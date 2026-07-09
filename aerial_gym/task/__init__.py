@@ -106,6 +106,19 @@ task_registry.register_task(
     position_setpoint_task_config_morphy,
 )
 
+from aerial_gym.task.shooting_moving_target_task.shooting_moving_target_task import (
+    ShootingMovingTargetTask,
+)
+from aerial_gym.config.task_config.shooting_moving_target_task_config import (
+    task_config as shooting_moving_target_task_config,
+)
+
+task_registry.register_task(
+    "shooting_moving_target_task",
+    ShootingMovingTargetTask,
+    shooting_moving_target_task_config,
+)
+
 
 ## Uncomment this to use custom tasks
 

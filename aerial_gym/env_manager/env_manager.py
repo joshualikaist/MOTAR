@@ -231,6 +231,9 @@ class EnvManager(BaseManager):
                         )
                     )
 
+            if self.cfg.env.create_ground_plane:
+                self.IGE_env.add_ground_actor_to_env(env_handle, i)
+
         # check if environment has 0 objects. If so, skip this step
         if self.asset_min_state_ratio is not None:
             self.asset_min_state_ratio = self.asset_min_state_ratio.to(self.device)

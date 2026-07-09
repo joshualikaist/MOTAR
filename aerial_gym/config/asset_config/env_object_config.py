@@ -596,3 +596,60 @@ class back_wall(asset_state_params):
     per_link_semantic = False
     semantic_id = BACK_WALL_SEMANTIC_ID
     color = [100, 200, 210]
+
+
+INTERCEPT_TARGET_SEMANTIC_ID = 50
+
+
+class intercept_quad_target_params(asset_state_params):
+    """
+    Intercept target: center collision sphere R=0.05 m only (no arm geometry).
+    Matches chaser `quad/quad.urdf` base_link collision sphere and
+    `intercept_success_radius` (center distance ≤ 0.11 m at first touch).
+    """
+
+    num_assets = 1
+    asset_folder = f"{AERIAL_GYM_DIRECTORY}/resources/models/environment_assets/objects"
+    file = "intercept_target_quad_scale.urdf"
+    collision_mask = 0
+    disable_gravity = True
+    density = 0.000001
+    replace_cylinder_with_capsule = False  # align with flying quad robot_asset
+    flip_visual_attachments = True
+    collapse_fixed_joints = False  # align with quad.urdf as used by base_quadrotor
+    fix_base_link = True
+    keep_in_env = True
+    per_link_semantic = False
+    semantic_id = INTERCEPT_TARGET_SEMANTIC_ID
+    color = [220, 60, 60]
+    # Offset from center of empty_env cube (see EmptyEnvCfg bounds ± env_spacing)
+    min_state_ratio = [
+        0.72,
+        0.48,
+        0.52,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+    ]
+    max_state_ratio = [
+        0.72,
+        0.48,
+        0.52,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+    ]

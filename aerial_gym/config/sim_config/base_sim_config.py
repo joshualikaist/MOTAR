@@ -1,4 +1,12 @@
 class BaseSimConfig:
+    # Isaac Gym global lights — softens shadows in the viewer (no effect when graphics_device_id=-1).
+    class scene_lighting:
+        enabled = True
+        primary_light_index = 0
+        directional_intensity = [0.92, 0.92, 0.94]
+        ambient = [0.48, 0.48, 0.52]
+        direction = [0.35, -0.55, -0.76]
+
     # viewer camera:
     class viewer:
         headless = False

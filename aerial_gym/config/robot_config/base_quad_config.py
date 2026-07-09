@@ -59,13 +59,13 @@ class BaseQuadCfg:
         ]
 
     class sensor_config:
-        enable_camera = False
+        enable_camera = True  #False for navigation task, True for navigation task
         camera_config = BaseDepthCameraConfig  # BaseNormalFaceIDCameraConfig
 
-        enable_lidar = False
+        enable_lidar = False  #False for navigation task, True for navigation task
         lidar_config = BaseLidarConfig  # OSDome_64_Config
 
-        enable_imu = False
+        enable_imu = False  #False for navigation task, True for navigation task
         imu_config = BaseImuConfig
 
     class disturbance:

@@ -91,7 +91,7 @@ class MotorModel:
         thrust_error = ref_thrust - self.current_motor_thrust
         motor_time_constants = torch.where(
             torch.sign(self.current_motor_thrust) * torch.sign(thrust_error) < 0,
-            self.motor_time_constants_decreasing,
+            self.motor_time_constants_decreasing,   
             self.motor_time_constants_increasing,
         )
         mixing_factor = self.mixing_factor_function(self.dt, motor_time_constants)
