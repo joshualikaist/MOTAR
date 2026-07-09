@@ -198,6 +198,14 @@ env_configurations.register(
     },
 )
 
+env_configurations.register(
+    "navrl_task",
+    {
+        "env_creator": lambda **kwargs: task_registry.make_task("navrl_task", **kwargs),
+        "vecenv_type": "AERIAL-RLGPU",
+    },
+)
+
 vecenv.register(
     "AERIAL-RLGPU",
     lambda config_name, num_actors, **kwargs: AERIALRLGPUEnv(config_name, num_actors, **kwargs),
@@ -398,6 +406,7 @@ def _task_run_suffix(task: Optional[str]) -> str:
         "position_setpoint_task": "fixed",
         "shooting_moving_target_task": "moving",
         "navigation_task": "nav",
+        "navrl_task": "navrl",
     }
     if task in mapping:
         return mapping[task]
