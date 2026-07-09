@@ -94,6 +94,9 @@ class NavRLTask(BaseTask):
         self.target_dir_2d[:, 0] = 1.0  # placeholder unit direction before first reset
         self.height_range = torch.zeros((self.num_envs, 2), device=self.device)  # [min, max]
         self.prev_vel_w = torch.zeros((self.num_envs, 3), device=self.device)
+        # per-episode diagnostics: closest approach and whether the goal was ever reached
+        self.ep_min_goal_dist = torch.full((self.num_envs,), float("inf"), device=self.device)
+        self.ep_reached = torch.zeros(self.num_envs, dtype=torch.bool, device=self.device)
 
         self.target_min_ratio = torch.tensor(
             self.task_config.target_min_ratio, device=self.device
@@ -138,6 +141,9 @@ class NavRLTask(BaseTask):
         self._succ_agg = 0
         self._crash_agg = 0
         self._to_agg = 0
+        self._reach_agg = 0
+        self._fin_agg = 0
+        self._mindist_sum = 0.0
 
     def close(self):
         self.sim_env.delete_env()
@@ -174,6 +180,8 @@ class NavRLTask(BaseTask):
             start_pos[:, 2], self.target_position[env_ids, 2]
         )
         self.prev_vel_w[env_ids] = 0.0
+        self.ep_min_goal_dist[env_ids] = float("inf")
+        self.ep_reached[env_ids] = False
 
     def render(self):
         return self.sim_env.render()
@@ -204,6 +212,10 @@ class NavRLTask(BaseTask):
         dist_to_goal = torch.norm(
             self.target_position - self.obs_dict["robot_position"], dim=1
         )
+        # per-episode closest approach / ever-reached (updated before any env is reset)
+        self.ep_min_goal_dist = torch.minimum(self.ep_min_goal_dist, dist_to_goal)
+        self.ep_reached |= dist_to_goal < self.task_config.success_radius
+
         successes = self.truncations * (dist_to_goal < self.task_config.success_radius)
         successes = torch.where(self.terminations > 0, torch.zeros_like(successes), successes)
         timeouts = torch.where(
@@ -211,7 +223,9 @@ class NavRLTask(BaseTask):
         )
         timeouts = torch.where(self.terminations > 0, torch.zeros_like(timeouts), timeouts)
         self.infos = {"successes": successes, "timeouts": timeouts, "crashes": self.terminations}
-        self._log_progress(successes, self.terminations, timeouts)
+
+        finished = (self.terminations > 0) | (self.truncations > 0)
+        self._log_progress(successes, self.terminations, timeouts, finished)
 
         if self.task_config.return_state_before_reset:
             return_tuple = self.get_return_tuple()
@@ -303,14 +317,30 @@ class NavRLTask(BaseTask):
         self.task_obs["observations"][:, : self.task_config.internal_state_dim] = s_int
         self.task_obs["observations"][:, self.task_config.internal_state_dim :] = lidar
 
-    def _log_progress(self, successes, crashes, timeouts):
+    def _log_progress(self, successes, crashes, timeouts, finished=None):
         self._succ_agg += int(torch.sum(successes).item())
         self._crash_agg += int(torch.sum(crashes > 0).item())
         self._to_agg += int(torch.sum(timeouts).item())
+        if finished is not None and finished.any():
+            self._reach_agg += int(torch.sum(self.ep_reached & finished).item())
+            self._mindist_sum += float(torch.sum(self.ep_min_goal_dist[finished]).item())
+            self._fin_agg += int(torch.sum(finished).item())
         total = self._succ_agg + self._crash_agg + self._to_agg
         if total >= 2048:
+            reach_rate = self._reach_agg / max(1, self._fin_agg)
+            mean_min_dist = self._mindist_sum / max(1, self._fin_agg)
             logger.warning(
-                "NavRL progress | success=%.3f crash=%.3f timeout=%.3f (n=%d)"
-                % (self._succ_agg / total, self._crash_agg / total, self._to_agg / total, total)
+                "NavRL progress | success@timeout=%.3f ever_reached=%.3f crash=%.3f timeout=%.3f "
+                "mean_closest_approach=%.2fm (n=%d)"
+                % (
+                    self._succ_agg / total,
+                    reach_rate,
+                    self._crash_agg / total,
+                    self._to_agg / total,
+                    mean_min_dist,
+                    total,
+                )
             )
             self._succ_agg = self._crash_agg = self._to_agg = 0
+            self._reach_agg = self._fin_agg = 0
+            self._mindist_sum = 0.0
