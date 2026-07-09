@@ -6,8 +6,8 @@ This repository is a research fork of the [Aerial Gym Simulator](https://github.
 It studies reinforcement-learning-based UAV navigation and moving-target approach in random
 obstacle environments, analyzing performance under varying obstacle density and target speed,
 together with dynamic object detection. The experimental environment follows the setup of
-[NavRL](https://github.com/Zhefan-Xu/NavRL), reimplemented on top of Aerial Gym. See
-[`RESEARCH_PLAN.md`](../RESEARCH_PLAN.md) in the workspace root for the staged research roadmap.
+[NavRL](https://github.com/Zhefan-Xu/NavRL), reimplemented on top of Aerial Gym.
+The staged research roadmap is maintained in `RESEARCH_PLAN.md` in the local workspace root.
 
 Research work lives on the `research/navrl-env` branch; `main` tracks upstream Aerial Gym.
 
@@ -19,7 +19,7 @@ The upstream Aerial Gym Simulator documentation follows.
 
 [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause) [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
-# [Aerial Gym Simulator](index.md)
+# Aerial Gym Simulator
 
 Welcome to the [Aerial Gym Simulator](https://www.github.com/ntnu-arl/aerial_gym_simulator) repository. Please refer to our [documentation](https://ntnu-arl.github.io/aerial_gym_simulator/) for detailed information on how to get started with the simulator, and how to use it for your research.
 
@@ -30,17 +30,13 @@ This is the *second release* of the simulator and includes a variety of new feat
 
 Aerial Gym Simulator allows you to train state-based control policies in under a minute:
 
-![Aerial Gym Simulator](./docs/gifs/Aerial%20Gym%20Position%20Control.gif)
 
 And train vision-based navigation policies in under an hour:
 
-![RL for Navigation](./docs/gifs/rl_for_navigation_example.gif)
 
 Equipped with GPU-accelerated and customizable ray-casting based LiDAR and Camera sensors with depth and segmentation capabilities:
 
-![Depth Frames 1](./docs/gifs/camera_depth_frames.gif) ![Lidar Depth Frames 1](./docs/gifs/lidar_depth_frames.gif)
 
-![Seg Frames 1](./docs/gifs/camera_seg_frames.gif) ![Lidar Seg Frames 1](./docs/gifs/lidar_seg_frames.gif)
 
 
 ## Features
