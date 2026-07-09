@@ -1,3 +1,22 @@
+# MOTAR
+
+**MOTAR: Moving Object Tracking and Reinforcement-Learning-Based Approach for UAV Navigation in Random Obstacle Fields**
+
+This repository is a research fork of the [Aerial Gym Simulator](https://github.com/ntnu-arl/aerial_gym_simulator).
+It studies reinforcement-learning-based UAV navigation and moving-target approach in random
+obstacle environments, analyzing performance under varying obstacle density and target speed,
+together with dynamic object detection. The experimental environment follows the setup of
+[NavRL](https://github.com/Zhefan-Xu/NavRL), reimplemented on top of Aerial Gym. See
+[`RESEARCH_PLAN.md`](../RESEARCH_PLAN.md) in the workspace root for the staged research roadmap.
+
+Research work lives on the `research/navrl-env` branch; `main` tracks upstream Aerial Gym.
+
+---
+
+The upstream Aerial Gym Simulator documentation follows.
+
+---
+
 [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause) [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 # [Aerial Gym Simulator](index.md)
