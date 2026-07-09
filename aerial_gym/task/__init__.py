@@ -119,6 +119,17 @@ task_registry.register_task(
     shooting_moving_target_task_config,
 )
 
+from aerial_gym.task.navrl_task.navrl_task import NavRLTask
+from aerial_gym.config.task_config.navrl_task_config import (
+    task_config as navrl_task_config,
+)
+
+task_registry.register_task(
+    "navrl_task",
+    NavRLTask,
+    navrl_task_config,
+)
+
 
 ## Uncomment this to use custom tasks
 
