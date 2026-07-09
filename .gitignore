@@ -11,3 +11,11 @@ nn/
 train_dir/
 wandb/
 runs/
+
+# local experiment workspace (checkpoints/reports, ~1.4GB)
+aerial_gym/lms_rl_trial/
+
+# generated example outputs (save_camera_stream.py etc.)
+aerial_gym/examples/*_frame_100.png
+aerial_gym/examples/*_frames_100.png
+aerial_gym/examples/*_frames_100.gif
