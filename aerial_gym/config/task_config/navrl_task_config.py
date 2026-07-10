@@ -69,7 +69,10 @@ class task_config:
     target_max_ratio = [0.95, 0.90, 0.70]
 
     # Success / termination
-    success_radius = 1.0  # [m]
+    # NavRL's own reach_goal condition is distance < 0.5 m (env.py:583) — an interception-
+    # grade capture radius (two ~0.3 m quads with centers 0.5 m apart nearly touch), not a
+    # loose "passed nearby" test. Also gates the goal-distance curriculum.
+    success_radius = 0.5  # [m]
     lower_height_bound = 0.1  # [m] crash if below
     upper_height_bound = 4.0  # [m] crash if above (NavRL uses 4)
 

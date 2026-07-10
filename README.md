@@ -133,11 +133,11 @@ What to watch in TensorBoard (rl_games scalar names):
 
 | Console box line | TensorBoard scalar | Meaning / goal |
 |------------------|--------------------|----------------|
-| `goal reached` | `navrl/reach_rate` | episodes that touched the 1 m success radius — the primary signal, ↑ toward 1.0; the curriculum expands the goal distance when this exceeds 0.6 |
-| `success @ timeout` | `navrl/success_at_timeout_rate` | still within 1 m of the goal at episode end, ↑ |
+| `goal reached` | `navrl/reach_rate` | episodes that touched the 0.5 m capture radius (NavRL's reach_goal condition) — the primary signal, ↑ toward 1.0; the curriculum expands the goal distance when this exceeds 0.6 |
+| `success @ timeout` | `navrl/success_at_timeout_rate` | still within 0.5 m of the goal at episode end, ↑ |
 | `crash` | `navrl/crash_rate` | ended by collision / height bound, ↓ |
 | `timeout (no reach)` | `navrl/timeout_rate` | ran all 150 steps without reaching, ↓ |
-| `closest to goal (m)` | `navrl/mean_closest_approach_m` | mean closest approach, ↓ toward < 1 |
+| `closest to goal (m)` | `navrl/mean_closest_approach_m` | mean closest approach, ↓ toward < 0.5 |
 | `curriculum max (m)` | `navrl/curriculum_goal_dist_max_m` | current max goal distance (5 → 18 m as the policy improves) |
 
 The same stats are also summarized to the console every ~2048 finished episodes as
