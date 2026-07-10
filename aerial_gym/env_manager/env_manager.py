@@ -264,7 +264,11 @@ class EnvManager(BaseManager):
             if not self.warp_env.prepare_for_simulation(self.global_tensor_dict):
                 raise Exception("Failed to prepare the simulation")
 
-        self.asset_manager = AssetManager(self.global_tensor_dict, self.keep_in_env)
+        self.asset_manager = AssetManager(
+            self.global_tensor_dict,
+            self.keep_in_env,
+            min_xy_spacing=getattr(self.cfg.env, "min_obstacle_xy_spacing", 0.0),
+        )
         self.asset_manager.prepare_for_sim()
         self.robot_manager.prepare_for_sim(self.global_tensor_dict)
         self.obstacle_manager = ObstacleManager(

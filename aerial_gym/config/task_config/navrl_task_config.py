@@ -14,7 +14,8 @@ class task_config:
 
     seed = 42
     sim_name = "base_sim"
-    env_name = "env_with_obstacles"
+    # Controlled Phase-1 arena: empty space + 16 static bars (no walls/panels). See navrl_bars_env.py.
+    env_name = "navrl_bars_env"
     robot_name = "navrl_quad"
     controller_name = "lee_velocity_control"
     args = {}
@@ -41,6 +42,11 @@ class task_config:
     return_state_before_reset = False
 
     max_velocity = 2.0  # NavRL v_lim [m/s]
+
+    # 2D navigation: the drone flies at this fixed altitude and tracks the goal in XY only.
+    # The drone spawns here (navrl_quad init z-ratio) and the task zeroes the vertical velocity
+    # command; the goal is placed at this same altitude. (A future fleeing target also moves in XY.)
+    flight_altitude = 1.0  # [m]
 
     # Stationary goal placement.
     #  - Curriculum ON (default): the goal is sampled at a random horizontal direction and a
