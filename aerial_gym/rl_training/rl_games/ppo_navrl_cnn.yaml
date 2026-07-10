@@ -9,7 +9,11 @@ params:
   load_checkpoint: False
 
   network:
-    name: actor_critic
+    # NavRL-style LiDAR CNN feature extractor (navrl_network.py): the 36x4 scan keeps its
+    # spatial structure through a 3-layer conv stack -> 128-d embedding, concatenated with
+    # S_int (8) and fused by a [256, 256] ELU MLP. Compare against the flat-MLP baseline
+    # (ppo_navrl.yaml) under identical PPO settings.
+    name: navrl_cnn
     separate: False
     space:
       continuous:
@@ -21,15 +25,6 @@ params:
           name: const_initializer
           val: 0
         fixed_sigma: True
-    mlp:
-      # obs = 8 (goal-frame state) + 36*4 (lidar) = 152. MLP feature extractor for the
-      # Phase 1 skeleton; a CNN over the 36x4 scan (NavRL-style) can replace this later.
-      units: [256, 256, 128]
-      d2rl: False
-      activation: elu
-      initializer:
-        name: default
-        scale: 2
 
   config:
     env_name: navrl_task

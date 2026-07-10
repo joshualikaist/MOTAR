@@ -502,6 +502,13 @@ if __name__ == "__main__":
             "a2c_continuous", lambda **kwargs: EarlyStopA2CAgent(**kwargs)
         )
 
+        # Custom networks (select via params.network.name in the YAML).
+        from rl_games.algos_torch import model_builder
+
+        from aerial_gym.rl_training.rl_games.navrl_network import NavRLCNNBuilder
+
+        model_builder.register_network("navrl_cnn", NavRLCNNBuilder)
+
         # Task-aware dashboard config: banner title, episode-length cap and the optional
         # reward "design range" hint all follow the task being trained.
         try:
