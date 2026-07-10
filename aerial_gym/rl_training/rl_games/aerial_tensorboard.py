@@ -65,6 +65,10 @@ def write_aerial_epoch_scalars(
             value = extra_intercept_metrics.get(key)
             if value is not None:
                 w.add_scalar(tag, float(value), ep)
+        # task-namespaced metrics (e.g. navrl/*) are written under their own tag as-is
+        for key, value in extra_intercept_metrics.items():
+            if "/" in key and value is not None:
+                w.add_scalar(key, float(value), ep)
 
     w.add_scalar("intercept/ep_finished", int(intercept_done), ep)
     if intercept_done > 0:

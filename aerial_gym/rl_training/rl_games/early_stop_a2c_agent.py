@@ -533,6 +533,23 @@ class EarlyStopA2CAgent(A2CAgent):
                     except Exception:
                         pass
 
+                    # NavRL navigation tasks feed their own per-epoch stats; when present they
+                    # replace the intercept lines in the dashboard and add navrl/* TB scalars.
+                    try:
+                        from aerial_gym.task.navrl_task.train_dashboard import (
+                            consume_navrl_epoch_summary,
+                        )
+
+                        nav_lines, nav_metrics, nav_done = consume_navrl_epoch_summary()
+                        if nav_done > 0:
+                            intercept_lines = nav_lines
+                            if intercept_extra_metrics:
+                                intercept_extra_metrics.update(nav_metrics)
+                            else:
+                                intercept_extra_metrics = nav_metrics
+                    except Exception:
+                        pass
+
                     self._flush_aerial_tensorboard(
                         mean_reward=dash_mr,
                         mean_episode_length=dash_el,

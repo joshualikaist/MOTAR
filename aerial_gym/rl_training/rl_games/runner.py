@@ -502,6 +502,25 @@ if __name__ == "__main__":
             "a2c_continuous", lambda **kwargs: EarlyStopA2CAgent(**kwargs)
         )
 
+        # Task-aware dashboard config: banner title, episode-length cap and the optional
+        # reward "design range" hint all follow the task being trained.
+        try:
+            _dash_task = str(args.get("task") or config["params"]["config"].get("env_name", ""))
+            from aerial_gym.rl_training.rl_games.run_header import _TASK_TITLES
+
+            os.environ.setdefault(
+                "AERIAL_RUN_TITLE",
+                f"Aerial RL  ·  {_TASK_TITLES.get(_dash_task, _dash_task or 'PPO')}",
+            )
+            os.environ.setdefault(
+                "AERIAL_TASK_CONFIG_MODULE",
+                f"aerial_gym.config.task_config.{_dash_task}_config",
+            )
+            if _dash_task in ("position_setpoint_task", "shooting_moving_target_task"):
+                os.environ.setdefault("AERIAL_REWARD_DESIGN_MAX", "1000")
+        except Exception:
+            pass
+
         # Prettier boxed stats only during TRAIN; PLAY 에서는 학습처럼 보이게 하지 않음.
         if not args.get("play"):
             try:

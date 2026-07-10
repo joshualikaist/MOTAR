@@ -15,7 +15,21 @@ _PATCHED_ATTR = "_aerial_boxed_statistics_patch"
 
 _rlgames_print_statistics_original = None
 
-_REWARD_DESIGN_MAX = 1000.0
+
+def _dashboard_title() -> str:
+    """Task-aware banner title; the runner sets AERIAL_RUN_TITLE per task."""
+    return os.environ.get("AERIAL_RUN_TITLE", "").strip() or "Aerial RL  ·  PPO"
+
+
+def _reward_design_suffix() -> str:
+    """Optional '(design ~0-N)' hint; only shown when the task declares a design range."""
+    raw = os.environ.get("AERIAL_REWARD_DESIGN_MAX", "").strip()
+    if not raw:
+        return ""
+    try:
+        return f"  (design ~0–{float(raw):.0f})"
+    except ValueError:
+        return ""
 
 
 def _episode_len_max() -> int:
@@ -67,11 +81,11 @@ def _format_dashboard_rows(
     bar = "\u2500" * 52
     rows: List[str] = [
         bar,
-        "  Aerial RL  ·  PPO  ·  Intercept",
+        f"  {_dashboard_title()}",
         "",
         f"  epoch          : {ep_s}",
         f"  step time (s)  : {float(step_time):.4f}",
-        f"  mean reward    : {_cell(mean_reward, ',.4f')}  (design ~0\u2013{_REWARD_DESIGN_MAX:.0f})",
+        f"  mean reward    : {_cell(mean_reward, ',.4f')}{_reward_design_suffix()}",
     ]
     if intercept_lines:
         for ln in intercept_lines:

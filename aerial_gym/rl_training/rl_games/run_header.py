@@ -22,6 +22,7 @@ _TASK_TITLES: dict[str, str] = {
     "position_setpoint_task_sim2real_end_to_end": "Quadrotor E2E sim2real \u00b7 PPO",
     "navigation_task": "Quadrotor Navigation \u00b7 PPO",
     "shooting_moving_target_task": "Moving Target Intercept \u00b7 PPO",
+    "navrl_task": "NavRL Navigation \u00b7 PPO",
 }
 
 _ENV_LABELS: dict[str, str] = {
