@@ -105,6 +105,12 @@ class NavRLTask(BaseTask):
             self.task_config.target_max_ratio, device=self.device
         ).expand(self.num_envs, -1)
 
+        # goal-distance curriculum state
+        self.cur = self.task_config.curriculum
+        self.cur_goal_dist_max = float(self.cur.goal_dist_start)
+        self._cur_reach_agg = 0
+        self._cur_fin_agg = 0
+
         rp = self.task_config.reward_parameters
         self.rw = {k: float(v) for k, v in rp.items()}
 
@@ -161,13 +167,33 @@ class NavRLTask(BaseTask):
         # robot has already been respawned by the env manager when this is called mid-episode,
         # so robot_position holds the fresh start pose.
         start_pos = self.obs_dict["robot_position"][env_ids]
+        b_min = self.obs_dict["env_bounds_min"][env_ids]
+        b_max = self.obs_dict["env_bounds_max"][env_ids]
 
-        ratio = torch_rand_float_tensor(self.target_min_ratio, self.target_max_ratio)[env_ids]
-        self.target_position[env_ids] = (
-            self.obs_dict["env_bounds_min"][env_ids]
-            + (self.obs_dict["env_bounds_max"][env_ids] - self.obs_dict["env_bounds_min"][env_ids])
-            * ratio
-        )
+        if self.cur.use_curriculum:
+            n = len(env_ids)
+            # random horizontal direction, distance in [min, current max]
+            theta = 2.0 * torch.pi * torch.rand(n, device=self.device)
+            dist = self.cur.goal_dist_min + (
+                self.cur_goal_dist_max - self.cur.goal_dist_min
+            ) * torch.rand(n, device=self.device)
+            goal = start_pos.clone()
+            goal[:, 0] = start_pos[:, 0] + dist * torch.cos(theta)
+            goal[:, 1] = start_pos[:, 1] + dist * torch.sin(theta)
+            jitter = self.cur.goal_height_jitter
+            goal[:, 2] = start_pos[:, 2] + (2.0 * torch.rand(n, device=self.device) - 1.0) * jitter
+            # keep the goal inside the arena (and above a minimum height)
+            margin = 1.0
+            goal = torch.maximum(goal, b_min + margin)
+            goal = torch.minimum(goal, b_max - margin)
+            goal[:, 2] = goal[:, 2].clamp(
+                min=self.task_config.lower_height_bound + 0.3,
+                max=self.task_config.upper_height_bound - 0.3,
+            )
+            self.target_position[env_ids] = goal
+        else:
+            ratio = torch_rand_float_tensor(self.target_min_ratio, self.target_max_ratio)[env_ids]
+            self.target_position[env_ids] = b_min + (b_max - b_min) * ratio
 
         d = self.target_position[env_ids] - start_pos
         d[:, 2] = 0.0  # horizontal goal direction defines the goal frame
@@ -226,6 +252,7 @@ class NavRLTask(BaseTask):
 
         finished = (self.terminations > 0) | (self.truncations > 0)
         self._log_progress(successes, self.terminations, timeouts, finished)
+        self._update_curriculum(finished)
 
         if self.task_config.return_state_before_reset:
             return_tuple = self.get_return_tuple()
@@ -316,6 +343,27 @@ class NavRLTask(BaseTask):
 
         self.task_obs["observations"][:, : self.task_config.internal_state_dim] = s_int
         self.task_obs["observations"][:, self.task_config.internal_state_dim :] = lidar
+
+    def _update_curriculum(self, finished):
+        if not self.cur.use_curriculum or not finished.any():
+            return
+        self._cur_reach_agg += int(torch.sum(self.ep_reached & finished).item())
+        self._cur_fin_agg += int(torch.sum(finished).item())
+        if self._cur_fin_agg >= self.cur.check_after_episodes:
+            reach_rate = self._cur_reach_agg / max(1, self._cur_fin_agg)
+            if (
+                reach_rate >= self.cur.reach_rate_to_expand
+                and self.cur_goal_dist_max < self.cur.goal_dist_max
+            ):
+                self.cur_goal_dist_max = min(
+                    self.cur_goal_dist_max + self.cur.expand_step, self.cur.goal_dist_max
+                )
+                logger.warning(
+                    "curriculum ↑ | reach_rate=%.2f -> goal_dist_max=%.1f m"
+                    % (reach_rate, self.cur_goal_dist_max)
+                )
+            self._cur_reach_agg = 0
+            self._cur_fin_agg = 0
 
     def _log_progress(self, successes, crashes, timeouts, finished=None):
         self._succ_agg += int(torch.sum(successes).item())

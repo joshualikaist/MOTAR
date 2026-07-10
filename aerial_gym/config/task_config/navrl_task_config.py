@@ -42,7 +42,23 @@ class task_config:
 
     max_velocity = 2.0  # NavRL v_lim [m/s]
 
-    # Stationary goal sampled as a ratio of the environment bounds (far side of the arena).
+    # Stationary goal placement.
+    #  - Curriculum ON (default): the goal is sampled at a random horizontal direction and a
+    #    distance in [goal_dist_min, cur_max] from the spawn, starting easy (nearby goals) and
+    #    expanding as the reach rate improves. This is the fix for the "goal too far, 0% reached"
+    #    result of the first training run -- get the simple static case succeeding first.
+    #  - Curriculum OFF: fall back to sampling the goal as a ratio of the environment bounds.
+    class curriculum:
+        use_curriculum = True
+        goal_dist_min = 2.5          # [m] nearest goal
+        goal_dist_start = 5.0        # [m] initial max goal distance (easy)
+        goal_dist_max = 18.0         # [m] final max goal distance
+        expand_step = 1.5            # [m] added to the max distance per successful check
+        reach_rate_to_expand = 0.60  # ever_reached rate needed to expand difficulty
+        check_after_episodes = 4096  # evaluate the reach rate over this many finished episodes
+        goal_height_jitter = 1.0     # [m] goal z = spawn z +/- U(this), clamped to height bounds
+
+    # Fallback goal placement (curriculum OFF): ratio of the environment bounds.
     target_min_ratio = [0.85, 0.10, 0.30]
     target_max_ratio = [0.95, 0.90, 0.70]
 
