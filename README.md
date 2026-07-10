@@ -13,6 +13,122 @@ Research work lives on the `research/navrl-env` branch; `main` tracks upstream A
 
 ---
 
+## Getting Started (MOTAR)
+
+This section is a self-contained guide: from a fresh machine to watching a drone fly
+in the simulator. It targets the Phase 1 task `navrl_task` (static obstacles + a
+stationary goal, LiDAR-based navigation).
+
+### 1. Prerequisites
+
+| Component | Tested version |
+|-----------|----------------|
+| OS | Ubuntu 20.04 |
+| GPU | NVIDIA, ≥ 8 GB VRAM (developed on an RTX 3070 8 GB) + recent driver (CUDA 12.x) |
+| [Isaac Gym Preview 4](https://developer.nvidia.com/isaac-gym) | 1.0rc4, unpacked to `~/isaacgym` |
+| Conda | Miniconda / Anaconda |
+
+### 2. One-time environment setup
+
+```bash
+# (a) Create and activate a Python 3.8 conda env
+conda create -n aerialgym python=3.8 -y
+conda activate aerialgym
+
+# (b) Install Isaac Gym Preview 4 (download from NVIDIA, then:)
+cd ~/isaacgym/python && pip install -e .
+
+# (c) Install this repo (editable) + its deps
+cd <path>/aerial_gym_simulator
+pip install -e .
+pip install rl-games==1.6.5 warp-lang==1.0.0
+
+# (d) Install the urdfpy fork used by the simulator
+pip install -e <path>/urdfpy
+```
+
+**Two gotchas that will bite you (already handled on the dev machine):**
+
+1. **Import order** — in any custom script, import `isaacgym` (or `aerial_gym`)
+   **before** `torch`, or Isaac Gym raises `ImportError: PyTorch was imported before
+   isaacgym`.
+2. **`~/.local` numpy shadowing** — if a `pip install --user` numpy (e.g. from AirSim)
+   sits in `~/.local`, it overrides the conda env's numpy and breaks the warp sensor
+   path (`np.int` error). The `aerialgym` env fixes this by exporting
+   `PYTHONNOUSERSITE=1` on activation (see
+   `$CONDA_PREFIX/etc/conda/activate.d/`). If you build the env yourself, set that
+   variable, or `pip uninstall --user numpy`.
+
+Quick check that everything imports and the sim builds:
+
+```bash
+conda activate aerialgym
+python -c "import aerial_gym; from aerial_gym.registry.task_registry import task_registry; import torch; print('ok')"
+```
+
+### 3. Watch the environment (no policy)
+
+Opens an Isaac Gym window with 16 LiDAR-equipped drones in the static-obstacle field,
+driven by a constant "toward the goal" command — a quick way to see the scene:
+
+```bash
+conda activate aerialgym
+cd aerial_gym/examples
+python navrl_task_example.py            # a viewer window opens
+```
+
+### 4. Train the navigation policy (PPO, rl_games)
+
+```bash
+conda activate aerialgym
+cd aerial_gym/rl_training/rl_games
+
+# headless training, 512 parallel drones (fits 8 GB VRAM; drop to 256 if you OOM)
+python runner.py --file ppo_navrl.yaml --task navrl_task \
+    --num_envs 512 --headless True --train
+```
+
+- Checkpoints: `runs/ppo_<date>_navrl/nn/gen_ppo.pth` (saved periodically).
+- Live curves: `tensorboard --logdir runs`
+- The task prints navigation stats to the log every ~2048 finished episodes:
+  `success@timeout`, `ever_reached`, `crash`, `timeout`, `mean_closest_approach`.
+
+### 5. Watch a trained policy (viewer)
+
+```bash
+conda activate aerialgym
+cd aerial_gym/rl_training/rl_games
+python runner.py --file ppo_navrl.yaml --task navrl_task \
+    --num_envs 16 --headless False --play \
+    --checkpoint runs/<your_run>/nn/gen_ppo.pth
+```
+
+`--headless False` opens the viewer so you can judge the policy by eye. Use a small
+`--num_envs` (e.g. 16) for a readable window.
+
+### 6. Evaluate (metrics only, no window)
+
+Same as play but headless; read the `NavRL progress` lines from the output:
+
+```bash
+PLAY_GAMES_NUM=8000 python runner.py --file ppo_navrl.yaml --task navrl_task \
+    --num_envs 512 --headless True --play \
+    --checkpoint runs/<your_run>/nn/gen_ppo.pth 2>&1 | grep "NavRL progress"
+```
+
+### Where things live
+
+| Path | What |
+|------|------|
+| `aerial_gym/task/navrl_task/` | the Phase 1 navigation task (obs / reward / done) |
+| `aerial_gym/config/task_config/navrl_task_config.py` | task settings (goal placement, reward weights, episode length) |
+| `aerial_gym/config/robot_config/navrl_quad_config.py` | the LiDAR-equipped quad |
+| `aerial_gym/config/sensor_config/lidar_config/navrl_lidar_config.py` | NavRL-matched 36×4 yaw-only LiDAR |
+| `aerial_gym/rl_training/rl_games/ppo_navrl.yaml` | PPO hyperparameters |
+| `RESEARCH_PLAN.md` (workspace root) | staged research roadmap |
+
+---
+
 The upstream Aerial Gym Simulator documentation follows.
 
 ---
