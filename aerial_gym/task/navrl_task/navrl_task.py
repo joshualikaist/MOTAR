@@ -179,20 +179,41 @@ class NavRLTask(BaseTask):
 
         if self.cur.use_curriculum:
             n = len(env_ids)
-            # random horizontal direction, distance in [min, current max]
-            theta = 2.0 * torch.pi * torch.rand(n, device=self.device)
-            dist = self.cur.goal_dist_min + (
-                self.cur_goal_dist_max - self.cur.goal_dist_min
-            ) * torch.rand(n, device=self.device)
             goal = start_pos.clone()
-            goal[:, 0] = start_pos[:, 0] + dist * torch.cos(theta)
-            goal[:, 1] = start_pos[:, 1] + dist * torch.sin(theta)
-            # 2D navigation: keep the goal inside the arena horizontally, pin it to the fixed
-            # flight altitude (the drone flies XY-only at flight_altitude).
-            margin = 1.0
-            goal[:, 0:2] = torch.maximum(goal[:, 0:2], b_min[:, 0:2] + margin)
-            goal[:, 0:2] = torch.minimum(goal[:, 0:2], b_max[:, 0:2] - margin)
             goal[:, 2] = self.task_config.flight_altitude
+            margin = 1.0
+            clearance = getattr(self.task_config, "goal_min_bar_clearance", 0.0)
+            bars_xy = self.obs_dict["obstacle_position"][env_ids][:, :, 0:2]
+            # Sample a goal at a random heading and a distance in [min, current max]; resample
+            # any goal that lands within `clearance` (XY) of a bar so the capture sphere is
+            # flyable. 2D navigation: the goal stays inside the arena at flight_altitude.
+            todo = torch.ones(n, dtype=torch.bool, device=self.device)
+            for _ in range(10):
+                if not todo.any():
+                    break
+                k = int(todo.sum())
+                theta = 2.0 * torch.pi * torch.rand(k, device=self.device)
+                dist = self.cur.goal_dist_min + (
+                    self.cur_goal_dist_max - self.cur.goal_dist_min
+                ) * torch.rand(k, device=self.device)
+                gx = start_pos[todo, 0] + dist * torch.cos(theta)
+                gy = start_pos[todo, 1] + dist * torch.sin(theta)
+                gx = gx.clamp(b_min[todo, 0] + margin, b_max[todo, 0] - margin)
+                gy = gy.clamp(b_min[todo, 1] + margin, b_max[todo, 1] - margin)
+                goal[todo, 0] = gx
+                goal[todo, 1] = gy
+                if clearance <= 0.0:
+                    break
+                d_bar = (
+                    torch.cdist(goal[todo, 0:2].unsqueeze(1), bars_xy[todo])
+                    .squeeze(1)
+                    .min(dim=1)
+                    .values
+                )
+                still_bad = d_bar < clearance
+                idx = todo.nonzero(as_tuple=False).squeeze(-1)
+                todo = torch.zeros_like(todo)
+                todo[idx[still_bad]] = True
             self.target_position[env_ids] = goal
         else:
             ratio = torch_rand_float_tensor(self.target_min_ratio, self.target_max_ratio)[env_ids]
@@ -248,18 +269,27 @@ class NavRLTask(BaseTask):
         self.ep_min_goal_dist = torch.minimum(self.ep_min_goal_dist, dist_to_goal)
         self.ep_reached |= dist_to_goal < self.task_config.success_radius
 
-        successes = self.truncations * (dist_to_goal < self.task_config.success_radius)
-        successes = torch.where(self.terminations > 0, torch.zeros_like(successes), successes)
-        timeouts = torch.where(
-            self.truncations > 0, torch.logical_not(successes), torch.zeros_like(successes)
-        )
-        timeouts = torch.where(self.terminations > 0, torch.zeros_like(timeouts), timeouts)
-        self.infos = {"successes": successes, "timeouts": timeouts, "crashes": self.terminations}
+        if getattr(self.task_config, "terminate_on_capture", False):
+            # capture ends the episode; timeouts are truncations that never captured
+            successes = self.captured_now
+            crashes = self.crashed_now
+            timeouts = (self.truncations > 0) & ~successes & ~crashes
+        else:
+            successes = self.truncations * (dist_to_goal < self.task_config.success_radius)
+            successes = torch.where(
+                self.terminations > 0, torch.zeros_like(successes), successes
+            )
+            crashes = self.terminations > 0
+            timeouts = torch.where(
+                self.truncations > 0, torch.logical_not(successes), torch.zeros_like(successes)
+            )
+            timeouts = torch.where(self.terminations > 0, torch.zeros_like(timeouts), timeouts)
+        self.infos = {"successes": successes, "timeouts": timeouts, "crashes": crashes}
 
         finished = (self.terminations > 0) | (self.truncations > 0)
-        self._log_progress(successes, self.terminations, timeouts, finished)
+        self._log_progress(successes, crashes, timeouts, finished)
         self._update_curriculum(finished)
-        self._record_epoch_dashboard(successes, timeouts, finished)
+        self._record_epoch_dashboard(successes, crashes, timeouts, finished)
 
         if self.task_config.return_state_before_reset:
             return_tuple = self.get_return_tuple()
@@ -313,11 +343,25 @@ class NavRLTask(BaseTask):
         crashed = self.obs_dict["crashes"] > 0
         below = z < self.task_config.lower_height_bound
         above = z > self.task_config.upper_height_bound
-        terminated = crashed | below | above
+        crashed_out = crashed | below | above
+
+        # Interception: touching the capture radius ends the episode as a success (bonus
+        # instead of the step reward). Capture wins over a same-step contact.
+        if getattr(self.task_config, "terminate_on_capture", False):
+            captured = dist < self.task_config.success_radius
+        else:
+            captured = torch.zeros_like(crashed_out)
+        crashed_out = crashed_out & ~captured
+        self.captured_now = captured
+        self.crashed_now = crashed_out
+
         self.rewards[:] = torch.where(
-            terminated, torch.full_like(self.rewards, self.rw["collision_penalty"]), self.rewards
+            crashed_out, torch.full_like(self.rewards, self.rw["collision_penalty"]), self.rewards
         )
-        self.terminations[:] = terminated.to(self.terminations.dtype)
+        self.rewards[:] = torch.where(
+            captured, self.rewards + self.rw["capture_bonus"], self.rewards
+        )
+        self.terminations[:] = (crashed_out | captured).to(self.terminations.dtype)
 
     def add_static_safety_reward(self):
         # NavRL r_ss = mean over rays of log(distance to obstacle), clamped to (0, range].
@@ -372,7 +416,7 @@ class NavRLTask(BaseTask):
             self._cur_reach_agg = 0
             self._cur_fin_agg = 0
 
-    def _record_epoch_dashboard(self, successes, timeouts, finished):
+    def _record_epoch_dashboard(self, successes, crashes, timeouts, finished):
         """Feed finished-episode outcomes to the per-epoch train dashboard (console + TB)."""
         n_fin = int(torch.sum(finished).item())
         if n_fin == 0:
@@ -380,8 +424,8 @@ class NavRLTask(BaseTask):
         record_navrl_epoch_episodes(
             num_finished=n_fin,
             num_reached=int(torch.sum(self.ep_reached & finished).item()),
-            num_success_timeout=int(torch.sum(successes).item()),
-            num_crash=int(torch.sum(self.terminations > 0).item()),
+            num_captured=int(torch.sum(successes).item()),
+            num_crash=int(torch.sum(crashes > 0).item()),
             num_timeout=int(torch.sum(timeouts).item()),
             closest_sum=float(torch.sum(self.ep_min_goal_dist[finished]).item()),
             closest_count=n_fin,
@@ -401,7 +445,7 @@ class NavRLTask(BaseTask):
             reach_rate = self._reach_agg / max(1, self._fin_agg)
             mean_min_dist = self._mindist_sum / max(1, self._fin_agg)
             logger.warning(
-                "NavRL progress | success@timeout=%.3f ever_reached=%.3f crash=%.3f timeout=%.3f "
+                "NavRL progress | captured=%.3f ever_reached=%.3f crash=%.3f timeout=%.3f "
                 "mean_closest_approach=%.2fm (n=%d)"
                 % (
                     self._succ_agg / total,

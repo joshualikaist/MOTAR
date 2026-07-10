@@ -73,6 +73,14 @@ class task_config:
     # grade capture radius (two ~0.3 m quads with centers 0.5 m apart nearly touch), not a
     # loose "passed nearby" test. Also gates the goal-distance curriculum.
     success_radius = 0.5  # [m]
+    # Interception semantics: touching the capture radius ends the episode as a success.
+    # (Deliberate divergence from NavRL, whose navigation env never terminates on reach —
+    # the 6000-epoch run showed the drone tags the goal then wanders, since the velocity
+    # reward gives no incentive to stay: 82% timeouts with only 17% still at the goal.)
+    terminate_on_capture = True
+    # Keep the goal at least this far (XY) from the nearest bar so the capture sphere is
+    # actually flyable; without it a goal can spawn flush against a bar.
+    goal_min_bar_clearance = 1.0  # [m]
     lower_height_bound = 0.1  # [m] crash if below
     upper_height_bound = 4.0  # [m] crash if above (NavRL uses 4)
 
@@ -88,4 +96,6 @@ class task_config:
         # NavRL leaves the terminal collision penalty commented out; a modest value is used here
         # to discourage crashing while training the skeleton. Tune/remove in ablations.
         "collision_penalty": -10.0,
+        # Terminal bonus when the capture radius is touched (episode ends as a success).
+        "capture_bonus": 10.0,
     }

@@ -23,7 +23,7 @@ _GOAL_DIST_MAX: Optional[float] = None
 def record_navrl_epoch_episodes(
     num_finished: int,
     num_reached: int,
-    num_success_timeout: int,
+    num_captured: int,
     num_crash: int,
     num_timeout: int,
     closest_sum: float,
@@ -36,7 +36,7 @@ def record_navrl_epoch_episodes(
         return
     _DONE += int(num_finished)
     _REACHED += int(num_reached)
-    _SUCC_TIMEOUT += int(num_success_timeout)
+    _SUCC_TIMEOUT += int(num_captured)
     _CRASH += int(num_crash)
     _TIMEOUT += int(num_timeout)
     if closest_count > 0:
@@ -68,10 +68,10 @@ def consume_navrl_epoch_summary() -> Tuple[List[str], dict, int]:
         return f"{100.0 * k / done:5.1f}% ({k}/{done})"
 
     lines = [
+        f"captured (success)   : {pct(succ)}",
         f"goal reached         : {pct(reached)}",
-        f"success @ timeout    : {pct(succ)}",
         f"crash                : {pct(crash)}",
-        f"timeout (no reach)   : {pct(timeout)}",
+        f"timeout (no capture) : {pct(timeout)}",
     ]
     if closest is not None:
         lines.append(f"closest to goal (m)  : {closest:.2f}")
@@ -81,7 +81,7 @@ def consume_navrl_epoch_summary() -> Tuple[List[str], dict, int]:
     metrics = {
         "navrl/ep_finished": float(done),
         "navrl/reach_rate": reached / done,
-        "navrl/success_at_timeout_rate": succ / done,
+        "navrl/captured_rate": succ / done,
         "navrl/crash_rate": crash / done,
         "navrl/timeout_rate": timeout / done,
     }
