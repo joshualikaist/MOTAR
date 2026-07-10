@@ -3,6 +3,7 @@ import torch
 from gym.spaces import Box, Dict
 
 from aerial_gym.task.base_task import BaseTask
+from aerial_gym.task.navrl_task.train_dashboard import record_navrl_epoch_episodes
 from aerial_gym.sim.sim_builder import SimBuilder
 from aerial_gym.utils.math import quat_rotate, quat_rotate_inverse, torch_rand_float_tensor
 from aerial_gym.utils.logging import CustomLogger
@@ -156,6 +157,12 @@ class NavRLTask(BaseTask):
 
     # ------------------------------------------------------------------ reset
     def reset(self):
+        # Respawn the robots (and re-place obstacles) BEFORE sampling goals. Without this, a
+        # full reset leaves the robots at their build pose (overlapping the bars near the env
+        # origin), so the first step crashes every env at once — which ends rl_games play mode
+        # after a single step. Mid-episode resets don't need it: the env manager has already
+        # respawned those envs by the time reset_idx() is called from step().
+        self.sim_env.reset()
         self.reset_idx(torch.arange(self.num_envs, device=self.device))
         # render once so the first observation carries a valid LiDAR scan
         self.sim_env.render(render_components="sensors")
@@ -180,16 +187,12 @@ class NavRLTask(BaseTask):
             goal = start_pos.clone()
             goal[:, 0] = start_pos[:, 0] + dist * torch.cos(theta)
             goal[:, 1] = start_pos[:, 1] + dist * torch.sin(theta)
-            jitter = self.cur.goal_height_jitter
-            goal[:, 2] = start_pos[:, 2] + (2.0 * torch.rand(n, device=self.device) - 1.0) * jitter
-            # keep the goal inside the arena (and above a minimum height)
+            # 2D navigation: keep the goal inside the arena horizontally, pin it to the fixed
+            # flight altitude (the drone flies XY-only at flight_altitude).
             margin = 1.0
-            goal = torch.maximum(goal, b_min + margin)
-            goal = torch.minimum(goal, b_max - margin)
-            goal[:, 2] = goal[:, 2].clamp(
-                min=self.task_config.lower_height_bound + 0.3,
-                max=self.task_config.upper_height_bound - 0.3,
-            )
+            goal[:, 0:2] = torch.maximum(goal[:, 0:2], b_min[:, 0:2] + margin)
+            goal[:, 0:2] = torch.minimum(goal[:, 0:2], b_max[:, 0:2] - margin)
+            goal[:, 2] = self.task_config.flight_altitude
             self.target_position[env_ids] = goal
         else:
             ratio = torch_rand_float_tensor(self.target_min_ratio, self.target_max_ratio)[env_ids]
@@ -219,6 +222,9 @@ class NavRLTask(BaseTask):
         vel_world = goal_frame_to_world(vel_goal, self.target_dir_2d)
         vel_vehicle = quat_rotate_inverse(self.obs_dict["robot_vehicle_orientation"], vel_world)
         self.command[:, 0:3] = vel_vehicle
+        # 2D flight: hold altitude. The vehicle frame is yaw-only (level), so vehicle-z == world-z;
+        # zeroing the vertical velocity command keeps the drone at its 1 m spawn altitude.
+        self.command[:, 2] = 0.0
         self.command[:, 3] = 0.0  # no yaw-rate command; heading is held from reset
         return self.command
 
@@ -253,6 +259,7 @@ class NavRLTask(BaseTask):
         finished = (self.terminations > 0) | (self.truncations > 0)
         self._log_progress(successes, self.terminations, timeouts, finished)
         self._update_curriculum(finished)
+        self._record_epoch_dashboard(successes, timeouts, finished)
 
         if self.task_config.return_state_before_reset:
             return_tuple = self.get_return_tuple()
@@ -364,6 +371,22 @@ class NavRLTask(BaseTask):
                 )
             self._cur_reach_agg = 0
             self._cur_fin_agg = 0
+
+    def _record_epoch_dashboard(self, successes, timeouts, finished):
+        """Feed finished-episode outcomes to the per-epoch train dashboard (console + TB)."""
+        n_fin = int(torch.sum(finished).item())
+        if n_fin == 0:
+            return
+        record_navrl_epoch_episodes(
+            num_finished=n_fin,
+            num_reached=int(torch.sum(self.ep_reached & finished).item()),
+            num_success_timeout=int(torch.sum(successes).item()),
+            num_crash=int(torch.sum(self.terminations > 0).item()),
+            num_timeout=int(torch.sum(timeouts).item()),
+            closest_sum=float(torch.sum(self.ep_min_goal_dist[finished]).item()),
+            closest_count=n_fin,
+            goal_dist_max=self.cur_goal_dist_max if self.cur.use_curriculum else None,
+        )
 
     def _log_progress(self, successes, crashes, timeouts, finished=None):
         self._succ_agg += int(torch.sum(successes).item())
