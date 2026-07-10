@@ -135,7 +135,19 @@
 - 참고: play 콘솔이 조용한 것은 `AERIAL_RL_QUIET_STARTUP=1`(기본) 필터 때문 —
   `AERIAL_RL_QUIET_STARTUP=0`으로 끄면 `av reward` 등 rl_games 출력이 보임.
 
+### 뷰어 관찰 결과 + LiDAR CNN 특징추출기 (사용자 방향 확정)
+- 뷰어 관찰: 드론이 목표로는 가지만 **막대에 충돌하는 케이스가 여전함** → 학습량 부족 +
+  평탄화 MLP의 공간정보 소실이 원인 후보. 사용자 결정: 학습 6000 epoch로 상향 + CNN 진행.
+- **신규** `rl_training/rl_games/navrl_network.py` — NavRL ppo.py의 특징추출기를 rl_games
+  커스텀 네트워크("navrl_cnn")로 이식: 36×4 스캔 → Conv(1→4→16→16, 커널 5×3, 수평 ×2
+  다운샘플) → 288→128 임베딩(LayerNorm) → S_int(8)와 concat → MLP [256,256] → Gaussian
+  헤드. (NavRL과의 차이: Beta 대신 Gaussian(logstd), actor/critic 트렁크 공유 — 기록됨)
+- **신규** `ppo_navrl_cnn.yaml` (CNN, 권장) / 기존 `ppo_navrl.yaml`(MLP 베이스라인)은 비교용
+  유지. 둘 다 `max_epochs: 6000`(≈2h @ 1.1s/epoch)으로 상향. runner.py에 네트워크 등록.
+- **스모크 (125 epoch, 2.5분)**: CNN이 MLP 동일 시점 대비 우세 — goal reached 71.8%,
+  success@timeout 62.6%(MLP ~52%), **crash 37.4%(MLP ~46%)**, 커리큘럼 12.5 m 도달.
+  새 대시보드 박스·TB `navrl/*` 스칼라 모두 정상 동작 확인.
+
 ### 다음 단계
-1. 뷰어로 정책 거동 확인(막대 회피 품질, 실패 모드 분류) — 진행 중.
-2. 남은 개선 레버: LiDAR CNN 특징추출기, 보상 재균형, 커리큘럼 최종거리(18 m) 완주 학습.
-3. 변경 파일 일괄 커밋(사용자 diff 확인 후).
+1. `ppo_navrl_cnn.yaml`로 6000 epoch 본 학습 → MLP 베이스라인과 도달률/충돌률 비교.
+2. 부족하면 보상 재균형(속도 vs 안전 가중), 커리큘럼 최종거리(18 m) 완주 확인.

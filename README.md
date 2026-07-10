@@ -93,9 +93,15 @@ conda activate aerialgym
 cd aerial_gym/rl_training/rl_games
 
 # headless training, 512 parallel drones (fits 8 GB VRAM; drop to 256 if you OOM)
-python runner.py --file ppo_navrl.yaml --task navrl_task \
+# ppo_navrl_cnn.yaml = NavRL-style LiDAR CNN feature extractor (recommended)
+python runner.py --file ppo_navrl_cnn.yaml --task navrl_task \
     --num_envs 512 --headless True --train
 ```
+
+Two network configs exist, identical except for the feature extractor — train both to
+compare: `ppo_navrl_cnn.yaml` (conv stack over the 36×4 scan, preserves which directions
+hold obstacles; see `navrl_network.py`) and `ppo_navrl.yaml` (flat-MLP baseline that
+flattens the scan). Both run 6000 epochs ≈ 2 h at ~1.1 s/epoch on an RTX 3070.
 
 - Checkpoints: `runs/ppo_<date>_navrl/nn/gen_ppo.pth` (saved periodically), plus
   `last_gen_ppo_ep_<N>_rew_<R>.pth` snapshots.
@@ -122,19 +128,20 @@ What to watch in TensorBoard (rl_games scalar names):
 | `info/kl` | approx. KL between updates | small and stable (adaptive lr keeps ~0.008–0.016) |
 | `info/lr` | current learning rate | adapts; persistent floor/ceiling = check kl |
 
-**The task-specific navigation metrics are printed to the console** (not TensorBoard)
-every ~2048 finished episodes, as `NavRL progress |` lines:
+**The task-specific navigation metrics** appear in the per-epoch console box AND as
+`navrl/*` TensorBoard scalars:
 
-| Metric | Meaning | Goal |
-|--------|---------|------|
-| `ever_reached` | fraction of episodes that touched the 1 m success radius at least once | ↑ toward 1.0 — the primary success signal; the curriculum expands the goal distance when this exceeds 0.6 |
-| `success@timeout` | still within 1 m of the goal when the episode times out | ↑ |
-| `crash` | episodes ended by collision / height bound | ↓ |
-| `timeout` | episodes that ran the full 150 steps without reaching | ↓ as reaching improves |
-| `mean_closest_approach` | mean over episodes of the closest distance to the goal | ↓ toward < 1 m |
+| Console box line | TensorBoard scalar | Meaning / goal |
+|------------------|--------------------|----------------|
+| `goal reached` | `navrl/reach_rate` | episodes that touched the 1 m success radius — the primary signal, ↑ toward 1.0; the curriculum expands the goal distance when this exceeds 0.6 |
+| `success @ timeout` | `navrl/success_at_timeout_rate` | still within 1 m of the goal at episode end, ↑ |
+| `crash` | `navrl/crash_rate` | ended by collision / height bound, ↓ |
+| `timeout (no reach)` | `navrl/timeout_rate` | ran all 150 steps without reaching, ↓ |
+| `closest to goal (m)` | `navrl/mean_closest_approach_m` | mean closest approach, ↓ toward < 1 |
+| `curriculum max (m)` | `navrl/curriculum_goal_dist_max_m` | current max goal distance (5 → 18 m as the policy improves) |
 
-Tip: capture them to a file while training,
-`... --train 2>&1 | tee train.log`, then `grep "NavRL progress" train.log`.
+The same stats are also summarized to the console every ~2048 finished episodes as
+`NavRL progress |` lines — handy with `... --train 2>&1 | tee train.log`.
 
 ### 5. Watch a trained policy (viewer)
 
@@ -171,7 +178,9 @@ PLAY_GAMES_NUM=8000 python runner.py --file ppo_navrl.yaml --task navrl_task \
 | `aerial_gym/env_manager/asset_manager.py` | jittered-grid obstacle placement (`min_obstacle_xy_spacing`) |
 | `aerial_gym/config/robot_config/navrl_quad_config.py` | the LiDAR-equipped quad (spawns at 1 m) |
 | `aerial_gym/config/sensor_config/lidar_config/navrl_lidar_config.py` | NavRL-matched 36×4 yaw-only LiDAR |
-| `aerial_gym/rl_training/rl_games/ppo_navrl.yaml` | PPO hyperparameters |
+| `aerial_gym/rl_training/rl_games/ppo_navrl_cnn.yaml` | PPO config, NavRL-style LiDAR CNN (recommended) |
+| `aerial_gym/rl_training/rl_games/ppo_navrl.yaml` | PPO config, flat-MLP baseline |
+| `aerial_gym/rl_training/rl_games/navrl_network.py` | the LiDAR CNN feature extractor (rl_games custom network) |
 | `WORKLOG.md` | chronological log of what changed and why |
 | `RESEARCH_PLAN.md` (workspace root) | staged research roadmap |
 
