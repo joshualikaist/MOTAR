@@ -12,6 +12,9 @@ train_dir/
 wandb/
 runs/
 
+# tee'd training logs
+*.log
+
 # local experiment workspace (checkpoints/reports, ~1.4GB)
 aerial_gym/lms_rl_trial/
 

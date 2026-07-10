@@ -19,6 +19,15 @@ This section is a self-contained guide: from a fresh machine to watching a drone
 in the simulator. It targets the Phase 1 task `navrl_task` (static obstacles + a
 stationary goal, LiDAR-based navigation).
 
+**The Phase 1 arena (`navrl_bars_env`)** is a controlled smoke-test environment: an
+otherwise-empty 10×10×3 m space with **16 static vertical bars** (random footprint
+0.4–0.8 m per side, height fixed 2 m). Bars are placed on a per-episode jittered 4×4
+grid that guarantees ≥ 1.3 m center-to-center distance (≥ 0.5 m clear gap even between
+the two largest bars). The drone flies **in 2D at a fixed 1 m altitude** (vertical
+velocity command is zeroed) and must weave through the bars to a goal sampled 2.5–5 m
+away (goal-distance curriculum expands this as the reach rate improves). See
+`navrl_bars_env_layout.png` in the workspace root for a top-down picture.
+
 ### 1. Prerequisites
 
 | Component | Tested version |
@@ -88,10 +97,44 @@ python runner.py --file ppo_navrl.yaml --task navrl_task \
     --num_envs 512 --headless True --train
 ```
 
-- Checkpoints: `runs/ppo_<date>_navrl/nn/gen_ppo.pth` (saved periodically).
-- Live curves: `tensorboard --logdir runs`
-- The task prints navigation stats to the log every ~2048 finished episodes:
-  `success@timeout`, `ever_reached`, `crash`, `timeout`, `mean_closest_approach`.
+- Checkpoints: `runs/ppo_<date>_navrl/nn/gen_ppo.pth` (saved periodically), plus
+  `last_gen_ppo_ep_<N>_rew_<R>.pth` snapshots.
+
+#### Monitoring training — TensorBoard + console metrics
+
+rl_games writes TensorBoard logs automatically to `runs/<run_name>/summaries/`
+(no flag needed). To view them (install once with `pip install tensorboard`):
+
+```bash
+tensorboard --logdir aerial_gym/rl_training/rl_games/runs
+# then open http://localhost:6006
+```
+
+What to watch in TensorBoard (rl_games scalar names):
+
+| Scalar | Meaning | Healthy sign |
+|--------|---------|--------------|
+| `rewards/step` (or `rewards/iter`) | mean episode reward | rising, then plateaus |
+| `episode_lengths/step` | mean episode length | rising toward the 150-step cap (fewer crashes) |
+| `losses/a_loss` | PPO actor loss | small, no explosion |
+| `losses/c_loss` | critic (value) loss | decreasing / stable |
+| `losses/entropy` | policy entropy | decreasing slowly (too fast = premature collapse) |
+| `info/kl` | approx. KL between updates | small and stable (adaptive lr keeps ~0.008–0.016) |
+| `info/lr` | current learning rate | adapts; persistent floor/ceiling = check kl |
+
+**The task-specific navigation metrics are printed to the console** (not TensorBoard)
+every ~2048 finished episodes, as `NavRL progress |` lines:
+
+| Metric | Meaning | Goal |
+|--------|---------|------|
+| `ever_reached` | fraction of episodes that touched the 1 m success radius at least once | ↑ toward 1.0 — the primary success signal; the curriculum expands the goal distance when this exceeds 0.6 |
+| `success@timeout` | still within 1 m of the goal when the episode times out | ↑ |
+| `crash` | episodes ended by collision / height bound | ↓ |
+| `timeout` | episodes that ran the full 150 steps without reaching | ↓ as reaching improves |
+| `mean_closest_approach` | mean over episodes of the closest distance to the goal | ↓ toward < 1 m |
+
+Tip: capture them to a file while training,
+`... --train 2>&1 | tee train.log`, then `grep "NavRL progress" train.log`.
 
 ### 5. Watch a trained policy (viewer)
 
@@ -121,10 +164,15 @@ PLAY_GAMES_NUM=8000 python runner.py --file ppo_navrl.yaml --task navrl_task \
 | Path | What |
 |------|------|
 | `aerial_gym/task/navrl_task/` | the Phase 1 navigation task (obs / reward / done) |
-| `aerial_gym/config/task_config/navrl_task_config.py` | task settings (goal placement, reward weights, episode length) |
-| `aerial_gym/config/robot_config/navrl_quad_config.py` | the LiDAR-equipped quad |
+| `aerial_gym/config/task_config/navrl_task_config.py` | task settings (goal placement, reward weights, flight altitude, episode length) |
+| `aerial_gym/config/env_config/navrl_bars_env.py` | the Phase 1 arena: empty 10×10×3 m + 16 bars, grid spacing guarantee |
+| `aerial_gym/config/asset_config/env_object_config.py` (`bar_asset_params`) | bar asset selection / placement band |
+| `resources/models/environment_assets/bars/` | the variable-size bar URDF pool (regenerate: `python tools/generate_bar_assets.py`) |
+| `aerial_gym/env_manager/asset_manager.py` | jittered-grid obstacle placement (`min_obstacle_xy_spacing`) |
+| `aerial_gym/config/robot_config/navrl_quad_config.py` | the LiDAR-equipped quad (spawns at 1 m) |
 | `aerial_gym/config/sensor_config/lidar_config/navrl_lidar_config.py` | NavRL-matched 36×4 yaw-only LiDAR |
 | `aerial_gym/rl_training/rl_games/ppo_navrl.yaml` | PPO hyperparameters |
+| `WORKLOG.md` | chronological log of what changed and why |
 | `RESEARCH_PLAN.md` (workspace root) | staged research roadmap |
 
 ---
