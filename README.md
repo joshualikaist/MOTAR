@@ -121,7 +121,7 @@ What to watch in TensorBoard (rl_games scalar names):
 | Scalar | Meaning | Healthy sign |
 |--------|---------|--------------|
 | `rewards/step` (or `rewards/iter`) | mean episode reward | rising, then plateaus |
-| `episode_lengths/step` | mean episode length | rising toward the 150-step cap (fewer crashes) |
+| `episode_lengths/step` | mean episode length | with `terminate_on_capture` (default), *dropping* below the 150-step cap is good — episodes end early when the drone captures the goal (a flat 150 means it never captures) |
 | `losses/a_loss` | PPO actor loss | small, no explosion |
 | `losses/c_loss` | critic (value) loss | decreasing / stable |
 | `losses/entropy` | policy entropy | decreasing slowly (too fast = premature collapse) |
@@ -148,7 +148,9 @@ The same stats are also summarized to the console every ~2048 finished episodes 
 ```bash
 conda activate aerialgym
 cd aerial_gym/rl_training/rl_games
-python runner.py --file ppo_navrl.yaml --task navrl_task \
+# IMPORTANT: --file must match the network the checkpoint was trained with, or the
+# state_dict load fails (CNN weights vs flat-MLP). Use ppo_navrl_cnn.yaml for CNN runs.
+python runner.py --file ppo_navrl_cnn.yaml --task navrl_task \
     --num_envs 16 --headless False --play \
     --checkpoint runs/<your_run>/nn/gen_ppo.pth
 ```
@@ -161,7 +163,7 @@ python runner.py --file ppo_navrl.yaml --task navrl_task \
 Same as play but headless; read the `NavRL progress` lines from the output:
 
 ```bash
-PLAY_GAMES_NUM=8000 python runner.py --file ppo_navrl.yaml --task navrl_task \
+PLAY_GAMES_NUM=8000 python runner.py --file ppo_navrl_cnn.yaml --task navrl_task \
     --num_envs 512 --headless True --play \
     --checkpoint runs/<your_run>/nn/gen_ppo.pth 2>&1 | grep "NavRL progress"
 ```
