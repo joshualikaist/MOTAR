@@ -49,32 +49,39 @@ def write_aerial_epoch_scalars(
     if mean_closest_target_dist_m is not None:
         w.add_scalar("aerial/mean_closest_target_dist_m", mean_closest_target_dist_m, ep)
     if extra_intercept_metrics:
-        scalar_map = {
-            "success_closest_target_dist_m": "aerial/success_closest_target_dist_m",
-            "failure_closest_target_dist_m": "aerial/failure_closest_target_dist_m",
-            "mean_surface_gap_m": "aerial/mean_surface_gap_m",
-            "failure_surface_gap_m": "aerial/failure_surface_gap_m",
-            "near_miss_count": "intercept/near_miss_count",
-            "near_miss_rate": "intercept/near_miss_rate",
-            "radius_no_contact_count": "intercept/radius_no_contact_count",
-            "radius_no_contact_rate": "intercept/radius_no_contact_rate",
-            "contact_no_radius_count": "intercept/contact_no_radius_count",
-            "contact_no_radius_rate": "intercept/contact_no_radius_rate",
-        }
-        for key, tag in scalar_map.items():
-            value = extra_intercept_metrics.get(key)
-            if value is not None:
-                w.add_scalar(tag, float(value), ep)
+        # intercept/* and the aerial/*_target_dist scalars only apply to the interception task;
+        # skip them entirely when no intercept episodes were recorded (e.g. navrl_task) so they
+        # don't leak as constant-zero curves. The task-namespaced pass-through below is unaffected.
+        if intercept_done > 0:
+            scalar_map = {
+                "success_closest_target_dist_m": "aerial/success_closest_target_dist_m",
+                "failure_closest_target_dist_m": "aerial/failure_closest_target_dist_m",
+                "mean_surface_gap_m": "aerial/mean_surface_gap_m",
+                "failure_surface_gap_m": "aerial/failure_surface_gap_m",
+                "near_miss_count": "intercept/near_miss_count",
+                "near_miss_rate": "intercept/near_miss_rate",
+                "radius_no_contact_count": "intercept/radius_no_contact_count",
+                "radius_no_contact_rate": "intercept/radius_no_contact_rate",
+                "contact_no_radius_count": "intercept/contact_no_radius_count",
+                "contact_no_radius_rate": "intercept/contact_no_radius_rate",
+            }
+            for key, tag in scalar_map.items():
+                value = extra_intercept_metrics.get(key)
+                if value is not None:
+                    w.add_scalar(tag, float(value), ep)
         # task-namespaced metrics (e.g. navrl/*) are written under their own tag as-is
         for key, value in extra_intercept_metrics.items():
             if "/" in key and value is not None:
                 w.add_scalar(key, float(value), ep)
 
-    w.add_scalar("intercept/ep_finished", int(intercept_done), ep)
+    # intercept/* scalars belong to the interception task only. Skip them entirely when no
+    # intercept episodes were recorded this epoch (e.g. navrl_task never feeds that summarizer),
+    # so navrl runs don't get constant-zero intercept/* clutter in TensorBoard.
     if intercept_done > 0:
+        w.add_scalar("intercept/ep_finished", int(intercept_done), ep)
         w.add_scalar("intercept/success_rate", float(intercept_succ) / float(intercept_done), ep)
-    if num_parallel_envs > 0:
-        w.add_scalar("intercept/env_hit_rate", float(intercept_envs_hit) / float(num_parallel_envs), ep)
+        if num_parallel_envs > 0:
+            w.add_scalar("intercept/env_hit_rate", float(intercept_envs_hit) / float(num_parallel_envs), ep)
 
     w.add_scalar("ppo/a_loss", torch_ext.mean_list(a_losses).item(), ep)
     w.add_scalar("ppo/c_loss", torch_ext.mean_list(c_losses).item(), ep)

@@ -37,7 +37,8 @@ class task_config:
     # Action = 3D velocity in the goal frame (NavRL). Yaw is left uncommanded (held at reset heading).
     action_space_dim = 3
 
-    episode_len_steps = 150  # RL steps; wall-clock = this * physics_steps_per_step * sim.dt
+    episode_len_steps = 250  # RL steps (150->250 for the 24x24 arena; an 18 m goal at 2 m/s needs
+    # ~90 steps straight, ~150+ weaving, so 250 keeps timeout from being the failure mode)
 
     return_state_before_reset = False
 
@@ -84,18 +85,60 @@ class task_config:
     lower_height_bound = 0.1  # [m] crash if below
     upper_height_bound = 4.0  # [m] crash if above (NavRL uses 4)
 
-    # NavRL static-branch reward weights (env.py):
+    # PBRS progress reward (A) discount -- MUST equal the PPO gamma (ppo_navrl*.yaml: gamma 0.99)
+    # or the distance shaping stops being optimality-preserving.
+    progress_gamma = 0.99
+
+    # B/C clearance-penalty mode (only active when reward clearance_weight > 0):
+    #   False -> plain proximity penalty (B): -clearance_weight * relu(margin - nearest_obstacle_dist)
+    #   True  -> speed x proximity (C): also multiply by |velocity|, so only FAST approaches near
+    #            obstacles are punished (agility in open space is untouched).
+    clearance_speed_gated = False
+
+    # Reward weights. NavRL's static branch (env.py) is:
     #   r = 1*reward_vel + 1(alive) + 1*r_safety_static - 0.1*penalty_smooth - 8*penalty_height
+    #
+    # NavRL keeps a constant +1 "alive" survival bonus (present in code, absent from paper
+    # Eqn. 7) so that flying stays net-positive even when the safety/height terms go negative
+    # near obstacles — the classic antidote to a "suicidal agent" that would crash early to
+    # stop accumulating negative reward. It is safe there because NavRL's ONLY terminations are
+    # bad (collision / out-of-bounds); reaching the goal is never a termination (env.py:583-587
+    # feeds reach_goal to stats only). Once we terminate on capture (terminate_on_capture=True),
+    # a positive per-step alive bonus flips from protective to harmful: ending the episode early
+    # forfeits ~100 remaining steps of (alive + safety + vel) reward (hundreds of points) for a
+    # small capture bonus, so the agent learns to loiter just outside the capture radius instead
+    # of entering it (observed as ~10% capture). Fix (Option A): replace the survival bonus with
+    # a small per-step time cost so that reaching the goal quickly is strictly optimal, and raise
+    # the terminal capture bonus to cover the forfeited future reward.
     reward_parameters = {
         "vel_weight": 1.0,
-        "alive_weight": 1.0,
-        "safety_static_weight": 1.0,
+        "alive_weight": -0.05,  # time cost per step (was +1 survival bonus; see note above)
+        # A(crash): raised 1.0 -> 1.5 so obstacle clearance is valued more relative to the
+        # velocity-toward-goal reward (the drone was shaving bars while rushing to far 18 m goals
+        # -> ~14% crashes). The log-distance gradient is unchanged, only its weight.
+        "safety_static_weight": 1.5,
         "smooth_weight": 0.1,
         "height_weight": 8.0,
         "height_margin": 0.2,  # NavRL's +/-0.2 m tolerance band
-        # NavRL leaves the terminal collision penalty commented out; a modest value is used here
-        # to discourage crashing while training the skeleton. Tune/remove in ablations.
-        "collision_penalty": -10.0,
-        # Terminal bonus when the capture radius is touched (episode ends as a success).
-        "capture_bonus": 10.0,
+        # A: PBRS progress reward weight -- dense per-step "got closer to the goal" gradient
+        # (reward = progress_weight*(prev_dist - progress_gamma*dist)). Optimality-preserving and
+        # bounded ~progress_weight*(v_max*dt + (1-gamma)*d_max) per step. Set 0.0 to disable.
+        "progress_weight": 1.0,
+        # B3: raised -10 -> -20 so a no-capture episode (~ -0.05*250 = -12.5 once B1 removes the
+        # open-space safety income) stays strictly better than crashing -- the suicide guard that
+        # the removed +1 alive bonus used to provide. NavRL leaves this commented out entirely.
+        "collision_penalty": -20.0,
+        # Terminal bonus when the capture radius is touched (episode ends as a success). Sized to
+        # outweigh the future reward given up by ending the episode early.
+        "capture_bonus": 30.0,
+        # B/C(crash): near-obstacle clearance penalty (DEFAULT OFF). Set clearance_weight > 0 (try
+        # 1.5) to penalize being within clearance_margin of the nearest bar -- a firmer collision
+        # buffer than the gentle log safety term. clearance_speed_gated (above) picks B vs C mode.
+        "clearance_weight": 0.0,       # 0.0 = off; try 1.5 to enable
+        "clearance_margin": 0.6,       # [m] start penalizing inside this distance to the nearest bar
+        # --- C1 finish-funnel params (DISABLED). Uncomment these together with the funnel block in
+        #     navrl_task.py to reward closing through the 0.5-1.0 m shell just outside capture.
+        # "funnel_coef": 1.0,
+        # "funnel_outer": 1.0,   # [m] outer radius of the funnel shell
+        # "funnel_width": 0.5,   # [m] shell thickness (outer_radius - capture_radius)
     }

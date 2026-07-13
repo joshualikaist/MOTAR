@@ -88,33 +88,60 @@ python navrl_task_example.py            # a viewer window opens
 
 ### 4. Train the navigation policy (PPO, rl_games)
 
+**The exact command to start a training run.** From the repository root
+(`<path>/aerial_gym_simulator`):
+
 ```bash
 conda activate aerialgym
 cd aerial_gym/rl_training/rl_games
 
-# headless training, 512 parallel drones (fits 8 GB VRAM; drop to 256 if you OOM)
-# ppo_navrl_cnn.yaml = NavRL-style LiDAR CNN feature extractor (recommended)
+# Headless training, 512 parallel drones (fits 8 GB VRAM; drop to 256 if you OOM).
+# ppo_navrl_cnn.yaml = NavRL-style LiDAR CNN feature extractor (recommended).
 python runner.py --file ppo_navrl_cnn.yaml --task navrl_task \
     --num_envs 512 --headless True --train
+```
+
+This launches the full **6000-epoch** run (≈ 2 h at ~1.1 s/epoch on an RTX 3070). It
+trains the latest task code — the LiDAR CNN plus the `terminate_on_capture` reward, i.e.
+the drone flies through the bars to a random goal and the episode ends the moment it
+touches the 0.5 m capture sphere. The console prints a per-epoch `NavRL progress` box;
+the number to watch is **`captured (success)`** climbing toward 1.0.
+
+Keep a scrollable log of the long run (recommended) by teeing the output to a file:
+
+```bash
+python runner.py --file ppo_navrl_cnn.yaml --task navrl_task \
+    --num_envs 512 --headless True --train 2>&1 | tee "train_$(date +%y%m%d_%H%M).log"
 ```
 
 Two network configs exist, identical except for the feature extractor — train both to
 compare: `ppo_navrl_cnn.yaml` (conv stack over the 36×4 scan, preserves which directions
 hold obstacles; see `navrl_network.py`) and `ppo_navrl.yaml` (flat-MLP baseline that
-flattens the scan). Both run 6000 epochs ≈ 2 h at ~1.1 s/epoch on an RTX 3070.
+flattens the scan). Both run 6000 epochs.
 
-- Checkpoints: `runs/ppo_<date>_navrl/nn/gen_ppo.pth` (saved periodically), plus
-  `last_gen_ppo_ep_<N>_rew_<R>.pth` snapshots.
+- Each run writes to `runs/ppo_<date>_navrl/`. Checkpoints land in `nn/gen_ppo.pth`
+  (latest) plus periodic `last_gen_ppo_ep_<N>_rew_<R>.pth` snapshots.
+- **Phase 1 target (M1):** `navrl/captured_rate` ≥ 0.9 while the goal-distance
+  curriculum (`curriculum max (m)`) has expanded toward its 18 m ceiling. Check these in
+  the console box or in TensorBoard (next section).
 
 #### Monitoring training — TensorBoard + console metrics
 
 rl_games writes TensorBoard logs automatically to `runs/<run_name>/summaries/`
-(no flag needed). To view them (install once with `pip install tensorboard`):
+(no flag needed — every `--train` run logs there). **Open a second terminal** while
+training runs and point TensorBoard at the parent `runs/` folder (install once with
+`pip install tensorboard`):
 
 ```bash
-tensorboard --logdir aerial_gym/rl_training/rl_games/runs
-# then open http://localhost:6006
+conda activate aerialgym          # tensorboard is installed in this env
+cd <path>/aerial_gym_simulator    # the repository root
+tensorboard --logdir aerial_gym/rl_training/rl_games/runs --port 6006
+# then open http://localhost:6006 in a browser
 ```
+
+Pointing `--logdir` at `runs/` (not a single run) makes every run show up as its own set
+of curves, so you can compare the CNN and flat-MLP runs side by side. The plots refresh
+live as training writes new epochs — no need to restart TensorBoard.
 
 What to watch in TensorBoard (rl_games scalar names):
 
@@ -134,11 +161,10 @@ What to watch in TensorBoard (rl_games scalar names):
 | Console box line | TensorBoard scalar | Meaning / goal |
 |------------------|--------------------|----------------|
 | `captured (success)` | `navrl/captured_rate` | episodes ended by touching the 0.5 m capture radius — interception success, the primary signal, ↑ toward 1.0 |
-| `goal reached` | `navrl/reach_rate` | touched the capture radius at any point (equals captured when terminate_on_capture is on); gates the curriculum at 0.6 |
 | `crash` | `navrl/crash_rate` | ended by collision / height bound, ↓ |
 | `timeout (no capture)` | `navrl/timeout_rate` | ran all 150 steps without capturing, ↓ |
 | `closest to goal (m)` | `navrl/mean_closest_approach_m` | mean closest approach, ↓ toward < 0.5 |
-| `curriculum max (m)` | `navrl/curriculum_goal_dist_max_m` | current max goal distance (5 → 18 m as the policy improves) |
+| `curriculum max (m)` | `navrl/curriculum_goal_dist_max_m` | current max goal-sampling distance; expands by 1.5 m each time the ever-reached rate ≥ 0.6 (5 m → goal_dist_max) |
 
 The same stats are also summarized to the console every ~2048 finished episodes as
 `NavRL progress |` lines — handy with `... --train 2>&1 | tee train.log`.

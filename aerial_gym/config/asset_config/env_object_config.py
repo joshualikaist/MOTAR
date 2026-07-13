@@ -670,7 +670,10 @@ class bar_asset_params(asset_state_params):
     NavRLBarsEnvCfg.env.min_obstacle_xy_spacing (a minimum center-to-center XY distance).
     """
 
-    num_assets = 16
+    # 48 bars in the 24 x 24 m arena (576 m^2) -> ~8 bars / 100 m^2. Sparser than NavRL's density
+    # (350 bars / 1600 m^2 ~= 22 / 100 m^2; the RESEARCH_PLAN "2.2/100m2" figure is a 10x typo) to
+    # keep warp-LiDAR VRAM in budget on 8 GB; raise toward NavRL density in the Phase 2 sweep.
+    num_assets = 48
 
     asset_folder = f"{AERIAL_GYM_DIRECTORY}/resources/models/environment_assets/bars"
     file = None  # random pick from the pool -> each bar gets a random footprint

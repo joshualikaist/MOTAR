@@ -50,6 +50,12 @@ _CSV_FIELDS = (
     "intercept_done",
     "intercept_envs_hit",
     "num_parallel_envs",
+    # navrl_task per-epoch metrics (empty for the intercept task)
+    "captured_rate",
+    "crash_rate",
+    "timeout_rate",
+    "closest_approach_m",
+    "curriculum_max_m",
 )
 
 
@@ -109,6 +115,12 @@ class EpochRow:
     intercept_done: int = 0
     intercept_envs_hit: int = 0
     num_parallel_envs: int = 0
+    # navrl_task per-epoch metrics (None for the intercept task)
+    captured_rate: Optional[float] = None
+    crash_rate: Optional[float] = None
+    timeout_rate: Optional[float] = None
+    closest_approach_m: Optional[float] = None
+    curriculum_max_m: Optional[float] = None
 
 
 @dataclass
@@ -142,6 +154,15 @@ class RunDiagnostics:
     first_short_episode_epoch: Optional[int] = None
     mean_dist_start: Optional[float] = None
     mean_dist_end: Optional[float] = None
+    # navrl_task summary (populated only for navrl runs)
+    is_navrl: bool = False
+    last_captured_rate: Optional[float] = None
+    last_crash_rate: Optional[float] = None
+    last_timeout_rate: Optional[float] = None
+    last_closest_approach_m: Optional[float] = None
+    last_curriculum_max_m: Optional[float] = None
+    peak_captured_rate: Optional[float] = None
+    peak_captured_epoch: Optional[int] = None
     hints: list[str] = field(default_factory=list)
 
 
@@ -185,6 +206,11 @@ class TrainRunRecorder:
                         intercept_done=_i(raw.get("intercept_done")),
                         intercept_envs_hit=_i(raw.get("intercept_envs_hit")),
                         num_parallel_envs=_i(raw.get("num_parallel_envs")),
+                        captured_rate=_f(raw.get("captured_rate")),
+                        crash_rate=_f(raw.get("crash_rate")),
+                        timeout_rate=_f(raw.get("timeout_rate")),
+                        closest_approach_m=_f(raw.get("closest_approach_m")),
+                        curriculum_max_m=_f(raw.get("curriculum_max_m")),
                     )
                 )
 
@@ -223,6 +249,11 @@ class TrainRunRecorder:
             intercept_done=int(intercept_done),
             intercept_envs_hit=int(intercept_envs_hit),
             num_parallel_envs=int(num_parallel_envs),
+            captured_rate=_f(extra.get("navrl/captured_rate")),
+            crash_rate=_f(extra.get("navrl/crash_rate")),
+            timeout_rate=_f(extra.get("navrl/timeout_rate")),
+            closest_approach_m=_f(extra.get("navrl/mean_closest_approach_m")),
+            curriculum_max_m=_f(extra.get("navrl/curriculum_goal_dist_max_m")),
         )
         # Replace same epoch on resume overlap
         self._rows = [r for r in self._rows if r.epoch != row.epoch]
@@ -254,6 +285,11 @@ class TrainRunRecorder:
                         "intercept_done": r.intercept_done,
                         "intercept_envs_hit": r.intercept_envs_hit,
                         "num_parallel_envs": r.num_parallel_envs,
+                        "captured_rate": _cell(r.captured_rate),
+                        "crash_rate": _cell(r.crash_rate),
+                        "timeout_rate": _cell(r.timeout_rate),
+                        "closest_approach_m": _cell(r.closest_approach_m),
+                        "curriculum_max_m": _cell(r.curriculum_max_m),
                     }
                 )
 
@@ -321,6 +357,19 @@ class TrainRunRecorder:
                         f"→ trough {trough.mean_reward:.1f} @ epoch {trough.epoch}"
                     )
 
+        nav_rows = [r for r in self._rows if r.captured_rate is not None]
+        if nav_rows:
+            diag.is_navrl = True
+            last_nav = nav_rows[-1]
+            diag.last_captured_rate = last_nav.captured_rate
+            diag.last_crash_rate = last_nav.crash_rate
+            diag.last_timeout_rate = last_nav.timeout_rate
+            diag.last_closest_approach_m = last_nav.closest_approach_m
+            diag.last_curriculum_max_m = last_nav.curriculum_max_m
+            peak_nav = max(nav_rows, key=lambda r: r.captured_rate or float("-inf"))
+            diag.peak_captured_rate = peak_nav.captured_rate
+            diag.peak_captured_epoch = peak_nav.epoch
+
         diag.hints = _build_hints(diag)
         return diag
 
@@ -383,7 +432,47 @@ def _exit_reason_label(reason: str) -> str:
     }.get(reason, reason)
 
 
+def _build_navrl_hints(d: RunDiagnostics) -> list[str]:
+    hints: list[str] = []
+    cap = d.last_captured_rate
+    if cap is not None:
+        if cap >= 0.9:
+            hints.append(f"captured {100 * cap:.1f}% — 목표를 안정적으로 포획 (M1 달성권).")
+        elif cap >= 0.6:
+            hints.append(
+                f"captured {100 * cap:.1f}% (peak {100 * (d.peak_captured_rate or 0.0):.1f}%) — "
+                "포획되나 개선 여지."
+            )
+        elif cap >= 0.1:
+            hints.append(f"captured {100 * cap:.1f}% — 낮음. 리워드 균형/커리큘럼 점검.")
+        else:
+            hints.append(
+                f"captured {100 * cap:.1f}% — 거의 실패. loiter farming(안전항 개방공간 수입) 또는 "
+                "리워드 최적해가 '배회'인지 확인."
+            )
+    if d.last_timeout_rate is not None and d.last_timeout_rate > 0.3:
+        hints.append(
+            f"timeout {100 * d.last_timeout_rate:.1f}% — 목표 근처 배회(farming) 의심. "
+            "capture 보너스 대비 스텝 수입(안전+생존)을 점검."
+        )
+    if d.last_crash_rate is not None and d.last_crash_rate > 0.1:
+        hints.append(
+            f"실패 주원인이 crash {100 * d.last_crash_rate:.1f}% — safety weight↑ 또는 근접 마진 "
+            "페널티(clearance_weight)로 충돌 저감."
+        )
+    if d.last_closest_approach_m is not None and cap is not None and cap >= 0.5:
+        hints.append(
+            f"closest {d.last_closest_approach_m:.2f} m는 stop-short 아님 — captured가 높으면 "
+            "먼 곳에서 죽는 crash 에피소드가 평균을 끌어올린 것."
+        )
+    if d.reward_collapse:
+        hints.append(f"reward 붕괴 의심: {d.collapse_detail}.")
+    return hints
+
+
 def _build_hints(d: RunDiagnostics) -> list[str]:
+    if d.is_navrl:
+        return _build_navrl_hints(d)
     hints: list[str] = []
     ep_max = _episode_len_max_hint()
 
@@ -481,15 +570,31 @@ def print_run_summary_box(
         f"  last reward    : {_fmt(diag.last_mean_reward)}",
         f"  peak reward    : {_fmt(diag.peak_mean_reward)}  @ epoch {_or_na(diag.peak_epoch)}",
         f"  last ep length : {_fmt(diag.last_mean_episode_length)}",
-        f"  last target dist: {_fmt(diag.last_mean_target_dist_m, 'm')}",
-        f"  closest dist/ep: {_fmt(diag.last_mean_closest_target_dist_m, 'm')}",
-        f"  fail closest   : {_fmt(diag.last_failure_closest_target_dist_m, 'm')}",
-        f"  fail surf gap  : {_fmt(diag.last_failure_surface_gap_m, 'm')}",
-        "",
-        f"  intercept success: {_rate_count(diag.total_intercept_succ, diag.total_intercept_done)}",
-        f"  near misses       : {diag.total_near_miss_count}",
-        f"  first intercept epoch   : {_or_na(diag.first_intercept_epoch)}",
-        f"  first ep_len drop epoch : {_or_na(diag.first_short_episode_epoch)}",
+    ]
+    if diag.is_navrl:
+        lines += [
+            "",
+            f"  captured (success): {_pct(diag.last_captured_rate)}"
+            f"    peak {_pct(diag.peak_captured_rate)} @ epoch {_or_na(diag.peak_captured_epoch)}",
+            f"  crash             : {_pct(diag.last_crash_rate)}",
+            f"  timeout (no cap)  : {_pct(diag.last_timeout_rate)}",
+            f"  closest approach  : {_fmt(diag.last_closest_approach_m, 'm')}"
+            "   (mean over ALL episodes; far-crashing episodes inflate it)",
+            f"  curriculum max    : {_fmt(diag.last_curriculum_max_m, 'm')}",
+        ]
+    else:
+        lines += [
+            f"  last target dist: {_fmt(diag.last_mean_target_dist_m, 'm')}",
+            f"  closest dist/ep: {_fmt(diag.last_mean_closest_target_dist_m, 'm')}",
+            f"  fail closest   : {_fmt(diag.last_failure_closest_target_dist_m, 'm')}",
+            f"  fail surf gap  : {_fmt(diag.last_failure_surface_gap_m, 'm')}",
+            "",
+            f"  intercept success: {_rate_count(diag.total_intercept_succ, diag.total_intercept_done)}",
+            f"  near misses       : {diag.total_near_miss_count}",
+            f"  first intercept epoch   : {_or_na(diag.first_intercept_epoch)}",
+            f"  first ep_len drop epoch : {_or_na(diag.first_short_episode_epoch)}",
+        ]
+    lines += [
         "",
         "  Interpretation:",
     ]
@@ -512,6 +617,12 @@ def _fmt(v: Optional[float], suffix: str = "") -> str:
         return _NA
     s = f"{v:,.3f}" if suffix == "m" else f"{v:,.4f}"
     return f"{s}{suffix}" if suffix else s
+
+
+def _pct(v: Optional[float]) -> str:
+    if v is None:
+        return _NA
+    return f"{100.0 * v:.1f}%"
 
 
 def get_or_create_recorder(agent) -> Optional[TrainRunRecorder]:

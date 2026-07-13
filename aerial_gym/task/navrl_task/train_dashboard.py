@@ -69,7 +69,6 @@ def consume_navrl_epoch_summary() -> Tuple[List[str], dict, int]:
 
     lines = [
         f"captured (success)   : {pct(succ)}",
-        f"goal reached         : {pct(reached)}",
         f"crash                : {pct(crash)}",
         f"timeout (no capture) : {pct(timeout)}",
     ]
@@ -78,9 +77,9 @@ def consume_navrl_epoch_summary() -> Tuple[List[str], dict, int]:
     if goal_dist_max is not None:
         lines.append(f"curriculum max (m)   : {goal_dist_max:.1f}")
 
+    # Interception mode: reach_rate == captured_rate (touching the radius ends the episode),
+    # so only captured_rate is logged. crash/timeout/captured partition every finished episode.
     metrics = {
-        "navrl/ep_finished": float(done),
-        "navrl/reach_rate": reached / done,
         "navrl/captured_rate": succ / done,
         "navrl/crash_rate": crash / done,
         "navrl/timeout_rate": timeout / done,
