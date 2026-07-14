@@ -20,13 +20,14 @@ in the simulator. It targets the Phase 1 task `navrl_task` (static obstacles + a
 stationary goal, LiDAR-based navigation).
 
 **The Phase 1 arena (`navrl_bars_env`)** is a controlled smoke-test environment: an
-otherwise-empty 10×10×3 m space with **16 static vertical bars** (random footprint
-0.4–0.8 m per side, height fixed 2 m). Bars are placed on a per-episode jittered 4×4
-grid that guarantees ≥ 1.3 m center-to-center distance (≥ 0.5 m clear gap even between
+otherwise-empty 24×24×3 m space with **48 static vertical bars** (random footprint
+0.4–0.8 m per side, height fixed 2 m). Bars are placed on a per-episode jittered 7×7
+grid that guarantees ≥ 1.8 m center-to-center distance (≥ 1.0 m clear gap even between
 the two largest bars). The drone flies **in 2D at a fixed 1 m altitude** (vertical
-velocity command is zeroed) and must weave through the bars to a goal sampled 2.5–5 m
-away (goal-distance curriculum expands this as the reach rate improves). See
-`navrl_bars_env_layout.png` in the workspace root for a top-down picture.
+velocity command is zeroed), spawns at the left edge (x≈0), and must cross the whole
+bar field to a goal placed on the far side at x=k — the epoch-proportional curriculum
+pushes k from ~7 m out to the far wall (~24 m). See the spawn-layout picture in the
+workspace root for a top-down view.
 
 ### 1. Prerequisites
 
@@ -95,10 +96,13 @@ python navrl_task_example.py            # a viewer window opens
 conda activate aerialgym
 cd aerial_gym/rl_training/rl_games
 
-# Headless training, 512 parallel drones (fits 8 GB VRAM; drop to 256 if you OOM).
-# ppo_navrl_cnn.yaml = NavRL-style LiDAR CNN feature extractor (recommended).
+# Short wrapper (recommended): headless, warp + PYTHONNOUSERSITE + tee log all built in.
+# 256 parallel drones + 48 bars ≈ 6.8 GB (fits 8 GB VRAM). Adjust with NUM_ENVS.
+./train_navrl.sh                       # == NUM_ENVS=256 ./train_navrl.sh
+
+# ...which wraps this underlying call (ppo_navrl_cnn.yaml = NavRL-style LiDAR CNN, recommended):
 python runner.py --file ppo_navrl_cnn.yaml --task navrl_task \
-    --num_envs 512 --headless True --train
+    --num_envs 256 --headless True --use_warp True --train
 ```
 
 This launches the full **6000-epoch** run (≈ 2 h at ~1.1 s/epoch on an RTX 3070). It
@@ -107,11 +111,12 @@ the drone flies through the bars to a random goal and the episode ends the momen
 touches the 0.5 m capture sphere. The console prints a per-epoch `NavRL progress` box;
 the number to watch is **`captured (success)`** climbing toward 1.0.
 
-Keep a scrollable log of the long run (recommended) by teeing the output to a file:
+`train_navrl.sh` already tees the run to `train_session_logs/train_<date>.log`. To tee the
+raw command yourself instead:
 
 ```bash
 python runner.py --file ppo_navrl_cnn.yaml --task navrl_task \
-    --num_envs 512 --headless True --train 2>&1 | tee "train_$(date +%y%m%d_%H%M).log"
+    --num_envs 256 --headless True --use_warp True --train 2>&1 | tee "train_$(date +%y%m%d_%H%M).log"
 ```
 
 Two network configs exist, identical except for the feature extractor — train both to
@@ -122,7 +127,7 @@ flattens the scan). Both run 6000 epochs.
 - Each run writes to `runs/ppo_<date>_navrl/`. Checkpoints land in `nn/gen_ppo.pth`
   (latest) plus periodic `last_gen_ppo_ep_<N>_rew_<R>.pth` snapshots.
 - **Phase 1 target (M1):** `navrl/captured_rate` ≥ 0.9 while the goal-distance
-  curriculum (`curriculum max (m)`) has expanded toward its 18 m ceiling. Check these in
+  curriculum (`curriculum max (m)`) has expanded toward its far-wall ceiling (k_max → 24 m). Check these in
   the console box or in TensorBoard (next section).
 
 #### Monitoring training — TensorBoard + console metrics
@@ -148,7 +153,7 @@ What to watch in TensorBoard (rl_games scalar names):
 | Scalar | Meaning | Healthy sign |
 |--------|---------|--------------|
 | `rewards/step` (or `rewards/iter`) | mean episode reward | rising, then plateaus |
-| `episode_lengths/step` | mean episode length | with `terminate_on_capture` (default), *dropping* below the 150-step cap is good — episodes end early when the drone captures the goal (a flat 150 means it never captures) |
+| `episode_lengths/step` | mean episode length | with `terminate_on_capture` (default), *dropping* below the 300-step cap is good — episodes end early when the drone captures the goal (a flat 300 means it never captures) |
 | `losses/a_loss` | PPO actor loss | small, no explosion |
 | `losses/c_loss` | critic (value) loss | decreasing / stable |
 | `losses/entropy` | policy entropy | decreasing slowly (too fast = premature collapse) |
@@ -162,9 +167,9 @@ What to watch in TensorBoard (rl_games scalar names):
 |------------------|--------------------|----------------|
 | `captured (success)` | `navrl/captured_rate` | episodes ended by touching the 0.5 m capture radius — interception success, the primary signal, ↑ toward 1.0 |
 | `crash` | `navrl/crash_rate` | ended by collision / height bound, ↓ |
-| `timeout (no capture)` | `navrl/timeout_rate` | ran all 150 steps without capturing, ↓ |
+| `timeout (no capture)` | `navrl/timeout_rate` | ran all 300 steps without capturing, ↓ |
 | `closest, no crash (m)` | `navrl/closest_nocrash_m` (+ `navrl/closest_min_m`) | mean closest approach over NON-crash episodes (crashes die far and only inflate it), plus the best (min) approach; ↓ toward < 0.5 |
-| `curriculum max (m)` | `navrl/curriculum_goal_dist_max_m` | current max goal-sampling distance; expands by 1.5 m each time the ever-reached rate ≥ 0.6 (5 m → goal_dist_max) |
+| `curriculum max (m)` | `navrl/curriculum_goal_dist_max_m` | current goal-x upper bound k_max; ramps epoch-proportionally 7 → 24 m over ~3000 epochs, then the lower bound k_min rises 5 → 20 m (`navrl/curriculum_goal_dist_min_m`) |
 
 The same stats are also summarized to the console every ~2048 finished episodes as
 `NavRL progress |` lines — handy with `... --train 2>&1 | tee train.log`.
@@ -174,8 +179,11 @@ The same stats are also summarized to the console every ~2048 finished episodes 
 ```bash
 conda activate aerialgym
 cd aerial_gym/rl_training/rl_games
-# IMPORTANT: --file must match the network the checkpoint was trained with, or the
-# state_dict load fails (CNN weights vs flat-MLP). Use ppo_navrl_cnn.yaml for CNN runs.
+# Short wrapper (recommended): viewer, 16 envs.
+./play_navrl.sh runs/<your_run>/nn/gen_ppo.pth
+
+# ...which wraps this. IMPORTANT: --file must match the network the checkpoint was trained
+# with, or the state_dict load fails (CNN weights vs flat-MLP). Use ppo_navrl_cnn.yaml for CNN runs.
 python runner.py --file ppo_navrl_cnn.yaml --task navrl_task \
     --num_envs 16 --headless False --play \
     --checkpoint runs/<your_run>/nn/gen_ppo.pth
@@ -200,7 +208,7 @@ PLAY_GAMES_NUM=8000 python runner.py --file ppo_navrl_cnn.yaml --task navrl_task
 |------|------|
 | `aerial_gym/task/navrl_task/` | the Phase 1 navigation task (obs / reward / done) |
 | `aerial_gym/config/task_config/navrl_task_config.py` | task settings (goal placement, reward weights, flight altitude, episode length) |
-| `aerial_gym/config/env_config/navrl_bars_env.py` | the Phase 1 arena: empty 10×10×3 m + 16 bars, grid spacing guarantee |
+| `aerial_gym/config/env_config/navrl_bars_env.py` | the Phase 1 arena: empty 24×24×3 m + 48 bars, grid spacing guarantee |
 | `aerial_gym/config/asset_config/env_object_config.py` (`bar_asset_params`) | bar asset selection / placement band |
 | `resources/models/environment_assets/bars/` | the variable-size bar URDF pool (regenerate: `python tools/generate_bar_assets.py`) |
 | `aerial_gym/env_manager/asset_manager.py` | jittered-grid obstacle placement (`min_obstacle_xy_spacing`) |

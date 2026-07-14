@@ -8,13 +8,15 @@ class task_config:
       state  = S_int (goal-frame internal state, 8) concatenated with the flattened
                36x4 LiDAR scan (see NavRLLidarConfig / navrl_quad robot).
       action = 3D velocity command in the goal frame, scaled to +/- max_velocity.
-      reward = vel + alive + static-safety - smooth - height  (NavRL weights).
+      reward = vel + time_cost(alive<0) + static_safety - smooth - height + PBRS_progress,
+               with a terminal +capture_bonus on reaching the goal and -collision_penalty on a
+               crash (see reward_parameters). NavRL static branch + interception-capture shaping.
     Dynamic obstacles and the moving target are added in later phases.
     """
 
     seed = 42
     sim_name = "base_sim"
-    # Controlled Phase-1 arena: empty space + 16 static bars (no walls/panels). See navrl_bars_env.py.
+    # Controlled Phase-1 arena: empty space + 48 static bars (no walls/panels). See navrl_bars_env.py.
     env_name = "navrl_bars_env"
     robot_name = "navrl_quad"
     controller_name = "lee_velocity_control"
@@ -50,10 +52,10 @@ class task_config:
     flight_altitude = 1.0  # [m]
 
     # Stationary goal placement.
-    #  - Curriculum ON (default): the goal is sampled at a random horizontal direction and a
-    #    distance in [goal_dist_min, cur_max] from the spawn, starting easy (nearby goals) and
-    #    expanding as the reach rate improves. This is the fix for the "goal too far, 0% reached"
-    #    result of the first training run -- get the simple static case succeeding first.
+    #  - Curriculum ON (default): "cross the bar field" -- the drone spawns at the left edge (x~0)
+    #    and the goal is placed on the far side at x=k, so every episode traverses the whole bar
+    #    field. k grows epoch-proportionally (see class curriculum below): near goals first, then
+    #    progressively deeper crossings as training proceeds.
     #  - Curriculum OFF: fall back to sampling the goal as a ratio of the environment bounds.
     class curriculum:
         use_curriculum = True

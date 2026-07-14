@@ -8,10 +8,10 @@ class NavRLBarsEnvCfg:
     clutter -- just N vertical bars the drone must fly through to reach the goal.
 
     Geometry is ground-referenced (z = height above the floor), so it matches the navrl_task
-    height bounds (0.1..4.0 m). The drone spawns near the low-x edge (robot init x-ratio ~0.1-0.2)
-    and the goal is placed 2.5 m up to the curriculum max (41 m) away, i.e. into/through the bar
-    field. The arena is 24 x 24 m with 48 bars (~8 bars / 100 m^2) scattered across the interior
-    band so the curriculum goals are reachable without being clamped to the walls.
+    height bounds (0.1..4.0 m). The drone spawns at the left edge (robot init x-ratio ~0 -> x in
+    [0, ~1]) and the goal is placed on the far side at x=k (curriculum, ~5 m out to the far wall
+    ~23.5 m), so every episode crosses the whole bar field. The arena is 24 x 24 m with 48 bars
+    (~8 bars / 100 m^2) on a jittered 7 x 7 grid across the interior band.
     """
 
     class env:
@@ -40,11 +40,10 @@ class NavRLBarsEnvCfg:
         min_obstacle_xy_spacing = 1.8
 
         # Fixed 24 x 24 x 3 m arena (min == max so every env is identical). Ground-referenced:
-        # z in [0, 3]. Enlarged from 10 x 10 so the goal-distance curriculum's goals are actually
-        # reachable inside the arena (they were clamped to ~10 m in the old 10 x 10 box).
-        # Drone spawns near the low-x edge (init x-ratio 0.1-0.2 -> x in [2.4, 4.8]); the goal is
-        # placed up to the curriculum max (41 m, the integer part of the 24*sqrt(3) box diagonal)
-        # away, well inside the [0, 24] x [0, 24] bounds.
+        # z in [0, 3]. (Enlarged from an earlier 10 x 10 box so the far-side goals fit inside.)
+        # Drone spawns at the left edge (init x-ratio ~0 -> x in [0, ~1]); the goal is placed at
+        # x=k on the far side (curriculum k ~5 -> ~23.5 m, clamped to arena_x - margin), so every
+        # episode crosses the bar field left->right, well inside the [0, 24] x [0, 24] bounds.
         lower_bound_min = [0.0, 0.0, 0.0]
         lower_bound_max = [0.0, 0.0, 0.0]
         upper_bound_min = [24.0, 24.0, 3.0]

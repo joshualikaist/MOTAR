@@ -683,7 +683,7 @@ class bar_asset_params(asset_state_params):
     collision_mask = 1  # bars do not collide with each other
 
     # [x_ratio, y_ratio, z_ratio, roll, pitch, yaw, 1.0, vx,vy,vz, wx,wy,wz]
-    # x band starts past the drone spawn strip (x-ratio 0.1-0.2); z fixed at 1/3 -> bar center
+    # x band starts past the drone spawn strip (drone x-ratio ~0, x <~ 1); z fixed at 1/3 -> bar center
     # 1 m -> stands 0..2 m; upright (no roll/pitch/yaw).
     min_state_ratio = [
         0.09,
