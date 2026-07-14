@@ -105,12 +105,12 @@ class task_config:
     #   False -> plain proximity penalty (B): -clearance_weight * relu(margin - nearest_obstacle_dist)
     #   True  -> speed x proximity (C): also multiply by |velocity|, so only FAST approaches near
     #            obstacles are punished (agility in open space is untouched).
-    # D(crash, 2026-07-14): speed-gated ON. In the NEW cross-field scheme every episode crosses the
-    # 48-bar field with the 0.28 m box, so crashes are dominated by "shaving a bar at cruise speed"
-    # (all 3 diagnostic lenses converge on this). Speed-gating scales the clearance penalty by |v|, so
-    # only FAST approaches near a bar are punished -> the drone SLOWS through tight gaps rather than
-    # detouring/freezing (open-lane agility untouched). See CRASH_TUNING_LOG.md run D.
-    clearance_speed_gated = True
+    # Run D RESULT (run ppo_260714_2207): speed-gated cw=6 SLOWED the drone 32% (ep_len 88->116) and
+    # added a few timeouts but did NOT reduce crash (0.35->0.32). Conclusion: the residual crash is
+    # geometric/perception (corner-clip = gap-centering precision), NOT reward-shaving, so no reward
+    # weight fixes it. Clearance is OFF again (clearance_weight=0) for a clean Phase-2 baseline; the
+    # real levers if we revisit are perception (LiDAR 36->72 beams) or yaw control. See CRASH_TUNING_LOG.md.
+    clearance_speed_gated = False
 
     # Reward weights. NavRL's static branch (env.py) is:
     #   r = 1*reward_vel + 1(alive) + 1*r_safety_static - 0.1*penalty_smooth - 8*penalty_height
@@ -151,12 +151,11 @@ class task_config:
         # B/C(crash): near-obstacle clearance penalty (DEFAULT OFF). Set clearance_weight > 0 (try
         # 1.5) to penalize being within clearance_margin of the nearest bar -- a firmer collision
         # buffer than the gentle log safety term. clearance_speed_gated (above) picks B vs C mode.
-        # D: 0.0 -> 6.0. The prior null runs (B/C at 1.5) failed because the penalty (~0.75/step at a
-        # 0.30 m shave) was WEAKER than the +2/step velocity reward, so shaving stayed net-positive.
-        # At cw=6, speed-gated, a 0.30 m shave at 2 m/s costs 6*relu(0.5-0.30)*2 = 2.40/step > 2.0, so
-        # the effective velocity coefficient (1 - 6*relu(0.5-d)) goes NEGATIVE inside 0.333 m: fast-
-        # toward-a-close-bar is now punished, not merely offset. ~4x the failed cw=1.5 at the shave pt.
-        "clearance_weight": 6.0,
+        # OFF (0.0). B(1.5) / C(1.5 speed-gated) / D(6.0 speed-gated) ALL failed to reduce crash --
+        # D even slowed the drone 32% yet crash held at ~0.32, proving the residual crash is geometric
+        # (corner-clip), not reward-driven. Kept here (with the live code path) as a documented dead
+        # end; the real levers are perception (LiDAR 36->72 beams) or yaw control. See CRASH_TUNING_LOG.md.
+        "clearance_weight": 0.0,
         # D: 0.6 -> 0.5. Calibrated to the worst gap: two ~0.8 m AXIS-ALIGNED bars (bars do NOT rotate)
         # at the 1.8 m min centre spacing leave a ~1.0 m free gap -> a CENTERED pass reads min_dist
         # ~0.5 m -> relu(0.5-0.5)=0 -> zero added cost (byte-identical to the 1904 reward on normal
