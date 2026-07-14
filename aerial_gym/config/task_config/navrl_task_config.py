@@ -19,7 +19,7 @@ class task_config:
     # Controlled Phase-1 arena: empty space + 48 static bars (no walls/panels). See navrl_bars_env.py.
     env_name = "navrl_bars_env"
     robot_name = "navrl_quad"
-    controller_name = "lee_velocity_control"
+    controller_name = "lee_velocity_control_navrl"  # NavRL-scoped: raises yaw-rate clamp pi/3 -> 2.5
     args = {}
     num_envs = 256
     use_warp = True
@@ -32,12 +32,14 @@ class task_config:
     lidar_max_range = 4.0
 
     # Observation = S_int (8) + flattened LiDAR (36 * 4 = 144) = 152.
-    internal_state_dim = 8
+    internal_state_dim = 12  # (b) 8 nav dims + goal_bearing_body(2) + vel_body_xy(2) for learned yaw
     observation_space_dim = internal_state_dim + lidar_hbeams * lidar_vbeams
     privileged_observation_space_dim = 0
 
-    # Action = 3D velocity in the goal frame (NavRL). Yaw is left uncommanded (held at reset heading).
-    action_space_dim = 3
+    # Action = 3D velocity in the goal frame (NavRL) + a learned 4th action = yaw-rate (option b).
+    # Yaw used to be HELD; now action[:, 3] commands the euler yaw-rate so the agent points its nose
+    # along its travel direction (shrinks the swept footprint 0.40 m diagonal -> 0.28 m -> fewer clips).
+    action_space_dim = 4
 
     episode_len_steps = 300  # RL steps (300 for the far-side goals: a diagonal goal can be ~30 m,
     # ~150 steps straight / ~225 weaving at 2 m/s, so 300 keeps timeout from being the failure mode)
@@ -45,6 +47,11 @@ class task_config:
     return_state_before_reset = False
 
     max_velocity = 2.0  # NavRL v_lim [m/s]
+
+    # (b) Learned yaw control. yaw_rate_max MUST equal lee_controller_config_navrl.max_yaw_rate so
+    # action[:, 3] in [-1, 1] maps linearly onto the controller's yaw-rate clamp (no dead band).
+    yaw_rate_max = 2.5          # [rad/s] max commanded euler yaw-rate for action[:, 3]
+    yaw_align_speed_ref = 1.0   # [m/s] speed at which the crab-alignment penalty reaches full weight
 
     # 2D navigation: the drone flies at this fixed altitude and tracks the goal in XY only.
     # The drone spawns here (navrl_quad init z-ratio) and the task zeroes the vertical velocity
@@ -150,6 +157,11 @@ class task_config:
         # Terminal bonus when the capture radius is touched (episode ends as a success). Sized to
         # outweigh the future reward given up by ending the episode early.
         "capture_bonus": 30.0,
+        # (b) Learned-yaw shaping. Dense, speed-gated crab PENALTY (<=0 so it cannot create standing
+        # income / re-open the loiter optimum): punishes moving crab-wise so the drone leads with its
+        # 0.28 m face, not its 0.40 m diagonal. Plus a tiny yaw-rate^2 damping. Set both 0.0 to disable.
+        "yaw_align_weight": 0.3,
+        "yaw_rate_smooth_weight": 0.02,
         # B/C(crash): near-obstacle clearance penalty (DEFAULT OFF). Set clearance_weight > 0 (try
         # 1.5) to penalize being within clearance_margin of the nearest bar -- a firmer collision
         # buffer than the gentle log safety term. clearance_speed_gated (above) picks B vs C mode.

@@ -25,7 +25,7 @@ import torch.nn as nn
 
 from rl_games.algos_torch.network_builder import NetworkBuilder
 
-S_INT_DIM = 8
+S_INT_DIM = 12  # (b) 8 nav dims + goal_bearing_body(2) + vel_body_xy(2); obs = 12 + 36*4 = 156
 LIDAR_VBEAMS = 4
 LIDAR_HBEAMS = 36
 CNN_EMBED_DIM = 128

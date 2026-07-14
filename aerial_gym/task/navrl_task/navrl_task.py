@@ -150,6 +150,7 @@ class NavRLTask(BaseTask):
             )
         }
         self.command = torch.zeros((self.num_envs, 4), device=self.device)  # controller input
+        self._yaw_cmd = torch.zeros(self.num_envs, device=self.device)  # (b) last yaw action a[:,3], for the smoothness penalty
         self.infos = {}
         self.num_task_steps = 0
 
@@ -267,14 +268,17 @@ class NavRLTask(BaseTask):
     # ------------------------------------------------------------------ step
     def transform_action_to_command(self, actions):
         """NavRL 3D goal-frame velocity action -> vehicle-frame velocity command for the controller."""
-        vel_goal = torch.clamp(actions, -1.0, 1.0) * self.task_config.max_velocity  # (N, 3)
+        vel_goal = torch.clamp(actions[:, 0:3], -1.0, 1.0) * self.task_config.max_velocity  # (N, 3)
         vel_world = goal_frame_to_world(vel_goal, self.target_dir_2d)
         vel_vehicle = quat_rotate_inverse(self.obs_dict["robot_vehicle_orientation"], vel_world)
         self.command[:, 0:3] = vel_vehicle
         # 2D flight: hold altitude. The vehicle frame is yaw-only (level), so vehicle-z == world-z;
         # zeroing the vertical velocity command keeps the drone at its 1 m spawn altitude.
         self.command[:, 2] = 0.0
-        self.command[:, 3] = 0.0  # no yaw-rate command; heading is held from reset
+        # (b) learned yaw-rate: action[:, 3] in [-1, 1] -> euler yaw-rate (was held at 0). yaw_rate_max
+        # matches the NavRL-scoped controller clamp (2.5 rad/s) so the mapping is linear (no dead band).
+        self._yaw_cmd[:] = torch.clamp(actions[:, 3], -1.0, 1.0)
+        self.command[:, 3] = self._yaw_cmd * self.task_config.yaw_rate_max
         return self.command
 
     def step(self, actions):
@@ -367,6 +371,19 @@ class NavRLTask(BaseTask):
             - self.rw["smooth_weight"] * penalty_smooth
             - self.rw["height_weight"] * penalty_height
         )
+
+        # (b) Learned-yaw shaping. Penalize crabbing so the 0.28 m box leads with its 0.28 m face,
+        # not its 0.40 m diagonal, through the gaps. <= 0 and speed-gated -> no standing income (the
+        # loiter optimum stays closed); yaw is decoupled from the goal-frame velocity command, so this
+        # shapes ONLY the yaw DOF and cannot move the nav optimum. Added BEFORE the crash/capture
+        # overwrites below, so a crashed env is still overwritten to the collision penalty.
+        vel_veh = self.obs_dict["robot_vehicle_linvel"]
+        speed_xy = vel_veh[:, :2].norm(dim=1)
+        cos_crab = vel_veh[:, 0] / speed_xy.clamp(min=1e-6)
+        misalign = 0.5 * (1.0 - cos_crab)  # 0 = nose-aligned .. 1 = flying backward
+        align_gate = (speed_xy / self.task_config.yaw_align_speed_ref).clamp(0.0, 1.0)
+        self.rewards[:] = self.rewards - self.rw["yaw_align_weight"] * misalign * align_gate
+        self.rewards[:] = self.rewards - self.rw["yaw_rate_smooth_weight"] * self._yaw_cmd.pow(2)
 
         crashed = self.obs_dict["crashes"] > 0
         below = z < self.task_config.lower_height_bound
@@ -465,8 +482,18 @@ class NavRLTask(BaseTask):
 
         rpos_unit_g = vec_to_goal_frame(rpos / dist, self.target_dir_2d)
         vel_g = vec_to_goal_frame(vel_w, self.target_dir_2d)
+        # (b) heading info in the vehicle (yaw-only) frame so the agent can OBSERVE its crab angle
+        # (vel_body_xy: lateral slip = which way to yaw) and where the goal is relative to its NOSE
+        # (goal_bearing_body, always defined even at rest), re-anchoring the body-frame LiDAR now that
+        # yaw is free. robot_vehicle_orientation is yaw-only; robot_vehicle_linvel is precomputed.
+        q_veh = self.obs_dict["robot_vehicle_orientation"]
+        goal_veh = quat_rotate_inverse(q_veh, rpos)
+        goal_bearing_body = goal_veh[:, :2] / goal_veh[:, :2].norm(dim=1, keepdim=True).clamp(min=1e-6)
+        vel_body_xy = self.obs_dict["robot_vehicle_linvel"][:, :2] / self.task_config.max_velocity
 
-        s_int = torch.cat([rpos_unit_g, dist_2d, dist_z, vel_g], dim=1)  # (N, 8)
+        s_int = torch.cat(
+            [rpos_unit_g, dist_2d, dist_z, vel_g, goal_bearing_body, vel_body_xy], dim=1
+        )  # (N, 12)
 
         # LiDAR scan, normalized [0,1] (1 = no obstacle within range), flattened to 144
         lidar = self._lidar_distance_m() / self.task_config.lidar_max_range
