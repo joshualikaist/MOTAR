@@ -120,16 +120,24 @@ python -c "import aerial_gym; from aerial_gym.registry.task_registry import task
 conda activate aerialgym
 cd ~/workspaces/aerial_gym_ws/src/aerial_gym_simulator/aerial_gym/rl_training/rl_games
 
-# 한 줄이면 끝. 4 GB VRAM은 NUM_ENVS만 낮춘다 (헤드리스·warp·PYTHONNOUSERSITE·로그 전부 내장):
-NUM_ENVS=64 ./train_navrl.sh
+# 4 GB VRAM 은 GPU4GB=1 프리셋으로 한 줄 (헤드리스·warp·PYTHONNOUSERSITE·로그 전부 내장):
+GPU4GB=1 ./train_navrl.sh
 ```
 
+> **왜 `NUM_ENVS` 만으로는 안 되나 (4 GB 함정):** NUM_ENVS 를 낮춰도 두 가지가 남아 학습이 안 뜬다 —
+> ① Isaac Gym 의 PhysX **GPU 버퍼**(`base_sim` 의 `max_gpu_contact_pairs=2**24`, `buffer_multiplier=10`)는
+> env 수와 무관하게 8000-env 용으로 고정 할당돼 4 GB 를 넘겨 `GymPhysX.cpp: out of memory` 로 죽는다.
+> ② rl_games 는 `minibatch_size ≤ horizon_length(32)×num_envs` 를 요구하는데 `runner.py` 가 자동 축소를 안 해
+> 기본 `minibatch_size=4096` 은 num_envs≥128 에서만 유효하다. **`GPU4GB=1` 이 셋을 한 번에 처리한다**:
+> PhysX 버퍼 축소(`base_sim_4gb`, `AERIAL_GYM_SIM_NAME` 로 선택) + `ppo_navrl_cnn_4gb.yaml`(minibatch 512) + `NUM_ENVS=32`.
+
 - 로그는 `train_session_logs/`에, 체크포인트는 이 폴더의 `runs/ppo_XXXX_navrl/`에 자동 저장.
-- 이어하기: `NUM_ENVS=64 ./train_navrl.sh --checkpoint runs/ppo_XXXX_navrl/nn/gen_ppo.pth`
-- 활성화된 conda의 `python`을 씀. 다른 파이썬이면 `PYTHON=/path/to/python NUM_ENVS=64 ./train_navrl.sh`.
+- 이어하기: `GPU4GB=1 ./train_navrl.sh --checkpoint runs/ppo_XXXX_navrl/nn/gen_ppo.pth`
+- 활성화된 conda의 `python`을 씀. 다른 파이썬이면 `PYTHON=/path/to/python GPU4GB=1 ./train_navrl.sh`.
 - **다른 터미널에서 VRAM 감시**: `watch -n 2 nvidia-smi`
-  - 여유가 있으면 다음 실행 때 `NUM_ENVS=96`, `128`로 올린다.
-  - `PxgCudaDeviceMemoryAllocator fail` / OOM이 뜨면 `NUM_ENVS`를 더 낮춘다.
+  - 여유가 있으면 `GPU4GB=1 NUM_ENVS=48 ./train_navrl.sh` 처럼 `NUM_ENVS` 를 16 의 배수로 올린다(minibatch 512 가 나눠떨어지게).
+  - `out of memory` / `PxgCudaDeviceMemoryAllocator fail` 이 뜨면 `NUM_ENVS` 를 더 낮춘다(예: 16).
+- 8 GB 메인 머신은 `GPU4GB` 없이 기존대로 `NUM_ENVS=256 ./train_navrl.sh` (base_sim + minibatch 4096).
 - 저사양 GPU는 메인보다 느리다 — 같은 epoch 수라도 오래 걸리니 밤샘 학습용으로.
 
 ## 8. (선택) A/B 리워드 비교
@@ -179,7 +187,7 @@ tensorboard --logdir runs                                   # 곡선 비교
 | Isaac Gym 다운로드 | NVIDIA 계정 필요, 자동화 불가 (2번) |
 | Python | **3.8** 고정 (Isaac Gym Preview 4 요구) |
 | 최신 코드 | 이미 클론돼 있으면 실행 전 `git pull` (3번) |
-| 학습 실행 | `NUM_ENVS=64 ./train_navrl.sh` (7번) |
-| VRAM 4 GB | `NUM_ENVS=64`부터, `headless` 내장 |
+| 학습 실행 | `GPU4GB=1 ./train_navrl.sh` (7번) |
+| VRAM 4 GB | `GPU4GB=1` 프리셋(PhysX 버퍼↓ + minibatch↓ + NUM_ENVS=32), `headless` 내장 |
 | urdfpy | git 미포함 → 메인 머신에서 복사 (3-b) |
 | 결과 회수 | `runs/`는 git 제외 → **rsync**로 메인에 회수 (9번) |
