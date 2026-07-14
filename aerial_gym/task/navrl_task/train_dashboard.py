@@ -1,9 +1,13 @@
 """TRAIN: per-epoch NavRL navigation stats for the console dashboard + TensorBoard.
 
 Mirrors the intercept train_dashboard pattern: the task records every finished episode
-(reached / success@timeout / crash / timeout / closest approach) into module-level
-accumulators each step, and the training agent consumes them once per PPO epoch to
-render dashboard lines and TensorBoard scalars (navrl/*).
+(reached / captured / crash / timeout / closest approach) into module-level accumulators
+each step, and the training agent consumes them once per PPO epoch to render dashboard
+lines and TensorBoard scalars (navrl/*).
+
+Closest-approach is aggregated over NON-CRASH episodes only: a crash dies far from the goal
+and would only inflate the mean, hiding how close the drone actually gets when it is really
+approaching. We also surface the single best (min) approach in the window.
 """
 
 from __future__ import annotations
@@ -15,9 +19,11 @@ _REACHED = 0
 _SUCC_TIMEOUT = 0
 _CRASH = 0
 _TIMEOUT = 0
-_CLOSEST_SUM = 0.0
-_CLOSEST_COUNT = 0
+_CLOSEST_NC_SUM = 0.0  # sum of per-episode closest approach over NON-CRASH finished episodes
+_CLOSEST_NC_COUNT = 0
+_CLOSEST_MIN: Optional[float] = None  # best (min) closest approach over non-crash episodes
 _GOAL_DIST_MAX: Optional[float] = None
+_GOAL_DIST_MIN: Optional[float] = None
 
 
 def record_navrl_epoch_episodes(
@@ -26,12 +32,14 @@ def record_navrl_epoch_episodes(
     num_captured: int,
     num_crash: int,
     num_timeout: int,
-    closest_sum: float,
-    closest_count: int,
+    closest_nocrash_sum: float,
+    closest_nocrash_count: int,
+    closest_min: Optional[float],
     goal_dist_max: Optional[float] = None,
+    goal_dist_min: Optional[float] = None,
 ) -> None:
     global _DONE, _REACHED, _SUCC_TIMEOUT, _CRASH, _TIMEOUT
-    global _CLOSEST_SUM, _CLOSEST_COUNT, _GOAL_DIST_MAX
+    global _CLOSEST_NC_SUM, _CLOSEST_NC_COUNT, _CLOSEST_MIN, _GOAL_DIST_MAX, _GOAL_DIST_MIN
     if num_finished <= 0:
         return
     _DONE += int(num_finished)
@@ -39,27 +47,33 @@ def record_navrl_epoch_episodes(
     _SUCC_TIMEOUT += int(num_captured)
     _CRASH += int(num_crash)
     _TIMEOUT += int(num_timeout)
-    if closest_count > 0:
-        _CLOSEST_SUM += float(closest_sum)
-        _CLOSEST_COUNT += int(closest_count)
+    if closest_nocrash_count > 0:
+        _CLOSEST_NC_SUM += float(closest_nocrash_sum)
+        _CLOSEST_NC_COUNT += int(closest_nocrash_count)
+    if closest_min is not None:
+        _CLOSEST_MIN = closest_min if _CLOSEST_MIN is None else min(_CLOSEST_MIN, closest_min)
     if goal_dist_max is not None:
         _GOAL_DIST_MAX = float(goal_dist_max)
+    if goal_dist_min is not None:
+        _GOAL_DIST_MIN = float(goal_dist_min)
 
 
 def consume_navrl_epoch_summary() -> Tuple[List[str], dict, int]:
     """Return (dashboard lines, TensorBoard scalars {navrl/<name>: value}, episodes done)."""
     global _DONE, _REACHED, _SUCC_TIMEOUT, _CRASH, _TIMEOUT
-    global _CLOSEST_SUM, _CLOSEST_COUNT, _GOAL_DIST_MAX
+    global _CLOSEST_NC_SUM, _CLOSEST_NC_COUNT, _CLOSEST_MIN, _GOAL_DIST_MAX, _GOAL_DIST_MIN
     done = _DONE
-    reached = _REACHED
     succ = _SUCC_TIMEOUT
     crash = _CRASH
     timeout = _TIMEOUT
-    closest = _CLOSEST_SUM / float(_CLOSEST_COUNT) if _CLOSEST_COUNT > 0 else None
+    closest_nc = _CLOSEST_NC_SUM / float(_CLOSEST_NC_COUNT) if _CLOSEST_NC_COUNT > 0 else None
+    closest_min = _CLOSEST_MIN
     goal_dist_max = _GOAL_DIST_MAX
+    goal_dist_min = _GOAL_DIST_MIN
     _DONE = _REACHED = _SUCC_TIMEOUT = _CRASH = _TIMEOUT = 0
-    _CLOSEST_SUM = 0.0
-    _CLOSEST_COUNT = 0
+    _CLOSEST_NC_SUM = 0.0
+    _CLOSEST_NC_COUNT = 0
+    _CLOSEST_MIN = None
 
     if done <= 0:
         return ([], {}, 0)
@@ -72,10 +86,12 @@ def consume_navrl_epoch_summary() -> Tuple[List[str], dict, int]:
         f"crash                : {pct(crash)}",
         f"timeout (no capture) : {pct(timeout)}",
     ]
-    if closest is not None:
-        lines.append(f"closest to goal (m)  : {closest:.2f}")
+    if closest_nc is not None:
+        best = f"   (best {closest_min:.2f})" if closest_min is not None else ""
+        lines.append(f"closest, no crash (m): {closest_nc:.2f}{best}")
     if goal_dist_max is not None:
-        lines.append(f"curriculum max (m)   : {goal_dist_max:.1f}")
+        gmin = f"{goal_dist_min:.1f}" if goal_dist_min is not None else "?"
+        lines.append(f"curriculum (m)       : k_min {gmin}, k_max {goal_dist_max:.1f}")
 
     # Interception mode: reach_rate == captured_rate (touching the radius ends the episode),
     # so only captured_rate is logged. crash/timeout/captured partition every finished episode.
@@ -84,8 +100,12 @@ def consume_navrl_epoch_summary() -> Tuple[List[str], dict, int]:
         "navrl/crash_rate": crash / done,
         "navrl/timeout_rate": timeout / done,
     }
-    if closest is not None:
-        metrics["navrl/mean_closest_approach_m"] = closest
+    if closest_nc is not None:
+        metrics["navrl/closest_nocrash_m"] = closest_nc
+    if closest_min is not None:
+        metrics["navrl/closest_min_m"] = closest_min
     if goal_dist_max is not None:
         metrics["navrl/curriculum_goal_dist_max_m"] = goal_dist_max
+    if goal_dist_min is not None:
+        metrics["navrl/curriculum_goal_dist_min_m"] = goal_dist_min
     return (lines, metrics, done)

@@ -9,9 +9,9 @@ class NavRLBarsEnvCfg:
 
     Geometry is ground-referenced (z = height above the floor), so it matches the navrl_task
     height bounds (0.1..4.0 m). The drone spawns near the low-x edge (robot init x-ratio ~0.1-0.2)
-    and the goal is placed 2.5 m up to the curriculum max (18 m) away, i.e. into/through the bar
+    and the goal is placed 2.5 m up to the curriculum max (41 m) away, i.e. into/through the bar
     field. The arena is 24 x 24 m with 48 bars (~8 bars / 100 m^2) scattered across the interior
-    band so the 18 m curriculum goals are reachable without being clamped to the walls.
+    band so the curriculum goals are reachable without being clamped to the walls.
     """
 
     class env:
@@ -40,14 +40,15 @@ class NavRLBarsEnvCfg:
         min_obstacle_xy_spacing = 1.8
 
         # Fixed 24 x 24 x 3 m arena (min == max so every env is identical). Ground-referenced:
-        # z in [0, 3]. Enlarged from 10 x 10 so the goal-distance curriculum's 18 m goals are
-        # actually reachable inside the arena (they were clamped to ~10 m in the old 10 x 10 box).
+        # z in [0, 3]. Enlarged from 10 x 10 so the goal-distance curriculum's goals are actually
+        # reachable inside the arena (they were clamped to ~10 m in the old 10 x 10 box).
         # Drone spawns near the low-x edge (init x-ratio 0.1-0.2 -> x in [2.4, 4.8]); the goal is
-        # placed up to 18 m away, well inside the [0, 24] x [-12, 12] bounds.
-        lower_bound_min = [0.0, -12.0, 0.0]
-        lower_bound_max = [0.0, -12.0, 0.0]
-        upper_bound_min = [24.0, 12.0, 3.0]
-        upper_bound_max = [24.0, 12.0, 3.0]
+        # placed up to the curriculum max (41 m, the integer part of the 24*sqrt(3) box diagonal)
+        # away, well inside the [0, 24] x [0, 24] bounds.
+        lower_bound_min = [0.0, 0.0, 0.0]
+        lower_bound_max = [0.0, 0.0, 0.0]
+        upper_bound_min = [24.0, 24.0, 3.0]
+        upper_bound_max = [24.0, 24.0, 3.0]
 
     class env_config:
         # Only bars. Everything else (walls, panels, objects, trees) is OFF.

@@ -37,8 +37,8 @@ class task_config:
     # Action = 3D velocity in the goal frame (NavRL). Yaw is left uncommanded (held at reset heading).
     action_space_dim = 3
 
-    episode_len_steps = 250  # RL steps (150->250 for the 24x24 arena; an 18 m goal at 2 m/s needs
-    # ~90 steps straight, ~150+ weaving, so 250 keeps timeout from being the failure mode)
+    episode_len_steps = 300  # RL steps (300 for the far-side goals: a diagonal goal can be ~30 m,
+    # ~150 steps straight / ~225 weaving at 2 m/s, so 300 keeps timeout from being the failure mode)
 
     return_state_before_reset = False
 
@@ -57,13 +57,23 @@ class task_config:
     #  - Curriculum OFF: fall back to sampling the goal as a ratio of the environment bounds.
     class curriculum:
         use_curriculum = True
-        goal_dist_min = 2.5          # [m] nearest goal
-        goal_dist_start = 5.0        # [m] initial max goal distance (easy)
-        goal_dist_max = 18.0         # [m] final max goal distance
-        expand_step = 1.5            # [m] added to the max distance per successful check
-        reach_rate_to_expand = 0.60  # ever_reached rate needed to expand difficulty
-        check_after_episodes = 4096  # evaluate the reach rate over this many finished episodes
-        goal_height_jitter = 1.0     # [m] goal z = spawn z +/- U(this), clamped to height bounds
+        # "Cross the bar field" scheme: the drone spawns at x~0 and the goal is placed at x=k on the
+        # far side, so every episode must traverse the bars (x in ~[6.2, 22]). k grows with training
+        # (epoch-proportional) so the drone learns to cross progressively deeper into the field.
+        #   goal x ~ U[k_min, k_max(t)],  goal y ~ U[wall_margin, arena_y - wall_margin]
+        #   k_max(t) = k_start + (k_final - k_start) * min(1, epoch / k_warmup_epochs)
+        k_min = 5.0              # [m] initial nearest goal x (just before the bars -> easy anchor)
+        k_min_final = 20.0       # [m] LATE nearest goal x. Schedule after k_max plateaus (at epoch
+        #   k_warmup_epochs): (B) HOLD full scale [k_min, k_max] for full_scale_hold_epochs, THEN
+        #   (C) ramp k_min k_min->k_min_final over k_min_ramp_epochs (narrows to deep goals).
+        #   Set k_min_final = k_min to disable the narrowing.
+        full_scale_hold_epochs = 500   # (B) epochs held at full range [k_min, k_max] before k_min rises
+        k_min_ramp_epochs = 2500       # (C) epochs to ramp k_min after the hold
+        k_start = 7.0            # [m] initial k_max (first bar rows)
+        k_final = 24.0           # [m] final k_max (far wall; goal x is clamped to arena_x - margin = 23.5)
+        k_warmup_epochs = 3000   # epochs to ramp k_max from k_start to k_final (linear, then plateau)
+        ppo_horizon = 32         # rl_games horizon_length (MUST match ppo_navrl_cnn.yaml) -> steps/epoch
+        wall_margin = 0.5        # [m] keep drone/goal this far from the y walls
 
     # Fallback goal placement (curriculum OFF): ratio of the environment bounds.
     target_min_ratio = [0.85, 0.10, 0.30]
@@ -93,7 +103,12 @@ class task_config:
     #   False -> plain proximity penalty (B): -clearance_weight * relu(margin - nearest_obstacle_dist)
     #   True  -> speed x proximity (C): also multiply by |velocity|, so only FAST approaches near
     #            obstacles are punished (agility in open space is untouched).
-    clearance_speed_gated = False
+    # D(crash, 2026-07-14): speed-gated ON. In the NEW cross-field scheme every episode crosses the
+    # 48-bar field with the 0.28 m box, so crashes are dominated by "shaving a bar at cruise speed"
+    # (all 3 diagnostic lenses converge on this). Speed-gating scales the clearance penalty by |v|, so
+    # only FAST approaches near a bar are punished -> the drone SLOWS through tight gaps rather than
+    # detouring/freezing (open-lane agility untouched). See CRASH_TUNING_LOG.md run D.
+    clearance_speed_gated = True
 
     # Reward weights. NavRL's static branch (env.py) is:
     #   r = 1*reward_vel + 1(alive) + 1*r_safety_static - 0.1*penalty_smooth - 8*penalty_height
@@ -134,8 +149,17 @@ class task_config:
         # B/C(crash): near-obstacle clearance penalty (DEFAULT OFF). Set clearance_weight > 0 (try
         # 1.5) to penalize being within clearance_margin of the nearest bar -- a firmer collision
         # buffer than the gentle log safety term. clearance_speed_gated (above) picks B vs C mode.
-        "clearance_weight": 0.0,       # 0.0 = off; try 1.5 to enable
-        "clearance_margin": 0.6,       # [m] start penalizing inside this distance to the nearest bar
+        # D: 0.0 -> 6.0. The prior null runs (B/C at 1.5) failed because the penalty (~0.75/step at a
+        # 0.30 m shave) was WEAKER than the +2/step velocity reward, so shaving stayed net-positive.
+        # At cw=6, speed-gated, a 0.30 m shave at 2 m/s costs 6*relu(0.5-0.30)*2 = 2.40/step > 2.0, so
+        # the effective velocity coefficient (1 - 6*relu(0.5-d)) goes NEGATIVE inside 0.333 m: fast-
+        # toward-a-close-bar is now punished, not merely offset. ~4x the failed cw=1.5 at the shave pt.
+        "clearance_weight": 6.0,
+        # D: 0.6 -> 0.5. Calibrated to the worst gap: two ~0.8 m AXIS-ALIGNED bars (bars do NOT rotate)
+        # at the 1.8 m min centre spacing leave a ~1.0 m free gap -> a CENTERED pass reads min_dist
+        # ~0.5 m -> relu(0.5-0.5)=0 -> zero added cost (byte-identical to the 1904 reward on normal
+        # passes). Only off-centre/shave passes (d < 0.5) are taxed, and only if fast (speed-gated).
+        "clearance_margin": 0.5,       # [m] start penalizing inside this distance to the nearest bar
         # --- C1 finish-funnel params (DISABLED). Uncomment these together with the funnel block in
         #     navrl_task.py to reward closing through the 0.5-1.0 m shell just outside capture.
         # "funnel_coef": 1.0,

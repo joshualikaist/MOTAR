@@ -115,7 +115,8 @@ class NavRLTask(BaseTask):
 
         # goal-distance curriculum state
         self.cur = self.task_config.curriculum
-        self.cur_goal_dist_max = float(self.cur.goal_dist_start)
+        self.cur_goal_dist_max = float(self.cur.k_start)  # current goal-x ceiling (epoch-driven)
+        self.cur_goal_dist_min = float(self.cur.k_min)    # current goal-x floor (epoch-driven)
         self._cur_reach_agg = 0
         self._cur_fin_agg = 0
 
@@ -157,10 +158,23 @@ class NavRLTask(BaseTask):
         self._to_agg = 0
         self._reach_agg = 0
         self._fin_agg = 0
-        self._mindist_sum = 0.0
+        self._mindist_sum = 0.0  # sum of closest approach over NON-CRASH finished episodes
+        self._nc_agg = 0         # count of non-crash finished episodes
+        self._closest_min = None  # best (min) closest approach in the window
 
     def close(self):
         self.sim_env.delete_env()
+
+    # ------------------------------------------------------------------ checkpoint state
+    def get_env_state(self):
+        """Saved into the rl_games checkpoint ('env_state') so the epoch-proportional curriculum
+        survives a --checkpoint resume. num_task_steps is otherwise in-memory and would restart at 0,
+        resetting k_max/k_min to the easy start."""
+        return {"num_task_steps": int(self.num_task_steps)}
+
+    def set_env_state(self, state):
+        if isinstance(state, dict) and state.get("num_task_steps") is not None:
+            self.num_task_steps = int(state["num_task_steps"])
 
     # ------------------------------------------------------------------ reset
     def reset(self):
@@ -188,25 +202,27 @@ class NavRLTask(BaseTask):
             n = len(env_ids)
             goal = start_pos.clone()
             goal[:, 2] = self.task_config.flight_altitude
-            margin = 1.0
+            m = float(self.cur.wall_margin)
             clearance = getattr(self.task_config, "goal_min_bar_clearance", 0.0)
             bars_xy = self.obs_dict["obstacle_position"][env_ids][:, :, 0:2]
-            # Sample a goal at a random heading and a distance in [min, current max]; resample
-            # any goal that lands within `clearance` (XY) of a bar so the capture sphere is
-            # flyable. 2D navigation: the goal stays inside the arena at flight_altitude.
+            # "Cross the bar field": the drone spawns at x~0, so placing the goal at x=k on the far
+            # side forces a left->right traversal of the bars. k ~ U[k_min, k_max(epoch)] (k_max
+            # grows with training via _goal_x_max), y is free across the arena minus a wall margin.
+            # Resample any goal within `clearance` of a bar so the 0.5 m capture sphere is flyable.
+            k_max = self._goal_x_max()
+            k_min = self._goal_x_min()
+            self.cur_goal_dist_max = k_max  # surfaced to the dashboard as "curriculum max"
+            self.cur_goal_dist_min = k_min  # surfaced to the dashboard as "curriculum min"
             todo = torch.ones(n, dtype=torch.bool, device=self.device)
             for _ in range(10):
                 if not todo.any():
                     break
-                k = int(todo.sum())
-                theta = 2.0 * torch.pi * torch.rand(k, device=self.device)
-                dist = self.cur.goal_dist_min + (
-                    self.cur_goal_dist_max - self.cur.goal_dist_min
-                ) * torch.rand(k, device=self.device)
-                gx = start_pos[todo, 0] + dist * torch.cos(theta)
-                gy = start_pos[todo, 1] + dist * torch.sin(theta)
-                gx = gx.clamp(b_min[todo, 0] + margin, b_max[todo, 0] - margin)
-                gy = gy.clamp(b_min[todo, 1] + margin, b_max[todo, 1] - margin)
+                j = int(todo.sum())
+                gx = k_min + (k_max - k_min) * torch.rand(j, device=self.device)
+                gx = gx.clamp(max=(b_max[todo, 0] - m))  # keep the capture sphere off the far wall
+                gy = (b_min[todo, 1] + m) + (
+                    b_max[todo, 1] - b_min[todo, 1] - 2.0 * m
+                ) * torch.rand(j, device=self.device)
                 goal[todo, 0] = gx
                 goal[todo, 1] = gy
                 if clearance <= 0.0:
@@ -457,41 +473,56 @@ class NavRLTask(BaseTask):
         self.task_obs["observations"][:, : self.task_config.internal_state_dim] = s_int
         self.task_obs["observations"][:, self.task_config.internal_state_dim :] = lidar
 
+    def _goal_x_max(self):
+        """Epoch-proportional goal-x ceiling: ramps k_start -> k_final over k_warmup_epochs, then
+        plateaus. Uses num_task_steps as an epoch proxy (rl_games collects ppo_horizon env-steps per
+        epoch, so epoch ~= num_task_steps / ppo_horizon). Resets with the process (in-memory), like
+        the old curriculum -- on --checkpoint resume k_max restarts at k_start and re-ramps."""
+        warmup_steps = max(1, int(self.cur.k_warmup_epochs) * int(self.cur.ppo_horizon))
+        frac = min(1.0, self.num_task_steps / warmup_steps)
+        return self.cur.k_start + (self.cur.k_final - self.cur.k_start) * frac
+
+    def _goal_x_min(self):
+        """Goal-x floor: stays at k_min while k_max expands (phase 1), then ramps k_min -> k_min_final
+        over the NEXT warmup (phase 2 / late training) so late episodes drop the easy near goals and
+        focus on deep crossings. Kept at least 1 m below k_max so the [min, max] window stays valid."""
+        k_min_final = getattr(self.cur, "k_min_final", self.cur.k_min)
+        h = int(self.cur.ppo_horizon)
+        hold = int(getattr(self.cur, "full_scale_hold_epochs", 0))
+        # k_min stays at k_min through the k_max ramp AND the full-scale hold, then ramps up.
+        start_steps = (int(self.cur.k_warmup_epochs) + hold) * h
+        ramp_steps = max(1, int(getattr(self.cur, "k_min_ramp_epochs", self.cur.k_warmup_epochs)) * h)
+        frac = min(1.0, max(0.0, (self.num_task_steps - start_steps) / ramp_steps))
+        k_min = self.cur.k_min + (k_min_final - self.cur.k_min) * frac
+        return min(k_min, self._goal_x_max() - 1.0)
+
     def _update_curriculum(self, finished):
-        if not self.cur.use_curriculum or not finished.any():
-            return
-        self._cur_reach_agg += int(torch.sum(self.ep_reached & finished).item())
-        self._cur_fin_agg += int(torch.sum(finished).item())
-        if self._cur_fin_agg >= self.cur.check_after_episodes:
-            reach_rate = self._cur_reach_agg / max(1, self._cur_fin_agg)
-            if (
-                reach_rate >= self.cur.reach_rate_to_expand
-                and self.cur_goal_dist_max < self.cur.goal_dist_max
-            ):
-                self.cur_goal_dist_max = min(
-                    self.cur_goal_dist_max + self.cur.expand_step, self.cur.goal_dist_max
-                )
-                logger.warning(
-                    "curriculum ↑ | reach_rate=%.2f -> goal_dist_max=%.1f m"
-                    % (reach_rate, self.cur_goal_dist_max)
-                )
-            self._cur_reach_agg = 0
-            self._cur_fin_agg = 0
+        # The curriculum is now epoch-proportional (goal-x ceiling via _goal_x_max, applied in
+        # reset_idx), so there is nothing to update per finished episode. Kept for the step() hook.
+        return
 
     def _record_epoch_dashboard(self, successes, crashes, timeouts, finished):
         """Feed finished-episode outcomes to the per-epoch train dashboard (console + TB)."""
         n_fin = int(torch.sum(finished).item())
         if n_fin == 0:
             return
+        # Closest approach EXCLUDING crashes: a crash dies far from the goal and only inflates the
+        # mean, so aggregate over non-crash finished episodes and also surface the best (min).
+        nocrash = finished & ~(crashes > 0)
+        n_nc = int(torch.sum(nocrash).item())
+        closest_nc_sum = float(torch.sum(self.ep_min_goal_dist[nocrash]).item()) if n_nc else 0.0
+        closest_min = float(torch.min(self.ep_min_goal_dist[nocrash]).item()) if n_nc else None
         record_navrl_epoch_episodes(
             num_finished=n_fin,
             num_reached=int(torch.sum(self.ep_reached & finished).item()),
             num_captured=int(torch.sum(successes).item()),
             num_crash=int(torch.sum(crashes > 0).item()),
             num_timeout=int(torch.sum(timeouts).item()),
-            closest_sum=float(torch.sum(self.ep_min_goal_dist[finished]).item()),
-            closest_count=n_fin,
+            closest_nocrash_sum=closest_nc_sum,
+            closest_nocrash_count=n_nc,
+            closest_min=closest_min,
             goal_dist_max=self.cur_goal_dist_max if self.cur.use_curriculum else None,
+            goal_dist_min=self.cur_goal_dist_min if self.cur.use_curriculum else None,
         )
 
     def _log_progress(self, successes, crashes, timeouts, finished=None):
@@ -500,24 +531,33 @@ class NavRLTask(BaseTask):
         self._to_agg += int(torch.sum(timeouts).item())
         if finished is not None and finished.any():
             self._reach_agg += int(torch.sum(self.ep_reached & finished).item())
-            self._mindist_sum += float(torch.sum(self.ep_min_goal_dist[finished]).item())
+            nocrash = finished & ~(crashes > 0)
+            if nocrash.any():
+                self._mindist_sum += float(torch.sum(self.ep_min_goal_dist[nocrash]).item())
+                self._nc_agg += int(torch.sum(nocrash).item())
+                m = float(torch.min(self.ep_min_goal_dist[nocrash]).item())
+                self._closest_min = m if self._closest_min is None else min(self._closest_min, m)
             self._fin_agg += int(torch.sum(finished).item())
         total = self._succ_agg + self._crash_agg + self._to_agg
         if total >= 2048:
             reach_rate = self._reach_agg / max(1, self._fin_agg)
-            mean_min_dist = self._mindist_sum / max(1, self._fin_agg)
+            mean_nc = self._mindist_sum / max(1, self._nc_agg)
+            best = self._closest_min if self._closest_min is not None else float("nan")
             logger.warning(
                 "NavRL progress | captured=%.3f ever_reached=%.3f crash=%.3f timeout=%.3f "
-                "mean_closest_approach=%.2fm (n=%d)"
+                "closest_nocrash=%.2fm best=%.2fm (n=%d)"
                 % (
                     self._succ_agg / total,
                     reach_rate,
                     self._crash_agg / total,
                     self._to_agg / total,
-                    mean_min_dist,
+                    mean_nc,
+                    best,
                     total,
                 )
             )
             self._succ_agg = self._crash_agg = self._to_agg = 0
             self._reach_agg = self._fin_agg = 0
             self._mindist_sum = 0.0
+            self._nc_agg = 0
+            self._closest_min = None

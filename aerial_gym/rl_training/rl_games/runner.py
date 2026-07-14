@@ -88,6 +88,17 @@ class AERIALRLGPUEnv(vecenv.IVecEnv):
     def reset_done(self):
         return self.env.reset_done()
 
+    def get_env_state(self):
+        # rl_games saves this into the checkpoint ('env_state'); forward to the task (via the
+        # gym.Wrapper) so per-task state like navrl_task's curriculum counter survives resume.
+        fn = getattr(self.env, "get_env_state", None)
+        return fn() if callable(fn) else None
+
+    def set_env_state(self, state):
+        fn = getattr(self.env, "set_env_state", None)
+        if callable(fn) and state is not None:
+            fn(state)
+
     def render(self, mode="human"):
         """rl_games BasePlayer expects vecenv.render(mode=...) during play."""
         if hasattr(self.env, "render"):

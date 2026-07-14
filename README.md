@@ -163,7 +163,7 @@ What to watch in TensorBoard (rl_games scalar names):
 | `captured (success)` | `navrl/captured_rate` | episodes ended by touching the 0.5 m capture radius — interception success, the primary signal, ↑ toward 1.0 |
 | `crash` | `navrl/crash_rate` | ended by collision / height bound, ↓ |
 | `timeout (no capture)` | `navrl/timeout_rate` | ran all 150 steps without capturing, ↓ |
-| `closest to goal (m)` | `navrl/mean_closest_approach_m` | mean closest approach, ↓ toward < 0.5 |
+| `closest, no crash (m)` | `navrl/closest_nocrash_m` (+ `navrl/closest_min_m`) | mean closest approach over NON-crash episodes (crashes die far and only inflate it), plus the best (min) approach; ↓ toward < 0.5 |
 | `curriculum max (m)` | `navrl/curriculum_goal_dist_max_m` | current max goal-sampling distance; expands by 1.5 m each time the ever-reached rate ≥ 0.6 (5 m → goal_dist_max) |
 
 The same stats are also summarized to the console every ~2048 finished episodes as

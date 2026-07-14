@@ -55,6 +55,7 @@ _CSV_FIELDS = (
     "crash_rate",
     "timeout_rate",
     "closest_approach_m",
+    "closest_min_m",
     "curriculum_max_m",
 )
 
@@ -119,7 +120,8 @@ class EpochRow:
     captured_rate: Optional[float] = None
     crash_rate: Optional[float] = None
     timeout_rate: Optional[float] = None
-    closest_approach_m: Optional[float] = None
+    closest_approach_m: Optional[float] = None  # mean over NON-CRASH finished episodes
+    closest_min_m: Optional[float] = None  # best (min) closest approach
     curriculum_max_m: Optional[float] = None
 
 
@@ -159,7 +161,8 @@ class RunDiagnostics:
     last_captured_rate: Optional[float] = None
     last_crash_rate: Optional[float] = None
     last_timeout_rate: Optional[float] = None
-    last_closest_approach_m: Optional[float] = None
+    last_closest_approach_m: Optional[float] = None  # mean over non-crash episodes
+    last_closest_min_m: Optional[float] = None
     last_curriculum_max_m: Optional[float] = None
     peak_captured_rate: Optional[float] = None
     peak_captured_epoch: Optional[int] = None
@@ -210,6 +213,7 @@ class TrainRunRecorder:
                         crash_rate=_f(raw.get("crash_rate")),
                         timeout_rate=_f(raw.get("timeout_rate")),
                         closest_approach_m=_f(raw.get("closest_approach_m")),
+                        closest_min_m=_f(raw.get("closest_min_m")),
                         curriculum_max_m=_f(raw.get("curriculum_max_m")),
                     )
                 )
@@ -252,7 +256,8 @@ class TrainRunRecorder:
             captured_rate=_f(extra.get("navrl/captured_rate")),
             crash_rate=_f(extra.get("navrl/crash_rate")),
             timeout_rate=_f(extra.get("navrl/timeout_rate")),
-            closest_approach_m=_f(extra.get("navrl/mean_closest_approach_m")),
+            closest_approach_m=_f(extra.get("navrl/closest_nocrash_m")),
+            closest_min_m=_f(extra.get("navrl/closest_min_m")),
             curriculum_max_m=_f(extra.get("navrl/curriculum_goal_dist_max_m")),
         )
         # Replace same epoch on resume overlap
@@ -289,6 +294,7 @@ class TrainRunRecorder:
                         "crash_rate": _cell(r.crash_rate),
                         "timeout_rate": _cell(r.timeout_rate),
                         "closest_approach_m": _cell(r.closest_approach_m),
+                        "closest_min_m": _cell(r.closest_min_m),
                         "curriculum_max_m": _cell(r.curriculum_max_m),
                     }
                 )
@@ -365,6 +371,7 @@ class TrainRunRecorder:
             diag.last_crash_rate = last_nav.crash_rate
             diag.last_timeout_rate = last_nav.timeout_rate
             diag.last_closest_approach_m = last_nav.closest_approach_m
+            diag.last_closest_min_m = last_nav.closest_min_m
             diag.last_curriculum_max_m = last_nav.curriculum_max_m
             peak_nav = max(nav_rows, key=lambda r: r.captured_rate or float("-inf"))
             diag.peak_captured_rate = peak_nav.captured_rate
@@ -460,10 +467,11 @@ def _build_navrl_hints(d: RunDiagnostics) -> list[str]:
             f"실패 주원인이 crash {100 * d.last_crash_rate:.1f}% — safety weight↑ 또는 근접 마진 "
             "페널티(clearance_weight)로 충돌 저감."
         )
-    if d.last_closest_approach_m is not None and cap is not None and cap >= 0.5:
+    if d.last_closest_approach_m is not None:
+        best = f", best {d.last_closest_min_m:.2f} m" if d.last_closest_min_m is not None else ""
         hints.append(
-            f"closest {d.last_closest_approach_m:.2f} m는 stop-short 아님 — captured가 높으면 "
-            "먼 곳에서 죽는 crash 에피소드가 평균을 끌어올린 것."
+            f"closest(no-crash) {d.last_closest_approach_m:.2f} m{best} — crash 제외 평균이라 "
+            "실제 접근 정밀도를 반영(과거 all-episode 평균의 crash 왜곡 제거)."
         )
     if d.reward_collapse:
         hints.append(f"reward 붕괴 의심: {d.collapse_detail}.")
@@ -578,8 +586,8 @@ def print_run_summary_box(
             f"    peak {_pct(diag.peak_captured_rate)} @ epoch {_or_na(diag.peak_captured_epoch)}",
             f"  crash             : {_pct(diag.last_crash_rate)}",
             f"  timeout (no cap)  : {_pct(diag.last_timeout_rate)}",
-            f"  closest approach  : {_fmt(diag.last_closest_approach_m, 'm')}"
-            "   (mean over ALL episodes; far-crashing episodes inflate it)",
+            f"  closest (no crash): {_fmt(diag.last_closest_approach_m, 'm')}"
+            f"   best {_fmt(diag.last_closest_min_m, 'm')}",
             f"  curriculum max    : {_fmt(diag.last_curriculum_max_m, 'm')}",
         ]
     else:

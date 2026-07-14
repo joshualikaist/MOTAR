@@ -670,9 +670,11 @@ class bar_asset_params(asset_state_params):
     NavRLBarsEnvCfg.env.min_obstacle_xy_spacing (a minimum center-to-center XY distance).
     """
 
-    # 48 bars in the 24 x 24 m arena (576 m^2) -> ~8 bars / 100 m^2. Sparser than NavRL's density
+    # 48 bars spread ~uniformly across the arena (x-ratio 0.09-0.96, y-ratio 0->1) EXCEPT a ~3 m
+    # drone-spawn corridor on the left (x-ratio starts at 0.09 so the drone at x~0 never spawns in a
+    # bar). Covered region ~x[3,22] x y[1,23] -> ~11 bars / 100 m^2. Sparser than NavRL's density
     # (350 bars / 1600 m^2 ~= 22 / 100 m^2; the RESEARCH_PLAN "2.2/100m2" figure is a 10x typo) to
-    # keep warp-LiDAR VRAM in budget on 8 GB; raise toward NavRL density in the Phase 2 sweep.
+    # keep warp-LiDAR VRAM in budget on 8 GB; raise num_assets toward NavRL density if desired.
     num_assets = 48
 
     asset_folder = f"{AERIAL_GYM_DIRECTORY}/resources/models/environment_assets/bars"
@@ -684,8 +686,8 @@ class bar_asset_params(asset_state_params):
     # x band starts past the drone spawn strip (x-ratio 0.1-0.2); z fixed at 1/3 -> bar center
     # 1 m -> stands 0..2 m; upright (no roll/pitch/yaw).
     min_state_ratio = [
-        0.26,
-        0.10,
+        0.09,
+        0.0,
         0.3333,
         0.0,
         0.0,
@@ -699,8 +701,8 @@ class bar_asset_params(asset_state_params):
         0.0,
     ]
     max_state_ratio = [
-        0.92,
-        0.90,
+        0.96,
+        1.0,
         0.3333,
         0.0,
         0.0,
