@@ -41,6 +41,24 @@ tar -xf IsaacGym_Preview_4_Package.tar.gz -C ~/
 ls ~/isaacgym/python   # 이 경로가 존재해야 함
 ```
 
+## ⚡ 빠른 시작 (부트스트랩 — §3~6을 한 번에)
+
+위 §1(conda)·§2(Isaac Gym)만 끝나 있으면, 아래 두 줄로 나머지(코드 clone·환경·설치·스모크테스트)가
+전부 자동으로 된다:
+
+```bash
+git clone -b research/navrl-env git@github.com:joshualikaist/MOTAR.git aerial_gym_simulator
+cd aerial_gym_simulator && ./bootstrap_second_machine.sh
+```
+
+- urdfpy(원본 `mmatl/urdfpy`)를 알아서 clone·설치하고 `PYTHONNOUSERSITE`까지 설정.
+- Isaac Gym 경로가 다르면 `ISAACGYM_PATH=/path ./bootstrap_second_machine.sh`.
+- NavRL 참고 repo도 받으려면 `CLONE_NAVRL=1 ./bootstrap_second_machine.sh`.
+
+아래 §3~6은 이 스크립트가 하는 일의 **수동 버전**이다(문제 생기면 단계별로 참고).
+
+---
+
 ## 3. 코드 가져오기 (MOTAR repo + urdfpy)
 
 MOTAR 본체는 git으로 받고, `urdfpy` 포크는 repo에 포함돼 있지 않으므로 **메인 머신에서 복사**한다.
@@ -51,10 +69,8 @@ mkdir -p ~/workspaces/aerial_gym_ws/src && cd ~/workspaces/aerial_gym_ws/src
 # (a) MOTAR 본체 — research 브랜치
 git clone -b research/navrl-env git@github.com:joshualikaist/MOTAR.git aerial_gym_simulator
 
-# (b) urdfpy 포크 — 메인(3070) 머신에서 복사
-#     아래 <계정>@<메인머신IP>는 실제 값으로 교체
-scp -r <계정>@<메인머신IP>:/home/fair/workspaces/aerial_gym_ws/src/urdfpy .
-#     또는 USB로 src/urdfpy 폴더를 통째로 옮겨도 됨
+# (b) urdfpy — 원본 mmatl/urdfpy 그대로라 직접 clone (수정본 아님 → scp 불필요)
+git clone https://github.com/mmatl/urdfpy.git
 ```
 
 > **이미 클론돼 있으면** 매 실행 전 `git pull` 로 최신 코드를 받는다(메인에서 push한 것 반영).
