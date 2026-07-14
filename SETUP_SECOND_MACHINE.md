@@ -57,6 +57,7 @@ scp -r <계정>@<메인머신IP>:/home/fair/workspaces/aerial_gym_ws/src/urdfpy 
 #     또는 USB로 src/urdfpy 폴더를 통째로 옮겨도 됨
 ```
 
+> **이미 클론돼 있으면** 매 실행 전 `git pull` 로 최신 코드를 받는다(메인에서 push한 것 반영).
 > 처음부터 학습할 거면 `runs/`, `nn/`(체크포인트)는 옮길 필요 없다.
 
 ## 4. conda 환경 + 패키지 설치
@@ -97,20 +98,22 @@ python -c "import aerial_gym; from aerial_gym.registry.task_registry import task
 
 `ok`가 나오면 성공.
 
-## 7. 학습 실행 (4 GB VRAM 기준)
+## 7. 학습 실행 (짧은 래퍼 — 4 GB VRAM 기준)
 
 ```bash
 conda activate aerialgym
 cd ~/workspaces/aerial_gym_ws/src/aerial_gym_simulator/aerial_gym/rl_training/rl_games
 
-# 4 GB VRAM: num_envs=64로 시작, 헤드리스 필수
-python runner.py --file ppo_navrl_cnn.yaml --task navrl_task \
-    --num_envs 64 --headless True --train 2>&1 | tee "train_$(date +%y%m%d_%H%M).log"
+# 한 줄이면 끝. 4 GB VRAM은 NUM_ENVS만 낮춘다 (헤드리스·warp·PYTHONNOUSERSITE·로그 전부 내장):
+NUM_ENVS=64 ./train_navrl.sh
 ```
 
+- 로그는 `train_session_logs/`에, 체크포인트는 이 폴더의 `runs/ppo_XXXX_navrl/`에 자동 저장.
+- 이어하기: `NUM_ENVS=64 ./train_navrl.sh --checkpoint runs/ppo_XXXX_navrl/nn/gen_ppo.pth`
+- 활성화된 conda의 `python`을 씀. 다른 파이썬이면 `PYTHON=/path/to/python NUM_ENVS=64 ./train_navrl.sh`.
 - **다른 터미널에서 VRAM 감시**: `watch -n 2 nvidia-smi`
-  - 여유가 있으면 다음 실행 때 `--num_envs 96`, `128`로 올린다.
-  - `PxgCudaDeviceMemoryAllocator fail` / OOM이 뜨면 `num_envs`를 더 낮춘다.
+  - 여유가 있으면 다음 실행 때 `NUM_ENVS=96`, `128`로 올린다.
+  - `PxgCudaDeviceMemoryAllocator fail` / OOM이 뜨면 `NUM_ENVS`를 더 낮춘다.
 - 저사양 GPU는 메인보다 느리다 — 같은 epoch 수라도 오래 걸리니 밤샘 학습용으로.
 
 ## 8. (선택) A/B 리워드 비교
@@ -121,6 +124,36 @@ python runner.py --file ppo_navrl_cnn.yaml --task navrl_task \
 
 두 머신을 나눠 쓰면 GPU 하나에 두 학습을 욱여넣지 않고 OOM 없이 동시에 비교할 수 있다.
 
+## 9. 학습 결과를 메인 머신으로 회수 (`runs/` 는 git 제외 → rsync)
+
+`runs/`·`nn/`·`*.pth`·`*.log`는 `.gitignore` 대상이라 **git으로는 안 넘어온다**. 학습이 끝나면
+**rsync/scp로 직접** 메인(3070) 머신으로 가져와 평가·재생한다. (TensorBoard 스칼라와 `.pth`는
+머신 독립이라 그대로 열린다.)
+
+**메인 머신에서** 실행해 보조 머신의 결과를 당겨온다 (`ppo_XXXX_navrl`는 실제 run 이름으로 교체):
+
+```bash
+RG=aerial_gym/rl_training/rl_games
+BASE=~/workspaces/aerial_gym_ws/src/aerial_gym_simulator
+REMOTE=<계정>@<보조머신IP>:~/workspaces/aerial_gym_ws/src/aerial_gym_simulator
+
+# (a) 평가·TensorBoard 만 볼 거면 summaries/ 만 — ~10 MB, 빠름
+rsync -avz -e ssh $REMOTE/$RG/runs/ppo_XXXX_navrl/summaries/ \
+                       $BASE/$RG/runs/ppo_XXXX_navrl/summaries/
+
+# (b) 재생(play)까지 하려면 nn/ 체크포인트 포함해 run 폴더 통째로 — ~200 MB
+rsync -avz -e ssh $REMOTE/$RG/runs/ppo_XXXX_navrl/ \
+                       $BASE/$RG/runs/ppo_XXXX_navrl/
+```
+
+가져온 뒤 메인에서:
+
+```bash
+cd $BASE/$RG
+tensorboard --logdir runs                                   # 곡선 비교
+./play_navrl.sh runs/ppo_XXXX_navrl/nn/gen_ppo.pth          # 정책 재생
+```
+
 ---
 
 ## 요약 표
@@ -129,6 +162,8 @@ python runner.py --file ppo_navrl_cnn.yaml --task navrl_task \
 |------|------|
 | Isaac Gym 다운로드 | NVIDIA 계정 필요, 자동화 불가 (2번) |
 | Python | **3.8** 고정 (Isaac Gym Preview 4 요구) |
-| VRAM 4 GB | `num_envs=64`부터, `headless=True` 필수 |
+| 최신 코드 | 이미 클론돼 있으면 실행 전 `git pull` (3번) |
+| 학습 실행 | `NUM_ENVS=64 ./train_navrl.sh` (7번) |
+| VRAM 4 GB | `NUM_ENVS=64`부터, `headless` 내장 |
 | urdfpy | git 미포함 → 메인 머신에서 복사 (3-b) |
-| 체크포인트(`runs/`,`nn/`) | 새로 학습이면 복사 불필요 |
+| 결과 회수 | `runs/`는 git 제외 → **rsync**로 메인에 회수 (9번) |
