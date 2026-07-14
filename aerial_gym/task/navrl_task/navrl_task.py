@@ -484,14 +484,18 @@ class NavRLTask(BaseTask):
         return self.cur.k_start + (self.cur.k_final - self.cur.k_start) * frac
 
     def _goal_x_min(self):
-        """Goal-x floor: stays at k_min while k_max expands (phase 1), then ramps k_min -> k_min_final
-        over the NEXT warmup (phase 2 / late training) so late episodes drop the easy near goals and
-        focus on deep crossings. Kept at least 1 m below k_max so the [min, max] window stays valid."""
+        """Goal-x floor: stays at k_min early, then ramps k_min -> k_min_final over
+        [k_min_ramp_start_epochs, +k_min_ramp_epochs] so late episodes drop the easy near goals and
+        focus on deep crossings. The start is independent of the k_max ramp (they may overlap). Kept
+        at least 1 m below k_max so the [min, max] window stays valid."""
         k_min_final = getattr(self.cur, "k_min_final", self.cur.k_min)
         h = int(self.cur.ppo_horizon)
         hold = int(getattr(self.cur, "full_scale_hold_epochs", 0))
-        # k_min stays at k_min through the k_max ramp AND the full-scale hold, then ramps up.
-        start_steps = (int(self.cur.k_warmup_epochs) + hold) * h
+        # k_min starts rising at k_min_ramp_start_epochs (explicit). Legacy fallback: after the k_max
+        # ramp + full-scale hold, i.e. k_warmup_epochs + hold.
+        start_epochs = int(getattr(self.cur, "k_min_ramp_start_epochs",
+                                   int(self.cur.k_warmup_epochs) + hold))
+        start_steps = start_epochs * h
         ramp_steps = max(1, int(getattr(self.cur, "k_min_ramp_epochs", self.cur.k_warmup_epochs)) * h)
         frac = min(1.0, max(0.0, (self.num_task_steps - start_steps) / ramp_steps))
         k_min = self.cur.k_min + (k_min_final - self.cur.k_min) * frac

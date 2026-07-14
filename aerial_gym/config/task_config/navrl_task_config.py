@@ -65,12 +65,14 @@ class task_config:
         #   goal x ~ U[k_min, k_max(t)],  goal y ~ U[wall_margin, arena_y - wall_margin]
         #   k_max(t) = k_start + (k_final - k_start) * min(1, epoch / k_warmup_epochs)
         k_min = 5.0              # [m] initial nearest goal x (just before the bars -> easy anchor)
-        k_min_final = 20.0       # [m] LATE nearest goal x. Schedule after k_max plateaus (at epoch
-        #   k_warmup_epochs): (B) HOLD full scale [k_min, k_max] for full_scale_hold_epochs, THEN
-        #   (C) ramp k_min k_min->k_min_final over k_min_ramp_epochs (narrows to deep goals).
-        #   Set k_min_final = k_min to disable the narrowing.
-        full_scale_hold_epochs = 500   # (B) epochs held at full range [k_min, k_max] before k_min rises
-        k_min_ramp_epochs = 2500       # (C) epochs to ramp k_min after the hold
+        k_min_final = 20.0       # [m] LATE nearest goal x. k_min ramps k_min -> k_min_final linearly
+        #   over epochs [k_min_ramp_start_epochs, k_min_ramp_start_epochs + k_min_ramp_epochs],
+        #   narrowing the goal window to deep crossings. Set k_min_final = k_min to disable.
+        k_min_ramp_start_epochs = 2000  # epoch k_min STARTS rising. Independent of the k_max ramp --
+        #   it overlaps it (k_max keeps ramping to k_warmup_epochs=3000 while k_min already climbs).
+        k_min_ramp_epochs = 3000        # epochs to ramp k_min -> k_min_final => hits max at 2000+3000 = 5000
+        full_scale_hold_epochs = 500   # (legacy) fallback k_min start = k_warmup+hold, only if
+        #   k_min_ramp_start_epochs is unset. Ignored now that k_min_ramp_start_epochs is set.
         k_start = 7.0            # [m] initial k_max (first bar rows)
         k_final = 24.0           # [m] final k_max (far wall; goal x is clamped to arena_x - margin = 23.5)
         k_warmup_epochs = 3000   # epochs to ramp k_max from k_start to k_final (linear, then plateau)
