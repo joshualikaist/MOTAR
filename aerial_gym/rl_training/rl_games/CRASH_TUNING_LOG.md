@@ -72,3 +72,25 @@ run 1904)에서 사라졌지만 (b)는 구조적 사실로 남는다.** 따라�
   멎으면 그 잔여분은 reward가 아닌 기하/지각 한계 신호(다음 레버: 속도governor 또는 LiDAR 해상도↑).
 - **폴백**: captured가 5pt↑ 하락 → margin 0.5→0.45(cw는 5.0 밑으로 내리지 말 것). timeout>0.05 →
   거리모드 1/d 배리어(cw=2.0, margin=0.45, speed-gate OFF)로 전환.
+
+### Run D 실제 결과 — `ppo_260714_2207` (6000 epoch 완료, cw=6 확정: 커밋 71aa606 22:02 → run 22:05)
+
+| 지표(last-500) | 1904(baseline) | **Run D(2207)** | Δ |
+|---|---|---|---|
+| captured | 0.653 (peak 0.802) | **0.663 (peak 0.833)** | +0.01 (flat) |
+| crash | 0.347 (min 0.198) | **0.316 (min 0.162)** | −0.03 (미미) |
+| timeout | 0.000 | **0.021** | +0.02 (등장) |
+| closest_nocrash | 0.428 | 0.440 | flat |
+| mean_ep_len | 88 | **116** | **+32% (감속)** |
+
+- **판정: 예측 실패(crash 0.18 예상 → 실제 0.32).** speed-gate는 **작동함**(드론 32% 감속 + timeout 등장이 증거)
+  이나 **crash를 거의 못 줄임.** captured도 flat.
+- ⚠️ **교란**: Run D는 cw=0→6 **뿐 아니라 k_min_final 10→20**(더 깊은 목표)도 바뀜 → 순수 cw 효과 아님.
+  더 어려운 커리큘럼에서 crash가 그래도 소폭↓ = cw가 어려워진 만큼을 상쇄했을 순 있음. 하지만 clean 아님.
+- **결정적 해석**: **큰 감속(88→116)에도 crash 불변** ⇒ crash는 speed/reward-shaving이 아니라 **기하/지각
+  (corner-clip: 10° 빔각으로 갭 중앙정렬 정밀도가 반클리어런스와 비슷 → 감속해도 못 고침).** 기하 렌즈의
+  co-dominant 진단이 옳았고 리워드-수학 렌즈의 "순항 스침" 베팅은 빗나감.
+- **결론: 리워드로 crash 줄이기 소진(B/C/D 모두 실패).** 다음은 리워드가 아님:
+  1. **지각**: LiDAR 36→72빔(갭 중앙정렬 정밀도↑, corner-clip 직접 공격). 2. **요 제어**: 대각 footprint
+     0.38m→0.28m. 3. **수용**: ~0.66-0.83은 NavRL 0.81 상회 → Phase1 종료하고 Phase2(밀도)로(critical path).
+- **cw=6 유지 여부 미정**: 감속+timeout 부작용 vs 미미한 안전이득. Phase2는 clean baseline(cw=0) 권장 검토.
