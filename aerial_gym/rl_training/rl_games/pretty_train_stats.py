@@ -82,6 +82,11 @@ def _format_dashboard_rows(
     rows: List[str] = [
         bar,
         f"  {_dashboard_title()}",
+    ]
+    _run = os.environ.get("AERIAL_RUN_NAME", "").strip()
+    if _run:
+        rows.append(f"  run            : {_run}")
+    rows += [
         "",
         f"  epoch          : {ep_s}",
         f"  step time (s)  : {float(step_time):.4f}",

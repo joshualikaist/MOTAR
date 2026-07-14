@@ -1,4 +1,5 @@
 import math
+import os
 
 import numpy as np
 import torch
@@ -543,10 +544,12 @@ class NavRLTask(BaseTask):
             reach_rate = self._reach_agg / max(1, self._fin_agg)
             mean_nc = self._mindist_sum / max(1, self._nc_agg)
             best = self._closest_min if self._closest_min is not None else float("nan")
+            _run = os.environ.get("AERIAL_RUN_NAME", "").strip()
             logger.warning(
-                "NavRL progress | captured=%.3f ever_reached=%.3f crash=%.3f timeout=%.3f "
+                "NavRL progress%s | captured=%.3f ever_reached=%.3f crash=%.3f timeout=%.3f "
                 "closest_nocrash=%.2fm best=%.2fm (n=%d)"
                 % (
+                    (" [" + _run + "]") if _run else "",
                     self._succ_agg / total,
                     reach_rate,
                     self._crash_agg / total,

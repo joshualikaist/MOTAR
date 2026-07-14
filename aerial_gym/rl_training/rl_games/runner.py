@@ -526,6 +526,11 @@ if __name__ == "__main__":
             _dash_task = str(args.get("task") or config["params"]["config"].get("env_name", ""))
             from aerial_gym.rl_training.rl_games.run_header import _TASK_TITLES
 
+            # Surface the run folder name (ppo_YYMMDD_HHMM_<task>) so the dashboard box title AND
+            # the recurring "NavRL progress" line show which run this terminal is — avoids mixing up
+            # concurrent runs. AERIAL_RUN_NAME is read by navrl_task._log_progress.
+            _run_name = str(config["params"]["config"].get("full_experiment_name") or "").strip()
+            os.environ.setdefault("AERIAL_RUN_NAME", _run_name)
             os.environ.setdefault(
                 "AERIAL_RUN_TITLE",
                 f"Aerial RL  ·  {_TASK_TITLES.get(_dash_task, _dash_task or 'PPO')}",
