@@ -33,9 +33,13 @@ class NavRLBarsEnvCfg:
 
         use_warp = True  # required for the warp LiDAR
 
-        # Guarantee the bars never overlap and keep a clear gap between them: minimum XY
-        # center-to-center distance. Bars are up to 0.8 m wide, so a 1.5 m center distance leaves
-        # >= 0.7 m clear gap even between two largest neighbours and supports the 150-bar level.
+        # NavRL-style random scatter: sample uniform XY positions and reject candidates that violate
+        # a minimum center-to-center distance. At high density the placement relaxes this threshold
+        # by 0.8 after repeated failed attempts, matching NavRL's "do not stall when saturated"
+        # behavior while avoiding the visible row/column artifact of the old jittered grid.
+        obstacle_placement_mode = "random"
+        obstacle_placement_attempts_before_relax = 128
+        obstacle_placement_relax_factor = 0.8
         min_obstacle_xy_spacing = 1.5
 
         # Fixed 24 x 24 x 3 m arena (min == max so every env is identical). Ground-referenced:

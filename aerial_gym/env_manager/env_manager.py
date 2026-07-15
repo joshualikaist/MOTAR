@@ -268,6 +268,11 @@ class EnvManager(BaseManager):
             self.global_tensor_dict,
             self.keep_in_env,
             min_xy_spacing=getattr(self.cfg.env, "min_obstacle_xy_spacing", 0.0),
+            placement_mode=getattr(self.cfg.env, "obstacle_placement_mode", "grid"),
+            placement_attempts_before_relax=getattr(
+                self.cfg.env, "obstacle_placement_attempts_before_relax", 128
+            ),
+            placement_relax_factor=getattr(self.cfg.env, "obstacle_placement_relax_factor", 0.8),
         )
         self.asset_manager.prepare_for_sim()
         self.robot_manager.prepare_for_sim(self.global_tensor_dict)
