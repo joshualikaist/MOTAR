@@ -184,6 +184,11 @@ class NavRLTask(BaseTask):
             tensor = self.obs_dict.get(key, None)
             if tensor is not None and len(tensor.shape) >= 2:
                 return int(tensor.shape[1])
+        logger.warning(
+            "NavRL density | obstacle-state tensor not found in obs_dict "
+            "(tried obstacle_position, env_asset_state_tensor) -> max_bars=0. Density control is "
+            "INERT (0 bars active); check the env build / obs key names."
+        )
         return 0
 
     def _initial_active_bars(self):
@@ -590,17 +595,19 @@ class NavRLTask(BaseTask):
         # only promotes the optional Phase-2 density curriculum.
         if self.density is None or not getattr(self.density, "use_density_curriculum", False):
             return
+        # Gate on warmup FIRST so the capture accumulators only collect POST-warmup episodes.
+        # Accumulating during warmup (early low-capture training) would make the first promotion check
+        # use a lifetime average dragged below threshold and stall the first promotion by one window.
+        horizon = int(getattr(self.cur, "ppo_horizon", 1))
+        warmup_steps = int(getattr(self.density, "warmup_epochs", 0)) * max(1, horizon)
+        if self.num_task_steps < warmup_steps:
+            return
         n_fin = int(torch.sum(finished).item())
         if n_fin <= 0:
             return
 
         self._density_succ_agg += int(torch.sum(successes).item())
         self._density_fin_agg += n_fin
-
-        horizon = int(getattr(self.cur, "ppo_horizon", 1))
-        warmup_steps = int(getattr(self.density, "warmup_epochs", 0)) * max(1, horizon)
-        if self.num_task_steps < warmup_steps:
-            return
 
         check_after = max(1, int(getattr(self.density, "check_after_episodes", 2048)))
         if self._density_fin_agg < check_after:
