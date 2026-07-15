@@ -273,6 +273,9 @@ class EnvManager(BaseManager):
                 self.cfg.env, "obstacle_placement_attempts_before_relax", 128
             ),
             placement_relax_factor=getattr(self.cfg.env, "obstacle_placement_relax_factor", 0.8),
+            placement_candidate_batch_size=getattr(
+                self.cfg.env, "obstacle_placement_candidate_batch_size", 32
+            ),
         )
         self.asset_manager.prepare_for_sim()
         self.robot_manager.prepare_for_sim(self.global_tensor_dict)

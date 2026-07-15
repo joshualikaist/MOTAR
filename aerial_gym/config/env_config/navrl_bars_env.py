@@ -40,6 +40,7 @@ class NavRLBarsEnvCfg:
         obstacle_placement_mode = "random"
         obstacle_placement_attempts_before_relax = 128
         obstacle_placement_relax_factor = 0.8
+        obstacle_placement_candidate_batch_size = 32
         min_obstacle_xy_spacing = 1.5
 
         # Fixed 24 x 24 x 3 m arena (min == max so every env is identical). Ground-referenced:

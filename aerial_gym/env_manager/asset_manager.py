@@ -17,6 +17,7 @@ class AssetManager:
         placement_mode="grid",
         placement_attempts_before_relax=128,
         placement_relax_factor=0.8,
+        placement_candidate_batch_size=32,
     ):
         # min_xy_spacing > 0 enforces a minimum ground-plane (XY) center-to-center distance
         # between the kept obstacles so they never overlap. Default 0.0 = off (unchanged behavior).
@@ -26,6 +27,7 @@ class AssetManager:
         self.placement_relax_factor = float(placement_relax_factor)
         if self.placement_relax_factor <= 0.0 or self.placement_relax_factor >= 1.0:
             self.placement_relax_factor = 0.8
+        self.placement_candidate_batch_size = max(1, int(placement_candidate_batch_size))
         self.init_tensors(global_tensor_dict, num_keep_in_env)
 
     def init_tensors(self, global_tensor_dict, num_keep_in_env):
@@ -47,6 +49,15 @@ class AssetManager:
     def prepare_for_sim(self):
         self.reset(self.num_keep_in_env)
         logger.warning(f"Number of obstacles to be kept in the environment: {self.num_keep_in_env}")
+        logger.warning(
+            "Obstacle placement | mode=%s min_xy_spacing=%.3f relax_factor=%.3f candidate_batch=%d"
+            % (
+                self.placement_mode,
+                self.min_xy_spacing,
+                self.placement_relax_factor,
+                self.placement_candidate_batch_size,
+            )
+        )
 
     def pre_physics_step(self, actions):
         pass
@@ -158,8 +169,10 @@ class AssetManager:
 
     def _random_rejection_xy_spacing(self, positions, num_used, env_ids):
         """NavRL-style random scatter: sample uniform XY positions and reject candidates that are
-        too close to already placed obstacles. If the local field is saturated, progressively relax
-        the spacing so high-density runs do not stall, mirroring NavRL's obstacle placement trick.
+        too close to already placed obstacles. Candidates are drawn in small batches to avoid the
+        slow one-candidate-at-a-time Python loop at high density. If the local field is saturated,
+        progressively relax the spacing so high-density runs do not stall, mirroring NavRL's
+        obstacle placement trick.
         """
         num_assets = positions.shape[1]
         n = int(min(num_used, num_assets))
@@ -176,31 +189,43 @@ class AssetManager:
         placed_y = torch.empty((num_envs, n), device=device)
         min_dist = torch.full((num_envs,), self.min_xy_spacing, device=device)
         relax_factor = min(max(self.placement_relax_factor, 0.0), 1.0)
+        batch = self.placement_candidate_batch_size
 
         for k in range(n):
+            if k == 0:
+                placed_x[:, 0] = bx0 + width * torch.rand(num_envs, device=device)
+                placed_y[:, 0] = by0 + height * torch.rand(num_envs, device=device)
+                continue
+
             pending = torch.ones(num_envs, dtype=torch.bool, device=device)
             attempts = torch.zeros(num_envs, dtype=torch.int32, device=device)
             while pending.any():
                 idx = pending.nonzero(as_tuple=False).squeeze(-1)
-                cand_x = bx0[idx] + width[idx] * torch.rand(len(idx), device=device)
-                cand_y = by0[idx] + height[idx] * torch.rand(len(idx), device=device)
-                if k == 0:
-                    valid = torch.ones(len(idx), dtype=torch.bool, device=device)
-                else:
-                    dx = placed_x[idx, :k] - cand_x.unsqueeze(1)
-                    dy = placed_y[idx, :k] - cand_y.unsqueeze(1)
-                    nearest_sq = (dx * dx + dy * dy).min(dim=1).values
-                    valid = nearest_sq >= min_dist[idx].pow(2)
+                local_n = len(idx)
+                cand_x = bx0[idx].unsqueeze(1) + width[idx].unsqueeze(1) * torch.rand(
+                    local_n, batch, device=device
+                )
+                cand_y = by0[idx].unsqueeze(1) + height[idx].unsqueeze(1) * torch.rand(
+                    local_n, batch, device=device
+                )
+                dx = placed_x[idx, :k].unsqueeze(1) - cand_x.unsqueeze(2)
+                dy = placed_y[idx, :k].unsqueeze(1) - cand_y.unsqueeze(2)
+                nearest_sq = (dx * dx + dy * dy).min(dim=2).values
+                valid = nearest_sq >= min_dist[idx].pow(2).unsqueeze(1)
+                has_valid = valid.any(dim=1)
+                first_valid = valid.to(torch.int64).argmax(dim=1)
 
-                accepted = idx[valid]
+                accepted = idx[has_valid]
                 if len(accepted) > 0:
-                    placed_x[accepted, k] = cand_x[valid]
-                    placed_y[accepted, k] = cand_y[valid]
+                    local = torch.arange(local_n, device=device)[has_valid]
+                    chosen = first_valid[has_valid]
+                    placed_x[accepted, k] = cand_x[local, chosen]
+                    placed_y[accepted, k] = cand_y[local, chosen]
                     pending[accepted] = False
 
-                rejected = idx[~valid]
+                rejected = idx[~has_valid]
                 if len(rejected) > 0:
-                    attempts[rejected] += 1
+                    attempts[rejected] += batch
                     relax = attempts[rejected] >= self.placement_attempts_before_relax
                     if relax.any():
                         relax_ids = rejected[relax]
