@@ -19,8 +19,11 @@ from aerial_gym.config.sim_config.base_sim_config import BaseSimConfig
 class BaseSim4GBConfig(BaseSimConfig):
     class sim(BaseSimConfig.sim):
         class physx(BaseSimConfig.sim.physx):
-            # ~1M contact pairs is ample for the few dozen envs a 4 GB card runs; the
-            # 2**24 default is sized for 8000+ envs and by itself exhausts 4 GB of VRAM.
-            max_gpu_contact_pairs = 2**20
+            # Caps the PhysX GPU aggregate/contact-pair capacity. The 2**24 default is sized
+            # for 8000+ envs and by itself exhausts 4 GB of VRAM. 2**22 (~4.2M pairs) is 4x
+            # smaller yet still covers a dense arena (e.g. 192 envs x 150 built bars needs
+            # ~1.14M aggregate pairs); 2**20 overflowed there -> PhysX "increase
+            # totalAggregatePairsCapacity" + a warp illegal-memory crash.
+            max_gpu_contact_pairs = 2**22
             # 10x -> 2x PhysX default buffers keeps the GPU allocation within 4 GB.
             default_buffer_size_multiplier = 2
