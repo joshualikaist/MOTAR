@@ -208,6 +208,7 @@
 - **막대 16 → 48개** (`bar_asset_params.num_assets`), ~8/100 m²(NavRL ~22/100 m²보다 희소 — VRAM.
   참고: RESEARCH_PLAN의 "2.2/100 m²"는 10배 오타, 실제 NavRL은 ~22). spacing 1.3 → 1.8.
 - **에피소드 150 → 250 스텝** (18 m 목표: 직선 ~90, 위빙 ~150+ 스텝이라 타임아웃이 실패요인 안 되게).
+  (→ 이후 `episode_len_steps=300`으로 상향(24 m cross-field 대각 goal 대응) — config가 현재 최신값.)
 
 ### 새 학습 시작
 - run `ppo_260713_2210_navrl` (256 env, 48 장애물 확인, fresh weights, 6000 epoch) 시작됨.
@@ -218,6 +219,7 @@
 
 ### 남은 정리(TODO)
 - 최종 요약기(`run_summary.json`/콘솔)를 navrl 지표(captured/crash/timeout/closest/curriculum)로 교체.
+  (→ 이후 완료: `train_run_recorder.py`에 `is_navrl` 분기 + `_build_navrl_hints` + navrl 요약 박스/density bars 필드.)
 - 위 리워드/환경 변경은 전부 **미커밋 working tree** — `git diff` 검토 후 커밋. (→ 이후 커밋됨 `be701eb`)
 
 ---
@@ -265,4 +267,26 @@ Phase 1을 정직한 난이도로 재설계하고, 잔여 충돌의 진짜 원�
   `bootstrap_second_machine.sh` + `SETUP_SECOND_MACHINE.md`(urdfpy 직접 clone·rsync 회수).
 - `RESEARCH_PLAN.md`·`ROADMAP.md`를 repo 안으로 이동(전엔 repo 밖이라 clone에 안 왔음). 콘솔 박스·progress
   로그에 run 이름 표시. 옛 run 24개 요약 후 삭제(`RUNS_ARCHIVE_SUMMARY.md`). upstream 원격 제거.
+
+### ★ 막대 배치 방식 전환: 지터드 격자 → NavRL식 랜덤 rejection (커밋 `54d7cfe` + `10708e2`, 20:26~20:35)
+- **변경**: `asset_manager.py`에 `_random_rejection_xy_spacing` 추가 + env config에 `obstacle_placement_mode`
+  스위치. `navrl_bars_env.py`가 `mode="random"`으로 전환(밴드 균등 스캐터 + 최소간격 rejection, 포화 시
+  128회 실패마다 간격 ×0.8 완화 = NavRL "do not stall when saturated" 트릭). 후보를 32개씩 배치 샘플링해
+  파이썬 per-candidate 루프 회피(GPU 벡터화).
+- **이유**: 격자는 min-spacing을 결정론적으로 보장하지만 **눈에 보이는 행/열 아티팩트**가 있어 밀도 실험의
+  일반성을 해침. NavRL 원본이 랜덤 스캐터라 사양 충실도도 ↑. **opt-in**(env config에서 `mode` 지정, 기본
+  `grid`)이라 타 환경 무영향. 07-10에 "rejection→격자로 전환(사용자 승인)"했던 결정을 **뒤집은 것**:
+  당시 실패 원인(16개@1.3m 균등)은 완화 로직 + GPU 배치로 해소됨.
+- **⚠️ 스윕 교란 주의**: run `1552`(150막대, **격자**, captured 0.85)·`1922`(75막대, 격자, 중단)는 **옛 격자**
+  결과라 새 랜덤 배치 run과 **직접 비교 불가**. 배치 방식이 밀도-성능 곡선(RQ1)의 교란변수가 됨.
+  → run `2038`(150막대, **랜덤**, seed 1) = 새 배치 기준의 150막대 재-baseline. **나머지 밀도{25,50,75,110}도
+  전부 랜덤 배치로 재실행해야 한 곡선 안에서 비교 가능** (격자 데이터포인트는 폐기).
+
+### 2026-07-15 문서 정합성 리뷰 결과
+- **밀도 분모 통일 완료**: 실제 배치 밴드 x-ratio[0.13,0.96]×y[0,1] = **약 478 m²** 기준으로
+  `RESEARCH_PLAN.md`를 갱신. 48→10.0, 75→15.7, 150→31.4 /100m².
+- **VRAM 안내 수정 완료**: 150막대+256env≈6.1GB 실측에 따라 고밀도에서도 256 env 유지 가능하다고 명시.
+- **episode 길이 정정 완료**: 실제 config 최신값 `episode_len_steps=300`을 07-13 기록에 후속 표기.
+- (코드 소소) `navrl_task._clamp_active_bars`/`_set_active_bars` int-cast 중복, `train_run_recorder`가 navrl run에도
+  옛 intercept 컬럼(near_miss/surface_gap 등)을 빈칸으로 계속 기록 — 동작엔 무해, 정리 여지.
 - 문서 전반 옛 스킴 흔적(10×10·16막대·150스텝 등) → 현재 스킴으로 동기화.
