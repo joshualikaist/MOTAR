@@ -129,6 +129,12 @@ flattens the scan). Both run 6000 epochs.
 - **Phase 1 target (M1):** `navrl/captured_rate` ≥ 0.9 while the goal-distance
   curriculum (`curriculum max (m)`) has expanded toward its far-wall ceiling (k_max → 24 m). Check these in
   the console box or in TensorBoard (next section).
+- **Status — Phase 1 ✅ met (2026-07-15):** `captured 0.95 / crash 0.05` with **learned yaw control**
+  (the drone steers its heading along travel so its 0.28 m body — not its 0.40 m diagonal — leads through
+  gaps; action is now 4-D = 3-D velocity + yaw-rate). Beats NavRL's 0.81. Full history in `WORKLOG.md`.
+- **Phase 2 (obstacle-density sweep) in progress:** set the active bar count via env vars, e.g.
+  `NAVRL_MAX_BARS=150 NAVRL_NUM_BARS=150 NUM_ENVS=256 ./train_navrl.sh` (150 bars ≈ 26/100 m² ≈ NavRL
+  density, fits 8 GB at ~6.1 GB). First point: 150 bars → captured 0.85. See `RESEARCH_PLAN.md` Phase 2.
 
 #### Monitoring training — TensorBoard + console metrics
 

@@ -106,14 +106,14 @@ r = r_vel + 1.0(alive) + 1.0·r_ss + 1.0·r_ds − 0.1·r_smooth − 8.0·r_heig
 - [ ] wandb(권장) 또는 tensorboard 로깅 규약 결정, 시드 고정 유틸 확인
 - [ ] NavRL `env.py` 정독 (레이캐스트 구현, 동적 장애물 이동 로직, 종료 조건) — 위 팩트 시트 보완
 
-### Phase 1 — 정적 환경 + 정지 표적 ✅ 사실상 완료 (2026-07-14)
+### Phase 1 — 정적 환경 + 정지 표적 ✅ 완료 (2026-07-15, yaw 제어로 captured 0.95)
 목표: NavRL-static을 Aerial Gym에서 재현. 파이프라인 전체(환경→학습→평가→그림)를 한 번 관통. **달성.**
 - `navrl_bars_env.py` (env_config): **24×24×3m** 아레나 + 정적 기둥(bars) **48개 균등 배치**(x[3,22]×y[0,24], ~11개/100m²), **2D 비행 @ 고도 1m**. **스폰: 드론 x≈0(왼쪽 가장자리) → 목표 x=k(먼쪽) = 매 에피소드 막대밭 전체 관통**(옛 방사형/18m 설계 폐기). 커리큘럼: k_max 7→24m 램프 후 full-scale hold, 이어 k_min 5→20m. 드론 충돌 = **0.28m 박스**(팔/프롭 포함, navrl 전용 URDF).
-- `navrl_task.py` (task): S_int(8) + LiDAR 36×4(range 4m) 관측, goal프레임 속도명령 행동, **LiDAR CNN 특징추출기**(`navrl_network.py`).
+- `navrl_task.py` (task): S_int(**12**, vehicle-frame heading 포함) + LiDAR 36×4(range 4m) 관측, goal프레임 속도명령 **+ 학습형 yaw-rate(option b)** 행동, **LiDAR CNN 특징추출기**(`navrl_network.py`).
 - 보상: NavRL 정적 브랜치를 **요격용으로 각색**(NavRL과 의도적 차이) — 캡처 종료 +30, alive를 −0.05 시간비용으로, **B1 안전항 재베이스라인**(개방공간=0, loiter 수입 제거), **PBRS progress**(거리 shaping), collision −20 가드. crash 저감용 safety weight 1.5 + clearance 페널티(옵션).
 - 정책: rl_games PPO (`ppo_navrl_cnn.yaml`), Gaussian+clamp(Beta 미지원, 필요 시 NavRL 순수 torch PPO 포팅 가능).
 - 평가: 성공률(**포획 반경 0.5m 진입**, NavRL env.py 기준)/충돌률/타임아웃/최근접(**crash 제외** 평균+최소)/커리큘럼. 요약기·TB navrl화 완료.
-- **완료 기준 M1(성공률 ≥ 90%)**: 옛 스킴(방사형 18m·비균등 막대·0.05m 구 충돌)에서 **captured 86%(peak 94%), crash 14%**. **현재 새 스킴(cross-field 24m·균등막대·0.28m 박스충돌)으로 재학습 중**(run `ppo_260714_1904`) — 이게 진짜 Phase-1 최종 결과. 상세: `WORKLOG.md`.
+- **완료 기준 M1(성공률 ≥ 90%) → ✅ 달성**: 새 스킴(cross-field 24m·균등막대·0.28m 박스충돌) 진행 = run `1904` 정직 baseline **0.65** → crash 레버 Run D `2207` **0.66**(감속만, 리워드로 안 줄어드는 **기하 바닥** 발견) → **yaw 제어(option b)로 captured 0.954 / crash 0.046**(run `ppo_260715_0251`, k_min=20 최심에서도 0.95). **NavRL 0.81·M1 0.90 모두 상회.** 잔여 crash 원인 = 요-고정 ±30° corner-clip(대각 footprint 0.40m)이었고 yaw 권한(action 3→4)으로 해결. 대조군 브랜치 `ablation/yaw-off`(논문 attribution용). 상세: `WORKLOG.md`.
 
 ### Phase 2 — 정적 밀도 스윕 (1주) → RQ1 전반부 ← **현재 여기**
 - 밀도 정의: **개수/100m²** (NavRL 기준 350개/1600m² ≈ **22개/100m²** — 이전 계획의 "2.2"는 10배 오타)
@@ -121,6 +121,11 @@ r = r_vel + 1.0(alive) + 1.0·r_ss + 1.0·r_ds − 0.1·r_smooth − 8.0·r_heig
 - 커리큘럼 학습 vs 고정 밀도 학습 비교 (NavRL Table I 재현 성격)
 - 일반화 매트릭스: 학습 밀도 A → 평가 밀도 B (교차 평가)
 - **완료 기준 M2**: 밀도–성능 곡선 + 커리큘럼 효과 그림
+- **진행(2026-07-15)**: 밀도 배관 완료(`NAVRL_MAX_BARS`/`NAVRL_NUM_BARS`, `keep_in_env=False`로 런타임 활성수
+  제어; 커밋 `7e1b6a8`+`0aed4be`). 실제 sweep = 막대수 {25, 50, 75, 110, 150}개 = {4.3, 8.7, 13, 19, 26}개/100m².
+  **VRAM 스크리닝: 150막대+256env ≈ 6.1GB → num_envs 256 그대로 가능**(위 "128 이하로 낮춰야" 우려는 해소됨).
+  첫 데이터포인트: **150막대(≈26/100m², NavRL 밀도) → captured 0.85**(run `ppo_260715_1552`, NavRL 0.81 상회).
+  밀도-성능(RQ1): 48막대 0.95 → 150막대 0.85. 나머지 4레벨 seed 1 진행 중.
 
 > **빌드 순서 (결정): P2 밀도 → P3 이동표적 → P4 동적장애물 → P5 3D → P6 탐지 → P7 논문.**
 > 논문 핵심(밀도×속도 성능지도)은 **P2+P3만으로 완성** → critical path. 기능 간 하드 선후행 없음(모두 P1 정적 정책만 필요). **VRAM은 밀도(P2)만 메시를 늘림** — 이동표적/동적장애물/3D는 전부 VRAM 중립. 3D는 **마지막·격리**(탐색비용↑, 하드설정과 겹치지 말 것). ※ 기존 Phase 3(동적)↔4(표적)를 **스왑**했음.
