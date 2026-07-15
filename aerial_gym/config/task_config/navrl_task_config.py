@@ -1,4 +1,23 @@
+import os
+
 import torch
+
+
+def _env_int(name, default):
+    raw = os.environ.get(name)
+    if raw is None or raw.strip() == "":
+        return int(default)
+    try:
+        return int(raw)
+    except ValueError:
+        return int(default)
+
+
+def _env_bool(name, default=False):
+    raw = os.environ.get(name)
+    if raw is None or raw.strip() == "":
+        return bool(default)
+    return raw.strip().lower() in ("1", "true", "yes", "on")
 
 
 class task_config:
@@ -16,7 +35,8 @@ class task_config:
 
     seed = 42
     sim_name = "base_sim"
-    # Controlled Phase-1 arena: empty space + 48 static bars (no walls/panels). See navrl_bars_env.py.
+    # Controlled arena: empty space + density-controlled static bars (no walls/panels).
+    # See navrl_bars_env.py and class density below.
     env_name = "navrl_bars_env"
     robot_name = "navrl_quad"
     controller_name = "lee_velocity_control_navrl"  # NavRL-scoped: raises yaw-rate clamp pi/3 -> 2.5
@@ -85,6 +105,23 @@ class task_config:
         k_warmup_epochs = 3000   # epochs to ramp k_max from k_start to k_final (linear, then plateau)
         ppo_horizon = 32         # rl_games horizon_length (MUST match ppo_navrl_cnn.yaml) -> steps/epoch
         wall_margin = 0.5        # [m] keep drone/goal this far from the y walls
+
+    # Phase 2 density sweep: obstacle size stays fixed; only the active bar count changes.
+    # NAVRL_MAX_BARS controls the build-time ceiling in env_object_config.py.
+    class density:
+        use_density_curriculum = _env_bool("NAVRL_DENSITY_CURRICULUM", False)
+        num_bars_active = _env_int("NAVRL_NUM_BARS", 48)
+        n_start = 25
+        n_final = 150
+        success_threshold = 0.8
+        promote_step = 15
+        warmup_epochs = 2500
+        check_after_episodes = 2048
+
+    class eval:
+        densities = [25, 50, 75, 110, 150]
+        episodes_per_condition = 500
+        seeds = [1, 2, 3, 4, 5]
 
     # Fallback goal placement (curriculum OFF): ratio of the environment bounds.
     target_min_ratio = [0.85, 0.10, 0.30]

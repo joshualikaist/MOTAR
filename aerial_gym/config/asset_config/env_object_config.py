@@ -1,5 +1,6 @@
 from aerial_gym import AERIAL_GYM_DIRECTORY
 
+import os
 import numpy as np
 
 THIN_SEMANTIC_ID = 1
@@ -12,6 +13,16 @@ LEFT_WALL_SEMANTIC_ID = 11
 RIGHT_WALL_SEMANTIC_ID = 12
 BOTTOM_WALL_SEMANTIC_ID = 13
 TOP_WALL_SEMANTIC_ID = 14
+
+
+def _env_int(name, default):
+    raw = os.environ.get(name)
+    if raw is None or raw.strip() == "":
+        return int(default)
+    try:
+        return int(raw)
+    except ValueError:
+        return int(default)
 
 
 class asset_state_params:
@@ -670,12 +681,9 @@ class bar_asset_params(asset_state_params):
     NavRLBarsEnvCfg.env.min_obstacle_xy_spacing (a minimum center-to-center XY distance).
     """
 
-    # 48 bars spread ~uniformly across the arena (x-ratio 0.09-0.96, y-ratio 0->1) EXCEPT a ~3 m
-    # drone-spawn corridor on the left (x-ratio starts at 0.09 so the drone at x~0 never spawns in a
-    # bar). Covered region ~x[3,22] x y[1,23] -> ~11 bars / 100 m^2. Sparser than NavRL's density
-    # (350 bars / 1600 m^2 ~= 22 / 100 m^2; the RESEARCH_PLAN "2.2/100m2" figure is a 10x typo) to
-    # keep warp-LiDAR VRAM in budget on 8 GB; raise num_assets toward NavRL density if desired.
-    num_assets = 48
+    # Build-time ceiling for the density sweep. Runtime active bars are controlled by
+    # task_config.density / NAVRL_NUM_BARS; inactive bars are moved to -1000 by AssetManager.
+    num_assets = max(0, _env_int("NAVRL_MAX_BARS", 150))
 
     asset_folder = f"{AERIAL_GYM_DIRECTORY}/resources/models/environment_assets/bars"
     file = None  # random pick from the pool -> each bar gets a random footprint
@@ -686,7 +694,7 @@ class bar_asset_params(asset_state_params):
     # x band starts past the drone spawn strip (drone x-ratio ~0, x <~ 1); z fixed at 1/3 -> bar center
     # 1 m -> stands 0..2 m; upright (no roll/pitch/yaw).
     min_state_ratio = [
-        0.09,
+        0.13,
         0.0,
         0.3333,
         0.0,
@@ -716,7 +724,7 @@ class bar_asset_params(asset_state_params):
         0.0,
     ]
 
-    keep_in_env = True
+    keep_in_env = False
 
     collapse_fixed_joints = True
     per_link_semantic = False

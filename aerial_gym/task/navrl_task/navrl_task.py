@@ -126,6 +126,21 @@ class NavRLTask(BaseTask):
 
         # --- shared views into the environment tensors
         self.obs_dict = self.sim_env.get_obs()
+        self.density = getattr(self.task_config, "density", None)
+        self.max_bars_available = self._get_max_bars_available()
+        initial_bars_requested = self._initial_active_bars()
+        self.n_bars_active = 0
+        self._density_succ_agg = 0
+        self._density_fin_agg = 0
+        self._set_active_bars(initial_bars_requested)
+        logger.warning(
+            "NavRL density | active_bars=%d max_bars=%d curriculum=%s"
+            % (
+                self.n_bars_active,
+                self.max_bars_available,
+                bool(getattr(self.density, "use_density_curriculum", False)),
+            )
+        )
         self.terminations = self.obs_dict["crashes"]
         self.truncations = self.obs_dict["truncations"]
         self.rewards = torch.zeros(self.num_envs, device=self.device)
@@ -164,19 +179,61 @@ class NavRLTask(BaseTask):
         self._nc_agg = 0         # count of non-crash finished episodes
         self._closest_min = None  # best (min) closest approach in the window
 
+    def _get_max_bars_available(self):
+        for key in ("obstacle_position", "env_asset_state_tensor"):
+            tensor = self.obs_dict.get(key, None)
+            if tensor is not None and len(tensor.shape) >= 2:
+                return int(tensor.shape[1])
+        return 0
+
+    def _initial_active_bars(self):
+        if self.density is None:
+            requested = self.max_bars_available
+        elif getattr(self.density, "use_density_curriculum", False):
+            requested = getattr(self.density, "n_start", self.max_bars_available)
+        else:
+            requested = getattr(self.density, "num_bars_active", self.max_bars_available)
+        return requested
+
+    def _clamp_active_bars(self, n_bars):
+        try:
+            requested = int(n_bars)
+        except (TypeError, ValueError):
+            requested = 0
+        return min(max(0, requested), self.max_bars_available)
+
+    def _set_active_bars(self, n_bars, log=True):
+        try:
+            requested = int(n_bars)
+        except (TypeError, ValueError):
+            requested = 0
+        clamped = self._clamp_active_bars(requested)
+        if log and clamped != requested:
+            logger.warning(
+                "Requested %d active bars but only %d were built; using %d."
+                % (requested, self.max_bars_available, clamped)
+            )
+        self.n_bars_active = clamped
+        self.obs_dict["num_obstacles_in_env"] = clamped
+        return clamped
+
     def close(self):
         self.sim_env.delete_env()
 
     # ------------------------------------------------------------------ checkpoint state
     def get_env_state(self):
-        """Saved into the rl_games checkpoint ('env_state') so the epoch-proportional curriculum
-        survives a --checkpoint resume. num_task_steps is otherwise in-memory and would restart at 0,
-        resetting k_max/k_min to the easy start."""
-        return {"num_task_steps": int(self.num_task_steps)}
+        """Saved into the rl_games checkpoint ('env_state') so the epoch-proportional goal
+        curriculum and optional density curriculum survive a --checkpoint resume."""
+        return {
+            "num_task_steps": int(self.num_task_steps),
+            "n_bars_active": int(self.n_bars_active),
+        }
 
     def set_env_state(self, state):
         if isinstance(state, dict) and state.get("num_task_steps") is not None:
             self.num_task_steps = int(state["num_task_steps"])
+        if isinstance(state, dict) and state.get("n_bars_active") is not None:
+            self._set_active_bars(state["n_bars_active"])
 
     # ------------------------------------------------------------------ reset
     def reset(self):
@@ -320,7 +377,7 @@ class NavRLTask(BaseTask):
 
         finished = (self.terminations > 0) | (self.truncations > 0)
         self._log_progress(successes, crashes, timeouts, finished)
-        self._update_curriculum(finished)
+        self._update_curriculum(successes, finished)
         self._record_epoch_dashboard(successes, crashes, timeouts, finished)
 
         if self.task_config.return_state_before_reset:
@@ -528,10 +585,46 @@ class NavRLTask(BaseTask):
         k_min = self.cur.k_min + (k_min_final - self.cur.k_min) * frac
         return min(k_min, self._goal_x_max() - 1.0)
 
-    def _update_curriculum(self, finished):
-        # The curriculum is now epoch-proportional (goal-x ceiling via _goal_x_max, applied in
-        # reset_idx), so there is nothing to update per finished episode. Kept for the step() hook.
-        return
+    def _update_curriculum(self, successes, finished):
+        # Goal-distance curriculum stays epoch-proportional via _goal_x_max/_goal_x_min. This hook
+        # only promotes the optional Phase-2 density curriculum.
+        if self.density is None or not getattr(self.density, "use_density_curriculum", False):
+            return
+        n_fin = int(torch.sum(finished).item())
+        if n_fin <= 0:
+            return
+
+        self._density_succ_agg += int(torch.sum(successes).item())
+        self._density_fin_agg += n_fin
+
+        horizon = int(getattr(self.cur, "ppo_horizon", 1))
+        warmup_steps = int(getattr(self.density, "warmup_epochs", 0)) * max(1, horizon)
+        if self.num_task_steps < warmup_steps:
+            return
+
+        check_after = max(1, int(getattr(self.density, "check_after_episodes", 2048)))
+        if self._density_fin_agg < check_after:
+            return
+
+        capture_rate = self._density_succ_agg / max(1, self._density_fin_agg)
+        threshold = float(getattr(self.density, "success_threshold", 0.8))
+        final_bars = self._clamp_active_bars(getattr(self.density, "n_final", self.n_bars_active))
+        if capture_rate >= threshold and self.n_bars_active < final_bars:
+            step = max(1, int(getattr(self.density, "promote_step", 15)))
+            old_bars = self.n_bars_active
+            self._set_active_bars(min(final_bars, old_bars + step))
+            logger.warning(
+                "NavRL density curriculum promoted | bars %d -> %d after %d eps, capture=%.3f"
+                % (old_bars, self.n_bars_active, self._density_fin_agg, capture_rate)
+            )
+        else:
+            logger.info(
+                "NavRL density curriculum held | bars=%d capture=%.3f over %d eps"
+                % (self.n_bars_active, capture_rate, self._density_fin_agg)
+            )
+
+        self._density_succ_agg = 0
+        self._density_fin_agg = 0
 
     def _record_epoch_dashboard(self, successes, crashes, timeouts, finished):
         """Feed finished-episode outcomes to the per-epoch train dashboard (console + TB)."""
@@ -555,6 +648,7 @@ class NavRLTask(BaseTask):
             closest_min=closest_min,
             goal_dist_max=self.cur_goal_dist_max if self.cur.use_curriculum else None,
             goal_dist_min=self.cur_goal_dist_min if self.cur.use_curriculum else None,
+            n_bars_active=self.n_bars_active,
         )
 
     def _log_progress(self, successes, crashes, timeouts, finished=None):

@@ -57,6 +57,7 @@ _CSV_FIELDS = (
     "closest_approach_m",
     "closest_min_m",
     "curriculum_max_m",
+    "n_bars_active",
 )
 
 
@@ -123,6 +124,7 @@ class EpochRow:
     closest_approach_m: Optional[float] = None  # mean over NON-CRASH finished episodes
     closest_min_m: Optional[float] = None  # best (min) closest approach
     curriculum_max_m: Optional[float] = None
+    n_bars_active: Optional[int] = None
 
 
 @dataclass
@@ -164,6 +166,7 @@ class RunDiagnostics:
     last_closest_approach_m: Optional[float] = None  # mean over non-crash episodes
     last_closest_min_m: Optional[float] = None
     last_curriculum_max_m: Optional[float] = None
+    last_n_bars_active: Optional[int] = None
     peak_captured_rate: Optional[float] = None
     peak_captured_epoch: Optional[int] = None
     hints: list[str] = field(default_factory=list)
@@ -215,6 +218,7 @@ class TrainRunRecorder:
                         closest_approach_m=_f(raw.get("closest_approach_m")),
                         closest_min_m=_f(raw.get("closest_min_m")),
                         curriculum_max_m=_f(raw.get("curriculum_max_m")),
+                        n_bars_active=_i_opt(raw.get("n_bars_active")),
                     )
                 )
 
@@ -259,6 +263,7 @@ class TrainRunRecorder:
             closest_approach_m=_f(extra.get("navrl/closest_nocrash_m")),
             closest_min_m=_f(extra.get("navrl/closest_min_m")),
             curriculum_max_m=_f(extra.get("navrl/curriculum_goal_dist_max_m")),
+            n_bars_active=_i_opt(extra.get("navrl/n_bars_active")),
         )
         # Replace same epoch on resume overlap
         self._rows = [r for r in self._rows if r.epoch != row.epoch]
@@ -296,6 +301,7 @@ class TrainRunRecorder:
                         "closest_approach_m": _cell(r.closest_approach_m),
                         "closest_min_m": _cell(r.closest_min_m),
                         "curriculum_max_m": _cell(r.curriculum_max_m),
+                        "n_bars_active": _cell(r.n_bars_active),
                     }
                 )
 
@@ -373,6 +379,7 @@ class TrainRunRecorder:
             diag.last_closest_approach_m = last_nav.closest_approach_m
             diag.last_closest_min_m = last_nav.closest_min_m
             diag.last_curriculum_max_m = last_nav.curriculum_max_m
+            diag.last_n_bars_active = last_nav.n_bars_active
             peak_nav = max(nav_rows, key=lambda r: r.captured_rate or float("-inf"))
             diag.peak_captured_rate = peak_nav.captured_rate
             diag.peak_captured_epoch = peak_nav.epoch
@@ -411,6 +418,15 @@ def _i(v: Any) -> int:
         return int(float(v))
     except (TypeError, ValueError):
         return 0
+
+
+def _i_opt(v: Any) -> Optional[int]:
+    if v is None or v == "":
+        return None
+    try:
+        return int(float(v))
+    except (TypeError, ValueError):
+        return None
 
 
 def _cell(v: Optional[float]) -> str:
@@ -589,6 +605,7 @@ def print_run_summary_box(
             f"  closest (no crash): {_fmt(diag.last_closest_approach_m, 'm')}"
             f"   best {_fmt(diag.last_closest_min_m, 'm')}",
             f"  curriculum max    : {_fmt(diag.last_curriculum_max_m, 'm')}",
+            f"  density bars      : {_or_na(diag.last_n_bars_active)}",
         ]
     else:
         lines += [

@@ -24,6 +24,7 @@ _CLOSEST_NC_COUNT = 0
 _CLOSEST_MIN: Optional[float] = None  # best (min) closest approach over non-crash episodes
 _GOAL_DIST_MAX: Optional[float] = None
 _GOAL_DIST_MIN: Optional[float] = None
+_N_BARS_ACTIVE: Optional[int] = None
 
 
 def record_navrl_epoch_episodes(
@@ -37,9 +38,11 @@ def record_navrl_epoch_episodes(
     closest_min: Optional[float],
     goal_dist_max: Optional[float] = None,
     goal_dist_min: Optional[float] = None,
+    n_bars_active: Optional[int] = None,
 ) -> None:
     global _DONE, _REACHED, _SUCC_TIMEOUT, _CRASH, _TIMEOUT
     global _CLOSEST_NC_SUM, _CLOSEST_NC_COUNT, _CLOSEST_MIN, _GOAL_DIST_MAX, _GOAL_DIST_MIN
+    global _N_BARS_ACTIVE
     if num_finished <= 0:
         return
     _DONE += int(num_finished)
@@ -56,12 +59,15 @@ def record_navrl_epoch_episodes(
         _GOAL_DIST_MAX = float(goal_dist_max)
     if goal_dist_min is not None:
         _GOAL_DIST_MIN = float(goal_dist_min)
+    if n_bars_active is not None:
+        _N_BARS_ACTIVE = int(n_bars_active)
 
 
 def consume_navrl_epoch_summary() -> Tuple[List[str], dict, int]:
     """Return (dashboard lines, TensorBoard scalars {navrl/<name>: value}, episodes done)."""
     global _DONE, _REACHED, _SUCC_TIMEOUT, _CRASH, _TIMEOUT
     global _CLOSEST_NC_SUM, _CLOSEST_NC_COUNT, _CLOSEST_MIN, _GOAL_DIST_MAX, _GOAL_DIST_MIN
+    global _N_BARS_ACTIVE
     done = _DONE
     succ = _SUCC_TIMEOUT
     crash = _CRASH
@@ -70,6 +76,7 @@ def consume_navrl_epoch_summary() -> Tuple[List[str], dict, int]:
     closest_min = _CLOSEST_MIN
     goal_dist_max = _GOAL_DIST_MAX
     goal_dist_min = _GOAL_DIST_MIN
+    n_bars_active = _N_BARS_ACTIVE
     _DONE = _REACHED = _SUCC_TIMEOUT = _CRASH = _TIMEOUT = 0
     _CLOSEST_NC_SUM = 0.0
     _CLOSEST_NC_COUNT = 0
@@ -92,6 +99,8 @@ def consume_navrl_epoch_summary() -> Tuple[List[str], dict, int]:
     if goal_dist_max is not None:
         gmin = f"{goal_dist_min:.1f}" if goal_dist_min is not None else "?"
         lines.append(f"curriculum (m)       : k_min {gmin}, k_max {goal_dist_max:.1f}")
+    if n_bars_active is not None:
+        lines.append(f"density bars        : {n_bars_active}")
 
     # Interception mode: reach_rate == captured_rate (touching the radius ends the episode),
     # so only captured_rate is logged. crash/timeout/captured partition every finished episode.
@@ -108,4 +117,6 @@ def consume_navrl_epoch_summary() -> Tuple[List[str], dict, int]:
         metrics["navrl/curriculum_goal_dist_max_m"] = goal_dist_max
     if goal_dist_min is not None:
         metrics["navrl/curriculum_goal_dist_min_m"] = goal_dist_min
+    if n_bars_active is not None:
+        metrics["navrl/n_bars_active"] = n_bars_active
     return (lines, metrics, done)
