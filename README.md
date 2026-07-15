@@ -38,23 +38,44 @@ workspace root for a top-down view.
 | [Isaac Gym Preview 4](https://developer.nvidia.com/isaac-gym) | 1.0rc4, unpacked to `~/isaacgym` |
 | Conda | Miniconda / Anaconda |
 
-### 2. One-time environment setup
+### 2. Get the code + set up the environment
+
+The workspace is **two repos side by side**: this one (`aerial_gym_simulator`) plus the
+`urdfpy` it depends on. Clone both under one `src/` folder.
+
+**⚡ Fastest path — one script.** After §1 (conda installed + Isaac Gym unpacked to
+`~/isaacgym`):
 
 ```bash
-# (a) Create and activate a Python 3.8 conda env
+mkdir -p ~/workspaces/aerial_gym_ws/src && cd ~/workspaces/aerial_gym_ws/src
+git clone -b research/navrl-env git@github.com:joshualikaist/MOTAR.git aerial_gym_simulator
+cd aerial_gym_simulator && ./bootstrap_second_machine.sh
+```
+
+`bootstrap_second_machine.sh` clones `urdfpy`, creates the `aerialgym` conda env, and
+pip-installs Isaac Gym + this repo + rl_games + warp + urdfpy, then runs a smoke test.
+(Override the Isaac Gym path with `ISAACGYM_PATH=/path ./bootstrap_second_machine.sh`.)
+
+**Manual — exactly what the script does**, if you prefer step by step:
+
+```bash
+# (a) Get the code: this repo + the urdfpy fork it needs (unmodified upstream mmatl/urdfpy)
+mkdir -p ~/workspaces/aerial_gym_ws/src && cd ~/workspaces/aerial_gym_ws/src
+git clone -b research/navrl-env git@github.com:joshualikaist/MOTAR.git aerial_gym_simulator
+git clone https://github.com/mmatl/urdfpy.git
+
+# (b) Create and activate a Python 3.8 conda env
 conda create -n aerialgym python=3.8 -y
 conda activate aerialgym
 
-# (b) Install Isaac Gym Preview 4 (download from NVIDIA, then:)
+# (c) Install Isaac Gym Preview 4 (downloaded from NVIDIA, unpacked to ~/isaacgym)
 cd ~/isaacgym/python && pip install -e .
 
-# (c) Install this repo (editable) + its deps
-cd <path>/aerial_gym_simulator
+# (d) Install this repo (editable) + its deps + the urdfpy fork
+cd ~/workspaces/aerial_gym_ws/src/aerial_gym_simulator
 pip install -e .
 pip install rl-games==1.6.5 warp-lang==1.0.0
-
-# (d) Install the urdfpy fork used by the simulator
-pip install -e <path>/urdfpy
+pip install -e ../urdfpy
 ```
 
 **Two gotchas that will bite you (already handled on the dev machine):**
@@ -90,7 +111,7 @@ python navrl_task_example.py            # a viewer window opens
 ### 4. Train the navigation policy (PPO, rl_games)
 
 **The exact command to start a training run.** From the repository root
-(`<path>/aerial_gym_simulator`):
+(`~/workspaces/aerial_gym_ws/src/aerial_gym_simulator`):
 
 ```bash
 conda activate aerialgym
@@ -145,7 +166,7 @@ training runs and point TensorBoard at the parent `runs/` folder (install once w
 
 ```bash
 conda activate aerialgym          # tensorboard is installed in this env
-cd <path>/aerial_gym_simulator    # the repository root
+cd ~/workspaces/aerial_gym_ws/src/aerial_gym_simulator    # the repository root
 tensorboard --logdir aerial_gym/rl_training/rl_games/runs --port 6006
 # then open http://localhost:6006 in a browser
 ```
