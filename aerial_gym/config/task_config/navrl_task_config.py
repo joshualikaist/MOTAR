@@ -34,7 +34,10 @@ class task_config:
     """
 
     seed = 42
-    sim_name = "base_sim"
+    # Default "base_sim" (8 GB main machine). A 4 GB secondary machine sets
+    # AERIAL_GYM_SIM_NAME=base_sim_4gb (via GPU4GB=1 ./train_navrl.sh) to shrink the PhysX
+    # GPU buffers so training fits in 4 GB VRAM. See base_sim_4gb_config.py.
+    sim_name = os.environ.get("AERIAL_GYM_SIM_NAME", "base_sim")
     # Controlled arena: empty space + density-controlled static bars (no walls/panels).
     # See navrl_bars_env.py and class density below.
     env_name = "navrl_bars_env"

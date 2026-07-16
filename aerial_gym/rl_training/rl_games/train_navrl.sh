@@ -20,10 +20,24 @@ cd "$(dirname "${BASH_SOURCE[0]}")"
 # AirSim user-site numpy 가 conda numpy 를 가리는 문제 차단 (activate.d 가 이미 설정하지만 이중 안전).
 export PYTHONNOUSERSITE=1
 
+# 4 GB VRAM 보조 머신 프리셋(GPU4GB=1): 세 조각을 한 번에 켠다 —
+#   (1) base_sim_4gb 로 PhysX GPU 버퍼 축소(navrl_task_config 가 AERIAL_GYM_SIM_NAME 을 읽음),
+#   (2) 4gb yaml(PPO 하이퍼파라미터는 3070 과 동일, minibatch=4096), (3) NUM_ENVS 기본 256.
+# NUM_ENVS 기본 256 인 이유: minibatch=4096 은 batch=32*NUM_ENVS>=4096(=NUM_ENVS>=128)를 요구하고,
+# 맨몸(기본 max_bars=150) 으로 4GB 에서 안전한 최대가 256 임(512x150 은 PhysX pair 버퍼 오버플로우로 죽음).
+# density sweep 은 max_bars 25/50 라 가벼워, 3070 과 맞추려 NUM_ENVS=512 를 직접 붙여 돌린다(검증됨 ~2.5GB):
+#   NAVRL_MAX_BARS=50 NAVRL_NUM_BARS=50 NUM_ENVS=512 GPU4GB=1 ./train_navrl.sh
+# GPU4GB 를 세팅하지 않으면 8 GB 메인 머신 동작은 기존 그대로. (개별 변수로 오버라이드 가능.)
+if [ "${GPU4GB:-0}" = "1" ]; then
+    export AERIAL_GYM_SIM_NAME="${AERIAL_GYM_SIM_NAME:-base_sim_4gb}"
+    FILE="${FILE:-ppo_navrl_cnn_4gb.yaml}"
+    NUM_ENVS="${NUM_ENVS:-256}"
+fi
+
 PY="${PYTHON:-python}"                 # 활성화된 conda env 의 python (2번째 머신 이식용, 경로 하드코딩 X)
 FILE="${FILE:-ppo_navrl_cnn.yaml}"     # NavRL LiDAR CNN (권장). MLP 는 ppo_navrl.yaml
 TASK="${TASK:-navrl_task}"
-NUM_ENVS="${NUM_ENVS:-256}"            # 256 envs + 48 bars ≈ 6.8GB (8GB 안전선)
+NUM_ENVS="${NUM_ENVS:-256}"            # 256 envs + 48 bars ≈ 6.8GB (8GB 안전선). 4GB 는 GPU4GB=1 (→256)
 
 mkdir -p runs train_session_logs
 LOG="train_session_logs/train_$(date +%y%m%d_%H%M).log"
