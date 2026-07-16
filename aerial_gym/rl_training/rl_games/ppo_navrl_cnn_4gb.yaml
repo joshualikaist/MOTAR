@@ -1,8 +1,12 @@
 # 4 GB-VRAM variant of ppo_navrl_cnn.yaml for secondary training machines (e.g. GTX 1650 4GB).
-# Only the batch-sizing differs: num_envs/num_actors default to 32 and minibatch_size to 512
-# (rl_games needs minibatch_size <= horizon_length*num_actors; runner.py sets num_actors=NUM_ENVS
-# but does NOT rescale minibatch_size). Pair with base_sim_4gb (shrunk PhysX GPU buffers) via
-# GPU4GB=1 ./train_navrl.sh. Network/PPO hyperparameters are identical to ppo_navrl_cnn.yaml.
+# Only the sim/build side differs (via base_sim_4gb: shrunk PhysX GPU buffers); the PPO
+# hyperparameters incl. minibatch_size=4096 match ppo_navrl_cnn.yaml so the 4 GB density runs
+# stay directly comparable to the 8 GB (3070) runs.
+#   IMPORTANT: minibatch_size=4096 requires batch = horizon_length(32) * num_envs >= 4096, i.e.
+#   NUM_ENVS >= 128 (rl_games asserts minibatch <= batch; runner.py sets num_actors=NUM_ENVS but
+#   does NOT rescale minibatch). So always pass NUM_ENVS>=128 -- the 4 GB card handles 512 fine
+#   (max_bars=25/50 -> ~2.5 GB): e.g. NAVRL_MAX_BARS=50 NAVRL_NUM_BARS=50 NUM_ENVS=512 GPU4GB=1 ./train_navrl.sh
+#   (For a tiny <128-env run instead, drop minibatch_size back to <= 32*NUM_ENVS.)
 params:
   seed: 42
   algo:
@@ -55,7 +59,7 @@ params:
     clip_value: False
     num_actors: 32
     horizon_length: 32
-    minibatch_size: 512
+    minibatch_size: 4096
     mini_epochs: 4
     critic_coef: 2
     normalize_input: True
