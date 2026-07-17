@@ -630,6 +630,15 @@ class NavRLTask(BaseTask):
     def add_static_safety_reward(self):
         # NavRL r_ss = mean over rays of log(distance to obstacle), clamped to (0, range].
         dist_m = self._lidar_distance_m().clamp(min=1e-6, max=self.task_config.lidar_max_range)
+        if self.vision_mode:
+            # The analytic target sphere is injected into the LiDAR RANGE channel too, so without
+            # this it would be counted as an OBSTACLE — the safety term would penalize the drone
+            # for approaching the very target it must capture. Only bars are obstacles: blank the
+            # target's rays (id 50) to max range so they contribute log(range)->0 (no penalty).
+            seg = self.obs_dict["segmentation_pixels"].squeeze(1).reshape(self.num_envs, -1)
+            dist_m = torch.where(
+                seg == 50, torch.full_like(dist_m, self.task_config.lidar_max_range), dist_m
+            )
         # B1: re-baseline so OPEN SPACE (all rays at max range) scores 0 instead of +log(range).
         # This subtracts a constant log(range) per step, so the obstacle-avoidance GRADIENT is
         # byte-for-byte unchanged, but it deletes the standing "loiter income" (~+log(4)=+1.39/step
