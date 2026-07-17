@@ -290,3 +290,42 @@ Phase 1을 정직한 난이도로 재설계하고, 잔여 충돌의 진짜 원�
 - (코드 소소) `navrl_task._clamp_active_bars`/`_set_active_bars` int-cast 중복, `train_run_recorder`가 navrl run에도
   옛 intercept 컬럼(near_miss/surface_gap 등)을 빈칸으로 계속 기록 — 동작엔 무해, 정리 여지.
 - 문서 전반 옛 스킴 흔적(10×10·16막대·150스텝 등) → 현재 스킴으로 동기화.
+
+---
+
+## 2026-07-16 ~ 07-17 — 밀도 스윕 완성 → Phase 3(이동 표적) 착수
+
+### 밀도 스윕 결과 (랜덤 배치, seed 1, 각 6000 epoch)
+| 막대수 | 밀도(/100m², 밴드478) | captured(last-500) | crash |
+|---|---|---|---|
+| 25 | 5.2 | 0.972 | 0.026 |
+| 50 | 10.5 | 0.970 | 0.030 |
+| 75 | 15.7 | 0.942 | 0.058 |
+| 110 (NavRL 앵커) | 23.0 | 0.926 | 0.074 |
+| 150 | 31.4 | 0.656 | 0.344 |
+- **NavRL 앵커까지 평탄 → 110→150 절벽(−27pt).** 기하 분석: 밴드 478m²의 RSA 재밍 한계 ≈148,
+  적응완화 시작 ≈115-120 → 절벽은 배치 기하의 한계와 일치(선형 아님 = 논문 핵심 스토리).
+- ⚠️ 25/50은 4GB 노트북에서 **minibatch 정합(512→4096) 이전** 학습 = 업데이트 16배 confound.
+  정성 결론 유효, 정량 인용 주의. GPU4GB 프리셋 정합 후 재실행 예약.
+- 잔여: 150 seed2(진행), 120막대(절벽 경계), 25/50 재실행.
+
+### Phase 3 착수 — 문헌조사·계획(`PHASE3_PLAN.md`, 커밋 `460366a`) 후 구현
+- **사전 전면 감사**(6렌즈 멀티에이전트): 실버그 4(timeout 스텝이 다음 에피소드 스폰스캔으로 safety
+  보상 받는 leakage, play의 `--seed` 증발, play_navrl.sh GPU4GB 미적용, set_env_state가 checkpoint
+  밀도로 NAVRL_NUM_BARS를 덮어씀) + 죽은코드 ~12(C1 funnel, `class eval`, `full_scale_hold_epochs`,
+  clearance 경로, `terminate_on_capture=False`/`return_state_before_reset` 분기, `_REACHED`,
+  `quat_rotate`/`torch` import 등) + 문서 드리프트 ~15 — **전부 수정/삭제**.
+- **이동 표적 v1 구현** (기본 OFF = Phase 1/2와 byte-호환):
+  - `_advance_target()`: 가상점(액터 0, LiDAR 불가시), **rl_dt=0.1s**(물리 dt×10 — `obs_dict["dt"]`
+    직접 쓰면 1/10 속도 나는 함정을 회피), 패턴 cv(벽반사)/waypoint/circle(평가전용)/mixed,
+    막대 clearance push-out + 벽 클램프, **realized velocity**(반사·push-out 포함 실제 변위/dt)를
+    리워드에 공급.
+  - **range-rate 리워드**: `(v_drone − v_target)·dir` — v_t=0이면 기존 항과 IEEE-정확히 동일.
+  - **PBRS re-anchor**: `‖prev_pos−target_new‖ − γ‖pos−target_new‖` — 표적 이동분을 드론 상벌에서
+    제거(naive형은 도주 표적에서 정지 드론에 −0.94/step 오벌점). prev_dist 버퍼 폐지.
+  - **상대프레임 세그먼트 캡처**: prev_rel→rel 선분 vs 원점 0.5m — 상대속도 4m/s 터널링 방지,
+    v=0에서 point 테스트의 strict superset(수학 유닛테스트 `scratchpad/p3_math_unit.py` 전항 PASS).
+  - 속도 커리큘럼 0→`NAVRL_TARGET_SPEED_FINAL`(epoch비례, num_task_steps 기반=checkpoint 생존),
+    평가 노브 `NAVRL_TARGET_SPEED`/`NAVRL_TARGET_PATTERN`/`NAVRL_SEED`. 대시보드/TB에
+    `navrl/target_speed_{max,mean}_m_s` 추가.
+- goal 배치: 10회 rejection 실패 시 최근접 막대에서 방사 snap-out(고밀도 안전망).

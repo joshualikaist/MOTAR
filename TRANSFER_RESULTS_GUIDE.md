@@ -1,5 +1,7 @@
 # 학습 결과 옮기기 — 보조머신(4GB) ↔ 집 3070 [상세 가이드]
 
+> 경로 주의: 이 가이드는 보조 머신의 repo 를 `~/MOTAR` 로 표기한다. `SETUP_SECOND_MACHINE.md` §3 대로
+> `~/workspaces/aerial_gym_ws/src/aerial_gym_simulator` 에 클론했다면 경로를 그에 맞게 바꿔 읽는다.
 보조 학습 머신(GTX 1650, 4GB)에서 돌린 학습 결과를 집 메인 머신(RTX 3070)으로 모아
 TensorBoard로 같이 비교하거나 정책을 재생하기 위한 전송 방법 정리다. 코드를 몰라도
 그대로 복붙하면 되게 적어둔다.

@@ -9,8 +9,10 @@ exceeds a 4 GB card once the torch CUDA context is loaded — so training OOMs i
 These are memory-capacity ceilings, not dynamics parameters: physics behaviour is
 unchanged. Sized for the few dozen envs a 4 GB GPU (e.g. GTX 1650) can run headless.
 Select it via ``AERIAL_GYM_SIM_NAME=base_sim_4gb`` (navrl_task_config reads this) — the
-``GPU4GB=1 ./train_navrl.sh`` wrapper sets it together with a matching low ``minibatch_size``
-(ppo_navrl_cnn_4gb.yaml) and a low ``NUM_ENVS``. The 8 GB main machine keeps ``base_sim``.
+``GPU4GB=1 ./train_navrl.sh`` wrapper sets it together with ppo_navrl_cnn_4gb.yaml, whose PPO
+hyperparameters (incl. minibatch_size=4096) deliberately MATCH the 8 GB yaml so density runs
+stay comparable; only the PhysX buffer capacities shrink. Validated at 512 envs for the
+25/50-bar builds (~2.5 GB). The 8 GB main machine keeps ``base_sim``.
 """
 
 from aerial_gym.config.sim_config.base_sim_config import BaseSimConfig

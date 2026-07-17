@@ -11,7 +11,7 @@ params:
   network:
     # NavRL-style LiDAR CNN feature extractor (navrl_network.py): the 36x4 scan keeps its
     # spatial structure through a 3-layer conv stack -> 128-d embedding, concatenated with
-    # S_int (8) and fused by a [256, 256] ELU MLP. Compare against the flat-MLP baseline
+    # S_int (12) and fused by a [256, 256] ELU MLP. Compare against the flat-MLP baseline
     # (ppo_navrl.yaml) under identical PPO settings.
     name: navrl_cnn
     separate: False

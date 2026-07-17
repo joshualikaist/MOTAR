@@ -7,7 +7,7 @@ It studies reinforcement-learning-based UAV navigation and moving-target approac
 obstacle environments, analyzing performance under varying obstacle density and target speed,
 together with dynamic object detection. The experimental environment follows the setup of
 [NavRL](https://github.com/Zhefan-Xu/NavRL), reimplemented on top of Aerial Gym.
-The staged research roadmap is maintained in `RESEARCH_PLAN.md` in the local workspace root.
+The staged research roadmap is maintained in `RESEARCH_PLAN.md` in this repository's root.
 
 Research work lives on the `research/navrl-env` branch; `main` tracks upstream Aerial Gym.
 
@@ -19,15 +19,16 @@ This section is a self-contained guide: from a fresh machine to watching a drone
 in the simulator. It targets the Phase 1 task `navrl_task` (static obstacles + a
 stationary goal, LiDAR-based navigation).
 
-**The Phase 1 arena (`navrl_bars_env`)** is a controlled smoke-test environment: an
-otherwise-empty 24×24×3 m space with **48 static vertical bars** (random footprint
-0.4–0.8 m per side, height fixed 2 m). Bars are placed on a per-episode jittered 7×7
-grid that guarantees ≥ 1.8 m center-to-center distance (≥ 1.0 m clear gap even between
-the two largest bars). The drone flies **in 2D at a fixed 1 m altitude** (vertical
+**The arena (`navrl_bars_env`)** is a controlled environment: an otherwise-empty
+24×24×3 m space with **density-controlled static vertical bars** (`NAVRL_NUM_BARS`,
+default 48; random footprint 0.4–0.8 m per side, height fixed 2 m). Bars are scattered
+per episode by **NavRL-style uniform random sampling with rejection** (min 1.5 m
+center-to-center; after 128 failed attempts the threshold relaxes ×0.8 so high-density
+fields don't stall). The drone flies **in 2D at a fixed 1 m altitude** (vertical
 velocity command is zeroed), spawns at the left edge (x≈0), and must cross the whole
 bar field to a goal placed on the far side at x=k — the epoch-proportional curriculum
-pushes k from ~7 m out to the far wall (~24 m). See the spawn-layout picture in the
-workspace root for a top-down view.
+pushes k from ~7 m out to the far wall (~24 m). See `navrl_run2038_random_layout.png`
+in the workspace root for a top-down view.
 
 ### 1. Prerequisites
 
@@ -118,7 +119,7 @@ conda activate aerialgym
 cd aerial_gym/rl_training/rl_games
 
 # Short wrapper (recommended): headless, warp + PYTHONNOUSERSITE + tee log all built in.
-# 256 parallel drones + 48 bars ≈ 6.8 GB (fits 8 GB VRAM). Adjust with NUM_ENVS.
+# 256 parallel drones (default build = 150-bar ceiling, 48 active) ≈ 6.1 GB — fits 8 GB VRAM.
 ./train_navrl.sh                       # == NUM_ENVS=256 ./train_navrl.sh
 
 # ...which wraps this underlying call (ppo_navrl_cnn.yaml = NavRL-style LiDAR CNN, recommended):
@@ -153,9 +154,17 @@ flattens the scan). Both run 6000 epochs.
 - **Status — Phase 1 ✅ met (2026-07-15):** `captured 0.95 / crash 0.05` with **learned yaw control**
   (the drone steers its heading along travel so its 0.28 m body — not its 0.40 m diagonal — leads through
   gaps; action is now 4-D = 3-D velocity + yaw-rate). Beats NavRL's 0.81. Full history in `WORKLOG.md`.
-- **Phase 2 (obstacle-density sweep) in progress:** set the active bar count via env vars, e.g.
-  `NAVRL_MAX_BARS=150 NAVRL_NUM_BARS=150 NUM_ENVS=256 ./train_navrl.sh` (150 bars ≈ 26/100 m² ≈ NavRL
-  density, fits 8 GB at ~6.1 GB). First point: 150 bars → captured 0.85. See `RESEARCH_PLAN.md` Phase 2.
+- **Phase 2 (obstacle-density sweep) ✅ swept (2026-07-16, random placement, seed 1):** bar count via
+  env vars, e.g. `NAVRL_MAX_BARS=150 NAVRL_NUM_BARS=150 NUM_ENVS=256 ./train_navrl.sh`. Densities are
+  quoted over the ~478 m² placement band; the NavRL-density anchor (~22/100 m²) is **110 bars**.
+  Results 25/50/75/110/150 bars → captured **0.97 / 0.97 / 0.94 / 0.93 / 0.66** — flat until the
+  NavRL anchor, then a cliff toward the placement-jamming limit (~148 bars at 1.5 m spacing).
+  Caveat: the 25/50 points were trained on the 4 GB machine before its minibatch was aligned to 4096.
+- **Phase 3 (moving target) — code in place:** the goal becomes a moving virtual point. Train with
+  `NAVRL_TARGET_SPEED_FINAL=1.5 ./train_navrl.sh` (speed curriculum 0→1.5 m/s); evaluate a fixed cell
+  with `NAVRL_TARGET_SPEED=1.0 NAVRL_TARGET_PATTERN=cv ./play_navrl.sh <ckpt>`. Patterns:
+  cv / waypoint / circle (eval-only) / mixed. Default (speed 0) is byte-compatible with Phases 1-2.
+  See `PHASE3_PLAN.md` for the experiment plan.
 
 #### Monitoring training — TensorBoard + console metrics
 
@@ -196,7 +205,7 @@ What to watch in TensorBoard (rl_games scalar names):
 | `crash` | `navrl/crash_rate` | ended by collision / height bound, ↓ |
 | `timeout (no capture)` | `navrl/timeout_rate` | ran all 300 steps without capturing, ↓ |
 | `closest, no crash (m)` | `navrl/closest_nocrash_m` (+ `navrl/closest_min_m`) | mean closest approach over NON-crash episodes (crashes die far and only inflate it), plus the best (min) approach; ↓ toward < 0.5 |
-| `curriculum max (m)` | `navrl/curriculum_goal_dist_max_m` | current goal-x upper bound k_max; ramps epoch-proportionally 7 → 24 m over ~3000 epochs, then the lower bound k_min rises 5 → 20 m (`navrl/curriculum_goal_dist_min_m`) |
+| `curriculum max (m)` | `navrl/curriculum_goal_dist_max_m` | current goal-x upper bound k_max; ramps epoch-proportionally 7 → 24 m over ~3000 epochs; overlapping it, the lower bound k_min rises 5 → 20 m over epochs 2000–5000 (`navrl/curriculum_goal_dist_min_m`) |
 
 The same stats are also summarized to the console every ~2048 finished episodes as
 `NavRL progress |` lines — handy with `... --train 2>&1 | tee train.log`.
@@ -235,17 +244,17 @@ PLAY_GAMES_NUM=8000 python runner.py --file ppo_navrl_cnn.yaml --task navrl_task
 |------|------|
 | `aerial_gym/task/navrl_task/` | the Phase 1 navigation task (obs / reward / done) |
 | `aerial_gym/config/task_config/navrl_task_config.py` | task settings (goal placement, reward weights, flight altitude, episode length) |
-| `aerial_gym/config/env_config/navrl_bars_env.py` | the Phase 1 arena: empty 24×24×3 m + 48 bars, grid spacing guarantee |
+| `aerial_gym/config/env_config/navrl_bars_env.py` | the arena: empty 24×24×3 m + density-controlled bars (`NAVRL_NUM_BARS`), random-rejection placement |
 | `aerial_gym/config/asset_config/env_object_config.py` (`bar_asset_params`) | bar asset selection / placement band |
 | `resources/models/environment_assets/bars/` | the variable-size bar URDF pool (regenerate: `python tools/generate_bar_assets.py`) |
-| `aerial_gym/env_manager/asset_manager.py` | jittered-grid obstacle placement (`min_obstacle_xy_spacing`) |
+| `aerial_gym/env_manager/asset_manager.py` | obstacle placement: random-rejection (navrl default) + legacy jittered-grid (`obstacle_placement_mode`) |
 | `aerial_gym/config/robot_config/navrl_quad_config.py` | the LiDAR-equipped quad (spawns at 1 m) |
 | `aerial_gym/config/sensor_config/lidar_config/navrl_lidar_config.py` | NavRL-matched 36×4 yaw-only LiDAR |
 | `aerial_gym/rl_training/rl_games/ppo_navrl_cnn.yaml` | PPO config, NavRL-style LiDAR CNN (recommended) |
 | `aerial_gym/rl_training/rl_games/ppo_navrl.yaml` | PPO config, flat-MLP baseline |
 | `aerial_gym/rl_training/rl_games/navrl_network.py` | the LiDAR CNN feature extractor (rl_games custom network) |
 | `WORKLOG.md` | chronological log of what changed and why |
-| `RESEARCH_PLAN.md` (workspace root) | staged research roadmap |
+| `RESEARCH_PLAN.md` (repo root) | staged research roadmap |
 
 ---
 

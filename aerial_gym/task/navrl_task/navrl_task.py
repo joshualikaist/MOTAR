@@ -8,7 +8,7 @@ from gym.spaces import Box, Dict
 from aerial_gym.task.base_task import BaseTask
 from aerial_gym.task.navrl_task.train_dashboard import record_navrl_epoch_episodes
 from aerial_gym.sim.sim_builder import SimBuilder
-from aerial_gym.utils.math import quat_rotate, quat_rotate_inverse, torch_rand_float_tensor
+from aerial_gym.utils.math import quat_rotate_inverse
 from aerial_gym.utils.logging import CustomLogger
 
 logger = CustomLogger("navrl_task")
@@ -98,28 +98,34 @@ class NavRLTask(BaseTask):
         self.target_dir_2d[:, 0] = 1.0  # placeholder unit direction before first reset
         self.height_range = torch.zeros((self.num_envs, 2), device=self.device)  # [min, max]
         self.prev_vel_w = torch.zeros((self.num_envs, 3), device=self.device)
-        # PBRS progress reward (A): previous-step distance to goal, potential Phi = -dist.
-        self.prev_dist = torch.zeros(self.num_envs, device=self.device)
-        # --- F segment-based capture (DISABLED): uncomment to track the previous position so the
-        #     capture test can use the prev_pos->pos segment instead of the sampled endpoint.
-        # self.prev_pos = torch.zeros((self.num_envs, 3), device=self.device)
+        # Previous drone position: anchors the PBRS progress term to the target's CURRENT position
+        # (credits only the drone's own motion when the target moves) and, together with prev_rel,
+        # provides the swept-segment capture test.
+        self.prev_pos = torch.zeros((self.num_envs, 3), device=self.device)
+        # Previous drone-position-minus-target-position (relative frame). The capture test sweeps
+        # the segment prev_rel -> (pos - target) against the capture sphere at the origin, so a
+        # fast fly-through cannot tunnel between 0.1 s samples even when BOTH agents move.
+        self.prev_rel = torch.zeros((self.num_envs, 3), device=self.device)
         # per-episode diagnostics: closest approach and whether the goal was ever reached
         self.ep_min_goal_dist = torch.full((self.num_envs,), float("inf"), device=self.device)
         self.ep_reached = torch.zeros(self.num_envs, dtype=torch.bool, device=self.device)
-
-        self.target_min_ratio = torch.tensor(
-            self.task_config.target_min_ratio, device=self.device
-        ).expand(self.num_envs, -1)
-        self.target_max_ratio = torch.tensor(
-            self.task_config.target_max_ratio, device=self.device
-        ).expand(self.num_envs, -1)
 
         # goal-distance curriculum state
         self.cur = self.task_config.curriculum
         self.cur_goal_dist_max = float(self.cur.k_start)  # current goal-x ceiling (epoch-driven)
         self.cur_goal_dist_min = float(self.cur.k_min)    # current goal-x floor (epoch-driven)
-        self._cur_reach_agg = 0
-        self._cur_fin_agg = 0
+
+        # --- Phase 3 moving target: a VIRTUAL point (task-side coordinates only — no actor, no
+        # mesh, invisible to the LiDAR). All-zero speeds (the default) keep the task byte-
+        # compatible with the static Phases 1-2.
+        self.tm = self.task_config.target_motion
+        self.target_vel_w = torch.zeros((self.num_envs, 3), device=self.device)  # realized vel
+        self._tm_speed = torch.zeros(self.num_envs, device=self.device)          # per-episode speed
+        self._tm_pattern = torch.zeros(self.num_envs, dtype=torch.long, device=self.device)  # 0=cv 1=wp 2=circle
+        self._tm_cv_vel = torch.zeros((self.num_envs, 2), device=self.device)    # cv desired velocity
+        self._tm_waypoint = torch.zeros((self.num_envs, 2), device=self.device)  # waypoint target
+        self._tm_circle_center = torch.zeros((self.num_envs, 2), device=self.device)
+        self._tm_circle_angvel = torch.zeros(self.num_envs, device=self.device)  # signed rad/s
 
         rp = self.task_config.reward_parameters
         self.rw = {k: float(v) for k, v in rp.items()}
@@ -141,6 +147,22 @@ class NavRLTask(BaseTask):
                 bool(getattr(self.density, "use_density_curriculum", False)),
             )
         )
+        # One RL step = num_physics_steps x physics dt (0.1 s here). obs_dict["dt"] alone is the
+        # PHYSICS dt (0.01 s) — integrating the target with it would move the target at 1/10 of its
+        # nominal speed (the shooting_moving_target task gets away with obs_dict["dt"] only because
+        # its env runs 1 physics step per RL step).
+        try:
+            n_phys = int(self.sim_env.cfg.env.num_physics_steps_per_env_step_mean)
+        except AttributeError:
+            n_phys = 10
+            logger.warning("navrl_task: env config not reachable for physics-steps; assuming 10.")
+        self.step_dt = float(self.obs_dict["dt"]) * n_phys
+        if float(self.tm.speed_final) > 0.0 or float(self.tm.speed_fixed) >= 0.0:
+            logger.warning(
+                "NavRL moving target | pattern=%s speed_final=%.2f speed_fixed=%.2f rl_dt=%.3fs"
+                % (self.tm.pattern, self.tm.speed_final, self.tm.speed_fixed, self.step_dt)
+            )
+
         self.terminations = self.obs_dict["crashes"]
         self.truncations = self.obs_dict["truncations"]
         self.rewards = torch.zeros(self.num_envs, device=self.device)
@@ -165,7 +187,7 @@ class NavRLTask(BaseTask):
             )
         }
         self.command = torch.zeros((self.num_envs, 4), device=self.device)  # controller input
-        self._yaw_cmd = torch.zeros(self.num_envs, device=self.device)  # (b) last yaw action a[:,3], for the smoothness penalty
+        self._yaw_cmd = torch.zeros(self.num_envs, device=self.device)  # (b) current-step yaw action a[:,3], penalized quadratically (magnitude damping)
         self.infos = {}
         self.num_task_steps = 0
 
@@ -238,7 +260,15 @@ class NavRLTask(BaseTask):
         if isinstance(state, dict) and state.get("num_task_steps") is not None:
             self.num_task_steps = int(state["num_task_steps"])
         if isinstance(state, dict) and state.get("n_bars_active") is not None:
-            self._set_active_bars(state["n_bars_active"])
+            # An explicit NAVRL_NUM_BARS wins over the checkpoint: density-sweep evals must run at
+            # the REQUESTED density, not silently at whatever density the checkpoint trained on.
+            if os.environ.get("NAVRL_NUM_BARS", "").strip():
+                logger.warning(
+                    "NAVRL_NUM_BARS set explicitly; ignoring checkpoint n_bars_active=%s (keeping %d)."
+                    % (state.get("n_bars_active"), self.n_bars_active)
+                )
+            else:
+                self._set_active_bars(state["n_bars_active"])
 
     # ------------------------------------------------------------------ reset
     def reset(self):
@@ -262,49 +292,59 @@ class NavRLTask(BaseTask):
         b_min = self.obs_dict["env_bounds_min"][env_ids]
         b_max = self.obs_dict["env_bounds_max"][env_ids]
 
-        if self.cur.use_curriculum:
-            n = len(env_ids)
-            goal = start_pos.clone()
-            goal[:, 2] = self.task_config.flight_altitude
-            m = float(self.cur.wall_margin)
-            clearance = getattr(self.task_config, "goal_min_bar_clearance", 0.0)
-            bars_xy = self.obs_dict["obstacle_position"][env_ids][:, :, 0:2]
-            # "Cross the bar field": the drone spawns at x~0, so placing the goal at x=k on the far
-            # side forces a left->right traversal of the bars. k ~ U[k_min, k_max(epoch)] (k_max
-            # grows with training via _goal_x_max), y is free across the arena minus a wall margin.
-            # Resample any goal within `clearance` of a bar so the 0.5 m capture sphere is flyable.
-            k_max = self._goal_x_max()
-            k_min = self._goal_x_min()
-            self.cur_goal_dist_max = k_max  # surfaced to the dashboard as "curriculum max"
-            self.cur_goal_dist_min = k_min  # surfaced to the dashboard as "curriculum min"
-            todo = torch.ones(n, dtype=torch.bool, device=self.device)
-            for _ in range(10):
-                if not todo.any():
-                    break
-                j = int(todo.sum())
-                gx = k_min + (k_max - k_min) * torch.rand(j, device=self.device)
-                gx = gx.clamp(max=(b_max[todo, 0] - m))  # keep the capture sphere off the far wall
-                gy = (b_min[todo, 1] + m) + (
-                    b_max[todo, 1] - b_min[todo, 1] - 2.0 * m
-                ) * torch.rand(j, device=self.device)
-                goal[todo, 0] = gx
-                goal[todo, 1] = gy
-                if clearance <= 0.0:
-                    break
-                d_bar = (
-                    torch.cdist(goal[todo, 0:2].unsqueeze(1), bars_xy[todo])
-                    .squeeze(1)
-                    .min(dim=1)
-                    .values
-                )
-                still_bad = d_bar < clearance
-                idx = todo.nonzero(as_tuple=False).squeeze(-1)
-                todo = torch.zeros_like(todo)
-                todo[idx[still_bad]] = True
-            self.target_position[env_ids] = goal
-        else:
-            ratio = torch_rand_float_tensor(self.target_min_ratio, self.target_max_ratio)[env_ids]
-            self.target_position[env_ids] = b_min + (b_max - b_min) * ratio
+        n = len(env_ids)
+        goal = start_pos.clone()
+        goal[:, 2] = self.task_config.flight_altitude
+        m = float(self.cur.wall_margin)
+        clearance = float(getattr(self.task_config, "goal_min_bar_clearance", 0.0))
+        bars_xy = self.obs_dict["obstacle_position"][env_ids][:, :, 0:2]
+        # "Cross the bar field": the drone spawns at x~0, so placing the goal at x=k on the far
+        # side forces a left->right traversal of the bars. k ~ U[k_min, k_max(epoch)] (k_max
+        # grows with training via _goal_x_max), y is free across the arena minus a wall margin.
+        # Resample any goal within `clearance` of a bar so the 0.5 m capture sphere is flyable.
+        k_max = self._goal_x_max()
+        k_min = self._goal_x_min()
+        self.cur_goal_dist_max = k_max  # surfaced to the dashboard as "curriculum max"
+        self.cur_goal_dist_min = k_min  # surfaced to the dashboard as "curriculum min"
+        todo = torch.ones(n, dtype=torch.bool, device=self.device)
+        for _ in range(10):
+            if not todo.any():
+                break
+            j = int(todo.sum())
+            gx = k_min + (k_max - k_min) * torch.rand(j, device=self.device)
+            gx = gx.clamp(max=(b_max[todo, 0] - m))  # keep the capture sphere off the far wall
+            gy = (b_min[todo, 1] + m) + (
+                b_max[todo, 1] - b_min[todo, 1] - 2.0 * m
+            ) * torch.rand(j, device=self.device)
+            goal[todo, 0] = gx
+            goal[todo, 1] = gy
+            if clearance <= 0.0:
+                break
+            d_bar = (
+                torch.cdist(goal[todo, 0:2].unsqueeze(1), bars_xy[todo])
+                .squeeze(1)
+                .min(dim=1)
+                .values
+            )
+            still_bad = d_bar < clearance
+            idx = todo.nonzero(as_tuple=False).squeeze(-1)
+            todo = torch.zeros_like(todo)
+            todo[idx[still_bad]] = True
+        if clearance > 0.0 and bool(todo.any()):
+            # At high density a few goals can survive 10 rejection rounds still inside the bar
+            # clearance. Snap them radially away from the nearest bar (best effort) instead of
+            # silently keeping a goal whose capture sphere is not flyable.
+            gxy = goal[todo, 0:2]
+            d_bar, j_bar = torch.cdist(gxy.unsqueeze(1), bars_xy[todo]).squeeze(1).min(dim=1)
+            near = bars_xy[todo][torch.arange(len(j_bar), device=self.device), j_bar]
+            away = gxy - near
+            away = away / away.norm(dim=1, keepdim=True).clamp(min=1e-6)
+            goal[todo, 0:2] = near + away * clearance
+            logger.warning(
+                "navrl reset: %d goals snapped out of bar clearance after 10 rejection rounds."
+                % int(todo.sum())
+            )
+        self.target_position[env_ids] = goal
 
         d = self.target_position[env_ids] - start_pos
         d[:, 2] = 0.0  # horizontal goal direction defines the goal frame
@@ -317,10 +357,13 @@ class NavRLTask(BaseTask):
             start_pos[:, 2], self.target_position[env_ids, 2]
         )
         self.prev_vel_w[env_ids] = 0.0
-        # PBRS progress reward (A): seed prev_dist with the start->goal distance for reset envs.
-        self.prev_dist[env_ids] = torch.norm(self.target_position[env_ids] - start_pos, dim=1)
-        # --- F segment-based capture (DISABLED): uncomment alongside the __init__/step prev_pos lines.
-        # self.prev_pos[env_ids] = start_pos
+        # Seed the PBRS/segment-capture buffers with the spawn state. First-step progress is then
+        # ||start - target|| - gamma*||pos - target||, identical to the old prev_dist seeding.
+        self.prev_pos[env_ids] = start_pos
+        self.prev_rel[env_ids] = start_pos - self.target_position[env_ids]
+        # Phase 3: per-episode target speed + trajectory pattern (all-static when the speed
+        # ceiling is 0 -> Phases 1-2 behavior).
+        self._sample_target_motion(env_ids)
         self.ep_min_goal_dist[env_ids] = float("inf")
         self.ep_reached[env_ids] = False
 
@@ -344,6 +387,10 @@ class NavRLTask(BaseTask):
         return self.command
 
     def step(self, actions):
+        # Phase 3: move the virtual target FIRST — both agents move during this 0.1 s control
+        # interval, and the end-of-interval reward is computed against the target's NEW position.
+        # (No-op while all per-episode target speeds are 0, i.e. the static Phases 1-2 task.)
+        self._advance_target()
         command = self.transform_action_to_command(actions)
         self.sim_env.step(actions=command)
 
@@ -363,30 +410,17 @@ class NavRLTask(BaseTask):
         self.ep_min_goal_dist = torch.minimum(self.ep_min_goal_dist, dist_to_goal)
         self.ep_reached |= dist_to_goal < self.task_config.success_radius
 
-        if getattr(self.task_config, "terminate_on_capture", False):
-            # capture ends the episode; timeouts are truncations that never captured
-            successes = self.captured_now
-            crashes = self.crashed_now
-            timeouts = (self.truncations > 0) & ~successes & ~crashes
-        else:
-            successes = self.truncations * (dist_to_goal < self.task_config.success_radius)
-            successes = torch.where(
-                self.terminations > 0, torch.zeros_like(successes), successes
-            )
-            crashes = self.terminations > 0
-            timeouts = torch.where(
-                self.truncations > 0, torch.logical_not(successes), torch.zeros_like(successes)
-            )
-            timeouts = torch.where(self.terminations > 0, torch.zeros_like(timeouts), timeouts)
+        # Interception semantics (always on): capture ends the episode; timeouts are truncations
+        # that never captured.
+        successes = self.captured_now
+        crashes = self.crashed_now
+        timeouts = (self.truncations > 0) & ~successes & ~crashes
         self.infos = {"successes": successes, "timeouts": timeouts, "crashes": crashes}
 
         finished = (self.terminations > 0) | (self.truncations > 0)
         self._log_progress(successes, crashes, timeouts, finished)
         self._update_curriculum(successes, finished)
         self._record_epoch_dashboard(successes, crashes, timeouts, finished)
-
-        if self.task_config.return_state_before_reset:
-            return_tuple = self.get_return_tuple()
 
         # render (raycast LiDAR from the new state) and reset finished envs
         reset_envs = self.sim_env.post_reward_calculation_step()
@@ -397,9 +431,7 @@ class NavRLTask(BaseTask):
         self.add_static_safety_reward()
 
         self.num_task_steps += 1
-        if not self.task_config.return_state_before_reset:
-            return_tuple = self.get_return_tuple()
-        return return_tuple
+        return self.get_return_tuple()
 
     def _lidar_distance_m(self):
         """Per-ray distance in meters, shape (N, vbeams*hbeams). Normalized pixels * max_range."""
@@ -414,7 +446,10 @@ class NavRLTask(BaseTask):
         rpos = self.target_position - pos
         dist = rpos.norm(dim=1).clamp(min=1e-6)
         vel_dir = rpos / dist.unsqueeze(1)
-        reward_vel = (vel_w * vel_dir).sum(dim=1)
+        # Range-rate (closing speed): the component of the RELATIVE velocity toward the target.
+        # With a static target (target_vel_w == 0, the Phases 1-2 default) the subtraction is
+        # IEEE-exact zero, so this reduces to NavRL's velocity-toward-goal term bit-for-bit.
+        reward_vel = ((vel_w - self.target_vel_w) * vel_dir).sum(dim=1)
 
         penalty_smooth = (vel_w - self.prev_vel_w).norm(dim=1)
         self.prev_vel_w[:] = vel_w
@@ -452,49 +487,42 @@ class NavRLTask(BaseTask):
         above = z > self.task_config.upper_height_bound
         crashed_out = crashed | below | above
 
-        # Interception: touching the capture radius ends the episode as a success (bonus
-        # instead of the step reward). Capture wins over a same-step contact.
-        if getattr(self.task_config, "terminate_on_capture", False):
-            captured = dist < self.task_config.success_radius
-            # --- F segment-based capture (DISABLED): uncomment to catch fast fly-throughs that
-            #     tunnel over the 0.5 m sphere between 0.2 m/step samples. Tests the closest
-            #     distance of the prev_pos->pos segment to the goal. Needs the prev_pos buffer
-            #     (__init__ / reset_idx) and the `self.prev_pos[:] = pos` update below; replaces
-            #     the point test on the line above.
-            # ab = pos - self.prev_pos
-            # t = (((self.target_position - self.prev_pos) * ab).sum(1)
-            #      / ab.pow(2).sum(1).clamp(min=1e-9)).clamp(0.0, 1.0)
-            # seg_dist = (self.target_position - (self.prev_pos + t.unsqueeze(1) * ab)).norm(dim=1)
-            # captured = seg_dist < self.task_config.success_radius
-        else:
-            captured = torch.zeros_like(crashed_out)
+        # Interception (always on): touching the capture radius ends the episode as a success
+        # (terminal bonus instead of continued step reward). Capture wins over a same-step contact.
+        # Swept-SEGMENT test in the target-relative frame: sweep prev_rel -> rel against the capture
+        # sphere at the origin. This linearizes BOTH agents' motion over the 0.1 s step, so a fast
+        # fly-through (closing speed up to 4 m/s = 0.4 m/step) cannot tunnel between samples. With a
+        # static target and 0.2 m steps it is a strict superset of the old point test (adds only
+        # rare grazing captures; unit-tested in tools/test_navrl_p3_math.py).
+        rel = pos - self.target_position
+        seg = rel - self.prev_rel
+        t_close = (-(self.prev_rel * seg).sum(dim=1) / (seg * seg).sum(dim=1).clamp(min=1e-9)).clamp(0.0, 1.0)
+        seg_dist = (self.prev_rel + t_close.unsqueeze(1) * seg).norm(dim=1)
+        captured = seg_dist < self.task_config.success_radius
         crashed_out = crashed_out & ~captured
         self.captured_now = captured
         self.crashed_now = crashed_out
 
         # A: PBRS progress reward -- dense "got closer" signal. F = gamma*Phi(s') - Phi(s) with
-        # Phi = -progress_weight*dist  =>  reward = progress_weight*(prev_dist - gamma*dist). Zero
-        # the next-state potential on TRUE terminals (capture/crash) per Grzes 2017; a timeout is a
-        # truncation (not in `term`) so it keeps its gradient. This term is optimality-preserving,
-        # so it cannot by itself move the "loiter" optimum -- it MUST ride alongside B1/B3 (which
-        # do move it to "capture"). Disable by setting progress_weight = 0.0.
+        # Phi = -progress_weight*dist. RE-ANCHORED to the target's CURRENT position:
+        #   progress = ||prev_pos - target_new|| - gamma*||pos_new - target_new||
+        # so only the drone's OWN motion is credited — the naive prev_dist form would reward/punish
+        # the drone for the target's uncontrollable move (biased shaping under pursuit). With a
+        # static target both forms are identical (unit-tested: tools/test_navrl_p3_math.py). Zero the next-state potential on
+        # TRUE terminals (capture/crash) per Grzes 2017; a timeout is a truncation (not in `term`)
+        # so it keeps its gradient. Disable by setting progress_weight = 0.0.
         if self.rw.get("progress_weight", 0.0) != 0.0:
             gamma = self.task_config.progress_gamma
             term = self.captured_now | self.crashed_now
+            prev_dist_anchored = (self.target_position - self.prev_pos).norm(dim=1)
             phi_next = torch.where(term, torch.zeros_like(dist), gamma * dist)
-            self.rewards[:] = self.rewards + self.rw["progress_weight"] * (self.prev_dist - phi_next)
-        self.prev_dist[:] = dist
+            self.rewards[:] = self.rewards + self.rw["progress_weight"] * (
+                prev_dist_anchored - phi_next
+            )
 
-        # --- C1 finish-funnel (DISABLED): uncomment to reward STILL MOVING INWARD in the
-        #     0.5-1.0 m shell just outside capture, pulling the drone through the last band instead
-        #     of braking ~1 m short. From shooting_moving_target_task (reached 97.5% success).
-        #     Also uncomment funnel_coef / funnel_outer / funnel_width in navrl_task_config.
-        # zone = ((self.rw["funnel_outer"] - dist) / self.rw["funnel_width"]).clamp(0.0, 1.0)
-        # self.rewards[:] = self.rewards + self.rw["funnel_coef"] * zone * reward_vel.clamp(min=0.0)
-
-        # --- F segment-based capture (DISABLED): uncomment to store this step's position for the
-        #     segment capture test above.
-        # self.prev_pos[:] = pos
+        # roll the swept-segment / PBRS buffers forward (reset_idx re-seeds them for reset envs)
+        self.prev_pos[:] = pos
+        self.prev_rel[:] = rel
 
         self.rewards[:] = torch.where(
             crashed_out, torch.full_like(self.rewards, self.rw["collision_penalty"]), self.rewards
@@ -512,22 +540,15 @@ class NavRLTask(BaseTask):
         # byte-for-byte unchanged, but it deletes the standing "loiter income" (~+log(4)=+1.39/step
         # in the open) that made hovering short optimal (V_loiter >> V_capture -> ~7% capture).
         r_ss = (torch.log(dist_m) - math.log(self.task_config.lidar_max_range)).mean(dim=1)
-        # do not reward-shape envs that just terminated (their reward is the collision penalty)
-        alive = self.terminations <= 0
+        # Do not reward-shape envs that just FINISHED (crash reward is the collision penalty;
+        # capture reward is the terminal bonus; TRUNCATED envs were already reset before this
+        # render, so their scan belongs to the NEXT episode's spawn — shaping them would leak
+        # next-episode state into this step's reward).
+        alive = (self.terminations <= 0) & (self.truncations <= 0)
         self.rewards[alive] += self.rw["safety_static_weight"] * r_ss[alive]
-
-        # B/C: near-obstacle clearance penalty (DEFAULT OFF via clearance_weight = 0.0). The log
-        # safety term above is gentle; this adds a firmer buffer -- penalize being within
-        # `clearance_margin` of the NEAREST obstacle (NavRL treats a 0.3 m proximity as a collision).
-        # With task_config.clearance_speed_gated = True it becomes speed x proximity (option C):
-        # only FAST approaches near obstacles are punished, so agility in the open is untouched.
-        cw = self.rw.get("clearance_weight", 0.0)
-        if cw != 0.0:
-            min_dist = dist_m.min(dim=1).values
-            pen = torch.relu(self.rw["clearance_margin"] - min_dist)  # > 0 only inside the margin
-            if getattr(self.task_config, "clearance_speed_gated", False):
-                pen = pen * self.obs_dict["robot_linvel"].norm(dim=1)  # C: scale by speed
-            self.rewards[alive] -= cw * pen[alive]
+        # (The B/C/D near-obstacle clearance penalty that used to live here was removed: three
+        #  null results — crash proved geometric, not reward-driven. See CRASH_TUNING_LOG.md;
+        #  code in git history @44e86a2.)
 
     # ------------------------------------------------------------------ obs
     def get_return_tuple(self):
@@ -566,8 +587,9 @@ class NavRLTask(BaseTask):
     def _goal_x_max(self):
         """Epoch-proportional goal-x ceiling: ramps k_start -> k_final over k_warmup_epochs, then
         plateaus. Uses num_task_steps as an epoch proxy (rl_games collects ppo_horizon env-steps per
-        epoch, so epoch ~= num_task_steps / ppo_horizon). Resets with the process (in-memory), like
-        the old curriculum -- on --checkpoint resume k_max restarts at k_start and re-ramps."""
+        epoch, so epoch ~= num_task_steps / ppo_horizon). num_task_steps is saved/restored via
+        get_env_state/set_env_state, so a --checkpoint resume (and --play) continues at the saved
+        curriculum position."""
         warmup_steps = max(1, int(self.cur.k_warmup_epochs) * int(self.cur.ppo_horizon))
         frac = min(1.0, self.num_task_steps / warmup_steps)
         return self.cur.k_start + (self.cur.k_final - self.cur.k_start) * frac
@@ -577,18 +599,205 @@ class NavRLTask(BaseTask):
         [k_min_ramp_start_epochs, +k_min_ramp_epochs] so late episodes drop the easy near goals and
         focus on deep crossings. The start is independent of the k_max ramp (they may overlap). Kept
         at least 1 m below k_max so the [min, max] window stays valid."""
-        k_min_final = getattr(self.cur, "k_min_final", self.cur.k_min)
         h = int(self.cur.ppo_horizon)
-        hold = int(getattr(self.cur, "full_scale_hold_epochs", 0))
-        # k_min starts rising at k_min_ramp_start_epochs (explicit). Legacy fallback: after the k_max
-        # ramp + full-scale hold, i.e. k_warmup_epochs + hold.
-        start_epochs = int(getattr(self.cur, "k_min_ramp_start_epochs",
-                                   int(self.cur.k_warmup_epochs) + hold))
-        start_steps = start_epochs * h
-        ramp_steps = max(1, int(getattr(self.cur, "k_min_ramp_epochs", self.cur.k_warmup_epochs)) * h)
+        start_steps = int(self.cur.k_min_ramp_start_epochs) * h
+        ramp_steps = max(1, int(self.cur.k_min_ramp_epochs) * h)
         frac = min(1.0, max(0.0, (self.num_task_steps - start_steps) / ramp_steps))
-        k_min = self.cur.k_min + (k_min_final - self.cur.k_min) * frac
+        k_min = self.cur.k_min + (self.cur.k_min_final - self.cur.k_min) * frac
         return min(k_min, self._goal_x_max() - 1.0)
+
+    def _target_speed_max(self):
+        """Phase 3: epoch-proportional target-speed ceiling — 0 -> speed_final over
+        [speed_ramp_start_epochs, +speed_ramp_epochs], then holds. Same num_task_steps epoch proxy
+        as _goal_x_max, so it survives --checkpoint resume and is restored at --play. An explicit
+        NAVRL_TARGET_SPEED (speed_fixed >= 0, evaluation cells) bypasses the curriculum entirely."""
+        if float(self.tm.speed_fixed) >= 0.0:
+            return float(self.tm.speed_fixed)
+        final = float(self.tm.speed_final)
+        if final <= 0.0:
+            return 0.0
+        h = int(self.cur.ppo_horizon)
+        start_steps = int(self.tm.speed_ramp_start_epochs) * h
+        ramp_steps = max(1, int(self.tm.speed_ramp_epochs) * h)
+        frac = min(1.0, max(0.0, (self.num_task_steps - start_steps) / ramp_steps))
+        return final * frac
+
+    def _sample_target_motion(self, env_ids):
+        """Per-episode target speed + trajectory pattern for reset envs. Training samples
+        speed ~ U[0, v_max(epoch)] so static episodes stay in-distribution (the v_t=0 skill is
+        never forgotten); NAVRL_TARGET_SPEED forces the exact speed instead (evaluation cells)."""
+        n = len(env_ids)
+        if n == 0:
+            return
+        v_max = self._target_speed_max()
+        if float(self.tm.speed_fixed) >= 0.0:
+            speed = torch.full((n,), float(self.tm.speed_fixed), device=self.device)
+        else:
+            speed = v_max * torch.rand(n, device=self.device)
+        self._tm_speed[env_ids] = speed
+
+        pat = str(self.tm.pattern)
+        if pat == "mixed":
+            code = torch.randint(0, 2, (n,), device=self.device)  # cv | waypoint, 50:50
+        elif pat == "cv":
+            code = torch.zeros(n, dtype=torch.long, device=self.device)
+        elif pat == "waypoint":
+            code = torch.ones(n, dtype=torch.long, device=self.device)
+        elif pat == "circle":
+            code = torch.full((n,), 2, dtype=torch.long, device=self.device)
+        else:
+            raise ValueError(
+                f"unknown NAVRL_TARGET_PATTERN '{pat}' (expected cv|waypoint|circle|mixed)"
+            )
+        self._tm_pattern[env_ids] = code
+
+        # cv: random persistent heading (reflected at walls while the episode runs)
+        ang = 2.0 * math.pi * torch.rand(n, device=self.device)
+        self._tm_cv_vel[env_ids, 0] = speed * torch.cos(ang)
+        self._tm_cv_vel[env_ids, 1] = speed * torch.sin(ang)
+        # waypoint: first waypoint anywhere inside the wall margins
+        self._tm_waypoint[env_ids] = self._sample_waypoints(env_ids)
+        # circle: ring around the (bar-clear) spawn goal, random direction
+        self._tm_circle_center[env_ids] = self.target_position[env_ids, 0:2]
+        r = max(1e-6, float(self.tm.circle_radius))
+        sign = torch.where(
+            torch.rand(n, device=self.device) < 0.5,
+            torch.full((n,), -1.0, device=self.device),
+            torch.full((n,), 1.0, device=self.device),
+        )
+        self._tm_circle_angvel[env_ids] = sign * speed / r
+        # realized velocity starts at zero; _advance_target sets it from actual displacement
+        self.target_vel_w[env_ids] = 0.0
+
+    def _sample_waypoints(self, env_ids):
+        """Uniform random XY waypoints inside the wall margins (per-env bounds)."""
+        b_min = self.obs_dict["env_bounds_min"][env_ids]
+        b_max = self.obs_dict["env_bounds_max"][env_ids]
+        m = float(self.cur.wall_margin)
+        lo = b_min[:, 0:2] + m
+        hi = b_max[:, 0:2] - m
+        return lo + (hi - lo) * torch.rand(len(env_ids), 2, device=self.device)
+
+    def _advance_target(self):
+        """Phase 3: integrate the virtual target one RL step (step_dt = 0.1 s). Patterns:
+        cv (heading held, reflected at the wall margins), waypoint (random waypoints), circle
+        (parametric ring; the angle is re-derived from the current position each step, so bar
+        push-outs simply slide the target around the ring). All patterns are then pushed out of
+        bar clearance and clamped inside the wall margins; target_vel_w is set from the REALIZED
+        displacement so the range-rate reward always matches the actual motion (reflections and
+        push-outs included). Static episodes (speed 0 — the Phases 1-2 default) exit immediately,
+        keeping the task byte-identical."""
+        moving = self._tm_speed > 1e-6
+        if not bool(moving.any()):
+            return  # target_vel_w stays exactly zero -> range-rate == static vel term
+
+        dt = self.step_dt
+        old_xy = self.target_position[:, 0:2].clone()
+        new_xy = old_xy.clone()
+        b_min = self.obs_dict["env_bounds_min"]
+        b_max = self.obs_dict["env_bounds_max"]
+        m = float(self.cur.wall_margin)
+        lo = b_min[:, 0:2] + m
+        hi = b_max[:, 0:2] - m
+
+        # -- cv: integrate the held heading, reflect position AND velocity at the wall margins
+        cv = moving & (self._tm_pattern == 0)
+        if bool(cv.any()):
+            p = old_xy[cv] + self._tm_cv_vel[cv] * dt
+            v = self._tm_cv_vel[cv]
+            for ax in (0, 1):
+                below = p[:, ax] < lo[cv, ax]
+                above = p[:, ax] > hi[cv, ax]
+                p[:, ax] = torch.where(below, 2.0 * lo[cv, ax] - p[:, ax], p[:, ax])
+                p[:, ax] = torch.where(above, 2.0 * hi[cv, ax] - p[:, ax], p[:, ax])
+                v[:, ax] = torch.where(below | above, -v[:, ax], v[:, ax])
+            self._tm_cv_vel[cv] = v
+            new_xy[cv] = p
+
+        # -- waypoint: head toward the waypoint at the episode speed; resample on arrival
+        wp = moving & (self._tm_pattern == 1)
+        if bool(wp.any()):
+            to_wp = self._tm_waypoint[wp] - old_xy[wp]
+            d_wp = to_wp.norm(dim=1, keepdim=True).clamp(min=1e-6)
+            step_len = (self._tm_speed[wp] * dt).unsqueeze(1)
+            # do not overshoot the waypoint within a step
+            move = to_wp / d_wp * torch.minimum(step_len, d_wp)
+            new_xy[wp] = old_xy[wp] + move
+            reached = (self._tm_waypoint[wp] - new_xy[wp]).norm(dim=1) < float(
+                self.tm.waypoint_reach_m
+            )
+            if bool(reached.any()):
+                wp_idx = wp.nonzero(as_tuple=False).squeeze(-1)
+                self._tm_waypoint[wp_idx[reached]] = self._sample_waypoints(wp_idx[reached])
+
+        # -- circle: orbit the center at the CURRENT radius (adaptive). Deriving both angle and
+        # radius from the current position each step means a bar push-out simply enlarges the
+        # orbit instead of fighting a fixed-radius snap-back (which oscillated in testing).
+        ci = moving & (self._tm_pattern == 2)
+        if bool(ci.any()):
+            rel_c = old_xy[ci] - self._tm_circle_center[ci]
+            r_cur = rel_c.norm(dim=1).clamp(min=max(0.5, 1e-6))
+            theta = torch.atan2(rel_c[:, 1], rel_c[:, 0])
+            # keep the TANGENTIAL speed at the episode speed regardless of the current radius
+            omega = torch.sign(self._tm_circle_angvel[ci]) * self._tm_speed[ci] / r_cur
+            theta = theta + omega * dt
+            new_xy[ci] = self._tm_circle_center[ci] + r_cur.unsqueeze(1) * torch.stack(
+                (torch.cos(theta), torch.sin(theta)), dim=1
+            )
+
+        # -- keep the capture sphere flyable: push the target out of bar clearance. With bars only
+        # 1.5 m apart and a 1.0 m clearance the exclusion discs OVERLAP: a naive radial push out of
+        # the nearest bar PING-PONGS forever inside the lens between two discs (verified by probe —
+        # push out of A lands in B's disc and vice versa). Instead push along the COMPOSITE of the
+        # unit away-vectors of ALL violating bars: in a symmetric lens that resolves to the
+        # perpendicular escape direction. Iterated with the wall clamp so a wall-adjacent bar
+        # slides the target along the wall instead of fighting the clamp.
+        clearance = float(getattr(self.task_config, "goal_min_bar_clearance", 0.0))
+        pushed_any = torch.zeros(self.num_envs, dtype=torch.bool, device=self.device)
+        if clearance > 0.0:
+            mov_idx = moving.nonzero(as_tuple=False).squeeze(-1)
+            bars_xy = self.obs_dict["obstacle_position"][mov_idx][:, :, 0:2]  # (M, B, 2)
+            arangeM = torch.arange(len(mov_idx), device=self.device)
+            for _ in range(6):
+                new_xy = torch.maximum(torch.minimum(new_xy, hi), lo)  # walls first
+                diff = new_xy[mov_idx].unsqueeze(1) - bars_xy          # (M, B, 2)
+                d_all = diff.norm(dim=2)                               # (M, B)
+                viol = d_all < clearance
+                rows = viol.any(dim=1)
+                if not bool(rows.any()):
+                    break
+                unit = diff / d_all.clamp(min=1e-6).unsqueeze(2)
+                comp = (unit * viol.unsqueeze(2).float()).sum(dim=1)   # (M, 2)
+                comp_n = comp.norm(dim=1, keepdim=True)
+                # degenerate (dead-center of a symmetric lens): fall back to away-from-nearest
+                jmin = d_all.min(dim=1).indices
+                fallback = new_xy[mov_idx] - bars_xy[arangeM, jmin]
+                fallback = fallback / fallback.norm(dim=1, keepdim=True).clamp(min=1e-6)
+                dirn = torch.where(comp_n > 1e-6, comp / comp_n.clamp(min=1e-6), fallback)
+                step_out = (clearance - d_all).clamp(min=0.0).max(dim=1).values + 1e-3
+                sel = mov_idx[rows]
+                new_xy[sel] = new_xy[sel] + dirn[rows] * step_out[rows].unsqueeze(1)
+                pushed_any[sel] = True
+            # a pushed WAYPOINT target was heading somewhere unreachable next to a bar —
+            # resample its waypoint so it does not keep fighting the push-out every step
+            re_wp = pushed_any & (self._tm_pattern == 1)
+            if bool(re_wp.any()):
+                re_idx = re_wp.nonzero(as_tuple=False).squeeze(-1)
+                self._tm_waypoint[re_idx] = self._sample_waypoints(re_idx)
+
+        # -- final wall clamp (physical bound) and write-back
+        new_xy = torch.maximum(torch.minimum(new_xy, hi), lo)
+        self.target_position[:, 0:2] = torch.where(
+            moving.unsqueeze(1), new_xy, old_xy
+        )
+        self.target_position[:, 2] = self.task_config.flight_altitude
+        # realized world velocity (z = 0): what the range-rate reward sees
+        self.target_vel_w[:, 0:2] = torch.where(
+            moving.unsqueeze(1),
+            (self.target_position[:, 0:2] - old_xy) / dt,
+            torch.zeros_like(old_xy),
+        )
+        self.target_vel_w[:, 2] = 0.0
 
     def _update_curriculum(self, successes, finished):
         # Goal-distance curriculum stays epoch-proportional via _goal_x_max/_goal_x_min. This hook
@@ -644,18 +853,20 @@ class NavRLTask(BaseTask):
         n_nc = int(torch.sum(nocrash).item())
         closest_nc_sum = float(torch.sum(self.ep_min_goal_dist[nocrash]).item()) if n_nc else 0.0
         closest_min = float(torch.min(self.ep_min_goal_dist[nocrash]).item()) if n_nc else None
+        tm_on = float(self.tm.speed_final) > 0.0 or float(self.tm.speed_fixed) >= 0.0
         record_navrl_epoch_episodes(
             num_finished=n_fin,
-            num_reached=int(torch.sum(self.ep_reached & finished).item()),
             num_captured=int(torch.sum(successes).item()),
             num_crash=int(torch.sum(crashes > 0).item()),
             num_timeout=int(torch.sum(timeouts).item()),
             closest_nocrash_sum=closest_nc_sum,
             closest_nocrash_count=n_nc,
             closest_min=closest_min,
-            goal_dist_max=self.cur_goal_dist_max if self.cur.use_curriculum else None,
-            goal_dist_min=self.cur_goal_dist_min if self.cur.use_curriculum else None,
+            goal_dist_max=self.cur_goal_dist_max,
+            goal_dist_min=self.cur_goal_dist_min,
             n_bars_active=self.n_bars_active,
+            target_speed_max=self._target_speed_max() if tm_on else None,
+            target_speed_mean=float(self._tm_speed.mean().item()) if tm_on else None,
         )
 
     def _log_progress(self, successes, crashes, timeouts, finished=None):

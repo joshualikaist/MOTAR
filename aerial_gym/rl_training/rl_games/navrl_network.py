@@ -2,7 +2,8 @@
 
 Mirrors the feature extractor in reference/NavRL isaac-training/training/scripts/ppo.py:
 the 36x4 LiDAR range scan passes through a 3-layer conv stack into a 128-d embedding
-(LayerNorm), which is concatenated with the 8-d goal-frame internal state (S_int) and
+(LayerNorm), which is concatenated with the 12-d internal state (S_int: goal-frame
+direction/distance/velocity + body-frame heading terms for learned yaw) and
 fused by a [256, 256] ELU MLP. Unlike the flat-MLP baseline (ppo_navrl.yaml), the conv
 stack preserves the scan's spatial structure — which directions hold nearby obstacles —
 instead of flattening it away, which is NavRL's lever for collision avoidance.
@@ -11,8 +12,8 @@ Differences from NavRL kept deliberately (recorded in RESEARCH_PLAN/WORKLOG): Ga
 policy with fixed log-sigma via rl_games' continuous_a2c_logstd model instead of a Beta
 head, and a shared actor/critic trunk.
 
-Observation layout (152) as produced by navrl_task:
-    [ S_int (8) | LiDAR scan, row-major (vbeams=4 x hbeams=36 -> 144) ]
+Observation layout (156) as produced by navrl_task:
+    [ S_int (12) | LiDAR scan, row-major (vbeams=4 x hbeams=36 -> 144) ]
 
 Select it from YAML with:
     params:

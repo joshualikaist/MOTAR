@@ -37,7 +37,7 @@ fi
 PY="${PYTHON:-python}"                 # 활성화된 conda env 의 python (2번째 머신 이식용, 경로 하드코딩 X)
 FILE="${FILE:-ppo_navrl_cnn.yaml}"     # NavRL LiDAR CNN (권장). MLP 는 ppo_navrl.yaml
 TASK="${TASK:-navrl_task}"
-NUM_ENVS="${NUM_ENVS:-256}"            # 256 envs + 48 bars ≈ 6.8GB (8GB 안전선). 4GB 는 GPU4GB=1 (→256)
+NUM_ENVS="${NUM_ENVS:-256}"            # 256 envs (기본 빌드 = 150-bar 천장, 48 active) ≈ 6.1GB. 4GB 는 GPU4GB=1 (→256)
 
 mkdir -p runs train_session_logs
 LOG="train_session_logs/train_$(date +%y%m%d_%H%M).log"

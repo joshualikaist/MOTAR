@@ -85,9 +85,6 @@ class AERIALRLGPUEnv(vecenv.IVecEnv):
     def reset(self):
         return self.env.reset()
 
-    def reset_done(self):
-        return self.env.reset_done()
-
     def get_env_state(self):
         # rl_games saves this into the checkpoint ('env_state'); forward to the task (via the
         # gym.Wrapper) so per-task state like navrl_task's curriculum counter survives resume.
@@ -462,7 +459,7 @@ def update_config(config, args):
         try:
             _gn = int(os.environ.get("PLAY_GAMES_NUM", "64"))
         except ValueError:
-            _gn = 10
+            _gn = 64
         player_cfg["games_num"] = max(1, _gn)
     config["params"]["config"]["player"] = player_cfg
 
