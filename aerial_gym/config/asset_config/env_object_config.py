@@ -666,6 +666,45 @@ class intercept_quad_target_params(asset_state_params):
     ]
 
 
+class navrl_target_params(asset_state_params):
+    """NavRL Phase-3 moving target drone (semantic_id=50).
+
+    A single drone-sized body the pursuer must LOCATE from its onboard sensors (no ground-truth
+    position). It is registered as an env asset so its mesh is baked into the raycastable warp
+    scene and shows up in the LiDAR/camera SEGMENTATION channel as id=50 (bars are id=3). It is
+    kept_in_env (so it lands at obstacle index 0 -- the task slices obstacle_position[:, 1:] for
+    bars and drives obstacle_position[:, 0] itself each step) and never deactivated.
+
+    fix_base_link + disable_gravity + collision_mask=0: the body is teleported kinematically by
+    NavRLTask (no physics dynamics, no crash on contact -- capture stays the geometric point test).
+
+    The XY/Z state ratio is DELIBERATELY the same as bar_asset_params: AssetManager._placement_band
+    reads asset index 0's ratio as the placement band for ALL obstacles, so a divergent ratio here
+    would collapse the bar-scatter band. The initial pose is overwritten by the task at reset
+    anyway, so the sampled placement is irrelevant -- only the band-protection matters.
+    """
+
+    num_assets = 1
+    asset_folder = f"{AERIAL_GYM_DIRECTORY}/resources/models/environment_assets/objects"
+    file = "navrl_target_drone.urdf"
+
+    collision_mask = 0
+    disable_gravity = True
+    density = 0.000001
+    replace_cylinder_with_capsule = False
+    flip_visual_attachments = True
+    collapse_fixed_joints = False
+    fix_base_link = True
+    keep_in_env = True
+    per_link_semantic = False
+    semantic_id = INTERCEPT_TARGET_SEMANTIC_ID  # 50
+    color = [220, 40, 40]
+
+    # Same band as bar_asset_params (see docstring): x in [0.13, 0.96], y in [0, 1], z = 1/3.
+    min_state_ratio = [0.13, 0.0, 0.3333, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    max_state_ratio = [0.96, 1.0, 0.3333, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+
+
 class bar_asset_params(asset_state_params):
     """Variable-size vertical obstacle bars ("막대") for the controlled NavRL bars environment.
 

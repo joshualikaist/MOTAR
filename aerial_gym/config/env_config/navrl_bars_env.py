@@ -54,7 +54,9 @@ class NavRLBarsEnvCfg:
         upper_bound_max = [24.0, 24.0, 3.0]
 
     class env_config:
-        # Only bars. Everything else (walls, panels, objects, trees) is OFF.
+        # Only bars. The Phase-3 moving target is NOT a mesh asset -- it is injected analytically
+        # into the LiDAR (ray-sphere, NAVRL_VISION=1) so a fast target needs no per-step mesh
+        # refit. Walls, panels, objects, trees stay OFF.
         include_asset_type = {
             "bars": True,
         }

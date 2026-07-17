@@ -133,6 +133,18 @@ class NavRLTask(BaseTask):
         # --- shared views into the environment tensors
         self.obs_dict = self.sim_env.get_obs()
         self.density = getattr(self.task_config, "density", None)
+
+        # Phase-3 vision pivot (NAVRL_VISION=1): the moving target is injected ANALYTICALLY into
+        # the LiDAR as a sphere -- the sensor allocates a per-env target-center tensor and exposes
+        # it here as obs_dict["navrl_target_position"]. The task drives it each step by mirroring
+        # self.target_position into it (the captured render graph reads the same storage), so the
+        # pursuer perceives the target at its live position with NO mesh and NO per-step warp refit
+        # (the refit loop was the throughput killer). None when NAVRL_VISION is off -> the verified
+        # Phases 1-2 (injected-goal) task is untouched. self.target_position stays the single source
+        # of truth for reward/capture/curriculum; the sensor sphere is a mirror of it.
+        self._sensor_target = self.obs_dict.get("navrl_target_position", None)
+        self.has_vision_target = self._sensor_target is not None
+
         self.max_bars_available = self._get_max_bars_available()
         initial_bars_requested = self._initial_active_bars()
         self.n_bars_active = 0
@@ -279,6 +291,9 @@ class NavRLTask(BaseTask):
         # respawned those envs by the time reset_idx() is called from step().
         self.sim_env.reset()
         self.reset_idx(torch.arange(self.num_envs, device=self.device))
+        # place the analytic target sphere at its spawn BEFORE the first render so the very first
+        # observation already carries the target at its true position.
+        self._sync_target_to_sensor()
         # render once so the first observation carries a valid LiDAR scan
         self.sim_env.render(render_components="sensors")
         return self.get_return_tuple()
@@ -421,6 +436,10 @@ class NavRLTask(BaseTask):
         self._log_progress(successes, crashes, timeouts, finished)
         self._update_curriculum(successes, finished)
         self._record_epoch_dashboard(successes, crashes, timeouts, finished)
+
+        # Mirror the moving target into the analytic sensor sphere BEFORE the render, so the LiDAR
+        # sees the target at its CURRENT position (self.target_position, already advanced this step).
+        self._sync_target_to_sensor()
 
         # render (raycast LiDAR from the new state) and reset finished envs
         reset_envs = self.sim_env.post_reward_calculation_step()
@@ -677,6 +696,15 @@ class NavRLTask(BaseTask):
         lo = b_min[:, 0:2] + m
         hi = b_max[:, 0:2] - m
         return lo + (hi - lo) * torch.rand(len(env_ids), 2, device=self.device)
+
+    def _sync_target_to_sensor(self):
+        """Phase-3 vision pivot: drive the analytic LiDAR target sphere to the virtual target's
+        current position, so the pursuer perceives the target where it actually is. No-op unless
+        NAVRL_VISION allocated the sensor target buffer. self.target_position stays the single
+        source of truth (reward/capture/curriculum); this only mirrors it into the sensor tensor,
+        whose storage the captured render graph reads -- no mesh, no per-step refit."""
+        if self._sensor_target is not None:
+            self._sensor_target[:] = self.target_position
 
     def _advance_target(self):
         """Phase 3: integrate the virtual target one RL step (step_dt = 0.1 s). Patterns:

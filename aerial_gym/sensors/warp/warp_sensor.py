@@ -143,6 +143,10 @@ class WarpSensor(BaseSensor):
         self.sensor.set_image_tensors(
             pixels=self.pixels, segmentation_pixels=self.segmentation_pixels
         )
+        # Expose the analytic moving-target center so the task can drive it in place each step
+        # (the captured render graph reads this same storage). See warp_lidar.inject_target.
+        if getattr(self.sensor, "target_positions", None) is not None:
+            global_tensor_dict["navrl_target_position"] = self.sensor.target_positions
         self.reset()
 
         logger.debug(f"[DONE] Initializing sensor tensors")

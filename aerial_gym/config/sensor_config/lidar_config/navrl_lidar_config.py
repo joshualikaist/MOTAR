@@ -1,5 +1,19 @@
+import os
+
 from aerial_gym.config.sensor_config.lidar_config.base_lidar_config import (
     BaseLidarConfig,
+)
+
+# Phase-3 vision pivot (NAVRL_VISION=1): the pursuer must LOCATE the moving target purely from its
+# sensors. The target is injected ANALYTICALLY as a moving sphere directly in the LiDAR kernel
+# (ray-sphere) -- no mesh, no per-step warp refit (the refit loop is the throughput killer; see
+# tools/test_navrl_p3_stage0). Enabling this turns on the per-ray semantic channel AND the target
+# injection. Default OFF = range-only scan, byte-compatible with the verified Phases 1-2.
+_NAVRL_VISION = os.environ.get("NAVRL_VISION", "0").strip().lower() not in (
+    "",
+    "0",
+    "false",
+    "no",
 )
 
 
@@ -44,10 +58,17 @@ class NavRLLidarConfig(BaseLidarConfig):
     # --- attach yaw-only: scan plane stays level under body roll/pitch (NavRL attach_yaw_only)
     yaw_only_attach = True
 
-    # --- range image only; static-obstacle scan does not need segmentation
+    # --- range image; the per-ray semantic channel + analytic moving-target injection are enabled
+    # ONLY for the Phase-3 vision pivot (NAVRL_VISION=1). The pursuer then detects the target as
+    # rays that return semantic_id=50 (target_semantic_id), at the target's live position.
     return_pointcloud = False
     pointcloud_in_world_frame = False
-    segmentation_camera = False
+    segmentation_camera = _NAVRL_VISION
+
+    # Analytic moving-target sphere (see warp_lidar.inject_target / the *_target LiDAR kernel).
+    inject_target = _NAVRL_VISION
+    target_radius = 0.20  # ~matches the 0.30 m target-drone footprint (half-extent + margin)
+    target_semantic_id = 50  # INTERCEPT_TARGET_SEMANTIC_ID; bars are OBJECT_SEMANTIC_ID=3
 
     # --- NavRL ray caster: sensor at body center, no placement randomization, no noise
     randomize_placement = False
