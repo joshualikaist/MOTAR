@@ -65,10 +65,15 @@ NAVRL_VISION=1 NAVRL_NUM_BARS=110 ./train_navrl.sh --seed 1
 
 ### (B) 보조: GTX 1650 Ti 4GB
 ```bash
-# 학습 말고 "평가 스윕 / 시각화" 전용. GPU4GB 프리셋 사용.
+# (1) 비전 학습 시도 — base_sim_4gb + ppo_navrl_vision_4gb.yaml(N=128, minibatch 2048) 자동 선택.
+NAVRL_VISION=1 GPU4GB=1 NAVRL_NUM_BARS=50 ./train_navrl.sh --seed 1
+#   OOM 나면 env 수를 낮춘다 (minibatch 2048 이 32*64=2048 도 나눔):
+NAVRL_VISION=1 GPU4GB=1 NUM_ENVS=64 NAVRL_NUM_BARS=50 ./train_navrl.sh --seed 1
+# (2) 평가 스윕 / 시각화
 NUM_ENVS=128 HEADLESS=True PLAY_GAMES_NUM=3000 ./play_navrl.sh <checkpoint>   # 4gb 프리셋 자동
 ```
-- vision 학습은 불가. LiDAR-only 평가·그림 생성 담당.
+- 비전 태스크는 raw 이미지를 관측에 안 넣어(검출기 8-dim + 2ch LiDAR) 4GB에도 **들어갈 여지**가 있음.
+  단 실적재는 미검증 — OOM이면 N=64로, 그래도 안 되면 평가·시각화 전용으로.
 
 ### (C) 업그레이드 로컬: RTX 3090 / 4090 (24GB) ★추천
 ```bash

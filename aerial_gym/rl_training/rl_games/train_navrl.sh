@@ -28,26 +28,32 @@ export PYTHONNOUSERSITE=1
 # density sweep 은 max_bars 25/50 라 가벼워, 3070 과 맞추려 NUM_ENVS=512 를 직접 붙여 돌린다(검증됨 ~2.5GB):
 #   NAVRL_MAX_BARS=50 NAVRL_NUM_BARS=50 NUM_ENVS=512 GPU4GB=1 ./train_navrl.sh
 # GPU4GB 를 세팅하지 않으면 8 GB 메인 머신 동작은 기존 그대로. (개별 변수로 오버라이드 가능.)
+# 4GB(1650 Ti 등): PhysX GPU 버퍼 축소 프리셋. yaml/NUM_ENVS 선택은 아래 모드 블록에서 함께 결정.
 if [ "${GPU4GB:-0}" = "1" ]; then
     export AERIAL_GYM_SIM_NAME="${AERIAL_GYM_SIM_NAME:-base_sim_4gb}"
-    FILE="${FILE:-ppo_navrl_cnn_4gb.yaml}"
-    NUM_ENVS="${NUM_ENVS:-256}"
 fi
 
-# Phase-3 vision pivot: NAVRL_VISION=1 → 센서 전용 actor + 비대칭 critic yaml 자동 선택.
-# LSTM(부분관측 기억)까지 켜려면: NAVRL_VISION=1 NAVRL_LSTM=1 ./train_navrl.sh
+# yaml + 기본 env 수 선택 (VISION 이 GPU4GB 보다 우선 — 조합이면 vision_4gb 를 고른다).
+#   NAVRL_VISION=1                 → 센서 전용 actor + 비대칭 critic (ppo_navrl_vision.yaml)
+#   NAVRL_VISION=1 NAVRL_LSTM=1    → 위 + 부분관측 LSTM
+#   NAVRL_VISION=1 GPU4GB=1        → 4GB 비전 (N=128, minibatch 2048, base_sim_4gb)
+#   GPU4GB=1 (비전 아님)           → 4GB LiDAR CNN
 if [ "${NAVRL_VISION:-0}" = "1" ]; then
-    if [ "${NAVRL_LSTM:-0}" = "1" ]; then
-        FILE="${FILE:-ppo_navrl_vision_lstm.yaml}"
+    if [ "${GPU4GB:-0}" = "1" ]; then
+        FILE="${FILE:-ppo_navrl_vision_4gb.yaml}"; DEF_ENVS=128
+    elif [ "${NAVRL_LSTM:-0}" = "1" ]; then
+        FILE="${FILE:-ppo_navrl_vision_lstm.yaml}"; DEF_ENVS=256
     else
-        FILE="${FILE:-ppo_navrl_vision.yaml}"
+        FILE="${FILE:-ppo_navrl_vision.yaml}"; DEF_ENVS=256
     fi
+elif [ "${GPU4GB:-0}" = "1" ]; then
+    FILE="${FILE:-ppo_navrl_cnn_4gb.yaml}"; DEF_ENVS=256
 fi
 
 PY="${PYTHON:-python}"                 # 활성화된 conda env 의 python (2번째 머신 이식용, 경로 하드코딩 X)
 FILE="${FILE:-ppo_navrl_cnn.yaml}"     # NavRL LiDAR CNN (권장). MLP 는 ppo_navrl.yaml
 TASK="${TASK:-navrl_task}"
-NUM_ENVS="${NUM_ENVS:-256}"            # 256 envs (기본 빌드 = 150-bar 천장, 48 active) ≈ 6.1GB. 4GB 는 GPU4GB=1 (→256)
+NUM_ENVS="${NUM_ENVS:-${DEF_ENVS:-256}}"  # 8GB 기본 256. vision+4GB 는 128. (직접 오버라이드 가능)
 
 mkdir -p runs train_session_logs
 LOG="train_session_logs/train_$(date +%y%m%d_%H%M).log"
