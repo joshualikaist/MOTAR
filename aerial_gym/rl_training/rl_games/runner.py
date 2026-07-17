@@ -46,9 +46,19 @@ class ExtractObsWrapper(gym.Wrapper):
     def __init__(self, env):
         super().__init__(env)
 
+    @staticmethod
+    def _extract(observations):
+        # Asymmetric actor-critic (navrl vision mode): the task also emits privileged critic
+        # input under 'states'. rl_games' obs_to_tensors keeps a dict containing an 'obs' key
+        # as-is, and get_action_values feeds obs['states'] to the central value net; the player
+        # extracts obs['obs'] and ignores 'states'.
+        if "states" in observations:
+            return {"obs": observations["observations"], "states": observations["states"]}
+        return observations["observations"]
+
     def reset(self, **kwargs):
         observations, *_ = super().reset(**kwargs)
-        return observations["observations"]
+        return self._extract(observations)
 
     def step(self, action):
         observations, rewards, terminated, truncated, infos = super().step(action)
@@ -60,7 +70,7 @@ class ExtractObsWrapper(gym.Wrapper):
         )
 
         return (
-            observations["observations"],
+            self._extract(observations),
             rewards,
             dones,
             infos,
@@ -115,6 +125,14 @@ class AERIALRLGPUEnv(vecenv.IVecEnv):
             np.ones(self.env.task_config.observation_space_dim) * -np.Inf,
             np.ones(self.env.task_config.observation_space_dim) * np.Inf,
         )
+        # navrl vision mode: expose the privileged-critic state space so rl_games'
+        # central_value_config builds against the right shape (falls back to observation_space
+        # if absent, which would silently defeat the asymmetric critic).
+        state_dim = int(getattr(self.env.task_config, "state_space_dim", 0) or 0)
+        if state_dim > 0:
+            info["state_space"] = spaces.Box(
+                np.ones(state_dim) * -np.Inf, np.ones(state_dim) * np.Inf
+            )
         if not quiet_startup_enabled():
             print(info["action_space"], info["observation_space"])
         return info
@@ -514,8 +532,10 @@ if __name__ == "__main__":
         from rl_games.algos_torch import model_builder
 
         from aerial_gym.rl_training.rl_games.navrl_network import NavRLCNNBuilder
+        from aerial_gym.rl_training.rl_games.navrl_vision_network import NavRLVisionBuilder
 
         model_builder.register_network("navrl_cnn", NavRLCNNBuilder)
+        model_builder.register_network("navrl_vision", NavRLVisionBuilder)
 
         # Task-aware dashboard config: banner title, episode-length cap and the optional
         # reward "design range" hint all follow the task being trained.

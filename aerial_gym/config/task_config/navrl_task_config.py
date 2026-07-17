@@ -67,9 +67,57 @@ class task_config:
     lidar_vbeams = 4
     lidar_max_range = 4.0
 
-    # Observation = S_int (12) + flattened LiDAR (36 * 4 = 144) = 156.
-    internal_state_dim = 12  # (b) 8 nav dims + goal_bearing_body(2) + vel_body_xy(2) for learned yaw
-    observation_space_dim = internal_state_dim + lidar_hbeams * lidar_vbeams
+    # ------------------------------------------------------------------ Phase-3 vision pivot
+    class vision:
+        """NAVRL_VISION=1: the ACTOR perceives the target only through its sensors -- no ground-
+        truth target position in the policy observation. Reward/termination/critic keep GT
+        (privileged reward shaping + asymmetric critic are standard and do not leak into the
+        deployed actor). Default OFF keeps the verified Phases 1-2 injected-goal task
+        byte-compatible.
+
+        Perception channels:
+          1. semantic LiDAR (Stage 0.5): the 36x4 range image carries the target as rays that
+             return semantic id 50; the obs adds a per-ray target-mask channel.
+          2. modeled forward DETECTOR (perfect-detection camera abstraction): bearing/elevation/
+             range are exposed ONLY when the target is inside the camera FOV, within range, and
+             not occluded by a bar (warp line-of-sight ray). Stage 2 replaces this with the real
+             depth+segmentation pixel pipeline behind the same interface.
+          3. a detector-side tracker (last-seen bearing + time-since-seen) -- the standard
+             onboard filter memory (NavRL itself tracks dynamic obstacles onboard).
+        """
+
+        enable = _env_bool("NAVRL_VISION", False)
+
+        # -- modeled detector (forward camera, gimbal-level like the yaw-only LiDAR attach)
+        detector_max_range = 20.0   # [m] detection range (a segmentation camera covers this)
+        detector_hfov_deg = 87.0    # matches the D455-style forward depth camera
+        detector_vfov_deg = 58.0
+        occlusion_margin = 0.25     # [m] LOS ray length = dist - margin (don't hit the target)
+        tracker_memory_s = 5.0      # time_since_seen saturates at this many seconds
+
+        # -- reward add-ons (vision mode only)
+        visibility_bonus = 0.02     # per-step bonus while the detector sees the target
+        oob_margin = 0.5            # [m] outside the arena bounds by this much -> terminate as a
+                                    # crash (the goal attraction that implicitly kept the drone
+                                    # in-bounds is gone when the target is unobserved)
+
+        # -- observation layout (actor)
+        ego_dim = 9        # vel_vehicle(3) + yaw_rate(1) + prev_action(4) + height(1)
+        detector_dim = 8   # visible, bearing sin/cos, elev, range | last bearing sin/cos, t_since
+        privileged_dim = 8 # critic-only extras: rpos_unit_veh(3), dist, target_vel_veh(3), closing
+
+    # Observation:
+    #   default      = S_int (12) + LiDAR range (144)                          = 156
+    #   NAVRL_VISION = ego (9) + detector (8) + LiDAR range+target-mask (288)  = 305
+    #   (critic 'states' in vision mode = actor obs + privileged extras       = 313)
+    if vision.enable:
+        internal_state_dim = vision.ego_dim + vision.detector_dim  # network state/scan split
+        observation_space_dim = internal_state_dim + 2 * lidar_hbeams * lidar_vbeams
+        state_space_dim = observation_space_dim + vision.privileged_dim
+    else:
+        internal_state_dim = 12  # (b) 8 nav dims + goal_bearing_body(2) + vel_body_xy(2)
+        observation_space_dim = internal_state_dim + lidar_hbeams * lidar_vbeams
+        state_space_dim = 0  # no asymmetric critic in the injected-goal task
 
     # Action = 3D velocity in the goal frame (NavRL) + a learned 4th action = yaw-rate (option b).
     # Yaw used to be HELD; now action[:, 3] commands the euler yaw-rate so the agent points its nose

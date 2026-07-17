@@ -165,6 +165,16 @@ flattens the scan). Both run 6000 epochs.
   with `NAVRL_TARGET_SPEED=1.0 NAVRL_TARGET_PATTERN=cv ./play_navrl.sh <ckpt>`. Patterns:
   cv / waypoint / circle (eval-only) / mixed. Default (speed 0) is byte-compatible with Phases 1-2.
   See `PHASE3_PLAN.md` for the experiment plan.
+- **Phase 3 vision pivot (sensor-only interception) — code in place:** with `NAVRL_VISION=1` the
+  ACTOR never receives the ground-truth target position. It perceives the target through
+  (a) the semantic LiDAR (the 36×4 scan carries the target as id-50 rays, injected analytically —
+  no mesh refit) and (b) a modeled forward detector (87° FOV, 20 m, bar-occlusion-checked via a
+  warp LOS ray) with a last-seen tracker. Actions switch to the vehicle frame; a privileged
+  critic (`central_value_config`, actor obs + GT extras) trains the sensor-only actor
+  (asymmetric actor-critic — the critic is dropped at deployment). Train:
+  `NAVRL_VISION=1 ./train_navrl.sh` (add `NAVRL_LSTM=1` for the recurrent POMDP variant).
+  Verification probes: `tools/test_navrl_p3_stage0.py` (sensor sees the moving target),
+  `tools/test_navrl_p3_stage1.py` (detector geometry, no-GT-leakage, asymmetric states).
 
 #### Monitoring training — TensorBoard + console metrics
 

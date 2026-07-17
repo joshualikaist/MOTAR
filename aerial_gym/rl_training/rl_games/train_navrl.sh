@@ -34,6 +34,16 @@ if [ "${GPU4GB:-0}" = "1" ]; then
     NUM_ENVS="${NUM_ENVS:-256}"
 fi
 
+# Phase-3 vision pivot: NAVRL_VISION=1 → 센서 전용 actor + 비대칭 critic yaml 자동 선택.
+# LSTM(부분관측 기억)까지 켜려면: NAVRL_VISION=1 NAVRL_LSTM=1 ./train_navrl.sh
+if [ "${NAVRL_VISION:-0}" = "1" ]; then
+    if [ "${NAVRL_LSTM:-0}" = "1" ]; then
+        FILE="${FILE:-ppo_navrl_vision_lstm.yaml}"
+    else
+        FILE="${FILE:-ppo_navrl_vision.yaml}"
+    fi
+fi
+
 PY="${PYTHON:-python}"                 # 활성화된 conda env 의 python (2번째 머신 이식용, 경로 하드코딩 X)
 FILE="${FILE:-ppo_navrl_cnn.yaml}"     # NavRL LiDAR CNN (권장). MLP 는 ppo_navrl.yaml
 TASK="${TASK:-navrl_task}"

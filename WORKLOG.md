@@ -329,3 +329,28 @@ Phase 1을 정직한 난이도로 재설계하고, 잔여 충돌의 진짜 원�
     평가 노브 `NAVRL_TARGET_SPEED`/`NAVRL_TARGET_PATTERN`/`NAVRL_SEED`. 대시보드/TB에
     `navrl/target_speed_{max,mean}_m_s` 추가.
 - goal 배치: 10회 rejection 실패 시 최근접 막대에서 방사 snap-out(고밀도 안전망).
+
+## 2026-07-17 — 비전 피벗: 센서 전용 요격 (Stage 0.5 + Stage 1)
+
+**방향 전환(사용자 결정)**: actor가 표적의 GT 상대위치를 관측에서 받지 않는다. LiDAR+비전(카메라)
+정보만으로 표적을 찾아 요격. 이것이 논문의 최종 문제 설정이 됨 (기존 GT-주입 경로는 baseline).
+
+- **Stage 0.5 — 해석적 표적 주입** (`38a4f22`): 이동 표적을 LiDAR 커널 내 ray-sphere로 주입
+  (`NAVRL_VISION=1`, semantic id 50). 메시+refit 방식은 refit 루프(Python, env당 wp.Mesh.refit)가
+  81ms@N128로 학습 불가(8.5 steps/s) → 해석적 주입은 오버헤드 ~0 (25.8 vs 기준 25.0 steps/s).
+  검증: `tools/test_navrl_p3_stage0.py` ALL PASS. GPU 이전 가이드 `GPU_SCALING_GUIDE.md` 추가.
+- **Stage 1 — 센서 전용 actor + 비대칭 critic**:
+  - actor 관측 305 = ego 9(기체속도/요레이트/직전행동/고도) + 검출기 8 + LiDAR 2채널 288(range+표적마스크).
+    GT 무누출: blind 상태에서 표적 위치를 바꿔도 관측 완전 동일(프로브 C 검증).
+  - 검출기(`navrl_detector.py`) = 전방 카메라 모델(HFOV 87°/20m): FOV+거리+**막대 가림(warp LOS 레이)**
+    통과 시에만 방위/거리 노출 + last-seen 추적기(온보드 필터 표준). Stage 2에서 실픽셀로 교체 가능.
+  - 행동 = goal프레임 → **기체(vehicle)프레임** (표적 미지 → goal프레임 정의 불가).
+  - 비대칭 critic: `states` 313 = actor관측 + GT 8, rl_games `central_value_config` 네이티브
+    (runner.py {obs,states} 래퍼 + state_space). 배포 시 critic 폐기 → actor는 센서만.
+  - 보상: 기존 유지(GT는 환경 심판) + 가시성 보너스 0.02 + 장외(OOB) 종료.
+  - 네트워크 `navrl_vision`(2ch CNN) + 옵션 LSTM(dones-masked, `ppo_navrl_vision_lstm.yaml`).
+  - 실행: `NAVRL_VISION=1 ./train_navrl.sh` (LSTM: `NAVRL_LSTM=1` 추가).
+- **검증**: stage1 프로브 ALL PASS(가시/후방/원거리/가림/무누출/추적기/행동프레임/states);
+  vision off 스모크 ALL PASS(156 무손상); sanity 학습 40ep(비대칭 critic 저장 확인, 입력 313,
+  ep_len 19→32 성장) + LSTM 10ep(가중치 저장 확인). sanity run 2개(1522/1525)는 삭제 가능한 테스트.
+- **8GB 판단**: 의미론 LiDAR+검출기 경로는 VRAM 추가 ~0. raw 카메라 CNN은 Stage 2(옵션)로 격리.

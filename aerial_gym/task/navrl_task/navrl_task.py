@@ -175,6 +175,42 @@ class NavRLTask(BaseTask):
                 % (self.tm.pattern, self.tm.speed_final, self.tm.speed_fixed, self.step_dt)
             )
 
+        # --- Phase-3 vision pivot (NAVRL_VISION=1): sensor-only actor. See task_config.vision.
+        self.vis_cfg = getattr(self.task_config, "vision", None)
+        self.vision_mode = bool(self.vis_cfg is not None and self.vis_cfg.enable)
+        self.detector = None
+        self.prev_action = torch.zeros((self.num_envs, 4), device=self.device)
+        self._visible_now = torch.zeros(self.num_envs, dtype=torch.bool, device=self.device)
+        if self.vision_mode:
+            if not self.has_vision_target:
+                raise RuntimeError(
+                    "NAVRL_VISION=1 but the LiDAR did not allocate the analytic target buffer "
+                    "(navrl_target_position missing) — sensor and task saw different env values?"
+                )
+            from aerial_gym.task.navrl_task.navrl_detector import NavRLTargetDetector
+
+            self.detector = NavRLTargetDetector(
+                warp_env=self.sim_env.warp_env,
+                num_envs=self.num_envs,
+                device=self.device,
+                vis_cfg=self.vis_cfg,
+                step_dt=self.step_dt,
+            )
+            logger.warning(
+                "NavRL VISION mode | actor obs=%d (ego %d + detector %d + 2x%dx%d scan), "
+                "critic states=%d, body-frame actions, detector range=%.1fm hfov=%.0fdeg"
+                % (
+                    self.task_config.observation_space_dim,
+                    self.vis_cfg.ego_dim,
+                    self.vis_cfg.detector_dim,
+                    self.task_config.lidar_vbeams,
+                    self.task_config.lidar_hbeams,
+                    self.task_config.state_space_dim,
+                    self.vis_cfg.detector_max_range,
+                    self.vis_cfg.detector_hfov_deg,
+                )
+            )
+
         self.terminations = self.obs_dict["crashes"]
         self.truncations = self.obs_dict["truncations"]
         self.rewards = torch.zeros(self.num_envs, device=self.device)
@@ -198,6 +234,12 @@ class NavRLTask(BaseTask):
                 (self.num_envs, self.task_config.observation_space_dim), device=self.device
             )
         }
+        # vision mode: privileged critic input = actor obs + GT extras (asymmetric actor-critic;
+        # rl_games central_value reads obs dict key 'states', forwarded by ExtractObsWrapper)
+        if self.vision_mode:
+            self.task_obs["states"] = torch.zeros(
+                (self.num_envs, self.task_config.state_space_dim), device=self.device
+            )
         self.command = torch.zeros((self.num_envs, 4), device=self.device)  # controller input
         self._yaw_cmd = torch.zeros(self.num_envs, device=self.device)  # (b) current-step yaw action a[:,3], penalized quadratically (magnitude damping)
         self.infos = {}
@@ -376,6 +418,10 @@ class NavRLTask(BaseTask):
         # ||start - target|| - gamma*||pos - target||, identical to the old prev_dist seeding.
         self.prev_pos[env_ids] = start_pos
         self.prev_rel[env_ids] = start_pos - self.target_position[env_ids]
+        # vision mode: fresh episode -> tracker knows nothing, no previous action yet
+        if self.vision_mode:
+            self.detector.reset_idx(env_ids)
+            self.prev_action[env_ids] = 0.0
         # Phase 3: per-episode target speed + trajectory pattern (all-static when the speed
         # ceiling is 0 -> Phases 1-2 behavior).
         self._sample_target_motion(env_ids)
@@ -387,10 +433,18 @@ class NavRLTask(BaseTask):
 
     # ------------------------------------------------------------------ step
     def transform_action_to_command(self, actions):
-        """NavRL 3D goal-frame velocity action -> vehicle-frame velocity command for the controller."""
-        vel_goal = torch.clamp(actions[:, 0:3], -1.0, 1.0) * self.task_config.max_velocity  # (N, 3)
-        vel_world = goal_frame_to_world(vel_goal, self.target_dir_2d)
-        vel_vehicle = quat_rotate_inverse(self.obs_dict["robot_vehicle_orientation"], vel_world)
+        """Action -> vehicle-frame velocity command for the controller.
+
+        Default: NavRL 3D goal-frame velocity (the goal frame is defined by the KNOWN start->goal
+        direction). Vision mode: the actor does not know the target position, so a goal frame is
+        undefinable from its observations — actions are the vehicle-frame velocity directly
+        (fly toward what the sensors show; the frame matches the body-frame scan and detector)."""
+        if self.vision_mode:
+            vel_vehicle = torch.clamp(actions[:, 0:3], -1.0, 1.0) * self.task_config.max_velocity
+        else:
+            vel_goal = torch.clamp(actions[:, 0:3], -1.0, 1.0) * self.task_config.max_velocity
+            vel_world = goal_frame_to_world(vel_goal, self.target_dir_2d)
+            vel_vehicle = quat_rotate_inverse(self.obs_dict["robot_vehicle_orientation"], vel_world)
         self.command[:, 0:3] = vel_vehicle
         # 2D flight: hold altitude. The vehicle frame is yaw-only (level), so vehicle-z == world-z;
         # zeroing the vertical velocity command keeps the drone at its 1 m spawn altitude.
@@ -407,6 +461,9 @@ class NavRLTask(BaseTask):
         # (No-op while all per-episode target speeds are 0, i.e. the static Phases 1-2 task.)
         self._advance_target()
         command = self.transform_action_to_command(actions)
+        if self.vision_mode:
+            # remembered as "previous action" in the NEXT observation (ego proprioception)
+            self.prev_action[:] = torch.clamp(actions[:, 0:4], -1.0, 1.0)
         self.sim_env.step(actions=command)
 
         # state-based reward + termination (LiDAR-based safety reward is added after rendering)
@@ -501,10 +558,29 @@ class NavRLTask(BaseTask):
         self.rewards[:] = self.rewards - self.rw["yaw_align_weight"] * misalign * align_gate
         self.rewards[:] = self.rewards - self.rw["yaw_rate_smooth_weight"] * self._yaw_cmd.pow(2)
 
+        # -- vision mode add-ons (before the terminal overwrites, like the other shaping terms)
+        if self.vision_mode:
+            # perception-aware bonus: pays while the modeled detector actually sees the target
+            # (in FOV + in range + line-of-sight clear), encouraging acquire-and-hold behavior.
+            q_veh = self.obs_dict["robot_vehicle_orientation"]
+            rpos_veh = quat_rotate_inverse(q_veh, rpos)
+            self._visible_now = self.detector.visible_only(pos, rpos_veh, rpos)
+            self.rewards[:] = self.rewards + float(
+                self.vis_cfg.visibility_bonus
+            ) * self._visible_now.float()
+
         crashed = self.obs_dict["crashes"] > 0
         below = z < self.task_config.lower_height_bound
         above = z > self.task_config.upper_height_bound
         crashed_out = crashed | below | above
+        if self.vision_mode:
+            # out-of-arena termination: with the target unobserved there is no implicit goal
+            # attraction keeping the drone in-bounds, and there are no physical walls to crash on.
+            m_oob = float(self.vis_cfg.oob_margin)
+            b_min = self.obs_dict["env_bounds_min"][:, 0:2]
+            b_max = self.obs_dict["env_bounds_max"][:, 0:2]
+            oob = ((pos[:, 0:2] < b_min - m_oob) | (pos[:, 0:2] > b_max + m_oob)).any(dim=1)
+            crashed_out = crashed_out | oob
 
         # Interception (always on): touching the capture radius ends the episode as a success
         # (terminal bonus instead of continued step reward). Capture wins over a same-step contact.
@@ -575,6 +651,9 @@ class NavRLTask(BaseTask):
         return (self.task_obs, self.rewards, self.terminations, self.truncations, self.infos)
 
     def process_obs_for_task(self):
+        if self.vision_mode:
+            self._process_obs_vision()
+            return
         pos = self.obs_dict["robot_position"]
         vel_w = self.obs_dict["robot_linvel"]
         rpos = self.target_position - pos
@@ -602,6 +681,60 @@ class NavRLTask(BaseTask):
 
         self.task_obs["observations"][:, : self.task_config.internal_state_dim] = s_int
         self.task_obs["observations"][:, self.task_config.internal_state_dim :] = lidar
+
+    def _process_obs_vision(self):
+        """Sensor-only ACTOR observation + privileged CRITIC 'states' (vision mode).
+
+        actor (305) = ego 9 [vel_vehicle/vmax(3), yaw_rate/max(1), prev_action(4), height(1)]
+                    + detector 8 [visible, bearing sin/cos, elev, range | tracker 3]
+                    + LiDAR range channel (144, [0,1]) + LiDAR target-mask channel (144, {0,1})
+        states (313) = actor obs + GT extras [rpos_unit_veh(3), dist/24(1), tvel_veh/2(3),
+                       closing/(vmax+2)(1)] — read ONLY by the central-value critic at train time.
+
+        No ground-truth target quantity enters the actor slice: the target appears only through
+        the semantic scan (id-50 rays) and the FOV/occlusion-gated detector."""
+        pos = self.obs_dict["robot_position"]
+        q_veh = self.obs_dict["robot_vehicle_orientation"]
+        rpos_w = self.target_position - pos
+        rpos_veh = quat_rotate_inverse(q_veh, rpos_w)
+
+        det_vec, visible = self.detector.detect(pos, rpos_veh, rpos_w, update_tracker=True)
+
+        vel_veh = self.obs_dict["robot_vehicle_linvel"] / self.task_config.max_velocity
+        yaw_rate = self.obs_dict["robot_body_angvel"][:, 2:3] / self.task_config.yaw_rate_max
+        height = pos[:, 2:3] / 3.0
+        ego = torch.cat([vel_veh, yaw_rate, self.prev_action, height], dim=1)  # (N, 9)
+
+        lidar = self._lidar_distance_m() / self.task_config.lidar_max_range  # (N, 144)
+        seg = self.obs_dict["segmentation_pixels"].squeeze(1).reshape(self.num_envs, -1)
+        target_mask = (seg == 50).float()  # same row-major (vbeams, hbeams) layout as the range
+
+        obs = self.task_obs["observations"]
+        d0 = self.vis_cfg.ego_dim
+        d1 = d0 + self.vis_cfg.detector_dim
+        d2 = d1 + lidar.shape[1]
+        obs[:, :d0] = ego
+        obs[:, d0:d1] = det_vec
+        obs[:, d1:d2] = lidar
+        obs[:, d2:] = target_mask
+
+        # privileged critic extras (train-time only; the player ignores 'states')
+        dist = rpos_w.norm(dim=1, keepdim=True).clamp(min=1e-6)
+        tvel_veh = quat_rotate_inverse(q_veh, self.target_vel_w)
+        closing = ((self.obs_dict["robot_linvel"] - self.target_vel_w) * (rpos_w / dist)).sum(
+            dim=1, keepdim=True
+        )
+        states = self.task_obs["states"]
+        states[:, : obs.shape[1]] = obs
+        states[:, obs.shape[1] :] = torch.cat(
+            [
+                rpos_veh / dist,
+                dist / 24.0,
+                tvel_veh / 2.0,
+                closing / (self.task_config.max_velocity + 2.0),
+            ],
+            dim=1,
+        )
 
     def _goal_x_max(self):
         """Epoch-proportional goal-x ceiling: ramps k_start -> k_final over k_warmup_epochs, then
