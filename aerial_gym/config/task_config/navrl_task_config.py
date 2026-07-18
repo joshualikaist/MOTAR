@@ -163,14 +163,20 @@ class task_config:
     # Phase 2 density sweep: obstacle size stays fixed; only the active bar count changes.
     # NAVRL_MAX_BARS controls the build-time ceiling in env_object_config.py.
     class density:
+        # Density (clutter) curriculum: start sparse, add promote_step bars each time the capture
+        # rate over check_after_episodes clears success_threshold, until n_final. Orthogonal to the
+        # goal-DISTANCE curriculum above (that one ramps by epoch; this one ramps by capture).
+        # All knobs are env-overridable because the defaults were tuned for the GT-injected LiDAR
+        # task; the sensor-only (vision) task caps lower at high density and masters sparse density
+        # fast, so it wants a SHORTER warmup and a LOWER threshold (see the vision launch recipe).
         use_density_curriculum = _env_bool("NAVRL_DENSITY_CURRICULUM", False)
         num_bars_active = _env_int("NAVRL_NUM_BARS", 48)
-        n_start = 25
-        n_final = 150
-        success_threshold = 0.8
-        promote_step = 15
-        warmup_epochs = 2500
-        check_after_episodes = 2048
+        n_start = _env_int("NAVRL_DENSITY_START", 25)
+        n_final = _env_int("NAVRL_DENSITY_FINAL", 150)
+        success_threshold = _env_float("NAVRL_DENSITY_THRESHOLD", 0.8)
+        promote_step = _env_int("NAVRL_DENSITY_STEP", 15)
+        warmup_epochs = _env_int("NAVRL_DENSITY_WARMUP", 2500)
+        check_after_episodes = _env_int("NAVRL_DENSITY_CHECK_EPS", 2048)
 
     # Phase 3 moving target (RQ2). The target is a VIRTUAL point (task-side coordinates, no
     # actor/mesh -> VRAM neutral; the LiDAR never sees it). speed_final = 0 (default) keeps the
