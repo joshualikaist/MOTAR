@@ -41,6 +41,12 @@ os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
 # import warnings
 # warnings.filterwarnings("error")
 
+# Vision mode emits obs['states'] for the asymmetric critic during TRAINING. The rl_games PLAYER
+# expects a plain actor-obs tensor (observation_space is a Box, not a Dict), so returning the dict
+# at play time makes norm_obs choke ("Can't create empty tensor"). Detect --play and hand the
+# player only the actor observation; the critic/states are a train-only concern.
+_PLAY_MODE = ("--play" in sys.argv) or ("-p" in sys.argv)
+
 
 class ExtractObsWrapper(gym.Wrapper):
     def __init__(self, env):
@@ -48,11 +54,11 @@ class ExtractObsWrapper(gym.Wrapper):
 
     @staticmethod
     def _extract(observations):
-        # Asymmetric actor-critic (navrl vision mode): the task also emits privileged critic
-        # input under 'states'. rl_games' obs_to_tensors keeps a dict containing an 'obs' key
-        # as-is, and get_action_values feeds obs['states'] to the central value net; the player
-        # extracts obs['obs'] and ignores 'states'.
-        if "states" in observations:
+        # Asymmetric actor-critic (navrl vision mode): during TRAINING the task also emits
+        # privileged critic input under 'states'. rl_games' obs_to_tensors keeps a dict containing
+        # an 'obs' key as-is, and get_action_values feeds obs['states'] to the central value net.
+        # At PLAY the player wants a plain actor-obs tensor, so drop 'states' there (_PLAY_MODE).
+        if "states" in observations and not _PLAY_MODE:
             return {"obs": observations["observations"], "states": observations["states"]}
         return observations["observations"]
 

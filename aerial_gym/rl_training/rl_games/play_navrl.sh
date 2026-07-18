@@ -20,8 +20,18 @@ if [ "${GPU4GB:-0}" = "1" ]; then
     export AERIAL_GYM_SIM_NAME="${AERIAL_GYM_SIM_NAME:-base_sim_4gb}"
 fi
 
+# 체크포인트는 반드시 학습에 쓴 것과 같은 네트워크 yaml 로 로드해야 함(state_dict/obs-dim 불일치 방지).
+# NAVRL_VISION=1 로 학습한 비전 체크포인트는 vision yaml 로. (LSTM 이면 NAVRL_LSTM=1 도)
+if [ "${NAVRL_VISION:-0}" = "1" ]; then
+    if [ "${NAVRL_LSTM:-0}" = "1" ]; then
+        FILE="${FILE:-ppo_navrl_vision_lstm.yaml}"
+    else
+        FILE="${FILE:-ppo_navrl_vision.yaml}"
+    fi
+fi
+
 PY="${PYTHON:-python}"
-FILE="${FILE:-ppo_navrl_cnn.yaml}"     # CNN 체크포인트는 반드시 CNN yaml 로 (state_dict 불일치 방지)
+FILE="${FILE:-ppo_navrl_cnn.yaml}"     # 기본: CNN 체크포인트는 CNN yaml 로
 TASK="${TASK:-navrl_task}"
 NUM_ENVS="${NUM_ENVS:-16}"             # 뷰어는 적게, 통계는 크게
 HEADLESS="${HEADLESS:-False}"
