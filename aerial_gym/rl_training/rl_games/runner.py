@@ -356,6 +356,14 @@ def get_args():
             "default": "True",
             "help": "Choose whether to use warp or Isaac Gym rendeing pipeline.",
         },
+        {
+            "name": "--max_epochs",
+            "type": int,
+            "default": -1,
+            "help": "Override max_epochs in the yaml (> 0). Needed to EXTEND a warm-start: a "
+            "--checkpoint resume restores the epoch counter, so a Phase-B run must raise this "
+            "above the checkpoint's epoch (e.g. Phase A ended at 6000 -> --max_epochs 12000).",
+        },
     ]
 
     # parse arguments
@@ -455,7 +463,34 @@ def _new_experiment_name(task: Optional[str]) -> str:
     return f"{stamp}_{suffix}" if suffix else stamp
 
 
+def _normalize_vf_checkpoint(path):
+    """Warm-start fix: torch.compile prefixes the CENTRAL-VALUE (critic) state_dict keys with
+    '_orig_mod.' when the checkpoint is saved, but the freshly-built central_value_net at restore
+    expects no prefix -> set_full_state_weights' strict load_state_dict('assymetric_vf_nets')
+    raises on a `--checkpoint --train` resume of a vision (asymmetric-critic) run. Strip the prefix
+    into a sibling *_rlnorm.pth and return that path (or the original if there is nothing to fix).
+    The actor 'model' keys are left untouched -- rl_games restores those fine."""
+    if not path or not os.path.isfile(path):
+        return path
+    try:
+        ck = torch.load(path, map_location="cpu", weights_only=False)
+    except Exception:
+        return path
+    cv = ck.get("assymetric_vf_nets")
+    if not isinstance(cv, dict) or not any("_orig_mod." in k for k in cv):
+        return path
+    ck["assymetric_vf_nets"] = {k.replace("_orig_mod.", ""): v for k, v in cv.items()}
+    out = (path[:-4] if path.endswith(".pth") else path) + "_rlnorm.pth"
+    torch.save(ck, out)
+    if not quiet_startup_enabled():
+        print(f"[aerial RL] normalized central-value checkpoint keys -> {out}")
+    return out
+
+
 def update_config(config, args):
+
+    if args.get("max_epochs", -1) and int(args.get("max_epochs", -1)) > 0:
+        config["params"]["config"]["max_epochs"] = int(args["max_epochs"])
 
     if args.get("task") is not None:
         config["params"]["config"]["env_name"] = args["task"]
@@ -514,6 +549,11 @@ if __name__ == "__main__":
 
     args = vars(get_args())
     args = _prepare_rlgames_argv_dict(args)
+
+    # Warm-start (--checkpoint --train) of a vision run needs the central-value keys normalized
+    # (torch.compile '_orig_mod.' prefix); rewrite the path to the normalized copy before restore.
+    if args.get("checkpoint") and not args.get("play"):
+        args["checkpoint"] = _normalize_vf_checkpoint(args["checkpoint"])
 
     config_name = args["file"]
 
