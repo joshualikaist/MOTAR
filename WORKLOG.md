@@ -354,3 +354,35 @@ Phase 1을 정직한 난이도로 재설계하고, 잔여 충돌의 진짜 원�
   vision off 스모크 ALL PASS(156 무손상); sanity 학습 40ep(비대칭 critic 저장 확인, 입력 313,
   ep_len 19→32 성장) + LSTM 10ep(가중치 저장 확인). sanity run 2개(1522/1525)는 삭제 가능한 테스트.
 - **8GB 판단**: 의미론 LiDAR+검출기 경로는 VRAM 추가 ~0. raw 카메라 CNN은 Stage 2(옵션)로 격리.
+
+## 2026-07-18 ~ 07-19 — 센서 전용 밀도 커리큘럼: 첫 결과 + 진단 + 순차 전환
+
+**평가(play) 경로 수정 (커밋 eaad795)**: 비전 체크포인트가 play_navrl.sh에서 안 돌던 2버그
+(156-dim cnn yaml 오선택 / {obs,states} dict를 player가 못 먹음) 수정. 이제 held-out 평가 됨.
+- **110막대·정적 from-scratch (baseline)**: captured **47.3%** / crash 52% / timeout 0.7% (n=2050).
+  timeout≈0 → 표적은 찾음, 실패=충돌. 병목=장애물 회피(밀도).
+
+**4GB 경로 (커밋 3f50639)**: `ppo_navrl_vision_4gb.yaml`(N=128, mb 2048) + train/play 스크립트가
+`NAVRL_VISION=1 GPU4GB=1`에 vision_4gb 선택. **1650 Ti("joshualisky")에서 실기 검증됨**.
+
+**밀도 커리큘럼 (커밋 c5bd707 knob) — 첫 run `1841`**: `NAVRL_DENSITY_CURRICULUM=1 WARMUP=1000
+THRESHOLD=0.6`. 밀도 knob들 env화(기본 threshold 0.8/warmup 2500는 GT용이라 센서엔 부적합).
+- **밀도 계단 25→130 성공적 상승**: 승급별 안정 캡처 25:93% 55:79% 85:61% 100:59% **115:62%** 130:47%(정체).
+- ⚠️ **그런데 최종 체크포인트 110 held-out = 40.8%** (crash 50%, **timeout 8.8%↑**) → **baseline 47%보다 낮음**.
+  학습 중 62%(115막대)는 목표가 중간거리였을 때 값. 최종 정책은 130막대+깊은목표(20m) 과특화 → 소심해져
+  먼 목표 timeout. **두 커리큘럼(거리·밀도)이 끝에서 충돌**. rl_games가 후반 ckpt만 보관해 좋은 중간정책 유실.
+- 정정: "깊은목표=시야밖" 진단은 일부 오류(baseline은 깊은목표 timeout 0.7%로 도달함). 진짜 원인=과특화.
+
+**1650 Ti seed-2 (`vision50_seed2`)**: 50막대 peak **92.5%** (seed-1 93.2%와 일치 → 앵커 재현성 확인).
+후반 캡처 하락(70%)은 goal 커리큘럼이 목표를 20m로 밀어서(밀도 아님).
+
+**거리 커리큘럼 knob env화 (커밋 24d7036)**: `NAVRL_K_FINAL`/`NAVRL_K_MIN_FINAL`/`NAVRL_K_WARMUP`
+(기본 24/20/3000). 센서 전용은 목표를 검출기 시야(20m) 안에 묶을 수 있게.
+
+**다음 계획 — 충돌 회피 두 해법을 두 머신에서 병렬:**
+- **3070 = 순차(sequenced)**: 거리 먼저(6000ep, 25막대 고정) → 밀도 나중(6000→12000, 목표 고정).
+  단일 명령으로: `NAVRL_DENSITY_CURRICULUM=1 NAVRL_DENSITY_WARMUP=6000 NAVRL_DENSITY_THRESHOLD=0.6
+  ./train_navrl.sh --seed 1 --max_epochs 12000` (warmup 6000이 밀도를 6000판까지 막음 → 자동 2단계).
+- **1650 Ti = 목표제한(goal-capped)**: `NAVRL_K_FINAL=16 NAVRL_K_MIN_FINAL=10` (목표≤16m 시야내) +
+  밀도 커리큘럼 60캡 + GPU4GB. 6000ep. 동시 램프지만 목표가 얕아 충돌 완화.
+- 승급마다 체크포인트 스냅샷 필요(중간정책 유실 방지). 밀도별 평가로 곡선 완성이 목표.
