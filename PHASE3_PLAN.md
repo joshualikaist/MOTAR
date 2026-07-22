@@ -1,164 +1,77 @@
-# Phase 3 실행 계획서 — 이동 표적 접근 (RQ2, 논문 핵심 기여)
+# Phase 3 실행 계획 — 원시 센서 기반 표적 탐지·추적·접근
 
-작성: 2026-07-17 | 목표: IEEE RA-L 억셉 수준의 방법론으로 Phase 3을 설계·실행한다.
-전제: Phase 1 완료(yaw 정책 captured 0.95, run `0251`), Phase 2 밀도곡선 5점 + 절벽(110→150)의
-기하학적 원인(RSA 재밍 한계) 규명. 이 문서는 문헌 조사에 근거해 리워드·실험·일정을 확정한다.
+업데이트: 2026-07-22
+상세 설계: [`PERCEPTION_TRANSFORMER_PLAN.md`](PERCEPTION_TRANSFORMER_PLAN.md)
 
----
+## 핵심 변경 — NavRL++-Target
 
-## 1. 논문 포지셔닝 — 우리가 채우는 빈 자리
+이전 Phase 3은 task가 가진 `target_position`을 관측 또는 analytic detector로 변환해 정책에 제공했다.
+이 경로는 더 이상 논문의 제안 방법으로 사용하지 않는다. Phase 3의 핵심은 드론이 camera와 LiDAR의
+원시 관측으로 표적을 직접 탐지하고, 장애물 가림 동안 NavRL++식 시계열 정책으로 위치와 운동을
+추론하는 것이다. Transformer는 주 모델이며 LSTM은 기여 검증용 baseline이다.
 
-### 1.1 관련 연구 지형 (2026-07-17 조사)
+NavRL++ 원문에서 Transformer는 raw RGB/point detector가 아니다. perception module이 static map과
+dynamic track을 먼저 만들고, 2초 이력을 12 tokens로 통합해 관측 열화와 제어 진동을 줄인다. 본 Phase는
+그 구조에 learned target detector/tracker와 target-history 5 tokens를 추가한 17-token 정책을 구현한다.
 
-| 계열 | 대표 연구 | 하는 것 | 안 하는 것 (우리 기회) |
-|---|---|---|---|
-| 회피 항법 | NavRL (RA-L'25), NavRL++ (arXiv 2605.15559), Intent-MPC (RA-L'25) | 정적+동적 장애물 **회피**, sim-to-real | 표적 **접근/포획** 없음, 밀도×속도 교차 분석 없음 |
-| 요격 | Learning Agile Intruder Interception (arXiv 2607.02472) | 표적 속도 스윕, 파라메트릭 궤적, 성공률 곡선 | **장애물 없음** (빈 공간 요격) |
-| 추격-회피 | Multi-UAV Pursuit-Evasion (arXiv 2409.15866), GE-DDPG (IJCAS'25) | 장애물 속 추격, 2단계 리워드 | 멀티에이전트 협동이 주제, **밀도 체계 분석 없음** |
-| 표적 추종 | Vision-based tracking (Drones'24 등) | 속도/가속 제한형 리워드 | 추종(유지)이지 포획 아님, 장애물 희박 |
+## 연구 가설
 
-### 1.2 우리의 주장 (the claim)
+- H1: camera와 LiDAR의 결합은 어느 한 센서만 사용할 때보다 표적 위치 RMSE와 capture를 개선한다.
+- H2: temporal memory는 완전 가림 뒤 재탐지 시간과 track survival을 개선한다.
+- H3: NavRL++식 Transformer+perception-failure fine-tuning은 single-step CNN보다 가림 견고성과 제어
+  평활도가 높고, LSTM보다 accuracy–smoothness–latency Pareto 우위를 보인다.
+- H4: uncertainty-aware policy는 마지막 추정 위치로 돌진하는 정책보다 충돌률이 낮다.
+- H5: Transformer의 이점은 저밀도·항상-visible 조건보다 고밀도·긴 가림 조건에서 커진다.
 
-> **"난잡(cluttered) 환경에서 이동 표적을 포획하는 단일 RL 정책의 성능이
-> 장애물 밀도 × 표적 속도의 2차원 공간에서 어떻게 붕괴하는지를 최초로 체계적으로 지도화하고,
-> 그 붕괴 경계의 기하학적 원인(배치 재밍 한계 + 추격 기하)을 규명한다."**
+## 고정 정보 경계
 
-보조 기여: ① 요격 의미론(캡처 종료)에 맞춘 문헌 근거 리워드(§3), ② zero-shot(정지표적 정책)
-vs 재학습 갭 정량화, ③ 학습형 yaw의 기여 ablation(브랜치 확보됨), ④ 8GB 단일 GPU 재현 가능성.
+| 데이터 | Perception 입력 | Actor 직접 입력 | Label/Reward/Critic/Eval |
+|---|---:|---:|---:|
+| RGB-D camera | 예 | 아니오 | — |
+| LiDAR range/points | 예 | 아니오 | — |
+| structured obstacle/target history | 출력 | **예** | — |
+| proprioception | tracker 보조 | **예** | — |
+| target semantic mask/id | **아니오** | **아니오** | label/eval만 |
+| GT target position/velocity | **아니오** | **아니오** | label/reward/critic/eval |
+| GT visibility/occlusion | **아니오** | **아니오** | label/eval만 |
 
-### 1.3 타깃 학회지: **RA-L 1순위** (ICRA/IROS 옵션 체크)
-- NavRL과 같은 venue — 직접 비교·인용 구도가 자연스러움.
-- RA-L이 좋아하는 형식: 체계적 평가 + 시스템 기여 + (가능하면) 실기 시연. 실기는 없으므로
-  **평가의 철저함(다중 seed, held-out 일반화, ablation)으로 보강**한다.
-- 발전 가능성/응용(리뷰어 "so what" 방어): counter-UAS 요격, 재난 구조 접근(움직이는 조난자),
-  시네마토그래피/검사 추종, 항만·창고 동적 환경 배송. Phase 6(탐지 in-the-loop)은 후속 논문.
+## 실행 순서
 
----
+1. 정보 누출 테스트와 sensor/label tensor 분리.
+2. 실제 target geometry가 camera와 LiDAR에 나타나는 데이터 생성 환경 구축.
+3. RGB-D obstacle/target detector와 LiDAR obstacle/target cluster classifier 학습.
+4. fusion + data association + Kalman tracker로 structured state 생성.
+5. NavRL++ 기준 2초/0.5초 이력의 17-token Transformer 학습.
+6. detector/tracker freeze 상태에서 PPO 학습.
+7. `p_drop=0.3` 중심의 perception-failure/latency/noise fine-tuning.
+8. density × speed × occlusion 평가와 CNN/LSTM/Transformer ablation.
 
-## 2. 과학적 질문과 가설 (실험 전에 고정 — HARKing 방지)
+## 1차 모델 크기
 
-| # | 질문 | 사전 가설 |
+- Camera: RGB-D 160×96 detector → obstacle/target 3D proposals.
+- LiDAR: 36×4 또는 point clusters → obstacle/target proposals; 72×6은 해상도 ablation.
+- Tracker: 10 Hz update, policy history는 2초 동안 0.5초 간격 5 samples.
+- Tokens: `[CLS]` 1 + static 1 + dynamic history 5 + robot history 5 + target history 5 = 17.
+- Transformer: NavRL++ 기준 dim 64, 4 heads, 4 layers, FFN 128, dropout 0.1.
+- Output: velocity action과 target probability/position/velocity/uncertainty auxiliary heads.
+
+## 4주 계획
+
+| 주차 | 산출물 | 통과 기준 |
 |---|---|---|
-| H1 | 표적 속도↑ → 포획률? | 단조 감소, v_t/v_max→1에서 급락(순수추격 불가 기하) |
-| H2 | 밀도×속도 상호작용? | 초가법적 악화(장애물이 추격 경로 선택지를 제거) — **히트맵의 핵심** |
-| H3 | zero-shot(P1 정책) 성능? | v_t≤0.5에서 완만한 하락, v_t≥1.0에서 붕괴 (관측이 표적속도를 모름) |
-| H4 | 재학습 회복량? | range-rate 리워드 + 커리큘럼로 v_t=1.5까지 상당 회복 |
-| H5 | 표적속도 관측 추가(152→156) 효과? | v_t≥1.0에서 유의미한 추가 이득 (lead pursuit 학습 가능) |
+| W1 | 누출 방화벽 + target asset + sensor dataset | blind-GT equality; 두 센서 raw target return 확인 |
+| W2 | 양 센서 detector + fusion/tracker | sensor별 recall 보고; fused 10 m median error ≤0.30 m |
+| W3 | NavRL++-Target Transformer + PF curriculum | 1초 동시 miss 뒤 track survival/reacquisition ≥80% |
+| W4 | PPO 연결 + ablation | GT/CNN/LSTM/Transformer와 no-PF 비교표, density×speed heatmap |
 
----
+## 중단 조건
 
-## 3. 리워드 설계 — 문헌 근거 + 검증된 베이스에서 한 레버씩
+- 어느 한 센서 detector도 visible target을 못 찾으면 Transformer를 키우지 말고 sensor/asset/data부터 수정한다.
+- Transformer 평가는 success만 보지 않고 NavRL++처럼 control effort와 perturbation robustness를 함께 본다.
+- 8GB에서 OOM이면 raw image를 policy에 넣지 않고 detector output을 detach/cache하고 env를 256→128로 낮춘다.
 
-**원칙 (Phase 1에서 피로 배운 것):** 검증된 베이스(0.95 달성 리워드)를 동결하고,
-한 번에 한 레버만 바꾸고, 각 변경은 문헌 근거를 명시한다. (B/C/D null-result와 yaw 성공이 증거:
-감으로 흔들면 실패하고, 원인 규명 후 정조준하면 성공한다.)
+## 논문 핵심 주장 후보
 
-### v1 — 최소 변경 (기본안, 첫 재학습에 사용)
-1. **속도항 → range-rate**: `r_vel = (v_drone − v_target)·d̂` (d̂=표적방향 단위벡터).
-   - 근거: 유도(guidance) 문헌의 closing-velocity 표준. 정지표적(v_t=0)이면 현재 리워드와
-     **완전 동일** → 하위호환 + 회귀 테스트 공짜.
-2. **PBRS 진행항의 "표적 이동 보정"** (정확성 핵심):
-   - 문제: 표적이 움직이면 dist 변화에 표적 기여가 섞여 드론이 **자기가 안 한 일로 상/벌**을 받음
-     (비정상성 → 가치함수 학습 방해).
-   - 수정: `_advance_target()` 직후 `prev_dist ← ‖pos_prev − target_new‖`로 재기준.
-     shaping이 **드론 자신의 운동에 의한 진전만** 크레딧. (PBRS의 "제어 가능 진전만 보상" 원칙)
-3. 나머지 전부 동결: safety 1.5, yaw align 0.3, smooth, height, capture +30, collision −20.
-4. **캡처 판정 세그먼트화**: 순간 dist<0.5에 더해 prev→cur 선분–표적 최근접 판정(F, 이미 주석
-   코드 존재) 활성화. 이동 표적은 상대속도 최대 4 m/s = 스텝당 0.4 m라 터널링이 실제 위험.
-
-### v2 — v1 정체 시에만 (사전 등록해두는 예비 레버)
-- **속도 커리큘럼**: v_t를 0→목표치로 epoch 비례 램프 (우리 k-커리큘럼과 동일 패턴,
-  NavRL 동적장애물 60→120 promotion과 동일 사상). *v1에 기본 포함 권장.*
-- **lead-pursuit 보너스**: 표적 현재 위치가 아닌 예측 요격점 방향 정렬 보상 (PN 유도 차용).
-  근거: 순수추격은 v_t/v_max 높을수록 기하학적으로 불리 — 문헌에서 잘 알려진 한계.
-- **표적속도 관측 추가** (S_int 12→14: v_target 상대속도 2D, goal frame): H5 검증용.
-  NavRL의 S_dyn이 동적장애물 상대속도를 주는 것과 동형 — 근거 명확.
-
-### v3 — 안정화 예비 (문헌: reward clipping/스무딩은 cluttered 환경 표준)
-- 필요 시 range-rate 클램프(±2·v_max), 이미 있는 smooth/yaw-damping 유지.
-
----
-
-## 4. 실험 매트릭스 (논문 Figure를 역산해서 설계)
-
-### 논문 그림 목록 (이걸 만들기 위해 실험한다)
-- **Fig.1** 시스템/과제 개요 (아레나 + 드론 + 이동 표적 다이어그램)
-- **Fig.2** 밀도–성능 곡선 (P2 완성분 + 절벽 기하 설명 삽화)
-- **Fig.3 (대표)** 밀도 × 표적속도 **포획률 히트맵** (zero-shot vs 재학습 나란히)
-- **Fig.4** 속도–성공률 곡선 (zero-shot / 재학습 / +v_t관측, 3선)
-- **Fig.5** ablation 막대 (yaw off / range-rate off / 커리큘럼 off)
-- **Tab.1** NavRL 밀도 앵커(110bars)에서의 비교 + 실패모드 분해(crash/timeout/추월당함)
-
-### 학습 매트릭스 (6000ep ≈ 2h/run 기준)
-| 축 | 값 | 비고 |
-|---|---|---|
-| 학습 밀도 | {50, 110, 150} | 3레벨로 압축(25는 50과 통계 동일, P2에서 확인) |
-| 학습 표적속도 | 커리큘럼 0→1.5 | 단일 정책/밀도 (속도별 개별 학습 아님 — 일반화가 주장) |
-| seed | 앵커(110)만 3개, 나머지 1개 | +기존 P1/P2 run 재활용 |
-| 궤적 패턴 | 학습: CV반사+랜덤웨이포인트 / **평가 held-out: 원형** | 일반화 증거 |
-
-→ **필수 학습 run: 3(밀도) + 2(seed 추가) + 3(ablation: no-rangerate, no-curriculum, +v_t obs) ≈ 8개 ≈ 16 GPU-시간.**
-평가(각 셀 1000 에피소드 headless play)는 학습보다 훨씬 싸다 (~10분/셀 × 5속도 × 3밀도 × 정책들).
-
-### 평가 프로토콜 (리뷰어 방어)
-- 각 히트맵 셀: **1000 에피소드**, 95% 신뢰구간(Wilson) 표기.
-- 지표: 포획률 / 충돌률 / 타임아웃률 / 평균 포획시간 / 최근접거리(비충돌).
-- 실패모드 3분해: 충돌 | 시간초과-근접(<2m 도달) | 시간초과-추월(표적을 영영 못 따라감).
-- v_t=2.0(=v_max)은 평가 전용 degenerate 셀로 보고.
-
----
-
-## 5. 일정 — 14일, 2머신 병렬 (3070 + 4GB 노트북)
-
-**병렬 원칙:** 3070은 "새 학습", 노트북(GPU4GB 프리셋, minibatch 정합 확인됨)은
-"잔여 P2 + 평가 스윕". 매일 밤 run을 걸어두고 낮에 분석.
-
-| 일 | 3070 (학습) | 노트북 | 낮 작업 (코드/분석) |
-|---|---|---|---|
-| D1 | — | P2 잔여: 120bars s1 | ✅ **완료(07-17)**: 구현+전면감사+스모크 29/29+v0회귀 0.953 |
-| D2 | 150bars s2 (P2 재현성) | P2: 25 or 50 재현(confound 해소) | **zero-shot 평가** (학습 0회로 H3 답 나옴) → 속도-성공률 1차 곡선 |
-| D3 | **P3 첫 재학습**: 110bars, v커리큘럼 0→1.5 | 평가 스윕 계속 | zero-shot 분석, v1 리워드 최종 점검 |
-| D4 | P3: 150bars | P3: 50bars (4GB에서 가능 확인됨) | D3 run 평가, H4 1차 답 |
-| D5 | 110bars seed2 | 110bars seed3 | 히트맵 1차 생성, H2 확인 |
-| D6 | ablation: range-rate off | ablation: v커리큘럼 off | 중간 점검 — **v1 정체 시 여기서 v2 발동 결정** |
-| D7 | +v_t 관측(156) 110bars | 예비/재실행 버퍼 | H5 답 |
-| D8-9 | 예비 버퍼 (실패 run 재실행) | held-out 궤적 평가 스윕 | 전체 히트맵/곡선/CI 확정 |
-| D10-11 | yaw-off ablation (P3 조건) | — | Fig.2-5 최종 제작, 통계 검정 |
-| D12-14 | — | — | 논문 초안 (Intro/Related/Method는 지금부터 병행 가능) |
-
-**총 GPU 예산: ~20 run × 2h ≈ 40 GPU-시간 (2머신이라 실제 ~1주).** 버퍼 3일 포함 14일.
-
----
-
-## 6. 리스크 대장 (사전 등록)
-
-| 리스크 | 징후 | 대응 (사전 결정) |
-|---|---|---|
-| PBRS 보정 실수로 학습 불안정 | v_t=0 회귀 테스트가 0.95 재현 실패 | **D1 스모크에 v_t=0 회귀 테스트 필수 포함** — 통과 못 하면 병합 금지 |
-| v_t=1.5 학습 붕괴 | captured<0.3 정체 | v2 lead-pursuit 투입, 커리큘럼 상한 1.0으로 후퇴(1.5는 평가만) |
-| 고밀도×고속 celle 전멸(0%) | 히트맵 모서리 공백 | 그 자체가 결과 — "운용 한계 경계"로 보고 (실패도 데이터) |
-| 노트북 run confound 재발 | — | GPU4GB 프리셋 고정(minibatch 4096 정합 커밋 완료), 로그의 `mode=random`+`minibatch` 매 run 확인 |
-| seed 분산으로 히트맵 노이즈 | 앵커 seed간 >5pt 차이 | 해당 셀만 seed 추가, CI 명기 |
-| 절벽값(120/150s2) 미완으로 Fig.2 구멍 | — | D1-2 노트북 슬롯에 이미 배정 |
-
----
-
-## 7. 성공 기준 (자기 평가 게이트)
-
-- **G1 (D2)**: zero-shot 곡선 확보 — 어떤 모양이든 논문 서사 성립 (좋으면 "robust", 나쁘면 "재학습 필요성 입증").
-- **G2 (D5)**: 재학습 110bars에서 v_t=1.0 포획률 ≥ 0.7 — 미달 시 v2 발동.
-- **G3 (D9)**: 3×5 히트맵 + CI 완성 = 논문 대표 그림 확보 → 이 시점에 억셉 가능성 실질 판단.
-- **G4**: NavRL 앵커(110bars, v_t=0)에서 0.9+ 유지 — "우리 각색이 항법 성능을 훼손 안 함" 방어.
-
-## 8. 이 연구의 발전 가능성 (Discussion/Future 절 재료)
-
-1. **탐지 in-the-loop (Phase 6)**: GT 표적위치 → 탐지열화 모델 주입 = 후속 논문 (RQ3).
-2. **동적 장애물 결합 (Phase 4)**: 히트맵에 3축째(동적 장애물 수) — 확장 저널판.
-3. **회피 표적(적대적)**: 표적이 도망 정책을 학습 — pursuit-evasion 학계와 접점.
-4. **실기 이전**: NavRL++ 방식의 sim-to-real 체크리스트 재활용 가능(LiDAR 36×4는 실기 호환 사양).
-5. **응용**: counter-UAS(불법 드론 포획), 재난 구조(이동 조난자 접근), 동적 환경 검사/추종.
-
----
-*조사 출처: NavRL(arXiv 2409.15634, RA-L'25), NavRL++(arXiv 2605.15559), Agile Intruder
-Interception(arXiv 2607.02472), Multi-UAV Pursuit-Evasion(arXiv 2409.15866), GE-DDPG(IJCAS'25),
-vision-based tracking reward 계열(MDPI Drones 8(11):628 등). 상세 링크는 대화 로그 참조.*
+> Extending NavRL++ temporal reasoning with directly observed camera–LiDAR target tracks and
+> perception-failure-aware fine-tuning enables a UAV to pursue a temporarily occluded target without
+> privileged target-state input while maintaining collision avoidance and smooth control.

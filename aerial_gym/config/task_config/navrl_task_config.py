@@ -99,24 +99,38 @@ class task_config:
         byte-compatible.
 
         Perception channels:
-          1. semantic LiDAR (Stage 0.5): the 36x4 range image carries the target as rays that
-             return semantic id 50; the obs adds a per-ray target-mask channel.
-          2. modeled forward DETECTOR (perfect-detection camera abstraction): bearing/elevation/
-             range are exposed ONLY when the target is inside the camera FOV, within range, and
-             not occluded by a bar (warp line-of-sight ray). Stage 2 replaces this with the real
-             depth+segmentation pixel pipeline behind the same interface.
+          1. semantic LiDAR: the 36x4 range image observes both environment geometry and the
+             target; a second per-ray channel marks target returns.
+          2. forward depth/segmentation CAMERA: a low-resolution full-scene depth image observes
+             obstacles, while a higher-resolution target mask/depth image provides detection.
+             Bars remove occluded target pixels, and bearing/elevation/range are calculated only
+             from surviving pixels. The target pose is renderer-only and never enters the actor.
           3. a detector-side tracker (last-seen bearing + time-since-seen) -- the standard
              onboard filter memory (NavRL itself tracks dynamic obstacles onboard).
         """
 
         enable = _env_bool("NAVRL_VISION", False)
+        # Read-only checkpoint compatibility for the 2026-07 semantic CNN runs. Those actors were
+        # trained before the 40x24 obstacle-camera channel was added and therefore require the
+        # original 17 + 144 + 144 = 305 observation exactly. Never use this for new training.
+        legacy_actor_305 = _env_bool("NAVRL_LEGACY_VISION", False)
 
-        # -- modeled detector (forward camera, gimbal-level like the yaw-only LiDAR attach)
+        # -- forward target camera (gimbal-level like the yaw-only LiDAR attach)
         detector_max_range = 20.0   # [m] detection range (a segmentation camera covers this)
         detector_hfov_deg = 87.0    # matches the D455-style forward depth camera
         detector_vfov_deg = 58.0
-        occlusion_margin = 0.25     # [m] LOS ray length = dist - margin (don't hit the target)
         tracker_memory_s = 5.0      # time_since_seen saturates at this many seconds
+        camera_width = 160          # efficient target-only semantic render; aspect ratio 16:9
+        camera_height = 90
+        camera_target_radius = 0.15 # [m], matches the 0.30 m target-drone footprint
+        camera_min_target_pixels = 1
+        camera_translation = [0.10, 0.0, 0.03]  # vehicle frame, forward/left/up [m]
+        # Full-scene depth supplied to the actor. Kept lower-resolution than target detection to
+        # preserve vectorized PPO throughput while still adding forward obstacle geometry.
+        camera_obstacle_width = 40
+        camera_obstacle_height = 24
+        camera_obstacle_max_range = 10.0
+        camera_obstacle_dim = camera_obstacle_width * camera_obstacle_height
 
         # -- reward add-ons (vision mode only)
         visibility_bonus = 0.02     # per-step bonus while the detector sees the target
@@ -129,13 +143,46 @@ class task_config:
         detector_dim = 8   # visible, bearing sin/cos, elev, range | last bearing sin/cos, t_since
         privileged_dim = 8 # critic-only extras: rpos_unit_veh(3), dist, target_vel_veh(3), closing
 
+    class perception:
+        """Real sensor-to-track path used by the NavRL++-Target Transformer.
+
+        Enable with ``NAVRL_VISION=1 NAVRL_PERCEPTION=1``. The legacy semantic prototype remains
+        available only for baseline/checkpoint compatibility when NAVRL_PERCEPTION is unset.
+        """
+
+        enable = _env_bool("NAVRL_PERCEPTION", False)
+        history_steps = 5
+        history_interval_s = 0.5
+        max_obstacles = 5
+        lidar_max_range = 4.0
+        min_target_pixels = _env_int("NAVRL_DETECTOR_MIN_PIXELS", 2)
+        pixel_threshold = _env_float("NAVRL_DETECTOR_THRESHOLD", 0.55)
+        detector_checkpoint = os.environ.get("NAVRL_DETECTOR_CHECKPOINT", "")
+        # Perturbations are opt-in for the post-training stage, not silently applied to clean runs.
+        enable_perturbations = _env_bool("NAVRL_PERCEPTION_PERTURB", False)
+        detection_dropout_prob = _env_float("NAVRL_DETECTION_DROPOUT", 0.3)
+        rgb_noise_std = _env_float("NAVRL_RGB_NOISE_STD", 0.015)
+        depth_noise_std = _env_float("NAVRL_DEPTH_NOISE_STD", 0.02)
+        # [static 144 | obstacle history 5x5x12 | robot history 5x10 |
+        #  target history 5x16] -> 574. The network converts these to 17 tokens.
+        observation_dim = 574
+
     # Observation:
-    #   default      = S_int (12) + LiDAR range (144)                          = 156
-    #   NAVRL_VISION = ego (9) + detector (8) + LiDAR range+target-mask (288)  = 305
-    #   (critic 'states' in vision mode = actor obs + privileged extras       = 313)
-    if vision.enable:
+    #   default      = S_int(12) + LiDAR range(144)                            = 156
+    #   NAVRL_VISION = ego+detector(17) + LiDAR range+target(288)
+    #                  + camera obstacle depth(40x24=960)                      = 1265
+    #   critic states = actor obs + privileged extras(8)                       = 1273
+    if vision.enable and perception.enable:
+        internal_state_dim = perception.observation_dim
+        observation_space_dim = perception.observation_dim
+        state_space_dim = observation_space_dim + vision.privileged_dim
+    elif vision.enable:
         internal_state_dim = vision.ego_dim + vision.detector_dim  # network state/scan split
-        observation_space_dim = internal_state_dim + 2 * lidar_hbeams * lidar_vbeams
+        observation_space_dim = (
+            internal_state_dim
+            + 2 * lidar_hbeams * lidar_vbeams
+            + (0 if vision.legacy_actor_305 else vision.camera_obstacle_dim)
+        )
         state_space_dim = observation_space_dim + vision.privileged_dim
     else:
         internal_state_dim = 12  # (b) 8 nav dims + goal_bearing_body(2) + vel_body_xy(2)
@@ -147,10 +194,10 @@ class task_config:
     # along its travel direction (shrinks the swept footprint 0.40 m diagonal -> 0.28 m -> fewer clips).
     action_space_dim = 4
 
-    episode_len_steps = 300  # RL steps (300 for the far-side goals: a diagonal goal can be ~30 m,
+    episode_len_steps = _env_int("NAVRL_EPISODE_LEN_STEPS", 300)  # RL steps (300 for far goals;
     # ~150 steps straight / ~225 weaving at 2 m/s, so 300 keeps timeout from being the failure mode)
 
-    max_velocity = 2.0  # NavRL v_lim [m/s]
+    max_velocity = _env_float("NAVRL_MAX_VELOCITY", 2.0)  # NavRL v_lim [m/s]
 
     # (b) Learned yaw control. yaw_rate_max MUST equal lee_controller_config_navrl.max_yaw_rate so
     # action[:, 3] in [-1, 1] maps linearly onto the controller's yaw-rate clamp (no dead band).
@@ -178,9 +225,11 @@ class task_config:
         k_min_final = _env_float("NAVRL_K_MIN_FINAL", 20.0)  # [m] LATE nearest goal x. k_min ramps
         #   k_min -> k_min_final linearly over [k_min_ramp_start_epochs, +k_min_ramp_epochs],
         #   narrowing the goal window to deep crossings. Set k_min_final = k_min to disable.
-        k_min_ramp_start_epochs = 2000  # epoch k_min STARTS rising. Independent of the k_max ramp --
+        k_min_ramp_start_epochs = _env_int("NAVRL_K_MIN_RAMP_START", 2000)
+        # epoch k_min STARTS rising. Independent of the k_max ramp --
         #   it overlaps it (k_max keeps ramping to k_warmup_epochs=3000 while k_min already climbs).
-        k_min_ramp_epochs = 3000        # epochs to ramp k_min -> k_min_final => hits max at 2000+3000 = 5000
+        k_min_ramp_epochs = _env_int("NAVRL_K_MIN_RAMP_EPOCHS", 3000)
+        # epochs to ramp k_min -> k_min_final => default hits max at 2000+3000 = 5000
         k_start = 7.0            # [m] initial k_max (first bar rows)
         k_final = _env_float("NAVRL_K_FINAL", 24.0)  # [m] final k_max (far wall; clamped to arena-margin)
         k_warmup_epochs = _env_int("NAVRL_K_WARMUP", 3000)  # epochs to ramp k_start->k_final, then plateau
@@ -204,6 +253,12 @@ class task_config:
         promote_step = _env_int("NAVRL_DENSITY_STEP", 15)
         warmup_epochs = _env_int("NAVRL_DENSITY_WARMUP", 2500)
         check_after_episodes = _env_int("NAVRL_DENSITY_CHECK_EPS", 2048)
+        # Once density training starts, keep a fraction of short/medium crossings in every batch.
+        # This prevents catastrophic forgetting of avoidance/reacquisition at close range while
+        # the main distance window remains at its final (hard) range. Zero preserves old runs.
+        easy_goal_mix_prob = _env_float("NAVRL_DENSITY_EASY_GOAL_MIX", 0.0)
+        easy_goal_min = _env_float("NAVRL_DENSITY_EASY_GOAL_MIN", 5.0)
+        easy_goal_max = _env_float("NAVRL_DENSITY_EASY_GOAL_MAX", 10.0)
 
     # Phase 3 moving target (RQ2). The target is a VIRTUAL point (task-side coordinates, no
     # actor/mesh -> VRAM neutral; the LiDAR never sees it). speed_final = 0 (default) keeps the

@@ -1,5 +1,9 @@
 # 옛 학습 run 요약 (삭제 전 보존) — 2026-07-14
 
+> 역사 문서. 여기에 기록된 run은 dual-sensor detector/tracker + NavRL++-Target 이전의 navigation 또는
+> oracle/semantic prototype 계열이다. 새 perception 실험과 직접 성능 비교하거나 checkpoint를 호환해
+> 로드하지 않는다. 현재 observation/model schema는 각 run manifest로 구분한다.
+
 `runs/`의 옛 run들을 삭제하기 전에 핵심 정보를 남김. 현재 학습 `ppo_260714_1904_navrl`은 유지.
 지표: cap=captured_rate, crash=crash_rate, to=timeout_rate (최종 epoch). reward는 스케일이 리워드 설계에 따라 달라 절대비교 불가.
 

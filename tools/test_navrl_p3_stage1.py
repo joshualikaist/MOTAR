@@ -1,19 +1,19 @@
-"""Phase-3 Stage-1 verification: sensor-only actor obs + modeled detector + privileged states.
+"""Phase-3 Stage-1 verification: sensor-only actor obs + camera detector + privileged states.
 
 Run (GPU free):
   NAVRL_VISION=1 NAVRL_MAX_BARS=40 NAVRL_NUM_BARS=40 PYTHONNOUSERSITE=1 \
     python tools/test_navrl_p3_stage1.py
 
 Checks:
-  A. dims: actor obs 305, states 313, internal split 17.
+  A. dims: actor obs 1265, states 1273, internal split 17.
   B. detector geometry, forced scenarios per env:
      - target 3 m directly ahead, clear LOS       -> visible, bearing ~0
      - target 3 m BEHIND (out of the 87-deg FOV)  -> not visible
      - target beyond detector range (25 m)        -> not visible
      - target ahead but occluded by a bar         -> not visible (warp LOS)
   C. no GT leakage: the actor slice contains no monotone function of target position when the
-     detector is blind AND no id-50 ray fires (obs must be IDENTICAL for two different target
-     positions that are both undetectable).
+     camera detector is blind (obs must be IDENTICAL for two different target positions that are
+     both outside camera and LiDAR range).
   D. tracker: after seeing then losing the target, last-bearing persists and t_since grows.
   E. body-frame action: +x action command equals vehicle-frame velocity command.
   F. states tail carries the GT extras (rpos unit etc).
@@ -40,12 +40,12 @@ vc = tc.vision
 
 # A. dims
 check("vision mode on", task.vision_mode)
-check("obs dim 305", tc.observation_space_dim == 305, f"({tc.observation_space_dim})")
-check("states dim 313", tc.state_space_dim == 313, f"({tc.state_space_dim})")
+check("obs dim 1265", tc.observation_space_dim == 1265, f"({tc.observation_space_dim})")
+check("states dim 1273", tc.state_space_dim == 1273, f"({tc.state_space_dim})")
 check("split 17", tc.internal_state_dim == 17)
 obs0 = task.reset()[0]
-check("obs buffer shape", tuple(obs0["observations"].shape) == (N, 305))
-check("states buffer shape", tuple(obs0["states"].shape) == (N, 313))
+check("obs buffer shape", tuple(obs0["observations"].shape) == (N, 1265))
+check("states buffer shape", tuple(obs0["states"].shape) == (N, 1273))
 
 act = torch.zeros(N, 4, device=task.device)
 task.tm.speed_fixed = 0.0
@@ -58,7 +58,7 @@ fwd_w = quat_rotate(q_veh, torch.tensor([[1.0, 0.0, 0.0]], device=task.device).e
 
 
 def place_and_observe(offset_w):
-    """Teleport the target to drone + offset (world), sync sensor, re-render, rebuild obs."""
+    """Teleport the virtual target to drone + offset (world), render, and rebuild observation."""
     task.target_position[:] = task.obs_dict["robot_position"] + offset_w
     task._sync_target_to_sensor()
     task.sim_env.render(render_components="sensors")
@@ -73,6 +73,9 @@ det = obs_a[:, vc.ego_dim : vc.ego_dim + vc.detector_dim]
 check("ahead: visible", bool((det[:, 0] > 0.5).all()), f"(vis={det[:, 0].tolist()})")
 check("ahead: bearing ~0", bool((det[:, 1].abs() < 0.15).all()), f"(sin={det[:, 1].abs().max():.3f})")
 check("ahead: range ~1.5/20", bool(((det[:, 4] - 0.075).abs() < 0.02).all()))
+cam_hits = task.obs_dict["target_camera_mask"].sum(dim=(1, 2))
+check("ahead: camera target pixels exist", bool((cam_hits > 0).all()),
+      f"(pixels={cam_hits.tolist()})")
 
 # B2. 3 m behind -> out of the 87-deg forward FOV
 obs_b, _ = place_and_observe(-3.0 * fwd_w)
@@ -129,7 +132,7 @@ check("action: +x maps to vehicle +x at vmax",
 
 # F. states tail = GT extras (rpos unit toward target)
 obs_g, st_g = place_and_observe(1.5 * fwd_w)
-extras = st_g[:, 305:]
+extras = st_g[:, 1265:]
 check("states: rpos unit +x ~1 (target dead ahead)", bool((extras[:, 0] > 0.95).all()),
       f"(x={extras[:, 0].min():.3f})")
 check("states: dist/24 ~ 1.5/24", bool(((extras[:, 3] - 0.0625).abs() < 0.01).all()))

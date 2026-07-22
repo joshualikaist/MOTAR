@@ -2,21 +2,13 @@ params:
   seed: 42
   algo:
     name: a2c_continuous
-
   model:
     name: continuous_a2c_logstd
-
   load_checkpoint: False
 
   network:
-    # Multi-sensor policy: 2-channel 36x4 LiDAR (range + target mask) and 40x24
-    # forward camera obstacle depth use separate CNNs, fused with ego + camera detector state.
-    # ego+detector state by a [256, 256] ELU MLP. The actor NEVER sees the ground-truth
-    # target position; the separate privileged critic below does (asymmetric actor-critic).
-    # 4GB variant (1650 Ti): identical net/hyperparams to ppo_navrl_vision.yaml; only
-    # num_envs/minibatch shrink + base_sim_4gb (set by GPU4GB=1). If it still OOMs on 4GB,
-    # drop --num_envs to 64 (minibatch 2048 still divides 32*64=2048).
-    name: navrl_vision
+    # 17 structured temporal tokens; raw sensors and semantic/GT target channels are forbidden.
+    name: navrl_transformer
     separate: False
     space:
       continuous:
@@ -32,7 +24,7 @@ params:
   config:
     env_name: navrl_task
     env_config:
-      num_envs: 128          # 4GB (1650 Ti); overridden by --num_envs
+      num_envs: 128
     name: gen_ppo
     reward_shaper:
       scale_value: 0.1
@@ -53,7 +45,7 @@ params:
     clip_value: False
     num_actors: 128
     horizon_length: 32
-    minibatch_size: 2048     # 32 * 128 = 4096 batch -> 2 minibatches (N>=64 ok)
+    minibatch_size: 2048
     mini_epochs: 4
     critic_coef: 2
     normalize_input: True
@@ -64,10 +56,7 @@ params:
     value_bootstrap: True
     use_smooth_clamp: False
 
-    # Asymmetric (privileged) critic: trained on obs['states'] = actor obs + ground-truth
-    # target extras (navrl_task._process_obs_vision). The actor stays sensor-only; this
-    # critic exists only at train time and is dropped at deployment. Standard remedy for
-    # the POMDP value-variance problem (critic conditions on the true target state).
+    # Oracle target state exists only in this train-time central value network.
     central_value_config:
       minibatch_size: 2048
       mini_epochs: 4

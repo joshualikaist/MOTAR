@@ -22,11 +22,12 @@ const perc100=(n)=>((n/BAND_AREA)*100).toFixed(1);
    Arena bounds: x 0..24, y -12..12 (=Three z), height 0..3 (=Three y up)
    ============================================================ */
 const Arena=(()=>{
-  const X0=0,X1=24,Y0=-12,Y1=12,H=3;        // sim coords
-  const BX0=3.1,BX1=23;                       // bar band in x (spawn corridor clear)
-  let scene,cam,renderer,controls,root,barGroup,drone,target,lidarGroup,groundMat,gridHelper;
-  let bars=[],playing=true,speed=0,tParam=0,goalX=22;
-  let host;
+  const X0=0,X1=24,Y0=-12,Y1=12,BX0=3.1,BX1=23;
+  const CAMERA_RANGE=20,CAMERA_HALF_FOV=THREE.MathUtils.degToRad(43.5),LIDAR_RANGE=4;
+  let scene,cam,renderer,controls,root,barMesh,drone,target,cameraFov,lidarLines;
+  let pursuerTrail,targetTrail,targetHalo,groundMat,gridHelper,resizeObserver;
+  let bars=[],playing=true,speed=0,tParam=0,goalX=22,viewMode=0,showTrails=true,frame=0;
+  let host,lastDrone={x:1,y:0},trailA=[],trailB=[];
 
   // seeded RNG (mulberry32) so a given bar-count is reproducible/stable
   function rng(seed){return function(){seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
@@ -49,15 +50,16 @@ const Arena=(()=>{
   }
 
   function makeBars(n){
-    barGroup.clear(); bars=placeBars(n);
-    const col=new THREE.Color(cssv('--warn')||'#c9762f');
-    for(const p of bars){
-      const g=new THREE.BoxGeometry(p.w,2,p.w);
-      const m=new THREE.MeshLambertMaterial({color:0xc9762f});
-      const b=new THREE.Mesh(g,m);
-      b.position.set(p.x,1,p.y);            // sim (x, z=y, height/2)
-      barGroup.add(b);
-    }
+    if(barMesh){root.remove(barMesh);barMesh.geometry.dispose();barMesh.material.dispose();}
+    bars=placeBars(n);
+    const geometry=new THREE.BoxGeometry(1,2,1);
+    geometry.translate(0,1,0);
+    const material=new THREE.MeshStandardMaterial({color:0xb8733d,roughness:.7,metalness:.06});
+    barMesh=new THREE.InstancedMesh(geometry,material,bars.length);
+    barMesh.castShadow=true;barMesh.receiveShadow=true;
+    const m=new THREE.Matrix4();
+    bars.forEach((p,i)=>{m.compose(new THREE.Vector3(p.x,0,p.y),new THREE.Quaternion(),new THREE.Vector3(p.w,1,p.w));barMesh.setMatrixAt(i,m);});
+    barMesh.instanceMatrix.needsUpdate=true;root.add(barMesh);
   }
 
   // nearest-bar avoidance so the drone visually weaves rather than clips
@@ -85,83 +87,143 @@ const Arena=(()=>{
     return [x,y];
   }
 
+  function makeDrone(color,accent,scale=1){
+    const g=new THREE.Group();
+    const bodyMat=new THREE.MeshStandardMaterial({color,roughness:.32,metalness:.48});
+    const dark=new THREE.MeshStandardMaterial({color:0x16232c,roughness:.5,metalness:.55});
+    const glow=new THREE.MeshBasicMaterial({color:accent});
+    const body=new THREE.Mesh(new THREE.BoxGeometry(.36*scale,.11*scale,.24*scale),bodyMat);
+    body.castShadow=true;g.add(body);
+    const nose=new THREE.Mesh(new THREE.ConeGeometry(.09*scale,.20*scale,10),glow);
+    nose.rotation.z=-Math.PI/2;nose.position.x=.26*scale;g.add(nose);
+    for(const z of [-1,1]){
+      const arm=new THREE.Mesh(new THREE.BoxGeometry(.46*scale,.035*scale,.045*scale),dark);
+      arm.rotation.y=z*.58;g.add(arm);
+    }
+    for(const x of [-1,1])for(const z of [-1,1]){
+      const rotor=new THREE.Mesh(new THREE.RingGeometry(.095*scale,.12*scale,28),
+        new THREE.MeshBasicMaterial({color:0xbcd5df,transparent:true,opacity:.55,side:THREE.DoubleSide}));
+      rotor.rotation.x=-Math.PI/2;rotor.position.set(x*.19*scale,.055*scale,z*.13*scale);g.add(rotor);
+      const motor=new THREE.Mesh(new THREE.CylinderGeometry(.025*scale,.03*scale,.055*scale,10),dark);
+      motor.position.copy(rotor.position);g.add(motor);
+    }
+    return g;
+  }
+
+  function makeLabel(textValue,color){
+    const canvas=document.createElement('canvas');canvas.width=256;canvas.height=64;
+    const ctx=canvas.getContext('2d');ctx.clearRect(0,0,256,64);
+    ctx.fillStyle='rgba(4,12,18,.82)';ctx.strokeStyle=color;ctx.lineWidth=2;
+    ctx.beginPath();ctx.roundRect(4,4,248,56,10);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#f4fbff';ctx.font='600 23px ui-monospace, monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(textValue,128,33);
+    const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(canvas),transparent:true,depthTest:false}));
+    sprite.scale.set(1.9,.48,1);sprite.position.set(0,1.0,0);sprite.renderOrder=5;return sprite;
+  }
+
+  function line(points,color,opacity=1){
+    return new THREE.Line(new THREE.BufferGeometry().setFromPoints(points),new THREE.LineBasicMaterial({color,transparent:opacity<1,opacity}));
+  }
+
+  function makeCameraFov(){
+    const range=7,half=Math.tan(CAMERA_HALF_FOV)*range;
+    const verts=new Float32Array([0,.02,0,range,.02,-half,range,.02,half,0,.02,0,range,.02,half,range,.02,-half]);
+    const geom=new THREE.BufferGeometry();geom.setAttribute('position',new THREE.BufferAttribute(verts,3));
+    const mesh=new THREE.Mesh(geom,new THREE.MeshBasicMaterial({color:0x31d6e2,transparent:true,opacity:.12,side:THREE.DoubleSide,depthWrite:false}));
+    const outline=line([new THREE.Vector3(0,.03,0),new THREE.Vector3(range,.03,-half),new THREE.Vector3(range,.03,half),new THREE.Vector3(0,.03,0)],0x56e4ed,.48);
+    const group=new THREE.Group();group.position.y=-.05;group.add(mesh,outline);return group;
+  }
+
   function init(el){
     host=el;
-    scene=new THREE.Scene();
-    cam=new THREE.PerspectiveCamera(50, el.clientWidth/el.clientHeight,0.1,500);
-    cam.position.set(30,26,30);
-    renderer=new THREE.WebGLRenderer({antialias:true});
-    renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+    scene=new THREE.Scene();scene.background=new THREE.Color(0x071018);scene.fog=new THREE.FogExp2(0x071018,.018);
+    cam=new THREE.PerspectiveCamera(48, el.clientWidth/el.clientHeight,.08,160);
+    cam.position.set(20,16,23);
+    renderer=new THREE.WebGLRenderer({antialias:true,alpha:false,powerPreference:'high-performance'});
+    renderer.setPixelRatio(Math.min(devicePixelRatio,1.75));
     renderer.setSize(el.clientWidth,el.clientHeight);
+    renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+    renderer.outputEncoding=THREE.sRGBEncoding;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.12;
     el.appendChild(renderer.domElement);
     controls=new THREE.OrbitControls(cam,renderer.domElement);
-    controls.enableDamping=true; controls.target.set(12,1,0); controls.maxPolarAngle=Math.PI/2.05;
+    controls.enableDamping=true;controls.target.set(0,1,0);controls.maxPolarAngle=Math.PI/2.04;
+    controls.minDistance=7;controls.maxDistance=65;
 
-    scene.add(new THREE.AmbientLight(0xffffff,0.72));
-    const dl=new THREE.DirectionalLight(0xffffff,0.75); dl.position.set(20,40,10); scene.add(dl);
+    scene.add(new THREE.HemisphereLight(0xaad8ee,0x13202b,.72));
+    const dl=new THREE.DirectionalLight(0xf4fbff,2.2);dl.position.set(-8,26,14);dl.castShadow=true;
+    dl.shadow.mapSize.set(2048,2048);dl.shadow.camera.left=-25;dl.shadow.camera.right=25;dl.shadow.camera.top=25;dl.shadow.camera.bottom=-25;scene.add(dl);
+    const rim=new THREE.PointLight(0x20d4df,1.25,42);rim.position.set(-12,8,-15);scene.add(rim);
 
     root=new THREE.Group(); scene.add(root);
-    // center arena at origin for nicer orbit
     root.position.set(-12,0,0);
 
-    // ground
-    groundMat=new THREE.MeshLambertMaterial({color:0x223, transparent:true, opacity:0.35});
+    groundMat=new THREE.MeshStandardMaterial({color:0x10212b,roughness:.9,metalness:.03});
     const ground=new THREE.Mesh(new THREE.PlaneGeometry(X1-X0,Y1-Y0),groundMat);
-    ground.rotation.x=-Math.PI/2; ground.position.set((X0+X1)/2,0,(Y0+Y1)/2); root.add(ground);
-    gridHelper=new THREE.GridHelper(24,24,0x4a5a6a,0x33404d);
+    ground.rotation.x=-Math.PI/2;ground.position.set(12,-.02,0);ground.receiveShadow=true;root.add(ground);
+    gridHelper=new THREE.GridHelper(24,24,0x315063,0x1c3442);
     gridHelper.position.set((X0+X1)/2,0.01,(Y0+Y1)/2); root.add(gridHelper);
 
-    // flight-altitude plane (1 m)
-    const alt=new THREE.Mesh(new THREE.PlaneGeometry(X1-X0,Y1-Y0),
-      new THREE.MeshBasicMaterial({color:0x22c1cd,transparent:true,opacity:0.05,side:THREE.DoubleSide}));
-    alt.rotation.x=-Math.PI/2; alt.position.set((X0+X1)/2,1,(Y0+Y1)/2); root.add(alt);
+    const border=line([new THREE.Vector3(0,.04,-12),new THREE.Vector3(24,.04,-12),new THREE.Vector3(24,.04,12),new THREE.Vector3(0,.04,12),new THREE.Vector3(0,.04,-12)],0x4b768b,.8);root.add(border);
+    const altGeom=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,1,-12),new THREE.Vector3(24,1,-12),new THREE.Vector3(24,1,12),new THREE.Vector3(0,1,12),new THREE.Vector3(0,1,-12)]);
+    root.add(new THREE.Line(altGeom,new THREE.LineDashedMaterial({color:0x24bbc6,dashSize:.35,gapSize:.22,transparent:true,opacity:.22})));root.children[root.children.length-1].computeLineDistances();
 
-    barGroup=new THREE.Group(); root.add(barGroup);
+    drone=makeDrone(0x3bd68d,0xc6ffec,1.15);drone.add(makeLabel('PURSUER','#3bd68d'));drone.position.set(1,1,0);root.add(drone);
+    target=makeDrone(0xf05252,0xffc1a8,1.35);target.add(makeLabel('TARGET','#ff685f'));target.position.set(goalX,1,0);root.add(target);
+    targetHalo=new THREE.Mesh(new THREE.RingGeometry(.52,.64,40),new THREE.MeshBasicMaterial({color:0xff665e,transparent:true,opacity:.9,side:THREE.DoubleSide,depthTest:false}));
+    targetHalo.rotation.x=-Math.PI/2;targetHalo.position.y=.01;target.add(targetHalo);
+    cameraFov=makeCameraFov();drone.add(cameraFov);
 
-    // drone (0.28 m collision box + rotor cross)
-    drone=new THREE.Group();
-    const body=new THREE.Mesh(new THREE.BoxGeometry(0.28,0.12,0.28),
-      new THREE.MeshLambertMaterial({color:0x2f9e60}));
-    drone.add(body);
-    for(const s of [[1,1],[1,-1],[-1,1],[-1,-1]]){
-      const arm=new THREE.Mesh(new THREE.CylinderGeometry(0.03,0.03,0.14,8),
-        new THREE.MeshLambertMaterial({color:0x1c6b42}));
-      arm.position.set(s[0]*0.16,0.06,s[1]*0.16); drone.add(arm);
-    }
-    root.add(drone);
-
-    // target (moving goal)
-    target=new THREE.Mesh(new THREE.SphereGeometry(0.5,20,16),
-      new THREE.MeshLambertMaterial({color:0xd14b4b,transparent:true,opacity:0.9}));
-    root.add(target);
-
-    lidarGroup=new THREE.Group(); lidarGroup.visible=false; root.add(lidarGroup);
+    const lp=new Float32Array(36*4*2*3);const lg=new THREE.BufferGeometry();lg.setAttribute('position',new THREE.BufferAttribute(lp,3));
+    lidarLines=new THREE.LineSegments(lg,new THREE.LineBasicMaterial({color:0x47d9e3,transparent:true,opacity:.46,vertexColors:false}));root.add(lidarLines);
+    pursuerTrail=line([],0x8ef6c7,.75);targetTrail=line([],0xff8a76,.62);root.add(pursuerTrail,targetTrail);
 
     makeBars(48);
-    addEventListener('resize',onResize);
+    resizeObserver=new ResizeObserver(onResize);resizeObserver.observe(el);
+    addEventListener('keydown',e=>{if(e.key.toLowerCase()==='v')cycleView();});
     animate();
   }
 
   function onResize(){if(!host)return;cam.aspect=host.clientWidth/host.clientHeight;cam.updateProjectionMatrix();renderer.setSize(host.clientWidth,host.clientHeight);}
 
+  function rayHit(x,y,a,maxRange){
+    let best=maxRange;const ux=Math.cos(a),uy=Math.sin(a);
+    for(const p of bars){
+      const ox=p.x-x,oy=p.y-y,t=ox*ux+oy*uy;if(t<=0||t>=best)continue;
+      const d2=ox*ox+oy*oy-t*t,r=p.w*.72;if(d2<r*r){const hit=t-Math.sqrt(r*r-d2);if(hit>0)best=Math.min(best,hit);}
+    }return best;
+  }
+
   function drawLidar(x,y){
-    lidarGroup.clear(); if(!lidarGroup.visible)return;
-    const R=4, N=36;
-    for(let i=0;i<N;i++){
-      const a=(i/N)*Math.PI*2;
-      let hit=R;
-      // crude ray march against bar circles
-      for(let t=0.1;t<R;t+=0.1){const px=x+Math.cos(a)*t,py=y+Math.sin(a)*t;
-        for(const p of bars){if(Math.hypot(px-p.x,py-p.y)<p.w*0.6){hit=t;break;}}
-        if(hit<R)break;}
-      const g=new THREE.BufferGeometry().setFromPoints([
-        new THREE.Vector3(x,1,y),new THREE.Vector3(x+Math.cos(a)*hit,1,y+Math.sin(a)*hit)]);
-      lidarGroup.add(new THREE.Line(g,new THREE.LineBasicMaterial({color:hit<R?0xe58a58:0x22c1cd,transparent:true,opacity:0.5})));
-    }
+    if(!lidarLines.visible)return;
+    const a=lidarLines.geometry.attributes.position.array;let k=0;
+    for(let layer=0;layer<4;layer++)for(let i=0;i<36;i++){
+      const ang=i/36*Math.PI*2,hit=rayHit(x,y,ang,LIDAR_RANGE),h=.82+layer*.12;
+      a[k++]=x;a[k++]=h;a[k++]=y;a[k++]=x+Math.cos(ang)*hit;a[k++]=h;a[k++]=y+Math.sin(ang)*hit;
+    }lidarLines.geometry.attributes.position.needsUpdate=true;
+  }
+
+  function visibility(dx,dy,tx,ty,heading){
+    const vx=tx-dx,vy=ty-dy,range=Math.hypot(vx,vy),bearing=Math.atan2(vy,vx);
+    const rel=Math.atan2(Math.sin(bearing-heading),Math.cos(bearing-heading));
+    const inFov=Math.abs(rel)<=CAMERA_HALF_FOV&&range<=CAMERA_RANGE;
+    const hit=rayHit(dx,dy,bearing,Math.min(range,CAMERA_RANGE));
+    return {range,visible:inFov&&hit>=range-.28,occluded:inFov&&hit<range-.28,inFov};
+  }
+
+  function updateTrail(obj,arr,lineObj){
+    if(frame%5!==0)return;arr.push(obj.position.clone());if(arr.length>190)arr.shift();
+    lineObj.geometry.dispose();lineObj.geometry=new THREE.BufferGeometry().setFromPoints(arr);lineObj.visible=showTrails;
+  }
+
+  function updateCamera(){
+    if(viewMode===0){controls.enabled=true;return;}
+    controls.enabled=false;const wp=new THREE.Vector3();drone.getWorldPosition(wp);
+    const dir=new THREE.Vector3(1,0,0).applyQuaternion(drone.getWorldQuaternion(new THREE.Quaternion()));
+    if(viewMode===1){cam.position.copy(wp).addScaledVector(dir,-3.4).add(new THREE.Vector3(0,2.1,0));cam.lookAt(wp.clone().addScaledVector(dir,4));}
+    else{cam.position.copy(wp).add(new THREE.Vector3(0,.12,0)).addScaledVector(dir,.24);cam.lookAt(wp.clone().addScaledVector(dir,8));}
   }
 
   function animate(){
-    requestAnimationFrame(animate); controls.update();
+    requestAnimationFrame(animate);controls.update();
     if(playing) tParam+=0.0016*(1+speed*0.25);
     if(tParam>1) tParam=0;
     // drone path: sweep x 1..goalX; y follows a gentle weave + bar repulsion,
@@ -170,13 +232,24 @@ const Arena=(()=>{
     let y=Math.sin(tParam*Math.PI*3)*4;
     const [sx,sy]=steer(x,y); y+=sy*2.2;
     const [dx,dy]=clearBars(x,y,0.2);
-    drone.position.set(dx,1,dy);
+    const heading=Math.atan2(dy-lastDrone.y,dx-lastDrone.x);
+    drone.position.set(dx,1+.025*Math.sin(tParam*30),dy);
+    drone.rotation.y=-heading;drone.rotation.z=THREE.MathUtils.clamp((dy-lastDrone.y)*-.55,-.28,.28);
+    lastDrone={x:dx,y:dy};
     // target: static (speed 0) sits at the goal; moving target bounces in y BUT is pushed out
     // of bar clearance every frame — exactly like the sim, so it never passes through a bar.
     let tx=goalX, ty=(speed>0)? Math.sin(tParam*Math.PI*2*(0.5+speed*0.1))*8 : 0;
     [tx,ty]=clearBars(tx,ty,0.5);
-    target.position.set(tx,1,ty);
+    target.position.set(tx,1+.04*Math.sin(tParam*24),ty);target.rotation.y=Math.sin(tParam*Math.PI*2)*.5;
+    const vis=visibility(dx,dy,tx,ty,heading);
+    const state=document.getElementById('hud-camera');
+    if(state){state.textContent=vis.visible?'DETECTED':vis.occluded?'OCCLUDED':'OUT OF FOV';state.className=vis.visible?'seen':'lost';}
+    const rangeEl=document.getElementById('hud-range');if(rangeEl)rangeEl.textContent=vis.range.toFixed(1)+' m';
+    targetHalo.material.color.setHex(vis.visible?0x5bf2a6:0xff665e);targetHalo.material.opacity=vis.visible?.9:.5;
+    targetHalo.scale.setScalar(1+.12*Math.sin(frame*.08));
+    cameraFov.children.forEach(o=>{if(o.material)o.material.color.setHex(vis.visible?0x31d6e2:0xf06652);});
     drawLidar(dx,dy);
+    updateTrail(drone,trailA,pursuerTrail);updateTrail(target,trailB,targetTrail);updateCamera();frame++;
     renderer.render(scene,cam);
   }
 
@@ -185,9 +258,19 @@ const Arena=(()=>{
     setBars(n){makeBars(n);},
     setSpeed(s){speed=s;},
     setPlaying(p){playing=p;},
-    setLidar(v){lidarGroup.visible=v;},
-    recolor(){if(gridHelper){/* grid colors fixed; ground opacity ok */}},
+    setLidar(v){lidarLines.visible=v;},
+    setCamera(v){cameraFov.visible=v;},
+    setTrails(v){showTrails=v;pursuerTrail.visible=v;targetTrail.visible=v;},
+    cycleView(){return cycleView();},
+    recolor(){if(renderer)renderer.toneMappingExposure=document.documentElement.dataset.theme==='light'?1.2:1.08;},
   };
+
+  function cycleView(){
+    viewMode=(viewMode+1)%3;
+    if(viewMode===0){cam.position.set(20,16,23);controls.target.set(0,1,0);controls.enabled=true;controls.update();}
+    const btn=document.getElementById('btn-view');if(btn)btn.textContent=['◉ view · overview','◉ view · chase','◉ view · sensor'][viewMode];
+    return viewMode;
+  }
 })();
 
 /* ============================================================
@@ -217,16 +300,16 @@ function renderLatest(s){
   const cards=[
     {k:'포획률 (최종)',v:pct(cap),c:cap>=0.7?'good':cap>=0.5?'warn':'bad',s:'학습 종료 시점'},
     {k:'충돌률 (최종)',v:pct(crash),c:crash<=0.1?'good':crash<=0.3?'warn':'bad',s:'주 실패 모드'},
-    {k:'timeout',v:pct(to),c:'acc',s:'표적 미탐지'},
+    {k:'timeout',v:pct(to),c:'acc',s:'시간 제한 종료'},
     {k:'포획률 (peak)',v:pct(peak),c:'acc',s:'ep '+(L.peak_captured_epoch||'?')},
     {k:'peak→final 격차',v:gapPt!=null?('−'+gapPt+'pt'):'—',c:gapPt>=30?'bad':gapPt>=15?'warn':'good',s:'과특화 지표'},
   ];
   document.getElementById('latest-cards').innerHTML=cards.map(c=>
     `<div class="card ${c.c}"><div class="v">${c.v}</div><div class="k">${c.k}</div><div class="s">${c.s}</div></div>`).join('');
   document.getElementById('latest-cap').innerHTML=
-    `이 run은 <b>peak ${pct(peak)}(ep ${L.peak_captured_epoch})</b>에서 <b>final ${pct(cap)}</b>로 떨어졌습니다.
-     밀도·거리 커리큘럼이 끝에서 동시에 최대(막대 ${L.last_n_bars_active}·${L.last_curriculum_max_m} m)에 도달 →
-     최종 체크포인트가 가장 어려운 설정에 과특화된 결과이며, 평가는 용도에 맞는 체크포인트로 해야 합니다.`;
+    `이 값은 <b>learned detector 이전의 navigation baseline</b>입니다. peak ${pct(peak)}(ep ${L.peak_captured_epoch})에서
+     final ${pct(cap)}로 하락했으며, 밀도·거리 커리큘럼이 동시에 증가한 영향이 섞여 있습니다.
+     detector+tracker를 연결한 뒤 같은 held-out protocol로 다시 측정해야 합니다.`;
 }
 
 function renderCurve(s){
@@ -257,7 +340,7 @@ function renderCurve(s){
     <polyline fill="none" stroke="${cssv('--sensor')}" stroke-width="3" points="${path('captured')}"/>
     ${dots('captured',cssv('--sensor'),4.5)}`;
   // table
-  const head=`<thead><tr><th>막대</th><th>밀도/100m²</th><th>포획(센서)</th><th>충돌</th><th>timeout</th><th>포획(GT)</th></tr></thead>`;
+  const head=`<thead><tr><th>막대</th><th>밀도/100m²</th><th>포획(prototype)</th><th>충돌</th><th>timeout</th><th>포획(GT)</th></tr></thead>`;
   const body=rows.map(r=>{const cliff=r.crash>=0.5?' class="cliff"':'';
     return `<tr${cliff}><td>${r.density_bars}</td><td>${perc100(r.density_bars)}</td><td>${pct(r.captured)}</td><td>${pct(r.crash)}</td><td>${pct(r.timeout)}</td><td>${r.gt_injected_phase2!=null?pct(r.gt_injected_phase2):'—'}</td></tr>`;}).join('');
   document.getElementById('curve-tbl').innerHTML=head+'<tbody>'+body+'</tbody>';
@@ -276,62 +359,43 @@ function renderRuns(s){
   document.getElementById('runs-tbl').innerHTML=head+'<tbody>'+body+'</tbody>';
 }
 
-/* diagnosis + next-plan + roadmap are content-driven (updated by the skill run) */
+/* Diagnosis + perception-first implementation plan. */
 function renderStatic(){
   document.getElementById('diagnosis').innerHTML=`
-    <div class="callout">
-      <h3>결론: "급락"의 절반은 커리큘럼/체크포인트 아티팩트, 절반은 진짜 기하학적 바닥</h3>
-      <p><b>① 아티팩트 (놀랄 일 아님).</b> 최신 run의 <b>peak 97.1%(ep 3764)→final 44.9%</b> 급락은 밀도·거리
-        커리큘럼이 끝에서 <b>동시에 최대</b>(막대 115·목표 24 m)에 도달해 최종 체크포인트가 가장 어려운 셀에
-        과특화된 결과입니다. peak는 25막대·얕은 목표 구간의 값. 정책이 무너진 게 아니라 <b>학습 지표가 난이도
-        상승분을 섞어 찍은 것</b>. 평가에 best-reward <code>gen_ppo.pth</code>(=저밀도 정책)를 쓰면 더 왜곡되고,
-        고밀도는 반드시 <code>last_gen_ppo_*</code> 체크포인트로 held-out 해야 합니다.</p>
-      <p><b>② 진짜 기하학적 바닥 (실재).</b> 센서 held-out 곡선의 충돌 급증은 로깅 버그가 아니라 실제입니다:
-        110→130막대 <b>+13.5pt</b>, 130→150막대 <b>+19.9pt</b>. 원인은 배치 알고리즘 —
-        최소 중심간격 <b>1.5 m</b>가 128회 실패마다 <b>×0.8로 완화</b>(→1.2→0.96 m)되는데, ~115–120막대에서
-        완화가 시작됩니다. 완화 2단계(0.96 m)면 평균 막대(0.6 m) 기준 <b>틈이 0.36 m &lt; 드론 대각 0.40 m</b> →
-        물리적으로 통과 불가 → 충돌. GT 곡선이 120막대까지 평탄(충돌 1.8%)하다 150에서만 절벽(0.66)인 것도
-        같은 RSA 재밍 한계(~148막대/478 m²)입니다.</p>
-      <p><b>③ 센서 전용의 대가.</b> 같은 밀도에서 센서 충돌이 GT보다 <b>+0.17~+0.37</b> 높습니다(110막대 0.37 vs
-        ~0.07). timeout은 저밀도에서 오히려 높아(25막대 10.3%) 고밀도 실패의 주범은 탐지가 아니라 <b>회피(충돌)</b>.</p>
-    </div>`;
+    <div class="callout"><h3>확인된 것 · navigation 난이도와 고밀도 geometry</h3>
+      <p><b>커리큘럼 효과.</b> peak→final 급락에는 밀도와 목표거리가 함께 증가한 영향이 섞여 있습니다.
+        단일 training curve만으로 detector 실패나 정책 붕괴를 주장할 수 없고, 고정 난이도의 held-out 평가가 필요합니다.</p>
+      <p><b>기하학적 바닥.</b> 110→130→150막대에서 충돌이 급증합니다. 배치 최소간격이 포화 시
+        1.5→1.2→0.96 m로 완화되어 일부 통로가 기체 collision envelope보다 좁아집니다.</p></div>
+    <div class="callout"><h3>아직 확인하지 못한 것 · onboard detection과 occlusion recovery</h3>
+      <p>기존 actor는 raw RGB나 raw point cloud를 받지 않고 analytic bearing/range와 semantic target mask를 받습니다.
+        따라서 기존 곡선은 <b>카메라가 표적을 검출했다</b>거나 <b>가림 뒤 재획득했다</b>는 증거가 아닙니다.</p>
+      <p>새 실험은 detection recall/precision, track RMSE, covariance calibration, occlusion duration별 reacquisition time을
+        capture/crash와 함께 보고해야 합니다.</p></div>`;
 
   document.getElementById('nextplan').innerHTML=`
-    <p class="sub">사용자 방향("막대 밀도를 순차적으로 늘린다")에 맞춘 확정 레시피. 현행 기본값은 승급 <b>+15막대·임계 0.8</b>로
-      계단이 크고, 거리(24 m)·밀도가 <b>끝에서 충돌</b>합니다. 세 가지를 바꿉니다: ① 계단을 <b>+5막대</b>로 완만하게,
-      ② <b>거리 커리큘럼을 시야 안(≤16 m)으로 캡</b>해 두 커리큘럼 충돌 제거, ③ <b>110막대에서 정지</b>(완화 절벽 ~115+ 직전).</p>
-    <div class="callout">
-      <h3>A. 완만한 자동 승급 · 충돌 안전 (권장, 3070)</h3>
-      <pre><span class="c"># 밀도 +5씩, 임계 0.55, 자주 체크 / 목표는 얕게(≤16m) 유지 / 110막대에서 정지</span>
-NAVRL_VISION=1 NAVRL_MAX_BARS=150 \\
-NAVRL_DENSITY_CURRICULUM=1 NAVRL_DENSITY_START=25 NAVRL_DENSITY_FINAL=110 \\
-NAVRL_DENSITY_STEP=5 NAVRL_DENSITY_THRESHOLD=0.55 \\
-NAVRL_DENSITY_WARMUP=1000 NAVRL_DENSITY_CHECK_EPS=1024 \\
-NAVRL_K_FINAL=16 NAVRL_K_MIN_FINAL=10 NAVRL_K_WARMUP=8000 \\
-./train_navrl.sh --seed 1 --max_epochs 9000</pre>
-      <p class="s">승급은 <b>capture ≥ 0.55</b>가 1024 에피소드 창에서 유지될 때만 +5막대. 목표거리를 20 m 시야 안에 묶어
-        (K_FINAL=16) 거리·밀도가 끝에서 겹치지 않게 함. <code>save_frequency: 50</code>으로 승급마다 <code>last_gen_ppo_*</code> 스냅샷 보관.</p>
-    </div>
-    <div class="callout">
-      <h3>B. 단계별 명시 스테이징 (체크포인트 통제 최상, 대안)</h3>
-      <p>25→35→45…105→110막대를 각각 고정(<code>NAVRL_NUM_BARS</code>)으로 학습하고 이전 <code>last_gen</code> ckpt에서
-        <code>--checkpoint</code>로 resume. 각 단계 종료 시 스냅샷을 남겨 논문용 밀도별 정책을 확보.</p>
-    </div>
-    <div class="callout">
-      <h3>C. 밀도별 held-out 평가로 곡선 완성</h3>
-      <p>최종 정책의 <code>last_gen_ppo_*</code>를 {25,50,75,110,130}에서 평가(<code>play_navrl.sh</code>, 셀당 ≥2500 ep).
-        <b>절대 <code>gen_ppo.pth</code>(저밀도 best) 쓰지 말 것.</b></p>
-    </div>`;
+    <p class="sub">지금은 기존 policy를 더 오래 학습시키기보다 observation pipeline을 바로잡는 것이 먼저입니다.
+      아래 순서를 통과해야만 “드론이 표적 위치를 직접 탐지한다”는 연구 주장을 할 수 있습니다.</p>
+    <div class="callout"><h3>P0 · 정보 방화벽 — 구현·smoke test 완료</h3>
+      <p>새 actor observation은 semantic target ID와 analytic bearing/range를 사용하지 않습니다. RGB-D/LiDAR가
+        perception module을 거쳐 만든 track과 covariance만 17-token Transformer에 전달됩니다.</p></div>
+    <div class="callout"><h3>P1 · detection → fusion → tracking</h3>
+      <p>카메라 detector가 <b>bar / target drone</b>을 구분하고, depth 또는 LiDAR association으로 3D 위치를 만듭니다.
+        Kalman/IMM 계열 tracker가 위치·속도·covariance·age·visibility를 출력하도록 구성합니다.</p></div>
+    <div class="callout"><h3>P2 · NavRL++-style temporal Transformer actor</h3>
+      <p>ego, target track, obstacle tracks, confidence/covariance, visibility/age를 structured temporal token으로 만들고
+        Transformer가 가림 전후 문맥을 사용하게 합니다. 저밀도·정지 표적에서 시작해 가림 길이와 표적 속도,
+        마지막에 장애물 밀도를 올립니다.</p></div>`;
 
   const phases=[
-    ['Phase 0','준비·스택 검증·NavRL 클론','done'],
-    ['Phase 1','정적 환경 + 정지 표적 (yaw 제어 captured 0.95)','done'],
-    ['Phase 2','정적 밀도 스윕 (RQ1) — GT 곡선 완성, 절벽 규명','done'],
-    ['Phase 3','이동 표적 + 센서 전용 요격 (RQ2) — 밀도 커리큘럼 진행','active'],
-    ['Phase 4','동적(이동) 장애물 2D (RQ1 후반)','todo'],
-    ['Phase 5','3D / z축 비행','todo'],
-    ['Phase 6','탐지 in-the-loop (RQ3)','todo'],
-    ['Phase 7','분석·논문화 (RA-L)','todo'],
+    ['Baseline','navigation·밀도 스윕·geometry 절벽 규명','done'],
+    ['P0','GT→actor 정보 방화벽 + structured schema','done'],
+    ['P1','RGB-D/LiDAR detector 학습·held-out 검증','active'],
+    ['P2','association + Kalman tracker + covariance prototype','done'],
+    ['P3','17-token temporal Transformer actor 연결','done'],
+    ['P4','가림 curriculum + 재탐색 behavior','todo'],
+    ['P5','sim-to-real·onboard latency·sensor noise 검증','todo'],
+    ['Paper','oracle/perception ablation + 논문화','todo'],
   ];
   document.getElementById('phases').innerHTML=phases.map(p=>{
     const lab={done:'완료',active:'진행 중',todo:'예정'}[p[2]];
@@ -350,6 +414,9 @@ function wire(){
   let playing=true;
   play.addEventListener('click',()=>{playing=!playing;Arena.setPlaying(playing);play.textContent=playing?'⏸ 일시정지':'▶ 재생';});
   document.getElementById('cb-lidar').addEventListener('change',e=>Arena.setLidar(e.target.checked));
+  document.getElementById('cb-camera').addEventListener('change',e=>Arena.setCamera(e.target.checked));
+  document.getElementById('cb-trails').addEventListener('change',e=>Arena.setTrails(e.target.checked));
+  document.getElementById('btn-view').addEventListener('click',()=>Arena.cycleView());
   document.getElementById('btn-preset').addEventListener('click',()=>{bars.value=110;upd();});
 }
 

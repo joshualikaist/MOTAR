@@ -1,6 +1,7 @@
 # GPU 스케일링 / 이전 가이드 (환경 바꿀 때 참고)
 
-작성: 2026-07-17. 대상: NavRL(MOTAR) Phase-3 vision 파이프라인.
+작성: 2026-07-17, 연구 방향 업데이트: 2026-07-22. 대상: MOTAR dual-sensor detector/tracker +
+NavRL++-Target temporal policy 파이프라인.
 목적: **더 좋은 GPU를 구하거나 클라우드로 옮길 때 무엇을 어떻게 바꿔야 하는지**를 한 곳에 정리.
 
 ---
@@ -41,11 +42,12 @@ PyTorch에 고정돼 있습니다. 그래서:
 | `NUM_ENVS` | `train_navrl.sh` (기본 256) | 병렬 환경 수 | ↑ = VRAM·처리량 ↑ |
 | `minibatch_size` | `ppo_navrl_cnn*.yaml` (4096) | PPO 미니배치 | **제약: horizon(32)×NUM_ENVS ≥ minibatch → NUM_ENVS ≥ 128** |
 | `horizon_length` | `ppo_navrl_cnn*.yaml` (32) | 롤아웃 길이 | ↑ = VRAM(버퍼) ↑ |
-| 카메라 해상도 | `sensor_config/camera_config/base_depth_camera_config.py` (135×240) | Stage 2 vision | ↑ = 레이수·버퍼 ↑↑ (가장 큰 VRAM 변수) |
+| 카메라 해상도 | `PERCEPTION_TRANSFORMER_PLAN.md` 초기값 160×96 RGB-D | offline detector | ↑ = detector/dataset 메모리 ↑↑ |
+| policy history | 2초, 0.5초 간격 5 samples | NavRL++-Target | ↑ = structured token·activation 메모리 ↑ |
 | `NAVRL_MAX_BARS`/`NAVRL_NUM_BARS` | 환경변수 | 장애물 밀도(빌드/활성) | 미미 |
-| `NAVRL_VISION` | 환경변수 (1=켬) | 센서기반 표적지각(해석적 구 주입) | **오버헤드 ~0** (측정됨) |
+| `NAVRL_VISION` | 환경변수 (1=켬) | 현재 analytic semantic **프로토타입** | 최종 learned detector가 아님 |
 | GPU4GB 프리셋 | `base_sim_4gb_config.py` + `*_4gb.yaml` | PhysX 버퍼 축소 | 4GB(1650Ti)용 |
-| 네트워크 크기 | `navrl_network.py`, `*.yaml` | CNN/MLP/LSTM 폭 | ↑ = VRAM·속도 ↓ |
+| 네트워크 크기 | 예정 perception/policy modules | detector 크기; Transformer dim 64·4 layers | ↑ = VRAM·속도 ↓ |
 
 > **미니배치 함정**: `NUM_ENVS`를 줄이면 `minibatch_size`도 같이 줄여야 함
 > (`horizon×NUM_ENVS ≥ minibatch`). 안 그러면 rl_games가 시작 못 함. 예: NUM_ENVS=64면 minibatch ≤ 2048.
@@ -56,29 +58,30 @@ PyTorch에 고정돼 있습니다. 그래서:
 
 ### (A) 현재: RTX 3070 8GB (메인)
 ```bash
-# LiDAR / 저해상도 vision 개발·학습. VRAM 아끼는 설정.
+# 센서 프로토타입과 향후 detector/tracker + structured Transformer 개발.
 NUM_ENVS=256           # minibatch 4096 충족
-# vision(카메라)까지 켤 땐: 카메라 해상도 64x64 or latent 압축, 필요시 NUM_ENVS=128(+minibatch 2048)
+# PPO rollout에는 raw image가 아니라 structured track tokens/[CLS] latent를 저장한다.
 NAVRL_VISION=1 NAVRL_NUM_BARS=110 ./train_navrl.sh --seed 1
 ```
-- 의미론 LiDAR(P-A)만이면 8GB 여유. 카메라 raw는 해상도/latent로 절약 필수.
+- 현재 semantic prototype은 256 env에서 검증됐다. 최종 방식은 offline detector pretraining과 structured
+  17-token rollout을 사용한다. raw RGB-D sequence를 PPO observation buffer에 그대로 복제하지 않는다.
 
 ### (B) 보조: GTX 1650 Ti 4GB
 ```bash
-# (1) 비전 학습 시도 — base_sim_4gb + ppo_navrl_vision_4gb.yaml(N=128, minibatch 2048) 자동 선택.
+# (1) 기존 navigation 및 semantic prototype baseline.
 NAVRL_VISION=1 GPU4GB=1 NAVRL_NUM_BARS=50 ./train_navrl.sh --seed 1
 #   OOM 나면 env 수를 낮춘다 (minibatch 2048 이 32*64=2048 도 나눔):
 NAVRL_VISION=1 GPU4GB=1 NUM_ENVS=64 NAVRL_NUM_BARS=50 ./train_navrl.sh --seed 1
 # (2) 평가 스윕 / 시각화
 NUM_ENVS=128 HEADLESS=True PLAY_GAMES_NUM=3000 ./play_navrl.sh <checkpoint>   # 4gb 프리셋 자동
 ```
-- 비전 태스크는 raw 이미지를 관측에 안 넣어(검출기 8-dim + 2ch LiDAR) 4GB에도 **들어갈 여지**가 있음.
-  단 실적재는 미검증 — OOM이면 N=64로, 그래도 안 되면 평가·시각화 전용으로.
+- 4GB 머신은 dataset 생성, detector baseline, 평가 전담으로 둔다. Transformer+PPO 본학습은
+  8GB 이상에서 수행한다. semantic prototype 성능을 최종 perception 결과로 보고하지 않는다.
 
 ### (C) 업그레이드 로컬: RTX 3090 / 4090 (24GB) ★추천
 ```bash
 NUM_ENVS=512           # minibatch 8192로 올려도 됨 (yaml 수정)
-# 카메라 풀해상도(135x240 or 270x480) 여유, LSTM·큰 CNN 가능
+# 큰 detector backbone, 더 긴 history, raw-token ablation 가능
 NAVRL_VISION=1 NAVRL_NUM_BARS=110 ./train_navrl.sh --seed 1
 ```
 - VRAM 걱정 사라짐. §2의 절약 knob 전부 원상복구 가능. 속도도 3070 대비 2~3배.
@@ -105,7 +108,7 @@ NUM_ENVS=1024          # minibatch 16384 (yaml), 48GB+에서
 5. **스모크로 검증** (학습 전 필수):
    ```bash
    PYTHONNOUSERSITE=1 python tools/test_navrl_p3_smoke.py          # 정적/주입 경로 (156 관측)
-   NAVRL_VISION=1 python tools/test_navrl_p3_stage0.py             # 해석적 표적 지각
+   NAVRL_VISION=1 python tools/test_navrl_p3_stage0.py             # semantic 센서 prototype 회귀
    python tools/test_navrl_p3_math.py                              # 리워드 수학
    ```
 6. **VRAM 헤드룸 확인**: 첫 학습 몇 스텝에서 `nvidia-smi`로 최대 사용량 보고 NUM_ENVS 조정.
@@ -117,20 +120,20 @@ NUM_ENVS=1024          # minibatch 16384 (yaml), 48GB+에서
 | 구성 | 대략 VRAM (N=256) |
 |---|---|
 | 물리 + warp 메시 + LiDAR | ~2.5 GB |
-| 의미론 LiDAR 표적지각 (해석적) | +~0 (오버헤드 없음) |
-| compact-detector 카메라 (방위/거리만 관측) | +~0.5 GB |
-| **raw 카메라 이미지 관측 + CNN 학습** | **+3~5 GB** (← 8GB 터지는 주범) |
-| LSTM | +~0.3 GB |
+| analytic semantic 센서 prototype | 현재 256 env에서 동작; 최종 모델 아님 |
+| 160×96 RGB-D + LiDAR detector offline batch | 구현 후 실측 필요 |
+| 17-token Transformer(dim 64, 4 layers) | NavRL++ 기준 경량 구조; 구현 후 실측 필요 |
+| raw RGB-D sequence를 PPO buffer에 직접 저장 | 금지에 가까움; OOM 위험 가장 큼 |
 
-**8GB 생존 규칙**: raw 이미지를 관측 버퍼에 통째로 넣지 말 것.
-→ ① 의미론 LiDAR만, ② 카메라는 compact-detector(작은 벡터), ③ 정 필요하면 이미지→latent 압축.
-raw-이미지 CNN을 풀로 하고 싶으면 그때가 24GB(로컬 업그레이드) or 클라우드 갈 시점.
+**8GB 생존 규칙**: detector는 offline sequence batch로 먼저 학습하고, PPO에는 structured obstacle/target
+track과 `[CLS]` latent만 저장한다. end-to-end fine-tuning은 작은 env batch, gradient accumulation으로
+마지막에만 수행한다. semantic target id/mask로 메모리를 아끼는 것은 연구적으로 허용되지 않는다.
 
 ---
 
 ## 6. 한 줄 요약
 
-- **지금(3070 8GB)**: 개발·의미론LiDAR·저해상도vision 다 됨. 아무것도 안 사도 논문 가능.
+- **지금(3070 8GB)**: dual detector와 NavRL++-style 17-token policy 개발 가능.
 - **하나 산다면**: 중고 **RTX 3090 24GB** (Isaac Gym 100% 호환, 가성비 최고).
 - **급하면**: 최종 스윕만 클라우드 **A5000/4090/L40S** 대여($100대).
 - **절대 금물(지금)**: RTX 50번대(Blackwell) — 시뮬레이터가 안 돌아갈 위험.

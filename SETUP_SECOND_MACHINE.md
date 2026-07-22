@@ -9,6 +9,11 @@ GPU A/B 비교나 밤샘 학습을 GPU 하나에 욱여넣지 않고 두 대로 
 > 메인 머신의 정식 설치 안내는 `README.md`의 *Getting Started (MOTAR)* 참고. 이 문서는
 > 그걸 "두 번째 머신에 git으로 클론해서 학습만" 하는 상황에 맞춰 재정리한 것이다.
 
+> **2026-07-22 연구 방향 주의:** 현재 `NAVRL_VISION=1`은 analytic semantic sensor prototype이다.
+> 최종 논문 모델은 RGB-D/LiDAR detector와 tracker가 만든 structured history를 NavRL++-style 17-token
+> Transformer가 처리한다. semantic target id/mask나 GT 위치는 actor에 주지 않는다. 새 perception 학습을
+> 시작하기 전 `PERCEPTION_TRANSFORMER_PLAN.md`를 확인한다.
+
 ---
 
 ## 0. 사전 확인
@@ -114,7 +119,7 @@ python -c "import aerial_gym; from aerial_gym.registry.task_registry import task
 
 `ok`가 나오면 성공.
 
-## 7. 학습 실행 (짧은 래퍼 — 4 GB VRAM 기준)
+## 7. 학습 실행 (4 GB 기준: navigation/prototype baseline)
 
 ```bash
 conda activate aerialgym
@@ -123,6 +128,10 @@ cd ~/workspaces/aerial_gym_ws/src/aerial_gym_simulator/aerial_gym/rl_training/rl
 # 4 GB VRAM 은 GPU4GB=1 프리셋으로 한 줄 (헤드리스·warp·PYTHONNOUSERSITE·로그 전부 내장):
 GPU4GB=1 ./train_navrl.sh
 ```
+
+이 명령은 기존 navigation baseline이다. `NAVRL_VISION=1`을 추가하면 현재 semantic prototype을 재현하지만,
+그 결과는 최종 learned detector/Transformer 결과가 아니다. 새 학습 스크립트가 추가되기 전에는 4GB
+머신을 dataset 생성·sensor별 detector baseline·평가에 우선 사용한다.
 
 > **왜 `NUM_ENVS` 만으로는 안 되나 (4 GB 함정):** NUM_ENVS 를 낮춰도 두 가지가 남아 학습이 안 뜬다 —
 > ① Isaac Gym 의 PhysX **GPU 버퍼**(`base_sim` 의 `max_gpu_contact_pairs=2**24`, `buffer_multiplier=10`)는
@@ -141,6 +150,9 @@ GPU4GB=1 ./train_navrl.sh
     (더 작게 돌려야 하면 4gb yaml 의 minibatch_size 를 32×NUM_ENVS 이하로 직접 낮춘다 — 단, 그 run 은 스윕과 비교 불가).
 - 8 GB 메인 머신은 `GPU4GB` 없이 기존대로 `NUM_ENVS=256 ./train_navrl.sh` (base_sim + minibatch 4096).
 - 저사양 GPU는 메인보다 느리다 — 같은 epoch 수라도 오래 걸리니 밤샘 학습용으로.
+- 새 perception run은 sensor별 detector, tracker, camera/LiDAR resolution, history seconds/sample interval,
+  Transformer/PF 설정, raw/semantic 여부를
+  run manifest에 반드시 기록한다. 입력 schema가 다르면 체크포인트를 이어 학습하지 않는다.
 
 ## 8. (선택) A/B 리워드 비교
 
@@ -190,6 +202,7 @@ tensorboard --logdir runs                                   # 곡선 비교
 | Python | **3.8** 고정 (Isaac Gym Preview 4 요구) |
 | 최신 코드 | 이미 클론돼 있으면 실행 전 `git pull` (3번) |
 | 학습 실행 | `GPU4GB=1 ./train_navrl.sh` (7번) |
+| 최종 perception/policy | dual-sensor detector/tracker + structured 17-token Transformer; GT/semantic actor 입력 금지 |
 | VRAM 4 GB | `GPU4GB=1` 프리셋(PhysX 버퍼↓, minibatch 4096 유지, NUM_ENVS 기본 256 — 반드시 ≥128) |
 | urdfpy | git 미포함 → 메인 머신에서 복사 (3-b) |
 | 결과 회수 | `runs/`는 git 제외 → **rsync**로 메인에 회수 (9번) |

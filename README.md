@@ -3,11 +3,13 @@
 **MOTAR: Moving Object Tracking and Reinforcement-Learning-Based Approach for UAV Navigation in Random Obstacle Fields**
 
 This repository is a research fork of the [Aerial Gym Simulator](https://github.com/ntnu-arl/aerial_gym_simulator).
-It studies reinforcement-learning-based UAV navigation and moving-target approach in random
-obstacle environments, analyzing performance under varying obstacle density and target speed,
-together with dynamic object detection. The experimental environment follows the setup of
+It studies raw-sensor-based UAV target localization, tracking, and approach in random obstacle
+environments. A temporal camera–LiDAR fusion model must infer the moving target state under
+occlusion; the deployed policy is never given ground-truth target position. The experimental
+environment follows the setup of
 [NavRL](https://github.com/Zhefan-Xu/NavRL), reimplemented on top of Aerial Gym.
-The staged research roadmap is maintained in `RESEARCH_PLAN.md` in this repository's root.
+The current method is specified in `PERCEPTION_TRANSFORMER_PLAN.md`; the staged roadmap is in
+`RESEARCH_PLAN.md` and `ROADMAP.md`.
 
 Research work lives on the `research/navrl-env` branch; `main` tracks upstream Aerial Gym.
 
@@ -160,21 +162,21 @@ flattens the scan). Both run 6000 epochs.
   Results 25/50/75/110/150 bars → captured **0.97 / 0.97 / 0.94 / 0.93 / 0.66** — flat until the
   NavRL anchor, then a cliff toward the placement-jamming limit (~148 bars at 1.5 m spacing).
   Caveat: the 25/50 points were trained on the 4 GB machine before its minibatch was aligned to 4096.
-- **Phase 3 (moving target) — code in place:** the goal becomes a moving virtual point. Train with
-  `NAVRL_TARGET_SPEED_FINAL=1.5 ./train_navrl.sh` (speed curriculum 0→1.5 m/s); evaluate a fixed cell
-  with `NAVRL_TARGET_SPEED=1.0 NAVRL_TARGET_PATTERN=cv ./play_navrl.sh <ckpt>`. Patterns:
-  cv / waypoint / circle (eval-only) / mixed. Default (speed 0) is byte-compatible with Phases 1-2.
-  See `PHASE3_PLAN.md` for the experiment plan.
-- **Phase 3 vision pivot (sensor-only interception) — code in place:** with `NAVRL_VISION=1` the
-  ACTOR never receives the ground-truth target position. It perceives the target through
-  (a) the semantic LiDAR (the 36×4 scan carries the target as id-50 rays, injected analytically —
-  no mesh refit) and (b) a modeled forward detector (87° FOV, 20 m, bar-occlusion-checked via a
-  warp LOS ray) with a last-seen tracker. Actions switch to the vehicle frame; a privileged
-  critic (`central_value_config`, actor obs + GT extras) trains the sensor-only actor
-  (asymmetric actor-critic — the critic is dropped at deployment). Train:
-  `NAVRL_VISION=1 ./train_navrl.sh` (add `NAVRL_LSTM=1` for the recurrent POMDP variant).
-  Verification probes: `tools/test_navrl_p3_stage0.py` (sensor sees the moving target),
-  `tools/test_navrl_p3_stage1.py` (detector geometry, no-GT-leakage, asymmetric states).
+- **Phase 3 (NavRL++-Target) — sensor-to-track path integrated, training pending:** RGB-D appearance
+  detection and raw LiDAR range association now produce obstacle/target tracks and covariance. A NavRL++-style
+  17-token Transformer then reasons over 2 seconds of static-obstacle, dynamic-obstacle, robot, and
+  target history. Ground-truth target state and semantic masks/IDs are forbidden actor inputs. The
+  old analytic semantic path remains only as a baseline. The new perception API has no GT/semantic
+  arguments and the 17-token Transformer passed a 64-env end-to-end smoke test; the bootstrap RGB-D
+  head still needs detector dataset training and held-out validation before a full PPO run. Start the
+  new path with `NAVRL_VISION=1 NAVRL_PERCEPTION=1 ./train_navrl.sh` only after that gate. See
+  `PERCEPTION_TRANSFORMER_PLAN.md` and `PHASE3_PLAN.md`.
+
+For the first full perception-policy run, do not overlap two blind linear 6000-epoch ramps. Use
+`aerial_gym/rl_training/rl_games/train_navrl_perception_staged.sh`: epochs 0–4000 expand goal
+distance at 25 bars, then density is promoted 25→110 by measured capture rate through epoch 10000.
+During the density stage, 25% of resets replay 5–10 m goals to prevent close-range skill forgetting.
+Target motion and sensor perturbations stay off until the static detector/tracker/policy gate passes.
 
 #### Monitoring training — TensorBoard + console metrics
 
@@ -222,6 +224,21 @@ The same stats are also summarized to the console every ~2048 finished episodes 
 
 ### 5. Watch a trained policy (viewer)
 
+The native interactive application runs the real Isaac Gym simulation rather than the website's
+Three.js illustration. Double-click `launch_navrl_3d.sh`, or launch it once from the IDE. Its setup
+window selects a checkpoint, target speed, and drone speed. Density is intentionally not a UI
+control: each generalized trial samples it independently. A manual sensor-demo mode needs no
+checkpoint. In the 3-D window: `,`/`.` changes target speed, `-`/`=` drone speed, `G` toggles real
+LiDAR rays, `N` starts a new trial, and `M` switches policy/manual
+control (`I/K/J/L`, `U/O`). The red target wireframe is a human-only debug overlay and is never an
+actor input. The launcher inspects checkpoint structure before creating the simulator: new 574-D
+Transformer checkpoints use the perception path, while archived 305-D `scan_cnn` checkpoints are
+clearly labeled as a legacy semantic baseline and replayed through their exact compatible network.
+Policy playback is a fixed 10-trial generalized protocol: every trial regenerates the obstacle
+layout/count (25–110 bars), collision-free random drone XY/yaw, and random target XY. The target
+uses a nonzero mixed trajectory (0.75 m/s default), and the session reports captured/crash/timeout
+counts before exiting.
+
 ```bash
 conda activate aerialgym
 cd aerial_gym/rl_training/rl_games
@@ -263,6 +280,8 @@ PLAY_GAMES_NUM=8000 python runner.py --file ppo_navrl_cnn.yaml --task navrl_task
 | `aerial_gym/rl_training/rl_games/ppo_navrl_cnn.yaml` | PPO config, NavRL-style LiDAR CNN (recommended) |
 | `aerial_gym/rl_training/rl_games/ppo_navrl.yaml` | PPO config, flat-MLP baseline |
 | `aerial_gym/rl_training/rl_games/navrl_network.py` | the LiDAR CNN feature extractor (rl_games custom network) |
+| `PERCEPTION_TRANSFORMER_PLAN.md` | authoritative NavRL++-Target detector/tracker, token, PF, and ablation design |
+| `PHASE3_PLAN.md` | current execution gates for target detection/tracking/navigation |
 | `WORKLOG.md` | chronological log of what changed and why |
 | `RESEARCH_PLAN.md` (repo root) | staged research roadmap |
 

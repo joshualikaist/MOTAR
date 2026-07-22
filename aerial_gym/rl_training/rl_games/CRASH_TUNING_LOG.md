@@ -1,5 +1,9 @@
 # Crash-reduction tuning log — Phase 1 (2026-07-14)
 
+> 역사 문서. 아래 실험은 GT-goal/static-navigation 단계의 기록이며, 2026-07-22 이후의 dual-sensor
+> detector/tracker + NavRL++-Target 설계를 설명하지 않는다. 현재 계획은 저장소 루트의
+> `PERCEPTION_TRANSFORMER_PLAN.md`를 따른다.
+
 목표: crash ~14%(먼 18m 목표로 가는 transit 중 막대 충돌)를 captured 손실 없이 줄이기.
 고정 변수: safety_static_weight 1.5, 아레나 24×24, 기둥 48, 커리큘럼 18m, episode 250, num_envs 256, 6000 epoch.
 지표는 마지막 500 epoch 평균(안정 구간). 기준 = captured↑ / crash↓ / timeout 0 유지.

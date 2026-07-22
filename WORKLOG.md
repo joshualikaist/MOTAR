@@ -456,3 +456,34 @@ THRESHOLD=0.6`. 밀도 knob들 env화(기본 threshold 0.8/warmup 2500는 GT용�
 **미수정(플래그만)**: ① vision 모드 mid-episode 리셋 첫 프레임에서 LiDAR 표적마스크가 옛 목표를 가리키는
 1프레임 불일치(리워드 무관, 수정은 step 순서 재배치라 별도 스모크 필요) ② PBRS re-anchor는 표적 이동 시
 엄밀 PBRS 아님(정적=정확, 문서화된 의도적 트레이드오프) ③ episode 301스텝 off-by-one(재현성 영향 우려로 미변경).
+
+---
+
+## 2026-07-22 — 연구 핵심 재정의: oracle semantic → raw-sensor learned perception
+
+사용자 결정으로 Phase 3의 기준을 다시 고정했다. 드론은 `target_position`, GT bearing/range 또는
+semantic target mask/id를 받아 추격하면 안 된다. camera RGB-D와 LiDAR의 원시 시계열 관측에서 표적의
+상대 위치·속도·가림·불확실도를 직접 추정해야 한다.
+
+### 기존 구현의 판정
+
+- analytic LiDAR target sphere, semantic id 50, analytic camera target mask/depth는 센서 geometry,
+  occlusion, 처리량을 확인한 **prototype/upper-bound**다.
+- camera obstacle depth + LiDAR range/semantic fusion이 256 env에서 약 8,180 env-steps/s로 동작한 것은
+  engineering baseline으로 보존한다.
+- 그러나 semantic target identity를 actor에 넣는 checkpoint는 논문의 최종 perception checkpoint가 아니다.
+
+### NavRL++ 원문 확인 후 계획 교정
+
+- NavRL++의 Transformer는 raw sensor detector가 아니라 perception이 만든 structured obstacle/state history를
+  처리하는 temporal actor–critic backbone이다. 원문 설정은 12 tokens, 2초/0.5초 history, dim 64,
+  4 heads, 4 layers, FFN 128, 약 0.31M parameters다.
+- 본 연구는 이를 `[CLS]+static+dynamic history+robot history+target history`의 17 tokens로 확장한다.
+  Transformer를 주 모델로 확정하고 CNN/LSTM은 ablation baseline으로 둔다.
+- RGB-D와 LiDAR가 각각 obstacle/target proposal을 직접 만들고 association/Kalman tracking으로 structured
+  state를 생성한다. semantic target id와 GT pose는 actor에 제공하지 않는다.
+- NavRL++ ablation상 Transformer 단독의 명확한 이득은 success 자동 향상이 아니라 control effort 감소이며,
+  최종 성능은 perception-failure-aware fine-tuning과 결합할 때 개선됐다. 따라서 target detection drop,
+  latency, noise, calibration perturbation fine-tuning을 필수 단계로 추가했다.
+- 구현 순서: **information firewall → dual-sensor detector → fusion/tracker → 17-token Transformer →
+  perturbation-aware fine-tuning → PPO**.

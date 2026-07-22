@@ -91,6 +91,12 @@ class IGEViewerControl:
 
         self.pause_sim = False
 
+        # Tasks/apps may extend the stock viewer without forking its event loop.  Handlers receive
+        # the Isaac Gym event value (1 on press, 0 on release for held keys); render callbacks run
+        # immediately before draw_viewer and are useful for sensor/target overlays.
+        self.custom_action_handlers = {}
+        self.custom_render_callbacks = []
+
         self.create_viewer()
 
     def set_actor_and_env_handles(self, actor_handles, env_handles):
@@ -154,6 +160,21 @@ class IGEViewerControl:
 
         return self.viewer
 
+    def subscribe_keyboard_event(self, key, action, handler):
+        """Register an application keybinding on the existing Isaac Gym viewer."""
+        if self.viewer is None:
+            return False
+        if action in self.custom_action_handlers:
+            raise ValueError("Viewer action already registered: %s" % action)
+        self.gym.subscribe_viewer_keyboard_event(self.viewer, key, action)
+        self.custom_action_handlers[action] = handler
+        return True
+
+    def add_render_callback(self, callback):
+        """Add an overlay callback. The callback must not step/reset the simulator."""
+        if callback not in self.custom_render_callbacks:
+            self.custom_render_callbacks.append(callback)
+
     def handle_keyboard_events(self):
         # check for keyboard events
         for evt in self.gym.query_viewer_action_events(self.viewer):
@@ -175,6 +196,8 @@ class IGEViewerControl:
                 self.pause_simulation()
             elif evt.action == "sync_frame_time" and evt.value > 0:
                 self.toggle_sync_frame_time()
+            elif evt.action in self.custom_action_handlers:
+                self.custom_action_handlers[evt.action](float(evt.value))
 
     def reset_all_envs(self):
         logger.warning("Resetting all environments.")
@@ -289,6 +312,8 @@ class IGEViewerControl:
         if self.enable_viewer_sync:
             if self.camera_follow:
                 self.set_camera_lookat()
+            for callback in tuple(self.custom_render_callbacks):
+                callback()
             self.gym.draw_viewer(self.viewer, self.sim, False)
             if self.sync_frame_time:
                 self.gym.sync_frame_time(self.sim)

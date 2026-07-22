@@ -1,10 +1,12 @@
 """Sensor-only NavRL vision policy network ("navrl_vision") for the Phase-3 pivot.
 
-Observation layout (305) as produced by navrl_task in NAVRL_VISION mode:
-    [ ego+detector state (17) | LiDAR range (144) | LiDAR target-mask (144) ]
-The two scan channels keep their (vbeams=4 x hbeams=36) spatial structure and go through a
-2-channel conv stack (same downsampling as navrl_cnn) into a 128-d embedding, fused with the
-17-d state by a [256, 256] ELU MLP.
+Observation layout (1265) as produced by navrl_task in NAVRL_VISION mode:
+    [ ego+camera-detector state (17)
+      | LiDAR range (144) | LiDAR target mask (144)
+      | forward camera obstacle depth (40x24=960) ]
+LiDAR and camera images have independent CNN encoders. Their embeddings are fused with the 17-d
+state by a [256, 256] ELU MLP. Thus both sensors contribute to perception: LiDAR observes obstacle
+range and target semantics; camera observes obstacle depth and the detector's target evidence.
 
 Optional recurrence for the POMDP (target occluded / out of FOV / beyond range): add an `rnn`
 block to the network params (units/layers/name: lstm) and a `seq_length` to the PPO config.
@@ -35,7 +37,9 @@ from rl_games.common.layers.recurrent import GRUWithDones, LSTMWithDones
 STATE_DIM = 17  # ego (9) + detector (8); must match task_config.vision
 LIDAR_VBEAMS = 4
 LIDAR_HBEAMS = 36
-SCAN_CHANNELS = 2  # range + target mask
+LIDAR_CHANNELS = 2  # nearest range + target semantic mask
+CAMERA_WIDTH = 40
+CAMERA_HEIGHT = 24
 CNN_EMBED_DIM = 128
 FUSE_UNITS = (256, 256)
 
@@ -57,11 +61,16 @@ class NavRLVisionBuilder(NetworkBuilder):
             self.num_seqs = kwargs.pop("num_seqs", 1)
             NetworkBuilder.BaseNetwork.__init__(self)
 
-            expected = STATE_DIM + SCAN_CHANNELS * LIDAR_VBEAMS * LIDAR_HBEAMS
+            expected = (
+                STATE_DIM
+                + LIDAR_CHANNELS * LIDAR_VBEAMS * LIDAR_HBEAMS
+                + CAMERA_WIDTH * CAMERA_HEIGHT
+            )
             if input_shape[0] != expected:
                 raise ValueError(
                     f"navrl_vision expects obs dim {expected} (state {STATE_DIM} + "
-                    f"{SCAN_CHANNELS}x{LIDAR_VBEAMS}x{LIDAR_HBEAMS} scan), got {input_shape[0]}"
+                    f"{LIDAR_CHANNELS}x{LIDAR_VBEAMS}x{LIDAR_HBEAMS} LiDAR + "
+                    f"1x{CAMERA_HEIGHT}x{CAMERA_WIDTH} camera), got {input_shape[0]}"
                 )
 
             rnn_cfg = params.get("rnn", None)
@@ -70,9 +79,9 @@ class NavRLVisionBuilder(NetworkBuilder):
             self.rnn_layers = int(rnn_cfg.get("layers", 1)) if self.has_rnn else 0
             self.rnn_name = str(rnn_cfg.get("name", "lstm")) if self.has_rnn else ""
 
-            # 2-channel scan encoder: input (N, 2, 36, 4), downsample 36->18->9, 4->4->2.
-            self.scan_cnn = nn.Sequential(
-                nn.Conv2d(SCAN_CHANNELS, 8, kernel_size=(5, 3), padding=(2, 1)),
+            # LiDAR encoder: input (N, 2, 36, 4), downsample 36->18->9, 4->4->2.
+            self.lidar_cnn = nn.Sequential(
+                nn.Conv2d(LIDAR_CHANNELS, 8, kernel_size=(5, 3), padding=(2, 1)),
                 nn.ELU(),
                 nn.Conv2d(8, 16, kernel_size=(5, 3), stride=(2, 1), padding=(2, 1)),
                 nn.ELU(),
@@ -83,8 +92,21 @@ class NavRLVisionBuilder(NetworkBuilder):
                 nn.LayerNorm(CNN_EMBED_DIM),
             )
 
+            # Forward depth encoder: input (N, 1, 40, 24), downsample to 10x6.
+            self.camera_cnn = nn.Sequential(
+                nn.Conv2d(1, 8, kernel_size=3, padding=1),
+                nn.ELU(),
+                nn.Conv2d(8, 16, kernel_size=3, stride=2, padding=1),
+                nn.ELU(),
+                nn.Conv2d(16, 16, kernel_size=3, stride=2, padding=1),
+                nn.ELU(),
+                nn.Flatten(),
+                nn.Linear(16 * (CAMERA_WIDTH // 4) * (CAMERA_HEIGHT // 4), CNN_EMBED_DIM),
+                nn.LayerNorm(CNN_EMBED_DIM),
+            )
+
             fuse_layers = []
-            in_dim = CNN_EMBED_DIM + STATE_DIM
+            in_dim = 2 * CNN_EMBED_DIM + STATE_DIM
             for units in FUSE_UNITS:
                 fuse_layers += [nn.Linear(in_dim, units), nn.ELU()]
                 in_dim = units
@@ -131,13 +153,25 @@ class NavRLVisionBuilder(NetworkBuilder):
             bptt_len = obs_dict.get("bptt_len", 0)
 
             state = obs[:, :STATE_DIM]
-            n_scan = LIDAR_VBEAMS * LIDAR_HBEAMS
-            rng = obs[:, STATE_DIM : STATE_DIM + n_scan].view(-1, LIDAR_VBEAMS, LIDAR_HBEAMS)
-            mask = obs[:, STATE_DIM + n_scan :].view(-1, LIDAR_VBEAMS, LIDAR_HBEAMS)
-            # (N, 2, 36, 4): same width/height orientation as navrl_cnn's single-channel scan
-            img = torch.stack([rng, mask], dim=1).permute(0, 1, 3, 2).contiguous()
+            n_lidar = LIDAR_VBEAMS * LIDAR_HBEAMS
+            lidar_range = obs[:, STATE_DIM : STATE_DIM + n_lidar].view(
+                -1, LIDAR_VBEAMS, LIDAR_HBEAMS
+            )
+            lidar_target = obs[:, STATE_DIM + n_lidar : STATE_DIM + 2 * n_lidar].view(
+                -1, LIDAR_VBEAMS, LIDAR_HBEAMS
+            )
+            lidar_img = torch.stack([lidar_range, lidar_target], dim=1).permute(
+                0, 1, 3, 2
+            ).contiguous()
+            camera_img = obs[:, STATE_DIM + 2 * n_lidar :].view(
+                -1, 1, CAMERA_HEIGHT, CAMERA_WIDTH
+            ).permute(0, 1, 3, 2).contiguous()
 
-            out = self.fuse(torch.cat([self.scan_cnn(img), state], dim=1))
+            out = self.fuse(
+                torch.cat(
+                    [self.lidar_cnn(lidar_img), self.camera_cnn(camera_img), state], dim=1
+                )
+            )
 
             if self.has_rnn:
                 seq_length = obs_dict.get("seq_length", 1)

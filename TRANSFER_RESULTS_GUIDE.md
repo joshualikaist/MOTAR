@@ -9,6 +9,11 @@ TensorBoard로 같이 비교하거나 정책을 재생하기 위한 전송 방�
 > **왜 git 으로는 안 되나?** `runs/`, `nn/`, `*.pth`, `*.tfevents*` 는 `.gitignore` 대상이라
 > `git push`/`pull` 로는 **절대 안 넘어간다**. 그래서 아래처럼 직접 옮겨야 한다.
 
+> **새 perception 모델 주의:** 체크포인트와 함께 dataset/config manifest를 옮겨야 한다. 최소 항목은
+> git commit, raw-vs-semantic 입력, sensor별 detector/tracker, camera/LiDAR 해상도, history seconds/interval,
+> 17-token Transformer와 perturbation 설정, label schema다. GT/semantic prototype checkpoint와
+> NavRL++-Target checkpoint는 서로 호환되지 않는다.
+
 ---
 
 ## 0. 요약 (TL;DR)
@@ -36,6 +41,16 @@ TensorBoard로 같이 비교하거나 정책을 재생하기 위한 전송 방�
 │   └── run_summary.json           ← 최종 요약(reward, 완주 여부)
 └── nn/                            ← 정책 체크포인트(.pth). 재생/이어학습용. 수백 MB (무거움)
     └── gen_ppo.pth, last_gen_ppo_ep_*.pth ...
+```
+
+향후 NavRL++-Target run에는 아래도 함께 보관한다:
+
+```text
+├── perception/
+│   ├── detector_best.pth
+│   ├── config.yaml
+│   └── dataset_manifest.json
+└── run_manifest.json              # git commit + observation schema + model type
 ```
 
 `YYMMDD_HHMM` 은 학습 **시작 시각**이다. 실행할 때 콘솔에 `run folder : ppo_XXXX_navrl` 로 찍히고,
@@ -159,6 +174,8 @@ rsync -avz --exclude 'nn/' -e ssh ~/MOTAR/aerial_gym/rl_training/rl_games/runs/p
 - **학습 자체가 `CUDA Error 804` / `nvidia-smi: Driver/library version mismatch` 로 안 돈다**
   (전송과는 무관하지만 자주 겪음) → 백그라운드 드라이버 자동업데이트 후 커널 모듈이 안 맞는 것. **재부팅**하면 해결.
   재부팅 후 `nvidia-smi` 가 정상 표를 보이면 OK.
+- **checkpoint shape mismatch** → 156/305/1265 등 옛 observation schema와 새 structured 17-token schema를
+  섞은 것이다. manifest를 확인하고, detector·policy 양쪽의 정확히 같은 schema끼리만 로드한다.
 
 ---
 

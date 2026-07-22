@@ -12,6 +12,10 @@
 # NOTE: NAVRL_NUM_BARS 를 명시하면 체크포인트에 저장된 밀도 대신 그 값이 쓰인다(교차 평가용).
 set -euo pipefail
 
+if [ "${NAVRL_PERCEPTION:-0}" = "1" ]; then
+    export NAVRL_VISION=1
+fi
+
 cd "$(dirname "${BASH_SOURCE[0]}")"
 export PYTHONNOUSERSITE=1
 
@@ -21,9 +25,11 @@ if [ "${GPU4GB:-0}" = "1" ]; then
 fi
 
 # 체크포인트는 반드시 학습에 쓴 것과 같은 네트워크 yaml 로 로드해야 함(state_dict/obs-dim 불일치 방지).
-# NAVRL_VISION=1 로 학습한 비전 체크포인트는 vision yaml 로. (LSTM 이면 NAVRL_LSTM=1 도)
+# perception Transformer checkpoint는 NAVRL_VISION=1 NAVRL_PERCEPTION=1 로 선택한다.
 if [ "${NAVRL_VISION:-0}" = "1" ]; then
-    if [ "${NAVRL_LSTM:-0}" = "1" ]; then
+    if [ "${NAVRL_PERCEPTION:-0}" = "1" ]; then
+        FILE="${FILE:-ppo_navrl_perception_transformer.yaml}"
+    elif [ "${NAVRL_LSTM:-0}" = "1" ]; then
         FILE="${FILE:-ppo_navrl_vision_lstm.yaml}"
     else
         FILE="${FILE:-ppo_navrl_vision.yaml}"

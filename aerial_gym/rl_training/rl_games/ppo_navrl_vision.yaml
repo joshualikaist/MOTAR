@@ -9,8 +9,8 @@ params:
   load_checkpoint: False
 
   network:
-    # Sensor-only vision policy (navrl_vision_network.py): 2-channel 36x4 scan
-    # (range + target mask) -> conv stack -> 128-d embedding, fused with the 17-d
+    # Multi-sensor policy: 2-channel 36x4 LiDAR (range + target mask) and 40x24
+    # forward camera obstacle depth use separate CNNs, fused with ego + camera detector state.
     # ego+detector state by a [256, 256] ELU MLP. The actor NEVER sees the ground-truth
     # target position; the separate privileged critic below does (asymmetric actor-critic).
     # For POMDP memory (occluded target), use ppo_navrl_vision_lstm.yaml instead.

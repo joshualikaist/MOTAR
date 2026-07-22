@@ -534,6 +534,10 @@ def update_config(config, args):
         player_cfg["games_num"] = max(1, _gn)
     config["params"]["config"]["player"] = player_cfg
 
+    network_override = os.environ.get("NAVRL_NETWORK_OVERRIDE", "").strip()
+    if network_override:
+        config["params"]["network"]["name"] = network_override
+
     # Runs folder: ppo_YYMMDD_HHMM_<fixed|moving|…> (local time).
     # Interrupted runs have no finished marker and resume in place. A checkpoint from a completed
     # run is a warm-start branch: putting it back into the source folder mixes old/future epochs,
@@ -610,9 +614,17 @@ if __name__ == "__main__":
 
         from aerial_gym.rl_training.rl_games.navrl_network import NavRLCNNBuilder
         from aerial_gym.rl_training.rl_games.navrl_vision_network import NavRLVisionBuilder
+        from aerial_gym.rl_training.rl_games.navrl_vision_legacy_network import (
+            NavRLVisionLegacyBuilder,
+        )
+        from aerial_gym.rl_training.rl_games.navrl_transformer_network import (
+            NavRLTransformerBuilder,
+        )
 
         model_builder.register_network("navrl_cnn", NavRLCNNBuilder)
         model_builder.register_network("navrl_vision", NavRLVisionBuilder)
+        model_builder.register_network("navrl_vision_legacy", NavRLVisionLegacyBuilder)
+        model_builder.register_network("navrl_transformer", NavRLTransformerBuilder)
 
         # Task-aware dashboard config: banner title, episode-length cap and the optional
         # reward "design range" hint all follow the task being trained.

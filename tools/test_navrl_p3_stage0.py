@@ -1,17 +1,15 @@
-"""Phase-3 Stage-0/0.5 verification: the moving target is perceived via the LiDAR (segmentation),
-injected ANALYTICALLY as a sphere (no mesh, no per-step warp refit) so it is training-fast.
+"""Phase-3 Stage-0 verification: both camera and LiDAR observe obstacles and target.
 
 Run (GPU free, vision ON):
   NAVRL_VISION=1 NAVRL_MAX_BARS=40 NAVRL_NUM_BARS=40 PYTHONNOUSERSITE=1 \
     python tools/test_navrl_p3_stage0.py
 
 Checks:
-  1. env builds with vision on; the sensor exposes obs_dict['navrl_target_position'].
-  2. NO extra obstacle column (target is analytic, not a mesh asset): max_bars == obstacle cols.
-  3. segmentation channel exists (obs_dict['segmentation_pixels']).
-  4. target (id=50) is hit by LiDAR rays when placed in front of the drone.
-  5. the target MOVES: driving self.target_position changes which rays see id=50 (analytic follows).
-  6. THROUGHPUT is back to ~baseline (no refit) -- the whole point of Stage 0.5.
+  1. LiDAR provides obstacle range plus target semantics.
+  2. camera provides full-scene obstacle depth plus target detection pixels.
+  3. a front target is observed by both sensors.
+  4. a rear target is outside the camera FOV but remains observable by 360-degree LiDAR.
+  5. throughput remains suitable for vectorized training (no per-step mesh refit).
 """
 import os
 import time
@@ -20,8 +18,6 @@ os.environ.setdefault("NAVRL_VISION", "1")
 from aerial_gym.registry.task_registry import task_registry  # isaacgym before torch
 import torch
 
-TARGET_SEMANTIC_ID = 50
-BAR_SEMANTIC_ID = 3
 N = 16
 fails = []
 
@@ -33,45 +29,57 @@ def check(name, ok, extra=""):
 
 
 task = task_registry.make_task("navrl_task", seed=7, num_envs=N, headless=True, use_warp=True)
-print(f"[stage0] has_vision_target={task.has_vision_target} "
-      f"max_bars={task.max_bars_available} n_bars_active={task.n_bars_active}")
+print(f"[stage0] vision_mode={task.vision_mode} max_bars={task.max_bars_available} "
+      f"n_bars_active={task.n_bars_active}")
 
 obst = task.obs_dict["obstacle_position"]
-check("sensor target buffer exposed (navrl_target_position)", task.has_vision_target)
+check("vision mode enabled", task.vision_mode)
+check("LiDAR target buffer exposed", task.has_vision_target)
 check("NO extra obstacle column (target is analytic, not a mesh)",
       task.max_bars_available == obst.shape[1], f"(cols={obst.shape[1]})")
 
 task.reset()
 has_seg = "segmentation_pixels" in task.obs_dict and task.obs_dict["segmentation_pixels"] is not None
-check("segmentation channel exists", has_seg)
+check("LiDAR segmentation channel exists", has_seg)
 
-# --- target 2 m directly in front of each drone; step once and read the segmentation
+# --- Place the target in front, then behind, and verify complementary sensor coverage.
 act = torch.zeros(N, 4, device=task.device)
 task.tm.speed_fixed = 0.0
 pos = task.obs_dict["robot_position"]
-task.target_position[:, 0] = pos[:, 0] + 2.0
-task.target_position[:, 1] = pos[:, 1]
-task.target_position[:, 2] = pos[:, 2]
-task.step(act)
+q_veh = task.obs_dict["robot_vehicle_orientation"]
+from aerial_gym.utils.math import quat_rotate
+fwd_w = quat_rotate(q_veh, torch.tensor([[1.0, 0.0, 0.0]], device=task.device).expand(N, 3))
 
-if has_seg:
-    seg = task.obs_dict["segmentation_pixels"].reshape(N, -1)
-    hits_front = (seg == TARGET_SEMANTIC_ID).sum(dim=1)
-    n_seeing = int((hits_front > 0).sum())
-    print(f"[stage0] target-in-front: envs seeing id=50 = {n_seeing}/{N}, "
-          f"id=50 rays = {int(hits_front.sum())}, bar rays(id=3) = {int((seg == BAR_SEMANTIC_ID).sum())}")
-    check("target (id=50) hit by LiDAR when in front", n_seeing >= N // 2, f"({n_seeing}/{N})")
+task.target_position[:] = pos + 1.5 * fwd_w
+task._sync_target_to_sensor()
+task.sim_env.render(render_components="sensors")
+task.process_obs_for_task()
+pixels_front = task.obs_dict["target_camera_mask"].sum(dim=(1, 2))
+check("front target produces camera pixels", bool((pixels_front > 0).all()),
+      f"(pixels={pixels_front.tolist()})")
+seg_front = task.obs_dict["segmentation_pixels"].reshape(N, -1)
+lidar_target_front = (seg_front == 50).sum(dim=1)
+check("front target produces LiDAR semantic returns", bool((lidar_target_front > 0).all()),
+      f"(rays={lidar_target_front.tolist()})")
+camera_obstacle = task.obs_dict["obstacle_camera_depth"]
+check("camera obstacle depth shape", tuple(camera_obstacle.shape) == (N, 24, 40),
+      f"(shape={tuple(camera_obstacle.shape)})")
+check("camera observes environment geometry",
+      bool((camera_obstacle < task.vis_cfg.camera_obstacle_max_range).any()))
+check("LiDAR observes environment geometry", bool((seg_front == 3).any()))
 
-    # move the target far away and re-render: id=50 rays vanish (analytic follows the position)
-    task.target_position[:, 0] = pos[:, 0] - 50.0
-    task.target_position[:, 1] = pos[:, 1] - 50.0
-    task._sync_target_to_sensor()
-    task.sim_env.render(render_components="sensors")
-    seg2 = task.obs_dict["segmentation_pixels"].reshape(N, -1)
-    hits_away = int((seg2 == TARGET_SEMANTIC_ID).sum())
-    print(f"[stage0] target-moved-away: id=50 rays = {hits_away} (was {int(hits_front.sum())})")
-    check("moving the target changes segmentation (analytic injection works)",
-          hits_away < int(hits_front.sum()), f"(away={hits_away} < front={int(hits_front.sum())})")
+task.detector.reset_idx(torch.arange(N, device=task.device))
+task.target_position[:] = pos - 3.0 * fwd_w
+task._sync_target_to_sensor()
+task.sim_env.render(render_components="sensors")
+task.process_obs_for_task()
+pixels_behind = task.obs_dict["target_camera_mask"].sum(dim=(1, 2))
+check("behind target produces no camera pixels", bool((pixels_behind == 0).all()),
+      f"(pixels={pixels_behind.tolist()})")
+seg_behind = task.obs_dict["segmentation_pixels"].reshape(N, -1)
+lidar_target_behind = (seg_behind == 50).sum(dim=1)
+check("behind target remains visible to 360-degree LiDAR",
+      bool((lidar_target_behind > 0).all()), f"(rays={lidar_target_behind.tolist()})")
 
 # --- throughput with vision ON (must be ~baseline: NO refit)
 task.reset()
@@ -86,6 +94,6 @@ for _ in range(STEPS):
 torch.cuda.synchronize()
 dt = time.time() - t0
 print(f"[stage0] throughput: {STEPS/dt:.1f} steps/s ({N*STEPS/dt:.0f} env-steps/s), "
-      f"{1000*dt/STEPS:.1f} ms/step (N={N}, {task.n_bars_active} bars, analytic target, NO refit)")
+      f"{1000*dt/STEPS:.1f} ms/step (N={N}, {task.n_bars_active} bars, camera target, NO refit)")
 
 print(f"[stage0] RESULT: {'ALL PASS' if not fails else 'FAILURES: ' + str(fails)}")

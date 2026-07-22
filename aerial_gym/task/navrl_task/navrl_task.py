@@ -8,7 +8,7 @@ from gym.spaces import Box, Dict
 from aerial_gym.task.base_task import BaseTask
 from aerial_gym.task.navrl_task.train_dashboard import record_navrl_epoch_episodes
 from aerial_gym.sim.sim_builder import SimBuilder
-from aerial_gym.utils.math import quat_rotate_inverse
+from aerial_gym.utils.math import quat_rotate, quat_rotate_inverse
 from aerial_gym.utils.logging import CustomLogger
 
 logger = CustomLogger("navrl_task")
@@ -134,14 +134,10 @@ class NavRLTask(BaseTask):
         self.obs_dict = self.sim_env.get_obs()
         self.density = getattr(self.task_config, "density", None)
 
-        # Phase-3 vision pivot (NAVRL_VISION=1): the moving target is injected ANALYTICALLY into
-        # the LiDAR as a sphere -- the sensor allocates a per-env target-center tensor and exposes
-        # it here as obs_dict["navrl_target_position"]. The task drives it each step by mirroring
-        # self.target_position into it (the captured render graph reads the same storage), so the
-        # pursuer perceives the target at its live position with NO mesh and NO per-step warp refit
-        # (the refit loop was the throughput killer). None when NAVRL_VISION is off -> the verified
-        # Phases 1-2 (injected-goal) task is untouched. self.target_position stays the single source
-        # of truth for reward/capture/curriculum; the sensor sphere is a mirror of it.
+        # In vision mode the LiDAR renderer owns a per-environment analytic target center. The
+        # task mirrors the moving target into that buffer before every LiDAR render. Camera
+        # perception uses the same task target only inside its renderer; neither path exposes the
+        # ground-truth coordinate directly to the actor.
         self._sensor_target = self.obs_dict.get("navrl_target_position", None)
         self.has_vision_target = self._sensor_target is not None
 
@@ -178,14 +174,21 @@ class NavRLTask(BaseTask):
         # --- Phase-3 vision pivot (NAVRL_VISION=1): sensor-only actor. See task_config.vision.
         self.vis_cfg = getattr(self.task_config, "vision", None)
         self.vision_mode = bool(self.vis_cfg is not None and self.vis_cfg.enable)
+        self.perception_cfg = getattr(self.task_config, "perception", None)
+        self.perception_mode = bool(
+            self.vision_mode
+            and self.perception_cfg is not None
+            and self.perception_cfg.enable
+        )
         self.detector = None
+        self.perception = None
         self.prev_action = torch.zeros((self.num_envs, 4), device=self.device)
         self._visible_now = torch.zeros(self.num_envs, dtype=torch.bool, device=self.device)
         if self.vision_mode:
             if not self.has_vision_target:
                 raise RuntimeError(
-                    "NAVRL_VISION=1 but the LiDAR did not allocate the analytic target buffer "
-                    "(navrl_target_position missing) — sensor and task saw different env values?"
+                    "NAVRL_VISION=1 requires the LiDAR target buffer "
+                    "(navrl_target_position missing)."
                 )
             from aerial_gym.task.navrl_task.navrl_detector import NavRLTargetDetector
 
@@ -196,15 +199,30 @@ class NavRLTask(BaseTask):
                 vis_cfg=self.vis_cfg,
                 step_dt=self.step_dt,
             )
+            if self.perception_mode:
+                from aerial_gym.task.navrl_task.navrl_perception import (
+                    NavRLPerceptionModule,
+                    STRUCTURED_OBS_DIM,
+                )
+
+                if int(self.task_config.observation_space_dim) != int(STRUCTURED_OBS_DIM):
+                    raise RuntimeError(
+                        "NavRL perception schema mismatch: task=%d module=%d"
+                        % (self.task_config.observation_space_dim, STRUCTURED_OBS_DIM)
+                    )
+                self.perception = NavRLPerceptionModule(
+                    num_envs=self.num_envs,
+                    device=self.device,
+                    cfg=self.perception_cfg,
+                    step_dt=self.step_dt,
+                    camera_cfg=self.vis_cfg,
+                )
             logger.warning(
-                "NavRL VISION mode | actor obs=%d (ego %d + detector %d + 2x%dx%d scan), "
+                "NavRL %s mode | actor obs=%d, "
                 "critic states=%d, body-frame actions, detector range=%.1fm hfov=%.0fdeg"
                 % (
+                    "PERCEPTION+TRANSFORMER" if self.perception_mode else "VISION-ORACLE-BASELINE",
                     self.task_config.observation_space_dim,
-                    self.vis_cfg.ego_dim,
-                    self.vis_cfg.detector_dim,
-                    self.task_config.lidar_vbeams,
-                    self.task_config.lidar_hbeams,
                     self.task_config.state_space_dim,
                     self.vis_cfg.detector_max_range,
                     self.vis_cfg.detector_hfov_deg,
@@ -255,6 +273,36 @@ class NavRLTask(BaseTask):
         self._nc_agg = 0         # count of non-crash finished episodes
         self._closest_min = None  # best (min) closest approach in the window
 
+        # Native 3-D application controls. They are completely disabled during ordinary train/play
+        # runs and never become actor observations. The debug target overlay uses GT only for the
+        # human viewer; sensor/perception tensors remain the policy's sole target input.
+        self.interactive_mode = os.environ.get("NAVRL_INTERACTIVE", "0").strip().lower() in (
+            "1", "true", "yes", "on"
+        )
+        self.general_eval_mode = os.environ.get("NAVRL_GENERAL_EVAL", "0").strip().lower() in (
+            "1", "true", "yes", "on"
+        )
+        self.general_density_min = int(os.environ.get("NAVRL_GENERAL_DENSITY_MIN", "25"))
+        self.general_density_max = int(os.environ.get("NAVRL_GENERAL_DENSITY_MAX", "110"))
+        self.general_trial_index = 0
+        self.general_completed_trials = 0
+        self.general_successes = 0
+        self.general_crashes = 0
+        self.general_timeouts = 0
+        if self.general_eval_mode and self.num_envs != 1:
+            raise RuntimeError("NAVRL_GENERAL_EVAL currently requires exactly one viewer env.")
+        self._interactive_reset_requested = False
+        self._interactive_show_lidar = True
+        self._interactive_manual = False
+        self._interactive_manual_keys = {}
+        self._interactive_manual_action = torch.zeros(
+            (self.num_envs, self.task_config.action_space_dim), device=self.device
+        )
+        self._interactive_target_trail = []
+        self._runtime_target_speed = None
+        if self.interactive_mode:
+            self._register_interactive_viewer()
+
     def _get_max_bars_available(self):
         for key in ("obstacle_position", "env_asset_state_tensor"):
             tensor = self.obs_dict.get(key, None)
@@ -303,6 +351,336 @@ class NavRLTask(BaseTask):
         self.obs_dict["num_obstacles_in_env"] = clamped
         return clamped
 
+    def set_runtime_bars(self, n_bars):
+        """Change density for subsequent resets and request an immediate all-env reset."""
+        value = self._set_active_bars(n_bars)
+        self._interactive_reset_requested = True
+        return value
+
+    def set_runtime_target_speed(self, speed_mps):
+        """Force one exact target speed for interactive episodes (not a training curriculum)."""
+        self._runtime_target_speed = max(0.0, float(speed_mps))
+        self._interactive_reset_requested = True
+        return self._runtime_target_speed
+
+    def set_runtime_drone_speed(self, speed_mps):
+        """Set the action-to-velocity scale used by the controller."""
+        self.task_config.max_velocity = max(0.25, float(speed_mps))
+        return float(self.task_config.max_velocity)
+
+    def _sample_general_density(self):
+        """Sample one randomized clutter level for the next single-env evaluation trial."""
+        lo = self._clamp_active_bars(min(self.general_density_min, self.general_density_max))
+        hi = self._clamp_active_bars(max(self.general_density_min, self.general_density_max))
+        value = int(torch.randint(lo, hi + 1, (1,), device=self.device).item())
+        self._set_active_bars(value, log=False)
+        self.general_trial_index += 1
+        logger.warning(
+            "NavRL general trial %d/10 | randomized bars=%d"
+            % (self.general_trial_index, value)
+        )
+
+    def _record_general_result(self, successes, crashes, timeouts, finished):
+        if not self.general_eval_mode or not bool(finished.any()):
+            return
+        self.general_completed_trials += int(finished.sum().item())
+        self.general_successes += int(successes.sum().item())
+        self.general_crashes += int((crashes > 0).sum().item())
+        self.general_timeouts += int(timeouts.sum().item())
+        outcome = "captured" if bool(successes.any()) else (
+            "crashed" if bool((crashes > 0).any()) else "timeout"
+        )
+        logger.warning(
+            "NavRL general result %d/10 | %s"
+            % (min(self.general_completed_trials, 10), outcome)
+        )
+        if self.general_completed_trials >= 10:
+            logger.warning(
+                "NavRL general summary | captured=%d crash=%d timeout=%d / 10"
+                % (self.general_successes, self.general_crashes, self.general_timeouts)
+            )
+
+    def _randomize_general_drone_spawn(self, env_ids):
+        """Place the drone at a collision-free random XY/yaw for generalized evaluation."""
+        n = len(env_ids)
+        if n == 0:
+            return
+        b_min = self.obs_dict["env_bounds_min"][env_ids]
+        b_max = self.obs_dict["env_bounds_max"][env_ids]
+        bars = self.obs_dict["obstacle_position"][env_ids, : self.n_bars_active, 0:2]
+        lo = b_min[:, 0:2] + 1.0
+        hi = b_max[:, 0:2] - 1.0
+        chosen = lo + (hi - lo) * torch.rand((n, 2), device=self.device)
+        todo = torch.ones(n, dtype=torch.bool, device=self.device)
+        for _ in range(64):
+            if not bool(todo.any()):
+                break
+            ids = todo.nonzero(as_tuple=False).squeeze(-1)
+            candidate = lo[ids] + (hi[ids] - lo[ids]) * torch.rand(
+                (len(ids), 2), device=self.device
+            )
+            if bars.shape[1] > 0:
+                clearance = torch.cdist(candidate.unsqueeze(1), bars[ids]).squeeze(1).min(1).values
+                accepted = clearance >= 0.65
+            else:
+                accepted = torch.ones(len(ids), dtype=torch.bool, device=self.device)
+            chosen[ids[accepted]] = candidate[accepted]
+            todo[ids[accepted]] = False
+
+        self.obs_dict["robot_position"][env_ids, 0:2] = chosen
+        self.obs_dict["robot_position"][env_ids, 2] = float(self.task_config.flight_altitude)
+        yaw = -math.pi + 2.0 * math.pi * torch.rand(n, device=self.device)
+        quat = torch.zeros((n, 4), device=self.device)
+        quat[:, 2] = torch.sin(0.5 * yaw)
+        quat[:, 3] = torch.cos(0.5 * yaw)
+        self.obs_dict["robot_orientation"][env_ids] = quat
+        self.obs_dict["robot_linvel"][env_ids] = 0.0
+        self.obs_dict["robot_angvel"][env_ids] = 0.0
+        self.sim_env.robot_manager.robot.update_states()
+        self.sim_env.IGE_env.write_to_sim()
+
+    def _sample_general_target(self, env_ids, start_pos, b_min, b_max, bars_xy):
+        """Sample a visible-range, collision-free target independently of the drone spawn."""
+        n = len(env_ids)
+        lo = b_min[:, 0:2] + 1.0
+        hi = b_max[:, 0:2] - 1.0
+        chosen = lo + (hi - lo) * torch.rand((n, 2), device=self.device)
+        todo = torch.ones(n, dtype=torch.bool, device=self.device)
+        for _ in range(96):
+            if not bool(todo.any()):
+                break
+            ids = todo.nonzero(as_tuple=False).squeeze(-1)
+            candidate = lo[ids] + (hi[ids] - lo[ids]) * torch.rand(
+                (len(ids), 2), device=self.device
+            )
+            drone_dist = torch.norm(candidate - start_pos[ids, 0:2], dim=1)
+            accepted = (drone_dist >= 4.0) & (drone_dist <= 18.0)
+            if bars_xy.shape[1] > 0:
+                bar_dist = (
+                    torch.cdist(candidate.unsqueeze(1), bars_xy[ids, : self.n_bars_active])
+                    .squeeze(1)
+                    .min(1)
+                    .values
+                )
+                accepted &= bar_dist >= 0.65
+            chosen[ids[accepted]] = candidate[accepted]
+            todo[ids[accepted]] = False
+        goal = start_pos.clone()
+        goal[:, 0:2] = chosen
+        goal[:, 2] = float(self.task_config.flight_altitude)
+        return goal
+
+    def _register_interactive_viewer(self):
+        """Attach NavRL controls and overlays to the already-created Isaac Gym viewer."""
+        from isaacgym import gymapi
+
+        viewer = getattr(getattr(self.sim_env, "IGE_env", None), "viewer", None)
+        if viewer is None or getattr(viewer, "viewer", None) is None:
+            raise RuntimeError("NAVRL_INTERACTIVE=1 requires headless=False (no viewer was created).")
+
+        def on_press(fn):
+            return lambda value: fn() if value > 0 else None
+
+        if not self.general_eval_mode:
+            viewer.subscribe_keyboard_event(
+                gymapi.KEY_LEFT_BRACKET,
+                "navrl_bars_down",
+                on_press(lambda: self._interactive_change_bars(-5)),
+            )
+            viewer.subscribe_keyboard_event(
+                gymapi.KEY_RIGHT_BRACKET,
+                "navrl_bars_up",
+                on_press(lambda: self._interactive_change_bars(5)),
+            )
+        viewer.subscribe_keyboard_event(
+            gymapi.KEY_COMMA,
+            "navrl_target_speed_down",
+            on_press(lambda: self._interactive_change_target_speed(-0.25)),
+        )
+        viewer.subscribe_keyboard_event(
+            gymapi.KEY_PERIOD,
+            "navrl_target_speed_up",
+            on_press(lambda: self._interactive_change_target_speed(0.25)),
+        )
+        viewer.subscribe_keyboard_event(
+            gymapi.KEY_MINUS,
+            "navrl_drone_speed_down",
+            on_press(lambda: self._interactive_change_drone_speed(-0.25)),
+        )
+        viewer.subscribe_keyboard_event(
+            gymapi.KEY_EQUAL,
+            "navrl_drone_speed_up",
+            on_press(lambda: self._interactive_change_drone_speed(0.25)),
+        )
+        viewer.subscribe_keyboard_event(
+            gymapi.KEY_G,
+            "navrl_toggle_lidar",
+            on_press(self._interactive_toggle_lidar),
+        )
+        viewer.subscribe_keyboard_event(
+            gymapi.KEY_M,
+            "navrl_toggle_manual",
+            on_press(self._interactive_toggle_manual),
+        )
+        viewer.subscribe_keyboard_event(
+            gymapi.KEY_N,
+            "navrl_reset",
+            on_press(self._interactive_request_reset),
+        )
+        for key, action in (
+            (gymapi.KEY_I, "manual_forward"),
+            (gymapi.KEY_K, "manual_back"),
+            (gymapi.KEY_J, "manual_left"),
+            (gymapi.KEY_L, "manual_right"),
+            (gymapi.KEY_U, "manual_yaw_left"),
+            (gymapi.KEY_O, "manual_yaw_right"),
+        ):
+            viewer.subscribe_keyboard_event(
+                key,
+                "navrl_" + action,
+                lambda value, name=action: self._interactive_manual_key(name, value),
+            )
+        viewer.add_render_callback(self._draw_interactive_overlay)
+        density_help = "" if self.general_eval_mode else "[/] bars±5  "
+        logger.warning(
+            "NavRL 3D controls | %s,/. target-speed±0.25  -/= drone-speed±0.25\n"
+            "                     G LiDAR  N reset  M policy/manual  I/K/J/L move  U/O yaw\n"
+            "                     red wireframe=debug target (never given to actor)"
+            % density_help
+        )
+
+    def _interactive_request_reset(self):
+        self._interactive_reset_requested = True
+        logger.warning("NavRL 3D | reset requested")
+
+    def _interactive_change_bars(self, delta):
+        value = self.set_runtime_bars(self.n_bars_active + int(delta))
+        logger.warning("NavRL 3D | bars=%d (reset requested)" % value)
+
+    def _interactive_change_target_speed(self, delta):
+        current = (
+            float(self._runtime_target_speed)
+            if self._runtime_target_speed is not None
+            else float(self._tm_speed[0].item())
+        )
+        value = self.set_runtime_target_speed(current + float(delta))
+        logger.warning("NavRL 3D | target speed=%.2f m/s (reset requested)" % value)
+
+    def _interactive_change_drone_speed(self, delta):
+        value = self.set_runtime_drone_speed(float(self.task_config.max_velocity) + float(delta))
+        logger.warning("NavRL 3D | drone max speed=%.2f m/s" % value)
+
+    def _interactive_toggle_lidar(self):
+        self._interactive_show_lidar = not self._interactive_show_lidar
+        logger.warning("NavRL 3D | LiDAR overlay=%s" % self._interactive_show_lidar)
+
+    def _interactive_toggle_manual(self):
+        self._interactive_manual = not self._interactive_manual
+        self._interactive_manual_keys.clear()
+        self._interactive_manual_action.zero_()
+        logger.warning(
+            "NavRL 3D | control=%s" % ("MANUAL" if self._interactive_manual else "POLICY")
+        )
+
+    def _interactive_manual_key(self, name, value):
+        self._interactive_manual_keys[name] = max(0.0, float(value))
+        fwd = self._interactive_manual_keys.get("manual_forward", 0.0)
+        back = self._interactive_manual_keys.get("manual_back", 0.0)
+        left = self._interactive_manual_keys.get("manual_left", 0.0)
+        right = self._interactive_manual_keys.get("manual_right", 0.0)
+        yaw_l = self._interactive_manual_keys.get("manual_yaw_left", 0.0)
+        yaw_r = self._interactive_manual_keys.get("manual_yaw_right", 0.0)
+        self._interactive_manual_action[:, 0] = fwd - back
+        self._interactive_manual_action[:, 1] = left - right
+        self._interactive_manual_action[:, 2] = 0.0
+        self._interactive_manual_action[:, 3] = yaw_l - yaw_r
+
+    def _draw_interactive_overlay(self):
+        """Draw debug target/velocity and the selected environment's actual LiDAR scan."""
+        viewer_ctl = self.sim_env.IGE_env.viewer
+        gym = viewer_ctl.gym
+        viewer = viewer_ctl.viewer
+        env_id = int(viewer_ctl.current_target_env)
+        env_handle = viewer_ctl.env_handles[env_id]
+        gym.clear_lines(viewer)
+
+        target = self.target_position[env_id].detach().cpu().numpy().astype(np.float32)
+        # The target itself is a 0.3 m virtual drone. Draw a larger human-only marker and a short
+        # trajectory trail so motion remains obvious in a 24x24 m overview camera.
+        size = np.float32(0.35)
+        corners = np.asarray(
+            [[target[0] + sx * size, target[1] + sy * size, target[2] + sz * size]
+             for sx in (-1, 1) for sy in (-1, 1) for sz in (-1, 1)],
+            dtype=np.float32,
+        )
+        edges = []
+        for a in range(8):
+            for bit in (1, 2, 4):
+                b = a ^ bit
+                if a < b:
+                    edges.extend((corners[a], corners[b]))
+        velocity_tip = target + self.target_vel_w[env_id].detach().cpu().numpy().astype(np.float32)
+        edges.extend((target, velocity_tip))
+        target_vertices = np.ascontiguousarray(np.asarray(edges, dtype=np.float32))
+        target_colors = np.ascontiguousarray(
+            np.vstack(
+                [np.tile(np.asarray([[1.0, 0.08, 0.08]], dtype=np.float32), (12, 1)),
+                 np.asarray([[0.1, 0.4, 1.0]], dtype=np.float32)]
+            )
+        )
+        gym.add_lines(viewer, env_handle, 13, target_vertices, target_colors)
+
+        if self._interactive_target_trail:
+            jump = np.linalg.norm(target - self._interactive_target_trail[-1])
+            if jump > 2.0:
+                self._interactive_target_trail.clear()
+        if not self._interactive_target_trail or np.linalg.norm(
+            target - self._interactive_target_trail[-1]
+        ) >= 0.03:
+            self._interactive_target_trail.append(target.copy())
+            self._interactive_target_trail = self._interactive_target_trail[-40:]
+        if len(self._interactive_target_trail) >= 2:
+            trail = np.asarray(self._interactive_target_trail, dtype=np.float32)
+            trail_vertices = np.stack((trail[:-1], trail[1:]), axis=1).reshape(-1, 3)
+            alpha = np.linspace(0.25, 1.0, len(trail) - 1, dtype=np.float32)
+            trail_colors = np.stack((np.ones_like(alpha), 0.15 + 0.25 * alpha, 0.05 * alpha), axis=1)
+            gym.add_lines(
+                viewer,
+                env_handle,
+                len(trail) - 1,
+                np.ascontiguousarray(trail_vertices),
+                np.ascontiguousarray(trail_colors),
+            )
+
+        if not self._interactive_show_lidar:
+            return
+        ranges = self._lidar_distance_m()[env_id]
+        az = torch.deg2rad(torch.linspace(-170.0, 180.0, 36, device=self.device))
+        el = torch.deg2rad(torch.linspace(-10.0, 20.0, 4, device=self.device))
+        ee, aa = torch.meshgrid(el, az, indexing="ij")
+        dirs = torch.stack(
+            (torch.cos(ee) * torch.cos(aa), torch.cos(ee) * torch.sin(aa), torch.sin(ee)),
+            dim=-1,
+        ).reshape(-1, 3)
+        quat = self.obs_dict["robot_vehicle_orientation"][env_id].expand(dirs.shape[0], -1)
+        dirs_w = quat_rotate(quat, dirs)
+        origin = self.obs_dict["robot_position"][env_id]
+        tips = origin.unsqueeze(0) + dirs_w * ranges.unsqueeze(1)
+        lidar_vertices = torch.stack(
+            (origin.expand_as(tips), tips), dim=1
+        ).reshape(-1, 3).detach().cpu().numpy().astype(np.float32)
+        hit = (ranges < float(self.task_config.lidar_max_range) * 0.99).detach().cpu().numpy()
+        lidar_colors = np.zeros((len(hit), 3), dtype=np.float32)
+        lidar_colors[~hit] = (0.10, 0.45, 0.10)
+        lidar_colors[hit] = (1.00, 0.55, 0.05)
+        gym.add_lines(
+            viewer,
+            env_handle,
+            len(hit),
+            np.ascontiguousarray(lidar_vertices),
+            np.ascontiguousarray(lidar_colors),
+        )
+
     def close(self):
         self.sim_env.delete_env()
 
@@ -336,10 +714,10 @@ class NavRLTask(BaseTask):
         # origin), so the first step crashes every env at once — which ends rl_games play mode
         # after a single step. Mid-episode resets don't need it: the env manager has already
         # respawned those envs by the time reset_idx() is called from step().
+        if self.general_eval_mode:
+            self._sample_general_density()
         self.sim_env.reset()
         self.reset_idx(torch.arange(self.num_envs, device=self.device))
-        # place the analytic target sphere at its spawn BEFORE the first render so the very first
-        # observation already carries the target at its true position.
         self._sync_target_to_sensor()
         # render once so the first observation carries a valid LiDAR scan
         self.sim_env.render(render_components="sensors")
@@ -348,6 +726,8 @@ class NavRLTask(BaseTask):
     def reset_idx(self, env_ids):
         if len(env_ids) == 0:
             return
+        if self.general_eval_mode:
+            self._randomize_general_drone_spawn(env_ids)
         # robot has already been respawned by the env manager when this is called mid-episode,
         # so robot_position holds the fresh start pose.
         start_pos = self.obs_dict["robot_position"][env_ids]
@@ -364,16 +744,40 @@ class NavRLTask(BaseTask):
         # side forces a left->right traversal of the bars. k ~ U[k_min, k_max(epoch)] (k_max
         # grows with training via _goal_x_max), y is free across the arena minus a wall margin.
         # Resample any goal within `clearance` of a bar so the 0.5 m capture sphere is flyable.
-        k_max = self._goal_x_max()
-        k_min = self._goal_x_min()
+        if self.general_eval_mode:
+            goal = self._sample_general_target(env_ids, start_pos, b_min, b_max, bars_xy)
+            sampled_dist = torch.norm(goal[:, 0:2] - start_pos[:, 0:2], dim=1)
+            k_min = float(sampled_dist.min().item())
+            k_max = float(sampled_dist.max().item())
+        else:
+            k_max = self._goal_x_max()
+            k_min = self._goal_x_min()
         self.cur_goal_dist_max = k_max  # surfaced to the dashboard as "curriculum max"
         self.cur_goal_dist_min = k_min  # surfaced to the dashboard as "curriculum min"
-        todo = torch.ones(n, dtype=torch.bool, device=self.device)
+        todo = torch.zeros(n, dtype=torch.bool, device=self.device) if self.general_eval_mode else torch.ones(
+            n, dtype=torch.bool, device=self.device
+        )
         for _ in range(10):
             if not todo.any():
                 break
             j = int(todo.sum())
             gx = k_min + (k_max - k_min) * torch.rand(j, device=self.device)
+            # Density is a different source of difficulty from distance. During the density stage,
+            # retain some short/medium episodes instead of training exclusively on the final far
+            # window. This is enabled only by the staged launch recipe; default behavior is intact.
+            mix_prob = float(getattr(self.density, "easy_goal_mix_prob", 0.0))
+            horizon = max(1, int(getattr(self.cur, "ppo_horizon", 1)))
+            density_start = int(getattr(self.density, "warmup_epochs", 0)) * horizon
+            if mix_prob > 0.0 and self.num_task_steps >= density_start:
+                easy = torch.rand(j, device=self.device) < min(1.0, max(0.0, mix_prob))
+                easy_lo = float(getattr(self.density, "easy_goal_min", self.cur.k_min))
+                easy_hi = min(
+                    float(getattr(self.density, "easy_goal_max", k_max)), float(k_max)
+                )
+                if easy_hi > easy_lo and bool(easy.any()):
+                    gx[easy] = easy_lo + (easy_hi - easy_lo) * torch.rand(
+                        int(easy.sum()), device=self.device
+                    )
             gx = gx.clamp(max=(b_max[todo, 0] - m))  # keep the capture sphere off the far wall
             gy = (b_min[todo, 1] + m) + (
                 b_max[todo, 1] - b_min[todo, 1] - 2.0 * m
@@ -426,7 +830,10 @@ class NavRLTask(BaseTask):
         # vision mode: fresh episode -> tracker knows nothing, no previous action yet
         if self.vision_mode:
             self.detector.reset_idx(env_ids)
+            if self.perception is not None:
+                self.perception.reset_idx(env_ids)
             self.prev_action[env_ids] = 0.0
+            self._visible_now[env_ids] = False
         # Phase 3: per-episode target speed + trajectory pattern (all-static when the speed
         # ceiling is 0 -> Phases 1-2 behavior).
         self._sample_target_motion(env_ids)
@@ -461,6 +868,8 @@ class NavRLTask(BaseTask):
         return self.command
 
     def step(self, actions):
+        if self.interactive_mode and self._interactive_manual:
+            actions = self._interactive_manual_action
         # Phase 3: move the virtual target FIRST — both agents move during this 0.1 s control
         # interval, and the end-of-interval reward is computed against the target's NEW position.
         # (No-op while all per-episode target speeds are 0, i.e. the static Phases 1-2 task.)
@@ -479,6 +888,8 @@ class NavRLTask(BaseTask):
             torch.ones_like(self.truncations),
             torch.zeros_like(self.truncations),
         )
+        if self._interactive_reset_requested:
+            self.truncations[:] = 1
 
         dist_to_goal = torch.norm(
             self.target_position - self.obs_dict["robot_position"], dim=1
@@ -495,18 +906,25 @@ class NavRLTask(BaseTask):
         self.infos = {"successes": successes, "timeouts": timeouts, "crashes": crashes}
 
         finished = (self.terminations > 0) | (self.truncations > 0)
+        self._record_general_result(successes, crashes, timeouts, finished)
         self._log_progress(successes, crashes, timeouts, finished)
         self._update_curriculum(successes, finished)
         self._record_epoch_dashboard(successes, crashes, timeouts, finished)
 
-        # Mirror the moving target into the analytic sensor sphere BEFORE the render, so the LiDAR
-        # sees the target at its CURRENT position (self.target_position, already advanced this step).
+        # The LiDAR reads this buffer inside its captured render graph. Keep it synchronized with
+        # the same moving target that the camera renderer observes.
         self._sync_target_to_sensor()
 
         # render (raycast LiDAR from the new state) and reset finished envs
         reset_envs = self.sim_env.post_reward_calculation_step()
         if len(reset_envs) > 0:
             self.reset_idx(reset_envs)
+            # The env manager rendered once before the task sampled its new generalized drone and
+            # target poses. Refresh both target injection and LiDAR so the first policy observation
+            # of the next trial matches the newly randomized scene.
+            self._sync_target_to_sensor()
+            self.sim_env.render(render_components="sensors")
+        self._interactive_reset_requested = False
 
         # LiDAR-based static-safety reward, using the freshly rendered scan
         self.add_static_safety_reward()
@@ -565,11 +983,9 @@ class NavRLTask(BaseTask):
 
         # -- vision mode add-ons (before the terminal overwrites, like the other shaping terms)
         if self.vision_mode:
-            # perception-aware bonus: pays while the modeled detector actually sees the target
-            # (in FOV + in range + line-of-sight clear), encouraging acquire-and-hold behavior.
-            q_veh = self.obs_dict["robot_vehicle_orientation"]
-            rpos_veh = quat_rotate_inverse(q_veh, rpos)
-            self._visible_now = self.detector.visible_only(pos, rpos_veh, rpos)
+            # The camera is rendered once while building the observation.  Use its most recent
+            # pixel-derived visibility here (one control interval old) instead of secretly
+            # querying GT geometry a second time for reward shaping.
             self.rewards[:] = self.rewards + float(
                 self.vis_cfg.visibility_bonus
             ) * self._visible_now.float()
@@ -636,10 +1052,7 @@ class NavRLTask(BaseTask):
         # NavRL r_ss = mean over rays of log(distance to obstacle), clamped to (0, range].
         dist_m = self._lidar_distance_m().clamp(min=1e-6, max=self.task_config.lidar_max_range)
         if self.vision_mode:
-            # The analytic target sphere is injected into the LiDAR RANGE channel too, so without
-            # this it would be counted as an OBSTACLE — the safety term would penalize the drone
-            # for approaching the very target it must capture. Only bars are obstacles: blank the
-            # target's rays (id 50) to max range so they contribute log(range)->0 (no penalty).
+            # Target returns are valid perception but are not collision obstacles for r_ss.
             seg = self.obs_dict["segmentation_pixels"].squeeze(1).reshape(self.num_envs, -1)
             dist_m = torch.where(
                 seg == 50, torch.full_like(dist_m, self.task_config.lidar_max_range), dist_m
@@ -665,6 +1078,9 @@ class NavRLTask(BaseTask):
         return (self.task_obs, self.rewards, self.terminations, self.truncations, self.infos)
 
     def process_obs_for_task(self):
+        if self.perception_mode:
+            self._process_obs_perception()
+            return
         if self.vision_mode:
             self._process_obs_vision()
             return
@@ -699,20 +1115,30 @@ class NavRLTask(BaseTask):
     def _process_obs_vision(self):
         """Sensor-only ACTOR observation + privileged CRITIC 'states' (vision mode).
 
-        actor (305) = ego 9 [vel_vehicle/vmax(3), yaw_rate/max(1), prev_action(4), height(1)]
+        actor (1265) = ego 9 [vel_vehicle/vmax(3), yaw_rate/max(1), prev_action(4), height(1)]
                     + detector 8 [visible, bearing sin/cos, elev, range | tracker 3]
-                    + LiDAR range channel (144, [0,1]) + LiDAR target-mask channel (144, {0,1})
-        states (313) = actor obs + GT extras [rpos_unit_veh(3), dist/24(1), tvel_veh/2(3),
+                    + LiDAR range (144) + LiDAR target mask (144)
+                    + forward camera obstacle depth (40x24=960)
+        states (1273) = actor obs + GT extras [rpos_unit_veh(3), dist/24(1), tvel_veh/2(3),
                        closing/(vmax+2)(1)] — read ONLY by the central-value critic at train time.
 
         No ground-truth target quantity enters the actor slice: the target appears only through
-        the semantic scan (id-50 rays) and the FOV/occlusion-gated detector."""
+        LiDAR returns and the FOV/occlusion-gated camera detector. Both LiDAR and camera also
+        observe obstacle geometry."""
         pos = self.obs_dict["robot_position"]
         q_veh = self.obs_dict["robot_vehicle_orientation"]
         rpos_w = self.target_position - pos
         rpos_veh = quat_rotate_inverse(q_veh, rpos_w)
 
-        det_vec, visible = self.detector.detect(pos, rpos_veh, rpos_w, update_tracker=True)
+        det_vec, visible = self.detector.detect(
+            pos, q_veh, self.target_position, update_tracker=True
+        )
+        self._visible_now[:] = visible
+        # Expose raw target-camera products for evaluation/debugging. Target mask/depth are reduced
+        # to det_vec; the separate obstacle depth image is concatenated into the actor below.
+        self.obs_dict["target_camera_mask"] = self.detector.target_mask
+        self.obs_dict["target_camera_depth"] = self.detector.target_depth
+        self.obs_dict["obstacle_camera_depth"] = self.detector.obstacle_depth
 
         vel_veh = self.obs_dict["robot_vehicle_linvel"] / self.task_config.max_velocity
         yaw_rate = self.obs_dict["robot_body_angvel"][:, 2:3] / self.task_config.yaw_rate_max
@@ -721,16 +1147,28 @@ class NavRLTask(BaseTask):
 
         lidar = self._lidar_distance_m() / self.task_config.lidar_max_range  # (N, 144)
         seg = self.obs_dict["segmentation_pixels"].squeeze(1).reshape(self.num_envs, -1)
-        target_mask = (seg == 50).float()  # same row-major (vbeams, hbeams) layout as the range
+        lidar_target = (seg == 50).float()
+        camera_obstacle = torch.nan_to_num(
+            self.detector.obstacle_depth,
+            nan=self.vis_cfg.camera_obstacle_max_range,
+            posinf=self.vis_cfg.camera_obstacle_max_range,
+            neginf=self.vis_cfg.camera_obstacle_max_range,
+        ).clamp(0.0, self.vis_cfg.camera_obstacle_max_range)
+        camera_obstacle = (
+            camera_obstacle / self.vis_cfg.camera_obstacle_max_range
+        ).reshape(self.num_envs, -1)
 
         obs = self.task_obs["observations"]
         d0 = self.vis_cfg.ego_dim
         d1 = d0 + self.vis_cfg.detector_dim
         d2 = d1 + lidar.shape[1]
+        d3 = d2 + lidar_target.shape[1]
         obs[:, :d0] = ego
         obs[:, d0:d1] = det_vec
         obs[:, d1:d2] = lidar
-        obs[:, d2:] = target_mask
+        obs[:, d2:d3] = lidar_target
+        if not bool(getattr(self.vis_cfg, "legacy_actor_305", False)):
+            obs[:, d3:] = camera_obstacle
 
         # privileged critic extras (train-time only; the player ignores 'states')
         dist = rpos_w.norm(dim=1, keepdim=True).clamp(min=1e-6)
@@ -738,6 +1176,68 @@ class NavRLTask(BaseTask):
         closing = ((self.obs_dict["robot_linvel"] - self.target_vel_w) * (rpos_w / dist)).sum(
             dim=1, keepdim=True
         )
+        states = self.task_obs["states"]
+        states[:, : obs.shape[1]] = obs
+        states[:, obs.shape[1] :] = torch.cat(
+            [
+                rpos_veh / dist,
+                dist / 24.0,
+                tvel_veh / 2.0,
+                closing / (self.task_config.max_velocity + 2.0),
+            ],
+            dim=1,
+        )
+
+    def _process_obs_perception(self):
+        """Raw RGB-D/LiDAR -> perception tracks -> actor-safe structured history.
+
+        ``target_position`` is passed only to the simulator-side renderer, exactly as scene pose is
+        used by a physical renderer. The perception module API has no target/semantic argument;
+        its output is therefore structurally unable to read the oracle target state.
+        """
+        pos = self.obs_dict["robot_position"]
+        vel_w = self.obs_dict["robot_linvel"]
+        q_veh = self.obs_dict["robot_vehicle_orientation"]
+
+        raw_rgb, raw_depth = self.detector.render_raw_rgbd(
+            pos, q_veh, self.target_position
+        )
+        lidar_m = self._lidar_distance_m()
+        structured, diagnostics = self.perception.observe(
+            rgb=raw_rgb,
+            depth=raw_depth,
+            lidar_m=lidar_m,
+            drone_pos_w=pos,
+            drone_vel_w=vel_w,
+            vehicle_quat=q_veh,
+            yaw_rate=self.obs_dict["robot_body_angvel"][:, 2]
+            / self.task_config.yaw_rate_max,
+            previous_action=self.prev_action,
+            max_velocity=self.task_config.max_velocity,
+            flight_altitude=self.task_config.flight_altitude,
+            training=bool(self.perception_cfg.enable_perturbations),
+        )
+        self.task_obs["observations"][:] = structured
+        self._visible_now[:] = diagnostics["visible"]
+
+        # Raw sensor and tracker diagnostics are available to evaluators, never concatenated into
+        # actor observations. Semantic renderer buffers intentionally remain private.
+        self.obs_dict["navrl_raw_rgb"] = raw_rgb
+        self.obs_dict["navrl_raw_depth"] = raw_depth
+        self.obs_dict["navrl_track_confidence"] = diagnostics["confidence"]
+        self.obs_dict["navrl_track_age"] = diagnostics["track_age"]
+        self.obs_dict["navrl_track_covariance"] = diagnostics["track_covariance"]
+
+        # Asymmetric critic: oracle quantities are appended only to the physically separate
+        # states buffer. rl_games' player drops this entire tensor at deployment.
+        rpos_w = self.target_position - pos
+        dist = rpos_w.norm(dim=1, keepdim=True).clamp(min=1e-6)
+        rpos_veh = quat_rotate_inverse(q_veh, rpos_w)
+        tvel_veh = quat_rotate_inverse(q_veh, self.target_vel_w)
+        closing = ((vel_w - self.target_vel_w) * (rpos_w / dist)).sum(
+            dim=1, keepdim=True
+        )
+        obs = self.task_obs["observations"]
         states = self.task_obs["states"]
         states[:, : obs.shape[1]] = obs
         states[:, obs.shape[1] :] = torch.cat(
@@ -777,6 +1277,8 @@ class NavRLTask(BaseTask):
         [speed_ramp_start_epochs, +speed_ramp_epochs], then holds. Same num_task_steps epoch proxy
         as _goal_x_max, so it survives --checkpoint resume and is restored at --play. An explicit
         NAVRL_TARGET_SPEED (speed_fixed >= 0, evaluation cells) bypasses the curriculum entirely."""
+        if self._runtime_target_speed is not None:
+            return float(self._runtime_target_speed)
         if float(self.tm.speed_fixed) >= 0.0:
             return float(self.tm.speed_fixed)
         final = float(self.tm.speed_final)
@@ -796,7 +1298,9 @@ class NavRLTask(BaseTask):
         if n == 0:
             return
         v_max = self._target_speed_max()
-        if float(self.tm.speed_fixed) >= 0.0:
+        if self._runtime_target_speed is not None:
+            speed = torch.full((n,), float(self._runtime_target_speed), device=self.device)
+        elif float(self.tm.speed_fixed) >= 0.0:
             speed = torch.full((n,), float(self.tm.speed_fixed), device=self.device)
         else:
             speed = v_max * torch.rand(n, device=self.device)
@@ -845,11 +1349,7 @@ class NavRLTask(BaseTask):
         return lo + (hi - lo) * torch.rand(len(env_ids), 2, device=self.device)
 
     def _sync_target_to_sensor(self):
-        """Phase-3 vision pivot: drive the analytic LiDAR target sphere to the virtual target's
-        current position, so the pursuer perceives the target where it actually is. No-op unless
-        NAVRL_VISION allocated the sensor target buffer. self.target_position stays the single
-        source of truth (reward/capture/curriculum); this only mirrors it into the sensor tensor,
-        whose storage the captured render graph reads -- no mesh, no per-step refit."""
+        """Mirror the moving target into the analytic semantic-LiDAR target buffer."""
         if self._sensor_target is not None:
             self._sensor_target[:] = self.target_position
 

@@ -22,6 +22,11 @@ cd "$(dirname "${BASH_SOURCE[0]}")"
 # AirSim user-site numpy 가 conda numpy 를 가리는 문제 차단 (activate.d 가 이미 설정하지만 이중 안전).
 export PYTHONNOUSERSITE=1
 
+# Perception is a strict sub-mode of vision; make the dependency explicit and foolproof.
+if [ "${NAVRL_PERCEPTION:-0}" = "1" ]; then
+    export NAVRL_VISION=1
+fi
+
 # 4 GB VRAM 보조 머신 프리셋(GPU4GB=1): 세 조각을 한 번에 켠다 —
 #   (1) base_sim_4gb 로 PhysX GPU 버퍼 축소(navrl_task_config 가 AERIAL_GYM_SIM_NAME 을 읽음),
 #   (2) 4gb yaml(PPO 하이퍼파라미터는 3070 과 동일, minibatch=4096), (3) NUM_ENVS 기본 256.
@@ -36,12 +41,15 @@ if [ "${GPU4GB:-0}" = "1" ]; then
 fi
 
 # yaml + 기본 env 수 선택 (VISION 이 GPU4GB 보다 우선 — 조합이면 vision_4gb 를 고른다).
-#   NAVRL_VISION=1                 → 센서 전용 actor + 비대칭 critic (ppo_navrl_vision.yaml)
+#   NAVRL_VISION=1 NAVRL_PERCEPTION=1 → RGB-D/LiDAR perception + Transformer (권장)
+#   NAVRL_VISION=1                 → 기존 semantic prototype baseline
 #   NAVRL_VISION=1 NAVRL_LSTM=1    → 위 + 부분관측 LSTM
 #   NAVRL_VISION=1 GPU4GB=1        → 4GB 비전 (N=128, minibatch 2048, base_sim_4gb)
 #   GPU4GB=1 (비전 아님)           → 4GB LiDAR CNN
 if [ "${NAVRL_VISION:-0}" = "1" ]; then
-    if [ "${GPU4GB:-0}" = "1" ]; then
+    if [ "${NAVRL_PERCEPTION:-0}" = "1" ]; then
+        FILE="${FILE:-ppo_navrl_perception_transformer.yaml}"; DEF_ENVS=128
+    elif [ "${GPU4GB:-0}" = "1" ]; then
         FILE="${FILE:-ppo_navrl_vision_4gb.yaml}"; DEF_ENVS=128
     elif [ "${NAVRL_LSTM:-0}" = "1" ]; then
         FILE="${FILE:-ppo_navrl_vision_lstm.yaml}"; DEF_ENVS=256
