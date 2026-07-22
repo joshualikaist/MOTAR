@@ -410,3 +410,49 @@ THRESHOLD=0.6`. 밀도 knob들 env화(기본 threshold 0.8/warmup 2500는 GT용�
 **다음**: 1841 마지막 ckpt를 25/50/75/110/130/150에서 평가 → 센서전용 밀도곡선. 1650 Ti는 평가 전담
 (학습 N=128 페널티로 학습결과는 3070과 못 섞음; 평가는 N무관이라 OK).
 주의: **밀도 커리큘럼 run 평가는 항상 last_ ckpt 사용** (gen_ppo.pth=저밀도 best 함정).
+
+---
+
+## 2026-07-22 — 충돌률 급증 진단 + 3D 연구현황 대시보드 + research-status 스킬
+
+`ppo_260719_1000`(12000ep 순차) 종료 확인: **peak 97.1%(ep 3764) → final 44.9% / crash 54.1%(막대 115·목표 24 m)**.
+사용자 우려("갑자기 충돌률↑ = 이상")를 3-에이전트 병렬 조사(run분석·커리큘럼감사·운영리뷰)로 정밀 진단.
+
+### 진단 — "급락"은 절반 아티팩트, 절반 진짜 기하 바닥
+- **아티팩트**: peak→final −52pt는 밀도·거리 커리큘럼이 끝에서 동시 최대(115막대+24 m)로 가서 최종 ckpt가
+  최난이도 셀에 과특화된 것(정책 붕괴 아님). 07-20 정정대로 **`last_gen_ppo_*`** held-out하면 110막대 60.6% 정상.
+  훈련중 final-epoch 지표/`gen_ppo.pth`(저밀도 best)로 밀도 비교 금지.
+- **진짜 기하 바닥**: 센서 held-out 충돌 110→130 **+13.5pt**, 130→150 **+19.9pt**(로깅버그 아님). 원인 =
+  배치 최소간격 **1.5 m가 128실패마다 ×0.8 완화**(→1.2→0.96 m), ~115–120막대에서 완화 시작. 2단계(0.96 m)면
+  평균막대(0.6 m) 기준 **틈 0.36 m < 드론 대각 0.40 m** → 통과불가 → 충돌. GT는 120막대까지 평탄(1.8%)·150만 절벽
+  = 같은 RSA 재밍 한계(~148/478 m²). **회피(충돌)가 병목이지 탐지 아님**(timeout은 저밀도서 오히려↑).
+
+### 커리큘럼 감사(코드 확인) → 순차 밀도 레시피 확정
+- 밀도 커리큘럼 기본값: `STEP=+15`·`THRESHOLD=0.8`·`WARMUP=2500`·`CHECK_EPS=2048`, capture-gated 승급(25→150).
+  거리: `K_FINAL=24`/`K_MIN_FINAL=20`/`K_WARMUP=3000`, num_task_steps/32 램프. 표적속도: `SPEED_FINAL` 기본 0.
+- **확정 권장(완만+충돌안전)**: `NAVRL_DENSITY_STEP=5 THRESHOLD=0.55 START=25 FINAL=110`(완화절벽 ~115 직전 정지)
+  + **거리 얕게 캡 `K_FINAL=16 K_MIN_FINAL=10 K_WARMUP=8000`**(두 커리큘럼 끝-충돌 제거) + 승급마다 `last_gen` 스냅샷.
+  단계별 명시 스테이징(NUM_BARS 고정 25→…→110, --checkpoint resume)은 ckpt 통제 최상 대안.
+
+### 인프라 — 3D 웹 대시보드 + 재사용 스킬
+- **`docs/status/`** (index.html+app.js+status.json): three.js 3D 아레나(막대/표적속도 슬라이더·LiDAR 토글) +
+  최신현황·밀도곡선·run타임라인·진단·다음계획·로드맵. `status.json` 구동(데이터 자동반영), 오프라인/3D실패 시
+  데이터패널은 유지되게 graceful degrade. **research 브랜치 `/docs`에서 GitHub Pages 게시**(gh-pages 브랜치 불필요).
+  커밋 `8d25c89` push 완료 → Pages 활성화(Settings→Pages, branch=research/navrl-env, folder=/docs) 후
+  `https://joshualikaist.github.io/MOTAR/status/` 라이브.
+- **`.cursor/skills/research-status/`**: 이 워크플로우(지표수집→서브에이전트 분석→종합→대시보드→게시→WORKLOG)를
+  순차 실행하는 스킬. `collect_status.py`(runs+CSV→status.json, 토큰절약 핵심), `publish_dashboard.sh`(docs만 커밋·push).
+
+### 코드 리뷰(서브에이전트) + 수정
+정직한 결함 리뷰 결과 **Critical 버그 없음** — 정적 LiDAR(P1–2) 태스크·리뷰에서 의심됐던 부분(swept-segment 캡처가
+순간 dist<0.5의 상위집합, 정적표적 byte-동일, 밀도 accumulator/warmup/clamp/전파, 커리큘럼 min<max 불변식,
+종료 aliasing, obs 차원 분할, PBRS Φ=0)은 전부 정상 확인. **수정한 3건**:
+- **[Suspicious] `NAVRL_NUM_BARS` 무시 버그**: 밀도 커리큘럼 flag가 켜져 있으면 `_initial_active_bars`가
+  `n_start`(25)를 반환해 explicit `NAVRL_NUM_BARS`를 조용히 무시 → 밀도별 eval/resume이 25막대로 잘못 돌던 문제.
+  `_initial_active_bars`가 explicit `NAVRL_NUM_BARS`를 최우선하도록 수정(set_env_state의 규칙과 일치). 검증 완료.
+- **[Minor] env-var 파싱 무음 삼킴**: `_env_int/_env_float`가 잘못된 값(`NAVRL_K_FINAL=abc`, `1.5m`)을 조용히
+  기본값으로 → stderr 경고 추가.
+- **[Minor] `_env_bool`이 `1.0` 같은 값을 False로**: 숫자형 허용(`float(s)!=0`)으로 수정(`NAVRL_VISION=1.0` 함정).
+**미수정(플래그만)**: ① vision 모드 mid-episode 리셋 첫 프레임에서 LiDAR 표적마스크가 옛 목표를 가리키는
+1프레임 불일치(리워드 무관, 수정은 step 순서 재배치라 별도 스모크 필요) ② PBRS re-anchor는 표적 이동 시
+엄밀 PBRS 아님(정적=정확, 문서화된 의도적 트레이드오프) ③ episode 301스텝 off-by-one(재현성 영향 우려로 미변경).

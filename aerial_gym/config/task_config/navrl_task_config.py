@@ -1,4 +1,15 @@
 import os
+import sys
+
+
+def _warn_bad_env(name, raw, default):
+    # A malformed knob (e.g. NAVRL_K_FINAL=abc or a stray unit like "1.5m") used to be swallowed
+    # silently and trained on the default — a nasty invisible confound. Make it loud instead.
+    print(
+        "[navrl config] WARNING: %s=%r could not be parsed; using default %r."
+        % (name, raw, default),
+        file=sys.stderr,
+    )
 
 
 def _env_int(name, default):
@@ -8,6 +19,7 @@ def _env_int(name, default):
     try:
         return int(raw)
     except ValueError:
+        _warn_bad_env(name, raw, default)
         return int(default)
 
 
@@ -18,6 +30,7 @@ def _env_float(name, default):
     try:
         return float(raw)
     except ValueError:
+        _warn_bad_env(name, raw, default)
         return float(default)
 
 
@@ -25,7 +38,17 @@ def _env_bool(name, default=False):
     raw = os.environ.get(name)
     if raw is None or raw.strip() == "":
         return bool(default)
-    return raw.strip().lower() in ("1", "true", "yes", "on")
+    s = raw.strip().lower()
+    if s in ("1", "true", "yes", "on"):
+        return True
+    if s in ("0", "false", "no", "off"):
+        return False
+    # Tolerate numeric forms like "1.0"/"0.0" (a common footgun: NAVRL_VISION=1.0 used to be False).
+    try:
+        return float(s) != 0.0
+    except ValueError:
+        _warn_bad_env(name, raw, default)
+        return bool(default)
 
 
 class task_config:

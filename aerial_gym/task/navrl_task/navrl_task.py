@@ -268,7 +268,12 @@ class NavRLTask(BaseTask):
         return 0
 
     def _initial_active_bars(self):
-        if self.density is None:
+        # An explicit NAVRL_NUM_BARS ALWAYS wins — even with the density curriculum flag left on —
+        # so density-sweep evals/resumes run at the REQUESTED density instead of silently falling
+        # back to n_start (this mirrors the same "NAVRL_NUM_BARS wins" rule in set_env_state).
+        if self.density is not None and os.environ.get("NAVRL_NUM_BARS", "").strip():
+            requested = getattr(self.density, "num_bars_active", self.max_bars_available)
+        elif self.density is None:
             requested = self.max_bars_available
         elif getattr(self.density, "use_density_curriculum", False):
             requested = getattr(self.density, "n_start", self.max_bars_available)

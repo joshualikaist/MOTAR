@@ -7,7 +7,9 @@
 #
 #   처음부터:     ./train_navrl.sh
 #   env 수 변경:  NUM_ENVS=512 ./train_navrl.sh          # RTX 3070 8GB 기본은 256
-#   이어하기:     ./train_navrl.sh --checkpoint runs/ppo_XXXX_navrl/nn/gen_ppo.pth
+#   중단 지점 재개: ./train_navrl.sh --checkpoint runs/ppo_XXXX_navrl/nn/gen_ppo.pth
+#   완료 run 분기:  위와 동일 (완료 표식이 있으면 새 run 폴더를 자동 생성)
+#   같은 폴더 강제: ./train_navrl.sh --checkpoint ... --resume_in_place
 #   MLP 베이스라인: FILE=ppo_navrl.yaml ./train_navrl.sh
 #   다른 파이썬:  PYTHON=/path/to/conda/envs/aerialgym/bin/python ./train_navrl.sh
 #

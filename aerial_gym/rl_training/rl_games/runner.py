@@ -286,6 +286,13 @@ def get_args():
             "help": "path to checkpoint",
         },
         {
+            "name": "--resume_in_place",
+            "action": "store_true",
+            "default": False,
+            "help": "Reuse the checkpoint's run folder even if that run is already marked "
+            "finished. By default, checkpoints from finished runs warm-start a new run folder.",
+        },
+        {
             "name": "--file",
             "type": str,
             "default": "ppo_aerial_quad.yaml",
@@ -417,8 +424,8 @@ def _prepare_rlgames_argv_dict(cli: dict):
     return cli
 
 
-def _run_name_from_checkpoint(ckpt_path, base_dir=None):
-    """Extract runs/<run_name>/ from .../runs/<run_name>/nn/<file>.pth."""
+def _run_root_from_checkpoint(ckpt_path, base_dir=None):
+    """Resolve runs/<run_name>/ from .../runs/<run_name>/nn/<file>.pth."""
     if ckpt_path is None:
         return None
     s = str(ckpt_path).strip()
@@ -434,8 +441,13 @@ def _run_name_from_checkpoint(ckpt_path, base_dir=None):
         return None
     run_root = p.parent.parent
     if run_root.parent.name == "runs":
-        return run_root.name
+        return run_root
     return None
+
+
+def _run_name_from_checkpoint(ckpt_path, base_dir=None):
+    run_root = _run_root_from_checkpoint(ckpt_path, base_dir=base_dir)
+    return run_root.name if run_root is not None else None
 
 
 def _task_run_suffix(task: Optional[str]) -> str:
@@ -523,19 +535,38 @@ def update_config(config, args):
     config["params"]["config"]["player"] = player_cfg
 
     # Runs folder: ppo_YYMMDD_HHMM_<fixed|moving|…> (local time).
-    # Resume/play with --checkpoint: reuse runs/<name>/ from the checkpoint path so TensorBoard,
-    # nn/, and aerial_run/ stay in one folder instead of splitting per launch.
+    # Interrupted runs have no finished marker and resume in place. A checkpoint from a completed
+    # run is a warm-start branch: putting it back into the source folder mixes old/future epochs,
+    # TensorBoard events and checkpoint names, so it gets a new folder by default. PLAY is
+    # read-only and may keep the source name; --resume_in_place is the explicit escape hatch.
     _cfg = config["params"]["config"]
     fe = _cfg.get("full_experiment_name", None)
     if isinstance(fe, str) and fe.strip():
         pass
     else:
-        resumed = _run_name_from_checkpoint(args.get("checkpoint"))
-        if resumed:
-            _cfg["full_experiment_name"] = resumed
+        resumed_root = _run_root_from_checkpoint(args.get("checkpoint"))
+        source_finished = bool(
+            resumed_root is not None
+            and (resumed_root / ".aerial_training_finished").is_file()
+        )
+        reuse_source = bool(
+            resumed_root is not None
+            and (
+                args.get("play")
+                or args.get("resume_in_place")
+                or not source_finished
+            )
+        )
+        if reuse_source:
+            _cfg["full_experiment_name"] = resumed_root.name
         else:
             task = args.get("task") or _cfg.get("env_name")
             _cfg["full_experiment_name"] = _new_experiment_name(task)
+            if source_finished and not quiet_startup_enabled():
+                print(
+                    "[aerial RL] source run is already finished; warm-starting a new run folder "
+                    f"({_cfg['full_experiment_name']}). Use --resume_in_place to override."
+                )
 
     return config
 
