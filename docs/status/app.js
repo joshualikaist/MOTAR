@@ -259,37 +259,47 @@ function renderRuns(s){
 function renderStatic(){
   document.getElementById('diagnosis').innerHTML=`
     <div class="callout">
-      <h3>결론: 대부분 "정상적 난이도 상승 + 체크포인트 선택 아티팩트", 일부는 "기하학적 바닥"</h3>
-      <p>1) <b>GT 주입</b> 곡선은 110~120막대까지 포획 0.93+/충돌 &lt;9%로 <b>평탄</b>하다가 150막대에서 절벽(포획 0.66).
-        이는 배치 밴드(478 m²)의 랜덤 rejection이 ~148막대에서 포화·최소간격을 완화 → 드론 0.28 m box보다 좁은 틈이
-        생기는 <b>기하학적 한계</b>와 일치. 밀도의 선형 효과가 아니라 배치 기하의 임계점.</p>
-      <p>2) <b>센서 전용</b> 곡선은 시작부터 단조 감소(포획 0.70→0.28, 충돌 0.20→0.71). GT 대비 격차(−32~−38pt)가
-        "정답 위치 없이 센서만으로 고밀도가 얼마나 어려운가"의 대가. timeout은 저밀도에서 오히려 높음(못 찾음) →
-        고밀도 실패의 주범은 <b>회피(충돌)</b>이지 탐지가 아님.</p>
-      <p>3) 최신 run의 <b>peak 97%→final 45%</b> 급락은 "갑자기 나빠진" 것처럼 보이지만, 밀도·거리 커리큘럼이
-        끝에서 <b>동시에 최대</b>(115막대+24 m)로 가면서 최종 체크포인트가 가장 어려운 셀에 과특화된 결과.
-        WORKLOG 2026-07-20 정정대로, <b>용도에 맞는 체크포인트</b>로 held-out 평가하면 110막대 60.6%로 정상.
-        (평가에 best-reward <code>gen_ppo.pth</code>=저밀도 정책을 쓰면 왜곡됨 → 고밀도는 <code>last_gen</code> ckpt.)</p>
+      <h3>결론: "급락"의 절반은 커리큘럼/체크포인트 아티팩트, 절반은 진짜 기하학적 바닥</h3>
+      <p><b>① 아티팩트 (놀랄 일 아님).</b> 최신 run의 <b>peak 97.1%(ep 3764)→final 44.9%</b> 급락은 밀도·거리
+        커리큘럼이 끝에서 <b>동시에 최대</b>(막대 115·목표 24 m)에 도달해 최종 체크포인트가 가장 어려운 셀에
+        과특화된 결과입니다. peak는 25막대·얕은 목표 구간의 값. 정책이 무너진 게 아니라 <b>학습 지표가 난이도
+        상승분을 섞어 찍은 것</b>. 평가에 best-reward <code>gen_ppo.pth</code>(=저밀도 정책)를 쓰면 더 왜곡되고,
+        고밀도는 반드시 <code>last_gen_ppo_*</code> 체크포인트로 held-out 해야 합니다.</p>
+      <p><b>② 진짜 기하학적 바닥 (실재).</b> 센서 held-out 곡선의 충돌 급증은 로깅 버그가 아니라 실제입니다:
+        110→130막대 <b>+13.5pt</b>, 130→150막대 <b>+19.9pt</b>. 원인은 배치 알고리즘 —
+        최소 중심간격 <b>1.5 m</b>가 128회 실패마다 <b>×0.8로 완화</b>(→1.2→0.96 m)되는데, ~115–120막대에서
+        완화가 시작됩니다. 완화 2단계(0.96 m)면 평균 막대(0.6 m) 기준 <b>틈이 0.36 m &lt; 드론 대각 0.40 m</b> →
+        물리적으로 통과 불가 → 충돌. GT 곡선이 120막대까지 평탄(충돌 1.8%)하다 150에서만 절벽(0.66)인 것도
+        같은 RSA 재밍 한계(~148막대/478 m²)입니다.</p>
+      <p><b>③ 센서 전용의 대가.</b> 같은 밀도에서 센서 충돌이 GT보다 <b>+0.17~+0.37</b> 높습니다(110막대 0.37 vs
+        ~0.07). timeout은 저밀도에서 오히려 높아(25막대 10.3%) 고밀도 실패의 주범은 탐지가 아니라 <b>회피(충돌)</b>.</p>
     </div>`;
 
   document.getElementById('nextplan').innerHTML=`
-    <p class="sub">사용자 방향("막대 밀도를 순차적으로 늘린다")에 맞춘 권장 레시피. 핵심은 <b>거리 커리큘럼을 얕게 고정</b>해
-      두 커리큘럼이 끝에서 충돌하지 않게 하고, <b>밀도 단계마다 체크포인트를 남겨</b> 중간 정책 유실을 막는 것.</p>
+    <p class="sub">사용자 방향("막대 밀도를 순차적으로 늘린다")에 맞춘 확정 레시피. 현행 기본값은 승급 <b>+15막대·임계 0.8</b>로
+      계단이 크고, 거리(24 m)·밀도가 <b>끝에서 충돌</b>합니다. 세 가지를 바꿉니다: ① 계단을 <b>+5막대</b>로 완만하게,
+      ② <b>거리 커리큘럼을 시야 안(≤16 m)으로 캡</b>해 두 커리큘럼 충돌 제거, ③ <b>110막대에서 정지</b>(완화 절벽 ~115+ 직전).</p>
     <div class="callout">
-      <h3>A. 순차 밀도 · 체크포인트 스냅샷 (3070)</h3>
-      <p>거리 커리큘럼을 시야 안(≤16 m)으로 캡한 채 밀도를 완만하게 올립니다. 밀도 warmup을 길게 잡아
-        저밀도에서 충분히 학습한 뒤 승급.</p>
-      <pre><span class="c"># 거리 얕게 고정(≤16m) + 밀도 단계 상승 + 관대한 승급 임계</span>
-NAVRL_K_FINAL=16 NAVRL_K_MIN_FINAL=10 \\
-NAVRL_DENSITY_CURRICULUM=1 NAVRL_DENSITY_WARMUP=3000 NAVRL_DENSITY_THRESHOLD=0.7 \\
-NAVRL_NUM_BARS=25 NAVRL_MAX_BARS=130 \\
+      <h3>A. 완만한 자동 승급 · 충돌 안전 (권장, 3070)</h3>
+      <pre><span class="c"># 밀도 +5씩, 임계 0.55, 자주 체크 / 목표는 얕게(≤16m) 유지 / 110막대에서 정지</span>
+NAVRL_VISION=1 NAVRL_MAX_BARS=150 \\
+NAVRL_DENSITY_CURRICULUM=1 NAVRL_DENSITY_START=25 NAVRL_DENSITY_FINAL=110 \\
+NAVRL_DENSITY_STEP=5 NAVRL_DENSITY_THRESHOLD=0.55 \\
+NAVRL_DENSITY_WARMUP=1000 NAVRL_DENSITY_CHECK_EPS=1024 \\
+NAVRL_K_FINAL=16 NAVRL_K_MIN_FINAL=10 NAVRL_K_WARMUP=8000 \\
 ./train_navrl.sh --seed 1 --max_epochs 9000</pre>
-      <p class="s">※ 정확한 노브 이름/기본값은 서브에이전트 감사 결과로 확정 예정. 승급마다 <code>last_gen</code> ckpt 보관.</p>
+      <p class="s">승급은 <b>capture ≥ 0.55</b>가 1024 에피소드 창에서 유지될 때만 +5막대. 목표거리를 20 m 시야 안에 묶어
+        (K_FINAL=16) 거리·밀도가 끝에서 겹치지 않게 함. <code>save_frequency: 50</code>으로 승급마다 <code>last_gen_ppo_*</code> 스냅샷 보관.</p>
     </div>
     <div class="callout">
-      <h3>B. 밀도별 held-out 평가로 곡선 완성</h3>
-      <p>단일 강건 정책의 <code>last_gen</code> ckpt를 {25,50,75,110,130}에서 평가 → 논문 밀도–성능 곡선.
-        (best-reward ckpt 함정 주의.)</p>
+      <h3>B. 단계별 명시 스테이징 (체크포인트 통제 최상, 대안)</h3>
+      <p>25→35→45…105→110막대를 각각 고정(<code>NAVRL_NUM_BARS</code>)으로 학습하고 이전 <code>last_gen</code> ckpt에서
+        <code>--checkpoint</code>로 resume. 각 단계 종료 시 스냅샷을 남겨 논문용 밀도별 정책을 확보.</p>
+    </div>
+    <div class="callout">
+      <h3>C. 밀도별 held-out 평가로 곡선 완성</h3>
+      <p>최종 정책의 <code>last_gen_ppo_*</code>를 {25,50,75,110,130}에서 평가(<code>play_navrl.sh</code>, 셀당 ≥2500 ep).
+        <b>절대 <code>gen_ppo.pth</code>(저밀도 best) 쓰지 말 것.</b></p>
     </div>`;
 
   const phases=[
