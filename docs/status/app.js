@@ -68,6 +68,23 @@ const Arena=(()=>{
     return [fx,fy];
   }
 
+  // push a point out of every bar's clearance disc (composite escape), mirroring the real
+  // _advance_target clearance push-out so the target never sits inside an obstacle. Iterated a
+  // few times to resolve overlapping discs at high density.
+  function clearBars(x,y,clr){
+    for(let it=0;it<6;it++){
+      let ex=0,ey=0,bad=false;
+      for(const p of bars){
+        const rad=clr+p.w*0.5;             // bar half-footprint + capture clearance
+        const dx=x-p.x,dy=y-p.y;const d=Math.hypot(dx,dy);
+        if(d<rad){bad=true;const inv=d>1e-3?1/d:1;ex+=dx*inv;ey+=dy*inv;}
+      }
+      if(!bad)break;
+      const en=Math.hypot(ex,ey)||1; x+=ex/en*0.25; y+=ey/en*0.25;
+    }
+    return [x,y];
+  }
+
   function init(el){
     host=el;
     scene=new THREE.Scene();
@@ -147,15 +164,19 @@ const Arena=(()=>{
     requestAnimationFrame(animate); controls.update();
     if(playing) tParam+=0.0016*(1+speed*0.25);
     if(tParam>1) tParam=0;
-    // drone path: sweep x 1..goalX; y follows a gentle weave + bar repulsion
+    // drone path: sweep x 1..goalX; y follows a gentle weave + bar repulsion,
+    // then push the drone out of any bar it would clip (visual weaving through gaps).
     const x=1+tParam*(goalX-1);
     let y=Math.sin(tParam*Math.PI*3)*4;
     const [sx,sy]=steer(x,y); y+=sy*2.2;
-    drone.position.set(x,1,y);
-    // target moves if speed>0 (bounce inside band)
-    const ty=(speed>0)? Math.sin(tParam*Math.PI*2*(0.5+speed*0.1))*8 : Math.sin(0)*0;
-    target.position.set(goalX,1,ty);
-    drawLidar(x,y);
+    const [dx,dy]=clearBars(x,y,0.2);
+    drone.position.set(dx,1,dy);
+    // target: static (speed 0) sits at the goal; moving target bounces in y BUT is pushed out
+    // of bar clearance every frame — exactly like the sim, so it never passes through a bar.
+    let tx=goalX, ty=(speed>0)? Math.sin(tParam*Math.PI*2*(0.5+speed*0.1))*8 : 0;
+    [tx,ty]=clearBars(tx,ty,0.5);
+    target.position.set(tx,1,ty);
+    drawLidar(dx,dy);
     renderer.render(scene,cam);
   }
 
