@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# NavRL++-Target recommended static-target curriculum.
+# NavRL++-Target generalized moving-target curriculum.
 #
 # Stage A (epoch 0..4000): 25 bars, distance 7 -> 16 m.
 # Stage B (epoch 4000..): competence-gated density 25 -> 110 bars.  The final 10..16 m
 # distance window remains active, but 25% of resets sample 5..10 m to retain close-range
 # avoidance/reacquisition. Density is promoted only after >=65% capture over 4096 episodes.
 #
-# This intentionally does NOT add target motion or sensor corruption yet. A moving target before
-# the static sensor-to-track policy is competent makes failures impossible to attribute.
+# Sensor corruption remains off until detector/tracker validation. Target motion is enabled from
+# the beginning and widens from a 0.25 m/s floor to a 0.75 m/s curriculum ceiling.
 #
 # Usage:
 #   ./train_navrl_perception_staged.sh
@@ -19,8 +19,10 @@ cd "$(dirname "${BASH_SOURCE[0]}")"
 export PYTHONNOUSERSITE=1
 export NAVRL_PERCEPTION=1
 export NAVRL_VISION=1
+export NAVRL_GENERAL_TRAIN=1
 export NAVRL_MAX_BARS=150
-export NAVRL_TARGET_SPEED_FINAL=0
+export NAVRL_TARGET_SPEED_MIN=0.25
+export NAVRL_TARGET_SPEED_FINAL=0.75
 
 # Distance first. Goals remain inside the 20 m camera range.
 export NAVRL_K_FINAL=16
@@ -44,7 +46,7 @@ export NAVRL_DENSITY_EASY_GOAL_MAX=10
 MAX_EPOCHS="${MAX_EPOCHS:-10000}"
 NUM_ENVS="${NUM_ENVS:-128}"
 
-echo "[perception_staged] distance 0..4000 -> competence-gated density 25..110"
-echo "[perception_staged] easy-distance replay=25% target-speed=0 epochs=${MAX_EPOCHS} envs=${NUM_ENVS}"
+echo "[perception_staged] randomized drone/target spawn + distance 0..4000 -> density 25..110"
+echo "[perception_staged] easy-distance replay=25% target-speed=0.25..0.75 epochs=${MAX_EPOCHS} envs=${NUM_ENVS}"
 
 exec env NUM_ENVS="${NUM_ENVS}" ./train_navrl.sh --max_epochs "${MAX_EPOCHS}" "$@"

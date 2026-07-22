@@ -266,10 +266,14 @@ class task_config:
     #   train:  NAVRL_TARGET_SPEED_FINAL=1.5 ./train_navrl.sh      (curriculum 0 -> 1.5 m/s)
     #   eval:   NAVRL_TARGET_SPEED=1.0 NAVRL_TARGET_PATTERN=cv ./play_navrl.sh <ckpt>  (exact cell)
     class target_motion:
-        # Per-episode speed ~ U[0, v_max(epoch)] keeps static episodes in-distribution;
+        # Per-episode speed ~ U[speed_min, v_max(epoch)]; speed_min=0 keeps static/slow episodes
+        # in-distribution for the default curriculum.
         # v_max(epoch) = speed_final * clamp((epoch - ramp_start) / ramp_epochs, 0, 1).
         # The epoch proxy is num_task_steps / ppo_horizon (checkpoint-persisted, resume-safe).
         speed_final = _env_float("NAVRL_TARGET_SPEED_FINAL", 0.0)  # [m/s] curriculum ceiling; 0 = static
+        # Optional positive floor for generalized moving-target training. Zero preserves every
+        # existing static-target experiment unless a launch recipe explicitly enables it.
+        speed_min = _env_float("NAVRL_TARGET_SPEED_MIN", 0.0)      # [m/s]
         speed_ramp_start_epochs = 0
         speed_ramp_epochs = 3000       # full target speed by epoch 3000 (mirrors k_warmup)
         # Evaluation override: force the EXACT per-episode speed (heatmap cells). < 0 disables.

@@ -282,6 +282,10 @@ class NavRLTask(BaseTask):
         self.general_eval_mode = os.environ.get("NAVRL_GENERAL_EVAL", "0").strip().lower() in (
             "1", "true", "yes", "on"
         )
+        self.general_train_mode = os.environ.get("NAVRL_GENERAL_TRAIN", "0").strip().lower() in (
+            "1", "true", "yes", "on"
+        )
+        self.general_spawn_mode = self.general_eval_mode or self.general_train_mode
         self.general_density_min = int(os.environ.get("NAVRL_GENERAL_DENSITY_MIN", "25"))
         self.general_density_max = int(os.environ.get("NAVRL_GENERAL_DENSITY_MAX", "110"))
         self.general_trial_index = 0
@@ -454,7 +458,9 @@ class NavRLTask(BaseTask):
                 (len(ids), 2), device=self.device
             )
             drone_dist = torch.norm(candidate - start_pos[ids, 0:2], dim=1)
-            accepted = (drone_dist >= 4.0) & (drone_dist <= 18.0)
+            max_dist = 18.0 if self.general_eval_mode else min(18.0, float(self._goal_x_max()))
+            min_dist = min(4.0, max(1.0, max_dist - 1.0))
+            accepted = (drone_dist >= min_dist) & (drone_dist <= max_dist)
             if bars_xy.shape[1] > 0:
                 bar_dist = (
                     torch.cdist(candidate.unsqueeze(1), bars_xy[ids, : self.n_bars_active])
@@ -726,7 +732,7 @@ class NavRLTask(BaseTask):
     def reset_idx(self, env_ids):
         if len(env_ids) == 0:
             return
-        if self.general_eval_mode:
+        if self.general_spawn_mode:
             self._randomize_general_drone_spawn(env_ids)
         # robot has already been respawned by the env manager when this is called mid-episode,
         # so robot_position holds the fresh start pose.
@@ -744,7 +750,7 @@ class NavRLTask(BaseTask):
         # side forces a left->right traversal of the bars. k ~ U[k_min, k_max(epoch)] (k_max
         # grows with training via _goal_x_max), y is free across the arena minus a wall margin.
         # Resample any goal within `clearance` of a bar so the 0.5 m capture sphere is flyable.
-        if self.general_eval_mode:
+        if self.general_spawn_mode:
             goal = self._sample_general_target(env_ids, start_pos, b_min, b_max, bars_xy)
             sampled_dist = torch.norm(goal[:, 0:2] - start_pos[:, 0:2], dim=1)
             k_min = float(sampled_dist.min().item())
@@ -754,7 +760,7 @@ class NavRLTask(BaseTask):
             k_min = self._goal_x_min()
         self.cur_goal_dist_max = k_max  # surfaced to the dashboard as "curriculum max"
         self.cur_goal_dist_min = k_min  # surfaced to the dashboard as "curriculum min"
-        todo = torch.zeros(n, dtype=torch.bool, device=self.device) if self.general_eval_mode else torch.ones(
+        todo = torch.zeros(n, dtype=torch.bool, device=self.device) if self.general_spawn_mode else torch.ones(
             n, dtype=torch.bool, device=self.device
         )
         for _ in range(10):
@@ -1282,18 +1288,19 @@ class NavRLTask(BaseTask):
         if float(self.tm.speed_fixed) >= 0.0:
             return float(self.tm.speed_fixed)
         final = float(self.tm.speed_final)
+        minimum = max(0.0, float(getattr(self.tm, "speed_min", 0.0)))
         if final <= 0.0:
             return 0.0
         h = int(self.cur.ppo_horizon)
         start_steps = int(self.tm.speed_ramp_start_epochs) * h
         ramp_steps = max(1, int(self.tm.speed_ramp_epochs) * h)
         frac = min(1.0, max(0.0, (self.num_task_steps - start_steps) / ramp_steps))
-        return final * frac
+        return max(minimum, final * frac)
 
     def _sample_target_motion(self, env_ids):
         """Per-episode target speed + trajectory pattern for reset envs. Training samples
-        speed ~ U[0, v_max(epoch)] so static episodes stay in-distribution (the v_t=0 skill is
-        never forgotten); NAVRL_TARGET_SPEED forces the exact speed instead (evaluation cells)."""
+        speed ~ U[speed_min, v_max(epoch)]; the default speed_min=0 keeps static/slow episodes
+        in-distribution. NAVRL_TARGET_SPEED forces the exact speed instead (evaluation cells)."""
         n = len(env_ids)
         if n == 0:
             return
@@ -1303,7 +1310,8 @@ class NavRLTask(BaseTask):
         elif float(self.tm.speed_fixed) >= 0.0:
             speed = torch.full((n,), float(self.tm.speed_fixed), device=self.device)
         else:
-            speed = v_max * torch.rand(n, device=self.device)
+            v_min = min(v_max, max(0.0, float(getattr(self.tm, "speed_min", 0.0))))
+            speed = v_min + (v_max - v_min) * torch.rand(n, device=self.device)
         self._tm_speed[env_ids] = speed
 
         pat = str(self.tm.pattern)

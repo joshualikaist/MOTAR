@@ -66,25 +66,25 @@ except Exception as exc:
     try:
         info = json.loads(result.stdout.strip().splitlines()[-1])
     except (IndexError, json.JSONDecodeError):
-        info = {"ok": False, "error": result.stderr.strip() or "checkpoint 검사 실패"}
+        info = {"ok": False, "error": result.stderr.strip() or "checkpoint inspection failed"}
     return info
 
 
 def _configure_checkpoint(args):
     path = Path(args.checkpoint).expanduser().resolve()
     if not path.is_file():
-        raise ValueError("checkpoint 파일을 찾을 수 없습니다.")
+        raise ValueError("Checkpoint file not found.")
     info = _inspect_checkpoint(path)
     if not info.get("ok"):
-        raise ValueError("checkpoint를 읽을 수 없습니다: %s" % info.get("error", "unknown"))
+        raise ValueError("Unable to read checkpoint: %s" % info.get("error", "unknown"))
     kind = info.get("kind")
     expected = {"transformer": 574, "legacy_vision_305": 305, "vision_1265": 1265}
     if kind not in expected:
-        raise ValueError("지원하지 않는 checkpoint 구조입니다. CNN/LSTM 종류를 확인하세요.")
+        raise ValueError("Unsupported checkpoint architecture. Check its CNN/LSTM type.")
     observed = info.get("obs_dim")
     if observed not in (None, expected[kind]):
         raise ValueError(
-            "checkpoint observation은 %sD이지만 감지된 모델은 %sD입니다."
+            "Checkpoint observation is %sD, but the detected model expects %sD."
             % (observed, expected[kind])
         )
     args.checkpoint = path
@@ -104,11 +104,32 @@ def _setup_dialog(args):
         raise SystemExit("tkinter is unavailable; pass --manual or --checkpoint PATH") from exc
 
     root = tk.Tk()
-    root.title("NavRL 3D 시뮬레이션")
+    root.title("NavRL 3D Simulator")
     root.geometry("1040x730")
     root.minsize(920, 680)
     root.configure(bg="#F4F7FB")
     root.tk.call("tk", "scaling", 1.45)
+
+    from tkinter import font as tkfont
+
+    # This Tk build maps explicit Linux font-family names to a jagged bitmap renderer. Clone its
+    # native UI font instead: buttons/dialogs already render this font correctly, and the copies
+    # let us keep presentation-sized typography without overriding the system font family.
+    base_font = tkfont.nametofont("TkDefaultFont")
+
+    def sized_font(size, bold=False):
+        value = base_font.copy()
+        value.configure(size=size, weight="bold" if bold else "normal")
+        return value
+
+    title_font = sized_font(27, bold=True)
+    section_font = sized_font(15, bold=True)
+    card_title_font = sized_font(14, bold=True)
+    body_font = sized_font(12)
+    copy_font = sized_font(11)
+    hint_font = sized_font(10)
+    hint_bold_font = sized_font(10, bold=True)
+    button_font = sized_font(11, bold=True)
 
     style = ttk.Style(root)
     style.theme_use("clam")
@@ -118,13 +139,13 @@ def _setup_dialog(args):
         "Card.TLabelframe.Label",
         background="#FFFFFF",
         foreground="#18253B",
-        font=("Noto Sans CJK KR", 14, "bold"),
+        font=card_title_font,
     )
-    style.configure("TLabel", background="#FFFFFF", foreground="#26364F", font=("Noto Sans CJK KR", 12))
-    style.configure("Hint.TLabel", foreground="#66758C", font=("Noto Sans CJK KR", 10))
-    style.configure("TEntry", font=("Noto Sans CJK KR", 11), padding=7)
-    style.configure("TSpinbox", font=("Noto Sans CJK KR", 11), padding=5)
-    style.configure("TButton", font=("Noto Sans CJK KR", 11, "bold"), padding=(14, 10))
+    style.configure("TLabel", background="#FFFFFF", foreground="#26364F", font=body_font)
+    style.configure("Hint.TLabel", foreground="#66758C", font=hint_font)
+    style.configure("TEntry", font=copy_font, padding=7)
+    style.configure("TSpinbox", font=copy_font, padding=5)
+    style.configure("TButton", font=button_font, padding=(14, 10))
     style.configure(
         "Accent.TButton", background="#2563EB", foreground="#FFFFFF", borderwidth=0
     )
@@ -135,7 +156,7 @@ def _setup_dialog(args):
     checkpoint = tk.StringVar(value="")
     target_speed = tk.StringVar(value=str(args.target_speed))
     drone_speed = tk.StringVar(value=str(args.drone_speed))
-    compatibility = tk.StringVar(value="Checkpoint를 선택하면 모델 구조를 먼저 검사합니다.")
+    compatibility = tk.StringVar(value="Select a checkpoint to inspect model compatibility.")
     compatibility_color = {"value": "#66758C"}
     result = {"mode": None}
 
@@ -147,29 +168,29 @@ def _setup_dialog(args):
     def inspect_selected(show_error=False):
         raw = checkpoint.get().strip()
         if not raw:
-            set_compatibility("Checkpoint 미선택 · Manual 모드는 바로 실행할 수 있습니다.", "#66758C")
+            set_compatibility("No checkpoint selected. Manual preview is available.", "#66758C")
             return None
         path = Path(raw).expanduser()
         if not path.is_file():
-            set_compatibility("파일을 찾을 수 없습니다.", "#DC2626")
+            set_compatibility("File not found.", "#DC2626")
             return None
         info = _inspect_checkpoint(path)
         if not info.get("ok"):
-            set_compatibility("읽기 실패 · %s" % info.get("error", "unknown"), "#DC2626")
+            set_compatibility("Read failed: %s" % info.get("error", "unknown"), "#DC2626")
             return None
         labels = {
-            "transformer": "NavRL++ Target Transformer · 574D · 권장 모델",
-            "legacy_vision_305": "Legacy semantic Vision CNN · 305D · baseline 재생 가능",
+            "transformer": "NavRL++ Target Transformer | 574D | Recommended",
+            "legacy_vision_305": "Legacy semantic Vision CNN | 305D | Baseline playback",
             "vision_1265": "RGB-D + semantic LiDAR Vision CNN · 1265D",
         }
         label = labels.get(info.get("kind"))
         if label is None:
-            set_compatibility("지원하지 않는 checkpoint 구조입니다.", "#DC2626")
+            set_compatibility("Unsupported checkpoint architecture.", "#DC2626")
             if show_error:
-                messagebox.showerror("호환 불가", compatibility.get())
+                messagebox.showerror("Incompatible checkpoint", compatibility.get())
             return None
         epoch = info.get("epoch")
-        suffix = " · epoch %s" % epoch if epoch is not None else ""
+        suffix = " | epoch %s" % epoch if epoch is not None else ""
         set_compatibility(label + suffix, "#15803D" if info["kind"] == "transformer" else "#B45309")
         return info
 
@@ -188,22 +209,22 @@ def _setup_dialog(args):
             args.target_speed = float(target_speed.get())
             args.drone_speed = float(drone_speed.get())
         except ValueError:
-            messagebox.showerror("입력 오류", "표적 속도와 드론 속도는 숫자로 입력하세요.")
+            messagebox.showerror("Invalid input", "Target and drone speeds must be numbers.")
             return
         if mode == "policy" and args.target_speed <= 0.0:
-            messagebox.showerror("입력 오류", "Policy 평가에서는 움직이는 표적 속도를 0보다 크게 설정하세요.")
+            messagebox.showerror("Invalid input", "Policy evaluation requires target speed above zero.")
             return
         args.num_envs = 1
         if mode == "policy":
             path = Path(checkpoint.get()).expanduser()
             if not path.is_file():
-                messagebox.showerror("checkpoint 없음", "학습된 .pth 파일을 선택하세요.")
+                messagebox.showerror("Checkpoint required", "Select a trained .pth checkpoint.")
                 return
             args.checkpoint = path
             try:
                 _configure_checkpoint(args)
             except ValueError as exc:
-                messagebox.showerror("Checkpoint 호환 오류", str(exc))
+                messagebox.showerror("Checkpoint compatibility error", str(exc))
                 inspect_selected(show_error=False)
                 return
         else:
@@ -215,13 +236,13 @@ def _setup_dialog(args):
     header.pack(fill="x")
     header.pack_propagate(False)
     tk.Label(
-        header, text="NavRL 3D 시뮬레이션", bg="#14213D", fg="#FFFFFF",
-        font=("Noto Sans CJK KR", 27, "bold"),
+        header, text="NavRL 3D Simulator", bg="#14213D", fg="#FFFFFF",
+        font=title_font,
     ).pack(anchor="w", padx=34, pady=(23, 0))
     tk.Label(
         header,
-        text="정책의 일반화 성능을 실제 Isaac Gym 환경에서 확인합니다",
-        bg="#14213D", fg="#C5D7F8", font=("Noto Sans CJK KR", 11),
+        text="Evaluate policy generalization in the real Isaac Gym environment",
+        bg="#14213D", fg="#C5D7F8", font=copy_font,
     ).pack(anchor="w", padx=36, pady=(4, 18))
 
     main = ttk.Frame(root, padding=(26, 20, 26, 12))
@@ -229,37 +250,37 @@ def _setup_dialog(args):
     main.columnconfigure(0, weight=1)
     main.columnconfigure(1, weight=1)
 
-    scene = ttk.LabelFrame(main, text="  실행 조건  ", style="Card.TLabelframe", padding=18)
+    scene = ttk.LabelFrame(main, text="  Evaluation setup  ", style="Card.TLabelframe", padding=18)
     scene.grid(row=0, column=0, sticky="nsew", padx=(0, 9))
-    model = ttk.LabelFrame(main, text="  정책 모델  ", style="Card.TLabelframe", padding=18)
+    model = ttk.LabelFrame(main, text="  Policy model  ", style="Card.TLabelframe", padding=18)
     model.grid(row=0, column=1, sticky="nsew", padx=(9, 0))
 
     tk.Label(
         scene,
-        text="일반화 평가",
-        bg="#FFFFFF", fg="#1E3A5F", font=("Noto Sans CJK KR", 15, "bold"),
+        text="Generalized evaluation",
+        bg="#FFFFFF", fg="#1E3A5F", font=section_font,
     ).grid(row=0, column=0, columnspan=2, sticky="w")
     tk.Label(
         scene,
-        text="10회의 독립적인 시도를 진행합니다.\n"
-             "매 시도마다 장애물 배치와 개수(25–110),\n"
-             "드론 위치·방향, 표적 위치를 다시 생성합니다.",
-        bg="#FFFFFF", fg="#586A82", justify="left", font=("Noto Sans CJK KR", 11),
+        text="Runs 10 independent trials.\n"
+             "Each trial randomizes 25-110 obstacles,\n"
+             "drone position/yaw, and target position.",
+        bg="#FFFFFF", fg="#586A82", justify="left", font=copy_font,
     ).grid(row=1, column=0, columnspan=2, sticky="w", pady=(6, 22))
 
-    ttk.Label(scene, text="표적 이동 속도").grid(row=2, column=0, sticky="w")
+    ttk.Label(scene, text="Target speed").grid(row=2, column=0, sticky="w")
     ttk.Spinbox(
         scene, from_=0.0, to=2.5, increment=0.25, textvariable=target_speed, width=8
     ).grid(row=2, column=1, sticky="e")
-    ttk.Label(scene, text="m/s · policy 평가에서는 항상 이동", style="Hint.TLabel").grid(
+    ttk.Label(scene, text="m/s | target always moves in policy mode", style="Hint.TLabel").grid(
         row=3, column=0, columnspan=2, sticky="w", pady=(4, 16)
     )
-    ttk.Label(scene, text="드론 최대 속도").grid(row=4, column=0, sticky="w")
+    ttk.Label(scene, text="Drone max speed").grid(row=4, column=0, sticky="w")
     ttk.Spinbox(
         scene, from_=0.25, to=3.0, increment=0.25, textvariable=drone_speed, width=8
     ).grid(row=4, column=1, sticky="e")
 
-    ttk.Label(model, text="학습 체크포인트").pack(anchor="w")
+    ttk.Label(model, text="Trained checkpoint").pack(anchor="w")
     ck_row = ttk.Frame(model, style="TFrame")
     ck_row.pack(fill="x", pady=(7, 10))
     ttk.Entry(ck_row, textvariable=checkpoint).pack(side="left", fill="x", expand=True)
@@ -268,36 +289,36 @@ def _setup_dialog(args):
     status_box.pack(fill="x", pady=(2, 16))
     status_label = tk.Label(
         status_box, textvariable=compatibility, bg="#F5F7FA", fg="#66758C",
-        justify="left", anchor="w", wraplength=390, font=("Noto Sans CJK KR", 10, "bold"),
+        justify="left", anchor="w", wraplength=390, font=hint_bold_font,
     )
     status_label.pack(fill="x", padx=12, pady=11)
-    ttk.Label(model, text="모델 호환 정보", style="Hint.TLabel").pack(anchor="w")
+    ttk.Label(model, text="Model compatibility", style="Hint.TLabel").pack(anchor="w")
     tk.Label(
         model,
         text="574D Transformer: RGB-D/LiDAR perception\n"
-             "305D legacy CNN: 기존 semantic baseline\n"
-             "모델 구조를 확인한 뒤 알맞은 실행 환경을 선택합니다.",
+             "305D legacy CNN: archived semantic baseline\n"
+             "The launcher selects the matching runtime automatically.",
         bg="#FFFFFF", fg="#40516B", justify="left", anchor="w",
-        font=("Noto Sans CJK KR", 10),
+        font=hint_font,
     ).pack(fill="x", pady=(5, 0))
 
-    controls = ttk.LabelFrame(main, text="  실행 중 조작  ", style="Card.TLabelframe", padding=14)
+    controls = ttk.LabelFrame(main, text="  Viewer controls  ", style="Card.TLabelframe", padding=14)
     controls.grid(row=1, column=0, columnspan=2, sticky="ew", pady=(18, 0))
     tk.Label(
         controls,
-        text="표적 속도  , / .     드론 속도  − / =     LiDAR  G     새 시도  N\n"
-             "Policy / Manual  M     이동  I K J L     회전  U O     일시정지  Space",
-        bg="#FFFFFF", fg="#31445F", justify="center", font=("Noto Sans CJK KR", 11, "bold"),
+        text="Target speed  , / .     Drone speed  - / =     LiDAR  G     New trial  N\n"
+             "Policy / Manual  M     Move  I K J L     Yaw  U O     Pause  Space",
+        bg="#FFFFFF", fg="#31445F", justify="center", font=button_font,
     ).pack(fill="x", pady=2)
 
     footer = ttk.Frame(root, padding=(26, 4, 26, 22))
     footer.pack(fill="x")
     ttk.Button(
-        footer, text="수동 조작으로 미리보기", style="Manual.TButton",
+        footer, text="Open manual preview", style="Manual.TButton",
         command=lambda: finish("manual"),
     ).pack(side="left")
     ttk.Button(
-        footer, text="정책 평가 시작  →", style="Accent.TButton",
+        footer, text="Start policy evaluation  >", style="Accent.TButton",
         command=lambda: finish("policy"),
     ).pack(side="right")
     root.protocol("WM_DELETE_WINDOW", root.destroy)
@@ -309,6 +330,9 @@ def _setup_dialog(args):
 
 def _set_environment(args):
     os.environ["PYTHONNOUSERSITE"] = "1"
+    # The native application always runs one environment. Do not reserve base_sim's PhysX contact
+    # buffers sized for 8000 parallel environments; that can OOM when a training job is resident.
+    os.environ["AERIAL_GYM_SIM_NAME"] = "navrl_viewer_sim"
     os.environ["NAVRL_INTERACTIVE"] = "1"
     os.environ["NAVRL_VISION"] = "1"
     os.environ["NAVRL_DENSITY_CURRICULUM"] = "0"
