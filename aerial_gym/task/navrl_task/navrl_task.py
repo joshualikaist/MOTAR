@@ -146,6 +146,12 @@ class NavRLTask(BaseTask):
         self.n_bars_active = 0
         self._density_succ_agg = 0
         self._density_fin_agg = 0
+        # competence-gated goal-DISTANCE window (NAVRL_K_COMPETENCE): advances by measured capture
+        # instead of by epoch. Seeded to the shallow start; persisted across --checkpoint resume.
+        self._k_max_cur = float(self.task_config.curriculum.k_start)
+        self._k_min_cur = float(self.task_config.curriculum.k_min)
+        self._kcomp_succ = 0
+        self._kcomp_fin = 0
         self._set_active_bars(initial_bars_requested)
         logger.warning(
             "NavRL density | active_bars=%d max_bars=%d curriculum=%s"
@@ -272,6 +278,15 @@ class NavRLTask(BaseTask):
         self._mindist_sum = 0.0  # sum of closest approach over NON-CRASH finished episodes
         self._nc_agg = 0         # count of non-crash finished episodes
         self._closest_min = None  # best (min) closest approach in the window
+        # --- crash-cause diagnosis (NAVRL_CRASH_DIAG=1): split the aggregate "crash" number into
+        # its termination source (bar contact / height bound / out-of-arena side) so a stuck run
+        # can be diagnosed from measured counts instead of guesses. Off by default: zero overhead.
+        self._crash_diag = os.environ.get("NAVRL_CRASH_DIAG", "0").strip().lower() in ("1", "true", "yes", "on")
+        self._diag = {k: 0 for k in ("contact", "below", "above", "oob", "oob_w", "oob_e", "oob_s", "oob_n")}
+        # "oob" is the EXACT per-env count; W/E/S/N are informational side buckets (a rare
+        # diagonal corner exit can land in two of them, so their sum may exceed "oob").
+        self._diag_steps = {"contact": 0.0, "oob": 0.0}  # steps-to-death sums per cause
+        self._diag_x_sum = 0.0  # death-x sum for bar contacts (bar band starts ~3.1 m)
 
         # Native 3-D application controls. They are completely disabled during ordinary train/play
         # runs and never become actor observations. The debug target overlay uses GT only for the
@@ -697,11 +712,17 @@ class NavRLTask(BaseTask):
         return {
             "num_task_steps": int(self.num_task_steps),
             "n_bars_active": int(self.n_bars_active),
+            "k_max_cur": float(self._k_max_cur),
+            "k_min_cur": float(self._k_min_cur),
         }
 
     def set_env_state(self, state):
         if isinstance(state, dict) and state.get("num_task_steps") is not None:
             self.num_task_steps = int(state["num_task_steps"])
+        if isinstance(state, dict) and state.get("k_max_cur") is not None:
+            # restore the competence-gated distance window across a --checkpoint resume
+            self._k_max_cur = float(state["k_max_cur"])
+            self._k_min_cur = float(state.get("k_min_cur", self._k_min_cur))
         if isinstance(state, dict) and state.get("n_bars_active") is not None:
             # An explicit NAVRL_NUM_BARS wins over the checkpoint: density-sweep evals must run at
             # the REQUESTED density, not silently at whatever density the checkpoint trained on.
@@ -788,6 +809,23 @@ class NavRLTask(BaseTask):
             gy = (b_min[todo, 1] + m) + (
                 b_max[todo, 1] - b_min[todo, 1] - 2.0 * m
             ) * torch.rand(j, device=self.device)
+            if self.vision_mode and float(getattr(self.vis_cfg, "fov_curriculum_epochs", 0.0)) > 0.0:
+                # Cold-start visibility: keep the goal inside the camera FOV early so the detector
+                # acquires the target (the KF activates -> the actor finally gets a bearing to act
+                # on), then widen the allowed bearing to the full arena. The +/- spawn-yaw headroom
+                # keeps the target visible regardless of the spawn heading. Without this a sensor-
+                # only from-scratch policy is goal-blind and never leaves the ~100% crash basin.
+                horizon_e = max(1, int(getattr(self.cur, "ppo_horizon", 1)))
+                frac = min(1.0, (self.num_task_steps / horizon_e) / float(self.vis_cfg.fov_curriculum_epochs))
+                half_fov = math.radians(float(self.vis_cfg.detector_hfov_deg) * 0.5)
+                yaw_head = math.radians(float(getattr(self.vis_cfg, "spawn_yaw_max_deg", 30.0)))
+                bearing0 = max(math.radians(8.0), 0.85 * (half_fov - yaw_head))
+                bearing_lim = bearing0 + frac * (0.5 * math.pi - bearing0)
+                dy_max = (gx - start_pos[todo, 0]).clamp(min=0.5) * math.tan(bearing_lim)
+                sy = start_pos[todo, 1]
+                lo = torch.maximum(b_min[todo, 1] + m, sy - dy_max)
+                hi = torch.maximum(torch.minimum(b_max[todo, 1] - m, sy + dy_max), lo)
+                gy = lo + (hi - lo) * torch.rand(j, device=self.device)
             goal[todo, 0] = gx
             goal[todo, 1] = gy
             if clearance <= 0.0:
@@ -864,9 +902,15 @@ class NavRLTask(BaseTask):
             vel_world = goal_frame_to_world(vel_goal, self.target_dir_2d)
             vel_vehicle = quat_rotate_inverse(self.obs_dict["robot_vehicle_orientation"], vel_world)
         self.command[:, 0:3] = vel_vehicle
-        # 2D flight: hold altitude. The vehicle frame is yaw-only (level), so vehicle-z == world-z;
-        # zeroing the vertical velocity command keeps the drone at its 1 m spawn altitude.
-        self.command[:, 2] = 0.0
+        # 2D flight: hold altitude. The vehicle frame is yaw-only (level), so vehicle-z == world-z.
+        # A plain vz=0 command is OPEN-LOOP: the velocity controller carries no z-position feedback
+        # (setpoint_position tracks the current position), so altitude bled away during aggressive
+        # lateral/yaw maneuvers — measured with NAVRL_CRASH_DIAG on the first perception run, 39%
+        # of all crashes were floor strikes (z < 0.1 m after ~4.5 s of flight). Close the loop with
+        # a proportional altitude-hold velocity command instead (policy-independent stabilization;
+        # the action space is unchanged — the actor still cannot command vertical motion).
+        z_err = self.task_config.flight_altitude - self.obs_dict["robot_position"][:, 2]
+        self.command[:, 2] = torch.clamp(2.0 * z_err, -1.0, 1.0)
         # (b) learned yaw-rate: action[:, 3] in [-1, 1] -> euler yaw-rate (was held at 0). yaw_rate_max
         # matches the NavRL-scoped controller clamp (2.5 rad/s) so the mapping is linear (no dead band).
         self._yaw_cmd[:] = torch.clamp(actions[:, 3], -1.0, 1.0)
@@ -1024,6 +1068,29 @@ class NavRLTask(BaseTask):
         crashed_out = crashed_out & ~captured
         self.captured_now = captured
         self.crashed_now = crashed_out
+
+        if self._crash_diag:
+            # Attribute each crash to ONE cause, priority contact > below > above > oob (matching
+            # the sources OR-ed into crashed_out above). Same-step captures already excluded.
+            d_contact = crashed & crashed_out
+            d_below = below & ~crashed & crashed_out
+            d_above = above & ~crashed & ~below & crashed_out
+            self._diag["contact"] += int(d_contact.sum().item())
+            self._diag["below"] += int(d_below.sum().item())
+            self._diag["above"] += int(d_above.sum().item())
+            steps = self.sim_env.sim_steps.float()
+            if bool(d_contact.any()):
+                self._diag_steps["contact"] += float(steps[d_contact].sum().item())
+                self._diag_x_sum += float(pos[d_contact, 0].sum().item())
+            if self.vision_mode:
+                d_oob = oob & ~crashed & ~below & ~above & crashed_out
+                if bool(d_oob.any()):
+                    self._diag["oob"] += int(d_oob.sum().item())
+                    self._diag["oob_w"] += int((d_oob & (pos[:, 0] < b_min[:, 0] - m_oob)).sum().item())
+                    self._diag["oob_e"] += int((d_oob & (pos[:, 0] > b_max[:, 0] + m_oob)).sum().item())
+                    self._diag["oob_s"] += int((d_oob & (pos[:, 1] < b_min[:, 1] - m_oob)).sum().item())
+                    self._diag["oob_n"] += int((d_oob & (pos[:, 1] > b_max[:, 1] + m_oob)).sum().item())
+                    self._diag_steps["oob"] += float(steps[d_oob].sum().item())
 
         # A: PBRS progress reward -- dense "got closer" signal. F = gamma*Phi(s') - Phi(s) with
         # Phi = -progress_weight*dist. RE-ANCHORED to the target's CURRENT position:
@@ -1262,6 +1329,8 @@ class NavRLTask(BaseTask):
         epoch, so epoch ~= num_task_steps / ppo_horizon). num_task_steps is saved/restored via
         get_env_state/set_env_state, so a --checkpoint resume (and --play) continues at the saved
         curriculum position."""
+        if getattr(self.cur, "use_competence", False):
+            return self._k_max_cur  # competence-gated: advanced only in _update_curriculum
         warmup_steps = max(1, int(self.cur.k_warmup_epochs) * int(self.cur.ppo_horizon))
         frac = min(1.0, self.num_task_steps / warmup_steps)
         return self.cur.k_start + (self.cur.k_final - self.cur.k_start) * frac
@@ -1271,6 +1340,8 @@ class NavRLTask(BaseTask):
         [k_min_ramp_start_epochs, +k_min_ramp_epochs] so late episodes drop the easy near goals and
         focus on deep crossings. The start is independent of the k_max ramp (they may overlap). Kept
         at least 1 m below k_max so the [min, max] window stays valid."""
+        if getattr(self.cur, "use_competence", False):
+            return min(self._k_min_cur, self._goal_x_max() - 1.0)
         h = int(self.cur.ppo_horizon)
         start_steps = int(self.cur.k_min_ramp_start_epochs) * h
         ramp_steps = max(1, int(self.cur.k_min_ramp_epochs) * h)
@@ -1483,8 +1554,35 @@ class NavRLTask(BaseTask):
         self.target_vel_w[:, 2] = 0.0
 
     def _update_curriculum(self, successes, finished):
-        # Goal-distance curriculum stays epoch-proportional via _goal_x_max/_goal_x_min. This hook
-        # only promotes the optional Phase-2 density curriculum.
+        # (A) Competence-gated goal-DISTANCE curriculum (NAVRL_K_COMPETENCE=1): deepen the goal
+        # window only when measured capture clears the threshold -- the same self-pacing the density
+        # curriculum uses below. When off, distance stays epoch-proportional in _goal_x_max/_min.
+        if getattr(self.cur, "use_competence", False):
+            n_fin_d = int(torch.sum(finished).item())
+            if n_fin_d > 0:
+                self._kcomp_succ += int(torch.sum(successes).item())
+                self._kcomp_fin += n_fin_d
+                if self._kcomp_fin >= max(1, int(self.cur.k_comp_check)):
+                    rate = self._kcomp_succ / max(1, self._kcomp_fin)
+                    if rate >= float(self.cur.k_comp_threshold) and self._k_max_cur < float(self.cur.k_final):
+                        old = self._k_max_cur
+                        self._k_max_cur = min(float(self.cur.k_final), self._k_max_cur + float(self.cur.k_comp_step))
+                        self._k_min_cur = min(
+                            float(self.cur.k_min_final), max(float(self.cur.k_min), self._k_max_cur - 3.0)
+                        )
+                        logger.warning(
+                            "NavRL distance curriculum promoted | k_max %.1f -> %.1f window [%.1f, %.1f] "
+                            "after %d eps, capture=%.3f"
+                            % (old, self._k_max_cur, self._k_min_cur, self._k_max_cur, self._kcomp_fin, rate)
+                        )
+                    else:
+                        logger.info(
+                            "NavRL distance curriculum held | window [%.1f, %.1f] capture=%.3f over %d eps"
+                            % (self._k_min_cur, self._k_max_cur, rate, self._kcomp_fin)
+                        )
+                    self._kcomp_succ = 0
+                    self._kcomp_fin = 0
+        # (B) Optional Phase-2 density curriculum (also capture-gated; orthogonal to distance above).
         if self.density is None or not getattr(self.density, "use_density_curriculum", False):
             return
         # Gate on warmup FIRST so the capture accumulators only collect POST-warmup episodes.
@@ -1585,6 +1683,31 @@ class NavRLTask(BaseTask):
                     total,
                 )
             )
+            if self._crash_diag:
+                d = self._diag
+                n_raw = d["contact"] + d["below"] + d["above"] + d["oob"]
+                n_all = max(1, n_raw)  # division guard only; the printed count is the raw sum
+                logger.warning(
+                    "NavRL crashdiag | bar_contact=%.3f (mean_x=%.1fm steps=%.0f) below=%.3f "
+                    "above=%.3f oob=%.3f [W=%d E=%d S=%d N=%d steps=%.0f] (n_crash=%d)"
+                    % (
+                        d["contact"] / n_all,
+                        self._diag_x_sum / max(1, d["contact"]),
+                        self._diag_steps["contact"] / max(1, d["contact"]),
+                        d["below"] / n_all,
+                        d["above"] / n_all,
+                        d["oob"] / n_all,
+                        d["oob_w"],
+                        d["oob_e"],
+                        d["oob_s"],
+                        d["oob_n"],
+                        self._diag_steps["oob"] / max(1, d["oob"]),
+                        n_raw,
+                    )
+                )
+                self._diag = {k: 0 for k in self._diag}
+                self._diag_steps = {"contact": 0.0, "oob": 0.0}
+                self._diag_x_sum = 0.0
             self._succ_agg = self._crash_agg = self._to_agg = 0
             self._reach_agg = self._fin_agg = 0
             self._mindist_sum = 0.0

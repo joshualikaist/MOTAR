@@ -138,6 +138,18 @@ class task_config:
                                     # crash (the goal attraction that implicitly kept the drone
                                     # in-bounds is gone when the target is unobserved)
 
+        # -- cold-start visibility curriculum (vision mode only)
+        # The target token is all-zero until the detector first ACQUIRES the target: the KF only
+        # activates once the target enters FOV+range (navrl_perception.py). A from-scratch policy
+        # whose goal starts OUTSIDE the camera FOV therefore never receives a bearing, cannot learn
+        # to approach, and just drifts out of bounds (~100% crash, no gradient -- the exact failure
+        # seen on the first perception run). Fix: constrain the goal's INITIAL bearing to the
+        # detector FOV, then widen to the full arena over this many epochs. This shapes only the
+        # episode initial condition (like the k-distance curriculum) -- it is NOT a GT leak into the
+        # actor. Set NAVRL_FOV_CURRICULUM_EPOCHS=0 to disable (full-arena goals from step 0).
+        fov_curriculum_epochs = _env_int("NAVRL_FOV_CURRICULUM_EPOCHS", 3000)
+        spawn_yaw_max_deg = 30.0    # matches navrl_quad_config spawn yaw (+/-30 deg); FOV headroom
+
         # -- observation layout (actor)
         ego_dim = 9        # vel_vehicle(3) + yaw_rate(1) + prev_action(4) + height(1)
         detector_dim = 8   # visible, bearing sin/cos, elev, range | last bearing sin/cos, t_since
@@ -235,6 +247,20 @@ class task_config:
         k_warmup_epochs = _env_int("NAVRL_K_WARMUP", 3000)  # epochs to ramp k_start->k_final, then plateau
         ppo_horizon = 32         # rl_games horizon_length (MUST match ppo_navrl_cnn.yaml) -> steps/epoch
         wall_margin = 0.5        # [m] keep drone/goal this far from the y walls
+
+        # --- Competence-gated distance mode (NAVRL_K_COMPETENCE=1) ---------------------------------
+        # The k_max/k_min ramps above are EPOCH-proportional: the goal deepens on a clock regardless
+        # of skill. Measured failure -- at capture ~1% the window still auto-ramped 5-8 m -> 15-24 m,
+        # every episode then ended in a crash, and the value function collapsed (no capture gradient
+        # survives at a depth the policy cannot reach). Lowering the slope only DELAYS this: a time
+        # ramp still eventually outruns a plateaued policy, and the right slope differs per run. This
+        # mode instead advances the window ONLY when measured capture clears k_comp_threshold over
+        # k_comp_check finished episodes -- exactly how the density curriculum self-paces -- and just
+        # PAUSES (logging "held") when the policy stalls. Off => the epoch ramp above (LiDAR default).
+        use_competence = _env_bool("NAVRL_K_COMPETENCE", False)
+        k_comp_threshold = _env_float("NAVRL_K_THRESHOLD", 0.6)  # capture rate needed to deepen the goal
+        k_comp_step = _env_float("NAVRL_K_STEP", 2.0)            # [m] deepen k_max by this per promotion
+        k_comp_check = _env_int("NAVRL_K_CHECK", 2048)           # finished episodes per competence check
 
     # Phase 2 density sweep: obstacle size stays fixed; only the active bar count changes.
     # NAVRL_MAX_BARS controls the build-time ceiling in env_object_config.py.
