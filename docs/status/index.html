@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MOTAR · 연구 현황 (3D)</title>
+<style>
+  :root{
+    --paper:#e9edf0; --panel:#f4f6f8; --ink:#111820; --slate:#586576; --faint:#7d8896;
+    --line:#cfd6dc; --line2:#dde3e8; --accent:#0d97a4; --accent-ink:#0a6f79;
+    --sensor:#0d97a4; --gt:#8b97a4; --good:#2f9e60; --warn:#c99a2e; --bad:#d16a37;
+    --shade:#dfe5ea; --code-bg:#0f1720; --code-ink:#cdd8e2; --code-accent:#3fd0d9;
+    --mono:ui-monospace,"SF Mono","JetBrains Mono","Cascadia Code",Menlo,Consolas,monospace;
+    --sans:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",-apple-system,system-ui,"Segoe UI",sans-serif;
+  }
+  @media (prefers-color-scheme: dark){:root{
+    --paper:#0c1116;--panel:#131b23;--ink:#e2e8ee;--slate:#98a5b3;--faint:#6f7d8b;
+    --line:#242f3a;--line2:#1b242d;--accent:#22c1cd;--accent-ink:#7fe0e7;
+    --sensor:#22c1cd;--gt:#6f7d8b;--good:#48c07f;--warn:#e0b84a;--bad:#e58a58;
+    --shade:#18222c;--code-bg:#080c11;--code-ink:#c4d1dc;--code-accent:#3fd0d9;}}
+  :root[data-theme="light"]{--paper:#e9edf0;--panel:#f4f6f8;--ink:#111820;--slate:#586576;--faint:#7d8896;
+    --line:#cfd6dc;--line2:#dde3e8;--accent:#0d97a4;--accent-ink:#0a6f79;--sensor:#0d97a4;--gt:#8b97a4;
+    --good:#2f9e60;--warn:#c99a2e;--bad:#d16a37;--shade:#dfe5ea;--code-bg:#0f1720;--code-ink:#cdd8e2;--code-accent:#3fd0d9;}
+  :root[data-theme="dark"]{--paper:#0c1116;--panel:#131b23;--ink:#e2e8ee;--slate:#98a5b3;--faint:#6f7d8b;
+    --line:#242f3a;--line2:#1b242d;--accent:#22c1cd;--accent-ink:#7fe0e7;--sensor:#22c1cd;--gt:#6f7d8b;
+    --good:#48c07f;--warn:#e0b84a;--bad:#e58a58;--shade:#18222c;--code-bg:#080c11;--code-ink:#c4d1dc;--code-accent:#3fd0d9;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.6;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:960px;margin:0 auto;padding:0 24px 100px}
+  a{color:var(--accent-ink)}
+  .kicker{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-ink);font-weight:600}
+  h1{font-size:clamp(28px,5vw,44px);font-weight:700;letter-spacing:-.01em;text-wrap:balance;margin:14px 0 12px;line-height:1.16}
+  .lede{color:var(--slate);font-size:16.5px;max-width:66ch}
+  header{padding:52px 0 24px;border-bottom:1px solid var(--line)}
+  .tagrow{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
+  .tag{font-family:var(--mono);font-size:11.5px;padding:5px 10px;border:1px solid var(--line);border-radius:2px;color:var(--slate);background:var(--panel)}
+  .tag b{color:var(--ink)}
+  .tag.live b{color:var(--good)}
+  section{padding:40px 0;border-bottom:1px solid var(--line2)}
+  .lbl{display:flex;align-items:baseline;gap:12px;margin-bottom:6px}
+  .lbl .n{font-family:var(--mono);font-size:12px;color:var(--faint);letter-spacing:.1em}
+  h2{font-size:22px;font-weight:700;margin:0 0 12px;letter-spacing:-.01em}
+  .sub{color:var(--slate);max-width:70ch;margin:0 0 18px;font-size:15px}
+  /* 3D viewer */
+  #stage{position:relative;width:100%;height:460px;background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  #stage canvas{display:block}
+  .hud{position:absolute;top:12px;left:12px;font-family:var(--mono);font-size:11.5px;color:var(--slate);background:color-mix(in srgb,var(--panel) 78%,transparent);padding:8px 10px;border:1px solid var(--line);border-radius:6px;pointer-events:none;line-height:1.7}
+  .hud b{color:var(--ink)}
+  .hud .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:middle}
+  .controls{display:flex;flex-wrap:wrap;gap:16px 22px;align-items:center;margin-top:14px;padding:14px 16px;background:var(--panel);border:1px solid var(--line);border-radius:8px}
+  .ctl{display:flex;flex-direction:column;gap:5px;min-width:150px;flex:1}
+  .ctl label{font-family:var(--mono);font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--faint)}
+  .ctl .val{font-family:var(--mono);color:var(--ink);font-weight:600}
+  input[type=range]{width:100%;accent-color:var(--accent)}
+  .btn{font-family:var(--mono);font-size:12px;padding:8px 12px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink);cursor:pointer}
+  .btn:hover{border-color:var(--accent)}
+  .chk{display:flex;gap:7px;align-items:center;font-family:var(--mono);font-size:12px;color:var(--slate);cursor:pointer}
+  figcaption{font-size:13px;color:var(--slate);margin-top:12px}
+  figcaption b{color:var(--ink)}
+  /* cards */
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+  .card{background:var(--panel);padding:15px 16px}
+  .card .v{font-family:var(--mono);font-size:26px;font-weight:600;letter-spacing:-.02em}
+  .card .k{font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--faint);margin-top:2px}
+  .card .s{font-size:12px;color:var(--slate);margin-top:4px}
+  .card.good .v{color:var(--good)} .card.bad .v{color:var(--bad)} .card.warn .v{color:var(--warn)} .card.acc .v{color:var(--accent-ink)}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:6px}
+  th,td{padding:8px 9px;border-bottom:1px solid var(--line2);text-align:right;font-variant-numeric:tabular-nums;font-family:var(--mono)}
+  th{font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--faint);border-bottom:1px solid var(--line)}
+  th:first-child,td:first-child{text-align:left}
+  tr.hi td{color:var(--accent-ink);font-weight:600}
+  tr.cliff td{color:var(--bad)}
+  svg.plot{display:block;width:100%;height:auto;min-width:520px}
+  .scrollx{overflow-x:auto}
+  .t{font-family:var(--mono);fill:var(--slate)} .t.dim{fill:var(--faint)} .t.ink{fill:var(--ink)}
+  .legend{display:flex;gap:20px;flex-wrap:wrap;margin:12px 2px;font-size:13px;color:var(--slate)}
+  .legend i{display:inline-block;width:20px;height:3px;border-radius:2px;margin-right:7px;vertical-align:middle}
+  /* roadmap */
+  .phases{display:flex;flex-direction:column;gap:2px}
+  .phase{display:grid;grid-template-columns:110px 1fr auto;gap:14px;align-items:center;padding:11px 14px;background:var(--panel);border:1px solid var(--line2);border-radius:6px}
+  .phase .pid{font-family:var(--mono);font-size:12px;color:var(--faint)}
+  .phase .pt{font-size:14px}
+  .phase .pt b{font-weight:600}
+  .badge{font-family:var(--mono);font-size:11px;padding:3px 9px;border-radius:20px;white-space:nowrap}
+  .badge.done{background:color-mix(in srgb,var(--good) 18%,transparent);color:var(--good)}
+  .badge.active{background:color-mix(in srgb,var(--accent) 20%,transparent);color:var(--accent-ink)}
+  .badge.todo{background:var(--shade);color:var(--faint)}
+  .callout{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:6px;padding:16px 18px;margin-top:6px}
+  .callout h3{margin:0 0 8px;font-size:15px}
+  .callout p{margin:6px 0;font-size:14px;color:var(--slate)}
+  .callout b{color:var(--ink)}
+  pre{background:var(--code-bg);color:var(--code-ink);border-radius:8px;padding:14px 16px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.6;margin:10px 0}
+  pre .c{color:var(--code-accent)}
+  .foot{padding-top:28px;font-family:var(--mono);font-size:12px;color:var(--faint);line-height:1.8}
+  .themebtn{position:fixed;top:16px;right:16px;z-index:9;font-family:var(--mono);font-size:11px;padding:6px 10px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--slate);cursor:pointer}
+</style>
+</head>
+<body>
+<button class="themebtn" onclick="toggleTheme()">◐ theme</button>
+<div class="wrap">
+  <header>
+    <div class="kicker">MOTAR · NavRL-in-AerialGym · Research Status</div>
+    <h1>난잡한 장애물 속<br>이동 표적 요격 — 연구 현황</h1>
+    <p class="lede">장애물 밀도 × 표적 속도의 2차원 공간에서, LiDAR·센서만으로 이동 표적을
+      포획하는 단일 RL 정책이 어디서 무너지는지를 지도화하는 연구입니다. 아래 3D 뷰에서 실제
+      아레나·장애물 밀도·드론을 직접 돌려 보고, 최신 학습 현황과 다음 단계를 확인하세요.</p>
+    <div class="tagrow" id="tagrow">
+      <span class="tag live">status <b id="tag-live">● live</b></span>
+      <span class="tag">phase <b>2→3 (밀도×표적)</b></span>
+      <span class="tag">latest <b id="tag-run">—</b></span>
+      <span class="tag">GPU <b>RTX 3070 8GB</b></span>
+      <span class="tag">updated <b id="tag-gen">—</b></span>
+    </div>
+  </header>
+
+  <!-- ===================== 3D ARENA ===================== -->
+  <section>
+    <div class="lbl"><span class="n">01</span><h2>3D 아레나 — 밀도를 눈으로</h2></div>
+    <p class="sub">24×24×3 m 빈 아레나에 높이 2 m 막대(footprint 0.4–0.8 m)를 세우고, 드론은
+      고도 1 m에서 2D로 왼쪽 가장자리(x≈0)에서 반대편 목표(x=k)까지 <b>막대밭 전체를 관통</b>합니다.
+      슬라이더로 막대 수를 바꾸면 "밀도"가 실제로 무엇인지 보입니다. 드래그=회전, 휠=줌.</p>
+    <div id="stage">
+      <div class="hud" id="hud">
+        <div><span class="dot" style="background:#c9762f"></span><b id="hud-bars">48</b> 막대 · <span id="hud-density">10.0</span>/100m²</div>
+        <div><span class="dot" style="background:#2f9e60"></span>드론 0.28 m box · 고도 1 m</div>
+        <div><span class="dot" style="background:#d14b4b"></span>이동 표적 (goal)</div>
+      </div>
+    </div>
+    <div class="controls">
+      <div class="ctl">
+        <label>장애물 막대 수 · <span class="val" id="lbl-bars">48</span></label>
+        <input type="range" id="sl-bars" min="10" max="150" step="1" value="48">
+      </div>
+      <div class="ctl">
+        <label>표적 속도 · <span class="val" id="lbl-speed">0.0</span> m/s</label>
+        <input type="range" id="sl-speed" min="0" max="20" step="1" value="0">
+      </div>
+      <button class="btn" id="btn-play">⏸ 일시정지</button>
+      <label class="chk"><input type="checkbox" id="cb-lidar"> LiDAR 36빔</label>
+      <button class="btn" id="btn-preset">NavRL 밀도(110)</button>
+    </div>
+    <figcaption>기하 메모: 배치 밴드 ≈478 m²(x∈[3.1,23]×y 전폭). 랜덤 rejection 배치가
+      <b>~115–120막대에서 최소간격 완화를 시작</b>, ~148막대에서 포화 → 고밀도에서 드론 0.28 m box보다
+      좁은 틈이 생겨 충돌이 급증하는 <b>기하학적 바닥</b>이 만들어집니다.</figcaption>
+  </section>
+
+  <!-- ===================== LATEST RUN ===================== -->
+  <section>
+    <div class="lbl"><span class="n">02</span><h2>최신 학습 현황</h2></div>
+    <p class="sub" id="latest-sub">—</p>
+    <div class="cards" id="latest-cards"></div>
+    <figcaption id="latest-cap"></figcaption>
+  </section>
+
+  <!-- ===================== DENSITY CURVE ===================== -->
+  <section>
+    <div class="lbl"><span class="n">03</span><h2>밀도–포획률 곡선</h2></div>
+    <p class="sub">단일 정책(밀도 커리큘럼 최종 체크포인트)을 밀도별로 held-out 평가. 센서 전용은
+      단조 감소하고, 충돌률은 고밀도에서 급증합니다. GT(정답 위치 주입) 대비 "센서 전용의 대가"가 벌어집니다.</p>
+    <div class="scrollx"><svg class="plot" id="curve" viewBox="0 0 720 400" role="img" aria-label="밀도 대 포획률"></svg></div>
+    <div class="legend">
+      <span><i style="background:var(--sensor)"></i>센서 전용 (포획률)</span>
+      <span><i style="background:var(--gt)"></i>GT 주입 (포획률)</span>
+      <span><i style="background:var(--bad)"></i>충돌률 (센서)</span>
+    </div>
+    <div class="scrollx"><table id="curve-tbl"></table></div>
+  </section>
+
+  <!-- ===================== TIMELINE ===================== -->
+  <section>
+    <div class="lbl"><span class="n">04</span><h2>학습 타임라인 (peak vs final)</h2></div>
+    <p class="sub">각 run의 학습 종료 시점 지표. <b>peak→final 격차</b>가 큰 run은 커리큘럼이 끝에서
+      가장 어려운 설정(고밀도+원거리)에 도달해 최종 체크포인트가 과특화된 신호입니다 — 평가는 반드시
+      용도에 맞는 체크포인트로.</p>
+    <div class="scrollx"><table id="runs-tbl"></table></div>
+  </section>
+
+  <!-- ===================== DIAGNOSIS ===================== -->
+  <section>
+    <div class="lbl"><span class="n">05</span><h2>충돌률 급증 — 원인 진단</h2></div>
+    <div id="diagnosis"></div>
+  </section>
+
+  <!-- ===================== NEXT ===================== -->
+  <section>
+    <div class="lbl"><span class="n">06</span><h2>다음 학습 — 순차 밀도 커리큘럼</h2></div>
+    <div id="nextplan"></div>
+  </section>
+
+  <!-- ===================== ROADMAP ===================== -->
+  <section style="border-bottom:none">
+    <div class="lbl"><span class="n">07</span><h2>로드맵</h2></div>
+    <div class="phases" id="phases"></div>
+    <div class="foot">
+      MOTAR · research/navrl-env · joshualikaist/MOTAR<br>
+      데이터: <span id="foot-runs">—</span> runs · <code>docs/status/status.json</code> (collect_status.py 생성) ·
+      3D: three.js · 갱신 <span id="foot-gen">—</span>
+    </div>
+  </section>
+</div>
+
+<!-- ================= FALLBACK DATA (used if status.json fetch fails) ================= -->
+<script id="fallback" type="application/json">
+{"generated_at":"2026-07-22T03:48:52Z","n_runs":18,
+ "latest_run":{"run":"ppo_260719_1000_navrl","finalized_at":"2026-07-21T21:58:48Z","epochs_logged":12000,
+   "last_captured_rate":0.449,"last_crash_rate":0.541,"last_timeout_rate":0.010,"last_n_bars_active":115,
+   "last_curriculum_max_m":24.0,"peak_captured_rate":0.971,"peak_captured_epoch":3764,"last_mean_reward":119.4,"peak_mean_reward":248.7},
+ "density_curves":{"vision_density_curve":[
+   {"density_bars":25,"captured":0.697,"crash":0.200,"timeout":0.103,"gt_injected_phase2":0.97},
+   {"density_bars":50,"captured":0.691,"crash":0.240,"timeout":0.069,"gt_injected_phase2":0.97},
+   {"density_bars":75,"captured":0.661,"crash":0.310,"timeout":0.029,"gt_injected_phase2":0.94},
+   {"density_bars":110,"captured":0.606,"crash":0.372,"timeout":0.022,"gt_injected_phase2":0.93},
+   {"density_bars":130,"captured":0.473,"crash":0.507,"timeout":0.020,"gt_injected_phase2":null},
+   {"density_bars":150,"captured":0.283,"crash":0.706,"timeout":0.011,"gt_injected_phase2":0.66}]},
+ "runs":[
+   {"run":"ppo_260714_1904","last_captured_rate":0.701,"last_crash_rate":0.299,"last_n_bars_active":48,"peak_captured_rate":0.802,"finalized_at":"2026-07-14"},
+   {"run":"ppo_260715_0251","last_captured_rate":0.957,"last_crash_rate":0.043,"last_n_bars_active":48,"peak_captured_rate":1.0,"finalized_at":"2026-07-14"},
+   {"run":"density_25","last_captured_rate":0.925,"last_crash_rate":0.075,"last_n_bars_active":25,"peak_captured_rate":1.0,"finalized_at":"2026-07-16"},
+   {"run":"density_50","last_captured_rate":0.978,"last_crash_rate":0.022,"last_n_bars_active":50,"peak_captured_rate":1.0,"finalized_at":"2026-07-16"},
+   {"run":"ppo_260716_0329","last_captured_rate":0.969,"last_crash_rate":0.031,"last_n_bars_active":75,"peak_captured_rate":1.0,"finalized_at":"2026-07-16"},
+   {"run":"ppo_260716_1223","last_captured_rate":0.915,"last_crash_rate":0.085,"last_n_bars_active":110,"peak_captured_rate":0.987,"finalized_at":"2026-07-16"},
+   {"run":"density_120","last_captured_rate":0.982,"last_crash_rate":0.018,"last_n_bars_active":120,"peak_captured_rate":0.987,"finalized_at":"2026-07-17"},
+   {"run":"ppo_260717_0032","last_captured_rate":0.672,"last_crash_rate":0.328,"last_n_bars_active":150,"peak_captured_rate":0.855,"finalized_at":"2026-07-16"},
+   {"run":"ppo_260718_0259","last_captured_rate":0.514,"last_crash_rate":0.458,"last_n_bars_active":110,"peak_captured_rate":0.667,"finalized_at":"2026-07-17"},
+   {"run":"ppo_260718_1841","last_captured_rate":0.449,"last_crash_rate":0.538,"last_n_bars_active":130,"peak_captured_rate":0.980,"finalized_at":"2026-07-18"},
+   {"run":"vision50_seed2","last_captured_rate":0.698,"last_crash_rate":0.302,"last_n_bars_active":50,"peak_captured_rate":0.925,"finalized_at":"2026-07-18"},
+   {"run":"vision_goalcap_seed1","last_captured_rate":0.754,"last_crash_rate":0.246,"last_n_bars_active":60,"peak_captured_rate":0.946,"finalized_at":"2026-07-19"},
+   {"run":"ppo_260719_1000","last_captured_rate":0.449,"last_crash_rate":0.541,"last_n_bars_active":115,"peak_captured_rate":0.971,"finalized_at":"2026-07-21"}]}
+</script>
+
+<script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
+<script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
