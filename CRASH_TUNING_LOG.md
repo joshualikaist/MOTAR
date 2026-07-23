@@ -86,3 +86,50 @@ the drone cannot see a bar until 2 s before impact at 2 m/s.
 comment already notes a 10 m option) so navigation becomes reliable enough that approach beats hover,
 then re-validate with `NAVRL_CRASH_DIAG=1`. Secondary: OOB drift (26%) — body-frame action + tight
 fence; and a small trim of `visibility_bonus` if the hover optimum persists.
+
+---
+
+# Session 2 (2026-07-23/24): sensor-only MOVING-target interception + the sudden-NaN root cause
+
+## What now works end-to-end
+Sensor-only perception+Transformer policy intercepts a MOVING target through a 25-bar field at a
+FASTER drone speed. Enablers added this session (all committed):
+- Env-overridable `NAVRL_YAW_RATE_MAX` (task + Lee controller, default 2.5). At 2.0 m/s the weave
+  already needs ~2.4 of 2.5 rad/s -> yaw-rate (not thrust/tilt, T/W~3.3) is the binding
+  maneuverability limit. Ran the faster regime at yaw 3.0 / max_velocity 2.5.
+- Moving target via `NAVRL_TARGET_SPEED_FINAL` ramp (0->1.5 m/s). The warm-started policy tracked
+  and intercepted; capture stayed ~0.8 up to target ~1.25 m/s (drone 2.5).
+
+## THE root cause of the repeated mid-run deaths: policy log-std runaway (fixed)
+Runs kept dying by a SUDDEN NaN (~epoch 5000 of healthy capture 0.8-0.9, then a_loss->NaN in ONE
+step -> hover collapse). NOT gradual overtraining. At the NaN step c_loss / kl / explained_variance
+were all healthy; only ppo/entropy was pinned at ~16 == policy std sigma ~ 13.
+Mechanism: `fixed_sigma: True` + `entropy_coef>0` -> log-std has no upper bound; as difficulty rose
+the policy-loss's downward pressure on sigma weakened while entropy_coef kept pushing up, so sigma
+drifted 1 -> ~13 over ~5000 epochs until the PPO log-prob/gradient overflowed to NaN. Both
+entropy_coef 0.005 and 0.003 died this way (rate only). FIX (commit bb0faa7): clamp log-std to
+[-5, 0.4] (sigma <= 1.49, entropy <= ~7.3) in navrl_transformer_network.forward -> sigma=13 is
+unreachable. VALIDATED: warm-started from the 98.6% peak it sailed PAST epoch 5178 (the exact old
+death point) healthy (entropy flat ~4.4, capture 0.86-0.91, no NaN).
+
+## Eval/play crash was NOT a bug in our code
+`*** Can't create empty tensor` is a benign Isaac Gym build-time diagnostic (hidden in train by the
+quiet wrapper, shown in play). The real crash at NUM_ENVS=512 was VRAM OOM (512 perception cameras
+on the 8 GB 3070). NUM_ENVS=128 (= training) evals fine. Use 128 for eval, not 512.
+
+## BASELINE (measuring stick) -- results/baseline_speed_axis_peak986.csv
+98.6%-peak policy, 25 bars, 13-16 m goals, drone 2.5 m/s, deterministic, 2049 episodes/cell:
+  target 0.0/0.5/0.75/1.0/1.25/1.5 -> capture 0.741/0.762/0.755/0.744/0.724/0.686
+Key: capture is FLAT ~0.74 across target speed (drone is fast enough), timeout ~0 (no hover). The
+bottleneck is CRASH ~25% (bar contacts), NOT target speed -- confirming the earlier "25 bars but it
+still crashes" concern. The 0.986 training peak vs 0.74 eval is the honest train-vs-eval gap.
+
+## Next: crash-reduction tuning, ONE parameter at a time (measure each vs the 0.74 baseline)
+Ranked (reward tuning excluded -- prior 3 null results, crash is geometric):
+1. Proper altitude control (Lee controller z-position feedback) -- ENABLER: lets look-ahead extend
+   without the floor strikes that killed the 12 m attempt (floor was altitude sag under heavier
+   weaving, not a LiDAR floor return -- create_ground_plane=False, no floor mesh).
+2. Extend obstacle look-ahead (LiDAR 8 -> 10/12 m) -- only after #1.
+3. Feed the 10 m camera obstacle-depth to the actor (forward-only, no floor issue).
+4. More obstacle tokens (5 -> 8) or larger Transformer (dim 64 -> 128).
+Note: each needs a retrain (~30-40 min) + a 128-env eval; there is no zero-cost crash win.
