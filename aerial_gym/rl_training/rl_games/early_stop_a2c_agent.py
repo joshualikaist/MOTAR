@@ -9,7 +9,6 @@ refresh this ``train()`` from the upstream method.
 import os
 import re
 import time
-from copy import deepcopy
 
 import numpy as np
 import torch
@@ -100,36 +99,6 @@ def _read_existing_best_reward(nn_dir: str) -> float:
     return best
 
 
-def _clone_state_tree(value):
-    if isinstance(value, torch.Tensor):
-        return value.detach().clone()
-    if isinstance(value, dict):
-        return {k: _clone_state_tree(v) for k, v in value.items()}
-    if isinstance(value, list):
-        return [_clone_state_tree(v) for v in value]
-    if isinstance(value, tuple):
-        return tuple(_clone_state_tree(v) for v in value)
-    return deepcopy(value)
-
-
-def _parse_best_rollback_config(config_section):
-    if config_section is None or not isinstance(config_section, dict):
-        return None
-    if not config_section.get("enable", False):
-        return None
-    return {
-        "enable": True,
-        "every_epochs": max(1, int(config_section.get("every_epochs", 50))),
-        "min_epoch": int(config_section.get("min_epoch", 100)),
-        "drop_from_best": max(0.0, float(config_section.get("drop_from_best", 0.15))),
-        "min_reward_gap": max(0.0, float(config_section.get("min_reward_gap", 80.0))),
-        "min_best_reward": float(config_section.get("min_best_reward", 300.0)),
-        "patience_epochs": max(0, int(config_section.get("patience_epochs", 0))),
-        "cooldown_epochs": max(0, int(config_section.get("cooldown_epochs", 0))),
-        "restore_optimizer": bool(config_section.get("restore_optimizer", True)),
-    }
-
-
 class EarlyStopA2CAgent(A2CAgent):
     def write_stats(
         self,
@@ -188,7 +157,6 @@ class EarlyStopA2CAgent(A2CAgent):
         if pending is None or self.writer is None:
             return
         epoch_num = int(pending["epoch_num"])
-        rollback_event = getattr(self, "_aerial_last_rollback_event", None)
         write_aerial_epoch_scalars(
             self.writer,
             epoch_num,
@@ -216,12 +184,6 @@ class EarlyStopA2CAgent(A2CAgent):
                 self.writer.add_scalar("stability/best_reward", float(self.last_mean_rewards), epoch_num)
             except (TypeError, ValueError):
                 pass
-        rollback_now = bool(rollback_event and rollback_event.get("epoch") == epoch_num)
-        self.writer.add_scalar("stability/best_rollback", 1.0 if rollback_now else 0.0, epoch_num)
-        if rollback_now:
-            self.writer.add_scalar("stability/rollback_current_reward", rollback_event["current_reward"], epoch_num)
-            self.writer.add_scalar("stability/rollback_to_reward", rollback_event["best_reward"], epoch_num)
-            self.writer.add_scalar("stability/rollback_to_epoch", rollback_event["best_epoch"], epoch_num)
         try:
             self.writer.flush()
         except Exception:
@@ -236,77 +198,6 @@ class EarlyStopA2CAgent(A2CAgent):
                 f.write(f"epoch={epoch_num}\n")
         except OSError:
             pass
-
-    def _capture_aerial_best_snapshot(self, reward: float, epoch_num: int, *, include_optimizer: bool) -> None:
-        snapshot = {
-            "reward": float(reward),
-            "epoch": int(epoch_num),
-            "model": _clone_state_tree(self.model.state_dict()),
-        }
-        if getattr(self, "has_central_value", False):
-            snapshot["central_value"] = _clone_state_tree(self.central_value_net.state_dict())
-        opt = getattr(self, "optimizer", None)
-        if include_optimizer and opt is not None:
-            snapshot["optimizer"] = _clone_state_tree(opt.state_dict())
-        self._aerial_best_snapshot = snapshot
-
-    def _restore_aerial_best_snapshot(self, cfg, current_reward: float, epoch_num: int) -> bool:
-        snapshot = getattr(self, "_aerial_best_snapshot", None)
-        if not snapshot:
-            return False
-        best_reward = float(snapshot["reward"])
-        if best_reward < cfg["min_best_reward"]:
-            return False
-        every = int(cfg["every_epochs"])
-        if epoch_num < cfg["min_epoch"]:
-            return False
-        periodic_due = epoch_num % every == 0
-        gap = max(cfg["min_reward_gap"], abs(best_reward) * cfg["drop_from_best"])
-        if current_reward >= best_reward - gap:
-            self._aerial_rollback_state = {
-                **getattr(self, "_aerial_rollback_state", {}),
-                "below_count": 0,
-            }
-            return False
-
-        state = getattr(self, "_aerial_rollback_state", {})
-        below_count = int(state.get("below_count", 0)) + 1
-        last_restore_epoch = int(state.get("last_restore_epoch", -1000000000))
-        patience = int(cfg["patience_epochs"])
-        cooldown = int(cfg["cooldown_epochs"])
-        patience_due = patience > 0 and below_count >= patience
-        cooldown_ok = (epoch_num - last_restore_epoch) >= cooldown
-        self._aerial_rollback_state = {
-            "below_count": below_count,
-            "last_restore_epoch": last_restore_epoch,
-        }
-        if not (periodic_due or patience_due) or not cooldown_ok:
-            return False
-
-        self.model.load_state_dict(snapshot["model"])
-        if getattr(self, "has_central_value", False) and "central_value" in snapshot:
-            self.central_value_net.load_state_dict(snapshot["central_value"])
-        opt = getattr(self, "optimizer", None)
-        if cfg["restore_optimizer"] and opt is not None and "optimizer" in snapshot:
-            opt.load_state_dict(snapshot["optimizer"])
-
-        self._aerial_collapse_stop_state = {"peak": best_reward, "below_count": 0}
-        self._aerial_rollback_state = {"below_count": 0, "last_restore_epoch": int(epoch_num)}
-        self._aerial_last_rollback_event = {
-            "epoch": int(epoch_num),
-            "current_reward": float(current_reward),
-            "best_reward": float(best_reward),
-            "best_epoch": int(snapshot["epoch"]),
-            "gap": float(gap),
-        }
-        print(
-            "[aerial RL] Best rollback: "
-            f"epoch {epoch_num}, current reward {current_reward:.1f} "
-            f"< best {best_reward:.1f} − gap {gap:.1f}; "
-            f"restored snapshot from epoch {snapshot['epoch']}.",
-            flush=True,
-        )
-        return True
 
     def train(self):
         self.init_tensors()
@@ -326,21 +217,6 @@ class EarlyStopA2CAgent(A2CAgent):
 
         early_cfg = parse_early_stop_stable_config(self.config.get("early_stop_stable"))
         collapse_cfg = parse_early_stop_collapse_config(self.config.get("early_stop_collapse"))
-        rollback_cfg = _parse_best_rollback_config(self.config.get("best_rollback"))
-        if rollback_cfg is not None:
-            self._capture_aerial_best_snapshot(
-                self.last_mean_rewards,
-                0,
-                include_optimizer=rollback_cfg["restore_optimizer"],
-            )
-            if getattr(self, "global_rank", 0) == 0:
-                print(
-                    "[aerial RL] Best rollback enabled: "
-                    f"every {rollback_cfg['every_epochs']} epochs, "
-                    f"drop_from_best={rollback_cfg['drop_from_best']:.2f}, "
-                    f"min_gap={rollback_cfg['min_reward_gap']:.1f}.",
-                    flush=True,
-                )
 
         if self.multi_gpu:
             torch.cuda.set_device(self.local_rank)
@@ -492,12 +368,6 @@ class EarlyStopA2CAgent(A2CAgent):
                             print("saving next best rewards: ", mean_rewards)
                             self.last_mean_rewards = current_mean_reward
                             self.save(os.path.join(self.nn_dir, self.config["name"]))
-                            if rollback_cfg is not None:
-                                self._capture_aerial_best_snapshot(
-                                    current_mean_reward,
-                                    epoch_num,
-                                    include_optimizer=rollback_cfg["restore_optimizer"],
-                                )
 
                             if "score_to_win" in self.config:
                                 if self.last_mean_rewards > self.config["score_to_win"]:
@@ -505,17 +375,6 @@ class EarlyStopA2CAgent(A2CAgent):
                                     self.save(os.path.join(self.nn_dir, checkpoint_name))
                                     should_exit = True
                                     pending_exit_reason = "score_to_win"
-
-                        if (
-                            rollback_cfg is not None
-                            and not should_exit
-                            and getattr(self, "global_rank", 0) == 0
-                        ):
-                            self._restore_aerial_best_snapshot(
-                                rollback_cfg,
-                                current_mean_reward,
-                                epoch_num,
-                            )
 
                     try:
                         (

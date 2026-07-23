@@ -43,8 +43,6 @@ def _allow_print(*args: object) -> bool:
         return True
     if "[aerial RL] Early stop" in msg:
         return True
-    if "[aerial RL] Best rollback" in msg:
-        return True
     if msg.strip() in ("MAX EPOCHS NUM!", "MAX FRAMES NUM!"):
         return True
     if msg.startswith("WARNING: Max epochs") or msg.startswith("WARNING: Max frames"):
