@@ -133,3 +133,43 @@ Ranked (reward tuning excluded -- prior 3 null results, crash is geometric):
 3. Feed the 10 m camera obstacle-depth to the actor (forward-only, no floor issue).
 4. More obstacle tokens (5 -> 8) or larger Transformer (dim 64 -> 128).
 Note: each needs a retrain (~30-40 min) + a 128-env eval; there is no zero-cost crash win.
+
+## Candidate #1 RESULT: altitude PI-hold -- CONFIRMED WIN (2026-07-24) -- results/altitude_pi_speed_axis.csv
+
+Root cause: `lee_velocity_control.compute_acceleration` always passes `setpoint_position=self.robot_position`,
+so the low-level position-error term is permanently zero -- the controller is pure velocity-tracking. The
+task-level altitude hold (`vz = clamp(4*z_err, +-mv)`) is a bare P loop on top of that, and during sustained
+lateral+yaw weaving the attitude-tracking transient (desired vs actual body-z axis) biases achieved vertical
+accel low even though thrust has headroom (T/W ~= 3.3) -- P alone settles to a nonzero steady-state sag.
+Fix (uncommitted, navrl_task.py): PI, not P -- `vz = clamp(4*z_err + Ki*integral(z_err dt), +-mv)`, Ki=1.0,
+anti-windup clamp to +-mv/Ki, integral reset every episode in reset_idx.
+
+Validated in two stages:
+1. **Stability**: warm-started from the 98.6% peak, ran ~450 epochs (3344->3800), 18 crashdiag samples --
+   `below` stayed in a 0-5.6% band throughout (vs the 39%/71% floor-strike blowups seen earlier this
+   session under weaker altitude authority). Reward/capture/crash all stayed in normal healthy ranges, no
+   NaN.
+2. **Held-out eval** (128 envs, 2049 episodes/cell, deterministic, same grid as the baseline), checkpoint =
+   this run's best-reward `gen_ppo.pth` (epoch ~3800, reward ~161):
+
+   | target | baseline capture | PI capture | baseline crash | PI crash |
+   |---|---|---|---|---|
+   | 0.0  | 0.741 | **0.804** | 0.251 | **0.191** |
+   | 0.5  | 0.762 | **0.822** | 0.238 | **0.178** |
+   | 0.75 | 0.755 | **0.813** | 0.245 | **0.187** |
+   | 1.0  | 0.744 | **0.808** | 0.256 | **0.192** |
+   | 1.25 | 0.724 | **0.786** | 0.275 | **0.214** |
+   | 1.5  | 0.686 | **0.778** | 0.314 | **0.222** |
+   | **mean** | **0.735** | **0.802** | **0.263** | **0.197** |
+
+   **capture +6.7pt / crash -6.6pt on average, uniform across every target speed** (biggest gain at the
+   fastest target, 1.5 m/s: +9.2pt). `below` (floor strikes) is now 1.6-2.3% of crashes at every speed --
+   effectively solved. `bar_contact` remains the largest single crash cause (54-64% of crashes) but its
+   absolute rate fell along with the total. **New finding**: `oob` (arena exit, overwhelmingly the N wall)
+   is now 34-44% of crashes -- floor strikes were masking how much drift-out was already happening.
+
+Next candidates, in order:
+2. Extend LiDAR look-ahead 8 -> 10/12 m -- now unlocked (altitude no longer sags under heavier weaving).
+3. Investigate the N-wall `oob` drift specifically (new leading secondary cause, wasn't visible before #1).
+4. Feed 10 m camera depth to actor.
+5. More obstacle tokens (5 -> 8) or larger Transformer.

@@ -266,6 +266,7 @@ class NavRLTask(BaseTask):
             )
         self.command = torch.zeros((self.num_envs, 4), device=self.device)  # controller input
         self._yaw_cmd = torch.zeros(self.num_envs, device=self.device)  # (b) current-step yaw action a[:,3], penalized quadratically (magnitude damping)
+        self._z_err_integral = torch.zeros(self.num_envs, device=self.device)  # altitude-hold PI integral term (see transform_action_to_command)
         self.infos = {}
         self.num_task_steps = 0
 
@@ -867,6 +868,7 @@ class NavRLTask(BaseTask):
             start_pos[:, 2], self.target_position[env_ids, 2]
         )
         self.prev_vel_w[env_ids] = 0.0
+        self._z_err_integral[env_ids] = 0.0  # fresh episode -> no carried-over altitude-hold bias
         # Seed the PBRS/segment-capture buffers with the spawn state. First-step progress is then
         # ||start - target|| - gamma*||pos - target||, identical to the old prev_dist seeding.
         self.prev_pos[env_ids] = start_pos
@@ -916,8 +918,19 @@ class NavRLTask(BaseTask):
         # floor strikes (below 0% -> 71%). NOTE: there is NO floor mesh to hit (create_ground_plane
         # =False; the warp LiDAR raycasts only bar meshes), so this is a control-authority fix, not a
         # perception one. Match the lateral command's gain and authority so vertical recovery keeps up.
+        # PI, not just P: sustained lateral+yaw weaving holds the vehicle tilted for multi-step
+        # bursts, and during that tilt the attitude-tracking transient (desired vs actual body-z
+        # axis) biases the achieved vertical acceleration low even though thrust magnitude has
+        # plenty of headroom (T/W ~= 3.3) -- a proportional term alone settles to a nonzero
+        # steady-state z_err under a persistent bias. The integral term removes that steady-state
+        # sag; anti-windup clamp keeps it from overshooting once the bias clears (e.g. after a
+        # crash-avoidance turn ends). Reset per-episode in reset_idx.
         _mv = self.task_config.max_velocity
-        self.command[:, 2] = torch.clamp(4.0 * z_err, -_mv, _mv)
+        self._z_err_integral += z_err * self.step_dt
+        _ki = 1.0
+        _i_bound = _mv / _ki
+        self._z_err_integral.clamp_(-_i_bound, _i_bound)
+        self.command[:, 2] = torch.clamp(4.0 * z_err + _ki * self._z_err_integral, -_mv, _mv)
         # (b) learned yaw-rate: action[:, 3] in [-1, 1] -> euler yaw-rate (was held at 0). yaw_rate_max
         # matches the NavRL-scoped controller clamp (2.5 rad/s) so the mapping is linear (no dead band).
         self._yaw_cmd[:] = torch.clamp(actions[:, 3], -1.0, 1.0)
