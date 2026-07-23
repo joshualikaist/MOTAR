@@ -11,6 +11,16 @@ _NAVRL_VISION = os.environ.get("NAVRL_VISION", "0").strip().lower() not in (
     "no",
 )
 
+# LiDAR sensing range. NavRL's spec is 4.0 m (kept as the default for the GT-injected LiDAR task).
+# The sensor-only perception task needs a longer obstacle horizon than 4 m -- at 2 m/s a bar becomes
+# visible only ~2 s before impact, so PPO learned to hover rather than risk approach (see
+# CRASH_TUNING_LOG.md). NAVRL_LIDAR_RANGE overrides it (e.g. 8). MUST match the perception module's
+# lidar_max_range (navrl_task_config.perception.lidar_max_range reads the SAME env var).
+try:
+    _NAVRL_LIDAR_RANGE = float(os.environ.get("NAVRL_LIDAR_RANGE", "").strip() or "4.0")
+except ValueError:
+    _NAVRL_LIDAR_RANGE = 4.0
+
 
 class NavRLLidarConfig(BaseLidarConfig):
     """Ray-cast LiDAR matching NavRL's RayCaster (Xu et al., "NavRL", RA-L 2025).
@@ -39,8 +49,8 @@ class NavRLLidarConfig(BaseLidarConfig):
     horizontal_fov_deg_min = -170.0
     horizontal_fov_deg_max = 180.0
 
-    # --- range: NavRL lidar_range = 4.0 m
-    max_range = 4.0
+    # --- range: NavRL lidar_range = 4.0 m (override with NAVRL_LIDAR_RANGE for the perception task)
+    max_range = _NAVRL_LIDAR_RANGE
     min_range = 0.2
 
     # Out-of-range fill (recomputed here because the base class evaluated these against its own

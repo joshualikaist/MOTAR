@@ -910,7 +910,14 @@ class NavRLTask(BaseTask):
         # a proportional altitude-hold velocity command instead (policy-independent stabilization;
         # the action space is unchanged — the actor still cannot command vertical motion).
         z_err = self.task_config.flight_altitude - self.obs_dict["robot_position"][:, 2]
-        self.command[:, 2] = torch.clamp(2.0 * z_err, -1.0, 1.0)
+        # Symmetric vertical authority. The prior +/-1 m/s hold lost to the +/-2 m/s tilt-induced
+        # altitude sag during sustained lateral+yaw weaving; once the 8 m LiDAR horizon let episodes
+        # survive in open space long enough (bar contacts 76% -> 14%), that latent bleed surfaced as
+        # floor strikes (below 0% -> 71%). NOTE: there is NO floor mesh to hit (create_ground_plane
+        # =False; the warp LiDAR raycasts only bar meshes), so this is a control-authority fix, not a
+        # perception one. Match the lateral command's gain and authority so vertical recovery keeps up.
+        _mv = self.task_config.max_velocity
+        self.command[:, 2] = torch.clamp(4.0 * z_err, -_mv, _mv)
         # (b) learned yaw-rate: action[:, 3] in [-1, 1] -> euler yaw-rate (was held at 0). yaw_rate_max
         # matches the NavRL-scoped controller clamp (2.5 rad/s) so the mapping is linear (no dead band).
         self._yaw_cmd[:] = torch.clamp(actions[:, 3], -1.0, 1.0)

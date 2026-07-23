@@ -88,7 +88,7 @@ class task_config:
     # LiDAR scan geometry -- must stay in sync with NavRLLidarConfig.
     lidar_hbeams = 36
     lidar_vbeams = 4
-    lidar_max_range = 4.0
+    lidar_max_range = _env_float("NAVRL_LIDAR_RANGE", 4.0)  # must match NavRLLidarConfig.max_range
 
     # ------------------------------------------------------------------ Phase-3 vision pivot
     class vision:
@@ -166,7 +166,7 @@ class task_config:
         history_steps = 5
         history_interval_s = 0.5
         max_obstacles = 5
-        lidar_max_range = 4.0
+        lidar_max_range = _env_float("NAVRL_LIDAR_RANGE", 4.0)  # obstacle horizon; matches the LiDAR sensor
         min_target_pixels = _env_int("NAVRL_DETECTOR_MIN_PIXELS", 2)
         pixel_threshold = _env_float("NAVRL_DETECTOR_THRESHOLD", 0.55)
         detector_checkpoint = os.environ.get("NAVRL_DETECTOR_CHECKPOINT", "")
