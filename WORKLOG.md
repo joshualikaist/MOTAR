@@ -487,3 +487,105 @@ semantic target mask/id를 받아 추격하면 안 된다. camera RGB-D와 LiDAR
   latency, noise, calibration perturbation fine-tuning을 필수 단계로 추가했다.
 - 구현 순서: **information firewall → dual-sensor detector → fusion/tracker → 17-token Transformer →
   perturbation-aware fine-tuning → PPO**.
+
+---
+
+## 2026-07-23 — Perception+Transformer 초기 학습 run 정리 (중단 사유 기록)
+
+`NAVRL_PERCEPTION=1` + `ppo_navrl_perception_transformer.yaml` 첫 본학습 시도들. 아래 run·로그는
+학습 가치 없거나 붕괴된 것으로 판단해 **삭제함** (`runs/` + `train_session_logs/`). **유지:**
+진행 중인 `ppo_260723_1241_navrl` (12:41 시작, tuned env).
+
+| run / log | ep | peak cap | 종료 이유 |
+|---|---|---|---|
+| `ppo_260722_1928` / `train_260722_1928` | 615 | 3.8%@443 | **수동 중단.** perception Transformer 첫 시도(128env, 밀도 커리큘럼 on, 25막대). 최종 crash **100%**·cap 0% — from-scratch로는 학습 신호 없음. |
+| `train_260722_2044` | 0 | — | **즉시 실패.** conda 미활성화로 `ModuleNotFoundError: yaml`. run 폴더 없음. |
+| `ppo_260722_2045` / `train_260722_2045` | 256 | 6.1%@81 | **수동 중단.** **48막대**로 시작(설정 실수로 추정). crash 97%·cap 3% — perception cold-start에 밀도 과다. |
+| `ppo_260722_2058` / `train_260722_2058` | 4074 | 4.8%@91 | **포기.** 거리 커리큘럼 기본 `K_FINAL=24`가 ep~3000에 k_max=24 m까지 올라갔으나 cap은 ep1000 이후 **0% 고착**, crash **100%**. perception from-scratch에 원거리 커리큘럼이 너무 공격적. |
+| `train_260722_2342` | +124 | — | 2058 resume 시도(`last_gen ep3950`). ep3950→4074만 추가 후 중단 — resume도 회복 불가 확인. |
+| `ppo_260722_2349` / `train_260722_2349` | 63 | 21.6%@54 | **조기 중단.** fresh restart, 초반 cap 13~22%로 1928/2058보다 나았으나 레시피 재튜닝 위해 중단. |
+| `ppo_260723_0011` / `train_260723_0011` | 1051 | **42.9%@314** | **수동 중단 (NaN 붕괴).** ep314까지 유망(cap 43%, crash 36%) → ep~348부터 PPO gradient **NaN** → 100% timeout·reward NaN. ckpt unusable. |
+| `ppo_260723_0225` / `train_260723_0225` | 1111 | 6.7%@79 | **수동 중단 (NaN).** 0011과 동일 패턴 — 초반 미약, 후반 NaN/timeout 붕괴. |
+| `ppo_260723_1138` / `train_260723_1138` | 1563 | **48.3%@755** | **수동 중단 (정책 퇴화).** ep755 peak 48% → ep1563 cap 14%/crash 86%로 퇴화. `K_COMPETENCE`·`LIDAR_RANGE=8`·`K_FINAL=16` 등으로 **1241 run 재시작**. |
+
+**교훈:** (1) perception cold-start는 25막대·얕은 목표(≤16 m) 고정부터. (2) default `K_FINAL=24` 거리 커리큘럼은 Transformer+detector 경로에 부적합.
+(3) NaN은 ep300~500대에서 발생 — lr/grad clip/mean_std 안정화 점검 필요. (4) 1138→1241 전환 env:
+`NAVRL_CRASH_DIAG=1 NAVRL_LIDAR_RANGE=8 NAVRL_K_COMPETENCE=1 NAVRL_K_FINAL=16 NAVRL_FOV_CURRICULUM_EPOCHS=1000000 NAVRL_NUM_BARS=25`.
+
+---
+
+## 2026-07-23 (저녁) — Perception+Transformer 2차 run 정리
+
+1241 tuned run 이후 same-day 추가 시도들. **첫 perception 성공 run = `ppo_260723_1509`** (peak cap **98.6%@ep3343**,
+`checkpoints_saved/peak_cap986_r165_ep3343*.pth` 보존). **현재 학습 중 = `ppo_260723_2210`** (peak ckpt에서 resume).
+
+| run / log | ep | peak cap | 종료 이유 |
+|---|---|---|---|
+| `ppo_260723_1241` / `train_260723_1241` | 705 | 68.3%@136 | **수동 중단.** k_max **7 m에 고착**(거리 커리큘럼 미승급). peak 68%→final 46%. 1330/1509 레시피로 교체. |
+| `ppo_260723_1311` / `train_260723_1311` | 584 | 20.0%@83 | **수동 중단 (NaN).** 1241과 중복 fresh start. ep~93부터 NaN → 100% timeout. |
+| `ppo_260723_1330` / `train_260723_1330`, `train_260723_1418` | 1263 | **97.0%@488** | **수동 중단.** k_max=16 레시피 첫 성공(peak 97%). ep1263 final 72% — 1509 fresh restart로 교체. 1418=1330 resume 로그. |
+| `ppo_260723_1424` / `train_260723_1424` | 607 | 17.3%@115 | **수동 중단 (NaN).** 1330/1509와 병렬 fresh start. ep~122부터 NaN. |
+| `ppo_260723_1509` / `train_260723_1509` | **10000** | **98.6%@3343** | **완주(max_epochs).** perception+Transformer **첫 본학습 성공**. ep5000 cap 83% 유지 → ep~7000 NaN/timeout 붕괴(loiter farming). **평가·resume은 peak ckpt 사용** (`gen_ppo`=후반 loiter 함정). |
+| `train_260723_1535`, `train_260723_1559` | — | — | 1509 resume 시도 로그(`gen_ppo`, `last_gen ep1000`). gen_ppo=저밀도/loiter ckpt라 무의미 — 세션 로그만 삭제. |
+| `ppo_260723_2105` / `train_260723_2105` | 4267 | 96.2%@3792 | **수동 중단 (NaN).** 1509 `gen_ppo_rlnorm`에서 resume(잘못된 ckpt). ep3792 잠깐 96% → NaN 붕괴. peak ckpt resume으로 2210 전환. |
+
+**유지:** `ppo_260723_1509_navrl`(1.5 GB, peak ckpt 원본), `ppo_260723_2210_navrl`(진행 중, peak ckpt resume),
+`checkpoints_saved/peak_cap986_r165_ep3343*.pth`.
+
+**교훈:** (1) 거리 커리큘럼 k_max=16 승급이 핵심(1241은 k=7 고착). (2) 1509 완주 후 **gen_ppo로 resume 금지** — peak cap ckpt만.
+(3) NaN은 여전히 ep100~700대 random hit; peak ckpt resume(2210)은 ep3790 cap 82%로 정상.
+
+---
+
+## 2026-07-23~24 — 센서 전용 이동표적 요격 검증 + 급사(sudden NaN) 근본원인 수정 + 정직한 baseline
+
+`checkpoints_saved/peak_cap986_r165_ep3343.pth`(98.6% 학습피크)를 기반으로 (1) 속도를 줄이지 않고
+올리는 방향으로 이동표적 요격을 검증하고, (2) 반복적으로 학습을 죽이던 급사(sudden NaN)의 진짜
+원인을 특정·수정하고, (3) 파라미터 튜닝의 기준이 될 정직한 baseline을 측정했다.
+
+### 속도 상향 + 이동표적 요격 (검증 완료)
+`NAVRL_YAW_RATE_MAX=3.0`(task+`lee_controller_config_navrl` 동시 상향, 2.0m/s에서 이미 위빙이
+2.4/2.5rad/s를 요구 → 요레이트가 진짜 기동 한계, 추력 아님, T/W≈3.3) + `NAVRL_MAX_VELOCITY=2.5` +
+`NAVRL_TARGET_SPEED_FINAL` 램프(0→1.5m/s)로 재학습. capture는 표적속도 전 구간에서 ~0.8 유지 —
+드론이 표적보다 충분히 빠르면 속도 자체는 병목이 아님을 확인.
+
+### ★ 급사 NaN의 근본원인 (수정: `navrl_transformer_network.py:149`, 커밋 `bb0faa7`)
+건강하게 capture 0.8~0.9로 돌던 run이 ~epoch 5000대에서 a_loss가 **단 한 스텝**에 NaN → hover 붕괴하는
+패턴이 반복(entropy_coef 0.005·0.003 둘 다). NaN 직전 c_loss/kl/explained_variance는 전부 정상이었고
+**ppo/entropy만 ~16(σ≈13)**으로 튀어 있었다 — 점진적 과학습이 아니라 값 자체의 발산이었다.
+기전: `fixed_sigma=True` + `entropy_coef>0`에서 log-std에 **상한이 없어**, 난이도가 오르며 정책손실의
+하방압은 약해지고 엔트로피 보너스는 계속 σ를 밀어올려 σ가 1→13까지 표류 → PPO log-prob/gradient가
+오버플로. **수정**: `forward()`에서 `log_std = (mu*0.0 + self.sigma).clamp(-5.0, 0.4)`(σ≤1.49,
+entropy≤~7.3)로 σ=13 도달 자체를 봉쇄. **검증**: 98.6% 피크에서 warm-start해 옛 사망지점 epoch 5178을
+건강하게 통과(entropy 평탄 ~4.4, capture 0.86~0.91, NaN 없음).
+
+### eval 크래시 = Isaac Gym 진단 메시지(우리 버그 아님) + eval은 128 envs
+`*** Can't create empty tensor`는 Isaac Gym 빌드타임 진단이 train에서는 조용 래퍼로 숨겨지고 play에서만
+노출되는 것뿐, 무해함. 512-env eval이 실제로 죽는 이유는 **VRAM OOM**(512개 perception 카메라 @ 8GB).
+128 envs(=학습값)로 하면 정상 동작. 512는 사용 금지.
+
+### 정직한 baseline (측정 잣대) — `results/baseline_speed_axis_peak986.csv`
+98.6% 피크 정책, 25막대·목표 13-16m·드론 2.5m/s·deterministic·2049 episode/셀:
+
+| target speed | capture | crash | timeout |
+|---|---|---|---|
+| 0.0 | 0.741 | 0.251 | 0.008 |
+| 0.5 | 0.762 | 0.238 | 0.000 |
+| 0.75 | 0.755 | 0.245 | 0.001 |
+| 1.0 | 0.744 | 0.256 | 0.000 |
+| 1.25 | 0.724 | 0.275 | 0.001 |
+| 1.5 | 0.686 | 0.314 | 0.000 |
+
+**capture가 표적속도에 거의 평탄(0.74 근처, timeout≈0) — 병목은 표적속도가 아니라 막대충돌(~25%)이다.**
+"25막대인데 충돌은 용납 못한다"는 문제의식이 데이터로 확증됨. 학습곡선 피크 0.986 vs 이 고정평가
+0.74가 정직한 train↔eval 갭.
+
+### 다음: 충돌 저감 튜닝, 파라미터 1개씩 (각각 이 baseline 0.74/0.25 대비 측정)
+보상 재조정은 과거 3회 연속 무효였던 레버라 제외(충돌은 기하 문제로 판단). 순위:
+1. **고도 z-position 피드백** — 인에이블러, 가장 짧음. look-ahead 확장 시 바닥 sag 재발을 막는 전제조건.
+2. LiDAR look-ahead 8→10/12m (①이 검증된 뒤에만).
+3. 10m 카메라 depth를 actor에 전달 (전방향only, 바닥 무관).
+4. 장애물 토큰 5→8 또는 Transformer dim 64→128 (`MAX_OBSTACLES`, 저위험이나 obs shape 변경 → fresh 재학습).
+
+각 실험당 재학습 ~30-40분 + 128-env eval 필요, 무비용 충돌개선 레버는 없음. 상세 = `CRASH_TUNING_LOG.md`
+Session 2 섹션. 커밋: `bb0faa7`(코드), `ccb979b`(문서+baseline CSV).
