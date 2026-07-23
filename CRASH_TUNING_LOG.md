@@ -173,3 +173,25 @@ Next candidates, in order:
 3. Investigate the N-wall `oob` drift specifically (new leading secondary cause, wasn't visible before #1).
 4. Feed 10 m camera depth to actor.
 5. More obstacle tokens (5 -> 8) or larger Transformer.
+
+## N-wall oob investigation -- starting hypothesis (2026-07-24, not yet investigated)
+
+oob detection: `navrl_task.py:1070-1111`, N = `pos[:,1] > b_max[:,1] + oob_margin` (lateral/y-axis,
+positive direction). Crash breakdown consistently shows N >> S,E,W (e.g. speed 1.0: N=122 vs
+S=26,E=1,W=0 -- N is ~80% of all oob exits, not just the plurality).
+
+Hypotheses to check first (cheap, no retrain needed -- code/data inspection only):
+1. **Goal-y sampling asymmetry**: goal y is "free across the arena minus wall margin" (reset_idx,
+   ~line 774) -- check whether the sampling is actually symmetric around the arena y-centerline, or
+   biased toward +y (N), which would pull the drone's whole trajectory (and evasive excursions)
+   toward the N wall.
+2. **Bar layout asymmetry**: random bar placement (asset_manager) could be denser near the S side by
+   chance-of-seed, statistically forcing evasive maneuvers northward.
+3. **oob_margin too tight relative to weave amplitude**: now that altitude is fixed and the drone
+   flies more assertively (higher effective speed/aggression in dodges), lateral excursion amplitude
+   during a dodge may routinely exceed the fence's margin on whichever side the dodge happens to go.
+   If (1)/(2) rule out systematic bias, check whether just widening the arena y-bound or oob_margin
+   (vision-only, cosmetic) removes most N exits without touching reward/behavior.
+
+Do NOT touch reward shaping. This is a placement/geometry lens first (same discipline as the
+corner-clip diagnosis that led to the yaw-rate fix earlier this project).
