@@ -1,28 +1,28 @@
 {
-  "generated_at": "2026-07-22T04:09:55.695091+00:00",
+  "generated_at": "2026-07-23T15:53:14.452779+00:00",
   "repo": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator",
-  "n_runs": 18,
+  "n_runs": 19,
   "latest_run": {
-    "run": "ppo_260719_1000_navrl",
-    "finalized_at": "2026-07-21T21:58:48.758247+00:00",
+    "run": "ppo_260723_1509_navrl",
+    "finalized_at": "2026-07-23T12:00:42.396770+00:00",
     "exit_reason": "max_epochs",
-    "epochs_logged": 12000,
+    "epochs_logged": 10000,
     "first_epoch": 1,
-    "last_epoch": 12000,
+    "last_epoch": 10000,
     "is_navrl": true,
-    "last_mean_reward": 119.41085815429688,
-    "last_mean_episode_length": 103.70968627929688,
-    "last_captured_rate": 0.4489795918367347,
-    "last_crash_rate": 0.5408163265306123,
-    "last_timeout_rate": 0.01020408163265306,
-    "last_closest_approach_m": 0.5754736026128133,
-    "last_closest_min_m": 0.22760163247585297,
-    "last_curriculum_max_m": 24.0,
-    "last_n_bars_active": 115,
-    "peak_captured_rate": 0.971154,
-    "peak_captured_epoch": 3764,
-    "peak_mean_reward": 248.698,
-    "peak_epoch": 5647,
+    "last_mean_reward": NaN,
+    "last_mean_episode_length": 300.99945068359375,
+    "last_captured_rate": 0.0,
+    "last_crash_rate": 0.0,
+    "last_timeout_rate": 1.0,
+    "last_closest_approach_m": NaN,
+    "last_closest_min_m": NaN,
+    "last_curriculum_max_m": 16.0,
+    "last_n_bars_active": 25,
+    "peak_captured_rate": 0.9863013698630136,
+    "peak_captured_epoch": 3343,
+    "peak_mean_reward": 165.17112731933594,
+    "peak_epoch": 3343,
     "reward_collapse": false
   },
   "runs": [
@@ -439,9 +439,70 @@
       "peak_mean_reward": 248.698,
       "peak_epoch": 5647,
       "reward_collapse": false
+    },
+    {
+      "run": "ppo_260723_1509_navrl",
+      "finalized_at": "2026-07-23T12:00:42.396770+00:00",
+      "exit_reason": "max_epochs",
+      "epochs_logged": 10000,
+      "first_epoch": 1,
+      "last_epoch": 10000,
+      "is_navrl": true,
+      "last_mean_reward": NaN,
+      "last_mean_episode_length": 300.99945068359375,
+      "last_captured_rate": 0.0,
+      "last_crash_rate": 0.0,
+      "last_timeout_rate": 1.0,
+      "last_closest_approach_m": NaN,
+      "last_closest_min_m": NaN,
+      "last_curriculum_max_m": 16.0,
+      "last_n_bars_active": 25,
+      "peak_captured_rate": 0.9863013698630136,
+      "peak_captured_epoch": 3343,
+      "peak_mean_reward": 165.17112731933594,
+      "peak_epoch": 3343,
+      "reward_collapse": false
     }
   ],
   "density_curves": {
+    "baseline_speed_axis_peak986": [
+      {
+        "# BASELINE speed-axis eval -- 98.6%-peak perception policy (checkpoints_saved/peak_cap986_r165_ep3343.pth)": null,
+        "null": null
+      },
+      {
+        "# BASELINE speed-axis eval -- 98.6%-peak perception policy (checkpoints_saved/peak_cap986_r165_ep3343.pth)": null,
+        "null": null
+      },
+      {
+        "# BASELINE speed-axis eval -- 98.6%-peak perception policy (checkpoints_saved/peak_cap986_r165_ep3343.pth)": null,
+        "null": null
+      },
+      {
+        "# BASELINE speed-axis eval -- 98.6%-peak perception policy (checkpoints_saved/peak_cap986_r165_ep3343.pth)": 0.0,
+        "null": null
+      },
+      {
+        "# BASELINE speed-axis eval -- 98.6%-peak perception policy (checkpoints_saved/peak_cap986_r165_ep3343.pth)": 0.5,
+        "null": null
+      },
+      {
+        "# BASELINE speed-axis eval -- 98.6%-peak perception policy (checkpoints_saved/peak_cap986_r165_ep3343.pth)": 0.75,
+        "null": null
+      },
+      {
+        "# BASELINE speed-axis eval -- 98.6%-peak perception policy (checkpoints_saved/peak_cap986_r165_ep3343.pth)": 1.0,
+        "null": null
+      },
+      {
+        "# BASELINE speed-axis eval -- 98.6%-peak perception policy (checkpoints_saved/peak_cap986_r165_ep3343.pth)": 1.25,
+        "null": null
+      },
+      {
+        "# BASELINE speed-axis eval -- 98.6%-peak perception policy (checkpoints_saved/peak_cap986_r165_ep3343.pth)": 1.5,
+        "null": null
+      }
+    ],
     "vision_density_curve": [
       {
         "density_bars": 25.0,

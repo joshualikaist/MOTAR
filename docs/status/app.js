@@ -362,39 +362,45 @@ function renderRuns(s){
 /* Diagnosis + perception-first implementation plan. */
 function renderStatic(){
   document.getElementById('diagnosis').innerHTML=`
-    <div class="callout"><h3>확인된 것 · navigation 난이도와 고밀도 geometry</h3>
-      <p><b>커리큘럼 효과.</b> peak→final 급락에는 밀도와 목표거리가 함께 증가한 영향이 섞여 있습니다.
-        단일 training curve만으로 detector 실패나 정책 붕괴를 주장할 수 없고, 고정 난이도의 held-out 평가가 필요합니다.</p>
-      <p><b>기하학적 바닥.</b> 110→130→150막대에서 충돌이 급증합니다. 배치 최소간격이 포화 시
-        1.5→1.2→0.96 m로 완화되어 일부 통로가 기체 collision envelope보다 좁아집니다.</p></div>
-    <div class="callout"><h3>아직 확인하지 못한 것 · onboard detection과 occlusion recovery</h3>
-      <p>기존 actor는 raw RGB나 raw point cloud를 받지 않고 analytic bearing/range와 semantic target mask를 받습니다.
-        따라서 기존 곡선은 <b>카메라가 표적을 검출했다</b>거나 <b>가림 뒤 재획득했다</b>는 증거가 아닙니다.</p>
-      <p>새 실험은 detection recall/precision, track RMSE, covariance calibration, occlusion duration별 reacquisition time을
-        capture/crash와 함께 보고해야 합니다.</p></div>`;
+    <div class="callout"><h3>확인된 것 · sensor-only 이동표적 요격이 end-to-end로 작동</h3>
+      <p><b>속도 상향 검증.</b> yaw-rate ceiling을 2.5→3.0 rad/s, max_velocity를 2.5 m/s로 올려도(속도를
+        줄이지 않는 방향) 이동표적(최대 1.5 m/s)을 계속 포획합니다. capture는 표적 속도에 <b>거의 평탄
+        (0.74→0.69, 0~1.5 m/s)</b> — 드론이 표적보다 충분히 빠릅니다.</p>
+      <p><b>급사(sudden NaN)의 근본원인을 특정·수정.</b> <code>fixed_sigma=True</code> + entropy bonus 조합에서
+        정책 log-std에 상한이 없어 5000 epoch에 걸쳐 σ가 1→13까지 표류하다 PPO log-prob이 한 스텝에 overflow →
+        NaN → hover 붕괴. log-std를 [-5, 0.4]로 clamp해 재현 실험(옛 사망지점 epoch 5178)을 건강하게 통과시켜
+        검증했습니다.</p></div>
+    <div class="callout"><h3>정직한 baseline · 병목은 표적속도가 아니라 막대충돌</h3>
+      <p>98.6% 학습피크 정책을 128-env·2049 episode/cell로 고정평가(25막대, deterministic)한 결과
+        <b>capture ≈0.74, crash ≈0.25, timeout ≈0</b>(표적속도 전 구간 동일 패턴). 학습곡선의 0.986과
+        평가의 0.74 사이 간극이 정직한 train↔eval gap입니다. hover farming이 아니라 <b>막대 접촉</b>이
+        지배적 실패 원인 — "25막대인데 충돌은 용납 못한다"는 문제의식이 데이터로 확인됩니다.</p></div>`;
 
   document.getElementById('nextplan').innerHTML=`
-    <p class="sub">지금은 기존 policy를 더 오래 학습시키기보다 observation pipeline을 바로잡는 것이 먼저입니다.
-      아래 순서를 통과해야만 “드론이 표적 위치를 직접 탐지한다”는 연구 주장을 할 수 있습니다.</p>
-    <div class="callout"><h3>P0 · 정보 방화벽 — 구현·smoke test 완료</h3>
-      <p>새 actor observation은 semantic target ID와 analytic bearing/range를 사용하지 않습니다. RGB-D/LiDAR가
-        perception module을 거쳐 만든 track과 covariance만 17-token Transformer에 전달됩니다.</p></div>
-    <div class="callout"><h3>P1 · detection → fusion → tracking</h3>
-      <p>카메라 detector가 <b>bar / target drone</b>을 구분하고, depth 또는 LiDAR association으로 3D 위치를 만듭니다.
-        Kalman/IMM 계열 tracker가 위치·속도·covariance·age·visibility를 출력하도록 구성합니다.</p></div>
-    <div class="callout"><h3>P2 · NavRL++-style temporal Transformer actor</h3>
-      <p>ego, target track, obstacle tracks, confidence/covariance, visibility/age를 structured temporal token으로 만들고
-        Transformer가 가림 전후 문맥을 사용하게 합니다. 저밀도·정지 표적에서 시작해 가림 길이와 표적 속도,
-        마지막에 장애물 밀도를 올립니다.</p></div>`;
+    <p class="sub">Perception pipeline(P0-P3)은 이미 작동합니다. 지금 단계는 <b>충돌(crash) 저감을 파라미터
+      하나씩 바꿔가며</b> baseline(capture 0.74 / crash 0.25) 대비로 측정하는 것입니다. 보상 재조정은
+      과거 3회 연속 무효였던 레버라 제외합니다(충돌은 기하학적 문제로 판단).</p>
+    <div class="callout"><h3>① 고도 z-position 피드백 — 인에이블러, 가장 짧음</h3>
+      <p>현재 altitude-hold는 <code>clamp(4·z_err)</code> 오픈루프에 가까운 형태. 제대로 된 고도 제어가
+        있어야 LiDAR look-ahead를 늘려도 바닥 sag로 인한 이차 충돌 없이 확장 가능합니다. 98.6% 피크에서
+        warm-start 가능.</p></div>
+    <div class="callout"><h3>② LiDAR look-ahead 8→10/12 m</h3>
+      <p>①이 검증된 뒤에만 시도(단독 시도 시 위빙 심화→고도 sag로 바닥충돌 재발 이력 있음).</p></div>
+    <div class="callout"><h3>③ 10 m 카메라 depth를 actor에 전달</h3>
+      <p>전방향만 보는 depth라 바닥 이슈와 무관 — obs/네트워크 변경.</p></div>
+    <div class="callout"><h3>④ 장애물 토큰 5→8 또는 Transformer dim 64→128</h3>
+      <p>지금은 한 시점에 최대 5개 장애물만 토큰화되어(<code>MAX_OBSTACLES</code>), 밀집 구간에서 6번째부터
+        정책 입력에서 잘립니다. 코드변경은 상수 수준으로 저위험이나 obs shape 변경으로 fresh 재학습 필요.</p></div>`;
 
   const phases=[
     ['Baseline','navigation·밀도 스윕·geometry 절벽 규명','done'],
     ['P0','GT→actor 정보 방화벽 + structured schema','done'],
-    ['P1','RGB-D/LiDAR detector 학습·held-out 검증','active'],
+    ['P1','RGB-D/LiDAR detector 학습·held-out 검증','done'],
     ['P2','association + Kalman tracker + covariance prototype','done'],
     ['P3','17-token temporal Transformer actor 연결','done'],
-    ['P4','가림 curriculum + 재탐색 behavior','todo'],
-    ['P5','sim-to-real·onboard latency·sensor noise 검증','todo'],
+    ['P4','속도 상향 + 이동표적 요격 검증 + PPO 안정화(σ-clamp)','done'],
+    ['P5','충돌(crash) 저감 튜닝 — 파라미터 1개씩','active'],
+    ['P6','sim-to-real·onboard latency·sensor noise 검증','todo'],
     ['Paper','oracle/perception ablation + 논문화','todo'],
   ];
   document.getElementById('phases').innerHTML=phases.map(p=>{
