@@ -43,7 +43,12 @@ params:
     save_frequency: 50
     score_to_win: 100000
     grad_norm: 1.0
-    entropy_coef: 0.01   # was 0.0 -- with dropout removed AND fixed_sigma, there was NO exploration
+    entropy_coef: 0.003  # 0.01 escaped the early hover trap but, with fixed_sigma, INFLATED sigma
+                         # over long runs (ppo/entropy 5.9 -> 12): the policy peaked (captured 0.986
+                         # @ ep 3343) then the growing action noise degraded it back into a 100%-
+                         # timeout hover with NaN reward by ep 10000. 0.005 slowed the drift but did
+                         # not stop it; 0.003 is low enough to hold sigma while still escaping the
+                         # early hover. (0.0 collapsed early; 0.01/0.005 collapsed late.)
                          # regularizer, so the policy collapsed to the safe hover local optimum
                          # (100% timeout) before learning to capture. A proper PPO entropy bonus
                          # keeps the policy exploring long enough to escape the hover trap.

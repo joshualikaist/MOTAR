@@ -139,5 +139,13 @@ class NavRLTransformerBuilder(NetworkBuilder):
             cls = self.final_norm(encoded[:, 0])
             mu = self.mu(self.actor(cls))
             value = self.value(self.critic(cls))
-            return mu, mu * 0.0 + self.sigma, value, None
+            # Clamp log-std. With fixed_sigma=True + entropy_coef>0 the log-std parameter has NO upper
+            # bound and the entropy bonus inflates it without limit -- over ~5000 epochs sigma drifted
+            # 1 -> ~13 (ppo/entropy 7 -> 16) while capture/value stayed healthy, then at sigma~13 the
+            # PPO log-prob/gradient overflowed to NaN in a SINGLE step (5173: a_loss NaN while c_loss,
+            # kl, explained_variance were all fine) -> weights NaN -> hover collapse. Both 0.005 and
+            # 0.003 entropy_coef died this way (only the drift RATE differed). Bounding log-std to
+            # [-5, 0.4] (sigma in [0.007, 1.49], around the healthy early level) removes the runaway.
+            log_std = (mu * 0.0 + self.sigma).clamp(-5.0, 0.4)
+            return mu, log_std, value, None
 
