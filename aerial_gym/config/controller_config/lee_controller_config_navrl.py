@@ -1,4 +1,12 @@
+import os
+
 from aerial_gym.config.controller_config.lee_controller_config import control as _base
+
+try:
+    # Same env var the task reads, so the two ceilings stay in lockstep (raise to fly faster).
+    _NAVRL_YAW_RATE_MAX = float(os.environ.get("NAVRL_YAW_RATE_MAX", "").strip() or "2.5")
+except ValueError:
+    _NAVRL_YAW_RATE_MAX = 2.5
 
 
 class control(_base):
@@ -11,4 +19,4 @@ class control(_base):
     and every other task using lee_velocity_control keeps the pi/3 clamp unchanged.
     """
 
-    max_yaw_rate = 2.5  # [rad/s]; MUST equal navrl_task_config.yaw_rate_max
+    max_yaw_rate = _NAVRL_YAW_RATE_MAX  # [rad/s]; MUST equal navrl_task_config.yaw_rate_max (same env var)

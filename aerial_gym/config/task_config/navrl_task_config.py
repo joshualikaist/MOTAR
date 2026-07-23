@@ -213,7 +213,10 @@ class task_config:
 
     # (b) Learned yaw control. yaw_rate_max MUST equal lee_controller_config_navrl.max_yaw_rate so
     # action[:, 3] in [-1, 1] maps linearly onto the controller's yaw-rate clamp (no dead band).
-    yaw_rate_max = 2.5          # [rad/s] max commanded euler yaw-rate for action[:, 3]
+    yaw_rate_max = _env_float("NAVRL_YAW_RATE_MAX", 2.5)  # [rad/s] max euler yaw-rate for action[:,3];
+    #   raise (e.g. 3.0) to let a FASTER drone turn its heading fast enough to weave between bars --
+    #   at 2.0 m/s the weave already demands ~2.4 rad/s, so yaw-rate (not tilt/thrust) is the binding
+    #   maneuverability limit. MUST stay equal to lee_controller_config_navrl.max_yaw_rate (same env var).
     yaw_align_speed_ref = 1.0   # [m/s] speed at which the crab-alignment penalty reaches full weight
 
     # 2D navigation: the drone flies at this fixed altitude and tracks the goal in XY only.
