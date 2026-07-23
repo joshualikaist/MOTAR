@@ -32,17 +32,24 @@ params:
     gamma: 0.99
     tau: 0.95
     ppo: True
-    learning_rate: 3e-4
+    # Stability (2026-07-23): a_loss/entropy/KL diverged AFTER the policy started learning (captured
+    # rose to ~0.4 then decayed to ~0.1 at CONSTANT curriculum difficulty). Lowered the actor LR
+    # 3e-4 -> 1e-4 (Transformer policies destabilize at higher LR) and enabled value clipping below;
+    # the real culprit is the privileged critic's fixed 5e-4 LR (fixed further down).
+    learning_rate: 1e-4
     lr_schedule: adaptive
     kl_threshold: 0.016
     save_best_after: 20
     save_frequency: 50
     score_to_win: 100000
     grad_norm: 1.0
-    entropy_coef: 0.0
+    entropy_coef: 0.01   # was 0.0 -- with dropout removed AND fixed_sigma, there was NO exploration
+                         # regularizer, so the policy collapsed to the safe hover local optimum
+                         # (100% timeout) before learning to capture. A proper PPO entropy bonus
+                         # keeps the policy exploring long enough to escape the hover trap.
     truncate_grads: True
     e_clip: 0.2
-    clip_value: False
+    clip_value: True    # was False -- clip value updates to contain the value-driven divergence
     num_actors: 128
     horizon_length: 32
     minibatch_size: 2048
@@ -60,9 +67,9 @@ params:
     central_value_config:
       minibatch_size: 2048
       mini_epochs: 4
-      learning_rate: 5e-4
-      lr_schedule: None
-      clip_value: False
+      learning_rate: 1e-4   # was 5e-4 FIXED -- higher than the actor and non-adaptive, so the
+      lr_schedule: None     # privileged critic diverged and corrupted the actor's advantages.
+      clip_value: True      # was False -- add value clipping; slow the critic to match the actor.
       normalize_input: True
       truncate_grads: True
       grad_norm: 1.0

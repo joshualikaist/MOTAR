@@ -78,7 +78,13 @@ class NavRLTransformerBuilder(NetworkBuilder):
                 d_model=EMBED_DIM,
                 nhead=4,
                 dim_feedforward=128,
-                dropout=0.1,
+                # 0.0, deliberately: rl_games collects rollouts in eval() (masks off) but runs the
+                # 8 minibatch updates in train() (masks re-sampled every forward), so any nonzero
+                # dropout injects mask noise into new_log_prob while old_log_prob stays clean --
+                # corrupting the PPO ratio/KL and misleading the KL-adaptive LR schedule. PPO has
+                # no fixed dataset to overfit; generalization comes from env randomization, and
+                # sensor-level dropout (perception.detection_dropout_prob) is a separate knob.
+                dropout=0.0,
                 activation="relu",
             )
             self.transformer = nn.TransformerEncoder(layer, num_layers=4)
