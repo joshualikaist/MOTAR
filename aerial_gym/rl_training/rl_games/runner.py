@@ -293,6 +293,13 @@ def get_args():
             "finished. By default, checkpoints from finished runs warm-start a new run folder.",
         },
         {
+            "name": "--branch_run",
+            "action": "store_true",
+            "default": False,
+            "help": "Warm-start into a new run folder even when the source run was interrupted. "
+            "Use this when changing the environment/config so the source metrics stay clean.",
+        },
+        {
             "name": "--file",
             "type": str,
             "default": "ppo_aerial_quad.yaml",
@@ -555,6 +562,7 @@ def update_config(config, args):
         )
         reuse_source = bool(
             resumed_root is not None
+            and not args.get("branch_run")
             and (
                 args.get("play")
                 or args.get("resume_in_place")
@@ -566,9 +574,9 @@ def update_config(config, args):
         else:
             task = args.get("task") or _cfg.get("env_name")
             _cfg["full_experiment_name"] = _new_experiment_name(task)
-            if source_finished and not quiet_startup_enabled():
+            if resumed_root is not None and not quiet_startup_enabled():
                 print(
-                    "[aerial RL] source run is already finished; warm-starting a new run folder "
+                    "[aerial RL] warm-starting a new run folder "
                     f"({_cfg['full_experiment_name']}). Use --resume_in_place to override."
                 )
 

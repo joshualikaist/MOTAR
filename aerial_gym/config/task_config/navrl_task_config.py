@@ -134,9 +134,10 @@ class task_config:
 
         # -- reward add-ons (vision mode only)
         visibility_bonus = 0.02     # per-step bonus while the detector sees the target
-        oob_margin = 0.5            # [m] outside the arena bounds by this much -> terminate as a
-                                    # crash (the goal attraction that implicitly kept the drone
-                                    # in-bounds is gone when the target is unobserved)
+        # The arena edge is an artificial task boundary, not physical geometry, so LiDAR cannot
+        # see it. Keep the historical default while allowing checkpoint-only sensitivity sweeps
+        # (no retraining) with NAVRL_OOB_MARGIN=1.0, 2.0, ...
+        oob_margin = _env_float("NAVRL_OOB_MARGIN", 0.5)
 
         # -- cold-start visibility curriculum (vision mode only)
         # The target token is all-zero until the detector first ACQUIRES the target: the KF only
