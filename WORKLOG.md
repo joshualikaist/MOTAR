@@ -619,3 +619,34 @@ sag는 P만으로는 안 지워짐.
 
 **다음 후보(순서)**: ② LiDAR look-ahead 8→10/12m(이제 잠금 해제) ③ N벽 oob drift 원인 조사(새로 부각된
 2차 원인) ④ 카메라 depth→actor ⑤ 장애물 토큰/네트워크 확대.
+
+---
+
+## 2026-07-24 (이어서) — General-spawn G0 파인튜닝 검증 (랜덤 스폰 일반화)
+
+사용자가 후보 ②(LiDAR) 대신 `train_navrl_general_8m_finetune.sh`로 **랜덤 드론/타깃 스폰 일반화**
+파인튜닝을 실행(`NAVRL_GENERAL_TRAIN=1`, PI 체크포인트 ppo_260724_0110에서 +~1200 epoch →
+`ppo_260724_0209_navrl`, LiDAR 8m 유지, OOB_MARGIN=1.0, K_MIN_FINAL=10). 학습은 건강히 완주
+(peak captured 93.7%@ep4256, last 83.8%, NaN 없음).
+
+⚠️ **평가 함정(기록)**: 이 정책을 baseline recipe(고정 스폰)로 평가하면 capture 10%·oob 90%(W벽)로
+완전히 망가진 것처럼 나옴 — 정책이 랜덤 스폰을 학습했는데 고정 스폰으로 재면 분포 불일치. **general
+정책은 반드시 `NAVRL_GENERAL_TRAIN=1`로 평가**해야 함. (체크포인트 env_state에는 n_bars=25,
+k=13-16만 저장되고 GENERAL_TRAIN 플래그는 안 저장되므로 평가 시 수동 지정 필수.)
+
+정상 조건(general-spawn, 128 env, 2049 ep/셀) 6-speed 평가 = `results/general_8m_speed_axis.csv`:
+
+| target | capture | crash | timeout |
+|---|---|---|---|
+| 0.0 | 0.803 | 0.120 | 0.077 |
+| 0.5 | 0.873 | 0.124 | 0.002 |
+| 0.75 | 0.837 | 0.160 | 0.003 |
+| 1.0 | 0.850 | 0.146 | 0.004 |
+| 1.25 | 0.837 | 0.161 | 0.002 |
+| 1.5 | 0.819 | 0.180 | 0.001 |
+| **평균** | **0.836** | **0.149** | **0.015** |
+
+랜덤 스폰 일반화에도 capture 0.836/crash 0.149로 견고(oob는 margin 1.0 덕에 4~8%로 억제). **단,
+스폰 분포가 달라 baseline(0.735)·PI-only(0.802)와 직접 비교 불가** — 이건 general-spawn 체제의 새
+measuring stick. `below`가 crash의 10~18%로 다시 보이는데, 이 역시 다른 분포에서의 값이라 PI-only
+평가(1.6~2.3%)와 직접 비교하면 안 됨.
