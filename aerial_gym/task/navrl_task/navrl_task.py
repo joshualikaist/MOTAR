@@ -1,5 +1,7 @@
+import json
 import math
 import os
+from pathlib import Path
 
 import numpy as np
 import torch
@@ -335,11 +337,16 @@ class NavRLTask(BaseTask):
         self.general_spawn_mode = self.general_eval_mode or self.general_train_mode
         self.general_density_min = int(os.environ.get("NAVRL_GENERAL_DENSITY_MIN", "25"))
         self.general_density_max = int(os.environ.get("NAVRL_GENERAL_DENSITY_MAX", "110"))
+        self.general_num_trials = max(1, int(os.environ.get("NAVRL_GENERAL_NUM_TRIALS", "10")))
         self.general_trial_index = 0
         self.general_completed_trials = 0
         self.general_successes = 0
         self.general_crashes = 0
         self.general_timeouts = 0
+        self.general_trial_records = []
+        self._general_results_exported = False
+        self._hud = None
+        self._hud_last_outcome = ""
         if self.general_eval_mode and self.num_envs != 1:
             raise RuntimeError("NAVRL_GENERAL_EVAL currently requires exactly one viewer env.")
         self._interactive_reset_requested = False
@@ -427,8 +434,8 @@ class NavRLTask(BaseTask):
         self._set_active_bars(value, log=False)
         self.general_trial_index += 1
         logger.warning(
-            "NavRL general trial %d/10 | randomized bars=%d"
-            % (self.general_trial_index, value)
+            "NavRL general trial %d/%d | randomized bars=%d"
+            % (self.general_trial_index, self.general_num_trials, value)
         )
 
     def _record_general_result(self, successes, crashes, timeouts, finished):
@@ -441,15 +448,90 @@ class NavRLTask(BaseTask):
         outcome = "captured" if bool(successes.any()) else (
             "crashed" if bool((crashes > 0).any()) else "timeout"
         )
-        logger.warning(
-            "NavRL general result %d/10 | %s"
-            % (min(self.general_completed_trials, 10), outcome)
-        )
-        if self.general_completed_trials >= 10:
-            logger.warning(
-                "NavRL general summary | captured=%d crash=%d timeout=%d / 10"
-                % (self.general_successes, self.general_crashes, self.general_timeouts)
+        env_ids = finished.nonzero(as_tuple=False).squeeze(-1)
+        if env_ids.ndim == 0:
+            env_ids = env_ids.unsqueeze(0)
+        for env_id in env_ids.tolist():
+            self.general_trial_records.append(
+                {
+                    "trial": int(self.general_completed_trials),
+                    "bars": int(self.n_bars_active),
+                    "outcome": outcome,
+                    "min_goal_dist_m": float(self.ep_min_goal_dist[env_id].item()),
+                    "steps": int(self.sim_env.sim_steps[env_id].item()),
+                    "target_speed_mps": float(self._tm_speed[env_id].item()),
+                }
             )
+        logger.warning(
+            "NavRL general result %d/%d | %s"
+            % (
+                min(self.general_completed_trials, self.general_num_trials),
+                self.general_num_trials,
+                outcome,
+            )
+        )
+        if self._hud is not None:
+            from aerial_gym.apps.navrl_3d_hud import NavRL3DHud, build_hud_lines, build_hud_pip
+
+            flash_text = outcome.upper()
+            if outcome == "captured":
+                self._hud.flash(flash_text, color=NavRL3DHud.OK)
+            elif outcome == "crashed":
+                self._hud.flash(flash_text, color=NavRL3DHud.BAD)
+            else:
+                self._hud.flash(flash_text, color=NavRL3DHud.WARN)
+        if self.general_completed_trials >= self.general_num_trials:
+            logger.warning(
+                "NavRL general summary | captured=%d crash=%d timeout=%d / %d"
+                % (
+                    self.general_successes,
+                    self.general_crashes,
+                    self.general_timeouts,
+                    self.general_num_trials,
+                )
+            )
+            self._export_general_results_json()
+
+    def _export_general_results_json(self):
+        if self._general_results_exported or not self.general_eval_mode:
+            return
+        path = os.environ.get("NAVRL_GENERAL_RESULTS_JSON", "").strip()
+        if not path:
+            return
+        payload = {
+            "num_trials": int(self.general_num_trials),
+            "density_min": int(self.general_density_min),
+            "density_max": int(self.general_density_max),
+            "target_speed_mps": float(os.environ.get("NAVRL_TARGET_SPEED", "0") or 0.0),
+            "drone_max_speed_mps": float(self.task_config.max_velocity),
+            "summary": {
+                "captured": int(self.general_successes),
+                "crash": int(self.general_crashes),
+                "timeout": int(self.general_timeouts),
+            },
+            "trials": list(self.general_trial_records),
+        }
+        try:
+            out = Path(path)
+            out.parent.mkdir(parents=True, exist_ok=True)
+            out.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+            logger.warning("NavRL general results saved -> %s" % out)
+            if self._hud is not None:
+                cap = payload["summary"]["captured"]
+                self._hud.set_summary(
+                    [
+                        "Evaluation complete",
+                        "Captured %d / %d" % (cap, self.general_num_trials),
+                        "Crash %d  Timeout %d" % (
+                            payload["summary"]["crash"],
+                            payload["summary"]["timeout"],
+                        ),
+                        "Saved %s" % out.name,
+                    ]
+                )
+        except OSError as exc:
+            logger.warning("NavRL general results export failed: %s" % exc)
+        self._general_results_exported = True
 
     def _randomize_general_drone_spawn(self, env_ids):
         """Place the drone at a collision-free random XY/yaw for generalized evaluation."""
@@ -594,6 +676,14 @@ class NavRLTask(BaseTask):
                 lambda value, name=action: self._interactive_manual_key(name, value),
             )
         viewer.add_render_callback(self._draw_interactive_overlay)
+        if os.environ.get("NAVRL_3D_HUD", "1").strip().lower() not in ("0", "false", "no", "off"):
+            try:
+                from aerial_gym.apps.navrl_3d_hud import NavRL3DHud, build_hud_lines, build_hud_pip
+
+                self._hud = NavRL3DHud()
+            except Exception as exc:
+                logger.warning("NavRL 3D HUD unavailable: %s" % exc)
+                self._hud = None
         density_help = "" if self.general_eval_mode else "[/] bars±5  "
         logger.warning(
             "NavRL 3D controls | %s,/. target-speed±0.25  -/= drone-speed±0.25\n"
@@ -705,36 +795,45 @@ class NavRLTask(BaseTask):
                 np.ascontiguousarray(trail_colors),
             )
 
-        if not self._interactive_show_lidar:
-            return
-        ranges = self._lidar_distance_m()[env_id]
-        az = torch.deg2rad(torch.linspace(-170.0, 180.0, 36, device=self.device))
-        el = torch.deg2rad(torch.linspace(-10.0, 20.0, 4, device=self.device))
-        ee, aa = torch.meshgrid(el, az, indexing="ij")
-        dirs = torch.stack(
-            (torch.cos(ee) * torch.cos(aa), torch.cos(ee) * torch.sin(aa), torch.sin(ee)),
-            dim=-1,
-        ).reshape(-1, 3)
-        quat = self.obs_dict["robot_vehicle_orientation"][env_id].expand(dirs.shape[0], -1)
-        dirs_w = quat_rotate(quat, dirs)
-        origin = self.obs_dict["robot_position"][env_id]
-        tips = origin.unsqueeze(0) + dirs_w * ranges.unsqueeze(1)
-        lidar_vertices = torch.stack(
-            (origin.expand_as(tips), tips), dim=1
-        ).reshape(-1, 3).detach().cpu().numpy().astype(np.float32)
-        hit = (ranges < float(self.task_config.lidar_max_range) * 0.99).detach().cpu().numpy()
-        lidar_colors = np.zeros((len(hit), 3), dtype=np.float32)
-        lidar_colors[~hit] = (0.10, 0.45, 0.10)
-        lidar_colors[hit] = (1.00, 0.55, 0.05)
-        gym.add_lines(
-            viewer,
-            env_handle,
-            len(hit),
-            np.ascontiguousarray(lidar_vertices),
-            np.ascontiguousarray(lidar_colors),
-        )
+        if self._interactive_show_lidar:
+            ranges = self._lidar_distance_m()[env_id]
+            az = torch.deg2rad(torch.linspace(-170.0, 180.0, 36, device=self.device))
+            el = torch.deg2rad(torch.linspace(-10.0, 20.0, 4, device=self.device))
+            ee, aa = torch.meshgrid(el, az, indexing="ij")
+            dirs = torch.stack(
+                (torch.cos(ee) * torch.cos(aa), torch.cos(ee) * torch.sin(aa), torch.sin(ee)),
+                dim=-1,
+            ).reshape(-1, 3)
+            quat = self.obs_dict["robot_vehicle_orientation"][env_id].expand(dirs.shape[0], -1)
+            dirs_w = quat_rotate(quat, dirs)
+            origin = self.obs_dict["robot_position"][env_id]
+            tips = origin.unsqueeze(0) + dirs_w * ranges.unsqueeze(1)
+            lidar_vertices = torch.stack(
+                (origin.expand_as(tips), tips), dim=1
+            ).reshape(-1, 3).detach().cpu().numpy().astype(np.float32)
+            hit = (ranges < float(self.task_config.lidar_max_range) * 0.99).detach().cpu().numpy()
+            lidar_colors = np.zeros((len(hit), 3), dtype=np.float32)
+            lidar_colors[~hit] = (0.10, 0.45, 0.10)
+            lidar_colors[hit] = (1.00, 0.55, 0.05)
+            gym.add_lines(
+                viewer,
+                env_handle,
+                len(hit),
+                np.ascontiguousarray(lidar_vertices),
+                np.ascontiguousarray(lidar_colors),
+            )
+
+        if self._hud is not None and getattr(self._hud, "enabled", False):
+            from aerial_gym.apps.navrl_3d_hud import build_hud_lines, build_hud_pip
+
+            self._hud.update(build_hud_lines(self, env_id), build_hud_pip(self, env_id))
 
     def close(self):
+        if self._hud is not None:
+            self._hud.close()
+            self._hud = None
+        if self.general_eval_mode and not self._general_results_exported:
+            self._export_general_results_json()
         self.sim_env.delete_env()
 
     # ------------------------------------------------------------------ checkpoint state

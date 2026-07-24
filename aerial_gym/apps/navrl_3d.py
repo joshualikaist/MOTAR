@@ -7,17 +7,29 @@ sensor/environment demo so the application can be inspected before policy traini
 """
 
 import argparse
-import json
 import os
 from pathlib import Path
 import runpy
-import subprocess
 import sys
+
+from aerial_gym.apps.navrl_3d_launcher_common import (
+    DEFAULT_DENSITY_MAX,
+    DEFAULT_DENSITY_MIN,
+    DEFAULT_DRONE_SPEED,
+    DEFAULT_NUM_TRIALS,
+    DEFAULT_TARGET_SPEED,
+    RL_DIR,
+    VIEWER_CONTROL_CHIPS,
+    apply_runtime_environment,
+    configure_policy_checkpoint,
+    find_recent_checkpoints,
+    inspect_checkpoint,
+    validate_checkpoint_info,
+)
 
 
 HERE = Path(__file__).resolve()
 REPO = HERE.parents[2]
-RL_DIR = REPO / "aerial_gym" / "rl_training" / "rl_games"
 
 
 def _args():
@@ -25,72 +37,14 @@ def _args():
     parser.add_argument("--checkpoint", type=Path, help="supported NavRL .pth checkpoint")
     parser.add_argument("--manual", action="store_true", help="run without a policy checkpoint")
     parser.add_argument("--bars", type=int, default=48, help=argparse.SUPPRESS)
-    parser.add_argument("--target-speed", type=float, default=0.75)
-    parser.add_argument("--drone-speed", type=float, default=2.0)
+    parser.add_argument("--target-speed", type=float, default=DEFAULT_TARGET_SPEED)
+    parser.add_argument("--drone-speed", type=float, default=DEFAULT_DRONE_SPEED)
+    parser.add_argument("--num-trials", type=int, default=DEFAULT_NUM_TRIALS)
+    parser.add_argument("--density-min", type=int, default=DEFAULT_DENSITY_MIN)
+    parser.add_argument("--density-max", type=int, default=DEFAULT_DENSITY_MAX)
+    parser.add_argument("--results-json", type=Path, help="path for generalized eval summary JSON")
     parser.add_argument("--num-envs", type=int, default=1)
     return parser.parse_args()
-
-
-def _inspect_checkpoint(path):
-    """Inspect checkpoint ABI in a subprocess so torch is not imported before Isaac Gym here."""
-    probe = r"""
-import json, sys, torch
-try:
-    ck = torch.load(sys.argv[1], map_location='cpu', weights_only=False)
-    model = ck.get('model', {})
-    keys = list(model.keys())
-    dim = None
-    for key, value in model.items():
-        if key.endswith('running_mean_std.running_mean') and getattr(value, 'ndim', 0) == 1:
-            dim = int(value.shape[0])
-            if dim > 1:
-                break
-    if any('.cls_token' in key for key in keys):
-        kind = 'transformer'
-    elif any('.scan_cnn.' in key for key in keys):
-        kind = 'legacy_vision_305'
-    elif any('.lidar_cnn.' in key for key in keys):
-        kind = 'vision_1265'
-    else:
-        kind = 'unsupported'
-    print(json.dumps({'ok': True, 'kind': kind, 'obs_dim': dim, 'epoch': ck.get('epoch')}))
-except Exception as exc:
-    print(json.dumps({'ok': False, 'error': str(exc)}))
-"""
-    result = subprocess.run(
-        [sys.executable, "-c", probe, str(path)],
-        text=True,
-        capture_output=True,
-        check=False,
-    )
-    try:
-        info = json.loads(result.stdout.strip().splitlines()[-1])
-    except (IndexError, json.JSONDecodeError):
-        info = {"ok": False, "error": result.stderr.strip() or "checkpoint inspection failed"}
-    return info
-
-
-def _configure_checkpoint(args):
-    path = Path(args.checkpoint).expanduser().resolve()
-    if not path.is_file():
-        raise ValueError("Checkpoint file not found.")
-    info = _inspect_checkpoint(path)
-    if not info.get("ok"):
-        raise ValueError("Unable to read checkpoint: %s" % info.get("error", "unknown"))
-    kind = info.get("kind")
-    expected = {"transformer": 574, "legacy_vision_305": 305, "vision_1265": 1265}
-    if kind not in expected:
-        raise ValueError("Unsupported checkpoint architecture. Check its CNN/LSTM type.")
-    observed = info.get("obs_dim")
-    if observed not in (None, expected[kind]):
-        raise ValueError(
-            "Checkpoint observation is %sD, but the detected model expects %sD."
-            % (observed, expected[kind])
-        )
-    args.checkpoint = path
-    args.policy_kind = kind
-    args.checkpoint_info = info
-    return info
 
 
 def _setup_dialog(args):
@@ -105,16 +59,19 @@ def _setup_dialog(args):
 
     root = tk.Tk()
     root.title("NavRL 3D Simulator")
-    root.geometry("1040x730")
-    root.minsize(920, 680)
-    root.configure(bg="#F4F7FB")
+    root.geometry("1120x820")
+    root.minsize(980, 740)
+    root.configure(bg="#E9EDF0")
     root.tk.call("tk", "scaling", 1.45)
+
+    ACCENT = "#0D97A4"
+    INK = "#111820"
+    SLATE = "#586576"
+    PANEL = "#F4F6F8"
+    LINE = "#CFD6DC"
 
     from tkinter import font as tkfont
 
-    # This Tk build maps explicit Linux font-family names to a jagged bitmap renderer. Clone its
-    # native UI font instead: buttons/dialogs already render this font correctly, and the copies
-    # let us keep presentation-sized typography without overriding the system font family.
     base_font = tkfont.nametofont("TkDefaultFont")
 
     def sized_font(size, bold=False):
@@ -133,37 +90,38 @@ def _setup_dialog(args):
 
     style = ttk.Style(root)
     style.theme_use("clam")
-    style.configure("TFrame", background="#F4F7FB")
-    style.configure("Card.TLabelframe", background="#FFFFFF", borderwidth=1, relief="solid")
+    style.configure("Root.TFrame", background="#E9EDF0")
+    style.configure("Card.TLabelframe", background=PANEL, borderwidth=1, relief="solid")
     style.configure(
         "Card.TLabelframe.Label",
-        background="#FFFFFF",
-        foreground="#18253B",
+        background=PANEL,
+        foreground=INK,
         font=card_title_font,
     )
-    style.configure("TLabel", background="#FFFFFF", foreground="#26364F", font=body_font)
-    style.configure("Hint.TLabel", foreground="#66758C", font=hint_font)
+    style.configure("TLabel", background=PANEL, foreground=INK, font=body_font)
+    style.configure("Hint.TLabel", foreground="#7D8896", font=hint_font)
     style.configure("TEntry", font=copy_font, padding=7)
     style.configure("TSpinbox", font=copy_font, padding=5)
     style.configure("TButton", font=button_font, padding=(14, 10))
     style.configure(
-        "Accent.TButton", background="#2563EB", foreground="#FFFFFF", borderwidth=0
+        "Accent.TButton", background=ACCENT, foreground="#FFFFFF", borderwidth=0
     )
-    style.map("Accent.TButton", background=[("active", "#1D4ED8")])
+    style.map("Accent.TButton", background=[("active", "#0A6F79")])
     style.configure(
-        "Manual.TButton", background="#E8EEF8", foreground="#20304A", borderwidth=0
+        "Manual.TButton", background="#FFFFFF", foreground="#243041", borderwidth=1
     )
+
     checkpoint = tk.StringVar(value="")
     target_speed = tk.StringVar(value=str(args.target_speed))
     drone_speed = tk.StringVar(value=str(args.drone_speed))
+    num_trials = tk.StringVar(value=str(args.num_trials))
+    density_min = tk.StringVar(value=str(args.density_min))
+    density_max = tk.StringVar(value=str(args.density_max))
     compatibility = tk.StringVar(value="Select a checkpoint to inspect model compatibility.")
     compatibility_color = {"value": "#66758C"}
     result = {"mode": None}
-
-    def set_compatibility(text, color):
-        compatibility.set(text)
-        compatibility_color["value"] = color
-        status_label.configure(fg=color)
+    recent_paths = find_recent_checkpoints(limit=8)
+    recent_index_map = {}
 
     def inspect_selected(show_error=False):
         raw = checkpoint.get().strip()
@@ -174,24 +132,15 @@ def _setup_dialog(args):
         if not path.is_file():
             set_compatibility("File not found.", "#DC2626")
             return None
-        info = _inspect_checkpoint(path)
-        if not info.get("ok"):
-            set_compatibility("Read failed: %s" % info.get("error", "unknown"), "#DC2626")
-            return None
-        labels = {
-            "transformer": "NavRL++ Target Transformer | 574D | Recommended",
-            "legacy_vision_305": "Legacy semantic Vision CNN | 305D | Baseline playback",
-            "vision_1265": "RGB-D + semantic LiDAR Vision CNN · 1265D",
-        }
-        label = labels.get(info.get("kind"))
-        if label is None:
-            set_compatibility("Unsupported checkpoint architecture.", "#DC2626")
+        info = inspect_checkpoint(path)
+        label, error = validate_checkpoint_info(info)
+        if error:
+            set_compatibility(error, "#DC2626")
             if show_error:
-                messagebox.showerror("Incompatible checkpoint", compatibility.get())
+                messagebox.showerror("Incompatible checkpoint", error)
             return None
-        epoch = info.get("epoch")
-        suffix = " | epoch %s" % epoch if epoch is not None else ""
-        set_compatibility(label + suffix, "#15803D" if info["kind"] == "transformer" else "#B45309")
+        color = "#15803D" if info["kind"] == "transformer" else "#B45309"
+        set_compatibility(label, color)
         return info
 
     def browse():
@@ -204,12 +153,28 @@ def _setup_dialog(args):
             checkpoint.set(value)
             inspect_selected()
 
+    def choose_recent(_event=None):
+        selection = recent_list.curselection()
+        if not selection:
+            return
+        path = recent_index_map.get(selection[0])
+        if path is None:
+            return
+        checkpoint.set(str(path))
+        inspect_selected()
+
     def finish(mode):
         try:
             args.target_speed = float(target_speed.get())
             args.drone_speed = float(drone_speed.get())
+            args.num_trials = max(1, int(num_trials.get()))
+            args.density_min = int(density_min.get())
+            args.density_max = int(density_max.get())
         except ValueError:
-            messagebox.showerror("Invalid input", "Target and drone speeds must be numbers.")
+            messagebox.showerror("Invalid input", "Speeds, trials, and density must be numbers.")
+            return
+        if args.density_min > args.density_max:
+            messagebox.showerror("Invalid density range", "Minimum bars must be <= maximum bars.")
             return
         if mode == "policy" and args.target_speed <= 0.0:
             messagebox.showerror("Invalid input", "Policy evaluation requires target speed above zero.")
@@ -222,7 +187,7 @@ def _setup_dialog(args):
                 return
             args.checkpoint = path
             try:
-                _configure_checkpoint(args)
+                configure_policy_checkpoint(args)
             except ValueError as exc:
                 messagebox.showerror("Checkpoint compatibility error", str(exc))
                 inspect_selected(show_error=False)
@@ -232,20 +197,35 @@ def _setup_dialog(args):
         result["mode"] = mode
         root.destroy()
 
-    header = tk.Frame(root, bg="#14213D", height=132)
+    header = tk.Frame(root, bg="#071018", height=148)
     header.pack(fill="x")
     header.pack_propagate(False)
+    accent = tk.Frame(header, bg=ACCENT, width=5)
+    accent.pack(side="left", fill="y")
+    head_body = tk.Frame(header, bg="#071018")
+    head_body.pack(side="left", fill="both", expand=True)
     tk.Label(
-        header, text="NavRL 3D Simulator", bg="#14213D", fg="#FFFFFF",
+        head_body, text="MOTAR · NAVRL 3D", bg="#071018", fg="#7FE0E7",
+        font=sized_font(10, bold=True),
+    ).pack(anchor="w", padx=28, pady=(22, 0))
+    tk.Label(
+        head_body, text="Perception Evaluator", bg="#071018", fg="#F2F8FB",
         font=title_font,
-    ).pack(anchor="w", padx=34, pady=(23, 0))
+    ).pack(anchor="w", padx=28, pady=(2, 0))
     tk.Label(
-        header,
-        text="Evaluate policy generalization in the real Isaac Gym environment",
-        bg="#14213D", fg="#C5D7F8", font=copy_font,
-    ).pack(anchor="w", padx=36, pady=(4, 18))
+        head_body,
+        text="Real Isaac Gym scene · RGB-D + LiDAR perception · Transformer policy playback",
+        bg="#071018", fg="#A8BAC8", font=copy_font,
+    ).pack(anchor="w", padx=28, pady=(4, 10))
+    chips = tk.Frame(head_body, bg="#071018")
+    chips.pack(anchor="w", padx=28, pady=(0, 16))
+    for text in ("574D Transformer", "Generalized trials", "Live HUD"):
+        tk.Label(
+            chips, text="  %s  " % text, bg="#122430", fg="#D7E7EF",
+            font=hint_bold_font, highlightbackground="#3A6670", highlightthickness=1,
+        ).pack(side="left", padx=(0, 8))
 
-    main = ttk.Frame(root, padding=(26, 20, 26, 12))
+    main = ttk.Frame(root, padding=(28, 22, 28, 10), style="Root.TFrame")
     main.pack(fill="both", expand=True)
     main.columnconfigure(0, weight=1)
     main.columnconfigure(1, weight=1)
@@ -258,67 +238,104 @@ def _setup_dialog(args):
     tk.Label(
         scene,
         text="Generalized evaluation",
-        bg="#FFFFFF", fg="#1E3A5F", font=section_font,
+        bg=PANEL, fg=INK, font=section_font,
     ).grid(row=0, column=0, columnspan=2, sticky="w")
     tk.Label(
         scene,
-        text="Runs 10 independent trials.\n"
-             "Each trial randomizes 25-110 obstacles,\n"
-             "drone position/yaw, and target position.",
-        bg="#FFFFFF", fg="#586A82", justify="left", font=copy_font,
-    ).grid(row=1, column=0, columnspan=2, sticky="w", pady=(6, 22))
+        text="Randomize obstacle density, drone spawn, and target placement each trial.",
+        bg=PANEL, fg=SLATE, justify="left", font=copy_font,
+    ).grid(row=1, column=0, columnspan=2, sticky="w", pady=(6, 18))
 
-    ttk.Label(scene, text="Target speed").grid(row=2, column=0, sticky="w")
+    ttk.Label(scene, text="Trials").grid(row=2, column=0, sticky="w")
+    ttk.Spinbox(scene, from_=1, to=100, increment=1, textvariable=num_trials, width=8).grid(
+        row=2, column=1, sticky="e"
+    )
+    ttk.Label(scene, text="Density min / max bars").grid(row=3, column=0, sticky="w", pady=(10, 0))
+    density_row = ttk.Frame(scene, style="TFrame")
+    density_row.grid(row=3, column=1, sticky="e", pady=(10, 0))
+    ttk.Spinbox(
+        density_row, from_=0, to=200, increment=5, textvariable=density_min, width=6
+    ).pack(side="left")
+    ttk.Label(density_row, text=" to ", style="Hint.TLabel").pack(side="left")
+    ttk.Spinbox(
+        density_row, from_=0, to=200, increment=5, textvariable=density_max, width=6
+    ).pack(side="left")
+
+    ttk.Label(scene, text="Target speed").grid(row=4, column=0, sticky="w", pady=(14, 0))
     ttk.Spinbox(
         scene, from_=0.0, to=2.5, increment=0.25, textvariable=target_speed, width=8
-    ).grid(row=2, column=1, sticky="e")
+    ).grid(row=4, column=1, sticky="e", pady=(14, 0))
     ttk.Label(scene, text="m/s | target always moves in policy mode", style="Hint.TLabel").grid(
-        row=3, column=0, columnspan=2, sticky="w", pady=(4, 16)
+        row=5, column=0, columnspan=2, sticky="w", pady=(4, 12)
     )
-    ttk.Label(scene, text="Drone max speed").grid(row=4, column=0, sticky="w")
+    ttk.Label(scene, text="Drone max speed").grid(row=6, column=0, sticky="w")
     ttk.Spinbox(
         scene, from_=0.25, to=3.0, increment=0.25, textvariable=drone_speed, width=8
-    ).grid(row=4, column=1, sticky="e")
+    ).grid(row=6, column=1, sticky="e")
 
     ttk.Label(model, text="Trained checkpoint").pack(anchor="w")
     ck_row = ttk.Frame(model, style="TFrame")
     ck_row.pack(fill="x", pady=(7, 10))
     ttk.Entry(ck_row, textvariable=checkpoint).pack(side="left", fill="x", expand=True)
     ttk.Button(ck_row, text="Browse", command=browse).pack(side="left", padx=(8, 0))
-    status_box = tk.Frame(model, bg="#F5F7FA", highlightbackground="#D9E1EC", highlightthickness=1)
-    status_box.pack(fill="x", pady=(2, 16))
+    status_box = tk.Frame(model, bg="#FFFFFF", highlightbackground=LINE, highlightthickness=1)
+    status_box.pack(fill="x", pady=(2, 12))
+    status_accent = tk.Frame(status_box, bg="#8B97A4", width=4)
+    status_accent.pack(side="left", fill="y")
     status_label = tk.Label(
-        status_box, textvariable=compatibility, bg="#F5F7FA", fg="#66758C",
+        status_box, textvariable=compatibility, bg="#FFFFFF", fg=SLATE,
         justify="left", anchor="w", wraplength=390, font=hint_bold_font,
     )
-    status_label.pack(fill="x", padx=12, pady=11)
-    ttk.Label(model, text="Model compatibility", style="Hint.TLabel").pack(anchor="w")
-    tk.Label(
-        model,
-        text="574D Transformer: RGB-D/LiDAR perception\n"
-             "305D legacy CNN: archived semantic baseline\n"
-             "The launcher selects the matching runtime automatically.",
-        bg="#FFFFFF", fg="#40516B", justify="left", anchor="w",
-        font=hint_font,
-    ).pack(fill="x", pady=(5, 0))
+    status_label.pack(side="left", fill="x", expand=True, padx=12, pady=11)
 
-    controls = ttk.LabelFrame(main, text="  Viewer controls  ", style="Card.TLabelframe", padding=14)
+    def set_compatibility(text, color):
+        compatibility.set(text)
+        compatibility_color["value"] = color
+        status_label.configure(fg=color)
+        status_accent.configure(bg=color if color.startswith("#") else ACCENT)
+
+    ttk.Label(model, text="Recent checkpoints", style="Hint.TLabel").pack(anchor="w")
+    recent_list = tk.Listbox(model, height=5, font=copy_font, activestyle="dotbox")
+    recent_list.pack(fill="x", pady=(4, 10))
+    recent_list.bind("<<ListboxSelect>>", choose_recent)
+    if recent_paths:
+        for path in recent_paths:
+            line_idx = recent_list.size()
+            recent_list.insert("end", path.name)
+            recent_index_map[line_idx] = path
+            recent_list.insert("end", "  %s" % path.parent)
+            recent_list.insert("end", "")
+    else:
+        recent_list.insert("end", "(no recent checkpoints found)")
+
+    controls = ttk.LabelFrame(main, text="  In-viewer controls  ", style="Card.TLabelframe", padding=14)
     controls.grid(row=1, column=0, columnspan=2, sticky="ew", pady=(18, 0))
-    tk.Label(
-        controls,
-        text="Target speed  , / .     Drone speed  - / =     LiDAR  G     New trial  N\n"
-             "Policy / Manual  M     Move  I K J L     Yaw  U O     Pause  Space",
-        bg="#FFFFFF", fg="#31445F", justify="center", font=button_font,
-    ).pack(fill="x", pady=2)
+    chip_row = tk.Frame(controls, bg=PANEL)
+    chip_row.pack(fill="x", pady=2)
+    for key, desc in VIEWER_CONTROL_CHIPS:
+        key_lbl = tk.Label(
+            chip_row, text=" %s " % key, bg=INK, fg="#F2F8FB", font=hint_bold_font,
+        )
+        key_lbl.pack(side="left", padx=(0, 4))
+        tk.Label(chip_row, text=desc, bg=PANEL, fg=SLATE, font=hint_font).pack(
+            side="left", padx=(0, 14)
+        )
 
-    footer = ttk.Frame(root, padding=(26, 4, 26, 22))
+    footer = ttk.Frame(root, padding=(28, 4, 28, 22), style="Root.TFrame")
     footer.pack(fill="x")
-    ttk.Button(
-        footer, text="Open manual preview", style="Manual.TButton",
-        command=lambda: finish("manual"),
+    tk.Label(
+        footer,
+        text="Results are saved to results/general_eval_results.json after the run.",
+        background="#E9EDF0",
+        foreground="#7D8896",
+        font=hint_font,
     ).pack(side="left")
     ttk.Button(
-        footer, text="Start policy evaluation  >", style="Accent.TButton",
+        footer, text="Manual preview", style="Manual.TButton",
+        command=lambda: finish("manual"),
+    ).pack(side="right", padx=(8, 0))
+    ttk.Button(
+        footer, text="Start evaluation", style="Accent.TButton",
         command=lambda: finish("policy"),
     ).pack(side="right")
     root.protocol("WM_DELETE_WINDOW", root.destroy)
@@ -328,42 +345,12 @@ def _setup_dialog(args):
     return args
 
 
-def _set_environment(args):
-    os.environ["PYTHONNOUSERSITE"] = "1"
-    # The native application always runs one environment. Do not reserve base_sim's PhysX contact
-    # buffers sized for 8000 parallel environments; that can OOM when a training job is resident.
-    os.environ["AERIAL_GYM_SIM_NAME"] = "navrl_viewer_sim"
-    os.environ["NAVRL_INTERACTIVE"] = "1"
-    os.environ["NAVRL_VISION"] = "1"
-    os.environ["NAVRL_DENSITY_CURRICULUM"] = "0"
-    os.environ.pop("NAVRL_NUM_BARS", None)
-    os.environ["NAVRL_GENERAL_EVAL"] = "1"
-    os.environ["NAVRL_GENERAL_DENSITY_MIN"] = "25"
-    os.environ["NAVRL_GENERAL_DENSITY_MAX"] = "110"
-    os.environ["NAVRL_TARGET_SPEED"] = str(max(0.0, args.target_speed))
-    os.environ["NAVRL_TARGET_PATTERN"] = "mixed"
-    os.environ["NAVRL_MAX_VELOCITY"] = str(max(0.25, args.drone_speed))
-    kind = getattr(args, "policy_kind", "transformer")
-    if kind == "legacy_vision_305":
-        os.environ["NAVRL_PERCEPTION"] = "0"
-        os.environ["NAVRL_LEGACY_VISION"] = "1"
-        os.environ["NAVRL_NETWORK_OVERRIDE"] = "navrl_vision_legacy"
-    elif kind == "vision_1265":
-        os.environ["NAVRL_PERCEPTION"] = "0"
-        os.environ["NAVRL_LEGACY_VISION"] = "0"
-        os.environ.pop("NAVRL_NETWORK_OVERRIDE", None)
-    else:
-        os.environ["NAVRL_PERCEPTION"] = "1"
-        os.environ["NAVRL_LEGACY_VISION"] = "0"
-        os.environ.pop("NAVRL_NETWORK_OVERRIDE", None)
-
-
 def _run_manual(args):
-    # Isaac Gym must be imported before torch in this environment.
     import isaacgym  # noqa: F401
     import torch
     from aerial_gym.registry.task_registry import task_registry
 
+    apply_runtime_environment(args)
     task = task_registry.make_task("navrl_task", headless=False, num_envs=1, use_warp=True)
     task.reset()
     task._interactive_manual = True
@@ -373,21 +360,26 @@ def _run_manual(args):
     print("NavRL 3D manual mode: I/K/J/L move, U/O yaw, M toggles control.")
     with torch.no_grad():
         completed = 0
-        while completed < 10:
+        while completed < int(args.num_trials):
             _, _, terminated, truncated, _ = task.step(actions)
             newly_finished = int(torch.sum(terminated | truncated).item())
             completed += newly_finished
             if newly_finished:
-                print("NavRL 3D manual trial: %d/10" % min(completed, 10))
-                if completed < 10:
+                print(
+                    "NavRL 3D manual trial: %d/%d"
+                    % (min(completed, int(args.num_trials)), int(args.num_trials))
+                )
+                if completed < int(args.num_trials):
                     task.reset()
+    task.close()
 
 
 def _run_policy(args):
     checkpoint = args.checkpoint.expanduser().resolve()
     if not checkpoint.is_file():
         raise SystemExit("checkpoint not found: %s" % checkpoint)
-    os.environ["PLAY_GAMES_NUM"] = "10"
+    apply_runtime_environment(args)
+    os.environ["PLAY_GAMES_NUM"] = str(int(args.num_trials))
     config_file = (
         "ppo_navrl_perception_transformer.yaml"
         if args.policy_kind == "transformer"
@@ -416,10 +408,9 @@ def main():
     args = _setup_dialog(_args())
     if not args.manual and not hasattr(args, "policy_kind"):
         try:
-            _configure_checkpoint(args)
+            configure_policy_checkpoint(args)
         except ValueError as exc:
             raise SystemExit("Checkpoint compatibility error: %s" % exc)
-    _set_environment(args)
     if args.manual:
         _run_manual(args)
     else:
