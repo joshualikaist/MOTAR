@@ -258,3 +258,42 @@ reduction from fine-tuning WITH comp on (policy can stop self-limiting its bank 
 
 Next: fine-tune from the 0209 general ckpt with NAVRL_TILT_COMP=1 (the new default), then re-run the
 6-speed general eval vs results/general_8m_speed_axis.csv.
+
+## Tilt-comp fine-tune RESULT: below fixed but capture FLAT -- "conservation of failure" (2026-07-24)
+
+Fine-tuned the general-spawn policy WITH NAVRL_TILT_COMP=1 (0209 -> 1052, +~1180 epoch, healthy,
+peak captured 96.9%). 6-speed deterministic general-spawn eval vs the pre-tiltcomp general policy
+(results/general_8m_tiltcomp_speed_axis.csv vs general_8m_speed_axis.csv), absolute rates (% of all
+episodes), mean over 6 speeds:
+
+  capture       0.837 -> 0.837   (EXACTLY flat -- the user predicted this)
+  below (floor)  1.82% -> 0.50%  (-1.31pp -- the tilt comp worked as designed & measured)
+  oob   (wall)   0.89% -> 2.38%  (+1.49pp -- the failure MOVED here)
+  bar_contact   ~12.2% -> ~13.1% (unchanged, still dominant)
+
+Interpretation -- CONSERVATION OF FAILURE: the tilt comp removed the floor-strike sag exactly as
+designed, but fixing below let the policy bank harder (it fine-tuned into the freed aggression), and
+that harder banking + the tilt-comp's lateral thrust leak pushed it out of the arena instead. below
+and oob traded ~1:1; capture did not move. The constraint relocated from floor to wall.
+
+THE decisive finding: below (0.5%) and oob (2.4%) are BOTH small. bar_contact (~13%) is 4-5x larger
+than both combined and was never touched by any altitude work. That is why the altitude PI and the
+tilt comp -- both physically correct and both validated on their own metric -- produced ZERO net
+capture gain. We have been polishing secondary failure modes. To move capture off ~0.84 we must
+attack bar_contact, which is geometric/perceptual (drone hits bars deep in the field at mean_x
+~12 m), NOT altitude.
+
+Keep the tilt comp + PI: they are the correct altitude control and the foundation for higher-density
+sweeps (weaving intensifies with density -> floor strikes return without them). The oob regression is
+tracked separately (candidate 3). But the NEXT capture lever is bar_contact.
+
+## PIVOT to bar_contact: candidate 2 (LiDAR look-ahead 8 -> 12 m)
+
+Now unlocked -- altitude is solid (below ~0.5%), so extending look-ahead can no longer regress into
+floor strikes (that was the entire reason altitude came first). Warm-start from the tilt-comp policy
+(1052) with NAVRL_LIDAR_RANGE=12 and re-run the 6-speed general eval; the direct question is whether
+bar_contact (~13%) drops. Caveat: extending the LiDAR range changes the static-scan normalization
+(scan/range), so warm-start needs a re-adaptation window -- watch for a transient capture dip that
+recovers. If bar_contact does NOT drop, the limiter is not look-ahead (8 m = 3.2 s at 2.5 m/s is
+already generous for a single dodge) but obstacle-token capacity (MAX_OBSTACLES=5, candidate 4) or
+path-planning through the field -- diagnose crowding-at-contact before spending another train there.
