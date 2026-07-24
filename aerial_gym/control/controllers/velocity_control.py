@@ -29,9 +29,21 @@ class LeeVelocityController(BaseLeeController):
         )
         forces = (self.accel[:] - self.gravity) * self.mass
         # thrust command is transformed by the body orientation's z component
-        self.wrench_command[:, 2] = torch.sum(
-            forces * quat_to_rotation_matrix(self.robot_orientation)[:, :, 2], dim=1
-        )
+        b3 = quat_to_rotation_matrix(self.robot_orientation)[:, :, 2]
+        if getattr(self.cfg, "tilt_thrust_compensation", False):
+            # Altitude-priority thrust (PX4-style tilt compensation). The standard Lee projection
+            # T = f·b3 delivers a vertical force of (f·b3)*b3_z, which equals the commanded f_z ONLY
+            # when the desired force direction and the CURRENT body axis agree. During attitude-lag
+            # transients (e.g. a weave reversal: body still tilted one way, f already pointing the
+            # other) the achieved vertical force sags below f_z deterministically -- both vectors are
+            # known at this line, so no prediction is involved. Choosing T = f_z / b3_z makes the
+            # achieved vertical force EXACTLY f_z regardless of the current tilt, decoupling altitude
+            # from lateral/yaw transients. Cost: during the mismatch some thrust leaks laterally
+            # along the stale body axis (slightly slower reversals) -- acceptable, floor strikes are
+            # terminal. clamp(min=0.5) caps compensation at a 60 deg tilt to avoid thrust blowup.
+            self.wrench_command[:, 2] = forces[:, 2] / b3[:, 2].clamp(min=0.5)
+        else:
+            self.wrench_command[:, 2] = torch.sum(forces * b3, dim=1)
 
         # after calculating forces, we calculate the desired euler angles
         self.desired_quat[:] = calculate_desired_orientation_for_position_velocity_control(

@@ -282,12 +282,43 @@ class NavRLTask(BaseTask):
         # --- crash-cause diagnosis (NAVRL_CRASH_DIAG=1): split the aggregate "crash" number into
         # its termination source (bar contact / height bound / out-of-arena side) so a stuck run
         # can be diagnosed from measured counts instead of guesses. Off by default: zero overhead.
-        self._crash_diag = os.environ.get("NAVRL_CRASH_DIAG", "0").strip().lower() in ("1", "true", "yes", "on")
+        self._oob_probe = os.environ.get("NAVRL_OOB_PROBE", "0").strip().lower() in (
+            "1", "true", "yes", "on"
+        )
+        self._crash_diag = self._oob_probe or os.environ.get(
+            "NAVRL_CRASH_DIAG", "0"
+        ).strip().lower() in ("1", "true", "yes", "on")
         self._diag = {k: 0 for k in ("contact", "below", "above", "oob", "oob_w", "oob_e", "oob_s", "oob_n")}
         # "oob" is the EXACT per-env count; W/E/S/N are informational side buckets (a rare
         # diagonal corner exit can land in two of them, so their sum may exceed "oob").
-        self._diag_steps = {"contact": 0.0, "oob": 0.0}  # steps-to-death sums per cause
+        self._diag_steps = {"contact": 0.0, "oob": 0.0, "below": 0.0}  # steps-to-death sums per cause
+        self._diag_below_tilt = 0.0  # sum of tilt angle [deg] at the moment of each below-death
         self._diag_x_sum = 0.0  # death-x sum for bar contacts (bar band starts ~3.1 m)
+        # NAVRL_OOB_PROBE=1 is evaluation-only instrumentation. None of these tensors enter the
+        # actor/critic observation. Side-aligned values are positive toward the wall that was
+        # crossed, letting N and S exits be pooled without hiding a directional policy bias.
+        self._probe_ep_start_y = torch.zeros(self.num_envs, device=self.device)
+        self._probe_ep_target_start_y = torch.zeros(self.num_envs, device=self.device)
+        self._probe_ep_bar_mean_y = torch.zeros(self.num_envs, device=self.device)
+        self._probe_ep_y_min = torch.zeros(self.num_envs, device=self.device)
+        self._probe_ep_y_max = torch.zeros(self.num_envs, device=self.device)
+        self._probe = {
+            k: 0.0
+            for k in (
+                "n",
+                "start_y",
+                "goal_pull_side",
+                "goal_now_pull_side",
+                "bar_bias_side",
+                "world_vy_side",
+                "command_vy_side",
+                "action_y_side",
+                "excursion_side",
+                "visible",
+                "track_age",
+                "track_cov_pos",
+            )
+        }
 
         # Native 3-D application controls. They are completely disabled during ordinary train/play
         # runs and never become actor observations. The debug target overlay uses GT only for the
@@ -856,6 +887,19 @@ class NavRLTask(BaseTask):
                 % int(todo.sum())
             )
         self.target_position[env_ids] = goal
+        if self._oob_probe:
+            self._probe_ep_start_y[env_ids] = start_pos[:, 1]
+            self._probe_ep_target_start_y[env_ids] = goal[:, 1]
+            if self.n_bars_active > 0:
+                self._probe_ep_bar_mean_y[env_ids] = bars_xy[
+                    :, : self.n_bars_active, 1
+                ].mean(dim=1)
+            else:
+                self._probe_ep_bar_mean_y[env_ids] = 0.5 * (
+                    b_min[:, 1] + b_max[:, 1]
+                )
+            self._probe_ep_y_min[env_ids] = start_pos[:, 1]
+            self._probe_ep_y_max[env_ids] = start_pos[:, 1]
 
         d = self.target_position[env_ids] - start_pos
         d[:, 2] = 0.0  # horizontal goal direction defines the goal frame
@@ -1072,6 +1116,9 @@ class NavRLTask(BaseTask):
             b_max = self.obs_dict["env_bounds_max"][:, 0:2]
             oob = ((pos[:, 0:2] < b_min - m_oob) | (pos[:, 0:2] > b_max + m_oob)).any(dim=1)
             crashed_out = crashed_out | oob
+            if self._oob_probe:
+                self._probe_ep_y_min = torch.minimum(self._probe_ep_y_min, pos[:, 1])
+                self._probe_ep_y_max = torch.maximum(self._probe_ep_y_max, pos[:, 1])
 
         # Interception (always on): touching the capture radius ends the episode as a success
         # (terminal bonus instead of continued step reward). Capture wins over a same-step contact.
@@ -1102,6 +1149,14 @@ class NavRLTask(BaseTask):
             if bool(d_contact.any()):
                 self._diag_steps["contact"] += float(steps[d_contact].sum().item())
                 self._diag_x_sum += float(pos[d_contact, 0].sum().item())
+            if bool(d_below.any()):
+                # below-death forensics: WHEN it dies (early sharp-turn transient vs late drift) and
+                # HOW TILTED it is at death (tilt-induced thrust sag vs level sink). b3_z from the
+                # quaternion directly: R[2][2] = 1 - 2*(qx^2 + qy^2), tilt = acos(b3_z).
+                self._diag_steps["below"] += float(steps[d_below].sum().item())
+                q = self.obs_dict["robot_orientation"][d_below]
+                b3z = (1.0 - 2.0 * (q[:, 0] ** 2 + q[:, 1] ** 2)).clamp(-1.0, 1.0)
+                self._diag_below_tilt += float(torch.rad2deg(torch.acos(b3z)).sum().item())
             if self.vision_mode:
                 d_oob = oob & ~crashed & ~below & ~above & crashed_out
                 if bool(d_oob.any()):
@@ -1111,6 +1166,64 @@ class NavRLTask(BaseTask):
                     self._diag["oob_s"] += int((d_oob & (pos[:, 1] < b_min[:, 1] - m_oob)).sum().item())
                     self._diag["oob_n"] += int((d_oob & (pos[:, 1] > b_max[:, 1] + m_oob)).sum().item())
                     self._diag_steps["oob"] += float(steps[d_oob].sum().item())
+                    if self._oob_probe:
+                        north = d_oob & (pos[:, 1] > b_max[:, 1] + m_oob)
+                        south = d_oob & (pos[:, 1] < b_min[:, 1] - m_oob)
+                        lateral = north | south
+                        if bool(lateral.any()):
+                            side = torch.where(
+                                north, torch.ones_like(pos[:, 1]), -torch.ones_like(pos[:, 1])
+                            )
+                            arena_mid_y = 0.5 * (b_min[:, 1] + b_max[:, 1])
+                            arena_half_y = 0.5 * (b_max[:, 1] - b_min[:, 1]).clamp(min=1e-6)
+                            command_world = quat_rotate(
+                                self.obs_dict["robot_vehicle_orientation"],
+                                self.command[:, 0:3],
+                            )
+                            excursion = torch.where(
+                                north,
+                                self._probe_ep_y_max - self._probe_ep_start_y,
+                                self._probe_ep_start_y - self._probe_ep_y_min,
+                            )
+                            p = self._probe
+                            p["n"] += float(lateral.sum().item())
+                            p["start_y"] += float(self._probe_ep_start_y[lateral].sum().item())
+                            p["goal_pull_side"] += float(
+                                (
+                                    (self._probe_ep_target_start_y - self._probe_ep_start_y)
+                                    * side
+                                )[lateral].sum().item()
+                            )
+                            p["goal_now_pull_side"] += float(
+                                (
+                                    (self.target_position[:, 1] - self._probe_ep_start_y) * side
+                                )[lateral].sum().item()
+                            )
+                            p["bar_bias_side"] += float(
+                                (
+                                    (self._probe_ep_bar_mean_y - arena_mid_y)
+                                    / arena_half_y
+                                    * side
+                                )[lateral].sum().item()
+                            )
+                            p["world_vy_side"] += float(
+                                (self.obs_dict["robot_linvel"][:, 1] * side)[lateral].sum().item()
+                            )
+                            p["command_vy_side"] += float(
+                                (command_world[:, 1] * side)[lateral].sum().item()
+                            )
+                            p["action_y_side"] += float(
+                                (self.prev_action[:, 1] * side)[lateral].sum().item()
+                            )
+                            p["excursion_side"] += float(excursion[lateral].sum().item())
+                            p["visible"] += float(self._visible_now[lateral].sum().item())
+                            if self.perception is not None:
+                                tracker = self.perception.tracker
+                                p["track_age"] += float(tracker.age[lateral].sum().item())
+                                cov_pos = torch.diagonal(
+                                    tracker.cov[:, :3, :3], dim1=1, dim2=2
+                                ).sum(dim=1)
+                                p["track_cov_pos"] += float(cov_pos[lateral].sum().item())
 
         # A: PBRS progress reward -- dense "got closer" signal. F = gamma*Phi(s') - Phi(s) with
         # Phi = -progress_weight*dist. RE-ANCHORED to the target's CURRENT position:
@@ -1709,12 +1822,15 @@ class NavRLTask(BaseTask):
                 n_all = max(1, n_raw)  # division guard only; the printed count is the raw sum
                 logger.warning(
                     "NavRL crashdiag | bar_contact=%.3f (mean_x=%.1fm steps=%.0f) below=%.3f "
+                    "(steps=%.0f tilt=%.0fdeg) "
                     "above=%.3f oob=%.3f [W=%d E=%d S=%d N=%d steps=%.0f] (n_crash=%d)"
                     % (
                         d["contact"] / n_all,
                         self._diag_x_sum / max(1, d["contact"]),
                         self._diag_steps["contact"] / max(1, d["contact"]),
                         d["below"] / n_all,
+                        self._diag_steps["below"] / max(1, d["below"]),
+                        self._diag_below_tilt / max(1, d["below"]),
                         d["above"] / n_all,
                         d["oob"] / n_all,
                         d["oob_w"],
@@ -1725,9 +1841,35 @@ class NavRLTask(BaseTask):
                         n_raw,
                     )
                 )
+                if self._oob_probe and self._probe["n"] > 0:
+                    p = self._probe
+                    n_probe = p["n"]
+                    logger.warning(
+                        "NavRL oobprobe | lateral_n=%d start_y=%.2fm "
+                        "goal_pull_side=%.2fm goal_now_pull_side=%.2fm "
+                        "bar_bias_side=%.3f outward_vy=%.2fm/s outward_cmd_vy=%.2fm/s "
+                        "action_y_side=%.3f excursion=%.2fm visible=%.3f "
+                        "track_age=%.2fs track_cov_pos=%.3f"
+                        % (
+                            int(n_probe),
+                            p["start_y"] / n_probe,
+                            p["goal_pull_side"] / n_probe,
+                            p["goal_now_pull_side"] / n_probe,
+                            p["bar_bias_side"] / n_probe,
+                            p["world_vy_side"] / n_probe,
+                            p["command_vy_side"] / n_probe,
+                            p["action_y_side"] / n_probe,
+                            p["excursion_side"] / n_probe,
+                            p["visible"] / n_probe,
+                            p["track_age"] / n_probe,
+                            p["track_cov_pos"] / n_probe,
+                        )
+                    )
                 self._diag = {k: 0 for k in self._diag}
-                self._diag_steps = {"contact": 0.0, "oob": 0.0}
+                self._diag_steps = {"contact": 0.0, "oob": 0.0, "below": 0.0}
+                self._diag_below_tilt = 0.0
                 self._diag_x_sum = 0.0
+                self._probe = {k: 0.0 for k in self._probe}
             self._succ_agg = self._crash_agg = self._to_agg = 0
             self._reach_agg = self._fin_agg = 0
             self._mindist_sum = 0.0

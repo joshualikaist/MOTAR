@@ -195,3 +195,66 @@ Hypotheses to check first (cheap, no retrain needed -- code/data inspection only
 
 Do NOT touch reward shaping. This is a placement/geometry lens first (same discipline as the
 corner-clip diagnosis that led to the yaw-rate fix earlier this project).
+
+## N-wall/OOB investigation -- measured result (2026-07-24)
+
+Added evaluation-only `NAVRL_OOB_PROBE=1` and an env-overridable `NAVRL_OOB_MARGIN`. The probe never
+enters actor/critic observations. It records initial/current target pull, active-bar y bias, outward
+velocity/command, target visibility, track age/covariance, and lateral excursion at each OOB event.
+
+Code inspection ruled out the first two hypotheses:
+- Goal y sampling is symmetric about the arena center.
+- Active bars are sampled symmetrically in y with direction-free rejection spacing.
+- The boundary is not physical geometry. It is only a coordinate termination, and the actor gets
+  neither absolute xy nor distance-to-boundary, so LiDAR/camera cannot observe it.
+
+Paired 2,049-episode, seed-42 evaluation at target speed 1.0 m/s:
+
+| spawn regime | margin | capture | crash | OOB / crash | lateral OOB |
+|---|---:|---:|---:|---:|---:|
+| fixed/central (diagnostic only) | 0.5 m | 0.900 | 0.100 | 0.190 | 35 |
+| fixed/central (diagnostic only) | 1.0 m | 0.903 | 0.097 | 0.075 | 15 |
+| **generalized random drone+target** | 0.5 m | **0.541** | **0.459** | **0.693** | **379** |
+| **generalized random drone+target** | 1.0 m | **0.584** | **0.416** | **0.618** | **297** |
+
+The required generalized regime is the decisive result. At margin 0.5, lateral exits had
+`goal_pull_side=-6.62 m`, `bar_bias_side=-0.002`, `outward_vy=2.51 m/s`, target visibility 0.003,
+and tracker age 4.95 s. The target was on the opposite side and the bars were unbiased, yet the
+policy flew outward at full speed after losing the target. This is an observability/generalization
+failure, not an N-wall placement bias. N>S was not stable under paired reruns, so there is no evidence
+for a fixed north-wall code bias.
+
+Margin 1.0 is a justified tolerance for the artificial invisible boundary (+4.3 capture points in
+the generalized regime), but it does not solve the behavior: residual crash is still 41.6%. Therefore
+do not combine LiDAR 10 m with the first correction. First run `train_navrl_general_8m_finetune.sh`
+to teach randomized spawn at the verified 8 m sensor setting. Only after held-out generalized
+capture recovers should the next one-variable branch change LiDAR 8 -> 10 m.
+
+## `below` root cause under general-spawn: tilt-induced thrust sag at spawn -- MEASURED + FIXED (2026-07-24)
+
+New crashdiag forensics (below now logs steps-to-death + tilt-at-death). General-spawn eval, comp OFF:
+`below=0.134 (steps=15 tilt=30deg)` vs bar_contact steps=39, oob steps=29. Translation: below deaths
+happen ~1.5 s after spawn (earliest of all causes) while banked ~30 deg -- the random-spawn initial
+sharp turn, exactly when the task-level altitude-PI integral is still zero. Mechanism, from
+velocity_control.py: Lee thrust T = f.b3 delivers vertical force (f.b3)*b3_z, which equals the
+commanded f_z ONLY when the desired-force direction and the CURRENT body axis agree; during
+attitude-lag transients the deficit is deterministic (cos-of-mismatch), NOT a prediction problem --
+both vectors are known at the line where thrust is computed.
+
+FIX: altitude-priority thrust (PX4-style tilt compensation), NavRL-scoped opt-in:
+`T = f_z / clamp(b3_z, min=0.5)` -- achieved vertical force equals f_z regardless of current tilt
+(60-deg cap). velocity_control.py gated by cfg flag `tilt_thrust_compensation`; enabled only in
+lee_controller_config_navrl via `NAVRL_TILT_COMP` (default ON; set 0 to A/B). Cost: during mismatch
+some thrust leaks laterally along the stale body axis (slightly slower reversals) -- acceptable,
+floor strikes are terminal.
+
+Zero-shot A/B on the general-spawn ckpt (0209, speed 1.0, n=2048/leg):
+  OFF: capture 0.850, below absolute 1.96% (share 0.134, tilt 30deg)
+  ON : capture 0.843, below absolute 1.22% (share 0.078, tilt 36deg)  -> below -38%, capture unchanged
+Fingerprint check: surviving below-deaths shifted to HIGHER tilt (30->36 deg) = the compensation
+removed exactly the moderate-tilt deaths it targets. Residual ~1.2% = motor-RPM lag (thrust arrives
+late regardless of geometry) + recovery limits once vertical speed has built up; expect further
+reduction from fine-tuning WITH comp on (policy can stop self-limiting its bank angle).
+
+Next: fine-tune from the 0209 general ckpt with NAVRL_TILT_COMP=1 (the new default), then re-run the
+6-speed general eval vs results/general_8m_speed_axis.csv.

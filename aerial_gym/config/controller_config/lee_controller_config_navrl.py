@@ -20,3 +20,10 @@ class control(_base):
     """
 
     max_yaw_rate = _NAVRL_YAW_RATE_MAX  # [rad/s]; MUST equal navrl_task_config.yaw_rate_max (same env var)
+
+    # Altitude-priority thrust: T = f_z / cos(tilt) instead of T = f·b3 (see velocity_control.py).
+    # Cancels the deterministic vertical-force sag during attitude-lag transients (weave reversals),
+    # measured as `below` floor strikes -- worst under NAVRL_GENERAL_TRAIN's random spawns, where
+    # sharp initial turns happen while the task-level altitude-PI integral is still zero.
+    # NavRL-scoped opt-in; every other task keeps the shared Lee projection unchanged.
+    tilt_thrust_compensation = os.environ.get("NAVRL_TILT_COMP", "1").strip() != "0"
