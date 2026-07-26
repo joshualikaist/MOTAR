@@ -682,3 +682,72 @@ PX4식 고도우선 추력 `T = f_z / clamp(b3_z, 0.5)` 추가(cfg gate, NavRL �
 **tilt-comp/PI는 유지**(올바른 제어 + 고밀도 일반화 기반). oob는 candidate ③로 별도 추적. **capture를
 0.84에서 올릴 유일한 레버 = bar_contact = candidate ② LiDAR look-ahead 8→12m** (고도 단단해져 이제
 바닥충돌 재발 없이 확장 가능 — 이게 고도를 먼저 한 이유). 커밋 `c01e552`(tilt-comp+계측), `b28eac1`(G0 지원).
+
+---
+
+## 2026-07-24 (이어서) — candidate ② LiDAR 12m: capture 최고치이나 **가설은 기각**
+
+12m look-ahead 학습(1052→`ppo_260724_1230`). **ep6145에 peak(capture 95.2%, reward 111) 찍고 ~ep6700에
+붕괴** — crashdiag oob가 0.10→0.60으로 전 방향(W/E/S/N 균등) 폭발 = 드론이 방향감각 상실, 최종 capture
+0.558. `gen_ppo.pth`는 붕괴 이전 peak라 **정책 자체는 무사**. 붕괴 추정 트리거: LiDAR range를 8→12로 바꾸면
+스캔 정규화(`scan/range`)가 바뀌는데 warm-start한 체크포인트의 `running_mean_std`는 8m 통계 → 학습 중
+입력 스케일이 밑에서 드리프트 → 정책이 스캔 오독 → PPO 온폴리시 나선. (미증명)
+
+**peak 6-speed 평가**(= `results/general_12m_lookahead_speed_axis.csv`, 평가도 반드시 `LIDAR_RANGE=12`):
+
+| 지표(절대율 평균) | 8m tilt-comp | **12m peak** | Δ |
+|---|---|---|---|
+| capture | 0.837 | **0.856** | **+1.8pp (역대 최고)** |
+| crash | 0.160 | 0.139 | |
+| oob | 2.4% | **1.2%** | −1.2pp ← **이득은 전부 여기서** |
+| **bar_contact** | 13.1% | **12.6%** | **−0.5pp (노이즈, 겨냥한 목표인데 안 움직임)** |
+
+**★ 가설 기각**: look-ahead는 bar_contact의 레버가 아니다. 8m = 2.5m/s에서 3.2초 경고로 단일 회피엔 이미
+충분했고, 더 멀리 본 효과는 "아레나 밖으로 덜 샘"(oob)뿐. **이로써 bar_contact(~13%)에 대한 독립적 음성
+결과 3연속**: 고도 PI / tilt-comp / look-ahead 전부 불변. bar_contact(mean_x~12.4m = 막대밭 한복판)는
+고도 권한에도 감지 거리에도 면역이며, 남은 capture 갭의 전부다.
+
+**다음: 추측 금지, 직접 진단.** 남은 가설 2개(측정으로 구분 가능):
+- **H1 토큰 용량**: `MAX_OBSTACLES=5`(navrl_perception.py) — 밀집 구간엔 반경 내 막대가 5개 초과라
+  6번째부터 정책 입력에서 잘림 → 안 보이는 걸 피할 수 없음.
+- **H2 인지/추적 품질**: 부딪힌 막대의 KF 추적 위치 오차 → 유령을 피하다 실물에 스침.
+
+**진단 계측**(재학습 불필요): bar_contact 순간에 (a) 반경 내 막대 개수(혼잡도) (b) 실제 부딪힌 막대가
+정책에 들어간 토큰 안에 있었는지 (c) 그 막대의 추적-실제 위치 오차. H1이면 혼잡도↑ & 부딪힌 막대가
+토큰 밖, H2면 혼잡도↓ & 토큰 안에 있으나 오차 큼. (below/tilt를 정확히 짚었던 것과 같은 measure-first 방식)
+
+---
+
+## 2026-07-24 (이어서) — **코드 불일치 정리 + bar_contact 진단 완료: H1·H2 둘 다 확인**
+
+### 서브에이전트 감사로 잡은 불일치 (전부 수정)
+- **평가 스크립트가 스케일 결정 env를 안 박음**(`eval_navrl_density_sweep.sh`, `..._speed_density_grid.sh`):
+  `NAVRL_LIDAR_RANGE`(=스캔 정규화 divisor!), `MAX_VELOCITY`, `YAW_RATE_MAX` 미지정 → 8/12m 정책이 4m
+  기본값으로 평가돼 **밀도곡선이 조용히 틀림**. + density_sweep은 `NAVRL_PERCEPTION=1`이 없어 아예 CNN
+  yaml을 골라 현재 정책엔 사용 불가였음. → 전부 pin + 에코.
+- **`max_velocity`가 고도 PI 권한·anti-windup까지 결정하던 결함(내 코드)** → `alt_hold_vmax`
+  (`NAVRL_ALT_HOLD_VMAX`, 기본 2.5)로 분리. 안 그러면 속도 스윕이 "느린 추격자가 덜 충돌"과 "느린
+  추격자는 고도 유지 불가"를 뒤섞음.
+- **체크포인트 설정 드리프트 무경고** → `get/set_env_state`에 `cfg_lidar_max_range/max_velocity/
+  yaw_rate_max/max_obstacles` 기록 + 불일치 시 경고(복원은 안 함, 의도적 override 허용). 오늘 두 번 헤맨 그 문제.
+- **`navrl_task_config`의 `max_obstacles=5`·`history_steps=5`는 아무도 안 읽는 죽은 필드**(실제 상수는
+  `navrl_perception.py`) → 삭제 + 경위 주석. 대신 `NAVRL_MAX_OBSTACLES`로 스윕 가능하게.
+- 런처 드리프트 정리 → 두 스크립트가 이제 **`LIDAR_RANGE`만 다름**(검증됨). crashdiag 계측 자체는 감사 결과 **정상**.
+
+### ★ bar_contact 진단 결과 (`NAVRL_BAR_PROBE=1`, 12m peak, n=266 충돌)
+```
+bars_in_range=15.8  occupied_bins=19.5/36  hit_in_tokens=0.647
+token_err=0.57m     token_rank=0.9         (capacity=5)
+```
+- **H1(토큰 용량) 확인**: 반경 내 막대 **15.8개 vs 용량 5개**. **충돌의 35%가 정책 입력에 아예 없던 막대와의
+  충돌.** 보여주지 않은 걸 피할 수는 없음.
+- **H2(추적 품질) 확인, 단 원인은 추적기가 아님**: 토큰에 있던 65%도 **위치오차 0.57m**(드론 박스 0.28m,
+  막대 반경 0.2~0.4m → 통로 폭과 맞먹음). 원인 = **각도 양자화**(수평 36빔=10°/bin → 5m에서 반빔 오차 ~0.44m).
+  토큰 위치가 range/angle 기하로 만들어지므로 측방 정확도의 상한이 빔 개수에 묶여 있음.
+- **숨은 천장 발견**: 토큰 하나 뽑을 때마다 ±2 bin(=50°)을 지움 → 360/50≈7.2 → **MAX_OBSTACLES를 8로
+  올려도 7개 이상은 구조적으로 안 채워짐.** 용량만 올리면 헛돎.
+
+### 수정은 3개 묶음 (전부 관측 차원 변경 → **fresh 재학습 필수**)
+1. `MAX_OBSTACLES` 5→8  2. 억제폭 ±2→±1 bin  3. 수평빔 36→72
+**캠페인 통틀어 처음으로 추측이 아닌 측정에 근거한 bar_contact 개입** — 고도 PI·tilt-comp·12m look-ahead가
+전부 bar_contact를 ~13%로 남긴 이유는 셋 다 **장애물 표현(representation)** 을 건드리지 않았기 때문.

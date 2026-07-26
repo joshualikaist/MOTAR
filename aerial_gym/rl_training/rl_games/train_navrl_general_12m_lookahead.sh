@@ -6,7 +6,7 @@
 #
 # Usage:
 #   ./train_navrl_general_12m_lookahead.sh
-#   CKPT=runs/.../nn/gen_ppo.pth MAX_EPOCHS=6000 ./train_navrl_general_12m_lookahead.sh
+#   CKPT=runs/.../nn/gen_ppo.pth MAX_EPOCHS=7000 ./train_navrl_general_12m_lookahead.sh
 #
 # NOTE: changing NAVRL_LIDAR_RANGE changes the static-scan normalization (scan/range), so the
 # warm-start needs a re-adaptation window -- expect a transient capture dip that recovers over a few
@@ -36,6 +36,7 @@ export NAVRL_K_FINAL=16
 export NAVRL_K_MIN_FINAL=10
 export NAVRL_FOV_CURRICULUM_EPOCHS=1000000
 export NAVRL_MAX_VELOCITY=2.5
+export NAVRL_ALT_HOLD_VMAX=2.5
 export NAVRL_YAW_RATE_MAX=3.0
 export NAVRL_TARGET_SPEED_MIN=0.0
 export NAVRL_TARGET_SPEED_FINAL=1.5

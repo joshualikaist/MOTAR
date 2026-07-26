@@ -30,6 +30,10 @@ export NAVRL_K_FINAL=16
 export NAVRL_K_MIN_FINAL=10
 export NAVRL_FOV_CURRICULUM_EPOCHS=1000000
 export NAVRL_MAX_VELOCITY=2.5
+# Pinned explicitly (not inherited from the caller's shell) so this recipe is reproducible and
+# so it stays a true one-variable comparison against train_navrl_general_12m_lookahead.sh.
+export NAVRL_TILT_COMP=1
+export NAVRL_ALT_HOLD_VMAX=2.5
 export NAVRL_YAW_RATE_MAX=3.0
 export NAVRL_TARGET_SPEED_MIN=0.0
 export NAVRL_TARGET_SPEED_FINAL=1.5

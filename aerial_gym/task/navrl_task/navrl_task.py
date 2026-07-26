@@ -321,6 +321,29 @@ class NavRLTask(BaseTask):
                 "track_cov_pos",
             )
         }
+        # NAVRL_BAR_PROBE=1: bar_contact forensics (evaluation-only, zero overhead when off).
+        # bar_contact survived the altitude fixes AND the look-ahead extension, so the remaining
+        # hypotheses are (H1) obstacle-token CAPACITY -- more bars in range than MAX_OBSTACLES, so
+        # the bar that hits was never shown to the policy -- or (H2) track QUALITY -- the bar was in
+        # the token set but its estimated position was wrong enough to plan through. These make
+        # opposite predictions, so one measurement settles it instead of another guessed retrain.
+        self._bar_probe = os.environ.get("NAVRL_BAR_PROBE", "0").strip().lower() in (
+            "1", "true", "yes", "on"
+        )
+        if self._bar_probe:
+            self._crash_diag = True
+        self._bprobe = {
+            k: 0.0
+            for k in (
+                "n",              # bar_contact deaths sampled
+                "bars_in_range",  # GT bars within the LiDAR horizon at impact (crowding)
+                "occupied_bins",  # distinct scan bearings returning an obstacle (crowding, sensed)
+                "hit_dist",       # distance to the struck bar at impact
+                "hit_in_tokens",  # fraction where the struck bar HAD a matching obstacle token (H1 test)
+                "hit_token_err",  # |token position - true bar position| for matched hits (H2 test)
+                "hit_token_rank", # which token slot matched (0 = nearest); high = near truncation
+            )
+        }
 
         # Native 3-D application controls. They are completely disabled during ordinary train/play
         # runs and never become actor observations. The debug target overlay uses GT only for the
@@ -845,9 +868,121 @@ class NavRLTask(BaseTask):
             "n_bars_active": int(self.n_bars_active),
             "k_max_cur": float(self._k_max_cur),
             "k_min_cur": float(self._k_min_cur),
+            # Scaling-critical settings, recorded so set_env_state() can warn when a checkpoint is
+            # replayed under a different config. These are NOT restored (an eval may legitimately
+            # override them) -- they exist purely to make a silent mismatch loud. lidar_max_range in
+            # particular is BOTH the sensor horizon and the observation divisor (scan/range), so
+            # evaluating an 8 m policy at 4 m rescales every scan input and the policy misreads the
+            # world entirely -- a failure that looks like "the policy is broken", not like a config
+            # error. Learned the hard way twice in one session.
+            "cfg_lidar_max_range": float(self.task_config.lidar_max_range),
+            "cfg_max_velocity": float(self.task_config.max_velocity),
+            "cfg_yaw_rate_max": float(self.task_config.yaw_rate_max),
+            "cfg_max_obstacles": int(self._max_obstacles_or_zero()),
         }
 
+    def _record_bar_contact_probe(self, hit_mask, pos):
+        """Measure WHY a bar was hit: was it truncated out of the tokens (H1) or mislocated (H2)?
+
+        Evaluation-only (NAVRL_BAR_PROBE=1). Uses ground-truth bar positions, which is legitimate
+        here because nothing computed in this method reaches the actor, the critic, the reward, or
+        any termination -- it only accumulates diagnostic sums that are printed and reset.
+        """
+        from aerial_gym.task.navrl_task.navrl_perception import MAX_OBSTACLES, OBSTACLE_DIM
+
+        idx = hit_mask.nonzero(as_tuple=False).squeeze(1)
+        if idx.numel() == 0:
+            return
+        rng = float(self.task_config.lidar_max_range)
+
+        # True bars, expressed in the drone's vehicle frame (yaw-only, matching the LiDAR frame).
+        bars_w = self.obs_dict["obstacle_position"][idx][:, : self.n_bars_active, 0:3]  # (K, B, 3)
+        rel_w = bars_w - pos[idx].unsqueeze(1)
+        quat = self.obs_dict["robot_vehicle_orientation"][idx]  # (K, 4)
+        k, b = rel_w.shape[0], rel_w.shape[1]
+        rel_v = quat_rotate_inverse(
+            quat.unsqueeze(1).expand(k, b, 4).reshape(k * b, 4), rel_w.reshape(k * b, 3)
+        ).reshape(k, b, 3)
+        bar_dist = rel_v[:, :, 0:2].norm(dim=2)  # (K, B) horizontal distance to each bar
+        bar_bearing = torch.atan2(rel_v[:, :, 1], rel_v[:, :, 0])
+
+        # The bar that was struck = the closest one at the moment of contact.
+        hit_d, hit_i = bar_dist.min(dim=1)
+        rows = torch.arange(k, device=self.device)
+        hit_bearing = bar_bearing[rows, hit_i]
+        hit_rel = rel_v[rows, hit_i, 0:2]
+
+        # Crowding, two independent ways: ground truth (bars physically within the horizon) and as
+        # actually sensed (scan bearings returning something). H1 needs crowding > MAX_OBSTACLES.
+        bars_in_range = (bar_dist < rng).sum(dim=1).float()
+        scan = getattr(self.perception, "last_scan_nearest", None)
+        occupied = (
+            (scan[idx] < rng * 0.995).sum(dim=1).float()
+            if scan is not None
+            else torch.zeros_like(bars_in_range)
+        )
+
+        # Was the struck bar actually represented among the MAX_OBSTACLES tokens?
+        tokens = self.perception.obstacle_history[idx, -1].view(k, MAX_OBSTACLES, OBSTACLE_DIM)
+        tok_pos = tokens[:, :, 0:2] * rng  # positions are stored normalized by the LiDAR range
+        tok_valid = tokens[:, :, 11] > 0.5
+        tok_bearing = torch.atan2(tok_pos[:, :, 1], tok_pos[:, :, 0])
+        ang_err = torch.atan2(
+            torch.sin(tok_bearing - hit_bearing.unsqueeze(1)),
+            torch.cos(tok_bearing - hit_bearing.unsqueeze(1)),
+        ).abs()
+        # A token "covers" the struck bar if it is valid and points within one 10-deg scan bin
+        # (+ half-bin tolerance) of it. Slots are angularly separated by construction, so at most
+        # one can match; ties are resolved by taking the closest in bearing.
+        covers = tok_valid & (ang_err < math.radians(15.0))
+        ang_err_masked = torch.where(covers, ang_err, torch.full_like(ang_err, 1e3))
+        best_err, best_slot = ang_err_masked.min(dim=1)
+        matched = best_err < 1e2
+
+        self._bprobe["n"] += float(k)
+        self._bprobe["bars_in_range"] += float(bars_in_range.sum().item())
+        self._bprobe["occupied_bins"] += float(occupied.sum().item())
+        self._bprobe["hit_dist"] += float(hit_d.sum().item())
+        self._bprobe["hit_in_tokens"] += float(matched.sum().item())
+        if bool(matched.any()):
+            m = matched.nonzero(as_tuple=False).squeeze(1)
+            err = (tok_pos[m, best_slot[m]] - hit_rel[m]).norm(dim=1)
+            self._bprobe["hit_token_err"] += float(err.sum().item())
+            self._bprobe["hit_token_rank"] += float(best_slot[m].float().sum().item())
+
+    @staticmethod
+    def _max_obstacles_or_zero():
+        """Obstacle-token capacity, or 0 when perception is off (import stays lazy on purpose)."""
+        try:
+            from aerial_gym.task.navrl_task.navrl_perception import MAX_OBSTACLES
+
+            return int(MAX_OBSTACLES)
+        except Exception:
+            return 0
+
     def set_env_state(self, state):
+        if isinstance(state, dict):
+            # Loud config-drift guard (warn, never override: an eval may deliberately change these).
+            # A mismatch here silently invalidates the run -- see get_env_state() for why.
+            for key, current, name in (
+                ("cfg_lidar_max_range", float(self.task_config.lidar_max_range), "NAVRL_LIDAR_RANGE"),
+                ("cfg_max_velocity", float(self.task_config.max_velocity), "NAVRL_MAX_VELOCITY"),
+                ("cfg_yaw_rate_max", float(self.task_config.yaw_rate_max), "NAVRL_YAW_RATE_MAX"),
+                (
+                    "cfg_max_obstacles",
+                    float(self._max_obstacles_or_zero()),
+                    "MAX_OBSTACLES (navrl_perception.py)",
+                ),
+            ):
+                saved = state.get(key)
+                if saved is None:
+                    continue  # checkpoint predates this guard
+                if abs(float(saved) - current) > 1e-6:
+                    logger.warning(
+                        "NavRL CONFIG MISMATCH | %s: checkpoint trained with %.3f, running with %.3f. "
+                        "This rescales observations -- results are NOT comparable unless intentional."
+                        % (name, float(saved), current)
+                    )
         if isinstance(state, dict) and state.get("num_task_steps") is not None:
             self.num_task_steps = int(state["num_task_steps"])
         if isinstance(state, dict) and state.get("k_max_cur") is not None:
@@ -1068,7 +1203,11 @@ class NavRLTask(BaseTask):
         # steady-state z_err under a persistent bias. The integral term removes that steady-state
         # sag; anti-windup clamp keeps it from overshooting once the bias clears (e.g. after a
         # crash-avoidance turn ends). Reset per-episode in reset_idx.
-        _mv = self.task_config.max_velocity
+        # Vertical authority is alt_hold_vmax, NOT max_velocity: tying it to the horizontal speed
+        # limit made every pursuer-speed sweep confound "slower pursuer crashes less" with "slower
+        # pursuer has proportionally weaker altitude hold" (at 0.75 m/s it kept only ~30% of its
+        # authority AND a 3x tighter anti-windup bound).
+        _mv = float(getattr(self.task_config, "alt_hold_vmax", self.task_config.max_velocity))
         self._z_err_integral += z_err * self.step_dt
         _ki = 1.0
         _i_bound = _mv / _ki
@@ -1248,6 +1387,8 @@ class NavRLTask(BaseTask):
             if bool(d_contact.any()):
                 self._diag_steps["contact"] += float(steps[d_contact].sum().item())
                 self._diag_x_sum += float(pos[d_contact, 0].sum().item())
+                if self._bar_probe and self.perception is not None:
+                    self._record_bar_contact_probe(d_contact, pos)
             if bool(d_below.any()):
                 # below-death forensics: WHEN it dies (early sharp-turn transient vs late drift) and
                 # HOW TILTED it is at death (tilt-induced thrust sag vs level sink). b3_z from the
@@ -1964,9 +2105,29 @@ class NavRLTask(BaseTask):
                             p["track_cov_pos"] / n_probe,
                         )
                     )
+                if self._bar_probe and self._bprobe["n"] > 0:
+                    bp = self._bprobe
+                    nb = bp["n"]
+                    n_match = max(1.0, bp["hit_in_tokens"])
+                    logger.warning(
+                        "NavRL barprobe | n=%d bars_in_range=%.1f occupied_bins=%.1f "
+                        "hit_dist=%.2fm hit_in_tokens=%.3f token_err=%.2fm token_rank=%.1f "
+                        "(capacity=%d)"
+                        % (
+                            int(nb),
+                            bp["bars_in_range"] / nb,
+                            bp["occupied_bins"] / nb,
+                            bp["hit_dist"] / nb,
+                            bp["hit_in_tokens"] / nb,
+                            bp["hit_token_err"] / n_match,
+                            bp["hit_token_rank"] / n_match,
+                            self._max_obstacles_or_zero(),
+                        )
+                    )
                 self._diag = {k: 0 for k in self._diag}
                 self._diag_steps = {"contact": 0.0, "oob": 0.0, "below": 0.0}
                 self._diag_below_tilt = 0.0
+                self._bprobe = {k: 0.0 for k in self._bprobe}
                 self._diag_x_sum = 0.0
                 self._probe = {k: 0.0 for k in self._probe}
             self._succ_agg = self._crash_agg = self._to_agg = 0

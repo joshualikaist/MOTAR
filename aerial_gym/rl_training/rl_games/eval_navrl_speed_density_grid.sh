@@ -16,6 +16,16 @@ export NAVRL_PERCEPTION=1
 export NAVRL_TARGET_PATTERN="${NAVRL_TARGET_PATTERN:-cv}"
 export NAVRL_MAX_BARS="${NAVRL_MAX_BARS:-150}"
 
+# SCALING-CRITICAL: must match the checkpoint's training values (lidar range is also the scan
+# normalizer). Unset -> config defaults (4.0 / 2.5) -> wrong curve that looks like a bad policy.
+export NAVRL_LIDAR_RANGE="${NAVRL_LIDAR_RANGE:-8}"
+export NAVRL_YAW_RATE_MAX="${NAVRL_YAW_RATE_MAX:-3.0}"
+export NAVRL_TILT_COMP="${NAVRL_TILT_COMP:-1}"
+# The pursuer-speed axis below sweeps NAVRL_MAX_VELOCITY, which ALSO rescales the ego-velocity
+# observation. Pin the altitude-hold authority so it does NOT shrink with the swept speed, otherwise
+# "slow pursuer crashes less" is confounded with "slow pursuer cannot hold altitude".
+export NAVRL_ALT_HOLD_VMAX="${NAVRL_ALT_HOLD_VMAX:-2.5}"
+
 for density in ${DENSITIES}; do
   for target_speed in ${TARGET_SPEEDS}; do
     for pursuer_speed in ${PURSUER_SPEEDS}; do

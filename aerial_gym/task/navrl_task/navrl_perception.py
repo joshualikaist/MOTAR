@@ -10,6 +10,7 @@ measurements.  Ground truth is intentionally absent from every public method in 
 """
 
 import math
+import os
 
 import torch
 import torch.nn as nn
@@ -18,7 +19,12 @@ import torch.nn as nn
 ROBOT_HISTORY = 5
 TARGET_HISTORY = 5
 OBSTACLE_HISTORY = 5
-MAX_OBSTACLES = 5
+# Obstacle-token capacity: how many tracked bars the policy can see AT ALL in one step. Bars beyond
+# this are truncated out of the observation, so the drone cannot avoid what it is never shown --
+# the leading hypothesis (H1) for the bar_contact floor that survived the altitude and look-ahead
+# fixes. Env-overridable so the capacity can be swept; changing it changes STRUCTURED_OBS_DIM and
+# therefore requires a FRESH policy (no warm-start from a different capacity).
+MAX_OBSTACLES = int(os.environ.get("NAVRL_MAX_OBSTACLES", "").strip() or 5)
 ROBOT_DIM = 10
 TARGET_DIM = 16
 OBSTACLE_DIM = 12
@@ -273,6 +279,10 @@ class NavRLPerceptionModule:
         # Five nearest angularly separated obstacle proposals. Bars are static, hence velocity=0;
         # position and covariance come from range/angle geometry rather than simulator positions.
         nearest = scan.amin(dim=1)
+        # Diagnostics only (no grad, no copy cost on the hot path): the per-bearing obstacle range
+        # actually seen this step. The bar_contact probe uses it to measure how crowded the scene was
+        # at the moment of a collision -- i.e. whether MAX_OBSTACLES truncated away the bar that hit.
+        self.last_scan_nearest = nearest
         work = nearest.clone()
         tokens = torch.zeros(
             self.num_envs, MAX_OBSTACLES, OBSTACLE_DIM, device=self.device

@@ -297,3 +297,91 @@ bar_contact (~13%) drops. Caveat: extending the LiDAR range changes the static-s
 recovers. If bar_contact does NOT drop, the limiter is not look-ahead (8 m = 3.2 s at 2.5 m/s is
 already generous for a single dodge) but obstacle-token capacity (MAX_OBSTACLES=5, candidate 4) or
 path-planning through the field -- diagnose crowding-at-contact before spending another train there.
+
+## Candidate #2 RESULT: look-ahead is NOT the bar_contact lever (2026-07-24)
+
+Trained the 12 m look-ahead run (1052 -> 1230). It PEAKED at capture 95.2% / reward 111 @ epoch 6145,
+then COLLAPSED around epoch ~6700: crashdiag oob exploded 0.10 -> 0.60 spread uniformly over W/E/S/N
+(drone lost heading entirely and flew out of the arena in every direction), n_crash 350 -> 900, final
+capture 0.558 @ ep7000. The best-reward `gen_ppo.pth` predates the collapse and is the valid policy.
+
+Likely collapse trigger: changing NAVRL_LIDAR_RANGE 8 -> 12 changes the static-scan normalization
+(scan/range) while the warm-started checkpoint's `running_mean_std` still encodes 8 m statistics. As
+those input-normalization stats slowly re-adapt mid-training, the network's effective input scale
+drifts under it -> at some point the policy misreads the scan -> navigation lost -> on-policy PPO
+spirals on the bad data. (Consistent with the ~200-epoch delay after peak; not proven.)
+
+Eval of the surviving peak (results/general_12m_lookahead_speed_axis.csv), 6-speed general-spawn
+deterministic, absolute rates (% of all episodes), mean over 6 speeds, vs the 8 m tilt-comp policy:
+
+  capture       0.837 -> 0.856   (+1.8pp -- best so far)
+  crash         0.160 -> 0.139
+  oob            2.4% -> 1.2%    (-1.2pp  <- where the gain actually came from)
+  bar_contact   13.1% -> 12.6%   (-0.5pp  <- the INTENDED target, essentially unmoved)
+
+CONCLUSION: extending look-ahead did NOT reduce bar_contact. 8 m was already 3.2 s of warning at
+2.5 m/s -- ample for a single dodge -- so more range only helped the drone stop wandering out of the
+arena (oob), which is a small pool. Together with the altitude campaign this now gives three
+independent negatives on the SAME number:
+
+  altitude PI     -> bar_contact ~13%  (unmoved)
+  tilt comp       -> bar_contact ~13%  (unmoved)
+  look-ahead 12 m -> bar_contact ~13%  (unmoved)
+
+bar_contact (~13% of ALL episodes, mean_x ~12.4 m = deep inside the bar field) is immune to both
+altitude authority and sensing range. It is the entire remaining gap to a higher capture rate and it
+must now be diagnosed DIRECTLY rather than attacked with another guessed lever.
+
+Remaining hypotheses (mutually distinguishable by measurement, NOT by another training run):
+  H1 OBSTACLE TOKEN CAPACITY -- MAX_OBSTACLES=5 (navrl_perception.py). Deep in the field more than 5
+     bars are within range; bars 6+ are truncated out of the policy input entirely, so the drone
+     cannot avoid what it is never shown.
+  H2 PERCEPTION/TRACK QUALITY -- the KF track position for the hit bar is off by enough that the
+     drone plans around a phantom and clips the real one.
+
+DIAGNOSTIC (next step, no retraining): at each bar_contact instant record (a) how many bars are
+within the perception radius (crowding), (b) whether the bar actually hit was among the MAX_OBSTACLES
+tokens fed to the policy, (c) the track-vs-true position error of that bar. H1 predicts high crowding
++ hit bar frequently NOT in the token set; H2 predicts low crowding + hit bar present in tokens but
+with large track error. This is the same measure-first discipline that correctly identified the
+below/tilt mechanism.
+
+## bar_contact DIAGNOSED: both H1 and H2 confirmed, plus a hidden design ceiling (2026-07-24)
+
+New probe `NAVRL_BAR_PROBE=1` (evaluation-only; uses GT bar positions but nothing it computes
+reaches actor/critic/reward/termination). At every bar_contact death it records scene crowding, and
+whether the bar that actually hit was represented among the MAX_OBSTACLES obstacle tokens.
+
+Run on the 12 m peak policy (general spawn, target 1.0 m/s, n=266 contact deaths):
+
+  bars_in_range = 15.8    GT bars inside the LiDAR horizon at impact   (capacity = 5)
+  occupied_bins = 19.5    of 36 scan bearings returning an obstacle
+  hit_in_tokens = 0.647   fraction of struck bars that HAD a matching token
+  token_err     = 0.57 m  position error of the matched token vs the true bar
+  token_rank    = 0.9     matched hits sat in the nearest slots, not the far ones
+  hit_dist      = 0.56 m  distance to bar center at contact
+
+H1 (CAPACITY) CONFIRMED, strongly: 15.8 bars in range vs a capacity of 5, and **35% of all
+bar_contact deaths are collisions with a bar that was never in the policy's input at all**. The
+drone cannot avoid what it is never shown.
+
+H2 (TRACK QUALITY) CONFIRMED too, and its root cause is NOT the tracker: for the 65% that WERE
+represented, the token was off by 0.57 m -- comparable to the free gap width (drone collision box
+0.28 m, bar radius 0.2-0.4 m). That magnitude is explained by ANGULAR QUANTIZATION alone: 36
+horizontal bins = 10 deg each, so at ~5 m a half-bin error is ~0.44 m. The token positions are built
+from range/angle geometry (`_fuse_static_and_extract_obstacles`), so their lateral accuracy is capped
+by the beam count, not by filtering.
+
+HIDDEN CEILING (found while designing the fix): each accepted token blanks +-2 bins around itself
+(`for off in (-2,-1,0,1,2)`) = 50 deg of the 360 deg scan. 360/50 = 7.2, so **no more than ~7 tokens
+can ever be populated regardless of MAX_OBSTACLES** -- raising the capacity to 8+ without narrowing
+the suppression window silently wastes the extra slots.
+
+=> The fix is a package of three, all of which change the observation layout and therefore require a
+   FRESH policy (no warm-start):
+     1. MAX_OBSTACLES 5 -> 8            (H1: represent more of the 15.8 bars in range)
+     2. suppression +-2 -> +-1 bins     (H1: otherwise slots 8+ can never fill)
+     3. horizontal beams 36 -> 72       (H2: halve the 10 deg quantization driving the 0.57 m error)
+   This is the first bar_contact intervention in the whole campaign that is grounded in measurement
+   rather than a guessed lever -- the altitude PI, the tilt compensation and the 12 m look-ahead all
+   left bar_contact at ~13% because none of them touched the obstacle REPRESENTATION.

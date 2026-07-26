@@ -164,9 +164,12 @@ class task_config:
         """
 
         enable = _env_bool("NAVRL_PERCEPTION", False)
-        history_steps = 5
         history_interval_s = 0.5
-        max_obstacles = 5
+        # NOTE: history_steps and max_obstacles do NOT live here. They are ROBOT_HISTORY /
+        # MAX_OBSTACLES in navrl_perception.py because they define STRUCTURED_OBS_DIM (and therefore
+        # the network's token layout), so a single source of truth is mandatory. Duplicates used to
+        # sit here and were read by nobody -- editing them looked like tuning but changed nothing.
+        # Sweep the token capacity with NAVRL_MAX_OBSTACLES (requires a fresh policy: obs dim changes).
         lidar_max_range = _env_float("NAVRL_LIDAR_RANGE", 4.0)  # obstacle horizon; matches the LiDAR sensor
         min_target_pixels = _env_int("NAVRL_DETECTOR_MIN_PIXELS", 2)
         pixel_threshold = _env_float("NAVRL_DETECTOR_THRESHOLD", 0.55)
@@ -211,6 +214,13 @@ class task_config:
     # ~150 steps straight / ~225 weaving at 2 m/s, so 300 keeps timeout from being the failure mode)
 
     max_velocity = _env_float("NAVRL_MAX_VELOCITY", 2.0)  # NavRL v_lim [m/s]
+
+    # Vertical authority of the task-level altitude hold, DELIBERATELY independent of max_velocity.
+    # It used to reuse max_velocity for both the vz clamp and the PI anti-windup bound, which made a
+    # pursuer-speed sweep confound two effects: a 0.75 m/s sweep point lost ~70% of its altitude-hold
+    # authority, so "slower pursuer crashes less" was inseparable from "slower pursuer cannot hold
+    # altitude". Keep this fixed across speed sweeps so only the horizontal speed varies.
+    alt_hold_vmax = _env_float("NAVRL_ALT_HOLD_VMAX", 2.5)  # [m/s] vz clamp for the altitude hold
 
     # (b) Learned yaw control. yaw_rate_max MUST equal lee_controller_config_navrl.max_yaw_rate so
     # action[:, 3] in [-1, 1] maps linearly onto the controller's yaw-rate clamp (no dead band).
