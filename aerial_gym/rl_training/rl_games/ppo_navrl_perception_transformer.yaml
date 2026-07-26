@@ -90,6 +90,18 @@ params:
           regularizer:
             name: None
 
+    # Stop a run that has irrecoverably collapsed instead of burning hours on it. The 12 m
+    # look-ahead run peaked at reward 111 / capture 95.2% and then diverged (oob 0.10 -> 0.60 in
+    # every direction) for ~800 epochs before hitting max_epochs; gen_ppo.pth kept the pre-collapse
+    # peak, so all that compute bought nothing. Defaults never fire here: min_peak_reward=400 is far
+    # above this task's ~110 peak and drop_from_peak=0.55 is looser than the 47% drop we saw.
+    early_stop_collapse:
+      enable: True
+      min_epoch: 400
+      min_peak_reward: 80     # this task peaks around 110
+      drop_from_peak: 0.35    # the observed collapse was -47%
+      patience_epochs: 100    # must stay collapsed this long (survives ordinary dips)
+
     player:
       render: False
       deterministic: True

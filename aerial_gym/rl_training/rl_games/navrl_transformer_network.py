@@ -11,6 +11,7 @@ import torch.nn as nn
 from rl_games.algos_torch.network_builder import NetworkBuilder
 
 from aerial_gym.task.navrl_task.navrl_perception import (
+    HBEAMS,
     MAX_OBSTACLES,
     OBSTACLE_DIM,
     OBSTACLE_HISTORY,
@@ -18,13 +19,32 @@ from aerial_gym.task.navrl_task.navrl_perception import (
     ROBOT_HISTORY,
     STATIC_DIM,
     STRUCTURED_OBS_DIM,
+    VBEAMS,
     TARGET_DIM,
     TARGET_HISTORY,
 )
 
 
 EMBED_DIM = 64
+# CLS + static-scan + one token per history step of obstacles / robot / target. Note this does NOT
+# depend on MAX_OBSTACLES: raising the obstacle capacity widens each obstacle token's input
+# (MAX_OBSTACLES * OBSTACLE_DIM) rather than adding tokens.
 NUM_TOKENS = 17
+
+
+def _static_encoder_flat_dim(vbeams, hbeams, channels=16):
+    """Flattened size of the static-scan CNN, whose two strided convs halve each axis.
+
+    Derived rather than hard-coded so the scan resolution stays a single source of truth: a stale
+    constant here would surface as an opaque shape error at network build time.
+    """
+    stride1 = (2, 1)  # (vertical, horizontal)
+    stride2 = (2, 2)
+    v = -(-vbeams // stride1[0])
+    h = -(-hbeams // stride1[1])
+    v = -(-v // stride2[0])
+    h = -(-h // stride2[1])
+    return channels * v * h
 
 
 class NavRLTransformerBuilder(NetworkBuilder):
@@ -56,7 +76,7 @@ class NavRLTransformerBuilder(NetworkBuilder):
                 nn.Conv2d(16, 16, kernel_size=3, stride=(2, 2), padding=1),
                 nn.ELU(),
                 nn.Flatten(),
-                nn.Linear(16 * 1 * 18, 128),
+                nn.Linear(_static_encoder_flat_dim(VBEAMS, HBEAMS), 128),
                 nn.ELU(),
                 nn.Linear(128, EMBED_DIM),
             )
@@ -108,7 +128,7 @@ class NavRLTransformerBuilder(NetworkBuilder):
             obs = obs_dict["obs"]
             batch = obs.shape[0]
             offset = 0
-            static = obs[:, offset : offset + STATIC_DIM].view(batch, 1, 4, 36)
+            static = obs[:, offset : offset + STATIC_DIM].view(batch, 1, VBEAMS, HBEAMS)
             offset += STATIC_DIM
             obstacle = obs[
                 :, offset : offset + OBSTACLE_HISTORY * MAX_OBSTACLES * OBSTACLE_DIM

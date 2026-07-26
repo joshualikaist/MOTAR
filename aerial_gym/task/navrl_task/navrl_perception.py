@@ -28,7 +28,22 @@ MAX_OBSTACLES = int(os.environ.get("NAVRL_MAX_OBSTACLES", "").strip() or 5)
 ROBOT_DIM = 10
 TARGET_DIM = 16
 OBSTACLE_DIM = 12
-STATIC_DIM = 4 * 36
+
+# LiDAR scan resolution. HBEAMS is THE source of truth for the horizontal beam count and must equal
+# navrl_lidar_config.width (both read NAVRL_LIDAR_HBEAMS). It sets the angular quantization of every
+# obstacle token: token positions come from range/angle geometry, so their lateral error is about
+# half a bin, i.e. ~0.44 m at 5 m with 36 beams (10 deg). That matches the 0.57 m token error the
+# bar_contact probe measured, which is why doubling to 72 is the fix for mislocated obstacles rather
+# than anything in the tracker. Changing this changes STRUCTURED_OBS_DIM -> fresh policy required.
+HBEAMS = int(os.environ.get("NAVRL_LIDAR_HBEAMS", "").strip() or 36)
+VBEAMS = int(os.environ.get("NAVRL_LIDAR_VBEAMS", "").strip() or 4)
+# Angular half-width blanked around an accepted obstacle token, in DEGREES (not bins: the bin size
+# changes with HBEAMS). It stops one wide bar from consuming several token slots, but it also caps
+# how many tokens can EVER be filled at 360/(2*this). The original +-2 bins at 36 beams was +-20 deg
+# = at most ~7 tokens, so raising MAX_OBSTACLES alone silently wasted the extra slots. At +-10 deg
+# the ceiling is 18, comfortably above any capacity we intend to sweep.
+OBSTACLE_SUPPRESS_DEG = float(os.environ.get("NAVRL_OBSTACLE_SUPPRESS_DEG", "").strip() or 10.0)
+STATIC_DIM = VBEAMS * HBEAMS
 STRUCTURED_OBS_DIM = (
     ROBOT_HISTORY * ROBOT_DIM
     + TARGET_HISTORY * TARGET_DIM
@@ -200,9 +215,16 @@ class NavRLPerceptionModule:
 
         self._u = torch.arange(self.width, device=device, dtype=torch.float32).view(1, 1, -1)
         self._v = torch.arange(self.height, device=device, dtype=torch.float32).view(1, -1, 1)
+        # Bearings of the horizontal beams. The span stops 360/HBEAMS short of a full turn so the
+        # first and last ray are not the same direction (matching navrl_lidar_config's fov choice):
+        # HBEAMS=36 -> [-170, 180] deg at 10 deg spacing, HBEAMS=72 -> [-175, 180] at 5 deg.
+        self._bin_deg = 360.0 / HBEAMS
         self._lidar_angles = torch.linspace(
-            math.radians(-170.0), math.radians(180.0), 36, device=device
+            math.radians(-180.0 + self._bin_deg), math.radians(180.0), HBEAMS, device=device
         )
+        # Suppression window converted from degrees to bins (at least 1 so a token always blanks
+        # its own bin, never selecting the same bearing twice).
+        self._suppress_bins = max(1, int(round(OBSTACLE_SUPPRESS_DEG / self._bin_deg)))
 
     def reset_idx(self, env_ids):
         self.tracker.reset_idx(env_ids)
@@ -248,13 +270,13 @@ class NavRLPerceptionModule:
     def _fuse_static_and_extract_obstacles(
         self, lidar_m, raw_depth, target_pixels, target_surface_range, target_bearing, visible
     ):
-        scan = lidar_m.view(self.num_envs, 4, 36).clone()
+        scan = lidar_m.view(self.num_envs, VBEAMS, HBEAMS).clone()
 
         # Camera-associated LiDAR returns are target evidence, not static obstacles. No semantic
         # ID is consulted: association uses only bearing and metric range agreement.
         angle_delta = torch.atan2(
-            torch.sin(self._lidar_angles.view(1, 1, 36) - target_bearing.view(-1, 1, 1)),
-            torch.cos(self._lidar_angles.view(1, 1, 36) - target_bearing.view(-1, 1, 1)),
+            torch.sin(self._lidar_angles.view(1, 1, HBEAMS) - target_bearing.view(-1, 1, 1)),
+            torch.cos(self._lidar_angles.view(1, 1, HBEAMS) - target_bearing.view(-1, 1, 1)),
         ).abs()
         target_like = (
             visible.view(-1, 1, 1)
@@ -272,7 +294,7 @@ class NavRLPerceptionModule:
         camera_u = ((self.hfov * 0.5 - self._lidar_angles) / self.hfov * (self.width - 1)).round()
         camera_u = camera_u.long().clamp(0, self.width - 1)
         camera_ranges = camera_col_min[:, camera_u]
-        fused_camera = camera_ranges.unsqueeze(1).expand(-1, 4, -1)
+        fused_camera = camera_ranges.unsqueeze(1).expand(-1, VBEAMS, -1)
         scan[:, :, inside] = torch.minimum(scan[:, :, inside], fused_camera[:, :, inside])
         static_state = (scan / self.lidar_max_range).clamp(0.0, 1.0)
 
@@ -310,8 +332,8 @@ class NavRLPerceptionModule:
                 dim=1,
             )
             tokens[:, slot] = feat * valid.unsqueeze(1)
-            for off in (-2, -1, 0, 1, 2):
-                work[rows, (idx + off) % 36] = self.lidar_max_range
+            for off in range(-self._suppress_bins, self._suppress_bins + 1):
+                work[rows, (idx + off) % HBEAMS] = self.lidar_max_range
         return static_state.reshape(self.num_envs, -1), tokens
 
     def _associate_lidar_target(self, lidar_m, drone_pos_w, vehicle_quat, camera_visible):
@@ -327,7 +349,7 @@ class NavRLPerceptionModule:
             torch.cos(self._lidar_angles.view(1, -1) - bearing.unsqueeze(1)),
         ).abs()
         h_idx = angular_error.argmin(dim=1)
-        raw_scan = lidar_m.view(self.num_envs, 4, 36)
+        raw_scan = lidar_m.view(self.num_envs, VBEAMS, HBEAMS)
         rows = torch.arange(self.num_envs, device=self.device)
         ray_ranges = raw_scan[rows, :, h_idx]
         measured_surface, _ = ray_ranges.min(dim=1)

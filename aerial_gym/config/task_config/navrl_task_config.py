@@ -51,6 +51,21 @@ def _env_bool(name, default=False):
         return bool(default)
 
 
+def _perception_obs_dim():
+    """Structured observation width, imported from navrl_perception (the single source of truth).
+
+    Imported lazily inside the function: this config module is loaded by every NavRL task, while
+    navrl_perception pulls in torch and is only meaningful in perception mode. Falls back to the
+    36-beam / 5-token default so a non-perception run never fails on an unrelated import.
+    """
+    try:
+        from aerial_gym.task.navrl_task.navrl_perception import STRUCTURED_OBS_DIM
+
+        return int(STRUCTURED_OBS_DIM)
+    except Exception:
+        return 574
+
+
 class task_config:
     """NavRL reimplementation: static bar field + capture task (Phases 1-3).
 
@@ -86,8 +101,11 @@ class task_config:
     device = "cuda:0"
 
     # LiDAR scan geometry -- must stay in sync with NavRLLidarConfig.
-    lidar_hbeams = 36
-    lidar_vbeams = 4
+    # MUST match navrl_lidar_config.width/height and navrl_perception.HBEAMS/VBEAMS -- all three
+    # read the same env vars. Doubling the horizontal beams halves the angular quantization that
+    # dominates obstacle-token position error (see navrl_perception.HBEAMS).
+    lidar_hbeams = _env_int("NAVRL_LIDAR_HBEAMS", 36)
+    lidar_vbeams = _env_int("NAVRL_LIDAR_VBEAMS", 4)
     lidar_max_range = _env_float("NAVRL_LIDAR_RANGE", 4.0)  # must match NavRLLidarConfig.max_range
 
     # ------------------------------------------------------------------ Phase-3 vision pivot
@@ -179,9 +197,12 @@ class task_config:
         detection_dropout_prob = _env_float("NAVRL_DETECTION_DROPOUT", 0.3)
         rgb_noise_std = _env_float("NAVRL_RGB_NOISE_STD", 0.015)
         depth_noise_std = _env_float("NAVRL_DEPTH_NOISE_STD", 0.02)
-        # [static 144 | obstacle history 5x5x12 | robot history 5x10 |
-        #  target history 5x16] -> 574. The network converts these to 17 tokens.
-        observation_dim = 574
+        # [static VBEAMS*HBEAMS | obstacle history 5*MAX_OBSTACLES*12 | robot history 5x10 |
+        #  target history 5x16]. The network converts these to 17 tokens.
+        # DERIVED, never hard-coded: this used to be a literal 574, which silently contradicted
+        # navrl_perception the moment the scan resolution or obstacle capacity was swept (the task
+        # asserts the two agree at startup, so a stale literal aborts the run).
+        observation_dim = _perception_obs_dim()
 
     # Observation:
     #   default      = S_int(12) + LiDAR range(144)                            = 156
