@@ -1,11 +1,11 @@
 <!doctype html>
-<html lang="ko">
+<html lang="ko" data-theme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>MOTAR · 가림 속 표적을 다시 찾는 자율 드론 요격 연구</title>
 <meta name="description" content="센서만으로 장애물을 피하며 이동 표적을 요격하는 perception-aware 드론 강화학습 연구의 실시간 학습 현황.">
-<meta name="color-scheme" content="dark light">
+<meta name="color-scheme" content="light dark">
 <meta property="og:title" content="MOTAR · Research Status">
 <meta property="og:description" content="센서 전용 관측으로 24×24 m 장애물 필드에서 이동 표적을 요격하는 강화학습 연구 현황.">
 <link rel="stylesheet" href="style.css">
@@ -28,62 +28,60 @@
   <button class="themebtn magnetic" id="themebtn" type="button" aria-label="색상 테마 전환">◐</button>
 </nav>
 
-<!-- ══════════════════════════ HERO ══════════════════════════ -->
 <header class="hero">
-  <div id="stage" aria-hidden="true"></div>
-  <div class="iframe" aria-hidden="true">
-    <span class="iframe-tr"></span>
-    <span class="iframe-bl"></span>
+  <span class="pill is-live" id="livepill">
+    <span class="dot"></span><span id="livepill-txt">학습 진행 중</span>&nbsp;<b id="livepill-run">—</b>
+  </span>
+  <h1>가림 속 표적을<br><em>다시 찾는</em> 드론</h1>
+  <p class="lede">
+    GT 없이 <b>LiDAR와 전방 검출기만으로</b> 장애물 필드를 통과해 이동 표적을 요격합니다.
+  </p>
+  <div class="hero-cta">
+    <a class="btn primary magnetic" href="#s-arena">3D 아레나 보기</a>
+    <a class="btn magnetic" href="#s-live">학습 현황</a>
   </div>
-
-  <div class="hud">
-    <div><span class="dot" style="background:var(--bar)"></span><b id="hud-bars">25</b> 막대 · <span id="hud-density">5.2</span>/100m²</div>
-    <div><span class="dot" style="background:var(--good)"></span>pursuer · 2.5 m/s · z=1 m</div>
-    <div><span class="dot" style="background:var(--bad)"></span>moving target · 센서로만 관측</div>
-  </div>
-  <div class="sensor" aria-hidden="true">
-    <div><span>DETECTOR</span><b id="hud-camera" class="seen">DETECTED</b></div>
-    <div><span>LOS RANGE</span><b id="hud-range">—</b></div>
-    <div><span>LiDAR</span><b>72×4 · 12 m</b></div>
-    <div><span>TOKEN FOV</span><b>240°</b></div>
-  </div>
-
-  <div class="hero-inner">
-    <span class="pill is-live" id="livepill">
-      <span class="dot"></span><span id="livepill-txt">학습 진행 중</span>&nbsp;<b id="livepill-run">—</b>
-    </span>
-    <h1>가림 속 표적을<br><em>다시 찾는</em> 드론</h1>
-    <p class="lede">
-      GT 없이 <b>LiDAR와 전방 검출기만으로</b> 장애물 필드를 통과해 이동 표적을 요격합니다.
-    </p>
-    <div class="hero-cta">
-      <a class="btn magnetic" href="#s-live">현재 학습 보기</a>
-      <a class="btn magnetic" href="#s-arena">아레나 조작</a>
-    </div>
-  </div>
-
-  <div class="scrollcue" aria-hidden="true">SCROLL<i></i></div>
 </header>
 
 <main class="wrap">
 
-  <!-- 01 ARENA -->
-  <section id="s-arena">
+  <!-- 01 ARENA — dedicated visible stage (not a buried background) -->
+  <section id="s-arena" class="arena-sec">
     <div class="shead reveal">
       <span class="n">01 / ARENA</span>
       <h2>보임과 가림을 직접 만져보기</h2>
-      <p class="sub">24×24×3 m 아레나입니다. 방사형 ray는 <b>12 m LiDAR(72×4)</b>, 청록 frustum은 전방 검출기,
-        흰 궤적은 pursuer의 경로입니다. 표적이 막대 뒤로 들어가면 <b>DETECTED → OCCLUDED</b>로 바뀝니다 —
-        이 상태 전환을 견디는 것이 이 연구의 핵심 난이도입니다.</p>
+      <p class="sub">24×24×3 m 아레나입니다. 청록 ray는 <b>12 m LiDAR(72×4)</b>, frustum은 전방 검출기입니다.
+        표적이 막대 뒤로 가면 <b>DETECTED → OCCLUDED</b>로 바뀝니다.</p>
     </div>
-    <div class="dock reveal" style="--i:1">
+
+    <div class="stage-frame reveal" style="--i:1">
+      <div class="iframe" aria-hidden="true">
+        <span class="iframe-tr"></span>
+        <span class="iframe-bl"></span>
+      </div>
+      <div id="stage" role="img" aria-label="3D perception arena"></div>
+      <div class="stage-hud">
+        <div class="hud-card">
+          <div><span class="dot" style="background:var(--bar)"></span><b id="hud-bars">25</b> 막대 · <span id="hud-density">5.2</span>/100m²</div>
+          <div><span class="dot" style="background:var(--good)"></span>pursuer · 2.5 m/s</div>
+          <div><span class="dot" style="background:var(--bad)"></span>moving target</div>
+        </div>
+        <div class="hud-card sensor">
+          <div><span>DETECTOR</span><b id="hud-camera" class="seen">DETECTED</b></div>
+          <div><span>LOS RANGE</span><b id="hud-range">—</b></div>
+          <div><span>LiDAR</span><b>72×4 · 12 m</b></div>
+          <div><span>TOKEN FOV</span><b>240°</b></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dock reveal" style="--i:2">
       <div class="ctl">
         <label for="sl-bars">장애물 막대 · <span class="val" id="lbl-bars">25</span></label>
         <input type="range" id="sl-bars" min="10" max="150" step="1" value="25">
       </div>
       <div class="ctl">
-        <label for="sl-speed">표적 속도 · <span class="val" id="lbl-speed">0.0</span> m/s</label>
-        <input type="range" id="sl-speed" min="0" max="20" step="1" value="0">
+        <label for="sl-speed">표적 속도 · <span class="val" id="lbl-speed">0.5</span> m/s</label>
+        <input type="range" id="sl-speed" min="0" max="20" step="1" value="5">
       </div>
       <button class="btn magnetic" id="btn-play" type="button" aria-pressed="true">일시정지</button>
       <button class="btn magnetic" id="btn-view" type="button">시점 · overview</button>
@@ -92,11 +90,10 @@
       <label class="chk"><input type="checkbox" id="cb-lidar" checked> LiDAR</label>
       <label class="chk"><input type="checkbox" id="cb-trails" checked> 궤적</label>
     </div>
-    <figcaption class="reveal" style="--i:2">마우스로 회전 · <b>V</b> 키로 시점 전환 · 휠은 페이지 스크롤을 유지합니다.
-      배치 밴드 ≈478 m²이며 랜덤 rejection 배치가 <b>~115막대에서 최소간격 완화를 시작</b>해 ~148막대에서 포화합니다.</figcaption>
+    <figcaption class="reveal" style="--i:3">드래그로 회전 · 휠로 확대 · <b>V</b> 키로 시점 전환.
+      표적이 움직이도록 기본 속도를 0.5 m/s로 두었습니다.</figcaption>
   </section>
 
-  <!-- 02 LIVE -->
   <section id="s-live">
     <div class="shead reveal">
       <span class="n">02 / LIVE</span>
@@ -107,35 +104,30 @@
     <figcaption class="reveal" id="live-cap" style="--i:2"></figcaption>
   </section>
 
-  <!-- 03 FIREWALL -->
   <section id="s-firewall">
     <div class="shead reveal">
       <span class="n">03 / FIREWALL</span>
       <h2>정책이 볼 수 있는 것과 볼 수 없는 것</h2>
-      <p class="sub">actor에는 센서에서 유도된 값만 들어가고, 시뮬레이터의 GT 표적 위치는 critic·reward·평가 label에만 쓰입니다.</p>
+      <p class="sub">actor에는 센서에서 유도된 값만 들어가고, GT 표적 위치는 critic·reward·평가 label에만 쓰입니다.</p>
     </div>
     <div class="flow reveal" style="--i:1">
       <div class="card now tilt">
         <h3>ACTOR 관측 · 센서 유도</h3>
-        <p><code>LiDAR 72×4 @ 12 m</code> 정적 장애물 스캔</p>
-        <p><code>obstacle tokens ×8 / 240° 선택</code></p>
-        <p><code>전방 RGB-D 검출기 → track</code> 표적 bearing·range</p>
-        <p>가림 구간에는 추정 belief만 남습니다.</p>
+        <p><code>LiDAR 72×4 @ 12 m</code></p>
+        <p><code>obstacle tokens ×8 / 240°</code></p>
+        <p><code>전방 RGB-D 검출기 → track</code></p>
       </div>
       <div class="arrow" aria-hidden="true">→</div>
       <div class="card next tilt">
-        <h3>GT 사용 범위 · 학습 신호 전용</h3>
+        <h3>GT · 학습 신호 전용</h3>
         <p><code>critic value target</code></p>
         <p><code>reward · 종료 판정</code></p>
-        <p><code>평가 label (capture / crash)</code></p>
-        <p>actor 입력에는 어떤 경로로도 들어가지 않습니다.</p>
+        <p><code>평가 label</code></p>
       </div>
     </div>
-    <div class="note reveal" style="--i:2"><b>따라서:</b> 아래 모든 수치는 “센서 전용(sensor-only)” 성능입니다.
-      GT를 주입한 참고선은 곡선에서 회색 점선으로 따로 표시했습니다.</div>
+    <div class="note reveal" style="--i:2"><b>따라서:</b> 아래 수치는 모두 sensor-only 성능입니다.</div>
   </section>
 
-  <!-- 04 DENSITY -->
   <section id="s-density">
     <div class="shead reveal">
       <span class="n">04 / DENSITY</span>
@@ -143,80 +135,68 @@
       <p class="sub" id="density-sub">—</p>
     </div>
     <div class="scrollx reveal" style="--i:1">
-      <svg class="plot" id="curve" viewBox="0 0 740 400" role="img" aria-label="장애물 밀도에 따른 포획률과 충돌률"></svg>
+      <svg class="plot" id="curve" viewBox="0 0 740 400" role="img" aria-label="밀도 곡선"></svg>
     </div>
     <div class="legend reveal" style="--i:2">
-      <span><i style="background:var(--sensor)"></i>포획률 · 센서 전용</span>
-      <span><i style="background:var(--bad)"></i>충돌률</span>
-      <span><i class="dash"></i>포획률 · GT 주입 참고선</span>
+      <span><i style="background:var(--sensor)"></i>포획 · 센서</span>
+      <span><i style="background:var(--bad)"></i>충돌</span>
+      <span><i class="dash"></i>포획 · GT 참고</span>
     </div>
     <div class="scrollx reveal" style="--i:3"><table id="curve-tbl"></table></div>
     <div class="tbl-cap reveal" id="curve-cap" style="--i:4"></div>
   </section>
 
-  <!-- 05 SPEED -->
   <section id="s-speed">
     <div class="shead reveal">
       <span class="n">05 / SPEED</span>
       <h2>표적이 빨라져도 버티는가</h2>
-      <p class="sub">25막대에서 표적 속도를 0 → 1.5 m/s로 올리며 측정했습니다. 드론이 2.5 m/s로 충분히 빠르기 때문에
-        속도 축은 <b>거의 평탄</b>합니다. 장애물 토큰 선택 범위를 360°에서 240°로 좁힌 결과의 정면 비교입니다.</p>
+      <p class="sub">25막대 · 0→1.5 m/s. 토큰 FOV 240° vs 360° 비교.</p>
     </div>
     <div class="scrollx reveal" style="--i:1">
-      <svg class="plot" id="speedplot" viewBox="0 0 740 380" role="img" aria-label="표적 속도에 따른 포획률"></svg>
+      <svg class="plot" id="speedplot" viewBox="0 0 740 380" role="img" aria-label="속도 곡선"></svg>
     </div>
     <div class="legend reveal" style="--i:2">
-      <span><i style="background:var(--sensor)"></i>토큰 FOV 240° (현재)</span>
-      <span><i style="background:var(--gt)"></i>토큰 FOV 360° (직전)</span>
-      <span><i style="background:var(--bad)"></i>막대 충돌률</span>
+      <span><i style="background:var(--sensor)"></i>FOV 240°</span>
+      <span><i style="background:var(--gt)"></i>FOV 360°</span>
+      <span><i style="background:var(--bad)"></i>막대 충돌</span>
     </div>
     <div class="scrollx reveal" style="--i:3"><table id="speed-tbl"></table></div>
     <div class="tbl-cap reveal" id="speed-cap" style="--i:4"></div>
   </section>
 
-  <!-- 06 CAMPAIGN -->
   <section id="s-campaign">
     <div class="shead reveal">
       <span class="n">06 / CAMPAIGN</span>
       <h2>무엇이 실제로 통했나</h2>
-      <p class="sub">고정 스폰 baseline부터 현재까지의 개입 순서입니다. <b>고도 관련 3연속 개입은 포획률만 올리고
-        막대 충돌은 13%에서 전혀 못 건드렸습니다.</b> 충돌이 움직인 것은 장애물 표현을 바꾼 뒤부터입니다.</p>
+      <p class="sub">고도 개입은 포획만 올리고 충돌은 못 건드렸습니다. 충돌이 움직인 것은 장애물 표현 이후입니다.</p>
     </div>
     <div class="camp reveal" id="campaign" style="--i:1"></div>
-    <figcaption class="reveal" style="--i:2">막대 충돌률은 25막대·속도평균 기준. 각 행은 warm-start fine-tune 결과입니다.</figcaption>
   </section>
 
-  <!-- 07 FINDINGS -->
   <section id="s-diag">
     <div class="shead reveal">
       <span class="n">07 / FINDINGS</span>
       <h2>측정이 기각한 것들</h2>
-      <p class="sub">그럴듯했지만 데이터가 반증한 가설들입니다. 다시 시도하지 않기 위해 남겨 둡니다.</p>
     </div>
     <div class="grid k2" id="diagnosis"></div>
   </section>
 
-  <!-- 08 RUNS -->
   <section id="s-runs">
     <div class="shead reveal">
       <span class="n">08 / RUNS</span>
-      <h2>학습 타임라인 · peak와 final의 간격</h2>
-      <p class="sub"><b>peak→final 간격</b>이 큰 run은 커리큘럼이 마지막에 가장 어려운 설정에 도달해
-        최종 체크포인트가 과특화된 신호입니다.</p>
+      <h2>학습 타임라인 · peak와 final</h2>
     </div>
     <div class="scrollx reveal" style="--i:1"><table id="runs-tbl"></table></div>
   </section>
 
-  <!-- 09 NEXT -->
   <section id="s-next">
     <div class="shead reveal">
       <span class="n">09 / NEXT</span>
-      <h2>다음에 필요한 것은 아이디어가 아니라 시간</h2>
+      <h2>다음에 필요한 것은 시간</h2>
     </div>
     <div class="grid k2" id="nextplan"></div>
   </section>
 
-  <!-- 10 ROADMAP -->
   <section id="s-road">
     <div class="shead reveal">
       <span class="n">10 / ROADMAP</span>
@@ -225,17 +205,16 @@
     <div class="phases reveal" id="phases" style="--i:1"></div>
     <div class="foot">
       MOTAR · <code>research/navrl-env</code> · joshualikaist/MOTAR<br>
-      데이터 <span id="foot-runs">—</span> runs · <code>docs/status/status.json</code> ·
-      3D three.js · 갱신 <span id="foot-gen">—</span>
+      데이터 <span id="foot-runs">—</span> runs · 갱신 <span id="foot-gen">—</span>
     </div>
   </section>
 
 </main>
 
-<script id="fallback" type="application/json">{"generated_at":"2026-07-27T17:15:06.952309+00:00","n_runs":32,"active_run":{"run":"ppo_260727_2324_navrl","is_live":true,"metrics_age_min":0.0,"epoch":18662.0,"epochs_logged":3662,"tail_epochs":50,"captured_rate":0.69619208,"crash_rate":0.29511682000000006,"timeout_rate":0.008691112,"mean_reward":41.36392999999999,"closest_approach_m":0.4708216599999999,"n_bars_active":70.0,"curriculum_max_m":13.2172646},"latest_run":{"run":"ppo_260727_1309_navrl","finalized_at":"2026-07-27T08:46:06.183543+00:00","exit_reason":"max_epochs","epochs_logged":6094,"first_epoch":8907,"last_epoch":15000,"is_navrl":true,"last_mean_reward":48.58036422729492,"last_mean_episode_length":44.04255294799805,"last_captured_rate":0.6853932584269663,"last_crash_rate":0.3146067415730337,"last_timeout_rate":0.0,"last_closest_approach_m":0.3772043629747922,"last_closest_min_m":0.16644321382045746,"last_curriculum_max_m":14.169286727905273,"last_n_bars_active":65,"peak_captured_rate":0.8529411764705882,"peak_captured_epoch":12530,"peak_mean_reward":64.91057586669922,"peak_epoch":13135,"reward_collapse":false},"density_curves":{"general_repr_density_curve":{"notes":["Density curve -- sensor-only perception+Transformer policy (Stage C, FOV-240 representation)","checkpoint: runs/ppo_260727_1309_navrl/nn/last_gen_ppo_ep_15000_rew_48.580364.pth","(density curriculum reached 65 bars; 75+ is OUT-OF-DISTRIBUTION generalization, not trained there)","config: general spawn, target 1.0 m/s mixed, drone 2.5 m/s, LiDAR 72x4 @12 m,","8 obstacle tokens / 240 deg selection / +-10 deg suppression, tilt comp on, max tilt 45 deg","eval: 128 envs, ~2049 episodes/cell, deterministic","density per 100 m^2 = bars / 478 * 100"],"rows":[{"bars":25.0,"density_per_100m2":5.2,"capture":0.896,"crash":0.102,"timeout":0.002,"crash_bar_contact_share":0.652,"crash_below_share":0.229,"crash_oob_share":0.119},{"bars":50.0,"density_per_100m2":10.5,"capture":0.796,"crash":0.202,"timeout":0.002,"crash_bar_contact_share":0.853,"crash_below_share":0.101,"crash_oob_share":0.046},{"bars":65.0,"density_per_100m2":13.6,"capture":0.679,"crash":0.316,"timeout":0.005,"crash_bar_contact_share":0.88,"crash_below_share":0.079,"crash_oob_share":0.042},{"bars":75.0,"density_per_100m2":15.7,"capture":0.598,"crash":0.399,"timeout":0.003,"crash_bar_contact_share":0.917,"crash_below_share":0.053,"crash_oob_share":0.031},{"bars":110.0,"density_per_100m2":23.0,"capture":0.28,"crash":0.711,"timeout":0.009,"crash_bar_contact_share":0.944,"crash_below_share":0.033,"crash_oob_share":0.023},{"bars":130.0,"density_per_100m2":27.2,"capture":0.15,"crash":0.847,"timeout":0.003,"crash_bar_contact_share":0.946,"crash_below_share":0.025,"crash_oob_share":0.029},{"bars":150.0,"density_per_100m2":31.4,"capture":0.079,"crash":0.92,"timeout":0.002,"crash_bar_contact_share":0.945,"crash_below_share":0.021,"crash_oob_share":0.034}],"mtime":"2026-07-27T11:31:13.671983+00:00"},"vision_density_curve":{"notes":[],"rows":[{"density_bars":25.0,"captured":0.697,"crash":0.2,"timeout":0.103,"gt_injected_phase2":0.97},{"density_bars":50.0,"captured":0.691,"crash":0.24,"timeout":0.069,"gt_injected_phase2":0.97},{"density_bars":75.0,"captured":0.661,"crash":0.31,"timeout":0.029,"gt_injected_phase2":0.94},{"density_bars":110.0,"captured":0.606,"crash":0.372,"timeout":0.022,"gt_injected_phase2":0.93},{"density_bars":130.0,"captured":0.473,"crash":0.507,"timeout":0.02,"gt_injected_phase2":null},{"density_bars":150.0,"captured":0.283,"crash":0.706,"timeout":0.011,"gt_injected_phase2":0.66}],"mtime":"2026-07-19T22:00:59.497205+00:00"}},"speed_curves":{"general_repr_fov240_speed_axis":{"notes":["Candidate B: 240-degree obstacle-token selection FOV warm-start","source policy: ppo_260727_0225_navrl (360-degree token selection)","trained policy: ppo_260727_0930_navrl, gen_ppo.pth (peak reward epoch 8571)","common representation: 8 obstacle tokens, suppression +/-10 deg, 4x72 LiDAR, 12 m range","eval: 128 envs, ~2049 episodes/cell, general spawn, deterministic","IMPORTANT: the trained policy must be evaluated with NAVRL_OBSTACLE_FOV_DEG=240.","At target=1.0, evaluating the same policy at 360 deg changed capture 0.893 -> 0.878.","The training log/checkpoint predated the FOV provenance guard, so 240 deg was reconstructed by","paired 240/360 evaluation. Future checkpoints record cfg_token_fov_deg."],"rows":[{"target_speed_ms":0.0,"capture_fov360_baseline":0.874,"capture_fov240":0.894,"bar_contact_fov360_baseline":0.074,"bar_contact_fov240":0.062,"below_fov360_baseline":0.03,"below_fov240":0.029},{"target_speed_ms":0.5,"capture_fov360_baseline":0.879,"capture_fov240":0.906,"bar_contact_fov360_baseline":0.079,"bar_contact_fov240":0.062,"below_fov360_baseline":0.038,"below_fov240":0.027},{"target_speed_ms":0.75,"capture_fov360_baseline":0.87,"capture_fov240":0.894,"bar_contact_fov360_baseline":0.086,"bar_contact_fov240":0.068,"below_fov360_baseline":0.033,"below_fov240":0.029},{"target_speed_ms":1.0,"capture_fov360_baseline":0.869,"capture_fov240":0.893,"bar_contact_fov360_baseline":0.089,"bar_contact_fov240":0.078,"below_fov360_baseline":0.033,"below_fov240":0.024},{"target_speed_ms":1.25,"capture_fov360_baseline":0.859,"capture_fov240":0.889,"bar_contact_fov360_baseline":0.101,"bar_contact_fov240":0.079,"below_fov360_baseline":0.03,"below_fov240":0.026},{"target_speed_ms":1.5,"capture_fov360_baseline":0.824,"capture_fov240":0.859,"bar_contact_fov360_baseline":0.119,"bar_contact_fov240":0.1,"below_fov360_baseline":0.04,"below_fov240":0.032},{"target_speed_ms":"mean","capture_fov360_baseline":0.862,"capture_fov240":0.889,"bar_contact_fov360_baseline":0.091,"bar_contact_fov240":0.075,"below_fov360_baseline":0.034,"below_fov240":0.028}],"mtime":"2026-07-27T02:50:41.125789+00:00"},"general_repr_speed_axis":{"notes":["Candidate #4 (obstacle representation) -- speed-axis eval","checkpoint: runs/ppo_260727_0225_navrl/nn/gen_ppo.pth (epoch 7247, reward 107.8)","FIRST fresh run to complete: 8000/8000 epochs, no NaN. Earlier fresh attempts died at epoch","43-62 (adaptive-LR NaN, fixed separately by lr_schedule: None).","representation: MAX_OBSTACLES=8, suppression +-10 deg, LiDAR 72 horizontal beams (obs 574 -> 898)","other config identical to the 12 m recipe: 25 bars, general spawn, LiDAR 12 m, v=2.5, yaw=3.0,","tilt comp on, max tilt 45 deg, oob margin 1.0","eval: 128 envs, ~2049 episodes/cell, deterministic. MUST be run with the same 72-beam / 8-token","config as training (scan normalization + obs layout).","","HEADLINE: bar_contact 12.7% -> 9.0% absolute (-29%), the FIRST intervention in the campaign to","move it (altitude PI, tilt comp and 12 m look-ahead all left it at ~13%). capture +1.0pp.","BUT the probe refutes both mechanisms we predicted:","hit_in_tokens 0.647 -> 0.40-0.53 (WORSE despite capacity 5->8, and token_rank ~2.9 shows the","extra slots ARE used) => capacity was not the binding constraint; 8 tokens still cannot cover","the ~16 bars in range, and \"nearest N\" is the wrong selection rule in a dense field.","token_err 0.57 m -> 0.72-1.13 m (WORSE despite halving the angular bin) => H2 was wrong, the","token position error is not dominated by angular quantization.","The gain therefore came from somewhere else (most likely the denser static scan itself), not","from the token mechanism we were aiming at."],"rows":[{"target_speed_ms":0.0,"capture":0.874,"crash":0.111,"timeout":0.015,"crash_bar_contact_share":0.671,"crash_below_share":0.268,"crash_oob_share":0.061,"hit_in_tokens":0.425,"token_err_m":1.13,"bars_in_range":16.1},{"target_speed_ms":0.5,"capture":0.879,"crash":0.121,"timeout":0.0,"crash_bar_contact_share":0.656,"crash_below_share":0.312,"crash_oob_share":0.032,"hit_in_tokens":0.475,"token_err_m":0.78,"bars_in_range":16.2},{"target_speed_ms":0.75,"capture":0.87,"crash":0.13,"timeout":0.0,"crash_bar_contact_share":0.662,"crash_below_share":0.252,"crash_oob_share":0.086,"hit_in_tokens":0.5,"token_err_m":0.83,"bars_in_range":16.0},{"target_speed_ms":1.0,"capture":0.869,"crash":0.131,"timeout":0.0,"crash_bar_contact_share":0.679,"crash_below_share":0.25,"crash_oob_share":0.071,"hit_in_tokens":0.418,"token_err_m":0.8,"bars_in_range":15.5},{"target_speed_ms":1.25,"capture":0.859,"crash":0.141,"timeout":0.0,"crash_bar_contact_share":0.716,"crash_below_share":0.215,"crash_oob_share":0.069,"hit_in_tokens":0.527,"token_err_m":0.74,"bars_in_range":15.7},{"target_speed_ms":1.5,"capture":0.824,"crash":0.175,"timeout":0.001,"crash_bar_contact_share":0.679,"crash_below_share":0.229,"crash_oob_share":0.092,"hit_in_tokens":0.403,"token_err_m":0.88,"bars_in_range":15.9}],"mtime":"2026-07-27T00:22:05.416882+00:00"}},"runs":[{"run":"ppo_260727_0058_navrl","finalized_at":"2026-07-26T16:04:40.032584+00:00","exit_reason":"max_epochs","epochs_logged":120,"first_epoch":1,"last_epoch":120,"is_navrl":true,"last_mean_reward":-41.91904067993164,"last_mean_episode_length":19.161426544189453,"last_captured_rate":0.0,"last_crash_rate":1.0,"last_timeout_rate":0.0,"last_closest_approach_m":null,"last_closest_min_m":null,"last_curriculum_max_m":6.913992881774902,"last_n_bars_active":25,"peak_captured_rate":0.009345794392523364,"peak_captured_epoch":68,"peak_mean_reward":-36.406166076660156,"peak_epoch":110,"reward_collapse":false},{"run":"ppo_260727_0106_navrl","finalized_at":"2026-07-26T16:12:52.118591+00:00","exit_reason":"max_epochs","epochs_logged":120,"first_epoch":1,"last_epoch":120,"is_navrl":true,"last_mean_reward":-45.75758743286133,"last_mean_episode_length":23.56831169128418,"last_captured_rate":0.0,"last_crash_rate":1.0,"last_timeout_rate":0.0,"last_closest_approach_m":null,"last_closest_min_m":null,"last_curriculum_max_m":6.959465026855469,"last_n_bars_active":25,"peak_captured_rate":0.011904761904761904,"peak_captured_epoch":78,"peak_mean_reward":-40.98122024536133,"peak_epoch":1,"reward_collapse":false},{"run":"ppo_260727_0147_navrl","finalized_at":"2026-07-26T16:49:41.840497+00:00","exit_reason":"early_stop_nan","epochs_logged":43,"first_epoch":1,"last_epoch":43,"is_navrl":true,"last_mean_reward":null,"last_mean_episode_length":35.76774215698242,"last_captured_rate":0.0,"last_crash_rate":0.0,"last_timeout_rate":1.0,"last_closest_approach_m":null,"last_closest_min_m":null,"last_curriculum_max_m":5.98809289932251,"last_n_bars_active":25,"peak_captured_rate":0.01694915254237288,"peak_captured_epoch":13,"peak_mean_reward":-40.98122024536133,"peak_epoch":1,"reward_collapse":false},{"run":"ppo_260727_0225_navrl","finalized_at":"2026-07-26T22:53:01.673654+00:00","exit_reason":"max_epochs","epochs_logged":8000,"first_epoch":1,"last_epoch":8000,"is_navrl":true,"last_mean_reward":94.21517181396484,"last_mean_episode_length":45.47786331176758,"last_captured_rate":0.8571428571428571,"last_crash_rate":0.14285714285714285,"last_timeout_rate":0.0,"last_closest_approach_m":0.3970300429142438,"last_closest_min_m":0.17081673443317413,"last_curriculum_max_m":9.945727348327637,"last_n_bars_active":25,"peak_captured_rate":0.96,"peak_captured_epoch":7277,"peak_mean_reward":107.814208984375,"peak_epoch":7247,"reward_collapse":false},{"run":"ppo_260727_0930_navrl","finalized_at":"2026-07-27T02:01:13.324819+00:00","exit_reason":"max_epochs","epochs_logged":2253,"first_epoch":7248,"last_epoch":9500,"is_navrl":true,"last_mean_reward":99.31278228759766,"last_mean_episode_length":45.890106201171875,"last_captured_rate":0.8229166666666666,"last_crash_rate":0.17708333333333334,"last_timeout_rate":0.0,"last_closest_approach_m":0.38882287487953526,"last_closest_min_m":0.09012570977210999,"last_curriculum_max_m":13.668133735656738,"last_n_bars_active":25,"peak_captured_rate":0.9662921348314607,"peak_captured_epoch":9470,"peak_mean_reward":112.46405792236328,"peak_epoch":8571,"reward_collapse":false},{"run":"ppo_260727_1204_navrl","finalized_at":"2026-07-27T03:19:38.135180+00:00","exit_reason":"early_stop_collapse","epochs_logged":335,"first_epoch":8572,"last_epoch":8906,"is_navrl":true,"last_mean_reward":38.70595932006836,"last_mean_episode_length":42.975833892822266,"last_captured_rate":0.5888888888888889,"last_crash_rate":0.4111111111111111,"last_timeout_rate":0.0,"last_closest_approach_m":0.38067882887597354,"last_closest_min_m":0.2013450413942337,"last_curriculum_max_m":6.584150314331055,"last_n_bars_active":60,"peak_captured_rate":0.9456521739130435,"peak_captured_epoch":8614,"peak_mean_reward":108.30500030517578,"peak_epoch":8589,"reward_collapse":false},{"run":"ppo_260727_1309_navrl","finalized_at":"2026-07-27T08:46:06.183543+00:00","exit_reason":"max_epochs","epochs_logged":6094,"first_epoch":8907,"last_epoch":15000,"is_navrl":true,"last_mean_reward":48.58036422729492,"last_mean_episode_length":44.04255294799805,"last_captured_rate":0.6853932584269663,"last_crash_rate":0.3146067415730337,"last_timeout_rate":0.0,"last_closest_approach_m":0.3772043629747922,"last_closest_min_m":0.16644321382045746,"last_curriculum_max_m":14.169286727905273,"last_n_bars_active":65,"peak_captured_rate":0.8529411764705882,"peak_captured_epoch":12530,"peak_mean_reward":64.91057586669922,"peak_epoch":13135,"reward_collapse":false},{"run":"ppo_260727_2323_navrl","finalized_at":"2026-07-27T14:23:34.496571+00:00","exit_reason":"unknown","epochs_logged":0,"first_epoch":null,"last_epoch":null,"is_navrl":false,"last_mean_reward":null,"last_mean_episode_length":null,"last_captured_rate":null,"last_crash_rate":null,"last_timeout_rate":null,"last_closest_approach_m":null,"last_closest_min_m":null,"last_curriculum_max_m":null,"last_n_bars_active":null,"peak_captured_rate":null,"peak_captured_epoch":null,"peak_mean_reward":null,"peak_epoch":null,"reward_collapse":false}]}</script>
+<script id="fallback" type="application/json">{"generated_at":"2026-07-27T17:23:13.742973+00:00","n_runs":32,"active_run":{"run":"ppo_260727_2324_navrl","is_live":true,"metrics_age_min":0.0,"epoch":18827.0,"epochs_logged":3827,"tail_epochs":50,"captured_rate":0.6699390199999999,"crash_rate":0.32255942,"timeout_rate":0.007501576000000001,"mean_reward":34.32442,"closest_approach_m":0.46025752,"n_bars_active":75.0,"curriculum_max_m":12.123014400000002},"latest_run":{"run":"ppo_260727_1309_navrl","finalized_at":"2026-07-27T08:46:06.183543+00:00","exit_reason":"max_epochs","epochs_logged":6094,"first_epoch":8907,"last_epoch":15000,"is_navrl":true,"last_mean_reward":48.58036422729492,"last_mean_episode_length":44.04255294799805,"last_captured_rate":0.6853932584269663,"last_crash_rate":0.3146067415730337,"last_timeout_rate":0.0,"last_closest_approach_m":0.3772043629747922,"last_closest_min_m":0.16644321382045746,"last_curriculum_max_m":14.169286727905273,"last_n_bars_active":65,"peak_captured_rate":0.8529411764705882,"peak_captured_epoch":12530,"peak_mean_reward":64.91057586669922,"peak_epoch":13135,"reward_collapse":false},"density_curves":{"general_repr_density_curve":{"notes":["Density curve -- sensor-only perception+Transformer policy (Stage C, FOV-240 representation)","checkpoint: runs/ppo_260727_1309_navrl/nn/last_gen_ppo_ep_15000_rew_48.580364.pth","(density curriculum reached 65 bars; 75+ is OUT-OF-DISTRIBUTION generalization, not trained there)","config: general spawn, target 1.0 m/s mixed, drone 2.5 m/s, LiDAR 72x4 @12 m,","8 obstacle tokens / 240 deg selection / +-10 deg suppression, tilt comp on, max tilt 45 deg","eval: 128 envs, ~2049 episodes/cell, deterministic","density per 100 m^2 = bars / 478 * 100"],"rows":[{"bars":25.0,"density_per_100m2":5.2,"capture":0.896,"crash":0.102,"timeout":0.002,"crash_bar_contact_share":0.652,"crash_below_share":0.229,"crash_oob_share":0.119},{"bars":50.0,"density_per_100m2":10.5,"capture":0.796,"crash":0.202,"timeout":0.002,"crash_bar_contact_share":0.853,"crash_below_share":0.101,"crash_oob_share":0.046},{"bars":65.0,"density_per_100m2":13.6,"capture":0.679,"crash":0.316,"timeout":0.005,"crash_bar_contact_share":0.88,"crash_below_share":0.079,"crash_oob_share":0.042},{"bars":75.0,"density_per_100m2":15.7,"capture":0.598,"crash":0.399,"timeout":0.003,"crash_bar_contact_share":0.917,"crash_below_share":0.053,"crash_oob_share":0.031},{"bars":110.0,"density_per_100m2":23.0,"capture":0.28,"crash":0.711,"timeout":0.009,"crash_bar_contact_share":0.944,"crash_below_share":0.033,"crash_oob_share":0.023},{"bars":130.0,"density_per_100m2":27.2,"capture":0.15,"crash":0.847,"timeout":0.003,"crash_bar_contact_share":0.946,"crash_below_share":0.025,"crash_oob_share":0.029},{"bars":150.0,"density_per_100m2":31.4,"capture":0.079,"crash":0.92,"timeout":0.002,"crash_bar_contact_share":0.945,"crash_below_share":0.021,"crash_oob_share":0.034}],"mtime":"2026-07-27T11:31:13.671983+00:00"},"vision_density_curve":{"notes":[],"rows":[{"density_bars":25.0,"captured":0.697,"crash":0.2,"timeout":0.103,"gt_injected_phase2":0.97},{"density_bars":50.0,"captured":0.691,"crash":0.24,"timeout":0.069,"gt_injected_phase2":0.97},{"density_bars":75.0,"captured":0.661,"crash":0.31,"timeout":0.029,"gt_injected_phase2":0.94},{"density_bars":110.0,"captured":0.606,"crash":0.372,"timeout":0.022,"gt_injected_phase2":0.93},{"density_bars":130.0,"captured":0.473,"crash":0.507,"timeout":0.02,"gt_injected_phase2":null},{"density_bars":150.0,"captured":0.283,"crash":0.706,"timeout":0.011,"gt_injected_phase2":0.66}],"mtime":"2026-07-19T22:00:59.497205+00:00"}},"speed_curves":{"general_repr_fov240_speed_axis":{"notes":["Candidate B: 240-degree obstacle-token selection FOV warm-start","source policy: ppo_260727_0225_navrl (360-degree token selection)","trained policy: ppo_260727_0930_navrl, gen_ppo.pth (peak reward epoch 8571)","common representation: 8 obstacle tokens, suppression +/-10 deg, 4x72 LiDAR, 12 m range","eval: 128 envs, ~2049 episodes/cell, general spawn, deterministic","IMPORTANT: the trained policy must be evaluated with NAVRL_OBSTACLE_FOV_DEG=240.","At target=1.0, evaluating the same policy at 360 deg changed capture 0.893 -> 0.878.","The training log/checkpoint predated the FOV provenance guard, so 240 deg was reconstructed by","paired 240/360 evaluation. Future checkpoints record cfg_token_fov_deg."],"rows":[{"target_speed_ms":0.0,"capture_fov360_baseline":0.874,"capture_fov240":0.894,"bar_contact_fov360_baseline":0.074,"bar_contact_fov240":0.062,"below_fov360_baseline":0.03,"below_fov240":0.029},{"target_speed_ms":0.5,"capture_fov360_baseline":0.879,"capture_fov240":0.906,"bar_contact_fov360_baseline":0.079,"bar_contact_fov240":0.062,"below_fov360_baseline":0.038,"below_fov240":0.027},{"target_speed_ms":0.75,"capture_fov360_baseline":0.87,"capture_fov240":0.894,"bar_contact_fov360_baseline":0.086,"bar_contact_fov240":0.068,"below_fov360_baseline":0.033,"below_fov240":0.029},{"target_speed_ms":1.0,"capture_fov360_baseline":0.869,"capture_fov240":0.893,"bar_contact_fov360_baseline":0.089,"bar_contact_fov240":0.078,"below_fov360_baseline":0.033,"below_fov240":0.024},{"target_speed_ms":1.25,"capture_fov360_baseline":0.859,"capture_fov240":0.889,"bar_contact_fov360_baseline":0.101,"bar_contact_fov240":0.079,"below_fov360_baseline":0.03,"below_fov240":0.026},{"target_speed_ms":1.5,"capture_fov360_baseline":0.824,"capture_fov240":0.859,"bar_contact_fov360_baseline":0.119,"bar_contact_fov240":0.1,"below_fov360_baseline":0.04,"below_fov240":0.032},{"target_speed_ms":"mean","capture_fov360_baseline":0.862,"capture_fov240":0.889,"bar_contact_fov360_baseline":0.091,"bar_contact_fov240":0.075,"below_fov360_baseline":0.034,"below_fov240":0.028}],"mtime":"2026-07-27T02:50:41.125789+00:00"},"general_repr_speed_axis":{"notes":["Candidate #4 (obstacle representation) -- speed-axis eval","checkpoint: runs/ppo_260727_0225_navrl/nn/gen_ppo.pth (epoch 7247, reward 107.8)","FIRST fresh run to complete: 8000/8000 epochs, no NaN. Earlier fresh attempts died at epoch","43-62 (adaptive-LR NaN, fixed separately by lr_schedule: None).","representation: MAX_OBSTACLES=8, suppression +-10 deg, LiDAR 72 horizontal beams (obs 574 -> 898)","other config identical to the 12 m recipe: 25 bars, general spawn, LiDAR 12 m, v=2.5, yaw=3.0,","tilt comp on, max tilt 45 deg, oob margin 1.0","eval: 128 envs, ~2049 episodes/cell, deterministic. MUST be run with the same 72-beam / 8-token","config as training (scan normalization + obs layout).","","HEADLINE: bar_contact 12.7% -> 9.0% absolute (-29%), the FIRST intervention in the campaign to","move it (altitude PI, tilt comp and 12 m look-ahead all left it at ~13%). capture +1.0pp.","BUT the probe refutes both mechanisms we predicted:","hit_in_tokens 0.647 -> 0.40-0.53 (WORSE despite capacity 5->8, and token_rank ~2.9 shows the","extra slots ARE used) => capacity was not the binding constraint; 8 tokens still cannot cover","the ~16 bars in range, and \"nearest N\" is the wrong selection rule in a dense field.","token_err 0.57 m -> 0.72-1.13 m (WORSE despite halving the angular bin) => H2 was wrong, the","token position error is not dominated by angular quantization.","The gain therefore came from somewhere else (most likely the denser static scan itself), not","from the token mechanism we were aiming at."],"rows":[{"target_speed_ms":0.0,"capture":0.874,"crash":0.111,"timeout":0.015,"crash_bar_contact_share":0.671,"crash_below_share":0.268,"crash_oob_share":0.061,"hit_in_tokens":0.425,"token_err_m":1.13,"bars_in_range":16.1},{"target_speed_ms":0.5,"capture":0.879,"crash":0.121,"timeout":0.0,"crash_bar_contact_share":0.656,"crash_below_share":0.312,"crash_oob_share":0.032,"hit_in_tokens":0.475,"token_err_m":0.78,"bars_in_range":16.2},{"target_speed_ms":0.75,"capture":0.87,"crash":0.13,"timeout":0.0,"crash_bar_contact_share":0.662,"crash_below_share":0.252,"crash_oob_share":0.086,"hit_in_tokens":0.5,"token_err_m":0.83,"bars_in_range":16.0},{"target_speed_ms":1.0,"capture":0.869,"crash":0.131,"timeout":0.0,"crash_bar_contact_share":0.679,"crash_below_share":0.25,"crash_oob_share":0.071,"hit_in_tokens":0.418,"token_err_m":0.8,"bars_in_range":15.5},{"target_speed_ms":1.25,"capture":0.859,"crash":0.141,"timeout":0.0,"crash_bar_contact_share":0.716,"crash_below_share":0.215,"crash_oob_share":0.069,"hit_in_tokens":0.527,"token_err_m":0.74,"bars_in_range":15.7},{"target_speed_ms":1.5,"capture":0.824,"crash":0.175,"timeout":0.001,"crash_bar_contact_share":0.679,"crash_below_share":0.229,"crash_oob_share":0.092,"hit_in_tokens":0.403,"token_err_m":0.88,"bars_in_range":15.9}],"mtime":"2026-07-27T00:22:05.416882+00:00"}},"runs":[{"run":"ppo_260727_0058_navrl","finalized_at":"2026-07-26T16:04:40.032584+00:00","exit_reason":"max_epochs","epochs_logged":120,"first_epoch":1,"last_epoch":120,"is_navrl":true,"last_mean_reward":-41.91904067993164,"last_mean_episode_length":19.161426544189453,"last_captured_rate":0.0,"last_crash_rate":1.0,"last_timeout_rate":0.0,"last_closest_approach_m":null,"last_closest_min_m":null,"last_curriculum_max_m":6.913992881774902,"last_n_bars_active":25,"peak_captured_rate":0.009345794392523364,"peak_captured_epoch":68,"peak_mean_reward":-36.406166076660156,"peak_epoch":110,"reward_collapse":false},{"run":"ppo_260727_0106_navrl","finalized_at":"2026-07-26T16:12:52.118591+00:00","exit_reason":"max_epochs","epochs_logged":120,"first_epoch":1,"last_epoch":120,"is_navrl":true,"last_mean_reward":-45.75758743286133,"last_mean_episode_length":23.56831169128418,"last_captured_rate":0.0,"last_crash_rate":1.0,"last_timeout_rate":0.0,"last_closest_approach_m":null,"last_closest_min_m":null,"last_curriculum_max_m":6.959465026855469,"last_n_bars_active":25,"peak_captured_rate":0.011904761904761904,"peak_captured_epoch":78,"peak_mean_reward":-40.98122024536133,"peak_epoch":1,"reward_collapse":false},{"run":"ppo_260727_0147_navrl","finalized_at":"2026-07-26T16:49:41.840497+00:00","exit_reason":"early_stop_nan","epochs_logged":43,"first_epoch":1,"last_epoch":43,"is_navrl":true,"last_mean_reward":null,"last_mean_episode_length":35.76774215698242,"last_captured_rate":0.0,"last_crash_rate":0.0,"last_timeout_rate":1.0,"last_closest_approach_m":null,"last_closest_min_m":null,"last_curriculum_max_m":5.98809289932251,"last_n_bars_active":25,"peak_captured_rate":0.01694915254237288,"peak_captured_epoch":13,"peak_mean_reward":-40.98122024536133,"peak_epoch":1,"reward_collapse":false},{"run":"ppo_260727_0225_navrl","finalized_at":"2026-07-26T22:53:01.673654+00:00","exit_reason":"max_epochs","epochs_logged":8000,"first_epoch":1,"last_epoch":8000,"is_navrl":true,"last_mean_reward":94.21517181396484,"last_mean_episode_length":45.47786331176758,"last_captured_rate":0.8571428571428571,"last_crash_rate":0.14285714285714285,"last_timeout_rate":0.0,"last_closest_approach_m":0.3970300429142438,"last_closest_min_m":0.17081673443317413,"last_curriculum_max_m":9.945727348327637,"last_n_bars_active":25,"peak_captured_rate":0.96,"peak_captured_epoch":7277,"peak_mean_reward":107.814208984375,"peak_epoch":7247,"reward_collapse":false},{"run":"ppo_260727_0930_navrl","finalized_at":"2026-07-27T02:01:13.324819+00:00","exit_reason":"max_epochs","epochs_logged":2253,"first_epoch":7248,"last_epoch":9500,"is_navrl":true,"last_mean_reward":99.31278228759766,"last_mean_episode_length":45.890106201171875,"last_captured_rate":0.8229166666666666,"last_crash_rate":0.17708333333333334,"last_timeout_rate":0.0,"last_closest_approach_m":0.38882287487953526,"last_closest_min_m":0.09012570977210999,"last_curriculum_max_m":13.668133735656738,"last_n_bars_active":25,"peak_captured_rate":0.9662921348314607,"peak_captured_epoch":9470,"peak_mean_reward":112.46405792236328,"peak_epoch":8571,"reward_collapse":false},{"run":"ppo_260727_1204_navrl","finalized_at":"2026-07-27T03:19:38.135180+00:00","exit_reason":"early_stop_collapse","epochs_logged":335,"first_epoch":8572,"last_epoch":8906,"is_navrl":true,"last_mean_reward":38.70595932006836,"last_mean_episode_length":42.975833892822266,"last_captured_rate":0.5888888888888889,"last_crash_rate":0.4111111111111111,"last_timeout_rate":0.0,"last_closest_approach_m":0.38067882887597354,"last_closest_min_m":0.2013450413942337,"last_curriculum_max_m":6.584150314331055,"last_n_bars_active":60,"peak_captured_rate":0.9456521739130435,"peak_captured_epoch":8614,"peak_mean_reward":108.30500030517578,"peak_epoch":8589,"reward_collapse":false},{"run":"ppo_260727_1309_navrl","finalized_at":"2026-07-27T08:46:06.183543+00:00","exit_reason":"max_epochs","epochs_logged":6094,"first_epoch":8907,"last_epoch":15000,"is_navrl":true,"last_mean_reward":48.58036422729492,"last_mean_episode_length":44.04255294799805,"last_captured_rate":0.6853932584269663,"last_crash_rate":0.3146067415730337,"last_timeout_rate":0.0,"last_closest_approach_m":0.3772043629747922,"last_closest_min_m":0.16644321382045746,"last_curriculum_max_m":14.169286727905273,"last_n_bars_active":65,"peak_captured_rate":0.8529411764705882,"peak_captured_epoch":12530,"peak_mean_reward":64.91057586669922,"peak_epoch":13135,"reward_collapse":false},{"run":"ppo_260727_2323_navrl","finalized_at":"2026-07-27T14:23:34.496571+00:00","exit_reason":"unknown","epochs_logged":0,"first_epoch":null,"last_epoch":null,"is_navrl":false,"last_mean_reward":null,"last_mean_episode_length":null,"last_captured_rate":null,"last_crash_rate":null,"last_timeout_rate":null,"last_closest_approach_m":null,"last_closest_min_m":null,"last_curriculum_max_m":null,"last_n_bars_active":null,"peak_captured_rate":null,"peak_captured_epoch":null,"peak_mean_reward":null,"peak_epoch":null,"reward_collapse":false}]}</script>
 
-<script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
-<script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script src="arena.js"></script>
 <script src="app.js"></script>
 </body>

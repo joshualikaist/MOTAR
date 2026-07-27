@@ -10,8 +10,7 @@ const finePointer = matchMedia('(hover: hover) and (pointer: fine)').matches;
 
 function toggleTheme() {
   const r = document.documentElement;
-  const cur = r.getAttribute('data-theme')
-    || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  const cur = r.getAttribute('data-theme') || 'light';
   r.setAttribute('data-theme', cur === 'dark' ? 'light' : 'dark');
   if (window.__mo) window.__mo.recolor();
 }
@@ -536,22 +535,37 @@ function wireArena() {
     if (t) t.textContent = 'snapshot';
   }
 
-  try {
+  const boot3d = () => {
     if (typeof THREE === 'undefined' || !THREE.OrbitControls || !window.Arena)
       throw new Error('three.js / Arena unavailable');
+    const stage = document.getElementById('stage');
+    if (!stage) throw new Error('#stage missing');
     window.__mo = window.Arena;
-    window.Arena.init(document.getElementById('stage'));
+    window.Arena.init(stage);
     wireArena();
-  } catch (e) {
-    console.error('3D init', e);
-    const st = document.getElementById('stage');
-    if (st) {
-      const msg = document.createElement('div');
-      msg.className = 'hud';
-      msg.style.cssText = 'position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)';
-      msg.textContent = '3D 뷰를 불러오지 못했습니다 (three.js CDN) · 인터넷 연결 후 새로고침';
-      st.appendChild(msg);
+    // default moving target so motion is obvious immediately
+    const speed = document.getElementById('sl-speed');
+    if (speed) {
+      speed.value = '5';
+      document.getElementById('lbl-speed').textContent = '0.5';
+      window.Arena.setSpeed(0.5);
     }
-    document.querySelectorAll('.dock input,.dock button').forEach(el => { el.disabled = true; });
-  }
+  };
+  try {
+    // Wait one frame so .stage-frame height is resolved before WebGL sizing.
+    requestAnimationFrame(() => {
+      try { boot3d(); }
+      catch (e) {
+        console.error('3D init', e);
+        const st = document.getElementById('stage');
+        if (st) {
+          const msg = document.createElement('div');
+          msg.style.cssText = 'position:absolute;inset:0;display:grid;place-items:center;font:13px/1.5 IBM Plex Mono,monospace;color:#4d5f70;padding:24px;text-align:center;background:#d5e7f2';
+          msg.textContent = '3D 뷰를 불러오지 못했습니다 (three.js CDN). 인터넷 연결 후 새로고침하세요.';
+          st.appendChild(msg);
+        }
+        document.querySelectorAll('.dock input,.dock button').forEach(el => { el.disabled = true; });
+      }
+    });
+  } catch (e) { console.error(e); }
 })();
