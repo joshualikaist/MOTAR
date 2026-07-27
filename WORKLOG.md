@@ -1302,3 +1302,23 @@ tail -f train_session_logs/night_density.out
 기존 `ppo_260727_2324_navrl`은 epoch 18096/45000, 70 bars, VRAM 약 5.85 GiB로 정상 진행 중이다.
 65→70 승급은 16388 episodes에서 capture 0.706으로 통과했다. 현재는 새 실행 명령이 아니라
 `tail -f train_session_logs/train_260727_2323.log`로 기존 run을 모니터링한다.
+
+### 2026-07-28 02:03 — 학습 건강도·진척도 정량 판정
+
+`ppo_260727_2324_navrl`은 epoch 18432까지 프로세스/GPU/수치 면에서는 정상이다. step time은
+최근 100 epoch 평균 2.70초, VRAM 약 5.85 GiB이고 NaN/OOM/traceback이 없다. 최신 epoch-18400
+checkpoint의 actor/critic/두 optimizer는 모두 finite이며 LR은 양쪽 모두 `1e-4`다.
+
+그러나 **목표 진척은 70 bars에서 정체**다. 70 bars 진입(epoch 15618) 뒤 218,475 episodes를
+학습했고 16,384-episode 승급 판정창을 13번 완료했지만 capture 범위는 `0.663~0.699`로
+threshold 0.70을 한 번도 통과하지 못했다. 전체 70-bars capture는 0.6818이고 최근
+16,394 episodes는 0.6762, 최근 2,054 episodes는 0.6957이다. 간헐적 반등은 있으나 지속적인
+상승 추세는 아니다. reward는 초반 창의 약 39~41에서 최근 약 42~43으로 소폭 개선됐다.
+
+실패 원인은 고도보다 막대충돌로 수렴한다. 최근 crash 중 bar_contact 비중은 평균 약 91%로
+상승했고 below 비중은 약 6.8%로 낮아졌다. `hit_token_given_fov`는 최근 32개 probe 평균 약
+0.56, 최신 0.587로 붕괴하지 않아 센서/토큰 표현의 갑작스러운 고장 징후는 없다.
+
+판정: **학습 엔진은 건강하지만 커리큘럼은 잘 진행되지 않는다.** 목표가 안정적인 70-bars 정책이면
+계속 학습 가능하지만, 110 bars 도달 목적이라면 현재 threshold 0.70을 유지한 채 epoch 45000까지
+방치하는 것은 계산 낭비 가능성이 높다. 실행은 사용자 지시 없이 중단하거나 설정 변경하지 않았다.
