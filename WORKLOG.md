@@ -1095,3 +1095,130 @@ P6 밀도 커리큘럼 진행 중으로 갱신. 3D 씬 스펙도 현재 정책(L
 
 수정: 투영을 지수 스무딩으로 추종(dt 기반), 헤딩은 필터링된 속도벡터에서 최단각 회전, `performance.now()`
 델타 적분(탭 복귀 클램프), 궤적은 이동거리(0.12m) 기준 샘플링.
+
+---
+
+## 2026-07-27 — Stage C 밀도 커리큘럼 중단 진단: collapse guard 오발
+
+### 결론
+
+`ppo_260727_1204_navrl`은 NaN/OOM/프로세스 강제 종료나 실제 정책 붕괴로 끊긴 것이 아니다.
+epoch 8906에서 `early_stop_collapse`가 정상적인 밀도 증가에 따른 reward 하락을 붕괴로 오인해
+정상 종료 마커를 남기고 학습을 끝냈다.
+
+```
+Early stop: reward collapse from peak — peak 108.3 → now 38.7
+for 100 epochs (epoch 8906)
+```
+
+### 근거
+
+- 커리큘럼은 25→30→35→40→45→50→55→60 bars까지 7회 연속 정상 승급했다.
+- 각 승급 capture는 `0.856, 0.815, 0.766, 0.729, 0.682, 0.635, 0.587`로 모두
+  승급 문턱 0.55를 통과했다.
+- reward 평균은 난도가 오르면서 약 `101.0(25 bars) → 45.4(55 bars)`로 연속 하락했다.
+  갑작스러운 수치 발산이 아니라 커리큘럼의 의도된 난도 상승과 일치한다.
+- 가드는 전체 run의 저밀도 peak 108.3을 계속 기준으로 삼았다. 설정
+  `drop_from_peak=0.35`는 reward가 `70.4` 미만인 epoch를 누적하고, density 변경 때 peak나
+  counter를 재설정하지 않아 100 epoch 뒤 종료했다.
+- 종료 직전 55 bars capture는 약 0.587, 60 bars의 짧은 4 epoch 구간도 약 0.590이었다.
+  커리큘럼이 정체되거나 성능이 0으로 무너진 상태가 아니었다.
+- 로그에 NaN, OOM, CUDA 오류, traceback, SIGKILL 흔적이 없고
+  `.aerial_training_finished`에 `epoch=8906`이 기록됐다.
+
+### 재개 가능성 및 조치
+
+`nn/last_gen_ppo_ep_8906_rew__38.70596_.pth`의 actor, asymmetric critic, 두 optimizer state를
+직접 검사했다. 모든 tensor가 finite이고 actor/critic LR도 모두 `1e-4`여서 이 체크포인트는
+60 bars부터 재개 가능한 정상 상태다. 저밀도 best-reward인 `gen_ppo.pth`로 재개하면 안 된다.
+
+다만 같은 설정으로 바로 재실행하지 않는다. Stage C launcher에서는 NaN/Inf fail-fast는 유지하되
+고정 밀도용 global `early_stop_collapse`를 비활성화하는 것이 권장 조치다.
+`drop_from_peak=0.80` 완화는 이번 오발은 피할 수 있지만 밀도가 더 오르면 다시 오발할 수 있어
+근본 해결이 아니다. 더 정교한 대안은 density 승급마다 peak/counter를 재설정하고 동일 밀도
+구간 안에서만 붕괴를 판정하는 것이다.
+
+### 조치 완료
+
+- `runner.py`에 run 단위 옵션 `--disable_collapse_early_stop`을 추가했다. 이 옵션은
+  `early_stop_collapse.enable=False`만 적용하므로 일반/고정밀도 학습의 YAML 기본 가드는 유지된다.
+- Stage C 전용 `train_navrl_general_repr_density.sh`가 위 옵션을 항상 전달하도록 고쳤다.
+  시작 헤더에는 `reward-collapse guard=off; NaN/Inf fail-fast=on`이 명시된다.
+- Stage C 런처의 기본 체크포인트를 25-bars best인 `ppo_260727_0930/gen_ppo.pth`에서
+  `ppo_260727_1204/last_gen_ppo_ep_8906_rew__38.70596_.pth`로 변경했다. 체크포인트
+  `env_state.n_bars_active=60`이 복원되므로 별도 인자 없이 60 bars부터 새 run으로 분기 재개한다.
+- mean reward의 NaN/Inf 검사를 reward-collapse 함수 밖으로 분리했다. 따라서 collapse 가드를 꺼도
+  NaN/Inf reward와 PPO loss/parameter non-finite는 즉시 실패하며 손상 체크포인트를 저장하지 않는다.
+
+검증: 전체 단위 테스트 13/13, 수정 Python `py_compile`, 두 launcher `bash -n`,
+`git diff --check`, 실제 runner argparse의 새 옵션과 config override/header 출력 확인 완료.
+학습은 자동으로 시작하지 않았다.
+
+재개 명령:
+
+```bash
+cd /home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/aerial_gym/rl_training/rl_games
+./train_navrl_general_repr_density.sh
+```
+
+---
+
+## 2026-07-27 — Stage C 1차 완주(65막대) + 밀도 곡선 실측 + 대시보드 갱신
+
+### Stage C run `ppo_260727_1309` — max_epochs 도달 (8907 → 15000)
+
+느린 승급 설정(`CHECK_EPS=16384`, `THRESHOLD=0.70`)으로 재개. **승급 1회: 60 → 65막대**
+(epoch 13208, capture 0.705). 최종 65막대 capture 68.5%, crash 31.5%, reward 48.6(peak 64.9).
+
+**설정 변경이 결정적이었다** — 직전 `1204` run(문턱 0.55 / 창 4096)은 **45 epoch마다** 승급해 7단계를
+몰아쳤고 capture가 0.856 → 0.587로 **회복 없이** 내려앉아 reward-collapse 가드에 걸려 종료됐다.
+문턱 0.70 / 창 16384로 단계당 정착 시간을 ~4배 늘리자 **승급 후 회복 패턴이 돌아왔다**:
+
+| 65막대 구간 | capture | crash |
+|---|---|---|
+| 초반 | 0.668 | 0.328 |
+| 중반 | 0.680 | 0.315 |
+| 후반 | 0.685 | 0.312 |
+
+**"실력이 아니라 시간에 따라 난이도를 올리면 무너진다"는 이 프로젝트에서 두 번째 확인**(첫 번째는
+거리 커리큘럼의 epoch 비례 램프 폭주). 커리큘럼 게이트는 문턱과 **판정 창 길이**를 함께 봐야 한다.
+
+추세(회귀): 60막대 구간 crash −0.044/1000ep → 65막대 −0.013/1000ep. 개선은 계속되나 **밀도가 오를수록
+단계당 소요가 늘어난다.** 최근 400ep 평균 capture 0.688 → 다음 승급까지 약 800 epoch 예상.
+
+### ★ 밀도 곡선 실측 = `results/general_repr_density_curve.csv`
+
+`last_gen_ppo_ep_15000`(65막대까지 학습), target 1.0 m/s, 2049 ep/셀, deterministic:
+
+| 막대 | 밀도/100㎡ | capture | crash | bar_contact 비중 | 비고 |
+|---|---|---|---|---|---|
+| 25 | 5.2 | 0.896 | 0.102 | 65% | 학습됨 |
+| 50 | 10.5 | 0.796 | 0.202 | 85% | 학습됨 |
+| 65 | 13.6 | 0.679 | 0.316 | 88% | **학습 상한** |
+| 75 | 15.7 | 0.598 | 0.399 | 92% | 범위 밖 |
+| 110 | 23.0 | 0.280 | 0.711 | 94% | 범위 밖 (NavRL 앵커) |
+| 130 | 27.2 | 0.150 | 0.847 | 95% | 범위 밖 |
+| 150 | 31.4 | 0.079 | 0.920 | 95% | 범위 밖 |
+
+**해석 주의**: 75막대 이상은 **학습하지 않은 밀도**다. 이 하락을 "방법의 한계"로 읽으면 안 되고
+**일반화 측정**으로 읽어야 한다(과거 GT-LiDAR 시절 밀도 커리큘럼으로 110막대를 학습했을 때는 0.93였다).
+또한 밀도가 오를수록 **실패가 사실상 전부 막대충돌**이 된다(65% → 95%). 고밀도 상한은 곧 충돌 문제다.
+
+### 대시보드 갱신 (`docs/status/`, 커밋 `9495309`, `4c4184c`)
+
+- 히어로 KPI를 밀도 축 중심으로 교체(25/50/65막대 포획 + 학습 도달 밀도)
+- **밀도 곡선을 실측값으로 교체**하고, 학습 범위(≤65막대)를 음영+점선으로 표시해 그 오른쪽이
+  일반화 구간임을 그래프에서 바로 보이게 함. 표에도 `학습범위` 열 추가.
+- Stage C 섹션 신설(승급 속도가 결정적이었다는 내용), 다음 계획을 "커리큘럼 연장 65→110"으로 갱신
+- 로드맵 P6를 "밀도 커리큘럼 25→65막대 (진행 중, 목표 110)"로
+
+### 다음 판단 (사용자 확인 대기)
+
+**연장 권장** — 65막대 구간이 아직 포화하지 않았고(crash 기울기 음수 유지), 승급 문턱까지 ~800 epoch.
+다만 110막대까지는 단계당 소요 증가를 감안하면 **수 시간~10시간** 규모다. 명령:
+
+```bash
+CKPT=runs/ppo_260727_1309_navrl/nn/last_gen_ppo_ep_15000_rew_48.580364.pth \
+MAX_EPOCHS=30000 NAVRL_DENSITY_CHECK_EPS=16384 NAVRL_DENSITY_THRESHOLD=0.70 \
+  ./train_navrl_general_repr_density.sh
+```
