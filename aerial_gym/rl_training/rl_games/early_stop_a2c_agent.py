@@ -31,6 +31,7 @@ from aerial_gym.rl_training.rl_games.train_run_recorder import (
 )
 from aerial_gym.rl_training.rl_games.training_safety import (
     first_nonfinite_training_value,
+    is_finite_training_value,
     reset_optimizer_learning_rate,
 )
 from aerial_gym.task.position_setpoint_task.train_dashboard import consume_epoch_intercept_summary
@@ -321,6 +322,13 @@ class EarlyStopA2CAgent(A2CAgent):
                         mean_lengths = self.game_lengths.get_mean()
                         self.mean_rewards = mean_rewards[0]
                         dash_mr = _scalar_mean_reward(mean_rewards[0])
+                        if not is_finite_training_value(dash_mr):
+                            print(
+                                "[aerial RL] Early stop: NaN/Inf mean reward — "
+                                f"epoch {epoch_num}. No corrupted checkpoint will be saved."
+                            )
+                            should_exit = True
+                            pending_exit_reason = "early_stop_nan"
                         try:
                             dash_el = _scalar_mean_reward(mean_lengths[0])
                         except (TypeError, IndexError, KeyError):
@@ -331,7 +339,7 @@ class EarlyStopA2CAgent(A2CAgent):
 
                         checkpoint_name = self.config["name"] + "_ep_" + str(epoch_num) + "_rew_" + str(mean_rewards[0])
 
-                        if early_cfg is not None:
+                        if not should_exit and early_cfg is not None:
                             mr0 = _scalar_mean_reward(mean_rewards[0])
                             es_state = getattr(self, "_aerial_early_stop_state", None)
                             stop_stable, es_state_next = window_band_stable_should_stop(

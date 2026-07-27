@@ -1222,3 +1222,75 @@ CKPT=runs/ppo_260727_1309_navrl/nn/last_gen_ppo_ep_15000_rew_48.580364.pth \
 MAX_EPOCHS=30000 NAVRL_DENSITY_CHECK_EPS=16384 NAVRL_DENSITY_THRESHOLD=0.70 \
   ./train_navrl_general_repr_density.sh
 ```
+
+---
+
+## 2026-07-27 — 밤샘 Stage C 명령 감사 + 재개 런처 안전성 보강
+
+### 실행 상태와 Claude 안내 판정
+
+사용자가 입력한 명령은 실패하지 않았다. 실제 실행은 `ppo_260727_2324_navrl`로 분기됐고,
+감사 중 epoch 15200 이상, 65 bars, GPU 약 5.85 GiB로 정상 진행했다. 실행 환경에서도
+`DENSITY_THRESHOLD=0.70`, `DENSITY_CHECK_EPS=16384`, 240°/8-token/4×72/12m contract가
+모두 확인됐으며 collapse guard off + NaN/Inf fail-fast on도 정확히 적용됐다.
+
+Claude가 맞게 확인한 항목:
+
+- `ppo_260727_1309/...ep_15000_rew_48.580364.pth`는 실제 존재하고 epoch 15000,
+  `env_state.n_bars_active=65`, FOV 240°, tokens 8인 finite 체크포인트다.
+- `MAX_EPOCHS=45000`은 30000 epoch 추가이고 현재 약 2.6초/epoch 기준 약 21.7시간이다.
+- YAML `save_frequency=50`이므로 periodic checkpoint는 50 epoch마다 저장된다.
+- 0.70/16384는 직전 run에서 60→65 승급을 capture 0.705로 통과한 보수적인 설정이다.
+
+수정이 필요했던 항목:
+
+- `nohup ... > /dev/null 2>&1`은 launcher의 “확인할 3줄”까지 버리므로, 직후 터미널에서
+  그 줄을 확인하라는 안내와 모순된다. 출력 파일을 남기고 `tail -f`해야 한다.
+- task 생성 시 출력되는 25 bars는 **체크포인트 복원 전 초기값**이다. 실제 복원 후 dashboard는
+  65 bars였지만 복원 완료 로그가 없어 잘못 시작한 것처럼 보였다.
+- “밤새 중간에 끝나지 않는다/110까지 간다”는 보장은 아니다. 45000까지의 계산 예산만 보장하며
+  threshold를 넘지 못하면 65 bars에서 held가 반복될 수 있고 OOM/NaN/외부 종료도 가능하다.
+- density 판정창의 `_density_succ_agg/_density_fin_agg`가 checkpoint에 없었다.
+  16384-episode 창 도중 재개하면 누적 증거가 0으로 리셋돼 승급이 불필요하게 늦어질 수 있었다.
+- 분 단위 `train_YYMMDD_HHMM.log` 이름은 같은 분의 빠른 재시도가 앞 로그를 덮어썼다.
+  실제로 2323 zero-epoch 폴더와 2324 정상 run이 생겼지만 로그는 하나만 남아 원인 추적이 어려웠다.
+
+### 구현한 수정
+
+- Stage C 기본값을 검증된 `threshold=0.70`, `check_eps=16384`, `max_epochs=45000`으로 갱신.
+- `CKPT` 미지정 시 가장 최근의 non-`_rlnorm` `last_gen_ppo_ep_*.pth`를 자동 선택.
+- 실행 전 checkpoint를 CPU에서 읽어 epoch < max_epochs, 0≤bars≤final, actor/critic/optimizer
+  finite 여부와 FOV/token/LiDAR contract를 검증하는 `navrl_checkpoint_preflight.py` 추가.
+- 이미 NavRL train process가 있으면 중복 실행을 거부하고, 동시에 시작되는 race는 `flock`으로 차단.
+  `PREFLIGHT_ONLY=1`로 학습 없이 전체 사전검증 가능.
+- checkpoint에 density window 누적값과 final/step/threshold/check_eps provenance를 저장·복원.
+  복원 시 `bars=25->65`, distance window와 density-window 진행량을 명시적으로 출력.
+- 세션 로그 이름을 초+launcher PID까지 포함하도록 변경해 빠른 재시도 시 덮어쓰지 않음.
+- `density curriculum held`를 억제되는 INFO에서 WARNING으로 올려, gate가 아직 미평가인지
+  평가 후 문턱 미달인지 로그에서 구분 가능하게 함.
+
+검증: 실제 epoch-15000 및 최신 epoch-15200 checkpoint preflight 통과, duplicate-process guard
+실제 PID 거부 확인, 전체 단위 테스트 17/17, Python `py_compile`, launcher `bash -n`,
+`git diff --check` 통과.
+
+주의: 이미 실행 중인 2324 프로세스는 수정 전에 모듈을 로드했으므로 그대로 계속 학습한다.
+지금 재시작하면 거의 찬 16384-episode 창을 버리므로 중단하지 않았다. 새 checkpoint의 density-window
+영속화는 다음 재개로 새 코드를 로드한 뒤부터 적용된다.
+
+현재 run의 첫 판정창은 epoch 15208에 16457 episodes, capture 0.6925로 0.70에 조금 못 미쳐
+**65 bars held**였다. 기존 코드가 held를 INFO로 숨겨 promotion 로그가 없었던 것이다.
+이후 새 창의 초기 2147 episodes는 capture 0.6968로 문턱 근처이며 학습은 계속 정상 진행 중이다.
+
+현재 run 모니터링:
+
+```bash
+tail -f train_session_logs/train_260727_2323.log
+```
+
+현재 run 종료 후 자동 최신 checkpoint로 다시 밤샘 실행:
+
+```bash
+nohup ./train_navrl_general_repr_density.sh \
+  > train_session_logs/night_density.out 2>&1 &
+tail -f train_session_logs/night_density.out
+```

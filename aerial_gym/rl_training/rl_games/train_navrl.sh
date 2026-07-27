@@ -66,7 +66,9 @@ TASK="${TASK:-navrl_task}"
 NUM_ENVS="${NUM_ENVS:-${DEF_ENVS:-256}}"  # 8GB 기본 256. vision+4GB 는 128. (직접 오버라이드 가능)
 
 mkdir -p runs train_session_logs
-LOG="train_session_logs/train_$(date +%y%m%d_%H%M).log"
+# Seconds + launcher PID prevent a quick retry from truncating the previous minute-resolution log.
+LOG="${TRAIN_SESSION_LOG:-train_session_logs/train_$(date +%y%m%d_%H%M%S)_$$.log}"
+mkdir -p "$(dirname "${LOG}")"
 echo "[train_navrl] py=${PY} file=${FILE} task=${TASK} envs=${NUM_ENVS}"
 echo "[train_navrl] log → ${LOG}"
 echo "[train_navrl] TensorBoard: tensorboard --logdir $(pwd)/runs"

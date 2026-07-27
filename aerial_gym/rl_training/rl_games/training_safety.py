@@ -8,7 +8,8 @@ from typing import Iterable, Optional, Tuple
 import torch
 
 
-def _is_finite(value) -> bool:
+def is_finite_training_value(value) -> bool:
+    """Return whether a scalar or tensor contains only finite values."""
     if isinstance(value, torch.Tensor):
         return bool(torch.isfinite(value.detach()).all().item())
     try:
@@ -24,11 +25,11 @@ def first_nonfinite_training_value(
     """Return the first non-finite metric/parameter path, or ``None`` when all are finite."""
     for group_name, values in metric_groups:
         for index, value in enumerate(values):
-            if not _is_finite(value):
+            if not is_finite_training_value(value):
                 return f"{group_name}[{index}]"
 
     for name, parameter in named_parameters:
-        if not _is_finite(parameter):
+        if not is_finite_training_value(parameter):
             return f"model.{name}"
 
     return None

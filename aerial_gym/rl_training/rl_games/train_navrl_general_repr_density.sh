@@ -7,7 +7,10 @@
 #
 # Usage:
 #   ./train_navrl_general_repr_density.sh
-#   CKPT=runs/.../nn/gen_ppo.pth MAX_EPOCHS=15000 ./train_navrl_general_repr_density.sh
+#   CKPT=runs/.../nn/last_gen_ppo_ep_XXXX.pth MAX_EPOCHS=45000 ./train_navrl_general_repr_density.sh
+# Background (keep launcher output; do not redirect it to /dev/null):
+#   nohup env CKPT=runs/.../nn/last_gen_ppo_ep_XXXX.pth MAX_EPOCHS=45000 \
+#     ./train_navrl_general_repr_density.sh > train_session_logs/night_density.out 2>&1 &
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
@@ -35,9 +38,9 @@ export NAVRL_DENSITY_CURRICULUM=1
 export NAVRL_DENSITY_START=25
 export NAVRL_DENSITY_FINAL="${NAVRL_DENSITY_FINAL:-110}"
 export NAVRL_DENSITY_STEP="${NAVRL_DENSITY_STEP:-5}"
-export NAVRL_DENSITY_THRESHOLD="${NAVRL_DENSITY_THRESHOLD:-0.55}"
+export NAVRL_DENSITY_THRESHOLD="${NAVRL_DENSITY_THRESHOLD:-0.70}"
 export NAVRL_DENSITY_WARMUP="${NAVRL_DENSITY_WARMUP:-1000}"
-export NAVRL_DENSITY_CHECK_EPS="${NAVRL_DENSITY_CHECK_EPS:-4096}"
+export NAVRL_DENSITY_CHECK_EPS="${NAVRL_DENSITY_CHECK_EPS:-16384}"
 
 export NAVRL_K_COMPETENCE=1
 export NAVRL_K_FINAL=16
@@ -56,21 +59,58 @@ export NAVRL_CRASH_DIAG=1
 export NAVRL_BAR_PROBE=1
 export NAVRL_OOB_PROBE=0
 
-CKPT="${CKPT:-runs/ppo_260727_0930_navrl/nn/gen_ppo.pth}"
-MAX_EPOCHS="${MAX_EPOCHS:-15000}"
+# `latest` selects the newest non-derived periodic/final NavRL checkpoint after the duplicate-run
+# guard succeeds. An explicit CKPT remains available for a deliberate branch from an older policy.
+CKPT="${CKPT:-latest}"
+MAX_EPOCHS="${MAX_EPOCHS:-45000}"
 NUM_ENVS="${NUM_ENVS:-128}"
 SEED="${SEED:-1}"
 
-if [[ ! -f "${CKPT}" ]]; then
-    echo "checkpoint not found: ${CKPT}" >&2
-    exit 1
+mkdir -p train_session_logs
+if [[ "${ALLOW_CONCURRENT:-0}" != "1" ]]; then
+    ACTIVE_PIDS="$(pgrep -f '[r]unner.py .*--task navrl_task .*--train' | tr '\n' ' ' || true)"
+    if [[ -n "${ACTIVE_PIDS// }" ]]; then
+        echo "[general_repr_density] refusing duplicate NavRL training; active PID(s): ${ACTIVE_PIDS}" >&2
+        echo "[general_repr_density] monitor the active run instead, or set ALLOW_CONCURRENT=1 intentionally." >&2
+        exit 3
+    fi
+    exec 9>train_session_logs/.general_repr_density.lock
+    if ! flock -n 9; then
+        echo "[general_repr_density] another density launcher holds the training lock." >&2
+        exit 3
+    fi
 fi
 
+if [[ "${CKPT}" == "latest" ]]; then
+    LATEST_ENTRY="$(
+        find runs -path '*/nn/last_gen_ppo_ep_*.pth' -type f ! -name '*_rlnorm.pth' \
+            -printf '%T@ %p\n' | sort -nr | sed -n '1p'
+    )"
+    CKPT="${LATEST_ENTRY#* }"
+    if [[ -z "${LATEST_ENTRY}" || -z "${CKPT}" ]]; then
+        echo "[general_repr_density] no last_gen_ppo_ep_*.pth checkpoint found under runs/." >&2
+        exit 2
+    fi
+    echo "[general_repr_density] auto-selected latest checkpoint: ${CKPT}"
+fi
+
+"${PYTHON}" navrl_checkpoint_preflight.py "${CKPT}" \
+    --max-epochs "${MAX_EPOCHS}" --density-final "${NAVRL_DENSITY_FINAL}"
+
 echo "[general_repr_density] Stage C | 25 -> ${NAVRL_DENSITY_FINAL} bars, step=${NAVRL_DENSITY_STEP}"
+echo "[general_repr_density] promotion | threshold=${NAVRL_DENSITY_THRESHOLD} \
+check_eps=${NAVRL_DENSITY_CHECK_EPS} warmup=${NAVRL_DENSITY_WARMUP}"
 echo "[general_repr_density] representation | tokens=${NAVRL_MAX_OBSTACLES} \
 fov=${NAVRL_OBSTACLE_FOV_DEG}deg suppress=+-${NAVRL_OBSTACLE_SUPPRESS_DEG}deg \
 scan=${NAVRL_LIDAR_VBEAMS}x${NAVRL_LIDAR_HBEAMS} lidar=${NAVRL_LIDAR_RANGE}m"
+echo "[general_repr_density] safety | reward-collapse guard=off; NaN/Inf fail-fast=on"
 echo "[general_repr_density] checkpoint=${CKPT} max_epochs=${MAX_EPOCHS} envs=${NUM_ENVS} seed=${SEED}"
 
+if [[ "${PREFLIGHT_ONLY:-0}" == "1" ]]; then
+    echo "[general_repr_density] preflight-only check complete; training was not started."
+    exit 0
+fi
+
 exec env NUM_ENVS="${NUM_ENVS}" ./train_navrl.sh \
-    --checkpoint "${CKPT}" --branch_run --max_epochs "${MAX_EPOCHS}" --seed "${SEED}" "$@"
+    --checkpoint "${CKPT}" --branch_run --disable_collapse_early_stop \
+    --max_epochs "${MAX_EPOCHS}" --seed "${SEED}" "$@"

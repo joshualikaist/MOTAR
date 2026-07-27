@@ -135,6 +135,8 @@ def _early_stop_line(cfg: Mapping[str, Any]) -> str:
             f"(drop {collapse.get('drop_from_peak', '?')}, "
             f"patience {collapse.get('patience_epochs', '?')})"
         )
+    elif collapse.get("disabled_by"):
+        parts.append(f"reward-collapse guard disabled by {collapse['disabled_by']}")
     return "on (" + "; ".join(parts) + ")"
 
 

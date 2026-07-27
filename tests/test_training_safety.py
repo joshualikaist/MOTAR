@@ -34,6 +34,11 @@ class TrainingSafetyTest(unittest.TestCase):
         )
         self.assertEqual(result, "model.actor.weight")
 
+    def test_mean_reward_fail_fast_is_independent_of_collapse_guard(self):
+        self.assertTrue(_SAFETY.is_finite_training_value(torch.tensor(38.7)))
+        self.assertFalse(_SAFETY.is_finite_training_value(float("nan")))
+        self.assertFalse(_SAFETY.is_finite_training_value(torch.tensor(float("inf"))))
+
     def test_checkpoint_learning_rate_is_overridden(self):
         parameter = torch.nn.Parameter(torch.tensor(1.0))
         optimizer = torch.optim.Adam([parameter], lr=1e-2)

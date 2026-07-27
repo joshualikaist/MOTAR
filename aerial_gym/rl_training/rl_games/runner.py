@@ -300,6 +300,13 @@ def get_args():
             "Use this when changing the environment/config so the source metrics stay clean.",
         },
         {
+            "name": "--disable_collapse_early_stop",
+            "action": "store_true",
+            "default": False,
+            "help": "Disable only the reward-drop-from-peak early-stop rule for this run. "
+            "NaN/Inf fail-fast remains enabled.",
+        },
+        {
             "name": "--file",
             "type": str,
             "default": "ppo_aerial_quad.yaml",
@@ -510,6 +517,14 @@ def update_config(config, args):
 
     if args.get("max_epochs", -1) and int(args.get("max_epochs", -1)) > 0:
         config["params"]["config"]["max_epochs"] = int(args["max_epochs"])
+
+    if args.get("disable_collapse_early_stop"):
+        train_cfg = config["params"]["config"]
+        collapse_cfg = train_cfg.get("early_stop_collapse")
+        collapse_cfg = dict(collapse_cfg) if isinstance(collapse_cfg, dict) else {}
+        collapse_cfg["enable"] = False
+        collapse_cfg["disabled_by"] = "--disable_collapse_early_stop"
+        train_cfg["early_stop_collapse"] = collapse_cfg
 
     if args.get("task") is not None:
         config["params"]["config"]["env_name"] = args["task"]

@@ -156,11 +156,16 @@ class NavRLTask(BaseTask):
         self._kcomp_fin = 0
         self._set_active_bars(initial_bars_requested)
         logger.warning(
-            "NavRL density | active_bars=%d max_bars=%d curriculum=%s"
+            "NavRL density config | initial_bars=%d max_bars=%d curriculum=%s "
+            "final=%d step=%d threshold=%.3f check_eps=%d"
             % (
                 self.n_bars_active,
                 self.max_bars_available,
                 bool(getattr(self.density, "use_density_curriculum", False)),
+                int(getattr(self.density, "n_final", self.n_bars_active)),
+                int(getattr(self.density, "promote_step", 0)),
+                float(getattr(self.density, "success_threshold", 0.0)),
+                int(getattr(self.density, "check_after_episodes", 0)),
             )
         )
         # One RL step = num_physics_steps x physics dt (0.1 s here). obs_dict["dt"] alone is the
@@ -916,6 +921,19 @@ class NavRLTask(BaseTask):
             "cfg_obstacle_suppress_deg": float(representation["suppress_deg"]),
             "cfg_lidar_hbeams": int(representation["hbeams"]),
             "cfg_lidar_vbeams": int(representation["vbeams"]),
+            # Preserve the in-progress competence window. With a 16k-episode density gate, dropping
+            # these counters on every periodic-checkpoint resume can discard hours of evidence and
+            # indefinitely postpone the next promotion.
+            "density_succ_agg": int(self._density_succ_agg),
+            "density_fin_agg": int(self._density_fin_agg),
+            "cfg_density_final": int(getattr(self.density, "n_final", self.n_bars_active)),
+            "cfg_density_step": int(getattr(self.density, "promote_step", 0)),
+            "cfg_density_threshold": float(
+                getattr(self.density, "success_threshold", 0.0)
+            ),
+            "cfg_density_check_eps": int(
+                getattr(self.density, "check_after_episodes", 0)
+            ),
         }
 
     @staticmethod
@@ -1060,6 +1078,7 @@ class NavRLTask(BaseTask):
         return int(NavRLTask._obstacle_representation_or_zero()["max_obstacles"])
 
     def set_env_state(self, state):
+        bars_before_restore = int(self.n_bars_active)
         if isinstance(state, dict):
             representation = self._obstacle_representation_or_zero()
             # Loud config-drift guard (warn, never override: an eval may deliberately change these).
@@ -1103,6 +1122,37 @@ class NavRLTask(BaseTask):
                         "This changes policy inputs -- results are NOT comparable unless intentional."
                         % (name, float(saved), current)
                     )
+            if bool(getattr(self.density, "use_density_curriculum", False)):
+                for key, current, name in (
+                    (
+                        "cfg_density_final",
+                        float(getattr(self.density, "n_final", self.n_bars_active)),
+                        "NAVRL_DENSITY_FINAL",
+                    ),
+                    (
+                        "cfg_density_step",
+                        float(getattr(self.density, "promote_step", 0)),
+                        "NAVRL_DENSITY_STEP",
+                    ),
+                    (
+                        "cfg_density_threshold",
+                        float(getattr(self.density, "success_threshold", 0.0)),
+                        "NAVRL_DENSITY_THRESHOLD",
+                    ),
+                    (
+                        "cfg_density_check_eps",
+                        float(getattr(self.density, "check_after_episodes", 0)),
+                        "NAVRL_DENSITY_CHECK_EPS",
+                    ),
+                ):
+                    saved = state.get(key)
+                    if saved is not None and abs(float(saved) - current) > 1e-6:
+                        logger.warning(
+                            "NavRL CURRICULUM CONFIG MISMATCH | %s: checkpoint used %.3f, "
+                            "running with %.3f. The promotion schedule is changing intentionally "
+                            "or the runs are not directly comparable."
+                            % (name, float(saved), current)
+                        )
         if isinstance(state, dict) and state.get("num_task_steps") is not None:
             self.num_task_steps = int(state["num_task_steps"])
         if isinstance(state, dict) and state.get("k_max_cur") is not None:
@@ -1119,6 +1169,24 @@ class NavRLTask(BaseTask):
                 )
             else:
                 self._set_active_bars(state["n_bars_active"])
+        if isinstance(state, dict):
+            restored_fin = max(0, int(state.get("density_fin_agg", 0)))
+            restored_succ = max(0, int(state.get("density_succ_agg", 0)))
+            self._density_fin_agg = restored_fin
+            self._density_succ_agg = min(restored_succ, restored_fin)
+            logger.warning(
+                "NavRL checkpoint state restored | task_steps=%d bars=%d->%d "
+                "k_min=%.1f k_max=%.1f density_window=%d/%d eps"
+                % (
+                    int(self.num_task_steps),
+                    bars_before_restore,
+                    int(self.n_bars_active),
+                    float(self._k_min_cur),
+                    float(self._k_max_cur),
+                    int(self._density_fin_agg),
+                    int(getattr(self.density, "check_after_episodes", 0)),
+                )
+            )
 
     # ------------------------------------------------------------------ reset
     def reset(self):
@@ -2108,7 +2176,10 @@ class NavRLTask(BaseTask):
                 % (old_bars, self.n_bars_active, self._density_fin_agg, capture_rate)
             )
         else:
-            logger.info(
+            # Training runs suppress INFO logs, so an INFO-only hold made "no promotion line"
+            # ambiguous: the gate may not have been evaluated yet, or it may have failed. Keep the
+            # competence decision visible at the same level as a promotion.
+            logger.warning(
                 "NavRL density curriculum held | bars=%d capture=%.3f over %d eps"
                 % (self.n_bars_active, capture_rate, self._density_fin_agg)
             )
