@@ -144,28 +144,32 @@ window.Arena = (() => {
     const group = new THREE.Group(); group.position.y = -.05; group.add(mesh, outline); return group;
   }
 
+  function setHex(color, hex) {
+    if (color && typeof color.setHex === 'function') color.setHex(hex);
+  }
+
   function applyTheme() {
     if (!scene) return;
     const light = isLight();
     const bg = light ? 0xd5e7f2 : 0x0a1018;
     const ground = light ? 0xe8eef3 : 0x0d1a23;
-    if (!scene.background) scene.background = new THREE.Color(bg);
-    else scene.background.setHex(bg);
-    if (scene.fog && scene.fog.color) {
-      scene.fog.color.setHex(bg);
+    // Always replace — never assume scene.background is a Color (it starts as null).
+    scene.background = new THREE.Color(bg);
+    if (!scene.fog) scene.fog = new THREE.FogExp2(bg, light ? 0.012 : 0.019);
+    else {
+      setHex(scene.fog.color, bg);
       scene.fog.density = light ? 0.012 : 0.019;
     }
-    if (groundMat && groundMat.color) groundMat.color.setHex(ground);
+    if (groundMat) setHex(groundMat.color, ground);
     if (gridHelper) {
-      // r128 GridHelper uses a material array — never assume .material.color
       const mats = Array.isArray(gridHelper.material) ? gridHelper.material : [gridHelper.material];
-      if (mats[0] && mats[0].color) mats[0].color.setHex(light ? 0x9bb4c4 : 0x2b4b5e);
-      if (mats[1] && mats[1].color) mats[1].color.setHex(light ? 0xc5d5e0 : 0x182e3c);
+      setHex(mats[0] && mats[0].color, light ? 0x9bb4c4 : 0x2b4b5e);
+      setHex(mats[1] && mats[1].color, light ? 0xc5d5e0 : 0x182e3c);
     }
     if (rimLight) rimLight.intensity = light ? 0.85 : 1.25;
     if (renderer) renderer.toneMappingExposure = light ? 1.15 : 1.1;
-    if (lidarLines && lidarLines.material && lidarLines.material.color) {
-      lidarLines.material.color.setHex(light ? 0x0a7f88 : 0x47d9e3);
+    if (lidarLines && lidarLines.material) {
+      setHex(lidarLines.material.color, light ? 0x0a7f88 : 0x47d9e3);
       lidarLines.material.opacity = light ? 0.55 : 0.46;
     }
   }
@@ -381,10 +385,17 @@ window.Arena = (() => {
     }
     const rangeEl = document.getElementById('hud-range');
     if (rangeEl) rangeEl.textContent = vis.range.toFixed(1) + ' m';
-    targetHalo.material.color.setHex(vis.visible ? 0x1aa86a : 0xe04545);
-    targetHalo.material.opacity = vis.visible ? .95 : .55;
-    targetHalo.scale.setScalar(1 + .14 * Math.sin(frame * .1));
-    cameraFov.children.forEach(o => { if (o.material) o.material.color.setHex(vis.visible ? 0x0d8f82 : 0xe04545); });
+    if (targetHalo && targetHalo.material) {
+      setHex(targetHalo.material.color, vis.visible ? 0x1aa86a : 0xe04545);
+      targetHalo.material.opacity = vis.visible ? .95 : .55;
+      targetHalo.scale.setScalar(1 + .14 * Math.sin(frame * .1));
+    }
+    if (cameraFov) {
+      cameraFov.children.forEach(o => {
+        const mats = o.material == null ? [] : (Array.isArray(o.material) ? o.material : [o.material]);
+        mats.forEach(m => setHex(m && m.color, vis.visible ? 0x0d8f82 : 0xe04545));
+      });
+    }
     drawLidar(dx, dy);
     updateTrail(drone, trailA, pursuerTrail);
     updateTrail(target, trailB, targetTrail);
