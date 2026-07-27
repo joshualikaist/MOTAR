@@ -1486,3 +1486,14 @@ relaxation `0/100`, 최종 center spacing `1.5 m`였다. 따라서 70 bars는 �
 정정된 우선순위는 `(1) deterministic/stochastic paired eval → (2) lateral clamp telemetry →
 (3) target visibility/track-age conditioned crash 분석`이다. static token 수 증가는 이 세 검증 뒤로
 내린다. 실행 중 학습에는 어떤 변경도 하지 않았다.
+
+### 2026-07-28 02:48 — 행동 포화 가설의 의미 명확화
+
+`lateral std=1.141` 문제는 최대 속도 제한을 더 풀어야 한다는 뜻이 아니다. 현재 Gaussian sample을
+`[-1,1]`로 clamp한 뒤 2.5m/s를 곱하므로, 큰 분산이 매 step 좌우 최대속도 명령을 자주 만든다는 뜻이다.
+상한을 높이면 같은 포화 sample이 더 큰 횡속도가 되어 충돌을 악화시킬 수 있고, clamp를 없애면
+unbounded Gaussian 명령이 controller로 들어가므로 둘 다 올바른 수정이 아니다.
+
+검증 후 가능한 수정 방향은 bounded Beta/tanh-squashed policy, 실제 사용하는 action 차원별 적절한
+std 제한 또는 entropy 조정, 사용하지 않는 z action 제거, stochastic rollout과 deterministic
+curriculum gate 분리다. 우선순위는 여전히 동일 체크포인트의 deterministic/stochastic paired eval이다.
