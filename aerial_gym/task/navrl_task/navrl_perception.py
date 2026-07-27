@@ -43,6 +43,15 @@ VBEAMS = int(os.environ.get("NAVRL_LIDAR_VBEAMS", "").strip() or 4)
 # = at most ~7 tokens, so raising MAX_OBSTACLES alone silently wasted the extra slots. At +-10 deg
 # the ceiling is 18, comfortably above any capacity we intend to sweep.
 OBSTACLE_SUPPRESS_DEG = float(os.environ.get("NAVRL_OBSTACLE_SUPPRESS_DEG", "").strip() or 10.0)
+# Angular sector (centered on body-forward, in DEGREES) the obstacle tokens are selected from.
+# 360 = the original behavior: pick the nearest MAX_OBSTACLES bars anywhere around the drone.
+# Why narrowing helps: the probe measured ~16 bars inside the horizon against 8 token slots, so a
+# 360-degree search represents only ~50% of them -- which is exactly the measured hit_in_tokens
+# (0.40-0.53). Spending slots on bars BEHIND the drone is what starves the ones ahead of it.
+# Restricting the sector raises coverage geometrically (240 deg -> ~75%, 180 deg -> ~100%) WITHOUT
+# changing the observation width, so a policy can warm-start across this change.
+# Omnidirectional awareness is not lost: the static scan token still carries all HBEAMS bearings.
+OBSTACLE_FOV_DEG = float(os.environ.get("NAVRL_OBSTACLE_FOV_DEG", "").strip() or 360.0)
 STATIC_DIM = VBEAMS * HBEAMS
 STRUCTURED_OBS_DIM = (
     ROBOT_HISTORY * ROBOT_DIM
@@ -225,6 +234,13 @@ class NavRLPerceptionModule:
         # Suppression window converted from degrees to bins (at least 1 so a token always blanks
         # its own bin, never selecting the same bearing twice).
         self._suppress_bins = max(1, int(round(OBSTACLE_SUPPRESS_DEG / self._bin_deg)))
+        # Bearings eligible to become obstacle tokens (see OBSTACLE_FOV_DEG). None = all of them.
+        if OBSTACLE_FOV_DEG < 359.9:
+            self._token_bearing_mask = (
+                self._lidar_angles.abs() <= math.radians(OBSTACLE_FOV_DEG * 0.5)
+            )
+        else:
+            self._token_bearing_mask = None
 
     def reset_idx(self, env_ids):
         self.tracker.reset_idx(env_ids)
@@ -306,6 +322,10 @@ class NavRLPerceptionModule:
         # at the moment of a collision -- i.e. whether MAX_OBSTACLES truncated away the bar that hit.
         self.last_scan_nearest = nearest
         work = nearest.clone()
+        if self._token_bearing_mask is not None:
+            # Blank bearings outside the token sector so they can never win a slot. Applied to the
+            # SELECTION copy only -- `static_state` above still encodes the full 360 deg scan.
+            work = work.masked_fill(~self._token_bearing_mask.view(1, -1), self.lidar_max_range)
         tokens = torch.zeros(
             self.num_envs, MAX_OBSTACLES, OBSTACLE_DIM, device=self.device
         )

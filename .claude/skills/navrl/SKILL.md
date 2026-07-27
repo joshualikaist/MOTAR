@@ -20,6 +20,29 @@ training logs into the main context — that is what subagents are for.
 Working dir for all training/eval: `aerial_gym/rl_training/rl_games`. Env: conda `aerialgym`, always
 `PYTHONNOUSERSITE=1`. Sensor-only mode = `NAVRL_VISION=1`.
 
+## WORKLOG RULE — non-negotiable
+
+**Every piece of work ends with a `WORKLOG.md` entry. No exceptions, no "I'll add it later".**
+
+This applies to *each* of these, not just a full loop iteration:
+- a training run (launched, finished, died, or was killed — record which, and why)
+- an eval / sweep (record the actual numbers, not "it improved")
+- a code change (what changed, what it was measured against)
+- a diagnosis, **including one that turned out wrong** — a refuted hypothesis is a result and stops
+  the next session from re-running it
+
+Entry format (newest at the BOTTOM of `WORKLOG.md`):
+- dated `## YYYY-MM-DD — <one-line headline>`
+- the measured numbers, in a table when there is more than one cell
+- the decision it led to, and the next concrete step
+- run folder / checkpoint / `results/*.csv` paths so the numbers can be re-derived
+- when a claim was **disproved**, say so explicitly ("hypothesis X refuted: measured Y")
+
+Write the entry **before** asking the user to review a diff, so the docs and the code land in the
+same commit. If a session is running out of budget, the WORKLOG entry is the LAST thing to cut —
+it is what makes the next session cheap. `CRASH_TUNING_LOG.md` gets the long-form mechanism writeup;
+`WORKLOG.md` always gets at least the dated summary.
+
 ## Hard-won rules (do not relearn these)
 
 - **Evaluate a curriculum run with `last_gen_ppo_ep_XXXX.pth`, NOT `gen_ppo.pth`.** `gen_ppo.pth`
@@ -64,10 +87,11 @@ ALSO parse aerial_run/epoch_metrics.csv for crash-vs-density and any promotion s
 compact table + one-paragraph diagnosis + next-config suggestion. Cite file:line."* Keep only its
 report; do not pull the raw numbers into your context.
 
-### 4. Record + surface (direct, small)
-Append a dated WORKLOG entry (numbers + decision), save the curve to `results/<name>.csv`, and if a
-figure/status page exists, redeploy the Artifact with the new point. Commit docs/results only after
-the user reviews the diff (their standing preference — never autonomous commit/push).
+### 4. Record + surface (direct, small) — MANDATORY, see the WORKLOG RULE above
+Append the dated WORKLOG entry (numbers + decision + paths), save the curve to `results/<name>.csv`,
+and if a figure/status page exists, redeploy the Artifact with the new point. Commit docs/results
+only after the user reviews the diff (their standing preference — never autonomous commit/push).
+Do not report a step as finished until its WORKLOG entry exists.
 
 ## Running subagents well (token-efficient)
 - **Delegate reads, keep conclusions.** One agent that returns a 15-line report replaces hundreds of

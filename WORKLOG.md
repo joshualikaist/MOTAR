@@ -3,6 +3,9 @@
 무엇을, 왜 바꿨는지의 시간순 기록. 최신이 아래쪽. (연구 로드맵은 워크스페이스 루트의
 `RESEARCH_PLAN.md`, 실행 방법은 `README.md`의 Getting Started 참고)
 
+**기록 규칙:** 코드·설정·실험 조건 또는 결과를 변경한 작업은 같은 작업 안에서 이 파일도 함께
+갱신한다.
+
 ---
 
 ## 2026-07-09 — 저장소 정리 & NavRL LiDAR 재현
@@ -751,3 +754,191 @@ token_err=0.57m     token_rank=0.9         (capacity=5)
 1. `MAX_OBSTACLES` 5→8  2. 억제폭 ±2→±1 bin  3. 수평빔 36→72
 **캠페인 통틀어 처음으로 추측이 아닌 측정에 근거한 bar_contact 개입** — 고도 PI·tilt-comp·12m look-ahead가
 전부 bar_contact를 ~13%로 남긴 이유는 셋 다 **장애물 표현(representation)** 을 건드리지 않았기 때문.
+
+---
+
+## 2026-07-27 — `general_repr` 반복 조기 종료 원인 규명 및 PPO 안전장치
+
+### 증상과 원인
+
+`train_navrl_general_repr.sh`로 시작한 fresh representation 학습 중 다음 두 run이 조기에 끝났다.
+
+- `ppo_260727_0048_navrl`: epoch 62, `early_stop_nan`
+- `ppo_260727_0147_navrl`: epoch 43, `early_stop_nan`
+
+비교 run(`0054`, `0058`, `0106`)은 각각 설정된 60/120/120 epoch까지 정상 실행되었고, 실패 로그에는
+OOM·CUDA 오류·외부 process kill이 없었다. 조기 종료 로직이 학습을 임의로 끊은 것이 아니라 이미 망가진
+학습 상태를 mean reward의 NaN으로 뒤늦게 감지한 것이었다.
+
+근본원인은 `ppo_navrl_perception_transformer.yaml`의 조합이었다.
+
+```yaml
+learning_rate: 1e-4
+lr_schedule: adaptive
+```
+
+현재 `rl_games`의 legacy adaptive scheduler는 KL이 낮으면 minibatch마다 LR을 1.5배 올리고 상한을
+`1e-2`로 둔다. 이 batch 구성에서는 첫 epoch에만 `1e-4 → 1.70859e-3`으로 올라갔고 이후 `1e-2`에
+도달했다. 실패 run에서 PPO loss가 epoch 56/36부터 NaN이 된 뒤 mean reward가 epoch 62/43에 NaN이
+되어 조기 종료되었다. 실패 체크포인트의 optimizer에도 LR `0.01`이 저장되어 있어 그대로 resume하면
+설정의 `1e-4`와 무관하게 위험한 LR을 다시 사용하게 되는 문제도 확인했다.
+
+### 수정
+
+- `ppo_navrl_perception_transformer.yaml`
+  - actor LR은 `1e-4` 유지.
+  - `lr_schedule: adaptive`를 `lr_schedule: None`으로 변경해 IdentityScheduler로 고정.
+- `training_safety.py` 신규
+  - PPO metric과 모델 파라미터의 첫 NaN/Inf 위치를 찾는 검사 추가.
+  - 체크포인트 restore 후 optimizer 모든 param group의 LR을 현재 설정값으로 덮어쓰는 helper 추가.
+- `early_stop_a2c_agent.py`
+  - restore 시 과거 체크포인트의 optimizer LR을 버리고 현재 config LR로 초기화.
+  - 매 epoch 직후 actor/value/bounds loss, entropy, KL 및 모델 파라미터의 NaN/Inf를 검사.
+  - non-finite 상태는 `nonfinite_ppo` 실패로 즉시 예외 종료.
+  - NaN reward 또는 non-finite PPO 상태에서는 손상된 periodic/best/last checkpoint를 저장하지 않음.
+  - NaN 실패에는 `.aerial_training_finished`를 쓰지 않고 non-zero exit를 유지하여 정상 완료로
+    오인하거나 손상 체크포인트를 자동 재사용하지 않게 함.
+  - 정상 reward collapse/plateau, max epoch/frame 종료의 기존 체크포인트 동작은 유지.
+- `run_header.py`, `train_run_recorder.py`
+  - 실행 헤더에 NaN/Inf fail-fast, plateau, collapse 조건을 실제 설정대로 표시.
+  - NaN 종료를 정상 조기 종료가 아닌 실패로 기록.
+- `tests/test_training_safety.py` 신규
+  - 고정 LR 설정, metric/parameter NaN 감지, stale checkpoint LR 교정을 검증.
+
+### 실제 실행 경로 확인
+
+사용 중인 명령은 다음과 같다.
+
+```bash
+cd aerial_gym/rl_training/rl_games
+./train_navrl_general_repr.sh
+```
+
+이 wrapper가 `NAVRL_VISION=1`, `NAVRL_PERCEPTION=1`을 설정한 뒤 `train_navrl.sh`를 호출하므로 실제로
+수정한 `ppo_navrl_perception_transformer.yaml`을 선택한다. 관측 차원이 574→898로 바뀐 실험이라
+wrapper 설계대로 checkpoint warm-start 없이 fresh run으로 실행된다. 따라서 실행 명령은 변경하지 않는다.
+
+### 검증
+
+- `tests/test_training_safety.py`: 4/4 통과.
+- 기존 `tests/test_navrl_perception.py`: 4/4 통과.
+- 수정 Python 파일 `py_compile` 통과.
+- `git diff --check` 통과.
+- 사용자 소유의 untracked `checkpoints_saved/`는 변경하지 않음.
+
+전체 Isaac Gym 학습 smoke run은 현재 셸 환경에 `ninja` 실행 파일이 없어 extension import 단계에서
+실행하지 못했다. 실제 다음 `general_repr` fresh run에서 시작 헤더의 actor LR `0.0001`,
+schedule `None`과 장시간 NaN 재발 여부를 확인한다.
+
+---
+
+## 2026-07-27 — tilt 제한 + 추력보상 부호 안전화, 그리고 내 NaN 진단의 정정
+
+병렬 세션이 같은 날 NaN의 근본원인을 **adaptive LR 스케줄러**(1e-4 → 1e-2 상승)로 규명해 위에
+기록했다. 이 항목은 **그와 별개로 진행된 제어 쪽 작업**과, 그로 인해 **내 초기 결론이 부분적으로
+틀렸음**을 남긴다.
+
+### 정정: "tilt 수정으로 NaN이 해결됐다"는 근거가 약했다
+
+`0048`(epoch 62 NaN)을 보고 나는 원인을 내가 c01e552에서 넣은 tilt 보상의 부호 버그로 지목하고,
+tilt 제한을 넣은 뒤 fresh 120 epoch에서 NaN이 없자 해결로 판단했다. **각 조건 n=1이라 통계적으로
+빈약했고, 실제로 `0147`이 tilt 제한이 있는 상태에서도 epoch 43에 NaN으로 죽었다**(위 항목).
+→ **NaN의 주원인은 LR 스케줄러이고, 내 tilt 가설은 기각에 가깝다.** 다만 아래 부호 버그 자체는
+실재하는 결함이라 수정은 유지한다(NaN의 원인이 아니었을 뿐, 뒤집힌 상태에서 지면으로 가속하는 것은
+그 자체로 잘못).
+
+### 유지하는 수정 (커밋 `6d391e0`)
+
+1. **부호 안전화**: `T = f_z / b3_z.clamp(min=0.5)`는 크기만 막고 부호를 안 막아, 뒤집힌 상태
+   (`b3_z<0`)에서 `+0.5`를 반환해 **아래를 향한 몸통축에 양의 추력**을 걸었다. `b3_z ≤ 0.5`면 표준
+   Lee 투영으로 폴백하도록 변경.
+2. **목표 기울기 제한 45°** (`NAVRL_MAX_TILT_DEG`, PX4 `MPC_TILTMAX_AIR` 방식). 기존 Lee는 목표
+   body-z를 `힘/|힘|`로 그대로 뽑아 수평 명령이 크면 90°를 넘기는 자세를 요구했다. 고도 우선 형태
+   (수직 유지·수평 축소)라 양력이 아니라 횡가속을 희생 — 45°에서도 9.8 m/s², 2.5 m/s에서 선회반경
+   0.64 m.
+
+**학습된 정책 무손상 확인**(2048 ep, general spawn, target 1.0): 제한 없음 capture **0.868** vs
+45° **0.864**. 즉 잘 나는 정책은 이 제한에 닿지 않는다.
+
+### 기각된 가설 2건 (다시 시도하지 말 것)
+
+- **"tilt 보상이 바닥추락(below)의 원인"** → 기각. A/B 결과 보상 **OFF일 때 below가 85~87%로 더
+  높았고** ON은 73~76%였다. 보상은 오히려 바닥추락을 줄이고 있었다.
+- **"각속도 감쇠 부족이 자세 오버슈트의 원인"** → 기각. `K_angvel` 0.2 / 0.45 / 0.8 스윕에서
+  IID 랜덤 행동 시 최대 기울기가 **127~134°로 변하지 않았다.** 측정 이득이 없어 변경을 되돌렸고
+  커밋하지 않았다.
+
+### 부수 측정 (fresh 정책의 고도)
+
+직접 프로브(32~64 env, 고정 명령): 정지·최대전진 모두 z=1.00 m 유지, 기울기 3~7°로 **고도 제어
+자체는 정상**. 반면 **매 스텝 IID 랜덤 행동**(=갓 시작한 PPO)에서는 최저 고도 0.10 m(사망선),
+최대 기울기 127°. 0.5초 유지 시엔 0.70 m/67°로 안전. fresh 초반 `below` 80%대는 제어 결함이 아니라
+**행동이 매 스텝 뒤집히는 데서 오는 것**으로 보인다. 과거 성공한 fresh run도 capture 0.008에서
+시작했으므로(이번 `0048`도 epoch 5에 0.007) 초반 고 crash 자체는 이상 신호가 아닐 수 있다 —
+학습되며 내려가는지가 관건이며 아직 미확인.
+
+### 작업 규칙 변경
+
+`.claude/skills/navrl/SKILL.md`와 `CLAUDE.md`에 **WORKLOG 규칙**을 명문화했다: 학습·평가·코드변경·
+진단(기각된 가설 포함) 각각에 대해 이 파일 갱신을 필수로 하고, diff 검토 요청 **전에** 작성하며,
+세션 예산이 부족해도 마지막까지 자르지 않는다.
+
+---
+
+## 2026-07-27 — (A) representation run 평가 완료 + (B) 토큰 선택 FOV 설계
+
+### (A) `ppo_260727_0225` 평가 — **첫 fresh 완주**, bar_contact를 처음으로 움직임
+
+fresh 8000/8000 epoch 완주(NaN 없음). 이전 fresh 시도는 epoch 43~62에서 NaN 사망 — 병렬 세션이
+고친 `lr_schedule: None`이 효과를 본 것으로 보인다. peak reward 107.8 @ ep7247, peak capture 96.0%.
+
+6-speed held-out 평가(128 env, 2049 ep/셀, general spawn, 학습과 동일한 72빔/8토큰 조건).
+결과 = `results/general_repr_speed_axis.csv`. 절대율(전체 에피소드 대비) 평균, 직전 최고(12m peak,
+5토큰/36빔) 대비:
+
+| 지표 | 12m peak | **0225 (8토큰/72빔)** | Δ |
+|---|---|---|---|
+| capture | 0.851 | **0.861** | +1.0pp |
+| **bar_contact** | 12.7% | **9.0%** | **−3.7pp (−29%)** |
+| below | 0.2% | 3.5% | +3.3pp |
+
+**캠페인 통틀어 bar_contact를 움직인 첫 개입.** 고도 PI·tilt-comp·12m look-ahead는 셋 다 ~13%로
+남겼었다.
+
+### ★ 그러나 예측한 메커니즘 2개 모두 기각 (다시 시도하지 말 것)
+
+- **H1 "토큰 용량이 병목"** → **기각.** 용량을 5→8로 늘렸는데 `hit_in_tokens`가 0.647 → **0.40~0.53
+  으로 오히려 하락.** `token_rank≈2.9`라 늘린 슬롯을 쓰고는 있다. 반경 내 막대가 ~16개라 8개로도
+  절반이 안 잡힌다.
+- **H2 "token 위치오차 = 각도 양자화"** → **기각.** 빔을 36→72로 늘려 bin을 10°→5°로 절반으로
+  줄였는데 `token_err`가 0.57m → **0.72~1.13m로 증가.**
+- ⇒ **bar_contact 개선은 우리가 겨냥한 토큰 메커니즘이 아니라 다른 경로**(가장 유력: 더 촘촘해진
+  static scan 자체)에서 왔다. 개선은 진짜지만 이유는 예측과 달랐다.
+
+### (B) 설계 — 토큰 선택 FOV (`NAVRL_OBSTACLE_FOV_DEG`, 기본 360 = 기존 동작)
+
+기하 계산이 측정과 일치: 360°에서 8토큰 = 반경 내 16개 중 **50% 커버** → 측정된 `hit_in_tokens`
+0.40~0.53과 정확히 맞는다. **뒤쪽 막대에 슬롯을 쓰느라 앞쪽이 굶는 구조.**
+
+| 선택 FOV | 반경 내 막대 | 8토큰 커버율 |
+|---|---|---|
+| 360°(현재) | 16.0 | 50% |
+| 240° | 10.7 | 75% |
+| 180° | 8.0 | 100% |
+
+구현: `navrl_perception._fuse_static_and_extract_obstacles`에서 **선택용 복사본에만** 섹터 밖
+bearing을 blank 처리. `static_state`는 전 360°를 그대로 유지하므로 전방위 인지는 잃지 않는다.
+**관측 차원 898 불변 → 0225에서 warm-start 가능**(fresh 재학습 불필요).
+
+**제로샷 사전확인**(재학습 없이 FOV만 바꿔 0225 평가, target 1.0): 360° cap 0.869/hit 0.418,
+240° cap 0.857/hit 0.479, 180° cap 0.862/hit 0.402. `hit_in_tokens`가 기대(0.75)에 훨씬 못 미친다 —
+정책이 360° 토큰 배치에 맞춰 학습됐기 때문일 수 있어 **재학습해야 판정 가능**. 이것이 (B)를 하는 이유.
+
+**판정 기준**: `hit_in_tokens` 0.42 → 0.65+ **그리고** `bar_contact` < 9%면 성공. 실패 시 240→180
+재시도, 그래도 안 되면 `NAVRL_OBSTACLE_FOV_DEG` 제거로 롤백하고 (C) 밀도로 진행.
+
+### 다음 순서 (사용자 확정): A → B → C
+- (A) 완료
+- (B) 위 warm-start 명령으로 ~2250 epoch(≈1.5h) 추가 학습 — 사용자가 직접 실행
+- (C) 밀도 커리큘럼 = 논문 본선(밀도×속도 지도). bar_contact를 먼저 낮춰야 고밀도에서 폭발하지 않음
+  (과거 150막대 절벽 −27pt 기록).
