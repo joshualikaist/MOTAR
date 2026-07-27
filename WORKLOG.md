@@ -1497,3 +1497,16 @@ unbounded Gaussian 명령이 controller로 들어가므로 둘 다 올바른 수
 검증 후 가능한 수정 방향은 bounded Beta/tanh-squashed policy, 실제 사용하는 action 차원별 적절한
 std 제한 또는 entropy 조정, 사용하지 않는 z action 제거, stochastic rollout과 deterministic
 curriculum gate 분리다. 우선순위는 여전히 동일 체크포인트의 deterministic/stochastic paired eval이다.
+
+### 2026-07-28 02:36 — 현재 작업 스냅샷 커밋 정리
+
+사용자 요청에 따라 지금까지의 추적 파일 변경을 하나의 Git 스냅샷으로 정리했다.
+
+- 연구 현황 대시보드의 compact panel 레이아웃 변경(`docs/status/index.html`,
+  `docs/status/style.css`)을 포함했다.
+- 대시보드가 외부 CDN 연결 없이 3D arena를 열 수 있도록 Three.js r128과
+  OrbitControls 로컬 사본(`docs/status/vendor/`)을 포함했다. Three.js 파일에는
+  MIT SPDX 라이선스 헤더가 보존돼 있다.
+- 실행 중인 학습에서 계속 생성되는 `train_session_logs/`(약 81 MB)와
+  `checkpoints_saved/`(약 15 MB)는 소스 변경이 아닌 런타임 산출물이므로 Git에는 넣지 않았다.
+- 커밋 전 `git diff --check`, JavaScript DOM 참조 감사, headless Chrome 로딩 검사를 수행한다.
