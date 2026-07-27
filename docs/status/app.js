@@ -370,6 +370,16 @@ function renderCurve(s){
   const dots=(key,col,r0)=>rows.filter(r=>r[key]!=null).map(r=>`<circle cx="${sx(r.density_bars).toFixed(1)}" cy="${sy(r[key]).toFixed(1)}" r="${r0}" fill="${col}"/>`).join('');
   let g='';
   for(let i=0;i<=4;i++){const y=PY0+i*(PY1-PY0)/4;g+=`<line x1="${PX0}" y1="${y}" x2="${PX1}" y2="${y}" stroke="${cssv('--line2')}" stroke-width="1"/>`;}
+  // Shade the density range the policy was actually TRAINED on. Everything to the right is
+  // out-of-distribution generalization, and reading it as "the method's ceiling" would be wrong.
+  const trainedMax=(s.curve_meta&&s.curve_meta.trained_max_bars)||null;
+  const trainedBand=trainedMax? `
+    <rect x="${PX0}" y="${PY0}" width="${(sx(trainedMax)-PX0).toFixed(1)}" height="${PY1-PY0}"
+      fill="${cssv('--accent')}" opacity="0.07"/>
+    <line x1="${sx(trainedMax).toFixed(1)}" y1="${PY0}" x2="${sx(trainedMax).toFixed(1)}" y2="${PY1}"
+      stroke="${cssv('--accent')}" stroke-width="1.5" stroke-dasharray="4 4" opacity="0.75"/>
+    <text class="t dim" x="${(sx(trainedMax)+7).toFixed(1)}" y="${PY0+14}" font-size="10.5">
+      ← 학습 범위 (${trainedMax}막대) · 오른쪽은 일반화</text>` : '';
   const ylab=[100,75,50,25,0].map((v,i)=>`<text x="60" y="${(PY0+i*(PY1-PY0)/4+4).toFixed(0)}" text-anchor="end">${v}${i==0?'%':''}</text>`).join('');
   const xlab=rows.map(r=>`<text x="${sx(r.density_bars).toFixed(0)}" y="${PY1+18}" text-anchor="middle">${r.density_bars}</text>`).join('');
   document.getElementById('curve').innerHTML=`
@@ -379,6 +389,7 @@ function renderCurve(s){
     <g class="t dim" font-size="11">${ylab}</g>
     <g class="t dim" font-size="11">${xlab}</g>
     <text class="t dim" x="380" y="395" font-size="12" text-anchor="middle">활성 막대 수 →</text>
+    ${trainedBand}
     <polyline fill="none" stroke="${cssv('--gt')}" stroke-width="2.4" stroke-dasharray="6 5" points="${path('gt_injected_phase2')}"/>
     ${dots('gt_injected_phase2',cssv('--gt'),4)}
     <polyline fill="none" stroke="${cssv('--bad')}" stroke-width="2.2" points="${path('crash')}"/>
@@ -386,9 +397,10 @@ function renderCurve(s){
     <polyline fill="none" stroke="${cssv('--sensor')}" stroke-width="3" points="${path('captured')}"/>
     ${dots('captured',cssv('--sensor'),4.5)}`;
   // table
-  const head=`<thead><tr><th>막대</th><th>밀도/100m²</th><th>포획(prototype)</th><th>충돌</th><th>timeout</th><th>포획(GT)</th></tr></thead>`;
+  const head=`<thead><tr><th>막대</th><th>밀도/100m²</th><th>포획(sensor-only)</th><th>충돌</th><th>timeout</th><th>학습범위</th><th>포획(GT)</th></tr></thead>`;
   const body=rows.map(r=>{const cliff=r.crash>=0.5?' class="cliff"':'';
-    return `<tr${cliff}><td>${r.density_bars}</td><td>${perc100(r.density_bars)}</td><td>${pct(r.captured)}</td><td>${pct(r.crash)}</td><td>${pct(r.timeout)}</td><td>${r.gt_injected_phase2!=null?pct(r.gt_injected_phase2):'—'}</td></tr>`;}).join('');
+    const zone=r.trained===false?'<span class="ood">범위 밖</span>':(r.trained?'학습됨':'—');
+    return `<tr${cliff}><td>${r.density_bars}</td><td>${perc100(r.density_bars)}</td><td>${pct(r.captured)}</td><td>${pct(r.crash)}</td><td>${pct(r.timeout)}</td><td>${zone}</td><td>${r.gt_injected_phase2!=null?pct(r.gt_injected_phase2):'—'}</td></tr>`;}).join('');
   document.getElementById('curve-tbl').innerHTML=head+'<tbody>'+body+'</tbody>';
 }
 
@@ -431,6 +443,15 @@ function renderStatic(){
       <p><b>고도 관련 3연속은 capture만 올리고 막대충돌은 못 건드렸습니다</b>(13%에서 고착). 충돌이
         움직이기 시작한 건 <b>장애물 표현</b>을 바꾼 뒤부터입니다.</p></div>
 
+    <div class="callout"><h3>밀도 커리큘럼 (Stage C) · 65막대까지 진행</h3>
+      <p>25막대 정책에서 출발해 capture가 <b>0.70을 회복했을 때만</b> 밀도를 +5씩 올리는 competence
+        게이트로 진행 중이며, 현재 <b>65막대(13.6/100 m²)</b>에 도달했습니다. 승급 직후 capture가 떨어졌다가
+        다시 올라오는 정상 패턴을 확인했습니다(65막대 구간: 0.668 → 0.680 → 0.685).</p>
+      <p><b>승급 속도가 결정적이었습니다.</b> 첫 시도는 문턱 0.55 · 판정창 4096 episode로 <b>45 epoch마다</b>
+        승급해 7단계를 몰아쳤고, capture가 0.86에서 0.59까지 회복 없이 내려앉아 실패했습니다. 문턱 0.70 ·
+        판정창 16384 episode로 바꿔 단계당 정착 시간을 4배로 늘리자 회복 패턴이 돌아왔습니다. 실력이 아니라
+        시간에 따라 난이도를 올리면 무너진다는 점은 이 프로젝트에서 두 번째로 확인된 사실입니다.</p></div>
+
     <div class="callout"><h3>측정으로 기각된 가설 · 다시 시도하지 않음</h3>
       <p><b>look-ahead가 부족해서 부딪힌다</b> → 기각. 8→12 m로 늘려도 막대충돌 12.7%로 불변
         (2.5 m/s에서 8 m면 이미 3.2초 경고).</p>
@@ -450,18 +471,21 @@ function renderStatic(){
         막지 않았습니다. PX4식 45° 제한 + 뒤집힘 시 안전 폴백.</p></div>`;
 
   document.getElementById('nextplan').innerHTML=`
-    <p class="sub">25막대에서 남은 실패는 11%뿐이고 그 3분의 2가 막대충돌입니다. 다음은 <b>논문 본선인
-      밀도 축</b>으로 들어가되, 고밀도에서 충돌이 폭발하지 않도록 표현 쪽을 한 번 더 다듬는 선택지가 있습니다.</p>
-    <div class="callout"><h3>C · 밀도 커리큘럼 → 밀도 × 표적속도 지도 <span class="badge active">다음</span></h3>
-      <p>25 → 110 → 150막대. 과거 GT-LiDAR 시절 150막대에서 −27 pt 절벽이 관측됐고, 배치 최소간격이
-        포화로 완화되며 일부 통로가 기체 폭보다 좁아지는 <b>기하학적 한계</b>가 원인이었습니다.
-        이 절벽이 sensor-only에서도 같은 위치에 나타나는지가 논문의 핵심 그림입니다.</p></div>
-    <div class="callout"><h3>B′ · 억제폭 ±10°→±5° (선택, 30분)</h3>
-      <p>토큰끼리 최소 20° 벌어져야 해서 240° 중 실제로는 160°만 덮습니다. 좁히면 커버율이 더 오릅니다.
-        관측 차원이 안 바뀌어 warm-start 가능 — 짧게 시도해보고 아니면 롤백.</p></div>
+    <p class="sub">위 곡선의 오른쪽 절반은 <b>아직 학습하지 않은 밀도</b>입니다. 지금 필요한 것은 새로운
+      아이디어가 아니라 커리큘럼을 더 밀어 올릴 <b>시간</b>입니다.</p>
+    <div class="callout"><h3>커리큘럼 연장 · 65 → 110막대 <span class="badge active">진행 예정</span></h3>
+      <p>65막대 구간의 개선은 아직 포화하지 않았습니다(충돌 기울기 −0.013/1000 epoch, 포획 +0.015/1000).
+        최근 400 epoch 평균 포획 0.688로 다음 승급 문턱(0.70)까지 약 800 epoch 남았습니다. 다만 단계당
+        소요가 밀도에 따라 늘어나므로(60막대 −0.044 → 65막대 −0.013), 110막대까지는 <b>수 시간 단위</b>가
+        더 필요합니다.</p></div>
+    <div class="callout"><h3>표적속도 축 → 밀도 × 속도 지도</h3>
+      <p>25막대에서는 표적속도 0–1.5 m/s 전 구간에서 포획 0.86–0.91로 <b>거의 평탄</b>합니다(드론이
+        2.5 m/s로 충분히 빠름). 밀도 축이 확보되면 두 축을 교차해 논문의 핵심 그림인 밀도 × 속도 지도를
+        완성합니다.</p></div>
     <div class="callout"><h3>남은 과제</h3>
-      <p>고도이탈 2.8%(fresh 학습의 잔재), 토큰 위치오차 지표의 신뢰성 재검증, 그리고 sim-to-real
-        (onboard latency · 센서 노이즈) 검증.</p></div>`;
+      <p>고밀도에서 막대충돌이 전체 충돌의 94%를 차지합니다(25막대에서는 65%). 고밀도 실패는 사실상
+        <b>전부 충돌</b>이므로, 표현·회피 쪽 개선이 곧 밀도 상한을 결정합니다. 그 외 sim-to-real
+        (onboard latency · 센서 노이즈) 검증이 남아 있습니다.</p></div>`;
 
   const phases=[
     ['Baseline','navigation·밀도 스윕·geometry 절벽 규명','done'],
@@ -471,7 +495,7 @@ function renderStatic(){
     ['P3','17-token temporal Transformer actor 연결','done'],
     ['P4','속도 상향 + 이동표적 요격 + PPO 안정화(σ·LR·tilt)','done'],
     ['P5','충돌 저감 — 고도 → look-ahead → 장애물 표현','done'],
-    ['P6','밀도 커리큘럼 → 밀도 × 표적속도 지도','active'],
+    ['P6','밀도 커리큘럼 25→65막대 (진행 중, 목표 110)','active'],
     ['P7','sim-to-real·onboard latency·sensor noise 검증','todo'],
     ['Paper','oracle/perception ablation + 논문화','todo'],
   ];

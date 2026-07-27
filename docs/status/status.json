@@ -506,46 +506,67 @@
     "vision_density_curve": [
       {
         "density_bars": 25.0,
-        "captured": 0.697,
-        "crash": 0.2,
-        "timeout": 0.103,
-        "gt_injected_phase2": 0.97
+        "captured": 0.896,
+        "crash": 0.102,
+        "timeout": 0.002,
+        "gt_injected_phase2": 0.97,
+        "trained": true
       },
       {
         "density_bars": 50.0,
-        "captured": 0.691,
-        "crash": 0.24,
-        "timeout": 0.069,
-        "gt_injected_phase2": 0.97
+        "captured": 0.796,
+        "crash": 0.202,
+        "timeout": 0.002,
+        "gt_injected_phase2": 0.97,
+        "trained": true
+      },
+      {
+        "density_bars": 65.0,
+        "captured": 0.679,
+        "crash": 0.316,
+        "timeout": 0.005,
+        "gt_injected_phase2": null,
+        "trained": true
       },
       {
         "density_bars": 75.0,
-        "captured": 0.661,
-        "crash": 0.31,
-        "timeout": 0.029,
-        "gt_injected_phase2": 0.94
+        "captured": 0.598,
+        "crash": 0.399,
+        "timeout": 0.003,
+        "gt_injected_phase2": 0.94,
+        "trained": false
       },
       {
         "density_bars": 110.0,
-        "captured": 0.606,
-        "crash": 0.372,
-        "timeout": 0.022,
-        "gt_injected_phase2": 0.93
+        "captured": 0.28,
+        "crash": 0.711,
+        "timeout": 0.009,
+        "gt_injected_phase2": 0.93,
+        "trained": false
       },
       {
         "density_bars": 130.0,
-        "captured": 0.473,
-        "crash": 0.507,
-        "timeout": 0.02,
-        "gt_injected_phase2": null
+        "captured": 0.15,
+        "crash": 0.847,
+        "timeout": 0.003,
+        "gt_injected_phase2": null,
+        "trained": false
       },
       {
         "density_bars": 150.0,
-        "captured": 0.283,
-        "crash": 0.706,
-        "timeout": 0.011,
-        "gt_injected_phase2": 0.66
+        "captured": 0.079,
+        "crash": 0.92,
+        "timeout": 0.002,
+        "gt_injected_phase2": 0.66,
+        "trained": false
       }
     ]
+  },
+  "curve_meta": {
+    "checkpoint": "ppo_260727_1309 last_gen_ep_15000",
+    "trained_max_bars": 65,
+    "note": "65막대까지만 학습. 75막대 이상은 학습범위 밖 일반화 측정.",
+    "target_speed_ms": 1.0,
+    "episodes_per_cell": 2049
   }
 }
