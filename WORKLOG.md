@@ -1294,3 +1294,11 @@ nohup ./train_navrl_general_repr_density.sh \
   > train_session_logs/night_density.out 2>&1 &
 tail -f train_session_logs/night_density.out
 ```
+
+### 2026-07-28 01:47 — 중복 실행 문의 확인
+
+사용자가 동일 launcher를 한 번 더 실행했으나 duplicate guard가 기존 train PID `1652517`을 찾아
+의도대로 exit 3으로 거부했다. 실패가 아니라 GPU에 두 학습이 겹치는 것을 막은 정상 동작이다.
+기존 `ppo_260727_2324_navrl`은 epoch 18096/45000, 70 bars, VRAM 약 5.85 GiB로 정상 진행 중이다.
+65→70 승급은 16388 episodes에서 capture 0.706으로 통과했다. 현재는 새 실행 명령이 아니라
+`tail -f train_session_logs/train_260727_2323.log`로 기존 run을 모니터링한다.
