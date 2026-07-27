@@ -1406,3 +1406,83 @@ bar probe는 **충돌 순간** 측정이라 token 누락이 충돌의 선행 원
 3. 그 결과 뒤에만 수정한다. 1번이 맞으면 커리큘럼 gate를 deterministic probe로 분리하거나
    lateral std/entropy 구조를 고친다. 2번이 맞으면 단순 token 수 증가보다 object/segment 또는
    TTC·진행경로 위험 기반 token과 slot별 tokenization을 우선한다.
+
+### 2026-07-28 02:40 — NavRL/NavRL++ 원문 밀도 대조 및 원인 가설 정정
+
+사용자가 “NavRL/NavRL++에 비해 70막대가 훨씬 많은 것은 아니지 않느냐”고 지적해 원 논문,
+공개 NavRL 코드, 현재 환경 코드를 같은 면적 기준으로 다시 감사했다. 결론은 **사용자 지적이 맞다.**
+70막대를 고밀도 자체의 한계로 해석하거나, 정적 막대 수를 8 obstacle token 용량과 직접 비교한
+앞선 설명은 잘못됐다.
+
+#### 원문·공개 구현에서 확인한 환경
+
+- NavRL 공개 학습 config: `350 static + 80 dynamic`.
+- NavRL 공개 코드의 실제 obstacle 영역: `map_range=[20,20,4.5]`, 즉 내부 `40×40 m`.
+  static 폭은 `0.4~1.1 m`, dynamic 폭은 `0.25~1.0 m`, 충돌 robot radius는 `0.3 m`.
+- NavRL 논문은 전체 환경을 `50×50 m`로 표기하고 static 350개를 고정한 채 dynamic을
+  `60→80→100→120`으로 승급한다. 코드상 장애물 자체는 중앙 40×40m에 배치되고 바깥은 border다.
+- NavRL++ Table I:
+  - S1: `300 static + 60 dynamic`
+  - S2: `350 + 80`
+  - S3: `400 + 100`
+  - S4: `400 + 120`
+  - S5: `400 + 140`
+- NavRL++ 평가는 명시적으로 `40×40 m` 안에 static `300/350/400`, dynamic 환경은 여기에
+  `60/80/100`을 추가한다. high-complexity 결과는 static SR `99.84%`, dynamic SR `83.96%`다.
+- NavRL++ 정적 표현은 `4×36` 360° ray-distance map을 CNN으로 하나의 64-D static token으로
+  만든다. 최대 5개 object state와 그 history는 **dynamic obstacle 전용**이다.
+
+#### 면적당 밀도 비교
+
+우리 막대 배치 밴드는 `(0.96-0.13)×24×24 = 478.08 m²`이고, 70 bars는
+`14.64 bars/100m²`다. NavRL++의 40×40m 기준은:
+
+| 조건 | static/100m² | static+dynamic/100m² | 우리 밴드 환산 개수 |
+|---|---:|---:|---:|
+| 우리 70 bars | 14.64 | 14.64 | 70 |
+| NavRL++ S1 | 18.75 | 22.50 | static 90 / total 108 |
+| S2 | 21.88 | 26.88 | static 105 / total 128 |
+| S3 | 25.00 | 31.25 | static 120 / total 149 |
+| S4 | 25.00 | 32.50 | static 120 / total 155 |
+| S5 | 25.00 | 33.75 | static 120 / total 161 |
+
+4m 반경의 균일밀도 기대 장애물 수도 우리는 약 `7.36`, NavRL++은 S1 total `11.31`,
+S2 `13.51`, S5 `16.96`이다. 현재 probe의 “12m 안 43~44개”는 NavRL++의 4m local range와
+다른 반경을 사용한 수치라 직접 비교하면 안 된다.
+
+우리 bar 폭/깊이는 실측 평균 `0.603 m`(범위 `0.403~0.790 m`), NavRL 공개 static은
+`0.4~1.1 m`라 우리 막대가 특별히 큰 것도 아니다. 우리 70-bar 배치 Monte-Carlo 100 layouts는
+drone 반폭 0.14m에 추가 side clearance `0.2 m`를 요구해도 path-exists `100/100`, placement
+relaxation `0/100`, 최종 center spacing `1.5 m`였다. 따라서 70 bars는 물리적 통로 한계도 아니다.
+
+#### 철회·수정하는 가설
+
+- **철회:** “70 bars라 8 token이 감당하지 못해 68% ceiling이 생긴다.”
+- 이유: 우리 막대는 static obstacle이고, NavRL++도 수백 개 static obstacle을 object token 5개가
+  아니라 ray map 하나로 처리한다. 우리 actor에도 더 촘촘한 `4×72` full 360° static scan이 별도로
+  있으며 8 proposal token은 보조 경로다.
+- bar-contact 순간 `unique token bars≈1.2`, `hit_token_given_fov≈0.56`은 우리 auxiliary proposal
+  selector가 static surface를 비효율적으로 중복 선택한다는 증거일 수는 있으나, policy가 충돌 막대를
+  전혀 관측하지 못했다는 증거가 아니다. full static scan에 남아 있기 때문이다.
+- NavRL++도 static scan 전체를 하나의 64-D token으로 압축하므로 “64-D static token 자체가
+  70 bars를 못 담는다” 역시 비교 근거가 약하다.
+
+#### 비교 후 더 유력해진 차이
+
+1. **행동 분포/gate 불일치:** NavRL/NavRL++은 bounded Beta action을 사용하며 논문도 Gaussian의
+   boundary bias를 피하는 이유를 명시한다. 우리는 Gaussian을 샘플한 뒤 clamp한다. 현재 lateral
+   std `1.141`이면 최소 약 38%가 매 step 경계에 잘려 ±2.5m/s 횡명령으로 포화된다. stochastic
+   rollout으로 승급을 판정하는 현재 구조와 직접 충돌한다.
+2. **문제 설정 차이:** NavRL++은 정확히 알려진 static navigation goal을 goal-aligned frame으로
+   관측한다. 우리는 target GT를 actor에서 제거했고, 움직이며 막대에 가려지는 target을 RGB-D/LiDAR
+   tracker로 찾아야 하고, random yaw의 vehicle frame에서 yaw까지 학습한다. target visibility/track
+   age를 bar-contact outcome별로 아직 측정하지 않았다.
+3. **기동 자유도:** 우리 막대는 모두 0~2m이고 drone은 z=1m에 고정돼 2-D로 통과해야 한다.
+   NavRL/NavRL++ UAV는 3-D velocity를 사용하고 높이가 다른 장애물 일부를 상하로 회피할 수 있다.
+   다만 우리 70-bar layout은 0.2m 추가 여유를 둬도 전부 연결되므로 이것만으로 68%는 설명되지 않는다.
+4. **제어 주기:** 우리는 10Hz, NavRL++ 기본은 50Hz다. 하지만 NavRL++ 자체 ablation에서 10Hz
+   overall SR `93.20%` vs 50Hz `94.08%`로 차이가 0.88pp여서 주원인일 가능성은 낮다.
+
+정정된 우선순위는 `(1) deterministic/stochastic paired eval → (2) lateral clamp telemetry →
+(3) target visibility/track-age conditioned crash 분석`이다. static token 수 증가는 이 세 검증 뒤로
+내린다. 실행 중 학습에는 어떤 변경도 하지 않았다.
