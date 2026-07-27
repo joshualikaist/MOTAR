@@ -1,21 +1,21 @@
 {
-  "generated_at": "2026-07-27T17:13:17.065936+00:00",
+  "generated_at": "2026-07-27T17:15:06.952309+00:00",
   "repo": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator",
   "n_runs": 32,
   "active_run": {
     "run": "ppo_260727_2324_navrl",
     "is_live": true,
     "metrics_age_min": 0.0,
-    "epoch": 18623.0,
-    "epochs_logged": 3623,
+    "epoch": 18662.0,
+    "epochs_logged": 3662,
     "tail_epochs": 50,
-    "captured_rate": 0.71519824,
-    "crash_rate": 0.28085754000000007,
-    "timeout_rate": 0.0039441960000000005,
-    "mean_reward": 44.557426000000014,
-    "closest_approach_m": 0.41387438,
+    "captured_rate": 0.69619208,
+    "crash_rate": 0.29511682000000006,
+    "timeout_rate": 0.008691112,
+    "mean_reward": 41.36392999999999,
+    "closest_approach_m": 0.4708216599999999,
     "n_bars_active": 70.0,
-    "curriculum_max_m": 12.754260000000002
+    "curriculum_max_m": 13.2172646
   },
   "latest_run": {
     "run": "ppo_260727_1309_navrl",

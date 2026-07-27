@@ -110,25 +110,6 @@ function renderLive(s) {
   if (footGen) footGen.textContent = gen || '—';
   if (footRuns) footRuns.textContent = s.n_runs || (s.runs ? s.runs.length : '—');
 
-  // hero metrics — prefer live training snapshot
-  const cap = live ? A.captured_rate : L.last_captured_rate;
-  const crash = live ? A.crash_rate : L.last_crash_rate;
-  const bars = live ? A.n_bars_active : L.last_n_bars_active;
-  const kmax = live ? A.curriculum_max_m : L.last_curriculum_max_m;
-  const ep = live ? A.epoch : L.last_epoch;
-  const hero = document.getElementById('hero-metrics');
-  if (hero) {
-    const chips = [
-      { v: pct(cap), k: '포획률', c: cap >= 0.7 ? 'good' : cap >= 0.55 ? 'warn' : 'bad' },
-      { v: pct(crash), k: '충돌률', c: crash <= 0.15 ? 'good' : crash <= 0.35 ? 'warn' : 'bad' },
-      { v: bars != null ? String(Math.round(bars)) : '—', k: '활성 막대', c: 'acc' },
-      { v: kmax != null ? Number(kmax).toFixed(1) + ' m' : '—', k: '목표 거리', c: 'acc' },
-      { v: ep != null ? String(Math.round(ep)) : '—', k: live ? 'epoch' : '최종 epoch', c: 'acc' },
-    ];
-    hero.innerHTML = chips.map(c =>
-      `<div class="hmetric ${c.c}"><b>${c.v}</b><span>${c.k}</span></div>`).join('');
-  }
-
   const h2 = document.getElementById('live-h2');
   const sub = document.getElementById('live-sub');
   const cards = document.getElementById('live-cards');
