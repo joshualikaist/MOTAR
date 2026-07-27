@@ -1322,3 +1322,87 @@ threshold 0.70을 한 번도 통과하지 못했다. 전체 70-bars capture는 0
 판정: **학습 엔진은 건강하지만 커리큘럼은 잘 진행되지 않는다.** 목표가 안정적인 70-bars 정책이면
 계속 학습 가능하지만, 110 bars 도달 목적이라면 현재 threshold 0.70을 유지한 채 epoch 45000까지
 방치하는 것은 계산 낭비 가능성이 높다. 실행은 사용자 지시 없이 중단하거나 설정 변경하지 않았다.
+
+### 2026-07-28 02:22 — 70-bars 0.70 gate 정체 원인 감사
+
+사용자 요청에 따라 threshold를 낮추거나 코드를 바꾸기 전에 원인을 분리했다. 실행 중인
+`ppo_260727_2324_navrl`은 감사 시점 epoch 18551, 70 bars에서 계속 정상 실행 중이며 설정이나
+프로세스는 건드리지 않았다.
+
+#### 확정된 사실
+
+- 70 bars 진입(epoch 15618) 후 2,934 epoch의 epoch-level 평균은 capture `0.6830`,
+  crash `0.3117`, timeout `0.0053`이다. 최근 100 epoch는 capture `0.6960`까지 반등했지만,
+  최근 400/1000 epoch는 각각 `0.6846/0.6899`라 지속적인 0.70 돌파로 보기는 어렵다.
+- 앞서 집계한 16,384-finished-episode 창 13개가 모두 `0.663~0.699`였다. 진짜 성공률이
+  약 0.683이면 한 창의 이항 표준오차는 약 0.0036이므로 0.70은 약 4.7σ 위다. 따라서 긴 창이
+  우연히 나쁘게 뽑힌 문제가 아니라 현재 **stochastic training policy**가 약 68%에 머문 것이다.
+- 70-bars 2,927개 정렬 epoch에서 capture와 평균 target speed의 상관은 `0.0136`, goal-distance
+  max와의 상관은 `0.0185`다. 두 변수의 사분위별 capture도 모두 `0.6817~0.6847`이다.
+  특정 고속 표적이나 먼 목표가 평균을 끌어내린다는 가설은 현재 로그에서 기각된다.
+- 실패의 약 91%는 bar contact이고 below는 약 7%, timeout은 약 0.5%다. 충돌 x는 평균
+  `12~13 m`, episode step은 약 `38~41`이라 스폰/goal/timeout 가장자리 문제가 아니라
+  막대밭 중앙 위빙 중 충돌이다.
+
+#### 가장 먼저 검증할 원인: stochastic gate와 큰 횡행동 노이즈
+
+밀도 gate는 별도의 deterministic 평가가 아니라 PPO rollout의 **샘플 행동**으로 끝난 episode를
+그대로 센다. epoch-18550 체크포인트의 정책 log-std/std는 행동 `[x,y,z,yaw]` 순서로:
+
+```
+raw log-std = [-0.992, 0.132, 0.400, -2.531]
+effective std = [0.371, 1.141, 1.492, 0.080]
+```
+
+`y`는 기체 좌우 속도 행동이고 환경에서 `clamp(action,-1,1) * 2.5 m/s`로 변환된다. std 1.141이면
+평균 행동이 0이어도 정규분포 샘플의 약 38%가 ±1 바깥이라 매 step 좌우 명령이 포화된다
+(평균이 0이 아니면 포화율은 더 커질 수 있다). 이 std는 65-bars 시작 체크포인트의 `1.063`에서
+현재 `1.141`로 증가했다. 반면 x/yaw std는 `0.444→0.371`, `0.103→0.080`으로 감소했다.
+
+z std가 상한 1.492에 붙은 것은 task가 z 행동을 즉시 PI altitude command로 덮어써 실제 기동에는
+영향이 없지만, 사용하지 않는 차원에도 entropy bonus가 계속 걸린다는 별도 설계 결함이다. 수치
+안정성은 괜찮다(entropy 최근 약 2.69, explained variance 약 0.69, LR 1e-4). 다만 좌우 노이즈는
+실제 막대 회피를 매 step 교란한다. 따라서 “평균 정책은 70%가 가능한데 탐색 rollout으로 재는
+gate만 못 넘는다”가 현재 가장 값싼 설명이다. 아직 동일 체크포인트의 deterministic/stochastic
+paired eval이 없으므로 **유력 가설이지 확정 원인은 아니다**.
+
+#### 두 번째 원인 후보: 밀집 기하를 지나치게 압축하는 표현
+
+- 70-bars bar-contact 순간 12m 안에는 평균 `43~44`개 막대, 240° token FOV에는 `29~31`개,
+  장애물이 찬 scan bearing은 약 `54/72`개다.
+- 8개 token은 모두 valid지만 range+bearing 기하로 GT bar에 연관되는 것은 평균 `2.5~3.0`개,
+  서로 다른 막대는 `1.1~1.3`개뿐이고 나머지는 같은 근접 막대 표면 중복 또는 비연관 표면이다.
+  충돌 막대가 240° 안에 있었을 때도 token으로 표현된 비율은 최근 대략 `0.47~0.63`,
+  장기 평균 약 `0.56`이다.
+- 선택 로직은 물체/경로 위험도를 구분하지 않고 nearest surface bearing을 순서대로 고른 뒤
+  ±10°를 억제한다. 가까운 넓은 막대가 여러 slot을 소비하고 진행 경로상의 다른 막대가 누락될 수
+  있다. 또한 8개 token 전체를 시간 step당 하나의 64-D token으로 projection하므로 slot별
+  attention이나 안정적인 object identity가 없다.
+- 360° 4×72 static scan은 남아 있지만 CNN이 이것 전체를 하나의 64-D token으로 압축한다. 따라서
+  “충돌 막대 token 누락 = 완전 실명”은 아니나, 조밀한 free-space topology를 policy가 쓰기 좋은
+  형태로 유지한다고도 보장할 수 없다.
+
+bar probe는 **충돌 순간** 측정이라 token 누락이 충돌의 선행 원인임을 단독으로 증명하지는 못한다.
+그러나 25→65→70으로 밀도가 올라갈수록 실패가 bar contact로 수렴하고, 과거 GT-LiDAR policy는
+110 bars에서 약 0.93을 달성했으므로 70 bars가 환경의 절대 기하 한계라는 설명은 기각된다.
+현재 sensor-only 표현/정책/탐색의 병목이다.
+
+#### 후순위·미측정 가설
+
+- 보상: safety reward가 전 ray의 mean-log-distance라 국소 충돌 위험 신호가 희석될 수 있으나,
+  과거 clearance reward 세 실험이 모두 null이었으므로 첫 수정 후보는 아니다.
+- 제어: 2.5 m/s에서 yaw 3.0 rad/s가 조밀 위빙에 부족하거나 action saturation이 있을 수 있으나
+  현재 action/yaw saturation telemetry가 없어 단정할 수 없다.
+- target occlusion: tracker age/visibility가 actor에는 들어가지만 bar-contact outcome별 visibility를
+  로그하지 않아 아직 분리하지 못했다. target speed/goal distance 무상관만으로 occlusion까지
+  기각할 수는 없다.
+
+#### 다음 진단 순서
+
+1. 현재 체크포인트를 70 bars, 동일 seed/distribution에서 `deterministic=True`와 stochastic 두 조건,
+   최소 4096 episodes씩 paired 평가한다. deterministic만 0.70을 넘으면 gate/탐색 노이즈가 주원인이다.
+2. 둘 다 0.70 아래면 충돌 전 1~2초 구간의 `hit-bar represented`, target visibility/track age,
+   action clamp율, yaw clamp율을 success/bar-contact별로 기록한다.
+3. 그 결과 뒤에만 수정한다. 1번이 맞으면 커리큘럼 gate를 deterministic probe로 분리하거나
+   lateral std/entropy 구조를 고친다. 2번이 맞으면 단순 token 수 증가보다 object/segment 또는
+   TTC·진행경로 위험 기반 token과 slot별 tokenization을 우선한다.
