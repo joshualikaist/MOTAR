@@ -420,15 +420,16 @@ function renderRuns(s){
 /* Diagnosis + perception-first implementation plan. */
 function renderStatic(){
   document.getElementById('diagnosis').innerHTML=`
-    <div class="callout hero"><h3>현재 성능 · 25막대 held-out, 표적속도 0–1.5 m/s 평균</h3>
+    <div class="callout hero"><h3>현재 성능 · sensor-only, 무작위 스폰, held-out</h3>
       <div class="kpis">
-        <div class="kpi"><b>0.889</b><span>capture</span></div>
-        <div class="kpi"><b>7.5%</b><span>막대충돌</span></div>
-        <div class="kpi"><b>2.8%</b><span>고도이탈</span></div>
-        <div class="kpi"><b>0.0%</b><span>timeout</span></div>
+        <div class="kpi"><b>0.90</b><span>포획 · 25막대</span></div>
+        <div class="kpi"><b>0.80</b><span>포획 · 50막대</span></div>
+        <div class="kpi"><b>0.68</b><span>포획 · 65막대</span></div>
+        <div class="kpi"><b>65</b><span>학습 도달 밀도</span></div>
       </div>
-      <p>128-env · 셀당 2049 episode · deterministic · 무작위 스폰. actor 관측에 GT 표적 없음
-        (LiDAR 72×4@12 m + 전방 RGB-D 검출기만). 참고로 NavRL 원논문은 0.81입니다.</p></div>
+      <p>128-env · 셀당 2049 episode · deterministic. actor 관측에 GT 표적이 전혀 없습니다
+        (LiDAR 72×4@12 m + 전방 RGB-D 검출기만). 25막대 기준 표적속도 0–1.5 m/s 전 구간에서 포획
+        0.86–0.91로 평탄하며, 참고로 NavRL 원논문은 0.81입니다.</p></div>
 
     <div class="callout"><h3>캠페인 궤적 · 무엇이 실제로 통했나</h3>
       <table class="mini-tbl">
