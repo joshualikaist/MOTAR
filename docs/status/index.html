@@ -3,292 +3,241 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>MOTAR · Perception-aware Research Status</title>
-<style>
-  :root{
-    --paper:#e9edf0; --panel:#f4f6f8; --ink:#111820; --slate:#586576; --faint:#7d8896;
-    --line:#cfd6dc; --line2:#dde3e8; --accent:#0d97a4; --accent-ink:#0a6f79;
-    --sensor:#0d97a4; --gt:#8b97a4; --good:#2f9e60; --warn:#c99a2e; --bad:#d16a37;
-    --shade:#dfe5ea; --code-bg:#0f1720; --code-ink:#cdd8e2; --code-accent:#3fd0d9;
-    --mono:ui-monospace,"SF Mono","JetBrains Mono","Cascadia Code",Menlo,Consolas,monospace;
-    --sans:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",-apple-system,system-ui,"Segoe UI",sans-serif;
-  }
-  @media (prefers-color-scheme: dark){:root{
-    --paper:#0c1116;--panel:#131b23;--ink:#e2e8ee;--slate:#98a5b3;--faint:#6f7d8b;
-    --line:#242f3a;--line2:#1b242d;--accent:#22c1cd;--accent-ink:#7fe0e7;
-    --sensor:#22c1cd;--gt:#6f7d8b;--good:#48c07f;--warn:#e0b84a;--bad:#e58a58;
-    --shade:#18222c;--code-bg:#080c11;--code-ink:#c4d1dc;--code-accent:#3fd0d9;}}
-  :root[data-theme="light"]{--paper:#e9edf0;--panel:#f4f6f8;--ink:#111820;--slate:#586576;--faint:#7d8896;
-    --line:#cfd6dc;--line2:#dde3e8;--accent:#0d97a4;--accent-ink:#0a6f79;--sensor:#0d97a4;--gt:#8b97a4;
-    --good:#2f9e60;--warn:#c99a2e;--bad:#d16a37;--shade:#dfe5ea;--code-bg:#0f1720;--code-ink:#cdd8e2;--code-accent:#3fd0d9;}
-  :root[data-theme="dark"]{--paper:#0c1116;--panel:#131b23;--ink:#e2e8ee;--slate:#98a5b3;--faint:#6f7d8b;
-    --line:#242f3a;--line2:#1b242d;--accent:#22c1cd;--accent-ink:#7fe0e7;--sensor:#22c1cd;--gt:#6f7d8b;
-    --good:#48c07f;--warn:#e0b84a;--bad:#e58a58;--shade:#18222c;--code-bg:#080c11;--code-ink:#c4d1dc;--code-accent:#3fd0d9;}
-  *{box-sizing:border-box}
-  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden}
-  .wrap{max-width:1180px;min-width:0;margin:0 auto;padding:0 24px 100px}
-  a{color:var(--accent-ink)}
-  .kicker{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-ink);font-weight:600}
-  h1{font-size:clamp(28px,5vw,44px);font-weight:700;letter-spacing:-.01em;text-wrap:balance;margin:14px 0 12px;line-height:1.16}
-  .lede{color:var(--slate);font-size:16.5px;max-width:66ch}
-  header{padding:52px 0 24px;border-bottom:1px solid var(--line)}
-  .tagrow{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
-  .tag{font-family:var(--mono);font-size:11.5px;padding:5px 10px;border:1px solid var(--line);border-radius:2px;color:var(--slate);background:var(--panel)}
-  .tag b{color:var(--ink)}
-  .tag.live b{color:var(--good)}
-  section{padding:40px 0;border-bottom:1px solid var(--line2)}
-  .lbl{display:flex;align-items:baseline;gap:12px;margin-bottom:6px}
-  .lbl .n{font-family:var(--mono);font-size:12px;color:var(--faint);letter-spacing:.1em}
-  h2{font-size:22px;font-weight:700;margin:0 0 12px;letter-spacing:-.01em}
-  .sub{color:var(--slate);max-width:70ch;margin:0 0 18px;font-size:15px}
-  /* 3D viewer */
-  #stage{position:relative;width:100%;height:600px;background:#071018;border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:0 24px 70px rgba(3,10,16,.18)}
-  #stage canvas{display:block}
-  .hud{position:absolute;top:14px;left:14px;font-family:var(--mono);font-size:11.5px;color:#a8bac8;background:rgba(5,14,22,.82);backdrop-filter:blur(12px);padding:11px 13px;border:1px solid rgba(148,196,219,.19);border-radius:9px;pointer-events:none;line-height:1.75;box-shadow:0 8px 30px rgba(0,0,0,.2)}
-  .hud b{color:#f2f8fb}
-  .hud .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:middle}
-  .sensor-state{position:absolute;top:14px;right:14px;display:grid;gap:6px;min-width:185px;font-family:var(--mono);font-size:10.5px;color:#9eb0be;background:rgba(5,14,22,.82);backdrop-filter:blur(12px);padding:11px 13px;border:1px solid rgba(148,196,219,.19);border-radius:9px;pointer-events:none}
-  .sensor-state div{display:flex;justify-content:space-between;gap:12px}.sensor-state b{color:#f2f8fb}.sensor-state .seen{color:#67e8a5}.sensor-state .lost{color:#ff8d6b}
-  .view-hint{position:absolute;bottom:12px;right:14px;font-family:var(--mono);font-size:10px;color:#89a0af;background:rgba(5,14,22,.64);padding:5px 8px;border-radius:5px;pointer-events:none}
-  .controls{display:flex;flex-wrap:wrap;gap:16px 22px;align-items:center;margin-top:14px;padding:14px 16px;background:var(--panel);border:1px solid var(--line);border-radius:8px}
-  .ctl{display:flex;flex-direction:column;gap:5px;min-width:150px;flex:1}
-  .ctl label{font-family:var(--mono);font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--faint)}
-  .ctl .val{font-family:var(--mono);color:var(--ink);font-weight:600}
-  input[type=range]{width:100%;accent-color:var(--accent)}
-  .btn{font-family:var(--mono);font-size:12px;padding:8px 12px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink);cursor:pointer}
-  .btn:hover{border-color:var(--accent)}
-  .btn.active{border-color:var(--accent);color:var(--accent-ink);background:color-mix(in srgb,var(--accent) 10%,var(--panel))}
-  .chk{display:flex;gap:7px;align-items:center;font-family:var(--mono);font-size:12px;color:var(--slate);cursor:pointer}
-  figcaption{font-size:13px;color:var(--slate);margin-top:12px}
-  figcaption b{color:var(--ink)}
-  /* cards */
-  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:6px;overflow:hidden}
-  .card{background:var(--panel);padding:15px 16px}
-  .card .v{font-family:var(--mono);font-size:26px;font-weight:600;letter-spacing:-.02em}
-  .card .k{font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--faint);margin-top:2px}
-  .card .s{font-size:12px;color:var(--slate);margin-top:4px}
-  .card.good .v{color:var(--good)} .card.bad .v{color:var(--bad)} .card.warn .v{color:var(--warn)} .card.acc .v{color:var(--accent-ink)}
-  table{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:6px}
-  th,td{padding:8px 9px;border-bottom:1px solid var(--line2);text-align:right;font-variant-numeric:tabular-nums;font-family:var(--mono)}
-  th{font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--faint);border-bottom:1px solid var(--line)}
-  th:first-child,td:first-child{text-align:left}
-  tr.hi td{color:var(--accent-ink);font-weight:600}
-  tr.cliff td{color:var(--bad)}
-  svg.plot{display:block;width:100%;height:auto;min-width:520px}
-  .scrollx{overflow-x:auto}
-  .t{font-family:var(--mono);fill:var(--slate)} .t.dim{fill:var(--faint)} .t.ink{fill:var(--ink)}
-  .legend{display:flex;gap:20px;flex-wrap:wrap;margin:12px 2px;font-size:13px;color:var(--slate)}
-  .legend i{display:inline-block;width:20px;height:3px;border-radius:2px;margin-right:7px;vertical-align:middle}
-  /* roadmap */
-  .phases{display:flex;flex-direction:column;gap:2px}
-  .phase{display:grid;grid-template-columns:110px 1fr auto;gap:14px;align-items:center;padding:11px 14px;background:var(--panel);border:1px solid var(--line2);border-radius:6px}
-  .phase .pid{font-family:var(--mono);font-size:12px;color:var(--faint)}
-  .phase .pt{font-size:14px}
-  .phase .pt b{font-weight:600}
-  .badge{font-family:var(--mono);font-size:11px;padding:3px 9px;border-radius:20px;white-space:nowrap}
-  .badge.done{background:color-mix(in srgb,var(--good) 18%,transparent);color:var(--good)}
-  .badge.active{background:color-mix(in srgb,var(--accent) 20%,transparent);color:var(--accent-ink)}
-  .badge.todo{background:var(--shade);color:var(--faint)}
-  .callout{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:6px;padding:16px 18px;margin-top:6px}
-  .callout h3{margin:0 0 8px;font-size:15px}
-  .callout p{margin:6px 0;font-size:14px;color:var(--slate)}
-  .callout b{color:var(--ink)}
-  /* headline result block */
-  .callout.hero{border-left-color:var(--sensor,#2bb673);background:
-    linear-gradient(180deg,color-mix(in srgb,var(--accent) 7%,var(--panel)),var(--panel))}
-  .kpis{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0 6px}
-  .kpi{flex:1 1 110px;background:var(--bg);border:1px solid var(--line);border-radius:6px;
-    padding:10px 12px;text-align:center}
-  .kpi b{display:block;font-size:26px;line-height:1.15;font-variant-numeric:tabular-nums;
-    letter-spacing:-.5px}
-  .kpi span{display:block;margin-top:2px;font-size:11px;color:var(--slate);
-    text-transform:uppercase;letter-spacing:.08em}
-  /* compact progression table inside a callout */
-  .mini-tbl{width:100%;border-collapse:collapse;margin:10px 0 4px;font-size:13px}
-  .mini-tbl th{text-align:left;font-weight:600;color:var(--slate);font-size:11px;
-    text-transform:uppercase;letter-spacing:.06em;padding:4px 8px 6px;border-bottom:1px solid var(--line)}
-  .mini-tbl td{padding:5px 8px;border-bottom:1px solid var(--line2);
-    font-variant-numeric:tabular-nums;color:var(--slate)}
-  .mini-tbl td:first-child{color:var(--ink)}
-  .mini-tbl tr:last-child td{border-bottom:none}
-  .mini-tbl tr.hi td{background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--ink)}
-  .ood{font-size:11px;padding:2px 7px;border-radius:20px;background:var(--shade);color:var(--faint);
-    font-family:var(--mono)}
-  @media (max-width:560px){.kpi b{font-size:21px}}
-  pre{background:var(--code-bg);color:var(--code-ink);border-radius:8px;padding:14px 16px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.6;margin:10px 0}
-  pre .c{color:var(--code-accent)}
-  .foot{padding-top:28px;font-family:var(--mono);font-size:12px;color:var(--faint);line-height:1.8}
-  .themebtn{position:fixed;top:16px;right:16px;z-index:9;font-family:var(--mono);font-size:11px;padding:6px 10px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--slate);cursor:pointer}
-  .truth-grid{display:grid;grid-template-columns:1fr auto 1fr;gap:16px;align-items:stretch;margin-top:20px}
-  .truth-card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px}.truth-card.current{border-top:3px solid var(--warn)}.truth-card.target{border-top:3px solid var(--accent)}
-  .truth-card h3{font-size:14px;margin:0 0 8px}.truth-card p{font-size:13px;color:var(--slate);margin:6px 0}.truth-card code{font-family:var(--mono);font-size:11px;color:var(--accent-ink)}
-  .truth-arrow{align-self:center;color:var(--faint);font-family:var(--mono);font-size:20px}
-  .truth-note{margin-top:14px;padding:12px 14px;border-radius:8px;background:color-mix(in srgb,var(--warn) 10%,var(--panel));border:1px solid color-mix(in srgb,var(--warn) 36%,var(--line));font-size:13px;color:var(--slate)}
-  @media(max-width:760px){.wrap{padding:0 14px 70px}#stage{height:520px}.sensor-state{top:auto;bottom:42px;left:14px;right:auto;min-width:175px}.truth-grid{grid-template-columns:1fr}.truth-arrow{transform:rotate(90deg);justify-self:center}.phase{grid-template-columns:78px 1fr}.phase .badge{grid-column:2;justify-self:start}.controls{gap:12px}.ctl{min-width:130px}}
-</style>
+<title>MOTAR · 가림 속 표적을 다시 찾는 자율 드론 요격 연구</title>
+<meta name="description" content="센서만으로 장애물을 피하며 이동 표적을 요격하는 perception-aware 드론 강화학습 연구의 실시간 학습 현황.">
+<meta name="color-scheme" content="dark light">
+<meta property="og:title" content="MOTAR · Research Status">
+<meta property="og:description" content="센서 전용 관측으로 24×24 m 장애물 필드에서 이동 표적을 요격하는 강화학습 연구 현황.">
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-<button class="themebtn" onclick="toggleTheme()">◐ theme</button>
-<div class="wrap">
-  <header>
-    <div class="kicker">MOTAR · NavRL-in-AerialGym · Research Status</div>
-    <h1>가림 속 표적을 다시 찾는<br>자율 드론 요격 연구</h1>
-    <p class="lede">카메라와 LiDAR가 장애물과 표적을 직접 관측하고, 가림 동안에는 추적 불확실성을 유지한 뒤
-      표적을 재획득하는 perception-aware navigation을 목표로 합니다. 현재 성능과 <b>현재 prototype의 한계</b>를
-      분리해 공개하며, 아래 3D scene에서 시야·가림·센서 범위를 직접 확인할 수 있습니다.</p>
-    <div class="tagrow" id="tagrow">
-      <span class="tag live">status <b id="tag-live">● live</b></span>
-      <span class="tag">phase <b>perception integrated · train pending</b></span>
-      <span class="tag">latest <b id="tag-run">—</b></span>
-      <span class="tag">GPU <b>RTX 3070 8GB</b></span>
-      <span class="tag">updated <b id="tag-gen">—</b></span>
-    </div>
-  </header>
 
-  <!-- ===================== 3D ARENA ===================== -->
-  <section>
-    <div class="lbl"><span class="n">01</span><h2>Perception arena — 보임과 가림을 눈으로</h2></div>
-    <p class="sub">24×24×3 m 아레나를 실제 실험 좌표계에 맞춰 재구성했습니다. 청록색 frustum은 전방 카메라,
-      방사형 ray는 4 m LiDAR, 흰색 궤적은 pursuer의 이동을 뜻합니다. 표적이 막대 뒤로 사라지면
-      <b>DETECTED → OCCLUDED</b>가 바뀌며, 이것이 앞으로 tracker와 Transformer가 처리해야 할 핵심 상태입니다.</p>
-    <div id="stage">
-      <div class="hud" id="hud">
-        <div><span class="dot" style="background:#c9762f"></span><b id="hud-bars">25</b> 막대 · <span id="hud-density">5.2</span>/100m²</div>
-        <div><span class="dot" style="background:#55e1a4"></span>pursuer · z=1 m · attitude 제어</div>
-        <div><span class="dot" style="background:#ff685f"></span>moving target · 직접 관측 대상</div>
-      </div>
-      <div class="sensor-state">
-        <div><span>CAMERA</span><b id="hud-camera" class="seen">DETECTED</b></div>
-        <div><span>LOS / RANGE</span><b id="hud-range">—</b></div>
-        <div><span>LiDAR</span><b>4 m · 36×4</b></div>
-        <div><span>ALTITUDE</span><b>1.00 m</b></div>
-      </div>
-      <div class="view-hint">drag orbit · wheel zoom · V camera view</div>
+<div class="grain" aria-hidden="true"></div>
+<div class="railtop" id="railtop" aria-hidden="true"></div>
+
+<nav class="nav" id="nav">
+  <a class="nav-brand" href="#">MOTAR</a>
+  <div class="nav-links" aria-label="섹션">
+    <a class="nav-link" href="#s-arena">Arena</a>
+    <a class="nav-link" href="#s-live">Live</a>
+    <a class="nav-link" href="#s-density">Density</a>
+    <a class="nav-link" href="#s-speed">Speed</a>
+    <a class="nav-link" href="#s-campaign">Campaign</a>
+    <a class="nav-link" href="#s-next">Next</a>
+  </div>
+  <button class="themebtn magnetic" id="themebtn" type="button" aria-label="색상 테마 전환">◐</button>
+</nav>
+
+<!-- ══════════════════════════ HERO ══════════════════════════ -->
+<header class="hero">
+  <div id="stage" aria-hidden="true"></div>
+  <div class="iframe" aria-hidden="true">
+    <span class="iframe-tr"></span>
+    <span class="iframe-bl"></span>
+  </div>
+
+  <div class="hud">
+    <div><span class="dot" style="background:var(--bar)"></span><b id="hud-bars">25</b> 막대 · <span id="hud-density">5.2</span>/100m²</div>
+    <div><span class="dot" style="background:var(--good)"></span>pursuer · 2.5 m/s · z=1 m</div>
+    <div><span class="dot" style="background:var(--bad)"></span>moving target · 센서로만 관측</div>
+  </div>
+  <div class="sensor" aria-hidden="true">
+    <div><span>DETECTOR</span><b id="hud-camera" class="seen">DETECTED</b></div>
+    <div><span>LOS RANGE</span><b id="hud-range">—</b></div>
+    <div><span>LiDAR</span><b>72×4 · 12 m</b></div>
+    <div><span>TOKEN FOV</span><b>240°</b></div>
+  </div>
+
+  <div class="hero-inner">
+    <span class="pill is-live" id="livepill">
+      <span class="dot"></span><span id="livepill-txt">학습 진행 중</span>&nbsp;<b id="livepill-run">—</b>
+    </span>
+    <h1>가림 속 표적을<br><em>다시 찾는</em> 드론</h1>
+    <p class="lede">
+      GT 좌표 없이 <b>LiDAR와 전방 검출기만으로</b> 장애물 필드를 통과해 이동 표적을 요격합니다.
+      아래는 실제 학습 로그에서 자동 수집한 현재 상태이며, 배경 장면은 실험과 같은 좌표계·센서 규격으로
+      재구성한 아레나입니다.
+    </p>
+    <div class="hero-metrics" id="hero-metrics"></div>
+  </div>
+
+  <div class="scrollcue" aria-hidden="true">SCROLL<i></i></div>
+</header>
+
+<main class="wrap">
+
+  <!-- 01 ARENA -->
+  <section id="s-arena">
+    <div class="shead reveal">
+      <span class="n">01 / ARENA</span>
+      <h2>보임과 가림을 직접 만져보기</h2>
+      <p class="sub">24×24×3 m 아레나입니다. 방사형 ray는 <b>12 m LiDAR(72×4)</b>, 청록 frustum은 전방 검출기,
+        흰 궤적은 pursuer의 경로입니다. 표적이 막대 뒤로 들어가면 <b>DETECTED → OCCLUDED</b>로 바뀝니다 —
+        이 상태 전환을 견디는 것이 이 연구의 핵심 난이도입니다.</p>
     </div>
-    <div class="controls">
+    <div class="dock reveal" style="--i:1">
       <div class="ctl">
-        <label>장애물 막대 수 · <span class="val" id="lbl-bars">25</span></label>
+        <label for="sl-bars">장애물 막대 · <span class="val" id="lbl-bars">25</span></label>
         <input type="range" id="sl-bars" min="10" max="150" step="1" value="25">
       </div>
       <div class="ctl">
-        <label>표적 속도 · <span class="val" id="lbl-speed">0.0</span> m/s</label>
+        <label for="sl-speed">표적 속도 · <span class="val" id="lbl-speed">0.0</span> m/s</label>
         <input type="range" id="sl-speed" min="0" max="20" step="1" value="0">
       </div>
-      <button class="btn" id="btn-play">⏸ 일시정지</button>
-      <label class="chk"><input type="checkbox" id="cb-camera" checked> camera FOV</label>
-      <label class="chk"><input type="checkbox" id="cb-lidar" checked> LiDAR rays</label>
-      <label class="chk"><input type="checkbox" id="cb-trails" checked> trajectories</label>
-      <button class="btn" id="btn-view">◉ view · overview</button>
-      <button class="btn" id="btn-preset">NavRL 밀도(110)</button>
+      <button class="btn magnetic" id="btn-play" type="button" aria-pressed="true">일시정지</button>
+      <button class="btn magnetic" id="btn-view" type="button">시점 · overview</button>
+      <button class="btn magnetic" id="btn-preset" type="button">학습 도달 밀도 · 70</button>
+      <label class="chk"><input type="checkbox" id="cb-camera" checked> 검출기 FOV</label>
+      <label class="chk"><input type="checkbox" id="cb-lidar" checked> LiDAR</label>
+      <label class="chk"><input type="checkbox" id="cb-trails" checked> 궤적</label>
     </div>
-    <figcaption>기하 메모: 배치 밴드 ≈478 m²(x∈[3.1,23]×y 전폭). 랜덤 rejection 배치가
-      <b>~115–120막대에서 최소간격 완화를 시작</b>, ~148막대에서 포화합니다. 장면은 연구 geometry를 설명하는
-      interactive visualization이며, 표시되는 DETECTED/OCCLUDED는 LOS 기반 진단값이지 학습된 detector 결과가 아닙니다.</figcaption>
+    <figcaption class="reveal" style="--i:2">드래그로 회전 · 휠로 확대 · <b>V</b> 키로 시점 전환.
+      배치 밴드 ≈478 m²이며 랜덤 rejection 배치가 <b>~115막대에서 최소간격 완화를 시작</b>해 ~148막대에서 포화합니다.</figcaption>
   </section>
 
-  <section>
-    <div class="lbl"><span class="n">02</span><h2>지금 주는 정보 vs 드론이 스스로 알아내야 할 정보</h2></div>
-    <p class="sub">가장 중요한 정정입니다. 아래 과거 성능은 최종 perception system 성능이 아니라,
-      navigation policy를 먼저 검증하기 위해 구조화된 표적 정보를 제공한 <b>oracle/analytic prototype baseline</b>입니다.</p>
-    <div class="truth-grid">
-      <div class="truth-card current"><h3>CURRENT · prototype observation</h3>
-        <p><code>ego state + analytic bearing/range</code></p><p><code>LiDAR ranges + semantic target mask</code></p>
-        <p><code>camera obstacle depth</code></p><p>표적 class와 위치 단서가 이미 구조화되어 actor에 들어갑니다.</p></div>
-      <div class="truth-arrow">→</div>
-      <div class="truth-card target"><h3>IMPLEMENTED · onboard perception prototype</h3>
-        <p><code>RGB-D + raw LiDAR → detector/fusion</code></p><p><code>association → tracks + velocity + covariance</code></p>
-        <p><code>temporal tokens → Transformer actor</code></p><p>장애물과 드론을 센서에서 직접 구분하고, 가림 동안 belief를 유지합니다.</p></div>
+  <!-- 02 LIVE -->
+  <section id="s-live">
+    <div class="shead reveal">
+      <span class="n">02 / LIVE</span>
+      <h2 id="live-h2">지금 이 순간 학습 중</h2>
+      <p class="sub" id="live-sub">—</p>
     </div>
-    <div class="truth-note"><b>정보 방화벽:</b> actor에는 detector/tracker가 추정한 값만 전달하고, simulator의 GT 표적 위치는
-      critic·reward·평가 label에만 사용합니다. 이 분리가 완료되기 전 결과는 “완전 자율 탐지”로 주장하지 않습니다.</div>
+    <div class="grid k5 reveal" id="live-cards" style="--i:1"></div>
+    <figcaption class="reveal" id="live-cap" style="--i:2"></figcaption>
   </section>
 
-  <!-- ===================== LATEST RUN ===================== -->
-  <section>
-    <div class="lbl"><span class="n">03</span><h2>기존 navigation baseline 현황</h2></div>
-    <p class="sub" id="latest-sub">—</p>
-    <div class="cards" id="latest-cards"></div>
-    <figcaption id="latest-cap"></figcaption>
-  </section>
-
-  <!-- ===================== DENSITY CURVE ===================== -->
-  <section>
-    <div class="lbl"><span class="n">04</span><h2>밀도–포획률 곡선 · historical baseline</h2></div>
-    <p class="sub">구조화된 semantic/analytic 표적 단서를 사용한 기존 navigation policy의 held-out 평가입니다.
-      learned detector를 연결한 결과가 아니며, 향후 detector+tracker+Transformer와 비교할 기준선입니다.</p>
-    <div class="scrollx"><svg class="plot" id="curve" viewBox="0 0 720 400" role="img" aria-label="밀도 대 포획률"></svg></div>
-    <div class="legend">
-      <span><i style="background:var(--sensor)"></i>semantic prototype (포획률)</span>
-      <span><i style="background:var(--gt)"></i>GT 주입 (포획률)</span>
-      <span><i style="background:var(--bad)"></i>충돌률 (센서)</span>
+  <!-- 03 FIREWALL -->
+  <section id="s-firewall">
+    <div class="shead reveal">
+      <span class="n">03 / FIREWALL</span>
+      <h2>정책이 볼 수 있는 것과 볼 수 없는 것</h2>
+      <p class="sub">actor에는 센서에서 유도된 값만 들어가고, 시뮬레이터의 GT 표적 위치는 critic·reward·평가 label에만 쓰입니다.</p>
     </div>
-    <div class="scrollx"><table id="curve-tbl"></table></div>
+    <div class="flow reveal" style="--i:1">
+      <div class="card now tilt">
+        <h3>ACTOR 관측 · 센서 유도</h3>
+        <p><code>LiDAR 72×4 @ 12 m</code> 정적 장애물 스캔</p>
+        <p><code>obstacle tokens ×8 / 240° 선택</code></p>
+        <p><code>전방 RGB-D 검출기 → track</code> 표적 bearing·range</p>
+        <p>가림 구간에는 추정 belief만 남습니다.</p>
+      </div>
+      <div class="arrow" aria-hidden="true">→</div>
+      <div class="card next tilt">
+        <h3>GT 사용 범위 · 학습 신호 전용</h3>
+        <p><code>critic value target</code></p>
+        <p><code>reward · 종료 판정</code></p>
+        <p><code>평가 label (capture / crash)</code></p>
+        <p>actor 입력에는 어떤 경로로도 들어가지 않습니다.</p>
+      </div>
+    </div>
+    <div class="note reveal" style="--i:2"><b>따라서:</b> 아래 모든 수치는 “센서 전용(sensor-only)” 성능입니다.
+      GT를 주입한 참고선은 곡선에서 회색 점선으로 따로 표시했습니다.</div>
   </section>
 
-  <!-- ===================== TIMELINE ===================== -->
-  <section>
-    <div class="lbl"><span class="n">05</span><h2>학습 타임라인 (peak vs final)</h2></div>
-    <p class="sub">각 run의 학습 종료 시점 지표. <b>peak→final 격차</b>가 큰 run은 커리큘럼이 끝에서
-      가장 어려운 설정(고밀도+원거리)에 도달해 최종 체크포인트가 과특화된 신호입니다 — 평가는 반드시
-      용도에 맞는 체크포인트로.</p>
-    <div class="scrollx"><table id="runs-tbl"></table></div>
+  <!-- 04 DENSITY -->
+  <section id="s-density">
+    <div class="shead reveal">
+      <span class="n">04 / DENSITY</span>
+      <h2>밀도를 올릴 때 무엇이 먼저 무너지는가</h2>
+      <p class="sub" id="density-sub">—</p>
+    </div>
+    <div class="scrollx reveal" style="--i:1">
+      <svg class="plot" id="curve" viewBox="0 0 740 400" role="img" aria-label="장애물 밀도에 따른 포획률과 충돌률"></svg>
+    </div>
+    <div class="legend reveal" style="--i:2">
+      <span><i style="background:var(--sensor)"></i>포획률 · 센서 전용</span>
+      <span><i style="background:var(--bad)"></i>충돌률</span>
+      <span><i class="dash"></i>포획률 · GT 주입 참고선</span>
+    </div>
+    <div class="scrollx reveal" style="--i:3"><table id="curve-tbl"></table></div>
+    <div class="tbl-cap reveal" id="curve-cap" style="--i:4"></div>
   </section>
 
-  <!-- ===================== DIAGNOSIS ===================== -->
-  <section>
-    <div class="lbl"><span class="n">06</span><h2>무엇을 배웠고, 무엇은 아직 못 배웠나</h2></div>
-    <div id="diagnosis"></div>
+  <!-- 05 SPEED -->
+  <section id="s-speed">
+    <div class="shead reveal">
+      <span class="n">05 / SPEED</span>
+      <h2>표적이 빨라져도 버티는가</h2>
+      <p class="sub">25막대에서 표적 속도를 0 → 1.5 m/s로 올리며 측정했습니다. 드론이 2.5 m/s로 충분히 빠르기 때문에
+        속도 축은 <b>거의 평탄</b>합니다. 장애물 토큰 선택 범위를 360°에서 240°로 좁힌 결과의 정면 비교입니다.</p>
+    </div>
+    <div class="scrollx reveal" style="--i:1">
+      <svg class="plot" id="speedplot" viewBox="0 0 740 380" role="img" aria-label="표적 속도에 따른 포획률"></svg>
+    </div>
+    <div class="legend reveal" style="--i:2">
+      <span><i style="background:var(--sensor)"></i>토큰 FOV 240° (현재)</span>
+      <span><i style="background:var(--gt)"></i>토큰 FOV 360° (직전)</span>
+      <span><i style="background:var(--bad)"></i>막대 충돌률</span>
+    </div>
+    <div class="scrollx reveal" style="--i:3"><table id="speed-tbl"></table></div>
+    <div class="tbl-cap reveal" id="speed-cap" style="--i:4"></div>
   </section>
 
-  <!-- ===================== NEXT ===================== -->
-  <section>
-    <div class="lbl"><span class="n">07</span><h2>다음 구현 — perception부터 다시 연결</h2></div>
-    <div id="nextplan"></div>
+  <!-- 06 CAMPAIGN -->
+  <section id="s-campaign">
+    <div class="shead reveal">
+      <span class="n">06 / CAMPAIGN</span>
+      <h2>무엇이 실제로 통했나</h2>
+      <p class="sub">고정 스폰 baseline부터 현재까지의 개입 순서입니다. <b>고도 관련 3연속 개입은 포획률만 올리고
+        막대 충돌은 13%에서 전혀 못 건드렸습니다.</b> 충돌이 움직인 것은 장애물 표현을 바꾼 뒤부터입니다.</p>
+    </div>
+    <div class="camp reveal" id="campaign" style="--i:1"></div>
+    <figcaption class="reveal" style="--i:2">막대 충돌률은 25막대·속도평균 기준. 각 행은 warm-start fine-tune 결과입니다.</figcaption>
   </section>
 
-  <!-- ===================== ROADMAP ===================== -->
-  <section style="border-bottom:none">
-    <div class="lbl"><span class="n">08</span><h2>수정된 로드맵</h2></div>
-    <div class="phases" id="phases"></div>
+  <!-- 07 FINDINGS -->
+  <section id="s-diag">
+    <div class="shead reveal">
+      <span class="n">07 / FINDINGS</span>
+      <h2>측정이 기각한 것들</h2>
+      <p class="sub">그럴듯했지만 데이터가 반증한 가설들입니다. 다시 시도하지 않기 위해 남겨 둡니다.</p>
+    </div>
+    <div class="grid k2" id="diagnosis"></div>
+  </section>
+
+  <!-- 08 RUNS -->
+  <section id="s-runs">
+    <div class="shead reveal">
+      <span class="n">08 / RUNS</span>
+      <h2>학습 타임라인 · peak와 final의 간격</h2>
+      <p class="sub"><b>peak→final 간격</b>이 큰 run은 커리큘럼이 마지막에 가장 어려운 설정에 도달해
+        최종 체크포인트가 과특화된 신호입니다.</p>
+    </div>
+    <div class="scrollx reveal" style="--i:1"><table id="runs-tbl"></table></div>
+  </section>
+
+  <!-- 09 NEXT -->
+  <section id="s-next">
+    <div class="shead reveal">
+      <span class="n">09 / NEXT</span>
+      <h2>다음에 필요한 것은 아이디어가 아니라 시간</h2>
+    </div>
+    <div class="grid k2" id="nextplan"></div>
+  </section>
+
+  <!-- 10 ROADMAP -->
+  <section id="s-road">
+    <div class="shead reveal">
+      <span class="n">10 / ROADMAP</span>
+      <h2>로드맵</h2>
+    </div>
+    <div class="phases reveal" id="phases" style="--i:1"></div>
     <div class="foot">
-      MOTAR · research/navrl-env · joshualikaist/MOTAR<br>
-      데이터: <span id="foot-runs">—</span> runs · <code>docs/status/status.json</code> (collect_status.py 생성) ·
-      3D: three.js · 갱신 <span id="foot-gen">—</span>
+      MOTAR · <code>research/navrl-env</code> · joshualikaist/MOTAR<br>
+      데이터 <span id="foot-runs">—</span> runs · <code>docs/status/status.json</code> ·
+      3D three.js · 갱신 <span id="foot-gen">—</span>
     </div>
   </section>
-</div>
 
-<!-- ================= FALLBACK DATA (used if status.json fetch fails) ================= -->
+</main>
+
 <script id="fallback" type="application/json">
-{"generated_at":"2026-07-22T03:48:52Z","n_runs":18,
- "latest_run":{"run":"ppo_260719_1000_navrl","finalized_at":"2026-07-21T21:58:48Z","epochs_logged":12000,
-   "last_captured_rate":0.449,"last_crash_rate":0.541,"last_timeout_rate":0.010,"last_n_bars_active":115,
-   "last_curriculum_max_m":24.0,"peak_captured_rate":0.971,"peak_captured_epoch":3764,"last_mean_reward":119.4,"peak_mean_reward":248.7},
- "density_curves":{"vision_density_curve":[
-   {"density_bars":25,"captured":0.697,"crash":0.200,"timeout":0.103,"gt_injected_phase2":0.97},
-   {"density_bars":50,"captured":0.691,"crash":0.240,"timeout":0.069,"gt_injected_phase2":0.97},
-   {"density_bars":75,"captured":0.661,"crash":0.310,"timeout":0.029,"gt_injected_phase2":0.94},
-   {"density_bars":110,"captured":0.606,"crash":0.372,"timeout":0.022,"gt_injected_phase2":0.93},
-   {"density_bars":130,"captured":0.473,"crash":0.507,"timeout":0.020,"gt_injected_phase2":null},
-   {"density_bars":150,"captured":0.283,"crash":0.706,"timeout":0.011,"gt_injected_phase2":0.66}]},
- "runs":[
-   {"run":"ppo_260714_1904","last_captured_rate":0.701,"last_crash_rate":0.299,"last_n_bars_active":48,"peak_captured_rate":0.802,"finalized_at":"2026-07-14"},
-   {"run":"ppo_260715_0251","last_captured_rate":0.957,"last_crash_rate":0.043,"last_n_bars_active":48,"peak_captured_rate":1.0,"finalized_at":"2026-07-14"},
-   {"run":"density_25","last_captured_rate":0.925,"last_crash_rate":0.075,"last_n_bars_active":25,"peak_captured_rate":1.0,"finalized_at":"2026-07-16"},
-   {"run":"density_50","last_captured_rate":0.978,"last_crash_rate":0.022,"last_n_bars_active":50,"peak_captured_rate":1.0,"finalized_at":"2026-07-16"},
-   {"run":"ppo_260716_0329","last_captured_rate":0.969,"last_crash_rate":0.031,"last_n_bars_active":75,"peak_captured_rate":1.0,"finalized_at":"2026-07-16"},
-   {"run":"ppo_260716_1223","last_captured_rate":0.915,"last_crash_rate":0.085,"last_n_bars_active":110,"peak_captured_rate":0.987,"finalized_at":"2026-07-16"},
-   {"run":"density_120","last_captured_rate":0.982,"last_crash_rate":0.018,"last_n_bars_active":120,"peak_captured_rate":0.987,"finalized_at":"2026-07-17"},
-   {"run":"ppo_260717_0032","last_captured_rate":0.672,"last_crash_rate":0.328,"last_n_bars_active":150,"peak_captured_rate":0.855,"finalized_at":"2026-07-16"},
-   {"run":"ppo_260718_0259","last_captured_rate":0.514,"last_crash_rate":0.458,"last_n_bars_active":110,"peak_captured_rate":0.667,"finalized_at":"2026-07-17"},
-   {"run":"ppo_260718_1841","last_captured_rate":0.449,"last_crash_rate":0.538,"last_n_bars_active":130,"peak_captured_rate":0.980,"finalized_at":"2026-07-18"},
-   {"run":"vision50_seed2","last_captured_rate":0.698,"last_crash_rate":0.302,"last_n_bars_active":50,"peak_captured_rate":0.925,"finalized_at":"2026-07-18"},
-   {"run":"vision_goalcap_seed1","last_captured_rate":0.754,"last_crash_rate":0.246,"last_n_bars_active":60,"peak_captured_rate":0.946,"finalized_at":"2026-07-19"},
-   {"run":"ppo_260719_1000","last_captured_rate":0.449,"last_crash_rate":0.541,"last_n_bars_active":115,"peak_captured_rate":0.971,"finalized_at":"2026-07-21"}]}
+{"generated_at":"","n_runs":0,"active_run":null,"latest_run":null,"density_curves":{},"speed_curves":{},"runs":[]}
 </script>
 
 <script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
 <script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="arena.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
