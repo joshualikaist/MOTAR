@@ -445,7 +445,8 @@ def _exit_reason_label(reason: str) -> str:
     return {
         "early_stop_stable": "조기 종료 (reward plateau)",
         "early_stop_collapse": "조기 종료 (reward collapse)",
-        "early_stop_nan": "조기 종료 (NaN/Inf reward)",
+        "early_stop_nan": "실패 (NaN/Inf reward)",
+        "nonfinite_ppo": "실패 (NaN/Inf PPO state)",
         "score_to_win": "score_to_win 도달",
         "max_epochs": "max_epochs 도달",
         "max_frames": "max_frames 도달",

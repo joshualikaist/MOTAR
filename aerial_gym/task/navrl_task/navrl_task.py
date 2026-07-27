@@ -236,6 +236,31 @@ class NavRLTask(BaseTask):
                     self.vis_cfg.detector_hfov_deg,
                 )
             )
+            if self.perception_mode:
+                # Echo the knobs that change the obstacle REPRESENTATION. Without this a run leaves
+                # no trace of how its tokens were selected, and a finished run cannot be interpreted
+                # after the fact -- exactly what happened to ppo_260727_0930, whose token FOV could
+                # not be recovered from either the log or the checkpoint.
+                from aerial_gym.task.navrl_task.navrl_perception import (
+                    HBEAMS,
+                    MAX_OBSTACLES,
+                    OBSTACLE_FOV_DEG,
+                    OBSTACLE_SUPPRESS_DEG,
+                    VBEAMS,
+                )
+
+                logger.warning(
+                    "NavRL obstacle representation | tokens=%d token_fov=%.0fdeg "
+                    "suppress=+-%.0fdeg scan=%dx%d lidar_range=%.1fm"
+                    % (
+                        MAX_OBSTACLES,
+                        OBSTACLE_FOV_DEG,
+                        OBSTACLE_SUPPRESS_DEG,
+                        VBEAMS,
+                        HBEAMS,
+                        self.task_config.lidar_max_range,
+                    )
+                )
 
         self.terminations = self.obs_dict["crashes"]
         self.truncations = self.obs_dict["truncations"]
@@ -321,12 +346,10 @@ class NavRLTask(BaseTask):
                 "track_cov_pos",
             )
         }
-        # NAVRL_BAR_PROBE=1: bar_contact forensics (evaluation-only, zero overhead when off).
-        # bar_contact survived the altitude fixes AND the look-ahead extension, so the remaining
-        # hypotheses are (H1) obstacle-token CAPACITY -- more bars in range than MAX_OBSTACLES, so
-        # the bar that hits was never shown to the policy -- or (H2) track QUALITY -- the bar was in
-        # the token set but its estimated position was wrong enough to plan through. These make
-        # opposite predictions, so one measurement settles it instead of another guessed retrain.
+        # NAVRL_BAR_PROBE=1: evaluation-only bar-contact forensics (zero overhead when off).
+        # Probe v2 uses both bearing and range to associate LiDAR surface tokens with GT bars. It
+        # also reports collisions inside the token-selection FOV separately; comparing all 240-deg
+        # hits against a geometric coverage estimate silently counted the excluded rear 120 deg.
         self._bar_probe = os.environ.get("NAVRL_BAR_PROBE", "0").strip().lower() in (
             "1", "true", "yes", "on"
         )
@@ -335,13 +358,22 @@ class NavRLTask(BaseTask):
         self._bprobe = {
             k: 0.0
             for k in (
-                "n",              # bar_contact deaths sampled
-                "bars_in_range",  # GT bars within the LiDAR horizon at impact (crowding)
-                "occupied_bins",  # distinct scan bearings returning an obstacle (crowding, sensed)
-                "hit_dist",       # distance to the struck bar at impact
-                "hit_in_tokens",  # fraction where the struck bar HAD a matching obstacle token (H1 test)
-                "hit_token_err",  # |token position - true bar position| for matched hits (H2 test)
-                "hit_token_rank", # which token slot matched (0 = nearest); high = near truncation
+                "n",                    # bar-contact deaths sampled
+                "bars_in_range",        # GT bars within the LiDAR horizon at impact
+                "bars_in_token_fov",    # in-range GT bars eligible for token selection
+                "occupied_bins",        # scan bearings returning an obstacle
+                "hit_dist",             # center distance to the struck bar
+                "hit_in_token_fov",     # struck bar is inside the configured token FOV
+                "hit_in_tokens",        # v2 surface-ray/range association to the struck bar
+                "hit_in_tokens_in_fov", # v2 match and the struck bar is inside the token FOV
+                "valid_tokens",         # valid token slots at impact
+                "associated_tokens",    # tokens associated with any GT bar
+                "unique_token_bars",    # distinct GT bars represented by associated tokens
+                "duplicate_tokens",     # associated slots spent on an already represented GT bar
+                "hit_center_offset",    # token surface point to struck-bar center (not an error)
+                "hit_cross_track",      # lateral distance from token ray to struck-bar center
+                "hit_radial_gap",       # bar-center range minus token surface range
+                "hit_token_rank",       # matched slot (0 = nearest)
             )
         }
 
@@ -863,6 +895,7 @@ class NavRLTask(BaseTask):
     def get_env_state(self):
         """Saved into the rl_games checkpoint ('env_state') so the epoch-proportional goal
         curriculum and optional density curriculum survive a --checkpoint resume."""
+        representation = self._obstacle_representation_or_zero()
         return {
             "num_task_steps": int(self.num_task_steps),
             "n_bars_active": int(self.n_bars_active),
@@ -878,17 +911,60 @@ class NavRLTask(BaseTask):
             "cfg_lidar_max_range": float(self.task_config.lidar_max_range),
             "cfg_max_velocity": float(self.task_config.max_velocity),
             "cfg_yaw_rate_max": float(self.task_config.yaw_rate_max),
-            "cfg_max_obstacles": int(self._max_obstacles_or_zero()),
+            "cfg_max_obstacles": int(representation["max_obstacles"]),
+            "cfg_token_fov_deg": float(representation["token_fov_deg"]),
+            "cfg_obstacle_suppress_deg": float(representation["suppress_deg"]),
+            "cfg_lidar_hbeams": int(representation["hbeams"]),
+            "cfg_lidar_vbeams": int(representation["vbeams"]),
         }
 
+    @staticmethod
+    def _obstacle_representation_or_zero():
+        """Policy obstacle-representation settings, or zeros when perception is unavailable."""
+        try:
+            from aerial_gym.task.navrl_task.navrl_perception import (
+                HBEAMS,
+                MAX_OBSTACLES,
+                OBSTACLE_FOV_DEG,
+                OBSTACLE_SUPPRESS_DEG,
+                VBEAMS,
+            )
+
+            return {
+                "max_obstacles": int(MAX_OBSTACLES),
+                "token_fov_deg": float(OBSTACLE_FOV_DEG),
+                "suppress_deg": float(OBSTACLE_SUPPRESS_DEG),
+                "hbeams": int(HBEAMS),
+                "vbeams": int(VBEAMS),
+            }
+        except Exception:
+            return {
+                "max_obstacles": 0,
+                "token_fov_deg": 0.0,
+                "suppress_deg": 0.0,
+                "hbeams": 0,
+                "vbeams": 0,
+            }
+
+    @classmethod
+    def _token_fov_or_zero(cls):
+        return float(cls._obstacle_representation_or_zero()["token_fov_deg"])
+
     def _record_bar_contact_probe(self, hit_mask, pos):
-        """Measure WHY a bar was hit: was it truncated out of the tokens (H1) or mislocated (H2)?
+        """Measure which current obstacle tokens geometrically represent a struck bar.
 
         Evaluation-only (NAVRL_BAR_PROBE=1). Uses ground-truth bar positions, which is legitimate
         here because nothing computed in this method reaches the actor, the critic, the reward, or
-        any termination -- it only accumulates diagnostic sums that are printed and reset.
+        any termination. Probe v2 separates FOV eligibility, range+bearing association, lateral ray
+        offset, radial surface gap, and duplicate token use instead of collapsing them into the old
+        ambiguous ``token_err``.
         """
-        from aerial_gym.task.navrl_task.navrl_perception import MAX_OBSTACLES, OBSTACLE_DIM
+        from aerial_gym.task.navrl_task.bar_probe import associate_surface_tokens_to_bars
+        from aerial_gym.task.navrl_task.navrl_perception import (
+            MAX_OBSTACLES,
+            OBSTACLE_DIM,
+            OBSTACLE_FOV_DEG,
+        )
 
         idx = hit_mask.nonzero(as_tuple=False).squeeze(1)
         if idx.numel() == 0:
@@ -909,12 +985,17 @@ class NavRLTask(BaseTask):
         # The bar that was struck = the closest one at the moment of contact.
         hit_d, hit_i = bar_dist.min(dim=1)
         rows = torch.arange(k, device=self.device)
-        hit_bearing = bar_bearing[rows, hit_i]
-        hit_rel = rel_v[rows, hit_i, 0:2]
 
-        # Crowding, two independent ways: ground truth (bars physically within the horizon) and as
-        # actually sensed (scan bearings returning something). H1 needs crowding > MAX_OBSTACLES.
+        # Crowding, two independent ways: GT bars inside the range/FOV and scan bearings returning
+        # something.  The FOV split is essential: a 240-deg token sector cannot represent a struck
+        # bar in the excluded rear 120 deg, although the full static scan still observes it.
         bars_in_range = (bar_dist < rng).sum(dim=1).float()
+        if OBSTACLE_FOV_DEG < 359.9:
+            in_token_fov = bar_bearing.abs() <= math.radians(OBSTACLE_FOV_DEG * 0.5)
+        else:
+            in_token_fov = torch.ones_like(bar_bearing, dtype=torch.bool)
+        bars_in_token_fov = ((bar_dist < rng) & in_token_fov).sum(dim=1).float()
+        hit_in_token_fov = in_token_fov[rows, hit_i]
         scan = getattr(self.perception, "last_scan_nearest", None)
         occupied = (
             (scan[idx] < rng * 0.995).sum(dim=1).float()
@@ -922,46 +1003,65 @@ class NavRLTask(BaseTask):
             else torch.zeros_like(bars_in_range)
         )
 
-        # Was the struck bar actually represented among the MAX_OBSTACLES tokens?
+        # Associate each LiDAR surface token to a plausible GT bar using BOTH bearing and range.
+        # The old +/-15-deg bearing-only matcher routinely attached a nearer token to a farther bar
+        # in dense scenes and then mislabeled surface-to-center distance as token position error.
         tokens = self.perception.obstacle_history[idx, -1].view(k, MAX_OBSTACLES, OBSTACLE_DIM)
         tok_pos = tokens[:, :, 0:2] * rng  # positions are stored normalized by the LiDAR range
         tok_valid = tokens[:, :, 11] > 0.5
-        tok_bearing = torch.atan2(tok_pos[:, :, 1], tok_pos[:, :, 0])
-        ang_err = torch.atan2(
-            torch.sin(tok_bearing - hit_bearing.unsqueeze(1)),
-            torch.cos(tok_bearing - hit_bearing.unsqueeze(1)),
-        ).abs()
-        # A token "covers" the struck bar if it is valid and points within one 10-deg scan bin
-        # (+ half-bin tolerance) of it. Slots are angularly separated by construction, so at most
-        # one can match; ties are resolved by taking the closest in bearing.
-        covers = tok_valid & (ang_err < math.radians(15.0))
-        ang_err_masked = torch.where(covers, ang_err, torch.full_like(ang_err, 1e3))
-        best_err, best_slot = ang_err_masked.min(dim=1)
-        matched = best_err < 1e2
+        association = associate_surface_tokens_to_bars(tok_pos, tok_valid, rel_v[:, :, 0:2])
+        token_bar = association["bar_index"]
+        token_associated = association["associated"]
+        hit_token = token_associated & (token_bar == hit_i.unsqueeze(1))
+        hit_offsets = torch.where(
+            hit_token,
+            association["center_offset"],
+            torch.full_like(association["center_offset"], float("inf")),
+        )
+        best_offset, best_slot = hit_offsets.min(dim=1)
+        matched = torch.isfinite(best_offset)
+
+        represented = (
+            torch.nn.functional.one_hot(token_bar, num_classes=b).bool()
+            & token_associated.unsqueeze(2)
+        ).any(dim=1)
+        associated_count = token_associated.sum(dim=1).float()
+        unique_count = represented.sum(dim=1).float()
 
         self._bprobe["n"] += float(k)
         self._bprobe["bars_in_range"] += float(bars_in_range.sum().item())
+        self._bprobe["bars_in_token_fov"] += float(bars_in_token_fov.sum().item())
         self._bprobe["occupied_bins"] += float(occupied.sum().item())
         self._bprobe["hit_dist"] += float(hit_d.sum().item())
+        self._bprobe["hit_in_token_fov"] += float(hit_in_token_fov.sum().item())
         self._bprobe["hit_in_tokens"] += float(matched.sum().item())
+        self._bprobe["hit_in_tokens_in_fov"] += float(
+            (matched & hit_in_token_fov).sum().item()
+        )
+        self._bprobe["valid_tokens"] += float(tok_valid.sum().item())
+        self._bprobe["associated_tokens"] += float(associated_count.sum().item())
+        self._bprobe["unique_token_bars"] += float(unique_count.sum().item())
+        self._bprobe["duplicate_tokens"] += float((associated_count - unique_count).sum().item())
         if bool(matched.any()):
             m = matched.nonzero(as_tuple=False).squeeze(1)
-            err = (tok_pos[m, best_slot[m]] - hit_rel[m]).norm(dim=1)
-            self._bprobe["hit_token_err"] += float(err.sum().item())
+            slot = best_slot[m]
+            self._bprobe["hit_center_offset"] += float(best_offset[m].sum().item())
+            self._bprobe["hit_cross_track"] += float(
+                association["cross_track"][m, slot].sum().item()
+            )
+            self._bprobe["hit_radial_gap"] += float(
+                association["radial_gap"][m, slot].sum().item()
+            )
             self._bprobe["hit_token_rank"] += float(best_slot[m].float().sum().item())
 
     @staticmethod
     def _max_obstacles_or_zero():
         """Obstacle-token capacity, or 0 when perception is off (import stays lazy on purpose)."""
-        try:
-            from aerial_gym.task.navrl_task.navrl_perception import MAX_OBSTACLES
-
-            return int(MAX_OBSTACLES)
-        except Exception:
-            return 0
+        return int(NavRLTask._obstacle_representation_or_zero()["max_obstacles"])
 
     def set_env_state(self, state):
         if isinstance(state, dict):
+            representation = self._obstacle_representation_or_zero()
             # Loud config-drift guard (warn, never override: an eval may deliberately change these).
             # A mismatch here silently invalidates the run -- see get_env_state() for why.
             for key, current, name in (
@@ -970,8 +1070,28 @@ class NavRLTask(BaseTask):
                 ("cfg_yaw_rate_max", float(self.task_config.yaw_rate_max), "NAVRL_YAW_RATE_MAX"),
                 (
                     "cfg_max_obstacles",
-                    float(self._max_obstacles_or_zero()),
+                    float(representation["max_obstacles"]),
                     "MAX_OBSTACLES (navrl_perception.py)",
+                ),
+                (
+                    "cfg_token_fov_deg",
+                    float(representation["token_fov_deg"]),
+                    "NAVRL_OBSTACLE_FOV_DEG",
+                ),
+                (
+                    "cfg_obstacle_suppress_deg",
+                    float(representation["suppress_deg"]),
+                    "NAVRL_OBSTACLE_SUPPRESS_DEG",
+                ),
+                (
+                    "cfg_lidar_hbeams",
+                    float(representation["hbeams"]),
+                    "NAVRL_LIDAR_HBEAMS",
+                ),
+                (
+                    "cfg_lidar_vbeams",
+                    float(representation["vbeams"]),
+                    "NAVRL_LIDAR_VBEAMS",
                 ),
             ):
                 saved = state.get(key)
@@ -980,7 +1100,7 @@ class NavRLTask(BaseTask):
                 if abs(float(saved) - current) > 1e-6:
                     logger.warning(
                         "NavRL CONFIG MISMATCH | %s: checkpoint trained with %.3f, running with %.3f. "
-                        "This rescales observations -- results are NOT comparable unless intentional."
+                        "This changes policy inputs -- results are NOT comparable unless intentional."
                         % (name, float(saved), current)
                     )
         if isinstance(state, dict) and state.get("num_task_steps") is not None:
@@ -2109,17 +2229,29 @@ class NavRLTask(BaseTask):
                     bp = self._bprobe
                     nb = bp["n"]
                     n_match = max(1.0, bp["hit_in_tokens"])
+                    n_hit_fov = max(1.0, bp["hit_in_token_fov"])
                     logger.warning(
-                        "NavRL barprobe | n=%d bars_in_range=%.1f occupied_bins=%.1f "
-                        "hit_dist=%.2fm hit_in_tokens=%.3f token_err=%.2fm token_rank=%.1f "
+                        "NavRL barprobe v2 | n=%d bars_range=%.1f bars_fov=%.1f occupied_bins=%.1f "
+                        "hit_dist=%.2fm hit_fov=%.3f hit_token=%.3f hit_token_given_fov=%.3f "
+                        "tokens=%.1f associated=%.1f unique=%.1f duplicate=%.1f "
+                        "center_offset=%.2fm cross_track=%.2fm radial_gap=%.2fm rank=%.1f "
                         "(capacity=%d)"
                         % (
                             int(nb),
                             bp["bars_in_range"] / nb,
+                            bp["bars_in_token_fov"] / nb,
                             bp["occupied_bins"] / nb,
                             bp["hit_dist"] / nb,
+                            bp["hit_in_token_fov"] / nb,
                             bp["hit_in_tokens"] / nb,
-                            bp["hit_token_err"] / n_match,
+                            bp["hit_in_tokens_in_fov"] / n_hit_fov,
+                            bp["valid_tokens"] / nb,
+                            bp["associated_tokens"] / nb,
+                            bp["unique_token_bars"] / nb,
+                            bp["duplicate_tokens"] / nb,
+                            bp["hit_center_offset"] / n_match,
+                            bp["hit_cross_track"] / n_match,
+                            bp["hit_radial_gap"] / n_match,
                             bp["hit_token_rank"] / n_match,
                             self._max_obstacles_or_zero(),
                         )

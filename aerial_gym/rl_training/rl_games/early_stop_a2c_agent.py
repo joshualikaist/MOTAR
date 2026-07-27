@@ -29,11 +29,16 @@ from aerial_gym.rl_training.rl_games.train_run_recorder import (
     finalize_agent_run,
     record_agent_epoch,
 )
+from aerial_gym.rl_training.rl_games.training_safety import (
+    first_nonfinite_training_value,
+    reset_optimizer_learning_rate,
+)
 from aerial_gym.task.position_setpoint_task.train_dashboard import consume_epoch_intercept_summary
 
 
 _AERIAL_FINISHED_MARKER = ".aerial_training_finished"
 _CKPT_REWARD_RE = re.compile(r"_rew_([-+]?\d+(?:\.\d+)?)")
+_FAILED_EXIT_REASONS = {"early_stop_nan", "nonfinite_ppo"}
 
 
 def _scalar_mean_reward(mean_r0):
@@ -100,6 +105,18 @@ def _read_existing_best_reward(nn_dir: str) -> float:
 
 
 class EarlyStopA2CAgent(A2CAgent):
+    def restore(self, fn, set_epoch=True):
+        """Restore weights/state, but never inherit a stale checkpoint learning rate."""
+        super().restore(fn, set_epoch=set_epoch)
+        configured_lr = float(self.config["learning_rate"])
+        self.last_lr = configured_lr
+        reset_optimizer_learning_rate(self.optimizer, configured_lr)
+        print(
+            "[aerial RL] Resume optimizer LR reset to active config: "
+            f"{configured_lr:.3g}.",
+            flush=True,
+        )
+
     def write_stats(
         self,
         total_time,
@@ -237,6 +254,23 @@ class EarlyStopA2CAgent(A2CAgent):
                 step_time, play_time, update_time, sum_time, a_losses, c_losses, b_losses, entropies, kls, last_lr, lr_mul = (
                     self.train_epoch()
                 )
+                nonfinite_path = first_nonfinite_training_value(
+                    (
+                        ("ppo/a_loss", a_losses),
+                        ("ppo/c_loss", c_losses),
+                        ("ppo/b_loss", b_losses),
+                        ("ppo/entropy", entropies),
+                        ("ppo/kl", kls),
+                    ),
+                    self.model.named_parameters(),
+                )
+                if nonfinite_path is not None:
+                    exit_reason = "nonfinite_ppo"
+                    raise FloatingPointError(
+                        "[aerial RL] Non-finite PPO state detected at "
+                        f"epoch {epoch_num}: {nonfinite_path}. "
+                        "Optimizer output is discarded; use the last finite checkpoint."
+                    )
                 total_time += sum_time
                 frame = self.frame // self.num_agents
 
@@ -339,7 +373,7 @@ class EarlyStopA2CAgent(A2CAgent):
                                 if cs_state_next.get("nan_stop"):
                                     print(
                                         "[aerial RL] Early stop: NaN/Inf mean reward — "
-                                        f"epoch {epoch_num}. Best checkpoint should be used."
+                                        f"epoch {epoch_num}. No corrupted checkpoint will be saved."
                                     )
                                     pending_exit_reason = "early_stop_nan"
                                 else:
@@ -350,21 +384,29 @@ class EarlyStopA2CAgent(A2CAgent):
                                         f"for {collapse_cfg['patience_epochs']} epochs (epoch {epoch_num})."
                                     )
                                     pending_exit_reason = "early_stop_collapse"
-                                tail = "_rew_" + str(mean_rewards).replace("[", "_").replace("]", "_")
-                                self.save(
-                                    os.path.join(
-                                        self.nn_dir,
-                                        "last_" + self.config["name"] + "_ep_" + str(epoch_num) + tail,
+                                    tail = "_rew_" + str(mean_rewards).replace("[", "_").replace("]", "_")
+                                    self.save(
+                                        os.path.join(
+                                            self.nn_dir,
+                                            "last_"
+                                            + self.config["name"]
+                                            + "_ep_"
+                                            + str(epoch_num)
+                                            + tail,
+                                        )
                                     )
-                                )
                                 should_exit = True
 
-                        if self.save_freq > 0:
+                        if not should_exit and self.save_freq > 0:
                             if epoch_num % self.save_freq == 0:
                                 self.save(os.path.join(self.nn_dir, "last_" + checkpoint_name))
 
                         current_mean_reward = _scalar_mean_reward(mean_rewards[0])
-                        if current_mean_reward > self.last_mean_rewards and epoch_num >= self.save_best_after:
+                        if (
+                            not should_exit
+                            and current_mean_reward > self.last_mean_rewards
+                            and epoch_num >= self.save_best_after
+                        ):
                             print("saving next best rewards: ", mean_rewards)
                             self.last_mean_rewards = current_mean_reward
                             self.save(os.path.join(self.nn_dir, self.config["name"]))
@@ -451,7 +493,11 @@ class EarlyStopA2CAgent(A2CAgent):
                         num_parallel_envs=n_agents,
                     )
 
-                    if epoch_num >= self.max_epochs and self.max_epochs != -1:
+                    if (
+                        not should_exit
+                        and epoch_num >= self.max_epochs
+                        and self.max_epochs != -1
+                    ):
                         if self.game_rewards.current_size == 0:
                             print("WARNING: Max epochs reached before any env terminated at least once")
                             mean_rewards = -np.inf
@@ -467,7 +513,11 @@ class EarlyStopA2CAgent(A2CAgent):
                         should_exit = True
                         pending_exit_reason = "max_epochs"
 
-                    if self.frame >= self.max_frames and self.max_frames != -1:
+                    if (
+                        not should_exit
+                        and self.frame >= self.max_frames
+                        and self.max_frames != -1
+                    ):
                         if self.game_rewards.current_size == 0:
                             print("WARNING: Max frames reached before any env terminated at least once")
                             mean_rewards = -np.inf
@@ -490,11 +540,22 @@ class EarlyStopA2CAgent(A2CAgent):
 
                 if should_exit:
                     exit_reason = pending_exit_reason or "completed"
-                    if getattr(self, "global_rank", 0) == 0:
+                    if (
+                        exit_reason not in _FAILED_EXIT_REASONS
+                        and getattr(self, "global_rank", 0) == 0
+                    ):
                         self._write_aerial_training_finished_marker(epoch_num)
+                    if exit_reason in _FAILED_EXIT_REASONS:
+                        raise FloatingPointError(
+                            f"[aerial RL] Training failed with {exit_reason} at epoch {epoch_num}."
+                        )
                     break
 
             return self.last_mean_rewards, epoch_num
+        except FloatingPointError:
+            if exit_reason == "unknown":
+                exit_reason = "nonfinite_ppo"
+            raise
         except KeyboardInterrupt:
             exit_reason = "interrupted"
             print("\n[aerial RL] 학습 중단 (KeyboardInterrupt)", flush=True)

@@ -120,13 +120,22 @@ def _moving_target_speed_line(task: str) -> Optional[str]:
 
 
 def _early_stop_line(cfg: Mapping[str, Any]) -> str:
-    es = cfg.get("early_stop_stable") or {}
-    if not es.get("enable"):
-        return "off"
-    return (
-        f"on (after epoch {es.get('min_epoch', '?')}, "
-        f"last {es.get('consecutive_epochs', '?')} epochs max−min ≤ {es.get('reward_band', '?')})"
-    )
+    parts = ["NaN/Inf fail-fast"]
+    stable = cfg.get("early_stop_stable") or {}
+    if stable.get("enable"):
+        parts.append(
+            f"plateau after {stable.get('min_epoch', '?')} "
+            f"({stable.get('consecutive_epochs', '?')} epochs, "
+            f"band ≤ {stable.get('reward_band', '?')})"
+        )
+    collapse = cfg.get("early_stop_collapse") or {}
+    if collapse.get("enable"):
+        parts.append(
+            f"collapse after {collapse.get('min_epoch', '?')} "
+            f"(drop {collapse.get('drop_from_peak', '?')}, "
+            f"patience {collapse.get('patience_epochs', '?')})"
+        )
+    return "on (" + "; ".join(parts) + ")"
 
 
 def _checkpoint_line(args: Mapping[str, Any]) -> str:

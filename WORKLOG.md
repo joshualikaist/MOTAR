@@ -942,3 +942,103 @@ bearing을 blank 처리. `static_state`는 전 360°를 그대로 유지하므�
 - (B) 위 warm-start 명령으로 ~2250 epoch(≈1.5h) 추가 학습 — 사용자가 직접 실행
 - (C) 밀도 커리큘럼 = 논문 본선(밀도×속도 지도). bar_contact를 먼저 낮춰야 고밀도에서 폭발하지 않음
   (과거 150막대 절벽 −27pt 기록).
+
+---
+
+## 2026-07-27 — (B) FOV-240 결과 감사 + bar probe v2 + (C) 진입 결정
+
+### (B) `ppo_260727_0930` 평가 결과
+
+`ppo_260727_0225`의 360° token-selection 정책에서 warm-start해 epoch 7248→9500을 추가 학습했다.
+best `gen_ppo.pth`는 epoch 8571, optimizer LR은 고정된 `1e-4`. 6-speed general-spawn 평가 결과는
+`results/general_repr_fov240_speed_axis.csv`에 보존했다.
+
+| target | capture (360 baseline→240) | bar_contact 절대율 | below 절대율 |
+|---:|---:|---:|---:|
+| 0.0 | 0.874→0.894 | 7.4%→6.2% | 3.0%→2.9% |
+| 0.5 | 0.879→0.906 | 7.9%→6.2% | 3.8%→2.7% |
+| 0.75 | 0.870→0.894 | 8.6%→6.8% | 3.3%→2.9% |
+| 1.0 | 0.869→0.893 | 8.9%→7.8% | 3.3%→2.4% |
+| 1.25 | 0.859→0.889 | 10.1%→7.9% | 3.0%→2.6% |
+| 1.5 | 0.824→0.859 | 11.9%→10.0% | 4.0%→3.2% |
+| **평균** | **0.862→0.889 (+2.7pp)** | **9.1%→7.5%** | **3.4%→2.8%** |
+
+캠페인 궤적은 capture `0.851→0.861→0.889`, bar_contact `12.7%→9.1%→7.5%`.
+240° 정책을 360° token FOV로 평가하면 target 1.0 capture가 `0.893→0.878`로 내려가므로 반드시
+학습과 동일한 240°로 평가해야 한다.
+
+### 관측성 결함 수정
+
+`0930`은 FOV 기록 패치 전에 시작되어 log/checkpoint에 FOV가 없었다. 240°/360° paired eval로 조건을
+역추론해야 했으므로 다음을 추가했다.
+
+- 시작 로그: `tokens`, `token_fov`, `suppress`, `scan V×H`, `lidar_range`를 한 줄로 출력.
+- checkpoint `env_state`: `cfg_token_fov_deg`, `cfg_obstacle_suppress_deg`,
+  `cfg_lidar_hbeams/vbeams`까지 저장.
+- resume/eval 시 현재 값과 다르면 policy input mismatch 경고.
+- FOV `(0, 360]`, 양수 beam/token 수, 음수가 아닌 suppression을 시작 시 검증.
+- density/speed 평가 스크립트의 기본 contract를 최신 정책의
+  `8 tokens / 240° / ±10° / 4×72 / 12m / general spawn / 128 env`로 교정.
+- density eval의 `... | grep ... || true`가 `play_navrl.sh` 실패까지 성공으로 숨기던 문제를 제거해,
+  `set -o pipefail`이 평가 오류를 정상적으로 중단시키게 함.
+
+### ★ 기존 `hit_in_tokens`/`token_err` 해석은 무효 — bar probe v2
+
+기존 probe에는 세 결함이 있었다.
+
+1. 240° 밖 후방 충돌도 `hit_in_tokens`의 전체 분모에 포함하고 이를 240° 내부의 기하학적 75%
+   커버 예상치와 비교했다.
+2. 같은 방위의 토큰을 거리와 무관하게 충돌 막대에 매칭해, 밀집 구간에서 앞/뒤의 다른 막대를
+   잘못 붙였다.
+3. token 위치는 LiDAR **표면점**인데 GT **중심점**과의 거리를 position error라고 불렀다. 막대
+   반경 자체와 측정 오차가 섞인 값이었다.
+
+v2는 token ray가 GT bar bounding circle을 실제로 통과하고 표면 range도 가능한 경우에만
+range+bearing으로 연관한다. 또한 다음을 별도로 출력한다.
+
+- `hit_fov`: 충돌 막대가 token-selection FOV 안에 있었던 비율.
+- `hit_token_given_fov`: 선택 가능했던 충돌만 분모로 한 실제 token representation 비율.
+- `unique/duplicate`: 토큰 슬롯이 서로 다른 GT 막대를 담는지, 같은 막대를 중복하는지.
+- `center_offset`, `cross_track`, `radial_gap`: 표면-중심 거리, 횡방향 ray 오차, 중심까지 남은
+  방사 거리. 더 이상 이것을 하나의 `token_err`로 부르지 않는다.
+
+순수 geometry helper `bar_probe.py`와 동일 방위·다른 거리 오매칭 회귀 테스트를 추가했다.
+
+### 실제 GPU 검증 (FOV 240°, target 1.0, 32 env, 2048 episodes)
+
+```
+capture=0.883  crash=0.116  timeout=0.001
+bar_contact=0.688 of crashes  below=0.257 of crashes
+barprobe v2:
+  n=163  bars_range=15.7  bars_fov=10.9
+  hit_fov=0.773  hit_token=0.442  hit_token_given_fov=0.556
+  valid tokens=8.0  associated=2.3  unique=0.8  duplicate=1.4
+  center_offset=0.36m  cross_track=0.20m  radial_gap=0.25m
+```
+
+`token_err 1.2~1.3m`는 v2에서 재현되지 않았다. 주된 원인은 실제 센서 오차가 아니라
+bearing-only 오매칭과 표면/중심 의미 혼동이었다. global `hit_token=0.442`가 낮은 이유 중 일부도
+후방 FOV 밖 충돌을 포함한 분모였고, 조건부 값은 `0.556`이다.
+
+### 결정: suppression ±5° 재학습은 보류하고 (C)로 진행
+
+±10°인 현재 상태에서도 contact 순간 평균 `duplicate=1.4` 슬롯이 이미 같은 GT 막대에 중복 사용된다.
+suppression을 ±5°로 줄이면 같은 넓은 막대가 더 많은 슬롯을 소비할 가능성이 커서, “240° 중 더 넓게
+덮는다”는 단순 계산과 반대 효과가 날 수 있다. 그 가설의 근거였던 기존 `hit_in_tokens/token_err`도
+측정 결함이 확인됐다.
+
+반면 실제 목표 지표는 capture `0.889`, bar_contact `7.5%`로 명확히 개선됐다. 따라서 한 번 더
+25-bar 조건을 미세 조정하지 않고 (C) density curriculum으로 진입한다.
+
+전용 `train_navrl_general_repr_density.sh`를 추가했다. 기존
+`train_navrl_vision_seq_density.sh`는 898-D representation/FOV를 고정하지 않아 이 checkpoint에
+사용하면 안 된다. 새 launcher는 240°/72빔/8토큰/12m를 고정하고 `NAVRL_NUM_BARS`를 unset하여
+25→110, +5 bars, capture threshold 0.55 curriculum이 실제로 승급되게 한다.
+
+### 검증
+
+- `tests/test_navrl_bar_probe.py`: 4/4 통과.
+- `tests/test_navrl_perception.py`: 4/4 통과.
+- `tests/test_training_safety.py`: 4/4 통과.
+- 수정 Python `py_compile`, launcher `bash -n`, `git diff --check` 통과.
+- 실제 Isaac Gym 2048-episode CUDA 평가 완료, probe v2 출력 확인.

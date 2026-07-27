@@ -32,13 +32,14 @@ params:
     gamma: 0.99
     tau: 0.95
     ppo: True
-    # Stability (2026-07-23): a_loss/entropy/KL diverged AFTER the policy started learning (captured
-    # rose to ~0.4 then decayed to ~0.1 at CONSTANT curriculum difficulty). Lowered the actor LR
-    # 3e-4 -> 1e-4 (Transformer policies destabilize at higher LR) and enabled value clipping below;
-    # the real culprit is the privileged critic's fixed 5e-4 LR (fixed further down).
+    # Stability: keep the Transformer actor at the configured 1e-4 learning rate.
     learning_rate: 1e-4
-    lr_schedule: adaptive
-    kl_threshold: 0.016
+    # rl_games' adaptive scheduler has a hard-coded 1e-2 ceiling and, in legacy mode, updates once
+    # per minibatch. With this 4096/2048 batch layout it raised 1e-4 -> 1.7e-3 in the first epoch
+    # and eventually to 1e-2, causing the reproducible PPO NaN failures in
+    # ppo_260727_0048/0147.
+    lr_schedule: None
+    kl_threshold: 0.016  # retained for documentation; IdentityScheduler does not read it
     save_best_after: 20
     save_frequency: 50
     score_to_win: 100000

@@ -1,17 +1,9 @@
 #!/usr/bin/env bash
-# Candidate #4: fix the OBSTACLE REPRESENTATION -- the measured cause of the bar_contact floor.
+# Candidate #4 historical fresh-run recipe: 8 tokens + 72-beam obstacle representation.
 #
-# Three changes, applied together because the bar_contact probe showed they are one problem:
-#   1. NAVRL_MAX_OBSTACLES 5 -> 8        H1: 15.8 bars sat inside the horizon against a capacity of
-#                                        5, and 35% of contact deaths were with a bar that was
-#                                        never in the policy's input at all.
-#   2. suppression +-20 -> +-10 deg      H1: each token blanks a wedge around itself, so at +-20 deg
-#                                        no more than ~7 tokens could EVER fill -- raising the
-#                                        capacity alone would have wasted the extra slots.
-#   3. NAVRL_LIDAR_HBEAMS 36 -> 72       H2: token positions come from range/angle geometry, so
-#                                        their lateral error is ~half a bin (~0.44 m at 5 m with
-#                                        10 deg bins). The probe measured 0.57 m, matching. 5 deg
-#                                        bins halve it.
+# The combined change improved bar_contact, but the original capacity/quantization explanation was
+# not supported by the first-generation probe. Probe v2 now uses range+bearing GT association and
+# FOV-conditioned denominators; do not infer which sub-knob caused the gain from the old token_err.
 #
 # All three change the observation layout (574 -> 898), so this is a FRESH run: no warm-start is
 # possible from any existing checkpoint. Everything else matches train_navrl_general_12m_lookahead.sh
@@ -22,10 +14,9 @@
 #   MAX_EPOCHS=8000 NUM_ENVS=128 ./train_navrl_general_repr.sh
 #
 # Watch (crashdiag prints every ~2048 episodes):
-#   NavRL barprobe hit_in_tokens  -- was 0.647; H1 is fixed if this climbs toward ~0.9
-#   NavRL barprobe token_err      -- was 0.57 m; H2 is fixed if this drops toward ~0.3 m
-#   NavRL crashdiag bar_contact   -- the actual goal: was ~13% of all episodes
-# If hit_in_tokens rises but bar_contact does not fall, the limit is control/planning, not sensing.
+#   NavRL barprobe v2 hit_token_given_fov -- range+bearing match, conditioned on selectable hits
+#   NavRL barprobe v2 unique/duplicate    -- whether suppression wastes slots on the same bar
+#   NavRL crashdiag bar_contact           -- the actual safety outcome
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
@@ -70,8 +61,9 @@ NUM_ENVS="${NUM_ENVS:-128}"
 SEED="${SEED:-1}"
 
 echo "[general_repr] FRESH run (obs 574 -> 898; no warm-start possible)"
-echo "[general_repr] tokens=${NAVRL_MAX_OBSTACLES} suppress=${NAVRL_OBSTACLE_SUPPRESS_DEG}deg \
-hbeams=${NAVRL_LIDAR_HBEAMS} lidar=${NAVRL_LIDAR_RANGE}m"
+echo "[general_repr] tokens=${NAVRL_MAX_OBSTACLES} fov=${NAVRL_OBSTACLE_FOV_DEG:-360}deg \
+suppress=+-${NAVRL_OBSTACLE_SUPPRESS_DEG}deg hbeams=${NAVRL_LIDAR_HBEAMS} \
+lidar=${NAVRL_LIDAR_RANGE}m"
 echo "[general_repr] max_epochs=${MAX_EPOCHS} envs=${NUM_ENVS} seed=${SEED}"
 
 exec env NUM_ENVS="${NUM_ENVS}" ./train_navrl.sh --max_epochs "${MAX_EPOCHS}" --seed "${SEED}"

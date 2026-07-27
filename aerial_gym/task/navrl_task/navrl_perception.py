@@ -19,22 +19,17 @@ import torch.nn as nn
 ROBOT_HISTORY = 5
 TARGET_HISTORY = 5
 OBSTACLE_HISTORY = 5
-# Obstacle-token capacity: how many tracked bars the policy can see AT ALL in one step. Bars beyond
-# this are truncated out of the observation, so the drone cannot avoid what it is never shown --
-# the leading hypothesis (H1) for the bar_contact floor that survived the altitude and look-ahead
-# fixes. Env-overridable so the capacity can be swept; changing it changes STRUCTURED_OBS_DIM and
-# therefore requires a FRESH policy (no warm-start from a different capacity).
+# Obstacle-token capacity. Env-overridable so it can be swept; changing it changes
+# STRUCTURED_OBS_DIM and therefore requires a FRESH policy (no warm-start across capacities).
 MAX_OBSTACLES = int(os.environ.get("NAVRL_MAX_OBSTACLES", "").strip() or 5)
 ROBOT_DIM = 10
 TARGET_DIM = 16
 OBSTACLE_DIM = 12
 
 # LiDAR scan resolution. HBEAMS is THE source of truth for the horizontal beam count and must equal
-# navrl_lidar_config.width (both read NAVRL_LIDAR_HBEAMS). It sets the angular quantization of every
-# obstacle token: token positions come from range/angle geometry, so their lateral error is about
-# half a bin, i.e. ~0.44 m at 5 m with 36 beams (10 deg). That matches the 0.57 m token error the
-# bar_contact probe measured, which is why doubling to 72 is the fix for mislocated obstacles rather
-# than anything in the tracker. Changing this changes STRUCTURED_OBS_DIM -> fresh policy required.
+# navrl_lidar_config.width (both read NAVRL_LIDAR_HBEAMS). Changing it changes STRUCTURED_OBS_DIM,
+# hence a fresh policy is required. The old claim that token error was dominated by angular
+# quantization was refuted by evaluation; see WORKLOG 2026-07-27 and bar-probe v2.
 HBEAMS = int(os.environ.get("NAVRL_LIDAR_HBEAMS", "").strip() or 36)
 VBEAMS = int(os.environ.get("NAVRL_LIDAR_VBEAMS", "").strip() or 4)
 # Angular half-width blanked around an accepted obstacle token, in DEGREES (not bins: the bin size
@@ -52,6 +47,14 @@ OBSTACLE_SUPPRESS_DEG = float(os.environ.get("NAVRL_OBSTACLE_SUPPRESS_DEG", "").
 # changing the observation width, so a policy can warm-start across this change.
 # Omnidirectional awareness is not lost: the static scan token still carries all HBEAMS bearings.
 OBSTACLE_FOV_DEG = float(os.environ.get("NAVRL_OBSTACLE_FOV_DEG", "").strip() or 360.0)
+if MAX_OBSTACLES <= 0:
+    raise ValueError("NAVRL_MAX_OBSTACLES must be positive")
+if HBEAMS <= 0 or VBEAMS <= 0:
+    raise ValueError("NAVRL_LIDAR_HBEAMS and NAVRL_LIDAR_VBEAMS must be positive")
+if not math.isfinite(OBSTACLE_SUPPRESS_DEG) or OBSTACLE_SUPPRESS_DEG < 0.0:
+    raise ValueError("NAVRL_OBSTACLE_SUPPRESS_DEG must be finite and non-negative")
+if not math.isfinite(OBSTACLE_FOV_DEG) or not 0.0 < OBSTACLE_FOV_DEG <= 360.0:
+    raise ValueError("NAVRL_OBSTACLE_FOV_DEG must be in (0, 360]")
 STATIC_DIM = VBEAMS * HBEAMS
 STRUCTURED_OBS_DIM = (
     ROBOT_HISTORY * ROBOT_DIM
@@ -314,7 +317,7 @@ class NavRLPerceptionModule:
         scan[:, :, inside] = torch.minimum(scan[:, :, inside], fused_camera[:, :, inside])
         static_state = (scan / self.lidar_max_range).clamp(0.0, 1.0)
 
-        # Five nearest angularly separated obstacle proposals. Bars are static, hence velocity=0;
+        # Nearest angularly separated obstacle proposals. Bars are static, hence velocity=0;
         # position and covariance come from range/angle geometry rather than simulator positions.
         nearest = scan.amin(dim=1)
         # Diagnostics only (no grad, no copy cost on the hot path): the per-bearing obstacle range
