@@ -23,11 +23,18 @@ const perc100=(n)=>((n/BAND_AREA)*100).toFixed(1);
    ============================================================ */
 const Arena=(()=>{
   const X0=0,X1=24,Y0=-12,Y1=12,BX0=3.1,BX1=23;
-  const CAMERA_RANGE=20,CAMERA_HALF_FOV=THREE.MathUtils.degToRad(43.5),LIDAR_RANGE=4;
+  // Sensor spec mirrors the current trained policy (2026-07-27 FOV-240 representation run):
+  // 72 horizontal x 4 vertical LiDAR beams at 12 m, forward RGB-D detector at 87 deg / 20 m.
+  const CAMERA_RANGE=20,CAMERA_HALF_FOV=THREE.MathUtils.degToRad(43.5),LIDAR_RANGE=12;
+  const LIDAR_HBEAMS=72,LIDAR_VBEAMS=4,TOKEN_FOV_DEG=240;
   let scene,cam,renderer,controls,root,barMesh,drone,target,cameraFov,lidarLines;
   let pursuerTrail,targetTrail,targetHalo,groundMat,gridHelper,resizeObserver;
   let bars=[],playing=true,speed=0,tParam=0,goalX=22,viewMode=0,showTrails=true,frame=0;
   let host,lastDrone={x:1,y:0},trailA=[],trailB=[];
+  // Smoothing state for the render loop (see animate()). `smooth`/`smoothT` are the drawn
+  // positions that chase the hard bar-clearance projection; `vel` and `heading` are filtered
+  // so the airframe never snaps when that projection steps.
+  let lastT=0,smooth={x:1,y:0},smoothT={x:22,y:0},vel={x:1,y:0},heading=0;
 
   // seeded RNG (mulberry32) so a given bar-count is reproducible/stable
   function rng(seed){return function(){seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
@@ -172,11 +179,11 @@ const Arena=(()=>{
     targetHalo.rotation.x=-Math.PI/2;targetHalo.position.y=.01;target.add(targetHalo);
     cameraFov=makeCameraFov();drone.add(cameraFov);
 
-    const lp=new Float32Array(36*4*2*3);const lg=new THREE.BufferGeometry();lg.setAttribute('position',new THREE.BufferAttribute(lp,3));
+    const lp=new Float32Array(LIDAR_HBEAMS*LIDAR_VBEAMS*2*3);const lg=new THREE.BufferGeometry();lg.setAttribute('position',new THREE.BufferAttribute(lp,3));
     lidarLines=new THREE.LineSegments(lg,new THREE.LineBasicMaterial({color:0x47d9e3,transparent:true,opacity:.46,vertexColors:false}));root.add(lidarLines);
     pursuerTrail=line([],0x8ef6c7,.75);targetTrail=line([],0xff8a76,.62);root.add(pursuerTrail,targetTrail);
 
-    makeBars(48);
+    makeBars(25);
     resizeObserver=new ResizeObserver(onResize);resizeObserver.observe(el);
     addEventListener('keydown',e=>{if(e.key.toLowerCase()==='v')cycleView();});
     animate();
@@ -195,8 +202,8 @@ const Arena=(()=>{
   function drawLidar(x,y){
     if(!lidarLines.visible)return;
     const a=lidarLines.geometry.attributes.position.array;let k=0;
-    for(let layer=0;layer<4;layer++)for(let i=0;i<36;i++){
-      const ang=i/36*Math.PI*2,hit=rayHit(x,y,ang,LIDAR_RANGE),h=.82+layer*.12;
+    for(let layer=0;layer<LIDAR_VBEAMS;layer++)for(let i=0;i<LIDAR_HBEAMS;i++){
+      const ang=i/LIDAR_HBEAMS*Math.PI*2,hit=rayHit(x,y,ang,LIDAR_RANGE),h=.82+layer*.12;
       a[k++]=x;a[k++]=h;a[k++]=y;a[k++]=x+Math.cos(ang)*hit;a[k++]=h;a[k++]=y+Math.sin(ang)*hit;
     }lidarLines.geometry.attributes.position.needsUpdate=true;
   }
@@ -210,7 +217,13 @@ const Arena=(()=>{
   }
 
   function updateTrail(obj,arr,lineObj){
-    if(frame%5!==0)return;arr.push(obj.position.clone());if(arr.length>190)arr.shift();
+    // Sample by DISTANCE, not every Nth frame. Frame sampling made the trail's vertex spacing
+    // depend on speed and refresh rate, so it rendered as a visibly polygonal chain that
+    // lurched forward a segment at a time; a distance threshold gives even, stable spacing.
+    const p=obj.position;
+    const last=arr.length?arr[arr.length-1]:null;
+    if(last && last.distanceToSquared(p)<0.0144) return;   // 0.12 m
+    arr.push(p.clone()); if(arr.length>420) arr.shift();
     lineObj.geometry.dispose();lineObj.geometry=new THREE.BufferGeometry().setFromPoints(arr);lineObj.visible=showTrails;
   }
 
@@ -224,22 +237,55 @@ const Arena=(()=>{
 
   function animate(){
     requestAnimationFrame(animate);controls.update();
-    if(playing) tParam+=0.0016*(1+speed*0.25);
+
+    // --- time-based, not frame-based -------------------------------------------------
+    // tParam used to advance by a fixed amount PER FRAME, so playback speed tracked the
+    // refresh rate and every dropped frame became a visible jump. Advance by elapsed time
+    // instead, clamping dt so returning to a backgrounded tab does not teleport the drone.
+    const now=performance.now();
+    const dt=Math.min((now-(lastT||now))/1000,0.05); lastT=now;
+    if(playing) tParam+=dt*0.096*(1+speed*0.25);
     if(tParam>1) tParam=0;
-    // drone path: sweep x 1..goalX; y follows a gentle weave + bar repulsion,
-    // then push the drone out of any bar it would clip (visual weaving through gaps).
+
+    // Nominal path: sweep x 1..goalX; y follows a gentle weave plus bar repulsion.
     const x=1+tParam*(goalX-1);
     let y=Math.sin(tParam*Math.PI*3)*4;
-    const [sx,sy]=steer(x,y); y+=sy*2.2;
-    const [dx,dy]=clearBars(x,y,0.2);
-    const heading=Math.atan2(dy-lastDrone.y,dx-lastDrone.x);
+    const [,sy]=steer(x,y); y+=sy*2.2;
+    // clearBars() is a HARD projection: it iteratively shoves the point out of any bar it
+    // overlaps, in fixed 0.25 steps. Near a bar the correction can switch on and reverse
+    // direction between consecutive frames, so the projected point is not a continuous
+    // function of tParam -- that discontinuity was the "ticking" jump. Feed it through an
+    // exponential smoother so the rendered body follows the projection instead of snapping
+    // to it. Frame-rate independent because the coefficient is derived from dt.
+    const [px,py]=clearBars(x,y,0.2);
+    const k=1-Math.exp(-dt*9);
+    smooth.x+=(px-smooth.x)*k; smooth.y+=(py-smooth.y)*k;
+    const dx=smooth.x, dy=smooth.y;
+
+    // Heading came from the frame-to-frame delta of the *projected* point, so every
+    // projection jump snapped the whole airframe around. Track a smoothed velocity and
+    // turn toward it through the shortest angle, at a bounded rate.
+    vel.x+=((dx-lastDrone.x)/Math.max(dt,1e-3)-vel.x)*(1-Math.exp(-dt*6));
+    vel.y+=((dy-lastDrone.y)/Math.max(dt,1e-3)-vel.y)*(1-Math.exp(-dt*6));
+    if(Math.hypot(vel.x,vel.y)>0.05){
+      const want=Math.atan2(vel.y,vel.x);
+      let d=Math.atan2(Math.sin(want-heading),Math.cos(want-heading));
+      heading+=d*(1-Math.exp(-dt*7));
+    }
     drone.position.set(dx,1+.025*Math.sin(tParam*30),dy);
-    drone.rotation.y=-heading;drone.rotation.z=THREE.MathUtils.clamp((dy-lastDrone.y)*-.55,-.28,.28);
+    drone.rotation.y=-heading;
+    // Bank from the smoothed lateral velocity rather than a raw per-frame difference.
+    const bank=THREE.MathUtils.clamp(-vel.y*0.12,-.28,.28);
+    drone.rotation.z+=(bank-drone.rotation.z)*(1-Math.exp(-dt*8));
     lastDrone={x:dx,y:dy};
+
     // target: static (speed 0) sits at the goal; moving target bounces in y BUT is pushed out
     // of bar clearance every frame — exactly like the sim, so it never passes through a bar.
     let tx=goalX, ty=(speed>0)? Math.sin(tParam*Math.PI*2*(0.5+speed*0.1))*8 : 0;
     [tx,ty]=clearBars(tx,ty,0.5);
+    // Same smoothing for the target, whose projection jumps for the same reason.
+    smoothT.x+=(tx-smoothT.x)*k; smoothT.y+=(ty-smoothT.y)*k;
+    tx=smoothT.x; ty=smoothT.y;
     target.position.set(tx,1+.04*Math.sin(tParam*24),ty);target.rotation.y=Math.sin(tParam*Math.PI*2)*.5;
     const vis=visibility(dx,dy,tx,ty,heading);
     const state=document.getElementById('hud-camera');
@@ -362,35 +408,60 @@ function renderRuns(s){
 /* Diagnosis + perception-first implementation plan. */
 function renderStatic(){
   document.getElementById('diagnosis').innerHTML=`
-    <div class="callout"><h3>확인된 것 · sensor-only 이동표적 요격이 end-to-end로 작동</h3>
-      <p><b>속도 상향 검증.</b> yaw-rate ceiling을 2.5→3.0 rad/s, max_velocity를 2.5 m/s로 올려도(속도를
-        줄이지 않는 방향) 이동표적(최대 1.5 m/s)을 계속 포획합니다. capture는 표적 속도에 <b>거의 평탄
-        (0.74→0.69, 0~1.5 m/s)</b> — 드론이 표적보다 충분히 빠릅니다.</p>
-      <p><b>급사(sudden NaN)의 근본원인을 특정·수정.</b> <code>fixed_sigma=True</code> + entropy bonus 조합에서
-        정책 log-std에 상한이 없어 5000 epoch에 걸쳐 σ가 1→13까지 표류하다 PPO log-prob이 한 스텝에 overflow →
-        NaN → hover 붕괴. log-std를 [-5, 0.4]로 clamp해 재현 실험(옛 사망지점 epoch 5178)을 건강하게 통과시켜
-        검증했습니다.</p></div>
-    <div class="callout"><h3>정직한 baseline · 병목은 표적속도가 아니라 막대충돌</h3>
-      <p>98.6% 학습피크 정책을 128-env·2049 episode/cell로 고정평가(25막대, deterministic)한 결과
-        <b>capture ≈0.74, crash ≈0.25, timeout ≈0</b>(표적속도 전 구간 동일 패턴). 학습곡선의 0.986과
-        평가의 0.74 사이 간극이 정직한 train↔eval gap입니다. hover farming이 아니라 <b>막대 접촉</b>이
-        지배적 실패 원인 — "25막대인데 충돌은 용납 못한다"는 문제의식이 데이터로 확인됩니다.</p></div>`;
+    <div class="callout hero"><h3>현재 성능 · 25막대 held-out, 표적속도 0–1.5 m/s 평균</h3>
+      <div class="kpis">
+        <div class="kpi"><b>0.889</b><span>capture</span></div>
+        <div class="kpi"><b>7.5%</b><span>막대충돌</span></div>
+        <div class="kpi"><b>2.8%</b><span>고도이탈</span></div>
+        <div class="kpi"><b>0.0%</b><span>timeout</span></div>
+      </div>
+      <p>128-env · 셀당 2049 episode · deterministic · 무작위 스폰. actor 관측에 GT 표적 없음
+        (LiDAR 72×4@12 m + 전방 RGB-D 검출기만). 참고로 NavRL 원논문은 0.81입니다.</p></div>
+
+    <div class="callout"><h3>캠페인 궤적 · 무엇이 실제로 통했나</h3>
+      <table class="mini-tbl">
+        <tr><th>단계</th><th>capture</th><th>막대충돌</th></tr>
+        <tr><td>baseline (고정 스폰)</td><td>0.735</td><td>—</td></tr>
+        <tr><td>고도 PI</td><td>0.802</td><td>~13%</td></tr>
+        <tr><td>tilt 보상</td><td>0.837</td><td>~13%</td></tr>
+        <tr><td>look-ahead 12 m</td><td>0.851</td><td>12.7%</td></tr>
+        <tr><td>장애물 표현 (8토큰·72빔)</td><td>0.861</td><td>9.1%</td></tr>
+        <tr class="hi"><td>토큰 FOV 240°</td><td><b>0.889</b></td><td><b>7.5%</b></td></tr>
+      </table>
+      <p><b>고도 관련 3연속은 capture만 올리고 막대충돌은 못 건드렸습니다</b>(13%에서 고착). 충돌이
+        움직이기 시작한 건 <b>장애물 표현</b>을 바꾼 뒤부터입니다.</p></div>
+
+    <div class="callout"><h3>측정으로 기각된 가설 · 다시 시도하지 않음</h3>
+      <p><b>look-ahead가 부족해서 부딪힌다</b> → 기각. 8→12 m로 늘려도 막대충돌 12.7%로 불변
+        (2.5 m/s에서 8 m면 이미 3.2초 경고).</p>
+      <p><b>토큰 용량(5개)이 병목</b> → 기각. 8개로 늘렸더니 "부딪힌 막대가 토큰에 있던 비율"이
+        0.65→0.45로 오히려 하락. 반경 안에 막대가 평균 16개라 8개로도 부족했고, <b>360° 전방위에서
+        가장 가까운 순으로 고르는 규칙</b> 자체가 문제였습니다 — 뒤쪽 막대에 슬롯을 쓰느라 앞쪽이 굶습니다.
+        선택 범위를 240°로 좁히자 capture가 +2.7 pt 올랐습니다.</p>
+      <p><b>토큰 위치오차 = 각도 양자화</b> → 기각. 빔을 36→72로 늘려 bin을 10°→5°로 줄였는데 오차는
+        오히려 커졌습니다. 원인은 아직 미해명이며, 지표 자체의 측정 방식을 의심하고 있습니다.</p></div>
+
+    <div class="callout"><h3>학습 안정성 · 반복되던 급사 2종을 제거</h3>
+      <p><b>σ 폭주</b> — <code>fixed_sigma</code>+entropy bonus에 log-std 상한이 없어 σ가 1→13까지
+        표류하다 한 스텝에 NaN. log-std를 [-5, 0.4]로 clamp.</p>
+      <p><b>adaptive LR 폭주</b> — rl_games 스케줄러가 1e-4를 1e-2까지 올려 fresh run이 epoch 43–62에
+        전멸. <code>lr_schedule: None</code>. 이후 fresh run이 8000 epoch 완주.</p>
+      <p><b>기울기 제한 부재</b> — Lee 컨트롤러가 목표 자세를 힘벡터에서 그대로 뽑아 90°를 넘겨도
+        막지 않았습니다. PX4식 45° 제한 + 뒤집힘 시 안전 폴백.</p></div>`;
 
   document.getElementById('nextplan').innerHTML=`
-    <p class="sub">Perception pipeline(P0-P3)은 이미 작동합니다. 지금 단계는 <b>충돌(crash) 저감을 파라미터
-      하나씩 바꿔가며</b> baseline(capture 0.74 / crash 0.25) 대비로 측정하는 것입니다. 보상 재조정은
-      과거 3회 연속 무효였던 레버라 제외합니다(충돌은 기하학적 문제로 판단).</p>
-    <div class="callout"><h3>① 고도 z-position 피드백 — 인에이블러, 가장 짧음</h3>
-      <p>현재 altitude-hold는 <code>clamp(4·z_err)</code> 오픈루프에 가까운 형태. 제대로 된 고도 제어가
-        있어야 LiDAR look-ahead를 늘려도 바닥 sag로 인한 이차 충돌 없이 확장 가능합니다. 98.6% 피크에서
-        warm-start 가능.</p></div>
-    <div class="callout"><h3>② LiDAR look-ahead 8→10/12 m</h3>
-      <p>①이 검증된 뒤에만 시도(단독 시도 시 위빙 심화→고도 sag로 바닥충돌 재발 이력 있음).</p></div>
-    <div class="callout"><h3>③ 10 m 카메라 depth를 actor에 전달</h3>
-      <p>전방향만 보는 depth라 바닥 이슈와 무관 — obs/네트워크 변경.</p></div>
-    <div class="callout"><h3>④ 장애물 토큰 5→8 또는 Transformer dim 64→128</h3>
-      <p>지금은 한 시점에 최대 5개 장애물만 토큰화되어(<code>MAX_OBSTACLES</code>), 밀집 구간에서 6번째부터
-        정책 입력에서 잘립니다. 코드변경은 상수 수준으로 저위험이나 obs shape 변경으로 fresh 재학습 필요.</p></div>`;
+    <p class="sub">25막대에서 남은 실패는 11%뿐이고 그 3분의 2가 막대충돌입니다. 다음은 <b>논문 본선인
+      밀도 축</b>으로 들어가되, 고밀도에서 충돌이 폭발하지 않도록 표현 쪽을 한 번 더 다듬는 선택지가 있습니다.</p>
+    <div class="callout"><h3>C · 밀도 커리큘럼 → 밀도 × 표적속도 지도 <span class="badge active">다음</span></h3>
+      <p>25 → 110 → 150막대. 과거 GT-LiDAR 시절 150막대에서 −27 pt 절벽이 관측됐고, 배치 최소간격이
+        포화로 완화되며 일부 통로가 기체 폭보다 좁아지는 <b>기하학적 한계</b>가 원인이었습니다.
+        이 절벽이 sensor-only에서도 같은 위치에 나타나는지가 논문의 핵심 그림입니다.</p></div>
+    <div class="callout"><h3>B′ · 억제폭 ±10°→±5° (선택, 30분)</h3>
+      <p>토큰끼리 최소 20° 벌어져야 해서 240° 중 실제로는 160°만 덮습니다. 좁히면 커버율이 더 오릅니다.
+        관측 차원이 안 바뀌어 warm-start 가능 — 짧게 시도해보고 아니면 롤백.</p></div>
+    <div class="callout"><h3>남은 과제</h3>
+      <p>고도이탈 2.8%(fresh 학습의 잔재), 토큰 위치오차 지표의 신뢰성 재검증, 그리고 sim-to-real
+        (onboard latency · 센서 노이즈) 검증.</p></div>`;
 
   const phases=[
     ['Baseline','navigation·밀도 스윕·geometry 절벽 규명','done'],
@@ -398,9 +469,10 @@ function renderStatic(){
     ['P1','RGB-D/LiDAR detector 학습·held-out 검증','done'],
     ['P2','association + Kalman tracker + covariance prototype','done'],
     ['P3','17-token temporal Transformer actor 연결','done'],
-    ['P4','속도 상향 + 이동표적 요격 검증 + PPO 안정화(σ-clamp)','done'],
-    ['P5','충돌(crash) 저감 튜닝 — 파라미터 1개씩','active'],
-    ['P6','sim-to-real·onboard latency·sensor noise 검증','todo'],
+    ['P4','속도 상향 + 이동표적 요격 + PPO 안정화(σ·LR·tilt)','done'],
+    ['P5','충돌 저감 — 고도 → look-ahead → 장애물 표현','done'],
+    ['P6','밀도 커리큘럼 → 밀도 × 표적속도 지도','active'],
+    ['P7','sim-to-real·onboard latency·sensor noise 검증','todo'],
     ['Paper','oracle/perception ablation + 논문화','todo'],
   ];
   document.getElementById('phases').innerHTML=phases.map(p=>{

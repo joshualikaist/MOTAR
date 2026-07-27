@@ -93,6 +93,26 @@
   .callout h3{margin:0 0 8px;font-size:15px}
   .callout p{margin:6px 0;font-size:14px;color:var(--slate)}
   .callout b{color:var(--ink)}
+  /* headline result block */
+  .callout.hero{border-left-color:var(--sensor,#2bb673);background:
+    linear-gradient(180deg,color-mix(in srgb,var(--accent) 7%,var(--panel)),var(--panel))}
+  .kpis{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0 6px}
+  .kpi{flex:1 1 110px;background:var(--bg);border:1px solid var(--line);border-radius:6px;
+    padding:10px 12px;text-align:center}
+  .kpi b{display:block;font-size:26px;line-height:1.15;font-variant-numeric:tabular-nums;
+    letter-spacing:-.5px}
+  .kpi span{display:block;margin-top:2px;font-size:11px;color:var(--slate);
+    text-transform:uppercase;letter-spacing:.08em}
+  /* compact progression table inside a callout */
+  .mini-tbl{width:100%;border-collapse:collapse;margin:10px 0 4px;font-size:13px}
+  .mini-tbl th{text-align:left;font-weight:600;color:var(--slate);font-size:11px;
+    text-transform:uppercase;letter-spacing:.06em;padding:4px 8px 6px;border-bottom:1px solid var(--line)}
+  .mini-tbl td{padding:5px 8px;border-bottom:1px solid var(--line2);
+    font-variant-numeric:tabular-nums;color:var(--slate)}
+  .mini-tbl td:first-child{color:var(--ink)}
+  .mini-tbl tr:last-child td{border-bottom:none}
+  .mini-tbl tr.hi td{background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--ink)}
+  @media (max-width:560px){.kpi b{font-size:21px}}
   pre{background:var(--code-bg);color:var(--code-ink);border-radius:8px;padding:14px 16px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.6;margin:10px 0}
   pre .c{color:var(--code-accent)}
   .foot{padding-top:28px;font-family:var(--mono);font-size:12px;color:var(--faint);line-height:1.8}
@@ -131,7 +151,7 @@
       <b>DETECTED → OCCLUDED</b>가 바뀌며, 이것이 앞으로 tracker와 Transformer가 처리해야 할 핵심 상태입니다.</p>
     <div id="stage">
       <div class="hud" id="hud">
-        <div><span class="dot" style="background:#c9762f"></span><b id="hud-bars">48</b> 막대 · <span id="hud-density">10.0</span>/100m²</div>
+        <div><span class="dot" style="background:#c9762f"></span><b id="hud-bars">25</b> 막대 · <span id="hud-density">5.2</span>/100m²</div>
         <div><span class="dot" style="background:#55e1a4"></span>pursuer · z=1 m · attitude 제어</div>
         <div><span class="dot" style="background:#ff685f"></span>moving target · 직접 관측 대상</div>
       </div>
@@ -145,8 +165,8 @@
     </div>
     <div class="controls">
       <div class="ctl">
-        <label>장애물 막대 수 · <span class="val" id="lbl-bars">48</span></label>
-        <input type="range" id="sl-bars" min="10" max="150" step="1" value="48">
+        <label>장애물 막대 수 · <span class="val" id="lbl-bars">25</span></label>
+        <input type="range" id="sl-bars" min="10" max="150" step="1" value="25">
       </div>
       <div class="ctl">
         <label>표적 속도 · <span class="val" id="lbl-speed">0.0</span> m/s</label>
