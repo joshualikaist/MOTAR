@@ -2005,3 +2005,54 @@ bar clearance를 검사한다. 또한 launcher/task/env/LiDAR config와 사이�
 완료된 18:17 run을 `LAST`로 보여 준다. 페이지가 이를 `LIVE`라고 표시하지는 않아 데이터
 거짓 표시는 아니지만, Git commit 사이 실시간 PPO telemetry는 제공하지 않는다. 이번 수정은
 그 한계를 숨기지 않고 Arena에도 명시했다.
+
+### 2026-07-28 20:31 — squashed-v2 500-epoch pilot 종료 판정
+
+RTX 3070의 `ppo_260728_1958_navrl_action-squashed-v2-main-s1`은 epoch
+19051→19550의 계획된 500 epoch를 모두 수행하고 `max_epochs`로 정상 종료했다. GPU는
+비었고 `.aerial_training_finished`는 `epoch=19550`을 기록한다. canonical final checkpoint
+`last_gen_ppo_ep_19550_rew_33.75813.pth`를 CPU로 실제 load해 epoch, model/optimizer,
+asymmetric critic, `env_state`를 확인했다. SHA-256은
+`a0a3aa65f2378580b480f09e43fe6f1fd5bd8ec5bd77db78a846fc8c47fda9ea`다.
+
+종료 summary 뒤의 `*** Can't create empty tensor` 한 줄은 이미 final checkpoint, summary
+JSON, CSV, finished marker가 모두 기록된 뒤 shutdown에서 출력됐다. 종료 원인이 아니며
+checkpoint load에도 문제가 없다. 다만 cleanup noise로 별도 추적할 수 있다.
+
+같은 source checkpoint, seed, 75 bars와 정확히 같은 500-epoch 구간인 squashed-v1과
+TensorBoard scalar를 비교했다.
+
+| metric | v1 tail 50 | v2 tail 50 | 변화 |
+|---|---:|---:|---:|
+| capture | 67.50% | 71.54% | +4.04pp |
+| crash | 31.72% | 28.07% | -3.65pp |
+| reward | 32.82 | 35.58 | +2.76 |
+| lateral edge95 | 75.36% | 29.26% | -46.10pp |
+| lateral edge99 | 8.32% | 0.358% | -7.96pp |
+| mean `|mu_y|` | 2.096 | 1.623 | -22.6% |
+| mean action `|Δy|` | 0.0330 | 0.0703 | +113% |
+
+전체 500 epoch 평균 capture는 v1 69.85%, v2 70.09%로 거의 같지만, v1은 후반으로
+갈수록 포획이 67%대로 하락하고 경계 집중이 커진 반면 v2는 마지막 100 epoch capture
+70.67%, crash 28.94%를 유지했다. v1은 최종 직후 `nonfinite_ppo`, v2는 정상 종료했다.
+따라서 원래 가설인 “횡축 표본을 ±2.5 명령 근처에 몰리지 않게 한다”는 pilot 수준에서
+성공했고, 후반 성능도 악화시키지 않았다.
+
+단, v2 내부 100-epoch chunk의 edge95가 24.99→25.41→26.23→27.24→29.17%로
+천천히 다시 증가하고 `|mu_y|`도 1.570→1.622로 증가했다. 완전히 수렴했다고 보기는
+이르다. `ppo/kl_skipped_minibatches=0`이라 KL gate는 한 번도 개입하지 않았고,
+표시된 KL의 작은 음수(~-0.0016)는 `rl_games.policy_kl`의 epsilon bias로 사실상 0이다.
+이번 개선은 주로 5e-6 LR, lateral latent margin, finite log-ratio의 조합에서 왔으며
+각 요소의 단독 기여는 아직 분리되지 않았다.
+
+다음 순서는 장기 연장이 아니라 deterministic A/B 평가다.
+
+1. source ep19050, squashed-v1 ep19550, squashed-v2 ep19550을 동일한 75 bars,
+   target speed 0/0.5/1.0/1.5, `mixed`, pursuer 2.5 조건에서 비교한다.
+2. 먼저 1000 games/cell quick screen, 승자와 source만 2500 games/cell로 확정한다.
+3. 1650 Ti truncated-Gaussian 결과가 오면 같은 평가표에 세 번째 후보로 넣는다.
+4. v2가 source 대비 capture/crash를 유지하면서 edge 지표 우위를 보일 때만
+   ep20550까지 1000 epoch 연장한다. 연장 시 v2 checkpoint의 Adam state를 유지하도록
+   `NAVRL_RESET_ACTOR_OPTIMIZER=0`을 반드시 지정한다.
+5. 연장 중 edge95 tail이 40% 또는 edge99가 1%를 넘으면 장기화하지 않고 margin/LR
+   ablation으로 돌아간다.
