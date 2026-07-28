@@ -1767,3 +1767,65 @@ capture는 대체로 45~58%였다.
 1650 Ti sub는 같은 checkpoint 파일을 복사한 뒤 별도 머신에서 launcher만 실행한다. 128 env를
 먼저 사용해 main과 PPO batch를 맞추고, 실제 4 GiB OOM이 확인될 때만 `NUM_ENVS=64`로 낮춘다
 (`32*64=2048`이라 configured minibatch와 정확히 일치한다).
+
+### 2026-07-28 18:43 — TensorBoard 세션 정리 및 날짜별 run 색인
+
+사용자 요청에 따라 `rl_games/runs/`를 전수 감사했다. 정리 전에는 top-level run directory
+38개, TensorBoard 표시 세션 36개, event file 43개, 전체 약 14 GiB였다. TensorBoard
+`EventAccumulator`로 모든 event protobuf와 scalar를 읽었고 손상된 event file은 **0개**였다.
+40-byte event들은 손상이 아니라 header-only 초기화 artifact였다.
+
+#### 정리 기준과 방식
+
+- 엄격한 short-run 기준은 **완료 epoch ≤120**으로 잡았다. 일반 본학습 6000 epoch의 2% 이하이고,
+  실제 분포에서도 120 다음이 335 epoch라 자연스러운 간격이 있다.
+- short-run 외에는 후속 정식 run으로 대체된 `0220`, 원인이 WORKLOG와 후속 `1309`에 완전히
+  남은 collapse-guard 오발 `1204`, 수정된 `1817`로 대체된 unscaled action smoke `1813`만
+  정리했다.
+- 연구 provenance를 잃지 않도록 영구 삭제하지 않고 TensorBoard logdir 밖의 복구용 경로
+  `/home/fair/workspaces/aerial_gym_ws/tensorboard_archive/2026-07-28_pruned/`로 옮겼다.
+  이동량은 약 298 MiB다. 한 run을 복구하려면 해당 directory를 `rl_games/runs/`로 되돌리고
+  TensorBoard를 reload하면 된다.
+- 현재 학습 `ppo_260728_1817...`과 그 source checkpoint가 있는 `ppo_260727_2324...`는
+  process command line까지 확인하고 보호했다.
+- `ppo_260719_1000`의 event 6개와 `ppo_260723_1509`의 event 3개는 중복 세션이 아니라 같은
+  run의 resume shard이므로 임의로 쪼개 삭제하지 않았다.
+
+#### 실험 날짜별 TensorBoard 색인
+
+| 실험 날짜 | TensorBoard에 보존한 핵심 세션 | 이번에 아카이브한 세션 |
+|---|---|---|
+| 07-14~15 | `1904` 정직한 baseline, `2207` clearance negative ablation, `0251` yaw 해결, `2038` random-150 seed1 | 없음. `1552` grid-150과 `1922` interrupted grid-75는 event가 없어 원래부터 TB 비표시 |
+| 07-16~17 | `density_25`, `density_50`, `0329`=75, `1223`=110, `density_120`, `0032`=150 seed2 — 밀도곡선 원자료 | 없음 |
+| 07-18 | `0259` fixed-110 vision baseline, `1841` 동시 밀도 curriculum, `vision50_seed2` | `0220` — 50 bars에서 833 epoch 중단, 정식 후속 run으로 대체 |
+| 07-19 | `1000` 12000-epoch 순차 curriculum, `vision_goalcap_seed1` | 없음 |
+| 07-23 | `1509` perception+Transformer 첫 성공/후반 붕괴, `2210` peak-resume continuation | 없음 |
+| 07-24 | `0110` altitude-PI source, `0209` general representation, `1052` tilt compensation, `1230` 12 m look-ahead | `0108` — 완료 epoch/checkpoint 0 |
+| 07-27 | `0225` first stable fresh representation, `0930` FOV-240, `1309` Stage-C 65 bars, `2324` Stage-C 75 bars 장기 진단/source checkpoint | `0048`(62ep NaN), `0054`(60ep), `0058`(120ep), `0106`(120ep), `0147`(43ep NaN), `1204`(335ep collapse-guard 오발), `2323`(NavRL epoch/checkpoint 0) |
+| 07-28 | `1817` corrected squashed-Gaussian main — 정리 시 PID `3089290`으로 계속 학습 중 | `1813` — 69ep unscaled-mean negative smoke; raw `edge99_y=98.75%` 증거는 아카이브에 보존 |
+
+정리 후 filesystem run directory는 38→28개, TensorBoard API의 표시 세션은 **36→26개**로
+즉시 줄었다. TensorBoard data server가 reload를 정상 반영해 서비스 재시작은 필요 없었다.
+정리 직후에도 main PID `3089290`은 정상 실행 중이며 active event/checkpoint 생성에 영향이 없었다.
+
+### 2026-07-28 18:49 — squashed-Gaussian main 500-epoch 종료
+
+TensorBoard 정리 직후까지 정상이던 `ppo_260728_1817_navrl_action-squashed-main-s1`은
+epoch `19550`까지 정확히 500 epoch를 완료한 뒤, 다음 PPO update(epoch 19551)의
+`ppo/a_loss[7]`에서 non-finite가 검출되어 fail-fast 종료됐다. optimizer output은 버려졌고,
+업데이트 전 마지막 finite checkpoint
+`last_gen_ppo_ep_19550_rew_31.084248.pth`가 저장되어 있다.
+
+- 마지막 epoch: capture `70.7%`, crash `29.3%`, timeout `0%`, reward `31.08`.
+- run peak: capture `83.3%@19106`, reward `48.89@19417`.
+- task 입력 OOB는 끝까지 0이었지만, 마지막 세 diagnostic window의 lateral
+  `exec_edge98_y`가 `22.15%→26.05%→29.91%`, `mean_abs_y`가 `0.951→0.955→0.958`로
+  상승했다. 즉 tanh가 범위 밖 sample/clamp mismatch는 제거했으나 actor mean이 다시 경계로
+  이동해 `±2.5 m/s` 근처 사용률이 장기적으로 재상승했다.
+- 이번 결과는 `mu_scale=0.4`가 warm-start 순간의 포화는 풀어도 지속적인 제약은 아니라는 증거다.
+  non-finite의 직접 원인은 아직 `a_loss[7]`까지만 확정됐으며, 경계 접근에 따른 transformed
+  likelihood/PPO ratio 수치 문제인지 별도 재현·tensor audit이 필요하다.
+
+따라서 이 run을 그대로 재개하지 않는다. 다음 main 수정은 lateral latent-mean margin/regularization과
+log-probability 수치 안정성을 함께 다룬 뒤, 동일 epoch-19050 checkpoint에서 짧은 재현 실험으로
+검증해야 한다.
