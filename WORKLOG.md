@@ -2193,3 +2193,124 @@ checkpoint preflight, 실제 optimizer smoke, 조건부 4007-episode profile,
 최종 2002-episode deterministic screen. 원시 결과는
 `train_session_logs/eval_results/{v2_action_context_260728,v3_reflect_c100_p100_260728}/`에
 보관한다.
+
+---
+
+## 2026-07-28 — 1650 Ti truncated 환경 준비 완료 (학습 미시작)
+
+수신 파일: `~/navrl_truncated_1650ti_transfer.tar.gz` (18:56, RustDesk).
+
+배치:
+- 코드: 이미 `7a10948` (`git merge-base --is-ancestor` OK). patch 재적용 불필요.
+- 체크포인트 복사:
+  `aerial_gym/rl_training/rl_games/runs/ppo_260727_2324_navrl/nn/last_gen_ppo_ep_19050_rew_31.79068.pth`
+- SHA-256 일치: `b3d67792f65b71fa3939630d2b182e1b28155564a285b3feaa12db651bc68277`
+- `test_navrl_action_models.py` 7/7 OK. GPU idle (~0.45 GiB / 4 GiB).
+- launcher `train_navrl_action_truncated_1650ti.sh` 실행 가능 상태 (`READY_TO_LAUNCH`).
+
+**학습은 아직 시작하지 않음.** 사용자 지시 시:
+```bash
+conda activate aerialgym
+cd aerial_gym/rl_training/rl_games
+nohup ./train_navrl_action_truncated_1650ti.sh \
+  > train_session_logs/action_truncated_1650ti.out 2>&1 &
+```
+OOM 시에만 `NUM_ENVS=64`.
+
+---
+
+## 2026-07-28 — truncated 1650 mid-run 평가 (학습 유지, held-out 미실행)
+
+학습 중 `ppo_260728_1929_navrl_action-truncated-1650ti-s1` 중간 점검. 4GB에서 학습이
+~2.9 GiB를 점유 중이라 **held-out `play`는 GPU 충돌** — 학습을 죽이지 않고
+`epoch_metrics.csv` + 로그로 평가. (SIGSTOP은 VRAM을 안 비움.)
+
+### 상태
+- epoch **19500 / 22050** (+450/3000 = 15%), fixed 75 bars, step ~6–8s, ETA ~5h.
+- ckpt (나중 held-out용): `nn/last_gen_ppo_ep_19500_rew_34.33362.pth` (`gen_ppo.pth` 금지).
+
+### 학습 중 capture/crash (PPO stochastic — held-out와 동일시 금지)
+
+| window | capture | crash | mean reward |
+|---|---|---|---|
+| first 50 (warm) | 0.675 | 0.319 | 31.7 |
+| since start (19051–19500) | 0.712 | 0.281 | 35.4 |
+| last 200 | 0.736 | 0.257 | 38.2 |
+| last 50 | 0.724 | 0.267 | 36.4 |
+
+### 판정
+건강: collapse 없음, warm 대비 capture↑ / crash↓. 마지막 200ep 소폭 출렁임은 노이즈 수준.
+A/B 최종 판정은 22050 완주 + held-out 속도축 평가 필요. held-out를 지금 돌리려면 학습
+일시 중단(프로세스 종료→평가→같은 last_gen에서 resume) 승인 필요.
+
+---
+
+## 2026-07-29 — 1650 Ti truncated 완주 및 held-out 평가
+
+`ppo_260728_1929_navrl_action-truncated-1650ti-s1`이 epoch `22050/22050`에
+`max_epochs`로 정상 종료됐다. 19050 checkpoint에서 시작해 fixed 75 bars, seed 1,
+128 envs로 정확히 3000 epoch를 추가했으며 NaN/OOM/reward collapse는 없었다.
+
+### 학습 rollout 요약
+
+| window | capture | crash | timeout | mean reward |
+|---|---:|---:|---:|---:|
+| first 50 | 67.5% | 31.9% | 0.6% | 31.69 |
+| 전체 3000 | 74.8% | 24.4% | 0.8% | 38.35 |
+| last 500 | 76.6% | 22.7% | 0.7% | 41.06 |
+| last 200 | 74.8% | 24.6% | 0.6% | 40.27 |
+| last 50 | 75.5% | 24.0% | 0.5% | 40.76 |
+
+- 최고 100-epoch rolling capture는 `79.5%`(window end epoch 21533), 최고 200-epoch
+  rolling capture는 `79.1%`(end 21610)였다.
+- 단일 epoch peak reward는 `55.48 @ 21559`; 단일 epoch capture peak는
+  `93.0% @ 21121`이다. 단일 epoch 값은 표본 수가 작으므로 checkpoint 선택 근거로 쓰지 않는다.
+- value 학습은 안정적이었다: explained variance first50 `0.694`, last200 `0.709`;
+  PPO/c-value loss와 모든 기록값은 finite였다.
+
+bounded-action contract는 끝까지 유지됐다. `policy_action/raw_oob_y=0`이라 실행 action과
+PPO likelihood의 support 불일치는 제거됐다. 다만 actor mean이 다시 lateral boundary를
+선택하면서 `edge99_y`가 first50 `4.0%`에서 last200 `22.2%`,
+`mean_abs_y`가 `0.863→0.952`, `mean_mu_abs_y`가 `0.927→0.978`로 상승했다.
+동시에 adjusted sigma는 `0.132→0.047`, `delta_y`는 `0.105→0.044`로 감소했다.
+즉 무작위 큰 횡샘플 문제는 해결됐지만, 정책 평균 자체의 boundary-seeking은 남아 있다.
+
+### 동일 조건 deterministic held-out
+
+조건: 75 bars, target `cv 1.0 m/s`, pursuer limit `2.5 m/s`, seed 42,
+128 envs, 2049 episodes(시작 checkpoint만 종료 집계 2051), 12 m/4x72 LiDAR,
+8 tokens, FOV 240°, tilt compensation on.
+
+| checkpoint | capture | crash | timeout | closest, no crash |
+|---|---:|---:|---:|---:|
+| start `19050` legacy | 67.7% | 31.7% | 0.6% | 0.45 m |
+| truncated `21550` | **75.9%** | **22.9%** | 1.1% | 0.50 m |
+| truncated `22050` final | 72.1% | 27.2% | 0.6% | 0.45 m |
+
+- `21550`은 start 대비 capture `+8.2%p`, crash `-8.8%p`다. 독립 binomial
+  근사 95% CI로 capture 차이는 약 `+5.5~+11.0%p`라 단순 평가 노이즈보다 크다.
+- final `22050`도 start 대비 capture `+4.4%p`지만, `21550`보다 `-3.8%p`
+  (근사 95% CI 약 `-6.5~-1.1%p`)라 후반 500 epoch에서 실제 held-out 퇴행이 있었다.
+- 따라서 이 branch의 대표 checkpoint는 **final이 아니라 `21550`**이다. `gen_ppo.pth`는
+  선택 기준이 불투명하므로 사용하지 않는다.
+- 이 평가는 deterministic 한 축과 training stochastic rollout을 확인한 것이다.
+  완전한 최종 A/B 판정은 3070의 squashed branch에 동일 seed/조건을 적용하고,
+  필요하면 player deterministic=False 평가를 별도로 추가해야 한다.
+
+### 3070 전달 항목
+
+추천 checkpoint:
+
+`aerial_gym/rl_training/rl_games/runs/ppo_260728_1929_navrl_action-truncated-1650ti-s1/nn/last_gen_ppo_ep_21550_rew_44.51707.pth`
+
+SHA-256:
+
+`60cea22b0345bb2922376b12d27dfc3d7852012b4b50b80aaada8404321d0992`
+
+최종 checkpoint `22050` SHA-256:
+
+`284b5b3008d251deed278ac5d24b916b1093c97103ae7d3a0b6fe0b1a39ea9c9`
+
+checkpoint와 eval log는 `.gitignore` 대상이므로 이 커밋에는 결론과 식별자만 들어간다.
+3070에는 이 커밋을 pull/cherry-pick한 뒤 추천 `.pth`를 별도 전송하고 SHA를 확인한다.
+3070 squashed checkpoint도 위 held-out 조건으로 평가해 `capture/crash/timeout`을 직접 비교한다.
