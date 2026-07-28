@@ -12,6 +12,10 @@ train_dir/
 wandb/
 runs/
 
+# local RL session artifacts and manually retained checkpoints
+train_session_logs/
+checkpoints_saved/
+
 # local experiment workspace (checkpoints/reports, ~1.4GB)
 aerial_gym/lms_rl_trial/
 
