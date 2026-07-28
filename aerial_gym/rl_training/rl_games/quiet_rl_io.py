@@ -53,6 +53,8 @@ def _allow_print(*args: object) -> bool:
         return True
     if msg.startswith("[train]"):
         return True
+    if msg.startswith("NAVRL_BULK_EVAL_RESULT "):
+        return True
     if msg.startswith(" >>"):
         return True
     return False

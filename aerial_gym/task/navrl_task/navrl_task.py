@@ -311,11 +311,32 @@ class NavRLTask(BaseTask):
         self._mindist_sum = 0.0  # sum of closest approach over NON-CRASH finished episodes
         self._nc_agg = 0         # count of non-crash finished episodes
         self._closest_min = None  # best (min) closest approach in the window
+        # Machine-readable vectorized evaluation. rl_games' player summary contains reward/length
+        # only, while the periodic task summary historically waited for 2048 episodes. As a result,
+        # a perfectly valid 1000-game screen completed without preserving capture/crash data. In
+        # bulk mode, make the requested player game count the summary interval and atomically write
+        # one result document before the vector player exits.
+        self._bulk_eval_mode = os.environ.get(
+            "NAVRL_BULK_EVAL", "0"
+        ).strip().lower() in ("1", "true", "yes", "on")
+        try:
+            self._bulk_eval_target = max(
+                1, int(os.environ.get("PLAY_GAMES_NUM", "1000"))
+            )
+        except ValueError:
+            self._bulk_eval_target = 1000
+        self._bulk_eval_output = os.environ.get(
+            "NAVRL_BULK_EVAL_JSON", ""
+        ).strip()
+        self._bulk_eval_exported = False
+        self._progress_log_interval = (
+            self._bulk_eval_target if self._bulk_eval_mode else 2048
+        )
         # Policy-side action diagnostics. `prev_action` stores the post-clamp observation and cannot
         # reveal how much Gaussian probability was collapsed onto +/-1, so measure the actor output
         # immediately on entry to step(). This is instrumentation only; it never changes commands,
         # observations, rewards, or terminations.
-        self._action_diag_enabled = os.environ.get(
+        self._action_diag_enabled = self._bulk_eval_mode or os.environ.get(
             "NAVRL_ACTION_DIAG", "0"
         ).strip().lower() in ("1", "true", "yes", "on")
         self._action_diag = self._empty_action_diag()
@@ -331,7 +352,7 @@ class NavRLTask(BaseTask):
         self._oob_probe = os.environ.get("NAVRL_OOB_PROBE", "0").strip().lower() in (
             "1", "true", "yes", "on"
         )
-        self._crash_diag = self._oob_probe or os.environ.get(
+        self._crash_diag = self._bulk_eval_mode or self._oob_probe or os.environ.get(
             "NAVRL_CRASH_DIAG", "0"
         ).strip().lower() in ("1", "true", "yes", "on")
         self._diag = {k: 0 for k in ("contact", "below", "above", "oob", "oob_w", "oob_e", "oob_s", "oob_n")}
@@ -2343,6 +2364,94 @@ class NavRLTask(BaseTask):
             target_speed_mean=float(self._tm_speed.mean().item()) if tm_on else None,
         )
 
+    def _export_bulk_eval_result(self, total, reach_rate, mean_nc, best):
+        """Persist the exact outcome window consumed by a vectorized rl_games player."""
+        if not self._bulk_eval_mode or self._bulk_eval_exported:
+            return
+
+        ad = self._action_diag
+        n_action = max(1, int(ad["n"]))
+        n_delta = max(1, int(ad["delta_y_n"]))
+        d = self._diag
+        n_crash_causes = d["contact"] + d["below"] + d["above"] + d["oob"]
+        n_cause_den = max(1, n_crash_causes)
+
+        def _float_env(name, default):
+            try:
+                return float(os.environ.get(name, str(default)) or default)
+            except ValueError:
+                return float(default)
+
+        payload = {
+            "schema_version": 1,
+            "requested_episodes": int(self._bulk_eval_target),
+            "actual_episodes": int(total),
+            "checkpoint": os.environ.get("NAVRL_EVAL_CHECKPOINT", ""),
+            "condition": {
+                "bars": int(self.n_bars_active),
+                "target_pattern": os.environ.get("NAVRL_TARGET_PATTERN", "static"),
+                "target_speed_mps": _float_env("NAVRL_TARGET_SPEED", 0.0),
+                "pursuer_max_speed_mps": float(self.task_config.max_velocity),
+                "episode_len_steps": int(self.task_config.episode_len_steps),
+                "num_envs": int(self.num_envs),
+            },
+            "outcome": {
+                "captured": int(self._succ_agg),
+                "crash": int(self._crash_agg),
+                "timeout": int(self._to_agg),
+                "capture_rate": float(self._succ_agg / max(1, total)),
+                "crash_rate": float(self._crash_agg / max(1, total)),
+                "timeout_rate": float(self._to_agg / max(1, total)),
+                "ever_reached_rate": float(reach_rate),
+                "closest_nocrash_mean_m": float(mean_nc),
+                "closest_nocrash_best_m": None if math.isnan(best) else float(best),
+                "closest_nocrash_count": int(self._nc_agg),
+            },
+            "action": {
+                "policy": os.environ.get("NAVRL_ACTION_POLICY", "legacy"),
+                "samples": int(ad["n"]),
+                "task_input_oob_rate": [
+                    float(value / n_action) for value in ad["raw_oob"]
+                ],
+                "executed_edge98_rate": [
+                    float(value / n_action) for value in ad["exec_edge"]
+                ],
+                "mean_abs": [float(value / n_action) for value in ad["abs_sum"]],
+                "mean_abs_delta_y": float(ad["delta_y_sum"] / n_delta),
+                "sign_flip_y_rate": float(ad["sign_flip_y"] / n_delta),
+            },
+            "crash_causes": {
+                "count": int(n_crash_causes),
+                "bar_contact": int(d["contact"]),
+                "below": int(d["below"]),
+                "above": int(d["above"]),
+                "out_of_bounds": int(d["oob"]),
+                "bar_contact_share": float(d["contact"] / n_cause_den),
+                "below_share": float(d["below"] / n_cause_den),
+                "above_share": float(d["above"] / n_cause_den),
+                "out_of_bounds_share": float(d["oob"] / n_cause_den),
+            },
+        }
+        compact = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+        print("NAVRL_BULK_EVAL_RESULT " + compact, flush=True)
+
+        if not self._bulk_eval_output:
+            logger.warning(
+                "NavRL bulk eval result was printed but NAVRL_BULK_EVAL_JSON is unset."
+            )
+            self._bulk_eval_exported = True
+            return
+        try:
+            out = Path(self._bulk_eval_output)
+            out.parent.mkdir(parents=True, exist_ok=True)
+            tmp = out.with_name(out.name + ".tmp")
+            tmp.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+            tmp.replace(out)
+            logger.warning("NavRL bulk eval results saved -> %s" % out)
+            self._bulk_eval_exported = True
+        except OSError as exc:
+            logger.warning("NavRL bulk eval results export failed: %s" % exc)
+
     def _log_progress(self, successes, crashes, timeouts, finished=None):
         self._succ_agg += int(torch.sum(successes).item())
         self._crash_agg += int(torch.sum(crashes > 0).item())
@@ -2357,7 +2466,7 @@ class NavRLTask(BaseTask):
                 self._closest_min = m if self._closest_min is None else min(self._closest_min, m)
             self._fin_agg += int(torch.sum(finished).item())
         total = self._succ_agg + self._crash_agg + self._to_agg
-        if total >= 2048:
+        if total >= self._progress_log_interval:
             reach_rate = self._reach_agg / max(1, self._fin_agg)
             mean_nc = self._mindist_sum / max(1, self._nc_agg)
             best = self._closest_min if self._closest_min is not None else float("nan")
@@ -2376,6 +2485,7 @@ class NavRLTask(BaseTask):
                     total,
                 )
             )
+            self._export_bulk_eval_result(total, reach_rate, mean_nc, best)
             if self._action_diag_enabled and self._action_diag["n"] > 0:
                 ad = self._action_diag
                 n_action = max(1, int(ad["n"]))

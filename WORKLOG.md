@@ -2056,3 +2056,62 @@ TensorBoard scalar를 비교했다.
    `NAVRL_RESET_ACTOR_OPTIMIZER=0`을 반드시 지정한다.
 5. 연장 중 edge95 tail이 40% 또는 edge99가 1%를 넘으면 장기화하지 않고 margin/LR
    ablation으로 돌아간다.
+
+### 2026-07-28 21:10 — action A/B 평가 복구 및 squashed-v2 독립 검증
+
+ep19050 source와 squashed-v2 ep19550에 대해 75 bars, `mixed`, pursuer 2.5 m/s,
+target 0/0.5/1.0/1.5 m/s, 1000 games/cell quick screen을 실행했다. 최초 실행은 각
+체크포인트의 네 셀을 실제로 끝냈지만 capture/crash 결과를 전혀 남기지 않아 성능 비교에
+사용할 수 없었다.
+
+원인은 `*** Can't create empty tensor`가 아니다. 이 문구는 종료 시 empty DOF tensor를
+wrap하는 Isaac Gym 경고이며 프로세스 실패 원인이 아니었다. 실제 원인은 다음 두 설정의
+조합이다.
+
+- vector player의 기본 reward/length 통계는 `runner.py`에서 `print_stats=False`였다.
+- task의 NavRL outcome 통계는 고정 2048-episode 주기에만 출력됐는데 평가 셀은 1000
+  episodes였다.
+
+따라서 계산은 정상 종료됐지만 outcome이 메모리에서 버려졌다. 이를 막기 위해
+`NAVRL_BULK_EVAL=1` 모드를 추가했다. 이 모드에서는 `PLAY_GAMES_NUM`을 결과 집계 주기로
+사용하고, player가 끝나기 전에 capture/crash/timeout, closest approach, action boundary
+지표, crash 원인을 셀별 JSON으로 atomic 저장한다. 평가 launcher는 headless/num-env/python
+경로를 고정하고, 셀별 로그와 CSV를 만들며, JSON이 없으면 exit 3으로 실패한다. 체크포인트
+상대 경로는 launcher 호출 위치를 기준으로 해석하고, 실제 학습 분포와 맞도록 target
+pattern 기본값을 `mixed`로 바꿨다. quiet 출력 필터에도 machine-readable
+`NAVRL_BULK_EVAL_RESULT`를 허용했다.
+
+32 envs × 64 episodes 실제 checkpoint smoke에서 JSON/CSV 저장과 fail guard를 확인한 뒤,
+동일 seed 42로 기존 두 체크포인트의 8개 셀을 다시 실행했다. vector batch 종료 때문에 실제
+표본 수는 셀별 1000–1005이며 JSON의 `actual_episodes`를 분모로 사용했다.
+
+| target m/s | source capture | v2 capture | source crash | v2 crash |
+|---:|---:|---:|---:|---:|
+| 0.0 | 69.96% | 74.80% | 28.74% | 23.90% |
+| 0.5 | 71.03% | 74.10% | 28.67% | 25.50% |
+| 1.0 | 67.93% | 71.46% | 31.87% | 28.34% |
+| 1.5 | 62.20% | 66.87% | 37.70% | 32.84% |
+| 전체 가중 | 67.78% | 71.80% | 31.74% | 27.65% |
+
+전체 차이는 capture `+4.02pp`(근사 95% CI `+2.01..+6.03pp`), crash
+`-4.09pp`(95% CI `-6.09..-2.09pp`)다. bar contact는 28.17%→25.83%,
+below는 1.90%→0.82%로 감소했다. 즉 v2의 학습 로그 개선은 독립 rollout에서도 재현됐고
+source보다 명확히 낫다.
+
+그러나 원래 action 문제는 부분 해결이다. source의 deterministic lateral action은 네 셀
+평균 `edge98_y=99.99%`, 평균 `|a_y|=0.99994`로 사실상 항상 ±2.5 m/s 명령이었다. v2는
+`edge98_y=0%`, raw OOB=0%로 exact boundary mass를 제거했지만 평균 `|a_y|=0.9217`
+(약 2.30 m/s 명령), sign flip≈0, 평균 `|Δa_y|=0.0119`다. 따라서 “경계에 정확히 붙는
+현상”은 해결했지만 한쪽의 큰 지속 횡명령이라는 구조적 bias는 남았다. v2를 장기 연장해
+같은 형태를 더 굳히지 않는다.
+
+다음 의사결정은 1650 Ti truncated-Gaussian 결과를 같은 corrected evaluator로 비교하는
+것이다. 그것이 capture/crash를 유지하면서 평균 `|a_y|`도 의미 있게 낮추면 truncated
+정책을 선택한다. 그렇지 않으면 main에서는 squashed-v2를 기준으로 더 강한 latent-mean
+centering/margin ablation을 300–500 epoch만 수행하고, 동일 4-cell screen을 통과할 때만
+장기 학습으로 확장한다.
+
+검증: Python compile, shell syntax, `git diff --check`, training-safety 5 tests,
+checkpoint-preflight 4 tests, 실제 Isaac Gym 64-episode export smoke, corrected
+8-cell/약 8011-episode A/B 평가를 통과했다. 원시 JSON/CSV/log는
+`train_session_logs/eval_results/action_ab_{base,v2}_260728_corrected/`에 보관한다.
