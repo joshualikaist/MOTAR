@@ -1873,3 +1873,31 @@ upstream Aerial Gym을 보존하고 연구 코드는 연구 브랜치에 두는 
 - `7847994`의 upstream 자료 삭제: main 보존 목적과 정면으로 충돌.
 
 병합은 로컬에서만 수행했으며 자동 push하지 않았다.
+
+### 2026-07-28 19:35 — `main`·연구 브랜치 원격 동기화
+
+다른 컴퓨터와 Git 자료구조를 일치시키려는 사용자 의도에 따라 두 브랜치를 push했다. push 전
+`git fetch --prune`에서 `origin/main`에 새 커밋 `317505b`(사용하지 않는 MkDocs gh-pages
+workflow 삭제)가 있음을 발견했다. 이를 덮어쓰지 않고 로컬 main과 일반 merge하여 다음 구조로
+보존했다.
+
+- `79f0679`: `origin/main`의 `317505b`와 로컬 ignore 커밋 `b609eee`, `64ba00a`의 merge.
+- main의 원격 대비 실질 diff는 `.gitignore` 12줄 추가뿐이며, 원격 workflow 삭제도 유지.
+- `6fcef96`: research branch의 transfer, TensorBoard 정리, main 선별 병합 기록까지의 tip.
+
+첫 동기화 시도에서 별도 worktree 생성과 rebase를 같은 shell command에 넣어 현재 디렉터리가
+자동으로 새 worktree로 바뀐다고 잘못 판단해, push 전 로컬 research ref가 일시적으로 재작성됐다.
+원래 tip `6fcef96`과 재작성 tip의 tree diff가 0임을 확인하고 compare-and-swap `git update-ref`로
+즉시 `6fcef96`을 복구했다. 원격 push나 파일 손실은 없었다. 이후 rebase를 사용하지 않고 실제
+main worktree에서 `origin/main`을 merge했다.
+
+두 브랜치는 한쪽만 갱신되는 상황을 막기 위해 다음 atomic push로 함께 반영했다.
+
+```text
+317505b..79f0679  main -> main
+7a10948..6fcef96  research/navrl-env -> research/navrl-env
+```
+
+체크포인트, `runs/`, `train_session_logs/`, `checkpoints_saved/`와 workspace의 transfer archive는
+의도적으로 Git에 포함하지 않는다. 다른 컴퓨터에서는 Git 코드 동기화 후 ep19050 체크포인트만
+별도로 복사해야 truncated-Gaussian 실험의 데이터까지 완전히 일치한다.
