@@ -94,7 +94,16 @@ function renderLive(s) {
 
   const preset = document.getElementById('btn-preset');
   const nBars = live ? Math.round(A.n_bars_active) : (L.last_n_bars_active || 70);
-  if (preset) preset.textContent = `trained · ${nBars}`;
+  window.__arenaRunBars = Math.round(nBars);
+  if (preset) preset.textContent = `current run · ${Math.round(nBars)}`;
+  const slider = document.getElementById('sl-bars');
+  const sliderLabel = document.getElementById('lbl-bars');
+  const hudBars = document.getElementById('hud-bars');
+  const hudDensity = document.getElementById('hud-density');
+  if (slider) slider.value = Math.round(nBars);
+  if (sliderLabel) sliderLabel.textContent = Math.round(nBars);
+  if (hudBars) hudBars.textContent = Math.round(nBars);
+  if (hudDensity) hudDensity.textContent = perc100(nBars);
 }
 
 function pickDensity(s) {
@@ -331,6 +340,7 @@ function wireArena() {
     if (hudD) hudD.textContent = perc100(n);
     Arena.setBars(n);
   };
+  if (Number.isFinite(window.__arenaRunBars)) bars.value = window.__arenaRunBars;
   bars.addEventListener('input', upd);
   speed.addEventListener('input', () => {
     const v = +speed.value / 10;
@@ -351,8 +361,7 @@ function wireArena() {
   document.getElementById('cb-trails').addEventListener('change', e => Arena.setTrails(e.target.checked));
   document.getElementById('btn-view').addEventListener('click', () => Arena.cycleView());
   document.getElementById('btn-preset').addEventListener('click', () => {
-    const m = (document.getElementById('btn-preset').textContent.match(/(\d+)/) || [])[1];
-    bars.value = m || 70;
+    bars.value = Number.isFinite(window.__arenaRunBars) ? window.__arenaRunBars : 70;
     upd();
   });
   upd();

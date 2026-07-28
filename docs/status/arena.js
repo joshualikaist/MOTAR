@@ -5,14 +5,20 @@ window.Arena = (() => {
   const X0 = 0, X1 = 24, Y0 = -12, Y1 = 12, BX0 = 3.1, BX1 = 23;
   const CAMERA_RANGE = 20, CAMERA_HALF_FOV = THREE.MathUtils.degToRad(43.5), LIDAR_RANGE = 12;
   const LIDAR_HBEAMS = 72, LIDAR_VBEAMS = 4;
+  const LIDAR_ELEVATION_MIN = THREE.MathUtils.degToRad(-10);
+  const LIDAR_ELEVATION_MAX = THREE.MathUtils.degToRad(20);
+  const Motion = window.NavRLArenaMotion;
+  if (!Motion) throw new Error('NavRLArenaMotion missing (arena_motion.js)');
 
   let scene, cam, renderer, controls, root, barMesh, drone, target, cameraFov, lidarLines;
   let pursuerTrail, targetTrail, targetHalo, resizeObserver;
   let groundMat, gridHelper, rimLight;
-  let bars = [], playing = true, speed = 0.5, tParam = 0, goalX = 22, viewMode = 0;
+  let bars = [], playing = true, speedCeiling = 1.5, viewMode = 0;
+  let currentBars = 25, layoutSeed = 20260728, episode;
   let showTrails = true, frame = 0, visible = true;
   let host, lastDrone = { x: 1, y: 0 }, trailA = [], trailB = [];
-  let lastT = 0, smooth = { x: 1, y: 0 }, smoothT = { x: 22, y: 0 }, vel = { x: 1, y: 0 }, heading = 0;
+  let lastT = 0, vel = { x: 0, y: 0 }, heading = 0;
+  const motionRng = Motion.seededRng(8675309);
 
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const coarsePointer = matchMedia('(pointer: coarse)').matches;
@@ -23,22 +29,13 @@ window.Arena = (() => {
     return !matchMedia('(prefers-color-scheme: dark)').matches;
   }
 
-  function rng(seed) {
-    return function () {
-      seed |= 0; seed = seed + 0x6D2B79F5 | 0;
-      let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
-      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
-      return ((t ^ t >>> 14) >>> 0) / 4294967296;
-    };
-  }
-
   function placeBars(n) {
-    const r = rng(12345); const pts = []; let spacing = 1.5;
+    const r = Motion.seededRng(layoutSeed++); const pts = []; let spacing = 1.5;
     const bw = () => 0.4 + r() * 0.4;
     let fails = 0, guard = 0;
     while (pts.length < n && guard < n * 400) {
       guard++;
-      const x = BX0 + r() * (BX1 - BX0), y = Y0 + 0.6 + r() * ((Y1 - Y0) - 1.2);
+      const x = BX0 + r() * (BX1 - BX0), y = Y0 + r() * (Y1 - Y0);
       let ok = true;
       for (const p of pts) { const dx = x - p.x, dy = y - p.y; if (dx * dx + dy * dy < spacing * spacing) { ok = false; break; } }
       if (ok) { pts.push({ x, y, w: bw() }); fails = 0; }
@@ -61,6 +58,29 @@ window.Arena = (() => {
       barMesh.setMatrixAt(i, m);
     });
     barMesh.instanceMatrix.needsUpdate = true; root.add(barMesh);
+  }
+
+  function resetEpisode(regenerateBars = true) {
+    if (!drone || !target) return;
+    if (regenerateBars) makeBars(currentBars);
+    episode = Motion.createEpisode(motionRng, bars, speedCeiling);
+    drone.position.set(episode.drone.x, 1, episode.drone.y);
+    target.position.set(episode.target.x, 1, episode.target.y);
+    heading = motionRng() * Math.PI * 2 - Math.PI;
+    vel = { x: 0, y: 0 };
+    lastDrone = { x: episode.drone.x, y: episode.drone.y };
+    trailA.length = 0;
+    trailB.length = 0;
+    if (pursuerTrail) pursuerTrail.geometry.setFromPoints([]);
+    if (targetTrail) targetTrail.geometry.setFromPoints([]);
+    updateMotionHud();
+  }
+
+  function updateMotionHud() {
+    const mode = document.getElementById('hud-pattern');
+    const sampled = document.getElementById('hud-target-speed');
+    if (mode && episode) mode.textContent = `mixed → ${episode.mode}`;
+    if (sampled && episode) sampled.textContent = `${episode.speed.toFixed(2)} m/s sampled`;
   }
 
   function steer(x, y) {
@@ -132,7 +152,7 @@ window.Arena = (() => {
   }
 
   function makeCameraFov() {
-    const range = 8, half = Math.tan(CAMERA_HALF_FOV) * range;
+    const range = CAMERA_RANGE, half = Math.tan(CAMERA_HALF_FOV) * range;
     const verts = new Float32Array([0, .02, 0, range, .02, -half, range, .02, half,
       0, .02, 0, range, .02, half, range, .02, -half]);
     const geom = new THREE.BufferGeometry();
@@ -236,7 +256,7 @@ window.Arena = (() => {
     drone = makeDrone(0x1aa86a, 0x7dffc8, 1.2); drone.add(makeLabel('PURSUER', '#1aa86a'));
     drone.position.set(1, 1, 0); root.add(drone);
     target = makeDrone(0xe04545, 0xffb0a0, 1.4); target.add(makeLabel('TARGET', '#e04545'));
-    target.position.set(goalX, 1, 0); root.add(target);
+    target.position.set(22, 1, 0); root.add(target);
     targetHalo = new THREE.Mesh(new THREE.RingGeometry(.52, .64, 40), new THREE.MeshBasicMaterial({
       color: 0xe04545, transparent: true, opacity: .95, side: THREE.DoubleSide, depthTest: false }));
     targetHalo.rotation.x = -Math.PI / 2; targetHalo.position.y = .02; target.add(targetHalo);
@@ -251,7 +271,8 @@ window.Arena = (() => {
     pursuerTrail = line([], 0x178a52, .85); targetTrail = line([], 0xe04545, .7);
     root.add(pursuerTrail, targetTrail);
 
-    makeBars(25);
+    makeBars(currentBars);
+    resetEpisode(false);
     applyTheme();
 
     resizeObserver = new ResizeObserver(() => onResize());
@@ -277,13 +298,30 @@ window.Arena = (() => {
     renderer.setSize(w, h, false);
   }
 
-  function rayHit(x, y, a, maxRange) {
-    let best = maxRange; const ux = Math.cos(a), uy = Math.sin(a);
+  function rayHit(x, y, z, yaw, elevation, maxRange) {
+    let best = maxRange;
+    const ce = Math.cos(elevation);
+    const direction = [Math.cos(yaw) * ce, Math.sin(yaw) * ce, Math.sin(elevation)];
+    const origin = [x, y, z];
     for (const p of bars) {
-      const ox = p.x - x, oy = p.y - y, t = ox * ux + oy * uy;
-      if (t <= 0 || t >= best) continue;
-      const d2 = ox * ox + oy * oy - t * t, r = p.w * .72;
-      if (d2 < r * r) { const hit = t - Math.sqrt(r * r - d2); if (hit > 0) best = Math.min(best, hit); }
+      const half = p.w * 0.5;
+      const lo = [p.x - half, p.y - half, 0];
+      const hi = [p.x + half, p.y + half, 2];
+      let enter = 0, exit = best, hit = true;
+      for (let axis = 0; axis < 3; axis++) {
+        const d = direction[axis];
+        if (Math.abs(d) < 1e-9) {
+          if (origin[axis] < lo[axis] || origin[axis] > hi[axis]) { hit = false; break; }
+          continue;
+        }
+        let near = (lo[axis] - origin[axis]) / d;
+        let far = (hi[axis] - origin[axis]) / d;
+        if (near > far) { const swap = near; near = far; far = swap; }
+        enter = Math.max(enter, near);
+        exit = Math.min(exit, far);
+        if (enter > exit) { hit = false; break; }
+      }
+      if (hit && enter > 0 && enter < best) best = enter;
     }
     return best;
   }
@@ -292,9 +330,16 @@ window.Arena = (() => {
     if (!lidarLines.visible) return;
     const a = lidarLines.geometry.attributes.position.array; let k = 0;
     for (let layer = 0; layer < LIDAR_VBEAMS; layer++) for (let i = 0; i < LIDAR_HBEAMS; i++) {
-      const ang = i / LIDAR_HBEAMS * Math.PI * 2, hit = rayHit(x, y, ang, LIDAR_RANGE), h = .82 + layer * .12;
+      const ang = i / LIDAR_HBEAMS * Math.PI * 2;
+      const elev = LIDAR_ELEVATION_MIN
+        + layer / Math.max(1, LIDAR_VBEAMS - 1) * (LIDAR_ELEVATION_MAX - LIDAR_ELEVATION_MIN);
+      const h = 1;
+      const hit = rayHit(x, y, h, ang, elev, LIDAR_RANGE);
+      const planar = Math.cos(elev) * hit;
       a[k++] = x; a[k++] = h; a[k++] = y;
-      a[k++] = x + Math.cos(ang) * hit; a[k++] = h; a[k++] = y + Math.sin(ang) * hit;
+      a[k++] = x + Math.cos(ang) * planar;
+      a[k++] = h + Math.sin(elev) * hit;
+      a[k++] = y + Math.sin(ang) * planar;
     }
     lidarLines.geometry.attributes.position.needsUpdate = true;
   }
@@ -303,7 +348,7 @@ window.Arena = (() => {
     const vx = tx - dx, vy = ty - dy, range = Math.hypot(vx, vy), bearing = Math.atan2(vy, vx);
     const rel = Math.atan2(Math.sin(bearing - hdg), Math.cos(bearing - hdg));
     const inFov = Math.abs(rel) <= CAMERA_HALF_FOV && range <= CAMERA_RANGE;
-    const hit = rayHit(dx, dy, bearing, Math.min(range, CAMERA_RANGE));
+    const hit = rayHit(dx, dy, 1, bearing, 0, Math.min(range, CAMERA_RANGE));
     return { range, visible: inFov && hit >= range - .28, occluded: inFov && hit < range - .28, inFov };
   }
 
@@ -338,20 +383,22 @@ window.Arena = (() => {
 
     const now = performance.now();
     const dt = Math.min((now - (lastT || now)) / 1000, 0.05); lastT = now;
-    // Faster than before so motion is obvious in the dedicated stage.
-    if (playing) tParam += dt * 0.14 * (1 + speed * 0.35);
-    if (tParam > 1) {
-      tParam = 0;
-      trailA.length = 0; trailB.length = 0;
+    if (!episode) resetEpisode(false);
+    if (playing) Motion.advanceTarget(episode, dt, bars, motionRng);
+    let dx = drone.position.x, dy = drone.position.z;
+    if (playing && dt > 0) {
+      const toX = episode.target.x - dx, toY = episode.target.y - dy;
+      const toD = Math.max(Math.hypot(toX, toY), 1e-6);
+      const [avoidX, avoidY] = steer(dx, dy);
+      let cmdX = toX / toD + avoidX * 2.4;
+      let cmdY = toY / toD + avoidY * 2.4;
+      const cmdN = Math.max(Math.hypot(cmdX, cmdY), 1e-6);
+      cmdX = cmdX / cmdN * Motion.CONTRACT.pursuerSpeedMax;
+      cmdY = cmdY / cmdN * Motion.CONTRACT.pursuerSpeedMax;
+      const proposed = clearBars(dx + cmdX * dt, dy + cmdY * dt, 0.25);
+      dx = THREE.MathUtils.clamp(proposed[0], X0 + 0.5, X1 - 0.5);
+      dy = THREE.MathUtils.clamp(proposed[1], Y0 + 0.5, Y1 - 0.5);
     }
-
-    const x = 1 + tParam * (goalX - 1);
-    let y = Math.sin(tParam * Math.PI * 3) * 4;
-    const [, sy] = steer(x, y); y += sy * 2.2;
-    const [px, py] = clearBars(x, y, 0.2);
-    const k = 1 - Math.exp(-dt * 9);
-    smooth.x += (px - smooth.x) * k; smooth.y += (py - smooth.y) * k;
-    const dx = smooth.x, dy = smooth.y;
 
     vel.x += ((dx - lastDrone.x) / Math.max(dt, 1e-3) - vel.x) * (1 - Math.exp(-dt * 6));
     vel.y += ((dy - lastDrone.y) / Math.max(dt, 1e-3) - vel.y) * (1 - Math.exp(-dt * 6));
@@ -360,7 +407,7 @@ window.Arena = (() => {
       const d = Math.atan2(Math.sin(want - heading), Math.cos(want - heading));
       heading += d * (1 - Math.exp(-dt * 7));
     }
-    drone.position.set(dx, 1 + .03 * Math.sin(tParam * 30), dy);
+    drone.position.set(dx, 1 + .03 * Math.sin(frame * .12), dy);
     drone.rotation.y = -heading;
     const bank = THREE.MathUtils.clamp(-vel.y * 0.12, -.28, .28);
     drone.rotation.z += (bank - drone.rotation.z) * (1 - Math.exp(-dt * 8));
@@ -370,12 +417,10 @@ window.Arena = (() => {
     });
     lastDrone = { x: dx, y: dy };
 
-    let tx = goalX, ty = (speed > 0) ? Math.sin(tParam * Math.PI * 2 * (0.55 + speed * 0.15)) * 8 : 0;
-    [tx, ty] = clearBars(tx, ty, 0.5);
-    smoothT.x += (tx - smoothT.x) * k; smoothT.y += (ty - smoothT.y) * k;
-    tx = smoothT.x; ty = smoothT.y;
-    target.position.set(tx, 1 + .04 * Math.sin(tParam * 24), ty);
-    target.rotation.y = Math.sin(tParam * Math.PI * 2) * .5;
+    const tx = episode.target.x, ty = episode.target.y;
+    target.position.set(tx, 1 + .04 * Math.sin(frame * .1), ty);
+    const tv = episode.realizedVelocity;
+    if (Math.hypot(tv.x, tv.y) > .02) target.rotation.y = -Math.atan2(tv.y, tv.x);
 
     const vis = visibility(dx, dy, tx, ty, heading);
     const state = document.getElementById('hud-camera');
@@ -401,6 +446,7 @@ window.Arena = (() => {
     updateTrail(target, trailB, targetTrail);
     updateCamera(); frame++;
     renderer.render(scene, cam);
+    if (playing && (episode.age >= 30 || vis.range < 0.5)) resetEpisode(true);
   }
 
   function cycleView() {
@@ -418,8 +464,15 @@ window.Arena = (() => {
 
   return {
     init,
-    setBars(n) { makeBars(n); trailA.length = 0; trailB.length = 0; },
-    setSpeed(s) { speed = s; },
+    setBars(n) {
+      currentBars = Math.max(1, Math.round(n));
+      makeBars(currentBars);
+      resetEpisode(false);
+    },
+    setSpeed(s) {
+      speedCeiling = Math.max(0, Number(s) || 0);
+      resetEpisode(false);
+    },
     setPlaying(p) { playing = p; },
     setLidar(v) { lidarLines.visible = v; },
     setCamera(v) { cameraFov.visible = v; },

@@ -1957,3 +1957,51 @@ walk는 아니지만, episode/waypoint 단위로 2D 방향과 궤적이 무작�
 반면 `docs/status/arena.js`는 `tx=goalX`로 x를 고정하고 `ty=sin(...)`만 갱신하는 장식용
 1축 왕복 애니메이션이다. status JSON의 `mixed` 설명과 실제 task를 시각적으로 재현하지 않아
 오해를 만든다. 사이트 표현 결함이며 현재 학습 데이터/환경에는 영향을 주지 않는다.
+
+### 2026-07-28 20:21 — status Arena 전면 parity 감사 및 수정
+
+사용자 요청에 따라 3D Arena를 실제 실행 중인 general-training recipe와 대조했다. 학습
+프로세스 PID 3290841은 중단하거나 수정하지 않았으며, 감사 중에도
+`action-squashed-v2-main-s1`이 75 bars, `mixed`, target speed
+`U(0, 1.5)` 조건으로 계속 진행되는 것을 확인했다.
+
+#### 확인된 표현 결함
+
+- 타깃은 실제 2D `mixed`가 아니라 x 고정+y 사인파였다.
+- 실제 `NAVRL_GENERAL_TRAIN=1`은 pursuer/target 시작점을 arena 전체에서 무작위화하지만
+  사이트는 왼쪽→오른쪽 고정 cross-field episode였다.
+- speed 슬라이더 값은 물리 속도가 아니라 임의 애니메이션 주파수에 사용되고 있었다.
+- `detector 240°` 표기는 camera detector 87°와 obstacle-token selection FOV 240°를
+  혼동했다.
+- LiDAR 4개 층은 실제 elevation `-10°..+20°`가 아니라 수평 원 4개였고, ray 충돌은
+  실제 box 막대를 원으로 근사했다.
+- Arena 초기 bars=25가 status의 current/latest run bars=75와 자동 동기화되지 않았다.
+- 3D pursuer가 실제 PPO telemetry인 것처럼 오해될 여지가 있었지만 브라우저 status에는
+  policy state/action trajectory가 전달되지 않는다.
+
+#### 수정
+
+- `arena_motion.js`를 추가해 학습 코드와 같은 general spawn, target 거리 4–16 m,
+  episode speed `U(0, max)`, CV/waypoint 50:50, CV 양축 반사, waypoint 0.5 m 도달
+  재샘플, wall clamp, 모든 위반 bar의 composite 1.0 m push-out을 독립 구현했다.
+- episode마다 bar layout, pursuer/target spawn, CV heading/waypoint를 다시 샘플링한다.
+  target-speed UI는 `target max m/s`로 바꾸고 실제 학습 ceiling 1.5를 기본값으로 했다.
+- HUD에 실제 선택된 `mixed → cv|waypoint`와 episode sampled speed를 표시한다.
+- LiDAR는 72×4, 12 m, elevation `-10/0/10/20°`와 3D axis-aligned box ray intersection을
+  사용한다. camera 표기는 87° @20 m, token selection은 별도 240°로 분리했다.
+- status에서 current/latest run bars를 렌더러 성공 여부와 무관하게 slider/HUD에 먼저
+  적용한다. 캐시 버전을 갱신하고 motion module을 Arena보다 먼저 로드한다.
+- 실제 PPO trajectory가 없는 한 pursuer는 설명용 steering임을 Arena 아래에 명시해,
+  training-distribution replay와 live telemetry를 구분했다.
+
+`tests/test_status_arena_motion.js`는 400 episode에서 두 pattern과 양축 heading이 모두
+샘플되는지, 4–16 m spawn 거리, 속도 상한, 양축 wall reflection, physical speed 적분,
+bar clearance를 검사한다. 또한 launcher/task/env/LiDAR config와 사이트 상수·표기가
+어긋나면 실패하는 source-contract 검사를 포함한다. Node parity test, JS syntax,
+`git diff --check`를 통과했고, headless Chrome software WebGL에서 75 bars,
+`mixed → cv`, sampled speed, 3D target motion과 HUD가 렌더링되는 것을 확인했다.
+
+별도 감사 결과 `docs/status/status.json`은 정적 snapshot이라 현재 19:58 run이 아니라
+완료된 18:17 run을 `LAST`로 보여 준다. 페이지가 이를 `LIVE`라고 표시하지는 않아 데이터
+거짓 표시는 아니지만, Git commit 사이 실시간 PPO telemetry는 제공하지 않는다. 이번 수정은
+그 한계를 숨기지 않고 Arena에도 명시했다.
