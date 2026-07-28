@@ -1941,3 +1941,19 @@ RTX 3070에서는 우선 500 epoch만 실행한다. 약 25~35분 뒤 KL, capture
 `mean_mu_abs_y`, KL-skip 수를 판정하고, 정상일 때만 같은 run의 last checkpoint에서
 ep22050까지 연장한다. 이렇게 하면 1650 Ti가 5~7시간 도는 동안 main GPU도 독립적인 원인
 검증을 수행하면서, 잘못된 설정에 수 시간을 쓰는 위험은 제한한다.
+
+### 2026-07-28 20:08 — 타겟 운동: 학습은 random mixed, 사이트만 단축 표현
+
+사용자가 status 사이트에서 TARGET이 한 축으로만 왕복하는 것을 발견해 실제 학습 프로세스와
+코드를 대조했다. 실행 중인 `action-squashed-v2-main-s1`의 process environment와 로그는
+`NAVRL_TARGET_PATTERN=mixed`, `speed_final=1.5`, fixed speed override 없음이며, target speed
+평균도 epoch별 약 0.7~0.86 m/s로 기록되고 있다. 학습을 중단할 문제는 아니다.
+
+실제 `mixed`는 reset episode마다 cv/waypoint를 50:50으로 선택한다. cv는 방향각을
+`U[0, 2π)`로 뽑아 벽에서 반사하고, waypoint는 arena XY에서 uniform waypoint를 뽑아 도달 시
+재샘플한다. 속도도 episode마다 `U[0, 1.5]`다. 즉 매 simulation step마다 방향이 튀는 random
+walk는 아니지만, episode/waypoint 단위로 2D 방향과 궤적이 무작위화된다.
+
+반면 `docs/status/arena.js`는 `tx=goalX`로 x를 고정하고 `ty=sin(...)`만 갱신하는 장식용
+1축 왕복 애니메이션이다. status JSON의 `mixed` 설명과 실제 task를 시각적으로 재현하지 않아
+오해를 만든다. 사이트 표현 결함이며 현재 학습 데이터/환경에는 영향을 주지 않는다.
