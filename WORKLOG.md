@@ -1901,3 +1901,43 @@ main worktree에서 `origin/main`을 merge했다.
 체크포인트, `runs/`, `train_session_logs/`, `checkpoints_saved/`와 workspace의 transfer archive는
 의도적으로 Git에 포함하지 않는다. 다른 컴퓨터에서는 Git 코드 동기화 후 ep19050 체크포인트만
 별도로 복사해야 truncated-Gaussian 실험의 데이터까지 완전히 일치한다.
+
+### 2026-07-28 19:49 — RTX 3070 병렬 실험: squashed-v2 안정화
+
+1650 Ti의 truncated-Gaussian 실험이 진행되는 동안 RTX 3070을 유휴 상태로 두지 않기 위해,
+실패한 squashed run을 그대로 반복하지 않고 측정된 실패 원인만 다루는 v2 pilot을 추가했다.
+시작점, seed, 75 bars, action std와 lateral warm-start scale은 모두 ep19050 A/B와 동일하다.
+
+#### 변경
+
+- `ppo_update_safety.py`: PPO가 ordinary ratio clip을 적용하기 전에
+  `exp(old_neglogp-new_neglogp)`에서 overflow하는 것을 막는 opt-in log-ratio clamp.
+- `early_stop_a2c_agent.py`: single-GPU에서 analytic KL이 문턱을 넘은 후속 minibatch를
+  optimizer step 없이 건너뛰는 gate와 `ppo/kl_skipped_minibatches` 기록.
+- lateral latent mean의 `|mu_y| > margin` 초과분에 대한 soft squared penalty. 속도 상한을
+  낮추는 hard cap이 아니며, noisy action은 여전히 2.5 m/s 경계까지 사용할 수 있다.
+- `runner.py`: actor learning-rate 환경변수 override. asymmetric critic LR은 기존 1e-4 유지.
+- `train_navrl_action_squashed_v2_main.sh`: fixed 75 bars, seed 1, std
+  `0.35,0.35,0.05,0.08`, log-ratio `±10`, KL stop `0.04`, lateral margin
+  `1.25@0.01`, 500-epoch pilot.
+- 새 safety knob와 actor LR을 checkpoint `env_state`에 기록해 provenance를 남긴다.
+
+#### 실제 restore/update smoke
+
+ep19050 checkpoint를 실제 Isaac Gym 128-env run으로 restore하고 각각 1 epoch optimizer update를
+수행했다. 단위 테스트만 통과시키고 장기 학습에 넘기지 않았다.
+
+| actor LR | epoch 19051 PPO KL | actor loss | raw OOB y | edge99 y | 판정 |
+|---:|---:|---:|---:|---:|---|
+| `3e-5` | `0.18701` | `0.02327` | `0` | `0.00537` | 너무 큼, 기각 |
+| `5e-6` | `0.005215` | `-0.007895` | `0` | `0.00537` | target 0.016 아래, 채택 |
+
+따라서 처음 추정한 `3e-5`를 그대로 장기 실행하지 않고, 실측으로 검증된 `5e-6`을 launcher
+기본값으로 확정했다. 첫 epoch의 capture 15/32=46.9%는 종료 episode가 32개뿐이라 성능
+판정에는 사용하지 않는다. 검증은 action-model/safety unit test 9개, Python compile,
+shell syntax, checkpoint preflight, 실제 두 번의 restore+optimizer smoke를 통과했다.
+
+RTX 3070에서는 우선 500 epoch만 실행한다. 약 25~35분 뒤 KL, capture, `edge95_y/edge99_y`,
+`mean_mu_abs_y`, KL-skip 수를 판정하고, 정상일 때만 같은 run의 last checkpoint에서
+ep22050까지 연장한다. 이렇게 하면 1650 Ti가 5~7시간 도는 동안 main GPU도 독립적인 원인
+검증을 수행하면서, 잘못된 설정에 수 시간을 쓰는 위험은 제한한다.

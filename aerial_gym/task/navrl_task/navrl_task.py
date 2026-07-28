@@ -944,6 +944,21 @@ class NavRLTask(BaseTask):
             "cfg_action_entropy_coef": float(
                 os.environ.get("NAVRL_ENTROPY_COEF", "0") or 0.0
             ),
+            "cfg_action_learning_rate": float(
+                os.environ.get("NAVRL_LEARNING_RATE", "0") or 0.0
+            ),
+            "cfg_ppo_log_ratio_clamp": float(
+                os.environ.get("NAVRL_PPO_LOG_RATIO_CLAMP", "0") or 0.0
+            ),
+            "cfg_ppo_kl_stop": float(
+                os.environ.get("NAVRL_PPO_KL_STOP", "0") or 0.0
+            ),
+            "cfg_lateral_latent_margin_y": float(
+                os.environ.get("NAVRL_LATENT_MARGIN_Y", "0") or 0.0
+            ),
+            "cfg_lateral_latent_margin_coef": float(
+                os.environ.get("NAVRL_LATENT_MARGIN_COEF", "0") or 0.0
+            ),
             "cfg_truncated_dmin": float(
                 os.environ.get("NAVRL_TRUNCATED_DMIN", "0.01") or 0.01
             ),

@@ -6,6 +6,7 @@ inject block marked ``aerial_early_stop``. If rl_games is upgraded and training 
 refresh this ``train()`` from the upstream method.
 """
 
+import math
 import os
 import re
 import time
@@ -25,6 +26,10 @@ from aerial_gym.rl_training.rl_games.reward_stable_early_stop import (
 )
 from aerial_gym.rl_training.rl_games.aerial_tensorboard import write_aerial_epoch_scalars
 from aerial_gym.rl_training.rl_games.pretty_train_stats import print_training_dashboard
+from aerial_gym.rl_training.rl_games.ppo_update_safety import (
+    lateral_latent_margin_loss,
+    stable_ppo_actor_loss,
+)
 from aerial_gym.rl_training.rl_games.train_run_recorder import (
     finalize_agent_run,
     record_agent_epoch,
@@ -106,6 +111,211 @@ def _read_existing_best_reward(nn_dir: str) -> float:
 
 
 class EarlyStopA2CAgent(A2CAgent):
+    def calc_gradients(self, input_dict):
+        """rl-games PPO update with opt-in ratio, KL and lateral-mean safety controls."""
+        value_preds_batch = input_dict["old_values"]
+        old_action_log_probs_batch = input_dict["old_logp_actions"]
+        advantage = input_dict["advantages"]
+        old_mu_batch = input_dict["mu"]
+        old_sigma_batch = input_dict["sigma"]
+        return_batch = input_dict["returns"]
+        actions_batch = input_dict["actions"]
+        obs_batch = self._preproc_obs(input_dict["obs"])
+
+        lr_mul = 1.0
+        curr_e_clip = self.e_clip
+        batch_dict = {
+            "is_train": True,
+            "prev_actions": actions_batch,
+            "obs": obs_batch,
+        }
+
+        rnn_masks = None
+        if self.is_rnn:
+            rnn_masks = input_dict["rnn_masks"]
+            batch_dict["rnn_states"] = input_dict["rnn_states"]
+            batch_dict["seq_length"] = self.seq_length
+            if self.zero_rnn_on_done:
+                batch_dict["dones"] = input_dict["dones"]
+
+        with torch.amp.autocast(
+            "cuda", enabled=self.mixed_precision, dtype=torch.bfloat16
+        ):
+            res_dict = self.model(batch_dict)
+            action_log_probs = res_dict["prev_neglogp"]
+            values = res_dict["values"]
+            entropy = res_dict["entropy"]
+            mu = res_dict["mus"]
+            sigma = res_dict["sigmas"]
+
+            with torch.no_grad():
+                reduce_kl = rnn_masks is None
+                kl_dist = torch_ext.policy_kl(
+                    mu.detach(),
+                    sigma.detach(),
+                    old_mu_batch,
+                    old_sigma_batch,
+                    reduce_kl,
+                )
+                if rnn_masks is not None:
+                    kl_dist = (kl_dist * rnn_masks).sum() / rnn_masks.numel()
+
+            raw_kl_gate = os.environ.get("NAVRL_PPO_KL_STOP", "").strip()
+            kl_gate = float(raw_kl_gate) if raw_kl_gate else 0.0
+            if not math.isfinite(kl_gate) or kl_gate < 0.0:
+                raise ValueError("NAVRL_PPO_KL_STOP must be finite and >= 0")
+
+            # Do not let different DDP ranks make different backward/skip decisions. NavRL uses one
+            # GPU; multi-GPU callers retain the stock synchronized update path.
+            skip_for_kl = (
+                not self.multi_gpu
+                and kl_gate > 0.0
+                and bool(torch.isfinite(kl_dist))
+                and float(kl_dist.detach().cpu()) > kl_gate
+            )
+            if skip_for_kl:
+                zero = action_log_probs.detach().new_zeros(())
+                self.aux_loss_dict = {}
+                self._aerial_kl_skipped_minibatches = (
+                    int(getattr(self, "_aerial_kl_skipped_minibatches", 0)) + 1
+                )
+                skipped = self._aerial_kl_skipped_minibatches
+                if skipped == 1 or skipped % 50 == 0:
+                    print(
+                        "[aerial RL] PPO minibatch skipped by KL gate | "
+                        f"kl={float(kl_dist):.5f} > {kl_gate:.5f} "
+                        f"(total skipped={skipped}).",
+                        flush=True,
+                    )
+                self.diagnostics.mini_batch(
+                    self,
+                    {
+                        "values": value_preds_batch,
+                        "returns": return_batch,
+                        "new_neglogp": action_log_probs,
+                        "old_neglogp": old_action_log_probs_batch,
+                        "masks": rnn_masks,
+                    },
+                    curr_e_clip,
+                    0,
+                )
+                self.train_result = (
+                    zero,
+                    zero,
+                    entropy.detach().mean(),
+                    kl_dist,
+                    self.last_lr,
+                    lr_mul,
+                    mu.detach(),
+                    sigma.detach(),
+                    zero,
+                )
+                return
+
+            raw_log_ratio_clamp = os.environ.get(
+                "NAVRL_PPO_LOG_RATIO_CLAMP", ""
+            ).strip()
+            log_ratio_clamp = (
+                float(raw_log_ratio_clamp) if raw_log_ratio_clamp else 0.0
+            )
+            if not math.isfinite(log_ratio_clamp) or log_ratio_clamp < 0.0:
+                raise ValueError(
+                    "NAVRL_PPO_LOG_RATIO_CLAMP must be finite and >= 0"
+                )
+            actor_loss_func = self.actor_loss_func
+            if log_ratio_clamp > 0.0:
+                actor_loss_func = lambda old_nlp, new_nlp, adv, is_ppo, e_clip: (
+                    stable_ppo_actor_loss(
+                        old_nlp,
+                        new_nlp,
+                        adv,
+                        is_ppo,
+                        e_clip,
+                        log_ratio_clamp,
+                    )
+                )
+
+            loss, a_loss, c_loss, entropy, b_loss, sum_mask = self.calc_losses(
+                actor_loss_func,
+                old_action_log_probs_batch,
+                action_log_probs,
+                advantage,
+                curr_e_clip,
+                value_preds_batch,
+                values,
+                return_batch,
+                mu,
+                entropy,
+                rnn_masks,
+            )
+
+            aux_loss = self.model.get_aux_loss()
+            self.aux_loss_dict = {}
+            if aux_loss is not None:
+                for key, value in aux_loss.items():
+                    loss += value
+                    if key in self.aux_loss_dict:
+                        self.aux_loss_dict[key] = value.detach()
+                    else:
+                        self.aux_loss_dict[key] = [value.detach()]
+
+            raw_margin = os.environ.get("NAVRL_LATENT_MARGIN_Y", "").strip()
+            raw_margin_coef = os.environ.get(
+                "NAVRL_LATENT_MARGIN_COEF", ""
+            ).strip()
+            margin = float(raw_margin) if raw_margin else 0.0
+            margin_coef = float(raw_margin_coef) if raw_margin_coef else 0.0
+            if (
+                not math.isfinite(margin)
+                or not math.isfinite(margin_coef)
+                or margin < 0.0
+                or margin_coef < 0.0
+            ):
+                raise ValueError(
+                    "NAVRL_LATENT_MARGIN_Y and NAVRL_LATENT_MARGIN_COEF "
+                    "must be finite and >= 0"
+                )
+            if margin > 0.0 and margin_coef > 0.0:
+                margin_penalty = lateral_latent_margin_loss(mu, margin)
+                weighted_margin = margin_coef * margin_penalty
+                loss += weighted_margin
+                self.aux_loss_dict["lateral_latent_margin"] = [
+                    weighted_margin.detach()
+                ]
+
+            if self.multi_gpu:
+                self.optimizer.zero_grad(set_to_none=True)
+            else:
+                for parameter in self.model.parameters():
+                    parameter.grad = None
+
+        self.scaler.scale(loss).backward()
+        self.trancate_gradients_and_step()
+
+        self.diagnostics.mini_batch(
+            self,
+            {
+                "values": value_preds_batch,
+                "returns": return_batch,
+                "new_neglogp": action_log_probs,
+                "old_neglogp": old_action_log_probs_batch,
+                "masks": rnn_masks,
+            },
+            curr_e_clip,
+            0,
+        )
+        self.train_result = (
+            a_loss,
+            c_loss,
+            entropy,
+            kl_dist,
+            self.last_lr,
+            lr_mul,
+            mu.detach(),
+            sigma.detach(),
+            b_loss,
+        )
+
     def get_action_values(self, obs):
         """Collect policy-output diagnostics before rl_games clips actions for the environment."""
         result = super().get_action_values(obs)
@@ -293,6 +503,14 @@ class EarlyStopA2CAgent(A2CAgent):
             extra_intercept_metrics=intercept_extra_metrics,
         )
         action_diag = self._consume_policy_action_diag()
+        skipped_total = int(getattr(self, "_aerial_kl_skipped_minibatches", 0))
+        skipped_previous = int(getattr(self, "_aerial_kl_skipped_last_epoch", 0))
+        self.writer.add_scalar(
+            "ppo/kl_skipped_minibatches",
+            max(0, skipped_total - skipped_previous),
+            epoch_num,
+        )
+        self._aerial_kl_skipped_last_epoch = skipped_total
         if action_diag is not None:
             axis_names = ("x", "y", "z", "yaw")
             for axis, name in enumerate(axis_names):

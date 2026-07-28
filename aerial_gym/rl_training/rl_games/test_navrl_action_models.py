@@ -1,5 +1,6 @@
 """CPU tests for bounded NavRL PPO action distributions."""
 
+import math
 import os
 import unittest
 
@@ -14,6 +15,7 @@ from navrl_action_models import (
     NavRLSquashedGaussianModel,
     NavRLTruncatedGaussianModel,
 )
+from ppo_update_safety import lateral_latent_margin_loss, stable_ppo_actor_loss
 
 
 class _DummyA2CNetwork(nn.Module):
@@ -149,6 +151,32 @@ class ActionModelTests(unittest.TestCase):
         self.assertTrue(
             torch.allclose(result["deterministic_actions"][0], expected, atol=2.0e-6)
         )
+
+    def test_stable_ppo_ratio_stays_finite_for_extreme_logprob_gap(self):
+        old_neglogp = torch.tensor([0.0, 0.0])
+        new_neglogp = torch.tensor([-1.0e4, 1.0e4])
+        advantage = torch.tensor([-1.0, 1.0])
+        loss = stable_ppo_actor_loss(
+            old_neglogp,
+            new_neglogp,
+            advantage,
+            True,
+            0.2,
+            10.0,
+        )
+        self.assertTrue(bool(torch.isfinite(loss).all()))
+        self.assertLessEqual(float(loss.abs().max()), math.exp(10.0))
+
+    def test_lateral_latent_margin_is_soft_and_differentiable(self):
+        mu = torch.tensor(
+            [[0.0, 0.5, 0.0, 0.0], [0.0, 2.25, 0.0, 0.0]],
+            requires_grad=True,
+        )
+        penalty = lateral_latent_margin_loss(mu, margin=1.25)
+        self.assertAlmostEqual(float(penalty.detach()), 0.5, places=6)
+        penalty.backward()
+        self.assertEqual(float(mu.grad[0, 1]), 0.0)
+        self.assertGreater(float(mu.grad[1, 1]), 0.0)
 
     def test_truncated_pdf_is_normalized(self):
         network = _make_network(NavRLTruncatedGaussianModel)

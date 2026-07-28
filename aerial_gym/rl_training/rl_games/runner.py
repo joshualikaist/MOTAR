@@ -587,16 +587,25 @@ def _apply_action_policy_config(config, args):
             raise ValueError("NAVRL_ENTROPY_COEF must be finite and >= 0")
         train_cfg["entropy_coef"] = entropy
 
+    learning_rate_override = os.environ.get("NAVRL_LEARNING_RATE", "").strip()
+    if learning_rate_override:
+        learning_rate = float(learning_rate_override)
+        if not np.isfinite(learning_rate) or learning_rate <= 0.0:
+            raise ValueError("NAVRL_LEARNING_RATE must be finite and > 0")
+        train_cfg["learning_rate"] = learning_rate
+
     os.environ.setdefault("NAVRL_ACTION_POLICY", policy)
     os.environ["NAVRL_ENTROPY_COEF"] = str(float(train_cfg.get("entropy_coef", 0.0)))
     print(
-        "[aerial RL] action policy | mode=%s std=%s mu_scale=%s entropy=%g bounds_loss=%g"
+        "[aerial RL] action policy | mode=%s std=%s mu_scale=%s entropy=%g "
+        "bounds_loss=%g lr=%g"
         % (
             policy,
             os.environ.get("NAVRL_ACTION_STD", "checkpoint/legacy"),
             os.environ.get("NAVRL_ACTION_MU_SCALE", "1"),
             float(train_cfg.get("entropy_coef", 0.0)),
             float(train_cfg.get("bounds_loss_coef", 0.0)),
+            float(train_cfg.get("learning_rate", 0.0)),
         ),
         flush=True,
     )

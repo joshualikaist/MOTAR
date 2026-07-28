@@ -126,7 +126,9 @@ echo "[general_repr_density] action | policy=${NAVRL_ACTION_POLICY:-legacy} \
 std=${NAVRL_ACTION_STD:-learned} mu_scale=${NAVRL_ACTION_MU_SCALE:-1} \
 entropy=${NAVRL_ENTROPY_COEF:-yaml} \
 diag=${NAVRL_ACTION_DIAG:-0}"
-echo "[general_repr_density] safety | reward-collapse guard=off; NaN/Inf fail-fast=on"
+echo "[general_repr_density] safety | reward-collapse=off NaN/Inf=fail-fast \
+log_ratio=${NAVRL_PPO_LOG_RATIO_CLAMP:-off} kl_stop=${NAVRL_PPO_KL_STOP:-off} \
+margin_y=${NAVRL_LATENT_MARGIN_Y:-off}@${NAVRL_LATENT_MARGIN_COEF:-off}"
 echo "[general_repr_density] checkpoint=${CKPT} max_epochs=${MAX_EPOCHS} envs=${NUM_ENVS} seed=${SEED}"
 
 if [[ "${PREFLIGHT_ONLY:-0}" == "1" ]]; then
