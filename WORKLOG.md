@@ -1510,3 +1510,260 @@ curriculum gate 분리다. 우선순위는 여전히 동일 체크포인트의 d
 - 실행 중인 학습에서 계속 생성되는 `train_session_logs/`(약 81 MB)와
   `checkpoints_saved/`(약 15 MB)는 소스 변경이 아닌 런타임 산출물이므로 Git에는 넣지 않았다.
 - 커밋 전 `git diff --check`, JavaScript DOM 참조 감사, headless Chrome 로딩 검사를 수행한다.
+
+### 2026-07-28 02:38 — PPO action noise 대안 감사
+
+사용자 요청에 따라 bounded Beta에 한정하지 않고 현재 `rl_games` 구현, 최신 체크포인트,
+bounded-action 정책 및 시간상관 탐색 관련 원 논문을 대조했다. 실행 중인 학습에는 변경을 가하지 않았다.
+
+#### 현재 정책에서 확인한 사실
+
+- `continuous_a2c_logstd`가 대각 Gaussian에서 매 step 독립 표본을 뽑고, 환경
+  `transform_action_to_command()`가 뒤에서 `[-1,1]`로 hard clamp한다.
+- 최신 `last_gen_ppo_ep_19100_rew_23.645699.pth`의 축별 `(log_std, std)`는
+  forward `(-1.007, 0.365)`, lateral `(0.146, 1.157)`, unused-z `(0.400, 1.492)`,
+  yaw `(-2.568, 0.077)`이다.
+- 평균이 0인 가장 유리한 경우에도 횡축 표본의 `38.7%`가 `|a|>1`이고, 따라서 실제 clamp율은
+  최소 38.7%다. `NAVRL_MAX_VELOCITY=2.5`이므로 이 질량은 매번 `±2.5 m/s` 횡명령에 모인다.
+- z action은 altitude PI가 덮어써 물리적으로 사용되지 않는데 entropy bonus는 이 축에도 걸린다.
+  실제로 z std가 상한에 붙어 있어 총 entropy 지표도 정책에 쓰이는 세 축보다 크게 보인다.
+- `bounds_loss_coef`는 rl_games 코드상 `|mu|>1.1`인 평균만 벌점화한다. sigma와 경계 밖
+  표본 질량은 줄이지 않으므로 이 값을 키우는 것은 현재 문제의 직접 해법이 아니다.
+- 학습은 감사 시점에 75 bars까지 승급했고 최근 2050 episode의 capture는 `0.674`,
+  crash는 `0.322`였다. 따라서 70 bars gate가 영구 정체였다는 가정은 이미 기각됐다.
+
+#### 대안 우선순위
+
+1. **현 Gaussian + 단계별 std/entropy annealing**: 초기 `entropy_coef=0.003`은 hover 탈출까지
+   유지하고, competence를 얻은 뒤 횡축 std 목표를 우선 `0.5`로 낮춘다. 평균 0 기준 clamp 질량은
+   `38.7% → 4.55%`가 된다. 고정 entropy가 다시 std를 밀어 올리지 않도록 entropy coefficient도
+   함께 낮추거나 성능 기반 schedule로 바꿔야 한다. 가장 작고 해석 가능한 변경이다.
+2. **tanh-squashed Gaussian PPO**: 설치된 rl_games에 이미 `continuous_a2c_tanh`와 Jacobian을
+   반영한 log-prob 구현이 있다. Beta 없이도 action support가 `(-1,1)`로 제한되고 hard-clamp
+   pile-up이 사라진다. 다만 현재 player의 deterministic 경로는 raw `mu`를 사용하므로
+   `tanh(mu)` mode를 사용하도록 먼저 고쳐야 하며, 기존 checkpoint의 log-std가 `exp`에서
+   `softplus`로 재해석되는 점도 warm-start A/B에서 통제해야 한다.
+3. **gSDE/시간상관 탐색**: marginal std를 단순히 줄이기보다 noise를 여러 control step 동안
+   유지해 10 Hz의 좌우 독립 jitter를 부드러운 탐색 궤적으로 바꾼다. 로봇에서 성능 손실 없이
+   smoothness를 조절할 수 있다는 CoRL 결과가 있으나 현재 rl_games PPO에는 바로 연결된 구현이 없어
+   1·2보다 작업량이 크다.
+4. **CAPG 또는 truncated Gaussian**: 현 hard clamp를 유지하면서 tail probability에 맞는
+   likelihood/gradient를 써 clipping mismatch를 고칠 수 있다. CAPG는 unbiased·저분산 estimator지만
+   표본의 경계 집중 자체를 없애지는 않으므로 std schedule과 병행해야 한다. truncated Gaussian은
+   직접 bounded지만 PPO ratio, entropy, CDF 정규화까지 새로 구현해야 해 tanh보다 우선순위가 낮다.
+5. **action EMA/action-rate penalty**: 고주파 떨림 완화에는 유효할 수 있지만 raw Gaussian과 실제
+   실행 action의 차이를 또 만들 수 있다. 현재 보상에도 achieved-velocity smooth penalty가 이미 있어,
+   먼저 raw action clamp율과 `Δaction` telemetry로 고주파 jitter가 실제 crash 원인인지 확인한다.
+
+권장 실험은 현재 run을 건드리지 않고 동일 checkpoint에서 `(A) 기존 stochastic`,
+`(B) deterministic`, `(C) lateral std=0.5`를 paired seed로 평가한 뒤, C가 capture/crash를
+개선하면 entropy/std annealing을 먼저 적용하고 tanh-Gaussian을 별도 branch로 비교하는 순서다.
+
+참고 원문: PPO (Schulman et al., 2017), CAPG (Fujita & Maeda, 2018), SAC Appendix C의
+tanh change-of-variables (Haarnoja et al., 2018), gSDE (Raffin et al., CoRL 2022),
+Beta policy (Chou et al., ICML 2017).
+
+### 2026-07-28 17:36 — 실행 중 density run의 시간 대비 학습효율 감사
+
+사용자가 현재 승급 학습을 계속 오래 돌리는 것이 실제로 도움이 되는지 물어
+`ppo_260727_2324_navrl`의 전체 로그(15001~37194 epoch), 체크포인트 sigma, promotion gate,
+crashdiag/barprobe를 읽기 전용으로 집계했다. 프로세스는 중단하거나 변경하지 않았다.
+
+#### 현재 상태
+
+- PID `1652517`, 약 18.2시간 실행, GPU 5.85 GiB, 점검 당시 75 bars / 약 37194 epoch.
+- 45000까지 약 7800 epoch가 남아 현재 속도 2.6 s/epoch 기준 추가 약 5.6시간이다.
+- 실제 promotion은 두 번뿐이다.
+  - 65→70: epoch 15617, 실행 0.49시간, gate capture `0.706/16388 eps`
+  - 70→75: epoch 18787, 실행 2.96시간, gate capture `0.704/16386 eps`
+- 이후 75 bars에서 18407 epoch, 약 147.2만 episode, 약 15.2시간을 보냈지만
+  80 bars로 한 번도 승급하지 못했다.
+
+#### 밀도별 집계
+
+| bars | epoch | episodes | 전체 capture | 처음 500 epoch | 마지막 500 epoch |
+|---:|---:|---:|---:|---:|---:|
+| 65 | 617 | 49,128 | 0.696 | 0.692 | 0.699 |
+| 70 | 3,170 | 245,723 | 0.684 | 0.670 | 0.692 |
+| 75 | 18,407 | 1,471,998 | 0.634 | 0.653 | 0.587 |
+
+65와 70에서는 완만한 개선과 승급이 있었으므로 처음 약 3시간은 유효했다. 반면 75는
+처음 500 epoch보다 마지막 500 epoch capture가 `6.6pp` 낮고 crash가
+`34.3%→41.1%`로 증가했다. 최근 2048-episode window도 `capture=0.539~0.565`다.
+1000-epoch bin은 중간에 0.65 수준으로 회복한 적은 있으나 0.70 gate를 지속해서 넘은 적이 없다.
+
+75 bars에서 gate window는 `16384 eps`이고 총 147만 episode를 보았으므로 약 89회의
+실패 판정을 받은 셈이다. 로그에 `held`가 안 보이는 이유는 run 시작(23:24) 12분 뒤
+`cbefbe3`에서 INFO→WARNING으로 가시성을 고쳤기 때문이다. 실행 중 Python은 시작 당시 코드를
+메모리에 유지하므로 hold는 수행됐지만 출력만 억제됐다. 즉 승급 로직이 완전히 멈춘 것이 아니라
+정책이 문턱을 못 넘은 것이다.
+
+#### 시간이 성능을 악화시킨 정황
+
+- epoch 19050→37150 동안 lateral std가 `1.160→1.492`로 증가해 상한에 붙었다.
+  평균 0일 때조차 횡 action hard-clamp 최소 확률이 `38.7%→50.3%`가 된다.
+- 같은 기간 forward std는 `0.367→0.192`, yaw는 `0.077→0.062`로 내려가므로
+  “모든 행동이 무작정 시끄러운 것”이 아니라 횡축만 선택적으로 포화됐다.
+- bar-contact의 crash 내 비중은 초반 20 window `91.4%`, 최근 20 window `92.0%`로 비슷하지만,
+  crash 자체가 증가해 절대 bar-contact는 대략 `31.3%→37.8%`로 악화됐다.
+- 반대로 `hit_token_given_fov`는 `0.559→0.638`로 좋아졌다. 관측 token hit가 개선됐는데
+  포획이 하락했으므로 이번 장기 정체를 representation 용량 부족으로 설명하기 어렵고,
+  action 분포/제어 쪽 증거가 더 강하다.
+
+#### 판정 및 다음 조치
+
+**현재 설정 그대로 45000까지 추가 5.6시간을 쓰는 것은 권장하지 않는다.**
+75 bars에서 이미 충분한 표본을 훨씬 넘겼고 최근 성능·횡축 sigma가 모두 나빠지고 있다.
+
+중단 후 평가 후보는 75-bar 로그 근방 성능이 좋았던:
+
+- `last_gen_ppo_ep_19050_rew_31.79068.pth` 부근 — 100-epoch 근방 capture `0.691`
+- epoch 27450 부근 — `0.681`
+- epoch 30450 부근 — `0.672`
+- 최신 checkpoint — 퇴행 대조군
+
+이다. 동일 seed로 deterministic/stochastic paired 평가해 19050 계열이 실제 held-out에서도
+우세한지 확인한 뒤, 그 checkpoint에서 lateral std=0.5 + entropy annealing branch를 시작하는
+것이 다음 합리적 실험이다. `gen_ppo.pth`는 낮은 밀도의 best-reward일 수 있으므로 후보에서 제외한다.
+
+### 2026-07-28 17:46 — 실행 유지 상태에서 전체 로드맵·핵심 병목 재판정
+
+사용자 요청에 따라 실행 중인 `ppo_260727_2324_navrl`은 종료·신호 전송·설정 변경 없이
+그대로 유지했다. 점검 시 PID `1652517`, epoch `37401/45000`, 75 bars였고 최근 epoch별
+capture는 대체로 45~58%였다.
+
+#### 현재 run의 결론
+
+- 65→70→75까지 약 3시간은 유효한 curriculum 학습이었다.
+- 75 bars에서는 약 147만 episode와 약 89개의 16,384-episode gate window를 소비했지만
+  80 bars로 승급하지 못했다. 처음 500 epoch capture `0.653`에서 최근 500 epoch
+  `0.587`로 하락했고 crash는 `0.343→0.411`로 증가했다.
+- 같은 기간 obstacle token의 `hit_token_given_fov`는 `0.559→0.638`로 개선됐는데 절대
+  bar-contact는 약 `0.313→0.378`로 증가했다. 따라서 이번 정체의 1차 원인은 8-token
+  표현 용량이나 기하학적 불가능성보다 action/optimization 쪽이다.
+- 가장 강한 기전은 고정 entropy `0.003`, state-independent unbounded Gaussian,
+  후단 hard clamp의 조합이다. 75-bar 초반→최근 lateral std가 `1.160→1.492`로 상한에
+  붙어 평균 0에서도 `|a_y|>1`인 표본의 최소 비율이 `38.7%→50.3%`가 됐다. 이 표본은
+  실제로 `±2.5 m/s` 횡속도 명령에 쌓인다.
+- 다만 sigma와 crash의 상관관계만으로 인과가 완전히 확정된 것은 아니다. 같은 checkpoint의
+  deterministic/stochastic paired evaluation과 raw clamp-rate/`Δaction` 계측이 필요하다.
+
+#### capture 비율 개선 우선순위
+
+1. 현재 run은 끝까지 진단 궤적으로 보존하되, 다음 학습의 warm-start 후보는 최신이 아니라
+   75-bar 초반의 `last_gen_ppo_ep_19050...pth`와 중간 후보 27450/30450을 held-out 평가해 고른다.
+2. 같은 seed·75 bars·4096 episode 이상으로 각 후보의 deterministic/stochastic 성능을 나눠
+   평균 정책 퇴행과 sampling noise를 분리한다.
+3. noise가 주원인이면 기존 Gaussian의 초기 탐색은 유지하고 competence 이후
+   `entropy_coef 0.003→0.0003(또는 0)`과 lateral std 목표/상한 `0.5`를 함께 anneal하는
+   최소 변경 branch를 먼저 시험한다. 평균 0 기준 clamp 질량은 약 `50.3%→4.55%`로 줄어든다.
+4. 별도 A/B로 tanh-squashed Gaussian을 시험한다. 설치된 `continuous_a2c_tanh`는 사용할 수
+   있지만 deterministic player의 `tanh(mu)` 처리와 기존 checkpoint std 재해석을 먼저 고쳐야 한다.
+5. curriculum gate는 noisy stochastic train ratio만 보지 말고 고정 seed deterministic
+   competence probe를 병행한다. 반대로 threshold를 단순히 0.70→0.60/0.65로 내리는 것은
+   퇴행 중인 정책을 다음 밀도로 넘기므로 해결책이 아니다.
+6. 속도 상한 확대, reward 재설계, token 억제폭 변경은 현재 증거상 우선순위가 낮다.
+   특히 속도 상한 확대는 포화 action의 실제 속도만 키워 충돌을 악화시킬 수 있다.
+
+#### 전체 로드맵의 실제 위치
+
+- 정보 firewall, raw RGB-D/LiDAR 렌더링, tracking/fusion, 17-token Transformer,
+  navigation 통합은 구현되어 있어 **엔지니어링 파이프라인은 약 65~75%**로 본다.
+- 현재 density curriculum은 목표 25→110 bars 중 75까지 도달했으므로 bar interval 기준
+  `(75-25)/(110-25)=58.8%`지만, 75→80 performance gate에 막혀 있다.
+- 논문 수준의 실증은 **약 35~45%**다. 25 bars speed-axis와 단일 seed의 부분 density curve는
+  있으나, density×speed×occlusion 전체 matrix, 3개 이상 seed, CNN/LSTM/Transformer 및
+  camera/LiDAR/fusion ablation, occlusion 생존·재획득 검증이 남아 있다.
+- 전체 프로젝트에서 다음 큰 병목은 detector다. 현재 appearance segmenter는 학습된 detector
+  증거가 아니라 red-color bootstrap 초기화이며, sequence dataset·held-out detector metric·
+  detector checkpoint가 확인되지 않았다. navigation capture를 개선해도 이 부분 없이
+  learned-perception 주장을 완성할 수 없다.
+- 따라서 대시보드의 P0~P5 “done” 표시는 기능 통합 관점에서는 이해되지만 과학적 검증 완료로
+  읽으면 과대평가다. 문서와 대시보드의 완료 기준을 분리해 갱신할 필요가 있다.
+
+현재 run이 GPU를 사용하는 동안에는 평가를 겹쳐 실행하지 않는다. 종료 후 paired evaluation으로
+최선 checkpoint와 원인을 확정하고, 그 결과에 따라 std/entropy annealing branch를 우선 진행한다.
+
+### 2026-07-28 18:24 — bounded-action A/B 구현 및 main 실험 시작
+
+사용자가 기존 density run을 더 연장하는 대신, 평균 action이 0이어도 큰 Gaussian sigma 때문에
+횡축 표본이 범위 밖으로 나가 task clamp 뒤 `±2.5 m/s`에 합쳐지는 문제를 직접 고치도록 방향을
+변경했다. 이 요청은 앞선 “현재 run 유지” 요청을 대체하는 것으로 해석했다. 기존 PID `1652517`은
+정확한 command line을 재확인한 뒤 `SIGINT`로 정상 종료했고, 종료 전 마지막 주기 checkpoint
+`last_gen_ppo_ep_37850_rew_31.752436.pth`가 존재함을 확인했다.
+
+#### 원인과 설계 결정
+
+- 기존 정책은 unbounded Normal sample을 PPO action으로 기록하고 task에서 뒤늦게 hard clamp했다.
+  최근 lateral sigma `1.492`이면 mean=0인 가장 유리한 경우에도 `P(|a_y|>1)=50.3%`다. 서로
+  다른 절반가량의 표본이 같은 `±2.5 m/s` 명령으로 합쳐지고, PPO likelihood는 실제 실행 action과
+  다른 확률변수를 최적화했다.
+- 단순 sigma clamp만으로는 support/likelihood 불일치를 없애지 못하고, Beta policy는 기존
+  Gaussian checkpoint의 actor head를 직접 warm-start하기 어렵다. CAPG는 clipped policy의
+  gradient variance는 줄이지만 boundary sample 자체를 없애지 않는다. gSDE는 시간적으로 부드러운
+  탐색의 후속 후보지만 action support 문제의 직접 해법은 아니다.
+- main은 likelihood-correct **tanh-squashed Gaussian**, 1650 Ti sub는 **scale-adjusted truncated
+  Gaussian**으로 정했다. 둘 다 실행 action과 PPO log-probability가 같은 bounded distribution을
+  가리킨다.
+- 공정한 A/B를 위해 둘 다 epoch `19050`, 75 bars, seed 1, 128 envs, 3000 추가 epoch,
+  base std `[0.35, 0.35, 0.05, 0.08]`, entropy 0, actor Adam moment reset을 사용한다.
+  density promotion은 끄고 75 bars로 고정했다.
+- 첫 main smoke에서 tanh만 붙였을 때 기존 clipped-policy가 물려준 큰 lateral mean 때문에
+  `edge99_y=98.75%`가 됐다. 따라서 checkpoint 표현/value는 유지하되 inherited lateral mean만
+  `0.4×`로 재보정했다. 이는 속도 상한을 낮추는 것이 아니며, PPO가 필요하면 mean을 다시 키울 수
+  있다.
+
+#### 구현
+
+- `navrl_action_models.py`
+  - `NavRLSquashedGaussianModel`: tanh transform, stable Jacobian correction, bounded stochastic/
+    deterministic action, transformed entropy.
+  - `NavRLTruncatedGaussianModel`: `[-1,1]` inverse-CDF sampling, normalized exact log-probability와
+    entropy, boundary 부근 scale-adjustment(`d_min=0.01`).
+  - 기존 checkpoint의 `state_dict` key/shape를 그대로 보존하고 dead legacy sigma parameter는
+    ABI 용도로만 유지한다.
+- `navrl_players.py`: rl_games 1.6.5 deterministic player가 pre-tanh `mus`를 실행하던 문제를
+  막고 model의 bounded `deterministic_actions`를 사용한다.
+- `runner.py`: action model/player 등록, `NAVRL_ACTION_POLICY` 선택, checkpoint env-state의
+  distribution/std/mu-scale/d_min 자동 복원, run tag 분리.
+- `early_stop_a2c_agent.py`: action-distribution branch restore 시 actor optimizer moment만
+  초기화하고 central critic state는 유지한다. clamp 전 `raw_oob`, edge95/99, mean action,
+  mean mu/sigma, temporal `delta_y`를 TensorBoard에 기록한다.
+- `navrl_task.py`: task 입력 OOB와 실제 edge98/mean_abs/delta/sign-flip을 별도 기록하고,
+  checkpoint에 action contract를 저장하며 평가 설정 불일치를 경고한다.
+- `train_navrl_general_repr_density.sh`: `NAVRL_FIXED_BARS`를 추가해 action A/B에서 curriculum을
+  비활성화하고 동일한 75-bar task를 강제한다.
+- 실행 파일:
+  - main: `train_navrl_action_squashed_main.sh`
+  - 1650 Ti: `train_navrl_action_truncated_1650ti.sh` (`GPU4GB=1`, `base_sim_4gb`)
+- CPU 단위시험 `test_navrl_action_models.py` 7개를 추가했다. bounded/finite sample, legacy
+  state keys, theoretical Gaussian tail, lateral warm-start scale, tanh deterministic action,
+  PyTorch `TransformedDistribution`과 log-prob 일치, truncated PDF 적분값 1을 검증한다.
+
+#### 검증 및 현재 main 결과
+
+- 단위시험: `Ran 7 tests ... OK`.
+- `bash -n`, `py_compile`, `git diff --check` 통과.
+- 두 launcher 모두 checkpoint preflight-only 통과했고 실행 권한을 확인했다.
+- old checkpoint를 실제 main model에 strict restore한 뒤 PPO update가 진행되고 있으므로
+  checkpoint compatibility는 smoke 수준을 넘어 runtime으로도 확인됐다.
+- 현재 main:
+  - PID `3089290`
+  - run `ppo_260728_1817_navrl_action-squashed-main-s1`
+  - log `train_session_logs/action_squashed_main_260728_181755.log`
+  - 점검 시 epoch `19162/22050`, 프로세스 정상, GPU 약 `5.72 GiB`.
+- epoch 19051~19162 누적 capture `5481/7895 = 69.42%`, crash `30.09%`,
+  최근 50 epoch capture `2494/3561 = 70.04%`. 즉 bounded 전환 직후 competence가 붕괴하지
+  않았다.
+- 세 개의 독립 task diagnostic window에서 lateral `task_input_oob_y=0.0000`; 실제
+  `|command_y|>=0.98*2.5` 비율은 `3.71% → 5.20% → 6.71%`였다. 기존 sigma만으로 계산되는
+  mean=0 hard-clamp 하한 `50.3%`와 비교하면 `±2.5` 몰림은 약 한 자릿수 비율로 줄었다.
+- 다만 `mean_abs_y=0.899→0.916`, `edge95_y`도 상승 중이다. 이는 random OOB tail은 제거됐지만
+  actor mean이 강한 횡이동을 다시 선택한다는 뜻이다. main을 중단하지 않고 끝까지 관측하되,
+  최종 판정은 capture뿐 아니라 edge98_y, bar-contact, deterministic/stochastic paired 평가를
+  함께 사용한다. edge98_y가 다시 크게 오르면 다음 개입은 속도 상한 변경이 아니라 lateral
+  mean-margin regularization 또는 더 작은 warm-start scale이다.
+
+1650 Ti sub는 같은 checkpoint 파일을 복사한 뒤 별도 머신에서 launcher만 실행한다. 128 env를
+먼저 사용해 main과 PPO batch를 맞추고, 실제 4 GiB OOM이 확인될 때만 `NUM_ENVS=64`로 낮춘다
+(`32*64=2048`이라 configured minibatch와 정확히 일치한다).

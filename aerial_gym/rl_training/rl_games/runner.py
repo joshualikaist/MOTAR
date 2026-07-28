@@ -1,5 +1,6 @@
 import numpy as np
 import os
+import re
 import sys
 import yaml
 
@@ -486,7 +487,119 @@ def _new_experiment_name(task: Optional[str]) -> str:
     """runs/ folder name: ppo_YYMMDD_HHMM_<fixed|moving|…>."""
     stamp = datetime.now().strftime("ppo_%y%m%d_%H%M")
     suffix = _task_run_suffix(task)
-    return f"{stamp}_{suffix}" if suffix else stamp
+    name = f"{stamp}_{suffix}" if suffix else stamp
+    raw_tag = os.environ.get("AERIAL_RUN_TAG", "").strip()
+    if raw_tag:
+        tag = re.sub(r"[^a-zA-Z0-9._-]+", "-", raw_tag).strip("-._")
+        if not tag:
+            raise ValueError("AERIAL_RUN_TAG contains no usable filename characters")
+        name = f"{name}_{tag}"
+    return name
+
+
+_ACTION_POLICY_MODELS = {
+    "fixed_gaussian": "navrl_fixed_gaussian",
+    "squashed_gaussian": "navrl_squashed_gaussian",
+    "truncated_gaussian": "navrl_truncated_gaussian",
+}
+
+
+def _canonical_action_policy(value):
+    raw = str(value or "").strip().lower().replace("-", "_")
+    aliases = {
+        "": "",
+        "legacy": "legacy",
+        "legacy_gaussian": "legacy",
+        "gaussian": "legacy",
+        "fixed": "fixed_gaussian",
+        "fixed_gaussian": "fixed_gaussian",
+        "tanh": "squashed_gaussian",
+        "tanh_gaussian": "squashed_gaussian",
+        "squashed": "squashed_gaussian",
+        "squashed_gaussian": "squashed_gaussian",
+        "truncated": "truncated_gaussian",
+        "sa_truncated": "truncated_gaussian",
+        "truncated_gaussian": "truncated_gaussian",
+    }
+    if raw not in aliases:
+        raise ValueError(
+            "NAVRL_ACTION_POLICY must be one of legacy, fixed_gaussian, "
+            "squashed_gaussian, truncated_gaussian; got %r" % value
+        )
+    return aliases[raw]
+
+
+def _checkpoint_action_contract(checkpoint):
+    """Read action-distribution provenance without modifying the checkpoint."""
+    if not checkpoint or not os.path.isfile(str(checkpoint)):
+        return {}
+    try:
+        state = torch.load(str(checkpoint), map_location="cpu", weights_only=False)
+        env_state = state.get("env_state")
+        return env_state if isinstance(env_state, dict) else {}
+    except Exception:
+        return {}
+
+
+def _apply_action_policy_config(config, args):
+    """Select a local bounded-action model and restore its checkpoint metadata for evaluation."""
+    checkpoint_contract = _checkpoint_action_contract(args.get("checkpoint"))
+    explicit_policy = os.environ.get("NAVRL_ACTION_POLICY", "").strip()
+    saved_policy = checkpoint_contract.get("cfg_action_policy", "")
+    policy = _canonical_action_policy(explicit_policy or saved_policy or "legacy")
+
+    if not explicit_policy and saved_policy:
+        os.environ["NAVRL_ACTION_POLICY"] = policy
+    if not os.environ.get("NAVRL_ACTION_STD", "").strip():
+        saved_std = str(checkpoint_contract.get("cfg_action_std", "")).strip()
+        if saved_std:
+            os.environ["NAVRL_ACTION_STD"] = saved_std
+    if not os.environ.get("NAVRL_ACTION_MU_SCALE", "").strip():
+        saved_mu_scale = str(checkpoint_contract.get("cfg_action_mu_scale", "")).strip()
+        if saved_mu_scale:
+            os.environ["NAVRL_ACTION_MU_SCALE"] = saved_mu_scale
+    if not os.environ.get("NAVRL_TRUNCATED_DMIN", "").strip():
+        saved_dmin = checkpoint_contract.get("cfg_truncated_dmin")
+        if saved_dmin is not None:
+            os.environ["NAVRL_TRUNCATED_DMIN"] = str(saved_dmin)
+
+    if explicit_policy and saved_policy:
+        saved_canonical = _canonical_action_policy(saved_policy)
+        if saved_canonical != policy:
+            print(
+                "[aerial RL WARNING] action-policy branch changes checkpoint contract: "
+                f"{saved_canonical} -> {policy}.",
+                flush=True,
+            )
+
+    train_cfg = config["params"]["config"]
+    if policy in _ACTION_POLICY_MODELS:
+        config["params"]["model"]["name"] = _ACTION_POLICY_MODELS[policy]
+        os.environ.setdefault("NAVRL_ACTION_STD", "0.35,0.35,0.05,0.08")
+        # A pre-tanh mean may legitimately exceed 1.1.  Truncated locations are already bounded.
+        if policy in ("squashed_gaussian", "truncated_gaussian"):
+            train_cfg["bounds_loss_coef"] = 0.0
+
+    entropy_override = os.environ.get("NAVRL_ENTROPY_COEF", "").strip()
+    if entropy_override:
+        entropy = float(entropy_override)
+        if not np.isfinite(entropy) or entropy < 0.0:
+            raise ValueError("NAVRL_ENTROPY_COEF must be finite and >= 0")
+        train_cfg["entropy_coef"] = entropy
+
+    os.environ.setdefault("NAVRL_ACTION_POLICY", policy)
+    os.environ["NAVRL_ENTROPY_COEF"] = str(float(train_cfg.get("entropy_coef", 0.0)))
+    print(
+        "[aerial RL] action policy | mode=%s std=%s mu_scale=%s entropy=%g bounds_loss=%g"
+        % (
+            policy,
+            os.environ.get("NAVRL_ACTION_STD", "checkpoint/legacy"),
+            os.environ.get("NAVRL_ACTION_MU_SCALE", "1"),
+            float(train_cfg.get("entropy_coef", 0.0)),
+            float(train_cfg.get("bounds_loss_coef", 0.0)),
+        ),
+        flush=True,
+    )
 
 
 def _normalize_vf_checkpoint(path):
@@ -540,6 +653,8 @@ def update_config(config, args):
     if args["seed"] > 0:
         config["params"]["seed"] = args["seed"]
         config["params"]["config"]["env_config"]["seed"] = args["seed"]
+
+    _apply_action_policy_config(config, args)
 
     player_cfg = config["params"]["config"].get("player")
     if not isinstance(player_cfg, dict):
@@ -643,11 +758,24 @@ if __name__ == "__main__":
         from aerial_gym.rl_training.rl_games.navrl_transformer_network import (
             NavRLTransformerBuilder,
         )
+        from aerial_gym.rl_training.rl_games.navrl_action_models import (
+            NavRLFixedGaussianModel,
+            NavRLSquashedGaussianModel,
+            NavRLTruncatedGaussianModel,
+        )
+        from aerial_gym.rl_training.rl_games.navrl_players import NavRLPpoPlayerContinuous
 
         model_builder.register_network("navrl_cnn", NavRLCNNBuilder)
         model_builder.register_network("navrl_vision", NavRLVisionBuilder)
         model_builder.register_network("navrl_vision_legacy", NavRLVisionLegacyBuilder)
         model_builder.register_network("navrl_transformer", NavRLTransformerBuilder)
+        model_builder.register_model("navrl_fixed_gaussian", NavRLFixedGaussianModel)
+        model_builder.register_model("navrl_squashed_gaussian", NavRLSquashedGaussianModel)
+        model_builder.register_model("navrl_truncated_gaussian", NavRLTruncatedGaussianModel)
+        # Backward compatible for legacy models; bounded models add an explicit deterministic action.
+        runner.player_factory.register_builder(
+            "a2c_continuous", lambda **kwargs: NavRLPpoPlayerContinuous(**kwargs)
+        )
 
         # Task-aware dashboard config: banner title, episode-length cap and the optional
         # reward "design range" hint all follow the task being trained.

@@ -106,9 +106,104 @@ def _read_existing_best_reward(nn_dir: str) -> float:
 
 
 class EarlyStopA2CAgent(A2CAgent):
+    def get_action_values(self, obs):
+        """Collect policy-output diagnostics before rl_games clips actions for the environment."""
+        result = super().get_action_values(obs)
+        if os.environ.get("NAVRL_ACTION_DIAG", "0").strip().lower() in (
+            "1",
+            "true",
+            "yes",
+            "on",
+        ):
+            self._accumulate_policy_action_diag(result)
+        return result
+
+    def _accumulate_policy_action_diag(self, result):
+        actions = result.get("actions")
+        if not isinstance(actions, torch.Tensor) or actions.ndim != 2:
+            return
+        with torch.no_grad():
+            actions = actions.detach()
+            mus = result.get("mus")
+            sigmas = result.get("sigmas")
+            diag = getattr(self, "_policy_action_diag", None)
+            if not isinstance(diag, dict):
+                diag = {
+                    "n": 0,
+                    "raw_oob": torch.zeros(actions.shape[1], device=actions.device),
+                    "edge95": torch.zeros(actions.shape[1], device=actions.device),
+                    "edge99": torch.zeros(actions.shape[1], device=actions.device),
+                    "abs_sum": torch.zeros(actions.shape[1], device=actions.device),
+                    "mu_abs_sum": torch.zeros(actions.shape[1], device=actions.device),
+                    "sigma_sum": torch.zeros(actions.shape[1], device=actions.device),
+                    "delta_y_sum": 0.0,
+                    "delta_y_n": 0,
+                }
+            finite = torch.isfinite(actions)
+            safe = torch.where(finite, actions, torch.zeros_like(actions))
+            diag["n"] += int(actions.shape[0])
+            diag["raw_oob"] += ((safe.abs() > 1.0) & finite).sum(dim=0)
+            diag["edge95"] += ((safe.abs() >= 0.95) & finite).sum(dim=0)
+            diag["edge99"] += ((safe.abs() >= 0.99) & finite).sum(dim=0)
+            diag["abs_sum"] += (safe.abs() * finite).sum(dim=0)
+            if isinstance(mus, torch.Tensor) and mus.shape == actions.shape:
+                diag["mu_abs_sum"] += mus.detach().abs().sum(dim=0)
+            if isinstance(sigmas, torch.Tensor) and sigmas.shape == actions.shape:
+                diag["sigma_sum"] += sigmas.detach().sum(dim=0)
+
+            previous = getattr(self, "_policy_action_diag_prev", None)
+            if isinstance(previous, torch.Tensor) and previous.shape == actions.shape:
+                valid = finite[:, 1]
+                dones = getattr(self, "dones", None)
+                if isinstance(dones, torch.Tensor) and dones.shape[0] == actions.shape[0]:
+                    valid &= ~dones.bool()
+                if bool(valid.any()):
+                    diag["delta_y_sum"] += float(
+                        (safe[valid, 1] - previous[valid, 1]).abs().sum().item()
+                    )
+                    diag["delta_y_n"] += int(valid.sum().item())
+            self._policy_action_diag_prev = safe.clone()
+            self._policy_action_diag = diag
+
+    def _consume_policy_action_diag(self):
+        diag = getattr(self, "_policy_action_diag", None)
+        self._policy_action_diag = None
+        if not isinstance(diag, dict) or int(diag.get("n", 0)) <= 0:
+            return None
+        n = max(1, int(diag["n"]))
+        delta_n = max(1, int(diag["delta_y_n"]))
+
+        def values(key):
+            return [float(v) / n for v in diag[key].detach().cpu().tolist()]
+
+        return {
+            "raw_oob": values("raw_oob"),
+            "edge95": values("edge95"),
+            "edge99": values("edge99"),
+            "mean_abs": values("abs_sum"),
+            "mean_mu_abs": values("mu_abs_sum"),
+            "mean_sigma": values("sigma_sum"),
+            "delta_y": float(diag["delta_y_sum"]) / delta_n,
+            "n": n,
+        }
+
     def restore(self, fn, set_epoch=True):
         """Restore weights/state, but never inherit a stale checkpoint learning rate."""
         super().restore(fn, set_epoch=set_epoch)
+        reset_actor_optimizer = os.environ.get(
+            "NAVRL_RESET_ACTOR_OPTIMIZER", "0"
+        ).strip().lower() in ("1", "true", "yes", "on")
+        if reset_actor_optimizer:
+            # A bounded-distribution branch reuses the competent representation/mean/value weights
+            # but changes the actor likelihood geometry.  Old Adam moments point along the legacy
+            # clipped-Gaussian objective and caused a large first update in dry-run checks.
+            # Keep the separately owned asymmetric critic optimizer/state; reset only actor PPO.
+            self.optimizer.state.clear()
+            print(
+                "[aerial RL] Actor optimizer moments reset for action-distribution branch; "
+                "central critic optimizer retained.",
+                flush=True,
+            )
         configured_lr = float(self.config["learning_rate"])
         self.last_lr = configured_lr
         reset_optimizer_learning_rate(self.optimizer, configured_lr)
@@ -197,6 +292,60 @@ class EarlyStopA2CAgent(A2CAgent):
             explained_variance=explained_variance,
             extra_intercept_metrics=intercept_extra_metrics,
         )
+        action_diag = self._consume_policy_action_diag()
+        if action_diag is not None:
+            axis_names = ("x", "y", "z", "yaw")
+            for axis, name in enumerate(axis_names):
+                self.writer.add_scalar(
+                    f"policy_action/raw_oob_{name}",
+                    action_diag["raw_oob"][axis],
+                    epoch_num,
+                )
+                self.writer.add_scalar(
+                    f"policy_action/edge95_{name}",
+                    action_diag["edge95"][axis],
+                    epoch_num,
+                )
+                self.writer.add_scalar(
+                    f"policy_action/edge99_{name}",
+                    action_diag["edge99"][axis],
+                    epoch_num,
+                )
+                self.writer.add_scalar(
+                    f"policy_action/mean_abs_{name}",
+                    action_diag["mean_abs"][axis],
+                    epoch_num,
+                )
+                self.writer.add_scalar(
+                    f"policy_action/mean_sigma_{name}",
+                    action_diag["mean_sigma"][axis],
+                    epoch_num,
+                )
+                self.writer.add_scalar(
+                    f"policy_action/mean_mu_abs_{name}",
+                    action_diag["mean_mu_abs"][axis],
+                    epoch_num,
+                )
+            self.writer.add_scalar(
+                "policy_action/delta_y", action_diag["delta_y"], epoch_num
+            )
+            if epoch_num == 1 or epoch_num % 25 == 0:
+                print(
+                    "[aerial RL] policy-actiondiag | mode=%s raw_oob_y=%.4f "
+                    "edge95_y=%.4f edge99_y=%.4f |mu_y|=%.3f sigma_y=%.3f "
+                    "delta_y=%.3f (n=%d)"
+                    % (
+                        os.environ.get("NAVRL_ACTION_POLICY", "legacy"),
+                        action_diag["raw_oob"][1],
+                        action_diag["edge95"][1],
+                        action_diag["edge99"][1],
+                        action_diag["mean_mu_abs"][1],
+                        action_diag["mean_sigma"][1],
+                        action_diag["delta_y"],
+                        action_diag["n"],
+                    ),
+                    flush=True,
+                )
         if getattr(self, "last_mean_rewards", None) is not None:
             try:
                 self.writer.add_scalar("stability/best_reward", float(self.last_mean_rewards), epoch_num)

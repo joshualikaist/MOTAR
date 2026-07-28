@@ -33,10 +33,25 @@ export NAVRL_LIDAR_VBEAMS=4
 export NAVRL_LIDAR_RANGE=12
 
 export NAVRL_MAX_BARS=150
-unset NAVRL_NUM_BARS  # an explicit value disables promotion even when the curriculum flag is on
-export NAVRL_DENSITY_CURRICULUM=1
-export NAVRL_DENSITY_START=25
-export NAVRL_DENSITY_FINAL="${NAVRL_DENSITY_FINAL:-110}"
+# A bounded-policy A/B must hold the environment at the checkpoint's 75 bars; otherwise the first
+# policy to promote starts training on a different task and distribution effects become ambiguous.
+# Normal Stage-C use leaves NAVRL_FIXED_BARS empty and retains the original curriculum.
+NAVRL_FIXED_BARS="${NAVRL_FIXED_BARS:-}"
+if [[ -n "${NAVRL_FIXED_BARS}" ]]; then
+    if [[ ! "${NAVRL_FIXED_BARS}" =~ ^[0-9]+$ ]] || (( NAVRL_FIXED_BARS < 1 || NAVRL_FIXED_BARS > NAVRL_MAX_BARS )); then
+        echo "[general_repr_density] NAVRL_FIXED_BARS must be an integer in 1..${NAVRL_MAX_BARS}" >&2
+        exit 2
+    fi
+    export NAVRL_NUM_BARS="${NAVRL_FIXED_BARS}"
+    export NAVRL_DENSITY_CURRICULUM=0
+    export NAVRL_DENSITY_START="${NAVRL_FIXED_BARS}"
+    export NAVRL_DENSITY_FINAL="${NAVRL_FIXED_BARS}"
+else
+    unset NAVRL_NUM_BARS  # an explicit value disables promotion even when the curriculum flag is on
+    export NAVRL_DENSITY_CURRICULUM=1
+    export NAVRL_DENSITY_START=25
+    export NAVRL_DENSITY_FINAL="${NAVRL_DENSITY_FINAL:-110}"
+fi
 export NAVRL_DENSITY_STEP="${NAVRL_DENSITY_STEP:-5}"
 export NAVRL_DENSITY_THRESHOLD="${NAVRL_DENSITY_THRESHOLD:-0.70}"
 export NAVRL_DENSITY_WARMUP="${NAVRL_DENSITY_WARMUP:-1000}"
@@ -97,12 +112,20 @@ fi
 "${PYTHON}" navrl_checkpoint_preflight.py "${CKPT}" \
     --max-epochs "${MAX_EPOCHS}" --density-final "${NAVRL_DENSITY_FINAL}"
 
-echo "[general_repr_density] Stage C | 25 -> ${NAVRL_DENSITY_FINAL} bars, step=${NAVRL_DENSITY_STEP}"
-echo "[general_repr_density] promotion | threshold=${NAVRL_DENSITY_THRESHOLD} \
+if [[ -n "${NAVRL_FIXED_BARS}" ]]; then
+    echo "[general_repr_density] controlled A/B | fixed bars=${NAVRL_FIXED_BARS} (promotion off)"
+else
+    echo "[general_repr_density] Stage C | 25 -> ${NAVRL_DENSITY_FINAL} bars, step=${NAVRL_DENSITY_STEP}"
+    echo "[general_repr_density] promotion | threshold=${NAVRL_DENSITY_THRESHOLD} \
 check_eps=${NAVRL_DENSITY_CHECK_EPS} warmup=${NAVRL_DENSITY_WARMUP}"
+fi
 echo "[general_repr_density] representation | tokens=${NAVRL_MAX_OBSTACLES} \
 fov=${NAVRL_OBSTACLE_FOV_DEG}deg suppress=+-${NAVRL_OBSTACLE_SUPPRESS_DEG}deg \
 scan=${NAVRL_LIDAR_VBEAMS}x${NAVRL_LIDAR_HBEAMS} lidar=${NAVRL_LIDAR_RANGE}m"
+echo "[general_repr_density] action | policy=${NAVRL_ACTION_POLICY:-legacy} \
+std=${NAVRL_ACTION_STD:-learned} mu_scale=${NAVRL_ACTION_MU_SCALE:-1} \
+entropy=${NAVRL_ENTROPY_COEF:-yaml} \
+diag=${NAVRL_ACTION_DIAG:-0}"
 echo "[general_repr_density] safety | reward-collapse guard=off; NaN/Inf fail-fast=on"
 echo "[general_repr_density] checkpoint=${CKPT} max_epochs=${MAX_EPOCHS} envs=${NUM_ENVS} seed=${SEED}"
 

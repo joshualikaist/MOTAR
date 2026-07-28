@@ -311,6 +311,20 @@ class NavRLTask(BaseTask):
         self._mindist_sum = 0.0  # sum of closest approach over NON-CRASH finished episodes
         self._nc_agg = 0         # count of non-crash finished episodes
         self._closest_min = None  # best (min) closest approach in the window
+        # Policy-side action diagnostics. `prev_action` stores the post-clamp observation and cannot
+        # reveal how much Gaussian probability was collapsed onto +/-1, so measure the actor output
+        # immediately on entry to step(). This is instrumentation only; it never changes commands,
+        # observations, rewards, or terminations.
+        self._action_diag_enabled = os.environ.get(
+            "NAVRL_ACTION_DIAG", "0"
+        ).strip().lower() in ("1", "true", "yes", "on")
+        self._action_diag = self._empty_action_diag()
+        self._action_diag_prev = torch.zeros(
+            (self.num_envs, self.task_config.action_space_dim), device=self.device
+        )
+        self._action_diag_prev_valid = torch.zeros(
+            self.num_envs, dtype=torch.bool, device=self.device
+        )
         # --- crash-cause diagnosis (NAVRL_CRASH_DIAG=1): split the aggregate "crash" number into
         # its termination source (bar contact / height bound / out-of-arena side) so a stuck run
         # can be diagnosed from measured counts instead of guesses. Off by default: zero overhead.
@@ -921,6 +935,18 @@ class NavRLTask(BaseTask):
             "cfg_obstacle_suppress_deg": float(representation["suppress_deg"]),
             "cfg_lidar_hbeams": int(representation["hbeams"]),
             "cfg_lidar_vbeams": int(representation["vbeams"]),
+            # Action-distribution provenance. Bounded and legacy models intentionally share the
+            # same state_dict keys, so without this an eval can load successfully under the wrong
+            # likelihood and silently measure a different policy.
+            "cfg_action_policy": os.environ.get("NAVRL_ACTION_POLICY", "legacy"),
+            "cfg_action_std": os.environ.get("NAVRL_ACTION_STD", ""),
+            "cfg_action_mu_scale": os.environ.get("NAVRL_ACTION_MU_SCALE", "1"),
+            "cfg_action_entropy_coef": float(
+                os.environ.get("NAVRL_ENTROPY_COEF", "0") or 0.0
+            ),
+            "cfg_truncated_dmin": float(
+                os.environ.get("NAVRL_TRUNCATED_DMIN", "0.01") or 0.01
+            ),
             # Preserve the in-progress competence window. With a 16k-episode density gate, dropping
             # these counters on every periodic-checkpoint resume can discard hours of evidence and
             # indefinitely postpone the next promotion.
@@ -1081,6 +1107,35 @@ class NavRLTask(BaseTask):
         bars_before_restore = int(self.n_bars_active)
         if isinstance(state, dict):
             representation = self._obstacle_representation_or_zero()
+            saved_action_policy = state.get("cfg_action_policy")
+            current_action_policy = os.environ.get("NAVRL_ACTION_POLICY", "legacy")
+            if (
+                saved_action_policy is not None
+                and str(saved_action_policy).strip() != str(current_action_policy).strip()
+            ):
+                logger.warning(
+                    "NavRL ACTION POLICY MISMATCH | checkpoint=%s running=%s. "
+                    "The state_dict is shape-compatible but the action likelihood is not."
+                    % (saved_action_policy, current_action_policy)
+                )
+            saved_action_std = str(state.get("cfg_action_std", "")).strip()
+            current_action_std = os.environ.get("NAVRL_ACTION_STD", "").strip()
+            if (
+                saved_action_std
+                and current_action_std
+                and saved_action_std != current_action_std
+            ):
+                logger.warning(
+                    "NavRL ACTION STD MISMATCH | checkpoint=%s running=%s."
+                    % (saved_action_std, current_action_std)
+                )
+            saved_mu_scale = str(state.get("cfg_action_mu_scale", "")).strip()
+            current_mu_scale = os.environ.get("NAVRL_ACTION_MU_SCALE", "1").strip()
+            if saved_mu_scale and saved_mu_scale != current_mu_scale:
+                logger.warning(
+                    "NavRL ACTION MU-SCALE MISMATCH | checkpoint=%s running=%s."
+                    % (saved_mu_scale, current_mu_scale)
+                )
             # Loud config-drift guard (warn, never override: an eval may deliberately change these).
             # A mismatch here silently invalidates the run -- see get_env_state() for why.
             for key, current, name in (
@@ -1346,6 +1401,8 @@ class NavRLTask(BaseTask):
                 self.perception.reset_idx(env_ids)
             self.prev_action[env_ids] = 0.0
             self._visible_now[env_ids] = False
+        if self._action_diag_enabled:
+            self._action_diag_prev_valid[env_ids] = False
         # Phase 3: per-episode target speed + trajectory pattern (all-static when the speed
         # ceiling is 0 -> Phases 1-2 behavior).
         self._sample_target_motion(env_ids)
@@ -1410,6 +1467,7 @@ class NavRLTask(BaseTask):
     def step(self, actions):
         if self.interactive_mode and self._interactive_manual:
             actions = self._interactive_manual_action
+        self._record_action_diagnostics(actions)
         # Phase 3: move the virtual target FIRST — both agents move during this 0.1 s control
         # interval, and the end-of-interval reward is computed against the target's NEW position.
         # (No-op while all per-episode target speeds are 0, i.e. the static Phases 1-2 task.)
@@ -1471,6 +1529,62 @@ class NavRLTask(BaseTask):
 
         self.num_task_steps += 1
         return self.get_return_tuple()
+
+    @staticmethod
+    def _empty_action_diag():
+        return {
+            "n": 0,
+            "raw_oob": [0.0, 0.0, 0.0, 0.0],
+            "exec_edge": [0.0, 0.0, 0.0, 0.0],
+            "abs_sum": [0.0, 0.0, 0.0, 0.0],
+            "delta_y_sum": 0.0,
+            "delta_y_n": 0,
+            "sign_flip_y": 0.0,
+        }
+
+    def _record_action_diagnostics(self, actions):
+        """Accumulate raw tail, executed-edge and temporal lateral-action statistics."""
+        if not self._action_diag_enabled:
+            return
+        with torch.no_grad():
+            action = actions[:, :4].detach()
+            if action.shape[1] != 4:
+                return
+            finite = torch.isfinite(action)
+            safe = torch.where(finite, action, torch.zeros_like(action))
+            self._action_diag["n"] += int(action.shape[0])
+            raw_oob = (safe.abs() > 1.0) & finite
+            executed = safe.clamp(-1.0, 1.0)
+            exec_edge = (executed.abs() >= 0.98) & finite
+            abs_sum = safe.abs() * finite
+            for axis in range(4):
+                self._action_diag["raw_oob"][axis] += float(
+                    raw_oob[:, axis].sum().item()
+                )
+                self._action_diag["exec_edge"][axis] += float(
+                    exec_edge[:, axis].sum().item()
+                )
+                self._action_diag["abs_sum"][axis] += float(
+                    abs_sum[:, axis].sum().item()
+                )
+
+            valid = self._action_diag_prev_valid & finite[:, 1]
+            if bool(valid.any()):
+                current_y = safe[valid, 1]
+                previous_y = self._action_diag_prev[valid, 1]
+                self._action_diag["delta_y_sum"] += float(
+                    (current_y - previous_y).abs().sum().item()
+                )
+                self._action_diag["delta_y_n"] += int(valid.sum().item())
+                sign_flip = (
+                    (current_y * previous_y < 0.0)
+                    & (current_y.abs() > 0.1)
+                    & (previous_y.abs() > 0.1)
+                )
+                self._action_diag["sign_flip_y"] += float(sign_flip.sum().item())
+
+            self._action_diag_prev[:] = safe
+            self._action_diag_prev_valid[:] = finite.all(dim=1)
 
     def _lidar_distance_m(self):
         """Per-ray distance in meters, shape (N, vbeams*hbeams). Normalized pixels * max_range."""
@@ -2247,6 +2361,30 @@ class NavRLTask(BaseTask):
                     total,
                 )
             )
+            if self._action_diag_enabled and self._action_diag["n"] > 0:
+                ad = self._action_diag
+                n_action = max(1, int(ad["n"]))
+                n_delta = max(1, int(ad["delta_y_n"]))
+                raw_oob = [value / n_action for value in ad["raw_oob"]]
+                exec_edge = [value / n_action for value in ad["exec_edge"]]
+                mean_abs = [value / n_action for value in ad["abs_sum"]]
+                logger.warning(
+                    "NavRL actiondiag | policy=%s std=%s "
+                    "task_input_oob[x,y,z,yaw]=[%.4f,%.4f,%.4f,%.4f] "
+                    "exec_edge98=[%.4f,%.4f,%.4f,%.4f] "
+                    "mean_abs=[%.3f,%.3f,%.3f,%.3f] delta_y=%.3f sign_flip_y=%.3f (n=%d)"
+                    % (
+                        os.environ.get("NAVRL_ACTION_POLICY", "legacy"),
+                        os.environ.get("NAVRL_ACTION_STD", "learned"),
+                        *raw_oob,
+                        *exec_edge,
+                        *mean_abs,
+                        ad["delta_y_sum"] / n_delta,
+                        ad["sign_flip_y"] / n_delta,
+                        n_action,
+                    )
+                )
+                self._action_diag = self._empty_action_diag()
             if self._crash_diag:
                 d = self._diag
                 n_raw = d["contact"] + d["below"] + d["above"] + d["oob"]
