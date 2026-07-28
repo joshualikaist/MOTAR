@@ -2115,3 +2115,81 @@ centering/margin ablation을 300–500 epoch만 수행하고, 동일 4-cell scre
 checkpoint-preflight 4 tests, 실제 Isaac Gym 64-episode export smoke, corrected
 8-cell/약 8011-episode A/B 평가를 통과했다. 원시 JSON/CSV/log는
 `train_session_logs/eval_results/action_ab_{base,v2}_260728_corrected/`에 보관한다.
+
+### 2026-07-28 22:22 — lateral +y 고착 원인 분리와 v3 ablation 기각
+
+1650 Ti truncated-Gaussian 실험을 기다리는 동안 RTX 3070에서 squashed-v2의 남은
+`|a_y|≈0.92`가 고밀도 회피에 필요한 행동인지 정책 편향인지 분리했다. 장기학습을 먼저
+돌리지 않고 vector eval에 signed y, positive/negative, high80, edge95/98/99와
+front clear/blocked, target centered/off-center/visible 조건부 평균 `|a_y|`를 추가했다.
+
+25/50/75/110 bars × target 0.5/1.5 m/s, 500 games/cell, 총 4007 episodes의
+squashed-v2 프로파일 결과는 다음과 같다.
+
+| bars | target | capture | signed y | positive y | high80 y | clear `|y|` | blocked `|y|` |
+|---:|---:|---:|---:|---:|---:|---:|---:|
+| 25 | 0.5 | 91.60% | 0.933 | 100% | 99.99% | 0.934 | 0.931 |
+| 25 | 1.5 | 87.03% | 0.932 | 100% | 99.98% | 0.934 | 0.931 |
+| 50 | 0.5 | 88.25% | 0.929 | 100% | 99.94% | 0.931 | 0.928 |
+| 50 | 1.5 | 81.27% | 0.929 | 100% | 99.93% | 0.931 | 0.928 |
+| 75 | 0.5 | 73.40% | 0.921 | 100% | 99.65% | 0.926 | 0.921 |
+| 75 | 1.5 | 65.47% | 0.922 | 100% | 99.65% | 0.926 | 0.922 |
+| 110 | 0.5 | 38.32% | 0.906 | 100% | 98.64% | 0.921 | 0.905 |
+| 110 | 1.5 | 32.60% | 0.907 | 100% | 98.82% | 0.924 | 0.906 |
+
+가장 낮은 25 bars, 전방 clear, 타깃 centered에서도 `|a_y|≈0.93`이고 모든 셀에서
+positive y=100%였다. 따라서 큰 횡명령은 고밀도 장애물 회피 요구가 아니라 policy가 한
+passing side에 고착된 전역 편향이다.
+
+#### Ablation A: signed minibatch-mean penalty — 기각
+
+`mean(mu_y)^2`는 balanced `[-m,+m]` 회피에는 0이고 한쪽 batch에만 비용을 주므로 일반
+action L1/L2보다 적합하다고 판단했다. v2 Adam state, LR 5e-6, margin 1.25@0.01을
+유지했다.
+
+- coef 0.002, 약 63 epochs: `mu_y` 1.635→1.604. 너무 느려 중단.
+- coef 0.01, 50 epochs: `mu_y` 1.635→1.593, positive y tail 99.98%,
+  tail capture 67.55%. 방향 분화 없이 모든 y를 조금 줄였고 성능도 v2보다 낮아 기각.
+
+#### Ablation B: 좌우 reflection equivariance — 기각
+
+898-D actor observation의 좌우 반사를 구현했다. LiDAR 방위 순서를 반전하고 obstacle
+position/velocity y, robot velocity y/yaw-rate/previous y+yaw action, target tracked
+position/velocity y를 부호 반전한다. action latent는 y와 yaw 부호를 반전하며,
+`||mu(mirror(obs))-mirror(mu(obs))||²` auxiliary loss를 쓴다. mirror를 두 번 적용하면
+observation/action이 bit-exact 원복되는 unit test를 포함했다.
+
+- coef 0.01은 23 epochs에서도 positive y=100%라 약해서 중단.
+- coef 0.1은 25 epochs에서 `mu_y` 1.635→1.493, edge95 31.4%→19.9%,
+  tail capture 71.3%를 유지해 총 100 epochs까지 제한 확장했다.
+- 100 epochs에서 `mu_y=1.243`, sampled signed y=0.810, edge95=7.1%로 magnitude는
+  줄었지만 positive y=99.89%, negative y=0.01%로 방향 고착은 그대로였다.
+  training tail capture는 62.78%, crash 36.26%로 악화됐다.
+
+최종 ep19650을 75 bars, mixed, target 0/0.5/1.0/1.5, 500 games/cell로 독립 평가했다.
+
+| metric | squashed-v2 ep19550 | reflect-v3 ep19650 | 판정 |
+|---|---:|---:|---|
+| capture | 71.80% | 60.64% | -11.16pp |
+| crash | 27.65% | 39.36% | +11.71pp |
+| mean `|a_y|` | 0.922 | 0.844 | 감소 |
+| positive y | 100% | 99.999% | 고착 유지 |
+| edge95 y | 약 7.5% | 0.61% | 감소 |
+| edge98 y | 0% | 0% | 유지 |
+
+결론은 명확하다. 현재 network/rollout에서 batch centering과 counterfactual reflection
+auxiliary는 좌우 상태 의존성을 만들지 못하고 기존의 성공적인 +y passing strategy
+크기만 줄여 capture를 훼손한다. 두 방식 모두 main 후보에서 기각한다. 재현 launcher는
+`*_ablation.sh`로 이름을 바꾸고 `ALLOW_REJECTED_ABLATION=1` 없이는 실행을 거부하도록
+가드했다.
+
+현재 main winner는 계속 squashed-v2 ep19550이다. 다음 정책 결정은 1650 Ti의
+truncated-Gaussian 결과다. 그것도 한쪽 고착이면 다음 설계는 auxiliary penalty가 아니라
+환경 rollout 자체에서 paired mirror trajectories를 생성하거나 lateral head에 구조적
+reflection-equivariance를 넣는 새 architecture가 필요하다.
+
+검증: action-model CPU tests 13개, Python compile, shell syntax, diff check,
+checkpoint preflight, 실제 optimizer smoke, 조건부 4007-episode profile,
+최종 2002-episode deterministic screen. 원시 결과는
+`train_session_logs/eval_results/{v2_action_context_260728,v3_reflect_c100_p100_260728}/`에
+보관한다.

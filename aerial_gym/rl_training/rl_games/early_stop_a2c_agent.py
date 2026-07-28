@@ -27,7 +27,11 @@ from aerial_gym.rl_training.rl_games.reward_stable_early_stop import (
 from aerial_gym.rl_training.rl_games.aerial_tensorboard import write_aerial_epoch_scalars
 from aerial_gym.rl_training.rl_games.pretty_train_stats import print_training_dashboard
 from aerial_gym.rl_training.rl_games.ppo_update_safety import (
+    lateral_batch_bias_loss,
     lateral_latent_margin_loss,
+    mirror_navrl_actions,
+    mirror_navrl_structured_observation,
+    reflection_equivariance_loss,
     stable_ppo_actor_loss,
 )
 from aerial_gym.rl_training.rl_games.train_run_recorder import (
@@ -283,6 +287,59 @@ class EarlyStopA2CAgent(A2CAgent):
                     weighted_margin.detach()
                 ]
 
+            raw_bias_coef = os.environ.get("NAVRL_LATERAL_BIAS_COEF", "").strip()
+            bias_coef = float(raw_bias_coef) if raw_bias_coef else 0.0
+            if not math.isfinite(bias_coef) or bias_coef < 0.0:
+                raise ValueError("NAVRL_LATERAL_BIAS_COEF must be finite and >= 0")
+            if bias_coef > 0.0:
+                bias_penalty = lateral_batch_bias_loss(mu)
+                weighted_bias = bias_coef * bias_penalty
+                loss += weighted_bias
+                self.aux_loss_dict["lateral_batch_bias"] = [
+                    weighted_bias.detach()
+                ]
+
+            raw_reflection_coef = os.environ.get(
+                "NAVRL_REFLECTION_COEF", ""
+            ).strip()
+            reflection_coef = (
+                float(raw_reflection_coef) if raw_reflection_coef else 0.0
+            )
+            if not math.isfinite(reflection_coef) or reflection_coef < 0.0:
+                raise ValueError("NAVRL_REFLECTION_COEF must be finite and >= 0")
+            if reflection_coef > 0.0:
+                reflected_batch = dict(batch_dict)
+                reflected_batch["obs"] = mirror_navrl_structured_observation(
+                    input_dict["obs"]
+                )
+                reflected_batch["prev_actions"] = mirror_navrl_actions(actions_batch)
+
+                # The original forward already updated observation RMS once. Reuse the frozen
+                # current statistics for the auxiliary reflected forward so this loss cannot
+                # perturb PPO merely by double-counting normalization samples.
+                rms_owner = self.model
+                while hasattr(rms_owner, "_orig_mod"):
+                    rms_owner = rms_owner._orig_mod
+                running_rms = getattr(rms_owner, "running_mean_std", None)
+                rms_was_training = (
+                    bool(running_rms.training)
+                    if isinstance(running_rms, torch.nn.Module)
+                    else False
+                )
+                if isinstance(running_rms, torch.nn.Module):
+                    running_rms.eval()
+                try:
+                    reflected_mu = self.model(reflected_batch)["mus"]
+                finally:
+                    if isinstance(running_rms, torch.nn.Module) and rms_was_training:
+                        running_rms.train()
+                symmetry_penalty = reflection_equivariance_loss(mu, reflected_mu)
+                weighted_symmetry = reflection_coef * symmetry_penalty
+                loss += weighted_symmetry
+                self.aux_loss_dict["reflection_equivariance"] = [
+                    weighted_symmetry.detach()
+                ]
+
             if self.multi_gpu:
                 self.optimizer.zero_grad(set_to_none=True)
             else:
@@ -345,6 +402,10 @@ class EarlyStopA2CAgent(A2CAgent):
                     "edge99": torch.zeros(actions.shape[1], device=actions.device),
                     "abs_sum": torch.zeros(actions.shape[1], device=actions.device),
                     "mu_abs_sum": torch.zeros(actions.shape[1], device=actions.device),
+                    "signed_y_sum": torch.zeros((), device=actions.device),
+                    "mu_signed_y_sum": torch.zeros((), device=actions.device),
+                    "positive_y": torch.zeros((), device=actions.device),
+                    "negative_y": torch.zeros((), device=actions.device),
                     "sigma_sum": torch.zeros(actions.shape[1], device=actions.device),
                     "delta_y_sum": 0.0,
                     "delta_y_n": 0,
@@ -356,8 +417,12 @@ class EarlyStopA2CAgent(A2CAgent):
             diag["edge95"] += ((safe.abs() >= 0.95) & finite).sum(dim=0)
             diag["edge99"] += ((safe.abs() >= 0.99) & finite).sum(dim=0)
             diag["abs_sum"] += (safe.abs() * finite).sum(dim=0)
+            diag["signed_y_sum"] += (safe[:, 1] * finite[:, 1]).sum()
+            diag["positive_y"] += ((safe[:, 1] > 0.1) & finite[:, 1]).sum()
+            diag["negative_y"] += ((safe[:, 1] < -0.1) & finite[:, 1]).sum()
             if isinstance(mus, torch.Tensor) and mus.shape == actions.shape:
                 diag["mu_abs_sum"] += mus.detach().abs().sum(dim=0)
+                diag["mu_signed_y_sum"] += mus.detach()[:, 1].sum()
             if isinstance(sigmas, torch.Tensor) and sigmas.shape == actions.shape:
                 diag["sigma_sum"] += sigmas.detach().sum(dim=0)
 
@@ -393,6 +458,10 @@ class EarlyStopA2CAgent(A2CAgent):
             "mean_abs": values("abs_sum"),
             "mean_mu_abs": values("mu_abs_sum"),
             "mean_sigma": values("sigma_sum"),
+            "signed_y": float(diag["signed_y_sum"].detach().cpu()) / n,
+            "mu_signed_y": float(diag["mu_signed_y_sum"].detach().cpu()) / n,
+            "positive_y": float(diag["positive_y"].detach().cpu()) / n,
+            "negative_y": float(diag["negative_y"].detach().cpu()) / n,
             "delta_y": float(diag["delta_y_sum"]) / delta_n,
             "n": n,
         }
@@ -547,10 +616,15 @@ class EarlyStopA2CAgent(A2CAgent):
             self.writer.add_scalar(
                 "policy_action/delta_y", action_diag["delta_y"], epoch_num
             )
+            for name in ("signed_y", "mu_signed_y", "positive_y", "negative_y"):
+                self.writer.add_scalar(
+                    f"policy_action/{name}", action_diag[name], epoch_num
+                )
             if epoch_num == 1 or epoch_num % 25 == 0:
                 print(
                     "[aerial RL] policy-actiondiag | mode=%s raw_oob_y=%.4f "
-                    "edge95_y=%.4f edge99_y=%.4f |mu_y|=%.3f sigma_y=%.3f "
+                    "edge95_y=%.4f edge99_y=%.4f |mu_y|=%.3f mu_y=%.3f "
+                    "pos_y=%.3f neg_y=%.3f sigma_y=%.3f "
                     "delta_y=%.3f (n=%d)"
                     % (
                         os.environ.get("NAVRL_ACTION_POLICY", "legacy"),
@@ -558,11 +632,28 @@ class EarlyStopA2CAgent(A2CAgent):
                         action_diag["edge95"][1],
                         action_diag["edge99"][1],
                         action_diag["mean_mu_abs"][1],
+                        action_diag["mu_signed_y"],
+                        action_diag["positive_y"],
+                        action_diag["negative_y"],
                         action_diag["mean_sigma"][1],
                         action_diag["delta_y"],
                         action_diag["n"],
                     ),
                     flush=True,
+                )
+        for name, values in getattr(self, "aux_loss_dict", {}).items():
+            if not isinstance(values, (list, tuple)):
+                values = [values]
+            finite_values = [
+                float(value.detach().mean().cpu())
+                for value in values
+                if isinstance(value, torch.Tensor) and bool(torch.isfinite(value).all())
+            ]
+            if finite_values:
+                self.writer.add_scalar(
+                    f"aux_loss/{name}",
+                    sum(finite_values) / len(finite_values),
+                    epoch_num,
                 )
         if getattr(self, "last_mean_rewards", None) is not None:
             try:

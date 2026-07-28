@@ -346,6 +346,7 @@ class NavRLTask(BaseTask):
         self._action_diag_prev_valid = torch.zeros(
             self.num_envs, dtype=torch.bool, device=self.device
         )
+        self._action_front_mask = None
         # --- crash-cause diagnosis (NAVRL_CRASH_DIAG=1): split the aggregate "crash" number into
         # its termination source (bar contact / height bound / out-of-arena side) so a stuck run
         # can be diagnosed from measured counts instead of guesses. Off by default: zero overhead.
@@ -980,6 +981,12 @@ class NavRLTask(BaseTask):
             "cfg_lateral_latent_margin_coef": float(
                 os.environ.get("NAVRL_LATENT_MARGIN_COEF", "0") or 0.0
             ),
+            "cfg_lateral_bias_coef": float(
+                os.environ.get("NAVRL_LATERAL_BIAS_COEF", "0") or 0.0
+            ),
+            "cfg_reflection_coef": float(
+                os.environ.get("NAVRL_REFLECTION_COEF", "0") or 0.0
+            ),
             "cfg_truncated_dmin": float(
                 os.environ.get("NAVRL_TRUNCATED_DMIN", "0.01") or 0.01
             ),
@@ -1572,14 +1579,34 @@ class NavRLTask(BaseTask):
             "n": 0,
             "raw_oob": [0.0, 0.0, 0.0, 0.0],
             "exec_edge": [0.0, 0.0, 0.0, 0.0],
+            "exec_edge95": [0.0, 0.0, 0.0, 0.0],
+            "exec_edge99": [0.0, 0.0, 0.0, 0.0],
             "abs_sum": [0.0, 0.0, 0.0, 0.0],
+            "signed_y_sum": 0.0,
+            "positive_y": 0.0,
+            "negative_y": 0.0,
+            "high80_y": 0.0,
             "delta_y_sum": 0.0,
             "delta_y_n": 0,
             "sign_flip_y": 0.0,
+            "front_clear_n": 0.0,
+            "front_clear_abs_y": 0.0,
+            "front_blocked_n": 0.0,
+            "front_blocked_abs_y": 0.0,
+            "goal_centered_n": 0.0,
+            "goal_centered_abs_y": 0.0,
+            "goal_offcenter_n": 0.0,
+            "goal_offcenter_abs_y": 0.0,
+            "clear_centered_n": 0.0,
+            "clear_centered_abs_y": 0.0,
+            "target_visible_n": 0.0,
+            "target_visible_abs_y": 0.0,
+            "target_hidden_n": 0.0,
+            "target_hidden_abs_y": 0.0,
         }
 
     def _record_action_diagnostics(self, actions):
-        """Accumulate raw tail, executed-edge and temporal lateral-action statistics."""
+        """Accumulate action tails plus context needed to separate avoidance from policy bias."""
         if not self._action_diag_enabled:
             return
         with torch.no_grad():
@@ -1592,6 +1619,8 @@ class NavRLTask(BaseTask):
             raw_oob = (safe.abs() > 1.0) & finite
             executed = safe.clamp(-1.0, 1.0)
             exec_edge = (executed.abs() >= 0.98) & finite
+            exec_edge95 = (executed.abs() >= 0.95) & finite
+            exec_edge99 = (executed.abs() >= 0.99) & finite
             abs_sum = safe.abs() * finite
             for axis in range(4):
                 self._action_diag["raw_oob"][axis] += float(
@@ -1600,9 +1629,97 @@ class NavRLTask(BaseTask):
                 self._action_diag["exec_edge"][axis] += float(
                     exec_edge[:, axis].sum().item()
                 )
+                self._action_diag["exec_edge95"][axis] += float(
+                    exec_edge95[:, axis].sum().item()
+                )
+                self._action_diag["exec_edge99"][axis] += float(
+                    exec_edge99[:, axis].sum().item()
+                )
                 self._action_diag["abs_sum"][axis] += float(
                     abs_sum[:, axis].sum().item()
                 )
+
+            valid_y_now = finite[:, 1]
+            ay = safe[:, 1]
+            abs_y = ay.abs()
+            self._action_diag["signed_y_sum"] += float(ay[valid_y_now].sum().item())
+            self._action_diag["positive_y"] += float(
+                ((ay > 0.1) & valid_y_now).sum().item()
+            )
+            self._action_diag["negative_y"] += float(
+                ((ay < -0.1) & valid_y_now).sum().item()
+            )
+            self._action_diag["high80_y"] += float(
+                ((abs_y >= 0.8) & valid_y_now).sum().item()
+            )
+
+            # Diagnostics only: classify the command using the same LiDAR frame as the actor.
+            # Target returns are excluded so chasing a centered target is not mislabeled as an
+            # obstacle. "Blocked" means a static return within 4 m in the forward +/-30 degree
+            # sector. This never enters observations, rewards, terminations or commands.
+            depth = self.obs_dict.get("depth_range_pixels")
+            if isinstance(depth, torch.Tensor) and depth.ndim >= 4:
+                scan = torch.nan_to_num(
+                    depth.squeeze(1), nan=1.0, posinf=1.0, neginf=1.0
+                ).clamp(0.0, 1.0)
+                hbeams = int(scan.shape[-1])
+                if (
+                    self._action_front_mask is None
+                    or int(self._action_front_mask.numel()) != hbeams
+                ):
+                    bin_deg = 360.0 / max(1, hbeams)
+                    angles = torch.linspace(
+                        -180.0 + bin_deg, 180.0, hbeams, device=self.device
+                    )
+                    self._action_front_mask = angles.abs() <= 30.0
+                segmentation = self.obs_dict.get("segmentation_pixels")
+                if isinstance(segmentation, torch.Tensor):
+                    target_return = segmentation.squeeze(1) == 50
+                    if target_return.shape == scan.shape:
+                        scan = torch.where(target_return, torch.ones_like(scan), scan)
+                front_min = scan[:, :, self._action_front_mask].amin(dim=(1, 2))
+                blocked_threshold = min(
+                    0.999,
+                    4.0 / max(1e-6, float(self.task_config.lidar_max_range)),
+                )
+                front_blocked = (front_min < blocked_threshold) & valid_y_now
+                front_clear = ~front_blocked & valid_y_now
+                for name, mask in (
+                    ("front_clear", front_clear),
+                    ("front_blocked", front_blocked),
+                ):
+                    self._action_diag[name + "_n"] += float(mask.sum().item())
+                    self._action_diag[name + "_abs_y"] += float(abs_y[mask].sum().item())
+            else:
+                front_clear = torch.zeros_like(valid_y_now)
+
+            # Ground truth is used only to label this diagnostic. The future v3 gate is derived
+            # from the actor's structured target track instead; no oracle feature is introduced.
+            rpos = self.target_position - self.obs_dict["robot_position"]
+            goal_vehicle = quat_rotate_inverse(
+                self.obs_dict["robot_vehicle_orientation"], rpos
+            )
+            lateral_sine = goal_vehicle[:, 1].abs() / goal_vehicle[:, :2].norm(
+                dim=1
+            ).clamp(min=1e-6)
+            goal_centered = (lateral_sine <= math.sin(math.radians(15.0))) & valid_y_now
+            goal_offcenter = ~goal_centered & valid_y_now
+            for name, mask in (
+                ("goal_centered", goal_centered),
+                ("goal_offcenter", goal_offcenter),
+            ):
+                self._action_diag[name + "_n"] += float(mask.sum().item())
+                self._action_diag[name + "_abs_y"] += float(abs_y[mask].sum().item())
+            clear_centered = front_clear & goal_centered
+            self._action_diag["clear_centered_n"] += float(clear_centered.sum().item())
+            self._action_diag["clear_centered_abs_y"] += float(
+                abs_y[clear_centered].sum().item()
+            )
+            visible = self._visible_now & valid_y_now
+            hidden = ~self._visible_now & valid_y_now
+            for name, mask in (("target_visible", visible), ("target_hidden", hidden)):
+                self._action_diag[name + "_n"] += float(mask.sum().item())
+                self._action_diag[name + "_abs_y"] += float(abs_y[mask].sum().item())
 
             valid = self._action_diag_prev_valid & finite[:, 1]
             if bool(valid.any()):
@@ -2416,9 +2533,37 @@ class NavRLTask(BaseTask):
                 "executed_edge98_rate": [
                     float(value / n_action) for value in ad["exec_edge"]
                 ],
+                "executed_edge95_rate": [
+                    float(value / n_action) for value in ad["exec_edge95"]
+                ],
+                "executed_edge99_rate": [
+                    float(value / n_action) for value in ad["exec_edge99"]
+                ],
                 "mean_abs": [float(value / n_action) for value in ad["abs_sum"]],
+                "signed_mean_y": float(ad["signed_y_sum"] / n_action),
+                "positive_y_rate": float(ad["positive_y"] / n_action),
+                "negative_y_rate": float(ad["negative_y"] / n_action),
+                "high80_y_rate": float(ad["high80_y"] / n_action),
                 "mean_abs_delta_y": float(ad["delta_y_sum"] / n_delta),
                 "sign_flip_y_rate": float(ad["sign_flip_y"] / n_delta),
+                "context": {
+                    name: {
+                        "samples": int(ad[name + "_n"]),
+                        "fraction": float(ad[name + "_n"] / n_action),
+                        "mean_abs_y": float(
+                            ad[name + "_abs_y"] / max(1.0, ad[name + "_n"])
+                        ),
+                    }
+                    for name in (
+                        "front_clear",
+                        "front_blocked",
+                        "goal_centered",
+                        "goal_offcenter",
+                        "clear_centered",
+                        "target_visible",
+                        "target_hidden",
+                    )
+                },
             },
             "crash_causes": {
                 "count": int(n_crash_causes),
@@ -2497,16 +2642,41 @@ class NavRLTask(BaseTask):
                     "NavRL actiondiag | policy=%s std=%s "
                     "task_input_oob[x,y,z,yaw]=[%.4f,%.4f,%.4f,%.4f] "
                     "exec_edge98=[%.4f,%.4f,%.4f,%.4f] "
-                    "mean_abs=[%.3f,%.3f,%.3f,%.3f] delta_y=%.3f sign_flip_y=%.3f (n=%d)"
+                    "mean_abs=[%.3f,%.3f,%.3f,%.3f] signed_y=%.3f "
+                    "pos_y=%.3f neg_y=%.3f high80_y=%.3f "
+                    "delta_y=%.3f sign_flip_y=%.3f (n=%d)"
                     % (
                         os.environ.get("NAVRL_ACTION_POLICY", "legacy"),
                         os.environ.get("NAVRL_ACTION_STD", "learned"),
                         *raw_oob,
                         *exec_edge,
                         *mean_abs,
+                        ad["signed_y_sum"] / n_action,
+                        ad["positive_y"] / n_action,
+                        ad["negative_y"] / n_action,
+                        ad["high80_y"] / n_action,
                         ad["delta_y_sum"] / n_delta,
                         ad["sign_flip_y"] / n_delta,
                         n_action,
+                    )
+                )
+                logger.warning(
+                    "NavRL actioncontext | clear=%.3f/|y|%.3f blocked=%.3f/|y|%.3f "
+                    "centered=%.3f/|y|%.3f offcenter=%.3f/|y|%.3f "
+                    "clear_centered=%.3f/|y|%.3f visible=%.3f/|y|%.3f"
+                    % (
+                        ad["front_clear_n"] / n_action,
+                        ad["front_clear_abs_y"] / max(1.0, ad["front_clear_n"]),
+                        ad["front_blocked_n"] / n_action,
+                        ad["front_blocked_abs_y"] / max(1.0, ad["front_blocked_n"]),
+                        ad["goal_centered_n"] / n_action,
+                        ad["goal_centered_abs_y"] / max(1.0, ad["goal_centered_n"]),
+                        ad["goal_offcenter_n"] / n_action,
+                        ad["goal_offcenter_abs_y"] / max(1.0, ad["goal_offcenter_n"]),
+                        ad["clear_centered_n"] / n_action,
+                        ad["clear_centered_abs_y"] / max(1.0, ad["clear_centered_n"]),
+                        ad["target_visible_n"] / n_action,
+                        ad["target_visible_abs_y"] / max(1.0, ad["target_visible_n"]),
                     )
                 )
                 self._action_diag = self._empty_action_diag()

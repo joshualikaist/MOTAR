@@ -15,7 +15,14 @@ from navrl_action_models import (
     NavRLSquashedGaussianModel,
     NavRLTruncatedGaussianModel,
 )
-from ppo_update_safety import lateral_latent_margin_loss, stable_ppo_actor_loss
+from ppo_update_safety import (
+    lateral_batch_bias_loss,
+    lateral_latent_margin_loss,
+    mirror_navrl_actions,
+    mirror_navrl_structured_observation,
+    reflection_equivariance_loss,
+    stable_ppo_actor_loss,
+)
 
 
 class _DummyA2CNetwork(nn.Module):
@@ -177,6 +184,94 @@ class ActionModelTests(unittest.TestCase):
         penalty.backward()
         self.assertEqual(float(mu.grad[0, 1]), 0.0)
         self.assertGreater(float(mu.grad[1, 1]), 0.0)
+
+    def test_lateral_batch_bias_penalizes_direction_not_magnitude(self):
+        balanced = torch.tensor(
+            [[0.0, -2.0, 0.0, 0.0], [0.0, 2.0, 0.0, 0.0]],
+            requires_grad=True,
+        )
+        one_sided = torch.tensor(
+            [[0.0, 2.0, 0.0, 0.0], [0.0, 2.0, 0.0, 0.0]],
+            requires_grad=True,
+        )
+        self.assertEqual(float(lateral_batch_bias_loss(balanced).detach()), 0.0)
+        penalty = lateral_batch_bias_loss(one_sided)
+        self.assertEqual(float(penalty.detach()), 4.0)
+        penalty.backward()
+        self.assertTrue(bool((one_sided.grad[:, 1] > 0.0).all()))
+
+    def test_navrl_reflection_is_an_involution(self):
+        hbeams = int(os.environ.get("NAVRL_LIDAR_HBEAMS", "") or 36)
+        vbeams = int(os.environ.get("NAVRL_LIDAR_VBEAMS", "") or 4)
+        obstacles = int(os.environ.get("NAVRL_MAX_OBSTACLES", "") or 5)
+        structured_obs_dim = vbeams * hbeams + 5 * obstacles * 12 + 5 * 10 + 5 * 16
+        obs = torch.randn(3, structured_obs_dim)
+        actions = torch.randn(3, 4)
+        self.assertTrue(
+            torch.equal(
+                mirror_navrl_structured_observation(
+                    mirror_navrl_structured_observation(obs)
+                ),
+                obs,
+            )
+        )
+        self.assertTrue(
+            torch.equal(mirror_navrl_actions(mirror_navrl_actions(actions)), actions)
+        )
+
+    def test_navrl_reflection_maps_the_structured_schema(self):
+        hbeams = int(os.environ.get("NAVRL_LIDAR_HBEAMS", "") or 36)
+        vbeams = int(os.environ.get("NAVRL_LIDAR_VBEAMS", "") or 4)
+        obstacles = int(os.environ.get("NAVRL_MAX_OBSTACLES", "") or 5)
+        static_dim = vbeams * hbeams
+        obstacle_size = 5 * obstacles * 12
+        robot_size = 5 * 10
+        structured_obs_dim = static_dim + obstacle_size + robot_size + 5 * 16
+        obs = torch.zeros(1, structured_obs_dim)
+        obs[:, :static_dim] = torch.arange(static_dim).reshape(1, -1)
+        obstacle = obs[:, static_dim : static_dim + obstacle_size].view(
+            1, 5, obstacles, 12
+        )
+        obstacle[..., 1], obstacle[..., 4], obstacle[..., 8] = 2.0, -3.0, 4.0
+        robot_offset = static_dim + obstacle_size
+        robot = obs[:, robot_offset : robot_offset + robot_size].view(1, 5, 10)
+        robot[..., (1, 3, 5, 7)] = torch.tensor([1.0, 2.0, 3.0, 4.0])
+        target = obs[:, robot_offset + robot_size :].view(1, 5, 16)
+        target[..., 1], target[..., 4], target[..., 7] = 5.0, -6.0, 7.0
+
+        mirrored = mirror_navrl_structured_observation(obs)
+        expected_index = (hbeams - 2 - torch.arange(hbeams)) % hbeams
+        expected_scan = obs[:, :static_dim].view(1, vbeams, hbeams).index_select(
+            2, expected_index
+        )
+        self.assertTrue(
+            torch.equal(mirrored[:, :static_dim].view_as(expected_scan), expected_scan)
+        )
+        mirrored_obstacle = mirrored[
+            :, static_dim : static_dim + obstacle_size
+        ].view(1, 5, obstacles, 12)
+        self.assertTrue(bool((mirrored_obstacle[..., 1] == -2.0).all()))
+        self.assertTrue(bool((mirrored_obstacle[..., 4] == 3.0).all()))
+        self.assertTrue(bool((mirrored_obstacle[..., 8] == 4.0).all()))
+        mirrored_robot = mirrored[
+            :, robot_offset : robot_offset + robot_size
+        ].view(1, 5, 10)
+        self.assertTrue(
+            torch.equal(
+                mirrored_robot[0, 0, (1, 3, 5, 7)],
+                torch.tensor([-1.0, -2.0, -3.0, -4.0]),
+            )
+        )
+        mirrored_target = mirrored[:, robot_offset + robot_size :].view(1, 5, 16)
+        self.assertTrue(bool((mirrored_target[..., 1] == -5.0).all()))
+        self.assertTrue(bool((mirrored_target[..., 4] == 6.0).all()))
+        self.assertTrue(bool((mirrored_target[..., 7] == 7.0).all()))
+
+    def test_reflection_loss_accepts_balanced_policy_means(self):
+        mu = torch.tensor([[0.5, 1.2, -0.3, 0.4]])
+        mirrored = mirror_navrl_actions(mu)
+        self.assertEqual(float(reflection_equivariance_loss(mu, mirrored)), 0.0)
+        self.assertGreater(float(reflection_equivariance_loss(mu, mu)), 0.0)
 
     def test_truncated_pdf_is_normalized(self):
         network = _make_network(NavRLTruncatedGaussianModel)
