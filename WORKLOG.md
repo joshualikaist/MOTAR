@@ -1829,3 +1829,23 @@ epoch `19550`까지 정확히 500 epoch를 완료한 뒤, 다음 PPO update(epoc
 따라서 이 run을 그대로 재개하지 않는다. 다음 main 수정은 lateral latent-mean margin/regularization과
 log-probability 수치 안정성을 함께 다룬 뒤, 동일 epoch-19050 checkpoint에서 짧은 재현 실험으로
 검증해야 한다.
+
+### 2026-07-28 18:56 — GTX 1650 Ti truncated-Gaussian 전송 방식 정리
+
+sub 실험의 체크포인트는 launcher에 적힌 기본 상대경로와 동일한 위치에 둘 필요가 없다.
+`CKPT=/absolute/path/to/last_gen_ppo_ep_19050_rew_31.79068.pth`로 전달하면 runner가 해당
+파일을 읽고 필요한 central-value key normalization 사본을 옆에 생성한다. 코드 커밋
+`7a10948`은 이미 원격 `research/navrl-env`에 포함되어 있어, 다른 컴퓨터가 같은 저장소를
+사용하면 `git fetch/pull`만으로 설치할 수 있다.
+
+네트워크 없이 옮기는 경우를 위해
+`/home/fair/workspaces/aerial_gym_ws/transfers/navrl_truncated_1650ti/`에 다음을 준비했다.
+
+- `0001-navrl-add-bounded-action-policies-for-squashed-trunc.patch`
+- `last_gen_ppo_ep_19050_rew_31.79068.pth` (8.5 MiB)
+- `README_KO.txt`
+
+원본 체크포인트 SHA-256은
+`b3d67792f65b71fa3939630d2b182e1b28155564a285b3feaa12db651bc68277`이다. 1650 Ti에서는
+main과 batch 조건을 맞추기 위해 우선 `NUM_ENVS=128`을 사용하고, 실제 CUDA OOM이 발생할
+때만 launcher가 지원하는 `NUM_ENVS=64`로 낮춘다.
