@@ -1849,3 +1849,27 @@ sub 실험의 체크포인트는 launcher에 적힌 기본 상대경로와 동�
 `b3d67792f65b71fa3939630d2b182e1b28155564a285b3feaa12db651bc68277`이다. 1650 Ti에서는
 main과 batch 조건을 맞추기 위해 우선 `NUM_ENVS=128`을 사용하고, 실제 CUDA OOM이 발생할
 때만 launcher가 지원하는 `NUM_ENVS=64`로 낮춘다.
+
+### 2026-07-28 19:04 — upstream `main` 선별 병합
+
+사용자 요청에 따라 `main..research/navrl-env` 전체를 감사했다. 저장소 정책대로 `main`은
+upstream Aerial Gym을 보존하고 연구 코드는 연구 브랜치에 두는 구조이며, 연구 브랜치 전체
+병합에는 upstream 문서·sim2real·DCE 예제 등 100개 파일 삭제가 포함된다. 따라서 전체 병합은
+하지 않고 별도 clean worktree에서 독립적이고 회귀 위험이 낮은 ignore 규칙만 선별 적용했다.
+
+- `b609eee`: 로컬 experiment workspace와 생성된 example media ignore.
+- `64ba00a`: `train_session_logs/`, `checkpoints_saved/` ignore. 연구 브랜치 원본은
+  `39d472f`; main에는 연구 전용 `*.log` 규칙을 끌어오지 않고 두 디렉터리만 적용했다.
+- `main`의 `origin/main` 대비 최종 diff는 `.gitignore` 한 파일, 12줄 추가뿐이며
+  `git diff --check`를 통과했다. 원본 upstream 파일 삭제·수정은 0건이다.
+
+다음은 의도적으로 main에서 제외했다.
+
+- `7a10948` bounded-action A/B: squashed main은 epoch 19551에서 non-finite 종료됐고,
+  truncated sub는 아직 별도 GPU 검증 전이므로 연구 브랜치에 유지.
+- `e3ba49e`, `542895e` 및 기타 WORKLOG/status/result: 연구 provenance 전용.
+- NavRL task, representation, density curriculum, controller opt-in 변경: 연구 스택에 대한
+  의존성이 크므로 부분 cherry-pick 시 불완전한 기능이 된다.
+- `7847994`의 upstream 자료 삭제: main 보존 목적과 정면으로 충돌.
+
+병합은 로컬에서만 수행했으며 자동 push하지 않았다.
