@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>MOTAR · Research Status</title>
 <meta name="color-scheme" content="light dark">
-<link rel="stylesheet" href="style.css?v=20260728d">
+<link rel="stylesheet" href="style.css?v=20260729a">
 </head>
 <body>
 
@@ -20,6 +20,7 @@
   <nav class="tabs" aria-label="섹션">
     <a href="#panel-live">Live</a>
     <a href="#panel-arena">Arena</a>
+    <a href="#panel-arch">Design</a>
     <a href="#panel-curves">Curves</a>
     <a href="#panel-runs">Runs</a>
   </nav>
@@ -71,6 +72,172 @@
       <label class="chk"><input type="checkbox" id="cb-trails" checked> trail</label>
     </div>
     <p class="hint arena-disclaimer">Training-distribution replay, not live PPO telemetry. Target/spawn rules match the active general-training recipe; pursuer steering is illustrative.</p>
+  </section>
+
+
+  <!-- ARCHITECTURE (paper-style block diagram) -->
+  <section class="panel" id="panel-arch">
+    <div class="panel-h">
+      <h2>Architecture</h2>
+      <p class="meta">sensor-only interception pipeline · 실선 = 온보드(배포) 경로 · 점선 = 학습 전용</p>
+    </div>
+    <div class="scrollx">
+    <svg class="arch" viewBox="0 0 1250 620" role="img" aria-label="MOTAR perception-to-interception block diagram">
+      <defs>
+        <marker id="arw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/>
+        </marker>
+        <marker id="arw-gt" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="#d05a4e"/>
+        </marker>
+      </defs>
+
+      <!-- ===== actor (onboard) lane ===== -->
+      <!-- environment -->
+      <rect class="blk" x="16" y="150" width="132" height="124" rx="9"/>
+      <text class="blk-t" x="82" y="178" text-anchor="middle">환경 시뮬레이션</text>
+      <text class="blk-s" x="82" y="196" text-anchor="middle">Isaac Gym + Warp</text>
+      <text class="blk-s" x="82" y="212" text-anchor="middle">막대 장애물 25–150</text>
+      <text class="blk-s" x="82" y="228" text-anchor="middle">이동 표적 ≤1.5 m/s</text>
+      <text class="blk-s" x="82" y="244" text-anchor="middle">기체 동역학 (0.01 s)</text>
+
+      <!-- lidar -->
+      <rect class="blk" x="188" y="56" width="158" height="88" rx="9"/>
+      <text class="blk-t" x="267" y="84" text-anchor="middle">LiDAR</text>
+      <text class="blk-s" x="267" y="102" text-anchor="middle">72×4 빔 · 360° · 12 m</text>
+      <text class="blk-s" x="267" y="118" text-anchor="middle">yaw-attached</text>
+
+      <!-- camera -->
+      <rect class="blk" x="188" y="252" width="158" height="100" rx="9"/>
+      <text class="blk-t" x="267" y="280" text-anchor="middle">RGB-D 카메라</text>
+      <text class="blk-s" x="267" y="298" text-anchor="middle">87°×58° · 표적 20 m</text>
+      <text class="blk-s" x="267" y="314" text-anchor="middle">RGB 160×90</text>
+      <text class="blk-s" x="267" y="330" text-anchor="middle">장애물 depth 40×24 @10 m</text>
+
+      <!-- fusion + tokens -->
+      <rect class="blk" x="386" y="44" width="196" height="116" rx="9"/>
+      <text class="blk-t" x="484" y="70" text-anchor="middle">스캔 융합 · 장애물 토큰화</text>
+      <text class="blk-s" x="484" y="88" text-anchor="middle">LiDAR+카메라 min-융합</text>
+      <text class="blk-s" x="484" y="104" text-anchor="middle">far-plane→no-return 리맵</text>
+      <text class="blk-s" x="484" y="120" text-anchor="middle">토큰 8개 · 240° 선택</text>
+      <text class="blk-s" x="484" y="136" text-anchor="middle">±10° 억제 · 물리 방위 테이블</text>
+
+      <!-- target detection -->
+      <rect class="blk" x="386" y="252" width="180" height="100" rx="9"/>
+      <text class="blk-t" x="476" y="280" text-anchor="middle">표적 분할 → 3D 측정</text>
+      <text class="blk-s" x="476" y="298" text-anchor="middle">외형 기반 분할기 (학습형)</text>
+      <text class="blk-s" x="476" y="314" text-anchor="middle">픽셀→방위·거리 복원</text>
+      <text class="blk-s" x="476" y="330" text-anchor="middle">측정 공분산 추정</text>
+
+      <!-- kalman -->
+      <rect class="blk" x="606" y="252" width="186" height="100" rx="9"/>
+      <text class="blk-t" x="699" y="280" text-anchor="middle">칼만 추적기</text>
+      <text class="blk-s" x="699" y="298" text-anchor="middle">등속 6-state · 5 s 기억</text>
+      <text class="blk-s" x="699" y="314" text-anchor="middle">카메라 개시 + LiDAR 재연관</text>
+      <text class="blk-s" x="699" y="330" text-anchor="middle">가림 중 공분산 성장</text>
+
+      <!-- history -->
+      <rect class="blk" x="648" y="56" width="152" height="112" rx="9"/>
+      <text class="blk-t" x="724" y="84" text-anchor="middle">히스토리 버퍼</text>
+      <text class="blk-s" x="724" y="102" text-anchor="middle">0.5 s 간격 × 5 스냅샷</text>
+      <text class="blk-s" x="724" y="118" text-anchor="middle">장애물 5×8×12 · 로봇 5×10</text>
+      <text class="blk-s" x="724" y="134" text-anchor="middle">표적 5×16 · static 288</text>
+
+      <!-- policy -->
+      <rect class="blk hi" x="832" y="120" width="168" height="140" rx="9"/>
+      <text class="blk-t" x="916" y="148" text-anchor="middle">Transformer 정책</text>
+      <text class="blk-s" x="916" y="166" text-anchor="middle">17 tokens = CLS + static</text>
+      <text class="blk-s" x="916" y="182" text-anchor="middle">+ 5·장애물 + 5·로봇 + 5·표적</text>
+      <text class="blk-s" x="916" y="198" text-anchor="middle">d64 · 4 heads · 4 layers</text>
+      <text class="blk-s" x="916" y="222" text-anchor="middle">σ clamp [-5, 0.4]</text>
+      <text class="blk-s" x="916" y="238" text-anchor="middle">deterministic 시 μ 사용</text>
+
+      <!-- controller -->
+      <rect class="blk" x="1040" y="120" width="188" height="140" rx="9"/>
+      <text class="blk-t" x="1134" y="148" text-anchor="middle">제어기 (Lee velocity)</text>
+      <text class="blk-s" x="1134" y="166" text-anchor="middle">기울기 제한 45°</text>
+      <text class="blk-s" x="1134" y="182" text-anchor="middle">tilt-보상 추력 (부호 안전)</text>
+      <text class="blk-s" x="1134" y="198" text-anchor="middle">고도 PI → v_z 생성</text>
+      <text class="blk-s" x="1134" y="214" text-anchor="middle">yaw-rate 한계 3.0 rad/s</text>
+      <text class="blk-s" x="1134" y="238" text-anchor="middle">v_max 2.5 m/s</text>
+
+      <!-- actor-lane wires -->
+      <polyline class="wire" points="148,190 168,190 168,100 180,100" marker-end="url(#arw)"/>
+      <text class="io" x="120" y="132">장면 렌더</text>
+      <polyline class="wire" points="148,240 168,240 168,302 180,302" marker-end="url(#arw)"/>
+
+      <polyline class="wire" points="346,100 378,100" marker-end="url(#arw)"/>
+      <text class="io" x="330" y="118">range 4×72</text>
+
+      <polyline class="wire" points="267,252 267,206 420,206 420,168" marker-end="url(#arw)"/>
+      <text class="io" x="280" y="222">장애물 depth</text>
+
+      <polyline class="wire" points="346,302 378,302" marker-end="url(#arw)"/>
+      <text class="io" x="348" y="292">RGB·D</text>
+
+      <polyline class="wire" points="566,302 598,302" marker-end="url(#arw)"/>
+      <text class="io" x="508" y="244">측정 + 공분산</text>
+
+      <polyline class="wire" points="582,102 640,102" marker-end="url(#arw)"/>
+      <text class="io" x="584" y="94">288 + 8×12</text>
+
+      <polyline class="wire" points="699,252 699,176" marker-end="url(#arw)"/>
+      <text class="io" x="706" y="222">표적 track 16-D</text>
+
+      <polyline class="wire" points="800,112 818,112 818,190 824,190" marker-end="url(#arw)"/>
+      <text class="io" x="742" y="208">관측 898-D</text>
+
+      <polyline class="wire" points="1000,190 1032,190" marker-end="url(#arw)"/>
+      <text class="io" x="986" y="108">행동 4-D</text>
+      <text class="io" x="972" y="278">(vx · vy · ω_yaw)</text>
+
+      <polyline class="wire" points="1134,120 1134,24 82,24 82,142" marker-end="url(#arw)"/>
+      <text class="io" x="540" y="16">모터 추력 4 → 기체 동역학 (100 Hz)</text>
+
+      <!-- ===== information firewall ===== -->
+      <line class="fw" x1="20" y1="404" x2="1228" y2="404"/>
+      <text class="fw-t" x="624" y="394" text-anchor="middle">정보 방화벽 — GT 표적·장애물 상태는 아래(학습 신호)로만 · actor 관측 경로 진입 금지</text>
+
+      <!-- ===== train-only lane ===== -->
+      <rect class="lane" x="20" y="424" width="1208" height="168" rx="10"/>
+      <text class="lane-t" x="36" y="446">TRAIN-TIME ONLY · 배포 시 제거</text>
+
+      <rect class="blk gt" x="48" y="470" width="180" height="94" rx="9"/>
+      <text class="blk-t" x="138" y="498" text-anchor="middle">GT 상태</text>
+      <text class="blk-s" x="138" y="516" text-anchor="middle">표적 위치·속도</text>
+      <text class="blk-s" x="138" y="532" text-anchor="middle">막대 배치 · 기체 자세</text>
+
+      <rect class="blk" x="300" y="470" width="200" height="94" rx="9"/>
+      <text class="blk-t" x="400" y="498" text-anchor="middle">보상 · 종료 판정</text>
+      <text class="blk-s" x="400" y="516" text-anchor="middle">포획 0.5 m (swept) · 충돌</text>
+      <text class="blk-s" x="400" y="532" text-anchor="middle">PBRS progress · 안전항</text>
+
+      <rect class="blk" x="572" y="470" width="220" height="94" rx="9"/>
+      <text class="blk-t" x="682" y="498" text-anchor="middle">특권 critic</text>
+      <text class="blk-s" x="682" y="516" text-anchor="middle">관측 898 + GT 8 = 906-D</text>
+      <text class="blk-s" x="682" y="532" text-anchor="middle">MLP 256×256 (비대칭 A-C)</text>
+
+      <rect class="blk" x="864" y="470" width="180" height="94" rx="9"/>
+      <text class="blk-t" x="954" y="498" text-anchor="middle">PPO</text>
+      <text class="blk-s" x="954" y="516" text-anchor="middle">rl_games · LR 1e-4 고정</text>
+      <text class="blk-s" x="954" y="532" text-anchor="middle">경쟁 게이트 커리큘럼</text>
+
+      <!-- train-lane wires -->
+      <polyline class="wire wire-gt" points="82,274 82,462" marker-end="url(#arw-gt)"/>
+      <text class="io gtio" x="92" y="380">특권 정보</text>
+      <polyline class="wire wire-gt" points="228,500 292,500" marker-end="url(#arw-gt)"/>
+      <polyline class="wire wire-gt" points="500,505 564,505" marker-end="url(#arw-gt)"/>
+      <text class="io gtio" x="508" y="495">GT 8-D</text>
+      <polyline class="wire" points="500,540 856,540" marker-end="url(#arw)"/>
+      <text class="io" x="640" y="556">보상 r_t</text>
+      <polyline class="wire" points="792,505 856,505" marker-end="url(#arw)"/>
+      <text class="io" x="800" y="495">가치 V</text>
+      <polyline class="wire wire-gt" points="954,470 954,300 916,300 916,268" marker-end="url(#arw-gt)"/>
+      <text class="io gtio" x="962" y="330">가중치 업데이트 (학습 시)</text>
+    </svg>
+    </div>
+    <p class="hint">치수는 텐서 크기. actor는 GT 표적 상태를 어떤 형태로도 받지 않으며(방위·거리·semantic ID 포함),
+      배포 시에는 위쪽 실선 경로만 남는다. 진단 프로브(crashdiag·bar probe)는 GT를 읽지만 관측·보상·행동에 영향을 주지 않는 평가 전용이다.</p>
   </section>
 
   <!-- CURVES -->
