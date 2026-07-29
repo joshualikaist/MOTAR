@@ -2643,3 +2643,29 @@ Traceback/non-finite/OOM/illegal-memory 오류는 0건이었다. 학습 중단 �
 - Chrome 실렌더 검수에서 live 카드가 직전 legacy run의 peak→final gap을 현재 run에 섞어
   보여주는 기존 결함을 발견했다. live일 때는 현재 epoch/500을 표시하도록 바꾸고, density
   promotion 설명도 fixed 25-bar bounded pilot 설명으로 교정했다.
+
+## 2026-07-29 22:47 — 고밀도 Arena pursuer 정지 병목 수정
+
+사용자가 status Arena에서 막대 수를 높였을 때 `PURSUER`가 중간에 정지하는 현상을
+발견했다. 이 화면의 pursuer는 PPO checkpoint를 브라우저에서 실행하는 것이 아니라
+`docs/status/arena.js`의 설명용 steering이므로, 이 현상만으로 실제 정책의 고밀도 성능을
+판정할 수 없다. 실제 정식 run
+`ppo_260729_2225_navrl_corrected-squashed-fresh-pilot-s1`도 현재 25 bars 고정 P6A
+pilot이며, P6B 25→110 density curriculum은 아직 시작하지 않았다.
+
+사이트 정지의 직접 원인은 목표 인력과 근거리 막대 반발력을 단순 합산하던 artificial
+potential field였다. 막대가 조밀하거나 좌우 대칭이면 벡터가 상쇄되어 local minimum에
+빠질 수 있었다. 이를 다음처럼 수정했다.
+
+- pursuer 반경 0.25 m와 각 막대의 실제 폭을 포함한 swept-path clearance를 사용한다.
+- 목표 방향 기준 `0, ±15, ±30, ±45, ±60, ±90, ±120, 180°` 후보를 0.9초
+  look-ahead로 평가한다.
+- 동일 점수에서 episode별 좌/우 회피 부호와 이전 heading을 유지해 프레임마다 회피 방향이
+  뒤집히는 것을 막는다.
+- 브라우저 장면은 계속 `illustrative pursuer`임을 명시하며, 실제 PPO 결과로 오인하지 않는다.
+
+회귀 검증은 기존 대칭 막대 함정에서 5초 안에 목표 1 m 이내로 탈출하는지 검사한다. 추가
+20 episode/density 동적 probe에서 25/110/130/150 bars 모두 capture `20/20`,
+stationary step `0.00%`, 평균 이동속도 `2.50 m/s`였다. 150 bars의 look-ahead
+blocked 표시는 `0.95%`였지만 정지는 없었다. 기존 target-motion/status parity test와
+`git diff --check`도 통과했다.

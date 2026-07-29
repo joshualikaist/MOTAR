@@ -83,29 +83,6 @@ window.Arena = (() => {
     if (sampled && episode) sampled.textContent = `${episode.speed.toFixed(2)} m/s sampled`;
   }
 
-  function steer(x, y) {
-    let fx = 0, fy = 0;
-    for (const p of bars) {
-      const dx = x - p.x, dy = y - p.y; const d = Math.hypot(dx, dy);
-      if (d < 1.6 && d > 1e-3) { const w = (1.6 - d) / 1.6; fx += dx / d * w; fy += dy / d * w; }
-    }
-    return [fx, fy];
-  }
-
-  function clearBars(x, y, clr) {
-    for (let it = 0; it < 6; it++) {
-      let ex = 0, ey = 0, bad = false;
-      for (const p of bars) {
-        const rad = clr + p.w * 0.5;
-        const dx = x - p.x, dy = y - p.y; const d = Math.hypot(dx, dy);
-        if (d < rad) { bad = true; const inv = d > 1e-3 ? 1 / d : 1; ex += dx * inv; ey += dy * inv; }
-      }
-      if (!bad) break;
-      const en = Math.hypot(ex, ey) || 1; x += ex / en * 0.25; y += ey / en * 0.25;
-    }
-    return [x, y];
-  }
-
   function makeDrone(color, accent, scale = 1) {
     const g = new THREE.Group();
     const bodyMat = new THREE.MeshStandardMaterial({ color, roughness: .28, metalness: .45 });
@@ -387,17 +364,12 @@ window.Arena = (() => {
     if (playing) Motion.advanceTarget(episode, dt, bars, motionRng);
     let dx = drone.position.x, dy = drone.position.z;
     if (playing && dt > 0) {
-      const toX = episode.target.x - dx, toY = episode.target.y - dy;
-      const toD = Math.max(Math.hypot(toX, toY), 1e-6);
-      const [avoidX, avoidY] = steer(dx, dy);
-      let cmdX = toX / toD + avoidX * 2.4;
-      let cmdY = toY / toD + avoidY * 2.4;
-      const cmdN = Math.max(Math.hypot(cmdX, cmdY), 1e-6);
-      cmdX = cmdX / cmdN * Motion.CONTRACT.pursuerSpeedMax;
-      cmdY = cmdY / cmdN * Motion.CONTRACT.pursuerSpeedMax;
-      const proposed = clearBars(dx + cmdX * dt, dy + cmdY * dt, 0.25);
-      dx = THREE.MathUtils.clamp(proposed[0], X0 + 0.5, X1 - 0.5);
-      dy = THREE.MathUtils.clamp(proposed[1], Y0 + 0.5, Y1 - 0.5);
+      const proposed = Motion.steerPursuerStep(
+        dx, dy, episode.target.x, episode.target.y,
+        Motion.CONTRACT.pursuerSpeedMax, dt, bars, heading, episode.avoidSign
+      );
+      dx = proposed.x;
+      dy = proposed.y;
     }
 
     vel.x += ((dx - lastDrone.x) / Math.max(dt, 1e-3) - vel.x) * (1 - Math.exp(-dt * 6));

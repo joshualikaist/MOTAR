@@ -16,6 +16,7 @@ assert.strictEqual(M.CONTRACT.targetDistanceMax, 16);
 assert.strictEqual(M.CONTRACT.targetBarClearance, 1);
 assert.strictEqual(M.CONTRACT.waypointReach, 0.5);
 assert.strictEqual(M.CONTRACT.targetSpeedMax, 1.5);
+assert.strictEqual(M.CONTRACT.pursuerSpeedMax, 2.5);
 
 // Fail loudly if the training recipe changes without updating the status simulator.
 const repo = path.resolve(__dirname, '..');
@@ -112,5 +113,26 @@ assert(steered.clear && steered.steered);
 close(Math.hypot(steered.x - 10, steered.y), 0.1, 1e-10);
 close(Math.hypot(steered.vx, steered.vy), 1, 1e-10);
 assert(M.distanceToBars(steered.x, steered.y, [{ x: 11.05, y: 0 }]) >= 1);
+
+// The browser pursuer must escape the symmetric potential-field trap that used
+// to make it stand still between dense bars.
+const trapBars = [
+  { x: 11, y: -0.45, w: 0.7 },
+  { x: 11, y: 0.45, w: 0.7 },
+  { x: 12.2, y: -1.25, w: 0.7 },
+  { x: 12.2, y: 1.25, w: 0.7 },
+];
+let pursuer = { x: 10, y: 0, heading: 0 };
+let moved = 0;
+for (let i = 0; i < 100; i++) {
+  const next = M.steerPursuerStep(
+    pursuer.x, pursuer.y, 16, 0, 2.5, 0.05, trapBars, pursuer.heading, 1
+  );
+  moved += Math.hypot(next.x - pursuer.x, next.y - pursuer.y);
+  pursuer = { x: next.x, y: next.y, heading: next.heading };
+  assert(M.pursuerClearance(pursuer.x, pursuer.y, trapBars) >= -1e-9);
+}
+assert(moved > 5.5, `dense-trap movement too small: ${moved}`);
+assert(Math.hypot(16 - pursuer.x, pursuer.y) < 1);
 
 console.log('status arena motion parity: ok');
