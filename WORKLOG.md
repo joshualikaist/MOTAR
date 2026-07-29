@@ -2510,3 +2510,76 @@ Phase-3 실제 Isaac Gym smoke(static identity + CV/waypoint/circle + curriculum
   NaN/Inf fail-fast는 유지한다.
 - 기본 500 epoch, 128 env, seed 1. 이 결과로 P1–P4를 판정한 뒤에만 full fresh run의
   액션 정책과 density curriculum을 결정한다.
+
+---
+
+## 2026-07-29 — sensor-fix fresh pilot 완료 및 5-speed held-out 평가
+
+`ppo_260729_2104_navrl_sensorfix-fresh-pilot-s1`이 계획한 epoch `500/500`에
+`max_epochs`로 정상 종료했다. NaN/Inf, reward collapse, OOM은 없었다. 마지막의
+`*** Can't create empty tensor`는 checkpoint·summary·finished marker가 기록된 뒤 Isaac Gym
+shutdown에서 나오는 기존 cleanup 경고이며 종료 원인이 아니다. 평가 checkpoint는
+`last_gen_ppo_ep_500_rew_38.911366.pth`이다.
+
+### 학습 추세
+
+| epoch window | capture 평균 | crash 평균 | reward 평균 |
+|---|---:|---:|---:|
+| 1–100 | 5.3% | 94.7% | -37.51 |
+| 101–200 | 26.6% | 73.4% | -0.61 |
+| 201–300 | 44.6% | 55.4% | 18.07 |
+| 301–400 | 55.8% | 44.2% | 29.26 |
+| 401–500 | 57.1% | 42.9% | 35.21 |
+| 451–500 | 55.9% | 44.1% | 36.52 |
+
+마지막 epoch capture는 59.7%, run 단일-epoch peak는 71.6%@429였다. PPO 자체는 안정적이다:
+epoch 500 KL `0.00522`, explained variance `0.581`, LR `1e-4`, 모든 scalar finite.
+
+표적 운동 수정도 실제 학습에서 검증됐다. epoch 100/200/300/400/500의 command 평균과
+realized 평균이 소수점 출력 정밀도까지 각각 동일했고, epoch 500은 command=realized
+`0.12676 m/s`(ceiling `0.24998`)였다. 따라서 현재 성능 저하를 표적 stall로 설명할 수 없다.
+
+### 25-bars deterministic held-out (seed 42, 1000 games/cell)
+
+조건: mixed CV/waypoint, pursuer limit 2.5 m/s, 240°/8-token/4×72/12 m,
+실제 episode 합계 5,010개.
+
+| target m/s | capture | crash | bar contact (절대) | below (절대) |
+|---:|---:|---:|---:|---:|
+| 0.0 | 64.9% | 35.1% | 20.5% | 13.7% |
+| 0.25 | **67.2%** | **32.8%** | 18.7% | 13.5% |
+| 0.5 | 65.3% | 34.7% | 23.1% | 11.2% |
+| 1.0 | 61.0% | 39.0% | 23.2% | 14.6% |
+| 1.5 | 55.2% | 44.8% | 28.1% | 14.9% |
+| 가중 평균 | **62.7%** | **37.3%** | **22.7%** | **13.6%** |
+
+raw 결과는
+`train_session_logs/eval_results/speed_density_ppo_260729_2104_navrl_sensorfix-fresh-pilot-s1_260729_221344/`
+에 보관한다.
+
+### 사전등록 P1–P4 판정
+
+1. **P1 부분 통과** — literal 기준인 좌/우 사용률 >10%는 만족했다. 하지만 고정 평가에서
+   positive-y `31.3–37.0%`, negative-y `62.4–68.0%`로, 과거 +y 고착이 사라진 대신 약한
+   -y 편향이 자랐다. “키랄리티 완전 소멸”로 해석하면 실패다.
+2. **P2 강하게 통과** — 마지막 barprobe `hit_token_given_fov=0.981`로 목표 0.8+를 넘었다.
+   sensor-bearing/far-plane 수정은 실제 simulation 관측에서도 효과가 확인됐다.
+3. **P3 실패** — held-out 전 속도에서 front-clear와 front-blocked의 mean `|a_y|`가
+   `0.959–0.969`로 사실상 동일했다(차이 <0.004). 정책이 장애물 문맥에 따라 횡축 크기를
+   조절하지 않는다.
+4. **P4 실패** — 최고 held-out capture 67.2%로 0.90에 미달한다. 수정 전 15k-epoch 정책과
+   수정 후 500-epoch fresh 정책은 직접 동등 비교가 아니지만, pilot의 go 조건은 충족하지 못했다.
+
+### 핵심 원인과 다음 결정
+
+센서는 병목에서 빠졌고 새 병목은 **legacy Gaussian의 action saturation**이다. TensorBoard에서
+lateral `edge99_y`가 epoch 100 `59.9%`→500 `90.3%`, raw mean `|a_y|`가
+`1.44`→`2.71`, mean `|mu_y|`가 `1.22`→`2.68`로 악화됐다. 반면 sigma는
+`1.00`→`0.91`에 불과해, 단순 exploration noise보다 actor mean 자체가 clamp 밖으로 달아난다.
+held-out에서도 executed `edge98_y=91.7–93.7%`, clear/blocked 행동이 동일했다.
+
+따라서 이 legacy run을 장기 연장하거나 density curriculum으로 넘기지 않는다. 이전
+bounded-policy 결과는 깨진 센서 checkpoint에서 얻었으므로 성능 수치는 재사용하지 않되,
+검증된 likelihood-correct 구현과 PPO safety 장치는 재사용할 수 있다. 다음 실험은 깨끗한
+관측에서 **fresh bounded actor pilot**로 action support와 context response를 먼저 통과시킨 뒤
+장기·밀도 학습으로 확장한다.
