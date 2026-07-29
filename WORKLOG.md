@@ -2618,3 +2618,28 @@ range` 경고가 여러 번 출력됐다. 이는 `torch.compile`이 첫 graph를
 dimension의 정적 범위를 증명하지 못해 unknown으로 처리한다는 compile-time 진단이다.
 실제 PID `1160972`는 GPU 약 5.85 GiB를 사용하며 경고 이후 epoch 23까지 정상 진행했고,
 Traceback/non-finite/OOM/illegal-memory 오류는 0건이었다. 학습 중단 사유가 아니므로 무시한다.
+
+---
+
+## 2026-07-29 22:32 — research status 사이트 최신화
+
+`docs/status` snapshot을 현재 연구 상태와 live bounded pilot로 갱신했다.
+
+- 새 **Research update** 패널: 물리 LiDAR match 94.8%, token hit|FOV 98.1%, target-motion
+  25–130 bars 실현속도 100%/stall 0%, legacy 5-speed held-out 5,010 episodes 가중 capture
+  62.7%와 edge98-y 91.7–93.7%를 한 화면에 배치했다.
+- 현재 `ppo_260729_2225_navrl_corrected-squashed-fresh-pilot-s1`을 epoch 132 snapshot으로
+  표시한다. tail50 capture 70.5%, crash 29.3%, raw OOB-y 0%, edge99-y 0%,
+  +y/−y 43.9%/45.8%, KL 0.00471이다.
+- Architecture 정책 블록을 낡은 learned-σ legacy 설명에서 실제
+  tanh-squashed bounded action, fixed σ `[.35,.35,.05,.08]`, KL gate/latent margin/finite
+  ratio 계약으로 교정했다.
+- Now/phase를 density curriculum active에서 **P6A bounded action contract active**,
+  P6B density 25→110 pending으로 수정했다. 장기·밀도 학습 gate도 raw OOB=0,
+  edge99-y<5%, 좌우 양방향>10%, clear/blocked context 분리로 명시했다.
+- `status.json`과 HTML fallback snapshot을 같은 데이터로 동기화하고 cache version을
+  `20260729b`로 갱신했다. status parity test가 update schema와 bounded contract drift를
+  감시하도록 확장했다.
+- Chrome 실렌더 검수에서 live 카드가 직전 legacy run의 peak→final gap을 현재 run에 섞어
+  보여주는 기존 결함을 발견했다. live일 때는 현재 epoch/500을 표시하도록 바꾸고, density
+  promotion 설명도 fixed 25-bar bounded pilot 설명으로 교정했다.

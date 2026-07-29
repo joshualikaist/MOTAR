@@ -1,43 +1,43 @@
 {
-  "generated_at": "2026-07-28T09:47:08.142180+00:00",
+  "generated_at": "2026-07-29T13:31:55.429455+00:00",
   "repo": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator",
-  "n_runs": 26,
+  "n_runs": 38,
   "active_run": {
-    "run": "ppo_260724_0110_navrl",
-    "is_live": false,
-    "metrics_age_min": 6796.6,
-    "epoch": 3825.0,
-    "epochs_logged": 482,
+    "run": "ppo_260729_2225_navrl_corrected-squashed-fresh-pilot-s1",
+    "is_live": true,
+    "metrics_age_min": 0.030305663744608562,
+    "epoch": 132.0,
+    "epochs_logged": 132,
     "tail_epochs": 50,
-    "captured_rate": 0.89671454,
-    "crash_rate": 0.10328545799999997,
-    "timeout_rate": 0.0,
-    "mean_reward": 157.24868000000004,
-    "closest_approach_m": 0.38230926000000004,
+    "captured_rate": 0.7049997200000001,
+    "crash_rate": 0.2927713,
+    "timeout_rate": 0.002228984,
+    "mean_reward": 35.416864000000004,
+    "closest_approach_m": 0.45890060000000005,
     "n_bars_active": 25.0,
-    "curriculum_max_m": 16.0
+    "curriculum_max_m": 6.57948
   },
   "latest_run": {
-    "run": "ppo_260728_1817_navrl_action-squashed-main-s1",
-    "finalized_at": "2026-07-28T09:44:44.893363+00:00",
-    "exit_reason": "nonfinite_ppo",
+    "run": "ppo_260729_2104_navrl_sensorfix-fresh-pilot-s1",
+    "finalized_at": "2026-07-29T12:28:11.207346+00:00",
+    "exit_reason": "max_epochs",
     "epochs_logged": 500,
-    "first_epoch": 19051,
-    "last_epoch": 19550,
+    "first_epoch": 1,
+    "last_epoch": 500,
     "is_navrl": true,
-    "last_mean_reward": 31.084247589111328,
-    "last_mean_episode_length": 55.64152526855469,
-    "last_captured_rate": 0.7066666666666667,
-    "last_crash_rate": 0.29333333333333333,
+    "last_mean_reward": 38.9113655090332,
+    "last_mean_episode_length": 33.00690841674805,
+    "last_captured_rate": 0.5966386554621849,
+    "last_crash_rate": 0.40336134453781514,
     "last_timeout_rate": 0.0,
-    "last_closest_approach_m": 0.36845798368723887,
-    "last_closest_min_m": 0.185881108045578,
-    "last_curriculum_max_m": 14.60225772857666,
-    "last_n_bars_active": 75,
-    "peak_captured_rate": 0.8333333333333334,
-    "peak_captured_epoch": 19106,
-    "peak_mean_reward": 48.89157485961914,
-    "peak_epoch": 19417,
+    "last_closest_approach_m": 0.42100258276496133,
+    "last_closest_min_m": 0.2562471926212311,
+    "last_curriculum_max_m": 8.350894927978516,
+    "last_n_bars_active": 25,
+    "peak_captured_rate": 0.7164179104477612,
+    "peak_captured_epoch": 429,
+    "peak_mean_reward": 44.10559844970703,
+    "peak_epoch": 467,
     "reward_collapse": false
   },
   "runs": [
@@ -203,7 +203,7 @@
       "reward_collapse": false
     },
     {
-      "run": "density_25",
+      "run": "ppo_260716_0357_navrl",
       "finalized_at": "2026-07-16T00:47:39.601812+00:00",
       "exit_reason": "max_epochs",
       "epochs_logged": 6000,
@@ -249,7 +249,7 @@
       "reward_collapse": false
     },
     {
-      "run": "density_50",
+      "run": "ppo_260716_1250_navrl",
       "finalized_at": "2026-07-16T11:00:24.772106+00:00",
       "exit_reason": "max_epochs",
       "epochs_logged": 6000,
@@ -295,7 +295,7 @@
       "reward_collapse": false
     },
     {
-      "run": "density_120",
+      "run": "ppo_260717_0033_navrl",
       "finalized_at": "2026-07-17T03:03:21.207103+00:00",
       "exit_reason": "max_epochs",
       "epochs_logged": 6000,
@@ -364,7 +364,7 @@
       "reward_collapse": false
     },
     {
-      "run": "ppo_260718_1844_navrl_vision50-seed2",
+      "run": "ppo_260718_1844_navrl",
       "finalized_at": "2026-07-18T15:34:41.495787+00:00",
       "exit_reason": "max_epochs",
       "epochs_logged": 6000,
@@ -387,7 +387,7 @@
       "reward_collapse": false
     },
     {
-      "run": "ppo_260719_1002_navrl_vision-goalcap-seed1",
+      "run": "ppo_260719_1002_navrl",
       "finalized_at": "2026-07-19T07:06:44.206539+00:00",
       "exit_reason": "max_epochs",
       "epochs_logged": 6000,
@@ -637,6 +637,259 @@
       "peak_captured_epoch": 19106,
       "peak_mean_reward": 48.89157485961914,
       "peak_epoch": 19417,
+      "reward_collapse": false
+    },
+    {
+      "run": "ppo_260728_1946_navrl_action-squashed-v2-smoke",
+      "finalized_at": "2026-07-28T10:46:38.311368+00:00",
+      "exit_reason": "max_epochs",
+      "epochs_logged": 1,
+      "first_epoch": 19051,
+      "last_epoch": 19051,
+      "is_navrl": true,
+      "last_mean_reward": 19.22300910949707,
+      "last_mean_episode_length": 20.65625,
+      "last_captured_rate": 0.46875,
+      "last_crash_rate": 0.53125,
+      "last_timeout_rate": 0.0,
+      "last_closest_approach_m": 0.3253271003564199,
+      "last_closest_min_m": 0.16060000658035278,
+      "last_curriculum_max_m": 15.793977737426758,
+      "last_n_bars_active": 75,
+      "peak_captured_rate": 0.46875,
+      "peak_captured_epoch": 19051,
+      "peak_mean_reward": 19.22300910949707,
+      "peak_epoch": 19051,
+      "reward_collapse": false
+    },
+    {
+      "run": "ppo_260728_1947_navrl_action-squashed-v2-lr5e6-smoke",
+      "finalized_at": "2026-07-28T10:47:48.096083+00:00",
+      "exit_reason": "max_epochs",
+      "epochs_logged": 1,
+      "first_epoch": 19051,
+      "last_epoch": 19051,
+      "is_navrl": true,
+      "last_mean_reward": 19.22300910949707,
+      "last_mean_episode_length": 20.65625,
+      "last_captured_rate": 0.46875,
+      "last_crash_rate": 0.53125,
+      "last_timeout_rate": 0.0,
+      "last_closest_approach_m": 0.3253271003564199,
+      "last_closest_min_m": 0.16060000658035278,
+      "last_curriculum_max_m": 15.793977737426758,
+      "last_n_bars_active": 75,
+      "peak_captured_rate": 0.46875,
+      "peak_captured_epoch": 19051,
+      "peak_mean_reward": 19.22300910949707,
+      "peak_epoch": 19051,
+      "reward_collapse": false
+    },
+    {
+      "run": "ppo_260728_1958_navrl_action-squashed-v2-main-s1",
+      "finalized_at": "2026-07-28T11:23:32.236187+00:00",
+      "exit_reason": "max_epochs",
+      "epochs_logged": 500,
+      "first_epoch": 19051,
+      "last_epoch": 19550,
+      "is_navrl": true,
+      "last_mean_reward": 33.75812911987305,
+      "last_mean_episode_length": 58.95928192138672,
+      "last_captured_rate": 0.6835443037974683,
+      "last_crash_rate": 0.3037974683544304,
+      "last_timeout_rate": 0.012658227848101266,
+      "last_closest_approach_m": 0.4965112266215411,
+      "last_closest_min_m": 0.15158505737781525,
+      "last_curriculum_max_m": 10.907613754272461,
+      "last_n_bars_active": 75,
+      "peak_captured_rate": 0.8461538461538461,
+      "peak_captured_epoch": 19145,
+      "peak_mean_reward": 48.45063018798828,
+      "peak_epoch": 19303,
+      "reward_collapse": false
+    },
+    {
+      "run": "ppo_260728_2156_navrl_action-squashed-v3-bias-smoke-c002",
+      "finalized_at": "2026-07-28T12:57:03.417443+00:00",
+      "exit_reason": "max_epochs",
+      "epochs_logged": 1,
+      "first_epoch": 19551,
+      "last_epoch": 19551,
+      "is_navrl": true,
+      "last_mean_reward": 12.964920997619629,
+      "last_mean_episode_length": 21.96875,
+      "last_captured_rate": 0.40625,
+      "last_crash_rate": 0.59375,
+      "last_timeout_rate": 0.0,
+      "last_closest_approach_m": 0.3263278408692433,
+      "last_closest_min_m": 0.09753315150737762,
+      "last_curriculum_max_m": 12.244063377380371,
+      "last_n_bars_active": 75,
+      "peak_captured_rate": 0.40625,
+      "peak_captured_epoch": 19551,
+      "peak_mean_reward": 12.964920997619629,
+      "peak_epoch": 19551,
+      "reward_collapse": false
+    },
+    {
+      "run": "ppo_260728_2158_navrl_action-squashed-v3-bias-main-s1",
+      "finalized_at": "2026-07-28T13:01:51.061575+00:00",
+      "exit_reason": "interrupted",
+      "epochs_logged": 63,
+      "first_epoch": 19551,
+      "last_epoch": 19613,
+      "is_navrl": true,
+      "last_mean_reward": 36.098106384277344,
+      "last_mean_episode_length": 56.82274627685547,
+      "last_captured_rate": 0.746268656716418,
+      "last_crash_rate": 0.2537313432835821,
+      "last_timeout_rate": 0.0,
+      "last_closest_approach_m": 0.3662422603368759,
+      "last_closest_min_m": 0.16199734807014465,
+      "last_curriculum_max_m": 12.948078155517578,
+      "last_n_bars_active": 75,
+      "peak_captured_rate": 0.8360655737704918,
+      "peak_captured_epoch": 19559,
+      "peak_mean_reward": 47.6485595703125,
+      "peak_epoch": 19598,
+      "reward_collapse": false
+    },
+    {
+      "run": "ppo_260728_2202_navrl_action-squashed-v3-bias-c010-p50-s1",
+      "finalized_at": "2026-07-28T13:05:08.827428+00:00",
+      "exit_reason": "max_epochs",
+      "epochs_logged": 50,
+      "first_epoch": 19551,
+      "last_epoch": 19600,
+      "is_navrl": true,
+      "last_mean_reward": 33.11819076538086,
+      "last_mean_episode_length": 59.54209518432617,
+      "last_captured_rate": 0.6875,
+      "last_crash_rate": 0.3125,
+      "last_timeout_rate": 0.0,
+      "last_closest_approach_m": 0.36332039365714247,
+      "last_closest_min_m": 0.19615571200847626,
+      "last_curriculum_max_m": 15.38719367980957,
+      "last_n_bars_active": 75,
+      "peak_captured_rate": 0.8289473684210527,
+      "peak_captured_epoch": 19553,
+      "peak_mean_reward": 50.324954986572266,
+      "peak_epoch": 19554,
+      "reward_collapse": false
+    },
+    {
+      "run": "ppo_260728_2208_navrl_action-squashed-v3-reflect-smoke-c010",
+      "finalized_at": "2026-07-28T13:08:49.624189+00:00",
+      "exit_reason": "max_epochs",
+      "epochs_logged": 1,
+      "first_epoch": 19551,
+      "last_epoch": 19551,
+      "is_navrl": true,
+      "last_mean_reward": 12.964920997619629,
+      "last_mean_episode_length": 21.96875,
+      "last_captured_rate": 0.40625,
+      "last_crash_rate": 0.59375,
+      "last_timeout_rate": 0.0,
+      "last_closest_approach_m": 0.3263278408692433,
+      "last_closest_min_m": 0.09753315150737762,
+      "last_curriculum_max_m": 12.244063377380371,
+      "last_n_bars_active": 75,
+      "peak_captured_rate": 0.40625,
+      "peak_captured_epoch": 19551,
+      "peak_mean_reward": 12.964920997619629,
+      "peak_epoch": 19551,
+      "reward_collapse": false
+    },
+    {
+      "run": "ppo_260728_2209_navrl_action-squashed-v3-reflect-p50-s1",
+      "finalized_at": "2026-07-28T13:10:41.930642+00:00",
+      "exit_reason": "interrupted",
+      "epochs_logged": 23,
+      "first_epoch": 19551,
+      "last_epoch": 19573,
+      "is_navrl": true,
+      "last_mean_reward": 33.99295425415039,
+      "last_mean_episode_length": 59.16313934326172,
+      "last_captured_rate": 0.676923076923077,
+      "last_crash_rate": 0.3230769230769231,
+      "last_timeout_rate": 0.0,
+      "last_closest_approach_m": 0.3802020979875868,
+      "last_closest_min_m": 0.1829492300748825,
+      "last_curriculum_max_m": 11.890405654907227,
+      "last_n_bars_active": 75,
+      "peak_captured_rate": 0.7777777777777778,
+      "peak_captured_epoch": 19558,
+      "peak_mean_reward": 47.32312774658203,
+      "peak_epoch": 19553,
+      "reward_collapse": false
+    },
+    {
+      "run": "ppo_260728_2211_navrl_action-squashed-v3-reflect-c100-p25-s1",
+      "finalized_at": "2026-07-28T13:12:54.511788+00:00",
+      "exit_reason": "max_epochs",
+      "epochs_logged": 25,
+      "first_epoch": 19551,
+      "last_epoch": 19575,
+      "is_navrl": true,
+      "last_mean_reward": 30.59674644470215,
+      "last_mean_episode_length": 57.54349899291992,
+      "last_captured_rate": 0.6933333333333334,
+      "last_crash_rate": 0.30666666666666664,
+      "last_timeout_rate": 0.0,
+      "last_closest_approach_m": 0.3554754320245523,
+      "last_closest_min_m": 0.1580238789319992,
+      "last_curriculum_max_m": 15.4100341796875,
+      "last_n_bars_active": 75,
+      "peak_captured_rate": 0.8181818181818182,
+      "peak_captured_epoch": 19571,
+      "peak_mean_reward": 44.16714859008789,
+      "peak_epoch": 19555,
+      "reward_collapse": false
+    },
+    {
+      "run": "ppo_260728_2214_navrl_action-squashed-v3-reflect-c100-p100-s1",
+      "finalized_at": "2026-07-28T13:19:03.598894+00:00",
+      "exit_reason": "max_epochs",
+      "epochs_logged": 75,
+      "first_epoch": 19576,
+      "last_epoch": 19650,
+      "is_navrl": true,
+      "last_mean_reward": 20.523204803466797,
+      "last_mean_episode_length": 54.76858901977539,
+      "last_captured_rate": 0.5416666666666666,
+      "last_crash_rate": 0.4583333333333333,
+      "last_timeout_rate": 0.0,
+      "last_closest_approach_m": 0.380629165432392,
+      "last_closest_min_m": 0.16626863181591034,
+      "last_curriculum_max_m": 13.458976745605469,
+      "last_n_bars_active": 75,
+      "peak_captured_rate": 0.8032786885245902,
+      "peak_captured_epoch": 19577,
+      "peak_mean_reward": 48.5397834777832,
+      "peak_epoch": 19577,
+      "reward_collapse": false
+    },
+    {
+      "run": "ppo_260729_2104_navrl_sensorfix-fresh-pilot-s1",
+      "finalized_at": "2026-07-29T12:28:11.207346+00:00",
+      "exit_reason": "max_epochs",
+      "epochs_logged": 500,
+      "first_epoch": 1,
+      "last_epoch": 500,
+      "is_navrl": true,
+      "last_mean_reward": 38.9113655090332,
+      "last_mean_episode_length": 33.00690841674805,
+      "last_captured_rate": 0.5966386554621849,
+      "last_crash_rate": 0.40336134453781514,
+      "last_timeout_rate": 0.0,
+      "last_closest_approach_m": 0.42100258276496133,
+      "last_closest_min_m": 0.2562471926212311,
+      "last_curriculum_max_m": 8.350894927978516,
+      "last_n_bars_active": 25,
+      "peak_captured_rate": 0.7164179104477612,
+      "peak_captured_epoch": 429,
+      "peak_mean_reward": 44.10559844970703,
+      "peak_epoch": 467,
       "reward_collapse": false
     }
   ],
@@ -1290,7 +1543,152 @@
         }
       ],
       "mtime": "2026-07-27T00:22:05.416882+00:00"
+    },
+    "corrected_sensorfix_legacy_speed_axis": {
+      "notes": [
+        "Corrected LiDAR bearing + camera far-plane + target local steering",
+        "Legacy Gaussian fresh pilot, epoch 500, deterministic held-out, 25 bars",
+        "Primary failure: executed edge98-y 91.7–93.7%; perception hit_token_given_fov=0.981"
+      ],
+      "rows": [
+        {
+          "target_speed": 0.0,
+          "capture": 0.6487025948,
+          "crash": 0.3512974052,
+          "bar_contact": 0.2045908184,
+          "below": 0.1367265469
+        },
+        {
+          "target_speed": 0.25,
+          "capture": 0.672,
+          "crash": 0.328,
+          "bar_contact": 0.187,
+          "below": 0.135
+        },
+        {
+          "target_speed": 0.5,
+          "capture": 0.6526946108,
+          "crash": 0.3473053892,
+          "bar_contact": 0.2305389222,
+          "below": 0.1117764471
+        },
+        {
+          "target_speed": 1.0,
+          "capture": 0.6103379722,
+          "crash": 0.3896620278,
+          "bar_contact": 0.231610338,
+          "below": 0.1461232604
+        },
+        {
+          "target_speed": 1.5,
+          "capture": 0.552,
+          "crash": 0.448,
+          "bar_contact": 0.281,
+          "below": 0.149
+        }
+      ],
+      "mtime": "2026-07-29T13:31:55.429455+00:00"
     }
   },
-  "other_curves": {}
+  "other_curves": {},
+  "research_update": {
+    "subtitle": "2026-07-29 · corrected observation → bounded action contract",
+    "headline": "Perception is fixed. Action saturation is now the controlled variable.",
+    "summary": "The corrected LiDAR/camera stack passes its physical probe; the legacy Gaussian failed by saturating lateral commands. A checkpoint-free squashed policy is running on the corrected environment.",
+    "bounded_pilot": {
+      "is_live": true,
+      "max_epochs": 500,
+      "bars": 25,
+      "run": "ppo_260729_2225_navrl_corrected-squashed-fresh-pilot-s1",
+      "epoch": 132,
+      "capture_tail": 0.7049997200000001,
+      "raw_oob_y": 0.0,
+      "edge99_y": 0.0,
+      "positive_y": 0.439208984375,
+      "negative_y": 0.45849609375,
+      "kl": 0.004714327864348888
+    },
+    "milestones": [
+      {
+        "label": "SENSOR GEOMETRY",
+        "value": "94.8% match",
+        "detail": "physical LiDAR bearing match; token hit|FOV 98.1%",
+        "state": "pass"
+      },
+      {
+        "label": "TARGET MOTION",
+        "value": "100% speed",
+        "detail": "25–130 bars; stall 0%, clearance violations 0%",
+        "state": "pass"
+      },
+      {
+        "label": "LEGACY PILOT",
+        "value": "62.7% capture",
+        "detail": "5,010 held-out episodes; edge98-y 91.7–93.7%",
+        "state": "fail"
+      },
+      {
+        "label": "BOUNDED PILOT",
+        "value": "0.00% edge99-y",
+        "detail": "fresh squashed · ep 132/500 · raw OOB 0.0%",
+        "state": "active"
+      }
+    ],
+    "legacy_eval": [
+      {
+        "target_speed": 0.0,
+        "capture": 0.6487025948,
+        "crash": 0.3512974052,
+        "bar_contact": 0.2045908184,
+        "below": 0.1367265469
+      },
+      {
+        "target_speed": 0.25,
+        "capture": 0.672,
+        "crash": 0.328,
+        "bar_contact": 0.187,
+        "below": 0.135
+      },
+      {
+        "target_speed": 0.5,
+        "capture": 0.6526946108,
+        "crash": 0.3473053892,
+        "bar_contact": 0.2305389222,
+        "below": 0.1117764471
+      },
+      {
+        "target_speed": 1.0,
+        "capture": 0.6103379722,
+        "crash": 0.3896620278,
+        "bar_contact": 0.231610338,
+        "below": 0.1461232604
+      },
+      {
+        "target_speed": 1.5,
+        "capture": 0.552,
+        "crash": 0.448,
+        "bar_contact": 0.281,
+        "below": 0.149
+      }
+    ],
+    "gates": [
+      {
+        "label": "support",
+        "value": "raw OOB = 0"
+      },
+      {
+        "label": "boundary",
+        "value": "edge99-y < 5%"
+      },
+      {
+        "label": "symmetry",
+        "value": "+y and −y both > 10%"
+      },
+      {
+        "label": "context",
+        "value": "clear vs blocked |a_y| separates"
+      }
+    ],
+    "decision": "Do not resume the legacy checkpoint. Promote to long training and density curriculum only after the fresh bounded pilot passes the action gate."
+  }
 }

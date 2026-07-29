@@ -80,7 +80,9 @@ function renderLive(s) {
       { k: 'crash', v: pct(finalCrash), c: finalCrash <= 0.15 ? 'good' : finalCrash <= 0.35 ? 'warn' : 'bad', s: 'fail mode' },
       { k: 'timeout', v: pct(finalTo), c: 'acc', s: '' },
       { k: 'bars', v: bars != null ? String(Math.round(bars)) : '—', c: 'acc', s: 'active' },
-      { k: 'peak→final', v: gapPt != null ? ('−' + gapPt + 'pt') : '—', c: gapPt >= 30 ? 'bad' : gapPt >= 15 ? 'warn' : 'good', s: pct(peak) + ' peak' },
+      live
+        ? { k: 'epoch', v: String(Math.round(A.epoch)), c: 'acc', s: '/ 500 pilot' }
+        : { k: 'peak→final', v: gapPt != null ? ('−' + gapPt + 'pt') : '—', c: gapPt >= 30 ? 'bad' : gapPt >= 15 ? 'warn' : 'good', s: pct(peak) + ' peak' },
     ];
     cards.innerHTML = rows.map(c =>
       `<div class="stat ${c.c}"><div class="v">${c.v}</div><div class="k">${c.k}</div><div class="s">${c.s}</div></div>`
@@ -88,7 +90,7 @@ function renderLive(s) {
   }
   if (capEl) {
     capEl.textContent = live
-      ? `Live = last ${A.tail_epochs || 50} epochs. Capture often dips right after a density promotion.`
+      ? `Live = last ${A.tail_epochs || 50} epochs · fixed 25-bar fresh bounded pilot.`
       : `peak ${pct(peak)} (ep ${L.peak_captured_epoch}) → final ${pct(L.last_captured_rate)}.`;
   }
 
@@ -104,6 +106,44 @@ function renderLive(s) {
   if (sliderLabel) sliderLabel.textContent = Math.round(nBars);
   if (hudBars) hudBars.textContent = Math.round(nBars);
   if (hudDensity) hudDensity.textContent = perc100(nBars);
+}
+
+function renderResearchUpdate(s) {
+  const u = s.research_update || {};
+  const pilot = u.bounded_pilot || {};
+  const hero = document.getElementById('update-hero');
+  const sub = document.getElementById('update-sub');
+  const milestones = document.getElementById('update-milestones');
+  const evalTbl = document.getElementById('update-eval');
+  const decision = document.getElementById('update-decision');
+
+  if (sub) sub.textContent = u.subtitle || 'corrected observation → bounded action contract';
+  if (hero) {
+    const active = pilot.is_live ? '<span class="update-live">RUNNING</span>' : '<span class="update-snap">SNAPSHOT</span>';
+    hero.innerHTML = `<div><span class="eyebrow">CURRENT HYPOTHESIS</span>
+      <strong>${u.headline || 'Sensor fixed; action support is the active bottleneck.'}</strong>
+      <p>${u.summary || ''}</p></div>
+      <div class="update-run">${active}<b>${pilot.run || '—'}</b>
+      <span>ep ${pilot.epoch ?? '—'} / ${pilot.max_epochs ?? 500} · ${pilot.bars ?? 25} bars</span></div>`;
+  }
+  if (milestones) {
+    milestones.innerHTML = (u.milestones || []).map(m => `
+      <article class="milestone ${m.state || ''}">
+        <span>${m.label || ''}</span><b>${m.value || ''}</b><p>${m.detail || ''}</p>
+      </article>`).join('');
+  }
+  if (evalTbl) {
+    const rows = u.legacy_eval || [];
+    evalTbl.innerHTML = `<thead><tr><th>target</th><th>capture</th><th>crash</th><th>bar</th><th>below</th></tr></thead>
+      <tbody>${rows.map(r => `<tr><td>${Number(r.target_speed).toFixed(2)}</td>
+        <td>${pct(r.capture)}</td><td>${pct(r.crash)}</td>
+        <td>${pct(r.bar_contact)}</td><td>${pct(r.below)}</td></tr>`).join('')}</tbody>`;
+  }
+  if (decision) {
+    const gates = u.gates || [];
+    decision.innerHTML = gates.map(g => `<p><b>${g.label}</b> ${g.value}</p>`).join('')
+      + `<p class="decision">${u.decision || ''}</p>`;
+  }
 }
 
 function pickDensity(s) {
@@ -308,8 +348,9 @@ function renderRuns(s) {
 
 function renderPhases() {
   const phases = [
-    ['P0–P5', 'firewall · detector · actor', 'done'],
-    ['P6', 'density 25→110', 'active'],
+    ['P0–P5', 'firewall · detector · perception', 'done'],
+    ['P6A', 'bounded action contract', 'active'],
+    ['P6B', 'density 25→110', 'todo'],
     ['P7', 'sim-to-real', 'todo'],
     ['Paper', 'ablation + write-up', 'todo'],
   ];
@@ -374,6 +415,7 @@ function wireArena() {
 
   const renderAll = (s) => {
     renderLive(s);
+    renderResearchUpdate(s);
     renderCurve(s);
     renderSpeed(s);
     renderRuns(s);

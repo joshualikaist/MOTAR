@@ -52,6 +52,17 @@ assert(lidarCfg.includes('vertical_fov_deg_max = 20.0'));
 assert(html.includes('camera 87° @20 m · obstacle tokens 240°'));
 assert(!html.includes('detector 240°'));
 assert(html.indexOf('arena_motion.js') < html.indexOf('arena.js'));
+assert(html.includes('id="panel-update"'));
+assert(html.includes('tanh-squashed Gaussian · bounded'));
+assert(html.includes('fixed σ [.35,.35,.05,.08]'));
+
+const status = JSON.parse(fs.readFileSync(path.join(repo, 'docs/status/status.json'), 'utf8'));
+assert(status.research_update);
+assert.strictEqual(status.research_update.legacy_eval.length, 5);
+assert.strictEqual(status.research_update.bounded_pilot.run,
+  'ppo_260729_2225_navrl_corrected-squashed-fresh-pilot-s1');
+assert.strictEqual(status.research_update.bounded_pilot.raw_oob_y, 0);
+assert(status.research_update.milestones.some(m => m.label === 'SENSOR GEOMETRY'));
 
 // Mixed must really contain both 2-D CV and waypoint episodes, with non-axis-only CV headings.
 const rng = M.seededRng(20260728);
