@@ -2314,3 +2314,94 @@ SHA-256:
 checkpoint와 eval log는 `.gitignore` 대상이므로 이 커밋에는 결론과 식별자만 들어간다.
 3070에는 이 커밋을 pull/cherry-pick한 뒤 추천 `.pth`를 별도 전송하고 SHA를 확인한다.
 3070 squashed checkpoint도 위 held-out 조건으로 평가해 `capture/crash/timeout`을 직접 비교한다.
+
+---
+
+## 2026-07-29 — ★ +y 고착의 유력 원인 발견: 관측의 좌우(키랄리티) 결함 2건 (코드로 검증됨)
+
+75-에이전트 전면 감사가 지목한 perception HIGH 결함 2건을 세션 한도로 검증이 끊긴 부분까지
+**직접 코드로 재검증**했다. 둘 다 실재하며, Codex가 "unknown 전역 편향"으로 규정한 +y 고착
+(positive y=100%, clear/blocked 무차별)의 **관측-레벨 원인 후보**다.
+
+### 결함 1 — LiDAR 빈 방위각 테이블이 센서와 거울상 (perception 전 기간 존재)
+
+- 센서: `warp_lidar.py:67-69` — `azimuth = hfov_max − Δ·j/(W−1)`, 즉 **빈 인덱스↑ = 방위각↓**
+  (j=0 → +180°, j=71 → −175°).
+- perception: `navrl_perception.py:234` — `_lidar_angles = linspace(−175°, +180°)`, **증가** 가정.
+- 관계식: **가정 = 5° − 실제** = x축 거울 반사 + 5° 회전. 검증: 검출기의 픽셀↔방위는 렌더
+  (`navrl_detector.py:135`)와 측정(`:307`)이 서로 일관된 올바른 규약 → **표적 채널은 정상,
+  장애물 토큰 채널만 반전**.
+- 결과: ① 오른쪽 막대가 왼쪽 토큰으로 발행(pos=[r·cosα, r·sinα], x≈보존·y≈부호반전)
+  ② 카메라 융합(`:313-317`)이 실제 방위 α의 관측을 **거울 빈(5°−α)** 에 min-fuse → 전방
+  장애물이 반대편에 고스트로 복제 ③ 표적-리턴 억제/재연관(`:296-305`, `:371-378`)도 거울 빈을
+  조작. 정적 스캔 자체는 고정 순열이라 학습 가능(그래서 성능이 나왔음) — 문제는 **채널 간 모순**.
+
+### 결함 2 — 카메라 far-plane 10 m가 12 m LiDAR에 팬텀 벽으로 융합
+
+`camera_obstacle_max_range=10.0` 고정(`navrl_task_config.py:150`), no-hit 채움값이 그대로
+`min(scan, 10.0)` 융합(`navrl_perception.py:311,317`) → `NAVRL_LIDAR_RANGE=12`에서 **빈 전방이
+항상 10 m 벽으로 보임**(static 전방 상한 0.833, 토큰 유효성 10<11.94 통과 → 팬텀 토큰이 정면에
+3~4슬롯 점유). LIDAR_RANGE≤10이던 과거엔 휴면, **12 m 피벗 이후 활성**.
+
+### 증상과의 정합 (사전 관찰들이 전부 설명됨)
+
+- **clear |a_y| ≈ blocked |a_y|** (0.934≈0.931, Codex 조건부 프로파일): 팬텀 벽 때문에 정책
+  눈에는 전방이 **한 번도 clear로 보인 적이 없다**. 조건 무차별이 당연한 귀결.
+- **positive y=100% 고착**: 좌우 정보가 채널 간 모순(토큰 y 반전 vs 표적/로봇 y 정상) + 전방
+  고스트 대칭화 → 좌우 신호의 기대가치 소멸 → 항상-회피(팬텀 벽) × 한쪽 고정(tie-break) 이
+  가장 안정한 국소최적.
+- **hit_in_tokens 0.40~0.55 미스터리**: 토큰이 거울 위치라 GT 연관이 우연 일치 수준.
+- **reflection equivariance 실패의 구조적 이유**: Codex의 mirror 연산자는 잘못된 각도 테이블
+  위에 세워져 진짜 세계-거울이 아니고(반전+5° skew, 채널별 불일치), "mirror 2회=항등" 단위테스트
+  는 임의의 involution이 통과하므로 물리 정합성을 검증하지 못했다. **오염된 관측은 대칭화로
+  고칠 수 없다** — 출력(actor)을 강제하기 전에 입력(센서)을 고쳐야 한다.
+
+### 사전등록 예측 (수정 후 25 bars 300–500 epoch fresh pilot에서 판정)
+
+- P1: positive-y 고착 소멸(좌/우 사용률 모두 >10%)
+- P2: barprobe `hit_token_given_fov` 0.556 → 0.8+
+- P3: 전방 clear vs blocked의 |a_y| 차이가 유의미해짐
+- P4: 25 bars capture ≥ 기존(0.90) — 단 1차 판정 기준은 P1-P3
+
+예측이 맞으면 equivariant actor는 불필요. 틀리면 그때 깨끗한 관측 위에 구조적 equivariance를
+얹는다(그 시점엔 잘 정의됨). **기존 전 결과는 "거울 토큰+팬텀 벽 관측 하의 성능"이므로 수정 후
+재베이스라인 필수.** 아직 코드 수정은 하지 않음 — 사용자 승인 대기.
+
+---
+
+## 2026-07-29 — 키랄리티 결함 2건 수정 완료 (물리 프로브로 사전·사후 검증)
+
+### 물리 판정 (tools/probe_lidar_bearing.py — 신규, 상시 회귀 가드)
+
+실제 시뮬레이터에서 raw 스캔 1,126개 리턴을 두 각도 테이블로 역투영해 GT 막대와 대조:
+
+| 테이블 | on-bar 일치율 | 평균 오차 |
+|---|---:|---:|
+| increasing (옛 perception 가정) | **13.9%** | 2.54 m |
+| decreasing (warp 센서 실제) | **94.8%** | 0.47 m (≈표면-중심) |
+
+수정 후 perception 라이브 테이블 = 94.8% 동일. **거울 버그 실재가 물리적으로 확정·해소됨.**
+
+### 적용된 수정
+
+1. `navrl_perception.lidar_bin_bearings()` 신설 — bin→방위 단일 진실 공급원(감소 규약, warp_lidar.py:67
+   과 일치). `_lidar_angles`가 이를 사용 → 토큰 기하/카메라 융합/표적 억제/LiDAR 재연관 6개 사용처 일괄 교정.
+2. `camera_no_return_to_lidar_range()` — 카메라 far-plane(10 m) 열을 no-return(=lidar_max)으로 리맵 후
+   min-융합. **12 m LiDAR에서 전방 팬텀 벽 제거.** 구 8 m 레시피에서는 동작 불변(no-op) 확인.
+3. `navrl_task.py` 뷰어 오버레이(36빔+증가 규약으로 이중 낡음)와 action-context front mask를 공유
+   테이블로 교정.
+4. `tests/test_navrl_perception.py`의 픽스처가 **옛 거울 규약을 박제**하고 있었음(정면 표적 리턴을
+   bin 17에 주입 — 물리 규약에선 bin 18). "깨진 구현에서 통과하던 테스트"를 물리 규약으로 수정.
+5. `tests/test_lidar_bearing_convention.py` 신설 — warp 공식을 독립 재계산해 테이블과 대조(어느 쪽이
+   바뀌어도 시끄럽게 실패), far-plane 리맵 케이스(12 m 활성/8 m no-op) 고정. 36/72빔 모두 통과.
+
+검증: 신규 테스트 2세트 + 기존 perception/bar_probe/training_safety 전부 OK, 3-epoch 학습 스모크
+(obs 898) 정상, 물리 프로브 사후 94.8%.
+
+### 함의 (재확인)
+
+- 기존 전 정책은 "거울 토큰 + (12 m에선) 팬텀 벽" 관측으로 학습된 것. **수정 후 관측 의미가 바뀌므로
+  warm-start 무효, fresh 재학습 필수.** 기존 결과 수치는 수정 전 조건의 기록으로만 유효.
+- Codex의 reflection equivariance 실험(기각됨)은 잘못된 각도 테이블 위의 mirror 연산자를 사용했으므로,
+  향후 재시도 시 반드시 `lidar_bin_bearings()` 기반으로 재구축해야 함.
+- 다음: 사전등록 예측 P1–P4 판정용 25 bars fresh pilot (WORKLOG 2026-07-29 앞 항목 참조).

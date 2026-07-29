@@ -893,8 +893,14 @@ class NavRLTask(BaseTask):
 
         if self._interactive_show_lidar:
             ranges = self._lidar_distance_m()[env_id]
-            az = torch.deg2rad(torch.linspace(-170.0, 180.0, 36, device=self.device))
-            el = torch.deg2rad(torch.linspace(-10.0, 20.0, 4, device=self.device))
+            # Ray directions must follow the warp generator's ordering: azimuth DECREASES with the
+            # bin index (see navrl_perception.lidar_bin_bearings) and elevation DECREASES with the
+            # scan line (warp_lidar.py: vfov_max at row 0). The old hard-coded 36-beam increasing
+            # tables drew every ray mirrored left-right (and were stale at 72 beams).
+            from aerial_gym.task.navrl_task.navrl_perception import VBEAMS, lidar_bin_bearings
+
+            az = lidar_bin_bearings(self.device)
+            el = torch.deg2rad(torch.linspace(20.0, -10.0, VBEAMS, device=self.device))
             ee, aa = torch.meshgrid(el, az, indexing="ij")
             dirs = torch.stack(
                 (torch.cos(ee) * torch.cos(aa), torch.cos(ee) * torch.sin(aa), torch.sin(ee)),
@@ -1667,10 +1673,18 @@ class NavRLTask(BaseTask):
                     self._action_front_mask is None
                     or int(self._action_front_mask.numel()) != hbeams
                 ):
-                    bin_deg = 360.0 / max(1, hbeams)
-                    angles = torch.linspace(
-                        -180.0 + bin_deg, 180.0, hbeams, device=self.device
+                    from aerial_gym.task.navrl_task.navrl_perception import (
+                        HBEAMS as _HB,
+                        lidar_bin_bearings,
                     )
+
+                    if hbeams == _HB:
+                        angles = torch.rad2deg(lidar_bin_bearings(self.device))
+                    else:  # non-perception scan shape: derive locally, same DECREASING convention
+                        bin_deg = 360.0 / max(1, hbeams)
+                        angles = torch.linspace(
+                            180.0, -180.0 + bin_deg, hbeams, device=self.device
+                        )
                     self._action_front_mask = angles.abs() <= 30.0
                 segmentation = self.obs_dict.get("segmentation_pixels")
                 if isinstance(segmentation, torch.Tensor):

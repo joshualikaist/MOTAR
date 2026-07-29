@@ -56,6 +56,42 @@ if not math.isfinite(OBSTACLE_SUPPRESS_DEG) or OBSTACLE_SUPPRESS_DEG < 0.0:
 if not math.isfinite(OBSTACLE_FOV_DEG) or not 0.0 < OBSTACLE_FOV_DEG <= 360.0:
     raise ValueError("NAVRL_OBSTACLE_FOV_DEG must be in (0, 360]")
 STATIC_DIM = VBEAMS * HBEAMS
+
+
+def lidar_bin_bearings(device=None):
+    """Physical body-frame bearing of each horizontal scan bin, in radians.
+
+    THE single source of truth for bin -> bearing. It mirrors the warp ray generator
+    (warp_lidar.py:67: azimuth = hfov_max - span * j/(W-1)), so the bearing DECREASES with the bin
+    index: bin 0 = +180 deg, bin W-1 = -(180 - 360/W) deg.
+
+    History: this module used to assume the INCREASING convention (linspace(-180+bin, +180)),
+    which is the mirror image (assumed = bin_deg - true). Every obstacle token was therefore
+    emitted on the wrong side of the drone, the camera fusion ghosted forward bars onto the
+    opposite bearing, and the LiDAR target re-association read the mirrored bin. Physically
+    adjudicated with tools/probe_lidar_bearing.py: back-projecting real returns through the
+    increasing table lands on a GT bar only 13.9% of the time (mean error 2.5 m); through this
+    decreasing table 94.8% (mean error 0.47 m ~= bar surface-to-center). Any edit here must keep
+    tests/test_lidar_bearing_convention.py and that probe passing.
+    """
+    bin_rad = 2.0 * math.pi / HBEAMS
+    return torch.linspace(math.pi, -math.pi + bin_rad, HBEAMS, device=device)
+
+
+def camera_no_return_to_lidar_range(camera_col_min, camera_max_range, lidar_max_range):
+    """Map camera columns that saw NOTHING to the LiDAR no-return value before min-fusion.
+
+    The obstacle depth camera fills no-hit rays with its own far plane (camera_obstacle_max_range,
+    10 m). When the LiDAR range exceeds that (12 m), min-fusing the raw fill value stamps a phantom
+    10 m wall across the whole forward sector: the actor can never observe true free space ahead,
+    and the token selector manufactures obstacles out of the camera's horizon. A column at (or
+    beyond) the camera far plane carries no obstacle information, so it must fuse as lidar_max
+    (= no return), leaving the LiDAR's own measurement untouched.
+    """
+    no_return = camera_col_min >= float(camera_max_range) - 1e-3
+    return torch.where(
+        no_return, torch.full_like(camera_col_min, float(lidar_max_range)), camera_col_min
+    )
 STRUCTURED_OBS_DIM = (
     ROBOT_HISTORY * ROBOT_DIM
     + TARGET_HISTORY * TARGET_DIM
@@ -184,6 +220,11 @@ class NavRLPerceptionModule:
         self.step_dt = float(step_dt)
         self.max_camera_range = float(camera_cfg.detector_max_range)
         self.lidar_max_range = float(getattr(cfg, "lidar_max_range", 4.0))
+        # Far plane of the obstacle depth camera: columns at this value saw NOTHING and must not
+        # min-fuse into a longer-range LiDAR scan (see camera_no_return_to_lidar_range).
+        self.camera_obstacle_max_range = float(
+            getattr(camera_cfg, "camera_obstacle_max_range", self.lidar_max_range)
+        )
         self.hfov = math.radians(float(camera_cfg.detector_hfov_deg))
         self.vfov = math.radians(float(camera_cfg.detector_vfov_deg))
         self.width = int(camera_cfg.camera_width)
@@ -231,9 +272,9 @@ class NavRLPerceptionModule:
         # first and last ray are not the same direction (matching navrl_lidar_config's fov choice):
         # HBEAMS=36 -> [-170, 180] deg at 10 deg spacing, HBEAMS=72 -> [-175, 180] at 5 deg.
         self._bin_deg = 360.0 / HBEAMS
-        self._lidar_angles = torch.linspace(
-            math.radians(-180.0 + self._bin_deg), math.radians(180.0), HBEAMS, device=device
-        )
+        # Physical bin bearings (DECREASING with index, matching the warp ray generator).
+        # See lidar_bin_bearings() for the mirror-bug history and the adjudication probe.
+        self._lidar_angles = lidar_bin_bearings(device)
         # Suppression window converted from degrees to bins (at least 1 so a token always blanks
         # its own bin, never selecting the same bearing twice).
         self._suppress_bins = max(1, int(round(OBSTACLE_SUPPRESS_DEG / self._bin_deg)))
@@ -308,7 +349,9 @@ class NavRLPerceptionModule:
         depth_no_target = torch.where(
             target_pixels, torch.full_like(raw_depth, self.lidar_max_range), raw_depth
         )
-        camera_col_min = depth_no_target.amin(dim=1).clamp(0.0, self.lidar_max_range)
+        camera_col_min = camera_no_return_to_lidar_range(
+            depth_no_target.amin(dim=1), self.camera_obstacle_max_range, self.lidar_max_range
+        ).clamp(0.0, self.lidar_max_range)
         inside = self._lidar_angles.abs() <= self.hfov * 0.5
         camera_u = ((self.hfov * 0.5 - self._lidar_angles) / self.hfov * (self.width - 1)).round()
         camera_u = camera_u.long().clamp(0, self.width - 1)

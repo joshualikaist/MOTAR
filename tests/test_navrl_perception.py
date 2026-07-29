@@ -98,7 +98,10 @@ class NavRLPerceptionTest(unittest.TestCase):
         self.lidar[0] = 4.0
         self._observe()
         self.rgb[:] = 0.15
-        self.lidar[0, 17] = 2.85
+        # Target sits dead ahead (bearing 0). Under the PHYSICAL bin convention (bearing
+        # decreases with the index: 180 - 10*j at 36 beams) that is bin 18, not bin 17 --
+        # the old fixture value 17 encoded the mirrored table this test must now reject.
+        self.lidar[0, 18] = 2.85
         _, diag = self._observe()
         self.assertFalse(bool(diag["camera_visible"][0]))
         self.assertTrue(bool(diag["lidar_visible"][0]))
