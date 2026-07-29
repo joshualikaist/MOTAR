@@ -2491,3 +2491,22 @@ status Node parity, Python compile/diff check,
 Phase-3 실제 Isaac Gym smoke(static identity + CV/waypoint/circle + curriculum) 전부 통과,
 25/75/110/130/150 bars × 300-step 물리 probe. 이 변경은 moving-target 환경 자체를
 바꾸므로 기존 moving-target 성능표와 직접 비교하지 않고 fresh 재학습·재평가해야 한다.
+
+---
+
+## 2026-07-29 — 센서/표적 수정 후 25-bars fresh pilot 실행 계약
+
+기존 `train_navrl_general_repr.sh`는 `NAVRL_OBSTACLE_FOV_DEG`를 고정하지 않아 현재 평가 계약인
+240°가 아니라 기본 360°로 조용히 실행될 수 있고, 기본 8000 epoch라 P1–P4 사전등록 검증보다
+범위가 컸다. 전용 `train_navrl_sensorfix_fresh_pilot.sh`를 추가해 아래 조건을 고정했다.
+
+- **fresh only**: `CKPT`, `--checkpoint`, `--resume_in_place`, `--branch_run` 거부. 수정 전
+  거울 bearing/팬텀 벽 정책을 섞지 않는다.
+- **환경**: 25 bars 고정, density promotion off, 8 tokens, 240° FOV, ±10° suppression,
+  4×72 LiDAR, 12 m, mixed CV/waypoint, 목표 속도 ceiling 0→1.5 m/s(3000 epoch curriculum).
+- **인과 분리**: baseline `legacy` actor를 사용하고 bounded-action 실험의 환경변수를 제거한다.
+  action/crash/barprobe 진단은 켠다.
+- **안전**: 중복 NavRL process/launcher lock을 검사하고 reward-collapse guard는 끄되
+  NaN/Inf fail-fast는 유지한다.
+- 기본 500 epoch, 128 env, seed 1. 이 결과로 P1–P4를 판정한 뒤에만 full fresh run의
+  액션 정책과 density curriculum을 결정한다.
