@@ -1640,6 +1640,11 @@ class NavRLTask(BaseTask):
             "target_visible_abs_y": 0.0,
             "target_hidden_n": 0.0,
             "target_hidden_abs_y": 0.0,
+            "motion_n": 0.0,
+            "motion_speed_sum": 0.0,
+            "motion_command_speed_sum": 0.0,
+            "motion_low_speed": 0.0,
+            "motion_commanded_stall": 0.0,
         }
 
     def _record_action_diagnostics(self, actions):
@@ -1689,6 +1694,42 @@ class NavRLTask(BaseTask):
             self._action_diag["high80_y"] += float(
                 ((abs_y >= 0.8) & valid_y_now).sum().item()
             )
+
+            # Actual-vehicle motion telemetry for the dense-arena bottleneck. A low measured
+            # velocity is only called a commanded stall when the target is still >1 m away and
+            # the policy requests at least 20% of horizontal speed authority. This excludes
+            # intentional stopping at capture and reports the real Isaac Gym vehicle, not the
+            # illustrative status-site pursuer.
+            robot_velocity = self.obs_dict.get("robot_linvel")
+            robot_position = self.obs_dict.get("robot_position")
+            if (
+                isinstance(robot_velocity, torch.Tensor)
+                and isinstance(robot_position, torch.Tensor)
+                and robot_velocity.ndim == 2
+                and robot_velocity.shape[1] >= 2
+            ):
+                max_velocity = max(1e-6, float(self.task_config.max_velocity))
+                actual_speed = robot_velocity[:, :2].norm(dim=1)
+                command_speed = executed[:, :2].norm(dim=1) * max_velocity
+                goal_distance = (
+                    self.target_position[:, :2] - robot_position[:, :2]
+                ).norm(dim=1)
+                motion_valid = finite[:, :2].all(dim=1) & (goal_distance > 1.0)
+                low_speed = actual_speed < 0.2 * max_velocity
+                command_active = command_speed >= 0.2 * max_velocity
+                self._action_diag["motion_n"] += float(motion_valid.sum().item())
+                self._action_diag["motion_speed_sum"] += float(
+                    actual_speed[motion_valid].sum().item()
+                )
+                self._action_diag["motion_command_speed_sum"] += float(
+                    command_speed[motion_valid].sum().item()
+                )
+                self._action_diag["motion_low_speed"] += float(
+                    (motion_valid & low_speed).sum().item()
+                )
+                self._action_diag["motion_commanded_stall"] += float(
+                    (motion_valid & low_speed & command_active).sum().item()
+                )
 
             # Diagnostics only: classify the command using the same LiDAR frame as the actor.
             # Target returns are excluded so chasing a centered target is not mislabeled as an
@@ -2669,6 +2710,21 @@ class NavRLTask(BaseTask):
                         "target_hidden",
                     )
                 },
+                "motion": {
+                    "samples": int(ad["motion_n"]),
+                    "mean_speed_mps": float(
+                        ad["motion_speed_sum"] / max(1.0, ad["motion_n"])
+                    ),
+                    "mean_command_speed_mps": float(
+                        ad["motion_command_speed_sum"] / max(1.0, ad["motion_n"])
+                    ),
+                    "low_speed_rate": float(
+                        ad["motion_low_speed"] / max(1.0, ad["motion_n"])
+                    ),
+                    "commanded_stall_rate": float(
+                        ad["motion_commanded_stall"] / max(1.0, ad["motion_n"])
+                    ),
+                },
             },
             "crash_causes": {
                 "count": int(n_crash_causes),
@@ -2782,6 +2838,18 @@ class NavRLTask(BaseTask):
                         ad["clear_centered_abs_y"] / max(1.0, ad["clear_centered_n"]),
                         ad["target_visible_n"] / n_action,
                         ad["target_visible_abs_y"] / max(1.0, ad["target_visible_n"]),
+                    )
+                )
+                n_motion = max(1.0, ad["motion_n"])
+                logger.warning(
+                    "NavRL motiondiag | speed=%.3fm/s command=%.3fm/s "
+                    "low_speed=%.4f commanded_stall=%.4f (n=%d)"
+                    % (
+                        ad["motion_speed_sum"] / n_motion,
+                        ad["motion_command_speed_sum"] / n_motion,
+                        ad["motion_low_speed"] / n_motion,
+                        ad["motion_commanded_stall"] / n_motion,
+                        int(ad["motion_n"]),
                     )
                 )
                 self._action_diag = self._empty_action_diag()

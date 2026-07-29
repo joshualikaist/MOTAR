@@ -2669,3 +2669,75 @@ potential field였다. 막대가 조밀하거나 좌우 대칭이면 벡터가 �
 stationary step `0.00%`, 평균 이동속도 `2.50 m/s`였다. 150 bars의 look-ahead
 blocked 표시는 `0.95%`였지만 정지는 없었다. 기존 target-motion/status parity test와
 `git diff --check`도 통과했다.
+
+## 2026-07-29 22:49 — corrected bounded 500-epoch pilot 완료 판정
+
+`ppo_260729_2225_navrl_corrected-squashed-fresh-pilot-s1`이 epoch 500에서
+`max_epochs`로 정상 종료됐다. traceback/non-finite/OOM 없이
+`last_gen_ppo_ep_500_rew_102.53619.pth`와 summary/CSV가 저장됐고 GPU도 반환됐다.
+
+학습 추세는 명확한 개선이다.
+
+| epoch block | capture | crash | timeout | mean reward |
+|---|---:|---:|---:|---:|
+| 1–100 | 46.68% | 43.51% | 9.81% | -19.84 |
+| 101–200 | 72.17% | 27.18% | 0.65% | 49.58 |
+| 201–300 | 80.25% | 19.07% | 0.68% | 79.64 |
+| 301–400 | 90.37% | 9.07% | 0.56% | 96.99 |
+| 401–500 | 91.32% | 8.28% | 0.39% | 99.78 |
+
+마지막 50 epoch는 capture `92.68%`, crash `7.07%`, timeout `0.25%`이고 마지막
+epoch는 `92.2/7.8/0.0%`다. 사전등록 action gate도 training telemetry 기준으로
+raw OOB 전 축 `0%`, lateral edge98 `0.23%`, positive/negative y
+`36.5%/60.1%`라 support/boundary/two-sided 조건을 통과했다. legacy의 lateral
+edge98 `91.7–93.7%` 문제는 제거됐다. clear/blocked `|a_y|`는
+`0.689/0.662`로 legacy `0.934/0.931`보다 분리는 생겼지만 차이가 `0.027`로 작아
+held-out에서 재확인한다.
+
+중요한 제한은 이 pilot의 target-speed curriculum이 3000 epoch 기준이라는 점이다.
+500 epoch 종료 시 speed ceiling은 약 `0.25 m/s`이고 실제 평균은 `0.12–0.13 m/s`였다.
+따라서 training capture 92%를 1.5 m/s 성능이나 고밀도 성능으로 해석하지 않는다.
+
+다음 gate는 density training이 아니라 **25 bars fixed, mixed target, held-out
+0/0.25/0.5/1.0/1.5 m/s × 1000 games**다. final `last_*` checkpoint를 사용해 기존
+legacy 5-speed 5,010-episode 결과와 직접 비교한다. 이 평가에서 full-speed 성능과
+action context를 확인한 뒤에만 3000-epoch speed continuation 또는 P6B
+25→110 density curriculum을 선택한다.
+
+## 2026-07-29 23:00 — 5-speed held-out 통과 및 P6B 자동 전환
+
+사용자 부재 중 후속 작업을 이어가기 위해 epoch-500 final checkpoint를 25 bars,
+mixed target, pursuer 2.5 m/s, seed 42에서 `0/0.25/0.5/1.0/1.5 m/s × 1000 games`
+평가했다. 128-env를 단순 `nohup`으로 분리한 시도는 이 도구 실행 환경이 자식
+프로세스를 호출 종료 시 정리해 결과 JSON 없이 끝났다. checkpoint 이상으로 오판하지
+않도록 16-env 10-game과 64-env 100-game smoke를 먼저 통과시킨 뒤, 관리형 64-env
+세션으로 정식 5,004 episode를 완료했다.
+
+| target m/s | bounded capture | legacy capture | Δ | crash | timeout |
+|---:|---:|---:|---:|---:|---:|
+| 0.00 | 96.50% | 64.87% | +31.63pp | 3.10% | 0.40% |
+| 0.25 | 96.30% | 67.20% | +29.10pp | 3.70% | 0.00% |
+| 0.50 | 95.60% | 65.27% | +30.33pp | 4.40% | 0.00% |
+| 1.00 | 93.50% | 61.03% | +32.47pp | 6.50% | 0.00% |
+| 1.50 | 79.92% | 55.20% | +24.72pp | 19.08% | 1.00% |
+
+episode 가중 capture는 `4622/5004 = 92.37%`다. 모든 셀의 action raw OOB는 전 축
+0%, lateral edge99는 0%였다. 속도가 높아질수록 capture는 내려가지만, 500-epoch
+checkpoint가 실제로 학습한 speed ceiling 약 0.25 m/s를 크게 벗어난 1.5 m/s에서도
+legacy보다 24.7pp 높다. 따라서 별도 25-bars speed-only continuation은 생략하고
+P6B density curriculum으로 간다. speed curriculum은 checkpoint의 task step에서
+계속 이어지지만 full-speed held-out competence가 이미 확인되어 과거의 검증되지 않은
+two-axis 전환과는 다르다.
+
+고밀도 실제 기체 정지를 놓치지 않기 위해 `NavRL motiondiag`를 추가했다. 목표가 1 m
+이상 남은 step에서 실제 수평속도 평균, 명령속도 평균, 실제속도 `<0.2*vmax` 비율,
+그중 명령도 `>=0.2*vmax`인 `commanded_stall` 비율을 집계한다. 이는 status 사이트의
+illustrative pursuer가 아니라 Isaac Gym `robot_linvel`을 직접 측정한다.
+
+재현 launcher `train_navrl_corrected_squashed_density.sh`는 final epoch-500 checkpoint,
+bounded action/safety 계약, 25→110 bars(step 5), promotion gate 0.70/16,384 eps,
+warmup 1000, total max epoch 8000을 고정한다. Python compile, diff check, training-safety
+5개, checkpoint-preflight 4개, target-motion 13개 단위시험을 통과했다. action-model
+stochastic tail test는 첫 실행에서 허용치 0.100% 대비 0.102%가 나왔으나, 코드 변경 없이
+연속 3회(각 13개) 통과해 표본 경계 변동으로 판정했다. launcher preflight는 epoch 500,
+bars 25, task_steps 16000과 bounded action 계약을 정확히 복원했다.
