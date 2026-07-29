@@ -30,6 +30,11 @@
     targetSpeedMax: 1.5,
     pursuerSpeedMax: 2.5,
   });
+  const TURN_ANGLES = Object.freeze(
+    [0, 30, -30, 60, -60, 90, -90, 120, -120, 180].map(
+      function (degrees) { return degrees * Math.PI / 180; }
+    )
+  );
 
   function seededRng(seed) {
     return function () {
@@ -83,7 +88,7 @@
     const target = sampleClearPoint(
       rng,
       bars,
-      CONTRACT.spawnBarClearance,
+      CONTRACT.targetBarClearance,
       CONTRACT.spawnMargin,
       function (p) {
         const d = Math.hypot(p.x - drone.x, p.y - drone.y);
@@ -100,6 +105,7 @@
       speed: speed,
       cvVelocity: { x: speed * Math.cos(angle), y: speed * Math.sin(angle) },
       waypoint: sampleWaypoint(rng),
+      avoidSign: rng() < 0.5 ? -1 : 1,
       realizedVelocity: { x: 0, y: 0 },
       age: 0,
     };
@@ -110,6 +116,7 @@
     let x = point.x;
     let y = point.y;
     let pushed = false;
+    let normalX = 0, normalY = 0;
     for (let iteration = 0; iteration < 6; iteration++) {
       x = clamp(x, b.x0 + CONTRACT.wallMargin, b.x1 - CONTRACT.wallMargin);
       y = clamp(y, b.y0 + CONTRACT.wallMargin, b.y1 - CONTRACT.wallMargin);
@@ -133,10 +140,42 @@
         sumY = nearest.dy;
         norm = Math.max(Math.hypot(sumX, sumY), 1e-6);
       }
-      x += sumX / norm * (maxPenetration + 1e-3);
-      y += sumY / norm * (maxPenetration + 1e-3);
+      normalX = sumX / norm;
+      normalY = sumY / norm;
+      x += normalX * (maxPenetration + 1e-3);
+      y += normalY * (maxPenetration + 1e-3);
     }
-    return { x: x, y: y, pushed: pushed };
+    return {
+      x: x, y: y, pushed: pushed, normalX: normalX, normalY: normalY
+    };
+  }
+
+  function steerTargetStep(oldX, oldY, desiredVX, desiredVY, speed, dt, bars, avoidSign) {
+    const b = CONTRACT.bounds;
+    const loX = b.x0 + CONTRACT.wallMargin, hiX = b.x1 - CONTRACT.wallMargin;
+    const loY = b.y0 + CONTRACT.wallMargin, hiY = b.y1 - CONTRACT.wallMargin;
+    const norm = Math.max(Math.hypot(desiredVX, desiredVY), 1e-6);
+    const bx = desiredVX / norm, by = desiredVY / norm;
+    let best = null;
+    TURN_ANGLES.forEach(function (angle, index) {
+      const c = Math.cos(angle), s = Math.sin(angle);
+      const dx = bx * c - by * s, dy = bx * s + by * c;
+      const x = oldX + dx * speed * dt, y = oldY + dy * speed * dt;
+      const inside = x >= loX && x <= hiX && y >= loY && y <= hiY;
+      const minBar = distanceToBars(x, y, bars);
+      const clear = inside && minBar >= CONTRACT.targetBarClearance + 1e-4;
+      const tie = (avoidSign || 1) * Math.sign(angle) * 1e-3;
+      const score = clear
+        ? 1000 - Math.abs(angle) + tie
+        : (inside ? 100 : 0) + Math.min(minBar, 10) - 0.01 * Math.abs(angle) + tie;
+      if (!best || score > best.score) {
+        best = {
+          x: x, y: y, vx: dx * speed, vy: dy * speed,
+          clear: clear, steered: index !== 0, score: score,
+        };
+      }
+    });
+    return best;
   }
 
   function advanceTarget(episode, dt, bars, rng) {
@@ -165,12 +204,37 @@
       }
     }
 
+    // Match target_motion.steer_target_step: keep the direct full-speed heading when clear,
+    // otherwise take the smallest symmetric turn that clears the bars and arena wall.
+    const steered = steerTargetStep(
+      oldX, oldY, (x - oldX) / dt, (y - oldY) / dt,
+      episode.speed, dt, bars, episode.avoidSign
+    );
+    x = steered.x;
+    y = steered.y;
+    if (episode.mode === 'cv') {
+      episode.cvVelocity.x = steered.vx;
+      episode.cvVelocity.y = steered.vy;
+    }
+
     const clear = pushOutOfBars({ x: x, y: y }, bars, CONTRACT.targetBarClearance);
     episode.target.x = clamp(clear.x, loX, hiX);
     episode.target.y = clamp(clear.y, loY, hiY);
     episode.realizedVelocity.x = (episode.target.x - oldX) / dt;
     episode.realizedVelocity.y = (episode.target.y - oldY) / dt;
     if (clear.pushed && episode.mode === 'waypoint') episode.waypoint = sampleWaypoint(rng);
+    if (clear.pushed && episode.mode === 'cv') {
+      const into = episode.cvVelocity.x * clear.normalX
+        + episode.cvVelocity.y * clear.normalY;
+      if (into < 0) {
+        const vx = episode.cvVelocity.x - 2 * into * clear.normalX;
+        const vy = episode.cvVelocity.y - 2 * into * clear.normalY;
+        const jitter = (rng() - 0.5) * Math.PI / 9;
+        const c = Math.cos(jitter), s = Math.sin(jitter);
+        episode.cvVelocity.x = vx * c - vy * s;
+        episode.cvVelocity.y = vx * s + vy * c;
+      }
+    }
     episode.age += dt;
     return episode;
   }
@@ -182,6 +246,7 @@
     sampleWaypoint: sampleWaypoint,
     createEpisode: createEpisode,
     pushOutOfBars: pushOutOfBars,
+    steerTargetStep: steerTargetStep,
     advanceTarget: advanceTarget,
   };
 });

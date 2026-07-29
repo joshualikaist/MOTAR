@@ -9,6 +9,10 @@ from gym.spaces import Box, Dict
 
 from aerial_gym.task.base_task import BaseTask
 from aerial_gym.task.navrl_task.train_dashboard import record_navrl_epoch_episodes
+from aerial_gym.task.navrl_task.target_motion import (
+    TARGET_MOTION_MODEL,
+    steer_target_step,
+)
 from aerial_gym.sim.sim_builder import SimBuilder
 from aerial_gym.utils.math import quat_rotate, quat_rotate_inverse
 from aerial_gym.utils.logging import CustomLogger
@@ -128,6 +132,7 @@ class NavRLTask(BaseTask):
         self._tm_waypoint = torch.zeros((self.num_envs, 2), device=self.device)  # waypoint target
         self._tm_circle_center = torch.zeros((self.num_envs, 2), device=self.device)
         self._tm_circle_angvel = torch.zeros(self.num_envs, device=self.device)  # signed rad/s
+        self._tm_avoid_sign = torch.ones(self.num_envs, device=self.device)
 
         rp = self.task_config.reward_parameters
         self.rw = {k: float(v) for k, v in rp.items()}
@@ -693,7 +698,9 @@ class NavRLTask(BaseTask):
                     .min(1)
                     .values
                 )
-                accepted &= bar_dist >= 0.65
+                accepted &= bar_dist >= float(
+                    getattr(self.task_config, "goal_min_bar_clearance", 0.65)
+                )
             chosen[ids[accepted]] = candidate[accepted]
             todo[ids[accepted]] = False
         goal = start_pos.clone()
@@ -963,6 +970,7 @@ class NavRLTask(BaseTask):
             "cfg_obstacle_suppress_deg": float(representation["suppress_deg"]),
             "cfg_lidar_hbeams": int(representation["hbeams"]),
             "cfg_lidar_vbeams": int(representation["vbeams"]),
+            "cfg_target_motion_model": TARGET_MOTION_MODEL,
             # Action-distribution provenance. Bounded and legacy models intentionally share the
             # same state_dict keys, so without this an eval can load successfully under the wrong
             # likelihood and silently measure a different policy.
@@ -1185,6 +1193,24 @@ class NavRLTask(BaseTask):
                     "NavRL ACTION MU-SCALE MISMATCH | checkpoint=%s running=%s."
                     % (saved_mu_scale, current_mu_scale)
                 )
+            moving_target_requested = (
+                float(self.tm.speed_final) > 0.0
+                or float(self.tm.speed_fixed) > 0.0
+                or (
+                    self._runtime_target_speed is not None
+                    and float(self._runtime_target_speed) > 0.0
+                )
+            )
+            saved_motion_model = str(
+                state.get("cfg_target_motion_model", "")
+            ).strip()
+            if moving_target_requested and saved_motion_model != TARGET_MOTION_MODEL:
+                logger.warning(
+                    "NavRL TARGET MOTION MISMATCH | checkpoint=%s running=%s. "
+                    "Older checkpoints saw targets stall at bars; moving-target metrics and "
+                    "fine-tuning are a changed environment contract."
+                    % (saved_motion_model or "legacy_bar_push", TARGET_MOTION_MODEL)
+                )
             # Loud config-drift guard (warn, never override: an eval may deliberately change these).
             # A mismatch here silently invalidates the run -- see get_env_state() for why.
             for key, current, name in (
@@ -1324,7 +1350,12 @@ class NavRLTask(BaseTask):
         goal[:, 2] = self.task_config.flight_altitude
         m = float(self.cur.wall_margin)
         clearance = float(getattr(self.task_config, "goal_min_bar_clearance", 0.0))
-        bars_xy = self.obs_dict["obstacle_position"][env_ids][:, :, 0:2]
+        # Only the first n_bars_active assets exist in the current density contract. Treating
+        # every build-time slot as physical here makes a 25-bar episode avoid the parked/inactive
+        # slots from the 150-bar capacity and silently changes the requested target dynamics.
+        bars_xy = self.obs_dict["obstacle_position"][
+            env_ids, : self.n_bars_active, 0:2
+        ]
         # "Cross the bar field": the drone spawns at x~0, so placing the goal at x=k on the far
         # side forces a left->right traversal of the bars. k ~ U[k_min, k_max(epoch)] (k_max
         # grows with training via _goal_x_max), y is free across the arena minus a wall margin.
@@ -1386,7 +1417,7 @@ class NavRLTask(BaseTask):
                 gy = lo + (hi - lo) * torch.rand(j, device=self.device)
             goal[todo, 0] = gx
             goal[todo, 1] = gy
-            if clearance <= 0.0:
+            if clearance <= 0.0 or bars_xy.shape[1] == 0:
                 break
             d_bar = (
                 torch.cdist(goal[todo, 0:2].unsqueeze(1), bars_xy[todo])
@@ -1398,7 +1429,7 @@ class NavRLTask(BaseTask):
             idx = todo.nonzero(as_tuple=False).squeeze(-1)
             todo = torch.zeros_like(todo)
             todo[idx[still_bad]] = True
-        if clearance > 0.0 and bool(todo.any()):
+        if clearance > 0.0 and bars_xy.shape[1] > 0 and bool(todo.any()):
             # At high density a few goals can survive 10 rejection rounds still inside the bar
             # clearance. Snap them radially away from the nearest bar (best effort) instead of
             # silently keeping a goal whose capture sphere is not flyable.
@@ -2257,6 +2288,11 @@ class NavRLTask(BaseTask):
             torch.full((n,), 1.0, device=self.device),
         )
         self._tm_circle_angvel[env_ids] = sign * speed / r
+        self._tm_avoid_sign[env_ids] = torch.where(
+            torch.rand(n, device=self.device) < 0.5,
+            torch.full((n,), -1.0, device=self.device),
+            torch.full((n,), 1.0, device=self.device),
+        )
         # realized velocity starts at zero; _advance_target sets it from actual displacement
         self.target_vel_w[env_ids] = 0.0
 
@@ -2341,6 +2377,30 @@ class NavRLTask(BaseTask):
                 (torch.cos(theta), torch.sin(theta)), dim=1
             )
 
+        # Local symmetric steering keeps the target moving at its commanded speed instead of
+        # proposing an into-bar step and relying on positional push-out. The direct heading wins
+        # whenever it is clear; otherwise +/- turn candidates are tried symmetrically with a
+        # balanced per-episode tie sign. This makes mixed motion genuinely thread around bars and
+        # prevents dense scenes from silently turning a nominal 1.5 m/s target into a parked one.
+        if self.n_bars_active > 0:
+            bars_all = self.obs_dict["obstacle_position"][
+                :, : self.n_bars_active, 0:2
+            ]
+            desired_velocity = (new_xy - old_xy) / dt
+            steered_xy, steered_velocity, _, _ = steer_target_step(
+                old_xy,
+                desired_velocity,
+                self._tm_speed,
+                dt,
+                bars_all,
+                lo,
+                hi,
+                float(getattr(self.task_config, "goal_min_bar_clearance", 0.0)),
+                self._tm_avoid_sign,
+            )
+            new_xy = torch.where(moving.unsqueeze(1), steered_xy, new_xy)
+            self._tm_cv_vel[cv] = steered_velocity[cv]
+
         # -- keep the capture sphere flyable: push the target out of bar clearance. With bars only
         # 1.5 m apart and a 1.0 m clearance the exclusion discs OVERLAP: a naive radial push out of
         # the nearest bar PING-PONGS forever inside the lens between two discs (verified by probe —
@@ -2350,9 +2410,12 @@ class NavRLTask(BaseTask):
         # slides the target along the wall instead of fighting the clamp.
         clearance = float(getattr(self.task_config, "goal_min_bar_clearance", 0.0))
         pushed_any = torch.zeros(self.num_envs, dtype=torch.bool, device=self.device)
-        if clearance > 0.0:
+        push_dir = torch.zeros(self.num_envs, 2, device=self.device)
+        if clearance > 0.0 and self.n_bars_active > 0:
             mov_idx = moving.nonzero(as_tuple=False).squeeze(-1)
-            bars_xy = self.obs_dict["obstacle_position"][mov_idx][:, :, 0:2]  # (M, B, 2)
+            bars_xy = self.obs_dict["obstacle_position"][
+                mov_idx, : self.n_bars_active, 0:2
+            ]  # (M, active B, 2)
             arangeM = torch.arange(len(mov_idx), device=self.device)
             for _ in range(6):
                 new_xy = torch.maximum(torch.minimum(new_xy, hi), lo)  # walls first
@@ -2374,12 +2437,35 @@ class NavRLTask(BaseTask):
                 sel = mov_idx[rows]
                 new_xy[sel] = new_xy[sel] + dirn[rows] * step_out[rows].unsqueeze(1)
                 pushed_any[sel] = True
+                push_dir[sel] = dirn[rows]  # last composite escape normal, for the cv bounce
             # a pushed WAYPOINT target was heading somewhere unreachable next to a bar —
             # resample its waypoint so it does not keep fighting the push-out every step
             re_wp = pushed_any & (self._tm_pattern == 1)
             if bool(re_wp.any()):
                 re_idx = re_wp.nonzero(as_tuple=False).squeeze(-1)
                 self._tm_waypoint[re_idx] = self._sample_waypoints(re_idx)
+            # cv targets BOUNCE off bars: reflect the held heading off the composite push normal
+            # (specular, applied only to the into-bar component) plus a +-10 deg random deflection
+            # so a symmetric two-bar trap cannot lock into a perfect back-and-forth loop. Without
+            # this the cv heading only ever changed at the WALLS: a target aimed at a bar
+            # re-entered the clearance disc every step and parked there. Measured with
+            # tools/probe_target_motion.py at 75 bars / 1.5 m/s: realized speed 66% of commanded
+            # with 28% of steps stalled before the bounce. Bouncing preserves the episode speed
+            # exactly (reflection and rotation are both norm-preserving), so the speed-axis
+            # labels of the density x speed map stay truthful.
+            re_cv = pushed_any & (self._tm_pattern == 0)
+            if bool(re_cv.any()):
+                idx = re_cv.nonzero(as_tuple=False).squeeze(-1)
+                n_hat = push_dir[idx]
+                n_hat = n_hat / n_hat.norm(dim=1, keepdim=True).clamp(min=1e-6)
+                v = self._tm_cv_vel[idx]
+                into = (v * n_hat).sum(dim=1, keepdim=True)
+                hit = (into.squeeze(1) < 0.0).float()
+                refl = v - 2.0 * into.clamp(max=0.0) * n_hat
+                jit = (torch.rand(len(idx), device=self.device) - 0.5) * (math.pi / 9.0) * hit
+                c, sn = torch.cos(jit), torch.sin(jit)
+                self._tm_cv_vel[idx, 0] = refl[:, 0] * c - refl[:, 1] * sn
+                self._tm_cv_vel[idx, 1] = refl[:, 0] * sn + refl[:, 1] * c
 
         # -- final wall clamp (physical bound) and write-back
         new_xy = torch.maximum(torch.minimum(new_xy, hi), lo)
@@ -2493,6 +2579,11 @@ class NavRLTask(BaseTask):
             n_bars_active=self.n_bars_active,
             target_speed_max=self._target_speed_max() if tm_on else None,
             target_speed_mean=float(self._tm_speed.mean().item()) if tm_on else None,
+            target_speed_realized_mean=(
+                float(self.target_vel_w[:, 0:2].norm(dim=1).mean().item())
+                if tm_on
+                else None
+            ),
         )
 
     def _export_bulk_eval_result(self, total, reach_rate, mean_nc, best):

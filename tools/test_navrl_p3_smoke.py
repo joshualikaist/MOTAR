@@ -61,7 +61,7 @@ for pattern, code in (("cv", 0), ("waypoint", 1), ("circle", 2)):
         prev = cur.clone()
         # bounds check (allow tiny numeric slack)
         viol_wall += int(((cur < b_min + m - 1e-4) | (cur > b_max - m + 1e-4)).sum())
-        bars = task.obs_dict["obstacle_position"][:, :, 0:2]
+        bars = task.obs_dict["obstacle_position"][:, : task.n_bars_active, 0:2]
         dbar = torch.cdist(cur.unsqueeze(1), bars).squeeze(1).min(dim=1).values
         viol_bar += int((dbar < 0.9).sum())          # HARD: capture sphere touches bar surface
         soft_n += int((dbar < 1.0 - 1e-3).sum())     # SOFT: nominal clearance not met

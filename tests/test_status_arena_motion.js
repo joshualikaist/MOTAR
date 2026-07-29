@@ -93,4 +93,13 @@ assert(freeEp.target.x !== 10 && freeEp.target.y !== 0);
 const pushed = M.pushOutOfBars({ x: 10, y: 0 }, [{ x: 10, y: 0.2 }], 1);
 assert(M.distanceToBars(pushed.x, pushed.y, [{ x: 10, y: 0.2 }]) >= 0.999);
 
+// A blocked target takes a symmetric local turn without losing commanded speed.
+const steered = M.steerTargetStep(
+  10, 0, 1, 0, 1, 0.1, [{ x: 11.05, y: 0 }], 1
+);
+assert(steered.clear && steered.steered);
+close(Math.hypot(steered.x - 10, steered.y), 0.1, 1e-10);
+close(Math.hypot(steered.vx, steered.vy), 1, 1e-10);
+assert(M.distanceToBars(steered.x, steered.y, [{ x: 11.05, y: 0 }]) >= 1);
+
 console.log('status arena motion parity: ok');

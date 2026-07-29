@@ -2418,3 +2418,76 @@ checkpoint와 eval log는 `.gitignore` 대상이므로 이 커밋에는 결론�
 GT 상태 → 보상·종료(0.5m swept)·특권 critic(898+8=906) → PPO → 가중치 업데이트. 두 레인 사이에
 **정보 방화벽**(빨간 점선)과 "GT는 학습 신호로만, actor 관측 진입 금지" 명시. 모든 화살표에 텐서
 치수 표기. 헤드리스 Chrome 스크린샷으로 배치·겹침 검수 후 게시.
+
+---
+
+## 2026-07-29 20:39 — 표적 속도 실현 결함 감사 및 대칭 local steering 적용
+
+학습 전 사용자가 status 사이트의 표적이 둔하고 막대에서 잘 빠져나오지 못한다고 지적했다.
+로그에는 `pattern=mixed`, `speed_fixed`/`speed_final`, `rl_dt=0.100s`만 남아 있어 명령 속도는
+확인할 수 있었지만 **실제 변위 속도는 기록되지 않았다**. 중단된 Claude 작업에는 CV 표적이
+막대 clearance push-out과 매 스텝 싸운다는 진단, 막대 접촉 시 진행 벡터를 반사하는 미커밋
+수정, `tools/probe_target_motion.py` 초안이 남아 있었다.
+
+probe를 drone 전체 step과 분리해 `_advance_target()`만 300회 호출하도록 고쳤다. 이렇게 해야
+zero-action drone crash/reset에 따른 표적 teleport와 pattern 재샘플이 계측에 섞이지 않는다.
+수정 전 `HEAD`를 별도 임시 worktree에서 동일 seed로 다시 측정한 결과:
+
+| bars | pattern | 명령 | 실현 평균 | 명령 대비 | stall(<20%) | clearance<1m |
+|---:|---|---:|---:|---:|---:|---:|
+| 75 | CV | 1.50 | 0.78 m/s | 52% | 41.4% | 24.5% |
+| 75 | waypoint | 1.50 | 1.40 m/s | 93% | 3.5% | 2.5% |
+| 110 | CV | 1.50 | 0.38 m/s | 26% | 71.6% | 32.8% |
+| 110 | waypoint | 1.50 | 1.29 m/s | 86% | 4.9% | 6.3% |
+
+원인은 CV가 벽에서만 heading을 반사하고 막대에서는 위치만 밀어낸 것이었다. 막대를 향한 원래
+heading이 유지되어 다음 스텝에 다시 진입했고, 고밀도에서는 nominal 1.5 m/s 표적이 사실상
+주차됐다. waypoint도 막대에 닿은 뒤 waypoint를 재샘플했지만 현재 스텝 변위는 이미 손실됐다.
+추가로 target spawn은 drone용 0.65 m clearance를 재사용해 이동 계약의 1.0 m보다 가까이
+시작할 수 있었고, 일부 clearance 경로가 build-time 전체 slot을 참조해 활성 밀도 계약이
+불명확했다.
+
+### 적용
+
+1. simulator-independent `target_motion.steer_target_step()`을 추가했다. 직접 heading이
+   clear하면 그대로 쓰고, 막히면 `0, ±30, ±60, ±90, ±120, 180°` 후보 중 **가장 작은
+   대칭 회전**으로 full-speed endpoint를 선택한다.
+2. 정확히 대칭인 좌/우 후보는 에피소드마다 50:50으로 뽑은 `_tm_avoid_sign`으로 결정한다.
+   고정된 한쪽 tie-break가 새 lateral chirality를 만들지 않게 했다.
+3. CV는 선택된 회피 heading을 유지하고 waypoint는 waypoint 목표를 유지한 채 local steering으로
+   막대를 돌아 나간다. 기존 composite push와 CV 반사는 후보가 전부 막힌 경우의 safety fallback으로
+   남겼다.
+4. spawn target clearance를 0.65→설정값 1.0 m로 맞추고, 이동/생성 모두
+   `:n_bars_active`만 사용한다.
+5. checkpoint `env_state`에 `cfg_target_motion_model=symmetric_local_steer_v1`을 기록한다.
+   이전 checkpoint로 moving-target fine-tune/eval하면 legacy stall 환경과 계약이 달라졌다는
+   경고를 출력한다.
+6. `docs/status/arena_motion.js`에도 같은 후보각·대칭 tie-break·fallback 반사를 적용했다.
+   사이트의 speed slider는 학습 분포와 같이 **최댓값**이며 episode speed는 `U[0,max]`라 평균은
+   max의 절반이다. HUD의 sampled speed가 실제 해당 episode 속도다.
+7. train dashboard/TensorBoard에 명령 평균과 별도로
+   `navrl/target_speed_realized_mean_m_s`를 추가했다. 앞으로는 probe 없이도 로그에서
+   명령-실현 속도 괴리를 즉시 확인할 수 있다.
+
+### 사후 물리 probe
+
+| bars | CV | waypoint | stall | overspeed | clearance<1m |
+|---:|---:|---:|---:|---:|---:|
+| 25 | 1.50 m/s (100%) | 1.50 (100%) | 0% | 0% | 0% |
+| 75 | 1.50 (100%) | 1.50 (100%) | 0% | 0% | 0% |
+| 110 | 1.50 (100%) | 1.50 (100%) | 0% | 0% | 0% |
+| 130 | 1.50 (100%) | 1.50 (100%) | 0% | 0% | 0% |
+
+사이트/interactive 기본값과 같은 110 bars·0.75 m/s도 두 패턴 모두 실현 0.75 m/s,
+stall/과속/clearance 위반 0%를 별도로 확인했다.
+
+150 bars는 알려진 기하 절벽(약 148 bars)을 넘는다. CV는 100%를 유지했지만 waypoint는 1.48
+m/s, stall 0.9%, clearance 위반 7.2%였다. 이 밀도에서는 1.0 m exclusion disc가 arena를
+사실상 덮으므로, 속도와 1.0 m clearance를 동시에 강제하는 것은 코드가 아니라 기하적으로
+불가능하다. Stage C의 110 bars와 절벽 아래 130 bars까지는 계약을 정확히 만족한다.
+
+검증: target-motion CPU tests 3개, train-dashboard realized-speed contract,
+status Node parity, Python compile/diff check,
+Phase-3 실제 Isaac Gym smoke(static identity + CV/waypoint/circle + curriculum) 전부 통과,
+25/75/110/130/150 bars × 300-step 물리 probe. 이 변경은 moving-target 환경 자체를
+바꾸므로 기존 moving-target 성능표와 직접 비교하지 않고 fresh 재학습·재평가해야 한다.
