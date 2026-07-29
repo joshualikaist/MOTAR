@@ -2583,3 +2583,29 @@ bounded-policy 결과는 깨진 센서 checkpoint에서 얻었으므로 성능 �
 검증된 likelihood-correct 구현과 PPO safety 장치는 재사용할 수 있다. 다음 실험은 깨끗한
 관측에서 **fresh bounded actor pilot**로 action support와 context response를 먼저 통과시킨 뒤
 장기·밀도 학습으로 확장한다.
+
+---
+
+## 2026-07-29 — corrected-sensor fresh squashed pilot 실행기 확정
+
+위 판정에 따라 `train_navrl_corrected_squashed_fresh_pilot.sh`를 추가했다. 기존
+sensor-fix launcher의 환경 계약(25 bars, 240°/8-token/4×72/12 m, mixed moving target,
+fresh-only)은 그대로 사용하고 action 쪽만 다음처럼 바꾼다.
+
+- likelihood-correct tanh-squashed Gaussian, fixed std `0.35,0.35,0.05,0.08`
+- lateral network-mean scale `0.4`, entropy coefficient `0`
+- latent lateral margin `1.25@0.01`
+- PPO log-ratio finite clamp `±10`, KL update-stop `0.04`
+- fresh 학습률 `1e-4`; warm-start 분포 변경에서만 필요했던 `5e-6`은 사용하지 않음
+- checkpoint/resume flag 거부, action raw-OOB/edge/mu/sigma 진단 유지
+
+실제 Isaac Gym 128-env × 3-epoch optimizer smoke를 fresh weights로 수행했다. PPO actor/critic
+loss와 모든 parameter가 finite였고, KL은 `-0.00068,-0.00234,-0.00234`로 epsilon bias 범위,
+KL-skip 0이었다. lateral raw-OOB/edge95/edge99는 3 epoch 모두 0%, mean `|a_y|≈0.26`,
+mean `|mu_y|=0.0004→0.0075`, positive/negative 사용률은 각각 약 37–39%/38–40%였다.
+즉 시작부터 좌우 대칭이고 경계에 몰리지 않으며 fresh `1e-4` update도 안정적이다.
+
+단위시험: action model 13개, training safety 5개 전부 통과. smoke run은 정식 TensorBoard
+세션과 혼동되지 않도록 workspace 밖 임시 보관 후, 정식 500-epoch pilot만 실행 대상으로
+남긴다. 500 epoch 뒤 go 조건은 raw-OOB=0, `edge99_y<5%`, 양 방향 >10%,
+clear/blocked `|a_y|` 분리, capture가 계속 상승하는 것이다.

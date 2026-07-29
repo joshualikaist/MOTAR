@@ -63,14 +63,28 @@ export NAVRL_BAR_PROBE=1
 export NAVRL_OOB_PROBE=0
 export NAVRL_ACTION_DIAG=1
 
-# Preserve the baseline actor for causal attribution.  Remove knobs that may be exported by an
-# earlier bounded-action experiment in the caller's shell.
-export NAVRL_ACTION_POLICY=legacy
-unset NAVRL_ACTION_STD NAVRL_ACTION_MU_SCALE NAVRL_ENTROPY_COEF
-unset NAVRL_RESET_ACTOR_OPTIMIZER NAVRL_LEARNING_RATE
-unset NAVRL_PPO_LOG_RATIO_CLAMP NAVRL_PPO_KL_STOP
-unset NAVRL_LATENT_MARGIN_Y NAVRL_LATENT_MARGIN_COEF
-unset NAVRL_LATERAL_BIAS_COEF NAVRL_REFLECTION_COEF NAVRL_TRUNCATED_DMIN
+# Default to the causal legacy baseline.  The dedicated bounded wrapper opts into the only other
+# supported mode; arbitrary inherited action settings are never trusted.
+if [[ "${NAVRL_FRESH_BOUNDED_ACTOR:-0}" == "1" ]]; then
+    export NAVRL_ACTION_POLICY=squashed_gaussian
+    export NAVRL_ACTION_STD=0.35,0.35,0.05,0.08
+    export NAVRL_ACTION_MU_SCALE=1.0,0.4,1.0,1.0
+    export NAVRL_ENTROPY_COEF=0.0
+    export NAVRL_RESET_ACTOR_OPTIMIZER=0
+    export NAVRL_LEARNING_RATE=1e-4
+    export NAVRL_PPO_LOG_RATIO_CLAMP=10.0
+    export NAVRL_PPO_KL_STOP=0.04
+    export NAVRL_LATENT_MARGIN_Y=1.25
+    export NAVRL_LATENT_MARGIN_COEF=0.01
+    unset NAVRL_LATERAL_BIAS_COEF NAVRL_REFLECTION_COEF NAVRL_TRUNCATED_DMIN
+else
+    export NAVRL_ACTION_POLICY=legacy
+    unset NAVRL_ACTION_STD NAVRL_ACTION_MU_SCALE NAVRL_ENTROPY_COEF
+    unset NAVRL_RESET_ACTOR_OPTIMIZER NAVRL_LEARNING_RATE
+    unset NAVRL_PPO_LOG_RATIO_CLAMP NAVRL_PPO_KL_STOP
+    unset NAVRL_LATENT_MARGIN_Y NAVRL_LATENT_MARGIN_COEF
+    unset NAVRL_LATERAL_BIAS_COEF NAVRL_REFLECTION_COEF NAVRL_TRUNCATED_DMIN
+fi
 
 MAX_EPOCHS="${MAX_EPOCHS:-500}"
 NUM_ENVS="${NUM_ENVS:-128}"
@@ -95,8 +109,8 @@ fi
 echo "[sensorfix_fresh_pilot] FRESH 25-bar causal pilot; checkpoint restore is disabled"
 echo "[sensorfix_fresh_pilot] representation | tokens=${NAVRL_MAX_OBSTACLES} fov=${NAVRL_OBSTACLE_FOV_DEG}deg suppress=+-${NAVRL_OBSTACLE_SUPPRESS_DEG}deg scan=${NAVRL_LIDAR_VBEAMS}x${NAVRL_LIDAR_HBEAMS} lidar=${NAVRL_LIDAR_RANGE}m"
 echo "[sensorfix_fresh_pilot] target | pattern=${NAVRL_TARGET_PATTERN} speed ceiling 0->${NAVRL_TARGET_SPEED_FINAL}m/s over 3000 epochs"
-echo "[sensorfix_fresh_pilot] action | policy=${NAVRL_ACTION_POLICY} diagnostic=on"
-echo "[sensorfix_fresh_pilot] safety | reward-collapse=off NaN/Inf=fail-fast"
+echo "[sensorfix_fresh_pilot] action | policy=${NAVRL_ACTION_POLICY} diagnostic=on std=${NAVRL_ACTION_STD:-learned} mu_scale=${NAVRL_ACTION_MU_SCALE:-1}"
+echo "[sensorfix_fresh_pilot] safety | reward-collapse=off NaN/Inf=fail-fast log_ratio=${NAVRL_PPO_LOG_RATIO_CLAMP:-off} kl_stop=${NAVRL_PPO_KL_STOP:-off} margin_y=${NAVRL_LATENT_MARGIN_Y:-off}@${NAVRL_LATENT_MARGIN_COEF:-off}"
 echo "[sensorfix_fresh_pilot] max_epochs=${MAX_EPOCHS} envs=${NUM_ENVS} seed=${SEED}"
 
 if [[ "${PREFLIGHT_ONLY:-0}" == "1" ]]; then
