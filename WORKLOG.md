@@ -2609,3 +2609,12 @@ mean `|mu_y|=0.0004→0.0075`, positive/negative 사용률은 각각 약 37–39
 세션과 혼동되지 않도록 workspace 밖 임시 보관 후, 정식 500-epoch pilot만 실행 대상으로
 남긴다. 500 epoch 뒤 go 조건은 raw-OOB=0, `edge99_y<5%`, 양 방향 >10%,
 clear/blocked `|a_y|` 분리, capture가 계속 상승하는 것이다.
+
+### 2026-07-29 22:27 — 정식 pilot 시작 직후 symbolic-shape 경고 확인
+
+정식 run `ppo_260729_2225_navrl_corrected-squashed-fresh-pilot-s1` 시작 시
+`torch/fx/experimental/symbolic_shapes.py`의 `not in var_ranges, defaulting to unknown
+range` 경고가 여러 번 출력됐다. 이는 `torch.compile`이 첫 graph를 만들 때 일부 symbolic
+dimension의 정적 범위를 증명하지 못해 unknown으로 처리한다는 compile-time 진단이다.
+실제 PID `1160972`는 GPU 약 5.85 GiB를 사용하며 경고 이후 epoch 23까지 정상 진행했고,
+Traceback/non-finite/OOM/illegal-memory 오류는 0건이었다. 학습 중단 사유가 아니므로 무시한다.
