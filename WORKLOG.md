@@ -2405,3 +2405,16 @@ checkpoint와 eval log는 `.gitignore` 대상이므로 이 커밋에는 결론�
 - Codex의 reflection equivariance 실험(기각됨)은 잘못된 각도 테이블 위의 mirror 연산자를 사용했으므로,
   향후 재시도 시 반드시 `lidar_bin_bearings()` 기반으로 재구축해야 함.
 - 다음: 사전등록 예측 P1–P4 판정용 25 bars fresh pilot (WORKLOG 2026-07-29 앞 항목 참조).
+
+---
+
+## 2026-07-29 — status 사이트에 논문식 Architecture 블록 다이어그램 추가
+
+`docs/status/index.html`에 `#panel-arch` 섹션(테마 연동 인라인 SVG, 1250×620) + 상단 탭 "Design".
+내용: **온보드(배포) 경로 실선** — 환경 → LiDAR 72×4@12m / RGB-D 87°(표적 20m·장애물 depth 40×24@10m)
+→ 스캔 융합·토큰화(far-plane 리맵, 240° 선택, ±10° 억제, 물리 방위 테이블) + 표적 분할→3D 측정→칼만
+추적(track 16-D) → 히스토리 0.5s×5 → **관측 898-D** → Transformer(17tok d64, σ clamp) → **행동 4-D**
+→ 제어기(tilt 45°·tilt-comp·고도 PI·yaw 3.0) → **모터 추력 4** → 루프백. **학습 전용 레인 점선** —
+GT 상태 → 보상·종료(0.5m swept)·특권 critic(898+8=906) → PPO → 가중치 업데이트. 두 레인 사이에
+**정보 방화벽**(빨간 점선)과 "GT는 학습 신호로만, actor 관측 진입 금지" 명시. 모든 화살표에 텐서
+치수 표기. 헤드리스 Chrome 스크린샷으로 배치·겹침 검수 후 게시.
