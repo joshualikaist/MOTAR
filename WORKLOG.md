@@ -2741,3 +2741,11 @@ warmup 1000, total max epoch 8000을 고정한다. Python compile, diff check, t
 stochastic tail test는 첫 실행에서 허용치 0.100% 대비 0.102%가 나왔으나, 코드 변경 없이
 연속 3회(각 13개) 통과해 표본 경계 변동으로 판정했다. launcher preflight는 epoch 500,
 bars 25, task_steps 16000과 bounded action 계약을 정확히 복원했다.
+
+P6B run `ppo_260729_2303_navrl_corrected-squashed-density25to110-s1`을 관리형 백그라운드
+세션으로 시작했다. runner PID는 `1226712`, GPU 사용량은 약 5.85 GiB다. epoch
+501→535까지 정상 진행했고 첫 재개 구간 capture는 대체로 91–99%, raw OOB 전 축 0%,
+lateral edge98 0.16%였다. 첫 2,049-episode 실제 기체 baseline은 평균 수평속도
+`2.079 m/s`, 평균 명령속도 `2.607 m/s`, low-speed `6.33%`, commanded-stall
+`6.29%`다. 이 수치는 25 bars의 reset/가속 transient를 포함한 기준선이며, 이후 밀도별
+절대값과 이 기준선 대비 증가량을 함께 본다.
