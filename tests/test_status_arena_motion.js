@@ -30,6 +30,12 @@ const envCfg = fs.readFileSync(path.join(
   repo, 'aerial_gym/config/env_config/navrl_bars_env.py'
 ), 'utf8');
 const html = fs.readFileSync(path.join(repo, 'docs/status/index.html'), 'utf8');
+const suppress15Launcher = fs.readFileSync(path.join(
+  repo, 'aerial_gym/rl_training/rl_games/train_navrl_corrected_squashed_density_suppress15.sh'
+), 'utf8');
+const clusterSectorLauncher = fs.readFileSync(path.join(
+  repo, 'aerial_gym/rl_training/rl_games/train_navrl_corrected_squashed_density_cluster_sector.sh'
+), 'utf8');
 assert(launcher.includes('export NAVRL_GENERAL_TRAIN=1'));
 assert(launcher.includes('export NAVRL_TARGET_SPEED_MIN=0.0'));
 assert(launcher.includes('export NAVRL_TARGET_SPEED_FINAL=1.5'));
@@ -40,6 +46,12 @@ assert(launcher.includes('export NAVRL_LIDAR_VBEAMS=4'));
 assert(launcher.includes('export NAVRL_LIDAR_RANGE=12'));
 assert(launcher.includes('export NAVRL_K_FINAL=16'));
 assert(launcher.includes('export NAVRL_MAX_VELOCITY=2.5'));
+assert(launcher.includes('NAVRL_OBSTACLE_SUPPRESS_DEG="${NAVRL_OBSTACLE_SUPPRESS_DEG:-10}"'));
+assert(suppress15Launcher.includes('export NAVRL_OBSTACLE_SUPPRESS_DEG=15'));
+assert(suppress15Launcher.includes('export NAVRL_ALLOW_SUPPRESS_WARMSTART=1'));
+assert(clusterSectorLauncher.includes('export NAVRL_OBSTACLE_SELECTOR=cluster_sector'));
+assert(clusterSectorLauncher.includes('NAVRL_OBSTACLE_CLUSTER_GAP_M'));
+assert(clusterSectorLauncher.includes('NAVRL_OBSTACLE_SECTORS'));
 assert(taskCfg.includes('waypoint_reach_m = 0.5'));
 assert(taskCfg.includes('goal_min_bar_clearance = 1.0'));
 assert(taskCfg.includes('detector_hfov_deg = 87.0'));
@@ -56,14 +68,20 @@ assert(html.indexOf('arena_motion.js') < html.indexOf('arena.js'));
 assert(html.includes('id="panel-update"'));
 assert(html.includes('tanh-squashed Gaussian · bounded'));
 assert(html.includes('fixed σ [.35,.35,.05,.08]'));
+assert(html.includes('cluster 0.45 m · 8 angular sectors'));
 
 const status = JSON.parse(fs.readFileSync(path.join(repo, 'docs/status/status.json'), 'utf8'));
 assert(status.research_update);
-assert.strictEqual(status.research_update.legacy_eval.length, 5);
-assert.strictEqual(status.research_update.bounded_pilot.run,
-  'ppo_260729_2225_navrl_corrected-squashed-fresh-pilot-s1');
-assert.strictEqual(status.research_update.bounded_pilot.raw_oob_y, 0);
+assert(status.research_update.active_experiment.run.endsWith(
+  'navrl_corrected-squashed-density-cluster-sector-s1'
+));
+assert.strictEqual(status.research_update.active_experiment.selector, 'cluster_sector');
+assert.strictEqual(status.research_update.active_experiment.cluster_gap_m, 0.45);
+assert.strictEqual(status.research_update.active_experiment.sectors, 8);
+assert.strictEqual(status.research_update.comparison.length, 5);
 assert(status.research_update.milestones.some(m => m.label === 'SENSOR GEOMETRY'));
+assert(status.research_update.milestones.some(m => m.label === 'DE-DUPLICATION'));
+assert(status.density_curves.corrected_chirality_density_curve);
 
 // Mixed must really contain both 2-D CV and waypoint episodes, with non-axis-only CV headings.
 const rng = M.seededRng(20260728);
@@ -113,6 +131,96 @@ assert(steered.clear && steered.steered);
 close(Math.hypot(steered.x - 10, steered.y), 0.1, 1e-10);
 close(Math.hypot(steered.vx, steered.vy), 1, 1e-10);
 assert(M.distanceToBars(steered.x, steered.y, [{ x: 11.05, y: 0 }]) >= 1);
+
+// ---- freeze / heading-churn regression block (2026-07-30 arena-motion audit) ----
+
+// Mirror of arena.js placeBars so density-dependent motion can be tested headlessly.
+function barsAt(seed, n) {
+  const r = M.seededRng(seed), pts = [];
+  let spacing = 1.5, fails = 0, guard = 0;
+  while (pts.length < n && guard < n * 400) {
+    guard++;
+    const x = 1.2 + r() * 21.6, y = -10.8 + r() * 21.6;
+    let ok = true;
+    for (const p of pts) {
+      if ((x - p.x) * (x - p.x) + (y - p.y) * (y - p.y) < spacing * spacing) { ok = false; break; }
+    }
+    if (ok) { pts.push({ x: x, y: y, w: 0.4 + r() * 0.4 }); fails = 0; }
+    else { fails++; if (fails >= 128) { spacing *= 0.8; fails = 0; } }
+  }
+  return pts;
+}
+function wrapAngle(a) { return Math.atan2(Math.sin(a), Math.cos(a)); }
+
+// T1 — episode.age is wall-clock even for a static target: arena.js's 30 s watchdog
+// must not be disable-able by dragging the speed slider to 0.
+const ageEp = M.createEpisode(M.seededRng(11), [], 1.5);
+ageEp.speed = 0; ageEp.age = 0;
+for (let i = 0; i < 100; i++) M.advanceTarget(ageEp, 0.1, [], M.seededRng(12));
+close(ageEp.age, 10, 1e-9);
+
+// T2 — rendered target yaw is temporally coherent at production density. Guards the
+// heading-continuity window: pre-fix this measures 75.8°/step mean and 41% reversals.
+const churnRng = M.seededRng(4242);
+let churnFrames = 0, churnSum = 0, churnBig = 0;
+for (let e = 0; e < 40; e++) {
+  const layout = barsAt(7000 + e, 110);
+  const ep = M.createEpisode(churnRng, layout, 1.5);
+  if (ep.speed < 0.75) ep.speed = 0.75 + churnRng() * 0.75; // skip the by-design static half
+  ep.cvVelocity.x = ep.speed * Math.cos(churnRng() * 6.283);
+  ep.cvVelocity.y = ep.speed * Math.sin(churnRng() * 6.283);
+  ep.heading = Math.atan2(ep.cvVelocity.y, ep.cvVelocity.x);
+  let prev = null;
+  for (let i = 0; i < 200; i++) {
+    M.advanceTarget(ep, 0.1, layout, churnRng);
+    const v = ep.realizedVelocity;
+    if (Math.hypot(v.x, v.y) <= 1e-6) continue;
+    const h = Math.atan2(v.y, v.x);
+    if (prev != null) {
+      const d = Math.abs(wrapAngle(h - prev));
+      churnFrames++; churnSum += d;
+      if (d > Math.PI / 2) churnBig++;
+    }
+    prev = h;
+  }
+}
+const meanTurnDeg = (churnSum / churnFrames) * 180 / Math.PI;
+assert(meanTurnDeg < 30, `target yaw churn too high: ${meanTurnDeg.toFixed(1)} deg/step`);
+assert(churnBig / churnFrames < 0.12,
+  `target reverses too often: ${(100 * churnBig / churnFrames).toFixed(1)}% of steps > 90 deg`);
+
+// T3 — the continuity window is a preference, never a veto: with the previous heading
+// pointing +x, this wall blocks every candidate within ±120° (bar centers sit in the
+// 0.88..1.12 m annulus where they discriminate between 0.12 m candidate steps) and leaves
+// ONLY the 180° reversal clear. The window (90°) excludes it, so the fallback chain must
+// still take it rather than force a blocked step.
+const wall = [{ x: 11.0, y: 0, w: 0.6 }, { x: 10, y: 1.05, w: 0.6 }, { x: 10, y: -1.05, w: 0.6 }];
+const esc = M.steerTargetStep(10, 0, 1, 0, 1.2, 0.1, wall, 1, 0);
+assert(M.distanceToBars(esc.x, esc.y, wall) >= 1,
+  'continuity window must never force a step inside bar clearance');
+close(Math.hypot(esc.vx, esc.vy), 1.2, 1e-10);
+
+// T4 — steerTargetStep with no previous heading is byte-identical to the legacy law,
+// so the 9th argument is strictly opt-in.
+const legacy = M.steerTargetStep(10, 0, 1, 0, 1, 0.1, [{ x: 11.05, y: 0 }], 1);
+const withNull = M.steerTargetStep(10, 0, 1, 0, 1, 0.1, [{ x: 11.05, y: 0 }], 1, null);
+close(legacy.x, withNull.x, 0); close(legacy.y, withNull.y, 0);
+close(legacy.vx, withNull.vx, 0); close(legacy.vy, withNull.vy, 0);
+
+// T5 — the pursuer still crosses a dense 85-bar field end to end (anti-regression lock;
+// the 4-bar trap below does not exercise realistic density).
+const crossBars = barsAt(7001, 85).filter(b =>
+  Math.hypot(b.x - 2, b.y) > 1.3 && Math.hypot(b.x - 22, b.y) > 1.3);
+let px = 2, py = 0, ph = 0, closestCross = Infinity;
+for (let i = 0; i < 1800; i++) {
+  const n = M.steerPursuerStep(px, py, 22, 0, 2.5, 1 / 60, crossBars, ph, 1);
+  if (n.hit) break;
+  px = n.x; py = n.y; ph = n.heading;
+  closestCross = Math.min(closestCross, Math.hypot(22 - px, py));
+  assert(M.pursuerClearance(px, py, crossBars) >= -1e-9);
+}
+assert(closestCross < 0.6,
+  `pursuer failed to cross an 85-bar field: closest ${closestCross.toFixed(2)} m`);
 
 // The browser pursuer must escape the symmetric potential-field trap that used
 // to make it stand still between dense bars.

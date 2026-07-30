@@ -3291,6 +3291,36 @@ cluster-sector 표시를 동기화했다. dashboard JSON과 fallback의 완전 �
 
 ---
 
+## 2026-07-30 — research 전체를 main에 합치기 전 감사
+
+사용자가 GitHub의 `research/navrl-env`를 `main`에 합쳐도 되는지 질문해 실제 branch graph,
+merge-base, 전체 tree diff와 merge-tree를 read-only로 점검했다. merge는 실행하지 않았다.
+
+- `main...research/navrl-env`은 main-only 4개, research-only 138개 commit으로 갈라져 있어
+  fast-forward가 아니다. merge-tree상 직접 text conflict는 `.gitignore` 1건이다.
+- main-only 4개는 실제로 두 경로뿐이다. `317505b`는
+  `.github/workflows/publish_site.yml`을 삭제했고, `b609eee`와 `64ba00a`는 `.gitignore`에
+  local experiment/generated media와 session/checkpoint ignore를 추가했다. `79f0679`는 이
+  두 갈래를 합친 merge commit이라 독립 기능 변경이 아니다. research tree에도 workflow
+  삭제와 모든 ignore 규칙이 이미 내용상 반영돼 있고 `*.log` ignore만 하나 더 있으므로,
+  main-only 네 commit 자체가 통합 위험인 것은 아니다.
+- 그러나 전체 변경은 287 files, 약 `+28k/-85k`이며 NavRL/MOTAR 추가뿐 아니라 upstream
+  DCE navigation example, sim2real code/weights, MkDocs 문서·이미지와 pretrained artifact의
+  대량 삭제를 포함한다. 현재 “main은 upstream 기반, research는 MOTAR 연구”라는 branch
+  역할을 유지한다면 전체 merge는 범위가 맞지 않는다.
+- 더 중요하게 현재 working tree에는 cluster-sector selector, curriculum/PPO safety,
+  preflight, launcher와 tests를 포함한 25개 미커밋 항목이 있다. 지금 merge하면 정작 최신
+  핵심 구현은 main에 포함되지 않고, 오래된 research tip만 합쳐진다.
+- 따라서 현 시점 결정은 **전체 merge 보류**다. 최신 same-shape selector와 safety 변경을
+  먼저 하나의 검증된 research commit으로 만들고 clean worktree에서 main 통합 후보를
+  선별한다.
+- GitHub에서 최신 프로젝트를 기본으로 보이게 하는 목적이라면 upstream 보존용 main을
+  합치기보다 default branch를 `research/navrl-env`로 바꾸는 방법이 더 안전하다. 반대로
+  main 자체를 MOTAR 제품 branch로 전환하려는 경우에는 upstream 보존 branch를 먼저 만든
+  뒤, 대량 삭제를 의도적으로 수락하는 별도 통합 작업으로 진행해야 한다.
+
+---
+
 ## 2026-07-30 — density × target-speed 맵 (논문 헤드라인 그림) + 85→110 확장 학습 재개 + 사이트 Map 탭
 
 체크포인트 `runs/ppo_260730_1549_navrl_corrected-squashed-density-cluster-sector-s1/nn/
@@ -3357,6 +3387,52 @@ capture 75-80%대에서 85 bars 유지 중(아직 Layer-1 window 16384 episode �
   셀 텍스트 스타일 추가.
 - headless Chrome 스크린샷으로 28셀 전부(25→150 bars × 4속도) 렌더 검증 완료 — 값, 색상,
   구분선, 캡션 텍스트 모두 CSV와 일치 확인.
+
+---
+
+## 2026-07-30 (밤) — 85→110 학습이 사실 85에 얼어있었음: launcher override-무시 버그 수정 후 재시작
+
+### 발견 (버그)
+
+run `ppo_260730_2015`(20:15 시작)가 85→110 확장 학습인 줄 알았으나, **승급 심사가 2회 모두
+통과 기준을 넘기고도 "held"** 로 찍힘:
+
+```
+NavRL density curriculum held | bars=85 capture=0.759 over 16385 eps   (epoch 10658)
+NavRL density curriculum held | bars=85 capture=0.767 over 16384 eps   (epoch 10921)
+```
+
+`/proc/<pid>/environ` 실측: `NAVRL_DENSITY_FINAL=85`, `NAVRL_FIXED_BARS=85`,
+`NAVRL_CONTROLLED_ABLATION=1` — 승급 조건 `n_bars_active < final_bars`(85<85=False)가 영구
+False. 원인은 `train_navrl_corrected_squashed_density_cluster_sector.sh:23-24`:
+
+```bash
+export NAVRL_CONTROLLED_ABLATION=1                 # 가드 없음 — override 무조건 덮어씀
+export NAVRL_FIXED_BARS="${NAVRL_FIXED_BARS:-85}"  # ':-'는 빈 문자열도 85로 치환
+```
+
+launch 시 `NAVRL_CONTROLLED_ABLATION=0 NAVRL_FIXED_BARS=` override를 줬으나 둘 다 무력화됨.
+결과: epoch 10151→11200(~1,050 epoch, 2.5시간)이 85 고정 ablation 재확인에 소모됨(손실은
+아님 — capture 0.759/0.767로 85-bar 역량 재확증 데이터가 됐고 checkpoint도 개선 지속).
+
+### 승급 주기 실측 (질문 답변용)
+
+- 승급은 epoch가 아니라 **완료 에피소드 16,384개**(`NAVRL_DENSITY_CHECK_EPS`) 단위 심사.
+- 실측 완료 에피소드 63.9개/epoch → **심사 1회 ≈ 263 epoch ≈ 14분**(step 2.7-2.9s).
+- 재개 직후 첫 심사만 `NAVRL_DENSITY_RESUME_WARMUP=250` 때문에 ~507 epoch.
+- 심사 시 capture ≥ 0.70 (+ strata gate, 현재 diagnostic-only) 그리고 bars < final이면 +5.
+
+### 수정 및 재시작
+
+- launcher를 `NAVRL_CONTROLLED_ABLATION="${NAVRL_CONTROLLED_ABLATION:-1}"` + FIXED_BARS는
+  ablation=1일 때만 설정하도록 수정(기본 동작=기존 ablation 그대로, `=0` 전달 시 커리큘럼).
+  echo도 모드 표시(`mode=density-curriculum->110` vs `mode=fixed-85bars-ablation`)로 변경.
+- 기존 run kill 후 `last_gen_ppo_ep_11200_rew_23.425339.pth`에서 재시작 (21:11 KST):
+  run `cluster-sector-density85to110-v2-s1`, 로그
+  `train_session_logs/cluster_sector_85to110_v2_260730_211103.log`, MAX_EPOCHS=26000.
+- **재시작 후 프로세스 env 검증 완료**: `CONTROLLED_ABLATION=0`, FIXED_BARS/NUM_BARS 없음,
+  `DENSITY_FINAL=110`, restore 로그 `bars=25->85` (체크포인트 밀도 정상 복원), epoch 11201부터
+  85 bars로 진행 중. 첫 승급 심사 예상 ≈ epoch 11710 (~25분 후), 통과 시 85→90.
 
 ---
 
@@ -3473,3 +3549,94 @@ token-selection 통과 기준 4개)은 같은 시각 `PERCEPTION`/`ROADMAP`/`PHA
 교훈: **다른 세션의 미커밋 변경이 있는 파일은 덮어쓰기 전에 `git status`로 확인**한다.
 
 Codex의 미커밋 코드 변경 21개 파일은 손대지 않았다(스테이징 제외).
+
+---
+
+## 2026-07-30 — GitHub 기본 브랜치 전환 시도
+
+사용자 선택에 따라 기존 `main`을 삭제하거나 병합하지 않고, GitHub 저장소
+`joshualikaist/MOTAR`의 기본 브랜치만 `research/navrl-env`로 바꾸는 방법을 선택했다.
+
+- 전환 전 확인: 원격 `main`과 `research/navrl-env`가 모두 존재하고 로컬 추적 브랜치와 일치한다.
+- 1차 미실행 사유: 이 환경에는 `gh` CLI, `GH_TOKEN`/`GITHUB_TOKEN`, GitHub API credential이
+  없었고, 비공개 상태의 저장소는 GitHub 플러그인에서도 404로 조회가 거절됐다.
+- 공개 전환 후 재시도: GitHub 플러그인으로 `visibility=public`, 사용자 권한 `admin=true`,
+  `default_branch=main`을 확인했다. 다만 현재 플러그인이 저장소 기본 브랜치 변경 API를
+  제공하지 않아 설정 변경은 실행하지 못했다.
+- 최종 검증: `origin`의 HEAD는 여전히 `main`이다. 원격 브랜치 삭제·병합·강제 푸시는 수행하지 않았다.
+- 남은 작업: GitHub 연결 후 기본 브랜치를 `research/navrl-env`로 변경하고,
+  `git remote show origin`의 `HEAD branch`가 해당 브랜치인지 재확인한다.
+
+---
+
+## 2026-07-30 (밤) — 아레나 시뮬레이션 "표적 발작·둘 다 정지" 진단 및 수정 (14-에이전트 감사, 70만+ 프레임 실측)
+
+사용자 보고: "pursuer는 똑똑한데 target은 혼자 멋대로 돌아다니고, 가끔 둘 다 가만히 있다.
+막대 토큰 병목 때문인 것 같다." → 5렌즈 발견 + 8건 적대적 검증 워크플로우로 조사.
+
+### 사용자 귀속(토큰 병목) 판정: 기각
+
+브라우저 아레나에는 장애물 토큰 개념이 없다. `MAX_OBSTACLES=8`은 `navrl_perception.py:24`의
+RL 관측 텐서 크기일 뿐이고, `arena.js`/`arena_motion.js`에는 `MAX_OBSTACLES`/`token`/
+`cluster_sector` 문자열이 0회 등장 — 모션 모델은 매 프레임 전체 bars 배열을 직접 순회한다.
+토큰 병목은 실제 env에서 **bar contact**(충돌)를 유발하는 문제이지 정지를 만들지 않는다.
+
+### 근본 원인 (실측 확정)
+
+1. **표적 발작 = `steerTargetStep`의 무기억 argmax** (`arena_motion.js`): 직전 비행 방향을
+   전혀 참조하지 않고 순간 목표 방위만으로 10개 후보를 재선택. waypoint 모드(에피소드의 50%)는
+   조향 결과를 어디에도 저장하지 않아(`cvVelocity` 기록은 cv 전용), 막대에 막히면 ±120~180°
+   탈출 후보로 점프→다음 프레임 복귀하는 **주기-2 진동**. 실측(40에피소드×20s): 85막대에서
+   렌더 yaw 평균 55.1°/스텝, 29.4%가 90° 초과 반전; 110막대에서 75.8°/41.0%. pursuer가
+   "똑똑해 보이는" 것은 `steerPursuerStep`에만 연속성 항(`-turn*0.35`)+저역 필터가 있어서다.
+   **이것은 포팅 버그가 아니라 Python `target_motion.py` 조향 법칙의 충실한 재현** —
+   trainer의 표적도 동일하게 진동한다(아래 후속 작업).
+2. **"둘 다 정지" = 같은 결함의 다른 얼굴 + 기하**: 표적은 전속력으로 움직이지만(경로길이/
+   명령속도=1.000) 제자리 진동이라 순수송이 붕괴 — 150막대에서 1초 순수송 효율 0.338, 벽시계의
+   58.1%가 순정지. 추가로 110막대↑에서는 표적 여유공간(1.0m clearance) 자체가 단절됨(최대
+   연결 성분: 85막대 96.4% → 110막대 45.4% → 150막대 12.5%) — 이건 코드가 아니라 기하 한계.
+   기본 설정(85막대)에서는 둘-다-정지 0.00% — 사용자가 본 정지는 슬라이더를 높였을 때.
+3. **부가 버그**: `advanceTarget`이 `speed≤1e-6`이면 `episode.age += dt` 전에 조기 return →
+   속도 슬라이더 0에서 30초 워치독 무력화(120초에 에피소드 3개 vs 수정 후 16개).
+
+### 적용한 수정 (`docs/status/arena_motion.js`)
+
+- **FIX 1**: `episode.age += dt`를 조기 return 앞으로 호이스팅 — 워치독은 벽시계 기준.
+- **FIX 2**: `steerTargetStep`에 opt-in 9번째 인자 `prevHeading` + **90° 연속성 창**
+  (lexicographic: 창 내 clear > 창 밖 clear > blocked; veto 아님 — 창에 clear가 없으면 큰
+  탈출 턴 허용). `createEpisode`에 `heading` 상태 추가, `advanceTarget`이 모든 패턴에서
+  기록, cv 반사 후 재동기화. 스칼라 페널티(k=0.35/1.0/2.0)와 하드 ±120° 필터 변형은 감사에서
+  실측으로 기각됨(전자는 반전 잔존, 후자는 push-out 0.23→79회/에피소드).
+- **FIX 4**: 파일 헤더에 일시적 divergence 명시(trainer는 아직 진동함) — Python 반영 전까지
+  대시보드 정직성 유지.
+
+### 수정 후 실측 (독립 하네스 CURRENT/FIXED 컬럼 수렴 확인)
+
+| 지표 | 수정 전 | 수정 후 |
+|---|---|---|
+| 렌더 yaw 변화/스텝 (85막대, dt=0.1) | 55.1° | **16.5°** |
+| 90° 초과 반전 (85막대) | 29.4% | **5.1%** |
+| yaw 변화/스텝 (110막대) | 75.8° | **19.0°** |
+| 90° 초과 반전 (110막대) | 41.0% | **4.9%** |
+| age 워치독 (speed=0, 10초) | 0.000 (죽음) | **10.000** |
+
+`tests/test_status_arena_motion.js`에 회귀 테스트 T1-T5 추가(수정 전 실패 확인된 T1/T2 포함;
+T3는 감사 제안 기하가 전 후보 차단이라 판별 불가 벡터 → 0.88-1.12m 환대 기하로 재설계).
+전체 스위트 green. SwiftShader headless Chrome으로 장면 구동 확인.
+
+### 기각된 가설 (재조사 방지)
+
+- `sampleWaypoint` 전영역 균등 샘플: Python `_sample_waypoints`와 올바른 parity. clearance
+  필터 추가해도 stall 0.3pp 변화 — 원인 아님.
+- cv write-back(`cvVelocity` 갱신): 버그가 아니라 안정자(cv 모드 97.8%+ 프레임에서 직진 유지).
+- `steerPursuerStep` no-candidate 경로: 36,250 프로브+70만 프레임에서 0회 발화 — 실질 사문.
+- 기존 테스트 `moved>5.5` 무력 주장: 다음 줄 net-arrival 단언이 정지·2-cycle 모두 잡음(변이 검증).
+
+### 후속 작업 (staged)
+
+- **FIX 3 (Python parity)**: 같은 연속성 창을 `target_motion.py`+`navrl_task.py`에 이식.
+  **현재 진행 중인 밀도 커리큘럼 run이 끝나고 채점된 뒤에만** 적용 — 진동하지 않는 표적은
+  실제로 더 어려워 capture가 떨어지며, 이는 정책 퇴행이 아니라 과제 난이도 보정(task-version
+  bump). 적용 시 waypoint/mixed 고밀도 셀 재측정 필요, circle 패턴(held-out eval)은 제외.
+- `tools/probe_target_motion.py`는 per-step 속도만 봐서 이 결함에 맹목(반전은 norm 보존) —
+  1초 순수송/명령속도 비율과 평균 방향 변화 지표를 추가한 뒤에야 증거로 사용 가능.

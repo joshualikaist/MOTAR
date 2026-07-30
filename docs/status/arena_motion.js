@@ -7,6 +7,12 @@
  *     _sample_target_motion, _sample_waypoints, _advance_target
  *   aerial_gym/rl_training/rl_games/train_navrl_general_repr_density.sh
  *
+ * DIVERGENCE (temporary, 2026-07-30): steerTargetStep adds a 90° heading-continuity
+ * window that target_motion.steer_target_step does not yet have. The trainer's waypoint
+ * targets re-derive their bearing every step and therefore reverse far more often than
+ * shown here. Tracked for parity; mirror into target_motion.py after the current
+ * density-curriculum run is scored, then delete this paragraph.
+ *
  * Coordinates use the status arena convention: x=[0,24], y=[-12,12].
  * This module is deliberately independent of THREE/DOM so its parity contracts
  * can be tested with Node.
@@ -204,6 +210,7 @@
       mode: mode,
       speed: speed,
       cvVelocity: { x: speed * Math.cos(angle), y: speed * Math.sin(angle) },
+      heading: angle, // last FLOWN heading, persisted for ALL patterns (see steerTargetStep)
       waypoint: sampleWaypoint(rng),
       avoidSign: rng() < 0.5 ? -1 : 1,
       realizedVelocity: { x: 0, y: 0 },
@@ -250,13 +257,25 @@
     };
   }
 
-  function steerTargetStep(oldX, oldY, desiredVX, desiredVY, speed, dt, bars, avoidSign) {
+  /*
+   * Heading-continuity window for the target. Without it the argmax below is memoryless:
+   * in waypoint mode the desired bearing is re-derived from the same static waypoint every
+   * frame, so a blocking bar makes the choice flip between "aim at waypoint" and a ±120-180°
+   * escape turn — a period-2 oscillation that renders as frantic spinning (measured 55°/step
+   * mean heading change at 85 bars) or, at high density, as standing still at full commanded
+   * speed. The window is a PREFERENCE among clear candidates, never a veto: the
+   * inWindow || anyClear || trapped fallback chain must stay intact so a large escape turn
+   * (and cv wall reflections) are still taken when nothing inside the window is clear.
+   */
+  const CONTINUITY_WINDOW = 90 * Math.PI / 180;
+
+  function steerTargetStep(oldX, oldY, desiredVX, desiredVY, speed, dt, bars, avoidSign, prevHeading) {
     const b = CONTRACT.bounds;
     const loX = b.x0 + CONTRACT.wallMargin, hiX = b.x1 - CONTRACT.wallMargin;
     const loY = b.y0 + CONTRACT.wallMargin, hiY = b.y1 - CONTRACT.wallMargin;
     const norm = Math.max(Math.hypot(desiredVX, desiredVY), 1e-6);
     const bx = desiredVX / norm, by = desiredVY / norm;
-    let best = null;
+    let inWindow = null, anyClear = null, trapped = null;
     TURN_ANGLES.forEach(function (angle, index) {
       const c = Math.cos(angle), s = Math.sin(angle);
       const dx = bx * c - by * s, dy = bx * s + by * c;
@@ -265,17 +284,30 @@
       const minBar = distanceToBars(x, y, bars);
       const clear = inside && minBar >= CONTRACT.targetBarClearance + 1e-4;
       const tie = (avoidSign || 1) * Math.sign(angle) * 1e-3;
-      const score = clear
-        ? 1000 - Math.abs(angle) + tie
-        : (inside ? 100 : 0) + Math.min(minBar, 10) - 0.01 * Math.abs(angle) + tie;
-      if (!best || score > best.score) {
-        best = {
-          x: x, y: y, vx: dx * speed, vy: dy * speed,
-          clear: clear, steered: index !== 0, score: score,
-        };
+      const heading = Math.atan2(dy, dx);
+      const candidate = {
+        x: x, y: y, vx: dx * speed, vy: dy * speed,
+        clear: clear, steered: index !== 0, heading: heading,
+        score: clear
+          ? 1000 - Math.abs(angle) + tie
+          : (inside ? 100 : 0) + Math.min(minBar, 10) - 0.01 * Math.abs(angle) + tie,
+      };
+      if (!clear) {
+        if (!trapped || candidate.score > trapped.score) trapped = candidate;
+        return;
       }
+      if (!anyClear || candidate.score > anyClear.score) anyClear = candidate;
+      if (prevHeading == null) return;
+      const turn = Math.abs(Math.atan2(
+        Math.sin(heading - prevHeading), Math.cos(heading - prevHeading)
+      ));
+      if (turn <= CONTINUITY_WINDOW + 1e-9
+          && (!inWindow || candidate.score > inWindow.score)) inWindow = candidate;
     });
-    return best;
+    // Clear ALWAYS beats blocked (min clear score ≈ 996.86 > max trapped score ≈ 110.001);
+    // with prevHeading == null, inWindow stays null and the result is exactly the legacy
+    // single-pass argmax, so the 9th argument is strictly opt-in.
+    return inWindow || anyClear || trapped;
   }
 
   /*
@@ -386,7 +418,11 @@
   }
 
   function advanceTarget(episode, dt, bars, rng) {
-    if (!episode || dt <= 0 || episode.speed <= 1e-6) return episode;
+    if (!episode || dt <= 0) return episode;
+    // episode.age drives arena.js's 30 s watchdog: it must measure WALL CLOCK, not
+    // target-motion time, or a speed-0 episode (speed slider at its 0 notch) never resets.
+    episode.age += dt;
+    if (episode.speed <= 1e-6) return episode;
     const b = CONTRACT.bounds;
     const loX = b.x0 + CONTRACT.wallMargin, hiX = b.x1 - CONTRACT.wallMargin;
     const loY = b.y0 + CONTRACT.wallMargin, hiY = b.y1 - CONTRACT.wallMargin;
@@ -415,10 +451,11 @@
     // otherwise take the smallest symmetric turn that clears the bars and arena wall.
     const steered = steerTargetStep(
       oldX, oldY, (x - oldX) / dt, (y - oldY) / dt,
-      episode.speed, dt, bars, episode.avoidSign
+      episode.speed, dt, bars, episode.avoidSign, episode.heading
     );
     x = steered.x;
     y = steered.y;
+    episode.heading = steered.heading; // persist for ALL patterns, not just cv
     if (episode.mode === 'cv') {
       episode.cvVelocity.x = steered.vx;
       episode.cvVelocity.y = steered.vy;
@@ -440,9 +477,11 @@
         const c = Math.cos(jitter), s = Math.sin(jitter);
         episode.cvVelocity.x = vx * c - vy * s;
         episode.cvVelocity.y = vx * s + vy * c;
+        // Re-sync the persisted heading, or the next step's continuity window is measured
+        // against the pre-bounce heading and the guard fights the bounce.
+        episode.heading = Math.atan2(episode.cvVelocity.y, episode.cvVelocity.x);
       }
     }
-    episode.age += dt;
     return episode;
   }
 
