@@ -269,6 +269,7 @@
       <div class="seg" role="tablist">
         <button type="button" class="seg-btn on" data-curve="density">Density</button>
         <button type="button" class="seg-btn" data-curve="speed">Speed</button>
+        <button type="button" class="seg-btn" data-curve="map">Map</button>
       </div>
     </div>
 
@@ -299,6 +300,15 @@
       <div class="scrollx"><table id="speed-tbl"></table></div>
       <p class="hint" id="speed-cap"></p>
     </div>
+
+    <div class="curve-pane" id="pane-map">
+      <p class="meta" id="map-sub">density × target speed · held-out · shaded = trained range</p>
+      <div class="scrollx">
+        <svg class="plot" id="heatmap" viewBox="0 0 740 430" aria-label="density by target speed capture map"></svg>
+      </div>
+      <p class="hint" id="map-cap"></p>
+    </div>
+
   </section>
 
   <!-- RUNS + NEXT -->

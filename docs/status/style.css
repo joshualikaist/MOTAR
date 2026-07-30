@@ -330,3 +330,8 @@ tr.cliff td { color: var(--bad); }
 .arch .fw-t { fill: #d05a4e; font-size: 11px; font-weight: 700; letter-spacing: .02em; }
 .arch .lane { fill: none; stroke: var(--line); stroke-dasharray: 4 4; }
 .arch .lane-t { fill: var(--faint); font-size: 10px; font-weight: 700; letter-spacing: .1em; }
+
+/* ---------- density x speed heat map ---------- */
+#pane-map .plot { min-width: 660px; }
+.hm-v { fill: #fff; font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.hm-s { fill: rgba(255,255,255,.82); font-size: 10px; font-variant-numeric: tabular-nums; }

@@ -3244,6 +3244,122 @@ innovation reliability를 붙인다. CPA auxiliary head는 진단 로그가 효�
 
 ---
 
+## 2026-07-30 — cluster-sector 현황 사이트 반영 및 TensorBoard 2차 정리
+
+사용자 요청에 따라 연구현황 사이트를 현재 실행 중인 fixed-85 cluster-sector 실험으로
+갱신하고, checkpoint와 metrics CSV를 보존하면서 TensorBoard의 오래된 세션을 별도
+archive로 이동했다.
+
+### 사이트에 반영한 현재 결과
+
+- 작업 시작 시 활성 run은
+  `ppo_260730_1549_navrl_corrected-squashed-density-cluster-sector-s1`이었다. TensorBoard
+  정리 뒤에도 계속 epoch를 기록했으나 이후 terminal error나 정상 종료 summary 없이
+  epoch 10157에서 중단됐다. 마지막 주기 checkpoint 10150은 보존됐다.
+- clean 16,384-episode competence window 네 개는 capture
+  `0.742 / 0.745 / 0.722 / 0.714`로 모두 0.70 기준을 넘었다.
+- barprobe의 unique associated bars는 기존 greedy/suppress 계열 `3.0~3.5/8`에서
+  cluster-sector 약 `4.4/8`로 상승했고 duplicate는 `1.9`에서 약 `0.1`로 감소했다.
+  이는 중복 surface가 slot을 소모하던 병목을 실제로 제거했다는 증거다.
+- unique `4.5/8` 기준은 window에 따라 `4.2~4.6`으로 경계이므로 완전 통과로 과장하지
+  않고 사이트에 `near threshold`로 표시했다.
+- 네 개의 큰 clean window가 이미 같은 결론을 내므로 남은 epoch만 채우기 위해 재시작하지
+  않고, checkpoint 10150의 density×target-speed held-out 평가로 넘어간다. 재현되면
+  navigation backbone을 고정하고 Phase 3B learned detector로 돌아간다.
+  후속 perception 후보는 occlusion/dropout 평가, Kalman innovation reliability 순이며
+  CPA auxiliary risk는 diagnostic-first로 유지했다.
+
+`tools/update_status_snapshot.py`, `docs/status/status.json`, HTML inline fallback과
+cluster-sector 표시를 동기화했다. dashboard JSON과 fallback의 완전 일치, 활성 run/selector
+계약, 브라우저 motion test를 검증했다.
+
+### TensorBoard 정리
+
+- 라이브 TensorBoard에서 2026-07-14~24의 historical 세션 21개와 2026-07-28의
+  1~75 epoch action diagnostic 9개, 합계 **30개 summaries**를 제거했다.
+- 여러 resume shard를 포함해 event file **37개**를
+  `/home/fair/workspaces/aerial_gym_ws/tensorboard_archive/2026-07-30_historical_events/`
+  아래로 이동했다. 삭제하지 않았으며 archive README에 전체 목록과 복구 방법을 기록했다.
+- `runs/`의 checkpoint, `aerial_run/epoch_metrics.csv`, run summary 등은 전혀 이동하지
+  않았다. 따라서 학습 재개 경로와 사이트의 45-run 연구 원자료는 유지된다.
+- TensorBoard API에서 표시 세션이 **43→13개**로 즉시 줄어든 것을 확인했다.
+  라이브에는 07-27 representation/density 계보, 500-epoch bounded-action 비교,
+  07-29~30 corrected 계보와 현재 cluster-sector만 남겼다.
+- summaries 이동 직후 TensorBoard API를 검사할 때까지 활성 runner와 event/checkpoint
+  기록은 정상 계속됐다. 이후 epoch 10157에서 별도 종료 기록 없이 프로세스가 사라졌으며,
+  archive 작업은 활성 run의 `summaries`나 다른 파일을 이동하지 않았다.
+
+---
+
+## 2026-07-30 — density × target-speed 맵 (논문 헤드라인 그림) + 85→110 확장 학습 재개 + 사이트 Map 탭
+
+체크포인트 `runs/ppo_260730_1549_navrl_corrected-squashed-density-cluster-sector-s1/nn/
+last_gen_ppo_ep_10150_rew_36.50442.pth` (cluster_sector selector, epoch 10150)로 밀도(25/50/
+65/85/110/130/150 bars) × 표적속도(0.0/0.5/1.0/1.5 m/s) 28셀 held-out 평가를 실행했다.
+128 envs, 셀당 2049 episode, deterministic, general(랜덤) spawn, mixed target pattern.
+결과: `results/density_speed_map_cluster_sector.csv`.
+
+### 핵심 발견 — 두 축이 완전히 비대칭
+
+| bars | density/100m² | capture @0.0 | @0.5 | @1.0 | @1.5 |
+|---|---|---|---|---|---|
+| 25  | 5.2  | 96.2% | 97.0% | 96.5% | 94.9% |
+| 50  | 10.5 | 91.8% | 93.0% | 92.2% | 90.4% |
+| 65  | 13.6 | 88.1% | 87.9% | 86.1% | 83.7% |
+| 85  | 17.8 | 73.6% | 75.3% | 71.8% | 67.1% |
+| **110** | **23.0** | 49.7% | 50.6% | 48.4% | 43.7% |
+| 130 | 27.2 | 31.8% | 29.6% | 28.1% | 25.9% |
+| 150 | 31.4 | 19.4% | 19.2% | 19.0% | 15.9% |
+
+(85 bars = 학습된 최대 밀도, 굵게 표시한 110행부터 generalisation. 전체 표+crash 원인
+breakdown은 CSV 참고.)
+
+전체 그리드에서 밀도를 5.2→31.4 bars/100m²로 올리면 capture가 **78 pp** 떨어지는 반면,
+표적속도를 0→1.5 m/s로 올리면 **4.2 pp**만 떨어진다. pursuer v_max=2.5 m/s가 표적보다
+충분히 빨라서, 이 레짐에서 표적속도는 사실상 난이도 축이 아니고 밀도가 거의 전부다 —
+이게 논문 헤드라인 그림이 된다. crash 원인은 밀도가 오를수록 거의 전부
+`crash_bar_contact_share`(85 bars에서 90%+, 150 bars에서 94%+)로 수렴 — OOB/추락사는
+부수적이고 장애물 접촉이 지배적 실패 모드임을 재확인.
+
+### 85→110 밀도 커리큘럼 확장 재개
+
+체크포인트 10150에서 재개하려던 중 `train_navrl_corrected_squashed_density_cluster_sector.sh`
+(Codex가 이전에 작성한 launcher)에 다음이 하드코딩되어 있음을 발견:
+
+```
+export NAVRL_CONTROLLED_ABLATION=1
+export NAVRL_FIXED_BARS="${NAVRL_FIXED_BARS:-85}"
+```
+
+`NAVRL_CONTROLLED_ABLATION=1`이 `_update_curriculum`의 밀도 승급 자체를 막아 85 bars에서
+영구 고정시킨다 — 위 held-out 평가로 85 bars plateau가 이미 확인됐으므로 이 ablation은
+목적을 다했고, 다음 단계(85→110+)로 넘어가려면 반드시 해제해야 한다. 아래처럼 override해서
+재시작:
+
+```
+NAVRL_CONTROLLED_ABLATION=0 NAVRL_FIXED_BARS= \
+  ./train_navrl.sh --checkpoint runs/ppo_260730_1549_navrl_corrected-squashed-density-cluster-sector-s1/nn/last_gen_ppo_ep_10150_rew_36.50442.pth \
+  --branch_run --disable_collapse_early_stop --max_epochs 26000 --seed 1
+```
+
+20:15 KST 시작, run `ppo_260730_2015_navrl_cluster-sector-density85to110-s1`, 로그
+`train_session_logs/cluster_sector_85to110_260730_201534.log`. 20:30 기준 epoch 10429/26000,
+capture 75-80%대에서 85 bars 유지 중(아직 Layer-1 window 16384 episode 채우는 중, 승급
+전). 예상 소요 11-15시간. `NAVRL_DENSITY_STEP=5` 그대로이므로 다음 승급 목표는 90 bars.
+
+### 사이트 반영
+
+- `docs/status/status.json`에 `density_speed_map`(28행 + notes + trained_max_bars=85) 키 추가.
+- `docs/status/app.js`에 `renderHeatmap(s)` 신규 — 28셀을 red→tan→teal 그라디언트로 렌더링,
+  85 bars(학습 범위) 아래는 옅은 배경 음영 + 점선으로 generalisation과 구분, 실측값 기반
+  헤드라인 문장("Density dominates: ... 78 pp ... 4.2 pp ...")을 데이터에서 직접 계산해 표시.
+- `docs/status/index.html`에 `Map` 탭 버튼 + `#pane-map` 추가, `style.css`에 `.hm-v`/`.hm-s`
+  셀 텍스트 스타일 추가.
+- headless Chrome 스크린샷으로 28셀 전부(25→150 bars × 4속도) 렌더 검증 완료 — 값, 색상,
+  구분선, 캡션 텍스트 모두 CSV와 일치 확인.
+
+---
+
 ## 부록 A — 삭제된 run 아카이브 (2026-07-14 정리 시점)
 
 `runs/` 폴더가 삭제되어 재구성 불가한 26개 run의 최종 지표. 원본:

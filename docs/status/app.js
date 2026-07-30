@@ -32,6 +32,8 @@ function wireChrome() {
       const which = btn.dataset.curve;
       document.getElementById('pane-density').classList.toggle('on', which === 'density');
       document.getElementById('pane-speed').classList.toggle('on', which === 'speed');
+      const m = document.getElementById('pane-map');
+      if (m) m.classList.toggle('on', which === 'map');
     });
   });
 }
@@ -285,6 +287,86 @@ function pickSpeed(s) {
   }).filter(Boolean).sort((a, b) => a.speed - b.speed);
 }
 
+/* Density x target-speed capture heat map -- the paper headline figure. */
+function renderHeatmap(s) {
+  const pack = s.density_speed_map;
+  const rows = (pack && pack.rows) || [];
+  const svg = document.getElementById('heatmap');
+  if (!svg) return;
+  const sub = document.getElementById('map-sub');
+  if (!rows.length) { if (sub) sub.textContent = 'no map measured yet'; return; }
+
+  const bars = [...new Set(rows.map(r => r.bars))].sort((a, b) => a - b);
+  const speeds = [...new Set(rows.map(r => r.target_speed_ms))].sort((a, b) => a - b);
+  const at = (b, v) => rows.find(r => r.bars === b && r.target_speed_ms === v);
+  const trainedMax = pack.trained_max_bars || null;
+
+  const X0 = 96, Y0 = 46, CW = 132, CH = 62;
+  const W = X0 + speeds.length * CW, H = Y0 + bars.length * CH;
+
+  // capture -> colour. Sequential ramp built from the theme accent so it tracks light/dark.
+  const col = v => {
+    const t = Math.max(0, Math.min(1, v));
+    // low capture = warm/bad, high = accent. Interpolate in sRGB; good enough for a 28-cell map.
+    const bad = [209, 90, 78], good = [13, 143, 130];
+    const mid = [214, 178, 96];
+    const c = t < 0.5
+      ? bad.map((x, i) => Math.round(x + (mid[i] - x) * (t / 0.5)))
+      : mid.map((x, i) => Math.round(x + (good[i] - x) * ((t - 0.5) / 0.5)));
+    return `rgb(${c[0]},${c[1]},${c[2]})`;
+  };
+
+  let g = '';
+  // trained-range shading behind the rows at or below the trained max
+  if (trainedMax) {
+    const n = bars.filter(b => b <= trainedMax).length;
+    if (n) g += `<rect x="${X0}" y="${Y0}" width="${speeds.length * CW}" height="${n * CH}"
+      fill="${cssv('--accent')}" opacity="0.06"/>`;
+  }
+  bars.forEach((b, ri) => {
+    speeds.forEach((v, ci) => {
+      const cell = at(b, v);
+      if (!cell) return;
+      const x = X0 + ci * CW, y = Y0 + ri * CH;
+      const ood = trainedMax && b > trainedMax;
+      g += `<rect x="${x + 2}" y="${y + 2}" width="${CW - 4}" height="${CH - 4}" rx="4"
+        fill="${col(cell.capture)}" opacity="${ood ? 0.55 : 0.92}"/>`;
+      g += `<text class="hm-v" x="${x + CW / 2}" y="${y + CH / 2 + 1}" text-anchor="middle">${(cell.capture * 100).toFixed(1)}</text>`;
+      g += `<text class="hm-s" x="${x + CW / 2}" y="${y + CH / 2 + 17}" text-anchor="middle">crash ${(cell.crash * 100).toFixed(0)}%</text>`;
+    });
+    const y = Y0 + ri * CH;
+    const dens = (at(b, speeds[0]) || {}).density_per_100m2;
+    g += `<text class="t ink" x="${X0 - 12}" y="${y + CH / 2 - 3}" text-anchor="end" font-size="13" font-weight="600">${b} bars</text>`;
+    g += `<text class="t dim" x="${X0 - 12}" y="${y + CH / 2 + 13}" text-anchor="end" font-size="10.5">${dens != null ? dens.toFixed(1) + '/100m²' : ''}</text>`;
+  });
+  speeds.forEach((v, ci) => {
+    g += `<text class="t dim" x="${X0 + ci * CW + CW / 2}" y="${Y0 - 22}" text-anchor="middle" font-size="11.5">target ${v.toFixed(2)} m/s</text>`;
+  });
+  g += `<text class="t dim" x="${X0 - 12}" y="${Y0 - 22}" text-anchor="end" font-size="10.5">capture %</text>`;
+  if (trainedMax) {
+    const n = bars.filter(b => b <= trainedMax).length;
+    const yl = Y0 + n * CH;
+    g += `<line x1="${X0}" y1="${yl}" x2="${X0 + speeds.length * CW}" y2="${yl}"
+      stroke="${cssv('--accent')}" stroke-width="1.6" stroke-dasharray="5 4"/>`;
+    g += `<text class="t dim" x="${X0 + 4}" y="${yl + 14}" font-size="10.5">↑ trained (≤${trainedMax} bars) · ↓ generalisation</text>`;
+  }
+  svg.setAttribute('viewBox', `0 0 ${W} ${H + 26}`);
+  svg.innerHTML = g;
+
+  // headline asymmetry, computed from the data rather than hard-coded
+  const mean = xs => xs.reduce((a, b) => a + b, 0) / xs.length;
+  const byBar = bars.map(b => mean(speeds.map(v => (at(b, v) || {}).capture).filter(x => x != null)));
+  const bySpd = speeds.map(v => mean(bars.map(b => (at(b, v) || {}).capture).filter(x => x != null)));
+  const dDen = (byBar[0] - byBar[byBar.length - 1]) * 100;
+  const dSpd = (bySpd[0] - bySpd[bySpd.length - 1]) * 100;
+  const cap = document.getElementById('map-cap');
+  if (cap) cap.textContent =
+    `Density dominates: over this grid it costs ${dDen.toFixed(0)} pp of capture, while target speed `
+    + `costs only ${dSpd.toFixed(1)} pp — the pursuer at 2.5 m/s is fast enough that target speed is `
+    + `not a binding difficulty axis. Rows below the dashed line were never trained.`;
+  if (sub) sub.textContent = `${rows.length} cells · 2049 episodes each · deterministic · sensor-only`;
+}
+
 function renderSpeed(s) {
   const data = pickSpeed(s);
   const tbl = document.getElementById('speed-tbl');
@@ -428,6 +510,7 @@ function wireArena() {
     renderResearchUpdate(s);
     renderCurve(s);
     renderSpeed(s);
+    renderHeatmap(s);
     renderRuns(s);
   };
   try { renderAll(fallbackStatus()); } catch (e) { console.error(e); }
