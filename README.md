@@ -26,7 +26,7 @@ Research lives on the `research/navrl-env` branch; `main` tracks upstream Aerial
 ## Quick start
 
 Full prerequisites (Ubuntu, NVIDIA GPU ≥ 8 GB, Isaac Gym Preview 4, conda), the manual
-install, and the two environment gotchas are in **[SETUP_SECOND_MACHINE.md](SETUP_SECOND_MACHINE.md)**.
+install, and the two environment gotchas are in **[OPERATIONS.md](OPERATIONS.md)**.
 The short path:
 
 ```bash
@@ -39,9 +39,10 @@ conda activate aerialgym
 # 2. See the arena — a viewer with drones flying toward the goal (no policy yet)
 cd aerial_gym/examples && python navrl_task_example.py
 
-# 3. Train the navigation policy (PPO) — headless; log + TensorBoard paths are printed
+# 3. Train the navigation policy (PPO) — headless; console output is also saved
 cd ../rl_training/rl_games && ./train_navrl.sh
 #    watch the console box: `captured (success)` should climb toward 1.0
+#    from another terminal: ./watch_navrl_training.sh
 
 # 4. Watch / evaluate a trained checkpoint
 ./play_navrl.sh runs/<your_run>/nn/gen_ppo.pth              # viewer, 16 drones
@@ -49,20 +50,43 @@ cd ../rl_training/rl_games && ./train_navrl.sh
 ```
 
 Env counts, the 4 GB-VRAM preset, and the training metrics / TensorBoard scalars to watch
-are documented in **[GPU_SCALING_GUIDE.md](GPU_SCALING_GUIDE.md)** and **[WORKLOG.md](WORKLOG.md)**.
+are documented in **[OPERATIONS.md](OPERATIONS.md)** and **[WORKLOG.md](WORKLOG.md)**.
 
 > **Current method** — a learned RGB-D + LiDAR perception front-end feeding a NavRL++-style
-> Transformer policy — is specified in **[PERCEPTION_TRANSFORMER_PLAN.md](PERCEPTION_TRANSFORMER_PLAN.md)**.
+> Transformer policy — is specified in **[RESEARCH_PLAN.md](RESEARCH_PLAN.md)**.
 > Run it with `NAVRL_VISION=1 NAVRL_PERCEPTION=1 ./train_navrl.sh` (staged curriculum:
 > `./train_navrl_perception_staged.sh`), after the detector-validation gate in that plan.
+>
+> **Current controlled experiment** — fixed-85 cluster-sector obstacle selection:
+> `./train_navrl_corrected_squashed_density_cluster_sector.sh`. It warm-starts the validated
+> epoch-8350 bounded policy, resets the contaminated competence window, and keeps density fixed.
+> As of 2026-07-30 it clears its gate: token `unique` 4.6 (target 4.5+) and an 85-bar capture
+> plateau of 0.725 with promotion windows at 0.712-0.745 (target 0.70).
 
 ## Status
 
-Baseline LiDAR navigation is **solved** — captured ≈ 0.95 with learned yaw control, beating
-NavRL's 0.81 — and obstacle density has been **swept** end-to-end. The project is now building
-the **sensor-only perception → Transformer** policy, where interception must hold under
-occlusion and rising density (work in progress; detector validation pending). Live detail is
-in **[WORKLOG.md](WORKLOG.md)** and the [status dashboard](docs/status/).
+Sensor-only interception works end to end: the actor sees **only** a 72x4 LiDAR at 12 m plus a
+forward RGB-D detector (898-D structured observation, 17-token Transformer, asymmetric 906-D
+critic with ground truth confined to training).
+
+A left/right chirality defect in the observation pipeline was found and fixed on 2026-07-29 --
+the perception bin-to-bearing table was the mirror image of the sensor's ray generator, so every
+obstacle token had been emitted on the wrong side of the drone. Physically adjudicated: token
+association with real bars went from 13.9% to 94.8%. Held-out density curve improved by **+11.1 pp
+on average**, and the density curriculum reached **85 bars (17.8 bars/100 m^2)** where it had
+previously stalled at 65.
+
+Current measured capture (held-out, 2049 episodes/cell, target 1.0 m/s, deterministic):
+
+| bars | 25 | 50 | 65 | 85 | 110 | 130 | 150 |
+|---|---|---|---|---|---|---|---|
+| capture | 0.978 | 0.935 | 0.854 | **0.689** | 0.412 | 0.225 | 0.144 |
+
+85 bars is the trained maximum; everything to its right measures generalization, not a ceiling of
+the method. The obstacle-token bottleneck (8 slots representing only ~3 unique bars) was traced to
+suppression-window duplication and addressed by a `cluster_sector` selector, which raised unique
+bars per step from 3.0 to 4.6 and the 85-bar capture plateau from 0.650 to 0.725. Live detail is in
+**[WORKLOG.md](WORKLOG.md)** (newest entry last) and the [status dashboard](docs/status/).
 
 ## Repo map
 
@@ -80,10 +104,8 @@ in **[WORKLOG.md](WORKLOG.md)** and the [status dashboard](docs/status/).
 | File | For |
 |------|-----|
 | **[WORKLOG.md](WORKLOG.md)** | what changed and why — **start here** |
-| [PERCEPTION_TRANSFORMER_PLAN.md](PERCEPTION_TRANSFORMER_PLAN.md) | the current method (perception + Transformer) |
-| [RESEARCH_PLAN.md](RESEARCH_PLAN.md), [ROADMAP.md](ROADMAP.md) | the staged research roadmap |
-| [SETUP_SECOND_MACHINE.md](SETUP_SECOND_MACHINE.md) | full install + running a second machine |
-| [GPU_SCALING_GUIDE.md](GPU_SCALING_GUIDE.md) | VRAM budgets, env counts, the 4 GB preset |
+| [RESEARCH_PLAN.md](RESEARCH_PLAN.md) | research questions, method spec, staged plan P0-P7 |
+| [OPERATIONS.md](OPERATIONS.md) | install, GPU tiers/VRAM, second machine, transferring results |
 
 ---
 

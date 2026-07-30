@@ -18,10 +18,14 @@ substantive한 요청(학습·평가·분석·감사·구현)을 받으면:
 - **주제**: 센서 전용 UAV 요격. actor 관측에 GT 표적(semantic id/mask, bearing/range, `target_position`,
   GT visibility) **절대 금지** — detector supervision·reward·종료판정·critic·평가 metric에만 사용.
 - **현재 방향(2026-07-22 피벗)**: NavRL++식 **학습형 인지(RGB-D 카메라 + LiDAR detector/tracker) +
-  Transformer 시계열 정책**. 계획서 = `PERCEPTION_TRANSFORMER_PLAN.md`. 해석적 semantic id 방식(관측
-  305차원)은 이제 **프로토타입/baseline**. 현재 vision 관측 = 1265차원(카메라 depth 포함).
+  Transformer 시계열 정책**. 계획서 = `RESEARCH_PLAN.md`.
+- **현재 관측 계약(2026-07-30)**: actor **898차원** / critic **906차원**(=898 + GT 8). 장애물 토큰 8개를
+  `cluster_sector` 셀렉터로 전방 240°에서 선택, LiDAR 72×4 @12 m, 17-token Transformer.
+  폐기된 계보: 156(GT LiDAR) → 305(해석적 semantic) → 1265(vision CNN). 체크포인트 shape 불일치의
+  원인이 되므로 섞지 말 것.
 - **canonical 현재 상태**: `WORKLOG.md`(맨 아래) + `docs/status/` 라이브 대시보드(status.json 구동).
-  `RESEARCH_PLAN.md`는 charter(가끔 갱신). ROADMAP/PHASE3_PLAN은 위상 번호가 엇갈리니 WORKLOG 기준.
+  `RESEARCH_PLAN.md`는 charter(가설·방법·P0–P7 단일 번호). 실무는 `OPERATIONS.md`,
+  진단 도구·측정된 음성 결과는 `CRASH_TUNING_LOG.md`. 문서는 2026-07-30에 14→6개로 통합됨.
 - **하드웨어**: RTX 3070 8GB(학습 공장) + GTX 1650 Ti 4GB(평가 공장 — 학습은 N=128이라 ~10-15pt 약함,
   결과 섞지 말 것). RTX 50번대(Blackwell)는 Isaac Gym Preview4와 비호환 — 사지 말 것.
 

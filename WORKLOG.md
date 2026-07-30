@@ -2824,3 +2824,536 @@ FOV 좁히기 때와 동일 계열의 변경(그때 +2.7pp 성공 전례).
 수정이 유효, 이후 자연 승급을 기다림. ~3000 epoch 내 안 오르거나 올라도 capture가 안
 따라오면 정보가 병목이 아니었다는 뜻이므로 중단 후 재판단(용량 확장 fresh 또는 85막대를
 상한으로 확정).
+
+---
+
+## 2026-07-30 — 85막대 재개 런 발산 및 억제폭 실험 미적용 확인
+
+실행 중인 `ppo_260730_1154_navrl_corrected-squashed-density25to110-s1`을 감사했다. 이
+런은 `ppo_260730_1104.../last_gen_ppo_ep_8350_rew_22.905773.pth`에서 재개되어 epoch
+11100을 넘겼지만, 최근 500 epoch 평균은 capture **1.0%**, crash **85.8%**, reward
+**-104.3**으로 학습 가치가 없는 명백한 발산 상태다. 50-epoch 평균 capture가 20% 아래로
+내려간 최초 창은 epoch 10314~10363이며, epoch 10400의 50-epoch 평균은 capture 0.5%,
+crash 99.5%였다.
+
+TensorBoard에서 직접 원인을 확인했다. `ppo/kl`은 epoch 10276에 설정 한계 0.04를 처음
+넘었고 이후 0.30, 0.48, 최대 2.56 수준까지 폭증했다. 동시에 latent policy mean의
+절대값이 x축 4.8→2025, z축 0.32→464, yaw축 0.57→15.3으로 폭발해 실제 action이
+x/z/yaw 전부 경계에 고정됐다(`exec_edge98=1.0`). 최근 crash의 약 90%는 bar contact다.
+이는 정지 병목이 아니다(actual speed 1.61m/s, commanded-stall 3.5%).
+
+현재 KL 가드는 임계치를 넘은 minibatch를 skip할 뿐 이미 수행된 이전 update를 rollback하지
+않는다. 발산 뒤에는 매 epoch 7~8개 minibatch가 skip되지만 손상된 정책은 복구되지 않는다.
+또 density launcher는 정상적인 승급 reward 하락을 허용하려고 일반 reward-collapse guard를
+완전히 비활성화한다. 두 안전장치 사이의 공백 때문에 실제 발산을 자동 종료하지 못했다.
+후속 수정은 (1) 고정 density 안에서만 비교하는 curriculum-aware collapse guard,
+(2) KL/latent 폭증 시 last-known-good epoch checkpoint rollback 또는 즉시 fail-stop이어야
+한다.
+
+더 중요한 실행 계약 오류도 확인했다. 사용한 명령의
+`NAVRL_OBSTACLE_SUPPRESS_DEG=15`는 실제 적용되지 않았다.
+`train_navrl_general_repr_density.sh`가 이를 무조건 `10`으로 다시 export하며, 시작 로그도
+`suppress=+-10deg`를 명시한다. 따라서 이 런은 제안했던 ±15° 중복 토큰 억제 실험이 아니라
+기존 ±10° 정책의 장기 연장이다. `CKPT=$(ls -t runs/*/nn/last_gen_ppo_ep_*.pth | head -1)`도
+이제는 발산 런의 최신 checkpoint를 고를 수 있으므로 재사용 금지. 수정 전 재시작 기준점은
+명시적 pre-collapse checkpoint `ppo_260730_1104.../last_gen_ppo_ep_8350_rew_22.905773.pth`로
+고정한다.
+
+### 후속 수정 — ±15° 실험 및 사용자 가시 로그
+
+사용자가 학습은 직접 실행하기로 해 자동 실행하지 않았다. `general_repr_density`가 외부의
+`NAVRL_OBSTACLE_SUPPRESS_DEG`를 덮어쓰지 않도록 기본값 방식으로 수정했다. 체크포인트
+preflight는 원래 `cfg_obstacle_suppress_deg=10`과 요청값 15의 차이를 차단했으므로, 모든
+다른 관측 계약 검사는 유지하면서 `cfg_obstacle_suppress_deg` 하나만 명시적으로 허용하는
+`NAVRL_ALLOW_SUPPRESS_WARMSTART=1` opt-in을 추가했다. opt-in 없이 15를 주면 여전히
+실패하고, opt-in 시에는 `INTENTIONAL contract override | ... checkpoint=10 requested=15`가
+출력되는 것을 확인했다.
+
+사용자 실수를 줄이기 위해 재현 런처
+`train_navrl_corrected_squashed_density_suppress15.sh`를 추가했다. 안전 기준점 epoch 8350,
+`MAX_EPOCHS=12000`, suppress ±15°, 별도 run tag/log 이름을 기본값으로 고정하며 학습을
+시작하지 않는 preflight에서 epoch 8350·bars 85·tokens 8·FOV 240°·suppress ±15°를
+확인했다.
+
+학습 로그는 `train_navrl.sh`가 원래 터미널과 파일에 동시에 쓰는 `tee` 구조였지만, 과거
+`nohup ... > /dev/null` 명령 때문에 화면이 사라지고 실제 파일명이 매번 달랐다. 이제 매
+실행마다 `train_session_logs/current_training.log`가 실제 세션 로그를 가리키며,
+`watch_navrl_training.sh`가 이를 `tail -F`한다. 포그라운드 실행에서는 같은 PPO dashboard가
+현재 터미널에 바로 보이고, 다른 터미널에서는 watcher로 볼 수 있다. watcher 종료의
+`Ctrl-C`는 tail만 종료하며 학습에는 영향을 주지 않는다.
+
+---
+
+## 2026-07-30 — 연구 문서·status 사이트를 suppress ±15° live gate로 통합
+
+7월 29일 bounded 25-bars pilot에 머물러 있던 정적 사이트와 7월 22일 연구 계획을 현재
+증거에 맞춰 전면 동기화했다.
+
+- `RESEARCH_PLAN.md`, `ROADMAP.md`, `PHASE3_PLAN.md`,
+  `PERCEPTION_TRANSFORMER_PLAN.md`, `README.md`에 corrected 85-bars plateau
+  `0.676±0.001`, 이전 65-bars `0.678`, 같은 competence에서 밀도 `+31%`라는 정정된
+  결론을 반영했다.
+- ±10° 장기 재개 run `ppo_260730_1154...`는 epoch 10276 이후 KL/latent가 발산해
+  tail500 capture/crash `1.0%/86.0%`가 된 PPO safety failure이며, ±15° 결과가 아니므로
+  성능 비교에서 제외한다고 모든 계획 문서에 명시했다.
+- 현재 critical path를 suppress ±15°의 세 gate로 고정했다: unique `≥4.5/8`, capture
+  `≥0.70/16,384 episodes`, KL `≤0.04`. 통과 후 held-out density sweep, 실패 시
+  threshold 완화가 아니라 token selection 재설계다. 장기 재시도 전 curriculum-aware
+  collapse guard와 KL/latent fail-stop 또는 rollback을 선수정한다.
+- `results/corrected_chirality_density_curve.csv`를 추가해 corrected policy의 held-out
+  25/50/65/85/110/130/150-bars capture
+  `0.978/0.935/0.854/0.689/0.412/0.225/0.144`를 재현 가능한 사이트 데이터로 남겼다.
+- `tools/update_status_snapshot.py`가 run CSV를 다시 집계하고 `docs/status/status.json`과
+  HTML inline fallback을 하나의 객체로 동시에 갱신하도록 했다. 검증 snapshot은 44 runs,
+  live `ppo_260730_1419_navrl_corrected-squashed-density-suppress15-s1`, epoch 8639,
+  tail50 capture/crash/timeout `69.1%/30.4%/0.5%`, bars 85였다. 첫 suppress15 barprobe는
+  unique `3.5/8`, duplicate `1.8`로 기준 `3.0/~3.0`보다 방향은 맞지만 아직 gate 미달이다.
+- status UI의 Research update, evidence ledger, decision gate, phase strip, architecture
+  suppression 설명, Now 패널을 모두 이 live experiment로 교체했다. density 기본 그래프도
+  corrected curve를 우선 선택한다.
+
+검증: status JSON↔HTML fallback 완전 일치, Chrome 1440×1800 실제 렌더에서 Live/Research
+update/evidence ledger 확인, status arena-motion parity 통과, checkpoint preflight 6개,
+training-safety 5개, target-motion 테스트 통과, Python compile 및 `git diff --check` 통과.
+사이트 snapshot 생성 중 실제 학습 프로세스는 중단하거나 변경하지 않았다.
+
+---
+
+## 2026-07-30 — density curriculum 설계 감사
+
+사용자 요청에 따라 실행 중인 suppress ±15° 학습을 중단하지 않고, 커리큘럼 구현·체크포인트
+상태·실제 승급 로그를 대조했다. 결론은 **밀도를 competence gate로 5개씩 올리는 큰 방향은
+맞지만, 현재 gate는 학습 스케줄러로는 쓸 수 있어도 표현 ablation과 최종 성능 판정에는
+그대로 쓰면 안 된다**는 것이다.
+
+### 확인된 현재 계약
+
+- 실행 중인 `ppo_260730_1419_navrl_corrected-squashed-density-suppress15-s1`은 85막대,
+  목표 거리 상한 16 m, 표적 속도 상한 1.5 m/s, density threshold 0.70,
+  `check_eps=16384`, step 5로 정상 실행 중이다.
+- 거리 competence 상태는 시작 체크포인트부터 `k_min=10`, `k_max=16`으로 포화되어
+  현재 density와 경쟁하지 않는다. 표적 속도 램프도 global epoch 3000에 끝나 현재는
+  `speed ~ U[0,1.5]`로 고정되어 있다.
+- 반면 25→65막대 초기 승급 때는 표적 속도 상한이 약 0.61→1.47 m/s로 동시에 증가했다.
+  따라서 초기 승급 곡선의 하락을 density 효과 하나로 해석할 수는 없다. 65막대 이후에는
+  속도 상한이 1.5 m/s로 포화되어 density 단일축 비교가 가능하다.
+- `NAVRL_GENERAL_TRAIN=1`에서는 드론과 표적을 arena 전역에서 독립 표본화하고 실제 목표
+  거리는 `[4 m, k_max]`로 뽑는다. 이 경로는 `k_min_cur=10`과
+  `NAVRL_DENSITY_EASY_GOAL_MIX`를 사용하지 않는다. 즉 로그의 저장된 `[10,16]` 계약과 달리
+  현재 gate는 실제로 거리 약 4~16 m, 속도 0~1.5 m/s, cv/waypoint 50:50이 섞인
+  aggregate capture다.
+
+### 체크포인트 재개의 판정창 오염
+
+epoch 8350 체크포인트에는 suppress ±10°에서 수집한 density window가
+`9823/15616`으로 저장되어 있었다. suppress ±15° run이 이 값을 그대로 복원해 첫 gate는
+새 표현 에피소드가 768회만 추가된 즉시 0.630으로 판정됐다. 첫 판정 자료의 95.3%가 이전
+표현에서 온 것이므로 ±15° 효과 판정으로 사용할 수 없다. 그 다음 창 16,385회는 전부 새
+표현이며 0.664로 hold되어 유효하다. 감사가 끝날 때 세 번째 판정도 16,384회, 0.689로
+hold되어 suppress ±15°의 clean window는 현재 `0.664, 0.689` 두 개다. 표현·reward·motion
+contract가 바뀌면 curriculum position은 복원하되 진행 중인 competence accumulator와
+adaptation warmup은 새로 시작해야 한다.
+
+### 0.70 / 16,384 gate 해석
+
+85막대 장기 plateau 0.676에서 이항 표준오차는 약 0.00366, 근사 95% 구간은
+`[0.669, 0.683]`이다. 실제 성능이 0.676인 정책이 raw capture 0.70을 우연히 넘을 확률은
+약 `2.6e-11`이다. 따라서 0.70은 noisy해서 막는 값이 아니라 **실제 +2.4%p 개선을 요구하는
+엄격한 목표**다. 목표가 “85막대에서 최소 70%”이면 유지하는 게 맞고, 단순히 다음 난도를
+경험시키는 훈련 스케줄러라면 너무 경직되어 있다. 또한 16k aggregate는 평균을 정밀하게
+측정하지만 속도·거리·패턴별 실패를 숨기며, 계속 업데이트되는 정책의 과거 에피소드를
+섞으므로 held-out 평가가 아니다.
+
+### 권장 재설계
+
+1. **표현 ablation과 density curriculum 분리**: suppress 변경은 85막대 고정,
+   accumulator reset, 최소 adaptation hold 후 동일한 held-out grid로 비교한다.
+2. **승급 gate 층화**: 전체 평균 `>=0.70`만 보지 말고 target speed
+   `0/0.5/1.0/1.5`, motion `cv/waypoint`, 거리 구간별 capture를 함께 기록한다.
+   weighted mean과 hard-bin floor를 동시에 사용해야 쉬운 짧은/느린 에피소드가 어려운
+   조건의 실패를 가리지 않는다.
+3. **승급 후 cooldown과 회귀 방지**: step 5는 85막대 기준 약 5.9% 증가라 적절하다.
+   승급 뒤 일정 epoch 동안 재승급을 금지하고, 현재/이전 density를 일부 재표본화해
+   catastrophic forgetting을 막는다.
+4. **두 종류의 안전장치 분리**: density 증가로 reward가 내려가는 것은 허용하되, 같은
+   density에서 capture 급락·KL/latent 폭증은 last-known-good 저장 또는 fail-stop으로
+   막는다.
+5. **최종 논문 판정은 별도 평가**: curriculum gate는 teacher 신호일 뿐 성능 근거가
+   아니다. 고정 checkpoint를 3 seeds와 고정 density×speed×pattern grid로 평가한다.
+
+문헌 방향도 대조했다. Self-Paced Deep RL은 정책 능력에 맞춰 task distribution 자체를
+목표 분포 쪽으로 이동시키고, ALP-GMM과 Prioritized Level Replay는 단일 고정 성공문턱보다
+학습 진전이 큰 task/level을 다시 표본화한다. 이 프로젝트에는 당장 복잡한 GMM teacher보다
+먼저 **층화 gate + 이전 density replay + contract 변경 시 accumulator reset**을 넣는 것이
+비용 대비 효과와 인과 해석 모두에서 우선이다.
+
+---
+
+## 2026-07-30 — 오염된 suppress15 런 종료 및 curriculum 계약 수정
+
+사용자 승인 후 `ppo_260730_1419_navrl_corrected-squashed-density-suppress15-s1`을
+SIGINT로 종료했다. 프로세스 그룹 전체가 내려간 것을 확인했고 마지막 정상 주기
+checkpoint `last_gen_ppo_ep_8900_rew_22.966688.pth`를 보존했다. 이 run의 clean density
+window는 `0.664`, `0.689`, unique는 `3.4~3.5/8`로 사전 기준 0.70/4.5에 미달했다.
+
+다음 계약 오류와 안전 공백을 수정했다.
+
+- `train_navrl_corrected_squashed_density_suppress15.sh`는 이제 85 bars 고정,
+  `NAVRL_RESET_DENSITY_WINDOW=1`, 250-epoch resume adaptation을 강제한다. density
+  monitor는 켜 두되 final=current라 promotion은 불가능하다.
+- checkpoint의 표현/action/motion/task-distribution/promotion 설정이 달라지거나 새
+  stratified counter provenance가 없으면 aggregate gate를 자동 폐기한다. 동일 계약
+  재개만 aggregate와 speed/distance/pattern counter를 함께 복원한다.
+- general-spawn 실제 목표거리 계약을 `NAVRL_GENERAL_GOAL_DIST_MIN/MAX=4/16m`로
+  checkpoint와 시작 로그에 명시했다. legacy `k_min=10`을 실제 radial minimum처럼
+  해석하지 않는다.
+- 각 16,384-episode 창에 speed quartile 4개, initial-distance quartile 4개,
+  cv/waypoint/circle pattern capture를 저장·출력한다. broad-slice floor enforcement는
+  fixed baseline을 얻기 전까지 diagnostic-only다.
+- density stage preflight는 `k_max>=16`, `task_steps>=96,000`을 요구한다. 따라서 거리
+  competence나 3000-epoch target-speed ramp가 진행 중인 checkpoint에서 density를
+  동시에 올리는 run을 시작할 수 없다.
+- reward collapse guard를 density에서 끄더라도, 동일 bar count의 50-epoch rolling
+  capture가 같은 density peak보다 25%p 내려간 상태가 25 epoch 지속되면 fail-stop한다.
+  density가 바뀌면 기준을 초기화하므로 정상 promotion 하락은 오발하지 않는다.
+- `current_training.log` 출력이 교체 전 symlink target을 표시하던 관측 오류도 수정했다.
+
+검증은 Python 전체 test discovery 31개(새 density-capture guard 4개와 density-stage
+preflight 2개 포함), action-model 13개, shell syntax, checkpoint preflight와
+`git diff --check`를 통과했다. 실제 epoch 8350
+checkpoint를 1 epoch만 resume한 smoke에서 `discarded=9823/15616`,
+`gate_not_before_step=275200`, bars `85->85`, same-density guard 활성화를 확인했다.
+smoke run/log/TensorBoard 이벤트는 휴지통으로 이동해 연구 run 목록을 오염시키지 않았고
+`current_training.log`는 종료한 실제 suppress15 로그로 복원했다.
+
+이미 두 개의 fully clean ±15° window와 안정 구간 unique가 기준 미달이므로 동일 설정을
+장시간 다시 돌리는 것은 권장하지 않는다. fixed-85 suppress15 launcher는 계약 회귀와 짧은
+재현용으로 남기고, 다음 GPU 예산은 angular/cluster-balanced token selection 후보에 쓴다.
+검증 중 100k Monte-Carlo action tail 테스트가 경계에서 1-count 변동으로 간헐 실패하던
+기존 flake도 확인해 RNG seed를 고정했으며, action 구현이나 판정 한계는 변경하지 않았다.
+
+---
+
+## 2026-07-30 — obstacle token 관리 문헌 조사와 현재 구조 재판정
+
+사용자 요청에 따라 현재 obstacle representation 코드를 다시 읽고, NavRL++ 원문과
+point-cloud/set-prediction/object-centric tokenization 연구를 대조했다.
+
+### 코드에서 확정한 이중 압축
+
+- `navrl_perception.py`는 4×72 scan을 vertical-min 72개 range로 만든 뒤, 가장 가까운
+  bearing을 반복 선택하고 고정 각도 주변을 지우는 greedy suppression으로 8개 surface
+  proposal을 만든다. proposal은 실제 막대 중심이나 instance가 아니라 LiDAR 표면점이다.
+- `navrl_transformer_network.py`는 이 8개를 Transformer의 독립 토큰으로 넣지 않는다.
+  각 history step의 `8×12=96` 값을 이어 붙여 MLP 하나로 64차원 한 토큰에 투영한다.
+  따라서 5-step obstacle history가 Transformer token 5개를 차지한다.
+- 즉 현재 “unique 3/8”은 첫 압축의 낭비를 보여주며, 그 뒤에도 여러 proposal 사이의
+  관계가 한 MLP 벡터로 다시 압축된다. `MAX_OBSTACLES`를 늘리면 Transformer sequence가
+  길어지는 것이 아니라 같은 MLP 입력만 넓어지고 checkpoint shape가 깨진다.
+
+### 원 NavRL++와의 차이
+
+[NavRL++](https://arxiv.org/html/2605.15559v1)은 static obstacle을 4×36 ego-centric
+ray-distance array로 유지해 CNN 한 토큰으로 만들고, object slot 최대 5개는
+position/velocity/radius가 있는 **dynamic obstacle** history에만 쓴다. 현재 구현은
+정적인 arena bar 표면점을 velocity=0으로 채워 이 dynamic-history 자리에 넣었다.
+원 논문에 없는 확장이므로, suppression 폭만의 문제가 아니라 static geometry를 object
+history로 중복 표현한 설계 자체가 검증 대상이다.
+
+### 유사 연구에서 쓰는 관리 방식
+
+- [PointNet++](https://proceedings.neurips.cc/paper_files/paper/2017/hash/d8bf84be3800d12f74d8b05e9b89836f-Abstract.html)와
+  [Point-BERT](https://openaccess.thecvf.com/content/CVPR2022/html/Yu_Point-BERT_Pre-Training_3D_Point_Cloud_Transformers_With_Masked_Point_Modeling_CVPR_2022_paper.html)는
+  가까운 점만 순서대로 고르지 않고 공간적으로 퍼진 center를 sampling한 뒤 주변 point를
+  local patch로 묶는다. 이 계열의 핵심은 대표점 수와 무관하게 공간 coverage를 먼저
+  확보하는 것이다.
+- [PointPillars](https://openaccess.thecvf.com/content_CVPR_2019/html/Lang_PointPillars_Fast_Encoders_for_Object_Detection_From_Point_Clouds_CVPR_2019_paper.html)는
+  point를 고정 spatial pillar에 모아 pseudo-image로 되돌린다. 객체 수가 token budget보다
+  많을 때도 특정 근거리 객체가 모든 slot을 점유하지 않으며, 현재 full polar scan CNN을
+  유지해야 한다는 근거에 가깝다.
+- [Set Transformer](https://proceedings.mlr.press/v97/lee19d.html)와
+  [Perceiver](https://proceedings.mlr.press/v139/jaegle21a.html)는 많은 input을 소수의
+  learned inducing/latent vector가 cross-attention으로 읽어 fixed bottleneck으로 만든다.
+  hard top-k를 없앨 수 있지만, latent가 각각 물리적 객체 하나라는 보장은 없다.
+- [Slot Attention](https://papers.nips.cc/paper/2020/hash/8511df98c02ab60aea1b2356c013bc0f-Abstract.html)은
+  fixed slots이 입력 feature를 두고 반복적으로 경쟁하게 해 object-like set을 만든다.
+  현재처럼 한 막대가 여러 slot을 먹는 문제와 가장 직접적으로 닮았지만, reconstruction이나
+  supervised property loss 없이 PPO reward만 주면 slot specialization을 보장하기 어렵다.
+- [DETR](https://arxiv.org/abs/2005.12872)은 learned object query와 Hungarian
+  one-to-one matching loss로 duplicate prediction을 억제한다. 이 프로젝트에서도
+  simulator bar identity를 actor 입력에 넣지 않고 training-only auxiliary label로 쓰는
+  방법은 가능하다. 단, FOV 안 약 35개를 8 slot으로 모두 match할 수 없으므로 TTC와
+  goal-corridor 기준 top-risk subset 정의가 먼저 필요하다.
+- navigation 쪽의 [Omni-Perception](https://proceedings.mlr.press/v305/wang25b.html)은
+  raw LiDAR를 proximal/distal risk로 나눠 서로 다른 sampling/temporal 처리를 하고,
+  [SAGA](https://arxiv.org/abs/2605.02301)는 장애물 객체 대신 후보 motion anchor를
+  geometry-aware token으로 만든다. 전자는 8 slot을 `near-risk + spatial coverage` quota로
+  나누는 근거이고, 후자는 객체를 모두 열거할 수 없는 초고밀도 환경에서 action-corridor
+  token으로 문제를 바꾸는 장기 후보이다.
+
+### 결정한 실험 순서
+
+1. 학습 없이 동일 scan에 current suppression, contiguous range clustering,
+   risk-weighted angular/farthest selection을 적용해 unique/struck-bar/angular/
+   goal-corridor coverage를 비교한다.
+2. 첫 PPO 후보는 **cluster-balanced 8-slot**이다. 연속 beam을 surface cluster로 묶어
+   cluster당 한 proposal만 만들고, 일부 slot은 TTC/closest-approach 위험, 나머지는
+   아직 덮이지 않은 방위에 배정한다. 기존 12차원/8-slot 폭을 유지해 선택 규칙만 검증한다.
+3. hard selector가 부족할 때 `72 bearings → 8 learned slots`와 training-only Hungarian
+   auxiliary loss를 추가한다. 이때만 obstacle slots을 Transformer의 독립 token으로 넣는
+   ablation을 병행한다.
+4. 8→12 capacity 증가는 중복 선택을 고친 뒤 수행한다. 지금 늘리면 같은 막대 표면점을
+   더 많이 담을 가능성이 높고 fresh policy가 필요해 인과 비교도 나빠진다.
+
+이번 조사는 문헌·코드 감사와 계획 갱신만 수행했으며 학습 프로세스나 정책 코드는 변경하지 않았다.
+
+---
+
+## 2026-07-30 — token 재설계 전 학습 실행 여부 확인
+
+사용자가 다음 학습 명령을 요청해 프로세스, checkpoint, launcher와 perception 구현을 다시
+확인했다. 현재 NavRL 학습 프로세스는 없고 GPU 학습은 시작되지 않은 상태다. 최신 정상
+baseline은 `ppo_260730_1104.../last_gen_ppo_ep_8350...`이며, 이후 suppress ±15° run의
+epoch 8900 checkpoint는 clean window `0.664/0.689`, unique `3.4~3.5/8`로 실패 판정된
+ablation 결과다.
+
+문헌 조사에서 정한 `cluster-balanced` selector는 아직 `navrl_perception.py`에 구현되지
+않았다. 현재 이용 가능한 `train_navrl_corrected_squashed_density_suppress15.sh`를 실행하면
+새 token 설계가 아니라 실패한 fixed-85 ±15° 설정을 반복한다. 따라서 새 selector를 구현하고
+학습 없는 offline coverage gate를 통과하기 전에는 장기 PPO 명령을 제공하거나 실행하지
+않는 것으로 결정했다.
+
+---
+
+## 2026-07-30 — cluster-sector obstacle selector 구현
+
+사용자 승인 후 기존 898-D observation과 8×12 obstacle proposal 폭을 유지하는
+`cluster_sector` 선택기를 구현했다.
+
+### 선택 로직
+
+- 4×72 LiDAR의 vertical-min 72 range를 body-frame 2-D endpoint로 변환한다.
+- 인접한 유효 endpoint 거리가 기본 0.45 m 이하이면 같은 surface cluster로 연결한다.
+  range 차이만 쓰지 않아 가까운 원통 표면에서 생기는 정상적인 깊이 변화에 덜 민감하다.
+- 240° token FOV를 기본 8 sector로 나누고 각 non-empty sector의 최근접 cluster 하나를
+  먼저 예약한다. 이미 선택한 cluster는 다른 sector에서 다시 선택할 수 없다.
+- 빈 sector 수만큼 아직 선택되지 않은 최근접 cluster를 보충한다. 최종 proposal은 기존
+  flattened MLP가 warm-start하기 쉽도록 거리순으로 재정렬한다.
+- 이전 `greedy_suppress`는 기본 모드로 그대로 남겨 회귀와 A/B가 가능하다. 두 selector는
+  모두 `[8,12]`를 내므로 actor observation은 898-D로 동일하다.
+
+### 계약·launcher·평가 가드
+
+- 환경변수 `NAVRL_OBSTACLE_SELECTOR`, `NAVRL_OBSTACLE_CLUSTER_GAP_M`,
+  `NAVRL_OBSTACLE_SECTORS`를 추가하고 시작 로그 및 checkpoint `env_state`에 저장한다.
+- preflight는 legacy checkpoint의 selector를 `greedy_suppress`로 해석한다. 새 전용
+  launcher만 selector/gap/sector의 same-shape override를 명시적으로 허용하며, 다른
+  representation 계약은 계속 엄격하게 검사한다.
+- `train_navrl_corrected_squashed_density_cluster_sector.sh`는 정상 epoch-8350 bounded
+  checkpoint, 85 bars 고정, density accumulator reset, 250-epoch adaptation hold,
+  gap 0.45 m, 8 sectors를 고정한다.
+- `eval_navrl_cluster_sector_density_sweep.sh`를 추가하고 공통 density sweep도 selector
+  계약을 출력하도록 수정했다. `play_navrl.sh`는 절대 Python 경로 사용 시 해당 conda
+  `bin`을 PATH에 넣어 Isaac Gym의 `ninja` 탐색 실패를 막는다.
+
+### 검증
+
+- cluster 중복 제거, sector coverage, empty-sector fallback 단위 테스트 3개를 추가했다.
+- 전체 Python discovery `37/37`, action-model `13/13`, Python compile, shell syntax,
+  `git diff --check`가 통과했다.
+- 실제 epoch-8350 checkpoint preflight는 legacy greedy→cluster-sector와 과거 checkpoint에
+  없던 gap/sector provenance만 의도적 override로 기록했고, legacy greedy preflight도
+  회귀 없이 통과했다.
+- CPU perception observe와 RTX 3070 CUDA `[128,72]→[128,8]` selector smoke가 통과했다.
+- 64 environments로 실제 PPO를 1 epoch 재개해 epoch 8351까지 forward/backward와 종료가
+  정상임을 확인했다. 17 episodes의 capture 58.8%는 적응 전 극소표본이므로 성능 근거로
+  사용하지 않는다. smoke run은 `/tmp/motar_cluster_smoke.zh4AlZ`로 이동했고
+  `current_training.log`는 마지막 실제 suppress15 로그로 복원했다.
+- bulk-play는 simulator/selector 초기화까지 성공했으나 기존 player가 episode 집계 전에
+  `Can't create empty tensor`로 종료해 실제 barprobe offline 수치는 얻지 못했다. 따라서
+  첫 clean training window에서 unique/duplicate와 capture를 함께 판정한다.
+
+실행 명령:
+
+```bash
+cd /home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/aerial_gym/rl_training/rl_games
+./train_navrl_corrected_squashed_density_cluster_sector.sh
+```
+
+정상 시작 로그는 `selector=cluster_sector`, `cluster_gap=0.45m`, `sectors=8`,
+`fixed bars=85`, 세 개의 `INTENTIONAL contract override`, density evidence reset을
+모두 포함해야 한다. 다른 터미널에서는 `./watch_navrl_training.sh`로 같은 로그를 본다.
+
+---
+
+## 2026-07-30 — 최근 UAV 인지 논문 5편의 저비용 적용성 감사
+
+사용자가 제공한 최근 한 달 논문 목록을 원문과 대조하고, 현재 MOTAR/NavRL++-Target
+구현에서 학습 방향을 바꾸지 않고 가져올 수 있는 부분을 검토했다. 정책·환경·launcher는
+변경하지 않았다.
+
+### 이미 구현되어 있어 새 구조가 필요 없는 부분
+
+- fixed-wing tracking 논문의 `detector → target state estimator` 구조는 현재 RGB-D/LiDAR
+  측정 뒤 3-D constant-velocity Kalman tracker로 이미 구현되어 있다. actor target
+  feature도 상대 위치/속도, 위치·속도 covariance, camera/LiDAR confidence, track age를
+  포함한다. 측정값이 이미 3-D이므로 비선형 image measurement를 직접 처리하는 해당
+  논문의 UKF로 바꿀 근거는 없다.
+- CosFly-VLA의 핵심인 5-frame history, 이전 action/state, visibility-aware memory도
+  현재 5-step robot/target history와 5 s tracker memory에 대부분 대응한다. 검출이
+  끊겨도 KF prediction은 유지되고 camera/LiDAR confidence는 0, track age/covariance는
+  증가한다. 다만 CosFly-VLA 성능은 평가 때 이전 target state history를 GT로 제공한
+  조건이므로 sensor-only MOTAR와 직접 수치 비교하지 않는다.
+- CMRTrack이 주장하는 motion reliability에 해당하는 최소 정보는 이미 covariance,
+  confidence, track age로 actor에 전달된다. CMRTrack 자체는 infrared image tracker이며
+  ViT-B와 별도 detector dataset을 요구하므로 현재 PPO에 통째로 넣지 않는다.
+
+### 방향을 유지하는 후보 순서
+
+1. **설정·평가만으로 시작:** Phase 3C에서 기존
+   `NAVRL_PERCEPTION_PERTURB`, `NAVRL_DETECTION_DROPOUT`,
+   `NAVRL_RGB_NOISE_STD`, `NAVRL_DEPTH_NOISE_STD`를 사용해 가림/검출누락을 만들고,
+   visible/occluded duration별 track survival, reacquisition time, capture/crash를
+   층화한다. 현재 clean detector/tracker gate 전에는 perturbation을 켜지 않는다.
+2. **작은 same-shape tracker 개선:** learned detector가 준비되면 Kalman normalized
+   innovation 및 camera–LiDAR disagreement를 먼저 diagnostic으로 기록한다. false
+   correction과 강하게 연관되면 Mahalanobis innovation gate 또는 innovation-derived
+   reliability로 측정 update를 조절한다. observation 차원을 늘리지 않고 기존
+   confidence/covariance 의미를 강화할 수 있다.
+3. **검증 후에만 auxiliary risk:** CPA future-risk는 현재 PPO·asymmetric critic과
+   구조적으로 잘 맞지만 원 논문의 주효과는 동적 장애물이다. 현재 arena 막대는 정적이라
+   즉시 risk head를 추가하면 LiDAR urgency와 reward를 중복할 수 있다. 우선 GT
+   relative velocity로 72-bearing CPA risk diagnostic을 계산해 collision 선행 예측력과
+   정지 병목 상관을 확인하고, 이득이 있을 때만 기존 temporal encoder에 training-only
+   auxiliary loss를 추가한다.
+
+### 보류
+
+- CosFly-VLA의 0.8B VLA, language prompt, 8-step waypoint chunk와 CoT 학습은 모델·데이터·
+  action contract를 크게 바꾸며, 해당 논문도 predicted-state feedback 검증을 미래 과제로
+  남겼으므로 채택하지 않는다.
+- fixed-wing NMPC/CBF/BPNG는 기체·카메라·terminal-impact 목적이 다르다. quadrotor
+  capture PPO를 대체하지 않는다.
+- ASUMOT은 event camera 전용이고 코드·데이터가 “공개 예정” 상태다. sensor swap은
+  현재 범위 밖이며, motion-consistency 원리는 향후 innovation reliability에만 반영한다.
+
+결론적으로 현재 실행 순서는 바꾸지 않는다. 먼저 fixed-85 `cluster_sector` gate로
+navigation backbone을 고정하고, Phase 3B detector 검증 뒤 occlusion/dropout 평가와
+innovation reliability를 붙인다. CPA auxiliary head는 진단 로그가 효과를 입증할 때만
+세 번째 후보로 진행한다.
+
+---
+
+## 부록 A — 삭제된 run 아카이브 (2026-07-14 정리 시점)
+
+`runs/` 폴더가 삭제되어 재구성 불가한 26개 run의 최종 지표. 원본:
+`aerial_gym/rl_training/rl_games/RUNS_ARCHIVE_SUMMARY.md` (이 부록으로 통합 후 삭제).
+
+> 로드하지 않는다. 현재 observation/model schema는 각 run manifest로 구분한다.
+
+`runs/`의 옛 run들을 삭제하기 전에 핵심 정보를 남김. 현재 학습 `ppo_260714_1904_navrl`은 유지.
+지표: cap=captured_rate, crash=crash_rate, to=timeout_rate (최종 epoch). reward는 스케일이 리워드 설계에 따라 달라 절대비교 불가.
+
+| run | type | ep | exit | last/peak reward | navrl 최종 | 무엇 |
+|---|---|---|---|---|---|---|
+| ppo_260530_1059 | intercept(옛과제) |  |  | / |  |  |
+| ppo_260530_1112 | intercept(옛과제) |  |  | / |  |  |
+| ppo_260530_1419 | intercept(옛과제) |  |  | / |  |  |
+| ppo_260530_1604 | intercept(옛과제) |  |  | / |  |  |
+| ppo_260530_1921 | intercept(옛과제) | 1261 | interrupted | 2408.2/2906.1 |  |  |
+| ppo_260530_2005 | intercept(옛과제) | 6500 | interrupted | 922.4/1537.9 |  |  |
+| ppo_260531_1031 | intercept(옛과제) | 15000 | max_epochs | 617.9/841.8 |  |  |
+| ppo_260601_1152 | intercept(옛과제) | 931 | interrupted | 825.7/1149.7 |  |  |
+| ppo_260601_1228 | intercept(옛과제) | 4652 | interrupted | 808.6/1076.9 |  |  |
+| ppo_260601_1718 | intercept(옛과제) | 8787 | interrupted | 277.7/455.3 |  |  |
+| ppo_260709_2146_navrl | navrl | 1500 | max_epochs | 142.5/170.3 |  | 첫 navrl 학습(1500ep, 옛 env). 목표도달 0%·충돌 다수 — 인프라만 완성. |
+| ppo_260710_1230_navrl | navrl | 273 | interrupted | 126.5/159.8 |  | 초기 bars env 스모크/설정. |
+| ppo_260710_1559_navrl | navrl |  |  | / |  | 초기 bars env 실험. |
+| ppo_260710_1608_navrl | navrl | 1500 | max_epochs | 339.2/349.9 |  | bars env 첫 본학습(512env, MLP). |
+| ppo_260710_1709_navrl | navrl |  |  | / | cap 0.00 / crash 0.37 / to 0.00 | bars env 실험. |
+| ppo_260710_1738_navrl | navrl | 62 | interrupted | 229.7/236.4 | cap 0.00 / crash 0.42 / to 0.06 | bars env 실험. |
+| ppo_260710_1745_navrl | navrl | 6000 | max_epochs | 365.2/375.9 | cap 0.00 / crash 0.02 / to 0.82 | bars env 실험. |
+| ppo_260710_2106_navrl | navrl | 6000 | max_epochs | 296.9/327.5 | cap 0.01 / crash 0.12 / to 0.87 | 6000ep CNN 네비게이션 run(캡처종료 前, '목표찍고 배회'). |
+| ppo_260713_1950_navrl | navrl | 6000 | max_epochs | 327.3/338.1 | cap 0.07 / crash 0.10 / to 0.84 | 캡처종료 첫 run — LOITER 실패(captured 6.7%, timeout 84%). 안전항 수입이 배회를 보상. |
+| ppo_260713_2210_navrl | navrl | 6000 | max_epochs | 88.7/100.0 | cap 0.86 / crash 0.14 / to 0.00 | 리워드 재설계(B1 재베이스+PBRS progress+B3) 성공 — captured 86%(peak 94%), timeout 0%. loiter 해결. |
+| ppo_260714_0153_navrl | navrl | 5049 | interrupted | 80.8/98.0 | cap 0.86 / crash 0.14 / to 0.00 | crash튜닝 A: safety_weight 1.5 — crash 13.7%(무효, safety만으론 안됨). |
+| ppo_260714_0346_navrl | navrl | 6000 | max_epochs | 89.5/100.1 | cap 0.85 / crash 0.15 / to 0.00 | crash튜닝 B: clearance 거리 페널티 1.5 — crash 13.9%(무효). |
+| ppo_260714_0555_navrl | navrl | 6000 | max_epochs | 85.6/100.2 | cap 0.87 / crash 0.13 / to 0.00 | crash튜닝 C: clearance speed-gated 1.5 — crash 13.8%(무효). 결론: 옛 스폰이 막대 무관(8%만 관통). |
+| ppo_260714_1853_navrl | navrl | 32 | interrupted | 13.2/15.1 | cap 0.03 / crash 0.97 / to 0.00 | 짧게 중단된 run(설정 확인). |
+
+---
+
+## 2026-07-30 — navigation backbone 동결 게이트 (Codex 기록, 문서 통합 시 계획서에서 이관)
+
+문서 통합(14→6개) 과정에서 `PERCEPTION_TRANSFORMER_PLAN`/`ROADMAP`/`PHASE3_PLAN`에 있던
+2026-07-30 상태 기록을 여기로 옮긴다. 계획서는 charter만 담고 상태는 WORKLOG가 canonical.
+
+**전제**: Phase 3 detector/occlusion 효과를 해석하려면 장애물 표현과 PPO update 자체의 실패를
+먼저 분리해야 한다. 그래서 detector 본 검증 전에 navigation-only backbone의 고밀도 표현을 동결한다.
+
+| 항목 | 근거 | 판정 |
+|---|---|---|
+| 센서 기하 | corrected bearing, token hit·FOV 약 97–98% | 통과 |
+| bounded action | raw OOB 0%, corrected 500-epoch pilot + speed gate 통과 | 통과 |
+| 밀도 확장 | 65 bars `0.678` → 85 bars `0.676±0.001` | 같은 실력으로 밀도 +31% |
+| token coverage | 85 bars에서 unique 약 3/8, duplicate 약 2.7–3.0 | **병목** |
+| ±10° 장기 재개 | epoch 10276 이후 KL/latent 폭발, tail500 capture 1.0% | **실패 · 결과 제외** |
+| ±15° 1차 ablation | clean gate 0.664/0.689, unique 3.4–3.5, epoch 8900 중단 | 기준 미달 |
+
+**token selection 후보의 통과 기준 (넷 다 만족해야 Phase 3의 고정 backbone이 된다)**
+- barprobe `unique` 3.0 → **4.5+**, duplicate 감소
+- 85 bars promotion window capture **≥0.70 / 16,384 episodes**
+- PPO **KL ≤0.04**, latent mean/edge saturation 발산 없음
+- 정상 checkpoint의 held-out density sweep 재현
+
+**재시험 계약**: 85 bars 고정, gate accumulator 초기화, 250-epoch adaptation hold, density
+promotion cap, speed/distance/pattern 층화 진단, same-density capture collapse fail-stop.
+첫 ±15° 시도는 판정창에 이전 ±10° 에피소드가 섞이는 계약 오류가 있었다.
+
+**결과 표에서 제외할 run**: `ppo_260730_1154...`의 tail500 capture 1.0%는 ±10° 장기 재개 중
+PPO 발산 사례이며 ±15°의 결과가 아니다. safety ablation / engineering failure로만 기록한다.
+
+**롤백 규칙**: 고정 density에서 KL 또는 latent mean이 지속 상승하면 더 학습하지 말고
+last-known-good checkpoint로 rollback한 뒤 update safety를 수정한다.
+
+---
+
+## 2026-07-30 — 저장소 정리: runs/ 14.8GB 회수 + 문서 14→6개 통합
+
+### 디스크 정리 (파괴적 작업 — 4단 검증 후 실행)
+
+`runs/` **16.1GB → 1.27GB (14.8GB 회수)**. 50 epoch마다 저장되던 중간 체크포인트를 run별
+최신 2개 + `gen_ppo*.pth`만 남기고 삭제. 근거: 2026-07-29 키랄리티 수정으로 **그 이전 체크포인트는
+warm-start가 원천 무효**이고, 성능 수치는 `results/*.csv`와 WORKLOG에 이미 보존돼 있다.
+
+삭제 전 4단 검증 전부 통과: ① 문서/런처가 참조하는 체크포인트 8개가 삭제목록에 없음 ② 실행 중인
+run과 그 소스 체크포인트 제외 ③ `gen_ppo.pth` 0건 포함 ④ 모든 run이 최소 1개 체크포인트 유지.
+6MB 초과 세션 로그는 gzip(진행 중 로그 제외). 학습 프로세스 무중단 확인.
+
+### 문서 통합 (14 → 6개)
+
+| 남긴 파일 | 통합된 원본 |
+|---|---|
+| `README.md` | (상태 블록을 실측값으로 재작성) |
+| `RESEARCH_PLAN.md` | + `PERCEPTION_TRANSFORMER_PLAN` + `ROADMAP` + `PHASE3_PLAN` |
+| `OPERATIONS.md` (신규) | `SETUP_SECOND_MACHINE` + `GPU_SCALING_GUIDE` + `TRANSFER_RESULTS_GUIDE` |
+| `CRASH_TUNING_LOG.md` | + `rl_games/CRASH_TUNING_LOG.md`(B/C/D 음성결과를 부록으로) |
+| `WORKLOG.md` | + `RUNS_ARCHIVE_SUMMARY`(부록 A) |
+| `CLAUDE.md`, `SKILL.md` | 병합 안 함(에이전트 지시문) — 링크·관측차원만 수정 |
+
+**세 가지 상충하던 위상 번호**(ROADMAP P0–P6 / PHASE3 "Phase 3" / PERCEPTION P0–P5)를
+`RESEARCH_PLAN`의 **단일 P0–P7**로 통일. CLAUDE.md의 "관측 1265차원" 낡은 기술을
+**898 actor / 906 critic + cluster_sector 240°**로 수정하고 폐기된 계보(156→305→1265)를 명시.
+
+보존 확인: 업스트림 Aerial Gym 라이선스·인용 섹션 그대로, **코드 주석 3곳이 참조하는
+`CRASH_TUNING_LOG.md` 경로 불변**(옮기면 주석이 깨지므로), 삭제 문서를 가리키던 링크 전부 재지정.
+
+### ⚠ 이 작업 중 내가 낸 실수 (기록)
+
+`RESEARCH_PLAN.md`를 통합본으로 덮어쓸 때 **Codex의 미커밋 상태 블록을 삭제했다.** 그 실질
+내용(85 bars `0.676±0.001`, unique 약 3/8 병목, ±15° 1차 미달, ±10° 장기재개 PPO 발산,
+token-selection 통과 기준 4개)은 같은 시각 `PERCEPTION`/`ROADMAP`/`PHASE3`의 미커밋 편집에도
+동일하게 있었고, 그것을 삭제 전에 위 "navigation backbone 동결 게이트" 항목으로 이관해 보존했다.
+교훈: **다른 세션의 미커밋 변경이 있는 파일은 덮어쓰기 전에 `git status`로 확인**한다.
+
+Codex의 미커밋 코드 변경 21개 파일은 손대지 않았다(스테이징 제외).
