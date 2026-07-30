@@ -135,4 +135,26 @@ for (let i = 0; i < 100; i++) {
 assert(moved > 5.5, `dense-trap movement too small: ${moved}`);
 assert(Math.hypot(16 - pursuer.x, pursuer.y) < 1);
 
+// Rendered bars are boxes. A circular check of radius w/2 would miss the corners;
+// the pursuer disk must stay outside the AABB (including corners).
+const cornerBar = [{ x: 12, y: 0, w: 0.8 }];
+assert(M.pursuerClearance(12 + 0.4 * Math.SQRT2 - 0.01, 0.4 * Math.SQRT2 - 0.01, cornerBar) < 0);
+const fromOutside = M.steerPursuerStep(
+  12 + 0.9, 0.9, 12, 0, 2.5, 0.05, cornerBar, Math.PI, 1
+);
+assert(M.pursuerClearance(fromOutside.x, fromOutside.y, cornerBar) >= -1e-9);
+assert(!fromOutside.hit || (fromOutside.x === 12 + 0.9 && fromOutside.y === 0.9));
+
+// Sweep along the box diagonal must not tunnel into the pillar.
+let diag = { x: 12 + 1.2, y: 1.2, heading: -3 * Math.PI / 4 };
+for (let i = 0; i < 40; i++) {
+  const next = M.steerPursuerStep(
+    diag.x, diag.y, 12, 0, 2.5, 0.05, cornerBar, diag.heading, 1
+  );
+  if (next.hit) break;
+  diag = { x: next.x, y: next.y, heading: next.heading };
+  assert(M.pursuerClearance(diag.x, diag.y, cornerBar) >= -1e-9,
+    `corner clip at step ${i}: (${diag.x}, ${diag.y})`);
+}
+
 console.log('status arena motion parity: ok');
