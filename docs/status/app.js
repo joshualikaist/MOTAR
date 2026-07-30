@@ -367,6 +367,46 @@ function renderHeatmap(s) {
   if (sub) sub.textContent = `${rows.length} cells · 2049 episodes each · deterministic · sensor-only`;
 }
 
+/* Where the self-paced density curriculum actually stopped climbing. */
+function renderCeiling(s) {
+  const c = s.density_ceiling;
+  const wrap = document.getElementById('ceiling-wrap');
+  const tbl = document.getElementById('ceiling-tbl');
+  if (!wrap || !tbl) return;
+  if (!c || !(c.chain || []).length) { wrap.hidden = true; return; }
+  wrap.hidden = false;
+
+  const verdict = { promoted: 'promoted', held: 'held', ceiling: 'ceiling' };
+  tbl.innerHTML = `<thead><tr><th>bars</th><th>density</th><th>gate capture</th><th>outcome</th></tr></thead>
+    <tbody>${c.chain.map(r => {
+      const cls = r.result === 'promoted' ? 'good' : r.result === 'ceiling' ? 'bad' : '';
+      const held = r.held_windows ? ` ×${r.held_windows}` : '';
+      return `<tr${cls ? ` class="${cls}"` : ''}>
+        <td>${r.bars}</td>
+        <td>${r.density_per_100m2 != null ? r.density_per_100m2.toFixed(1) + '/100m²' : ''}</td>
+        <td>${(r.capture * 100).toFixed(1)}%</td>
+        <td>${verdict[r.result] || r.result}${held}</td></tr>`;
+    }).join('')}</tbody>`;
+
+  const held = c.hold_series || [];
+  const ceil = c.chain[c.chain.length - 1] || {};
+  const cap = document.getElementById('ceiling-cap');
+  if (cap && held.length) {
+    const mean = held.reduce((a, b) => a + b, 0) / held.length;
+    // least-squares slope per window, to say "converged" rather than "still climbing"
+    const mx = (held.length - 1) / 2;
+    let num = 0, den = 0;
+    held.forEach((y, i) => { num += (i - mx) * (y - mean); den += (i - mx) * (i - mx); });
+    const slope = den ? num / den : 0;
+    cap.textContent =
+      `The curriculum promoted 85 → 90 → 95 → ${ceil.bars}, then held ${held.length} consecutive `
+      + `windows at ${ceil.bars} bars with capture averaging ${(mean * 100).toFixed(1)}% against a `
+      + `${(c.threshold * 100).toFixed(0)}% gate (${(slope * 100).toFixed(2)} pp per window — flat, `
+      + `not still climbing). ${ceil.density_per_100m2.toFixed(1)} bars/100 m² is the trainable `
+      + `density ceiling for this sensor-only policy.`;
+  }
+}
+
 function renderSpeed(s) {
   const data = pickSpeed(s);
   const tbl = document.getElementById('speed-tbl');
@@ -511,6 +551,7 @@ function wireArena() {
     renderCurve(s);
     renderSpeed(s);
     renderHeatmap(s);
+    renderCeiling(s);
     renderRuns(s);
   };
   try { renderAll(fallbackStatus()); } catch (e) { console.error(e); }

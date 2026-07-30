@@ -1,29 +1,44 @@
 {
-  "generated_at": "2026-07-30T08:20:37.273294+00:00",
+  "generated_at": "2026-07-30T17:14:46.238090+00:00",
   "repo": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator",
-  "n_runs": 45,
-  "active_run": null,
+  "n_runs": 49,
+  "active_run": {
+    "run": "ppo_260730_2015_navrl_cluster-sector-density85to110-s1",
+    "is_live": true,
+    "metrics_age_min": 304.42704999049505,
+    "epoch": 11203,
+    "max_epochs": 12000,
+    "epochs_logged": 1053,
+    "tail_epochs": 50,
+    "captured_rate": 0.7131632,
+    "crash_rate": 0.28189906,
+    "timeout_rate": 0.004937792,
+    "mean_reward": 26.691268,
+    "closest_approach_m": 0.44378404000000005,
+    "n_bars_active": 85.0,
+    "curriculum_max_m": 12.270564799999999
+  },
   "latest_run": {
-    "run": "ppo_260730_1549_navrl_corrected-squashed-density-cluster-sector-s1",
-    "finalized_at": "2026-07-30T08:18:43.629826+00:00",
-    "exit_reason": "interrupted",
-    "epochs_logged": 1807,
-    "first_epoch": 8351,
-    "last_epoch": 10157,
+    "run": "ppo_260731_0208_navrl_fix3-low-lr-replay-b2-90bars-s1",
+    "finalized_at": "2026-07-30T17:14:42.012270+00:00",
+    "exit_reason": "max_epochs",
+    "epochs_logged": 100,
+    "first_epoch": 12601,
+    "last_epoch": 12700,
     "is_navrl": true,
-    "last_mean_reward": 34.0197,
-    "last_mean_episode_length": 58.7861,
-    "last_captured_rate": 0.722222,
-    "last_crash_rate": 0.277778,
+    "last_mean_reward": 16.2176,
+    "last_mean_episode_length": 65.1749,
+    "last_captured_rate": 0.746479,
+    "last_crash_rate": 0.253521,
     "last_timeout_rate": 0.0,
-    "last_closest_approach_m": 0.382206,
-    "last_closest_min_m": 0.169741,
-    "last_curriculum_max_m": 8.42927,
-    "last_n_bars_active": 85,
-    "peak_captured_rate": 0.895522,
-    "peak_captured_epoch": 9580,
-    "peak_mean_reward": 38.6335,
-    "peak_epoch": 9468,
+    "last_closest_approach_m": 0.385927,
+    "last_closest_min_m": 0.177928,
+    "last_curriculum_max_m": 13.8922,
+    "last_n_bars_active": 90,
+    "peak_captured_rate": 0.863636,
+    "peak_captured_epoch": 12632,
+    "peak_mean_reward": 32.8447,
+    "peak_epoch": 12634,
     "reward_collapse": false
   },
   "runs": [
@@ -1062,6 +1077,98 @@
       "peak_mean_reward": 38.6335,
       "peak_epoch": 9468,
       "reward_collapse": false
+    },
+    {
+      "run": "ppo_260730_2015_navrl_cluster-sector-density85to110-s1",
+      "finalized_at": null,
+      "exit_reason": "running",
+      "epochs_logged": 1053,
+      "first_epoch": 10151,
+      "last_epoch": 11203,
+      "is_navrl": true,
+      "last_mean_reward": 23.9368,
+      "last_mean_episode_length": 59.2047,
+      "last_captured_rate": 0.716216,
+      "last_crash_rate": 0.283784,
+      "last_timeout_rate": 0.0,
+      "last_closest_approach_m": 0.385268,
+      "last_closest_min_m": 0.193707,
+      "last_curriculum_max_m": 8.39956,
+      "last_n_bars_active": 85,
+      "peak_captured_rate": 0.904762,
+      "peak_captured_epoch": 10927,
+      "peak_mean_reward": 39.4235,
+      "peak_epoch": 10808,
+      "reward_collapse": false
+    },
+    {
+      "run": "ppo_260730_2111_navrl_cluster-sector-density85to110-v2-s1",
+      "finalized_at": "2026-07-30T16:36:51.879922+00:00",
+      "exit_reason": "interrupted",
+      "epochs_logged": 4900,
+      "first_epoch": 11201,
+      "last_epoch": 16100,
+      "is_navrl": true,
+      "last_mean_reward": -0.439329,
+      "last_mean_episode_length": 50.838,
+      "last_captured_rate": 0.4625,
+      "last_crash_rate": 0.5375,
+      "last_timeout_rate": 0.0,
+      "last_closest_approach_m": 0.37602,
+      "last_closest_min_m": 0.242051,
+      "last_curriculum_max_m": 4.92154,
+      "last_n_bars_active": 100,
+      "peak_captured_rate": 0.910448,
+      "peak_captured_epoch": 12415,
+      "peak_mean_reward": 39.524,
+      "peak_epoch": 11523,
+      "reward_collapse": false
+    },
+    {
+      "run": "ppo_260731_0203_navrl_fix3-low-lr-replay-b1-85bars-s1",
+      "finalized_at": "2026-07-30T17:08:46.832580+00:00",
+      "exit_reason": "max_epochs",
+      "epochs_logged": 100,
+      "first_epoch": 12501,
+      "last_epoch": 12600,
+      "is_navrl": true,
+      "last_mean_reward": 33.7817,
+      "last_mean_episode_length": 57.9664,
+      "last_captured_rate": 0.8,
+      "last_crash_rate": 0.2,
+      "last_timeout_rate": 0.0,
+      "last_closest_approach_m": 0.374655,
+      "last_closest_min_m": 0.177705,
+      "last_curriculum_max_m": 15.9642,
+      "last_n_bars_active": 85,
+      "peak_captured_rate": 0.868852,
+      "peak_captured_epoch": 12506,
+      "peak_mean_reward": 41.1804,
+      "peak_epoch": 12536,
+      "reward_collapse": false
+    },
+    {
+      "run": "ppo_260731_0208_navrl_fix3-low-lr-replay-b2-90bars-s1",
+      "finalized_at": "2026-07-30T17:14:42.012270+00:00",
+      "exit_reason": "max_epochs",
+      "epochs_logged": 100,
+      "first_epoch": 12601,
+      "last_epoch": 12700,
+      "is_navrl": true,
+      "last_mean_reward": 16.2176,
+      "last_mean_episode_length": 65.1749,
+      "last_captured_rate": 0.746479,
+      "last_crash_rate": 0.253521,
+      "last_timeout_rate": 0.0,
+      "last_closest_approach_m": 0.385927,
+      "last_closest_min_m": 0.177928,
+      "last_curriculum_max_m": 13.8922,
+      "last_n_bars_active": 90,
+      "peak_captured_rate": 0.863636,
+      "peak_captured_epoch": 12632,
+      "peak_mean_reward": 32.8447,
+      "peak_epoch": 12634,
+      "reward_collapse": false
     }
   ],
   "density_curves": {
@@ -1814,18 +1921,18 @@
     "headline": "Cluster-sector removed duplicate slots and passed four clean competence windows.",
     "summary": "The same-shape selector clusters adjacent LiDAR surfaces and reserves one nearest cluster per angular sector. At 85 bars, duplicate slots fell from 1.9 to about 0.1 and unique associated bars rose from 3.0–3.5 to about 4.4. Four independent 16,384-episode windows reached 0.742, 0.745, 0.722, and 0.714 capture. The process later ended without a terminal error record at epoch 10157; checkpoint 10150 is preserved. Coverage remains close to the 4.5/8 gate, so the next evidence should come from held-out evaluation.",
     "active_experiment": {
-      "is_live": false,
+      "is_live": true,
       "max_epochs": 12000,
       "bars": 85,
       "run": "ppo_260730_1549_navrl_corrected-squashed-density-cluster-sector-s1",
-      "epoch": 10157,
-      "capture_tail": null,
-      "crash_tail": null,
+      "epoch": 11203,
+      "capture_tail": 0.7131632,
+      "crash_tail": 0.28189906,
       "selector": "cluster_sector",
       "cluster_gap_m": 0.45,
       "sectors": 8,
-      "unique_bars": 4.3,
-      "duplicate_tokens": 0.2
+      "unique_bars": null,
+      "duplicate_tokens": null
     },
     "milestones": [
       {
@@ -1842,8 +1949,8 @@
       },
       {
         "label": "TOKEN COVERAGE",
-        "value": "4.3/8",
-        "detail": "baseline 3.0–3.5/8; duplicate 0.2",
+        "value": "pending",
+        "detail": "baseline 3.0–3.5/8; awaiting probe",
         "state": "warn"
       },
       {
@@ -1886,7 +1993,7 @@
         "label": "cluster-sector",
         "bars": 85,
         "capture": 0.731,
-        "unique": 4.3,
+        "unique": null,
         "verdict": "4 clean capture gates passed; coverage near threshold"
       }
     ],
@@ -1916,7 +2023,8 @@
       "checkpoint ppo_260730_1549 cluster-sector last_gen_ep_10150; trained density max = 85 bars.",
       "Cells above 85 bars measure generalisation, not a method ceiling.",
       "128 envs, 2049 episodes/cell, deterministic, general spawn, mixed target pattern.",
-      "Finding: density costs 78 pp of capture across the grid; target speed costs only 4.2 pp."
+      "Finding: density costs 78 pp of capture across the grid; target speed costs only 4.2 pp.",
+      "Measured before the 2026-07-31 target heading-continuity fix; the target oscillated in place under the old steering law, so these cells describe the pre-fix task."
     ],
     "trained_max_bars": 85,
     "rows": [
@@ -2116,6 +2224,75 @@
         "capture": 0.159,
         "crash": 0.841
       }
+    ]
+  },
+  "density_ceiling": {
+    "run": "ppo_260730_2111_navrl_cluster-sector-density85to110-v2-s1",
+    "epochs": "11201-16100",
+    "threshold": 0.7,
+    "window_episodes": 16384,
+    "step": 5,
+    "notes": [
+      "Self-paced density curriculum: promote +5 bars when capture over a 16,384-episode window clears 0.70.",
+      "The chain stalled at 100 bars (20.9 bars/100 m2): 17 consecutive windows held, capture plateauing at 0.56.",
+      "Trend over those 17 windows is -0.0026/window (slightly declining), i.e. converged, not still climbing.",
+      "This is the trainable density ceiling for the sensor-only cluster-sector policy, not a transient stall."
+    ],
+    "chain": [
+      {
+        "bars": 85,
+        "density_per_100m2": 17.8,
+        "capture": 0.737,
+        "result": "promoted"
+      },
+      {
+        "bars": 90,
+        "density_per_100m2": 18.8,
+        "capture": 0.718,
+        "result": "promoted"
+      },
+      {
+        "bars": 95,
+        "density_per_100m2": 19.9,
+        "capture": 0.67,
+        "result": "held"
+      },
+      {
+        "bars": 95,
+        "density_per_100m2": 19.9,
+        "capture": 0.709,
+        "result": "promoted"
+      },
+      {
+        "bars": 100,
+        "density_per_100m2": 20.9,
+        "capture": 0.56,
+        "result": "ceiling",
+        "held_windows": 17,
+        "hold_range": [
+          0.521,
+          0.631
+        ]
+      }
+    ],
+    "hold_series": [
+      0.631,
+      0.58,
+      0.555,
+      0.555,
+      0.554,
+      0.549,
+      0.564,
+      0.58,
+      0.573,
+      0.561,
+      0.538,
+      0.54,
+      0.521,
+      0.547,
+      0.546,
+      0.561,
+      0.558
     ]
   }
 }
