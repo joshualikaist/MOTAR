@@ -7,11 +7,8 @@
  *     _sample_target_motion, _sample_waypoints, _advance_target
  *   aerial_gym/rl_training/rl_games/train_navrl_general_repr_density.sh
  *
- * DIVERGENCE (temporary, 2026-07-30): steerTargetStep adds a 90° heading-continuity
- * window that target_motion.steer_target_step does not yet have. The trainer's waypoint
- * targets re-derive their bearing every step and therefore reverse far more often than
- * shown here. Tracked for parity; mirror into target_motion.py after the current
- * density-curriculum run is scored, then delete this paragraph.
+ * Target steering parity: both this browser model and target_motion.steer_target_step use
+ * the same 90° heading-continuity preference with a large-turn escape fallback.
  *
  * Coordinates use the status arena convention: x=[0,24], y=[-12,12].
  * This module is deliberately independent of THREE/DOM so its parity contracts

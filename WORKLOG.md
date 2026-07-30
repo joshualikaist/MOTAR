@@ -3648,3 +3648,202 @@ T3는 감사 제안 기하가 전 후보 차단이라 판별 불가 벡터 → 0
 (≤25%), 둘-다-정지 35.0%→**11.2%**(≤15%, 최장 연속 1.1s→0.6s), 에피소드 13→19개/240s.
 속도 0 극단: 120초당 에피소드 3→16개, age-타임아웃 리셋 5회 발화(FIX 1 시그니처 확인).
 잔존 정지는 전부 110막대↑ 기하 단절 구간(코드로 해결 불가, 감사 FIX 5 참조).
+
+---
+
+## 2026-07-31 — cluster-sector 100 bars 장기 hold 재감사
+
+실행 중인 `ppo_260730_2111_navrl_cluster-sector-density85to110-v2-s1`을 중단하지 않고
+프로세스, 전체 density gate 이력, TensorBoard, 최신 crash/barprobe 진단을 다시 대조했다.
+
+### 판정
+
+- 승급: 85→90 `0.737`, 90→95 `0.718`, 95에서 한 번 hold `0.670`, 95→100 `0.709`.
+- 100 bars에서는 epoch 약 12,699부터 15,940까지 **17회 연속 hold**:
+  `0.631, 0.580, 0.555, 0.555, 0.554, 0.549, 0.564, 0.580, 0.573, 0.561,
+  0.538, 0.540, 0.521, 0.547, 0.546, 0.561, 0.558`.
+- 100 bars는 epoch 12,463에 시작했다. 처음 계산한 `ep_12500` rolling-250 `0.703`은
+  **95-bars 샘플이 섞인 오염값이라 폐기**한다. 100-bars만 자르면 `ep_12500`까지 38 epoch
+  평균 `0.658`, 첫 16,385-episode gate가 `0.631`, 최근 tail-500은 **약 `0.560`**이다.
+  즉 0.70에 근접한 100-bars 정책을 잃은 것이 아니라, 진입 직후부터 기준 미달이었고 이후
+  약 0.56 plateau로 내려갔다.
+- PPO 발산은 아님: 최근 tail-500 `KL=0.0097`, explained variance `0.762`, raw lateral
+  OOB `0%`. NaN/Inf 또는 KL 폭발 증거가 없다.
+- 기존 token 중복 병목도 주원인에서 내려감: 최신 barprobe `unique=4.5~4.9/8`,
+  duplicate 약 `0.1`, `hit_token_given_fov=0.80~0.84`. 실패의 `95.6~98.1%`는 bar contact.
+
+따라서 현재 run을 26,000 epoch까지 그대로 연장할 기대값은 낮다. threshold를 0.70에서
+0.55로 내려 105 bars로 보내는 것은 실력을 높이는 것이 아니라 실패 정책을 승급시키는 것이므로
+기각한다. 감사 중에는 사용자 학습 프로세스를 임의로 중단하지 않았다.
+
+### 다음 실험 권장안
+
+1. 복구점을 단일 로그값으로 확정하지 않는다. 100-bars 진입 직후
+   `ep_12500`(38 epoch만 적응), 첫 완전 gate 근처 `ep_12700`, 중간 국소 회복점
+   `ep_14300`, 최신 checkpoint를 같은 held-out sweep으로 채점해 선택한다.
+2. 새 학습 전 FIX 3(target heading continuity)를 Python에 적용하고 task-version을 올린다.
+   현재 run은 무기억 target 반전이 있는 구 task이므로 새 task의 최종 결과로 쓰지 않는다.
+3. 같은 복구점에서 낮은 PPO 학습률과 85/90/95/100 density rehearsal을 사용해 100-bars
+   적응을 짧게 비교하고, same-density guard를 초기 best 대비 약 0.10 하락에서 멈추도록 강화한다.
+4. 그래도 100-bars held-out capture가 회복되지 않으면 obstacle-hit 토큰 수를 더 늘리기보다
+   **통과 가능한 빈 공간/회랑을 직접 나타내는 sector gap 또는 2-depth-layer 표현**을 다음
+   perception ablation으로 사용한다.
+
+---
+
+## 2026-07-31 — 장기 hold 중단, FIX3 + low-LR density replay 확정 평가
+
+사용자 승인 후 기존 장기 run을 보존 중단하고, “더 오래 학습하면 나아지는가”와
+“표적 진동 수정 + 낮은 LR + 저밀도 rehearsal이면 100막대가 회복되는가”를 분리 검증했다.
+
+### 1. 기존 run 안전 중단과 복구점 선택
+
+- run: `ppo_260730_2111_navrl_cluster-sector-density85to110-v2-s1`
+- epoch 16,100 periodic checkpoint가 저장된 뒤 process group에 `SIGINT`; 학습 프로세스 소멸과
+  checkpoint 파일을 확인했다.
+- 구 target-motion 계약에서 100막대, target speed `0/0.5/1.0/1.5`, pursuer `2.5m/s`,
+  셀당 1,000회로 후보를 동일 평가했다.
+
+| checkpoint | 4속도 가중 capture | 판정 |
+|---|---:|---|
+| ep12500 | **63.24%** | warm-start 선택 |
+| ep12700 | 58.85% | 하락 |
+| ep14300 | 58.59% | 하락 |
+| ep16100 | 54.79% | 장기학습으로 추가 하락 |
+
+따라서 100막대 hold는 단순히 시간이 부족한 상태가 아니었다. ep12500 이후 PPO 수치는
+폭발하지 않았지만 held-out 일반화는 계속 나빠졌고, ep12500을 last-known-good로 확정했다.
+평가 원본은
+`train_session_logs/eval_results/checkpoint_select_oldmotion_ep{12500,12700,14300,16100}_260731/`.
+
+### 2. FIX3: Python target heading continuity
+
+- `target_motion.py`: 모션 버전을
+  `symmetric_local_steer_v2_heading_continuity90`으로 올리고, 직전 비행 heading 기준 ±90° 안의
+  clear 후보를 먼저 고르되 없으면 큰 탈출 회전을 허용하는 preference를 추가했다.
+- `navrl_task.py`: per-env `_tm_heading`을 episode heading으로 초기화하고 cv/waypoint에
+  전달·저장, cv wall/bar reflection 뒤 heading을 재동기화했다. held-out circle은 기존
+  smallest-turn 계약을 유지한다.
+- 브라우저와 Python의 모션 계약이 다시 같아져 `arena_motion.js`의 임시 divergence 표기를
+  제거했다.
+- 검증: target-motion 함수 테스트 **5/5**, training-safety **7/7**, curriculum guard **4/4**,
+  `test_status_arena_motion.js` parity, `py_compile`, 셸 문법, `git diff --check` 모두 통과.
+
+### 3. 500-epoch low-LR blockwise density rehearsal
+
+물리 asset manager의 active obstacle 수는 env별 값이 아니라 전역 scalar라 한 PPO batch 안에서
+서로 다른 막대 수를 정직하게 섞을 수 없다. 대신 model/optimizer checkpoint를 이어서
+`85→90→95→100→100`, 각 100 epoch의 고정-density block으로 실행했다.
+
+- source: ep12500
+- actor LR: `3e-5` (checkpoint optimizer의 `1e-4`를 restore 후 실제로 덮어씀)
+- action: squashed Gaussian, 기존 std/mu-scale 유지
+- same-density guard: rolling 20 epoch, min 40 epoch, peak ≥0.55, absolute drop 0.10,
+  patience 10
+- TensorBoard에서 LR `3.0e-5`, 전 block `|KL|max ≤0.00232` 확인
+
+| block | bars | train capture 평균 | 마지막 20 epoch | 최고 20 epoch |
+|---|---:|---:|---:|---:|
+| b1 | 85 | 76.69% | 77.68% | 78.16% |
+| b2 | 90 | 73.48% | 72.86% | 77.46% |
+| b3 | 95 | 67.96% | 69.26% | 69.66% |
+| b4 | 100 | 63.22% | 60.07% | 67.82% |
+| b5 | 100 | 63.57% | 65.34% | 66.05% |
+
+런처: `train_navrl_fix3_low_lr_density_replay.sh`. 최초 실행에서 같은 100막대를 두 process로
+나눠 b4→b5 전환 때 actor fail-stop rolling peak도 초기화되는 약점을 발견했다. 이후 기본
+schedule을 `85:100, 90:100, 95:100, 100:200`으로 합쳐, 다음 실행부터 100막대 200 epoch가
+한 process에서 같은 guard state를 유지하도록 수정했다.
+
+### 4. 새 FIX3 계약의 checkpoint 평가
+
+1차: ep12500/12800/12850/12900/12950/13000, 셀당 400회 선별. ep12900은 56.87%로 명백히
+나빴지만 ep13000은 65.04%로 회복했다. 즉 training의 단일 epoch 값이나 `last`만으로 checkpoint를
+선택하면 안 되고 held-out 선택이 필수다.
+
+2차 확정: 100막대, target speed `0/0.5/1.0/1.5`, pursuer `2.5m/s`, radial `4..16m`,
+mixed motion, fixed seed, 셀당 1,000회.
+
+| checkpoint | 0.0 | 0.5 | 1.0 | 1.5 | 가중 평균 | bar contact |
+|---|---:|---:|---:|---:|---:|---:|
+| ep12500 (FIX3, no adaptation) | 63.94% | 66.80% | 65.13% | 62.24% | **64.53%** | 33.18% |
+| ep12850 | 64.24% | 68.00% | 64.07% | 59.82% | **64.03%** | 34.20% |
+| ep13000 | 67.03% | 67.40% | 66.37% | 61.70% | **65.63%** | 32.23% |
+
+- ep13000 − ep12500: **+1.10pp**, 독립 비율 근사 95% CI **[-0.99, +3.19]pp**.
+- bar contact: `33.18% → 32.23%`(-0.95pp), below `0.25% → 0.40%`.
+- 관측상 최고는 ep13000이지만 통계적으로 확정된 개선은 아니며 70% gate에도 못 미친다.
+- FIX3 자체가 수치를 인위적으로 올린 것은 아니다. ep12500을 새 모션으로 다시 평가한 평균은
+  64.53%였고, 구 모션의 동일 계열 평가는 63.24%였다.
+
+확정 결과:
+`train_session_logs/eval_results/fix3_replay_confirm_ep{12500,12850,13000}_260731/`.
+
+### 최종 판정과 다음 전환
+
+**추가 장기 low-LR replay는 중단한다.** target 진동 수정은 실제/사이트 parity에 필요했고
+PPO 안정성도 확보했지만, 100막대 capture의 유의한 개선을 만들지 못했다. 최신 100막대
+barprobe는 `unique=4.9/8`, `hit_token_given_fov=0.839`, duplicate `0.2`인데 crash의
+약 95.5%가 bar contact였다. 따라서 현재 핵심 병목은 “막대를 못 봄”보다 **관측한 장애물
+표면을 통과 가능한 회랑/행동 affordance로 변환하지 못함**이다.
+
+다음 perception ablation은 토큰 수 증설이나 threshold 하향이 아니라:
+
+1. sector별 nearest obstacle만 주는 현재 표현에 **free-gap width/center/clearance**를 직접 넣는
+   corridor token, 또는
+2. 같은 방위의 앞/뒤 표면을 구분하는 **2-depth-layer sector representation**
+
+중 하나로 진행한다. 같은 898-D를 억지로 재해석하면 checkpoint semantic mismatch가 생기므로,
+입력 projection 확장/초기화와 fixed-100 짧은 A/B를 명시적으로 설계한 뒤 실행한다.
+
+---
+
+## 2026-07-31 — 상태 사이트 최신화 및 corridor-token 전환 계획 공개
+
+FIX3 + low-LR density replay의 확정 평가를 정적 연구 대시보드에 반영했다. 기존 사이트는
+7월 30일 cluster-sector 85막대 중간 상태와 종료된 프로세스를 `LIVE`로 표시하고 있었으므로,
+스냅샷 생성기를 다시 실행해 52개 run을 동기화하고 `active_run=null`, 최신 run
+`ppo_260731_0226_navrl_fix3-low-lr-replay-b5-100bars-s1`, epoch 13000으로 바로잡았다.
+
+### 사이트에 반영한 현재 결론
+
+- 100막대 held-out: ep12500 **64.53%**, ep12850 **64.03%**, ep13000 **65.63%**.
+- ep13000 개선량은 **+1.10pp**, 95% CI **[-0.99,+3.19]pp**라 통계적으로 확정되지 않았고
+  70% gate에도 못 미쳤다.
+- FIX3 target-motion parity와 PPO update safety(`|KL|max=0.00232`)는 통과했지만, 관측된 crash의
+  약 **95.5%가 bar contact**였다.
+- 따라서 추가 low-LR replay는 중단하고, “장애물 표면 위치”에서 “통과 가능한 빈 공간”으로
+  표현을 바꾸는 corridor-token 진단을 다음 단계로 명시했다.
+
+### corridor token 설명과 실험 계약
+
+사이트에 obstacle token과 corridor token을 나란히 비교하는 시각 설명을 추가했다.
+
+- 기존 obstacle token: nearest bar의 bearing/range/relative geometry를 주며
+  “장애물이 어디 있는가?”에 답한다.
+- corridor token: gap center bearing, usable width, left/right clearance, clear depth 또는 TTC를
+  주며 “기체가 어디로 통과할 수 있는가?”에 답한다.
+- 이는 전체 경로를 직접 정해주는 planner가 아니라 LiDAR 표면을 국소 통과 가능성
+  (affordance)으로 바꿔 주는 입력 표현이다.
+
+다음 순서는 사이트와 연구 계획에 동일하게 고정했다.
+
+1. P0: ep12500/ep13000 및 fixed-100 four-speed 평가를 불변 baseline으로 보존.
+2. P1: actor 입력을 바꾸지 않고 LiDAR 기반 corridor geometry extractor를 먼저 검증.
+3. P2: 기존 898-D 의미를 재해석하지 않고 observation schema를 확장하며 input projection을
+   선택 초기화하고 checkpoint에 schema provenance를 기록.
+4. P3: 같은 seed/eval 계약으로 cluster-sector baseline과 corridor token의 짧은 fixed-100 A/B.
+
+파일럿 진행 gate는 **capture ≥68%, ep12500 대비 ≥+3pp, bar-contact 감소**의 동시 충족으로
+정했다. backbone freeze는 별도 seed에서 **70% 재현**까지 요구한다.
+
+### 검증
+
+- `tools/update_status_snapshot.py`: Python compile 및 실행 성공.
+- 생성된 `status.json`과 `index.html` inline fallback JSON의 byte-level object equality 확인.
+- latest run/epoch, no-active-run, corridor data와 필수 DOM id assertion 통과.
+- 로컬 HTTP로 모든 site asset이 200 응답하는 것을 확인.
+- Chrome headless 1440×2200 렌더에서 desktop layout 및 새 corridor section을 육안 검증.
+  headless GPU 환경의 WebGL context 실패는 3D arena에만 해당하며, 기존 fallback 문구가 정상
+  표시되었다.
+- `git diff --check` 통과.

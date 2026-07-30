@@ -157,6 +157,43 @@ function renderResearchUpdate(s) {
   }
 }
 
+function renderCorridor(s) {
+  const c = s.corridor_token || {};
+  const current = c.current || {};
+  const proposed = c.proposed || {};
+  const setText = (id, value) => {
+    const el = document.getElementById(id);
+    if (el && value != null) el.textContent = value;
+  };
+  const setFields = (id, fields) => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = (fields || []).map(v => `<li>${v}</li>`).join('');
+  };
+
+  setText('corridor-sub', c.subtitle);
+  setText('corridor-title', c.title ? `${c.title}: free space as a policy input` : null);
+  setText('corridor-definition', c.definition);
+  setText('corridor-why', c.why_now);
+  setText('token-current-label', current.label);
+  setText('token-current-question', current.question);
+  setFields('token-current-fields', current.fields);
+  setText('token-current-weakness', current.weakness);
+  setText('token-proposed-label', proposed.label);
+  setText('token-proposed-question', proposed.question);
+  setFields('token-proposed-fields', proposed.fields);
+  setText('token-proposed-weakness', proposed.weakness);
+  setText('corridor-gate', c.pilot_gate ? `PILOT GATE · ${c.pilot_gate}` : null);
+
+  const steps = document.getElementById('corridor-steps');
+  if (steps) {
+    steps.innerHTML = (c.steps || []).map(step => `
+      <article class="corridor-step ${step.state || ''}">
+        <span>${step.id || ''}</span>
+        <div><b>${step.title || ''}</b><p>${step.detail || ''}</p></div>
+      </article>`).join('');
+  }
+}
+
 function pickDensity(s) {
   const c = s.density_curves || {};
   const pack = c.corrected_chirality_density_curve || c.general_repr_density_curve || c.vision_density_curve;
@@ -481,8 +518,8 @@ function renderPhases() {
   const phases = [
     ['P0–P5', 'sensor · tracking foundation', 'done'],
     ['P6A', 'bounded action contract', 'done'],
-    ['P6B', '85-bar token coverage', 'active'],
-    ['P6C', 'collapse + rollback safety', 'todo'],
+    ['P6B', 'cluster-sector baseline', 'done'],
+    ['P6C', 'corridor-token ablation', 'active'],
     ['P7', 'sim-to-real', 'todo'],
     ['Paper', 'ablation + write-up', 'todo'],
   ];
@@ -548,6 +585,7 @@ function wireArena() {
   const renderAll = (s) => {
     renderLive(s);
     renderResearchUpdate(s);
+    renderCorridor(s);
     renderCurve(s);
     renderSpeed(s);
     renderHeatmap(s);

@@ -1,44 +1,29 @@
 {
-  "generated_at": "2026-07-30T17:14:46.238090+00:00",
+  "generated_at": "2026-07-30T18:11:14.144310+00:00",
   "repo": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator",
-  "n_runs": 49,
-  "active_run": {
-    "run": "ppo_260730_2015_navrl_cluster-sector-density85to110-s1",
-    "is_live": true,
-    "metrics_age_min": 304.42704999049505,
-    "epoch": 11203,
-    "max_epochs": 12000,
-    "epochs_logged": 1053,
-    "tail_epochs": 50,
-    "captured_rate": 0.7131632,
-    "crash_rate": 0.28189906,
-    "timeout_rate": 0.004937792,
-    "mean_reward": 26.691268,
-    "closest_approach_m": 0.44378404000000005,
-    "n_bars_active": 85.0,
-    "curriculum_max_m": 12.270564799999999
-  },
+  "n_runs": 52,
+  "active_run": null,
   "latest_run": {
-    "run": "ppo_260731_0208_navrl_fix3-low-lr-replay-b2-90bars-s1",
-    "finalized_at": "2026-07-30T17:14:42.012270+00:00",
+    "run": "ppo_260731_0226_navrl_fix3-low-lr-replay-b5-100bars-s1",
+    "finalized_at": "2026-07-30T17:32:39.008556+00:00",
     "exit_reason": "max_epochs",
     "epochs_logged": 100,
-    "first_epoch": 12601,
-    "last_epoch": 12700,
+    "first_epoch": 12901,
+    "last_epoch": 13000,
     "is_navrl": true,
-    "last_mean_reward": 16.2176,
-    "last_mean_episode_length": 65.1749,
-    "last_captured_rate": 0.746479,
-    "last_crash_rate": 0.253521,
+    "last_mean_reward": -0.83411,
+    "last_mean_episode_length": 64.1542,
+    "last_captured_rate": 0.615385,
+    "last_crash_rate": 0.384615,
     "last_timeout_rate": 0.0,
-    "last_closest_approach_m": 0.385927,
-    "last_closest_min_m": 0.177928,
-    "last_curriculum_max_m": 13.8922,
-    "last_n_bars_active": 90,
-    "peak_captured_rate": 0.863636,
-    "peak_captured_epoch": 12632,
-    "peak_mean_reward": 32.8447,
-    "peak_epoch": 12634,
+    "last_closest_approach_m": 0.377704,
+    "last_closest_min_m": 0.214593,
+    "last_curriculum_max_m": 8.3402,
+    "last_n_bars_active": 100,
+    "peak_captured_rate": 0.746667,
+    "peak_captured_epoch": 12947,
+    "peak_mean_reward": 15.8361,
+    "peak_epoch": 12982,
     "reward_collapse": false
   },
   "runs": [
@@ -1080,8 +1065,8 @@
     },
     {
       "run": "ppo_260730_2015_navrl_cluster-sector-density85to110-s1",
-      "finalized_at": null,
-      "exit_reason": "running",
+      "finalized_at": "2026-07-30T12:10:20.614841+00:00",
+      "exit_reason": "interrupted",
       "epochs_logged": 1053,
       "first_epoch": 10151,
       "last_epoch": 11203,
@@ -1168,6 +1153,75 @@
       "peak_captured_epoch": 12632,
       "peak_mean_reward": 32.8447,
       "peak_epoch": 12634,
+      "reward_collapse": false
+    },
+    {
+      "run": "ppo_260731_0214_navrl_fix3-low-lr-replay-b3-95bars-s1",
+      "finalized_at": "2026-07-30T17:20:47.511425+00:00",
+      "exit_reason": "max_epochs",
+      "epochs_logged": 100,
+      "first_epoch": 12701,
+      "last_epoch": 12800,
+      "is_navrl": true,
+      "last_mean_reward": 19.331,
+      "last_mean_episode_length": 61.0332,
+      "last_captured_rate": 0.731343,
+      "last_crash_rate": 0.268657,
+      "last_timeout_rate": 0.0,
+      "last_closest_approach_m": 0.402916,
+      "last_closest_min_m": 0.23006,
+      "last_curriculum_max_m": 11.86,
+      "last_n_bars_active": 95,
+      "peak_captured_rate": 0.816901,
+      "peak_captured_epoch": 12718,
+      "peak_mean_reward": 25.4569,
+      "peak_epoch": 12724,
+      "reward_collapse": false
+    },
+    {
+      "run": "ppo_260731_0220_navrl_fix3-low-lr-replay-b4-100bars-s1",
+      "finalized_at": "2026-07-30T17:26:44.069073+00:00",
+      "exit_reason": "max_epochs",
+      "epochs_logged": 100,
+      "first_epoch": 12801,
+      "last_epoch": 12900,
+      "is_navrl": true,
+      "last_mean_reward": 3.48842,
+      "last_mean_episode_length": 55.2382,
+      "last_captured_rate": 0.666667,
+      "last_crash_rate": 0.333333,
+      "last_timeout_rate": 0.0,
+      "last_closest_approach_m": 0.376306,
+      "last_closest_min_m": 0.199898,
+      "last_curriculum_max_m": 13.7136,
+      "last_n_bars_active": 100,
+      "peak_captured_rate": 0.788732,
+      "peak_captured_epoch": 12841,
+      "peak_mean_reward": 19.1313,
+      "peak_epoch": 12802,
+      "reward_collapse": false
+    },
+    {
+      "run": "ppo_260731_0226_navrl_fix3-low-lr-replay-b5-100bars-s1",
+      "finalized_at": "2026-07-30T17:32:39.008556+00:00",
+      "exit_reason": "max_epochs",
+      "epochs_logged": 100,
+      "first_epoch": 12901,
+      "last_epoch": 13000,
+      "is_navrl": true,
+      "last_mean_reward": -0.83411,
+      "last_mean_episode_length": 64.1542,
+      "last_captured_rate": 0.615385,
+      "last_crash_rate": 0.384615,
+      "last_timeout_rate": 0.0,
+      "last_closest_approach_m": 0.377704,
+      "last_closest_min_m": 0.214593,
+      "last_curriculum_max_m": 8.3402,
+      "last_n_bars_active": 100,
+      "peak_captured_rate": 0.746667,
+      "peak_captured_epoch": 12947,
+      "peak_mean_reward": 15.8361,
+      "peak_epoch": 12982,
       "reward_collapse": false
     }
   ],
@@ -1917,105 +1971,91 @@
   },
   "other_curves": {},
   "research_update": {
-    "subtitle": "2026-07-30 · fixed-85 cluster-sector selector gate",
-    "headline": "Cluster-sector removed duplicate slots and passed four clean competence windows.",
-    "summary": "The same-shape selector clusters adjacent LiDAR surfaces and reserves one nearest cluster per angular sector. At 85 bars, duplicate slots fell from 1.9 to about 0.1 and unique associated bars rose from 3.0–3.5 to about 4.4. Four independent 16,384-episode windows reached 0.742, 0.745, 0.722, and 0.714 capture. The process later ended without a terminal error record at epoch 10157; checkpoint 10150 is preserved. Coverage remains close to the 4.5/8 gate, so the next evidence should come from held-out evaluation.",
+    "subtitle": "2026-07-31 · FIX3 target motion + low-LR density replay",
+    "headline": "100-bar replay stayed stable, but did not clear the held-out 70% gate.",
+    "summary": "FIX3 removed target heading oscillation and the 500-epoch replay kept PPO updates well behaved (|KL|max 0.00232). On the fixed 100-bar, four-speed held-out grid, ep13000 reached 65.63% capture versus 64.53% for the unadapted ep12500 checkpoint: +1.10 percentage points, but the 95% interval [-0.99, +3.19] crosses zero. More of the same replay is therefore unlikely to buy the missing performance.",
     "active_experiment": {
-      "is_live": true,
-      "max_epochs": 12000,
-      "bars": 85,
-      "run": "ppo_260730_1549_navrl_corrected-squashed-density-cluster-sector-s1",
-      "epoch": 11203,
-      "capture_tail": 0.7131632,
-      "crash_tail": 0.28189906,
+      "is_live": false,
+      "max_epochs": 13000,
+      "bars": 100,
+      "run": "ppo_260731_0226_navrl_fix3-low-lr-replay-b5-100bars-s1",
+      "epoch": 13000,
+      "capture_tail": null,
+      "crash_tail": null,
       "selector": "cluster_sector",
       "cluster_gap_m": 0.45,
       "sectors": 8,
-      "unique_bars": null,
-      "duplicate_tokens": null
+      "unique_bars": 4.9,
+      "duplicate_tokens": 0.2
     },
     "milestones": [
       {
-        "label": "SENSOR GEOMETRY",
-        "value": "97–98% hit|FOV",
-        "detail": "bearing/chirality correction physically validated",
+        "label": "TARGET MOTION",
+        "value": "FIX3 parity",
+        "detail": "Python and browser use the same heading-continuity contract",
         "state": "pass"
       },
       {
-        "label": "COMPETENCE",
-        "value": "0.742 / 0.745 / 0.722 / 0.714",
-        "detail": "four clean 16,384-episode windows at fixed 85 bars",
+        "label": "UPDATE SAFETY",
+        "value": "|KL|max 0.00232",
+        "detail": "low-LR replay remained far below the 0.04 fail-stop",
         "state": "pass"
       },
       {
-        "label": "TOKEN COVERAGE",
-        "value": "pending",
-        "detail": "baseline 3.0–3.5/8; awaiting probe",
+        "label": "HELD-OUT CAPTURE",
+        "value": "65.63%",
+        "detail": "ep13000 at 100 bars; 70% target remains unmet",
         "state": "warn"
       },
       {
-        "label": "DE-DUPLICATION",
-        "value": "1.9 → ~0.1",
-        "detail": "cluster identity prevents one wide surface consuming many slots",
-        "state": "pass"
+        "label": "FAILURE MODE",
+        "value": "95.5% bar contact",
+        "detail": "of observed crashes; below-ground failures remain small",
+        "state": "fail"
       }
     ],
     "comparison": [
       {
-        "label": "prior backbone",
-        "bars": 65,
-        "capture": 0.678,
-        "unique": null,
-        "verdict": "reference plateau"
+        "label": "ep12500 · FIX3, no replay",
+        "bars": 100,
+        "capture": 0.6453,
+        "unique": 4.9,
+        "verdict": "warm-start baseline; bar contact 33.18%"
       },
       {
-        "label": "corrected bounded",
-        "bars": 85,
-        "capture": 0.676,
-        "unique": 3.0,
-        "verdict": "validated plateau"
+        "label": "ep12850 · replay",
+        "bars": 100,
+        "capture": 0.6403,
+        "unique": 4.9,
+        "verdict": "no gain; bar contact 34.20%"
       },
       {
-        "label": "wrong ±10° continuation",
-        "bars": 85,
-        "capture": 0.01,
-        "unique": 3.6,
-        "verdict": "discarded: PPO divergence"
-      },
-      {
-        "label": "first ±15°",
-        "bars": 85,
-        "capture": 0.689,
-        "unique": 3.5,
-        "verdict": "stopped: clean windows 0.664/0.689; coverage below gate"
-      },
-      {
-        "label": "cluster-sector",
-        "bars": 85,
-        "capture": 0.731,
-        "unique": null,
-        "verdict": "4 clean capture gates passed; coverage near threshold"
+        "label": "ep13000 · replay",
+        "bars": 100,
+        "capture": 0.6563,
+        "unique": 4.9,
+        "verdict": "best observed; bar contact 32.23%"
       }
     ],
     "gates": [
       {
-        "label": "coverage",
-        "value": "unique bars ≥ 4.5 / 8"
-      },
-      {
-        "label": "competence",
-        "value": "capture ≥ 0.70 / 16,384 episodes"
+        "label": "task contract",
+        "value": "PASS · FIX3 target motion + browser parity"
       },
       {
         "label": "update safety",
-        "value": "KL ≤ 0.04; no latent/edge explosion"
+        "value": "PASS · |KL|max 0.00232"
       },
       {
-        "label": "clean contract",
-        "value": "fixed 85 bars; gate reset; 250-epoch adaptation"
+        "label": "held-out target",
+        "value": "FAIL · 65.63% < 70%"
+      },
+      {
+        "label": "significance",
+        "value": "NO · +1.10pp, CI crosses zero"
       }
     ],
-    "decision": "Do not restart merely to fill the remaining epochs: four large clean windows already establish the training-side competence result. Evaluate checkpoint 10150 on the fixed density × target-speed grid. If held-out performance confirms it, freeze the navigation backbone and return to Phase 3B learned detection. The lowest-cost perception additions are occlusion/dropout evaluation and Kalman innovation reliability; CPA risk remains diagnostic-first."
+    "decision": "Stop extending the low-LR replay. Preserve ep12500 and ep13000 as baselines, validate a free-space corridor extractor without changing policy input, then run a short fixed-100 A/B with an explicit new observation schema. Do not silently reinterpret the current 898-D input."
   },
   "density_speed_map": {
     "notes": [
@@ -2294,5 +2334,61 @@
       0.561,
       0.558
     ]
+  },
+  "corridor_token": {
+    "title": "Corridor token",
+    "subtitle": "next ablation · represent traversable gaps, not only obstacle surfaces",
+    "definition": "A corridor token is a compact description of one locally traversable opening between obstacles. The current obstacle token says where a bar surface is; a corridor token says where the drone may fit, how wide the opening is, and how far that opening remains clear.",
+    "why_now": "At 100 bars the cluster-sector encoder already associates about 4.9 unique bars out of 8 slots, hit_token_given_fov is 0.839, and duplicate use is only 0.2. Yet most crashes are bar contacts. The next bottleneck is therefore converting detected surfaces into a safe passage affordance, not simply adding more obstacle hits.",
+    "current": {
+      "label": "Obstacle token · current",
+      "question": "Where are the nearest bars?",
+      "fields": [
+        "bearing",
+        "range",
+        "relative geometry",
+        "valid mask"
+      ],
+      "weakness": "The policy must infer the opening between bars and whether the drone fits."
+    },
+    "proposed": {
+      "label": "Corridor token · proposed",
+      "question": "Where can the drone pass?",
+      "fields": [
+        "gap center bearing",
+        "usable width",
+        "left/right clearance",
+        "clear depth or TTC",
+        "valid mask"
+      ],
+      "weakness": "Local affordance only; it is not a full planner and still needs policy choice."
+    },
+    "steps": [
+      {
+        "id": "P0",
+        "title": "Freeze evidence",
+        "detail": "Keep ep12500 and ep13000 plus the fixed 100-bar four-speed evaluation as immutable baselines.",
+        "state": "done"
+      },
+      {
+        "id": "P1",
+        "title": "Geometry-only diagnostic",
+        "detail": "Extract gap center, usable width, and clear depth from the existing LiDAR, but do not feed it to the actor yet.",
+        "state": "now"
+      },
+      {
+        "id": "P2",
+        "title": "Contract-safe input",
+        "detail": "Add explicit corridor fields and selectively initialize the widened input projection; record the observation schema in checkpoints.",
+        "state": "todo"
+      },
+      {
+        "id": "P3",
+        "title": "Short fixed-100 A/B",
+        "detail": "Compare the unchanged cluster-sector baseline against corridor tokens under the same seeds and held-out sweep.",
+        "state": "todo"
+      }
+    ],
+    "pilot_gate": "Advance only if the fixed-100 aggregate reaches at least 68%, improves by at least 3 percentage points over ep12500, and lowers bar-contact rate. Treat 70% with a replicated seed as the backbone-freeze gate."
   }
 }
