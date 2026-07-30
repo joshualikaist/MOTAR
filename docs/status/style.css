@@ -154,6 +154,7 @@ code { font-family: var(--mono); font-size: 12px; }
 .milestone > b { display: block; margin-top: 5px; color: var(--ink); font: 800 18px/1.1 var(--display); }
 .milestone > p { margin: 5px 0 0; color: var(--muted); font-size: 11.5px; }
 .milestone.pass { border-color: color-mix(in srgb, var(--good) 35%, var(--line)); }
+.milestone.warn { border-color: color-mix(in srgb, var(--warn) 45%, var(--line)); }
 .milestone.fail { border-color: color-mix(in srgb, var(--bad) 35%, var(--line)); }
 .milestone.active { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
 .update-grid { display: grid; grid-template-columns: 1.35fr .8fr; gap: 12px; margin-top: 12px; }

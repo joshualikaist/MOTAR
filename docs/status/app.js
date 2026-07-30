@@ -81,7 +81,7 @@ function renderLive(s) {
       { k: 'timeout', v: pct(finalTo), c: 'acc', s: '' },
       { k: 'bars', v: bars != null ? String(Math.round(bars)) : '—', c: 'acc', s: 'active' },
       live
-        ? { k: 'epoch', v: String(Math.round(A.epoch)), c: 'acc', s: '/ 500 pilot' }
+        ? { k: 'epoch', v: String(Math.round(A.epoch)), c: 'acc', s: `/ ${A.max_epochs || '?'} max` }
         : { k: 'peak→final', v: gapPt != null ? ('−' + gapPt + 'pt') : '—', c: gapPt >= 30 ? 'bad' : gapPt >= 15 ? 'warn' : 'good', s: pct(peak) + ' peak' },
     ];
     cards.innerHTML = rows.map(c =>
@@ -90,7 +90,7 @@ function renderLive(s) {
   }
   if (capEl) {
     capEl.textContent = live
-      ? `Live = last ${A.tail_epochs || 50} epochs · fixed 25-bar fresh bounded pilot.`
+      ? `Live = last ${A.tail_epochs || 50} epochs · current curriculum state.`
       : `peak ${pct(peak)} (ep ${L.peak_captured_epoch}) → final ${pct(L.last_captured_rate)}.`;
   }
 
@@ -110,21 +110,21 @@ function renderLive(s) {
 
 function renderResearchUpdate(s) {
   const u = s.research_update || {};
-  const pilot = u.bounded_pilot || {};
+  const experiment = u.active_experiment || u.bounded_pilot || {};
   const hero = document.getElementById('update-hero');
   const sub = document.getElementById('update-sub');
   const milestones = document.getElementById('update-milestones');
   const evalTbl = document.getElementById('update-eval');
   const decision = document.getElementById('update-decision');
 
-  if (sub) sub.textContent = u.subtitle || 'corrected observation → bounded action contract';
+  if (sub) sub.textContent = u.subtitle || '85-bar obstacle-token coverage ablation';
   if (hero) {
-    const active = pilot.is_live ? '<span class="update-live">RUNNING</span>' : '<span class="update-snap">SNAPSHOT</span>';
+    const active = experiment.is_live ? '<span class="update-live">RUNNING</span>' : '<span class="update-snap">SNAPSHOT</span>';
     hero.innerHTML = `<div><span class="eyebrow">CURRENT HYPOTHESIS</span>
       <strong>${u.headline || 'Sensor fixed; action support is the active bottleneck.'}</strong>
       <p>${u.summary || ''}</p></div>
-      <div class="update-run">${active}<b>${pilot.run || '—'}</b>
-      <span>ep ${pilot.epoch ?? '—'} / ${pilot.max_epochs ?? 500} · ${pilot.bars ?? 25} bars</span></div>`;
+      <div class="update-run">${active}<b>${experiment.run || '—'}</b>
+      <span>ep ${experiment.epoch ?? '—'} / ${experiment.max_epochs ?? '—'} · ${experiment.bars ?? '—'} bars</span></div>`;
   }
   if (milestones) {
     milestones.innerHTML = (u.milestones || []).map(m => `
@@ -133,11 +133,20 @@ function renderResearchUpdate(s) {
       </article>`).join('');
   }
   if (evalTbl) {
-    const rows = u.legacy_eval || [];
-    evalTbl.innerHTML = `<thead><tr><th>target</th><th>capture</th><th>crash</th><th>bar</th><th>below</th></tr></thead>
-      <tbody>${rows.map(r => `<tr><td>${Number(r.target_speed).toFixed(2)}</td>
-        <td>${pct(r.capture)}</td><td>${pct(r.crash)}</td>
-        <td>${pct(r.bar_contact)}</td><td>${pct(r.below)}</td></tr>`).join('')}</tbody>`;
+    const rows = u.comparison || [];
+    if (rows.length) {
+      evalTbl.innerHTML = `<thead><tr><th>condition</th><th>bars</th><th>capture</th><th>unique</th><th>verdict</th></tr></thead>
+        <tbody>${rows.map(r => `<tr><td>${r.label || '—'}</td>
+          <td>${r.bars ?? '—'}</td><td>${r.capture == null ? '—' : pct(r.capture)}</td>
+          <td>${r.unique == null ? '—' : Number(r.unique).toFixed(1)}</td>
+          <td>${r.verdict || '—'}</td></tr>`).join('')}</tbody>`;
+    } else {
+      const legacy = u.legacy_eval || [];
+      evalTbl.innerHTML = `<thead><tr><th>target</th><th>capture</th><th>crash</th><th>bar</th><th>below</th></tr></thead>
+        <tbody>${legacy.map(r => `<tr><td>${Number(r.target_speed).toFixed(2)}</td>
+          <td>${pct(r.capture)}</td><td>${pct(r.crash)}</td>
+          <td>${pct(r.bar_contact)}</td><td>${pct(r.below)}</td></tr>`).join('')}</tbody>`;
+    }
   }
   if (decision) {
     const gates = u.gates || [];
@@ -148,7 +157,7 @@ function renderResearchUpdate(s) {
 
 function pickDensity(s) {
   const c = s.density_curves || {};
-  const pack = c.general_repr_density_curve || c.vision_density_curve;
+  const pack = c.corrected_chirality_density_curve || c.general_repr_density_curve || c.vision_density_curve;
   const raw = Array.isArray(pack) ? pack : (pack && pack.rows) || [];
   const gtPack = c.vision_density_curve;
   const gtRows = Array.isArray(gtPack) ? gtPack : (gtPack && gtPack.rows) || [];
@@ -348,9 +357,10 @@ function renderRuns(s) {
 
 function renderPhases() {
   const phases = [
-    ['P0–P5', 'firewall · detector · perception', 'done'],
-    ['P6A', 'bounded action contract', 'active'],
-    ['P6B', 'density 25→110', 'todo'],
+    ['P0–P5', 'sensor · tracking foundation', 'done'],
+    ['P6A', 'bounded action contract', 'done'],
+    ['P6B', '85-bar token coverage', 'active'],
+    ['P6C', 'collapse + rollback safety', 'todo'],
     ['P7', 'sim-to-real', 'todo'],
     ['Paper', 'ablation + write-up', 'todo'],
   ];
