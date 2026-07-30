@@ -69,8 +69,17 @@ mkdir -p runs train_session_logs
 # Seconds + launcher PID prevent a quick retry from truncating the previous minute-resolution log.
 LOG="${TRAIN_SESSION_LOG:-train_session_logs/train_$(date +%y%m%d_%H%M%S)_$$.log}"
 mkdir -p "$(dirname "${LOG}")"
+LIVE_LOG="${TRAIN_LIVE_LOG:-train_session_logs/current_training.log}"
+mkdir -p "$(dirname "${LIVE_LOG}")"
+LOG_ABS="$(realpath -m "${LOG}")"
+# Resolve the parent directory, not the live symlink itself. Resolving LIVE_LOG before replacing it
+# printed the previous session's target even though ln correctly updated the link.
+LIVE_LOG_ABS="$(realpath -m "$(dirname "${LIVE_LOG}")")/$(basename "${LIVE_LOG}")"
+ln -sfn "${LOG_ABS}" "${LIVE_LOG}"
 echo "[train_navrl] py=${PY} file=${FILE} task=${TASK} envs=${NUM_ENVS}"
-echo "[train_navrl] log → ${LOG}"
+echo "[train_navrl] log → ${LOG_ABS}"
+echo "[train_navrl] live log → ${LIVE_LOG_ABS}"
+echo "[train_navrl] watch anytime: ./watch_navrl_training.sh"
 echo "[train_navrl] TensorBoard: tensorboard --logdir $(pwd)/runs"
 
 "${PY}" runner.py --file "${FILE}" --task "${TASK}" \

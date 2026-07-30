@@ -6,7 +6,7 @@ import argparse
 import math
 import os
 from pathlib import Path
-from typing import Any, Dict, Mapping, Optional
+from typing import Any, Dict, Iterable, Mapping, Optional
 
 import torch
 
@@ -20,9 +20,17 @@ _CONTRACT_ENV = {
     "cfg_max_obstacles": "NAVRL_MAX_OBSTACLES",
     "cfg_token_fov_deg": "NAVRL_OBSTACLE_FOV_DEG",
     "cfg_obstacle_suppress_deg": "NAVRL_OBSTACLE_SUPPRESS_DEG",
+    "cfg_obstacle_selector": "NAVRL_OBSTACLE_SELECTOR",
+    "cfg_obstacle_cluster_gap_m": "NAVRL_OBSTACLE_CLUSTER_GAP_M",
+    "cfg_obstacle_sectors": "NAVRL_OBSTACLE_SECTORS",
     "cfg_lidar_hbeams": "NAVRL_LIDAR_HBEAMS",
     "cfg_lidar_vbeams": "NAVRL_LIDAR_VBEAMS",
+    "cfg_corridor_tokens": "NAVRL_CORRIDOR_TOKENS",
 }
+_STRING_CONTRACT_FIELDS = {"cfg_obstacle_selector"}
+# Checkpoints saved before a contract field existed are interpreted at the field's historical
+# behavior. corridor_tokens=0: every pre-corridor checkpoint used the plain 898-D schema.
+_LEGACY_CONTRACT_DEFAULTS = {"cfg_obstacle_selector": "greedy_suppress", "cfg_corridor_tokens": 0}
 
 
 def _first_nonfinite(value: Any, path: str = "checkpoint") -> Optional[str]:
@@ -49,13 +57,35 @@ def _first_nonfinite(value: Any, path: str = "checkpoint") -> Optional[str]:
     return None
 
 
-def expected_contract_from_environment() -> Dict[str, float]:
+def expected_contract_from_environment() -> Dict[str, Any]:
     expected = {}
     for saved_key, env_name in _CONTRACT_ENV.items():
         raw = os.environ.get(env_name, "").strip()
         if raw:
-            expected[saved_key] = float(raw)
+            expected[saved_key] = (
+                raw.lower() if saved_key in _STRING_CONTRACT_FIELDS else float(raw)
+            )
     return expected
+
+
+def _contract_values_match(saved: Any, expected: Any) -> bool:
+    if isinstance(expected, str):
+        return str(saved).strip().lower() == expected.strip().lower()
+    try:
+        return abs(float(saved) - float(expected)) <= 1e-6
+    except (TypeError, ValueError):
+        return False
+
+
+def _format_contract_value(value: Any) -> str:
+    if value is None:
+        return "<missing>"
+    if isinstance(value, str):
+        return value
+    try:
+        return f"{float(value):g}"
+    except (TypeError, ValueError):
+        return str(value)
 
 
 def inspect_checkpoint(
@@ -63,7 +93,10 @@ def inspect_checkpoint(
     *,
     max_epochs: int,
     density_final: int,
-    expected_contract: Optional[Mapping[str, float]] = None,
+    expected_contract: Optional[Mapping[str, Any]] = None,
+    allowed_contract_overrides: Optional[Iterable[str]] = None,
+    min_k_max: Optional[float] = None,
+    min_task_steps: Optional[int] = None,
 ) -> Dict[str, Any]:
     path = Path(checkpoint_path)
     if not path.is_file():
@@ -100,17 +133,48 @@ def inspect_checkpoint(
         raise CheckpointPreflightError(
             f"checkpoint density {bars} is outside requested curriculum range 0..{density_final}"
         )
+    task_steps = int(state.get("num_task_steps", 0))
+    k_max = float(state.get("k_max_cur", float("-inf")))
+    if min_k_max is not None and k_max + 1e-6 < float(min_k_max):
+        raise CheckpointPreflightError(
+            f"distance curriculum is not saturated: k_max={k_max:g} < {float(min_k_max):g}"
+        )
+    if min_task_steps is not None and task_steps < int(min_task_steps):
+        raise CheckpointPreflightError(
+            "time-based curricula are not saturated: "
+            f"task_steps={task_steps} < {int(min_task_steps)}"
+        )
+
+    allowed_overrides = set(allowed_contract_overrides or ())
+    contract_overrides = {}
+    unknown_overrides = allowed_overrides.difference(_CONTRACT_ENV)
+    if unknown_overrides:
+        raise CheckpointPreflightError(
+            "unknown policy-input override field(s): " + ", ".join(sorted(unknown_overrides))
+        )
 
     for saved_key, expected in (expected_contract or {}).items():
-        saved = state.get(saved_key)
+        saved = state.get(saved_key, _LEGACY_CONTRACT_DEFAULTS.get(saved_key))
         if saved is None:
+            if saved_key in allowed_overrides:
+                contract_overrides[saved_key] = {
+                    "checkpoint": None,
+                    "requested": expected,
+                }
+                continue
             raise CheckpointPreflightError(
                 f"checkpoint lacks policy-input provenance field: {saved_key}"
             )
-        if abs(float(saved) - float(expected)) > 1e-6:
-            raise CheckpointPreflightError(
-                f"policy-input mismatch for {saved_key}: checkpoint={saved}, requested={expected}"
-            )
+        if not _contract_values_match(saved, expected):
+            if saved_key not in allowed_overrides:
+                raise CheckpointPreflightError(
+                    f"policy-input mismatch for {saved_key}: checkpoint={saved}, "
+                    f"requested={expected}"
+                )
+            contract_overrides[saved_key] = {
+                "checkpoint": saved,
+                "requested": expected,
+            }
 
     nonfinite_path = _first_nonfinite(checkpoint)
     if nonfinite_path is not None:
@@ -120,9 +184,11 @@ def inspect_checkpoint(
         "path": str(path),
         "epoch": epoch,
         "bars": bars,
-        "task_steps": int(state.get("num_task_steps", 0)),
+        "task_steps": task_steps,
+        "k_max": k_max,
         "token_fov_deg": state.get("cfg_token_fov_deg"),
         "max_obstacles": state.get("cfg_max_obstacles"),
+        "contract_overrides": contract_overrides,
     }
 
 
@@ -131,6 +197,15 @@ def main() -> int:
     parser.add_argument("checkpoint")
     parser.add_argument("--max-epochs", type=int, required=True)
     parser.add_argument("--density-final", type=int, required=True)
+    parser.add_argument("--min-k-max", type=float)
+    parser.add_argument("--min-task-steps", type=int)
+    parser.add_argument(
+        "--allow-contract-override",
+        action="append",
+        choices=sorted(_CONTRACT_ENV),
+        default=[],
+        help="allow one intentional same-shape policy-input ablation while retaining all other checks",
+    )
     args = parser.parse_args()
     try:
         info = inspect_checkpoint(
@@ -138,6 +213,9 @@ def main() -> int:
             max_epochs=args.max_epochs,
             density_final=args.density_final,
             expected_contract=expected_contract_from_environment(),
+            allowed_contract_overrides=args.allow_contract_override,
+            min_k_max=args.min_k_max,
+            min_task_steps=args.min_task_steps,
         )
     except CheckpointPreflightError as exc:
         print(f"[general_repr_density] preflight FAILED | {exc}", file=os.sys.stderr)
@@ -146,8 +224,15 @@ def main() -> int:
     print(
         "[general_repr_density] checkpoint state | "
         f"epoch={info['epoch']} bars={info['bars']} task_steps={info['task_steps']} "
-        f"tokens={info['max_obstacles']} fov={info['token_fov_deg']}deg"
+        f"k_max={info['k_max']:g} tokens={info['max_obstacles']} "
+        f"fov={info['token_fov_deg']}deg"
     )
+    for field, override in info["contract_overrides"].items():
+        print(
+            "[general_repr_density] INTENTIONAL contract override | "
+            f"{field}: checkpoint={_format_contract_value(override['checkpoint'])} "
+            f"requested={_format_contract_value(override['requested'])}"
+        )
     return 0
 
 

@@ -8,9 +8,13 @@
 # Usage:
 #   ./train_navrl_general_repr_density.sh
 #   CKPT=runs/.../nn/last_gen_ppo_ep_XXXX.pth MAX_EPOCHS=45000 ./train_navrl_general_repr_density.sh
-# Background (keep launcher output; do not redirect it to /dev/null):
+# Foreground (training output is visible here and also saved to a log):
+#   CKPT=runs/.../nn/last_gen_ppo_ep_XXXX.pth MAX_EPOCHS=12000 \
+#     NAVRL_OBSTACLE_SUPPRESS_DEG=15 ./train_navrl_corrected_squashed_density.sh
+# Background (the stable current-training log remains directly watchable):
 #   nohup env CKPT=runs/.../nn/last_gen_ppo_ep_XXXX.pth MAX_EPOCHS=45000 \
 #     ./train_navrl_general_repr_density.sh > train_session_logs/night_density.out 2>&1 &
+#   ./watch_navrl_training.sh
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
@@ -27,13 +31,16 @@ export NAVRL_TILT_COMP=1
 # Policy-input contract of ppo_260727_0930. Keep all of these pinned together.
 export NAVRL_MAX_OBSTACLES=8
 export NAVRL_OBSTACLE_FOV_DEG=240
-export NAVRL_OBSTACLE_SUPPRESS_DEG=10
+export NAVRL_OBSTACLE_SELECTOR="${NAVRL_OBSTACLE_SELECTOR:-greedy_suppress}"
+# Keep 10 degrees as the validated default, but allow controlled same-shape ablations such as
+# 15 degrees to pass through the launcher instead of being silently overwritten.
+export NAVRL_OBSTACLE_SUPPRESS_DEG="${NAVRL_OBSTACLE_SUPPRESS_DEG:-10}"
 export NAVRL_LIDAR_HBEAMS=72
 export NAVRL_LIDAR_VBEAMS=4
 export NAVRL_LIDAR_RANGE=12
 
 export NAVRL_MAX_BARS=150
-# A bounded-policy A/B must hold the environment at the checkpoint's 75 bars; otherwise the first
+# A controlled A/B must hold the environment at the selected checkpoint density; otherwise the first
 # policy to promote starts training on a different task and distribution effects become ambiguous.
 # Normal Stage-C use leaves NAVRL_FIXED_BARS empty and retains the original curriculum.
 NAVRL_FIXED_BARS="${NAVRL_FIXED_BARS:-}"
@@ -43,7 +50,9 @@ if [[ -n "${NAVRL_FIXED_BARS}" ]]; then
         exit 2
     fi
     export NAVRL_NUM_BARS="${NAVRL_FIXED_BARS}"
-    export NAVRL_DENSITY_CURRICULUM=0
+    # Keep the competence monitor active while capping final==current. This produces clean 16k
+    # aggregate + stratified windows for an ablation without allowing a density promotion.
+    export NAVRL_DENSITY_CURRICULUM=1
     export NAVRL_DENSITY_START="${NAVRL_FIXED_BARS}"
     export NAVRL_DENSITY_FINAL="${NAVRL_FIXED_BARS}"
 else
@@ -56,10 +65,17 @@ export NAVRL_DENSITY_STEP="${NAVRL_DENSITY_STEP:-5}"
 export NAVRL_DENSITY_THRESHOLD="${NAVRL_DENSITY_THRESHOLD:-0.70}"
 export NAVRL_DENSITY_WARMUP="${NAVRL_DENSITY_WARMUP:-1000}"
 export NAVRL_DENSITY_CHECK_EPS="${NAVRL_DENSITY_CHECK_EPS:-16384}"
+export NAVRL_DENSITY_STRATIFIED_GATE="${NAVRL_DENSITY_STRATIFIED_GATE:-0}"
+export NAVRL_DENSITY_STRATIFIED_FLOOR="${NAVRL_DENSITY_STRATIFIED_FLOOR:-0.55}"
+export NAVRL_DENSITY_STRATIFIED_MIN_EPS="${NAVRL_DENSITY_STRATIFIED_MIN_EPS:-512}"
 
 export NAVRL_K_COMPETENCE=1
 export NAVRL_K_FINAL=16
 export NAVRL_K_MIN_FINAL=10
+# General-spawn training samples a radial distance independently of the legacy left-to-right
+# k-window. Pin that real contract explicitly so logs, checkpoints and gate strata agree.
+export NAVRL_GENERAL_GOAL_DIST_MIN="${NAVRL_GENERAL_GOAL_DIST_MIN:-4}"
+export NAVRL_GENERAL_GOAL_DIST_MAX="${NAVRL_GENERAL_GOAL_DIST_MAX:-16}"
 export NAVRL_FOV_CURRICULUM_EPOCHS=1000000
 export NAVRL_MAX_VELOCITY=2.5
 export NAVRL_ALT_HOLD_VMAX=2.5
@@ -109,22 +125,64 @@ if [[ "${CKPT}" == "latest" ]]; then
     echo "[general_repr_density] auto-selected latest checkpoint: ${CKPT}"
 fi
 
-"${PYTHON}" navrl_checkpoint_preflight.py "${CKPT}" \
-    --max-epochs "${MAX_EPOCHS}" --density-final "${NAVRL_DENSITY_FINAL}"
+PREFLIGHT_ARGS=(
+    "${CKPT}"
+    --max-epochs "${MAX_EPOCHS}"
+    # A fixed-density rehearsal may intentionally move down from a denser checkpoint. Validate
+    # against the built physical capacity here; NAVRL_NUM_BARS remains the exact runtime contract.
+    --density-final "$([[ -n "${NAVRL_FIXED_BARS}" ]] && echo "${NAVRL_MAX_BARS}" || echo "${NAVRL_DENSITY_FINAL}")"
+    --min-k-max "${NAVRL_K_FINAL}"
+    --min-task-steps "$((3000 * 32))"
+)
+case "${NAVRL_ALLOW_SUPPRESS_WARMSTART:-0}" in
+    0) ;;
+    1) PREFLIGHT_ARGS+=(--allow-contract-override cfg_obstacle_suppress_deg) ;;
+    *)
+        echo "[general_repr_density] NAVRL_ALLOW_SUPPRESS_WARMSTART must be 0 or 1." >&2
+        exit 2
+        ;;
+esac
+case "${NAVRL_ALLOW_SELECTOR_WARMSTART:-0}" in
+    0) ;;
+    1)
+        PREFLIGHT_ARGS+=(
+            --allow-contract-override cfg_obstacle_selector
+            --allow-contract-override cfg_obstacle_cluster_gap_m
+            --allow-contract-override cfg_obstacle_sectors
+        )
+        ;;
+    *)
+        echo "[general_repr_density] NAVRL_ALLOW_SELECTOR_WARMSTART must be 0 or 1." >&2
+        exit 2
+        ;;
+esac
+case "${NAVRL_ALLOW_CORRIDOR_WARMSTART:-0}" in
+    0) ;;
+    1) PREFLIGHT_ARGS+=(--allow-contract-override cfg_corridor_tokens) ;;
+    *)
+        echo "[general_repr_density] NAVRL_ALLOW_CORRIDOR_WARMSTART must be 0 or 1." >&2
+        exit 2
+        ;;
+esac
+"${PYTHON}" navrl_checkpoint_preflight.py "${PREFLIGHT_ARGS[@]}"
 
 if [[ -n "${NAVRL_FIXED_BARS}" ]]; then
-    echo "[general_repr_density] controlled A/B | fixed bars=${NAVRL_FIXED_BARS} (promotion off)"
+    echo "[general_repr_density] controlled A/B | fixed bars=${NAVRL_FIXED_BARS} (promotion capped; gate monitor on)"
 else
     echo "[general_repr_density] Stage C | 25 -> ${NAVRL_DENSITY_FINAL} bars, step=${NAVRL_DENSITY_STEP}"
     echo "[general_repr_density] promotion | threshold=${NAVRL_DENSITY_THRESHOLD} \
 check_eps=${NAVRL_DENSITY_CHECK_EPS} warmup=${NAVRL_DENSITY_WARMUP}"
 fi
+echo "[general_repr_density] general goals | radial=${NAVRL_GENERAL_GOAL_DIST_MIN}..${NAVRL_GENERAL_GOAL_DIST_MAX}m \
+stratified_gate=${NAVRL_DENSITY_STRATIFIED_GATE} floor=${NAVRL_DENSITY_STRATIFIED_FLOOR}"
 echo "[general_repr_density] representation | tokens=${NAVRL_MAX_OBSTACLES} \
-fov=${NAVRL_OBSTACLE_FOV_DEG}deg suppress=+-${NAVRL_OBSTACLE_SUPPRESS_DEG}deg \
+fov=${NAVRL_OBSTACLE_FOV_DEG}deg selector=${NAVRL_OBSTACLE_SELECTOR} \
+suppress=+-${NAVRL_OBSTACLE_SUPPRESS_DEG}deg \
+cluster_gap=${NAVRL_OBSTACLE_CLUSTER_GAP_M:-0.45}m sectors=${NAVRL_OBSTACLE_SECTORS:-${NAVRL_MAX_OBSTACLES}} \
 scan=${NAVRL_LIDAR_VBEAMS}x${NAVRL_LIDAR_HBEAMS} lidar=${NAVRL_LIDAR_RANGE}m"
 echo "[general_repr_density] action | policy=${NAVRL_ACTION_POLICY:-legacy} \
 std=${NAVRL_ACTION_STD:-learned} mu_scale=${NAVRL_ACTION_MU_SCALE:-1} \
-entropy=${NAVRL_ENTROPY_COEF:-yaml} \
+entropy=${NAVRL_ENTROPY_COEF:-yaml} lr=${NAVRL_LEARNING_RATE:-yaml} \
 diag=${NAVRL_ACTION_DIAG:-0}"
 echo "[general_repr_density] safety | reward-collapse=off NaN/Inf=fail-fast \
 log_ratio=${NAVRL_PPO_LOG_RATIO_CLAMP:-off} kl_stop=${NAVRL_PPO_KL_STOP:-off} \

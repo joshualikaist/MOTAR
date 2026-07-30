@@ -115,6 +115,9 @@ class NavRLTask(BaseTask):
         # per-episode diagnostics: closest approach and whether the goal was ever reached
         self.ep_min_goal_dist = torch.full((self.num_envs,), float("inf"), device=self.device)
         self.ep_reached = torch.zeros(self.num_envs, dtype=torch.bool, device=self.device)
+        # Initial radial goal distance is stable for the lifetime of an episode even when the
+        # target moves. It is the correct quantity for stratifying a density competence window.
+        self._episode_goal_dist = torch.zeros(self.num_envs, device=self.device)
 
         # goal-distance curriculum state
         self.cur = self.task_config.curriculum
@@ -133,6 +136,7 @@ class NavRLTask(BaseTask):
         self._tm_circle_center = torch.zeros((self.num_envs, 2), device=self.device)
         self._tm_circle_angvel = torch.zeros(self.num_envs, device=self.device)  # signed rad/s
         self._tm_avoid_sign = torch.ones(self.num_envs, device=self.device)
+        self._tm_heading = torch.zeros(self.num_envs, device=self.device)  # last flown XY heading
 
         rp = self.task_config.reward_parameters
         self.rw = {k: float(v) for k, v in rp.items()}
@@ -153,6 +157,13 @@ class NavRLTask(BaseTask):
         self.n_bars_active = 0
         self._density_succ_agg = 0
         self._density_fin_agg = 0
+        self._density_gate_not_before_steps = 0
+        self._density_speed_succ = torch.zeros(4, dtype=torch.long, device=self.device)
+        self._density_speed_fin = torch.zeros(4, dtype=torch.long, device=self.device)
+        self._density_dist_succ = torch.zeros(4, dtype=torch.long, device=self.device)
+        self._density_dist_fin = torch.zeros(4, dtype=torch.long, device=self.device)
+        self._density_pattern_succ = torch.zeros(3, dtype=torch.long, device=self.device)
+        self._density_pattern_fin = torch.zeros(3, dtype=torch.long, device=self.device)
         # competence-gated goal-DISTANCE window (NAVRL_K_COMPETENCE): advances by measured capture
         # instead of by epoch. Seeded to the shallow start; persisted across --checkpoint resume.
         self._k_max_cur = float(self.task_config.curriculum.k_start)
@@ -254,18 +265,25 @@ class NavRLTask(BaseTask):
                 from aerial_gym.task.navrl_task.navrl_perception import (
                     HBEAMS,
                     MAX_OBSTACLES,
+                    OBSTACLE_CLUSTER_GAP_M,
                     OBSTACLE_FOV_DEG,
+                    OBSTACLE_SECTORS,
+                    OBSTACLE_SELECTOR,
                     OBSTACLE_SUPPRESS_DEG,
                     VBEAMS,
                 )
 
                 logger.warning(
                     "NavRL obstacle representation | tokens=%d token_fov=%.0fdeg "
-                    "suppress=+-%.0fdeg scan=%dx%d lidar_range=%.1fm"
+                    "selector=%s suppress=+-%.0fdeg cluster_gap=%.2fm sectors=%d "
+                    "scan=%dx%d lidar_range=%.1fm"
                     % (
                         MAX_OBSTACLES,
                         OBSTACLE_FOV_DEG,
+                        OBSTACLE_SELECTOR,
                         OBSTACLE_SUPPRESS_DEG,
+                        OBSTACLE_CLUSTER_GAP_M,
+                        OBSTACLE_SECTORS,
                         VBEAMS,
                         HBEAMS,
                         self.task_config.lidar_max_range,
@@ -438,6 +456,13 @@ class NavRLTask(BaseTask):
         self.general_spawn_mode = self.general_eval_mode or self.general_train_mode
         self.general_density_min = int(os.environ.get("NAVRL_GENERAL_DENSITY_MIN", "25"))
         self.general_density_max = int(os.environ.get("NAVRL_GENERAL_DENSITY_MAX", "110"))
+        self.general_goal_dist_min = max(
+            1.0, float(os.environ.get("NAVRL_GENERAL_GOAL_DIST_MIN", "4"))
+        )
+        self.general_goal_dist_max = max(
+            self.general_goal_dist_min + 1.0,
+            float(os.environ.get("NAVRL_GENERAL_GOAL_DIST_MAX", "18")),
+        )
         self.general_num_trials = max(1, int(os.environ.get("NAVRL_GENERAL_NUM_TRIALS", "10")))
         self.general_trial_index = 0
         self.general_completed_trials = 0
@@ -674,23 +699,42 @@ class NavRLTask(BaseTask):
         self.sim_env.IGE_env.write_to_sim()
 
     def _sample_general_target(self, env_ids, start_pos, b_min, b_max, bars_xy):
-        """Sample a visible-range, collision-free target independently of the drone spawn."""
+        """Sample a range-controlled, collision-free target in a random direction.
+
+        General-spawn training is deliberately direction agnostic, unlike the legacy left-to-right
+        task. Keep its real radial contract explicit instead of silently reporting the legacy
+        ``k_min_cur`` while actually accepting every distance above a hard-coded four metres.
+        """
         n = len(env_ids)
         lo = b_min[:, 0:2] + 1.0
         hi = b_max[:, 0:2] - 1.0
         chosen = lo + (hi - lo) * torch.rand((n, 2), device=self.device)
         todo = torch.ones(n, dtype=torch.bool, device=self.device)
+        curriculum_max = (
+            self.general_goal_dist_max
+            if self.general_eval_mode
+            else min(self.general_goal_dist_max, float(self._goal_x_max()))
+        )
+        max_dist = max(self.general_goal_dist_min + 1.0, curriculum_max)
+        min_dist = min(self.general_goal_dist_min, max_dist - 1.0)
         for _ in range(96):
             if not bool(todo.any()):
                 break
             ids = todo.nonzero(as_tuple=False).squeeze(-1)
+            # Uniform arena positions preserve the validated general-spawn task distribution.
+            # The explicit radial acceptance range below makes its real contract observable.
             candidate = lo[ids] + (hi[ids] - lo[ids]) * torch.rand(
                 (len(ids), 2), device=self.device
             )
             drone_dist = torch.norm(candidate - start_pos[ids, 0:2], dim=1)
-            max_dist = 18.0 if self.general_eval_mode else min(18.0, float(self._goal_x_max()))
-            min_dist = min(4.0, max(1.0, max_dist - 1.0))
-            accepted = (drone_dist >= min_dist) & (drone_dist <= max_dist)
+            accepted = (
+                (candidate[:, 0] >= lo[ids, 0])
+                & (candidate[:, 0] <= hi[ids, 0])
+                & (candidate[:, 1] >= lo[ids, 1])
+                & (candidate[:, 1] <= hi[ids, 1])
+                & (drone_dist >= min_dist)
+                & (drone_dist <= max_dist)
+            )
             if bars_xy.shape[1] > 0:
                 bar_dist = (
                     torch.cdist(candidate.unsqueeze(1), bars_xy[ids, : self.n_bars_active])
@@ -968,9 +1012,15 @@ class NavRLTask(BaseTask):
             "cfg_max_obstacles": int(representation["max_obstacles"]),
             "cfg_token_fov_deg": float(representation["token_fov_deg"]),
             "cfg_obstacle_suppress_deg": float(representation["suppress_deg"]),
+            "cfg_obstacle_selector": str(representation["selector"]),
+            "cfg_obstacle_cluster_gap_m": float(representation["cluster_gap_m"]),
+            "cfg_obstacle_sectors": int(representation["sectors"]),
             "cfg_lidar_hbeams": int(representation["hbeams"]),
             "cfg_lidar_vbeams": int(representation["vbeams"]),
+            "cfg_corridor_tokens": int(representation["corridor_tokens"]),
             "cfg_target_motion_model": TARGET_MOTION_MODEL,
+            "cfg_general_goal_dist_min": float(self.general_goal_dist_min),
+            "cfg_general_goal_dist_max": float(self.general_goal_dist_max),
             # Action-distribution provenance. Bounded and legacy models intentionally share the
             # same state_dict keys, so without this an eval can load successfully under the wrong
             # likelihood and silently measure a different policy.
@@ -1009,6 +1059,13 @@ class NavRLTask(BaseTask):
             # indefinitely postpone the next promotion.
             "density_succ_agg": int(self._density_succ_agg),
             "density_fin_agg": int(self._density_fin_agg),
+            "density_gate_not_before_steps": int(self._density_gate_not_before_steps),
+            "density_speed_succ": self._density_speed_succ.detach().cpu().tolist(),
+            "density_speed_fin": self._density_speed_fin.detach().cpu().tolist(),
+            "density_dist_succ": self._density_dist_succ.detach().cpu().tolist(),
+            "density_dist_fin": self._density_dist_fin.detach().cpu().tolist(),
+            "density_pattern_succ": self._density_pattern_succ.detach().cpu().tolist(),
+            "density_pattern_fin": self._density_pattern_fin.detach().cpu().tolist(),
             "cfg_density_final": int(getattr(self.density, "n_final", self.n_bars_active)),
             "cfg_density_step": int(getattr(self.density, "promote_step", 0)),
             "cfg_density_threshold": float(
@@ -1017,6 +1074,12 @@ class NavRLTask(BaseTask):
             "cfg_density_check_eps": int(
                 getattr(self.density, "check_after_episodes", 0)
             ),
+            "cfg_density_stratified_gate": bool(
+                getattr(self.density, "use_stratified_gate", False)
+            ),
+            "cfg_density_stratified_floor": float(
+                getattr(self.density, "stratified_floor", 0.0)
+            ),
         }
 
     @staticmethod
@@ -1024,9 +1087,13 @@ class NavRLTask(BaseTask):
         """Policy obstacle-representation settings, or zeros when perception is unavailable."""
         try:
             from aerial_gym.task.navrl_task.navrl_perception import (
+                CORRIDOR_TOKENS,
                 HBEAMS,
                 MAX_OBSTACLES,
+                OBSTACLE_CLUSTER_GAP_M,
                 OBSTACLE_FOV_DEG,
+                OBSTACLE_SECTORS,
+                OBSTACLE_SELECTOR,
                 OBSTACLE_SUPPRESS_DEG,
                 VBEAMS,
             )
@@ -1035,16 +1102,24 @@ class NavRLTask(BaseTask):
                 "max_obstacles": int(MAX_OBSTACLES),
                 "token_fov_deg": float(OBSTACLE_FOV_DEG),
                 "suppress_deg": float(OBSTACLE_SUPPRESS_DEG),
+                "selector": str(OBSTACLE_SELECTOR),
+                "cluster_gap_m": float(OBSTACLE_CLUSTER_GAP_M),
+                "sectors": int(OBSTACLE_SECTORS),
                 "hbeams": int(HBEAMS),
                 "vbeams": int(VBEAMS),
+                "corridor_tokens": int(CORRIDOR_TOKENS),
             }
         except Exception:
             return {
                 "max_obstacles": 0,
                 "token_fov_deg": 0.0,
                 "suppress_deg": 0.0,
+                "selector": "none",
+                "cluster_gap_m": 0.0,
+                "sectors": 0,
                 "hbeams": 0,
                 "vbeams": 0,
+                "corridor_tokens": 0,
             }
 
     @classmethod
@@ -1162,14 +1237,30 @@ class NavRLTask(BaseTask):
 
     def set_env_state(self, state):
         bars_before_restore = int(self.n_bars_active)
+        force_density_reset = os.environ.get(
+            "NAVRL_RESET_DENSITY_WINDOW", "0"
+        ).strip().lower() in ("1", "true", "yes", "on")
+        density_evidence_changed = force_density_reset
         if isinstance(state, dict):
             representation = self._obstacle_representation_or_zero()
+            saved_selector = str(
+                state.get("cfg_obstacle_selector", "greedy_suppress")
+            ).strip()
+            current_selector = str(representation["selector"]).strip()
+            if saved_selector != current_selector:
+                density_evidence_changed = True
+                logger.warning(
+                    "NavRL OBSTACLE SELECTOR MISMATCH | checkpoint=%s running=%s. "
+                    "This intentionally changes same-shape policy-input semantics."
+                    % (saved_selector, current_selector)
+                )
             saved_action_policy = state.get("cfg_action_policy")
             current_action_policy = os.environ.get("NAVRL_ACTION_POLICY", "legacy")
             if (
                 saved_action_policy is not None
                 and str(saved_action_policy).strip() != str(current_action_policy).strip()
             ):
+                density_evidence_changed = True
                 logger.warning(
                     "NavRL ACTION POLICY MISMATCH | checkpoint=%s running=%s. "
                     "The state_dict is shape-compatible but the action likelihood is not."
@@ -1182,6 +1273,7 @@ class NavRLTask(BaseTask):
                 and current_action_std
                 and saved_action_std != current_action_std
             ):
+                density_evidence_changed = True
                 logger.warning(
                     "NavRL ACTION STD MISMATCH | checkpoint=%s running=%s."
                     % (saved_action_std, current_action_std)
@@ -1189,6 +1281,7 @@ class NavRLTask(BaseTask):
             saved_mu_scale = str(state.get("cfg_action_mu_scale", "")).strip()
             current_mu_scale = os.environ.get("NAVRL_ACTION_MU_SCALE", "1").strip()
             if saved_mu_scale and saved_mu_scale != current_mu_scale:
+                density_evidence_changed = True
                 logger.warning(
                     "NavRL ACTION MU-SCALE MISMATCH | checkpoint=%s running=%s."
                     % (saved_mu_scale, current_mu_scale)
@@ -1205,6 +1298,7 @@ class NavRLTask(BaseTask):
                 state.get("cfg_target_motion_model", "")
             ).strip()
             if moving_target_requested and saved_motion_model != TARGET_MOTION_MODEL:
+                density_evidence_changed = True
                 logger.warning(
                     "NavRL TARGET MOTION MISMATCH | checkpoint=%s running=%s. "
                     "Older checkpoints saw targets stall at bars; moving-target metrics and "
@@ -1233,6 +1327,16 @@ class NavRLTask(BaseTask):
                     "NAVRL_OBSTACLE_SUPPRESS_DEG",
                 ),
                 (
+                    "cfg_obstacle_cluster_gap_m",
+                    float(representation["cluster_gap_m"]),
+                    "NAVRL_OBSTACLE_CLUSTER_GAP_M",
+                ),
+                (
+                    "cfg_obstacle_sectors",
+                    float(representation["sectors"]),
+                    "NAVRL_OBSTACLE_SECTORS",
+                ),
+                (
                     "cfg_lidar_hbeams",
                     float(representation["hbeams"]),
                     "NAVRL_LIDAR_HBEAMS",
@@ -1242,14 +1346,40 @@ class NavRLTask(BaseTask):
                     float(representation["vbeams"]),
                     "NAVRL_LIDAR_VBEAMS",
                 ),
+                (
+                    "cfg_corridor_tokens",
+                    float(representation["corridor_tokens"]),
+                    "NAVRL_CORRIDOR_TOKENS",
+                ),
             ):
                 saved = state.get(key)
                 if saved is None:
                     continue  # checkpoint predates this guard
                 if abs(float(saved) - current) > 1e-6:
+                    density_evidence_changed = True
                     logger.warning(
                         "NavRL CONFIG MISMATCH | %s: checkpoint trained with %.3f, running with %.3f. "
                         "This changes policy inputs -- results are NOT comparable unless intentional."
+                        % (name, float(saved), current)
+                    )
+            for key, current, name in (
+                (
+                    "cfg_general_goal_dist_min",
+                    float(self.general_goal_dist_min),
+                    "NAVRL_GENERAL_GOAL_DIST_MIN",
+                ),
+                (
+                    "cfg_general_goal_dist_max",
+                    float(self.general_goal_dist_max),
+                    "NAVRL_GENERAL_GOAL_DIST_MAX",
+                ),
+            ):
+                saved = state.get(key)
+                if saved is not None and abs(float(saved) - current) > 1e-6:
+                    density_evidence_changed = True
+                    logger.warning(
+                        "NavRL TASK-DISTRIBUTION MISMATCH | %s: checkpoint used %.3f, "
+                        "running with %.3f. The density competence window will be reset."
                         % (name, float(saved), current)
                     )
             if bool(getattr(self.density, "use_density_curriculum", False)):
@@ -1277,6 +1407,7 @@ class NavRLTask(BaseTask):
                 ):
                     saved = state.get(key)
                     if saved is not None and abs(float(saved) - current) > 1e-6:
+                        density_evidence_changed = True
                         logger.warning(
                             "NavRL CURRICULUM CONFIG MISMATCH | %s: checkpoint used %.3f, "
                             "running with %.3f. The promotion schedule is changing intentionally "
@@ -1302,8 +1433,48 @@ class NavRLTask(BaseTask):
         if isinstance(state, dict):
             restored_fin = max(0, int(state.get("density_fin_agg", 0)))
             restored_succ = max(0, int(state.get("density_succ_agg", 0)))
-            self._density_fin_agg = restored_fin
-            self._density_succ_agg = min(restored_succ, restored_fin)
+            strata_keys = (
+                "density_speed_succ",
+                "density_speed_fin",
+                "density_dist_succ",
+                "density_dist_fin",
+                "density_pattern_succ",
+                "density_pattern_fin",
+            )
+            if restored_fin > 0 and any(state.get(key) is None for key in strata_keys):
+                density_evidence_changed = True
+                logger.warning(
+                    "NavRL density evidence provenance missing | checkpoint predates stratified "
+                    "counters; aggregate window cannot be completed consistently."
+                )
+            if density_evidence_changed:
+                self._density_fin_agg = 0
+                self._density_succ_agg = 0
+                self._reset_density_strata()
+                resume_warmup_epochs = max(
+                    0, int(os.environ.get("NAVRL_DENSITY_RESUME_WARMUP", "250"))
+                )
+                horizon = max(1, int(getattr(self.cur, "ppo_horizon", 1)))
+                self._density_gate_not_before_steps = (
+                    int(self.num_task_steps) + resume_warmup_epochs * horizon
+                )
+                logger.warning(
+                    "NavRL density evidence RESET | discarded=%d/%d eps "
+                    "resume_warmup=%d epochs gate_not_before_step=%d"
+                    % (
+                        min(restored_succ, restored_fin),
+                        restored_fin,
+                        resume_warmup_epochs,
+                        self._density_gate_not_before_steps,
+                    )
+                )
+            else:
+                self._density_fin_agg = restored_fin
+                self._density_succ_agg = min(restored_succ, restored_fin)
+                self._density_gate_not_before_steps = max(
+                    0, int(state.get("density_gate_not_before_steps", 0))
+                )
+                self._restore_density_strata(state)
             logger.warning(
                 "NavRL checkpoint state restored | task_steps=%d bars=%d->%d "
                 "k_min=%.1f k_max=%.1f density_window=%d/%d eps"
@@ -1461,6 +1632,7 @@ class NavRLTask(BaseTask):
         d = self.target_position[env_ids] - start_pos
         d[:, 2] = 0.0  # horizontal goal direction defines the goal frame
         self.target_dir_2d[env_ids] = d
+        self._episode_goal_dist[env_ids] = d[:, 0:2].norm(dim=1)
 
         self.height_range[env_ids, 0] = torch.minimum(
             start_pos[:, 2], self.target_position[env_ids, 2]
@@ -2318,6 +2490,7 @@ class NavRLTask(BaseTask):
         ang = 2.0 * math.pi * torch.rand(n, device=self.device)
         self._tm_cv_vel[env_ids, 0] = speed * torch.cos(ang)
         self._tm_cv_vel[env_ids, 1] = speed * torch.sin(ang)
+        self._tm_heading[env_ids] = ang
         # waypoint: first waypoint anywhere inside the wall margins
         self._tm_waypoint[env_ids] = self._sample_waypoints(env_ids)
         # circle: ring around the (bar-clear) spawn goal, random direction
@@ -2423,11 +2596,19 @@ class NavRLTask(BaseTask):
         # whenever it is clear; otherwise +/- turn candidates are tried symmetrically with a
         # balanced per-episode tie sign. This makes mixed motion genuinely thread around bars and
         # prevents dense scenes from silently turning a nominal 1.5 m/s target into a parked one.
+        flown_velocity = (new_xy - old_xy) / dt
         if self.n_bars_active > 0:
             bars_all = self.obs_dict["obstacle_position"][
                 :, : self.n_bars_active, 0:2
             ]
             desired_velocity = (new_xy - old_xy) / dt
+            # Circle is a held-out pattern and keeps its legacy smallest-turn behavior. Passing
+            # its current desired bearing as the reference makes the continuity preference a
+            # no-op, while cv/waypoint use the persistent last flown heading.
+            desired_heading = torch.atan2(desired_velocity[:, 1], desired_velocity[:, 0])
+            continuity_heading = torch.where(
+                self._tm_pattern == 2, desired_heading, self._tm_heading
+            )
             steered_xy, steered_velocity, _, _ = steer_target_step(
                 old_xy,
                 desired_velocity,
@@ -2438,9 +2619,14 @@ class NavRLTask(BaseTask):
                 hi,
                 float(getattr(self.task_config, "goal_min_bar_clearance", 0.0)),
                 self._tm_avoid_sign,
+                continuity_heading,
             )
             new_xy = torch.where(moving.unsqueeze(1), steered_xy, new_xy)
+            flown_velocity = steered_velocity
             self._tm_cv_vel[cv] = steered_velocity[cv]
+        self._tm_heading[moving] = torch.atan2(
+            flown_velocity[moving, 1], flown_velocity[moving, 0]
+        )
 
         # -- keep the capture sphere flyable: push the target out of bar clearance. With bars only
         # 1.5 m apart and a 1.0 m clearance the exclusion discs OVERLAP: a naive radial push out of
@@ -2507,6 +2693,11 @@ class NavRLTask(BaseTask):
                 c, sn = torch.cos(jit), torch.sin(jit)
                 self._tm_cv_vel[idx, 0] = refl[:, 0] * c - refl[:, 1] * sn
                 self._tm_cv_vel[idx, 1] = refl[:, 0] * sn + refl[:, 1] * c
+                # The next continuity window must follow the reflected heading rather than fight
+                # the collision response using the pre-bounce direction.
+                self._tm_heading[idx] = torch.atan2(
+                    self._tm_cv_vel[idx, 1], self._tm_cv_vel[idx, 0]
+                )
 
         # -- final wall clamp (physical bound) and write-back
         new_xy = torch.maximum(torch.minimum(new_xy, hi), lo)
@@ -2521,6 +2712,117 @@ class NavRLTask(BaseTask):
             torch.zeros_like(old_xy),
         )
         self.target_vel_w[:, 2] = 0.0
+
+    def _reset_density_strata(self):
+        for tensor in (
+            self._density_speed_succ,
+            self._density_speed_fin,
+            self._density_dist_succ,
+            self._density_dist_fin,
+            self._density_pattern_succ,
+            self._density_pattern_fin,
+        ):
+            tensor.zero_()
+
+    def _restore_density_strata(self, state):
+        specs = (
+            ("density_speed_succ", self._density_speed_succ),
+            ("density_speed_fin", self._density_speed_fin),
+            ("density_dist_succ", self._density_dist_succ),
+            ("density_dist_fin", self._density_dist_fin),
+            ("density_pattern_succ", self._density_pattern_succ),
+            ("density_pattern_fin", self._density_pattern_fin),
+        )
+        self._reset_density_strata()
+        for key, dst in specs:
+            value = state.get(key)
+            if not isinstance(value, (list, tuple)) or len(value) != dst.numel():
+                continue
+            dst.copy_(torch.as_tensor(value, dtype=dst.dtype, device=self.device))
+
+    def _record_density_strata(self, successes, finished):
+        idx = finished.nonzero(as_tuple=False).squeeze(1)
+        if idx.numel() == 0:
+            return
+        captured = successes[idx].to(torch.float32)
+
+        speed_max = max(1e-6, float(self._target_speed_max()))
+        speed_bin = torch.floor(self._tm_speed[idx] * (4.0 / speed_max)).long().clamp(0, 3)
+        dist_span = max(1e-6, self.general_goal_dist_max - self.general_goal_dist_min)
+        dist_bin = torch.floor(
+            (self._episode_goal_dist[idx] - self.general_goal_dist_min) * (4.0 / dist_span)
+        ).long().clamp(0, 3)
+        pattern_bin = self._tm_pattern[idx].long().clamp(0, 2)
+
+        for bins, succ_dst, fin_dst, size in (
+            (speed_bin, self._density_speed_succ, self._density_speed_fin, 4),
+            (dist_bin, self._density_dist_succ, self._density_dist_fin, 4),
+            (pattern_bin, self._density_pattern_succ, self._density_pattern_fin, 3),
+        ):
+            fin_dst += torch.bincount(bins, minlength=size).to(fin_dst.dtype)
+            succ_dst += torch.bincount(
+                bins, weights=captured, minlength=size
+            ).to(succ_dst.dtype)
+
+    @staticmethod
+    def _density_rate_text(succ, fin, labels):
+        result = []
+        for label, n_succ, n_fin in zip(labels, succ.tolist(), fin.tolist()):
+            if n_fin > 0:
+                result.append("%s=%.3f(%d)" % (label, n_succ / n_fin, n_fin))
+            else:
+                result.append("%s=na(0)" % label)
+        return ",".join(result)
+
+    def _density_stratified_gate(self):
+        """Return (pass, reason) for the optional broad-slice competence guard."""
+        enabled = bool(getattr(self.density, "use_stratified_gate", False))
+        if not enabled:
+            return True, "diagnostic-only"
+
+        floor = float(getattr(self.density, "stratified_floor", 0.55))
+        min_eps = max(1, int(getattr(self.density, "stratified_min_episodes", 512)))
+        if self._runtime_target_speed is not None or float(self.tm.speed_fixed) >= 0.0:
+            forced_speed = max(0.0, float(self._target_speed_max()))
+            speed_max = max(1e-6, float(self.tm.speed_final), forced_speed)
+            speed_bins = (
+                min(3, max(0, int(math.floor(forced_speed * 4.0 / speed_max)))),
+            )
+        elif float(self.tm.speed_final) <= 0.0:
+            speed_bins = (0,)
+        else:
+            speed_bins = range(4)
+        expected = [
+            ("speed", self._density_speed_succ, self._density_speed_fin, speed_bins),
+            ("distance", self._density_dist_succ, self._density_dist_fin, range(4)),
+        ]
+        pattern = str(self.tm.pattern)
+        pattern_bins = {"mixed": (0, 1), "cv": (0,), "waypoint": (1,), "circle": (2,)}.get(
+            pattern, (0, 1)
+        )
+        expected.append(
+            ("pattern", self._density_pattern_succ, self._density_pattern_fin, pattern_bins)
+        )
+
+        for name, succ, fin, bins in expected:
+            for bin_index in bins:
+                n_fin = int(fin[bin_index].item())
+                if n_fin < min_eps:
+                    return False, "%s[%d] insufficient %d<%d" % (
+                        name,
+                        bin_index,
+                        n_fin,
+                        min_eps,
+                    )
+                rate = int(succ[bin_index].item()) / max(1, n_fin)
+                if rate < floor:
+                    return False, "%s[%d] %.3f<%.3f" % (
+                        name,
+                        bin_index,
+                        rate,
+                        floor,
+                    )
+        return True, "all broad slices >= %.3f" % floor
 
     def _update_curriculum(self, successes, finished):
         # (A) Competence-gated goal-DISTANCE curriculum (NAVRL_K_COMPETENCE=1): deepen the goal
@@ -2558,7 +2860,10 @@ class NavRLTask(BaseTask):
         # Accumulating during warmup (early low-capture training) would make the first promotion check
         # use a lifetime average dragged below threshold and stall the first promotion by one window.
         horizon = int(getattr(self.cur, "ppo_horizon", 1))
-        warmup_steps = int(getattr(self.density, "warmup_epochs", 0)) * max(1, horizon)
+        warmup_steps = max(
+            int(getattr(self.density, "warmup_epochs", 0)) * max(1, horizon),
+            int(self._density_gate_not_before_steps),
+        )
         if self.num_task_steps < warmup_steps:
             return
         n_fin = int(torch.sum(finished).item())
@@ -2567,6 +2872,7 @@ class NavRLTask(BaseTask):
 
         self._density_succ_agg += int(torch.sum(successes).item())
         self._density_fin_agg += n_fin
+        self._record_density_strata(successes, finished)
 
         check_after = max(1, int(getattr(self.density, "check_after_episodes", 2048)))
         if self._density_fin_agg < check_after:
@@ -2575,7 +2881,34 @@ class NavRLTask(BaseTask):
         capture_rate = self._density_succ_agg / max(1, self._density_fin_agg)
         threshold = float(getattr(self.density, "success_threshold", 0.8))
         final_bars = self._clamp_active_bars(getattr(self.density, "n_final", self.n_bars_active))
-        if capture_rate >= threshold and self.n_bars_active < final_bars:
+        strata_pass, strata_reason = self._density_stratified_gate()
+        logger.warning(
+            "NavRL density strata | speed[%s] distance[%s] pattern[%s] gate=%s (%s)"
+            % (
+                self._density_rate_text(
+                    self._density_speed_succ,
+                    self._density_speed_fin,
+                    ("q0", "q1", "q2", "q3"),
+                ),
+                self._density_rate_text(
+                    self._density_dist_succ,
+                    self._density_dist_fin,
+                    ("q0", "q1", "q2", "q3"),
+                ),
+                self._density_rate_text(
+                    self._density_pattern_succ,
+                    self._density_pattern_fin,
+                    ("cv", "waypoint", "circle"),
+                ),
+                "pass" if strata_pass else "hold",
+                strata_reason,
+            )
+        )
+        if (
+            capture_rate >= threshold
+            and strata_pass
+            and self.n_bars_active < final_bars
+        ):
             step = max(1, int(getattr(self.density, "promote_step", 15)))
             old_bars = self.n_bars_active
             self._set_active_bars(min(final_bars, old_bars + step))
@@ -2594,6 +2927,7 @@ class NavRLTask(BaseTask):
 
         self._density_succ_agg = 0
         self._density_fin_agg = 0
+        self._reset_density_strata()
 
     def _record_epoch_dashboard(self, successes, crashes, timeouts, finished):
         """Feed finished-episode outcomes to the per-epoch train dashboard (console + TB)."""

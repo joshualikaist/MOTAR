@@ -5,12 +5,13 @@ import math
 import torch
 
 
-TARGET_MOTION_MODEL = "symmetric_local_steer_v1"
+TARGET_MOTION_MODEL = "symmetric_local_steer_v2_heading_continuity90"
 
 
 # Symmetric candidates keep obstacle avoidance from introducing a global left/right bias. The
 # per-episode turn_sign only breaks exact +/- ties and is sampled 50:50 by NavRLTask.
 TURN_ANGLES_DEG = (0.0, 30.0, -30.0, 60.0, -60.0, 90.0, -90.0, 120.0, -120.0, 180.0)
+HEADING_CONTINUITY_RAD = math.radians(90.0)
 
 
 def steer_target_step(
@@ -23,11 +24,15 @@ def steer_target_step(
     hi,
     clearance,
     turn_sign,
+    previous_heading=None,
 ):
-    """Choose the smallest symmetric heading change whose full-speed endpoint is collision-free.
+    """Choose a collision-free full-speed step with optional heading continuity.
 
     Returns ``(new_xy, velocity, steered, clear)``. If no candidate is clear, the least-bad
     endpoint is returned with ``clear=False`` so the caller's projection fallback can recover it.
+    When ``previous_heading`` is provided, clear candidates within 90 degrees of the last flown
+    heading are preferred. This is not a veto: if that window contains no clear candidate, the
+    ordinary smallest-turn clear candidate still wins.
     """
     if old_xy.ndim != 2 or old_xy.shape[1] != 2:
         raise ValueError("old_xy must have shape [N, 2]")
@@ -36,6 +41,8 @@ def steer_target_step(
         raise ValueError("desired_velocity must match old_xy")
     if speed.shape != (n,) or turn_sign.shape != (n,):
         raise ValueError("speed and turn_sign must have shape [N]")
+    if previous_heading is not None and previous_heading.shape != (n,):
+        raise ValueError("previous_heading must have shape [N]")
     if lo.shape != old_xy.shape or hi.shape != old_xy.shape:
         raise ValueError("lo and hi must match old_xy")
     if bars_xy.ndim != 3 or bars_xy.shape[0] != n or bars_xy.shape[2] != 2:
@@ -82,7 +89,24 @@ def steer_target_step(
     # applies its iterative projection as a final safety net.
     trapped_score = inside.to(old_xy.dtype) * 100.0 + min_bar.clamp(max=10.0)
     trapped_score = trapped_score - 0.01 * turn_cost + tie
-    score = torch.where(clear, clear_score, trapped_score)
+    if previous_heading is None:
+        score = torch.where(clear, clear_score, trapped_score)
+    else:
+        heading = torch.atan2(directions[:, :, 1], directions[:, :, 0])
+        delta = torch.atan2(
+            torch.sin(heading - previous_heading.view(n, 1)),
+            torch.cos(heading - previous_heading.view(n, 1)),
+        ).abs()
+        in_window_clear = clear & (delta <= HEADING_CONTINUITY_RAD + 1e-9)
+        has_window_clear = in_window_clear.any(dim=1, keepdim=True)
+        eligible_clear = torch.where(has_window_clear, in_window_clear, clear)
+        has_any_clear = clear.any(dim=1, keepdim=True)
+        neg_inf = torch.full_like(clear_score, float("-inf"))
+        score = torch.where(
+            has_any_clear,
+            torch.where(eligible_clear, clear_score, neg_inf),
+            trapped_score,
+        )
     chosen = score.argmax(dim=1)
     rows = torch.arange(n, device=old_xy.device)
     selected_xy = proposals[rows, chosen]

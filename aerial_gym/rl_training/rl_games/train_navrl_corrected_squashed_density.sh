@@ -19,14 +19,16 @@ export NAVRL_DENSITY_STEP="${NAVRL_DENSITY_STEP:-5}"
 export NAVRL_DENSITY_THRESHOLD="${NAVRL_DENSITY_THRESHOLD:-0.70}"
 export NAVRL_DENSITY_WARMUP="${NAVRL_DENSITY_WARMUP:-1000}"
 export NAVRL_DENSITY_CHECK_EPS="${NAVRL_DENSITY_CHECK_EPS:-16384}"
-unset NAVRL_FIXED_BARS NAVRL_NUM_BARS
+if [[ "${NAVRL_CONTROLLED_ABLATION:-0}" != "1" ]]; then
+    unset NAVRL_FIXED_BARS NAVRL_NUM_BARS
+fi
 
 export NAVRL_ACTION_POLICY=squashed_gaussian
 export NAVRL_ACTION_STD=0.35,0.35,0.05,0.08
 export NAVRL_ACTION_MU_SCALE=1.0,0.4,1.0,1.0
 export NAVRL_ENTROPY_COEF=0.0
 export NAVRL_RESET_ACTOR_OPTIMIZER=0
-export NAVRL_LEARNING_RATE=1e-4
+export NAVRL_LEARNING_RATE="${NAVRL_LEARNING_RATE:-1e-4}"
 export NAVRL_PPO_LOG_RATIO_CLAMP=10.0
 export NAVRL_PPO_KL_STOP=0.04
 export NAVRL_LATENT_MARGIN_Y=1.25
@@ -34,6 +36,10 @@ export NAVRL_LATENT_MARGIN_COEF=0.01
 export NAVRL_ACTION_DIAG=1
 unset NAVRL_LATERAL_BIAS_COEF NAVRL_REFLECTION_COEF NAVRL_TRUNCATED_DMIN
 
-echo "[corrected_squashed_density] validated bounded checkpoint -> P6B 25..${NAVRL_DENSITY_FINAL}"
+if [[ "${NAVRL_CONTROLLED_ABLATION:-0}" == "1" ]]; then
+    echo "[corrected_squashed_density] controlled bounded-policy ablation | fixed bars=${NAVRL_FIXED_BARS}"
+else
+    echo "[corrected_squashed_density] validated bounded checkpoint -> P6B 25..${NAVRL_DENSITY_FINAL}"
+fi
 echo "[corrected_squashed_density] actual-vehicle motiondiag enabled; watch commanded_stall"
 exec ./train_navrl_general_repr_density.sh "$@"

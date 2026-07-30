@@ -10,7 +10,9 @@ import torch.nn as nn
 
 from rl_games.algos_torch.network_builder import NetworkBuilder
 
+from aerial_gym.task.navrl_task.navrl_corridor import CORRIDOR_DIM
 from aerial_gym.task.navrl_task.navrl_perception import (
+    CORRIDOR_TOKENS,
     HBEAMS,
     MAX_OBSTACLES,
     OBSTACLE_DIM,
@@ -28,8 +30,10 @@ from aerial_gym.task.navrl_task.navrl_perception import (
 EMBED_DIM = 64
 # CLS + static-scan + one token per history step of obstacles / robot / target. Note this does NOT
 # depend on MAX_OBSTACLES: raising the obstacle capacity widens each obstacle token's input
-# (MAX_OBSTACLES * OBSTACLE_DIM) rather than adding tokens.
-NUM_TOKENS = 17
+# (MAX_OBSTACLES * OBSTACLE_DIM) rather than adding tokens. When corridor tokens are enabled
+# (NAVRL_CORRIDOR_TOKENS > 0), ONE additional token carries all corridor slots, appended LAST so
+# position-embedding rows 0..16 keep their trained meaning across a corridor warm-start.
+NUM_TOKENS = 17 + (1 if CORRIDOR_TOKENS > 0 else 0)
 
 
 def _static_encoder_flat_dim(vbeams, hbeams, channels=16):
@@ -89,6 +93,12 @@ class NavRLTransformerBuilder(NetworkBuilder):
             self.target_project = nn.Sequential(
                 nn.Linear(TARGET_DIM, 128), nn.ELU(), nn.Linear(128, EMBED_DIM)
             )
+            if CORRIDOR_TOKENS > 0:
+                self.corridor_project = nn.Sequential(
+                    nn.Linear(CORRIDOR_TOKENS * CORRIDOR_DIM, 128),
+                    nn.ELU(),
+                    nn.Linear(128, EMBED_DIM),
+                )
             self.cls_token = nn.Parameter(torch.zeros(1, 1, EMBED_DIM))
             self.position_embedding = nn.Parameter(torch.zeros(1, NUM_TOKENS, EMBED_DIM))
             nn.init.normal_(self.cls_token, std=0.02)
@@ -141,17 +151,19 @@ class NavRLTransformerBuilder(NetworkBuilder):
             target = obs[:, offset : offset + TARGET_HISTORY * TARGET_DIM].view(
                 batch, TARGET_HISTORY, TARGET_DIM
             )
+            offset += TARGET_HISTORY * TARGET_DIM
 
-            tokens = torch.cat(
-                [
-                    self.cls_token.expand(batch, -1, -1),
-                    self.static_encoder(static).unsqueeze(1),
-                    self.obstacle_project(obstacle),
-                    self.robot_project(robot),
-                    self.target_project(target),
-                ],
-                dim=1,
-            )
+            token_list = [
+                self.cls_token.expand(batch, -1, -1),
+                self.static_encoder(static).unsqueeze(1),
+                self.obstacle_project(obstacle),
+                self.robot_project(robot),
+                self.target_project(target),
+            ]
+            if CORRIDOR_TOKENS > 0:
+                corridor = obs[:, offset : offset + CORRIDOR_TOKENS * CORRIDOR_DIM]
+                token_list.append(self.corridor_project(corridor).unsqueeze(1))
+            tokens = torch.cat(token_list, dim=1)
             if tokens.shape[1] != NUM_TOKENS:
                 raise RuntimeError("Transformer token schema drift: %d" % tokens.shape[1])
             tokens = tokens + self.position_embedding

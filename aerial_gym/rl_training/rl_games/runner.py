@@ -1,3 +1,5 @@
+import math
+
 import numpy as np
 import os
 import re
@@ -37,6 +39,10 @@ from rl_games.common import env_configurations, vecenv
 
 import torch
 import distutils
+
+from aerial_gym.rl_training.rl_games.training_safety import (
+    apply_density_capture_guard_overrides,
+)
 
 os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
 # import warnings
@@ -594,6 +600,23 @@ def _apply_action_policy_config(config, args):
             raise ValueError("NAVRL_LEARNING_RATE must be finite and > 0")
         train_cfg["learning_rate"] = learning_rate
 
+    guard_cfg = train_cfg.get("early_stop_density_capture")
+    if isinstance(guard_cfg, dict):
+        guard_cfg = apply_density_capture_guard_overrides(guard_cfg, os.environ)
+        train_cfg["early_stop_density_capture"] = guard_cfg
+        print(
+            "[aerial RL] same-density guard | window=%d min_epochs=%d "
+            "min_peak=%.3f drop=%.3f patience=%d"
+            % (
+                int(guard_cfg.get("window_epochs", 50)),
+                int(guard_cfg.get("min_epochs_at_density", 100)),
+                float(guard_cfg.get("min_peak_capture", 0.50)),
+                float(guard_cfg.get("drop_absolute", 0.25)),
+                int(guard_cfg.get("patience_epochs", 25)),
+            ),
+            flush=True,
+        )
+
     os.environ.setdefault("NAVRL_ACTION_POLICY", policy)
     os.environ["NAVRL_ENTROPY_COEF"] = str(float(train_cfg.get("entropy_coef", 0.0)))
     print(
@@ -632,6 +655,130 @@ def _normalize_vf_checkpoint(path):
     torch.save(ck, out)
     if not quiet_startup_enabled():
         print(f"[aerial RL] normalized central-value checkpoint keys -> {out}")
+    return out
+
+
+def _expand_corridor_checkpoint(path):
+    """Rewrite a pre-corridor (17-token) checkpoint for the corridor-token schema.
+
+    Gated on NAVRL_CORRIDOR_WARMSTART=1 with NAVRL_CORRIDOR_TOKENS>0. Corridor features are
+    APPENDED at the end of the actor observation (before the privileged tail of the critic
+    state), so the expansion is purely structural -- no trained weight is reinterpreted:
+
+      actor model : position_embedding (1,17,E) -> (1,18,E) with one fresh N(0,0.02) row;
+                    corridor_project.* injected at nn.Linear default init;
+                    input running_mean_std mean/var padded with 0/1 for the new features.
+      critic nets : first MLP weight [H, obs+priv] -> [H, obs+add+priv] with the privileged
+                    COLUMNS MOVED to the new tail and zero columns for corridor features
+                    (zero-init = critic initially ignores them; no value shock);
+                    critic input running_mean_std remapped the same way.
+      optimizers  : actor Adam state cleared and param count grown by the 4 corridor_project
+                    tensors; critic Adam state cleared (its first-layer shape changed).
+                    Fresh moments are the correct choice for a schema change.
+
+    All fresh values come from a fixed-seed generator so the expansion is reproducible. The
+    original file is never modified; a *_corridor<K>.pth sibling is written and returned.
+    env_state provenance (cfg_corridor_tokens absent/0) is intentionally left as trained --
+    the preflight override + set_env_state warning document the schema change loudly.
+    """
+    flag = os.environ.get("NAVRL_CORRIDOR_WARMSTART", "0").strip().lower()
+    if flag not in ("1", "true", "yes", "on"):
+        return path
+    corridor_tokens = int(os.environ.get("NAVRL_CORRIDOR_TOKENS", "0").strip() or 0)
+    if corridor_tokens <= 0 or not path or not os.path.isfile(path):
+        return path
+    from aerial_gym.task.navrl_task.navrl_corridor import CORRIDOR_DIM
+
+    add = corridor_tokens * CORRIDOR_DIM
+    ck = torch.load(path, map_location="cpu", weights_only=False)
+    model = ck.get("model")
+    if not isinstance(model, dict):
+        return path
+    pe_key = next(
+        (k for k in model if k.endswith("a2c_network.position_embedding")), None
+    )
+    if pe_key is None:
+        return path
+    pe = model[pe_key]
+    if pe.shape[1] == 18:
+        return path  # already expanded (idempotent)
+    if pe.shape[1] != 17:
+        raise RuntimeError(
+            f"corridor warm-start expects a 17-token checkpoint, found {tuple(pe.shape)}"
+        )
+    prefix = pe_key[: -len("position_embedding")]
+
+    gen = torch.Generator().manual_seed(20260731)
+    new_row = torch.empty(1, 1, pe.shape[2], dtype=pe.dtype).normal_(std=0.02, generator=gen)
+    model[pe_key] = torch.cat([pe, new_row], dim=1)
+
+    def _fresh_linear(fan_out, fan_in):
+        # nn.Linear.reset_parameters: kaiming_uniform(a=sqrt(5)) == U(-1/sqrt(fan_in), +...),
+        # same law for the bias. Spelled out so a seeded generator can be used.
+        bound = 1.0 / math.sqrt(fan_in)
+        w = torch.empty(fan_out, fan_in).uniform_(-bound, bound, generator=gen)
+        b = torch.empty(fan_out).uniform_(-bound, bound, generator=gen)
+        return w, b
+
+    w0, b0 = _fresh_linear(128, add)
+    w2, b2 = _fresh_linear(pe.shape[2], 128)
+    model[prefix + "corridor_project.0.weight"] = w0
+    model[prefix + "corridor_project.0.bias"] = b0
+    model[prefix + "corridor_project.2.weight"] = w2
+    model[prefix + "corridor_project.2.bias"] = b2
+
+    # Actor input normalizer: new features start at identity normalization (mean 0, var 1).
+    old_obs = None
+    for k in list(model.keys()):
+        if "value_mean_std" in k:
+            continue
+        if k.endswith("running_mean_std.running_mean"):
+            old_obs = model[k].numel()
+            model[k] = torch.cat([model[k], torch.zeros(add, dtype=model[k].dtype)])
+        elif k.endswith("running_mean_std.running_var"):
+            model[k] = torch.cat([model[k], torch.ones(add, dtype=model[k].dtype)])
+    if old_obs is None:
+        raise RuntimeError("corridor warm-start: actor running_mean_std not found")
+
+    def _remap_cols(t, old_o, priv):
+        # [.., old_o | priv] -> [.., old_o | add(new) | priv]
+        head, tail = t[..., :old_o], t[..., old_o:]
+        mid_shape = list(t.shape[:-1]) + [add]
+        mid = torch.zeros(*mid_shape, dtype=t.dtype)
+        return torch.cat([head, mid, tail], dim=-1), priv
+
+    vf = ck.get("assymetric_vf_nets")
+    if isinstance(vf, dict):
+        for k in list(vf.keys()):
+            v = vf[k]
+            if "value_mean_std" in k or not hasattr(v, "shape"):
+                continue
+            if k.endswith("running_mean_std.running_mean") and v.numel() > old_obs:
+                priv = v.numel() - old_obs
+                vf[k], _ = _remap_cols(v, old_obs, priv)
+            elif k.endswith("running_mean_std.running_var") and v.numel() > old_obs:
+                head, tail = v[:old_obs], v[old_obs:]
+                vf[k] = torch.cat([head, torch.ones(add, dtype=v.dtype), tail])
+            elif v.ndim == 2 and v.shape[1] == old_obs + 8:
+                vf[k], _ = _remap_cols(v, old_obs, v.shape[1] - old_obs)
+
+    opt = ck.get("optimizer")
+    if isinstance(opt, dict) and opt.get("param_groups"):
+        opt["state"] = {}
+        for pg in opt["param_groups"]:
+            pg["params"] = list(range(len(pg["params"]) + 4))
+            break  # single param group; the 4 corridor_project tensors join it
+    vopt = ck.get("assymetric_vf_optimizer")
+    if isinstance(vopt, dict):
+        vopt["state"] = {}  # critic first-layer shape changed; param count is unchanged
+
+    out = (path[:-4] if path.endswith(".pth") else path) + f"_corridor{corridor_tokens}.pth"
+    torch.save(ck, out)
+    print(
+        f"[aerial RL] corridor warm-start: expanded 17->18 tokens, obs {old_obs}->"
+        f"{old_obs + add} (K={corridor_tokens}); optimizer moments reset -> {out}",
+        flush=True,
+    )
     return out
 
 
@@ -735,6 +882,9 @@ if __name__ == "__main__":
     # Warm-start (--checkpoint --train) of a vision run needs the central-value keys normalized
     # (torch.compile '_orig_mod.' prefix); rewrite the path to the normalized copy before restore.
     if args.get("checkpoint") and not args.get("play"):
+        # Corridor expansion first: it matches keys by suffix, so it works on the raw prefixes,
+        # and the normalizer then sees the already-expanded tensors.
+        args["checkpoint"] = _expand_corridor_checkpoint(args["checkpoint"])
         args["checkpoint"] = _normalize_vf_checkpoint(args["checkpoint"])
 
     config_name = args["file"]

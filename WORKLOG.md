@@ -3847,3 +3847,58 @@ FIX3 + low-LR density replay의 확정 평가를 정적 연구 대시보드에 �
   headless GPU 환경의 WebGL context 실패는 3D arena에만 해당하며, 기존 fallback 문구가 정상
   표시되었다.
 - `git diff --check` 통과.
+
+---
+
+## 2026-07-31 (새벽) — corridor token P0-P3 전체 구현·검증·학습 런칭
+
+계획(사이트/WORKLOG 2026-07-31 "corridor-token 전환 계획")대로 P1→P2→P3를 구현하고
+100막대 B-arm 학습을 시작했다.
+
+### P1: corridor geometry extractor + 물리 검증 (PASS)
+
+- `aerial_gym/task/navrl_task/navrl_corridor.py` 신설 — 순수 torch 함수
+  `extract_corridor_tokens()`: fused 수평 LiDAR 프로파일에서 horizon(6m) 이내 표면으로
+  막히지 않은 각도 연속 구간(free gap)을 벡터화 추출. 슬롯당 8특징 =
+  [sin/cos(center), width_m, left/right clearance, clear depth, angular width, valid].
+  선정은 폭 내림차순 top-K 후 |center| 오름차순(전방 우선) 정렬. 검증 게이트:
+  bounding surface의 chord 기반 metric width (내부 gap), FOV edge는 arc 근사.
+- CPU 단위 테스트 `tests/test_navrl_corridor.py` 20/20 PASS (빈 장면/2-bar chord/벽/
+  horizon 경계/슬릿 폭 필터/전방 우선 정렬/결정성/정규화 범위).
+- GPU 물리 검증 `tools/probe_corridor_geometry.py` (64 env × 40 step, 100막대, 실제
+  perception fused scan → GT bar 대조): **PASS**
+  - A center-ray clearance ≥0.2m: **100.0%** (n=12,930; p50 clearance 0.68m)
+  - B bounding surface가 실제 bar 위: **97.8%** (n=22,734)
+  - C 폭 vs GT bar 중심거리 ≤1.2m: **98.8%** (오차 p50 0.38m = bar 반폭 불확실성 수준)
+  - corridor 5.05개/env-step @100막대 — affordance 커버리지 충분.
+
+### P2: 관측 스키마 명시적 확장 + checkpoint 확장 warm-start
+
+- `NAVRL_CORRIDOR_TOKENS`(기본 0=off) 신설. 0이면 기존 898-D와 byte-identical.
+  K>0이면 관측 **끝에** K×8 append → 898→946 (K=6), 기존 세그먼트 오프셋 불변.
+- 네트워크: 17→18 토큰 (corridor_project 1개 토큰, 마지막 위치라 기존 position
+  embedding row 0..16 의미 보존). critic states 906→954.
+- provenance: env_state에 `cfg_corridor_tokens` 저장 + set_env_state 경고 가드 +
+  preflight `_CONTRACT_ENV` 등록(legacy default 0) + `NAVRL_ALLOW_CORRIDOR_WARMSTART`.
+- `runner.py::_expand_corridor_checkpoint`: 17-토큰 체크포인트를 스키마 확장 재작성 —
+  position_embedding 18행(신규 행 N(0,0.02) seeded), corridor_project fresh init,
+  actor input RMS 0/1 pad, **critic 첫 층은 privileged 열을 꼬리로 이동 + corridor 열
+  zero-init**(critic이 초기에 신규 특징 무시 → value shock 없음), actor/critic Adam
+  moment 리셋. 오프라인 검증: 기존 가중치 보존·열 재배치·idempotency 전부 assert PASS.
+
+### P3: fixed-100 A/B — B-arm 학습 시작
+
+- A-arm(불변 baseline): ep12500 **64.53%** / ep13000 **65.63%** (100막대 4속도 가중,
+  celll당 1,000ep — 2026-07-31 확정 평가).
+- B-arm 런처 `train_navrl_corridor_fixed100.sh`: ep13000에서 corridor-warmstart,
+  fixed 100막대(NAVRL_CONTROLLED_ABLATION=1), LR 3e-5(replay 계약과 동일), 800 epoch.
+- 스모크(64env, 4epoch): 확장 체크포인트 로드 성공, preflight override 로그 명시,
+  **첫 epoch부터 captured 70-77%** = 로드된 backbone 손상 없음, NaN 없음.
+- **본 학습 03:43 시작**: run `ppo_260731_0343_navrl_corridor6-fixed100-s1`,
+  epoch 13000→13800, 로그 `train_session_logs/corridor6_fixed100_260731_034321.log`.
+  프로세스 env 검증: CORRIDOR_TOKENS=6/WARMSTART=1/FIXED_BARS=100/LR=3e-5 확인.
+- **평가 시 주의**: corridor 체크포인트 평가는 반드시 `NAVRL_CORRIDOR_TOKENS=6`을
+  export해야 한다(관측 계약). 미설정 시 obs dim mismatch로 로드 불가.
+- 파일럿 게이트(계획 고정값): held-out capture ≥68% AND ep12500 대비 ≥+3pp AND
+  bar-contact 감소. backbone freeze는 별도 seed 70% 재현 추가 요구.
+

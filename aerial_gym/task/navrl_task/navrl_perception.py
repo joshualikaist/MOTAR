@@ -15,6 +15,8 @@ import os
 import torch
 import torch.nn as nn
 
+from aerial_gym.task.navrl_task.navrl_corridor import CORRIDOR_DIM, extract_corridor_tokens
+
 
 ROBOT_HISTORY = 5
 TARGET_HISTORY = 5
@@ -38,6 +40,19 @@ VBEAMS = int(os.environ.get("NAVRL_LIDAR_VBEAMS", "").strip() or 4)
 # = at most ~7 tokens, so raising MAX_OBSTACLES alone silently wasted the extra slots. At +-10 deg
 # the ceiling is 18, comfortably above any capacity we intend to sweep.
 OBSTACLE_SUPPRESS_DEG = float(os.environ.get("NAVRL_OBSTACLE_SUPPRESS_DEG", "").strip() or 10.0)
+# Obstacle proposal policy. ``greedy_suppress`` preserves the historical nearest-bearing selector.
+# ``cluster_sector`` first joins adjacent ray endpoints that plausibly lie on one physical surface,
+# then reserves one nearest cluster per angular sector. Empty sectors are filled from the remaining
+# nearest clusters. Both modes emit the same [MAX_OBSTACLES, OBSTACLE_DIM] shape.
+OBSTACLE_SELECTOR = (
+    os.environ.get("NAVRL_OBSTACLE_SELECTOR", "").strip().lower() or "greedy_suppress"
+)
+OBSTACLE_CLUSTER_GAP_M = float(
+    os.environ.get("NAVRL_OBSTACLE_CLUSTER_GAP_M", "").strip() or 0.45
+)
+OBSTACLE_SECTORS = int(
+    os.environ.get("NAVRL_OBSTACLE_SECTORS", "").strip() or MAX_OBSTACLES
+)
 # Angular sector (centered on body-forward, in DEGREES) the obstacle tokens are selected from.
 # 360 = the original behavior: pick the nearest MAX_OBSTACLES bars anywhere around the drone.
 # Why narrowing helps: the probe measured ~16 bars inside the horizon against 8 token slots, so a
@@ -53,8 +68,32 @@ if HBEAMS <= 0 or VBEAMS <= 0:
     raise ValueError("NAVRL_LIDAR_HBEAMS and NAVRL_LIDAR_VBEAMS must be positive")
 if not math.isfinite(OBSTACLE_SUPPRESS_DEG) or OBSTACLE_SUPPRESS_DEG < 0.0:
     raise ValueError("NAVRL_OBSTACLE_SUPPRESS_DEG must be finite and non-negative")
+if OBSTACLE_SELECTOR not in ("greedy_suppress", "cluster_sector"):
+    raise ValueError(
+        "NAVRL_OBSTACLE_SELECTOR must be 'greedy_suppress' or 'cluster_sector'"
+    )
+if not math.isfinite(OBSTACLE_CLUSTER_GAP_M) or OBSTACLE_CLUSTER_GAP_M <= 0.0:
+    raise ValueError("NAVRL_OBSTACLE_CLUSTER_GAP_M must be finite and positive")
+if OBSTACLE_SECTORS <= 0 or OBSTACLE_SECTORS > MAX_OBSTACLES:
+    raise ValueError("NAVRL_OBSTACLE_SECTORS must be in 1..NAVRL_MAX_OBSTACLES")
 if not math.isfinite(OBSTACLE_FOV_DEG) or not 0.0 < OBSTACLE_FOV_DEG <= 360.0:
     raise ValueError("NAVRL_OBSTACLE_FOV_DEG must be in (0, 360]")
+# Corridor (free-gap) affordance tokens -- see navrl_corridor.py. 0 (the default) keeps the
+# historical 898-D schema byte-identical; any positive count APPENDS
+# CORRIDOR_TOKENS * CORRIDOR_DIM features at the END of the observation, so every existing
+# segment keeps its offset and a checkpoint can be warm-started by expanding only the input
+# projections (see runner._expand_corridor_checkpoint). Changing this is a schema change:
+# provenance is recorded in env_state as cfg_corridor_tokens.
+CORRIDOR_TOKENS = int(os.environ.get("NAVRL_CORRIDOR_TOKENS", "").strip() or 0)
+CORRIDOR_HORIZON_M = float(os.environ.get("NAVRL_CORRIDOR_HORIZON_M", "").strip() or 6.0)
+CORRIDOR_MIN_WIDTH_M = float(os.environ.get("NAVRL_CORRIDOR_MIN_WIDTH_M", "").strip() or 0.55)
+if CORRIDOR_TOKENS < 0 or CORRIDOR_TOKENS > 16:
+    raise ValueError("NAVRL_CORRIDOR_TOKENS must be in 0..16")
+if not math.isfinite(CORRIDOR_HORIZON_M) or CORRIDOR_HORIZON_M <= 0.0:
+    raise ValueError("NAVRL_CORRIDOR_HORIZON_M must be finite and positive")
+if not math.isfinite(CORRIDOR_MIN_WIDTH_M) or CORRIDOR_MIN_WIDTH_M < 0.0:
+    raise ValueError("NAVRL_CORRIDOR_MIN_WIDTH_M must be finite and non-negative")
+CORRIDOR_OBS_DIM = CORRIDOR_TOKENS * CORRIDOR_DIM
 STATIC_DIM = VBEAMS * HBEAMS
 
 
@@ -92,11 +131,135 @@ def camera_no_return_to_lidar_range(camera_col_min, camera_max_range, lidar_max_
     return torch.where(
         no_return, torch.full_like(camera_col_min, float(lidar_max_range)), camera_col_min
     )
+
+
+def select_cluster_sector_obstacles(
+    nearest,
+    bearings,
+    *,
+    max_range,
+    max_obstacles,
+    token_fov_deg,
+    cluster_gap_m,
+    num_sectors,
+):
+    """Select distinct, angularly distributed LiDAR surface clusters.
+
+    ``nearest`` is [batch, horizontal_beams]. Adjacent valid ray endpoints are assigned to the same
+    cluster when their Euclidean separation is at most ``cluster_gap_m``. One nearest cluster is
+    reserved per fixed body-frame angular sector, then empty sector capacity is filled with the
+    nearest still-unselected clusters. Returned proposals are sorted by range so a same-shape
+    warm-start retains the historical nearest-first slot convention as closely as possible.
+
+    The intended experiment uses a forward 240-degree FOV, so its eligible bearings form one
+    contiguous interval away from the +/-pi scan seam. Full-360 operation deliberately treats the
+    seam as a boundary; the static scan token still retains the complete circular geometry.
+    """
+    if nearest.ndim != 2 or bearings.ndim != 1 or nearest.shape[1] != bearings.shape[0]:
+        raise ValueError("nearest must be [batch, beams] and bearings must be [beams]")
+    if max_obstacles <= 0 or num_sectors <= 0 or num_sectors > max_obstacles:
+        raise ValueError("sector count must be in 1..max_obstacles")
+    if not 0.0 < float(token_fov_deg) <= 360.0:
+        raise ValueError("token_fov_deg must be in (0, 360]")
+    if not math.isfinite(float(cluster_gap_m)) or float(cluster_gap_m) <= 0.0:
+        raise ValueError("cluster_gap_m must be finite and positive")
+
+    batch, beams = nearest.shape
+    device = nearest.device
+    max_range = float(max_range)
+    half_fov = math.radians(float(token_fov_deg) * 0.5)
+    eligible = nearest < max_range * 0.995
+    if token_fov_deg < 359.9:
+        eligible &= bearings.abs().view(1, beams) <= half_fov + 1e-7
+
+    # A range jump alone is a poor object boundary: two rays on one nearby cylinder can differ in
+    # range noticeably. Endpoint distance combines angular separation and radial change in metres.
+    x = nearest * torch.cos(bearings).view(1, beams)
+    y = nearest * torch.sin(bearings).view(1, beams)
+    endpoint_gap = torch.sqrt(
+        (x[:, 1:] - x[:, :-1]).square() + (y[:, 1:] - y[:, :-1]).square()
+    )
+    linked_to_previous = (
+        eligible[:, 1:]
+        & eligible[:, :-1]
+        & (endpoint_gap <= float(cluster_gap_m))
+    )
+    boundary = torch.ones((batch, beams), dtype=torch.bool, device=device)
+    boundary[:, 1:] = ~linked_to_previous
+    cluster_id = boundary.long().cumsum(dim=1)
+
+    remaining = eligible.clone()
+    rows = torch.arange(batch, device=device)
+    sector_ranges = []
+    sector_indices = []
+    sector_valid = []
+    sector_width = (2.0 * half_fov) / float(num_sectors)
+
+    for sector in range(num_sectors):
+        low = -half_fov + sector * sector_width
+        high = low + sector_width
+        if sector == num_sectors - 1:
+            in_sector = (bearings >= low - 1e-7) & (bearings <= high + 1e-7)
+        else:
+            in_sector = (bearings >= low - 1e-7) & (bearings < high - 1e-7)
+        work = nearest.masked_fill(~(remaining & in_sector.view(1, beams)), max_range)
+        picked_range, picked_idx = work.min(dim=1)
+        picked_valid = picked_range < max_range * 0.995
+        sector_ranges.append(picked_range)
+        sector_indices.append(picked_idx)
+        sector_valid.append(picked_valid)
+
+        picked_cluster = cluster_id[rows, picked_idx]
+        remove = cluster_id.eq(picked_cluster.unsqueeze(1)) & picked_valid.unsqueeze(1)
+        remaining &= ~remove
+
+    # Generate enough global candidates to fill every empty sector. They are lower-priority than
+    # all valid sector representatives, irrespective of range.
+    fallback_ranges = []
+    fallback_indices = []
+    fallback_valid = []
+    for _ in range(max_obstacles):
+        work = nearest.masked_fill(~remaining, max_range)
+        picked_range, picked_idx = work.min(dim=1)
+        picked_valid = picked_range < max_range * 0.995
+        fallback_ranges.append(picked_range)
+        fallback_indices.append(picked_idx)
+        fallback_valid.append(picked_valid)
+
+        picked_cluster = cluster_id[rows, picked_idx]
+        remove = cluster_id.eq(picked_cluster.unsqueeze(1)) & picked_valid.unsqueeze(1)
+        remaining &= ~remove
+
+    ranges = torch.stack(sector_ranges + fallback_ranges, dim=1)
+    indices = torch.stack(sector_indices + fallback_indices, dim=1)
+    valid = torch.stack(sector_valid + fallback_valid, dim=1)
+    source_is_fallback = torch.cat(
+        [
+            torch.zeros(num_sectors, device=device, dtype=nearest.dtype),
+            torch.ones(max_obstacles, device=device, dtype=nearest.dtype),
+        ]
+    ).view(1, -1)
+    priority = source_is_fallback * 2.0 + ranges / max_range
+    priority = priority.masked_fill(~valid, float("inf"))
+    keep = priority.argsort(dim=1)[:, :max_obstacles]
+    ranges = ranges.gather(1, keep)
+    indices = indices.gather(1, keep)
+    valid = valid.gather(1, keep)
+
+    # Preserve nearest-first slot semantics for the downstream flattened MLP.
+    range_order = ranges.masked_fill(~valid, float("inf")).argsort(dim=1)
+    ranges = ranges.gather(1, range_order)
+    indices = indices.gather(1, range_order)
+    valid = valid.gather(1, range_order)
+    return ranges, indices, valid
+
+
 STRUCTURED_OBS_DIM = (
     ROBOT_HISTORY * ROBOT_DIM
     + TARGET_HISTORY * TARGET_DIM
     + OBSTACLE_HISTORY * MAX_OBSTACLES * OBSTACLE_DIM
     + STATIC_DIM
+    + CORRIDOR_OBS_DIM
 )
 
 
@@ -367,18 +530,52 @@ class NavRLPerceptionModule:
         # actually seen this step. The bar_contact probe uses it to measure how crowded the scene was
         # at the moment of a collision -- i.e. whether MAX_OBSTACLES truncated away the bar that hit.
         self.last_scan_nearest = nearest
-        work = nearest.clone()
-        if self._token_bearing_mask is not None:
-            # Blank bearings outside the token sector so they can never win a slot. Applied to the
-            # SELECTION copy only -- `static_state` above still encodes the full 360 deg scan.
-            work = work.masked_fill(~self._token_bearing_mask.view(1, -1), self.lidar_max_range)
         tokens = torch.zeros(
             self.num_envs, MAX_OBSTACLES, OBSTACLE_DIM, device=self.device
         )
         rows = torch.arange(self.num_envs, device=self.device)
+        if OBSTACLE_SELECTOR == "cluster_sector":
+            selected_ranges, selected_indices, selected_valid = (
+                select_cluster_sector_obstacles(
+                    nearest,
+                    self._lidar_angles,
+                    max_range=self.lidar_max_range,
+                    max_obstacles=MAX_OBSTACLES,
+                    token_fov_deg=OBSTACLE_FOV_DEG,
+                    cluster_gap_m=OBSTACLE_CLUSTER_GAP_M,
+                    num_sectors=OBSTACLE_SECTORS,
+                )
+            )
+        else:
+            work = nearest.clone()
+            if self._token_bearing_mask is not None:
+                # Blank bearings outside the token sector so they can never win a slot. Applied to
+                # the SELECTION copy only -- `static_state` still encodes the full 360-degree scan.
+                work = work.masked_fill(
+                    ~self._token_bearing_mask.view(1, -1), self.lidar_max_range
+                )
+            selected_ranges = torch.full(
+                (self.num_envs, MAX_OBSTACLES), self.lidar_max_range, device=self.device
+            )
+            selected_indices = torch.zeros(
+                (self.num_envs, MAX_OBSTACLES), dtype=torch.long, device=self.device
+            )
+            selected_valid = torch.zeros(
+                (self.num_envs, MAX_OBSTACLES), dtype=torch.bool, device=self.device
+            )
+            for slot in range(MAX_OBSTACLES):
+                r, idx = work.min(dim=1)
+                valid = r < self.lidar_max_range * 0.995
+                selected_ranges[:, slot] = r
+                selected_indices[:, slot] = idx
+                selected_valid[:, slot] = valid
+                for off in range(-self._suppress_bins, self._suppress_bins + 1):
+                    work[rows, (idx + off) % HBEAMS] = self.lidar_max_range
+
         for slot in range(MAX_OBSTACLES):
-            r, idx = work.min(dim=1)
-            valid = r < self.lidar_max_range * 0.995
+            r = selected_ranges[:, slot]
+            idx = selected_indices[:, slot]
+            valid = selected_valid[:, slot]
             a = self._lidar_angles[idx]
             pos = torch.stack([r * torch.cos(a), r * torch.sin(a), torch.zeros_like(r)], dim=1)
             radial_sigma = 0.04 + 0.02 * r
@@ -398,8 +595,6 @@ class NavRLPerceptionModule:
                 dim=1,
             )
             tokens[:, slot] = feat * valid.unsqueeze(1)
-            for off in range(-self._suppress_bins, self._suppress_bins + 1):
-                work[rows, (idx + off) % HBEAMS] = self.lidar_max_range
         return static_state.reshape(self.num_envs, -1), tokens
 
     def _associate_lidar_target(self, lidar_m, drone_pos_w, vehicle_quat, camera_visible):
@@ -541,15 +736,27 @@ class NavRLPerceptionModule:
         self.last_visible[:] = fused_visible
         self.last_confidence[:] = torch.maximum(confidence, lidar_confidence)
 
-        obs = torch.cat(
-            [
-                static_state,
-                self.obstacle_history.reshape(self.num_envs, -1),
-                self.robot_history.reshape(self.num_envs, -1),
-                self.target_history.reshape(self.num_envs, -1),
-            ],
-            dim=1,
-        )
+        obs_parts = [
+            static_state,
+            self.obstacle_history.reshape(self.num_envs, -1),
+            self.robot_history.reshape(self.num_envs, -1),
+            self.target_history.reshape(self.num_envs, -1),
+        ]
+        if CORRIDOR_TOKENS > 0:
+            # Free-gap affordance from the SAME fused profile the obstacle tokens use
+            # (last_scan_nearest is set inside _fuse_static_and_extract_obstacles above).
+            # Appended LAST so all pre-existing segment offsets stay checkpoint-compatible.
+            corridor_tokens, _ = extract_corridor_tokens(
+                self.last_scan_nearest,
+                self._lidar_angles,
+                max_range=self.lidar_max_range,
+                num_corridors=CORRIDOR_TOKENS,
+                fov_deg=OBSTACLE_FOV_DEG,
+                horizon_m=CORRIDOR_HORIZON_M,
+                min_width_m=CORRIDOR_MIN_WIDTH_M,
+            )
+            obs_parts.append(corridor_tokens.reshape(self.num_envs, -1))
+        obs = torch.cat(obs_parts, dim=1)
         if obs.shape[1] != STRUCTURED_OBS_DIM:
             raise RuntimeError(
                 "perception observation schema drift: got %d, expected %d"

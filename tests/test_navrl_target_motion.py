@@ -76,3 +76,64 @@ def test_tie_break_is_mirror_symmetric():
     assert torch.allclose(new[0, 0], new[1, 0])
     assert torch.allclose(new[0, 1], -new[1, 1])
     assert torch.allclose(velocity[0, 1], -velocity[1, 1])
+
+
+def test_heading_continuity_turns_toward_previous_flight_direction():
+    old = torch.tensor([[0.0, 0.0]])
+    desired = torch.tensor([[1.0, 0.0]])
+    speed = torch.tensor([1.0])
+    lo, hi = _bounds(1)
+    new, velocity, steered, clear = steer_target_step(
+        old,
+        desired,
+        speed,
+        0.1,
+        torch.empty(1, 0, 2),
+        lo,
+        hi,
+        1.0,
+        torch.ones(1),
+        torch.tensor([torch.pi]),
+    )
+    heading = torch.atan2(velocity[:, 1], velocity[:, 0]).abs()
+    assert bool(steered.item())
+    assert bool(clear.item())
+    assert torch.allclose(heading, torch.tensor([torch.pi / 2]), atol=1e-6)
+    assert torch.allclose((new - old).norm(dim=1), torch.tensor([0.1]), atol=1e-6)
+
+
+def test_heading_window_is_preference_not_escape_veto():
+    old = torch.tensor([[0.0, 0.0]])
+    desired = torch.tensor([[-1.0, 0.0]])
+    speed = torch.tensor([1.0])
+    lo, hi = _bounds(1)
+    angles = torch.tensor(
+        [torch.deg2rad(torch.tensor(value)) for value in _MODULE.TURN_ANGLES_DEG]
+    )
+    base = desired[0]
+    directions = torch.stack(
+        (
+            base[0] * torch.cos(angles) - base[1] * torch.sin(angles),
+            base[0] * torch.sin(angles) + base[1] * torch.cos(angles),
+        ),
+        dim=1,
+    )
+    # Block every candidate except the direct west escape. Its heading differs from the previous
+    # eastward flight by 180 degrees, so selecting it proves that the 90-degree window is no veto.
+    bars = (directions[1:] * 0.1).unsqueeze(0)
+    new, velocity, steered, clear = steer_target_step(
+        old,
+        desired,
+        speed,
+        0.1,
+        bars,
+        lo,
+        hi,
+        0.02,
+        torch.ones(1),
+        torch.tensor([0.0]),
+    )
+    assert not bool(steered.item())
+    assert bool(clear.item())
+    assert torch.allclose(velocity, desired)
+    assert torch.allclose(new, torch.tensor([[-0.1, 0.0]]), atol=1e-6)
