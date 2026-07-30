@@ -368,8 +368,19 @@ window.Arena = (() => {
         dx, dy, episode.target.x, episode.target.y,
         Motion.CONTRACT.pursuerSpeedMax, dt, bars, heading, episode.avoidSign
       );
+      if (proposed.hit) {
+        // Match sim termination: contact with a bar ends the episode.
+        resetEpisode(true);
+        lastT = now;
+        frame++;
+        renderer.render(scene, cam);
+        return;
+      }
       dx = proposed.x;
       dy = proposed.y;
+      if (proposed.heading != null && Math.hypot(proposed.vx, proposed.vy) > 0.05) {
+        heading = proposed.heading;
+      }
     }
 
     vel.x += ((dx - lastDrone.x) / Math.max(dt, 1e-3) - vel.x) * (1 - Math.exp(-dt * 6));

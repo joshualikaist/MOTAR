@@ -52,19 +52,101 @@
     return Math.max(lo, Math.min(hi, v));
   }
 
+  function barHalfExtent(bar) {
+    return 0.5 * (bar && bar.w != null ? bar.w : 0.6);
+  }
+
   function distanceToBars(x, y, bars) {
     let best = Infinity;
     for (const bar of bars || []) best = Math.min(best, Math.hypot(x - bar.x, y - bar.y));
     return best;
   }
 
+  /*
+   * Bars are rendered as axis-aligned boxes of side w. A circle of radius w/2 does
+   * NOT cover the box corners (half-diagonal is w/2 * √2), which made the browser
+   * pursuer clip through pillars even while "clearance" stayed non-negative.
+   * Signed distance from a point to the box, minus the pursuer radius.
+   */
   function pursuerClearance(x, y, bars) {
     let best = Infinity;
+    const r = CONTRACT.pursuerRadius;
     for (const bar of bars || []) {
-      const radius = CONTRACT.pursuerRadius + 0.5 * (bar.w == null ? 0.6 : bar.w);
-      best = Math.min(best, Math.hypot(x - bar.x, y - bar.y) - radius);
+      const half = barHalfExtent(bar);
+      const ox = Math.abs(x - bar.x) - half;
+      const oy = Math.abs(y - bar.y) - half;
+      let surface;
+      if (ox > 0 && oy > 0) surface = Math.hypot(ox, oy);
+      else if (ox > 0) surface = ox;
+      else if (oy > 0) surface = oy;
+      else surface = -Math.min(-ox, -oy); // inside AABB: negative depth to nearest face
+      best = Math.min(best, surface - r);
     }
     return best;
+  }
+
+  function segmentPursuerClearance(x0, y0, x1, y1, bars) {
+    const length = Math.hypot(x1 - x0, y1 - y0);
+    const steps = Math.max(2, Math.ceil(length / 0.08));
+    let best = Infinity;
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps;
+      best = Math.min(
+        best,
+        pursuerClearance(x0 + (x1 - x0) * t, y0 + (y1 - y0) * t, bars)
+      );
+    }
+    return best;
+  }
+
+  function pushPursuerOut(point, bars) {
+    const b = CONTRACT.bounds;
+    let x = point.x;
+    let y = point.y;
+    let pushed = false;
+    const r = CONTRACT.pursuerRadius;
+    for (let iteration = 0; iteration < 8; iteration++) {
+      x = clamp(x, b.x0 + CONTRACT.wallMargin, b.x1 - CONTRACT.wallMargin);
+      y = clamp(y, b.y0 + CONTRACT.wallMargin, b.y1 - CONTRACT.wallMargin);
+      let worst = null;
+      for (const bar of bars || []) {
+        const half = barHalfExtent(bar);
+        const cx = clamp(x, bar.x - half, bar.x + half);
+        const cy = clamp(y, bar.y - half, bar.y + half);
+        let nx = x - cx, ny = y - cy;
+        let d = Math.hypot(nx, ny);
+        let pen;
+        if (d < 1e-8) {
+          // Centered inside the box: escape through the nearest face.
+          const left = x - (bar.x - half);
+          const right = (bar.x + half) - x;
+          const bottom = y - (bar.y - half);
+          const top = (bar.y + half) - y;
+          const m = Math.min(left, right, bottom, top);
+          if (m === left) { nx = -1; ny = 0; pen = left + r; }
+          else if (m === right) { nx = 1; ny = 0; pen = right + r; }
+          else if (m === bottom) { nx = 0; ny = -1; pen = bottom + r; }
+          else { nx = 0; ny = 1; pen = top + r; }
+        } else {
+          pen = r - d;
+          nx /= d;
+          ny /= d;
+        }
+        if (pen > 1e-6 && (!worst || pen > worst.pen)) {
+          worst = { nx: nx, ny: ny, pen: pen };
+        }
+      }
+      if (!worst) break;
+      pushed = true;
+      x += worst.nx * (worst.pen + 1e-3);
+      y += worst.ny * (worst.pen + 1e-3);
+    }
+    return {
+      x: clamp(x, b.x0 + CONTRACT.wallMargin, b.x1 - CONTRACT.wallMargin),
+      y: clamp(y, b.y0 + CONTRACT.wallMargin, b.y1 - CONTRACT.wallMargin),
+      pushed: pushed,
+      clear: pursuerClearance(x, y, bars) >= -1e-6,
+    };
   }
 
   function samplePoint(rng, margin) {
@@ -93,7 +175,14 @@
 
   function createEpisode(rng, bars, speedCeiling) {
     const drone = sampleClearPoint(
-      rng, bars, CONTRACT.spawnBarClearance, CONTRACT.spawnMargin
+      rng,
+      bars,
+      CONTRACT.spawnBarClearance,
+      CONTRACT.spawnMargin,
+      function (p) {
+        // Also keep the pursuer disk outside the rendered box (not just the center-distance rule).
+        return pursuerClearance(p.x, p.y, bars) >= 0.05;
+      }
     );
     const maxDistance = CONTRACT.targetDistanceMax;
     const target = sampleClearPoint(
@@ -204,17 +293,26 @@
     const tx = targetX - oldX, ty = targetY - oldY;
     const targetDistance = Math.hypot(tx, ty);
     if (dt <= 0 || speed <= 1e-6 || targetDistance <= 1e-6) {
-      return { x: oldX, y: oldY, vx: 0, vy: 0, heading: oldHeading || 0, blocked: false };
+      return { x: oldX, y: oldY, vx: 0, vy: 0, heading: oldHeading || 0, blocked: false, hit: false };
+    }
+
+    // Already inside a pillar: freeze and signal a crash so the demo can reset.
+    if (pursuerClearance(oldX, oldY, bars) < -1e-4) {
+      return {
+        x: oldX, y: oldY, vx: 0, vy: 0,
+        heading: oldHeading == null ? Math.atan2(ty, tx) : oldHeading,
+        blocked: true, hit: true,
+      };
     }
 
     const directHeading = Math.atan2(ty, tx);
-    const offsets = [0, 15, -15, 30, -30, 45, -45, 60, -60, 90, -90, 120, -120, 180];
+    const offsets = [0, 15, -15, 30, -30, 45, -45, 60, -60, 90, -90, 120, -120, 150, -150, 180];
     const stepDistance = Math.min(speed * dt, targetDistance);
     const lookDistance = Math.min(
       speed * CONTRACT.pursuerLookaheadSeconds,
       Math.max(stepDistance, targetDistance)
     );
-    const samples = Math.max(2, Math.ceil(lookDistance / 0.18));
+    const samples = Math.max(4, Math.ceil(lookDistance / 0.1));
     let best = null;
 
     offsets.forEach(function (degrees) {
@@ -234,6 +332,8 @@
           if (distance <= stepDistance + 1e-6) immediateClear = false;
         }
       }
+      const stepX = oldX + ux * stepDistance, stepY = oldY + uy * stepDistance;
+      if (segmentPursuerClearance(oldX, oldY, stepX, stepY, bars) < 0) immediateClear = false;
       if (!immediateClear) return;
 
       const endX = oldX + ux * lookDistance, endY = oldY + uy * lookDistance;
@@ -257,16 +357,31 @@
     if (!best) {
       return {
         x: oldX, y: oldY, vx: 0, vy: 0,
-        heading: oldHeading == null ? directHeading : oldHeading, blocked: true
+        heading: oldHeading == null ? directHeading : oldHeading,
+        blocked: true, hit: false,
+      };
+    }
+
+    const rawX = clamp(oldX + best.ux * stepDistance, loX, hiX);
+    const rawY = clamp(oldY + best.uy * stepDistance, loY, hiY);
+    const cleared = pushPursuerOut({ x: rawX, y: rawY }, bars);
+    const moved = Math.hypot(cleared.x - oldX, cleared.y - oldY);
+    // A proposed step that collapses to near-zero after push-out is a soft collision.
+    const hit = !cleared.clear || (moved < stepDistance * 0.15 && stepDistance > 1e-3);
+    if (hit) {
+      return {
+        x: oldX, y: oldY, vx: 0, vy: 0,
+        heading: best.angle, blocked: true, hit: true,
       };
     }
     return {
-      x: clamp(oldX + best.ux * stepDistance, loX, hiX),
-      y: clamp(oldY + best.uy * stepDistance, loY, hiY),
+      x: cleared.x,
+      y: cleared.y,
       vx: best.ux * speed,
       vy: best.uy * speed,
       heading: best.angle,
       blocked: !best.pathClear,
+      hit: false,
     };
   }
 
@@ -336,9 +451,11 @@
     seededRng: seededRng,
     distanceToBars: distanceToBars,
     pursuerClearance: pursuerClearance,
+    segmentPursuerClearance: segmentPursuerClearance,
     sampleWaypoint: sampleWaypoint,
     createEpisode: createEpisode,
     pushOutOfBars: pushOutOfBars,
+    pushPursuerOut: pushPursuerOut,
     steerTargetStep: steerTargetStep,
     steerPursuerStep: steerPursuerStep,
     advanceTarget: advanceTarget,
