@@ -76,17 +76,31 @@ association with real bars went from 13.9% to 94.8%. Held-out density curve impr
 on average**, and the density curriculum reached **85 bars (17.8 bars/100 m^2)** where it had
 previously stalled at 65.
 
-Current measured capture (held-out, 2049 episodes/cell, target 1.0 m/s, deterministic):
-
-| bars | 25 | 50 | 65 | 85 | 110 | 130 | 150 |
-|---|---|---|---|---|---|---|---|
-| capture | 0.978 | 0.935 | 0.854 | **0.689** | 0.412 | 0.225 | 0.144 |
-
-85 bars is the trained maximum; everything to its right measures generalization, not a ceiling of
-the method. The obstacle-token bottleneck (8 slots representing only ~3 unique bars) was traced to
+The obstacle-token bottleneck (8 slots representing only ~3 unique bars) was traced to
 suppression-window duplication and addressed by a `cluster_sector` selector, which raised unique
-bars per step from 3.0 to 4.6 and the 85-bar capture plateau from 0.650 to 0.725. Live detail is in
-**[WORKLOG.md](WORKLOG.md)** (newest entry last) and the [status dashboard](docs/status/).
+bars per step from 3.0 to 4.6.
+
+**Headline result — density x target-speed map** (held-out, 2049 episodes/cell, deterministic,
+`cluster_sector` checkpoint, sensor-only):
+
+| bars | density/100 m^2 | capture @0.0 m/s | @0.5 | @1.0 | @1.5 |
+|---|---|---|---|---|---|
+| 25 | 5.2 | 0.962 | 0.970 | 0.965 | 0.949 |
+| 50 | 10.5 | 0.918 | 0.930 | 0.922 | 0.904 |
+| 65 | 13.6 | 0.881 | 0.879 | 0.861 | 0.837 |
+| **85** | **17.8** | 0.736 | 0.753 | 0.718 | 0.671 |
+| 110 | 23.0 | 0.497 | 0.506 | 0.484 | 0.437 |
+| 130 | 27.2 | 0.318 | 0.296 | 0.281 | 0.259 |
+| 150 | 31.4 | 0.194 | 0.192 | 0.190 | 0.159 |
+
+85 bars is the trained maximum; rows below it measure generalization, not a ceiling of the method.
+Across the full grid, raising density 5.2 -> 31.4 bars/100 m^2 costs **78 pp** of capture, while
+raising target speed 0 -> 1.5 m/s costs only **4.2 pp** -- the pursuer (v_max 2.5 m/s) is fast
+enough that target speed is not a binding difficulty axis in this regime; obstacle density is.
+This is the paper's headline figure (full CSV: `results/density_speed_map_cluster_sector.csv`,
+interactive version: [status dashboard, "Map" tab](docs/status/)). A density-curriculum extension
+past 85 bars (target: 110+) is running from this checkpoint as of 2026-07-30. Live detail is in
+**[WORKLOG.md](WORKLOG.md)** (newest entry last).
 
 ## Repo map
 
