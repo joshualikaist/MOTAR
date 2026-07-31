@@ -118,7 +118,11 @@ export NAVRL_PERCEPTION_PERTURB=0
 export NAVRL_TILT_COMP=1
 export NAVRL_MAX_OBSTACLES=8
 export NAVRL_OBSTACLE_FOV_DEG=240
-export NAVRL_OBSTACLE_SELECTOR=cluster_sector
+# Overridable so a representation A/B (train_navrl_v2_ttc_ab.sh) can swap the selector while
+# inheriting the rest of this contract. Hardcoding it silently discarded the experimental variable
+# and made both arms run the SAME condition -- an A/B failure that is invisible because both arms
+# still train normally. Unset => cluster_sector, the v2 default.
+export NAVRL_OBSTACLE_SELECTOR="${NAVRL_OBSTACLE_SELECTOR:-cluster_sector}"
 export NAVRL_OBSTACLE_CLUSTER_GAP_M=0.45
 export NAVRL_OBSTACLE_SECTORS=8
 export NAVRL_OBSTACLE_SUPPRESS_DEG=10
