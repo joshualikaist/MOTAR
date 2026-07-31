@@ -36,7 +36,19 @@
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
-export PYTHON="${PYTHON:-/home/fair/miniconda3/envs/aerialgym/bin/python}"
+# Prefer the current user's aerialgym environment so this launcher remains portable between the
+# 3070 and 4 GB hosts. Keep the original 3070 path as a compatibility fallback; callers can still
+# override either choice with PYTHON=/path/to/python.
+if [[ -z "${PYTHON:-}" ]]; then
+    if [[ -x "${HOME}/miniconda3/envs/aerialgym/bin/python" ]]; then
+        PYTHON="${HOME}/miniconda3/envs/aerialgym/bin/python"
+    elif [[ -x /home/fair/miniconda3/envs/aerialgym/bin/python ]]; then
+        PYTHON=/home/fair/miniconda3/envs/aerialgym/bin/python
+    else
+        PYTHON=python
+    fi
+fi
+export PYTHON
 export PATH="$(dirname "${PYTHON}"):${PATH}"
 export PYTHONNOUSERSITE=1
 
