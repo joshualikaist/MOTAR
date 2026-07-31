@@ -1018,6 +1018,8 @@ class NavRLTask(BaseTask):
             "cfg_lidar_hbeams": int(representation["hbeams"]),
             "cfg_lidar_vbeams": int(representation["vbeams"]),
             "cfg_corridor_tokens": int(representation["corridor_tokens"]),
+            "cfg_corridor_horizon_m": float(representation["corridor_horizon_m"]),
+            "cfg_corridor_min_width_m": float(representation["corridor_min_width_m"]),
             "cfg_target_motion_model": TARGET_MOTION_MODEL,
             "cfg_general_goal_dist_min": float(self.general_goal_dist_min),
             "cfg_general_goal_dist_max": float(self.general_goal_dist_max),
@@ -1087,6 +1089,8 @@ class NavRLTask(BaseTask):
         """Policy obstacle-representation settings, or zeros when perception is unavailable."""
         try:
             from aerial_gym.task.navrl_task.navrl_perception import (
+                CORRIDOR_HORIZON_M,
+                CORRIDOR_MIN_WIDTH_M,
                 CORRIDOR_TOKENS,
                 HBEAMS,
                 MAX_OBSTACLES,
@@ -1108,6 +1112,8 @@ class NavRLTask(BaseTask):
                 "hbeams": int(HBEAMS),
                 "vbeams": int(VBEAMS),
                 "corridor_tokens": int(CORRIDOR_TOKENS),
+                "corridor_horizon_m": float(CORRIDOR_HORIZON_M),
+                "corridor_min_width_m": float(CORRIDOR_MIN_WIDTH_M),
             }
         except Exception:
             return {
@@ -1120,6 +1126,8 @@ class NavRLTask(BaseTask):
                 "hbeams": 0,
                 "vbeams": 0,
                 "corridor_tokens": 0,
+                "corridor_horizon_m": 0.0,
+                "corridor_min_width_m": 0.0,
             }
 
     @classmethod
@@ -1350,6 +1358,16 @@ class NavRLTask(BaseTask):
                     "cfg_corridor_tokens",
                     float(representation["corridor_tokens"]),
                     "NAVRL_CORRIDOR_TOKENS",
+                ),
+                (
+                    "cfg_corridor_horizon_m",
+                    float(representation["corridor_horizon_m"]),
+                    "NAVRL_CORRIDOR_HORIZON_M",
+                ),
+                (
+                    "cfg_corridor_min_width_m",
+                    float(representation["corridor_min_width_m"]),
+                    "NAVRL_CORRIDOR_MIN_WIDTH_M",
                 ),
             ):
                 saved = state.get(key)

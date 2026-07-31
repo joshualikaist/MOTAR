@@ -112,6 +112,9 @@ token을 직접 attention하는 기존 아이디어는 1차 구조가 아니라 
 
 후속 방향:
 
+3. free-space corridor를 명시적 18번째 token으로 append하는 통제 ablation을 먼저 수행한다.
+   geometry, observation schema, checkpoint warm-start를 각각 독립 gate로 검증하며, fixed-density
+   평가 gate를 통과하지 못하면 같은 표현의 epoch만 늘리지 않는다.
 4. hard selector가 부족하면 72개 bearing feature를 8개 latent slot으로 압축하는
    Set Transformer/Slot Attention 후보를 시험한다. PPO 보상만으로 slot collapse를
    맡기지 않고, simulator GT는 actor 입력이 아닌 training-only Hungarian auxiliary
@@ -212,6 +215,12 @@ timeout이 증가한다. 새 policy 학습 후 `eval_navrl_speed_density_grid.sh
 이는 “두 축을 영원히 완전히 분리”하는 방식이 아니라, 첫 기술을 얻은 뒤 다음 축을 competence-gated로
 추가하고 이전 분포 일부를 계속 replay하는 staged curriculum이다. 총 10000 epoch는 상한이며, density 승급이
 멈추면 epoch를 더 쓰는 대신 detector error/collision/timeout 원인을 먼저 분해한다.
+
+여기서 `k_max=16`은 **막대 수 상한이 아니라 goal-distance curriculum의 최대 반경(m)** 이다.
+학습 중 `k_max`는 capture gate를 통과할 때마다 시작값에서 16 m까지 단계적으로 증가하며, 포화 뒤에는
+밀도 curriculum과 경쟁하지 않도록 고정한다. fixed-100 표현 A/B에서도 4–16 m를 고정해 오직 표현 차이만
+비교한다. 16 m 밖 일반화는 arena 경계와 out-of-bounds 혼입을 피하기 위해 별도 평가로 다루며, 필요하면
+arena 자체를 확장한 뒤 `k_final`을 함께 높인다.
 
 ### 6.3 평가 그리드
 

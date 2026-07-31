@@ -158,7 +158,13 @@ case "${NAVRL_ALLOW_SELECTOR_WARMSTART:-0}" in
 esac
 case "${NAVRL_ALLOW_CORRIDOR_WARMSTART:-0}" in
     0) ;;
-    1) PREFLIGHT_ARGS+=(--allow-contract-override cfg_corridor_tokens) ;;
+    1)
+        PREFLIGHT_ARGS+=(
+            --allow-contract-override cfg_corridor_tokens
+            --allow-contract-override cfg_corridor_horizon_m
+            --allow-contract-override cfg_corridor_min_width_m
+        )
+        ;;
     *)
         echo "[general_repr_density] NAVRL_ALLOW_CORRIDOR_WARMSTART must be 0 or 1." >&2
         exit 2

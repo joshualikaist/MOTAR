@@ -3902,3 +3902,57 @@ FIX3 + low-LR density replay의 확정 평가를 정적 연구 대시보드에 �
 - 파일럿 게이트(계획 고정값): held-out capture ≥68% AND ep12500 대비 ≥+3pp AND
   bar-contact 감소. backbone freeze는 별도 seed 70% 재현 추가 요구.
 
+---
+
+## 2026-07-31 (새벽) — corridor6 학습·확정 평가 완료: 충돌 소폭 개선, 진행 게이트 FAIL
+
+`ppo_260731_0343_navrl_corridor6-fixed100-s1`은 ep13000→13800, 800 epoch를 정상 완료했다.
+학습 마지막 50 epoch capture는 63.72%였으며, 단일 epoch 최고값(78%)을 성능으로 오독하지 않고
+사전등록한 fixed-100 four-speed held-out 평가로 checkpoint를 판정했다.
+
+### 평가 계약
+
+- checkpoint: `last_gen_ppo_ep_13800_*.pth`
+- representation: cluster-sector 8 + corridor K=6, observation 898→946
+- corridor geometry: horizon 6.0 m, min width 0.55 m
+- task: 100 bars 고정, pursuer 2.5 m/s, target speed {0, 0.5, 1.0, 1.5} m/s
+- goal distance: 4–16 m 고정, seed 1, 총 4,003 episodes
+- 결과: capture **66.10%**, bar contact **32.25%**
+- 불변 ep12500 baseline: capture **64.53%**, bar contact **33.18%**
+- 차이: capture **+1.57pp**, 95% CI **[-0.51,+3.66]pp**; bar contact **-0.93pp**
+
+사전 게이트 판정:
+
+| 항목 | 기준 | 결과 |
+|---|---:|---:|
+| capture | ≥68% | **FAIL · 66.10%** |
+| ep12500 대비 gain | ≥+3pp | **FAIL · +1.57pp** |
+| bar contact | <33.18% | **PASS · 32.25%** |
+
+따라서 corridor geometry 자체와 schema-safe warm-start는 성공했고 충돌 방향의 신호도 있었지만,
+정책 성능 개선은 작고 CI가 0을 포함한다. 동일 corridor6 run에 epoch를 더 쓰지 않는다. 다음 표현
+진단은 밀도와 거리 조건을 그대로 고정한 채, 같은 방위의 앞/뒤 표면을 보존하는 2-depth-layer
+sector representation으로 진행한다.
+
+### `k_max=16` 의미 및 curriculum 판단
+
+`k_max`는 막대 개수가 아니라 **표적/goal 거리 커리큘럼의 최대 반경(m)** 이다. competence gate가
+통과될 때 시작 거리에서 16 m까지 단계적으로 올라가며, 현재 checkpoint는 이미 포화되어 있다.
+이번 fixed-100 A/B에서 이를 16으로 고정한 이유는 corridor 표현 외의 난이도 축을 움직이지 않기
+위해서다. 막대 수는 별도의 density curriculum이 5개 단위로 승급한다.
+
+현재 24×24 m arena에서 16 m 밖을 같은 학습에 섞으면 경계와 out-of-bounds 효과가 커져 표현 A/B가
+오염된다. 더 먼 거리 성능은 별도 held-out 평가로 보고, 실제 학습 범위를 늘릴 때는 arena 크기와
+`k_final`을 함께 변경한다.
+
+### 추가 안전장치와 재현 도구
+
+- `eval_navrl_corridor_fixed100.sh`: corridor schema, LiDAR, selector, 4–16 m goal, 100 bars를
+  명시적으로 고정하고 checkpoint contract 불일치를 실행 전에 차단.
+- `evaluate_corridor_gate.py`: four-speed CSV를 episode 가중 집계하고 세 사전 게이트 및
+  capture-delta 95% CI를 JSON으로 저장.
+- corridor horizon/min-width를 checkpoint `env_state` provenance에 추가했으며, 최초 corridor
+  checkpoint의 historical default(6.0/0.55)는 preflight가 명시적으로 해석한다.
+- 잘못된 첫 screen(goal max 18 m)은 즉시 중단하고 판정에서 제외했다. 유효 screen은 동일 4–16 m
+  계약으로 ep13100 64.20%, ep13450 59.93%, ep13800 65.11%였고, 최종 4,003-episode confirm만
+  위 결론에 사용했다.

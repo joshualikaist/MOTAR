@@ -519,7 +519,8 @@ function renderPhases() {
     ['P0–P5', 'sensor · tracking foundation', 'done'],
     ['P6A', 'bounded action contract', 'done'],
     ['P6B', 'cluster-sector baseline', 'done'],
-    ['P6C', 'corridor-token ablation', 'active'],
+    ['P6C', 'corridor-token pilot', 'done'],
+    ['P6D', 'two-depth representation', 'active'],
     ['P7', 'sim-to-real', 'todo'],
     ['Paper', 'ablation + write-up', 'todo'],
   ];

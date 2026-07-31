@@ -1,29 +1,29 @@
 {
-  "generated_at": "2026-07-30T18:11:14.144310+00:00",
+  "generated_at": "2026-07-31T03:22:48.423951+00:00",
   "repo": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator",
-  "n_runs": 52,
+  "n_runs": 53,
   "active_run": null,
   "latest_run": {
-    "run": "ppo_260731_0226_navrl_fix3-low-lr-replay-b5-100bars-s1",
-    "finalized_at": "2026-07-30T17:32:39.008556+00:00",
+    "run": "ppo_260731_0343_navrl_corridor6-fixed100-s1",
+    "finalized_at": "2026-07-30T19:27:12.035084+00:00",
     "exit_reason": "max_epochs",
-    "epochs_logged": 100,
-    "first_epoch": 12901,
-    "last_epoch": 13000,
+    "epochs_logged": 800,
+    "first_epoch": 13001,
+    "last_epoch": 13800,
     "is_navrl": true,
-    "last_mean_reward": -0.83411,
-    "last_mean_episode_length": 64.1542,
-    "last_captured_rate": 0.615385,
-    "last_crash_rate": 0.384615,
+    "last_mean_reward": 8.25064,
+    "last_mean_episode_length": 55.2531,
+    "last_captured_rate": 0.628571,
+    "last_crash_rate": 0.371429,
     "last_timeout_rate": 0.0,
-    "last_closest_approach_m": 0.377704,
-    "last_closest_min_m": 0.214593,
-    "last_curriculum_max_m": 8.3402,
+    "last_closest_approach_m": 0.392716,
+    "last_closest_min_m": 0.200995,
+    "last_curriculum_max_m": 14.8479,
     "last_n_bars_active": 100,
-    "peak_captured_rate": 0.746667,
-    "peak_captured_epoch": 12947,
-    "peak_mean_reward": 15.8361,
-    "peak_epoch": 12982,
+    "peak_captured_rate": 0.779661,
+    "peak_captured_epoch": 13054,
+    "peak_mean_reward": 20.5856,
+    "peak_epoch": 13002,
     "reward_collapse": false
   },
   "runs": [
@@ -1223,6 +1223,29 @@
       "peak_mean_reward": 15.8361,
       "peak_epoch": 12982,
       "reward_collapse": false
+    },
+    {
+      "run": "ppo_260731_0343_navrl_corridor6-fixed100-s1",
+      "finalized_at": "2026-07-30T19:27:12.035084+00:00",
+      "exit_reason": "max_epochs",
+      "epochs_logged": 800,
+      "first_epoch": 13001,
+      "last_epoch": 13800,
+      "is_navrl": true,
+      "last_mean_reward": 8.25064,
+      "last_mean_episode_length": 55.2531,
+      "last_captured_rate": 0.628571,
+      "last_crash_rate": 0.371429,
+      "last_timeout_rate": 0.0,
+      "last_closest_approach_m": 0.392716,
+      "last_closest_min_m": 0.200995,
+      "last_curriculum_max_m": 14.8479,
+      "last_n_bars_active": 100,
+      "peak_captured_rate": 0.779661,
+      "peak_captured_epoch": 13054,
+      "peak_mean_reward": 20.5856,
+      "peak_epoch": 13002,
+      "reward_collapse": false
     }
   ],
   "density_curves": {
@@ -1971,18 +1994,19 @@
   },
   "other_curves": {},
   "research_update": {
-    "subtitle": "2026-07-31 · FIX3 target motion + low-LR density replay",
-    "headline": "100-bar replay stayed stable, but did not clear the held-out 70% gate.",
-    "summary": "FIX3 removed target heading oscillation and the 500-epoch replay kept PPO updates well behaved (|KL|max 0.00232). On the fixed 100-bar, four-speed held-out grid, ep13000 reached 65.63% capture versus 64.53% for the unadapted ep12500 checkpoint: +1.10 percentage points, but the 95% interval [-0.99, +3.19] crosses zero. More of the same replay is therefore unlikely to buy the missing performance.",
+    "subtitle": "2026-07-31 · corridor-token fixed-100 A/B complete",
+    "headline": "Corridor tokens reduced bar contact, but missed the advancement gate.",
+    "summary": "The K=6 free-gap representation passed its physical geometry and checkpoint-schema tests, then completed an 800-epoch fixed-100 adaptation. On 4,003 held-out episodes, ep13800 reached 66.10% capture versus 64.53% for ep12500 (+1.57 percentage points; 95% CI [-0.51,+3.66]) while bar contact fell from 33.18% to 32.25%. The collision signal is encouraging, but the preregistered 68% and +3pp gates were not met.",
     "active_experiment": {
       "is_live": false,
-      "max_epochs": 13000,
+      "max_epochs": 13800,
       "bars": 100,
-      "run": "ppo_260731_0226_navrl_fix3-low-lr-replay-b5-100bars-s1",
-      "epoch": 13000,
+      "run": "ppo_260731_0343_navrl_corridor6-fixed100-s1",
+      "epoch": 13800,
       "capture_tail": null,
       "crash_tail": null,
       "selector": "cluster_sector",
+      "corridor_tokens": 6,
       "cluster_gap_m": 0.45,
       "sectors": 8,
       "unique_bars": 4.9,
@@ -1990,72 +2014,79 @@
     },
     "milestones": [
       {
-        "label": "TARGET MOTION",
-        "value": "FIX3 parity",
-        "detail": "Python and browser use the same heading-continuity contract",
+        "label": "GEOMETRY",
+        "value": "PASS",
+        "detail": "center clear 100%; bound-on-bar 97.8%; width sanity 98.8%",
         "state": "pass"
       },
       {
-        "label": "UPDATE SAFETY",
-        "value": "|KL|max 0.00232",
-        "detail": "low-LR replay remained far below the 0.04 fail-stop",
+        "label": "OBS SCHEMA",
+        "value": "898 → 946",
+        "detail": "explicit six-corridor append and contract-safe checkpoint expansion",
         "state": "pass"
       },
       {
         "label": "HELD-OUT CAPTURE",
-        "value": "65.63%",
-        "detail": "ep13000 at 100 bars; 70% target remains unmet",
+        "value": "66.10%",
+        "detail": "4,003 episodes at 100 bars; pilot target was 68%",
         "state": "warn"
       },
       {
-        "label": "FAILURE MODE",
-        "value": "95.5% bar contact",
-        "detail": "of observed crashes; below-ground failures remain small",
-        "state": "fail"
+        "label": "BAR CONTACT",
+        "value": "32.25%",
+        "detail": "down from the immutable ep12500 baseline of 33.18%",
+        "state": "pass"
       }
     ],
     "comparison": [
       {
-        "label": "ep12500 · FIX3, no replay",
+        "label": "ep12500 · cluster-sector baseline",
         "bars": 100,
         "capture": 0.6453,
         "unique": 4.9,
-        "verdict": "warm-start baseline; bar contact 33.18%"
+        "verdict": "immutable baseline; bar contact 33.18%"
       },
       {
-        "label": "ep12850 · replay",
+        "label": "ep13100 · corridor screen",
         "bars": 100,
-        "capture": 0.6403,
+        "capture": 0.642,
         "unique": 4.9,
-        "verdict": "no gain; bar contact 34.20%"
+        "verdict": "no early gain; bar contact 33.75%"
       },
       {
-        "label": "ep13000 · replay",
+        "label": "ep13450 · corridor screen",
         "bars": 100,
-        "capture": 0.6563,
+        "capture": 0.5993,
         "unique": 4.9,
-        "verdict": "best observed; bar contact 32.23%"
+        "verdict": "mid-run regression; bar contact 38.15%"
+      },
+      {
+        "label": "ep13800 · corridor confirm",
+        "bars": 100,
+        "capture": 0.661,
+        "unique": 4.9,
+        "verdict": "4,003 episodes; bar contact 32.25%"
       }
     ],
     "gates": [
       {
-        "label": "task contract",
-        "value": "PASS · FIX3 target motion + browser parity"
+        "label": "capture target",
+        "value": "FAIL · 66.10% < 68%"
       },
       {
-        "label": "update safety",
-        "value": "PASS · |KL|max 0.00232"
+        "label": "minimum gain",
+        "value": "FAIL · +1.57pp < +3pp"
       },
       {
-        "label": "held-out target",
-        "value": "FAIL · 65.63% < 70%"
+        "label": "bar contact",
+        "value": "PASS · 32.25% < 33.18%"
       },
       {
         "label": "significance",
-        "value": "NO · +1.10pp, CI crosses zero"
+        "value": "INCONCLUSIVE · 95% CI crosses zero"
       }
     ],
-    "decision": "Stop extending the low-LR replay. Preserve ep12500 and ep13000 as baselines, validate a free-space corridor extractor without changing policy input, then run a short fixed-100 A/B with an explicit new observation schema. Do not silently reinterpret the current 898-D input."
+    "decision": "Freeze corridor6 as a partial/negative result and do not buy more epochs with the same representation. Keep density=100 and goal distance=4..16 fixed for the next diagnostic, then test whether two depth layers per sector preserve the front/back surfaces that one corridor token compresses away."
   },
   "density_speed_map": {
     "notes": [
@@ -2337,9 +2368,9 @@
   },
   "corridor_token": {
     "title": "Corridor token",
-    "subtitle": "next ablation · represent traversable gaps, not only obstacle surfaces",
+    "subtitle": "completed pilot · physical geometry passed, policy gate failed",
     "definition": "A corridor token is a compact description of one locally traversable opening between obstacles. The current obstacle token says where a bar surface is; a corridor token says where the drone may fit, how wide the opening is, and how far that opening remains clear.",
-    "why_now": "At 100 bars the cluster-sector encoder already associates about 4.9 unique bars out of 8 slots, hit_token_given_fov is 0.839, and duplicate use is only 0.2. Yet most crashes are bar contacts. The next bottleneck is therefore converting detected surfaces into a safe passage affordance, not simply adding more obstacle hits.",
+    "why_now": "The geometry was real and the actor consumed it safely: K=6 expanded the observation from 898 to 946 dimensions without changing historical offsets. It reduced bar contact by 0.93pp, but capture improved only 1.57pp and its confidence interval crossed zero. That rules out simply extending this same run; the next representation must preserve more depth structure rather than add more copies of the same local gap summary.",
     "current": {
       "label": "Obstacle token · current",
       "question": "Where are the nearest bars?",
@@ -2352,7 +2383,7 @@
       "weakness": "The policy must infer the opening between bars and whether the drone fits."
     },
     "proposed": {
-      "label": "Corridor token · proposed",
+      "label": "Corridor token · tested",
       "question": "Where can the drone pass?",
       "fields": [
         "gap center bearing",
@@ -2373,22 +2404,22 @@
       {
         "id": "P1",
         "title": "Geometry-only diagnostic",
-        "detail": "Extract gap center, usable width, and clear depth from the existing LiDAR, but do not feed it to the actor yet.",
-        "state": "now"
+        "detail": "Physical probe passed: center clearance 100%, bar-boundary 97.8%, width sanity 98.8%.",
+        "state": "done"
       },
       {
         "id": "P2",
         "title": "Contract-safe input",
-        "detail": "Add explicit corridor fields and selectively initialize the widened input projection; record the observation schema in checkpoints.",
-        "state": "todo"
+        "detail": "Expanded 898→946 dimensions, selectively initialized the new projection, and recorded schema provenance.",
+        "state": "done"
       },
       {
         "id": "P3",
         "title": "Short fixed-100 A/B",
-        "detail": "Compare the unchanged cluster-sector baseline against corridor tokens under the same seeds and held-out sweep.",
-        "state": "todo"
+        "detail": "Completed 800 epochs and 4,003 held-out episodes: 66.10% capture, 32.25% bar contact.",
+        "state": "done"
       }
     ],
-    "pilot_gate": "Advance only if the fixed-100 aggregate reaches at least 68%, improves by at least 3 percentage points over ep12500, and lowers bar-contact rate. Treat 70% with a replicated seed as the backbone-freeze gate."
+    "pilot_gate": "FAIL: capture 66.10% < 68% and gain +1.57pp < +3pp; bar-contact reduction passed. Do not extend corridor6. Advance to a separately gated two-depth-layer diagnostic."
   }
 }

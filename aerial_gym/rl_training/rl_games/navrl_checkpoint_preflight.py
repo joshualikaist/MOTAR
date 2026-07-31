@@ -26,11 +26,20 @@ _CONTRACT_ENV = {
     "cfg_lidar_hbeams": "NAVRL_LIDAR_HBEAMS",
     "cfg_lidar_vbeams": "NAVRL_LIDAR_VBEAMS",
     "cfg_corridor_tokens": "NAVRL_CORRIDOR_TOKENS",
+    "cfg_corridor_horizon_m": "NAVRL_CORRIDOR_HORIZON_M",
+    "cfg_corridor_min_width_m": "NAVRL_CORRIDOR_MIN_WIDTH_M",
 }
 _STRING_CONTRACT_FIELDS = {"cfg_obstacle_selector"}
 # Checkpoints saved before a contract field existed are interpreted at the field's historical
 # behavior. corridor_tokens=0: every pre-corridor checkpoint used the plain 898-D schema.
-_LEGACY_CONTRACT_DEFAULTS = {"cfg_obstacle_selector": "greedy_suppress", "cfg_corridor_tokens": 0}
+_LEGACY_CONTRACT_DEFAULTS = {
+    "cfg_obstacle_selector": "greedy_suppress",
+    "cfg_corridor_tokens": 0,
+    # The first corridor checkpoints (2026-07-31) predated provenance for these two knobs but used
+    # these exact launcher defaults. Future checkpoints save both fields explicitly.
+    "cfg_corridor_horizon_m": 6.0,
+    "cfg_corridor_min_width_m": 0.55,
+}
 
 
 def _first_nonfinite(value: Any, path: str = "checkpoint") -> Optional[str]:
