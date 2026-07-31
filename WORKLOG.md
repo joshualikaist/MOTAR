@@ -4466,3 +4466,16 @@ v2 launcher 기본값을 `NAVRL_TARGET_SPEED_RAMP_EPOCHS=300`으로 확정했다
 
 최종 정적/회귀 검증: checkpoint preflight 13 PASS, curriculum 8 PASS,
 training safety 7 PASS, Node arena/status parity PASS, Python compile/bash syntax/diff check PASS.
+
+### 공개 사이트 배포 정정
+
+최초 완료 보고 때는 로컬 `docs/status`와 snapshot만 수정했고 GitHub Pages 배포를 하지 않아,
+공개 페이지가 계속 24×24×3m / 115 bars인 이전 커밋을 표시했다. 사용자 캡처로 이를
+재확인하고 사이트 변경을 `9a8eab4`로 `research/navrl-env`(원격 default branch)에
+푸시했다. 공개 URL을 다시 조회해 다음을 확인했다.
+
+- HTML caption: **40×40×3m**
+- cache key: `arena_motion.js?v=20260731b`
+- live `status.json`: arena 40×40×3m, bar height 3m, slider 10..300,
+  goal 6..28m, target speed 0.3..1.5m/s
+- 공개 JS: 동적 `Motion.configure`, `arenaSpan`, `BAR_HEIGHT` raycast 반영
