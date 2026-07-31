@@ -18,6 +18,8 @@ class AssetManager:
         placement_attempts_before_relax=128,
         placement_relax_factor=0.8,
         placement_candidate_batch_size=32,
+        placement_touch_dist=0.4,
+        placement_gap_dist=1.6,
     ):
         # min_xy_spacing > 0 enforces a minimum ground-plane (XY) center-to-center distance
         # between the kept obstacles so they never overlap. Default 0.0 = off (unchanged behavior).
@@ -28,6 +30,12 @@ class AssetManager:
         if self.placement_relax_factor <= 0.0 or self.placement_relax_factor >= 1.0:
             self.placement_relax_factor = 0.8
         self.placement_candidate_batch_size = max(1, int(placement_candidate_batch_size))
+        # navrl_band mode: forbidden center-distance band (touch, gap). Candidates whose distance
+        # to some placed obstacle falls INSIDE the band would create a narrow slit and are
+        # rejected; touching (<= touch) merges obstacles into compound walls instead (the
+        # reference NavRL terrain generator's good_distance() behavior).
+        self.placement_touch_dist = max(0.0, float(placement_touch_dist))
+        self.placement_gap_dist = max(self.placement_touch_dist, float(placement_gap_dist))
         self.init_tensors(global_tensor_dict, num_keep_in_env)
 
     def init_tensors(self, global_tensor_dict, num_keep_in_env):
@@ -50,12 +58,15 @@ class AssetManager:
         self.reset(self.num_keep_in_env)
         logger.warning(f"Number of obstacles to be kept in the environment: {self.num_keep_in_env}")
         logger.warning(
-            "Obstacle placement | mode=%s min_xy_spacing=%.3f relax_factor=%.3f candidate_batch=%d"
+            "Obstacle placement | mode=%s min_xy_spacing=%.3f relax_factor=%.3f "
+            "candidate_batch=%d touch=%.2f gap=%.2f"
             % (
                 self.placement_mode,
                 self.min_xy_spacing,
                 self.placement_relax_factor,
                 self.placement_candidate_batch_size,
+                self.placement_touch_dist,
+                self.placement_gap_dist,
             )
         )
 
@@ -113,6 +124,8 @@ class AssetManager:
         return torch.as_tensor(env_ids, device=device, dtype=torch.long).view(-1)
 
     def _enforce_min_xy_spacing(self, positions, num_used, env_ids):
+        if self.placement_mode == "navrl_band":
+            return self._navrl_band_xy_spacing(positions, num_used, env_ids)
         if self.placement_mode in ("random", "rejection", "navrl_random"):
             return self._random_rejection_xy_spacing(positions, num_used, env_ids)
         return self._grid_xy_spacing(positions, num_used, env_ids)
@@ -231,6 +244,92 @@ class AssetManager:
                         relax_ids = rejected[relax]
                         min_dist[relax_ids] *= relax_factor
                         attempts[relax_ids] = 0
+
+        positions = positions.clone()
+        positions[env_ids, :n, 0] = placed_x
+        positions[env_ids, :n, 1] = placed_y
+        return positions
+
+    def _navrl_band_xy_spacing(self, positions, num_used, env_ids):
+        """Slit-free scatter with a forbidden center-distance band (touch, gap).
+
+        A candidate is accepted only if EVERY already-placed obstacle is either touching it
+        (center distance <= touch -> the boxes overlap for all footprints in the 0.4..0.8 m
+        pool, forming one compound wall) or at least ``gap`` away (worst-case surface gap
+        gap - 0.8 m, comfortably passable). Distances inside the band would create a slit
+        narrower than the drone and are never accepted; when the field saturates, the
+        candidate snaps onto a random placed obstacle (guaranteed merge) instead of relaxing
+        the passable-gap guarantee -- the exact opposite failure mode of the legacy
+        "random" rule, whose *=0.8 relaxation produced ~2.2 impassable slits per 150-bar
+        layout (tools/probe_placement_slits.py, 2026-07-31).
+        """
+        num_assets = positions.shape[1]
+        n = int(min(num_used, num_assets))
+        if n <= 1 or len(env_ids) == 0:
+            return positions
+
+        device = positions.device
+        num_envs = len(env_ids)
+        touch = self.placement_touch_dist
+        gap = self.placement_gap_dist
+        bx0, bx1, by0, by1 = self._placement_band()
+        bx0, bx1, by0, by1 = bx0[env_ids], bx1[env_ids], by0[env_ids], by1[env_ids]
+        width = (bx1 - bx0).clamp(min=1e-6)
+        height = (by1 - by0).clamp(min=1e-6)
+        placed_x = torch.empty((num_envs, n), device=device)
+        placed_y = torch.empty((num_envs, n), device=device)
+        batch = self.placement_candidate_batch_size
+        max_attempts = self.placement_attempts_before_relax * 10  # then merge, never slit
+
+        placed_x[:, 0] = bx0 + width * torch.rand(num_envs, device=device)
+        placed_y[:, 0] = by0 + height * torch.rand(num_envs, device=device)
+        for k in range(1, n):
+            pending = torch.ones(num_envs, dtype=torch.bool, device=device)
+            attempts = torch.zeros(num_envs, dtype=torch.int32, device=device)
+            while pending.any():
+                idx = pending.nonzero(as_tuple=False).squeeze(-1)
+                local_n = len(idx)
+                cand_x = bx0[idx].unsqueeze(1) + width[idx].unsqueeze(1) * torch.rand(
+                    local_n, batch, device=device
+                )
+                cand_y = by0[idx].unsqueeze(1) + height[idx].unsqueeze(1) * torch.rand(
+                    local_n, batch, device=device
+                )
+                dx = placed_x[idx, :k].unsqueeze(1) - cand_x.unsqueeze(2)
+                dy = placed_y[idx, :k].unsqueeze(1) - cand_y.unsqueeze(2)
+                d = torch.sqrt(dx * dx + dy * dy)  # (local_n, batch, k)
+                # valid iff no placed obstacle sits INSIDE the forbidden band
+                in_band = (d > touch) & (d < gap)
+                valid = ~in_band.any(dim=2)
+                has_valid = valid.any(dim=1)
+                first_valid = valid.to(torch.int64).argmax(dim=1)
+
+                accepted = idx[has_valid]
+                if len(accepted) > 0:
+                    local = torch.arange(local_n, device=device)[has_valid]
+                    chosen = first_valid[has_valid]
+                    placed_x[accepted, k] = cand_x[local, chosen]
+                    placed_y[accepted, k] = cand_y[local, chosen]
+                    pending[accepted] = False
+
+                rejected = idx[~has_valid]
+                if len(rejected) > 0:
+                    attempts[rejected] += batch
+                    saturated = attempts[rejected] >= max_attempts
+                    if saturated.any():
+                        sat_ids = rejected[saturated]
+                        # merge fallback: snap onto a random already-placed obstacle with a
+                        # sub-touch offset -> guaranteed compound wall, never a slit.
+                        pick = torch.randint(0, k, (len(sat_ids),), device=device)
+                        ang = 2.0 * math.pi * torch.rand(len(sat_ids), device=device)
+                        r = 0.5 * touch * torch.rand(len(sat_ids), device=device)
+                        placed_x[sat_ids, k] = (
+                            placed_x[sat_ids, pick] + r * torch.cos(ang)
+                        ).clamp(bx0[sat_ids], bx1[sat_ids])
+                        placed_y[sat_ids, k] = (
+                            placed_y[sat_ids, pick] + r * torch.sin(ang)
+                        ).clamp(by0[sat_ids], by1[sat_ids])
+                        pending[sat_ids] = False
 
         positions = positions.clone()
         positions[env_ids, :n, 0] = placed_x

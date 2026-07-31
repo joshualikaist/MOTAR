@@ -1,4 +1,27 @@
+import os
+
 from aerial_gym.config.asset_config.env_object_config import bar_asset_params
+
+
+def _env_float(name, default):
+    raw = os.environ.get(name)
+    if raw is None or raw.strip() == "":
+        return float(default)
+    try:
+        return float(raw)
+    except ValueError:
+        return float(default)
+
+
+# Arena footprint [m]. Default 24 preserves every v1 result byte-identically; the v2 search
+# arena sets NAVRL_ARENA_XY=40 to match NavRL's 40 x 40 m map (map_range [20,20] in
+# reference/NavRL isaac-training env.py:102). The height stays 3 m ground-referenced.
+_ARENA_XY = _env_float("NAVRL_ARENA_XY", 24.0)
+_ARENA_Z = _env_float("NAVRL_ARENA_Z", 3.0)
+if not 8.0 <= _ARENA_XY <= 80.0:
+    raise ValueError("NAVRL_ARENA_XY must be in [8, 80] m")
+if not 2.0 <= _ARENA_Z <= 8.0:
+    raise ValueError("NAVRL_ARENA_Z must be in [2, 8] m")
 
 
 class NavRLBarsEnvCfg:
@@ -33,25 +56,38 @@ class NavRLBarsEnvCfg:
 
         use_warp = True  # required for the warp LiDAR
 
-        # NavRL-style random scatter: sample uniform XY positions and reject candidates that violate
-        # a minimum center-to-center distance. At high density the placement relaxes this threshold
-        # by 0.8 after repeated failed attempts, matching NavRL's "do not stall when saturated"
-        # behavior while avoiding the visible row/column artifact of the old jittered grid.
-        obstacle_placement_mode = "random"
+        # Obstacle placement. "random" = legacy NavRL-style scatter with a min center-to-center
+        # distance that RELAXES (*0.8) when saturated. Measured 2026-07-31
+        # (tools/probe_placement_slits.py): fine through 110 bars (0 impassable slits, free space
+        # fully connected), but at 150 bars the relaxation fires in 100% of layouts and produces
+        # ~2.2 impassable (<0.40 m) + ~15 marginal (<0.60 m) surface gaps per layout.
+        # "navrl_band" = slit-free rule mirroring the reference NavRL terrain generator's
+        # good_distance() forbidden band: a candidate is accepted only if every already-placed bar
+        # is either TOUCHING it (centers <= touch dist -> bars merge into a compound wall) or at
+        # least gap dist away (worst-case SURFACE gap = gap - 2*0.4 >= 0.8 m, comfortably above
+        # the 0.396 m drone-box diagonal). Saturation merges instead of slitting.
+        obstacle_placement_mode = (
+            os.environ.get("NAVRL_PLACEMENT_MODE", "").strip().lower() or "random"
+        )
         obstacle_placement_attempts_before_relax = 128
         obstacle_placement_relax_factor = 0.8
         obstacle_placement_candidate_batch_size = 32
         min_obstacle_xy_spacing = 1.5
+        # navrl_band parameters (center-to-center): touch <= 0.4 guarantees overlap for every
+        # footprint pair in the 0.4..0.8 m pool; gap >= 1.6 guarantees a passable corridor even
+        # for two 0.8 m bars. Conservative by construction because the manager places by center
+        # without per-instance footprints.
+        obstacle_touch_dist = _env_float("NAVRL_PLACEMENT_TOUCH_M", 0.4)
+        obstacle_gap_dist = _env_float("NAVRL_PLACEMENT_GAP_M", 1.6)
 
-        # Fixed 24 x 24 x 3 m arena (min == max so every env is identical). Ground-referenced:
-        # z in [0, 3]. (Enlarged from an earlier 10 x 10 box so the far-side goals fit inside.)
-        # Drone spawns at the left edge (init x-ratio ~0 -> x in [0, ~1]); the goal is placed at
-        # x=k on the far side (curriculum k ~5 -> ~23.5 m, clamped to arena_x - margin), so every
-        # episode crosses the bar field left->right, well inside the [0, 24] x [0, 24] bounds.
+        # Arena (min == max so every env is identical). Ground-referenced: z in [0, Z].
+        # Default 24 x 24 x 3 m (v1); NAVRL_ARENA_XY=40 gives the NavRL-scale search arena.
+        # Drone spawns at the left edge (init x-ratio ~0); general-spawn training randomizes
+        # start/goal inside the bounds at runtime, so the size propagates automatically.
         lower_bound_min = [0.0, 0.0, 0.0]
         lower_bound_max = [0.0, 0.0, 0.0]
-        upper_bound_min = [24.0, 24.0, 3.0]
-        upper_bound_max = [24.0, 24.0, 3.0]
+        upper_bound_min = [_ARENA_XY, _ARENA_XY, _ARENA_Z]
+        upper_bound_max = [_ARENA_XY, _ARENA_XY, _ARENA_Z]
 
     class env_config:
         # Only bars. The Phase-3 moving target is NOT a mesh asset -- it is injected analytically

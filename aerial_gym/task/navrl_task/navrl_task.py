@@ -200,6 +200,13 @@ class NavRLTask(BaseTask):
                 % (self.tm.pattern, self.tm.speed_final, self.tm.speed_fixed, self.step_dt)
             )
 
+        # Critic privileged-state distance normalizer. Reads the SAME env var as
+        # navrl_bars_env.NAVRL_ARENA_XY so the divisor always equals the arena side length
+        # (24 m in the v1 arena, 40 m in the v2 NavRL-scale search arena). Changing the
+        # arena therefore changes the critic input scale -- a task-version change; checkpoints
+        # are not comparable across arena sizes.
+        self._arena_xy_norm = float(os.environ.get("NAVRL_ARENA_XY", "").strip() or 24.0)
+
         # --- Phase-3 vision pivot (NAVRL_VISION=1): sensor-only actor. See task_config.vision.
         self.vis_cfg = getattr(self.task_config, "vision", None)
         self.vision_mode = bool(self.vis_cfg is not None and self.vis_cfg.enable)
@@ -2358,7 +2365,7 @@ class NavRLTask(BaseTask):
         states[:, obs.shape[1] :] = torch.cat(
             [
                 rpos_veh / dist,
-                dist / 24.0,
+                dist / self._arena_xy_norm,
                 tvel_veh / 2.0,
                 closing / (self.task_config.max_velocity + 2.0),
             ],
@@ -2420,7 +2427,7 @@ class NavRLTask(BaseTask):
         states[:, obs.shape[1] :] = torch.cat(
             [
                 rpos_veh / dist,
-                dist / 24.0,
+                dist / self._arena_xy_norm,
                 tvel_veh / 2.0,
                 closing / (self.task_config.max_velocity + 2.0),
             ],

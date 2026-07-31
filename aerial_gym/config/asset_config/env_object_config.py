@@ -724,18 +724,26 @@ class bar_asset_params(asset_state_params):
     # task_config.density / NAVRL_NUM_BARS; inactive bars are moved to -1000 by AssetManager.
     num_assets = max(0, _env_int("NAVRL_MAX_BARS", 150))
 
-    asset_folder = f"{AERIAL_GYM_DIRECTORY}/resources/models/environment_assets/bars"
+    # Bar pool selection. "bars" = legacy 2.0 m pool (fly-over possible in a 3 m arena);
+    # "bars_h3" = full-height 3.0 m pool (v2 search arena: removes the fly-over option,
+    # matching NavRL's mostly-unoverflyable obstacles). Same footprints/seed either way, so
+    # this changes ONLY the height. The bar z-ratio must put the box center at height/2:
+    # 2 m pool -> 1.0 m (ratio 1/3 in a 3 m arena), 3 m pool -> 1.5 m (ratio 1/2).
+    _bar_pool = (os.environ.get("NAVRL_BAR_POOL", "").strip() or "bars")
+    _bar_z_ratio = 0.5 if _bar_pool == "bars_h3" else 0.3333
+
+    asset_folder = f"{AERIAL_GYM_DIRECTORY}/resources/models/environment_assets/{_bar_pool}"
     file = None  # random pick from the pool -> each bar gets a random footprint
 
     collision_mask = 1  # bars do not collide with each other
 
     # [x_ratio, y_ratio, z_ratio, roll, pitch, yaw, 1.0, vx,vy,vz, wx,wy,wz]
-    # x band starts past the drone spawn strip (drone x-ratio ~0, x <~ 1); z fixed at 1/3 -> bar center
-    # 1 m -> stands 0..2 m; upright (no roll/pitch/yaw).
+    # x band starts past the drone spawn strip (drone x-ratio ~0, x <~ 1); z ratio places the box
+    # center at bar_height/2 (pool-dependent, see _bar_z_ratio) so bars stand on the floor; upright.
     min_state_ratio = [
         0.13,
         0.0,
-        0.3333,
+        _bar_z_ratio,
         0.0,
         0.0,
         0.0,
@@ -750,7 +758,7 @@ class bar_asset_params(asset_state_params):
     max_state_ratio = [
         0.96,
         1.0,
-        0.3333,
+        _bar_z_ratio,
         0.0,
         0.0,
         0.0,

@@ -6,17 +6,23 @@ placing it at z = 1 m makes it stand from the floor (0 m) up to 2 m. The environ
 `num_assets` of these at random per env (bar_asset_params.file = None).
 
 Run once (positions are randomized at run time, only the *shapes* live in these files):
-    python tools/generate_bar_assets.py
+    python tools/generate_bar_assets.py               # legacy 2.0 m pool -> .../bars
+    BAR_HEIGHT=3.0 BAR_POOL=bars_h3 python tools/generate_bar_assets.py
+        # v2 full-height pool: 3.0 m bars in a 3 m arena remove the fly-over option entirely
+        # (NavRL's obstacles are mostly 4-6 m in a 4.5 m map for the same reason). A separate
+        # folder keeps old checkpoints/evals bit-identical; select at runtime with
+        # NAVRL_BAR_POOL=bars_h3 (see env_object_config.bar_asset_params).
 """
 import os
 import numpy as np
 
 OUT = os.path.join(
     os.path.dirname(os.path.dirname(os.path.realpath(__file__))),
-    "resources/models/environment_assets/bars",
+    "resources/models/environment_assets",
+    os.environ.get("BAR_POOL", "bars").strip() or "bars",
 )
 N = 40           # pool size (env randomly picks 16 with replacement each reset)
-HEIGHT = 2.0     # fixed bar height [m]
+HEIGHT = float(os.environ.get("BAR_HEIGHT", "2.0") or 2.0)  # bar height [m]
 MIN_WD, MAX_WD = 0.4, 0.8  # random width/depth range [m]
 SEED = 42
 

@@ -276,6 +276,8 @@ class EnvManager(BaseManager):
             placement_candidate_batch_size=getattr(
                 self.cfg.env, "obstacle_placement_candidate_batch_size", 32
             ),
+            placement_touch_dist=getattr(self.cfg.env, "obstacle_touch_dist", 0.4),
+            placement_gap_dist=getattr(self.cfg.env, "obstacle_gap_dist", 1.6),
         )
         self.asset_manager.prepare_for_sim()
         self.robot_manager.prepare_for_sim(self.global_tensor_dict)
