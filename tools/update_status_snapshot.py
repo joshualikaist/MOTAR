@@ -62,6 +62,24 @@ def _training_process_exists() -> bool:
     return False
 
 
+def _live_training_max_epochs(default: int = 12000) -> int:
+    """Read the active NavRL runner's explicit epoch ceiling when available."""
+    proc = Path("/proc")
+    if not proc.is_dir():
+        return default
+    pattern = re.compile(r"(?:^|\s)--max_epochs\s+(\d+)(?:\s|$)")
+    for cmdline_path in proc.glob("[0-9]*/cmdline"):
+        try:
+            command = cmdline_path.read_bytes().replace(b"\0", b" ").decode(errors="ignore")
+        except (OSError, PermissionError):
+            continue
+        if "runner.py" not in command or "--task navrl_task" not in command or "--train" not in command:
+            continue
+        if match := pattern.search(command):
+            return int(match.group(1))
+    return default
+
+
 def _load_rows(csv_path: Path) -> List[Dict[str, str]]:
     with csv_path.open(newline="", encoding="utf-8") as handle:
         return list(csv.DictReader(handle))
@@ -144,7 +162,9 @@ def _corrected_density_curve() -> Dict[str, Any]:
     }
 
 
-def _active_record(summary: Dict[str, Any], csv_path: Path) -> Dict[str, Any]:
+def _active_record(
+    summary: Dict[str, Any], csv_path: Path, *, max_epochs: int
+) -> Dict[str, Any]:
     rows = _load_rows(csv_path)
     tail = rows[-50:]
     age_min = max(0.0, (datetime.now(timezone.utc).timestamp() - csv_path.stat().st_mtime) / 60.0)
@@ -153,7 +173,7 @@ def _active_record(summary: Dict[str, Any], csv_path: Path) -> Dict[str, Any]:
         "is_live": True,
         "metrics_age_min": age_min,
         "epoch": summary["last_epoch"],
-        "max_epochs": 12000,
+        "max_epochs": max_epochs,
         "epochs_logged": summary["epochs_logged"],
         "tail_epochs": len(tail),
         "captured_rate": _mean(tail, "captured_rate"),
@@ -166,9 +186,127 @@ def _active_record(summary: Dict[str, Any], csv_path: Path) -> Dict[str, Any]:
     }
 
 
+def _live_density_promotions() -> List[Dict[str, Any]]:
+    live_link = RL_ROOT / "train_session_logs/current_training.log"
+    if not live_link.exists():
+        return []
+    pattern = re.compile(
+        r"density curriculum promoted \| bars (\d+) -> (\d+) "
+        r"after (\d+) eps, capture=([0-9.]+)"
+    )
+    promotions = []
+    for source, target, episodes, capture in pattern.findall(
+        live_link.read_text(encoding="utf-8", errors="ignore")
+    ):
+        promotions.append(
+            {
+                "source": int(source),
+                "target": int(target),
+                "episodes": int(episodes),
+                "capture": float(capture),
+            }
+        )
+    return promotions
+
+
+def _v2_search_update(active: Dict[str, Any]) -> Dict[str, Any]:
+    promotions = _live_density_promotions()
+    bars = int(round(active.get("n_bars_active") or 70))
+    capture_tail = active.get("captured_rate")
+    comparison = [
+        {
+            "label": f"{item['source']} → {item['target']} promotion",
+            "bars": item["target"],
+            "capture": item["capture"],
+            "unique": None,
+            "verdict": f"PASS over {item['episodes']:,} episodes",
+        }
+        for item in promotions
+    ]
+    comparison.append(
+        {
+            "label": "current stage · rolling tail",
+            "bars": bars,
+            "capture": capture_tail,
+            "unique": None,
+            "verdict": "live diagnostic only; not the 16,384-episode promotion gate",
+        }
+    )
+    promotion_text = " → ".join(
+        [str(promotions[0]["source"])] + [str(item["target"]) for item in promotions]
+    ) if promotions else str(bars)
+    gate_captures = ", ".join(f"{item['capture'] * 100:.1f}%" for item in promotions)
+    tail_text = f"{capture_tail * 100:.1f}%" if capture_tail is not None else "pending"
+    return {
+        "subtitle": "2026-07-31 · v2 search-arena density curriculum · running snapshot",
+        "headline": f"Task-v2 training is live at {bars} bars after {len(promotions)} promotions.",
+        "summary": (
+            f"The 40 m search-arena run has advanced {promotion_text}; completed promotion-window "
+            f"capture values are {gate_captures or 'not yet available'}. The current 50-epoch tail "
+            f"is {tail_text}, which is diagnostic only and must not be mistaken for the 16,384-episode "
+            "gate. Training may continue, but checkpoint evaluation remains pending the provenance "
+            "and v2 gate fixes identified by the independent audit."
+        ),
+        "active_experiment": {
+            **active,
+            "bars": bars,
+            "selector": "cluster_sector",
+            "cluster_gap_m": 0.45,
+            "sectors": 8,
+            "arena_xy_m": 40,
+            "arena_z_m": 3,
+            "density_final": 300,
+            "density_step": 15,
+            "density_threshold": 0.70,
+            "density_window_episodes": 16384,
+        },
+        "milestones": [
+            {
+                "label": "DENSITY",
+                "value": f"{bars} / 300",
+                "detail": f"self-paced +15 bars; chain {promotion_text}",
+                "state": "active",
+            },
+            {
+                "label": "PROMOTIONS",
+                "value": str(len(promotions)),
+                "detail": f"window capture {gate_captures or 'pending'}",
+                "state": "pass" if promotions else "active",
+            },
+            {
+                "label": "PROVENANCE",
+                "value": "6 / 7",
+                "detail": "arena contract saved; placement_touch is still missing",
+                "state": "warn",
+            },
+            {
+                "label": "1650 Ti · 4GB",
+                "value": "CONDITIONAL",
+                "detail": "64-env path fits the batch; real-card 8-epoch smoke still required",
+                "state": "warn",
+            },
+        ],
+        "comparison": comparison,
+        "gates": [
+            {"label": "density curriculum", "value": f"RUNNING · {promotion_text}"},
+            {"label": "collapse safety", "value": "PASS · reward guard off, NaN/Inf fail-fast on"},
+            {"label": "evaluation contract", "value": "PATCH BEFORE EVAL · touch/z/gap coverage incomplete"},
+            {"label": "1650 Ti", "value": "SMOKE REQUIRED · recommend free VRAM ≥3.6–3.7 GiB"},
+        ],
+        "decision": (
+            "Keep the current 128-env training process running. Do not interpret the rolling tail as "
+            "a promotion decision. Before held-out evaluation, add placement_touch to checkpoint "
+            "provenance, enforce z/gap/touch in the v2 evaluator, and repair NAVRL_V2_FORCE ordering. "
+            "Treat the 4GB launcher as provisional until it passes an actual 1650 Ti smoke run."
+        ),
+    }
+
+
 def _research_update(
     active: Optional[Dict[str, Any]], latest: Optional[Dict[str, Any]]
 ) -> Dict[str, Any]:
+    if active and "v2-search" in active.get("run", ""):
+        return _v2_search_update(active)
     record = active or latest or {}
     experiment = {
         "is_live": bool(active),
@@ -356,7 +494,11 @@ def build_snapshot() -> Dict[str, Any]:
     active = None
     if active_path is not None:
         active_summary = next(item for item in summaries if item["run"] == active_path.parents[1].name)
-        active = _active_record(active_summary, active_path)
+        active = _active_record(
+            active_summary,
+            active_path,
+            max_epochs=_live_training_max_epochs(),
+        )
 
     finalized = [item for item in summaries if item["run"] != (active or {}).get("run")]
     latest = max(

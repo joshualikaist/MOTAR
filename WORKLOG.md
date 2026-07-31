@@ -4163,3 +4163,63 @@ provenance는 실행 중 프로세스에 소급 적용되지 않으므로, 사�
    더 안전한 대안은 런타임 bounds 텐서에서 역산하는 것.
 6. 4GB 실측이 3070에서 base_sim_4gb로 수행됨 — 1650 Ti 실기에서는 드라이버/컨텍스트
    오버헤드가 달라 수백 MiB 차이 가능. 실기 첫 실행 시 재확인 필요.
+
+### Codex 독립 검수 결과
+
+현재 학습은 중단하지 않고 read-only로 코드·체크포인트·로그를 교차 확인했다. 재개 run
+`ppo_260731_1411_navrl_v2-search-prov-s1`의 ep1500 체크포인트에는
+`arena_xy=40 / arena_z=3 / bar_pool=bars_h3 / placement_mode=navrl_band /
+placement_gap=1.6 / episode_len=600`이 실제로 저장돼 있었다. preflight 직접 재현에서도
+v2→v2와 v1→v1은 통과하고 v1↔v2 교차 resume은 arena mismatch로 거부됐다. 기존
+`test_navrl_checkpoint_preflight.py` 13개도 통과했다. 현재 run은 70→85막대까지 승급했으므로
+provenance 추가 때문에 학습 로직이 깨진 정황은 없다.
+
+다만 다음 세 결함은 평가 전에 수정해야 한다.
+
+1. **계약 필드 누락**: 실제 배치 로직이 소비하고 v2 런처가 `0.4m`로 설정하는
+   `NAVRL_PLACEMENT_TOUCH_M`이 checkpoint env_state, preflight, v2 eval gate에 모두 없다.
+   이 값이 바뀌면 같은 `navrl_band` 이름이어도 장애물 배치 의미가 달라지므로 조용한 과제
+   혼동을 완전히 차단하지 못한다.
+2. **v2 평가 gate 불완전**: inline gate는 현재 `arena_xy/bar_pool/placement_mode/
+   episode_len`만 거부 조건으로 검사한다. 저장·preflight 대상인 `arena_z`와
+   `placement_gap_m`도 여기서는 강제되지 않고, 누락된 touch도 검사하지 않는다.
+3. **FORCE 우회 불능**: 문서에는 `NAVRL_V2_FORCE=1`로 provenance 거부를 우회할 수 있다고
+   되어 있지만, 실제 스크립트는 Python gate가 먼저 exit 2를 내므로 v1 체크포인트를 넣은
+   직접 재현에서 FORCE도 동일하게 실패했다.
+
+추가로 `_arena_contract()`가 런타임 객체가 아니라 env var를 다시 읽는 구조라 정상 런처
+입력에서는 일치하지만 거짓 provenance 가능성이 남는다. 예를 들어 episode 값
+`600.0`은 실제 task의 int parser에서는 기본값 300으로 되돌아가지만 contract에는 600으로
+저장된다. 가능한 값은 `env_bounds_min/max`, `task_config.episode_len_steps`, asset manager의
+실제 placement 설정에서 읽고, env var는 기대값 비교에만 쓰는 방식이 안전하다. 이번 커밋은
+provenance 관련 회귀 테스트도 새로 추가하지 않았으므로 위 경계조건을 테스트로 고정할 필요가
+있다.
+
+4GB 경로는 **조건부 통과**다. `64 env × horizon 32 = minibatch 2048`이므로 현재 YAML과
+배치가 정확히 맞고, 두 3070 smoke log에서도 64 env/transformer/v2 계약/8 epoch 실행을
+확인했다. 하지만 3,425MiB 수치는 1650 Ti 실측이 아니라 동일 프리셋을 쓴 3070 실측이다.
+4,096MiB 카드에서 idle 사용량이 600MiB면 예상 여유가 약 70MiB뿐이고, 800MiB면 OOM 범위다.
+따라서 1650 Ti에서는 실행 전 free VRAM을 확인하고(권장 free ≥3.6~3.7GiB), 8 epoch smoke
+동안 peak를 폴링한 뒤 본 학습으로 전환해야 한다. 현 YAML에서는 env만 64 미만으로 낮추면
+minibatch보다 rollout batch가 작아지므로, 메모리가 부족하면 48env/minibatch1536 또는
+32env/minibatch1024 전용 설정이 필요하다.
+
+## 2026-07-31 15:07 — task-v2 진행 중 학습을 연구 사이트에 반영
+
+정적 연구 대시보드의 상단 현황이 종료된 corridor6 실험에 고정돼 있어, 진행 중인
+`ppo_260731_1411_navrl_v2-search-prov-s1`을 canonical current update로 바꿨다. snapshot
+생성 시점 기준 epoch 2,420대, 115막대, 50-epoch capture tail 약 75.6%였고 밀도 게이트는
+`70→85 (83.4%) →100 (82.1%) →115 (79.3%)`로 세 번 통과했다. tail 수치와 16,384-episode
+승급 수치를 혼동하지 않도록 사이트 문구와 표에서 둘을 명시적으로 분리했다.
+
+`tools/update_status_snapshot.py`는 활성 `runner.py`의 `--max_epochs`를 `/proc`에서 읽도록
+수정해 기존 하드코딩 12,000 대신 실제 30,000을 표시한다. 현재 로그에서 density promotion
+이력을 파싱해 연구 카드와 비교표에 싣고, provenance `6/7`(placement_touch 누락), v2 평가
+gate 선수정 3건, 1650 Ti 4GB 실기 smoke 필요 상태도 경고 카드로 공개했다. 기존 corridor
+결과와 밀도 ceiling 자료는 역사적 결과로 그대로 보존했다.
+
+검증:
+- `python3 -m py_compile tools/update_status_snapshot.py`
+- `python3 tools/update_status_snapshot.py`: 54 runs, 활성 v2 run 탐지
+- `node tests/test_status_arena_motion.js`: PASS
+- `status.json`과 `index.html` inline fallback 동시 재생성, `git diff --check` PASS
