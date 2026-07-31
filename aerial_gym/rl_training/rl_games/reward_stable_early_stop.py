@@ -127,3 +127,81 @@ def collapse_from_peak_should_stop(cfg, epoch_num, mean_reward_scalar, prev_stat
         return True, next_state
 
     return False, next_state
+
+
+def parse_density_capture_guard_config(config_section):
+    if config_section is None or not isinstance(config_section, dict):
+        return None
+    if not config_section.get("enable", False):
+        return None
+    return {
+        "enable": True,
+        "window_epochs": max(2, int(config_section.get("window_epochs", 50))),
+        "min_epochs_at_density": max(
+            1, int(config_section.get("min_epochs_at_density", 100))
+        ),
+        "min_peak_capture": float(config_section.get("min_peak_capture", 0.50)),
+        "drop_absolute": float(config_section.get("drop_absolute", 0.25)),
+        "patience_epochs": max(1, int(config_section.get("patience_epochs", 25))),
+    }
+
+
+def density_capture_collapse_should_stop(
+    cfg, epoch_num, captured_rate, n_bars_active, prev_state
+):
+    """Detect catastrophic capture loss without comparing rewards across density promotions.
+
+    State resets whenever the active bar count changes. A rolling capture mean is compared only to
+    the best rolling mean achieved at that same density, so a normal reward step when the curriculum
+    promotes cannot trigger this guard.
+    """
+    if cfg is None or captured_rate is None or n_bars_active is None:
+        return False, prev_state or {}
+
+    import math
+
+    rate = float(captured_rate)
+    bars = int(n_bars_active)
+    if not math.isfinite(rate):
+        return True, {
+            "bars": bars,
+            "history": [],
+            "epochs_at_density": 0,
+            "below_count": 0,
+            "nan_stop": True,
+        }
+
+    old = dict(prev_state or {})
+    if int(old.get("bars", bars)) != bars:
+        old = {}
+    history = list(old.get("history", []))
+    history.append(rate)
+    history = history[-cfg["window_epochs"] :]
+    epochs_at_density = int(old.get("epochs_at_density", 0)) + 1
+    peak = float(old.get("peak", -1.0))
+    below_count = int(old.get("below_count", 0))
+    rolling = sum(history) / len(history)
+
+    if len(history) >= cfg["window_epochs"]:
+        peak = max(peak, rolling)
+        collapsed = (
+            epochs_at_density >= cfg["min_epochs_at_density"]
+            and peak >= cfg["min_peak_capture"]
+            and rolling < peak - cfg["drop_absolute"]
+        )
+        below_count = below_count + 1 if collapsed else 0
+
+    next_state = {
+        "bars": bars,
+        "history": history,
+        "epochs_at_density": epochs_at_density,
+        "peak": peak,
+        "rolling": rolling,
+        "below_count": below_count,
+        "epoch": int(epoch_num),
+    }
+    if below_count >= cfg["patience_epochs"]:
+        next_state["collapse_peak"] = peak
+        next_state["collapse_capture"] = rolling
+        return True, next_state
+    return False, next_state

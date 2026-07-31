@@ -45,6 +45,39 @@ class TrainingSafetyTest(unittest.TestCase):
         _SAFETY.reset_optimizer_learning_rate(optimizer, 1e-4)
         self.assertEqual(optimizer.param_groups[0]["lr"], 1e-4)
 
+    def test_density_capture_guard_environment_overrides(self):
+        config = {
+            "enable": True,
+            "window_epochs": 50,
+            "min_epochs_at_density": 100,
+            "min_peak_capture": 0.5,
+            "drop_absolute": 0.25,
+            "patience_epochs": 25,
+        }
+        result = _SAFETY.apply_density_capture_guard_overrides(
+            config,
+            {
+                "NAVRL_DENSITY_GUARD_WINDOW_EPOCHS": "20",
+                "NAVRL_DENSITY_GUARD_MIN_EPOCHS": "40",
+                "NAVRL_DENSITY_GUARD_MIN_PEAK": "0.55",
+                "NAVRL_DENSITY_GUARD_DROP": "0.10",
+                "NAVRL_DENSITY_GUARD_PATIENCE": "10",
+            },
+        )
+        self.assertEqual(result["window_epochs"], 20)
+        self.assertEqual(result["min_epochs_at_density"], 40)
+        self.assertEqual(result["min_peak_capture"], 0.55)
+        self.assertEqual(result["drop_absolute"], 0.10)
+        self.assertEqual(result["patience_epochs"], 10)
+        self.assertEqual(config["drop_absolute"], 0.25)
+
+    def test_density_capture_guard_rejects_invalid_rate(self):
+        with self.assertRaises(ValueError):
+            _SAFETY.apply_density_capture_guard_overrides(
+                {"enable": True},
+                {"NAVRL_DENSITY_GUARD_DROP": "1.5"},
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

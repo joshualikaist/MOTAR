@@ -445,6 +445,7 @@ def _exit_reason_label(reason: str) -> str:
     return {
         "early_stop_stable": "조기 종료 (reward plateau)",
         "early_stop_collapse": "조기 종료 (reward collapse)",
+        "early_stop_density_capture_collapse": "실패 (same-density capture collapse)",
         "early_stop_nan": "실패 (NaN/Inf reward)",
         "nonfinite_ppo": "실패 (NaN/Inf PPO state)",
         "score_to_win": "score_to_win 도달",

@@ -8,6 +8,13 @@ import torch
 from gym.spaces import Box, Dict
 
 from aerial_gym.task.base_task import BaseTask
+from aerial_gym.task.navrl_task.navrl_curriculum import (
+    density_dwell_epochs,
+    density_dwell_ready,
+    density_level_start_after_promotion,
+    density_threshold_at,
+    restore_density_level_start_steps,
+)
 from aerial_gym.task.navrl_task.train_dashboard import record_navrl_epoch_episodes
 from aerial_gym.task.navrl_task.target_motion import (
     TARGET_MOTION_MODEL,
@@ -158,6 +165,9 @@ class NavRLTask(BaseTask):
         self._density_succ_agg = 0
         self._density_fin_agg = 0
         self._density_gate_not_before_steps = 0
+        # num_task_steps at which the CURRENT density became active. The dwell gate below uses it
+        # to require a minimum number of epochs at each density before promotion is allowed.
+        self._density_level_start_steps = 0
         self._density_speed_succ = torch.zeros(4, dtype=torch.long, device=self.device)
         self._density_speed_fin = torch.zeros(4, dtype=torch.long, device=self.device)
         self._density_dist_succ = torch.zeros(4, dtype=torch.long, device=self.device)
@@ -171,16 +181,26 @@ class NavRLTask(BaseTask):
         self._kcomp_succ = 0
         self._kcomp_fin = 0
         self._set_active_bars(initial_bars_requested)
+        # Report the threshold the gate ACTUALLY applies. With the start/end ramp configured these
+        # differ from the flat success_threshold, and printing the unused flat value here made the
+        # startup banner disagree with every promotion decision.
+        _t_start = float(getattr(self.density, "success_threshold_start", 0.0))
+        _t_end = float(getattr(self.density, "success_threshold_end", 0.0))
+        _threshold_text = (
+            "%.3f" % _t_start
+            if abs(_t_start - _t_end) <= 1e-9
+            else "%.3f->%.3f" % (_t_start, _t_end)
+        )
         logger.warning(
             "NavRL density config | initial_bars=%d max_bars=%d curriculum=%s "
-            "final=%d step=%d threshold=%.3f check_eps=%d"
+            "final=%d step=%d threshold=%s check_eps=%d"
             % (
                 self.n_bars_active,
                 self.max_bars_available,
                 bool(getattr(self.density, "use_density_curriculum", False)),
                 int(getattr(self.density, "n_final", self.n_bars_active)),
                 int(getattr(self.density, "promote_step", 0)),
-                float(getattr(self.density, "success_threshold", 0.0)),
+                _threshold_text,
                 int(getattr(self.density, "check_after_episodes", 0)),
             )
         )
@@ -1075,6 +1095,7 @@ class NavRLTask(BaseTask):
             "density_succ_agg": int(self._density_succ_agg),
             "density_fin_agg": int(self._density_fin_agg),
             "density_gate_not_before_steps": int(self._density_gate_not_before_steps),
+            "density_level_start_steps": int(self._density_level_start_steps),
             "density_speed_succ": self._density_speed_succ.detach().cpu().tolist(),
             "density_speed_fin": self._density_speed_fin.detach().cpu().tolist(),
             "density_dist_succ": self._density_dist_succ.detach().cpu().tolist(),
@@ -1086,8 +1107,17 @@ class NavRLTask(BaseTask):
             "cfg_density_threshold": float(
                 getattr(self.density, "success_threshold", 0.0)
             ),
+            "cfg_density_threshold_start": float(
+                getattr(self.density, "success_threshold_start", 0.0)
+            ),
+            "cfg_density_threshold_end": float(
+                getattr(self.density, "success_threshold_end", 0.0)
+            ),
             "cfg_density_check_eps": int(
                 getattr(self.density, "check_after_episodes", 0)
+            ),
+            "cfg_density_min_epochs": int(
+                getattr(self.density, "min_epochs_per_density", 0)
             ),
             "cfg_density_stratified_gate": bool(
                 getattr(self.density, "use_stratified_gate", False)
@@ -1116,9 +1146,16 @@ class NavRLTask(BaseTask):
             "cfg_placement_gap_m": float(
                 os.environ.get("NAVRL_PLACEMENT_GAP_M", "").strip() or 1.6
             ),
+            "cfg_placement_touch_m": float(
+                os.environ.get("NAVRL_PLACEMENT_TOUCH_M", "").strip() or 0.4
+            ),
             "cfg_episode_len_steps": float(
                 os.environ.get("NAVRL_EPISODE_LEN_STEPS", "").strip() or 300
             ),
+            # Obstacle placement band as a fraction of the arena. Same failure class as the arena
+            # fields: changing it changes the task with no shape error to catch it.
+            "cfg_bar_x_min": float(os.environ.get("NAVRL_BAR_X_MIN", "").strip() or 0.13),
+            "cfg_bar_x_max": float(os.environ.get("NAVRL_BAR_X_MAX", "").strip() or 0.96),
         }
 
     @staticmethod
@@ -1429,10 +1466,17 @@ class NavRLTask(BaseTask):
                 ("cfg_arena_z", arena["cfg_arena_z"], "NAVRL_ARENA_Z"),
                 ("cfg_placement_gap_m", arena["cfg_placement_gap_m"], "NAVRL_PLACEMENT_GAP_M"),
                 (
+                    "cfg_placement_touch_m",
+                    arena["cfg_placement_touch_m"],
+                    "NAVRL_PLACEMENT_TOUCH_M",
+                ),
+                (
                     "cfg_episode_len_steps",
                     arena["cfg_episode_len_steps"],
                     "NAVRL_EPISODE_LEN_STEPS",
                 ),
+                ("cfg_bar_x_min", arena["cfg_bar_x_min"], "NAVRL_BAR_X_MIN"),
+                ("cfg_bar_x_max", arena["cfg_bar_x_max"], "NAVRL_BAR_X_MAX"),
             ):
                 saved = state.get(key)
                 if saved is None:
@@ -1482,9 +1526,24 @@ class NavRLTask(BaseTask):
                         "NAVRL_DENSITY_THRESHOLD",
                     ),
                     (
+                        "cfg_density_threshold_start",
+                        float(getattr(self.density, "success_threshold_start", 0.0)),
+                        "NAVRL_DENSITY_THRESHOLD_START",
+                    ),
+                    (
+                        "cfg_density_threshold_end",
+                        float(getattr(self.density, "success_threshold_end", 0.0)),
+                        "NAVRL_DENSITY_THRESHOLD_END",
+                    ),
+                    (
                         "cfg_density_check_eps",
                         float(getattr(self.density, "check_after_episodes", 0)),
                         "NAVRL_DENSITY_CHECK_EPS",
+                    ),
+                    (
+                        "cfg_density_min_epochs",
+                        float(getattr(self.density, "min_epochs_per_density", 0)),
+                        "NAVRL_DENSITY_MIN_EPOCHS",
                     ),
                 ):
                     saved = state.get(key)
@@ -1557,6 +1616,13 @@ class NavRLTask(BaseTask):
                     0, int(state.get("density_gate_not_before_steps", 0))
                 )
                 self._restore_density_strata(state)
+            # Dwell clock. Restore it so a resume does not reset the counter and re-serve a full
+            # dwell period at a density the policy already matured on. A checkpoint that predates
+            # the field falls back to "this density started now", which is the conservative choice.
+            self._density_level_start_steps = restore_density_level_start_steps(
+                state,
+                self.num_task_steps,
+            )
             logger.warning(
                 "NavRL checkpoint state restored | task_steps=%d bars=%d->%d "
                 "k_min=%.1f k_max=%.1f density_window=%d/%d eps"
@@ -2906,6 +2972,24 @@ class NavRLTask(BaseTask):
                     )
         return True, "all broad slices >= %.3f" % floor
 
+    def _density_threshold_now(self):
+        # Linear ramp from success_threshold_start (at n_start bars) to success_threshold_end (at
+        # n_final bars), evaluated at the CURRENT active bar count. Both endpoints default to the
+        # flat success_threshold, so this is a no-op (constant threshold) unless the two env vars
+        # are set explicitly.
+        d = self.density
+        n_start = int(getattr(d, "n_start", self.n_bars_active))
+        n_final = int(getattr(d, "n_final", self.n_bars_active))
+        t_start = float(getattr(d, "success_threshold_start", getattr(d, "success_threshold", 0.8)))
+        t_end = float(getattr(d, "success_threshold_end", getattr(d, "success_threshold", 0.8)))
+        return density_threshold_at(
+            self.n_bars_active,
+            n_start,
+            n_final,
+            t_start,
+            t_end,
+        )
+
     def _update_curriculum(self, successes, finished):
         # (A) Competence-gated goal-DISTANCE curriculum (NAVRL_K_COMPETENCE=1): deepen the goal
         # window only when measured capture clears the threshold -- the same self-pacing the density
@@ -2961,7 +3045,7 @@ class NavRLTask(BaseTask):
             return
 
         capture_rate = self._density_succ_agg / max(1, self._density_fin_agg)
-        threshold = float(getattr(self.density, "success_threshold", 0.8))
+        threshold = self._density_threshold_now()
         final_bars = self._clamp_active_bars(getattr(self.density, "n_final", self.n_bars_active))
         strata_pass, strata_reason = self._density_stratified_gate()
         logger.warning(
@@ -2986,25 +3070,69 @@ class NavRLTask(BaseTask):
                 strata_reason,
             )
         )
+        # Dwell gate: even a passing capture window cannot promote until the policy has spent
+        # min_epochs_per_density at this density. This is what stops the curriculum from chaining
+        # promotions the instant each evidence window fills and never letting a level converge.
+        min_dwell_epochs = max(0, int(getattr(self.density, "min_epochs_per_density", 0)))
+        dwell_epochs = density_dwell_epochs(
+            self.num_task_steps,
+            self._density_level_start_steps,
+            horizon,
+        )
+        dwell_ok = density_dwell_ready(
+            self.num_task_steps,
+            self._density_level_start_steps,
+            horizon,
+            min_dwell_epochs,
+        )
+
         if (
             capture_rate >= threshold
             and strata_pass
             and self.n_bars_active < final_bars
+            and dwell_ok
         ):
             step = max(1, int(getattr(self.density, "promote_step", 15)))
             old_bars = self.n_bars_active
             self._set_active_bars(min(final_bars, old_bars + step))
+            self._density_level_start_steps = density_level_start_after_promotion(
+                self._density_level_start_steps,
+                self.num_task_steps,
+                promoted=True,
+            )
             logger.warning(
-                "NavRL density curriculum promoted | bars %d -> %d after %d eps, capture=%.3f"
-                % (old_bars, self.n_bars_active, self._density_fin_agg, capture_rate)
+                "NavRL density curriculum promoted | bars %d -> %d after %d eps, "
+                "capture=%.3f (threshold=%.3f) dwell=%.0f epochs"
+                % (
+                    old_bars,
+                    self.n_bars_active,
+                    self._density_fin_agg,
+                    capture_rate,
+                    threshold,
+                    dwell_epochs,
+                )
+            )
+        elif capture_rate >= threshold and strata_pass and not dwell_ok:
+            # Distinguish "not good enough yet" from "good enough but still maturing" -- otherwise
+            # a dwell hold is indistinguishable from a failed capture gate in the log.
+            logger.warning(
+                "NavRL density curriculum DWELL | bars=%d capture=%.3f >= threshold=%.3f but only "
+                "%.0f/%d epochs at this density; holding to let it converge"
+                % (
+                    self.n_bars_active,
+                    capture_rate,
+                    threshold,
+                    dwell_epochs,
+                    min_dwell_epochs,
+                )
             )
         else:
             # Training runs suppress INFO logs, so an INFO-only hold made "no promotion line"
             # ambiguous: the gate may not have been evaluated yet, or it may have failed. Keep the
             # competence decision visible at the same level as a promotion.
             logger.warning(
-                "NavRL density curriculum held | bars=%d capture=%.3f over %d eps"
-                % (self.n_bars_active, capture_rate, self._density_fin_agg)
+                "NavRL density curriculum held | bars=%d capture=%.3f over %d eps (threshold=%.3f)"
+                % (self.n_bars_active, capture_rate, self._density_fin_agg, threshold)
             )
 
         self._density_succ_agg = 0

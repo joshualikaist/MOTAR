@@ -311,12 +311,34 @@ class task_config:
         n_start = _env_int("NAVRL_DENSITY_START", 25)
         n_final = _env_int("NAVRL_DENSITY_FINAL", 150)
         success_threshold = _env_float("NAVRL_DENSITY_THRESHOLD", 0.8)
+        # Optional per-density threshold ramp: require MORE capture to promote out of the easy,
+        # sparse end (build a solid foundation before compounding difficulty) and LESS to promote
+        # out of the hard, dense end (a flat threshold can strand the curriculum forever if the
+        # achievable capture ceiling keeps dropping with density -- this is exactly the failure
+        # mode behind the observed v1 100-bar density-ceiling plateau). Both default to the flat
+        # success_threshold above, so unset envs reproduce the old constant-threshold behavior
+        # exactly. Interpolated linearly over [n_start, n_final] by current bar count.
+        success_threshold_start = _env_float("NAVRL_DENSITY_THRESHOLD_START", success_threshold)
+        success_threshold_end = _env_float("NAVRL_DENSITY_THRESHOLD_END", success_threshold)
         promote_step = _env_int("NAVRL_DENSITY_STEP", 15)
         warmup_epochs = _env_int("NAVRL_DENSITY_WARMUP", 2500)
         check_after_episodes = _env_int("NAVRL_DENSITY_CHECK_EPS", 2048)
-        # Once density training starts, keep a fraction of short/medium crossings in every batch.
-        # This prevents catastrophic forgetting of avoidance/reacquisition at close range while
-        # the main distance window remains at its final (hard) range. Zero preserves old runs.
+        # Minimum epochs to DWELL at a density before promotion is allowed, even when the capture
+        # gate already passes. Without it the curriculum can chain promotions the moment each
+        # evidence window fills, so the policy is pushed to the next difficulty while still
+        # improving at the current one -- the reward curve then only ever measures rising
+        # difficulty. Dwelling lets each level converge before it is replaced. 0 = old behavior.
+        min_epochs_per_density = _env_int("NAVRL_DENSITY_MIN_EPOCHS", 0)
+        # Optional broad-slice guard. The ordinary aggregate gate can be dominated by short/slow
+        # trials, so record speed, initial-distance and motion-pattern marginals on the exact same
+        # evidence window. Enforcement remains opt-in until a fixed-density baseline establishes a
+        # defensible floor; diagnostics are always emitted.
+        use_stratified_gate = _env_bool("NAVRL_DENSITY_STRATIFIED_GATE", False)
+        stratified_floor = _env_float("NAVRL_DENSITY_STRATIFIED_FLOOR", 0.55)
+        stratified_min_episodes = _env_int("NAVRL_DENSITY_STRATIFIED_MIN_EPS", 512)
+        # Legacy left-to-right spawn only: keep a fraction of short/medium crossings in a batch.
+        # General-spawn training already samples its explicit radial range and does not use this
+        # k-window mix. Zero preserves old runs.
         easy_goal_mix_prob = _env_float("NAVRL_DENSITY_EASY_GOAL_MIX", 0.0)
         easy_goal_min = _env_float("NAVRL_DENSITY_EASY_GOAL_MIN", 5.0)
         easy_goal_max = _env_float("NAVRL_DENSITY_EASY_GOAL_MAX", 10.0)
@@ -336,7 +358,13 @@ class task_config:
         # existing static-target experiment unless a launch recipe explicitly enables it.
         speed_min = _env_float("NAVRL_TARGET_SPEED_MIN", 0.0)      # [m/s]
         speed_ramp_start_epochs = 0
-        speed_ramp_epochs = 3000       # full target speed by epoch 3000 (mirrors k_warmup)
+        # Epochs to reach speed_final. The v1 ramp (3000) existed so the policy could learn
+        # interception against a STATIC target first. In v2 the target must be FOUND before it can
+        # be intercepted, so target speed is no longer the dominant early-difficulty term, and a
+        # time-based ramp only entangles the speed axis with the capture-paced density curriculum
+        # (both indexed by num_task_steps) -- a variable-control defect. Set to 1 to hold the full
+        # U[speed_min, speed_final] distribution from epoch 0. Default 3000 preserves v1 runs.
+        speed_ramp_epochs = _env_int("NAVRL_TARGET_SPEED_RAMP_EPOCHS", 3000)
         # Evaluation override: force the EXACT per-episode speed (heatmap cells). < 0 disables.
         speed_fixed = _env_float("NAVRL_TARGET_SPEED", -1.0)      # [m/s]
         # Trajectory pattern: "cv" (constant velocity, reflected at the wall margins),

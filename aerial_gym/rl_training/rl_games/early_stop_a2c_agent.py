@@ -20,11 +20,16 @@ from rl_games.algos_torch.a2c_continuous import A2CAgent
 
 from aerial_gym.rl_training.rl_games.reward_stable_early_stop import (
     collapse_from_peak_should_stop,
+    density_capture_collapse_should_stop,
+    parse_density_capture_guard_config,
     parse_early_stop_collapse_config,
     parse_early_stop_stable_config,
     window_band_stable_should_stop,
 )
-from aerial_gym.rl_training.rl_games.aerial_tensorboard import write_aerial_epoch_scalars
+from aerial_gym.rl_training.rl_games.aerial_tensorboard import (
+    _REWARD_WARMUP_EPOCHS as _TB_REWARD_WARMUP_EPOCHS,
+    write_aerial_epoch_scalars,
+)
 from aerial_gym.rl_training.rl_games.pretty_train_stats import print_training_dashboard
 from aerial_gym.rl_training.rl_games.ppo_update_safety import (
     lateral_batch_bias_loss,
@@ -48,7 +53,11 @@ from aerial_gym.task.position_setpoint_task.train_dashboard import consume_epoch
 
 _AERIAL_FINISHED_MARKER = ".aerial_training_finished"
 _CKPT_REWARD_RE = re.compile(r"_rew_([-+]?\d+(?:\.\d+)?)")
-_FAILED_EXIT_REASONS = {"early_stop_nan", "nonfinite_ppo"}
+_FAILED_EXIT_REASONS = {
+    "early_stop_nan",
+    "nonfinite_ppo",
+    "early_stop_density_capture_collapse",
+}
 
 
 def _scalar_mean_reward(mean_r0):
@@ -655,7 +664,13 @@ class EarlyStopA2CAgent(A2CAgent):
                     sum(finite_values) / len(finite_values),
                     epoch_num,
                 )
-        if getattr(self, "last_mean_rewards", None) is not None:
+        # Skip the first epochs: an untrained policy crashes instantly and posts a large negative
+        # reward that stretches the TensorBoard y-axis until the rest of the run is a flat line.
+        # Same warmup the aerial/mean_reward scalar uses (NAVRL_TB_REWARD_WARMUP_EPOCHS).
+        if (
+            getattr(self, "last_mean_rewards", None) is not None
+            and int(epoch_num) >= _TB_REWARD_WARMUP_EPOCHS
+        ):
             try:
                 self.writer.add_scalar("stability/best_reward", float(self.last_mean_rewards), epoch_num)
             except (TypeError, ValueError):
@@ -693,6 +708,9 @@ class EarlyStopA2CAgent(A2CAgent):
 
         early_cfg = parse_early_stop_stable_config(self.config.get("early_stop_stable"))
         collapse_cfg = parse_early_stop_collapse_config(self.config.get("early_stop_collapse"))
+        density_capture_cfg = parse_density_capture_guard_config(
+            self.config.get("early_stop_density_capture")
+        )
 
         if self.multi_gpu:
             torch.cuda.set_device(self.local_rank)
@@ -914,6 +932,32 @@ class EarlyStopA2CAgent(A2CAgent):
                                 intercept_extra_metrics.update(nav_metrics)
                             else:
                                 intercept_extra_metrics = nav_metrics
+                            if not should_exit and density_capture_cfg is not None:
+                                dc_state = getattr(
+                                    self, "_aerial_density_capture_stop_state", None
+                                )
+                                stop_density, dc_state_next = (
+                                    density_capture_collapse_should_stop(
+                                        density_capture_cfg,
+                                        epoch_num,
+                                        nav_metrics.get("navrl/captured_rate"),
+                                        nav_metrics.get("navrl/n_bars_active"),
+                                        dc_state,
+                                    )
+                                )
+                                self._aerial_density_capture_stop_state = dc_state_next
+                                if stop_density:
+                                    print(
+                                        "[aerial RL] FAIL-STOP: same-density capture collapse — "
+                                        f"bars {dc_state_next.get('bars')} rolling "
+                                        f"{dc_state_next.get('collapse_peak', float('nan')):.3f} → "
+                                        f"{dc_state_next.get('collapse_capture', float('nan')):.3f} "
+                                        f"(epoch {epoch_num}). Use the last periodic checkpoint."
+                                    )
+                                    should_exit = True
+                                    pending_exit_reason = (
+                                        "early_stop_density_capture_collapse"
+                                    )
                     except Exception:
                         pass
 

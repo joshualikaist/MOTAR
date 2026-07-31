@@ -105,6 +105,17 @@ params:
       drop_from_peak: 0.35    # the observed collapse was -47%
       patience_epochs: 100    # must stay collapsed this long (survives ordinary dips)
 
+    # Unlike reward, capture is directly comparable while density is unchanged. Reset the
+    # reference whenever bars change, then fail-stop a catastrophic policy collapse while keeping
+    # ordinary curriculum reward steps legal. The last 50-epoch periodic checkpoint is the LKG.
+    early_stop_density_capture:
+      enable: True
+      window_epochs: 50
+      min_epochs_at_density: 100
+      min_peak_capture: 0.50
+      drop_absolute: 0.25
+      patience_epochs: 25
+
     player:
       render: False
       deterministic: True

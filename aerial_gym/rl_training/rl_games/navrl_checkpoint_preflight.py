@@ -36,7 +36,10 @@ _CONTRACT_ENV = {
     "cfg_bar_pool": "NAVRL_BAR_POOL",
     "cfg_placement_mode": "NAVRL_PLACEMENT_MODE",
     "cfg_placement_gap_m": "NAVRL_PLACEMENT_GAP_M",
+    "cfg_placement_touch_m": "NAVRL_PLACEMENT_TOUCH_M",
     "cfg_episode_len_steps": "NAVRL_EPISODE_LEN_STEPS",
+    "cfg_bar_x_min": "NAVRL_BAR_X_MIN",
+    "cfg_bar_x_max": "NAVRL_BAR_X_MAX",
 }
 _STRING_CONTRACT_FIELDS = {"cfg_obstacle_selector", "cfg_bar_pool", "cfg_placement_mode"}
 # Checkpoints saved before a contract field existed are interpreted at the field's historical
@@ -50,7 +53,10 @@ _LEGACY_CONTRACT_DEFAULTS = {
     "cfg_bar_pool": "bars",
     "cfg_placement_mode": "random",
     "cfg_placement_gap_m": 1.6,
+    "cfg_placement_touch_m": 0.4,
     "cfg_episode_len_steps": 300.0,
+    "cfg_bar_x_min": 0.13,
+    "cfg_bar_x_max": 0.96,
     "cfg_corridor_tokens": 0,
     # The first corridor checkpoints (2026-07-31) predated provenance for these two knobs but used
     # these exact launcher defaults. Future checkpoints save both fields explicitly.

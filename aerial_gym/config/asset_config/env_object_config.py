@@ -25,6 +25,33 @@ def _env_int(name, default):
         return int(default)
 
 
+def _env_float(name, default):
+    raw = os.environ.get(name)
+    if raw is None or raw.strip() == "":
+        return float(default)
+    try:
+        return float(raw)
+    except ValueError:
+        return float(default)
+
+
+# X placement band as a fraction of the arena, shared by navrl_target_params (obstacle index 0,
+# which AssetManager._placement_band reads for ALL obstacles) and bar_asset_params.
+#
+# The legacy 0.13..0.96 window existed only because the v1 task spawned the drone at x~0 and flew
+# it left-to-right, so the spawn strip had to stay clear. v2 uses NAVRL_GENERAL_TRAIN=1 (drone AND
+# target spawn uniformly over the whole arena), which voids that premise and leaves 17% of the v2
+# arena permanently obstacle free -- episodes spawning there degenerate into straight-line pursuit
+# no matter how high the density curriculum climbs, and reported density is inflated because the
+# real flyable area exceeds the placement band. Both spawn samplers already reject positions
+# within 0.65 m of a bar and stay 1 m inside the walls, so a full-width band is safe.
+# Defaults preserve v1 exactly.
+_BAR_X_MIN = _env_float("NAVRL_BAR_X_MIN", 0.13)
+_BAR_X_MAX = _env_float("NAVRL_BAR_X_MAX", 0.96)
+if not 0.0 <= _BAR_X_MIN < _BAR_X_MAX <= 1.0:
+    raise ValueError("NAVRL_BAR_X_MIN/MAX must satisfy 0 <= min < max <= 1")
+
+
 class asset_state_params:
     num_assets = 1  # number of assets to include
 
@@ -700,9 +727,11 @@ class navrl_target_params(asset_state_params):
     semantic_id = INTERCEPT_TARGET_SEMANTIC_ID  # 50
     color = [220, 40, 40]
 
-    # Same band as bar_asset_params (see docstring): x in [0.13, 0.96], y in [0, 1], z = 1/3.
-    min_state_ratio = [0.13, 0.0, 0.3333, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-    max_state_ratio = [0.96, 1.0, 0.3333, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    # Same band as bar_asset_params (see docstring). _placement_band reads asset index 0 -- which
+    # is THIS asset -- so the x window must track NAVRL_BAR_X_MIN/MAX or the bars keep the legacy
+    # band no matter what bar_asset_params says.
+    min_state_ratio = [_BAR_X_MIN, 0.0, 0.3333, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    max_state_ratio = [_BAR_X_MAX, 1.0, 0.3333, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
 
 class bar_asset_params(asset_state_params):
@@ -741,7 +770,7 @@ class bar_asset_params(asset_state_params):
     # x band starts past the drone spawn strip (drone x-ratio ~0, x <~ 1); z ratio places the box
     # center at bar_height/2 (pool-dependent, see _bar_z_ratio) so bars stand on the floor; upright.
     min_state_ratio = [
-        0.13,
+        _BAR_X_MIN,
         0.0,
         _bar_z_ratio,
         0.0,
@@ -756,7 +785,7 @@ class bar_asset_params(asset_state_params):
         0.0,
     ]
     max_state_ratio = [
-        0.96,
+        _BAR_X_MAX,
         1.0,
         _bar_z_ratio,
         0.0,

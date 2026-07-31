@@ -18,13 +18,19 @@
 #                                     competence curriculum ramps k_max 10->28 as before)
 #   episode        300 steps/30 s -> 600 steps/60 s    (search + longer traversals need time;
 #                                     NavRL uses 2200 x 0.016 s = 35 s for navigation alone)
-#   density        25..150 bars   -> 70..300 bars      (SAME density per area: 5.2..22.6/100m^2
-#                                     over the 1328 m^2 band; step 15 = v1's 5-bar step scaled)
+#   density        25..150 bars   -> 70..300 bars      (4.4..18.8/100m^2 over the full 1600 m^2
+#                                     arena; step 15 = v1's 5-bar step scaled)
+#   bar x band     0.13..0.96     -> 0.0..1.0          (the legacy window kept v1's left-to-right
+#                                     spawn strip clear; with uniform v2 spawns it only left 17%
+#                                     of the arena obstacle-free and inflated reported density)
+#   promote gate   flat 0.70      -> 0.85 @70 -> 0.70 @300 (linear in bar count: demand mastery
+#                                     at the easy end, avoid a permanent stall at the hard end)
+#   target speed   U[0,1.5] / 3000-> U[0.3,vmax] over 300 epochs (always moving; the short ramp
+#                                     recovers early survival learning and finishes 700 epochs
+#                                     before density evidence starts, so the two gates do not overlap)
 # Deliberately UNCHANGED (variable control): observation contract 898-D, LiDAR 12 m 72x4,
-# 8 cluster-sector tokens, camera 87 deg @20 m, v_max 2.5, yaw 3.0, target speed U[0,1.5]
-# ramped, mixed pattern, squashed-Gaussian action policy, PPO hyperparameters, seed.
-# The speed axis gets re-measured on v2 -- an unseen target that relocates before arrival
-# makes target speed meaningful again without touching the speed knobs.
+# 8 cluster-sector tokens, camera 87 deg @20 m, v_max 2.5, yaw 3.0, mixed pattern,
+# squashed-Gaussian action policy, PPO hyperparameters, seed.
 #
 # VRAM: measured 6314 MiB / 8192 at 128 envs, 40x40, 300 full-height bars (2026-07-31).
 set -euo pipefail
@@ -49,6 +55,12 @@ export NAVRL_PLACEMENT_TOUCH_M=0.4
 export NAVRL_PLACEMENT_GAP_M=1.6
 export NAVRL_EPISODE_LEN_STEPS=600
 export NAVRL_MAX_BARS=300
+# Full-width obstacle band. The legacy 0.13..0.96 window kept the v1 left-to-right spawn strip
+# clear; v2 spawns drone AND target uniformly (NAVRL_GENERAL_TRAIN=1), so that window only left
+# 17% of the arena permanently empty -- episodes spawning there were straight-line pursuit at any
+# density -- and inflated reported density (1328 m^2 band vs 1600 m^2 flyable).
+export NAVRL_BAR_X_MIN=0.0
+export NAVRL_BAR_X_MAX=1.0
 
 # ---- v2 objective: goal beyond the sensor horizon ----
 export NAVRL_GENERAL_GOAL_DIST_MIN=6
@@ -62,9 +74,18 @@ export NAVRL_DENSITY_CURRICULUM=1
 export NAVRL_DENSITY_START="${NAVRL_DENSITY_START:-70}"
 export NAVRL_DENSITY_FINAL="${NAVRL_DENSITY_FINAL:-300}"
 export NAVRL_DENSITY_STEP=15
-export NAVRL_DENSITY_THRESHOLD="${NAVRL_DENSITY_THRESHOLD:-0.70}"
+# Per-density threshold ramp (2026-07-31): flat 0.70 risks the curriculum stalling forever if the
+# achievable capture ceiling keeps falling with density (the same failure mode behind v1's 100-bar
+# plateau). Require MORE capture to leave the easy end, LESS to leave the hard end. Unset either
+# var to fall back to the flat NAVRL_DENSITY_THRESHOLD.
+export NAVRL_DENSITY_THRESHOLD_START="${NAVRL_DENSITY_THRESHOLD_START:-0.85}"
+export NAVRL_DENSITY_THRESHOLD_END="${NAVRL_DENSITY_THRESHOLD_END:-0.70}"
 export NAVRL_DENSITY_WARMUP="${NAVRL_DENSITY_WARMUP:-1000}"
 export NAVRL_DENSITY_CHECK_EPS="${NAVRL_DENSITY_CHECK_EPS:-16384}"
+# Dwell at each density for at least this many epochs before promoting, even when the capture gate
+# already passes. Without it the curriculum chains promotions as fast as evidence windows fill, so
+# no level ever converges and every metric only ever tracks rising difficulty.
+export NAVRL_DENSITY_MIN_EPOCHS="${NAVRL_DENSITY_MIN_EPOCHS:-1000}"
 unset NAVRL_NUM_BARS NAVRL_FIXED_BARS NAVRL_CONTROLLED_ABLATION
 
 # ---- UNCHANGED sensor/representation/action contract (variable control) ----
@@ -86,8 +107,14 @@ export NAVRL_LIDAR_RANGE=12
 export NAVRL_MAX_VELOCITY=2.5
 export NAVRL_ALT_HOLD_VMAX=2.5
 export NAVRL_YAW_RATE_MAX=3.0
-export NAVRL_TARGET_SPEED_MIN=0.0
+# Target speed: always moving at >=0.3 m/s, with the upper support increasing to 1.5 m/s over a
+# short 300-epoch ramp. The measured no-ramp v3 pilot learned, but reached 10-epoch rolling capture
+# 0.50 at epoch 140 versus 53 for the old ramped run; the comparison is confounded by the simultaneous
+# full-width bar-band change, so keep only a short scaffold. It ends at epoch 300, well before density
+# evidence starts at epoch 1000, avoiding the old 3000-epoch overlap with the density curriculum.
+export NAVRL_TARGET_SPEED_MIN=0.3
 export NAVRL_TARGET_SPEED_FINAL=1.5
+export NAVRL_TARGET_SPEED_RAMP_EPOCHS="${NAVRL_TARGET_SPEED_RAMP_EPOCHS:-300}"
 export NAVRL_TARGET_PATTERN=mixed
 unset NAVRL_TARGET_SPEED
 export NAVRL_ACTION_POLICY=squashed_gaussian
@@ -112,5 +139,6 @@ fi
 
 echo "[v2-search] FRESH | arena=${NAVRL_ARENA_XY}m pool=${NAVRL_BAR_POOL} placement=${NAVRL_PLACEMENT_MODE}"
 echo "[v2-search] goal ${NAVRL_GENERAL_GOAL_DIST_MIN}..${NAVRL_GENERAL_GOAL_DIST_MAX}m (camera 20m -> search) episode=${NAVRL_EPISODE_LEN_STEPS} steps"
-echo "[v2-search] density ${NAVRL_DENSITY_START}->${NAVRL_DENSITY_FINAL} bars step=${NAVRL_DENSITY_STEP} (5.2->22.6 /100m2)"
+echo "[v2-search] density ${NAVRL_DENSITY_START}->${NAVRL_DENSITY_FINAL} bars step=${NAVRL_DENSITY_STEP} (4.4->18.8 /100m2 over 1600m2) threshold ${NAVRL_DENSITY_THRESHOLD_START}->${NAVRL_DENSITY_THRESHOLD_END}"
+echo "[v2-search] target speed U[${NAVRL_TARGET_SPEED_MIN}, vmax] m/s, vmax->${NAVRL_TARGET_SPEED_FINAL} by epoch ${NAVRL_TARGET_SPEED_RAMP_EPOCHS} | bar band x=[${NAVRL_BAR_X_MIN}, ${NAVRL_BAR_X_MAX}]"
 exec ./train_navrl.sh --seed "${SEED}" --max_epochs "${MAX_EPOCHS}" --disable_collapse_early_stop "$@"

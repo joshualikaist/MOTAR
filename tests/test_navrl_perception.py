@@ -12,6 +12,7 @@ _PERCEPTION = importlib.util.module_from_spec(_SPEC)
 _SPEC.loader.exec_module(_PERCEPTION)
 NavRLPerceptionModule = _PERCEPTION.NavRLPerceptionModule
 STRUCTURED_OBS_DIM = _PERCEPTION.STRUCTURED_OBS_DIM
+select_cluster_sector_obstacles = _PERCEPTION.select_cluster_sector_obstacles
 
 
 def _configs():
@@ -106,6 +107,55 @@ class NavRLPerceptionTest(unittest.TestCase):
         self.assertFalse(bool(diag["camera_visible"][0]))
         self.assertTrue(bool(diag["lidar_visible"][0]))
         self.assertTrue(bool(diag["visible"][0]))
+
+
+class ClusterSectorSelectorTest(unittest.TestCase):
+    def setUp(self):
+        self.bearings = torch.deg2rad(torch.arange(-120.0, 125.0, 5.0))
+        self.max_range = 12.0
+
+    def _select(self, scan, *, slots=4, sectors=4):
+        return select_cluster_sector_obstacles(
+            torch.tensor([scan], dtype=torch.float32),
+            self.bearings,
+            max_range=self.max_range,
+            max_obstacles=slots,
+            token_fov_deg=240.0,
+            cluster_gap_m=0.45,
+            num_sectors=sectors,
+        )
+
+    def test_adjacent_surface_returns_consume_one_slot(self):
+        scan = [self.max_range] * len(self.bearings)
+        # Three adjacent 5-degree returns at ~2 m are one physical surface cluster.
+        scan[10:13] = [2.10, 2.00, 2.08]
+        scan[20] = 3.0
+        scan[30] = 4.0
+        ranges, indices, valid = self._select(scan)
+        picked = indices[0, valid[0]].tolist()
+        self.assertEqual(sum(index in (10, 11, 12) for index in picked), 1)
+        self.assertEqual(valid.sum().item(), 3)
+        self.assertTrue(torch.all(ranges[0, 1:] >= ranges[0, :-1]))
+
+    def test_each_nonempty_sector_keeps_its_nearest_cluster(self):
+        scan = [self.max_range] * len(self.bearings)
+        # One representative in every 60-degree sector. Index 7 is a second, farther cluster in
+        # the first sector and must not displace coverage of the far fourth-sector obstacle.
+        for index, distance in ((2, 2.0), (7, 2.5), (16, 3.0), (28, 4.0), (43, 8.0)):
+            scan[index] = distance
+        _, indices, valid = self._select(scan)
+        picked = set(indices[0, valid[0]].tolist())
+        self.assertEqual(picked, {2, 16, 28, 43})
+
+    def test_empty_sectors_are_filled_by_remaining_clusters(self):
+        scan = [self.max_range] * len(self.bearings)
+        # All returns lie in one sector but are separated by no-return beams, hence three clusters.
+        for index, distance in ((3, 2.0), (6, 3.0), (9, 4.0)):
+            scan[index] = distance
+        ranges, indices, valid = self._select(scan)
+        self.assertEqual(valid.sum().item(), 3)
+        self.assertEqual(set(indices[0, valid[0]].tolist()), {3, 6, 9})
+        self.assertEqual(ranges[0, valid[0]].tolist(), [2.0, 3.0, 4.0])
 
 
 if __name__ == "__main__":

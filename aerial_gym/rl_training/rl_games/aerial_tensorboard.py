@@ -2,9 +2,23 @@
 
 from __future__ import annotations
 
+import os
 from typing import Any, Optional
 
 from rl_games.algos_torch import torch_ext
+
+
+def _reward_warmup_epochs() -> int:
+    raw = os.environ.get("NAVRL_TB_REWARD_WARMUP_EPOCHS", "").strip()
+    if not raw:
+        return 20
+    try:
+        return max(0, int(raw))
+    except ValueError:
+        return 20
+
+
+_REWARD_WARMUP_EPOCHS = _reward_warmup_epochs()
 
 
 def _f(x: Any) -> float:
@@ -40,7 +54,12 @@ def write_aerial_epoch_scalars(
     ep = int(epoch_num)
     w = writer
 
-    if mean_reward is not None:
+    # The first epochs sit at a large negative reward (an untrained policy crashes immediately and
+    # eats the collision penalty), which stretches the TensorBoard y-axis so far that the entire
+    # rest of the curve is squashed into a flat line. Skip those points: they carry no information
+    # that the console dashboard does not already print, and dropping them makes the chart legible
+    # from the first epoch that means anything. NAVRL_TB_REWARD_WARMUP_EPOCHS=0 logs from epoch 0.
+    if mean_reward is not None and ep >= _REWARD_WARMUP_EPOCHS:
         w.add_scalar("aerial/mean_reward", mean_reward, ep)
     if mean_episode_length is not None:
         w.add_scalar("aerial/mean_episode_length", mean_episode_length, ep)

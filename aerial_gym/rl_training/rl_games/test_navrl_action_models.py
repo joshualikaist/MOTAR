@@ -80,6 +80,9 @@ class ActionModelTests(unittest.TestCase):
             os.environ["NAVRL_ACTION_MU_SCALE"] = self._old_mu_scale
 
     def test_bounded_models_are_finite_and_strictly_bounded(self):
+        # This is a Monte-Carlo tail assertion; pin the RNG so a 1-count fluctuation around the
+        # 1e-3 boundary cannot make the suite intermittently fail.
+        torch.manual_seed(0)
         obs = torch.zeros(100_000, 3)
 
         for model_cls in (NavRLSquashedGaussianModel, NavRLTruncatedGaussianModel):

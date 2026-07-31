@@ -37,6 +37,9 @@ if [ "${NAVRL_VISION:-0}" = "1" ]; then
 fi
 
 PY="${PYTHON:-python}"
+if [[ "${PY}" == */* ]]; then
+    export PATH="$(dirname "${PY}"):${PATH}"
+fi
 FILE="${FILE:-ppo_navrl_cnn.yaml}"     # 기본: CNN 체크포인트는 CNN yaml 로
 TASK="${TASK:-navrl_task}"
 NUM_ENVS="${NUM_ENVS:-16}"             # 뷰어는 적게, 통계는 크게

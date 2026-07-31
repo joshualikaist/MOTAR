@@ -137,6 +137,14 @@ def _early_stop_line(cfg: Mapping[str, Any]) -> str:
         )
     elif collapse.get("disabled_by"):
         parts.append(f"reward-collapse guard disabled by {collapse['disabled_by']}")
+    density_capture = cfg.get("early_stop_density_capture") or {}
+    if density_capture.get("enable"):
+        parts.append(
+            "same-density capture guard "
+            f"({density_capture.get('window_epochs', '?')} epoch window, "
+            f"drop {density_capture.get('drop_absolute', '?')}, "
+            f"patience {density_capture.get('patience_epochs', '?')})"
+        )
     return "on (" + "; ".join(parts) + ")"
 
 
