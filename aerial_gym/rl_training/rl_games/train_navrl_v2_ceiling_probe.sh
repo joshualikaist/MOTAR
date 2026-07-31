@@ -3,17 +3,26 @@
 #
 # Why this run exists
 # -------------------
-# The v2 density curriculum promotes when capture clears a threshold that ramps 0.85 (at 70 bars)
-# down to 0.70 (at 300). That start value is an assumption, and it is currently unverified in the
-# NEW arena: the best 70-bar capture ever measured was 0.834, and that was in the OLD arena whose
-# 0.13..0.96 bar band left 17% of the map permanently obstacle-free. The v2 arena removed that free
-# strip, so the task is strictly harder while the bar to clear it went UP. If 0.85 is simply not
-# reachable at 70 bars, the main run stalls at its starting density forever -- the same failure mode
-# the threshold ramp was introduced to prevent, just relocated to the easy end.
+# The v2 density curriculum promotes when measured capture clears a threshold that ramps down with
+# bar count. BOTH endpoints of that ramp were guesses, and only one of them has since been measured:
 #
-# The main run cannot answer this about itself: its dwell gate blocks promotion for the first 1000
-# epochs regardless, and after that a stall and "still improving" look identical from the outside.
-# This probe answers it directly by freezing density and letting capture run to its plateau.
+#   70 bars  -> 0.85 assumed.  MEASURED 2026-07-31 (run ppo_260731_1722, 2300 epochs): two full
+#               16,384-episode gate windows scored 0.816 and 0.837 while crash decayed to an
+#               extrapolated floor of 13.1% (fit tau~650 epochs, converged). With the ~2.6% timeout
+#               base that is a ceiling of ~0.843 -- BELOW the threshold. Retuned to 0.80.
+#   300 bars -> 0.70 assumed.  NEVER MEASURED. v2 has never been run at 300 bars. The number was
+#               inherited from v1's flat threshold. Extrapolating v1's density curve says it is
+#               very likely unreachable: 300 bars is 18.8/100m^2, where a FINISHED v1 policy scored
+#               0.67-0.75 with SHORT paths and a static target, while v2 already caps at 0.84 in a
+#               regime where v1 reached 0.96. So the curriculum is expected to stall again near the
+#               dense end, for the same reason it stalled at the sparse end.
+#
+# The main run cannot answer this about itself: its dwell gate blocks promotion for 1000 epochs per
+# level regardless, so reaching 300 bars takes >=16,000 epochs before the question is even asked.
+# This probe answers it directly by freezing density and letting capture run to its plateau, which
+# also yields the per-density ceiling table needed to set every threshold from evidence.
+#
+#   PROBE_BARS=300 ./train_navrl_v2_ceiling_probe.sh   # the value that matters most right now
 #
 # Why the 4 GB card is a VALID place to measure it
 # ------------------------------------------------
@@ -61,8 +70,8 @@ export AERIAL_RUN_TAG="${AERIAL_RUN_TAG:-v2-ceiling${PROBE_BARS}-s${SEED}}"
 export TRAIN_SESSION_LOG="${TRAIN_SESSION_LOG:-train_session_logs/v2_ceiling${PROBE_BARS}_$(date +%y%m%d_%H%M%S).log}"
 
 echo "[ceiling] fixed density ${PROBE_BARS} bars ($(python3 -c "print(f'{${PROBE_BARS}/1600*100:.1f}')")/100m2), curriculum OFF"
-echo "[ceiling] measuring the achievable capture plateau; threshold@70 in the main run is 0.85"
-echo "[ceiling] 64-env plateau >= 0.85 => main run's threshold is safe (one-sided: 64env <= 128env)"
+echo "[ceiling] measuring the achievable capture plateau at this density (no curriculum confound)"
+echo "[ceiling] 64-env plateau is a LOWER BOUND on the 128-env plateau (do not pool the two)"
 
 # Delegate to the 4 GB launcher, which delegates to the main v2 launcher -- so the arena, sensors,
 # action policy, reward and target-motion contract are inherited, not restated.

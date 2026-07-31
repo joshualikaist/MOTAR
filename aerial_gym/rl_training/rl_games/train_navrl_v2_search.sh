@@ -80,7 +80,15 @@ export NAVRL_DENSITY_STEP=15
 # achievable capture ceiling keeps falling with density (the same failure mode behind v1's 100-bar
 # plateau). Require MORE capture to leave the easy end, LESS to leave the hard end. Unset either
 # var to fall back to the flat NAVRL_DENSITY_THRESHOLD.
-export NAVRL_DENSITY_THRESHOLD_START="${NAVRL_DENSITY_THRESHOLD_START:-0.85}"
+#
+# START was 0.85 (a design guess) and got MEASURED at 70 bars on 2026-07-31 (run ppo_260731_1722,
+# 2300 epochs): two full 16,384-episode gate windows scored 0.816 and 0.837, crash decayed to an
+# extrapolated floor of 13.1% (fit tau~650 epochs, already converged), and with the ~2.6% timeout
+# base that puts the achievable capture ceiling at ~0.843 -- structurally BELOW 0.85. Root cause is
+# representation, not geometry: 23.6% of crashed bars were outside the 240-degree token window and
+# 11.7% of in-window hits had no token (capacity 8 vs ~12 bars in FOV). 0.80 sits under the
+# measured ceiling with margin while still demanding near-ceiling mastery before promotion.
+export NAVRL_DENSITY_THRESHOLD_START="${NAVRL_DENSITY_THRESHOLD_START:-0.80}"
 export NAVRL_DENSITY_THRESHOLD_END="${NAVRL_DENSITY_THRESHOLD_END:-0.70}"
 export NAVRL_DENSITY_WARMUP="${NAVRL_DENSITY_WARMUP:-1000}"
 export NAVRL_DENSITY_CHECK_EPS="${NAVRL_DENSITY_CHECK_EPS:-16384}"

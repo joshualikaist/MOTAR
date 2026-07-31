@@ -68,10 +68,24 @@ if HBEAMS <= 0 or VBEAMS <= 0:
     raise ValueError("NAVRL_LIDAR_HBEAMS and NAVRL_LIDAR_VBEAMS must be positive")
 if not math.isfinite(OBSTACLE_SUPPRESS_DEG) or OBSTACLE_SUPPRESS_DEG < 0.0:
     raise ValueError("NAVRL_OBSTACLE_SUPPRESS_DEG must be finite and non-negative")
-if OBSTACLE_SELECTOR not in ("greedy_suppress", "cluster_sector"):
+if OBSTACLE_SELECTOR not in ("greedy_suppress", "cluster_sector", "ttc_sector"):
     raise ValueError(
-        "NAVRL_OBSTACLE_SELECTOR must be 'greedy_suppress' or 'cluster_sector'"
+        "NAVRL_OBSTACLE_SELECTOR must be 'greedy_suppress', 'cluster_sector' or 'ttc_sector'"
     )
+# ttc_sector only: a cluster that the drone is not closing on is ranked by this fallback time
+# instead of being dropped, so a slow/hovering drone still tokenizes its surroundings by proximity
+# rather than emitting an empty set.
+OBSTACLE_TTC_IDLE_S = float(
+    os.environ.get("NAVRL_OBSTACLE_TTC_IDLE_S", "").strip() or 30.0
+)
+# Speed below which closing rate is treated as unreliable and selection degrades to nearest-first.
+OBSTACLE_TTC_MIN_SPEED = float(
+    os.environ.get("NAVRL_OBSTACLE_TTC_MIN_SPEED", "").strip() or 0.15
+)
+if not math.isfinite(OBSTACLE_TTC_IDLE_S) or OBSTACLE_TTC_IDLE_S <= 0.0:
+    raise ValueError("NAVRL_OBSTACLE_TTC_IDLE_S must be finite and positive")
+if not math.isfinite(OBSTACLE_TTC_MIN_SPEED) or OBSTACLE_TTC_MIN_SPEED < 0.0:
+    raise ValueError("NAVRL_OBSTACLE_TTC_MIN_SPEED must be finite and non-negative")
 if not math.isfinite(OBSTACLE_CLUSTER_GAP_M) or OBSTACLE_CLUSTER_GAP_M <= 0.0:
     raise ValueError("NAVRL_OBSTACLE_CLUSTER_GAP_M must be finite and positive")
 if OBSTACLE_SECTORS <= 0 or OBSTACLE_SECTORS > MAX_OBSTACLES:
@@ -252,6 +266,108 @@ def select_cluster_sector_obstacles(
     indices = indices.gather(1, range_order)
     valid = valid.gather(1, range_order)
     return ranges, indices, valid
+
+
+def select_ttc_obstacles(
+    nearest,
+    bearings,
+    body_vel_xy,
+    *,
+    max_range,
+    max_obstacles,
+    cluster_gap_m,
+    idle_ttc_s=30.0,
+    min_speed=0.15,
+):
+    """Select the obstacle clusters the drone is most imminently going to hit.
+
+    ``cluster_sector`` allocates slots by BEARING: one cluster per fixed forward sector. That is a
+    proxy for threat, and the crash probe measured where the proxy breaks (run ppo_260731_1722,
+    2300 epochs, 70 bars): 23.6% of the bars actually struck were outside the 240-degree token
+    window entirely, and of those inside it, 11.7% still received no token because a sector only
+    reserves its single nearest cluster. Both losses share one cause -- a bar is dangerous because
+    the drone is MOVING INTO it, and bearing alone does not encode that. While searching, the drone
+    yaws hard, so a bar that was forward moments ago sits behind the window while the velocity
+    vector still points at it.
+
+    This selector ranks clusters by time-to-collision instead:
+
+        closing = -d(range)/dt ~= body_velocity . unit_vector_to_cluster
+        ttc     = range / closing            when closing > 0
+                = idle_ttc_s + range/max_range  otherwise (receding: ordered last, by proximity)
+
+    Consequences: a receding bar dead ahead yields its slot to an approaching bar off to the side;
+    a second cluster in one sector can be tokenized when it is the more urgent one; and no bearing
+    is excluded a priori, so the rear blind sector disappears without widening any sensor. Below
+    ``min_speed`` the closing estimate is dominated by noise, so ranking degrades continuously to
+    nearest-first -- which is exactly ``cluster_sector`` behaviour at a standstill.
+
+    Shape and semantics of the return match ``select_cluster_sector_obstacles`` exactly
+    ([batch, max_obstacles] ranges/indices/valid, sorted nearest-first), so this is a same-width
+    swap that a trained policy can warm-start across.
+    """
+    if nearest.ndim != 2 or bearings.ndim != 1 or nearest.shape[1] != bearings.shape[0]:
+        raise ValueError("nearest must be [batch, beams] and bearings must be [beams]")
+    if body_vel_xy.ndim != 2 or body_vel_xy.shape[0] != nearest.shape[0] or body_vel_xy.shape[1] != 2:
+        raise ValueError("body_vel_xy must be [batch, 2]")
+    if max_obstacles <= 0:
+        raise ValueError("max_obstacles must be positive")
+    if not math.isfinite(float(cluster_gap_m)) or float(cluster_gap_m) <= 0.0:
+        raise ValueError("cluster_gap_m must be finite and positive")
+
+    batch, beams = nearest.shape
+    device = nearest.device
+    max_range = float(max_range)
+    eligible = nearest < max_range * 0.995
+
+    # Identical clustering to cluster_sector: adjacent endpoints within cluster_gap_m are one
+    # physical surface. Keeping this shared means the A/B isolates the RANKING, not the grouping.
+    cos_b = torch.cos(bearings).view(1, beams)
+    sin_b = torch.sin(bearings).view(1, beams)
+    x = nearest * cos_b
+    y = nearest * sin_b
+    endpoint_gap = torch.sqrt(
+        (x[:, 1:] - x[:, :-1]).square() + (y[:, 1:] - y[:, :-1]).square()
+    )
+    linked_to_previous = eligible[:, 1:] & eligible[:, :-1] & (endpoint_gap <= float(cluster_gap_m))
+    boundary = torch.ones((batch, beams), dtype=torch.bool, device=device)
+    boundary[:, 1:] = ~linked_to_previous
+    cluster_id = boundary.long().cumsum(dim=1)
+
+    # Closing speed toward each bearing. Bars are static, so the drone's own motion is the whole
+    # closing rate; a moving target is never in this scan (it is a virtual point, no mesh).
+    closing = body_vel_xy[:, 0:1] * cos_b + body_vel_xy[:, 1:2] * sin_b
+    speed = body_vel_xy.norm(dim=1, keepdim=True)
+    approaching = (closing > 1e-3) & (speed > float(min_speed))
+    ttc = torch.where(
+        approaching,
+        nearest / closing.clamp(min=1e-3),
+        float(idle_ttc_s) + nearest / max_range,
+    )
+    ttc = ttc.masked_fill(~eligible, float("inf"))
+
+    remaining = eligible.clone()
+    rows = torch.arange(batch, device=device)
+    picked_ranges, picked_indices, picked_valid = [], [], []
+    for _ in range(max_obstacles):
+        work = ttc.masked_fill(~remaining, float("inf"))
+        _, idx = work.min(dim=1)
+        r = nearest[rows, idx]
+        valid = remaining[rows, idx] & (r < max_range * 0.995)
+        picked_ranges.append(r)
+        picked_indices.append(idx)
+        picked_valid.append(valid)
+        # Consume the whole cluster so one wide surface cannot occupy several slots.
+        picked_cluster = cluster_id[rows, idx]
+        remaining &= ~(cluster_id.eq(picked_cluster.unsqueeze(1)) & valid.unsqueeze(1))
+
+    ranges = torch.stack(picked_ranges, dim=1)
+    indices = torch.stack(picked_indices, dim=1)
+    valid = torch.stack(picked_valid, dim=1)
+
+    # Preserve nearest-first slot semantics for the downstream flattened MLP.
+    order = ranges.masked_fill(~valid, float("inf")).argsort(dim=1)
+    return ranges.gather(1, order), indices.gather(1, order), valid.gather(1, order)
 
 
 STRUCTURED_OBS_DIM = (
@@ -534,7 +650,21 @@ class NavRLPerceptionModule:
             self.num_envs, MAX_OBSTACLES, OBSTACLE_DIM, device=self.device
         )
         rows = torch.arange(self.num_envs, device=self.device)
-        if OBSTACLE_SELECTOR == "cluster_sector":
+        if OBSTACLE_SELECTOR == "ttc_sector":
+            # Body-frame planar velocity drives the closing-rate ranking. Same rotation the robot
+            # observation uses below, so the two views of the drone's motion cannot disagree.
+            body_vel = _quat_rotate_inverse_xyzw(vehicle_quat, drone_vel_w)
+            selected_ranges, selected_indices, selected_valid = select_ttc_obstacles(
+                nearest,
+                self._lidar_angles,
+                body_vel[:, :2],
+                max_range=self.lidar_max_range,
+                max_obstacles=MAX_OBSTACLES,
+                cluster_gap_m=OBSTACLE_CLUSTER_GAP_M,
+                idle_ttc_s=OBSTACLE_TTC_IDLE_S,
+                min_speed=OBSTACLE_TTC_MIN_SPEED,
+            )
+        elif OBSTACLE_SELECTOR == "cluster_sector":
             selected_ranges, selected_indices, selected_valid = (
                 select_cluster_sector_obstacles(
                     nearest,
