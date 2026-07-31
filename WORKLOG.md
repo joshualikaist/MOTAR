@@ -4479,3 +4479,63 @@ training safety 7 PASS, Node arena/status parity PASS, Python compile/bash synta
 - live `status.json`: arena 40×40×3m, bar height 3m, slider 10..300,
   goal 6..28m, target speed 0.3..1.5m/s
 - 공개 JS: 동적 `Motion.configure`, `arenaSpan`, `BAR_HEIGHT` raycast 반영
+
+## 2026-07-31 (저녁) — 70막대 천장 프로브 신설 + 본 run의 임계값 stall 위험 식별
+
+### 발견: 새 임계값이 과거 최고 달성치보다 높다
+
+Codex가 17:22 런칭한 `ppo_260731_1722_navrl_v2-search-fresh-s1`(seed 1, 128env)을 점검하다
+승급 임계값의 stall 위험을 발견했다.
+
+| 항목 | 값 |
+|---|---|
+| 새 승급 임계값 @70막대 | **0.850** |
+| 과거 v2가 70막대에서 달성한 실측 최고 | 0.834 |
+| 과거 아레나 | x밴드 0.13–0.96 → **17% 무장애물 (더 쉬움)** |
+| 현재 아레나 | x밴드 0.0–1.0 (전폭, **더 어려움**) |
+
+즉 **더 어려워진 과제에 과거 최고치보다 높은 기준**을 걸어둔 상태다. 70막대에서 0.85를
+못 넘기면 커리큘럼이 시작 밀도에 영구 정체한다 — threshold ramp가 막으려던 실패 모드가
+반대편(쉬운 끝)에서 재현되는 셈이다.
+
+현재 run 진행(70막대 고정 구간, 50-epoch 평균):
+`0.251 → 0.518 → 0.591 → 0.677 → 0.739 → 0.760` (epoch 0→300, 상승 중)
+
+**결정: 본 run은 개입하지 않는다.** dwell 게이트가 epoch 1000 전 승급을 어차피 막으므로
+749 epoch의 여유가 있고, 그 안에 아래 프로브 결과가 나온다. 근거 없이 기준을 낮추지 않는다.
+임계값은 env var라 필요시 resume으로 조정 가능(재시작 불필요).
+
+### 신설: `train_navrl_v2_ceiling_probe.sh` (1650 Ti용)
+
+본 run은 **자기 자신에 대해 이 질문에 답할 수 없다** — dwell이 1000 epoch 승급을 막고,
+그 이후에는 "정체"와 "아직 개선 중"이 밖에서 구분되지 않는다. 밀도를 고정하고 capture가
+어디서 평탄해지는지 직접 재는 프로브를 만들었다.
+
+- 밀도 70 고정, `NAVRL_DENSITY_CURRICULUM=0`, 나머지 v2 계약은 메인 런처에서 그대로 상속
+- `NAVRL_MAX_BARS=300` 유지 → PhysX actor 수 불변 → 검증된 4GB VRAM 프로파일 유지
+- 64env, 2000 epoch 기본
+
+**4GB 카드에서 재는 것이 타당한 이유(단측 추론)**: 64env 학습 결과는 128env와 섞을 수 없다는
+프로젝트 규칙은 유효하다. 하지만 이 측정의 추론은 한쪽 방향이다 —
+- 64env 평탄값 ≥ 0.85 → **0.85 도달 가능, 본 run 임계값 안전 (결정적)**
+- 64env 평탄값 < 0.85 → 경고일 뿐, 더 강한 128env는 넘길 수 있음
+
+de-risking 프로브에 필요한 비대칭이 정확히 이것이다. 같은 설정 병행 학습(64 vs 128)은
+교란이라 채택하지 않았다.
+
+### 런처 체인 수정
+
+프로브 설정이 메인 런처에 덮어써지고 있었다 — `NAVRL_DENSITY_CURRICULUM=1`이 하드 export였고
+`unset NAVRL_NUM_BARS`가 무조건 실행돼, 프로브의 고정 밀도가 조용히 config 기본값으로
+되돌아갈 상황이었다. 둘 다 조건부로 바꿨다(기본 동작 불변).
+
+검증 (exec 직전 dry-run):
+
+| 경로 | curriculum | num_bars | min_epochs |
+|---|---|---|---|
+| 메인 단독 + `NUM_BARS=999` | 1 | `<unset>` | 1000 |
+| 프로브 경로 | 0 | 70 | 0 |
+| 프로브 전체 체인 | \multicolumn — `envs=64 sim=base_sim_4gb max_bars=300` 확인 | | |
+
+`bash -n` 통과. 1650 Ti 실기 절차는 기존 권고 유지: pull → free VRAM ≥3.6–3.7GiB 확인 →
+8 epoch smoke로 peak 폴링 → 본 프로브.

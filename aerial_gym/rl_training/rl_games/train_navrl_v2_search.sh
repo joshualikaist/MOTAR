@@ -70,7 +70,9 @@ export NAVRL_K_FINAL=28
 export NAVRL_K_MIN_FINAL=20
 
 # ---- density curriculum, v1-equivalent per-area schedule ----
-export NAVRL_DENSITY_CURRICULUM=1
+# Overridable so a fixed-density probe (train_navrl_v2_ceiling_probe.sh) can freeze the curriculum
+# while inheriting the rest of this contract verbatim. Unset => the normal curriculum run.
+export NAVRL_DENSITY_CURRICULUM="${NAVRL_DENSITY_CURRICULUM:-1}"
 export NAVRL_DENSITY_START="${NAVRL_DENSITY_START:-70}"
 export NAVRL_DENSITY_FINAL="${NAVRL_DENSITY_FINAL:-300}"
 export NAVRL_DENSITY_STEP=15
@@ -86,7 +88,13 @@ export NAVRL_DENSITY_CHECK_EPS="${NAVRL_DENSITY_CHECK_EPS:-16384}"
 # already passes. Without it the curriculum chains promotions as fast as evidence windows fill, so
 # no level ever converges and every metric only ever tracks rising difficulty.
 export NAVRL_DENSITY_MIN_EPOCHS="${NAVRL_DENSITY_MIN_EPOCHS:-1000}"
-unset NAVRL_NUM_BARS NAVRL_FIXED_BARS NAVRL_CONTROLLED_ABLATION
+# NAVRL_NUM_BARS pins the active density; clearing it is what lets the curriculum own the value.
+# A fixed-density probe sets it deliberately, so only clear it when the curriculum is actually on --
+# otherwise the probe's density silently reverts to the config default.
+if [[ "${NAVRL_DENSITY_CURRICULUM}" == "1" ]]; then
+    unset NAVRL_NUM_BARS
+fi
+unset NAVRL_FIXED_BARS NAVRL_CONTROLLED_ABLATION
 
 # ---- UNCHANGED sensor/representation/action contract (variable control) ----
 export NAVRL_VISION=1
