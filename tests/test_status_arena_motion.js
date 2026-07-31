@@ -56,7 +56,12 @@ assert(taskCfg.includes('waypoint_reach_m = 0.5'));
 assert(taskCfg.includes('goal_min_bar_clearance = 1.0'));
 assert(taskCfg.includes('detector_hfov_deg = 87.0'));
 assert(taskCfg.includes('detector_max_range = 20.0'));
-assert(envCfg.includes('upper_bound_min = [24.0, 24.0, 3.0]'));
+// The arena is env-var sized since the 2026-07-31 v2 search arena. arena_motion.js hardcodes
+// the v1 bounds (x 0..24, y -12..12), so what must hold is that the DEFAULT is still 24 x 24 x 3.
+// A v2 (40 m) run is a different task and is not what the browser panel illustrates.
+assert(envCfg.includes('_env_float("NAVRL_ARENA_XY", 24.0)'));
+assert(envCfg.includes('_env_float("NAVRL_ARENA_Z", 3.0)'));
+assert(envCfg.includes('upper_bound_min = [_ARENA_XY, _ARENA_XY, _ARENA_Z]'));
 const lidarCfg = fs.readFileSync(path.join(
   repo, 'aerial_gym/config/sensor_config/lidar_config/navrl_lidar_config.py'
 ), 'utf8');

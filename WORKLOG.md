@@ -4052,3 +4052,114 @@ yaw 3.0, 표적 U[0,1.5] mixed 램프, squashed-Gaussian 액션, PPO 하이퍼�
    않은지 (actor는 LiDAR/token/robot/target 전부 센서-정규화 — 확인했으나 재검 환영).
 4. 에피소드 600스텝에서 alive/time-cost 리워드 균형 (v1 리워드가 300스텝 기준 튜닝됨 —
    timeout 페널티 대비 캡처 보너스 비율이 2× 길이에서도 배회를 유발하지 않는지).
+
+### Codex 독립 감사 결과 (2026-07-31 13시)
+
+학습 프로세스는 중단하거나 변경하지 않고 코드, 실제 `bars_h3` URDF 40개, ep850 checkpoint,
+실행 프로세스 환경변수와 epoch metrics를 읽기 전용으로 대조했다.
+
+1. **touch=0.4 — PASS.** 막대는 yaw=0인 축정렬 box이고 실제 pool의 최소 변 길이는
+   0.4029m다. 중심 Euclidean 거리 ≤0.4m이면 각 축 오프셋도 ≤0.4m이므로 두 box의 x/y
+   interval이 모든 footprint 조합에서 겹치거나 접한다. saturation fallback은 반경을
+   `0.5*touch=0.2m` 미만으로 제한하므로 더 강하게 겹친다.
+2. **gap=1.6 — WARN. 이상적 기하에서는 통과 가능하지만 robust clearance가 부족하다.**
+   config 주석의 `surface gap = 1.6 - 0.8 = 0.8m`는 축정렬 방향에만 맞고 대각 최악에는
+   틀리다. 실제 최대 bar 변 0.7902m 기준 corner gap은 0.4825m, 0.28m drone 대각
+   0.3960m를 뺀 여유는 **0.0865m**뿐이다. 1.8m면 여유가 0.2865m로 늘어난다. 다만
+   exact center-band Monte Carlo(40×40 band, 16 layouts)에서 300 bodies의 독립 component가
+   gap 1.6/1.7/1.8일 때 약 247/237/225개로 감소했다. 즉 1.8은 안전 여유를 얻는 대신
+   고밀도에서 약 9%를 추가 병합한다. 장기적으로는 고정 1.8보다 per-asset footprint를
+   읽는 Minkowski surface-clearance rule이 더 정확하다.
+3. **actor arena-normalization 격리 — PASS.** v2 perception actor 898-D는 LiDAR range,
+   camera range, velocity limit, tracker covariance/memory, flight altitude로만 정규화되며
+   absolute XY나 arena side를 받지 않는다. `_arena_xy_norm`은 두 privileged critic
+   extras의 `dist` 열에만 사용된다. `_process_obs_vision` docstring의 `dist/24` 표기는
+   stale 문서지만 실행 코드는 40m divisor를 사용한다.
+4. **600-step reward — 현재 로그 PASS, 후반 provisional.** ep787–886 rolling 100에서
+   capture 78.64%, timeout 1.81%, mean length 108.3/600으로 배회/timeout 증거는 없다.
+   checkpoint ep850은 이미 `k_max_cur=28`이라 sensor-outside goal도 포함한다. PPO
+   `gamma=0.99`에서 -0.05 time cost의 무한-horizon discounted 총량은 약 -5이므로 단순히
+   300→600으로 raw cost가 2배가 되지는 않는다. 다만 terminal +30의 현재가치는 100/200/
+   300 step에서 10.98/4.02/1.47로 줄어든다. 이후 density와 target speed가 올라가 mean
+   length가 200~300을 넘을 때 rolling timeout과 hidden-target dwell을 다시 판정해야 한다.
+
+**추가로 발견한 계약 결함:** v2는 task-version bump라고 선언했지만 ep850 `env_state`에는
+`arena_xy/z`, `bar_pool`, `placement_mode/touch/gap`, `episode_len_steps`가 모두 없다.
+따라서 v2 checkpoint를 v1 arena/placement로 잘못 평가하거나 resume해도 현재 preflight가
+차단하지 못한다. 본 run 자체는 `/proc/<pid>/environ`에서 40m/bars_h3/navrl_band/0.4/1.6/
+600step/goal6..28/density70..300 계약을 확인했다. 평가 전에 이 7개 provenance와 mismatch
+guard를 추가해야 한다.
+
+---
+
+## 2026-07-31 (오후) — 1650 Ti(4GB) 경로 실측, 아레나 provenance, v2 평가 경로
+
+### 1. 4GB(1650 Ti) 타당성 — 실측 통과
+
+병목은 메시가 아니라 **PhysX 강체 액터 수 = num_envs × NAVRL_MAX_BARS**임을 먼저 확정했다
+(막대는 박스라 env당 warp 메시+BVH가 ~360KB에 불과). 문서화된 4GB 한계선:
+
+| 구성 | 액터 수 | 결과 |
+|---|---|---|
+| 256env × 150막대 (비전 X) | 38,400 | 안전 최대 |
+| 512env × 150막대 | 76,800 | PhysX pair 버퍼 오버플로우 사망 |
+| 128env × 150막대 + 비전 | 19,200 | 검증된 4GB 비전 프리셋 |
+| **64env × 300막대 (v2)** | **19,200** | ← 액터 수 등가로 설계 |
+
+64는 PPO 배치 최솟값이기도 하다(minibatch 2048, horizon 32 → 32×64=2048).
+
+**실측(3070에서 base_sim_4gb 프리셋으로, 1650 Ti와 동일 버퍼 설정)**:
+- 학습 중 peak **3,425 MiB / 4,096** (여유 ~670 MiB) → **1650 Ti 탑재 가능**
+- env만(300막대 전부 활성) 2,561 MiB
+- **밀도 커리큘럼이 올라가도 VRAM 불변**: 70막대 실행 3,425 vs 300막대 빌드 3,422 —
+  3 MiB 차이. 막대는 빌드 시점에 전부 액터로 생성되고 비활성은 -1000에 주차될 뿐이다.
+
+런처 `train_navrl_v2_search_4gb.sh` 신설(측정치와 산정 근거를 주석에 기록).
+주의: 배치가 절반이라 3070 결과와 **혼합 금지**(기존 프로젝트 규칙) — 평가 또는 별도 보고
+seed 용도.
+
+### 2. 아레나 provenance — 조용한 과제 혼동 차단
+
+v2는 **관측 폭이 v1과 동일(898-D)**해서 v2 체크포인트가 v1 아레나에서 에러 없이 로드되고
+**전혀 다른 과제로 채점**된다 — 예전 lidar_max_range 사고와 같은 유형. 차단 3중화:
+
+- `env_state`에 `cfg_arena_xy / cfg_arena_z / cfg_bar_pool / cfg_placement_mode /
+  cfg_placement_gap_m / cfg_episode_len_steps` 저장(`_arena_contract()`).
+- `set_env_state` 불일치 시 경고 — 검증: v1 상태를 v2 env에 주입하니 ARENA MISMATCH 2건
+  (bar_pool, placement_mode) + CONFIG MISMATCH 2건(arena_xy, episode_len) 발화 확인.
+- preflight `_CONTRACT_ENV`에 6개 등록, legacy 기본값(24/3/bars/random/1.6/300)을 둬서
+  **v1 체크포인트는 계속 통과**하고 v1↔v2 교차만 실패한다.
+
+### 3. v2 평가 경로 + v1 오염 방지
+
+- `eval_navrl_v2_density_sweep.sh` 신설: v2 계약 전체 pin + **체크포인트 provenance 게이트**
+  (v2 계약이 없거나 불일치면 실행 거부, `NAVRL_V2_FORCE=1`로만 우회). 밀도 70/150/210/280
+  = 5.3/11.3/15.8/21.1 per 100m². 검증: v1 체크포인트(fix3 ep13000) 투입 시 정상 거부.
+- `eval_navrl_density_sweep.sh`(v1)에 v1 아레나 값을 **명시 export** — v2 런처를 돌린 셸에
+  `NAVRL_ARENA_XY=40`이 남아 있으면 v1 평가가 조용히 오염되기 때문(관측 폭이 같아 로드는 성공).
+
+### 4. 학습 재시작
+
+provenance는 실행 중 프로세스에 소급 적용되지 않으므로, 사용자 승인 하에 ep1400에서 중단하고
+**체크포인트에서 이어받아** 재개(1,400 epoch 진척 보존).
+- 중단 시점: run `ppo_260731_1252`, epoch 1417, 70막대 capture 82.4%, k_max 16.2
+- 재개: run **`ppo_260731_1411_navrl_v2-search-prov-s1`**, ep1410부터,
+  로그 `train_session_logs/v2_search_resume_260731_141136.log`
+- 검증: 프로세스 env(ARENA_XY=40/BAR_POOL=bars_h3/PLACEMENT=navrl_band/GOAL_MAX=28) 확인,
+  **저장된 체크포인트에서 provenance 6개 필드 PASS** 확인.
+
+### 5. 밀도 승급 상태 (질문 답변)
+
+승급은 설정돼 있다: 70→300, step 15, 임계 0.70, 창 16,384 에피소드. 다만
+`NAVRL_DENSITY_WARMUP=1000` epoch 이후부터 누적을 시작하고, v2 실측 완료 에피소드가
+**44.7개/epoch**(에피소드가 600스텝으로 길어져 v1의 63.9보다 적음)이라 창 하나 ≈ **367 epoch**.
+따라서 첫 심사는 epoch ~1367 부근이며 중단 시점(1417)에는 아직 심사 기록이 없었다.
+재개 run에서 곧 첫 심사가 발화한다.
+
+### Codex 추가 검수 포인트
+
+5. `_arena_contract()`가 env var를 읽는 방식이 navrl_bars_env/navrl_task_config의 실제
+   소비 경로와 항상 일치하는지(둘 다 같은 var를 읽지만, 한쪽만 바뀌면 기록이 거짓이 됨).
+   더 안전한 대안은 런타임 bounds 텐서에서 역산하는 것.
+6. 4GB 실측이 3070에서 base_sim_4gb로 수행됨 — 1650 Ti 실기에서는 드라이버/컨텍스트
+   오버헤드가 달라 수백 MiB 차이 가능. 실기 첫 실행 시 재확인 필요.

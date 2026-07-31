@@ -28,12 +28,29 @@ _CONTRACT_ENV = {
     "cfg_corridor_tokens": "NAVRL_CORRIDOR_TOKENS",
     "cfg_corridor_horizon_m": "NAVRL_CORRIDOR_HORIZON_M",
     "cfg_corridor_min_width_m": "NAVRL_CORRIDOR_MIN_WIDTH_M",
+    # Arena / task version (v2 search arena). These do NOT change the observation width, so a
+    # mismatch loads without error and silently measures a different task -- exactly why they
+    # belong in the preflight contract rather than only in a runtime warning.
+    "cfg_arena_xy": "NAVRL_ARENA_XY",
+    "cfg_arena_z": "NAVRL_ARENA_Z",
+    "cfg_bar_pool": "NAVRL_BAR_POOL",
+    "cfg_placement_mode": "NAVRL_PLACEMENT_MODE",
+    "cfg_placement_gap_m": "NAVRL_PLACEMENT_GAP_M",
+    "cfg_episode_len_steps": "NAVRL_EPISODE_LEN_STEPS",
 }
-_STRING_CONTRACT_FIELDS = {"cfg_obstacle_selector"}
+_STRING_CONTRACT_FIELDS = {"cfg_obstacle_selector", "cfg_bar_pool", "cfg_placement_mode"}
 # Checkpoints saved before a contract field existed are interpreted at the field's historical
 # behavior. corridor_tokens=0: every pre-corridor checkpoint used the plain 898-D schema.
 _LEGACY_CONTRACT_DEFAULTS = {
     "cfg_obstacle_selector": "greedy_suppress",
+    # Every checkpoint saved before 2026-07-31 trained in the v1 arena; these are its exact
+    # settings, so a v1 checkpoint keeps passing while a v1-vs-v2 mismatch still fails loudly.
+    "cfg_arena_xy": 24.0,
+    "cfg_arena_z": 3.0,
+    "cfg_bar_pool": "bars",
+    "cfg_placement_mode": "random",
+    "cfg_placement_gap_m": 1.6,
+    "cfg_episode_len_steps": 300.0,
     "cfg_corridor_tokens": 0,
     # The first corridor checkpoints (2026-07-31) predated provenance for these two knobs but used
     # these exact launcher defaults. Future checkpoints save both fields explicitly.

@@ -1030,6 +1030,12 @@ class NavRLTask(BaseTask):
             "cfg_target_motion_model": TARGET_MOTION_MODEL,
             "cfg_general_goal_dist_min": float(self.general_goal_dist_min),
             "cfg_general_goal_dist_max": float(self.general_goal_dist_max),
+            # ARENA / task-version provenance (v2 search arena, 2026-07-31). The observation
+            # width does NOT change with these, so a v2 checkpoint loads cleanly in a v1 arena
+            # and would silently measure a completely different task -- the same failure class as
+            # the old lidar_max_range mismatch. Recorded here so set_env_state() and the eval
+            # preflight can make that loud.
+            **self._arena_contract(),
             # Action-distribution provenance. Bounded and legacy models intentionally share the
             # same state_dict keys, so without this an eval can load successfully under the wrong
             # likelihood and silently measure a different policy.
@@ -1088,6 +1094,30 @@ class NavRLTask(BaseTask):
             ),
             "cfg_density_stratified_floor": float(
                 getattr(self.density, "stratified_floor", 0.0)
+            ),
+        }
+
+    @staticmethod
+    def _arena_contract():
+        """Arena / task-version settings recorded in every checkpoint.
+
+        These change the TASK, not the observation width, so nothing downstream would fail
+        loudly on a mismatch without this record. Read from the same env vars that
+        navrl_bars_env and navrl_task_config consume, so the record always equals what the
+        environment was actually built with.
+        """
+        return {
+            "cfg_arena_xy": float(os.environ.get("NAVRL_ARENA_XY", "").strip() or 24.0),
+            "cfg_arena_z": float(os.environ.get("NAVRL_ARENA_Z", "").strip() or 3.0),
+            "cfg_bar_pool": (os.environ.get("NAVRL_BAR_POOL", "").strip() or "bars"),
+            "cfg_placement_mode": (
+                os.environ.get("NAVRL_PLACEMENT_MODE", "").strip().lower() or "random"
+            ),
+            "cfg_placement_gap_m": float(
+                os.environ.get("NAVRL_PLACEMENT_GAP_M", "").strip() or 1.6
+            ),
+            "cfg_episode_len_steps": float(
+                os.environ.get("NAVRL_EPISODE_LEN_STEPS", "").strip() or 300
             ),
         }
 
@@ -1258,6 +1288,7 @@ class NavRLTask(BaseTask):
         density_evidence_changed = force_density_reset
         if isinstance(state, dict):
             representation = self._obstacle_representation_or_zero()
+            arena = self._arena_contract()
             saved_selector = str(
                 state.get("cfg_obstacle_selector", "greedy_suppress")
             ).strip()
@@ -1269,6 +1300,21 @@ class NavRLTask(BaseTask):
                     "This intentionally changes same-shape policy-input semantics."
                     % (saved_selector, current_selector)
                 )
+            for key, current, name in (
+                ("cfg_bar_pool", arena["cfg_bar_pool"], "NAVRL_BAR_POOL"),
+                ("cfg_placement_mode", arena["cfg_placement_mode"], "NAVRL_PLACEMENT_MODE"),
+            ):
+                saved_str = state.get(key)
+                if saved_str is None:
+                    continue  # checkpoint predates arena provenance
+                if str(saved_str).strip() != str(current).strip():
+                    density_evidence_changed = True
+                    logger.warning(
+                        "NavRL ARENA MISMATCH | %s: checkpoint=%s running=%s. The observation "
+                        "width is unchanged, so this loads cleanly while measuring a DIFFERENT "
+                        "task -- verify this is intentional."
+                        % (name, saved_str, current)
+                    )
             saved_action_policy = state.get("cfg_action_policy")
             current_action_policy = os.environ.get("NAVRL_ACTION_POLICY", "legacy")
             if (
@@ -1375,6 +1421,17 @@ class NavRLTask(BaseTask):
                     "cfg_corridor_min_width_m",
                     float(representation["corridor_min_width_m"]),
                     "NAVRL_CORRIDOR_MIN_WIDTH_M",
+                ),
+                # Arena / task version. A mismatch here is not an "input scaling" bug but a
+                # DIFFERENT TASK (v1 24 m pursuit vs v2 40 m search) that loads without error
+                # because the observation width is identical.
+                ("cfg_arena_xy", arena["cfg_arena_xy"], "NAVRL_ARENA_XY"),
+                ("cfg_arena_z", arena["cfg_arena_z"], "NAVRL_ARENA_Z"),
+                ("cfg_placement_gap_m", arena["cfg_placement_gap_m"], "NAVRL_PLACEMENT_GAP_M"),
+                (
+                    "cfg_episode_len_steps",
+                    arena["cfg_episode_len_steps"],
+                    "NAVRL_EPISODE_LEN_STEPS",
                 ),
             ):
                 saved = state.get(key)
