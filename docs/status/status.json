@@ -1,44 +1,29 @@
 {
-  "generated_at": "2026-07-31T06:07:49.330269+00:00",
+  "generated_at": "2026-07-31T08:17:46.684588+00:00",
   "repo": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator",
-  "n_runs": 54,
-  "active_run": {
-    "run": "ppo_260731_1411_navrl_v2-search-prov-s1",
-    "is_live": true,
-    "metrics_age_min": 0.04219040870666504,
-    "epoch": 2445,
-    "max_epochs": 30000,
-    "epochs_logged": 1045,
-    "tail_epochs": 50,
-    "captured_rate": 0.7540459800000001,
-    "crash_rate": 0.24279802,
-    "timeout_rate": 0.0031560319999999996,
-    "mean_reward": 95.434146,
-    "closest_approach_m": 0.46033334,
-    "n_bars_active": 115.0,
-    "curriculum_max_m": 19.803518
-  },
+  "n_runs": 56,
+  "active_run": null,
   "latest_run": {
-    "run": "ppo_260731_1252_navrl_v2-search-fresh-s1",
-    "finalized_at": "2026-07-31T05:07:45.361831+00:00",
+    "run": "ppo_260731_1606_navrl_v2-search-v3-s1",
+    "finalized_at": "2026-07-31T07:15:58.350394+00:00",
     "exit_reason": "interrupted",
-    "epochs_logged": 1419,
+    "epochs_logged": 156,
     "first_epoch": 1,
-    "last_epoch": 1419,
+    "last_epoch": 156,
     "is_navrl": true,
-    "last_mean_reward": 137.483,
-    "last_mean_episode_length": 105.803,
-    "last_captured_rate": 0.775,
-    "last_crash_rate": 0.225,
+    "last_mean_reward": 26.1327,
+    "last_mean_episode_length": 61.7455,
+    "last_captured_rate": 0.666667,
+    "last_crash_rate": 0.333333,
     "last_timeout_rate": 0.0,
-    "last_closest_approach_m": 0.37724,
-    "last_closest_min_m": 0.21871,
-    "last_curriculum_max_m": 11.8193,
-    "last_n_bars_active": 85,
-    "peak_captured_rate": 1.0,
-    "peak_captured_epoch": 1403,
-    "peak_mean_reward": 157.223,
-    "peak_epoch": 1223,
+    "last_closest_approach_m": 0.433859,
+    "last_closest_min_m": 0.238932,
+    "last_curriculum_max_m": 6.73387,
+    "last_n_bars_active": 70,
+    "peak_captured_rate": 0.666667,
+    "peak_captured_epoch": 156,
+    "peak_mean_reward": 26.1327,
+    "peak_epoch": 156,
     "reward_collapse": false
   },
   "runs": [
@@ -1264,25 +1249,71 @@
     },
     {
       "run": "ppo_260731_1411_navrl_v2-search-prov-s1",
-      "finalized_at": null,
-      "exit_reason": "running",
-      "epochs_logged": 1045,
+      "finalized_at": "2026-07-31T06:44:24.892856+00:00",
+      "exit_reason": "interrupted",
+      "epochs_logged": 1686,
       "first_epoch": 1401,
-      "last_epoch": 2445,
+      "last_epoch": 3086,
       "is_navrl": true,
-      "last_mean_reward": 105.894,
-      "last_mean_episode_length": 95.6149,
-      "last_captured_rate": 0.705882,
-      "last_crash_rate": 0.294118,
+      "last_mean_reward": 83.0222,
+      "last_mean_episode_length": 101.786,
+      "last_captured_rate": 0.755556,
+      "last_crash_rate": 0.244444,
       "last_timeout_rate": 0.0,
-      "last_closest_approach_m": 0.412569,
-      "last_closest_min_m": 0.211115,
-      "last_curriculum_max_m": 13.6991,
-      "last_n_bars_active": 115,
+      "last_closest_approach_m": 0.36971,
+      "last_closest_min_m": 0.191679,
+      "last_curriculum_max_m": 27.0338,
+      "last_n_bars_active": 130,
       "peak_captured_rate": 1.0,
       "peak_captured_epoch": 1591,
       "peak_mean_reward": 153.636,
       "peak_epoch": 1412,
+      "reward_collapse": false
+    },
+    {
+      "run": "ppo_260731_1606_navrl_v2-search-v3-s1",
+      "finalized_at": "2026-07-31T07:15:58.350394+00:00",
+      "exit_reason": "interrupted",
+      "epochs_logged": 156,
+      "first_epoch": 1,
+      "last_epoch": 156,
+      "is_navrl": true,
+      "last_mean_reward": 26.1327,
+      "last_mean_episode_length": 61.7455,
+      "last_captured_rate": 0.666667,
+      "last_crash_rate": 0.333333,
+      "last_timeout_rate": 0.0,
+      "last_closest_approach_m": 0.433859,
+      "last_closest_min_m": 0.238932,
+      "last_curriculum_max_m": 6.73387,
+      "last_n_bars_active": 70,
+      "peak_captured_rate": 0.666667,
+      "peak_captured_epoch": 156,
+      "peak_mean_reward": 26.1327,
+      "peak_epoch": 156,
+      "reward_collapse": false
+    },
+    {
+      "run": "ppo_260731_1641_navrl_v2-preflight-smoke-s91",
+      "finalized_at": "2026-07-31T07:43:54.096656+00:00",
+      "exit_reason": "max_epochs",
+      "epochs_logged": 65,
+      "first_epoch": 1,
+      "last_epoch": 65,
+      "is_navrl": true,
+      "last_mean_reward": -58.4791,
+      "last_mean_episode_length": 194.316,
+      "last_captured_rate": 0.583333,
+      "last_crash_rate": 0.416667,
+      "last_timeout_rate": 0.0,
+      "last_closest_approach_m": 0.461959,
+      "last_closest_min_m": 0.397454,
+      "last_curriculum_max_m": 6.62838,
+      "last_n_bars_active": 70,
+      "peak_captured_rate": 1.0,
+      "peak_captured_epoch": 6,
+      "peak_mean_reward": -37.0195,
+      "peak_epoch": 1,
       "reward_collapse": false
     }
   ],
@@ -2032,25 +2063,35 @@
   },
   "other_curves": {},
   "research_update": {
-    "subtitle": "2026-07-31 · v2 search-arena density curriculum · running snapshot",
-    "headline": "Task-v2 training is live at 115 bars after 3 promotions.",
-    "summary": "The 40 m search-arena run has advanced 70 → 85 → 100 → 115; completed promotion-window capture values are 83.4%, 82.1%, 79.3%. The current 50-epoch tail is 75.4%, which is diagnostic only and must not be mistaken for the 16,384-episode gate. Training may continue, but checkpoint evaluation remains pending the provenance and v2 gate fixes identified by the independent audit.",
+    "subtitle": "2026-07-31 · v2 search-arena density curriculum · paused snapshot",
+    "headline": "Task-v2 training is paused at epoch 156, 70 bars.",
+    "summary": "The 40 m search-arena run has advanced 70; completed promotion-window capture values are not yet available. The displayed capture is 66.7%, which is diagnostic only and must not be mistaken for the 16,384-episode promotion gate or a held-out result.",
     "active_experiment": {
-      "run": "ppo_260731_1411_navrl_v2-search-prov-s1",
-      "is_live": true,
-      "metrics_age_min": 0.04219040870666504,
-      "epoch": 2445,
+      "run": "ppo_260731_1606_navrl_v2-search-v3-s1",
+      "finalized_at": "2026-07-31T07:15:58.350394+00:00",
+      "exit_reason": "interrupted",
+      "epochs_logged": 156,
+      "first_epoch": 1,
+      "last_epoch": 156,
+      "is_navrl": true,
+      "last_mean_reward": 26.1327,
+      "last_mean_episode_length": 61.7455,
+      "last_captured_rate": 0.666667,
+      "last_crash_rate": 0.333333,
+      "last_timeout_rate": 0.0,
+      "last_closest_approach_m": 0.433859,
+      "last_closest_min_m": 0.238932,
+      "last_curriculum_max_m": 6.73387,
+      "last_n_bars_active": 70,
+      "peak_captured_rate": 0.666667,
+      "peak_captured_epoch": 156,
+      "peak_mean_reward": 26.1327,
+      "peak_epoch": 156,
+      "reward_collapse": false,
+      "is_live": false,
+      "epoch": 156,
       "max_epochs": 30000,
-      "epochs_logged": 1045,
-      "tail_epochs": 50,
-      "captured_rate": 0.7540459800000001,
-      "crash_rate": 0.24279802,
-      "timeout_rate": 0.0031560319999999996,
-      "mean_reward": 95.434146,
-      "closest_approach_m": 0.46033334,
-      "n_bars_active": 115.0,
-      "curriculum_max_m": 19.803518,
-      "bars": 115,
+      "bars": 70,
       "selector": "cluster_sector",
       "cluster_gap_m": 0.45,
       "sectors": 8,
@@ -2064,21 +2105,21 @@
     "milestones": [
       {
         "label": "DENSITY",
-        "value": "115 / 300",
-        "detail": "self-paced +15 bars; chain 70 → 85 → 100 → 115",
+        "value": "70 / 300",
+        "detail": "self-paced +15 bars; chain 70",
         "state": "active"
       },
       {
         "label": "PROMOTIONS",
-        "value": "3",
-        "detail": "window capture 83.4%, 82.1%, 79.3%",
-        "state": "pass"
+        "value": "0",
+        "detail": "window capture pending",
+        "state": "active"
       },
       {
         "label": "PROVENANCE",
-        "value": "6 / 7",
-        "detail": "arena contract saved; placement_touch is still missing",
-        "state": "warn"
+        "value": "9 / 9",
+        "detail": "arena, placement, episode and full-width bar-band contract saved",
+        "state": "pass"
       },
       {
         "label": "1650 Ti · 4GB",
@@ -2089,38 +2130,17 @@
     ],
     "comparison": [
       {
-        "label": "70 → 85 promotion",
-        "bars": 85,
-        "capture": 0.834,
+        "label": "latest stopped epoch",
+        "bars": 70,
+        "capture": 0.666667,
         "unique": null,
-        "verdict": "PASS over 16,384 episodes"
-      },
-      {
-        "label": "85 → 100 promotion",
-        "bars": 100,
-        "capture": 0.821,
-        "unique": null,
-        "verdict": "PASS over 16,385 episodes"
-      },
-      {
-        "label": "100 → 115 promotion",
-        "bars": 115,
-        "capture": 0.793,
-        "unique": null,
-        "verdict": "PASS over 16,384 episodes"
-      },
-      {
-        "label": "current stage · rolling tail",
-        "bars": 115,
-        "capture": 0.7540459800000001,
-        "unique": null,
-        "verdict": "live diagnostic only; not the 16,384-episode promotion gate"
+        "verdict": "stopped-run diagnostic; not a held-out result"
       }
     ],
     "gates": [
       {
         "label": "density curriculum",
-        "value": "RUNNING · 70 → 85 → 100 → 115"
+        "value": "PAUSED · 70"
       },
       {
         "label": "collapse safety",
@@ -2128,14 +2148,14 @@
       },
       {
         "label": "evaluation contract",
-        "value": "PATCH BEFORE EVAL · touch/z/gap coverage incomplete"
+        "value": "PASS · z/gap/touch/bar-band enforced"
       },
       {
         "label": "1650 Ti",
         "value": "SMOKE REQUIRED · recommend free VRAM ≥3.6–3.7 GiB"
       }
     ],
-    "decision": "Keep the current 128-env training process running. Do not interpret the rolling tail as a promotion decision. Before held-out evaluation, add placement_touch to checkpoint provenance, enforce z/gap/touch in the v2 evaluator, and repair NAVRL_V2_FORCE ordering. Treat the 4GB launcher as provisional until it passes an actual 1650 Ti smoke run."
+    "decision": "The run is paused. Validate the revised speed ramp and density dwell state in a short smoke before starting the next full training run. Treat the 4GB launcher as provisional until it passes an actual 1650 Ti smoke run."
   },
   "density_speed_map": {
     "notes": [
@@ -2470,5 +2490,80 @@
       }
     ],
     "pilot_gate": "FAIL: capture 66.10% < 68% and gain +1.57pp < +3pp; bar-contact reduction passed. Do not extend corridor6. Advance to a separately gated two-depth-layer diagnostic."
+  },
+  "success_criteria": {
+    "headline": "Success is held-out capture rate at a stated density -- never a PPO loss curve.",
+    "primary": {
+      "metric": "capture rate",
+      "definition": "fraction of held-out episodes ending with the pursuer within 0.5 m of the target",
+      "measured_by": "eval_navrl_v2_density_sweep.sh -- a frozen checkpoint replayed on episodes it never trained on",
+      "why": "Training-time capture mixes densities while the curriculum ramps, so it cannot be compared across epochs. A held-out sweep fixes the density per cell."
+    },
+    "secondary": [
+      {
+        "metric": "crash rate",
+        "definition": "episodes ending in a bar/wall collision",
+        "role": "the dominant failure mode; a capture gain paid for with more crashes is not progress"
+      },
+      {
+        "metric": "timeout rate",
+        "definition": "episodes reaching the step limit without capture",
+        "role": "separates 'could not find the target' from 'found it and crashed'"
+      },
+      {
+        "metric": "bar contact rate",
+        "definition": "episodes touching an obstacle at any point",
+        "role": "sensitivity to representation changes even when capture is flat"
+      }
+    ],
+    "not_success_metrics": [
+      {
+        "metric": "mean reward",
+        "why": "Reward falls when the density curriculum promotes, so a declining curve during an active curriculum measures rising task difficulty, not a worsening policy. Only compare reward WITHIN one fixed density."
+      },
+      {
+        "metric": "ppo/a_loss, ppo/c_loss",
+        "why": "PPO's surrogate and value losses are optimizer diagnostics on a moving target distribution. They do not decrease monotonically in a healthy run and carry no task-performance meaning."
+      },
+      {
+        "metric": "ppo/entropy",
+        "why": "Falling entropy means the policy is committing to actions -- expected. It says nothing about whether those actions intercept the target."
+      },
+      {
+        "metric": "ppo/kl, ppo/explained_variance",
+        "why": "Guardrails only. KL flags too-large policy steps (stop at 0.04); explained variance flags a critic that has stopped tracking returns. Both being healthy is necessary, never sufficient."
+      }
+    ],
+    "curriculum_gate": {
+      "what": "density promotion gate (a TRAINING control, not a result)",
+      "rule": "promote +15 bars when capture over a 16,384-episode window clears the threshold, which ramps linearly with bar count: 0.85 at 70 bars -> 0.70 at 300, and only after at least 1,000 PPO epochs at the current density",
+      "why_ramped": "A flat threshold strands the curriculum forever once the achievable capture ceiling falls below it -- the failure mode behind the v1 100-bar plateau. Demand mastery where the task is easy; relax where it is hard.",
+      "caution": "The rolling 50-epoch tail shown in Live is a diagnostic, not this gate. Never quote the tail as a promotion or publication number."
+    },
+    "checkpoint_rule": "Evaluate a curriculum run with last_gen_ppo_ep_*.pth. gen_ppo.pth is the best-REWARD checkpoint, and reward peaks at low density, so it is a sparse-density policy that scores near 15% when replayed at high density."
+  },
+  "placement_area_m2": 1600.0,
+  "arena_geometry": {
+    "arena_xy_m": 40,
+    "arena_z_m": 3,
+    "bar_x_min_ratio": 0.0,
+    "bar_x_max_ratio": 1.0,
+    "bar_height_m": 3,
+    "placement_mode": "navrl_band",
+    "placement_touch_m": 0.4,
+    "placement_gap_m": 1.6,
+    "bars_min": 70,
+    "bars_slider_min": 10,
+    "bars_max": 300,
+    "episode_len_steps": 600,
+    "goal_dist_m": [
+      6,
+      28
+    ],
+    "target_speed_m": [
+      0.3,
+      1.5
+    ],
+    "label": "40×40×3 m · full-width bar band · 3 m bars (no fly-over)"
   }
 }

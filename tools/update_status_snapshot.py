@@ -62,6 +62,11 @@ def _training_process_exists() -> bool:
     return False
 
 
+def _is_smoke_run(run_name: str) -> bool:
+    """Keep short wiring checks in history without presenting them as research results."""
+    return "smoke" in run_name.lower()
+
+
 def _live_training_max_epochs(default: int = 12000) -> int:
     """Read the active NavRL runner's explicit epoch ceiling when available."""
     proc = Path("/proc")
@@ -209,10 +214,18 @@ def _live_density_promotions() -> List[Dict[str, Any]]:
     return promotions
 
 
-def _v2_search_update(active: Dict[str, Any]) -> Dict[str, Any]:
+def _v2_search_update(record: Dict[str, Any], *, is_live: bool) -> Dict[str, Any]:
     promotions = _live_density_promotions()
-    bars = int(round(active.get("n_bars_active") or 70))
-    capture_tail = active.get("captured_rate")
+    bars = int(
+        round(record.get("n_bars_active") or record.get("last_n_bars_active") or 70)
+    )
+    capture_tail = (
+        record.get("captured_rate")
+        if is_live
+        else record.get("last_captured_rate")
+    )
+    epoch = record.get("epoch") if is_live else record.get("last_epoch")
+    run_state = "running" if is_live else "paused snapshot"
     comparison = [
         {
             "label": f"{item['source']} → {item['target']} promotion",
@@ -225,11 +238,15 @@ def _v2_search_update(active: Dict[str, Any]) -> Dict[str, Any]:
     ]
     comparison.append(
         {
-            "label": "current stage · rolling tail",
+            "label": "current stage · rolling tail" if is_live else "latest stopped epoch",
             "bars": bars,
             "capture": capture_tail,
             "unique": None,
-            "verdict": "live diagnostic only; not the 16,384-episode promotion gate",
+            "verdict": (
+                "live diagnostic only; not the 16,384-episode promotion gate"
+                if is_live
+                else "stopped-run diagnostic; not a held-out result"
+            ),
         }
     )
     promotion_text = " → ".join(
@@ -238,17 +255,23 @@ def _v2_search_update(active: Dict[str, Any]) -> Dict[str, Any]:
     gate_captures = ", ".join(f"{item['capture'] * 100:.1f}%" for item in promotions)
     tail_text = f"{capture_tail * 100:.1f}%" if capture_tail is not None else "pending"
     return {
-        "subtitle": "2026-07-31 · v2 search-arena density curriculum · running snapshot",
-        "headline": f"Task-v2 training is live at {bars} bars after {len(promotions)} promotions.",
+        "subtitle": f"2026-07-31 · v2 search-arena density curriculum · {run_state}",
+        "headline": (
+            f"Task-v2 training is live at {bars} bars after {len(promotions)} promotions."
+            if is_live
+            else f"Task-v2 training is paused at epoch {epoch}, {bars} bars."
+        ),
         "summary": (
             f"The 40 m search-arena run has advanced {promotion_text}; completed promotion-window "
-            f"capture values are {gate_captures or 'not yet available'}. The current 50-epoch tail "
+            f"capture values are {gate_captures or 'not yet available'}. The displayed capture "
             f"is {tail_text}, which is diagnostic only and must not be mistaken for the 16,384-episode "
-            "gate. Training may continue, but checkpoint evaluation remains pending the provenance "
-            "and v2 gate fixes identified by the independent audit."
+            "promotion gate or a held-out result."
         ),
         "active_experiment": {
-            **active,
+            **record,
+            "is_live": is_live,
+            "epoch": epoch,
+            "max_epochs": record.get("max_epochs") or 30000,
             "bars": bars,
             "selector": "cluster_sector",
             "cluster_gap_m": 0.45,
@@ -275,9 +298,9 @@ def _v2_search_update(active: Dict[str, Any]) -> Dict[str, Any]:
             },
             {
                 "label": "PROVENANCE",
-                "value": "6 / 7",
-                "detail": "arena contract saved; placement_touch is still missing",
-                "state": "warn",
+                "value": "9 / 9",
+                "detail": "arena, placement, episode and full-width bar-band contract saved",
+                "state": "pass",
             },
             {
                 "label": "1650 Ti · 4GB",
@@ -288,26 +311,30 @@ def _v2_search_update(active: Dict[str, Any]) -> Dict[str, Any]:
         ],
         "comparison": comparison,
         "gates": [
-            {"label": "density curriculum", "value": f"RUNNING · {promotion_text}"},
+            {
+                "label": "density curriculum",
+                "value": f"{'RUNNING' if is_live else 'PAUSED'} · {promotion_text}",
+            },
             {"label": "collapse safety", "value": "PASS · reward guard off, NaN/Inf fail-fast on"},
-            {"label": "evaluation contract", "value": "PATCH BEFORE EVAL · touch/z/gap coverage incomplete"},
+            {"label": "evaluation contract", "value": "PASS · z/gap/touch/bar-band enforced"},
             {"label": "1650 Ti", "value": "SMOKE REQUIRED · recommend free VRAM ≥3.6–3.7 GiB"},
         ],
         "decision": (
-            "Keep the current 128-env training process running. Do not interpret the rolling tail as "
-            "a promotion decision. Before held-out evaluation, add placement_touch to checkpoint "
-            "provenance, enforce z/gap/touch in the v2 evaluator, and repair NAVRL_V2_FORCE ordering. "
-            "Treat the 4GB launcher as provisional until it passes an actual 1650 Ti smoke run."
-        ),
+            "Keep the current process running, but do not interpret the rolling tail as a promotion "
+            "decision." if is_live else
+            "The run is paused. Validate the revised speed ramp and density dwell state in a short "
+            "smoke before starting the next full training run."
+        ) + " Treat the 4GB launcher as provisional until it passes an actual 1650 Ti smoke run.",
     }
 
 
 def _research_update(
     active: Optional[Dict[str, Any]], latest: Optional[Dict[str, Any]]
 ) -> Dict[str, Any]:
-    if active and "v2-search" in active.get("run", ""):
-        return _v2_search_update(active)
-    record = active or latest or {}
+    record = active or latest
+    if record and "v2-search" in record.get("run", ""):
+        return _v2_search_update(record, is_live=bool(active))
+    record = record or {}
     experiment = {
         "is_live": bool(active),
         "max_epochs": 13800,
@@ -474,6 +501,161 @@ def _corridor_token_plan() -> Dict[str, Any]:
     }
 
 
+def _is_v2(record: Optional[Dict[str, Any]]) -> bool:
+    """True when the run being described is a task-v2 search-arena run.
+
+    Takes whichever record the dashboard is showing (active run, or the latest finished one when
+    nothing is training) -- keying only on `active` made the page fall back to v1 geometry and the
+    v1 density denominator whenever training was stopped.
+    """
+    return bool(record and "v2-search" in (record.get("run") or ""))
+
+
+def _arena_geometry(active: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+    """Real geometry of the task the dashboard is describing, for the 3D arena panel.
+
+    The panel used to hardcode v1 (24 m, bars in x 0.13..0.96, 2 m tall, relax placement); with
+    v2 running that silently drew the wrong arena at the wrong density.
+    """
+    if _is_v2(active):
+        return {
+            "arena_xy_m": 40,
+            "arena_z_m": 3,
+            "bar_x_min_ratio": 0.0,
+            "bar_x_max_ratio": 1.0,
+            "bar_height_m": 3,
+            "placement_mode": "navrl_band",
+            "placement_touch_m": 0.4,
+            "placement_gap_m": 1.6,
+            "bars_min": 70,
+            "bars_slider_min": 10,
+            "bars_max": 300,
+            "episode_len_steps": 600,
+            "goal_dist_m": [6, 28],
+            "target_speed_m": [0.3, 1.5],
+            "label": "40×40×3 m · full-width bar band · 3 m bars (no fly-over)",
+        }
+    return {
+        "arena_xy_m": 24,
+        "arena_z_m": 3,
+        "bar_x_min_ratio": 0.13,
+        "bar_x_max_ratio": 0.96,
+        "bar_height_m": 2,
+        "placement_mode": "random",
+        "placement_touch_m": 0.4,
+        "placement_gap_m": 1.6,
+        "bars_min": 25,
+        "bars_slider_min": 10,
+        "bars_max": 150,
+        "episode_len_steps": 300,
+        "goal_dist_m": [4, 16],
+        "target_speed_m": [0.0, 1.5],
+        "label": "24×24×3 m · bar band x 0.13–0.96 · 2 m bars",
+    }
+
+
+def _placement_area_m2(active: Optional[Dict[str, Any]]) -> float:
+    """Obstacle-placement area used as the density denominator.
+
+    v1: 24 m arena, bars confined to x in 0.13..0.96 -> 0.83*24*24 = 478 m^2.
+    v2: 40 m arena with the band widened to full width -> the whole 1600 m^2 footprint.
+    """
+    return 1600.0 if _is_v2(active) else 478.0
+
+
+def _success_criteria(active: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+    """What 'working' means for this project, stated explicitly.
+
+    PPO's own scalars (a_loss, c_loss, entropy, kl, explained_variance) describe whether the
+    OPTIMIZER is healthy, not whether the TASK is solved. They are reported as guardrails only.
+    Task success is measured exclusively by held-out capture rate at a stated density.
+    """
+    return {
+        "headline": "Success is held-out capture rate at a stated density -- never a PPO loss curve.",
+        "primary": {
+            "metric": "capture rate",
+            "definition": "fraction of held-out episodes ending with the pursuer within 0.5 m of the target",
+            "measured_by": "eval_navrl_v2_density_sweep.sh -- a frozen checkpoint replayed on episodes it never trained on",
+            "why": (
+                "Training-time capture mixes densities while the curriculum ramps, so it cannot be "
+                "compared across epochs. A held-out sweep fixes the density per cell."
+            ),
+        },
+        "secondary": [
+            {
+                "metric": "crash rate",
+                "definition": "episodes ending in a bar/wall collision",
+                "role": "the dominant failure mode; a capture gain paid for with more crashes is not progress",
+            },
+            {
+                "metric": "timeout rate",
+                "definition": "episodes reaching the step limit without capture",
+                "role": "separates 'could not find the target' from 'found it and crashed'",
+            },
+            {
+                "metric": "bar contact rate",
+                "definition": "episodes touching an obstacle at any point",
+                "role": "sensitivity to representation changes even when capture is flat",
+            },
+        ],
+        "not_success_metrics": [
+            {
+                "metric": "mean reward",
+                "why": (
+                    "Reward falls when the density curriculum promotes, so a declining curve during "
+                    "an active curriculum measures rising task difficulty, not a worsening policy. "
+                    "Only compare reward WITHIN one fixed density."
+                ),
+            },
+            {
+                "metric": "ppo/a_loss, ppo/c_loss",
+                "why": (
+                    "PPO's surrogate and value losses are optimizer diagnostics on a moving target "
+                    "distribution. They do not decrease monotonically in a healthy run and carry no "
+                    "task-performance meaning."
+                ),
+            },
+            {
+                "metric": "ppo/entropy",
+                "why": (
+                    "Falling entropy means the policy is committing to actions -- expected. It says "
+                    "nothing about whether those actions intercept the target."
+                ),
+            },
+            {
+                "metric": "ppo/kl, ppo/explained_variance",
+                "why": (
+                    "Guardrails only. KL flags too-large policy steps (stop at 0.04); explained "
+                    "variance flags a critic that has stopped tracking returns. Both being healthy "
+                    "is necessary, never sufficient."
+                ),
+            },
+        ],
+        "curriculum_gate": {
+            "what": "density promotion gate (a TRAINING control, not a result)",
+            "rule": (
+                "promote +15 bars when capture over a 16,384-episode window clears the threshold, "
+                "which ramps linearly with bar count: 0.85 at 70 bars -> 0.70 at 300, and only "
+                "after at least 1,000 PPO epochs at the current density"
+            ),
+            "why_ramped": (
+                "A flat threshold strands the curriculum forever once the achievable capture ceiling "
+                "falls below it -- the failure mode behind the v1 100-bar plateau. Demand mastery "
+                "where the task is easy; relax where it is hard."
+            ),
+            "caution": (
+                "The rolling 50-epoch tail shown in Live is a diagnostic, not this gate. Never quote "
+                "the tail as a promotion or publication number."
+            ),
+        },
+        "checkpoint_rule": (
+            "Evaluate a curriculum run with last_gen_ppo_ep_*.pth. gen_ppo.pth is the best-REWARD "
+            "checkpoint, and reward peaks at low density, so it is a sparse-density policy that "
+            "scores near 15% when replayed at high density."
+        ),
+    }
+
+
 def build_snapshot() -> Dict[str, Any]:
     status = json.loads(STATUS_PATH.read_text(encoding="utf-8"))
     csv_paths = sorted(RUNS_ROOT.glob("*/aerial_run/epoch_metrics.csv"))
@@ -501,8 +683,11 @@ def build_snapshot() -> Dict[str, Any]:
         )
 
     finalized = [item for item in summaries if item["run"] != (active or {}).get("run")]
+    reportable_finalized = [
+        item for item in finalized if not _is_smoke_run(str(item.get("run", "")))
+    ]
     latest = max(
-        finalized,
+        reportable_finalized or finalized,
         key=lambda item: (item.get("finalized_at") or "", item["run"]),
         default=None,
     )
@@ -516,6 +701,9 @@ def build_snapshot() -> Dict[str, Any]:
             "runs": summaries,
             "research_update": _research_update(active, latest),
             "corridor_token": _corridor_token_plan(),
+            "success_criteria": _success_criteria(active or latest),
+            "placement_area_m2": _placement_area_m2(active or latest),
+            "arena_geometry": _arena_geometry(active or latest),
         }
     )
     status.setdefault("density_curves", {})[

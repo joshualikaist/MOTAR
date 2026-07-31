@@ -56,9 +56,9 @@ assert(taskCfg.includes('waypoint_reach_m = 0.5'));
 assert(taskCfg.includes('goal_min_bar_clearance = 1.0'));
 assert(taskCfg.includes('detector_hfov_deg = 87.0'));
 assert(taskCfg.includes('detector_max_range = 20.0'));
-// The arena is env-var sized since the 2026-07-31 v2 search arena. arena_motion.js hardcodes
-// the v1 bounds (x 0..24, y -12..12), so what must hold is that the DEFAULT is still 24 x 24 x 3.
-// A v2 (40 m) run is a different task and is not what the browser panel illustrates.
+// The motion module defaults to v1 for offline/backward compatibility, then the browser applies
+// status.json.arena_geometry before Arena.init(). Verify both the simulator default and the
+// configurable browser contract rather than pinning the rendered page to v1 forever.
 assert(envCfg.includes('_env_float("NAVRL_ARENA_XY", 24.0)'));
 assert(envCfg.includes('_env_float("NAVRL_ARENA_Z", 3.0)'));
 assert(envCfg.includes('upper_bound_min = [_ARENA_XY, _ARENA_XY, _ARENA_Z]'));
@@ -77,6 +77,8 @@ assert(html.includes('cluster 0.45 m · 8 angular sectors'));
 
 const status = JSON.parse(fs.readFileSync(path.join(repo, 'docs/status/status.json'), 'utf8'));
 assert(status.research_update);
+assert(!status.latest_run.run.toLowerCase().includes('smoke'),
+  'short wiring smoke must not replace the dashboard research result');
 // Structural assertions only: the active experiment run NAME changes every update cycle and a
 // pinned name breaks the suite on each site refresh (it did twice). The representation
 // contract, by contrast, is stable and worth pinning.
@@ -85,7 +87,8 @@ assert(typeof activeExp.run === 'string' && activeExp.run.startsWith('ppo_'));
 assert.strictEqual(activeExp.selector, 'cluster_sector');
 assert.strictEqual(activeExp.cluster_gap_m, 0.45);
 assert.strictEqual(activeExp.sectors, 8);
-assert(status.research_update.comparison.length >= 3);
+assert(status.research_update.comparison.length >=
+  (status.research_update.headline.startsWith('Task-v2') ? 1 : 3));
 assert(status.research_update.milestones.length >= 3);
 assert(status.density_curves.corrected_chirality_density_curve);
 
@@ -270,5 +273,39 @@ for (let i = 0; i < 40; i++) {
   assert(M.pursuerClearance(diag.x, diag.y, cornerBar) >= -1e-9,
     `corner clip at step ${i}: (${diag.x}, ${diag.y})`);
 }
+
+// Task-v2 dashboard parity: status geometry must drive motion bounds, goal support and target
+// speed, not merely the bar coordinates. This caught the former hybrid 40 m floor / 24 m motion.
+assert.strictEqual(status.arena_geometry.arena_xy_m, 40);
+assert.deepStrictEqual(status.arena_geometry.goal_dist_m, [6, 28]);
+assert.deepStrictEqual(status.arena_geometry.target_speed_m, [0.3, 1.5]);
+assert.strictEqual(status.arena_geometry.bar_height_m, 3);
+assert.strictEqual(status.arena_geometry.bars_slider_min, 10);
+assert.strictEqual(status.arena_geometry.bars_max, 300);
+M.configure(status.arena_geometry);
+assert.deepStrictEqual(M.CONTRACT.bounds, { x0: 0, x1: 40, y0: -20, y1: 20 });
+assert.strictEqual(M.CONTRACT.targetDistanceMin, 6);
+assert.strictEqual(M.CONTRACT.targetDistanceMax, 28);
+assert.strictEqual(M.CONTRACT.targetSpeedMin, 0.3);
+const v2rng = M.seededRng(20260731);
+let v2FarX = false, v2FarGoal = false;
+for (let i = 0; i < 2000; i++) {
+  const ep = M.createEpisode(v2rng, [], 1.5);
+  const d = Math.hypot(ep.target.x - ep.drone.x, ep.target.y - ep.drone.y);
+  assert(d >= 6 && d <= 28);
+  assert(ep.speed >= 0.3 && ep.speed <= 1.5);
+  if (ep.drone.x > 24 || ep.target.x > 24) v2FarX = true;
+  if (d > 20) v2FarGoal = true;
+}
+assert(v2FarX, 'v2 spawn never used the part of the 40 m arena beyond x=24');
+assert(v2FarGoal, 'v2 goal sampler never produced a beyond-camera (>20 m) search episode');
+
+// Static scene geometry and ray casting must use configured values too.
+const arenaJs = fs.readFileSync(path.join(repo, 'docs/status/arena.js'), 'utf8');
+assert(arenaJs.includes('if (Motion.configure) Motion.configure(cfg)'));
+assert(arenaJs.includes('p.y + half, BAR_HEIGHT'));
+assert(!arenaJs.includes('root.position.set(-12'));
+assert(!arenaJs.includes('new THREE.GridHelper(24'));
+assert(!arenaJs.includes('new THREE.Vector3(24, .04'));
 
 console.log('status arena motion parity: ok');

@@ -10,9 +10,11 @@
  * Target steering parity: both this browser model and target_motion.steer_target_step use
  * the same 90° heading-continuity preference with a large-turn escape fallback.
  *
- * Coordinates use the status arena convention: x=[0,24], y=[-12,12].
- * This module is deliberately independent of THREE/DOM so its parity contracts
- * can be tested with Node.
+ * Coordinates use the status arena convention. Defaults preserve task v1; configure()
+ * replaces bounds, goal range and target-speed support from status.json before the
+ * scene starts so task v2 is not merely drawn on a larger floor with v1 motion.
+ * This module is deliberately independent of THREE/DOM so its parity contracts can
+ * be tested with Node.
  */
 (function (root, factory) {
   const api = factory();
@@ -21,8 +23,8 @@
 })(typeof window !== 'undefined' ? window : this, function () {
   'use strict';
 
-  const CONTRACT = Object.freeze({
-    bounds: Object.freeze({ x0: 0, x1: 24, y0: -12, y1: 12 }),
+  const CONTRACT = {
+    bounds: { x0: 0, x1: 24, y0: -12, y1: 12 },
     wallMargin: 0.5,
     spawnMargin: 1.0,
     spawnBarClearance: 0.65,
@@ -30,11 +32,12 @@
     targetDistanceMin: 4.0,
     targetDistanceMax: 16.0,
     waypointReach: 0.5,
+    targetSpeedMin: 0.0,
     targetSpeedMax: 1.5,
     pursuerSpeedMax: 2.5,
     pursuerRadius: 0.25,
     pursuerLookaheadSeconds: 0.9,
-  });
+  };
   const TURN_ANGLES = Object.freeze(
     [0, 30, -30, 60, -60, 90, -90, 120, -120, 180].map(
       function (degrees) { return degrees * Math.PI / 180; }
@@ -53,6 +56,34 @@
 
   function clamp(v, lo, hi) {
     return Math.max(lo, Math.min(hi, v));
+  }
+
+  function configure(cfg) {
+    if (!cfg) return CONTRACT;
+    if (cfg.arena_xy_m != null) {
+      const size = Number(cfg.arena_xy_m);
+      if (Number.isFinite(size) && size > 2 * CONTRACT.spawnMargin) {
+        CONTRACT.bounds.x0 = 0;
+        CONTRACT.bounds.x1 = size;
+        CONTRACT.bounds.y0 = -size / 2;
+        CONTRACT.bounds.y1 = size / 2;
+      }
+    }
+    if (Array.isArray(cfg.goal_dist_m) && cfg.goal_dist_m.length >= 2) {
+      const lo = Number(cfg.goal_dist_m[0]), hi = Number(cfg.goal_dist_m[1]);
+      if (Number.isFinite(lo) && Number.isFinite(hi) && 0 <= lo && lo < hi) {
+        CONTRACT.targetDistanceMin = lo;
+        CONTRACT.targetDistanceMax = hi;
+      }
+    }
+    if (Array.isArray(cfg.target_speed_m) && cfg.target_speed_m.length >= 2) {
+      const lo = Number(cfg.target_speed_m[0]), hi = Number(cfg.target_speed_m[1]);
+      if (Number.isFinite(lo) && Number.isFinite(hi) && 0 <= lo && lo <= hi) {
+        CONTRACT.targetSpeedMin = lo;
+        CONTRACT.targetSpeedMax = hi;
+      }
+    }
+    return CONTRACT;
   }
 
   function barHalfExtent(bar) {
@@ -199,7 +230,12 @@
       }
     );
     const mode = rng() < 0.5 ? 'cv' : 'waypoint';
-    const speed = rng() * Math.max(0, speedCeiling == null ? CONTRACT.targetSpeedMax : speedCeiling);
+    const ceiling = Math.max(
+      0,
+      speedCeiling == null ? CONTRACT.targetSpeedMax : Number(speedCeiling)
+    );
+    const floor = ceiling > 0 ? Math.min(ceiling, CONTRACT.targetSpeedMin) : 0;
+    const speed = floor + rng() * (ceiling - floor);
     const angle = rng() * Math.PI * 2;
     return {
       drone: drone,
@@ -484,6 +520,7 @@
 
   return {
     CONTRACT: CONTRACT,
+    configure: configure,
     seededRng: seededRng,
     distanceToBars: distanceToBars,
     pursuerClearance: pursuerClearance,

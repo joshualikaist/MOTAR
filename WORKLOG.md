@@ -4223,3 +4223,246 @@ gate 선수정 3건, 1650 Ti 4GB 실기 smoke 필요 상태도 경고 카드로 
 - `python3 tools/update_status_snapshot.py`: 54 runs, 활성 v2 run 탐지
 - `node tests/test_status_arena_motion.js`: PASS
 - `status.json`과 `index.html` inline fallback 동시 재생성, `git diff --check` PASS
+
+## 2026-07-31 (저녁) — task-v2 제약조건 재검토: 배치 빈 공간·속도 램프·승급 임계값 + fresh 재학습
+
+`ppo_260731_1411_..._prov-s1`을 ep3050에서 중단하고, fresh 재학습 전에 환경 제약조건을
+전면 재검토했다. 세 가지 결함을 찾아 고쳤고, 모두 env-var 게이트라 v1 기본값은 그대로다.
+
+### 1. 장애물 배치 빈 공간 (사용자 지적 — 확인됨)
+
+`bar_asset_params`/`navrl_target_params`의 x-ratio가 `[0.13, 0.96]`이라 아레나 양끝에
+장애물이 전혀 없는 띠가 존재했다.
+
+| 아레나 | 배치 x 범위 | 저-x 빈 띠 | 고-x 빈 띠 | 빈 면적 |
+|---|---|---|---|---|
+| v1 24m | 3.12–23.04 m | 3.12 m | 0.96 m | 98 m² (17%) |
+| v2 40m | 5.20–38.40 m | 5.20 m | 1.60 m | **272 m² (17%)** |
+
+근거는 코드 주석에 남아있던 **"드론이 x≈0에 스폰하니 스폰 스트립을 비운다"** — v1 좌→우
+횡단 시절 설정이다. v2는 `NAVRL_GENERAL_TRAIN=1`로 드론·표적 모두 아레나 전역 랜덤
+스폰이라 전제가 이미 깨져 있었다. 결과적으로:
+- 표적이 빈 띠에 스폰된 에피소드는 밀도와 무관하게 **직선 추격**으로 퇴화
+- **보고 밀도가 부풀려짐**: 분모 1328 m²를 썼으나 실제 비행영역은 1600 m².
+  115막대 = 보고 8.7/100m² → 실제 7.2/100m²
+
+수정: `NAVRL_BAR_X_MIN/MAX` env var 신설(기본 0.13/0.96 = v1 보존), v2는 0.0/1.0.
+**중요**: `_placement_band()`가 obstacle index 0 = `navrl_target_params`의 ratio를 읽으므로
+두 클래스를 함께 바꿔야 실제 반영된다(`_BAR_X_MIN/MAX` 모듈 상수로 공유).
+
+검증 — `navrl_band` 배치가 넓어진 밴드에서도 slit-free인지 CPU mirror로 측정:
+
+| 밴드 | 막대 | in-band 쌍 | merge fallback |
+|---|---|---|---|
+| v2 full 40×40 | 70 | 0 | 0 |
+| v2 full 40×40 | 150 | 0 | 0 |
+| v2 full 40×40 | **300** | **0** | 0 |
+| v1 24×24 | 150 | 0 | 0 |
+
+legacy 밴드 300막대에서 1건이 잡혔으나 **float32 반올림 artifact로 기각**
+(실제 거리 1.600024 m ≥ gap 1.6 m, float32 cdist가 1.599999로 계산). 실제 slit 아님.
+
+### 2. target speed 램프 제거
+
+`speed_ramp_epochs=3000`으로 0→1.5 m/s를 3000 epoch에 걸쳐 올리고 있었다. v1에서는
+"정지 표적으로 요격을 먼저 학습"이 목적이었으나 v2에서는 부적절:
+- v2의 초기 난이도 지배항은 속도가 아니라 **탐색**이다
+- 램프가 `num_task_steps` 기반이라 **밀도 커리큘럼과 시간축이 얽힘** — 변인 통제 결함
+
+수정: `NAVRL_TARGET_SPEED_RAMP_EPOCHS` env var 신설(기본 3000 = v1 보존). v2는 1로 두어
+epoch 0부터 U[0.3, 1.5] 고정 분포. `SPEED_MIN=0.3`으로 정지 표적 퇴화 케이스도 제거.
+
+### 3. 밀도 승급 임계값을 밀도별로 램프
+
+고정 0.70은 **달성 가능한 capture 상한이 밀도와 함께 떨어질 때 커리큘럼이 영구 정체**한다
+— v1 100막대 plateau의 정확한 실패 모드다. 쉬운 구간은 엄격히, 어려운 구간은 완화:
+
+`NAVRL_DENSITY_THRESHOLD_START/END` 신설, `n_bars_active`로 `[n_start, n_final]` 선형보간.
+둘 다 기본값이 기존 `NAVRL_DENSITY_THRESHOLD`라 미설정 시 상수 동작 그대로.
+
+| 막대 | 70 | 85 | 100 | 115 | 200 | 300 |
+|---|---|---|---|---|---|---|
+| 임계 | 0.850 | 0.840 | 0.830 | 0.821 | 0.765 | 0.700 |
+
+승급/hold 로그에 `threshold=%.3f`를 추가해 판정 근거를 남긴다.
+
+### 4. Codex 지적 3건 수정 (평가 경로)
+
+- **provenance 7번째 필드**: `cfg_placement_touch_m` 누락 → `_arena_contract()`,
+  `set_env_state` 경고, preflight `_CONTRACT_ENV`/legacy 기본값(0.4)에 추가
+- **v2 eval gate 불완전**: `arena_z`/`placement_gap_m`/`placement_touch_m`/`bar_x_min/max`가
+  거부 조건에 없었음 → want 딕셔너리를 9필드로 확장
+- **`NAVRL_V2_FORCE` 우회 불능**: Python gate가 `set -e` 하에서 먼저 exit 2를 내
+  뒤따르는 bash 분기가 도달 불가였음 → force를 gate **내부**로 이동, 경고 출력 후 exit 0
+
+### 5. 연구 사이트에 "성공 판단 기준" 명시 (사용자 요청)
+
+PPO 내부 스칼라(a_loss/c_loss/entropy/kl/explained_variance)가 학습 성공을 뜻하지 않음을
+사이트에 명문화했다. `docs/status/`에 `#panel-criteria` 섹션 신설:
+- **primary**: held-out capture rate(고정 밀도, frozen checkpoint, 미학습 에피소드)
+- **secondary**: crash / timeout / bar contact
+- **not success**: mean reward(커리큘럼 승급 시 하락 — 난이도 상승이지 정책 악화 아님),
+  a_loss/c_loss(움직이는 분포 위의 optimizer 진단), entropy(행동 확정일 뿐),
+  kl/explained_variance(guardrail — 필요조건이지 충분조건 아님)
+- **curriculum gate**: 승급 규칙은 학습 제어이지 결과가 아님. rolling tail을 승급/논문
+  수치로 인용 금지
+- **checkpoint rule**: `last_gen_ppo_ep_*` 사용, `gen_ppo.pth`(best-reward=저밀도)는 금지
+
+밀도 분모도 아레나별로 분리(`placement_area_m2`: v1 478, v2 1600) — v1/v2를 같은
+분모로 보고하던 버그 수정.
+
+### 검증
+
+- `python3 -m py_compile` (navrl_task / navrl_task_config / env_object_config / preflight): PASS
+- `bash -n` (train_navrl_v2_search.sh, eval_navrl_v2_density_sweep.sh): PASS
+- `tests/test_navrl_checkpoint_preflight.py` 13개: PASS
+- `tests/test_curriculum_safety.py` 4개: PASS
+- `node tests/test_status_arena_motion.js`: PASS
+- env var 기본값 회귀: bar x = (0.13, 0.96), target x = (0.13, 0.96) — v1 그대로
+- 임계값 선형보간 수식 수동 검증(위 표)
+
+### fresh 런칭
+
+run **`ppo_260731_1606_navrl_v2-search-v3-s1`** (seed 1, 128 env, max 30000 epoch),
+로그 `scratchpad/launch_v3.log` → `train_session_logs/`.
+런처 배너로 4개 변경 반영 확인:
+```
+arena=40m pool=bars_h3 placement=navrl_band
+goal 6..28m episode=600 steps
+density 70->300 step=15 (4.4->18.8 /100m2 over 1600m2) threshold 0.85->0.70
+target speed U[0.3, 1.5] m/s from epoch 0 (no ramp) | bar band x=[0.0, 1.0]
+```
+초기 22 epoch 관측: 배치 `mode=navrl_band touch=0.40 gap=1.60`, 표적 속도 실측 평균이
+0.46(리셋 전 초기 버퍼) → **0.84~0.86**으로 수렴(U[0.3,1.5] 이론 평균 0.90과 일치),
+VRAM 6861/8192 MiB, mean ep length 292/600.
+
+부수 수정: 시작 배너가 램프를 무시하고 미사용 flat `success_threshold`(0.800)를 찍어
+승급 판정과 로그가 불일치했다 → 램프 설정 시 `threshold=0.850->0.700`으로 출력하도록
+수정(다음 런부터 적용, 현재 런의 게이트 로직 자체는 정상).
+
+## 2026-07-31 — Codex pre-launch 독립 감사: 사이트는 미완성, TB 통과, dwell 테스트 필요
+
+클로드가 보고한 네 항목을 미커밋 diff·실제 CSV·브라우저 CPU 모델·체크포인트 코드로
+교차 검증했다. 학습 프로세스가 없는 것도 확인했으며 검수 중 새 학습은 시작하지 않았다.
+
+### 판정
+
+1. **사이트 v2 parity — 부분 통과, 배포 불가**
+   - `status.json.arena_geometry`와 1600m² 밀도 분모, 40m/3m/300막대/navrl_band 데이터는
+     맞고, 학습 중단 시 `latest` v2 run을 선택하는 geometry 분기도 동작한다.
+   - 그러나 `arena_motion.js`는 여전히 bounds `0..24 × -12..12`, goal `4..16m`로
+     하드코딩돼 있다. 2,000 episode 직접 샘플에서도 최대 x=22.996m, 최대 goal
+     distance=15.999m라 JSON의 40m/6..28m 계약을 전혀 소비하지 않았다.
+   - `arena.js`도 root shift `-12`, ground center `12`, GridHelper `24`, 경계선 `0..24`,
+     raycast bar top `z=2`가 남아 있다. 즉 막대 좌표만 40m로 늘고 바닥·카메라·센서 충돌
+     기하가 서로 어긋난다.
+   - slider도 `bars_min/2`를 써서 v2 실제 min이 10이 아니라 35가 된다.
+   - 학습 정지 snapshot의 headline은 corridor 결과인데 run 이름은 v3로 섞인다.
+   - 기존 `test_status_arena_motion.js`가 PASS한 이유는 v2 parity를 검사해서가 아니라,
+     오히려 v1 24m/4..16m 하드코딩을 명시적으로 assert하기 때문이다.
+
+2. **속도 램프 제거 — 방향은 가능, 인과 결론은 미확정**
+   - CSV 재계산에서 ramp run 대비 v3의 초기 학습이 느린 것은 재현됐다. 10-epoch rolling
+     capture 0.50 최초 도달은 53 vs 140 epoch이고, epoch 101..156 평균 capture는
+     0.591 vs 0.474다.
+   - v3는 full-width band도 동시에 바뀌었으므로 이 차이를 순수 속도 효과로 볼 수 없다는
+     클로드의 단서는 정확하다. crash가 지배적이고 range-rate/PBRS dense reward가 존재한다는
+     사실은 무램프가 학습 가능하다는 근거이지, 램프가 무용하다는 인과 증명은 아니다.
+   - 현재 `RAMP_EPOCHS=1`은 엄밀히 “epoch 0부터 U[0.3,1.5]”가 아니다. 최초 reset은
+     U[0.3,0.3]이고 epoch 1 뒤부터 full range가 된다. 진짜 no-ramp는 함수의 명시적
+     disabled branch가 필요하다.
+   - 권장 절충은 300 epoch 짧은 램프다. density evidence는 epoch 1000부터 시작하므로
+     700 epoch 먼저 종료되어 두 커리큘럼 게이트가 겹치지 않고, 표적도 처음부터 최소
+     0.3m/s로 계속 움직인다.
+
+3. **TensorBoard reward warmup — 통과**
+   - 독립 mock에서 기본값은 epoch 1/19를 쓰지 않고 20/21부터 `aerial/mean_reward`를
+     기록했다. `NAVRL_TB_REWARD_WARMUP_EPOCHS=0`이면 epoch 1부터 복구되고 잘못된 문자열은
+     안전하게 20으로 fallback한다.
+   - `stability/best_reward`에도 같은 `>=20` 조건이 걸렸다. 원본 reward는
+     `epoch_metrics.csv`에 계속 남으므로 진단 증거가 소실되지는 않는다.
+   - 이 경계조건 자체의 저장소 단위 테스트는 아직 없다.
+
+4. **밀도별 dwell — 구현 논리는 통과, 검증 주장은 미충족**
+   - `density_level_start_steps` 저장/복원, 승급 시 시계 reset, capture 통과와 dwell hold의
+     로그 분리는 올바른 위치에 구현됐다. 새 형식 체크포인트 resume은 dwell을 재복무하지
+     않는다.
+   - 하지만 PASS했다는 `tests/test_curriculum_safety.py` 4개는 전부 density-collapse guard
+     테스트이며 dwell/threshold/resume을 한 건도 호출하지 않는다. 최소한 “999 epoch
+     promotion 금지 / 1000 epoch 허용 / 승급 후 시계 reset / checkpoint restore 유지”를
+     새 테스트로 고정해야 한다.
+   - `cfg_density_min_epochs`는 저장되지만 set_env_state config-mismatch 비교에는 빠져 있어
+     resume 시 dwell 설정 변경이 조용히 지나간다.
+   - dwell은 최소 노출시간이지 수렴 판정은 아니다. 또한 16,384-episode window가 약
+     367 epoch이면 판정 시점이 window 단위로 양자화되어, 16회 승급의 이론 하한 16,000
+     epoch보다 실제 300막대 도달은 대략 17,000~18,000 epoch 이상이 될 수 있다.
+
+재현 검증:
+- checkpoint preflight 13개 PASS
+- 기존 curriculum-collapse 4개 PASS
+- training-safety 7개 PASS
+- status arena 기존 테스트 PASS(단, 위와 같이 v1 contract만 검증)
+- shell syntax, py_compile, `git diff --check` PASS
+- TensorBoard epoch 경계 독립 mock PASS
+
+**최종 판정: 아직 fresh 30k 학습을 재시작하지 않는다.** 사이트의 동적 v2 bounds/goal/
+bar-height parity와 dwell 회귀 테스트를 먼저 고치고, 속도는 300-epoch 짧은 램프로 확정한
+뒤 짧은 smoke에서 배너·target-speed 분포·dwell state 저장을 확인하고 본 학습으로 간다.
+
+## 2026-07-31 — Codex 사전조치 1~4 완료 및 64-env smoke 검증
+
+앞선 감사에서 본 학습 전 필수로 지정한 네 항목을 모두 구현하고 실제 GPU 학습 경로로
+확인했다. **30k 본 학습은 아직 시작하지 않았다.**
+
+### 1. 연구 사이트 Task-v2 기하 동기화
+
+- `arena_motion.js`가 `status.json.arena_geometry`의 40m bounds, goal 6..28m,
+  target speed 0.3..1.5m/s를 실제 episode sampler에 적용한다.
+- `arena.js`의 카메라/바닥/grid/border/root/raycast가 arena span 및 bar height를
+  사용하도록 바꿨다. 기존 24m/2m scene hardcode를 제거했다.
+- slider 최솟값은 `bars_slider_min=10`, 최댓값은 300이다.
+- stopped v2 run은 corridor 문구를 섞지 않고 Task-v2 paused headline을 표시한다.
+- 2,000-episode Node 회귀에서 x>24m spawn과 goal>20m episode가 모두 생성됐다.
+- 이름에 `smoke`가 들어간 짧은 배선 검증 run은 전체 run 수에는 남지만 사이트 대표
+  `latest_run`을 덮지 않도록 제외했다. snapshot은 56 runs를 동기화했고 대표 결과는
+  `ppo_260731_1606_navrl_v2-search-v3-s1`을 유지한다.
+
+### 2. density dwell 회귀 테스트와 복원 안전성
+
+순수 helper `navrl_curriculum.py`를 분리해 실제 task와 테스트가 같은 판정식을 사용한다.
+새 회귀 테스트는 다음 네 경계를 고정한다.
+
+- 999 epoch: 승급 금지
+- 1000 epoch: 승급 허용
+- 승급 직후 dwell clock reset, 다음 999 epoch 재승급 금지
+- 새/구형/future checkpoint의 `density_level_start_steps` 복원
+
+`cfg_density_min_epochs`도 resume 설정 불일치 경고 대상에 포함했다.
+`tests/test_curriculum_safety.py`는 기존 4개를 포함해 **8개 PASS**다.
+
+### 3. 표적 속도 300-epoch 짧은 램프 확정
+
+v2 launcher 기본값을 `NAVRL_TARGET_SPEED_RAMP_EPOCHS=300`으로 확정했다. 표적은 처음부터
+최소 0.3m/s로 움직이고, 상한만 300 epoch 동안 1.5m/s까지 증가한다. density warmup/dwell
+판정은 epoch 1000부터이므로 두 커리큘럼이 겹치지 않는다.
+
+### 4. 실제 64-env smoke
+
+- run: `ppo_260731_1641_navrl_v2-preflight-smoke-s91`
+- 조건: seed 91, 64 env, 65 epoch, fresh
+- 종료: `max_epochs` 정상 도달, exit code 0, 완료 표식과 epoch 50/65 체크포인트 생성
+- 배너: arena 40m, bars_h3, navrl_band, goal 6..28m, episode 600,
+  density 70→300/step15, threshold 0.85→0.70, speed ramp 300 모두 확인
+- 속도 상한: epoch 60까지 0.30, epoch 62부터 0.31, epoch 64~65에 0.32로 상승 확인
+- epoch-50 checkpoint: `num_task_steps=1600`, `density_level_start_steps=0`,
+  `cfg_density_min_epochs=1000`, `n_bars_active=70`, threshold start/end=0.85/0.70
+- TensorBoard: `aerial/mean_reward`와 `stability/best_reward` 첫 step=20,
+  `ppo/a_loss` 첫 step=1 — warmup 경계 통과
+- density promotion 0건 — 65-epoch smoke에서 의도한 결과이며 dwell 1000보다 짧다.
+
+종료 뒤 rl-games가 `Can't create empty tensor` 한 줄을 출력했지만 프로세스 exit code는
+0이고, max-epoch summary·완료 표식·두 체크포인트·TensorBoard event가 모두 정상이다.
+학습 실패나 저장 유실로 판정할 근거는 없다.
+
+최종 정적/회귀 검증: checkpoint preflight 13 PASS, curriculum 8 PASS,
+training safety 7 PASS, Node arena/status parity PASS, Python compile/bash syntax/diff check PASS.

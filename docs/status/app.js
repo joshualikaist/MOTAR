@@ -1,8 +1,33 @@
 /* MOTAR status board — data panels. Arena = window.Arena from arena.js */
 
 const pct = x => x == null ? '—' : (x * 100).toFixed(1) + '%';
-const BAND_AREA = 478;
+// Obstacle-placement area [m^2]. v1: a 24 m arena with bars confined to x in 0.13..0.96 -> 478.
+// v2: a 40 m arena with the band widened to the full width -> the whole 1600 m^2 footprint.
+// Set from status.json so a v1 and a v2 run are never reported on the same denominator.
+let BAND_AREA = 478;
 const perc100 = n => ((n / BAND_AREA) * 100).toFixed(1);
+// Geometry of the task actually being described; overwritten from status.json.arena_geometry.
+let ARENA_GEO = null;
+
+/* Retarget the arena panel (3D scene, bars slider, caption) at the running task's real geometry.
+   Without this the panel silently drew the v1 24 m arena while a 40 m v2 run was training. */
+function applyArenaGeometry(g) {
+  if (!g) return;
+  if (window.Arena && window.Arena.configure) window.Arena.configure(g);
+
+  const cap = document.getElementById('arena-cap');
+  if (cap && g.label) {
+    const ep = g.episode_len_steps ? ` · episode ${g.episode_len_steps} steps` : '';
+    const gd = g.goal_dist_m ? ` · goal ${g.goal_dist_m[0]}–${g.goal_dist_m[1]} m` : '';
+    cap.textContent = `${g.label} · LiDAR 72×4 @12 m · camera 87° @20 m · obstacle tokens 240°${gd}${ep}`;
+  }
+
+  const slider = document.getElementById('sl-bars');
+  if (slider && g.bars_max) {
+    slider.min = String(Math.max(1, Math.round(g.bars_slider_min || 10)));
+    slider.max = String(Math.round(g.bars_max));
+  }
+}
 const cssv = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -108,6 +133,41 @@ function renderLive(s) {
   if (sliderLabel) sliderLabel.textContent = Math.round(nBars);
   if (hudBars) hudBars.textContent = Math.round(nBars);
   if (hudDensity) hudDensity.textContent = perc100(nBars);
+}
+
+function renderCriteria(s) {
+  const c = s.success_criteria;
+  if (!c) return;
+  const set = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
+
+  set('criteria-headline', c.headline || '');
+
+  const p = c.primary || {};
+  set('criteria-primary',
+    `<p><b>${p.metric || ''}</b> — ${p.definition || ''}</p>
+     <p><b>Measured by</b> ${p.measured_by || ''}</p>
+     <p class="decision">${p.why || ''}</p>`);
+
+  set('criteria-secondary',
+    `<thead><tr><th>metric</th><th>definition</th><th>role</th></tr></thead><tbody>${
+      (c.secondary || []).map(r =>
+        `<tr><td><b>${r.metric}</b></td><td>${r.definition}</td><td>${r.role}</td></tr>`).join('')
+    }</tbody>`);
+
+  set('criteria-not',
+    `<thead><tr><th>metric</th><th>why it does not measure success</th></tr></thead><tbody>${
+      (c.not_success_metrics || []).map(r =>
+        `<tr><td><b>${r.metric}</b></td><td>${r.why}</td></tr>`).join('')
+    }</tbody>`);
+
+  const g = c.curriculum_gate || {};
+  set('criteria-gate',
+    `<p><b>${g.what || ''}</b></p>
+     <p>${g.rule || ''}</p>
+     <p>${g.why_ramped || ''}</p>
+     <p class="decision">${g.caution || ''}</p>`);
+
+  set('criteria-ckpt', c.checkpoint_rule || '');
 }
 
 function renderResearchUpdate(s) {
@@ -584,7 +644,10 @@ function wireArena() {
   renderPhases();
 
   const renderAll = (s) => {
+    if (s && s.placement_area_m2) BAND_AREA = Number(s.placement_area_m2);
+    if (s && s.arena_geometry) { ARENA_GEO = s.arena_geometry; applyArenaGeometry(ARENA_GEO); }
     renderLive(s);
+    renderCriteria(s);
     renderResearchUpdate(s);
     renderCorridor(s);
     renderCurve(s);
@@ -609,6 +672,8 @@ function wireArena() {
     const stage = document.getElementById('stage');
     if (!stage) throw new Error('#stage missing');
     window.__mo = window.Arena;
+    // configure BEFORE init: the geometry decides the scene bounds and the initial bar layout
+    if (ARENA_GEO) window.Arena.configure(ARENA_GEO);
     window.Arena.init(stage);
     wireArena();
   };

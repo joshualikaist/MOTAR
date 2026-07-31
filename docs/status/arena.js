@@ -1,8 +1,11 @@
 /* MOTAR — bright daylight 3D perception arena (three.js r128).
    Dedicated stage panel (not a buried hero background).
-   Bounds: x 0..24, y -12..12 (= three z), height 0..3 (= three y up). */
+   Bounds default to task v1 (x 0..24, y -12..12, height 0..3 = three y up); Arena.configure()
+   overrides them from status.json so a v2 run is drawn at its real 40 x 40 scale with the
+   full-width obstacle band and 3 m bars instead of silently rendering the old arena. */
 window.Arena = (() => {
-  const X0 = 0, X1 = 24, Y0 = -12, Y1 = 12, BX0 = 3.1, BX1 = 23;
+  let X0 = 0, X1 = 24, Y0 = -12, Y1 = 12, BX0 = 3.1, BX1 = 23;
+  let BAR_HEIGHT = 2, PLACEMENT = 'random', TOUCH_M = 0.4, GAP_M = 1.6;
   const CAMERA_RANGE = 20, CAMERA_HALF_FOV = THREE.MathUtils.degToRad(43.5), LIDAR_RANGE = 12;
   const LIDAR_HBEAMS = 72, LIDAR_VBEAMS = 4;
   const LIDAR_ELEVATION_MIN = THREE.MathUtils.degToRad(-10);
@@ -23,6 +26,20 @@ window.Arena = (() => {
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const coarsePointer = matchMedia('(pointer: coarse)').matches;
 
+  function arenaSpan() {
+    return Math.max(X1 - X0, Y1 - Y0);
+  }
+
+  function setOverviewCamera() {
+    if (!cam) return;
+    const span = arenaSpan();
+    cam.position.set(span * .58, Math.max(11, span * .30), span * .75);
+    if (controls) {
+      controls.target.set(0, 1.1, 0);
+      controls.update();
+    }
+  }
+
   function isLight() {
     const t = document.documentElement.getAttribute('data-theme');
     if (t) return t === 'light';
@@ -30,9 +47,42 @@ window.Arena = (() => {
   }
 
   function placeBars(n) {
-    const r = Motion.seededRng(layoutSeed++); const pts = []; let spacing = 1.5;
+    const r = Motion.seededRng(layoutSeed++); const pts = [];
     const bw = () => 0.4 + r() * 0.4;
-    let fails = 0, guard = 0;
+    let guard = 0;
+
+    if (PLACEMENT === 'navrl_band') {
+      // Mirrors AssetManager._navrl_band_xy_spacing: a candidate is accepted only if EVERY
+      // placed bar is either touching it (<= TOUCH_M, merging into a compound wall) or at
+      // least GAP_M away (a passable corridor). Distances inside the band would be an
+      // impassable slit and are never accepted; on saturation the candidate snaps onto a
+      // placed bar (guaranteed merge) rather than relaxing the gap guarantee.
+      let fails = 0;
+      while (pts.length < n && guard < n * 600) {
+        guard++;
+        const x = BX0 + r() * (BX1 - BX0), y = Y0 + r() * (Y1 - Y0);
+        let ok = true;
+        for (const p of pts) {
+          const d = Math.hypot(x - p.x, y - p.y);
+          if (d > TOUCH_M && d < GAP_M) { ok = false; break; }
+        }
+        if (ok) { pts.push({ x, y, w: bw() }); fails = 0; continue; }
+        if (++fails >= 400 && pts.length) {
+          const a = pts[Math.floor(r() * pts.length)];
+          const ang = r() * Math.PI * 2, rad = 0.5 * TOUCH_M * r();
+          pts.push({
+            x: Math.min(BX1, Math.max(BX0, a.x + rad * Math.cos(ang))),
+            y: Math.min(Y1, Math.max(Y0, a.y + rad * Math.sin(ang))),
+            w: bw(),
+          });
+          fails = 0;
+        }
+      }
+      return pts;
+    }
+
+    // legacy v1 rule: min spacing with a *0.8 relaxation once saturated
+    let spacing = 1.5, fails = 0;
     while (pts.length < n && guard < n * 400) {
       guard++;
       const x = BX0 + r() * (BX1 - BX0), y = Y0 + r() * (Y1 - Y0);
@@ -47,8 +97,8 @@ window.Arena = (() => {
   function makeBars(n) {
     if (barMesh) { root.remove(barMesh); barMesh.geometry.dispose(); barMesh.material.dispose(); }
     bars = placeBars(n);
-    const geometry = new THREE.BoxGeometry(1, 2, 1);
-    geometry.translate(0, 1, 0);
+    const geometry = new THREE.BoxGeometry(1, BAR_HEIGHT, 1);
+    geometry.translate(0, BAR_HEIGHT / 2, 0);
     const material = new THREE.MeshStandardMaterial({ color: 0xc06a2e, roughness: .62, metalness: .08 });
     barMesh = new THREE.InstancedMesh(geometry, material, bars.length);
     barMesh.castShadow = true; barMesh.receiveShadow = true;
@@ -150,12 +200,13 @@ window.Arena = (() => {
     const light = isLight();
     const bg = light ? 0xd5e7f2 : 0x0a1018;
     const ground = light ? 0xe8eef3 : 0x0d1a23;
+    const fogDensity = (light ? 0.012 : 0.019) * 24 / arenaSpan();
     // Always replace — never assume scene.background is a Color (it starts as null).
     scene.background = new THREE.Color(bg);
-    if (!scene.fog) scene.fog = new THREE.FogExp2(bg, light ? 0.012 : 0.019);
+    if (!scene.fog) scene.fog = new THREE.FogExp2(bg, fogDensity);
     else {
       setHex(scene.fog.color, bg);
-      scene.fog.density = light ? 0.012 : 0.019;
+      scene.fog.density = fogDensity;
     }
     if (groundMat) setHex(groundMat.color, ground);
     if (gridHelper) {
@@ -175,12 +226,12 @@ window.Arena = (() => {
     host = el;
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0xd5e7f2);
-    scene.fog = new THREE.FogExp2(0xd5e7f2, 0.012);
+    scene.fog = new THREE.FogExp2(0xd5e7f2, 0.012 * 24 / arenaSpan());
 
     const w = Math.max(el.clientWidth, 320);
     const h = Math.max(el.clientHeight, 320);
     cam = new THREE.PerspectiveCamera(42, w / h, .08, 180);
-    cam.position.set(14, 11, 18);
+    setOverviewCamera();
 
     renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
     renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
@@ -197,7 +248,7 @@ window.Arena = (() => {
     controls.enableDamping = true; controls.dampingFactor = 0.06;
     controls.target.set(0, 1.1, 0);
     controls.maxPolarAngle = Math.PI / 2.05;
-    controls.minDistance = 8; controls.maxDistance = 48;
+    controls.minDistance = 8; controls.maxDistance = Math.max(48, arenaSpan() * 2);
     controls.enableZoom = true;
     controls.enablePan = false;
     controls.enableRotate = true;
@@ -207,33 +258,35 @@ window.Arena = (() => {
 
     scene.add(new THREE.HemisphereLight(0xf2f8fc, 0xb7c6d0, 0.95));
     const dl = new THREE.DirectionalLight(0xffffff, 1.55);
-    dl.position.set(-10, 28, 12); dl.castShadow = true;
+    const span = arenaSpan();
+    dl.position.set(-span * .42, Math.max(28, span * .7), span * .5); dl.castShadow = true;
     dl.shadow.mapSize.set(2048, 2048);
-    dl.shadow.camera.left = -25; dl.shadow.camera.right = 25;
-    dl.shadow.camera.top = 25; dl.shadow.camera.bottom = -25;
+    dl.shadow.camera.left = -span * .7; dl.shadow.camera.right = span * .7;
+    dl.shadow.camera.top = span * .7; dl.shadow.camera.bottom = -span * .7;
     scene.add(dl);
-    rimLight = new THREE.PointLight(0x2aa8a0, 0.85, 50);
-    rimLight.position.set(-12, 8, -15); scene.add(rimLight);
+    rimLight = new THREE.PointLight(0x2aa8a0, 0.85, span * 2.1);
+    rimLight.position.set(-span * .5, Math.max(8, span * .2), -span * .62); scene.add(rimLight);
 
     root = new THREE.Group(); scene.add(root);
-    root.position.set(-12, 0, 0);
+    const centerX = (X0 + X1) / 2, centerY = (Y0 + Y1) / 2;
+    root.position.set(-centerX, 0, -centerY);
 
     groundMat = new THREE.MeshStandardMaterial({ color: 0xe8eef3, roughness: .95, metalness: .02 });
     const ground = new THREE.Mesh(new THREE.PlaneGeometry(X1 - X0, Y1 - Y0), groundMat);
-    ground.rotation.x = -Math.PI / 2; ground.position.set(12, -.02, 0);
+    ground.rotation.x = -Math.PI / 2; ground.position.set(centerX, -.02, centerY);
     ground.receiveShadow = true; root.add(ground);
 
-    gridHelper = new THREE.GridHelper(24, 24, 0x9bb4c4, 0xc5d5e0);
-    gridHelper.position.set((X0 + X1) / 2, 0.01, (Y0 + Y1) / 2); root.add(gridHelper);
+    gridHelper = new THREE.GridHelper(span, Math.max(2, Math.round(span)), 0x9bb4c4, 0xc5d5e0);
+    gridHelper.position.set(centerX, 0.01, centerY); root.add(gridHelper);
 
-    root.add(line([new THREE.Vector3(0, .04, -12), new THREE.Vector3(24, .04, -12),
-      new THREE.Vector3(24, .04, 12), new THREE.Vector3(0, .04, 12),
-      new THREE.Vector3(0, .04, -12)], 0x5f879c, .9));
+    root.add(line([new THREE.Vector3(X0, .04, Y0), new THREE.Vector3(X1, .04, Y0),
+      new THREE.Vector3(X1, .04, Y1), new THREE.Vector3(X0, .04, Y1),
+      new THREE.Vector3(X0, .04, Y0)], 0x5f879c, .9));
 
     drone = makeDrone(0x1aa86a, 0x7dffc8, 1.2); drone.add(makeLabel('PURSUER', '#1aa86a'));
-    drone.position.set(1, 1, 0); root.add(drone);
+    drone.position.set(X0 + 1, 1, centerY); root.add(drone);
     target = makeDrone(0xe04545, 0xffb0a0, 1.4); target.add(makeLabel('TARGET', '#e04545'));
-    target.position.set(22, 1, 0); root.add(target);
+    target.position.set(X1 - 2, 1, centerY); root.add(target);
     targetHalo = new THREE.Mesh(new THREE.RingGeometry(.52, .64, 40), new THREE.MeshBasicMaterial({
       color: 0xe04545, transparent: true, opacity: .95, side: THREE.DoubleSide, depthTest: false }));
     targetHalo.rotation.x = -Math.PI / 2; targetHalo.position.y = .02; target.add(targetHalo);
@@ -283,7 +336,7 @@ window.Arena = (() => {
     for (const p of bars) {
       const half = p.w * 0.5;
       const lo = [p.x - half, p.y - half, 0];
-      const hi = [p.x + half, p.y + half, 2];
+      const hi = [p.x + half, p.y + half, BAR_HEIGHT];
       let enter = 0, exit = best, hit = true;
       for (let axis = 0; axis < 3; axis++) {
         const d = direction[axis];
@@ -435,10 +488,8 @@ window.Arena = (() => {
   function cycleView() {
     viewMode = (viewMode + 1) % 3;
     if (viewMode === 0) {
-      cam.position.set(14, 11, 18);
-      controls.target.set(0, 1.1, 0);
+      setOverviewCamera();
       controls.enabled = true;
-      controls.update();
     }
     const btn = document.getElementById('btn-view');
     if (btn) btn.textContent = ['시점 · overview', '시점 · chase', '시점 · sensor'][viewMode];
@@ -447,6 +498,23 @@ window.Arena = (() => {
 
   return {
     init,
+    // Apply the running task's real geometry (status.json arena_geometry). Call BEFORE init().
+    configure(cfg) {
+      if (!cfg) return;
+      if (cfg.arena_xy_m) {
+        const s = Number(cfg.arena_xy_m);
+        X0 = 0; X1 = s; Y0 = -s / 2; Y1 = s / 2;
+      }
+      if (Motion.configure) Motion.configure(cfg);
+      // bar band given as arena fractions, same NAVRL_BAR_X_MIN/MAX the simulator uses
+      const fx0 = cfg.bar_x_min_ratio, fx1 = cfg.bar_x_max_ratio;
+      BX0 = fx0 == null ? BX0 : X0 + Number(fx0) * (X1 - X0);
+      BX1 = fx1 == null ? BX1 : X0 + Number(fx1) * (X1 - X0);
+      if (cfg.bar_height_m) BAR_HEIGHT = Number(cfg.bar_height_m);
+      if (cfg.placement_mode) PLACEMENT = String(cfg.placement_mode);
+      if (cfg.placement_touch_m != null) TOUCH_M = Number(cfg.placement_touch_m);
+      if (cfg.placement_gap_m != null) GAP_M = Number(cfg.placement_gap_m);
+    },
     setBars(n) {
       currentBars = Math.max(1, Math.round(n));
       makeBars(currentBars);
