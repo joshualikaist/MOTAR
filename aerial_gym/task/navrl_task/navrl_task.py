@@ -13,6 +13,7 @@ from aerial_gym.task.navrl_task.navrl_curriculum import (
     density_dwell_ready,
     density_level_start_after_promotion,
     density_threshold_at,
+    parse_density_threshold_schedule,
     restore_density_level_start_steps,
 )
 from aerial_gym.task.navrl_task.train_dashboard import record_navrl_epoch_episodes
@@ -181,16 +182,26 @@ class NavRLTask(BaseTask):
         self._kcomp_succ = 0
         self._kcomp_fin = 0
         self._set_active_bars(initial_bars_requested)
-        # Report the threshold the gate ACTUALLY applies. With the start/end ramp configured these
-        # differ from the flat success_threshold, and printing the unused flat value here made the
-        # startup banner disagree with every promotion decision.
+        # Parse the explicit gate schedule ONCE, here, so a malformed spec aborts at startup
+        # instead of at the first promotion check hours into a run.
+        self._density_threshold_schedule = parse_density_threshold_schedule(
+            getattr(self.density, "success_threshold_schedule", "")
+        )
+        # Report the threshold the gate ACTUALLY applies. With a schedule or the start/end ramp
+        # configured these differ from the flat success_threshold, and printing the unused flat
+        # value here made the startup banner disagree with every promotion decision.
         _t_start = float(getattr(self.density, "success_threshold_start", 0.0))
         _t_end = float(getattr(self.density, "success_threshold_end", 0.0))
-        _threshold_text = (
-            "%.3f" % _t_start
-            if abs(_t_start - _t_end) <= 1e-9
-            else "%.3f->%.3f" % (_t_start, _t_end)
-        )
+        if self._density_threshold_schedule:
+            _threshold_text = "schedule[" + ",".join(
+                "%d:%.2f" % (b, t) for b, t in self._density_threshold_schedule
+            ) + "]"
+        else:
+            _threshold_text = (
+                "%.3f" % _t_start
+                if abs(_t_start - _t_end) <= 1e-9
+                else "%.3f->%.3f" % (_t_start, _t_end)
+            )
         logger.warning(
             "NavRL density config | initial_bars=%d max_bars=%d curriculum=%s "
             "final=%d step=%d threshold=%s check_eps=%d"
@@ -1113,6 +1124,9 @@ class NavRLTask(BaseTask):
             "cfg_density_threshold_end": float(
                 getattr(self.density, "success_threshold_end", 0.0)
             ),
+            "cfg_density_threshold_schedule": str(
+                getattr(self.density, "success_threshold_schedule", "") or ""
+            ),
             "cfg_density_check_eps": int(
                 getattr(self.density, "check_after_episodes", 0)
             ),
@@ -1352,6 +1366,21 @@ class NavRLTask(BaseTask):
                         "task -- verify this is intentional."
                         % (name, saved_str, current)
                     )
+            saved_schedule = state.get("cfg_density_threshold_schedule")
+            current_schedule = str(
+                getattr(self.density, "success_threshold_schedule", "") or ""
+            )
+            if (
+                saved_schedule is not None
+                and str(saved_schedule).strip() != current_schedule.strip()
+            ):
+                density_evidence_changed = True
+                logger.warning(
+                    "NavRL CURRICULUM CONFIG MISMATCH | NAVRL_DENSITY_THRESHOLD_SCHEDULE: "
+                    "checkpoint used %r, running with %r. The promotion schedule is changing "
+                    "intentionally or the runs are not directly comparable."
+                    % (str(saved_schedule).strip(), current_schedule.strip())
+                )
             saved_action_policy = state.get("cfg_action_policy")
             current_action_policy = os.environ.get("NAVRL_ACTION_POLICY", "legacy")
             if (
@@ -2973,10 +3002,10 @@ class NavRLTask(BaseTask):
         return True, "all broad slices >= %.3f" % floor
 
     def _density_threshold_now(self):
-        # Linear ramp from success_threshold_start (at n_start bars) to success_threshold_end (at
-        # n_final bars), evaluated at the CURRENT active bar count. Both endpoints default to the
-        # flat success_threshold, so this is a no-op (constant threshold) unless the two env vars
-        # are set explicitly.
+        # An explicit per-density schedule wins when configured; otherwise a linear ramp from
+        # success_threshold_start (at n_start bars) to success_threshold_end (at n_final bars),
+        # evaluated at the CURRENT active bar count. Both ramp endpoints default to the flat
+        # success_threshold, so with nothing set this stays a constant threshold.
         d = self.density
         n_start = int(getattr(d, "n_start", self.n_bars_active))
         n_final = int(getattr(d, "n_final", self.n_bars_active))
@@ -2988,6 +3017,7 @@ class NavRLTask(BaseTask):
             n_final,
             t_start,
             t_end,
+            schedule=self._density_threshold_schedule,
         )
 
     def _update_curriculum(self, successes, finished):

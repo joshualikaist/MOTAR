@@ -320,6 +320,15 @@ class task_config:
         # exactly. Interpolated linearly over [n_start, n_final] by current bar count.
         success_threshold_start = _env_float("NAVRL_DENSITY_THRESHOLD_START", success_threshold)
         success_threshold_end = _env_float("NAVRL_DENSITY_THRESHOLD_END", success_threshold)
+        # Explicit per-density gate, e.g. "70:0.82,85:0.77,100:0.72,115:0.70". Overrides the
+        # linear ramp above when set. The achievable ceiling is NOT linear in density -- at 70
+        # bars it was measured at 0.843 while a straight line to the dense end would have demanded
+        # far more than that at every level in between -- so the schedule exists to encode the
+        # measured shape instead of a two-point guess. Step semantics: the highest knot at or
+        # below the active bar count.
+        success_threshold_schedule = os.environ.get(
+            "NAVRL_DENSITY_THRESHOLD_SCHEDULE", ""
+        ).strip()
         promote_step = _env_int("NAVRL_DENSITY_STEP", 15)
         warmup_epochs = _env_int("NAVRL_DENSITY_WARMUP", 2500)
         check_after_episodes = _env_int("NAVRL_DENSITY_CHECK_EPS", 2048)

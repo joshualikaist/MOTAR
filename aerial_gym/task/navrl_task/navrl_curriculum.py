@@ -5,14 +5,85 @@ from __future__ import annotations
 from typing import Any, Mapping
 
 
+def parse_density_threshold_schedule(spec):
+    """Parse ``"70:0.82,85:0.77,100:0.72,115:0.70"`` into sorted (bars, threshold) knots.
+
+    Returns an empty tuple for an unset/blank spec so callers fall back to the linear ramp.
+    Raises ValueError on a malformed entry: a silently ignored schedule would train against a
+    different promotion gate than the one written down, which is exactly the class of confound
+    this project keeps paying for.
+    """
+    if spec is None:
+        return ()
+    text = str(spec).strip()
+    if not text:
+        return ()
+    knots = []
+    for chunk in text.split(","):
+        item = chunk.strip()
+        if not item:
+            continue
+        if ":" not in item:
+            raise ValueError(
+                f"density threshold schedule entry {item!r} must look like '<bars>:<threshold>'"
+            )
+        bars_text, thr_text = item.split(":", 1)
+        try:
+            bars = int(bars_text.strip())
+            threshold = float(thr_text.strip())
+        except ValueError as exc:
+            raise ValueError(
+                f"density threshold schedule entry {item!r} is not '<int>:<float>'"
+            ) from exc
+        if bars < 0:
+            raise ValueError(f"density threshold schedule bar count must be >= 0, got {bars}")
+        if not 0.0 <= threshold <= 1.0:
+            raise ValueError(
+                f"density threshold schedule value must be a capture rate in [0,1], got {threshold}"
+            )
+        knots.append((bars, threshold))
+    if not knots:
+        return ()
+    knots.sort(key=lambda kv: kv[0])
+    return tuple(knots)
+
+
+def density_threshold_from_schedule(n_bars_active, knots):
+    """Threshold held from the highest knot at or below the active density (step schedule).
+
+    Step, not interpolation: the density curriculum advances in fixed jumps, so every density it
+    can actually occupy is expected to BE a knot. Holding the previous knot in between makes an
+    off-schedule density (e.g. a resume at a hand-set NAVRL_NUM_BARS) fail safe by keeping the
+    stricter gate it already earned rather than inventing an easier one.
+    """
+    if not knots:
+        raise ValueError("empty threshold schedule")
+    bars = int(n_bars_active)
+    value = knots[0][1]
+    for knot_bars, knot_threshold in knots:
+        if bars >= knot_bars:
+            value = knot_threshold
+        else:
+            break
+    return float(value)
+
+
 def density_threshold_at(
     n_bars_active: int,
     n_start: int,
     n_final: int,
     threshold_start: float,
     threshold_end: float,
+    schedule=(),
 ) -> float:
-    """Linearly interpolate the capture gate over the configured density range."""
+    """Capture gate for the active density.
+
+    An explicit ``schedule`` wins when present -- the measured ceiling is not linear in density,
+    so a straight ramp between two endpoints cannot express it. Without one, fall back to the
+    linear interpolation between the configured endpoints.
+    """
+    if schedule:
+        return density_threshold_from_schedule(n_bars_active, schedule)
     if int(n_final) <= int(n_start):
         return float(threshold_start)
     fraction = (int(n_bars_active) - int(n_start)) / float(int(n_final) - int(n_start))

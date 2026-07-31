@@ -125,5 +125,64 @@ class DensityDwellTest(unittest.TestCase):
         )
 
 
+_CURRICULUM_PATH = _ROOT / "aerial_gym/task/navrl_task/navrl_curriculum.py"
+_CSPEC = importlib.util.spec_from_file_location("navrl_curriculum_sched", _CURRICULUM_PATH)
+_CUR = importlib.util.module_from_spec(_CSPEC)
+_CSPEC.loader.exec_module(_CUR)
+
+SCHEDULE = "70:0.82,85:0.77,100:0.72,115:0.70"
+
+
+class DensityThresholdScheduleTest(unittest.TestCase):
+    """The measured ceiling is not linear in density, so the gate is an explicit schedule."""
+
+    def setUp(self):
+        self.knots = _CUR.parse_density_threshold_schedule(SCHEDULE)
+
+    def test_parses_and_sorts_knots(self):
+        self.assertEqual(self.knots, ((70, 0.82), (85, 0.77), (100, 0.72), (115, 0.70)))
+        self.assertEqual(
+            _CUR.parse_density_threshold_schedule("100:0.72,70:0.82")[0][0], 70
+        )
+
+    def test_each_curriculum_density_gets_its_configured_gate(self):
+        for bars, expected in ((70, 0.82), (85, 0.77), (100, 0.72), (115, 0.70)):
+            self.assertAlmostEqual(
+                _CUR.density_threshold_at(bars, 70, 300, 0.80, 0.70, schedule=self.knots),
+                expected,
+            )
+
+    def test_densities_past_the_last_knot_hold_the_floor(self):
+        for bars in (130, 160, 220, 300):
+            self.assertAlmostEqual(
+                _CUR.density_threshold_at(bars, 70, 300, 0.80, 0.70, schedule=self.knots),
+                0.70,
+            )
+
+    def test_between_knots_holds_the_stricter_earned_gate(self):
+        # 90 bars is off-schedule (a hand-set density); it must not invent an easier gate.
+        self.assertAlmostEqual(_CUR.density_threshold_from_schedule(90, self.knots), 0.77)
+
+    def test_below_first_knot_uses_first_value(self):
+        self.assertAlmostEqual(_CUR.density_threshold_from_schedule(25, self.knots), 0.82)
+
+    def test_unset_schedule_preserves_the_linear_ramp(self):
+        empty = _CUR.parse_density_threshold_schedule("")
+        self.assertEqual(empty, ())
+        self.assertAlmostEqual(
+            _CUR.density_threshold_at(70, 70, 300, 0.80, 0.70, schedule=empty), 0.80
+        )
+        self.assertAlmostEqual(
+            _CUR.density_threshold_at(300, 70, 300, 0.80, 0.70, schedule=empty), 0.70
+        )
+        self.assertEqual(_CUR.parse_density_threshold_schedule(None), ())
+
+    def test_malformed_schedule_is_rejected_not_ignored(self):
+        # Silently ignoring it would train against a different gate than the one written down.
+        for bad in ("70", "70:1.5", "70:-0.1", "abc:0.8", "-5:0.8", "70:xyz"):
+            with self.assertRaises(ValueError, msg=bad):
+                _CUR.parse_density_threshold_schedule(bad)
+
+
 if __name__ == "__main__":
     unittest.main()

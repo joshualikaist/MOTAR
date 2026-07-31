@@ -90,6 +90,12 @@ export NAVRL_DENSITY_STEP=15
 # measured ceiling with margin while still demanding near-ceiling mastery before promotion.
 export NAVRL_DENSITY_THRESHOLD_START="${NAVRL_DENSITY_THRESHOLD_START:-0.80}"
 export NAVRL_DENSITY_THRESHOLD_END="${NAVRL_DENSITY_THRESHOLD_END:-0.70}"
+# Explicit per-density gate (overrides the ramp above). The achievable ceiling is not linear in
+# density, so a two-point ramp cannot express it: 70 bars measured 0.843, and the early levels
+# should still demand near-ceiling mastery while the dense end settles at the 0.70 floor. Every
+# density the curriculum can occupy (70, 85, 100, 115, ...) is a knot, and the schedule holds the
+# last knot beyond 115.
+export NAVRL_DENSITY_THRESHOLD_SCHEDULE="${NAVRL_DENSITY_THRESHOLD_SCHEDULE:-70:0.82,85:0.77,100:0.72,115:0.70}"
 export NAVRL_DENSITY_WARMUP="${NAVRL_DENSITY_WARMUP:-1000}"
 export NAVRL_DENSITY_CHECK_EPS="${NAVRL_DENSITY_CHECK_EPS:-16384}"
 # Dwell at each density for at least this many epochs before promoting, even when the capture gate
@@ -155,6 +161,6 @@ fi
 
 echo "[v2-search] FRESH | arena=${NAVRL_ARENA_XY}m pool=${NAVRL_BAR_POOL} placement=${NAVRL_PLACEMENT_MODE}"
 echo "[v2-search] goal ${NAVRL_GENERAL_GOAL_DIST_MIN}..${NAVRL_GENERAL_GOAL_DIST_MAX}m (camera 20m -> search) episode=${NAVRL_EPISODE_LEN_STEPS} steps"
-echo "[v2-search] density ${NAVRL_DENSITY_START}->${NAVRL_DENSITY_FINAL} bars step=${NAVRL_DENSITY_STEP} (4.4->18.8 /100m2 over 1600m2) threshold ${NAVRL_DENSITY_THRESHOLD_START}->${NAVRL_DENSITY_THRESHOLD_END}"
+echo "[v2-search] density ${NAVRL_DENSITY_START}->${NAVRL_DENSITY_FINAL} bars step=${NAVRL_DENSITY_STEP} (4.4->18.8 /100m2 over 1600m2) threshold ${NAVRL_DENSITY_THRESHOLD_SCHEDULE:-${NAVRL_DENSITY_THRESHOLD_START}->${NAVRL_DENSITY_THRESHOLD_END}}"
 echo "[v2-search] target speed U[${NAVRL_TARGET_SPEED_MIN}, vmax] m/s, vmax->${NAVRL_TARGET_SPEED_FINAL} by epoch ${NAVRL_TARGET_SPEED_RAMP_EPOCHS} | bar band x=[${NAVRL_BAR_X_MIN}, ${NAVRL_BAR_X_MAX}]"
 exec ./train_navrl.sh --seed "${SEED}" --max_epochs "${MAX_EPOCHS}" --disable_collapse_early_stop "$@"
