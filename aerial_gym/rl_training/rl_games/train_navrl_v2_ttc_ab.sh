@@ -76,7 +76,13 @@ export NAVRL_DENSITY_MIN_EPOCHS=0  # inert with the curriculum off; pinned so a 
 # ---- shared: identical start point and budget ----
 export CKPT="${CKPT:-runs/ppo_260731_1940_navrl_v2-search-thr80-s1/nn/last_gen_ppo_ep_3250_rew_128.5965.pth}"
 export SEED="${SEED:-1}"
-export MAX_EPOCHS="${MAX_EPOCHS:-4250}"   # ~1000 epochs of adaptation past the ep3250 checkpoint
+# Budget matched in SAMPLES, not in epoch count. The warm-start checkpoint comes off the 3070 at
+# 128 envs (32x128 = 4096 samples/epoch); this card runs 64 envs (32x64 = 2048), so an epoch here
+# is worth half of one there. "+1000 epochs" would have delivered 2.05M steps -- half the intended
+# adaptation. +2000 epochs = 4.1M steps = the 1000 3070-equivalent epochs actually meant.
+# This is not a neutral shortfall: the baseline arm starts already converged for its selector while
+# the ttc arm starts off-distribution, so a short budget penalises only the arm that needs to adapt.
+export MAX_EPOCHS="${MAX_EPOCHS:-5250}"   # 3250 + 2000 @ 2048 samples/ep = 4.1M steps of adaptation
 export AERIAL_RUN_TAG="${AERIAL_RUN_TAG:-v2-ttc-${ARM}-s${SEED}}"
 export TRAIN_SESSION_LOG="${TRAIN_SESSION_LOG:-train_session_logs/v2_ttc_${ARM}_$(date +%y%m%d_%H%M%S).log}"
 

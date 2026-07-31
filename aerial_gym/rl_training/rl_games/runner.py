@@ -471,6 +471,27 @@ def _run_name_from_checkpoint(ckpt_path, base_dir=None):
     return run_root.name if run_root is not None else None
 
 
+def _record_run_lineage(new_run_name, source_run_root, base_dir=None):
+    """Write ``<new run>/aerial_run/resumed_from.txt`` naming the run this one continues.
+
+    Warm-starting into a new folder keeps each run's metrics clean, but it also means one
+    continuous training lineage lands in TensorBoard as several disjoint curves, and nothing on
+    disk said which folder continued which. Rebuilding the combined view then depended on somebody
+    remembering the order. This one line makes the chain walkable by tools/tb_merge_lineage.py.
+
+    Best effort: a failure here must never stop a run from starting.
+    """
+    try:
+        base = Path(base_dir or os.getcwd()).resolve()
+        target = base / "runs" / str(new_run_name) / "aerial_run"
+        target.mkdir(parents=True, exist_ok=True)
+        (target / "resumed_from.txt").write_text(
+            f"{source_run_root.name}\n", encoding="utf-8"
+        )
+    except Exception:
+        pass
+
+
 def _task_run_suffix(task: Optional[str]) -> str:
     """Short label appended to run folder names (fixed vs moving intercept, etc.)."""
     if not task:
@@ -860,11 +881,13 @@ def update_config(config, args):
         else:
             task = args.get("task") or _cfg.get("env_name")
             _cfg["full_experiment_name"] = _new_experiment_name(task)
-            if resumed_root is not None and not quiet_startup_enabled():
-                print(
-                    "[aerial RL] warm-starting a new run folder "
-                    f"({_cfg['full_experiment_name']}). Use --resume_in_place to override."
-                )
+            if resumed_root is not None:
+                _record_run_lineage(_cfg["full_experiment_name"], resumed_root)
+                if not quiet_startup_enabled():
+                    print(
+                        "[aerial RL] warm-starting a new run folder "
+                        f"({_cfg['full_experiment_name']}). Use --resume_in_place to override."
+                    )
 
     return config
 

@@ -4684,3 +4684,67 @@ env를 덤프해 diff한 결과 **차이 0줄** — 즉 두 팔이 정상 실행
 **사전 고지**: 표현 계열 개입 전적이 나쁘다 — 토큰 5→8 기각, 빔 36→72 기각,
 corridor +1.57pp로 게이트 미달. 유일하게 성공한 건 선택 FOV 360→240(같은 "무엇을 고를까"
 계열). 작은 효과를 예상하고 냉정하게 측정한다.
+
+## 2026-07-31 — TB에 한 학습이 3개 곡선으로 쪼개진 문제: 계보 병합 도구 + 자동 기록
+
+### 증상과 원인
+
+본 run 계보가 TensorBoard에서 서로 끊긴 3개 곡선으로 보였다. 원인은 `--branch_run`으로,
+warm-start마다 새 `runs/<name>/` 폴더를 만든다(설계 의도 자체는 맞다 — config가 바뀐 run의
+metric을 원본 폴더에 섞지 않기 위함).
+
+실제 계보(step은 이어져 있고 폴더만 갈렸음):
+
+| run | step 구간 |
+|---|---|
+| `ppo_260731_1722_navrl_v2-search-fresh-s1` | 20 → 2693 |
+| `ppo_260731_1940_navrl_v2-search-thr80-s1` | 2651 → 3251 |
+| `ppo_260731_2012_navrl_v2-search-sched-s1` | 3251 → (진행 중) |
+
+### 해결 — 재학습·재시작 없음
+
+TensorBoard는 **한 디렉터리 안의 event 파일들을 하나의 run으로 합쳐 step 순으로** 그리고,
+PPO step 카운터는 warm-start를 건너 이어진다. 따라서 계보의 event 파일을 한 폴더에
+심볼릭 링크하면 연속 곡선이 된다. 원본 불변, live run 파일도 링크되어 실시간 갱신됨.
+
+검증: `merged: steps 20 → 3780, n=3805, GAP 0개, duplicated=44`.
+중복 44 step(2651~2693)은 `1940` run이 ep2650 체크포인트에서 재개하며 **실제로 두 번 학습한**
+구간이다. 데이터를 지우거나 가공하지 않고 그대로 노출한다.
+
+`--resume_in_place`로 재시작하는 대안은 기각: epoch ~75를 버리는데 `1940` 구간은 여전히
+따로 남아 문제가 절반만 해결된다.
+
+### 재발 방지
+
+- `runner.py::_record_run_lineage()` — warm-start로 새 폴더를 만들 때
+  `<new run>/aerial_run/resumed_from.txt`에 출처 run 이름을 기록. best-effort(try/except)라
+  실패해도 학습 시작을 막지 않는다. 기존에는 계보 정보가 디스크 어디에도 없어서 사람이
+  기억해야 했다.
+- `tools/tb_merge_lineage.py` — `resumed_from.txt`를 역방향으로 걸어 병합 뷰를 만든다.
+  마커가 없는 옛 run은 `--chain a b c`로 명시 가능. `--list`로 전체 run의 step 구간 조회.
+  병합 폴더 이름은 **head가 아니라 lineage root** 기준(`_merged_<root>`) — head 기준이면
+  resume마다 새 병합 폴더가 생겨 없애려던 파편화를 그대로 재현한다.
+  실행 시 stale 심볼릭 링크를 먼저 지워 죽은 가지가 곡선에 접붙지 않게 한다.
+
+기존 3개 run에는 `resumed_from.txt`를 수동 backfill했다.
+
+```
+python tools/tb_merge_lineage.py            # 최신 run의 계보
+tensorboard --logdir .../runs/_merged_ppo_260731_1722_navrl_v2-search-fresh-s1
+```
+
+### 부수적으로 고친 것
+
+- `--list`가 summaries 폴더가 삭제된 옛 run(`density_120`)에서 예외로 전체 출력을 죽였다.
+  `step_range()`에 존재 확인 + try/except 추가.
+- `train_navrl_v2_ttc_ab.sh`: `MAX_EPOCHS` 4250 → 5250. 체크포인트는 3070/128env
+  (4096 샘플/epoch)에서 왔는데 1650 Ti는 64env(2048 샘플/epoch)라 "+1000 epoch"이 실제로는
+  의도한 적응량의 절반(2.05M step)이었다. 샘플 기준으로 맞춰 +2000 epoch = 4.1M step.
+  이건 중립적 부족이 아니다 — baseline 팔은 자기 셀렉터로 이미 수렴해 시작하고 ttc 팔만
+  분포 변화에 재적응해야 하므로, 예산 부족은 재적응이 필요한 쪽만 처벌한다.
+
+### 운영 메모
+
+순수 이어달리기(계약 변경 없음)라면 `--branch_run`을 빼면 된다 — 원본 폴더에 그대로 이어
+쓰므로 병합이 애초에 필요 없다. `--branch_run`은 **환경/보상/커리큘럼 계약을 바꿀 때만**
+쓰고, 그 경우 위 도구로 계보를 하나로 본다.
