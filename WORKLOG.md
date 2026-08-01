@@ -5363,3 +5363,60 @@ PYTHON=/home/joshuali/miniconda3/envs/aerialgym/bin/python \
 
 평가는 baseline과 **동일한 70막대 / 64 env / seed 42** 조건이어야 한다.
 평가 런처가 `/home/fair` python을 기본값으로 잡으므로 1650 Ti에서는 `PYTHON=`을 명시한다.
+
+---
+
+## 2026-08-01 — ttc 팔 기동 NameError 수정 (vehicle_quat)
+
+`ARM=ttc ./train_navrl_v2_ttc_ab.sh`가 reset 직후 사망:
+`navrl_perception.py` `_fuse_static_and_extract_obstacles` 안 `ttc_sector` 분기가
+`vehicle_quat`/`drone_vel_w`를 쓰는데 인자로 안 넘김 → `NameError`.
+
+수정: fuse 함수 시그니처에 두 인자를 추가하고 `observe()`에서 전달. baseline
+(`cluster_sector`)은 이 경로를 안 타서 통과했고, ttc만 터진 이유.
+`tests/test_navrl_ttc_selector.py` 11/11 OK. 학습은 아직 재시작 안 함 — 사용자 재실행 필요.
+
+## 2026-08-01 — TTC A/B ttc 팔 완료 + held-out **PASS** (1650 Ti)
+
+### 학습 (ttc_sector)
+
+- lineage: ep3250 warm-start → `1326`에서 3251–4450 학습 후 중단 → ep4450에서 resume
+  (`1532_navrl_v2-ttc-ttc-s1-resume`, 4451–5250, 800 epoch)
+- 최종 run `ppo_260801_1532_navrl_v2-ttc-ttc-s1-resume`, 1650 Ti / 64 env / 70막대 고정
+- ckpt `nn/last_gen_ppo_ep_5250_rew_154.677.pth`, peak reward 166.14 @ ep5246
+- 학습 종료 시 on-policy proxy: capture 90% / crash 10% (n=64, seed 1 — held-out 아님)
+
+### held-out 평가 (seed 42, 64 env, 70막대, n=2048)
+
+| 지표 | baseline | ttc | Δ (ttc−baseline) |
+|---|---|---|---|
+| capture | 79.443% (1627) | **89.307%** (1829) | **+9.864 pp** |
+| crash | 17.236% (353) | **9.180%** (188) | **−8.056 pp** |
+| timeout | 3.320% (68) | 1.514% (31) | −1.806 pp |
+| closest (no crash) | 1.13 m | 0.70 m | — |
+
+사전 등록 게이트 (baseline 실측 기준 capture ≥81.445%, crash ≤15.234%):
+
+| 조건 | ttc | 판정 |
+|---|---|---|
+| capture ≥ 81.445% | 89.307% | **PASS** |
+| crash ≤ 15.234% | 9.180% | **PASS** |
+
+**결론: ttc_sector A/B 통과.** bearing-ranked `cluster_sector` 대비 threat-ranked 토큰 선택이
+70막대 held-out에서 capture·crash를 동시에 개선했다. capture만 올리고 crash를 희생한 패턴 아님.
+
+### crash 분해 (ttc held-out)
+
+- bar_contact 93.6% of crashes, OOB 5.9%, below 0.5%
+- lateral edge98(y)=0.242 — baseline 대비 yaw saturation은 추가 조사 여지
+
+### 경로
+
+- eval: `train_session_logs/eval_v2_ppo_260801_1532_navrl_v2-ttc-ttc-s1-resume_260801_181048/`
+- 비교표: `results/v2_ttc_ab_1650ti.csv`
+
+### 다음
+
+- ttc_sector를 v2 기본 obstacle selector 후보로 승격 검토 (3070에서 동일 A/B 재현 여부 별도)
+- 1650 결과는 3070 recovery curriculum 수치와 **섞지 않음**
+

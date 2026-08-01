@@ -149,7 +149,20 @@ if [[ ! -f "${CKPT}" ]]; then
     exit 2
 fi
 
-"${PYTHON:-/home/fair/miniconda3/envs/aerialgym/bin/python}" - "${CKPT}" <<'PY'
+# Prefer an explicit PYTHON, then PATH (conda activate), then common install locations.
+if [[ -z "${PYTHON:-}" ]]; then
+    if command -v python >/dev/null 2>&1; then
+        PYTHON="$(command -v python)"
+    elif [[ -x "${HOME}/miniconda3/envs/aerialgym/bin/python" ]]; then
+        PYTHON="${HOME}/miniconda3/envs/aerialgym/bin/python"
+    elif [[ -x /home/fair/miniconda3/envs/aerialgym/bin/python ]]; then
+        PYTHON=/home/fair/miniconda3/envs/aerialgym/bin/python
+    else
+        echo "[ttc-ab] no aerialgym python found; activate conda or set PYTHON=..." >&2
+        exit 2
+    fi
+fi
+"${PYTHON}" - "${CKPT}" <<'PY'
 import hashlib
 from pathlib import Path
 import sys

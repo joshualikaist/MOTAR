@@ -607,7 +607,15 @@ class NavRLPerceptionModule:
         return measurement_vehicle, surface_range, bearing, visible, confidence, mask
 
     def _fuse_static_and_extract_obstacles(
-        self, lidar_m, raw_depth, target_pixels, target_surface_range, target_bearing, visible
+        self,
+        lidar_m,
+        raw_depth,
+        target_pixels,
+        target_surface_range,
+        target_bearing,
+        visible,
+        drone_vel_w=None,
+        vehicle_quat=None,
     ):
         scan = lidar_m.view(self.num_envs, VBEAMS, HBEAMS).clone()
 
@@ -653,6 +661,10 @@ class NavRLPerceptionModule:
         if OBSTACLE_SELECTOR == "ttc_sector":
             # Body-frame planar velocity drives the closing-rate ranking. Same rotation the robot
             # observation uses below, so the two views of the drone's motion cannot disagree.
+            if vehicle_quat is None or drone_vel_w is None:
+                raise ValueError(
+                    "ttc_sector requires vehicle_quat and drone_vel_w for closing-rate ranking"
+                )
             body_vel = _quat_rotate_inverse_xyzw(vehicle_quat, drone_vel_w)
             selected_ranges, selected_indices, selected_valid = select_ttc_obstacles(
                 nearest,
@@ -847,7 +859,14 @@ class NavRLPerceptionModule:
         fused_bearing = torch.where(lidar_visible, lidar_bearing, bearing)
 
         static_state, obstacles_now = self._fuse_static_and_extract_obstacles(
-            lidar_m, depth, pixels, fused_surface, fused_bearing, fused_visible
+            lidar_m,
+            depth,
+            pixels,
+            fused_surface,
+            fused_bearing,
+            fused_visible,
+            drone_vel_w=drone_vel_w,
+            vehicle_quat=vehicle_quat,
         )
         target_now = self._target_features(
             drone_pos_w, drone_vel_w, vehicle_quat, confidence, lidar_confidence
