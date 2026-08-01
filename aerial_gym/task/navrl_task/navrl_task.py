@@ -1,3 +1,4 @@
+import hashlib
 import json
 import math
 import os
@@ -26,6 +27,77 @@ from aerial_gym.utils.math import quat_rotate, quat_rotate_inverse
 from aerial_gym.utils.logging import CustomLogger
 
 logger = CustomLogger("navrl_task")
+
+
+def _full_eval_distribution_enabled(bulk_eval_mode, env_value):
+    """Return whether evaluation must ignore checkpoint curriculum clocks."""
+    return bool(bulk_eval_mode) or str(env_value).strip().lower() in (
+        "1",
+        "true",
+        "yes",
+        "on",
+    )
+
+
+def _goal_distance_bounds(goal_min, goal_max, curriculum_max, full_distribution):
+    """Resolve the radial sampling contract used by general-spawn episodes."""
+    goal_min = float(goal_min)
+    goal_max = max(goal_min + 1.0, float(goal_max))
+    effective_max = (
+        goal_max if full_distribution else min(goal_max, float(curriculum_max))
+    )
+    max_dist = max(goal_min + 1.0, effective_max)
+    min_dist = min(goal_min, max_dist - 1.0)
+    return float(min_dist), float(max_dist)
+
+
+def _fov_curriculum_saturated(
+    force_final_fov, num_task_steps, ppo_horizon, curriculum_epochs
+):
+    """Resolve whether goal-bearing sampling uses the final, unrestricted FOV."""
+    if force_final_fov:
+        return True
+    curriculum_epochs = float(curriculum_epochs)
+    if curriculum_epochs <= 0.0:
+        return True
+    horizon = max(1, int(ppo_horizon))
+    return (float(num_task_steps) / horizon) >= curriculum_epochs
+
+
+def _fov_curriculum_bearing_limit_rad(
+    force_final_fov,
+    num_task_steps,
+    ppo_horizon,
+    curriculum_epochs,
+    detector_hfov_deg,
+):
+    """Return the allowed initial target bearing relative to the drone nose.
+
+    General-spawn targets must remain direction agnostic, so the curriculum constrains the
+    *spawn yaw* rather than where the target may be placed.  At epoch zero the target fits safely
+    inside the camera (85% of its horizontal half-FOV); the range then expands linearly to the
+    complete [-pi, pi] bearing distribution.  Held-out evaluation bypasses the checkpoint clock.
+    """
+    if _fov_curriculum_saturated(
+        force_final_fov, num_task_steps, ppo_horizon, curriculum_epochs
+    ):
+        return math.pi
+    horizon = max(1, int(ppo_horizon))
+    progress = (float(num_task_steps) / horizon) / max(
+        float(curriculum_epochs), 1.0
+    )
+    progress = min(1.0, max(0.0, progress))
+    half_fov = math.radians(max(0.0, float(detector_hfov_deg)) * 0.5)
+    initial = min(math.pi, max(math.radians(8.0), 0.85 * half_fov))
+    return initial + progress * (math.pi - initial)
+
+
+def _sha256_file(path):
+    digest = hashlib.sha256()
+    with Path(path).open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def vec_to_goal_frame(vec, goal_direction):
@@ -247,6 +319,20 @@ class NavRLTask(BaseTask):
             and self.perception_cfg is not None
             and self.perception_cfg.enable
         )
+        self._detector_checkpoint_name = ""
+        self._detector_checkpoint_sha256 = ""
+        if self.perception_mode:
+            detector_checkpoint = str(
+                getattr(self.perception_cfg, "detector_checkpoint", "") or ""
+            ).strip()
+            if detector_checkpoint:
+                detector_path = Path(detector_checkpoint).expanduser().resolve()
+                if not detector_path.is_file():
+                    raise FileNotFoundError(
+                        f"NAVRL_DETECTOR_CHECKPOINT not found: {detector_path}"
+                    )
+                self._detector_checkpoint_name = detector_path.name
+                self._detector_checkpoint_sha256 = _sha256_file(detector_path)
         self.detector = None
         self.perception = None
         self.prev_action = torch.zeros((self.num_envs, 4), device=self.device)
@@ -380,6 +466,10 @@ class NavRLTask(BaseTask):
         self._bulk_eval_mode = os.environ.get(
             "NAVRL_BULK_EVAL", "0"
         ).strip().lower() in ("1", "true", "yes", "on")
+        self._eval_full_distribution = _full_eval_distribution_enabled(
+            self._bulk_eval_mode,
+            os.environ.get("NAVRL_EVAL_FULL_DISTRIBUTION", "0"),
+        )
         try:
             self._bulk_eval_target = max(
                 1, int(os.environ.get("PLAY_GAMES_NUM", "1000"))
@@ -491,7 +581,11 @@ class NavRLTask(BaseTask):
         self.general_train_mode = os.environ.get("NAVRL_GENERAL_TRAIN", "0").strip().lower() in (
             "1", "true", "yes", "on"
         )
-        self.general_spawn_mode = self.general_eval_mode or self.general_train_mode
+        self.general_spawn_mode = (
+            self.general_eval_mode
+            or self.general_train_mode
+            or self._eval_full_distribution
+        )
         self.general_density_min = int(os.environ.get("NAVRL_GENERAL_DENSITY_MIN", "25"))
         self.general_density_max = int(os.environ.get("NAVRL_GENERAL_DENSITY_MAX", "110"))
         self.general_goal_dist_min = max(
@@ -733,8 +827,81 @@ class NavRLTask(BaseTask):
         self.obs_dict["robot_orientation"][env_ids] = quat
         self.obs_dict["robot_linvel"][env_ids] = 0.0
         self.obs_dict["robot_angvel"][env_ids] = 0.0
-        self.sim_env.robot_manager.robot.update_states()
-        self.sim_env.IGE_env.write_to_sim()
+
+    def _general_goal_distance_bounds(self):
+        full_distribution = bool(
+            self.general_eval_mode or self._eval_full_distribution
+        )
+        curriculum_max = (
+            self.general_goal_dist_max
+            if full_distribution
+            else self._goal_x_max()
+        )
+        min_dist, max_dist = _goal_distance_bounds(
+            self.general_goal_dist_min,
+            self.general_goal_dist_max,
+            curriculum_max,
+            full_distribution,
+        )
+        return min_dist, max_dist, full_distribution
+
+    def _fov_curriculum_is_saturated(self):
+        return _fov_curriculum_saturated(
+            self.general_eval_mode or self._eval_full_distribution,
+            self.num_task_steps,
+            getattr(self.cur, "ppo_horizon", 1),
+            getattr(self.vis_cfg, "fov_curriculum_epochs", 0.0),
+        )
+
+    def _fov_curriculum_bearing_limit_rad(self):
+        return _fov_curriculum_bearing_limit_rad(
+            self.general_eval_mode or self._eval_full_distribution,
+            self.num_task_steps,
+            getattr(self.cur, "ppo_horizon", 1),
+            getattr(self.vis_cfg, "fov_curriculum_epochs", 0.0),
+            getattr(self.vis_cfg, "detector_hfov_deg", 0.0),
+        )
+
+    def _align_general_spawn_yaw_to_target(self, env_ids, start_pos, goal):
+        """Apply the FOV curriculum without biasing general target positions.
+
+        `_sample_general_target` deliberately samples every world direction.  Before saturation we
+        rotate only the drone's initial yaw so the target-relative bearing lies inside the current
+        curriculum limit.  At saturation (and in full-distribution evaluation) the yaw produced by
+        `_randomize_general_drone_spawn` remains uniformly random.
+        """
+        if (
+            not self.general_spawn_mode
+            or not self.vision_mode
+            or self._fov_curriculum_is_saturated()
+        ):
+            return
+        delta = goal[:, 0:2] - start_pos[:, 0:2]
+        target_bearing = torch.atan2(delta[:, 1], delta[:, 0])
+        bearing_limit = self._fov_curriculum_bearing_limit_rad()
+        relative_bearing = (2.0 * torch.rand_like(target_bearing) - 1.0) * bearing_limit
+        yaw = target_bearing - relative_bearing
+        quat = torch.zeros((len(env_ids), 4), device=self.device)
+        quat[:, 2] = torch.sin(0.5 * yaw)
+        quat[:, 3] = torch.cos(0.5 * yaw)
+        self.obs_dict["robot_orientation"][env_ids] = quat
+
+    def _runtime_physics_contract(self):
+        """Return measured simulator timing, never a launcher label or assumed default."""
+        sim_config = self.sim_env.sim_config
+        sim_config_class = getattr(sim_config, "__name__", type(sim_config).__name__)
+        physics_dt = float(self.obs_dict["dt"])
+        physics_substeps = int(sim_config.sim.substeps)
+        physics_steps_per_rl_step = int(
+            self.sim_env.cfg.env.num_physics_steps_per_env_step_mean
+        )
+        return {
+            "runtime_sim_config_class": str(sim_config_class),
+            "physics_dt_s": physics_dt,
+            "physics_substeps": physics_substeps,
+            "physics_steps_per_rl_step": physics_steps_per_rl_step,
+            "rl_step_dt_s": float(self.step_dt),
+        }
 
     def _sample_general_target(self, env_ids, start_pos, b_min, b_max, bars_xy):
         """Sample a range-controlled, collision-free target in a random direction.
@@ -748,13 +915,7 @@ class NavRLTask(BaseTask):
         hi = b_max[:, 0:2] - 1.0
         chosen = lo + (hi - lo) * torch.rand((n, 2), device=self.device)
         todo = torch.ones(n, dtype=torch.bool, device=self.device)
-        curriculum_max = (
-            self.general_goal_dist_max
-            if self.general_eval_mode
-            else min(self.general_goal_dist_max, float(self._goal_x_max()))
-        )
-        max_dist = max(self.general_goal_dist_min + 1.0, curriculum_max)
-        min_dist = min(self.general_goal_dist_min, max_dist - 1.0)
+        min_dist, max_dist, _ = self._general_goal_distance_bounds()
         for _ in range(96):
             if not bool(todo.any()):
                 break
@@ -1032,8 +1193,24 @@ class NavRLTask(BaseTask):
         """Saved into the rl_games checkpoint ('env_state') so the epoch-proportional goal
         curriculum and optional density curriculum survive a --checkpoint resume."""
         representation = self._obstacle_representation_or_zero()
+        physics = self._runtime_physics_contract()
+        rollback_raw = os.environ.get("NAVRL_PPO_EPOCH_ROLLBACK", "").strip().lower()
+        if rollback_raw:
+            rollback_enabled = rollback_raw in ("1", "true", "yes", "on")
+        else:
+            rollback_enabled = float(
+                os.environ.get("NAVRL_PPO_KL_STOP", "0") or 0.0
+            ) > 0.0
         return {
             "num_task_steps": int(self.num_task_steps),
+            "cfg_ppo_horizon": int(getattr(self.cur, "ppo_horizon", 1)),
+            "cfg_runtime_sim_config_class": physics["runtime_sim_config_class"],
+            "cfg_physics_dt_s": physics["physics_dt_s"],
+            "cfg_physics_substeps": physics["physics_substeps"],
+            "cfg_physics_steps_per_rl_step": physics[
+                "physics_steps_per_rl_step"
+            ],
+            "cfg_rl_step_dt_s": physics["rl_step_dt_s"],
             "n_bars_active": int(self.n_bars_active),
             "k_max_cur": float(self._k_max_cur),
             "k_min_cur": float(self._k_min_cur),
@@ -1047,20 +1224,63 @@ class NavRLTask(BaseTask):
             "cfg_lidar_max_range": float(self.task_config.lidar_max_range),
             "cfg_max_velocity": float(self.task_config.max_velocity),
             "cfg_yaw_rate_max": float(self.task_config.yaw_rate_max),
+            "cfg_max_tilt_deg": float(
+                os.environ.get("NAVRL_MAX_TILT_DEG", "").strip() or 45.0
+            ),
+            "cfg_tilt_comp": os.environ.get("NAVRL_TILT_COMP", "1").strip().lower()
+            not in ("0", "false", "no", "off"),
             "cfg_max_obstacles": int(representation["max_obstacles"]),
             "cfg_token_fov_deg": float(representation["token_fov_deg"]),
             "cfg_obstacle_suppress_deg": float(representation["suppress_deg"]),
             "cfg_obstacle_selector": str(representation["selector"]),
             "cfg_obstacle_cluster_gap_m": float(representation["cluster_gap_m"]),
             "cfg_obstacle_sectors": int(representation["sectors"]),
+            "cfg_obstacle_ttc_idle_s": float(representation["ttc_idle_s"]),
+            "cfg_obstacle_ttc_min_speed": float(representation["ttc_min_speed"]),
             "cfg_lidar_hbeams": int(representation["hbeams"]),
             "cfg_lidar_vbeams": int(representation["vbeams"]),
             "cfg_corridor_tokens": int(representation["corridor_tokens"]),
             "cfg_corridor_horizon_m": float(representation["corridor_horizon_m"]),
             "cfg_corridor_min_width_m": float(representation["corridor_min_width_m"]),
+            "cfg_fov_curriculum_epochs": int(
+                getattr(self.vis_cfg, "fov_curriculum_epochs", 0)
+            ),
+            "cfg_detector_min_pixels": int(
+                getattr(self.perception_cfg, "min_target_pixels", 0)
+            ),
+            "cfg_detector_threshold": float(
+                getattr(self.perception_cfg, "pixel_threshold", 0.0)
+            ),
+            "cfg_detector_checkpoint_name": self._detector_checkpoint_name,
+            "cfg_detector_checkpoint_sha256": self._detector_checkpoint_sha256,
+            "cfg_perception_perturb": bool(
+                getattr(self.perception_cfg, "enable_perturbations", False)
+            ),
+            "cfg_detection_dropout": float(
+                getattr(self.perception_cfg, "detection_dropout_prob", 0.0)
+            ),
+            "cfg_rgb_noise_std": float(
+                getattr(self.perception_cfg, "rgb_noise_std", 0.0)
+            ),
+            "cfg_depth_noise_std": float(
+                getattr(self.perception_cfg, "depth_noise_std", 0.0)
+            ),
             "cfg_target_motion_model": TARGET_MOTION_MODEL,
+            "cfg_target_pattern": str(self.tm.pattern),
+            "cfg_target_speed_min": float(getattr(self.tm, "speed_min", 0.0)),
+            "cfg_target_speed_final": float(self.tm.speed_final),
+            "cfg_target_speed_fixed": float(self.tm.speed_fixed),
+            "cfg_target_speed_ramp_epochs": int(self.tm.speed_ramp_epochs),
+            "cfg_target_speed_ramp_start_epochs": int(
+                self.tm.speed_ramp_start_epochs
+            ),
+            "cfg_general_train": bool(self.general_train_mode),
             "cfg_general_goal_dist_min": float(self.general_goal_dist_min),
             "cfg_general_goal_dist_max": float(self.general_goal_dist_max),
+            "cfg_oob_margin": float(self.vis_cfg.oob_margin),
+            "cfg_alt_hold_vmax": float(
+                getattr(self.task_config, "alt_hold_vmax", self.task_config.max_velocity)
+            ),
             # ARENA / task-version provenance (v2 search arena, 2026-07-31). The observation
             # width does NOT change with these, so a v2 checkpoint loads cleanly in a v1 arena
             # and would silently measure a completely different task -- the same failure class as
@@ -1076,8 +1296,40 @@ class NavRLTask(BaseTask):
             "cfg_action_entropy_coef": float(
                 os.environ.get("NAVRL_ENTROPY_COEF", "0") or 0.0
             ),
+            "cfg_training_seed": int(self.task_config.seed),
+            "cfg_training_num_envs": int(self.num_envs),
+            "cfg_training_file": os.environ.get("FILE", ""),
+            "cfg_training_task": os.environ.get("TASK", ""),
+            "cfg_training_sim": os.environ.get("AERIAL_GYM_SIM_NAME", ""),
+            "cfg_training_profile": os.environ.get("NAVRL_V2_PROFILE", "main"),
             "cfg_action_learning_rate": float(
                 os.environ.get("NAVRL_LEARNING_RATE", "0") or 0.0
+            ),
+            "current_action_learning_rate": float(
+                os.environ.get(
+                    "NAVRL_CURRENT_LEARNING_RATE",
+                    os.environ.get("NAVRL_LEARNING_RATE", "0"),
+                )
+                or 0.0
+            ),
+            "cfg_recovery_stage": os.environ.get("NAVRL_RECOVERY_STAGE", ""),
+            "cfg_recovery_source_epoch": int(
+                os.environ.get("NAVRL_RECOVERY_SOURCE_EPOCH", "-1") or -1
+            ),
+            "cfg_recovery_source_sha256": os.environ.get(
+                "NAVRL_RECOVERY_SOURCE_SHA256", ""
+            ),
+            "cfg_recovery_smoke_required_epochs": int(
+                os.environ.get("NAVRL_RECOVERY_SMOKE_REQUIRED_EPOCHS", "-1") or -1
+            ),
+            "cfg_recovery_smoke_bars": int(
+                os.environ.get("NAVRL_RECOVERY_SMOKE_BARS", "-1") or -1
+            ),
+            "cfg_recovery_eval_attestation_sha256": os.environ.get(
+                "NAVRL_RECOVERY_EVAL_ATTESTATION_SHA256", ""
+            ),
+            "cfg_recovery_eval_attestation_b64": os.environ.get(
+                "NAVRL_RECOVERY_EVAL_ATTESTATION_B64", ""
             ),
             "cfg_ppo_log_ratio_clamp": float(
                 os.environ.get("NAVRL_PPO_LOG_RATIO_CLAMP", "0") or 0.0
@@ -1085,9 +1337,35 @@ class NavRLTask(BaseTask):
             "cfg_ppo_kl_stop": float(
                 os.environ.get("NAVRL_PPO_KL_STOP", "0") or 0.0
             ),
+            "cfg_ppo_epoch_rollback": rollback_enabled,
+            "cfg_ppo_rollback_lr_factor": float(
+                os.environ.get("NAVRL_PPO_ROLLBACK_LR_FACTOR", "0.5") or 0.5
+            ),
+            "cfg_ppo_rollback_min_lr": float(
+                os.environ.get("NAVRL_PPO_ROLLBACK_MIN_LR", "1e-6") or 1e-6
+            ),
+            "cfg_ppo_rollback_patience": int(
+                os.environ.get("NAVRL_PPO_ROLLBACK_PATIENCE", "5") or 5
+            ),
+            "cfg_density_guard_window_epochs": int(
+                os.environ.get("NAVRL_DENSITY_GUARD_WINDOW_EPOCHS", "50") or 50
+            ),
+            "cfg_density_guard_min_epochs": int(
+                os.environ.get("NAVRL_DENSITY_GUARD_MIN_EPOCHS", "100") or 100
+            ),
+            "cfg_density_guard_min_peak": float(
+                os.environ.get("NAVRL_DENSITY_GUARD_MIN_PEAK", "0.5") or 0.5
+            ),
+            "cfg_density_guard_drop": float(
+                os.environ.get("NAVRL_DENSITY_GUARD_DROP", "0.25") or 0.25
+            ),
+            "cfg_density_guard_patience": int(
+                os.environ.get("NAVRL_DENSITY_GUARD_PATIENCE", "25") or 25
+            ),
             "cfg_lateral_latent_margin_y": float(
                 os.environ.get("NAVRL_LATENT_MARGIN_Y", "0") or 0.0
             ),
+            "cfg_latent_margin": os.environ.get("NAVRL_LATENT_MARGIN", ""),
             "cfg_lateral_latent_margin_coef": float(
                 os.environ.get("NAVRL_LATENT_MARGIN_COEF", "0") or 0.0
             ),
@@ -1187,6 +1465,8 @@ class NavRLTask(BaseTask):
                 OBSTACLE_SECTORS,
                 OBSTACLE_SELECTOR,
                 OBSTACLE_SUPPRESS_DEG,
+                OBSTACLE_TTC_IDLE_S,
+                OBSTACLE_TTC_MIN_SPEED,
                 VBEAMS,
             )
 
@@ -1197,6 +1477,8 @@ class NavRLTask(BaseTask):
                 "selector": str(OBSTACLE_SELECTOR),
                 "cluster_gap_m": float(OBSTACLE_CLUSTER_GAP_M),
                 "sectors": int(OBSTACLE_SECTORS),
+                "ttc_idle_s": float(OBSTACLE_TTC_IDLE_S),
+                "ttc_min_speed": float(OBSTACLE_TTC_MIN_SPEED),
                 "hbeams": int(HBEAMS),
                 "vbeams": int(VBEAMS),
                 "corridor_tokens": int(CORRIDOR_TOKENS),
@@ -1211,6 +1493,8 @@ class NavRLTask(BaseTask):
                 "selector": "none",
                 "cluster_gap_m": 0.0,
                 "sectors": 0,
+                "ttc_idle_s": 0.0,
+                "ttc_min_speed": 0.0,
                 "hbeams": 0,
                 "vbeams": 0,
                 "corridor_tokens": 0,
@@ -1352,6 +1636,26 @@ class NavRLTask(BaseTask):
                     % (saved_selector, current_selector)
                 )
             for key, current, name in (
+                (
+                    "cfg_detector_checkpoint_name",
+                    self._detector_checkpoint_name,
+                    "NAVRL_DETECTOR_CHECKPOINT basename",
+                ),
+                (
+                    "cfg_detector_checkpoint_sha256",
+                    self._detector_checkpoint_sha256,
+                    "NAVRL_DETECTOR_CHECKPOINT SHA-256",
+                ),
+            ):
+                saved_str = state.get(key)
+                if saved_str is not None and str(saved_str).strip() != str(current).strip():
+                    density_evidence_changed = True
+                    logger.warning(
+                        "NavRL PERCEPTION CHECKPOINT MISMATCH | %s: checkpoint=%s running=%s. "
+                        "Density evidence will be reset."
+                        % (name, saved_str or "none", current or "none")
+                    )
+            for key, current, name in (
                 ("cfg_bar_pool", arena["cfg_bar_pool"], "NAVRL_BAR_POOL"),
                 ("cfg_placement_mode", arena["cfg_placement_mode"], "NAVRL_PLACEMENT_MODE"),
             ):
@@ -1393,6 +1697,17 @@ class NavRLTask(BaseTask):
                     "The state_dict is shape-compatible but the action likelihood is not."
                     % (saved_action_policy, current_action_policy)
                 )
+            saved_training_seed = state.get("cfg_training_seed")
+            if (
+                saved_training_seed is not None
+                and int(saved_training_seed) != int(self.task_config.seed)
+            ):
+                density_evidence_changed = True
+                logger.warning(
+                    "NavRL TRAINING SEED MISMATCH | checkpoint=%s running=%s. "
+                    "Density evidence will be reset."
+                    % (saved_training_seed, self.task_config.seed)
+                )
             saved_action_std = str(state.get("cfg_action_std", "")).strip()
             current_action_std = os.environ.get("NAVRL_ACTION_STD", "").strip()
             if (
@@ -1432,12 +1747,83 @@ class NavRLTask(BaseTask):
                     "fine-tuning are a changed environment contract."
                     % (saved_motion_model or "legacy_bar_push", TARGET_MOTION_MODEL)
                 )
+            # Newer checkpoints record the complete moving-target/spawn/safety geometry. Missing
+            # fields are tolerated for old checkpoints, but a present mismatch changes the task
+            # distribution and invalidates accumulated density evidence.
+            for key, current, name in (
+                ("cfg_target_pattern", str(self.tm.pattern), "NAVRL_TARGET_PATTERN"),
+                (
+                    "cfg_target_speed_min",
+                    float(getattr(self.tm, "speed_min", 0.0)),
+                    "NAVRL_TARGET_SPEED_MIN",
+                ),
+                (
+                    "cfg_target_speed_final",
+                    float(self.tm.speed_final),
+                    "NAVRL_TARGET_SPEED_FINAL",
+                ),
+                (
+                    "cfg_target_speed_fixed",
+                    float(self.tm.speed_fixed),
+                    "NAVRL_TARGET_SPEED",
+                ),
+                (
+                    "cfg_target_speed_ramp_epochs",
+                    float(self.tm.speed_ramp_epochs),
+                    "NAVRL_TARGET_SPEED_RAMP_EPOCHS",
+                ),
+                ("cfg_general_train", bool(self.general_train_mode), "NAVRL_GENERAL_TRAIN"),
+                (
+                    "cfg_perception_perturb",
+                    bool(getattr(self.perception_cfg, "enable_perturbations", False)),
+                    "NAVRL_PERCEPTION_PERTURB",
+                ),
+                (
+                    "cfg_tilt_comp",
+                    os.environ.get("NAVRL_TILT_COMP", "1").strip().lower()
+                    not in ("0", "false", "no", "off"),
+                    "NAVRL_TILT_COMP",
+                ),
+                ("cfg_oob_margin", float(self.vis_cfg.oob_margin), "NAVRL_OOB_MARGIN"),
+                (
+                    "cfg_alt_hold_vmax",
+                    float(
+                        getattr(
+                            self.task_config,
+                            "alt_hold_vmax",
+                            self.task_config.max_velocity,
+                        )
+                    ),
+                    "NAVRL_ALT_HOLD_VMAX",
+                ),
+            ):
+                saved_value = state.get(key)
+                if saved_value is None:
+                    continue
+                if isinstance(current, str):
+                    matches = str(saved_value).strip() == current.strip()
+                elif isinstance(current, bool):
+                    matches = bool(saved_value) is current
+                else:
+                    matches = abs(float(saved_value) - float(current)) <= 1e-6
+                if not matches:
+                    density_evidence_changed = True
+                    logger.warning(
+                        "NavRL TASK CONTRACT MISMATCH | %s: checkpoint=%s running=%s. "
+                        "Density evidence will be reset."
+                        % (name, saved_value, current)
+                    )
             # Loud config-drift guard (warn, never override: an eval may deliberately change these).
             # A mismatch here silently invalidates the run -- see get_env_state() for why.
             for key, current, name in (
                 ("cfg_lidar_max_range", float(self.task_config.lidar_max_range), "NAVRL_LIDAR_RANGE"),
                 ("cfg_max_velocity", float(self.task_config.max_velocity), "NAVRL_MAX_VELOCITY"),
                 ("cfg_yaw_rate_max", float(self.task_config.yaw_rate_max), "NAVRL_YAW_RATE_MAX"),
+                (
+                    "cfg_max_tilt_deg",
+                    float(os.environ.get("NAVRL_MAX_TILT_DEG", "").strip() or 45.0),
+                    "NAVRL_MAX_TILT_DEG",
+                ),
                 (
                     "cfg_max_obstacles",
                     float(representation["max_obstacles"]),
@@ -1464,6 +1850,16 @@ class NavRLTask(BaseTask):
                     "NAVRL_OBSTACLE_SECTORS",
                 ),
                 (
+                    "cfg_obstacle_ttc_idle_s",
+                    float(representation["ttc_idle_s"]),
+                    "NAVRL_OBSTACLE_TTC_IDLE_S",
+                ),
+                (
+                    "cfg_obstacle_ttc_min_speed",
+                    float(representation["ttc_min_speed"]),
+                    "NAVRL_OBSTACLE_TTC_MIN_SPEED",
+                ),
+                (
                     "cfg_lidar_hbeams",
                     float(representation["hbeams"]),
                     "NAVRL_LIDAR_HBEAMS",
@@ -1487,6 +1883,36 @@ class NavRLTask(BaseTask):
                     "cfg_corridor_min_width_m",
                     float(representation["corridor_min_width_m"]),
                     "NAVRL_CORRIDOR_MIN_WIDTH_M",
+                ),
+                (
+                    "cfg_fov_curriculum_epochs",
+                    float(getattr(self.vis_cfg, "fov_curriculum_epochs", 0)),
+                    "NAVRL_FOV_CURRICULUM_EPOCHS",
+                ),
+                (
+                    "cfg_detector_min_pixels",
+                    float(getattr(self.perception_cfg, "min_target_pixels", 0)),
+                    "NAVRL_DETECTOR_MIN_PIXELS",
+                ),
+                (
+                    "cfg_detector_threshold",
+                    float(getattr(self.perception_cfg, "pixel_threshold", 0.0)),
+                    "NAVRL_DETECTOR_THRESHOLD",
+                ),
+                (
+                    "cfg_detection_dropout",
+                    float(getattr(self.perception_cfg, "detection_dropout_prob", 0.0)),
+                    "NAVRL_DETECTION_DROPOUT",
+                ),
+                (
+                    "cfg_rgb_noise_std",
+                    float(getattr(self.perception_cfg, "rgb_noise_std", 0.0)),
+                    "NAVRL_RGB_NOISE_STD",
+                ),
+                (
+                    "cfg_depth_noise_std",
+                    float(getattr(self.perception_cfg, "depth_noise_std", 0.0)),
+                    "NAVRL_DEPTH_NOISE_STD",
                 ),
                 # Arena / task version. A mismatch here is not an "input scaling" bug but a
                 # DIFFERENT TASK (v1 24 m pursuit vs v2 40 m search) that loads without error
@@ -1746,7 +2172,7 @@ class NavRLTask(BaseTask):
             gy = (b_min[todo, 1] + m) + (
                 b_max[todo, 1] - b_min[todo, 1] - 2.0 * m
             ) * torch.rand(j, device=self.device)
-            if self.vision_mode and float(getattr(self.vis_cfg, "fov_curriculum_epochs", 0.0)) > 0.0:
+            if self.vision_mode and not self._fov_curriculum_is_saturated():
                 # Cold-start visibility: keep the goal inside the camera FOV early so the detector
                 # acquires the target (the KF activates -> the actor finally gets a bearing to act
                 # on), then widen the allowed bearing to the full arena. The +/- spawn-yaw headroom
@@ -1792,6 +2218,15 @@ class NavRLTask(BaseTask):
                 % int(todo.sum())
             )
         self.target_position[env_ids] = goal
+        # General-spawn target positions remain uniformly direction agnostic.  The sensor cold-
+        # start curriculum acts on initial yaw only; the previous goal-sampling FOV branch is inert
+        # in this mode because `todo` is intentionally all false above.
+        self._align_general_spawn_yaw_to_target(env_ids, start_pos, goal)
+        if self.general_spawn_mode:
+            # Commit randomized XY and the optional target-relative yaw together.  One indexed
+            # write avoids paying for two full simulator state updates on every episode reset.
+            self.sim_env.robot_manager.robot.update_states()
+            self.sim_env.IGE_env.write_to_sim()
         if self._oob_probe:
             self._probe_ep_start_y[env_ids] = start_pos[:, 1]
             self._probe_ep_target_start_y[env_ids] = goal[:, 1]
@@ -2625,6 +3060,10 @@ class NavRLTask(BaseTask):
         minimum = max(0.0, float(getattr(self.tm, "speed_min", 0.0)))
         if final <= 0.0:
             return 0.0
+        if (self.general_eval_mode or self._bulk_eval_mode) and os.environ.get(
+            "NAVRL_EVAL_TARGET_SPEED_FINAL", "0"
+        ).strip().lower() in ("1", "true", "yes", "on"):
+            return max(minimum, final)
         h = int(self.cur.ppo_horizon)
         start_steps = int(self.tm.speed_ramp_start_epochs) * h
         ramp_steps = max(1, int(self.tm.speed_ramp_epochs) * h)
@@ -3213,11 +3652,27 @@ class NavRLTask(BaseTask):
         n_crash_causes = d["contact"] + d["below"] + d["above"] + d["oob"]
         n_cause_den = max(1, n_crash_causes)
 
-        def _float_env(name, default):
-            try:
-                return float(os.environ.get(name, str(default)) or default)
-            except ValueError:
-                return float(default)
+        fixed_speed = float(getattr(self.tm, "speed_fixed", -1.0))
+        speed_min = max(0.0, float(getattr(self.tm, "speed_min", 0.0)))
+        # Record the distribution actually sampled in this process. In particular, a checkpoint
+        # restored before its speed ramp finishes must not be mislabeled with speed_final.
+        speed_max = max(speed_min, float(self._target_speed_max()))
+        if fixed_speed >= 0.0:
+            target_speed_mode = "fixed"
+            target_speed_mps = fixed_speed
+            speed_min = speed_max = fixed_speed
+        elif speed_max > 0.0:
+            target_speed_mode = "uniform"
+            target_speed_mps = None
+        else:
+            target_speed_mode = "static"
+            target_speed_mps = 0.0
+
+        goal_dist_min, goal_dist_max, full_goal_distribution = (
+            self._general_goal_distance_bounds()
+        )
+        fov_curriculum_saturated = self._fov_curriculum_is_saturated()
+        physics = self._runtime_physics_contract()
 
         payload = {
             "schema_version": 1,
@@ -3225,12 +3680,23 @@ class NavRLTask(BaseTask):
             "actual_episodes": int(total),
             "checkpoint": os.environ.get("NAVRL_EVAL_CHECKPOINT", ""),
             "condition": {
+                "seed": int(self.task_config.seed),
                 "bars": int(self.n_bars_active),
                 "target_pattern": os.environ.get("NAVRL_TARGET_PATTERN", "static"),
-                "target_speed_mps": _float_env("NAVRL_TARGET_SPEED", 0.0),
+                "target_speed_mode": target_speed_mode,
+                "target_speed_mps": target_speed_mps,
+                "target_speed_min_mps": speed_min,
+                "target_speed_max_mps": speed_max,
                 "pursuer_max_speed_mps": float(self.task_config.max_velocity),
+                "oob_margin_m": float(self.vis_cfg.oob_margin),
                 "episode_len_steps": int(self.task_config.episode_len_steps),
                 "num_envs": int(self.num_envs),
+                "goal_dist_min_m": goal_dist_min,
+                "goal_dist_max_m": goal_dist_max,
+                "full_goal_distribution": bool(full_goal_distribution),
+                "fov_curriculum_saturated": bool(fov_curriculum_saturated),
+                "evaluation_nonce": os.environ.get("NAVRL_EVAL_RUN_NONCE", ""),
+                **physics,
             },
             "outcome": {
                 "captured": int(self._succ_agg),

@@ -77,20 +77,41 @@ assert(html.includes('cluster 0.45 m · 8 angular sectors'));
 
 const status = JSON.parse(fs.readFileSync(path.join(repo, 'docs/status/status.json'), 'utf8'));
 assert(status.research_update);
-assert(!status.latest_run.run.toLowerCase().includes('smoke'),
-  'short wiring smoke must not replace the dashboard research result');
+const latestName = status.latest_run.run.toLowerCase();
+for (const rejected of ['integration', 'forced', 'preflight']) {
+  assert(!latestName.includes(rejected), `${rejected} wiring run must not replace Latest`);
+}
+if (latestName.includes('smoke')) {
+  assert(latestName.includes('v2-recover-smoke'),
+    'only the real 100-epoch recovery smoke may replace the dashboard research result');
+}
 // Structural assertions only: the active experiment run NAME changes every update cycle and a
 // pinned name breaks the suite on each site refresh (it did twice). The representation
 // contract, by contrast, is stable and worth pinning.
 const activeExp = status.research_update.active_experiment;
 assert(typeof activeExp.run === 'string' && activeExp.run.startsWith('ppo_'));
-assert.strictEqual(activeExp.selector, 'cluster_sector');
+assert(['cluster_sector', 'ttc_sector'].includes(activeExp.selector));
+if (activeExp.ab_arm === 'ttc') assert.strictEqual(activeExp.selector, 'ttc_sector');
+if (activeExp.ab_arm === 'baseline') assert.strictEqual(activeExp.selector, 'cluster_sector');
 assert.strictEqual(activeExp.cluster_gap_m, 0.45);
 assert.strictEqual(activeExp.sectors, 8);
-assert(status.research_update.comparison.length >=
-  (status.research_update.headline.startsWith('Task-v2') ? 1 : 3));
+assert(Array.isArray(status.research_update.comparison));
+// A recovery smoke is a gate, not an A/B result, so its comparison table may legitimately be
+// empty. Every ordinary research-stage snapshot still needs at least one evidence row.
+if (!Object.prototype.hasOwnProperty.call(activeExp, 'recovery_attestation_valid')) {
+  assert(status.research_update.comparison.length >= 1);
+}
 assert(status.research_update.milestones.length >= 3);
 assert(status.density_curves.corrected_chirality_density_curve);
+
+// The Now/phase panel must follow research_update instead of preserving an old experiment name.
+const appJs = fs.readFileSync(path.join(repo, 'docs/status/app.js'), 'utf8');
+assert(appJs.includes('function renderNow(s)'));
+assert(appJs.includes('function renderPhases(s)'));
+assert(appJs.includes('renderNow(s);'));
+assert(appJs.includes('renderPhases(s);'));
+assert(!html.includes('corridor6 ended at ep13800'));
+assert(!html.includes('test a two-depth-layer obstacle representation'));
 
 // Mixed must really contain both 2-D CV and waypoint episodes, with non-axis-only CV headings.
 const rng = M.seededRng(20260728);

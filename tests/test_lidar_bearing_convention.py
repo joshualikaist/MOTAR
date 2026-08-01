@@ -12,6 +12,8 @@ CPU-only: no Isaac Gym, no warp import needed.
 
 import importlib.util
 import math
+import sys
+import types
 import unittest
 from pathlib import Path
 
@@ -19,7 +21,18 @@ import torch
 
 # Load navrl_perception standalone (same pattern as the other perception tests): importing the
 # aerial_gym package would pull in isaacgym, which refuses to load after torch.
-_MODULE_PATH = Path(__file__).parents[1] / "aerial_gym/task/navrl_task/navrl_perception.py"
+_TASK_DIR = Path(__file__).parents[1] / "aerial_gym/task/navrl_task"
+for _package in ("aerial_gym", "aerial_gym.task", "aerial_gym.task.navrl_task"):
+    sys.modules.setdefault(_package, types.ModuleType(_package))
+_CORRIDOR_NAME = "aerial_gym.task.navrl_task.navrl_corridor"
+_CORRIDOR_SPEC = importlib.util.spec_from_file_location(
+    _CORRIDOR_NAME, _TASK_DIR / "navrl_corridor.py"
+)
+_CORRIDOR = importlib.util.module_from_spec(_CORRIDOR_SPEC)
+sys.modules[_CORRIDOR_NAME] = _CORRIDOR
+_CORRIDOR_SPEC.loader.exec_module(_CORRIDOR)
+
+_MODULE_PATH = _TASK_DIR / "navrl_perception.py"
 _SPEC = importlib.util.spec_from_file_location("navrl_perception_bearing_test", _MODULE_PATH)
 _PERCEPTION = importlib.util.module_from_spec(_SPEC)
 _SPEC.loader.exec_module(_PERCEPTION)

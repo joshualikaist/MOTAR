@@ -1,10 +1,27 @@
+import ast
 import importlib.util
 import inspect
+import math
 from pathlib import Path
+import sys
 import types
 import unittest
 
 import torch
+
+# Load the one sibling dependency under its production module name without importing the
+# aerial_gym package. Importing that package after torch violates Isaac Gym's import-order rule,
+# which made this supposedly CPU-only test fail before collecting a single case.
+_TASK_DIR = Path(__file__).parents[1] / "aerial_gym/task/navrl_task"
+for _package in ("aerial_gym", "aerial_gym.task", "aerial_gym.task.navrl_task"):
+    sys.modules.setdefault(_package, types.ModuleType(_package))
+_CORRIDOR_NAME = "aerial_gym.task.navrl_task.navrl_corridor"
+_CORRIDOR_SPEC = importlib.util.spec_from_file_location(
+    _CORRIDOR_NAME, _TASK_DIR / "navrl_corridor.py"
+)
+_CORRIDOR = importlib.util.module_from_spec(_CORRIDOR_SPEC)
+sys.modules[_CORRIDOR_NAME] = _CORRIDOR
+_CORRIDOR_SPEC.loader.exec_module(_CORRIDOR)
 
 _MODULE_PATH = Path(__file__).parents[1] / "aerial_gym/task/navrl_task/navrl_perception.py"
 _SPEC = importlib.util.spec_from_file_location("navrl_perception_standalone", _MODULE_PATH)
@@ -13,6 +30,61 @@ _SPEC.loader.exec_module(_PERCEPTION)
 NavRLPerceptionModule = _PERCEPTION.NavRLPerceptionModule
 STRUCTURED_OBS_DIM = _PERCEPTION.STRUCTURED_OBS_DIM
 select_cluster_sector_obstacles = _PERCEPTION.select_cluster_sector_obstacles
+
+
+_TASK_PATH = _TASK_DIR / "navrl_task.py"
+_TASK_TREE = ast.parse(_TASK_PATH.read_text(encoding="utf-8"), filename=str(_TASK_PATH))
+
+
+def _load_task_function(name, namespace=None):
+    """Load one dependency-free task helper without importing Isaac Gym task modules."""
+    node = next(
+        node
+        for node in _TASK_TREE.body
+        if isinstance(node, ast.FunctionDef) and node.name == name
+    )
+    namespace = {"math": math, **(namespace or {})}
+    module = ast.Module(body=[node], type_ignores=[])
+    exec(compile(ast.fix_missing_locations(module), str(_TASK_PATH), "exec"), namespace)
+    return namespace[name]
+
+
+def _load_task_method(name, namespace):
+    """Load one task method as a free function for a lightweight contract test."""
+    task_class = next(
+        node
+        for node in _TASK_TREE.body
+        if isinstance(node, ast.ClassDef) and node.name == "NavRLTask"
+    )
+    node = next(
+        node
+        for node in task_class.body
+        if isinstance(node, ast.FunctionDef) and node.name == name
+    )
+    module = ast.Module(body=[node], type_ignores=[])
+    exec(compile(ast.fix_missing_locations(module), str(_TASK_PATH), "exec"), namespace)
+    return namespace[name]
+
+
+_full_eval_distribution_enabled = _load_task_function(
+    "_full_eval_distribution_enabled"
+)
+_goal_distance_bounds = _load_task_function("_goal_distance_bounds")
+_fov_curriculum_saturated = _load_task_function("_fov_curriculum_saturated")
+_fov_curriculum_bearing_limit_rad = _load_task_function(
+    "_fov_curriculum_bearing_limit_rad",
+    {"_fov_curriculum_saturated": _fov_curriculum_saturated},
+)
+_general_goal_distance_bounds_method = _load_task_method(
+    "_general_goal_distance_bounds",
+    {"_goal_distance_bounds": _goal_distance_bounds},
+)
+_runtime_physics_contract_method = _load_task_method(
+    "_runtime_physics_contract", {}
+)
+_align_general_spawn_yaw_method = _load_task_method(
+    "_align_general_spawn_yaw_to_target", {"torch": torch}
+)
 
 
 def _configs():
@@ -156,6 +228,220 @@ class ClusterSectorSelectorTest(unittest.TestCase):
         self.assertEqual(valid.sum().item(), 3)
         self.assertEqual(set(indices[0, valid[0]].tolist()), {3, 6, 9})
         self.assertEqual(ranges[0, valid[0]].tolist(), [2.0, 3.0, 4.0])
+
+
+class HeldOutDistributionContractTest(unittest.TestCase):
+    def test_bulk_eval_ignores_checkpoint_distance_and_fov_clocks(self):
+        full_distribution = _full_eval_distribution_enabled(True, "0")
+        self.assertTrue(full_distribution)
+        self.assertEqual(
+            _goal_distance_bounds(4.0, 18.0, 7.0, full_distribution),
+            (4.0, 18.0),
+        )
+        self.assertTrue(
+            _fov_curriculum_saturated(full_distribution, 0, 32, 3000)
+        )
+
+        def fail_if_checkpoint_clock_is_read():
+            self.fail("full held-out evaluation read checkpoint k_max_cur")
+
+        task = types.SimpleNamespace(
+            general_eval_mode=False,
+            _eval_full_distribution=True,
+            general_goal_dist_min=4.0,
+            general_goal_dist_max=18.0,
+            _goal_x_max=fail_if_checkpoint_clock_is_read,
+        )
+        self.assertEqual(
+            _general_goal_distance_bounds_method(task),
+            (4.0, 18.0, True),
+        )
+
+    def test_explicit_full_distribution_flag_has_the_same_contract(self):
+        for value in ("1", "true", "YES", "on"):
+            with self.subTest(value=value):
+                self.assertTrue(_full_eval_distribution_enabled(False, value))
+
+    def test_training_keeps_checkpoint_curriculum_until_saturated(self):
+        full_distribution = _full_eval_distribution_enabled(False, "0")
+        self.assertFalse(full_distribution)
+        self.assertEqual(
+            _goal_distance_bounds(4.0, 18.0, 7.0, full_distribution),
+            (4.0, 7.0),
+        )
+        self.assertFalse(_fov_curriculum_saturated(False, 3200, 32, 3000))
+        self.assertTrue(_fov_curriculum_saturated(False, 96000, 32, 3000))
+
+    def test_fov_bearing_limit_starts_inside_camera_and_ends_unrestricted(self):
+        initial = _fov_curriculum_bearing_limit_rad(
+            False, 0, 32, 3000, 87.0
+        )
+        midpoint = _fov_curriculum_bearing_limit_rad(
+            False, 48000, 32, 3000, 87.0
+        )
+        final = _fov_curriculum_bearing_limit_rad(
+            False, 96000, 32, 3000, 87.0
+        )
+        self.assertAlmostEqual(initial, math.radians(87.0 * 0.5 * 0.85))
+        self.assertGreater(midpoint, initial)
+        self.assertLess(midpoint, math.pi)
+        self.assertAlmostEqual(final, math.pi)
+        self.assertAlmostEqual(
+            _fov_curriculum_bearing_limit_rad(True, 0, 32, 3000, 87.0),
+            math.pi,
+        )
+
+    def test_general_reset_applies_yaw_curriculum_after_target_sampling(self):
+        task_class = next(
+            node
+            for node in _TASK_TREE.body
+            if isinstance(node, ast.ClassDef) and node.name == "NavRLTask"
+        )
+        reset_method = next(
+            node
+            for node in task_class.body
+            if isinstance(node, ast.FunctionDef) and node.name == "reset_idx"
+        )
+        called_methods = {
+            node.func.attr
+            for node in ast.walk(reset_method)
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
+        }
+        self.assertIn("_sample_general_target", called_methods)
+        self.assertIn("_align_general_spawn_yaw_to_target", called_methods)
+
+    def test_general_spawn_yaw_stays_within_current_relative_bearing_limit(self):
+        starts = torch.zeros((4, 3))
+        goals = torch.tensor(
+            [[4.0, 0.0, 0.0], [0.0, 4.0, 0.0], [-4.0, 0.0, 0.0], [0.0, -4.0, 0.0]]
+        )
+        limit = math.radians(87.0 * 0.5 * 0.85)
+        task = types.SimpleNamespace(
+            general_spawn_mode=True,
+            vision_mode=True,
+            device="cpu",
+            obs_dict={"robot_orientation": torch.zeros((4, 4))},
+            _fov_curriculum_is_saturated=lambda: False,
+            _fov_curriculum_bearing_limit_rad=lambda: limit,
+        )
+        env_ids = torch.arange(4)
+        _align_general_spawn_yaw_method(task, env_ids, starts, goals)
+        quat = task.obs_dict["robot_orientation"]
+        yaw = 2.0 * torch.atan2(quat[:, 2], quat[:, 3])
+        target_bearing = torch.atan2(goals[:, 1], goals[:, 0])
+        relative = torch.atan2(
+            torch.sin(target_bearing - yaw), torch.cos(target_bearing - yaw)
+        )
+        self.assertTrue(bool((relative.abs() <= limit + 1e-6).all()))
+        self.assertTrue(bool(torch.isfinite(quat).all()))
+
+        # A saturated or held-out evaluation keeps the independently sampled random yaw intact.
+        before = quat.clone()
+        task._fov_curriculum_is_saturated = lambda: True
+        _align_general_spawn_yaw_method(task, env_ids, starts, goals)
+        self.assertTrue(torch.equal(task.obs_dict["robot_orientation"], before))
+
+    def test_runtime_physics_contract_reads_simulator_objects(self):
+        class FakeSimConfig:
+            class sim:
+                substeps = 2
+
+        task = types.SimpleNamespace(
+            sim_env=types.SimpleNamespace(
+                sim_config=FakeSimConfig,
+                cfg=types.SimpleNamespace(
+                    env=types.SimpleNamespace(
+                        num_physics_steps_per_env_step_mean=10
+                    )
+                ),
+            ),
+            obs_dict={"dt": 0.01},
+            step_dt=0.1,
+        )
+        self.assertEqual(
+            _runtime_physics_contract_method(task),
+            {
+                "runtime_sim_config_class": "FakeSimConfig",
+                "physics_dt_s": 0.01,
+                "physics_substeps": 2,
+                "physics_steps_per_rl_step": 10,
+                "rl_step_dt_s": 0.1,
+            },
+        )
+
+    def test_bulk_json_exports_the_applied_distribution_contract(self):
+        task_class = next(
+            node
+            for node in _TASK_TREE.body
+            if isinstance(node, ast.ClassDef) and node.name == "NavRLTask"
+        )
+        export_method = next(
+            node
+            for node in task_class.body
+            if isinstance(node, ast.FunctionDef)
+            and node.name == "_export_bulk_eval_result"
+        )
+        strings = {
+            node.value
+            for node in ast.walk(export_method)
+            if isinstance(node, ast.Constant) and isinstance(node.value, str)
+        }
+        self.assertTrue(
+            {
+                "goal_dist_min_m",
+                "goal_dist_max_m",
+                "full_goal_distribution",
+                "fov_curriculum_saturated",
+                "evaluation_nonce",
+            }.issubset(strings)
+        )
+        physics_method = next(
+            node
+            for node in task_class.body
+            if isinstance(node, ast.FunctionDef)
+            and node.name == "_runtime_physics_contract"
+        )
+        physics_strings = {
+            node.value
+            for node in ast.walk(physics_method)
+            if isinstance(node, ast.Constant) and isinstance(node.value, str)
+        }
+        self.assertTrue(
+            {
+                "runtime_sim_config_class",
+                "physics_dt_s",
+                "physics_substeps",
+                "physics_steps_per_rl_step",
+                "rl_step_dt_s",
+            }.issubset(physics_strings)
+        )
+        called_methods = {
+            node.func.attr
+            for node in ast.walk(export_method)
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
+        }
+        self.assertIn("_general_goal_distance_bounds", called_methods)
+        self.assertIn("_fov_curriculum_is_saturated", called_methods)
+
+        get_state_method = next(
+            node
+            for node in task_class.body
+            if isinstance(node, ast.FunctionDef) and node.name == "get_env_state"
+        )
+        checkpoint_strings = {
+            node.value
+            for node in ast.walk(get_state_method)
+            if isinstance(node, ast.Constant) and isinstance(node.value, str)
+        }
+        self.assertTrue(
+            {
+                "cfg_runtime_sim_config_class",
+                "cfg_physics_dt_s",
+                "cfg_physics_substeps",
+                "cfg_physics_steps_per_rl_step",
+                "cfg_rl_step_dt_s",
+            }.issubset(checkpoint_strings)
+        )
 
 
 if __name__ == "__main__":

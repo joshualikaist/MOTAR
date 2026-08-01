@@ -124,6 +124,47 @@ token을 직접 attention하는 기존 아이디어는 1차 구조가 아니라 
    selection이 개선된 뒤 수행한다. 둘 다 observation/network shape가 바뀌어 fresh training이
    필요하므로 첫 실험으로 쓰지 않는다.
 
+### 4.4 PPO update 무결성 계약
+
+Squashed-Gaussian 정책의 안정성은 “KL을 로그로 본다”가 아니라 다음 원자적 commit 계약으로
+보장한다.
+
+- rollout 당시 latent Normal의 `mu/sigma`를 immutable behavior policy로 보존한다. minibatch
+  사이에 갱신되는 rl-games dataset reference를 hard gate 기준으로 쓰지 않는다.
+- PPO epoch 전 actor와 asymmetric central critic 양쪽의 model parameter/buffer
+  (input/value RunningMeanStd 포함), optimizer moments/step, AMP scaler를 snapshot한다.
+- 마지막 optimizer step 뒤 전체 rollout을 normalization frozen 상태로 재추론한다. minibatch
+  평균 KL>0.04 또는 actor/critic output, 누적 loss, model buffer, Adam moment/step, AMP scaler 중
+  하나라도 NaN·Inf면 actor와 central critic을 같은 epoch 경계로 함께 복원한다.
+- rollback 뒤 learning rate를 낮추며, 반복 rollback은 무한 학습하지 않고 fail-stop한다.
+- rollback total/streak는 checkpoint state다. patience fail-stop도 소비한 rollout frame을 반영하고
+  복원된 policy/critic/optimizer와 낮춘 LR을 durable `last_*` checkpoint로 먼저 저장한다.
+- checkpoint resume는 명시적 LR override가 없으면 저장된 `current_action_learning_rate`를 복원해,
+  이전 rollback의 backoff를 일반 resume에서도 조용히 되돌리지 않는다.
+- pre-tanh latent margin은 횡축 하나가 아니라 모든 action axis를 보호한다. action-space entropy의
+  큰 음수 급락과 edge saturation은 성공 지표가 아니라 latent saturation 경보다.
+- multi-GPU/RNN은 동기화된 all-rank transaction/sequence audit가 구현되기 전에는 이 학습 경로를
+  지원한다고 간주하지 않는다.
+- 붕괴 복구는 seed1 고정130/100-epoch smoke와 seed42/2,049-episode held-out을 분리한다. 모든 smoke
+  epoch의 KL/OOB/rollback, outcome count-rate, checkpoint/result SHA, same-shape perception/control
+  계약이 결합된 증명서가 없으면 density curriculum을 재개하지 않는다. 증명서의 자기보고 숫자는
+  신뢰하지 않고 실제 TensorBoard 9501–9600 window와 held-out JSON을 다시 읽어 canonical payload를
+  재구성한다.
+- held-out JSON은 evaluator가 만든 nonce/로그/스크립트 receipt와 실제로 재생한 checkpoint snapshot
+  SHA에 결합한다. simulator의 config class, physics dt/substeps와 RL step dt도 task에서 실측한다.
+
+General-spawn FOV curriculum은 표적의 world-direction 분포를 좁히지 않는다. 초기에는 drone yaw만
+표적 쪽으로 정렬해 상대 방위를 camera 내부로 제한하고, curriculum 진행에 따라 ±180°까지 넓힌다.
+포화 뒤와 held-out full-distribution 평가는 처음부터 unrestricted yaw를 사용한다.
+
+평가기는 checkpoint의 arena·sensor·representation·moving-target·action-policy 계약을 고정하고,
+조건별 episode accounting이 검증된 JSON/CSV가 없으면 성공 종료로 간주하지 않는다. 붕괴 복구
+smoke는 추가로 100-epoch KL/OOB 기록과 2,049-episode held-out 결과를 checkpoint hash에 결합한
+PASS 증명서가 있어야 밀도 커리큘럼으로 진입할 수 있다. 이 held-out는 main/base_sim(dt=0.01)/128
+env, 목표 거리 6–28 m 전체, 최종 FOV를 강제해 saved curriculum clock이나 4GB simulator가 평가
+난이도를 몰래 바꾸지 못한다. smoke/continue lineage는 epoch뿐 아니라 frame·task-step·horizon 관계도
+감사된 ep9500 anchor에서 검증한다.
+
 ---
 
 ## 5. 실행 순서 (단일 번호 체계 P0–P6)
@@ -176,8 +217,9 @@ token을 직접 attention하는 기존 아이디어는 1차 구조가 아니라 
 - 어느 한 센서 detector도 visible target을 못 찾으면 Transformer를 키우지 말고 sensor/asset/data부터 수정한다.
 - Transformer 평가는 success만 보지 않고 NavRL++처럼 control effort와 perturbation robustness를 함께 본다.
 - 8GB에서 OOM이면 raw image를 policy에 넣지 않고 detector output을 detach/cache하고 env를 256→128로 낮춘다.
-- 고정 density에서 KL 또는 latent mean이 지속 상승하면 더 학습하지 말고 last-known-good checkpoint로
-  rollback한 뒤 update safety를 수정한다.
+- 고정 density에서 KL 또는 latent mean이 지속 상승하면 더 학습하지 않는다. 현재 epoch transaction이
+  last-known-good actor/optimizer/RMS를 자동 복원해야 하며, 연속 rollback 한도를 넘으면 해당 run을
+  fail-stop하고 더 낮은 LR의 검증된 checkpoint에서만 재개한다.
 
 ---
 
@@ -255,7 +297,7 @@ arena 자체를 확장한 뒤 `k_final`을 함께 높인다.
 | sparse LiDAR로 target/obstacle 구분 불가 | 시간차 motion feature, target geometry, 72×6 ablation; camera와 fusion |
 | Transformer가 작은 데이터에서 과적합 | structured 17 tokens, NavRL++ dim 64, detector pretraining, strong split |
 | 8GB OOM | detector offline pretraining, structured 17 tokens, gradient accumulation, env 128 fallback |
-| detector 오류 또는 PPO update가 정책을 붕괴 | perception freeze, confidence input, density-aware collapse guard, KL/latent fail-stop와 last-known-good rollback |
+| detector 오류 또는 PPO update가 정책을 붕괴 | perception freeze, confidence input, density-aware collapse guard, immutable-behavior KL 전수감사, model/RMS/Adam/AMP epoch rollback, 전축 latent margin |
 | semantic label 누출 | 별도 label dict/dataloader, actor observation schema test, code review gate |
 | sim-to-real gap | texture/light/noise/dropout randomization, calibration perturbation, real-log validation |
 

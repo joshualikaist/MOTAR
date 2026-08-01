@@ -32,11 +32,20 @@ from aerial_gym.rl_training.rl_games.aerial_tensorboard import (
 )
 from aerial_gym.rl_training.rl_games.pretty_train_stats import print_training_dashboard
 from aerial_gym.rl_training.rl_games.ppo_update_safety import (
+    add_ppo_rollback_checkpoint_state,
+    all_finite_ppo_state,
+    capture_epoch_transaction,
+    completed_rollout_frames,
+    exact_normal_kl,
+    latent_margin_loss,
     lateral_batch_bias_loss,
     lateral_latent_margin_loss,
     mirror_navrl_actions,
     mirror_navrl_structured_observation,
     reflection_equivariance_loss,
+    read_ppo_rollback_checkpoint_state,
+    restore_epoch_transaction,
+    should_reject_ppo_update,
     stable_ppo_actor_loss,
 )
 from aerial_gym.rl_training.rl_games.train_run_recorder import (
@@ -57,6 +66,7 @@ _FAILED_EXIT_REASONS = {
     "early_stop_nan",
     "nonfinite_ppo",
     "early_stop_density_capture_collapse",
+    "ppo_rollback_livelock",
 }
 
 
@@ -124,6 +134,92 @@ def _read_existing_best_reward(nn_dir: str) -> float:
 
 
 class EarlyStopA2CAgent(A2CAgent):
+    def get_full_state_weights(self):
+        """Extend rl-games checkpoints with durable rollback-livelock history."""
+
+        state = super().get_full_state_weights()
+        return add_ppo_rollback_checkpoint_state(
+            state,
+            total=getattr(self, "_aerial_ppo_rollback_total", 0),
+            streak=getattr(self, "_aerial_ppo_rollback_streak", 0),
+        )
+
+    def set_full_state_weights(self, weights, set_epoch=True):
+        """Restore rollback counters as part of the same full-state transaction."""
+
+        # Validate before mutating model/optimizer state. A damaged safety counter must not leave a
+        # half-restored agent that could then be trained as if the checkpoint were trustworthy.
+        rollback_total, rollback_streak = read_ppo_rollback_checkpoint_state(weights)
+        super().set_full_state_weights(weights, set_epoch=set_epoch)
+        self._aerial_ppo_rollback_total = rollback_total
+        self._aerial_ppo_rollback_streak = rollback_streak
+
+    def _save_ppo_rollback_livelock_checkpoint(self):
+        """Account for the consumed rollout and durably save the restored PPO state."""
+
+        # Epoch rollback is deliberately single-GPU, but keep the frame rule explicit so a future
+        # synchronized implementation cannot accidentally under-count completed rollouts.
+        rollout_frames = completed_rollout_frames(
+            self.curr_frames,
+            self.world_size,
+            multi_gpu=self.multi_gpu,
+        )
+        self.frame += rollout_frames
+        checkpoint_stem = os.path.join(
+            self.nn_dir,
+            "last_%s_ep_%d_rew_rollback_livelock"
+            % (self.config["name"], int(self.epoch_num)),
+        )
+        self.save(checkpoint_stem)
+        checkpoint_path = checkpoint_stem + ".pth"
+        self._aerial_rollback_livelock_checkpoint = checkpoint_path
+        print(
+            "[aerial RL] PPO rollback livelock checkpoint saved | "
+            "epoch=%d frame=%d lr=%.3g path=%s"
+            % (self.epoch_num, self.frame, self.last_lr, checkpoint_path),
+            flush=True,
+        )
+        return checkpoint_path
+
+    @staticmethod
+    def _ppo_kl_gate():
+        raw = os.environ.get("NAVRL_PPO_KL_STOP", "").strip()
+        gate = float(raw) if raw else 0.0
+        if not math.isfinite(gate) or gate < 0.0:
+            raise ValueError("NAVRL_PPO_KL_STOP must be finite and >= 0")
+        return gate
+
+    @staticmethod
+    def _ppo_epoch_rollback_enabled(kl_gate):
+        raw = os.environ.get("NAVRL_PPO_EPOCH_ROLLBACK", "").strip().lower()
+        if not raw:
+            # Existing launchers already use NAVRL_PPO_KL_STOP as an opt-in safety contract.
+            # Make the repaired transaction the default semantics of that contract.
+            return kl_gate > 0.0
+        if raw in ("1", "true", "yes", "on"):
+            return True
+        if raw in ("0", "false", "no", "off"):
+            return False
+        raise ValueError("NAVRL_PPO_EPOCH_ROLLBACK must be a boolean")
+
+    @staticmethod
+    def _slice_rollout_value(value, start, end):
+        if isinstance(value, dict):
+            return {
+                key: EarlyStopA2CAgent._slice_rollout_value(item, start, end)
+                for key, item in value.items()
+            }
+        return value[start:end]
+
+    def prepare_dataset(self, batch_dict):
+        """Keep immutable rollout-policy parameters beside rl-games' moving PPO references."""
+        super().prepare_dataset(batch_dict)
+        # PPODataset.update_mu_sigma() intentionally rewrites ``mu``/``sigma`` after every
+        # minibatch. The old KL gate used those rewritten values and therefore rebased itself onto
+        # the policy it had just rejected. These fields are never passed to update_mu_sigma.
+        self.dataset.values_dict["behavior_mu"] = batch_dict["mus"].detach().clone()
+        self.dataset.values_dict["behavior_sigma"] = batch_dict["sigmas"].detach().clone()
+
     def calc_gradients(self, input_dict):
         """rl-games PPO update with opt-in ratio, KL and lateral-mean safety controls."""
         value_preds_batch = input_dict["old_values"]
@@ -131,6 +227,8 @@ class EarlyStopA2CAgent(A2CAgent):
         advantage = input_dict["advantages"]
         old_mu_batch = input_dict["mu"]
         old_sigma_batch = input_dict["sigma"]
+        behavior_mu_batch = input_dict.get("behavior_mu", old_mu_batch)
+        behavior_sigma_batch = input_dict.get("behavior_sigma", old_sigma_batch)
         return_batch = input_dict["returns"]
         actions_batch = input_dict["actions"]
         obs_batch = self._preproc_obs(input_dict["obs"])
@@ -163,40 +261,50 @@ class EarlyStopA2CAgent(A2CAgent):
 
             with torch.no_grad():
                 reduce_kl = rnn_masks is None
-                kl_dist = torch_ext.policy_kl(
+                kl_dist = exact_normal_kl(
                     mu.detach(),
                     sigma.detach(),
-                    old_mu_batch,
-                    old_sigma_batch,
-                    reduce_kl,
+                    behavior_mu_batch,
+                    behavior_sigma_batch,
+                    reduce=reduce_kl,
                 )
                 if rnn_masks is not None:
                     kl_dist = (kl_dist * rnn_masks).sum() / rnn_masks.numel()
 
-            raw_kl_gate = os.environ.get("NAVRL_PPO_KL_STOP", "").strip()
-            kl_gate = float(raw_kl_gate) if raw_kl_gate else 0.0
-            if not math.isfinite(kl_gate) or kl_gate < 0.0:
-                raise ValueError("NAVRL_PPO_KL_STOP must be finite and >= 0")
-
-            # Do not let different DDP ranks make different backward/skip decisions. NavRL uses one
-            # GPU; multi-GPU callers retain the stock synchronized update path.
-            skip_for_kl = (
-                not self.multi_gpu
-                and kl_gate > 0.0
-                and bool(torch.isfinite(kl_dist))
-                and float(kl_dist.detach().cpu()) > kl_gate
+            kl_gate = self._ppo_kl_gate()
+            rollback_enabled = self._ppo_epoch_rollback_enabled(kl_gate)
+            # This is an early latch only. The epoch transaction below is the authority: it audits
+            # the final policy over the entire rollout, then restores model/RMS/Adam/scaler if any
+            # slice crossed the immutable behavior-policy boundary. NaN/Inf is a rejection too.
+            skip_for_kl = rollback_enabled and should_reject_ppo_update(
+                kl_dist,
+                kl_gate,
+                action_log_probs,
+                values,
+                entropy,
+                mu,
+                sigma,
             )
             if skip_for_kl:
                 zero = action_log_probs.detach().new_zeros(())
                 self.aux_loss_dict = {}
+                self._aerial_epoch_kl_rejected = True
+                self._aerial_epoch_kl_reject_nonfinite = not bool(
+                    torch.isfinite(kl_dist).all()
+                )
+                if bool(torch.isfinite(kl_dist).all()):
+                    self._aerial_epoch_max_pre_kl = max(
+                        float(getattr(self, "_aerial_epoch_max_pre_kl", 0.0)),
+                        float(kl_dist.detach().cpu()),
+                    )
                 self._aerial_kl_skipped_minibatches = (
                     int(getattr(self, "_aerial_kl_skipped_minibatches", 0)) + 1
                 )
                 skipped = self._aerial_kl_skipped_minibatches
                 if skipped == 1 or skipped % 50 == 0:
                     print(
-                        "[aerial RL] PPO minibatch skipped by KL gate | "
-                        f"kl={float(kl_dist):.5f} > {kl_gate:.5f} "
+                        "[aerial RL] PPO epoch rejection latched before minibatch step | "
+                        f"kl={float(kl_dist):.5f} gate={kl_gate:.5f} "
                         f"(total skipped={skipped}).",
                         flush=True,
                     )
@@ -272,29 +380,38 @@ class EarlyStopA2CAgent(A2CAgent):
                     else:
                         self.aux_loss_dict[key] = [value.detach()]
 
+            raw_axis_margins = os.environ.get("NAVRL_LATENT_MARGIN", "").strip()
             raw_margin = os.environ.get("NAVRL_LATENT_MARGIN_Y", "").strip()
             raw_margin_coef = os.environ.get(
                 "NAVRL_LATENT_MARGIN_COEF", ""
             ).strip()
-            margin = float(raw_margin) if raw_margin else 0.0
             margin_coef = float(raw_margin_coef) if raw_margin_coef else 0.0
-            if (
-                not math.isfinite(margin)
-                or not math.isfinite(margin_coef)
-                or margin < 0.0
-                or margin_coef < 0.0
-            ):
-                raise ValueError(
-                    "NAVRL_LATENT_MARGIN_Y and NAVRL_LATENT_MARGIN_COEF "
-                    "must be finite and >= 0"
-                )
-            if margin > 0.0 and margin_coef > 0.0:
-                margin_penalty = lateral_latent_margin_loss(mu, margin)
+            if not math.isfinite(margin_coef) or margin_coef < 0.0:
+                raise ValueError("NAVRL_LATENT_MARGIN_COEF must be finite and >= 0")
+            if raw_axis_margins and margin_coef > 0.0:
+                try:
+                    margins = [
+                        float(value.strip())
+                        for value in raw_axis_margins.split(",")
+                        if value.strip()
+                    ]
+                except ValueError as exc:
+                    raise ValueError(
+                        "NAVRL_LATENT_MARGIN must be a scalar or comma-separated floats"
+                    ) from exc
+                margin_penalty = latent_margin_loss(mu, margins)
                 weighted_margin = margin_coef * margin_penalty
                 loss += weighted_margin
-                self.aux_loss_dict["lateral_latent_margin"] = [
+                self.aux_loss_dict["all_axis_latent_margin"] = [
                     weighted_margin.detach()
                 ]
+            elif raw_margin and margin_coef > 0.0:
+                margin = float(raw_margin)
+                if not math.isfinite(margin) or margin <= 0.0:
+                    raise ValueError("NAVRL_LATENT_MARGIN_Y must be finite and > 0")
+                weighted_margin = margin_coef * lateral_latent_margin_loss(mu, margin)
+                loss += weighted_margin
+                self.aux_loss_dict["lateral_latent_margin"] = [weighted_margin.detach()]
 
             raw_bias_coef = os.environ.get("NAVRL_LATERAL_BIAS_COEF", "").strip()
             bias_coef = float(raw_bias_coef) if raw_bias_coef else 0.0
@@ -349,6 +466,53 @@ class EarlyStopA2CAgent(A2CAgent):
                     weighted_symmetry.detach()
                 ]
 
+            # The forward/KL can be finite while a critic square, PPO ratio or auxiliary term
+            # overflows. Do not send such a loss through backward/Adam; latch rejection so the
+            # epoch transaction restores any earlier minibatches as well.
+            if rollback_enabled and not all_finite_ppo_state(
+                loss,
+                a_loss,
+                c_loss,
+                entropy,
+                b_loss,
+                self.aux_loss_dict,
+            ):
+                zero = action_log_probs.detach().new_zeros(())
+                self._aerial_epoch_kl_rejected = True
+                self._aerial_epoch_kl_reject_nonfinite = True
+                self._aerial_kl_skipped_minibatches = (
+                    int(getattr(self, "_aerial_kl_skipped_minibatches", 0)) + 1
+                )
+                print(
+                    "[aerial RL] PPO epoch rejection latched before backward | "
+                    "non-finite PPO/critic/auxiliary loss.",
+                    flush=True,
+                )
+                self.diagnostics.mini_batch(
+                    self,
+                    {
+                        "values": value_preds_batch,
+                        "returns": return_batch,
+                        "new_neglogp": action_log_probs,
+                        "old_neglogp": old_action_log_probs_batch,
+                        "masks": rnn_masks,
+                    },
+                    curr_e_clip,
+                    0,
+                )
+                self.train_result = (
+                    zero,
+                    zero,
+                    entropy.detach().mean(),
+                    kl_dist,
+                    self.last_lr,
+                    lr_mul,
+                    mu.detach(),
+                    sigma.detach(),
+                    zero,
+                )
+                return
+
             if self.multi_gpu:
                 self.optimizer.zero_grad(set_to_none=True)
             else:
@@ -380,6 +544,398 @@ class EarlyStopA2CAgent(A2CAgent):
             mu.detach(),
             sigma.detach(),
             b_loss,
+        )
+
+    def _audit_behavior_policy(
+        self,
+        rollout_obs,
+        rollout_actions,
+        behavior_mu,
+        behavior_sigma,
+    ):
+        """Measure final-policy KL on every rollout slice with normalization frozen."""
+        module_modes = {
+            name: bool(module.training) for name, module in self.model.named_modules()
+        }
+        max_minibatch_kl = 0.0
+        max_sample_kl = 0.0
+        all_finite = True
+        batch_size = int(behavior_mu.shape[0])
+        chunk_size = max(1, int(getattr(self, "minibatch_size", batch_size)))
+        self.model.eval()
+        try:
+            with torch.no_grad():
+                for start in range(0, batch_size, chunk_size):
+                    end = min(batch_size, start + chunk_size)
+                    obs = self._slice_rollout_value(rollout_obs, start, end)
+                    actions = self._slice_rollout_value(rollout_actions, start, end)
+                    result = self.model(
+                        {
+                            "is_train": True,
+                            "prev_actions": actions,
+                            "obs": self._preproc_obs(obs),
+                        }
+                    )
+                    current_mu = result["mus"]
+                    current_sigma = result["sigmas"]
+                    per_sample = exact_normal_kl(
+                        current_mu,
+                        current_sigma,
+                        behavior_mu[start:end],
+                        behavior_sigma[start:end],
+                        reduce=False,
+                    )
+                    required_outputs = (
+                        current_mu,
+                        current_sigma,
+                        result.get("values"),
+                        result.get("prev_neglogp"),
+                        result.get("entropy"),
+                    )
+                    finite = all(
+                        isinstance(value, torch.Tensor)
+                        and bool(torch.isfinite(value).all())
+                        for value in required_outputs
+                    ) and bool(torch.isfinite(per_sample).all())
+                    if not bool(finite):
+                        all_finite = False
+                        continue
+                    max_minibatch_kl = max(
+                        max_minibatch_kl, float(per_sample.mean().detach().cpu())
+                    )
+                    max_sample_kl = max(
+                        max_sample_kl, float(per_sample.max().detach().cpu())
+                    )
+        finally:
+            modules = dict(self.model.named_modules())
+            for name, training in module_modes.items():
+                modules[name].training = training
+        return max_minibatch_kl, max_sample_kl, all_finite
+
+    def _rollback_learning_rate(self, original_lr):
+        raw_factor = os.environ.get("NAVRL_PPO_ROLLBACK_LR_FACTOR", "0.5").strip()
+        raw_floor = os.environ.get("NAVRL_PPO_ROLLBACK_MIN_LR", "1e-6").strip()
+        factor = float(raw_factor)
+        floor = float(raw_floor)
+        if not math.isfinite(factor) or not 0.0 < factor < 1.0:
+            raise ValueError("NAVRL_PPO_ROLLBACK_LR_FACTOR must be finite and in (0, 1)")
+        if not math.isfinite(floor) or floor <= 0.0:
+            raise ValueError("NAVRL_PPO_ROLLBACK_MIN_LR must be finite and > 0")
+        backed_off = max(floor, float(original_lr) * factor)
+        self.last_lr = backed_off
+        reset_optimizer_learning_rate(self.optimizer, backed_off)
+        os.environ["NAVRL_CURRENT_LEARNING_RATE"] = str(backed_off)
+        return backed_off
+
+    def train_epoch(self):
+        """rl-games PPO epoch with an atomic actor-side KL transaction.
+
+        rl-games rewrites each dataset slice's policy mean after every minibatch. The previous
+        gate consequently compared against a moving reference, noticed a bad optimizer step only
+        after it had happened, and never restored Adam/RMS. This copy of the upstream loop keeps
+        immutable rollout parameters, audits the *post-update* policy over the full rollout, and
+        commits or restores the complete actor-side epoch as one unit.
+        """
+        self.vec_env.set_train_info(self.frame, self)
+
+        kl_gate = self._ppo_kl_gate()
+        rollback_enabled = self._ppo_epoch_rollback_enabled(kl_gate)
+        if rollback_enabled and self.multi_gpu:
+            raise RuntimeError(
+                "NavRL PPO epoch rollback is single-GPU only; DDP requires an all-rank "
+                "reject/restore barrier. Set NAVRL_PPO_EPOCH_ROLLBACK=0 only for an "
+                "intentional unsupported experiment."
+            )
+        if rollback_enabled and self.is_rnn:
+            raise RuntimeError(
+                "NavRL PPO epoch rollback does not yet support recurrent sequence-state audits."
+            )
+
+        self.set_eval()
+        play_time_start = time.perf_counter()
+        with torch.no_grad():
+            if self.is_rnn:
+                batch_dict = self.play_steps_rnn()
+            else:
+                batch_dict = self.play_steps()
+        play_time_end = time.perf_counter()
+        update_time_start = time.perf_counter()
+
+        # These four values are the immutable behavior-policy audit set. PPODataset is free to
+        # mutate its ordinary mu/sigma fields during optimization without changing this reference.
+        rollout_obs = batch_dict["obses"]
+        rollout_actions = batch_dict["actions"]
+        behavior_mu = batch_dict["mus"].detach().clone()
+        behavior_sigma = batch_dict["sigmas"].detach().clone()
+
+        transaction = None
+        central_transaction = None
+        central_scalar_state = None
+        original_lr = float(self.last_lr)
+        original_entropy_coef = float(self.entropy_coef)
+        if rollback_enabled:
+            transaction = capture_epoch_transaction(
+                self.model, self.optimizer, self.scaler
+            )
+            if self.has_central_value:
+                central = self.central_value_net
+                central_transaction = capture_epoch_transaction(
+                    central.model, central.optimizer, central.scaler
+                )
+                central_scalar_state = (
+                    float(central.lr),
+                    int(central.epoch_num),
+                    int(central.frame),
+                    bool(central.training),
+                )
+
+        self._aerial_epoch_kl_rejected = False
+        self._aerial_epoch_kl_reject_nonfinite = False
+        self._aerial_epoch_max_pre_kl = 0.0
+        self._aerial_epoch_rolled_back = False
+        self._aerial_epoch_audit_kl = 0.0
+        self._aerial_epoch_audit_sample_kl = 0.0
+
+        a_losses = []
+        c_losses = []
+        b_losses = []
+        entropies = []
+        kls = []
+        last_lr = self.last_lr
+        lr_mul = 1.0
+        central_loss = None
+
+        try:
+            # Dataset preparation updates value-normalization buffers. It is part of the PPO
+            # transaction too, so snapshots above must precede it and exceptions here must restore.
+            self.set_train()
+            self.curr_frames = batch_dict.pop("played_frames")
+            self.prepare_dataset(batch_dict)
+            self.algo_observer.after_steps()
+            if self.has_central_value:
+                central_loss = self.train_central_value()
+            stop_updates = False
+            for mini_ep in range(0, self.mini_epochs_num):
+                ep_kls = []
+                for i in range(len(self.dataset)):
+                    (
+                        a_loss,
+                        c_loss,
+                        entropy,
+                        kl,
+                        last_lr,
+                        lr_mul,
+                        cmu,
+                        csigma,
+                        b_loss,
+                    ) = self.train_actor_critic(self.dataset[i])
+                    a_losses.append(a_loss)
+                    c_losses.append(c_loss)
+                    ep_kls.append(kl)
+                    entropies.append(entropy)
+                    if self.bounds_loss_coef is not None:
+                        b_losses.append(b_loss)
+
+                    # A pre-step breach has latched rejection of the entire epoch. Do not rebase
+                    # the mutable PPO reference onto the rejected policy and do no further work.
+                    if self._aerial_epoch_kl_rejected:
+                        stop_updates = True
+                        break
+
+                    self.dataset.update_mu_sigma(cmu, csigma)
+                    if self.schedule_type == "legacy":
+                        av_kls = kl
+                        if self.multi_gpu:
+                            dist.all_reduce(kl, op=dist.ReduceOp.SUM)
+                            av_kls /= self.world_size
+                        self.last_lr, self.entropy_coef = self.scheduler.update(
+                            self.last_lr,
+                            self.entropy_coef,
+                            self.epoch_num,
+                            0,
+                            av_kls.item(),
+                        )
+                        self.update_lr(self.last_lr)
+                        os.environ["NAVRL_CURRENT_LEARNING_RATE"] = str(self.last_lr)
+
+                if ep_kls:
+                    av_kls = torch_ext.mean_list(ep_kls)
+                    if self.multi_gpu:
+                        dist.all_reduce(av_kls, op=dist.ReduceOp.SUM)
+                        av_kls /= self.world_size
+                    if self.schedule_type == "standard" and not stop_updates:
+                        self.last_lr, self.entropy_coef = self.scheduler.update(
+                            self.last_lr,
+                            self.entropy_coef,
+                            self.epoch_num,
+                            0,
+                            av_kls.item(),
+                        )
+                        self.update_lr(self.last_lr)
+                        os.environ["NAVRL_CURRENT_LEARNING_RATE"] = str(self.last_lr)
+                    kls.append(av_kls)
+                self.diagnostics.mini_epoch(self, mini_ep)
+                if self.normalize_input:
+                    self.model.running_mean_std.eval()
+                if stop_updates:
+                    break
+
+            if rollback_enabled:
+                audit_kl, audit_sample_kl, audit_finite = self._audit_behavior_policy(
+                    rollout_obs,
+                    rollout_actions,
+                    behavior_mu,
+                    behavior_sigma,
+                )
+                self._aerial_epoch_audit_kl = audit_kl
+                self._aerial_epoch_audit_sample_kl = audit_sample_kl
+                central_commit_state = None
+                if self.has_central_value:
+                    central = self.central_value_net
+                    central_commit_state = {
+                        "model": central.model.state_dict(),
+                        "optimizer": central.optimizer.state_dict(),
+                        "scaler": central.scaler.state_dict(),
+                        "loss": central_loss,
+                        "lr": central.lr,
+                    }
+                commit_state_finite = all_finite_ppo_state(
+                    self.model.state_dict(),
+                    self.optimizer.state_dict(),
+                    self.scaler.state_dict() if self.scaler is not None else None,
+                    central_commit_state,
+                    a_losses,
+                    c_losses,
+                    b_losses,
+                    entropies,
+                    kls,
+                    self.last_lr,
+                    self.entropy_coef,
+                )
+                reject_epoch = (
+                    bool(self._aerial_epoch_kl_rejected)
+                    or not audit_finite
+                    or not commit_state_finite
+                    or should_reject_ppo_update(audit_kl, kl_gate)
+                )
+                if reject_epoch:
+                    restore_epoch_transaction(
+                        transaction, self.model, self.optimizer, self.scaler
+                    )
+                    if central_transaction is not None:
+                        central = self.central_value_net
+                        restore_epoch_transaction(
+                            central_transaction,
+                            central.model,
+                            central.optimizer,
+                            central.scaler,
+                        )
+                        (
+                            central.lr,
+                            central.epoch_num,
+                            central.frame,
+                            central.training,
+                        ) = central_scalar_state
+                        central.update_lr(central.lr)
+                    self.entropy_coef = original_entropy_coef
+                    backed_off_lr = self._rollback_learning_rate(original_lr)
+                    self._aerial_epoch_rolled_back = True
+                    self._aerial_ppo_rollback_total = int(
+                        getattr(self, "_aerial_ppo_rollback_total", 0)
+                    ) + 1
+                    self._aerial_ppo_rollback_streak = int(
+                        getattr(self, "_aerial_ppo_rollback_streak", 0)
+                    ) + 1
+                    last_lr = backed_off_lr
+                    reason = (
+                        "nonfinite"
+                        if (
+                            self._aerial_epoch_kl_reject_nonfinite
+                            or not audit_finite
+                            or not commit_state_finite
+                        )
+                        else "KL"
+                    )
+                    print(
+                        "[aerial RL] PPO EPOCH ROLLBACK | reason=%s "
+                        "pre_kl_max=%.6f audit_kl_max=%.6f sample_kl_max=%.6f "
+                        "gate=%.6f lr=%.3g->%.3g streak=%d"
+                        % (
+                            reason,
+                            self._aerial_epoch_max_pre_kl,
+                            audit_kl,
+                            audit_sample_kl,
+                            kl_gate,
+                            original_lr,
+                            backed_off_lr,
+                            self._aerial_ppo_rollback_streak,
+                        ),
+                        flush=True,
+                    )
+                    patience = int(
+                        os.environ.get("NAVRL_PPO_ROLLBACK_PATIENCE", "5")
+                    )
+                    if patience < 1:
+                        raise ValueError(
+                            "NAVRL_PPO_ROLLBACK_PATIENCE must be an integer >= 1"
+                        )
+                    if self._aerial_ppo_rollback_streak >= patience:
+                        self._aerial_failure_reason = "ppo_rollback_livelock"
+                        # play_steps() has already advanced the simulator/task clocks. The normal
+                        # train() path increments frame only after train_epoch() returns, which a
+                        # livelock fail-stop never does. Persist the matching global frame now,
+                        # after exact model/Adam/RMS/scaler restore and LR backoff, then fail.
+                        self._save_ppo_rollback_livelock_checkpoint()
+                        raise FloatingPointError(
+                            "[aerial RL] PPO rollback livelock: %d consecutive unsafe epochs; "
+                            "last-known-good PPO actor/critic state was restored."
+                            % self._aerial_ppo_rollback_streak
+                        )
+                else:
+                    self._aerial_ppo_rollback_streak = 0
+        except Exception:
+            # An optimizer/runtime failure can happen after a partial actor or central-critic step.
+            # Ensure the whole in-memory PPO epoch is last-known-good before train() exits.
+            if transaction is not None and not self._aerial_epoch_rolled_back:
+                restore_epoch_transaction(
+                    transaction, self.model, self.optimizer, self.scaler
+                )
+                if central_transaction is not None:
+                    central = self.central_value_net
+                    restore_epoch_transaction(
+                        central_transaction,
+                        central.model,
+                        central.optimizer,
+                        central.scaler,
+                    )
+                    (
+                        central.lr,
+                        central.epoch_num,
+                        central.frame,
+                        central.training,
+                    ) = central_scalar_state
+                    central.update_lr(central.lr)
+                self.last_lr = original_lr
+                self.entropy_coef = original_entropy_coef
+                os.environ["NAVRL_CURRENT_LEARNING_RATE"] = str(original_lr)
+            raise
+
+        update_time_end = time.perf_counter()
+        play_time = play_time_end - play_time_start
+        update_time = update_time_end - update_time_start
+        total_time = update_time_end - play_time_start
+        return (
+            batch_dict["step_time"],
+            play_time,
+            update_time,
+            total_time,
+            a_losses,
+            c_losses,
+            b_losses,
+            entropies,
+            kls,
+            last_lr,
+            lr_mul,
         )
 
     def get_action_values(self, obs):
@@ -476,7 +1032,7 @@ class EarlyStopA2CAgent(A2CAgent):
         }
 
     def restore(self, fn, set_epoch=True):
-        """Restore weights/state, but never inherit a stale checkpoint learning rate."""
+        """Restore weights/state, then apply the LR resolved by runner checkpoint provenance."""
         super().restore(fn, set_epoch=set_epoch)
         reset_actor_optimizer = os.environ.get(
             "NAVRL_RESET_ACTOR_OPTIMIZER", "0"
@@ -495,6 +1051,7 @@ class EarlyStopA2CAgent(A2CAgent):
         configured_lr = float(self.config["learning_rate"])
         self.last_lr = configured_lr
         reset_optimizer_learning_rate(self.optimizer, configured_lr)
+        os.environ["NAVRL_CURRENT_LEARNING_RATE"] = str(configured_lr)
         print(
             "[aerial RL] Resume optimizer LR reset to active config: "
             f"{configured_lr:.3g}.",
@@ -589,6 +1146,31 @@ class EarlyStopA2CAgent(A2CAgent):
             epoch_num,
         )
         self._aerial_kl_skipped_last_epoch = skipped_total
+        self.writer.add_scalar(
+            "ppo/behavior_kl_audit_max",
+            float(getattr(self, "_aerial_epoch_audit_kl", 0.0)),
+            epoch_num,
+        )
+        self.writer.add_scalar(
+            "ppo/behavior_kl_sample_max",
+            float(getattr(self, "_aerial_epoch_audit_sample_kl", 0.0)),
+            epoch_num,
+        )
+        self.writer.add_scalar(
+            "ppo/epoch_rollback",
+            1.0 if getattr(self, "_aerial_epoch_rolled_back", False) else 0.0,
+            epoch_num,
+        )
+        self.writer.add_scalar(
+            "ppo/epoch_rollback_total",
+            int(getattr(self, "_aerial_ppo_rollback_total", 0)),
+            epoch_num,
+        )
+        self.writer.add_scalar(
+            "ppo/epoch_rollback_streak",
+            int(getattr(self, "_aerial_ppo_rollback_streak", 0)),
+            epoch_num,
+        )
         if action_diag is not None:
             axis_names = ("x", "y", "z", "yaw")
             for axis, name in enumerate(axis_names):
@@ -886,6 +1468,10 @@ class EarlyStopA2CAgent(A2CAgent):
                                 self.save(os.path.join(self.nn_dir, "last_" + checkpoint_name))
 
                         current_mean_reward = _scalar_mean_reward(mean_rewards[0])
+                        # Stashed for the navrl block further down, which needs this epoch's reward
+                        # alongside the active density. It is assigned inside a conditional branch
+                        # there, so read it via getattr rather than relying on it being bound.
+                        self._aerial_current_mean_reward = current_mean_reward
                         if (
                             not should_exit
                             and current_mean_reward > self.last_mean_rewards
@@ -932,6 +1518,49 @@ class EarlyStopA2CAgent(A2CAgent):
                                 intercept_extra_metrics.update(nav_metrics)
                             else:
                                 intercept_extra_metrics = nav_metrics
+
+                            # Per-density best reward. The global stability/best_reward is a running
+                            # max over the whole run, but each promotion makes the task harder and
+                            # lowers the attainable reward, so after the first promotion that scalar
+                            # is frozen at a number earned under an easier density and says nothing
+                            # about current progress. Additive only -- self.last_mean_rewards and
+                            # the best-checkpoint rule are deliberately left untouched.
+                            try:
+                                from aerial_gym.task.navrl_task.navrl_curriculum import (
+                                    track_best_reward_by_density,
+                                )
+
+                                bd_state, bd_finished = track_best_reward_by_density(
+                                    getattr(self, "_aerial_best_reward_density_state", None),
+                                    nav_metrics.get("navrl/n_bars_active"),
+                                    getattr(self, "_aerial_current_mean_reward", None),
+                                )
+                                self._aerial_best_reward_density_state = bd_state
+                                if bd_state.get("best") is not None:
+                                    self.writer.add_scalar(
+                                        "stability/best_reward_at_density",
+                                        float(bd_state["best"]),
+                                        epoch_num,
+                                    )
+                                if bd_finished is not None:
+                                    done_bars, done_best = bd_finished
+                                    print(
+                                        f"[aerial RL] density {done_bars} bars done: "
+                                        f"best mean_reward {done_best:.3f} "
+                                        f"-> now {bd_state['current_bars']} bars (epoch {epoch_num})"
+                                    )
+                                    # Step is the BAR COUNT, not the epoch: this series is meant to
+                                    # be read as best-reward-versus-density (one point per level
+                                    # the curriculum has left behind), which is the shape of the
+                                    # ceiling the density schedule is trying to characterise.
+                                    self.writer.add_scalar(
+                                        "stability/best_reward_of_finished_density",
+                                        float(done_best),
+                                        int(done_bars),
+                                    )
+                            except Exception:
+                                pass
+
                             if not should_exit and density_capture_cfg is not None:
                                 dc_state = getattr(
                                     self, "_aerial_density_capture_stop_state", None
@@ -1064,7 +1693,9 @@ class EarlyStopA2CAgent(A2CAgent):
             return self.last_mean_rewards, epoch_num
         except FloatingPointError:
             if exit_reason == "unknown":
-                exit_reason = "nonfinite_ppo"
+                exit_reason = getattr(
+                    self, "_aerial_failure_reason", "nonfinite_ppo"
+                )
             raise
         except KeyboardInterrupt:
             exit_reason = "interrupted"

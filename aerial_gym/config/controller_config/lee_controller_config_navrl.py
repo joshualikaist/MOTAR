@@ -26,7 +26,14 @@ class control(_base):
     # measured as `below` floor strikes -- worst under NAVRL_GENERAL_TRAIN's random spawns, where
     # sharp initial turns happen while the task-level altitude-PI integral is still zero.
     # NavRL-scoped opt-in; every other task keeps the shared Lee projection unchanged.
-    tilt_thrust_compensation = os.environ.get("NAVRL_TILT_COMP", "1").strip() != "0"
+    # Keep boolean semantics identical to NavRLTask checkpoint provenance. Previously "false"
+    # meant controller=ON but checkpoint=OFF, making a same-shape control mismatch look verified.
+    tilt_thrust_compensation = os.environ.get("NAVRL_TILT_COMP", "1").strip().lower() not in (
+        "0",
+        "false",
+        "no",
+        "off",
+    )
 
     # Maximum commanded tilt from vertical [deg], 0 disables. The base Lee controller derives its
     # desired body-z axis straight from the force vector, so nothing otherwise stops a large

@@ -574,24 +574,65 @@ function renderRuns(s) {
     }).join('')}</tbody>`;
 }
 
-function renderPhases() {
+function renderNow(s) {
+  const u = s.research_update || {};
+  const experiment = u.active_experiment || u.bounded_pilot || {};
+  const set = (id, value) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value || '—';
+  };
+  set('now-latest', u.headline);
+  set('now-status', u.summary);
+  set('now-next', u.decision);
+
+  const verification = document.getElementById('now-verification');
+  if (verification) {
+    const verifiedAt = experiment.recovery_attestation_verified_at;
+    verification.hidden = !verifiedAt;
+    verification.textContent = verifiedAt
+      ? `Evidence verified for static snapshot ${verifiedAt}. The safe launcher rechecks the live files before training.`
+      : '';
+  }
+}
+
+function renderPhases(s) {
+  const u = s.research_update || {};
+  const experiment = u.active_experiment || u.bounded_pilot || {};
+  const next = (u.milestones || []).find(m => String(m.label || '').toUpperCase() === 'NEXT');
+  const reachedBudget = Number.isFinite(Number(experiment.epoch))
+    && Number.isFinite(Number(experiment.max_epochs))
+    && Number(experiment.epoch) >= Number(experiment.max_epochs);
+  const currentDone = experiment.recovery_attestation_valid === true
+    || (Boolean(experiment.ab_arm) && !experiment.is_live && reachedBudget);
+  const currentLabel = String(u.subtitle || 'current research stage')
+    .replace(/^\d{4}-\d{2}-\d{2}\s*·\s*/, '');
+  const nextLabel = next
+    ? [next.value, next.detail].filter(Boolean).join(' · ')
+    : (u.decision || 'next gated experiment');
   const phases = [
-    ['P0–P5', 'sensor · tracking foundation', 'done'],
-    ['P6A', 'bounded action contract', 'done'],
-    ['P6B', 'cluster-sector baseline', 'done'],
-    ['P6C', 'corridor-token pilot', 'done'],
-    ['P6D', 'two-depth representation', 'active'],
-    ['P7', 'sim-to-real', 'todo'],
-    ['Paper', 'ablation + write-up', 'todo'],
+    ['Done', 'validated foundation and prior ablations', 'done'],
+    ['Now', currentLabel, currentDone ? 'done' : 'active'],
+    ['Next', nextLabel, currentDone ? 'active' : 'todo'],
+    ['Paper', 'held-out ablation + write-up', 'todo'],
   ];
   const ph = document.getElementById('phases');
   if (!ph) return;
   const lab = { done: 'done', active: 'now', todo: 'todo' };
-  ph.innerHTML = phases.map(p => `
-    <div class="phase${p[2] === 'active' ? ' is-active' : ''}">
-      <span class="pid">${p[0]}</span><span class="pt">${p[1]}</span>
-      <span class="badge ${p[2]}">${lab[p[2]]}</span>
-    </div>`).join('');
+  ph.replaceChildren(...phases.map(p => {
+    const row = document.createElement('div');
+    row.className = `phase${p[2] === 'active' ? ' is-active' : ''}`;
+    const id = document.createElement('span');
+    id.className = 'pid';
+    id.textContent = p[0];
+    const title = document.createElement('span');
+    title.className = 'pt';
+    title.textContent = p[1];
+    const badge = document.createElement('span');
+    badge.className = `badge ${p[2]}`;
+    badge.textContent = lab[p[2]];
+    row.append(id, title, badge);
+    return row;
+  }));
 }
 
 function wireArena() {
@@ -641,7 +682,6 @@ function wireArena() {
 
 (async function () {
   wireChrome();
-  renderPhases();
 
   const renderAll = (s) => {
     if (s && s.placement_area_m2) BAND_AREA = Number(s.placement_area_m2);
@@ -649,6 +689,8 @@ function wireArena() {
     renderLive(s);
     renderCriteria(s);
     renderResearchUpdate(s);
+    renderNow(s);
+    renderPhases(s);
     renderCorridor(s);
     renderCurve(s);
     renderSpeed(s);

@@ -93,6 +93,54 @@ def density_threshold_at(
     )
 
 
+def track_best_reward_by_density(state, n_bars_active, mean_reward):
+    """Running best reward *within the current density*, and the record of each finished density.
+
+    ``stability/best_reward`` is a single running max over the whole run, but a density promotion
+    changes the reward scale underneath it: more bars means more collisions and a harder capture,
+    so the global max is set at one density and then frozen, and every later epoch is compared
+    against a number that was earned under an easier task. After the first promotion the scalar
+    stops carrying information about whether learning is still progressing.
+
+    This tracks the best per density instead, and reports each density's best at the moment it is
+    left behind, which is the number that actually says "this is how well the policy ever did at
+    70 bars".
+
+    Returns ``(new_state, finished)`` where ``finished`` is ``None``, or ``(bars, best)`` for the
+    density just departed. ``state`` is treated as immutable.
+    """
+    current = None if state is None else state.get("current_bars")
+    best = None if state is None else state.get("best")
+    history = () if state is None else tuple(state.get("history") or ())
+
+    if n_bars_active is None:
+        return (
+            {"current_bars": current, "best": best, "history": history},
+            None,
+        )
+
+    bars = int(n_bars_active)
+    reward = None if mean_reward is None else float(mean_reward)
+    # A non-finite reward (NaN/Inf from a diverged update) must never become a "best": it would
+    # poison the comparison for the rest of the density.
+    if reward is not None and not (reward == reward and abs(reward) != float("inf")):
+        reward = None
+
+    finished = None
+    if current is None:
+        return ({"current_bars": bars, "best": reward, "history": history}, None)
+
+    if bars != current:
+        if best is not None:
+            finished = (int(current), float(best))
+            history = history + (finished,)
+        return ({"current_bars": bars, "best": reward, "history": history}, finished)
+
+    if reward is not None and (best is None or reward > best):
+        best = reward
+    return ({"current_bars": current, "best": best, "history": history}, None)
+
+
 def density_dwell_epochs(
     num_task_steps: int,
     level_start_steps: int,

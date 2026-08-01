@@ -44,11 +44,16 @@
 # while the baseline arm does not -- an asymmetry that penalises it early by construction.
 #
 # EVAL (per arm, after both finish)
-#   NAVRL_OBSTACLE_SELECTOR=<the arm's selector> NAVRL_V2_DENSITIES=70 NUM_ENVS=64 \
+#   GPU4GB=1 NAVRL_V2_DENSITIES=70 \
 #     ./eval_navrl_v2_density_sweep.sh runs/<arm run>/nn/last_gen_ppo_ep_XXXX.pth
-#   The selector MUST match the arm or the numbers are meaningless.
+#   The evaluator derives and verifies the selector and 4 GB runtime contract from the checkpoint.
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
+
+if (( $# != 0 )); then
+    echo "[ttc-ab] extra runner arguments are forbidden because they can invalidate the A/B contract: $*" >&2
+    exit 2
+fi
 
 ARM="${ARM:-}"
 case "${ARM}" in
@@ -69,12 +74,13 @@ export NAVRL_OBSTACLE_SELECTOR="${SELECTOR}"
 # characterised there (13.1% extrapolated). A promotion during either arm would change the task
 # under one arm and not the other.
 export NAVRL_DENSITY_CURRICULUM=0
-export NAVRL_NUM_BARS="${AB_BARS:-70}"
+export NAVRL_NUM_BARS=70
 export NAVRL_MAX_BARS=300          # keep the PhysX actor count at the validated 4 GB profile
 export NAVRL_DENSITY_MIN_EPOCHS=0  # inert with the curriculum off; pinned so a stray export cannot revive it
 
 # ---- shared: identical start point and budget ----
 export CKPT="${CKPT:-runs/ppo_260731_1940_navrl_v2-search-thr80-s1/nn/last_gen_ppo_ep_3250_rew_128.5965.pth}"
+export NAVRL_V2_ALLOW_RESUME=1
 export SEED="${SEED:-1}"
 # Budget matched in SAMPLES, not in epoch count. The warm-start checkpoint comes off the 3070 at
 # 128 envs (32x128 = 4096 samples/epoch); this card runs 64 envs (32x64 = 2048), so an epoch here
@@ -82,9 +88,60 @@ export SEED="${SEED:-1}"
 # adaptation. +2000 epochs = 4.1M steps = the 1000 3070-equivalent epochs actually meant.
 # This is not a neutral shortfall: the baseline arm starts already converged for its selector while
 # the ttc arm starts off-distribution, so a short budget penalises only the arm that needs to adapt.
-export MAX_EPOCHS="${MAX_EPOCHS:-5250}"   # 3250 + 2000 @ 2048 samples/ep = 4.1M steps of adaptation
-export AERIAL_RUN_TAG="${AERIAL_RUN_TAG:-v2-ttc-${ARM}-s${SEED}}"
-export TRAIN_SESSION_LOG="${TRAIN_SESSION_LOG:-train_session_logs/v2_ttc_${ARM}_$(date +%y%m%d_%H%M%S).log}"
+export MAX_EPOCHS=5250   # 3250 + 2000 @ 2048 samples/ep = 4.1M steps of adaptation
+export AERIAL_RUN_TAG="v2-ttc-${ARM}-s${SEED}"
+export TRAIN_SESSION_LOG="train_session_logs/v2_ttc_${ARM}_$(date +%y%m%d_%H%M%S)_$$.log"
+export TRAIN_LIVE_LOG=train_session_logs/current_training.log
+export AERIAL_GYM_SIM_NAME=base_sim_4gb
+export NUM_ENVS=64
+export HEADLESS=True
+export NAVRL_SEED="${SEED}"
+export FILE=ppo_navrl_perception_transformer.yaml
+export TASK=navrl_task
+unset ALLOW_CONCURRENT NAVRL_NETWORK_OVERRIDE
+unset NAVRL_GENERAL_EVAL NAVRL_INTERACTIVE NAVRL_BULK_EVAL NAVRL_BULK_EVAL_JSON
+unset NAVRL_GENERAL_RESULTS_JSON NAVRL_EVAL_CHECKPOINT NAVRL_EVAL_TARGET_SPEED_FINAL
+unset NAVRL_EVAL_FULL_DISTRIBUTION
+unset NAVRL_EVAL_RUN_NONCE NAVRL_EVAL_PROFILE NAVRL_SIM_PHYSICS_CONTRACT
+unset NAVRL_LEGACY_VISION NAVRL_OOB_PROBE
+# This is a selector A/B, not a recovery descendant. Clear stale recovery provenance before the
+# common continuation launcher serializes the environment into its output checkpoint.
+unset NAVRL_RECOVERY_STAGE NAVRL_RECOVERY_SOURCE_EPOCH
+unset NAVRL_RECOVERY_SOURCE_SHA256 NAVRL_RECOVERY_SMOKE_REQUIRED_EPOCHS
+unset NAVRL_RECOVERY_SMOKE_BARS NAVRL_RECOVERY_EVAL_ATTESTATION_SHA256
+unset NAVRL_RECOVERY_EVAL_ATTESTATION_B64
+export NAVRL_TARGET_SPEED_RAMP_EPOCHS=300
+export NAVRL_OBSTACLE_TTC_IDLE_S=30.0
+export NAVRL_OBSTACLE_TTC_MIN_SPEED=0.15
+export NAVRL_CORRIDOR_HORIZON_M=6.0
+export NAVRL_CORRIDOR_MIN_WIDTH_M=0.55
+export NAVRL_FOV_CURRICULUM_EPOCHS=3000
+export NAVRL_DETECTOR_MIN_PIXELS=2
+export NAVRL_DETECTOR_THRESHOLD=0.55
+unset NAVRL_DETECTOR_CHECKPOINT
+export NAVRL_DETECTION_DROPOUT=0.3
+export NAVRL_RGB_NOISE_STD=0.015
+export NAVRL_DEPTH_NOISE_STD=0.02
+export NAVRL_MAX_TILT_DEG=45.0
+
+# Freeze optimizer/safety settings as part of the A/B. Inherited shell values must not make one
+# machine repeat the failed 1e-4 update geometry or silently disable rollback/margin protection.
+export NAVRL_LEARNING_RATE=3e-5
+export NAVRL_RESET_ACTOR_OPTIMIZER=0
+export NAVRL_ACTION_DIAG=1
+export NAVRL_PPO_LOG_RATIO_CLAMP=10.0
+export NAVRL_PPO_KL_STOP=0.04
+export NAVRL_PPO_EPOCH_ROLLBACK=1
+export NAVRL_PPO_ROLLBACK_LR_FACTOR=0.5
+export NAVRL_PPO_ROLLBACK_MIN_LR=1e-6
+export NAVRL_PPO_ROLLBACK_PATIENCE=5
+export NAVRL_DENSITY_GUARD_WINDOW_EPOCHS=50
+export NAVRL_DENSITY_GUARD_MIN_EPOCHS=100
+export NAVRL_DENSITY_GUARD_MIN_PEAK=0.50
+export NAVRL_DENSITY_GUARD_DROP=0.25
+export NAVRL_DENSITY_GUARD_PATIENCE=25
+export NAVRL_LATENT_MARGIN=2.0,1.25,2.0,2.0
+export NAVRL_LATENT_MARGIN_COEF=0.01
 
 if [[ ! -f "${CKPT}" ]]; then
     echo "[ttc-ab] checkpoint not found: ${CKPT}" >&2
@@ -92,10 +149,46 @@ if [[ ! -f "${CKPT}" ]]; then
     exit 2
 fi
 
+"${PYTHON:-/home/fair/miniconda3/envs/aerialgym/bin/python}" - "${CKPT}" <<'PY'
+import hashlib
+from pathlib import Path
+import sys
+
+import torch
+
+path = Path(sys.argv[1])
+want_sha256 = "99da09e7d37a417f6628a6fc1f2180d70a41de1598a0552491df5a438c61ab37"
+digest = hashlib.sha256(path.read_bytes()).hexdigest()
+checkpoint = torch.load(path, map_location="cpu", weights_only=False)
+state = checkpoint.get("env_state") or {}
+problems = []
+if digest != want_sha256:
+    problems.append(f"SHA-256={digest}, expected the audited ep3250 source")
+if int(checkpoint.get("epoch", -1)) != 3250:
+    problems.append(f"epoch={checkpoint.get('epoch')!r}, expected 3250")
+if int(state.get("n_bars_active", -1)) != 70:
+    problems.append(f"bars={state.get('n_bars_active')!r}, expected 70")
+if state.get("cfg_action_policy") != "squashed_gaussian":
+    problems.append(f"action policy={state.get('cfg_action_policy')!r}, expected squashed_gaussian")
+if state.get("cfg_obstacle_selector") != "cluster_sector":
+    problems.append(f"source selector={state.get('cfg_obstacle_selector')!r}, expected cluster_sector")
+if problems:
+    print("[ttc-ab] refusing unverified warm-start checkpoint:", file=sys.stderr)
+    for problem in problems:
+        print(f"  - {problem}", file=sys.stderr)
+    raise SystemExit(2)
+print("[ttc-ab] checkpoint provenance/SHA-256 OK")
+PY
+
 echo "[ttc-ab] ARM=${ARM}  selector=${NAVRL_OBSTACLE_SELECTOR}  bars=${NAVRL_NUM_BARS} (fixed)"
 echo "[ttc-ab] warm-start ${CKPT}"
 echo "[ttc-ab] gate: capture >= +2.0pp AND crash <= -2.0pp vs the baseline arm, held-out, at the FINAL ckpt"
 
+if [[ "${NAVRL_PREFLIGHT_ONLY:-0}" == "1" ]]; then
+    echo "[ttc-ab] PREFLIGHT PASS (training not started)"
+    exit 0
+fi
+
 # 4 GB preset -> v2 contract. Both arms inherit arena, sensors, reward and target motion from
 # train_navrl_v2_search.sh rather than restating them here.
-exec ./train_navrl_v2_search_4gb.sh --checkpoint "${CKPT}" --branch_run "$@"
+exec ./train_navrl_v2_search_4gb.sh --checkpoint "${CKPT}" --branch_run

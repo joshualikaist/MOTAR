@@ -3,8 +3,8 @@
 #
 # v2 differs from v1 in the TASK, not the observation width (both 898-D), so a v2 checkpoint
 # loads without error in the v1 arena and would be scored on a completely different problem.
-# This script pins the whole v2 contract and refuses to run against a checkpoint whose
-# recorded arena provenance disagrees.
+# This script pins the v2 evaluation contract, checks checkpoint provenance, and requires one
+# machine-readable bulk-evaluation JSON result per density before writing a consolidated CSV.
 #
 # ALWAYS pass last_gen_ppo_ep_* -- gen_ppo.pth is the best-reward (low-density) policy.
 #
@@ -12,14 +12,179 @@
 #   ./eval_navrl_v2_density_sweep.sh runs/ppo_XXXX_v2/nn/last_gen_ppo_ep_9000.pth
 #   ./eval_navrl_v2_density_sweep.sh <ckpt> 2049                 # episodes per cell
 #   NUM_ENVS=64 GPU4GB=1 ./eval_navrl_v2_density_sweep.sh <ckpt> # 4 GB machine (1650 Ti)
+#
+# Optional outputs/conditions:
+#   NAVRL_V2_DENSITIES="70 150 210 280"
+#   NAVRL_V2_RESULT_DIR=/absolute/or/caller-relative/output/directory
 set -euo pipefail
+
+CALLER_PWD="${PWD}"
+CKPT_INPUT="${1:?usage: $0 <last_gen_ppo_ep_XXXX.pth> [games_per_cell]}"
+GAMES="${2:-2049}"
+if (( $# > 2 )); then
+    echo "[eval_v2] unexpected arguments: ${*:3}" >&2
+    exit 2
+fi
+
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
 export PYTHON="${PYTHON:-/home/fair/miniconda3/envs/aerialgym/bin/python}"
-export PATH="$(dirname "${PYTHON}"):${PATH}"
+if [[ "${PYTHON}" == */* ]]; then
+    export PATH="$(dirname "${PYTHON}"):${PATH}"
+fi
 export PYTHONNOUSERSITE=1
+# A held-out sweep is neither the single-environment interactive viewer nor the legacy general
+# evaluator. Inherited flags used to make the canonical 128-env bulk evaluation abort only after
+# Isaac Gym had initialized, wasting the run and leaving no attestation.
+unset NAVRL_GENERAL_EVAL NAVRL_INTERACTIVE NAVRL_GENERAL_RESULTS_JSON
+unset NAVRL_BULK_EVAL NAVRL_BULK_EVAL_JSON NAVRL_EVAL_CHECKPOINT NAVRL_EVAL_RUN_NONCE
+unset NAVRL_LEGACY_VISION NAVRL_OOB_PROBE
 
-# ---- v2 ARENA / TASK contract (must match train_navrl_v2_search.sh exactly) ----
+if [[ "${CKPT_INPUT}" == /* ]]; then
+    CKPT="${CKPT_INPUT}"
+else
+    # A relative argument belongs to the directory from which the user invoked this script, not
+    # this script's own directory (we cd above so all local launchers/configs remain resolvable).
+    CKPT="${CALLER_PWD}/${CKPT_INPUT}"
+fi
+if [[ ! -f "${CKPT}" ]]; then
+    echo "[eval_v2] checkpoint not found: ${CKPT}" >&2
+    exit 2
+fi
+CKPT="$(readlink -f -- "${CKPT}")"
+REQUESTED_DETECTOR_CHECKPOINT="${NAVRL_DETECTOR_CHECKPOINT:-}"
+
+# The token selector is part of the learned observation semantics. Recover it from the checkpoint
+# instead of trusting an inherited shell value; this also makes the registered cluster-vs-TTC A/B
+# evaluable without letting the caller accidentally score an arm with the other arm's selector.
+CHECKPOINT_META="$(
+    "${PYTHON}" - "${CKPT}" <<'PY'
+import math
+import os
+import sys
+import torch
+
+checkpoint = torch.load(sys.argv[1], map_location="cpu", weights_only=False)
+state = checkpoint.get("env_state") or {}
+selector = str(state.get("cfg_obstacle_selector", "")).strip()
+if selector not in {"cluster_sector", "ttc_sector"}:
+    raise SystemExit(
+        "[eval_v2] checkpoint has no supported v2 obstacle selector: %r" % selector
+    )
+force = os.environ.get("NAVRL_V2_FORCE", "0") == "1"
+defaults = {
+    "cfg_obstacle_ttc_idle_s": 30.0,
+    "cfg_obstacle_ttc_min_speed": 0.15,
+    "cfg_fov_curriculum_epochs": 3000.0,
+    "cfg_detector_min_pixels": 2.0,
+    "cfg_detector_threshold": 0.55,
+    "cfg_detector_checkpoint_sha256": "",
+    "cfg_perception_perturb": False,
+    "cfg_detection_dropout": 0.3,
+    "cfg_rgb_noise_std": 0.015,
+    "cfg_depth_noise_std": 0.02,
+    "cfg_max_tilt_deg": 45.0,
+    "cfg_tilt_comp": True,
+}
+missing = [key for key in defaults if key not in state]
+if missing and not force:
+    raise SystemExit(
+        "[eval_v2] checkpoint lacks same-shape perception/control provenance: "
+        + ", ".join(missing)
+    )
+if missing:
+    print(
+        "[eval_v2] WARNING (forced): inferring legacy defaults for " + ", ".join(missing),
+        file=sys.stderr,
+    )
+
+def value(key):
+    return state.get(key, defaults[key])
+
+numeric_keys = {
+    "cfg_obstacle_ttc_idle_s",
+    "cfg_obstacle_ttc_min_speed",
+    "cfg_fov_curriculum_epochs",
+    "cfg_detector_min_pixels",
+    "cfg_detector_threshold",
+    "cfg_detection_dropout",
+    "cfg_rgb_noise_std",
+    "cfg_depth_noise_std",
+    "cfg_max_tilt_deg",
+}
+for key in numeric_keys:
+    number = float(value(key))
+    if not math.isfinite(number):
+        raise SystemExit(f"[eval_v2] checkpoint has non-finite {key}: {number}")
+for key in ("cfg_fov_curriculum_epochs", "cfg_detector_min_pixels"):
+    number = float(value(key))
+    if not number.is_integer() or number < 0:
+        raise SystemExit(f"[eval_v2] checkpoint has invalid integer {key}: {number}")
+detector_sha = str(value("cfg_detector_checkpoint_sha256")).strip()
+if detector_sha and (
+    len(detector_sha) != 64
+    or any(char not in "0123456789abcdef" for char in detector_sha.lower())
+):
+    raise SystemExit("[eval_v2] checkpoint detector SHA-256 is malformed")
+print(
+    selector,
+    str(state.get("cfg_recovery_stage", "")).strip() or "-",
+    int(checkpoint.get("epoch", -1)),
+    int(state.get("cfg_recovery_source_epoch", -1)),
+    int(state.get("cfg_recovery_smoke_required_epochs", -1)),
+    int(state.get("n_bars_active", -1)),
+    float(value("cfg_obstacle_ttc_idle_s")),
+    float(value("cfg_obstacle_ttc_min_speed")),
+    int(float(value("cfg_fov_curriculum_epochs"))),
+    int(float(value("cfg_detector_min_pixels"))),
+    float(value("cfg_detector_threshold")),
+    float(value("cfg_detection_dropout")),
+    float(value("cfg_rgb_noise_std")),
+    float(value("cfg_depth_noise_std")),
+    float(value("cfg_max_tilt_deg")),
+    detector_sha or "-",
+    int(bool(value("cfg_perception_perturb"))),
+    int(bool(value("cfg_tilt_comp"))),
+)
+PY
+)"
+read -r CHECKPOINT_SELECTOR RECOVERY_STAGE CHECKPOINT_EPOCH RECOVERY_SOURCE_EPOCH \
+    RECOVERY_REQUIRED_EPOCHS CHECKPOINT_BARS TTC_IDLE_S TTC_MIN_SPEED FOV_CURRICULUM_EPOCHS \
+    DETECTOR_MIN_PIXELS DETECTOR_THRESHOLD DETECTION_DROPOUT RGB_NOISE_STD DEPTH_NOISE_STD \
+    MAX_TILT_DEG DETECTOR_SHA PERCEPTION_PERTURB TILT_COMP <<< "${CHECKPOINT_META}"
+
+if [[ ! "${GAMES}" =~ ^[1-9][0-9]*$ ]]; then
+    echo "[eval_v2] games_per_cell must be a positive integer, got: ${GAMES}" >&2
+    exit 2
+fi
+
+# Pin the runtime physics profile as part of the evaluation contract.  Merely recording the
+# caller's inherited AERIAL_GYM_SIM_NAME is insufficient: base_sim_4gb has a different timestep,
+# so the same policy can receive a materially different score while the JSON otherwise looks
+# canonical.  GPU4GB is the only supported profile selector; NUM_ENVS and the sim name themselves
+# are outputs of that selector, not caller-overridable inputs.
+case "${GPU4GB:-0}" in
+    0|"")
+        export GPU4GB=0
+        export AERIAL_GYM_SIM_NAME=base_sim
+        export NUM_ENVS=128
+        export NAVRL_EVAL_PROFILE=main
+        export NAVRL_SIM_PHYSICS_CONTRACT=base_sim_dt0.01
+        ;;
+    1)
+        export GPU4GB=1
+        export AERIAL_GYM_SIM_NAME=base_sim_4gb
+        export NUM_ENVS=64
+        export NAVRL_EVAL_PROFILE=4gb
+        export NAVRL_SIM_PHYSICS_CONTRACT=base_sim_4gb_dt0.01_buffers
+        ;;
+    *)
+        echo "[eval_v2] GPU4GB must be 0 or 1; got: ${GPU4GB}" >&2
+        exit 2
+        ;;
+esac
+
+# ---- v2 ARENA / TASK contract (fixed evaluation condition) ----
 export NAVRL_ARENA_XY=40
 export NAVRL_ARENA_Z=3
 export NAVRL_BAR_POOL=bars_h3
@@ -27,42 +192,173 @@ export NAVRL_PLACEMENT_MODE=navrl_band
 export NAVRL_PLACEMENT_TOUCH_M=0.4
 export NAVRL_PLACEMENT_GAP_M=1.6
 export NAVRL_EPISODE_LEN_STEPS=600
-export NAVRL_MAX_BARS="${NAVRL_MAX_BARS:-300}"
+export NAVRL_MAX_BARS=300
 export NAVRL_BAR_X_MIN=0.0
 export NAVRL_BAR_X_MAX=1.0
 export NAVRL_GENERAL_GOAL_DIST_MIN=6
 export NAVRL_GENERAL_GOAL_DIST_MAX=28
+export NAVRL_K_COMPETENCE=1
 export NAVRL_K_FINAL=28
 export NAVRL_K_MIN_FINAL=20
 
-# ---- representation contract (unchanged from v1: same policy family) ----
+# A sweep cell must stay at the requested density. An inherited curriculum flag could otherwise
+# promote density during a long evaluation even though NAVRL_NUM_BARS selected the initial value.
+export NAVRL_DENSITY_CURRICULUM=0
+export NAVRL_DENSITY_START=70
+export NAVRL_DENSITY_FINAL=300
+export NAVRL_DENSITY_STEP=15
+export NAVRL_DENSITY_THRESHOLD_START=0.80
+export NAVRL_DENSITY_THRESHOLD_END=0.70
+export NAVRL_DENSITY_THRESHOLD_SCHEDULE="70:0.82,85:0.77,100:0.72,115:0.70"
+export NAVRL_DENSITY_CHECK_EPS=16384
+export NAVRL_DENSITY_MIN_EPOCHS=1000
+unset NAVRL_FIXED_BARS NAVRL_CONTROLLED_ABLATION
+
+# v2 trains on moving targets sampled from U[0.3, 1.5] m/s after the short 300-epoch ramp. Leaving
+# these unset makes evaluation silently fall back to a static target; a stale NAVRL_TARGET_SPEED
+# instead fixes an arbitrary scalar speed. Pin the trained, final distribution explicitly.
+export NAVRL_TARGET_SPEED_MIN=0.3
+export NAVRL_TARGET_SPEED_FINAL=1.5
+export NAVRL_TARGET_SPEED_RAMP_EPOCHS=300
+export NAVRL_TARGET_PATTERN=mixed
+unset NAVRL_TARGET_SPEED
+# Evaluation is defined on the final training distribution, independent of the checkpoint's saved
+# curriculum clock. Without this explicit override, an early checkpoint silently evaluates at the
+# ramp's then-current upper speed while the result used to claim U[0.3,1.5].
+export NAVRL_EVAL_TARGET_SPEED_FINAL=1
+# Goal-distance and visibility difficulty are held-out conditions, not checkpoint state.  This
+# makes an early or malformed curriculum clock incapable of receiving an easier evaluation.
+export NAVRL_EVAL_FULL_DISTRIBUTION=1
+
+# ---- representation contract (fixed; observation width alone cannot detect semantic drift) ----
 export NAVRL_VISION=1
-export NAVRL_PERCEPTION="${NAVRL_PERCEPTION:-1}"
+export NAVRL_PERCEPTION=1
 export NAVRL_GENERAL_TRAIN=1
-export NAVRL_TILT_COMP=1
+export NAVRL_PERCEPTION_PERTURB="${PERCEPTION_PERTURB}"
+export NAVRL_TILT_COMP="${TILT_COMP}"
 export NAVRL_LIDAR_RANGE=12
 export NAVRL_LIDAR_HBEAMS=72
 export NAVRL_LIDAR_VBEAMS=4
 export NAVRL_MAX_OBSTACLES=8
-export NAVRL_OBSTACLE_SELECTOR="${NAVRL_OBSTACLE_SELECTOR:-cluster_sector}"
-export NAVRL_OBSTACLE_CLUSTER_GAP_M="${NAVRL_OBSTACLE_CLUSTER_GAP_M:-0.45}"
-export NAVRL_OBSTACLE_SECTORS="${NAVRL_OBSTACLE_SECTORS:-8}"
+export NAVRL_OBSTACLE_SELECTOR="${CHECKPOINT_SELECTOR}"
+export NAVRL_OBSTACLE_CLUSTER_GAP_M=0.45
+export NAVRL_OBSTACLE_SECTORS=8
 export NAVRL_OBSTACLE_SUPPRESS_DEG=10
 export NAVRL_OBSTACLE_FOV_DEG=240
-export NAVRL_CORRIDOR_TOKENS="${NAVRL_CORRIDOR_TOKENS:-0}"
+export NAVRL_OBSTACLE_TTC_IDLE_S="${TTC_IDLE_S}"
+export NAVRL_OBSTACLE_TTC_MIN_SPEED="${TTC_MIN_SPEED}"
+export NAVRL_CORRIDOR_TOKENS=0
+export NAVRL_CORRIDOR_HORIZON_M=6.0
+export NAVRL_CORRIDOR_MIN_WIDTH_M=0.55
 export NAVRL_MAX_VELOCITY=2.5
 export NAVRL_ALT_HOLD_VMAX=2.5
 export NAVRL_YAW_RATE_MAX=3.0
+export NAVRL_MAX_TILT_DEG="${MAX_TILT_DEG}"
+export NAVRL_FOV_CURRICULUM_EPOCHS="${FOV_CURRICULUM_EPOCHS}"
+export NAVRL_DETECTOR_MIN_PIXELS="${DETECTOR_MIN_PIXELS}"
+export NAVRL_DETECTOR_THRESHOLD="${DETECTOR_THRESHOLD}"
+export NAVRL_DETECTION_DROPOUT="${DETECTION_DROPOUT}"
+export NAVRL_RGB_NOISE_STD="${RGB_NOISE_STD}"
+export NAVRL_DEPTH_NOISE_STD="${DEPTH_NOISE_STD}"
+export NAVRL_OOB_MARGIN=1.0
+export FILE=ppo_navrl_perception_transformer.yaml
+export TASK=navrl_task
 
-CKPT="${1:?usage: $0 <last_gen_ppo_ep_XXXX.pth> [games_per_cell]}"
-GAMES="${2:-2049}"
-# Same per-area density schedule as the v1 sweep, over the full 1600 m^2 v2 arena:
+if [[ "${DETECTOR_SHA}" == "-" ]]; then
+    unset NAVRL_DETECTOR_CHECKPOINT
+    export NAVRL_EXPECTED_DETECTOR_SHA256=""
+else
+    if [[ -z "${REQUESTED_DETECTOR_CHECKPOINT}" || ! -f "${REQUESTED_DETECTOR_CHECKPOINT}" ]]; then
+        echo "[eval_v2] checkpoint requires its learned detector; set NAVRL_DETECTOR_CHECKPOINT to the matching file." >&2
+        exit 2
+    fi
+    ACTUAL_DETECTOR_SHA="$(
+        "${PYTHON}" - "${REQUESTED_DETECTOR_CHECKPOINT}" <<'PY'
+import hashlib
+from pathlib import Path
+import sys
+
+digest = hashlib.sha256()
+with Path(sys.argv[1]).open("rb") as stream:
+    for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+        digest.update(chunk)
+print(digest.hexdigest())
+PY
+    )"
+    if [[ "${ACTUAL_DETECTOR_SHA}" != "${DETECTOR_SHA}" ]]; then
+        echo "[eval_v2] detector checkpoint SHA-256 mismatch." >&2
+        exit 2
+    fi
+    export NAVRL_DETECTOR_CHECKPOINT="${REQUESTED_DETECTOR_CHECKPOINT}"
+    export NAVRL_EXPECTED_DETECTOR_SHA256="${DETECTOR_SHA}"
+fi
+
+# Evaluation must use the distribution encoded in the checkpoint. Inherited experiment variables
+# would otherwise select a different action model or network while appearing to be the same run.
+unset NAVRL_ACTION_POLICY NAVRL_ACTION_STD NAVRL_ACTION_MU_SCALE NAVRL_TRUNCATED_DMIN
+unset NAVRL_ENTROPY_COEF NAVRL_LEARNING_RATE NAVRL_NETWORK_OVERRIDE
+
+if [[ "${RECOVERY_STAGE}" == "smoke" ]]; then
+    if [[ "${NAVRL_V2_FORCE:-0}" == "1" ]]; then
+        echo "[eval_v2] NAVRL_V2_FORCE is forbidden for a curriculum-unlocking recovery evaluation." >&2
+        exit 2
+    fi
+    if [[ "${NAVRL_EVAL_PROFILE}" != "main" ]]; then
+        echo "[eval_v2] recovery smoke attestation requires the canonical main/base_sim/128-env runtime." >&2
+        exit 2
+    fi
+    export NAVRL_SEED=42
+else
+    export NAVRL_SEED="${NAVRL_SEED:-42}"
+fi
+export NAVRL_BULK_EVAL=1
+export NAVRL_EVAL_CHECKPOINT="${CKPT}"
+
+# Same per-area schedule as the v1 sweep, over the full 1600 m^2 v2 arena:
 # 70/150/210/280 bars = 4.4 / 9.4 / 13.1 / 17.5 per 100 m^2.
-DENSITIES="${NAVRL_V2_DENSITIES:-70 150 210 280}"
+DENSITIES_TEXT="${NAVRL_V2_DENSITIES:-70 150 210 280}"
+read -r -a DENSITIES <<< "${DENSITIES_TEXT}"
+if [[ "${#DENSITIES[@]}" -eq 0 ]]; then
+    echo "[eval_v2] NAVRL_V2_DENSITIES must contain at least one density" >&2
+    exit 2
+fi
+for N in "${DENSITIES[@]}"; do
+    if [[ ! "${N}" =~ ^[1-9][0-9]*$ ]]; then
+        echo "[eval_v2] density must be an integer in [1, ${NAVRL_MAX_BARS}], got: ${N}" >&2
+        exit 2
+    fi
+    N_VALUE=$((10#${N}))
+    if (( N_VALUE > NAVRL_MAX_BARS )); then
+        echo "[eval_v2] density must be an integer in [1, ${NAVRL_MAX_BARS}], got: ${N}" >&2
+        exit 2
+    fi
+done
 
-# ---- provenance gate: refuse a checkpoint that was not trained in this arena ----
-# NAVRL_V2_FORCE is honored INSIDE the gate: it used to be checked only after the Python block had
-# already exited 2 under `set -e`, so the documented override never worked.
+# A recovery smoke evaluation is a machine-enforced promotion gate, not a casual sweep. Refuse an
+# incomplete/intermediate checkpoint or a cheaper/different condition before spending GPU time.
+if [[ "${RECOVERY_STAGE}" == "smoke" ]]; then
+    if (( ${#DENSITIES[@]} != 1 || 10#${DENSITIES[0]} != 130 )); then
+        echo "[eval_v2] recovery smoke requires exactly NAVRL_V2_DENSITIES=130." >&2
+        exit 2
+    fi
+    if (( GAMES < 2049 )); then
+        echo "[eval_v2] recovery smoke requires at least 2049 held-out episodes; got ${GAMES}." >&2
+        exit 2
+    fi
+    if (( RECOVERY_SOURCE_EPOCH != 9500 || RECOVERY_REQUIRED_EPOCHS != 100 \
+          || CHECKPOINT_EPOCH != 9600 || CHECKPOINT_BARS != 130 )); then
+        echo "[eval_v2] recovery smoke checkpoint is incomplete or malformed: epoch=${CHECKPOINT_EPOCH} bars=${CHECKPOINT_BARS}." >&2
+        exit 2
+    fi
+    RECOVERY_RUN_ROOT="$(dirname "$(dirname "${CKPT}")")"
+    if [[ ! -f "${RECOVERY_RUN_ROOT}/.aerial_training_finished" ]]; then
+        echo "[eval_v2] recovery smoke lacks its normal-completion marker." >&2
+        exit 2
+    fi
+fi
+
+# ---- provenance gate: refuse a checkpoint that was not trained under the v2 contract ----
+# NAVRL_V2_FORCE is honored inside the gate so an explicit override works under `set -e`.
 NAVRL_V2_FORCE="${NAVRL_V2_FORCE:-0}" "${PYTHON}" - "${CKPT}" <<'PY'
 import os
 import sys
@@ -71,8 +367,8 @@ import torch
 force = os.environ.get("NAVRL_V2_FORCE", "0") == "1"
 ckpt = torch.load(sys.argv[1], map_location="cpu", weights_only=False)
 state = ckpt.get("env_state") or {}
-# Every field the environment is actually built from. Anything checked by the preflight contract
-# but not here would let a silently different task through the evaluator.
+# Every fixed task/representation field whose mismatch could still load at the same observation
+# width. Action-policy provenance is deliberately restored by runner.py rather than hard-coded.
 want = {
     "cfg_arena_xy": 40.0,
     "cfg_arena_z": 3.0,
@@ -83,20 +379,97 @@ want = {
     "cfg_episode_len_steps": 600.0,
     "cfg_bar_x_min": 0.0,
     "cfg_bar_x_max": 1.0,
+    "cfg_general_goal_dist_min": 6.0,
+    "cfg_general_goal_dist_max": 28.0,
+    "cfg_lidar_max_range": 12.0,
+    "cfg_lidar_hbeams": 72.0,
+    "cfg_lidar_vbeams": 4.0,
+    "cfg_max_obstacles": 8.0,
+    "cfg_token_fov_deg": 240.0,
+    "cfg_obstacle_suppress_deg": 10.0,
+    "cfg_obstacle_selector": os.environ["NAVRL_OBSTACLE_SELECTOR"],
+    "cfg_obstacle_cluster_gap_m": 0.45,
+    "cfg_obstacle_sectors": 8.0,
+    "cfg_obstacle_ttc_idle_s": float(os.environ["NAVRL_OBSTACLE_TTC_IDLE_S"]),
+    "cfg_obstacle_ttc_min_speed": float(os.environ["NAVRL_OBSTACLE_TTC_MIN_SPEED"]),
+    "cfg_corridor_tokens": 0.0,
+    "cfg_corridor_horizon_m": 6.0,
+    "cfg_corridor_min_width_m": 0.55,
+    "cfg_fov_curriculum_epochs": float(os.environ["NAVRL_FOV_CURRICULUM_EPOCHS"]),
+    "cfg_detector_min_pixels": float(os.environ["NAVRL_DETECTOR_MIN_PIXELS"]),
+    "cfg_detector_threshold": float(os.environ["NAVRL_DETECTOR_THRESHOLD"]),
+    "cfg_detector_checkpoint_sha256": os.environ["NAVRL_EXPECTED_DETECTOR_SHA256"],
+    "cfg_perception_perturb": float(os.environ["NAVRL_PERCEPTION_PERTURB"]),
+    "cfg_detection_dropout": float(os.environ["NAVRL_DETECTION_DROPOUT"]),
+    "cfg_rgb_noise_std": float(os.environ["NAVRL_RGB_NOISE_STD"]),
+    "cfg_depth_noise_std": float(os.environ["NAVRL_DEPTH_NOISE_STD"]),
+    "cfg_max_velocity": 2.5,
+    "cfg_yaw_rate_max": 3.0,
+    "cfg_max_tilt_deg": float(os.environ["NAVRL_MAX_TILT_DEG"]),
+    "cfg_tilt_comp": float(os.environ["NAVRL_TILT_COMP"]),
+    "cfg_target_motion_model": "symmetric_local_steer_v2_heading_continuity90",
+    "cfg_target_pattern": "mixed",
+    "cfg_target_speed_min": 0.3,
+    "cfg_target_speed_final": 1.5,
+    "cfg_target_speed_fixed": -1.0,
+    "cfg_target_speed_ramp_epochs": 300.0,
+    "cfg_target_speed_ramp_start_epochs": 0.0,
+    "cfg_general_train": 1.0,
+    "cfg_oob_margin": 1.0,
+    "cfg_alt_hold_vmax": 2.5,
+    "cfg_action_policy": "squashed_gaussian",
+    "cfg_action_std": "0.35,0.35,0.05,0.08",
+    "cfg_action_mu_scale": "1.0,0.4,1.0,1.0",
 }
+bad = []
+if state.get("cfg_recovery_stage") == "smoke":
+    # The held-out recovery cell unlocks further training, so it must also prove that the smoke
+    # was produced by the exact executable/safety contract rather than merely a shape-compatible
+    # policy. Check this before spending 2,049 GPU episodes.
+    want.update(
+        {
+            "cfg_training_seed": 1.0,
+            "cfg_training_num_envs": 128.0,
+            "cfg_training_file": "ppo_navrl_perception_transformer.yaml",
+            "cfg_training_task": "navrl_task",
+            "cfg_training_sim": "base_sim",
+            "cfg_training_profile": "main",
+            "cfg_ppo_horizon": 32.0,
+            "cfg_action_learning_rate": 5e-6,
+            "current_action_learning_rate": 5e-6,
+            "cfg_ppo_log_ratio_clamp": 10.0,
+            "cfg_ppo_kl_stop": 0.04,
+            "cfg_ppo_epoch_rollback": 1.0,
+            "cfg_ppo_rollback_lr_factor": 0.5,
+            "cfg_ppo_rollback_min_lr": 1e-6,
+            "cfg_ppo_rollback_patience": 5.0,
+            "cfg_density_guard_window_epochs": 50.0,
+            "cfg_density_guard_min_epochs": 100.0,
+            "cfg_density_guard_min_peak": 0.5,
+            "cfg_density_guard_drop": 0.25,
+            "cfg_density_guard_patience": 25.0,
+            "cfg_latent_margin": "2.0,1.25,2.0,2.0",
+            "cfg_lateral_latent_margin_coef": 0.01,
+            "num_task_steps": 307200.0,
+            "k_max_cur": 28.0,
+            "k_min_cur": 20.0,
+        }
+    )
+    if int(ckpt.get("frame", -1)) != 39321600:
+        bad.append(
+            f"checkpoint.frame: checkpoint={ckpt.get('frame')!r} expected=39321600"
+        )
 verb = "WARNING (forced)" if force else "REFUSING"
-missing = [k for k in want if state.get(k) is None]
+missing = [key for key in want if state.get(key) is None]
 if missing:
     print(
-        "[eval_v2] %s: checkpoint has no v2 arena provenance (%s).\n"
-        "          It was trained before arena provenance existed, or in the v1 arena.\n"
+        "[eval_v2] %s: checkpoint lacks required v2 provenance (%s).\n"
         "          Re-check the run, or set NAVRL_V2_FORCE=1 to override deliberately."
         % (verb, ", ".join(sorted(missing))),
         file=sys.stderr,
     )
     if not force:
         sys.exit(2)
-bad = []
 for key, expected in want.items():
     got = state.get(key)
     if got is None:
@@ -109,13 +482,13 @@ for key, expected in want.items():
     if not ok:
         bad.append(f"{key}: checkpoint={got} expected={expected}")
 if bad:
-    print("[eval_v2] %s: arena contract mismatch:\n  " % verb + "\n  ".join(bad), file=sys.stderr)
+    print("[eval_v2] %s: v2 contract mismatch:\n  " % verb + "\n  ".join(bad), file=sys.stderr)
     if not force:
         sys.exit(2)
 if missing or bad:
     sys.exit(0)
 print(
-    "[eval_v2] arena provenance OK | %.0fx%.0f m, pool=%s, placement=%s, %.0f steps"
+    "[eval_v2] provenance OK | %.0fx%.0f m, pool=%s, placement=%s, %.0f steps"
     % (
         state["cfg_arena_xy"],
         state["cfg_arena_xy"],
@@ -126,17 +499,393 @@ print(
 )
 PY
 
+echo "[eval_v2] same-shape | fov_curriculum=${FOV_CURRICULUM_EPOCHS} detector_pixels=${DETECTOR_MIN_PIXELS} detector_threshold=${DETECTOR_THRESHOLD} ttc=${TTC_IDLE_S}/${TTC_MIN_SPEED}"
+echo "[eval_v2] runtime=${NAVRL_EVAL_PROFILE}/${AERIAL_GYM_SIM_NAME} envs=${NUM_ENVS} physics=${NAVRL_SIM_PHYSICS_CONTRACT}"
+if [[ "${NAVRL_PREFLIGHT_ONLY:-0}" == "1" ]]; then
+    echo "[eval_v2] PREFLIGHT PASS (evaluation not started)"
+    exit 0
+fi
+
+RUN_NAME="$(basename "$(dirname "$(dirname "${CKPT}")")")"
+STAMP="$(date +%y%m%d_%H%M%S)"
+RESULT_DIR="${NAVRL_V2_RESULT_DIR:-train_session_logs/eval_v2_${RUN_NAME}_${STAMP}}"
+if [[ "${RESULT_DIR}" != /* ]]; then
+    # User-supplied relative output paths follow the same caller-relative rule as checkpoints.
+    if [[ -n "${NAVRL_V2_RESULT_DIR:-}" ]]; then
+        RESULT_DIR="${CALLER_PWD}/${RESULT_DIR}"
+    else
+        RESULT_DIR="${PWD}/${RESULT_DIR}"
+    fi
+fi
+if [[ -e "${RESULT_DIR}" ]]; then
+    echo "[eval_v2] refusing to overwrite existing result directory: ${RESULT_DIR}" >&2
+    exit 2
+fi
+mkdir -p "${RESULT_DIR}"
+RESULT_CSV="${RESULT_DIR}/results.csv"
+EVALUATOR_SCRIPT="$(readlink -f -- "${BASH_SOURCE[0]}")"
+CHECKPOINT_SNAPSHOT="${RESULT_DIR}/checkpoint_snapshot.pth"
+
+sha256_file() {
+    "${PYTHON}" - "$1" <<'PY'
+import hashlib
+from pathlib import Path
+import sys
+
+digest = hashlib.sha256()
+with Path(sys.argv[1]).open("rb") as stream:
+    for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+        digest.update(chunk)
+print(digest.hexdigest())
+PY
+}
+
+# Evaluate an immutable byte snapshot and bind it back to the named source checkpoint.  Checking
+# the source both before and after every cell prevents a path swap from attaching an old score to
+# new policy bytes.  A reflink is used when supported, but it is still a distinct CoW inode.
+SOURCE_CHECKPOINT_SHA256="$(sha256_file "${CKPT}")"
+cp --reflink=auto -- "${CKPT}" "${CHECKPOINT_SNAPSHOT}"
+chmod 0444 "${CHECKPOINT_SNAPSHOT}"
+SNAPSHOT_CHECKPOINT_SHA256="$(sha256_file "${CHECKPOINT_SNAPSHOT}")"
+if [[ "${SNAPSHOT_CHECKPOINT_SHA256}" != "${SOURCE_CHECKPOINT_SHA256}" ]]; then
+    echo "[eval_v2] checkpoint snapshot SHA-256 mismatch; refusing evaluation." >&2
+    exit 3
+fi
+EVALUATOR_SCRIPT_SHA256="$(sha256_file "${EVALUATOR_SCRIPT}")"
+
+append_result_csv() {
+    local result_json="$1"
+    local expected_bars="$2"
+    local cell_log="$3"
+    local receipt_json="$4"
+    local evaluation_nonce="$5"
+    local started_at_utc="$6"
+    "${PYTHON}" - "${result_json}" "${RESULT_CSV}" "${expected_bars}" "${GAMES}" \
+        "${CKPT}" "${cell_log}" "${NAVRL_SEED}" "${SOURCE_CHECKPOINT_SHA256}" \
+        "${CHECKPOINT_SNAPSHOT}" "${SNAPSHOT_CHECKPOINT_SHA256}" \
+        "${EVALUATOR_SCRIPT}" "${EVALUATOR_SCRIPT_SHA256}" "${receipt_json}" \
+        "${evaluation_nonce}" "${started_at_utc}" <<'PY'
+import csv
+from datetime import datetime, timezone
+import hashlib
+import json
+import math
+import os
+import sys
+from pathlib import Path
+
+(
+    json_path,
+    csv_path,
+    bars_text,
+    games_text,
+    checkpoint,
+    log_path,
+    seed_text,
+    checkpoint_sha256,
+    checkpoint_snapshot,
+    checkpoint_snapshot_sha256,
+    evaluator_script,
+    evaluator_script_sha256,
+    receipt_path,
+    expected_nonce,
+    started_at_utc,
+) = sys.argv[1:]
+expected_bars = int(bars_text)
+expected_games = int(games_text)
+expected_seed = int(seed_text)
+
+def sha256_file(path):
+    digest = hashlib.sha256()
+    with Path(path).open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+with open(json_path, encoding="utf-8") as stream:
+    payload = json.load(stream)
+
+if payload.get("schema_version") != 1:
+    raise SystemExit(f"[eval_v2] unsupported bulk JSON schema: {payload.get('schema_version')!r}")
+if int(payload.get("requested_episodes", -1)) != expected_games:
+    raise SystemExit("[eval_v2] bulk JSON requested_episodes does not match the sweep cell")
+actual = int(payload.get("actual_episodes", -1))
+if actual < expected_games:
+    raise SystemExit(f"[eval_v2] incomplete bulk result: {actual} < {expected_games} episodes")
+
+condition = payload.get("condition") or {}
+if int(condition.get("bars", -1)) != expected_bars:
+    raise SystemExit("[eval_v2] bulk JSON density does not match the sweep cell")
+if int(condition.get("seed", -1)) != expected_seed:
+    raise SystemExit("[eval_v2] bulk JSON seed does not match the pinned held-out seed")
+if int(condition.get("num_envs", -1)) != int(os.environ["NUM_ENVS"]):
+    raise SystemExit("[eval_v2] bulk JSON num_envs does not match the pinned runtime profile")
+if condition.get("evaluation_nonce") != expected_nonce:
+    raise SystemExit("[eval_v2] bulk JSON nonce does not match this evaluator process")
+expected_sim_class = (
+    "BaseSimConfig" if os.environ["NAVRL_EVAL_PROFILE"] == "main" else "BaseSim4GBConfig"
+)
+physics_expected = {
+    "runtime_sim_config_class": expected_sim_class,
+    "physics_dt_s": 0.01,
+    "physics_substeps": 1,
+    "physics_steps_per_rl_step": 10,
+    "rl_step_dt_s": 0.1,
+}
+for name, expected in physics_expected.items():
+    got = condition.get(name)
+    if isinstance(expected, str):
+        matches = got == expected
+    else:
+        try:
+            matches = math.isfinite(float(got)) and abs(float(got) - expected) <= 1e-9
+        except (TypeError, ValueError):
+            matches = False
+    if not matches:
+        raise SystemExit(
+            f"[eval_v2] measured physics mismatch for {name}: {got!r} != {expected!r}"
+        )
+if abs(float(condition.get("goal_dist_min_m", -1.0)) - 6.0) > 1e-6:
+    raise SystemExit("[eval_v2] bulk JSON goal-distance minimum is not 6 m")
+if abs(float(condition.get("goal_dist_max_m", -1.0)) - 28.0) > 1e-6:
+    raise SystemExit("[eval_v2] bulk JSON goal-distance maximum is not 28 m")
+if condition.get("full_goal_distribution") is not True:
+    raise SystemExit("[eval_v2] bulk JSON did not use the full goal-distance distribution")
+if condition.get("fov_curriculum_saturated") is not True:
+    raise SystemExit("[eval_v2] bulk JSON did not use the final FOV distribution")
+if condition.get("target_pattern") != "mixed":
+    raise SystemExit("[eval_v2] bulk JSON target pattern is not the pinned v2 mixed condition")
+if condition.get("target_speed_mode") != "uniform":
+    raise SystemExit("[eval_v2] bulk JSON target speed mode is not uniform")
+if abs(float(condition.get("target_speed_min_mps", -1.0)) - 0.3) > 1e-6:
+    raise SystemExit("[eval_v2] bulk JSON target-speed minimum is not 0.3 m/s")
+if abs(float(condition.get("target_speed_max_mps", -1.0)) - 1.5) > 1e-6:
+    raise SystemExit("[eval_v2] bulk JSON target-speed maximum is not 1.5 m/s")
+if abs(float(condition.get("oob_margin_m", -1.0)) - 1.0) > 1e-6:
+    raise SystemExit("[eval_v2] bulk JSON OOB margin is not the trained 1.0 m")
+if Path(payload.get("checkpoint", "")).resolve() != Path(checkpoint).resolve():
+    raise SystemExit("[eval_v2] bulk JSON checkpoint does not match the requested checkpoint")
+if sha256_file(checkpoint) != checkpoint_sha256:
+    raise SystemExit("[eval_v2] source checkpoint changed during evaluation")
+if sha256_file(checkpoint_snapshot) != checkpoint_snapshot_sha256:
+    raise SystemExit("[eval_v2] evaluated checkpoint snapshot changed during evaluation")
+if checkpoint_snapshot_sha256 != checkpoint_sha256:
+    raise SystemExit("[eval_v2] evaluated snapshot is not byte-identical to the source checkpoint")
+if sha256_file(evaluator_script) != evaluator_script_sha256:
+    raise SystemExit("[eval_v2] evaluator script changed during evaluation")
+
+payload.update(
+    {
+        "checkpoint_sha256": checkpoint_sha256,
+        "evaluated_checkpoint_snapshot": str(Path(checkpoint_snapshot).resolve()),
+        "evaluated_checkpoint_snapshot_sha256": checkpoint_snapshot_sha256,
+        "evaluator_script": str(Path(evaluator_script).resolve()),
+        "evaluator_script_sha256": evaluator_script_sha256,
+        "evaluation_receipt": str(Path(receipt_path).resolve()),
+    }
+)
+
+outcome = payload.get("outcome") or {}
+counts = [int(outcome.get(name, -1)) for name in ("captured", "crash", "timeout")]
+if any(value < 0 for value in counts) or sum(counts) != actual:
+    raise SystemExit(
+        f"[eval_v2] invalid outcome accounting: captured+crash+timeout={sum(counts)} actual={actual}"
+    )
+for name in ("capture_rate", "crash_rate", "timeout_rate"):
+    value = float(outcome.get(name, float("nan")))
+    if not math.isfinite(value) or not 0.0 <= value <= 1.0:
+        raise SystemExit(f"[eval_v2] invalid {name}: {value!r}")
+for name, count in zip(("capture_rate", "crash_rate", "timeout_rate"), counts):
+    reported = float(outcome[name])
+    measured = count / actual
+    if abs(reported - measured) > 1e-9:
+        raise SystemExit(
+            f"[eval_v2] {name}={reported:.12g} disagrees with count/actual={measured:.12g}"
+        )
+
+causes = payload.get("crash_causes") or {}
+action = payload.get("action") or {}
+if action.get("policy") != "squashed_gaussian":
+    raise SystemExit("[eval_v2] bulk JSON action policy is not squashed_gaussian")
+
+def action_y(name):
+    values = action.get(name) or []
+    if len(values) < 2:
+        raise SystemExit(f"[eval_v2] bulk JSON action.{name} lacks the lateral component")
+    value = float(values[1])
+    if not math.isfinite(value):
+        raise SystemExit(f"[eval_v2] invalid action.{name}[1]: {value!r}")
+    return value
+
+# Retain a compact evaluator-level contract beside the task's measured condition so downstream
+# plotting can validate the whole sweep without relying on shell history.
+payload["v2_evaluation_contract"] = {
+    "schema_version": 1,
+    "runtime_sim": os.environ["AERIAL_GYM_SIM_NAME"],
+    "runtime_profile": os.environ["NAVRL_EVAL_PROFILE"],
+    "runtime_num_envs": int(os.environ["NUM_ENVS"]),
+    "sim_physics_contract": os.environ["NAVRL_SIM_PHYSICS_CONTRACT"],
+    "runtime_sim_config_class": condition["runtime_sim_config_class"],
+    "physics_dt_s": float(condition["physics_dt_s"]),
+    "physics_substeps": int(condition["physics_substeps"]),
+    "physics_steps_per_rl_step": int(condition["physics_steps_per_rl_step"]),
+    "rl_step_dt_s": float(condition["rl_step_dt_s"]),
+    "arena_xy_m": 40.0,
+    "goal_dist_min_m": 6.0,
+    "goal_dist_max_m": 28.0,
+    "full_goal_distribution": True,
+    "fov_curriculum_saturated": True,
+    "target_speed_distribution": "uniform",
+    "target_speed_min_mps": 0.3,
+    "target_speed_max_mps": 1.5,
+    "target_pattern": "mixed",
+    "lidar_beams": [4, 72],
+    "lidar_range_m": 12.0,
+    "obstacle_tokens": 8,
+    "obstacle_fov_deg": 240.0,
+    "obstacle_selector": os.environ["NAVRL_OBSTACLE_SELECTOR"],
+    "obstacle_ttc_idle_s": float(os.environ["NAVRL_OBSTACLE_TTC_IDLE_S"]),
+    "obstacle_ttc_min_speed": float(os.environ["NAVRL_OBSTACLE_TTC_MIN_SPEED"]),
+    "fov_curriculum_epochs": int(os.environ["NAVRL_FOV_CURRICULUM_EPOCHS"]),
+    "detector_checkpoint_sha256": os.environ["NAVRL_EXPECTED_DETECTOR_SHA256"],
+    "detector_min_pixels": int(os.environ["NAVRL_DETECTOR_MIN_PIXELS"]),
+    "detector_threshold": float(os.environ["NAVRL_DETECTOR_THRESHOLD"]),
+    "perception_perturb": bool(int(os.environ["NAVRL_PERCEPTION_PERTURB"])),
+    "detection_dropout": float(os.environ["NAVRL_DETECTION_DROPOUT"]),
+    "rgb_noise_std": float(os.environ["NAVRL_RGB_NOISE_STD"]),
+    "depth_noise_std": float(os.environ["NAVRL_DEPTH_NOISE_STD"]),
+    "max_tilt_deg": float(os.environ["NAVRL_MAX_TILT_DEG"]),
+    "tilt_comp": bool(int(os.environ["NAVRL_TILT_COMP"])),
+    "oob_margin_m": 1.0,
+    "seed": expected_seed,
+}
+Path(json_path).write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+receipt = {
+    "schema_version": 1,
+    "producer": "eval_navrl_v2_density_sweep.sh",
+    "started_at_utc": started_at_utc,
+    "completed_at_utc": datetime.now(timezone.utc).isoformat(),
+    "evaluation_nonce": expected_nonce,
+    "source_checkpoint": str(Path(checkpoint).resolve()),
+    "source_checkpoint_sha256": checkpoint_sha256,
+    "evaluated_checkpoint_snapshot": str(Path(checkpoint_snapshot).resolve()),
+    "evaluated_checkpoint_snapshot_sha256": checkpoint_snapshot_sha256,
+    "result_json": str(Path(json_path).resolve()),
+    "result_sha256": sha256_file(json_path),
+    "log_file": str(Path(log_path).resolve()),
+    "log_sha256": sha256_file(log_path),
+    "evaluator_script": str(Path(evaluator_script).resolve()),
+    "evaluator_script_sha256": evaluator_script_sha256,
+    "bars": expected_bars,
+    "seed": expected_seed,
+    "requested_episodes": expected_games,
+    "actual_episodes": actual,
+}
+receipt_file = Path(receipt_path)
+temporary_receipt = receipt_file.with_name(
+    f"{receipt_file.name}.tmp.{os.getpid()}"
+)
+temporary_receipt.write_text(
+    json.dumps(receipt, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+)
+os.replace(temporary_receipt, receipt_file)
+
+row = {
+    "bars": expected_bars,
+    "seed": expected_seed,
+    "density_per_100m2": expected_bars / 16.0,
+    "target_speed_distribution": "U[0.3,1.5]",
+    "target_pattern": "mixed",
+    "requested_episodes": expected_games,
+    "actual_episodes": actual,
+    "captured": counts[0],
+    "crash": counts[1],
+    "timeout": counts[2],
+    "capture_rate": float(outcome["capture_rate"]),
+    "crash_rate": float(outcome["crash_rate"]),
+    "timeout_rate": float(outcome["timeout_rate"]),
+    "bar_contact_rate": int(causes.get("bar_contact", 0)) / actual,
+    "below_rate": int(causes.get("below", 0)) / actual,
+    "above_rate": int(causes.get("above", 0)) / actual,
+    "out_of_bounds_rate": int(causes.get("out_of_bounds", 0)) / actual,
+    "action_policy": action.get("policy", ""),
+    "lateral_task_input_oob_rate": action_y("task_input_oob_rate"),
+    "lateral_executed_edge98_rate": action_y("executed_edge98_rate"),
+    "lateral_mean_abs": action_y("mean_abs"),
+    "mean_abs_delta_y": float(action.get("mean_abs_delta_y", float("nan"))),
+    "sign_flip_y_rate": float(action.get("sign_flip_y_rate", float("nan"))),
+    "json_file": str(Path(json_path).resolve()),
+    "log_file": str(Path(log_path).resolve()),
+}
+fields = list(row)
+csv_file = Path(csv_path)
+write_header = not csv_file.exists()
+with csv_file.open("a", encoding="utf-8", newline="") as stream:
+    writer = csv.DictWriter(stream, fieldnames=fields)
+    if write_header:
+        writer.writeheader()
+    writer.writerow(row)
+
+print(
+    "[eval_v2] result | bars=%d episodes=%d capture=%.4f crash=%.4f timeout=%.4f "
+    "lateral_oob=%.4f lateral_edge98=%.4f"
+    % (
+        expected_bars,
+        actual,
+        row["capture_rate"],
+        row["crash_rate"],
+        row["timeout_rate"],
+        row["lateral_task_input_oob_rate"],
+        row["lateral_executed_edge98_rate"],
+    )
+)
+PY
+}
+
 echo "[eval_v2] arena=${NAVRL_ARENA_XY}m pool=${NAVRL_BAR_POOL} placement=${NAVRL_PLACEMENT_MODE} \
 episode=${NAVRL_EPISODE_LEN_STEPS} goal=${NAVRL_GENERAL_GOAL_DIST_MIN}..${NAVRL_GENERAL_GOAL_DIST_MAX}m"
+echo "[eval_v2] target=U[${NAVRL_TARGET_SPEED_MIN},${NAVRL_TARGET_SPEED_FINAL}]m/s pattern=${NAVRL_TARGET_PATTERN} \
+density_curriculum=${NAVRL_DENSITY_CURRICULUM} OOB_margin=${NAVRL_OOB_MARGIN}m seed=${NAVRL_SEED}"
 echo "[eval_v2] lidar=${NAVRL_LIDAR_RANGE}m scan=${NAVRL_LIDAR_VBEAMS}x${NAVRL_LIDAR_HBEAMS} \
 tokens=${NAVRL_MAX_OBSTACLES} selector=${NAVRL_OBSTACLE_SELECTOR} corridor=${NAVRL_CORRIDOR_TOKENS}"
-echo "[eval_v2] ckpt=${CKPT} games/cell=${GAMES} densities=${DENSITIES}"
+echo "[eval_v2] ckpt=${CKPT} games/cell=${GAMES} densities=${DENSITIES[*]}"
+echo "[eval_v2] results=${RESULT_DIR}"
 
-mkdir -p train_session_logs
-for N in ${DENSITIES}; do
-    echo "======== v2 density ${N} bars ($(python3 -c "print(f'{${N}/1600*100:.1f}')")/100m2) ========"
-    NAVRL_NUM_BARS="${N}" NUM_ENVS="${NUM_ENVS:-128}" HEADLESS=True PLAY_GAMES_NUM="${GAMES}" \
-        ./play_navrl.sh "${CKPT}" 2>&1 \
-        | tee "train_session_logs/eval_v2_${N}bars_$(date +%y%m%d_%H%M).log"
+for N in "${DENSITIES[@]}"; do
+    DENSITY_PER_AREA="$(${PYTHON} -c "print(f'{${N}/16.0:.1f}')")"
+    CELL_PREFIX="${RESULT_DIR}/${N}bars"
+    RESULT_JSON="${CELL_PREFIX}.json"
+    CELL_LOG="${CELL_PREFIX}.log"
+    RECEIPT_JSON="${CELL_PREFIX}.receipt.json"
+    EVALUATION_NONCE="$(${PYTHON} -c 'import secrets; print(secrets.token_hex(32))')"
+    EVALUATION_STARTED_AT="$(${PYTHON} -c 'from datetime import datetime, timezone; print(datetime.now(timezone.utc).isoformat())')"
+    echo "======== v2 density ${N} bars (${DENSITY_PER_AREA}/100m2) ========"
+    NAVRL_NUM_BARS="${N}" \
+    NAVRL_BULK_EVAL_JSON="${RESULT_JSON}" \
+    NAVRL_EVAL_RUN_NONCE="${EVALUATION_NONCE}" \
+    NUM_ENVS="${NUM_ENVS}" \
+    HEADLESS=True \
+    PLAY_GAMES_NUM="${GAMES}" \
+        ./play_navrl.sh "${CHECKPOINT_SNAPSHOT}" 2>&1 | tee "${CELL_LOG}"
+    if [[ ! -s "${RESULT_JSON}" ]]; then
+        echo "[eval_v2] evaluation completed without a bulk result: ${RESULT_JSON}" >&2
+        echo "[eval_v2] inspect: ${CELL_LOG}" >&2
+        exit 4
+    fi
+    if [[ "$(sha256_file "${CKPT}")" != "${SOURCE_CHECKPOINT_SHA256}" \
+          || "$(sha256_file "${CHECKPOINT_SNAPSHOT}")" != "${SNAPSHOT_CHECKPOINT_SHA256}" \
+          || "$(sha256_file "${EVALUATOR_SCRIPT}")" != "${EVALUATOR_SCRIPT_SHA256}" ]]; then
+        echo "[eval_v2] checkpoint or evaluator bytes changed during the cell; refusing result." >&2
+        exit 4
+    fi
+    append_result_csv "${RESULT_JSON}" "${N}" "${CELL_LOG}" "${RECEIPT_JSON}" \
+        "${EVALUATION_NONCE}" "${EVALUATION_STARTED_AT}"
 done
-echo "[eval_v2] done. logs in train_session_logs/eval_v2_*bars_*.log"
+
+if [[ "${RECOVERY_STAGE}" == "smoke" ]]; then
+    "${PYTHON}" ../../../tools/navrl_v2_recovery_attestation.py \
+        "${CKPT}" "${RESULT_DIR}/130bars.json"
+fi
+
+echo "[eval_v2] done | CSV=${RESULT_CSV} | per-cell JSON/logs=${RESULT_DIR}"

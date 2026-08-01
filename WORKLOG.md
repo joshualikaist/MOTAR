@@ -4480,6 +4480,87 @@ training safety 7 PASS, Node arena/status parity PASS, Python compile/bash synta
   goal 6..28m, target speed 0.3..1.5m/s
 - 공개 JS: 동적 `Motion.configure`, `arenaSpan`, `BAR_HEIGHT` raycast 반영
 
+## 2026-08-01 — v2 scheduled-density 라이브 감사 (epoch 10,787)
+
+학습을 중단하지 않고 `ppo_260731_2012_navrl_v2-search-sched-s1`의 터미널 로그,
+epoch CSV, TensorBoard 및 epoch-10750 체크포인트 상태를 교차 집계했다. 프로세스는
+PID 444488, VRAM 6176 MiB로 정상 실행 중이며 NaN/Inf/OOM/traceback은 없다.
+
+### 밀도별 학습 중 에피소드 집계
+
+| bars | density(/100m²) | epochs | episodes | capture | crash | timeout | gate 결과 |
+|---:|---:|---:|---:|---:|---:|---:|---|
+| 70 | 4.4 | 63* | 2,497* | 82.18%* | 16.50% | 1.32% | 83.2%로 85 승급 |
+| 85 | 5.3 | 1,360 | 49,163 | 78.27% | 19.48% | 2.26% | 78.4%로 100 승급 |
+| 100 | 6.3 | 1,386 | 49,140 | 76.68% | 20.74% | 2.58% | 78.0%로 115 승급 |
+| 115 | 7.2 | 1,406 | 49,160 | 72.37% | 24.68% | 2.95% | 71.6%로 130 승급 |
+| 130 | 8.1 | 2,080 | 65,530 | 69.20% | 26.17% | 4.63% | 68.9/66.3/69.5 hold 후 72.1% 승급 |
+| 145 | 9.1 | 1,242 | 42k+ | 약 65.0% | 약 31% | 약 4% | 67.4%, 64.0% 두 번 hold |
+
+`*` 70막대는 ep3250 체크포인트에서 branch-run한 뒤의 CSV만 센 값이다. 승급 게이트
+83.2%는 체크포인트에 복원된 이전 13,877 episode까지 포함한 정확한 16,386-episode 값이다.
+
+145막대 250-epoch 순차 구간 capture/crash는 `67.90/26.98 -> 66.67/28.59 ->
+64.66/31.39 -> 63.88/32.80 -> 62.11/34.98%`다. 즉 timeout은 약 5.1→2.9%로
+줄었지만 그만큼 capture가 아니라 crash가 증가했다. epoch-10750의 진행 중 게이트도
+4,787/7,665 = 62.45%라 다음 0.70 승급은 현재 추세상 어렵다.
+
+### 판정
+
+- **수치 발산은 아님**: 최근 500 epoch critic explained variance 평균 0.832,
+  KL 평균 0.0144. KL>0.04는 21/500(4.2%)이며 guard가 minibatch를 skip한다.
+- **과제 성능은 145에서 악화**: 두 완성 gate hold와 1,200+ epoch의 단조 하락이 있어
+  단순히 학습 시간이 부족하다는 설명은 약하다. 현 표현/정책의 새 실질 ceiling 후보는 145다.
+- 다음 16,384-episode gate가 0.65 이하라면 30k까지 동일 설정을 연장하지 말고,
+  130막대 직전(ep9500 부근)과 145막대 checkpoint들을 고정 held-out 평가해
+  representation/충돌 회피 병목을 분리한다.
+
+## 2026-08-01 — epoch 10836 실제 actor collapse 및 자동 중단
+
+위 라이브 감사 직후 run이 외부 kill/OOM이 아니라
+`early_stop_density_capture_collapse` 가드에 의해 epoch 10836에서 의도적으로 중단됐다.
+마지막 13 epoch 중 다수는 capture 0%, crash 100%, episode length 약 24/600이었고,
+완료 표식은 없으며 `run_summary.json.exit_reason`이 정확히 해당 fail-stop을 기록한다.
+
+이는 단순한 고밀도 성능 저하가 아니라 **PPO actor update collapse**다.
+
+- epoch 10750: KL 0.0191, entropy -8.77, capture 62.2%, crash 37.8%
+- epoch 10776~10783: KL 0.075~0.158로 0.04 gate 초과가 연속 발생
+- epoch 10785: actor loss 144.9
+- epoch 10787: KL 0.516
+- epoch 10800: KL 0.795, entropy -26.57, capture 30.6%, crash 68.1%
+- epoch 10803: KL 2.69
+- epoch 10824 이후: 거의 매 epoch capture 0%, crash 100%
+- checkpoint 10750→10800 단 50 epoch 동안 actor `mu.weight` norm이
+  0.962→1.085(+12.8%), parameter delta가 기존 norm의 16.3%
+
+entropy가 -8대에서 -106까지 단조 하락한 것은 fixed sigma가 변한 게 아니라 squashed
+Gaussian latent mean이 tanh 경계로 포화됐다는 신호다. explained variance는 끝까지
+약 0.8이라 critic 붕괴나 환경 난이도 변화가 직접 원인은 아니다.
+
+### 설정 누락/보호장치 한계
+
+검증된 `train_navrl_action_squashed_v2_main.sh`는 actor LR `5e-6`,
+`NAVRL_LATENT_MARGIN_COEF=0.01`, `NAVRL_ACTION_DIAG=1`을 사용한다. 반면 이번
+`train_navrl_v2_search.sh`는 LR을 YAML 기본 `1e-4`(20배)로 두고 margin 값 1.25만
+export했으며 coefficient를 빠뜨려 실제 margin penalty가 **0**이었다. action diagnostics도
+꺼져 축별 포화 조기경보가 없었다.
+
+현재 KL gate는 minibatch를 skip할 뿐 이미 적용된 같은 epoch의 앞선 update를 rollback하지
+않는다. collapse 구간에는 매 epoch 5 minibatch를 skip하면서도 KL이 0.5→2.7로 증가했다.
+따라서 guard가 충분한 trust-region 역할을 하지 못했다. same-density capture guard는 원인이
+아니며, 붕괴된 계산을 19k epoch 더 수행하지 않게 정상적으로 차단했다.
+
+복구 시 붕괴 후 ep10800은 사용하지 않는다. 최소한 ep10750 이전, 보수적으로는 130막대
+정책인 ep9500에서 분기하며, actor LR/latent penalty/action diagnostics를 먼저 바로잡고
+KL 초과 epoch 전체 rollback 또는 optimizer step 전후 rollback을 검증해야 한다.
+
+추가 감사에서 이 판정은 정정됐다. ep10750 actor restore/rollout은 exit 0으로 성공했다.
+`Can't create empty tensor`는 asymmetric observation 오류가 아니라 DOF가 0개인 rigid-body
+환경에서도 `acquire_dof_state_tensor()`를 wrap해 Isaac Gym C++가 출력한 진단이었다. 실제
+평가 결함은 v2 sweep이 bulk result를 켜지 않아 1,025 games를 수행하고도 capture/crash
+결과 파일을 하나도 남기지 않은 점이었다.
+
 ## 2026-07-31 (저녁) — 70막대 천장 프로브 신설 + 본 run의 임계값 stall 위험 식별
 
 ### 발견: 새 임계값이 과거 최고 달성치보다 높다
@@ -4748,3 +4829,519 @@ tensorboard --logdir .../runs/_merged_ppo_260731_1722_navrl_v2-search-fresh-s1
 순수 이어달리기(계약 변경 없음)라면 `--branch_run`을 빼면 된다 — 원본 폴더에 그대로 이어
 쓰므로 병합이 애초에 필요 없다. `--branch_run`은 **환경/보상/커리큘럼 계약을 바꿀 때만**
 쓰고, 그 경우 위 도구로 계보를 하나로 본다.
+
+## 2026-07-31 — 밀도별 best reward (전역 러닝 맥스는 첫 승급 이후 무의미)
+
+### 문제
+
+`stability/best_reward`는 run 전체의 러닝 맥스다. 그런데 밀도 승급은 과제 난이도를 바꾸고
+도달 가능한 보상 스케일 자체를 낮춘다. 따라서 첫 승급 이후 이 스칼라는 **더 쉬운 밀도에서
+얻은 값에 고정**되어, 이후 모든 epoch은 갱신 불가능한 기준과 비교된다 — 학습이 진행 중인지에
+대한 정보를 주지 못한다. (같은 뿌리의 함정이 이미 문서화되어 있다: `gen_ppo.pth`는 저밀도
+정책이라 고밀도 평가에서 오독된다.)
+
+### 구현 — 순수 가산, 체크포인트 규칙 불변
+
+`navrl_curriculum.py::track_best_reward_by_density(state, n_bars_active, mean_reward)`
+(torch-free, CPU 테스트 가능). 밀도가 바뀌면 best를 이월하지 않고 리셋하며, 떠나보낸 밀도의
+best를 `(bars, best)`로 반환한다.
+
+새 TB 스칼라:
+- `stability/best_reward_at_density` — 현재 밀도 내 best (승급 시 리셋). x축 epoch.
+- `stability/best_reward_of_finished_density` — **x축이 epoch이 아니라 막대 수**. 커리큘럼이
+  졸업한 각 밀도마다 점 하나 → 밀도별 천장의 형태를 그대로 읽을 수 있다.
+- 승급 시 콘솔: `density 70 bars done: best mean_reward 150.123 -> now 85 bars (epoch N)`
+
+`self.last_mean_rewards`와 best-checkpoint 저장 규칙은 **의도적으로 건드리지 않았다.**
+리셋하면 `gen_ppo.pth`가 밀도마다 덮어써져 체크포인트 의미가 조용히 바뀐다. 표시 문제와
+체크포인트 정책은 분리해서 다룬다.
+
+### 테스트 — `tests/test_curriculum_safety.py` 25개 통과 (기존 15 + 신규 10)
+
+`BestRewardByDensityTest`: 밀도 내 최댓값 추적, 승급 시 이월 금지, 히스토리 누적, 새 밀도의
+낮은 값도 그 밀도의 best가 됨, 밀도 None이면 no-op, NaN/±Inf는 best가 될 수 없음, 보상이
+한 번도 없던 밀도는 승급 시 아무것도 보고하지 않음, state 불변성, 밀도 하락도 레벨 변경으로 처리.
+
+### 검토 중 잡은 것
+
+`navrl/n_bars_active`를 새로 기록하려 했으나 live run의 TB 태그를 조회해 **이미 기록되고 있음**을
+확인하고 중복 기록을 제거했다.
+
+### 적용 시점
+
+현재 돌고 있는 `sched-s1`은 프로세스가 이미 모듈을 로드한 상태라 **다음 run부터 적용**된다.
+지금 run의 85막대 구간은 전역 best_reward만 남는다.
+
+## 2026-08-01 — PPO actor-collapse 근본 수정, 실제 rollback·v2 평가 검증
+
+### 결론
+
+`sched-s1`의 epoch 10836 종료는 145막대 자체의 알고리즘 한계가 아니라 **actor update
+transaction 부재**가 직접 원인이었다. 기존 KL guard는 안전장치처럼 보였지만 다음 네 가지
+결함이 동시에 있었다.
+
+1. KL은 optimizer step **전**에만 계산되어, 임계선을 넘긴 step은 이미 적용된 뒤였다.
+2. 초과 시 그 minibatch만 skip하고 모델·RunningMeanStd·Adam moments·GradScaler를 복원하지 않았다.
+3. rl-games가 skip 뒤에도 해당 slice의 `mu/sigma`를 초과 정책으로 덮어써 다음 비교 기준을
+   망가진 정책으로 rebase했다.
+4. hard gate가 NaN/Inf KL은 오히려 통과시켰고 마지막 optimizer step 뒤 전수 검사가 없었다.
+
+추가로 v2 런처는 실제 LR 1e-4를 checkpoint에는 0으로 잘못 기록했고, margin 1.25만 설정하고
+coefficient를 빠뜨려 penalty가 0이었다. 보호 범위도 y축뿐이라 x/z/yaw latent 폭주를 막지
+못했다. 따라서 단순히 gate 숫자를 낮추거나 더 오래 학습하는 것으로는 재발을 막을 수 없다.
+
+### 구현
+
+- `ppo_update_safety.py`
+  - model parameter와 persistent buffer, Adam state, AMP scaler, submodule train/eval mode를
+    deepcopy하는 `PPOEpochTransaction` 추가.
+  - 동일 분포가 정확히 0인 analytic Normal KL 추가(rl-games helper의 epsilon 음수 bias 제거).
+  - NaN/Inf 및 per-axis latent margin 공통 helper 추가.
+- `early_stop_a2c_agent.py`
+  - rollout 당시 `behavior_mu/sigma`를 immutable field로 보존. rl-games의 moving `mu/sigma`와 분리.
+  - actor epoch 시작 전 snapshot, 마지막 minibatch 뒤 **전체 rollout을 eval/frozen RMS로 재추론**.
+  - 어느 minibatch 평균 KL이라도 0.04 초과, output/parameter/loss가 nonfinite, 또는 pre-step
+    latch가 있으면 actor model+RMS+Adam+scaler를 epoch 시작 상태로 원자적으로 복원.
+  - rollback 후 LR×0.5(최저 1e-6), 5회 연속이면 `ppo_rollback_livelock` fail-stop.
+  - DDP/RNN은 불완전한 동기 복원을 허용하지 않고 명시적으로 거부.
+  - TB: `ppo/behavior_kl_audit_max`, `behavior_kl_sample_max`, `epoch_rollback{,_total,_streak}`.
+- `train_navrl_v2_search.sh`
+  - fresh 기본 LR 3e-5로 명시, action diagnostics on, all-axis latent margin
+    `2.0,1.25,2.0,2.0 @ 0.01`, epoch rollback on.
+  - fresh entry에 checkpoint/resume 인자가 들어오면 거부. 실험 wrapper만 명시적으로 opt-in.
+  - global flock 추가.
+- `train_navrl_v2_recover_safe.sh` 신설
+  - 기본 LKG = `sched-s1/last_gen_ppo_ep_9500_rew_83.67131.pth`(130막대).
+  - 같은 squashed likelihood이므로 Adam moments는 유지하고 LR 5e-6.
+  - 기본은 100-epoch/130막대 고정 smoke; 통과 뒤 `RECOVERY_MODE=curriculum`만 승급 재개.
+  - `gen_ppo.pth`와 정책-family mismatch를 거부.
+- provenance
+  - runner가 YAML 기본까지 포함한 **실제 optimizer LR**을 env에 역기록.
+  - checkpoint에 target speed min/final/fixed/ramp/pattern, general spawn, OOB/altitude contract,
+    rollback/all-axis margin을 추가. resume mismatch는 density evidence를 폐기하고 경고.
+- 평가
+  - zero-DOF sim은 null Isaac tensor를 acquire/wrap/refresh하지 않아 종료 진단 제거.
+  - `--eval`도 actor-only observation wrapper 사용.
+  - v2 sweep은 호출자 기준 상대 checkpoint, arena/표적/표현/density/seed 계약을 고정하고
+    cell별 bulk JSON + 종합 CSV가 없거나 episode accounting이 틀리면 실패한다.
+  - bulk JSON은 분포 평가를 더 이상 `target_speed_mps=0`으로 거짓 표시하지 않고
+    `mode=uniform, min=0.3, max=1.5`를 기록한다.
+- quiet log filter가 새 rollback/fail-stop 메시지를 삼키던 문제도 whitelist+테스트로 수정했다.
+
+### 실제 검증
+
+1. **정상 commit 경로** — ep9500 → ep9501, 130 bars, LR 5e-6
+   - process exit 0, final checkpoint/finished marker 생성.
+   - `behavior_kl_audit_max=0.006315 < 0.04`, 기존 표시 KL=0.00203.
+   - rollback 0, all-axis margin scalar 존재, raw OOB 전 축 0.
+   - checkpoint provenance: LR 5e-6, rollback true, margin vector/coef, moving-target 계약 모두 일치.
+2. **강제 reject 경로** — 같은 LKG에서 gate를 1e-8로 낮춘 1 epoch
+   - `epoch_rollback=1`, skipped=1, LR 5e-6→2.5e-6.
+   - 저장된 model tensor **93/93 byte-exact**, Adam state key/moment/step 변경 **0개**.
+     LR backoff만 의도적으로 달라졌다. 즉 이미 적용된 optimizer mutation이 실제로 폐기됐다.
+3. **held-out bulk 평가** — 안전 commit checkpoint, 130 bars, 257 episodes,
+   target `U[0.3,1.5]`, seed42
+   - capture **74.71%** (192/257), crash **25.29%** (65/257), timeout 0.
+   - 절대 원인: bar contact 63/257=24.51%, below 2/257=0.78%, OOB 0.
+   - task-input OOB 전 축 0, JSON/CSV episode 합계·checkpoint·density·speed contract 통과.
+   - `Can't create empty tensor` 미발생.
+
+단, 257-episode 평가는 배선/정책 건강 검증이지 논문 최종 CI 표본은 아니다. 또한 145막대
+후반 데이터는 actor drift에 오염됐으므로 “145가 표현의 확정 ceiling”이라는 기존 판정은
+보류한다. 먼저 LKG에서 100-epoch 고정130 smoke를 돌려 KL/edge99/capture를 확인한 뒤,
+그 final checkpoint로 curriculum을 재개하고 145를 다시 측정한다.
+
+### 테스트
+
+- `tests/` 전체 **85 tests PASS**.
+- bounded action-model **13 tests PASS**.
+- Python compile, launcher `bash -n`, `git diff --check` PASS.
+- CPU-only perception 테스트 2개가 torch→Isaac Gym import 순서 때문에 수집조차 실패하던
+  기존 결함도 sibling corridor module을 package import 없이 주입하도록 고쳐 6+7 tests PASS.
+
+## 2026-08-01 — 최종 적대적 재검수: 복구·평가 우회와 commit finite-hole 폐쇄
+
+### 추가로 발견한 주요 결함
+
+첫 transaction 구현을 다시 적대적으로 검수하자 다음 P1이 남아 있었다.
+
+1. parameter finite 여부를 Python `bool`로 만든 뒤 공통 검사기에 넘겼다. `False`는 실수 0으로
+   간주되어 finite였으므로 nonfinite parameter를 reject하지 못했다.
+2. post-update audit가 actor `mu/sigma/KL`만 확인해 critic output, PPO/aux loss, Adam moment,
+   GradScaler가 깨진 epoch를 commit할 수 있었다.
+3. recovery wrapper의 검증된 `--checkpoint` 뒤에 사용자 `"$@"`가 붙어 두 번째 checkpoint나
+   task/file 인자로 preflight를 우회할 수 있었다. 같은 config인 붕괴 ep10800도 통과했다.
+4. `RECOVERY_MODE=curriculum`이 100-epoch smoke 없이 기본 ep9500에서 바로 시작될 수 있었고,
+   stale shell의 LR/KL/margin 값이 safe default를 덮을 수 있었다.
+5. TTC A/B wrapper는 checkpoint가 존재하는지만 봐 v1/legacy checkpoint로도 비교가 시작됐다.
+6. v2 evaluator가 학습의 OOB margin 1.0 대신 기본 0.5를 사용했고, ramp 이전 checkpoint의 실제
+   속도 상한과 무관하게 JSON을 항상 `U[0.3,1.5]`로 기록했다. 새 target/OOB/action provenance도
+   gate에서 검사하지 않았다.
+7. rollback 뒤 optimizer LR은 낮아졌지만 checkpoint에는 최초 LR만 기록돼 사후 감사가 틀렸다.
+8. dashboard가 `v2-recover-*`를 v1로 분류하고 실제 recovery smoke까지 Latest에서 제외했다.
+
+### 보강
+
+- commit 전 actor/critic output, 누적 PPO/critic/aux loss, model state/buffer, Adam state,
+  AMP scaler를 재귀적으로 finite 검사한다. loss가 먼저 깨지면 backward 전에 epoch reject를 latch한다.
+- recovery wrapper는 추가 runner 인자를 전부 거부하고, 감사된 ep9500의 SHA-256
+  `3a0c167c…67578f`와 epoch=9500/bars=130/v2 계약을 강제한다. ep10800은 SHA와 밀도 모두에서 거부된다.
+- smoke는 고정130·정확히 100 epoch·LR 5e-6·KL 0.04·전축 margin으로 고정했다. curriculum 모드는
+  명시적 CKPT, smoke lineage metadata, ep>=9600, 정상종료 marker가 모두 있어야 열린다.
+- TTC A/B도 감사된 ep3250 파일 SHA-256과 epoch/bars/policy/selector를 확인하고, env=64,
+  70 bars, 2000-epoch sample budget, PPO safety 설정을 양 arm에서 고정한다.
+- evaluator는 final-speed 평가 override를 명시해 saved curriculum clock과 무관하게 실제
+  `U[0.3,1.5]`를 sampling하며, bulk JSON은 `_target_speed_max()`의 실제 상한과 OOB margin을 기록한다.
+  preflight는 moving-target/general-spawn/OOB/altitude/action-policy 계약까지 검사한다.
+- checkpoint에는 `cfg_action_learning_rate`(실행 시작값)와
+  `current_action_learning_rate`(scheduler/rollback 반영값)를 분리해 저장한다.
+- dashboard는 v2 recovery/TTC를 40×40×3 v2로 인식하고, 100-epoch recovery smoke만은 실제 gated
+  단계로 Latest에 남긴다. 1-epoch integration/forced-test는 계속 Latest에서 제외한다.
+
+### 최종 실제 검증
+
+- 정상 GPU commit(ep9500→9501): exit 0, `behavior_kl_audit_max=0.006319 < 0.04`,
+  `ppo/kl=0.002029`, rollback=0, all-axis margin scalar 존재. checkpoint의 configured/current LR은
+  모두 5e-6.
+- 강제 GPU reject(gate=1e-8): rollback 메시지가 콘솔에 보였고, 원본 대비 model 변경 0/93,
+  Adam moment/step 변경 0. configured LR=5e-6, current LR=2.5e-6로 정확히 분리 기록됐다.
+- 실제 GPU 1-episode evaluator 배선: 130 bars, `target_speed_mode=uniform`, min/max=0.3/1.5,
+  OOB margin=1.0, squashed-Gaussian, episode accounting/JSON/CSV 검증 통과. zero-DOF 종료 오류 없음.
+- preflight: ep9500 PASS; ep10800 거부; 후행 `--checkpoint` 거부; CKPT 없는 curriculum 거부;
+  TTC 감사 checkpoint PASS; 구 provenance checkpoint의 canonical eval 거부.
+- `tests/` 전체 **87 PASS**, bounded action-model **13 PASS**. Python compile, launcher `bash -n`,
+  dashboard JSON/inline parity도 PASS.
+
+### 다음 실행
+
+현재 장기 학습은 없다. `./train_navrl_v2_recover_safe.sh`로 ep9500→ep9600 고정130 smoke를
+먼저 끝내고, final checkpoint를 held-out 평가한 뒤에만 `RECOVERY_MODE=curriculum`로 재개한다.
+
+## 2026-08-01 — 주요 오류 전수 보강 완료: actor+critic 원자 복구와 평가 증명서
+
+### 최종 보강한 오류
+
+1. **central critic이 actor transaction 밖에 있던 문제**: snapshot을 `prepare_dataset()`보다 앞으로
+   옮겼다. 따라서 input/value RMS 갱신, central critic optimizer step, actor optimizer step이 모두
+   하나의 `try`/transaction 안에 들어간다. reject와 예외 양쪽에서 actor·critic model/buffer,
+   양 optimizer, scaler, critic lr/epoch/frame/mode를 같은 epoch 시작점으로 복원한다.
+2. **복구 런처의 inherited-env 우회**: `FILE`, `TASK`, `NUM_ENVS=128`, simulator preset,
+   cluster selector, 70→300 density schedule, 16,384-episode gate, 1,000-epoch dwell, 안전 PPO 설정,
+   tag/log를 모두 pin했다. `ALLOW_CONCURRENT`, `GPU4GB`, network override는 해제한다. hostile shell
+   값으로 preflight해도 고정 계약이 출력되는 것을 확인했다.
+3. **문서에만 있던 held-out gate**: recovery smoke checkpoint는 130 bars 단일 조건·최소 2,049
+   episodes로만 평가할 수 있다. evaluator가 capture≥0.65, crash≤0.35, timeout≤0.10뿐 아니라
+   smoke 100 epoch의 `behavior_kl_audit_max≤0.04`, 전축 task-input OOB=0, final rollback streak=0을
+   확인한 뒤 checkpoint hash 결합 PASS artifact를 원자적으로 기록한다. curriculum 런처는 이
+   artifact가 없거나 수치/hash가 바뀌면 거부한다.
+4. **curriculum 중단 후 안전 재개 불가**: `RECOVERY_MODE=continue`를 추가했다. safe curriculum
+   provenance와 평가 artifact hash lineage가 있는 checkpoint만 받고 density accumulator/dwell
+   evidence를 초기화하지 않는다.
+5. **TTC 평가·사이트 오분류**: v2 evaluator는 shell selector를 믿지 않고 checkpoint의
+   `cluster_sector`/`ttc_sector`를 복원한다. dashboard도 TTC를 density curriculum으로 표시하지 않고
+   fixed-70 selector A/B, 4.1M sample budget, +2pp capture/−2pp crash gate로 표시한다. fresh/TTC 런은
+   stale recovery provenance를 checkpoint에 쓰지 않는다.
+6. **검증 run이 사이트 Latest를 오염**: 이름에 smoke/integration/forced/preflight가 있는 짧은
+   배선 검증은 Latest에서 제외하되, 실제 100-epoch `v2-recover-smoke`만 연구 단계로 유지한다.
+
+### 실제 GPU rollback 최종 증명
+
+`ppo_260801_0528_navrl_v2-full-transaction-forced-final-s1`, ep9500→9501,
+KL gate `1e-8`에서 의도적으로 reject했다.
+
+- console: pre-KL `7e-6`, full-rollout audit KL `6e-6`, sample max `1.15e-4`, rollback 1.
+- actor model: source 대비 변경 **0**, actor Adam: LR 외 moment/step 변경 **0**.
+- asymmetric central model: compile prefix 정규화 후 변경 **0**.
+- central value statistics와 central Adam: 변경 **0**, central LR `1e-4` 유지.
+- actor LR만 설계대로 `5e-6 → 2.5e-6`; checkpoint에 configured `5e-6`, current `2.5e-6`로 분리 기록.
+
+이 1-epoch run의 capture 9.1%는 업데이트 후 정책 성능이 아니라, update 전에 소비한 11개 episode의
+작은 rollout 수치다. 정책·critic은 source와 exact 복원됐고 이 검증 run은 dashboard Latest에서 제외된다.
+
+### gate/회귀 검증
+
+- synthetic 정상 smoke: 100개 TB epoch + 2,049 held-out → attestation 생성, curriculum preflight PASS.
+- attestation capture를 0.64로 변조 → curriculum preflight 즉시 거부.
+- safe curriculum checkpoint → `RECOVERY_MODE=continue` preflight PASS.
+- hostile inherited env, ep10800, CKPT 없는 curriculum, 후행 runner arg는 모두 거부/고정 확인.
+- TTC selector checkpoint를 canonical evaluator가 그대로 복원하는 preflight PASS.
+- Python 전체 discovery **90 PASS**, bounded action-model **13 PASS**, Python compile,
+  launcher `bash -n`, `git diff --check`, dashboard JSON/inline fallback parity PASS.
+
+현재 장기 학습은 돌고 있지 않다. 다음 작업은 감사된 ep9500에서 정확히 100 epoch의 fixed-130
+recovery smoke이며, 실행 명령과 이후 eval/curriculum/continue 절차는 `OPERATIONS.md §6`에 고정했다.
+
+## 2026-08-01 — 최종 우회 경로 폐쇄: 재현 가능한 recovery gate
+
+### 마지막 적대적 감사에서 추가로 잡은 오류
+
+1. v2 evaluator가 checkpoint의 정수 provenance를 모두 float로 출력해
+   `NAVRL_FOV_CURRICULUM_EPOCHS=3000.0`, `NAVRL_DETECTOR_MIN_PIXELS=2.0`을 만들었다. task parser는
+   경고 뒤 우연히 같은 기본값으로 돌아갔지만, 2,049회 평가가 끝난 뒤 JSON 후처리의
+   `int("2.0")`에서 죽어 attestation을 만들지 못하는 P0였다. integral 검증 후 정수 문자열로
+   직렬화하도록 수정했다.
+2. held-out JSON의 outcome count 합과 보고된 capture/crash/timeout rate를 독립적으로만 검사해,
+   count와 rate가 서로 모순되어도 PASS가 가능했다. evaluator·attestation·recovery wrapper·dashboard
+   네 층 모두 `rate == count / actual_episodes`를 검증한다.
+3. TTC idle/min-speed, FOV curriculum, detector threshold/checkpoint SHA, perturb/dropout/noise,
+   max tilt/tilt compensation은 observation/control shape를 바꾸지 않아 stale env가 숨어들 수 있었다.
+   실제 실행값을 checkpoint에 저장하고, evaluator가 복원하며, smoke attestation과 continue embedded
+   artifact가 exact contract를 다시 확인한다.
+4. recovery training과 held-out가 같은 seed가 될 수 있었다. canonical recovery는 training seed=1을
+   고정하고 held-out는 seed=42를 강제·기록한다. evaluator는 inherited general-eval/interactive flag를
+   지우고 recovery에서 `NAVRL_V2_FORCE`를 금지한다.
+5. controller는 `NAVRL_TILT_COMP=false`를 ON으로 해석하지만 checkpoint는 OFF로 기록하던 bool parser
+   불일치를 제거했다.
+6. curriculum/continue는 낮아진 LR을 보존했지만 일반 checkpoint resume는 config LR로 다시 올렸다.
+   명시적 override가 없는 training resume는 이제 `current_action_learning_rate`를 복원하고, 잘못된
+   저장 LR은 fail-closed한다. `--checkpoint`만 주고 `--train`을 생략해도 실제로는 학습하던 rl-games
+   implicit 경로도 내부에서 TRAIN으로 정규화해 같은 규칙을 적용한다.
+7. main v2 launcher는 stale FILE/TASK/network/simulator/env 수와 `ALLOW_CONCURRENT=1`에 취약했다.
+   main=base_sim/128 env, 4GB=base_sim_4gb/64 env의 명시 profile, 고정 YAML/task, 무조건 global lock으로
+   분리했다. recovery는 main profile을 강제한다.
+8. dashboard의 `verdict=PASS` 한 줄 신뢰를 제거했다. 실제 checkpoint/result SHA, 정상종료 marker,
+   full checkpoint/eval contract, seed, outcome accounting, KL/OOB/rollback을 모두 다시 검증해야만
+   `curriculum unlocked`를 표시한다.
+
+### 자동·실제 검증
+
+- 실제 감사 LKG `last_gen_ppo_ep_9500_rew_83.67131.pth` SHA/epoch/bars/contract recovery preflight PASS.
+- FILE/TASK/NUM_ENVS/simulator/profile/network/동시실행/guard/TTC/tilt를 적대적으로 주입한 preflight도
+  안전 계약(128 env, base_sim, seed1, TTC 30/0.15, tilt45, KL0.04)으로 고정됨을 확인.
+- synthetic recovery gate 9개: 정상 curriculum/continue, LR 2.5e-6·1.25e-6 보존, held-out result
+  SHA 변조 거부, seed42 training 거부, force-eval 거부, 정수 provenance, 100-epoch TB audit,
+  중간 rollback 거부, count-rate 위조 거부 PASS.
+- Python discovery **102 PASS**, bounded action-model **13 PASS**. Python compile, launcher `bash -n`,
+  `git diff --check`, 사이트 JSON/inline snapshot 동기화와 JS arena-motion parity PASS.
+
+새 provenance 필드는 다음에 생성되는 smoke checkpoint부터 실제 artifact에 들어간다. 마지막 GPU
+forced-rollback checkpoint는 코드 변경 전 생성됐으므로 이 필드가 없는 것이 정상이며 논문 데이터로
+사용하지 않는다. 장기 학습은 현재 없다. 다음 실행은 `./train_navrl_v2_recover_safe.sh` 한 줄이며,
+ep9600 정상 종료 후에만 `OPERATIONS.md §6`의 held-out → curriculum 순서로 진행한다.
+
+## 2026-08-01 — 주요 오류 최종 폐쇄: 원증거 재검산·평가 분포 독립화
+
+### 마지막 감사에서 발견한 주요 오류
+
+1. curriculum 런처가 held-out 결과 SHA는 확인했지만 결과 내용과 100-epoch TensorBoard를 다시 읽지
+   않았다. 따라서 수기로 만든 plausible PASS attestation이 승급을 열 수 있었다.
+2. dashboard도 attestation의 KL/OOB/rollback 숫자를 신뢰해 summaries가 없는 가짜 PASS를 표시할 수
+   있었다.
+3. v2 evaluator가 inherited `AERIAL_GYM_SIM_NAME`과 `NUM_ENVS`를 고정하지 않아 다른 timestep의
+   simulator로도 같은 평가 이름을 만들 수 있었다.
+4. bulk held-out의 목표 거리와 초기 FOV가 checkpoint의 `k_max_cur`와 `num_task_steps`에 의존했다.
+   같은 policy도 저장 시점에 따라 더 쉬운 분포에서 채점될 수 있었다.
+5. recovery lineage가 `epoch>=9600`만 확인해 frame/task-step/horizon이 다른 intermediate 또는 변형
+   checkpoint를 정확한 smoke final처럼 취급할 여지가 있었다.
+
+### 수정
+
+- `navrl_v2_recovery_attestation.py`의 canonical builder를 단일 진실원으로 만들었다. 기존 증명서를
+  검증할 때 실제 checkpoint, held-out JSON, TensorBoard step 9501–9600의 KL·rollback·4축 OOB를
+  다시 읽고 payload 전체가 exact한지 비교한다. 정상종료 marker도 `epoch=9600`을 요구한다.
+- recovery launcher와 dashboard 모두 같은 canonical verifier를 호출한다. 결과 변조, summaries 누락,
+  self-written PASS는 fail-closed한다. producer/dashboard의 episode length, pursuer speed, action sample
+  수 계약도 동일하게 맞췄다.
+- recovery held-out runtime은 `main/base_sim/dt0.01/128 env`로 고정했다. shell의 sim/env 값은
+  덮어쓰며 `GPU4GB=1`은 증명서 평가에서 거부한다. 일반 4GB 평가는 별도 profile로 명시 기록한다.
+- bulk/full evaluation은 saved curriculum clock을 무시하고 목표 거리 6–28 m 전체와 최종 FOV를
+  사용한다. 실제 적용 min/max, full-distribution/FOV-saturated 여부, runtime profile을 결과 JSON에
+  남기고 evaluator/attestation/dashboard가 다시 검사한다. 일반 training 경로는 기존 curriculum을
+  그대로 사용하며 main/recovery/TTC training launcher는 inherited full-eval flag를 명시적으로 지운다.
+- smoke final은 정확히 epoch 9600/frame 39,321,600/task-step 307,200/horizon 32/k=[20,28]/130 bars를
+  요구한다. continue는 이 anchor에서 epoch당 task-step +32, frame +4096 및 130:+15:300 밀도 schedule을
+  검증하며 불일치를 자동 보정하지 않는다. checkpoint에 `cfg_ppo_horizon`도 새로 기록한다.
+- evaluator의 정수 provenance, count-rate 일치, seed 분리, full same-shape 계약과 함께 이 조건들을
+  recovery preflight와 사이트 unlock 양쪽에 결합했다.
+
+### 검증
+
+- 실제 audited LKG ep9500: SHA-256 일치, epoch/frame/task-step=9500/38,912,000/304,000,
+  k=[20,28], bars=130; safe recovery preflight PASS.
+- 적대적 evaluator env(`AERIAL_GYM_SIM_NAME=base_sim_4ms`, `NUM_ENVS=1`)도
+  `main/base_sim/128/base_sim_dt0.01`로 고정됨. recovery에서 `GPU4GB=1`은 거부.
+- synthetic canonical smoke는 curriculum/continue PASS. 결과 변조, 수기 PASS, TensorBoard 누락,
+  중간 rollback, count-rate 위조, force-eval, seed42 training, anchor clock 변조는 모두 거부.
+- Python 전체 discovery **111 PASS**, recovery gate **13 PASS**, status attestation **6 PASS**,
+  held-out distribution/perception **11 PASS**, bounded action-model **13 PASS**.
+- Python compile, launcher `bash -n`, `git diff --check`, 사이트 arena-motion parity PASS.
+
+장기 학습은 시작하지 않았다. 다음 실행은 여전히 `./train_navrl_v2_recover_safe.sh`이며, 실제 새
+checkpoint가 위 provenance를 갖는지는 이 100-epoch smoke artifact에서 최종 실증한다.
+
+## 2026-08-01 — 최종 적대적 감사 후 주요 오류 폐쇄: 평가 byte-binding·FOV·rollback 내구성
+
+### 마지막으로 발견한 결함
+
+1. canonical attestation이 결과 JSON의 수치만 재계산했기 때문에, 정상처럼 보이는 aggregate JSON을
+   직접 작성해도 evaluator를 실제로 실행했다는 증거가 없었다. 평가 뒤 같은 checkpoint 경로의 bytes를
+   교체하면 옛 결과가 새 policy에 재결합될 수도 있었다.
+2. TensorBoard 동일 step을 두 번 쓰면 마지막 값만 남겨 먼저 기록된 KL/OOB/rollback 이상치를 숨길 수
+   있었다. rollback streak 외 `epoch_rollback`과 누적 total도 gate가 직접 읽지 않았다.
+3. evaluator의 물리 계약은 simulator에서 측정한 값이 아니라 shell 라벨이었다. 특히
+   `base_sim_4gb`는 실제 상속 dt=0.01인데 `dt0.004`로 기록됐다.
+4. general-spawn은 표적을 전방위로 뽑은 뒤 기존 FOV goal loop를 `todo=0`으로 건너뛰어,
+   `NAVRL_FOV_CURRICULUM_EPOCHS=3000`이 사실상 no-op이었다.
+5. PPO rollback total/streak가 checkpoint에 없었다. patience fail-stop은 `train_epoch()` 안에서 예외를
+   던져 정상 frame 증가와 periodic save 전에 종료되므로, 낮아진 LR과 streak가 유실될 수 있었다.
+6. main launcher 뒤에 임의 runner 인자를 추가할 수 있었고, 사이트의 recovery 완료 판정은 exact
+   정상종료 marker보다 epoch 수를 더 신뢰했다. Now/phase 문구도 과거 corridor 단계에 고정돼 있었다.
+
+### 수정
+
+- evaluator는 원본 checkpoint와 byte-identical한 별도 CoW snapshot을 만들어 **그 snapshot을 실제
+  play**한다. 시작·종료 source/snapshot SHA를 확인하고, cell별 64-hex nonce를 task JSON과
+  `*.receipt.json`에 교차 기록한다. receipt는 result/log/evaluator script/checkpoint snapshot의 절대경로와
+  SHA, episode 수, density, seed, 시작·종료 시각을 묶는다. attestation은 receipt와 현재 source bytes를
+  다시 해시해 수기 JSON, receipt 누락, checkpoint swap을 거부한다. 이는 로컬 workflow의
+  tamper-evident guard이며 외부 개인키 서명은 아니다.
+- recovery TensorBoard 9501–9600은 필요한 tag마다 **step당 정확히 1개**만 허용한다. KL, 4축 raw OOB,
+  rollback event/streak/total 100개가 모두 존재하고 rollback 관련 값이 전부 0이어야 한다.
+- task가 실제 `BaseSimConfig`/`BaseSim4GBConfig`, physics dt, substeps, RL step당 physics step,
+  RL step dt를 checkpoint와 bulk JSON에 기록한다. main은 `BaseSimConfig/0.01/1/10/0.1`, 4GB는
+  `BaseSim4GBConfig/0.01/1/10/0.1`이어야 한다.
+- general-spawn FOV curriculum은 표적의 world 방향을 편향시키지 않고 초기 drone yaw만 정렬한다.
+  epoch0 상대 방위는 camera half-FOV의 85%(현재 약 ±36.98°), 3000 epoch 동안 ±180°까지 선형 확대한다.
+  포화 뒤와 full-distribution held-out는 unrestricted yaw다.
+- rollback total/streak를 rl-games full-state에 저장·복원한다. livelock patience 도달 시 소비한 rollout
+  frame을 반영하고, exact 복원된 actor/central critic/Adam/RMS/scaler와 backed-off LR을
+  `last_gen_ppo_ep_*_rew_rollback_livelock.pth`로 저장한 뒤 fail-stop한다.
+- fresh main은 CLI 인자 0개만 받으며, resume opt-in은 정확히
+  `--checkpoint "$CKPT" --branch_run`만 허용한다. training launchers는 evaluator nonce/profile/physics
+  변수를 지운다. 사이트는 exact `epoch=9600` marker 없이는 완료로 표시하지 않고, 현재 research
+  update에서 Now/phase를 동적으로 그리며 PASS도 생성 시각 기준 static snapshot임을 명시한다.
+
+### 검증
+
+- Python 전체 discovery **129 PASS**.
+- bounded action-model **13 PASS**, recovery gate **17 PASS**, status attestation **6 PASS**,
+  perception/FOV/physics **15 PASS**, PPO safety **14 PASS**, launcher contract **4 PASS**,
+  recovery marker **3 PASS**.
+- 적대적 회귀: receipt 없는 plausible JSON, 평가 뒤 checkpoint swap, TensorBoard duplicate step,
+  mid-window rollback, count-rate 위조, 결과 변조, anchor clock 변조를 모두 거부한다.
+- 실제 audited ep9500 LKG safe-recovery preflight PASS. 구 LKG 자체는 새 same-shape provenance가 없어서
+  canonical held-out evaluator가 직접 거부하는 것이 정상이며, ep9500에서 생성할 새 ep9600 smoke
+  checkpoint부터 새 물리/FOV/receipt 계약을 충족한다.
+- 모든 launcher `bash -n`, Python compile, `git diff --check`, 사이트 JS parity PASS.
+- 장기 NavRL training process는 현재 없다. 다음 실행은
+  `./train_navrl_v2_recover_safe.sh`로 ep9500→ep9600 fixed-130 smoke다.
+
+### 2026-08-01 — PPO transaction 검증 TensorBoard 7개 아카이브
+
+사용자 확인 후 다음 1-epoch safety-wiring 세션의 `summaries/`만 라이브 TensorBoard logdir 밖으로
+이동했다: `0405`, `0408`, `0449`, `0450`, `0455`, `0456`, `0528` rollback/transaction tests.
+
+- 이동 위치:
+  `/home/fair/workspaces/aerial_gym_ws/tensorboard_archive/2026-08-01_transaction_tests/`
+- 영구 삭제하지 않았으며 archive README에 정확한 7개 run과 복구 방법을 기록했다.
+- 원래 `runs/<run>/`의 checkpoint, CSV, marker 및 forced rollback 증거는 보존했다.
+- 활성 NavRL trainer/player가 없고 GPU가 비어 있음을 이동 전후 확인했다.
+- 이 정리는 다음 `train_navrl_v2_recover_safe.sh` 학습이나 ep9500 LKG에 영향을 주지 않는다.
+
+### 2026-08-01 — recovery 실제 실행 handoff 오류 수정
+
+사용자가 `./train_navrl_v2_recover_safe.sh`를 실제 실행했을 때 recovery wrapper는
+`--checkpoint <ep9500> --branch_run` 인자를 넘겼지만 `CKPT` shell 변수를 export하지 않았다.
+강화된 child `train_navrl_v2_search.sh`는 인자와 환경변수의 exact 일치를 요구하므로
+`expected <unset>`으로 즉시 거부했다. trainer/Isaac Gym 초기화 전 종료됐고 새 run/checkpoint는
+생기지 않았다. `libtinfo.so.6` 문구는 이 실패와 무관한 conda bash warning이다.
+
+- recovery wrapper가 resolved `CKPT`를 명시적으로 export하도록 수정했다.
+- 기존 preflight가 child 실행 직전에 끝나 이 배선 오류를 놓친 것도 수정했다.
+  `NAVRL_PREFLIGHT_ONLY=1`은 이제 같은 실제 `exec` handoff를 거쳐 child의 full continuation 계약까지
+  검사한 뒤에만 종료한다.
+- 실제 ep9500 기본 경로로 새 preflight를 실행해 child가 `CONTINUATION`, main/base_sim/128 env,
+  seed1, LR 5e-6, epoch rollback, 40 m arena와 정확한 checkpoint tuple을 모두 수락함을 확인했다.
+- launcher contract 5/5, recovery gate 17/17, Python 전체 discovery **130 PASS**,
+  `bash -n`, `git diff --check` PASS.
+
+## 2026-08-01 — ep9500→9600 fixed-130 recovery smoke 및 held-out PASS
+
+`./train_navrl_v2_recover_safe.sh`로 감사된 ep9500 LKG에서 정확히 100 epoch를 추가했다.
+run은 `ppo_260801_1150_navrl_v2-recover-smoke-130bars-s1`, 종료 사유는 `max_epochs`이며
+`epoch/frame/task-step=9600/39,321,600/307,200`, `k=[20,28]`, 130 bars, LR `5e-6`를 보존했다.
+최종 checkpoint는 `last_gen_ppo_ep_9600_rew_88.09682.pth`, SHA-256은
+`b154aad7e6395d5dc9db96110930ef9539ab8c4fbdffaa3977df86c047a28c70`이다.
+
+### 100-epoch smoke 안전성
+
+- TensorBoard step 9501–9600을 전부 재집계했다: behavior KL audit max **0.01173**
+  (`0.04` 제한 이내), PPO epoch rollback/event/streak/total **전부 0**, KL skipped minibatch **0**.
+- x/y/z/yaw task-input raw OOB는 100 epoch 모두 **0**. explained variance 평균 **0.847**,
+  LR은 전 구간 `5e-6`로 유지됐다.
+- training-distribution epoch 평균은 capture **72.95%**, crash **23.00%**, timeout **4.05%**.
+  마지막 한 epoch의 71.43%나 peak 94.87%는 표본 수가 작아 gate로 사용하지 않았다.
+
+### canonical 130-bars held-out
+
+seed 42, main/BaseSimConfig, 128 env, 2,049 episode, 목표 거리 6–28 m 전체, 최종 FOV,
+moving target `U[0.3,1.5] m/s`/mixed 조건으로 최종 checkpoint snapshot을 실제 재생했다.
+
+| 지표 | 결과 | recovery 기준 |
+|---|---:|---:|
+| capture | **75.74% (1,552/2,049)** | ≥65% PASS |
+| crash | **20.69% (424/2,049)** | ≤35% PASS |
+| timeout | **3.56% (73/2,049)** | ≤10% PASS |
+| task-input OOB | **0% (전 축)** | 0% PASS |
+
+충돌 중 96.46%가 bar contact(전체 episode의 19.96%)였고 below 0.54%, OOB 0.20%였다.
+다만 횡축은 executed edge98 **26.35%**, `high80_y=70.90%`, positive/negative y가
+84.27%/13.62%로 한쪽 편향이 아직 크다. 이전의 입력 경계 이탈·PPO 발산은 해결됐지만,
+고밀도에서 남은 주 병목은 bar-contact와 횡축 편향이다. 이 smoke는 해당 편향을 더 악화시키지
+않으면서 recovery 안전 gate를 통과했으므로, 지금 정책 구조를 다시 바꾸기보다 145 bars부터
+안전 커리큘럼을 재개하고 밀도별 held-out에서 편향과 충돌 증가를 함께 감시한다.
+
+- 평가 결과: `train_session_logs/eval_v2_ppo_260801_1150_navrl_v2-recover-smoke-130bars-s1_260801_121130/`
+- canonical attestation: `.navrl_v2_recovery_eval_pass.json`, SHA-256
+  `11a5e403e777165d49ee4f0ab7a92df308a74440c35039f0c6c51a42a49588a0`; 생성 직후 독립 재검증 PASS.
+- 다음 실행은 `RECOVERY_MODE=curriculum`과 위 ep9600 checkpoint를 명시한 safe wrapper이며,
+  일반 `train_navrl_v2_search.sh`로 우회하지 않는다.
+
+## 2026-08-01 — TTC A/B baseline 팔 완료 (1650 Ti): held-out capture 79.443%, 통과선 확정
+
+### baseline 팔 (대조군, `cluster_sector`)
+
+- run `ppo_260731_2045_navrl_v2-ttc-baseline-s1`, 1650 Ti, 64 env, 70막대 고정
+- ep3250 → ep5250 (**4.096M adaptation samples** — 샘플 기준 예산 정합이 의도대로 적용됨)
+- peak VRAM **2900/4096 MiB** — 4 GB 카드에서 여유 확인. `base_sim_4gb` 프리셋으로 3070에서
+  잰 3425 MiB보다 오히려 낮다. **1650 Ti VRAM 미검증 항목 해소.**
+- 최종 체크포인트 `nn/last_gen_ppo_ep_5250_rew__140.70476_.pth`
+
+### held-out 평가 (seed 42, 64 env, 70막대, 실제 n=2048)
+
+| 지표 | 값 | 카운트 |
+|---|---|---|
+| capture | **79.443%** | 1627/2048 |
+| crash | **17.236%** | 353/2048 |
+| timeout | 3.320% | 68/2048 |
+| closest (no crash) | 1.13 m | best 0.19 m |
+
+### 사전 등록 게이트 → 절대 통과선 확정
+
+사전에 정한 `capture ≥ +2.0pp AND crash ≤ −2.0pp`를 baseline 실측에 적용하면:
+
+| 조건 | 통과선 | 카운트 |
+|---|---|---|
+| capture | **≥ 81.445%** | ≥ 1668/2048 |
+| crash | **≤ 15.234%** | ≤ 312/2048 |
+
+**둘 다 충족해야 통과.** capture만 오르고 crash를 대가로 치렀으면 기각한다.
+이 숫자는 ttc 팔 결과를 보기 **전에** 확정되었다.
+
+### 결과 오염 방지 (재확인)
+
+이 절대 수치는 1650 Ti / 64 env에서 나왔다. 3070 / 128 env 결과 표에 **섞지 않는다.**
+유효한 것은 **1650 Ti 내부의 두 팔 delta뿐**이다. (3070의 70막대 capture 0.832와
+직접 비교하는 것도 같은 이유로 무효 — 두 카드의 배치 크기가 다르다.)
+
+### 다음 — ttc 팔
+
+```
+ARM=ttc ./train_navrl_v2_ttc_ab.sh
+PYTHON=/home/joshuali/miniconda3/envs/aerialgym/bin/python \
+  GPU4GB=1 NAVRL_V2_DENSITIES=70 \
+  ./eval_navrl_v2_density_sweep.sh runs/<ttc run>/nn/last_gen_ppo_ep_5250_*.pth
+```
+
+평가는 baseline과 **동일한 70막대 / 64 env / seed 42** 조건이어야 한다.
+평가 런처가 `/home/fair` python을 기본값으로 잡으므로 1650 Ti에서는 `PYTHON=`을 명시한다.

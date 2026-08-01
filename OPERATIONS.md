@@ -348,7 +348,88 @@ tensorboard --logdir "$RUNS"
 
 ---
 
-## 6. 트러블슈팅
+## 6. v2 actor-collapse 안전 복구
+
+붕괴한 `sched-s1`은 ep10800 이후를 재사용하지 않는다. 아래 전용 런처는 감사된 ep9500 파일의
+SHA-256, 40×40 v2 아레나·센서·토큰·행동정책 계약을 확인하고, 130막대에서 정확히 100 epoch만
+smoke한다. training seed=1, task/YAML/env 수/simulator/selector/TTC/detector/FOV/tilt,
+density/LR/KL/rollback/margin/collapse guard/tag/log까지 고정하며, 이전 shell의
+`ALLOW_CONCURRENT`, 4GB preset, network override, viewer/evaluator flag도 제거한다. 이 복구
+계보에서는 `SEED`를 바꿀 수 없다. held-out 평가는 별도 seed=42로 강제된다.
+
+```bash
+cd /home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/aerial_gym/rl_training/rl_games
+
+# 선택: 학습 없이 파일·계약만 확인
+NAVRL_PREFLIGHT_ONLY=1 ./train_navrl_v2_recover_safe.sh
+
+# 실제 ep9500 → ep9600 고정-130 recovery smoke (로그가 터미널에 보임)
+./train_navrl_v2_recover_safe.sh
+```
+
+정상 종료 후 반드시 `last_gen_ppo_ep_9600_*.pth`의 **정확한 파일명**으로 held-out 평가한다.
+
+```bash
+NAVRL_V2_DENSITIES=130 ./eval_navrl_v2_density_sweep.sh \
+  runs/ppo_<recovery-smoke-run>/nn/last_gen_ppo_ep_9600_<reward>.pth 2049
+```
+
+이 명령은 단순 JSON뿐 아니라 smoke run의 정확한 100개 TensorBoard epoch를 함께 감사한다.
+capture≥0.65, crash≤0.35, timeout≤0.10, outcome count/rate 일치, post-update KL≤0.04,
+학습·평가 task-input OOB=0, **100 epoch 전체에서 rollback event/streak/누적값=0**을 모두 통과해야 한다.
+평가기는 원본 checkpoint의 별도 CoW snapshot을 실제로 재생하고, 시작·종료 checkpoint SHA,
+64자 nonce, cell log, evaluator script와 결과 JSON을 `130bars.receipt.json`에 묶는다. 평가 seed=42,
+TTC/detector/FOV/noise/max-tilt 계약까지 함께 재검산한 뒤에만
+`.navrl_v2_recovery_eval_pass.json`을 run root에 원자적으로 만든다. 결과 JSON만 수기로 만들거나
+평가 뒤 같은 경로의 checkpoint를 교체하면 snapshot/receipt 검증에서 거부된다. recovery
+checkpoint에서는 `NAVRL_V2_FORCE=1`로 provenance를 우회할 수 없다.
+
+복구용 held-out는 메인 물리 계약(`base_sim`, dt=0.01, 128 env)을 강제한다. 호출 전 shell에
+`AERIAL_GYM_SIM_NAME`, `NUM_ENVS`가 남아 있어도 덮어쓰며 `GPU4GB=1`은 복구 증명서 생성에서
+거부한다. 목표 거리는 checkpoint의 저장된 curriculum clock과 무관하게 6–28 m 전체를 사용하고
+FOV도 최종 분포로 고정한다. 결과 JSON에는 launcher 라벨이 아니라 simulator에서 읽은 config
+class, physics dt/substeps, RL step당 physics step 수와 RL step dt, 실제 목표 거리와 FOV 포화 여부가
+기록되어야 한다. 4GB profile도 상속된 실제 dt=0.01을 기록한다.
+
+평가까지 건강한 경우에만 같은 최종 checkpoint로 curriculum을 재개한다. 런처가 smoke lineage,
+정확한 100 epoch, 정상종료 marker, held-out PASS 증명서와 checkpoint hash를 다시 확인하므로
+평가하지 않은 checkpoint, 중간 checkpoint, ep10800은 모두 거부된다. 증명서가 가리키는 held-out
+JSON의 실제 SHA-256만 보는 것이 아니라 JSON 내용과 100-epoch TensorBoard scalar를 원본에서 다시
+계산하고 canonical 증명서 전체와 일치시키므로, 수기로 만든 PASS나 plausible 숫자만으로는 열리지
+않는다. smoke anchor도 `epoch=9600`, `frame=39,321,600`, `num_task_steps=307,200`,
+`k_min/k_max=20/28`을 정확히 만족해야 한다.
+
+상태 사이트는 GitHub Pages의 **정적 snapshot**이므로, 사이트의 PASS/재개 가능 표시는
+`generated_at` 시각에 로컬 증거를 검증했다는 뜻이다. 그 뒤 checkpoint·평가 JSON·TensorBoard가
+바뀌었는지를 브라우저가 실시간으로 알 수는 없다. 따라서 사이트 문구만 보고 일반 런처를 직접
+실행하지 말고, 아래 안전 복구 런처를 사용한다. 이 런처가 시작 직전에 같은 증거를 다시 검증하며,
+정확한 `epoch=9600` 정상종료 marker가 없거나 달라졌으면 재개를 거부한다.
+
+```bash
+RECOVERY_MODE=curriculum \
+CKPT=runs/ppo_<recovery-smoke-run>/nn/last_gen_ppo_ep_9600_<reward>.pth \
+./train_navrl_v2_recover_safe.sh
+```
+
+커리큘럼이 중간에 끊기면 smoke부터 반복하지 않는다. 안전 커리큘럼이 저장한 최신
+`last_gen_ppo_ep_*.pth`만 명시해 density evidence를 그대로 이어간다. checkpoint 안에는 PASS
+증명서 원문(base64)+SHA가 함께 저장되므로 별도 파일을 옮기지 않아도 lineage를 검증할 수 있으며,
+rollback 또는 scheduler가 낮춘 `current_action_learning_rate`도 다시 올리지 않고 그대로 복원한다.
+continue checkpoint는 smoke anchor 기준 `task_step += 32/epoch`, `frame += 4096/epoch` 관계와
+130→145→…→300 밀도 schedule도 만족해야 한다. 불일치는 자동 보정하지 않고 즉시 중단한다.
+연속 PPO rollback 횟수도 checkpoint에 저장·복원한다. patience에 도달하면 이미 소비한 rollout의
+frame을 반영하고, 복원된 model/Adam/RMS/scaler와 낮춘 LR을
+`last_gen_ppo_ep_*_rew_rollback_livelock.pth`로 먼저 저장한 뒤 fail-stop하므로 재시작으로 streak나
+LR backoff가 사라지지 않는다.
+
+```bash
+RECOVERY_MODE=continue \
+CKPT=runs/ppo_<recovery-curriculum-run>/nn/last_gen_ppo_ep_<latest>_<reward>.pth \
+MAX_EPOCHS=30000 \
+./train_navrl_v2_recover_safe.sh
+```
+
+## 7. 트러블슈팅
 
 ## 자주 겪는 문제 (트러블슈팅)
 

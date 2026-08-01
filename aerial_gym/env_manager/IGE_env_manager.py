@@ -412,15 +412,26 @@ class IsaacGymEnv(BaseManager):
             requires_grad=False,
         )
 
-        self.global_tensor_dict["unfolded_dof_state_tensor"] = gymtorch.wrap_tensor(
-            self.gym.acquire_dof_state_tensor(self.sim)
-        )
-        # if not None, view the tensor as (num_envs, num_dofs, 2)
-        if not self.global_tensor_dict["unfolded_dof_state_tensor"] is None:
-            self.sim_has_dof = True
+        # Isaac Gym returns a null descriptor when the simulation has no DOFs. Passing that
+        # descriptor to gymtorch.wrap_tensor prints the alarming (but otherwise harmless)
+        # ``Can't create empty tensor`` message from the C++ binding. Query the count first and
+        # preserve the tensor-dictionary contract with real, zero-length Torch tensors instead.
+        self.sim_has_dof = int(self.gym.get_sim_dof_count(self.sim)) > 0
+        if self.sim_has_dof:
+            self.global_tensor_dict["unfolded_dof_state_tensor"] = gymtorch.wrap_tensor(
+                self.gym.acquire_dof_state_tensor(self.sim)
+            )
             self.global_tensor_dict["dof_state_tensor"] = self.global_tensor_dict[
                 "unfolded_dof_state_tensor"
             ].view(self.num_envs, -1, 2)
+        else:
+            dof_state_tensor = torch.empty(
+                (self.num_envs, 0, 2),
+                device=self.device,
+                dtype=torch.float32,
+            )
+            self.global_tensor_dict["dof_state_tensor"] = dof_state_tensor
+            self.global_tensor_dict["unfolded_dof_state_tensor"] = dof_state_tensor.reshape(0, 2)
 
         self.global_tensor_dict["global_contact_force_tensor"] = self.global_contact_force_tensor
         self.global_tensor_dict["robot_contact_force_tensor"] = self.global_contact_force_tensor[
@@ -576,7 +587,8 @@ class IsaacGymEnv(BaseManager):
         self.gym.refresh_force_sensor_tensor(self.sim)
         self.gym.refresh_actor_root_state_tensor(self.sim)
         self.gym.refresh_net_contact_force_tensor(self.sim)
-        self.gym.refresh_dof_state_tensor(self.sim)
+        if self.sim_has_dof:
+            self.gym.refresh_dof_state_tensor(self.sim)
 
     def step_graphics(self):
         if not self.graphics_are_stepped:

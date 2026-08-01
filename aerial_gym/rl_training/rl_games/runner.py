@@ -43,6 +43,9 @@ import distutils
 from aerial_gym.rl_training.rl_games.training_safety import (
     apply_density_capture_guard_overrides,
 )
+from aerial_gym.rl_training.rl_games.ppo_update_safety import (
+    resolve_action_learning_rate,
+)
 
 os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
 # import warnings
@@ -50,9 +53,9 @@ os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
 
 # Vision mode emits obs['states'] for the asymmetric critic during TRAINING. The rl_games PLAYER
 # expects a plain actor-obs tensor (observation_space is a Box, not a Dict), so returning the dict
-# at play time makes norm_obs choke ("Can't create empty tensor"). Detect --play and hand the
-# player only the actor observation; the critic/states are a train-only concern.
-_PLAY_MODE = ("--play" in sys.argv) or ("-p" in sys.argv)
+# at play time causes an observation-shape failure. Detect every player alias and hand the player
+# only the actor observation; the critic/states are a train-only concern.
+_PLAY_MODE = ("--play" in sys.argv) or ("-p" in sys.argv) or ("--eval" in sys.argv)
 
 
 class ExtractObsWrapper(gym.Wrapper):
@@ -435,6 +438,9 @@ def _prepare_rlgames_argv_dict(cli: dict):
                 "[aerial RL] Mode = TRAIN (implicit — TorchRunner 의 default)\n"
                 "            추론만: runner.py … --play --checkpoint PATH   (별칭: --eval)"
             )
+        # Normalize TorchRunner's implicit default into explicit internal state. Downstream
+        # checkpoint/LR/provenance logic must not have to rediscover that false/false means train.
+        cli["train"] = True
     elif cli["play"]:
         if not quiet_startup_enabled():
             print("[aerial RL] Mode = PLAY (inference, no PPO 학습 루프·TensorBoard epoch)")
@@ -615,11 +621,24 @@ def _apply_action_policy_config(config, args):
         train_cfg["entropy_coef"] = entropy
 
     learning_rate_override = os.environ.get("NAVRL_LEARNING_RATE", "").strip()
-    if learning_rate_override:
-        learning_rate = float(learning_rate_override)
-        if not np.isfinite(learning_rate) or learning_rate <= 0.0:
-            raise ValueError("NAVRL_LEARNING_RATE must be finite and > 0")
-        train_cfg["learning_rate"] = learning_rate
+    saved_current_lr = checkpoint_contract.get("current_action_learning_rate")
+    # TorchRunner's historical default is TRAIN even when both flags are false.  Treat every
+    # non-play checkpoint path as a training resume, otherwise the implicit resume route silently
+    # discards a saved rollback LR while the explicit --train route preserves it.
+    resume_training = not bool(args.get("play")) and bool(checkpoint_contract)
+    learning_rate = resolve_action_learning_rate(
+        train_cfg.get("learning_rate", 0.0),
+        explicit_override=learning_rate_override,
+        saved_current=saved_current_lr,
+        resume_training=resume_training,
+    )
+    train_cfg["learning_rate"] = learning_rate
+    if resume_training and not learning_rate_override and saved_current_lr is not None:
+        print(
+            "[aerial RL] Resume optimizer LR restored from checkpoint safety state: %.3g."
+            % learning_rate,
+            flush=True,
+        )
 
     guard_cfg = train_cfg.get("early_stop_density_capture")
     if isinstance(guard_cfg, dict):
@@ -640,6 +659,13 @@ def _apply_action_policy_config(config, args):
 
     os.environ.setdefault("NAVRL_ACTION_POLICY", policy)
     os.environ["NAVRL_ENTROPY_COEF"] = str(float(train_cfg.get("entropy_coef", 0.0)))
+    # Checkpoint provenance must record the optimizer value that is actually active, including the
+    # YAML default. Previously this environment key was set only for an explicit override, so a
+    # real 1e-4 optimizer was falsely stored as cfg_action_learning_rate=0.
+    os.environ["NAVRL_LEARNING_RATE"] = str(
+        float(train_cfg.get("learning_rate", 0.0))
+    )
+    os.environ["NAVRL_CURRENT_LEARNING_RATE"] = os.environ["NAVRL_LEARNING_RATE"]
     print(
         "[aerial RL] action policy | mode=%s std=%s mu_scale=%s entropy=%g "
         "bounds_loss=%g lr=%g"

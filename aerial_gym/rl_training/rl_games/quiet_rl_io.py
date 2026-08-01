@@ -43,6 +43,21 @@ def _allow_print(*args: object) -> bool:
         return True
     if "[aerial RL] Early stop" in msg:
         return True
+    if msg.startswith("[aerial RL]") and any(
+        marker in msg
+        for marker in (
+            "PPO epoch rejection",
+            "PPO EPOCH ROLLBACK",
+            "FAIL-STOP",
+            "Resume optimizer",
+            "Actor optimizer",
+            "action policy",
+            "policy-actiondiag",
+            "Best-checkpoint guard",
+            "density ",
+        )
+    ):
+        return True
     if msg.strip() in ("MAX EPOCHS NUM!", "MAX FRAMES NUM!"):
         return True
     if msg.startswith("WARNING: Max epochs") or msg.startswith("WARNING: Max frames"):

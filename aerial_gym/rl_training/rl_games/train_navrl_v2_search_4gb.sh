@@ -30,8 +30,9 @@ cd "$(dirname "${BASH_SOURCE[0]}")"
 # default_buffer_size_multiplier 10 -> 2). Physics behaviour is unchanged; these are capacity
 # ceilings that alone exceed a 4 GB card at the 8000-env defaults.
 export GPU4GB=1
-export AERIAL_GYM_SIM_NAME="${AERIAL_GYM_SIM_NAME:-base_sim_4gb}"
-export NUM_ENVS="${NUM_ENVS:-64}"
+export NAVRL_V2_PROFILE=4gb
+export AERIAL_GYM_SIM_NAME=base_sim_4gb
+export NUM_ENVS=64
 export AERIAL_RUN_TAG="${AERIAL_RUN_TAG:-v2-search-4gb-s${SEED:-1}}"
 export TRAIN_SESSION_LOG="${TRAIN_SESSION_LOG:-train_session_logs/v2_search_4gb_$(date +%y%m%d_%H%M%S).log}"
 

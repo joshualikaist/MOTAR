@@ -184,5 +184,77 @@ class DensityThresholdScheduleTest(unittest.TestCase):
                 _CUR.parse_density_threshold_schedule(bad)
 
 
+class BestRewardByDensityTest(unittest.TestCase):
+    """Per-density best reward: the global running max goes stale the moment density changes."""
+
+    def _feed(self, pairs, state=None):
+        finished = []
+        for bars, reward in pairs:
+            state, done = _CUR.track_best_reward_by_density(state, bars, reward)
+            if done is not None:
+                finished.append(done)
+        return state, finished
+
+    def test_tracks_max_within_a_density(self):
+        state, finished = self._feed([(70, 10.0), (70, 25.0), (70, 18.0)])
+        self.assertEqual(state["current_bars"], 70)
+        self.assertAlmostEqual(state["best"], 25.0)
+        self.assertEqual(finished, [])
+
+    def test_promotion_resets_the_best_instead_of_carrying_it(self):
+        # The whole point: 85 bars is harder, so the 70-bar peak must not become the bar to beat.
+        state, finished = self._feed([(70, 140.0), (70, 150.0), (85, 110.0), (85, 120.0)])
+        self.assertEqual(finished, [(70, 150.0)])
+        self.assertEqual(state["current_bars"], 85)
+        self.assertAlmostEqual(state["best"], 120.0)
+
+    def test_finished_history_accumulates_one_entry_per_density(self):
+        state, finished = self._feed(
+            [(70, 150.0), (85, 120.0), (85, 130.0), (100, 90.0)]
+        )
+        self.assertEqual(finished, [(70, 150.0), (85, 130.0)])
+        self.assertEqual(state["history"], ((70, 150.0), (85, 130.0)))
+
+    def test_lower_reward_at_a_new_density_still_becomes_that_density_best(self):
+        state, _ = self._feed([(70, 150.0), (85, 12.0)])
+        self.assertAlmostEqual(state["best"], 12.0)
+
+    def test_missing_density_is_a_no_op(self):
+        state, _ = self._feed([(70, 20.0)])
+        state2, done = _CUR.track_best_reward_by_density(state, None, 999.0)
+        self.assertIsNone(done)
+        self.assertEqual(state2["current_bars"], 70)
+        self.assertAlmostEqual(state2["best"], 20.0)
+
+    def test_non_finite_reward_never_becomes_the_best(self):
+        state, _ = self._feed([(70, 20.0)])
+        for bad in (float("nan"), float("inf"), float("-inf")):
+            state, _ = self._feed([(70, bad)], state=state)
+            self.assertAlmostEqual(state["best"], 20.0)
+
+    def test_missing_reward_before_any_value_leaves_best_unset(self):
+        state, finished = self._feed([(70, None), (70, None)])
+        self.assertIsNone(state["best"])
+        self.assertEqual(finished, [])
+
+    def test_density_with_no_reward_reports_nothing_on_promotion(self):
+        # Nothing measured at 70 means there is no honest "best at 70" to report.
+        state, finished = self._feed([(70, None), (85, 30.0)])
+        self.assertEqual(finished, [])
+        self.assertEqual(state["current_bars"], 85)
+
+    def test_state_is_not_mutated_in_place(self):
+        state, _ = self._feed([(70, 20.0)])
+        snapshot = dict(state)
+        _CUR.track_best_reward_by_density(state, 70, 999.0)
+        self.assertEqual(state, snapshot)
+
+    def test_density_decrease_is_treated_as_a_level_change(self):
+        # A resume at a hand-set lower density must not inherit the harder level's best.
+        state, finished = self._feed([(100, 90.0), (70, 140.0)])
+        self.assertEqual(finished, [(100, 90.0)])
+        self.assertAlmostEqual(state["best"], 140.0)
+
+
 if __name__ == "__main__":
     unittest.main()

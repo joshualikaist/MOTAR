@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import csv
 from datetime import datetime, timezone
+import hashlib
+import importlib.util
 import json
 import math
 from pathlib import Path
@@ -24,6 +26,538 @@ RUNS_ROOT = RL_ROOT / "runs"
 STATUS_PATH = ROOT / "docs/status/status.json"
 HTML_PATH = ROOT / "docs/status/index.html"
 CORRECTED_CURVE_PATH = ROOT / "results/corrected_chirality_density_curve.csv"
+RECOVERY_ATTESTATION_VERIFIER_PATH = ROOT / "tools/navrl_v2_recovery_attestation.py"
+
+_RECOVERY_SOURCE_SHA256 = (
+    "3a0c167cbf4bc966426488f562da2b6788bd00ca62e3a31f226f5fbe1967578f"
+)
+_RECOVERY_CHECKPOINT_CONTRACT = {
+    "num_task_steps": 307200,
+    "cfg_ppo_horizon": 32,
+    "k_max_cur": 28.0,
+    "k_min_cur": 20.0,
+    "cfg_training_seed": 1,
+    "cfg_training_num_envs": 128,
+    "cfg_training_file": "ppo_navrl_perception_transformer.yaml",
+    "cfg_training_task": "navrl_task",
+    "cfg_training_sim": "base_sim",
+    "cfg_training_profile": "main",
+    "cfg_runtime_sim_config_class": "BaseSimConfig",
+    "cfg_physics_dt_s": 0.01,
+    "cfg_physics_substeps": 1,
+    "cfg_physics_steps_per_rl_step": 10,
+    "cfg_rl_step_dt_s": 0.1,
+    "cfg_arena_xy": 40.0,
+    "cfg_arena_z": 3.0,
+    "cfg_bar_pool": "bars_h3",
+    "cfg_placement_mode": "navrl_band",
+    "cfg_placement_gap_m": 1.6,
+    "cfg_placement_touch_m": 0.4,
+    "cfg_bar_x_min": 0.0,
+    "cfg_bar_x_max": 1.0,
+    "cfg_episode_len_steps": 600,
+    "cfg_general_goal_dist_min": 6.0,
+    "cfg_general_goal_dist_max": 28.0,
+    "cfg_lidar_max_range": 12.0,
+    "cfg_lidar_hbeams": 72,
+    "cfg_lidar_vbeams": 4,
+    "cfg_max_obstacles": 8,
+    "cfg_token_fov_deg": 240.0,
+    "cfg_obstacle_suppress_deg": 10.0,
+    "cfg_obstacle_selector": "cluster_sector",
+    "cfg_obstacle_cluster_gap_m": 0.45,
+    "cfg_obstacle_sectors": 8,
+    "cfg_obstacle_ttc_idle_s": 30.0,
+    "cfg_obstacle_ttc_min_speed": 0.15,
+    "cfg_corridor_tokens": 0,
+    "cfg_corridor_horizon_m": 6.0,
+    "cfg_corridor_min_width_m": 0.55,
+    "cfg_fov_curriculum_epochs": 3000,
+    "cfg_detector_min_pixels": 2,
+    "cfg_detector_threshold": 0.55,
+    "cfg_detector_checkpoint_name": "",
+    "cfg_detector_checkpoint_sha256": "",
+    "cfg_perception_perturb": False,
+    "cfg_detection_dropout": 0.3,
+    "cfg_rgb_noise_std": 0.015,
+    "cfg_depth_noise_std": 0.02,
+    "cfg_max_velocity": 2.5,
+    "cfg_alt_hold_vmax": 2.5,
+    "cfg_yaw_rate_max": 3.0,
+    "cfg_max_tilt_deg": 45.0,
+    "cfg_tilt_comp": True,
+    "cfg_target_motion_model": "symmetric_local_steer_v2_heading_continuity90",
+    "cfg_target_pattern": "mixed",
+    "cfg_target_speed_min": 0.3,
+    "cfg_target_speed_final": 1.5,
+    "cfg_target_speed_fixed": -1.0,
+    "cfg_target_speed_ramp_epochs": 300,
+    "cfg_target_speed_ramp_start_epochs": 0,
+    "cfg_general_train": True,
+    "cfg_oob_margin": 1.0,
+    "cfg_action_policy": "squashed_gaussian",
+    "cfg_action_std": "0.35,0.35,0.05,0.08",
+    "cfg_action_mu_scale": "1.0,0.4,1.0,1.0",
+    "cfg_action_entropy_coef": 0.0,
+    "cfg_action_learning_rate": 5e-6,
+    "current_action_learning_rate": 5e-6,
+    "cfg_ppo_log_ratio_clamp": 10.0,
+    "cfg_ppo_kl_stop": 0.04,
+    "cfg_ppo_epoch_rollback": True,
+    "cfg_ppo_rollback_lr_factor": 0.5,
+    "cfg_ppo_rollback_min_lr": 1e-6,
+    "cfg_ppo_rollback_patience": 5,
+    "cfg_density_guard_window_epochs": 50,
+    "cfg_density_guard_min_epochs": 100,
+    "cfg_density_guard_min_peak": 0.5,
+    "cfg_density_guard_drop": 0.25,
+    "cfg_density_guard_patience": 25,
+    "cfg_lateral_latent_margin_y": 1.25,
+    "cfg_latent_margin": "2.0,1.25,2.0,2.0",
+    "cfg_lateral_latent_margin_coef": 0.01,
+}
+_RECOVERY_RESULT_CONTRACT = {
+    "schema_version": 1,
+    "runtime_sim": "base_sim",
+    "runtime_profile": "main",
+    "runtime_num_envs": 128,
+    "sim_physics_contract": "base_sim_dt0.01",
+    "runtime_sim_config_class": "BaseSimConfig",
+    "physics_dt_s": 0.01,
+    "physics_substeps": 1,
+    "physics_steps_per_rl_step": 10,
+    "rl_step_dt_s": 0.1,
+    "arena_xy_m": 40.0,
+    "goal_dist_min_m": 6.0,
+    "goal_dist_max_m": 28.0,
+    "full_goal_distribution": True,
+    "fov_curriculum_saturated": True,
+    "target_speed_distribution": "uniform",
+    "target_speed_min_mps": 0.3,
+    "target_speed_max_mps": 1.5,
+    "target_pattern": "mixed",
+    "lidar_beams": [4, 72],
+    "lidar_range_m": 12.0,
+    "obstacle_tokens": 8,
+    "obstacle_fov_deg": 240.0,
+    "obstacle_selector": "cluster_sector",
+    "obstacle_ttc_idle_s": 30.0,
+    "obstacle_ttc_min_speed": 0.15,
+    "fov_curriculum_epochs": 3000,
+    "detector_checkpoint_sha256": "",
+    "detector_min_pixels": 2,
+    "detector_threshold": 0.55,
+    "perception_perturb": False,
+    "detection_dropout": 0.3,
+    "rgb_noise_std": 0.015,
+    "depth_noise_std": 0.02,
+    "max_tilt_deg": 45.0,
+    "tilt_comp": True,
+    "oob_margin_m": 1.0,
+    "seed": 42,
+}
+_RECOVERY_ATTESTATION_THRESHOLDS = {
+    "min_episodes": 2049,
+    "min_capture_rate": 0.65,
+    "max_crash_rate": 0.35,
+    "max_timeout_rate": 0.10,
+    "max_training_kl": 0.04,
+    "max_task_input_oob_rate": 1e-9,
+}
+
+
+def _sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _finite_number(value: Any) -> Optional[float]:
+    if isinstance(value, bool):
+        return None
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    return number if math.isfinite(number) else None
+
+
+def _contract_value_matches(actual: Any, expected: Any) -> bool:
+    if isinstance(expected, bool):
+        return isinstance(actual, bool) and actual is expected
+    if isinstance(expected, (int, float)) and not isinstance(expected, bool):
+        number = _finite_number(actual)
+        return number is not None and math.isclose(
+            number, float(expected), rel_tol=0.0, abs_tol=1e-9
+        )
+    return actual == expected
+
+
+def _check_contract(
+    actual: Any, expected: Dict[str, Any], prefix: str, errors: List[str]
+) -> None:
+    if not isinstance(actual, dict):
+        errors.append(f"{prefix}: not an object")
+        return
+    for key, expected_value in expected.items():
+        if key not in actual:
+            errors.append(f"{prefix}.{key}: missing")
+        elif not _contract_value_matches(actual[key], expected_value):
+            errors.append(f"{prefix}.{key}: contract mismatch")
+
+
+def _run_canonical_recovery_verifier(
+    checkpoint_path: Path, attestation_path: Path, errors: List[str]
+) -> None:
+    """Recompute the attestation through its canonical checkpoint/result/TB verifier.
+
+    The dashboard must fail closed if the verifier cannot be imported or executed.  In
+    particular, self-reported KL/OOB/rollback values are not evidence: the canonical verifier
+    rereads the exact 100-epoch TensorBoard window and rebuilds the complete payload.
+    """
+
+    try:
+        spec = importlib.util.spec_from_file_location(
+            "_navrl_v2_recovery_attestation_for_status",
+            RECOVERY_ATTESTATION_VERIFIER_PATH,
+        )
+        if spec is None or spec.loader is None:
+            raise ImportError("module spec has no loader")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        verifier = getattr(module, "verify_existing_attestation", None)
+        if not callable(verifier):
+            raise AttributeError("verify_existing_attestation is unavailable")
+        verifier(checkpoint_path, attestation_path)
+    except Exception as exc:
+        errors.append(f"canonical verifier: {exc}")
+
+
+def _normal_completion_marker_epoch(run_dir: Path) -> Optional[int]:
+    """Return the epoch only for the exact marker emitted by a normal trainer exit.
+
+    A metrics row at epoch 9600 proves that an epoch was logged, not that the runner completed its
+    save/flush/finish path.  Treat extra or malformed marker content as invalid too, so a stale or
+    hand-edited file cannot turn an interrupted smoke into a completed one on the dashboard.
+    """
+
+    try:
+        marker_text = (run_dir / ".aerial_training_finished").read_text(encoding="utf-8")
+    except OSError:
+        return None
+    match = re.fullmatch(r"epoch=(\d+)\n?", marker_text)
+    return int(match.group(1)) if match else None
+
+
+def _validate_recovery_attestation(run_dir: Path) -> List[str]:
+    """Validate every artifact behind the dashboard's recovery PASS claim.
+
+    The attestation file is deliberately not treated as a signature.  It is accepted only when its
+    checkpoint and held-out paths still exist, both byte digests match, the checkpoint carries the
+    complete safe-recovery contract, and the held-out artifact independently reproduces every
+    seed/outcome/OOB/rollback field quoted by the attestation.
+    """
+    run_dir = run_dir.resolve()
+    errors: List[str] = []
+    attestation_path = run_dir / ".navrl_v2_recovery_eval_pass.json"
+    if not attestation_path.is_file():
+        return ["attestation: missing"]
+    try:
+        attestation = json.loads(attestation_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        return [f"attestation: unreadable ({exc})"]
+    if not isinstance(attestation, dict):
+        return ["attestation: not an object"]
+
+    def expect_equal(label: str, actual: Any, expected: Any) -> None:
+        if not _contract_value_matches(actual, expected):
+            errors.append(f"{label}: mismatch")
+
+    expect_equal("attestation.schema_version", attestation.get("schema_version"), 1)
+    expect_equal("attestation.verdict", attestation.get("verdict"), "PASS")
+    expect_equal("attestation.checkpoint_epoch", attestation.get("checkpoint_epoch"), 9600)
+    expect_equal("attestation.checkpoint_frame", attestation.get("checkpoint_frame"), 39321600)
+    expect_equal(
+        "attestation.source_checkpoint_sha256",
+        attestation.get("source_checkpoint_sha256"),
+        _RECOVERY_SOURCE_SHA256,
+    )
+    expect_equal("attestation.source_epoch", attestation.get("source_epoch"), 9500)
+    expect_equal("attestation.smoke_epochs", attestation.get("smoke_epochs"), 100)
+    expect_equal("attestation.bars", attestation.get("bars"), 130)
+    expect_equal("attestation.seed", attestation.get("seed"), 42)
+    _check_contract(
+        attestation.get("thresholds"),
+        _RECOVERY_ATTESTATION_THRESHOLDS,
+        "attestation.thresholds",
+        errors,
+    )
+    _check_contract(
+        attestation.get("evaluation_contract"),
+        _RECOVERY_RESULT_CONTRACT,
+        "attestation.evaluation_contract",
+        errors,
+    )
+    created_at = str(attestation.get("created_at_utc", ""))
+    try:
+        created = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+        if created.tzinfo is None:
+            raise ValueError("timezone missing")
+    except ValueError:
+        errors.append("attestation.created_at_utc: invalid")
+
+    if _normal_completion_marker_epoch(run_dir) != 9600:
+        errors.append("training marker: missing, malformed, or not exact epoch 9600")
+
+    checkpoint_path = Path(str(attestation.get("checkpoint", ""))).expanduser().resolve()
+    expected_nn_dir = (run_dir / "nn").resolve()
+    if checkpoint_path.parent != expected_nn_dir:
+        errors.append("checkpoint: outside recovery run nn directory")
+    if not checkpoint_path.is_file():
+        errors.append("checkpoint: missing")
+        checkpoint_digest = None
+        checkpoint = None
+    else:
+        try:
+            checkpoint_digest = _sha256(checkpoint_path)
+        except OSError as exc:
+            errors.append(f"checkpoint: unreadable ({exc})")
+            checkpoint_digest = None
+        if checkpoint_digest != attestation.get("checkpoint_sha256"):
+            errors.append("checkpoint: SHA-256 mismatch")
+        try:
+            import torch
+
+            checkpoint = torch.load(
+                checkpoint_path, map_location="cpu", weights_only=False
+            )
+        except Exception as exc:
+            errors.append(f"checkpoint: cannot load ({exc})")
+            checkpoint = None
+
+    if not isinstance(checkpoint, dict):
+        if checkpoint is not None:
+            errors.append("checkpoint: not an object")
+    else:
+        expect_equal("checkpoint.epoch", checkpoint.get("epoch"), 9600)
+        expect_equal("checkpoint.frame", checkpoint.get("frame"), 39321600)
+        state = checkpoint.get("env_state")
+        _check_contract(
+            state, _RECOVERY_CHECKPOINT_CONTRACT, "checkpoint.env_state", errors
+        )
+        if isinstance(state, dict):
+            lineage = {
+                "cfg_recovery_stage": "smoke",
+                "cfg_recovery_source_sha256": _RECOVERY_SOURCE_SHA256,
+                "cfg_recovery_source_epoch": 9500,
+                "cfg_recovery_smoke_required_epochs": 100,
+                "cfg_recovery_smoke_bars": 130,
+                "n_bars_active": 130,
+            }
+            _check_contract(state, lineage, "checkpoint.env_state", errors)
+
+    # This is the authoritative recomputation of checkpoint/result/TensorBoard evidence. Keep the
+    # local checks below as an independent, dashboard-specific fail-closed layer, but never unlock
+    # merely because a hand-written JSON repeats plausible PASS values.
+    if checkpoint_path.is_file():
+        _run_canonical_recovery_verifier(checkpoint_path, attestation_path, errors)
+
+    result_path = Path(
+        str(attestation.get("heldout_result_json", ""))
+    ).expanduser().resolve()
+    if not result_path.is_file():
+        errors.append("held-out result: missing")
+        result = None
+    else:
+        try:
+            result_digest = _sha256(result_path)
+            result = json.loads(result_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError) as exc:
+            errors.append(f"held-out result: unreadable ({exc})")
+            result = None
+        else:
+            if result_digest != attestation.get("heldout_result_sha256"):
+                errors.append("held-out result: SHA-256 mismatch")
+
+    if not isinstance(result, dict):
+        if result is not None:
+            errors.append("held-out result: not an object")
+        return errors
+
+    expect_equal("held-out.schema_version", result.get("schema_version"), 1)
+    try:
+        result_checkpoint = Path(str(result.get("checkpoint", ""))).expanduser().resolve()
+    except (OSError, RuntimeError, ValueError):
+        result_checkpoint = Path("/")
+    if result_checkpoint != checkpoint_path:
+        errors.append("held-out.checkpoint: mismatch")
+
+    requested = _finite_number(result.get("requested_episodes"))
+    actual = _finite_number(result.get("actual_episodes"))
+    if requested is None or not requested.is_integer() or requested < 2049:
+        errors.append("held-out.requested_episodes: invalid")
+    if (
+        actual is None
+        or not actual.is_integer()
+        or actual < 2049
+        or (requested is not None and actual < requested)
+    ):
+        errors.append("held-out.actual_episodes: invalid")
+
+    condition = result.get("condition")
+    expected_condition = {
+        "seed": 42,
+        "bars": 130,
+        "num_envs": 128,
+        "target_pattern": "mixed",
+        "target_speed_mode": "uniform",
+        "target_speed_min_mps": 0.3,
+        "target_speed_max_mps": 1.5,
+        "pursuer_max_speed_mps": 2.5,
+        "oob_margin_m": 1.0,
+        "episode_len_steps": 600,
+        "goal_dist_min_m": 6.0,
+        "goal_dist_max_m": 28.0,
+        "full_goal_distribution": True,
+        "fov_curriculum_saturated": True,
+        "runtime_sim_config_class": "BaseSimConfig",
+        "physics_dt_s": 0.01,
+        "physics_substeps": 1,
+        "physics_steps_per_rl_step": 10,
+        "rl_step_dt_s": 0.1,
+    }
+    _check_contract(condition, expected_condition, "held-out.condition", errors)
+    _check_contract(
+        result.get("v2_evaluation_contract"),
+        _RECOVERY_RESULT_CONTRACT,
+        "held-out.v2_evaluation_contract",
+        errors,
+    )
+
+    outcome = result.get("outcome")
+    rates: Dict[str, Optional[float]] = {}
+    count_values: Dict[str, Optional[float]] = {}
+    if not isinstance(outcome, dict):
+        errors.append("held-out.outcome: not an object")
+    else:
+        counts = []
+        for name in ("captured", "crash", "timeout"):
+            value = _finite_number(outcome.get(name))
+            if value is None or not value.is_integer() or value < 0:
+                errors.append(f"held-out.outcome.{name}: invalid")
+            counts.append(value)
+            count_values[name] = value
+        for name in ("capture_rate", "crash_rate", "timeout_rate"):
+            value = _finite_number(outcome.get(name))
+            rates[name] = value
+            if value is None or not 0.0 <= value <= 1.0:
+                errors.append(f"held-out.outcome.{name}: invalid")
+        if actual is not None and all(value is not None for value in counts):
+            if not math.isclose(sum(counts), actual, rel_tol=0.0, abs_tol=0.0):
+                errors.append("held-out.outcome: counts do not equal actual episodes")
+            elif actual > 0:
+                for count, rate_name in zip(
+                    counts, ("capture_rate", "crash_rate", "timeout_rate")
+                ):
+                    rate = rates.get(rate_name)
+                    if rate is not None and not math.isclose(
+                        rate, count / actual, rel_tol=0.0, abs_tol=1e-12
+                    ):
+                        errors.append(f"held-out.outcome.{rate_name}: count mismatch")
+
+    capture_rate = rates.get("capture_rate")
+    crash_rate = rates.get("crash_rate")
+    timeout_rate = rates.get("timeout_rate")
+    if capture_rate is not None and capture_rate < 0.65:
+        errors.append("held-out.outcome.capture_rate: below gate")
+    if crash_rate is not None and crash_rate > 0.35:
+        errors.append("held-out.outcome.crash_rate: above gate")
+    if timeout_rate is not None and timeout_rate > 0.10:
+        errors.append("held-out.outcome.timeout_rate: above gate")
+
+    action = result.get("action")
+    eval_oob: List[float] = []
+    if not isinstance(action, dict):
+        errors.append("held-out.action: not an object")
+    else:
+        expect_equal("held-out.action.policy", action.get("policy"), "squashed_gaussian")
+        samples = _finite_number(action.get("samples"))
+        if samples is None or not samples.is_integer() or samples <= 0:
+            errors.append("held-out.action.samples: invalid")
+        raw_oob = action.get("task_input_oob_rate")
+        if not isinstance(raw_oob, list) or len(raw_oob) != 4:
+            errors.append("held-out.action.task_input_oob_rate: expected four axes")
+        else:
+            for value in raw_oob:
+                number = _finite_number(value)
+                if number is None or not 0.0 <= number <= 1e-9:
+                    errors.append("held-out.action.task_input_oob_rate: invalid")
+                else:
+                    eval_oob.append(number)
+
+    mirror_fields = {
+        "checkpoint_epoch": 9600,
+        "bars": 130,
+        "seed": 42,
+        "requested_episodes": requested,
+        "episodes": actual,
+        "captured": count_values.get("captured"),
+        "crash": count_values.get("crash"),
+        "timeout": count_values.get("timeout"),
+        "capture_rate": capture_rate,
+        "crash_rate": crash_rate,
+        "timeout_rate": timeout_rate,
+    }
+    for name, expected in mirror_fields.items():
+        if expected is None or not _contract_value_matches(attestation.get(name), expected):
+            errors.append(f"attestation.{name}: held-out mismatch")
+
+    training_kl = _finite_number(attestation.get("training_max_kl"))
+    training_oob = _finite_number(
+        attestation.get("training_max_task_input_oob_rate")
+    )
+    attested_eval_oob = _finite_number(
+        attestation.get("evaluation_max_task_input_oob_rate")
+    )
+    combined_oob = _finite_number(attestation.get("max_task_input_oob_rate"))
+    if training_kl is None or not -1e-6 <= training_kl <= 0.04:
+        errors.append("attestation.training_max_kl: invalid")
+    for name, value in (
+        ("training_max_task_input_oob_rate", training_oob),
+        ("evaluation_max_task_input_oob_rate", attested_eval_oob),
+        ("max_task_input_oob_rate", combined_oob),
+    ):
+        if value is None or not 0.0 <= value <= 1e-9:
+            errors.append(f"attestation.{name}: invalid")
+    if eval_oob and attested_eval_oob is not None and not math.isclose(
+        attested_eval_oob, max(eval_oob), rel_tol=0.0, abs_tol=1e-12
+    ):
+        errors.append("attestation.evaluation_max_task_input_oob_rate: held-out mismatch")
+    if (
+        training_oob is not None
+        and attested_eval_oob is not None
+        and combined_oob is not None
+        and not math.isclose(
+            combined_oob,
+            max(training_oob, attested_eval_oob),
+            rel_tol=0.0,
+            abs_tol=1e-12,
+        )
+    ):
+        errors.append("attestation.max_task_input_oob_rate: component mismatch")
+    for name in (
+        "max_rollback_streak",
+        "final_rollback_streak",
+        "max_epoch_rollback",
+        "max_rollback_total",
+        "final_rollback_total",
+    ):
+        value = _finite_number(attestation.get(name))
+        if value is None or value != 0.0:
+            errors.append(f"attestation.{name}: expected zero")
+    return errors
 
 
 def _float(row: Dict[str, str], key: str) -> Optional[float]:
@@ -64,7 +598,15 @@ def _training_process_exists() -> bool:
 
 def _is_smoke_run(run_name: str) -> bool:
     """Keep short wiring checks in history without presenting them as research results."""
-    return "smoke" in run_name.lower()
+    lowered = run_name.lower()
+    # The 100-epoch v2 recovery smoke is a real gated recovery stage and must become the latest
+    # dashboard record when complete. Only one/few-epoch wiring checks stay out of Latest.
+    if "v2-recover-smoke" in lowered:
+        return False
+    return any(
+        marker in lowered
+        for marker in ("smoke", "integration", "forced", "preflight")
+    )
 
 
 def _live_training_max_epochs(default: int = 12000) -> int:
@@ -133,6 +675,12 @@ def _summarize_run(csv_path: Path, *, is_active: bool) -> Dict[str, Any]:
         summary["reward_collapse"] = True
         summary["collapse_detail"] = (
             "KL crossed 0.04 at epoch 10276; latent means exploded and tail500 capture fell to 1.0%."
+        )
+    if run_dir.name.startswith("ppo_260731_2012_"):
+        summary["reward_collapse"] = True
+        summary["collapse_detail"] = (
+            "Actor-update collapse at epoch 10836: KL peaked above 2.6, transformed entropy "
+            "fell below -100, and capture reached 0%. The same-density guard fail-stopped it."
         )
     return summary
 
@@ -215,6 +763,345 @@ def _live_density_promotions() -> List[Dict[str, Any]]:
 
 
 def _v2_search_update(record: Dict[str, Any], *, is_live: bool) -> Dict[str, Any]:
+    run_name = str(record.get("run", ""))
+    if "v2-ttc-" in run_name:
+        arm = "ttc" if "v2-ttc-ttc-" in run_name else "baseline"
+        selector = "ttc_sector" if arm == "ttc" else "cluster_sector"
+        epoch = int(record.get("epoch") if is_live else record.get("last_epoch") or 0)
+        bars = int(
+            round(record.get("n_bars_active") or record.get("last_n_bars_active") or 70)
+        )
+        completed = not is_live and epoch >= 5250
+        capture_tail = (
+            record.get("captured_rate") if is_live else record.get("last_captured_rate")
+        )
+        crash_tail = record.get("crash_rate") if is_live else record.get("last_crash_rate")
+        return {
+            "subtitle": f"2026-08-01 · fixed-70 selector A/B · {arm} arm",
+            "headline": (
+                f"The {arm} arm is running at a fixed 70 bars with {selector}."
+                if is_live
+                else (
+                    f"The {arm} arm finished its matched 4.1M-step adaptation budget."
+                    if completed
+                    else f"The {arm} arm stopped before its matched adaptation budget completed."
+                )
+            ),
+            "summary": (
+                "This is not a density curriculum. Both arms start from the SHA-256-pinned ep3250 "
+                "70-bar checkpoint, keep every task/action setting fixed, and differ only in how "
+                "eight obstacle tokens are ranked. Training-tail rates are diagnostics; the "
+                "preregistered decision uses matched held-out evaluations of both final checkpoints."
+            ),
+            "active_experiment": {
+                **record,
+                "is_live": is_live,
+                "epoch": epoch,
+                "max_epochs": 5250,
+                "bars": bars,
+                "selector": selector,
+                "cluster_gap_m": 0.45,
+                "sectors": 8,
+                "ab_arm": arm,
+                "density_curriculum": False,
+                "arena_xy_m": 40,
+                "arena_z_m": 3,
+                "warm_start_epoch": 3250,
+                "adaptation_steps": max(0, epoch - 3250) * 2048,
+            },
+            "milestones": [
+                {
+                    "label": "A/B ARM",
+                    "value": arm.upper(),
+                    "detail": f"selector={selector}; all other variables fixed",
+                    "state": "active" if is_live else ("pass" if completed else "warn"),
+                },
+                {
+                    "label": "DENSITY",
+                    "value": "70 FIXED",
+                    "detail": "promotion disabled for the entire comparison",
+                    "state": "pass",
+                },
+                {
+                    "label": "BUDGET",
+                    "value": f"{max(0, epoch - 3250)} / 2000 epochs",
+                    "detail": "64 envs · 4.1M adaptation samples",
+                    "state": "pass" if completed else "active",
+                },
+                {
+                    "label": "DECISION",
+                    "value": "HELD-OUT A/B",
+                    "detail": "capture +2pp and crash -2pp required together",
+                    "state": "active",
+                },
+            ],
+            "comparison": [
+                {
+                    "label": f"{arm} training tail",
+                    "bars": bars,
+                    "capture": capture_tail,
+                    "unique": None,
+                    "verdict": (
+                        f"crash={crash_tail:.3f}; diagnostic only"
+                        if isinstance(crash_tail, (int, float))
+                        else "diagnostic only; held-out result pending"
+                    ),
+                }
+            ],
+            "gates": [
+                {"label": "single experimental variable", "value": f"PASS · {selector}"},
+                {"label": "density curriculum", "value": "OFF · 70 bars fixed"},
+                {"label": "capture delta", "value": "PENDING · TTC - baseline ≥ +2.0pp"},
+                {"label": "crash delta", "value": "PENDING · TTC - baseline ≤ -2.0pp"},
+            ],
+            "decision": (
+                "Finish both arms, then evaluate their final checkpoints at the same 70-bar "
+                "condition. Adopt TTC ranking only if both preregistered gates pass."
+            ),
+        }
+
+    if "v2-recover-smoke" in run_name:
+        epoch = int(record.get("epoch") if is_live else record.get("last_epoch") or 0)
+        completed_epochs = max(0, epoch - 9500)
+        recovery_run_dir = RUNS_ROOT / run_name
+        normal_marker_epoch = _normal_completion_marker_epoch(recovery_run_dir)
+        complete = not is_live and epoch == 9600 and normal_marker_epoch == 9600
+        completion_anomaly = not is_live and epoch >= 9600 and not complete
+        attestation_path = recovery_run_dir / ".navrl_v2_recovery_eval_pass.json"
+        attested = False
+        attestation_errors: List[str] = []
+        if complete:
+            attestation_errors = _validate_recovery_attestation(recovery_run_dir)
+            attested = not attestation_errors
+        attestation_present = attestation_path.is_file()
+        bars = int(
+            round(record.get("n_bars_active") or record.get("last_n_bars_active") or 130)
+        )
+        return {
+            "subtitle": "2026-08-01 · transactional PPO recovery · fixed-130 safety smoke",
+            "headline": (
+                f"Recovery smoke is running: {completed_epochs}/100 epochs at {bars} bars."
+                if is_live
+                else (
+                    "Recovery smoke and its hash-bound held-out gate passed this snapshot's verification."
+                    if attested
+                    else "Recovery reached its epoch budget without the exact normal-completion marker; curriculum remains blocked."
+                    if completion_anomaly
+                    else "The recovery attestation failed artifact or contract verification; curriculum remains blocked."
+                    if complete and attestation_present
+                    else "The 100-epoch recovery smoke completed; held-out evaluation is the next gate."
+                    if complete
+                    else f"Recovery smoke stopped early after {completed_epochs}/100 epochs."
+                )
+            ),
+            "summary": (
+                "This stage starts from the SHA-256-pinned ep9500 last-known-good policy, freezes "
+                "density at 130 bars, preserves Adam moments, uses LR 5e-6, and atomically rolls "
+                "back actor and central critic together whenever immutable-behavior KL exceeds "
+                "0.04 or a model, RMS, optimizer, scaler, loss, or output becomes non-finite. "
+                "Promotion evidence is recomputed from the real 100-epoch TensorBoard window and "
+                "an evaluator receipt bound to an immutable checkpoint snapshot, nonce, log, and "
+                "measured physics under main/base_sim/128 envs, full 6–28 m goals, and final FOV."
+            ),
+            "active_experiment": {
+                **record,
+                "is_live": is_live,
+                "epoch": epoch,
+                "max_epochs": 9600,
+                "bars": bars,
+                "selector": "cluster_sector",
+                "cluster_gap_m": 0.45,
+                "sectors": 8,
+                "arena_xy_m": 40,
+                "arena_z_m": 3,
+                "recovery_checkpoint_epoch": 9500,
+                "recovery_lr": 5e-6,
+                "rollback_kl_gate": 0.04,
+                "recovery_attestation_valid": attested,
+                "recovery_attestation_errors": attestation_errors,
+                "recovery_normal_completion_marker_valid": complete,
+            },
+            "milestones": [
+                {
+                    "label": "RECOVERY SMOKE",
+                    "value": f"{completed_epochs} / 100",
+                    "detail": (
+                        "fixed 130 bars; exact normal marker epoch=9600"
+                        if complete
+                        else "fixed 130 bars; normal marker epoch=9600 required"
+                    ),
+                    "state": "pass" if complete else ("active" if is_live else "warn"),
+                },
+                {
+                    "label": "SOURCE",
+                    "value": "ep9500",
+                    "detail": "audited LKG; SHA-256 pinned",
+                    "state": "pass",
+                },
+                {
+                    "label": "PPO COMMIT",
+                    "value": "ATOMIC",
+                    "detail": "actor+central model/RMS/Adam/scaler/output/loss + KL audit",
+                    "state": "pass",
+                },
+                {
+                    "label": "NEXT",
+                    "value": (
+                        "CURRICULUM"
+                        if attested
+                        else "DIAGNOSE EXIT"
+                        if completion_anomaly
+                        else "RE-EVALUATE"
+                        if complete and attestation_present
+                        else "HELD-OUT EVAL"
+                        if complete
+                        else "FINISH SMOKE"
+                    ),
+                    "detail": "curriculum requires the checkpoint-bound evaluation PASS",
+                    "state": "pass" if attested else "active",
+                },
+            ],
+            "comparison": [],
+            "gates": [
+                {
+                    "label": "100 recovery epochs + normal exit",
+                    "value": (
+                        "PASS · marker epoch=9600"
+                        if complete
+                        else "INVALID · marker missing/mismatched"
+                        if completion_anomaly
+                        else "PENDING"
+                    ),
+                },
+                {"label": "post-update transaction", "value": "ENFORCED · KL 0.04 + finite state"},
+                {
+                    "label": "held-out 130-bar attestation",
+                    "value": (
+                        "PASS"
+                        if attested
+                        else "INVALID · artifact/contract mismatch"
+                        if complete and attestation_present
+                        else "PENDING · 2,049 episodes"
+                    ),
+                },
+                {
+                    "label": "curriculum resume",
+                    "value": (
+                        "VERIFIED IN THIS SNAPSHOT · LAUNCHER RECHECKS"
+                        if attested
+                        else "BLOCKED UNTIL HASH-BOUND PASS"
+                    ),
+                },
+            ],
+            "decision": (
+                "The ep9600 evidence is verified in this static snapshot. Resume only through the safe launcher, which re-verifies the live artifacts before training."
+                if attested
+                else "Do not evaluate or resume: the run reached epoch 9600 without the exact normal-completion marker. Diagnose the exit and rerun the smoke."
+                if completion_anomaly
+                else "Do not resume: the saved attestation, checkpoint, or held-out artifact failed strict verification. Re-run the canonical recovery evaluation."
+                if complete and attestation_present
+                else "Evaluate the final ep9600 checkpoint at 130 bars on the pinned U[0.3,1.5] target "
+                "distribution. Resume the curriculum only if KL, saturation, capture, and crash remain healthy."
+                if complete
+                else "Let this fixed-density stage finish; do not use an intermediate checkpoint to resume the curriculum."
+            ),
+        }
+
+    if (
+        not is_live
+        and run_name.startswith("ppo_260731_2012_")
+    ):
+        return {
+            "subtitle": "2026-08-01 · v2 PPO/FOV/provenance fixes audited · recovery smoke pending",
+            "headline": "The 145-bar run did not hit a proven density ceiling; its PPO actor update collapsed.",
+            "summary": (
+                "The run fail-stopped at epoch 10,836 after KL rose to 2.69 and capture fell to 0%. "
+                "The old gate skipped later minibatches but could not undo an already committed update, "
+                "then rebased its reference onto that rejected policy. PPO epochs are now transactional: "
+                "actor and asymmetric central-critic model, RMS, Adam and AMP state are restored against "
+                "immutable rollout-policy KL. A forced rollback restored every actor/critic tensor, value "
+                "statistic and Adam moment/step exactly; a normal update audited at KL 0.0063 under the 0.04 gate."
+                " The recovery gate now independently rebuilds its result from the exact checkpoint, "
+                "held-out JSON, evaluator receipt, and TensorBoard window; it binds an immutable "
+                "checkpoint snapshot, nonce, log and measured physics. The previously inert general-spawn "
+                "FOV curriculum now aligns only initial yaw while keeping target directions unbiased. "
+                "Rollback counters/LR are durable across fail-stop resumes."
+            ),
+            "active_experiment": {
+                **record,
+                "is_live": False,
+                "epoch": record.get("last_epoch"),
+                "max_epochs": 30000,
+                "bars": 145,
+                "selector": "cluster_sector",
+                "cluster_gap_m": 0.45,
+                "sectors": 8,
+                "arena_xy_m": 40,
+                "arena_z_m": 3,
+                "recovery_checkpoint_epoch": 9500,
+                "recovery_bars": 130,
+                "recovery_lr": 5e-6,
+                "rollback_kl_gate": 0.04,
+                "heldout_capture_130": 0.7470817120622568,
+                "heldout_crash_130": 0.2529182879377432,
+                "heldout_episodes": 257,
+            },
+            "milestones": [
+                {
+                    "label": "ROOT CAUSE",
+                    "value": "ACTOR UPDATE",
+                    "detail": "moving KL reference + no model/Adam/RMS rollback",
+                    "state": "pass",
+                },
+                {
+                    "label": "FORCED ROLLBACK",
+                    "value": "EXACT",
+                    "detail": "actor+central model/RMS/Adam exact; actor LR backoff only",
+                    "state": "pass",
+                },
+                {
+                    "label": "130-BAR HEALTH",
+                    "value": "74.71%",
+                    "detail": "257 held-out episodes; crash 25.29%; OOB 0",
+                    "state": "pass",
+                },
+                {
+                    "label": "NEXT",
+                    "value": "100 EPOCH",
+                    "detail": "fixed-130 recovery smoke before curriculum resume",
+                    "state": "active",
+                },
+            ],
+            "comparison": [
+                {
+                    "label": "ep9500 LKG + one safe update · held-out",
+                    "bars": 130,
+                    "capture": 0.7470817120622568,
+                    "unique": None,
+                    "verdict": "257 episodes; crash 25.29%; timeout 0%",
+                },
+                {
+                    "label": "ep10824+ collapsed actor · training tail",
+                    "bars": 145,
+                    "capture": 0.0,
+                    "unique": None,
+                    "verdict": "invalid for density-ceiling inference; crash 100%",
+                },
+            ],
+            "gates": [
+                {"label": "epoch transaction", "value": "PASS · actor+central/RMS/Adam/AMP atomic restore"},
+                {"label": "post-update KL", "value": "PASS · 0.0063 < 0.04"},
+                {"label": "evaluation contract", "value": "PASS · receipt/snapshot + measured sim/goal/FOV"},
+                {"label": "145-bar ceiling", "value": "UNRESOLVED · contaminated by actor drift"},
+            ],
+            "decision": (
+                "Resume from last_gen_ppo_ep_9500, not ep10800. Run the fixed-130 100-epoch safety "
+                "smoke at 5e-6 first; only its final checkpoint with a 2,049-episode hash-bound "
+                "held-out PASS attestation may re-enter the density curriculum. "
+                "Re-measure 145 bars before claiming a representation or geometric ceiling."
+            ),
+        }
+
     promotions = _live_density_promotions()
     bars = int(
         round(record.get("n_bars_active") or record.get("last_n_bars_active") or 70)
@@ -315,7 +1202,7 @@ def _v2_search_update(record: Dict[str, Any], *, is_live: bool) -> Dict[str, Any
                 "label": "density curriculum",
                 "value": f"{'RUNNING' if is_live else 'PAUSED'} · {promotion_text}",
             },
-            {"label": "collapse safety", "value": "PASS · reward guard off, NaN/Inf fail-fast on"},
+            {"label": "collapse safety", "value": "PASS · atomic PPO rollback + NaN/Inf fail-fast"},
             {"label": "evaluation contract", "value": "PASS · z/gap/touch/bar-band enforced"},
             {"label": "1650 Ti", "value": "SMOKE REQUIRED · recommend free VRAM ≥3.6–3.7 GiB"},
         ],
@@ -332,7 +1219,7 @@ def _research_update(
     active: Optional[Dict[str, Any]], latest: Optional[Dict[str, Any]]
 ) -> Dict[str, Any]:
     record = active or latest
-    if record and "v2-search" in record.get("run", ""):
+    if _is_v2(record):
         return _v2_search_update(record, is_live=bool(active))
     record = record or {}
     experiment = {
@@ -508,7 +1395,13 @@ def _is_v2(record: Optional[Dict[str, Any]]) -> bool:
     nothing is training) -- keying only on `active` made the page fall back to v1 geometry and the
     v1 density denominator whenever training was stopped.
     """
-    return bool(record and "v2-search" in (record.get("run") or ""))
+    if not record:
+        return False
+    run_name = str(record.get("run") or "").lower()
+    return any(
+        marker in run_name
+        for marker in ("v2-search", "v2-recover", "v2-ttc", "navrl_v2-")
+    )
 
 
 def _arena_geometry(active: Optional[Dict[str, Any]]) -> Dict[str, Any]:
@@ -618,14 +1511,14 @@ def _success_criteria(active: Optional[Dict[str, Any]]) -> Dict[str, Any]:
             {
                 "metric": "ppo/entropy",
                 "why": (
-                    "Falling entropy means the policy is committing to actions -- expected. It says "
-                    "nothing about whether those actions intercept the target."
+                    "Entropy is not task success. For this squashed Gaussian, however, a sudden plunge "
+                    "far below its normal range is a latent-tanh saturation alarm and must be read with KL."
                 ),
             },
             {
                 "metric": "ppo/kl, ppo/explained_variance",
                 "why": (
-                    "Guardrails only. KL flags too-large policy steps (stop at 0.04); explained "
+                    "Guardrails only. KL flags too-large policy steps (rollback at 0.04); explained "
                     "variance flags a critic that has stopped tracking returns. Both being healthy "
                     "is necessary, never sufficient."
                 ),
@@ -635,7 +1528,7 @@ def _success_criteria(active: Optional[Dict[str, Any]]) -> Dict[str, Any]:
             "what": "density promotion gate (a TRAINING control, not a result)",
             "rule": (
                 "promote +15 bars when capture over a 16,384-episode window clears the threshold, "
-                "which ramps linearly with bar count: 0.85 at 70 bars -> 0.70 at 300, and only "
+                "using the measured knot schedule 0.82@70, 0.77@85, 0.72@100, 0.70@115+, and only "
                 "after at least 1,000 PPO epochs at the current density"
             ),
             "why_ramped": (
@@ -658,6 +1551,7 @@ def _success_criteria(active: Optional[Dict[str, Any]]) -> Dict[str, Any]:
 
 def build_snapshot() -> Dict[str, Any]:
     status = json.loads(STATUS_PATH.read_text(encoding="utf-8"))
+    generated_at = datetime.now(timezone.utc).isoformat()
     csv_paths = sorted(RUNS_ROOT.glob("*/aerial_run/epoch_metrics.csv"))
     training_live = _training_process_exists()
     active_path = None
@@ -691,15 +1585,21 @@ def build_snapshot() -> Dict[str, Any]:
         key=lambda item: (item.get("finalized_at") or "", item["run"]),
         default=None,
     )
+    research_update = _research_update(active, latest)
+    experiment = research_update.get("active_experiment", {})
+    if experiment.get("recovery_attestation_valid") is True:
+        # GitHub Pages is a static snapshot, not a live filesystem verifier.  Bind the displayed
+        # PASS to this generation time; the training launcher independently rechecks the artifacts.
+        experiment["recovery_attestation_verified_at"] = generated_at
     status.update(
         {
-            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "generated_at": generated_at,
             "repo": str(ROOT),
             "n_runs": len(summaries),
             "active_run": active,
             "latest_run": latest,
             "runs": summaries,
-            "research_update": _research_update(active, latest),
+            "research_update": research_update,
             "corridor_token": _corridor_token_plan(),
             "success_criteria": _success_criteria(active or latest),
             "placement_area_m2": _placement_area_m2(active or latest),
