@@ -4760,7 +4760,25 @@ env를 덤프해 diff한 결과 **차이 0줄** — 즉 두 팔이 정상 실행
 - **사전 등록 게이트**: held-out 평가에서 **capture ≥ +2.0pp AND crash ≤ −2.0pp** 둘 다.
   최종 체크포인트로 판정(corridor A/B가 중간에 0.6420→0.5993→0.6610로 출렁였고, TTC 팔은
   입력 분포 변화에 재적응해야 하므로 초반이 구조적으로 불리하다).
-- 4GB 프리셋(64env), 약 1000 epoch 적응.
+- 4GB 프리셋(64env), **2000 local epoch** 적응. 64env의 epoch당 rollout은 2048
+  samples로 3070/128env의 절반이므로, 이는 3070 기준 1000 epoch와 같은 4.096M samples다.
+
+### 1650 Ti 실기 검증 통과 및 본 A/B 실행 시작
+
+1650 Ti(4GB, 디스플레이 연결)에서 baseline 8-epoch 스모크를 완료했다.
+
+- 시작 전: 505 MiB used / 3392~3398 MiB free
+- 학습 피크: **2900 / 4096 MiB** (약 1196 MiB 잔여) — 64env 설정 VRAM 통과
+- epoch 3251→3258 정상 종료, 평균 step time **6.40초/epoch**
+- 예상 예산: 팔당 약 3시간 34분, 두 팔 순차 약 7시간 7분(+초기화)
+- 최초 시도에서 `/home/fair/.../python` 하드코딩으로 exit 127이 발생해, 현재 사용자의
+  `~/miniconda3/envs/aerialgym`을 우선 탐색하고 기존 경로를 fallback으로 쓰도록 수정
+
+**2026-07-31 20:45 KST**, 본 baseline 팔을 시작했다:
+`ppo_260731_2045_navrl_v2-ttc-baseline-s1`, checkpoint ep3250 → max ep5250. baseline 완료 후
+TTC 팔을 같은 카드·64env·seed·checkpoint·sample budget으로 순차 실행한다. 스모크의
+capture/crash는 표본이 작아 판정에 쓰지 않는다. 1650 Ti A/B의 팔 사이 delta만 내부적으로
+유효하며, 절대 capture/crash 수치는 3070 결과 표에 합치지 않고 별도 보고한다.
 
 **사전 고지**: 표현 계열 개입 전적이 나쁘다 — 토큰 5→8 기각, 빔 36→72 기각,
 corridor +1.57pp로 게이트 미달. 유일하게 성공한 건 선택 FOV 360→240(같은 "무엇을 고를까"
