@@ -1,6 +1,7 @@
 /* MOTAR status board — data panels. Arena = window.Arena from arena.js */
 
 const pct = x => x == null ? '—' : (x * 100).toFixed(1) + '%';
+const finite = x => (x == null || x === '' ? null : (Number.isFinite(Number(x)) ? Number(x) : null));
 // Obstacle-placement area [m^2]. v1: a 24 m arena with bars confined to x in 0.13..0.96 -> 478.
 // v2: a 40 m arena with the band widened to the full width -> the whole 1600 m^2 footprint.
 // Set from status.json so a v1 and a v2 run are never reported on the same denominator.
@@ -67,15 +68,46 @@ function renderLive(s) {
   const A = s.active_run;
   const L = s.latest_run || {};
   const live = A && A.is_live;
+  const E = ((s.research_update || {}).active_experiment || {});
+  const finalAudit = !live && E.core_audit_complete === true;
+  const riskcapFinal = !live && E.speed_governor_mode === 'riskcap'
+    && E.post_evaluation_complete === true && E.generalization_pass === true;
+  const causalAudit = finalAudit && E.causal_checks_1to3_complete === true;
+  const completeAudit = finalAudit && E.causal_checks_complete === true;
+  const abExperiment = E.ab_experiment === true;
   const src = live ? A : L;
   const runName = ((src && src.run) || '—').replace(/_navrl$/, '');
 
   const pill = document.getElementById('livepill');
   const pillTxt = document.getElementById('livepill-txt');
   const pillRun = document.getElementById('livepill-run');
+  const topContext = document.getElementById('top-context');
+  const freshness = document.getElementById('live-freshness');
   if (pill) pill.className = 'pill ' + (live ? 'is-live' : 'is-snapshot');
-  if (pillTxt) pillTxt.textContent = live ? 'LIVE' : 'LAST';
+  if (pillTxt) pillTxt.textContent = live ? 'LIVE' : (riskcapFinal ? 'FINAL' : (abExperiment ? 'A/B' : (completeAudit ? 'AUDIT' : (causalAudit ? 'CAUSAL' : (finalAudit ? 'CORE' : 'LAST')))));
   if (pillRun) pillRun.textContent = runName;
+
+  const barsNow = live ? finite(A.n_bars_active)
+    : ((finalAudit || abExperiment || riskcapFinal) ? finite(E.bars) : finite(L.last_n_bars_active));
+  const tailCapture = live ? finite(A.captured_rate)
+    : ((abExperiment || riskcapFinal) ? finite(E.heldout_capture)
+      : (finalAudit ? finite(E.deterministic_capture) : finite(L.last_captured_rate)));
+  if (topContext) {
+    const state = live ? 'v2 · LIVE' : (riskcapFinal ? 'v2 · RISKCAP FINAL' : (abExperiment ? 'v2 · FIXED-205 A/B' : (completeAudit ? 'v2 · CAUSAL COMPLETE' : (causalAudit ? 'v2 · CAUSAL AUDIT' : (finalAudit ? 'v2 · CORE AUDIT' : 'v2 · SNAPSHOT')))));
+    topContext.textContent = `${state} · ${barsNow == null ? '—' : Math.round(barsNow)} bars`
+      + (tailCapture == null ? '' : ` · capture ${pct(tailCapture)}`);
+  }
+  if (freshness) {
+    if (!live) {
+      freshness.textContent = `snapshot · ${(s.generated_at || '').slice(0, 16).replace('T', ' ') || '—'} UTC`;
+      freshness.className = 'snapshot';
+    } else {
+      const age = finite(A.metrics_age_min);
+      freshness.textContent = age == null ? 'live · freshness unknown'
+        : `live data · ${age < 1 ? '<1' : age.toFixed(0)} min old`;
+      freshness.className = age != null && age > 10 ? 'stale' : 'fresh';
+    }
+  }
 
   const footGen = document.getElementById('foot-gen');
   const footRuns = document.getElementById('foot-runs');
@@ -86,28 +118,39 @@ function renderLive(s) {
   const sub = document.getElementById('live-sub');
   const cards = document.getElementById('live-cards');
   const capEl = document.getElementById('live-cap');
-  if (h2) h2.textContent = live ? 'Live' : 'Latest run';
+  if (h2) h2.textContent = live ? 'Live' : (riskcapFinal ? 'Riskcap held-out' : (causalAudit ? 'Causal held-out' : (finalAudit ? 'Final held-out' : 'Latest run')));
   if (sub) {
-    sub.textContent = live
+    sub.textContent = riskcapFinal
+      ? `${runName} · trained winner · seed45 deterministic · n=${E.heldout_episodes}`
+      : finalAudit
+      ? `${runName} · frozen ep ${E.epoch} · deterministic deployment · n=${E.deterministic_episodes}`
+      : live
       ? `${runName} · ep ${Math.round(A.epoch)} · bars ${Math.round(A.n_bars_active)} · goal ${Number(A.curriculum_max_m).toFixed(1)} m · tail ${A.tail_epochs || 50}`
       : `${runName} · ${L.epochs_logged || '?'} ep · bars ${L.last_n_bars_active ?? '?'} · goal ${L.last_curriculum_max_m ?? '?'} m`;
   }
 
   const peak = L.peak_captured_rate;
-  const finalCap = live ? A.captured_rate : L.last_captured_rate;
-  const finalCrash = live ? A.crash_rate : L.last_crash_rate;
-  const finalTo = live ? A.timeout_rate : L.last_timeout_rate;
+  const finalCap = live ? A.captured_rate
+    : (riskcapFinal ? E.heldout_capture : (finalAudit ? E.deterministic_capture : L.last_captured_rate));
+  const finalCrash = live ? A.crash_rate
+    : (riskcapFinal ? E.heldout_crash : (finalAudit ? E.deterministic_crash : L.last_crash_rate));
+  const finalTo = live ? A.timeout_rate
+    : (riskcapFinal ? E.heldout_timeout : (finalAudit ? E.deterministic_timeout : L.last_timeout_rate));
   const gapPt = (peak != null && L.last_captured_rate != null)
     ? ((peak - L.last_captured_rate) * 100).toFixed(0) : null;
-  const bars = live ? A.n_bars_active : L.last_n_bars_active;
+  const bars = live ? A.n_bars_active : ((finalAudit || riskcapFinal) ? E.bars : L.last_n_bars_active);
 
   if (cards) {
     const rows = [
-      { k: 'capture', v: pct(finalCap), c: finalCap >= 0.7 ? 'good' : finalCap >= 0.55 ? 'warn' : 'bad', s: live ? 'tail avg' : 'final' },
+      { k: 'capture', v: pct(finalCap), c: finalCap >= 0.7 ? 'good' : finalCap >= 0.55 ? 'warn' : 'bad', s: live ? 'tail avg' : ((finalAudit || riskcapFinal) ? 'held-out deploy' : 'final') },
       { k: 'crash', v: pct(finalCrash), c: finalCrash <= 0.15 ? 'good' : finalCrash <= 0.35 ? 'warn' : 'bad', s: 'fail mode' },
       { k: 'timeout', v: pct(finalTo), c: 'acc', s: '' },
       { k: 'bars', v: bars != null ? String(Math.round(bars)) : '—', c: 'acc', s: 'active' },
-      live
+      riskcapFinal
+        ? { k: 'seed46', v: '3 / 3', c: 'good', s: 'speed gates' }
+        : finalAudit
+        ? { k: 'deploy−sample', v: '+' + ((E.deterministic_capture - E.stochastic_capture) * 100).toFixed(1) + 'pt', c: 'warn', s: `${pct(E.stochastic_capture)} sampled` }
+        : live
         ? { k: 'epoch', v: String(Math.round(A.epoch)), c: 'acc', s: `/ ${A.max_epochs || '?'} max` }
         : { k: 'peak→final', v: gapPt != null ? ('−' + gapPt + 'pt') : '—', c: gapPt >= 30 ? 'bad' : gapPt >= 15 ? 'warn' : 'good', s: pct(peak) + ' peak' },
     ];
@@ -116,13 +159,18 @@ function renderLive(s) {
     ).join('');
   }
   if (capEl) {
-    capEl.textContent = live
+    capEl.textContent = riskcapFinal
+      ? `Trained ep ${E.epoch} + riskcap · unseen seed45 n=${E.heldout_episodes}; seed46 fixed-speed 3/3 PASS.`
+      : finalAudit
+      ? `Frozen ep ${E.epoch} · deterministic held-out n=${E.deterministic_episodes}; stochastic n=${E.stochastic_episodes}.`
+      : live
       ? `Live = last ${A.tail_epochs || 50} epochs · current curriculum state.`
       : `peak ${pct(peak)} (ep ${L.peak_captured_epoch}) → final ${pct(L.last_captured_rate)}.`;
   }
 
   const preset = document.getElementById('btn-preset');
-  const nBars = live ? Math.round(A.n_bars_active) : (L.last_n_bars_active || 70);
+  const nBars = live ? Math.round(A.n_bars_active)
+    : ((finalAudit || riskcapFinal) ? Math.round(E.bars) : (L.last_n_bars_active || 70));
   window.__arenaRunBars = Math.round(nBars);
   if (preset) preset.textContent = `current run · ${Math.round(nBars)}`;
   const slider = document.getElementById('sl-bars');
@@ -133,6 +181,23 @@ function renderLive(s) {
   if (sliderLabel) sliderLabel.textContent = Math.round(nBars);
   if (hudBars) hudBars.textContent = Math.round(nBars);
   if (hudDensity) hudDensity.textContent = perc100(nBars);
+}
+
+function renderArchitecture(s) {
+  const g = s.arena_geometry || {};
+  const active = s.active_run && s.active_run.is_live ? s.active_run : (s.latest_run || {});
+  const set = (id, value) => {
+    const el = document.getElementById(id);
+    if (el && value) el.textContent = value;
+  };
+  const loBars = finite(g.bars_min), hiBars = finite(g.bars_max);
+  const speeds = Array.isArray(g.target_speed_m) ? g.target_speed_m.map(finite) : [];
+  const arena = finite(g.arena_xy_m), height = finite(g.arena_z_m);
+  const lr = finite(active.current_action_learning_rate) || finite(active.recovery_lr) || 5e-6;
+  set('arch-bars-range', `막대 장애물 ${loBars == null ? '—' : Math.round(loBars)}–${hiBars == null ? '—' : Math.round(hiBars)}`);
+  set('arch-target-speed', speeds.length >= 2 ? `이동 표적 ${speeds[0].toFixed(1)}–${speeds[1].toFixed(1)} m/s` : '이동 표적 —');
+  set('arch-arena-contract', arena != null && height != null ? `${arena}×${arena}×${height} m · physics 0.01 s` : 'arena contract —');
+  set('arch-lr', lr == null ? 'rl_games · LR —' : `rl_games · LR ${lr.toExponential(0)} 고정`);
 }
 
 function renderCriteria(s) {
@@ -181,8 +246,21 @@ function renderResearchUpdate(s) {
 
   if (sub) sub.textContent = u.subtitle || '85-bar obstacle-token coverage ablation';
   if (hero) {
-    const active = experiment.is_live ? '<span class="update-live">RUNNING</span>' : '<span class="update-snap">SNAPSHOT</span>';
-    hero.innerHTML = `<div><span class="eyebrow">CURRENT HYPOTHESIS</span>
+    const eyebrow = experiment.generalization_pass === true ? 'FROZEN RESULT' : 'CURRENT HYPOTHESIS';
+    const active = experiment.is_live
+      ? '<span class="update-live">RUNNING</span>'
+      : (experiment.generalization_pass === true
+        ? '<span class="update-snap">FINAL PASS</span>'
+        : (experiment.ab_experiment
+        ? `<span class="update-snap">${experiment.ab_gate_complete ? (experiment.ab_gate_pass ? 'A/B PASS' : 'A/B CLOSED') : 'A/B GATE'}</span>`
+        : (experiment.causal_checks_complete
+        ? '<span class="update-snap">CAUSAL COMPLETE</span>'
+        : (experiment.causal_checks_1to3_complete
+        ? '<span class="update-snap">CAUSAL 1–3</span>'
+        : (experiment.core_audit_complete
+        ? '<span class="update-snap">CORE AUDIT</span>'
+        : '<span class="update-snap">SNAPSHOT</span>')))));
+    hero.innerHTML = `<div><span class="eyebrow">${eyebrow}</span>
       <strong>${u.headline || 'Sensor fixed; action support is the active bottleneck.'}</strong>
       <p>${u.summary || ''}</p></div>
       <div class="update-run">${active}<b>${experiment.run || '—'}</b>
@@ -197,10 +275,11 @@ function renderResearchUpdate(s) {
   if (evalTbl) {
     const rows = u.comparison || [];
     if (rows.length) {
-      evalTbl.innerHTML = `<thead><tr><th>condition</th><th>bars</th><th>capture</th><th>unique</th><th>verdict</th></tr></thead>
+      const hasUnique = rows.some(r => r.unique != null);
+      evalTbl.innerHTML = `<thead><tr><th>condition</th><th>bars</th><th>capture</th>${hasUnique ? '<th>unique</th>' : ''}<th>verdict</th></tr></thead>
         <tbody>${rows.map(r => `<tr><td>${r.label || '—'}</td>
           <td>${r.bars ?? '—'}</td><td>${r.capture == null ? '—' : pct(r.capture)}</td>
-          <td>${r.unique == null ? '—' : Number(r.unique).toFixed(1)}</td>
+          ${hasUnique ? `<td>${r.unique == null ? '—' : Number(r.unique).toFixed(1)}</td>` : ''}
           <td>${r.verdict || '—'}</td></tr>`).join('')}</tbody>`;
     } else {
       const legacy = u.legacy_eval || [];
@@ -265,8 +344,11 @@ function pickDensity(s) {
     return [b, r.gt_injected_phase2];
   }).filter(([b, g]) => b != null && g != null));
 
+  // The curve is a frozen checkpoint evaluation. Its train/OOD boundary must come from the
+  // curve's own checkpoint metadata, never from the currently running curriculum.
+  const explicitMax = pack && finite(pack.trained_max_bars);
   const liveBars = s.active_run && s.active_run.is_live ? s.active_run.n_bars_active : null;
-  const trainedMax = Math.round(liveBars || (s.latest_run && s.latest_run.last_n_bars_active) || 65);
+  const trainedMax = Math.round(explicitMax != null ? explicitMax : (liveBars || (s.latest_run && s.latest_run.last_n_bars_active) || 65));
 
   return raw.map(r => {
     const bars = r.density_bars ?? r.bars;
@@ -306,7 +388,7 @@ function renderCurve(s) {
 
   const sub = document.getElementById('density-sub');
   if (sub) sub.textContent = rows.length
-    ? 'held-out · sensor-only · cells above trained max = OOD'
+    ? 'held-out frozen checkpoint · sensor-only · cells above that checkpoint’s trained max = OOD'
     : 'no density curve yet';
   if (!rows.length) return;
 
@@ -364,7 +446,7 @@ function renderCurve(s) {
       }).join('')}</tbody>`;
   }
   const cap = document.getElementById('curve-cap');
-  if (cap) cap.textContent = 'deterministic · FOV 240°';
+  if (cap) cap.textContent = 'deterministic · FOV 240° · this curve is historical evidence; the live curriculum is tracked separately above';
 }
 
 function pickSpeed(s) {
@@ -460,7 +542,8 @@ function renderHeatmap(s) {
   if (cap) cap.textContent =
     `Density dominates: over this grid it costs ${dDen.toFixed(0)} pp of capture, while target speed `
     + `costs only ${dSpd.toFixed(1)} pp — the pursuer at 2.5 m/s is fast enough that target speed is `
-    + `not a binding difficulty axis. Rows below the dashed line were never trained.`;
+    + `not a binding difficulty axis. Rows below the dashed line were never trained. `
+    + `This map is historical and predates the target heading-continuity fix.`;
   if (sub) sub.textContent = `${rows.length} cells · 2049 episodes each · deterministic · sensor-only`;
 }
 
@@ -500,7 +583,7 @@ function renderCeiling(s) {
       + `windows at ${ceil.bars} bars with capture averaging ${(mean * 100).toFixed(1)}% against a `
       + `${(c.threshold * 100).toFixed(0)}% gate (${(slope * 100).toFixed(2)} pp per window — flat, `
       + `not still climbing). ${ceil.density_per_100m2.toFixed(1)} bars/100 m² is the trainable `
-      + `density ceiling for this sensor-only policy.`;
+      + `density ceiling for the historical cluster-sector policy shown here; it is not the active v2 run.`;
   }
 }
 
@@ -554,7 +637,7 @@ function renderSpeed(s) {
         <td>${pct(d.captured_360)}</td><td>${pct(d.crash_360)}</td>
       </tr>`).join('')}</tbody>`;
   }
-  if (cap) cap.textContent = '25 bars · held-out';
+  if (cap) cap.textContent = '25 bars · held-out · historical FOV ablation; not the active v2 density curriculum';
 }
 
 function renderRuns(s) {
@@ -602,7 +685,9 @@ function renderPhases(s) {
   const reachedBudget = Number.isFinite(Number(experiment.epoch))
     && Number.isFinite(Number(experiment.max_epochs))
     && Number(experiment.epoch) >= Number(experiment.max_epochs);
-  const currentDone = experiment.recovery_attestation_valid === true
+  const currentDone = experiment.core_audit_complete === true
+    || experiment.generalization_pass === true
+    || experiment.recovery_attestation_valid === true
     || (Boolean(experiment.ab_arm) && !experiment.is_live && reachedBudget);
   const currentLabel = String(u.subtitle || 'current research stage')
     .replace(/^\d{4}-\d{2}-\d{2}\s*·\s*/, '');
@@ -689,6 +774,7 @@ function wireArena() {
     renderLive(s);
     renderCriteria(s);
     renderResearchUpdate(s);
+    renderArchitecture(s);
     renderNow(s);
     renderPhases(s);
     renderCorridor(s);
@@ -705,6 +791,13 @@ function wireArena() {
     if (pill) pill.className = 'pill is-snapshot';
     const t = document.getElementById('livepill-txt');
     if (t) t.textContent = 'SNAP';
+    const topContext = document.getElementById('top-context');
+    const freshness = document.getElementById('live-freshness');
+    if (topContext) topContext.textContent = 'v2 · FALLBACK · offline snapshot';
+    if (freshness) {
+      freshness.textContent = 'fallback snapshot · live fetch failed';
+      freshness.className = 'snapshot';
+    }
   }
 
   const boot3d = () => {
