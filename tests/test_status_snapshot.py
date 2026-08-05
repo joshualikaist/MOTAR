@@ -249,6 +249,226 @@ class StatusSnapshotTest(unittest.TestCase):
         self.assertFalse(experiment["density_curriculum"])
         self.assertIn("selector A/B", update["subtitle"])
 
+    def test_main_ep24000_baseline_requires_heldout_before_ttc(self):
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.object(
+            _STATUS, "MAIN_TTC_RESULT_ROOT", Path(tmp)
+        ):
+            update = _STATUS._v2_search_update(
+                {
+                    "run": "ppo_260803_1819_navrl_v2-ep24000-205bars-main-baseline-s1",
+                    "last_epoch": 25000,
+                    "last_n_bars_active": 205,
+                    "last_captured_rate": 2.0 / 3.0,
+                    "last_crash_rate": 1.0 / 3.0,
+                },
+                is_live=False,
+            )
+        experiment = update["active_experiment"]
+        self.assertTrue(experiment["ab_experiment"])
+        self.assertEqual(experiment["ab_phase"], "BASELINE EVAL PENDING")
+        self.assertEqual(experiment["adaptation_samples"], 4_096_000)
+        self.assertFalse(experiment["heldout_complete"])
+        self.assertIn("Do not start TTC", update["decision"])
+        baseline_gate = next(
+            gate for gate in update["gates"] if gate["label"] == "baseline held-out"
+        )
+        self.assertIn("TTC arm blocked", baseline_gate["value"])
+
+    def test_main_ep24000_baseline_result_unlocks_ttc_with_canonical_floor(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            result_dir = root / "navrl_v2_ep24000_ttc_main_baseline"
+            result_dir.mkdir(parents=True)
+            result = {
+                "schema_version": 1,
+                "requested_episodes": 2049,
+                "actual_episodes": 2049,
+                "checkpoint_sha256": _STATUS._MAIN_TTC_BASELINE_SHA256,
+                "evaluated_checkpoint_snapshot_sha256": _STATUS._MAIN_TTC_BASELINE_SHA256,
+                "condition": {
+                    "bars": 205,
+                    "seed": 42,
+                    "action_selection": "deterministic",
+                    "reflection_mode": "original",
+                    "target_speed_mode": "uniform",
+                },
+                "v2_evaluation_contract": {
+                    "obstacle_selector": "cluster_sector",
+                    "runtime_profile": "main",
+                },
+                "outcome": {
+                    "captured": 1424,
+                    "crash": 594,
+                    "timeout": 31,
+                    "capture_rate": 1424 / 2049,
+                    "crash_rate": 594 / 2049,
+                    "timeout_rate": 31 / 2049,
+                },
+                "crash_causes": {"bar_contact": 570},
+            }
+            self._write_json(result_dir / "205bars.json", result)
+            with mock.patch.object(_STATUS, "MAIN_TTC_RESULT_ROOT", root):
+                update = _STATUS._v2_search_update(
+                    {
+                        "run": "ppo_260803_1819_navrl_v2-ep24000-205bars-main-baseline-s1",
+                        "last_epoch": 25000,
+                        "last_n_bars_active": 205,
+                    },
+                    is_live=False,
+                )
+        experiment = update["active_experiment"]
+        self.assertEqual(experiment["ab_phase"], "TTC ARM READY")
+        self.assertTrue(experiment["heldout_complete"])
+        self.assertIn("may now start", update["headline"])
+        floor = next(
+            gate
+            for gate in update["gates"]
+            if gate["label"] == "canonical replacement floor"
+        )
+        self.assertIn("72.44%", floor["value"])
+
+    def test_completed_main_ttc_rejects_bundle_and_discloses_fov_confound(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            baseline_dir = root / "navrl_v2_ep24000_ttc_main_baseline"
+            ttc_dir = root / "navrl_v2_ep24000_ttc_main_ttc"
+            baseline_sha = _STATUS._MAIN_TTC_BASELINE_SHA256
+            baseline = {
+                "schema_version": 1,
+                "requested_episodes": 2049,
+                "actual_episodes": 2049,
+                "checkpoint_sha256": baseline_sha,
+                "evaluated_checkpoint_snapshot_sha256": baseline_sha,
+                "condition": {
+                    "bars": 205,
+                    "seed": 42,
+                    "action_selection": "deterministic",
+                    "reflection_mode": "original",
+                    "target_speed_mode": "uniform",
+                },
+                "v2_evaluation_contract": {
+                    "obstacle_selector": "cluster_sector",
+                    "runtime_profile": "main",
+                },
+                "outcome": {
+                    "captured": 1424,
+                    "crash": 594,
+                    "timeout": 31,
+                    "capture_rate": 1424 / 2049,
+                    "crash_rate": 594 / 2049,
+                    "timeout_rate": 31 / 2049,
+                },
+                "crash_causes": {"bar_contact": 570},
+            }
+            ttc_sha = "a" * 64
+            ttc = {
+                "schema_version": 1,
+                "requested_episodes": 2049,
+                "actual_episodes": 2051,
+                "checkpoint_sha256": ttc_sha,
+                "evaluated_checkpoint_snapshot_sha256": ttc_sha,
+                "condition": {
+                    "bars": 205,
+                    "seed": 42,
+                    "action_selection": "deterministic",
+                    "reflection_mode": "original",
+                    "target_speed_mode": "uniform",
+                },
+                "v2_evaluation_contract": {
+                    "obstacle_selector": "ttc_sector",
+                    "runtime_profile": "main",
+                },
+                "outcome": {
+                    "captured": 1440,
+                    "crash": 605,
+                    "timeout": 6,
+                    "capture_rate": 1440 / 2051,
+                    "crash_rate": 605 / 2051,
+                    "timeout_rate": 6 / 2051,
+                },
+                "crash_causes": {"bar_contact": 578},
+            }
+            self._write_json(baseline_dir / "205bars.json", baseline)
+            self._write_json(ttc_dir / "205bars.json", ttc)
+            with mock.patch.object(_STATUS, "MAIN_TTC_RESULT_ROOT", root):
+                update = _STATUS._v2_search_update(
+                    {
+                        "run": "ppo_260804_0813_navrl_v2-ep24000-205bars-main-ttc-s1",
+                        "last_epoch": 25000,
+                        "last_n_bars_active": 205,
+                    },
+                    is_live=False,
+                )
+
+        experiment = update["active_experiment"]
+        self.assertEqual(experiment["ab_phase"], "TTC REJECT")
+        self.assertTrue(experiment["ab_gate_complete"])
+        self.assertFalse(experiment["ab_gate_pass"])
+        self.assertTrue(experiment["representation_bundle"])
+        self.assertEqual(experiment["baseline_effective_fov_deg"], 240)
+        self.assertEqual(experiment["ttc_effective_fov_deg"], 360)
+        self.assertFalse(experiment["pure_ranking_isolated"])
+        self.assertEqual(experiment["final_checkpoint_sha256"], ttc_sha)
+        self.assertIn("failed both", update["headline"])
+        self.assertIn("TTC-240", update["decision"])
+        current_arm = next(
+            milestone for milestone in update["milestones"]
+            if milestone["label"] == "CURRENT ARM"
+        )
+        self.assertEqual(current_arm["state"], "warn")
+        isolation = next(
+            gate for gate in update["gates"]
+            if gate["label"] == "experimental isolation"
+        )
+        self.assertIn("240→360", isolation["value"])
+
+    def test_completed_riskcap_uses_final_heldout_not_training_tail(self):
+        update = _STATUS._v2_search_update(
+            {
+                "run": "ppo_260805_0413_navrl_v2-speedgov-ep24000-205bars-main-riskcap-s1",
+                "last_epoch": 25000,
+                "last_n_bars_active": 205,
+                "last_captured_rate": 0.75,
+                "last_crash_rate": 0.25,
+            },
+            is_live=False,
+        )
+        experiment = update["active_experiment"]
+        self.assertEqual(experiment["stage_status"], "FINAL PASS")
+        self.assertTrue(experiment["post_evaluation_complete"])
+        self.assertTrue(experiment["generalization_pass"])
+        self.assertEqual(
+            experiment["winner_checkpoint_sha256"], _STATUS._RISKCAP_TRAINED_SHA256
+        )
+        self.assertAlmostEqual(experiment["heldout_capture"], 0.8194241093)
+        self.assertAlmostEqual(experiment["heldout_crash"], 0.1566617862)
+        self.assertEqual(experiment["heldout_episodes"], 2049)
+        self.assertIn("+3.75 pp", update["summary"])
+        self.assertIn("Do not extend", update["decision"])
+        self.assertEqual(len(update["comparison"]), 6)
+
+    def test_final_v2_snapshot_consumes_completed_causal_artifacts(self):
+        update = _STATUS._v2_search_update(
+            {
+                "run": "ppo_260802_0020_navrl_v2-recover-curriculum-continue-s1",
+                "last_epoch": 24010,
+                "last_n_bars_active": 205,
+            },
+            is_live=False,
+        )
+        experiment = update["active_experiment"]
+        self.assertTrue(experiment["causal_checks_complete"])
+        self.assertTrue(experiment["fixed_speed_complete"])
+        self.assertTrue(experiment["forgetting_complete"])
+        self.assertFalse(experiment["causal_checks_pending"])
+        self.assertTrue(experiment["ttc_1650_gate_pass"])
+        self.assertTrue(experiment["next_training_authorized"])
+        self.assertIn("causal audit complete", update["subtitle"])
+        self.assertIn("READY", next(
+            gate["value"] for gate in update["gates"]
+            if gate["label"] == "next training"
+        ))
+
     def test_recovery_attestation_requires_real_matching_artifacts(self):
         with tempfile.TemporaryDirectory() as tmp:
             artifacts = self._make_recovery_artifacts(Path(tmp))

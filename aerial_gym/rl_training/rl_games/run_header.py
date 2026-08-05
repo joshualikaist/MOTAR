@@ -202,7 +202,12 @@ def print_run_header(
             _kv("num envs", args.get("num_envs", cfg.get("num_actors", "?"))),
             _kv("headless", args.get("headless", cfg.get("env_config", {}).get("headless", "?"))),
             _kv("use_warp", args.get("use_warp", cfg.get("env_config", {}).get("use_warp", "?"))),
-            _kv("seed", params.get("seed", args.get("seed", "?"))),
+            # NavRL play uses NAVRL_SEED because rl-games discards --seed in the player path.
+            # Prefer the runtime override so a seed-43 held-out is not mislabeled as YAML seed 42.
+            _kv(
+                "seed",
+                os.environ.get("NAVRL_SEED", params.get("seed", args.get("seed", "?"))),
+            ),
         ]
     )
 

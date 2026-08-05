@@ -22,6 +22,11 @@ from aerial_gym.task.navrl_task.target_motion import (
     TARGET_MOTION_MODEL,
     steer_target_step,
 )
+from aerial_gym.task.navrl_task.speed_governor import (
+    SpeedGovernorConfig,
+    apply_speed_governor,
+    directional_lidar_clearance,
+)
 from aerial_gym.sim.sim_builder import SimBuilder
 from aerial_gym.utils.math import quat_rotate, quat_rotate_inverse
 from aerial_gym.utils.logging import CustomLogger
@@ -49,6 +54,20 @@ def _goal_distance_bounds(goal_min, goal_max, curriculum_max, full_distribution)
     max_dist = max(goal_min + 1.0, effective_max)
     min_dist = min(goal_min, max_dist - 1.0)
     return float(min_dist), float(max_dist)
+
+
+def _goal_front_centered(goal_vehicle, half_angle_deg=15.0):
+    """Label only the forward cone; a rear target is not a centered forward goal."""
+    if not isinstance(goal_vehicle, torch.Tensor) or goal_vehicle.ndim != 2:
+        raise ValueError("goal_vehicle must be a [batch, xyz] tensor")
+    if goal_vehicle.shape[1] < 2:
+        raise ValueError("goal_vehicle must contain x and y")
+    lateral_sine = goal_vehicle[:, 1].abs() / goal_vehicle[:, :2].norm(
+        dim=1
+    ).clamp(min=1e-6)
+    return (goal_vehicle[:, 0] > 0.0) & (
+        lateral_sine <= math.sin(math.radians(float(half_angle_deg)))
+    )
 
 
 def _fov_curriculum_saturated(
@@ -198,6 +217,16 @@ class NavRLTask(BaseTask):
         # Initial radial goal distance is stable for the lifetime of an episode even when the
         # target moves. It is the correct quantity for stratifying a density competence window.
         self._episode_goal_dist = torch.zeros(self.num_envs, device=self.device)
+        # Evaluation-only initial target bearing bucket. This is actor-frame geometry captured at
+        # reset, before either agent moves. It lets the mirror audit compare negative/positive-y
+        # starts without pretending asynchronously reset rollouts remain episode-paired.
+        self._episode_bearing_bin = torch.ones(
+            self.num_envs, dtype=torch.long, device=self.device
+        )
+        self._eval_bearing_succ = torch.zeros(3, dtype=torch.long, device=self.device)
+        self._eval_bearing_crash = torch.zeros(3, dtype=torch.long, device=self.device)
+        self._eval_bearing_timeout = torch.zeros(3, dtype=torch.long, device=self.device)
+        self._eval_bearing_fin = torch.zeros(3, dtype=torch.long, device=self.device)
 
         # goal-distance curriculum state
         self.cur = self.task_config.curriculum
@@ -297,6 +326,25 @@ class NavRLTask(BaseTask):
             n_phys = 10
             logger.warning("navrl_task: env config not reachable for physics-steps; assuming 10.")
         self.step_dt = float(self.obs_dict["dt"]) * n_phys
+        self.speed_governor_cfg = SpeedGovernorConfig.from_environ(os.environ)
+        if self.speed_governor_cfg.mode != "off":
+            logger.warning(
+                "NavRL speed governor | mode=%s fixed=%.2fm/s free=%.2fm/s "
+                "path_half=%.2fm margin=%.2fm slow=%.2fm release=%.2fm "
+                "ttc=%.2fs brake=%.2fm/s2 reaction=%.2fs"
+                % (
+                    self.speed_governor_cfg.mode,
+                    self.speed_governor_cfg.fixed_cap_mps,
+                    self.speed_governor_cfg.free_speed_cap_mps,
+                    self.speed_governor_cfg.path_half_width_m,
+                    self.speed_governor_cfg.hard_margin_m,
+                    self.speed_governor_cfg.slow_distance_m,
+                    self.speed_governor_cfg.release_distance_m,
+                    self.speed_governor_cfg.ttc_s,
+                    self.speed_governor_cfg.brake_mps2,
+                    self.speed_governor_cfg.reaction_s,
+                )
+            )
         if float(self.tm.speed_final) > 0.0 or float(self.tm.speed_fixed) >= 0.0:
             logger.warning(
                 "NavRL moving target | pattern=%s speed_final=%.2f speed_fixed=%.2f rl_dt=%.3fs"
@@ -370,6 +418,11 @@ class NavRLTask(BaseTask):
                     step_dt=self.step_dt,
                     camera_cfg=self.vis_cfg,
                 )
+            if self.speed_governor_cfg.mode != "off" and not self.perception_mode:
+                raise RuntimeError(
+                    "NavRL speed governor requires the actor-safe perception front-end; "
+                    "legacy semantic/oracle target masks are forbidden"
+                )
             logger.warning(
                 "NavRL %s mode | actor obs=%d, "
                 "critic states=%d, body-frame actions, detector range=%.1fm hfov=%.0fdeg"
@@ -390,22 +443,29 @@ class NavRLTask(BaseTask):
                     HBEAMS,
                     MAX_OBSTACLES,
                     OBSTACLE_CLUSTER_GAP_M,
+                    OBSTACLE_EFFECTIVE_FOV_DEG,
                     OBSTACLE_FOV_DEG,
                     OBSTACLE_SECTORS,
                     OBSTACLE_SELECTOR,
                     OBSTACLE_SUPPRESS_DEG,
+                    OBSTACLE_SUPPRESS_ACTIVE,
                     VBEAMS,
                 )
 
                 logger.warning(
-                    "NavRL obstacle representation | tokens=%d token_fov=%.0fdeg "
-                    "selector=%s suppress=+-%.0fdeg cluster_gap=%.2fm sectors=%d "
+                    "NavRL obstacle representation | tokens=%d configured_fov=%.0fdeg "
+                    "effective_fov=%.0fdeg selector=%s suppress=%s cluster_gap=%.2fm sectors=%d "
                     "scan=%dx%d lidar_range=%.1fm"
                     % (
                         MAX_OBSTACLES,
                         OBSTACLE_FOV_DEG,
+                        OBSTACLE_EFFECTIVE_FOV_DEG,
                         OBSTACLE_SELECTOR,
-                        OBSTACLE_SUPPRESS_DEG,
+                        (
+                            "+-%.0fdeg" % OBSTACLE_SUPPRESS_DEG
+                            if OBSTACLE_SUPPRESS_ACTIVE
+                            else "inactive"
+                        ),
                         OBSTACLE_CLUSTER_GAP_M,
                         OBSTACLE_SECTORS,
                         VBEAMS,
@@ -498,6 +558,34 @@ class NavRLTask(BaseTask):
             self.num_envs, dtype=torch.bool, device=self.device
         )
         self._action_front_mask = None
+        # R2 control-risk screen. The governor consumes only LiDAR plus the sensor-derived target
+        # association already produced by actor perception, changes horizontal command magnitude
+        # (never direction), and stays observable through executed previous-action feedback. In
+        # bulk evaluation, mode=off still instruments baseline risk margins with identical code.
+        self._speed_governor_diag_enabled = self._bulk_eval_mode or os.environ.get(
+            "NAVRL_SPEED_GOVERNOR_DIAG", "0"
+        ).strip().lower() in ("1", "true", "yes", "on")
+        self._speed_governor_bearings = None
+        self._last_governed_action_xy = torch.zeros(
+            (self.num_envs, 2), device=self.device
+        )
+        self._speed_governor_last = {
+            key: torch.zeros(self.num_envs, device=self.device)
+            for key in (
+                "requested_speed_mps",
+                "executed_speed_mps",
+                "speed_cap_mps",
+                "scale",
+                "clearance_m",
+                "ttc_requested_s",
+                "stopping_margin_requested_m",
+                "stopping_margin_executed_m",
+            )
+        }
+        self._speed_governor_diag = self._empty_speed_governor_diag()
+        self._speed_governor_outcome_steps = {
+            "capture": [], "crash": [], "timeout": []
+        }
         # --- crash-cause diagnosis (NAVRL_CRASH_DIAG=1): split the aggregate "crash" number into
         # its termination source (bar contact / height bound / out-of-arena side) so a stuck run
         # can be diagnosed from measured counts instead of guesses. Off by default: zero overhead.
@@ -1231,7 +1319,11 @@ class NavRLTask(BaseTask):
             not in ("0", "false", "no", "off"),
             "cfg_max_obstacles": int(representation["max_obstacles"]),
             "cfg_token_fov_deg": float(representation["token_fov_deg"]),
+            "cfg_token_effective_fov_deg": float(
+                representation["token_effective_fov_deg"]
+            ),
             "cfg_obstacle_suppress_deg": float(representation["suppress_deg"]),
+            "cfg_obstacle_suppress_active": bool(representation["suppress_active"]),
             "cfg_obstacle_selector": str(representation["selector"]),
             "cfg_obstacle_cluster_gap_m": float(representation["cluster_gap_m"]),
             "cfg_obstacle_sectors": int(representation["sectors"]),
@@ -1296,6 +1388,17 @@ class NavRLTask(BaseTask):
             "cfg_action_entropy_coef": float(
                 os.environ.get("NAVRL_ENTROPY_COEF", "0") or 0.0
             ),
+            "cfg_speed_governor_mode": self.speed_governor_cfg.mode,
+            "cfg_speed_governor_fixed_mps": self.speed_governor_cfg.fixed_cap_mps,
+            "cfg_speed_governor_free_mps": self.speed_governor_cfg.free_speed_cap_mps,
+            "cfg_speed_governor_half_width_m": self.speed_governor_cfg.path_half_width_m,
+            "cfg_speed_governor_margin_m": self.speed_governor_cfg.hard_margin_m,
+            "cfg_speed_governor_slow_m": self.speed_governor_cfg.slow_distance_m,
+            "cfg_speed_governor_release_m": self.speed_governor_cfg.release_distance_m,
+            "cfg_speed_governor_ttc_s": self.speed_governor_cfg.ttc_s,
+            "cfg_speed_governor_brake_mps2": self.speed_governor_cfg.brake_mps2,
+            "cfg_speed_governor_reaction_s": self.speed_governor_cfg.reaction_s,
+            "cfg_speed_governor_target_exclusion": "camera_lidar_association",
             "cfg_training_seed": int(self.task_config.seed),
             "cfg_training_num_envs": int(self.num_envs),
             "cfg_training_file": os.environ.get("FILE", ""),
@@ -1461,10 +1564,12 @@ class NavRLTask(BaseTask):
                 HBEAMS,
                 MAX_OBSTACLES,
                 OBSTACLE_CLUSTER_GAP_M,
+                OBSTACLE_EFFECTIVE_FOV_DEG,
                 OBSTACLE_FOV_DEG,
                 OBSTACLE_SECTORS,
                 OBSTACLE_SELECTOR,
                 OBSTACLE_SUPPRESS_DEG,
+                OBSTACLE_SUPPRESS_ACTIVE,
                 OBSTACLE_TTC_IDLE_S,
                 OBSTACLE_TTC_MIN_SPEED,
                 VBEAMS,
@@ -1473,7 +1578,12 @@ class NavRLTask(BaseTask):
             return {
                 "max_obstacles": int(MAX_OBSTACLES),
                 "token_fov_deg": float(OBSTACLE_FOV_DEG),
+                # TTC ranks every LiDAR cluster, including the configured rear exclusion.  Keep
+                # configured FOV for checkpoint compatibility, but record what selection actually
+                # consumes so diagnostics do not call rear TTC tokens "out of FOV".
+                "token_effective_fov_deg": float(OBSTACLE_EFFECTIVE_FOV_DEG),
                 "suppress_deg": float(OBSTACLE_SUPPRESS_DEG),
+                "suppress_active": bool(OBSTACLE_SUPPRESS_ACTIVE),
                 "selector": str(OBSTACLE_SELECTOR),
                 "cluster_gap_m": float(OBSTACLE_CLUSTER_GAP_M),
                 "sectors": int(OBSTACLE_SECTORS),
@@ -1489,7 +1599,9 @@ class NavRLTask(BaseTask):
             return {
                 "max_obstacles": 0,
                 "token_fov_deg": 0.0,
+                "token_effective_fov_deg": 0.0,
                 "suppress_deg": 0.0,
+                "suppress_active": False,
                 "selector": "none",
                 "cluster_gap_m": 0.0,
                 "sectors": 0,
@@ -1516,11 +1628,7 @@ class NavRLTask(BaseTask):
         ambiguous ``token_err``.
         """
         from aerial_gym.task.navrl_task.bar_probe import associate_surface_tokens_to_bars
-        from aerial_gym.task.navrl_task.navrl_perception import (
-            MAX_OBSTACLES,
-            OBSTACLE_DIM,
-            OBSTACLE_FOV_DEG,
-        )
+        from aerial_gym.task.navrl_task.navrl_perception import MAX_OBSTACLES, OBSTACLE_DIM
 
         idx = hit_mask.nonzero(as_tuple=False).squeeze(1)
         if idx.numel() == 0:
@@ -1546,8 +1654,11 @@ class NavRLTask(BaseTask):
         # something.  The FOV split is essential: a 240-deg token sector cannot represent a struck
         # bar in the excluded rear 120 deg, although the full static scan still observes it.
         bars_in_range = (bar_dist < rng).sum(dim=1).float()
-        if OBSTACLE_FOV_DEG < 359.9:
-            in_token_fov = bar_bearing.abs() <= math.radians(OBSTACLE_FOV_DEG * 0.5)
+        effective_fov_deg = float(
+            self._obstacle_representation_or_zero()["token_effective_fov_deg"]
+        )
+        if effective_fov_deg < 359.9:
+            in_token_fov = bar_bearing.abs() <= math.radians(effective_fov_deg * 0.5)
         else:
             in_token_fov = torch.ones_like(bar_bearing, dtype=torch.bool)
         bars_in_token_fov = ((bar_dist < rng) & in_token_fov).sum(dim=1).float()
@@ -2245,6 +2356,21 @@ class NavRLTask(BaseTask):
         d[:, 2] = 0.0  # horizontal goal direction defines the goal frame
         self.target_dir_2d[env_ids] = d
         self._episode_goal_dist[env_ids] = d[:, 0:2].norm(dim=1)
+        rel_vehicle = quat_rotate_inverse(
+            self.obs_dict["robot_vehicle_orientation"][env_ids], d
+        )
+        initial_bearing = torch.atan2(rel_vehicle[:, 1], rel_vehicle[:, 0])
+        centered = math.radians(5.0)
+        # 0=negative vehicle-y, 1=centered (+/-5 deg), 2=positive vehicle-y.
+        self._episode_bearing_bin[env_ids] = torch.where(
+            initial_bearing < -centered,
+            torch.zeros_like(initial_bearing, dtype=torch.long),
+            torch.where(
+                initial_bearing > centered,
+                torch.full_like(initial_bearing, 2, dtype=torch.long),
+                torch.ones_like(initial_bearing, dtype=torch.long),
+            ),
+        )
 
         self.height_range[env_ids, 0] = torch.minimum(
             start_pos[:, 2], self.target_position[env_ids, 2]
@@ -2290,6 +2416,11 @@ class NavRLTask(BaseTask):
             vel_goal = torch.clamp(actions[:, 0:3], -1.0, 1.0) * self.task_config.max_velocity
             vel_world = goal_frame_to_world(vel_goal, self.target_dir_2d)
             vel_vehicle = quat_rotate_inverse(self.obs_dict["robot_vehicle_orientation"], vel_world)
+        vel_vehicle = vel_vehicle.clone()
+        vel_vehicle[:, 0:2] = self._apply_sensor_speed_governor(vel_vehicle[:, 0:2])
+        self._last_governed_action_xy[:] = (
+            vel_vehicle[:, 0:2] / max(1e-6, float(self.task_config.max_velocity))
+        ).clamp(-1.0, 1.0)
         self.command[:, 0:3] = vel_vehicle
         # 2D flight: hold altitude. The vehicle frame is yaw-only (level), so vehicle-z == world-z.
         # A plain vz=0 command is OPEN-LOOP: the velocity controller carries no z-position feedback
@@ -2340,6 +2471,10 @@ class NavRLTask(BaseTask):
         if self.vision_mode:
             # remembered as "previous action" in the NEXT observation (ego proprioception)
             self.prev_action[:] = torch.clamp(actions[:, 0:4], -1.0, 1.0)
+            if self.speed_governor_cfg.mode != "off":
+                # The actor must observe what the controller actually executed; feeding the raw
+                # request after a safety-layer intervention makes the transition partially hidden.
+                self.prev_action[:, 0:2] = self._last_governed_action_xy
         self.sim_env.step(actions=command)
 
         # state-based reward + termination (LiDAR-based safety reward is added after rendering)
@@ -2366,6 +2501,18 @@ class NavRLTask(BaseTask):
         crashes = self.crashed_now
         timeouts = (self.truncations > 0) & ~successes & ~crashes
         self.infos = {"successes": successes, "timeouts": timeouts, "crashes": crashes}
+
+        if self._bulk_eval_mode:
+            steps = self.sim_env.sim_steps
+            for label, mask in (
+                ("capture", successes),
+                ("crash", crashes > 0),
+                ("timeout", timeouts),
+            ):
+                if bool(mask.any()):
+                    self._speed_governor_outcome_steps[label].extend(
+                        int(value) for value in steps[mask].detach().cpu().tolist()
+                    )
 
         finished = (self.terminations > 0) | (self.truncations > 0)
         self._record_general_result(successes, crashes, timeouts, finished)
@@ -2430,6 +2577,109 @@ class NavRLTask(BaseTask):
             "motion_low_speed": 0.0,
             "motion_commanded_stall": 0.0,
         }
+
+    def _empty_speed_governor_diag(self):
+        return {
+            key: torch.zeros((), device=self.device, dtype=torch.float64)
+            for key in (
+                "samples",
+                "interventions",
+                "near_stops",
+                "requested_speed_sum",
+                "executed_speed_sum",
+                "clearance_sum",
+                "scale_sum",
+                "ttc_sum",
+                "ttc_n",
+                "negative_margin_requested",
+                "negative_margin_executed",
+                "contact_n",
+                "contact_actual_speed_sum",
+                "contact_requested_speed_sum",
+                "contact_executed_speed_sum",
+                "contact_clearance_sum",
+                "contact_scale_sum",
+                "contact_ttc_sum",
+                "contact_margin_requested_sum",
+                "contact_margin_executed_sum",
+            )
+        }
+
+    def _apply_sensor_speed_governor(self, command_xy):
+        """Apply the configured sensor-only speed layer and preserve its causal telemetry."""
+
+        if self.speed_governor_cfg.mode == "off" and not self._speed_governor_diag_enabled:
+            return command_xy
+        depth = self.obs_dict.get("depth_range_pixels")
+        if not isinstance(depth, torch.Tensor) or depth.ndim < 4:
+            raise RuntimeError("NavRL speed governor requires the LiDAR depth_range_pixels tensor")
+        scan_m = torch.nan_to_num(
+            depth.squeeze(1), nan=1.0, posinf=1.0, neginf=1.0
+        ).clamp(0.0, 1.0) * float(self.task_config.lidar_max_range)
+        hbeams = int(scan_m.shape[-1])
+        if self._speed_governor_bearings is None or int(
+            self._speed_governor_bearings.numel()
+        ) != hbeams:
+            from aerial_gym.task.navrl_task.navrl_perception import (
+                HBEAMS as _HB,
+                lidar_bin_bearings,
+            )
+
+            if hbeams == _HB:
+                self._speed_governor_bearings = lidar_bin_bearings(self.device)
+            else:
+                bin_rad = 2.0 * math.pi / max(1, hbeams)
+                self._speed_governor_bearings = torch.linspace(
+                    math.pi,
+                    -math.pi + bin_rad,
+                    hbeams,
+                    device=self.device,
+                )
+        target_return = None
+        if self.perception is not None:
+            candidate = self.perception.last_target_like
+            if candidate.shape != scan_m.shape:
+                raise RuntimeError(
+                    "sensor-associated target mask does not match the current LiDAR scan"
+                )
+            target_return = candidate
+        clearance = directional_lidar_clearance(
+            scan_m,
+            self._speed_governor_bearings,
+            command_xy,
+            max_range_m=float(self.task_config.lidar_max_range),
+            path_half_width_m=self.speed_governor_cfg.path_half_width_m,
+            target_return_mask=target_return,
+        )
+        governed, telemetry = apply_speed_governor(
+            command_xy, clearance, self.speed_governor_cfg
+        )
+        for key, value in telemetry.items():
+            self._speed_governor_last[key][:] = value.detach()
+
+        if self._speed_governor_diag_enabled:
+            diag = self._speed_governor_diag
+            requested = telemetry["requested_speed_mps"].detach()
+            executed = telemetry["executed_speed_mps"].detach()
+            scale = telemetry["scale"].detach()
+            ttc = telemetry["ttc_requested_s"].detach()
+            finite_ttc = torch.isfinite(ttc)
+            diag["samples"] += requested.numel()
+            diag["interventions"] += (scale < 0.999).sum()
+            diag["near_stops"] += ((scale < 0.05) & (requested > 0.1)).sum()
+            diag["requested_speed_sum"] += requested.sum(dtype=torch.float64)
+            diag["executed_speed_sum"] += executed.sum(dtype=torch.float64)
+            diag["clearance_sum"] += clearance.detach().sum(dtype=torch.float64)
+            diag["scale_sum"] += scale.sum(dtype=torch.float64)
+            diag["ttc_sum"] += ttc[finite_ttc].sum(dtype=torch.float64)
+            diag["ttc_n"] += finite_ttc.sum()
+            diag["negative_margin_requested"] += (
+                telemetry["stopping_margin_requested_m"] < 0.0
+            ).sum()
+            diag["negative_margin_executed"] += (
+                telemetry["stopping_margin_executed_m"] < 0.0
+            ).sum()
+        return governed
 
     def _record_action_diagnostics(self, actions):
         """Accumulate action tails plus context needed to separate avoidance from policy bias."""
@@ -2569,10 +2819,7 @@ class NavRLTask(BaseTask):
             goal_vehicle = quat_rotate_inverse(
                 self.obs_dict["robot_vehicle_orientation"], rpos
             )
-            lateral_sine = goal_vehicle[:, 1].abs() / goal_vehicle[:, :2].norm(
-                dim=1
-            ).clamp(min=1e-6)
-            goal_centered = (lateral_sine <= math.sin(math.radians(15.0))) & valid_y_now
+            goal_centered = _goal_front_centered(goal_vehicle) & valid_y_now
             goal_offcenter = ~goal_centered & valid_y_now
             for name, mask in (
                 ("goal_centered", goal_centered),
@@ -2712,6 +2959,33 @@ class NavRLTask(BaseTask):
             if bool(d_contact.any()):
                 self._diag_steps["contact"] += float(steps[d_contact].sum().item())
                 self._diag_x_sum += float(pos[d_contact, 0].sum().item())
+                if self._speed_governor_diag_enabled:
+                    gdiag = self._speed_governor_diag
+                    last = self._speed_governor_last
+                    actual_speed = vel_w[:, 0:2].norm(dim=1)
+                    gdiag["contact_n"] += d_contact.sum()
+                    gdiag["contact_actual_speed_sum"] += actual_speed[
+                        d_contact
+                    ].sum(dtype=torch.float64)
+                    for source, destination in (
+                        ("requested_speed_mps", "contact_requested_speed_sum"),
+                        ("executed_speed_mps", "contact_executed_speed_sum"),
+                        ("clearance_m", "contact_clearance_sum"),
+                        ("scale", "contact_scale_sum"),
+                        ("ttc_requested_s", "contact_ttc_sum"),
+                        (
+                            "stopping_margin_requested_m",
+                            "contact_margin_requested_sum",
+                        ),
+                        (
+                            "stopping_margin_executed_m",
+                            "contact_margin_executed_sum",
+                        ),
+                    ):
+                        values = last[source][d_contact]
+                        if source == "ttc_requested_s":
+                            values = values[torch.isfinite(values)]
+                        gdiag[destination] += values.sum(dtype=torch.float64)
                 if self._bar_probe and self.perception is not None:
                     self._record_bar_contact_probe(d_contact, pos)
             if bool(d_below.any()):
@@ -3674,12 +3948,54 @@ class NavRLTask(BaseTask):
         fov_curriculum_saturated = self._fov_curriculum_is_saturated()
         physics = self._runtime_physics_contract()
 
+        def scalar(name):
+            return float(self._speed_governor_diag[name].item())
+
+        def mean_scalar(total_name, count_name="samples"):
+            return scalar(total_name) / max(1.0, scalar(count_name))
+
+        def step_summary(values):
+            if not values:
+                return {"count": 0, "mean": None, "p10": None, "p50": None, "p90": None}
+            array = np.asarray(values, dtype=np.float64)
+            return {
+                "count": int(array.size),
+                "mean": float(array.mean()),
+                "p10": float(np.quantile(array, 0.10)),
+                "p50": float(np.quantile(array, 0.50)),
+                "p90": float(np.quantile(array, 0.90)),
+            }
+
+        def stratum_payload(successes, episodes, labels):
+            result = {}
+            for label, n_success, n_episode in zip(
+                labels, successes.tolist(), episodes.tolist()
+            ):
+                n_episode = int(n_episode)
+                n_success = int(n_success)
+                result[label] = {
+                    "successes": n_success,
+                    "episodes": n_episode,
+                    "capture_rate": (
+                        float(n_success / n_episode) if n_episode > 0 else None
+                    ),
+                }
+            return result
+
         payload = {
             "schema_version": 1,
             "requested_episodes": int(self._bulk_eval_target),
             "actual_episodes": int(total),
             "checkpoint": os.environ.get("NAVRL_EVAL_CHECKPOINT", ""),
             "condition": {
+                "action_selection": os.environ.get(
+                    "NAVRL_EVAL_ACTION_MODE", "configured"
+                ).strip().lower(),
+                # The player owns this inference-only transform. Recording it here prevents an
+                # M*pi*M rollout from being mislabeled as the original controller.
+                "reflection_mode": os.environ.get(
+                    "NAVRL_EVAL_REFLECTION_MODE", "original"
+                ).strip().lower(),
                 "seed": int(self.task_config.seed),
                 "bars": int(self.n_bars_active),
                 "target_pattern": os.environ.get("NAVRL_TARGET_PATTERN", "static"),
@@ -3696,6 +4012,17 @@ class NavRLTask(BaseTask):
                 "full_goal_distribution": bool(full_goal_distribution),
                 "fov_curriculum_saturated": bool(fov_curriculum_saturated),
                 "evaluation_nonce": os.environ.get("NAVRL_EVAL_RUN_NONCE", ""),
+                "speed_governor_mode": self.speed_governor_cfg.mode,
+                "speed_governor_fixed_mps": self.speed_governor_cfg.fixed_cap_mps,
+                "speed_governor_free_mps": self.speed_governor_cfg.free_speed_cap_mps,
+                "speed_governor_half_width_m": self.speed_governor_cfg.path_half_width_m,
+                "speed_governor_margin_m": self.speed_governor_cfg.hard_margin_m,
+                "speed_governor_slow_m": self.speed_governor_cfg.slow_distance_m,
+                "speed_governor_release_m": self.speed_governor_cfg.release_distance_m,
+                "speed_governor_ttc_s": self.speed_governor_cfg.ttc_s,
+                "speed_governor_brake_mps2": self.speed_governor_cfg.brake_mps2,
+                "speed_governor_reaction_s": self.speed_governor_cfg.reaction_s,
+                "speed_governor_target_exclusion": "camera_lidar_association",
                 **physics,
             },
             "outcome": {
@@ -3777,6 +4104,104 @@ class NavRLTask(BaseTask):
                 "above_share": float(d["above"] / n_cause_den),
                 "out_of_bounds_share": float(d["oob"] / n_cause_den),
             },
+            "speed_governor": {
+                "mode": self.speed_governor_cfg.mode,
+                "sensor_only": True,
+                "direction_preserved": True,
+                "target_exclusion_source": "camera_lidar_association",
+                "feedback_executed_previous_action": self.speed_governor_cfg.mode != "off",
+                "samples": int(scalar("samples")),
+                "intervention_rate": mean_scalar("interventions"),
+                "near_stop_rate": mean_scalar("near_stops"),
+                "mean_requested_speed_mps": mean_scalar("requested_speed_sum"),
+                "mean_executed_speed_mps": mean_scalar("executed_speed_sum"),
+                "mean_clearance_m": mean_scalar("clearance_sum"),
+                "mean_scale": mean_scalar("scale_sum"),
+                "mean_requested_ttc_s": mean_scalar("ttc_sum", "ttc_n"),
+                "negative_stopping_margin_requested_rate": mean_scalar(
+                    "negative_margin_requested"
+                ),
+                "negative_stopping_margin_executed_rate": mean_scalar(
+                    "negative_margin_executed"
+                ),
+                "contact": {
+                    "count": int(scalar("contact_n")),
+                    "mean_actual_speed_mps": mean_scalar(
+                        "contact_actual_speed_sum", "contact_n"
+                    ),
+                    "mean_requested_speed_mps": mean_scalar(
+                        "contact_requested_speed_sum", "contact_n"
+                    ),
+                    "mean_executed_speed_mps": mean_scalar(
+                        "contact_executed_speed_sum", "contact_n"
+                    ),
+                    "mean_clearance_m": mean_scalar(
+                        "contact_clearance_sum", "contact_n"
+                    ),
+                    "mean_scale": mean_scalar("contact_scale_sum", "contact_n"),
+                    "mean_requested_ttc_s": mean_scalar(
+                        "contact_ttc_sum", "contact_n"
+                    ),
+                    "mean_stopping_margin_requested_m": mean_scalar(
+                        "contact_margin_requested_sum", "contact_n"
+                    ),
+                    "mean_stopping_margin_executed_m": mean_scalar(
+                        "contact_margin_executed_sum", "contact_n"
+                    ),
+                    "mean_step": float(
+                        self._diag_steps["contact"] / max(1, d["contact"])
+                    ),
+                },
+                "outcome_steps": {
+                    label: step_summary(self._speed_governor_outcome_steps[label])
+                    for label in ("capture", "crash", "timeout")
+                },
+            },
+            "strata": {
+                # Speed bins preserve the training gate's historical boundaries: four equal
+                # intervals over [0, current maximum], not empirical equal-count quartiles.
+                "speed_bin_edges_mps": [
+                    float(speed_max * i / 4.0) for i in range(5)
+                ],
+                "speed": stratum_payload(
+                    self._density_speed_succ,
+                    self._density_speed_fin,
+                    ("q0", "q1", "q2", "q3"),
+                ),
+                "distance_bin_edges_m": [
+                    float(goal_dist_min + (goal_dist_max - goal_dist_min) * i / 4.0)
+                    for i in range(5)
+                ],
+                "distance": stratum_payload(
+                    self._density_dist_succ,
+                    self._density_dist_fin,
+                    ("q0", "q1", "q2", "q3"),
+                ),
+                "pattern": stratum_payload(
+                    self._density_pattern_succ,
+                    self._density_pattern_fin,
+                    ("cv", "waypoint", "circle"),
+                ),
+                "initial_target_bearing": {
+                    label: {
+                        "captured": int(self._eval_bearing_succ[i].item()),
+                        "crash": int(self._eval_bearing_crash[i].item()),
+                        "timeout": int(self._eval_bearing_timeout[i].item()),
+                        "episodes": int(self._eval_bearing_fin[i].item()),
+                        "capture_rate": (
+                            float(
+                                self._eval_bearing_succ[i].item()
+                                / self._eval_bearing_fin[i].item()
+                            )
+                            if self._eval_bearing_fin[i].item() > 0
+                            else None
+                        ),
+                    }
+                    for i, label in enumerate(
+                        ("negative_y", "centered_5deg", "positive_y")
+                    )
+                },
+            },
         }
         compact = json.dumps(payload, sort_keys=True, separators=(",", ":"))
         print("NAVRL_BULK_EVAL_RESULT " + compact, flush=True)
@@ -3803,6 +4228,31 @@ class NavRLTask(BaseTask):
         self._crash_agg += int(torch.sum(crashes > 0).item())
         self._to_agg += int(torch.sum(timeouts).item())
         if finished is not None and finished.any():
+            # Density curriculum is disabled during a held-out sweep, but the same episode labels
+            # are essential for diagnosing whether a score is limited by speed, initial distance,
+            # or motion pattern. Reuse the audited gate accounting without altering task dynamics.
+            if self._bulk_eval_mode:
+                self._record_density_strata(successes, finished)
+                idx = finished.nonzero(as_tuple=False).squeeze(1)
+                bins = self._episode_bearing_bin[idx].long().clamp(0, 2)
+                self._eval_bearing_fin += torch.bincount(
+                    bins, minlength=3
+                ).to(self._eval_bearing_fin.dtype)
+                self._eval_bearing_succ += torch.bincount(
+                    bins,
+                    weights=successes[idx].to(torch.float32),
+                    minlength=3,
+                ).to(self._eval_bearing_succ.dtype)
+                self._eval_bearing_crash += torch.bincount(
+                    bins,
+                    weights=(crashes[idx] > 0).to(torch.float32),
+                    minlength=3,
+                ).to(self._eval_bearing_crash.dtype)
+                self._eval_bearing_timeout += torch.bincount(
+                    bins,
+                    weights=timeouts[idx].to(torch.float32),
+                    minlength=3,
+                ).to(self._eval_bearing_timeout.dtype)
             self._reach_agg += int(torch.sum(self.ep_reached & finished).item())
             nocrash = finished & ~(crashes > 0)
             if nocrash.any():
@@ -3893,6 +4343,32 @@ class NavRLTask(BaseTask):
                     )
                 )
                 self._action_diag = self._empty_action_diag()
+            if self._speed_governor_diag_enabled:
+                gd = self._speed_governor_diag
+                gn = max(1.0, float(gd["samples"].item()))
+                gc = max(1.0, float(gd["contact_n"].item()))
+                logger.warning(
+                    "NavRL speedgov | mode=%s intervene=%.3f stop=%.3f "
+                    "requested=%.3fm/s executed=%.3fm/s clearance=%.2fm scale=%.3f "
+                    "unsafe_pre=%.3f unsafe_post=%.3f | contact_n=%d actual=%.3fm/s "
+                    "executed=%.3fm/s clearance=%.2fm"
+                    % (
+                        self.speed_governor_cfg.mode,
+                        float(gd["interventions"].item()) / gn,
+                        float(gd["near_stops"].item()) / gn,
+                        float(gd["requested_speed_sum"].item()) / gn,
+                        float(gd["executed_speed_sum"].item()) / gn,
+                        float(gd["clearance_sum"].item()) / gn,
+                        float(gd["scale_sum"].item()) / gn,
+                        float(gd["negative_margin_requested"].item()) / gn,
+                        float(gd["negative_margin_executed"].item()) / gn,
+                        int(gd["contact_n"].item()),
+                        float(gd["contact_actual_speed_sum"].item()) / gc,
+                        float(gd["contact_executed_speed_sum"].item()) / gc,
+                        float(gd["contact_clearance_sum"].item()) / gc,
+                    )
+                )
+                self._speed_governor_diag = self._empty_speed_governor_diag()
             if self._crash_diag:
                 d = self._diag
                 n_raw = d["contact"] + d["below"] + d["above"] + d["oob"]

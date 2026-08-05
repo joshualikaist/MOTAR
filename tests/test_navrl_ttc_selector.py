@@ -100,6 +100,23 @@ def _select(scan, vel, **kw):
 
 
 class TTCSelectorTests(unittest.TestCase):
+    def test_selector_provenance_matches_executed_candidate_set(self):
+        cluster = _P.obstacle_selector_provenance("cluster_sector", 240.0)
+        self.assertEqual(cluster["effective_fov_deg"], 240.0)
+        self.assertFalse(cluster["suppress_active"])
+
+        ttc = _P.obstacle_selector_provenance("ttc_sector", 240.0)
+        self.assertEqual(ttc["effective_fov_deg"], 360.0)
+        self.assertFalse(ttc["suppress_active"])
+
+        greedy = _P.obstacle_selector_provenance("greedy_suppress", 180.0)
+        self.assertEqual(greedy["effective_fov_deg"], 180.0)
+        self.assertTrue(greedy["suppress_active"])
+
+    def test_selector_provenance_rejects_unknown_selector(self):
+        with self.assertRaises(ValueError):
+            _P.obstacle_selector_provenance("invented", 240.0)
+
     def test_shapes_and_dtypes_match_contract(self):
         scan = _blank()
         _put(scan, 0.0, 5.0)

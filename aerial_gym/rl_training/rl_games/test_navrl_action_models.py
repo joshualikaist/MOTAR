@@ -243,13 +243,16 @@ class ActionModelTests(unittest.TestCase):
         target[..., 1], target[..., 4], target[..., 7] = 5.0, -6.0, 7.0
 
         mirrored = mirror_navrl_structured_observation(obs)
-        expected_index = (hbeams - 2 - torch.arange(hbeams)) % hbeams
+        expected_index = (-torch.arange(hbeams)) % hbeams
         expected_scan = obs[:, :static_dim].view(1, vbeams, hbeams).index_select(
             2, expected_index
         )
         self.assertTrue(
             torch.equal(mirrored[:, :static_dim].view_as(expected_scan), expected_scan)
         )
+        # +180 is self-reflecting; the next positive bearing maps to the final negative bearing.
+        self.assertEqual(int(expected_index[0]), 0)
+        self.assertEqual(int(expected_index[1]), hbeams - 1)
         mirrored_obstacle = mirrored[
             :, static_dim : static_dim + obstacle_size
         ].view(1, 5, obstacles, 12)

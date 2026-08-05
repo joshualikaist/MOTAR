@@ -354,6 +354,23 @@ class NavRLV2RecoveryGateTest(unittest.TestCase):
         self.assertEqual(completed.returncode, 0, completed.stdout)
         self.assertIn("fov_curriculum=3000 detector_pixels=2 ", completed.stdout)
         self.assertNotIn("fov_curriculum=3000.0", completed.stdout)
+        self.assertIn("action_selection=deterministic", completed.stdout)
+
+    def test_recovery_evaluator_rejects_stochastic_attestation(self):
+        checkpoint = self._save_checkpoint()
+        completed = self._run_eval_preflight(
+            checkpoint, {"NAVRL_V2_ACTION_MODE": "stochastic"}
+        )
+        self.assertNotEqual(completed.returncode, 0, completed.stdout)
+        self.assertIn("requires deterministic action selection", completed.stdout)
+
+    def test_evaluator_rejects_unknown_action_selection(self):
+        checkpoint = self._save_checkpoint()
+        completed = self._run_eval_preflight(
+            checkpoint, {"NAVRL_V2_ACTION_MODE": "coin-flip"}
+        )
+        self.assertNotEqual(completed.returncode, 0, completed.stdout)
+        self.assertIn("must be deterministic or stochastic", completed.stdout)
 
     def test_recovery_evaluator_pins_main_runtime_against_hostile_environment(self):
         checkpoint = self._save_checkpoint()

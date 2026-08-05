@@ -70,6 +70,9 @@ _full_eval_distribution_enabled = _load_task_function(
     "_full_eval_distribution_enabled"
 )
 _goal_distance_bounds = _load_task_function("_goal_distance_bounds")
+_goal_front_centered = _load_task_function(
+    "_goal_front_centered", {"torch": torch}
+)
 _fov_curriculum_saturated = _load_task_function("_fov_curriculum_saturated")
 _fov_curriculum_bearing_limit_rad = _load_task_function(
     "_fov_curriculum_bearing_limit_rad",
@@ -127,6 +130,16 @@ class NavRLPerceptionTest(unittest.TestCase):
         self.vel = torch.zeros(2, 3)
         self.quat = torch.tensor([[0.0, 0.0, 0.0, 1.0]]).repeat(2, 1)
 
+    def test_goal_centered_diagnostic_is_forward_only(self):
+        goals = torch.tensor(
+            [
+                [3.0, 0.1, 0.0],
+                [-3.0, 0.1, 0.0],  # old abs-sine-only label falsely accepted the rear cone
+                [3.0, 2.0, 0.0],
+            ]
+        )
+        self.assertEqual(_goal_front_centered(goals).tolist(), [True, False, False])
+
     def _observe(self):
         return self.module.observe(
             self.rgb,
@@ -150,10 +163,45 @@ class NavRLPerceptionTest(unittest.TestCase):
         self.assertGreater(float(diag["confidence"][0]), 0.5)
         self.assertTrue(torch.isfinite(obs).all())
 
+    def test_target_return_mask_is_sensor_associated_and_resettable(self):
+        self.depth[0, 20:24, 38:43] = 3.0
+        self.lidar[0] = 4.0
+        # Four vertical returns at physical bearing zero and the detected surface range.
+        self.lidar[0, 18::36] = 3.0
+        self._observe()
+        self.assertTrue(bool(self.module.last_target_like[0, :, 18].all()))
+        self.assertFalse(bool(self.module.last_target_like[1].any()))
+        self.module.reset_idx(torch.tensor([0]))
+        self.assertFalse(bool(self.module.last_target_like[0].any()))
+
     def test_actor_perception_api_has_no_oracle_argument(self):
         names = set(inspect.signature(self.module.observe).parameters)
         forbidden = {"target_position", "target_velocity", "target_mask", "semantic_id"}
         self.assertFalse(names & forbidden)
+
+    def test_speed_governor_does_not_read_semantic_target_ids(self):
+        task_class = next(
+            node
+            for node in _TASK_TREE.body
+            if isinstance(node, ast.ClassDef) and node.name == "NavRLTask"
+        )
+        method = next(
+            node
+            for node in task_class.body
+            if isinstance(node, ast.FunctionDef)
+            and node.name == "_apply_sensor_speed_governor"
+        )
+        names = {
+            node.id for node in ast.walk(method) if isinstance(node, ast.Name)
+        } | {
+            node.attr for node in ast.walk(method) if isinstance(node, ast.Attribute)
+        }
+        constants = {
+            node.value for node in ast.walk(method) if isinstance(node, ast.Constant)
+        }
+        self.assertNotIn("segmentation_pixels", names)
+        self.assertNotIn(50, constants)
+        self.assertIn("last_target_like", names)
 
     def test_uncertainty_grows_during_occlusion(self):
         self._observe()
@@ -393,6 +441,10 @@ class HeldOutDistributionContractTest(unittest.TestCase):
                 "full_goal_distribution",
                 "fov_curriculum_saturated",
                 "evaluation_nonce",
+                "action_selection",
+                "strata",
+                "speed_bin_edges_mps",
+                "distance_bin_edges_m",
             }.issubset(strings)
         )
         physics_method = next(

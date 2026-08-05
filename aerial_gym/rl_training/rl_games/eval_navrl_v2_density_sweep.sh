@@ -16,9 +16,18 @@
 # Optional outputs/conditions:
 #   NAVRL_V2_DENSITIES="70 150 210 280"
 #   NAVRL_V2_RESULT_DIR=/absolute/or/caller-relative/output/directory
+#   NAVRL_V2_ACTION_MODE=deterministic|stochastic  # deployed mean vs on-policy gate
+#   NAVRL_EVAL_REFLECTION_MODE=original|conjugate # inference-only mirror audit
+#   NAVRL_V2_FIXED_TARGET_SPEED=0.9                # fixed-speed causal evaluation
+#   NAVRL_SPEED_GOVERNOR=off|fixed|clearance|ttc|riskcap  # inference-only R2 speed-risk screen
 set -euo pipefail
 
 CALLER_PWD="${PWD}"
+# Resolve the evaluator before changing directory.  When invoked from the repository root,
+# BASH_SOURCE[0] is relative to CALLER_PWD; resolving it again after cd would point at a
+# non-existent doubly-prefixed path and make a valid evaluation exit before the first cell.
+EVALUATOR_SCRIPT="$(readlink -f -- "${BASH_SOURCE[0]}")"
+SCRIPT_DIR="$(dirname "${EVALUATOR_SCRIPT}")"
 CKPT_INPUT="${1:?usage: $0 <last_gen_ppo_ep_XXXX.pth> [games_per_cell]}"
 GAMES="${2:-2049}"
 if (( $# > 2 )); then
@@ -26,7 +35,7 @@ if (( $# > 2 )); then
     exit 2
 fi
 
-cd "$(dirname "${BASH_SOURCE[0]}")"
+cd "${SCRIPT_DIR}"
 
 export PYTHON="${PYTHON:-/home/fair/miniconda3/envs/aerialgym/bin/python}"
 if [[ "${PYTHON}" == */* ]]; then
@@ -38,6 +47,7 @@ export PYTHONNOUSERSITE=1
 # Isaac Gym had initialized, wasting the run and leaving no attestation.
 unset NAVRL_GENERAL_EVAL NAVRL_INTERACTIVE NAVRL_GENERAL_RESULTS_JSON
 unset NAVRL_BULK_EVAL NAVRL_BULK_EVAL_JSON NAVRL_EVAL_CHECKPOINT NAVRL_EVAL_RUN_NONCE
+unset NAVRL_EVAL_ACTION_MODE
 unset NAVRL_LEGACY_VISION NAVRL_OOB_PROBE
 
 if [[ "${CKPT_INPUT}" == /* ]]; then
@@ -184,6 +194,87 @@ case "${GPU4GB:-0}" in
         ;;
 esac
 
+NAVRL_V2_ACTION_MODE="${NAVRL_V2_ACTION_MODE:-deterministic}"
+case "${NAVRL_V2_ACTION_MODE}" in
+    deterministic|stochastic) ;;
+    *)
+        echo "[eval_v2] NAVRL_V2_ACTION_MODE must be deterministic or stochastic; got: ${NAVRL_V2_ACTION_MODE}" >&2
+        exit 2
+        ;;
+esac
+export NAVRL_V2_ACTION_MODE
+export NAVRL_EVAL_ACTION_MODE="${NAVRL_V2_ACTION_MODE}"
+NAVRL_EVAL_REFLECTION_MODE="${NAVRL_EVAL_REFLECTION_MODE:-original}"
+case "${NAVRL_EVAL_REFLECTION_MODE}" in
+    original|conjugate) ;;
+    *)
+        echo "[eval_v2] NAVRL_EVAL_REFLECTION_MODE must be original or conjugate; got: ${NAVRL_EVAL_REFLECTION_MODE}" >&2
+        exit 2
+        ;;
+esac
+if [[ "${NAVRL_EVAL_REFLECTION_MODE}" != "original" && "${NAVRL_V2_ACTION_MODE}" != "deterministic" ]]; then
+    echo "[eval_v2] conjugate reflection evaluation requires deterministic actions." >&2
+    exit 2
+fi
+export NAVRL_EVAL_REFLECTION_MODE
+
+# Inference-only speed-risk intervention. Validate and normalize every numeric field before the
+# simulator starts; the task and result validator both record the normalized contract.
+NAVRL_SPEED_GOVERNOR="${NAVRL_SPEED_GOVERNOR:-off}"
+case "${NAVRL_SPEED_GOVERNOR}" in
+    off|fixed|clearance|ttc|riskcap) ;;
+    *)
+        echo "[eval_v2] NAVRL_SPEED_GOVERNOR must be off, fixed, clearance, ttc or riskcap; got: ${NAVRL_SPEED_GOVERNOR}" >&2
+        exit 2
+        ;;
+esac
+GOVERNOR_VALUES="$(${PYTHON} - <<'PY'
+import math
+import os
+
+spec = (
+    ("NAVRL_SPEED_GOVERNOR_FIXED_MPS", 2.0, True),
+    ("NAVRL_SPEED_GOVERNOR_FREE_MPS", math.sqrt(2.0) * 2.5, True),
+    ("NAVRL_SPEED_GOVERNOR_HALF_WIDTH_M", 0.45, True),
+    ("NAVRL_SPEED_GOVERNOR_MARGIN_M", 0.45, False),
+    ("NAVRL_SPEED_GOVERNOR_SLOW_M", 3.0, True),
+    ("NAVRL_SPEED_GOVERNOR_RELEASE_M", 5.0, True),
+    ("NAVRL_SPEED_GOVERNOR_TTC_S", 1.0, True),
+    ("NAVRL_SPEED_GOVERNOR_BRAKE_MPS2", 2.0, True),
+    ("NAVRL_SPEED_GOVERNOR_REACTION_S", 0.1, False),
+)
+values = []
+for name, default, positive in spec:
+    raw = os.environ.get(name, "").strip()
+    try:
+        value = float(raw) if raw else float(default)
+    except ValueError as exc:
+        raise SystemExit(f"[eval_v2] {name} must be numeric; got {raw!r}") from exc
+    if not math.isfinite(value) or value < 0.0 or (positive and value <= 0.0):
+        relation = "positive" if positive else "non-negative"
+        raise SystemExit(f"[eval_v2] {name} must be finite and {relation}; got {value!r}")
+    values.append(value)
+if values[4] <= values[3]:
+    raise SystemExit("[eval_v2] governor slow distance must exceed hard margin")
+if os.environ.get("NAVRL_SPEED_GOVERNOR", "off").strip().lower() == "riskcap":
+    if values[5] <= values[4]:
+        raise SystemExit("[eval_v2] riskcap release distance must exceed slow distance")
+    if values[1] < values[0]:
+        raise SystemExit("[eval_v2] riskcap free speed must be >= fixed cap")
+print(" ".join(f"{value:.12g}" for value in values))
+PY
+)"
+read -r NAVRL_SPEED_GOVERNOR_FIXED_MPS NAVRL_SPEED_GOVERNOR_FREE_MPS \
+    NAVRL_SPEED_GOVERNOR_HALF_WIDTH_M NAVRL_SPEED_GOVERNOR_MARGIN_M \
+    NAVRL_SPEED_GOVERNOR_SLOW_M NAVRL_SPEED_GOVERNOR_RELEASE_M \
+    NAVRL_SPEED_GOVERNOR_TTC_S \
+    NAVRL_SPEED_GOVERNOR_BRAKE_MPS2 NAVRL_SPEED_GOVERNOR_REACTION_S <<< "${GOVERNOR_VALUES}"
+export NAVRL_SPEED_GOVERNOR NAVRL_SPEED_GOVERNOR_FIXED_MPS NAVRL_SPEED_GOVERNOR_FREE_MPS
+export NAVRL_SPEED_GOVERNOR_HALF_WIDTH_M NAVRL_SPEED_GOVERNOR_MARGIN_M
+export NAVRL_SPEED_GOVERNOR_SLOW_M NAVRL_SPEED_GOVERNOR_RELEASE_M NAVRL_SPEED_GOVERNOR_TTC_S
+export NAVRL_SPEED_GOVERNOR_BRAKE_MPS2 NAVRL_SPEED_GOVERNOR_REACTION_S
+export NAVRL_SPEED_GOVERNOR_DIAG=1
+
 # ---- v2 ARENA / TASK contract (fixed evaluation condition) ----
 export NAVRL_ARENA_XY=40
 export NAVRL_ARENA_Z=3
@@ -214,14 +305,38 @@ export NAVRL_DENSITY_CHECK_EPS=16384
 export NAVRL_DENSITY_MIN_EPOCHS=1000
 unset NAVRL_FIXED_BARS NAVRL_CONTROLLED_ABLATION
 
-# v2 trains on moving targets sampled from U[0.3, 1.5] m/s after the short 300-epoch ramp. Leaving
-# these unset makes evaluation silently fall back to a static target; a stale NAVRL_TARGET_SPEED
-# instead fixes an arbitrary scalar speed. Pin the trained, final distribution explicitly.
+# v2 trains on moving targets sampled from U[0.3, 1.5] m/s after the short 300-epoch ramp.  The
+# canonical sweep uses that final distribution.  A causal speed evaluation may explicitly set
+# NAVRL_V2_FIXED_TARGET_SPEED within the training support; the result validator below then requires
+# the task's measured condition to be fixed at exactly that value.
 export NAVRL_TARGET_SPEED_MIN=0.3
 export NAVRL_TARGET_SPEED_FINAL=1.5
 export NAVRL_TARGET_SPEED_RAMP_EPOCHS=300
 export NAVRL_TARGET_PATTERN=mixed
-unset NAVRL_TARGET_SPEED
+FIXED_TARGET_SPEED="${NAVRL_V2_FIXED_TARGET_SPEED:-}"
+if [[ -n "${FIXED_TARGET_SPEED}" ]]; then
+    FIXED_TARGET_SPEED="$(${PYTHON} - "${FIXED_TARGET_SPEED}" <<'PY'
+import math
+import sys
+
+try:
+    value = float(sys.argv[1])
+except ValueError as exc:
+    raise SystemExit("[eval_v2] NAVRL_V2_FIXED_TARGET_SPEED must be numeric") from exc
+if not math.isfinite(value) or not 0.3 <= value <= 1.5:
+    raise SystemExit(
+        "[eval_v2] NAVRL_V2_FIXED_TARGET_SPEED must be within the trained [0.3, 1.5] m/s support"
+    )
+print(f"{value:.12g}")
+PY
+    )"
+    export NAVRL_V2_FIXED_TARGET_SPEED="${FIXED_TARGET_SPEED}"
+    export NAVRL_TARGET_SPEED="${FIXED_TARGET_SPEED}"
+    TARGET_SPEED_DESCRIPTION="fixed ${FIXED_TARGET_SPEED}m/s"
+else
+    unset NAVRL_V2_FIXED_TARGET_SPEED NAVRL_TARGET_SPEED
+    TARGET_SPEED_DESCRIPTION="U[${NAVRL_TARGET_SPEED_MIN},${NAVRL_TARGET_SPEED_FINAL}]m/s"
+fi
 # Evaluation is defined on the final training distribution, independent of the checkpoint's saved
 # curriculum clock. Without this explicit override, an early checkpoint silently evaluates at the
 # ramp's then-current upper speed while the result used to claim U[0.3,1.5].
@@ -299,6 +414,14 @@ unset NAVRL_ACTION_POLICY NAVRL_ACTION_STD NAVRL_ACTION_MU_SCALE NAVRL_TRUNCATED
 unset NAVRL_ENTROPY_COEF NAVRL_LEARNING_RATE NAVRL_NETWORK_OVERRIDE
 
 if [[ "${RECOVERY_STAGE}" == "smoke" ]]; then
+    if [[ -n "${FIXED_TARGET_SPEED}" ]]; then
+        echo "[eval_v2] fixed target speed is forbidden for a recovery-smoke attestation." >&2
+        exit 2
+    fi
+    if [[ "${NAVRL_V2_ACTION_MODE}" != "deterministic" ]]; then
+        echo "[eval_v2] recovery smoke attestation requires deterministic action selection." >&2
+        exit 2
+    fi
     if [[ "${NAVRL_V2_FORCE:-0}" == "1" ]]; then
         echo "[eval_v2] NAVRL_V2_FORCE is forbidden for a curriculum-unlocking recovery evaluation." >&2
         exit 2
@@ -501,6 +624,8 @@ PY
 
 echo "[eval_v2] same-shape | fov_curriculum=${FOV_CURRICULUM_EPOCHS} detector_pixels=${DETECTOR_MIN_PIXELS} detector_threshold=${DETECTOR_THRESHOLD} ttc=${TTC_IDLE_S}/${TTC_MIN_SPEED}"
 echo "[eval_v2] runtime=${NAVRL_EVAL_PROFILE}/${AERIAL_GYM_SIM_NAME} envs=${NUM_ENVS} physics=${NAVRL_SIM_PHYSICS_CONTRACT}"
+echo "[eval_v2] action_selection=${NAVRL_EVAL_ACTION_MODE} reflection=${NAVRL_EVAL_REFLECTION_MODE}"
+echo "[eval_v2] speed_governor=${NAVRL_SPEED_GOVERNOR} fixed=${NAVRL_SPEED_GOVERNOR_FIXED_MPS} free=${NAVRL_SPEED_GOVERNOR_FREE_MPS} margin=${NAVRL_SPEED_GOVERNOR_MARGIN_M} slow=${NAVRL_SPEED_GOVERNOR_SLOW_M} release=${NAVRL_SPEED_GOVERNOR_RELEASE_M} ttc=${NAVRL_SPEED_GOVERNOR_TTC_S}"
 if [[ "${NAVRL_PREFLIGHT_ONLY:-0}" == "1" ]]; then
     echo "[eval_v2] PREFLIGHT PASS (evaluation not started)"
     exit 0
@@ -523,7 +648,6 @@ if [[ -e "${RESULT_DIR}" ]]; then
 fi
 mkdir -p "${RESULT_DIR}"
 RESULT_CSV="${RESULT_DIR}/results.csv"
-EVALUATOR_SCRIPT="$(readlink -f -- "${BASH_SOURCE[0]}")"
 CHECKPOINT_SNAPSHOT="${RESULT_DIR}/checkpoint_snapshot.pth"
 
 sha256_file() {
@@ -618,6 +742,34 @@ if int(condition.get("bars", -1)) != expected_bars:
     raise SystemExit("[eval_v2] bulk JSON density does not match the sweep cell")
 if int(condition.get("seed", -1)) != expected_seed:
     raise SystemExit("[eval_v2] bulk JSON seed does not match the pinned held-out seed")
+if condition.get("action_selection") != os.environ["NAVRL_EVAL_ACTION_MODE"]:
+    raise SystemExit("[eval_v2] bulk JSON action selection does not match the requested mode")
+if condition.get("reflection_mode") != os.environ["NAVRL_EVAL_REFLECTION_MODE"]:
+    raise SystemExit("[eval_v2] bulk JSON reflection mode does not match the requested mode")
+if condition.get("speed_governor_mode") != os.environ["NAVRL_SPEED_GOVERNOR"]:
+    raise SystemExit("[eval_v2] bulk JSON speed governor does not match the requested mode")
+if condition.get("speed_governor_target_exclusion") != "camera_lidar_association":
+    raise SystemExit(
+        "[eval_v2] speed governor target exclusion is not actor-safe camera/LiDAR association"
+    )
+governor_numeric = {
+    "speed_governor_fixed_mps": "NAVRL_SPEED_GOVERNOR_FIXED_MPS",
+    "speed_governor_free_mps": "NAVRL_SPEED_GOVERNOR_FREE_MPS",
+    "speed_governor_half_width_m": "NAVRL_SPEED_GOVERNOR_HALF_WIDTH_M",
+    "speed_governor_margin_m": "NAVRL_SPEED_GOVERNOR_MARGIN_M",
+    "speed_governor_slow_m": "NAVRL_SPEED_GOVERNOR_SLOW_M",
+    "speed_governor_release_m": "NAVRL_SPEED_GOVERNOR_RELEASE_M",
+    "speed_governor_ttc_s": "NAVRL_SPEED_GOVERNOR_TTC_S",
+    "speed_governor_brake_mps2": "NAVRL_SPEED_GOVERNOR_BRAKE_MPS2",
+    "speed_governor_reaction_s": "NAVRL_SPEED_GOVERNOR_REACTION_S",
+}
+for field, env_name in governor_numeric.items():
+    try:
+        matches = abs(float(condition.get(field)) - float(os.environ[env_name])) <= 1e-6
+    except (TypeError, ValueError):
+        matches = False
+    if not matches:
+        raise SystemExit(f"[eval_v2] bulk JSON {field} does not match {env_name}")
 if int(condition.get("num_envs", -1)) != int(os.environ["NUM_ENVS"]):
     raise SystemExit("[eval_v2] bulk JSON num_envs does not match the pinned runtime profile")
 if condition.get("evaluation_nonce") != expected_nonce:
@@ -655,12 +807,23 @@ if condition.get("fov_curriculum_saturated") is not True:
     raise SystemExit("[eval_v2] bulk JSON did not use the final FOV distribution")
 if condition.get("target_pattern") != "mixed":
     raise SystemExit("[eval_v2] bulk JSON target pattern is not the pinned v2 mixed condition")
-if condition.get("target_speed_mode") != "uniform":
-    raise SystemExit("[eval_v2] bulk JSON target speed mode is not uniform")
-if abs(float(condition.get("target_speed_min_mps", -1.0)) - 0.3) > 1e-6:
-    raise SystemExit("[eval_v2] bulk JSON target-speed minimum is not 0.3 m/s")
-if abs(float(condition.get("target_speed_max_mps", -1.0)) - 1.5) > 1e-6:
-    raise SystemExit("[eval_v2] bulk JSON target-speed maximum is not 1.5 m/s")
+fixed_speed_text = os.environ.get("NAVRL_V2_FIXED_TARGET_SPEED", "").strip()
+fixed_speed = float(fixed_speed_text) if fixed_speed_text else None
+if fixed_speed is None:
+    if condition.get("target_speed_mode") != "uniform":
+        raise SystemExit("[eval_v2] bulk JSON target speed mode is not uniform")
+    if abs(float(condition.get("target_speed_min_mps", -1.0)) - 0.3) > 1e-6:
+        raise SystemExit("[eval_v2] bulk JSON target-speed minimum is not 0.3 m/s")
+    if abs(float(condition.get("target_speed_max_mps", -1.0)) - 1.5) > 1e-6:
+        raise SystemExit("[eval_v2] bulk JSON target-speed maximum is not 1.5 m/s")
+else:
+    if condition.get("target_speed_mode") != "fixed":
+        raise SystemExit("[eval_v2] bulk JSON target speed mode is not fixed")
+    for name in ("target_speed_mps", "target_speed_min_mps", "target_speed_max_mps"):
+        if abs(float(condition.get(name, -1.0)) - fixed_speed) > 1e-6:
+            raise SystemExit(
+                f"[eval_v2] bulk JSON {name} is not the requested {fixed_speed:g} m/s"
+            )
 if abs(float(condition.get("oob_margin_m", -1.0)) - 1.0) > 1e-6:
     raise SystemExit("[eval_v2] bulk JSON OOB margin is not the trained 1.0 m")
 if Path(payload.get("checkpoint", "")).resolve() != Path(checkpoint).resolve():
@@ -703,10 +866,30 @@ for name, count in zip(("capture_rate", "crash_rate", "timeout_rate"), counts):
             f"[eval_v2] {name}={reported:.12g} disagrees with count/actual={measured:.12g}"
         )
 
+bearing = (payload.get("strata") or {}).get("initial_target_bearing") or {}
+bearing_counts = [bearing.get(name) or {} for name in (
+    "negative_y", "centered_5deg", "positive_y"
+)]
+if sum(int(cell.get("episodes", -1)) for cell in bearing_counts) != actual:
+    raise SystemExit("[eval_v2] initial-target-bearing strata do not account for every episode")
+for outcome_name, expected_count in zip(("captured", "crash", "timeout"), counts):
+    if sum(int(cell.get(outcome_name, -1)) for cell in bearing_counts) != expected_count:
+        raise SystemExit(
+            "[eval_v2] initial-target-bearing %s counts do not match the bulk outcome"
+            % outcome_name
+        )
+
 causes = payload.get("crash_causes") or {}
 action = payload.get("action") or {}
+speed_governor = payload.get("speed_governor") or {}
 if action.get("policy") != "squashed_gaussian":
     raise SystemExit("[eval_v2] bulk JSON action policy is not squashed_gaussian")
+if speed_governor.get("mode") != os.environ["NAVRL_SPEED_GOVERNOR"]:
+    raise SystemExit("[eval_v2] speed_governor payload mode mismatch")
+if speed_governor.get("sensor_only") is not True or speed_governor.get("direction_preserved") is not True:
+    raise SystemExit("[eval_v2] speed governor must attest sensor-only direction-preserving execution")
+if int(speed_governor.get("samples", 0)) <= 0:
+    raise SystemExit("[eval_v2] speed governor diagnostics contain no samples")
 
 def action_y(name):
     values = action.get(name) or []
@@ -724,6 +907,19 @@ payload["v2_evaluation_contract"] = {
     "runtime_sim": os.environ["AERIAL_GYM_SIM_NAME"],
     "runtime_profile": os.environ["NAVRL_EVAL_PROFILE"],
     "runtime_num_envs": int(os.environ["NUM_ENVS"]),
+    "action_selection": os.environ["NAVRL_EVAL_ACTION_MODE"],
+    "reflection_mode": os.environ["NAVRL_EVAL_REFLECTION_MODE"],
+    "speed_governor_mode": os.environ["NAVRL_SPEED_GOVERNOR"],
+    "speed_governor_fixed_mps": float(os.environ["NAVRL_SPEED_GOVERNOR_FIXED_MPS"]),
+    "speed_governor_free_mps": float(os.environ["NAVRL_SPEED_GOVERNOR_FREE_MPS"]),
+    "speed_governor_half_width_m": float(os.environ["NAVRL_SPEED_GOVERNOR_HALF_WIDTH_M"]),
+    "speed_governor_margin_m": float(os.environ["NAVRL_SPEED_GOVERNOR_MARGIN_M"]),
+    "speed_governor_slow_m": float(os.environ["NAVRL_SPEED_GOVERNOR_SLOW_M"]),
+    "speed_governor_release_m": float(os.environ["NAVRL_SPEED_GOVERNOR_RELEASE_M"]),
+    "speed_governor_ttc_s": float(os.environ["NAVRL_SPEED_GOVERNOR_TTC_S"]),
+    "speed_governor_brake_mps2": float(os.environ["NAVRL_SPEED_GOVERNOR_BRAKE_MPS2"]),
+    "speed_governor_reaction_s": float(os.environ["NAVRL_SPEED_GOVERNOR_REACTION_S"]),
+    "speed_governor_target_exclusion": "camera_lidar_association",
     "sim_physics_contract": os.environ["NAVRL_SIM_PHYSICS_CONTRACT"],
     "runtime_sim_config_class": condition["runtime_sim_config_class"],
     "physics_dt_s": float(condition["physics_dt_s"]),
@@ -735,14 +931,19 @@ payload["v2_evaluation_contract"] = {
     "goal_dist_max_m": 28.0,
     "full_goal_distribution": True,
     "fov_curriculum_saturated": True,
-    "target_speed_distribution": "uniform",
-    "target_speed_min_mps": 0.3,
-    "target_speed_max_mps": 1.5,
+    "target_speed_distribution": "fixed" if fixed_speed is not None else "uniform",
+    "target_speed_mps": fixed_speed,
+    "target_speed_min_mps": fixed_speed if fixed_speed is not None else 0.3,
+    "target_speed_max_mps": fixed_speed if fixed_speed is not None else 1.5,
     "target_pattern": "mixed",
     "lidar_beams": [4, 72],
     "lidar_range_m": 12.0,
     "obstacle_tokens": 8,
     "obstacle_fov_deg": 240.0,
+    "obstacle_effective_fov_deg": (
+        360.0 if os.environ["NAVRL_OBSTACLE_SELECTOR"] == "ttc_sector" else 240.0
+    ),
+    "obstacle_suppress_active": os.environ["NAVRL_OBSTACLE_SELECTOR"] == "greedy_suppress",
     "obstacle_selector": os.environ["NAVRL_OBSTACLE_SELECTOR"],
     "obstacle_ttc_idle_s": float(os.environ["NAVRL_OBSTACLE_TTC_IDLE_S"]),
     "obstacle_ttc_min_speed": float(os.environ["NAVRL_OBSTACLE_TTC_MIN_SPEED"]),
@@ -781,6 +982,10 @@ receipt = {
     "seed": expected_seed,
     "requested_episodes": expected_games,
     "actual_episodes": actual,
+    "action_selection": os.environ["NAVRL_EVAL_ACTION_MODE"],
+    "reflection_mode": os.environ["NAVRL_EVAL_REFLECTION_MODE"],
+    "speed_governor_mode": os.environ["NAVRL_SPEED_GOVERNOR"],
+    "speed_governor_target_exclusion": "camera_lidar_association",
 }
 receipt_file = Path(receipt_path)
 temporary_receipt = receipt_file.with_name(
@@ -795,7 +1000,9 @@ row = {
     "bars": expected_bars,
     "seed": expected_seed,
     "density_per_100m2": expected_bars / 16.0,
-    "target_speed_distribution": "U[0.3,1.5]",
+    "target_speed_distribution": (
+        f"fixed:{fixed_speed:g}" if fixed_speed is not None else "U[0.3,1.5]"
+    ),
     "target_pattern": "mixed",
     "requested_episodes": expected_games,
     "actual_episodes": actual,
@@ -810,11 +1017,19 @@ row = {
     "above_rate": int(causes.get("above", 0)) / actual,
     "out_of_bounds_rate": int(causes.get("out_of_bounds", 0)) / actual,
     "action_policy": action.get("policy", ""),
+    "action_selection": condition.get("action_selection", ""),
+    "reflection_mode": condition.get("reflection_mode", ""),
     "lateral_task_input_oob_rate": action_y("task_input_oob_rate"),
     "lateral_executed_edge98_rate": action_y("executed_edge98_rate"),
     "lateral_mean_abs": action_y("mean_abs"),
     "mean_abs_delta_y": float(action.get("mean_abs_delta_y", float("nan"))),
     "sign_flip_y_rate": float(action.get("sign_flip_y_rate", float("nan"))),
+    "speed_governor_mode": speed_governor.get("mode", ""),
+    "speed_governor_target_exclusion": speed_governor.get("target_exclusion_source", ""),
+    "governor_intervention_rate": float(speed_governor.get("intervention_rate", float("nan"))),
+    "governor_mean_requested_speed_mps": float(speed_governor.get("mean_requested_speed_mps", float("nan"))),
+    "governor_mean_executed_speed_mps": float(speed_governor.get("mean_executed_speed_mps", float("nan"))),
+    "governor_contact_actual_speed_mps": float((speed_governor.get("contact") or {}).get("mean_actual_speed_mps", float("nan"))),
     "json_file": str(Path(json_path).resolve()),
     "log_file": str(Path(log_path).resolve()),
 }
@@ -845,7 +1060,7 @@ PY
 
 echo "[eval_v2] arena=${NAVRL_ARENA_XY}m pool=${NAVRL_BAR_POOL} placement=${NAVRL_PLACEMENT_MODE} \
 episode=${NAVRL_EPISODE_LEN_STEPS} goal=${NAVRL_GENERAL_GOAL_DIST_MIN}..${NAVRL_GENERAL_GOAL_DIST_MAX}m"
-echo "[eval_v2] target=U[${NAVRL_TARGET_SPEED_MIN},${NAVRL_TARGET_SPEED_FINAL}]m/s pattern=${NAVRL_TARGET_PATTERN} \
+echo "[eval_v2] target=${TARGET_SPEED_DESCRIPTION} pattern=${NAVRL_TARGET_PATTERN} \
 density_curriculum=${NAVRL_DENSITY_CURRICULUM} OOB_margin=${NAVRL_OOB_MARGIN}m seed=${NAVRL_SEED}"
 echo "[eval_v2] lidar=${NAVRL_LIDAR_RANGE}m scan=${NAVRL_LIDAR_VBEAMS}x${NAVRL_LIDAR_HBEAMS} \
 tokens=${NAVRL_MAX_OBSTACLES} selector=${NAVRL_OBSTACLE_SELECTOR} corridor=${NAVRL_CORRIDOR_TOKENS}"

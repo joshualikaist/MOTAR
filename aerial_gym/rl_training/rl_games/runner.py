@@ -867,6 +867,17 @@ def update_config(config, args):
     if args.get("play"):
         # Task 쪽 PLAY 대시보드만 쓰고 rl-games 기본 플레이 로그는 끈다.
         player_cfg["print_stats"] = False
+        # Evaluation must be able to reproduce both the deployed mean action and the stochastic
+        # policy that generated the on-policy density gate.  The YAML default is deterministic;
+        # require an explicit, validated mode only when the evaluator requests an override.
+        eval_action_mode = os.environ.get("NAVRL_EVAL_ACTION_MODE", "").strip().lower()
+        if eval_action_mode:
+            if eval_action_mode not in ("deterministic", "stochastic"):
+                raise ValueError(
+                    "NAVRL_EVAL_ACTION_MODE must be deterministic or stochastic, got %r"
+                    % eval_action_mode
+                )
+            player_cfg["deterministic"] = eval_action_mode == "deterministic"
         try:
             _gn = int(os.environ.get("PLAY_GAMES_NUM", "64"))
         except ValueError:

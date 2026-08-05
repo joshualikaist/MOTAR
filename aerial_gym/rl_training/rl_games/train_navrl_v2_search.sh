@@ -289,9 +289,14 @@ fi
 echo "[v2-search] ${V2_RUN_KIND} | arena=${NAVRL_ARENA_XY}m pool=${NAVRL_BAR_POOL} placement=${NAVRL_PLACEMENT_MODE}"
 echo "[v2-search] executable | profile=${NAVRL_V2_PROFILE:-main} file=${FILE} task=${TASK} sim=${AERIAL_GYM_SIM_NAME} envs=${NUM_ENVS} seed=${SEED}"
 echo "[v2-search] goal ${NAVRL_GENERAL_GOAL_DIST_MIN}..${NAVRL_GENERAL_GOAL_DIST_MAX}m (camera 20m -> search) episode=${NAVRL_EPISODE_LEN_STEPS} steps"
-echo "[v2-search] density ${NAVRL_DENSITY_START}->${NAVRL_DENSITY_FINAL} bars step=${NAVRL_DENSITY_STEP} (4.4->18.8 /100m2 over 1600m2) threshold ${NAVRL_DENSITY_THRESHOLD_SCHEDULE:-${NAVRL_DENSITY_THRESHOLD_START}->${NAVRL_DENSITY_THRESHOLD_END}}"
+DENSITY_START_PER_100M2="$(awk -v bars="${NAVRL_DENSITY_START}" 'BEGIN {printf "%.2f", bars / 16.0}')"
+DENSITY_FINAL_PER_100M2="$(awk -v bars="${NAVRL_DENSITY_FINAL}" 'BEGIN {printf "%.2f", bars / 16.0}')"
+echo "[v2-search] density ${NAVRL_DENSITY_START}->${NAVRL_DENSITY_FINAL} bars step=${NAVRL_DENSITY_STEP} (${DENSITY_START_PER_100M2}->${DENSITY_FINAL_PER_100M2} /100m2 over 1600m2) threshold ${NAVRL_DENSITY_THRESHOLD_SCHEDULE:-${NAVRL_DENSITY_THRESHOLD_START}->${NAVRL_DENSITY_THRESHOLD_END}}"
 echo "[v2-search] target speed U[${NAVRL_TARGET_SPEED_MIN}, vmax] m/s, vmax->${NAVRL_TARGET_SPEED_FINAL} by epoch ${NAVRL_TARGET_SPEED_RAMP_EPOCHS} | bar band x=[${NAVRL_BAR_X_MIN}, ${NAVRL_BAR_X_MAX}]"
 echo "[v2-search] PPO safety | lr=${NAVRL_LEARNING_RATE} KL=${NAVRL_PPO_KL_STOP} epoch_rollback=${NAVRL_PPO_EPOCH_ROLLBACK} latent_margin=${NAVRL_LATENT_MARGIN}@${NAVRL_LATENT_MARGIN_COEF}"
+if [[ "${NAVRL_SPEED_GOVERNOR:-off}" != "off" ]]; then
+    echo "[v2-search] speed governor | mode=${NAVRL_SPEED_GOVERNOR} fixed=${NAVRL_SPEED_GOVERNOR_FIXED_MPS:-2.0} free=${NAVRL_SPEED_GOVERNOR_FREE_MPS:-3.5355} slow=${NAVRL_SPEED_GOVERNOR_SLOW_M:-3.0} release=${NAVRL_SPEED_GOVERNOR_RELEASE_M:-5.0}"
+fi
 if [[ "${NAVRL_V2_CONTRACT_PREFLIGHT_ONLY:-0}" == "1" ]]; then
     echo "[v2-search] PREFLIGHT PASS (child handoff validated; training not started)"
     exit 0

@@ -385,12 +385,11 @@ def mirror_navrl_structured_observation(obs):
     mirrored = obs.clone()
     offset = 0
 
-    # Bearings are [-180+bin, ..., 180]. Reflection maps index i to H-2-i modulo H;
-    # the final +180 ray maps to itself because +/-180 are the same direction.
+    # Physical bearings DECREASE with index: theta_i = pi - i*2pi/H. Reflection maps theta to
+    # -theta, therefore index i maps to -i mod H. The former H-2-i formula belonged to the old
+    # increasing convention and injected a two-bin (10 deg at H=72) skew into every reflection.
     scan = obs[:, offset : offset + static_dim].view(-1, vbeams, hbeams)
-    reflect_index = (
-        hbeams - 2 - torch.arange(hbeams, device=obs.device)
-    ) % hbeams
+    reflect_index = (-torch.arange(hbeams, device=obs.device)) % hbeams
     mirrored[:, offset : offset + static_dim] = scan.index_select(
         2, reflect_index
     ).reshape(obs.shape[0], -1)

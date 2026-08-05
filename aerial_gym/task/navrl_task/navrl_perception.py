@@ -92,6 +92,28 @@ if OBSTACLE_SECTORS <= 0 or OBSTACLE_SECTORS > MAX_OBSTACLES:
     raise ValueError("NAVRL_OBSTACLE_SECTORS must be in 1..NAVRL_MAX_OBSTACLES")
 if not math.isfinite(OBSTACLE_FOV_DEG) or not 0.0 < OBSTACLE_FOV_DEG <= 360.0:
     raise ValueError("NAVRL_OBSTACLE_FOV_DEG must be in (0, 360]")
+
+
+def obstacle_selector_provenance(selector, configured_fov_deg):
+    """Return the candidate FOV and whether angular suppression actually executes."""
+    selector = str(selector).strip().lower()
+    configured_fov_deg = float(configured_fov_deg)
+    if selector not in ("greedy_suppress", "cluster_sector", "ttc_sector"):
+        raise ValueError("unsupported obstacle selector: %s" % selector)
+    if not math.isfinite(configured_fov_deg) or not 0.0 < configured_fov_deg <= 360.0:
+        raise ValueError("configured_fov_deg must be in (0, 360]")
+    return {
+        "effective_fov_deg": 360.0 if selector == "ttc_sector" else configured_fov_deg,
+        "suppress_active": selector == "greedy_suppress",
+    }
+
+
+# Provenance must describe the selector's actual candidate set. TTC intentionally ranks all 360
+# degrees, while cluster_sector/greedy_suppress obey the configured FOV. Suppression is only used
+# by the legacy greedy selector; logging it as active for cluster/TTC previously misdescribed runs.
+_OBSTACLE_PROVENANCE = obstacle_selector_provenance(OBSTACLE_SELECTOR, OBSTACLE_FOV_DEG)
+OBSTACLE_EFFECTIVE_FOV_DEG = _OBSTACLE_PROVENANCE["effective_fov_deg"]
+OBSTACLE_SUPPRESS_ACTIVE = _OBSTACLE_PROVENANCE["suppress_active"]
 # Corridor (free-gap) affordance tokens -- see navrl_corridor.py. 0 (the default) keeps the
 # historical 898-D schema byte-identical; any positive count APPENDS
 # CORRIDOR_TOKENS * CORRIDOR_DIM features at the END of the observation, so every existing
@@ -544,6 +566,12 @@ class NavRLPerceptionModule:
         )
         self.last_visible = torch.zeros(self.num_envs, dtype=torch.bool, device=device)
         self.last_confidence = torch.zeros(self.num_envs, device=device)
+        # Exact target-return association used to build the actor's obstacle representation.
+        # Safety layers may reuse this sensor-derived mask; they must never inspect the simulator
+        # semantic-ID buffer independently of the perception front-end.
+        self.last_target_like = torch.zeros(
+            self.num_envs, VBEAMS, HBEAMS, dtype=torch.bool, device=device
+        )
 
         self._u = torch.arange(self.width, device=device, dtype=torch.float32).view(1, 1, -1)
         self._v = torch.arange(self.height, device=device, dtype=torch.float32).view(1, -1, 1)
@@ -572,6 +600,7 @@ class NavRLPerceptionModule:
         self.obstacle_history[env_ids] = 0.0
         self.last_visible[env_ids] = False
         self.last_confidence[env_ids] = 0.0
+        self.last_target_like[env_ids] = False
 
     def _detect_rgbd(self, rgb, depth, training):
         if training and self.rgb_noise_std > 0.0:
@@ -630,6 +659,7 @@ class NavRLPerceptionModule:
             & (angle_delta < math.radians(15.0))
             & ((scan - target_surface_range.view(-1, 1, 1)).abs() < 0.55)
         )
+        self.last_target_like[:] = target_like
         scan = torch.where(target_like, torch.full_like(scan, self.lidar_max_range), scan)
 
         # Fuse forward RGB-D geometry into the 360-degree LiDAR distance representation.

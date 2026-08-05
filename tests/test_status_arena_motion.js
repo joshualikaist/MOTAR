@@ -110,6 +110,8 @@ assert(appJs.includes('function renderNow(s)'));
 assert(appJs.includes('function renderPhases(s)'));
 assert(appJs.includes('renderNow(s);'));
 assert(appJs.includes('renderPhases(s);'));
+assert(appJs.includes("'v2 · CAUSAL COMPLETE'"));
+assert(appJs.includes('CAUSAL COMPLETE'));
 assert(!html.includes('corridor6 ended at ep13800'));
 assert(!html.includes('test a two-depth-layer obstacle representation'));
 

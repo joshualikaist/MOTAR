@@ -27,6 +27,25 @@ STATUS_PATH = ROOT / "docs/status/status.json"
 HTML_PATH = ROOT / "docs/status/index.html"
 CORRECTED_CURVE_PATH = ROOT / "results/corrected_chirality_density_curve.csv"
 RECOVERY_ATTESTATION_VERIFIER_PATH = ROOT / "tools/navrl_v2_recovery_attestation.py"
+LIMIT_AUDIT_PATH = ROOT / "results/navrl_v2_ep24000_limit_audit.json"
+CAUSAL_1TO3_PATH = ROOT / "results/navrl_v2_ep24000_causal_1to3/summary.json"
+FIXED_SPEED_PATH = ROOT / "results/navrl_v2_ep24000_fixed_speed/summary.json"
+FORGETTING_PATH = ROOT / "results/navrl_v2_ep19100_vs_ep24000_forgetting/summary.json"
+SPEED_GOVERNOR_SCREEN_PATH = ROOT / "results/navrl_v2_ep24000_speed_governor_screen/summary.json"
+RISKCAP_SCREEN_PATH = ROOT / "results/navrl_v2_ep24000_riskcap_seed44_screen/summary.json"
+RISKCAP_POST_PATH = ROOT / "results/navrl_v2_riskcap_postadapt/summary.json"
+TTC_1650_PATH = ROOT / "results/v2_ttc_ab_1650ti.csv"
+MAIN_TTC_RESULT_ROOT = ROOT / "results"
+
+_MAIN_TTC_SOURCE_SHA256 = (
+    "82f7978b42d9d9e95adcc638a40ae85fb3736fd897ae39cb8aa8333be39cf23f"
+)
+_MAIN_TTC_BASELINE_SHA256 = (
+    "169ddcddb83c9d74df5c79252274660bc9c52e32d7d5144d325698e32b1d9b08"
+)
+_RISKCAP_TRAINED_SHA256 = (
+    "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40"
+)
 
 _RECOVERY_SOURCE_SHA256 = (
     "3a0c167cbf4bc966426488f562da2b6788bd00ca62e3a31f226f5fbe1967578f"
@@ -710,6 +729,7 @@ def _corrected_density_curve() -> Dict[str, Any]:
             "65-bar predecessor plateau was 0.678: equal competence at +31% training density.",
             "This curve used greedy +/-10 deg suppression. The active cluster-sector selector is a same-shape ablation and is not in this curve.",
         ],
+        "trained_max_bars": 85,
         "rows": rows,
         "mtime": _iso_mtime(CORRECTED_CURVE_PATH),
     }
@@ -762,8 +782,857 @@ def _live_density_promotions() -> List[Dict[str, Any]]:
     return promotions
 
 
+def _main_ttc_result(profile: str, arm: str) -> Optional[Dict[str, Any]]:
+    """Load one hash/contract-checked held-out cell for the ep24000 TTC A/B."""
+
+    path = (
+        MAIN_TTC_RESULT_ROOT
+        / f"navrl_v2_ep24000_ttc_{profile}_{arm}"
+        / "205bars.json"
+    )
+    if not path.is_file():
+        return None
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    condition = payload.get("condition", {})
+    contract = payload.get("v2_evaluation_contract", {})
+    outcome = payload.get("outcome", {})
+    expected_selector = "cluster_sector" if arm == "baseline" else "ttc_sector"
+    expected_profile = "main" if profile == "main" else "4gb"
+    actual = int(payload.get("actual_episodes", -1))
+    expected_sha = _MAIN_TTC_BASELINE_SHA256 if (profile, arm) == ("main", "baseline") else None
+    problems = []
+    if payload.get("schema_version") != 1:
+        problems.append("schema_version must be 1")
+    if int(payload.get("requested_episodes", -1)) != 2049 or actual < 2049:
+        problems.append("requires requested/actual episodes >= 2049")
+    if int(condition.get("bars", -1)) != 205 or int(condition.get("seed", -1)) != 42:
+        problems.append("requires bars=205 and seed=42")
+    if condition.get("action_selection") != "deterministic":
+        problems.append("requires deterministic actions")
+    if condition.get("reflection_mode") != "original":
+        problems.append("requires original reflection mode")
+    if condition.get("target_speed_mode") != "uniform":
+        problems.append("requires uniform target speed")
+    if contract.get("obstacle_selector") != expected_selector:
+        problems.append(f"requires selector={expected_selector}")
+    if contract.get("runtime_profile") != expected_profile:
+        problems.append(f"requires runtime_profile={expected_profile}")
+    counts = sum(int(outcome.get(key, -actual - 1)) for key in ("captured", "crash", "timeout"))
+    if counts != actual:
+        problems.append("outcome counts do not sum to actual episodes")
+    if expected_sha and payload.get("checkpoint_sha256") != expected_sha:
+        problems.append("baseline checkpoint SHA-256 mismatch")
+    if payload.get("evaluated_checkpoint_snapshot_sha256") != payload.get("checkpoint_sha256"):
+        problems.append("evaluated snapshot SHA-256 mismatch")
+    if problems:
+        raise RuntimeError(f"invalid ep24000 TTC A/B result {path}: " + "; ".join(problems))
+    try:
+        display_path = str(path.relative_to(ROOT))
+    except ValueError:
+        display_path = str(path)
+    return {
+        "path": display_path,
+        "checkpoint_sha256": payload["checkpoint_sha256"],
+        "episodes": actual,
+        "capture_rate": float(outcome["capture_rate"]),
+        "crash_rate": float(outcome["crash_rate"]),
+        "timeout_rate": float(outcome["timeout_rate"]),
+        "bar_contact_rate": float(payload.get("crash_causes", {}).get("bar_contact", 0)) / actual,
+    }
+
+
+def _riskcap_screen_result() -> Optional[Dict[str, Any]]:
+    if not RISKCAP_SCREEN_PATH.is_file():
+        return None
+    payload = json.loads(RISKCAP_SCREEN_PATH.read_text(encoding="utf-8"))
+    rows = {row.get("tag"): row for row in payload.get("rows", [])}
+    candidate = rows.get("riskcap") or {}
+    baseline = rows.get("off") or {}
+    checks = {
+        "schema": payload.get("schema_version") == 1,
+        "experiment": payload.get("experiment") == "ep24000_seed44_riskcap_screen",
+        "seed": int(payload.get("heldout_seed", -1)) == 44,
+        "sha": payload.get("source_checkpoint_sha256") == _MAIN_TTC_SOURCE_SHA256,
+        "go": payload.get("adaptive_go") is True and payload.get("selected_tag") == "riskcap",
+        "candidate": candidate.get("screen_pass") is True and int(candidate.get("episodes", 0)) >= 2049,
+        "baseline": int(baseline.get("episodes", 0)) >= 2049,
+    }
+    failed = [name for name, passed in checks.items() if not passed]
+    if failed:
+        raise RuntimeError(f"invalid riskcap screen {RISKCAP_SCREEN_PATH}: {', '.join(failed)}")
+    return {"payload": payload, "baseline": baseline, "candidate": candidate}
+
+
+def _speed_governor_screen_result() -> Optional[Dict[str, Any]]:
+    if not SPEED_GOVERNOR_SCREEN_PATH.is_file():
+        return None
+    payload = json.loads(SPEED_GOVERNOR_SCREEN_PATH.read_text(encoding="utf-8"))
+    rows = {row.get("tag"): row for row in payload.get("rows", [])}
+    checks = {
+        "schema": payload.get("schema_version") == 1,
+        "experiment": payload.get("experiment") == "ep24000_speed_governor_screen",
+        "sha": payload.get("source_checkpoint_sha256") == _MAIN_TTC_SOURCE_SHA256,
+        "decision": payload.get("adaptive_go") is False and payload.get("selected_tag") is None,
+        "cells": set(rows) == {"off", "fixed2p0", "fixed1p5", "clearance", "ttc"},
+        "episodes": all(int(row.get("episodes", 0)) >= 2049 for row in rows.values()),
+    }
+    failed = [name for name, passed in checks.items() if not passed]
+    if failed:
+        raise RuntimeError(
+            f"invalid speed-governor screen {SPEED_GOVERNOR_SCREEN_PATH}: {', '.join(failed)}"
+        )
+    return {"payload": payload, "rows": rows}
+
+
+def _riskcap_post_result() -> Optional[Dict[str, Any]]:
+    if not RISKCAP_POST_PATH.is_file():
+        return None
+    payload = json.loads(RISKCAP_POST_PATH.read_text(encoding="utf-8"))
+    uniform = {row.get("tag"): row for row in payload.get("uniform_rows", [])}
+    fixed = payload.get("fixed_speed_rows", [])
+    checks = {
+        "schema": payload.get("schema_version") == 1,
+        "source_sha": payload.get("source_checkpoint_sha256") == _MAIN_TTC_SOURCE_SHA256,
+        "trained_sha": payload.get("trained_checkpoint_sha256") == _RISKCAP_TRAINED_SHA256,
+        "winner": payload.get("winner_kind") == "trained"
+        and payload.get("winner_checkpoint_sha256") == _RISKCAP_TRAINED_SHA256,
+        "gates": payload.get("mechanism_replication_pass") is True
+        and payload.get("adaptation_pass") is True
+        and payload.get("generalization_pass") is True,
+        "uniform_cells": set(uniform)
+        == {"uniform_off", "uniform_source_riskcap", "uniform_trained_riskcap"}
+        and all(int(row.get("episodes", 0)) >= 2049 for row in uniform.values()),
+        "fixed_cells": [float(row.get("target_speed_mps", -1)) for row in fixed] == [0.3, 0.9, 1.5]
+        and all(row.get("direction_pass") is True for row in fixed),
+    }
+    failed = [name for name, passed in checks.items() if not passed]
+    if failed:
+        raise RuntimeError(f"invalid riskcap post-adaptation result: {', '.join(failed)}")
+    return {"payload": payload, "uniform": uniform, "fixed": fixed}
+
+
 def _v2_search_update(record: Dict[str, Any], *, is_live: bool) -> Dict[str, Any]:
     run_name = str(record.get("run", ""))
+    if "v2-speedgov-ep24000-205bars-main-riskcap-s1" in run_name:
+        complete_stop = _speed_governor_screen_result()
+        if complete_stop is None:
+            raise RuntimeError("riskcap training exists without the corrected five-cell screen")
+        screen = _riskcap_screen_result()
+        if screen is None:
+            raise RuntimeError("riskcap training exists without its held-out authorization")
+        baseline, candidate = screen["baseline"], screen["candidate"]
+        epoch = int(record.get("epoch") if is_live else record.get("last_epoch") or 0)
+        completed = not is_live and epoch >= 25000
+        post_result = _riskcap_post_result()
+        post = post_result["payload"] if post_result else None
+        phase = (
+            "TRAINING" if is_live else "FINAL PASS" if post and post.get("generalization_pass")
+            else "FINAL FAIL" if post else "EVAL PENDING" if completed else "INCOMPLETE"
+        )
+        comparison = []
+        if post:
+            for tag, label in (
+                ("uniform_off", "seed45 · canonical off"),
+                ("uniform_source_riskcap", "seed45 · source + riskcap"),
+                ("uniform_trained_riskcap", "seed45 · trained + riskcap"),
+            ):
+                row = post_result["uniform"][tag]
+                comparison.append(
+                    {
+                        "label": label,
+                        "bars": 205,
+                        "capture": row["capture_rate"],
+                        "unique": None,
+                        "verdict": f"crash {row['crash_rate'] * 100:.2f}%; timeout {row['timeout_rate'] * 100:.2f}%",
+                    }
+                )
+            for row in post_result["fixed"]:
+                winner = row["winner"]
+                comparison.append(
+                    {
+                        "label": f"final winner · fixed {row['target_speed_mps']:.1f} m/s",
+                        "bars": 205,
+                        "capture": winner["capture_rate"],
+                        "unique": None,
+                        "verdict": f"crash {winner['crash_rate'] * 100:.2f}%; {'PASS' if row['direction_pass'] else 'FAIL'} vs off",
+                    }
+                )
+        else:
+            comparison.extend(
+                [
+                    {
+                        "label": "seed44 · canonical off",
+                        "bars": 205,
+                        "capture": baseline["capture_rate"],
+                        "unique": None,
+                        "verdict": f"crash {baseline['crash_rate'] * 100:.2f}%; timeout {baseline['timeout_rate'] * 100:.2f}%",
+                    },
+                    {
+                        "label": "seed44 · minimum-intervention riskcap",
+                        "bars": 205,
+                        "capture": candidate["capture_rate"],
+                        "unique": None,
+                        "verdict": f"crash {candidate['crash_rate'] * 100:.2f}%; timeout {candidate['timeout_rate'] * 100:.2f}%",
+                    },
+                ]
+            )
+        adaptation_capture = post["adaptation_deltas"]["capture_rate"][0] if post else None
+        mechanism_capture = post["mechanism_deltas"]["capture_rate"][0] if post else None
+        mechanism_crash = post["mechanism_deltas"]["crash_rate"][0] if post else None
+        return {
+            "subtitle": f"2026-08-05 · R2b minimum-intervention riskcap · {phase.lower()}",
+            "headline": (
+                "Riskcap passed on an unseen seed and its matched adaptation is running."
+                if is_live
+                else "Riskcap training finished; unseen-seed post-adaptation evaluation is required."
+                if completed and not post
+                else f"Riskcap final generalization {'passed' if post and post.get('generalization_pass') else 'failed'}."
+                if post
+                else "Riskcap adaptation stopped before its matched budget."
+            ),
+            "summary": (
+                f"On unseen seed45, sensor-only riskcap improved capture by {mechanism_capture * 100:+.2f} pp "
+                f"and crash by {mechanism_crash * 100:+.2f} pp versus the frozen off policy. Exactly "
+                f"1,000 adaptation epochs added {adaptation_capture * 100:+.2f} pp capture; the trained "
+                "winner passed every seed46 fixed-speed direction check. The layer caps horizontal norm "
+                "at 2.0 m/s inside 3 m, releases by 5 m, and never forces a stop."
+                if post
+                else f"The frozen ep24000 policy improved from {baseline['capture_rate'] * 100:.2f}% to "
+                f"{candidate['capture_rate'] * 100:.2f}% capture on seed44 while crash fell "
+                f"{(candidate['crash_rate'] - baseline['crash_rate']) * 100:+.2f} pp. The layer caps "
+                "horizontal norm at 2.0 m/s inside 3 m and releases it to 3.535 m/s by 5 m; it never "
+                "forces a stop. Training-tail values remain diagnostic until seed45/46 evaluation."
+            ),
+            "active_experiment": {
+                **record,
+                "is_live": is_live,
+                "stage_status": phase,
+                "epoch": epoch,
+                "max_epochs": 25000,
+                "warm_start_epoch": 24000,
+                "adaptation_samples": max(0, epoch - 24000) * 32 * 128,
+                "bars": 205,
+                "density_curriculum": False,
+                "selector": "cluster_sector",
+                "cluster_gap_m": 0.45,
+                "sectors": 8,
+                "speed_governor_mode": "riskcap",
+                "speed_governor_fixed_mps": 2.0,
+                "speed_governor_slow_m": 3.0,
+                "speed_governor_release_m": 5.0,
+                "screen_pass": True,
+                "post_evaluation_complete": post is not None,
+                "generalization_pass": post.get("generalization_pass") if post else None,
+                "winner_checkpoint_sha256": post.get("winner_checkpoint_sha256") if post else None,
+                "heldout_capture": post_result["uniform"]["uniform_trained_riskcap"]["capture_rate"] if post else None,
+                "heldout_crash": post_result["uniform"]["uniform_trained_riskcap"]["crash_rate"] if post else None,
+                "heldout_timeout": post_result["uniform"]["uniform_trained_riskcap"]["timeout_rate"] if post else None,
+                "heldout_episodes": post_result["uniform"]["uniform_trained_riskcap"]["episodes"] if post else None,
+            },
+            "milestones": [
+                {"label": "SEED44 SCREEN", "value": "PASS", "detail": f"capture {candidate['capture_rate'] * 100:.2f}% · crash {candidate['crash_rate'] * 100:.2f}%", "state": "pass"},
+                {"label": "NO DEADLOCK", "value": f"{candidate['near_stop_rate'] * 100:.2f}%", "detail": f"intervention {candidate['intervention_rate'] * 100:.1f}% · timeout {candidate['timeout_rate'] * 100:.2f}%", "state": "pass"},
+                {"label": "ADAPTATION", "value": f"capture {adaptation_capture * 100:+.2f} pp" if post else f"{max(0, epoch - 24000)} / 1000", "detail": "trained winner · 4.096M samples" if post else "128 envs · 4.096M samples · LR 5e-6", "state": "pass" if post or completed else "active" if is_live else "warn"},
+                {"label": "FINAL HELD-OUT", "value": "PASS · 3/3 speeds" if post else "PENDING", "detail": "seed45 uniform + seed46 fixed-speed" if not post else "winner=trained; 0.3/0.9/1.5 m/s all improved", "state": "pass" if post and post.get("generalization_pass") else "warn" if post else "active"},
+            ],
+            "comparison": comparison,
+            "gates": [
+                {"label": "R2 complete-stop governors", "value": "REJECTED · 16.59–23.57% timeout"},
+                {"label": "R2b seed44", "value": f"PASS · capture {(candidate['capture_rate'] - baseline['capture_rate']) * 100:+.2f} pp; crash {(candidate['crash_rate'] - baseline['crash_rate']) * 100:+.2f} pp"},
+                {"label": "PPO adaptation", "value": "RUNNING" if is_live else "COMPLETE" if completed else "INCOMPLETE"},
+                {"label": "unseen seed45/46", "value": "PASS" if post and post.get("generalization_pass") else "FAIL" if post else "PENDING"},
+            ],
+            "decision": (
+                "Finish exactly 1,000 epochs, then compare off/source-riskcap/trained-riskcap on seed45."
+                if is_live
+                else "Run eval_navrl_v2_riskcap_postadapt.sh on the final ep25000 checkpoint."
+                if completed and not post
+                else "Freeze ep25000 + riskcap as the navigation/control candidate. Do not extend fixed-density PPO or retune the gate post hoc; move next to learned-detector robustness."
+            ),
+            "speed_governor_screen": complete_stop["payload"],
+            "riskcap_screen": screen["payload"],
+            "riskcap_postadapt": post,
+        }
+    if "v2-ep24000-205bars-" in run_name:
+        match = re.search(r"v2-ep24000-205bars-(main|4gb)-(baseline|ttc)-s1", run_name)
+        if not match:
+            raise RuntimeError(f"unrecognized ep24000 TTC A/B run name: {run_name}")
+        profile, arm = match.groups()
+        selector = "cluster_sector" if arm == "baseline" else "ttc_sector"
+        budget_epochs = 1000 if profile == "main" else 2000
+        envs = 128 if profile == "main" else 64
+        final_epoch = 24000 + budget_epochs
+        epoch = int(record.get("epoch") if is_live else record.get("last_epoch") or 0)
+        completed = not is_live and epoch >= final_epoch
+        baseline_result = _main_ttc_result(profile, "baseline")
+        ttc_result = _main_ttc_result(profile, "ttc")
+        current_result = baseline_result if arm == "baseline" else ttc_result
+        gate_complete = baseline_result is not None and ttc_result is not None
+        capture_delta = (
+            ttc_result["capture_rate"] - baseline_result["capture_rate"]
+            if gate_complete
+            else None
+        )
+        crash_delta = (
+            ttc_result["crash_rate"] - baseline_result["crash_rate"]
+            if gate_complete
+            else None
+        )
+        gate_pass = bool(
+            gate_complete and capture_delta >= 0.020 and crash_delta <= -0.020
+        )
+
+        if is_live:
+            phase_value = f"{arm.upper()} TRAINING"
+            headline = f"The fixed-205 {arm} arm is running; held-out comparison remains locked."
+        elif not completed:
+            phase_value = f"{arm.upper()} INCOMPLETE"
+            headline = f"The fixed-205 {arm} arm stopped before its matched sample budget."
+        elif current_result is None:
+            phase_value = f"{arm.upper()} EVAL PENDING"
+            headline = (
+                f"The fixed-205 {arm} adaptation finished normally; its independent held-out score is the next gate."
+            )
+        elif arm == "baseline" and ttc_result is None:
+            phase_value = "TTC ARM READY"
+            headline = "The fixed-205 baseline score is frozen; the sample-matched TTC arm may now start."
+        elif gate_complete:
+            phase_value = "TTC PASS" if gate_pass else "TTC REJECT"
+            headline = (
+                "The main fixed-205 TTC selector passed both preregistered gates."
+                if gate_pass
+                else (
+                    "The current fixed-205 TTC bundle failed both preregistered gates and remains "
+                    "below the canonical ep24000 policy."
+                )
+            )
+        else:
+            phase_value = "TTC EVAL PENDING"
+            headline = "The fixed-205 TTC adaptation finished; matched held-out evaluation is now required."
+
+        comparison = [
+            {
+                "label": "frozen source ep24000 · held-out",
+                "bars": 205,
+                "capture": 0.724390243902439,
+                "unique": None,
+                "verdict": "n=2,050; context anchor only, not the adapted A/B baseline",
+            }
+        ]
+        for result_arm, result in (("baseline", baseline_result), ("ttc", ttc_result)):
+            if result is not None:
+                comparison.append(
+                    {
+                        "label": f"main A/B · {result_arm} held-out",
+                        "bars": 205,
+                        "capture": result["capture_rate"],
+                        "unique": None,
+                        "verdict": (
+                            f"n={result['episodes']:,}; crash {result['crash_rate'] * 100:.2f}%; "
+                            f"bar contact {result['bar_contact_rate'] * 100:.2f}%"
+                        ),
+                    }
+                )
+        if current_result is None:
+            comparison.append(
+                {
+                    "label": f"{arm} training final epoch · diagnostic only",
+                    "bars": 205,
+                    "capture": (
+                        record.get("captured_rate") if is_live else record.get("last_captured_rate")
+                    ),
+                    "unique": None,
+                    "verdict": "small on-policy termination sample; never use for the A/B decision",
+                }
+            )
+
+        return {
+            "subtitle": (
+                f"{'2026-08-05' if ttc_result else '2026-08-04' if baseline_result else '2026-08-03'} · "
+                f"fixed-205 main selector A/B · {phase_value.lower()}"
+            ),
+            "headline": headline,
+            "summary": (
+                f"Both arms start from the SHA-256-pinned ep24000 policy, keep 205 bars, seed 1, "
+                f"LR 5e-6, action noise and task dynamics fixed, and receive {budget_epochs:,} epochs × "
+                f"32 × {envs} = 4,096,000 adaptation samples. The selector mode is the only launcher "
+                "knob, but its current semantics bundle ranking with candidate FOV: cluster_sector uses "
+                "240° while ttc_sector uses 360°. This therefore tests the deployable representation "
+                "bundle, not a pure ranking-only intervention. "
+                "Training-tail capture is diagnostic; adoption uses seed-42 deterministic/original "
+                "held-out evaluation with at least 2,049 episodes per arm."
+            ),
+            "active_experiment": {
+                **record,
+                "is_live": is_live,
+                "ab_experiment": True,
+                "ab_arm": arm,
+                "ab_phase": phase_value,
+                "ab_gate_complete": gate_complete,
+                "ab_gate_pass": gate_pass if gate_complete else None,
+                "representation_bundle": True,
+                "baseline_effective_fov_deg": 240,
+                "ttc_effective_fov_deg": 360,
+                "pure_ranking_isolated": False,
+                "epoch": epoch,
+                "max_epochs": final_epoch,
+                "bars": 205,
+                "selector": selector,
+                "cluster_gap_m": 0.45,
+                "sectors": 8,
+                "density_curriculum": False,
+                "arena_xy_m": 40,
+                "arena_z_m": 3,
+                "warm_start_epoch": 24000,
+                "adaptation_samples": max(0, epoch - 24000) * 32 * envs,
+                "source_checkpoint_sha256": _MAIN_TTC_SOURCE_SHA256,
+                "final_checkpoint_sha256": (
+                    current_result.get("checkpoint_sha256")
+                    if completed and current_result
+                    else _MAIN_TTC_BASELINE_SHA256
+                    if (profile, arm, completed) == ("main", "baseline", True)
+                    else None
+                ),
+                "training_tail_capture": (
+                    record.get("captured_rate") if is_live else record.get("last_captured_rate")
+                ),
+                "training_tail_crash": (
+                    record.get("crash_rate") if is_live else record.get("last_crash_rate")
+                ),
+                "heldout_complete": current_result is not None,
+                "heldout_capture": current_result.get("capture_rate") if current_result else None,
+                "heldout_crash": current_result.get("crash_rate") if current_result else None,
+                "heldout_episodes": current_result.get("episodes") if current_result else None,
+                "capture_delta": capture_delta,
+                "crash_delta": crash_delta,
+            },
+            "milestones": [
+                {
+                    "label": "CURRENT ARM",
+                    "value": phase_value,
+                    "detail": (
+                        f"selector={selector}; effective candidate FOV "
+                        f"{'240' if selector == 'cluster_sector' else '360'}°; density fixed at 205"
+                    ),
+                    "state": (
+                        "active"
+                        if is_live or current_result is None
+                        else "warn"
+                        if gate_complete and not gate_pass
+                        else "pass"
+                        if completed
+                        else "warn"
+                    ),
+                },
+                {
+                    "label": "TRAIN BUDGET",
+                    "value": f"{max(0, epoch - 24000)} / {budget_epochs}",
+                    "detail": f"{envs} envs · 4.096M matched samples",
+                    "state": "pass" if completed else ("active" if is_live else "warn"),
+                },
+                {
+                    "label": "HELD-OUT",
+                    "value": (
+                        f"{current_result['capture_rate'] * 100:.2f}%"
+                        if current_result
+                        else "PENDING"
+                    ),
+                    "detail": (
+                        f"n={current_result['episodes']:,}; crash {current_result['crash_rate'] * 100:.2f}%"
+                        if current_result
+                        else "205 bars · seed42 · deterministic · original · ≥2,049 episodes"
+                    ),
+                    "state": "pass" if current_result else "active",
+                },
+                {
+                    "label": "A/B DECISION",
+                    "value": (
+                        "PASS" if gate_pass else "REJECT"
+                        if gate_complete
+                        else "LOCKED"
+                    ),
+                    "detail": (
+                        f"capture {capture_delta * 100:+.2f} pp · crash {crash_delta * 100:+.2f} pp"
+                        if gate_complete
+                        else "requires baseline + TTC held-out; +2pp capture and -2pp crash"
+                    ),
+                    "state": "pass" if gate_pass else ("warn" if gate_complete else "active"),
+                },
+            ],
+            "comparison": comparison,
+            "gates": [
+                {
+                    "label": "matched training budget",
+                    "value": "PASS · 4.096M samples" if completed else "PENDING",
+                },
+                {
+                    "label": "baseline held-out",
+                    "value": "PASS · frozen" if baseline_result else "PENDING · TTC arm blocked",
+                },
+                {
+                    "label": "capture delta",
+                    "value": (
+                        f"{'PASS' if capture_delta >= 0.020 else 'FAIL'} · {capture_delta * 100:+.2f} pp"
+                        if gate_complete
+                        else "PENDING · TTC - baseline ≥ +2.0pp"
+                    ),
+                },
+                {
+                    "label": "crash delta",
+                    "value": (
+                        f"{'PASS' if crash_delta <= -0.020 else 'FAIL'} · {crash_delta * 100:+.2f} pp"
+                        if gate_complete
+                        else "PENDING · TTC - baseline ≤ -2.0pp"
+                    ),
+                },
+                {
+                    "label": "canonical replacement floor",
+                    "value": (
+                        "PASS · beats ep24000 on capture and crash"
+                        if gate_complete
+                        and ttc_result["capture_rate"] >= 0.724390243902439
+                        and ttc_result["crash_rate"] <= 0.25073170731707317
+                        else "FAIL · keep ep24000 as deployment default"
+                        if gate_complete
+                        else "PENDING · capture ≥72.44%; crash ≤25.07%"
+                    ),
+                },
+                {
+                    "label": "experimental isolation",
+                    "value": (
+                        "BUNDLE · candidate FOV 240→360; pure ranking not isolated"
+                    ),
+                },
+            ],
+            "decision": (
+                "Run the canonical held-out evaluation for the completed baseline and freeze its result. "
+                "Do not start TTC training until that artifact exists."
+                if completed and baseline_result is None and arm == "baseline"
+                else "Run the TTC arm with the same launcher and sample budget; do not change any other knob."
+                if baseline_result and arm == "baseline" and ttc_result is None
+                else "Adopt TTC and move to replication only; do not resume an open-ended density curriculum."
+                if gate_pass
+                else (
+                    "Close the current TTC-360 representation bundle as a negative result and keep ep24000 "
+                    "as the canonical policy. Pure TTC ranking was not isolated: either screen a decoupled "
+                    "TTC-240 arm first, or move to the preregistered R2 control-risk screen."
+                )
+                if gate_complete
+                else "Finish the current arm, then evaluate its final checkpoint before any new training."
+            ),
+        }
+
+    if (
+        not is_live
+        and run_name == "ppo_260802_0020_navrl_v2-recover-curriculum-continue-s1"
+        and LIMIT_AUDIT_PATH.is_file()
+    ):
+        audit = json.loads(LIMIT_AUDIT_PATH.read_text(encoding="utf-8"))
+        checkpoint = audit.get("checkpoint", {})
+        if (
+            audit.get("schema_version") != 1
+            or audit.get("status") != "training-stopped-core-audit-complete"
+            or checkpoint.get("epoch") != 24000
+            or checkpoint.get("sha256")
+            != "82f7978b42d9d9e95adcc638a40ae85fb3736fd897ae39cb8aa8333be39cf23f"
+        ):
+            raise RuntimeError(f"invalid final v2 limit audit: {LIMIT_AUDIT_PATH}")
+
+        deterministic = audit["action_mode_205"]["deterministic"]
+        stochastic = audit["action_mode_205"]["stochastic"]
+        difference = audit["action_mode_205"]["difference"]
+        training = audit["training"]
+        density_rows = audit["density_sweep_deterministic"]
+        causal = None
+        if CAUSAL_1TO3_PATH.is_file():
+            causal = json.loads(CAUSAL_1TO3_PATH.read_text(encoding="utf-8"))
+            if (
+                causal.get("schema_version") != 1
+                or causal.get("training_performed") is not False
+                or causal.get("checkpoint_sha256") != checkpoint["sha256"]
+                or causal.get("second_seed", {}).get("practical_replication") is not True
+            ):
+                raise RuntimeError(f"invalid v2 causal 1--3 result: {CAUSAL_1TO3_PATH}")
+        mirror = causal.get("mirror", {}) if causal else {}
+        seed_check = causal.get("second_seed", {}) if causal else {}
+        action_pair = mirror.get("action_pair", {})
+        bearing = mirror.get("initial_target_bearing", {})
+        causal_done = causal is not None
+        fixed_speed = None
+        if FIXED_SPEED_PATH.is_file():
+            fixed_speed = json.loads(FIXED_SPEED_PATH.read_text(encoding="utf-8"))
+            speed_cells = fixed_speed.get("cells", [])
+            if (
+                fixed_speed.get("schema_version") != 1
+                or fixed_speed.get("checkpoint_sha256") != checkpoint["sha256"]
+                or [cell.get("target_speed_mps") for cell in speed_cells] != [0.3, 0.9, 1.5]
+                or fixed_speed.get("high_minus_low_capture", {}).get(
+                    "material_speed_sensitivity"
+                )
+                is not True
+            ):
+                raise RuntimeError(f"invalid v2 fixed-speed result: {FIXED_SPEED_PATH}")
+        forgetting = None
+        if FORGETTING_PATH.is_file():
+            forgetting = json.loads(FORGETTING_PATH.read_text(encoding="utf-8"))
+            comparisons = forgetting.get("comparisons", {})
+            if (
+                forgetting.get("schema_version") != 1
+                or forgetting.get("checkpoints", {}).get("24000") != checkpoint["sha256"]
+                or forgetting.get("material_forgetting_detected") is not False
+                or comparisons.get("uniform", {}).get("verdict") != "improvement"
+                or comparisons.get("fast1p5", {}).get("verdict") != "improvement"
+            ):
+                raise RuntimeError(f"invalid v2 forgetting result: {FORGETTING_PATH}")
+        ttc_1650_rows = []
+        if TTC_1650_PATH.is_file():
+            with TTC_1650_PATH.open(encoding="utf-8", newline="") as stream:
+                ttc_1650_rows = list(csv.DictReader(stream))
+        ttc_1650 = {row.get("arm"): row for row in ttc_1650_rows}
+        ttc_1650_pass = (
+            set(ttc_1650) == {"baseline", "ttc"}
+            and ttc_1650["ttc"].get("gate_pass") == "PASS"
+            and float(ttc_1650["ttc"]["capture_pct"])
+            - float(ttc_1650["baseline"]["capture_pct"])
+            >= 2.0
+            and float(ttc_1650["ttc"]["crash_pct"])
+            - float(ttc_1650["baseline"]["crash_pct"])
+            <= -2.0
+        )
+        causal_all_done = causal_done and fixed_speed is not None and forgetting is not None
+        speed_delta = (
+            fixed_speed["high_minus_low_capture"]["delta"] if fixed_speed else None
+        )
+        speed_bar_delta = (
+            fixed_speed["high_minus_low_rates"]["bar_contact"] if fixed_speed else None
+        )
+        forgetting_uniform = (
+            forgetting["comparisons"]["uniform"] if forgetting else {}
+        )
+        forgetting_fast = forgetting["comparisons"]["fast1p5"] if forgetting else {}
+        comparison_rows = [
+            {
+                "label": f"held-out deterministic · {row['density_per_100m2']:.2f}/100m²",
+                "bars": row["bars"],
+                "capture": row["capture_rate"],
+                "unique": None,
+                "verdict": (
+                    f"n={row['episodes']:,}; crash {row['crash_rate'] * 100:.2f}%; "
+                    f"timeout {row['timeout_rate'] * 100:.2f}%"
+                ),
+            }
+            for row in density_rows
+        ]
+        if causal_all_done:
+            comparison_rows.extend(
+                {
+                    "label": f"ep24000 · fixed target {cell['target_speed_mps']:.1f} m/s",
+                    "bars": 205,
+                    "capture": cell["capture_rate"],
+                    "unique": None,
+                    "verdict": (
+                        f"crash {cell['crash_rate'] * 100:.2f}%; "
+                        f"bar contact {cell['bar_contact_rate'] * 100:.2f}%"
+                    ),
+                }
+                for cell in fixed_speed["cells"]
+            )
+        return {
+            "subtitle": (
+                "2026-08-03 · v2 causal audit complete · fixed-205 TTC A/B ready"
+                if causal_all_done and ttc_1650_pass
+                else "2026-08-02 · v2 ep24000 causal checks 1–3 complete · fixed-speed checks pending"
+                if causal_done
+                else "2026-08-02 · v2 ep24000 core limit audit · causal checks pending"
+            ),
+            "headline": (
+                "The 205-bar stage improved rather than forgot; high-speed bar contact is the next controlled bottleneck."
+                if causal_all_done
+                else "The 205-bar score replicates across seeds, but the policy has a strong learned turn-direction habit."
+                if causal_done
+                else "The unchanged 205-bar curriculum is closed; mirror and multi-condition evaluations come next."
+            ),
+            "summary": (
+                f"After {training['epochs_at_205']:,} epochs and "
+                f"{training['held_windows_at_205']} complete holds at 205 bars, the last seven "
+                f"16,384-episode gates averaged {training['last_seven_gate_mean'] * 100:.2f}%. "
+                f"The frozen ep24000 policy captures {deterministic['capture_rate'] * 100:.2f}% "
+                f"with deterministic deployment actions versus {stochastic['capture_rate'] * 100:.2f}% "
+                "with stochastic training actions. PPO divergence and disconnected geometry were rejected; "
+                "bar contact on long, fast trajectories is the remaining failure. "
+                + (
+                    f"Seed 43 reproduced capture within {seed_check['capture_seed43_minus_seed42'] * 100:+.2f} pp. "
+                    f"Aggregate mirror performance differed by only {mirror['differences']['capture_conjugate_minus_original'] * 100:+.2f} pp, "
+                    f"but exact reflected observations disagreed in lateral action sign {action_pair['lateral_sign_mismatch_rate'] * 100:.1f}% of comparable samples."
+                    if causal_done
+                    else ""
+                )
+                + (
+                    f" Fixed-speed capture falls {speed_delta * 100:.2f} pp from 0.3 to 1.5 m/s while bar contact rises {speed_bar_delta * 100:.2f} pp. "
+                    f"There is no 205-stage forgetting: ep24000 improves over ep19100 by {forgetting_uniform['ep24000_minus_ep19100_capture'] * 100:+.2f} pp on U[0.3,1.5] and {forgetting_fast['ep24000_minus_ep19100_capture'] * 100:+.2f} pp at fixed 1.5 m/s."
+                    if causal_all_done
+                    else ""
+                )
+            ),
+            "active_experiment": {
+                **record,
+                "is_live": False,
+                "core_audit_complete": True,
+                "causal_checks_pending": not causal_all_done,
+                "causal_checks_1to3_complete": causal_done,
+                "causal_checks_complete": causal_all_done,
+                "fixed_speed_complete": fixed_speed is not None,
+                "forgetting_complete": forgetting is not None,
+                "ttc_1650_gate_pass": ttc_1650_pass,
+                "next_training_authorized": causal_all_done and ttc_1650_pass,
+                "stage_status": "closed",
+                "epoch": 24000,
+                "max_epochs": 24000,
+                "bars": 205,
+                "selector": "cluster_sector",
+                "cluster_gap_m": 0.45,
+                "sectors": 8,
+                "arena_xy_m": 40,
+                "arena_z_m": 3,
+                "density_curriculum": False,
+                "frozen_checkpoint_sha256": checkpoint["sha256"],
+                "deterministic_capture": deterministic["capture_rate"],
+                "deterministic_crash": deterministic["crash_rate"],
+                "deterministic_timeout": deterministic["timeout_rate"],
+                "deterministic_episodes": deterministic["episodes"],
+                "stochastic_capture": stochastic["capture_rate"],
+                "stochastic_crash": stochastic["crash_rate"],
+                "stochastic_episodes": stochastic["episodes"],
+            },
+            "milestones": [
+                {
+                    "label": "FINAL ARTIFACT",
+                    "value": "ep24000 FROZEN",
+                    "detail": f"SHA-256 {checkpoint['sha256'][:12]}…; no training active",
+                    "state": "pass",
+                },
+                {
+                    "label": "SPEED SENSITIVITY" if causal_all_done else "SEED REPLICATION" if causal_done else "205 · DEPLOY",
+                    "value": (
+                        f"{speed_delta * 100:+.2f} pp"
+                        if causal_all_done
+                        else f"Δ {seed_check['capture_seed43_minus_seed42'] * 100:+.2f} pp"
+                        if causal_done
+                        else f"{deterministic['capture_rate'] * 100:.2f}%"
+                    ),
+                    "detail": (
+                        f"0.3→1.5 m/s; bar contact {speed_bar_delta * 100:+.2f} pp · material"
+                        if causal_all_done
+                        else f"seed42 {seed_check['seed42']['capture_rate'] * 100:.2f}% · "
+                        f"seed43 {seed_check['seed43']['capture_rate'] * 100:.2f}% · PASS"
+                        if causal_done
+                        else f"n={deterministic['episodes']:,}; crash "
+                        f"{deterministic['crash_rate'] * 100:.2f}%"
+                    ),
+                    "state": "pass",
+                },
+                {
+                    "label": "205-STAGE FORGETTING" if causal_all_done else "MIRROR OUTCOME" if causal_done else "205 · TRAIN POLICY",
+                    "value": (
+                        "NO · IMPROVED"
+                        if causal_all_done
+                        else f"{mirror['differences']['capture_conjugate_minus_original'] * 100:+.2f} pp"
+                        if causal_done
+                        else f"{stochastic['capture_rate'] * 100:.2f}%"
+                    ),
+                    "detail": (
+                        f"uniform {forgetting_uniform['ep24000_minus_ep19100_capture'] * 100:+.2f} pp · fast1.5 {forgetting_fast['ep24000_minus_ep19100_capture'] * 100:+.2f} pp"
+                        if causal_all_done
+                        else f"4,096/arm; initial-bearing Δ {bearing['positive_minus_negative_capture'] * 100:+.2f} pp; no outcome gap"
+                        if causal_done
+                        else f"n={stochastic['episodes']:,}; exploration costs "
+                        f"{difference['capture_rate_difference_deterministic_minus_stochastic'] * 100:.2f} pp"
+                    ),
+                    "state": "pass" if causal_done else "warn",
+                },
+                {
+                    "label": "1650 Ti TTC GATE" if causal_all_done else "ACTION EQUIVARIANCE" if causal_done else "NEXT",
+                    "value": (
+                        "PASS" if ttc_1650_pass else "MISSING"
+                        if causal_all_done
+                        else f"{action_pair['lateral_sign_mismatch_rate'] * 100:.1f}% MISMATCH"
+                        if causal_done
+                        else "MIRROR EVAL"
+                    ),
+                    "detail": (
+                        "70 bars · capture +9.86 pp · crash -8.06 pp"
+                        if causal_all_done and ttc_1650_pass
+                        else "paired 4GB evidence not verified"
+                        if causal_all_done
+                        else f"lateral MAE {action_pair['mean_abs_error'][1]:.3f}; learned chirality, outcome-neutral in current symmetric arena"
+                        if causal_done
+                        else "evaluation only; frozen weights; no training"
+                    ),
+                    "state": "pass" if causal_all_done and ttc_1650_pass else "warn" if causal_done else "active",
+                },
+                {
+                    "label": "NEXT CONTROLLED STEP",
+                    "value": "MAIN 205 TTC A/B" if causal_all_done and ttc_1650_pass else "BLOCKED",
+                    "detail": "run baseline first; then sample-matched ttc_sector arm"
+                    if causal_all_done and ttc_1650_pass
+                    else "complete causal and 4GB gates before training",
+                    "state": "active" if causal_all_done and ttc_1650_pass else "warn",
+                },
+            ],
+            "comparison": comparison_rows,
+            "gates": [
+                {"label": "curriculum continuation", "value": "CLOSED · more unchanged epochs rejected"},
+                {"label": "PPO divergence", "value": "REJECTED · behavior KL < 0.04; no rollback/OOB"},
+                {"label": "geometry disconnection", "value": "REJECTED · 99.83% random-pair connectivity @0.2m"},
+                {
+                    "label": "mirror + second seed",
+                    "value": (
+                        "COMPLETE · outcome symmetric, action non-equivariant"
+                        if causal_done
+                        else "PENDING · frozen checkpoint, no learning"
+                    ),
+                },
+                {
+                    "label": "fixed-speed + forgetting",
+                    "value": "COMPLETE · speed-sensitive; no forgetting"
+                    if causal_all_done
+                    else "PENDING · evaluation only",
+                },
+                {
+                    "label": "1650 Ti TTC transfer",
+                    "value": "PASS · capture +9.86 pp; crash -8.06 pp"
+                    if ttc_1650_pass
+                    else "PENDING",
+                },
+                {
+                    "label": "next training",
+                    "value": "READY · fixed-205 main baseline → TTC"
+                    if causal_all_done and ttc_1650_pass
+                    else "BLOCKED · causal checks and 1650 Ti gate pending",
+                },
+            ],
+            "decision": (
+                "Do not resume the open-ended 205-bar curriculum. Preserve ep24000 as the canonical "
+                "artifact. "
+                + (
+                    "All frozen-policy causal checks are complete. The 205 stage improved both uniform and fixed-1.5 performance, so replay for catastrophic forgetting is not the next intervention. "
+                    "Speed sensitivity is material and paid almost entirely in bar contact; the 1650 Ti TTC selector transfer gate also passed. "
+                    "Authorize the sample-matched fixed-205 main baseline arm first, then the TTC arm. Keep reflection/RMS regularization and learned-detector work as separate later experiments. "
+                    if causal_all_done and ttc_1650_pass
+                    else "Mirror and second-seed evaluation are complete: success is seed-stable and outcome-symmetric, "
+                    "but the controller is not action-equivariant. Finish the fixed-speed and forgetting checks before authorizing main training. "
+                    if causal_done
+                    else "Evaluate original/mirrored layouts without updating the policy, then finish "
+                    "the second-seed and fixed-speed checks. "
+                )
+            ),
+            "limit_audit": audit,
+            "causal_1to3": causal,
+            "fixed_speed": fixed_speed,
+            "forgetting": forgetting,
+            "ttc_1650": ttc_1650_rows,
+        }
+
     if "v2-ttc-" in run_name:
         arm = "ttc" if "v2-ttc-ttc-" in run_name else "baseline"
         selector = "ttc_sector" if arm == "ttc" else "cluster_sector"
