@@ -195,6 +195,15 @@ class task_config:
         # Perturbations are opt-in for the post-training stage, not silently applied to clean runs.
         enable_perturbations = _env_bool("NAVRL_PERCEPTION_PERTURB", False)
         detection_dropout_prob = _env_float("NAVRL_DETECTION_DROPOUT", 0.3)
+        detection_latency_s = _env_float("NAVRL_DETECTION_LATENCY_S", 0.0)
+        range_error_m = _env_float("NAVRL_RANGE_ERROR_M", 0.0)
+        # Latency COMPENSATION (fix), deliberately separate knobs from the latency PERTURBATION
+        # above: an eval arm sets the perturbation to model a slow pipeline and toggles these to
+        # measure how much of the loss the perception-side fix recovers (WORKLOG 2026-08-05 R3).
+        # P0: output-side constant-velocity forward predict by detection_latency_s.
+        latency_compensate = _env_bool("NAVRL_LATENCY_COMPENSATE", False)
+        # P1: a DELAYED camera detection no longer vetoes the fresh-LiDAR correction path.
+        latency_lidar_backup = _env_bool("NAVRL_LATENCY_LIDAR_BACKUP", False)
         rgb_noise_std = _env_float("NAVRL_RGB_NOISE_STD", 0.015)
         depth_noise_std = _env_float("NAVRL_DEPTH_NOISE_STD", 0.02)
         # [static VBEAMS*HBEAMS | obstacle history 5*MAX_OBSTACLES*12 | robot history 5x10 |

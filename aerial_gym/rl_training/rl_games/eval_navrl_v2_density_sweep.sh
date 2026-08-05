@@ -91,12 +91,15 @@ defaults = {
     "cfg_detector_checkpoint_sha256": "",
     "cfg_perception_perturb": False,
     "cfg_detection_dropout": 0.3,
+    "cfg_detection_latency_s": 0.0,
+    "cfg_range_error_m": 0.0,
     "cfg_rgb_noise_std": 0.015,
     "cfg_depth_noise_std": 0.02,
     "cfg_max_tilt_deg": 45.0,
     "cfg_tilt_comp": True,
 }
-missing = [key for key in defaults if key not in state]
+legacy_optional = {"cfg_detection_latency_s", "cfg_range_error_m"}
+missing = [key for key in defaults if key not in state and key not in legacy_optional]
 if missing and not force:
     raise SystemExit(
         "[eval_v2] checkpoint lacks same-shape perception/control provenance: "
@@ -118,6 +121,8 @@ numeric_keys = {
     "cfg_detector_min_pixels",
     "cfg_detector_threshold",
     "cfg_detection_dropout",
+    "cfg_detection_latency_s",
+    "cfg_range_error_m",
     "cfg_rgb_noise_std",
     "cfg_depth_noise_std",
     "cfg_max_tilt_deg",
@@ -349,8 +354,8 @@ export NAVRL_EVAL_FULL_DISTRIBUTION=1
 export NAVRL_VISION=1
 export NAVRL_PERCEPTION=1
 export NAVRL_GENERAL_TRAIN=1
-export NAVRL_PERCEPTION_PERTURB="${PERCEPTION_PERTURB}"
-export NAVRL_TILT_COMP="${TILT_COMP}"
+export NAVRL_PERCEPTION_PERTURB="${NAVRL_PERCEPTION_PERTURB:-${PERCEPTION_PERTURB}}"
+export NAVRL_TILT_COMP="${NAVRL_TILT_COMP:-${TILT_COMP}}"
 export NAVRL_LIDAR_RANGE=12
 export NAVRL_LIDAR_HBEAMS=72
 export NAVRL_LIDAR_VBEAMS=4
@@ -370,18 +375,38 @@ export NAVRL_ALT_HOLD_VMAX=2.5
 export NAVRL_YAW_RATE_MAX=3.0
 export NAVRL_MAX_TILT_DEG="${MAX_TILT_DEG}"
 export NAVRL_FOV_CURRICULUM_EPOCHS="${FOV_CURRICULUM_EPOCHS}"
-export NAVRL_DETECTOR_MIN_PIXELS="${DETECTOR_MIN_PIXELS}"
-export NAVRL_DETECTOR_THRESHOLD="${DETECTOR_THRESHOLD}"
-export NAVRL_DETECTION_DROPOUT="${DETECTION_DROPOUT}"
-export NAVRL_RGB_NOISE_STD="${RGB_NOISE_STD}"
-export NAVRL_DEPTH_NOISE_STD="${DEPTH_NOISE_STD}"
+export NAVRL_DETECTOR_MIN_PIXELS="${NAVRL_DETECTOR_MIN_PIXELS:-${DETECTOR_MIN_PIXELS}}"
+export NAVRL_DETECTOR_THRESHOLD="${NAVRL_DETECTOR_THRESHOLD:-${DETECTOR_THRESHOLD}}"
+export NAVRL_DETECTION_DROPOUT="${NAVRL_DETECTION_DROPOUT:-${DETECTION_DROPOUT}}"
+export NAVRL_DETECTION_LATENCY_S="${NAVRL_DETECTION_LATENCY_S:-0}"
+export NAVRL_RANGE_ERROR_M="${NAVRL_RANGE_ERROR_M:-0}"
+export NAVRL_RGB_NOISE_STD="${NAVRL_RGB_NOISE_STD:-${RGB_NOISE_STD}}"
+export NAVRL_DEPTH_NOISE_STD="${NAVRL_DEPTH_NOISE_STD:-${DEPTH_NOISE_STD}}"
 export NAVRL_OOB_MARGIN=1.0
 export FILE=ppo_navrl_perception_transformer.yaml
 export TASK=navrl_task
 
 if [[ "${DETECTOR_SHA}" == "-" ]]; then
-    unset NAVRL_DETECTOR_CHECKPOINT
-    export NAVRL_EXPECTED_DETECTOR_SHA256=""
+    if [[ -n "${REQUESTED_DETECTOR_CHECKPOINT}" && -f "${REQUESTED_DETECTOR_CHECKPOINT}" ]]; then
+        ACTUAL_DETECTOR_SHA="$(
+            "${PYTHON}" - "${REQUESTED_DETECTOR_CHECKPOINT}" <<'PY'
+import hashlib
+from pathlib import Path
+import sys
+
+digest = hashlib.sha256()
+with Path(sys.argv[1]).open("rb") as stream:
+    for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+        digest.update(chunk)
+print(digest.hexdigest())
+PY
+        )"
+        export NAVRL_DETECTOR_CHECKPOINT="${REQUESTED_DETECTOR_CHECKPOINT}"
+        export NAVRL_EXPECTED_DETECTOR_SHA256="${ACTUAL_DETECTOR_SHA}"
+    else
+        unset NAVRL_DETECTOR_CHECKPOINT
+        export NAVRL_EXPECTED_DETECTOR_SHA256=""
+    fi
 else
     if [[ -z "${REQUESTED_DETECTOR_CHECKPOINT}" || ! -f "${REQUESTED_DETECTOR_CHECKPOINT}" ]]; then
         echo "[eval_v2] checkpoint requires its learned detector; set NAVRL_DETECTOR_CHECKPOINT to the matching file." >&2
@@ -521,11 +546,6 @@ want = {
     "cfg_fov_curriculum_epochs": float(os.environ["NAVRL_FOV_CURRICULUM_EPOCHS"]),
     "cfg_detector_min_pixels": float(os.environ["NAVRL_DETECTOR_MIN_PIXELS"]),
     "cfg_detector_threshold": float(os.environ["NAVRL_DETECTOR_THRESHOLD"]),
-    "cfg_detector_checkpoint_sha256": os.environ["NAVRL_EXPECTED_DETECTOR_SHA256"],
-    "cfg_perception_perturb": float(os.environ["NAVRL_PERCEPTION_PERTURB"]),
-    "cfg_detection_dropout": float(os.environ["NAVRL_DETECTION_DROPOUT"]),
-    "cfg_rgb_noise_std": float(os.environ["NAVRL_RGB_NOISE_STD"]),
-    "cfg_depth_noise_std": float(os.environ["NAVRL_DEPTH_NOISE_STD"]),
     "cfg_max_velocity": 2.5,
     "cfg_yaw_rate_max": 3.0,
     "cfg_max_tilt_deg": float(os.environ["NAVRL_MAX_TILT_DEG"]),
@@ -953,6 +973,8 @@ payload["v2_evaluation_contract"] = {
     "detector_threshold": float(os.environ["NAVRL_DETECTOR_THRESHOLD"]),
     "perception_perturb": bool(int(os.environ["NAVRL_PERCEPTION_PERTURB"])),
     "detection_dropout": float(os.environ["NAVRL_DETECTION_DROPOUT"]),
+    "detection_latency_s": float(os.environ["NAVRL_DETECTION_LATENCY_S"]),
+    "range_error_m": float(os.environ["NAVRL_RANGE_ERROR_M"]),
     "rgb_noise_std": float(os.environ["NAVRL_RGB_NOISE_STD"]),
     "depth_noise_std": float(os.environ["NAVRL_DEPTH_NOISE_STD"]),
     "max_tilt_deg": float(os.environ["NAVRL_MAX_TILT_DEG"]),

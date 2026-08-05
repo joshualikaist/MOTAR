@@ -6089,3 +6089,221 @@ postrun **2/2**, arena-motion/DOM parity PASS다. 수정·신규 Python 전부 `
 시스템 Node는 기존부터 사용한 nullish-coalescing `??`를 지원하지 않는 구버전이라 raw `node --check`만
 129행에서 중단했다. `??`를 syntax-only로 `||` 치환한 stream의 전체 JS parse와 실제 DOM parity는
 통과했으므로 이번 UI 변경의 문법 실패가 아니다. 커밋·푸시는 이번 요청에 포함되지 않아 수행하지 않았다.
+
+---
+
+## 2026-08-05 — R3 latency screen 결과와 compensation 계획 (구현·재평가 전 검수용)
+
+### R3 screen 요약 (ep25000+riskcap, seed47, 205 bars, inference-only)
+
+canonical: `results/navrl_v2_detector_robustness/summary.{md,json}`
+
+| 축 | capture | crash | baseline 대비 capture |
+|---|---:|---:|---|
+| analytic_clean | 80.54% | 17.17% | — |
+| dropout 0.3 | 67.84% | 29.33% | −12.7 pp |
+| **latency 0.1 s** | 37.82% | 58.22% | **−42.7 pp** |
+| **latency 0.2 s** | 18.50% | 76.48% | **−62.0 pp** |
+| range error ±0.15/0.30 m | ~80.5% | ~17% | ≈0 pp |
+| learned_clean (4096-frame train) | 66.62% | 24.94% | −13.9 pp |
+
+**판정:** latency가 1순위 병목. range error는 Kalman/association이 흡수. learned detector는
+G1–G3 전에 dataset/학습 규모를 키워야 한다. **PPO 연장은 하지 않는다.**
+
+### latency가 코드에서 의미하는 것
+
+- RL step `dt=0.1 s`. `NAVRL_DETECTION_LATENCY_S=0.1` → policy/tracker에 들어가는 **camera detection이
+  1 step(0.1 s) 전 정보**.
+- 구현: `navrl_perception.py::_apply_detection_latency()`가 fresh detection을 ring buffer에 쓰고,
+  `_detect_rgbd()` 출력을 지연된 bearing/range/mask로 바꾼 뒤 `tracker.step()`에 넣는다.
+- **핵심 구조적 문제(왜 CV KF만으로는 부족한지):**
+  1. 지연된 measurement를 **현재 시각 measurement처럼** KF가 correct한다 → state가 과거 위치로 당겨짐.
+  2. `_associate_lidar_target()`은 `camera_visible=True`이면 LiDAR correction을 **막는다**
+     (`valid = ... & ~camera_visible`). 지연 camera가 “보인다”고 하면 **fresh LiDAR 백업 경로가 차단**된다.
+  3. policy는 `_target_features()`의 tracker state + 5-step history를 본다. stale correction이 history에
+     0.5 s 간격으로 누적된다.
+
+### “latency 줄이기” vs “compensate” — 역할 분리
+
+| 구분 | 무엇을 바꾸나 | 이 레포에서의 위치 | PPO 필요? |
+|---|---|---|---|
+| **줄이기 (reduce)** | 파이프라인 지연 자체를 짧게 | detector 경량화, 해상도, onboard rate, sim 밖 HW | 아니오 |
+| **보상 (compensate)** | 지연이 있어도 **현재 시각에 맞는 target state**를 policy에 제공 | `navrl_perception.py` tracker/output | 아니오 |
+
+reduce는 sim ablation 축이 아니라 **배포/실기 목표**. R3 gate 재평가는 **compensate arm**으로
+`latency=0.1/0.2`에서 capture/crash가 analytic_clean에 얼마나 근접하는지 본다.
+
+### compensation 후보 (우선순위 — 한 번에 하나만 구현·평가)
+
+#### P0 · forward predict (가장 작은 diff, 먼저 시험)
+
+**방법:** camera measurement는 그대로 지연 수신. KF update 후 policy에 넘기기 직전에 constant-velocity
+로 `τ = NAVRL_DETECTION_LATENCY_S`만큼 전방 extrapolate:
+
+`pos_policy = pos_est + vel_est * τ` (world frame → vehicle frame은 기존 `_target_features`와 동일)
+
+**이유:** 이미 `BatchedConstantVelocityTracker`에 속도 상태가 있고 obs dim 변경 없음. 0.1–0.2 s 지연의
+주된 오류는 “과거 위치로 correct”이므로, 출력단 predict가 1차 fix.
+
+**리스크:** covariance/age는 여전히 stale; LiDAR 차단 문제는 그대로 → P1과 세트 권장.
+
+**env:** `NAVRL_LATENCY_COMPENSATE=1` (신규, default off). eval perturb와 분리.
+
+#### P1 · delayed-aware LiDAR fusion (구조 버그 fix)
+
+**방법:** `camera_visible`이 **delayed**일 때는 LiDAR association을 막지 않는다. 즉
+`~camera_visible` gate를 `~camera_visible_fresh`로 바꾸거나, `latency_steps>0`이면 LiDAR valid path 허용.
+
+**이유:** R3 screen에서 latency가 dropout보다 훨씬 치명적인 이유 중 하나가 “stale camera가 LiDAR
+correction을 끔”. fresh LiDAR( sim에서 지연 없음)로 tracker를 당겨올 수 있음.
+
+**리스크:** camera/LiDAR disagreement 증가 → innovation gate(P2)와 함께 켜는 편이 안전.
+
+#### P2 · timestamped measurement / inflated noise
+
+**방법 A:** delayed measurement update 시 `R`을 `R + (τ·σ_vel)²` 또는 고정 inflation factor로 키워
+과거 점에 덜 끌리게 한다.
+
+**방법 B:** measurement를 `t−τ` 시점으로 태그하고, KF predict를 τ만큼 먼저 돌린 뒤 update (동치에 가까운
+forward predict + inflated R).
+
+**이유:** WORKLOG 2026-07-27 후속 후보(innovation reliability)와 연결. range error가 benign했던 것과
+대비, **시간 오류**는 innovation이 큼.
+
+#### P3 · confidence / age signaling (obs dim 유지)
+
+**방법:** `_target_features()`에서 `camera_confidence`를 `confidence * exp(-τ/τ₀)` 또는
+`age` feature를 latency-aware로 올림. policy/riskcap이 이미 track age/covariance를 받음.
+
+**이유:** NavRL++·CosFly 계열의 “stale measurement down-weight”. **단독으론 capture 회복 한계** —
+P0/P1 없이 confidence만 낮추면 보수적일 뿐.
+
+#### 보류 · PPO / temporal retrain
+
+latency arm에서 capture −42 pp를 **PPO fine-tune으로 메우는 것은 금지**. perception fix인지 policy
+적응인지 분리 불가. R4 temporal fusion은 **P0–P2 gate 통과 후**.
+
+#### 보류 · sim latency를 0으로 “줄이기”
+
+`NAVRL_DETECTION_LATENCY_S=0`은 baseline이지 해결책이 아님. 실기 목표는 onboard pipeline profiling.
+
+### 재평가 계약 (Claude/로컬 GPU — 구현 승인 후)
+
+동결: ep25000+riskcap, seed47, 205 bars, deterministic, 2049 ep.
+
+| arm | NAVRL_DETECTION_LATENCY_S | compensate | 기대 |
+|---|---:|---|---|
+| baseline | 0 | off | 80.54/17.17% 재현 |
+| latency 0.1 | 0.1 | off | R3 재현 (37.82%) |
+| latency 0.1 + P0 | 0.1 | forward predict on | capture ↑ crash ↓ |
+| latency 0.1 + P0+P1 | 0.1 | both | LiDAR backup 추가 이득 |
+
+**GO (1차):** latency 0.1에서 P0(+P1) 적용 시 capture가 **≥65%** (baseline −15 pp 이내)이고 crash가
+latency-off 대비 **≥10 pp** 감소. **완전 회복(≥78%)**은 2차(iterated predict, G3 reacquisition) 목표.
+
+**실행:** `eval_navrl_v2_detector_robustness.sh`에 compensate 셀 추가 또는 별도
+`eval_navrl_v2_latency_compensate.sh` (RESULT_ROOT 새 디렉터리). PPO 학습 없음.
+
+### 구현 전 검수 체크리스트
+
+1. compensate는 `_target_features()` 출력 또는 tracker update **한 경로**만 바꾸는가 (obs 898-D 유지)?
+2. `NAVRL_DETECTION_LATENCY_S` perturb와 `NAVRL_LATENCY_COMPENSATE` eval knob이 분리되는가?
+3. P0/P1을 **동시에** 첫 commit에 넣지 않고 arm별로 eval 가능한가?
+4. unit test: synthetic constant-velocity target + τ=0.1 → predict가 raw delayed보다 bearing error 작음?
+5. riskcap/speed governor는 perception output만 쓰므로 **별도 튜닝 없이** 재평가 가능한가?
+
+**현재 상태:** 계획만 기록. 코드 변경·GPU eval은 검수 후 진행.
+
+---
+
+## 2026-08-05 — latency compensation P0+P1 구현 완료 (검수 대기, GPU 미실행)
+
+2026-08-05 R3 compensation 계획을 코드로 구현했다. 체크리스트 5항목 전부 충족.
+**커밋·GPU eval은 하지 않았다** — diff 검수 후 사용자 지시로 실행한다.
+
+### 구현 내용 (diff 요약)
+
+| 파일 | 변경 |
+|---|---|
+| `navrl_task_config.py` | `NAVRL_LATENCY_COMPENSATE`(P0)·`NAVRL_LATENCY_LIDAR_BACKUP`(P1) 신규 env knob, 기본 off. perturb(`NAVRL_DETECTION_LATENCY_S`)와 분리 (체크리스트 2) |
+| `navrl_perception.py` | P0: `_target_features()` **출력단만** — `pos_policy = pos_est + vel_est·τ` (KF 내부·cov·age·진단 불변, obs 898-D 유지, 체크리스트 1). P1: `observe()`에서 `latency_lidar_backup`이면 지연 camera visible이 LiDAR association을 veto하지 못하게 gate 텐서만 교체 (`_associate_lidar_target` 자체는 무변경) |
+| `tests/test_navrl_latency_compensate.py` | 신규 7 테스트 **전부 PASS** |
+| `eval_navrl_v2_latency_compensate.sh` | 신규 4-arm(+옵션 0.2s) 스크립트, `PREFLIGHT=1` 드라이런 PASS |
+
+두 knob 모두 `detection_latency_s=0`이면 산술적 no-op이므로 clean run 결과는 byte-동일하다.
+
+### 단위 테스트 결과 (체크리스트 4)
+
+CV 표적(1.5 m/s), τ=0.1 s 지연 측정을 실제 `BatchedConstantVelocityTracker`에 60 step 공급:
+- raw 위치 오차 **0.147 m**(≈v·τ, 예측된 lag 재현) → predict 후 **<50%로 감소**, bearing 오차도 감소 ✓
+- KF 속도 추정 오차 <0.15 m/s (지연 위치로도 속도는 무편향 — P0가 작동하는 근거) ✓
+- τ=0이면 predict가 항등, 정지 표적이면 예측이 운동을 만들어내지 않음 ✓
+- 소스 검사: P0가 `_target_features`에만 존재(tracker 클래스에 없음), P1 gate가 backup 플래그를 읽음 ✓
+- 기존 `test_navrl_perception.py` 20/20 회귀 없음, py_compile 통과.
+
+### 재평가 실행 계약 (준비 완료, 미실행)
+
+`eval_navrl_v2_latency_compensate.sh` — ep25000+riskcap(SHA f7022139…) 고정, seed47,
+205 bars, deterministic, 2049 ep/cell, PPO 없음. arms: analytic_clean 재현 / latency_0p1s_raw
+재현 / +P0 / +P0+P1 (+옵션 `NAVRL_LAT_INCLUDE_0P2=1`). 끝에 summary.{md,json} 자동 생성 +
+GO gate(capture ≥65% AND crash raw 대비 ≥10 pp↓) 자동 판정. 결과 루트:
+`results/navrl_v2_latency_compensate/` (기존 존재 시 덮어쓰기 거부).
+
+### riskcap 상호작용 (체크리스트 5)
+
+riskcap/speed governor는 perception 출력(LiDAR scan·clearance)만 소비하고 target tracker
+state를 직접 읽지 않으므로 별도 튜닝 없이 동일 계약으로 재평가 가능하다. eval 스크립트는
+R3와 byte-동일한 governor env 블록을 고정한다.
+
+
+## 2026-08-05 — latency compensation P0/P1 재평가 결과: 둘 다 NO-GO, 진짜 채널은 obstacle map 오염
+
+frozen ep25000+riskcap (SHA f7022139…), seed47 / 205 bars / deterministic / riskcap,
+2049~2050 ep/cell. `results/navrl_v2_latency_compensate/summary.{md,json}`.
+
+| cell | episodes | capture | crash | timeout | bar-contact share | out-of-bounds share |
+|---|---:|---:|---:|---:|---:|---:|
+| analytic_clean | 2050 | 80.54% | 17.17% | 2.29% | 95.7% | 2.8% |
+| latency_0p1s_raw | 2049 | 37.82% | 58.22% | 3.95% | 78.0% | 21.0% |
+| latency_0p1s_p0 | 2049 | 37.73% | 57.74% | 4.54% | 76.1% | 22.4% |
+| latency_0p1s_p0p1 | 2050 | 28.98% | 66.54% | 4.49% | 78.9% | 20.1% |
+
+계약 무결성: clean(80.54/17.17)과 raw(37.82/58.22) 모두 R3 수치를 소수점까지 재현 →
+평가 계약·시드·정책 동일성 확인됨. 따라서 arm 간 차이는 순수하게 fix 토글 효과다.
+
+**P0 (forward predict): capture −0.10 pp = 무효.** flag가 안 켜진 게 아니다 —
+`closest_nocrash_mean_m`이 1.611 → 1.454 m로 유의하게 개선됐고 crash도 10건 줄었다.
+즉 P0는 의도한 대로 표적 추정 위치의 v·τ lag(≈0.15 m)를 제거했지만, **그 lag이
+latency 손실의 원인이 아니었다.** 5 m 거리에서 0.15 m는 bearing 1.7°로, capture를
+−42.7 pp 무너뜨리는 크기가 아니다. P0는 "위치 lag 가설"을 실험적으로 기각한 것.
+
+**P1 (LiDAR backup): capture −8.85 pp = 역효과.** bar_contact 절대수가 931 → 1076으로
+증가. stale camera 상태에서 LiDAR association을 열어주면 표적이 아닌 **막대**에
+잘못 association될 수 있고, 그 오연관이 아래 채널을 통해 곧바로 충돌로 이어진다.
+
+### 진짜 채널: 지연된 camera가 obstacle map을 오염시킨다
+
+`observe()`는 지연된 `fused_surface / fused_bearing / fused_visible / pixels`를 그대로
+`_fuse_static_and_extract_obstacles()`에 넘긴다. 그 안에서 두 가지 삭제가 일어난다:
+
+1. `target_like` carve-out (navrl_perception.py 743-749): 표적으로 판정된 LiDAR
+   return을 `lidar_max_range`로 치환해 obstacle scan에서 지운다. 지연 상태에서는
+   **stale bearing 방향**을 지우므로, 그 방향에 실제로 서 있는 막대가 장애물 지도에서
+   사라진다 → 정면 충돌.
+2. `depth_no_target` (752-754): stale `target_pixels`로 카메라 depth를 blank 처리 →
+   FOV 안의 실제 장애물이 지워지고, 반대로 진짜 표적은 장애물로 남는다.
+
+이것이 "카메라 표적 검출만 지연시켰는데 왜 bar contact가 337 → 931로 3배가 되는가"를
+설명하는 유일한 경로다. out-of-bounds도 10 → 251건으로 급증(추격 방향 자체가 stale).
+P0는 policy-facing 출력만 건드렸고 P1은 오연관을 늘렸으므로, **둘 다 이 채널을
+전혀 건드리지 못했다.** 계획서의 P0/P1 가설이 채널을 잘못 지목한 것이며, 이번 두 arm이
+그것을 저비용으로 확정했다.
+
+### 다음 후보 (P2': latency-aware carve-out)
+
+carve-out과 depth blanking의 입력을 stale camera bearing/range 대신 **tracker의 현재
+예측치**(= P0가 이미 계산하는 보정 위치에서 유도한 bearing/range)로 바꾼다. 대안으로
+detection이 stale일 때 carve-out을 아예 끄는 보수적 변형도 arm으로 둘 수 있다
+(표적이 장애물로 남는 대신 실제 막대는 지워지지 않음 — 안전 우선).
+평가 계약은 동일, PPO 재학습은 여전히 금지. GO gate도 동일(capture ≥ 65% AND
+crash raw 대비 ≥ 10 pp 감소).

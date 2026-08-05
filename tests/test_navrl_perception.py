@@ -106,6 +106,8 @@ def _configs():
         min_target_pixels=2,
         pixel_threshold=0.55,
         detection_dropout_prob=0.0,
+        detection_latency_s=0.0,
+        range_error_m=0.0,
         rgb_noise_std=0.0,
         depth_noise_std=0.0,
         history_interval_s=0.5,
@@ -227,6 +229,28 @@ class NavRLPerceptionTest(unittest.TestCase):
         self.assertFalse(bool(diag["camera_visible"][0]))
         self.assertTrue(bool(diag["lidar_visible"][0]))
         self.assertTrue(bool(diag["visible"][0]))
+
+    def test_range_error_shifts_reported_surface_range(self):
+        camera, perception = _configs()
+        perception.range_error_m = 0.5
+        module = NavRLPerceptionModule(1, "cpu", perception, 0.1, camera)
+        rgb = self.rgb[:1].clone()
+        depth = self.depth[:1].clone()
+        meas, surface, _, visible, _, _ = module._detect_rgbd(rgb, depth, training=True)
+        self.assertTrue(bool(visible[0]))
+        self.assertAlmostEqual(float(surface[0]), 6.5, places=3)
+        self.assertGreater(float(meas[0, 0]), 6.0)
+
+    def test_detection_latency_defers_visible_measurements(self):
+        camera, perception = _configs()
+        perception.detection_latency_s = 0.1
+        module = NavRLPerceptionModule(1, "cpu", perception, 0.1, camera)
+        rgb = self.rgb[:1].clone()
+        depth = self.depth[:1].clone()
+        _, _, _, visible0, _, _ = module._detect_rgbd(rgb, depth, training=True)
+        self.assertFalse(bool(visible0[0]))
+        _, _, _, visible1, _, _ = module._detect_rgbd(rgb, depth, training=True)
+        self.assertTrue(bool(visible1[0]))
 
 
 class ClusterSectorSelectorTest(unittest.TestCase):

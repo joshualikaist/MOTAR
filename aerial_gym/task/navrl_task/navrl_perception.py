@@ -541,10 +541,43 @@ class NavRLPerceptionModule:
         self.min_pixels = int(getattr(cfg, "min_target_pixels", 2))
         self.pixel_threshold = float(getattr(cfg, "pixel_threshold", 0.55))
         self.dropout_prob = float(getattr(cfg, "detection_dropout_prob", 0.0))
+        self.detection_latency_s = float(getattr(cfg, "detection_latency_s", 0.0))
+        self.range_error_m = float(getattr(cfg, "range_error_m", 0.0))
+        # Latency compensation (P0/P1, WORKLOG 2026-08-05). Both default off; both are no-ops
+        # when detection_latency_s is 0, so a clean run is byte-identical with them set.
+        self.latency_compensate = bool(getattr(cfg, "latency_compensate", False))
+        self.latency_lidar_backup = bool(getattr(cfg, "latency_lidar_backup", False))
         self.rgb_noise_std = float(getattr(cfg, "rgb_noise_std", 0.015))
         self.depth_noise_std = float(getattr(cfg, "depth_noise_std", 0.02))
         self.history_stride = max(1, int(round(float(cfg.history_interval_s) / self.step_dt)))
         self.step_count = 0
+        self._latency_steps = max(0, int(round(self.detection_latency_s / self.step_dt)))
+        self._latency_slots = self._latency_steps + 1
+        self._latency_step = torch.zeros(self.num_envs, dtype=torch.long, device=device)
+        self._latency_meas_vehicle = torch.zeros(
+            self.num_envs, self._latency_slots, 3, dtype=torch.float32, device=device
+        )
+        self._latency_surface_range = torch.zeros(
+            self.num_envs, self._latency_slots, dtype=torch.float32, device=device
+        )
+        self._latency_bearing = torch.zeros(
+            self.num_envs, self._latency_slots, dtype=torch.float32, device=device
+        )
+        self._latency_visible = torch.zeros(
+            self.num_envs, self._latency_slots, dtype=torch.bool, device=device
+        )
+        self._latency_confidence = torch.zeros(
+            self.num_envs, self._latency_slots, dtype=torch.float32, device=device
+        )
+        self._latency_mask = torch.zeros(
+            self.num_envs,
+            self._latency_slots,
+            self.height,
+            self.width,
+            dtype=torch.bool,
+            device=device,
+        )
+        self._env_ids = torch.arange(self.num_envs, device=device)
 
         self.segmenter = AppearanceTargetSegmenter().to(device).eval()
         checkpoint = str(getattr(cfg, "detector_checkpoint", "") or "").strip()
@@ -601,6 +634,53 @@ class NavRLPerceptionModule:
         self.last_visible[env_ids] = False
         self.last_confidence[env_ids] = 0.0
         self.last_target_like[env_ids] = False
+        self._latency_step[env_ids] = 0
+        self._latency_meas_vehicle[env_ids] = 0.0
+        self._latency_surface_range[env_ids] = 0.0
+        self._latency_bearing[env_ids] = 0.0
+        self._latency_visible[env_ids] = False
+        self._latency_confidence[env_ids] = 0.0
+        self._latency_mask[env_ids] = False
+
+    def _apply_detection_latency(
+        self,
+        measurement_vehicle,
+        surface_range,
+        bearing,
+        visible,
+        confidence,
+        mask,
+    ):
+        if self._latency_steps <= 0:
+            return measurement_vehicle, surface_range, bearing, visible, confidence, mask
+
+        write_idx = self._latency_step % self._latency_slots
+        self._latency_meas_vehicle[self._env_ids, write_idx] = measurement_vehicle
+        self._latency_surface_range[self._env_ids, write_idx] = surface_range
+        self._latency_bearing[self._env_ids, write_idx] = bearing
+        self._latency_visible[self._env_ids, write_idx] = visible
+        self._latency_confidence[self._env_ids, write_idx] = confidence
+        self._latency_mask[self._env_ids, write_idx] = mask
+        self._latency_step += 1
+        ready = self._latency_step > self._latency_steps
+        read_idx = (self._latency_step - self._latency_steps - 1) % self._latency_slots
+        delayed_visible = self._latency_visible[self._env_ids, read_idx] & ready
+        delayed_mask = self._latency_mask[self._env_ids, read_idx] & delayed_visible.view(
+            -1, 1, 1
+        )
+        delayed_confidence = self._latency_confidence[self._env_ids, read_idx]
+        return (
+            self._latency_meas_vehicle[self._env_ids, read_idx],
+            self._latency_surface_range[self._env_ids, read_idx],
+            self._latency_bearing[self._env_ids, read_idx],
+            delayed_visible,
+            torch.where(
+                delayed_visible,
+                delayed_confidence,
+                torch.zeros_like(confidence),
+            ),
+            delayed_mask,
+        )
 
     def _detect_rgbd(self, rgb, depth, training):
         if training and self.rgb_noise_std > 0.0:
@@ -622,6 +702,10 @@ class NavRLPerceptionModule:
         u = (mf * self._u).sum(dim=(1, 2)) / denom
         v = (mf * self._v).sum(dim=(1, 2)) / denom
         surface_range = (depth * mf).sum(dim=(1, 2)) / denom
+        if training and self.range_error_m != 0.0:
+            surface_range = (surface_range + self.range_error_m).clamp(
+                0.0, self.max_camera_range
+            )
         confidence = (score * mf).sum(dim=(1, 2)) / denom
         confidence *= (count.float() / max(1.0, float(self.min_pixels * 4))).clamp(max=1.0)
         confidence = torch.where(visible, confidence, torch.zeros_like(confidence))
@@ -633,7 +717,9 @@ class NavRLPerceptionModule:
         center_range = surface_range + self.target_radius
         measurement_vehicle = self.camera_offset + ray * center_range.unsqueeze(1)
         bearing = torch.atan2(measurement_vehicle[:, 1], measurement_vehicle[:, 0])
-        return measurement_vehicle, surface_range, bearing, visible, confidence, mask
+        return self._apply_detection_latency(
+            measurement_vehicle, surface_range, bearing, visible, confidence, mask
+        )
 
     def _fuse_static_and_extract_obstacles(
         self,
@@ -825,7 +911,15 @@ class NavRLPerceptionModule:
             self.tracker.active,
             self.tracker.age,
         )
-        rel_pos = _quat_rotate_inverse_xyzw(vehicle_quat, state[:, :3] - drone_pos_w)
+        pos_world = state[:, :3]
+        # P0 latency compensation: the KF is corrected with measurements that are
+        # detection_latency_s OLD, so its position estimate trails the true target by ~v*tau.
+        # Extrapolate the POLICY-FACING position to "now" with the filter's own velocity.
+        # Output-side only: KF internals, covariance, age, LiDAR association, and diagnostics
+        # are untouched, and the observation stays the same width.
+        if self.latency_compensate and self._latency_steps > 0:
+            pos_world = pos_world + state[:, 3:] * self.detection_latency_s
+        rel_pos = _quat_rotate_inverse_xyzw(vehicle_quat, pos_world - drone_pos_w)
         rel_vel = _quat_rotate_inverse_xyzw(vehicle_quat, state[:, 3:] - drone_vel_w)
         diag = torch.diagonal(cov, dim1=1, dim2=2)
         pos_var = diag[:, :3] / (self.max_camera_range * self.max_camera_range)
@@ -881,8 +975,17 @@ class NavRLPerceptionModule:
             [sigma_r.square(), sigma_lat.square(), sigma_lat.square()], dim=1
         )
         self.tracker.step(meas_world, visible, measurement_var)
+        # P1 latency compensation: `visible` here is the DELAYED camera flag (the ring buffer in
+        # _apply_detection_latency already ran inside _detect_rgbd). The historical
+        # `~camera_visible` gate inside _associate_lidar_target then blocks the fresh-LiDAR
+        # correction exactly when the stale camera claims sight -- the structural reason latency
+        # was catastrophic (-42.7 pp) while range error was benign. With the backup enabled a
+        # delayed detection no longer vetoes the LiDAR path; sim LiDAR has no latency.
+        lidar_camera_gate = visible
+        if self.latency_lidar_backup and self._latency_steps > 0:
+            lidar_camera_gate = torch.zeros_like(visible)
         lidar_visible, lidar_confidence, lidar_surface, lidar_bearing = (
-            self._associate_lidar_target(lidar_m, drone_pos_w, vehicle_quat, visible)
+            self._associate_lidar_target(lidar_m, drone_pos_w, vehicle_quat, lidar_camera_gate)
         )
         fused_visible = visible | lidar_visible
         fused_surface = torch.where(lidar_visible, lidar_surface, surface_range)

@@ -1351,6 +1351,12 @@ class NavRLTask(BaseTask):
             "cfg_detection_dropout": float(
                 getattr(self.perception_cfg, "detection_dropout_prob", 0.0)
             ),
+            "cfg_detection_latency_s": float(
+                getattr(self.perception_cfg, "detection_latency_s", 0.0)
+            ),
+            "cfg_range_error_m": float(
+                getattr(self.perception_cfg, "range_error_m", 0.0)
+            ),
             "cfg_rgb_noise_std": float(
                 getattr(self.perception_cfg, "rgb_noise_std", 0.0)
             ),
@@ -2014,6 +2020,16 @@ class NavRLTask(BaseTask):
                     "cfg_detection_dropout",
                     float(getattr(self.perception_cfg, "detection_dropout_prob", 0.0)),
                     "NAVRL_DETECTION_DROPOUT",
+                ),
+                (
+                    "cfg_detection_latency_s",
+                    float(getattr(self.perception_cfg, "detection_latency_s", 0.0)),
+                    "NAVRL_DETECTION_LATENCY_S",
+                ),
+                (
+                    "cfg_range_error_m",
+                    float(getattr(self.perception_cfg, "range_error_m", 0.0)),
+                    "NAVRL_RANGE_ERROR_M",
                 ),
                 (
                     "cfg_rgb_noise_std",
