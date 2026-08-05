@@ -51,6 +51,11 @@ python3 tools/update_status_snapshot.py
 # -> docs/status/status.json  +  the fallback block in docs/status/index.html
 ```
 
+On a fresh clone this exits 2 with "refusing to write: no runs found" — that is
+correct, not a bug. `runs/` is gitignored, so a cloud/mobile agent has no run
+evidence and writing would erase the published history. Steps 1 and 5 therefore
+belong on the training workstation.
+
 Then read `status.json` (small) for the latest run + curves. Do NOT read individual
 run files yourself — that is the subagents' job.
 

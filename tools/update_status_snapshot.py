@@ -17,6 +17,7 @@ import math
 from pathlib import Path
 import re
 from statistics import fmean
+import sys
 from typing import Any, Dict, Iterable, List, Optional
 
 
@@ -2498,7 +2499,32 @@ def write_snapshot(status: Dict[str, Any]) -> None:
 
 
 def main() -> int:
+    import argparse
+
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--allow-empty",
+        action="store_true",
+        help="write even when no local run evidence is visible (almost never correct)",
+    )
+    args = parser.parse_args()
+
     status = build_snapshot()
+    # runs/ is gitignored, so a fresh clone -- a Cursor cloud/mobile agent, or any
+    # machine that has not trained -- sees zero runs. Writing then silently strips
+    # the published run history and latest_run, and publishing that wipes the site.
+    if status["n_runs"] == 0 and not args.allow_empty:
+        print(
+            "[status] refusing to write: no runs found under\n"
+            f"  {RUNS_ROOT}\n"
+            "runs/ is gitignored, so this is expected on a fresh clone (cloud/mobile\n"
+            "agent). Publishing an empty snapshot would erase the dashboard's run\n"
+            "history. Run this on the training workstation, or pass --allow-empty if\n"
+            "you really intend an empty dashboard.",
+            file=sys.stderr,
+        )
+        return 2
+
     write_snapshot(status)
     active = status.get("active_run")
     print(
