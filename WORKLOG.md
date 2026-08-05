@@ -5420,3 +5420,672 @@ PYTHON=/home/joshuali/miniconda3/envs/aerialgym/bin/python \
 - ttc_sector를 v2 기본 obstacle selector 후보로 승격 검토 (3070에서 동일 A/B 재현 여부 별도)
 - 1650 결과는 3070 recovery curriculum 수치와 **섞지 않음**
 
+## 2026-08-02 — 205막대 중간 held-out 평가·문헌 밀도 대조·안전 재개
+
+사용자가 70% gate를 영원히 넘지 못할 추세인지 물어 현재 3070 학습을 변경 없이 감사했다.
+실제로는 130에 정체된 것이 아니라 `130→145→160→175→190→205`까지 이미 다섯 번 승급했다.
+승급 window는 각각 130 **0.747**, 145 **0.723**, 160 **0.708**, 175 **0.700**,
+190 **0.704**였다. 205의 완결된 16,384-episode windows는 **0.647→0.659→0.670**으로
+상승 중이고, ep20700 checkpoint의 진행 중 evidence는 `4,129/6,063=0.681`이었다.
+
+### 중간 평가
+
+동일 GPU 동시평가는 VRAM이 부족하므로 trainer를 SIGINT로 중단했다. 마지막 안전 checkpoint
+`last_gen_ppo_ep_20700_rew_27.684727.pth`(SHA-256
+`c08d9d527430e2633fdec9bb2dba08aade2a89d1bced0cf0250644b87d605015`, rollback 0)를
+seed 42, 128 env, 205 bars, full 6–28 m/FOV, moving target `U[0.3,1.5]`, 2,049 episodes로 평가했다.
+
+| 지표 | ep20700 @ 205 bars |
+|---|---:|
+| capture | **71.89% (1,473/2,049)** |
+| crash | **26.99% (553/2,049)** |
+| timeout | **1.12% (23/2,049)** |
+| task-input OOB | **0% (전 축)** |
+| lateral edge98 | **3.85%** |
+
+capture Wilson 95% CI는 약 **69.90–73.79%**다. 같은 recovery 계보의 130-bars 75.74%보다
+**−3.86 pp**(독립비율 근사 95% CI `−6.55..−1.17 pp`)로 밀도 증가 비용은 유의하지만,
+held-out point estimate는 70% gate를 넘는다. crash의 97.83%는 bar contact다. 결과 경로는
+`train_session_logs/eval_v2_ppo_260801_1235_navrl_v2-recover-curriculum-s1_260802_001543/`이다.
+
+### NavRL/NavRL++ 및 유사 연구와의 정량 대조
+
+- 현재 205 bars는 40×40 m에서 **12.81 static/100m²**다. NavRL++ 평가는 같은 40×40 m에서
+  static 300/350/400(**18.75/21.88/25.00 per 100m²**)와 dynamic 60/80/100을 더한다.
+  NavRL++ high-complexity SR은 static **99.84%**, dynamic **83.96%**다.
+- 원 NavRL은 50×50 m, static350+dynamic60/80/100/120에서 curriculum peak SR
+  **94.33/82.71/80.96/68.65%**, dynamic obstacle 승급 기준은 80%였다.
+- Safe-RL time-optimal flight는 unseen 최난도(장애물 간격 1–3 m) 성공률 **66.7%**,
+  differentiable-physics agile flight는 별도 waypoint/forest 기준 **90%**, privileged-ToA RL은
+  large-obstacle photorealistic 환경 **86%**를 보고한다.
+
+따라서 우리 71.89%는 유사 학습형 비행 연구 범위 밖의 실패 수치는 아니지만 NavRL++ dynamic보다
+약 12.1 pp 낮다. 동시에 우리 density 자체는 NavRL++ S1 static보다 31.7% 낮으므로 “장애물이 더
+많아서 낮다”로 설명할 수 없다. 다만 우리 과제는 알려진 고정 goal/goal-aligned action이 아니라
+가려지는 이동 표적을 RGB-D/LiDAR로 찾아 0.5 m 내 요격하고, full-height bars라 수직 우회가
+불가능하다. 논문 SR과의 차이는 density뿐 아니라 target-search/identification, success radius,
+행동 좌표계와 안전 shield 차이를 포함하므로 직접 순위표로 사용하지 않는다.
+
+### 판정 및 재개
+
+205 held-out가 이미 70%를 넘고 training gate windows도 +1.15 pp/window 추세라 현재 시점에 gate를
+낮추거나 구조를 바꾸지 않는다. 다만 단순 선형 외삽의 다음 window는 약 0.682라 즉시 승급을
+보장하지는 않는다. 2개 완결 window를 더 보고도 0.68 부근이면 stochastic gate와 deterministic
+held-out의 차이를 curriculum 설계 문제로 다룬다.
+
+평가 후 `RECOVERY_MODE=continue`로 ep20700에서 재개했다. 새 run은
+`ppo_260802_0020_navrl_v2-recover-curriculum-continue-s1`; 205 bars와 기존 density evidence
+`6063/16384`, task-step 662,400, LR `5e-6`, rollback 0을 정확히 복원했고 정상 학습 중이다.
+
+### 02:00 재시작 효과 재검산 및 live TensorBoard 단일화
+
+재시작 뒤 좋아 보이는 현상을 동일 205-bars 구간끼리 비교했다. 이전 run 마지막 100 epoch
+capture는 **69.55%**, continuation 최신 100 epoch는 **69.57%**로 사실상 같다. continuation 전체
+평균 69.10%가 이전 205-bars 전체 평균 66.37%보다 높아 보이는 이유는 이전 평균에 205로 막
+승급한 초기 적응 구간이 포함되기 때문이다. 재시작 직후 episode 통계 버퍼/환경이 리셋되어 작은
+분모의 단일 epoch가 10–86%로 크게 흔들린 효과도 있다. actor/optimizer/LR/evidence는 checkpoint에서
+복원됐으므로 재시작 자체가 정책을 개선한 것은 아니다.
+
+continuation에서 새로 완결된 gate windows는 **0.685→0.693→0.688**이다. 이전 세 window의
+0.647→0.659→0.670보다는 좋아졌지만 최신 세 개는 약 0.689 plateau다. 독립 Bernoulli 근사에서
+진짜 성공률 0.689로 16,384회 표본이 0.700 이상 나올 확률은 약 0.1% 수준이다(실제 PPO 표본은
+상관되어 이 수치를 정확한 p-value로 쓰지 않음). 따라서 max epoch까지 무조건 방치하지 않고
+**다음 완결 window 하나**를 decision point로 둔다. 통과하면 220으로 계속하고, 다시 <0.70이면
+205 held-out 71.89%와 stochastic gate의 불일치를 curriculum-control 문제로 다룬다.
+
+학습을 중단하지 않고 다음 세 summaries를 symlink-only merged view로 만들었다.
+
+- `ppo_260801_1150_navrl_v2-recover-smoke-130bars-s1` (9501–9600)
+- `ppo_260801_1235_navrl_v2-recover-curriculum-s1` (9601–20746)
+- `ppo_260802_0020_navrl_v2-recover-curriculum-continue-s1` (20701–live)
+
+TensorBoard에서 **`_merged_navrl_v2_recovery_live` 하나만 선택**하면 된다. active event file의
+심볼릭 링크라 학습 중에도 자동 갱신된다. 원본 두 run이 갈린 이유는 safe resume가
+`--branch_run`으로 새 artifact/contract 경계를 보존하기 때문이며, 원본을 한 폴더에 직접 이어
+쓰지 않는다. ep20701–20746 중복 46 step은 ep20700 checkpoint로 되돌아 실제 재학습된 구간이라
+merged view에도 가공 없이 남긴다.
+
+### 02:28 live PPO KL 점검
+
+학습은 중단하지 않고 continuation run의 ep20701–22729 TensorBoard 원자료를 재검산했다.
+`ppo/kl`은 최신 **0.00301**, 최근 100/500 epoch 평균 **0.00235/0.00244**이고 최근 500 epoch
+선형 기울기는 100 epoch당 **−0.00000024**로 사실상 평탄하다. immutable behavior policy 기준의
+최종 epoch audit인 `ppo/behavior_kl_audit_max`도 최근 500 평균 **0.00514**, 전체 최대
+**0.01241**로 rollback gate **0.04**의 31% 이하였다. ep20701 이후 KL skip/epoch rollback은
+모두 0이고 LR은 `5e-6` 고정이다. 따라서 현재 그래프의 국소 상승은 발산이 아니라 minibatch와
+episode 구성에 따른 정상 변동이며, `behavior_kl_sample_max`는 전체 표본 중 단일 극값이라
+평균 policy drift 판정에 사용하지 않는다. merged view에는 checkpoint 재학습 구간
+ep20701–20746의 중복 step도 있어 해당 짧은 구간의 선 모양은 해석에서 제외한다.
+
+### 03:05 dashboard 전면 감사·데이터 동기화
+
+사이트를 현재 실행 중인 v2 상태와 대조해 전면 점검했다. `tools/update_status_snapshot.py`를 다시
+실행해 `docs/status/status.json`과 HTML fallback을 **69개 run / active
+`ppo_260802_0020_navrl_v2-recover-curriculum-continue-s1` / ep23190 / 205 bars** 기준으로
+동기화했다. 당시 live tail은 capture **69.58%**, crash **28.04%**, timeout **2.38%**이며,
+이 값은 held-out 또는 16,384-episode promotion 결과가 아닌 진단용 tail임을 사이트에 명시했다.
+
+정적 수치 검수에서 과거 85-bar 정책 곡선의 OOD 경계가 현재 active curriculum bars로 잘못
+칠해지던 문제를 수정했다. `corrected_chirality_density_curve.trained_max_bars=85`를 메타데이터로
+고정하고, 85 초과 셀은 historical held-out/generalisation으로 표시한다. 과거 speed/FOV/ceiling
+자료에도 각각 historical·pre-heading-fix·not-active-v2 문구를 추가해 현재 40×40×3 m,
+full-width `navrl_band`, 70–300 bars, target 0.3–1.5 m/s 계약과 섞이지 않게 했다. Architecture
+도식의 bars/arena/target-speed/LR 표기도 status 데이터 및 v2 계약과 맞췄다.
+
+UI 감사 결과도 반영했다. 헤더에 `v2 · LIVE · bars · capture` 컨텍스트와 데이터 freshness를
+추가하고, live tail과 promotion gate를 분리했다. 오프라인/HTTP 실패 시 `FALLBACK · offline
+snapshot`으로 바뀌도록 해 stale live 오인을 막았다. 기준표의 긴 문장이 데스크톱에서 잘리지
+않도록 고정 레이아웃·자동 줄바꿈을 적용하고, 키보드 skip-link/focus outline, 가로 스크롤 탭,
+작은 화면의 2열 metrics·긴 run명 말줄임·패널 폭 제한을 추가했다. Threads 링크는 공개 SSR에서
+실제 레퍼런스 갤러리 UI가 노출되지 않고 “빈 배경과 텍스트만 남는 디자인을 피하자”는 설명만
+확인되어, 특정 화면을 복제하지 않고 현재 대시보드의 정보 위계·상태 배지·시각적 증거(3D/곡선/
+도식)를 강화하는 방향으로 반영했다.
+
+검증: `node tests/test_status_arena_motion.js` PASS, aerialgym Python으로 status 관련 unittest
+**9개 PASS**, `py_compile`, `git diff --check` PASS, Chrome desktop/mobile 렌더 및 dynamic DOM
+값(`205 bars`, `69.6%`, `40×40×3 m`, `LR 5e-6`) 확인. 현재 학습 프로세스는 건드리지 않았다.
+
+### 03:46 ep30000 종료 후 실패·한계 감사 사전등록
+
+사용자 요청에 따라 현재 recovery continuation을 중단·변경하지 않고 종료까지 보존한 뒤, 다음 학습
+직전까지 실패 원인과 achievable limit을 수치 우선으로 분석한다. 분석 계획·반증 기준·다음 학습 허가
+게이트를 `RESEARCH_PLAN.md` §8에 사전등록했고, `CLAUDE.md`, `OPERATIONS.md`, `README.md`,
+`CRASH_TUNING_LOG.md`의 현재 상태와 함정을 동기화했다.
+
+사전등록 시점의 process는 PID 2979738, run
+`ppo_260802_0020_navrl_v2-recover-curriculum-continue-s1`, ep23819/30000, 205 bars다. 완결 gate
+window는 **0.685, 0.693, 0.688, 0.691, 0.690, 0.694**로 6회 연속 0.70 아래다. 이는 plateau
+가설을 강하게 만들지만 아직 최종 checkpoint held-out 결과가 아니므로 학습 실패로 확정하지 않는다.
+
+동시 진단 snapshot은 2,049 episodes에서 capture/crash/timeout **0.651/0.333/0.017**,
+crash 중 bar contact **95.3%**, obstacle token은 FOV 내 bars 32.4 대비 unique **3.8**,
+hit-token-given-FOV **0.893**, action signed-y **0.762**, task-input OOB 전 축 0이었다. 종료 뒤
+deterministic/stochastic 격차, mirrored 좌우 대칭성, v2 40×40 실제 geometry 연결성, density별 망각,
+PPO KL/entropy/EV와 이중 token 압축을 각각 분리한다.
+
+canonical lineage는 smoke ep9501–9600 + curriculum ep9601–20700 + continuation ep20701–종료다.
+첫 curriculum run의 ep20701–20746은 ep20700 checkpoint에서 재학습된 중복이므로 최종 통계에서
+제외한다. 다음 메인 학습은 artifact 동결, held-out, dominant failure 한 층 식별, 단일 변경 설계,
+1650 Ti smoke/paired 평가가 모두 끝난 뒤에만 허가한다.
+
+## 2026-08-02 — recovery curriculum 안전 종료·ep24000 동결·최종 한계 감사
+
+사용자가 “할 만큼 했다”고 결정해 continuation trainer에 SIGINT를 보내 안전 종료했다. run summary는
+`exit_reason=interrupted`, 마지막 기록 epoch는 24010이며 관련 학습 PID가 모두 사라진 것을 확인했다.
+TensorBoard만 유지했고 새 학습은 시작하지 않았다. 50-epoch 주기의 마지막 durable artifact는 다음이다.
+
+- run: `ppo_260802_0020_navrl_v2-recover-curriculum-continue-s1`;
+- checkpoint: `nn/last_gen_ppo_ep_24000_rew_44.73549.pth`;
+- size/SHA-256: 8,873,939 bytes /
+  `82f7978b42d9d9e95adcc638a40ae85fb3736fd897ae39cb8aa8333be39cf23f`;
+- canonical lineage: smoke 9501–9600 + curriculum 9601–20700 + continuation 20701–24010,
+  총 **14,510 epoch = 59,432,960 samples**. 옛 run의 중복 20701–20746은 제외했다;
+- 205 bars: 19,101–24,010, **4,910 epoch = 20,111,360 samples**, 완결 hold 10회.
+
+### 205-bar plateau
+
+완결 gate window는 `0.647, 0.659, 0.670, 0.685, 0.693, 0.688, 0.691, 0.690, 0.694,
+0.685`였다. 최근 7회 평균은 **68.94%**, 각각 최소 16,384 episodes다. tail1000은 69.02%, 추세가
++0.79 pp/1000 epoch였으나 이미 20.1M samples를 쓴 상태에서 0.70 gate를 안정적으로 넘을 증거가 없어
+동일 curriculum 연장을 종료했다.
+
+### 동결 checkpoint held-out (deterministic, seed 42)
+
+| bars | /100m² | n | capture (Wilson 95%) | crash | timeout | bar contact/all |
+|---:|---:|---:|---:|---:|---:|---:|
+| 130 | 8.125 | 2,049 | 84.77% [83.15, 86.26] | 12.74% | 2.49% | 11.18% |
+| 160 | 10.000 | 2,050 | 79.66% [77.86, 81.34] | 16.88% | 3.46% | 15.61% |
+| 190 | 11.875 | 2,049 | 73.99% [72.04, 75.84] | 22.65% | 3.37% | 21.43% |
+| **205** | **12.812** | **2,050** | **72.44% [70.46, 74.33]** | **25.07%** | **2.49%** | **24.29%** |
+| 220 | 13.750 | 2,050 | 68.49% [66.44, 70.46] | 29.76% | 1.76% | 28.78% |
+
+205–220 선형 보간의 deterministic 70% crossing은 약 214.3 bars지만 hard limit 증명으로 쓰지 않는다.
+
+### 동일 205 checkpoint의 action-mode A/B
+
+| action mode | n | capture | crash | timeout | lateral edge98 |
+|---|---:|---:|---:|---:|---:|
+| deterministic mean | 2,050 | **72.44%** | **25.07%** | 2.49% | 3.37% |
+| stochastic sample | 2,049 | **67.35%** | **30.41%** | 2.24% | 7.08% |
+
+deterministic−stochastic capture는 **+5.09 pp**(근사 95% CI +2.28..+7.89), crash는
+**−5.33 pp**(−8.07..−2.60)다. online gate는 오류가 아니라 sampled training policy를 측정하고 있었다.
+deployment mean이 더 좋은 것도 사실이므로 두 수치를 함께 보고하고 하나로 대체하지 않는다.
+
+거리별 deterministic capture는 6–11.5 m **81.42%**에서 22.5–28 m **61.41%**로, stochastic은
+75.35%→55.06%로 떨어졌다. 최고속 stochastic bin은 64.26%였다. timeout이나 정지보다 긴·빠른
+trajectory에서 누적되는 bar contact가 지배적 실패다.
+
+### 기각·유지한 가설
+
+- **H-GEOM 주원인 기각**: v2 `navrl_band`를 그대로 미러링한 100-seed audit에서 205 bars/0.2 m
+  clearance crossing 100%, largest component 99.915%, random-pair connectivity 99.831%, fallback 0;
+- **H-PPO 주원인 기각**: tail500 KL 0.00236, behavior-KL max 0.01322 < rollback 0.04, LR 5e-6,
+  EV 0.789, rollback/skip/action-input OOB 0;
+- **stall/timeout 하향**: 평균 speed 약 2.37 m/s, commanded stall 약 3.2%, timeout 2–3%;
+- **단순 8-token capacity 단정 정정**: actor에는 obstacle token 외에 4×72 static scan CNN과 history가
+  들어간다. 열린 문제는 dense geometry를 위험순으로 이용하는지다;
+- **좌우 편향 미해결**: signed-y는 크지만 좌우 mirror pair가 없으므로 chirality 결함으로 확정하지 않음.
+
+### 코드·분석 산출물과 다음 결정
+
+- `tools/analyze_navrl_v2_postrun.py` + `tests/test_navrl_v2_postrun.py`;
+- v2 geometry mirror `tools/analyze_navrl_density_feasibility.py` + regression test;
+- evaluator에 explicit deterministic/stochastic action mode와 speed/distance/pattern strata 추가;
+- selector provenance에 configured/effective FOV와 suppress active/inactive를 분리. TTC는 실제 360° 후보,
+  cluster/TTC에서는 suppress가 비활성임을 checkpoint/log에 기록;
+- fixed-density preflight가 `205→205` 계약 옆에 과거 기본 밀도 `4.4→18.8/100m²`를 하드코딩해
+  출력하던 표시 오류를 수정해 실제 start/final bars에서 동적으로 계산;
+- rear target을 centered로 세던 context diagnostic 수정, 72-ray reflection index의 2-bin(10°) skew 수정;
+- 최종 보고: `results/navrl_v2_ep24000_limit_audit.{json,md}`,
+  중간 상세: `results/navrl_v2_ep24000_postmortem.{json,md}`;
+- NavRL 회귀 테스트 **75개 PASS**.
+
+다음 실험은 동결 ep24000의 fixed-205 `cluster_sector` 대 `ttc_sector` 단일변수 A/B다. arm당
+4,096,000 samples로 맞추고, 같은 profile baseline 대비 capture +2.0 pp 이상과 crash -2.0 pp 이하를
+동시에 요구한다. launcher `train_navrl_v2_ep24000_ttc_ab.sh`는 main/4GB preflight를 통과했지만
+**아직 학습을 시작하지 않았다**. 이 A/B가 실패할 때만 action-noise 축으로 이동한다.
+
+사이트 snapshot도 final-audit 데이터로 전환해 `active_run=null`, `FINAL AUDIT`, ep24000 frozen,
+205 deterministic/stochastic 수치와 다음 실험이 “prepared, not started”임을 표시한다.
+
+## 2026-08-02 — 감사 완료 범위 정정 및 mirror 검증을 평가-only로 확정
+
+사전등록 §8과 실제 산출물을 다시 대조한 결과, density/action/PPO/geometry의 **핵심 감사**는 끝났지만
+mirror pair, 두 번째 seed, 고정속도 0.3/0.9/1.5 m/s, 망각 비교, target-trajectory reachability,
+1650 Ti fixed-205 실기 gate는 남아 있었다. 따라서 보고서·사이트의 `analysis complete`/`FINAL AUDIT`
+표현은 증거보다 강하다고 판정했다.
+
+- machine-readable status를 `training-stopped-core-audit-complete`로 변경;
+- 사이트 상태를 `CORE AUDIT · causal checks pending`으로 변경;
+- `RESEARCH_PLAN.md`의 “현재 max_epochs=30000까지 관측” 문장을 작성 당시 사전등록으로 명확히 하고,
+  실제 ep24010 사용자 중단과 남은 검증을 §8.7에 구분;
+- fixed-205 TTC A/B는 준비됐지만 아직 학습 허가 전임을 CLAUDE/README/OPERATIONS/CRASH 문서에 통일.
+
+다음 1순위는 frozen ep24000의 **mirror-paired 평가**다. 이 단계는 inference-only이며 optimizer step,
+gradient, running-stat 갱신, checkpoint 저장을 하지 않는다. 원본/좌우 반전 조건의 capture/crash,
+action-y sign과 sign-equivariance만 측정한다. 즉 **평가만 하고 학습은 하지 않는다.** 결과가 좌우
+대칭이면 TTC A/B 후보를 유지하고, 유의한 비대칭이면 새 학습 전에 좌표/정책 대칭 문제를 먼저 다룬다.
+
+재생성·검증: NavRL unittest **79개 PASS**, status unittest **9개 PASS**, arena-motion parity PASS,
+Chrome 실제 DOM에서 `CORE AUDIT`, `MIRROR EVAL`, `evaluation only; frozen weights; no training` 확인.
+학습·평가 프로세스는 시작하지 않았다.
+
+## 2026-08-02 — 동결 ep24000 인과검사 1--3 완료: seed 재현 PASS, action chirality 확인
+
+사용자 요청에 따라 §8.8에 체크포인트 SHA·조건·표본·판정 margin을 **결과를 보기 전에** 등록하고
+1) 문서/사이트 정합성, 2) 좌우 반사, 3) 205-bar 두 번째 seed까지 수행했다. 모든 GPU 작업은
+inference-only였으며 optimizer/gradient/input RMS/checkpoint 저장을 수행하지 않았다. 학습 프로세스는
+없다. 대상은 ep24000 SHA-256 `82f7978b42d9d9e95adcc638a40ae85fb3736fd897ae39cb8aa8333be39cf23f`다.
+
+### 반사 평가 구현·검증
+
+- `navrl_players.py`에 `NAVRL_EVAL_REFLECTION_MODE=original|conjugate`를 추가했다. conjugate는
+  raw structured observation을 `M`으로 반사해 `pi(Mo)`를 계산하고 body action을 다시 `M`으로
+  되돌린 `M pi M`을 원래 물리계에 실행한다.
+- 같은 실제 observation에서 `pi(o)`와 `pi(Mo)`를 동시에 계산해 action pair를 저장한다. 진단용 두
+  번째 forward가 torch RNG를 소비해 이후 환경 reset을 바꾸지 않도록 `fork_rng`로 난수 상태를
+  복원했다.
+- evaluator result/receipt/CSV에 reflection mode를 넣고, checkpoint/evaluator byte·nonce·physics·episode
+  accounting 검증을 유지했다. `run_header.py`는 평가 seed43을 YAML 기본 42로 잘못 표시하던 것을
+  `NAVRL_SEED` 우선으로 수정했다.
+- 비동기 reset 뒤 outcome은 episode-paired가 아니므로 common-seed aggregate라고 명시했다. 이 한계를
+  보완하려고 reset 순간 actor-frame initial target bearing을 negative/centered/positive-y로 기록했고,
+  계측 재생의 outcome counts가 기존 4,096회와 완전히 같지 않으면 실패하도록 했다.
+
+### 수치 결과
+
+| 검사 | 조건 | 결과 |
+|---|---|---|
+| original `pi` | seed42, 205 bars, n=4,096 | capture/crash/timeout **70.97/25.71/3.32%** |
+| conjugate `M pi M` | 같은 조건, n=4,096 | **70.17/26.56/3.27%** |
+| mirror outcome 차이 | conjugate-original | capture **-0.81 pp** (95% CI -2.78..+1.17), crash +0.85 pp (-1.05..+2.76) |
+| exact action pair | 548,736 observations | MAE `[x,y,z,yaw]=[0.926,1.235,0.416,1.002]`; lateral sign mismatch **73.08%** |
+| initial target bearing | negative-y 1,967 / positive-y 2,008 | capture **71.17/70.97%**, 차이 -0.21 pp (-3.03..+2.61) |
+| second seed | seed43, n=2,049 | capture/crash/timeout **72.77/24.74/2.49%** |
+| seed replication | seed43-seed42 | capture **+0.33 pp** (95% CI -2.40..+3.06), 사전등록 gate **PASS** |
+
+반사 observation schema를 898차원 전부 재검수했다. static scan index `i→-i mod H`, obstacle y/vy,
+robot vy/yaw-rate/previous-y/previous-yaw, target y/vy 외 필드는 reflection invariant이며 누락을 찾지
+못했다. checkpoint input RMS는 mirror mean MAE 0.0317, robot-history mean 0.3243, scan variance 상대
+MAE 11.9%로 이미 좌우 비대칭 방문분포를 흡수했다.
+
+판정은 두 층으로 나눈다. 현재 대칭 arena에서 seed/초기 bearing/mirror aggregate **성공률 차이는
+검출되지 않았고 seed 재현은 PASS**다. 그러나 정책은 좌우 반사-equivariant하지 않고 거의 한 방향으로
+우회하는 습관을 학습했다. 이는 현재 분포에서는 outcome-neutral이지만 asymmetric layout/domain shift에
+취약할 수 있으므로 H-BIAS를 `action-level supported / outcome gap not detected`로 변경한다. 대칭분포에서
+`pi`와 `M pi M` aggregate가 같다는 사실만으로 정책 대칭을 주장하지 않는다.
+
+산출물:
+
+- 실행기: `aerial_gym/rl_training/rl_games/eval_navrl_v2_ep24000_causal_1to3.sh`;
+- 요약기: `tools/summarize_navrl_v2_causal_1to3.py`;
+- 결과: `results/navrl_v2_ep24000_causal_1to3/summary.{md,json}`와 arm별 receipt/log/checkpoint snapshot;
+- 사이트 generator는 causal 1--3 결과를 읽어 `CAUSAL 1–3`, seed replication, mirror outcome,
+  action mismatch를 서로 다른 milestone로 표시한다.
+
+검증: shell `bash -n`, Python `py_compile`, NavRL 회귀 **79개 PASS**, bounded-action unittest
+**13개 PASS**, status unittest **9개 PASS**, arena-motion parity PASS, evaluator preflight,
+16-episode conjugate GPU smoke, 본 평가의 checkpoint SHA/receipt/episode accounting PASS. bearing 계측
+재생은 original과 `2907/1053/136` outcome이 byte-level count로 동일했다.
+
+다음은 새 학습이 아니라 fixed target speed 0.3/0.9/1.5 평가와 이전 checkpoint 망각 비교다. 이후
+TTC selector A/B와 reflection augmentation/RMS symmetry는 서로 다른 단일변수 arm으로 설계한다.
+
+## 2026-08-02 — ep24000 고정속도 인과검사 실행 계약 준비
+
+다음 작업을 학습으로 오인하지 않도록 ep24000 동결 정책의 0.3/0.9/1.5 m/s fixed-speed 평가를
+전용 실행기 `eval_navrl_v2_ep24000_fixed_speed.sh`로 만들었다. 205 bars, seed 42,
+deterministic/original, mixed target, 2,049 episodes/cell을 고정하고 checkpoint SHA-256까지 확인한 뒤
+세 cell을 순서대로 실행한다. 결과는 `tools/summarize_navrl_v2_fixed_speed.py`가 계약을 다시 검증하고
+capture/crash/timeout/bar-contact, Wilson CI, 1.5-minus-0.3 capture 차이를 요약한다.
+
+기존 `eval_navrl_v2_density_sweep.sh`는 외부 `NAVRL_TARGET_SPEED`를 무조건 지워 고정속도 실험을 할 수
+없었다. `NAVRL_V2_FIXED_TARGET_SPEED`를 명시한 경우에만 학습 support [0.3,1.5] 안에서 허용하고,
+task bulk JSON의 `target_speed_mode=fixed` 및 point/min/max 세 값이 요청 속도와 같지 않으면 결과를
+거부하도록 수정했다. 값이 없으면 기존 U[0.3,1.5] canonical 평가 계약은 그대로다. recovery-smoke
+attestation에는 fixed-speed override를 금지했다.
+
+`RESEARCH_PLAN.md` §8.10에 실행 전 판정 규칙을 고정했다. 1.5-minus-0.3 capture가 -3.0 pp 이하이고
+독립 비율차 95% CI 상한도 0 미만이면 material speed sensitivity로 판정한다. 이 평가가 끝난 뒤
+이전 checkpoint 망각 비교를 하며, 그 전에는 새 PPO 학습을 시작하지 않는다.
+
+검증: 두 launcher `bash -n`, summary Python `py_compile`, `git diff --check`, fixed 0.9와 기존 uniform
+evaluator preflight PASS, support 밖 2.0 m/s 사전 거부 PASS. 실제 rollout smoke와 본 평가는 아직
+시작하지 않았다.
+
+추가로 0.9 m/s/205 bars/seed42의 16 requested-episode GPU smoke를 수행했다. task 시작 로그가
+`speed_fixed=0.90`, evaluator 계약 로그가 `target=fixed 0.9m/s`였고, bulk JSON은
+`target_speed_mode=fixed`, point/min/max 모두 0.9를 기록했다. evaluator의 nonce, checkpoint/evaluator
+SHA, physics, episode accounting 검증을 거쳐 PASS했다(비동기 env라 actual 17). 이 작은 smoke의
+capture 수치는 성능 근거로 사용하지 않는다. 본 2,049×3 평가는 사용자 실행 전이며 학습 프로세스는
+시작하지 않았다.
+
+## 2026-08-02 — ep24000 고정속도 평가 완료: 고속에서 충돌 병목 확인
+
+사용자 승인 후 `eval_navrl_v2_ep24000_fixed_speed.sh`를 RTX 3070에서 직접 실행했다. 세 cell 모두
+2,049 episodes 정확히 완료했고 checkpoint SHA, evaluator SHA, nonce, base_sim dt=0.01, seed42,
+deterministic/original, fixed-speed point/min/max 계약 검증을 통과했다. 학습/optimizer/RMS/checkpoint
+갱신은 없었다.
+
+| target speed | capture | crash | timeout | bar contact (절대) | lateral edge98 |
+|---:|---:|---:|---:|---:|---:|
+| 0.3 m/s | 73.26% | 23.04% | 3.71% | 22.11% | 2.41% |
+| 0.9 m/s | 72.62% | 25.09% | 2.29% | 24.26% | 3.38% |
+| 1.5 m/s | 67.35% | 30.75% | 1.90% | 29.97% | 4.92% |
+
+1.5-minus-0.3 capture는 **-5.91 pp** (95% CI **-8.70..-3.11**)여서 사전등록한 material
+speed-sensitivity gate를 통과했다. 같은 비교에서 crash +7.71 pp, bar contact +7.86 pp, timeout
+-1.81 pp다. 평균 비행속도는 2.386→2.400 m/s로 거의 그대로인데 command-speed norm은 이미
+2.958→2.969 m/s이고 lateral executed-edge98은 2.41→4.92%로 두 배가 됐다. 즉 고속 표적에서 단순
+timeout이 아니라, 속도 여유 없이 더 공격적인 경계 action을 써서 막대 충돌로 전환되는 것이 핵심이다.
+
+결과는 `results/navrl_v2_ep24000_fixed_speed/summary.{md,json}`과 속도별 JSON/log/receipt에 저장했다.
+다음은 새 학습이 아니라 이전 checkpoint의 동일 205-bar 망각 비교다. fixed-speed cell은 async reset
+뒤 paired rollout이 아니므로 개별 거리 bin의 작은 비단조 차이는 인과효과로 사용하지 않는다.
+
+## 2026-08-03 — ep19100 대 ep24000 망각검사 실행기 준비
+
+205 bars 승급 직전 ep19100과 205 bars에서 4,900 epoch를 더 학습한 ep24000을 비교 대상으로 고정했다.
+단순 uniform 한 cell만으로는 §8.11의 고속 충돌이 망각인지 분리되지 않으므로, 두 checkpoint를
+U[0.3,1.5]와 fixed 1.5 m/s에서 평가하는 2×2 설계로 확정했다. 조건은 205 bars, seed42,
+deterministic/original, mixed target, full 6--28 m, 2,049 episodes/cell이다.
+
+전용 실행기 `eval_navrl_v2_ep19100_vs_ep24000_forgetting.sh`는 두 checkpoint의 SHA-256을 확인하고 네
+cell을 실행한 뒤 `tools/summarize_navrl_v2_forgetting.py`로 계약·outcome accounting을 재검증한다.
+ep24000-minus-ep19100 capture가 -3.0 pp 이하이며 95% CI 상한도 0 미만이면 forgetting, 반대 방향
++3.0 pp와 CI 하한>0이면 improvement로 사전등록했다. 기존 결과 폴더는 덮어쓰지 않는다.
+
+ep19100 checkpoint는 실제 epoch=19100, bars=190, task_steps=611200이고 ep24000은 epoch=24000,
+bars=205, task_steps=768000이다. ep19100을 평가 시 205로 고정하는 uniform/fixed1.5 evaluator preflight가
+모두 PASS했다. 이 단계는 평가-only이며 아직 본 2×2 실행이나 새 PPO 학습은 시작하지 않았다.
+
+## 2026-08-03 — 망각 2×2 완료·사이트 정합성 복구·main TTC A/B 승인
+
+사용자가 실행한 망각검사는 15:29 KST에 네 cell과 summary까지 정상 종료했다. 프로세스와 GPU를 다시
+확인해 학습/평가가 남아 있지 않았고, 각 JSON/receipt의 SHA, seed42, deterministic/original,
+205 bars, U[0.3,1.5] 또는 fixed 1.5, requested/actual ≥2,049 계약이 모두 PASS했다.
+
+| 조건 | ep19100 capture/crash/bar | ep24000 capture/crash/bar | capture Δ (95% CI) |
+|---|---:|---:|---:|
+| uniform | 67.79/31.87/31.67% | 72.44/25.07/24.29% | **+4.65 pp** (+1.85..+7.45) |
+| fixed 1.5 | 64.10/35.61/34.93% | 67.35/30.75/29.97% | **+3.25 pp** (+0.35..+6.16) |
+
+두 조건 모두 preregistered improvement이며 material forgetting=NO다. 205-stage 4,900 epoch는 일반·고속
+성능과 충돌을 개선했으므로 replay/mixture curriculum을 다음 축으로 선택하지 않는다. 남은 병목은
+fixed-speed에서 확인한 고속 bar-contact와 경계 action이다.
+
+사이트 generator가 여전히 `fixed-speed checks pending`, `next training BLOCKED`를 하드코딩하고 있어
+실측과 어긋난 것을 발견했다. fixed-speed/forgetting summary와 1650 Ti TTC CSV를 검증해 읽도록
+`tools/update_status_snapshot.py`를 확장하고, dashboard에 speed -5.91 pp/bar +7.86 pp, no-forgetting,
+1650 TTC PASS, `MAIN 205 TTC A/B READY`를 표시하도록 수정했다. `app.js`의 상단/hero 상태도
+`CAUSAL COMPLETE`로 분리했다. README/CLAUDE/RESEARCH_PLAN/OPERATIONS/CRASH 문서도 같은 결정으로
+동기화했다.
+
+다음 launcher `train_navrl_v2_ep24000_ttc_ab.sh`를 다시 감사했다. source SHA와 ep24000/bars205 계약,
+selector 단일변수, density 고정, sample matching, LR/KL/rollback을 확인했고 main/4GB의 baseline/TTC
+네 preflight가 모두 PASS했다. 다음은 RTX 3070 main baseline 1,000 epoch를 먼저 실행·평가한 뒤 TTC
+1,000 epoch를 순차 실행하는 것이다. 아직 새 학습은 시작하지 않았다.
+
+사이트 재생성은 69 runs, active=none으로 완료했고 `status.json`과 `index.html` inline fallback의
+byte-equivalent JSON parity, `causal_checks_pending=false`, `next_training_authorized=true`를 확인했다.
+검증은 status Python 10개, arena-motion/DOM parity, TTC selector 13개, perception 16개, bounded-action
+13개, shell syntax, `py_compile`, `git diff --check` 모두 PASS했다. action test를 repo root의 unittest
+module 경로로 한 첫 호출은 Isaac Gym import 중 PATH에 ninja가 없어 실패했지만, 해당 테스트의 정식
+working directory/직접 실행으로 13/13 PASS를 확인했다. 이는 코드 실패가 아니라 호출 방식 오류다.
+
+## 2026-08-03 — main fixed-205 baseline 정상 완료·held-out 전 TTC 차단·장기 로드맵 고정
+
+main baseline `ppo_260803_1819_navrl_v2-ep24000-205bars-main-baseline-s1`을 확인했다. ep24001--25000,
+1,000 epoch × 32 × 128 = **4,096,000 samples**를 모두 수행했고 `exit_reason=max_epochs`, bars=205 고정,
+reward collapse=false였다. 현재 학습/평가 프로세스는 없고 GPU는 idle이다. 최종 artifact는
+`runs/ppo_260803_1819_navrl_v2-ep24000-205bars-main-baseline-s1/nn/last_gen_ppo_ep_25000_rew_29.188496.pth`,
+SHA-256 `169ddcddb83c9d74df5c79252274660bc9c52e32d7d5144d325698e32b1d9b08`이다.
+
+TensorBoard 1,000 epoch 전수 집계에서 PPO KL 평균/최대 **0.002439/0.007574**, immutable behavior-KL
+audit 최대 **0.012356 < 0.04**, epoch rollback/rollback-total/KL-skipped minibatch/4축 raw OOB는 모두
+0이었다. 따라서 발산·rollback 실패 가설은 기각한다. 훈련 proxy 전체 평균 capture/crash/timeout은
+**68.41/29.20/2.38%**, 첫100→마지막100은 capture **69.46→67.49%(-1.98 pp)**,
+crash **28.14→30.61%(+2.46 pp)**, timeout **2.39→1.91%**였다. reward는 36.64→38.51이라 collapse는
+아니지만 추가 epoch의 성능 향상 근거도 없다. 마지막 epoch capture 66.67%는 종료 episode 약 18개의
+작은 stochastic training 표본이므로 held-out 결과로 사용하지 않는다.
+
+action은 lateral edge95 평균/tail100 **24.26/25.61%**, edge99 **2.36/2.60%**, mean policy-mu signed-y
+**+1.323**, positive-y sample **94.09%**로 기존 learned chirality가 남았다. 주기적 crashdiag에서 crash의
+약 94--98%는 계속 bar contact였다. 이 수치는 TTC가 해결하려는 위험 정렬 가설을 유지하지만 baseline
+held-out보다 먼저 TTC를 시작할 근거는 아니다.
+
+final checkpoint의 canonical 205 bars / seed42 / deterministic / original / U[0.3,1.5] / 2,049 episode
+evaluator preflight는 PASS했고 실제 평가는 아직 실행하지 않았다. dashboard generator에 이 main A/B
+단계를 추가해 작은 training-tail을 상단 capture로 오표시하지 않고 `BASELINE EVAL PENDING`, TTC blocked,
+4.096M budget을 표시하도록 했다. baseline 결과 artifact가 검증된 뒤에만 TTC arm을 허용한다.
+
+`RESEARCH_PLAN.md §8.15`에 R0 selector A/B → R1 재현/한계 지도 → R2 control-risk → R3 learned
+perception → R4 temporal fusion → R5 다축 robustness → R6 sim-to-real/논문화 장기 로드맵과 gate,
+예상 범위, 사용자/Codex 역할을 고정했다. 현재 navigation/control은 P5 후반--P6 초반이지만 learned
+detector/tracker와 sim-to-real이 남아 전체 논문 증거는 중간 단계다. 사용자의 필수 입력은 GPU 시간 예산,
+두 머신 artifact 이관, 실제 센서/기체 사양, 목표 마감/연구 우선순위 네 가지로 제한한다.
+
+검증은 status snapshot Python **8/8**, arena-motion parity, Python compile, A/B/evaluator shell syntax,
+status.json↔inline fallback byte-equivalent JSON, `git diff --check`를 통과했다. dashboard는 70 runs,
+active=none, latest=main baseline, `BASELINE EVAL PENDING`, heldout=false, TTC blocked로 재생성됐다. 시스템
+Node의 raw `--check`는 기존 app.js 125행의 nullish-coalescing(`??`)을 지원하지 않는 구버전 parser에서
+중단했으며, syntax-only 치환 stream과 실제 arena parity test는 통과했다. 이는 이번 변경의 JS 오류가
+아니라 로컬 Node 버전 제약이다. 첫 A/B snapshot parity 호출은 새 experiment에 표시용
+`cluster_gap_m`이 빠진 것을 검출해 실패했고, 0.45 m와 8 sectors를 복구한 뒤 전체 검증을 다시 통과시켰다.
+
+## 2026-08-04 — main baseline held-out 완료: 안정적 PPO 속 느린 action drift 확인
+
+사용자가 완료한 `results/navrl_v2_ep24000_ttc_main_baseline/205bars.json`을 독립 검증했다. requested/actual
+episode는 2,049/2,049이고 checkpoint·snapshot SHA는 모두
+`169ddcddb83c9d74df5c79252274660bc9c52e32d7d5144d325698e32b1d9b08`로 ep25000 final과 일치했다.
+result/receipt/log digest, nonce, outcome 합, seed42, 205 bars, deterministic/original, mixed,
+U[0.3,1.5], full 6--28 m, `cluster_sector`, main/base_sim/128 env 계약도 모두 PASS했다.
+
+| checkpoint | n | capture | crash | timeout | bar contact | lateral edge98 | vertical edge98 |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| ep24000 source | 2,050 | 72.44% | 25.07% | 2.49% | 24.29% | 3.37% | 0.01% |
+| ep25000 matched baseline | 2,049 | **69.50%** | **28.99%** | 1.51% | **27.82%** | **5.03%** | **3.20%** |
+| Δ | — | **-2.94 pp** | **+3.92 pp** | -0.97 pp | **+3.53 pp** | +1.67 pp | +3.19 pp |
+
+독립 비율차 95% CI는 capture **-5.72..-0.16 pp**, crash **+1.20..+6.63 pp**, timeout
+**-1.83..-0.12 pp**다. 거리 q0/q1/q2/q3 capture는 81.15/74.77/66.79/57.87%, CV/waypoint는
+66.90/71.94%, 초기 bearing negative/positive는 69.47/69.47%로 outcome 좌우 비대칭은 여전히 없다.
+crash의 570/594=95.96%는 bar contact다.
+
+이 결과는 ep24001--25000의 KL max 0.00757, behavior-KL max 0.01236, rollback/OOB 0과 함께 읽는다.
+가설 “PPO 발산 때문에 악화”는 기각하며, 작은 update가 누적된 fixed-density control/action drift를
+지지한다. KL guard는 급성 collapse만 막고 held-out drift는 막지 못한다. 따라서 baseline 연장이나
+best training reward 선택은 금지한다.
+
+TTC 결과를 보기 전에 기존 primary A/B gate를 절대값으로 동결했다: capture **≥71.50%**, crash
+**≤26.99%** 동시다. 다만 이 gate만 통과하면 ep24000보다 약간 나쁠 수 있으므로 canonical replacement
+floor를 capture **≥72.44%**, crash **≤25.07%**로 별도 등록했다. primary만 통과하면 selector의 상대적
+효과는 인정하되 원본보다 우수하다고 주장하지 않는다. main TTC launcher가 baseline result/receipt/
+snapshot/log SHA와 계약을 실행 전에 재검증하도록 수정했다. 현재 학습/평가 프로세스는 없고 GPU는 idle다.
+
+실제 `ARM=ttc PROFILE=main NAVRL_PREFLIGHT_ONLY=1`은 baseline artifact 검증, ep24000 source SHA,
+fixed-205/same-sample 계약을 모두 통과했고 학습은 시작하지 않았다. dashboard는 70 runs, active=none,
+`TTC ARM READY`, baseline held-out 69.50/28.99%, primary gate와 canonical replacement floor를 표시하도록
+재생성했다. status Python 9/9, arena-motion parity, shell syntax, Python compile, JSON fallback parity,
+`git diff --check`를 통과했다. 첫 합성 baseline-unlock 테스트는 임시 result root가 repo 밖이라
+`relative_to(ROOT)`가 실패하는 이식성 문제를 잡았고, 외부 경로도 안전하게 절대경로로 표시하도록 고친 뒤
+9/9를 다시 통과시켰다.
+
+## 2026-08-05 — main TTC held-out 완료: current mode FAIL, ranking-only 인과효과 판정 불가
+
+TTC run `ppo_260804_0813_navrl_v2-ep24000-205bars-main-ttc-s1`은 ep24001--25000/4.096M samples를
+`max_epochs`로 정상 완료했다. final 일반 checkpoint
+`last_gen_ppo_ep_25000_rew_38.369205.pth` SHA-256은
+`14e4c72a744c9bedc2d07556e5aebdbef21a184c9f9b8239bc1a23d45e20823e`다. 함께 저장된 double-underscore
+파일은 직렬화 SHA만 달랐고 381개 tensor, env_state, epoch/frame이 전부 동일했다. 평가는 기존 convention의
+일반 파일을 사용했다.
+
+training TensorBoard 전수 감사에서 PPO KL 평균/최대 0.00247/0.00731, behavior-KL audit 최대 0.01189,
+rollback/OOB 0이었다. training proxy 첫100→끝100은 capture 55.77→65.75%, crash 43.84→33.59%였으나
+held-out 판정에는 사용하지 않았다.
+
+`results/navrl_v2_ep24000_ttc_main_ttc/205bars.json`은 checkpoint/snapshot/result/receipt/log SHA,
+nonce, outcome 합, seed42, 205 bars, deterministic/original, U[0.3,1.5], `ttc_sector`,
+main/base_sim/128 env를 모두 PASS했고 requested 2,049보다 많은 실제 2,051 episodes를 완료했다.
+
+| 정책 | n | capture | crash | timeout | bar contact | edge98 x/y/z | 실제 속도 |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| ep24000 source | 2,050 | 72.44% | 25.07% | 2.49% | 24.29% | 23.61/3.37/0.01% | 2.394 m/s |
+| matched cluster baseline | 2,049 | 69.50% | 28.99% | 1.51% | 27.82% | 26.25/5.03/3.20% | 2.436 m/s |
+| TTC mode | 2,051 | **70.21%** | **29.50%** | **0.29%** | **28.18%** | 22.46/**7.17**/1.56% | **2.570 m/s** |
+
+TTC-minus-baseline은 capture **+0.71 pp**(95% CI -2.10..+3.52), crash **+0.51 pp**
+(-2.28..+3.29), timeout **-1.22 pp**(-1.80..-0.64)다. capture ≥71.50%와 crash ≤26.99%를 모두
+못 넘어 primary FAIL이며 ep24000 replacement floor도 FAIL이다. ep24000 대비 crash는 +4.42 pp
+(95% CI +1.70..+7.15)다. timeout 감소가 더 높은 속도와 lateral saturation/bar contact로 전환됐다.
+
+사후 코드/provenance 감사에서 `NAVRL_OBSTACLE_SELECTOR` 한 env-var가 바뀌었어도 실제 candidate FOV가
+cluster 240°→TTC 360°로 함께 바뀜을 확인했다. 따라서 과거 “ranking만 분리” 주장은 틀렸고 이번 결과는
+current representation bundle의 FAIL이지 pure TTC ranking 기각은 아니다. 8-token/360°가 고밀도에서
+전방 표현을 희석했다는 설명은 plausible하지만 아직 미검증이다. current TTC를 채택·연장하지 않는다.
+재시험한다면 FOV를 selector와 독립시킨 `ttc240`을 1650 Ti에서 먼저 screen하고, 아니면 R2 control-risk
+inference-only screen으로 이동한다.
+
+최종 정합성 검증에서 dashboard를 71 runs / active=none / `TTC REJECT`로 재생성했다. 사이트 JSON과
+HTML inline fallback은 byte-equivalent payload이고, TTC checkpoint SHA·snapshot SHA·dashboard SHA가
+모두 `14e4c72a744c…`로 일치했다. status snapshot Python **10/10**, arena-motion parity, generator
+`py_compile`, A/B/evaluator shell syntax, `git diff --check`를 모두 통과했다. status test를 처음
+`python -m unittest tests.test_status_snapshot`으로 호출한 것은 `tests`가 package가 아니라 import에
+실패했으며, 정식 직접 실행 `python tests/test_status_snapshot.py`에서 10/10 PASS했다. 이는 제품 코드
+실패가 아니라 테스트 호출 경로 오류다.
+
+## 2026-08-05 — episode horizon 가설 감사: 시간 부족이 아니라 초기 과속 충돌
+
+사용자의 “고밀도에서 속도를 충분히 줄이지 않는다”는 가설을 현재 환경·reward·TTC 로그와 대조했다.
+v2 episode는 **600 RL step = 60 s**(`dt=0.1 s`)이고, TTC run의 주기적 crashdiag에서 bar-contact 평균
+발생 시점은 **74--92 step = 7.4--9.2 s**였다. held-out TTC timeout은 6/2,051=**0.29%**뿐이다.
+따라서 horizon을 900 step으로 늘려도 이미 발생하는 29.50% crash는 줄지 않으며, 모든 timeout이 성공으로
+바뀐다는 비현실적 상한에서도 capture 이득은 +0.29 pp뿐이다. “600-step 시간이 부족해서 충돌한다”는
+가설은 기각한다.
+
+반면 policy가 과속하도록 만드는 구조는 확인됐다. action은 이미 속도를 0까지 낮출 수 있지만 reward는
+매 step closing-speed `vel_weight=1.0`, PBRS progress `progress_weight=1.0`, time cost
+`alive_weight=-0.05`를 함께 사용하고, safety reward는 clearance만 보며 속도/제동거리와 결합하지 않는다.
+TTC held-out의 실제 속도 2.570 m/s, lateral edge98 7.17%, bar contact 28.18%도 시간 부족보다
+**clearance 대비 속도 위험을 표현·억제하지 못함**을 지지한다. horizon만 연장하면 느리게 가는 법을
+가르치지 못하고, 최대 episode의 누적 time cost만 -30→-45로 바뀐다.
+
+결정: canonical 600-step 평가 계약은 유지한다. 다음 변경 전에 frozen ep24000에 sensor-derived
+clearance/stopping-distance 기반 inference-only speed governor를 여러 강도로 screen하고, crash 감소가
+timeout 증가보다 큰지 확인한다. 동시에 contact 전 speed/command/min-clearance/TTC/stopping-margin과
+capture/crash step 분위수를 로깅한다. 이 gate가 유효할 때만 동일 risk margin을 policy action layer 또는
+단일 reward 항으로 학습한다. 600→900 평가는 원하면 timeout 회수 진단으로만 수행하며 성능 해결책으로
+간주하지 않는다. 이번 작업에서는 학습·환경 로직을 변경하지 않았다.
+
+RTX 3070의 실제 receipt에서 205 bars / 2,049 episodes 한 cell은 **3.9--4.4분**, 최근 main A/B
+1,000-epoch/4.096M-sample 학습은 run 시작 시각부터 finalize까지 약 **66--67분**이었다. 이를 기준으로
+contact 전 진단 추가, 실제 제동성능 probe, sensor-only adaptive governor 구현·단위검증, 기존/고정
+2.0/고정 1.5/clearance/TTC 5-cell held-out, 판정·문서화까지의 무학습 1차 gate는 **3--4.5시간**으로
+산정한다. FAIL이면 여기서 종료한다. PASS이면 학습용 action layer 통합, 1,000-epoch matched arm,
+seed/speed 재평가와 최종 분석에 **추가 3--4시간**이 필요해 전체는 **6--8.5시간**, 한 차례 재튜닝까지
+포함한 보수적 상한은 **8--12시간**이다. GPU 순수 점유는 1차 약 0.5시간, PASS 이후 약 1.5--2시간이고
+나머지는 구현·검증·분석 시간이다.
+
+## 2026-08-05 — 8시간 control-risk 루프 완료: sensor-only riskcap 최종 PASS
+
+### 구현·계측과 사전등록
+
+에피소드 시간 가설을 수치로 기각한 뒤 `aerial_gym/task/navrl_task/speed_governor.py`에 off/fixed/
+clearance/ttc/riskcap 다섯 mode를 구현했다. 공통 원칙은 nominal policy 방향을 유지하고 XY magnitude만
+제한하며, 실제 실행된 이전 action을 observation feedback에 넣는 것이다. bulk evaluator에는 requested/
+executed speed, intervention/near-stop, clearance/TTC/stopping margin, contact 직전 speed/command/step을
+추가했다. 실기체가 아니라 simulator 내 action step-response를 측정한
+`results/navrl_v2_speed_governor_braking.json`에서 p10 유효 감속도 **2.9609 m/s²**, p95 정지시간
+**1.0 s**, 정지거리 **1.047 m**를 얻어 riskcap의 3 m activation과 5 m release를 결과 전에 고정했다.
+
+### 두 번의 무효화와 수정
+
+첫 적응 run 감사에서 governor가 표적 LiDAR return을 제외하려고 `segmentation_pixels == 50`을 직접
+사용하는 actor semantic leak를 발견했다. 해당 R2/R2b와 ep24000→24334 checkpoint는 최종 증거에서
+제외하고 `/home/fair/workspaces/aerial_gym_ws/tensorboard_archive/2026-08-05_invalid_semantic_governor/`로
+격리했다. actor perception이 이미 계산하는 카메라 bearing/range–LiDAR association(±15°, ±0.55 m)의
+`last_target_like`만 governor가 재사용하도록 고쳤고 provenance를 JSON/checkpoint/receipt에
+`camera_lidar_association`으로 고정했다.
+
+첫 corrected 재실행에서는 Warp LiDAR row의 실제 수직각 순서가 +20°→-10°인데 governor가 반대로
+투영한 것을 추가로 발견했다. adaptive cell partial은
+`/home/fair/workspaces/aerial_gym_ws/tensorboard_archive/2026-08-05_invalid_vertical_order/`로 격리했고,
+기본 vertical FOV 순서를 `(20.0, -10.0)`으로 수정해 비대칭 수직각 단위 테스트로 잠갔다. archive 자료는
+원인 추적용으로 보존하지만 논문·사이트 수치에는 사용하지 않는다.
+
+### corrected R2와 seed44 R2b
+
+`results/navrl_v2_ep24000_speed_governor_screen/summary.{md,json}`의 유효한 seed42 5-cell 결과:
+
+| mode | n | capture | crash | timeout | bar contact | intervention | executed m/s |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| off | 2,050 | 72.44% | 25.07% | 2.49% | 24.29% | 0% | 2.965 |
+| fixed 2.0 | 2,049 | 78.53% | 16.06% | 5.42% | 15.18% | 97.00% | 1.985 |
+| fixed 1.5 | 2,051 | 74.65% | 16.82% | 8.53% | 15.89% | 99.01% | 1.496 |
+| clearance stop | 2,049 | 69.11% | 14.30% | 16.59% | 13.08% | 46.55% | 1.699 |
+| TTC stop | 2,049 | 69.59% | 6.83% | 23.57% | 5.47% | 57.22% | 1.520 |
+
+complete-stop adaptive는 near-stop 38.60/42.04%로 충돌을 timeout으로 바꿔 GO 없음으로 끝냈다.
+반면 결과 전에 하나만 고른 non-stopping riskcap의 새 seed44 결과
+`results/navrl_v2_ep24000_riskcap_seed44_screen/summary.{md,json}`은 off 72.83/24.63/2.54% 대비
+riskcap **79.55/17.62/2.83%**였다. capture +6.72 pp(95% CI +4.12..+9.32), crash -7.02 pp
+(-9.51..-4.53), intervention 28.74%, near-stop 0%로 네 GO 조건을 모두 통과했다.
+
+### 1,000-epoch 적응 학습
+
+승인된 run은
+`aerial_gym/rl_training/rl_games/runs/ppo_260805_0413_navrl_v2-speedgov-ep24000-205bars-main-riskcap-s1`이다.
+frozen ep24000 SHA `82f7978b42d…`에서 ep24001--25000, 1,000 epoch×32×128=**4.096M samples**,
+205 bars 고정, seed1, LR 5e-6, cluster-sector/riskcap으로 `max_epochs` 정상 종료했다. 일반 final
+checkpoint `nn/last_gen_ppo_ep_25000_rew_39.742134.pth` SHA-256은
+`f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40`이다. 같은 epoch의 double-underscore
+파일 대신 기존 관례의 일반 파일을 평가했다.
+
+학습 proxy 전체 27,632 episodes는 capture/crash/timeout **77.67/18.50/3.83%**였다. 100-epoch block은
+`78.70/18.61/2.69 → 76.14/19.30/4.56 → 77.72/18.36/3.92 → 75.26/20.15/4.59 →
+77.51/18.42/4.07 → 78.62/18.06/3.31 → 79.37/17.42/3.21 → 78.15/17.94/3.92 →
+77.79/18.14/4.08 → 77.24/18.71/4.06%`였다. 뚜렷한 training 상승은 없어 plateau지만 held-out을
+중단할 발산은 아니다. TensorBoard 1,000 epoch 전수에서 PPO KL 평균/최대 **0.002445/0.009062**,
+behavior-KL audit 평균/최대 **0.005028/0.010958**, rollback/KL-skip/4축 raw OOB는 모두 0이었다.
+lateral latent bias는 남아 마지막 epoch edge95-y 22.07%, edge99-y 2.37%, |mu-y| 1.303,
+signed-y +1.226, sigma-y 0.35였다.
+
+### 새 seed45/46 최종 평가와 판정
+
+`results/navrl_v2_riskcap_postadapt/summary.{md,json}`은 9개 cell의 checkpoint/snapshot/result/log/receipt
+SHA, nonce, outcome 합, main/base_sim/128 env, sensor-only provenance를 전부 재검증했다.
+
+seed45 uniform은 off **70.03/27.87/2.10%**, source+riskcap **78.20/17.80/4.00%**,
+trained+riskcap **81.94/15.67/2.39%** capture/crash/timeout이다. mechanism은 capture +8.16 pp
+(95% CI +5.49..+10.83), crash -10.06 pp(-12.61..-7.51)로 복제됐다. 적응은 source+riskcap 대비
+capture **+3.75 pp**(+1.30..+6.19), crash -2.14 pp(-4.42..+0.15), timeout -1.61 pp
+(-2.68..-0.53), intervention -1.48 pp라 non-inferior/useful 모두 PASS했고 trained를 winner로 골랐다.
+
+seed46 fixed 0.3/0.9/1.5 m/s에서 off→winner capture는 71.90→81.84, 71.89→80.77,
+67.98→75.51%였고 crash는 24.88→15.18, 25.77→16.59, 30.31→22.29%였다. 세 속도 모두
+capture↑/crash↓ 방향을 통과해 최종 generalization은 **PASS**다. 1.5 m/s winner의 bar contact가
+20.78% 남고 lateral high80-y 70.16%, signed-y +0.766이어서 chirality와 잔여 고속 충돌은 해결되지 않았다.
+
+결정은 **ep25000 + 고정 riskcap을 navigation/control candidate로 동결**하는 것이다. fixed-density PPO를
+더 연장하거나 final seed를 본 뒤 2.0/3/5 m를 튜닝하지 않는다. 이 결과는 analytic detector 조건이며
+정식 CBF 안전보장도 아니다. 다음 gate는 R3 learned detector/perception robustness: 동일 checkpoint에서
+analytic→learned detector, detection dropout, 지연, range error를 한 축씩 평가하고 실패하면 PPO가 아니라
+camera–LiDAR association/uncertainty-aware release를 수정한다. 현재 학습·평가 프로세스는 없고 GPU는 idle다.
+
+### 문서·사이트 동기화와 최종 회귀검증
+
+README/CLAUDE/RESEARCH_PLAN/OPERATIONS/CRASH_TUNING_LOG를 최종 수치, checkpoint SHA, 무효화 사유,
+다음 learned-perception gate로 동기화했다. `tools/update_status_snapshot.py`는 corrected 5-cell screen,
+seed44 screen, trained SHA, seed45/46 모든 gate를 검증해야만 FINAL PASS를 출력하도록 강화했다. 사이트는
+training 마지막 epoch의 75/25% 소표본 대신 seed45 held-out **81.94/15.67/2.39%**, seed46 **3/3**,
+trained winner SHA를 상단과 current-result 표에 표시한다. HTTP `status.json`과 `index.html` offline fallback은
+같은 payload로 재생성됐고 72 runs, active=none, latest=riskcap ep25000, stage=`FINAL PASS`다.
+
+최종 검증 결과는 speed-governor **10/10**, perception **18/18**, TTC selector **13/13**, status snapshot
+**11/11**, recovery gate **19/19**, action model **13/13**, density feasibility **3/3**, limit audit **4/4**,
+postrun **2/2**, arena-motion/DOM parity PASS다. 수정·신규 Python 전부 `py_compile`, shell 전부 `bash -n`,
+사이트 artifact/fallback/final-contract, stale invalid-number scan, checkpoint SHA, `git diff --check`도 PASS했다.
+시스템 Node는 기존부터 사용한 nullish-coalescing `??`를 지원하지 않는 구버전이라 raw `node --check`만
+129행에서 중단했다. `??`를 syntax-only로 `||` 치환한 stream의 전체 JS parse와 실제 DOM parity는
+통과했으므로 이번 UI 변경의 문법 실패가 아니다. 커밋·푸시는 이번 요청에 포함되지 않아 수행하지 않았다.

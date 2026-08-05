@@ -429,7 +429,176 @@ MAX_EPOCHS=30000 \
 ./train_navrl_v2_recover_safe.sh
 ```
 
-## 7. 트러블슈팅
+## 7. v2 종료 후 증거 동결·분석 절차
+
+`ppo_260802_0020_navrl_v2-recover-curriculum-continue-s1`은 2026-08-02 사용자 결정으로 SIGINT 안전
+중단되어 ep24010까지 기록되었다. `.aerial_training_finished`가 없는 것은 정상 완주가 아니라 의도적
+중단이기 때문이다. 마지막 분석 대상은 50-epoch durable checkpoint인
+`last_gen_ppo_ep_24000_rew_44.73549.pth`이며 SHA-256은
+`82f7978b42d9d9e95adcc638a40ae85fb3736fd897ae39cb8aa8333be39cf23f`다.
+
+canonical 계보는 다음 세 조각이다.
+
+| 구간 | run | 포함 epoch |
+|---|---|---:|
+| recovery smoke | `ppo_260801_1150_navrl_v2-recover-smoke-130bars-s1` | 9501–9600 |
+| curriculum | `ppo_260801_1235_navrl_v2-recover-curriculum-s1` | 9601–20700 |
+| continuation | `ppo_260802_0020_navrl_v2-recover-curriculum-continue-s1` | 20701–24010 |
+
+첫 curriculum run에 남은 20701–20746은 ep20700 checkpoint에서 되돌려 다시 학습된 구간이므로 최종
+통계에서 제외한다. TensorBoard 시각화에는 원자료 보존을 위해 남아 있을 수 있지만 분석기는 위 규칙으로
+deduplicate해야 한다.
+
+동결 artifact와 최종 분석 재검증:
+
+```bash
+cd /home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/aerial_gym/rl_training/rl_games
+
+# 1) runner가 실제로 끝났는지와 의도적 interrupted summary 확인
+ps -eo pid,etime,args | rg 'runner.py.*navrl_task.*--train'
+jq '{exit_reason,last_epoch,finalized_at}' \
+  runs/ppo_260802_0020_navrl_v2-recover-curriculum-continue-s1/aerial_run/run_summary.json
+
+# 2) 평가 대상은 동결된 마지막 durable checkpoint. gen_ppo.pth 금지
+sha256sum runs/ppo_260802_0020_navrl_v2-recover-curriculum-continue-s1/nn/last_gen_ppo_ep_24000_rew_44.73549.pth
+
+# 3) postmortem과 dashboard를 재생성
+cd /home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator
+/home/fair/miniconda3/envs/aerialgym/bin/python tools/analyze_navrl_v2_postrun.py
+/home/fair/miniconda3/envs/aerialgym/bin/python tools/summarize_navrl_v2_limit_audit.py
+/home/fair/miniconda3/envs/aerialgym/bin/python tools/update_status_snapshot.py
+```
+
+핵심 판정은 `results/navrl_v2_ep24000_limit_audit.{md,json}`이다. 기존 curriculum은 재개하지 않는다.
+mirror/conjugate와 두 번째 seed 검증은 frozen ep24000의 **평가만** 수행해 완료했으며 결과는
+`results/navrl_v2_ep24000_causal_1to3/summary.{md,json}`이다. 재현 명령은
+`eval_navrl_v2_ep24000_causal_1to3.sh`; 기존 결과를 overwrite하지 않으므로 재실행 시
+`NAVRL_CAUSAL_RESULT_ROOT`를 새 경로로 지정한다. 고정속도 평가와 1650 Ti smoke까지 끝난 뒤
+fixed-205 A/B를 승인할 경우에만 아래
+launcher를 사용한다. 두 팔은 같은 profile 안에서 비교한다.
+
+고정속도 인과검사 4번은 아래 명령 하나로 실행한다. 동결 ep24000 정책을 205 bars에서
+0.3/0.9/1.5 m/s로 각각 2,049회 평가하고
+`results/navrl_v2_ep24000_fixed_speed/summary.{md,json}`까지 만든다. optimizer와 checkpoint는
+변경하지 않는다.
+
+```bash
+cd /home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/aerial_gym/rl_training/rl_games
+./eval_navrl_v2_ep24000_fixed_speed.sh
+```
+
+기존 결과 디렉터리가 있으면 덮어쓰지 않고 중단한다. 재실행이 필요할 때만 새 출력 경로를 명시한다.
+
+```bash
+NAVRL_FIXED_SPEED_RESULT_ROOT=../../../results/navrl_v2_ep24000_fixed_speed_retry \
+  ./eval_navrl_v2_ep24000_fixed_speed.sh
+```
+
+고정속도 평가 다음의 망각 검사는 아래 명령 하나로 실행한다. 205막대 승급 직전 ep19100과 최종
+ep24000을 uniform 및 fixed 1.5 m/s에서 각각 비교하는 평가-only 2×2 실행이다.
+
+```bash
+cd /home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/aerial_gym/rl_training/rl_games
+./eval_navrl_v2_ep19100_vs_ep24000_forgetting.sh
+```
+
+결과와 자동 판정은
+`results/navrl_v2_ep19100_vs_ep24000_forgetting/summary.{md,json}`에 저장된다. 기존 결과는 덮어쓰지
+않으며 optimizer/RMS/checkpoint를 변경하지 않는다.
+
+망각검사는 uniform +4.65 pp, fixed-1.5 +3.25 pp로 두 조건 모두 improvement였고, 1650 Ti TTC gate도
+capture +9.86 pp/crash -8.06 pp로 PASS했다. main baseline은 2026-08-03에 아래 run으로 이미 정상
+완료됐다. 다시 실행하지 않는다.
+
+```bash
+cd /home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/aerial_gym/rl_training/rl_games
+run=runs/ppo_260803_1819_navrl_v2-ep24000-205bars-main-baseline-s1
+jq '{exit_reason,last_epoch,epochs_logged}' "$run/aerial_run/run_summary.json"
+sha256sum "$run/nn/last_gen_ppo_ep_25000_rew_29.188496.pth"
+```
+
+기대값은 `max_epochs`, epoch 25000/1,000개이며 checkpoint SHA-256은
+`169ddcddb83c9d74df5c79252274660bc9c52e32d7d5144d325698e32b1d9b08`이다. 다음에는 baseline
+ep25000의 held-out 205-bar 결과부터 고정한다.
+
+```bash
+cd /home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/aerial_gym/rl_training/rl_games
+
+NAVRL_V2_DENSITIES=205 \
+NAVRL_SEED=42 \
+NAVRL_V2_ACTION_MODE=deterministic \
+NAVRL_EVAL_REFLECTION_MODE=original \
+NAVRL_V2_RESULT_DIR=../../../results/navrl_v2_ep24000_ttc_main_baseline \
+./eval_navrl_v2_density_sweep.sh \
+  runs/ppo_260803_1819_navrl_v2-ep24000-205bars-main-baseline-s1/nn/last_gen_ppo_ep_25000_rew_29.188496.pth \
+  2049
+```
+
+`results/navrl_v2_ep24000_ttc_main_baseline/205bars.json`이 생성되고 evaluator가 ≥2,049 episodes,
+seed42, deterministic/original, U[0.3,1.5], selector=`cluster_sector`를 승인한 뒤에만 TTC를 실행한다.
+이 평가는 완료됐으며 capture/crash/timeout **69.50/28.99/1.51%**다. 따라서 primary TTC 통과선은
+capture **≥71.50%**, crash **≤26.99%**다. ep24000 원본 72.44/25.07보다 악화됐으므로 원본을 직접
+교체하려면 TTC가 **72.44% 이상/25.07% 이하**도 만족해야 한다. launcher가 baseline result/receipt/
+snapshot/log SHA와 이 조건을 실행 직전에 재검증한다.
+
+```bash
+# RTX 3070: 1,000 epoch × 32 × 128 = 4,096,000 samples
+ARM=ttc PROFILE=main ./train_navrl_v2_ep24000_ttc_ab.sh
+```
+
+TTC final ep25000도 같은 evaluator와 `NAVRL_V2_RESULT_DIR=../../../results/navrl_v2_ep24000_ttc_main_ttc`
+조건으로 평가한다. 채택 gate는 main baseline 대비 held-out capture `+2.0 pp 이상`이면서 crash `-2.0 pp
+이하`다. 둘 중 하나만 통과하면 기각한다. density, reward, action sigma, speed limit, LR은 이 A/B에서
+바꾸지 않는다. 4GB arm은 70-bar 선행 gate가 이미 끝났으므로 main 결과의 추가 확인이 필요할 때만
+2,000×32×64로 사용한다.
+
+이 평가도 완료됐다. TTC는 2,051 episodes에서 capture/crash/timeout **70.21/29.50/0.29%**로 baseline
+대비 **+0.71/+0.51/-1.22 pp**였다. primary와 canonical replacement floor 모두 FAIL이므로 같은 TTC
+mode를 재실행하거나 연장하지 않는다. selector 하나를 바꿨지만 구현상 effective candidate FOV도
+240°→360°로 바뀌므로 이 결과는 current representation bundle의 음성 결과이며 pure ranking ablation은
+아니다.
+
+## 7.10 최종 riskcap artifact와 운영 규칙 (2026-08-05)
+
+에피소드 horizon은 600 step=60 s로 유지한다. 실제 bar contact는 평균 7.4--9.2 s에 발생했고 timeout은
+0.29--4.00%여서 horizon 연장은 해결책이 아니었다. corrected 5-cell screen에서 완전정지 clearance/TTC는
+timeout 16.59/23.57%로 기각됐다. 채택된 `riskcap`은 command corridor가 3 m 이내일 때만 XY norm을
+2.0 m/s로 제한하고 5 m에서 3.535 m/s로 완전히 해제하며, 방향을 바꾸거나 정지를 강제하지 않는다.
+
+현재 navigation/control candidate는 아래 일반 checkpoint와 **riskcap 실행 설정의 결합**이다. checkpoint만
+governor off로 실행하면 최종 결과를 재현하지 못한다.
+
+```bash
+cd /home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/aerial_gym/rl_training/rl_games
+ckpt=runs/ppo_260805_0413_navrl_v2-speedgov-ep24000-205bars-main-riskcap-s1/nn/last_gen_ppo_ep_25000_rew_39.742134.pth
+sha256sum "$ckpt"
+```
+
+기대 SHA-256은
+`f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40`이다. run은 epoch
+24001--25000, 4.096M samples를 `max_epochs`로 정상 완료했고 `.aerial_training_finished`가 존재해야 한다.
+평가 결과는 이미 완료됐으므로 `eval_navrl_v2_riskcap_postadapt.sh`를 같은 출력 폴더에 재실행하지 않는다.
+원자료 계약과 요약만 다시 검증하려면 다음을 사용한다.
+
+```bash
+cd /home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator
+/home/fair/miniconda3/envs/aerialgym/bin/python \
+  tools/summarize_navrl_v2_riskcap_postadapt.py \
+  results/navrl_v2_riskcap_postadapt \
+  --trained-sha f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40
+```
+
+이 명령은 9개 cell의 checkpoint/snapshot/result/log/receipt SHA, nonce, sensor-only provenance,
+seed45/46, 205 bars, deterministic/original, 속도 조건을 모두 재검증한다. 기대 판정은
+`winner_kind=trained`, `generalization_pass=true`다. 새 평가가 꼭 필요하면 기존 결과를 보존한 채 launcher의
+`RESULT_ROOT`를 새 디렉터리로 바꾼 복사본을 사용한다.
+
+다음 학습은 riskcap을 더 연장하는 run이 아니다. 먼저 analytic detector와 learned detector의 동일
+checkpoint 평가 계약을 만들고 detection dropout/지연/거리오차를 한 축씩 screen한다. gate를 통과할
+때에만 detector fine-tuning 또는 temporal fusion 학습을 시작한다. riskcap의 2.0/3/5 m 값은 final
+seed45/46를 본 뒤 사후 조정하지 않는다.
+
+## 8. 트러블슈팅
 
 ## 자주 겪는 문제 (트러블슈팅)
 

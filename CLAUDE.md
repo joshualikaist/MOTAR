@@ -26,6 +26,37 @@ substantive한 요청(학습·평가·분석·감사·구현)을 받으면:
 - **canonical 현재 상태**: `WORKLOG.md`(맨 아래) + `docs/status/` 라이브 대시보드(status.json 구동).
   `RESEARCH_PLAN.md`는 charter(가설·방법·P0–P7 단일 번호). 실무는 `OPERATIONS.md`,
   진단 도구·측정된 음성 결과는 `CRASH_TUNING_LOG.md`. 문서는 2026-07-30에 14→6개로 통합됨.
+- **현재 상태(2026-08-03)**: recovery curriculum continuation
+  `ppo_260802_0020_navrl_v2-recover-curriculum-continue-s1`은 사용자 결정으로 ep24010에서 안전 중단했다.
+  canonical artifact는 ep24000 checkpoint(SHA-256 `82f7978b42d…`)이며 학습 프로세스는 없다.
+  205 bars에서 4,910 epoch/10회 hold 뒤 stochastic gate는 68.94%(최근 7회 평균), 동일 checkpoint의
+  held-out deterministic/stochastic capture는 72.44%/67.35%다. PPO 발산과 free-space 단절은 주원인에서
+  기각했다. frozen ep24000의 mirror/second-seed 평가는 완료됐다. seed43 capture는 72.77%(seed42 대비
+  +0.33 pp, 재현 PASS)이고 초기 target-bearing 좌/우 capture 차이는 -0.21 pp로 outcome asymmetry는
+  검출되지 않았다. 반면 정확한 reflected-observation pair에서 lateral action MAE 1.235, sign mismatch
+  73.08%로 학습된 turn-direction chirality는 명확하다. fixed-speed는 0.3→1.5 m/s에서 capture
+  73.26→67.35%(-5.91 pp), bar contact 22.11→29.97%(+7.86 pp)였다. ep19100→ep24000은 uniform
+  +4.65 pp, fixed-1.5 +3.25 pp로 **망각 없이 개선**했다. 1650 Ti의 70-bar TTC A/B도 capture
+  +9.86 pp/crash -8.06 pp로 PASS했다. main RTX 3070 고정-205 `cluster_sector` baseline은
+  ep24001→25000, 4.096M samples를 `max_epochs`로 정상 완료했다. final SHA는 `169ddcddb83c…`이며
+  KL max 0.00757, behavior-KL max 0.01236, rollback/OOB 0이었다. 이 checkpoint의 seed42
+  deterministic/original 205-bar held-out도 2,049회에서 capture/crash/timeout
+  **69.50/28.99/1.51%**로 완료됐다. ep24000 대비 capture -2.94 pp/crash +3.92 pp이며 KL이 정상인
+  느린 action drift다. 이어서 같은 예산의 main `ttc_sector` arm과 2,051회 held-out도 완료했다.
+  결과는 **70.21/29.50/0.29%**로 사전 등록한 primary gate(≥71.50/≤26.99%)와 ep24000 replacement
+  floor(≥72.44/≤25.07%)를 모두 FAIL했다. baseline 대비 capture +0.71 pp, crash +0.51 pp이므로
+  current TTC mode는 채택하지 않는다. 또한 selector switch가 candidate FOV 240°→360°를 함께
+  바꾸므로 pure ranking effect는 판정 불가다. 이어서 sensor-only control-risk를 분리했다. semantic-mask
+  leak과 LiDAR 수직행 역순을 찾아 앞선 speed-governor 자료를 무효·격리한 뒤 처음부터 재실행했다.
+  corrected complete-stop clearance/TTC는 timeout 16.59/23.57%로 기각했다. 멈추지 않는 단일 `riskcap`
+  후보는 seed44에서 capture/crash **79.55/17.62%**(off 72.83/24.63%)로 gate를 통과했고, 정확히
+  1,000 epoch/4.096M samples 적응한 checkpoint(SHA `f70221393660…`)는 새 seed45 uniform에서
+  **81.94/15.67/2.39%**를 기록했다. source+riskcap 78.20/17.80/4.00% 대비 capture +3.75 pp이며,
+  seed46 fixed 0.3/0.9/1.5 m/s도 capture↑/crash↓ 방향을 3/3 통과했다. 이 ep25000+riskcap을 현재
+  navigation/control candidate로 동결한다. fixed-density PPO 연장·riskcap 사후튜닝은 금지하며 다음은
+  learned detector/perception robustness다. 현재 학습/평가 프로세스는 없다.
+  핵심 보고는 `results/navrl_v2_ep24000_limit_audit.{md,json}`과
+  `results/navrl_v2_riskcap_postadapt/summary.{md,json}`이다.
 - **하드웨어**: RTX 3070 8GB(학습 공장) + GTX 1650 Ti 4GB(평가 공장 — 학습은 N=128이라 ~10-15pt 약함,
   결과 섞지 말 것). RTX 50번대(Blackwell)는 Isaac Gym Preview4와 비호환 — 사지 말 것.
 
@@ -34,7 +65,11 @@ substantive한 요청(학습·평가·분석·감사·구현)을 받으면:
 - **밀도 커리큘럼 run 평가는 `last_gen_ppo_ep_XXXX.pth`로.** `gen_ppo.pth`(best-reward)는 저밀도 정책이라
   고밀도 평가 시 ~15%로 오독됨.
 - warm-start: `--checkpoint <p> --max_epochs <N>` (runner가 critic `_orig_mod` 자동 정규화 + max_epochs override).
-- 커리큘럼 knob은 전부 env-var: 밀도 `NAVRL_DENSITY_*`, 거리 `NAVRL_K_*`. 센서 전용은 `NAVRL_DENSITY_THRESHOLD=0.6`.
+- 커리큘럼 knob은 전부 env-var: 밀도 `NAVRL_DENSITY_*`, 거리 `NAVRL_K_*`. v2 recovery의 density
+  gate는 단일 0.6이 아니라 measured knot schedule `0.82@70, 0.77@85, 0.72@100, 0.70@115+`,
+  16,384 episodes, 최소 dwell 1,000 epoch다. rolling tail을 이 gate나 held-out 수치로 오독하지 않는다.
+- canonical epoch 계보는 smoke 9501–9600 + curriculum 9601–20700 + continuation 20701–24010이다.
+  이전 curriculum run의 20701–20746은 ep20700에서 재학습된 중복 구간이므로 최종 통계에서 제외한다.
 
 ## WORKLOG 규칙 — 예외 없음
 

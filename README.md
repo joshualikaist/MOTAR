@@ -57,17 +57,59 @@ are documented in **[OPERATIONS.md](OPERATIONS.md)** and **[WORKLOG.md](WORKLOG.
 > Run it with `NAVRL_VISION=1 NAVRL_PERCEPTION=1 ./train_navrl.sh` (staged curriculum:
 > `./train_navrl_perception_staged.sh`), after the detector-validation gate in that plan.
 >
-> **Current controlled experiment** — fixed-85 cluster-sector obstacle selection:
-> `./train_navrl_corrected_squashed_density_cluster_sector.sh`. It warm-starts the validated
-> epoch-8350 bounded policy, resets the contaminated competence window, and keeps density fixed.
-> As of 2026-07-30 it clears its gate: token `unique` 4.6 (target 4.5+) and an 85-bar capture
-> plateau of 0.725 with promotion windows at 0.712-0.745 (target 0.70).
+> **Current controlled result (closed 2026-08-05)** — the frozen ep24000 policy exposed an early
+> high-speed bar-contact bottleneck, not an episode-horizon shortage. Complete-stop clearance/TTC
+> governors cut crash but raised timeout to 16.59–23.57%, so they were rejected. A sensor-only
+> minimum-intervention `riskcap` instead limits horizontal speed to 2.0 m/s only inside 3 m command-
+> corridor clearance, releases it by 5 m, and never forces a stop. On unseen seed45 it moved the
+> frozen policy from 70.03/27.87/2.10% to 78.20/17.80/4.00% capture/crash/timeout. Exactly 1,000
+> adaptation epochs then reached **81.94/15.67/2.39%**, adding +3.75 pp capture over source+riskcap.
+> The trained winner also improved capture and crash at all seed46 fixed speeds 0.3/0.9/1.5 m/s.
+> Its checkpoint SHA-256 is `f70221393660…`; full confidence intervals and artifact contracts are in
+> [results/navrl_v2_riskcap_postadapt/summary.md](results/navrl_v2_riskcap_postadapt/summary.md).
+> No training or evaluation is active. Do not extend fixed-density PPO or retune riskcap post hoc;
+> the next gated stage is learned-detector/perception robustness.
 
 ## Status
 
 Sensor-only interception works end to end: the actor sees **only** a 72x4 LiDAR at 12 m plus a
-forward RGB-D detector (898-D structured observation, 17-token Transformer, asymmetric 906-D
-critic with ground truth confined to training).
+forward sensor-derived target track (898-D structured observation, 17-token Transformer,
+asymmetric 906-D critic with ground truth confined to training). The completed density recovery
+used the **analytic detector mode** to isolate navigation/control. It is not evidence that
+the final learned RGB-D detector gate has been passed; that perception stage remains a separate
+research requirement.
+
+**Current v2 limit result** (40×40×3 m, moving target 0.3–1.5 m/s, seed 42, deterministic deployment):
+
+| bars | density/100 m² | episodes | capture | crash | timeout |
+|---:|---:|---:|---:|---:|---:|
+| 130 | 8.12 | 2,049 | 84.77% | 12.74% | 2.49% |
+| 160 | 10.00 | 2,050 | 79.66% | 16.88% | 3.46% |
+| 190 | 11.88 | 2,049 | 73.99% | 22.65% | 3.37% |
+| **205** | **12.81** | **2,050** | **72.44%** | **25.07%** | **2.49%** |
+| 220 | 13.75 | 2,050 | 68.49% | 29.76% | 1.76% |
+
+At 205 bars the same checkpoint scores 67.35% under stochastic action sampling, a significant
+5.09 pp gap from deterministic deployment. Ten complete curriculum holds, 20.1M samples at 205,
+healthy PPO diagnostics, and 99.83% random-pair geometric connectivity show that more unchanged
+epochs are not justified. The remaining failures are mostly bar contacts accumulated on long and
+fast trajectories.
+
+The frozen causal checks separate reproducibility from symmetry. Seed 43 scores **72.77%** at 205
+bars versus seed 42's 72.44% (+0.33 pp; replication PASS). Original and mirror-conjugate policies
+score 70.97% and 70.17% over 4,096 episodes/arm, and initial negative/positive-y target bearings
+score 71.17%/70.97%, so no material outcome-side asymmetry was detected. The controller itself is
+not reflection-equivariant: exact reflected-observation pairs have lateral action MAE **1.235** and
+**73.08%** sign mismatch. This is a learned one-direction route preference, currently outcome-neutral
+in the symmetric arena but a robustness concern. Fixed-speed evaluation shows a material
+**-5.91 pp** capture drop from 0.3 to 1.5 m/s, accompanied by **+7.86 pp** absolute bar contact.
+The matched forgetting evaluation found improvement, not degradation: ep24000 beats ep19100 by
+**+4.65 pp** on U[0.3,1.5] and **+3.25 pp** at fixed 1.5 m/s. Subsequent risk-ordering and speed-
+governor experiments are now complete; the non-stopping `riskcap` result above is the selected
+navigation/control candidate. Full diagnostic outputs:
+[causal 1–3](results/navrl_v2_ep24000_causal_1to3/summary.md),
+[fixed speed](results/navrl_v2_ep24000_fixed_speed/summary.md), and
+[riskcap final](results/navrl_v2_riskcap_postadapt/summary.md).
 
 A left/right chirality defect in the observation pipeline was found and fixed on 2026-07-29 --
 the perception bin-to-bearing table was the mirror image of the sensor's ray generator, so every
@@ -97,9 +139,10 @@ bars per step from 3.0 to 4.6.
 Across the full grid, raising density 5.2 -> 31.4 bars/100 m^2 costs **78 pp** of capture, while
 raising target speed 0 -> 1.5 m/s costs only **4.2 pp** -- the pursuer (v_max 2.5 m/s) is fast
 enough that target speed is not a binding difficulty axis in this regime; obstacle density is.
-This is the paper's headline figure (full CSV: `results/density_speed_map_cluster_sector.csv`,
-interactive version: [status dashboard, "Map" tab](docs/status/)). A density-curriculum extension
-past 85 bars (target: 110+) is running from this checkpoint as of 2026-07-30. Live detail is in
+This is a historical pre-heading-continuity figure (full CSV:
+`results/density_speed_map_cluster_sector.csv`, interactive version: [status dashboard, "Map"
+tab](docs/status/)). It remains useful as a frozen 85-bar baseline, but must not be presented as the
+current v2 40×40 result. The completed v2 result is the separate table above. Full detail is in
 **[WORKLOG.md](WORKLOG.md)** (newest entry last).
 
 ## Repo map
@@ -108,7 +151,7 @@ past 85 bars (target: 110+) is running from this checkpoint as of 2026-07-30. Li
 |------|------|
 | `aerial_gym/task/navrl_task/` | the interception task — observations, reward, termination |
 | `aerial_gym/task/navrl_task/navrl_perception.py` | learned camera–LiDAR detector + tracker (current method) |
-| `aerial_gym/config/env_config/navrl_bars_env.py` | the arena — a 24×24 m field of density-controlled bars |
+| `aerial_gym/config/env_config/navrl_bars_env.py` | the arena — current v2 40×40×3 m full-width `navrl_band` field; legacy v1 was 24×24 m |
 | `aerial_gym/config/…/navrl_lidar_config.py`, `navrl_quad_config.py` | the LiDAR-equipped quadrotor |
 | `aerial_gym/rl_training/rl_games/` | PPO configs, custom networks, and the `*_navrl*.sh` run wrappers |
 | `tools/`, `tests/` | bar-asset generation, geometry audits, smoke tests |

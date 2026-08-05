@@ -421,6 +421,109 @@ coverage gate and is not yet a success. Before any further long density run, add
 that compares reward only within a fixed density and a KL/latent fail-stop or last-known-good
 checkpoint rollback.
 
+## v2 205-bar 종료 후 postmortem 사전등록 (2026-08-02, 당시 진행 중 수치)
+
+작성 당시 recovery continuation은 ep20700 anchor에서 205 bars로 학습 중이었다. 다음 숫자는
+ep23819 부근의 중간 snapshot이므로 아래 최종 postmortem 대신 인용하지 않는다.
+
+- 완결된 16,384-episode hold window: `0.685, 0.693, 0.688, 0.691, 0.690, 0.694`;
+- 최신 2,049-episode progress sample: capture 0.651, crash 0.333, timeout 0.017;
+- crash 원인: bar contact 95.3%, below 4.0%, OOB 0.6%;
+- obstacle probe: FOV 내 bars 32.4, hit-token-given-FOV 0.893, associated 3.9,
+  unique 3.8, duplicate 0.1;
+- action probe: executed edge98 x/y `0.234/0.092`, signed-y 0.762, positive-y 0.935,
+  commanded stall 3.26%, task-input OOB 전 축 0.
+
+현재 관측만 보면 PPO가 즉시 발산한 흔적보다 **(a) gate 바로 아래 plateau, (b) 충돌의 거의 전부가
+bar contact, (c) FOV 내 수십 개 surface를 약 4개 unique slot으로 줄이는 표현 병목, (d) 큰 횡축
+부호 편향**이 우선 가설이다. 그러나 target/world geometry가 실제로 +y 행동을 요구했을 수 있으므로
+signed-y 하나만으로 좌표계 버그를 선언하지 않는다. 종료 뒤 target bearing 좌/우와 mirrored layout을
+짝지어 sign-equivariance를 검사한다.
+
+postmortem의 실패 원인 분해는 `RESEARCH_PLAN.md` §8을 따른다. 특히 다음을 서로 섞지 않는다.
+
+1. deterministic held-out가 0.70 이상인데 stochastic training gate만 낮으면 action-noise/gate 문제;
+2. 둘 다 낮고 unique/risk coverage가 부족하면 obstacle representation 문제;
+3. 동일 배치의 inflated-body path 자체가 자주 단절되면 환경의 achievable ceiling;
+4. 저밀도 replay 성능까지 내려가면 curriculum forgetting;
+5. KL/entropy/EV change point가 성능 저하와 일치할 때만 PPO optimization 문제.
+
+종료 전에는 threshold, sigma, speed, reward, selector를 바꾸지 않는다. 종료 뒤에도 여러 레버를 한 번에
+바꾸지 않고, dominant mechanism 하나와 반증 가능한 acceptance gate를 정한 뒤 1650 Ti smoke를 먼저
+통과시킨다.
+
+## v2 205-bar 핵심 postmortem (2026-08-02, 인과 검증 계속)
+
+ep24010에서 사용자 결정으로 안전 중단했고 ep24000을 동결했다. 205 bars에서 4,910 epoch와
+20.11M samples, 10개 완결 gate window를 소비했으며 최근 7개 평균은 68.94%였다. tail1000 capture
+69.02%, 추세는 +0.79 pp/1000 epoch였지만 gate와의 간격을 닫을 증거가 약해 동일 조건 연장은 중단했다.
+
+| 가설 | 판정 | 핵심 측정 |
+|---|---|---|
+| online gate 오발 | **정제** | stochastic 67.35%, deterministic 72.44%; gate는 sampled policy를 정확히 측정 |
+| PPO 발산 | **주원인 기각** | behavior KL 최대 0.0132 < 0.04, LR 5e-6, EV 0.789, rollback/OOB 0 |
+| free-space 단절 | **주원인 기각** | 205 bars, 0.2 m clearance random-pair connectivity 99.83% |
+| 정지/timeout | **하향** | commanded stall 약 3.2%, timeout 2.2–2.5% |
+| bar-contact 누적 | **지지** | deterministic crash 25.07% 중 bar contact 24.29%/all episodes |
+| 표현/위험 정렬 | **지지하나 미확정** | 4×72 scan도 actor에 존재; selector가 dense geometry를 위험순으로 쓰는지는 A/B 필요 |
+| 좌우 chirality | **action-level 지지 / outcome gap 미검출** | lateral MAE 1.235, sign mismatch 73.08%; 초기 bearing capture 차이 -0.21 pp |
+
+거리별 deterministic capture가 81.42%→61.41%, stochastic가 75.35%→55.06%로 떨어진다. action
+sampling은 lateral edge98을 3.37%→7.08%로 늘리고 capture -5.09 pp/crash +5.33 pp를 만든다.
+핵심 병목은 “공간이 없어서 정지”가 아니라 긴·빠른 요격 동안 bar-contact 위험이 누적되는 것이다.
+
+mirror/conjugate와 두 번째 seed **평가 전용** 진단은 완료됐다. seed43은 capture +0.33 pp로 재현
+PASS했고 aggregate/초기-bearing outcome gap은 없었지만 action equivariance는 크게 실패했다.
+fixed-speed는 0.3→1.5 m/s에서 capture -5.91 pp, bar contact +7.86 pp였고 lateral edge98이
+2.41→4.92%로 늘었지만 실제 비행속도는 2.386→2.400 m/s에 머물렀다. ep19100→ep24000 망각검사는
+uniform +4.65 pp/fixed-1.5 +3.25 pp로 오히려 개선했다. 따라서 현 crash를 catastrophic forgetting으로
+설명하지 않는다.
+
+1650 Ti 70-bar TTC A/B는 capture +9.86 pp/crash -8.06 pp로 PASS했다. main fixed-205
+`cluster_sector` baseline은 ep24001--25000/4.096M samples를 정상 완료했다. PPO KL 최대 0.00757,
+behavior-KL audit 최대 0.01236, rollback/OOB 0으로 발산은 없었지만 훈련 proxy 첫100→끝100 capture는
+69.46→67.49%라 개선 증거도 없다. 다음 단일변수 검사는 ep25000 baseline의 독립 held-out을 먼저
+동결한 뒤에만 `ttc_sector` threat-ordering을 실행한다. 이 held-out은 2,049회에서
+capture/crash/timeout **69.50/28.99/1.51%**, bar contact **27.82%**였다. ep24000 대비 capture
+-2.94 pp(95% CI -5.72..-0.16), crash +3.92 pp(+1.20..+6.63), bar contact +3.53 pp다. lateral
+edge98 3.37→5.03%, vertical edge98 0.01→3.20%도 같이 증가했다. 즉 정상 KL은 느린 action drift와
+held-out 악화를 막지 못한다. TTC primary 통과선은 matched baseline 기준 capture 71.50%/crash 26.99%,
+원본 교체 기준은 ep24000의 72.44%/25.07%로 분리한다.
+
+main TTC held-out은 capture/crash/timeout **70.21/29.50/0.29%**로 matched baseline 대비
+**+0.71/+0.51/-1.22 pp**였다. lateral edge98은 5.03→7.17%, 실제 속도는 2.436→2.570 m/s,
+bar contact는 27.82→28.18%다. timeout만 줄고 충돌은 줄지 않아 +2/-2 gate를 FAIL했다. 추가로
+cluster는 effective FOV 240°, TTC는 360°라 pure threat-ranking A/B가 아니었다. 현재 bundle은 기각하고,
+TTC ranking을 재시험하려면 candidate FOV를 독립시킨 `ttc240`이 필요하다.
+reflection regularization/RMS symmetry는 selector와 같은 run에 섞지 않고 별도 arm으로 분리한다.
+상세 보고: `results/navrl_v2_ep24000_causal_1to3/summary.md`, fixed-speed/forgetting summary.
+
+## 2026-08-05 — sensor-only riskcap: 고속 접촉 가설 지지, complete-stop 기각
+
+제동 probe는 p10 유효 감속도 2.961 m/s², p95 정지시간 1.0 s, 정지거리 1.047 m를 측정했다. 이를 토대로
+동결 ep24000에서 off/fixed2.0/fixed1.5/clearance/TTC를 screen했다. 첫 구현은 governor가 표적을 뺄 때
+GT semantic id를 읽었고, 첫 corrected 구현은 LiDAR 수직행 순서를 뒤집어 읽었다. 두 자료와 중단
+checkpoint는 최종 증거에서 제외하고 archive에 격리했다. 최종 구현은 actor perception이 계산한
+camera-bearing/range–LiDAR association만 재사용한다.
+
+유효한 seed42 결과는 off 72.44/25.07/2.49%, fixed2.0 78.53/16.06/5.42%, fixed1.5
+74.65/16.82/8.53%, clearance 69.11/14.30/16.59%, TTC 69.59/6.83/23.57% capture/crash/timeout이다.
+즉 속도 제한은 실제 충돌을 줄이지만 강한 complete-stop은 성공으로 바꾸지 못하고 timeout/deadlock으로
+옮긴다. “감속은 무효”가 아니라 **계속 진행 가능한 최소개입 감속이 필요하다**가 교정된 결론이다.
+
+사전등록한 non-stopping riskcap은 seed44에서 off 대비 capture +6.72 pp, crash -7.02 pp를 기록했고
+near-stop 0%로 GO했다. 1,000-epoch 적응 뒤 새 seed45에서 ep25000+riskcap은
+**81.94/15.67/2.39%**, ep24000+riskcap은 78.20/17.80/4.00%, off는 70.03/27.87/2.10%였다.
+적응 capture 이득 +3.75 pp의 95% CI는 +1.30..+6.19다. 새 seed46 fixed 0.3/0.9/1.5 m/s에서도
+capture는 각각 +9.94/+8.88/+7.53 pp, crash는 -9.70/-9.18/-8.02 pp로 모두 같은 방향이었다.
+
+잔여 한계는 1.5 m/s winner에서도 bar contact 20.78%, lateral high-action 80% 70.16%, signed-y
++0.766이라는 점이다. riskcap은 속도 위험 병목을 크게 줄였지만 learned chirality나 perception failure를
+고치지 않으며 안전을 수학적으로 보장하는 CBF도 아니다. 따라서 이 제어 후보는 동결하고 다음 crash
+분석은 learned detector의 target association dropout/지연/거리오차 조건에서만 재개한다. 같은 205-bar
+fixed-density PPO 연장과 riskcap 사후 파라미터 탐색은 금지한다. canonical 결과는
+`results/navrl_v2_riskcap_postadapt/summary.{md,json}`이다.
+
 ---
 
 # 부록 — Phase-1 GT-goal 시절 clearance 보상 튜닝 (B/C/D), 2026-07-14
