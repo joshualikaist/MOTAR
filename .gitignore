@@ -29,3 +29,6 @@ aerial_gym/lms_rl_trial/
 aerial_gym/examples/*_frame_100.png
 aerial_gym/examples/*_frames_100.png
 aerial_gym/examples/*_frames_100.gif
+
+# legacy scraper scratch output; never published
+docs/status/status.legacy.json
