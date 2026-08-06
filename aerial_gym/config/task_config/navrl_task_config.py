@@ -212,13 +212,18 @@ class task_config:
         # target; "skip" simply stops editing the map while the detection is stale (the target
         # then survives as an obstacle, but no real bar is ever deleted).
         latency_obstacle_fix = os.environ.get("NAVRL_LATENCY_OBSTACLE_FIX", "off").strip().lower()
-        # P3: a delayed detection is a VEHICLE-frame measurement taken at t-tau, but observe()
-        # lifts it to world with the pose at t, so the drone's own motion over tau (0.23 m of
-        # translation at the measured 2.33 m/s mean speed, plus yaw straight into the bearing)
-        # corrupts every KF correction -- a larger error than the <=0.15 m target lag P0 removed.
-        # Enabling this buffers the pose alongside the detection and lifts the measurement with
-        # the pose it was actually taken at (an IMU/odometry compensation on real hardware).
-        latency_ego_motion_fix = _env_bool("NAVRL_LATENCY_EGO_MOTION_FIX", False)
+        # P3, DEFAULT ON: a delayed detection is a VEHICLE-frame measurement taken at t-tau, but
+        # lifting it to world with the pose at t injects the drone's own motion over tau into
+        # every KF correction -- 0.23 m of translation at the measured 2.33 m/s mean speed and
+        # 0.41 m from yaw at 0.81 rad/s, both larger than the 0.15 m target lag P0 chased.
+        # Buffering the pose alongside the detection and lifting with it is what a real pipeline
+        # does (timestamped measurements + IMU/odometry), so the naive lift was not a "latency
+        # model", it was an extra unmodelled error on top of one. It is default ON because it is
+        # the CORRECT model, not a compensation: with it, 0.1 s latency costs 2.5 pp of capture
+        # instead of 42.7 pp (WORKLOG 2026-08-06). Arithmetically a no-op at zero latency, so
+        # clean results and every pre-2026-08-06 non-latency number are unaffected. Set
+        # NAVRL_LATENCY_EGO_MOTION_FIX=0 only to reproduce the superseded R3 latency arms.
+        latency_ego_motion_fix = _env_bool("NAVRL_LATENCY_EGO_MOTION_FIX", True)
         rgb_noise_std = _env_float("NAVRL_RGB_NOISE_STD", 0.015)
         depth_noise_std = _env_float("NAVRL_DEPTH_NOISE_STD", 0.02)
         # [static VBEAMS*HBEAMS | obstacle history 5*MAX_OBSTACLES*12 | robot history 5x10 |

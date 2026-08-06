@@ -6469,3 +6469,20 @@ arm 간 차이의 SE가 약 1.3 pp이므로 둘 다 유의하지 않다. P3가 �
 
 **다음 단계**: latency 0.2 s를 P3와 함께 재측정해서 실제 하드웨어 latency 예산 곡선을 얻는다
 (P3 없이는 18.50%였다). 그 다음에야 R4 temporal fusion 논의가 의미를 가진다.
+
+## 2026-08-06 — P3 기본 ON 승격 + R3 latency 셀 superseded 표시
+
+P3는 "보정"이 아니라 **올바른 측정 모델**이므로 기본값을 ON으로 올렸다
+(`NAVRL_LATENCY_EGO_MOTION_FIX` 기본 True, `eval_navrl_v2_density_sweep.sh`의 pin도 1). 근거:
+실제 파이프라인은 measurement에 timestamp를 달고 취득 시점 pose로 변환한다. 그렇게 하지 않은
+기존 코드는 "latency 모델"이 아니라 **latency 위에 얹힌 미모델링 오차**였다. τ=0에서 산술적
+no-op이므로 clean 결과와 2026-08-06 이전의 모든 비-latency 수치는 영향을 받지 않는다.
+`_env_bool`이 `=0`을 정확히 False로 처리하는 것을 확인했으므로 R3 재현 경로도 살아 있다.
+
+`eval_navrl_v2_detector_robustness.sh` 헤더에 **superseded 경고**를 달았다: 아카이브된
+latency_0p1s / latency_0p2s(37.82% / 18.50%)는 수정 전 수치이며, 지금 재실행하면 기본값이
+바뀌었으므로 그 숫자가 재현되지 않는다(의도된 동작). 비-latency 셀은 no-op이라 그대로다.
+
+**주의**: 이 승격으로 `results/navrl_v2_detector_robustness/`의 latency 두 셀은 논문·대시보드에
+그대로 인용하면 안 된다. 대체 수치는 `results/navrl_v2_latency_ego_motion/`(0.1 s)와
+`results/navrl_v2_latency_budget/`(0.2/0.3/0.5 s)다.

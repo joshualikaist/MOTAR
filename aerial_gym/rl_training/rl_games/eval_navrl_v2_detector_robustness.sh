@@ -1,6 +1,15 @@
 #!/usr/bin/env bash
 # R3 held-out detector/perception robustness screen for the frozen ep25000 + riskcap policy.
 # Usage: ./eval_navrl_v2_detector_robustness.sh [trained-detector-checkpoint]
+#
+# SUPERSEDED LATENCY CELLS: the archived latency_0p1s / latency_0p2s results in
+# results/navrl_v2_detector_robustness (37.82% / 18.50%) were produced BEFORE the ego-motion
+# fix, i.e. with the delayed measurement lifted to world using the current pose instead of the
+# pose it was taken at. Under the corrected model 0.1 s costs 2.5 pp, not 42.7 pp, and latency
+# is no longer the dominant perception axis (WORKLOG 2026-08-06,
+# results/navrl_v2_latency_ego_motion). Re-running this script now picks up the corrected model
+# by default, so its latency numbers will NOT reproduce the archived ones -- that is intended.
+# The non-latency cells are unaffected: the fix is arithmetically a no-op at zero latency.
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
 

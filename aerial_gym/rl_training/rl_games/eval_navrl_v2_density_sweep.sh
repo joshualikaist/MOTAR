@@ -380,12 +380,14 @@ export NAVRL_DETECTOR_THRESHOLD="${NAVRL_DETECTOR_THRESHOLD:-${DETECTOR_THRESHOL
 export NAVRL_DETECTION_DROPOUT="${NAVRL_DETECTION_DROPOUT:-${DETECTION_DROPOUT}}"
 export NAVRL_DETECTION_LATENCY_S="${NAVRL_DETECTION_LATENCY_S:-0}"
 export NAVRL_RANGE_ERROR_M="${NAVRL_RANGE_ERROR_M:-0}"
-# Compensation knobs (fixes, not perturbations). Pinned to their off values so a cell that does
-# not request a fix cannot inherit one from the caller's shell.
+# Compensation knobs (fixes, not perturbations), pinned so a cell cannot inherit one from the
+# caller's shell. P0/P1/P2 default off -- they were measured and not adopted. P3 defaults ON
+# because it is the correct measurement model rather than a compensation (WORKLOG 2026-08-06);
+# pass NAVRL_LATENCY_EGO_MOTION_FIX=0 to reproduce the superseded R3 latency arms.
 export NAVRL_LATENCY_COMPENSATE="${NAVRL_LATENCY_COMPENSATE:-0}"
 export NAVRL_LATENCY_LIDAR_BACKUP="${NAVRL_LATENCY_LIDAR_BACKUP:-0}"
 export NAVRL_LATENCY_OBSTACLE_FIX="${NAVRL_LATENCY_OBSTACLE_FIX:-off}"
-export NAVRL_LATENCY_EGO_MOTION_FIX="${NAVRL_LATENCY_EGO_MOTION_FIX:-0}"
+export NAVRL_LATENCY_EGO_MOTION_FIX="${NAVRL_LATENCY_EGO_MOTION_FIX:-1}"
 export NAVRL_RGB_NOISE_STD="${NAVRL_RGB_NOISE_STD:-${RGB_NOISE_STD}}"
 export NAVRL_DEPTH_NOISE_STD="${NAVRL_DEPTH_NOISE_STD:-${DEPTH_NOISE_STD}}"
 export NAVRL_OOB_MARGIN=1.0
