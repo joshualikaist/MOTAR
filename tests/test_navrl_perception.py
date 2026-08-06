@@ -2,6 +2,7 @@ import ast
 import importlib.util
 import inspect
 import math
+import os
 from pathlib import Path
 import sys
 import types
@@ -518,6 +519,48 @@ class HeldOutDistributionContractTest(unittest.TestCase):
                 "cfg_rl_step_dt_s",
             }.issubset(checkpoint_strings)
         )
+
+
+class DetectorCheckpointIntegrityTest(unittest.TestCase):
+    """The harness exports NAVRL_EXPECTED_DETECTOR_SHA256; the loader must actually check it.
+
+    It did not until 2026-08-06, so every learned-detector result recorded a detector SHA that
+    had never been compared against the bytes loaded. These tests keep the guard alive.
+    """
+
+    def setUp(self):
+        import hashlib
+        import tempfile
+
+        camera, perception = _configs()
+        self.camera, self.perception = camera, perception
+        module = NavRLPerceptionModule(1, "cpu", perception, 0.1, camera)
+        handle = tempfile.NamedTemporaryFile(suffix=".pth", delete=False)
+        handle.close()
+        self.addCleanup(os.unlink, handle.name)
+        torch.save({"model": module.segmenter.state_dict()}, handle.name)
+        self.checkpoint = handle.name
+        self.sha = hashlib.sha256(open(handle.name, "rb").read()).hexdigest()
+        self.addCleanup(os.environ.pop, "NAVRL_EXPECTED_DETECTOR_SHA256", None)
+
+    def _build(self):
+        self.perception.detector_checkpoint = self.checkpoint
+        return NavRLPerceptionModule(1, "cpu", self.perception, 0.1, self.camera)
+
+    def test_matching_sha_loads(self):
+        os.environ["NAVRL_EXPECTED_DETECTOR_SHA256"] = self.sha
+        self._build()
+
+    def test_mismatched_sha_is_fatal(self):
+        os.environ["NAVRL_EXPECTED_DETECTOR_SHA256"] = "0" * 64
+        with self.assertRaises(RuntimeError) as ctx:
+            self._build()
+        self.assertIn("SHA mismatch", str(ctx.exception))
+
+    def test_absent_expectation_still_loads(self):
+        """Interactive/legacy runs that never set the variable must keep working."""
+        os.environ.pop("NAVRL_EXPECTED_DETECTOR_SHA256", None)
+        self._build()
 
 
 if __name__ == "__main__":

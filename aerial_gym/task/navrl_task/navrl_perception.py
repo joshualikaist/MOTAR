@@ -9,6 +9,7 @@ The simulator may use ground truth to *render* sensor pixels, just as a real sce
 measurements.  Ground truth is intentionally absent from every public method in this file.
 """
 
+import hashlib
 import math
 import os
 
@@ -610,6 +611,21 @@ class NavRLPerceptionModule:
         self.segmenter = AppearanceTargetSegmenter().to(device).eval()
         checkpoint = str(getattr(cfg, "detector_checkpoint", "") or "").strip()
         if checkpoint:
+            # The eval harness hashes the detector and exports the digest expecting it to be
+            # checked here; until 2026-08-06 nothing read it, so every result recorded a
+            # detector SHA that was never compared against the bytes actually loaded.
+            expected_sha = os.environ.get("NAVRL_EXPECTED_DETECTOR_SHA256", "").strip().lower()
+            if expected_sha:
+                digest = hashlib.sha256()
+                with open(checkpoint, "rb") as stream:
+                    for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+                        digest.update(chunk)
+                actual_sha = digest.hexdigest()
+                if actual_sha != expected_sha:
+                    raise RuntimeError(
+                        "detector checkpoint SHA mismatch: %s expected %s, loaded %s"
+                        % (checkpoint, expected_sha, actual_sha)
+                    )
             state = torch.load(checkpoint, map_location=device)
             self.segmenter.load_state_dict(state.get("model", state), strict=True)
 

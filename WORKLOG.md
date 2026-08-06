@@ -6588,3 +6588,32 @@ PERTURB=0이므로 원칙적으로 모든 perturbation 셀이 센서 노이즈�
 range_error 두 셀(PERTURB=1)이 80.54 / 80.62%로 clean과 동일하므로, **이 노이즈의 비용은
 사실상 0 pp**이며 의도치 않은 대조군 역할을 한다. 따라서 latency 잔차 2.5 pp와 dropout
 −12.7 pp는 노이즈가 아니라 해당 축 자체의 비용이다.
+
+## 2026-08-07 — 전체 코드 점검 + detector SHA 가드 부활
+
+다음 축(learned detector)으로 넘어가기 전 전 저장소를 점검했다.
+
+**기계적 점검 (전부 통과)**: 병합 충돌 마커 0건, 추적 대상 `.py` 전량 컴파일, `.sh` 전량 파싱,
+python 테스트 21개 파일 + JS 1개 전부 PASS, pyflakes에 undefined name / redefinition 0건
+(남은 지적은 업스트림 Aerial Gym의 star-import 및 sample_factory 예제의 미사용 지역변수).
+대시보드는 재생성 후 `status.json`과 HTML fallback JSON이 일치하고, `getElementById` 대상
+53개가 모두 HTML에 존재하며 탭 앵커도 누락이 없다.
+
+**발견한 실제 결함 — detector SHA 가드가 죽어 있었다.**
+`eval_navrl_v2_density_sweep.sh`가 detector 체크포인트를 해시해서
+`NAVRL_EXPECTED_DETECTOR_SHA256`으로 export 하는데, **저장소 어디에서도 이 값을 읽지 않았다.**
+`navrl_perception.py`는 SHA 확인 없이 `torch.load`만 했다. 즉 `learned_clean` 셀의 결과 JSON에
+기록된 `detector_checkpoint_sha256`은 **실제로 로드된 바이트와 대조된 적이 없는 값**이었다.
+이제 loader가 변수가 설정된 경우 파일을 해시해 불일치 시 RuntimeError로 중단한다. 변수가 없으면
+기존처럼 로드한다(대화형·레거시 실행 보존). 회귀 테스트 3건 추가
+(`tests/test_navrl_perception.py::DetectorCheckpointIntegrityTest`).
+
+**미해결 리스크(내 작업 아님, 기록만)**: `artifacts/navrl_target_detector_v1.pth`와
+`tools/train_navrl_target_detector.py`가 여전히 미커밋이다. 따라서 `learned_clean` 결과는
+저장소만으로 재현할 수 없다. 다음 축이 바로 이 detector이므로, 진행 전에 이 두 파일의
+커밋 여부를 소유자(다른 세션)와 정리해야 한다.
+
+**환경 노브 교차 검증**: 스크립트가 참조하지만 python이 읽지 않는 `NAVRL_*` 19개를 전수 확인했다.
+`NAVRL_EXPECTED_DETECTOR_SHA256`을 제외한 18개는 전부 셸 내부 변수(결과 경로, 워밍스타트 허용
+플래그 등)이거나 문서 내 표기이며, `NAVRL_V2_FIXED_TARGET_SPEED`는 셸이 다른 노브로 변환해
+소비하는 것을 확인했다. 즉 진짜 구멍은 하나뿐이었다.
