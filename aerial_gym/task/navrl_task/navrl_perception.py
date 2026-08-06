@@ -35,6 +35,11 @@ OBSTACLE_DIM = 12
 TARGET_LIKE_ANGLE_RAD = math.radians(15.0)
 TARGET_LIKE_RANGE_TOL_M = 0.55
 
+# Standard deviation standing in for "this sensor said nothing about this direction". Large
+# enough that the Kalman gain perpendicular to the measurement ray is numerically zero, while
+# keeping R well-conditioned.
+LIDAR_UNOBSERVED_SIGMA_M = 50.0
+
 # LiDAR scan resolution. HBEAMS is THE source of truth for the horizontal beam count and must equal
 # navrl_lidar_config.width (both read NAVRL_LIDAR_HBEAMS). Changing it changes STRUCTURED_OBS_DIM,
 # hence a fresh policy is required. The old claim that token error was dominated by angular
@@ -499,15 +504,25 @@ class BatchedConstantVelocityTracker:
         self.active[expired] = False
         return self.state, self.cov, self.active, self.age
 
-    def correct(self, measurement_world, visible, measurement_var):
-        """Apply a second sensor correction without advancing time again."""
+    def correct(self, measurement_world, visible, measurement_var, measurement_cov=None):
+        """Apply a second sensor correction without advancing time again.
+
+        `measurement_cov` supplies a full 3x3 noise matrix instead of a diagonal one. A sensor
+        that constrains only one direction -- a range along a known bearing, say -- has an
+        anisotropic R, and passing it as a diagonal understates the uncertainty in the axes it
+        never measured, shrinking their covariance for free.
+        """
         update = visible & self.active
         if bool(update.any()):
             x = self.state[update]
             p = self.cov[update]
             z = measurement_world[update]
             innovation = z - x[:, :3]
-            r = torch.diag_embed(measurement_var[update])
+            r = (
+                measurement_cov[update]
+                if measurement_cov is not None
+                else torch.diag_embed(measurement_var[update])
+            )
             s = p[:, :3, :3] + r
             k = p[:, :, :3].matmul(torch.inverse(s))
             self.state[update] = x + k.matmul(innovation.unsqueeze(2)).squeeze(2)
@@ -576,6 +591,8 @@ class NavRLPerceptionModule:
         # the tracker coast on its constant-velocity prediction instead of correcting with a
         # coarse measurement, which is the A/B that decides whether the fallback helps or hurts.
         self.lidar_target_assoc = bool(getattr(cfg, "lidar_target_assoc", True))
+        # H3: restrict the LiDAR correction to the direction it actually measures.
+        self.lidar_range_only_update = bool(getattr(cfg, "lidar_range_only_update", False))
         self.rgb_noise_std = float(getattr(cfg, "rgb_noise_std", 0.015))
         self.depth_noise_std = float(getattr(cfg, "depth_noise_std", 0.02))
         self.history_stride = max(1, int(round(float(cfg.history_interval_s) / self.step_dt)))
@@ -1054,7 +1071,27 @@ class NavRLPerceptionModule:
         lidar_var = torch.tensor(
             [0.08**2, 0.15**2, 0.20**2], device=self.device
         ).view(1, 3).expand(self.num_envs, -1)
-        self.tracker.correct(measurement_world, valid, lidar_var)
+        # H3: only `measured_surface` is measured here. The bearing and the vertical component of
+        # `measured_vehicle` are the tracker's OWN prediction read back, so feeding all three to a
+        # diagonal-R update hands the filter information it never received: the lateral and
+        # vertical covariance stop growing even though nothing observed them. Measured on a target
+        # the camera has lost, the reported lateral sigma sits at 0.09 m while the true error runs
+        # to 3.27 m over 20 steps -- and the policy reads that covariance in its target token, so
+        # it is told "certain" exactly when it should be told "lost". Building R as
+        # sigma_r^2*uu^T + sigma_perp^2*(I - uu^T) about the measurement ray keeps the range
+        # update and leaves the unobserved directions to process noise, which is what an
+        # anisotropic sensor actually justifies.
+        lidar_cov = None
+        if self.lidar_range_only_update:
+            ray = measurement_world - drone_pos_w
+            unit = ray / ray.norm(dim=1, keepdim=True).clamp(min=1e-6)
+            outer = unit.unsqueeze(2) * unit.unsqueeze(1)
+            eye = torch.eye(3, device=self.device).unsqueeze(0)
+            lidar_cov = (
+                lidar_var[:, 0].view(-1, 1, 1) * outer
+                + LIDAR_UNOBSERVED_SIGMA_M**2 * (eye - outer)
+            )
+        self.tracker.correct(measurement_world, valid, lidar_var, measurement_cov=lidar_cov)
         confidence = torch.exp(
             -(measured_surface - predicted_surface_range).abs() / gate.clamp(min=1e-3)
         ) * valid.float()

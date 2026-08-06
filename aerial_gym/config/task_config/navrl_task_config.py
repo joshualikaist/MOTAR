@@ -238,6 +238,13 @@ class task_config:
         # coast on the constant-velocity prediction instead and measure whether the coarse
         # correction is helping or hurting. Default on = current behaviour.
         lidar_target_assoc = _env_bool("NAVRL_LIDAR_TARGET_ASSOC", True)
+        # H3 (WORKLOG 2026-08-07): the LiDAR target correction measures only a range along a
+        # bearing the tracker itself predicted, yet it is applied as a full 3-D update, so the
+        # lateral and vertical covariance shrink on information that was never observed. The
+        # filter then reports ~0.09 m of lateral sigma while the true error reaches 3.27 m, and
+        # the policy reads that covariance. Enabling this shapes R about the measurement ray so
+        # only the range informs the filter. Off until the A/B measures it.
+        lidar_range_only_update = _env_bool("NAVRL_LIDAR_RANGE_ONLY_UPDATE", False)
         rgb_noise_std = _env_float("NAVRL_RGB_NOISE_STD", 0.015)
         depth_noise_std = _env_float("NAVRL_DEPTH_NOISE_STD", 0.02)
         # [static VBEAMS*HBEAMS | obstacle history 5*MAX_OBSTACLES*12 | robot history 5x10 |

@@ -341,6 +341,62 @@ class TargetMaskBackfill(unittest.TestCase):
         )
 
 
+class LidarRangeOnlyUpdate(unittest.TestCase):
+    """H3: a range-along-a-predicted-bearing must not shrink the covariance it never observed."""
+
+    LIDAR_VAR = torch.tensor([[0.08**2, 0.15**2, 0.20**2]])
+    TRUTH = torch.tensor([[6.0, 0.0, 1.0]])
+
+    def _coast(self, steps, range_only):
+        """Lock on, then lose the camera while the LiDAR keeps 'correcting' every step."""
+        tracker = _PERCEPTION.BatchedConstantVelocityTracker(1, "cpu", DT, memory_s=5.0)
+        cam_var = torch.full((1, 3), 0.05**2)
+        seen, unseen = torch.ones(1, dtype=torch.bool), torch.zeros(1, dtype=torch.bool)
+        for _ in range(2):
+            tracker.step(self.TRUTH, seen, cam_var)
+        for _ in range(steps):
+            tracker.step(torch.zeros(1, 3), unseen, cam_var)
+            rel = tracker.state[:, :3]
+            bearing = torch.atan2(rel[:, 1], rel[:, 0])
+            center_range = rel.norm(dim=1)
+            # Exactly what _associate_lidar_target builds: bearing and z from the PREDICTION.
+            meas = torch.stack(
+                [center_range * torch.cos(bearing), center_range * torch.sin(bearing), rel[:, 2]],
+                dim=1,
+            )
+            cov = None
+            if range_only:
+                unit = meas / meas.norm(dim=1, keepdim=True).clamp(min=1e-6)
+                outer = unit.unsqueeze(2) * unit.unsqueeze(1)
+                eye = torch.eye(3).unsqueeze(0)
+                cov = (self.LIDAR_VAR[:, 0].view(-1, 1, 1) * outer
+                       + _PERCEPTION.LIDAR_UNOBSERVED_SIGMA_M**2 * (eye - outer))
+            tracker.correct(meas, seen, self.LIDAR_VAR, measurement_cov=cov)
+        sigma = torch.diagonal(tracker.cov[:, :3, :3], dim1=1, dim2=2)[0].sqrt()
+        return float(sigma[1]), float(sigma[2])
+
+    def test_full_3d_update_freezes_the_unobserved_covariance(self):
+        """The defect: lateral sigma barely moves over 20 blind steps."""
+        near_lat, _ = self._coast(2, range_only=False)
+        far_lat, _ = self._coast(20, range_only=False)
+        self.assertLess(far_lat, near_lat * 2.0)
+
+    def test_range_only_lets_the_unobserved_covariance_grow(self):
+        near_lat, near_vert = self._coast(2, range_only=True)
+        far_lat, far_vert = self._coast(20, range_only=True)
+        self.assertGreater(far_lat, near_lat * 3.0)
+        self.assertGreater(far_vert, near_vert * 3.0)
+
+    def test_range_only_reports_more_uncertainty_than_the_full_update(self):
+        blind_lat, blind_vert = self._coast(20, range_only=True)
+        full_lat, full_vert = self._coast(20, range_only=False)
+        self.assertGreater(blind_lat, full_lat)
+        self.assertGreater(blind_vert, full_vert)
+
+    def test_default_keeps_the_current_behaviour(self):
+        self.assertFalse(_module(0.0, "off").lidar_range_only_update)
+
+
 class LidarTargetAssociationSwitch(unittest.TestCase):
     """H2 probe: the LiDAR fallback must be switchable off without disturbing anything else."""
 

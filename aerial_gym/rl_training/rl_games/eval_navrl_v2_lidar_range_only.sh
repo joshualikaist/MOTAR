@@ -1,29 +1,34 @@
 #!/usr/bin/env bash
-# Is the coarse LiDAR fallback helping or hurting on camera-missed frames?
+# Should the LiDAR target correction update axes it never measured?
 #
-# On a dropped camera frame the LiDAR association is the ONLY thing correcting the target track,
-# and the bearing it reports is the bin nearest the tracker's own prediction -- quantised to
-# 360/HBEAMS = 5 deg, which is 0.44 m of lateral error at 5 m. So detection dropout may cost
-# capture not because the drone sees the target less often (fused visibility is unchanged,
-# 21.38% vs clean 21.21%) but because 30% of frames correct the filter with a much worse
-# measurement. P1, which opened this path wider, cost -8.85 pp -- consistent with that reading.
+# _associate_lidar_target measures ONE thing: a range along a bearing. The bearing it reports and
+# the vertical component of the measurement it hands the filter are the tracker's own prediction
+# read back. Applied as a full 3-D update with a diagonal R, that shrinks the lateral and
+# vertical covariance on information nobody observed, cancelling the growth process noise should
+# produce. Measured on a target the camera has lost, the filter reports 0.09 m of lateral sigma
+# while the true error runs to 3.27 m over 20 steps -- and the policy reads that covariance in
+# its target token, so it is told "certain" exactly when it should be told "lost".
 #
-# Turning the fallback off makes the tracker coast on its constant-velocity prediction instead.
+# H3 shapes R about the measurement ray, sigma_r^2*uu^T + sigma_perp^2*(I - uu^T), keeping the
+# range update and leaving the unobserved directions to process noise. Lateral sigma then grows
+# 0.16 -> 1.47 m over those same 20 blind steps.
 #
-#   arm                       dropout  lidar assoc
-#   analytic_clean               0          on      (80.54 / 17.17 재현)
-#   dropout_0p3_raw            0.3          on      (67.84 / 29.33 재현)
-#   dropout_0p3_no_assoc       0.3         off      ← 가설 검정
-#   clean_no_assoc               0         off      (카메라가 안 놓치면 무해해야 함)
+# This is the principled version of H2. Rather than discarding the fallback (+3.42/+3.09 pp under
+# dropout across two seeds, but -0.19/-1.02 pp on clean), keep its range information and stop
+# overstating its precision. If the covariance lie is the channel, H3 should match or beat H2
+# under dropout WITHOUT H2's clean cost.
 #
-# CAVEAT for reading this: switching the fallback off also drops fused visibility to camera-only,
-# so the target token's time-since-seen feature changes too. A gain therefore means "coasting
-# beats a coarse correction", not "the LiDAR path is useless".
+#   arm                       dropout  assoc  range-only
+#   analytic_clean               0       on      off      (80.54 / 17.17 재현)
+#   dropout_0p3_raw            0.3       on      off      (67.84 / 29.33 재현)
+#   dropout_0p3_range_only     0.3       on       ON      ← 가설 검정
+#   dropout_0p3_no_assoc       0.3      off      off      (H2 기준선, 71.25% 재현)
+#   clean_range_only             0       on       ON      (무해성)
 #
 # Usage:
-#   ./eval_navrl_v2_lidar_fallback.sh
-#   NAVRL_LIDARFB_SEED=51 ./eval_navrl_v2_lidar_fallback.sh
-#   PREFLIGHT=1 ./eval_navrl_v2_lidar_fallback.sh
+#   ./eval_navrl_v2_lidar_range_only.sh
+#   NAVRL_RANGEONLY_SEED=51 ./eval_navrl_v2_lidar_range_only.sh
+#   PREFLIGHT=1 ./eval_navrl_v2_lidar_range_only.sh
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
@@ -34,8 +39,8 @@ POLICY="runs/ppo_260805_0413_navrl_v2-speedgov-ep24000-205bars-main-riskcap-s1/n
 POLICY_SHA="f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40"
 # Seed 47 is the frozen contract; a second seed decides adoption. The backfill arm was rejected
 # because its clean regression replicated across seeds, so this one faces the same bar.
-SEED="${NAVRL_LIDARFB_SEED:-47}"
-RESULT_ROOT="../../../results/navrl_v2_lidar_fallback"
+SEED="${NAVRL_RANGEONLY_SEED:-47}"
+RESULT_ROOT="../../../results/navrl_v2_lidar_range_only"
 if [[ "${SEED}" != "47" ]]; then
     RESULT_ROOT="${RESULT_ROOT}_seed${SEED}"
 fi
@@ -43,11 +48,11 @@ PREFLIGHT="${PREFLIGHT:-0}"
 EPISODES="${EPISODES:-2049}"
 
 if [[ ! -f "${POLICY}" ]]; then
-    echo "[lidar-fb] policy checkpoint missing: ${POLICY}" >&2
+    echo "[range-only] policy checkpoint missing: ${POLICY}" >&2
     exit 2
 fi
 if [[ -e "${RESULT_ROOT}" && "${PREFLIGHT}" != "1" ]]; then
-    echo "[lidar-fb] refusing to overwrite ${RESULT_ROOT}" >&2
+    echo "[range-only] refusing to overwrite ${RESULT_ROOT}" >&2
     exit 2
 fi
 
@@ -62,7 +67,7 @@ import torch
 trained, expected = Path(sys.argv[1]), sys.argv[2]
 actual = hashlib.sha256(trained.read_bytes()).hexdigest()
 if actual != expected:
-    raise SystemExit(f"[lidar-fb] policy SHA mismatch: {actual}")
+    raise SystemExit(f"[range-only] policy SHA mismatch: {actual}")
 payload = torch.load(trained, map_location="cpu", weights_only=False)
 state = payload.get("env_state") or {}
 checks = {
@@ -74,7 +79,7 @@ checks = {
 }
 failed = [name for name, passed in checks.items() if not passed]
 if failed:
-    raise SystemExit("[lidar-fb] invalid policy checkpoint: " + ", ".join(failed))
+    raise SystemExit("[range-only] invalid policy checkpoint: " + ", ".join(failed))
 print(actual)
 PY
 )"
@@ -101,7 +106,8 @@ run_cell() {
     local perturb="$2"
     local dropout="$3"
     local assoc="$4"
-    echo "[lidar-fb] cell=${tag} perturb=${perturb} dropout=${dropout} lidar_assoc=${assoc}"
+    local range_only="$5"
+    echo "[range-only] cell=${tag} perturb=${perturb} dropout=${dropout} assoc=${assoc} range_only=${range_only}"
     if [[ "${PREFLIGHT}" == "1" ]]; then
         return 0
     fi
@@ -111,17 +117,19 @@ run_cell() {
     NAVRL_RANGE_ERROR_M=0 \
     NAVRL_TARGET_MASK_BACKFILL=0 \
     NAVRL_LIDAR_TARGET_ASSOC="${assoc}" \
+    NAVRL_LIDAR_RANGE_ONLY_UPDATE="${range_only}" \
     NAVRL_V2_RESULT_DIR="${RESULT_ROOT}/${tag}" \
         ./eval_navrl_v2_density_sweep.sh "${POLICY}" "${EPISODES}"
 }
 
-run_cell analytic_clean       0 0   1
-run_cell dropout_0p3_raw      1 0.3 1
-run_cell dropout_0p3_no_assoc 1 0.3 0
-run_cell clean_no_assoc       0 0   0
+run_cell analytic_clean          0 0   1 0
+run_cell dropout_0p3_raw         1 0.3 1 0
+run_cell dropout_0p3_range_only  1 0.3 1 1
+run_cell dropout_0p3_no_assoc    1 0.3 0 0
+run_cell clean_range_only        0 0   1 1
 
 if [[ "${PREFLIGHT}" == "1" ]]; then
-    echo "[lidar-fb] PREFLIGHT PASS (no results written)"
+    echo "[range-only] PREFLIGHT PASS (no results written)"
     exit 0
 fi
 
@@ -150,7 +158,7 @@ def load(cell_dir):
 
 
 cells = {d.name: load(d) for d in sorted(p for p in root.iterdir() if p.is_dir())}
-clean, raw, fixed = cells["analytic_clean"], cells["dropout_0p3_raw"], cells["dropout_0p3_no_assoc"]
+clean, raw, fixed = cells["analytic_clean"], cells["dropout_0p3_raw"], cells["dropout_0p3_range_only"]
 span = clean["capture"] - raw["capture"]
 excess_bars = raw["bar_contact"] - clean["bar_contact"]
 verdict = {
@@ -161,7 +169,7 @@ verdict = {
         (raw["bar_contact"] - fixed["bar_contact"]) / excess_bars if excess_bars else None
     ),
     # The fix must not cost anything when the camera never misses a frame.
-    "clean_regression_pp": (cells["clean_no_assoc"]["capture"] - clean["capture"]) * 100.0,
+    "clean_regression_pp": (cells["clean_range_only"]["capture"] - clean["capture"]) * 100.0,
 }
 # ~2050 episodes puts the inter-arm standard error near 1.3 pp, so anything smaller is noise.
 verdict["hypothesis"] = (
@@ -175,7 +183,7 @@ verdict["hypothesis"] = (
                 "cells": cells, "verdict": verdict}, indent=2, sort_keys=True) + "\n",
     encoding="utf-8",
 )
-lines = ["# LiDAR fallback A/B under detection dropout (ep25000+riskcap, seed %s, 205 bars)" % os.environ["NAVRL_SEED"],
+lines = ["# LiDAR range-only update A/B under detection dropout (ep25000+riskcap, seed %s, 205 bars)" % os.environ["NAVRL_SEED"],
          "",
          "| cell | episodes | capture | crash | bar contacts | OOB | fused visible | closest mean (m) |",
          "|---|---:|---:|---:|---:|---:|---:|---:|"]
@@ -198,4 +206,4 @@ lines += ["", f"## verdict: {verdict['hypothesis']}", "",
 (root / "summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
 print("\n".join(lines))
 PY
-echo "[lidar-fb] done -> ${RESULT_ROOT}/summary.{md,json}"
+echo "[range-only] done -> ${RESULT_ROOT}/summary.{md,json}"
