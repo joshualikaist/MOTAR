@@ -6555,3 +6555,36 @@ crash 증가분이 capture 감소분과 거의 1:1이고(예: 0.5 s에서 −15.
 
 1차 실행이 evaluator 편집으로 거부된 뒤의 재실행 결과이며, 이번에는 실행 중 어떤 평가 입력도
 수정하지 않았다.
+
+## 2026-08-06 — dropout vs learned detector: 손실 경로가 서로 다르다 (분석, GPU 미사용)
+
+R3 셀들의 진단 필드를 읽어 두 축의 **실패 서명**을 비교했다.
+
+| cell | fused visible | closest_nocrash_mean | bar contact 수 | 충돌 시 clearance | capture |
+|---|---:|---:|---:|---:|---:|
+| analytic_clean | 21.21% | 0.806 m | 337 | 0.92 m | 80.54% |
+| dropout_0p3 | 21.38% | 0.972 m | 559 | **0.65 m** | 67.84% |
+| learned_clean | 14.25% | **1.892 m** | 495 | **1.10 m** | 66.62% |
+
+capture 손실은 −12.7 / −13.9 pp로 비슷하지만 **경로가 정반대다.**
+- **dropout**: 표적에는 여전히 접근한다(closest 0.972 m ≈ clean 0.806 m). 그런데 충돌이
+  337 → 559로 늘고, 충돌 순간의 clearance가 0.92 → **0.65 m로 좁아진다**. 장애물 회피가
+  나빠지는 서명이다 —— 카메라 *표적* 검출을 버렸는데 왜 장애물 성능이 떨어지는지가 핵심 질문이다.
+- **learned detector**: 충돌 시 clearance는 오히려 **1.10 m로 넓고**, closest_nocrash_mean이
+  1.892 m로 clean의 2.3배다. 즉 애초에 표적 근처까지 가지 못한다. 추적 정확도 문제다.
+
+따라서 "검출 성능이 나쁘면 capture가 떨어진다"는 하나의 설명으로 묶으면 안 된다. 두 축을
+같은 처방으로 다루려던 계획은 폐기한다.
+
+**dropout 채널 가설(미검증)**: `visible`이 깜빡이면 `target_like` carve-out도 깜빡이므로,
+표적 근처 LiDAR return이 어떤 스텝에는 지워지고 어떤 스텝에는 장애물로 남는다. 8개뿐인
+obstacle token 예산을 표적이 간헐적으로 차지하면 실제 막대가 토큰에서 밀려난다 —— 좁은
+clearance에서의 충돌 증가와 부합한다. 검증에는 토큰 점유율 계측이 필요하다.
+
+**부수 확인 — noise 교란은 무시 가능**: R3의 모든 perturbation 셀은
+`NAVRL_PERCEPTION_PERTURB=1`을 쓰는데, 이 플래그는 `navrl_task.py:3279`에서 `training=True`로
+전달되어 dropout뿐 아니라 `rgb_noise_std=0.015`·`depth_noise_std=0.02`도 함께 켠다. clean 셀은
+PERTURB=0이므로 원칙적으로 모든 perturbation 셀이 센서 노이즈와 교란된다. 그러나
+range_error 두 셀(PERTURB=1)이 80.54 / 80.62%로 clean과 동일하므로, **이 노이즈의 비용은
+사실상 0 pp**이며 의도치 않은 대조군 역할을 한다. 따라서 latency 잔차 2.5 pp와 dropout
+−12.7 pp는 노이즈가 아니라 해당 축 자체의 비용이다.
