@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-06T15:24:37.316373+00:00",
+  "generated_at": "2026-08-06T16:35:32.433280+00:00",
   "repo": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator",
   "n_runs": 72,
   "active_run": null,
@@ -3655,7 +3655,12 @@
         "capture": 0.159,
         "crash": 0.841
       }
-    ]
+    ],
+    "task_version": "v1",
+    "arena_xy_m": 24.0,
+    "placement_area_m2": 478.0,
+    "comparable_with_v2": false,
+    "superseded_note": "v1 task: 24 m arena, 478 m² placement band. Densities are per that area, so these cells are NOT comparable with the v2 40 m arena (1600 m²) the rest of this page reports. A v2 re-measurement is pending."
   },
   "density_ceiling": {
     "run": "ppo_260730_2111_navrl_cluster-sector-density85to110-v2-s1",

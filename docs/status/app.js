@@ -553,6 +553,11 @@ function renderHeatmap(s) {
     g += `<text class="t dim" x="${X0 + ci * CW + CW / 2}" y="${Y0 - 22}" text-anchor="middle" font-size="11.5">target ${v.toFixed(2)} m/s</text>`;
   });
   g += `<text class="t dim" x="${X0 - 12}" y="${Y0 - 22}" text-anchor="end" font-size="10.5">capture %</text>`;
+  // The density labels are per this map's OWN placement area, which is not the one the rest of
+  // the page reports. Say so on the axis, next to the numbers being misread.
+  if (pack.placement_area_m2) {
+    g += `<text class="t dim" x="${X0 - 12}" y="${Y0 - 8}" text-anchor="end" font-size="9.5">per ${pack.placement_area_m2.toFixed(0)}m²</text>`;
+  }
   if (trainedMax) {
     const n = bars.filter(b => b <= trainedMax).length;
     const yl = Y0 + n * CH;
@@ -574,8 +579,17 @@ function renderHeatmap(s) {
     `Density dominates: over this grid it costs ${dDen.toFixed(0)} pp of capture, while target speed `
     + `costs only ${dSpd.toFixed(1)} pp — the pursuer at 2.5 m/s is fast enough that target speed is `
     + `not a binding difficulty axis. Rows below the dashed line were never trained. `
-    + `This map is historical and predates the target heading-continuity fix.`;
-  if (sub) sub.textContent = `${rows.length} cells · 2049 episodes each · deterministic · sensor-only`;
+    + `This map is historical and predates the target heading-continuity fix.`
+    + (pack.comparable_with_v2 === false
+        ? ` ${pack.superseded_note || ''} `
+          + `Reading a bar count across task versions is misleading: 85 bars is `
+          + `${(85 / (pack.placement_area_m2 || 478) * 100).toFixed(1)}/100m² here but `
+          + `${(85 / 1600 * 100).toFixed(1)}/100m² in the v2 arena.`
+        : '');
+  if (sub) {
+    const tag = pack.task_version ? `${pack.task_version} task · ${pack.arena_xy_m || '?'} m arena · ` : '';
+    sub.textContent = `${tag}${rows.length} cells · 2049 episodes each · deterministic · sensor-only`;
+  }
 }
 
 /* Where the self-paced density curriculum actually stopped climbing. */

@@ -30,6 +30,10 @@ CORRECTED_CURVE_PATH = ROOT / "results/corrected_chirality_density_curve.csv"
 RECOVERY_ATTESTATION_VERIFIER_PATH = ROOT / "tools/navrl_v2_recovery_attestation.py"
 LIMIT_AUDIT_PATH = ROOT / "results/navrl_v2_ep24000_limit_audit.json"
 CAUSAL_1TO3_PATH = ROOT / "results/navrl_v2_ep24000_causal_1to3/summary.json"
+# Obstacle-placement areas, the density denominators. Named because the v1 figure is also the
+# divisor baked into the archived density x speed map's labels.
+V1_PLACEMENT_AREA_M2 = 478.0
+V2_PLACEMENT_AREA_M2 = 1600.0
 DETECTOR_ROBUSTNESS_PATH = ROOT / "results/navrl_v2_detector_robustness/summary.json"
 LATENCY_EGO_MOTION_PATH = ROOT / "results/navrl_v2_latency_ego_motion/summary.json"
 LATENCY_BUDGET_PATH = ROOT / "results/navrl_v2_latency_budget/summary.json"
@@ -2194,6 +2198,30 @@ def _research_update(
     }
 
 
+def _stamp_density_speed_map(status: Dict[str, Any]) -> None:
+    """Make the density x speed map say which task version it belongs to.
+
+    The map is v1 data (24 m arena, bars confined to x in 0.13..0.96 -> 478 m^2), and its
+    density_per_100m2 labels were divided by that 478. The page around it now reports a v2
+    placement area of 1600 m^2, so an unlabelled 17.8/100m2 at 85 bars invites exactly the
+    comparison against v2's 205-bar cells that WORKLOG 2026-07-31 ruled out -- the real densities
+    differ by 3.3x. Stamping the denominator into the data makes it self-describing instead of an
+    implicit constant living in this file.
+    """
+    pack = status.get("density_speed_map")
+    if not pack:
+        return
+    pack["task_version"] = "v1"
+    pack["arena_xy_m"] = 24.0
+    pack["placement_area_m2"] = V1_PLACEMENT_AREA_M2
+    pack["comparable_with_v2"] = False
+    pack["superseded_note"] = (
+        "v1 task: 24 m arena, 478 m² placement band. Densities are per that area, so these "
+        "cells are NOT comparable with the v2 40 m arena (1600 m²) the rest of this page "
+        "reports. A v2 re-measurement is pending."
+    )
+
+
 def _perception_robustness() -> Dict[str, Any]:
     """Held-out perception robustness of the frozen ep25000+riskcap policy.
 
@@ -2405,7 +2433,7 @@ def _placement_area_m2(active: Optional[Dict[str, Any]]) -> float:
     v1: 24 m arena, bars confined to x in 0.13..0.96 -> 0.83*24*24 = 478 m^2.
     v2: 40 m arena with the band widened to full width -> the whole 1600 m^2 footprint.
     """
-    return 1600.0 if _is_v2(active) else 478.0
+    return V2_PLACEMENT_AREA_M2 if _is_v2(active) else V1_PLACEMENT_AREA_M2
 
 
 def _success_criteria(active: Optional[Dict[str, Any]]) -> Dict[str, Any]:
@@ -2559,6 +2587,7 @@ def build_snapshot() -> Dict[str, Any]:
             "arena_geometry": _arena_geometry(active or latest),
         }
     )
+    _stamp_density_speed_map(status)
     status.setdefault("density_curves", {})[
         "corrected_chirality_density_curve"
     ] = _corrected_density_curve()
