@@ -341,6 +341,53 @@ class TargetMaskBackfill(unittest.TestCase):
         )
 
 
+class LidarTargetAssociationSwitch(unittest.TestCase):
+    """H2 probe: the LiDAR fallback must be switchable off without disturbing anything else."""
+
+    COLUMNS = [30, 33, 36, 39, 42, 45]
+
+    def _run(self, assoc, camera_blind=False):
+        module = _module(0.0, "off")
+        module.lidar_target_assoc = assoc
+        lidar = torch.full((1, _PERCEPTION.VBEAMS * _PERCEPTION.HBEAMS), 4.0)
+        zero_bin = int(torch.argmin(module._lidar_angles.abs()))
+        lidar.view(1, _PERCEPTION.VBEAMS, _PERCEPTION.HBEAMS)[:, :, zero_bin] = 3.0
+        pos, vel = torch.zeros(1, 3), torch.zeros(1, 3)
+        quat = torch.tensor([[0.0, 0.0, 0.0, 1.0]])
+        diag = None
+        for step, col in enumerate(self.COLUMNS):
+            rgb, depth = _frame(col, 3.0)
+            if camera_blind and step >= 3:
+                # Simulate a dropped detection: nothing orange left in the frame.
+                rgb = torch.full_like(rgb, 0.15)
+            _, diag = module.observe(
+                rgb, depth, lidar.clone(), pos, vel, quat,
+                torch.zeros(1), torch.zeros(1, 4), 2.0, 1.0, training=False,
+            )
+        return module, diag
+
+    def test_disabling_removes_lidar_visibility(self):
+        _, on = self._run(True, camera_blind=True)
+        _, off = self._run(False, camera_blind=True)
+        self.assertTrue(bool(on["lidar_visible"][0]))
+        self.assertFalse(bool(off["lidar_visible"][0]))
+        # With the camera blind and the fallback off, nothing reports the target at all.
+        self.assertFalse(bool(off["visible"][0]))
+        self.assertTrue(bool(on["visible"][0]))
+
+    def test_default_is_current_behaviour(self):
+        module = _module(0.0, "off")
+        self.assertTrue(module.lidar_target_assoc)
+
+    def test_switch_is_inert_while_the_camera_sees_the_target(self):
+        """It must only change camera-missed frames, so a fully visible run is untouched."""
+        on, diag_on = self._run(True)
+        off, diag_off = self._run(False)
+        self.assertTrue(bool(diag_on["camera_visible"][0]))
+        self.assertTrue(bool(torch.equal(diag_on["camera_visible"], diag_off["camera_visible"])))
+        self.assertTrue(bool(torch.allclose(on.tracker.state, off.tracker.state)))
+
+
 class LatencyEgoMotionFix(unittest.TestCase):
     """P3: a delayed measurement must be lifted to world with the pose it was TAKEN at."""
 

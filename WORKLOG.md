@@ -6716,3 +6716,60 @@ time-since-seen 특징도 함께 변한다는 점을 해석 시 감안해야 한
 
 **미결(사용자 합의)**: v2 아레나(40 m, 1600 m²)에서 밀도×속도 맵을 **재측정**해야 논문
 figure로 쓸 수 있다. 현재 맵은 그때까지 v1 확정 데이터로만 보존한다.
+
+## 2026-08-07 — H2(LiDAR 대체 보정) + backfill 시드 재현: LiDAR target association이 순손실
+
+두 건을 따로 측정했다. frozen ep25000+riskcap, 205 bars, deterministic, 2049~2051 ep/cell.
+
+### (1) backfill 시드 재현 — 채택 기각
+
+`results/navrl_v2_target_mask_backfill_seed51/`.
+
+| | dropout 이득 | clean 회귀 |
+|---|---:|---:|
+| seed47 | +2.54 pp | −1.42 pp |
+| seed51 | +1.77 pp | −2.39 pp |
+| 평균 | **+2.15 pp** | **−1.91 pp** |
+
+**clean 회귀가 재현됐다** —— 2개 시드에서 같은 방향이므로 노이즈가 아니다. dropout 이득도
+재현되지만(+2.54 → +1.77) 크기가 clean 손실과 거의 같아 **순효과가 상쇄된다. backfill은
+채택하지 않는다**(기본 off 유지).
+
+회귀의 메커니즘도 설명된다: backfill은 카메라 마스크가 비었을 때 **LiDAR 유래 bearing/range**로
+마스크를 재구성하는데, 그 bearing은 5° 양자화돼 있다. ±15° 창으로 depth를 blank 하므로
+**실제 장애물 픽셀까지 지운다.** 원래 버그(표적을 못 지움)를 고치면서 반대 방향 버그(장애물을
+지움)를 만든 셈이고, 조악한 LiDAR 측정을 소비한다는 점에서 원인은 같다.
+
+### (2) H2 — LiDAR 대체 보정을 끄면 오히려 좋아진다
+
+`results/navrl_v2_lidar_fallback/` (seed47).
+
+| cell | capture | crash | bar contacts | fused visible |
+|---|---:|---:|---:|---:|
+| analytic_clean | 80.54% | 17.17% | 337 | 21.21% |
+| clean_no_assoc | 80.35% | 17.50% | 346 | 18.44% |
+| dropout_0p3_raw | 67.84% | 29.33% | 559 | 21.38% |
+| dropout_0p3_no_assoc | **71.25%** | 25.96% | 511 | 14.59% |
+
+dropout에서 **+3.42 pp**(손실의 26.9%), bar contact −48(초과분의 21.6%). 그런데
+**clean에서는 −0.19 pp로 무해**하다. 즉 프로파일이 backfill보다 확연히 낫다.
+
+**핵심 해석**: clean에서 LiDAR association은 fused visibility를 18.44% → 21.21%로 2.8 pp
+올려주지만 capture에는 0.19 pp밖에 기여하지 않는다. 반면 dropout에서는 그 경로가 트래커를
+조악한 측정으로 오염시켜 3.42 pp를 **깎아먹는다**. 즉 **LiDAR target association은 순손실**이다.
+P1(association을 더 열어줌)이 −8.85 pp였던 것이 이 그림에 정확히 들어맞는다 —— 세 번째
+독립 증거다.
+
+두 개입은 배타적이다: assoc를 끄면 `fused_visible`이 카메라 전용이 되어 카메라가 보일 때는
+마스크도 항상 존재하므로 backfill이 아예 발화하지 않는다. 따라서 합산 효과를 기대할 수 없고,
+**assoc-off 쪽만 남는다.**
+
+### 판정과 다음 단계
+
+자동 게이트 기준으로는 여전히 INCONCLUSIVE(+3.42 < 4 pp)이고 단일 시드다. **채택 전에
+seed51 재현이 필요하다** —— backfill이 정확히 이 이유로 기각됐으므로 같은 잣대를 적용한다.
+재현되면 `NAVRL_LIDAR_TARGET_ASSOC=0`을 기본값으로 승격하는 안을 검토한다. 다만 그 경우
+"카메라가 놓친 동안 표적 추적을 포기한다"는 설계 변경이므로, 논문에서는 성능 수치가 아니라
+**LiDAR 각분해능(5° = 5 m에서 0.44 m)이 표적 추적에 부족하다**는 관측으로 서술해야 한다.
+
+여전히 dropout 손실의 약 70%는 미설명이다.

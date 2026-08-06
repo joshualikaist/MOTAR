@@ -24,8 +24,8 @@
 # channel is elsewhere and the hypothesis is rejected -- which is just as useful.
 #
 # Usage:
-#   ./eval_navrl_v2_target_mask_backfill.sh
-#   PREFLIGHT=1 ./eval_navrl_v2_target_mask_backfill.sh
+#   ./eval_navrl_v2_lidar_fallback.sh
+#   PREFLIGHT=1 ./eval_navrl_v2_lidar_fallback.sh
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
@@ -34,23 +34,16 @@ export PYTHON
 
 POLICY="runs/ppo_260805_0413_navrl_v2-speedgov-ep24000-205bars-main-riskcap-s1/nn/last_gen_ppo_ep_25000_rew_39.742134.pth"
 POLICY_SHA="f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40"
-# Seed 47 is the frozen R3/latency contract. A second seed re-measures the two marginal effects
-# this arm produced (+2.54 pp under dropout, -1.42 pp on clean) against fresh episodes; the
-# result root is suffixed so the two never overwrite each other.
-SEED="${NAVRL_MASKBF_SEED:-47}"
-RESULT_ROOT="../../../results/navrl_v2_target_mask_backfill"
-if [[ "${SEED}" != "47" ]]; then
-    RESULT_ROOT="${RESULT_ROOT}_seed${SEED}"
-fi
+RESULT_ROOT="../../../results/navrl_v2_lidar_fallback"
 PREFLIGHT="${PREFLIGHT:-0}"
 EPISODES="${EPISODES:-2049}"
 
 if [[ ! -f "${POLICY}" ]]; then
-    echo "[mask-bf] policy checkpoint missing: ${POLICY}" >&2
+    echo "[lidar-fb] policy checkpoint missing: ${POLICY}" >&2
     exit 2
 fi
 if [[ -e "${RESULT_ROOT}" && "${PREFLIGHT}" != "1" ]]; then
-    echo "[mask-bf] refusing to overwrite ${RESULT_ROOT}" >&2
+    echo "[lidar-fb] refusing to overwrite ${RESULT_ROOT}" >&2
     exit 2
 fi
 
@@ -65,7 +58,7 @@ import torch
 trained, expected = Path(sys.argv[1]), sys.argv[2]
 actual = hashlib.sha256(trained.read_bytes()).hexdigest()
 if actual != expected:
-    raise SystemExit(f"[mask-bf] policy SHA mismatch: {actual}")
+    raise SystemExit(f"[lidar-fb] policy SHA mismatch: {actual}")
 payload = torch.load(trained, map_location="cpu", weights_only=False)
 state = payload.get("env_state") or {}
 checks = {
@@ -77,7 +70,7 @@ checks = {
 }
 failed = [name for name, passed in checks.items() if not passed]
 if failed:
-    raise SystemExit("[mask-bf] invalid policy checkpoint: " + ", ".join(failed))
+    raise SystemExit("[lidar-fb] invalid policy checkpoint: " + ", ".join(failed))
 print(actual)
 PY
 )"
@@ -87,7 +80,7 @@ export NAVRL_V2_DENSITIES=205
 export NAVRL_V2_ACTION_MODE=deterministic
 export NAVRL_EVAL_REFLECTION_MODE=original
 export NAVRL_SPEED_GOVERNOR=riskcap
-export NAVRL_SEED="${SEED}"
+export NAVRL_SEED=47
 export NAVRL_SPEED_GOVERNOR_FIXED_MPS=2.0
 export NAVRL_SPEED_GOVERNOR_FREE_MPS=3.53553390593
 export NAVRL_SPEED_GOVERNOR_HALF_WIDTH_M=0.45
@@ -103,8 +96,8 @@ run_cell() {
     local tag="$1"
     local perturb="$2"
     local dropout="$3"
-    local backfill="$4"
-    echo "[mask-bf] cell=${tag} perturb=${perturb} dropout=${dropout} backfill=${backfill}"
+    local assoc="$4"
+    echo "[lidar-fb] cell=${tag} perturb=${perturb} dropout=${dropout} lidar_assoc=${assoc}"
     if [[ "${PREFLIGHT}" == "1" ]]; then
         return 0
     fi
@@ -112,24 +105,24 @@ run_cell() {
     NAVRL_DETECTION_DROPOUT="${dropout}" \
     NAVRL_DETECTION_LATENCY_S=0 \
     NAVRL_RANGE_ERROR_M=0 \
-    NAVRL_TARGET_MASK_BACKFILL="${backfill}" \
+    NAVRL_TARGET_MASK_BACKFILL=0 \
+    NAVRL_LIDAR_TARGET_ASSOC="${assoc}" \
     NAVRL_V2_RESULT_DIR="${RESULT_ROOT}/${tag}" \
         ./eval_navrl_v2_density_sweep.sh "${POLICY}" "${EPISODES}"
 }
 
-run_cell analytic_clean       0 0   0
-run_cell dropout_0p3_raw      1 0.3 0
-run_cell dropout_0p3_backfill 1 0.3 1
-run_cell clean_backfill       0 0   1
+run_cell analytic_clean       0 0   1
+run_cell dropout_0p3_raw      1 0.3 1
+run_cell dropout_0p3_no_assoc 1 0.3 0
+run_cell clean_no_assoc       0 0   0
 
 if [[ "${PREFLIGHT}" == "1" ]]; then
-    echo "[mask-bf] PREFLIGHT PASS (no results written)"
+    echo "[lidar-fb] PREFLIGHT PASS (no results written)"
     exit 0
 fi
 
 "${PYTHON}" - "${RESULT_ROOT}" "${ACTUAL_POLICY_SHA}" <<'PY'
 import json
-import os
 from pathlib import Path
 import sys
 
@@ -152,7 +145,7 @@ def load(cell_dir):
 
 
 cells = {d.name: load(d) for d in sorted(p for p in root.iterdir() if p.is_dir())}
-clean, raw, fixed = cells["analytic_clean"], cells["dropout_0p3_raw"], cells["dropout_0p3_backfill"]
+clean, raw, fixed = cells["analytic_clean"], cells["dropout_0p3_raw"], cells["dropout_0p3_no_assoc"]
 span = clean["capture"] - raw["capture"]
 excess_bars = raw["bar_contact"] - clean["bar_contact"]
 verdict = {
@@ -163,7 +156,7 @@ verdict = {
         (raw["bar_contact"] - fixed["bar_contact"]) / excess_bars if excess_bars else None
     ),
     # The fix must not cost anything when the camera never misses a frame.
-    "clean_regression_pp": (cells["clean_backfill"]["capture"] - clean["capture"]) * 100.0,
+    "clean_regression_pp": (cells["clean_no_assoc"]["capture"] - clean["capture"]) * 100.0,
 }
 # ~2050 episodes puts the inter-arm standard error near 1.3 pp, so anything smaller is noise.
 verdict["hypothesis"] = (
@@ -173,11 +166,11 @@ verdict["hypothesis"] = (
 
 (root / "summary.json").write_text(
     json.dumps({"policy_sha256": policy_sha,
-                "contract": f"seed{os.environ['NAVRL_SEED']}/205bars/deterministic/riskcap",
+                "contract": "seed47/205bars/deterministic/riskcap",
                 "cells": cells, "verdict": verdict}, indent=2, sort_keys=True) + "\n",
     encoding="utf-8",
 )
-lines = ["# phantom-target obstacle under detection dropout (ep25000+riskcap, seed %s, 205 bars)" % os.environ["NAVRL_SEED"],
+lines = ["# LiDAR fallback A/B under detection dropout (ep25000+riskcap, seed47, 205 bars)",
          "",
          "| cell | episodes | capture | crash | bar contacts | OOB | fused visible | closest mean (m) |",
          "|---|---:|---:|---:|---:|---:|---:|---:|"]
@@ -200,4 +193,4 @@ lines += ["", f"## verdict: {verdict['hypothesis']}", "",
 (root / "summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
 print("\n".join(lines))
 PY
-echo "[mask-bf] done -> ${RESULT_ROOT}/summary.{md,json}"
+echo "[lidar-fb] done -> ${RESULT_ROOT}/summary.{md,json}"

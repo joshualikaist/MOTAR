@@ -232,6 +232,12 @@ class task_config:
         # of the 8 obstacle tokens. Enabling this rebuilds the mask from the fused bearing/range
         # so both halves agree. Off until the A/B measures it (WORKLOG 2026-08-07).
         target_mask_backfill = _env_bool("NAVRL_TARGET_MASK_BACKFILL", False)
+        # H2 probe (WORKLOG 2026-08-07): on a camera-missed frame the LiDAR association is the
+        # only thing correcting the target track, and its bearing is quantised to one 360/HBEAMS
+        # bin -- 5 deg, i.e. 0.44 m of lateral error at 5 m. Set NAVRL_LIDAR_TARGET_ASSOC=0 to
+        # coast on the constant-velocity prediction instead and measure whether the coarse
+        # correction is helping or hurting. Default on = current behaviour.
+        lidar_target_assoc = _env_bool("NAVRL_LIDAR_TARGET_ASSOC", True)
         rgb_noise_std = _env_float("NAVRL_RGB_NOISE_STD", 0.015)
         depth_noise_std = _env_float("NAVRL_DEPTH_NOISE_STD", 0.02)
         # [static VBEAMS*HBEAMS | obstacle history 5*MAX_OBSTACLES*12 | robot history 5x10 |

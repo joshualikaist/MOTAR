@@ -570,6 +570,12 @@ class NavRLPerceptionModule:
         # Backfill the target pixel mask from the fused bearing/range when the camera did not
         # deliver one but the track is alive (LiDAR-only frames). Off by default until measured.
         self.target_mask_backfill = bool(getattr(cfg, "target_mask_backfill", False))
+        # H2 probe: LiDAR association is the ONLY target measurement on a camera-missed frame,
+        # but its bearing is quantised to a 360/HBEAMS bin -- 5 deg here, which is 0.44 m of
+        # lateral error at 5 m, larger than the ego-motion error P3 removed. Disabling it makes
+        # the tracker coast on its constant-velocity prediction instead of correcting with a
+        # coarse measurement, which is the A/B that decides whether the fallback helps or hurts.
+        self.lidar_target_assoc = bool(getattr(cfg, "lidar_target_assoc", True))
         self.rgb_noise_std = float(getattr(cfg, "rgb_noise_std", 0.015))
         self.depth_noise_std = float(getattr(cfg, "depth_noise_std", 0.02))
         self.history_stride = max(1, int(round(float(cfg.history_interval_s) / self.step_dt)))
@@ -1146,9 +1152,17 @@ class NavRLPerceptionModule:
         lidar_camera_gate = visible
         if self.latency_lidar_backup and self._latency_steps > 0:
             lidar_camera_gate = torch.zeros_like(visible)
-        lidar_visible, lidar_confidence, lidar_surface, lidar_bearing = (
-            self._associate_lidar_target(lidar_m, drone_pos_w, vehicle_quat, lidar_camera_gate)
-        )
+        if self.lidar_target_assoc:
+            lidar_visible, lidar_confidence, lidar_surface, lidar_bearing = (
+                self._associate_lidar_target(
+                    lidar_m, drone_pos_w, vehicle_quat, lidar_camera_gate
+                )
+            )
+        else:
+            lidar_visible = torch.zeros_like(visible)
+            lidar_confidence = torch.zeros_like(confidence)
+            lidar_surface = torch.zeros_like(surface_range)
+            lidar_bearing = torch.zeros_like(bearing)
         fused_visible = visible | lidar_visible
         fused_surface = torch.where(lidar_visible, lidar_surface, surface_range)
         fused_bearing = torch.where(lidar_visible, lidar_bearing, bearing)
