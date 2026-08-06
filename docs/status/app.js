@@ -296,6 +296,37 @@ function renderResearchUpdate(s) {
   }
 }
 
+function renderRobustness(s) {
+  const r = s.perception_robustness || {};
+  const setText = (id, value) => {
+    const el = document.getElementById(id);
+    if (el && value != null) el.textContent = value;
+  };
+  setText('robust-sub', r.subtitle);
+  setText('robust-finding', r.finding);
+  const pct = v => (v == null ? '—' : `${(v * 100).toFixed(2)}%`);
+  const rows = document.getElementById('robust-rows');
+  if (rows) {
+    const clean = r.clean || {};
+    const head = clean.capture_rate == null ? '' :
+      `<tr class="robust-clean"><td>${clean.label || 'clean'}</td>` +
+      `<td>${pct(clean.capture_rate)}</td><td>${pct(clean.crash_rate)}</td><td>—</td></tr>`;
+    rows.innerHTML = head + (r.axes || []).map(a => {
+      const d = a.capture_delta_pp;
+      // Anything inside a few points of clean is noise at ~2050 episodes, not a finding.
+      const cls = d <= -10 ? 'robust-bad' : (d <= -5 ? 'robust-warn' : 'robust-ok');
+      const note = a.note ? ` <span class="robust-note">${a.note}</span>` : '';
+      return `<tr><td>${a.label}${note}</td><td>${pct(a.capture_rate)}</td>` +
+        `<td>${pct(a.crash_rate)}</td><td class="${cls}">${d >= 0 ? '+' : ''}${d.toFixed(2)}pp</td></tr>`;
+    }).join('');
+  }
+  const sup = r.superseded;
+  setText('robust-superseded', sup
+    ? `Superseded: the same 0.1s latency measured ${pct(sup.capture_rate)} (${sup.capture_delta_pp.toFixed(2)}pp) `
+      + 'before the timestamp-aware transform. That number is a modelling artifact and is not quoted.'
+    : '');
+}
+
 function renderCorridor(s) {
   const c = s.corridor_token || {};
   const current = c.current || {};
@@ -778,6 +809,7 @@ function wireArena() {
     renderNow(s);
     renderPhases(s);
     renderCorridor(s);
+    renderRobustness(s);
     renderCurve(s);
     renderSpeed(s);
     renderHeatmap(s);

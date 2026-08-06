@@ -30,6 +30,9 @@ CORRECTED_CURVE_PATH = ROOT / "results/corrected_chirality_density_curve.csv"
 RECOVERY_ATTESTATION_VERIFIER_PATH = ROOT / "tools/navrl_v2_recovery_attestation.py"
 LIMIT_AUDIT_PATH = ROOT / "results/navrl_v2_ep24000_limit_audit.json"
 CAUSAL_1TO3_PATH = ROOT / "results/navrl_v2_ep24000_causal_1to3/summary.json"
+DETECTOR_ROBUSTNESS_PATH = ROOT / "results/navrl_v2_detector_robustness/summary.json"
+LATENCY_EGO_MOTION_PATH = ROOT / "results/navrl_v2_latency_ego_motion/summary.json"
+LATENCY_BUDGET_PATH = ROOT / "results/navrl_v2_latency_budget/summary.json"
 FIXED_SPEED_PATH = ROOT / "results/navrl_v2_ep24000_fixed_speed/summary.json"
 FORGETTING_PATH = ROOT / "results/navrl_v2_ep19100_vs_ep24000_forgetting/summary.json"
 SPEED_GOVERNOR_SCREEN_PATH = ROOT / "results/navrl_v2_ep24000_speed_governor_screen/summary.json"
@@ -2191,6 +2194,85 @@ def _research_update(
     }
 
 
+def _perception_robustness() -> Dict[str, Any]:
+    """Held-out perception robustness of the frozen ep25000+riskcap policy.
+
+    Reads the measured cells rather than restating them, so the dashboard cannot drift from
+    results/. The latency axis is served from the ego-motion/budget sweeps, NOT from the R3
+    screen: R3's latency cells were measured before the timestamp-aware transform and are
+    superseded (WORKLOG 2026-08-06).
+    """
+    if not DETECTOR_ROBUSTNESS_PATH.exists():
+        return {}
+    r3 = json.loads(DETECTOR_ROBUSTNESS_PATH.read_text(encoding="utf-8"))
+    clean = r3["baseline"]
+    axes = []
+
+    def add(label, capture, crash, note=""):
+        axes.append({
+            "label": label,
+            "capture_rate": capture,
+            "crash_rate": crash,
+            "capture_delta_pp": (capture - clean["capture_rate"]) * 100.0,
+            "note": note,
+        })
+
+    for tag, label, note in (
+        ("range_error_0p15m", "range error ±0.15 m", ""),
+        ("range_error_0p30m", "range error ±0.30 m", ""),
+        ("dropout_0p3", "detection dropout 0.3", ""),
+        # Not a perturbation but a detector swap: the analytic segmenter is a bootstrap, so this
+        # row is what the sensor-only claim actually rests on.
+        ("learned_clean", "learned detector", "replaces the analytic segmenter"),
+    ):
+        cell = r3["cells"].get(tag)
+        if cell:
+            add(label, cell["capture_rate"], cell["crash_rate"], note)
+
+    superseded = None
+    if LATENCY_EGO_MOTION_PATH.exists():
+        ego = json.loads(LATENCY_EGO_MOTION_PATH.read_text(encoding="utf-8"))["cells"]
+        add("detection latency 0.1 s", ego["latency_0p1s_p3"]["capture"],
+            ego["latency_0p1s_p3"]["crash"], "timestamp-aware transform")
+        superseded = {
+            "label": "detection latency 0.1 s, naive transform",
+            "capture_rate": ego["latency_0p1s_raw"]["capture"],
+            "crash_rate": ego["latency_0p1s_raw"]["crash"],
+            "capture_delta_pp": (ego["latency_0p1s_raw"]["capture"] - clean["capture_rate"]) * 100.0,
+        }
+    if LATENCY_BUDGET_PATH.exists():
+        budget = json.loads(LATENCY_BUDGET_PATH.read_text(encoding="utf-8"))["cells"]
+        for tag, label in (
+            ("latency_0p2s_p3", "detection latency 0.2 s"),
+            ("latency_0p3s_p3", "detection latency 0.3 s"),
+            ("latency_0p5s_p3", "detection latency 0.5 s"),
+        ):
+            if tag in budget:
+                add(label, budget[tag]["capture"], budget[tag]["crash"],
+                    "timestamp-aware transform")
+
+    axes.sort(key=lambda a: a["capture_delta_pp"])
+    return {
+        "title": "Perception robustness",
+        "subtitle": "frozen ep25000 + riskcap · seed47 · 205 bars · ~2050 episodes per cell",
+        "clean": {
+            "label": "clean perception",
+            "capture_rate": clean["capture_rate"],
+            "crash_rate": clean["crash_rate"],
+        },
+        "axes": axes,
+        "superseded": superseded,
+        "finding": (
+            "Detection latency looked like the dominant failure axis (-42.7pp at 0.1s) until the "
+            "cause was isolated: a delayed detection was a vehicle-frame measurement from t-tau "
+            "being lifted to world with the pose at t, so the drone's own motion entered every "
+            "filter correction -- 0.23m from translation and 0.41m from yaw, against the 0.15m of "
+            "target motion. Buffering the pose beside the detection and lifting with it recovers "
+            "94% of the loss, which reclassifies latency as benign alongside range error."
+        ),
+    }
+
+
 def _corridor_token_plan() -> Dict[str, Any]:
     return {
         "title": "Corridor token",
@@ -2471,6 +2553,7 @@ def build_snapshot() -> Dict[str, Any]:
             "runs": summaries,
             "research_update": research_update,
             "corridor_token": _corridor_token_plan(),
+            "perception_robustness": _perception_robustness(),
             "success_criteria": _success_criteria(active or latest),
             "placement_area_m2": _placement_area_m2(active or latest),
             "arena_geometry": _arena_geometry(active or latest),

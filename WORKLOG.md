@@ -6486,3 +6486,72 @@ latency_0p1s / latency_0p2s(37.82% / 18.50%)는 수정 전 수치이며, 지금 
 **주의**: 이 승격으로 `results/navrl_v2_detector_robustness/`의 latency 두 셀은 논문·대시보드에
 그대로 인용하면 안 된다. 대체 수치는 `results/navrl_v2_latency_ego_motion/`(0.1 s)와
 `results/navrl_v2_latency_budget/`(0.2/0.3/0.5 s)다.
+
+## 2026-08-06 — latency 예산 곡선 1차 시도 무효화 (evaluator 무결성 가드 발동)
+
+`eval_navrl_v2_latency_budget.sh`(0.2/0.3/0.5 s, P3 ON) 1차 실행이 첫 셀 완주 후
+`[eval_v2] checkpoint or evaluator bytes changed during the cell; refusing result.`로 거부됐다.
+원인은 내 실수다: 평가가 도는 도중에 P3 기본값 승격 작업으로
+`eval_navrl_v2_density_sweep.sh`를 편집했고, 셀 시작 시 기록한 evaluator SHA와 종료 시 SHA가
+달라졌다. **가드가 정확히 동작한 것이며, 거부된 수치는 인용하지 않는다**(로그에는
+captured=0.766이 남아 있으나 provenance가 깨진 값이므로 폐기). 결과 디렉터리를 삭제하고
+스크립트가 안정된 상태에서 재실행했다.
+
+**운영 규칙**: 평가 실행 중에는 evaluator 스크립트·체크포인트를 편집하지 않는다. 편집이
+필요하면 평가 완료를 기다리거나, 편집 대상과 무관한 파일(docs/status, WORKLOG, tools)만 만진다.
+
+## 2026-08-06 — latency 재분류 후 남은 인지 병목 순위 (분석, GPU 미사용)
+
+latency를 수정된 모델로 갈아끼운 뒤 R3 축들의 순위가 바뀐다. `target_visible` 진단(스텝 중
+표적이 fused visible이었던 비율)을 함께 읽으면:
+
+| cell | fused visible | capture | crash | capture Δ vs clean |
+|---|---:|---:|---:|---:|
+| analytic_clean | 21.21% | 80.54% | 17.17% | — |
+| **learned_clean** | 14.25% | **66.62%** | 24.94% | **−13.92 pp** |
+| **dropout_0p3** | 21.38% | **67.84%** | 29.33% | **−12.70 pp** |
+| latency 0.1 s (P3) | — | 78.04% | 19.67% | −2.50 pp |
+| range_error_0p15m | 20.49% | 80.54% | 17.46% | 0.00 pp |
+| range_error_0p30m | 20.49% | 80.62% | 16.89% | +0.08 pp |
+
+**새 1순위는 learned detector(−13.92 pp)다.** analytic bootstrap segmenter는 어디까지나
+부트스트랩이므로, 센서 전용 주장을 지탱하려면 이 격차가 핵심이다.
+
+**동시에 풀리지 않은 관측**: dropout 0.3은 카메라 검출의 30%를 버리는데도 fused visible이
+21.38%로 clean(21.21%)과 **사실상 동일**하다. LiDAR association이 빈자리를 메우기 때문으로
+보인다. 그런데 capture는 12.70 pp 떨어진다 —— 즉 **dropout의 비용은 "표적을 덜 본다"로
+설명되지 않는다.** 반대로 learned detector는 visible이 14.25%로 clean 대비 1/3이 줄었는데
+capture 손실은 dropout과 비슷하다. 두 축의 손실 경로가 서로 다르다는 뜻이며, 어느 쪽도
+"검출 빈도"라는 단일 변수로 환원되지 않는다.
+
+이것은 P0가 실패했던 것과 같은 종류의 함정이다: 그럴듯한 중간 변수(위치 lag, 검출 빈도)를
+고쳐도 결과가 안 움직이면, 그 변수는 채널이 아니다. 다음 작업은 learned detector와 dropout
+각각에 대해 **실제 채널을 먼저 특정**하는 것이고, 수정안은 그 다음이다. 후보 진단:
+검출 실패의 시간적 상관(연속 miss 길이), 거리 의존성, 그리고 tracker age/공분산이 정책 입력에서
+어떻게 보이는지.
+
+## 2026-08-06 — latency 예산 곡선 (수정된 모델, P3 ON)
+
+`results/navrl_v2_latency_budget/summary.{md,json}`. 동일 계약, 2049 ep/cell.
+0.1 s는 `navrl_v2_latency_ego_motion`의 셀을 앵커로 재사용했다.
+
+| latency | capture | crash | bar contacts | Δ capture vs clean |
+|---:|---:|---:|---:|---:|
+| 0 (clean) | 80.54% | 17.17% | 337 | — |
+| 0.1 s | 78.04% | 19.67% | 390 | −2.50 pp |
+| 0.2 s | 76.62% | 20.40% | 397 | −3.91 pp |
+| 0.3 s | 72.57% | 24.79% | 494 | −7.96 pp |
+| 0.5 s | 64.76% | 32.41% | 648 | −15.77 pp |
+
+**해석**: 수정된 모델에서 열화는 완만하고 단조롭다. 0.2 s까지는 clean 대비 4 pp 이내로
+운용 가능하고, 0.3 s에서 −8 pp로 꺾이며, 0.5 s에서 −15.8 pp가 된다. 수정 전 모델이
+0.1 s에서 이미 −42.7 pp, 0.2 s에서 −62 pp였던 것과 비교하면 곡선의 모양 자체가 다르다.
+**실기 latency 예산: 0.2 s 이하를 목표, 0.3 s를 상한으로 제시할 수 있다.** 10 Hz 제어에서
+2 스텝 지연까지 허용된다는 뜻이므로 detector 추론 시간에 현실적인 여유가 생긴다.
+
+crash 증가분이 capture 감소분과 거의 1:1이고(예: 0.5 s에서 −15.77 / +15.24 pp) timeout은
+2.3→2.8%로 거의 고정이다. 즉 지연이 커져도 정책은 계속 추격하며, 손실은 전부 충돌로 나타난다
+—— 표적을 놓쳐 배회하는 실패 모드가 아니다. bar contact도 337 → 648로 단조 증가한다.
+
+1차 실행이 evaluator 편집으로 거부된 뒤의 재실행 결과이며, 이번에는 실행 중 어떤 평가 입력도
+수정하지 않았다.

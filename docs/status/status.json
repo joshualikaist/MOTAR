@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-04T21:10:26.378240+00:00",
+  "generated_at": "2026-08-06T01:20:05.386857+00:00",
   "repo": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator",
   "n_runs": 72,
   "active_run": null,
@@ -3856,5 +3856,79 @@
       1.5
     ],
     "label": "40×40×3 m · full-width bar band · 3 m bars (no fly-over)"
+  },
+  "perception_robustness": {
+    "title": "Perception robustness",
+    "subtitle": "frozen ep25000 + riskcap · seed47 · 205 bars · ~2050 episodes per cell",
+    "clean": {
+      "label": "clean perception",
+      "capture_rate": 0.8053658536585366,
+      "crash_rate": 0.17170731707317075
+    },
+    "axes": [
+      {
+        "label": "detection latency 0.5 s",
+        "capture_rate": 0.6476329917032699,
+        "crash_rate": 0.32406051732552466,
+        "capture_delta_pp": -15.77328619552667,
+        "note": "timestamp-aware transform"
+      },
+      {
+        "label": "learned detector",
+        "capture_rate": 0.6661786237188873,
+        "crash_rate": 0.24938994631527575,
+        "capture_delta_pp": -13.918722993964938,
+        "note": "replaces the analytic segmenter"
+      },
+      {
+        "label": "detection dropout 0.3",
+        "capture_rate": 0.6783796974133723,
+        "crash_rate": 0.29331381161542214,
+        "capture_delta_pp": -12.69861562451643,
+        "note": ""
+      },
+      {
+        "label": "detection latency 0.3 s",
+        "capture_rate": 0.7257198633479747,
+        "crash_rate": 0.24792581747193754,
+        "capture_delta_pp": -7.9645990310561965,
+        "note": "timestamp-aware transform"
+      },
+      {
+        "label": "detection latency 0.2 s",
+        "capture_rate": 0.7662274280136652,
+        "crash_rate": 0.20400195217179112,
+        "capture_delta_pp": -3.9138425644871466,
+        "note": "timestamp-aware transform"
+      },
+      {
+        "label": "detection latency 0.1 s",
+        "capture_rate": 0.780380673499268,
+        "crash_rate": 0.19668130795510005,
+        "capture_delta_pp": -2.498518015926865,
+        "note": "timestamp-aware transform"
+      },
+      {
+        "label": "range error ±0.15 m",
+        "capture_rate": 0.8053658536585366,
+        "crash_rate": 0.1746341463414634,
+        "capture_delta_pp": 0.0,
+        "note": ""
+      },
+      {
+        "label": "range error ±0.30 m",
+        "capture_rate": 0.8062469497315764,
+        "crash_rate": 0.168862859931674,
+        "capture_delta_pp": 0.08810960730397666,
+        "note": ""
+      }
+    ],
+    "superseded": {
+      "label": "detection latency 0.1 s, naive transform",
+      "capture_rate": 0.37823328452903854,
+      "crash_rate": 0.5822352367008297,
+      "capture_delta_pp": -42.71325691294981
+    },
+    "finding": "Detection latency looked like the dominant failure axis (-42.7pp at 0.1s) until the cause was isolated: a delayed detection was a vehicle-frame measurement from t-tau being lifted to world with the pose at t, so the drone's own motion entered every filter correction -- 0.23m from translation and 0.41m from yaw, against the 0.15m of target motion. Buffering the pose beside the detection and lifting with it recovers 94% of the loss, which reclassifies latency as benign alongside range error."
   }
 }

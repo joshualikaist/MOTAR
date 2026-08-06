@@ -517,3 +517,17 @@ tr.cliff td { color: var(--bad); }
 #ceiling-wrap { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
 #ceiling-tbl tr.good td:last-child { color: var(--accent); font-weight: 700; }
 #ceiling-tbl tr.bad td { color: var(--bad); font-weight: 700; }
+
+/* Perception robustness table. The delta column is colour-coded by how much capture the
+   perturbation costs; anything within a few points of clean is noise at ~2050 episodes, so only
+   real degradation gets a warning colour. */
+.robust-finding { margin: 0 0 14px; font-size: 13px; line-height: 1.55; overflow-wrap: anywhere; }
+.robust-table tr.robust-clean td { font-weight: 600; color: var(--accent-ink); }
+.robust-table td.robust-ok { color: var(--good); }
+.robust-table td.robust-warn { color: var(--warn); }
+.robust-table td.robust-bad { color: var(--bad); font-weight: 600; }
+.robust-note {
+  font-family: var(--mono); font-size: 10.5px; color: var(--faint);
+  display: inline-block; margin-left: 6px;
+}
+#robust-superseded { margin-top: 12px; }
