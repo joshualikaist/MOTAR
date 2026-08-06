@@ -28,6 +28,12 @@ ROBOT_DIM = 10
 TARGET_DIM = 16
 OBSTACLE_DIM = 12
 
+# Agreement window that declares a sensor return "the target, not static geometry", used to carve
+# the target out of the obstacle map. Named constants because P2's latency-aware variant must
+# reproduce the same window from the PREDICTED target pose; two literals would silently drift.
+TARGET_LIKE_ANGLE_RAD = math.radians(15.0)
+TARGET_LIKE_RANGE_TOL_M = 0.55
+
 # LiDAR scan resolution. HBEAMS is THE source of truth for the horizontal beam count and must equal
 # navrl_lidar_config.width (both read NAVRL_LIDAR_HBEAMS). Changing it changes STRUCTURED_OBS_DIM,
 # hence a fresh policy is required. The old claim that token error was dominated by angular
@@ -547,6 +553,19 @@ class NavRLPerceptionModule:
         # when detection_latency_s is 0, so a clean run is byte-identical with them set.
         self.latency_compensate = bool(getattr(cfg, "latency_compensate", False))
         self.latency_lidar_backup = bool(getattr(cfg, "latency_lidar_backup", False))
+        # P2: how the obstacle map is edited while the detection is stale.
+        self.latency_obstacle_fix = (
+            str(getattr(cfg, "latency_obstacle_fix", "off") or "off").strip().lower()
+        )
+        if self.latency_obstacle_fix not in ("off", "predict", "skip"):
+            raise ValueError(
+                "latency_obstacle_fix must be off|predict|skip, got "
+                f"{self.latency_obstacle_fix!r}"
+            )
+        # P3: lift the delayed measurement to world with the pose it was TAKEN at, not the
+        # current one. Set alongside the ring-buffer read so the index math happens exactly once.
+        self.latency_ego_motion_fix = bool(getattr(cfg, "latency_ego_motion_fix", False))
+        self._latency_delayed_pose = None
         self.rgb_noise_std = float(getattr(cfg, "rgb_noise_std", 0.015))
         self.depth_noise_std = float(getattr(cfg, "depth_noise_std", 0.02))
         self.history_stride = max(1, int(round(float(cfg.history_interval_s) / self.step_dt)))
@@ -577,6 +596,15 @@ class NavRLPerceptionModule:
             dtype=torch.bool,
             device=device,
         )
+        # Pose of the observer at the moment each buffered detection was taken (P3). The quat
+        # buffer holds identity rather than zeros so an unread slot still rotates validly.
+        self._latency_drone_pos = torch.zeros(
+            self.num_envs, self._latency_slots, 3, dtype=torch.float32, device=device
+        )
+        self._latency_drone_quat = torch.zeros(
+            self.num_envs, self._latency_slots, 4, dtype=torch.float32, device=device
+        )
+        self._latency_drone_quat[..., 3] = 1.0
         self._env_ids = torch.arange(self.num_envs, device=device)
 
         self.segmenter = AppearanceTargetSegmenter().to(device).eval()
@@ -608,6 +636,15 @@ class NavRLPerceptionModule:
 
         self._u = torch.arange(self.width, device=device, dtype=torch.float32).view(1, 1, -1)
         self._v = torch.arange(self.height, device=device, dtype=torch.float32).view(1, -1, 1)
+        # Vehicle-frame bearing of each depth COLUMN -- the exact inverse of the lidar-angle ->
+        # column map used below (camera_u = (hfov/2 - angle)/hfov * (width-1)). Only P2's
+        # "predict" mode reads it, to rebuild the target pixel mask from the predicted bearing.
+        self._pixel_angles = (
+            self.hfov * 0.5
+            - torch.arange(self.width, device=device, dtype=torch.float32)
+            / max(self.width - 1, 1)
+            * self.hfov
+        )
         # Bearings of the horizontal beams. The span stops 360/HBEAMS short of a full turn so the
         # first and last ray are not the same direction (matching navrl_lidar_config's fov choice):
         # HBEAMS=36 -> [-170, 180] deg at 10 deg spacing, HBEAMS=72 -> [-175, 180] at 5 deg.
@@ -641,6 +678,9 @@ class NavRLPerceptionModule:
         self._latency_visible[env_ids] = False
         self._latency_confidence[env_ids] = 0.0
         self._latency_mask[env_ids] = False
+        self._latency_drone_pos[env_ids] = 0.0
+        self._latency_drone_quat[env_ids] = 0.0
+        self._latency_drone_quat[env_ids, :, 3] = 1.0
 
     def _apply_detection_latency(
         self,
@@ -650,7 +690,10 @@ class NavRLPerceptionModule:
         visible,
         confidence,
         mask,
+        drone_pos_w=None,
+        vehicle_quat=None,
     ):
+        self._latency_delayed_pose = None
         if self._latency_steps <= 0:
             return measurement_vehicle, surface_range, bearing, visible, confidence, mask
 
@@ -661,6 +704,9 @@ class NavRLPerceptionModule:
         self._latency_visible[self._env_ids, write_idx] = visible
         self._latency_confidence[self._env_ids, write_idx] = confidence
         self._latency_mask[self._env_ids, write_idx] = mask
+        if drone_pos_w is not None and vehicle_quat is not None:
+            self._latency_drone_pos[self._env_ids, write_idx] = drone_pos_w
+            self._latency_drone_quat[self._env_ids, write_idx] = vehicle_quat
         self._latency_step += 1
         ready = self._latency_step > self._latency_steps
         read_idx = (self._latency_step - self._latency_steps - 1) % self._latency_slots
@@ -669,6 +715,13 @@ class NavRLPerceptionModule:
             -1, 1, 1
         )
         delayed_confidence = self._latency_confidence[self._env_ids, read_idx]
+        # Published from the SAME read index as the measurement, so the pose and the detection
+        # can never come from different steps. observe() consumes it only when P3 is enabled.
+        if drone_pos_w is not None and vehicle_quat is not None:
+            self._latency_delayed_pose = (
+                self._latency_drone_pos[self._env_ids, read_idx],
+                self._latency_drone_quat[self._env_ids, read_idx],
+            )
         return (
             self._latency_meas_vehicle[self._env_ids, read_idx],
             self._latency_surface_range[self._env_ids, read_idx],
@@ -682,7 +735,7 @@ class NavRLPerceptionModule:
             delayed_mask,
         )
 
-    def _detect_rgbd(self, rgb, depth, training):
+    def _detect_rgbd(self, rgb, depth, training, drone_pos_w=None, vehicle_quat=None):
         if training and self.rgb_noise_std > 0.0:
             rgb = (rgb + torch.randn_like(rgb) * self.rgb_noise_std).clamp(0.0, 1.0)
         if training and self.depth_noise_std > 0.0:
@@ -718,8 +771,80 @@ class NavRLPerceptionModule:
         measurement_vehicle = self.camera_offset + ray * center_range.unsqueeze(1)
         bearing = torch.atan2(measurement_vehicle[:, 1], measurement_vehicle[:, 0])
         return self._apply_detection_latency(
-            measurement_vehicle, surface_range, bearing, visible, confidence, mask
+            measurement_vehicle,
+            surface_range,
+            bearing,
+            visible,
+            confidence,
+            mask,
+            drone_pos_w=drone_pos_w,
+            vehicle_quat=vehicle_quat,
         )
+
+    def _latency_corrected_map_inputs(
+        self,
+        depth,
+        target_pixels,
+        target_surface_range,
+        target_bearing,
+        visible,
+        drone_pos_w,
+        vehicle_quat,
+    ):
+        """P2: fix WHERE the obstacle map gets the target carved out of it under latency.
+
+        `_fuse_static_and_extract_obstacles` deletes sensor returns that look like the target --
+        LiDAR bins inside the target_like window, and depth pixels inside `target_pixels` -- so
+        that the target is never proposed as an obstacle. Every one of those inputs is DELAYED,
+        so under latency the deletion happens at the target's OLD bearing/range, where a real bar
+        may stand: the map loses that bar and the drone flies into it. This is the channel that
+        tripled bar contacts (337 -> 931) in the 0.1 s arm even though LiDAR itself is undelayed,
+        and neither P0 (policy-facing output only) nor P1 (association gate) touched it.
+
+        "predict" rebuilds the deletion window from the tracker's forward-predicted target pose,
+        i.e. deletes at where the target is NOW. "skip" stops deleting while the detection is
+        stale: the target survives in the map as a phantom obstacle (costing capture), but no
+        real bar is ever erased (bounding crash). Returns the inputs unchanged when off or when
+        there is no latency, so clean runs are bit-identical.
+        """
+        if self.latency_obstacle_fix == "off" or self._latency_steps <= 0:
+            return target_pixels, target_surface_range, target_bearing, visible
+        if self.latency_obstacle_fix == "skip":
+            # visible=False disables both the target_like carve-out and (via the empty pixel
+            # mask) the depth blanking, without touching the fused scan geometry itself.
+            return (
+                torch.zeros_like(target_pixels),
+                target_surface_range,
+                target_bearing,
+                torch.zeros_like(visible),
+            )
+
+        # "predict": same window, relocated to the tracker's estimate of the target NOW. This is
+        # the P0 extrapolation reused on the map path -- deliberately the same expression, so the
+        # two compensations cannot disagree about where the target is.
+        state = self.tracker.state
+        pred_pos_w = state[:, :3] + state[:, 3:] * self.detection_latency_s
+        rel = _quat_rotate_inverse_xyzw(vehicle_quat, pred_pos_w - drone_pos_w)
+        pred_bearing = torch.atan2(rel[:, 1], rel[:, 0])
+        # surface_range is measured from the CAMERA to the near face, matching _detect_rgbd's
+        # center_range = surface_range + target_radius decomposition.
+        pred_surface = (rel - self.camera_offset).norm(dim=1) - self.target_radius
+        pred_surface = pred_surface.clamp(min=0.0)
+        # Only relocate where the tracker actually has a target; elsewhere carve nothing rather
+        # than carve at an arbitrary place.
+        pred_visible = visible & self.tracker.active
+        # Rebuild the depth blanking mask at the predicted pose with the same agreement window
+        # the LiDAR carve-out uses (the delayed segmenter mask points at the wrong place).
+        pixel_delta = torch.atan2(
+            torch.sin(self._pixel_angles.view(1, 1, -1) - pred_bearing.view(-1, 1, 1)),
+            torch.cos(self._pixel_angles.view(1, 1, -1) - pred_bearing.view(-1, 1, 1)),
+        ).abs()
+        pred_pixels = (
+            pred_visible.view(-1, 1, 1)
+            & (pixel_delta < TARGET_LIKE_ANGLE_RAD)
+            & ((depth - pred_surface.view(-1, 1, 1)).abs() < TARGET_LIKE_RANGE_TOL_M)
+        )
+        return pred_pixels, pred_surface, pred_bearing, pred_visible
 
     def _fuse_static_and_extract_obstacles(
         self,
@@ -742,8 +867,8 @@ class NavRLPerceptionModule:
         ).abs()
         target_like = (
             visible.view(-1, 1, 1)
-            & (angle_delta < math.radians(15.0))
-            & ((scan - target_surface_range.view(-1, 1, 1)).abs() < 0.55)
+            & (angle_delta < TARGET_LIKE_ANGLE_RAD)
+            & ((scan - target_surface_range.view(-1, 1, 1)).abs() < TARGET_LIKE_RANGE_TOL_M)
         )
         self.last_target_like[:] = target_like
         scan = torch.where(target_like, torch.full_like(scan, self.lidar_max_range), scan)
@@ -965,9 +1090,19 @@ class NavRLPerceptionModule:
     ):
         """Return actor-safe structured observation and sensor diagnostics."""
         meas_vehicle, surface_range, bearing, visible, confidence, pixels = self._detect_rgbd(
-            rgb, depth, training
+            rgb, depth, training, drone_pos_w=drone_pos_w, vehicle_quat=vehicle_quat
         )
-        meas_world = drone_pos_w + _quat_rotate_xyzw(vehicle_quat, meas_vehicle)
+        # P3 ego-motion compensation: a DELAYED detection was taken in the vehicle frame of
+        # t-tau, so lifting it to world with the pose at t injects the drone's own motion over
+        # tau into every KF correction -- 0.23 m of translation at the measured 2.33 m/s mean
+        # speed, plus yaw applied straight to the bearing. Both dominate the <=0.15 m target lag
+        # that P0 removes, which is why P0 alone changed nothing (WORKLOG 2026-08-06). Lifting
+        # with the buffered capture-time pose leaves a measurement that is accurate but tau old,
+        # i.e. exactly the residual P0 was written for.
+        meas_pos_w, meas_quat = drone_pos_w, vehicle_quat
+        if self.latency_ego_motion_fix and self._latency_delayed_pose is not None:
+            meas_pos_w, meas_quat = self._latency_delayed_pose
+        meas_world = meas_pos_w + _quat_rotate_xyzw(meas_quat, meas_vehicle)
         pixel_count = pixels.sum(dim=(1, 2)).float().clamp(min=1.0)
         sigma_r = 0.04 + 0.012 * surface_range + 0.15 / pixel_count.sqrt()
         sigma_lat = 0.03 + surface_range / max(self.fx, 1.0)
@@ -991,13 +1126,16 @@ class NavRLPerceptionModule:
         fused_surface = torch.where(lidar_visible, lidar_surface, surface_range)
         fused_bearing = torch.where(lidar_visible, lidar_bearing, bearing)
 
+        map_pixels, map_surface, map_bearing, map_visible = self._latency_corrected_map_inputs(
+            depth, pixels, fused_surface, fused_bearing, fused_visible, drone_pos_w, vehicle_quat
+        )
         static_state, obstacles_now = self._fuse_static_and_extract_obstacles(
             lidar_m,
             depth,
-            pixels,
-            fused_surface,
-            fused_bearing,
-            fused_visible,
+            map_pixels,
+            map_surface,
+            map_bearing,
+            map_visible,
             drone_vel_w=drone_vel_w,
             vehicle_quat=vehicle_quat,
         )

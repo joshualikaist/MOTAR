@@ -133,5 +133,274 @@ class LatencyCompensationPlumbing(unittest.TestCase):
         self.assertIn('getattr(cfg, "latency_lidar_backup", False)', self.SOURCE)
 
 
+def _yaw_quat(yaw):
+    return torch.tensor([[0.0, 0.0, math.sin(yaw * 0.5), math.cos(yaw * 0.5)]])
+
+
+def _module(latency_s, obstacle_fix, num_envs=1, ego_motion_fix=False):
+    camera = types.SimpleNamespace(
+        detector_max_range=20.0,
+        detector_hfov_deg=87.0,
+        detector_vfov_deg=58.0,
+        camera_width=80,
+        camera_height=45,
+        camera_translation=[0.1, 0.0, 0.03],
+        camera_target_radius=0.15,
+        tracker_memory_s=5.0,
+    )
+    perception = types.SimpleNamespace(
+        lidar_max_range=4.0,
+        min_target_pixels=2,
+        pixel_threshold=0.55,
+        detection_dropout_prob=0.0,
+        detection_latency_s=latency_s,
+        range_error_m=0.0,
+        latency_compensate=False,
+        latency_lidar_backup=False,
+        latency_obstacle_fix=obstacle_fix,
+        latency_ego_motion_fix=ego_motion_fix,
+        rgb_noise_std=0.0,
+        depth_noise_std=0.0,
+        history_interval_s=0.5,
+        detector_checkpoint="",
+    )
+    return _PERCEPTION.NavRLPerceptionModule(num_envs, "cpu", perception, DT, camera)
+
+
+def _frame(center_col, target_range):
+    """RGB-D frame with the orange target blob at a given column, everything else far."""
+    rgb = torch.full((1, 3, 45, 80), 0.15)
+    depth = torch.full((1, 45, 80), 10.0)
+    cols = slice(center_col - 2, center_col + 3)
+    rgb[0, 0, 20:24, cols] = 0.88
+    rgb[0, 1, 20:24, cols] = 0.08
+    rgb[0, 2, 20:24, cols] = 0.045
+    depth[0, 20:24, cols] = target_range
+    return rgb, depth
+
+
+def _sweep(module, lidar, columns, target_range=3.0):
+    """Drive the module over a target sweeping across the image; capture the map-path inputs."""
+    captured = {}
+    original = module._fuse_static_and_extract_obstacles
+
+    def spy(lidar_m, raw_depth, target_pixels, surface, bearing, visible, **kwargs):
+        captured["pixels"] = target_pixels.clone()
+        captured["surface"] = surface.clone()
+        captured["bearing"] = bearing.clone()
+        captured["visible"] = visible.clone()
+        return original(lidar_m, raw_depth, target_pixels, surface, bearing, visible, **kwargs)
+
+    module._fuse_static_and_extract_obstacles = spy
+    pos, vel = torch.zeros(1, 3), torch.zeros(1, 3)
+    quat = torch.tensor([[0.0, 0.0, 0.0, 1.0]])
+    for col in columns:
+        rgb, depth = _frame(col, target_range)
+        module.observe(
+            rgb, depth, lidar.clone(), pos, vel, quat,
+            torch.zeros(1), torch.zeros(1, 4), 2.0, 1.0, training=False,
+        )
+    return captured
+
+
+class LatencyObstacleMapFix(unittest.TestCase):
+    """P2: the obstacle map must not be edited at a STALE target bearing (WORKLOG 2026-08-05)."""
+
+    COLUMNS = [30, 33, 36, 39, 42, 45]  # target sweeping right across the image
+
+    def _lidar(self):
+        # A bar at 3.0 m in every bearing bin: whichever bin the carve-out touches gets erased,
+        # which is exactly the failure being measured.
+        return torch.full((1, _PERCEPTION.VBEAMS * _PERCEPTION.HBEAMS), 3.0)
+
+    def test_predict_relocates_carve_out_to_the_tracked_target(self):
+        stale = _sweep(_module(TAU, "off"), self._lidar(), self.COLUMNS)
+        fixed_module = _module(TAU, "predict")
+        fixed = _sweep(fixed_module, self._lidar(), self.COLUMNS)
+
+        state = fixed_module.tracker.state
+        predicted = state[:, :3] + state[:, 3:] * TAU
+        expected_bearing = math.atan2(float(predicted[0, 1]), float(predicted[0, 0]))
+        self.assertAlmostEqual(float(fixed["bearing"][0]), expected_bearing, places=5)
+        # The whole point: the map is no longer edited where the target USED to be.
+        self.assertGreater(
+            abs(float(fixed["bearing"][0]) - float(stale["bearing"][0])), math.radians(2.0)
+        )
+
+    def test_predict_rebuilds_the_pixel_mask_at_the_predicted_bearing(self):
+        fixed_module = _module(TAU, "predict")
+        fixed = _sweep(fixed_module, self._lidar(), self.COLUMNS)
+        self.assertTrue(bool(fixed["visible"][0]))
+        columns = fixed["pixels"][0].any(dim=0).nonzero().flatten()
+        self.assertGreater(columns.numel(), 0)
+        angles = fixed_module._pixel_angles[columns]
+        self.assertLess(
+            float((angles - float(fixed["bearing"][0])).abs().max()),
+            _PERCEPTION.TARGET_LIKE_ANGLE_RAD,
+        )
+
+    def test_skip_never_deletes_a_return_from_the_map(self):
+        """Conservative arm: the fused map may only get MORE occupied, never more free."""
+        off_module = _module(TAU, "off")
+        _sweep(off_module, self._lidar(), self.COLUMNS)
+        skip_module = _module(TAU, "skip")
+        _sweep(skip_module, self._lidar(), self.COLUMNS)
+        self.assertFalse(bool(skip_module.last_target_like.any()))
+        self.assertTrue(bool(off_module.last_target_like.any()))
+        self.assertTrue(
+            bool((skip_module.last_scan_nearest <= off_module.last_scan_nearest + 1e-6).all())
+        )
+        self.assertTrue(
+            bool((skip_module.last_scan_nearest < off_module.last_scan_nearest - 1e-6).any())
+        )
+
+    def test_no_latency_makes_every_mode_bit_identical(self):
+        """Clean runs must be untouched, so the fix can ship enabled-by-arm without a re-baseline."""
+        lidar = self._lidar()
+        baseline = _sweep(_module(0.0, "off"), lidar, self.COLUMNS)
+        for mode in ("predict", "skip"):
+            arm = _sweep(_module(0.0, mode), lidar, self.COLUMNS)
+            for key in ("pixels", "surface", "bearing", "visible"):
+                self.assertTrue(
+                    bool(torch.equal(baseline[key], arm[key])),
+                    f"mode={mode} changed {key} at zero latency",
+                )
+
+    def test_pixel_angles_invert_the_lidar_column_map(self):
+        """Guards the reconstruction: _pixel_angles must be the inverse of the camera_u map."""
+        module = _module(TAU, "predict")
+        u = (
+            (module.hfov * 0.5 - module._pixel_angles) / module.hfov * (module.width - 1)
+        ).round().long()
+        self.assertTrue(bool(torch.equal(u, torch.arange(module.width))))
+
+    def test_invalid_mode_is_rejected(self):
+        with self.assertRaises(ValueError):
+            _module(TAU, "compensate")
+
+
+class LatencyEgoMotionFix(unittest.TestCase):
+    """P3: a delayed measurement must be lifted to world with the pose it was TAKEN at."""
+
+    TRUE_WORLD = torch.tensor([[5.0, 1.0, 1.0]])
+    STEPS = 12
+
+    def _drive(self, tau_steps, speed=2.33, yaw_rate=0.8):
+        """Observer translating and yawing while a world-STATIC target is measured."""
+        module = _module(tau_steps * DT, "off", ego_motion_fix=True)
+        naive_err = corrected_err = None
+        for k in range(self.STEPS):
+            drone_pos = torch.tensor([[speed * k * DT, 0.0, 1.0]])
+            quat = _yaw_quat(yaw_rate * k * DT)
+            # What the camera would report right now, in the CURRENT vehicle frame.
+            meas_vehicle = _PERCEPTION._quat_rotate_inverse_xyzw(
+                quat, self.TRUE_WORLD - drone_pos
+            )
+            delayed = module._apply_detection_latency(
+                meas_vehicle,
+                torch.zeros(1),
+                torch.zeros(1),
+                torch.ones(1, dtype=torch.bool),
+                torch.ones(1),
+                torch.zeros(1, module.height, module.width, dtype=torch.bool),
+                drone_pos_w=drone_pos,
+                vehicle_quat=quat,
+            )
+            delayed_meas = delayed[0]
+            if module._latency_delayed_pose is None:
+                continue
+            past_pos, past_quat = module._latency_delayed_pose
+            naive = drone_pos + _PERCEPTION._quat_rotate_xyzw(quat, delayed_meas)
+            corrected = past_pos + _PERCEPTION._quat_rotate_xyzw(past_quat, delayed_meas)
+            naive_err = float((naive - self.TRUE_WORLD).norm())
+            corrected_err = float((corrected - self.TRUE_WORLD).norm())
+        return naive_err, corrected_err
+
+    def test_capture_time_pose_makes_a_static_target_exact(self):
+        naive_err, corrected_err = self._drive(tau_steps=1)
+        # A world-static target has no motion lag left to explain: whatever error survives is
+        # purely the observer's own motion, and P3 must remove all of it.
+        self.assertLess(corrected_err, 1e-5)
+        # And that error is large -- bigger than the <=0.15 m target lag P0 was aimed at.
+        self.assertGreater(naive_err, 0.2)
+
+    def test_two_step_latency_also_exact(self):
+        naive_err, corrected_err = self._drive(tau_steps=2)
+        self.assertLess(corrected_err, 1e-5)
+        self.assertGreater(naive_err, 0.4)
+
+    def test_pose_buffer_returns_the_pose_from_tau_steps_ago(self):
+        module = _module(TAU, "off", ego_motion_fix=True)
+        poses = []
+        for k in range(6):
+            drone_pos = torch.tensor([[float(k), 0.0, 1.0]])
+            quat = _yaw_quat(0.1 * k)
+            poses.append((drone_pos, quat))
+            delayed = module._apply_detection_latency(
+                torch.zeros(1, 3),
+                torch.zeros(1),
+                torch.zeros(1),
+                torch.ones(1, dtype=torch.bool),
+                torch.ones(1),
+                torch.zeros(1, module.height, module.width, dtype=torch.bool),
+                drone_pos_w=drone_pos,
+                vehicle_quat=quat,
+            )
+            past_pos, past_quat = module._latency_delayed_pose
+            if k == 0:
+                # The buffer has not filled yet, so the slot holds its init pose -- harmless
+                # only because the detection it belongs to is reported as NOT visible.
+                self.assertFalse(bool(delayed[3][0]))
+                continue
+            self.assertTrue(bool(delayed[3][0]))
+            expected_pos, expected_quat = poses[k - 1]
+            self.assertTrue(bool(torch.allclose(past_pos, expected_pos)))
+            self.assertTrue(bool(torch.allclose(past_quat, expected_quat)))
+
+    def test_zero_latency_publishes_no_pose(self):
+        """No latency, no correction: observe() must fall back to the current pose."""
+        module = _module(0.0, "off", ego_motion_fix=True)
+        module._apply_detection_latency(
+            torch.zeros(1, 3),
+            torch.zeros(1),
+            torch.zeros(1),
+            torch.ones(1, dtype=torch.bool),
+            torch.ones(1),
+            torch.zeros(1, module.height, module.width, dtype=torch.bool),
+            drone_pos_w=torch.zeros(1, 3),
+            vehicle_quat=_yaw_quat(0.0),
+        )
+        self.assertIsNone(module._latency_delayed_pose)
+
+    def test_observe_uses_the_buffered_pose_only_when_enabled(self):
+        lidar = torch.full((1, _PERCEPTION.VBEAMS * _PERCEPTION.HBEAMS), 3.0)
+        columns = [30, 33, 36, 39, 42, 45]
+        off = _module(TAU, "off", ego_motion_fix=False)
+        on = _module(TAU, "off", ego_motion_fix=True)
+        pos, vel = torch.zeros(1, 3), torch.zeros(1, 3)
+        for step, col in enumerate(columns):
+            rgb, depth = _frame(col, 3.0)
+            # Moving, yawing observer: the two modes must diverge.
+            drone_pos = torch.tensor([[2.33 * step * DT, 0.0, 1.0]])
+            quat = _yaw_quat(0.8 * step * DT)
+            for module in (off, on):
+                module.observe(
+                    rgb, depth, lidar.clone(), drone_pos, vel, quat,
+                    torch.zeros(1), torch.zeros(1, 4), 2.0, 1.0, training=False,
+                )
+        self.assertFalse(bool(torch.allclose(off.tracker.state, on.tracker.state)))
+        # A stationary observer leaves nothing for P3 to compensate.
+        still_off = _module(TAU, "off", ego_motion_fix=False)
+        still_on = _module(TAU, "off", ego_motion_fix=True)
+        for col in columns:
+            rgb, depth = _frame(col, 3.0)
+            for module in (still_off, still_on):
+                module.observe(
+                    rgb, depth, lidar.clone(), pos, vel, _yaw_quat(0.0),
+                    torch.zeros(1), torch.zeros(1, 4), 2.0, 1.0, training=False,
+                )
+        self.assertTrue(bool(torch.allclose(still_off.tracker.state, still_on.tracker.state)))
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

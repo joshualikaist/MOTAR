@@ -6307,3 +6307,165 @@ detection이 stale일 때 carve-out을 아예 끄는 보수적 변형도 arm으�
 (표적이 장애물로 남는 대신 실제 막대는 지워지지 않음 — 안전 우선).
 평가 계약은 동일, PPO 재학습은 여전히 금지. GO gate도 동일(capture ≥ 65% AND
 crash raw 대비 ≥ 10 pp 감소).
+
+## 2026-08-06 — latency P2 (obstacle-map 보정) 구현 완료, GPU 평가 대기
+
+P0/P1 NO-GO의 원인 분석(직전 항목)에서 지목한 채널 —— 지연된 target bearing/range/pixel mask가
+`_fuse_static_and_extract_obstacles()`의 carve-out과 depth blanking을 구동해서 **실제 막대를
+장애물 지도에서 지운다** —— 를 직접 고치는 P2를 구현했다.
+
+**노브**: `NAVRL_LATENCY_OBSTACLE_FIX=off|predict|skip` (기본 off, perturbation 노브와 분리).
+- `predict`: carve-out 창을 tracker의 forward-predict 위치(P0와 **동일 수식** 재사용)에서
+  다시 계산한다. LiDAR bin 창과 depth pixel mask를 모두 예측 bearing/range로 재구성하며,
+  `tracker.active`가 아닌 env는 아예 지우지 않는다.
+- `skip`: stale 동안 map 편집을 중단한다. 표적이 유령 장애물로 남는 대신(capture 손해)
+  **실제 막대는 절대 지워지지 않는다**(crash 상한). 보수적 arm.
+
+**구현 위치**: `navrl_perception.py::_latency_corrected_map_inputs()` (신규) → `observe()`가
+`_fuse_static_and_extract_obstacles()`에 넘기는 4개 입력만 교체한다. `_fuse_...` 본체는
+carve-out 상수를 모듈 상수(`TARGET_LIKE_ANGLE_RAD`, `TARGET_LIKE_RANGE_TOL_M`)로 뽑은 것 외에
+무변경. 관측 폭 898-D 불변, PPO 재학습 없음.
+
+**단위 테스트** `tests/test_navrl_latency_compensate.py` (13/13 PASS, 기존 20/20 회귀 PASS):
+- predict의 carve-out bearing이 tracker 예측 bearing과 일치하고, stale bearing과 2° 이상 다름
+- predict의 재구성 pixel mask가 예측 bearing ±15° 안에만 존재
+- skip은 `last_target_like`가 전부 False이고 fused scan이 off 대비 **어디서도 더 멀어지지 않음**
+  (지도가 더 비어 보이는 일이 없음) + 실제로 더 가까운 bin이 존재
+- latency=0이면 predict/skip/off의 map 입력 4개가 **bitwise 동일** (clean 재기준선 불필요)
+- `_pixel_angles`가 camera_u 매핑의 정확한 역함수, 잘못된 모드 문자열은 ValueError
+
+**provenance 공백 수정**: 기존 receipt에는 perturbation/fix 노브가 하나도 안 남아서 raw arm과
+P0 arm의 receipt가 nonce/시각 말고는 동일했다. `eval_navrl_v2_density_sweep.sh`가 이제
+`perception_{perturb,detection_dropout,detection_latency_s,range_error_m,latency_compensate,
+latency_lidar_backup,latency_obstacle_fix}`를 결과 JSON과 receipt 양쪽에 기록하고, fix 노브를
+off 값으로 명시 export 해서 호출자 셸에서 새어들어오지 않게 한다.
+
+**GPU smoke** (predict, 66 ep, scratch): 오류 없이 완주, capture 36.4/crash 63.6%. n=66이라
+raw(37.8%)와 구분 불가 —— 경로 동작 확인 목적이며 **결과로 해석하지 않는다**.
+
+**평가 스크립트** `eval_navrl_v2_latency_obstacle_fix.sh` (PREFLIGHT PASS), 동일 계약
+(seed47/205bars/deterministic/riskcap, 2049 ep/cell), arm 4개:
+raw / map_skip / map_predict / p0+predict. clean은 no-op 증명이 있으므로 재실행하지 않고
+`navrl_v2_latency_compensate/analytic_clean`을 앵커로 재사용한다(`NAVRL_LAT_RERUN_CLEAN=1`로 재측정).
+GO gate 동일(capture ≥ 65% AND crash raw 대비 ≥ 10 pp 감소). 추가로 **bar_contact 절대수**를
+raw 대비 함께 보고한다 —— 가설이 직접 예측하는 양이므로, GO를 못 넘겨도 "메커니즘이 틀렸는지
+맞는데 크기가 작은지"를 구분해준다.
+
+## 2026-08-06 — latency P2 재평가: 방향은 맞으나 크기가 작아 NO-GO, ego-motion 채널로 좁혀짐
+
+frozen ep25000+riskcap, seed47 / 205 bars / deterministic / riskcap, 2049~2050 ep/cell.
+`results/navrl_v2_latency_obstacle_fix/summary.{md,json}`. clean은 no-op 증명에 따라
+`navrl_v2_latency_compensate/analytic_clean`을 앵커로 재사용했다.
+
+| cell | capture | crash | bar contacts | OOB | closest mean (m) |
+|---|---:|---:|---:|---:|---:|
+| analytic_clean | 80.54% | 17.17% | 337 | 10 | 0.806 |
+| latency_0p1s_raw | 37.82% | 58.22% | 931 | 251 | 1.611 |
+| latency_0p1s_map_skip | 38.83% | 56.83% | 895 | 252 | 1.579 |
+| latency_0p1s_map_predict | 39.66% | 56.29% | 867 | 278 | 1.329 |
+| latency_0p1s_p0_predict | 36.88% | 58.44% | 918 | 267 | 1.812 |
+
+**전부 NO-GO.** 다만 P0/P1과 달리 **부호가 예측대로**다: map을 건드리지 않는(skip) 것도,
+예측 위치로 재배치하는(predict) 것도 bar contact를 줄이고(931 → 895 / 867) capture를 올렸다
+(+1.01 / +1.84 pp). predict가 skip보다 일관되게 낫다 —— "지우되 올바른 곳에 지운다"가
+"안 지운다"보다 낫다는 뜻이고, 이는 carve-out 자체는 필요한 기능이라는 기존 설계를 지지한다.
+
+**그러나 크기가 결정적으로 부족하다.** latency의 초과 bar contact는 931 − 337 = 594건인데
+P2가 회수한 건 64건, 약 11%다. 통계적으로도 약하다: 2050 ep에서 capture 차이의 SE는 약 1.5 pp,
+bar contact 차이의 SE는 약 42건이므로 두 지표 모두 ~1.3σ로 유의 미달이다. 따라서
+**"stale carve-out이 막대를 지운다"는 메커니즘은 실재하지만 지배적 채널이 아니다.**
+
+### 남은 지배 채널 가설: ego-motion 미보정 (P3 후보)
+
+`observe()` line 1059: `meas_world = drone_pos_w + _quat_rotate_xyzw(vehicle_quat, meas_vehicle)`.
+`meas_vehicle`은 τ 전 **드론 기체 프레임**에서 관측된 값인데, 이를 **현재** 위치·자세로 월드
+변환한다. 즉 지연 오차는 표적 운동(v_target·τ ≤ 0.15 m)이 아니라 **드론 자신의 ego-motion**이
+지배한다. 이번 run의 실측 평균 속도는 2.33 m/s이므로 병진만으로 0.23 m이고, 여기에 yaw
+회전분이 bearing에 직접 더해진다(mean_abs yaw action 0.325). P0는 표적 속도만 외삽했으므로
+이 항을 전혀 건드리지 못했고, 이것이 P0가 무효였던 이유를 완결적으로 설명한다.
+
+P2 predict가 그나마 최선이었던 것도 같은 그림과 일치한다: predict는 bearing/range를 tracker의
+**월드 상태**에서 다시 유도하므로 ego-motion 오차를 우회한다. 하지만 그 tracker 자체가 이미
+ego-motion 오염된 측정으로 correct 되어 있어서, 하류 보정으로는 상한이 있다.
+
+**P3**: 링 버퍼에 measurement와 함께 **당시의 drone_pos_w / vehicle_quat**을 저장하고, 지연된
+vehicle-frame 측정을 **그 시점 pose**로 월드 변환한다. 그러면 월드 측정은 "정확하지만 τ만큼
+과거"인 상태가 되고, 남은 것은 P0가 이미 처리하는 표적 운동 lag뿐이다. 실기에서도 IMU/odometry로
+동일하게 구현 가능한 보정이라 sim 전용 트릭이 아니다. 평가 계약·GO gate 동일, PPO 재학습 금지.
+
+## 2026-08-06 — latency P3 (ego-motion 보정) 구현 완료, GPU 평가 시작
+
+직전 항목의 가설을 그대로 구현했다. `observe()`는 t−τ의 **기체 프레임** 측정을 t의 pose로
+월드 변환하고 있었다. P3는 링 버퍼에 detection과 함께 그 시점의 `drone_pos_w`/`vehicle_quat`을
+저장하고, 지연된 측정을 **그 pose로** 월드 변환한다. 노브 `NAVRL_LATENCY_EGO_MOTION_FIX`
+(기본 off, τ=0이면 pose를 아예 발행하지 않아 no-op).
+
+**오차 크기 실측** (`tests/test_navrl_latency_compensate.py::LatencyEgoMotionFix`, 월드 고정
+표적을 이동·요잉하는 관측자가 보는 상황. 속도 2.33 m/s와 yaw 0.81 rad/s는 이번 205-bar run의
+실측 평균이다 —— mean_abs yaw action 0.325 × `yaw_rate_max` 2.5):
+
+| 성분 | τ=0.1s 월드 위치 오차 |
+|---|---:|
+| 병진만 (yaw=0) | 0.233 m |
+| yaw만 (speed=0) | 0.408 m |
+| 합성 (이 궤적에서 일부 상쇄) | 0.255 m |
+| **P3 보정 후** | **0.000 m** (exact) |
+| 참고: P0가 제거한 표적 운동 lag | 0.150 m |
+
+즉 **yaw 성분 하나만으로도 P0가 겨눈 표적 lag의 2.7배**다. P0가 무효였던 이유가 수치로
+확정된다: 더 작은 항만 고쳤다. τ=0.2s에서는 ego-motion 오차가 0.524 m로 커지며 P3는 여전히
+정확히 0으로 만든다.
+
+월드 고정 표적에서 잔차가 정확히 0이라는 것이 이 테스트의 핵심이다 —— 표적이 안 움직이면
+남은 오차는 전부 관측자 자신의 운동이므로, P3는 그 성분을 **전량** 제거한다. 남는 것은
+"정확하지만 τ만큼 과거"인 측정이고, 그게 바로 P0가 처리하도록 쓰인 잔차다(→ p3_p0 arm).
+
+**구현**: `_apply_detection_latency()`가 pose 링 버퍼를 함께 쓰고 **동일한 read index**로
+`self._latency_delayed_pose`를 발행한다(인덱스 산술을 두 번 쓰지 않기 위함). `_detect_rgbd`는
+pose를 optional kwarg로 받아 전달만 한다(기존 호출부·테스트 호환). 관측 898-D 불변, PPO 없음.
+버퍼가 아직 안 찬 첫 스텝은 init pose를 들고 있지만 그 detection이 `visible=False`로 보고되므로
+무해하다 —— 테스트가 이 불변식을 직접 검사한다.
+
+**테스트** 18/18 PASS (기존 perception 20/20 회귀 PASS). 정지 관측자에서는 P3 on/off의
+tracker state가 동일하고, 이동·요잉 관측자에서는 갈라진다는 것까지 확인.
+
+**평가** `eval_navrl_v2_latency_ego_motion.sh` (PREFLIGHT PASS), 동일 계약, 2049 ep/cell,
+arm 4개: raw / p3 / p3+p0 / p3+p0+predict. summary에 GO gate와 함께 **capture·bar_contact를
+"clean−raw 구멍 중 몇 %를 메웠는지"** 비율로도 보고하게 했다 —— P2의 +1.84 pp가 실은 구멍의
+4%였던 것처럼, pp 절대값만으로는 크기 판단이 안 되기 때문이다.
+
+## 2026-08-06 — latency P3 결과: GO. latency 손실의 94%는 ego-motion 미보정 아티팩트였다
+
+frozen ep25000+riskcap, seed47 / 205 bars / deterministic / riskcap, 2049~2050 ep/cell.
+`results/navrl_v2_latency_ego_motion/summary.{md,json}`.
+
+| cell | capture | crash | bar contacts | OOB | closest mean (m) |
+|---|---:|---:|---:|---:|---:|
+| analytic_clean | 80.54% | 17.17% | 337 | 10 | 0.806 |
+| latency_0p1s_raw | 37.82% | 58.22% | 931 | 251 | 1.611 |
+| **latency_0p1s_p3** | **78.04%** | 19.67% | 390 | 4 | 0.846 |
+| latency_0p1s_p3_p0 | 76.57% | 20.79% | 406 | 8 | 0.953 |
+| latency_0p1s_p3_p0_predict | 78.43% | 19.23% | 370 | 7 | 0.802 |
+
+**세 arm 모두 GO.** P3 단독으로 capture +40.21 pp —— clean−raw 구멍의 **94.2%**를 메웠고
+bar contact 초과분의 **91.1%**를 제거했다(931 → 390, clean 337). OOB는 251 → 4로 clean(10)보다도
+낮다. P0/P1/P2가 각각 −0.10 / −8.85 / +1.84 pp였던 것과 자릿수가 다르다.
+
+**핵심 결론(R3 헤드라인 수정)**: "detection latency 0.1 s가 capture를 42.7 pp 무너뜨린다"는
+R3 결과는 **대부분 latency 모델링 아티팩트였다.** 지연된 기체-프레임 측정을 현재 pose로 월드
+변환하면 드론 자신의 운동이 매 correct마다 주입되는데, 실제 시스템은 measurement에 timestamp를
+달고 **취득 시점 pose**로 변환한다(표준 관행). 그렇게 고치면 latency 0.1 s의 진짜 비용은
+**2.1~2.5 pp**(80.54 → 78.43 / 78.04)다. 따라서 R3의 "latency가 1순위 perception 병목"이라는
+판정은 **기각**하고, latency는 range error·dropout과 같은 등급의 benign 축으로 재분류한다.
+
+**P0/P2는 채택하지 않는다.** P3 위에서 P0는 −1.47 pp, P2 predict는 +0.39 pp인데 2049 ep에서
+arm 간 차이의 SE가 약 1.3 pp이므로 둘 다 유의하지 않다. P3가 측정을 정확하게 만든 뒤 남는
+표적 운동 lag(0.15 m)는 결과를 바꾸지 못한다 —— P0의 원래 가설이 왜 실패했는지와 같은 이유다.
+최선 arm(p3_p0_predict 78.43%)과 clean의 차이 2.11 pp도 1.7σ로 경계선이다.
+
+**P3를 기본 ON으로 승격할 것을 제안한다.** τ=0에서 산술적 no-op이므로 clean 결과에 영향이 없고,
+지연이 있을 때만 "올바른 latency 모델"이 된다. 현재는 여전히 `NAVRL_LATENCY_EGO_MOTION_FIX=0`
+기본값이다.
+
+**다음 단계**: latency 0.2 s를 P3와 함께 재측정해서 실제 하드웨어 latency 예산 곡선을 얻는다
+(P3 없이는 18.50%였다). 그 다음에야 R4 temporal fusion 논의가 의미를 가진다.

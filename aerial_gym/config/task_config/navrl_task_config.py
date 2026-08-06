@@ -204,6 +204,21 @@ class task_config:
         latency_compensate = _env_bool("NAVRL_LATENCY_COMPENSATE", False)
         # P1: a DELAYED camera detection no longer vetoes the fresh-LiDAR correction path.
         latency_lidar_backup = _env_bool("NAVRL_LATENCY_LIDAR_BACKUP", False)
+        # P2: the obstacle map is edited with the delayed target bearing/range/pixels
+        # (target_like carve-out + depth blanking in _fuse_static_and_extract_obstacles), so a
+        # stale detection erases LiDAR returns where a real BAR stands. This is the channel that
+        # P0/P1 did not touch and that tripled bar contacts under 0.1 s latency (WORKLOG
+        # 2026-08-05). "predict" re-derives the edit location from the tracker's forward-predicted
+        # target; "skip" simply stops editing the map while the detection is stale (the target
+        # then survives as an obstacle, but no real bar is ever deleted).
+        latency_obstacle_fix = os.environ.get("NAVRL_LATENCY_OBSTACLE_FIX", "off").strip().lower()
+        # P3: a delayed detection is a VEHICLE-frame measurement taken at t-tau, but observe()
+        # lifts it to world with the pose at t, so the drone's own motion over tau (0.23 m of
+        # translation at the measured 2.33 m/s mean speed, plus yaw straight into the bearing)
+        # corrupts every KF correction -- a larger error than the <=0.15 m target lag P0 removed.
+        # Enabling this buffers the pose alongside the detection and lifts the measurement with
+        # the pose it was actually taken at (an IMU/odometry compensation on real hardware).
+        latency_ego_motion_fix = _env_bool("NAVRL_LATENCY_EGO_MOTION_FIX", False)
         rgb_noise_std = _env_float("NAVRL_RGB_NOISE_STD", 0.015)
         depth_noise_std = _env_float("NAVRL_DEPTH_NOISE_STD", 0.02)
         # [static VBEAMS*HBEAMS | obstacle history 5*MAX_OBSTACLES*12 | robot history 5x10 |

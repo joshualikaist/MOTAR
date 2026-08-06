@@ -380,6 +380,12 @@ export NAVRL_DETECTOR_THRESHOLD="${NAVRL_DETECTOR_THRESHOLD:-${DETECTOR_THRESHOL
 export NAVRL_DETECTION_DROPOUT="${NAVRL_DETECTION_DROPOUT:-${DETECTION_DROPOUT}}"
 export NAVRL_DETECTION_LATENCY_S="${NAVRL_DETECTION_LATENCY_S:-0}"
 export NAVRL_RANGE_ERROR_M="${NAVRL_RANGE_ERROR_M:-0}"
+# Compensation knobs (fixes, not perturbations). Pinned to their off values so a cell that does
+# not request a fix cannot inherit one from the caller's shell.
+export NAVRL_LATENCY_COMPENSATE="${NAVRL_LATENCY_COMPENSATE:-0}"
+export NAVRL_LATENCY_LIDAR_BACKUP="${NAVRL_LATENCY_LIDAR_BACKUP:-0}"
+export NAVRL_LATENCY_OBSTACLE_FIX="${NAVRL_LATENCY_OBSTACLE_FIX:-off}"
+export NAVRL_LATENCY_EGO_MOTION_FIX="${NAVRL_LATENCY_EGO_MOTION_FIX:-0}"
 export NAVRL_RGB_NOISE_STD="${NAVRL_RGB_NOISE_STD:-${RGB_NOISE_STD}}"
 export NAVRL_DEPTH_NOISE_STD="${NAVRL_DEPTH_NOISE_STD:-${DEPTH_NOISE_STD}}"
 export NAVRL_OOB_MARGIN=1.0
@@ -940,6 +946,17 @@ payload["v2_evaluation_contract"] = {
     "speed_governor_brake_mps2": float(os.environ["NAVRL_SPEED_GOVERNOR_BRAKE_MPS2"]),
     "speed_governor_reaction_s": float(os.environ["NAVRL_SPEED_GOVERNOR_REACTION_S"]),
     "speed_governor_target_exclusion": "camera_lidar_association",
+    # Perception arm: WHICH perturbation was injected and WHICH compensation was enabled. Without
+    # these, two cells of a robustness sweep produce byte-identical provenance and the archive
+    # cannot say which arm a number came from.
+    "perception_perturb": os.environ.get("NAVRL_PERCEPTION_PERTURB", "0") == "1",
+    "perception_detection_dropout": float(os.environ.get("NAVRL_DETECTION_DROPOUT", 0.0)),
+    "perception_detection_latency_s": float(os.environ.get("NAVRL_DETECTION_LATENCY_S", 0.0)),
+    "perception_range_error_m": float(os.environ.get("NAVRL_RANGE_ERROR_M", 0.0)),
+    "perception_latency_compensate": os.environ.get("NAVRL_LATENCY_COMPENSATE", "0") == "1",
+    "perception_latency_lidar_backup": os.environ.get("NAVRL_LATENCY_LIDAR_BACKUP", "0") == "1",
+    "perception_latency_obstacle_fix": os.environ.get("NAVRL_LATENCY_OBSTACLE_FIX", "off"),
+    "perception_latency_ego_motion_fix": os.environ.get("NAVRL_LATENCY_EGO_MOTION_FIX", "0") == "1",
     "sim_physics_contract": os.environ["NAVRL_SIM_PHYSICS_CONTRACT"],
     "runtime_sim_config_class": condition["runtime_sim_config_class"],
     "physics_dt_s": float(condition["physics_dt_s"]),
@@ -1008,6 +1025,14 @@ receipt = {
     "reflection_mode": os.environ["NAVRL_EVAL_REFLECTION_MODE"],
     "speed_governor_mode": os.environ["NAVRL_SPEED_GOVERNOR"],
     "speed_governor_target_exclusion": "camera_lidar_association",
+    "perception_perturb": os.environ.get("NAVRL_PERCEPTION_PERTURB", "0") == "1",
+    "perception_detection_dropout": float(os.environ.get("NAVRL_DETECTION_DROPOUT", 0.0)),
+    "perception_detection_latency_s": float(os.environ.get("NAVRL_DETECTION_LATENCY_S", 0.0)),
+    "perception_range_error_m": float(os.environ.get("NAVRL_RANGE_ERROR_M", 0.0)),
+    "perception_latency_compensate": os.environ.get("NAVRL_LATENCY_COMPENSATE", "0") == "1",
+    "perception_latency_lidar_backup": os.environ.get("NAVRL_LATENCY_LIDAR_BACKUP", "0") == "1",
+    "perception_latency_obstacle_fix": os.environ.get("NAVRL_LATENCY_OBSTACLE_FIX", "off"),
+    "perception_latency_ego_motion_fix": os.environ.get("NAVRL_LATENCY_EGO_MOTION_FIX", "0") == "1",
 }
 receipt_file = Path(receipt_path)
 temporary_receipt = receipt_file.with_name(
