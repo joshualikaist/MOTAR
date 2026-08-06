@@ -567,6 +567,9 @@ class NavRLPerceptionModule:
         # current one. Set alongside the ring-buffer read so the index math happens exactly once.
         self.latency_ego_motion_fix = bool(getattr(cfg, "latency_ego_motion_fix", False))
         self._latency_delayed_pose = None
+        # Backfill the target pixel mask from the fused bearing/range when the camera did not
+        # deliver one but the track is alive (LiDAR-only frames). Off by default until measured.
+        self.target_mask_backfill = bool(getattr(cfg, "target_mask_backfill", False))
         self.rgb_noise_std = float(getattr(cfg, "rgb_noise_std", 0.015))
         self.depth_noise_std = float(getattr(cfg, "depth_noise_std", 0.02))
         self.history_stride = max(1, int(round(float(cfg.history_interval_s) / self.step_dt)))
@@ -849,18 +852,26 @@ class NavRLPerceptionModule:
         # Only relocate where the tracker actually has a target; elsewhere carve nothing rather
         # than carve at an arbitrary place.
         pred_visible = visible & self.tracker.active
-        # Rebuild the depth blanking mask at the predicted pose with the same agreement window
-        # the LiDAR carve-out uses (the delayed segmenter mask points at the wrong place).
-        pixel_delta = torch.atan2(
-            torch.sin(self._pixel_angles.view(1, 1, -1) - pred_bearing.view(-1, 1, 1)),
-            torch.cos(self._pixel_angles.view(1, 1, -1) - pred_bearing.view(-1, 1, 1)),
-        ).abs()
-        pred_pixels = (
-            pred_visible.view(-1, 1, 1)
-            & (pixel_delta < TARGET_LIKE_ANGLE_RAD)
-            & ((depth - pred_surface.view(-1, 1, 1)).abs() < TARGET_LIKE_RANGE_TOL_M)
+        pred_pixels = self._reconstruct_target_pixels(
+            depth, pred_bearing, pred_surface, pred_visible
         )
         return pred_pixels, pred_surface, pred_bearing, pred_visible
+
+    def _reconstruct_target_pixels(self, depth, bearing, surface_range, gate):
+        """Which depth pixels the target would occupy at a given bearing/range.
+
+        Uses the same agreement window as the LiDAR target_like carve-out, so the two halves of
+        the obstacle map agree about what counts as the target.
+        """
+        pixel_delta = torch.atan2(
+            torch.sin(self._pixel_angles.view(1, 1, -1) - bearing.view(-1, 1, 1)),
+            torch.cos(self._pixel_angles.view(1, 1, -1) - bearing.view(-1, 1, 1)),
+        ).abs()
+        return (
+            gate.view(-1, 1, 1)
+            & (pixel_delta < TARGET_LIKE_ANGLE_RAD)
+            & ((depth - surface_range.view(-1, 1, 1)).abs() < TARGET_LIKE_RANGE_TOL_M)
+        )
 
     def _fuse_static_and_extract_obstacles(
         self,
@@ -1145,6 +1156,20 @@ class NavRLPerceptionModule:
         map_pixels, map_surface, map_bearing, map_visible = self._latency_corrected_map_inputs(
             depth, pixels, fused_surface, fused_bearing, fused_visible, drone_pos_w, vehicle_quat
         )
+        # The obstacle map is edited in two places that use DIFFERENT gates: the LiDAR
+        # target_like carve-out is gated on fused_visible (camera OR LiDAR), while the depth
+        # blanking is gated on the camera-only pixel mask. Whenever LiDAR alone is holding the
+        # track -- every dropped camera frame -- the LiDAR half removes the target but the camera
+        # half puts it straight back, so the target becomes a phantom obstacle dead ahead and
+        # consumes one of the 8 obstacle tokens exactly when the drone should be closing in.
+        # Backfilling the mask from the fused bearing/range makes both halves agree.
+        if self.target_mask_backfill:
+            camera_mask_empty = ~map_pixels.any(dim=1).any(dim=1)
+            map_pixels = torch.where(
+                (map_visible & camera_mask_empty).view(-1, 1, 1),
+                self._reconstruct_target_pixels(depth, map_bearing, map_surface, map_visible),
+                map_pixels,
+            )
         static_state, obstacles_now = self._fuse_static_and_extract_obstacles(
             lidar_m,
             depth,

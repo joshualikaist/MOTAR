@@ -279,6 +279,68 @@ class LatencyObstacleMapFix(unittest.TestCase):
             _module(TAU, "compensate")
 
 
+class TargetMaskBackfill(unittest.TestCase):
+    """The two halves of the obstacle map must agree about where the target is.
+
+    The LiDAR target_like carve-out is gated on fused visibility (camera OR LiDAR) while the
+    depth blanking is gated on the camera-only pixel mask. On a frame the camera missed but the
+    LiDAR track survived -- 30% of frames under detection dropout -- the LiDAR half deleted the
+    target and the camera half put it straight back as a phantom obstacle dead ahead
+    (WORKLOG 2026-08-07).
+    """
+
+    TARGET_RANGE = 3.0
+    FREE_RANGE = 4.0
+
+    def _scene(self, module):
+        n, h, w = 1, module.height, module.width
+        lidar = torch.full((n, _PERCEPTION.VBEAMS * _PERCEPTION.HBEAMS), self.FREE_RANGE)
+        zero_bin = int(torch.argmin(module._lidar_angles.abs()))
+        lidar.view(n, _PERCEPTION.VBEAMS, _PERCEPTION.HBEAMS)[:, :, zero_bin] = self.TARGET_RANGE
+        depth = torch.full((n, h, w), 10.0)
+        centre = w // 2
+        depth[:, 18:26, centre - 3 : centre + 4] = self.TARGET_RANGE
+        pixels = torch.zeros(n, h, w, dtype=torch.bool)
+        pixels[:, 18:26, centre - 3 : centre + 4] = True
+        return lidar, depth, pixels, zero_bin
+
+    def _map_range_ahead(self, module, camera_mask_present):
+        lidar, depth, pixels, zero_bin = self._scene(module)
+        mask = pixels if camera_mask_present else torch.zeros_like(pixels)
+        if module.target_mask_backfill and not camera_mask_present:
+            mask = module._reconstruct_target_pixels(
+                depth, torch.zeros(1), torch.full((1,), self.TARGET_RANGE),
+                torch.ones(1, dtype=torch.bool),
+            )
+        module._fuse_static_and_extract_obstacles(
+            lidar, depth, mask, torch.full((1,), self.TARGET_RANGE), torch.zeros(1),
+            torch.ones(1, dtype=torch.bool),
+            drone_vel_w=torch.zeros(1, 3), vehicle_quat=torch.tensor([[0.0, 0.0, 0.0, 1.0]]),
+        )
+        return float(module.last_scan_nearest[0, zero_bin])
+
+    def test_missing_camera_mask_reinstates_the_target_as_an_obstacle(self):
+        """The defect itself: same visibility, but a dropped camera frame fills the map."""
+        module = _module(0.0, "off")
+        self.assertFalse(module.target_mask_backfill)
+        self.assertAlmostEqual(self._map_range_ahead(module, True), self.FREE_RANGE, places=3)
+        self.assertAlmostEqual(self._map_range_ahead(module, False), self.TARGET_RANGE, places=3)
+
+    def test_backfill_makes_both_halves_agree(self):
+        module = _module(0.0, "off")
+        module.target_mask_backfill = True
+        self.assertAlmostEqual(self._map_range_ahead(module, True), self.FREE_RANGE, places=3)
+        self.assertAlmostEqual(self._map_range_ahead(module, False), self.FREE_RANGE, places=3)
+
+    def test_backfill_leaves_a_present_camera_mask_alone(self):
+        """It must only fill a gap, never override what the detector actually reported."""
+        plain, filled = _module(0.0, "off"), _module(0.0, "off")
+        filled.target_mask_backfill = True
+        self.assertAlmostEqual(
+            self._map_range_ahead(plain, True), self._map_range_ahead(filled, True), places=6
+        )
+
+
 class LatencyEgoMotionFix(unittest.TestCase):
     """P3: a delayed measurement must be lifted to world with the pose it was TAKEN at."""
 

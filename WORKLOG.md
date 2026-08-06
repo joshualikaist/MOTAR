@@ -6617,3 +6617,74 @@ python 테스트 21개 파일 + JS 1개 전부 PASS, pyflakes에 undefined name 
 `NAVRL_EXPECTED_DETECTOR_SHA256`을 제외한 18개는 전부 셸 내부 변수(결과 경로, 워밍스타트 허용
 플래그 등)이거나 문서 내 표기이며, `NAVRL_V2_FIXED_TARGET_SPEED`는 셸이 다른 노브로 변환해
 소비하는 것을 확인했다. 즉 진짜 구멍은 하나뿐이었다.
+
+## 2026-08-07 — dropout 채널: 유령 표적 장애물을 코드에서 격리 (가설 H1은 기각, H1' 확정 대기)
+
+**먼저 내 가설 H1을 기각했다.** "dropout이 `visible`을 깜빡이게 해서 carve-out이 깜빡인다"는
+전제가 틀렸다: carve-out gate는 `fused_visible`(camera OR LiDAR)이고, 이 값은 dropout에서
+21.38%로 clean(21.21%)과 사실상 동일하다 —— LiDAR association이 빠진 카메라 프레임을 메우기
+때문이다. GPU를 쓰기 전에 기각됐다.
+
+**대신 실제 결함을 코드에서 격리했다 (H1')**: 장애물 지도는 **서로 다른 gate를 쓰는 두 경로**로
+편집된다.
+- LiDAR `target_like` carve-out (navrl_perception.py:884) → gate = `fused_visible`
+- depth blanking (`depth_no_target`, :893) → gate = **카메라 전용** `pixels` 마스크
+
+카메라가 놓쳤지만 LiDAR가 트랙을 유지한 프레임 —— dropout 0.3에서 전체의 30% —— 에서는
+LiDAR 쪽이 표적을 지우고 카메라 쪽이 그대로 되살린다. 그 결과 표적이 **정면의 실체 장애물**이
+되어 8개뿐인 obstacle token 하나를 먹는다. 바로 접근해야 할 순간에.
+
+격리 재현 (`tests/test_navrl_latency_compensate.py::TargetMaskBackfill`, latency 0, CPU):
+동일한 visibility·동일하게 carve-out이 작동하는데 전방 지도 거리가
+**카메라 마스크 있음 4.00 m / 없음 3.00 m**. 표적 거리가 그대로 장애물로 남는다.
+
+이 경로가 유력한 이유: dropout은 capture를 −12.70 pp 떨어뜨리면서 fused visibility는 건드리지
+않는다. 즉 손실이 "표적을 덜 본다"로 설명되지 않으므로, **카메라가 놓친 프레임에서만 발화하는**
+채널이 남은 후보다. 이 채널이 정확히 그렇다.
+
+**수정(A/B 대기)**: `NAVRL_TARGET_MASK_BACKFILL`(기본 off). 카메라 마스크가 비었는데 트랙이
+살아 있으면 fused bearing/range로 마스크를 재구성해 두 반쪽이 같은 것을 지우게 한다. 재구성
+로직은 P2 predict와 **같은 헬퍼**(`_reconstruct_target_pixels`, 동일 agreement window)를 쓰므로
+두 수정이 표적의 픽셀 범위에 대해 다른 답을 낼 수 없다. 마스크가 이미 있으면 절대 덮어쓰지
+않는다(테스트로 고정).
+
+**평가** `eval_navrl_v2_target_mask_backfill.sh`, 동일 계약, 2049 ep/cell, arm 4개:
+clean / dropout_raw / dropout+backfill / clean+backfill(무해성 확인). 판정은 자동:
+capture 회복 ≥ 4 pp면 SUPPORTED, ≤ 1.3 pp(arm 간 SE)면 REJECTED. **기각도 결과로 기록한다.**
+
+## 2026-08-07 — target mask backfill A/B: 채널은 실재하나 dropout 손실의 20%뿐 (INCONCLUSIVE)
+
+frozen ep25000+riskcap, seed47 / 205 bars / deterministic, 2049~2050 ep/cell.
+`results/navrl_v2_target_mask_backfill/summary.{md,json}`.
+
+| cell | capture | crash | bar contacts | fused visible | closest mean |
+|---|---:|---:|---:|---:|---:|
+| analytic_clean | 80.54% | 17.17% | 337 | 21.21% | 0.806 m |
+| dropout_0p3_raw | 67.84% | 29.33% | 559 | 21.38% | 0.972 m |
+| dropout_0p3_backfill | 70.38% | 26.65% | 513 | 21.00% | 1.020 m |
+| clean_backfill | 79.11% | 18.55% | 365 | 21.03% | 0.832 m |
+
+**판정 INCONCLUSIVE.** capture +2.54 pp(arm 간 SE 1.3 pp이므로 약 2σ)로 dropout 손실
+12.70 pp의 **20.0%**를 회복했다. 독립적인 두 번째 지표도 같은 크기를 가리킨다: 초과 bar contact
+222건(559−337) 중 46건, **20.7%** 감소. 서로 독립인 두 지표가 같은 비율을 내는 것은 채널이
+실재하고 그 크기가 약 20%라는 뜻이지, 노이즈가 우연히 정렬된 것으로 보기 어렵다.
+
+그러나 **지배적 채널은 아니다.** dropout 비용의 80%는 여전히 설명되지 않는다. P2(11%)에 이어
+두 번째로 "실재하지만 작은" 채널이며, latency에서 P3가 94%를 회수했던 것과는 성격이 다르다.
+
+**채택 보류**: `clean_backfill`이 79.11%로 clean 대비 −1.42 pp(약 1σ)다. 카메라가 프레임을
+놓치지 않을 때는 backfill이 발화하면 안 되는데(마스크가 이미 있으면 덮어쓰지 않도록 테스트로
+고정했다) 값이 내려갔다. 노이즈일 가능성이 높지만, 이득이 +2.54 pp인 상황에서 −1.42 pp의
+무해성 미확인은 무시할 수 없다. **기본 off를 유지하고, 채택은 남은 80%를 설명한 뒤 재검토한다.**
+
+### 다음 가설 H2: LiDAR 대체 측정의 조악함
+
+카메라가 놓친 프레임에서 트래커는 LiDAR association으로 보정된다. LiDAR bearing은 빈 폭
+360/72 = 5°로 양자화되어 있어 5 m 거리에서 측방 오차 0.44 m다 —— P3가 제거한 ego-motion 오차
+(0.26 m)보다도 크다. 즉 dropout은 "표적을 덜 보는" 것이 아니라 **30%의 프레임에서 훨씬 나쁜
+측정으로 트래커를 오염시키는** 것일 수 있다. P1(LiDAR association을 더 열어줌)이 −8.85 pp로
+역효과였던 것도 이 방향과 일치한다.
+
+검정 방법: dropout 상태에서 LiDAR 대체 보정을 끄고 CV 예측으로 coasting 시키는 arm과 비교한다.
+H2가 맞으면 조악한 보정을 버리는 쪽이 낫게 나온다. `fused_visible`이 카메라 전용으로 떨어지므로
+time-since-seen 특징도 함께 변한다는 점을 해석 시 감안해야 한다.

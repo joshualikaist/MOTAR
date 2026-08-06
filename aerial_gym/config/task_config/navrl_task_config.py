@@ -224,6 +224,14 @@ class task_config:
         # clean results and every pre-2026-08-06 non-latency number are unaffected. Set
         # NAVRL_LATENCY_EGO_MOTION_FIX=0 only to reproduce the superseded R3 latency arms.
         latency_ego_motion_fix = _env_bool("NAVRL_LATENCY_EGO_MOTION_FIX", True)
+        # The obstacle map is edited by two paths with different gates: the LiDAR target_like
+        # carve-out uses fused visibility (camera OR LiDAR) while the depth blanking uses the
+        # camera-only pixel mask. On any frame the camera misses but LiDAR still holds the track
+        # -- i.e. 30% of frames under detection dropout -- the LiDAR half deletes the target and
+        # the camera half reinstates it, leaving a phantom obstacle straight ahead that eats one
+        # of the 8 obstacle tokens. Enabling this rebuilds the mask from the fused bearing/range
+        # so both halves agree. Off until the A/B measures it (WORKLOG 2026-08-07).
+        target_mask_backfill = _env_bool("NAVRL_TARGET_MASK_BACKFILL", False)
         rgb_noise_std = _env_float("NAVRL_RGB_NOISE_STD", 0.015)
         depth_noise_std = _env_float("NAVRL_DEPTH_NOISE_STD", 0.02)
         # [static VBEAMS*HBEAMS | obstacle history 5*MAX_OBSTACLES*12 | robot history 5x10 |
