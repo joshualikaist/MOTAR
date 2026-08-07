@@ -245,6 +245,11 @@ class task_config:
         # the policy reads that covariance. Enabling this shapes R about the measurement ray so
         # only the range informs the filter. Off until the A/B measures it.
         lidar_range_only_update = _env_bool("NAVRL_LIDAR_RANGE_ONLY_UPDATE", False)
+        # The LiDAR association gate is (0.35 + 2*pos_sigma) clamped at 1.0 m, i.e. it widens as
+        # the track gets less certain -- so making the covariance honest (above) widens the
+        # mis-association window with it, which measurably cancels that fix. Set a constant gate
+        # in metres to decouple the two; 0 keeps the covariance-scaled behaviour.
+        lidar_assoc_gate_m = _env_float("NAVRL_LIDAR_ASSOC_GATE_M", 0.0)
         rgb_noise_std = _env_float("NAVRL_RGB_NOISE_STD", 0.015)
         depth_noise_std = _env_float("NAVRL_DEPTH_NOISE_STD", 0.02)
         # [static VBEAMS*HBEAMS | obstacle history 5*MAX_OBSTACLES*12 | robot history 5x10 |

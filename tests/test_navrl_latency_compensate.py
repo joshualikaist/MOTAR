@@ -394,7 +394,43 @@ class LidarRangeOnlyUpdate(unittest.TestCase):
         self.assertGreater(blind_vert, full_vert)
 
     def test_default_keeps_the_current_behaviour(self):
-        self.assertFalse(_module(0.0, "off").lidar_range_only_update)
+        module = _module(0.0, "off")
+        self.assertFalse(module.lidar_range_only_update)
+        self.assertEqual(module.lidar_assoc_gate_m, 0.0)
+
+
+class LidarAssociationGate(unittest.TestCase):
+    """A constant gate must decouple the association window from the track covariance."""
+
+    SOURCE = (_TASK_DIR / "navrl_perception.py").read_text(encoding="utf-8")
+
+    def test_gate_is_overridden_by_the_constant(self):
+        body = self.SOURCE[
+            self.SOURCE.index("def _associate_lidar_target") :
+            self.SOURCE.index("def _target_features")
+        ]
+        self.assertIn("gate = (0.35 + 2.0 * pos_sigma).clamp(max=1.0)", body)
+        self.assertIn("if self.lidar_assoc_gate_m > 0.0:", body)
+        self.assertIn("gate = torch.full_like(gate, self.lidar_assoc_gate_m)", body)
+        # The override must come after the covariance-scaled default, or it would be discarded.
+        self.assertLess(
+            body.index("gate = (0.35 + 2.0 * pos_sigma)"),
+            body.index("gate = torch.full_like(gate, self.lidar_assoc_gate_m)"),
+        )
+
+    def test_covariance_scaled_gate_saturates_once_the_covariance_is_honest(self):
+        """Why the constant is needed: the honest covariance pushes the gate to its cap."""
+        probe = LidarRangeOnlyUpdate("test_default_keeps_the_current_behaviour")
+
+        def gate_after(steps, range_only):
+            lat, vert = probe._coast(steps, range_only=range_only)
+            return lat, vert
+
+        frozen_lat, _ = gate_after(20, False)
+        honest_lat, _ = gate_after(20, True)
+        # Gate uses the trace, but the lateral term alone already tells the story.
+        self.assertLess(0.35 + 2.0 * frozen_lat, 1.0)
+        self.assertGreater(0.35 + 2.0 * honest_lat, 1.0)
 
 
 class LidarTargetAssociationSwitch(unittest.TestCase):

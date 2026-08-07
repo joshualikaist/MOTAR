@@ -593,6 +593,8 @@ class NavRLPerceptionModule:
         self.lidar_target_assoc = bool(getattr(cfg, "lidar_target_assoc", True))
         # H3: restrict the LiDAR correction to the direction it actually measures.
         self.lidar_range_only_update = bool(getattr(cfg, "lidar_range_only_update", False))
+        # >0 replaces the covariance-scaled association gate with a constant, in metres.
+        self.lidar_assoc_gate_m = float(getattr(cfg, "lidar_assoc_gate_m", 0.0))
         self.rgb_noise_std = float(getattr(cfg, "rgb_noise_std", 0.015))
         self.depth_noise_std = float(getattr(cfg, "depth_noise_std", 0.02))
         self.history_stride = max(1, int(round(float(cfg.history_interval_s) / self.step_dt)))
@@ -1051,6 +1053,13 @@ class NavRLPerceptionModule:
             dim=1
         ).sqrt()
         gate = (0.35 + 2.0 * pos_sigma).clamp(max=1.0)
+        # Scaling the association window by the track covariance means an honest covariance buys
+        # a WIDER mis-association window: with the range-only update the gate hits its 1.0 m cap
+        # within five blind steps, against ~0.67 m when the covariance was frozen. A gate is a
+        # statement about measurement precision, not about how lost the track is, so allow a
+        # constant one (WORKLOG 2026-08-07).
+        if self.lidar_assoc_gate_m > 0.0:
+            gate = torch.full_like(gate, self.lidar_assoc_gate_m)
         valid = (
             self.tracker.active
             & ~camera_visible

@@ -391,6 +391,7 @@ export NAVRL_LATENCY_EGO_MOTION_FIX="${NAVRL_LATENCY_EGO_MOTION_FIX:-1}"
 export NAVRL_TARGET_MASK_BACKFILL="${NAVRL_TARGET_MASK_BACKFILL:-0}"
 export NAVRL_LIDAR_TARGET_ASSOC="${NAVRL_LIDAR_TARGET_ASSOC:-1}"
 export NAVRL_LIDAR_RANGE_ONLY_UPDATE="${NAVRL_LIDAR_RANGE_ONLY_UPDATE:-0}"
+export NAVRL_LIDAR_ASSOC_GATE_M="${NAVRL_LIDAR_ASSOC_GATE_M:-0}"
 export NAVRL_RGB_NOISE_STD="${NAVRL_RGB_NOISE_STD:-${RGB_NOISE_STD}}"
 export NAVRL_DEPTH_NOISE_STD="${NAVRL_DEPTH_NOISE_STD:-${DEPTH_NOISE_STD}}"
 export NAVRL_OOB_MARGIN=1.0
@@ -965,6 +966,7 @@ payload["v2_evaluation_contract"] = {
     "perception_target_mask_backfill": os.environ.get("NAVRL_TARGET_MASK_BACKFILL", "0") == "1",
     "perception_lidar_target_assoc": os.environ.get("NAVRL_LIDAR_TARGET_ASSOC", "1") == "1",
     "perception_lidar_range_only_update": os.environ.get("NAVRL_LIDAR_RANGE_ONLY_UPDATE", "0") == "1",
+    "perception_lidar_assoc_gate_m": float(os.environ.get("NAVRL_LIDAR_ASSOC_GATE_M", 0.0)),
     "sim_physics_contract": os.environ["NAVRL_SIM_PHYSICS_CONTRACT"],
     "runtime_sim_config_class": condition["runtime_sim_config_class"],
     "physics_dt_s": float(condition["physics_dt_s"]),
@@ -1044,6 +1046,7 @@ receipt = {
     "perception_target_mask_backfill": os.environ.get("NAVRL_TARGET_MASK_BACKFILL", "0") == "1",
     "perception_lidar_target_assoc": os.environ.get("NAVRL_LIDAR_TARGET_ASSOC", "1") == "1",
     "perception_lidar_range_only_update": os.environ.get("NAVRL_LIDAR_RANGE_ONLY_UPDATE", "0") == "1",
+    "perception_lidar_assoc_gate_m": float(os.environ.get("NAVRL_LIDAR_ASSOC_GATE_M", 0.0)),
 }
 receipt_file = Path(receipt_path)
 temporary_receipt = receipt_file.with_name(
