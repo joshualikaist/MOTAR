@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-10T03:44:26.105378+00:00",
+  "generated_at": "2026-08-10T06:05:54.414649+00:00",
   "repo": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator",
   "n_runs": 72,
   "active_run": null,
@@ -1887,52 +1887,57 @@
       "placement_area_m2": 1600.0,
       "superseded": false,
       "trained_max_bars": 205,
-      "policy": "ep24000 (frozen), speed governor off",
+      "policy": "ep25000 + riskcap (current frozen candidate)",
       "notes": [
         "v2 search arena held-out density curve, deterministic, ~2050 episodes per cell.",
-        "Policy is the frozen ep24000 checkpoint WITHOUT the riskcap governor, so it is not the current candidate (ep25000+riskcap) -- that one has only been swept at 205 bars.",
-        "205 bars is the density the curriculum reached; 220 is generalisation."
+        "205 bars is the density the curriculum reached; 220 is generalisation.",
+        "ep24000 (governor off) is shown per row for reference: the gain grows with density, +4.54 pp at 130 bars to +9.27 pp at 220."
       ],
       "rows": [
         {
           "bars": 130,
           "density_per_100m2": 8.12,
-          "capture": 0.8477306002928258,
-          "crash": 0.1273792093704246,
-          "timeout": 0.024890190336749635,
-          "episodes": 2049
+          "capture": 0.8931185944363104,
+          "crash": 0.08150317227916057,
+          "timeout": 0.02537823328452904,
+          "episodes": 2049,
+          "ep24000_capture": 0.8477306002928258
         },
         {
           "bars": 160,
           "density_per_100m2": 10.0,
-          "capture": 0.7965853658536586,
-          "crash": 0.16878048780487806,
-          "timeout": 0.03463414634146342,
-          "episodes": 2050
+          "capture": 0.8462664714494875,
+          "crash": 0.1264031234748658,
+          "timeout": 0.027330405075646658,
+          "episodes": 2049,
+          "ep24000_capture": 0.7965853658536586
         },
         {
           "bars": 190,
           "density_per_100m2": 11.88,
-          "capture": 0.7398731088335774,
-          "crash": 0.22645192776964373,
-          "timeout": 0.03367496339677892,
-          "episodes": 2049
+          "capture": 0.8277208394338702,
+          "crash": 0.14690092728160078,
+          "timeout": 0.02537823328452904,
+          "episodes": 2049,
+          "ep24000_capture": 0.7398731088335774
         },
         {
           "bars": 205,
           "density_per_100m2": 12.81,
-          "capture": 0.724390243902439,
-          "crash": 0.25073170731707317,
-          "timeout": 0.024878048780487806,
-          "episodes": 2050
+          "capture": 0.8053658536585366,
+          "crash": 0.17170731707317075,
+          "timeout": 0.022926829268292682,
+          "episodes": 2050,
+          "ep24000_capture": 0.724390243902439
         },
         {
           "bars": 220,
           "density_per_100m2": 13.75,
-          "capture": 0.6848780487804879,
-          "crash": 0.2975609756097561,
-          "timeout": 0.0175609756097561,
-          "episodes": 2050
+          "capture": 0.7775609756097561,
+          "crash": 0.19414634146341464,
+          "timeout": 0.02829268292682927,
+          "episodes": 2050,
+          "ep24000_capture": 0.6848780487804879
         }
       ]
     }
@@ -3595,218 +3600,164 @@
     }
   },
   "density_speed_map": {
+    "task_version": "v2",
+    "arena_xy_m": 40.0,
+    "placement_area_m2": 1600.0,
+    "comparable_with_v2": true,
+    "trained_max_bars": 205,
+    "policy": "ep25000 + riskcap",
+    "density_cost_pp": 11.355777357187923,
+    "speed_cost_pp": 2.6707805116118477,
+    "speed_cost_at_min_density_pp": -0.8784773060029227,
+    "speed_cost_at_max_density_pp": -5.989239248175792,
     "notes": [
-      "DENSITY x TARGET-SPEED map -- the paper headline figure.",
-      "checkpoint ppo_260730_1549 cluster-sector last_gen_ep_10150; trained density max = 85 bars.",
-      "Cells above 85 bars measure generalisation, not a method ceiling.",
-      "128 envs, 2049 episodes/cell, deterministic, general spawn, mixed target pattern.",
-      "Finding: density costs 78 pp of capture across the grid; target speed costs only 4.2 pp.",
-      "Measured before the 2026-07-31 target heading-continuity fix; the target oscillated in place under the old steering law, so these cells describe the pre-fix task."
+      "DENSITY x TARGET-SPEED map on the v2 search arena -- the paper headline figure.",
+      "ep25000 + riskcap; deterministic, ~2050 episodes per cell, seed 47.",
+      "Speeds span the trained U[0.3,1.5] support; v1's stationary-target column has no counterpart because a 0 m/s target is outside that support.",
+      "Cells above the trained max measure generalisation, not a method ceiling."
     ],
-    "trained_max_bars": 85,
     "rows": [
       {
-        "bars": 25.0,
-        "density_per_100m2": 5.2,
-        "target_speed_ms": 0.0,
-        "capture": 0.962,
-        "crash": 0.025
+        "bars": 130,
+        "density_per_100m2": 8.12,
+        "target_speed_ms": 0.3,
+        "capture": 0.8828696925329429,
+        "crash": 0.0741825280624695
       },
       {
-        "bars": 25.0,
-        "density_per_100m2": 5.2,
-        "target_speed_ms": 0.5,
-        "capture": 0.97,
-        "crash": 0.03
+        "bars": 160,
+        "density_per_100m2": 10.0,
+        "target_speed_ms": 0.3,
+        "capture": 0.8609756097560975,
+        "crash": 0.09804878048780488
       },
       {
-        "bars": 25.0,
-        "density_per_100m2": 5.2,
-        "target_speed_ms": 1.0,
-        "capture": 0.965,
-        "crash": 0.035
+        "bars": 190,
+        "density_per_100m2": 11.88,
+        "target_speed_ms": 0.3,
+        "capture": 0.8263414634146341,
+        "crash": 0.13951219512195123
       },
       {
-        "bars": 25.0,
-        "density_per_100m2": 5.2,
+        "bars": 205,
+        "density_per_100m2": 12.81,
+        "target_speed_ms": 0.3,
+        "capture": 0.8121034651049293,
+        "crash": 0.1488530990727184
+      },
+      {
+        "bars": 220,
+        "density_per_100m2": 13.75,
+        "target_speed_ms": 0.3,
+        "capture": 0.7794045876037091,
+        "crash": 0.18496827720839434
+      },
+      {
+        "bars": 130,
+        "density_per_100m2": 8.12,
+        "target_speed_ms": 0.7,
+        "capture": 0.8882381649585164,
+        "crash": 0.08003904343582235
+      },
+      {
+        "bars": 160,
+        "density_per_100m2": 10.0,
+        "target_speed_ms": 0.7,
+        "capture": 0.8678048780487805,
+        "crash": 0.09560975609756098
+      },
+      {
+        "bars": 190,
+        "density_per_100m2": 11.88,
+        "target_speed_ms": 0.7,
+        "capture": 0.8408979990239142,
+        "crash": 0.1273792093704246
+      },
+      {
+        "bars": 205,
+        "density_per_100m2": 12.81,
+        "target_speed_ms": 0.7,
+        "capture": 0.8121034651049293,
+        "crash": 0.16105417276720352
+      },
+      {
+        "bars": 220,
+        "density_per_100m2": 13.75,
+        "target_speed_ms": 0.7,
+        "capture": 0.7994143484626647,
+        "crash": 0.18301610541727673
+      },
+      {
+        "bars": 130,
+        "density_per_100m2": 8.12,
+        "target_speed_ms": 1.1,
+        "capture": 0.8882381649585164,
+        "crash": 0.09126403123474866
+      },
+      {
+        "bars": 160,
+        "density_per_100m2": 10.0,
+        "target_speed_ms": 1.1,
+        "capture": 0.8711566617862372,
+        "crash": 0.1059053196681308
+      },
+      {
+        "bars": 190,
+        "density_per_100m2": 11.88,
+        "target_speed_ms": 1.1,
+        "capture": 0.8243045387994143,
+        "crash": 0.15617374328940947
+      },
+      {
+        "bars": 205,
+        "density_per_100m2": 12.81,
+        "target_speed_ms": 1.1,
+        "capture": 0.8077110785749146,
+        "crash": 0.1708150317227916
+      },
+      {
+        "bars": 220,
+        "density_per_100m2": 13.75,
+        "target_speed_ms": 1.1,
+        "capture": 0.7808687164470474,
+        "crash": 0.19960956564177648
+      },
+      {
+        "bars": 130,
+        "density_per_100m2": 8.12,
         "target_speed_ms": 1.5,
-        "capture": 0.949,
-        "crash": 0.051
+        "capture": 0.8740849194729137,
+        "crash": 0.10151293313811616
       },
       {
-        "bars": 50.0,
-        "density_per_100m2": 10.5,
-        "target_speed_ms": 0.0,
-        "capture": 0.918,
-        "crash": 0.066
-      },
-      {
-        "bars": 50.0,
-        "density_per_100m2": 10.5,
-        "target_speed_ms": 0.5,
-        "capture": 0.93,
-        "crash": 0.067
-      },
-      {
-        "bars": 50.0,
-        "density_per_100m2": 10.5,
-        "target_speed_ms": 1.0,
-        "capture": 0.922,
-        "crash": 0.075
-      },
-      {
-        "bars": 50.0,
-        "density_per_100m2": 10.5,
+        "bars": 160,
+        "density_per_100m2": 10.0,
         "target_speed_ms": 1.5,
-        "capture": 0.904,
-        "crash": 0.096
+        "capture": 0.8452903855539288,
+        "crash": 0.1386041971693509
       },
       {
-        "bars": 65.0,
-        "density_per_100m2": 13.6,
-        "target_speed_ms": 0.0,
-        "capture": 0.881,
-        "crash": 0.105
-      },
-      {
-        "bars": 65.0,
-        "density_per_100m2": 13.6,
-        "target_speed_ms": 0.5,
-        "capture": 0.879,
-        "crash": 0.12
-      },
-      {
-        "bars": 65.0,
-        "density_per_100m2": 13.6,
-        "target_speed_ms": 1.0,
-        "capture": 0.861,
-        "crash": 0.136
-      },
-      {
-        "bars": 65.0,
-        "density_per_100m2": 13.6,
+        "bars": 190,
+        "density_per_100m2": 11.88,
         "target_speed_ms": 1.5,
-        "capture": 0.837,
-        "crash": 0.162
+        "capture": 0.8078048780487805,
+        "crash": 0.17121951219512196
       },
       {
-        "bars": 85.0,
-        "density_per_100m2": 17.8,
-        "target_speed_ms": 0.0,
-        "capture": 0.736,
-        "crash": 0.25
-      },
-      {
-        "bars": 85.0,
-        "density_per_100m2": 17.8,
-        "target_speed_ms": 0.5,
-        "capture": 0.753,
-        "crash": 0.241
-      },
-      {
-        "bars": 85.0,
-        "density_per_100m2": 17.8,
-        "target_speed_ms": 1.0,
-        "capture": 0.718,
-        "crash": 0.277
-      },
-      {
-        "bars": 85.0,
-        "density_per_100m2": 17.8,
+        "bars": 205,
+        "density_per_100m2": 12.81,
         "target_speed_ms": 1.5,
-        "capture": 0.671,
-        "crash": 0.327
+        "capture": 0.7814634146341464,
+        "crash": 0.20097560975609757
       },
       {
-        "bars": 110.0,
-        "density_per_100m2": 23.0,
-        "target_speed_ms": 0.0,
-        "capture": 0.497,
-        "crash": 0.5
-      },
-      {
-        "bars": 110.0,
-        "density_per_100m2": 23.0,
-        "target_speed_ms": 0.5,
-        "capture": 0.506,
-        "crash": 0.49
-      },
-      {
-        "bars": 110.0,
-        "density_per_100m2": 23.0,
-        "target_speed_ms": 1.0,
-        "capture": 0.484,
-        "crash": 0.513
-      },
-      {
-        "bars": 110.0,
-        "density_per_100m2": 23.0,
+        "bars": 220,
+        "density_per_100m2": 13.75,
         "target_speed_ms": 1.5,
-        "capture": 0.437,
-        "crash": 0.562
-      },
-      {
-        "bars": 130.0,
-        "density_per_100m2": 27.2,
-        "target_speed_ms": 0.0,
-        "capture": 0.318,
-        "crash": 0.682
-      },
-      {
-        "bars": 130.0,
-        "density_per_100m2": 27.2,
-        "target_speed_ms": 0.5,
-        "capture": 0.296,
-        "crash": 0.704
-      },
-      {
-        "bars": 130.0,
-        "density_per_100m2": 27.2,
-        "target_speed_ms": 1.0,
-        "capture": 0.281,
-        "crash": 0.718
-      },
-      {
-        "bars": 130.0,
-        "density_per_100m2": 27.2,
-        "target_speed_ms": 1.5,
-        "capture": 0.259,
-        "crash": 0.741
-      },
-      {
-        "bars": 150.0,
-        "density_per_100m2": 31.4,
-        "target_speed_ms": 0.0,
-        "capture": 0.194,
-        "crash": 0.806
-      },
-      {
-        "bars": 150.0,
-        "density_per_100m2": 31.4,
-        "target_speed_ms": 0.5,
-        "capture": 0.192,
-        "crash": 0.808
-      },
-      {
-        "bars": 150.0,
-        "density_per_100m2": 31.4,
-        "target_speed_ms": 1.0,
-        "capture": 0.19,
-        "crash": 0.81
-      },
-      {
-        "bars": 150.0,
-        "density_per_100m2": 31.4,
-        "target_speed_ms": 1.5,
-        "capture": 0.159,
-        "crash": 0.841
+        "capture": 0.7195121951219512,
+        "crash": 0.2604878048780488
       }
-    ],
-    "task_version": "v1",
-    "arena_xy_m": 24.0,
-    "placement_area_m2": 478.0,
-    "comparable_with_v2": false,
-    "superseded_note": "v1 task: 24 m arena, 478 m² placement band. Densities are per that area, so these cells are NOT comparable with the v2 40 m arena (1600 m²) the rest of this page reports. A v2 re-measurement is pending."
+    ]
   },
   "density_ceiling": {
     "run": "ppo_260730_2111_navrl_cluster-sector-density85to110-v2-s1",
@@ -4081,5 +4032,219 @@
       "capture_delta_pp": -42.71325691294981
     },
     "finding": "Detection latency looked like the dominant failure axis (-42.7pp at 0.1s) until the cause was isolated: a delayed detection was a vehicle-frame measurement from t-tau being lifted to world with the pose at t, so the drone's own motion entered every filter correction -- 0.23m from translation and 0.41m from yaw, against the 0.15m of target motion. Buffering the pose beside the detection and lifting with it recovers 94% of the loss, which reclassifies latency as benign alongside range error."
+  },
+  "density_speed_map_v1": {
+    "notes": [
+      "DENSITY x TARGET-SPEED map -- the paper headline figure.",
+      "checkpoint ppo_260730_1549 cluster-sector last_gen_ep_10150; trained density max = 85 bars.",
+      "Cells above 85 bars measure generalisation, not a method ceiling.",
+      "128 envs, 2049 episodes/cell, deterministic, general spawn, mixed target pattern.",
+      "Finding: density costs 78 pp of capture across the grid; target speed costs only 4.2 pp.",
+      "Measured before the 2026-07-31 target heading-continuity fix; the target oscillated in place under the old steering law, so these cells describe the pre-fix task."
+    ],
+    "trained_max_bars": 85,
+    "rows": [
+      {
+        "bars": 25.0,
+        "density_per_100m2": 5.2,
+        "target_speed_ms": 0.0,
+        "capture": 0.962,
+        "crash": 0.025
+      },
+      {
+        "bars": 25.0,
+        "density_per_100m2": 5.2,
+        "target_speed_ms": 0.5,
+        "capture": 0.97,
+        "crash": 0.03
+      },
+      {
+        "bars": 25.0,
+        "density_per_100m2": 5.2,
+        "target_speed_ms": 1.0,
+        "capture": 0.965,
+        "crash": 0.035
+      },
+      {
+        "bars": 25.0,
+        "density_per_100m2": 5.2,
+        "target_speed_ms": 1.5,
+        "capture": 0.949,
+        "crash": 0.051
+      },
+      {
+        "bars": 50.0,
+        "density_per_100m2": 10.5,
+        "target_speed_ms": 0.0,
+        "capture": 0.918,
+        "crash": 0.066
+      },
+      {
+        "bars": 50.0,
+        "density_per_100m2": 10.5,
+        "target_speed_ms": 0.5,
+        "capture": 0.93,
+        "crash": 0.067
+      },
+      {
+        "bars": 50.0,
+        "density_per_100m2": 10.5,
+        "target_speed_ms": 1.0,
+        "capture": 0.922,
+        "crash": 0.075
+      },
+      {
+        "bars": 50.0,
+        "density_per_100m2": 10.5,
+        "target_speed_ms": 1.5,
+        "capture": 0.904,
+        "crash": 0.096
+      },
+      {
+        "bars": 65.0,
+        "density_per_100m2": 13.6,
+        "target_speed_ms": 0.0,
+        "capture": 0.881,
+        "crash": 0.105
+      },
+      {
+        "bars": 65.0,
+        "density_per_100m2": 13.6,
+        "target_speed_ms": 0.5,
+        "capture": 0.879,
+        "crash": 0.12
+      },
+      {
+        "bars": 65.0,
+        "density_per_100m2": 13.6,
+        "target_speed_ms": 1.0,
+        "capture": 0.861,
+        "crash": 0.136
+      },
+      {
+        "bars": 65.0,
+        "density_per_100m2": 13.6,
+        "target_speed_ms": 1.5,
+        "capture": 0.837,
+        "crash": 0.162
+      },
+      {
+        "bars": 85.0,
+        "density_per_100m2": 17.8,
+        "target_speed_ms": 0.0,
+        "capture": 0.736,
+        "crash": 0.25
+      },
+      {
+        "bars": 85.0,
+        "density_per_100m2": 17.8,
+        "target_speed_ms": 0.5,
+        "capture": 0.753,
+        "crash": 0.241
+      },
+      {
+        "bars": 85.0,
+        "density_per_100m2": 17.8,
+        "target_speed_ms": 1.0,
+        "capture": 0.718,
+        "crash": 0.277
+      },
+      {
+        "bars": 85.0,
+        "density_per_100m2": 17.8,
+        "target_speed_ms": 1.5,
+        "capture": 0.671,
+        "crash": 0.327
+      },
+      {
+        "bars": 110.0,
+        "density_per_100m2": 23.0,
+        "target_speed_ms": 0.0,
+        "capture": 0.497,
+        "crash": 0.5
+      },
+      {
+        "bars": 110.0,
+        "density_per_100m2": 23.0,
+        "target_speed_ms": 0.5,
+        "capture": 0.506,
+        "crash": 0.49
+      },
+      {
+        "bars": 110.0,
+        "density_per_100m2": 23.0,
+        "target_speed_ms": 1.0,
+        "capture": 0.484,
+        "crash": 0.513
+      },
+      {
+        "bars": 110.0,
+        "density_per_100m2": 23.0,
+        "target_speed_ms": 1.5,
+        "capture": 0.437,
+        "crash": 0.562
+      },
+      {
+        "bars": 130.0,
+        "density_per_100m2": 27.2,
+        "target_speed_ms": 0.0,
+        "capture": 0.318,
+        "crash": 0.682
+      },
+      {
+        "bars": 130.0,
+        "density_per_100m2": 27.2,
+        "target_speed_ms": 0.5,
+        "capture": 0.296,
+        "crash": 0.704
+      },
+      {
+        "bars": 130.0,
+        "density_per_100m2": 27.2,
+        "target_speed_ms": 1.0,
+        "capture": 0.281,
+        "crash": 0.718
+      },
+      {
+        "bars": 130.0,
+        "density_per_100m2": 27.2,
+        "target_speed_ms": 1.5,
+        "capture": 0.259,
+        "crash": 0.741
+      },
+      {
+        "bars": 150.0,
+        "density_per_100m2": 31.4,
+        "target_speed_ms": 0.0,
+        "capture": 0.194,
+        "crash": 0.806
+      },
+      {
+        "bars": 150.0,
+        "density_per_100m2": 31.4,
+        "target_speed_ms": 0.5,
+        "capture": 0.192,
+        "crash": 0.808
+      },
+      {
+        "bars": 150.0,
+        "density_per_100m2": 31.4,
+        "target_speed_ms": 1.0,
+        "capture": 0.19,
+        "crash": 0.81
+      },
+      {
+        "bars": 150.0,
+        "density_per_100m2": 31.4,
+        "target_speed_ms": 1.5,
+        "capture": 0.159,
+        "crash": 0.841
+      }
+    ],
+    "task_version": "v1",
+    "arena_xy_m": 24.0,
+    "placement_area_m2": 478.0,
+    "comparable_with_v2": false,
+    "superseded_note": "v1 task: 24 m arena, 478 m² placement band. Superseded for the current task by the v2 map; kept as the record of the v1 contract."
   }
 }

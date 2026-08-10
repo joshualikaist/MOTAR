@@ -2199,6 +2199,8 @@ def _research_update(
 
 
 V2_HELDOUT_DIR = ROOT / "results/navrl_v2_ep24000_heldout"
+V2_DENSITY_RISKCAP_DIR = ROOT / "results/navrl_v2_density_curve_riskcap"
+V2_DENSITY_SPEED_MAP_PATH = ROOT / "results/navrl_v2_density_speed_map/summary.json"
 RISKCAP_POSTADAPT_PATH = ROOT / "results/navrl_v2_riskcap_postadapt/summary.json"
 
 # Curves measured BEFORE the 2026-07-29 chirality fix. The LiDAR bearing table was mirrored
@@ -2245,11 +2247,24 @@ def _stamp_curve_provenance(status: Dict[str, Any]) -> None:
 
 
 def _v2_density_curve() -> Dict[str, Any]:
-    """v2 held-out density curve, rebuilt from the archived per-cell evaluations."""
-    if not V2_HELDOUT_DIR.is_dir():
+    """v2 held-out density curve for the current frozen candidate, with ep24000 as reference.
+
+    Prefers the ep25000+riskcap sweep: describing the page's own policy beats describing its
+    predecessor. The ep24000 cells stay attached per row so the governor's contribution is
+    visible instead of implied.
+    """
+    source = V2_DENSITY_RISKCAP_DIR if V2_DENSITY_RISKCAP_DIR.is_dir() else V2_HELDOUT_DIR
+    riskcap = source is V2_DENSITY_RISKCAP_DIR
+    reference = {}
+    if riskcap and V2_HELDOUT_DIR.is_dir():
+        for path in V2_HELDOUT_DIR.glob("*bars.json"):
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            if payload.get("outcome"):
+                reference[int(path.stem.replace("bars", ""))] = payload["outcome"]["capture_rate"]
+    if not source.is_dir():
         return {}
     rows = []
-    for path in sorted(V2_HELDOUT_DIR.glob("*bars.json")):
+    for path in sorted(source.glob("*bars.json")):
         payload = json.loads(path.read_text(encoding="utf-8"))
         outcome = payload.get("outcome")
         if not outcome:
@@ -2262,23 +2277,34 @@ def _v2_density_curve() -> Dict[str, Any]:
             "crash": outcome["crash_rate"],
             "timeout": outcome["timeout_rate"],
             "episodes": payload.get("actual_episodes"),
+            "ep24000_capture": reference.get(bars),
         })
     if not rows:
         return {}
     rows.sort(key=lambda r: r["bars"])
+    notes = [
+        "v2 search arena held-out density curve, deterministic, ~2050 episodes per cell.",
+        "205 bars is the density the curriculum reached; 220 is generalisation.",
+    ]
+    if riskcap:
+        gains = [r for r in rows if r.get("ep24000_capture") is not None]
+        if gains:
+            lo = (gains[0]["capture"] - gains[0]["ep24000_capture"]) * 100.0
+            hi = (gains[-1]["capture"] - gains[-1]["ep24000_capture"]) * 100.0
+            notes.append(
+                f"ep24000 (governor off) is shown per row for reference: the gain grows with "
+                f"density, {lo:+.2f} pp at {gains[0]['bars']} bars to {hi:+.2f} pp at "
+                f"{gains[-1]['bars']}."
+            )
     return {
         "task_version": "v2",
         "arena_xy_m": 40.0,
         "placement_area_m2": V2_PLACEMENT_AREA_M2,
         "superseded": False,
         "trained_max_bars": 205,
-        "policy": "ep24000 (frozen), speed governor off",
-        "notes": [
-            "v2 search arena held-out density curve, deterministic, ~2050 episodes per cell.",
-            "Policy is the frozen ep24000 checkpoint WITHOUT the riskcap governor, so it is not "
-            "the current candidate (ep25000+riskcap) -- that one has only been swept at 205 bars.",
-            "205 bars is the density the curriculum reached; 220 is generalisation.",
-        ],
+        "policy": ("ep25000 + riskcap (current frozen candidate)" if riskcap
+                   else "ep24000 (frozen), speed governor off"),
+        "notes": notes,
         "rows": rows,
     }
 
@@ -2319,6 +2345,72 @@ def _v2_speed_axis() -> Dict[str, Any]:
     }
 
 
+def _v2_density_speed_map() -> Dict[str, Any]:
+    """v2 density x target-speed map for the frozen candidate -- the headline figure, re-measured.
+
+    The v1 map is kept (labelled) but cannot be quoted for the current task: different arena,
+    placement band and target-motion law. This one is measured on the policy the page describes.
+    """
+    if not V2_DENSITY_SPEED_MAP_PATH.exists():
+        return {}
+    payload = json.loads(V2_DENSITY_SPEED_MAP_PATH.read_text(encoding="utf-8"))
+    rows = [
+        {
+            "bars": r["bars"],
+            "density_per_100m2": r["density_per_100m2"],
+            "target_speed_ms": r["target_speed_ms"],
+            "capture": r["capture"],
+            "crash": r["crash"],
+        }
+        for r in payload.get("rows", [])
+    ]
+    if not rows:
+        return {}
+    bars_axis = sorted({r["bars"] for r in rows})
+    speeds = sorted({r["target_speed_ms"] for r in rows})
+    at = {(r["bars"], r["target_speed_ms"]): r for r in rows}
+    # The interaction the v1 headline could not show: how much the speed axis costs at the
+    # lowest vs the highest density on the grid.
+    def speed_cost(bars):
+        lo, hi = at.get((bars, speeds[0])), at.get((bars, speeds[-1]))
+        return None if not (lo and hi) else (hi["capture"] - lo["capture"]) * 100.0
+    return {
+        "task_version": "v2",
+        "arena_xy_m": 40.0,
+        "placement_area_m2": V2_PLACEMENT_AREA_M2,
+        "comparable_with_v2": True,
+        "trained_max_bars": payload.get("trained_max_bars", 205),
+        "policy": payload.get("policy"),
+        "density_cost_pp": payload.get("density_cost_pp"),
+        "speed_cost_pp": payload.get("speed_cost_pp"),
+        "speed_cost_at_min_density_pp": speed_cost(bars_axis[0]),
+        "speed_cost_at_max_density_pp": speed_cost(bars_axis[-1]),
+        "notes": [
+            "DENSITY x TARGET-SPEED map on the v2 search arena -- the paper headline figure.",
+            f"{payload.get('policy')}; deterministic, ~2050 episodes per cell, seed 47.",
+            "Speeds span the trained U[0.3,1.5] support; v1's stationary-target column has no "
+            "counterpart because a 0 m/s target is outside that support.",
+            "Cells above the trained max measure generalisation, not a method ceiling.",
+        ],
+        "rows": rows,
+    }
+
+
+def _stamp_density_speed_map_v1(status: Dict[str, Any]) -> None:
+    """Stamp the archived v1 map wherever it now lives."""
+    pack = status.get("density_speed_map_v1")
+    if not pack:
+        return
+    pack["task_version"] = "v1"
+    pack["arena_xy_m"] = 24.0
+    pack["placement_area_m2"] = V1_PLACEMENT_AREA_M2
+    pack["comparable_with_v2"] = False
+    pack["superseded_note"] = (
+        "v1 task: 24 m arena, 478 m² placement band. Superseded for the current task by the v2 "
+        "map; kept as the record of the v1 contract."
+    )
+
+
 def _stamp_density_speed_map(status: Dict[str, Any]) -> None:
     """Make the density x speed map say which task version it belongs to.
 
@@ -2331,6 +2423,10 @@ def _stamp_density_speed_map(status: Dict[str, Any]) -> None:
     """
     pack = status.get("density_speed_map")
     if not pack:
+        return
+    if pack.get("task_version"):
+        # A map that already declares its own version is not the archived v1 one -- stamping it
+        # here would relabel the current v2 map as v1, which is worse than no label at all.
         return
     pack["task_version"] = "v1"
     pack["arena_xy_m"] = 24.0
@@ -2708,7 +2804,15 @@ def build_snapshot() -> Dict[str, Any]:
             "arena_geometry": _arena_geometry(active or latest),
         }
     )
+    v2_map = _v2_density_speed_map()
+    if v2_map:
+        # Keep the v1 map under its own key: it is the record of the v1 contract, and the
+        # dashboard labels it as such rather than deleting measured evidence.
+        if "density_speed_map" in status:
+            status.setdefault("density_speed_map_v1", status["density_speed_map"])
+        status["density_speed_map"] = v2_map
     _stamp_density_speed_map(status)
+    _stamp_density_speed_map_v1(status)
     v2_density = _v2_density_curve()
     if v2_density:
         status.setdefault("density_curves", {})["v2_heldout_density_curve"] = v2_density
