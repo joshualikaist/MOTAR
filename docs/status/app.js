@@ -6,7 +6,11 @@ const finite = x => (x == null || x === '' ? null : (Number.isFinite(Number(x)) 
 // v2: a 40 m arena with the band widened to the full width -> the whole 1600 m^2 footprint.
 // Set from status.json so a v1 and a v2 run are never reported on the same denominator.
 let BAND_AREA = 478;
-const perc100 = n => ((n / BAND_AREA) * 100).toFixed(1);
+// Density per 100 m2. The area is per SERIES, not per page: an archived v1 curve (478 m2 band in
+// a 24 m arena) rendered against the live v2 denominator (1600 m2) understated its density 3.3x
+// -- 25 bars read as 1.6/100m2 instead of 5.2. Callers drawing an archived curve pass that
+// curve's own placement_area_m2; the arena HUD, which describes the live task, passes nothing.
+const perc100 = (n, area) => ((n / (area || BAND_AREA)) * 100).toFixed(1);
 // Geometry of the task actually being described; overwritten from status.json.arena_geometry.
 let ARENA_GEO = null;
 
@@ -364,11 +368,21 @@ function renderCorridor(s) {
   }
 }
 
+function densityPack(s) {
+  const c = s.density_curves || {};
+  // Current task first. Superseded series are kept in the snapshot as evidence of the condition
+  // they were measured under, but must never stand in for present performance.
+  const ordered = [c.v2_heldout_density_curve, c.corrected_chirality_density_curve,
+                   c.general_repr_density_curve, c.vision_density_curve];
+  return ordered.find(p => p && !p.superseded && ((p.rows || p).length)) || null;
+}
+
 function pickDensity(s) {
   const c = s.density_curves || {};
-  const pack = c.corrected_chirality_density_curve || c.general_repr_density_curve || c.vision_density_curve;
+  const pack = densityPack(s);
   const raw = Array.isArray(pack) ? pack : (pack && pack.rows) || [];
-  const gtPack = c.vision_density_curve;
+  const gtPack = c.vision_density_curve && c.vision_density_curve.superseded
+    ? null : c.vision_density_curve;
   const gtRows = Array.isArray(gtPack) ? gtPack : (gtPack && gtPack.rows) || [];
   const gtByBars = Object.fromEntries(gtRows.map(r => {
     const b = r.density_bars ?? r.bars;
@@ -411,6 +425,8 @@ function drawIn(svg) {
 
 function renderCurve(s) {
   const rows = pickDensity(s);
+  const pack = densityPack(s) || {};
+  const curveArea = pack.placement_area_m2;
   const trainedMax = rows.find(r => r.trained === false)
     ? Math.max(...rows.filter(r => r.trained).map(r => r.density_bars))
     : (s.active_run && s.active_run.is_live
@@ -418,8 +434,13 @@ function renderCurve(s) {
       : (s.latest_run && s.latest_run.last_n_bars_active) || null);
 
   const sub = document.getElementById('density-sub');
+  // Name the task version on the panel: a v1 curve and a v2 curve differ in arena, placement
+  // band and bar geometry, so a reader must never have to guess which one is on screen.
+  const tag = pack.task_version
+    ? `${pack.task_version} task · ${pack.arena_xy_m || '?'} m arena · per ${Math.round(curveArea || 0)}m² · `
+    : '';
   if (sub) sub.textContent = rows.length
-    ? 'held-out frozen checkpoint · sensor-only · cells above that checkpoint’s trained max = OOD'
+    ? `${tag}held-out frozen checkpoint · sensor-only · cells above that checkpoint’s trained max = OOD`
     : 'no density curve yet';
   if (!rows.length) return;
 
@@ -473,16 +494,25 @@ function renderCurve(s) {
         const cliff = r.crash >= 0.5 ? ' class="cliff"' : '';
         const zone = r.trained === false ? '<span class="tag-ood">OOD</span>'
           : (r.trained ? '<span class="tag-tr">train</span>' : '—');
-        return `<tr${cliff}><td>${r.density_bars}</td><td>${perc100(r.density_bars)}</td><td>${pct(r.captured)}</td><td>${pct(r.crash)}</td><td>${pct(r.timeout)}</td><td>${zone}</td><td>${r.gt_injected_phase2 != null ? pct(r.gt_injected_phase2) : '—'}</td></tr>`;
+        return `<tr${cliff}><td>${r.density_bars}</td><td>${perc100(r.density_bars, curveArea)}</td><td>${pct(r.captured)}</td><td>${pct(r.crash)}</td><td>${pct(r.timeout)}</td><td>${zone}</td><td>${r.gt_injected_phase2 != null ? pct(r.gt_injected_phase2) : '—'}</td></tr>`;
       }).join('')}</tbody>`;
   }
   const cap = document.getElementById('curve-cap');
-  if (cap) cap.textContent = 'deterministic · FOV 240° · this curve is historical evidence; the live curriculum is tracked separately above';
+  if (cap) {
+    const policy = pack.policy ? `${pack.policy} · ` : '';
+    cap.textContent = `${policy}deterministic · this curve is a frozen-checkpoint evaluation; the live `
+      + `curriculum is tracked separately above.`
+      + (pack.task_version === 'v1'
+        ? ' v1 task (24 m arena): densities are per its own 478 m² band and are NOT comparable with v2.'
+        : '');
+  }
 }
 
 function pickSpeed(s) {
   const c = s.speed_curves || {};
-  const pack = c.general_repr_fov240_speed_axis || c.general_repr_speed_axis;
+  const pack = [c.v2_riskcap_fixed_speed_axis, c.corrected_sensorfix_legacy_speed_axis,
+                c.general_repr_fov240_speed_axis, c.general_repr_speed_axis]
+    .find(p => p && !p.superseded && ((p.rows || p).length)) || null;
   const raw = Array.isArray(pack) ? pack : (pack && pack.rows) || [];
   return raw.map(r => {
     const speed = r.speed ?? r.target_speed ?? r.target_speed_ms;
@@ -682,7 +712,19 @@ function renderSpeed(s) {
         <td>${pct(d.captured_360)}</td><td>${pct(d.crash_360)}</td>
       </tr>`).join('')}</tbody>`;
   }
-  if (cap) cap.textContent = '25 bars · held-out · historical FOV ablation; not the active v2 density curriculum';
+  // The caption must describe the series actually drawn: it used to hard-code the v1 25-bar FOV
+  // ablation, which silently mislabelled any other series selected above it.
+  const spack = (s.speed_curves || {});
+  const sp = [spack.v2_riskcap_fixed_speed_axis, spack.corrected_sensorfix_legacy_speed_axis,
+              spack.general_repr_fov240_speed_axis, spack.general_repr_speed_axis]
+    .find(p => p && !p.superseded && ((p.rows || p).length)) || {};
+  if (cap) {
+    const bars = sp.bars != null ? `${sp.bars} bars · ` : '';
+    const policy = sp.policy ? `${sp.policy} · ` : '';
+    const version = sp.task_version ? `${sp.task_version} task · ` : '';
+    cap.textContent = `${version}${bars}${policy}held-out · deterministic`
+      + (sp.task_version === 'v1' ? ' · historical, not the active v2 task' : '');
+  }
 }
 
 function renderRuns(s) {

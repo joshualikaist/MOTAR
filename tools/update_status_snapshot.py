@@ -2198,6 +2198,127 @@ def _research_update(
     }
 
 
+V2_HELDOUT_DIR = ROOT / "results/navrl_v2_ep24000_heldout"
+RISKCAP_POSTADAPT_PATH = ROOT / "results/navrl_v2_riskcap_postadapt/summary.json"
+
+# Curves measured BEFORE the 2026-07-29 chirality fix. The LiDAR bearing table was mirrored
+# (13.9% on-bar agreement vs 94.8% for the real convention) and the camera far plane fused into
+# the scan as a phantom wall, so these are records of a broken observation, not of policy skill.
+# They stay in the snapshot -- refuted evidence is still evidence -- but must never be displayed
+# as current performance.
+_PRE_CHIRALITY_CURVES = {
+    "general_repr_density_curve",
+    "vision_density_curve",
+    "altitude_pi_speed_axis",
+    "baseline_speed_axis_peak986",
+    "general_12m_lookahead_speed_axis",
+    "general_8m_speed_axis",
+    "general_8m_tiltcomp_speed_axis",
+    "general_repr_fov240_speed_axis",
+    "general_repr_speed_axis",
+}
+_PRE_CHIRALITY_REASON = (
+    "measured before the 2026-07-29 chirality fix: mirrored LiDAR bearing table plus a phantom "
+    "wall from the camera far plane. Kept as a record of that condition, not as performance."
+)
+
+
+def _stamp_curve_provenance(status: Dict[str, Any]) -> None:
+    """Tell every archived curve which task version and placement area it belongs to.
+
+    The dashboard divides bar counts by a single global placement area, so a v1 curve was being
+    reported at the v2 denominator -- 25 bars showed as 1.6/100m2 instead of 5.2, a 3.3x error.
+    Stamping the area per curve lets the renderer use the right one for each series.
+    """
+    for group in ("density_curves", "speed_curves", "other_curves"):
+        for name, pack in (status.get(group) or {}).items():
+            if not isinstance(pack, dict):
+                continue
+            pack.setdefault("task_version", "v1")
+            pack.setdefault("arena_xy_m", 24.0)
+            pack.setdefault("placement_area_m2", V1_PLACEMENT_AREA_M2)
+            if name in _PRE_CHIRALITY_CURVES:
+                pack["superseded"] = True
+                pack["superseded_reason"] = _PRE_CHIRALITY_REASON
+            else:
+                pack.setdefault("superseded", False)
+
+
+def _v2_density_curve() -> Dict[str, Any]:
+    """v2 held-out density curve, rebuilt from the archived per-cell evaluations."""
+    if not V2_HELDOUT_DIR.is_dir():
+        return {}
+    rows = []
+    for path in sorted(V2_HELDOUT_DIR.glob("*bars.json")):
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        outcome = payload.get("outcome")
+        if not outcome:
+            continue
+        bars = int(path.stem.replace("bars", ""))
+        rows.append({
+            "bars": bars,
+            "density_per_100m2": round(bars / V2_PLACEMENT_AREA_M2 * 100.0, 2),
+            "capture": outcome["capture_rate"],
+            "crash": outcome["crash_rate"],
+            "timeout": outcome["timeout_rate"],
+            "episodes": payload.get("actual_episodes"),
+        })
+    if not rows:
+        return {}
+    rows.sort(key=lambda r: r["bars"])
+    return {
+        "task_version": "v2",
+        "arena_xy_m": 40.0,
+        "placement_area_m2": V2_PLACEMENT_AREA_M2,
+        "superseded": False,
+        "trained_max_bars": 205,
+        "policy": "ep24000 (frozen), speed governor off",
+        "notes": [
+            "v2 search arena held-out density curve, deterministic, ~2050 episodes per cell.",
+            "Policy is the frozen ep24000 checkpoint WITHOUT the riskcap governor, so it is not "
+            "the current candidate (ep25000+riskcap) -- that one has only been swept at 205 bars.",
+            "205 bars is the density the curriculum reached; 220 is generalisation.",
+        ],
+        "rows": rows,
+    }
+
+
+def _v2_speed_axis() -> Dict[str, Any]:
+    """v2 fixed-target-speed axis for the CURRENT frozen candidate (ep25000 + riskcap)."""
+    if not RISKCAP_POSTADAPT_PATH.exists():
+        return {}
+    payload = json.loads(RISKCAP_POSTADAPT_PATH.read_text(encoding="utf-8"))
+    rows = []
+    for entry in payload.get("fixed_speed_rows") or []:
+        winner = entry.get("winner") or {}
+        if "target_speed_mps" not in winner:
+            continue
+        rows.append({
+            "target_speed_ms": winner["target_speed_mps"],
+            "captured": winner["capture_rate"],
+            "crash": winner["crash_rate"],
+            "timeout": winner.get("timeout_rate"),
+            "bar_contact": winner.get("bar_contact_rate"),
+            "episodes": winner.get("episodes"),
+        })
+    if not rows:
+        return {}
+    rows.sort(key=lambda r: r["target_speed_ms"])
+    return {
+        "task_version": "v2",
+        "arena_xy_m": 40.0,
+        "placement_area_m2": V2_PLACEMENT_AREA_M2,
+        "superseded": False,
+        "bars": 205,
+        "policy": "ep25000 + riskcap (current frozen candidate)",
+        "notes": [
+            "v2 fixed-target-speed axis at 205 bars, deterministic, ~2050 episodes per cell.",
+            "Same cells as the riskcap adaptation screen; these are the winner (riskcap) arm.",
+        ],
+        "rows": rows,
+    }
+
+
 def _stamp_density_speed_map(status: Dict[str, Any]) -> None:
     """Make the density x speed map say which task version it belongs to.
 
@@ -2588,9 +2709,18 @@ def build_snapshot() -> Dict[str, Any]:
         }
     )
     _stamp_density_speed_map(status)
+    v2_density = _v2_density_curve()
+    if v2_density:
+        status.setdefault("density_curves", {})["v2_heldout_density_curve"] = v2_density
+    v2_speed = _v2_speed_axis()
+    if v2_speed:
+        status.setdefault("speed_curves", {})["v2_riskcap_fixed_speed_axis"] = v2_speed
     status.setdefault("density_curves", {})[
         "corrected_chirality_density_curve"
     ] = _corrected_density_curve()
+    # Stamped LAST so it also covers curves rebuilt above; stamping earlier let the rebuilt
+    # chirality curve overwrite its own provenance and render at the wrong denominator.
+    _stamp_curve_provenance(status)
     return status
 
 
