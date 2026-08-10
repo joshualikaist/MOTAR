@@ -15,9 +15,10 @@ Research lives on the `research/navrl-env` branch; `main` tracks upstream Aerial
 
 ## Why it's a research problem
 
-- **Sensor-only.** The actor sees LiDAR + a learned camera detector — never a ground-truth
-  target position, bearing, or mask. Those are allowed only for the critic and the reward
-  during training (an *asymmetric* actor–critic).
+- **Sensor-only actor.** The actor sees LiDAR plus a camera-derived target track — never a
+  ground-truth target position, bearing, or mask. The frozen navigation result uses an analytic
+  appearance bootstrap; the learned detector remains an unpassed offline gate. Ground truth is
+  allowed only for the critic and reward during training (an *asymmetric* actor–critic).
 - **Scaling map.** How far does interception hold as the field gets **denser** and the
   target moves **faster**? MOTAR sweeps obstacle density × target speed to find where it breaks.
 - **Occlusion.** The target hides behind obstacles, so the policy tracks it through gaps in
@@ -52,10 +53,10 @@ cd ../rl_training/rl_games && ./train_navrl.sh
 Env counts, the 4 GB-VRAM preset, and the training metrics / TensorBoard scalars to watch
 are documented in **[OPERATIONS.md](OPERATIONS.md)** and **[WORKLOG.md](WORKLOG.md)**.
 
-> **Current method** — a learned RGB-D + LiDAR perception front-end feeding a NavRL++-style
-> Transformer policy — is specified in **[RESEARCH_PLAN.md](RESEARCH_PLAN.md)**.
-> Run it with `NAVRL_VISION=1 NAVRL_PERCEPTION=1 ./train_navrl.sh` (staged curriculum:
-> `./train_navrl_perception_staged.sh`), after the detector-validation gate in that plan.
+> **Current navigation/control candidate** — an analytic camera appearance bootstrap + LiDAR
+> target tracker feeding a NavRL++-style Transformer policy, with a sensor-only `riskcap` command
+> layer — is specified in **[RESEARCH_PLAN.md](RESEARCH_PLAN.md)**. A learned RGB-D detector is the
+> next offline validation stage, not a capability already demonstrated by the frozen policy.
 >
 > **Current controlled result (closed 2026-08-05)** — the frozen ep24000 policy exposed an early
 > high-speed bar-contact bottleneck, not an episode-horizon shortage. Complete-stop clearance/TTC
@@ -68,7 +69,9 @@ are documented in **[OPERATIONS.md](OPERATIONS.md)** and **[WORKLOG.md](WORKLOG.
 > Its checkpoint SHA-256 is `f70221393660…`; full confidence intervals and artifact contracts are in
 > [results/navrl_v2_riskcap_postadapt/summary.md](results/navrl_v2_riskcap_postadapt/summary.md).
 > No training or evaluation is active. Do not extend fixed-density PPO or retune riskcap post hoc;
-> the next gated stage is learned-detector/perception robustness.
+> first re-measure matched A/B/C arms under the corrected evaluation contract, then run the
+> learned-detector offline gate. The stored result predates that contract: configured 600-step
+> episodes ended at action 601 and rl_games did not receive its `time_outs` bootstrap signal.
 
 ## Status
 
@@ -79,21 +82,22 @@ used the **analytic detector mode** to isolate navigation/control. It is not evi
 the final learned RGB-D detector gate has been passed; that perception stage remains a separate
 research requirement.
 
-**Current v2 limit result** (40×40×3 m, moving target 0.3–1.5 m/s, seed 42, deterministic deployment):
+**Frozen-candidate v2 density curve — archived legacy evaluator** (40×40×3 m, moving target
+0.3–1.5 m/s, ep25000+riskcap, seed47, deterministic deployment):
 
 | bars | density/100 m² | episodes | capture | crash | timeout |
 |---:|---:|---:|---:|---:|---:|
-| 130 | 8.12 | 2,049 | 84.77% | 12.74% | 2.49% |
-| 160 | 10.00 | 2,050 | 79.66% | 16.88% | 3.46% |
-| 190 | 11.88 | 2,049 | 73.99% | 22.65% | 3.37% |
-| **205** | **12.81** | **2,050** | **72.44%** | **25.07%** | **2.49%** |
-| 220 | 13.75 | 2,050 | 68.49% | 29.76% | 1.76% |
+| 130 | 8.12 | 2,049 | 89.31% | 8.15% | 2.54% |
+| 160 | 10.00 | 2,049 | 84.63% | 12.64% | 2.73% |
+| 190 | 11.88 | 2,049 | 82.77% | 14.69% | 2.54% |
+| **205** | **12.81** | **2,050** | **80.54%** | **17.17%** | **2.29%** |
+| 220 | 13.75 | 2,050 | 77.76% | 19.41% | 2.83% |
 
-At 205 bars the same checkpoint scores 67.35% under stochastic action sampling, a significant
-5.09 pp gap from deterministic deployment. Ten complete curriculum holds, 20.1M samples at 205,
-healthy PPO diagnostics, and 99.83% random-pair geometric connectivity show that more unchanged
-epochs are not justified. The remaining failures are mostly bar contacts accumulated on long and
-fast trajectories.
+These cells used the old `>600` termination rule and therefore timed out at action 601. They remain
+valid as one internally consistent archive, but must not be mixed with new schema-v2 cells. The
+older ep24000/governor-off source policy separately scored 72.44% deterministic and 67.35%
+stochastic at 205 bars; that deployment gap and its curriculum diagnostics motivated the closed
+control-risk study, not a subtraction from the table above.
 
 The frozen causal checks separate reproducibility from symmetry. Seed 43 scores **72.77%** at 205
 bars versus seed 42's 72.44% (+0.33 pp; replication PASS). Original and mirror-conjugate policies
@@ -122,7 +126,7 @@ The obstacle-token bottleneck (8 slots representing only ~3 unique bars) was tra
 suppression-window duplication and addressed by a `cluster_sector` selector, which raised unique
 bars per step from 3.0 to 4.6.
 
-**Headline result — density x target-speed map** (held-out, 2049 episodes/cell, deterministic,
+**Archived historical v1 density x target-speed map** (held-out, 2049 episodes/cell, deterministic,
 `cluster_sector` checkpoint, sensor-only):
 
 | bars | density/100 m^2 | capture @0.0 m/s | @0.5 | @1.0 | @1.5 |
@@ -137,8 +141,9 @@ bars per step from 3.0 to 4.6.
 
 85 bars is the trained maximum; rows below it measure generalization, not a ceiling of the method.
 Across the full grid, raising density 5.2 -> 31.4 bars/100 m^2 costs **78 pp** of capture, while
-raising target speed 0 -> 1.5 m/s costs only **4.2 pp** -- the pursuer (v_max 2.5 m/s) is fast
-enough that target speed is not a binding difficulty axis in this regime; obstacle density is.
+raising target speed 0 -> 1.5 m/s costs only **4.2 pp**. This is a descriptive result for that v1
+grid, not evidence that speed is generally non-binding. The command limit was ±2.5 m/s **per x/y
+axis** (maximum requested XY norm 3.54 m/s), not a 2.5 m/s vector-speed cap.
 This is a historical pre-heading-continuity figure (full CSV:
 `results/density_speed_map_cluster_sector.csv`, interactive version: [status dashboard, "Map"
 tab](docs/status/)). It remains useful as a frozen 85-bar baseline, but must not be presented as the
@@ -150,7 +155,7 @@ current v2 40×40 result. The completed v2 result is the separate table above. F
 | Path | What |
 |------|------|
 | `aerial_gym/task/navrl_task/` | the interception task — observations, reward, termination |
-| `aerial_gym/task/navrl_task/navrl_perception.py` | learned camera–LiDAR detector + tracker (current method) |
+| `aerial_gym/task/navrl_task/navrl_perception.py` | analytic/learned camera front-ends + LiDAR tracker; frozen result uses analytic mode |
 | `aerial_gym/config/env_config/navrl_bars_env.py` | the arena — current v2 40×40×3 m full-width `navrl_band` field; legacy v1 was 24×24 m |
 | `aerial_gym/config/…/navrl_lidar_config.py`, `navrl_quad_config.py` | the LiDAR-equipped quadrotor |
 | `aerial_gym/rl_training/rl_games/` | PPO configs, custom networks, and the `*_navrl*.sh` run wrappers |

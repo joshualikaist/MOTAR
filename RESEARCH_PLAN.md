@@ -727,9 +727,10 @@ R2 control-risk inference-only screen으로 이동한다. 어느 쪽도 이번 �
 ### 8.18 R2 speed-risk governor 사전등록 (2026-08-05, 결과 확인 전)
 
 TTC FAIL 분기와 사용자 승인에 따라 frozen canonical ep24000 `cluster_sector` 정책에서 control-risk를
-먼저 분리한다. v2 episode는 600 RL step=60 s지만 main TTC crashdiag의 bar contact 평균은 74--92
+먼저 분리한다. 당시 v2 episode는 설정상 600 RL step=60 s였지만 후속 감사에서 `>600` 비교 때문에
+실제로 action 601에서 timeout된 것으로 확인됐다. main TTC crashdiag의 bar contact 평균은 74--92
 step(7.4--9.2 s), held-out timeout은 0.29%뿐이므로 horizon 부족 가설은 기각한다. actor action은 0속도를
-이미 표현할 수 있지만 reward가 closing speed 1.0 + PBRS progress 1.0 + time cost -0.05인 반면 safety는
+이미 표현할 수 있지만 reward가 closing speed 1.0 + ego-progress heuristic 1.0 + time cost -0.05인 반면 safety는
 속도/제동거리와 결합하지 않는다. 따라서 600-step·reward·policy weight를 동결하고 실행 command만
 sensor-derived LiDAR clearance로 감속하는 단일축 실험을 수행한다.
 
@@ -883,6 +884,21 @@ perception, 다른 obstacle realization, 실제 동역학 지연은 아직 미�
 perception gate를 통과한 뒤에만 R4 temporal fusion으로 간다. 실패하면 navigation PPO를 연장하지 말고
 camera–LiDAR association과 uncertainty-aware release를 고친다. 전체 원자료와 CI는
 `results/navrl_v2_riskcap_postadapt/summary.{md,json}`을 canonical로 사용한다.
+
+### 8.22 최종 계약 감사와 재개 gate (2026-08-10)
+
+§8.21의 policy/control 선택은 동결하되 publication 수치 계약은 재측정한다. frozen checkpoint는
+legacy 601-action horizon과 누락된 rl_games `time_outs` bootstrap 아래 학습됐으며, 과거 평가 receipt는
+imported runtime source를 보존하지 않았다. 현재 source는 정확히 action 600에서 종료하고 두 timeout key를
+동시에 제공하며, checkpoint/detector/runtime source/Python environment를 schema-v2 receipt로 묶는다.
+
+또한 `max_velocity=2.5`는 x/y 축별 limit(XY request norm 최대 3.54 m/s)이고 moving-target progress는
+엄밀 PBRS가 아닌 ego-motion heuristic이다. actor z는 altitude PI에 덮여 직접 actuator authority가 없지만
+raw z가 다음 `prev_action`에 남아 간접 state channel일 수 있으므로 단순 dead dimension으로 삭제하지 않는다.
+
+다음 실행 순서는 `docs/NEXT_WEEK_HANDOFF_2026-08-10.md`를 단일 기준으로 삼는다: 동일 미사용 seed에서
+governor/adaptation A/B/C 15 cells → ID speed interaction 16 cells/2 seed → detector offline dataset/loss/
+calibration gate다. 그 전에는 새 PPO, riskcap 재튜닝, dropout/H4 추가 분해를 시작하지 않는다.
 
 ---
 

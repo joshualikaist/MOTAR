@@ -7180,3 +7180,9 @@ dataset/loss/calibration gate 순서로 진행한다. dropout/H4 추가 분해�
 - RTX 3070 단일 episode 통합 스모크(`/tmp`, 성능 수치 미사용): evaluator가 source 280파일 receipt,
   checkpoint SHA `f7022139...`, 4-D/z-prev_action/per-axis/600-gte 계약을 실제 bulk JSON에서 검증하고 완료했다.
 - 학습·장기 평가는 시작하지 않았다. 다음 publication cell은 모두 schema-v2 receipt 아래 새로 측정한다.
+
+추가로 GitHub 첫 화면과 운영/연구 계획까지 같은 기준으로 대조했다. README가 frozen policy를 learned
+detector 사용으로 소개하고 ep24000/off 밀도 곡선을 current candidate 표로 표시하던 문제를 수정했다.
+current candidate의 ep25000+riskcap curve로 바꾸되 legacy 601-action archive임을 전면에 표시했고, v1
+`v_max 2.5 m/s`도 per-axis/XY 3.54 m/s로 정정했다. `OPERATIONS.md`와 `RESEARCH_PLAN.md`에는 legacy
+601/no-bootstrap 한계, ego-progress 의미, schema-v2 재측정 gate를 추가했다.

@@ -269,8 +269,8 @@
 2. **detector offline gate** — 현 −13.9pp는 positive pixel 0.054%에 unweighted BCE를 쓴
    1×1 artifact의 결과다. full-FOV/range/occlusion/absent split과 PR/calibration을 먼저 만든다.
 3. **density×speed interaction 재검정** — ID 4밀도×2속도×새 seed 2개, 220은 OOD 보조자료.
-4. corridor B-arm(946-D) 재평가, R4 temporal fusion(P3 통과로 전제 충족됨).
-5. 논문 작성: task-version(v1/v2) 구분 표기, superseded 데이터 처리 원칙 포함.
+4. corridor B-arm(946-D) 재평가와 R4 temporal fusion은 위 세 gate가 끝날 때까지 보류.
+5. 논문 작성: task-version(v1/v2)과 legacy-601/schema-v2 구분, superseded 데이터 처리 원칙 포함.
 
 **연구 방법론적 기여 (발표에서 강조할 만한 것)**
 - 모든 평가에 SHA-피닝·provenance receipt·무결성 가드 (evaluator 편집 시 자동 거부 실증됨)

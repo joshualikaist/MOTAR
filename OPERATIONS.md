@@ -560,8 +560,11 @@ mode를 재실행하거나 연장하지 않는다. selector 하나를 바꿨지�
 
 ## 7.10 최종 riskcap artifact와 운영 규칙 (2026-08-05)
 
-에피소드 horizon은 600 step=60 s로 유지한다. 실제 bar contact는 평균 7.4--9.2 s에 발생했고 timeout은
-0.29--4.00%여서 horizon 연장은 해결책이 아니었다. corrected 5-cell screen에서 완전정지 clearance/TTC는
+현재 source의 에피소드 horizon은 정확히 600 actions=60 s다. 다만 아래 frozen 결과를 만들 당시에는
+종료 비교가 `>600`여서 실제 timeout은 action 601이었고, rl_games의 `time_outs` bootstrap signal도
+누락됐다. 실제 bar contact는 평균 7.4--9.2 s에 발생했고 timeout은 0.29--4.00%여서 이 한 step 차이가
+“horizon 연장이 해결책이 아니다”라는 진단을 뒤집지는 않지만, legacy 결과와 새 schema-v2 결과를 같은
+arm으로 섞어서는 안 된다. corrected 5-cell screen에서 완전정지 clearance/TTC는
 timeout 16.59/23.57%로 기각됐다. 채택된 `riskcap`은 command corridor가 3 m 이내일 때만 XY norm을
 2.0 m/s로 제한하고 5 m에서 3.535 m/s로 완전히 해제하며, 방향을 바꾸거나 정지를 강제하지 않는다.
 
@@ -577,8 +580,8 @@ sha256sum "$ckpt"
 기대 SHA-256은
 `f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40`이다. run은 epoch
 24001--25000, 4.096M samples를 `max_epochs`로 정상 완료했고 `.aerial_training_finished`가 존재해야 한다.
-평가 결과는 이미 완료됐으므로 `eval_navrl_v2_riskcap_postadapt.sh`를 같은 출력 폴더에 재실행하지 않는다.
-원자료 계약과 요약만 다시 검증하려면 다음을 사용한다.
+기존 평가 폴더는 legacy 601-action 증거이므로 덮어쓰거나 그 안에서 재실행하지 않는다. 원자료 계약과
+요약만 다시 검증하려면 다음을 사용한다.
 
 ```bash
 cd /home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator
@@ -597,6 +600,10 @@ seed45/46, 205 bars, deterministic/original, 속도 조건을 모두 재검증�
 checkpoint 평가 계약을 만들고 detection dropout/지연/거리오차를 한 축씩 screen한다. gate를 통과할
 때에만 detector fine-tuning 또는 temporal fusion 학습을 시작한다. riskcap의 2.0/3/5 m 값은 final
 seed45/46를 본 뒤 사후 조정하지 않는다.
+
+다음 publication 평가는 `docs/NEXT_WEEK_HANDOFF_2026-08-10.md`의 Gate 1부터 시작한다. ep24000/off,
+ep24000/riskcap, ep25000/riskcap 전 arm을 같은 미사용 seed, 정확한 600-action 종료, 동일 source manifest로
+새 결과 디렉터리에 측정한다. 과거 요약기는 archive 무결성 확인용이지 새 계약의 대체물이 아니다.
 
 ## 8. 트러블슈팅
 
