@@ -7191,3 +7191,24 @@ current candidate의 ep25000+riskcap curve로 바꾸되 legacy 601-action archiv
 `origin/research/navrl-env`에 push했다. 공개 Pages `https://joshualikaist.github.io/MOTAR/status/`는 HTTP
 200, Contract panel과 cache key `20260810b`를 반환했고, 원격 `status.json`은 로컬 snapshot과 byte-level
 JSON 동등하며 z→`prev_action` 계약까지 포함하는 것을 확인했다.
+
+## 2026-08-11 — schema-v2 governor/adaptation A/B/C 15셀 launcher
+
+Gate 1을 세 개의 독립 density sweep 명령으로 실행하면 arm마다 source manifest가 새로 생기는 공백이 있어
+전용 `eval_navrl_v2_governor_adaptation_abc.sh`를 추가했다. canonical 계약은 미사용 seed **53**,
+deterministic/original, 2,049 requested episodes/cell, 130/160/190/205/220 bars이며 다음 15셀이다.
+
+- A: ep24000 / governor off × 5 densities
+- B: 같은 ep24000 / frozen riskcap × 5 densities
+- C: ep25000 / 같은 riskcap × 5 densities
+
+일반 evaluator에는 `NAVRL_V2_SHARED_SOURCE_BUNDLE`을 추가했다. 첫 cell이 runtime source/Python environment
+bundle을 만들고 나머지 14셀은 같은 manifest SHA와 snapshot을 검증한다. 각 cell은 별도 디렉터리라 완료
+후 재실행 시 안전하게 skip할 수 있고, incomplete cell은 자동 삭제하지 않고 중단한다. 최종 summarizer는
+15개 result/receipt/checkpoint/source/horizon/outcome 계약을 다시 검증하고 B−A와 C−B를 밀도별로 출력한다.
+
+검증: 두 checkpoint/세 arm preflight PASS. `/tmp` 1-episode A/B 통합 스모크에서 두 결과가 동일 source
+manifest SHA `a4ecc49b...`(281 runtime files)를 사용했고 off/riskcap, seed53, symlink-resolved canonical
+manifest가 모두 일치했다. 합성 15셀 fixture로 최종 summary/contrast 생성도 PASS했고 전체 Python 회귀는
+**205/205 PASS**, 두 shell과 13개 embedded Python heredoc compile, `git diff --check`도 통과했다. 스모크
+성능값은 사용하지 않는다. 장기 15셀 평가는 사용자가 명령을 실행할 때까지 시작하지 않았다.

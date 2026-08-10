@@ -605,6 +605,21 @@ seed45/46를 본 뒤 사후 조정하지 않는다.
 ep24000/riskcap, ep25000/riskcap 전 arm을 같은 미사용 seed, 정확한 600-action 종료, 동일 source manifest로
 새 결과 디렉터리에 측정한다. 과거 요약기는 archive 무결성 확인용이지 새 계약의 대체물이 아니다.
 
+15셀을 한 명령으로 순차 실행하는 canonical launcher는 다음과 같다. seed 53과 2,049 episodes/cell은
+launcher 내부에 고정돼 있고, 각 cell은 하나의 shared source bundle SHA를 검증한다.
+
+```bash
+cd /home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/aerial_gym/rl_training/rl_games
+PREFLIGHT=1 ./eval_navrl_v2_governor_adaptation_abc.sh
+./eval_navrl_v2_governor_adaptation_abc.sh
+```
+
+평가 중에는 다른 학습/평가를 같은 GPU에서 실행하지 않는다. 진행 로그는 아래로 본다.
+
+```bash
+tail -f ../../../results/navrl_v2_governor_adaptation_abc_seed53_schema2/campaign.log
+```
+
 ## 8. 트러블슈팅
 
 ## 자주 겪는 문제 (트러블슈팅)

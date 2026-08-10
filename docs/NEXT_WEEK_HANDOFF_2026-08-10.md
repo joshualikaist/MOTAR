@@ -64,6 +64,19 @@ dimension은 아니다. 3-D actor 실험은 이 간접 메모리 채널을 무�
 220은 OOD로 별도 표시한다. ep25000/off는 interaction까지 물을 때만 추가한다. 예상 GPU 시간은
 기존 5-cell sweep 기준 약 1.5–2.5시간이며 첫 1셀 wall-clock으로 다시 산정한다.
 
+15셀 전용 launcher가 구현됐다. seed 53, 2,049 requested episodes/cell, deterministic/original,
+exact-600 schema-v2를 내부에서 고정하며 한 shared source bundle을 모든 cell이 재사용한다. GPU 동시 실행이
+아니라 A 5셀 → B 5셀 → C 5셀 순차 실행이고, 완료된 cell은 재실행 시 skip한다.
+
+```bash
+cd /home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/aerial_gym/rl_training/rl_games
+./eval_navrl_v2_governor_adaptation_abc.sh
+```
+
+통합 로그는 `results/navrl_v2_governor_adaptation_abc_seed53_schema2/campaign.log`, 최종 표와 원자료 계약은
+같은 폴더의 `summary.md`와 `summary.json`에 생성된다. partial cell directory는 자동 삭제/덮어쓰기하지 않고
+명시적으로 중단한다.
+
 ### Gate 2 — in-distribution speed interaction 재검정
 
 primary grid는 0.3/1.5 m/s × 130/160/190/205 bars × 미사용 seed 2개 = 16 cells다.

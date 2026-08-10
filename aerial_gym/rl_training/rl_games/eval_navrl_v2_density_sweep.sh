@@ -20,6 +20,7 @@
 #   NAVRL_EVAL_REFLECTION_MODE=original|conjugate # inference-only mirror audit
 #   NAVRL_V2_FIXED_TARGET_SPEED=0.9                # fixed-speed causal evaluation
 #   NAVRL_SPEED_GOVERNOR=off|fixed|clearance|ttc|riskcap  # inference-only R2 speed-risk screen
+#   NAVRL_V2_SHARED_SOURCE_BUNDLE=/abs/path         # reuse one immutable source snapshot across arms
 set -euo pipefail
 
 CALLER_PWD="${PWD}"
@@ -690,9 +691,18 @@ fi
 mkdir -p "${RESULT_DIR}"
 RESULT_CSV="${RESULT_DIR}/results.csv"
 CHECKPOINT_SNAPSHOT="${RESULT_DIR}/checkpoint_snapshot.pth"
-SOURCE_SNAPSHOT_DIR="${RESULT_DIR}/source_snapshot"
-SOURCE_MANIFEST="${RESULT_DIR}/source_manifest.json"
-PYTHON_ENVIRONMENT="${RESULT_DIR}/python_environment.txt"
+SHARED_SOURCE_BUNDLE="${NAVRL_V2_SHARED_SOURCE_BUNDLE:-}"
+if [[ -n "${SHARED_SOURCE_BUNDLE}" ]]; then
+    if [[ "${SHARED_SOURCE_BUNDLE}" != /* ]]; then
+        SHARED_SOURCE_BUNDLE="${CALLER_PWD}/${SHARED_SOURCE_BUNDLE}"
+    fi
+    SOURCE_BUNDLE_DIR="$(readlink -m -- "${SHARED_SOURCE_BUNDLE}")"
+else
+    SOURCE_BUNDLE_DIR="${RESULT_DIR}"
+fi
+SOURCE_SNAPSHOT_DIR="${SOURCE_BUNDLE_DIR}/source_snapshot"
+SOURCE_MANIFEST="${SOURCE_BUNDLE_DIR}/source_manifest.json"
+PYTHON_ENVIRONMENT="${SOURCE_BUNDLE_DIR}/python_environment.txt"
 
 sha256_file() {
     "${PYTHON}" - "$1" <<'PY'
@@ -712,9 +722,21 @@ PY
 # enough: a dirty worktree can be scientifically valid, but only if the evaluated bytes are
 # preserved and checked after every cell.  Include every tracked/untracked runtime text source
 # under aerial_gym (ignored runs/results/logs are excluded by git), plus a Python package manifest.
-mkdir -p "${SOURCE_SNAPSHOT_DIR}"
-"${PYTHON}" - "${SCRIPT_DIR}" "${SOURCE_SNAPSHOT_DIR}" "${SOURCE_MANIFEST}" \
-    "${PYTHON_ENVIRONMENT}" <<'PY'
+# A campaign launcher may point several evaluator invocations at one immutable shared bundle so
+# all arms are provably evaluated from identical source bytes instead of merely similar commits.
+CREATE_SOURCE_BUNDLE=1
+if [[ -n "${SHARED_SOURCE_BUNDLE}" && -e "${SOURCE_BUNDLE_DIR}" ]]; then
+    if [[ ! -d "${SOURCE_BUNDLE_DIR}" || ! -f "${SOURCE_MANIFEST}" \
+          || ! -f "${PYTHON_ENVIRONMENT}" || ! -d "${SOURCE_SNAPSHOT_DIR}" ]]; then
+        echo "[eval_v2] shared source bundle is partial or malformed: ${SOURCE_BUNDLE_DIR}" >&2
+        exit 3
+    fi
+    CREATE_SOURCE_BUNDLE=0
+fi
+if (( CREATE_SOURCE_BUNDLE )); then
+    mkdir -p "${SOURCE_SNAPSHOT_DIR}"
+    "${PYTHON}" - "${SCRIPT_DIR}" "${SOURCE_SNAPSHOT_DIR}" "${SOURCE_MANIFEST}" \
+        "${PYTHON_ENVIRONMENT}" <<'PY'
 from datetime import datetime, timezone
 import hashlib
 import json
@@ -813,6 +835,16 @@ for path in [environment_path, *snapshot_dir.rglob("*")]:
         path.chmod(0o444)
 manifest_path.chmod(0o444)
 PY
+fi
+
+# Keep the standard per-result paths available as symlinks.  The attestation verifier resolves
+# these links to the one shared manifest, while a human opening any cell directory still finds the
+# complete provenance entry point in the expected place.
+if [[ -n "${SHARED_SOURCE_BUNDLE}" ]]; then
+    ln -s "${SOURCE_MANIFEST}" "${RESULT_DIR}/source_manifest.json"
+    ln -s "${PYTHON_ENVIRONMENT}" "${RESULT_DIR}/python_environment.txt"
+    ln -s "${SOURCE_SNAPSHOT_DIR}" "${RESULT_DIR}/source_snapshot"
+fi
 SOURCE_MANIFEST_SHA256="$(sha256_file "${SOURCE_MANIFEST}")"
 export NAVRL_EVAL_SOURCE_MANIFEST="${SOURCE_MANIFEST}"
 export NAVRL_EVAL_SOURCE_MANIFEST_SHA256="${SOURCE_MANIFEST_SHA256}"
