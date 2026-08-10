@@ -1,5 +1,9 @@
 # 검수 요청 브리프 — 2026-08-05 ~ 08-10 작업 (R3 latency/dropout + 대시보드 + v2 재측정)
 
+> **검수 완료 / 역사 입력 문서.** 최종 판정과 후속 코드 감사 결과는
+> `docs/codex_review_2026-08-10.md`를 따른다. 특히 speed×density interaction, H4 69% 분해,
+> 601-action horizon과 누락된 rl_games `time_outs` bootstrap은 이 문서의 초기 상태를 supersede한다.
+
 수신: 검수 세션(Codex) / 작성: Claude 세션
 대상 커밋 범위: `715dc76..HEAD` (브랜치 `research/navrl-env`, **push 안 함**)
 

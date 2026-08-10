@@ -117,9 +117,21 @@ SMOKE_STATE_CONTRACT = {
     "cfg_lateral_latent_margin_y": 1.25,
     "cfg_latent_margin": "2.0,1.25,2.0,2.0",
     "cfg_lateral_latent_margin_coef": 0.01,
+    "cfg_episode_limit_comparator": "gte",
+    "cfg_rlgames_timeout_info_key": "time_outs",
+    "cfg_time_limit_bootstrap_signal": True,
 }
 EVALUATION_CONTRACT = {
-    "schema_version": 1,
+    "schema_version": 2,
+    "episode_limit_steps": 600,
+    "episode_limit_comparator": "gte",
+    "timeout_observed_at_step": 600,
+    "pursuer_speed_limit_semantics": "per_axis_xy",
+    "pursuer_per_axis_speed_limit_mps": 2.5,
+    "pursuer_max_horizontal_request_norm_mps": math.sqrt(2.0) * 2.5,
+    "policy_output_dim": 4,
+    "policy_z_output_overwritten_by_altitude_pi": True,
+    "policy_z_persisted_in_prev_action_observation": True,
     "runtime_sim": "base_sim",
     "runtime_profile": "main",
     "runtime_num_envs": 128,
@@ -151,6 +163,7 @@ EVALUATION_CONTRACT = {
     "detector_threshold": 0.55,
     "perception_perturb": False,
     "detection_dropout": 0.3,
+    "detection_dropout_active": 0.0,
     "rgb_noise_std": 0.015,
     "depth_noise_std": 0.02,
     "max_tilt_deg": 45.0,
@@ -246,6 +259,54 @@ def _validate_evaluator_receipt(
     condition = result.get("condition") or {}
     nonce = str(condition.get("evaluation_nonce", ""))
 
+    manifest_path = Path(
+        str(result.get("runtime_source_manifest", ""))
+    ).expanduser().resolve()
+    canonical_manifest = (result_path.parent / "source_manifest.json").resolve()
+    manifest = {}
+    if manifest_path != canonical_manifest:
+        problems.append("held-out result names a non-canonical runtime source manifest")
+        manifest_sha = ""
+    elif not manifest_path.is_file():
+        problems.append(f"runtime source manifest is missing: {manifest_path}")
+        manifest_sha = ""
+    else:
+        manifest_sha = _sha256(manifest_path)
+        try:
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError) as exc:
+            problems.append(f"runtime source manifest cannot be read: {exc}")
+            manifest = {}
+    if result.get("runtime_source_manifest_sha256") != manifest_sha:
+        problems.append("held-out runtime source manifest SHA-256 is invalid")
+    if manifest:
+        if manifest.get("schema_version") != 2:
+            problems.append("runtime source manifest schema_version is not 2")
+        files = manifest.get("runtime_files") or []
+        if int(manifest.get("runtime_file_count", -1)) != len(files) or not files:
+            problems.append("runtime source manifest has invalid/empty file accounting")
+        repo = Path(str(manifest.get("repository_root", ""))).expanduser().resolve()
+        for entry in files:
+            try:
+                expected = str(entry["sha256"])
+                original = (repo / entry["path"]).resolve()
+                snapshot = (manifest_path.parent / entry["snapshot"]).resolve()
+            except (KeyError, TypeError):
+                problems.append("runtime source manifest contains a malformed file entry")
+                continue
+            if not original.is_file() or _sha256(original) != expected:
+                problems.append(f"runtime source changed after evaluation: {entry.get('path')}")
+            if not snapshot.is_file() or _sha256(snapshot) != expected:
+                problems.append(f"runtime source snapshot is invalid: {entry.get('snapshot')}")
+        environment_path = (
+            manifest_path.parent / str(manifest.get("python_environment", ""))
+        ).resolve()
+        if (
+            not environment_path.is_file()
+            or _sha256(environment_path) != manifest.get("python_environment_sha256")
+        ):
+            problems.append("Python environment manifest is missing or changed")
+
     if evaluator_path != EVALUATOR_SCRIPT.resolve():
         problems.append("held-out result names a non-canonical evaluator script")
     if not EVALUATOR_SCRIPT.is_file():
@@ -284,7 +345,7 @@ def _validate_evaluator_receipt(
         log_sha = _sha256(log_path)
 
     expected_receipt = {
-        "schema_version": 1,
+        "schema_version": 2,
         "producer": "eval_navrl_v2_density_sweep.sh",
         "evaluation_nonce": nonce,
         "source_checkpoint": str(checkpoint_path),
@@ -297,6 +358,17 @@ def _validate_evaluator_receipt(
         "log_sha256": log_sha,
         "evaluator_script": str(EVALUATOR_SCRIPT.resolve()),
         "evaluator_script_sha256": evaluator_sha,
+        "runtime_source_manifest": str(canonical_manifest),
+        "runtime_source_manifest_sha256": manifest_sha,
+        "runtime_source_file_count": int(manifest.get("runtime_file_count", -1)),
+        "runtime_git_commit": manifest.get("git_commit"),
+        "runtime_git_dirty": manifest.get("git_dirty"),
+        "python_environment_manifest": str(
+            (canonical_manifest.parent / str(manifest.get("python_environment", ""))).resolve()
+        ),
+        "python_environment_manifest_sha256": manifest.get(
+            "python_environment_sha256"
+        ),
         "bars": (result.get("condition") or {}).get("bars"),
         "seed": (result.get("condition") or {}).get("seed"),
         "requested_episodes": result.get("requested_episodes"),
@@ -502,8 +574,30 @@ def _build_attestation_payload(
             problems.append("target-speed maximum is not 1.5 m/s")
         if abs(_finite_float(condition.get("oob_margin_m"), "OOB margin") - 1.0) > 1e-6:
             problems.append("OOB margin is not 1.0 m")
-        if abs(_finite_float(condition.get("pursuer_max_speed_mps"), "pursuer max speed") - 2.5) > 1e-6:
-            problems.append("pursuer maximum speed is not 2.5 m/s")
+        if condition.get("pursuer_speed_limit_semantics") != "per_axis_xy":
+            problems.append("pursuer speed limit is not recorded as per-axis XY")
+        if abs(
+            _finite_float(
+                condition.get("pursuer_per_axis_speed_limit_mps"),
+                "pursuer per-axis speed limit",
+            )
+            - 2.5
+        ) > 1e-6:
+            problems.append("pursuer per-axis speed limit is not 2.5 m/s")
+        if abs(
+            _finite_float(
+                condition.get("pursuer_max_horizontal_request_norm_mps"),
+                "pursuer maximum horizontal request norm",
+            )
+            - math.sqrt(2.0) * 2.5
+        ) > 1e-6:
+            problems.append("pursuer maximum horizontal request norm is not sqrt(2)*2.5")
+        if int(condition.get("policy_output_dim", -1)) != 4:
+            problems.append("policy output dimension is not 4")
+        if condition.get("policy_z_output_overwritten_by_altitude_pi") is not True:
+            problems.append("policy-z compatibility dimension is not marked as overwritten")
+        if condition.get("policy_z_persisted_in_prev_action_observation") is not True:
+            problems.append("indirect policy-z prev_action channel is not attested")
         if int(condition.get("episode_len_steps", -1)) != 600:
             problems.append("held-out episode length is not 600 steps")
         if abs(_finite_float(condition.get("goal_dist_min_m"), "goal distance min") - 6.0) > 1e-6:

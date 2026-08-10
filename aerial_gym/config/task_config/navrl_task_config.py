@@ -73,10 +73,11 @@ class task_config:
     interception-style capture and a (Phase 3) moving target:
       state  = S_int (12: goal-frame direction/distance/velocity 8 + body-frame goal bearing 2
                + body-frame velocity 2) concatenated with the flattened 36x4 LiDAR scan -> 156.
-      action = 4-D: 3D velocity command in the goal frame (scaled to +/- max_velocity)
-               + learned yaw-rate (option b, scaled to +/- yaw_rate_max).
+      action = 4-D network output. x/y are vehicle-frame velocity commands with an independent
+               per-axis +/- max_velocity limit, z is retained for checkpoint compatibility but
+               is overwritten by the task-level altitude PI loop, and yaw commands yaw-rate.
       reward = range_rate + time_cost(alive<0) + static_safety - smooth - height - yaw_align
-               - yaw_rate_damping + PBRS_progress, with a terminal +capture_bonus (episode ends
+               - yaw_rate_damping + ego_progress, with a terminal +capture_bonus (episode ends
                on capture) and collision_penalty on a crash. With a static target (target_motion
                speed 0, the default) range_rate reduces exactly to NavRL's velocity-toward-goal.
     Dynamic obstacles are added in a later phase.
@@ -287,15 +288,21 @@ class task_config:
         observation_space_dim = internal_state_dim + lidar_hbeams * lidar_vbeams
         state_space_dim = 0  # no asymmetric critic in the injected-goal task
 
-    # Action = 3D velocity in the goal frame (NavRL) + a learned 4th action = yaw-rate (option b).
-    # Yaw used to be HELD; now action[:, 3] commands the euler yaw-rate so the agent points its nose
-    # along its travel direction (shrinks the swept footprint 0.40 m diagonal -> 0.28 m -> fewer clips).
+    # Four network outputs are preserved by the frozen 898-D policy contract. In perception mode,
+    # x/y command vehicle-frame velocity and yaw commands yaw-rate. The z output has no direct
+    # actuator authority because altitude PI overwrites it, but the raw z request is retained in
+    # the next observation's prev_action. It is therefore an indirect policy-state channel, not a
+    # dead dimension. Removing or replacing it requires a fresh-policy observation/action ablation.
     action_space_dim = 4
 
     episode_len_steps = _env_int("NAVRL_EPISODE_LEN_STEPS", 300)  # RL steps (300 for far goals;
     # ~150 steps straight / ~225 weaving at 2 m/s, so 300 keeps timeout from being the failure mode)
 
-    max_velocity = _env_float("NAVRL_MAX_VELOCITY", 2.0)  # NavRL v_lim [m/s]
+    # Per-axis command limit, not a vector-norm limit. The attainable horizontal norm is
+    # sqrt(2)*max_velocity (3.54 m/s in v2), which is why the riskcap free-speed setting uses that
+    # value. Renaming the environment variable would break old launch recipes, so document the
+    # actual semantics here and in the dashboard.
+    max_velocity = _env_float("NAVRL_MAX_VELOCITY", 2.0)  # [m/s per commanded axis]
 
     # Vertical authority of the task-level altitude hold, DELIBERATELY independent of max_velocity.
     # It used to reuse max_velocity for both the vz clamp and the PI anti-windup bound, which made a
@@ -458,8 +465,10 @@ class task_config:
     lower_height_bound = 0.1  # [m] crash if below
     upper_height_bound = 4.0  # [m] crash if above (NavRL uses 4)
 
-    # PBRS progress reward (A) discount -- MUST equal the PPO gamma (ppo_navrl*.yaml: gamma 0.99)
-    # or the distance shaping stops being optimality-preserving.
+    # Ego-motion progress discount. Under a static target this has the standard PBRS algebra and
+    # gamma must match PPO. Under a moving target the implementation deliberately re-anchors both
+    # distances to target_(t+1) to avoid crediting exogenous target motion; that makes it a
+    # heuristic rather than formally policy-invariant PBRS. Do not claim the PBRS theorem for v2.
     progress_gamma = 0.99
 
     # Reward weights. NavRL's static branch (env.py) is:
@@ -480,7 +489,7 @@ class task_config:
     #
     # (Removed dead ends, kept in git history + CRASH_TUNING_LOG.md: the B/C/D near-obstacle
     #  clearance penalty — three null results, crash is geometric not reward-driven — and the
-    #  C1 finish-funnel, superseded by PBRS + capture_bonus + learned yaw.)
+    #  C1 finish-funnel, superseded by ego-progress shaping + capture_bonus + learned yaw.)
     reward_parameters = {
         # Phase 3: applied to the RELATIVE velocity toward the target (range-rate,
         # (v_drone - v_target) . dir). With a static target this is EXACTLY NavRL's
@@ -494,7 +503,7 @@ class task_config:
         "smooth_weight": 0.1,
         "height_weight": 8.0,
         "height_margin": 0.2,  # NavRL's +/-0.2 m tolerance band
-        # A: PBRS progress reward weight -- dense per-step "got closer to the goal" gradient,
+        # A: ego-motion progress reward weight -- dense per-step "got closer" gradient,
         # re-anchored to the target's CURRENT position so only the drone's own motion is credited
         # (reward = w*(||prev_pos - target|| - progress_gamma*||pos - target||)). Set 0.0 to disable.
         "progress_weight": 1.0,

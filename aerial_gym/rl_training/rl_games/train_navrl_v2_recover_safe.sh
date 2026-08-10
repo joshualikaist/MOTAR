@@ -122,6 +122,12 @@ expected = {
     "cfg_action_policy": "squashed_gaussian",
     "cfg_action_std": "0.35,0.35,0.05,0.08",
     "cfg_action_mu_scale": "1.0,0.4,1.0,1.0",
+    # A checkpoint without these fields was trained under the legacy 601-action horizon and
+    # without rl_games time-limit bootstrapping.  Joining it to the fixed MDP would create an
+    # unlabelled semantic transition, so the safe continuation path rejects it.
+    "cfg_episode_limit_comparator": "gte",
+    "cfg_rlgames_timeout_info_key": "time_outs",
+    "cfg_time_limit_bootstrap_signal": True,
 }
 problems = []
 for key, want in expected.items():
@@ -255,7 +261,16 @@ def validate_attestation(attestation, expected_checkpoint_digest=None):
         )
 
     evaluation_contract_expected = {
-        "schema_version": 1,
+        "schema_version": 2,
+        "episode_limit_steps": 600,
+        "episode_limit_comparator": "gte",
+        "timeout_observed_at_step": 600,
+        "pursuer_speed_limit_semantics": "per_axis_xy",
+        "pursuer_per_axis_speed_limit_mps": 2.5,
+        "pursuer_max_horizontal_request_norm_mps": math.sqrt(2.0) * 2.5,
+        "policy_output_dim": 4,
+        "policy_z_output_overwritten_by_altitude_pi": True,
+        "policy_z_persisted_in_prev_action_observation": True,
         "runtime_sim": "base_sim",
         "runtime_profile": "main",
         "runtime_num_envs": 128,
@@ -287,6 +302,7 @@ def validate_attestation(attestation, expected_checkpoint_digest=None):
         "detector_threshold": 0.55,
         "perception_perturb": False,
         "detection_dropout": 0.3,
+        "detection_dropout_active": 0.0,
         "rgb_noise_std": 0.015,
         "depth_noise_std": 0.02,
         "max_tilt_deg": 45.0,

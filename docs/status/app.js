@@ -508,11 +508,16 @@ function renderCurve(s) {
   }
 }
 
-function pickSpeed(s) {
+function pickSpeedPack(s) {
   const c = s.speed_curves || {};
-  const pack = [c.v2_riskcap_fixed_speed_axis, c.corrected_sensorfix_legacy_speed_axis,
-                c.general_repr_fov240_speed_axis, c.general_repr_speed_axis]
-    .find(p => p && !p.superseded && ((p.rows || p).length)) || null;
+  // Fail closed: a valid archived v1 pilot must never silently replace missing v2 evidence.
+  return [c.v2_riskcap_fixed_speed_axis]
+    .find(p => p && p.task_version === 'v2' && p.headline_eligible !== false
+      && !p.superseded && ((p.rows || p).length)) || null;
+}
+
+function pickSpeed(s) {
+  const pack = pickSpeedPack(s);
   const raw = Array.isArray(pack) ? pack : (pack && pack.rows) || [];
   return raw.map(r => {
     const speed = r.speed ?? r.target_speed ?? r.target_speed_ms;
@@ -598,18 +603,26 @@ function renderHeatmap(s) {
   svg.setAttribute('viewBox', `0 0 ${W} ${H + 26}`);
   svg.innerHTML = g;
 
-  // headline asymmetry, computed from the data rather than hard-coded
+  // Marginal endpoint contrasts are descriptive effects, not an interaction test.
   const mean = xs => xs.reduce((a, b) => a + b, 0) / xs.length;
   const byBar = bars.map(b => mean(speeds.map(v => (at(b, v) || {}).capture).filter(x => x != null)));
   const bySpd = speeds.map(v => mean(bars.map(b => (at(b, v) || {}).capture).filter(x => x != null)));
   const dDen = (byBar[0] - byBar[byBar.length - 1]) * 100;
   const dSpd = (bySpd[0] - bySpd[bySpd.length - 1]) * 100;
   const cap = document.getElementById('map-cap');
+  const interaction = pack.interaction_test || {};
+  const interactionText = interaction.verdict === 'not confirmed'
+    ? `No density×speed interaction was confirmed inside the trained support `
+      + `(LR p=${interaction.continuous_likelihood_ratio_p}; omnibus p=${interaction.categorical_omnibus_p}). `
+    : '';
+  const legacy = pack.evaluation_semantics === 'legacy_timeout_at_601'
+    ? `Legacy evaluator: configured 600-step cells ended at action 601; do not mix with schema-v2 cells. `
+    : '';
   if (cap) cap.textContent =
-    `Density dominates: over this grid it costs ${dDen.toFixed(0)} pp of capture, while target speed `
-    + `costs only ${dSpd.toFixed(1)} pp — the pursuer at 2.5 m/s is fast enough that target speed is `
-    + `not a binding difficulty axis. Rows below the dashed line were never trained. `
-    + `This map is historical and predates the target heading-continuity fix.`
+    `Descriptively, the grid endpoint contrast is ${dDen.toFixed(1)} pp across density and `
+    + `${dSpd.toFixed(1)} pp across target speed. ${interactionText}${pack.ood_note || ''} `
+    + `Rows below the dashed line were never trained. ${legacy}`
+    + (pack.task_version === 'v1' ? `This map predates the target heading-continuity fix. ` : '')
     + (pack.comparable_with_v2 === false
         ? ` ${pack.superseded_note || ''} `
           + `Reading a bar count across task versions is misleading: 85 bars is `
@@ -664,13 +677,20 @@ function renderCeiling(s) {
 
 function renderSpeed(s) {
   const data = pickSpeed(s);
+  const sp = pickSpeedPack(s) || {};
   const tbl = document.getElementById('speed-tbl');
   const plot = document.getElementById('speedplot');
   const cap = document.getElementById('speed-cap');
+  const sub = document.getElementById('speed-sub');
+  const legend = document.getElementById('speed-legend');
   if (!data.length) {
-    if (cap) cap.textContent = 'no speed curve yet';
+    if (cap) cap.textContent = 'no current v2 speed curve yet';
+    if (sub) sub.textContent = 'current-task evidence unavailable; archived v1 pilots are not substituted';
+    if (tbl) tbl.innerHTML = '';
+    if (plot) plot.innerHTML = '';
     return;
   }
+  const has360 = data.some(d => d.captured_360 != null || d.crash_360 != null);
 
   if (plot) {
     const PX0 = 70, PX1 = 690, PY0 = 40, PY1 = 330;
@@ -705,25 +725,48 @@ function renderSpeed(s) {
   }
 
   if (tbl) {
-    tbl.innerHTML = `<thead><tr><th>speed</th><th>cap 240</th><th>crash 240</th><th>cap 360</th><th>crash 360</th></tr></thead>
+    tbl.innerHTML = `<thead><tr><th>target speed</th><th>capture</th><th>crash</th>${has360 ? '<th>capture 360</th><th>crash 360</th>' : ''}</tr></thead>
       <tbody>${data.map(d => `<tr>
-        <td>${d.speed.toFixed(1)}</td>
+        <td>${d.speed.toFixed(1)} m/s</td>
         <td>${pct(d.captured_240)}</td><td>${pct(d.crash_240)}</td>
-        <td>${pct(d.captured_360)}</td><td>${pct(d.crash_360)}</td>
+        ${has360 ? `<td>${pct(d.captured_360)}</td><td>${pct(d.crash_360)}</td>` : ''}
       </tr>`).join('')}</tbody>`;
   }
   // The caption must describe the series actually drawn: it used to hard-code the v1 25-bar FOV
   // ablation, which silently mislabelled any other series selected above it.
-  const spack = (s.speed_curves || {});
-  const sp = [spack.v2_riskcap_fixed_speed_axis, spack.corrected_sensorfix_legacy_speed_axis,
-              spack.general_repr_fov240_speed_axis, spack.general_repr_speed_axis]
-    .find(p => p && !p.superseded && ((p.rows || p).length)) || {};
+  if (sub) sub.textContent = `${sp.bars} bars · target-speed axis · sensor-only`;
+  if (legend) legend.innerHTML = has360
+    ? '<span><i style="background:var(--sensor)"></i>capture 240°</span><span><i style="background:var(--gt)"></i>capture 360°</span><span><i style="background:var(--bad)"></i>crash 240°</span>'
+    : '<span><i style="background:var(--sensor)"></i>capture</span><span><i style="background:var(--bad)"></i>crash</span>';
   if (cap) {
     const bars = sp.bars != null ? `${sp.bars} bars · ` : '';
     const policy = sp.policy ? `${sp.policy} · ` : '';
     const version = sp.task_version ? `${sp.task_version} task · ` : '';
-    cap.textContent = `${version}${bars}${policy}held-out · deterministic`
-      + (sp.task_version === 'v1' ? ' · historical, not the active v2 task' : '');
+    const legacy = sp.evaluation_semantics === 'legacy_timeout_at_601'
+      ? ' · legacy 601-action timeout semantics; re-measure before schema-v2 comparisons'
+      : '';
+    cap.textContent = `${version}${bars}${policy}held-out · deterministic${legacy}`;
+  }
+}
+
+function renderContract(s) {
+  const c = s.research_contract || {};
+  const task = document.getElementById('contract-task');
+  const reward = document.getElementById('contract-reward');
+  const warning = document.getElementById('contract-warning');
+  const meta = document.getElementById('contract-sub');
+  const rows = values => `<tbody>${(values || []).map(r =>
+    `<tr><td><b>${r[0]}</b></td><td>${r[1]}</td></tr>`).join('')}</tbody>`;
+  if (meta) meta.textContent = c.frozen_policy
+    ? `${c.frozen_policy} · checkpoint ${String(c.checkpoint_sha256 || '').slice(0, 12)}…`
+    : 'contract unavailable';
+  if (task) task.innerHTML = `<thead><tr><th>item</th><th>actual contract</th></tr></thead>${rows(c.task)}`;
+  if (reward) reward.innerHTML = `<thead><tr><th>term</th><th>exact form</th></tr></thead>${rows(c.reward)}`;
+  if (warning) {
+    const a = c.audit || {};
+    warning.innerHTML = `<p><b>Frozen checkpoint limitation</b> — ${a.frozen_training || '—'}</p>
+      <p><b>Fixed source</b> — ${a.current_source || '—'}</p>
+      <p><b>Comparison rule</b> — ${a.comparison_rule || '—'}</p>`;
   }
 }
 
@@ -860,6 +903,7 @@ function wireArena() {
     if (s && s.arena_geometry) { ARENA_GEO = s.arena_geometry; applyArenaGeometry(ARENA_GEO); }
     renderLive(s);
     renderCriteria(s);
+    renderContract(s);
     renderResearchUpdate(s);
     renderArchitecture(s);
     renderNow(s);

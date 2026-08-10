@@ -142,9 +142,21 @@ _RECOVERY_CHECKPOINT_CONTRACT = {
     "cfg_lateral_latent_margin_y": 1.25,
     "cfg_latent_margin": "2.0,1.25,2.0,2.0",
     "cfg_lateral_latent_margin_coef": 0.01,
+    "cfg_episode_limit_comparator": "gte",
+    "cfg_rlgames_timeout_info_key": "time_outs",
+    "cfg_time_limit_bootstrap_signal": True,
 }
 _RECOVERY_RESULT_CONTRACT = {
-    "schema_version": 1,
+    "schema_version": 2,
+    "episode_limit_steps": 600,
+    "episode_limit_comparator": "gte",
+    "timeout_observed_at_step": 600,
+    "pursuer_speed_limit_semantics": "per_axis_xy",
+    "pursuer_per_axis_speed_limit_mps": 2.5,
+    "pursuer_max_horizontal_request_norm_mps": math.sqrt(2.0) * 2.5,
+    "policy_output_dim": 4,
+    "policy_z_output_overwritten_by_altitude_pi": True,
+    "policy_z_persisted_in_prev_action_observation": True,
     "runtime_sim": "base_sim",
     "runtime_profile": "main",
     "runtime_num_envs": 128,
@@ -176,6 +188,7 @@ _RECOVERY_RESULT_CONTRACT = {
     "detector_threshold": 0.55,
     "perception_perturb": False,
     "detection_dropout": 0.3,
+    "detection_dropout_active": 0.0,
     "rgb_noise_std": 0.015,
     "depth_noise_std": 0.02,
     "max_tilt_deg": 45.0,
@@ -1055,7 +1068,7 @@ def _v2_search_update(record: Dict[str, Any], *, is_live: bool) -> Dict[str, Any
                 if is_live
                 else "Run eval_navrl_v2_riskcap_postadapt.sh on the final ep25000 checkpoint."
                 if completed and not post
-                else "Freeze ep25000 + riskcap as the navigation/control candidate. Do not extend fixed-density PPO or retune the gate post hoc; move next to learned-detector robustness."
+                else "Freeze ep25000 + riskcap as the navigation/control candidate. Do not extend fixed-density PPO. First re-measure matched A/B/C cells under the corrected 600-step/source-manifest contract, then gate a better detector offline before navigation replay."
             ),
             "speed_governor_screen": complete_stop["payload"],
             "riskcap_screen": screen["payload"],
@@ -2244,23 +2257,28 @@ def _stamp_curve_provenance(status: Dict[str, Any]) -> None:
                 pack["superseded_reason"] = _PRE_CHIRALITY_REASON
             else:
                 pack.setdefault("superseded", False)
+            # Valid historical evidence is not automatically a current-task headline.  In
+            # particular, this 500-epoch v1 Gaussian pilot used to replace the v2 speed curve
+            # silently whenever snapshot generation failed.
+            if name == "corrected_sensorfix_legacy_speed_axis":
+                pack["headline_eligible"] = False
+                pack["archive_reason"] = (
+                    "post-fix but v1/25-bars/legacy-Gaussian 500-epoch pilot; valid archive, "
+                    "not representative of the current v2 policy"
+                )
+            else:
+                pack.setdefault("headline_eligible", pack.get("task_version") == "v2")
 
 
 def _v2_density_curve() -> Dict[str, Any]:
-    """v2 held-out density curve for the current frozen candidate, with ep24000 as reference.
+    """v2 held-out density curve for the current frozen candidate.
 
-    Prefers the ep25000+riskcap sweep: describing the page's own policy beats describing its
-    predecessor. The ep24000 cells stay attached per row so the governor's contribution is
-    visible instead of implied.
+    The old ep24000/off row is intentionally not attached: it differs in checkpoint, governor,
+    seed and evaluator revision, so placing it beside this curve invited a causal subtraction.
+    The raw result remains archived under results/ until a matched A/B/C grid is re-measured.
     """
     source = V2_DENSITY_RISKCAP_DIR if V2_DENSITY_RISKCAP_DIR.is_dir() else V2_HELDOUT_DIR
     riskcap = source is V2_DENSITY_RISKCAP_DIR
-    reference = {}
-    if riskcap and V2_HELDOUT_DIR.is_dir():
-        for path in V2_HELDOUT_DIR.glob("*bars.json"):
-            payload = json.loads(path.read_text(encoding="utf-8"))
-            if payload.get("outcome"):
-                reference[int(path.stem.replace("bars", ""))] = payload["outcome"]["capture_rate"]
     if not source.is_dir():
         return {}
     rows = []
@@ -2277,7 +2295,6 @@ def _v2_density_curve() -> Dict[str, Any]:
             "crash": outcome["crash_rate"],
             "timeout": outcome["timeout_rate"],
             "episodes": payload.get("actual_episodes"),
-            "ep24000_capture": reference.get(bars),
         })
     if not rows:
         return {}
@@ -2285,22 +2302,16 @@ def _v2_density_curve() -> Dict[str, Any]:
     notes = [
         "v2 search arena held-out density curve, deterministic, ~2050 episodes per cell.",
         "205 bars is the density the curriculum reached; 220 is generalisation.",
+        "Legacy evaluator semantics: configured 600-step episodes timed out at action 601. "
+        "Re-measure before combining with schema-v2 results.",
     ]
-    if riskcap:
-        gains = [r for r in rows if r.get("ep24000_capture") is not None]
-        if gains:
-            lo = (gains[0]["capture"] - gains[0]["ep24000_capture"]) * 100.0
-            hi = (gains[-1]["capture"] - gains[-1]["ep24000_capture"]) * 100.0
-            notes.append(
-                f"ep24000 (governor off) is shown per row for reference: the gain grows with "
-                f"density, {lo:+.2f} pp at {gains[0]['bars']} bars to {hi:+.2f} pp at "
-                f"{gains[-1]['bars']}."
-            )
     return {
         "task_version": "v2",
         "arena_xy_m": 40.0,
         "placement_area_m2": V2_PLACEMENT_AREA_M2,
         "superseded": False,
+        "headline_eligible": True,
+        "evaluation_semantics": "legacy_timeout_at_601",
         "trained_max_bars": 205,
         "policy": ("ep25000 + riskcap (current frozen candidate)" if riskcap
                    else "ep24000 (frozen), speed governor off"),
@@ -2335,6 +2346,8 @@ def _v2_speed_axis() -> Dict[str, Any]:
         "arena_xy_m": 40.0,
         "placement_area_m2": V2_PLACEMENT_AREA_M2,
         "superseded": False,
+        "headline_eligible": True,
+        "evaluation_semantics": "legacy_timeout_at_601",
         "bars": 205,
         "policy": "ep25000 + riskcap (current frozen candidate)",
         "notes": [
@@ -2366,14 +2379,6 @@ def _v2_density_speed_map() -> Dict[str, Any]:
     ]
     if not rows:
         return {}
-    bars_axis = sorted({r["bars"] for r in rows})
-    speeds = sorted({r["target_speed_ms"] for r in rows})
-    at = {(r["bars"], r["target_speed_ms"]): r for r in rows}
-    # The interaction the v1 headline could not show: how much the speed axis costs at the
-    # lowest vs the highest density on the grid.
-    def speed_cost(bars):
-        lo, hi = at.get((bars, speeds[0])), at.get((bars, speeds[-1]))
-        return None if not (lo and hi) else (hi["capture"] - lo["capture"]) * 100.0
     return {
         "task_version": "v2",
         "arena_xy_m": 40.0,
@@ -2383,14 +2388,22 @@ def _v2_density_speed_map() -> Dict[str, Any]:
         "policy": payload.get("policy"),
         "density_cost_pp": payload.get("density_cost_pp"),
         "speed_cost_pp": payload.get("speed_cost_pp"),
-        "speed_cost_at_min_density_pp": speed_cost(bars_axis[0]),
-        "speed_cost_at_max_density_pp": speed_cost(bars_axis[-1]),
+        "interaction_test": {
+            "scope": "trained density support (130/160/190/205 bars)",
+            "continuous_likelihood_ratio_p": 0.337,
+            "categorical_omnibus_p": 0.817,
+            "verdict": "not confirmed",
+        },
+        "ood_note": "220 bars is OOD and is excluded from the primary interaction test.",
+        "evaluation_semantics": "legacy_timeout_at_601",
         "notes": [
             "DENSITY x TARGET-SPEED map on the v2 search arena -- the paper headline figure.",
             f"{payload.get('policy')}; deterministic, ~2050 episodes per cell, seed 47.",
             "Speeds span the trained U[0.3,1.5] support; v1's stationary-target column has no "
             "counterpart because a 0 m/s target is outside that support.",
             "Cells above the trained max measure generalisation, not a method ceiling.",
+            "No density×speed interaction was confirmed inside the trained density support "
+            "(continuous LR p=0.337; categorical omnibus p=0.817).",
         ],
         "rows": rows,
     }
@@ -2468,7 +2481,11 @@ def _perception_robustness() -> Dict[str, Any]:
         ("dropout_0p3", "detection dropout 0.3", ""),
         # Not a perturbation but a detector swap: the analytic segmenter is a bootstrap, so this
         # row is what the sensor-only claim actually rests on.
-        ("learned_clean", "learned detector", "replaces the analytic segmenter"),
+        (
+            "learned_clean",
+            "diagnostic 1×1 detector artifact",
+            "one under-gated artifact; not a learned-detector family limit",
+        ),
     ):
         cell = r3["cells"].get(tag)
         if cell:
@@ -2501,7 +2518,7 @@ def _perception_robustness() -> Dict[str, Any]:
         "title": "Perception robustness",
         "subtitle": "frozen ep25000 + riskcap · seed47 · 205 bars · ~2050 episodes per cell",
         "clean": {
-            "label": "clean perception",
+            "label": "analytic appearance bootstrap",
             "capture_rate": clean["capture_rate"],
             "crash_rate": clean["crash_rate"],
         },
@@ -2513,7 +2530,9 @@ def _perception_robustness() -> Dict[str, Any]:
             "being lifted to world with the pose at t, so the drone's own motion entered every "
             "filter correction -- 0.23m from translation and 0.41m from yaw, against the 0.15m of "
             "target motion. Buffering the pose beside the detection and lifting with it recovers "
-            "94% of the loss, which reclassifies latency as benign alongside range error."
+            "94% of the 0.1 s loss. Under exact timestamp/pose history the residual at 0.1 s is "
+            "-2.5 pp; longer delays remain material (-15.8 pp at 0.5 s), so latency is not "
+            "generally benign."
         ),
     }
 
@@ -2746,6 +2765,51 @@ def _success_criteria(active: Optional[Dict[str, Any]]) -> Dict[str, Any]:
     }
 
 
+def _research_contract() -> Dict[str, Any]:
+    """Expose the exact frozen-policy and reward semantics, including known legacy defects."""
+    return {
+        "title": "Frozen contract & reward audit",
+        "frozen_policy": "ep25000 + sensor-only riskcap",
+        "checkpoint_sha256": _RISKCAP_TRAINED_SHA256,
+        "task": [
+            ["arena", "40×40×3 m · 3 m bars · full 1600 m² placement area"],
+            ["sensor/actor", "LiDAR 4×72 @12 m · 8 cluster-sector tokens · 240° selection"],
+            ["target", "mixed motion · U[0.3,1.5] m/s · goal distance U[6,28] m"],
+            ["capture", "swept relative segment enters 0.5 m; capture wins same-step contact"],
+            ["command", "x/y each limited to ±2.5 m/s (XY norm can reach 3.54 m/s)"],
+            [
+                "policy output",
+                "4-D; z has no direct actuator authority, but raw z persists in next prev_action",
+            ],
+        ],
+        "reward": [
+            ["range rate", "+1.0 · relative closing speed (m/s)"],
+            ["time", "−0.05 per step"],
+            ["static safety", "+1.5 · mean(log(d/range)) ≤ 0"],
+            ["smooth / height", "−0.1·Δv − 8.0·height² outside ±0.2 m"],
+            ["ego progress", "+1.0·(d(prev drone,target_new) − 0.99·d_new); heuristic for moving targets"],
+            ["yaw", "−0.3·crab penalty − 0.02·yaw_command²"],
+            ["terminal", "+30 capture; crash reward overwritten to −20"],
+        ],
+        "audit": {
+            "frozen_training": (
+                "The checkpoint was trained before the timeout fix: a configured 600-step horizon "
+                "ended at action 601 and rl_games did not receive infos['time_outs'], despite "
+                "value_bootstrap=True. This is a frozen provenance limitation, not retroactively fixed."
+            ),
+            "current_source": (
+                "Source schema v2 now truncates exactly at action 600, emits both timeouts and "
+                "time_outs, snapshots runtime source/environment in every evaluation receipt, and "
+                "records reward/action semantics in new checkpoints."
+            ),
+            "comparison_rule": (
+                "Do not combine the displayed legacy 601-step cells with new schema-v2 cells. "
+                "Matched A/B/C arms must all be re-measured under one source manifest and seed."
+            ),
+        },
+    }
+
+
 def build_snapshot() -> Dict[str, Any]:
     status = json.loads(STATUS_PATH.read_text(encoding="utf-8"))
     generated_at = datetime.now(timezone.utc).isoformat()
@@ -2800,6 +2864,7 @@ def build_snapshot() -> Dict[str, Any]:
             "corridor_token": _corridor_token_plan(),
             "perception_robustness": _perception_robustness(),
             "success_criteria": _success_criteria(active or latest),
+            "research_contract": _research_contract(),
             "placement_area_m2": _placement_area_m2(active or latest),
             "arena_geometry": _arena_geometry(active or latest),
         }

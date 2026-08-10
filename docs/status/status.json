@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-10T06:05:54.414649+00:00",
+  "generated_at": "2026-08-10T15:52:45.397473+00:00",
   "repo": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator",
   "n_runs": 72,
   "active_run": null,
@@ -1774,7 +1774,8 @@
       "arena_xy_m": 24.0,
       "placement_area_m2": 478.0,
       "superseded": true,
-      "superseded_reason": "measured before the 2026-07-29 chirality fix: mirrored LiDAR bearing table plus a phantom wall from the camera far plane. Kept as a record of that condition, not as performance."
+      "superseded_reason": "measured before the 2026-07-29 chirality fix: mirrored LiDAR bearing table plus a phantom wall from the camera far plane. Kept as a record of that condition, not as performance.",
+      "headline_eligible": false
     },
     "vision_density_curve": {
       "notes": [],
@@ -1827,7 +1828,8 @@
       "arena_xy_m": 24.0,
       "placement_area_m2": 478.0,
       "superseded": true,
-      "superseded_reason": "measured before the 2026-07-29 chirality fix: mirrored LiDAR bearing table plus a phantom wall from the camera far plane. Kept as a record of that condition, not as performance."
+      "superseded_reason": "measured before the 2026-07-29 chirality fix: mirrored LiDAR bearing table plus a phantom wall from the camera far plane. Kept as a record of that condition, not as performance.",
+      "headline_eligible": false
     },
     "corrected_chirality_density_curve": {
       "notes": [
@@ -1879,19 +1881,22 @@
       "task_version": "v1",
       "arena_xy_m": 24.0,
       "placement_area_m2": 478.0,
-      "superseded": false
+      "superseded": false,
+      "headline_eligible": false
     },
     "v2_heldout_density_curve": {
       "task_version": "v2",
       "arena_xy_m": 40.0,
       "placement_area_m2": 1600.0,
       "superseded": false,
+      "headline_eligible": true,
+      "evaluation_semantics": "legacy_timeout_at_601",
       "trained_max_bars": 205,
       "policy": "ep25000 + riskcap (current frozen candidate)",
       "notes": [
         "v2 search arena held-out density curve, deterministic, ~2050 episodes per cell.",
         "205 bars is the density the curriculum reached; 220 is generalisation.",
-        "ep24000 (governor off) is shown per row for reference: the gain grows with density, +4.54 pp at 130 bars to +9.27 pp at 220."
+        "Legacy evaluator semantics: configured 600-step episodes timed out at action 601. Re-measure before combining with schema-v2 results."
       ],
       "rows": [
         {
@@ -1900,8 +1905,7 @@
           "capture": 0.8931185944363104,
           "crash": 0.08150317227916057,
           "timeout": 0.02537823328452904,
-          "episodes": 2049,
-          "ep24000_capture": 0.8477306002928258
+          "episodes": 2049
         },
         {
           "bars": 160,
@@ -1909,8 +1913,7 @@
           "capture": 0.8462664714494875,
           "crash": 0.1264031234748658,
           "timeout": 0.027330405075646658,
-          "episodes": 2049,
-          "ep24000_capture": 0.7965853658536586
+          "episodes": 2049
         },
         {
           "bars": 190,
@@ -1918,8 +1921,7 @@
           "capture": 0.8277208394338702,
           "crash": 0.14690092728160078,
           "timeout": 0.02537823328452904,
-          "episodes": 2049,
-          "ep24000_capture": 0.7398731088335774
+          "episodes": 2049
         },
         {
           "bars": 205,
@@ -1927,8 +1929,7 @@
           "capture": 0.8053658536585366,
           "crash": 0.17170731707317075,
           "timeout": 0.022926829268292682,
-          "episodes": 2050,
-          "ep24000_capture": 0.724390243902439
+          "episodes": 2050
         },
         {
           "bars": 220,
@@ -1936,8 +1937,7 @@
           "capture": 0.7775609756097561,
           "crash": 0.19414634146341464,
           "timeout": 0.02829268292682927,
-          "episodes": 2050,
-          "ep24000_capture": 0.6848780487804879
+          "episodes": 2050
         }
       ]
     }
@@ -2012,7 +2012,8 @@
       "arena_xy_m": 24.0,
       "placement_area_m2": 478.0,
       "superseded": true,
-      "superseded_reason": "measured before the 2026-07-29 chirality fix: mirrored LiDAR bearing table plus a phantom wall from the camera far plane. Kept as a record of that condition, not as performance."
+      "superseded_reason": "measured before the 2026-07-29 chirality fix: mirrored LiDAR bearing table plus a phantom wall from the camera far plane. Kept as a record of that condition, not as performance.",
+      "headline_eligible": false
     },
     "baseline_speed_axis_peak986": {
       "notes": [
@@ -2063,7 +2064,8 @@
       "arena_xy_m": 24.0,
       "placement_area_m2": 478.0,
       "superseded": true,
-      "superseded_reason": "measured before the 2026-07-29 chirality fix: mirrored LiDAR bearing table plus a phantom wall from the camera far plane. Kept as a record of that condition, not as performance."
+      "superseded_reason": "measured before the 2026-07-29 chirality fix: mirrored LiDAR bearing table plus a phantom wall from the camera far plane. Kept as a record of that condition, not as performance.",
+      "headline_eligible": false
     },
     "general_12m_lookahead_speed_axis": {
       "notes": [
@@ -2146,7 +2148,8 @@
       "arena_xy_m": 24.0,
       "placement_area_m2": 478.0,
       "superseded": true,
-      "superseded_reason": "measured before the 2026-07-29 chirality fix: mirrored LiDAR bearing table plus a phantom wall from the camera far plane. Kept as a record of that condition, not as performance."
+      "superseded_reason": "measured before the 2026-07-29 chirality fix: mirrored LiDAR bearing table plus a phantom wall from the camera far plane. Kept as a record of that condition, not as performance.",
+      "headline_eligible": false
     },
     "general_8m_speed_axis": {
       "notes": [
@@ -2219,7 +2222,8 @@
       "arena_xy_m": 24.0,
       "placement_area_m2": 478.0,
       "superseded": true,
-      "superseded_reason": "measured before the 2026-07-29 chirality fix: mirrored LiDAR bearing table plus a phantom wall from the camera far plane. Kept as a record of that condition, not as performance."
+      "superseded_reason": "measured before the 2026-07-29 chirality fix: mirrored LiDAR bearing table plus a phantom wall from the camera far plane. Kept as a record of that condition, not as performance.",
+      "headline_eligible": false
     },
     "general_8m_tiltcomp_speed_axis": {
       "notes": [
@@ -2304,7 +2308,8 @@
       "arena_xy_m": 24.0,
       "placement_area_m2": 478.0,
       "superseded": true,
-      "superseded_reason": "measured before the 2026-07-29 chirality fix: mirrored LiDAR bearing table plus a phantom wall from the camera far plane. Kept as a record of that condition, not as performance."
+      "superseded_reason": "measured before the 2026-07-29 chirality fix: mirrored LiDAR bearing table plus a phantom wall from the camera far plane. Kept as a record of that condition, not as performance.",
+      "headline_eligible": false
     },
     "general_repr_fov240_speed_axis": {
       "notes": [
@@ -2388,7 +2393,8 @@
       "arena_xy_m": 24.0,
       "placement_area_m2": 478.0,
       "superseded": true,
-      "superseded_reason": "measured before the 2026-07-29 chirality fix: mirrored LiDAR bearing table plus a phantom wall from the camera far plane. Kept as a record of that condition, not as performance."
+      "superseded_reason": "measured before the 2026-07-29 chirality fix: mirrored LiDAR bearing table plus a phantom wall from the camera far plane. Kept as a record of that condition, not as performance.",
+      "headline_eligible": false
     },
     "general_repr_speed_axis": {
       "notes": [
@@ -2492,7 +2498,8 @@
       "arena_xy_m": 24.0,
       "placement_area_m2": 478.0,
       "superseded": true,
-      "superseded_reason": "measured before the 2026-07-29 chirality fix: mirrored LiDAR bearing table plus a phantom wall from the camera far plane. Kept as a record of that condition, not as performance."
+      "superseded_reason": "measured before the 2026-07-29 chirality fix: mirrored LiDAR bearing table plus a phantom wall from the camera far plane. Kept as a record of that condition, not as performance.",
+      "headline_eligible": false
     },
     "corrected_sensorfix_legacy_speed_axis": {
       "notes": [
@@ -2541,13 +2548,17 @@
       "task_version": "v1",
       "arena_xy_m": 24.0,
       "placement_area_m2": 478.0,
-      "superseded": false
+      "superseded": false,
+      "headline_eligible": false,
+      "archive_reason": "post-fix but v1/25-bars/legacy-Gaussian 500-epoch pilot; valid archive, not representative of the current v2 policy"
     },
     "v2_riskcap_fixed_speed_axis": {
       "task_version": "v2",
       "arena_xy_m": 40.0,
       "placement_area_m2": 1600.0,
       "superseded": false,
+      "headline_eligible": true,
+      "evaluation_semantics": "legacy_timeout_at_601",
       "bars": 205,
       "policy": "ep25000 + riskcap (current frozen candidate)",
       "notes": [
@@ -2721,7 +2732,7 @@
         "value": "PASS"
       }
     ],
-    "decision": "Freeze ep25000 + riskcap as the navigation/control candidate. Do not extend fixed-density PPO or retune the gate post hoc; move next to learned-detector robustness.",
+    "decision": "Freeze ep25000 + riskcap as the navigation/control candidate. Do not extend fixed-density PPO. First re-measure matched A/B/C cells under the corrected 600-step/source-manifest contract, then gate a better detector offline before navigation replay.",
     "speed_governor_screen": {
       "adaptive_go": false,
       "experiment": "ep24000_speed_governor_screen",
@@ -3608,13 +3619,20 @@
     "policy": "ep25000 + riskcap",
     "density_cost_pp": 11.355777357187923,
     "speed_cost_pp": 2.6707805116118477,
-    "speed_cost_at_min_density_pp": -0.8784773060029227,
-    "speed_cost_at_max_density_pp": -5.989239248175792,
+    "interaction_test": {
+      "scope": "trained density support (130/160/190/205 bars)",
+      "continuous_likelihood_ratio_p": 0.337,
+      "categorical_omnibus_p": 0.817,
+      "verdict": "not confirmed"
+    },
+    "ood_note": "220 bars is OOD and is excluded from the primary interaction test.",
+    "evaluation_semantics": "legacy_timeout_at_601",
     "notes": [
       "DENSITY x TARGET-SPEED map on the v2 search arena -- the paper headline figure.",
       "ep25000 + riskcap; deterministic, ~2050 episodes per cell, seed 47.",
       "Speeds span the trained U[0.3,1.5] support; v1's stationary-target column has no counterpart because a 0 m/s target is outside that support.",
-      "Cells above the trained max measure generalisation, not a method ceiling."
+      "Cells above the trained max measure generalisation, not a method ceiling.",
+      "No density×speed interaction was confirmed inside the trained density support (continuous LR p=0.337; categorical omnibus p=0.817)."
     ],
     "rows": [
       {
@@ -3963,7 +3981,7 @@
     "title": "Perception robustness",
     "subtitle": "frozen ep25000 + riskcap · seed47 · 205 bars · ~2050 episodes per cell",
     "clean": {
-      "label": "clean perception",
+      "label": "analytic appearance bootstrap",
       "capture_rate": 0.8053658536585366,
       "crash_rate": 0.17170731707317075
     },
@@ -3976,11 +3994,11 @@
         "note": "timestamp-aware transform"
       },
       {
-        "label": "learned detector",
+        "label": "diagnostic 1×1 detector artifact",
         "capture_rate": 0.6661786237188873,
         "crash_rate": 0.24938994631527575,
         "capture_delta_pp": -13.918722993964938,
-        "note": "replaces the analytic segmenter"
+        "note": "one under-gated artifact; not a learned-detector family limit"
       },
       {
         "label": "detection dropout 0.3",
@@ -4031,7 +4049,7 @@
       "crash_rate": 0.5822352367008297,
       "capture_delta_pp": -42.71325691294981
     },
-    "finding": "Detection latency looked like the dominant failure axis (-42.7pp at 0.1s) until the cause was isolated: a delayed detection was a vehicle-frame measurement from t-tau being lifted to world with the pose at t, so the drone's own motion entered every filter correction -- 0.23m from translation and 0.41m from yaw, against the 0.15m of target motion. Buffering the pose beside the detection and lifting with it recovers 94% of the loss, which reclassifies latency as benign alongside range error."
+    "finding": "Detection latency looked like the dominant failure axis (-42.7pp at 0.1s) until the cause was isolated: a delayed detection was a vehicle-frame measurement from t-tau being lifted to world with the pose at t, so the drone's own motion entered every filter correction -- 0.23m from translation and 0.41m from yaw, against the 0.15m of target motion. Buffering the pose beside the detection and lifting with it recovers 94% of the 0.1 s loss. Under exact timestamp/pose history the residual at 0.1 s is -2.5 pp; longer delays remain material (-15.8 pp at 0.5 s), so latency is not generally benign."
   },
   "density_speed_map_v1": {
     "notes": [
@@ -4246,5 +4264,71 @@
     "placement_area_m2": 478.0,
     "comparable_with_v2": false,
     "superseded_note": "v1 task: 24 m arena, 478 m² placement band. Superseded for the current task by the v2 map; kept as the record of the v1 contract."
+  },
+  "research_contract": {
+    "title": "Frozen contract & reward audit",
+    "frozen_policy": "ep25000 + sensor-only riskcap",
+    "checkpoint_sha256": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+    "task": [
+      [
+        "arena",
+        "40×40×3 m · 3 m bars · full 1600 m² placement area"
+      ],
+      [
+        "sensor/actor",
+        "LiDAR 4×72 @12 m · 8 cluster-sector tokens · 240° selection"
+      ],
+      [
+        "target",
+        "mixed motion · U[0.3,1.5] m/s · goal distance U[6,28] m"
+      ],
+      [
+        "capture",
+        "swept relative segment enters 0.5 m; capture wins same-step contact"
+      ],
+      [
+        "command",
+        "x/y each limited to ±2.5 m/s (XY norm can reach 3.54 m/s)"
+      ],
+      [
+        "policy output",
+        "4-D; z has no direct actuator authority, but raw z persists in next prev_action"
+      ]
+    ],
+    "reward": [
+      [
+        "range rate",
+        "+1.0 · relative closing speed (m/s)"
+      ],
+      [
+        "time",
+        "−0.05 per step"
+      ],
+      [
+        "static safety",
+        "+1.5 · mean(log(d/range)) ≤ 0"
+      ],
+      [
+        "smooth / height",
+        "−0.1·Δv − 8.0·height² outside ±0.2 m"
+      ],
+      [
+        "ego progress",
+        "+1.0·(d(prev drone,target_new) − 0.99·d_new); heuristic for moving targets"
+      ],
+      [
+        "yaw",
+        "−0.3·crab penalty − 0.02·yaw_command²"
+      ],
+      [
+        "terminal",
+        "+30 capture; crash reward overwritten to −20"
+      ]
+    ],
+    "audit": {
+      "frozen_training": "The checkpoint was trained before the timeout fix: a configured 600-step horizon ended at action 601 and rl_games did not receive infos['time_outs'], despite value_bootstrap=True. This is a frozen provenance limitation, not retroactively fixed.",
+      "current_source": "Source schema v2 now truncates exactly at action 600, emits both timeouts and time_outs, snapshots runtime source/environment in every evaluation receipt, and records reward/action semantics in new checkpoints.",
+      "comparison_rule": "Do not combine the displayed legacy 601-step cells with new schema-v2 cells. Matched A/B/C arms must all be re-measured under one source manifest and seed."
+    }
   }
 }

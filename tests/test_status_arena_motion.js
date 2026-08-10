@@ -74,9 +74,20 @@ assert(html.includes('id="panel-update"'));
 assert(html.includes('tanh-squashed Gaussian · bounded'));
 assert(html.includes('fixed σ [.35,.35,.05,.08]'));
 assert(html.includes('cluster 0.45 m · 8 angular sectors'));
+assert(html.includes('id="panel-contract"'));
+assert(html.includes('id="contract-warning"'));
+assert(html.includes('분석적 red-appearance bootstrap'));
+assert(html.includes('축별 ±2.5 · XY 최대 3.54 m/s'));
+assert(html.includes('ego-progress heuristic · 안전항'));
+assert(!html.includes('25 bars · FOV 240° vs 360°'));
 
 const status = JSON.parse(fs.readFileSync(path.join(repo, 'docs/status/status.json'), 'utf8'));
 assert(status.research_update);
+assert(status.research_contract);
+assert.strictEqual(status.research_contract.checkpoint_sha256,
+  'f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40');
+assert(status.research_contract.audit.frozen_training.includes("infos['time_outs']"));
+assert(status.research_contract.audit.current_source.includes('action 600'));
 const latestName = status.latest_run.run.toLowerCase();
 for (const rejected of ['integration', 'forced', 'preflight']) {
   assert(!latestName.includes(rejected), `${rejected} wiring run must not replace Latest`);
@@ -108,6 +119,10 @@ assert(status.density_curves.corrected_chirality_density_curve);
 const appJs = fs.readFileSync(path.join(repo, 'docs/status/app.js'), 'utf8');
 assert(appJs.includes('function renderNow(s)'));
 assert(appJs.includes('function renderPhases(s)'));
+assert(appJs.includes('function renderContract(s)'));
+assert(appJs.includes('pickSpeedPack(s)'));
+assert(!appJs.includes('c.corrected_sensorfix_legacy_speed_axis'));
+assert(!appJs.includes('This map is historical and predates the target heading-continuity fix.'));
 assert(appJs.includes('renderNow(s);'));
 assert(appJs.includes('renderPhases(s);'));
 assert(appJs.includes("'v2 · CAUSAL COMPLETE'"));

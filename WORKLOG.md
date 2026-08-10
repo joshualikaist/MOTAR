@@ -7084,3 +7084,99 @@ off **70.03%** → source+riskcap **78.20%**(governor 단독 +8.17 pp) → train
   암시가 아니라 **표시**되게 했다.
 - 기존 v1 스탬퍼가 새 v2 맵을 v1으로 덮어쓰던 버그를 수정(이미 task_version을 선언한 팩은
   건드리지 않는다).
+
+## 2026-08-10 — Codex 독립 검수: P3 조건부 승인, 밀도 귀속·속도 상호작용·H4 과대해석 지적
+
+Claude가 작성한 `docs/review_brief_2026-08-10.md`와 `715dc76..d9ee124`를 독립 검수했다.
+상세 계산·근거·남은 inference-only 평가 설계는 `docs/codex_review_2026-08-10.md`에 보존했다.
+PPO 재학습이나 정책/실행 코드 변경은 하지 않았다.
+
+- **P3 조건부 동의**: measurement/pose가 동일 ring index를 쓰고 startup `visible=False`, τ=0 early
+  return이 맞다. focused latency tests 33/33 PASS. capture-time pose 변환은 timestamped pose history를
+  쓰는 실기 파이프라인과 맞지만, exact clock/pose 전제를 논문에 명시해야 한다.
+- **밀도 곡선 정정은 아직 부족**: ep24000/off와 ep25000/riskcap은 checkpoint와 governor뿐 아니라
+  seed **42→47**도 다르다. evaluator SHA도 다르고 receipt가 imported source tree를 해시하지 않아
+  revision provenance 공백도 있다. Δ를 method/governor 이득으로 읽히게 하는 문장은 내려야 한다.
+- **속도×밀도 상호작용 반박**: 학습범위 ≤205 aggregate logistic interaction `p=0.337`이고 density별
+  omnibus `p=0.817`. OOD 220 포함 때만 continuous interaction `p=0.022`. 205의 0.3→1.5 m/s
+  차이 −3.06 pp는 명목상 유의하지만 사후 다중비교 결과다. “속도는 밀도와 곱해져서만 의미” 및
+  v1/v2 endpoint 기울기 비교는 발표 문장에서 삭제해야 한다.
+- **H2는 작지만 재현**: 두 seed pooled +3.251 pp, 95% CI [+1.268,+5.234], p=0.00131. 그러나
+  preregistered 4 pp adoption gate는 미달이다. H4 +2.357 pp는 95% CI [−0.473,+5.188], p=0.103이라
+  “69% 분해 성공”은 exploratory로 낮춰야 한다. 69%는 H2 효과 대비이며 전체 dropout loss 대비는 18.6%다.
+- **learned detector 해석 주의**: 현 artifact는 positive pixel 0.054%에 unweighted BCE를 쓴 1×1
+  classifier이며 정면 2–12 m 중심 데이터만 수집했다. −13.9 pp는 이 artifact의 손실이지 learned
+  detector 일반 한계가 아니다. 다음 우선순위는 맞지만 full-FOV/range/occlusion/absent held-out gate와
+  class-balanced loss/calibration이 navigation 재평가보다 먼저다.
+- **dashboard**: pre-chirality 9개 분류·archive 보존은 맞다. post-fix legacy 500-epoch pilot은 유효한
+  역사 자료지만 current-v2 headline fallback 후보에서는 제외해야 한다.
+
+남은 작업은 전부 평가/오프라인 지도학습이다. 최소 평가 순서는 source manifest 고정 → seed47에서
+ep24000 off/riskcap 5밀도 10셀 → in-distribution speed endpoint 16셀/2 new seeds → detector offline
+gate와 새 artifact 평가다. dropout/H4 가지는 추가 A/B 없이 종료한다.
+
+## 2026-08-10 — 다음 주 재개용 동결·handoff
+
+사용자가 이번 주 작업을 정리한 뒤 다음 주부터 재개하기로 했다. 현재 NavRL 학습·평가 프로세스는
+없고 RTX 3070은 유휴 상태다. PPO 재학습은 계속 금지하며, current frozen ep25000+riskcap
+checkpoint(`f7022139...`), decomposition용 ep24000 checkpoint(`82f7978b...`), diagnostic detector
+artifact(`15cb90e...`)의 SHA-256을 다시 확인했다.
+
+재개 순서와 종료 조건을 `docs/NEXT_WEEK_HANDOFF_2026-08-10.md`에 고정했다. 이번 주에는 Claude가
+Codex 검수 결과를 원 문서/dashboard generator에 반영하고, status snapshot 재생성·라벨 재검수·단일
+커밋/push까지만 한다. 새 GPU 평가는 하지 않는다. 다음 주에는 evaluation source provenance 고정 →
+seed47 governor/adaptation 10셀 분리 → in-distribution speed endpoint 16셀/2 seed → detector offline
+dataset/loss/calibration gate 순서로 진행한다. dropout/H4 추가 분해와 새 PPO 실험은 종료/보류한다.
+
+## 2026-08-10 — 최종 강검수: 종료·bootstrap·source receipt·리워드/액션 의미 수정
+
+사용자 요청으로 사이트, 평가 계약, 실험 파라미터, reward/action 의미를 코드부터 다시 감사했다.
+정책 weight를 바꾸거나 PPO를 재학습하지 않았고, 과거 수치를 새 의미로 소급 변환하지 않았다.
+
+### 발견한 중대 결함과 수정
+
+1. **time-limit value bootstrap 불일치**: YAML은 `value_bootstrap: True`지만 설치된 rl_games
+   `a2c_common.py`는 exact key `infos["time_outs"]`만 읽는다. 환경은 `timeouts`만 내보내고 있었다.
+   현재 환경은 동일 tensor를 두 key로 제공하고 checkpoint에 comparator/key/bootstrap 계약을 기록한다.
+2. **600-step가 실제 601 actions**: 증가된 `sim_steps > episode_len_steps`를 `>=`로 바꿔 action 600에서
+   종료한다. 과거 JSON의 timeout outcome step이 전부 601인 것과 대조했다. helper 회귀 테스트와
+   evaluator의 timeout mean/p10/p50/p90=600 실측 gate를 추가했다.
+3. **평가 provenance 부족**: checkpoint와 top-level shell hash만으로는 dirty/imported Python source를
+   재현할 수 없었다. evaluator는 이제 checkpoint/detector immutable snapshot, `aerial_gym` runtime source
+   280개 파일 snapshot+SHA, git commit/dirty status, Python/pip manifest를 schema-v2 receipt에 묶고 각
+   cell 뒤 원본·snapshot 불변성을 검사한다. detector 상대경로도 caller 기준으로 바로잡았다.
+4. **속도 표기 오류**: 2.5 m/s는 vector limit가 아니라 x/y 각 축 limit여서 XY request norm은 최대
+   3.54 m/s다. bulk condition, evaluator, attestation, dashboard를 실제 의미로 통일했다.
+5. **z action 과잉 정정 방지**: z command는 altitude PI가 덮어 직접 actuator authority가 없지만 raw z는
+   다음 관측의 `prev_action`에 남는다. 따라서 dead dimension이 아니라 간접 policy-state channel이다.
+   3-D actor ablation은 이 채널 제거/대체까지 통제해야 하며, 이를 condition/receipt/site에 명시했다.
+6. **reward 명칭**: moving target progress는 target_(t+1)에 두 거리를 재고정한 ego-motion heuristic이다.
+   정적 target에서는 PBRS 대수와 같지만 moving target에 policy-invariance theorem을 적용할 수 없어
+   코드·설명·사이트에서 PBRS 확정 표현을 내렸다.
+7. **safe resume 차단**: 과거 LKG는 새 horizon/bootstrap fields가 없으므로 `recover_safe`가 continuation을
+   고의로 거부한다. 의미가 다른 MDP를 무표식으로 이어 학습하는 것보다 fresh 설계를 요구한다.
+
+### 사이트·연구 문서 정정
+
+- v1/legacy pilot이 current-v2 headline fallback으로 나타나는 경로를 제거했다. 현재 v2 pack이 없으면
+  historical curve를 대신 그리지 않고 unavailable로 표시한다.
+- ep24000/off와 ep25000/riskcap의 checkpoint·governor·seed·evaluator 동시 차이를 한 그래프에서 causal
+  gain처럼 빼던 열을 제거했다. 기존 v2 결과는 `legacy_timeout_at_601`로 명확히 표시한다.
+- 학습범위 speed×density interaction은 LR `p=0.337`, categorical omnibus `p=0.817`로 미확정이다.
+  220 bars OOD가 만든 강한 서술과 v1/v2 endpoint slope 비교를 headline에서 제거했다.
+- detector 행은 learned perception 일반 한계가 아니라 **diagnostic 1×1 artifact**로 낮췄다. 0.1 s latency
+  잔차 −2.5 pp와 0.5 s −15.8 pp를 분리해 “latency benign” 과장을 제거했다.
+- exact task/reward/audit를 보여주는 Contract panel을 추가했고 40×40×3 m, per-axis command, ego-progress,
+  frozen checkpoint의 601/no-bootstrap 한계를 한 화면에 표시한다. app cache key를 `20260810b`로 올렸다.
+- `docs/codex_review_2026-08-10.md`와 `docs/NEXT_WEEK_HANDOFF_2026-08-10.md`에 반박 근거,
+  재개 gate, 중단 조건을 고정했다. status snapshot은 72 runs, active none으로 재생성했다.
+
+### 검증
+
+- Python 전체 회귀: **202/202 PASS** (14.4 s; 기존 ResourceWarning/FutureWarning만 존재).
+- 모든 RL shell `bash -n`, 핵심 Python `py_compile`, `git diff --check`: PASS.
+- site DOM/arena-motion JS parity: PASS. Chrome 1440×5200 렌더에서 Contract·수치·레이아웃을 육안 확인했다.
+  headless `--disable-gpu`의 WebGL canvas 실패는 브라우저 검수 조건 한계이며 정적 DOM 실패가 아니다.
+- RTX 3070 단일 episode 통합 스모크(`/tmp`, 성능 수치 미사용): evaluator가 source 280파일 receipt,
+  checkpoint SHA `f7022139...`, 4-D/z-prev_action/per-axis/600-gte 계약을 실제 bulk JSON에서 검증하고 완료했다.
+- 학습·장기 평가는 시작하지 않았다. 다음 publication cell은 모두 schema-v2 receipt 아래 새로 측정한다.

@@ -137,6 +137,33 @@ class NavRLV2RecoveryGateTest(unittest.TestCase):
         receipt_path = result_path.with_suffix(".receipt.json")
         log_path = result_path.with_suffix(".log")
         log_path.write_text("synthetic evaluator log\n", encoding="utf-8")
+        source_snapshot = Path(self.temp.name) / "source_snapshot" / "aerial_gym"
+        source_snapshot.mkdir(parents=True, exist_ok=True)
+        source_copy = source_snapshot / "evaluator.sh"
+        shutil.copyfile(_EVALUATOR, source_copy)
+        environment_path = Path(self.temp.name) / "python_environment.txt"
+        environment_path.write_text("synthetic test environment\n", encoding="utf-8")
+        manifest_path = Path(self.temp.name) / "source_manifest.json"
+        manifest = {
+            "schema_version": 2,
+            "repository_root": str(_ROOT),
+            "git_commit": "0" * 40,
+            "git_dirty": False,
+            "python_environment": environment_path.name,
+            "python_environment_sha256": _sha256(environment_path),
+            "runtime_file_count": 1,
+            "runtime_files": [
+                {
+                    "path": str(_EVALUATOR.relative_to(_ROOT)),
+                    "sha256": _sha256(_EVALUATOR),
+                    "size_bytes": _EVALUATOR.stat().st_size,
+                    "snapshot": str(source_copy.relative_to(manifest_path.parent)),
+                }
+            ],
+        }
+        manifest_path.write_text(
+            json.dumps(manifest, sort_keys=True) + "\n", encoding="utf-8"
+        )
         payload = {
             "schema_version": 1,
             "requested_episodes": 2049,
@@ -150,6 +177,12 @@ class NavRLV2RecoveryGateTest(unittest.TestCase):
                 "target_speed_min_mps": 0.3,
                 "target_speed_max_mps": 1.5,
                 "pursuer_max_speed_mps": 2.5,
+                "pursuer_speed_limit_semantics": "per_axis_xy",
+                "pursuer_per_axis_speed_limit_mps": 2.5,
+                "pursuer_max_horizontal_request_norm_mps": 2.5 * 2**0.5,
+                "policy_output_dim": 4,
+                "policy_z_output_overwritten_by_altitude_pi": True,
+                "policy_z_persisted_in_prev_action_observation": True,
                 "oob_margin_m": 1.0,
                 "episode_len_steps": 600,
                 "num_envs": 128,
@@ -183,6 +216,8 @@ class NavRLV2RecoveryGateTest(unittest.TestCase):
             "evaluated_checkpoint_snapshot_sha256": _sha256(snapshot),
             "evaluator_script": str(_EVALUATOR.resolve()),
             "evaluator_script_sha256": _sha256(_EVALUATOR),
+            "runtime_source_manifest": str(manifest_path.resolve()),
+            "runtime_source_manifest_sha256": _sha256(manifest_path),
             "evaluation_receipt": str(receipt_path.resolve()),
         }
         result_path.write_text(
@@ -190,7 +225,7 @@ class NavRLV2RecoveryGateTest(unittest.TestCase):
         )
         if with_receipt:
             receipt = {
-                "schema_version": 1,
+                "schema_version": 2,
                 "producer": "eval_navrl_v2_density_sweep.sh",
                 "started_at_utc": "2026-08-01T00:00:00+00:00",
                 "completed_at_utc": "2026-08-01T00:01:00+00:00",
@@ -205,6 +240,13 @@ class NavRLV2RecoveryGateTest(unittest.TestCase):
                 "log_sha256": _sha256(log_path),
                 "evaluator_script": str(_EVALUATOR.resolve()),
                 "evaluator_script_sha256": _sha256(_EVALUATOR),
+                "runtime_source_manifest": str(manifest_path.resolve()),
+                "runtime_source_manifest_sha256": _sha256(manifest_path),
+                "runtime_source_file_count": 1,
+                "runtime_git_commit": "0" * 40,
+                "runtime_git_dirty": False,
+                "python_environment_manifest": str(environment_path.resolve()),
+                "python_environment_manifest_sha256": _sha256(environment_path),
                 "bars": 130,
                 "seed": 42,
                 "requested_episodes": 2049,

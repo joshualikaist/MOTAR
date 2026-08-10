@@ -119,6 +119,32 @@ def _sha256_file(path):
     return digest.hexdigest()
 
 
+def _episode_limit_reached(sim_steps, episode_len_steps):
+    """Return the Gymnasium truncation mask for an exact N-step horizon.
+
+    ``sim_steps`` is incremented after every RL action.  Using ``>`` here historically made a
+    configured 600-step episode last 601 actions; the stored v2 evaluation receipts expose that
+    off-by-one directly (every timeout occurred at step 601).
+    """
+    return sim_steps >= int(episode_len_steps)
+
+
+def _episode_outcome_info(successes, crashes, truncations):
+    """Build task diagnostics plus rl_games' required time-limit bootstrap signal.
+
+    The human-facing ``timeouts`` key is retained for all existing logging/evaluation consumers.
+    rl_games deliberately looks for the distinct ``time_outs`` spelling when
+    ``value_bootstrap=True``; omitting it makes a truncation train like a true terminal.
+    """
+    timeouts = (truncations > 0) & ~successes & ~crashes
+    return timeouts, {
+        "successes": successes,
+        "timeouts": timeouts,
+        "time_outs": timeouts,
+        "crashes": crashes,
+    }
+
+
 def vec_to_goal_frame(vec, goal_direction):
     """Express world-frame vector(s) in the goal coordinate frame.
 
@@ -203,7 +229,7 @@ class NavRLTask(BaseTask):
         self.target_dir_2d[:, 0] = 1.0  # placeholder unit direction before first reset
         self.height_range = torch.zeros((self.num_envs, 2), device=self.device)  # [min, max]
         self.prev_vel_w = torch.zeros((self.num_envs, 3), device=self.device)
-        # Previous drone position: anchors the PBRS progress term to the target's CURRENT position
+        # Previous drone position: anchors the ego-progress heuristic to the target's CURRENT position
         # (credits only the drone's own motion when the target moves) and, together with prev_rel,
         # provides the swept-segment capture test.
         self.prev_pos = torch.zeros((self.num_envs, 3), device=self.device)
@@ -1299,6 +1325,20 @@ class NavRLTask(BaseTask):
                 "physics_steps_per_rl_step"
             ],
             "cfg_rl_step_dt_s": physics["rl_step_dt_s"],
+            # Training/termination semantics.  Checkpoints created before 2026-08-10 lack these
+            # fields and used a 601-action horizon for cfg_episode_len_steps=600 while silently
+            # skipping rl_games' time-limit bootstrap.  New checkpoints make the correction
+            # auditable instead of relying on the installed framework's naming convention.
+            "cfg_episode_limit_comparator": "gte",
+            "cfg_rlgames_timeout_info_key": "time_outs",
+            "cfg_time_limit_bootstrap_signal": True,
+            "cfg_reward_contract_version": "navrl_intercept_heuristic_v2",
+            "cfg_reward_progress_kind": "ego_reanchored_heuristic",
+            "cfg_reward_progress_gamma": float(self.task_config.progress_gamma),
+            "cfg_reward_parameters": dict(self.rw),
+            "cfg_action_command_semantics": (
+                "vx_vy_axis_limited_vz_pi_yawrate_raw_z_in_prev_action"
+            ),
             "n_bars_active": int(self.n_bars_active),
             "k_max_cur": float(self._k_max_cur),
             "k_min_cur": float(self._k_min_cur),
@@ -2396,7 +2436,7 @@ class NavRLTask(BaseTask):
         )
         self.prev_vel_w[env_ids] = 0.0
         self._z_err_integral[env_ids] = 0.0  # fresh episode -> no carried-over altitude-hold bias
-        # Seed the PBRS/segment-capture buffers with the spawn state. First-step progress is then
+        # Seed the ego-progress/segment-capture buffers with the spawn state. First-step progress is
         # ||start - target|| - gamma*||pos - target||, identical to the old prev_dist seeding.
         self.prev_pos[env_ids] = start_pos
         self.prev_rel[env_ids] = start_pos - self.target_position[env_ids]
@@ -2497,7 +2537,9 @@ class NavRLTask(BaseTask):
         self.compute_state_reward_and_terminations()
 
         self.truncations[:] = torch.where(
-            self.sim_env.sim_steps > self.task_config.episode_len_steps,
+            _episode_limit_reached(
+                self.sim_env.sim_steps, self.task_config.episode_len_steps
+            ),
             torch.ones_like(self.truncations),
             torch.zeros_like(self.truncations),
         )
@@ -2515,8 +2557,9 @@ class NavRLTask(BaseTask):
         # that never captured.
         successes = self.captured_now
         crashes = self.crashed_now
-        timeouts = (self.truncations > 0) & ~successes & ~crashes
-        self.infos = {"successes": successes, "timeouts": timeouts, "crashes": crashes}
+        timeouts, self.infos = _episode_outcome_info(
+            successes, crashes, self.truncations
+        )
 
         if self._bulk_eval_mode:
             steps = self.sim_env.sim_steps
@@ -3080,14 +3123,14 @@ class NavRLTask(BaseTask):
                                 ).sum(dim=1)
                                 p["track_cov_pos"] += float(cov_pos[lateral].sum().item())
 
-        # A: PBRS progress reward -- dense "got closer" signal. F = gamma*Phi(s') - Phi(s) with
-        # Phi = -progress_weight*dist. RE-ANCHORED to the target's CURRENT position:
+        # A: ego-motion progress shaping -- dense "got closer" signal, RE-ANCHORED to the
+        # target's CURRENT position:
         #   progress = ||prev_pos - target_new|| - gamma*||pos_new - target_new||
-        # so only the drone's OWN motion is credited — the naive prev_dist form would reward/punish
-        # the drone for the target's uncontrollable move (biased shaping under pursuit). With a
-        # static target both forms are identical (unit-tested: tools/test_navrl_p3_math.py). Zero the next-state potential on
-        # TRUE terminals (capture/crash) per Grzes 2017; a timeout is a truncation (not in `term`)
-        # so it keeps its gradient. Disable by setting progress_weight = 0.0.
+        # so only the drone's OWN motion is credited.  This future-target re-anchoring is a useful
+        # heuristic but is NOT formal potential-based reward shaping for a moving target because
+        # the first term is not Phi(s_t).  With a static target it equals the standard expression.
+        # Zero the next-state term on TRUE terminals (capture/crash); a timeout is a truncation and
+        # rl_games bootstraps it through infos["time_outs"]. Disable with progress_weight = 0.0.
         if self.rw.get("progress_weight", 0.0) != 0.0:
             gamma = self.task_config.progress_gamma
             term = self.captured_now | self.crashed_now
@@ -3097,7 +3140,7 @@ class NavRLTask(BaseTask):
                 prev_dist_anchored - phi_next
             )
 
-        # roll the swept-segment / PBRS buffers forward (reset_idx re-seeds them for reset envs)
+        # roll the swept-segment / ego-progress buffers forward (reset_idx re-seeds reset envs)
         self.prev_pos[:] = pos
         self.prev_rel[:] = rel
 
@@ -4019,7 +4062,19 @@ class NavRLTask(BaseTask):
                 "target_speed_mps": target_speed_mps,
                 "target_speed_min_mps": speed_min,
                 "target_speed_max_mps": speed_max,
+                # Historical field retained for readers that already consume it.  It is a
+                # per-axis command limit, not a vector-norm limit.
                 "pursuer_max_speed_mps": float(self.task_config.max_velocity),
+                "pursuer_speed_limit_semantics": "per_axis_xy",
+                "pursuer_per_axis_speed_limit_mps": float(
+                    self.task_config.max_velocity
+                ),
+                "pursuer_max_horizontal_request_norm_mps": float(
+                    math.sqrt(2.0) * self.task_config.max_velocity
+                ),
+                "policy_output_dim": 4,
+                "policy_z_output_overwritten_by_altitude_pi": True,
+                "policy_z_persisted_in_prev_action_observation": True,
                 "oob_margin_m": float(self.vis_cfg.oob_margin),
                 "episode_len_steps": int(self.task_config.episode_len_steps),
                 "num_envs": int(self.num_envs),

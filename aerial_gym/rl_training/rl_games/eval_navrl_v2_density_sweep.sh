@@ -11,7 +11,7 @@
 # Usage:
 #   ./eval_navrl_v2_density_sweep.sh runs/ppo_XXXX_v2/nn/last_gen_ppo_ep_9000.pth
 #   ./eval_navrl_v2_density_sweep.sh <ckpt> 2049                 # episodes per cell
-#   NUM_ENVS=64 GPU4GB=1 ./eval_navrl_v2_density_sweep.sh <ckpt> # 4 GB machine (1650 Ti)
+#   GPU4GB=1 ./eval_navrl_v2_density_sweep.sh <ckpt> # 4 GB machine (1650 Ti)
 #
 # Optional outputs/conditions:
 #   NAVRL_V2_DENSITIES="70 150 210 280"
@@ -63,6 +63,14 @@ if [[ ! -f "${CKPT}" ]]; then
 fi
 CKPT="$(readlink -f -- "${CKPT}")"
 REQUESTED_DETECTOR_CHECKPOINT="${NAVRL_DETECTOR_CHECKPOINT:-}"
+if [[ -n "${REQUESTED_DETECTOR_CHECKPOINT}" ]]; then
+    if [[ "${REQUESTED_DETECTOR_CHECKPOINT}" != /* ]]; then
+        REQUESTED_DETECTOR_CHECKPOINT="${CALLER_PWD}/${REQUESTED_DETECTOR_CHECKPOINT}"
+    fi
+    if [[ -f "${REQUESTED_DETECTOR_CHECKPOINT}" ]]; then
+        REQUESTED_DETECTOR_CHECKPOINT="$(readlink -f -- "${REQUESTED_DETECTOR_CHECKPOINT}")"
+    fi
+fi
 
 # The token selector is part of the learned observation semantics. Recover it from the checkpoint
 # instead of trusting an inherited shell value; this also makes the registered cluster-vs-TTC A/B
@@ -682,6 +690,9 @@ fi
 mkdir -p "${RESULT_DIR}"
 RESULT_CSV="${RESULT_DIR}/results.csv"
 CHECKPOINT_SNAPSHOT="${RESULT_DIR}/checkpoint_snapshot.pth"
+SOURCE_SNAPSHOT_DIR="${RESULT_DIR}/source_snapshot"
+SOURCE_MANIFEST="${RESULT_DIR}/source_manifest.json"
+PYTHON_ENVIRONMENT="${RESULT_DIR}/python_environment.txt"
 
 sha256_file() {
     "${PYTHON}" - "$1" <<'PY'
@@ -696,6 +707,133 @@ with Path(sys.argv[1]).open("rb") as stream:
 print(digest.hexdigest())
 PY
 }
+
+# Snapshot the actual runtime source bytes before Isaac Gym starts.  A git commit alone is not
+# enough: a dirty worktree can be scientifically valid, but only if the evaluated bytes are
+# preserved and checked after every cell.  Include every tracked/untracked runtime text source
+# under aerial_gym (ignored runs/results/logs are excluded by git), plus a Python package manifest.
+mkdir -p "${SOURCE_SNAPSHOT_DIR}"
+"${PYTHON}" - "${SCRIPT_DIR}" "${SOURCE_SNAPSHOT_DIR}" "${SOURCE_MANIFEST}" \
+    "${PYTHON_ENVIRONMENT}" <<'PY'
+from datetime import datetime, timezone
+import hashlib
+import json
+from pathlib import Path
+import platform
+import shutil
+import subprocess
+import sys
+
+script_dir = Path(sys.argv[1]).resolve()
+snapshot_dir = Path(sys.argv[2]).resolve()
+manifest_path = Path(sys.argv[3]).resolve()
+environment_path = Path(sys.argv[4]).resolve()
+repo = Path(
+    subprocess.check_output(
+        ["git", "-C", str(script_dir), "rev-parse", "--show-toplevel"], text=True
+    ).strip()
+).resolve()
+
+def digest(path):
+    h = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+def git_paths(*args):
+    raw = subprocess.check_output(["git", "-C", str(repo), *args])
+    return [Path(item.decode("utf-8")) for item in raw.split(b"\0") if item]
+
+extensions = {".py", ".pyx", ".sh", ".yaml", ".yml", ".toml", ".json", ".csv"}
+paths = set(git_paths("ls-files", "-z", "--", "aerial_gym"))
+paths.update(
+    git_paths("ls-files", "--others", "--exclude-standard", "-z", "--", "aerial_gym")
+)
+paths = sorted(
+    path for path in paths
+    if path.suffix.lower() in extensions and "__pycache__" not in path.parts
+)
+if not paths:
+    raise SystemExit("[eval_v2] no runtime sources found for the provenance snapshot")
+
+entries = []
+for relative in paths:
+    source = (repo / relative).resolve()
+    if not source.is_file() or repo not in source.parents:
+        raise SystemExit(f"[eval_v2] invalid runtime source path: {relative}")
+    destination = snapshot_dir / relative
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(source, destination)
+    entries.append(
+        {
+            "path": relative.as_posix(),
+            "sha256": digest(source),
+            "size_bytes": source.stat().st_size,
+            "snapshot": destination.relative_to(manifest_path.parent).as_posix(),
+        }
+    )
+
+try:
+    freeze = subprocess.check_output(
+        [sys.executable, "-m", "pip", "freeze", "--all"], text=True, stderr=subprocess.STDOUT
+    )
+except subprocess.CalledProcessError as exc:
+    freeze = f"pip freeze failed ({exc.returncode})\n{exc.output}"
+environment_text = (
+    f"python_executable={Path(sys.executable).resolve()}\n"
+    f"python_version={sys.version.replace(chr(10), ' ')}\n"
+    f"platform={platform.platform()}\n"
+    "\n[pip-freeze]\n"
+    + freeze
+)
+environment_path.write_text(environment_text, encoding="utf-8")
+
+git_status = subprocess.check_output(
+    ["git", "-C", str(repo), "status", "--porcelain=v1", "--untracked-files=all"],
+    text=True,
+).splitlines()
+manifest = {
+    "schema_version": 2,
+    "created_at_utc": datetime.now(timezone.utc).isoformat(),
+    "repository_root": str(repo),
+    "git_commit": subprocess.check_output(
+        ["git", "-C", str(repo), "rev-parse", "HEAD"], text=True
+    ).strip(),
+    "git_dirty": bool(git_status),
+    "git_status": git_status,
+    "python_environment": environment_path.relative_to(manifest_path.parent).as_posix(),
+    "python_environment_sha256": digest(environment_path),
+    "runtime_file_count": len(entries),
+    "runtime_files": entries,
+}
+manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+for path in [environment_path, *snapshot_dir.rglob("*")]:
+    if path.is_file():
+        path.chmod(0o444)
+manifest_path.chmod(0o444)
+PY
+SOURCE_MANIFEST_SHA256="$(sha256_file "${SOURCE_MANIFEST}")"
+export NAVRL_EVAL_SOURCE_MANIFEST="${SOURCE_MANIFEST}"
+export NAVRL_EVAL_SOURCE_MANIFEST_SHA256="${SOURCE_MANIFEST_SHA256}"
+export NAVRL_EVAL_SOURCE_SNAPSHOT_DIR="${SOURCE_SNAPSHOT_DIR}"
+
+# Learned-detector bytes are an external artifact rather than repository source.  Evaluate an
+# immutable snapshot just like the PPO checkpoint; the expected SHA remains the artifact identity.
+if [[ -n "${NAVRL_DETECTOR_CHECKPOINT:-}" ]]; then
+    SOURCE_DETECTOR_CHECKPOINT="${NAVRL_DETECTOR_CHECKPOINT}"
+    DETECTOR_SNAPSHOT="${RESULT_DIR}/detector_snapshot.pth"
+    cp --reflink=auto -- "${SOURCE_DETECTOR_CHECKPOINT}" "${DETECTOR_SNAPSHOT}"
+    chmod 0444 "${DETECTOR_SNAPSHOT}"
+    if [[ "$(sha256_file "${DETECTOR_SNAPSHOT}")" != "${NAVRL_EXPECTED_DETECTOR_SHA256}" ]]; then
+        echo "[eval_v2] detector snapshot SHA-256 mismatch; refusing evaluation." >&2
+        exit 3
+    fi
+    export NAVRL_EVAL_SOURCE_DETECTOR="${SOURCE_DETECTOR_CHECKPOINT}"
+    export NAVRL_DETECTOR_CHECKPOINT="${DETECTOR_SNAPSHOT}"
+else
+    export NAVRL_EVAL_SOURCE_DETECTOR=""
+fi
 
 # Evaluate an immutable byte snapshot and bind it back to the named source checkpoint.  Checking
 # the source both before and after every cell prevents a path swap from attaching an old score to
@@ -758,6 +896,28 @@ def sha256_file(path):
         for chunk in iter(lambda: stream.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+source_manifest_path = Path(os.environ["NAVRL_EVAL_SOURCE_MANIFEST"]).resolve()
+source_manifest_sha256 = os.environ["NAVRL_EVAL_SOURCE_MANIFEST_SHA256"]
+if sha256_file(source_manifest_path) != source_manifest_sha256:
+    raise SystemExit("[eval_v2] runtime source manifest changed during evaluation")
+source_manifest = json.loads(source_manifest_path.read_text(encoding="utf-8"))
+if source_manifest.get("schema_version") != 2:
+    raise SystemExit("[eval_v2] unsupported runtime source manifest schema")
+repository_root = Path(source_manifest["repository_root"]).resolve()
+for entry in source_manifest.get("runtime_files") or []:
+    original = (repository_root / entry["path"]).resolve()
+    snapshot = (source_manifest_path.parent / entry["snapshot"]).resolve()
+    expected = entry["sha256"]
+    if not original.is_file() or sha256_file(original) != expected:
+        raise SystemExit(f"[eval_v2] runtime source changed during evaluation: {entry['path']}")
+    if not snapshot.is_file() or sha256_file(snapshot) != expected:
+        raise SystemExit(f"[eval_v2] runtime source snapshot changed: {entry['snapshot']}")
+environment_path = (
+    source_manifest_path.parent / source_manifest["python_environment"]
+).resolve()
+if sha256_file(environment_path) != source_manifest["python_environment_sha256"]:
+    raise SystemExit("[eval_v2] Python environment manifest changed during evaluation")
 
 with open(json_path, encoding="utf-8") as stream:
     payload = json.load(stream)
@@ -859,6 +1019,21 @@ else:
             )
 if abs(float(condition.get("oob_margin_m", -1.0)) - 1.0) > 1e-6:
     raise SystemExit("[eval_v2] bulk JSON OOB margin is not the trained 1.0 m")
+if condition.get("pursuer_speed_limit_semantics") != "per_axis_xy":
+    raise SystemExit("[eval_v2] pursuer speed limit is not recorded as per-axis XY")
+if abs(float(condition.get("pursuer_per_axis_speed_limit_mps", -1.0)) - 2.5) > 1e-6:
+    raise SystemExit("[eval_v2] pursuer per-axis speed limit is not 2.5 m/s")
+if abs(
+    float(condition.get("pursuer_max_horizontal_request_norm_mps", -1.0))
+    - math.sqrt(2.0) * 2.5
+) > 1e-6:
+    raise SystemExit("[eval_v2] pursuer maximum XY request norm is not sqrt(2)*2.5 m/s")
+if int(condition.get("policy_output_dim", -1)) != 4:
+    raise SystemExit("[eval_v2] policy output dimension is not 4")
+if condition.get("policy_z_output_overwritten_by_altitude_pi") is not True:
+    raise SystemExit("[eval_v2] policy-z altitude-PI overwrite is not attested")
+if condition.get("policy_z_persisted_in_prev_action_observation") is not True:
+    raise SystemExit("[eval_v2] indirect policy-z prev_action channel is not attested")
 if Path(payload.get("checkpoint", "")).resolve() != Path(checkpoint).resolve():
     raise SystemExit("[eval_v2] bulk JSON checkpoint does not match the requested checkpoint")
 if sha256_file(checkpoint) != checkpoint_sha256:
@@ -877,6 +1052,17 @@ payload.update(
         "evaluated_checkpoint_snapshot_sha256": checkpoint_snapshot_sha256,
         "evaluator_script": str(Path(evaluator_script).resolve()),
         "evaluator_script_sha256": evaluator_script_sha256,
+        "runtime_source_manifest": str(source_manifest_path),
+        "runtime_source_manifest_sha256": source_manifest_sha256,
+        "runtime_source_snapshot": str(
+            Path(os.environ["NAVRL_EVAL_SOURCE_SNAPSHOT_DIR"]).resolve()
+        ),
+        "runtime_git_commit": source_manifest["git_commit"],
+        "runtime_git_dirty": bool(source_manifest["git_dirty"]),
+        "python_environment_manifest": str(environment_path),
+        "python_environment_manifest_sha256": source_manifest[
+            "python_environment_sha256"
+        ],
         "evaluation_receipt": str(Path(receipt_path).resolve()),
     }
 )
@@ -924,6 +1110,21 @@ if speed_governor.get("sensor_only") is not True or speed_governor.get("directio
 if int(speed_governor.get("samples", 0)) <= 0:
     raise SystemExit("[eval_v2] speed governor diagnostics contain no samples")
 
+# A contract field is not evidence by itself.  Prove from the per-outcome diagnostic that every
+# measured timeout occurred on action 600.  This catches a regression back to the legacy > limit
+# (all legacy timeout summaries are exactly 601).
+timeout_steps = (speed_governor.get("outcome_steps") or {}).get("timeout") or {}
+if counts[2] > 0:
+    if int(timeout_steps.get("count", -1)) != counts[2]:
+        raise SystemExit("[eval_v2] timeout-step diagnostic does not account for every timeout")
+    for field in ("mean", "p10", "p50", "p90"):
+        if abs(float(timeout_steps.get(field, -1.0)) - 600.0) > 1e-9:
+            raise SystemExit(
+                f"[eval_v2] timeout {field} is not exactly action 600: {timeout_steps.get(field)!r}"
+            )
+elif int(timeout_steps.get("count", 0)) != 0:
+    raise SystemExit("[eval_v2] timeout-step diagnostic has samples but outcome timeout count is zero")
+
 def action_y(name):
     values = action.get(name) or []
     if len(values) < 2:
@@ -936,7 +1137,16 @@ def action_y(name):
 # Retain a compact evaluator-level contract beside the task's measured condition so downstream
 # plotting can validate the whole sweep without relying on shell history.
 payload["v2_evaluation_contract"] = {
-    "schema_version": 1,
+    "schema_version": 2,
+    "episode_limit_steps": 600,
+    "episode_limit_comparator": "gte",
+    "timeout_observed_at_step": 600,
+    "pursuer_speed_limit_semantics": "per_axis_xy",
+    "pursuer_per_axis_speed_limit_mps": 2.5,
+    "pursuer_max_horizontal_request_norm_mps": math.sqrt(2.0) * 2.5,
+    "policy_output_dim": 4,
+    "policy_z_output_overwritten_by_altitude_pi": True,
+    "policy_z_persisted_in_prev_action_observation": True,
     "runtime_sim": os.environ["AERIAL_GYM_SIM_NAME"],
     "runtime_profile": os.environ["NAVRL_EVAL_PROFILE"],
     "runtime_num_envs": int(os.environ["NUM_ENVS"]),
@@ -958,6 +1168,11 @@ payload["v2_evaluation_contract"] = {
     # cannot say which arm a number came from.
     "perception_perturb": os.environ.get("NAVRL_PERCEPTION_PERTURB", "0") == "1",
     "perception_detection_dropout": float(os.environ.get("NAVRL_DETECTION_DROPOUT", 0.0)),
+    "perception_detection_dropout_active": (
+        float(os.environ.get("NAVRL_DETECTION_DROPOUT", 0.0))
+        if os.environ.get("NAVRL_PERCEPTION_PERTURB", "0") == "1"
+        else 0.0
+    ),
     "perception_detection_latency_s": float(os.environ.get("NAVRL_DETECTION_LATENCY_S", 0.0)),
     "perception_range_error_m": float(os.environ.get("NAVRL_RANGE_ERROR_M", 0.0)),
     "perception_latency_compensate": os.environ.get("NAVRL_LATENCY_COMPENSATE", "0") == "1",
@@ -1002,6 +1217,11 @@ payload["v2_evaluation_contract"] = {
     "detector_threshold": float(os.environ["NAVRL_DETECTOR_THRESHOLD"]),
     "perception_perturb": bool(int(os.environ["NAVRL_PERCEPTION_PERTURB"])),
     "detection_dropout": float(os.environ["NAVRL_DETECTION_DROPOUT"]),
+    "detection_dropout_active": (
+        float(os.environ["NAVRL_DETECTION_DROPOUT"])
+        if bool(int(os.environ["NAVRL_PERCEPTION_PERTURB"]))
+        else 0.0
+    ),
     "detection_latency_s": float(os.environ["NAVRL_DETECTION_LATENCY_S"]),
     "range_error_m": float(os.environ["NAVRL_RANGE_ERROR_M"]),
     "rgb_noise_std": float(os.environ["NAVRL_RGB_NOISE_STD"]),
@@ -1014,7 +1234,7 @@ payload["v2_evaluation_contract"] = {
 Path(json_path).write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 receipt = {
-    "schema_version": 1,
+    "schema_version": 2,
     "producer": "eval_navrl_v2_density_sweep.sh",
     "started_at_utc": started_at_utc,
     "completed_at_utc": datetime.now(timezone.utc).isoformat(),
@@ -1029,6 +1249,20 @@ receipt = {
     "log_sha256": sha256_file(log_path),
     "evaluator_script": str(Path(evaluator_script).resolve()),
     "evaluator_script_sha256": evaluator_script_sha256,
+    "runtime_source_manifest": str(source_manifest_path),
+    "runtime_source_manifest_sha256": source_manifest_sha256,
+    "runtime_source_file_count": int(source_manifest["runtime_file_count"]),
+    "runtime_git_commit": source_manifest["git_commit"],
+    "runtime_git_dirty": bool(source_manifest["git_dirty"]),
+    "python_environment_manifest": str(environment_path),
+    "python_environment_manifest_sha256": source_manifest[
+        "python_environment_sha256"
+    ],
+    "source_detector_checkpoint": os.environ.get("NAVRL_EVAL_SOURCE_DETECTOR", ""),
+    "evaluated_detector_snapshot": os.environ.get("NAVRL_DETECTOR_CHECKPOINT", ""),
+    "evaluated_detector_snapshot_sha256": os.environ.get(
+        "NAVRL_EXPECTED_DETECTOR_SHA256", ""
+    ),
     "bars": expected_bars,
     "seed": expected_seed,
     "requested_episodes": expected_games,
