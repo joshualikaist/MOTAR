@@ -399,6 +399,67 @@ class LidarRangeOnlyUpdate(unittest.TestCase):
         self.assertEqual(module.lidar_assoc_gate_m, 0.0)
 
 
+class LidarSilentCorrect(unittest.TestCase):
+    """H4: the range correction stays; the 'visible, just seen' flags must go."""
+
+    COLUMNS = [30, 33, 36, 39, 42, 45]
+
+    def _run(self, silent):
+        module = _module(0.0, "off")
+        module.lidar_silent_correct = silent
+        lidar = torch.full((1, _PERCEPTION.VBEAMS * _PERCEPTION.HBEAMS), 4.0)
+        zero_bin = int(torch.argmin(module._lidar_angles.abs()))
+        lidar.view(1, _PERCEPTION.VBEAMS, _PERCEPTION.HBEAMS)[:, :, zero_bin] = 3.0
+        pos, vel = torch.zeros(1, 3), torch.zeros(1, 3)
+        quat = torch.tensor([[0.0, 0.0, 0.0, 1.0]])
+        diag = None
+        for step, col in enumerate(self.COLUMNS):
+            rgb, depth = _frame(col, 3.0)
+            if step >= 3:
+                rgb = torch.full_like(rgb, 0.15)  # camera drops the target
+            _, diag = module.observe(
+                rgb, depth, lidar.clone(), pos, vel, quat,
+                torch.zeros(1), torch.zeros(1, 4), 2.0, 1.0, training=False,
+            )
+        return module, diag
+
+    def test_flags_are_silenced_but_the_state_is_still_corrected(self):
+        loud, loud_diag = self._run(False)
+        quiet, quiet_diag = self._run(True)
+        # Flags: the loud path claims sight through the association; the quiet one does not.
+        self.assertTrue(bool(loud_diag["visible"][0]))
+        self.assertFalse(bool(quiet_diag["visible"][0]))
+        self.assertGreater(float(loud_diag["track_age"][0]), -1)  # present in diagnostics
+        self.assertGreater(
+            float(quiet_diag["track_age"][0]), float(loud_diag["track_age"][0])
+        )
+        # State: both trackers received the SAME range corrections, so they must agree --
+        # this is exactly what separates H4 from H2, whose tracker coasts uncorrected.
+        self.assertTrue(bool(torch.allclose(loud.tracker.state, quiet.tracker.state)))
+
+    def test_differs_from_no_assoc_in_state_only(self):
+        quiet, _ = self._run(True)
+        coast = _module(0.0, "off")
+        coast.lidar_target_assoc = False
+        lidar = torch.full((1, _PERCEPTION.VBEAMS * _PERCEPTION.HBEAMS), 4.0)
+        zero_bin = int(torch.argmin(coast._lidar_angles.abs()))
+        lidar.view(1, _PERCEPTION.VBEAMS, _PERCEPTION.HBEAMS)[:, :, zero_bin] = 3.0
+        pos, vel = torch.zeros(1, 3), torch.zeros(1, 3)
+        quat = torch.tensor([[0.0, 0.0, 0.0, 1.0]])
+        for step, col in enumerate(self.COLUMNS):
+            rgb, depth = _frame(col, 3.0)
+            if step >= 3:
+                rgb = torch.full_like(rgb, 0.15)
+            coast.observe(
+                rgb, depth, lidar.clone(), pos, vel, quat,
+                torch.zeros(1), torch.zeros(1, 4), 2.0, 1.0, training=False,
+            )
+        self.assertFalse(bool(torch.allclose(quiet.tracker.state, coast.tracker.state)))
+
+    def test_default_off(self):
+        self.assertFalse(_module(0.0, "off").lidar_silent_correct)
+
+
 class LidarAssociationGate(unittest.TestCase):
     """A constant gate must decouple the association window from the track covariance."""
 

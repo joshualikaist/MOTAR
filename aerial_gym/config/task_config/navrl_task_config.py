@@ -250,6 +250,12 @@ class task_config:
         # mis-association window with it, which measurably cancels that fix. Set a constant gate
         # in metres to decouple the two; 0 keeps the covariance-scaled behaviour.
         lidar_assoc_gate_m = _env_float("NAVRL_LIDAR_ASSOC_GATE_M", 0.0)
+        # H4 (WORKLOG 2026-08-10): correct() resets time-since-seen and observe() ORs the
+        # association into fused visibility, so the policy is told "visible, just seen" about a
+        # measurement whose bearing is the filter's own prediction. This keeps the range
+        # correction but silences those flags; if it matches H2's gain, the flags are the
+        # channel and the state update itself is innocent.
+        lidar_silent_correct = _env_bool("NAVRL_LIDAR_SILENT_CORRECT", False)
         rgb_noise_std = _env_float("NAVRL_RGB_NOISE_STD", 0.015)
         depth_noise_std = _env_float("NAVRL_DEPTH_NOISE_STD", 0.02)
         # [static VBEAMS*HBEAMS | obstacle history 5*MAX_OBSTACLES*12 | robot history 5x10 |

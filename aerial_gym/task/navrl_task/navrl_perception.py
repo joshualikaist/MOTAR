@@ -504,7 +504,7 @@ class BatchedConstantVelocityTracker:
         self.active[expired] = False
         return self.state, self.cov, self.active, self.age
 
-    def correct(self, measurement_world, visible, measurement_var, measurement_cov=None):
+    def correct(self, measurement_world, visible, measurement_var, measurement_cov=None, reset_age=True):
         """Apply a second sensor correction without advancing time again.
 
         `measurement_cov` supplies a full 3x3 noise matrix instead of a diagonal one. A sensor
@@ -530,7 +530,8 @@ class BatchedConstantVelocityTracker:
             self.cov[update] = ikh.matmul(p).matmul(ikh.transpose(1, 2)) + k.matmul(r).matmul(
                 k.transpose(1, 2)
             )
-            self.age[update] = 0.0
+            if reset_age:
+                self.age[update] = 0.0
 
 
 class NavRLPerceptionModule:
@@ -595,6 +596,11 @@ class NavRLPerceptionModule:
         self.lidar_range_only_update = bool(getattr(cfg, "lidar_range_only_update", False))
         # >0 replaces the covariance-scaled association gate with a constant, in metres.
         self.lidar_assoc_gate_m = float(getattr(cfg, "lidar_assoc_gate_m", 0.0))
+        # H4 flag probe: keep the LiDAR range correction but stop it from reporting the target
+        # as SEEN -- no age reset, no visibility, no confidence. Separates the state update
+        # (measurably ~harmless: H3/gate arms) from the "visible, just seen" flags the policy
+        # reads about a bearing the filter predicted itself.
+        self.lidar_silent_correct = bool(getattr(cfg, "lidar_silent_correct", False))
         self.rgb_noise_std = float(getattr(cfg, "rgb_noise_std", 0.015))
         self.depth_noise_std = float(getattr(cfg, "depth_noise_std", 0.02))
         self.history_stride = max(1, int(round(float(cfg.history_interval_s) / self.step_dt)))
@@ -1100,7 +1106,13 @@ class NavRLPerceptionModule:
                 lidar_var[:, 0].view(-1, 1, 1) * outer
                 + LIDAR_UNOBSERVED_SIGMA_M**2 * (eye - outer)
             )
-        self.tracker.correct(measurement_world, valid, lidar_var, measurement_cov=lidar_cov)
+        self.tracker.correct(
+            measurement_world,
+            valid,
+            lidar_var,
+            measurement_cov=lidar_cov,
+            reset_age=not self.lidar_silent_correct,
+        )
         confidence = torch.exp(
             -(measured_surface - predicted_surface_range).abs() / gate.clamp(min=1e-3)
         ) * valid.float()
@@ -1209,6 +1221,11 @@ class NavRLPerceptionModule:
             lidar_confidence = torch.zeros_like(confidence)
             lidar_surface = torch.zeros_like(surface_range)
             lidar_bearing = torch.zeros_like(bearing)
+        if self.lidar_silent_correct:
+            # The correction has already been applied inside _associate_lidar_target; from here
+            # on the association contributes no visibility, no confidence, and no map edits.
+            lidar_visible = torch.zeros_like(lidar_visible)
+            lidar_confidence = torch.zeros_like(lidar_confidence)
         fused_visible = visible | lidar_visible
         fused_surface = torch.where(lidar_visible, lidar_surface, surface_range)
         fused_bearing = torch.where(lidar_visible, lidar_bearing, bearing)
