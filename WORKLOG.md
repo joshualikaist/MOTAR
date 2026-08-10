@@ -7186,3 +7186,8 @@ detector 사용으로 소개하고 ep24000/off 밀도 곡선을 current candidat
 current candidate의 ep25000+riskcap curve로 바꾸되 legacy 601-action archive임을 전면에 표시했고, v1
 `v_max 2.5 m/s`도 per-axis/XY 3.54 m/s로 정정했다. `OPERATIONS.md`와 `RESEARCH_PLAN.md`에는 legacy
 601/no-bootstrap 한계, ego-progress 의미, schema-v2 재측정 gate를 추가했다.
+
+최종 변경은 `4e27dee`(코드·평가기·대시보드 감사)와 `34bd585`(README·운영·연구계획 정합화)로
+`origin/research/navrl-env`에 push했다. 공개 Pages `https://joshualikaist.github.io/MOTAR/status/`는 HTTP
+200, Contract panel과 cache key `20260810b`를 반환했고, 원격 `status.json`은 로컬 snapshot과 byte-level
+JSON 동등하며 z→`prev_action` 계약까지 포함하는 것을 확인했다.
