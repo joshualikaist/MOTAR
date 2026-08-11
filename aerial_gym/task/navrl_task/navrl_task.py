@@ -1403,6 +1403,30 @@ class NavRLTask(BaseTask):
             "cfg_depth_noise_std": float(
                 getattr(self.perception_cfg, "depth_noise_std", 0.0)
             ),
+            "cfg_appearance_hue_deg": float(
+                getattr(self.vis_cfg, "appearance_hue_deg", 0.0)
+            ),
+            "cfg_appearance_light_gain": float(
+                getattr(self.vis_cfg, "appearance_light_gain", 0.0)
+            ),
+            "cfg_appearance_albedo_jitter": float(
+                getattr(self.vis_cfg, "appearance_albedo_jitter", 0.0)
+            ),
+            "cfg_appearance_texture_std": float(
+                getattr(self.vis_cfg, "appearance_texture_std", 0.0)
+            ),
+            "cfg_appearance_motion_blur": float(
+                getattr(self.vis_cfg, "appearance_motion_blur", 0.0)
+            ),
+            "cfg_camera_mount_rot_deg": float(
+                getattr(self.vis_cfg, "camera_mount_rot_deg", 0.0)
+            ),
+            "cfg_camera_mount_trans_m": float(
+                getattr(self.vis_cfg, "camera_mount_trans_m", 0.0)
+            ),
+            "cfg_camera_fov_scale_err": float(
+                getattr(self.vis_cfg, "camera_fov_scale_err", 0.0)
+            ),
             "cfg_target_motion_model": TARGET_MOTION_MODEL,
             "cfg_target_pattern": str(self.tm.pattern),
             "cfg_target_speed_min": float(getattr(self.tm, "speed_min", 0.0)),
@@ -2080,6 +2104,46 @@ class NavRLTask(BaseTask):
                     "cfg_depth_noise_std",
                     float(getattr(self.perception_cfg, "depth_noise_std", 0.0)),
                     "NAVRL_DEPTH_NOISE_STD",
+                ),
+                (
+                    "cfg_appearance_hue_deg",
+                    float(getattr(self.vis_cfg, "appearance_hue_deg", 0.0)),
+                    "NAVRL_APP_HUE_DEG",
+                ),
+                (
+                    "cfg_appearance_light_gain",
+                    float(getattr(self.vis_cfg, "appearance_light_gain", 0.0)),
+                    "NAVRL_APP_LIGHT_GAIN",
+                ),
+                (
+                    "cfg_appearance_albedo_jitter",
+                    float(getattr(self.vis_cfg, "appearance_albedo_jitter", 0.0)),
+                    "NAVRL_APP_ALBEDO_JITTER",
+                ),
+                (
+                    "cfg_appearance_texture_std",
+                    float(getattr(self.vis_cfg, "appearance_texture_std", 0.0)),
+                    "NAVRL_APP_TEXTURE_STD",
+                ),
+                (
+                    "cfg_appearance_motion_blur",
+                    float(getattr(self.vis_cfg, "appearance_motion_blur", 0.0)),
+                    "NAVRL_APP_MOTION_BLUR",
+                ),
+                (
+                    "cfg_camera_mount_rot_deg",
+                    float(getattr(self.vis_cfg, "camera_mount_rot_deg", 0.0)),
+                    "NAVRL_CAM_MOUNT_ROT_DEG",
+                ),
+                (
+                    "cfg_camera_mount_trans_m",
+                    float(getattr(self.vis_cfg, "camera_mount_trans_m", 0.0)),
+                    "NAVRL_CAM_MOUNT_TRANS_M",
+                ),
+                (
+                    "cfg_camera_fov_scale_err",
+                    float(getattr(self.vis_cfg, "camera_fov_scale_err", 0.0)),
+                    "NAVRL_CAM_FOV_SCALE_ERR",
                 ),
                 # Arena / task version. A mismatch here is not an "input scaling" bug but a
                 # DIFFERENT TASK (v1 24 m pursuit vs v2 40 m search) that loads without error

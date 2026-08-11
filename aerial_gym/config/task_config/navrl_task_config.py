@@ -144,6 +144,24 @@ class task_config:
         camera_target_radius = 0.15 # [m], matches the 0.30 m target-drone footprint
         camera_min_target_pixels = 1
         camera_translation = [0.10, 0.0, 0.03]  # vehicle frame, forward/left/up [m]
+        # -- appearance domain shift (검증 2, WORKLOG 2026-08-12). The renderer paints a flat
+        # pure-red target over a depth-shaded neutral background, so the pixel classes are
+        # trivially separable; these knobs measure how much of the detector results survive when
+        # that stops being true. All default 0 = bit-identical nominal render. Per-EPISODE draws
+        # (resampled in detector.reset_idx) except the intrinsics error, which is per-run because
+        # the ray table is built once.
+        appearance_hue_deg = _env_float("NAVRL_APP_HUE_DEG", 0.0)        # target hue rotation, ±deg
+        appearance_light_gain = _env_float("NAVRL_APP_LIGHT_GAIN", 0.0)  # global illumination, ±fraction
+        appearance_albedo_jitter = _env_float("NAVRL_APP_ALBEDO_JITTER", 0.0)  # bar/background reflectance, ±fraction
+        appearance_texture_std = _env_float("NAVRL_APP_TEXTURE_STD", 0.0)  # static per-pixel luminance noise std
+        appearance_motion_blur = _env_float("NAVRL_APP_MOTION_BLUR", 0.0)  # EMA weight of the previous frame [0,1)
+        # Calibration error, RENDERER-ONLY by construction: the perception module keeps its own
+        # nominal intrinsics/extrinsics copy (navrl_perception.py), so perturbing the renderer
+        # copy makes every downstream consumer back-project with the wrong model -- which is what
+        # a real mis-calibration does. Perturbing both sides would cancel.
+        camera_mount_rot_deg = _env_float("NAVRL_CAM_MOUNT_ROT_DEG", 0.0)   # mount rotation error, ±deg per env
+        camera_mount_trans_m = _env_float("NAVRL_CAM_MOUNT_TRANS_M", 0.0)   # mount translation error, ±m per env
+        camera_fov_scale_err = _env_float("NAVRL_CAM_FOV_SCALE_ERR", 0.0)   # FOV scale error, fraction, per run
         # Full-scene depth supplied to the actor. Kept lower-resolution than target detection to
         # preserve vectorized PPO throughput while still adding forward obstacle geometry.
         camera_obstacle_width = 40

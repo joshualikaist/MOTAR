@@ -402,6 +402,15 @@ export NAVRL_LIDAR_TARGET_ASSOC="${NAVRL_LIDAR_TARGET_ASSOC:-1}"
 export NAVRL_LIDAR_RANGE_ONLY_UPDATE="${NAVRL_LIDAR_RANGE_ONLY_UPDATE:-0}"
 export NAVRL_LIDAR_ASSOC_GATE_M="${NAVRL_LIDAR_ASSOC_GATE_M:-0}"
 export NAVRL_LIDAR_SILENT_CORRECT="${NAVRL_LIDAR_SILENT_CORRECT:-0}"
+# Appearance domain-shift knobs (검증 2): pinned to nominal unless the arm sets them.
+export NAVRL_APP_HUE_DEG="${NAVRL_APP_HUE_DEG:-0}"
+export NAVRL_APP_LIGHT_GAIN="${NAVRL_APP_LIGHT_GAIN:-0}"
+export NAVRL_APP_ALBEDO_JITTER="${NAVRL_APP_ALBEDO_JITTER:-0}"
+export NAVRL_APP_TEXTURE_STD="${NAVRL_APP_TEXTURE_STD:-0}"
+export NAVRL_APP_MOTION_BLUR="${NAVRL_APP_MOTION_BLUR:-0}"
+export NAVRL_CAM_MOUNT_ROT_DEG="${NAVRL_CAM_MOUNT_ROT_DEG:-0}"
+export NAVRL_CAM_MOUNT_TRANS_M="${NAVRL_CAM_MOUNT_TRANS_M:-0}"
+export NAVRL_CAM_FOV_SCALE_ERR="${NAVRL_CAM_FOV_SCALE_ERR:-0}"
 export NAVRL_RGB_NOISE_STD="${NAVRL_RGB_NOISE_STD:-${RGB_NOISE_STD}}"
 export NAVRL_DEPTH_NOISE_STD="${NAVRL_DEPTH_NOISE_STD:-${DEPTH_NOISE_STD}}"
 export NAVRL_OOB_MARGIN=1.0
@@ -1216,6 +1225,14 @@ payload["v2_evaluation_contract"] = {
     "perception_lidar_range_only_update": os.environ.get("NAVRL_LIDAR_RANGE_ONLY_UPDATE", "0") == "1",
     "perception_lidar_assoc_gate_m": float(os.environ.get("NAVRL_LIDAR_ASSOC_GATE_M", 0.0)),
     "perception_lidar_silent_correct": os.environ.get("NAVRL_LIDAR_SILENT_CORRECT", "0") == "1",
+    "appearance_appearance_hue_deg": float(os.environ.get("NAVRL_APP_HUE_DEG", 0.0)),
+    "appearance_appearance_light_gain": float(os.environ.get("NAVRL_APP_LIGHT_GAIN", 0.0)),
+    "appearance_appearance_albedo_jitter": float(os.environ.get("NAVRL_APP_ALBEDO_JITTER", 0.0)),
+    "appearance_appearance_texture_std": float(os.environ.get("NAVRL_APP_TEXTURE_STD", 0.0)),
+    "appearance_appearance_motion_blur": float(os.environ.get("NAVRL_APP_MOTION_BLUR", 0.0)),
+    "camera_mount_rot_deg": float(os.environ.get("NAVRL_CAM_MOUNT_ROT_DEG", 0.0)),
+    "camera_mount_trans_m": float(os.environ.get("NAVRL_CAM_MOUNT_TRANS_M", 0.0)),
+    "camera_fov_scale_err": float(os.environ.get("NAVRL_CAM_FOV_SCALE_ERR", 0.0)),
     "sim_physics_contract": os.environ["NAVRL_SIM_PHYSICS_CONTRACT"],
     "runtime_sim_config_class": condition["runtime_sim_config_class"],
     "physics_dt_s": float(condition["physics_dt_s"]),
@@ -1316,6 +1333,14 @@ receipt = {
     "perception_lidar_range_only_update": os.environ.get("NAVRL_LIDAR_RANGE_ONLY_UPDATE", "0") == "1",
     "perception_lidar_assoc_gate_m": float(os.environ.get("NAVRL_LIDAR_ASSOC_GATE_M", 0.0)),
     "perception_lidar_silent_correct": os.environ.get("NAVRL_LIDAR_SILENT_CORRECT", "0") == "1",
+    "appearance_appearance_hue_deg": float(os.environ.get("NAVRL_APP_HUE_DEG", 0.0)),
+    "appearance_appearance_light_gain": float(os.environ.get("NAVRL_APP_LIGHT_GAIN", 0.0)),
+    "appearance_appearance_albedo_jitter": float(os.environ.get("NAVRL_APP_ALBEDO_JITTER", 0.0)),
+    "appearance_appearance_texture_std": float(os.environ.get("NAVRL_APP_TEXTURE_STD", 0.0)),
+    "appearance_appearance_motion_blur": float(os.environ.get("NAVRL_APP_MOTION_BLUR", 0.0)),
+    "camera_mount_rot_deg": float(os.environ.get("NAVRL_CAM_MOUNT_ROT_DEG", 0.0)),
+    "camera_mount_trans_m": float(os.environ.get("NAVRL_CAM_MOUNT_TRANS_M", 0.0)),
+    "camera_fov_scale_err": float(os.environ.get("NAVRL_CAM_FOV_SCALE_ERR", 0.0)),
 }
 receipt_file = Path(receipt_path)
 temporary_receipt = receipt_file.with_name(

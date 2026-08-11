@@ -18,7 +18,7 @@ import torch
 import torch.nn.functional as F
 import warp as wp
 
-from aerial_gym.utils.math import quat_rotate
+from aerial_gym.utils.math import quat_mul, quat_rotate
 
 
 @wp.kernel
@@ -97,6 +97,30 @@ def _render_target_camera_kernel(
                 target_depth[env_id, row, col] = t_target
 
 
+def _rotate_hue_rgb(rgb, radians):
+    """Rotate RGB rows (N,3) about the grey axis by per-row angles (N,) -- a pure hue shift.
+
+    Rodrigues rotation about (1,1,1)/sqrt(3): luminance-neutral, so it changes WHAT colour the
+    target is without changing how bright it is. Zero angle returns the input exactly.
+    """
+    axis = rgb.new_tensor([1.0, 1.0, 1.0]) / math.sqrt(3.0)
+    cos = torch.cos(radians).unsqueeze(1)
+    sin = torch.sin(radians).unsqueeze(1)
+    cross = torch.linalg.cross(axis.expand_as(rgb), rgb, dim=1)
+    dot = (rgb * axis).sum(dim=1, keepdim=True)
+    return (rgb * cos + cross * sin + axis * dot * (1.0 - cos)).clamp(0.0, 1.0)
+
+
+def _small_random_quat(max_angle_rad, n, device):
+    """n random unit quaternions (xyzw) with rotation angle uniform in [-max, +max]."""
+    axis = torch.randn(n, 3, device=device)
+    axis = axis / axis.norm(dim=1, keepdim=True).clamp(min=1e-9)
+    half = (torch.rand(n, device=device) * 2.0 - 1.0) * max_angle_rad * 0.5
+    return torch.cat(
+        [axis * torch.sin(half).unsqueeze(1), torch.cos(half).unsqueeze(1)], dim=1
+    )
+
+
 class NavRLTargetDetector:
     """Pixel-derived camera detection plus short detector-side tracking memory."""
 
@@ -125,6 +149,16 @@ class NavRLTargetDetector:
         self.cx = (self.width - 1) * 0.5
         self.cy = (self.height - 1) * 0.5
 
+        # Renderer-side FOV calibration error: the RAY TABLE is built from a scaled FOV while
+        # self.fx/fy above (used by consumers to interpret pixels) stay nominal -- so every
+        # back-projection downstream uses the wrong camera model, exactly like a real
+        # mis-calibration. Per-run, because the table is baked once and uploaded to Warp.
+        self.fov_scale_err = float(getattr(vis_cfg, "camera_fov_scale_err", 0.0))
+        render_half_hfov = self.half_hfov * (1.0 + self.fov_scale_err)
+        render_half_vfov = self.half_vfov * (1.0 + self.fov_scale_err)
+        render_fx = self.width / (2.0 * math.tan(render_half_hfov))
+        render_fy = self.height / (2.0 * math.tan(render_half_vfov))
+
         # Vehicle camera frame: +x forward, +y left, +z up. Image u grows right and v down.
         rows = torch.arange(self.height, device=device, dtype=torch.float32)
         cols = torch.arange(self.width, device=device, dtype=torch.float32)
@@ -132,8 +166,8 @@ class NavRLTargetDetector:
         rays = torch.stack(
             [
                 torch.ones_like(uu),
-                -(uu - self.cx) / self.fx,
-                -(vv - self.cy) / self.fy,
+                -(uu - self.cx) / render_fx,
+                -(vv - self.cy) / render_fy,
             ],
             dim=-1,
         )
@@ -148,8 +182,8 @@ class NavRLTargetDetector:
         obstacle_vv, obstacle_uu = torch.meshgrid(
             obstacle_rows, obstacle_cols, indexing="ij"
         )
-        obstacle_fx = self.obstacle_width / (2.0 * math.tan(self.half_hfov))
-        obstacle_fy = self.obstacle_height / (2.0 * math.tan(self.half_vfov))
+        obstacle_fx = self.obstacle_width / (2.0 * math.tan(render_half_hfov))
+        obstacle_fy = self.obstacle_height / (2.0 * math.tan(render_half_vfov))
         obstacle_cx = (self.obstacle_width - 1) * 0.5
         obstacle_cy = (self.obstacle_height - 1) * 0.5
         obstacle_rays = torch.stack(
@@ -203,13 +237,93 @@ class NavRLTargetDetector:
             device=device,
         ).view(1, 3)
 
+        # -- appearance domain shift state (검증 2). Nominal literals live HERE once; the paint
+        # path below reads only these buffers, so zero knobs reproduce the historical render
+        # bit-for-bit and non-zero knobs are per-episode draws (resampled in reset_idx).
+        self.app_hue_deg = float(getattr(vis_cfg, "appearance_hue_deg", 0.0))
+        self.app_light_gain = float(getattr(vis_cfg, "appearance_light_gain", 0.0))
+        self.app_albedo_jitter = float(getattr(vis_cfg, "appearance_albedo_jitter", 0.0))
+        self.app_texture_std = float(getattr(vis_cfg, "appearance_texture_std", 0.0))
+        self.app_motion_blur = float(getattr(vis_cfg, "appearance_motion_blur", 0.0))
+        self.mount_rot_deg = float(getattr(vis_cfg, "camera_mount_rot_deg", 0.0))
+        self.mount_trans_m = float(getattr(vis_cfg, "camera_mount_trans_m", 0.0))
+        self._nominal_target_color = torch.tensor(
+            [0.88, 0.08, 0.045], dtype=torch.float32, device=device
+        )
+        self._nominal_tint = torch.tensor(
+            [0.92, 1.00, 1.05], dtype=torch.float32, device=device
+        )
+        self.target_color = self._nominal_target_color.view(1, 3).repeat(self.num_envs, 1)
+        self.albedo_base = torch.full((self.num_envs, 1, 1), 0.08, device=device)
+        self.albedo_gain = torch.full((self.num_envs, 1, 1), 0.42, device=device)
+        self.albedo_tint = self._nominal_tint.view(1, 3, 1, 1).repeat(self.num_envs, 1, 1, 1)
+        self.texture_field = torch.ones(self.num_envs, self.height, self.width, device=device)
+        self.light_gain = torch.ones(self.num_envs, 1, 1, 1, device=device)
+        self.mount_quat = torch.zeros(self.num_envs, 4, device=device)
+        self.mount_quat[:, 3] = 1.0
+        self.mount_trans = torch.zeros(self.num_envs, 3, device=device)
+        self._blur_prev = torch.zeros(
+            self.num_envs, 3, self.height, self.width, device=device
+        )
+        self._blur_valid = torch.zeros(self.num_envs, dtype=torch.bool, device=device)
+        self._resample_appearance(torch.arange(self.num_envs, device=device))
+
         self.last_bearing_sin = torch.zeros(self.num_envs, device=device)
         self.last_bearing_cos = torch.zeros(self.num_envs, device=device)
         self.time_since_seen = torch.full((self.num_envs,), self.memory_s, device=device)
         self.last_bbox = torch.full((self.num_envs, 4), -1.0, device=device)
         self.last_pixel_count = torch.zeros(self.num_envs, dtype=torch.long, device=device)
 
+    def _resample_appearance(self, env_ids):
+        """Per-episode appearance draw. Knobs at zero leave every nominal buffer untouched."""
+        if not isinstance(env_ids, torch.Tensor):
+            env_ids = torch.as_tensor(env_ids, device=self.device, dtype=torch.long)
+        n = int(env_ids.numel())
+        if n == 0:
+            return
+        device = self.device
+        if self.app_hue_deg > 0.0:
+            angles = (
+                (torch.rand(n, device=device) * 2.0 - 1.0)
+                * math.radians(self.app_hue_deg)
+            )
+            self.target_color[env_ids] = _rotate_hue_rgb(
+                self._nominal_target_color.view(1, 3).expand(n, 3), angles
+            )
+        if self.app_albedo_jitter > 0.0:
+            jitter = self.app_albedo_jitter
+
+            def uniform(shape):
+                return 1.0 + (torch.rand(*shape, device=device) * 2.0 - 1.0) * jitter
+
+            self.albedo_base[env_ids] = 0.08 * uniform((n, 1, 1))
+            self.albedo_gain[env_ids] = 0.42 * uniform((n, 1, 1))
+            self.albedo_tint[env_ids] = self._nominal_tint.view(1, 3, 1, 1) * uniform(
+                (n, 3, 1, 1)
+            )
+        if self.app_texture_std > 0.0:
+            self.texture_field[env_ids] = (
+                1.0
+                + torch.randn(n, self.height, self.width, device=device)
+                * self.app_texture_std
+            ).clamp(min=0.0)
+        if self.app_light_gain > 0.0:
+            self.light_gain[env_ids] = 1.0 + (
+                torch.rand(n, 1, 1, 1, device=device) * 2.0 - 1.0
+            ) * self.app_light_gain
+        if self.mount_rot_deg > 0.0:
+            self.mount_quat[env_ids] = _small_random_quat(
+                math.radians(self.mount_rot_deg), n, device
+            )
+        if self.mount_trans_m > 0.0:
+            self.mount_trans[env_ids] = (
+                torch.rand(n, 3, device=device) * 2.0 - 1.0
+            ) * self.mount_trans_m
+        # A new episode must not inherit the previous episode's frame through the blur EMA.
+        self._blur_valid[env_ids] = False
+
     def reset_idx(self, env_ids):
+        self._resample_appearance(env_ids)
         self.last_bearing_sin[env_ids] = 0.0
         self.last_bearing_cos[env_ids] = 0.0
         self.time_since_seen[env_ids] = self.memory_s
@@ -218,8 +332,16 @@ class NavRLTargetDetector:
 
     def _render(self, drone_pos_w, vehicle_quat, target_pos_w):
         offset = self.camera_offset_vehicle.expand(self.num_envs, -1)
+        if self.mount_trans_m > 0.0:
+            # Renderer-only mount error: perception keeps its nominal camera_offset copy, so the
+            # rendered geometry and the back-projection model disagree -- a real extrinsic
+            # mis-calibration. (Perturbing both copies would cancel and measure nothing.)
+            offset = offset + self.mount_trans
         self._origins[:] = drone_pos_w + quat_rotate(vehicle_quat, offset)
-        self._orientations[:] = vehicle_quat
+        if self.mount_rot_deg > 0.0:
+            self._orientations[:] = quat_mul(vehicle_quat, self.mount_quat)
+        else:
+            self._orientations[:] = vehicle_quat
         self._targets[:] = target_pos_w
         wp.launch(
             kernel=_render_target_camera_kernel,
@@ -276,21 +398,38 @@ class NavRLTargetDetector:
         ).clamp(0.0, self.obstacle_max_range)
 
         # Neutral background/obstacle texture. It contains geometry cues but no semantic ID.
+        # Reflectance comes from the per-env appearance buffers; at zero knobs they hold exactly
+        # the historical literals (base 0.08, gain 0.42, tint 0.92/1.00/1.05).
         proximity = (1.0 - obstacle_depth_hi / self.obstacle_max_range).clamp(0.0, 1.0)
-        luminance = 0.08 + 0.42 * proximity
-        rgb = torch.stack(
-            [luminance * 0.92, luminance, luminance * 1.05], dim=1
-        )
+        luminance = self.albedo_base + self.albedo_gain * proximity
+        if self.app_texture_std > 0.0:
+            luminance = luminance * self.texture_field
+        rgb = luminance.unsqueeze(1) * self.albedo_tint
         depth = obstacle_depth_hi.clone()
 
         # Renderer-only class mask paints the visible target mesh appearance. The mask itself is
         # never returned to the perception module or actor.
         visible_target_pixels = self.target_mask > 0
-        target_color = torch.tensor(
-            [0.88, 0.08, 0.045], dtype=rgb.dtype, device=rgb.device
-        ).view(1, 3, 1, 1)
-        rgb = torch.where(visible_target_pixels.unsqueeze(1), target_color, rgb)
+        rgb = torch.where(
+            visible_target_pixels.unsqueeze(1), self.target_color.view(-1, 3, 1, 1), rgb
+        )
         depth = torch.where(visible_target_pixels, self.target_depth, depth)
+        # Global illumination multiplies AFTER the target paint so it hits target and background
+        # alike -- that is what a lighting change does, and what the fixed red rule in the
+        # bootstrap segmenter has never seen.
+        if self.app_light_gain > 0.0:
+            rgb = rgb * self.light_gain
+        if self.app_motion_blur > 0.0:
+            # Exponential trail: cheap, temporal, and directionally correct for a rolling camera.
+            # Depth is deliberately NOT blurred -- a depth sensor does not blur like an RGB
+            # exposure, and the depth channel has its own noise knob.
+            prev = torch.where(
+                self._blur_valid.view(-1, 1, 1, 1), self._blur_prev, rgb
+            )
+            rgb = (1.0 - self.app_motion_blur) * rgb + self.app_motion_blur * prev
+            self._blur_prev.copy_(rgb)
+            self._blur_valid[:] = True
+        rgb = rgb.clamp(0.0, 1.0)
         return rgb.contiguous(), depth.contiguous()
 
     def detect(self, drone_pos_w, vehicle_quat, target_pos_w, update_tracker=True):

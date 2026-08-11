@@ -7493,3 +7493,37 @@ summary만 사전등록 공식(pooled 독립 이항 95% CI)으로 **런처 밖�
 규칙(08-07)을 embedded summarizer에도 적용해야 한다.
 
 검증 1 종료. 다음은 검증 2 perception domain shift.
+
+## 2026-08-12 — 검증 2 구현: 렌더러 appearance domain-shift 8축 (기본 0 = 비트 동일)
+
+렌더러 탐색(서브에이전트) 결과 현 렌더는 "warp 기하 + 해석적 색칠"로 **외형 노브가 전무**했다:
+표적색 `[0.88,0.08,0.045]`·배경 명도식 `0.08+0.42·proximity`·틴트 `(0.92,1,1.05)` 전부
+리터럴, 조명/텍스처/블러/캘리브레이션 없음. intrinsics/extrinsics는 렌더러와 perception이
+**각자 계산**하며 교차검증 없음 — 즉 한쪽만 교란하면 실제 캘리브레이션 오차가 재현된다.
+
+`navrl_detector.py`에 8개 노브를 추가했다 (vision cfg, 전부 기본 0 = 종전 렌더와 비트 동일):
+
+| 노브 | 축 | 방식 |
+|---|---|---|
+| `NAVRL_APP_HUE_DEG` | 표적 hue | 회색축 Rodrigues 회전, per-episode 추출 |
+| `NAVRL_APP_LIGHT_GAIN` | 전역 조명 | 표적 페인트 **뒤에** 곱함(표적·배경 동시) |
+| `NAVRL_APP_ALBEDO_JITTER` | 막대/배경 반사율 | base/gain/tint per-env jitter |
+| `NAVRL_APP_TEXTURE_STD` | 텍스처 | per-env 정적 per-pixel 명도 노이즈 |
+| `NAVRL_APP_MOTION_BLUR` | 모션 블러 | EMA 트레일, depth는 블러 안 함(명시적 결정), reset 시 무효화 |
+| `NAVRL_CAM_MOUNT_ROT_DEG` | extrinsic 오차 | **렌더러만** mount quat 합성(perception은 nominal 유지) |
+| `NAVRL_CAM_MOUNT_TRANS_M` | extrinsic 오차 | 렌더러만 offset 이동 |
+| `NAVRL_CAM_FOV_SCALE_ERR` | intrinsic 오차 | ray table만 교란(per-run), 소비자 fx/fy는 nominal |
+
+per-episode 재추출은 `detector.reset_idx → _resample_appearance`. provenance는 checkpoint
+metadata echo + mismatch table(navrl_task.py) + evaluator receipt/pinned export
+(eval_navrl_v2_density_sweep.sh) 3곳에 배선했다.
+
+검증: CPU 단위 테스트 12/12 PASS(hue 회전 항등/120° 순환/in-gamut 명도 보존, mount quat 각도
+상한, source invariant 6종 — light가 표적 페인트 뒤에 오는지, depth 무블러, fov가 ray table만
+건드리는지, perception에 mount 개념이 없는지). GPU 스모크: **zero-knob 렌더가 종전과
+비트 동일**(rgb/depth 모두), 7개 축 각각 이미지가 실제로 변하고 mount/fov만 기하를 움직이며,
+blur는 첫 프레임 동일·둘째 프레임부터 발현(Δ0.28). 스모크 강도에서는 bootstrap/learned 모두
+recall 1.0 유지 — 강도 사다리는 본 평가에서 측정한다.
+
+주의(다음 단계에 반영): offline v2 trainer의 자체 augmentation 리터럴(randn 0.015/0.02)은
+렌더러 노브와 독립이므로, shift 하 재학습 시 분포 정합을 명시적으로 관리해야 한다.
