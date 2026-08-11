@@ -7527,3 +7527,41 @@ recall 1.0 유지 — 강도 사다리는 본 평가에서 측정한다.
 
 주의(다음 단계에 반영): offline v2 trainer의 자체 augmentation 리터럴(randn 0.015/0.02)은
 렌더러 노브와 독립이므로, shift 하 재학습 시 분포 정합을 명시적으로 관리해야 한다.
+
+## 2026-08-12 — 검증 2 stage A 완료: hue가 지배 축, learned v2는 bootstrap보다 오히려 취약
+
+`results/navrl_detector_domain_shift/summary.{md,json}` — 28셀 × 1,024 frames/셀, 205 bars,
+seed 103, threshold 0.55, bootstrap과 learned v2를 **동일 프레임**에서 측정.
+
+핵심 판독 (frame recall, nominal 95.0%):
+
+| 축 | 붕괴 지점 | bootstrap | learned v2 |
+|---|---|---:|---:|
+| **hue** | **60°부터 붕괴** | 60°: 79.7% / 90°: 45.0% / 180°: 24.8% | **60°: 62.5%** / 90°: 39.4% / 180°: 21.5% |
+| light_gain | ±0.7에서 열화 | 84.2% | 77.7% |
+| albedo/texture | **무해** (전 구간 92~96%) | — | — |
+| motion_blur | recall 소폭↓ + **FPR 3.2~3.5% 발생** | 91.4~95.3% | 동일 |
+| mount_rot | recall 무해, **bearing MAE 선형 증가** | 0.52°→1.48°(5°) | 동일 |
+| fov 10% | recall 89.6%, **bearing MAE 2.23°** | — | 동일 |
+
+1. **hue가 지배 축이다.** 예측대로 두 검출기 모두 60°부터 무너진다. ±30°까지는 red 우세가
+   유지돼 무해(95%+).
+2. **learned v2가 bootstrap보다 hue·light에 더 취약하다**(60°에서 62.5% vs 79.7%).
+   pure-red 데이터로 학습한 1×1 head는 손제작 red 규칙보다 학습 분포에 더 밀착해 있다.
+   "learned가 더 낫다"는 기대는 이 축들에서 역전된다 — Codex의 "pure-red라 너무 쉽다"
+   지적이 정량으로 확인된 것.
+3. **배경 축(albedo/texture)은 무해** — 표적 색만 보는 규칙이므로 당연하며, 이 축들은
+   detector가 아니라 (있다면) navigation 영향으로만 남는다.
+4. **blur는 유일하게 FPR을 만든다**(고블러에서 3.2~3.5%) — 고스트 트레일이 absent 프레임에
+   위양성을 만든다. 저블러(0.3)에서는 centroid가 끌려 bearing MAE 0.99°.
+5. **캘리브레이션 축은 recall이 아니라 bearing bias로 나타난다** — mount 5°에서 MAE 1.48°,
+   fov 10%에서 2.23°. 설계 의도(렌더러만 교란→back-projection bias) 그대로 계측됐다.
+
+### stage B 설계 결정
+
+- **운용 envelope 안 randomization으로 v3 재학습**: hue ±60°, light ±0.5, albedo 0.3,
+  texture 0.2, blur 0.3 (+기존 노이즈). 주장 형태는 "선언된 외형 envelope 안에서 NI 유지"로
+  한정한다. hue ±180° 전면 randomization은 1×1 색 규칙로는 원리적으로 불가능한 조건이며,
+  offline gate가 실패할 때만 architecture 확장을 연다는 사전등록(Gate 3)을 따른다.
+- 캘리브레이션 축(mount/fov)은 detector 재학습 대상이 아니라 **navigation A/B로 직접** 측정
+  (KF 측정 오염 경로).
