@@ -7596,3 +7596,31 @@ architecture 확장을 연다." 실패했으므로 확장을 연다.
   계약/파라미터 예산 <5k), latency 33/33, appearance 12/12 회귀 PASS.
 
 v4(동일 envelope, 4후보) 학습 시작. gate PASS 시 stage-A 사다리 재실행 → navigation A/B 순.
+
+## 2026-08-12 — 검증 2 stage B(2): spatial CNN이 gate를 거의 통과 — 남은 결함은 모델이 아니라 선택기
+
+**v4 1차 시도**는 trainer가 1×1 head의 `model.classifier` 속성을 직접 호출해 spatial 후보
+epoch 1에서 크래시(AttributeError). 두 head에 공통 `forward_logits(features)` 계약을 만들어
+해결, `sigmoid(forward_logits)==forward()` 파리티 확인. partial 산출물 없음.
+
+**v4 재실행** (`results/navrl_detector_offline_gate_v4_domainrand/`, SHA `354da116…`):
+4후보 중 **spatial_cnn+focal_dice가 validation 상위 독점** — 아키텍처 확장이 유효함을 확인.
+gate는 14체크 중 **12 PASS**로 v3(10 PASS) 대비 크게 개선:
+
+| 지표 | v3 (1×1) | v4 (spatial) | 기준 |
+|---|---:|---:|---:|
+| frame P / R | 0.975 / 0.937 | **0.984 / 1.000** | ≥0.98 / ≥0.95 |
+| far/small/partial recall | 0.85/0.88/1.00 | **1.00/1.00/1.00** | — |
+| bearing MAE | 0.37° | **0.16°** | ≤1.5° |
+| **pixel_precision** | 0.172 | **0.800 FAIL** | ≥0.95 |
+| **range MAE** | 0.068 m | **0.878 m FAIL** | ≤0.25 m |
+
+남은 2개 실패의 원인은 모델이 아니라 **operating-point 선택기**다: feasibility가 FPR 2개만
+반영해 recall을 좇아 threshold를 **0.075**까지 내렸고, 그 지점에서 마스크 halo가 pixel
+precision을 0.80으로, halo의 배경 깊이가 range MAE를 0.88 m로 끌어내렸다. gate가 요구하는
+정밀도 계열 체크를 선택기가 전혀 모르는 구조 — **자기가 공급하는 gate를 통과할 수 없는
+운영점을 고르는 선택기**였다.
+
+**수정**: feasibility가 validation에서 frame precision ≥0.98, pixel precision ≥0.95,
+range MAE ≤0.25까지 거울하도록 확장(`acb1bef`). 선택은 여전히 validation-only, sealed test
+불변, feasible이 없으면 종전처럼 랭킹 폴백 후 gate가 정직하게 FAIL. v5 학습 시작.
