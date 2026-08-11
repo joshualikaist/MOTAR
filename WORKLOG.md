@@ -7718,3 +7718,38 @@ spatial head로 **거의 도달하나 미달**이다(12/14; recall −1.6 pp, ra
   startswith 매칭되는 함정 테스트로 고정), 테스트 28/28 PASS.
 - 판정 규칙: 14/14 PASS → stage-A 사다리 재실행 + navigation A/B. FAIL → envelope 대비
   용량 사다리 2점(3k, 11k)의 측정된 한계로 확정하고 사용자 결정으로 복귀.
+
+## 2026-08-12 — v7 confirmatory: 14/14 PASS — envelope 하 detector 확보
+
+`results/navrl_detector_offline_gate_v7_confirmatory/` (SHA `85c7974b…`, seeds 137/139/149,
+1회 개봉). 선택 `spatial_cnn_wide+focal_dice @ threshold 0.70`.
+
+| 지표 | v6 | **v7** |
+|---|---:|---:|
+| frame recall | 0.9340 | **0.9938** |
+| range MAE | 0.274 m | **0.178 m** |
+| far/small/partial recall | 0.857/0.855/0.946 | **0.997/0.987/0.992** |
+| pixel precision(tol)/IoU | 0.9997/0.893 | **1.0000/0.969** |
+| bearing MAE | 0.040° | **0.024°** |
+
+감사에서 겨냥한 두 지렛대가 각각 작동했다: recall 미달(용량 한계)은 wide head가,
+range 미달(선택이 경계 rMAE 지점을 고름)은 선택 마진 0.23이 닫았다.
+
+**확정**: 선언한 appearance envelope(hue ±60°, light ±0.5, albedo 0.3, texture 0.2,
+blur 0.3) 안에서 offline detector gate를 통과하는 학습형 검출기(~11.3k params)를 확보했다.
+사전등록 판정대로 stage-A 사다리 재실행 + navigation A/B로 진행한다.
+
+### navigation A/B (envelope) 사전등록 — 실행 전 고정
+
+frozen ep25000+riskcap, 205 bars, deterministic, exact-600, 2,049 ep/cell.
+**2×2 factorial × 2 seeds = 8셀**: appearance {nominal, envelope} × detector
+{analytic_bootstrap, learned_v7} × seeds **{151, 157}** (미사용). learned arm은 artifact SHA
+`85c7974b…`·threshold **0.70**(meta의 validation 선택값) 고정, analytic arm은 종전 0.55.
+
+- **E1 (primary, NI gate)**: nominal에서 pooled capture(learned_v7) − capture(analytic),
+  독립 이항 95% CI 하한 > **−2.0 pp**면 PASS (Gate 3와 동일 margin·공식).
+- **E2 (headline, descriptive)**: capture(envelope, learned_v7) − capture(nominal, analytic)
+  — 외형 shift 전체의 navigation 비용. gate 없음, CI만 보고.
+- **E3 (counterfactual, descriptive)**: capture(envelope, analytic) — bootstrap의 붕괴 폭.
+  detector 붕괴가 navigation을 실제로 무너뜨리는지의 직접 증거.
+- 이 8셀 test에 재시도 없음. 부차 지표(crash/timeout)는 descriptive.
