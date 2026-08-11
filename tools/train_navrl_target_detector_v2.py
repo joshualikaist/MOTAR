@@ -57,6 +57,10 @@ def parse_args():
     parser.add_argument("--validation-frames", type=int, default=2048)
     parser.add_argument("--test-frames", type=int, default=4096)
     parser.add_argument("--num-envs", type=int, default=64)
+    parser.add_argument("--pixel-tolerance-px", type=int, default=0)
+    parser.add_argument("--train-seed", type=int, default=TRAIN_SEED)
+    parser.add_argument("--validation-seed", type=int, default=VALIDATION_SEED)
+    parser.add_argument("--test-seed", type=int, default=TEST_SEED)
     parser.add_argument("--epochs", type=int, default=10)
     parser.add_argument("--batch-size", type=int, default=128)
     parser.add_argument("--preflight", action="store_true")
@@ -329,7 +333,7 @@ def infer_scores(model, dataset, batch_size, max_range, device):
     return torch.cat(scores)
 
 
-def detector_metrics(scores, dataset, threshold, min_pixels, fx):
+def detector_metrics(scores, dataset, threshold, min_pixels, fx, pixel_tolerance_px=0):
     predicted = scores.float() >= float(threshold)
     target = dataset["mask"]
     predicted_count = predicted.sum(dim=(1, 2))
@@ -341,7 +345,24 @@ def detector_metrics(scores, dataset, threshold, min_pixels, fx):
     tp = int((predicted & target).sum())
     fp = int((predicted & ~target).sum())
     fn = int((~predicted & target).sum())
-    pixel_precision = tp / max(tp + fp, 1)
+    if pixel_tolerance_px > 0:
+        # Blur-aware precision: motion blur smears genuine target evidence into pixels the
+        # instantaneous GT mask labels background, so EXACT pixel precision under the appearance
+        # envelope punishes physics, not the model. A prediction within `tolerance` pixels of the
+        # GT mask counts toward precision; sprayed false positives far from the target still
+        # count against it. Recall/IoU stay exact.
+        kernel = 2 * int(pixel_tolerance_px) + 1
+        dilated = (
+            F.max_pool2d(
+                target.float().unsqueeze(1), kernel_size=kernel, stride=1,
+                padding=int(pixel_tolerance_px),
+            ).squeeze(1) > 0.5
+        )
+        tp_tol = int((predicted & dilated).sum())
+        fp_tol = int((predicted & ~dilated).sum())
+        pixel_precision = tp_tol / max(tp_tol + fp_tol, 1)
+    else:
+        pixel_precision = tp / max(tp + fp, 1)
     pixel_recall = tp / max(tp + fn, 1)
     pixel_iou = tp / max(tp + fp + fn, 1)
     frame_tp = int(true_positive_frame.sum())
@@ -419,11 +440,13 @@ def _metric_or_zero(metrics, name):
     return 0.0 if value is None or not math.isfinite(float(value)) else float(value)
 
 
-def select_validation_operating_point(candidates):
+def select_validation_operating_point(candidates, pixel_tolerance_px=0):
     ranked = []
     for candidate_name, model, pos_weight, scores, dataset, fx in candidates:
         for threshold in THRESHOLDS:
-            metrics = detector_metrics(scores, dataset, threshold, 2, fx)
+            metrics = detector_metrics(
+                scores, dataset, threshold, 2, fx, pixel_tolerance_px=pixel_tolerance_px
+            )
             # Feasibility mirrors EVERY precision-side gate check, not only the FPRs.
             # Mirroring just the FPRs let the selector chase recall down to threshold 0.075,
             # where the mask halo dropped pixel precision to 0.80 and the halo's background
@@ -537,8 +560,8 @@ def main():
     fx = task.detector.fx
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    train = collect_split(task, args.train_frames, TRAIN_SEED, "train")
-    validation = collect_split(task, args.validation_frames, VALIDATION_SEED, "validation")
+    train = collect_split(task, args.train_frames, args.train_seed, "train")
+    validation = collect_split(task, args.validation_frames, args.validation_seed, "validation")
 
     candidates = []
     candidate_receipts = []
@@ -554,14 +577,16 @@ def main():
     for index, (arch, kind) in enumerate(combos):
         model, pos_weight = train_candidate(
             train, kind, args.epochs, args.batch_size, max_range, device,
-            TRAIN_SEED + index, arch=arch,
+            args.train_seed + index, arch=arch,
         )
         scores = infer_scores(model, validation, args.batch_size, max_range, device)
         name = f"{arch}+{kind}"
         candidates.append((name, model, pos_weight, scores, validation, fx))
         candidate_receipts.append({"candidate": name, "pos_weight": pos_weight})
 
-    selected, validation_top10 = select_validation_operating_point(candidates)
+    selected, validation_top10 = select_validation_operating_point(
+        candidates, pixel_tolerance_px=args.pixel_tolerance_px
+    )
     _, selected_name, selected_model, pos_weight, validation_metrics = selected
     selected_threshold = float(validation_metrics["threshold"])
     print(
@@ -575,9 +600,12 @@ def main():
     )
 
     # Test is generated and touched only after candidate/loss/threshold selection is frozen.
-    test = collect_split(task, args.test_frames, TEST_SEED, "test")
+    test = collect_split(task, args.test_frames, args.test_seed, "test")
     test_scores = infer_scores(selected_model, test, args.batch_size, max_range, device)
-    test_metrics = detector_metrics(test_scores, test, selected_threshold, 2, fx)
+    test_metrics = detector_metrics(
+        test_scores, test, selected_threshold, 2, fx,
+        pixel_tolerance_px=args.pixel_tolerance_px,
+    )
     checks, passed = gate_decision(test_metrics)
 
     args.output.parent.mkdir(parents=True, exist_ok=True)
@@ -597,9 +625,10 @@ def main():
             "selected_threshold": selected_threshold,
             "min_pixels": 2,
             "max_range_m": max_range,
-            "train_seed": TRAIN_SEED,
-            "validation_seed": VALIDATION_SEED,
-            "test_seed": TEST_SEED,
+            "train_seed": args.train_seed,
+            "validation_seed": args.validation_seed,
+            "test_seed": args.test_seed,
+            "pixel_tolerance_px": args.pixel_tolerance_px,
             "gate_passed": passed,
         },
     }

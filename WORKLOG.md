@@ -7624,3 +7624,39 @@ precision을 0.80으로, halo의 배경 깊이가 range MAE를 0.88 m로 끌어�
 **수정**: feasibility가 validation에서 frame precision ≥0.98, pixel precision ≥0.95,
 range MAE ≤0.25까지 거울하도록 확장(`acb1bef`). 선택은 여전히 validation-only, sealed test
 불변, feasible이 없으면 종전처럼 랭킹 폴백 후 gate가 정직하게 FAIL. v5 학습 시작.
+
+## 2026-08-12 — 검증 2 stage B(3): v5도 FAIL — exploratory 종료 선언 + confirmatory 사전등록
+
+**v5 결과** (`results/navrl_detector_offline_gate_v5_domainrand/`, SHA `eeb332ec…`): 제약 선택기가
+**정반대 극단**을 골랐다. 1×1 focal이 validation에서 pixel precision 1.000(보수적 core-only
+발화)으로 유일하게 feasible해져 선택됐지만, test에서 recall 3종 FAIL(frame 0.850, far 0.822,
+small 0.825)이고 **pixel precision조차 0.657로 붕괴** — validation→test 정밀도 갭이 0.343이다.
+spatial은 validation 전 threshold에서 pixel precision <0.95라 top10에 아예 없다.
+
+**진단 — gate 설계 결함이 드러났다**: motion blur가 표적 색을 인접 픽셀에 섞는데 GT 마스크는
+순간 기하만 라벨하므로, envelope 하 **exact pixel precision ≥0.95는 어떤 모델로도 안정적으로
+만족 불가능**하다. 1×1은 이 지표에서 고분산(appearance 추첨에 따라 1.0↔0.66), spatial은
+안정적이되 0.8 수준. 다운스트림(KF)이 실제로 소비하는 것은 bearing/range/visible이며 그
+지표들은 이미 우수하다(spatial: bearing MAE 0.16°).
+
+**exploratory 선언**: v3/v4/v5는 test를 3회 관찰했으므로 전부 exploratory로 격하한다.
+이 셋에서 확정하는 것은 (a) 1×1은 envelope에서 원리적 불가(v3), (b) spatial 아키텍처 유효
+(v4: 12/14, recall 전 지표 1.0), (c) exact pixel precision은 blur 하 ill-posed(v5)뿐이다.
+
+### confirmatory 사전등록 (실행 전 고정)
+
+- **split seeds**: train/val/test = **113/127/131** (전부 미사용; 기존 71/73/79와 무관).
+  test는 이 run에서 단 1회만 개봉한다.
+- **envelope 불변**: hue ±60°, light ±0.5, albedo 0.3, texture 0.2, blur 0.3.
+- **후보 pool 불변**: {pixel_1x1, spatial_cnn} × {balanced_bce, focal_dice}, 선택은
+  validation-only 제약 랭킹(구현 그대로).
+- **gate = 기존 14체크 중 13개 불변 + pixel_precision 1건만 재정의**:
+  `--pixel-tolerance-px 1` — GT 마스크를 3×3 dilate한 범위 안의 예측을 정밀로 인정
+  (**blur가 물리적으로 만드는 1픽셀 경계 혼합을 벌하지 않되, 표적에서 떨어진 spray FP는
+  그대로 벌한다**). recall/IoU는 exact 유지. 임계 0.95 불변.
+- **판정**: 이 gate 14/14 PASS면 stage-A 사다리 재실행 + navigation A/B로 진행.
+  FAIL이면 "이 envelope은 이 용량(~3k)으로 불가"를 결과로 확정하고 envelope 축소 vs 용량
+  증가 트레이드오프를 사용자 결정으로 올린다. **이 run의 test에 대한 재시도는 없다.**
+
+trainer에 `--pixel-tolerance-px`(기본 0=종전 exact)와 split-seed 오버라이드를 추가했고,
+선택기 feasibility도 동일 tolerance로 판단하게 배선했다(선택과 gate의 지표 정의 일치).
