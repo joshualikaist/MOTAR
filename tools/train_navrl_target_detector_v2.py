@@ -58,6 +58,7 @@ def parse_args():
     parser.add_argument("--test-frames", type=int, default=4096)
     parser.add_argument("--num-envs", type=int, default=64)
     parser.add_argument("--pixel-tolerance-px", type=int, default=0)
+    parser.add_argument("--selection-range-mae-max", type=float, default=0.25)
     parser.add_argument("--train-seed", type=int, default=TRAIN_SEED)
     parser.add_argument("--validation-seed", type=int, default=VALIDATION_SEED)
     parser.add_argument("--test-seed", type=int, default=TEST_SEED)
@@ -291,8 +292,13 @@ def train_candidate(dataset, kind, epochs, batch_size, max_range, device, seed, 
     torch.manual_seed(seed)
     generator = torch.Generator(device=device)
     generator.manual_seed(seed)
-    model = (SpatialTargetSegmenter() if arch == "spatial_cnn"
-             else AppearanceTargetSegmenter()).to(device).train()
+    if arch == "spatial_cnn":
+        model = SpatialTargetSegmenter()
+    elif arch == "spatial_cnn_wide":
+        model = SpatialTargetSegmenterWide()
+    else:
+        model = AppearanceTargetSegmenter()
+    model = model.to(device).train()
     optimizer = torch.optim.Adam(model.parameters(), lr=2e-3)
     positive = float(dataset["mask"].sum())
     total = float(dataset["mask"].numel())
@@ -440,7 +446,7 @@ def _metric_or_zero(metrics, name):
     return 0.0 if value is None or not math.isfinite(float(value)) else float(value)
 
 
-def select_validation_operating_point(candidates, pixel_tolerance_px=0):
+def select_validation_operating_point(candidates, pixel_tolerance_px=0, selection_range_mae_max=0.25):
     ranked = []
     for candidate_name, model, pos_weight, scores, dataset, fx in candidates:
         for threshold in THRESHOLDS:
@@ -460,7 +466,7 @@ def select_validation_operating_point(candidates, pixel_tolerance_px=0):
                 and _metric_or_zero(metrics, "pixel_precision") >= 0.95
                 and range_mae is not None
                 and math.isfinite(float(range_mae))
-                and float(range_mae) <= 0.25
+                and float(range_mae) <= selection_range_mae_max
             )
             worst_recall = min(
                 _metric_or_zero(metrics, "frame_recall"),
@@ -541,13 +547,14 @@ def main():
     # validate the frozen campaign contract without initializing a GPU or JIT extension cache.
     # Its legacy gymutil parser otherwise re-parses this tool's already-consumed arguments.
     sys.argv = [sys.argv[0]]
-    global task_registry, torch, F, AppearanceTargetSegmenter, SpatialTargetSegmenter, quat_rotate
+    global task_registry, torch, F, AppearanceTargetSegmenter, SpatialTargetSegmenter, SpatialTargetSegmenterWide, quat_rotate
     from aerial_gym.registry.task_registry import task_registry
     import torch
     import torch.nn.functional as F
     from aerial_gym.task.navrl_task.navrl_perception import (
         AppearanceTargetSegmenter,
         SpatialTargetSegmenter,
+        SpatialTargetSegmenterWide,
     )
     from aerial_gym.utils.math import quat_rotate
 
@@ -568,11 +575,13 @@ def main():
     # Gate 3 escalation: the spatial CNN joins the candidate pool ONLY because the 1x1 head
     # failed the offline gate under the appearance envelope (pixel precision 0.17); selection
     # stays validation-only, so a nominal-appearance run can still pick the 1x1 head.
+    # v7 pool: the 1x1 head is EXCLUDED -- v3 settled that it is impossible under the envelope
+    # (pixel precision 0.17), so training it again spends GPU on a settled negative.
     combos = [
-        ("pixel_1x1", "balanced_bce"),
-        ("pixel_1x1", "focal_dice"),
         ("spatial_cnn", "balanced_bce"),
         ("spatial_cnn", "focal_dice"),
+        ("spatial_cnn_wide", "balanced_bce"),
+        ("spatial_cnn_wide", "focal_dice"),
     ]
     for index, (arch, kind) in enumerate(combos):
         model, pos_weight = train_candidate(
@@ -585,7 +594,9 @@ def main():
         candidate_receipts.append({"candidate": name, "pos_weight": pos_weight})
 
     selected, validation_top10 = select_validation_operating_point(
-        candidates, pixel_tolerance_px=args.pixel_tolerance_px
+        candidates,
+        pixel_tolerance_px=args.pixel_tolerance_px,
+        selection_range_mae_max=args.selection_range_mae_max,
     )
     _, selected_name, selected_model, pos_weight, validation_metrics = selected
     selected_threshold = float(validation_metrics["threshold"])
@@ -617,7 +628,9 @@ def main():
             "schema_version": SCHEMA_VERSION,
             "created_at_utc": created,
             "architecture": (
-                "SpatialTargetSegmenter/cnn7x7-RGBD"
+                "SpatialTargetSegmenterWide/cnn9x9x24-RGBD"
+                if selected_name.startswith("spatial_cnn_wide")
+                else "SpatialTargetSegmenter/cnn7x7-RGBD"
                 if selected_name.startswith("spatial_cnn")
                 else "AppearanceTargetSegmenter/1x1-RGBD"
             ),
@@ -629,6 +642,7 @@ def main():
             "validation_seed": args.validation_seed,
             "test_seed": args.test_seed,
             "pixel_tolerance_px": args.pixel_tolerance_px,
+            "selection_range_mae_max": args.selection_range_mae_max,
             "gate_passed": passed,
         },
     }

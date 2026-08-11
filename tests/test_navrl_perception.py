@@ -615,6 +615,20 @@ class SegmenterArchitectureDispatch(unittest.TestCase):
         n = sum(p.numel() for p in _PERCEPTION.SpatialTargetSegmenter().parameters())
         self.assertLess(n, 5000, n)
 
+    def test_wide_head_dispatch_and_budget(self):
+        """The wide tag must win prefix dispatch (it startswith the narrow tag) and stay cheap."""
+        wide = _PERCEPTION.build_target_segmenter("SpatialTargetSegmenterWide/cnn9x9x24-RGBD")
+        self.assertIsInstance(wide, _PERCEPTION.SpatialTargetSegmenterWide)
+        narrow = _PERCEPTION.build_target_segmenter("SpatialTargetSegmenter/cnn7x7-RGBD")
+        self.assertIsInstance(narrow, _PERCEPTION.SpatialTargetSegmenter)
+        self.assertNotIsInstance(narrow, _PERCEPTION.SpatialTargetSegmenterWide)
+        n = sum(p.numel() for p in wide.parameters())
+        self.assertLess(n, 15000, n)
+        rgb = torch.rand(2, 3, 45, 80)
+        depth = torch.rand(2, 45, 80) * 20.0
+        out = wide(rgb, depth, 20.0)
+        self.assertEqual(tuple(out.shape), (2, 45, 80))
+
 
 if __name__ == "__main__":
     unittest.main()

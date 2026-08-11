@@ -7692,3 +7692,29 @@ spatial head로 **거의 도달하나 미달**이다(12/14; recall −1.6 pp, ra
 - (c) **측정된 한계로 확정하고 진행**: "12/14, recall 93.4%"를 stage-B 결과로 공개하고
   검증 3(latency 전제)~5(fresh PPO)로 이동. navigation A/B는 offline-PASS 전제(Gate 3
   프로토콜)라 이 경우 실행하지 않는다.
+
+## 2026-08-12 — 자체 검증(Codex 방식) 후 v7 confirmatory 사전등록
+
+사용자 지시로 Codex 위임 전 자체 감사를 수행했다. 4개 판정:
+1. **frame_recall 미달은 실체다**: 0.9340, n=1,258, 95% CI [0.9203, 0.9477] — 상한이 0.95
+   아래. 게다가 validation의 **어떤 운영점도 recall 0.925를 못 넘었다**(feasible set 최고
+   0.925) → 선택 튜닝으로 불가, 모델 용량 한계.
+2. 프로토콜 준수 확인: v6 메타에 seeds/tolerance/envelope/gate_passed 완비, SHA 일치.
+3. 선택기 신뢰성 회복: val→test 갭 recall +0.9pp, pixel precision −0.0003 (v5 병리 해소).
+4. **range MAE 미달의 기제**: 선택점의 validation rMAE 0.2458 — 제약(≤0.25)을 0.4 cm 차로
+   통과 후 test에서 +2.8 cm 표류. feasible set(0.218~0.246)이 경계에 몰려 있는데 선택기는
+   recall 최대화로 최악 rMAE 지점을 골랐다 → **선택 안전마진 필요**.
+
+### v7 confirmatory 사전등록 (실행 전 고정)
+
+- split seeds **137/139/149** (미사용), test 1회 개봉, **재시도 없음**.
+- envelope·gate 불변 (tolerance 1px 포함).
+- 후보 pool: **{spatial_cnn(7×7/16ch), spatial_cnn_wide(9×9/24ch, ~11.3k params)} × {bce, focal}**.
+  1×1은 제외 — v3가 envelope 하 원리적 불가를 확정했으므로 재학습은 확정된 음성에 GPU를
+  쓰는 것. Wide는 conv 1층 추가 + 폭 24로 v6 미달 프레임(원거리·소형·강블러) 겨냥.
+- **선택 안전마진**: validation feasibility의 range MAE 상한을 0.25 → **0.23**으로
+  (감사 4의 측정 표류 +0.028 근거, `--selection-range-mae-max`). gate 기준 자체는 0.25 불변.
+- 구현: `SpatialTargetSegmenterWide` + prefix dispatch(긴 태그 우선 — Wide가 좁은 태그로
+  startswith 매칭되는 함정 테스트로 고정), 테스트 28/28 PASS.
+- 판정 규칙: 14/14 PASS → stage-A 사다리 재실행 + navigation A/B. FAIL → envelope 대비
+  용량 사다리 2점(3k, 11k)의 측정된 한계로 확정하고 사용자 결정으로 복귀.

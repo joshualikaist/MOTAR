@@ -454,9 +454,43 @@ class SpatialTargetSegmenter(nn.Module):
         return self.net(features)
 
 
+class SpatialTargetSegmenterWide(nn.Module):
+    """9x9-receptive-field, 24-channel head (~11.3k params) for the appearance envelope.
+
+    The confirmatory v6 run showed the 7x7/16ch head is capacity-bound under the declared
+    envelope: no validation operating point reached the 0.95 recall gate (best 0.925), with the
+    misses concentrated in hard frames (far/small/strong-blur draws). One extra 3x3 stage and
+    +50% width buys context and capacity while staying trivially cheap for 128 parallel streams.
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Conv2d(4, 24, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(24, 24, kernel_size=3, padding=2, dilation=2),
+            nn.ReLU(),
+            nn.Conv2d(24, 24, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(24, 1, kernel_size=1),
+        )
+
+    def forward(self, rgb, depth, max_depth):
+        depth_channel = (depth / max_depth).clamp(0.0, 1.0).unsqueeze(1)
+        return torch.sigmoid(self.net(torch.cat([rgb, depth_channel], dim=1))).squeeze(1)
+
+    def forward_logits(self, features):
+        """Logits from the pre-concatenated 4-channel input (offline trainer contract)."""
+        return self.net(features)
+
+
 def build_target_segmenter(architecture):
     """Map an artifact's meta.architecture tag to its module class (default: legacy 1x1)."""
-    if str(architecture).startswith("SpatialTargetSegmenter"):
+    tag = str(architecture)
+    # Longest prefix first: "SpatialTargetSegmenterWide" also startswith the narrow tag.
+    if tag.startswith("SpatialTargetSegmenterWide"):
+        return SpatialTargetSegmenterWide()
+    if tag.startswith("SpatialTargetSegmenter"):
         return SpatialTargetSegmenter()
     return AppearanceTargetSegmenter()
 
