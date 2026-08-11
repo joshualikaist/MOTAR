@@ -7660,3 +7660,35 @@ spatial은 validation 전 threshold에서 pixel precision <0.95라 top10에 아�
 
 trainer에 `--pixel-tolerance-px`(기본 0=종전 exact)와 split-seed 오버라이드를 추가했고,
 선택기 feasibility도 동일 tolerance로 판단하게 배선했다(선택과 gate의 지표 정의 일치).
+
+## 2026-08-12 — 검증 2 stage B confirmatory (v6): FAIL 12/14 — 근소 미달 2건, 사전등록대로 종료
+
+`results/navrl_detector_offline_gate_v6_confirmatory/` (SHA `b700778e…`, seeds 113/127/131,
+tolerance 1px, envelope 불변). 선택: **spatial_cnn+focal_dice @ threshold 0.50** (제약 선택기
+정상 작동 — v5의 극단 선택 문제 해소).
+
+| 체크 | 값 | 기준 | 판정 |
+|---|---:|---:|---|
+| frame_precision | 0.9975 | ≥0.98 | PASS |
+| **frame_recall** | **0.9340** | ≥0.95 | **FAIL (−1.6 pp)** |
+| pixel_precision (tol 1px) | 0.9997 | ≥0.95 | PASS — 재정의 의도대로 |
+| absent / full-occ FPR | 0.0012 / 0.0010 | ≤0.01 | PASS |
+| far / small / partial recall | 0.857 / 0.855 / 0.946 | ≥0.85/0.80/0.85 | PASS |
+| bearing MAE | **0.04°** | ≤1.5° | PASS |
+| **range MAE** | **0.274 m** | ≤0.25 m | **FAIL (+0.024 m)** |
+
+**사전등록된 판정을 그대로 집행한다**: 이 test에 대한 재시도 없음. 확정되는 결과는 —
+"선언한 envelope(hue ±60°, light ±0.5, albedo 0.3, texture 0.2, blur 0.3)은 ~2.9k 파라미터
+spatial head로 **거의 도달하나 미달**이다(12/14; recall −1.6 pp, range +2.4 cm)."
+
+수확도 명확하다: tolerance 재정의는 의도대로 작동했고(0.9997, spray FP는 FPR 0.001이
+잡음), bearing 0.04°는 KF 소비 품질로는 사실상 포화다. 남은 미달 2건은 둘 다
+"어려운 프레임(원거리·소형·강한 blur 추첨)의 검출 여부" 계열이다.
+
+**다음 선택지 (사용자 결정, 사전등록에 따라)**:
+- (a) **용량 증가**: 16→32ch 또는 1층 추가(~10k params, 런타임 여전히 무시 가능) 후 fresh
+  seeds로 confirmatory 재등록·1회 실행. 근소 미달 2건을 닫을 가능성이 가장 높다. ~1h GPU.
+- (b) **envelope 축소**: hue ±45° 또는 blur 0.2로 줄여 재등록. 논문 주장이 약해진다.
+- (c) **측정된 한계로 확정하고 진행**: "12/14, recall 93.4%"를 stage-B 결과로 공개하고
+  검증 3(latency 전제)~5(fresh PPO)로 이동. navigation A/B는 offline-PASS 전제(Gate 3
+  프로토콜)라 이 경우 실행하지 않는다.
