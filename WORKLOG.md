@@ -7465,3 +7465,31 @@ proof-of-concept 동결이 아니라 **일반화 검증 계속** 경로다. GPU�
 **검증 1 착수**: `eval_navrl_v2_detector_navigation_ab_replication.sh` 추가 — 원 launcher에서
 seeds 83/89 → **97/101**과 result root만 바꾸고 계약은 byte-동일하게 유지. 사전등록 문구
 (별도 보고, 동일 margin)를 헤더에 고정. PREFLIGHT 4셀 PASS. 실행 시작.
+
+## 2026-08-12 — 검증 1 완료: Gate 3 NI confirmatory replication PASS (seed 97/101)
+
+`results/navrl_v2_detector_navigation_ab_replication_seed97_101_schema2/` 4/4 셀 완료.
+독립 무결성 검사 PASS: 4셀 모두 policy SHA `f7022139…`, learned arm detector SHA `8da32d6f…`,
+동일 source manifest, exact-600 timeout(존재 셀 전부 mean/p10/p50/p90=600), seed/bars/action 계약 일치.
+
+| seed | arm | capture | crash | timeout | n |
+|---:|---|---:|---:|---:|---:|
+| 97 | analytic | 80.23% | 17.67% | 2.10% | 2049 |
+| 97 | learned_v2 | 80.06% | 17.70% | 2.24% | 2051 |
+| 101 | analytic | 79.40% | 17.37% | 3.22% | 2049 |
+| 101 | learned_v2 | 79.55% | 17.91% | 2.54% | 2049 |
+
+pooled learned−analytic **−0.015 pp**, 95% CI **[−1.752, +1.723]** → 사전등록 margin −2.0 pp
+대비 **replication PASS**. 원 campaign(seed 83/89: −0.073 pp, CI [−1.790, +1.644])과 사실상
+동일한 0 근방이며, 사전등록대로 **두 결과는 통합하지 않고 별도 보고**한다. CI 하한 여유는
+원 0.21 pp → 재현 0.25 pp로, "PASS지만 강하지 않다"는 성격도 재현됐다 — margin을 좁힌 것이
+아니라 동일 margin에서 독립 재현이 이뤄졌다는 의미다.
+
+**운영 사고 기록**: launcher 파생 시 summarizer 내부의 `seeds = [83, 89]` 리터럴이 남아
+4셀 완료 후 summary 단계에서 크래시했다. 수정하자 campaign contract의 launcher SHA 피닝이
+재실행을 정확히 거부했다(가드 정상 동작). 셀 데이터는 원본 launcher 산출물 그대로이므로,
+summary만 사전등록 공식(pooled 독립 이항 95% CI)으로 **런처 밖에서 재계산**해 저장했고
+그 사실을 summary 파일에 명시했다. 교훈: launcher 파생 시 모든 리터럴을 assert로 검증하는
+규칙(08-07)을 embedded summarizer에도 적용해야 한다.
+
+검증 1 종료. 다음은 검증 2 perception domain shift.

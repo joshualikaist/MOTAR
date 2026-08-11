@@ -197,7 +197,7 @@ import sys
 
 root = Path(sys.argv[1]).resolve()
 policy_sha, detector_sha, games = sys.argv[2], sys.argv[3], int(sys.argv[4])
-seeds = [83, 89]
+seeds = [97, 101]
 arms = {"analytic_bootstrap": "", "learned_v2": detector_sha}
 manifest = root / "source_bundle/source_manifest.json"
 manifest_sha = hashlib.sha256(manifest.read_bytes()).hexdigest()
