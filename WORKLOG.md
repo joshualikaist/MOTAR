@@ -7753,3 +7753,32 @@ frozen ep25000+riskcap, 205 bars, deterministic, exact-600, 2,049 ep/cell.
 - **E3 (counterfactual, descriptive)**: capture(envelope, analytic) — bootstrap의 붕괴 폭.
   detector 붕괴가 navigation을 실제로 무너뜨리는지의 직접 증거.
 - 이 8셀 test에 재시도 없음. 부차 지표(crash/timeout)는 descriptive.
+
+## 2026-08-12 — stage-A 사다리 재실행(v7): envelope 안 robust + 밖에서 우아한 열화
+
+`results/navrl_detector_domain_shift_v7/summary.{md,json}` — v2와 동일 28셀·동일 seed 103.
+v7(9×9/24ch, threshold는 사다리 공통 0.55로 측정)과 bootstrap을 동일 프레임에서 비교:
+
+| hue | bootstrap | v2(참고, 이전 측정) | **v7** |
+|---:|---:|---:|---:|
+| nominal | 95.0% | 95.0% | **96.9%** |
+| 60° (envelope 경계) | 79.7% | 62.5% | **96.2%** |
+| 90° (밖) | 45.0% | 39.4% | **91.2%** |
+| 120° (밖) | 40.9% | 34.4% | **83.7%** |
+| 180° (밖) | 24.8% | 21.5% | **62.6%** |
+
+light ±0.7(밖)에서도 98.9%(bootstrap 84.2%), texture/albedo envelope 안 96~99%.
+**v2의 "learned가 bootstrap보다 취약" 역전이 완전히 뒤집혔다** — randomization + 용량으로
+envelope 안 균일 robust, 밖에서도 bootstrap 대비 2.5배(180°) 유지.
+
+주의 신호 1건: **albedo 0.5(envelope 밖)에서 learned FPR 7.6%** 발생(envelope 안 0.0%).
+분포 밖 배경 반사율에서 위양성 모드가 열린다 — envelope 선언의 실증적 근거이자,
+실기 전 배경 분포 확장이 필요하다는 표지로 기록한다.
+
+### navigation A/B 재실행 사고 기록
+
+1차 실행이 2번째 셀에서 거부됐다: 평가 가드가 checkpoint의 학습 당시
+`cfg_detector_threshold=0.55`와 실행값 0.70(v7의 validation 선택 운영점)의 불일치를
+사고로 취급. **의도된 불일치**이므로 learned arm에만 `NAVRL_V2_FORCE=1`을 명시하고
+(analytic arm은 전체 가드 유지 — 환경 불일치는 거기서 잡힘), 완주 1셀 포함 루트를 삭제 후
+클린 재실행. 요약을 낸 적 없으므로 선택적 재시도가 아니다.
