@@ -46,8 +46,8 @@ from aerial_gym.task.navrl_task.navrl_detector import NavRLTargetDetector
 from aerial_gym.task.navrl_task.navrl_perception import AppearanceTargetSegmenter
 from aerial_gym.utils.math import quat_rotate, quat_rotate_inverse
 
-LEARNED_ARTIFACT = Path("artifacts/navrl_target_detector_v2.pth")
-LEARNED_SHA = "8da32d6f21bfbd3bdd5ec5de9ef9cb09e8deb4bd5ce511630e19afee33f26f10"
+DEFAULT_ARTIFACT = Path("artifacts/navrl_target_detector_v2.pth")
+DEFAULT_SHA = "8da32d6f21bfbd3bdd5ec5de9ef9cb09e8deb4bd5ce511630e19afee33f26f10"
 THRESHOLD = 0.55       # validation-selected in the offline gate; runtime default
 MIN_PIXELS = 2
 MAX_RANGE = 20.0
@@ -81,6 +81,8 @@ def parse_args():
     parser.add_argument("--batches", type=int, default=8)
     parser.add_argument("--seed", type=int, default=103)  # unused elsewhere in the project
     parser.add_argument("--output", type=Path, default=Path("results/navrl_detector_domain_shift"))
+    parser.add_argument("--learned-artifact", type=Path, default=DEFAULT_ARTIFACT)
+    parser.add_argument("--learned-sha", type=str, default=DEFAULT_SHA)
     return parser.parse_args()
 
 
@@ -173,8 +175,8 @@ def evaluate_cell(task, detector, models, batches, generator):
 
 def main():
     args = parse_args()
-    digest = hashlib.sha256(LEARNED_ARTIFACT.read_bytes()).hexdigest()
-    if digest != LEARNED_SHA:
+    digest = hashlib.sha256(args.learned_artifact.read_bytes()).hexdigest()
+    if digest != args.learned_sha:
         raise SystemExit(f"learned detector SHA mismatch: {digest}")
 
     task = task_registry.make_task(
@@ -186,7 +188,7 @@ def main():
 
     bootstrap = AppearanceTargetSegmenter().to(task.device).eval()
     learned = AppearanceTargetSegmenter().to(task.device).eval()
-    payload = torch.load(LEARNED_ARTIFACT, map_location=task.device)
+    payload = torch.load(args.learned_artifact, map_location=task.device)
     learned.load_state_dict(payload.get("model", payload), strict=True)
     models = {"bootstrap": bootstrap, "learned_v2": learned}
 
@@ -224,7 +226,8 @@ def main():
         "frames_per_cell": args.num_envs * args.batches,
         "threshold": THRESHOLD,
         "min_pixels": MIN_PIXELS,
-        "learned_detector_sha256": LEARNED_SHA,
+        "learned_detector_artifact": str(args.learned_artifact),
+        "learned_detector_sha256": args.learned_sha,
         "bars": 205,
         "cells": cells,
         "note": (
