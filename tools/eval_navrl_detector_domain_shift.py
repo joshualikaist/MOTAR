@@ -43,7 +43,10 @@ from aerial_gym.registry.task_registry import task_registry  # isaacgym before t
 import torch
 
 from aerial_gym.task.navrl_task.navrl_detector import NavRLTargetDetector
-from aerial_gym.task.navrl_task.navrl_perception import AppearanceTargetSegmenter
+from aerial_gym.task.navrl_task.navrl_perception import (
+    AppearanceTargetSegmenter,
+    build_target_segmenter,
+)
 from aerial_gym.utils.math import quat_rotate, quat_rotate_inverse
 
 DEFAULT_ARTIFACT = Path("artifacts/navrl_target_detector_v2.pth")
@@ -187,8 +190,11 @@ def main():
     generator.manual_seed(args.seed)
 
     bootstrap = AppearanceTargetSegmenter().to(task.device).eval()
-    learned = AppearanceTargetSegmenter().to(task.device).eval()
     payload = torch.load(args.learned_artifact, map_location=task.device)
+    architecture = ""
+    if isinstance(payload, dict):
+        architecture = str((payload.get("meta") or {}).get("architecture", ""))
+    learned = build_target_segmenter(architecture).to(task.device).eval()
     learned.load_state_dict(payload.get("model", payload), strict=True)
     models = {"bootstrap": bootstrap, "learned_v2": learned}
 
