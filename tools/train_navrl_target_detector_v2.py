@@ -424,9 +424,20 @@ def select_validation_operating_point(candidates):
     for candidate_name, model, pos_weight, scores, dataset, fx in candidates:
         for threshold in THRESHOLDS:
             metrics = detector_metrics(scores, dataset, threshold, 2, fx)
+            # Feasibility mirrors EVERY precision-side gate check, not only the FPRs.
+            # Mirroring just the FPRs let the selector chase recall down to threshold 0.075,
+            # where the mask halo dropped pixel precision to 0.80 and the halo's background
+            # depth pushed range MAE to 0.88 m -- an operating point that could never pass the
+            # gate it was being selected for. Validation-only; the held-out test stays sealed.
+            range_mae = metrics.get("range_mae_m")
             feasible = (
                 _metric_or_zero(metrics, "absent_false_positive_rate") <= 0.01
                 and _metric_or_zero(metrics, "fully_occluded_false_positive_rate") <= 0.01
+                and _metric_or_zero(metrics, "frame_precision") >= 0.98
+                and _metric_or_zero(metrics, "pixel_precision") >= 0.95
+                and range_mae is not None
+                and math.isfinite(float(range_mae))
+                and float(range_mae) <= 0.25
             )
             worst_recall = min(
                 _metric_or_zero(metrics, "frame_recall"),
