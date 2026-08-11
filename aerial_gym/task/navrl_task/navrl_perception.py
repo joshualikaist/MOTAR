@@ -449,6 +449,10 @@ class SpatialTargetSegmenter(nn.Module):
         depth_channel = (depth / max_depth).clamp(0.0, 1.0).unsqueeze(1)
         return torch.sigmoid(self.net(torch.cat([rgb, depth_channel], dim=1))).squeeze(1)
 
+    def forward_logits(self, features):
+        """Logits from the pre-concatenated 4-channel input (offline trainer contract)."""
+        return self.net(features)
+
 
 def build_target_segmenter(architecture):
     """Map an artifact's meta.architecture tag to its module class (default: legacy 1x1)."""
@@ -478,6 +482,10 @@ class AppearanceTargetSegmenter(nn.Module):
     def forward(self, rgb, depth, max_depth):
         depth_channel = (depth / max_depth).clamp(0.0, 1.0).unsqueeze(1)
         return torch.sigmoid(self.classifier(torch.cat([rgb, depth_channel], dim=1))).squeeze(1)
+
+    def forward_logits(self, features):
+        """Logits from the pre-concatenated 4-channel input (offline trainer contract)."""
+        return self.classifier(features)
 
 
 class BatchedConstantVelocityTracker:

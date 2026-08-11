@@ -302,7 +302,7 @@ def train_candidate(dataset, kind, epochs, batch_size, max_range, device, seed, 
             features, _, target = _input_batch(
                 dataset, indices, device, max_range, True, generator
             )
-            logits = model.classifier(features).squeeze(1)
+            logits = model.forward_logits(features).squeeze(1)
             loss = _candidate_loss(logits, target, kind, pos_weight)
             optimizer.zero_grad(set_to_none=True)
             loss.backward()
@@ -324,7 +324,7 @@ def infer_scores(model, dataset, batch_size, max_range, device):
             indices = torch.arange(start, min(start + batch_size, n))
             features, _, _ = _input_batch(dataset, indices, device, max_range, False, None)
             scores.append(
-                torch.sigmoid(model.classifier(features)).squeeze(1).to(torch.float16).cpu()
+                torch.sigmoid(model.forward_logits(features)).squeeze(1).to(torch.float16).cpu()
             )
     return torch.cat(scores)
 
