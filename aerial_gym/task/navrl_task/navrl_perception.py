@@ -425,6 +425,38 @@ def _quat_rotate_inverse_xyzw(q, v):
     return _quat_rotate_xyzw(qi, v)
 
 
+class SpatialTargetSegmenter(nn.Module):
+    """Small conv head (7x7 receptive field) for appearance-randomised scenes.
+
+    The preregistered Gate 3 escalation: the 1x1 per-pixel colour rule failed the offline gate
+    under the declared appearance envelope (pixel precision 0.17 at hue +/-60, light +/-0.5 --
+    a per-pixel rule cannot separate an arbitrary-hue target from a jittered background), which
+    opens exactly this step. ~2.9k parameters keeps 128 parallel camera streams cheap; the
+    dilated second layer buys spatial context (blob vs bar) without pooling.
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Conv2d(4, 16, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(16, 16, kernel_size=3, padding=2, dilation=2),
+            nn.ReLU(),
+            nn.Conv2d(16, 1, kernel_size=1),
+        )
+
+    def forward(self, rgb, depth, max_depth):
+        depth_channel = (depth / max_depth).clamp(0.0, 1.0).unsqueeze(1)
+        return torch.sigmoid(self.net(torch.cat([rgb, depth_channel], dim=1))).squeeze(1)
+
+
+def build_target_segmenter(architecture):
+    """Map an artifact's meta.architecture tag to its module class (default: legacy 1x1)."""
+    if str(architecture).startswith("SpatialTargetSegmenter"):
+        return SpatialTargetSegmenter()
+    return AppearanceTargetSegmenter()
+
+
 class AppearanceTargetSegmenter(nn.Module):
     """Tiny learnable RGB-D pixel classifier with a usable red-target bootstrap.
 
@@ -661,6 +693,13 @@ class NavRLPerceptionModule:
                         % (checkpoint, expected_sha, actual_sha)
                     )
             state = torch.load(checkpoint, map_location=device)
+            architecture = ""
+            if isinstance(state, dict):
+                architecture = str((state.get("meta") or {}).get("architecture", ""))
+            # Artifacts carry their architecture; a spatial checkpoint must not be forced into
+            # the 1x1 head (strict load would fail loudly, but constructing the right class is
+            # the contract, not the error message).
+            self.segmenter = build_target_segmenter(architecture).to(device).eval()
             self.segmenter.load_state_dict(state.get("model", state), strict=True)
 
         self.tracker = BatchedConstantVelocityTracker(

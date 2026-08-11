@@ -563,5 +563,58 @@ class DetectorCheckpointIntegrityTest(unittest.TestCase):
         self._build()
 
 
+class SegmenterArchitectureDispatch(unittest.TestCase):
+    """An artifact's meta.architecture selects the module class; legacy payloads keep the 1x1."""
+
+    def _payload_roundtrip(self, model, architecture):
+        import tempfile
+
+        camera, perception = _configs()
+        handle = tempfile.NamedTemporaryFile(suffix=".pth", delete=False)
+        handle.close()
+        self.addCleanup(os.unlink, handle.name)
+        torch.save({"model": model.state_dict(), "meta": {"architecture": architecture}},
+                   handle.name)
+        perception.detector_checkpoint = handle.name
+        return NavRLPerceptionModule(1, "cpu", perception, 0.1, camera)
+
+    def test_spatial_architecture_constructs_the_cnn(self):
+        module = self._payload_roundtrip(
+            _PERCEPTION.SpatialTargetSegmenter(), "SpatialTargetSegmenter/cnn7x7-RGBD"
+        )
+        self.assertIsInstance(module.segmenter, _PERCEPTION.SpatialTargetSegmenter)
+
+    def test_pixel_architecture_and_legacy_default_keep_the_1x1(self):
+        module = self._payload_roundtrip(
+            _PERCEPTION.AppearanceTargetSegmenter(), "AppearanceTargetSegmenter/1x1-RGBD"
+        )
+        self.assertIsInstance(module.segmenter, _PERCEPTION.AppearanceTargetSegmenter)
+        self.assertNotIsInstance(module.segmenter, _PERCEPTION.SpatialTargetSegmenter)
+        # v1-era payloads carry no meta at all
+        import tempfile
+
+        camera, perception = _configs()
+        handle = tempfile.NamedTemporaryFile(suffix=".pth", delete=False)
+        handle.close()
+        self.addCleanup(os.unlink, handle.name)
+        torch.save({"model": _PERCEPTION.AppearanceTargetSegmenter().state_dict()}, handle.name)
+        perception.detector_checkpoint = handle.name
+        legacy = NavRLPerceptionModule(1, "cpu", perception, 0.1, camera)
+        self.assertIsInstance(legacy.segmenter, _PERCEPTION.AppearanceTargetSegmenter)
+
+    def test_spatial_forward_contract(self):
+        model = _PERCEPTION.SpatialTargetSegmenter()
+        rgb = torch.rand(2, 3, 45, 80)
+        depth = torch.rand(2, 45, 80) * 20.0
+        out = model(rgb, depth, 20.0)
+        self.assertEqual(tuple(out.shape), (2, 45, 80))
+        self.assertTrue(bool((out >= 0).all() and (out <= 1).all()))
+
+    def test_spatial_head_stays_small(self):
+        """The escalation budget: spatial context, not capacity -- keep it a few k params."""
+        n = sum(p.numel() for p in _PERCEPTION.SpatialTargetSegmenter().parameters())
+        self.assertLess(n, 5000, n)
+
+
 if __name__ == "__main__":
     unittest.main()

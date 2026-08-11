@@ -283,11 +283,12 @@ def _candidate_loss(logits, target, kind, pos_weight):
     return focal + 0.25 * dice
 
 
-def train_candidate(dataset, kind, epochs, batch_size, max_range, device, seed):
+def train_candidate(dataset, kind, epochs, batch_size, max_range, device, seed, arch="pixel_1x1"):
     torch.manual_seed(seed)
     generator = torch.Generator(device=device)
     generator.manual_seed(seed)
-    model = AppearanceTargetSegmenter().to(device).train()
+    model = (SpatialTargetSegmenter() if arch == "spatial_cnn"
+             else AppearanceTargetSegmenter()).to(device).train()
     optimizer = torch.optim.Adam(model.parameters(), lr=2e-3)
     positive = float(dataset["mask"].sum())
     total = float(dataset["mask"].numel())
@@ -489,7 +490,7 @@ def main():
     if args.preflight:
         print(
             "[detector-v2] PREFLIGHT PASS | train/val/test=%d/%d/%d seeds=%d/%d/%d "
-            "candidates=balanced_bce,focal_dice thresholds=%d"
+            "candidates=pixel/spatial x bce/focal thresholds=%d"
             % (
                 args.train_frames,
                 args.validation_frames,
@@ -506,11 +507,14 @@ def main():
     # validate the frozen campaign contract without initializing a GPU or JIT extension cache.
     # Its legacy gymutil parser otherwise re-parses this tool's already-consumed arguments.
     sys.argv = [sys.argv[0]]
-    global task_registry, torch, F, AppearanceTargetSegmenter, quat_rotate
+    global task_registry, torch, F, AppearanceTargetSegmenter, SpatialTargetSegmenter, quat_rotate
     from aerial_gym.registry.task_registry import task_registry
     import torch
     import torch.nn.functional as F
-    from aerial_gym.task.navrl_task.navrl_perception import AppearanceTargetSegmenter
+    from aerial_gym.task.navrl_task.navrl_perception import (
+        AppearanceTargetSegmenter,
+        SpatialTargetSegmenter,
+    )
     from aerial_gym.utils.math import quat_rotate
 
     task = task_registry.make_task(
@@ -527,13 +531,24 @@ def main():
 
     candidates = []
     candidate_receipts = []
-    for index, kind in enumerate(("balanced_bce", "focal_dice")):
+    # Gate 3 escalation: the spatial CNN joins the candidate pool ONLY because the 1x1 head
+    # failed the offline gate under the appearance envelope (pixel precision 0.17); selection
+    # stays validation-only, so a nominal-appearance run can still pick the 1x1 head.
+    combos = [
+        ("pixel_1x1", "balanced_bce"),
+        ("pixel_1x1", "focal_dice"),
+        ("spatial_cnn", "balanced_bce"),
+        ("spatial_cnn", "focal_dice"),
+    ]
+    for index, (arch, kind) in enumerate(combos):
         model, pos_weight = train_candidate(
-            train, kind, args.epochs, args.batch_size, max_range, device, TRAIN_SEED + index
+            train, kind, args.epochs, args.batch_size, max_range, device,
+            TRAIN_SEED + index, arch=arch,
         )
         scores = infer_scores(model, validation, args.batch_size, max_range, device)
-        candidates.append((kind, model, pos_weight, scores, validation, fx))
-        candidate_receipts.append({"candidate": kind, "pos_weight": pos_weight})
+        name = f"{arch}+{kind}"
+        candidates.append((name, model, pos_weight, scores, validation, fx))
+        candidate_receipts.append({"candidate": name, "pos_weight": pos_weight})
 
     selected, validation_top10 = select_validation_operating_point(candidates)
     _, selected_name, selected_model, pos_weight, validation_metrics = selected
@@ -562,7 +577,11 @@ def main():
         "meta": {
             "schema_version": SCHEMA_VERSION,
             "created_at_utc": created,
-            "architecture": "AppearanceTargetSegmenter/1x1-RGBD",
+            "architecture": (
+                "SpatialTargetSegmenter/cnn7x7-RGBD"
+                if selected_name.startswith("spatial_cnn")
+                else "AppearanceTargetSegmenter/1x1-RGBD"
+            ),
             "selected_loss": selected_name,
             "selected_threshold": selected_threshold,
             "min_pixels": 2,

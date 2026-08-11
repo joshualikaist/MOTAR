@@ -7565,3 +7565,34 @@ seed 103, threshold 0.55, bootstrap과 learned v2를 **동일 프레임**에서 
   offline gate가 실패할 때만 architecture 확장을 연다는 사전등록(Gate 3)을 따른다.
 - 캘리브레이션 축(mount/fov)은 detector 재학습 대상이 아니라 **navigation A/B로 직접** 측정
   (KF 측정 오염 경로).
+
+## 2026-08-12 — 검증 2 stage B(1): envelope 하 1×1 head gate FAIL → 사전등록 에스컬레이션 발동
+
+envelope(hue ±60°, light ±0.5, albedo 0.3, texture 0.2, blur 0.3)로 v3를 학습했다
+(`results/navrl_detector_offline_gate_v3_domainrand/`, artifact SHA `c5d8b178…`, receipt에
+envelope 기록). 결과 **GATE FAIL** — 14체크 중 4개 실패:
+
+| 실패 체크 | 값 | 기준 |
+|---|---:|---:|
+| **pixel_precision** | **0.172** | ≥0.95 |
+| frame_recall | 0.937 | ≥0.95 |
+| frame_precision | 0.975 | ≥0.98 |
+| full_occlusion_fpr | 0.0134 | ≤0.01 |
+
+pixel precision 0.17이 본질이다: hue ±60° + light ±0.5 + albedo jitter에서는 **per-pixel 색
+규칙로 표적/배경을 분리할 수 없다**(선택된 threshold도 0.55 → 0.425로 내려갔다). 이는 결함이
+아니라 Gate 3에 사전등록된 판정 경로다 — "이 최소 head가 offline gate를 실패할 때만
+architecture 확장을 연다." 실패했으므로 확장을 연다.
+
+**에스컬레이션 구현**:
+- `SpatialTargetSegmenter` (navrl_perception.py): conv 4→16(3×3) → 16→16(3×3, dilation 2) →
+  16→1(1×1), **~2.9k params**, 수용영역 7×7. 공간 문맥(blob vs 세로 막대)을 사되 용량은
+  최소로 유지.
+- artifact가 `meta.architecture`를 실으며 로더가 이를 읽어 올바른 클래스를 생성한다
+  (`build_target_segmenter`). meta 없는 v1-era payload는 1×1로 기본 처리(하위 호환).
+- trainer 후보를 2×2로 확장: {pixel_1x1, spatial_cnn} × {balanced_bce, focal_dice}.
+  **선택은 여전히 validation-only**이므로 nominal 조건에서는 1×1이 다시 뽑힐 수 있다.
+- 테스트: perception 27/27(아키텍처 디스패치 4종 신규 — spatial 로드/legacy 기본/forward
+  계약/파라미터 예산 <5k), latency 33/33, appearance 12/12 회귀 PASS.
+
+v4(동일 envelope, 4후보) 학습 시작. gate PASS 시 stage-A 사다리 재실행 → navigation A/B 순.
