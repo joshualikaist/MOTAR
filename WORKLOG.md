@@ -7782,3 +7782,45 @@ envelope 안 균일 robust, 밖에서도 bootstrap 대비 2.5배(180°) 유지.
 사고로 취급. **의도된 불일치**이므로 learned arm에만 `NAVRL_V2_FORCE=1`을 명시하고
 (analytic arm은 전체 가드 유지 — 환경 불일치는 거기서 잡힘), 완주 1셀 포함 루트를 삭제 후
 클린 재실행. 요약을 낸 적 없으므로 선택적 재시도가 아니다.
+
+## 2026-08-12 — 검증 2 종결: navigation A/B — 인지 robustness ≠ 시스템 robustness
+
+`results/navrl_v2_appearance_navigation_ab_seed151_157/summary.{md,json}` — 사전등록 8셀 완주,
+재시도 없음. pooled (2×2049~2050 ep/arm):
+
+| arm | capture | crash | timeout |
+|---|---:|---:|---:|
+| nominal + analytic | **80.92%** | 16.52% | 2.56% |
+| nominal + learned_v7 | 75.89% | 21.59% | 2.51% |
+| envelope + analytic | 49.88% | 26.94% | **23.18%** |
+| envelope + learned_v7 | 66.62% | 30.60% | 2.79% |
+
+- **E1 (primary NI, nominal): FAIL** — learned_v7 − analytic = **−5.02 pp**,
+  CI [−6.80, −3.24] (margin −2.0). v2 detector가 NI였던 것(−0.07 pp)과 대조적으로,
+  **robustness 학습이 nominal 성능을 실제로 깎았다.**
+- **E2 (envelope 비용, v7)**: −14.29 pp, CI [−16.17, −12.41] (80.92 → 66.62%).
+- **E3 (bootstrap 붕괴)**: **−31.04 pp**, CI [−32.99, −29.09] (→ 49.88%), **timeout 23.2%**
+  — hue 변형 표적을 red 규칙이 못 봐서 탐색만 하다 끝나는 프로파일.
+
+### 판독
+
+1. **robust detector는 envelope 붕괴의 절반 이상을 구조한다**: E3 −31.0 → E2 −14.3
+   (+16.7 pp 회수), timeout 23.2% → 2.8% (표적은 계속 찾는다).
+2. **그러나 nominal NI가 깨졌다.** 원인 후보(미검증, 다음 진단 대상):
+   (a) v7의 offline gate는 **envelope 하에서만** 측정됐다 — nominal appearance의 offline
+   지표는 한 번도 게이트되지 않았다(검증 설계의 공백, 이번에 드러남).
+   (b) v7은 픽셀 마스크 통계(크기·경계·threshold 0.70)가 analytic과 달라
+   surface_range/carve-out/visible 분포를 바꾼다 — **정책은 analytic 통계에 적응돼 있으므로**
+   detector 교체 자체가 관측 분포 이동이다. crash +5.1 pp가 이 경로와 부합.
+3. **논문 서사**: "인지 모듈의 robustness는 시스템 robustness로 자동 승격되지 않는다 —
+   정책이 인지 통계에 결합돼 있기 때문"이 검증 2의 최종 결론. E1/E2/E3 세 숫자가
+   이 문장을 정량화한다.
+
+### 검증 2 종결 선언
+
+렌더러 8축 → stage-A 사다리(v2 취약) → v3(1×1 불가) → v4(용량) → v5(선택기) →
+v6(근소 미달) → v7(14/14 PASS) → 사다리 재실행(envelope 안 robust) → navigation A/B
+(E1 FAIL·E2/E3 정량화)까지, 사전등록·1회 개봉·재시도 없음 원칙을 유지하며 완료.
+후속 후보(로드맵 재논의 대상): nominal-포함 offline gate 재설계, threshold의 nominal
+재보정(새 사전등록 필요), 그리고 **검증 5의 fresh PPO를 v7+envelope randomization 위에서
+학습**하는 설계(정책-인지 결합을 학습으로 푸는 정공법).
