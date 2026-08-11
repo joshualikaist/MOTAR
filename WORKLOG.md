@@ -7212,3 +7212,256 @@ manifest SHA `a4ecc49b...`(281 runtime files)를 사용했고 off/riskcap, seed5
 manifest가 모두 일치했다. 합성 15셀 fixture로 최종 summary/contrast 생성도 PASS했고 전체 Python 회귀는
 **205/205 PASS**, 두 shell과 13개 embedded Python heredoc compile, `git diff --check`도 통과했다. 스모크
 성능값은 사용하지 않는다. 장기 15셀 평가는 사용자가 명령을 실행할 때까지 시작하지 않았다.
+
+## 2026-08-11 — schema-v2 governor/adaptation A/B/C 15셀 평가 완료
+
+`results/navrl_v2_governor_adaptation_abc_seed53_schema2/`가 **15/15 셀 완료**됐다. 전 셀은 미사용
+seed 53, deterministic action, exact 600-step timeout, 약 2,049 episodes/cell이고 동일 runtime source
+manifest SHA `cc71428b0445…`를 사용한다. 별도 무결성 검사에서도 checkpoint snapshot/result receipt,
+source SHA, outcome accounting, horizon 계약이 모두 PASS했다.
+
+| bars | A ep24000/off | B ep24000/riskcap | C ep25000/riskcap | B−A governor | C−B adaptation |
+|---:|---:|---:|---:|---:|---:|
+| 130 | 83.70% | 87.07% | 89.75% | +3.37 pp | +2.68 pp |
+| 160 | 79.17% | 85.26% | 86.34% | +6.09 pp | +1.08 pp |
+| 190 | 75.07% | 81.16% | 81.75% | +6.09 pp | +0.59 pp |
+| 205 | 70.67% | 78.40% | **80.28%** | **+7.73 pp** | +1.88 pp |
+| 220 OOD | 66.37% | 75.55% | **77.06%** | +9.18 pp | +1.51 pp |
+
+### 통계·원인 판정
+
+- **riskcap governor는 성공**: 학습범위 130–205 pooled capture가 77.15→82.97%, **+5.82 pp**
+  (95% CI +4.60..+7.04)다. 다섯 density의 B−A가 모두 양수이고 Holm 보정 뒤에도 모두 유의하다.
+  다만 점추정치가 +3.37→+7.73 pp로 커져도 학습범위 continuous interaction `p=0.358`, density별
+  heterogeneity `p=0.587`이므로 **“밀도가 높을수록 이득이 증가한다”는 확정 주장은 하지 않는다.**
+- governor 이득은 충돌 감소다. 205 bars에서 crash **26.50→17.70%**(−8.80 pp), timeout
+  2.83→3.90%(+1.07 pp), capture +7.73 pp다. 220 OOD도 crash −10.54 pp와 timeout +1.37 pp가 합쳐져
+  capture +9.18 pp다. 안전을 위해 205-bar capture 평균 시간이 11.83→13.08 s로 1.24 s 늘어나는
+  trade-off가 있지만, 정지율 증가는 아니라 의도한 감속 효과다.
+- **추가 1,000-epoch adaptation은 작다**: 학습범위 pooled +1.56 pp(95% CI +0.43..+2.69)지만,
+  density별로는 130 bars만 Holm 보정 후 유의하고 160/190/205는 CI가 0을 포함한다. 특히 205에서
+  crash는 17.70→17.37%(−0.32 pp)에 그치고 timeout 3.90→2.34%(−1.56 pp)가 대부분의 +1.88 pp를
+  만든다. 220에서는 crash가 20.50%로 완전히 동일하고 timeout만 1.51 pp 감소했다. 따라서 적응은
+  고밀도 collision ceiling을 해결했다기보다 timeout/제어 잔차를 줄였다.
+- **남은 핵심 한계는 bar contact**: 최종 C에서 205 bars crash의 97.2%(346/356), 220 bars crash의
+  97.9%(411/420)가 bar contact다. below는 각각 4건/3건뿐이다. 이제 고도·정지·episode length가
+  1순위 병목이라는 해석은 기각하고, 고밀도에서의 국소 경로 선택/장애물 표현/충돌 여유가 남은
+  ceiling이라고 판정한다.
+- legacy seed47 601-action 값 205 bars 80.54%와 새 exact-600 값 80.28%는 0.26 pp 차이여서 기존
+  headline의 크기는 재현됐다. 다만 publication 기준값은 provenance가 완전한 새 schema-v2
+  **80.28/17.37/2.34%**로 교체한다.
+
+Gate 1은 완료다. PPO 추가 학습은 하지 않는다. 다음 순서는 사전등록된 Gate 2
+(`0.3/1.5 m/s × 130/160/190/205 bars × 새 seed 2개`, 16 cells)이며, 여기서 speed×density
+interaction이 재현되지 않으면 밀도 main effect만 결론으로 남기고 해당 가지를 종료한다.
+
+## 2026-08-11 — Gate 2 speed×density 16셀 launcher 구현
+
+`eval_navrl_v2_speed_density_interaction.sh`를 추가했다. frozen ep25000+riskcap 하나만 사용하며
+미사용 seed 59/61 × 고정 표적속도 0.3/1.5 m/s × 학습범위 130/160/190/205 bars의 16셀을 순차 평가한다.
+각 cell은 deterministic/original, exact 600 actions, 2,049 requested episodes이고 하나의 immutable
+runtime-source bundle을 공유한다. 완료 cell skip/partial cell 거부로 중단 후 같은 명령 재개가 가능하다.
+
+primary statistic은 결과 전에 campaign contract에
+`binomial_logit(capture) ~ seed + density + fast + density:fast`로 고정했다. seed fixed effect를 포함한
+reduced/full model의 1-df likelihood-ratio test이며, 220 OOD는 primary grid에서 제외했다. 실행 완료 시
+셀별 표와 interaction p-value를 `summary.{md,json}`으로 자동 생성한다.
+
+검증: launcher `bash -n`, embedded Python 4개 compile, `git diff --check` PASS. `PREFLIGHT=1`에서
+4개 seed×speed invocation 모두 40×40 m/base_sim, deterministic/original, riskcap, exact-600 provenance
+계약을 통과했고 실제 장기 평가는 시작하지 않았다.
+
+### 2026-08-11 08:45 KST 진행 확인
+
+사용자가 Gate 2 launcher를 실행했다. 현재 16셀 중 **7셀 result/receipt 완료**, 8번째
+`seed59 / 1.5 m/s / 205 bars`가 GPU에서 실행 중이다(약 5.35 GiB, GPU utilization 약 57%).
+최종 `summary.{md,json}`은 아직 없으므로 interaction 판정은 보류한다. 완료된 seed59 7셀의 capture는
+0.3 m/s에서 130/160/190/205 bars = 87.96/86.29/83.85/81.32%, 1.5 m/s에서
+130/160/190 bars = 87.60/84.83/79.85%다. 동일 seed의 마지막 셀과 seed61 전량이 남아 있어 이 중간값으로
+가설 결론을 내리지 않는다.
+
+## 2026-08-11 — Gate 2 speed×density 16셀 완료: ID interaction 재현
+
+`results/navrl_v2_speed_density_interaction_seed59_61_schema2/`가 **16/16 셀 완료**됐다. 자동 summary와
+별도 독립 검사 모두 policy/source/receipt SHA, seed/speed/bars, deterministic+riskcap, exact-600 horizon,
+outcome accounting 계약을 통과했다. 모든 셀은 shared runtime source manifest `3303599b48b5…`와 frozen
+ep25000 checkpoint `f7022139…`를 사용한다.
+
+두 seed pooled capture 결과:
+
+| bars | 0.3 m/s | 1.5 m/s | fast−slow |
+|---:|---:|---:|---:|
+| 130 | 88.44% | 87.80% | −0.64 pp |
+| 160 | 86.42% | 84.41% | −2.00 pp |
+| 190 | 83.83% | 79.90% | −3.93 pp |
+| 205 | 81.78% | 75.90% | **−5.87 pp** |
+
+사전등록 primary model `capture ~ seed + density + fast + density:fast`의 likelihood-ratio test는
+χ²(1)=**12.7603**, **p=0.000354**로 interaction을 검출했다. interaction coefficient는 30 bars당
+−0.1161 log-odds(SE 0.0325), odds multiplier **0.890**(95% CI 0.835..0.949)이다. seed별 보조 검정도
+동일 방향으로 seed59 β=−0.1328/p=0.00369, seed61 β=−0.0991/p=0.03198이었다. 따라서 이전 seed47
+legacy grid의 ID interaction 미확정(p=0.337) 결론은 이 two-new-seed/exact-600/schema-v2 primary 결과로
+supersede한다. 220 OOD는 이번 검정에 들어가지 않았다.
+
+outcome identity로 분해하면 해석이 더 정확하다.
+
+| bars | fast−slow crash | fast−slow timeout | fast−slow capture |
+|---:|---:|---:|---:|
+| 130 | +3.40 pp | −2.75 pp | −0.64 pp |
+| 160 | +3.64 pp | −1.63 pp | −2.00 pp |
+| 190 | +5.49 pp | −1.56 pp | −3.93 pp |
+| 205 | +6.73 pp | −0.85 pp | −5.87 pp |
+
+빠른 표적은 전 밀도에서 crash를 늘리지만 저밀도에서는 timeout 감소가 그 손실을 상당 부분 상쇄한다.
+밀도가 높아질수록 crash 위험차가 커지고 timeout 상쇄가 줄어 capture 비용이 드러난다. crash 자체의
+logit interaction은 p=0.614이고 timeout interaction은 p=0.00192이므로, 현재 증거만으로 “회피 중 표적
+이동” 하나를 확정 메커니즘으로 쓰지는 않는다. 확정 가능한 결론은 **학습범위 안에서 표적속도 비용이
+밀도에 의존한다**는 것이다.
+
+Gate 2는 PASS로 종료한다. PPO 재학습이나 추가 speed grid는 하지 않는다. 다음 계획상 작업은 Gate 3
+learned detector offline gate이며, navigation policy를 고정한 채 detector dataset/loss/calibration을 먼저
+검증해야 한다.
+
+## 2026-08-11 — Gate 3 detector offline gate v2 구현
+
+기존 `tools/train_navrl_target_detector.py`는 정면 2–12 m/4,096 frames/unweighted BCE/v1 artifact를 다시
+만드는 코드라 Gate 3에 사용할 수 없음을 확인했다. v1은 덮어쓰지 않고
+`tools/train_navrl_target_detector_v2.py`와 `run_navrl_detector_offline_gate.sh`를 새로 추가했다.
+
+- split: train/validation/test = **8,192/2,048/4,096 frames**, 독립 seed **71/73/79**.
+- coverage: camera full bearing/elevation, 2–20 m 5개 range bin 균등 표집, 20% target-absent,
+  20% rendered obstacle 뒤 강제 occlusion, 자연 partial/full occlusion과 2–5 pixel small target.
+- geometry: current v2의 205 bars / 40×40 m / `navrl_band`; 비싼 layout은 독립 target batch 4개에만
+  재사용해 split당 128/32/64개 layout을 유지한다.
+- candidates: 기존 runtime-compatible 1×1 RGB-D head에 class-balanced BCE와 focal+Dice를 비교한다.
+  현재 simulator 표적은 고정 red appearance라 spatial CNN을 먼저 추가하면 불필요한 confound가 되므로,
+  이 최소 head가 offline gate를 실패할 때만 architecture 확장을 연다.
+- calibration: candidate/loss/37개 threshold 선택은 validation에서만 수행하고 test는 이후 한 번만 연다.
+  test gate는 frame precision/recall, absent/full-occlusion FPR, far/partial/small recall, pixel precision,
+  bearing/range MAE와 각 stratum 최소 표본수를 동시에 요구한다.
+- PPO policy는 이 단계에서 load/train하지 않는다. offline PASS artifact만 후속 frozen-policy
+  analytic-vs-learned navigation A/B에 들어간다.
+
+검증: Python compile, shell `bash -n`, preflight, focused tests 3/3, `git diff --check` PASS. RTX 3070
+소형 end-to-end smoke 두 번에서 renderer 수집→두 loss 학습→validation 선택→held-out report가 끝까지
+완료됐다. 두 번째 smoke는 `navrl_band` 로그까지 확인했다. 64/128-frame smoke의 검출 지표는 모두 1.0,
+gate는 사전등록된 최소 test 표본수 부족만으로 의도대로 FAIL했다. 정규 Gate 3 장기 실행은 아직
+시작하지 않았다.
+
+### Gate 3 정규 실행 완료 — offline PASS
+
+사용자 실행은 중단된 것이 아니라 2026-08-11 10:45 KST에 정상 종료됐다. train/validation/test 전량을
+수집·학습·평가했고 `artifacts/navrl_target_detector_v2.pth`와 receipt, summary를 생성했다. artifact
+SHA-256은 `8da32d6f21bfbd3bdd5ec5de9ef9cb09e8deb4bd5ce511630e19afee33f26f10`이며 summary/receipt/실제
+파일 해시가 모두 일치한다.
+
+- 선택: `balanced_bce`, validation 고정 threshold **0.55**(runtime default와 동일).
+- test seed79: 4,096 frames, visible 1,313, absent 832, non-visible/occluded 1,951,
+  forced-partial 230, small-target 579, far 14–20 m 339.
+- held-out test: frame precision/recall **1.000/1.000**, absent/full-occlusion FPR **0/0**,
+  far/partial/small recall **1/1/1**, pixel precision/IoU **1/1**, bearing/range MAE **0/0**.
+- 사전 고정 gate check **14/14 PASS**. v1의 약 14 m cutoff와 달리 v2 weight는 20 m의 pure-red
+  target score도 threshold 0.55 위에 남는다.
+
+이 PASS의 범위는 정확히 **현재 simulator appearance**다. renderer가 target을 고정된 red RGB로 칠하고
+배경/막대는 neutral이므로 geometry·range·occlusion split이 달라도 pixel class는 완전히 분리 가능하다.
+따라서 “실세계 learned vision이 해결됐다”는 결론은 금지하고, “v1의 데이터/loss 결함을 제거해 현
+simulator에서 analytic mask와 동일한 segmentation을 재현했다”로 제한한다. 다음 단계는 artifact SHA와
+threshold를 고정해 frozen ep25000+riskcap에서 analytic-vs-learned navigation A/B를 실행하는 것이다.
+
+## 2026-08-11 — Gate 3 stage B detector navigation A/B launcher
+
+`eval_navrl_v2_detector_navigation_ab.sh`를 추가했다. frozen ep25000+riskcap / 205 bars / deterministic /
+exact-600에서 미사용 seed 83/89 × `analytic_bootstrap`/`learned_v2`의 4셀을 순차 실행한다. 네 셀은 한
+runtime-source bundle을 공유하고 completed-cell skip/partial-cell 거부로 재개 가능하다. learned arm은
+offline PASS receipt, artifact SHA `8da32d6f…`, validation-selected threshold 0.55를 실행 전에 검증한다.
+
+primary endpoint는 두 seed pooled capture의 learned−analytic 차이다. 결과 전에 비열등성 margin을
+**−2.0 pp**로 campaign contract에 고정했고, 보수적인 독립-binomial 양측 95% CI lower bound가 −2.0 pp보다
+클 때만 PASS한다. crash/timeout은 secondary descriptive endpoint로 남긴다. PPO weight·governor·밀도·seed
+외 조건은 양 arm에서 동일하다.
+
+검증: launcher `bash -n`, embedded Python 3개 compile, 4-cell evaluator preflight, detector focused tests
+6/6, `git diff --check` PASS. 장기 navigation A/B는 사용자가 명령을 실행하기 전까지 시작하지 않았다.
+
+## 2026-08-11 — Genspark 발표 제작용 단일 source-of-truth 작성
+
+사용자가 지금까지의 MOTAR 연구를 Genspark AI Slides로 발표 자료화할 수 있도록
+`docs/GENSPARK_PPT_BRIEF_2026-08-11.md`를 추가했다. 이 파일 하나에 한국어 15장+부록 제작 프롬프트,
+시각 스타일, 권장 slide 순서, 시스템/정보방화벽 계약, 최신 schema-v2 Gate 1·2 수치, timestamp-aware
+latency 결과, Gate 3 offline detector 결과, 음성 결과, 금지 주장, 다음 로드맵과 내부 근거 파일을 묶었다.
+
+특히 legacy v1/v2와 601/exact-600 결과를 섞지 않도록 하고, 220 bars를 OOD로 표시하며, governor 이득의
+density interaction 과대주장과 synthetic detector의 실세계 일반화를 명시적으로 금지했다. detector
+navigation A/B는 현재 seed83 두 cell만 결과가 있고 seed89에서 중단되어 최종 판정이 없으므로 PPT 성과가
+아닌 `후속 검증 대기`로 고정했다. 기존 사용자 변경과 미커밋 실험 파일은 건드리지 않았다.
+
+## 2026-08-11 — Gate 3 stage B 4/4 완료: learned detector navigation 비열등성 PASS
+
+`results/navrl_v2_detector_navigation_ab_seed83_89_schema2/`의 4개 cell이 18:43 KST에 모두 완료됐고
+`summary.{md,json}`과 campaign COMPLETE 로그가 생성됐다. 실행 프로세스는 남아 있지 않다. 자동 summary
+외에 네 receipt와 실제 result/checkpoint/detector/source-manifest bytes를 독립 재해시하고 outcome accounting,
+exact-600 timeout, seed/bars/governor/action 계약을 다시 계산해 전부 PASS했다. policy SHA는 `f7022139…`,
+detector SHA는 `8da32d6f…`, shared source manifest SHA는 `0c813323…`다.
+
+| seed | analytic capture/crash/timeout | learned capture/crash/timeout | learned−analytic capture |
+|---:|---:|---:|---:|
+| 83 | 80.39/16.54/3.07% | 79.86/16.92/3.22% | −0.53 pp |
+| 89 | 80.59/17.07/2.34% | 80.97/16.11/2.93% | +0.38 pp |
+
+두 arm은 각각 4,100 episodes다. analytic은 3300/4100 = **80.49%**, learned는 3297/4100 =
+**80.41%**, learned−analytic은 **−0.073 pp**다. 독립 이항 비율차 95% CI를 별도로 계산한 결과
+**[−1.790,+1.644] pp**로 자동 summary와 일치하며, lower bound −1.790 pp가 사전등록한
+non-inferiority margin −2.0 pp보다 크므로 **Gate 3 navigation NI PASS**다. pooled crash는
+16.80→16.51%, timeout은 2.71→3.07%이며 secondary descriptive endpoint로만 남긴다.
+
+결론 범위는 현 synthetic simulator appearance에 한정한다. pure-red target과 neutral background/bar에서
+학습된 detector가 analytic appearance bootstrap을 대체해도 frozen navigation을 실질적으로 떨어뜨리지
+않는다는 증거다. 실제 lighting/texture/blur/noise/calibration에 대한 sim-to-real 증거는 아니다.
+
+평가 진행 중 작성했던 untracked `docs/GENSPARK_PPT_BRIEF_2026-08-11.md`가 campaign 완료 뒤 작업 디렉터리에
+남아 있지 않은 것을 확인했다. 원인을 추정해 단정하지 않고, 장기 프로세스가 모두 종료된 뒤 Gate 3 최종
+수치까지 포함한 단일 브리프로 재생성했다. 기존 사용자 변경은 보존했다.
+
+## 2026-08-11 — Gate 3 이후 남은 검증 우선순위 동결
+
+현재 simulator nominal condition에서 Gate 1 governor, Gate 2 density×speed interaction, Gate 3 learned
+detector navigation non-inferiority는 종료한다. 같은 seed/cell 반복, pure-red offline frame 증량, frozen
+checkpoint의 205-bar PPO 연장은 정보 가치가 낮아 수행하지 않는다.
+
+남은 검증은 다음 순서로 한정한다. (1) Gate 3 NI CI 하한 −1.79 pp가 margin −2.0 pp보다 0.21 pp만 위인
+점을 고려해 새 seed의 confirmatory replication을 원 primary와 분리해 사전등록한다. (2) lighting/target hue/
+texture/motion blur/depth noise/calibration perturbation에서 detector navigation을 평가해 pure-red synthetic
+appearance의 외적 타당성을 측정한다. (3) timestamp offset·pose interpolation error를 넣어 P3 latency의
+정확한 clock/odometry 전제 민감도를 잰다. (4) 205-bar bar-contact ceiling은 geometry reachability oracle,
+representation coverage, contact-time stopping margin을 순서대로 분리한 뒤에만 새 token/control 학습을 연다.
+(5) 최종 알고리즘 학습 주장을 하려면 legacy 601/no-bootstrap checkpoint와 별도로 exact-600+`time_outs`
+bootstrap fresh lineage를 재학습한다. 현재 결과를 simulator proof-of-concept로 마무리할 경우 (1)–(5)는
+future work로 공개하고 새 GPU 실험 없이 동결해도 된다.
+
+## 2026-08-12 — 일반화 검증 로드맵 확정 + 검증 1(NI 재현) 착수
+
+사용자 승인으로 08-11의 동결된 우선순위 5개를 실행 로드맵으로 확정한다. simulator
+proof-of-concept 동결이 아니라 **일반화 검증 계속** 경로다. GPU가 하나이므로 순차 실행하며,
+(1)~(4)는 inference/진단, (5)만 PPO 학습이다.
+
+1. **검증 1 — Gate 3 NI confirmatory replication**: 원 결과 CI 하한 −1.790 pp가 margin
+   −2.0 pp 대비 여유 0.21 pp뿐. 미사용 seed **97/101**, 4셀, margin 동일 −2.0 pp,
+   **원 결과와 사후 통합 금지·별도 보고**로 사전등록. → 오늘 착수.
+2. **검증 2 — perception domain shift** (가장 중요): 조명/표적 hue, 배경·막대 texture,
+   motion blur, RGB/depth noise, camera calibration 오차, partial occlusion·소형 표적.
+   pure-red appearance의 외적 타당성 측정. renderer/perception 교란 구현 후
+   detector offline gate → frozen-policy navigation A/B 순.
+3. **검증 3 — latency 전제 민감도**: P3의 −2.5 pp는 정확한 timestamp/pose history 조건.
+   clock offset, pose interpolation error, odometry noise 주입 지원을 구현하고 민감도 곡선 측정.
+4. **검증 4 — 205-bar bar-contact ceiling 분리**: crash의 97.2%가 bar contact.
+   ① geometry reachability oracle → ② 8-token representation coverage →
+   ③ 접촉 직전 속도·clearance·stopping margin → 그 뒤에만 token/control 변경을 연다.
+5. **검증 5 — corrected-semantics fresh PPO** (유일한 학습): frozen 계보는 legacy
+   601-action + no-`time_outs`-bootstrap 조건에서 학습됐다. "수정된 알고리즘의 학습 결과"
+   주장을 위해 exact-600 + bootstrap로 fresh lineage 1회 학습. 마지막에 실행
+   (며칠 단위로 GPU를 점유하므로 (1)~(4) 종료 후).
+
+**검증 1 착수**: `eval_navrl_v2_detector_navigation_ab_replication.sh` 추가 — 원 launcher에서
+seeds 83/89 → **97/101**과 result root만 바꾸고 계약은 byte-동일하게 유지. 사전등록 문구
+(별도 보고, 동일 margin)를 헤더에 고정. PREFLIGHT 4셀 PASS. 실행 시작.
