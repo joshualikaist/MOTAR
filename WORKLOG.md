@@ -7844,7 +7844,7 @@ exact 앵커 / clock ±0.02·±0.05·+0.10 / pos noise 0.01·0.03·0.10 m / yaw 
 판정: 셀별 Δ vs exact(95% CI). **clk_p0p10이 naive 수준(~38%대)으로 떨어지지 않으면 노브
 자체가 무효 → 캠페인 void**. 재시도 없음.
 
-## 2026-08-12 — 검증 3 완료: P3 전제 민감도 — clock 부호 비대칭 발견, 실기 스펙 도출
+## 2026-08-12 — 검증 3 완료 (부분 superseded): P3 전제 민감도
 
 `results/navrl_v2_pose_premise_seed163/summary.{md,json}` — 12/12셀, 사전등록 그대로, 재시도 없음.
 
@@ -7869,9 +7869,10 @@ carve-out을 구동해 비행 경로 위 실제 막대를 장애물 지도에서
 재발화 — crash 35.5% vs 21.3%가 부합). pose가 **이르면**(음수) 같은 크기의 오차가 뒤쪽을
 지우므로 무해하다. 즉 이 비대칭은 P2 채널의 독립 재확인이기도 하다.
 
-**실기 전제 스펙(논문 기재용)**: detection-odometry timestamp 정렬 오차 **+20 ms 이하**
-(음수 편향은 −50 ms까지 안전), odometry yaw 오차 **≤1°**, 위치 오차 **≤10 cm는 무료**.
-P3의 −2.5 pp 잔차 주장은 이 전제 하에서만 유효하다고 명시한다.
+> **2026-08-12 Codex 교정**: 아래의 `+20 ms 허용`, `yaw≤1°`, `위치≤10 cm 무료`는
+> 사전등록된 허용 gate가 아니며 1°는 직접 측정하지도 않았다. 또한 이 캠페인의 pos/yaw arm은
+> 전역 RNG를 소비했다. clock-offset 셀은 유효한 상수 offset 민감도이지만 hardware spec이 아니고,
+> pos/yaw 수치는 뒤의 isolated-RNG 교정 캠페인으로 대체한다.
 
 ## 2026-08-12 — 검증 4 사전등록: 205-bar bar-contact ceiling 3단 분리
 
@@ -7893,29 +7894,31 @@ frozen ep25000+riskcap의 잔여 crash 97.2%가 bar contact다(Gate 1). 동결�
   이 셀에 재시도 없음. 판정 규칙: ①이 "기하 무죄"면 ②/③의 상대 크기가 다음 개입
   (표현 vs 제어)을 정한다.
 
-## 2026-08-12 — 검증 4 완료: 기하 무죄 확정, 남은 천장은 표현 15% + 제어 여유 결핍
+## 2026-08-12 — 검증 4 완료(교정됨): 정적 연결성 통과, 접촉시점 표현·제어 진단
 
 계측 셀 `results/navrl_v2_bar_ceiling/instrumented/` (seed 167, 2,049 ep,
 capture/crash/timeout **80.09/16.98/2.93%** — 앵커 정합). dump 1,989 에피소드
 (timeout 60건은 종료 경로가 달라 미포함 — contact oracle에는 무영향), contact 표본 333.
 
-### ① geometry oracle — 기하 무죄 확정
+### ① geometry oracle — 좌표계 교정 후 정적 연결성 100%
 
 `results/navrl_v2_bar_ceiling/reachability.json`, bar-contact 333 에피소드 전수:
 
 | 팽창 반경 | 연결률 |
 |---|---:|
 | 낙관 0.40 m (최소 반폭+드론) | **100.0%** |
-| governor 0.65 m (riskcap 반폭+드론) | 97.3% |
-| 비관 0.766 m (최대 반대각+드론) | **94.6%** |
+| governor 0.65 m (riskcap 반폭+드론) | **100.0%** |
+| 비관 0.766 m (최대 반대각+드론) | **100.0%** |
 
-사전등록 판정(비관 ≥95% → 무죄)에 비관 94.6%로 0.4 pp 모자라나, 비관 반경은 **모든 막대를
-최대 크기로 가정**한 상계이고 낙관 100%·governor 97.3%이므로 **"기하가 천장을 강제한다"는
-가설은 기각**한다. 충돌한 에피소드의 사실상 전부에서 통과 가능한 경로가 존재했다.
+독립 검수에서 episode dump 좌표가 **0..40 m**인데 oracle이 **−20..20 m**로 해석한 결함을
+발견했다. 교정·회귀 테스트 후 같은 333건을 재계산하니 세 반경 모두 100%로 사전등록 기준을
+통과했다. 단, 이것은 **spawn→종료 시점 표적 위치의 정적 2-D 경로 존재**만 뜻한다. 선회·제동
+동역학, 이동 표적 궤적, 600-step 예산은 시험하지 않았으므로 `기하 무죄`라는 강한 표현은
+철회하고 **정적 연결 단절은 관측된 충돌의 주원인이 아님**으로 한정한다.
 
 ### ② representation coverage (barprobe v2, n=333)
 
-- **hit_token 0.832** — 충돌 막대의 **16.8%가 정책 입력(8토큰)에 없었다**
+- **hit_token 0.832** — **접촉 순간** 충돌 막대의 16.8%가 정책 입력(8토큰)에 없었다
   (v1 07-24의 35%에서 절반으로 개선됐지만 여전히 실재). FOV 분해: hit_fov 0.853
   (14.7%는 240° 토큰 섹터 밖에서 충돌), hit_token_given_fov 0.852.
 - crowding: 반경 내 46.9개 / 토큰 FOV 내 31.7개 vs **capacity 8** — 4배 과밀.
@@ -7930,10 +7933,144 @@ capture/crash/timeout **80.09/16.98/2.93%** — 앵커 정합). dump 1,989 에�
   물리적으로 세울 수 없는 수준이었고, governor가 2/3를 깎아도 executed 기준 **평균이 이미
   음수**다. negative-margin(executed) 비율 9.3%.
 
-### 종합 판정 (사전등록 규칙 적용)
+### 종합 판정 (교정된 보수적 해석)
 
-기하 무죄 → 남은 천장은 **(표현) 충돌 막대의 ~16.8%가 입력 부재** + **(제어) 제동 여유
-부족 상태로의 진입**의 합성이다. 둘 다 실재하고 어느 하나가 지배적이라 단정할 증거는 없다
-(표현 부재 16.8% vs crash 중 negative-margin 계열). 이제서야 token/control 변경이 열리며,
-구체 후보는 (a) capacity/FOV 확장 A/B(표현), (b) governor margin 강화 A/B(제어),
-(c) **fresh PPO에서 두 축을 함께**(검증 5와 결합). 개입 실험은 검증 5 협의와 함께 결정한다.
+정적 연결 단절은 기각됐다. 반면 **접촉 순간** representation miss와 음의 평균 제동 여유는
+관측됐지만 서로 독립 원인이라고 볼 수 없다. clearance 자체가 충돌 막대를 놓쳤다면 둘은 같은
+인지 실패의 두 증상일 수 있고, 막대가 접근 2~5 step 전에는 토큰에 있었는지도 아직 모른다.
+따라서 capacity/FOV 또는 governor 변경을 바로 여는 대신 pre-contact 시계열과 성공 near-miss
+대조군을 계측해야 한다. 전체-run negative-margin 비율 9.3%와 contact 시점 평균 −0.157 m는
+서로 다른 집계이므로 직접 비교하지 않는다.
+
+## 2026-08-12 — Codex 독립 검수 교정 및 후속 진단 사전등록
+
+Claude 검증 1~4의 원자료·receipt·SHA·집계식을 독립 재검산했다.
+
+- 검증 1: fresh seed 97/101 pooled learned−analytic **−0.0145 pp**, CI
+  **[−1.752, +1.723]**, NI margin −2 pp → **PASS 유지**.
+- 검증 2: E1 −5.02 pp는 detector 구현과 threshold 0.55→0.70을 동시에 바꿔 원인 분리 불가.
+  learned arm의 광역 `NAVRL_V2_FORCE=1`도 threshold만 허용하는 좁은 override로 교체했다.
+- v7 receipt가 실제 artifact meta의 seeds 137/139/149 대신 상수 71/73/79를 기록하던 provenance
+  결함을 수정하고 기존 receipt도 실제 값으로 교정했다.
+- 검증 3: pos/yaw noise가 전역 torch RNG를 소비해 환경 reset/배치 난수열까지 바꾸는 교란을
+  발견. `NAVRL_POSE_NOISE_SEED` 전용 generator로 분리했고, 전역 RNG 불변·재현성 테스트 통과.
+  clock offset 셀은 난수를 쓰지 않으므로 기존 결과가 유지된다.
+- 검증 4: 위 좌표계 결함과 함께, dump 활성 여부가 정상 perception/prev_action reset을 가르던
+  indentation 회귀를 발견·수정했다. dump를 켠 검증 4 셀은 reset이 실행되어 기존 계측 자체에는
+  영향 없지만, 이후 일반 평가/학습은 수정 없이는 오염될 수 있었다.
+
+### D2 threshold 분리 진단 — 실행 전 고정
+
+`eval_navrl_v2_detector_threshold_diagnostic.sh`: frozen ep25000+riskcap, nominal, 205 bars,
+deterministic, exact-600, fresh seeds **191/193**, 2,049 ep/cell. 3 arms × 2 seeds:
+`analytic@0.55`, `learned-v7@0.55`, `learned-v7@0.70`.
+
+- D1 `v7@.55 − analytic@.55`: threshold를 맞춘 detector 통계 교체 효과.
+- D2 `v7@.70 − analytic@.55`: 기존 E1의 결합 효과 재현.
+- D3 `v7@.70 − v7@.55`: 같은 v7 안 threshold 단독 효과.
+- 모두 독립 이항 95% CI로 보고하며, **이 데이터로 threshold를 선택·채택하지 않는다**.
+  재시도 없음. v7@.70만 threshold mismatch narrow override를 사용한다.
+
+초기 seed 173/179 실행은 2셀 뒤 narrow override의 Python 지역변수 누락을 고치는 과정에서
+shared source bundle과 런타임 evaluator가 달라져 무결성 가드가 3번째 셀을 차단했다. 숫자가
+노출된 뒤였으므로 같은 seed를 재시도하지 않고 **캠페인 전체를 VOID**로 보존한다. endpoint와
+arms는 바꾸지 않고, 수정 완료 후 미사용 seed 191/193을 새 confirmatory diagnostic으로 고정했다.
+
+### D3 pose RNG 교정 진단 — 실행 전 고정
+
+`eval_navrl_v2_pose_noise_rng_audit.sh`: frozen ep25000+riskcap+P3, tau=0.1, analytic,
+205 bars, deterministic, exact-600, fresh environment seed **181**, fixed pose-noise seed **9181**,
+2,049 ep/cell. exact + pos {0.01,0.03,0.10 m} + yaw {0.5,2,5°} = 7 cells.
+셀마다 simulator 전역 RNG는 동일하고 pose 교란의 표준정규 draw만 전용 stream에서 동일하게
+재생한다. 셀별 Δ vs exact와 95% CI만 보고하며 기존 단일시드 `실기 스펙`은 이 결과 전까지
+보류한다. 재시도 없음.
+
+## 2026-08-12 — Codex 후속 진단 완료: detector 결합 원인 분리 + pose RNG 교정
+
+### D2 detector threshold 분리 — 손실 원인은 threshold가 아니라 actor–detector 결합
+
+`results/navrl_v2_detector_threshold_diagnostic_seed191_193/summary.{md,json}`. 6/6 셀 완료,
+각 arm 4,098~4,100 episodes, policy SHA `f7022139…`, detector SHA `85c7974b…`, 셀 간
+source/evaluator/checkpoint SHA 동일. 원본 success/n과 receipt `result_sha256`를 독립 재계산했다.
+
+| arm | pooled capture | 대비 효과 (95% CI) |
+|---|---:|---:|
+| analytic @ 0.55 | **80.58%** | 기준 |
+| v7 @ 0.55 | **75.38%** | **−5.192 pp [−6.982, −3.401]** |
+| v7 @ 0.70 | **76.82%** | analytic 대비 **−3.752 pp [−5.523, −1.981]** |
+
+같은 v7 내부 threshold 효과(0.70−0.55)는 **+1.439 pp [−0.407, +3.285]**로 CI가 0을
+포함한다. 따라서 기존 E1 −5.02 pp를 `0.70 threshold 오정합`으로 설명하는 가설은 기각한다.
+threshold를 0.55로 맞춰도 약 −5.2 pp가 재현되므로 핵심은 v7의 mask/range/visibility/carve-out
+통계와 analytic detector로 학습된 actor의 결합이다. 0.70은 나빠지는 방향조차 아니었으나,
+이 진단으로 운영 threshold를 선택·변경하지 않는다.
+
+초기 seed173/179 캠페인은 두 셀 완료 뒤 narrow-override 변수 scope 결함을 수정하면서 source
+manifest가 달라졌고 post-run guard가 3번째 셀을 차단했다. 결과를 본 뒤 같은 seed를 재시도하지
+않고 `results/navrl_v2_detector_threshold_diagnostic_seed173_179_VOID_source_drift/`로 VOID 보존했다.
+
+### D3 pose isolated-RNG — 위치 결론 약화, yaw 2°/5° 민감도 재현
+
+`results/navrl_v2_pose_noise_rng_audit_seed181/summary.{md,json}`. 7/7 셀 완료, 셀당
+2,049~2,050 episodes, environment seed 181, 전용 pose-noise seed 9181. 모든 receipt/result/source
+SHA와 실제 seed/bars/noise seed를 독립 검증했다.
+
+| cell | capture | Δ vs exact (95% CI) |
+|---|---:|---:|
+| exact | **78.49%** | 기준 |
+| position 1 cm | 78.68% | +0.20 pp [−2.32, +2.71] |
+| position 3 cm | 77.79% | −0.69 pp [−3.22, +1.84] |
+| position 10 cm | 77.01% | −1.47 pp [−4.02, +1.07] |
+| yaw 0.5° | 77.79% | −0.69 pp [−3.22, +1.84] |
+| yaw 2° | **75.21%** | **−3.28 pp [−5.86, −0.70]** |
+| yaw 5° | **65.74%** | **−12.75 pp [−15.47, −10.03]** |
+
+직접 결론은 다음뿐이다. 이 **step-wise iid Gaussian** 모델·단일 환경 seed에서는 위치 10 cm와
+yaw 0.5°까지 유의한 손실을 검출하지 못했다. 이것은 `무료`나 허용 spec이 아니다. yaw 2°부터
+유의한 손실, 5°에서 큰 붕괴가 재현됐다. 1°는 측정하지 않았고, 실제 odometry의 bias/drift/jitter
+모델은 평가하지 않았으므로 하드웨어 요구조건으로 외삽하지 않는다. 기존 clock 결과도 `constant
+timestamp offset sensitivity`로만 부르며 clock skew나 jitter 결과로 부르지 않는다.
+
+### 검증 5 설계 판정 — C 금지, A smoke 후 분리된 fresh lineage
+
+한 번의 fresh PPO에 exact-600/bootstrap + v7 + appearance randomization + token/governor 변경을
+모두 넣는 선택지 C는 원인 분리가 불가능하므로 금지한다. 다음 순서를 고정한다.
+
+1. **5A engineering smoke (성과 자료 아님)**: exact-600 + `time_outs` bootstrap만 반영하고,
+   analytic detector·현 representation/control을 유지한 fresh run. 500~1,000 epoch에서 NaN/KL,
+   reset, timeout=600, curriculum state/receipt를 검증한다.
+2. **5B corrected-semantics baseline**: 5A가 통과하면 같은 최소 계약으로 full-budget fresh PPO.
+   단일 training seed는 pipeline demonstration일 뿐 알고리즘 효과 증거가 아니며, 성능 주장을
+   하려면 최소 2개(가능하면 3개) training seed와 별도 held-out evaluation seeds가 필요하다.
+3. **5C perception adaptation**: v7 nominal 학습을 baseline과 seed/budget/architecture matched로
+   비교한 뒤에만 v7+appearance randomization을 별도 arm으로 연다. 그래야 detector 교체 적응과
+   domain randomization 효과가 분리된다. 현재 E1/D2는 이 arm의 필요성을 입증하지만 성공을
+   보장하지 않는다.
+4. pose perturbation은 초기 fresh PPO에 넣지 않는다. 현재 검증은 iid 모델 한 종류뿐이고,
+   clock offset은 학습 randomization보다 timestamp calibration/동기화로 다룰 문제다.
+5. token capacity/FOV와 governor margin 변경도 검증 4의 pre-contact 시계열 및 matched near-miss
+   대조 측정 전에는 fresh PPO와 결합하지 않는다.
+
+검증 5를 지금 full run으로 시작하지 않는다. 먼저 5A launcher가 `fresh/no-checkpoint`, exact-600,
+`time_outs`, detector/appearance 계약, source receipt, 고정 budget과 중단 규칙을 기계적으로 검사하도록
+구현·preflight한 뒤 사용자에게 실행 계약을 제시한다.
+
+## 2026-08-12 — 발전 방향 문헌 접지 로드맵 작성 (검증 5는 Codex로 이관)
+
+사용자 지시로 검증 5(fresh PPO)는 Codex 세션이 진행한다(설계 질문은 브리프 #3 §3에 이관,
+`09fbb1e`). 본 세션은 "다음 주 이후 어디를 발전시킬 것인가"를 문헌 접지로 정리했다 —
+`docs/development_directions_2026-08.md`. 병렬 문헌 조사 2건(제어·요격 / 인지·강건성,
+2023–2026 중심, 검색 ~29회 + 원문 12편).
+
+**핵심 수확 — 우리가 이미 가진 신규성 3개를 두 조사가 독립적으로 확인**:
+1. 정책-인지 결합 비용의 직접 측정(E1 −5.0 pp) — 선행 부재 (Swift도 ablation까지만)
+2. "충돌 유발 장애물의 입력 탈락률" 측정(16.8%) — 측정 방법론 자체가 기여
+3. 단일기체 dense-clutter **요격** 설정(80.5% @ 12.8 bars/100m² = Wild 최고 밀도의 3.2배) —
+   밀집 SOTA는 전부 정지 표적 goal-reaching
+
+**방향 D1~D9** (실측 동기 → 문헌 → 실험 → 비용 형태): D1 backup-CBF 제동 필터(eval-only,
+FastBridge 계보 — margin −0.157 m 직격), D2 토큰 확장/어텐션(16.8% 직격), D3 Swift식
+노이즈모델 fine-tune(E1 직격), D4 velocity→CTBR 전환(ICRA'22 벤치마크: LV는 구조적 상한;
+dense-clutter 요격에서 이 비교는 미발표), D5 지연 랜덤화(−17.3 pp 절벽), D6 불확실성
+토큰(H4 직격), D7 탐색 목적함수, D8 학습형 추정기(병리 4종 실측이 동기), D9 distractor
+envelope(eval-only). 실행 순서와 RA-L 1편 구조(측정 주도 서사) + 2편째 후보(D4/D8)까지 제안.
