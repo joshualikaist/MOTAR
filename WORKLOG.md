@@ -7892,3 +7892,48 @@ frozen ep25000+riskcap의 잔여 crash 97.2%가 bar contact다(Gate 1). 동결�
 - dump는 GT를 **디스크로만** 내보낸다(actor/critic/reward/종료 무접촉 — bar probe와 동일 원칙).
   이 셀에 재시도 없음. 판정 규칙: ①이 "기하 무죄"면 ②/③의 상대 크기가 다음 개입
   (표현 vs 제어)을 정한다.
+
+## 2026-08-12 — 검증 4 완료: 기하 무죄 확정, 남은 천장은 표현 15% + 제어 여유 결핍
+
+계측 셀 `results/navrl_v2_bar_ceiling/instrumented/` (seed 167, 2,049 ep,
+capture/crash/timeout **80.09/16.98/2.93%** — 앵커 정합). dump 1,989 에피소드
+(timeout 60건은 종료 경로가 달라 미포함 — contact oracle에는 무영향), contact 표본 333.
+
+### ① geometry oracle — 기하 무죄 확정
+
+`results/navrl_v2_bar_ceiling/reachability.json`, bar-contact 333 에피소드 전수:
+
+| 팽창 반경 | 연결률 |
+|---|---:|
+| 낙관 0.40 m (최소 반폭+드론) | **100.0%** |
+| governor 0.65 m (riskcap 반폭+드론) | 97.3% |
+| 비관 0.766 m (최대 반대각+드론) | **94.6%** |
+
+사전등록 판정(비관 ≥95% → 무죄)에 비관 94.6%로 0.4 pp 모자라나, 비관 반경은 **모든 막대를
+최대 크기로 가정**한 상계이고 낙관 100%·governor 97.3%이므로 **"기하가 천장을 강제한다"는
+가설은 기각**한다. 충돌한 에피소드의 사실상 전부에서 통과 가능한 경로가 존재했다.
+
+### ② representation coverage (barprobe v2, n=333)
+
+- **hit_token 0.832** — 충돌 막대의 **16.8%가 정책 입력(8토큰)에 없었다**
+  (v1 07-24의 35%에서 절반으로 개선됐지만 여전히 실재). FOV 분해: hit_fov 0.853
+  (14.7%는 240° 토큰 섹터 밖에서 충돌), hit_token_given_fov 0.852.
+- crowding: 반경 내 46.9개 / 토큰 FOV 내 31.7개 vs **capacity 8** — 4배 과밀.
+- **rank 0.0**: 표현된 경우 충돌 막대는 항상 최근접 토큰이었다 — 즉 "먼 막대를 놓친" 게
+  아니라 **가까운 위협은 잘 고르는데, 놓친 15~17%가 치명적**이라는 구조.
+- 위치 정확도는 양호: center_offset 0.35 m, cross_track 0.23 m, radial_gap 0.20 m.
+
+### ③ contact kinematics (n=333)
+
+- 접촉 시 평균 clearance **0.84 m**, actual speed 1.15 m/s (executed 2.02, requested 3.03).
+- **stopping margin: executed −0.157 m, requested −1.162 m** — 접촉 직전 요청 속도는
+  물리적으로 세울 수 없는 수준이었고, governor가 2/3를 깎아도 executed 기준 **평균이 이미
+  음수**다. negative-margin(executed) 비율 9.3%.
+
+### 종합 판정 (사전등록 규칙 적용)
+
+기하 무죄 → 남은 천장은 **(표현) 충돌 막대의 ~16.8%가 입력 부재** + **(제어) 제동 여유
+부족 상태로의 진입**의 합성이다. 둘 다 실재하고 어느 하나가 지배적이라 단정할 증거는 없다
+(표현 부재 16.8% vs crash 중 negative-margin 계열). 이제서야 token/control 변경이 열리며,
+구체 후보는 (a) capacity/FOV 확장 A/B(표현), (b) governor margin 강화 A/B(제어),
+(c) **fresh PPO에서 두 축을 함께**(검증 5와 결합). 개입 실험은 검증 5 협의와 함께 결정한다.
