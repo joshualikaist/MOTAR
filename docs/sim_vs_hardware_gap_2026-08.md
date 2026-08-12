@@ -8,9 +8,10 @@
 
 ---
 
-## 1. 시뮬 기체 실측 스펙
+## 1. 시뮬 기체와 실행 profile을 분리한 스펙
 
-`quad_navrl_collide.urdf` + `base_quad_config.py` + `lee_controller_config_navrl.py`:
+아래 질량·충돌·actuator 행은 legacy `navrl_quad` rigid body다. task 기본값과 corrected-v2 고정
+launcher 값은 서로 다른 계층이므로 한 profile처럼 섞지 않는다.
 
 | 항목 | 값 | 출처 |
 |---|---|---|
@@ -21,11 +22,13 @@
 | 최대 상승 가속 | 22.2 m/s² | 계산 |
 | 최대 틸트 | 45° → 수평 가속 ≈ 9.8 m/s² | `NAVRL_MAX_TILT_DEG` |
 | 모터 시상수 | 0.04 s | `base_quad_config` |
-| 최대 속도 / yaw rate | 2.5 m/s(축별) / 2.5 rad/s | task_config |
+| 최대 속도 / yaw rate | 2.5 m/s(축별) / corrected-v2 **3.0 rad/s** | task default 속도 / 고정 launcher |
 | 제어 주기 | 10 Hz (물리 100 Hz) | `rl_step_dt_s=0.1` |
 
-**센서(시뮬)**: 360° LiDAR 72×4 @ 12 m + 전방 RGB-D 160×90, 87° HFOV @ 20 m.
-IMU는 **비활성**(`enable_imu = False`) — 상태는 시뮬레이터가 직접 제공.
+**corrected-v2 실행 profile**: LiDAR 72×4 @ 12 m, obstacle token FOV 240°, 전방 RGB-D
+160×90, 87° HFOV @ 20 m, yaw command 3.0 rad/s. 일반 task/config 기본값이나 구형 3-D viewer를
+이 profile로 간주하면 안 된다. IMU는 **비활성**(`enable_imu = False`)이고 ego-state는
+시뮬레이터가 직접 제공한다.
 
 ---
 
@@ -121,7 +124,7 @@ batch=1로 측정:
 
 제어 주기 10 Hz(100 ms) 대비 정책은 **0.4 ms = 예산의 0.4%**.
 
-**진짜 연산 비용은 검출기다**:
+**현재 따로 측정한 policy와 detector 중에서는 detector 비용이 더 컸다**:
 
 | 항목 | 160×90 (현재) | 640×480 (실기 카메라) |
 |---|---:|---:|

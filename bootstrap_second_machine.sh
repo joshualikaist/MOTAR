@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# One-shot second-machine setup for MOTAR (NavRL Phase-1 training).
+# One-shot second-machine setup for MOTAR.
 #
 # 자동화 안 되는 수동 전제 2가지 (스크립트로 불가):
 #   1. Miniconda/Anaconda 설치 (conda 가 PATH 에 있어야 함).            → SETUP §1
@@ -8,7 +8,7 @@
 #      (즉 ~/isaacgym/python 이 존재).  경로 다르면 ISAACGYM_PATH= 로 지정. → SETUP §2
 #
 # 사용법 (클론한 MOTAR 폴더 안에서):
-#   git clone -b research/navrl-env git@github.com:joshualikaist/MOTAR.git aerial_gym_simulator
+#   git clone https://github.com/joshualikaist/MOTAR.git aerial_gym_simulator
 #   cd aerial_gym_simulator
 #   ./bootstrap_second_machine.sh
 #
@@ -80,6 +80,9 @@ python -c "import aerial_gym; from aerial_gym.registry.task_registry import task
 say "완료 ✅  다음:"
 cat <<EOF
   conda deactivate && conda activate $ENV_NAME       # PYTHONNOUSERSITE 반영
-  cd "$MOTAR_DIR/aerial_gym/rl_training/rl_games"
-  NUM_ENVS=64 ./train_navrl.sh                        # VRAM: 4GB→64, 8GB→256
+  cd "$MOTAR_DIR"
+  python -m unittest discover -s tests -p 'test_navrl*.py'
+
+  학습은 일반 train_navrl.sh 대신 README/RESEARCH_PLAN의 현재 고정 launcher를 사용하세요.
+  GTX 1650 Ti는 학습 계보를 만들기보다 held-out 평가용 GPU4GB=1 profile을 권장합니다.
 EOF

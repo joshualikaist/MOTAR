@@ -4,9 +4,9 @@
 용도: 현재 PPT를 Claude에게 넘겨 **수치·주장·구조를 검수하고, 검증 5B 결과까지 반영한 최종 발표본**을
 만들게 할 때 사용하는 요청서다.
 
-> 중요: 현재 완료된 것은 검증 5A까지다. 검증 5B는 아직 실행되지 않았다. 아래 `[5B 결과 입력]`
-> 자리는 실제 5B summary/receipt가 생긴 뒤에만 채운다. Claude는 빈칸을 추정하거나 5A 수치를 5B
-> 결과로 대체하면 안 된다.
+> 중요: corrected-semantics 검증 5A와 ref5in P0는 완료됐다. ref5in P1a/P1b는 strict FAIL이고
+> P1c가 진행 중이다. held-out P2와 full-budget P3/검증 5B는 아직 실행되지 않았다. 아래
+> `[5B 결과 입력]` 자리는 실제 summary/receipt가 생긴 뒤에만 채운다.
 
 ---
 
@@ -27,8 +27,9 @@
 5. `docs/development_directions_2026-08.md` — 후속 연구 방향
 6. `docs/reference_platform_proposal_2026-08.md`와
    `results/navrl_ref_platform_verification/summary.md` — 5B 기체 계약 후보와 검증 한계
-7. `WORKLOG.md`의 2026-08-12 이후 항목 — 수정 이력과 반증 기록
-8. 검증 5B 완료 후 생성될 `summary.md`, `summary.json`, source receipt, seed별 held-out 결과
+7. `results/navrl_ref5in_smoke_seed197/summary.md`와 `p1b/summary.md` — P1a/P1b strict FAIL
+8. `WORKLOG.md`의 2026-08-12 이후 항목 — 수정 이력과 반증 기록
+9. 검증 5B 완료 후 생성될 `summary.md`, `summary.json`, source receipt, seed별 held-out 결과
 
 파일 사이 내용이 충돌하면 날짜가 최신인 독립 검수 문서를 우선하고, 어느 쪽이 맞는지 판단할 수
 없으면 슬라이드에 넣지 말고 `검수 필요`로 보고해 주세요.
@@ -65,8 +66,9 @@
 7. **5B의 robot contract를 결과보다 먼저 확인할 것.** legacy `navrl_quad`와 신규
    `navrl_ref5in_quad`는 서로 다른 학습 계보다. ref5in은 **hardware-informed simulation
    candidate**다. CPU repository consistency **26/26 PASS**, **canonical same-controller simulator
-   gate 21/21 PASS**, 각 기체 **16/16 env survival**까지만 확인됐으며 learning, capture,
-   buildability는 증명되지 않았다. 실제 5B summary가 선언한 robot만 본문 baseline으로 사용한다.
+   gate 21/21 PASS**, 각 기체 **16/16 env survival**을 확인했다. P1a/P1b에서 on-policy learning
+   outcome을 관측했지만 둘 다 전체 gate는 FAIL했고 held-out capture·장기 재현성·buildability는
+   증명되지 않았다. 실제 5B summary가 선언한 robot만 본문 baseline으로 사용한다.
 
 ### 원하는 납품물
 
@@ -235,14 +237,15 @@
 - forward 정상상태/t90은 둘 다 2.490 m/s / 0.8 s, reversal 0-cross/t90은 0.5/1.0 s였다.
   ref5in의 100 Hz peak body rate는 더 낮았으므로 이 폐루프 PASS를 intrinsic plant 동등성이나
   민첩성 증거로 해석하지 않는다.
-- 장애물 회피, PPO learning, capture/crash/timeout 및 buildability는 전혀 증명되지 않았고,
-  이 결과는 hardware validation도 아니다.
-- 5B가 ref5in을 쓰려면 먼저 ref5in fresh 500-epoch learning-viability smoke를 통과하고, 실제 5B receipt에
-  `robot_name`, URDF/config SHA를 기록해야 한다.
+- held-out 장애물 회피·capture/crash/timeout, 장기·multi-seed 재현성 및 buildability는 증명되지
+  않았고 hardware validation도 아니다. P1a/P1b on-policy outcome을 held-out 성능으로 쓰지 않는다.
+- 5B가 ref5in을 쓰려면 먼저 P1c fresh 900-epoch learning-viability gate와 held-out P2를 통과하고,
+  실제 P3 receipt에 `robot_name`, URDF/config SHA를 기록해야 한다.
 
 권장 문장: **“The hardware-informed simulation candidate passed repository consistency (26/26) and a
-canonical same-controller simulator gate (21/21; 16/16 env survival per model); learning, capture, and
-buildability remain unproven.”**
+canonical same-controller simulator gate (21/21; 16/16 env survival per model). P1a/P1b observed
+on-policy learning outcomes but failed their full gates; held-out capture and buildability remain
+unproven.”**
 금지 문장: “ref5in은 legacy와 동등한 요격 성능이다”, “기체 현실화가 성능에 영향이 없다.”
 
 ---
@@ -292,7 +295,7 @@ buildability remain unproven.”**
 12. **hardware-informed candidate는 canonical simulator gate를 통과했지만 과제·제작 가능성은 아직 모른다**
     legacy/ref5in 파라미터 비교를 전부 보여주지 말고 mass, motor diagonal, collision XY, T/W와
     CPU **26/26 PASS**, **canonical same-controller simulator gate 21/21 PASS**, 각 기체 **16/16 env
-    survival**만 요약. `learning / capture / buildability unproven` watermark. 실제 5B가 legacy를 쓰면
+    survival**과 P1a/P1b strict FAIL을 요약. `held-out capture / buildability unproven` watermark. 실제 5B가 legacy를 쓰면
     부록으로 이동.
 
 13. **두 줄의 종료 의미 오류가 corrected fresh lineage를 필요하게 했다**
@@ -363,7 +366,7 @@ buildability remain unproven.”**
 |---|---|
 | 확정 | Gate 1에서 riskcap ID pooled +5.82 pp; Gate 2 density×speed interaction p=0.000354; learned-v2 NI replication PASS; v7 nominal coupling loss; corrected static connectivity 333/333; 5A optimizer/semantics engineering PASS; ref5in CPU repository consistency 26/26 및 canonical same-controller simulator gate 21/21 PASS(각 기체 16/16 env survival) |
 | 조건부 | capture-time pose correction은 정확 timestamp/pose history 전제; yaw 민감도는 iid Gaussian 단일 seed; token/stopping diagnostics는 contact-time 기술 통계; ref5in은 hardware-informed simulation candidate일 뿐 hardware reference가 아님; legacy와 corrected lineage 비교는 기술적 참고 |
-| 미확정 | ref5in learning/capture/buildability, 5B 최종 성능, density ceiling의 corrected-lineage 재현, token miss와 stopping margin의 독립 인과, real-world detector 성능, clock skew/jitter, hardware pose tolerance |
+| 미확정 | ref5in held-out/장기 capture와 buildability, 5B 최종 성능, density ceiling의 corrected-lineage 재현, token miss와 stopping margin의 독립 인과, real-world detector 성능, clock skew/jitter, hardware pose tolerance |
 
 ---
 
@@ -381,8 +384,8 @@ buildability remain unproven.”**
 - [ ] 5B 실패 seed나 early-stop이 있다면 숨기지 않았다.
 - [ ] 5B의 robot/URDF/config SHA가 표시됐고 legacy/ref5in 결과가 연속 계보처럼 연결되지 않았다.
 - [ ] ref5in을 hardware-informed simulation candidate로 표시하고, CPU 26/26 및 canonical
-  same-controller simulator gate 21/21 PASS(각 기체 16/16 env survival)를 learning, capture,
-  buildability 또는 hardware validation으로 과장하지 않았다.
+  same-controller simulator gate 21/21 PASS(각 기체 16/16 env survival)나 P1 on-policy outcome을
+  held-out capture, 장기 재현성, buildability 또는 hardware validation으로 과장하지 않았다.
 - [ ] 결론 슬라이드가 최고 단일 epoch capture가 아니라 재현 가능한 기여를 말한다.
 
 이 체크리스트 중 하나라도 실패하면 최종 PPTX로 표시하지 말고 draft로 돌려주세요.

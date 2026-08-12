@@ -96,19 +96,18 @@ REF5IN_PREFLIGHT_ONLY=1 ./train_navrl_v2_ref5in_smoke_c.sh
 
 ### 3. 3-D로 환경 보기
 
-저장소 루트에서 수동 조작 또는 checkpoint 재생을 시작합니다.
+저장소 루트에서 수동 조작으로 실제 Isaac Gym 환경을 볼 수 있습니다.
 
 ```bash
 cd ~/workspaces/aerial_gym_ws/src/aerial_gym_simulator
 
 ./launch_navrl_3d.sh --manual
 
-# 정책을 재생할 때
-CKPT=/absolute/path/to/last_gen_ppo_ep_XXXX_rew_YY.pth
-./launch_navrl_3d.sh --checkpoint "$CKPT"
 ```
 
-checkpoint가 없다면 `--manual`만 사용할 수 있습니다. 아래 설명처럼 `.pth` 파일은 Git에 들어 있지 않습니다.
+현재 public 3-D policy path는 구형 574D Transformer 전용이라 corrected-v2 898D/ref5in checkpoint를
+거부합니다. robot·sensor·token·action metadata를 import 전에 복원하는 fail-closed playback이 회귀검사를
+통과하기 전에는 현행 checkpoint를 이 UI로 재생하지 마세요. formal 평가는 아래 evaluator를 사용합니다.
 
 ### 4. corrected-v2 held-out 평가
 

@@ -7,7 +7,8 @@
 1. 이 번들의 `01_CLAUDE_PPT_REVIEW_REQUEST.md`를 먼저 읽게 한다.
 2. 나머지 파일은 주장과 수치의 근거 자료로 사용하게 한다.
 3. Claude 대화에 현재 PPT/PPTX가 없다면 사용자가 가진 PPT 원본을 이 ZIP과 별도로 첨부한다.
-4. 검증 5B는 아직 결과가 확정되지 않았으므로 `[미실행]` 자리를 수치로 채우거나 PASS로 추정하면 안 된다.
+4. ref5in P1a/P1b는 strict FAIL이고 P1c가 진행 중이다. held-out P2와 full 5B `[미실행]` 자리를
+   P1의 on-policy 수치로 채우거나 PASS로 추정하면 안 된다.
 5. 기준 플랫폼은 실제 5B 결과의 `robot_name`, URDF SHA, config SHA를 확인한 뒤에만 확정한다.
 
 ## 파일 구성 (총 11개)
@@ -34,11 +35,12 @@
 - ref5in은 5인치급 부품 자료를 참고한 **hardware-informed simulation candidate**이며, 제작 가능한
   reference platform으로 검증된 기체가 아니다.
 - CPU repository consistency는 **26/26 PASS**, **canonical same-controller simulator gate는
-  21/21 PASS**이고 legacy/ref5in 각각 **16/16 env survival**을 확인했다. 이는 저장소·시뮬레이터
-  계약 검증일 뿐 learning, capture 또는 buildability를 증명하지 않는다.
+  21/21 PASS**이고 legacy/ref5in 각각 **16/16 env survival**을 확인했다. P1a/P1b는 on-policy
+  learning outcome을 관측했지만 전체 gate는 FAIL했다. held-out capture·장기 재현성·buildability를
+  증명하지 않는다.
 - legacy와 ref5in 결과를 하나의 연속 학습 곡선처럼 연결하지 않는다.
 - 5B가 끝나기 전에는 결과 숫자를 창작하지 않고 조건부 슬라이드/placeholder로 유지한다.
 
 ## 권장 첫 메시지
 
-> 첨부 ZIP의 `01_CLAUDE_PPT_REVIEW_REQUEST.md`를 최우선 지시문으로 읽고, 나머지 파일로 모든 숫자와 주장을 교차검증해 주세요. 현재 PPT를 보완하되, 검증 5B 미실행 값은 절대 추정하지 말고 placeholder로 남겨 주세요. 기존 PPT가 첨부되어 있다면 수정안과 슬라이드별 교체 지시를 만들고, 없다면 17장 본문 구조의 새 PPT 원고를 작성해 주세요.
+> 첨부 ZIP의 `01_CLAUDE_PPT_REVIEW_REQUEST.md`를 최우선 지시문으로 읽고, 나머지 파일로 모든 숫자와 주장을 교차검증해 주세요. P1a/P1b FAIL과 P1c/P2/P3 상태를 구분하고, 검증 5B 미실행 값은 절대 추정하지 말고 placeholder로 남겨 주세요. 기존 PPT가 첨부되어 있다면 수정안과 슬라이드별 교체 지시를 만들고, 없다면 17장 본문 구조의 새 PPT 원고를 작성해 주세요.

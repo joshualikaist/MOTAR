@@ -45,23 +45,23 @@ class NavRLRef5inQuadCfg(NavRLQuadCfg):
 
         class motor_model_config(NavRLQuadCfg.control_allocator_config.motor_model_config):
             # T/W 3.2617 preserved: 3.2617 * 1.20 kg * 9.81 / 4 = 9.599 N per motor.
-            # Sanity: a 2207-class motor on 6S with a 5x4.3x3 prop makes 1.6-1.8 kgf static, so
-            # 9.6 N = 0.98 kgf is a ~55% duty ceiling -- comfortably inside a real motor's envelope
-            # rather than an aspirational number.
+            # This is a synthetic simulation design point. Similar-class published thrust data
+            # make the magnitude plausible, but no exact motor/prop/ESC/battery combination or
+            # continuous thermal limit has been validated for this candidate.
             max_thrust = 9.6
 
             # thrust = k * rps^2 with use_rps=True, so k must be rescaled with max_thrust or the
-            # implied rotor speed becomes physically impossible. Anchored at 467 rps (28,020 RPM),
-            # which a 1750 kV motor on 6S reaches at ~70% of no-load: k = 9.6 / 467^2 = 4.401e-5.
+            # coordinate changes. 4.401e-5 is an unmeasured calibration selected so max_thrust
+            # corresponds to 467 rps; it is not an identified propeller coefficient.
             # In this simulator's unconstrained use_rps path k algebraically cancels from the
             # normalized thrust transient; varying it is NOT motor-strength randomization.  Keep a
             # single coordinate calibration instead of pretending the spread adds domain randomization.
             motor_thrust_constant_min = 4.401e-05
             motor_thrust_constant_max = 4.401e-05
 
-            # Unchanged at the stock 0.04 s. Rotor spin-up lag is a property of the rotor, not the
-            # airframe, and 20-45 ms is the measured band for 5-inch props; adding payload mass does
-            # not slow it. (A 10-inch platform would need ~0.08 s -- one more reason to stay at 5".)
+            # Unchanged at the stock 0.04 s. A similar-class published platform reports a value of
+            # comparable magnitude, but this candidate's propulsion system is unselected and has
+            # not been measured on a thrust stand.
             #   motor_time_constant_{increasing,decreasing}_{min,max} = 0.04
 
-            # thrust_to_torque_ratio 0.01 m is inherited: kQ/kT for a 5-inch prop is 0.008-0.016 m.
+            # thrust_to_torque_ratio 0.01 m is inherited and remains an unidentified parameter.

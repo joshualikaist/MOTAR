@@ -186,7 +186,11 @@ yaw 3.0 rad/s). exact center spawn, deterministic `mg/4` 초기화와 controller
 - 실중량, CAD/실측 관성, 모터·프롭·ESC·배터리의 actuator dynamics
 - 전력 분배, 전압 sag, 전류/발열, 냉각, 비행시간과 안전 마진
 - 공력, ground effect, 센서 진동, latency, 통신 및 estimator 오차
-- PPO 학습 가능성, 기존 정책의 전이 가능성 또는 실기 성능
+- held-out navigation 성능, 장기·multi-seed 재현성, 기존 정책의 전이 가능성 또는 실기 성능
+
+P1a/P1b fresh smoke에서 on-policy 학습 회복은 관측됐다. P1a는 behavior-KL rollback과 27 m
+종료로 FAIL했고, 낮춘 LR의 P1b는 KL/rollback/outcome을 통과했지만 마지막 27→28 m evidence
+window 전에 budget이 끝나 FAIL했다. 이는 held-out 성능이나 장기 학습 성공 증명이 아니다.
 
 정확한 표현은 **repository consistency 26/26 및 same-unretuned-controller simulator gate
 21/21 PASS**다. 이 두 검사가 통과해도 그 결과는 하드웨어 검증이 아니라 저장소·시뮬레이터 계약
@@ -210,8 +214,8 @@ yaw 3.0 rad/s). exact center spawn, deterministic `mg/4` 초기화와 controller
    fail-safe 여유를 측정한다.
 6. **독립 동역학 검증** — 동일 제어기만 비교하지 말고 open-loop 또는 식별 입력으로 plant를
    비교하고, 필요하면 확인된 분포로 domain randomization을 다시 정의한다.
-7. **그 후 학습** — simulation smoke 500~1,000 epoch → fresh baseline → 검출기 arm → envelope
-   arm 순으로 진행한다. 후보 파라미터가 바뀌면 smoke부터 다시 한다.
+7. **그 후 학습** — 현재 P1c fresh 900-epoch engineering gate → held-out P2 → 조건부 full seed 211
+   → 검출기 arm → envelope arm 순으로 진행한다. 후보 파라미터가 바뀌면 smoke부터 다시 한다.
 
 하드웨어 게이트 전의 논문·사이트 명칭은 `hardware-informed simulation candidate`로 통일한다.
 실제 조립과 비행 검증 전에는 `buildable`, `flight-proven`, `real reference platform`을 사용하지

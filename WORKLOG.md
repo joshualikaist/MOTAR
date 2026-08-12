@@ -8101,6 +8101,10 @@ envelope(eval-only). 실행 순서와 RA-L 1편 구조(측정 주도 서사) + 2
 
 ### 시뮬 기체 vs 실기 하드웨어 격차 (`docs/sim_vs_hardware_gap_2026-08.md`)
 
+> **SUPERSEDED:** 아래 472 g 합계·56%·“TensorRT 문제” 표현은 같은 날짜 뒤의 ref5in 전면
+> 재감사(§ `ref5in 전면 재감사`)로 폐기됐다. 최신 값은 명시 단품 부분합 404.2~411.8 g이며,
+> carrier/냉각/전원/배선/마운트가 빠져 완성 payload가 아니다.
+
 저장소에서 직접 읽은 시뮬 기체: **총 질량 250 g**(URDF), 충돌박스 0.28×0.28×0.08 m,
 모터 2 N×4 = 8 N, **T/W 3.26**, 최대 틸트 45°, 모터 시상수 0.04 s, IMU 비활성(상태는 시뮬 제공).
 
@@ -8199,6 +8203,10 @@ Claude 최종 체크리스트와 그대로 복사할 전달 프롬프트를 포�
 
 ## 2026-08-12 — 기준 플랫폼 수정안 (검증 5 시작 전 결정 필요)
 
+> **SUPERSEDED — 수치 사용 금지:** 이 절은 팔 중점을 모터로 오독한 당시 기록이다. 바로 뒤
+> `2026-08-13 — 기준 플랫폼 구현·검증 완료`가 1차 정정이고, 이후
+> `ref5in 전면 재감사`가 현재 증거 수준을 다시 제한한다.
+
 사용자가 "시뮬 기체 스펙 자체가 잘못 접근된 것 아닌가"를 제기해 URDF·config를 실사했다.
 
 **진단 — 현 URDF는 자기모순이다.** 질량 0.225 kg과 모터 추력 2 N은 Aerial Gym **기본
@@ -8233,6 +8241,10 @@ Claude 최종 체크리스트와 그대로 복사할 전달 프롬프트를 포�
 **코드 변경 없음**. legacy 계보와는 기체가 다르므로 **비교 불가**(v1↔v2 원칙 동일 적용).
 
 ## 2026-08-13 — 기준 플랫폼 구현·검증 완료, 그리고 08-12 진단의 정정
+
+> **부분 SUPERSEDED:** 아래 472 g, “유일한 실질 회귀”, 출처가 고정되지 않은 cross-check와
+> 초기 5/5 검증 서술은 이후 `ref5in 전면 재감사`에서 교정됐다. 역사적 진행 기록으로만 읽고
+> 현재 주장에는 26/26 repository consistency와 21/21 canonical simulator gate를 사용한다.
 
 사용자 지시 "파라미터 작성부터 시작해"에 따라 5인치 기준 플랫폼을 구현하고 두 층으로 검증했다.
 그 과정에서 **08-12 진단이 URDF 오독이었음**을 발견해 함께 정정한다.
@@ -8504,3 +8516,17 @@ P1c는 결과를 본 뒤 **budget만 750→900**으로 바꾸는 마지막 corre
 runtime byte 계보를 먼저 닫은 뒤 checkpoint metadata로 robot/sensor/token/action 계약을 import 전에
 복원하는 fail-closed playback으로 교체한다. 그 전까지 current 898D policy replay 명령은 작동한다고
 주장하지 않는다.
+
+### P1c 첫 launch 무효화 — source-receipt fail-closed 실증
+
+commit `89afe43`에서 P1c를 fresh로 시작했으나, Codex가 실행 중
+`navrl_ref5in_quad_config.py`의 하드웨어 claim **주석**을 정리했다. 수치·실행 로직은 바뀌지
+않았지만 source byte가 receipt와 달라졌고, epoch 117의 best-checkpoint save에서
+`RuntimeError: NavRL training runtime source changed`가 발생해 run
+`ppo_260813_0532_navrl_v2-ref5in-smoke-c-s197`가 중단됐다. 이는 학습 실패나 P1c 데이터가 아니라
+운영자에 의한 provenance 오염이며 해당 run은 **VOID**다. `.aerial_training_finished`도 없고 P1c
+판정에 사용하지 않는다.
+
+source guard가 오염된 checkpoint 저장을 막은 것은 의도한 fail-closed 동작이다. 주석 정리와 문서
+수정을 먼저 commit한 뒤, 동일한 사전등록 계약(seed/LR/task/budget/gate 변경 없음)으로 P1c를 fresh
+재실행한다. 재실행 중에는 `aerial_gym/`, `resources/robots/`, source-bundle 도구를 수정하지 않는다.
