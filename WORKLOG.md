@@ -8128,3 +8128,88 @@ RealSense ~72 g + Pixhawk ~35 g = **472 g** (프레임·배터리 제외).
   않았다.**
 - md 파일은 정리 대상에서 제외했다: 추적 중인 문서 전체가 ~750 KB(WORKLOG 548 KB 포함)로
   디스크 실익이 없고, 전부 연구 기록·검수 이력이다.
+
+## 2026-08-12 — 검증 5A corrected-semantics fresh PPO engineering smoke 완료
+
+사용자 승인 범위대로 full-budget 검증 5B는 실행하지 않고, 5A만 fresh seed 197 / 128 env /
+1,000 epoch로 실행했다. 전용 closed-contract launcher
+`train_navrl_v2_v5a_semantics_smoke.sh`를 추가해 checkpoint/CLI를 거부하고 상속된 `NAVRL_*`
+실험 변수를 제거한 뒤 canonical v2의 analytic detector, cluster-sector 8토큰/240°, squashed Gaussian,
+governor/pose-noise off를 고정했다. hostile-env preflight와 exact-600/timeout source 회귀 테스트를
+추가했다.
+
+실런 `ppo_260812_1620_navrl_v2-v5a-semantics-smoke-s197`는 약 59분 후 exit code 0,
+`max_epochs`, 완료 마커 `epoch=1000`으로 끝났다. canonical endpoint는
+`last_gen_ppo_ep_1000_rew_140.1189.pth`, SHA-256 `f53489aa9158…`이다. 체크포인트에서
+`cfg_episode_len_steps=600`, `cfg_rlgames_timeout_info_key=time_outs`, detector checkpoint 없음,
+selector `cluster_sector`, FOV 240°, squashed Gaussian, bars 70을 직접 재확인했다. timeout 경로는
+실제 학습 중 530회 실행됐고, capture/crash/timeout 합계 불변식도 전 파싱 epoch에서 통과했다.
+
+PPO 안정성: 1,000 scalar 전부 finite, PPO KL 최대 **0.015831**, behavior-KL audit 최대
+**0.022902**(< rollback 0.04), rollback **0**, skipped minibatch **0**, x/y/z/yaw raw OOB 최대
+전부 **0**. 사전 고정한 의미론 핵심 4파일 SHA도 전후 동일했다.
+
+성과 주장이 아닌 on-policy 기술 수치(실제 episode 분모로 가중 집계):
+
+| window | episodes | capture | crash | timeout |
+|---|---:|---:|---:|---:|
+| 전체 파싱 epoch | 44,383 | 73.02% | 25.78% | 1.19% |
+| speed ramp 1–300 | 15,533 | 66.95% | 31.63% | 1.42% |
+| post-ramp 301–1000 | 28,850 | 76.29% | 22.63% | 1.07% |
+| 마지막 100 epoch | 4,134 | 78.69% | 20.30% | 1.02% |
+| 마지막 50 epoch | 2,088 | 78.40% | 20.59% | 1.01% |
+
+판정은 **조건부 engineering PASS**다. corrected timeout 의미론이 fresh PPO 학습을 막거나
+optimizer를 발산시키지 않는다는 좁은 목적은 통과했다. 그러나 `DENSITY_WARMUP=1000`이라 endpoint가
+정확히 warmup 경계(num_task_steps=32,000)이고 post-warmup evidence는 한 건도 수집되지 않았다.
+따라서 density gate/승급은 **미검증**이다. held-out 평가도 없고 training seed 하나뿐이므로 위
+78~79%를 최종 성능이나 legacy 대비 개선으로 인용하면 안 된다. dirty worktree에서 실행해 핵심
+4파일의 수동 SHA 불변은 확인했지만 full runtime source manifest는 없다는 provenance 한계도 남는다.
+
+추가 관찰: x action은 epoch1000에서 edge95 49.8%, edge99 18.6%(run 최대 64.6%/43.0%)로
+경계 집중이 남았다. raw OOB=0이므로 과거 unbounded-action 결함은 아니지만 고밀도 제동 연구의
+경고 지표로 보존한다. 자동 summary의 peak capture 97.1%는 작은 단일 epoch 표본이라 폐기한다.
+
+종료 시 epoch1000이 50-epoch 주기 저장과 max-epoch 저장에 동시에 걸려 서로 다른 이름의 checkpoint
+두 개가 생겼다. 재귀 비교 결과 model/optimizer/env_state 차이 **0개**로 동일 상태였다. 기존 파일은
+증거로 보존하고, 이후에는 주기 저장과 겹치면 terminal 중복 저장을 건너뛰고 canonical scalar-reward
+이름 하나만 남기도록 `early_stop_a2c_agent.py`를 수정·회귀 테스트했다.
+
+상세 결과: `results/navrl_v2_v5a_semantics_smoke_seed197/summary.{md,json}`. 다음 5B 전 필수 조건은
+현재 소스 clean commit, 전체 training source receipt, 2–3 matched training seeds와 별도 held-out
+evaluation seeds 사전등록이다. 사용자 요청대로 full-budget 5B는 이번에 시작하지 않았다.
+
+## 2026-08-12 — 기준 플랫폼 수정안 (검증 5 시작 전 결정 필요)
+
+사용자가 "시뮬 기체 스펙 자체가 잘못 접근된 것 아닌가"를 제기해 URDF·config를 실사했다.
+
+**진단 — 현 URDF는 자기모순이다.** 질량 0.225 kg과 모터 추력 2 N은 Aerial Gym **기본
+`quad.urdf`/`base_quad_config` 값을 그대로 상속**한 것이고(선택된 값이 아님), 07-22에
+충돌 기하만 의도적으로 0.05 m 구 → **0.28 m 박스**로 키웠다. 그 결과:
+- 모터가 ±0.065 m에 있어 **실제 기체 폭은 18 cm**인데 충돌박스는 28 cm (1.5배 과대)
+- 관성 ixx 4.23e-4는 28 cm 균일박스 근사(1.77e-3)의 **1/4.2** — 관성은 작은 기체, 충돌은 큰 기체
+- 각가속 ≈870 rad/s²로 비현실적
+즉 **"18 cm 기체의 회전 민첩성 + 28 cm 기체의 충돌 단면"**이며 어떤 실제 빌드와도 대응하지 않는다.
+낙관(회전)과 보수(충돌)가 상쇄되는 구조라 결과가 무효인 것은 아니지만, 하드웨어 주장은 불가.
+
+**제안 — 5인치급 기준 플랫폼** (`docs/reference_platform_proposal_2026-08.md`):
+질량 1.20 kg(페이로드 472 g 포함), 모터 9.6 N×4(**T/W 3.26 유지**), 모터 반경 0.125 m(대각 25 cm),
+충돌박스 **0.32 m**, 관성 ixx 1.12e-2 / izz 2.05e-2, 모터 τ 0.08 s.
+
+**핵심 발견 — 수정 비용이 예상보다 훨씬 작다**:
+- **수평 가속 9.8 m/s², 상승 22.2 m/s² 모두 불변** (수평은 g·tan(틸트)로 질량 무관, 상승은
+  T/W 유지). 정책이 실제로 쓰는 속도 명령의 물리 한계가 그대로다.
+- **충돌폭 28 → 32 cm, +4 cm뿐**. 막대 간극 160 cm 대비 여유가 82% → 80%로 2%p 감소.
+- 나빠지는 것은 각가속(0.25배)과 모터 응답(2배 느림)뿐이며, 이는 검증 4가 지목한
+  stopping-margin 축과 **같은 축**이라 오히려 측정 가치가 있다.
+
+따라서 앞서 검토했던 "충돌박스만 키우는 eval-only 민감도 스윕(0.28→0.45)"은 **정보 가치가
+작아 폐기**한다(현실 플랫폼이 0.32 cm라 4 cm 차이). 기체 전체를 현실화하는 편이 낫다.
+
+**소요 추정**: 파라미터 작성+정합성 검증 3~4 h → 스모크 1~2 h → **본학습 3~5일**(시드 1개,
+기존 v2 fresh 커리큘럼 실측 ~2.5일 + 여유). 검증 5 전체 4단계를 기준 플랫폼으로 가면
+**11~17일**(시드 1개), Codex 권고대로 시드 3개면 1개월+.
+
+**권고**: 파라미터 작성 + 스모크(반나절)만 먼저 해서 "이 기체로 학습이 되는가"를 판정한 뒤
+본학습 여부를 결정한다. 변경 범위는 URDF 1개 + robot_config 1개 + `robot_name` 1줄이며
+**코드 변경 없음**. legacy 계보와는 기체가 다르므로 **비교 불가**(v1↔v2 원칙 동일 적용).
