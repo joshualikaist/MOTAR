@@ -900,6 +900,53 @@ raw z가 다음 `prev_action`에 남아 간접 state channel일 수 있으므로
 governor/adaptation A/B/C 15 cells → ID speed interaction 16 cells/2 seed → detector offline dataset/loss/
 calibration gate다. 그 전에는 새 PPO, riskcap 재튜닝, dropout/H4 추가 분해를 시작하지 않는다.
 
+### 8.23 검증 5B 진입 전 `ref5in` 후보의 fail-closed 순서 (2026-08-13)
+
+08-12/13 기준 기체 기록을 다시 감사한 결과, `navrl_ref5in_quad`는 “실기 기준 기체”가 아니라
+**hardware-informed simulation candidate**로만 취급한다. 1.20 kg, 합성 관성, 9.60 N/motor,
+40 ms와 0.12 m collision height는 BOM/CAD/추력대/비행으로 검증된 값이 아니다. 특히 높이
+0.08→0.12 m는 45° tilt에서 한 축의 projected support를 약 2.83 cm 늘리므로 legacy와 task geometry가
+완전히 같다는 주장을 금지한다. legacy/ref 결과는 한 learning curve로 이어 붙이지 않는다.
+
+아래 단계는 **앞 단계 PASS만 다음 단계를 허용**한다. 실패를 epoch 추가나 parameter sweep으로
+덮지 않는다.
+
+1. **P0 repository/runtime gate**
+   - CPU: URDF joint ↔ allocation matrix ↔ 질량/관성 ↔ collision proxy 계약 전량 PASS.
+   - GPU open arena: yaw 3.0 rad/s, tilt 45°, bars 0, governor off, exact center spawn,
+     deterministic `mg/4` motor initialization과 deterministic midpoint Lee gains.
+   - legacy/ref 모두 모든 env 생존, state/actuator finite, altitude/lateral-slip/reversal/allocator
+     saturation/100 Hz roll·pitch fixed-gain gate 통과.
+   - 이 결과는 same-controller closed-loop simulator gate일 뿐 intrinsic plant 또는 hardware
+     validation으로 표현하지 않는다.
+2. **P1 fresh 500-epoch learning-viability smoke**
+   - `train_navrl_v2_ref5in_smoke.sh`만 사용: seed 197, 128 env, 70 bars, analytic detector,
+     8 `cluster_sector` tokens/240°, squashed Gaussian, governor/pose/appearance perturbation off,
+     corrected exact-600 semantics. checkpoint resume와 CLI override는 금지한다.
+   - 실행 source와 robot config/URDF를 immutable receipt와 SHA로 checkpoint에 묶는다.
+   - hard gate: 정상 epoch-500 종료, checkpoint/TensorBoard finite, PPO KL와 behavior-KL max
+     `<0.04`, rollback/skipped minibatch/raw OOB 전부 0, timeout 실제 발생, distance curriculum
+     `[20,28]`, 마지막 100 epoch pooled capture `>=65%`, crash `<=33%`, timeout `<=5%`.
+   - PASS는 held-out 한 셀만 허용하며 성능 주장을 허용하지 않는다.
+3. **P2 held-out 70-bar decision cell**
+   - 미사용 eval seed 211, deterministic action, full goal/FOV distribution, 최소 2,049 requested
+     episodes. checkpoint의 robot/config/URDF hash와 runtime source가 다르면 시작 전에 실패한다.
+   - absolute gate는 capture `>=65%`, crash `<=33%`, timeout `<=5%`. corrected-v2 legacy seed-197
+     ep500 checkpoint도 같은 평가 seed로 재생해 descriptive anchor를 남긴다. 서로 다른 기체이므로
+     이 차이를 순수 airframe causal effect나 우월성으로 부르지 않는다.
+4. **P3 full-budget 첫 seed**
+   - P2까지 통과할 때만 fresh seed 211을 시작한다. 70→205 bars, +15, threshold
+     `70:.82,85:.77,100:.72,115+:.70`, evidence 16,384 episodes, density dwell 1,000 epochs,
+     30,000 epoch budget을 동결한다. unique checkpoint는 250 epoch 간격으로 제한해 디스크를
+     보존한다.
+   - 첫 seed의 held-out density curve와 optimizer/representation diagnostics를 본 뒤에만 seed
+     223/227을 같은 계약으로 추가한다. training seed 하나의 결과에는 confirmatory 표현을 쓰지 않는다.
+
+P0/P1 결과 파일은 각각 `results/navrl_ref_platform_verification/`과
+`results/navrl_ref5in_smoke_seed197/`을 canonical 위치로 사용한다. 모든 결과는 `WORKLOG.md`에도
+동일 날짜로 남긴다. Exact BOM, CAD/CG/FOV, inertia/actuator 식별, power/thermal/endurance와 실제 비행은
+별도의 hardware gate이며 P0–P3를 통과해도 자동으로 충족되지 않는다.
+
 ---
 
 ## 9. 참고문헌

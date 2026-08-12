@@ -7,9 +7,9 @@
   "selected_loss": "spatial_cnn_wide+focal_dice",
   "selected_threshold": 0.7,
   "test_frames": 4096,
-  "test_seed": 79,
+  "test_seed": 149,
   "train_frames": 8192,
-  "train_seed": 71,
+  "train_seed": 137,
   "validation_frames": 2048,
-  "validation_seed": 73
+  "validation_seed": 139
 }

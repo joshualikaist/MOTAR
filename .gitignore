@@ -21,6 +21,16 @@ checkpoints_saved/
 
 # evaluator provenance copies are locally verified but too large to version; receipts carry hashes
 results/**/checkpoint_snapshot.pth
+# Evaluator receipts retain hashes for these reproducibility copies.  Track compact summaries,
+# CSV/JSON results and manifests; do not turn every evaluated cell into a second source checkout.
+results/**/source_snapshot/
+results/**/source_snapshot
+results/**/python_environment.txt
+results/**/detector_snapshot.pth
+
+# Closed training launchers create immutable local source receipts.  Checkpoints bind their path
+# and SHA; the bundles travel with experiment artifacts, not Git history.
+train_source_receipts/
 
 # local experiment workspace (checkpoints/reports, ~1.4GB)
 aerial_gym/lms_rl_trial/

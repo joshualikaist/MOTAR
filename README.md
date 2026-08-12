@@ -1,292 +1,244 @@
 # MOTAR
 
-**Moving-Object Tracking And RL for UAV navigation in random obstacle fields**
+**MOTAR는 카메라와 LiDAR만 보는 쿼드로터가 밀집 장애물 사이에서 움직이는 표적을 추적·요격할 때, 어디까지 성공하고 어디서 실패하는지를 재현 가능하게 측정하는 Aerial Gym 기반 연구 저장소입니다.**
 
-> A quadrotor chases a **moving target** through a **cluttered field of obstacles** using
-> only its **onboard sensors** — LiDAR and a camera. It is never told where the target is.
+이 저장소의 목표는 “드론 요격이 해결됐다”는 데모를 만드는 것이 아닙니다. 표적을 빨리 따라갈수록 충돌 위험이 커지고, 장애물이 많아질수록 제한된 obstacle token에 정보가 빠지는 문제를 같은 조건에서 반복 측정하는 것이 먼저입니다. 그래서 성공률 하나보다 **환경 계약, checkpoint 계보, 실패 구성(capture/crash/timeout), seed와 신뢰구간**을 함께 남깁니다.
 
-MOTAR is a research fork of the [Aerial Gym Simulator](https://github.com/ntnu-arl/aerial_gym_simulator).
-The obstacle field and LiDAR follow [NavRL](https://github.com/Zhefan-Xu/NavRL),
-reimplemented on Aerial Gym and trained with PPO (rl_games). A temporal camera–LiDAR model
-infers the target's state under occlusion, and the **deployed policy never receives
-ground-truth target position** — only what the sensors can see.
+> 현재 기준일: **2026-08-13**
+>
+> 자세한 변경 이력은 [WORKLOG.md](WORKLOG.md), 다음 실험의 순서와 중단 조건은 [RESEARCH_PLAN.md](RESEARCH_PLAN.md), 설치·운영 방법은 [OPERATIONS.md](OPERATIONS.md)에 있습니다.
 
-Research lives on the `research/navrl-env` branch; `main` tracks upstream Aerial Gym.
+## 지금 어디까지 됐나
 
-## Why it's a research problem
+| 항목 | 현재 판정 | 여기서 말할 수 없는 것 |
+|---|---|---|
+| corrected-v2 episode 의미론 | **공학 스모크 통과**. fresh PPO 1,000 epoch에서 정확히 600 action 종료, rl_games `time_outs` 전달, finite PPO/KL, rollback 0, raw action OOB 0을 확인했습니다. | 이 run은 70 bars의 on-policy 학습 기록입니다. held-out 성능, 밀도 승급 능력, 알고리즘 우월성을 증명하지 않습니다. |
+| learned detector 연결 | frozen navigation policy에서 learned-v2가 analytic bootstrap 대비 비열등하다는 결과를 두 평가 seed에서 재현했습니다. | 더 최신인 learned-v7을 그대로 꽂으면 nominal 성능이 떨어집니다. threshold만 바꿔 해결되는 문제가 아니며, detector 출력 분포에 맞춘 별도 학습이 필요합니다. |
+| 고밀도 기하 | 수정된 좌표계의 정적 2-D 검사에서 333/333 장면에 경로가 존재했습니다. | 회전·제동·표적 이동·600-step 제한을 포함한 동적 도달 가능성은 아닙니다. “길이 있으니 정책 문제”라고 단정할 수 없습니다. |
+| `navrl_ref5in_quad` 후보 기체 | CPU 저장소 계약 **26/26**, canonical same-controller simulator gate **21/21**을 통과했습니다. | fresh 500-epoch 학습 스모크는 아직 완료 전입니다. 실기 비행, CAD, endurance, 열·전원 여유는 검증하지 않았습니다. |
+| 과거 navigation 결과 | legacy evaluator 안에서는 비교 가능한 동결 기록으로 보존합니다. | old 601-action 결과를 corrected exact-600 결과와 합치거나, legacy 기체 결과를 ref5in 성능으로 부를 수 없습니다. |
 
-- **Sensor-only actor.** The actor sees LiDAR plus a camera-derived target track — never a
-  ground-truth target position, bearing, or mask. The frozen navigation result uses an analytic
-  appearance bootstrap; the learned detector remains an unpassed offline gate. Ground truth is
-  allowed only for the critic and reward during training (an *asymmetric* actor–critic).
-- **Scaling map.** How far does interception hold as the field gets **denser** and the
-  target moves **faster**? MOTAR sweeps obstacle density × target speed to find where it breaks.
-- **Occlusion.** The target hides behind obstacles, so the policy tracks it through gaps in
-  what it can see — using a short memory of past detections, not a single frame.
+현재 판단의 근거는 [독립 검수 보고서](docs/codex_review_2026-08-12.md)와 [corrected-v2 의미론 스모크](results/navrl_v2_v5a_semantics_smoke_seed197/summary.md)에 있습니다. 위 표의 “통과”는 각 문서에 적힌 좁은 gate만 뜻합니다.
 
-## Quick start
+## 시스템을 짧게 보면
 
-Full prerequisites (Ubuntu, NVIDIA GPU ≥ 8 GB, Isaac Gym Preview 4, conda), the manual
-install, and the two environment gotchas are in **[OPERATIONS.md](OPERATIONS.md)**.
-The short path:
+현재 corrected-v2 baseline은 다음 흐름을 사용합니다.
+
+```text
+camera target track ─┐
+                     ├─ structured observation ─ Transformer actor ─ bounded velocity/yaw command
+72×4 LiDAR @ 12 m ───┘        8 cluster-sector obstacle tokens, token FOV 240°
+
+training only: ground-truth state ─ asymmetric critic + reward
+```
+
+- actor에는 ground-truth 표적 위치나 semantic mask를 직접 넣지 않습니다.
+- navigation/control을 분리해서 볼 때는 analytic detector를 기준선으로 씁니다.
+- learned detector는 오프라인 gate와 navigation A/B를 따로 통과해야 합니다.
+- action은 squashed Gaussian으로 유한 범위 안에 두며, 평가 때 deterministic/stochastic 모드를 반드시 기록합니다.
+- 현재 corrected-v2 공학 baseline은 governor를 끈 조건입니다. 과거 `riskcap` 결과는 별도 legacy 계보입니다.
+
+## 이름이 비슷한 결과를 섞지 않는 법
+
+MOTAR에는 **과제 계약**과 **기체 계약**이라는 서로 다른 두 축이 있습니다.
+
+### 과제·평가 계약
+
+| 계보 | 핵심 차이 | 용도 |
+|---|---|---|
+| historical v1 | 24×24 m arena와 과거 observation/배치 계약 | 초기 아이디어와 실패 양상 참고용 |
+| archived v2 | 40×40×3 m arena지만 과거 종료 조건은 600 설정에서 action 601까지 실행됐고 `time_outs` bootstrap이 없었습니다. | 같은 evaluator로 만든 동결 결과끼리만 비교 |
+| **corrected-v2** | 40×40×3 m, exact 600 actions, `time_outs`, checkpoint/평가 receipt와 source provenance guard | 앞으로의 재현·비교 기준 |
+
+### 기체 계약
+
+| robot name | 의미 | 주의점 |
+|---|---|---|
+| `navrl_quad` | 기존 checkpoint와 논리 연결을 보존하는 legacy simulation 기체 | 0.28 m 충돌 proxy, ±0.13 m motor 좌표, 0.25 kg stock dynamics가 한 실제 기체를 일관되게 나타내지는 않습니다. |
+| `navrl_ref5in_quad` | 1.20 kg, 220 mm motor diagonal, 0.28 m XY 충돌 proxy를 가정한 opt-in 5-inch hardware-informed simulation candidate | 저장소 내부 정합성과 canonical open-arena simulator gate까지만 통과했고 과제 성능은 아직 없습니다. legacy curve에 수치를 이어 붙이지 않고 fresh lineage로 시작합니다. |
+
+따라서 “v2”라고 적혀 있어도 종료 의미론이 다르면 같은 실험이 아니고, observation shape가 같아 checkpoint가 로드되더라도 robot lineage가 다르면 같은 정책으로 평가하면 안 됩니다. 현재 evaluator는 checkpoint에 저장된 arena·sensor·robot provenance를 확인하고 불일치를 fail-closed하도록 설계되어 있습니다.
+
+## 빠르게 확인하기
+
+### 1. 설치
+
+Isaac Gym Preview 4와 NVIDIA GPU가 먼저 필요합니다. 저장소는 공개 clone이 가능하지만 Isaac Gym은 NVIDIA 계정으로 직접 받아야 합니다.
 
 ```bash
-# 1. Install — clones deps, builds the `aerialgym` conda env, runs a smoke test
-mkdir -p ~/workspaces/aerial_gym_ws/src && cd ~/workspaces/aerial_gym_ws/src
-git clone -b research/navrl-env git@github.com:joshualikaist/MOTAR.git aerial_gym_simulator
-cd aerial_gym_simulator && ./bootstrap_second_machine.sh
+mkdir -p ~/workspaces/aerial_gym_ws/src
+cd ~/workspaces/aerial_gym_ws/src
+git clone https://github.com/joshualikaist/MOTAR.git aerial_gym_simulator
+cd aerial_gym_simulator
+./bootstrap_second_machine.sh
 conda activate aerialgym
-
-# 2. See the arena — a viewer with drones flying toward the goal (no policy yet)
-cd aerial_gym/examples && python navrl_task_example.py
-
-# 3. Train the navigation policy (PPO) — headless; console output is also saved
-cd ../rl_training/rl_games && ./train_navrl.sh
-#    watch the console box: `captured (success)` should climb toward 1.0
-#    from another terminal: ./watch_navrl_training.sh
-
-# 4. Watch / evaluate a trained checkpoint
-./play_navrl.sh runs/<your_run>/nn/gen_ppo.pth              # viewer, 16 drones
-./launch_navrl_3d.sh runs/<your_run>/nn/last_gen_ppo_ep_XXXX.pth   # live 3-D viewer
 ```
 
-Env counts, the 4 GB-VRAM preset, and the training metrics / TensorBoard scalars to watch
-are documented in **[OPERATIONS.md](OPERATIONS.md)** and **[WORKLOG.md](WORKLOG.md)**.
+Isaac Gym 경로, Python 3.8, 4 GB GPU 설정과 `PYTHONNOUSERSITE` 문제는 [OPERATIONS.md](OPERATIONS.md)를 먼저 확인하세요.
 
-> **Current navigation/control candidate** — an analytic camera appearance bootstrap + LiDAR
-> target tracker feeding a NavRL++-style Transformer policy, with a sensor-only `riskcap` command
-> layer — is specified in **[RESEARCH_PLAN.md](RESEARCH_PLAN.md)**. A learned RGB-D detector is the
-> next offline validation stage, not a capability already demonstrated by the frozen policy.
->
-> **Current controlled result (closed 2026-08-05)** — the frozen ep24000 policy exposed an early
-> high-speed bar-contact bottleneck, not an episode-horizon shortage. Complete-stop clearance/TTC
-> governors cut crash but raised timeout to 16.59–23.57%, so they were rejected. A sensor-only
-> minimum-intervention `riskcap` instead limits horizontal speed to 2.0 m/s only inside 3 m command-
-> corridor clearance, releases it by 5 m, and never forces a stop. On unseen seed45 it moved the
-> frozen policy from 70.03/27.87/2.10% to 78.20/17.80/4.00% capture/crash/timeout. Exactly 1,000
-> adaptation epochs then reached **81.94/15.67/2.39%**, adding +3.75 pp capture over source+riskcap.
-> The trained winner also improved capture and crash at all seed46 fixed speeds 0.3/0.9/1.5 m/s.
-> Its checkpoint SHA-256 is `f70221393660…`; full confidence intervals and artifact contracts are in
-> [results/navrl_v2_riskcap_postadapt/summary.md](results/navrl_v2_riskcap_postadapt/summary.md).
-> No training or evaluation is active. Do not extend fixed-density PPO or retune riskcap post hoc;
-> first re-measure matched A/B/C arms under the corrected evaluation contract, then run the
-> learned-detector offline gate. The stored result predates that contract: configured 600-step
-> episodes ended at action 601 and rl_games did not receive its `time_outs` bootstrap signal.
+### 2. 코드 계약 검사
 
-## Status
+GPU 학습 전에 CPU에서 빠르게 실패를 잡습니다.
 
-Sensor-only interception works end to end: the actor sees **only** a 72x4 LiDAR at 12 m plus a
-forward sensor-derived target track (898-D structured observation, 17-token Transformer,
-asymmetric 906-D critic with ground truth confined to training). The completed density recovery
-used the **analytic detector mode** to isolate navigation/control. It is not evidence that
-the final learned RGB-D detector gate has been passed; that perception stage remains a separate
-research requirement.
+```bash
+cd ~/workspaces/aerial_gym_ws/src/aerial_gym_simulator
+conda activate aerialgym
+export PYTHONNOUSERSITE=1
 
-**Frozen-candidate v2 density curve — archived legacy evaluator** (40×40×3 m, moving target
-0.3–1.5 m/s, ep25000+riskcap, seed47, deterministic deployment):
+python tests/test_navrl_v5a_semantics_smoke.py
+python tests/test_navrl_ref5in_platform.py
 
-| bars | density/100 m² | episodes | capture | crash | timeout |
-|---:|---:|---:|---:|---:|---:|
-| 130 | 8.12 | 2,049 | 89.31% | 8.15% | 2.54% |
-| 160 | 10.00 | 2,049 | 84.63% | 12.64% | 2.73% |
-| 190 | 11.88 | 2,049 | 82.77% | 14.69% | 2.54% |
-| **205** | **12.81** | **2,050** | **80.54%** | **17.17%** | **2.29%** |
-| 220 | 13.75 | 2,050 | 77.76% | 19.41% | 2.83% |
+cd aerial_gym/rl_training/rl_games
+REF5IN_PREFLIGHT_ONLY=1 ./train_navrl_v2_ref5in_smoke.sh
+```
 
-These cells used the old `>600` termination rule and therefore timed out at action 601. They remain
-valid as one internally consistent archive, but must not be mixed with new schema-v2 cells. The
-older ep24000/governor-off source policy separately scored 72.44% deterministic and 67.35%
-stochastic at 205 bars; that deployment gap and its curriculum diagnostics motivated the closed
-control-risk study, not a subtraction from the table above.
+마지막 명령은 GPU 학습을 시작하지 않고 ref5in launcher가 고정한 fresh/no-checkpoint 계약만 검사합니다.
 
-The frozen causal checks separate reproducibility from symmetry. Seed 43 scores **72.77%** at 205
-bars versus seed 42's 72.44% (+0.33 pp; replication PASS). Original and mirror-conjugate policies
-score 70.97% and 70.17% over 4,096 episodes/arm, and initial negative/positive-y target bearings
-score 71.17%/70.97%, so no material outcome-side asymmetry was detected. The controller itself is
-not reflection-equivariant: exact reflected-observation pairs have lateral action MAE **1.235** and
-**73.08%** sign mismatch. This is a learned one-direction route preference, currently outcome-neutral
-in the symmetric arena but a robustness concern. Fixed-speed evaluation shows a material
-**-5.91 pp** capture drop from 0.3 to 1.5 m/s, accompanied by **+7.86 pp** absolute bar contact.
-The matched forgetting evaluation found improvement, not degradation: ep24000 beats ep19100 by
-**+4.65 pp** on U[0.3,1.5] and **+3.25 pp** at fixed 1.5 m/s. Subsequent risk-ordering and speed-
-governor experiments are now complete; the non-stopping `riskcap` result above is the selected
-navigation/control candidate. Full diagnostic outputs:
-[causal 1–3](results/navrl_v2_ep24000_causal_1to3/summary.md),
-[fixed speed](results/navrl_v2_ep24000_fixed_speed/summary.md), and
-[riskcap final](results/navrl_v2_riskcap_postadapt/summary.md).
+### 3. 3-D로 환경 보기
 
-A left/right chirality defect in the observation pipeline was found and fixed on 2026-07-29 --
-the perception bin-to-bearing table was the mirror image of the sensor's ray generator, so every
-obstacle token had been emitted on the wrong side of the drone. Physically adjudicated: token
-association with real bars went from 13.9% to 94.8%. Held-out density curve improved by **+11.1 pp
-on average**, and the density curriculum reached **85 bars (17.8 bars/100 m^2)** where it had
-previously stalled at 65.
+저장소 루트에서 수동 조작 또는 checkpoint 재생을 시작합니다.
 
-The obstacle-token bottleneck (8 slots representing only ~3 unique bars) was traced to
-suppression-window duplication and addressed by a `cluster_sector` selector, which raised unique
-bars per step from 3.0 to 4.6.
+```bash
+cd ~/workspaces/aerial_gym_ws/src/aerial_gym_simulator
 
-**Archived historical v1 density x target-speed map** (held-out, 2049 episodes/cell, deterministic,
-`cluster_sector` checkpoint, sensor-only):
+./launch_navrl_3d.sh --manual
 
-| bars | density/100 m^2 | capture @0.0 m/s | @0.5 | @1.0 | @1.5 |
-|---|---|---|---|---|---|
-| 25 | 5.2 | 0.962 | 0.970 | 0.965 | 0.949 |
-| 50 | 10.5 | 0.918 | 0.930 | 0.922 | 0.904 |
-| 65 | 13.6 | 0.881 | 0.879 | 0.861 | 0.837 |
-| **85** | **17.8** | 0.736 | 0.753 | 0.718 | 0.671 |
-| 110 | 23.0 | 0.497 | 0.506 | 0.484 | 0.437 |
-| 130 | 27.2 | 0.318 | 0.296 | 0.281 | 0.259 |
-| 150 | 31.4 | 0.194 | 0.192 | 0.190 | 0.159 |
+# 정책을 재생할 때
+CKPT=/absolute/path/to/last_gen_ppo_ep_XXXX_rew_YY.pth
+./launch_navrl_3d.sh --checkpoint "$CKPT"
+```
 
-85 bars is the trained maximum; rows below it measure generalization, not a ceiling of the method.
-Across the full grid, raising density 5.2 -> 31.4 bars/100 m^2 costs **78 pp** of capture, while
-raising target speed 0 -> 1.5 m/s costs only **4.2 pp**. This is a descriptive result for that v1
-grid, not evidence that speed is generally non-binding. The command limit was ±2.5 m/s **per x/y
-axis** (maximum requested XY norm 3.54 m/s), not a 2.5 m/s vector-speed cap.
-This is a historical pre-heading-continuity figure (full CSV:
-`results/density_speed_map_cluster_sector.csv`, interactive version: [status dashboard, "Map"
-tab](docs/status/)). It remains useful as a frozen 85-bar baseline, but must not be presented as the
-current v2 40×40 result. The completed v2 result is the separate table above. Full detail is in
-**[WORKLOG.md](WORKLOG.md)** (newest entry last).
+checkpoint가 없다면 `--manual`만 사용할 수 있습니다. 아래 설명처럼 `.pth` 파일은 Git에 들어 있지 않습니다.
 
-## Repo map
+### 4. corrected-v2 held-out 평가
 
-| Path | What |
-|------|------|
-| `aerial_gym/task/navrl_task/` | the interception task — observations, reward, termination |
-| `aerial_gym/task/navrl_task/navrl_perception.py` | analytic/learned camera front-ends + LiDAR tracker; frozen result uses analytic mode |
-| `aerial_gym/config/env_config/navrl_bars_env.py` | the arena — current v2 40×40×3 m full-width `navrl_band` field; legacy v1 was 24×24 m |
-| `aerial_gym/config/…/navrl_lidar_config.py`, `navrl_quad_config.py` | the LiDAR-equipped quadrotor |
-| `aerial_gym/rl_training/rl_games/` | PPO configs, custom networks, and the `*_navrl*.sh` run wrappers |
-| `tools/`, `tests/` | bar-asset generation, geometry audits, smoke tests |
+끝 밀도 정책은 반드시 `last_gen_ppo_ep_*.pth`로 평가합니다.
 
-## Docs
+```bash
+cd ~/workspaces/aerial_gym_ws/src/aerial_gym_simulator/aerial_gym/rl_training/rl_games
 
-| File | For |
-|------|-----|
-| **[WORKLOG.md](WORKLOG.md)** | what changed and why — **start here** |
-| [RESEARCH_PLAN.md](RESEARCH_PLAN.md) | research questions, method spec, staged plan P0-P7 |
-| [OPERATIONS.md](OPERATIONS.md) | install, GPU tiers/VRAM, second machine, transferring results |
+CKPT=/absolute/path/to/last_gen_ppo_ep_XXXX_rew_YY.pth
+NAVRL_V2_ACTION_MODE=deterministic \
+NAVRL_V2_DENSITIES="130 160 190 205 220" \
+./eval_navrl_v2_density_sweep.sh "$CKPT" 2049
+```
 
----
+evaluator는 checkpoint의 selector, detector, arena, robot 및 source receipt를 확인합니다. 강제 옵션으로 provenance 오류를 덮은 결과는 정식 비교표에 넣지 않습니다.
 
-The upstream Aerial Gym Simulator documentation follows.
+### 5. ref5in canonical gate와 학습 스모크
 
----
+먼저 open-arena 명령 추종을 재측정합니다.
 
-[![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause) [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+```bash
+cd ~/workspaces/aerial_gym_ws/src/aerial_gym_simulator
+conda activate aerialgym
+export PYTHONNOUSERSITE=1
 
-# Aerial Gym Simulator
+python tools/verify_navrl_ref_platform.py \
+  --num-envs 16 \
+  --output results/navrl_ref_platform_verification/flight_envelope.json
+```
 
-Welcome to the [Aerial Gym Simulator](https://www.github.com/ntnu-arl/aerial_gym_simulator) repository. Please refer to our [documentation](https://ntnu-arl.github.io/aerial_gym_simulator/) for detailed information on how to get started with the simulator, and how to use it for your research.
+그다음 **실행에 관여하는 source가 commit된 상태**에서 fresh 500-epoch 스모크를 실행합니다.
 
-The Aerial Gym Simulator is a high-fidelity physics-based simulator for training Micro Aerial Vehicle (MAV) platforms such as multirotors to learn to fly and navigate cluttered environments using learning-based methods. The environments are built upon the underlying [NVIDIA Isaac Gym](https://developer.nvidia.com/isaac-gym) simulator. We offer aerial robot models for standard planar quadrotor platforms, as well as fully-actuated platforms and multirotors with arbitrary configurations. These configurations are supported with low-level and high-level geometric controllers that reside on the GPU and provide parallelization for the simultaneous control of thousands of multirotors.
+```bash
+cd ~/workspaces/aerial_gym_ws/src/aerial_gym_simulator
+git status --short -- aerial_gym resources/robots tools/create_navrl_source_bundle.py
+# 아무것도 출력되지 않아야 함. results/와 문서 초안은 실행 바이트가 아니므로 별도 표시됩니다.
 
-This is the *second release* of the simulator and includes a variety of new features and improvements. Task definition and environment configuration allow for fine-grained customization of all the environment entities without having to deal with large monolithic environment files. A custom rendering framework allows obtaining depth, and segmentation images at high speeds and can be used to simulate custom sensors such as LiDARs with varying properties. The simulator is open-source and is released under the [BSD-3-Clause License](https://opensource.org/licenses/BSD-3-Clause).
+cd aerial_gym/rl_training/rl_games
+./train_navrl_v2_ref5in_smoke.sh
+```
 
+이 launcher는 seed 197, 500 epochs, `navrl_ref5in_quad`, governor off와 corrected-v2 의미론을 고정합니다. CLI 인자와 `CKPT` resume를 일부러 거부합니다. 결과가 좋아도 이것은 **학습 가능성 engineering gate**일 뿐, legacy보다 낫다는 성능 주장이 아닙니다.
 
-Aerial Gym Simulator allows you to train state-based control policies in under a minute:
+일반적인 `train_navrl.sh`는 여러 역사적 기본값을 허용하므로 현재 기준 실험의 시작 명령으로 추천하지 않습니다. 새 실험은 목적에 맞는 고정 launcher와 사전등록 문서를 먼저 추가합니다.
 
+## checkpoint는 저장소에 없습니다
 
-And train vision-based navigation policies in under an hour:
+`runs/`와 `.pth` snapshot은 크기와 provenance 문제 때문에 `.gitignore` 대상입니다. README와 결과 문서에 보이는 `runs/ppo_.../nn/...pth`는 **그 실험을 수행한 로컬 경로**이지, clone 후 자동으로 생기는 다운로드 파일이 아닙니다.
 
+다른 머신으로 옮길 때는 최소한 다음을 함께 보관하세요.
 
-Equipped with GPU-accelerated and customizable ray-casting based LiDAR and Camera sensors with depth and segmentation capabilities:
+- `last_gen_ppo_ep_*.pth`
+- run의 `aerial_run/`과 `summaries/`
+- evaluation JSON/CSV와 receipt
+- source manifest 또는 source bundle
+- checkpoint SHA-256
 
+```bash
+sha256sum /absolute/path/to/last_gen_ppo_ep_XXXX_rew_YY.pth
+```
 
+run 폴더 이관과 TensorBoard 병합 절차는 [OPERATIONS.md](OPERATIONS.md)에 있습니다.
 
+## 결과를 읽는 규칙
 
-## Features
+1. **끝 정책은 `last_gen_ppo_ep_*.pth`입니다.** `gen_ppo.pth`는 reward 최고점을 저장하는데, density curriculum에서는 쉬운 저밀도 시점이 선택될 수 있어 끝 밀도 정책을 대표하지 않습니다.
+2. **exact-600과 old 601-action을 섞지 않습니다.** 종료 한 step 차이뿐 아니라 timeout value bootstrap 의미도 다릅니다.
+3. **학습 로그의 capture는 성능표가 아닙니다.** curriculum과 stochastic exploration이 섞인 on-policy 진단값입니다. 주장은 동결 checkpoint의 held-out fixed-condition 평가에서 만듭니다.
+4. **episode 수와 training seed 수는 다른 표본입니다.** 한 정책을 2,049 episodes 평가해 얻은 좁은 CI가 한 training seed의 우연을 제거하지 않습니다. full result를 주장하려면 최소 2개, 가급적 3개 training seed를 같은 예산으로 반복합니다.
+5. **deterministic와 stochastic을 표시합니다.** 전자는 배포 평균 action, 후자는 PPO gate와 탐색 잡음의 영향을 봅니다. 둘을 한 열에 합치지 않습니다.
+6. **결과에는 계약을 붙입니다.** checkpoint SHA, source SHA/dirty 여부, training/eval seed, episodes, bars, target speed, detector와 threshold, action mode, robot, episode semantics를 함께 기록합니다.
+7. **한 셀의 최고 epoch를 고르지 않습니다.** 사전등록한 checkpoint와 seed를 사용하고 capture/crash/timeout을 pooled count와 95% CI로 보고합니다.
 
-- **Modular and Extendable Design** allowing users to easily create custom environments, robots, sensors, tasks, and controllers, and changing parameters programmatically on-the-go by modifying the [Simulation Components](https://ntnu-arl.github.io/aerial_gym_simulator/4_simulation_components).
-- **Rewritten from the Ground-Up** to offer very high control over each of the simulation components and capability to extensively [customize](https://ntnu-arl.github.io/aerial_gym_simulator/5_customization) the simulator to your needs.
-- **High-Fidelity Physics Engine** leveraging [NVIDIA Isaac Gym](https://developer.nvidia.com/isaac-gym/download), which provides a high-fidelity physics engine for simulating multirotor platforms, with the possibility of adding support for custom physics engine backends and rendering pipelines.
-- **Parallelized Geometric Controllers** that reside on the GPU and provide parallelization for the [simultaneous control of (hundreds of) thousands of multirotor](https://ntnu-arl.github.io/aerial_gym_simulator/3_robots_and_controllers/#controllers) vehicles.
-- **Custom Rendering Framework** (based on [NVIDIA Warp](https://nvidia.github.io/warp/)) used to design [custom sensors](https://ntnu-arl.github.io/aerial_gym_simulator/8_sensors_and_rendering/#warp-sensors) and perform parallelized kernel-based operations.
-- **Modular and Extendable** allowing users to easily create [custom environments](https://ntnu-arl.github.io/aerial_gym_simulator/5_customization/#custom-environments), [robots](https://ntnu-arl.github.io/aerial_gym_simulator/5_customization/#custom-robots), [sensors](https://ntnu-arl.github.io/aerial_gym_simulator/5_customization/#custom-sensors), [tasks](https://ntnu-arl.github.io/aerial_gym_simulator/5_customization/#custom-tasks), and [controllers](https://ntnu-arl.github.io/aerial_gym_simulator/5_customization/#custom-controllers).
-- **RL-based control and navigation policies** of your choice can be added for robot learning tasks. [Includes scripts to get started with training your own robots.](https://ntnu-arl.github.io/aerial_gym_simulator/6_rl_training).
+## 현재 근거에서 실제로 말할 수 있는 것
 
+- learned-v2 detector navigation A/B 재현에서는 analytic이 3,271/4,098, learned-v2가 3,272/4,100 captures였습니다. 차이는 **-0.0145 percentage point**, 95% CI는 **[-1.752, +1.723] pp**로 사전등록한 -2 pp 비열등 margin을 통과했습니다. 원자료는 [replication summary](results/navrl_v2_detector_navigation_ab_replication_seed97_101_schema2/summary.md)에 있습니다.
+- corrected-v2 seed-197 스모크는 exact-600, `time_outs`, finite PPO와 checkpoint provenance 경로가 실제 학습 중 작동한다는 것을 보였습니다. 그러나 epoch 1,000이 density warmup 경계와 같아 **밀도 승급은 시험하지 못했습니다**.
+- corrected reachability audit의 333/333은 정적 경로 존재 증거입니다. 고밀도 정지나 충돌이 representation, control, dynamics 중 어디서 생기는지는 pre-contact trajectory를 맞춘 추가 평가가 필요합니다.
+- isolated pose-noise audit에서는 한 environment seed에서 위치 1/3/10 cm와 yaw 0.5°의 손실을 검출하지 못했고, yaw 2°와 5°에서는 손실을 검출했습니다. 이는 step-wise iid Gaussian simulation sensitivity이며 실제 센서 허용오차 규격이 아닙니다.
+- learned-v7은 선택한 appearance stress envelope에서 일부 장점이 있었지만 nominal analytic-trained actor와는 분포가 맞지 않았습니다. 그러므로 “detector가 좋아졌으니 기존 PPO에 교체”하거나 appearance randomization까지 한 번에 넣는 실험은 하지 않습니다.
 
-> [!IMPORTANT] 
-> Support for [**Isaac Lab**](https://isaac-sim.github.io/IsaacLab/) and [**Isaac Sim**](https://developer.nvidia.com/isaac/sim) is currently under development. We anticipate releasing this feature in the near future.
+과거 v1 density map과 v2 riskcap 실험은 실패 가설을 만드는 데 유용하지만 corrected-v2의 최종 성능표는 아닙니다. 숫자가 필요하면 메인 README의 요약보다 해당 `results/**/summary.md`의 계약·receipt·한계를 함께 읽으세요.
 
+## 다음 실행 순서
 
-Please refer to the paper detailing the previous version of our simulator to get insights into the motivation and the design principles involved in creating the Aerial Gym Simulator: [https://arxiv.org/abs/2305.16510](https://arxiv.org/abs/2305.16510) (link will be updated to reflect the newer version soon!).
+1. **완료:** ref5in CPU 정합성 26/26과 canonical same-controller simulator gate 21/21을 고정했습니다.
+2. **현재 단계:** clean source receipt가 있는 ref5in fresh 500-epoch 스모크로 시작·종료·checkpoint 계약을 검사합니다.
+3. 스모크가 통과해야만 같은 corrected-v2 계약의 held-out 평가를 수행합니다. 실패하면 full training으로 덮지 않고 dynamics/learning 신호를 분해합니다.
+4. held-out gate까지 통과하면 먼저 full-budget seed 1개를 완주하고, 그 결과가 사전등록 기준을 만족할 때만 나머지 training seed를 추가합니다. 한 seed는 데모로만 취급합니다.
+5. legacy와 ref5in을 비교할 때는 architecture·curriculum·예산·평가 seed를 맞추고 둘 다 fresh lineage로 만듭니다. 기존 legacy checkpoint를 ref5in에 그대로 재생하지 않습니다.
+6. perception 연구는 corrected-v2 analytic baseline → learned detector arm → appearance-randomized arm 순으로 한 축씩 추가합니다.
 
-## Why Aerial Gym Simulator?
+현재 가장 큰 미해결 문제는 “더 오래 학습하면 되는가”가 아니라 **고밀도에서 pre-contact obstacle 정보, 제동 여유, detector 출력 분포, 기체 동역학 중 어느 축이 먼저 한계가 되는가**입니다.
 
-The Aerial Gym Simulator is designed to simulate thousands of MAVs simultaneously and comes equipped with both low and high-level controllers that are used on real-world systems. In addition, the new customized ray-casting allows for superfast rendering of the environment for tasks using depth and segmentation from the environment.
+## 저장소 지도
 
-The optimized code in this newer version allows training for motor-command policies for robot control in under a minute and vision-based navigation policies in under an hour. Extensive examples are provided to allow users to get started with training their own policies for their custom robots quickly.
+| 경로 | 내용 |
+|---|---|
+| `aerial_gym/task/navrl_task/` | observation, reward, termination, curriculum, telemetry |
+| `aerial_gym/task/navrl_task/navrl_perception.py` | analytic/learned target front-end와 LiDAR association |
+| `aerial_gym/config/task_config/navrl_task_config.py` | task와 curriculum 기본 계약 |
+| `aerial_gym/config/env_config/navrl_bars_env.py` | v1/v2 arena와 bar 배치 |
+| `aerial_gym/config/robot_config/` | `navrl_quad`, `navrl_ref5in_quad` 동역학·allocator 설정 |
+| `resources/robots/quad/` | URDF와 충돌/관성 기하 |
+| `aerial_gym/rl_training/rl_games/` | PPO config, network, 고정 train/eval launcher |
+| `tests/` | 의미론·계보·수학·launcher 회귀검사 |
+| `tools/` | 데이터셋, receipt, geometry/platform 검증 도구 |
+| `results/` | 원자료와 조건별 `summary.md`; 성능 숫자의 근거 |
+| `docs/` | 독립 검수, handoff, 기준 기체 제안, 발표 자료 |
+| [WORKLOG.md](WORKLOG.md) | 날짜순 변경·실험 기록 |
+| [RESEARCH_PLAN.md](RESEARCH_PLAN.md) | 가설, gate, 장기 순서와 중단 조건 |
+| [OPERATIONS.md](OPERATIONS.md) | 설치, GPU별 실행, 결과 이관, 문제 해결 |
 
+## 기반 프로젝트와 크레딧
 
-## Citing
-When referencing the Aerial Gym Simulator in your research, please cite the following paper
+MOTAR는 [Aerial Gym Simulator](https://github.com/ntnu-arl/aerial_gym_simulator)의 연구 fork입니다. 병렬 Isaac Gym 환경, multirotor/controller 구조와 sensor rendering 기반을 사용합니다. 장애물장과 LiDAR navigation 구성은 [NavRL](https://github.com/Zhefan-Xu/NavRL)을 참고해 Aerial Gym 안에서 다시 구현했습니다. PPO 실행은 [rl_games](https://github.com/Denys88/rl_games)를 사용합니다.
+
+MOTAR 결과를 인용할 때는 이 저장소의 실험 계약과 함께 기반 프로젝트의 citation도 확인해 주세요.
 
 ```bibtex
-@ARTICLE{kulkarni2025aerial,
-  author={Kulkarni, Mihir and Rehberg, Welf and Alexis, Kostas},
-  journal={IEEE Robotics and Automation Letters}, 
-  title={Aerial Gym Simulator: A Framework for Highly Parallelized Simulation of Aerial Robots}, 
-  year={2025},
-  volume={10},
-  number={4},
-  pages={4093-4100},
-  keywords={Robots;Robot sensing systems;Rendering (computer graphics);Physics;Engines;Navigation;Training;Motors;Planning;Autonomous aerial vehicles;Aerial Systems: perception and autonomy;machine learning for robot control;reinforcement learning},
-  doi={10.1109/LRA.2025.3548507}}
+@article{kulkarni2025aerial,
+  author  = {Kulkarni, Mihir and Rehberg, Welf and Alexis, Kostas},
+  title   = {Aerial Gym Simulator: A Framework for Highly Parallelized Simulation of Aerial Robots},
+  journal = {IEEE Robotics and Automation Letters},
+  year    = {2025},
+  volume  = {10},
+  number  = {4},
+  pages   = {4093--4100},
+  doi     = {10.1109/LRA.2025.3548507}
+}
 ```
 
-If you use the reinforcement learning policy provided alongside this simulator for navigation tasks, please cite the following paper:
-
-```bibtex
-@INPROCEEDINGS{kulkarni2024@dceRL,
-  author={Kulkarni, Mihir and Alexis, Kostas},
-  booktitle={2024 IEEE International Conference on Robotics and Automation (ICRA)}, 
-  title={Reinforcement Learning for Collision-free Flight Exploiting Deep Collision Encoding}, 
-  year={2024},
-  volume={},
-  number={},
-  pages={15781-15788},
-  keywords={Image coding;Navigation;Supervised learning;Noise;Robot sensing systems;Encoding;Odometry},
-  doi={10.1109/ICRA57147.2024.10610287}}
-
-```
-
-## Quick Links
-For your convenience, here are some quick links to the most important sections of the documentation:
-
-- [Installation](https://ntnu-arl.github.io/aerial_gym_simulator/2_getting_started/#installation)
-- [Robots and Controllers](https://ntnu-arl.github.io/aerial_gym_simulator/3_robots_and_controllers)
-- [Sensors and Rendering Capabilities](https://ntnu-arl.github.io/aerial_gym_simulator/8_sensors_and_rendering)
-- [RL Training](https://ntnu-arl.github.io/aerial_gym_simulator/6_rl_training)
-- [Simulation Components](https://ntnu-arl.github.io/aerial_gym_simulator/4_simulation_components)
-- [Customization](https://ntnu-arl.github.io/aerial_gym_simulator/5_customization)
-- [FAQs and Troubleshooting](https://ntnu-arl.github.io/aerial_gym_simulator/7_FAQ_and_troubleshooting)
-
-
-
-## Contact
-
-Mihir Kulkarni  &nbsp;&nbsp;&nbsp; [Email](mailto:mihirk284@gmail.com) &nbsp; [GitHub](https://github.com/mihirk284) &nbsp; [LinkedIn](https://www.linkedin.com/in/mihir-kulkarni-6070b6135/) &nbsp; [X (formerly Twitter)](https://twitter.com/mihirk284)
-
-Welf Rehberg &nbsp;&nbsp;&nbsp;&nbsp; [Email](mailto:welf.rehberg@ntnu.no) &nbsp; [GitHub](https://github.com/Zwoelf12) &nbsp; [LinkedIn](https://www.linkedin.com/in/welfrehberg/)
-
-Theodor J. L. Forgaard &nbsp;&nbsp;&nbsp; [Email](mailto:tjforgaa@stud.ntnu.no) &nbsp; [GitHb](https://github.com/tforgaard) &nbsp; [LinkedIn](https://www.linkedin.com/in/theodor-johannes-line-forgaard-665b5311a/)
-
-Kostas Alexis &nbsp;&nbsp;&nbsp;&nbsp; [Email](mailto:konstantinos.alexis@ntnu.no) &nbsp;  [GitHub](https://github.com/kostas-alexis) &nbsp; 
- [LinkedIn](https://www.linkedin.com/in/kostas-alexis-67713918/) &nbsp; [X (formerly Twitter)](https://twitter.com/arlteam)
-
-This work is done at the [Autonomous Robots Lab](https://www.autonomousrobotslab.com), [Norwegian University of Science and Technology (NTNU)](https://www.ntnu.no). For more information, visit our [Website](https://www.autonomousrobotslab.com/).
-
-
-## Acknowledgements
-This material was supported by RESNAV (AFOSR Award No. FA8655-21-1-7033) and SPEAR (Horizon Europe Grant Agreement No. 101119774).
-
-This repository utilizes some of the code and helper scripts from [https://github.com/leggedrobotics/legged_gym](https://github.com/leggedrobotics/legged_gym) and [IsaacGymEnvs](https://github.com/isaac-sim/IsaacGymEnvs).
-
-
-
-## FAQs and Troubleshooting 
-
-Please refer to our [website](https://ntnu-arl.github.io/aerial_gym_simulator/7_FAQ_and_troubleshooting/) or to the [Issues](https://github.com/ntnu-arl/aerial_gym_simulator/issues) section in the GitHub repository for more information.
+라이선스는 [BSD-3-Clause](LICENSE)입니다. 이 저장소의 결과나 문구가 Aerial Gym 또는 NavRL 원 저자들의 검증을 대신하지 않습니다.

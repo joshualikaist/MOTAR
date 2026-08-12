@@ -675,6 +675,9 @@ class NavRLPerceptionModule:
         self.pose_clock_offset_s = float(getattr(cfg, "pose_clock_offset_s", 0.0))
         self.pose_noise_pos_m = float(getattr(cfg, "pose_noise_pos_m", 0.0))
         self.pose_noise_yaw_deg = float(getattr(cfg, "pose_noise_yaw_deg", 0.0))
+        self.pose_noise_seed = int(getattr(cfg, "pose_noise_seed", 9163))
+        self._pose_noise_generator = torch.Generator(device=device)
+        self._pose_noise_generator.manual_seed(self.pose_noise_seed)
         self._pose_premise_active = (
             self.pose_clock_offset_s != 0.0
             or self.pose_noise_pos_m > 0.0
@@ -925,10 +928,21 @@ class NavRLPerceptionModule:
         quat = torch.lerp(quat_a, quat_b, float(frac))
         quat = quat / quat.norm(dim=1, keepdim=True).clamp(min=1e-9)
         if self.pose_noise_pos_m > 0.0:
-            pos = pos + torch.randn_like(pos) * self.pose_noise_pos_m
+            pos_noise = torch.randn(
+                pos.shape,
+                dtype=pos.dtype,
+                device=pos.device,
+                generator=self._pose_noise_generator,
+            )
+            pos = pos + pos_noise * self.pose_noise_pos_m
         if self.pose_noise_yaw_deg > 0.0:
             half = (
-                torch.randn(self.num_envs, device=quat.device)
+                torch.randn(
+                    self.num_envs,
+                    dtype=quat.dtype,
+                    device=quat.device,
+                    generator=self._pose_noise_generator,
+                )
                 * math.radians(self.pose_noise_yaw_deg)
                 * 0.5
             )

@@ -107,11 +107,11 @@ run_cell() {
     if [[ "${detector_arm}" == "learned_v7" ]]; then
         # The PPO checkpoint records the threshold it TRAINED with (0.55); running the learned
         # detector at its own validation-selected 0.70 is the point of this arm, so the
-        # trained-vs-running contract guard must be overridden HERE AND ONLY HERE. The analytic
-        # arms run unforced, so any environmental contract mismatch still trips on them.
+        # trained-vs-running threshold guard must be overridden HERE AND ONLY HERE. The narrow
+        # override still refuses every other environmental contract mismatch.
         env_extra+=(NAVRL_DETECTOR_CHECKPOINT="${DETECTOR}"
                     NAVRL_DETECTOR_THRESHOLD="${LEARNED_THRESHOLD}"
-                    NAVRL_V2_FORCE=1)
+                    NAVRL_V2_ALLOW_DETECTOR_THRESHOLD_MISMATCH=1)
         env "${env_extra[@]}" \
             NAVRL_SEED="${seed}" \
             NAVRL_V2_RESULT_DIR="${RESULT_ROOT}/${tag}" \

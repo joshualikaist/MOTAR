@@ -725,9 +725,9 @@ def main():
         "train_frames": args.train_frames,
         "validation_frames": args.validation_frames,
         "test_frames": args.test_frames,
-        "train_seed": TRAIN_SEED,
-        "validation_seed": VALIDATION_SEED,
-        "test_seed": TEST_SEED,
+        "train_seed": args.train_seed,
+        "validation_seed": args.validation_seed,
+        "test_seed": args.test_seed,
         "gate_passed": passed,
     }
     args.output.with_suffix(".receipt.json").write_text(

@@ -1274,6 +1274,20 @@ class EarlyStopA2CAgent(A2CAgent):
 
     def train(self):
         self.init_tensors()
+        save_frequency_raw = os.environ.get("NAVRL_SAVE_FREQUENCY", "").strip()
+        if save_frequency_raw:
+            try:
+                save_frequency = int(save_frequency_raw)
+            except ValueError as exc:
+                raise ValueError("NAVRL_SAVE_FREQUENCY must be a positive integer") from exc
+            if save_frequency <= 0:
+                raise ValueError("NAVRL_SAVE_FREQUENCY must be a positive integer")
+            self.save_freq = save_frequency
+            print(
+                "[aerial RL] checkpoint cadence | every %d epochs "
+                "(NAVRL_SAVE_FREQUENCY)" % self.save_freq,
+                flush=True,
+            )
         self.last_mean_rewards = _read_existing_best_reward(self.nn_dir)
         if getattr(self, "global_rank", 0) == 0 and self.last_mean_rewards > -999999999:
             print(
@@ -1641,13 +1655,17 @@ class EarlyStopA2CAgent(A2CAgent):
                             print("WARNING: Max epochs reached before any env terminated at least once")
                             mean_rewards = -np.inf
 
-                        self.save(
-                            os.path.join(
-                                self.nn_dir,
-                                "last_" + self.config["name"] + "_ep_" + str(epoch_num)
-                                + "_rew_" + str(mean_rewards).replace("[", "_").replace("]", "_"),
-                            )
+                        # The periodic checkpoint above has already saved this exact agent state
+                        # when max_epochs is a save-frequency boundary.  Saving it again produced
+                        # two semantically identical epoch-N files with different spellings
+                        # (``rew_1.23`` and ``rew__1.23_``), making automatic LKG selection
+                        # ambiguous.  Reuse the canonical scalar-reward name and only write when
+                        # the periodic path did not already do so.
+                        periodic_checkpoint_saved = (
+                            self.save_freq > 0 and epoch_num % self.save_freq == 0
                         )
+                        if not periodic_checkpoint_saved:
+                            self.save(os.path.join(self.nn_dir, "last_" + checkpoint_name))
                         print("MAX EPOCHS NUM!")
                         should_exit = True
                         pending_exit_reason = "max_epochs"

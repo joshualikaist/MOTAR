@@ -93,7 +93,12 @@ class task_config:
     # Controlled arena: empty space + density-controlled static bars (no walls/panels).
     # See navrl_bars_env.py and class density below.
     env_name = "navrl_bars_env"
-    robot_name = "navrl_quad"
+    # "navrl_quad" = the legacy 0.250 kg body every existing checkpoint was trained on.
+    # "navrl_ref5in_quad" = an opt-in, internally consistent 1.20 kg hardware-informed simulation
+    # candidate. It preserves nominal T/W and the upright 0.28 m XY proxy, but mass/inertia,
+    # actuator calibration and the 0.12 m collision height make it a different vehicle/task
+    # lineage. It is not CAD-, BOM- or flight-validated. See navrl_ref5in_quad_config.py.
+    robot_name = os.environ.get("NAVRL_ROBOT", "").strip() or "navrl_quad"
     controller_name = "lee_velocity_control_navrl"  # NavRL-scoped: raises yaw-rate clamp pi/3 -> 2.5
     args = {}
     num_envs = 256
@@ -252,6 +257,9 @@ class task_config:
         pose_clock_offset_s = _env_float("NAVRL_POSE_CLOCK_OFFSET_S", 0.0)
         pose_noise_pos_m = _env_float("NAVRL_POSE_NOISE_POS_M", 0.0)
         pose_noise_yaw_deg = _env_float("NAVRL_POSE_NOISE_YAW_DEG", 0.0)
+        # Dedicated stream: pose-noise ablations must not consume the simulator/global RNG and
+        # silently change obstacle placement, target motion, or resets between evaluation arms.
+        pose_noise_seed = _env_int("NAVRL_POSE_NOISE_SEED", 9163)
         # The obstacle map is edited by two paths with different gates: the LiDAR target_like
         # carve-out uses fused visibility (camera OR LiDAR) while the depth blanking uses the
         # camera-only pixel mask. On any frame the camera misses but LiDAR still holds the track

@@ -159,6 +159,7 @@ def _module(latency_s, obstacle_fix, num_envs=1, ego_motion_fix=False):
         latency_lidar_backup=False,
         latency_obstacle_fix=obstacle_fix,
         latency_ego_motion_fix=ego_motion_fix,
+        pose_noise_seed=9163,
         rgb_noise_std=0.0,
         depth_noise_std=0.0,
         history_interval_s=0.5,
@@ -598,13 +599,29 @@ class PosePremiseSensitivity(unittest.TestCase):
         self.assertTrue(bool(torch.allclose(pos, poses[-3][0], atol=1e-6)))
 
     def test_yaw_noise_keeps_unit_norm_and_zero_noise_is_silent(self):
-        torch.manual_seed(0)
         module = self._module_with(pose_noise_yaw_deg=5.0)
         self._drive(module)
         _, quat = module._latency_delayed_pose
         self.assertAlmostEqual(float(quat.norm(dim=1)), 1.0, places=5)
         silent = self._module_with(pose_noise_pos_m=0.0, pose_noise_yaw_deg=0.0)
         self.assertFalse(silent._pose_premise_active)
+
+    def test_pose_noise_does_not_advance_global_rng(self):
+        """A pose-noise arm must not change simulator randomness in the same process."""
+        module = self._module_with(pose_noise_pos_m=0.03, pose_noise_yaw_deg=2.0)
+        torch.manual_seed(1234)
+        before = torch.random.get_rng_state().clone()
+        self._drive(module)
+        after = torch.random.get_rng_state()
+        self.assertTrue(bool(torch.equal(before, after)))
+
+    def test_pose_noise_stream_is_repeatable_and_seeded(self):
+        a = self._module_with(pose_noise_pos_m=0.03, pose_noise_yaw_deg=2.0)
+        b = self._module_with(pose_noise_pos_m=0.03, pose_noise_yaw_deg=2.0)
+        self._drive(a)
+        self._drive(b)
+        for left, right in zip(a._latency_delayed_pose, b._latency_delayed_pose):
+            self.assertTrue(bool(torch.equal(left, right)))
 
 
 class LatencyEgoMotionFix(unittest.TestCase):

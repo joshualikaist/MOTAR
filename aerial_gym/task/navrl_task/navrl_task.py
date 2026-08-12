@@ -1,4 +1,5 @@
 import hashlib
+import importlib
 import json
 import math
 import os
@@ -222,6 +223,13 @@ class NavRLTask(BaseTask):
             headless=self.task_config.headless,
         )
         self.num_envs = self.sim_env.num_envs
+        # Freeze the exact vehicle implementation at task construction.  `NAVRL_ROBOT` is read
+        # before the simulator is built and two vehicle configs are intentionally shape-compatible,
+        # so a checkpoint could otherwise train on ref5in and be evaluated on the legacy body with
+        # no tensor-shape error.  The file hashes also make the physical model independently
+        # identifiable when the git worktree is dirty.
+        self._robot_provenance = self._runtime_robot_provenance()
+        self._training_source_provenance = self._load_training_source_receipt()
 
         # --- task buffers
         self.target_position = torch.zeros((self.num_envs, 3), device=self.device)
@@ -1028,6 +1036,164 @@ class NavRLTask(BaseTask):
             "rl_step_dt_s": float(self.step_dt),
         }
 
+    @staticmethod
+    def _sha256_file(path):
+        digest = hashlib.sha256()
+        with Path(path).open("rb") as stream:
+            for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+                digest.update(chunk)
+        return digest.hexdigest()
+
+    def _runtime_robot_provenance(self):
+        """Return an exact, checkpoint-safe identity for the instantiated vehicle.
+
+        Robot choice is not encoded in the policy tensor shapes.  Record both the selected name
+        and the source bytes which define its URDF/config so evaluators can restore the vehicle
+        before importing the task config and can reject a silent cross-lineage replay.
+        """
+        robot_cfg = self.sim_env.robot_manager.cfg
+        asset_cfg = robot_cfg.robot_asset
+        asset_path = (Path(asset_cfg.asset_folder) / asset_cfg.file).resolve()
+        module = importlib.import_module(robot_cfg.__module__)
+        config_path = Path(module.__file__).resolve()
+        repo_root = Path(__file__).resolve().parents[3]
+        if not asset_path.is_file():
+            raise RuntimeError("NavRL robot asset is missing: %s" % asset_path)
+        if not config_path.is_file():
+            raise RuntimeError("NavRL robot config source is missing: %s" % config_path)
+        try:
+            config_relative = config_path.relative_to(repo_root).as_posix()
+            asset_relative = asset_path.relative_to(repo_root).as_posix()
+        except ValueError as exc:
+            raise RuntimeError(
+                "NavRL robot source must live inside the repository: %s / %s"
+                % (config_path, asset_path)
+            ) from exc
+        return {
+            "robot_name": str(self.task_config.robot_name),
+            "robot_config_class": str(robot_cfg.__name__),
+            "robot_config_module": str(robot_cfg.__module__),
+            "robot_config_file": config_path.name,
+            "robot_config_path": config_relative,
+            "robot_config_sha256": self._sha256_file(config_path),
+            "robot_asset_file": str(asset_cfg.file),
+            "robot_asset_path": asset_relative,
+            "robot_asset_sha256": self._sha256_file(asset_path),
+        }
+
+    def _load_training_source_receipt(self):
+        """Validate and bind an optional immutable training-source bundle.
+
+        Legacy/interactive tasks may omit it.  Closed ref5in launchers require it through
+        NAVRL_REQUIRE_TRAINING_SOURCE_RECEIPT=1.  Validation is repeated whenever a checkpoint is
+        saved so a mid-run source edit cannot be hidden behind the launch-time receipt.
+        """
+        manifest_text = os.environ.get("NAVRL_TRAINING_SOURCE_MANIFEST", "").strip()
+        expected_sha = os.environ.get(
+            "NAVRL_TRAINING_SOURCE_MANIFEST_SHA256", ""
+        ).strip().lower()
+        required = os.environ.get(
+            "NAVRL_REQUIRE_TRAINING_SOURCE_RECEIPT", "0"
+        ).strip().lower() in ("1", "true", "yes", "on")
+        require_clean = os.environ.get(
+            "NAVRL_REQUIRE_CLEAN_TRAINING_SOURCE", "0"
+        ).strip().lower() in ("1", "true", "yes", "on")
+        if not manifest_text:
+            if required:
+                raise RuntimeError("NavRL training source receipt is required but unset")
+            return {
+                "manifest": "",
+                "manifest_sha256": "",
+                "git_commit": "",
+                "git_dirty": None,
+                "runtime_file_count": 0,
+            }
+
+        manifest_path = Path(manifest_text).expanduser().resolve()
+        if not manifest_path.is_file():
+            raise RuntimeError("NavRL training source manifest is missing: %s" % manifest_path)
+        actual_sha = self._sha256_file(manifest_path)
+        if len(expected_sha) != 64 or actual_sha != expected_sha:
+            raise RuntimeError("NavRL training source manifest SHA-256 mismatch")
+        try:
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError) as exc:
+            raise RuntimeError("NavRL training source manifest is unreadable") from exc
+        if manifest.get("schema_version") != 1 or manifest.get("purpose") != (
+            "navrl_training_source_receipt"
+        ):
+            raise RuntimeError("unsupported NavRL training source manifest contract")
+        if require_clean and bool(manifest.get("git_dirty")):
+            raise RuntimeError("closed NavRL training requires a clean source receipt")
+
+        provenance = {
+            "manifest": str(manifest_path),
+            "manifest_sha256": actual_sha,
+            "git_commit": str(manifest.get("git_commit", "")),
+            "git_dirty": bool(manifest.get("git_dirty")),
+            "runtime_file_count": int(manifest.get("runtime_file_count", 0)),
+            "payload": manifest,
+        }
+        self._verify_training_source_receipt(provenance)
+        return provenance
+
+    def _verify_training_source_receipt(self, provenance=None):
+        provenance = provenance or self._training_source_provenance
+        manifest_path_text = str(provenance.get("manifest", ""))
+        if not manifest_path_text:
+            return
+        manifest_path = Path(manifest_path_text)
+        if self._sha256_file(manifest_path) != provenance["manifest_sha256"]:
+            raise RuntimeError("NavRL training source manifest changed during the run")
+        manifest = provenance.get("payload") or json.loads(
+            manifest_path.read_text(encoding="utf-8")
+        )
+        entries = manifest.get("runtime_files") or []
+        if not entries or len(entries) != int(manifest.get("runtime_file_count", -1)):
+            raise RuntimeError("NavRL training source receipt has invalid file accounting")
+        repo = Path(manifest["repository_root"]).resolve()
+        seen = {}
+        for entry in entries:
+            original = (repo / entry["path"]).resolve()
+            snapshot = (manifest_path.parent / entry["snapshot"]).resolve()
+            expected = str(entry["sha256"])
+            if not original.is_file() or self._sha256_file(original) != expected:
+                raise RuntimeError("NavRL training runtime source changed: %s" % entry["path"])
+            if not snapshot.is_file() or self._sha256_file(snapshot) != expected:
+                raise RuntimeError("NavRL training source snapshot changed: %s" % entry["snapshot"])
+            relative = Path(entry["path"]).as_posix()
+            if relative in seen:
+                raise RuntimeError(
+                    "NavRL training receipt contains a duplicate runtime path: %s" % relative
+                )
+            seen[relative] = expected
+        environment_path = (
+            manifest_path.parent / str(manifest.get("python_environment", ""))
+        ).resolve()
+        if (
+            not environment_path.is_file()
+            or self._sha256_file(environment_path)
+            != str(manifest.get("python_environment_sha256", ""))
+        ):
+            raise RuntimeError("NavRL training Python environment receipt changed")
+        for label, filename, digest in (
+            (
+                "robot config",
+                self._robot_provenance["robot_config_path"],
+                self._robot_provenance["robot_config_sha256"],
+            ),
+            (
+                "robot URDF",
+                self._robot_provenance["robot_asset_path"],
+                self._robot_provenance["robot_asset_sha256"],
+            ),
+        ):
+            if seen.get(filename) != digest:
+                raise RuntimeError(
+                    "NavRL training receipt does not bind the active %s: %s"
+                    % (label, filename)
+                )
+
     def _sample_general_target(self, env_ids, start_pos, b_min, b_max, bars_xy):
         """Sample a range-controlled, collision-free target in a random direction.
 
@@ -1317,6 +1483,7 @@ class NavRLTask(BaseTask):
     def get_env_state(self):
         """Saved into the rl_games checkpoint ('env_state') so the epoch-proportional goal
         curriculum and optional density curriculum survive a --checkpoint resume."""
+        self._verify_training_source_receipt()
         representation = self._obstacle_representation_or_zero()
         physics = self._runtime_physics_contract()
         rollback_raw = os.environ.get("NAVRL_PPO_EPOCH_ROLLBACK", "").strip().lower()
@@ -1328,6 +1495,34 @@ class NavRLTask(BaseTask):
             ) > 0.0
         return {
             "num_task_steps": int(self.num_task_steps),
+            # Vehicle lineage.  This is intentionally separate from the observation/action
+            # contract: navrl_quad and navrl_ref5in_quad have identical tensor shapes but different
+            # rigid-body dynamics.  Evaluators must restore this identity before importing the task.
+            "cfg_robot_contract_version": 1,
+            "cfg_robot_name": self._robot_provenance["robot_name"],
+            "cfg_robot_config_class": self._robot_provenance["robot_config_class"],
+            "cfg_robot_config_module": self._robot_provenance["robot_config_module"],
+            "cfg_robot_config_file": self._robot_provenance["robot_config_file"],
+            "cfg_robot_config_path": self._robot_provenance["robot_config_path"],
+            "cfg_robot_config_sha256": self._robot_provenance["robot_config_sha256"],
+            "cfg_robot_asset_file": self._robot_provenance["robot_asset_file"],
+            "cfg_robot_asset_path": self._robot_provenance["robot_asset_path"],
+            "cfg_robot_asset_sha256": self._robot_provenance["robot_asset_sha256"],
+            "cfg_training_source_manifest": self._training_source_provenance[
+                "manifest"
+            ],
+            "cfg_training_source_manifest_sha256": self._training_source_provenance[
+                "manifest_sha256"
+            ],
+            "cfg_training_source_git_commit": self._training_source_provenance[
+                "git_commit"
+            ],
+            "cfg_training_source_git_dirty": self._training_source_provenance[
+                "git_dirty"
+            ],
+            "cfg_training_source_runtime_file_count": self._training_source_provenance[
+                "runtime_file_count"
+            ],
             "cfg_ppo_horizon": int(getattr(self.cur, "ppo_horizon", 1)),
             "cfg_runtime_sim_config_class": physics["runtime_sim_config_class"],
             "cfg_physics_dt_s": physics["physics_dt_s"],
@@ -1869,6 +2064,31 @@ class NavRLTask(BaseTask):
         if isinstance(state, dict):
             representation = self._obstacle_representation_or_zero()
             arena = self._arena_contract()
+            # Vehicle configs are shape-compatible, so loading succeeds even when the physical
+            # body is wrong.  Older checkpoints predate this identity and are explicitly treated
+            # as legacy navrl_quad by the v2 evaluator; present fields must match exactly.
+            for key, current, name in (
+                ("cfg_robot_name", self._robot_provenance["robot_name"], "robot name"),
+                (
+                    "cfg_robot_config_sha256",
+                    self._robot_provenance["robot_config_sha256"],
+                    "robot config SHA-256",
+                ),
+                (
+                    "cfg_robot_asset_sha256",
+                    self._robot_provenance["robot_asset_sha256"],
+                    "robot URDF SHA-256",
+                ),
+            ):
+                saved_value = state.get(key)
+                if saved_value is None:
+                    continue
+                if str(saved_value).strip() != str(current).strip():
+                    raise RuntimeError(
+                        "NavRL ROBOT LINEAGE MISMATCH | %s: checkpoint=%s running=%s. "
+                        "The policy shape is compatible but the rigid-body dynamics are not."
+                        % (name, saved_value, current)
+                    )
             saved_selector = str(
                 state.get("cfg_obstacle_selector", "greedy_suppress")
             ).strip()
@@ -2571,12 +2791,12 @@ class NavRLTask(BaseTask):
         # vision mode: fresh episode -> tracker knows nothing, no previous action yet
         if self.vision_mode:
             self.detector.reset_idx(env_ids)
-        if self._episode_dump_path:
-            self._episode_spawn[env_ids] = self.obs_dict["robot_position"][env_ids].clone()
             if self.perception is not None:
                 self.perception.reset_idx(env_ids)
             self.prev_action[env_ids] = 0.0
             self._visible_now[env_ids] = False
+        if self._episode_dump_path:
+            self._episode_spawn[env_ids] = self.obs_dict["robot_position"][env_ids].clone()
         if self._action_diag_enabled:
             self._action_diag_prev_valid[env_ids] = False
         # Phase 3: per-episode target speed + trajectory pattern (all-static when the speed
@@ -4179,6 +4399,15 @@ class NavRLTask(BaseTask):
             "actual_episodes": int(total),
             "checkpoint": os.environ.get("NAVRL_EVAL_CHECKPOINT", ""),
             "condition": {
+                "robot_name": self._robot_provenance["robot_name"],
+                "robot_config_class": self._robot_provenance["robot_config_class"],
+                "robot_config_sha256": self._robot_provenance[
+                    "robot_config_sha256"
+                ],
+                "robot_asset_file": self._robot_provenance["robot_asset_file"],
+                "robot_asset_sha256": self._robot_provenance[
+                    "robot_asset_sha256"
+                ],
                 "action_selection": os.environ.get(
                     "NAVRL_EVAL_ACTION_MODE", "configured"
                 ).strip().lower(),

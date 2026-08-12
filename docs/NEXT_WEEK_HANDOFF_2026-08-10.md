@@ -1,5 +1,18 @@
 # Next-week handoff — 2026-08-10
 
+> **2026-08-12 update:** Gates 1–4 and the independent verification continuation are complete.
+> The current decision record is `docs/codex_review_2026-08-12.md`; where this older handoff
+> conflicts with it, the 2026-08-12 review supersedes this file. In particular, v7 is the current
+> detector candidate, the threshold confound is resolved, pose-noise results were rerun with an
+> isolated RNG, and verification 5 must begin with a corrected-semantics engineering smoke rather
+> than a multi-change full training run.
+>
+> **2026-08-12 verification 5A result:** the 1,000-epoch fresh engineering smoke completed with
+> exit code 0 and is a conditional PASS for exact-600/`time_outs` and PPO stability. It is not a
+> performance result and did not cross the density warmup boundary. See
+> `results/navrl_v2_v5a_semantics_smoke_seed197/summary.md`. Do not start 5B until the current
+> source is committed cleanly and a full training source receipt is added.
+
 ## 현재 동결 상태
 
 - PPO 재학습 금지. 남은 navigation 작업은 frozen-policy evaluation이다.
@@ -86,6 +99,19 @@ primary statistic은 bars≤205의 aggregate-binomial density×speed interaction
 interaction이 재현되지 않으면 논문 결론은 “학습 격자에서 density main effect가 speed main effect보다
 크다”로 종료한다. 재현되면 그때 trajectory mediation을 별도 평가한다.
 
+전용 launcher `eval_navrl_v2_speed_density_interaction.sh`를 구현했다. 미사용 seed 59/61,
+ep25000+riskcap, deterministic/original, exact-600, 2,049 requested episodes/cell을 고정하고 16개 셀이
+한 runtime-source bundle을 공유한다. 완료 cell은 재실행 시 skip하고 partial cell은 덮어쓰지 않는다.
+최종 primary test는 `binomial_logit(capture) ~ seed + density + fast + density:fast`의 1-df likelihood-ratio
+test로 자동 계산된다.
+
+```bash
+cd /home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/aerial_gym/rl_training/rl_games
+./eval_navrl_v2_speed_density_interaction.sh
+```
+
+통합 로그와 결과는 `results/navrl_v2_speed_density_interaction_seed59_61_schema2/` 아래 생성된다.
+
 ### Gate 3 — learned detector offline gate
 
 PPO는 고정한다. 먼저 detector 데이터/평가만 고친다.
@@ -99,6 +125,34 @@ PPO는 고정한다. 먼저 detector 데이터/평가만 고친다.
 
 offline gate를 통과한 artifact만 frozen ep25000+riskcap policy에 넣어 analytic-vs-learned navigation
 평가를 한다. 이는 PPO 재학습이 아니라 detector 지도학습 + frozen-policy evaluation이다.
+
+Gate 3 stage A 전용 launcher가 구현됐다. 기존 `train_navrl_target_detector.py`/v1 artifact는 역사 자료로
+보존하고 사용하지 않는다. 새 launcher는 train/validation/test seed 71/73/79를 분리하고
+8,192/2,048/4,096 frames, full-FOV 2–20 m range bins, target-absent, navrl_band 자연/강제 occlusion,
+small-target 사례를 수집한다. balanced BCE와 focal+Dice를 train/validation에서 비교하고 validation에서
+threshold를 한 번 고정한 뒤 test를 한 번만 열어 사전 고정된 precision/recall/FPR/bearing/range gate를
+판정한다.
+
+```bash
+cd /home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/aerial_gym/rl_training/rl_games
+./run_navrl_detector_offline_gate.sh
+```
+
+결과는 `results/navrl_detector_offline_gate_v2/summary.md`, artifact는
+`artifacts/navrl_target_detector_v2.pth`에 생성된다. offline `GATE PASS` 전에는 navigation A/B를 시작하지
+않는다. PASS 뒤 artifact receipt의 선택 threshold/SHA를 고정한 별도 analytic-vs-learned launcher를 쓴다.
+
+Offline gate가 PASS했고 stage B launcher도 구현됐다. frozen ep25000+riskcap, 205 bars,
+deterministic/exact-600에서 미사용 seed 83/89 × analytic bootstrap/learned-v2의 4셀을 같은 source bundle로
+평가한다. primary endpoint는 pooled learned−analytic capture이고 비열등성 margin은 결과 전에 −2.0 pp로
+고정했다(양측 95% CI lower bound > −2.0 pp이면 PASS).
+
+```bash
+cd /home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/aerial_gym/rl_training/rl_games
+./eval_navrl_v2_detector_navigation_ab.sh
+```
+
+결과는 `results/navrl_v2_detector_navigation_ab_seed83_89_schema2/summary.md`에 생성된다.
 
 ## 중단한 가지
 

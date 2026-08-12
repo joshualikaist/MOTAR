@@ -8179,6 +8179,24 @@ optimizer를 발산시키지 않는다는 좁은 목적은 통과했다. 그러�
 현재 소스 clean commit, 전체 training source receipt, 2–3 matched training seeds와 별도 held-out
 evaluation seeds 사전등록이다. 사용자 요청대로 full-budget 5B는 이번에 시작하지 않았다.
 
+## 2026-08-13 — 검증 5B까지 반영할 PPT 보완·검수 요청서 작성
+
+다음 PPT 개정에서 검증 5B 결과까지 사용할 수 있도록
+`docs/CLAUDE_PPT_REVIEW_REQUEST_VERIFICATION5B_2026-08-13.md`를 작성했다. 기존
+`GENSPARK_PPT_BRIEF_2026-08-11.md`는 Gate 1–3 수치 원천으로 보존하되 새 요청서가 supersede한다는
+경고를 추가했다.
+
+새 요청서는 검증 1 learned-v2 NI replication, 검증 2 v7 threshold 분리, 검증 3 pose isolated-RNG,
+검증 4 corrected reachability/contact-time 한계, 검증 5A engineering smoke를 슬라이드별로 연결한다.
+특히 5A의 최근 78~79%는 70-bar on-policy single-seed 수치이므로 benchmark 사용을 금지했고,
+`DENSITY_WARMUP=1000` 경계라 density promotion이 미검증임을 별도 슬라이드로 요구했다.
+
+5B는 아직 미실행이므로 결과 표를 전부 `[미실행]` placeholder로 두고, clean commit/full source
+receipt/2–3 training seeds/공통 held-out evaluation seeds/full-budget를 충족한 실제 summary에서만
+채우도록 고정했다. PASS/MIXED/FAIL 세 분기 서술을 미리 정의해 성공 seed만 선택하거나 실패를
+숨기지 못하게 했다. 본문 16장+부록 6장 구조, 유지/교체/삭제 목록, claim strength 3단계 표,
+Claude 최종 체크리스트와 그대로 복사할 전달 프롬프트를 포함한다.
+
 ## 2026-08-12 — 기준 플랫폼 수정안 (검증 5 시작 전 결정 필요)
 
 사용자가 "시뮬 기체 스펙 자체가 잘못 접근된 것 아닌가"를 제기해 URDF·config를 실사했다.
@@ -8213,3 +8231,214 @@ evaluation seeds 사전등록이다. 사용자 요청대로 full-budget 5B는 �
 **권고**: 파라미터 작성 + 스모크(반나절)만 먼저 해서 "이 기체로 학습이 되는가"를 판정한 뒤
 본학습 여부를 결정한다. 변경 범위는 URDF 1개 + robot_config 1개 + `robot_name` 1줄이며
 **코드 변경 없음**. legacy 계보와는 기체가 다르므로 **비교 불가**(v1↔v2 원칙 동일 적용).
+
+## 2026-08-13 — 기준 플랫폼 구현·검증 완료, 그리고 08-12 진단의 정정
+
+사용자 지시 "파라미터 작성부터 시작해"에 따라 5인치 기준 플랫폼을 구현하고 두 층으로 검증했다.
+그 과정에서 **08-12 진단이 URDF 오독이었음**을 발견해 함께 정정한다.
+
+### 정정 — 08-12 항목의 수치는 무효다
+
+`arm_motor_N` 조인트(팔 실린더의 **중점**, ±0.065 m)를 모터 위치로 착각했다. 실제 모터 링크
+`motor_N`은 **±0.13 m**이고 `base_quad_config`의 allocation matrix도 ±0.13이다.
+
+| 08-12 주장 | 실제 (재계산) |
+|---|---|
+| 모터 ±0.065 m, 기체 폭 18 cm | **±0.13 m, 모터간 대각 36.8 cm** (7~8인치급) |
+| 충돌박스 28 cm가 기체보다 **1.5배 과대** | 박스가 그 프레임(7인치 프롭 시 44 cm)보다 **과소** |
+| 관성이 28 cm 박스 대비 **4.2배 작음** | 조립 ixx 8.45e-4 = 균일 28 cm 박스의 **0.48배, 정상 범위** |
+| 각가속 ≈870 rad/s² | **377 rad/s²** (로터 평행축 기여 누락이었음) |
+| 제안: 박스 0.32 m, 반경 0.125 m, τ 0.08 s | **박스 0.28 m 유지, 반경 0.110 m, τ 0.04 s 유지** |
+
+"자기모순이다 / 5인치로 맞추는 것이 답이다"라는 방향은 유지되지만 **모순의 내용이 다르다**.
+관성이 아니라 **팔(±0.13, 7인치급)과 박스(0.28, 5인치급)의 충돌**이 핵심이고, 그다음이
+질량이다 — 이 정책이 전제하는 인지 스택 472 g은 250 g 기체의 1.9배다. 관성 리터럴은 stock
+잔재(두께 0인 0.150 m 평판)가 맞지만 조립 후 값은 평범하다. **그래서 3주간 눈에 띄지 않았다.**
+
+### 확정 파라미터 — `navrl_ref5in_quad`
+
+핵심 발견: **5인치 프롭 끝 AABB = 2×(0.0778+0.0635) = 0.2826 m**로, 현재 충돌박스 0.28 m와
+사실상 같다. 즉 **충돌 기하를 바꿀 필요가 없다.** 08-12가 예상한 "+4 cm, 여유 82→80%"는 무효.
+
+| | legacy | ref5in |
+|---|---:|---:|
+| 질량 | 0.250 kg | 1.200 kg |
+| 추력/모터 | 2.0 N | 9.60 N (T/W 3.2617 유지) |
+| 모터 팔 x=y | 0.130 m | 0.0777817 m (반경 0.110 = 220 mm 대각) |
+| 충돌박스 XY | 0.28 m | **0.28 m (불변)** |
+| 박스 높이 | 0.08 m | 0.12 m (바닥/천장만) |
+| ixx / izz (조립) | 8.45e-4 / 1.69e-3 | 4.142e-3 / 5.769e-3 |
+| 추력계수 k | 1.376e-5 | 4.401e-5 (467 rps 기준 재정규화) |
+| 모터 τ | 0.04 s | **0.04 s (불변)** |
+| 수평/상승 가속 | 9.81 / 22.19 m/s² | **동일** |
+| 롤 각가속 | 377 rad/s² | 221 rad/s² (**0.586배** — 유일한 실질 회귀) |
+
+교차검증: Agilicious(5~6", 0.75 kg) Ixx 2.5e-3을 1.2 kg으로 스케일 → ~4.0e-3, 우리 4.14e-3.
+
+### 검증 결과
+
+**정합성 26/26 PASS** (`tests/test_navrl_ref5in_platform.py`, CPU, isaacgym 불요).
+URDF 조인트 ↔ allocation matrix ↔ 박스 ↔ 관성의 상호 일치를 기계 검사한다. 이 세 가지는
+런타임에서 서로 대조되지 않으므로 legacy 결함이 조용히 생존했던 지점이다. legacy 결함 자체도
+4개 테스트로 고정했다. **테스트가 내 초안의 오류를 잡았다** — "legacy 조립 관성이 균일박스의
+0.25배 미만"이라는 단정이 실측 0.478에서 실패해, 관성 서사를 사실에 맞게 축소했다.
+
+**비행 포락선 5/5 PASS** (`tools/verify_navrl_ref_platform.py`, 16 env, seed 911, 막대 0,
+governor off, vision mode = vehicle-frame 속도 명령):
+
+| 기동 | legacy | ref5in |
+|---|---|---|
+| hover 고도오차 / 표류 | +0.003 m / 0.001 m/s | +0.001 m / 0.001 m/s |
+| forward 정상상태 / t90 | 2.490 m/s / 0.8 s | 2.490 m/s / 0.8 s |
+| reversal 0-교차 / t90 | 0.5 s / 1.0 s | 0.5 s / 1.0 s |
+| yaw 정상상태 / t90 | 2.500 rad/s / 0.3 s | 2.499 rad/s / **0.2 s** |
+
+병진 지표가 네 자리에서 일치 — T/W와 틸트 한계를 보존했으므로 설계상 당연하다.
+yaw가 빨라진 것은 izz 3.4배 증가보다 yaw 토크(`thrust_to_torque_ratio`×총추력) 4.8배 증가가
+크기 때문으로, 설계 시 계산하지 않았던 유리한 부수효과다.
+
+**미검출 명시**: 각가속 0.586배 회귀는 이 하네스로 **관측되지 않았다**. reversal이 동일한 것은
+두 기체가 같아서가 아니라 10 Hz 제어 주기가 자세 동역학보다 느려 0.1 s 분해능에 묻히기
+때문이다. 회귀 자체는 단위테스트가 계산·고정한다. 학습 가능성·과제 성능은 일절 미측정.
+
+### 하네스 설계에서 배운 것 (다음 세션 절약용)
+
+- 로봇당 **별도 프로세스** 필수. (a) `task_config`가 `robot_name`을 클래스 정의 시점에 읽으므로
+  이후 `os.environ` 쓰기는 무효, (b) 한 프로세스에서 Isaac Gym sim 2개 생성 시 segfault.
+- `NAVRL_VISION=1`이 아니면 action이 **goal frame**이라 스텝 응답을 읽을 수 없다. 첫 실행에서
+  두 기체 모두 정상상태 0.879/0.884 m/s가 나와 "양쪽 다 FAIL"이 됐는데, 기체 결함이 아니라
+  내 측정 프레임 오류였다.
+
+### 변경 범위 / 다음 단계
+
+신규 4파일 + 기존 2파일 1줄씩(`aerial_gym/robots/__init__.py` 등록,
+`navrl_task_config.py`의 `robot_name`을 `NAVRL_ROBOT` 옵트인으로). **기본값은 `navrl_quad`
+그대로**라 frozen `ep25000+riskcap` provenance와 진행 중인 캠페인에 영향 없음. 코드 로직 변경 없음.
+
+다음은 스모크 500~1,000 epoch(1~2시간). 그 결과로 검증 5의 baseline arm을 기준 플랫폼으로
+바꿀지 확정한다. legacy와 ref는 **기체가 다르므로 비교 불가**(v1↔v2 원칙 동일 적용).
+상세: `docs/reference_platform_proposal_2026-08.md`(전면 개정),
+`results/navrl_ref_platform_verification/summary.md`.
+
+## 2026-08-13 — PPT 검수 요청서에 기준 플랫폼 분기 반영
+
+PPT 요청서 초안 작성 뒤 같은 날 구현된 `navrl_ref5in_quad` 기록을 재감사해 5B 계약에 반영했다.
+5B가 legacy `navrl_quad`를 유지할지 ref5in을 새 본선으로 쓸지는 아직 학습 스모크 전이라 확정할 수
+없다. 따라서 Claude가 실제 5B summary의 `robot_name`과 URDF/config SHA를 확인하기 전에는 결과
+슬라이드를 만들지 못하게 했다.
+
+본문 구성을 17장으로 조정해 ref5in을 별도 슬라이드로 추가했다. 정합성 26/26 및 무장애물 command
+tracking 5/5 PASS는 확정이지만, 10 Hz 하네스가 roll angular-acceleration 0.586배 회귀를 관측하지
+못했고 learning/capture는 미측정임을 watermark로 요구했다. ref5in 채택 시 5A legacy-vehicle run과
+연속 계보로 그리지 않고 새 corrected-reference-platform lineage로 표시한다. 5B 결과 placeholder에도
+robot/URDF/config SHA 행을 추가했다.
+
+## 2026-08-13 — Claude PPT 검수 자료 전달 번들 생성
+
+Claude에 PPT 검수·보완을 요청할 때 필요한 최신 문서와 수치 근거를 단일 ZIP으로 묶었다.
+저장소 안에는 PPT/PPTX 원본이 없고 논문 PDF만 확인되어, 현재 PPT가 Claude 대화에 없다면 사용자가
+보유한 PPT 원본은 별도로 첨부해야 한다.
+
+번들: `/home/fair/workspaces/aerial_gym_ws/MOTAR_Claude_PPT_bundle_2026-08-13.zip`
+
+- 내부 파일: 11개 (`01_CLAUDE_PPT_REVIEW_REQUEST.md`부터 `11_BUNDLE_README.md`까지)
+- 크기: 274,452 bytes
+- SHA-256: `506a065f624358b3a53de9f7e8dbe74c04bddbff4ca535c9fb47d21a490f3861`
+- `unzip -t`: 11/11 OK
+
+번들 README에는 최신 사실 우선순위, 5B 미실행 수치 추정 금지, legacy/ref5in 계보 분리,
+ref5in 검증의 범위가 정합성·무장애물 command tracking에 한정된다는 점을 명시했다.
+
+## 2026-08-13 — ref5in 전면 재감사: 과대주장 제거, provenance 보강, canonical P0 PASS
+
+사용자 요청에 따라 Claude가 만든 `navrl_ref5in_quad` 파라미터·검증·README를 코드부터 다시
+감사했다. 이 항목은 위의 08-12/13 “기준 플랫폼 구현 완료” 기록 중 다음 주장을 **supersede**한다.
+
+- `ref5in`은 buildable/real/flight-proven reference platform이 아니라
+  **hardware-informed simulation candidate**다.
+- 기존 payload `472 g` 합계는 Orin NX module과 compute assembly allowance를 혼동했고 Pixhawk
+  질량도 부정확했다. 1.20 kg은 아직 BOM으로 닫히지 않은 synthetic design point다.
+- 0.28×0.28 m XY literal은 level에서 legacy와 같지만 높이 0.08→0.12 m는 45° tilt에서 한 축의
+  projected support를 약 **0.2546→0.2828 m(+2.83 cm)**로 바꾼다. “바닥/천장만 달라지고 bar
+  contact는 동일”이라는 기존 설명은 폐기한다.
+- 377/221 rad/s²는 최대 각가속이 아니라 constant-total-hover-thrust 조건의 roll authority다.
+- 같은 Lee gains를 쓰는 응답은 plant 차이와 controller tuning이 섞인 closed-loop 조건이다.
+
+### 코드·실험 계약 수정
+
+1. checkpoint `env_state`에 robot name/config class/config SHA/URDF SHA를 저장하고 source bundle
+   manifest/SHA/git commit/runtime dirty/file count를 함께 저장한다. 저장 때마다 source receipt를
+   재검증해 run 중 executable edit를 차단한다.
+2. `eval_navrl_v2_density_sweep.sh`가 checkpoint robot을 import 전에 복원하고, 현재 config/URDF
+   SHA가 다르면 Isaac Gym 시작 전에 실패한다. evaluation source receipt에 `resources/robots/**/*.urdf`
+   도 포함한다. legacy checkpoint만 contract-v0 fallback을 허용한다.
+3. `tools/create_navrl_source_bundle.py`를 추가했다. `aerial_gym`, `resources/robots`와 receipt tool의
+   실행 바이트, Python environment를 snapshot/hash한다. 결과·문서가 dirty인 것은 기록하되 학습을
+   막지 않고, 실행 source가 dirty일 때만 closed launcher가 실패한다.
+4. `NAVRL_SAVE_FREQUENCY` runtime override를 추가하고 ref5in smoke는 250 epoch마다 저장한다.
+   기존 50-epoch 주기로 30k×3 seed를 저장하면 약 16 GB가 필요해 현재 여유 디스크에서 안전하지
+   않았기 때문이다.
+5. `train_navrl_v2_ref5in_smoke.sh`를 fresh/no-checkpoint, seed197, 500 epochs, 70 bars,
+   corrected exact-600, analytic/cluster-sector/240°, squashed Gaussian, governor/pose/appearance off,
+   yaw3.0/tilt45 조건으로 닫았다. hostile environment와 CLI override 회귀 테스트를 추가했다.
+6. `tools/analyze_navrl_ref5in_smoke.py`를 추가해 completion/checkpoint finite/TensorBoard KL/rollback/
+   skipped minibatch/raw OOB/source+robot SHA/distance curriculum/last-100 pooled outcome gate를 한 번에
+   판정한다. PASS는 held-out 70-bar 한 셀만 허용하고 performance claim은 허용하지 않는다.
+
+### CPU P0
+
+`tests/test_navrl_ref5in_platform.py`를 buildability 검사가 아니라 repository consistency 검사로
+고쳤다. 가짜 motor-strength k-spread 주장을 제거하고 `min=max=4.401e-5`, implied 28,023 RPM의
+fixed coordinate calibration을 고정했다. 0.12 m tilted support 차이와 조건부 mass allowance도
+검사한다. 결과 **26/26 PASS**. ref5in run/provenance 계약 테스트도 **7/7 PASS**였다.
+
+### canonical GPU P0
+
+기존 `results/navrl_ref_platform_verification/flight_envelope.json`은 yaw 2.5였고 forward 15/16,
+reversal 13/16 생존자만 평균한 결과라 폐기했다. schema 2 verifier는 exact center, identity/zero
+kinematics, runtime `mg/4`, 매 기동 controller/motor midpoint 재고정, 1 s settle 후 recenter를
+사용한다. 실제 actor mass/inertia/body order/motor application mask, 모든 env 생존, finite state/
+actuator, altitude/slip/reversal/yaw, raw pre-clamp allocator saturation과 100 Hz fixed-gain roll/pitch를
+검사한다. absolute Python 실행에서 conda `ninja`가 PATH에 없어 첫 시도가 import 전에 실패했고,
+verifier가 실행 interpreter의 `bin/`을 PATH 앞에 고정하도록 고친 뒤 재실행했다.
+
+최종 결과는 **21/21 PASS**, 16/16 생존이었다.
+
+| metric | legacy | ref5in |
+|---|---:|---:|
+| hover altitude error | +0.0001 m | +0.0001 m |
+| forward steady / t90 | 2.490 m/s / 0.8 s | 2.490 m/s / 0.8 s |
+| reversal zero-cross / t90 | 0.5 s / 1.0 s | 0.5 s / 1.0 s |
+| yaw steady / t90 (3.0 command) | 3.000 rad/s / 0.2 s | 2.999 rad/s / 0.2 s |
+| 100 Hz pitch 20° / peak rate | 0.15 s / 5.363 rad/s | 0.13 s / 3.844 rad/s |
+| 100 Hz roll 20° / peak rate | 0.15 s / 5.363 rad/s | 0.13 s / 3.844 rad/s |
+
+ref5in worst raw allocator limit fraction은 1.3%, forward/reversal peak altitude error는 각각
+0.011/0.027 m였다. 이 결과는 same-unretuned-controller simulator gate일 뿐 intrinsic agility,
+hardware feasibility 또는 navigation 성능이 아니다. 원자료 SHA-256은
+`35c315603af0afc41bd03adc7cbcaee35cd2d032fd01e86150d983e24bccf5a8`이며 상세는
+`results/navrl_ref_platform_verification/summary.md`다.
+
+다음 단계는 runtime source clean commit → fresh 500-epoch P1 smoke → 자동 gate PASS 시에만
+seed211 held-out 70-bar 평가다. P1/P2 전에 full-budget 학습을 시작하지 않는다.
+
+### 재감사 마감과 P1 진입 조건
+
+MOTAR 최상위 `README.md`를 실제 사용 순서 중심으로 다시 썼다. corrected-v2/archived-v2,
+legacy/ref5in, training proxy/held-out 결과를 분리하고, 존재하지 않는 Git checkpoint를 바로 실행할 수
+있는 것처럼 보이던 안내와 일반 `train_navrl.sh` 권고를 제거했다. `ref5in`은 전 문서에서
+**hardware-informed simulation candidate**로 한정했다. 기존 `472 g` payload 합계도 폐기했다. 제조사
+단품 수치의 단순 합은 compute carrier·냉각·전원·배선·마운트가 빠진 값이므로 buildable BOM이 아니다.
+
+실행 계보 감사에서 두 shape-compatible 기체를 checkpoint가 구별하지 못하는 결함을 고쳤다. 새
+checkpoint는 robot name뿐 아니라 config/URDF의 저장소 상대경로와 SHA-256을 기록한다. contract-v1
+checkpoint를 다른 기체 또는 수정된 robot source로 불러오면 경고만 남기지 않고 fail-closed한다.
+training source receipt도 파일명 대신 저장소 상대경로로 active config/URDF를 결합하고 중복 경로를
+거부한다. historical contract-v0 checkpoint는 evaluator에서만 `navrl_quad`로 명시적 fallback한다.
+
+최종 CPU 회귀검사는 `python -m unittest discover -s tests -p 'test_navrl*.py' -v` 기준
+**212/212 PASS**였다. ref5in 전용 repository/run 계약은 **33/33 PASS**, launcher hostile-env
+preflight와 legacy corrected-v2 epoch-1000 checkpoint의 held-out evaluator preflight도 PASS했다.
+따라서 P0는 CPU 26/26 + canonical GPU 21/21(양 기체 각 16/16 생존) + 전체 NavRL 212/212로
+닫는다. 아직 P1 fresh 500-epoch와 P2 held-out navigation은 실행 전이므로 README/PPT의 과제 성능
+placeholder는 채우지 않는다.

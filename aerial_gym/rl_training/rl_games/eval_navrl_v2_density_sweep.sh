@@ -91,6 +91,9 @@ if selector not in {"cluster_sector", "ttc_sector"}:
         "[eval_v2] checkpoint has no supported v2 obstacle selector: %r" % selector
     )
 force = os.environ.get("NAVRL_V2_FORCE", "0") == "1"
+allow_detector_threshold = (
+    os.environ.get("NAVRL_V2_ALLOW_DETECTOR_THRESHOLD_MISMATCH", "0") == "1"
+)
 defaults = {
     "cfg_obstacle_ttc_idle_s": 30.0,
     "cfg_obstacle_ttc_min_speed": 0.15,
@@ -150,8 +153,33 @@ if detector_sha and (
     or any(char not in "0123456789abcdef" for char in detector_sha.lower())
 ):
     raise SystemExit("[eval_v2] checkpoint detector SHA-256 is malformed")
+robot_name = str(state.get("cfg_robot_name", "navrl_quad")).strip()
+if robot_name not in {"navrl_quad", "navrl_ref5in_quad"}:
+    raise SystemExit(f"[eval_v2] unsupported checkpoint robot lineage: {robot_name!r}")
+robot_contract_version = int(state.get("cfg_robot_contract_version", 0) or 0)
+robot_config_sha = str(state.get("cfg_robot_config_sha256", "")).strip()
+robot_asset_sha = str(state.get("cfg_robot_asset_sha256", "")).strip()
+robot_asset_file = str(state.get("cfg_robot_asset_file", "")).strip()
+if robot_contract_version >= 1:
+    for name, digest in (
+        ("cfg_robot_config_sha256", robot_config_sha),
+        ("cfg_robot_asset_sha256", robot_asset_sha),
+    ):
+        if len(digest) != 64 or any(c not in "0123456789abcdef" for c in digest.lower()):
+            raise SystemExit(f"[eval_v2] checkpoint {name} is missing or malformed")
+    if not robot_asset_file:
+        raise SystemExit("[eval_v2] checkpoint cfg_robot_asset_file is missing")
+elif robot_name != "navrl_quad":
+    raise SystemExit(
+        "[eval_v2] a non-legacy robot checkpoint must carry robot contract v1 provenance"
+    )
 print(
     selector,
+    robot_name,
+    robot_contract_version,
+    robot_config_sha or "-",
+    robot_asset_file or "quad_navrl_collide.urdf",
+    robot_asset_sha or "-",
     str(state.get("cfg_recovery_stage", "")).strip() or "-",
     int(checkpoint.get("epoch", -1)),
     int(state.get("cfg_recovery_source_epoch", -1)),
@@ -172,10 +200,52 @@ print(
 )
 PY
 )"
-read -r CHECKPOINT_SELECTOR RECOVERY_STAGE CHECKPOINT_EPOCH RECOVERY_SOURCE_EPOCH \
+read -r CHECKPOINT_SELECTOR CHECKPOINT_ROBOT ROBOT_CONTRACT_VERSION ROBOT_CONFIG_SHA \
+    ROBOT_ASSET_FILE ROBOT_ASSET_SHA RECOVERY_STAGE CHECKPOINT_EPOCH RECOVERY_SOURCE_EPOCH \
     RECOVERY_REQUIRED_EPOCHS CHECKPOINT_BARS TTC_IDLE_S TTC_MIN_SPEED FOV_CURRICULUM_EPOCHS \
     DETECTOR_MIN_PIXELS DETECTOR_THRESHOLD DETECTION_DROPOUT RGB_NOISE_STD DEPTH_NOISE_STD \
     MAX_TILT_DEG DETECTOR_SHA PERCEPTION_PERTURB TILT_COMP <<< "${CHECKPOINT_META}"
+
+# This must be exported before runner.py imports navrl_task_config.py.  Both robot lineages have
+# identical policy tensor shapes, so relying on a caller's shell value would silently replay the
+# checkpoint with different rigid-body dynamics.
+export NAVRL_ROBOT="${CHECKPOINT_ROBOT}"
+export ROBOT_CONTRACT_VERSION
+export NAVRL_EXPECTED_ROBOT_CONFIG_SHA256="${ROBOT_CONFIG_SHA}"
+export NAVRL_EXPECTED_ROBOT_ASSET_SHA256="${ROBOT_ASSET_SHA}"
+
+# Fail before allocating Isaac Gym when the current source cannot reproduce the checkpoint's
+# vehicle.  The bulk-result check below repeats this against runtime metadata, but discovering a
+# mismatch after thousands of episodes wastes GPU time and can leave tempting invalid CSV files.
+if [[ "${ROBOT_CONTRACT_VERSION}" -ge 1 ]]; then
+    case "${CHECKPOINT_ROBOT}" in
+        navrl_quad)
+            ROBOT_CONFIG_PATH=../../config/robot_config/navrl_quad_config.py
+            ;;
+        navrl_ref5in_quad)
+            ROBOT_CONFIG_PATH=../../config/robot_config/navrl_ref5in_quad_config.py
+            ;;
+        *)
+            echo "[eval_v2] unsupported robot lineage: ${CHECKPOINT_ROBOT}" >&2
+            exit 2
+            ;;
+    esac
+    ROBOT_ASSET_PATH=../../../resources/robots/quad/${ROBOT_ASSET_FILE}
+    if [[ ! -f "${ROBOT_CONFIG_PATH}" || ! -f "${ROBOT_ASSET_PATH}" ]]; then
+        echo "[eval_v2] checkpoint robot source is missing: ${ROBOT_CONFIG_PATH} / ${ROBOT_ASSET_PATH}" >&2
+        exit 2
+    fi
+    CURRENT_ROBOT_CONFIG_SHA="$(sha256sum "${ROBOT_CONFIG_PATH}" | awk '{print $1}')"
+    CURRENT_ROBOT_ASSET_SHA="$(sha256sum "${ROBOT_ASSET_PATH}" | awk '{print $1}')"
+    if [[ "${CURRENT_ROBOT_CONFIG_SHA}" != "${ROBOT_CONFIG_SHA}" ]]; then
+        echo "[eval_v2] robot config source drift: checkpoint=${ROBOT_CONFIG_SHA} runtime=${CURRENT_ROBOT_CONFIG_SHA}" >&2
+        exit 2
+    fi
+    if [[ "${CURRENT_ROBOT_ASSET_SHA}" != "${ROBOT_ASSET_SHA}" ]]; then
+        echo "[eval_v2] robot URDF source drift: checkpoint=${ROBOT_ASSET_SHA} runtime=${CURRENT_ROBOT_ASSET_SHA}" >&2
+        exit 2
+    fi
+fi
 
 if [[ ! "${GAMES}" =~ ^[1-9][0-9]*$ ]]; then
     echo "[eval_v2] games_per_cell must be a positive integer, got: ${GAMES}" >&2
@@ -547,6 +617,9 @@ import sys
 import torch
 
 force = os.environ.get("NAVRL_V2_FORCE", "0") == "1"
+allow_detector_threshold = (
+    os.environ.get("NAVRL_V2_ALLOW_DETECTOR_THRESHOLD_MISMATCH", "0") == "1"
+)
 ckpt = torch.load(sys.argv[1], map_location="cpu", weights_only=False)
 state = ckpt.get("env_state") or {}
 # Every fixed task/representation field whose mismatch could still load at the same observation
@@ -599,6 +672,25 @@ want = {
     "cfg_action_mu_scale": "1.0,0.4,1.0,1.0",
 }
 bad = []
+checkpoint_robot = str(state.get("cfg_robot_name", "navrl_quad")).strip()
+if checkpoint_robot != os.environ["NAVRL_ROBOT"]:
+    bad.append(
+        f"cfg_robot_name: checkpoint={checkpoint_robot!r} "
+        f"runtime={os.environ['NAVRL_ROBOT']!r}"
+    )
+if "cfg_robot_contract_version" in state:
+    want.update(
+        {
+            "cfg_robot_contract_version": 1.0,
+            "cfg_robot_name": os.environ["NAVRL_ROBOT"],
+            "cfg_robot_config_sha256": os.environ[
+                "NAVRL_EXPECTED_ROBOT_CONFIG_SHA256"
+            ],
+            "cfg_robot_asset_sha256": os.environ[
+                "NAVRL_EXPECTED_ROBOT_ASSET_SHA256"
+            ],
+        }
+    )
 if state.get("cfg_recovery_stage") == "smoke":
     # The held-out recovery cell unlocks further training, so it must also prove that the smoke
     # was produced by the exact executable/safety contract rather than merely a shape-compatible
@@ -657,6 +749,13 @@ for key, expected in want.items():
         else abs(float(got) - expected) <= 1e-6
     )
     if not ok:
+        if key == "cfg_detector_threshold" and allow_detector_threshold:
+            print(
+                "[eval_v2] ALLOWED mismatch: cfg_detector_threshold: "
+                f"checkpoint={got} expected={expected}",
+                file=sys.stderr,
+            )
+            continue
         bad.append(f"{key}: checkpoint={got} expected={expected}")
 if bad:
     print("[eval_v2] %s: v2 contract mismatch:\n  " % verb + "\n  ".join(bad), file=sys.stderr)
@@ -676,6 +775,7 @@ print(
 )
 PY
 
+echo "[eval_v2] robot=${CHECKPOINT_ROBOT} contract=v${ROBOT_CONTRACT_VERSION} asset=${ROBOT_ASSET_FILE} urdf_sha=${ROBOT_ASSET_SHA:0:12} config_sha=${ROBOT_CONFIG_SHA:0:12}"
 echo "[eval_v2] same-shape | fov_curriculum=${FOV_CURRICULUM_EPOCHS} detector_pixels=${DETECTOR_MIN_PIXELS} detector_threshold=${DETECTOR_THRESHOLD} ttc=${TTC_IDLE_S}/${TTC_MIN_SPEED}"
 echo "[eval_v2] runtime=${NAVRL_EVAL_PROFILE}/${AERIAL_GYM_SIM_NAME} envs=${NUM_ENVS} physics=${NAVRL_SIM_PHYSICS_CONTRACT}"
 echo "[eval_v2] action_selection=${NAVRL_EVAL_ACTION_MODE} reflection=${NAVRL_EVAL_REFLECTION_MODE}"
@@ -733,7 +833,9 @@ PY
 # Snapshot the actual runtime source bytes before Isaac Gym starts.  A git commit alone is not
 # enough: a dirty worktree can be scientifically valid, but only if the evaluated bytes are
 # preserved and checked after every cell.  Include every tracked/untracked runtime text source
-# under aerial_gym (ignored runs/results/logs are excluded by git), plus a Python package manifest.
+# under aerial_gym plus the robot URDF assets under resources/robots (ignored runs/results/logs are
+# excluded by git), plus a Python package manifest.  Omitting URDF used to let two different rigid
+# bodies share an otherwise identical evaluation receipt.
 # A campaign launcher may point several evaluator invocations at one immutable shared bundle so
 # all arms are provably evaluated from identical source bytes instead of merely similar commits.
 CREATE_SOURCE_BUNDLE=1
@@ -779,10 +881,11 @@ def git_paths(*args):
     raw = subprocess.check_output(["git", "-C", str(repo), *args])
     return [Path(item.decode("utf-8")) for item in raw.split(b"\0") if item]
 
-extensions = {".py", ".pyx", ".sh", ".yaml", ".yml", ".toml", ".json", ".csv"}
-paths = set(git_paths("ls-files", "-z", "--", "aerial_gym"))
+extensions = {".py", ".pyx", ".sh", ".yaml", ".yml", ".toml", ".json", ".csv", ".urdf"}
+runtime_roots = ("aerial_gym", "resources/robots")
+paths = set(git_paths("ls-files", "-z", "--", *runtime_roots))
 paths.update(
-    git_paths("ls-files", "--others", "--exclude-standard", "-z", "--", "aerial_gym")
+    git_paths("ls-files", "--others", "--exclude-standard", "-z", "--", *runtime_roots)
 )
 paths = sorted(
     path for path in paths
@@ -836,6 +939,7 @@ manifest = {
     ).strip(),
     "git_dirty": bool(git_status),
     "git_status": git_status,
+    "runtime_roots": list(runtime_roots),
     "python_environment": environment_path.relative_to(manifest_path.parent).as_posix(),
     "python_environment_sha256": digest(environment_path),
     "runtime_file_count": len(entries),
@@ -975,6 +1079,17 @@ if actual < expected_games:
     raise SystemExit(f"[eval_v2] incomplete bulk result: {actual} < {expected_games} episodes")
 
 condition = payload.get("condition") or {}
+if condition.get("robot_name") != os.environ["NAVRL_ROBOT"]:
+    raise SystemExit("[eval_v2] bulk JSON robot does not match the checkpoint lineage")
+if int(os.environ.get("ROBOT_CONTRACT_VERSION", "0")) >= 1:
+    if condition.get("robot_config_sha256") != os.environ[
+        "NAVRL_EXPECTED_ROBOT_CONFIG_SHA256"
+    ]:
+        raise SystemExit("[eval_v2] runtime robot config SHA differs from the checkpoint")
+    if condition.get("robot_asset_sha256") != os.environ[
+        "NAVRL_EXPECTED_ROBOT_ASSET_SHA256"
+    ]:
+        raise SystemExit("[eval_v2] runtime robot URDF SHA differs from the checkpoint")
 if int(condition.get("bars", -1)) != expected_bars:
     raise SystemExit("[eval_v2] bulk JSON density does not match the sweep cell")
 if int(condition.get("seed", -1)) != expected_seed:
@@ -1226,6 +1341,7 @@ payload["v2_evaluation_contract"] = {
     "perception_pose_clock_offset_s": float(os.environ.get("NAVRL_POSE_CLOCK_OFFSET_S", 0.0)),
     "perception_pose_noise_pos_m": float(os.environ.get("NAVRL_POSE_NOISE_POS_M", 0.0)),
     "perception_pose_noise_yaw_deg": float(os.environ.get("NAVRL_POSE_NOISE_YAW_DEG", 0.0)),
+    "perception_pose_noise_seed": int(os.environ.get("NAVRL_POSE_NOISE_SEED", 9163)),
     "perception_target_mask_backfill": os.environ.get("NAVRL_TARGET_MASK_BACKFILL", "0") == "1",
     "perception_lidar_target_assoc": os.environ.get("NAVRL_LIDAR_TARGET_ASSOC", "1") == "1",
     "perception_lidar_range_only_update": os.environ.get("NAVRL_LIDAR_RANGE_ONLY_UPDATE", "0") == "1",
@@ -1337,6 +1453,7 @@ receipt = {
     "perception_pose_clock_offset_s": float(os.environ.get("NAVRL_POSE_CLOCK_OFFSET_S", 0.0)),
     "perception_pose_noise_pos_m": float(os.environ.get("NAVRL_POSE_NOISE_POS_M", 0.0)),
     "perception_pose_noise_yaw_deg": float(os.environ.get("NAVRL_POSE_NOISE_YAW_DEG", 0.0)),
+    "perception_pose_noise_seed": int(os.environ.get("NAVRL_POSE_NOISE_SEED", 9163)),
     "perception_target_mask_backfill": os.environ.get("NAVRL_TARGET_MASK_BACKFILL", "0") == "1",
     "perception_lidar_target_assoc": os.environ.get("NAVRL_LIDAR_TARGET_ASSOC", "1") == "1",
     "perception_lidar_range_only_update": os.environ.get("NAVRL_LIDAR_RANGE_ONLY_UPDATE", "0") == "1",
