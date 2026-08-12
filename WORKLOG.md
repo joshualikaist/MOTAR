@@ -7872,3 +7872,23 @@ carve-out을 구동해 비행 경로 위 실제 막대를 장애물 지도에서
 **실기 전제 스펙(논문 기재용)**: detection-odometry timestamp 정렬 오차 **+20 ms 이하**
 (음수 편향은 −50 ms까지 안전), odometry yaw 오차 **≤1°**, 위치 오차 **≤10 cm는 무료**.
 P3의 −2.5 pp 잔차 주장은 이 전제 하에서만 유효하다고 명시한다.
+
+## 2026-08-12 — 검증 4 사전등록: 205-bar bar-contact ceiling 3단 분리
+
+frozen ep25000+riskcap의 잔여 crash 97.2%가 bar contact다(Gate 1). 동결된 순서(08-11)대로
+**측정 후에만** token/control 변경을 연다. 실행 전 고정:
+
+- **단일 계측 셀**: 205 bars, deterministic, riskcap, exact-600, seed **167**(미사용),
+  2,049 ep, `NAVRL_BAR_PROBE=1` + 신설 `NAVRL_EPISODE_DUMP` 동시 활성.
+- **① geometry oracle** (`tools/analyze_navrl_v2_reachability.py`): bar-contact 에피소드의
+  spawn→최종 표적 위치 정적 연결성을 3반경으로 괄호 — 낙관 0.40 m(최소 반폭+드론) /
+  governor 0.65 m(riskcap 반폭+드론) / 비관 0.766 m(최대 반대각+드론). 판정:
+  비관에서도 연결 ≥95% → "기하는 천장을 강제하지 않음" 확정.
+- **② representation coverage**: bar-probe v2 로그(`hit_in_token_fov`, `hit_token_given_fov`,
+  crowding, duplicate)를 셀 로그에서 회수. v1(07-24)의 "충돌의 35%가 입력에 없던 막대"를
+  현 정책·205 bars에서 재측정.
+- **③ contact kinematics**: governor contact 통계(clearance/executed speed/stopping margin)를
+  결과 JSON에서 회수.
+- dump는 GT를 **디스크로만** 내보낸다(actor/critic/reward/종료 무접촉 — bar probe와 동일 원칙).
+  이 셀에 재시도 없음. 판정 규칙: ①이 "기하 무죄"면 ②/③의 상대 크기가 다음 개입
+  (표현 vs 제어)을 정한다.

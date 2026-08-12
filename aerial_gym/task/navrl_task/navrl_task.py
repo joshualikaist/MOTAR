@@ -652,6 +652,17 @@ class NavRLTask(BaseTask):
                 "track_cov_pos",
             )
         }
+        # NAVRL_EPISODE_DUMP=<path>.npz: evaluation-only per-episode layout/outcome dump for the
+        # 검증 4 static reachability oracle. GT bar positions go to DISK for offline analysis
+        # only -- nothing recorded here reaches the actor, critic, reward, or termination.
+        self._episode_dump_path = os.environ.get("NAVRL_EPISODE_DUMP", "").strip()
+        if self._episode_dump_path:
+            self._episode_spawn = torch.zeros(self.num_envs, 3, device=self.device)
+            self._dump_records = []
+            import atexit
+
+            atexit.register(self._flush_episode_dump)
+
         # NAVRL_BAR_PROBE=1: evaluation-only bar-contact forensics (zero overhead when off).
         # Probe v2 uses both bearing and range to associate LiDAR surface tokens with GT bars. It
         # also reports collisions inside the token-selection FOV separately; comparing all 240-deg
@@ -1688,6 +1699,59 @@ class NavRLTask(BaseTask):
     def _token_fov_or_zero(cls):
         return float(cls._obstacle_representation_or_zero()["token_fov_deg"])
 
+    def _record_episode_dump(self, pos, captured, crashed_out, crashed, below, above):
+        """Append one row per terminated episode for the offline reachability oracle."""
+        done = captured | crashed_out
+        idx = done.nonzero(as_tuple=False).squeeze(1)
+        if idx.numel() == 0:
+            return
+        cap = captured[idx]
+        con = (crashed & crashed_out)[idx]
+        bel = (below & ~crashed & crashed_out)[idx]
+        abv = (above & ~crashed & ~below & crashed_out)[idx]
+        outcome = torch.where(
+            cap,
+            torch.zeros_like(cap, dtype=torch.long),
+            torch.where(
+                con,
+                torch.ones_like(cap, dtype=torch.long),
+                torch.where(
+                    bel,
+                    torch.full_like(cap, 2, dtype=torch.long),
+                    torch.where(
+                        abv,
+                        torch.full_like(cap, 3, dtype=torch.long),
+                        torch.full_like(cap, 4, dtype=torch.long),
+                    ),
+                ),
+            ),
+        )
+        bars = self.obs_dict["obstacle_position"][idx][:, : self.n_bars_active, 0:2]
+        self._dump_records.append(
+            {
+                "outcome": outcome.to(torch.int8).cpu(),
+                "spawn": self._episode_spawn[idx].to(torch.float16).cpu(),
+                "end_pos": pos[idx].to(torch.float16).cpu(),
+                "target_end": self.target_position[idx].to(torch.float16).cpu(),
+                "bars_xy": bars.to(torch.float16).cpu(),
+            }
+        )
+
+    def _flush_episode_dump(self):
+        if not getattr(self, "_dump_records", None):
+            return
+        merged = {
+            key: torch.cat([record[key] for record in self._dump_records]).numpy()
+            for key in self._dump_records[0]
+        }
+        path = Path(self._episode_dump_path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        np.savez_compressed(path, **merged)
+        logger.warning(
+            "NavRL episode dump | %d terminated episodes -> %s"
+            % (int(merged["outcome"].shape[0]), path)
+        )
+
     def _record_bar_contact_probe(self, hit_mask, pos):
         """Measure which current obstacle tokens geometrically represent a struck bar.
 
@@ -2507,6 +2571,8 @@ class NavRLTask(BaseTask):
         # vision mode: fresh episode -> tracker knows nothing, no previous action yet
         if self.vision_mode:
             self.detector.reset_idx(env_ids)
+        if self._episode_dump_path:
+            self._episode_spawn[env_ids] = self.obs_dict["robot_position"][env_ids].clone()
             if self.perception is not None:
                 self.perception.reset_idx(env_ids)
             self.prev_action[env_ids] = 0.0
@@ -3068,6 +3134,8 @@ class NavRLTask(BaseTask):
         crashed_out = crashed_out & ~captured
         self.captured_now = captured
         self.crashed_now = crashed_out
+        if self._episode_dump_path:
+            self._record_episode_dump(pos, captured, crashed_out, crashed, below, above)
 
         if self._crash_diag:
             # Attribute each crash to ONE cause, priority contact > below > above > oob (matching
