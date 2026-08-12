@@ -397,6 +397,9 @@ export NAVRL_LATENCY_COMPENSATE="${NAVRL_LATENCY_COMPENSATE:-0}"
 export NAVRL_LATENCY_LIDAR_BACKUP="${NAVRL_LATENCY_LIDAR_BACKUP:-0}"
 export NAVRL_LATENCY_OBSTACLE_FIX="${NAVRL_LATENCY_OBSTACLE_FIX:-off}"
 export NAVRL_LATENCY_EGO_MOTION_FIX="${NAVRL_LATENCY_EGO_MOTION_FIX:-1}"
+export NAVRL_POSE_CLOCK_OFFSET_S="${NAVRL_POSE_CLOCK_OFFSET_S:-0}"
+export NAVRL_POSE_NOISE_POS_M="${NAVRL_POSE_NOISE_POS_M:-0}"
+export NAVRL_POSE_NOISE_YAW_DEG="${NAVRL_POSE_NOISE_YAW_DEG:-0}"
 export NAVRL_TARGET_MASK_BACKFILL="${NAVRL_TARGET_MASK_BACKFILL:-0}"
 export NAVRL_LIDAR_TARGET_ASSOC="${NAVRL_LIDAR_TARGET_ASSOC:-1}"
 export NAVRL_LIDAR_RANGE_ONLY_UPDATE="${NAVRL_LIDAR_RANGE_ONLY_UPDATE:-0}"
@@ -1220,6 +1223,9 @@ payload["v2_evaluation_contract"] = {
     "perception_latency_lidar_backup": os.environ.get("NAVRL_LATENCY_LIDAR_BACKUP", "0") == "1",
     "perception_latency_obstacle_fix": os.environ.get("NAVRL_LATENCY_OBSTACLE_FIX", "off"),
     "perception_latency_ego_motion_fix": os.environ.get("NAVRL_LATENCY_EGO_MOTION_FIX", "0") == "1",
+    "perception_pose_clock_offset_s": float(os.environ.get("NAVRL_POSE_CLOCK_OFFSET_S", 0.0)),
+    "perception_pose_noise_pos_m": float(os.environ.get("NAVRL_POSE_NOISE_POS_M", 0.0)),
+    "perception_pose_noise_yaw_deg": float(os.environ.get("NAVRL_POSE_NOISE_YAW_DEG", 0.0)),
     "perception_target_mask_backfill": os.environ.get("NAVRL_TARGET_MASK_BACKFILL", "0") == "1",
     "perception_lidar_target_assoc": os.environ.get("NAVRL_LIDAR_TARGET_ASSOC", "1") == "1",
     "perception_lidar_range_only_update": os.environ.get("NAVRL_LIDAR_RANGE_ONLY_UPDATE", "0") == "1",
@@ -1328,6 +1334,9 @@ receipt = {
     "perception_latency_lidar_backup": os.environ.get("NAVRL_LATENCY_LIDAR_BACKUP", "0") == "1",
     "perception_latency_obstacle_fix": os.environ.get("NAVRL_LATENCY_OBSTACLE_FIX", "off"),
     "perception_latency_ego_motion_fix": os.environ.get("NAVRL_LATENCY_EGO_MOTION_FIX", "0") == "1",
+    "perception_pose_clock_offset_s": float(os.environ.get("NAVRL_POSE_CLOCK_OFFSET_S", 0.0)),
+    "perception_pose_noise_pos_m": float(os.environ.get("NAVRL_POSE_NOISE_POS_M", 0.0)),
+    "perception_pose_noise_yaw_deg": float(os.environ.get("NAVRL_POSE_NOISE_YAW_DEG", 0.0)),
     "perception_target_mask_backfill": os.environ.get("NAVRL_TARGET_MASK_BACKFILL", "0") == "1",
     "perception_lidar_target_assoc": os.environ.get("NAVRL_LIDAR_TARGET_ASSOC", "1") == "1",
     "perception_lidar_range_only_update": os.environ.get("NAVRL_LIDAR_RANGE_ONLY_UPDATE", "0") == "1",

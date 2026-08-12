@@ -541,6 +541,72 @@ class LidarTargetAssociationSwitch(unittest.TestCase):
         self.assertTrue(bool(torch.allclose(on.tracker.state, off.tracker.state)))
 
 
+class PosePremiseSensitivity(unittest.TestCase):
+    """검증 3: clock offset / interpolation / odometry noise on the P3 capture pose."""
+
+    def _drive(self, module, steps=6, speed=2.0):
+        poses = []
+        for k in range(steps):
+            pos = torch.tensor([[speed * k * DT, 0.0, 1.0]])
+            quat = _yaw_quat(0.3 * k * DT)
+            poses.append((pos, quat))
+            module._apply_detection_latency(
+                torch.zeros(1, 3), torch.zeros(1), torch.zeros(1),
+                torch.ones(1, dtype=torch.bool), torch.ones(1),
+                torch.zeros(1, module.height, module.width, dtype=torch.bool),
+                drone_pos_w=pos, vehicle_quat=quat,
+            )
+        return poses
+
+    def _module_with(self, **kw):
+        module = _module(TAU, "off", ego_motion_fix=True)
+        for key, value in kw.items():
+            setattr(module, key, value)
+        module._pose_premise_active = (
+            module.pose_clock_offset_s != 0.0
+            or module.pose_noise_pos_m > 0.0
+            or module.pose_noise_yaw_deg > 0.0
+        )
+        return module
+
+    def test_zero_knobs_publish_the_exact_capture_pose(self):
+        exact = _module(TAU, "off", ego_motion_fix=True)
+        poses = self._drive(exact)
+        pos, quat = exact._latency_delayed_pose
+        self.assertTrue(bool(torch.equal(pos, poses[-2][0])))
+        self.assertTrue(bool(torch.equal(quat, poses[-2][1])))
+
+    def test_offset_plus_tau_reproduces_the_current_pose(self):
+        """The built-in anchor: pose stamped tau late == the naive pre-P3 transform."""
+        module = self._module_with(pose_clock_offset_s=TAU)
+        poses = self._drive(module)
+        pos, quat = module._latency_delayed_pose
+        self.assertTrue(bool(torch.allclose(pos, poses[-1][0], atol=1e-6)))
+        self.assertTrue(bool(torch.allclose(quat, poses[-1][1], atol=1e-6)))
+
+    def test_fractional_offset_interpolates_between_samples(self):
+        module = self._module_with(pose_clock_offset_s=TAU * 0.5)
+        poses = self._drive(module)
+        pos, _ = module._latency_delayed_pose
+        midpoint = 0.5 * (poses[-2][0] + poses[-1][0])
+        self.assertTrue(bool(torch.allclose(pos, midpoint, atol=1e-6)))
+
+    def test_negative_offset_reads_an_older_pose(self):
+        module = self._module_with(pose_clock_offset_s=-TAU)
+        poses = self._drive(module)
+        pos, _ = module._latency_delayed_pose
+        self.assertTrue(bool(torch.allclose(pos, poses[-3][0], atol=1e-6)))
+
+    def test_yaw_noise_keeps_unit_norm_and_zero_noise_is_silent(self):
+        torch.manual_seed(0)
+        module = self._module_with(pose_noise_yaw_deg=5.0)
+        self._drive(module)
+        _, quat = module._latency_delayed_pose
+        self.assertAlmostEqual(float(quat.norm(dim=1)), 1.0, places=5)
+        silent = self._module_with(pose_noise_pos_m=0.0, pose_noise_yaw_deg=0.0)
+        self.assertFalse(silent._pose_premise_active)
+
+
 class LatencyEgoMotionFix(unittest.TestCase):
     """P3: a delayed measurement must be lifted to world with the pose it was TAKEN at."""
 

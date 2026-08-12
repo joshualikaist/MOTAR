@@ -420,6 +420,21 @@ def _quat_rotate_xyzw(q, v):
     return v + 2.0 * (q[:, 3:4] * uv + uuv)
 
 
+def _quat_mul_xyzw(a, b):
+    """Hamilton product of xyzw quaternion rows: rotation b followed by rotation a."""
+    ax, ay, az, aw = a.unbind(dim=1)
+    bx, by, bz, bw = b.unbind(dim=1)
+    return torch.stack(
+        [
+            aw * bx + ax * bw + ay * bz - az * by,
+            aw * by - ax * bz + ay * bw + az * bx,
+            aw * bz + ax * by - ay * bx + az * bw,
+            aw * bw - ax * bx - ay * by - az * bz,
+        ],
+        dim=1,
+    )
+
+
 def _quat_rotate_inverse_xyzw(q, v):
     qi = torch.cat([-q[:, :3], q[:, 3:4]], dim=1)
     return _quat_rotate_xyzw(qi, v)
@@ -656,6 +671,15 @@ class NavRLPerceptionModule:
         # P3: lift the delayed measurement to world with the pose it was TAKEN at, not the
         # current one. Set alongside the ring-buffer read so the index math happens exactly once.
         self.latency_ego_motion_fix = bool(getattr(cfg, "latency_ego_motion_fix", False))
+        # 검증 3: perturbations of P3's exact-timestamp/exact-pose premise.
+        self.pose_clock_offset_s = float(getattr(cfg, "pose_clock_offset_s", 0.0))
+        self.pose_noise_pos_m = float(getattr(cfg, "pose_noise_pos_m", 0.0))
+        self.pose_noise_yaw_deg = float(getattr(cfg, "pose_noise_yaw_deg", 0.0))
+        self._pose_premise_active = (
+            self.pose_clock_offset_s != 0.0
+            or self.pose_noise_pos_m > 0.0
+            or self.pose_noise_yaw_deg > 0.0
+        )
         self._latency_delayed_pose = None
         # Backfill the target pixel mask from the fused bearing/range when the camera did not
         # deliver one but the track is alive (LiDAR-only frames). Off by default until measured.
@@ -680,7 +704,9 @@ class NavRLPerceptionModule:
         self.history_stride = max(1, int(round(float(cfg.history_interval_s) / self.step_dt)))
         self.step_count = 0
         self._latency_steps = max(0, int(round(self.detection_latency_s / self.step_dt)))
-        self._latency_slots = self._latency_steps + 1
+        # +3 keeps one slot of pose history on EACH side of the capture slot, so a clock-offset
+        # read of up to one step in either direction never wraps onto overwritten data.
+        self._latency_slots = self._latency_steps + 3
         self._latency_step = torch.zeros(self.num_envs, dtype=torch.long, device=device)
         self._latency_meas_vehicle = torch.zeros(
             self.num_envs, self._latency_slots, 3, dtype=torch.float32, device=device
@@ -849,10 +875,13 @@ class NavRLPerceptionModule:
         # Published from the SAME read index as the measurement, so the pose and the detection
         # can never come from different steps. observe() consumes it only when P3 is enabled.
         if drone_pos_w is not None and vehicle_quat is not None:
-            self._latency_delayed_pose = (
-                self._latency_drone_pos[self._env_ids, read_idx],
-                self._latency_drone_quat[self._env_ids, read_idx],
-            )
+            if self._pose_premise_active:
+                self._latency_delayed_pose = self._perturbed_capture_pose()
+            else:
+                self._latency_delayed_pose = (
+                    self._latency_drone_pos[self._env_ids, read_idx],
+                    self._latency_drone_quat[self._env_ids, read_idx],
+                )
         return (
             self._latency_meas_vehicle[self._env_ids, read_idx],
             self._latency_surface_range[self._env_ids, read_idx],
@@ -865,6 +894,48 @@ class NavRLPerceptionModule:
             ),
             delayed_mask,
         )
+
+    def _perturbed_capture_pose(self):
+        """The capture-time pose as imperfect hardware would deliver it (검증 3).
+
+        Clock offset: the pose is read at capture-time + offset, with linear interpolation
+        between the two bracketing odometry samples (positions lerped, quaternions
+        sign-aligned nlerp -- inter-step rotations are small). offset = +tau lands on the
+        CURRENT pose and therefore reproduces the naive pre-P3 transform exactly, which the
+        sensitivity ladder uses as a built-in anchor. Odometry noise then perturbs the pose
+        itself: gaussian position error per axis and a yaw error about world z.
+        """
+        offset_steps = self.pose_clock_offset_s / self.step_dt
+        lo = math.floor(offset_steps)
+        frac = offset_steps - lo
+        newest = (self._latency_step - 1).clamp(min=0)
+        base_abs = self._latency_step - self._latency_steps - 1
+        a_abs = torch.minimum((base_abs + lo).clamp(min=0), newest)
+        b_abs = torch.minimum((base_abs + lo + 1).clamp(min=0), newest)
+        idx_a = a_abs % self._latency_slots
+        idx_b = b_abs % self._latency_slots
+        pos_a = self._latency_drone_pos[self._env_ids, idx_a]
+        pos_b = self._latency_drone_pos[self._env_ids, idx_b]
+        pos = torch.lerp(pos_a, pos_b, float(frac))
+        quat_a = self._latency_drone_quat[self._env_ids, idx_a]
+        quat_b = self._latency_drone_quat[self._env_ids, idx_b]
+        quat_b = torch.where(
+            (quat_a * quat_b).sum(dim=1, keepdim=True) < 0.0, -quat_b, quat_b
+        )
+        quat = torch.lerp(quat_a, quat_b, float(frac))
+        quat = quat / quat.norm(dim=1, keepdim=True).clamp(min=1e-9)
+        if self.pose_noise_pos_m > 0.0:
+            pos = pos + torch.randn_like(pos) * self.pose_noise_pos_m
+        if self.pose_noise_yaw_deg > 0.0:
+            half = (
+                torch.randn(self.num_envs, device=quat.device)
+                * math.radians(self.pose_noise_yaw_deg)
+                * 0.5
+            )
+            zeros = torch.zeros_like(half)
+            noise = torch.stack([zeros, zeros, torch.sin(half), torch.cos(half)], dim=1)
+            quat = _quat_mul_xyzw(noise, quat)
+        return pos, quat
 
     def _detect_rgbd(self, rgb, depth, training, drone_pos_w=None, vehicle_quat=None):
         if training and self.rgb_noise_std > 0.0:

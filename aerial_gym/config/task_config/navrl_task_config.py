@@ -243,6 +243,15 @@ class task_config:
         # clean results and every pre-2026-08-06 non-latency number are unaffected. Set
         # NAVRL_LATENCY_EGO_MOTION_FIX=0 only to reproduce the superseded R3 latency arms.
         latency_ego_motion_fix = _env_bool("NAVRL_LATENCY_EGO_MOTION_FIX", True)
+        # 검증 3 (WORKLOG 2026-08-12): P3's -2.5 pp latency residual assumes EXACT detection
+        # timestamps and an exact capture-time pose. These perturb that premise the way real
+        # hardware does. Clock offset shifts which pose the delayed measurement is lifted with
+        # (+tau reproduces the naive current-pose transform exactly -- a built-in anchor);
+        # fractional offsets exercise pose interpolation between odometry samples; the noise
+        # knobs model odometry error on the buffered pose (position per-axis, yaw about world z).
+        pose_clock_offset_s = _env_float("NAVRL_POSE_CLOCK_OFFSET_S", 0.0)
+        pose_noise_pos_m = _env_float("NAVRL_POSE_NOISE_POS_M", 0.0)
+        pose_noise_yaw_deg = _env_float("NAVRL_POSE_NOISE_YAW_DEG", 0.0)
         # The obstacle map is edited by two paths with different gates: the LiDAR target_like
         # carve-out uses fused visibility (camera OR LiDAR) while the depth blanking uses the
         # camera-only pixel mask. On any frame the camera misses but LiDAR still holds the track

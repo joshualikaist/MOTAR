@@ -7824,3 +7824,22 @@ v6(근소 미달) → v7(14/14 PASS) → 사다리 재실행(envelope 안 robust
 후속 후보(로드맵 재논의 대상): nominal-포함 offline gate 재설계, threshold의 nominal
 재보정(새 사전등록 필요), 그리고 **검증 5의 fresh PPO를 v7+envelope randomization 위에서
 학습**하는 설계(정책-인지 결합을 학습으로 푸는 정공법).
+
+## 2026-08-12 — 검증 3 사전등록 + 구현: P3 전제(정확한 clock/pose) 민감도
+
+**구현** (`navrl_perception.py`): 링 버퍼 슬롯을 steps+3으로 늘려 capture 슬롯 양쪽 1스텝의
+pose 이력을 보존하고, `_perturbed_capture_pose()`가 세 교란을 적용한다 —
+- `NAVRL_POSE_CLOCK_OFFSET_S`: 지연 측정을 (capture+δ) 시점 pose로 변환. 소수 스텝은
+  인접 odometry 샘플 간 **보간**(pos lerp, quat sign-aligned nlerp)이므로 clock skew와
+  pose interpolation을 동시에 연습한다. **δ=+τ는 현재 pose에 정확히 도달 = naive 변환 재현**
+  (사다리에 내장된 검증 앵커).
+- `NAVRL_POSE_NOISE_POS_M` / `NAVRL_POSE_NOISE_YAW_DEG`: buffered pose 자체의 odometry 오차
+  (축별 gaussian 위치, world-z yaw).
+zero-knob이면 종전 경로 그대로(bit 동일, `torch.equal` 테스트). 테스트 38/38 PASS
+(δ=0 정확 capture pose, δ=+τ=현재 pose, δ=τ/2=중점 보간, δ=−τ=한 스텝 이전, yaw noise 단위노름).
+
+**사전등록** (`eval_navrl_v2_pose_premise.sh`, 실행 전 고정): frozen ep25000+riskcap,
+τ=0.1+P3 ON, analytic bootstrap(검증 2와 분리), seed **163**(미사용), 2049 ep/cell, **12셀**:
+exact 앵커 / clock ±0.02·±0.05·+0.10 / pos noise 0.01·0.03·0.10 m / yaw noise 0.5·2·5°.
+판정: 셀별 Δ vs exact(95% CI). **clk_p0p10이 naive 수준(~38%대)으로 떨어지지 않으면 노브
+자체가 무효 → 캠페인 void**. 재시도 없음.
