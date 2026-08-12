@@ -8420,7 +8420,8 @@ hardware feasibility 또는 navigation 성능이 아니다. 원자료 SHA-256은
 `results/navrl_ref_platform_verification/summary.md`다.
 
 다음 단계는 runtime source clean commit → fresh 500-epoch P1 smoke → 자동 gate PASS 시에만
-seed211 held-out 70-bar 평가다. P1/P2 전에 full-budget 학습을 시작하지 않는다.
+미사용 **evaluation seed 313** held-out 70-bar 평가다. 이어지는 full 학습은 training seed 211을
+사용해 decision-cell 평가 seed와 분리한다. P1/P2 전에 full-budget 학습을 시작하지 않는다.
 
 ### 재감사 마감과 P1 진입 조건
 
@@ -8442,3 +8443,30 @@ preflight와 legacy corrected-v2 epoch-1000 checkpoint의 held-out evaluator pre
 따라서 P0는 CPU 26/26 + canonical GPU 21/21(양 기체 각 16/16 생존) + 전체 NavRL 212/212로
 닫는다. 아직 P1 fresh 500-epoch와 P2 held-out navigation은 실행 전이므로 README/PPT의 과제 성능
 placeholder는 채우지 않는다.
+
+## 2026-08-13 — ref5in P1a fresh 500 epoch: 성능 gate 통과, 안전 gate FAIL
+
+clean runtime commit `578b4bf`에서 `train_navrl_v2_ref5in_smoke.sh`를 실행했다. source receipt는
+310개 runtime file, `git_dirty=false`를 기록했고 실제 Isaac Gym actor는 질량 1.200000 kg,
+관성 대각 약 `[0.004,0.004,0.006]`으로 생성됐다. run은
+`ppo_260813_0406_navrl_v2-ref5in-smoke-s197`, terminal checkpoint는
+`last_gen_ppo_ep_500_rew_117.70658.pth`(SHA-256
+`59f993811b2f358dc144544998cf0d230756198b19a33b658d0b82c22bebd26c`)다.
+
+최근 100 epoch pooled 3,709 episodes의 capture/crash/timeout은
+**2,675/910/124 = 72.12/24.53/3.34%**였다. checkpoint finite, PPO KL max 0.03182,
+4축 raw OOB 0, timeout path exercised, robot/config/URDF/source 결합은 모두 PASS였다. 초반
+100% crash에서 회복했고 distance gate도 7→9→...→27 m로 10번 승급했다. 따라서 ref5in에서 PPO가
+학습 자체를 못한다는 가설은 기각한다.
+
+그러나 사전등록한 전체 판정은 **FAIL**이다. epoch 432에서 pre-update KL 0.05043,
+independent behavior-KL audit 0.05842가 0.04 gate를 넘어 minibatch 1회가 skip됐고 PPO epoch 전체가
+rollback됐다. transaction guard가 model/optimizer를 복구하고 LR을 3e-5→1.5e-5로 낮춰 corrupted
+continuation은 막았지만, P1a는 rollback/skipped 0을 요구했다. 또한 최종 distance state는
+`[20,27] m`로 28 m promotion 한 번이 부족했다. 마지막 25→27 m evidence window capture가 0.745였으므로
+27 m plateau라기보다 500-epoch budget 부족으로 판정한다.
+
+결과를 본 뒤 gate를 완화하지 않는다. P1b는 같은 seed197, fresh weights, 동일 task/robot 계약에서
+안전장치가 선택한 초기 LR **1.5e-5**와 budget **750 epochs**만 바꾼다. P1a와 동일 outcome/KL/OOB
+gate에 exact-750, `[20,28]`, rollback/skipped 0을 요구한다. P1b PASS 전에는 held-out P2와 full
+training을 시작하지 않는다. 상세: `results/navrl_ref5in_smoke_seed197/summary.{md,json}`.

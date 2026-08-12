@@ -10,6 +10,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 RL = ROOT / "aerial_gym/rl_training/rl_games"
 LAUNCHER = RL / "train_navrl_v2_ref5in_smoke.sh"
+CORRECTIVE_LAUNCHER = RL / "train_navrl_v2_ref5in_smoke_b.sh"
 
 
 class Ref5inSmokeLauncherContract(unittest.TestCase):
@@ -63,6 +64,44 @@ class Ref5inSmokeLauncherContract(unittest.TestCase):
 
     def test_launcher_pins_source_receipt_and_storage_policy(self):
         source = LAUNCHER.read_text(encoding="utf-8")
+        for literal in (
+            "NAVRL_REQUIRE_TRAINING_SOURCE_RECEIPT=1",
+            "NAVRL_REQUIRE_CLEAN_TRAINING_SOURCE",
+            "NAVRL_SAVE_FREQUENCY=250",
+            "NAVRL_SPEED_GOVERNOR=off",
+            "NAVRL_PERCEPTION_PERTURB=0",
+        ):
+            self.assertIn(literal, source)
+
+    def test_corrective_launcher_changes_only_preregistered_run_coordinates(self):
+        env = {
+            **os.environ,
+            "REF5IN_PREFLIGHT_ONLY": "1",
+            "SEED": "999",
+            "MAX_EPOCHS": "1",
+            "NAVRL_LEARNING_RATE": "1e-2",
+            "NAVRL_ROBOT": "navrl_quad",
+        }
+        completed = subprocess.run(
+            [str(CORRECTIVE_LAUNCHER)],
+            cwd=RL,
+            env=env,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            check=False,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stdout)
+        self.assertIn("robot=navrl_ref5in_quad", completed.stdout)
+        self.assertIn("seed=197", completed.stdout)
+        self.assertIn("epochs=750", completed.stdout)
+        self.assertIn("lr=1.5e-5", completed.stdout)
+        self.assertIn("density 70->205 bars", completed.stdout)
+        self.assertIn("PREFLIGHT PASS", completed.stdout)
+        self.assertNotIn("seed=999", completed.stdout)
+        self.assertNotIn("lr=0.01", completed.stdout)
+
+        source = CORRECTIVE_LAUNCHER.read_text(encoding="utf-8")
         for literal in (
             "NAVRL_REQUIRE_TRAINING_SOURCE_RECEIPT=1",
             "NAVRL_REQUIRE_CLEAN_TRAINING_SOURCE",

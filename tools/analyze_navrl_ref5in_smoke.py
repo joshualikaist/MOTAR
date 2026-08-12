@@ -154,13 +154,13 @@ def bool_check(checks: dict, name: str, passed: bool, detail: str) -> None:
     checks[name] = {"pass": bool(passed), "detail": detail}
 
 
-def analyze(run: Path) -> dict:
+def analyze(run: Path, expected_epochs: int, expected_learning_rate: float) -> dict:
     import torch
 
     run = run.expanduser().resolve()
     if not run.is_dir():
         raise RuntimeError(f"run directory is missing: {run}")
-    checkpoint_path = latest_checkpoint(run, 500)
+    checkpoint_path = latest_checkpoint(run, expected_epochs)
     checkpoint = torch.load(str(checkpoint_path), map_location="cpu", weights_only=False)
     state = checkpoint.get("env_state") or {}
     summary_path = run / "aerial_run/run_summary.json"
@@ -175,11 +175,11 @@ def analyze(run: Path) -> dict:
     checks = {}
     bool_check(
         checks,
-        "normal_epoch_500_completion",
+        "normal_terminal_completion",
         marker.is_file()
         and summary.get("exit_reason") == "max_epochs"
-        and int(summary.get("last_epoch", -1)) == 500
-        and int(checkpoint.get("epoch", -1)) == 500,
+        and int(summary.get("last_epoch", -1)) == expected_epochs
+        and int(checkpoint.get("epoch", -1)) == expected_epochs,
         f"summary={summary.get('exit_reason')} last={summary.get('last_epoch')} "
         f"checkpoint={checkpoint.get('epoch')} marker={marker.is_file()}",
     )
@@ -191,13 +191,15 @@ def analyze(run: Path) -> dict:
     bool_check(
         checks,
         "ppo_kl_below_0p04",
-        kl["count"] == 500 and kl["max"] is not None and kl["max"] < 0.04,
+        kl["count"] == expected_epochs
+        and kl["max"] is not None
+        and kl["max"] < 0.04,
         json.dumps(kl, sort_keys=True),
     )
     bool_check(
         checks,
         "behavior_kl_below_0p04",
-        behavior_kl["count"] == 500
+        behavior_kl["count"] == expected_epochs
         and behavior_kl["max"] is not None
         and behavior_kl["max"] < 0.04,
         json.dumps(behavior_kl, sort_keys=True),
@@ -207,8 +209,8 @@ def analyze(run: Path) -> dict:
     bool_check(
         checks,
         "no_rollback_or_skipped_minibatches",
-        rollback["count"] == 500
-        and skipped["count"] == 500
+        rollback["count"] == expected_epochs
+        and skipped["count"] == expected_epochs
         and rollback["max"] == 0.0
         and skipped["max"] == 0.0,
         f"rollback={rollback} skipped={skipped}",
@@ -217,7 +219,10 @@ def analyze(run: Path) -> dict:
     bool_check(
         checks,
         "all_axis_raw_oob_zero",
-        all(item["count"] == 500 and item["max"] == 0.0 for item in raw_oob.values()),
+        all(
+            item["count"] == expected_epochs and item["max"] == 0.0
+            for item in raw_oob.values()
+        ),
         json.dumps(raw_oob, sort_keys=True),
     )
 
@@ -253,6 +258,30 @@ def analyze(run: Path) -> dict:
         f"robot={state.get('cfg_robot_name')} config={state.get('cfg_robot_config_sha256')} "
         f"urdf={state.get('cfg_robot_asset_sha256')}",
     )
+    smoke_contract_ok = (
+        int(state.get("cfg_training_seed", -1)) == 197
+        and int(state.get("cfg_training_num_envs", -1)) == 128
+        and math.isclose(
+            float(state.get("cfg_action_learning_rate", float("nan"))),
+            expected_learning_rate,
+            rel_tol=0.0,
+            abs_tol=1e-12,
+        )
+        and int(state.get("num_task_steps", -1)) == expected_epochs * 32
+        and int(state.get("n_bars_active", -1)) == 70
+    )
+    bool_check(
+        checks,
+        "closed_smoke_contract",
+        smoke_contract_ok,
+        "seed={} envs={} lr={} task_steps={} bars={}".format(
+            state.get("cfg_training_seed"),
+            state.get("cfg_training_num_envs"),
+            state.get("cfg_action_learning_rate"),
+            state.get("num_task_steps"),
+            state.get("n_bars_active"),
+        ),
+    )
     bool_check(
         checks,
         "distance_curriculum_saturated",
@@ -285,6 +314,8 @@ def analyze(run: Path) -> dict:
         "schema_version": 1,
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
         "scope": "ref5in_learning_viability_engineering_smoke",
+        "expected_epochs": expected_epochs,
+        "expected_learning_rate": expected_learning_rate,
         "verdict": "PASS" if passed else "FAIL",
         "performance_claim_allowed": False,
         "next_step": (
@@ -313,8 +344,14 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("run", type=Path)
     parser.add_argument("--output", type=Path)
+    parser.add_argument("--expected-epochs", type=int, default=500)
+    parser.add_argument("--expected-learning-rate", type=float, default=3e-5)
     args = parser.parse_args()
-    report = analyze(args.run)
+    if args.expected_epochs < 100:
+        parser.error("--expected-epochs must be at least 100")
+    if not math.isfinite(args.expected_learning_rate) or args.expected_learning_rate <= 0.0:
+        parser.error("--expected-learning-rate must be finite and positive")
+    report = analyze(args.run, args.expected_epochs, args.expected_learning_rate)
     rendered = json.dumps(report, indent=2, sort_keys=True) + "\n"
     if args.output:
         output = args.output.expanduser().resolve()

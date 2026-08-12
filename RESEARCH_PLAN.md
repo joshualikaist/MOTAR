@@ -928,14 +928,24 @@ calibration gate다. 그 전에는 새 PPO, riskcap 재튜닝, dropout/H4 추가
      `<0.04`, rollback/skipped minibatch/raw OOB 전부 0, timeout 실제 발생, distance curriculum
      `[20,28]`, 마지막 100 epoch pooled capture `>=65%`, crash `<=33%`, timeout `<=5%`.
    - PASS는 held-out 한 셀만 허용하며 성능 주장을 허용하지 않는다.
+   - **P1a result (2026-08-13): FAIL.** Last-100 pooled outcome은 3,709 episodes에서
+     capture/crash/timeout `72.12/24.53/3.34%`로 성능 gate를 통과했다. 그러나 epoch 432의
+     behavior-KL audit가 `0.05842`여서 minibatch 1회 skip + PPO epoch rollback 1회가 발생했고,
+     거리 창도 `[20,27] m`로 28 m 직전이었다. 완료된 P1a gate를 사후 완화하지 않는다.
+   - **P1b corrective preregistration:** 같은 training seed 197과 동일 task/robot/representation을
+     fresh weights로 재실행한다. 관측된 안전 backoff 값인 LR `1.5e-5`와 budget 750 epochs만
+     바꾼다. 정확히 750개 PPO scalar, terminal epoch 750, `[20,28] m`, rollback/skipped 0,
+     PPO/behavior KL `<0.04`, all-axis raw OOB 0, 마지막 100 epoch의 동일 outcome gate를 모두
+     요구한다. P1b 실패 시 P2와 full training은 시작하지 않는다.
 3. **P2 held-out 70-bar decision cell**
-   - 미사용 eval seed 211, deterministic action, full goal/FOV distribution, 최소 2,049 requested
+   - 미사용 eval seed **313**, deterministic action, full goal/FOV distribution, 최소 2,049 requested
      episodes. checkpoint의 robot/config/URDF hash와 runtime source가 다르면 시작 전에 실패한다.
    - absolute gate는 capture `>=65%`, crash `<=33%`, timeout `<=5%`. corrected-v2 legacy seed-197
      ep500 checkpoint도 같은 평가 seed로 재생해 descriptive anchor를 남긴다. 서로 다른 기체이므로
      이 차이를 순수 airframe causal effect나 우월성으로 부르지 않는다.
 4. **P3 full-budget 첫 seed**
-   - P2까지 통과할 때만 fresh seed 211을 시작한다. 70→205 bars, +15, threshold
+   - P2까지 통과할 때만 fresh **training seed 211**을 시작한다. 평가 seed 313을 학습 seed로
+     재사용하지 않는다. 70→205 bars, +15, threshold
      `70:.82,85:.77,100:.72,115+:.70`, evidence 16,384 episodes, density dwell 1,000 epochs,
      30,000 epoch budget을 동결한다. unique checkpoint는 250 epoch 간격으로 제한해 디스크를
      보존한다.

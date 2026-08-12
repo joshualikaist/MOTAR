@@ -15,7 +15,7 @@
 | corrected-v2 episode 의미론 | **공학 스모크 통과**. fresh PPO 1,000 epoch에서 정확히 600 action 종료, rl_games `time_outs` 전달, finite PPO/KL, rollback 0, raw action OOB 0을 확인했습니다. | 이 run은 70 bars의 on-policy 학습 기록입니다. held-out 성능, 밀도 승급 능력, 알고리즘 우월성을 증명하지 않습니다. |
 | learned detector 연결 | frozen navigation policy에서 learned-v2가 analytic bootstrap 대비 비열등하다는 결과를 두 평가 seed에서 재현했습니다. | 더 최신인 learned-v7을 그대로 꽂으면 nominal 성능이 떨어집니다. threshold만 바꿔 해결되는 문제가 아니며, detector 출력 분포에 맞춘 별도 학습이 필요합니다. |
 | 고밀도 기하 | 수정된 좌표계의 정적 2-D 검사에서 333/333 장면에 경로가 존재했습니다. | 회전·제동·표적 이동·600-step 제한을 포함한 동적 도달 가능성은 아닙니다. “길이 있으니 정책 문제”라고 단정할 수 없습니다. |
-| `navrl_ref5in_quad` 후보 기체 | CPU 저장소 계약 **26/26**, canonical same-controller simulator gate **21/21**을 통과했습니다. | fresh 500-epoch 학습 스모크는 아직 완료 전입니다. 실기 비행, CAD, endurance, 열·전원 여유는 검증하지 않았습니다. |
+| `navrl_ref5in_quad` 후보 기체 | CPU 저장소 계약 **26/26**, canonical same-controller simulator gate **21/21**을 통과했습니다. P1a fresh 500 epoch의 last-100 outcome도 72.12/24.53/3.34%였습니다. | P1a는 KL rollback 1회와 거리 `[20,27] m` 때문에 전체 gate는 FAIL입니다. 낮춘 LR의 P1b를 통과하기 전에는 held-out/장기학습으로 가지 않습니다. 실기 비행, CAD, endurance, 열·전원 여유도 미검증입니다. |
 | 과거 navigation 결과 | legacy evaluator 안에서는 비교 가능한 동결 기록으로 보존합니다. | old 601-action 결과를 corrected exact-600 결과와 합치거나, legacy 기체 결과를 ref5in 성능으로 부를 수 없습니다. |
 
 현재 판단의 근거는 [독립 검수 보고서](docs/codex_review_2026-08-12.md)와 [corrected-v2 의미론 스모크](results/navrl_v2_v5a_semantics_smoke_seed197/summary.md)에 있습니다. 위 표의 “통과”는 각 문서에 적힌 좁은 gate만 뜻합니다.
@@ -195,8 +195,8 @@ run 폴더 이관과 TensorBoard 병합 절차는 [OPERATIONS.md](OPERATIONS.md)
 ## 다음 실행 순서
 
 1. **완료:** ref5in CPU 정합성 26/26과 canonical same-controller simulator gate 21/21을 고정했습니다.
-2. **현재 단계:** clean source receipt가 있는 ref5in fresh 500-epoch 스모크로 시작·종료·checkpoint 계약을 검사합니다.
-3. 스모크가 통과해야만 같은 corrected-v2 계약의 held-out 평가를 수행합니다. 실패하면 full training으로 덮지 않고 dynamics/learning 신호를 분해합니다.
+2. **P1a 완료·FAIL:** fresh 500 epoch에서 학습 성능은 gate를 넘었지만 epoch 432 KL rollback 1회와 거리 27 m 종료 때문에 전체 gate를 통과하지 못했습니다.
+3. **현재 단계:** safety backoff가 선택한 LR 1.5e-5로 fresh 750-epoch P1b를 실행합니다. P1b가 통과해야만 같은 corrected-v2 계약의 held-out 평가를 수행합니다.
 4. held-out gate까지 통과하면 먼저 full-budget seed 1개를 완주하고, 그 결과가 사전등록 기준을 만족할 때만 나머지 training seed를 추가합니다. 한 seed는 데모로만 취급합니다.
 5. legacy와 ref5in을 비교할 때는 architecture·curriculum·예산·평가 seed를 맞추고 둘 다 fresh lineage로 만듭니다. 기존 legacy checkpoint를 ref5in에 그대로 재생하지 않습니다.
 6. perception 연구는 corrected-v2 analytic baseline → learned detector arm → appearance-randomized arm 순으로 한 축씩 추가합니다.
