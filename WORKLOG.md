@@ -8470,3 +8470,37 @@ continuation은 막았지만, P1a는 rollback/skipped 0을 요구했다. 또한 
 안전장치가 선택한 초기 LR **1.5e-5**와 budget **750 epochs**만 바꾼다. P1a와 동일 outcome/KL/OOB
 gate에 exact-750, `[20,28]`, rollback/skipped 0을 요구한다. P1b PASS 전에는 held-out P2와 full
 training을 시작하지 않는다. 상세: `results/navrl_ref5in_smoke_seed197/summary.{md,json}`.
+
+## 2026-08-13 — ref5in P1b fresh 750 epoch: 안전·outcome PASS, 거리 budget FAIL
+
+clean runtime commit `227b874`에서 `train_navrl_v2_ref5in_smoke_b.sh`를 fresh seed 197로
+실행했다. run은 `ppo_260813_0441_navrl_v2-ref5in-smoke-b-s197`, terminal checkpoint는
+`last_gen_ppo_ep_750_rew_135.66144.pth`(SHA-256
+`5174695ac0d6ab8dcc81a4351afea378db55be2b00b2a4669de5ea1e80a6a2cf`)다. source receipt는
+311 files, commit `227b874cfaa358a4f0040885b6dbe45a06878084`, clean runtime과 manifest SHA
+`1b5209686c696ab9242111a3a1af54d60fa91e6cd31707021db7ae53fab628d6`을 기록했다.
+
+마지막 100 epoch pooled 3,780 episodes의 capture/crash/timeout은
+**2,629/1,063/88 = 69.55/28.12/2.33%**로 세 outcome gate를 통과했다. 정확히 epoch 750에서
+정상 종료했고, checkpoint 전체 tensor와 60개 TensorBoard scalar tag가 finite였다. PPO KL max
+`0.01300`, behavior-audit KL max `0.01980`, rollback/skipped minibatch/4-axis raw OOB는 모두 0이었다.
+초기·최종 actor LR도 `1.5e-5`로 같았고 robot config/URDF 및 original/snapshot runtime 311개를
+모두 다시 해시해 source receipt를 검증했다. 즉 P1a의 epoch-432 불안정성은 낮춘 LR에서 재현되지
+않았다.
+
+그럼에도 strict P1b verdict는 **FAIL**이다. terminal distance state가 `[20,27] m`라 사전등록한
+`[20,28] m`를 만족하지 못했다. 승급 epoch는 372/403/434/467/500/534/571/611/657/709였다.
+장거리에서 episode가 길어져 동일 2,048 completed-episode evidence를 모으는 epoch 수가 늘었고,
+750은 마지막 27→28 window 전에 끝났다. outcome이나 KL gate를 사후 완화하지 않으며 P2/full
+training도 아직 금지한다. 상세는 `results/navrl_ref5in_smoke_seed197/p1b/summary.{md,json}`다.
+
+P1c는 결과를 본 뒤 **budget만 750→900**으로 바꾸는 마지막 corrective engineering smoke로
+사전등록한다. seed 197, fresh weights, LR `1.5e-5`, task/robot/representation과 모든 gate는 그대로다.
+900은 예상 28 m saturation 뒤 온전한 last-100 window를 남긴다. 전용
+`train_navrl_v2_ref5in_smoke_c.sh`는 CLI/CKPT를 거부하고 clean runtime receipt를 강제한다.
+
+같은 감사 중 README의 3-D 재생 경로가 current 898D checkpoint를 구형 574D로 판정해 거부하고,
+그 검사 전에 Isaac Gym까지 import하는 결함도 실제 P1b epoch-250 checkpoint로 재현했다. P1c/P2의
+runtime byte 계보를 먼저 닫은 뒤 checkpoint metadata로 robot/sensor/token/action 계약을 import 전에
+복원하는 fail-closed playback으로 교체한다. 그 전까지 current 898D policy replay 명령은 작동한다고
+주장하지 않는다.

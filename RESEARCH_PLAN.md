@@ -919,12 +919,12 @@ calibration gate다. 그 전에는 새 PPO, riskcap 재튜닝, dropout/H4 추가
      saturation/100 Hz roll·pitch fixed-gain gate 통과.
    - 이 결과는 same-controller closed-loop simulator gate일 뿐 intrinsic plant 또는 hardware
      validation으로 표현하지 않는다.
-2. **P1 fresh 500-epoch learning-viability smoke**
-   - `train_navrl_v2_ref5in_smoke.sh`만 사용: seed 197, 128 env, 70 bars, analytic detector,
+2. **P1 fresh learning-viability smoke**
+   - 각 하위 단계에 사전등록된 전용 launcher만 사용: seed 197, 128 env, 70 bars, analytic detector,
      8 `cluster_sector` tokens/240°, squashed Gaussian, governor/pose/appearance perturbation off,
      corrected exact-600 semantics. checkpoint resume와 CLI override는 금지한다.
    - 실행 source와 robot config/URDF를 immutable receipt와 SHA로 checkpoint에 묶는다.
-   - hard gate: 정상 epoch-500 종료, checkpoint/TensorBoard finite, PPO KL와 behavior-KL max
+   - 공통 hard gate: 사전등록한 exact terminal epoch, checkpoint/모든 TensorBoard scalar finite, PPO KL와 behavior-KL max
      `<0.04`, rollback/skipped minibatch/raw OOB 전부 0, timeout 실제 발생, distance curriculum
      `[20,28]`, 마지막 100 epoch pooled capture `>=65%`, crash `<=33%`, timeout `<=5%`.
    - PASS는 held-out 한 셀만 허용하며 성능 주장을 허용하지 않는다.
@@ -932,11 +932,19 @@ calibration gate다. 그 전에는 새 PPO, riskcap 재튜닝, dropout/H4 추가
      capture/crash/timeout `72.12/24.53/3.34%`로 성능 gate를 통과했다. 그러나 epoch 432의
      behavior-KL audit가 `0.05842`여서 minibatch 1회 skip + PPO epoch rollback 1회가 발생했고,
      거리 창도 `[20,27] m`로 28 m 직전이었다. 완료된 P1a gate를 사후 완화하지 않는다.
-   - **P1b corrective preregistration:** 같은 training seed 197과 동일 task/robot/representation을
-     fresh weights로 재실행한다. 관측된 안전 backoff 값인 LR `1.5e-5`와 budget 750 epochs만
-     바꾼다. 정확히 750개 PPO scalar, terminal epoch 750, `[20,28] m`, rollback/skipped 0,
-     PPO/behavior KL `<0.04`, all-axis raw OOB 0, 마지막 100 epoch의 동일 outcome gate를 모두
-     요구한다. P1b 실패 시 P2와 full training은 시작하지 않는다.
+   - **P1b result (2026-08-13): FAIL.** 같은 seed의 fresh 750 epoch, LR `1.5e-5`에서
+     last-100 pooled 3,780 episodes의 capture/crash/timeout은 `69.55/28.12/2.33%`였다. 모든
+     checkpoint tensor와 60개 TensorBoard scalar tag가 finite였고 PPO/behavior KL max는
+     `0.01300/0.01980`, rollback/skipped/OOB는 0, 311-file source receipt도 재검증됐다. 그러나
+     distance가 `[20,27] m`에서 끝나 strict gate는 실패했다. promotion epoch가
+     372/403/434/467/500/534/571/611/657/709로 늘어난 것은 장거리 episode가 길어져 동일
+     2,048 completed-episode 증거에 더 많은 epoch가 필요했기 때문이다.
+   - **P1c corrective preregistration:** `train_navrl_v2_ref5in_smoke_c.sh`로 같은 seed 197,
+     LR `1.5e-5`, task/robot/representation을 fresh weights에서 재실행한다. P1b를 보고 바꾸는
+     좌표는 budget `750 -> 900`뿐이다. 정확히 900개 PPO scalar, terminal epoch 900,
+     `[20,28] m`, rollback/skipped 0, PPO/behavior KL `<0.04`, all-axis raw OOB 0, 마지막 100
+     epoch의 동일 outcome gate를 모두 요구한다. 이 예산은 예상 saturation 뒤 온전한 last-100
+     window를 남긴다. P1c 실패 시 P2와 full training은 시작하지 않는다.
 3. **P2 held-out 70-bar decision cell**
    - 미사용 eval seed **313**, deterministic action, full goal/FOV distribution, 최소 2,049 requested
      episodes. checkpoint의 robot/config/URDF hash와 runtime source가 다르면 시작 전에 실패한다.
@@ -953,7 +961,7 @@ calibration gate다. 그 전에는 새 PPO, riskcap 재튜닝, dropout/H4 추가
      223/227을 같은 계약으로 추가한다. training seed 하나의 결과에는 confirmatory 표현을 쓰지 않는다.
 
 P0/P1 결과 파일은 각각 `results/navrl_ref_platform_verification/`과
-`results/navrl_ref5in_smoke_seed197/`을 canonical 위치로 사용한다. 모든 결과는 `WORKLOG.md`에도
+`results/navrl_ref5in_smoke_seed197/`(P1b는 `p1b/`)을 canonical 위치로 사용한다. 모든 결과는 `WORKLOG.md`에도
 동일 날짜로 남긴다. Exact BOM, CAD/CG/FOV, inertia/actuator 식별, power/thermal/endurance와 실제 비행은
 별도의 hardware gate이며 P0–P3를 통과해도 자동으로 충족되지 않는다.
 

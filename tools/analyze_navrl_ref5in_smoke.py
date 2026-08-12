@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Apply the preregistered engineering gates to one ref5in 500-epoch smoke run.
+"""Apply the preregistered engineering gates to one ref5in fresh smoke run.
 
 This script intentionally separates a learning-viability decision from a performance claim.  It
 reads the terminal checkpoint, completion marker, TensorBoard safety scalars and the exact outcome
@@ -72,7 +72,7 @@ def matching_log(run_name: str) -> Path:
     return path
 
 
-def outcome_window(path: Path, last_n: int = 100) -> dict:
+def outcome_window(path: Path, expected_epochs: int, last_n: int = 100) -> dict:
     text = path.read_text(encoding="utf-8", errors="replace")
     rows = []
     for match in OUTCOME_RE.finditer(text):
@@ -82,6 +82,10 @@ def outcome_window(path: Path, last_n: int = 100) -> dict:
         if capture + crash + timeout != cap_n:
             raise RuntimeError("trainer outcome block does not account for every termination")
         rows.append((capture, crash, timeout, cap_n))
+    if len(rows) != expected_epochs:
+        raise RuntimeError(
+            f"outcome accounting has {len(rows)} blocks; expected exactly {expected_epochs}"
+        )
     if len(rows) < last_n:
         raise RuntimeError(f"only {len(rows)} complete outcome blocks; need {last_n}")
     tail = rows[-last_n:]
@@ -129,7 +133,60 @@ def tensorboard_summary(run: Path) -> dict:
         if not values or not all(math.isfinite(value) for value in values):
             raise RuntimeError(f"TensorBoard tag {tag} is empty or non-finite")
         result[tag] = {"count": len(values), "max": max(values), "last": values[-1]}
+    all_scalar_tags = sorted(tags)
+    nonfinite_tags = []
+    empty_tags = []
+    for tag in all_scalar_tags:
+        values = [float(event.value) for event in acc.Scalars(tag)]
+        if not values:
+            empty_tags.append(tag)
+        elif not all(math.isfinite(value) for value in values):
+            nonfinite_tags.append(tag)
+    result["all_scalars"] = {
+        "tag_count": len(all_scalar_tags),
+        "empty_tags": empty_tags,
+        "nonfinite_tags": nonfinite_tags,
+    }
     return result
+
+
+def verify_source_manifest(manifest_path: Path, expected_sha256: str) -> dict:
+    """Re-hash the original runtime bytes, immutable snapshot and Python receipt."""
+    manifest_path = manifest_path.expanduser().resolve()
+    if not manifest_path.is_file():
+        raise RuntimeError(f"source manifest is missing: {manifest_path}")
+    actual_sha = sha256_file(manifest_path)
+    if actual_sha != expected_sha256:
+        raise RuntimeError("source manifest SHA-256 changed")
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    if manifest.get("schema_version") != 1:
+        raise RuntimeError("unsupported training source manifest schema")
+    repository = Path(manifest["repository_root"]).resolve()
+    entries = manifest.get("runtime_files") or []
+    if not entries or len(entries) != int(manifest.get("runtime_file_count", -1)):
+        raise RuntimeError("invalid runtime source accounting")
+    for entry in entries:
+        original = (repository / entry["path"]).resolve()
+        snapshot = (manifest_path.parent / entry["snapshot"]).resolve()
+        if repository not in original.parents:
+            raise RuntimeError(f"runtime source escapes repository: {entry['path']}")
+        expected = entry["sha256"]
+        if not original.is_file() or sha256_file(original) != expected:
+            raise RuntimeError(f"runtime source changed: {entry['path']}")
+        if not snapshot.is_file() or sha256_file(snapshot) != expected:
+            raise RuntimeError(f"runtime snapshot changed: {entry['snapshot']}")
+    environment = (manifest_path.parent / manifest["python_environment"]).resolve()
+    if not environment.is_file() or sha256_file(environment) != manifest.get(
+        "python_environment_sha256"
+    ):
+        raise RuntimeError("Python environment receipt changed")
+    return {
+        "manifest_sha256": actual_sha,
+        "git_commit": manifest.get("git_commit"),
+        "git_dirty": bool(manifest.get("git_dirty")),
+        "runtime_file_count": len(entries),
+        "verified": True,
+    }
 
 
 def all_tensors_finite(value, prefix="checkpoint") -> list[str]:
@@ -167,7 +224,7 @@ def analyze(run: Path, expected_epochs: int, expected_learning_rate: float) -> d
     summary = json.loads(summary_path.read_text(encoding="utf-8"))
     marker = run / ".aerial_training_finished"
     log = matching_log(run.name)
-    outcome = outcome_window(log)
+    outcome = outcome_window(log, expected_epochs=expected_epochs)
     tb = tensorboard_summary(run)
 
     config_path = ROOT / "aerial_gym/config/robot_config/navrl_ref5in_quad_config.py"
@@ -185,6 +242,13 @@ def analyze(run: Path, expected_epochs: int, expected_learning_rate: float) -> d
     )
     nonfinite = all_tensors_finite(checkpoint)
     bool_check(checks, "checkpoint_all_finite", not nonfinite, str(nonfinite[:8]))
+    all_scalars = tb["all_scalars"]
+    bool_check(
+        checks,
+        "all_tensorboard_scalars_finite",
+        not all_scalars["empty_tags"] and not all_scalars["nonfinite_tags"],
+        json.dumps(all_scalars, sort_keys=True),
+    )
 
     kl = tb["ppo/kl"]
     behavior_kl = tb["ppo/behavior_kl_audit_max"]
@@ -229,13 +293,21 @@ def analyze(run: Path, expected_epochs: int, expected_learning_rate: float) -> d
     source_manifest_text = str(state.get("cfg_training_source_manifest", ""))
     source_manifest = Path(source_manifest_text) if source_manifest_text else None
     source_sha = str(state.get("cfg_training_source_manifest_sha256", ""))
+    source_verification = None
+    source_error = ""
+    try:
+        if not source_manifest or len(source_sha) != 64:
+            raise RuntimeError("checkpoint source manifest path/SHA is missing")
+        source_verification = verify_source_manifest(source_manifest, source_sha)
+    except (OSError, KeyError, ValueError, RuntimeError, json.JSONDecodeError) as exc:
+        source_error = str(exc)
     source_ok = bool(
-        source_manifest
-        and source_manifest.is_file()
-        and len(source_sha) == 64
-        and sha256_file(source_manifest) == source_sha
+        source_verification
+        and source_verification["verified"]
+        and source_verification["git_dirty"] is False
         and state.get("cfg_training_source_git_dirty") is False
-        and int(state.get("cfg_training_source_runtime_file_count", 0)) > 0
+        and int(state.get("cfg_training_source_runtime_file_count", 0))
+        == int(source_verification["runtime_file_count"])
     )
     bool_check(
         checks,
@@ -243,7 +315,8 @@ def analyze(run: Path, expected_epochs: int, expected_learning_rate: float) -> d
         source_ok,
         f"manifest={source_manifest_text!r} sha={source_sha} "
         f"dirty={state.get('cfg_training_source_git_dirty')} "
-        f"files={state.get('cfg_training_source_runtime_file_count')}",
+        f"files={state.get('cfg_training_source_runtime_file_count')} "
+        f"verification={source_verification!r} error={source_error!r}",
     )
     robot_ok = (
         int(state.get("cfg_robot_contract_version", 0)) == 1
@@ -258,29 +331,41 @@ def analyze(run: Path, expected_epochs: int, expected_learning_rate: float) -> d
         f"robot={state.get('cfg_robot_name')} config={state.get('cfg_robot_config_sha256')} "
         f"urdf={state.get('cfg_robot_asset_sha256')}",
     )
+    exact_contract = {
+        "cfg_training_seed": 197,
+        "cfg_training_num_envs": 128,
+        "cfg_training_file": "ppo_navrl_perception_transformer.yaml",
+        "cfg_training_task": "navrl_task",
+        "cfg_training_sim": "base_sim",
+        "cfg_training_profile": "main",
+        "cfg_ppo_horizon": 32,
+        "cfg_obstacle_selector": "cluster_sector",
+        "cfg_action_policy": "squashed_gaussian",
+        "cfg_speed_governor_mode": "off",
+        "cfg_perception_perturb": False,
+        "n_bars_active": 70,
+        "num_task_steps": expected_epochs * 32,
+    }
+    contract_mismatches = {
+        key: {"actual": state.get(key), "expected": expected}
+        for key, expected in exact_contract.items()
+        if state.get(key) != expected
+    }
+    initial_lr = float(state.get("cfg_action_learning_rate", float("nan")))
+    current_lr = float(state.get("current_action_learning_rate", float("nan")))
+    expected_frame = expected_epochs * 32 * 128
     smoke_contract_ok = (
-        int(state.get("cfg_training_seed", -1)) == 197
-        and int(state.get("cfg_training_num_envs", -1)) == 128
-        and math.isclose(
-            float(state.get("cfg_action_learning_rate", float("nan"))),
-            expected_learning_rate,
-            rel_tol=0.0,
-            abs_tol=1e-12,
-        )
-        and int(state.get("num_task_steps", -1)) == expected_epochs * 32
-        and int(state.get("n_bars_active", -1)) == 70
+        not contract_mismatches
+        and math.isclose(initial_lr, expected_learning_rate, rel_tol=0.0, abs_tol=1e-12)
+        and math.isclose(current_lr, expected_learning_rate, rel_tol=0.0, abs_tol=1e-12)
+        and int(checkpoint.get("frame", -1)) == expected_frame
     )
     bool_check(
         checks,
         "closed_smoke_contract",
         smoke_contract_ok,
-        "seed={} envs={} lr={} task_steps={} bars={}".format(
-            state.get("cfg_training_seed"),
-            state.get("cfg_training_num_envs"),
-            state.get("cfg_action_learning_rate"),
-            state.get("num_task_steps"),
-            state.get("n_bars_active"),
-        ),
+        f"mismatches={contract_mismatches!r} initial_lr={initial_lr} "
+        f"current_lr={current_lr} frame={checkpoint.get('frame')}/{expected_frame}",
     )
     bool_check(
         checks,
@@ -329,6 +414,7 @@ def analyze(run: Path, expected_epochs: int, expected_learning_rate: float) -> d
         "session_log": str(log.relative_to(ROOT) if ROOT in log.parents else log),
         "last100_training_outcomes": outcome,
         "tensorboard": tb,
+        "source_verification": source_verification,
         "checks": checks,
         "limitations": [
             "one training seed",
@@ -355,6 +441,8 @@ def main() -> int:
     rendered = json.dumps(report, indent=2, sort_keys=True) + "\n"
     if args.output:
         output = args.output.expanduser().resolve()
+        if output.exists():
+            raise SystemExit(f"refusing to overwrite existing report: {output}")
         output.parent.mkdir(parents=True, exist_ok=True)
         output.write_text(rendered, encoding="utf-8")
     print(rendered, end="")
