@@ -1050,6 +1050,30 @@
    "worklog_date": "2026-08-13",
    "results_paths": ["results/navrl_ref5in_d1_eval_seed331/"],
    "launcher": "tools/run_navrl_ref5in_d1_eval.py"}
+  ,
+  {"id": "2026-08-13-ref5in-cv-heading",
+   "title_ko": "ref5in 동결정책 — CV 초기 진행방향",
+   "question": "최장 거리 CV timeout이 초기 radial heading에 민감한가?",
+   "theme": "platform", "knob": "NAVRL_EVAL_CV_INITIAL_HEADING",
+   "levels": [{"label": "toward", "value": "toward", "is_baseline": true},
+              {"label": "tangent-left", "value": "tangent_left"},
+              {"label": "tangent-right", "value": "tangent_right"},
+              {"label": "away", "value": "away"}],
+   "metric": "timeout",
+   "effect": {"value_pp": 23.32, "ci95_pp": [21.26, 25.38], "ci_method": "normal", "direction": "lower_is_better"},
+   "arms": [{"label": "toward", "capture": 0.7820, "crash": 0.1859, "timeout": 0.0322, "n_episodes": 2050},
+            {"label": "tangent-left", "capture": 0.6374, "crash": 0.2020, "timeout": 0.1606, "n_episodes": 2049},
+            {"label": "tangent-right", "capture": 0.6249, "crash": 0.1927, "timeout": 0.1824, "n_episodes": 2050},
+            {"label": "away", "capture": 0.5351, "crash": 0.1995, "timeout": 0.2654, "n_episodes": 2050}],
+   "verdict": "PASS", "validity": "exploratory",
+   "verdict_note": "away−toward timeout +23.32 pp로 radial-heading channel screen을 통과했다. tangent L/R 최대 차이는 2.19 pp라 chirality-sensitive outcome 설명은 기각했다.",
+   "confounded_by": "초기 heading은 유효 경로길이, target visibility, 벽 반사 시점을 동시에 바꾼다. 순수 path-length 인과효과가 아니다.",
+   "seeds": [337], "episodes_per_cell": 2049,
+   "env": {"bars": 70, "machine": "rtx3070"},
+   "preregistered": true, "gate": "away−toward timeout ≥8 pp; tangent 좌우 outcome |Δ| ≥5 pp",
+   "worklog_date": "2026-08-13",
+   "results_paths": ["results/navrl_ref5in_cv_heading_seed337/"],
+   "launcher": "tools/run_navrl_ref5in_cv_heading_diagnostic.py"}
 
  ]
 }

@@ -56,6 +56,19 @@ def load_json(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def verify_runtime_clean_manifest(metadata: dict, mode: str) -> None:
+    """Accept repository-wide result dirt while rejecting any snapshotted runtime dirt."""
+    roots = tuple(str(root).rstrip("/") + "/" for root in metadata.get("runtime_roots") or ())
+    require(roots == ("aerial_gym/", "resources/robots/"), f"{mode} runtime roots changed")
+    offending = []
+    for row in metadata.get("git_status") or []:
+        path_text = str(row)[3:]
+        candidates = path_text.split(" -> ")
+        if any(candidate.startswith(roots) for candidate in candidates):
+            offending.append(row)
+    require(not offending, f"{mode} runtime source was dirty: {offending[:8]}")
+
+
 def cell_dir(mode: str) -> Path:
     return OUTPUT / "cells" / mode
 
@@ -204,7 +217,6 @@ def verify_cell(mode: str) -> tuple[dict, dict]:
         "cv_initial_heading": mode,
     }.items():
         require(receipt.get(key) == value, f"{mode} receipt mismatch: {key}")
-    require(result.get("runtime_git_dirty") is False, f"{mode} runtime receipt was dirty")
     return result, receipt
 
 
@@ -241,7 +253,7 @@ def build_summary(results: dict[str, dict], mismatch: str) -> dict:
     chirality = tangent_max_abs >= 0.05
     all_timeout_high = all(cell["timeout_rate"] >= 0.12 for cell in cells.values())
     if path_length:
-        interpretation = "supports_initial_path_length_channel"
+        interpretation = "supports_radial_heading_channel_path_visibility_wall_coupled"
     elif chirality:
         interpretation = "prioritize_chirality_sensitive_followup"
     elif all_timeout_high:
@@ -281,7 +293,7 @@ def build_summary(results: dict[str, dict], mismatch: str) -> dict:
             "tangent_left_minus_right": tangent_lr,
         },
         "screen": {
-            "path_length_support": path_length,
+            "radial_heading_channel_support": path_length,
             "chirality_sensitive": chirality,
             "all_cells_timeout_ge_12pct": all_timeout_high,
             "tangent_max_abs_outcome_difference": tangent_max_abs,
@@ -291,7 +303,8 @@ def build_summary(results: dict[str, dict], mismatch: str) -> dict:
             "mechanism diagnostic only; cannot revise P2 or D1 and cannot unlock P3",
             "one frozen training seed and one evaluation seed at 70 bars",
             "same seed is not episode-paired because vector environments reset asynchronously",
-            "heading is controlled only at reset; obstacle steering may alter it afterward",
+            "heading is controlled only at reset; obstacle steering and wall reflection may alter it afterward",
+            "radial heading changes path length, target visibility, and time to wall together",
         ],
     }
 
@@ -329,7 +342,7 @@ def verify_all() -> tuple[dict[str, dict], str]:
         results[mode] = result
         manifest = Path(receipt["runtime_source_manifest"]).resolve()
         mapping, metadata = P2.manifest_map(manifest, 2)
-        require(metadata.get("git_dirty") is False, f"{mode} source manifest was dirty")
+        verify_runtime_clean_manifest(metadata, mode)
         runtime_maps.append(mapping)
     require(all(mapping == runtime_maps[0] for mapping in runtime_maps[1:]),
             "heading cells used different runtime byte maps")

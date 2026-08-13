@@ -61,12 +61,15 @@ P1c는 성능 주장이 아니고 P2는 한 training seed/한 evaluation seed/70
    `64.03/19.98/15.98%`다. D0 대비 q3/CV capture `+15.19pp [10.94,19.44]`, crash
    `-9.02pp [-12.74,-5.31]`, timeout `-6.17pp [-9.57,-2.77]`로 개선됐지만 사전등록 절대
    timeout gate를 넘었다. 추가 epoch와 threshold 완화는 하지 않는다.
-2. **현재 frozen diagnostic:** D1 terminal policy에서 70 bars, `[22.5,28] m`, CV-only를 유지하고
-   초기 heading을 toward/tangent-left/tangent-right/away로 고정한다. 좌우 편향을 tangent 한 셀로
-   뭉개지 않고 두 방향을 따로 보고, pooled tangent는 보조값으로만 사용한다.
-3. **P3는 계속 차단:** heading 결과는 원인 분리용이라 어떤 셀 결과가 좋아도 P2나 D1을 PASS로
+2. **heading diagnostic 완료:** toward/tangent-left/tangent-right/away timeout은
+   `3.22/16.06/18.24/26.54%`였다. crash는 `18.59–20.20%`로 평평했고 tangent 좌우 최대 차이는
+   2.19pp였다. radial-heading 환경 채널은 확인됐지만 path length·visibility·wall reflection이
+   결합돼 있다.
+3. **현재 near-open diagnostic:** 같은 D1 policy와 toward/away 개입을 1 bar에서 반복해 dense
+   obstacle occlusion이 +23.32pp penalty에 필요한지 분리한다. PPO는 돌리지 않는다.
+4. **P3는 계속 차단:** heading 결과는 원인 분리용이라 어떤 셀 결과가 좋아도 P2나 D1을 PASS로
    소급 변경하지 않는다. 다음 PPO는 단일 메커니즘 intervention과 새 gate를 먼저 문서화해야 한다.
-4. **hardware gate는 별도:** exact BOM/CAD/CG, thrust stand, inertia/actuator identification, power/thermal/
+5. **hardware gate는 별도:** exact BOM/CAD/CG, thrust stand, inertia/actuator identification, power/thermal/
    endurance, camera/LiDAR FOV·latency, 실제 hover/step/collision-envelope 검증이 필요하다.
 
 이 순서는 한 run에서 airframe, reward, horizon, representation, governor를 동시에 바꾸지 않는다.

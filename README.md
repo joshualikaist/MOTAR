@@ -49,6 +49,14 @@ global capture/crash/timeout `76.82/18.62/4.55%`, 최장 거리 CV에서 `64.03/
 adaptation과 장거리 학습분포 변경이 함께 들어간 단일 training seed라 둘의 효과를 분리할 수도 없습니다.
 추가 epoch 대신 동결 정책으로 CV 초기 진행방향을 분리합니다.
 
+그 동결 진단도 완료했습니다. 최장 거리 CV에서 toward/tangent-left/tangent-right/away의
+capture/crash/timeout은 각각 `78.20/18.59/3.22`, `63.74/20.20/16.06`,
+`62.49/19.27/18.24`, `53.51/19.95/26.54%`였습니다. away−toward timeout은 +23.32pp지만
+crash는 +1.37pp로 불확실했고, tangent 좌우 차이는 최대 2.19pp라 action chirality가 outcome을
+지배한다는 설명은 지지되지 않았습니다. 다만 heading은 경로길이뿐 아니라 target visibility와
+벽 반사 시점도 함께 바꾸므로, 현재 결론은 **radial-heading 환경 채널**까지입니다. 다음은 1-bar
+near-open toward/away 대조로 dense obstacle occlusion의 필요성을 확인합니다.
+
 ## 시스템을 짧게 보면
 
 현재 corrected-v2 baseline은 다음 흐름을 사용합니다.
@@ -237,8 +245,8 @@ run 폴더 이관과 TensorBoard 병합 절차는 [OPERATIONS.md](OPERATIONS.md)
 5. **P2 strict FAIL:** held-out seed 313에서 capture/crash는 통과했지만 timeout 5.56%가 상한 5%를 넘었습니다. legacy anchor와 P3는 실행하지 않았습니다.
 6. **진단 완료:** 장거리에서 timeout과 crash가 함께 증가했고, q3 timeout은 CV에서 waypoint보다 14.20pp 높았습니다. 표적 속도 alone 가설은 지지되지 않았습니다.
 7. **D1 완료·FAIL:** `[22.5,28] m` exposure로 모든 outcome은 개선됐지만 q3/CV timeout `15.98% > 12%`라 사전 gate를 통과하지 못했습니다. P2 FAIL은 유지합니다.
-8. **현재 단계:** D1 terminal checkpoint를 동결하고 CV 초기 heading을 toward/tangent-left/tangent-right/away로 나눠 잔여 timeout이 단순 path-length인지, 접선 추적/좌우 정책인지 진단합니다. PPO와 episode horizon은 바꾸지 않습니다.
-9. 이 진단만으로 P3를 열지 않습니다. 결과에 따라 tracker/pursuit 또는 action chirality의 단일 intervention을 새로 사전등록합니다.
+8. **heading 진단 완료:** away−toward timeout +23.32pp로 radial-heading 채널을 확인했고 tangent 좌우 outcome 차이는 기준 미달이었습니다.
+9. **현재 단계:** 같은 동결 정책의 1-bar near-open toward/away 대조로 dense obstacle occlusion과 kinematic/FOV/wall-reflection 축을 분리합니다. 이 진단만으로 P3를 열지 않습니다.
 10. perception 연구는 corrected-v2 analytic baseline → learned detector arm → appearance-randomized arm 순으로 한 축씩 추가합니다.
 
 현재 가장 큰 미해결 문제는 “더 오래 학습하면 되는가”가 아니라 **고밀도에서 pre-contact obstacle 정보, 제동 여유, detector 출력 분포, 기체 동역학 중 어느 축이 먼저 한계가 되는가**입니다.

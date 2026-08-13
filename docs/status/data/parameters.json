@@ -1,14 +1,14 @@
 {
  "schema": "motar.parameters/1",
- "generated_at": "2026-08-13T09:05:47+00:00",
+ "generated_at": "2026-08-13T09:39:49+00:00",
  "generator": "tools/generate_parameter_catalog.py",
- "source_commit": "cbdf5c9",
+ "source_commit": "f55bf28",
  "counts": {
   "authoritative": 180,
   "echo_only": 84,
   "files_scanned": 272,
   "launchers_scanned": 66,
-  "ablated": 39,
+  "ablated": 40,
   "mirrors": 5,
   "launcher_only": 69
  },
@@ -70,7 +70,7 @@
    "echoes": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1750,
+     "line": 1755,
      "scope": "NavRLTask"
     }
    ],
@@ -1043,7 +1043,7 @@
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1879,
+     "line": 1884,
      "scope": "NavRLTask"
     }
    ],
@@ -1092,7 +1092,7 @@
    "echoes": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1880,
+     "line": 1885,
      "scope": "NavRLTask"
     }
    ],
@@ -1141,7 +1141,7 @@
    "echoes": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1881,
+     "line": 1886,
      "scope": "NavRLTask"
     }
    ],
@@ -1190,7 +1190,7 @@
    "echoes": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1897,
+     "line": 1902,
      "scope": "NavRLTask"
     }
    ],
@@ -1235,7 +1235,7 @@
    "echoes": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1896,
+     "line": 1901,
      "scope": "NavRLTask"
     }
    ],
@@ -3421,7 +3421,7 @@
    "echoes": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1892,
+     "line": 1897,
      "scope": "NavRLTask"
     }
    ],
@@ -3515,9 +3515,11 @@
      "value": "${NAVRL_EVAL_CV_INITIAL_HEADING:-random}"
     }
    ],
-   "experiments": [],
-   "ablated": false,
-   "swept_but_not_ablated": true,
+   "experiments": [
+    "2026-08-13-ref5in-cv-heading"
+   ],
+   "ablated": true,
+   "swept_but_not_ablated": false,
    "frozen_by_contract": false,
    "origin": "launcher"
   },
@@ -6342,12 +6344,12 @@
    "echoes": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1630,
+     "line": 1635,
      "scope": "NavRLTask"
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 2357,
+     "line": 2362,
      "scope": "NavRLTask"
     }
    ],
@@ -6479,12 +6481,12 @@
    "echoes": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 839,
+     "line": 844,
      "scope": "NavRLTask"
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 2605,
+     "line": 2610,
      "scope": "NavRLTask"
     }
    ],
@@ -7217,7 +7219,7 @@
    "echoes": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1886,
+     "line": 1891,
      "scope": "NavRLTask"
     }
    ],
@@ -7262,7 +7264,7 @@
    "echoes": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1883,
+     "line": 1888,
      "scope": "NavRLTask"
     }
    ],
@@ -7311,7 +7313,7 @@
    "echoes": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1889,
+     "line": 1894,
      "scope": "NavRLTask"
     }
    ],
@@ -9782,7 +9784,7 @@
    "echoes": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 4677,
+     "line": 4682,
      "scope": "NavRLTask"
     }
    ],
@@ -9911,7 +9913,7 @@
    "echoes": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 964,
+     "line": 969,
      "scope": "NavRLTask"
     }
    ],
@@ -10127,12 +10129,12 @@
    "echoes": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1632,
+     "line": 1637,
      "scope": "NavRLTask"
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 2316,
+     "line": 2321,
      "scope": "NavRLTask"
     }
    ],
@@ -11299,7 +11301,7 @@
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 4997,
+     "line": 5002,
      "scope": "NavRLTask"
     }
    ]
@@ -11374,7 +11376,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1748,
+     "line": 1753,
      "scope": "NavRLTask"
     }
    ]
@@ -11384,7 +11386,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1384,
+     "line": 1389,
      "scope": "NavRLTask"
     }
    ]
@@ -11429,12 +11431,12 @@
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1731,
+     "line": 1736,
      "scope": "NavRLTask"
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 2257,
+     "line": 2262,
      "scope": "NavRLTask"
     }
    ]
@@ -11454,22 +11456,22 @@
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1729,
+     "line": 1734,
      "scope": "NavRLTask"
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 2222,
+     "line": 2227,
      "scope": "NavRLTask"
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 4745,
+     "line": 4750,
      "scope": "NavRLTask"
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 5028,
+     "line": 5033,
      "scope": "NavRLTask"
     }
    ]
@@ -11499,17 +11501,17 @@
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1730,
+     "line": 1735,
      "scope": "NavRLTask"
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 2245,
+     "line": 2250,
      "scope": "NavRLTask"
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 5029,
+     "line": 5034,
      "scope": "NavRLTask"
     }
    ]
@@ -11569,7 +11571,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1756,
+     "line": 1761,
      "scope": "NavRLTask"
     }
    ]
@@ -11579,7 +11581,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1807,
+     "line": 1812,
      "scope": "NavRLTask"
     }
    ]
@@ -11589,7 +11591,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1801,
+     "line": 1806,
      "scope": "NavRLTask"
     }
    ]
@@ -11599,7 +11601,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1804,
+     "line": 1809,
      "scope": "NavRLTask"
     }
    ]
@@ -11609,7 +11611,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1810,
+     "line": 1815,
      "scope": "NavRLTask"
     }
    ]
@@ -11619,7 +11621,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1798,
+     "line": 1803,
      "scope": "NavRLTask"
     }
    ]
@@ -11629,7 +11631,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 2634,
+     "line": 2639,
      "scope": "NavRLTask"
     }
    ]
@@ -11644,7 +11646,7 @@
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1733,
+     "line": 1738,
      "scope": "NavRLTask"
     }
    ]
@@ -11669,7 +11671,7 @@
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 4667,
+     "line": 4672,
      "scope": "NavRLTask"
     }
    ]
@@ -11679,7 +11681,12 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 4656,
+     "line": 774,
+     "scope": "NavRLTask"
+    },
+    {
+     "file": "aerial_gym/task/navrl_task/navrl_task.py",
+     "line": 4661,
      "scope": "NavRLTask"
     }
    ]
@@ -11714,7 +11721,7 @@
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 4672,
+     "line": 4677,
      "scope": "NavRLTask"
     }
    ]
@@ -11724,7 +11731,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 4703,
+     "line": 4708,
      "scope": "NavRLTask"
     }
    ]
@@ -11734,7 +11741,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 3824,
+     "line": 3829,
      "scope": "NavRLTask"
     }
    ]
@@ -11754,7 +11761,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 791,
+     "line": 796,
      "scope": "NavRLTask"
     }
    ]
@@ -11764,7 +11771,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 790,
+     "line": 795,
      "scope": "NavRLTask"
     }
    ]
@@ -11784,7 +11791,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 797,
+     "line": 802,
      "scope": "NavRLTask"
     }
    ]
@@ -11794,7 +11801,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 793,
+     "line": 798,
      "scope": "NavRLTask"
     }
    ]
@@ -11804,7 +11811,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 799,
+     "line": 804,
      "scope": "NavRLTask"
     }
    ]
@@ -11814,7 +11821,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 957,
+     "line": 962,
      "scope": "NavRLTask"
     }
    ]
@@ -11849,7 +11856,7 @@
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1815,
+     "line": 1820,
      "scope": "NavRLTask"
     }
    ]
@@ -11864,7 +11871,7 @@
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1817,
+     "line": 1822,
      "scope": "NavRLTask"
     }
    ]
@@ -11879,7 +11886,7 @@
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1813,
+     "line": 1818,
      "scope": "NavRLTask"
     }
    ]
@@ -11894,7 +11901,7 @@
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1820,
+     "line": 1825,
      "scope": "NavRLTask"
     }
    ]
@@ -11909,12 +11916,12 @@
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1753,
+     "line": 1758,
      "scope": "NavRLTask"
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1758,
+     "line": 1763,
      "scope": "NavRLTask"
     }
    ]
@@ -11949,7 +11956,7 @@
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1557,
+     "line": 1562,
      "scope": "NavRLTask"
     }
    ]
@@ -11964,12 +11971,12 @@
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1562,
+     "line": 1567,
      "scope": "NavRLTask"
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1785,
+     "line": 1790,
      "scope": "NavRLTask"
     }
    ]
@@ -11984,7 +11991,7 @@
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1782,
+     "line": 1787,
      "scope": "NavRLTask"
     }
    ]
@@ -11999,7 +12006,7 @@
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1789,
+     "line": 1794,
      "scope": "NavRLTask"
     }
    ]
@@ -12014,7 +12021,7 @@
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1792,
+     "line": 1797,
      "scope": "NavRLTask"
     }
    ]
@@ -12029,7 +12036,7 @@
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1795,
+     "line": 1800,
      "scope": "NavRLTask"
     }
    ]
@@ -12039,7 +12046,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1778,
+     "line": 1783,
      "scope": "NavRLTask"
     }
    ]
@@ -12049,7 +12056,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1775,
+     "line": 1780,
      "scope": "NavRLTask"
     }
    ]
@@ -12059,7 +12066,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1773,
+     "line": 1778,
      "scope": "NavRLTask"
     }
    ]
@@ -12069,7 +12076,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1770,
+     "line": 1775,
      "scope": "NavRLTask"
     }
    ]
@@ -12079,7 +12086,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1764,
+     "line": 1769,
      "scope": "NavRLTask"
     }
    ]
@@ -12089,7 +12096,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1766,
+     "line": 1771,
      "scope": "NavRLTask"
     }
    ]
@@ -12099,7 +12106,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1762,
+     "line": 1767,
      "scope": "NavRLTask"
     }
    ]
@@ -12114,7 +12121,7 @@
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1823,
+     "line": 1828,
      "scope": "NavRLTask"
     }
    ]
@@ -12134,7 +12141,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1166,
+     "line": 1171,
      "scope": "NavRLTask"
     }
    ]
@@ -12144,7 +12151,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1163,
+     "line": 1168,
      "scope": "NavRLTask"
     }
    ]
@@ -12164,7 +12171,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 2128,
+     "line": 2133,
      "scope": "NavRLTask"
     }
    ]
@@ -12204,7 +12211,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1159,
+     "line": 1164,
      "scope": "NavRLTask"
     }
    ]
@@ -12214,7 +12221,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1160,
+     "line": 1165,
      "scope": "NavRLTask"
     }
    ]
@@ -12234,7 +12241,7 @@
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1826,
+     "line": 1831,
      "scope": "NavRLTask"
     }
    ]
@@ -12244,7 +12251,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1751,
+     "line": 1756,
      "scope": "NavRLTask"
     }
    ]
@@ -12269,7 +12276,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1749,
+     "line": 1754,
      "scope": "NavRLTask"
     }
    ]

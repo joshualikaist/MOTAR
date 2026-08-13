@@ -8850,3 +8850,34 @@ timeout `>=12%`로 고정했다.
 checkpoint/source bundle/log만 남은 폴더는 `_VOID_guard`로 이동해 결과에서 제외했다. guard는 실제
 실행 권한인 bulk mode + non-empty bulk-result path + `NAVRL_EVAL_CHECKPOINT` 세 조건으로 수정했다.
 일반 training은 이 세 조건을 함께 갖지 않으므로 controlled heading을 사용할 수 없다.
+
+### CV initial-heading 동결 진단 완료 — radial channel은 강하지만 단일 원인은 아님
+
+수정된 guard로 seed 337, 70 bars, CV-only, `[22.5,28] m`, `U[0.3,1.5] m/s`, deterministic,
+exact 600의 네 cell을 완료했다. 실제 episode 수는 toward/tangent-left/tangent-right/away 순으로
+2,050/2,049/2,050/2,050이며, reset direction audit 최대 계약오차는 모두 `2.4e-7` 이하라 요청한
+초기 방향이 실제 속도에 적용됐음을 확인했다.
+
+| initial heading | capture | crash | timeout |
+|---|---:|---:|---:|
+| toward | 78.20% | 18.59% | 3.22% |
+| tangent-left | 63.74% | 20.20% | 16.06% |
+| tangent-right | 62.49% | 19.27% | 18.24% |
+| away | 53.51% | 19.95% | 26.54% |
+
+away−toward는 capture `-24.68pp [-27.49,-21.88]`, timeout `+23.32pp
+[+21.26,+25.38]`, crash `+1.37pp [-1.05,+3.78]`였다. tangent L−R 최대 outcome 차이는 timeout
+`-2.19pp [-4.49,+0.12]`로 사전 5pp 기준 미만이다. 따라서 초기 radial heading 채널은 강하지만,
+고정된 action chirality가 좌우 outcome을 지배한다는 설명은 지지되지 않는다.
+
+이 개입은 순수 path-length 실험이 아니다. toward→away에서 step-weighted target-hidden fraction이
+`74.37→90.95%`, non-crash closest mean이 `1.16→7.01 m`, capture mean step이 `153→300`으로
+함께 움직였다. away speed q0→q3 timeout도 `38.17→16.55%`로 역전되어 finite arena에서 빠른 표적이
+벽에 더 일찍 닿아 반사되는 효과와 양립한다. 그러므로 결론은 **경로길이·가림·벽 반사를 결합한
+radial-heading 환경 채널**까지로 제한한다. P2/D1 FAIL과 P3 BLOCKED는 유지한다.
+
+다음 동결 평가는 §8.26에 결과 전 고정했다. 같은 policy/거리/속도/episode 계약에서 density만
+1 bar로 낮추고 seed 347 toward/away 각 requested 2,049회를 비교한다. away−toward timeout 차이가
+`<=8pp`면 dense obstacle/occlusion 필요성을, `>=15pp`면 장애물 가림 없이도 kinematic/FOV/
+wall-reflection 채널이 충분하다는 설명을 지지하며, 8–15pp는 혼합 판정한다. 어느 결과도 새 PPO나
+P3 해제를 자동 허가하지 않는다.

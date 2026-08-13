@@ -1064,6 +1064,40 @@ horizon을 바꾸지 않는다.
 결과를 보기 전에는 seed, episode 수, bin 경계, threshold를 바꾸지 않는다. 어느 결과도 P2 FAIL이나
 D1 FAIL을 소급 변경하지 않고 P3를 자동 해제하지 않는다.
 
+**결과:** 네 cell 모두 direction audit 최대오차 `2.4e-7` 이하, 합계/receipt/runtime-map 검증을
+통과했다. capture/crash/timeout은 toward `78.20/18.59/3.22%`, tangent-left
+`63.74/20.20/16.06%`, tangent-right `62.49/19.27/18.24%`, away
+`53.51/19.95/26.54%`였다. away−toward timeout은 `+23.32pp` (95% normal approximation
+`[+21.26,+25.38]`), capture는 `-24.68pp` (`[-27.49,-21.88]`)인 반면 crash는
+`+1.37pp` (`[-1.05,+3.78]`)로 0과 양립한다. tangent L−R의 가장 큰 outcome 차이는 timeout
+`-2.19pp` (`[-4.49,+0.12]`)로 사전 5pp screen 미만이다. 따라서 **radial-heading channel은
+지지되고 chirality-sensitive outcome 설명은 기각**한다.
+
+단, 이 개입은 순수 path length treatment가 아니다. toward→away에서 step-weighted target-hidden
+fraction이 `74.37→90.95%`, non-crash closest mean이 `1.16→7.01 m`, capture episode mean step이
+`153→300`으로 함께 변했다. away 안에서도 target speed q0→q3 timeout이 `38.17→16.55%`로
+감소해 빠른 표적이 벽에 일찍 닿아 반사되는 finite-arena 효과 가능성이 있다. 따라서 정확한 결론은
+**초기 radial heading이 경로길이·가림·벽 반사를 함께 바꾸는 강한 환경 채널**이라는 것이며,
+순수 tracker 또는 pursuit 원인으로 아직 분해되지 않았다.
+
+### 8.26 radial-heading 후속 near-open 동결 대조 사전등록 (2026-08-13)
+
+70 bars에서 검출한 heading 효과에 dense obstacle occlusion이 필요한지 확인한다. D1 terminal policy,
+CV-only, `[22.5,28] m`, `U[0.3,1.5] m/s`, deterministic/original, governor off, exact 600은 유지하고
+밀도만 **1 bar**로 낮춘다. 완전 0-bar가 아니라 기존 evaluator의 양의 density 계약을 그대로 쓰는
+near-open 대조다.
+
+- 새 eval seed **347**, toward/away 두 cell, cell당 requested **2,049 episodes**;
+- primary: `away−toward timeout`과 각 cell timeout Wilson CI;
+- 70-bar away−toward timeout `+23.32pp` 대비 near-open 차이가 `<=8pp`면 dense obstacles/occlusion이
+  heading penalty에 필요하다는 설명을 지지한다;
+- near-open에서도 차이가 `>=15pp`면 obstacle occlusion 없이도 kinematic pursuit/FOV/wall-reflection
+  채널이 충분하다고 본다;
+- 8–15pp는 mixed/inconclusive다. 어떤 결과도 P3를 열거나 새 PPO를 허가하지 않는다.
+
+벽 반사 횟수와 episode별 visibility가 아직 outcome별로 저장되지 않으므로 near-open 결과가
+`>=15pp`이면 다음 계측은 정책 변경이 아니라 이 두 telemetry를 추가하는 것이다.
+
 ---
 
 ## 9. 참고문헌
