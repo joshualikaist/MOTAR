@@ -182,7 +182,8 @@
 
 - 그러나 전부 on-policy 70-bar training outcome이며 held-out 성능이 아니다.
 - `DENSITY_WARMUP=1000`이므로 epoch1000은 정확히 warmup 경계다. density evidence/gate/promotion은
-  미검증. distance curriculum만 [20,28] m에 포화.
+  미검증. checkpoint distance state는 `[20,28]`이지만 general-spawn sampler의 실제 range는
+  `[6,28] m`였다. minimum 20 m mastery로 표현하지 않는다.
 - dirty worktree에서 실행돼 핵심 4파일 SHA 불변은 확인했지만 full runtime source manifest는 없다.
 
 권장 문장: **“Corrected semantics survived a real fresh PPO smoke without optimizer failure.”**

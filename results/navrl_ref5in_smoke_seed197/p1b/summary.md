@@ -1,5 +1,9 @@
 # ref5in P1b fresh 750-epoch smoke — FAIL (distance budget only)
 
+> **2026-08-13 sampler erratum:** `[20,27]` is checkpoint curriculum state. The applied
+> general-spawn range was `[6,27] m`; this run failed the preregistered max-state gate, not an
+> applied 20 m minimum-distance gate.
+
 Date: 2026-08-13 KST
 
 P1b repeated the P1a engineering gate from fresh weights with the same training seed 197 and

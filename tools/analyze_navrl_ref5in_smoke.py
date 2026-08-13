@@ -369,10 +369,11 @@ def analyze(run: Path, expected_epochs: int, expected_learning_rate: float) -> d
     )
     bool_check(
         checks,
-        "distance_curriculum_saturated",
+        "distance_curriculum_state_saturated",
         math.isclose(float(state.get("k_min_cur", -1)), 20.0, abs_tol=1e-9)
         and math.isclose(float(state.get("k_max_cur", -1)), 28.0, abs_tol=1e-9),
-        f"k=[{state.get('k_min_cur')},{state.get('k_max_cur')}]",
+        f"state k=[{state.get('k_min_cur')},{state.get('k_max_cur')}]; "
+        f"applied general-spawn minimum={state.get('cfg_general_goal_dist_min')}",
     )
     bool_check(
         checks,

@@ -135,8 +135,11 @@ export NAVRL_BAR_X_MIN=0.0
 export NAVRL_BAR_X_MAX=1.0
 
 # ---- v2 objective: goal beyond the sensor horizon ----
-export NAVRL_GENERAL_GOAL_DIST_MIN=6
-export NAVRL_GENERAL_GOAL_DIST_MAX=28
+# Keep the canonical 6..28 m default, but let a closed child launcher deliberately oversample one
+# preregistered radial band. Hardcoding these values made NAVRL_K_MIN_FINAL=20 look like an applied
+# minimum even though general-spawn sampling always read this separate 6 m variable.
+export NAVRL_GENERAL_GOAL_DIST_MIN="${NAVRL_GENERAL_GOAL_DIST_MIN:-6}"
+export NAVRL_GENERAL_GOAL_DIST_MAX="${NAVRL_GENERAL_GOAL_DIST_MAX:-28}"
 export NAVRL_K_COMPETENCE=1
 export NAVRL_K_FINAL=28
 export NAVRL_K_MIN_FINAL=20

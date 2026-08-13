@@ -1,5 +1,10 @@
 # ref5in P1c learning-viability smoke — PASS
 
+> **2026-08-13 sampler erratum:** checkpoint state `k=[20,28]` was recorded correctly, but
+> general-spawn sampling used the separate configured range `[6,28] m`. The table below records
+> state saturation, not proof that every training goal was 20–28 m. P1c engineering PASS and P2
+> lineage remain valid; the minimum-distance mastery interpretation is withdrawn.
+
 판정일: 2026-08-13
 범위: **engineering gate only** — held-out 성능이나 하드웨어 타당성 주장이 아님
 

@@ -12,6 +12,8 @@ RL = ROOT / "aerial_gym/rl_training/rl_games"
 LAUNCHER = RL / "train_navrl_v2_ref5in_smoke.sh"
 CORRECTIVE_LAUNCHER = RL / "train_navrl_v2_ref5in_smoke_b.sh"
 FINAL_CORRECTIVE_LAUNCHER = RL / "train_navrl_v2_ref5in_smoke_c.sh"
+D1_LAUNCHER = RL / "train_navrl_v2_ref5in_d1_adapt.sh"
+D1_EVALUATOR = ROOT / "tools/run_navrl_ref5in_d1_eval.py"
 
 
 class Ref5inSmokeLauncherContract(unittest.TestCase):
@@ -148,6 +150,53 @@ class Ref5inSmokeLauncherContract(unittest.TestCase):
             "NAVRL_SAVE_FREQUENCY=250",
             "NAVRL_SPEED_GOVERNOR=off",
             "NAVRL_PERCEPTION_PERTURB=0",
+        ):
+            self.assertIn(literal, source)
+
+    def test_d1_is_a_closed_q3_continuation_not_p3(self):
+        completed = subprocess.run(
+            [str(D1_LAUNCHER)],
+            cwd=RL,
+            env={
+                **os.environ,
+                "REF5IN_D1_PREFLIGHT_ONLY": "1",
+                "SEED": "999",
+                "MAX_EPOCHS": "2",
+                "NAVRL_GENERAL_GOAL_DIST_MIN": "6",
+                "NAVRL_DENSITY_CURRICULUM": "1",
+            },
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            check=False,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stdout)
+        self.assertIn("source=ep900 -> terminal=1900", completed.stdout)
+        self.assertIn("applied_goal_range=22.5..28m", completed.stdout)
+        self.assertIn("CONTINUATION", completed.stdout)
+        self.assertIn("density 70->70 bars", completed.stdout)
+        self.assertNotIn("seed=999", completed.stdout)
+        source = D1_LAUNCHER.read_text(encoding="utf-8")
+        for literal in (
+            "EXPECTED_CKPT_SHA=f1670a1d",
+            "NAVRL_DENSITY_CURRICULUM=0",
+            "NAVRL_NUM_BARS=70",
+            "NAVRL_GENERAL_GOAL_DIST_MIN=22.5",
+            "NAVRL_SPEED_GOVERNOR=off",
+            "NAVRL_REQUIRE_TRAINING_SOURCE_RECEIPT=1",
+        ):
+            self.assertIn(literal, source)
+
+    def test_d1_heldout_decision_is_fixed_before_training(self):
+        source = D1_EVALUATOR.read_text(encoding="utf-8")
+        for literal in (
+            "SEED = 331",
+            "EPISODES = 8193",
+            '"global_crash_lte_27pct"',
+            '"q3_crash_lte_30pct"',
+            '"q3_cv_timeout_lte_12pct"',
+            '"p2_verdict_changed": False',
+            '"p3_automatically_unlocked": False',
         ):
             self.assertIn(literal, source)
 

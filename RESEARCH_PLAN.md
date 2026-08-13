@@ -932,22 +932,24 @@ calibration gate를 계획했다. 이 순서와 새 PPO 금지 지시는 §8.23�
      corrected exact-600 semantics. checkpoint resume와 CLI override는 금지한다.
    - 실행 source와 robot config/URDF를 immutable receipt와 SHA로 checkpoint에 묶는다.
    - 공통 hard gate: 사전등록한 exact terminal epoch, checkpoint/모든 TensorBoard scalar finite, PPO KL와 behavior-KL max
-     `<0.04`, rollback/skipped minibatch/raw OOB 전부 0, timeout 실제 발생, distance curriculum
-     `[20,28]`, 마지막 100 epoch pooled capture `>=65%`, crash `<=33%`, timeout `<=5%`.
+     `<0.04`, rollback/skipped minibatch/raw OOB 전부 0, timeout 실제 발생, distance max-state
+     28 m, 마지막 100 epoch pooled capture `>=65%`, crash `<=33%`, timeout `<=5%`. 당시 gate의
+     `k_min_cur=20`은 general-spawn의 실제 minimum이 아니며 아래 정정 문단을 따른다.
    - PASS는 held-out 한 셀만 허용하며 성능 주장을 허용하지 않는다.
    - **P1a result (2026-08-13): FAIL.** Last-100 pooled outcome은 3,709 episodes에서
      capture/crash/timeout `72.12/24.53/3.34%`로 성능 gate를 통과했다. 그러나 epoch 432의
      behavior-KL audit가 `0.05842`여서 minibatch 1회 skip + PPO epoch rollback 1회가 발생했고,
-     거리 창도 `[20,27] m`로 28 m 직전이었다. 완료된 P1a gate를 사후 완화하지 않는다.
+     max-state도 27 m로 28 m 직전이었다. 실제 sampler minimum은 6 m였으며 완료된 P1a gate를
+     사후 완화하지 않는다.
    - **P1b result (2026-08-13): FAIL.** 같은 seed의 fresh 750 epoch, LR `1.5e-5`에서
      last-100 pooled 3,780 episodes의 capture/crash/timeout은 `69.55/28.12/2.33%`였다. 모든
      checkpoint tensor와 60개 TensorBoard scalar tag가 finite였고 PPO/behavior KL max는
      `0.01300/0.01980`, rollback/skipped/OOB는 0, 311-file source receipt도 재검증됐다. 그러나
-     distance가 `[20,27] m`에서 끝나 strict gate는 실패했다. promotion epoch가
+     max-state가 27 m에서 끝나 strict gate는 실패했다. promotion epoch가
      372/403/434/467/500/534/571/611/657/709로 늘어난 것은 장거리 episode가 길어져 동일
      2,048 completed-episode 증거에 더 많은 epoch가 필요했기 때문이다.
    - **P1c result (2026-08-13): PASS.** 같은 seed 197의 fresh 900 epoch에서 last-100 pooled
-     3,338 episodes의 capture/crash/timeout은 `72.77/23.94/3.30%`, distance `[20,28] m`,
+     3,338 episodes의 capture/crash/timeout은 `72.77/23.94/3.30%`, max-state 28 m,
      PPO/behavior KL max `0.01239/0.01774`, rollback/skipped/OOB 0이었다. 60개 TensorBoard
      scalar와 checkpoint/source receipt도 모두 finite·clean이었다. 이 PASS는 P2 한 셀만 허용했다.
 3. **P2 held-out 70-bar decision cell**
@@ -1014,11 +1016,16 @@ distance q0→q3는 capture `78.05→55.94%`, crash `21.89→29.09%`, timeout
 non-capture가 동시에 존재한다.
 
 이 결과는 “600-step을 늘린다”를 바로 허용하지 않는다. horizon 연장은 timeout을 crash로 바꿀 수
-있어 capability 개선과 다르다. 또한 P1c는 full `[20,28] m` window에서 약 마지막 100 epoch만
-보냈으므로, P2를 full training 진입 전에 성능 gate로 둔 원래 순서는 undertraining과 알고리즘 한계를
+있어 capability 개선과 다르다. 추가 코드 감사 결과 `k_min_cur=20`과 달리 general-spawn sampler는
+`NAVRL_GENERAL_GOAL_DIST_MIN=6`을 계속 적용했다. P1c 실제 range는 `[6,28] m`이고 28 m max만
+후반에 포화됐다. 따라서 P1c/P1b의 `[20,k_max]` 표기는 sampler range가 아니라 내부 state였으며,
+해당 minimum mastery 주장은 철회한다. P2/D0도 `[6,28]`에서 평가했으므로 그 결과 자체는 유효하다.
+
+P2를 full training 진입 전에 성능 gate로 둔 원래 순서는 hard-distance 노출 부족과 알고리즘 한계를
 구분하지 못한다. P2는 계속 claim gate로 FAIL 유지하되, 다음 학습은 P3가 아니라 **D1 제한 adaptation
-probe**로 별도 분류한다: P1c에서 warm-start, 70 bars 고정, `[20,28] m`, mixed 50:50, policy/reward/
-governor 불변, 추가 1,000 epoch. safety/KL/rollback이 통과한 뒤 새 eval seed에서 q3 CV timeout
+probe**로 별도 분류한다: P1c에서 warm-start, 70 bars 고정, 명시적 `[22.5,28] m`, mixed 50:50, policy/reward/
+governor 불변, 추가 1,000 epoch. safety/KL/rollback이 통과한 뒤 사전등록한 새 eval seed **331**에서
+최소 8,193 requested episodes를 평가해 q3 CV timeout
 `<=12%`(현재 22.16%), 전체 crash `<=27%`, q3 crash `<=30%`를 모두 요구한다. 결과 전에는 budget,
 seed, horizon을 바꾸지 않는다. D1 실패 시 다음은 학습 연장이 아니라 CV initial radial heading
 (toward/tangent/away) frozen-policy diagnostic이다.

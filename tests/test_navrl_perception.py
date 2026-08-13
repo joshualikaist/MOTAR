@@ -335,7 +335,7 @@ class HeldOutDistributionContractTest(unittest.TestCase):
             with self.subTest(value=value):
                 self.assertTrue(_full_eval_distribution_enabled(False, value))
 
-    def test_training_keeps_checkpoint_curriculum_until_saturated(self):
+    def test_training_uses_general_min_and_only_curriculum_gates_the_max(self):
         full_distribution = _full_eval_distribution_enabled(False, "0")
         self.assertFalse(full_distribution)
         self.assertEqual(

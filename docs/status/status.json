@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-13T07:21:50.656793+00:00",
+  "generated_at": "2026-08-13T07:32:45.521449+00:00",
   "repo": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator",
   "n_runs": 77,
   "active_run": null,
@@ -2746,7 +2746,7 @@
       {
         "label": "P1c ENGINEERING",
         "value": "PASS",
-        "detail": "72.77/23.94/3.30% · [20,28] m · rollback 0",
+        "detail": "72.77/23.94/3.30% · applied [6,28] m · rollback 0",
         "state": "pass"
       },
       {

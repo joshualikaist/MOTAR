@@ -2227,7 +2227,7 @@ def _ref5in_p2_update() -> Optional[Dict[str, Any]]:
         "active_experiment": experiment,
         "milestones": [
             {"label": "PLATFORM P0", "value": "PASS · 26/26 + 21/21", "detail": "repository consistency + same-controller simulator gate", "state": "pass"},
-            {"label": "P1c ENGINEERING", "value": "PASS", "detail": "72.77/23.94/3.30% · [20,28] m · rollback 0", "state": "pass"},
+            {"label": "P1c ENGINEERING", "value": "PASS", "detail": "72.77/23.94/3.30% · applied [6,28] m · rollback 0", "state": "pass"},
             {"label": "P2 HELD-OUT", "value": "STRICT FAIL", "detail": "timeout 114/2,049 = 5.56% > 5%", "state": "warn"},
             diagnostic_milestone,
             {"label": "P3 FULL BUDGET", "value": "BLOCKED", "detail": "seed 211 was not started", "state": "warn"},

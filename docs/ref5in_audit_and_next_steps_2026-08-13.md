@@ -56,10 +56,12 @@ P1c는 성능 주장이 아니고 P2는 한 training seed/한 evaluation seed/70
 
 ## 남은 순서
 
-1. **D1 adaptation probe:** P1c warm-start, 70 bars, `[20,28] m`, mixed, reward/policy/governor 불변,
+1. **D1 adaptation probe:** P1c warm-start, 70 bars, 명시적 `[22.5,28] m`, mixed,
+   reward/policy/governor 불변,
    추가 1,000 epoch. full P3나 publication run이 아니다.
-2. **D1 held-out gate:** 새 eval seed에서 q3 CV timeout ≤12%, 전체 crash ≤27%, q3 crash ≤30%, PPO
-   rollback/OOB/NaN 0. 하나라도 실패하면 연장하지 않는다.
+2. **D1 held-out gate:** 사전등록한 새 eval seed 331에서 최소 8,193 requested episodes를 사용한다.
+   q3 CV timeout ≤12%, 전체 crash ≤27%, q3 crash ≤30%, PPO rollback/OOB/NaN 0을 모두 요구하고,
+   하나라도 실패하면 연장하지 않는다.
 3. **실패 시 frozen diagnostic:** CV initial heading을 toward/tangent/away로 고정해 path-length와 tracker/
    pursuit failure를 분리한다. PPO는 돌리지 않는다.
 4. **D1 통과 시에만 P3 재승인:** fresh seed211 70→205 curriculum을 다시 사전등록한다. seed223/227은

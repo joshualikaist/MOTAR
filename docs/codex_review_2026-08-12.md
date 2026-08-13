@@ -150,7 +150,8 @@ Verification 5A completed on 2026-08-12 as run
   minibatches, and zero raw OOB on every action axis;
 - pooled post-speed-ramp training outcomes: 22,010/28,850 capture = 76.29%; last 100 epochs:
   3,253/4,134 = 78.69%. These are descriptive on-policy 70-bar data only;
-- distance curriculum reached [20,28] m, but density promotion was **not tested** because epoch
+- distance max-state reached 28 m, but the general-spawn sampler actually remained `[6,28] m`;
+  `k_min_cur=20` was not its applied minimum. Density promotion was **not tested** because epoch
   1,000 is exactly the configured density-warmup boundary;
 - the dirty worktree and lack of a full training source manifest limit provenance. Four critical
   source hashes were frozen and unchanged, but 5B requires a clean commit and full receipt.

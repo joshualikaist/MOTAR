@@ -8641,3 +8641,24 @@ capture/crash/timeout 차이는 각각 `-0.25/-0.18/+0.43pp`이고 단순 두-�
 사이트와 README는 P2 strict FAIL/P3 BLOCKED를 유지하면서 이 descriptive 진단을 최신 headline으로
 표시하도록 갱신한다. 다음 candidate는 full P3가 아니라 D1 1,000-epoch saturated-distance adaptation
 probe다. episode horizon 증가는 timeout을 crash로 바꿀 수 있어 원인 ablation으로만 남긴다.
+
+### 거리 curriculum 계약 정정 — `k_min_cur`는 general-spawn minimum이 아니었다
+
+D1 launcher를 준비하기 전에 reset sampler를 다시 추적해 문서상 큰 의미 오류를 발견했다.
+`_general_goal_distance_bounds()`는 training에서 `k_max_cur`만 upper bound로 사용하고 lower bound는
+항상 별도 `NAVRL_GENERAL_GOAL_DIST_MIN=6`을 쓴다. 따라서 P1b/P1c checkpoint state
+`[20,27]`/`[20,28]`은 실제 sampler range가 아니라 state pair이며, 적용 range는 각각
+`[6,27]`/`[6,28] m`였다. P2/D0 평가도 `[6,28]`이라 결과는 유효하고 P1c의 max=28 saturation 및
+engineering safety PASS도 유지된다. 다만 “20 m minimum mastery”와 “hard window에서 100 epoch”
+주장은 철회한다.
+
+`train_navrl_v2_search.sh`의 general goal min/max를 closed child launcher가 명시적으로 override할 수
+있게 하되 기본 `[6,28]`은 유지했다. D1은 이 수정으로 `[22.5,28] m`를 실제로 적용해 q3 exposure만
+늘린다. analyzer의 gate 이름도 sampler range처럼 보이지 않도록 `distance_curriculum_state_saturated`
+로 바꿨고 P1b/P1c report Markdown, PPT/review/site 문구에 erratum을 남겼다. immutable P1c JSON과
+그 SHA를 참조하는 P2 attestation은 변경하지 않았다.
+
+D1 판정을 결과 전에 고정했다. training은 seed 197/P1c epoch 900 warm-start/terminal epoch 1900,
+70 bars, `[22.5,28] m`, mixed target, LR `1.5e-5`이며, held-out은 새 seed 331과 최소 8,193 requested
+episodes를 사용한다. 통과에는 q3 CV timeout `<=12%`, 전체 crash `<=27%`, q3 crash `<=30%`와
+rollback/OOB/NaN 0이 모두 필요하다. D1은 P2 FAIL을 소급 변경하거나 P3 성능 주장에 쓰지 않는다.

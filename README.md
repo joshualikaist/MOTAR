@@ -225,11 +225,11 @@ run 폴더 이관과 TensorBoard 병합 절차는 [OPERATIONS.md](OPERATIONS.md)
 
 1. **완료:** ref5in CPU 정합성 26/26과 canonical same-controller simulator gate 21/21을 고정했습니다.
 2. **P1a 완료·FAIL:** fresh 500 epoch에서 outcome은 gate를 넘었지만 epoch 432 behavior-KL rollback 1회와 거리 27 m 종료 때문에 전체 gate를 통과하지 못했습니다.
-3. **P1b 완료·FAIL:** LR `1.5e-5`에서 KL/rollback/OOB/outcome은 전부 통과했지만, 750 epoch도 마지막 2,048-episode 거리 증거창을 채우지 못해 `[20,27] m`에서 끝났습니다.
+3. **P1b 완료·FAIL:** LR `1.5e-5`에서 KL/rollback/OOB/outcome은 전부 통과했지만, 750 epoch도 마지막 2,048-episode 거리 증거창을 채우지 못해 max-state 27 m에서 끝났습니다. 실제 general-spawn 범위는 `[6,27] m`였습니다.
 4. **P1c PASS:** budget만 900 epoch로 늘린 fresh run이 모든 engineering gate를 통과했습니다.
 5. **P2 strict FAIL:** held-out seed 313에서 capture/crash는 통과했지만 timeout 5.56%가 상한 5%를 넘었습니다. legacy anchor와 P3는 실행하지 않았습니다.
 6. **진단 완료:** 장거리에서 timeout과 crash가 함께 증가했고, q3 timeout은 CV에서 waypoint보다 14.20pp 높았습니다. 표적 속도 alone 가설은 지지되지 않았습니다.
-7. **현재 단계:** full P3 대신 saturated-distance CV 노출을 늘리는 짧은 preregistered adaptation probe를 먼저 설계합니다. episode horizon 증가는 원인 확인용 ablation일 뿐 기본 해법으로 쓰지 않습니다.
+7. **현재 단계:** full P3 대신 `[22.5,28] m` CV 노출을 늘리는 1,000-epoch D1 adaptation probe와 held-out seed 331 평가를 먼저 수행합니다. episode horizon 증가는 원인 확인용 ablation일 뿐 기본 해법으로 쓰지 않습니다.
 8. probe가 q3 timeout을 줄이면서 contact/OOB를 늘리지 않을 때만 full-budget seed 211의 새 gate를 논의합니다.
 9. perception 연구는 corrected-v2 analytic baseline → learned detector arm → appearance-randomized arm 순으로 한 축씩 추가합니다.
 
