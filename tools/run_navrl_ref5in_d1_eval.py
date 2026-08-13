@@ -254,9 +254,16 @@ def main() -> int:
     configure_base(training["checkpoint"], training["checkpoint_sha256"])
     if mode == "run":
         status = subprocess.check_output(
-            ["git", "-C", str(ROOT), "status", "--porcelain", "--untracked-files=no"], text=True
+            [
+                "git", "-C", str(ROOT), "status", "--porcelain", "--untracked-files=all",
+                "--", "aerial_gym", "resources/robots",
+            ],
+            text=True,
         )
-        require(not status.strip(), "tracked source is dirty; commit before D1 evaluation")
+        # Documentation/result/dashboard drafts cannot change simulator behavior and often coexist
+        # with a long GPU campaign.  Gate the exact runtime roots here; verify_training() and
+        # verify_eval_source() still require byte-for-byte train/eval maps and Python receipts.
+        require(not status.strip(), "runtime source is dirty; commit before D1 evaluation")
         require(not OUTPUT.exists(), f"refusing overwrite: {OUTPUT}")
         BASE.run_evaluator()
     result = BASE.verify_result()
