@@ -65,11 +65,14 @@ P1c는 성능 주장이 아니고 P2는 한 training seed/한 evaluation seed/70
    `3.22/16.06/18.24/26.54%`였다. crash는 `18.59–20.20%`로 평평했고 tangent 좌우 최대 차이는
    2.19pp였다. radial-heading 환경 채널은 확인됐지만 path length·visibility·wall reflection이
    결합돼 있다.
-3. **현재 near-open diagnostic:** 같은 D1 policy와 toward/away 개입을 1 bar에서 반복해 dense
-   obstacle occlusion이 +23.32pp penalty에 필요한지 분리한다. PPO는 돌리지 않는다.
-4. **P3는 계속 차단:** heading 결과는 원인 분리용이라 어떤 셀 결과가 좋아도 P2나 D1을 PASS로
+3. **near-open diagnostic 완료:** 1 bar away−toward timeout도 `+54.32pp`라 dense obstacle
+   occlusion 필요성은 기각됐다. away의 hidden fraction은 95.09%, timeout은 저속 q0 77.16%에서
+   고속 q3 30.95%로 감소해 FOV 이탈과 벽 반사가 함께 의심된다.
+4. **현재 telemetry diagnostic:** 같은 동결 policy에 outcome별 visible-step 비율과 wall/bar
+   reflection 횟수만 추가한다. reward, policy, horizon은 바꾸지 않는다.
+5. **P3는 계속 차단:** heading 결과는 원인 분리용이라 어떤 셀 결과가 좋아도 P2나 D1을 PASS로
    소급 변경하지 않는다. 다음 PPO는 단일 메커니즘 intervention과 새 gate를 먼저 문서화해야 한다.
-5. **hardware gate는 별도:** exact BOM/CAD/CG, thrust stand, inertia/actuator identification, power/thermal/
+6. **hardware gate는 별도:** exact BOM/CAD/CG, thrust stand, inertia/actuator identification, power/thermal/
    endurance, camera/LiDAR FOV·latency, 실제 hover/step/collision-envelope 검증이 필요하다.
 
 이 순서는 한 run에서 airframe, reward, horizon, representation, governor를 동시에 바꾸지 않는다.

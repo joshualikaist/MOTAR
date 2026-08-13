@@ -1,12 +1,12 @@
 {
  "schema": "motar.parameters/1",
- "generated_at": "2026-08-13T09:39:49+00:00",
+ "generated_at": "2026-08-13T09:57:39+00:00",
  "generator": "tools/generate_parameter_catalog.py",
- "source_commit": "f55bf28",
+ "source_commit": "0e29134",
  "counts": {
   "authoritative": 180,
   "echo_only": 84,
-  "files_scanned": 272,
+  "files_scanned": 273,
   "launchers_scanned": 66,
   "ablated": 40,
   "mirrors": 5,
@@ -6540,7 +6540,8 @@
    ],
    "experiments": [
     "2026-07-16-density-sweep-v1",
-    "2026-07-30-density-speed-map-v1"
+    "2026-07-30-density-speed-map-v1",
+    "2026-08-13-ref5in-cv-heading-near-open"
    ],
    "ablated": true,
    "swept_but_not_ablated": false,

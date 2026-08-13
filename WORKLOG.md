@@ -8881,3 +8881,25 @@ radial-heading 환경 채널**까지로 제한한다. P2/D1 FAIL과 P3 BLOCKED�
 `<=8pp`면 dense obstacle/occlusion 필요성을, `>=15pp`면 장애물 가림 없이도 kinematic/FOV/
 wall-reflection 채널이 충분하다는 설명을 지지하며, 8–15pp는 혼합 판정한다. 어느 결과도 새 PPO나
 P3 해제를 자동 허가하지 않는다.
+
+### 1-bar near-open heading 대조 완료 — dense obstacle occlusion 필요성 기각
+
+커밋 `0e29134`의 fail-closed orchestrator로 seed 347 toward/away를 실행했다. 두 cell은 같은 D1
+terminal checkpoint SHA, source byte map, `[22.5,28] m`, CV-only, `U[0.3,1.5] m/s`, deterministic,
+exact 600 계약을 통과했고 direction audit 최대오차는 `2.4e-7` 이하였다.
+
+| 1 bar | episodes | capture | crash | timeout | target hidden |
+|---|---:|---:|---:|---:|---:|
+| toward | 2,050 | 95.51% | 4.34% | 0.15% | 65.53% |
+| away | 2,049 | 36.85% | 8.69% | 54.47% | 95.09% |
+
+away−toward timeout은 `+54.32pp [+52.16,+56.48]`, capture는 `-58.66pp
+[-60.94,-56.39]`, crash는 `+4.35pp [+2.84,+5.85]`다. 70-bar timeout 차이 `+23.32pp`보다
+near-open에서 더 커졌으므로 **dense obstacle occlusion이 있어야만 실패한다는 설명은 기각**한다.
+막대 접촉은 toward 2건, away 1건뿐이라 이 결론과도 일치한다.
+
+단, target-hidden은 순수 occlusion이 아니라 camera FOV 밖도 포함한다. away의 non-crash closest
+mean `13.03 m`, capture mean step `392`, speed q0→q3 timeout `77.16→30.95%`는 slow-away target이
+60초 안에 벽 반사로 되돌아오지 않는 finite-arena 기하와 양립한다. 따라서 다음은 학습이 아니라
+outcome별 visible-step 비율과 wall/bar reflection 횟수를 추가한 seed 353 재평가다. 계약과 판정
+기준은 `RESEARCH_PLAN.md` §8.27에 결과 전에 고정했다.

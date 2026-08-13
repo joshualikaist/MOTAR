@@ -1074,6 +1074,26 @@
    "worklog_date": "2026-08-13",
    "results_paths": ["results/navrl_ref5in_cv_heading_seed337/"],
    "launcher": "tools/run_navrl_ref5in_cv_heading_diagnostic.py"}
+  ,
+  {"id": "2026-08-13-ref5in-cv-heading-near-open",
+   "title_ko": "ref5in 동결정책 — 1막대 radial heading",
+   "question": "70막대 heading penalty에 dense obstacle occlusion이 필요한가?",
+   "theme": "platform", "knob": "NAVRL_NUM_BARS",
+   "levels": [{"label": "toward · 1 bar", "value": "toward", "is_baseline": true},
+              {"label": "away · 1 bar", "value": "away"}],
+   "metric": "timeout",
+   "effect": {"value_pp": 54.32, "ci95_pp": [52.16, 56.48], "ci_method": "normal", "direction": "lower_is_better"},
+   "arms": [{"label": "toward", "capture": 0.9551, "crash": 0.0434, "timeout": 0.0015, "n_episodes": 2050},
+            {"label": "away", "capture": 0.3685, "crash": 0.0869, "timeout": 0.5447, "n_episodes": 2049}],
+   "verdict": "PASS", "validity": "exploratory",
+   "verdict_note": "away−toward timeout +54.32 pp로 >=15 pp screen을 통과했다. dense obstacle occlusion은 필요하지 않다.",
+   "confounded_by": "heading은 kinematic path, camera FOV 체류시간, 벽 반사 시점을 함께 바꾼다.",
+   "seeds": [347], "episodes_per_cell": 2049,
+   "env": {"bars": 1, "machine": "rtx3070"},
+   "preregistered": true, "gate": "away−toward timeout <=8 pp / >=15 pp",
+   "worklog_date": "2026-08-13",
+   "results_paths": ["results/navrl_ref5in_cv_heading_near_open_seed347/"],
+   "launcher": "tools/run_navrl_ref5in_cv_heading_near_open.py"}
 
  ]
 }

@@ -54,8 +54,10 @@ capture/crash/timeout은 각각 `78.20/18.59/3.22`, `63.74/20.20/16.06`,
 `62.49/19.27/18.24`, `53.51/19.95/26.54%`였습니다. away−toward timeout은 +23.32pp지만
 crash는 +1.37pp로 불확실했고, tangent 좌우 차이는 최대 2.19pp라 action chirality가 outcome을
 지배한다는 설명은 지지되지 않았습니다. 다만 heading은 경로길이뿐 아니라 target visibility와
-벽 반사 시점도 함께 바꾸므로, 현재 결론은 **radial-heading 환경 채널**까지입니다. 다음은 1-bar
-near-open toward/away 대조로 dense obstacle occlusion의 필요성을 확인합니다.
+벽 반사 시점도 함께 바꾸므로, 이 단계의 결론은 **radial-heading 환경 채널**까지였습니다. 후속 1-bar
+near-open 대조에서도 toward/away timeout이 `0.15/54.47%`로 `+54.32pp` 벌어졌습니다. 따라서 dense
+obstacle occlusion은 이 실패에 필요하지 않습니다. 현재는 결과별 FOV visibility와 벽 반사 횟수를
+계측해 kinematic/FOV와 finite-arena 반사를 분리하는 단계입니다.
 
 ## 시스템을 짧게 보면
 
@@ -246,8 +248,9 @@ run 폴더 이관과 TensorBoard 병합 절차는 [OPERATIONS.md](OPERATIONS.md)
 6. **진단 완료:** 장거리에서 timeout과 crash가 함께 증가했고, q3 timeout은 CV에서 waypoint보다 14.20pp 높았습니다. 표적 속도 alone 가설은 지지되지 않았습니다.
 7. **D1 완료·FAIL:** `[22.5,28] m` exposure로 모든 outcome은 개선됐지만 q3/CV timeout `15.98% > 12%`라 사전 gate를 통과하지 못했습니다. P2 FAIL은 유지합니다.
 8. **heading 진단 완료:** away−toward timeout +23.32pp로 radial-heading 채널을 확인했고 tangent 좌우 outcome 차이는 기준 미달이었습니다.
-9. **현재 단계:** 같은 동결 정책의 1-bar near-open toward/away 대조로 dense obstacle occlusion과 kinematic/FOV/wall-reflection 축을 분리합니다. 이 진단만으로 P3를 열지 않습니다.
-10. perception 연구는 corrected-v2 analytic baseline → learned detector arm → appearance-randomized arm 순으로 한 축씩 추가합니다.
+9. **near-open 완료:** 1 bar에서도 away−toward timeout `+54.32pp`여서 dense obstacle occlusion 필요성은 기각했습니다.
+10. **현재 단계:** 같은 동결 정책에 outcome별 visibility와 wall/bar reflection telemetry만 추가해 FOV 손실과 finite-arena 반사를 분리합니다. 이 진단만으로 P3를 열지 않습니다.
+11. perception 연구는 corrected-v2 analytic baseline → learned detector arm → appearance-randomized arm 순으로 한 축씩 추가합니다.
 
 현재 가장 큰 미해결 문제는 “더 오래 학습하면 되는가”가 아니라 **고밀도에서 pre-contact obstacle 정보, 제동 여유, detector 출력 분포, 기체 동역학 중 어느 축이 먼저 한계가 되는가**입니다.
 

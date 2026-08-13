@@ -1098,6 +1098,36 @@ near-open 대조다.
 벽 반사 횟수와 episode별 visibility가 아직 outcome별로 저장되지 않으므로 near-open 결과가
 `>=15pp`이면 다음 계측은 정책 변경이 아니라 이 두 telemetry를 추가하는 것이다.
 
+**결과:** toward 2,050회는 capture/crash/timeout `95.51/4.34/0.15%`, away 2,049회는
+`36.85/8.69/54.47%`였다. away−toward timeout은 `+54.32pp` (95% normal approximation
+`[+52.16,+56.48]`), capture는 `-58.66pp` (`[-60.94,-56.39]`), crash는 `+4.35pp`
+(`[+2.84,+5.85]`)다. step-weighted target-hidden fraction도 `65.53→95.09%`, non-crash closest
+mean은 `0.47→13.03 m`, capture mean step은 `137→392`로 갈렸다. away speed q0→q3 timeout은
+`77.16→30.95%`로, 빠른 표적이 벽에 먼저 닿아 방향을 바꾸는 설명과 양립한다.
+
+사전 `>=15pp` screen을 큰 폭으로 통과했으므로 **dense obstacle occlusion은 radial-heading timeout
+penalty에 필요하지 않다.** 다만 `target_hidden`은 장애물 가림뿐 아니라 camera FOV 이탈을 포함하고,
+현재 wall reflection 횟수가 없으므로 kinematic pursuit, FOV loss, finite-arena reflection의 기여는
+아직 분리되지 않았다. P2/D1 FAIL과 P3 BLOCKED는 유지한다.
+
+### 8.27 outcome별 visibility·reflection 계측 사전등록 (2026-08-13)
+
+정책·reward·episode horizon은 바꾸지 않고 계측만 추가한다. D1 terminal checkpoint, 1 bar,
+CV-only, `[22.5,28] m`, `U[0.3,1.5] m/s`, deterministic/original, governor off, exact 600을 유지한다.
+새 seed **353**, toward/away 각 requested **2,049 episodes**다.
+
+- episode별 observation step 수와 visible step 수, wall reflection 수, bar reflection 수를 누적한다;
+- outcome(capture/crash/timeout)별 step-weighted visible fraction, wall/bar reflection 평균과
+  `>=1` 비율을 내보낸다;
+- speed quartile × wall-reflection 여부 × outcome의 합계가 전체 episode와 정확히 일치해야 한다;
+- away timeout의 visible fraction이 away capture보다 **20pp 이상 낮으면** FOV/track-loss 채널을
+  다음 intervention 우선순위로 둔다;
+- wall reflection 전후의 capture 차이는 episode 생존시간에 의해 선택 편향될 수 있으므로 인과효과로
+  부르지 않고, 속도 quartile별 연관 방향만 기록한다.
+
+계측 결과가 나온 뒤에만 FOV-memory/tracker 개입 또는 arena-size/reflection 대조 중 하나를 새로
+사전등록한다. 이 telemetry 진단 자체는 P3를 열지 않는다.
+
 ---
 
 ## 9. 참고문헌
