@@ -1,16 +1,16 @@
 {
  "schema": "motar.parameters/1",
- "generated_at": "2026-08-13T08:57:08+00:00",
+ "generated_at": "2026-08-13T09:05:47+00:00",
  "generator": "tools/generate_parameter_catalog.py",
- "source_commit": "5086cea",
+ "source_commit": "cbdf5c9",
  "counts": {
-  "authoritative": 176,
-  "echo_only": 83,
-  "files_scanned": 271,
+  "authoritative": 180,
+  "echo_only": 84,
+  "files_scanned": 272,
   "launchers_scanned": 66,
   "ablated": 39,
   "mirrors": 5,
-  "launcher_only": 65
+  "launcher_only": 69
  },
  "groups": [
   {
@@ -70,7 +70,7 @@
    "echoes": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1725,
+     "line": 1750,
      "scope": "NavRLTask"
     }
    ],
@@ -1038,12 +1038,12 @@
    "echoes": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 436,
+     "line": 438,
      "scope": "NavRLTask"
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1854,
+     "line": 1879,
      "scope": "NavRLTask"
     }
    ],
@@ -1092,7 +1092,7 @@
    "echoes": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1855,
+     "line": 1880,
      "scope": "NavRLTask"
     }
    ],
@@ -1141,7 +1141,7 @@
    "echoes": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1856,
+     "line": 1881,
      "scope": "NavRLTask"
     }
    ],
@@ -1190,7 +1190,7 @@
    "echoes": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1872,
+     "line": 1897,
      "scope": "NavRLTask"
     }
    ],
@@ -1235,7 +1235,7 @@
    "echoes": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1871,
+     "line": 1896,
      "scope": "NavRLTask"
     }
    ],
@@ -3421,7 +3421,7 @@
    "echoes": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1867,
+     "line": 1892,
      "scope": "NavRLTask"
     }
    ],
@@ -3462,7 +3462,7 @@
    "declarations": [
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh",
-     "line": 781,
+     "line": 802,
      "scope": "shell launcher",
      "type": "str",
      "default": null
@@ -3487,6 +3487,41 @@
    "origin": "launcher"
   },
   {
+   "name": "NAVRL_EVAL_CV_INITIAL_HEADING",
+   "group": "protocol",
+   "type": "str",
+   "default": "random",
+   "default_expr": null,
+   "effective_default": "random",
+   "effective_differs": false,
+   "unit": null,
+   "attr": null,
+   "declarations": [
+    {
+     "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh",
+     "line": 420,
+     "scope": "shell launcher",
+     "type": "str",
+     "default": "random"
+    }
+   ],
+   "mirrors": false,
+   "echoes": [],
+   "doc": "런처 스크립트가 직접 소비하는 값이다. 파이썬 코드는 이 이름을 읽지 않고, 런처가 셀마다 개별 knob으로 펼쳐서 전달한다.",
+   "doc_short": "런처 전용 — 셀별 knob으로 펼쳐진다.",
+   "launchers": [
+    {
+     "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh",
+     "value": "${NAVRL_EVAL_CV_INITIAL_HEADING:-random}"
+    }
+   ],
+   "experiments": [],
+   "ablated": false,
+   "swept_but_not_ablated": true,
+   "frozen_by_contract": false,
+   "origin": "launcher"
+  },
+  {
    "name": "NAVRL_EVAL_PROFILE",
    "group": "protocol",
    "type": "str",
@@ -3499,14 +3534,14 @@
    "declarations": [
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh",
-     "line": 558,
+     "line": 579,
      "scope": "shell launcher",
      "type": "str",
      "default": null
     },
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh",
-     "line": 780,
+     "line": 801,
      "scope": "shell launcher",
      "type": "str",
      "default": null
@@ -3573,7 +3608,7 @@
     },
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh",
-     "line": 781,
+     "line": 802,
      "scope": "shell launcher",
      "type": "str",
      "default": null
@@ -3698,7 +3733,7 @@
    "declarations": [
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh",
-     "line": 976,
+     "line": 997,
      "scope": "shell launcher",
      "type": "str",
      "default": null
@@ -4117,7 +4152,7 @@
     },
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh",
-     "line": 1543,
+     "line": 1594,
      "scope": "shell launcher",
      "type": "str",
      "default": null
@@ -4169,7 +4204,7 @@
     },
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh",
-     "value": "28"
+     "value": "${EVAL_GOAL_DIST_MAX}"
     },
     {
      "file": "aerial_gym/rl_training/rl_games/train_navrl_general_repr_density.sh",
@@ -4217,7 +4252,7 @@
     },
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh",
-     "line": 1543,
+     "line": 1594,
      "scope": "shell launcher",
      "type": "str",
      "default": null
@@ -4269,7 +4304,7 @@
     },
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh",
-     "value": "6"
+     "value": "${EVAL_GOAL_DIST_MIN}"
     },
     {
      "file": "aerial_gym/rl_training/rl_games/train_navrl_general_repr_density.sh",
@@ -6307,12 +6342,12 @@
    "echoes": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1605,
+     "line": 1630,
      "scope": "NavRLTask"
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 2332,
+     "line": 2357,
      "scope": "NavRLTask"
     }
    ],
@@ -6444,12 +6479,12 @@
    "echoes": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 814,
+     "line": 839,
      "scope": "NavRLTask"
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 2580,
+     "line": 2605,
      "scope": "NavRLTask"
     }
    ],
@@ -7182,7 +7217,7 @@
    "echoes": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1861,
+     "line": 1886,
      "scope": "NavRLTask"
     }
    ],
@@ -7227,7 +7262,7 @@
    "echoes": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1858,
+     "line": 1883,
      "scope": "NavRLTask"
     }
    ],
@@ -7276,7 +7311,7 @@
    "echoes": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1864,
+     "line": 1889,
      "scope": "NavRLTask"
     }
    ],
@@ -7745,7 +7780,7 @@
    "declarations": [
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh",
-     "line": 783,
+     "line": 804,
      "scope": "shell launcher",
      "type": "str",
      "default": "0"
@@ -8384,7 +8419,7 @@
    "declarations": [
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh",
-     "line": 780,
+     "line": 801,
      "scope": "shell launcher",
      "type": "str",
      "default": null
@@ -9747,7 +9782,7 @@
    "echoes": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 4622,
+     "line": 4677,
      "scope": "NavRLTask"
     }
    ],
@@ -9760,7 +9795,7 @@
     },
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh",
-     "value": "mixed"
+     "value": "${EVAL_TARGET_PATTERN}"
     },
     {
      "file": "aerial_gym/rl_training/rl_games/train_navrl_general_12m_lookahead.sh",
@@ -9876,7 +9911,7 @@
    "echoes": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 939,
+     "line": 964,
      "scope": "NavRLTask"
     }
    ],
@@ -10092,12 +10127,12 @@
    "echoes": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1607,
+     "line": 1632,
      "scope": "NavRLTask"
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 2291,
+     "line": 2316,
      "scope": "NavRLTask"
     }
    ],
@@ -10316,7 +10351,7 @@
     },
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh",
-     "line": 550,
+     "line": 571,
      "scope": "shell launcher",
      "type": "str",
      "default": null
@@ -10570,7 +10605,7 @@
     },
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh",
-     "line": 571,
+     "line": 592,
      "scope": "shell launcher",
      "type": "str",
      "default": "70 150 210 280"
@@ -10692,7 +10727,7 @@
    "declarations": [
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh",
-     "line": 400,
+     "line": 421,
      "scope": "shell launcher",
      "type": "str",
      "default": null
@@ -10731,17 +10766,77 @@
    "declarations": [
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh",
-     "line": 554,
+     "line": 575,
      "scope": "shell launcher",
      "type": "str",
      "default": "0"
     },
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh",
-     "line": 614,
+     "line": 635,
      "scope": "shell launcher",
      "type": "str",
      "default": "0"
+    }
+   ],
+   "mirrors": false,
+   "echoes": [],
+   "doc": "런처 스크립트가 직접 소비하는 값이다. 파이썬 코드는 이 이름을 읽지 않고, 런처가 셀마다 개별 knob으로 펼쳐서 전달한다.",
+   "doc_short": "런처 전용 — 셀별 knob으로 펼쳐진다.",
+   "launchers": [],
+   "experiments": [],
+   "ablated": false,
+   "swept_but_not_ablated": true,
+   "frozen_by_contract": false,
+   "origin": "launcher"
+  },
+  {
+   "name": "NAVRL_V2_GOAL_DIST_MAX",
+   "group": "protocol",
+   "type": "str",
+   "default": "28",
+   "default_expr": null,
+   "effective_default": "28",
+   "effective_differs": false,
+   "unit": null,
+   "attr": null,
+   "declarations": [
+    {
+     "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh",
+     "line": 374,
+     "scope": "shell launcher",
+     "type": "str",
+     "default": "28"
+    }
+   ],
+   "mirrors": false,
+   "echoes": [],
+   "doc": "런처 스크립트가 직접 소비하는 값이다. 파이썬 코드는 이 이름을 읽지 않고, 런처가 셀마다 개별 knob으로 펼쳐서 전달한다.",
+   "doc_short": "런처 전용 — 셀별 knob으로 펼쳐진다.",
+   "launchers": [],
+   "experiments": [],
+   "ablated": false,
+   "swept_but_not_ablated": true,
+   "frozen_by_contract": false,
+   "origin": "launcher"
+  },
+  {
+   "name": "NAVRL_V2_GOAL_DIST_MIN",
+   "group": "protocol",
+   "type": "str",
+   "default": "6",
+   "default_expr": null,
+   "effective_default": "6",
+   "effective_differs": false,
+   "unit": null,
+   "attr": null,
+   "declarations": [
+    {
+     "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh",
+     "line": 374,
+     "scope": "shell launcher",
+     "type": "str",
+     "default": "6"
     }
    ],
    "mirrors": false,
@@ -10845,14 +10940,14 @@
    "declarations": [
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh",
-     "line": 790,
+     "line": 811,
      "scope": "shell launcher",
      "type": "str",
      "default": "train_session_logs/eval_v2_${RUN_NAME"
     },
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh",
-     "line": 793,
+     "line": 814,
      "scope": "shell launcher",
      "type": "str",
      "default": null
@@ -10882,7 +10977,7 @@
    "declarations": [
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh",
-     "line": 806,
+     "line": 827,
      "scope": "shell launcher",
      "type": "str",
      "default": null
@@ -10902,6 +10997,36 @@
      "value": "${RESULT_ROOT}/source_bundle"
     }
    ],
+   "experiments": [],
+   "ablated": false,
+   "swept_but_not_ablated": true,
+   "frozen_by_contract": false,
+   "origin": "launcher"
+  },
+  {
+   "name": "NAVRL_V2_TARGET_PATTERN",
+   "group": "protocol",
+   "type": "str",
+   "default": "mixed",
+   "default_expr": null,
+   "effective_default": "mixed",
+   "effective_differs": false,
+   "unit": null,
+   "attr": null,
+   "declarations": [
+    {
+     "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh",
+     "line": 375,
+     "scope": "shell launcher",
+     "type": "str",
+     "default": "mixed"
+    }
+   ],
+   "mirrors": false,
+   "echoes": [],
+   "doc": "런처 스크립트가 직접 소비하는 값이다. 파이썬 코드는 이 이름을 읽지 않고, 런처가 셀마다 개별 knob으로 펼쳐서 전달한다.",
+   "doc_short": "런처 전용 — 셀별 knob으로 펼쳐진다.",
+   "launchers": [],
    "experiments": [],
    "ablated": false,
    "swept_but_not_ablated": true,
@@ -11174,7 +11299,7 @@
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 4926,
+     "line": 4997,
      "scope": "NavRLTask"
     }
    ]
@@ -11249,7 +11374,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1723,
+     "line": 1748,
      "scope": "NavRLTask"
     }
    ]
@@ -11259,7 +11384,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1359,
+     "line": 1384,
      "scope": "NavRLTask"
     }
    ]
@@ -11274,7 +11399,7 @@
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 627,
+     "line": 629,
      "scope": "NavRLTask"
     }
    ]
@@ -11304,12 +11429,12 @@
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1706,
+     "line": 1731,
      "scope": "NavRLTask"
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 2232,
+     "line": 2257,
      "scope": "NavRLTask"
     }
    ]
@@ -11329,22 +11454,22 @@
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1704,
+     "line": 1729,
      "scope": "NavRLTask"
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 2197,
+     "line": 2222,
      "scope": "NavRLTask"
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 4674,
+     "line": 4745,
      "scope": "NavRLTask"
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 4957,
+     "line": 5028,
      "scope": "NavRLTask"
     }
    ]
@@ -11374,17 +11499,17 @@
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1705,
+     "line": 1730,
      "scope": "NavRLTask"
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 2220,
+     "line": 2245,
      "scope": "NavRLTask"
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 4958,
+     "line": 5029,
      "scope": "NavRLTask"
     }
    ]
@@ -11394,7 +11519,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 721,
+     "line": 723,
      "scope": "NavRLTask"
     }
    ]
@@ -11404,7 +11529,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 603,
+     "line": 605,
      "scope": "NavRLTask"
     }
    ]
@@ -11414,7 +11539,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 616,
+     "line": 618,
      "scope": "NavRLTask"
     }
    ]
@@ -11434,7 +11559,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 672,
+     "line": 674,
      "scope": "NavRLTask"
     }
    ]
@@ -11444,7 +11569,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1731,
+     "line": 1756,
      "scope": "NavRLTask"
     }
    ]
@@ -11454,7 +11579,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1782,
+     "line": 1807,
      "scope": "NavRLTask"
     }
    ]
@@ -11464,7 +11589,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1776,
+     "line": 1801,
      "scope": "NavRLTask"
     }
    ]
@@ -11474,7 +11599,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1779,
+     "line": 1804,
      "scope": "NavRLTask"
     }
    ]
@@ -11484,7 +11609,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1785,
+     "line": 1810,
      "scope": "NavRLTask"
     }
    ]
@@ -11494,7 +11619,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1773,
+     "line": 1798,
      "scope": "NavRLTask"
     }
    ]
@@ -11504,7 +11629,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 2609,
+     "line": 2634,
      "scope": "NavRLTask"
     }
    ]
@@ -11519,7 +11644,7 @@
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1708,
+     "line": 1733,
      "scope": "NavRLTask"
     }
    ]
@@ -11529,7 +11654,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 709,
+     "line": 711,
      "scope": "NavRLTask"
     }
    ]
@@ -11544,7 +11669,7 @@
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 4612,
+     "line": 4667,
      "scope": "NavRLTask"
     }
    ]
@@ -11554,7 +11679,17 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 4601,
+     "line": 4656,
+     "scope": "NavRLTask"
+    }
+   ]
+  },
+  {
+   "name": "NAVRL_EVAL_CV_INITIAL_HEADING",
+   "sites": [
+    {
+     "file": "aerial_gym/task/navrl_task/navrl_task.py",
+     "line": 762,
      "scope": "NavRLTask"
     }
    ]
@@ -11564,7 +11699,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 608,
+     "line": 610,
      "scope": "NavRLTask"
     }
    ]
@@ -11579,7 +11714,7 @@
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 4617,
+     "line": 4672,
      "scope": "NavRLTask"
     }
    ]
@@ -11589,7 +11724,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 4647,
+     "line": 4703,
      "scope": "NavRLTask"
     }
    ]
@@ -11599,7 +11734,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 3799,
+     "line": 3824,
      "scope": "NavRLTask"
     }
    ]
@@ -11619,7 +11754,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 766,
+     "line": 791,
      "scope": "NavRLTask"
     }
    ]
@@ -11629,7 +11764,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 765,
+     "line": 790,
      "scope": "NavRLTask"
     }
    ]
@@ -11639,7 +11774,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 754,
+     "line": 756,
      "scope": "NavRLTask"
     }
    ]
@@ -11649,7 +11784,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 772,
+     "line": 797,
      "scope": "NavRLTask"
     }
    ]
@@ -11659,7 +11794,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 768,
+     "line": 793,
      "scope": "NavRLTask"
     }
    ]
@@ -11669,7 +11804,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 774,
+     "line": 799,
      "scope": "NavRLTask"
     }
    ]
@@ -11679,7 +11814,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 932,
+     "line": 957,
      "scope": "NavRLTask"
     }
    ]
@@ -11689,7 +11824,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 757,
+     "line": 759,
      "scope": "NavRLTask"
     }
    ]
@@ -11699,7 +11834,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 751,
+     "line": 753,
      "scope": "NavRLTask"
     }
    ]
@@ -11714,7 +11849,7 @@
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1790,
+     "line": 1815,
      "scope": "NavRLTask"
     }
    ]
@@ -11729,7 +11864,7 @@
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1792,
+     "line": 1817,
      "scope": "NavRLTask"
     }
    ]
@@ -11744,7 +11879,7 @@
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1788,
+     "line": 1813,
      "scope": "NavRLTask"
     }
    ]
@@ -11759,7 +11894,7 @@
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1795,
+     "line": 1820,
      "scope": "NavRLTask"
     }
    ]
@@ -11774,12 +11909,12 @@
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1728,
+     "line": 1753,
      "scope": "NavRLTask"
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1733,
+     "line": 1758,
      "scope": "NavRLTask"
     }
    ]
@@ -11799,7 +11934,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 669,
+     "line": 671,
      "scope": "NavRLTask"
     }
    ]
@@ -11814,7 +11949,7 @@
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1532,
+     "line": 1557,
      "scope": "NavRLTask"
     }
    ]
@@ -11829,12 +11964,12 @@
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1537,
+     "line": 1562,
      "scope": "NavRLTask"
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1760,
+     "line": 1785,
      "scope": "NavRLTask"
     }
    ]
@@ -11849,7 +11984,7 @@
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1757,
+     "line": 1782,
      "scope": "NavRLTask"
     }
    ]
@@ -11864,7 +11999,7 @@
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1764,
+     "line": 1789,
      "scope": "NavRLTask"
     }
    ]
@@ -11879,7 +12014,7 @@
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1767,
+     "line": 1792,
      "scope": "NavRLTask"
     }
    ]
@@ -11894,7 +12029,7 @@
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1770,
+     "line": 1795,
      "scope": "NavRLTask"
     }
    ]
@@ -11904,7 +12039,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1753,
+     "line": 1778,
      "scope": "NavRLTask"
     }
    ]
@@ -11914,7 +12049,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1750,
+     "line": 1775,
      "scope": "NavRLTask"
     }
    ]
@@ -11924,7 +12059,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1748,
+     "line": 1773,
      "scope": "NavRLTask"
     }
    ]
@@ -11934,7 +12069,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1745,
+     "line": 1770,
      "scope": "NavRLTask"
     }
    ]
@@ -11944,7 +12079,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1739,
+     "line": 1764,
      "scope": "NavRLTask"
     }
    ]
@@ -11954,7 +12089,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1741,
+     "line": 1766,
      "scope": "NavRLTask"
     }
    ]
@@ -11964,7 +12099,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1737,
+     "line": 1762,
      "scope": "NavRLTask"
     }
    ]
@@ -11979,7 +12114,7 @@
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1798,
+     "line": 1823,
      "scope": "NavRLTask"
     }
    ]
@@ -11999,7 +12134,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1141,
+     "line": 1166,
      "scope": "NavRLTask"
     }
    ]
@@ -12009,7 +12144,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1138,
+     "line": 1163,
      "scope": "NavRLTask"
     }
    ]
@@ -12029,7 +12164,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 2103,
+     "line": 2128,
      "scope": "NavRLTask"
     }
    ]
@@ -12049,7 +12184,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 642,
+     "line": 644,
      "scope": "NavRLTask"
     }
    ]
@@ -12069,7 +12204,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1134,
+     "line": 1159,
      "scope": "NavRLTask"
     }
    ]
@@ -12079,7 +12214,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1135,
+     "line": 1160,
      "scope": "NavRLTask"
     }
    ]
@@ -12099,7 +12234,7 @@
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1801,
+     "line": 1826,
      "scope": "NavRLTask"
     }
    ]
@@ -12109,7 +12244,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1726,
+     "line": 1751,
      "scope": "NavRLTask"
     }
    ]
@@ -12134,7 +12269,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1724,
+     "line": 1749,
      "scope": "NavRLTask"
     }
    ]

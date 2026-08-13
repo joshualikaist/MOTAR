@@ -8820,3 +8820,26 @@ action negative-y rate는 D0 98.53%, D1 97.82%로 강한 키랄리티가 D1 전�
 `RESEARCH_PLAN.md` §8.25에 결과 전에 고정했다: 70 bars, `[22.5,28] m`, CV-only,
 `U[0.3,1.5] m/s`, exact 600, seed 337, cell당 requested 2,049, toward/tangent-left/
 tangent-right/away 네 cell이다. 결과는 P2/D1을 재판정하거나 P3를 자동 해제하지 않는다.
+
+### CV initial-heading 진단 구현·preflight PASS
+
+`NAVRL_EVAL_CV_INITIAL_HEADING=random|toward|tangent_left|tangent_right|away`를 추가했다. 기본
+`random`은 기존 RNG와 동작을 유지한다. controlled 값은 bulk evaluation + CV-only에서만 허용하고
+training 또는 mixed/waypoint/circle과 결합하면 task 초기화가 실패한다. 모든 cell에서 random angle을
+먼저 동일하게 소비한 뒤 CV velocity만 덮어써 이후 waypoint/avoid-sign RNG draw의 순서를 보존한다.
+
+방향 정의는 pursuer→target radial을 기준으로 away `(+1,0)`, toward `(-1,0)`, tangent-left
+`(0,+1)`, tangent-right `(0,-1)`이다. 요청 문자열만 기록하는 자기증명을 피하려고 reset마다 실제
+velocity의 radial cos/sin과 최대 계약오차를 누적하며, cell export가 mean/maximum `1e-5` 허용오차를
+벗어나면 generic evaluator가 결과 저장을 거부한다.
+
+generic evaluator는 기본 `[6,28] m`/mixed를 그대로 유지하면서 닫힌 diagnostic만
+`NAVRL_V2_GOAL_DIST_MIN/MAX`와 `NAVRL_V2_TARGET_PATTERN`으로 범위/pattern을 요청할 수 있게 했다.
+checkpoint와 다른 항목을 자동 허용하지 않는다. 새 orchestrator는 force 없이 먼저 거부시켜 mismatch가
+정확히 `cfg_target_pattern: mixed→cv` 한 건인지 증명한 다음에만 force preflight/run을 허용한다.
+checkpoint SHA, D1 FAIL, P3 locked, runtime clean/source map 동일성, cell condition/receipt/count/heading
+audit를 모두 fail-closed 검증한다.
+
+CPU 단위 테스트 7개, ref5in contract unittest 15개, shell syntax/py_compile을 통과했고 실제 GPU를
+할당하지 않는 preflight도 PASS했다. 결과 전 screen의 `all timeout high`는 모호하지 않게 모든 cell
+timeout `>=12%`로 고정했다.

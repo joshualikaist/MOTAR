@@ -20,7 +20,9 @@ from aerial_gym.task.navrl_task.navrl_curriculum import (
 )
 from aerial_gym.task.navrl_task.train_dashboard import record_navrl_epoch_episodes
 from aerial_gym.task.navrl_task.target_motion import (
+    CV_INITIAL_HEADING_MODES,
     TARGET_MOTION_MODEL,
+    initial_cv_velocity,
     steer_target_step,
 )
 from aerial_gym.task.navrl_task.speed_governor import (
@@ -757,6 +759,29 @@ class NavRLTask(BaseTask):
         self.general_train_mode = os.environ.get("NAVRL_GENERAL_TRAIN", "0").strip().lower() in (
             "1", "true", "yes", "on"
         )
+        self._eval_cv_initial_heading = os.environ.get(
+            "NAVRL_EVAL_CV_INITIAL_HEADING", "random"
+        ).strip().lower()
+        if self._eval_cv_initial_heading not in CV_INITIAL_HEADING_MODES:
+            raise RuntimeError(
+                "NAVRL_EVAL_CV_INITIAL_HEADING must be one of %s, got %r"
+                % ("|".join(CV_INITIAL_HEADING_MODES), self._eval_cv_initial_heading)
+            )
+        if self._eval_cv_initial_heading != "random":
+            if not self._bulk_eval_mode or self.general_train_mode:
+                raise RuntimeError(
+                    "NAVRL_EVAL_CV_INITIAL_HEADING is evaluation-only and requires NAVRL_BULK_EVAL=1"
+                )
+            if str(self.tm.pattern) != "cv":
+                raise RuntimeError(
+                    "NAVRL_EVAL_CV_INITIAL_HEADING requires NAVRL_TARGET_PATTERN=cv"
+                )
+        self._eval_cv_heading_diag = {
+            "samples": 0,
+            "radial_cos_sum": 0.0,
+            "radial_sin_sum": 0.0,
+            "max_contract_error": 0.0,
+        }
         self.general_spawn_mode = (
             self.general_eval_mode
             or self.general_train_mode
@@ -3838,11 +3863,41 @@ class NavRLTask(BaseTask):
             )
         self._tm_pattern[env_ids] = code
 
-        # cv: random persistent heading (reflected at walls while the episode runs)
+        # cv: random persistent heading by default.  A closed evaluation may intervene on the
+        # initial radial heading; random angles are still consumed to keep downstream RNG aligned.
         ang = 2.0 * math.pi * torch.rand(n, device=self.device)
-        self._tm_cv_vel[env_ids, 0] = speed * torch.cos(ang)
-        self._tm_cv_vel[env_ids, 1] = speed * torch.sin(ang)
-        self._tm_heading[env_ids] = ang
+        cv_velocity = initial_cv_velocity(
+            self._eval_cv_initial_heading,
+            speed,
+            self.target_position[env_ids, 0:2],
+            self.obs_dict["robot_position"][env_ids, 0:2],
+            ang,
+        )
+        self._tm_cv_vel[env_ids] = cv_velocity
+        self._tm_heading[env_ids] = torch.atan2(cv_velocity[:, 1], cv_velocity[:, 0])
+        if self._eval_cv_initial_heading != "random":
+            radial = self.target_position[env_ids, 0:2] - self.obs_dict[
+                "robot_position"
+            ][env_ids, 0:2]
+            radial = radial / radial.norm(dim=1, keepdim=True).clamp(min=1e-6)
+            direction = cv_velocity / speed.unsqueeze(1).clamp(min=1e-6)
+            radial_cos = (radial * direction).sum(dim=1)
+            radial_sin = radial[:, 0] * direction[:, 1] - radial[:, 1] * direction[:, 0]
+            expected = {
+                "toward": (-1.0, 0.0),
+                "tangent_left": (0.0, 1.0),
+                "tangent_right": (0.0, -1.0),
+                "away": (1.0, 0.0),
+            }[self._eval_cv_initial_heading]
+            error = torch.maximum(
+                (radial_cos - expected[0]).abs(), (radial_sin - expected[1]).abs()
+            )
+            self._eval_cv_heading_diag["samples"] += int(n)
+            self._eval_cv_heading_diag["radial_cos_sum"] += float(radial_cos.sum().item())
+            self._eval_cv_heading_diag["radial_sin_sum"] += float(radial_sin.sum().item())
+            self._eval_cv_heading_diag["max_contract_error"] = max(
+                self._eval_cv_heading_diag["max_contract_error"], float(error.max().item())
+            )
         # waypoint: first waypoint anywhere inside the wall margins
         self._tm_waypoint[env_ids] = self._sample_waypoints(env_ids)
         # circle: ring around the (bar-clear) spawn goal, random direction
@@ -4620,6 +4675,7 @@ class NavRLTask(BaseTask):
                 "seed": int(self.task_config.seed),
                 "bars": int(self.n_bars_active),
                 "target_pattern": os.environ.get("NAVRL_TARGET_PATTERN", "static"),
+                "cv_initial_heading": self._eval_cv_initial_heading,
                 "target_speed_mode": target_speed_mode,
                 "target_speed_mps": target_speed_mps,
                 "target_speed_min_mps": speed_min,
@@ -4669,6 +4725,21 @@ class NavRLTask(BaseTask):
                 "closest_nocrash_mean_m": float(mean_nc),
                 "closest_nocrash_best_m": None if math.isnan(best) else float(best),
                 "closest_nocrash_count": int(self._nc_agg),
+            },
+            "target_motion": {
+                "cv_initial_heading": self._eval_cv_initial_heading,
+                "initial_heading_samples": int(self._eval_cv_heading_diag["samples"]),
+                "initial_heading_mean_radial_cos": (
+                    self._eval_cv_heading_diag["radial_cos_sum"]
+                    / max(1, self._eval_cv_heading_diag["samples"])
+                ),
+                "initial_heading_mean_radial_sin": (
+                    self._eval_cv_heading_diag["radial_sin_sum"]
+                    / max(1, self._eval_cv_heading_diag["samples"])
+                ),
+                "initial_heading_max_contract_error": float(
+                    self._eval_cv_heading_diag["max_contract_error"]
+                ),
             },
             "action": {
                 "policy": os.environ.get("NAVRL_ACTION_POLICY", "legacy"),

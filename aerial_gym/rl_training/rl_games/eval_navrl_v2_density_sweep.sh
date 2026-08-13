@@ -370,8 +370,28 @@ export NAVRL_EPISODE_LEN_STEPS=600
 export NAVRL_MAX_BARS=300
 export NAVRL_BAR_X_MIN=0.0
 export NAVRL_BAR_X_MAX=1.0
-export NAVRL_GENERAL_GOAL_DIST_MIN=6
-export NAVRL_GENERAL_GOAL_DIST_MAX=28
+read -r EVAL_GOAL_DIST_MIN EVAL_GOAL_DIST_MAX EVAL_TARGET_PATTERN <<< "$(
+    "${PYTHON}" - "${NAVRL_V2_GOAL_DIST_MIN:-6}" "${NAVRL_V2_GOAL_DIST_MAX:-28}" \
+        "${NAVRL_V2_TARGET_PATTERN:-mixed}" <<'PY'
+import math
+import sys
+
+try:
+    minimum, maximum = map(float, sys.argv[1:3])
+except ValueError as exc:
+    raise SystemExit("[eval_v2] goal-distance overrides must be numeric") from exc
+pattern = sys.argv[3].strip().lower()
+if not all(math.isfinite(value) for value in (minimum, maximum)) or minimum < 1.0:
+    raise SystemExit("[eval_v2] goal-distance overrides must be finite with min >= 1 m")
+if maximum < minimum + 1.0 or maximum > 28.0:
+    raise SystemExit("[eval_v2] goal-distance overrides require min+1 <= max <= 28 m")
+if pattern not in {"mixed", "cv", "waypoint", "circle"}:
+    raise SystemExit("[eval_v2] NAVRL_V2_TARGET_PATTERN must be mixed|cv|waypoint|circle")
+print(f"{minimum:.12g} {maximum:.12g} {pattern}")
+PY
+)"
+export NAVRL_GENERAL_GOAL_DIST_MIN="${EVAL_GOAL_DIST_MIN}"
+export NAVRL_GENERAL_GOAL_DIST_MAX="${EVAL_GOAL_DIST_MAX}"
 export NAVRL_K_COMPETENCE=1
 export NAVRL_K_FINAL=28
 export NAVRL_K_MIN_FINAL=20
@@ -396,7 +416,8 @@ unset NAVRL_FIXED_BARS NAVRL_CONTROLLED_ABLATION
 export NAVRL_TARGET_SPEED_MIN=0.3
 export NAVRL_TARGET_SPEED_FINAL=1.5
 export NAVRL_TARGET_SPEED_RAMP_EPOCHS=300
-export NAVRL_TARGET_PATTERN=mixed
+export NAVRL_TARGET_PATTERN="${EVAL_TARGET_PATTERN}"
+export NAVRL_EVAL_CV_INITIAL_HEADING="${NAVRL_EVAL_CV_INITIAL_HEADING:-random}"
 FIXED_TARGET_SPEED="${NAVRL_V2_FIXED_TARGET_SPEED:-}"
 if [[ -n "${FIXED_TARGET_SPEED}" ]]; then
     FIXED_TARGET_SPEED="$(${PYTHON} - "${FIXED_TARGET_SPEED}" <<'PY'
@@ -634,8 +655,8 @@ want = {
     "cfg_episode_len_steps": 600.0,
     "cfg_bar_x_min": 0.0,
     "cfg_bar_x_max": 1.0,
-    "cfg_general_goal_dist_min": 6.0,
-    "cfg_general_goal_dist_max": 28.0,
+    "cfg_general_goal_dist_min": float(os.environ["NAVRL_GENERAL_GOAL_DIST_MIN"]),
+    "cfg_general_goal_dist_max": float(os.environ["NAVRL_GENERAL_GOAL_DIST_MAX"]),
     "cfg_lidar_max_range": 12.0,
     "cfg_lidar_hbeams": 72.0,
     "cfg_lidar_vbeams": 4.0,
@@ -658,7 +679,7 @@ want = {
     "cfg_max_tilt_deg": float(os.environ["NAVRL_MAX_TILT_DEG"]),
     "cfg_tilt_comp": float(os.environ["NAVRL_TILT_COMP"]),
     "cfg_target_motion_model": "symmetric_local_steer_v2_heading_continuity90",
-    "cfg_target_pattern": "mixed",
+    "cfg_target_pattern": os.environ["NAVRL_TARGET_PATTERN"],
     "cfg_target_speed_min": 0.3,
     "cfg_target_speed_final": 1.5,
     "cfg_target_speed_fixed": -1.0,
@@ -1149,16 +1170,41 @@ for name, expected in physics_expected.items():
         raise SystemExit(
             f"[eval_v2] measured physics mismatch for {name}: {got!r} != {expected!r}"
         )
-if abs(float(condition.get("goal_dist_min_m", -1.0)) - 6.0) > 1e-6:
-    raise SystemExit("[eval_v2] bulk JSON goal-distance minimum is not 6 m")
-if abs(float(condition.get("goal_dist_max_m", -1.0)) - 28.0) > 1e-6:
-    raise SystemExit("[eval_v2] bulk JSON goal-distance maximum is not 28 m")
+expected_goal_min = float(os.environ["NAVRL_GENERAL_GOAL_DIST_MIN"])
+expected_goal_max = float(os.environ["NAVRL_GENERAL_GOAL_DIST_MAX"])
+if abs(float(condition.get("goal_dist_min_m", -1.0)) - expected_goal_min) > 1e-6:
+    raise SystemExit("[eval_v2] bulk JSON goal-distance minimum is not the requested value")
+if abs(float(condition.get("goal_dist_max_m", -1.0)) - expected_goal_max) > 1e-6:
+    raise SystemExit("[eval_v2] bulk JSON goal-distance maximum is not the requested value")
 if condition.get("full_goal_distribution") is not True:
     raise SystemExit("[eval_v2] bulk JSON did not use the full goal-distance distribution")
 if condition.get("fov_curriculum_saturated") is not True:
     raise SystemExit("[eval_v2] bulk JSON did not use the final FOV distribution")
-if condition.get("target_pattern") != "mixed":
-    raise SystemExit("[eval_v2] bulk JSON target pattern is not the pinned v2 mixed condition")
+if condition.get("target_pattern") != os.environ["NAVRL_TARGET_PATTERN"]:
+    raise SystemExit("[eval_v2] bulk JSON target pattern is not the requested condition")
+if condition.get("cv_initial_heading") != os.environ["NAVRL_EVAL_CV_INITIAL_HEADING"]:
+    raise SystemExit("[eval_v2] bulk JSON CV initial heading is not the requested condition")
+heading_mode = os.environ["NAVRL_EVAL_CV_INITIAL_HEADING"]
+motion = payload.get("target_motion") or {}
+if motion.get("cv_initial_heading") != heading_mode:
+    raise SystemExit("[eval_v2] target-motion heading audit mode mismatch")
+if heading_mode != "random":
+    expected_radial = {
+        "toward": (-1.0, 0.0),
+        "tangent_left": (0.0, 1.0),
+        "tangent_right": (0.0, -1.0),
+        "away": (1.0, 0.0),
+    }.get(heading_mode)
+    if expected_radial is None:
+        raise SystemExit("[eval_v2] unsupported controlled CV initial heading")
+    if int(motion.get("initial_heading_samples", 0)) < actual:
+        raise SystemExit("[eval_v2] controlled CV heading audit has too few reset samples")
+    if abs(float(motion.get("initial_heading_mean_radial_cos")) - expected_radial[0]) > 1e-5:
+        raise SystemExit("[eval_v2] controlled CV heading radial-cos audit failed")
+    if abs(float(motion.get("initial_heading_mean_radial_sin")) - expected_radial[1]) > 1e-5:
+        raise SystemExit("[eval_v2] controlled CV heading radial-sin audit failed")
+    if float(motion.get("initial_heading_max_contract_error", 1.0)) > 1e-5:
+        raise SystemExit("[eval_v2] controlled CV heading contract-error audit failed")
 fixed_speed_text = os.environ.get("NAVRL_V2_FIXED_TARGET_SPEED", "").strip()
 fixed_speed = float(fixed_speed_text) if fixed_speed_text else None
 if fixed_speed is None:
@@ -1362,15 +1408,16 @@ payload["v2_evaluation_contract"] = {
     "physics_steps_per_rl_step": int(condition["physics_steps_per_rl_step"]),
     "rl_step_dt_s": float(condition["rl_step_dt_s"]),
     "arena_xy_m": 40.0,
-    "goal_dist_min_m": 6.0,
-    "goal_dist_max_m": 28.0,
+    "goal_dist_min_m": expected_goal_min,
+    "goal_dist_max_m": expected_goal_max,
     "full_goal_distribution": True,
     "fov_curriculum_saturated": True,
     "target_speed_distribution": "fixed" if fixed_speed is not None else "uniform",
     "target_speed_mps": fixed_speed,
     "target_speed_min_mps": fixed_speed if fixed_speed is not None else 0.3,
     "target_speed_max_mps": fixed_speed if fixed_speed is not None else 1.5,
-    "target_pattern": "mixed",
+    "target_pattern": os.environ["NAVRL_TARGET_PATTERN"],
+    "cv_initial_heading": os.environ["NAVRL_EVAL_CV_INITIAL_HEADING"],
     "lidar_beams": [4, 72],
     "lidar_range_m": 12.0,
     "obstacle_tokens": 8,
@@ -1440,6 +1487,10 @@ receipt = {
     "actual_episodes": actual,
     "action_selection": os.environ["NAVRL_EVAL_ACTION_MODE"],
     "reflection_mode": os.environ["NAVRL_EVAL_REFLECTION_MODE"],
+    "goal_dist_min_m": expected_goal_min,
+    "goal_dist_max_m": expected_goal_max,
+    "target_pattern": os.environ["NAVRL_TARGET_PATTERN"],
+    "cv_initial_heading": os.environ["NAVRL_EVAL_CV_INITIAL_HEADING"],
     "speed_governor_mode": os.environ["NAVRL_SPEED_GOVERNOR"],
     "speed_governor_target_exclusion": "camera_lidar_association",
     "perception_perturb": os.environ.get("NAVRL_PERCEPTION_PERTURB", "0") == "1",
@@ -1484,7 +1535,7 @@ row = {
     "target_speed_distribution": (
         f"fixed:{fixed_speed:g}" if fixed_speed is not None else "U[0.3,1.5]"
     ),
-    "target_pattern": "mixed",
+    "target_pattern": os.environ["NAVRL_TARGET_PATTERN"],
     "requested_episodes": expected_games,
     "actual_episodes": actual,
     "captured": counts[0],

@@ -12,6 +12,51 @@ TARGET_MOTION_MODEL = "symmetric_local_steer_v2_heading_continuity90"
 # per-episode turn_sign only breaks exact +/- ties and is sampled 50:50 by NavRLTask.
 TURN_ANGLES_DEG = (0.0, 30.0, -30.0, 60.0, -60.0, 90.0, -90.0, 120.0, -120.0, 180.0)
 HEADING_CONTINUITY_RAD = math.radians(90.0)
+CV_INITIAL_HEADING_MODES = (
+    "random",
+    "toward",
+    "tangent_left",
+    "tangent_right",
+    "away",
+)
+
+
+def initial_cv_velocity(mode, speed, target_xy, pursuer_xy, random_angle):
+    """Return a CV velocity under an evaluation-only radial-heading intervention.
+
+    ``left`` and ``right`` are defined looking from the pursuer toward the target: left is a
+    +90-degree rotation of the pursuer->target radial vector.  The caller always samples and
+    supplies ``random_angle`` even for controlled cells so subsequent RNG draws stay aligned.
+    """
+    if mode not in CV_INITIAL_HEADING_MODES:
+        raise ValueError(
+            "unknown CV initial heading %r (expected %s)"
+            % (mode, "|".join(CV_INITIAL_HEADING_MODES))
+        )
+    if target_xy.ndim != 2 or target_xy.shape[1] != 2:
+        raise ValueError("target_xy must have shape [N, 2]")
+    if pursuer_xy.shape != target_xy.shape:
+        raise ValueError("pursuer_xy must match target_xy")
+    n = target_xy.shape[0]
+    if speed.shape != (n,) or random_angle.shape != (n,):
+        raise ValueError("speed and random_angle must have shape [N]")
+
+    radial = target_xy - pursuer_xy
+    radial_norm = radial.norm(dim=1, keepdim=True)
+    fallback = torch.zeros_like(radial)
+    fallback[:, 0] = 1.0
+    away = torch.where(radial_norm > 1e-6, radial / radial_norm.clamp(min=1e-6), fallback)
+    if mode == "random":
+        direction = torch.stack((torch.cos(random_angle), torch.sin(random_angle)), dim=1)
+    elif mode == "away":
+        direction = away
+    elif mode == "toward":
+        direction = -away
+    elif mode == "tangent_left":
+        direction = torch.stack((-away[:, 1], away[:, 0]), dim=1)
+    else:  # tangent_right
+        direction = torch.stack((away[:, 1], -away[:, 0]), dim=1)
+    return direction * speed.unsqueeze(1)
 
 
 def steer_target_step(

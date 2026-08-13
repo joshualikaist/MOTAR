@@ -14,6 +14,7 @@ CORRECTIVE_LAUNCHER = RL / "train_navrl_v2_ref5in_smoke_b.sh"
 FINAL_CORRECTIVE_LAUNCHER = RL / "train_navrl_v2_ref5in_smoke_c.sh"
 D1_LAUNCHER = RL / "train_navrl_v2_ref5in_d1_adapt.sh"
 D1_EVALUATOR = ROOT / "tools/run_navrl_ref5in_d1_eval.py"
+CV_HEADING_EVALUATOR = ROOT / "tools/run_navrl_ref5in_cv_heading_diagnostic.py"
 
 
 class Ref5inSmokeLauncherContract(unittest.TestCase):
@@ -204,6 +205,33 @@ class Ref5inSmokeLauncherContract(unittest.TestCase):
             'pattern.sub(placeholder, train_text) == pattern.sub(placeholder, eval_text)',
         ):
             self.assertIn(literal, source)
+
+    def test_post_d1_heading_diagnostic_is_frozen_and_non_decisional(self):
+        source = CV_HEADING_EVALUATOR.read_text(encoding="utf-8")
+        for literal in (
+            "SEED = 337",
+            "EPISODES = 2049",
+            '("toward", "tangent_left", "tangent_right", "away")',
+            '"NAVRL_V2_GOAL_DIST_MIN": "22.5"',
+            '"NAVRL_V2_TARGET_PATTERN": "cv"',
+            '"p2_verdict_changed": False',
+            '"d1_verdict_changed": False',
+            '"p3_unlocked": False',
+            'mismatch_lines == [expected]',
+            '"path_length_support"',
+            '"chirality_sensitive"',
+        ):
+            self.assertIn(literal, source)
+
+        task = (ROOT / "aerial_gym/task/navrl_task/navrl_task.py").read_text(
+            encoding="utf-8"
+        )
+        for literal in (
+            "NAVRL_EVAL_CV_INITIAL_HEADING is evaluation-only",
+            "NAVRL_EVAL_CV_INITIAL_HEADING requires NAVRL_TARGET_PATTERN=cv",
+            '"initial_heading_max_contract_error"',
+        ):
+            self.assertIn(literal, task)
 
 
 class SourceReceiptContract(unittest.TestCase):

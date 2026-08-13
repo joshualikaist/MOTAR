@@ -15,12 +15,40 @@ _SPEC = importlib.util.spec_from_file_location("navrl_target_motion_standalone",
 _MODULE = importlib.util.module_from_spec(_SPEC)
 _SPEC.loader.exec_module(_MODULE)
 steer_target_step = _MODULE.steer_target_step
+initial_cv_velocity = _MODULE.initial_cv_velocity
 
 
 def _bounds(n):
     lo = torch.full((n, 2), -10.0)
     hi = torch.full((n, 2), 10.0)
     return lo, hi
+
+
+def test_controlled_initial_cv_headings_follow_radial_contract():
+    target = torch.tensor([[2.0, 0.0], [0.0, 3.0]])
+    pursuer = torch.zeros(2, 2)
+    speed = torch.tensor([1.0, 2.0])
+    random_angle = torch.tensor([0.4, -0.7])
+    expected = {
+        "away": torch.tensor([[1.0, 0.0], [0.0, 2.0]]),
+        "toward": torch.tensor([[-1.0, 0.0], [0.0, -2.0]]),
+        "tangent_left": torch.tensor([[0.0, 1.0], [-2.0, 0.0]]),
+        "tangent_right": torch.tensor([[0.0, -1.0], [2.0, 0.0]]),
+    }
+    for mode, want in expected.items():
+        got = initial_cv_velocity(mode, speed, target, pursuer, random_angle)
+        assert torch.allclose(got, want, atol=1e-6)
+
+
+def test_random_initial_cv_heading_and_degenerate_radial_are_finite():
+    speed = torch.tensor([1.5])
+    xy = torch.zeros(1, 2)
+    angle = torch.tensor([torch.pi / 2])
+    random_velocity = initial_cv_velocity("random", speed, xy, xy, angle)
+    away_velocity = initial_cv_velocity("away", speed, xy, xy, angle)
+    assert torch.allclose(random_velocity, torch.tensor([[0.0, 1.5]]), atol=1e-6)
+    assert torch.allclose(away_velocity, torch.tensor([[1.5, 0.0]]), atol=1e-6)
+    assert torch.isfinite(away_velocity).all()
 
 
 def test_unobstructed_step_preserves_heading_and_speed():

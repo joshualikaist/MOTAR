@@ -1056,7 +1056,7 @@ horizon을 바꾸지 않는다.
   `tangent-left−tangent-right` outcome 차이는 normal approximation CI와 함께 기술한다;
 - 사전 판독: away timeout이 toward보다 `>=8pp` 높고 tangent 양쪽이 그 사이면 path-length 설명을
   지지한다. tangent 좌우 outcome 차이의 절댓값이 `>=5pp`면 chirality-sensitive 후속을 우선한다.
-  둘 다 아니면서 모든 cell timeout이 높으면 초기 heading alone 설명을 기각하고 tracker/progress
+  둘 다 아니면서 모든 cell timeout이 D1 절대 기준인 `12%` 이상이면 초기 heading alone 설명을 기각하고 tracker/progress
   telemetry로 이동한다. 이는 가설 screen이지 P2/D1/P3 decision gate가 아니다;
 - runtime은 eval-only heading override와 해당 값을 receipt/result condition에 기록한다. CV가 아닌
   pattern, training mode, 또는 허용되지 않은 값에서 override가 켜지면 fail-closed한다.
