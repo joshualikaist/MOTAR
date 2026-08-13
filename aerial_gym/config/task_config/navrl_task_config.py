@@ -260,6 +260,43 @@ class task_config:
         # Dedicated stream: pose-noise ablations must not consume the simulator/global RNG and
         # silently change obstacle placement, target motion, or resets between evaluation arms.
         pose_noise_seed = _env_int("NAVRL_POSE_NOISE_SEED", 9163)
+        # 4-1 결합 진단 (사전등록 docs/prereg_2026-08-13_detector_coupling.md).
+        # Synthetic detector noise shaped to the v7 detector's PROFILED error statistics, injected
+        # into the analytic detector's output. The question it exists to answer: is the -5.19 pp
+        # cost of swapping in v7 a property of v7's outputs, or of the frozen policy being coupled
+        # to the analytic detector's statistics? Injecting v7-shaped error into analytic separates
+        # those without retraining. All default 0/off, so a clean run is byte-identical.
+        #
+        # Dropout is a two-state MARKOV chain, not iid Bernoulli, because a real detector that
+        # misses a frame tends to miss the next one too, and iid draws with the same marginal
+        # under-reproduce that. p01 = P(miss | seen), p10 = P(seen | miss); the stationary miss
+        # rate is p01/(p01+p10) and the mean miss run-length is 1/p10.
+        detector_noise_bearing_std_rad = _env_float("NAVRL_DETNOISE_BEARING_STD_RAD", 0.0)
+        detector_noise_range_std_m = _env_float("NAVRL_DETNOISE_RANGE_STD_M", 0.0)
+        # The seed-419 profile showed v7's range error is neither white nor homoscedastic:
+        # lag-1 autocorrelation 0.644, and std 0.42/0.37/0.23/1.07 m across range quartiles.
+        # An iid homoscedastic draw with the right marginal would leave the Kalman filter free to
+        # average the error away, which is exactly the under-reproduction the preregistration
+        # warned would make a null result uninterpretable. So the injection is AR(1) with a
+        # range-dependent scale. Both default to the white/flat behaviour.
+        detector_noise_range_rho = _env_float("NAVRL_DETNOISE_RANGE_RHO", 0.0)
+        detector_noise_range_bias_m = _env_float("NAVRL_DETNOISE_RANGE_BIAS_M", 0.0)
+        # "r0:s0,r1:s1,..." -- piecewise-constant sigma multiplier by measured range, upper edges
+        # in metres. Empty means flat.
+        detector_noise_range_sigma_profile = os.environ.get(
+            "NAVRL_DETNOISE_RANGE_SIGMA_PROFILE", ""
+        ).strip()
+        detector_noise_dropout_p01 = _env_float("NAVRL_DETNOISE_DROPOUT_P01", 0.0)
+        detector_noise_dropout_p10 = _env_float("NAVRL_DETNOISE_DROPOUT_P10", 1.0)
+        # Dose-response ladder: multiplies the two sigmas and p01 (leaving p10, i.e. the run-length
+        # shape, intact) so 0.5x/1.0x/1.5x arms vary magnitude without changing the noise family.
+        detector_noise_scale = _env_float("NAVRL_DETNOISE_SCALE", 1.0)
+        # Dedicated stream. Verification 3 lost a whole campaign to pose noise drawing from the
+        # global torch RNG, which changed obstacle placement and target motion between arms.
+        detector_noise_seed = _env_int("NAVRL_DETNOISE_SEED", 9409)
+        # Profiling mode: additionally run a SECOND detector on the same frame and export the
+        # paired outputs, so v7's error against analytic can be measured on identical inputs.
+        detector_profile_checkpoint = os.environ.get("NAVRL_DETPROFILE_CHECKPOINT", "")
         # The obstacle map is edited by two paths with different gates: the LiDAR target_like
         # carve-out uses fused visibility (camera OR LiDAR) while the depth blanking uses the
         # camera-only pixel mask. On any frame the camera misses but LiDAR still holds the track

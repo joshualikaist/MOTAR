@@ -12,6 +12,7 @@ measurements.  Ground truth is intentionally absent from every public method in 
 import hashlib
 import math
 import os
+import pathlib
 
 import torch
 import torch.nn as nn
@@ -683,6 +684,72 @@ class NavRLPerceptionModule:
             or self.pose_noise_pos_m > 0.0
             or self.pose_noise_yaw_deg > 0.0
         )
+        # 4-1 결합 진단: v7-shaped synthetic noise on the analytic detector's output.
+        # See docs/prereg_2026-08-13_detector_coupling.md. Scale multiplies the two sigmas and the
+        # miss-entry probability but NOT p10, so the dose ladder changes magnitude while keeping
+        # the miss run-length distribution (the part iid noise gets wrong) fixed.
+        _dn_scale = float(getattr(cfg, "detector_noise_scale", 1.0))
+        self.detector_noise_bearing_std_rad = (
+            float(getattr(cfg, "detector_noise_bearing_std_rad", 0.0)) * _dn_scale
+        )
+        self.detector_noise_range_std_m = (
+            float(getattr(cfg, "detector_noise_range_std_m", 0.0)) * _dn_scale
+        )
+        self.detector_noise_dropout_p01 = min(
+            1.0, float(getattr(cfg, "detector_noise_dropout_p01", 0.0)) * _dn_scale
+        )
+        self.detector_noise_dropout_p10 = float(getattr(cfg, "detector_noise_dropout_p10", 1.0))
+        self.detector_noise_scale = _dn_scale
+        # AR(1) + heteroscedastic range error, matched to the profiled structure. rho is NOT
+        # scaled by the dose ladder: the ladder must vary magnitude only, leaving the correlation
+        # structure fixed, or the rungs are three different noise families.
+        self.detector_noise_range_rho = float(getattr(cfg, "detector_noise_range_rho", 0.0))
+        self.detector_noise_range_bias_m = (
+            float(getattr(cfg, "detector_noise_range_bias_m", 0.0)) * _dn_scale
+        )
+        self._detector_noise_range_ar = torch.zeros(self.num_envs, device=device)
+        edges, mults = [], []
+        for chunk in str(
+            getattr(cfg, "detector_noise_range_sigma_profile", "") or ""
+        ).split(","):
+            chunk = chunk.strip()
+            if not chunk:
+                continue
+            hi, mult = chunk.split(":")
+            edges.append(float(hi))
+            mults.append(float(mult))
+        self._detector_noise_sigma_edges = (
+            torch.tensor(edges, device=device) if edges else None
+        )
+        self._detector_noise_sigma_mults = (
+            torch.tensor(mults, device=device) if mults else None
+        )
+        self.detector_noise_seed = int(getattr(cfg, "detector_noise_seed", 9409))
+        self._detector_noise_generator = torch.Generator(device=device)
+        self._detector_noise_generator.manual_seed(self.detector_noise_seed)
+        # Persistent Markov state: True = currently in a miss run. Not reset per episode -- the
+        # chain models the detector, not the episode, and rewinding it on every reset would bias
+        # the run-length distribution toward short runs.
+        self._detector_noise_missing = torch.zeros(
+            self.num_envs, dtype=torch.bool, device=device
+        )
+        self._detector_noise_active = (
+            self.detector_noise_bearing_std_rad > 0.0
+            or self.detector_noise_range_std_m > 0.0
+            or self.detector_noise_dropout_p01 > 0.0
+        )
+        # Profiling: paired evaluation of a second detector on identical frames (analytic drives,
+        # the profile head only observes). Populated by _detect_rgbd, written out at exit.
+        self.detector_profile_records = []
+        self._profile_segmenter = None
+        self._detector_profile_out = str(
+            os.environ.get("NAVRL_DETPROFILE_OUT", "") or ""
+        ).strip()
+        # Bounded so a long campaign cannot grow this without limit. 4,000 steps x num_envs is
+        # already ~500k paired samples, far more than the quantiles and run-length histogram need.
+        self._detector_profile_max_steps = int(
+            os.environ.get("NAVRL_DETPROFILE_MAX_STEPS", "4000") or 4000
+        )
         self._latency_delayed_pose = None
         # Backfill the target pixel mask from the fused bearing/range when the camera did not
         # deliver one but the track is alive (LiDAR-only frames). Off by default until measured.
@@ -772,6 +839,28 @@ class NavRLPerceptionModule:
             # the contract, not the error message).
             self.segmenter = build_target_segmenter(architecture).to(device).eval()
             self.segmenter.load_state_dict(state.get("model", state), strict=True)
+
+        # 4-1 profiling: a SECOND head evaluated on the same frame, observing only. Its outputs
+        # never touch the tracker, the map or the observation -- the arm being profiled must
+        # behave exactly as it does without profiling, or the errors are measured on a trajectory
+        # the profiled detector partly caused.
+        profile_ckpt = str(getattr(cfg, "detector_profile_checkpoint", "") or "").strip()
+        if profile_ckpt:
+            p_state = torch.load(profile_ckpt, map_location=device)
+            p_arch = ""
+            if isinstance(p_state, dict):
+                p_arch = str((p_state.get("meta") or {}).get("architecture", ""))
+            self._profile_segmenter = build_target_segmenter(p_arch).to(device).eval()
+            self._profile_segmenter.load_state_dict(
+                p_state.get("model", p_state), strict=True
+            )
+            if self._detector_profile_out:
+                # atexit rather than an explicit drain: the evaluator owns the run loop and there
+                # is no hook in it for "campaign finished", so tying the write to interpreter exit
+                # is the only way to capture a full run without editing the run loop itself.
+                import atexit
+
+                atexit.register(self._dump_detector_profile)
 
         self.tracker = BatchedConstantVelocityTracker(
             num_envs, device, step_dt, float(camera_cfg.tracker_memory_s)
@@ -951,6 +1040,139 @@ class NavRLPerceptionModule:
             quat = _quat_mul_xyzw(noise, quat)
         return pos, quat
 
+    def _detector_noise_range(self, surface_range):
+        """AR(1), range-dependent range error matched to the profiled v7 statistics.
+
+        The seed-419 profile measured lag-1 autocorrelation 0.644 and a std that varies 0.23-1.07 m
+        with measured range. Injecting white homoscedastic noise with the same marginal would be a
+        materially weaker perturbation: a constant-velocity Kalman filter averages independent
+        errors away across frames, whereas a correlated error walks the track off and holds it
+        there. Matching only the marginal would therefore under-reproduce v7 and leave a null
+        result unable to distinguish "not coupling" from "my noise was too easy".
+
+            e_t = rho * e_{t-1} + sqrt(1 - rho^2) * w_t,   w_t ~ N(0, sigma(range)^2)
+
+        The sqrt(1 - rho^2) keeps the stationary variance equal to sigma^2, so rho changes the
+        correlation without changing the marginal the profile pinned.
+        """
+        sigma = torch.full_like(surface_range, self.detector_noise_range_std_m)
+        if self._detector_noise_sigma_edges is not None:
+            # Piecewise-constant multiplier, selected by which profiled band the range falls in.
+            idx = torch.bucketize(surface_range, self._detector_noise_sigma_edges)
+            idx = idx.clamp(max=self._detector_noise_sigma_mults.numel() - 1)
+            sigma = sigma * self._detector_noise_sigma_mults[idx]
+
+        white = torch.randn(
+            self.num_envs, device=self.device, dtype=surface_range.dtype,
+            generator=self._detector_noise_generator,
+        )
+        rho = self.detector_noise_range_rho
+        if rho > 0.0:
+            self._detector_noise_range_ar = (
+                rho * self._detector_noise_range_ar
+                + math.sqrt(max(0.0, 1.0 - rho * rho)) * white
+            )
+            unit = self._detector_noise_range_ar
+        else:
+            unit = white
+        return (
+            surface_range + unit * sigma + self.detector_noise_range_bias_m
+        ).clamp(0.0, self.max_camera_range)
+
+    def _detector_noise_visibility(self, visible):
+        """Two-state Markov miss process on the detection flag.
+
+        iid Bernoulli dropout with the right marginal still gets the WRONG temporal structure: a
+        real detector that loses the target holds the miss for several frames, and the tracker's
+        response to one isolated miss is nothing like its response to a four-frame run (it coasts
+        on constant velocity while the covariance grows, and hands the frame to the LiDAR
+        fallback). Matching only the marginal would therefore under-reproduce the effect and make
+        a null result uninterpretable -- the same failure that made verification 3's step-wise iid
+        Gaussian an incomplete odometry model.
+
+        p01 = P(enter a miss | currently seen); p10 = P(leave a miss | currently missing).
+        Stationary miss rate p01/(p01+p10), mean miss run-length 1/p10.
+        """
+        draw = torch.rand(
+            self.num_envs, device=self.device,
+            generator=self._detector_noise_generator,
+        )
+        was_missing = self._detector_noise_missing
+        enter = (~was_missing) & (draw < self.detector_noise_dropout_p01)
+        stay = was_missing & (draw >= self.detector_noise_dropout_p10)
+        self._detector_noise_missing = enter | stay
+        return visible & ~self._detector_noise_missing
+
+    def _dump_detector_profile(self):
+        """Write the paired-detector records as one npz. Registered with atexit; must never raise
+        into the interpreter shutdown path, so failures are reported and swallowed."""
+        try:
+            records = self.detector_profile_records
+            if not records or not self._detector_profile_out:
+                return
+            import numpy as np
+
+            keys = list(records[0].keys())
+            arrays = {
+                # (steps, num_envs) so the run-length analysis can walk the time axis per env.
+                k: torch.stack([r[k] for r in records]).numpy() for k in keys
+            }
+            path = pathlib.Path(self._detector_profile_out)
+            path.parent.mkdir(parents=True, exist_ok=True)
+            np.savez_compressed(path, **arrays)
+            print(
+                f"[detprofile] wrote {path} "
+                f"({len(records)} steps x {self.num_envs} envs)",
+                flush=True,
+            )
+        except Exception as exc:  # noqa: BLE001 - atexit must not raise
+            print(f"[detprofile] dump failed: {exc}", flush=True)
+
+    def _record_detector_profile(self, rgb, depth, mask, count, visible):
+        """Score the profile head on the same frame and store its error against the live head.
+
+        Runs strictly read-only: nothing here feeds the tracker, the map or the observation, so
+        the trajectory stays exactly the one the live detector produces. That is deliberate --
+        profiling v7 on a v7-driven trajectory would measure its error on states it partly caused,
+        and the injected-noise arms are driven by the analytic detector, so the analytic-driven
+        trajectory is the matched reference. The cost is a covariate-shift caveat, recorded in the
+        profile summary rather than silently ignored.
+        """
+        with torch.no_grad():
+            p_score = self._profile_segmenter(rgb, depth, self.max_camera_range)
+        p_mask = (p_score >= self.pixel_threshold) & (depth < self.max_camera_range)
+        p_count = p_mask.sum(dim=(1, 2))
+        p_visible = p_count >= self.min_pixels
+        p_mask = p_mask & p_visible.view(-1, 1, 1)
+
+        def _centroid_range(m, c):
+            denom = c.clamp(min=1).float()
+            mf = m.float()
+            return (
+                (mf * self._u).sum(dim=(1, 2)) / denom,
+                (mf * self._v).sum(dim=(1, 2)) / denom,
+                (depth * mf).sum(dim=(1, 2)) / denom,
+            )
+
+        ref_mask = mask & visible.view(-1, 1, 1)
+        u_a, v_a, r_a = _centroid_range(ref_mask, count)
+        u_b, v_b, r_b = _centroid_range(p_mask, p_count)
+        # Small-angle bearing from the pixel centroid: atan(-(u - cx) / fx).
+        bearing_a = torch.atan(-(u_a - self.cx) / self.fx)
+        bearing_b = torch.atan(-(u_b - self.cx) / self.fx)
+
+        both = visible & p_visible
+        self.detector_profile_records.append({
+            "ref_visible": visible.detach().to("cpu", torch.bool).clone(),
+            "profile_visible": p_visible.detach().to("cpu", torch.bool).clone(),
+            "both_visible": both.detach().to("cpu", torch.bool).clone(),
+            "bearing_err": (bearing_b - bearing_a).detach().to("cpu", torch.float32).clone(),
+            "range_err": (r_b - r_a).detach().to("cpu", torch.float32).clone(),
+            "ref_range": r_a.detach().to("cpu", torch.float32).clone(),
+            "ref_count": count.detach().to("cpu", torch.int32).clone(),
+            "profile_count": p_count.detach().to("cpu", torch.int32).clone(),
+        })
+
     def _detect_rgbd(self, rgb, depth, training, drone_pos_w=None, vehicle_quat=None):
         if training and self.rgb_noise_std > 0.0:
             rgb = (rgb + torch.randn_like(rgb) * self.rgb_noise_std).clamp(0.0, 1.0)
@@ -963,8 +1185,15 @@ class NavRLPerceptionModule:
         mask = (score >= self.pixel_threshold) & (depth < self.max_camera_range)
         count = mask.sum(dim=(1, 2))
         visible = count >= self.min_pixels
+        if (
+            self._profile_segmenter is not None
+            and len(self.detector_profile_records) < self._detector_profile_max_steps
+        ):
+            self._record_detector_profile(rgb, depth, mask, count, visible)
         if training and self.dropout_prob > 0.0:
             visible &= torch.rand(self.num_envs, device=self.device) >= self.dropout_prob
+        if self._detector_noise_active:
+            visible = self._detector_noise_visibility(visible)
         mask &= visible.view(-1, 1, 1)
         denom = count.clamp(min=1).float()
         mf = mask.float()
@@ -975,6 +1204,21 @@ class NavRLPerceptionModule:
             surface_range = (surface_range + self.range_error_m).clamp(
                 0.0, self.max_camera_range
             )
+        if self._detector_noise_active:
+            # Bearing error is injected as a CENTROID error, not by rewriting `bearing` after the
+            # fact: bearing is derived from u below via the ray, and writing it directly would
+            # desync it from measurement_vehicle -- the KF would see the clean position while only
+            # the obstacle-map carve-out saw the perturbed angle. Perturbing u moves both, which is
+            # also what a real detector error does.
+            #   bearing ~= atan(-(u - cx) / fx)  ->  d(bearing)/du ~= -1/fx  ->  du = -fx * dbearing
+            if self.detector_noise_bearing_std_rad > 0.0:
+                d_bearing = torch.randn(
+                    self.num_envs, device=self.device, dtype=u.dtype,
+                    generator=self._detector_noise_generator,
+                ) * self.detector_noise_bearing_std_rad
+                u = u - self.fx * d_bearing
+            if self.detector_noise_range_std_m > 0.0:
+                surface_range = self._detector_noise_range(surface_range)
         confidence = (score * mf).sum(dim=(1, 2)) / denom
         confidence *= (count.float() / max(1.0, float(self.min_pixels * 4))).clamp(max=1.0)
         confidence = torch.where(visible, confidence, torch.zeros_like(confidence))

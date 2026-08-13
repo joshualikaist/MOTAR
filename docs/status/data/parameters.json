@@ -1,14 +1,14 @@
 {
  "schema": "motar.parameters/1",
- "generated_at": "2026-08-13T10:20:37+00:00",
+ "generated_at": "2026-08-13T11:16:19+00:00",
  "generator": "tools/generate_parameter_catalog.py",
- "source_commit": "40bb520",
+ "source_commit": "c63430d",
  "counts": {
-  "authoritative": 180,
-  "echo_only": 84,
-  "files_scanned": 274,
-  "launchers_scanned": 66,
-  "ablated": 40,
+  "authoritative": 190,
+  "echo_only": 86,
+  "files_scanned": 275,
+  "launchers_scanned": 67,
+  "ablated": 44,
   "mirrors": 5,
   "launcher_only": 69
  },
@@ -708,7 +708,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 347,
+     "line": 384,
      "scope": "task_config",
      "type": "float",
      "default": 2.5
@@ -1512,7 +1512,7 @@
    "declarations": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_perception.py",
-     "line": 136,
+     "line": 137,
      "scope": "<module>",
      "type": "str",
      "default": ""
@@ -1567,7 +1567,7 @@
    "declarations": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_perception.py",
-     "line": 137,
+     "line": 138,
      "scope": "<module>",
      "type": "str",
      "default": ""
@@ -1622,7 +1622,7 @@
    "declarations": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_perception.py",
-     "line": 135,
+     "line": 136,
      "scope": "<module>",
      "type": "str",
      "default": ""
@@ -1677,7 +1677,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 437,
+     "line": 474,
      "scope": "task_config.density",
      "type": "int",
      "default": 2048
@@ -1736,7 +1736,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 412,
+     "line": 449,
      "scope": "task_config.density",
      "type": "bool",
      "default": false
@@ -1839,7 +1839,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 456,
+     "line": 493,
      "scope": "task_config.density",
      "type": "float",
      "default": 10.0
@@ -1882,7 +1882,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 455,
+     "line": 492,
      "scope": "task_config.density",
      "type": "float",
      "default": 5.0
@@ -1925,7 +1925,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 454,
+     "line": 491,
      "scope": "task_config.density",
      "type": "float",
      "default": 0.0
@@ -1968,7 +1968,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 415,
+     "line": 452,
      "scope": "task_config.density",
      "type": "int",
      "default": 150
@@ -2311,7 +2311,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 443,
+     "line": 480,
      "scope": "task_config.density",
      "type": "int",
      "default": 0
@@ -2451,7 +2451,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 414,
+     "line": 451,
      "scope": "task_config.density",
      "type": "int",
      "default": 25
@@ -2522,7 +2522,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 435,
+     "line": 472,
      "scope": "task_config.density",
      "type": "int",
      "default": 15
@@ -2581,7 +2581,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 449,
+     "line": 486,
      "scope": "task_config.density",
      "type": "float",
      "default": 0.55
@@ -2624,7 +2624,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 448,
+     "line": 485,
      "scope": "task_config.density",
      "type": "bool",
      "default": false
@@ -2667,7 +2667,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 450,
+     "line": 487,
      "scope": "task_config.density",
      "type": "int",
      "default": 512
@@ -2710,7 +2710,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 416,
+     "line": 453,
      "scope": "task_config.density",
      "type": "float",
      "default": 0.8
@@ -2761,7 +2761,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 425,
+     "line": 462,
      "scope": "task_config.density",
      "type": "float",
      "default": null
@@ -2804,7 +2804,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 432,
+     "line": 469,
      "scope": "task_config.density",
      "type": "str",
      "default": ""
@@ -2847,7 +2847,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 424,
+     "line": 461,
      "scope": "task_config.density",
      "type": "float",
      "default": null
@@ -2890,7 +2890,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 436,
+     "line": 473,
      "scope": "task_config.density",
      "type": "int",
      "default": 2500
@@ -2965,7 +2965,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 296,
+     "line": 333,
      "scope": "task_config.perception",
      "type": "float",
      "default": 0.02
@@ -3187,7 +3187,8 @@
     "2026-08-11-detector-nav-ab-83-89",
     "2026-08-12-detector-nav-ab-97-101",
     "2026-08-12-appearance-nav-ab",
-    "2026-08-12-detector-threshold-diagnostic"
+    "2026-08-12-detector-threshold-diagnostic",
+    "2026-08-13-detector-coupling-probe"
    ],
    "ablated": true,
    "swept_but_not_ablated": false,
@@ -3270,6 +3271,10 @@
      "value": "${NAVRL_DETECTOR_THRESHOLD:-${DETECTOR_THRESHOLD}}"
     },
     {
+     "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_detector_coupling.sh",
+     "value": "0.55"
+    },
+    {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_detector_navigation_ab.sh",
      "value": "${THRESHOLD}"
     },
@@ -3296,6 +3301,319 @@
     "2026-08-12-detector-threshold-void"
    ],
    "ablated": true,
+   "swept_but_not_ablated": false,
+   "frozen_by_contract": false,
+   "origin": "python"
+  },
+  {
+   "name": "NAVRL_DETNOISE_BEARING_STD_RAD",
+   "group": "other",
+   "type": "float",
+   "default": 0.0,
+   "default_expr": null,
+   "effective_default": 0.0,
+   "effective_differs": false,
+   "unit": null,
+   "attr": "task_config.perception.detector_noise_bearing_std_rad",
+   "declarations": [
+    {
+     "file": "aerial_gym/config/task_config/navrl_task_config.py",
+     "line": 274,
+     "scope": "task_config.perception",
+     "type": "float",
+     "default": 0.0
+    }
+   ],
+   "mirrors": false,
+   "echoes": [],
+   "doc": "4-1 결합 진단 (사전등록 docs/prereg_2026-08-13_detector_coupling.md).\nSynthetic detector noise shaped to the v7 detector's PROFILED error statistics, injected\ninto the analytic detector's output. The question it exists to answer: is the -5.19 pp\ncost of swapping in v7 a property of v7's outputs, or of the frozen policy being coupled\nto the analytic detector's statistics? Injecting v7-shaped error into analytic separates\nthose without retraining. All default 0/off, so a clean run is byte-identical.\n\nDropout is a two-state MARKOV chain, not iid Bernoulli, because a real detector that\nmisses a frame tends to miss the next one too, and iid draws with the same marginal\nunder-reproduce that. p01 = P(miss | seen), p10 = P(seen | miss); the stationary miss\nrate is p01/(p01+p10) and the mean miss run-length is 1/p10.",
+   "doc_short": "4-1 결합 진단 (사전등록 docs/prereg_2026-08-13_detector_coupling.md).",
+   "launchers": [],
+   "experiments": [
+    "2026-08-13-detector-coupling-probe"
+   ],
+   "ablated": true,
+   "swept_but_not_ablated": false,
+   "frozen_by_contract": false,
+   "origin": "python"
+  },
+  {
+   "name": "NAVRL_DETNOISE_DROPOUT_P01",
+   "group": "other",
+   "type": "float",
+   "default": 0.0,
+   "default_expr": null,
+   "effective_default": 0.0,
+   "effective_differs": false,
+   "unit": null,
+   "attr": "task_config.perception.detector_noise_dropout_p01",
+   "declarations": [
+    {
+     "file": "aerial_gym/config/task_config/navrl_task_config.py",
+     "line": 289,
+     "scope": "task_config.perception",
+     "type": "float",
+     "default": 0.0
+    }
+   ],
+   "mirrors": false,
+   "echoes": [],
+   "doc": "",
+   "doc_short": null,
+   "launchers": [],
+   "experiments": [
+    "2026-08-13-detector-coupling-probe"
+   ],
+   "ablated": true,
+   "swept_but_not_ablated": false,
+   "frozen_by_contract": false,
+   "origin": "python"
+  },
+  {
+   "name": "NAVRL_DETNOISE_DROPOUT_P10",
+   "group": "other",
+   "type": "float",
+   "default": 1.0,
+   "default_expr": null,
+   "effective_default": 1.0,
+   "effective_differs": false,
+   "unit": null,
+   "attr": "task_config.perception.detector_noise_dropout_p10",
+   "declarations": [
+    {
+     "file": "aerial_gym/config/task_config/navrl_task_config.py",
+     "line": 290,
+     "scope": "task_config.perception",
+     "type": "float",
+     "default": 1.0
+    }
+   ],
+   "mirrors": false,
+   "echoes": [],
+   "doc": "",
+   "doc_short": null,
+   "launchers": [],
+   "experiments": [],
+   "ablated": false,
+   "swept_but_not_ablated": false,
+   "frozen_by_contract": false,
+   "origin": "python"
+  },
+  {
+   "name": "NAVRL_DETNOISE_RANGE_BIAS_M",
+   "group": "other",
+   "type": "float",
+   "default": 0.0,
+   "default_expr": null,
+   "effective_default": 0.0,
+   "effective_differs": false,
+   "unit": "m",
+   "attr": "task_config.perception.detector_noise_range_bias_m",
+   "declarations": [
+    {
+     "file": "aerial_gym/config/task_config/navrl_task_config.py",
+     "line": 283,
+     "scope": "task_config.perception",
+     "type": "float",
+     "default": 0.0
+    }
+   ],
+   "mirrors": false,
+   "echoes": [],
+   "doc": "",
+   "doc_short": null,
+   "launchers": [],
+   "experiments": [],
+   "ablated": false,
+   "swept_but_not_ablated": false,
+   "frozen_by_contract": false,
+   "origin": "python"
+  },
+  {
+   "name": "NAVRL_DETNOISE_RANGE_RHO",
+   "group": "other",
+   "type": "float",
+   "default": 0.0,
+   "default_expr": null,
+   "effective_default": 0.0,
+   "effective_differs": false,
+   "unit": null,
+   "attr": "task_config.perception.detector_noise_range_rho",
+   "declarations": [
+    {
+     "file": "aerial_gym/config/task_config/navrl_task_config.py",
+     "line": 282,
+     "scope": "task_config.perception",
+     "type": "float",
+     "default": 0.0
+    }
+   ],
+   "mirrors": false,
+   "echoes": [],
+   "doc": "The seed-419 profile showed v7's range error is neither white nor homoscedastic:\nlag-1 autocorrelation 0.644, and std 0.42/0.37/0.23/1.07 m across range quartiles.\nAn iid homoscedastic draw with the right marginal would leave the Kalman filter free to\naverage the error away, which is exactly the under-reproduction the preregistration\nwarned would make a null result uninterpretable. So the injection is AR(1) with a\nrange-dependent scale. Both default to the white/flat behaviour.",
+   "doc_short": "The seed-419 profile showed v7's range error is neither white nor homoscedastic: lag-1 autocorrelation 0.644, and std 0.42/0.37/0.23/1.07 m across range quartiles.",
+   "launchers": [],
+   "experiments": [
+    "2026-08-13-detector-coupling-probe"
+   ],
+   "ablated": true,
+   "swept_but_not_ablated": false,
+   "frozen_by_contract": false,
+   "origin": "python"
+  },
+  {
+   "name": "NAVRL_DETNOISE_RANGE_SIGMA_PROFILE",
+   "group": "other",
+   "type": "str",
+   "default": "",
+   "default_expr": null,
+   "effective_default": "",
+   "effective_differs": false,
+   "unit": null,
+   "attr": "task_config.perception.detector_noise_range_sigma_profile",
+   "declarations": [
+    {
+     "file": "aerial_gym/config/task_config/navrl_task_config.py",
+     "line": 286,
+     "scope": "task_config.perception",
+     "type": "str",
+     "default": ""
+    }
+   ],
+   "mirrors": false,
+   "echoes": [],
+   "doc": "\"r0:s0,r1:s1,...\" -- piecewise-constant sigma multiplier by measured range, upper edges\nin metres. Empty means flat.",
+   "doc_short": "\"r0:s0,r1:s1,...\" -- piecewise-constant sigma multiplier by measured range, upper edges in metres.",
+   "launchers": [],
+   "experiments": [],
+   "ablated": false,
+   "swept_but_not_ablated": false,
+   "frozen_by_contract": false,
+   "origin": "python"
+  },
+  {
+   "name": "NAVRL_DETNOISE_RANGE_STD_M",
+   "group": "other",
+   "type": "float",
+   "default": 0.0,
+   "default_expr": null,
+   "effective_default": 0.0,
+   "effective_differs": false,
+   "unit": "m",
+   "attr": "task_config.perception.detector_noise_range_std_m",
+   "declarations": [
+    {
+     "file": "aerial_gym/config/task_config/navrl_task_config.py",
+     "line": 275,
+     "scope": "task_config.perception",
+     "type": "float",
+     "default": 0.0
+    }
+   ],
+   "mirrors": false,
+   "echoes": [],
+   "doc": "",
+   "doc_short": null,
+   "launchers": [],
+   "experiments": [
+    "2026-08-13-detector-coupling-probe"
+   ],
+   "ablated": true,
+   "swept_but_not_ablated": false,
+   "frozen_by_contract": false,
+   "origin": "python"
+  },
+  {
+   "name": "NAVRL_DETNOISE_SCALE",
+   "group": "other",
+   "type": "float",
+   "default": 1.0,
+   "default_expr": null,
+   "effective_default": 1.0,
+   "effective_differs": false,
+   "unit": null,
+   "attr": "task_config.perception.detector_noise_scale",
+   "declarations": [
+    {
+     "file": "aerial_gym/config/task_config/navrl_task_config.py",
+     "line": 293,
+     "scope": "task_config.perception",
+     "type": "float",
+     "default": 1.0
+    }
+   ],
+   "mirrors": false,
+   "echoes": [],
+   "doc": "Dose-response ladder: multiplies the two sigmas and p01 (leaving p10, i.e. the run-length\nshape, intact) so 0.5x/1.0x/1.5x arms vary magnitude without changing the noise family.",
+   "doc_short": "Dose-response ladder: multiplies the two sigmas and p01 (leaving p10, i.e.",
+   "launchers": [],
+   "experiments": [],
+   "ablated": false,
+   "swept_but_not_ablated": false,
+   "frozen_by_contract": false,
+   "origin": "python"
+  },
+  {
+   "name": "NAVRL_DETNOISE_SEED",
+   "group": "other",
+   "type": "int",
+   "default": 9409,
+   "default_expr": null,
+   "effective_default": 9409,
+   "effective_differs": false,
+   "unit": null,
+   "attr": "task_config.perception.detector_noise_seed",
+   "declarations": [
+    {
+     "file": "aerial_gym/config/task_config/navrl_task_config.py",
+     "line": 296,
+     "scope": "task_config.perception",
+     "type": "int",
+     "default": 9409
+    }
+   ],
+   "mirrors": false,
+   "echoes": [],
+   "doc": "Dedicated stream. Verification 3 lost a whole campaign to pose noise drawing from the\nglobal torch RNG, which changed obstacle placement and target motion between arms.",
+   "doc_short": "Dedicated stream.",
+   "launchers": [
+    {
+     "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_detector_coupling.sh",
+     "value": "9409"
+    }
+   ],
+   "experiments": [],
+   "ablated": false,
+   "swept_but_not_ablated": true,
+   "frozen_by_contract": false,
+   "origin": "python"
+  },
+  {
+   "name": "NAVRL_DETPROFILE_CHECKPOINT",
+   "group": "other",
+   "type": "str",
+   "default": "",
+   "default_expr": null,
+   "effective_default": "",
+   "effective_differs": false,
+   "unit": null,
+   "attr": "task_config.perception.detector_profile_checkpoint",
+   "declarations": [
+    {
+     "file": "aerial_gym/config/task_config/navrl_task_config.py",
+     "line": 299,
+     "scope": "task_config.perception",
+     "type": "str",
+     "default": ""
+    }
+   ],
+   "mirrors": false,
+   "echoes": [],
+   "doc": "Profiling mode: additionally run a SECOND detector on the same frame and export the\npaired outputs, so v7's error against analytic can be measured on identical inputs.",
+   "doc_short": "Profiling mode: additionally run a SECOND detector on the same frame and export the paired outputs, so v7's error against analytic can be measured on identical inputs.",
+   "launchers": [],
+   "experiments": [],
+   "ablated": false,
    "swept_but_not_ablated": false,
    "frozen_by_contract": false,
    "origin": "python"
@@ -3411,7 +3729,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 333,
+     "line": 370,
      "scope": "task_config",
      "type": "int",
      "default": 300
@@ -3631,6 +3949,10 @@
     },
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_speed_map.sh",
+     "value": "original"
+    },
+    {
+     "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_detector_coupling.sh",
      "value": "original"
     },
     {
@@ -4431,7 +4753,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 401,
+     "line": 438,
      "scope": "task_config.curriculum",
      "type": "int",
      "default": 2048
@@ -4470,7 +4792,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 398,
+     "line": 435,
      "scope": "task_config.curriculum",
      "type": "bool",
      "default": false
@@ -4529,7 +4851,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 384,
+     "line": 421,
      "scope": "task_config.curriculum",
      "type": "float",
      "default": 24.0
@@ -4604,7 +4926,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 375,
+     "line": 412,
      "scope": "task_config.curriculum",
      "type": "float",
      "default": 20.0
@@ -4679,7 +5001,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 381,
+     "line": 418,
      "scope": "task_config.curriculum",
      "type": "int",
      "default": 3000
@@ -4722,7 +5044,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 378,
+     "line": 415,
      "scope": "task_config.curriculum",
      "type": "int",
      "default": 2000
@@ -4765,7 +5087,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 400,
+     "line": 437,
      "scope": "task_config.curriculum",
      "type": "float",
      "default": 2.0
@@ -4804,7 +5126,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 399,
+     "line": 436,
      "scope": "task_config.curriculum",
      "type": "float",
      "default": 0.6
@@ -4843,7 +5165,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 385,
+     "line": 422,
      "scope": "task_config.curriculum",
      "type": "int",
      "default": 3000
@@ -5654,7 +5976,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 288,
+     "line": 325,
      "scope": "task_config.perception",
      "type": "float",
      "default": 0.0
@@ -5705,7 +6027,7 @@
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_perception.py",
-     "line": 47,
+     "line": 48,
      "scope": "<module>",
      "type": "str",
      "default": ""
@@ -5873,7 +6195,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 283,
+     "line": 320,
      "scope": "task_config.perception",
      "type": "bool",
      "default": false
@@ -5910,7 +6232,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 294,
+     "line": 331,
      "scope": "task_config.perception",
      "type": "bool",
      "default": false
@@ -5947,7 +6269,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 276,
+     "line": 313,
      "scope": "task_config.perception",
      "type": "bool",
      "default": true
@@ -5998,7 +6320,7 @@
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_perception.py",
-     "line": 48,
+     "line": 49,
      "scope": "<module>",
      "type": "str",
      "default": ""
@@ -6253,7 +6575,7 @@
    "declarations": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_perception.py",
-     "line": 27,
+     "line": 28,
      "scope": "<module>",
      "type": "str",
      "default": ""
@@ -6408,7 +6730,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 340,
+     "line": 377,
      "scope": "task_config",
      "type": "float",
      "default": 2.0
@@ -6471,7 +6793,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 413,
+     "line": 450,
      "scope": "task_config.density",
      "type": "int",
      "default": 48
@@ -6561,7 +6883,7 @@
    "declarations": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_perception.py",
-     "line": 63,
+     "line": 64,
      "scope": "<module>",
      "type": "str",
      "default": ""
@@ -6620,7 +6942,7 @@
    "declarations": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_perception.py",
-     "line": 76,
+     "line": 77,
      "scope": "<module>",
      "type": "str",
      "default": ""
@@ -6681,7 +7003,7 @@
    "declarations": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_perception.py",
-     "line": 66,
+     "line": 67,
      "scope": "<module>",
      "type": "str",
      "default": ""
@@ -6740,7 +7062,7 @@
    "declarations": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_perception.py",
-     "line": 60,
+     "line": 61,
      "scope": "<module>",
      "type": "str",
      "default": ""
@@ -6822,7 +7144,7 @@
    "declarations": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_perception.py",
-     "line": 54,
+     "line": 55,
      "scope": "<module>",
      "type": "str",
      "default": ""
@@ -6899,7 +7221,7 @@
    "declarations": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_perception.py",
-     "line": 91,
+     "line": 92,
      "scope": "<module>",
      "type": "str",
      "default": ""
@@ -6946,7 +7268,7 @@
    "declarations": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_perception.py",
-     "line": 95,
+     "line": 96,
      "scope": "<module>",
      "type": "str",
      "default": ""
@@ -8103,7 +8425,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 295,
+     "line": 332,
      "scope": "task_config.perception",
      "type": "float",
      "default": 0.015
@@ -8515,6 +8837,10 @@
      "value": "riskcap"
     },
     {
+     "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_detector_coupling.sh",
+     "value": "riskcap"
+    },
+    {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_detector_navigation_ab.sh",
      "value": "riskcap"
     },
@@ -8599,7 +8925,8 @@
     "2026-08-05-governor-screen",
     "2026-08-05-riskcap-screen",
     "2026-08-05-riskcap-postadapt",
-    "2026-08-11-gate1-governor-adaptation"
+    "2026-08-11-gate1-governor-adaptation",
+    "2026-08-13-detector-profile-void-governor"
    ],
    "ablated": true,
    "swept_but_not_ablated": false,
@@ -8640,6 +8967,10 @@
     },
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_speed_map.sh",
+     "value": "2.9608856678"
+    },
+    {
+     "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_detector_coupling.sh",
      "value": "2.9608856678"
     },
     {
@@ -8766,6 +9097,10 @@
      "value": "2.0"
     },
     {
+     "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_detector_coupling.sh",
+     "value": "2.0"
+    },
+    {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_detector_navigation_ab.sh",
      "value": "2.0"
     },
@@ -8889,6 +9224,10 @@
      "value": "3.53553390593"
     },
     {
+     "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_detector_coupling.sh",
+     "value": "3.53553390593"
+    },
+    {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_detector_navigation_ab.sh",
      "value": "3.53553390593"
     },
@@ -9009,6 +9348,10 @@
     },
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_speed_map.sh",
+     "value": "0.45"
+    },
+    {
+     "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_detector_coupling.sh",
      "value": "0.45"
     },
     {
@@ -9139,6 +9482,10 @@
      "value": "0.45"
     },
     {
+     "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_detector_coupling.sh",
+     "value": "0.45"
+    },
+    {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_detector_navigation_ab.sh",
      "value": "0.45"
     },
@@ -9259,6 +9606,10 @@
     },
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_speed_map.sh",
+     "value": "0.1"
+    },
+    {
+     "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_detector_coupling.sh",
      "value": "0.1"
     },
     {
@@ -9389,6 +9740,10 @@
      "value": "5.0"
     },
     {
+     "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_detector_coupling.sh",
+     "value": "5.0"
+    },
+    {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_detector_navigation_ab.sh",
      "value": "5.0"
     },
@@ -9505,6 +9860,10 @@
     },
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_speed_map.sh",
+     "value": "3.0"
+    },
+    {
+     "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_detector_coupling.sh",
      "value": "3.0"
     },
     {
@@ -9635,6 +9994,10 @@
      "value": "1.2"
     },
     {
+     "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_detector_coupling.sh",
+     "value": "1.2"
+    },
+    {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_detector_navigation_ab.sh",
      "value": "1.2"
     },
@@ -9738,7 +10101,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 270,
+     "line": 307,
      "scope": "task_config.perception",
      "type": "bool",
      "default": false
@@ -9775,7 +10138,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 485,
+     "line": 522,
      "scope": "task_config.target_motion",
      "type": "str",
      "default": "mixed"
@@ -9904,7 +10267,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 481,
+     "line": 518,
      "scope": "task_config.target_motion",
      "type": "float",
      "default": -1.0
@@ -9947,7 +10310,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 468,
+     "line": 505,
      "scope": "task_config.target_motion",
      "type": "float",
      "default": 0.0
@@ -10010,7 +10373,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 471,
+     "line": 508,
      "scope": "task_config.target_motion",
      "type": "float",
      "default": 0.0
@@ -10073,7 +10436,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 479,
+     "line": 516,
      "scope": "task_config.target_motion",
      "type": "int",
      "default": 3000
@@ -10378,6 +10741,10 @@
      "value": "deterministic"
     },
     {
+     "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_detector_coupling.sh",
+     "value": "deterministic"
+    },
+    {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_detector_navigation_ab.sh",
      "value": "deterministic"
     },
@@ -10630,6 +10997,10 @@
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_speed_map.sh",
      "value": "130 160 190 205 220"
+    },
+    {
+     "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_detector_coupling.sh",
+     "value": "205"
     },
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_detector_navigation_ab.sh",
@@ -11150,7 +11521,7 @@
     },
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 351,
+     "line": 388,
      "scope": "task_config",
      "type": "float",
      "default": 2.5
@@ -11638,6 +12009,26 @@
    ]
   },
   {
+   "name": "NAVRL_DETPROFILE_MAX_STEPS",
+   "sites": [
+    {
+     "file": "aerial_gym/task/navrl_task/navrl_perception.py",
+     "line": 751,
+     "scope": "NavRLPerceptionModule"
+    }
+   ]
+  },
+  {
+   "name": "NAVRL_DETPROFILE_OUT",
+   "sites": [
+    {
+     "file": "aerial_gym/task/navrl_task/navrl_perception.py",
+     "line": 746,
+     "scope": "NavRLPerceptionModule"
+    }
+   ]
+  },
+  {
    "name": "NAVRL_ENTROPY_COEF",
    "sites": [
     {
@@ -11752,7 +12143,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_perception.py",
-     "line": 754,
+     "line": 821,
      "scope": "NavRLPerceptionModule"
     }
    ]
