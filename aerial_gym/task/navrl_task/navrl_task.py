@@ -768,9 +768,14 @@ class NavRLTask(BaseTask):
                 % ("|".join(CV_INITIAL_HEADING_MODES), self._eval_cv_initial_heading)
             )
         if self._eval_cv_initial_heading != "random":
-            if not self._bulk_eval_mode or self.general_train_mode:
+            if (
+                not self._bulk_eval_mode
+                or not self._bulk_eval_output
+                or not os.environ.get("NAVRL_EVAL_CHECKPOINT", "").strip()
+            ):
                 raise RuntimeError(
-                    "NAVRL_EVAL_CV_INITIAL_HEADING is evaluation-only and requires NAVRL_BULK_EVAL=1"
+                    "NAVRL_EVAL_CV_INITIAL_HEADING is evaluation-only and requires a bulk-result "
+                    "path plus NAVRL_EVAL_CHECKPOINT"
                 )
             if str(self.tm.pattern) != "cv":
                 raise RuntimeError(

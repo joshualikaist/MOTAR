@@ -228,6 +228,7 @@ class Ref5inSmokeLauncherContract(unittest.TestCase):
         )
         for literal in (
             "NAVRL_EVAL_CV_INITIAL_HEADING is evaluation-only",
+            'not os.environ.get("NAVRL_EVAL_CHECKPOINT", "").strip()',
             "NAVRL_EVAL_CV_INITIAL_HEADING requires NAVRL_TARGET_PATTERN=cv",
             '"initial_heading_max_contract_error"',
         ):

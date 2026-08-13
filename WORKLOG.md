@@ -8843,3 +8843,10 @@ audit를 모두 fail-closed 검증한다.
 CPU 단위 테스트 7개, ref5in contract unittest 15개, shell syntax/py_compile을 통과했고 실제 GPU를
 할당하지 않는 preflight도 PASS했다. 결과 전 screen의 `all timeout high`는 모호하지 않게 모든 cell
 timeout `>=12%`로 고정했다.
+
+첫 toward 실행은 task 생성 중 0 episode에서 fail-closed됐다. evaluator는 checkpoint provenance를
+맞추기 위해 `NAVRL_GENERAL_TRAIN=1`을 유지하면서도 실제 실행은 `NAVRL_BULK_EVAL=1`인 구조인데,
+초기 guard가 `general_train_mode` 플래그만 보고 실제 학습으로 오판했다. 성능 JSON은 생성되지 않았고
+checkpoint/source bundle/log만 남은 폴더는 `_VOID_guard`로 이동해 결과에서 제외했다. guard는 실제
+실행 권한인 bulk mode + non-empty bulk-result path + `NAVRL_EVAL_CHECKPOINT` 세 조건으로 수정했다.
+일반 training은 이 세 조건을 함께 갖지 않으므로 controlled heading을 사용할 수 없다.
