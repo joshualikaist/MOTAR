@@ -184,6 +184,7 @@ class Ref5inSmokeLauncherContract(unittest.TestCase):
             "NAVRL_GENERAL_GOAL_DIST_MIN=22.5",
             "NAVRL_SPEED_GOVERNOR=off",
             "NAVRL_REQUIRE_TRAINING_SOURCE_RECEIPT=1",
+            "PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True",
         ):
             self.assertIn(literal, source)
 

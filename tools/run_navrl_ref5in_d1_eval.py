@@ -63,9 +63,22 @@ def configure_base(checkpoint: Path, checkpoint_sha: str) -> None:
 
 
 def unique_d1_run() -> Path:
-    runs = sorted(path for path in (RL_ROOT / "runs").glob(RUN_GLOB) if path.is_dir())
-    require(len(runs) == 1, f"expected exactly one D1 run, found {[p.name for p in runs]}")
-    return runs[0]
+    candidates = sorted(path for path in (RL_ROOT / "runs").glob(RUN_GLOB) if path.is_dir())
+    completed = []
+    for path in candidates:
+        summary_path = path / "aerial_run/run_summary.json"
+        marker = path / ".aerial_training_finished"
+        if not summary_path.is_file() or not marker.is_file():
+            continue
+        summary = BASE.load_json(summary_path)
+        if summary.get("exit_reason") == "max_epochs" and int(summary.get("last_epoch", -1)) == TERMINAL_EPOCH:
+            completed.append(path)
+    require(
+        len(completed) == 1,
+        f"expected exactly one completed D1 run; candidates={[p.name for p in candidates]} "
+        f"completed={[p.name for p in completed]}",
+    )
+    return completed[0]
 
 
 def verify_training() -> dict:

@@ -8662,3 +8662,14 @@ D1 판정을 결과 전에 고정했다. training은 seed 197/P1c epoch 900 warm
 70 bars, `[22.5,28] m`, mixed target, LR `1.5e-5`이며, held-out은 새 seed 331과 최소 8,193 requested
 episodes를 사용한다. 통과에는 q3 CV timeout `<=12%`, 전체 crash `<=27%`, q3 crash `<=30%`와
 rollback/OOB/NaN 0이 모두 필요하다. D1은 P2 FAIL을 소급 변경하거나 P3 성능 주장에 쓰지 않는다.
+
+### D1 첫 launch — 0 epoch VRAM OOM으로 VOID
+
+commit `0877158`에서 D1을 시작했지만 run
+`ppo_260813_1633_navrl_v2-ref5in-d1-q3-adapt-s197`는 첫 backward의 130 MiB 추가 할당에서 OOM으로
+종료됐다. 완료 epoch/학습 data/checkpoint는 0/없음이며 성능 판정에 쓰지 않는다. 시작 로그는
+`[22.5,28] m`, 70 bars, ref5in, mixed target과 checkpoint 분포 mismatch에 따른 density-window reset이
+정상 적용됐음을 보여준다. 종료 직전 PyTorch reserved-but-unallocated는 216 MiB였고 학습 종료 뒤 GPU
+free는 6.2 GiB로 회복됐다. 따라서 batch/env/과제 의미론을 바꾸기 전에 launcher가
+`PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True`를 고정하도록 했다. 이 설정은 allocator segment만
+바꾸며 128-env PPO 계약은 그대로 둔다. 0-epoch 폴더는 삭제하지 않고 `runs_void/`에 보존한다.

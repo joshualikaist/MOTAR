@@ -13,7 +13,7 @@ D1_PREFLIGHT="${REF5IN_D1_PREFLIGHT_ONLY:-0}"
 D1_PYTHON="${PYTHON:-/home/fair/miniconda3/envs/aerialgym/bin/python}"
 while IFS= read -r name; do
     case "${name}" in
-        NAVRL_*|AERIAL_RUN_TAG|AERIAL_GYM_SIM_NAME|TRAIN_SESSION_LOG|TRAIN_LIVE_LOG|MAX_EPOCHS|SEED|NUM_ENVS|FILE|TASK|GPU4GB|CKPT|ALLOW_CONCURRENT)
+        NAVRL_*|AERIAL_RUN_TAG|AERIAL_GYM_SIM_NAME|TRAIN_SESSION_LOG|TRAIN_LIVE_LOG|MAX_EPOCHS|SEED|NUM_ENVS|FILE|TASK|GPU4GB|CKPT|ALLOW_CONCURRENT|PYTORCH_CUDA_ALLOC_CONF)
             unset "${name}"
             ;;
     esac
@@ -21,6 +21,10 @@ done < <(compgen -v)
 export PYTHON="${D1_PYTHON}"
 export PATH="$(dirname "${PYTHON}"):${PATH}"
 export PYTHONNOUSERSITE=1
+# The 128-env PhysX + compiled Transformer footprint sits close to the 8 GB board limit.  The
+# first zero-epoch launch had 216 MiB reserved-but-unused and failed on a 130 MiB backward buffer.
+# This allocator setting changes memory segmentation only, not the model, batch or task contract.
+export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 CKPT="${REPO_ROOT}/aerial_gym/rl_training/rl_games/runs/ppo_260813_0540_navrl_v2-ref5in-smoke-c-s197/nn/last_gen_ppo_ep_900_rew_137.08087.pth"
