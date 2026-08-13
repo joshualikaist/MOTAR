@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import math
 from pathlib import Path
 import subprocess
 import sys
@@ -60,8 +61,13 @@ def verify_parity(result: dict) -> None:
     for key in ("distance", "pattern", "initial_target_bearing"):
         require(result["strata"].get(key) == original["strata"].get(key),
                 f"behavioral parity failed: strata/{key}")
-    require(result["strata"].get("speed_bin_edges_mps") == [0.3, 0.6, 0.9, 1.2, 1.5],
-            "corrected speed support is not [0.3,1.5]")
+    edges = result["strata"].get("speed_bin_edges_mps") or []
+    expected = [0.3, 0.6, 0.9, 1.2, 1.5]
+    require(
+        len(edges) == len(expected)
+        and all(math.isclose(float(a), b, abs_tol=1e-12) for a, b in zip(edges, expected)),
+        "corrected speed support is not [0.3,1.5]",
+    )
 
 
 def enriched_joint(result: dict) -> dict:
@@ -130,7 +136,10 @@ def verify_result() -> dict:
 
 def main() -> int:
     mode = sys.argv[1] if len(sys.argv) == 2 else ""
-    require(mode in {"preflight", "run", "verify"}, "usage: ... {preflight|run|verify}")
+    require(
+        mode in {"preflight", "run", "finalize", "verify"},
+        "usage: ... {preflight|run|finalize|verify}",
+    )
     if mode == "preflight":
         BASE.verify_prerequisites(require_clean=False)
         require(not OUTPUT.exists(), f"output already exists: {OUTPUT}")
@@ -145,6 +154,12 @@ def main() -> int:
         payload = summary(verify_result())
         write(payload)
         print(json.dumps(payload["mechanism_screen"], indent=2))
+        return 0
+    if mode == "finalize":
+        BASE.verify_prerequisites(require_clean=False)
+        payload = summary(verify_result())
+        write(payload)
+        print("[ref5in-outcome-diagnostic-v2] FINALIZE PASS")
         return 0
     BASE.verify_prerequisites(require_clean=False)
     expected = summary(verify_result())

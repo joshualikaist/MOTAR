@@ -2129,6 +2129,20 @@ def _ref5in_p2_update() -> Optional[Dict[str, Any]]:
     crash = float(outcome["crash_rate"])
     timeout = float(outcome["timeout_rate"])
     episodes = int(outcome["captured"]) + int(outcome["crash"]) + int(outcome["timeout"])
+    diagnostic_path = ROOT / "results/navrl_ref5in_outcome_diagnostic_v2_seed317/summary.json"
+    diagnostic = None
+    if diagnostic_path.is_file():
+        try:
+            candidate = json.loads(diagnostic_path.read_text(encoding="utf-8"))
+            if (
+                candidate.get("scope") == "post_p2_descriptive_outcome_strata_v2_seed317"
+                and candidate.get("decision_authority") == "none"
+                and candidate.get("p3_unlocked") is False
+                and candidate.get("behavioral_parity_with_v1") is True
+            ):
+                diagnostic = candidate
+        except (OSError, TypeError, ValueError, json.JSONDecodeError):
+            diagnostic = None
     experiment = {
         "ref5in_p2": True,
         "core_audit_complete": True,
@@ -2150,38 +2164,85 @@ def _ref5in_p2_update() -> Optional[Dict[str, Any]]:
         "robot_name": condition.get("robot_name"),
         "checkpoint_sha256": proof.get("p1c", {}).get("checkpoint_sha256"),
         "runtime_map_sha256": proof.get("evaluation_runtime", {}).get("runtime_map_sha256"),
+        "diagnostic_complete": diagnostic is not None,
     }
+    diagnostic_milestone = {
+        "label": "POST-P2 DIAGNOSTIC",
+        "value": "PENDING",
+        "detail": "outcome-aware distance/pattern measurement not finalized",
+        "state": "warn",
+    }
+    diagnostic_comparison = None
+    if diagnostic is not None:
+        distance = diagnostic["strata"]["distance"]
+        joint = diagnostic["strata"]["distance_by_pattern"]
+        diagnostic_milestone = {
+            "label": "POST-P2 DIAGNOSTIC",
+            "value": "COMPLETE · descriptive",
+            "detail": (
+                f"q3 timeout {distance['q3']['timeout_rate']*100:.2f}% · "
+                f"CV {joint['q3']['cv']['timeout_rate']*100:.2f}% vs "
+                f"waypoint {joint['q3']['waypoint']['timeout_rate']*100:.2f}%"
+            ),
+            "state": "pass",
+        }
+        diagnostic_comparison = {
+            "label": "diagnostic q3 · 22.5–28 m",
+            "bars": 70,
+            "capture": distance["q3"]["capture_rate"],
+            "unique": None,
+            "verdict": (
+                f"descriptive only · crash {distance['q3']['crash_rate']*100:.2f}% · "
+                f"timeout {distance['q3']['timeout_rate']*100:.2f}%"
+            ),
+        }
+    headline = "The ref5in policy learned, but missed the held-out timeout ceiling by 12 episodes."
+    summary = (
+        f"P1c passed every engineering gate. In the preregistered seed-313 held-out cell, "
+        f"capture/crash/timeout were {capture*100:.2f}/{crash*100:.2f}/{timeout*100:.2f}% "
+        f"over {episodes:,} episodes. Capture and crash passed, but 114 timeouts exceeded the "
+        "5% ceiling (maximum 102), so P3 remains blocked."
+    )
+    decision = (
+        "Do not start P3 or relax the timeout gate after seeing the result. Add outcome-aware "
+        "distance strata, then run a separately labelled diagnostic evaluation to distinguish "
+        "long-range timeout from contact and arena-boundary failure."
+    )
+    if diagnostic is not None:
+        headline = "Long-range CV pursuit, not target speed alone, is the clearest ref5in bottleneck."
+        summary += (
+            " A separate seed-317 diagnostic preserved the P2 decision but localized the failure: "
+            "capture fell 78.05→55.94% from the nearest to farthest distance bin, while timeout "
+            "rose 0.06→14.97%. In the farthest bin, CV timeout was 22.16% versus 7.96% for waypoint."
+        )
+        decision = (
+            "P2 remains a strict FAIL and P3 remains blocked. Treat longer episode time as a "
+            "measurement ablation, not a fix: first test whether additional saturated-distance "
+            "CV exposure removes the q3 timeout without increasing contact or OOB crashes."
+        )
     return {
         "subtitle": "2026-08-13 · ref5in P1c PASS → held-out P2 strict FAIL",
-        "headline": "The ref5in policy learned, but missed the held-out timeout ceiling by 12 episodes.",
-        "summary": (
-            f"P1c passed every engineering gate. In the preregistered seed-313 held-out cell, "
-            f"capture/crash/timeout were {capture*100:.2f}/{crash*100:.2f}/{timeout*100:.2f}% "
-            f"over {episodes:,} episodes. Capture and crash passed, but 114 timeouts exceeded the "
-            "5% ceiling (maximum 102), so P3 remains blocked."
-        ),
+        "headline": headline,
+        "summary": summary,
         "active_experiment": experiment,
         "milestones": [
             {"label": "PLATFORM P0", "value": "PASS · 26/26 + 21/21", "detail": "repository consistency + same-controller simulator gate", "state": "pass"},
             {"label": "P1c ENGINEERING", "value": "PASS", "detail": "72.77/23.94/3.30% · [20,28] m · rollback 0", "state": "pass"},
             {"label": "P2 HELD-OUT", "value": "STRICT FAIL", "detail": "timeout 114/2,049 = 5.56% > 5%", "state": "warn"},
+            diagnostic_milestone,
             {"label": "P3 FULL BUDGET", "value": "BLOCKED", "detail": "seed 211 was not started", "state": "warn"},
         ],
         "comparison": [
             {"label": "P1c · on-policy last 100", "bars": 70, "capture": 0.7276812463, "unique": None, "verdict": "engineering-only · 3,338 episodes"},
             {"label": "P2 · held-out seed313", "bars": 70, "capture": capture, "unique": None, "verdict": f"strict FAIL · crash {crash*100:.2f}% · timeout {timeout*100:.2f}%"},
-        ],
+        ] + ([diagnostic_comparison] if diagnostic_comparison is not None else []),
         "gates": [
             {"label": "capture", "value": f"PASS · {capture*100:.2f}% ≥ 65%"},
             {"label": "crash", "value": f"PASS · {crash*100:.2f}% ≤ 33%"},
             {"label": "timeout", "value": f"FAIL · {timeout*100:.2f}% > 5%"},
             {"label": "provenance", "value": "PASS · P1/current/eval runtime maps identical"},
         ],
-        "decision": (
-            "Do not start P3 or relax the timeout gate after seeing the result. Add outcome-aware "
-            "distance strata, then run a separately labelled diagnostic evaluation to distinguish "
-            "long-range timeout from contact and arena-boundary failure."
-        ),
+        "decision": decision,
     }
 
 

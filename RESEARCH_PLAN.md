@@ -1005,6 +1005,24 @@ global outcome·crash cause·distance/pattern/bearing JSON 값이 v1과 정확�
 distance×pattern joint cell을 추가해 장거리 효과가 CV/waypoint 중 한 generator에만 의존하는지
 기술한다. 이 정정 replay 역시 decision authority는 없고 독립 replication으로 세지 않는다.
 
+**결과:** v2 parity는 PASS했다. 두 replay 모두 global `5,574/2,129/491`, distance/pattern/bearing,
+crash causes가 정확히 같았다. 수정된 speed bins `[0.3,0.6,0.9,1.2,1.5]`의 timeout은
+`8.49/6.84/5.65/3.10%`로 속도와 함께 감소했다. 따라서 target-speed alone 병목 가설은 기각한다.
+distance q0→q3는 capture `78.05→55.94%`, crash `21.89→29.09%`, timeout
+`0.06→14.97%`였다. q3 crash는 CV/waypoint가 `29.00/29.17%`로 같았지만 timeout은
+`22.16/7.96%`로 갈렸다. 장거리에는 (1) pattern-independent contact/OOB 증가와 (2) CV-specific
+non-capture가 동시에 존재한다.
+
+이 결과는 “600-step을 늘린다”를 바로 허용하지 않는다. horizon 연장은 timeout을 crash로 바꿀 수
+있어 capability 개선과 다르다. 또한 P1c는 full `[20,28] m` window에서 약 마지막 100 epoch만
+보냈으므로, P2를 full training 진입 전에 성능 gate로 둔 원래 순서는 undertraining과 알고리즘 한계를
+구분하지 못한다. P2는 계속 claim gate로 FAIL 유지하되, 다음 학습은 P3가 아니라 **D1 제한 adaptation
+probe**로 별도 분류한다: P1c에서 warm-start, 70 bars 고정, `[20,28] m`, mixed 50:50, policy/reward/
+governor 불변, 추가 1,000 epoch. safety/KL/rollback이 통과한 뒤 새 eval seed에서 q3 CV timeout
+`<=12%`(현재 22.16%), 전체 crash `<=27%`, q3 crash `<=30%`를 모두 요구한다. 결과 전에는 budget,
+seed, horizon을 바꾸지 않는다. D1 실패 시 다음은 학습 연장이 아니라 CV initial radial heading
+(toward/tangent/away) frozen-policy diagnostic이다.
+
 ---
 
 ## 9. 참고문헌

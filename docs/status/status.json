@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-13T06:33:44.850456+00:00",
+  "generated_at": "2026-08-13T07:21:50.656793+00:00",
   "repo": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator",
   "n_runs": 77,
   "active_run": null,
@@ -2711,8 +2711,8 @@
   "other_curves": {},
   "research_update": {
     "subtitle": "2026-08-13 · ref5in P1c PASS → held-out P2 strict FAIL",
-    "headline": "The ref5in policy learned, but missed the held-out timeout ceiling by 12 episodes.",
-    "summary": "P1c passed every engineering gate. In the preregistered seed-313 held-out cell, capture/crash/timeout were 68.28/26.16/5.56% over 2,049 episodes. Capture and crash passed, but 114 timeouts exceeded the 5% ceiling (maximum 102), so P3 remains blocked.",
+    "headline": "Long-range CV pursuit, not target speed alone, is the clearest ref5in bottleneck.",
+    "summary": "P1c passed every engineering gate. In the preregistered seed-313 held-out cell, capture/crash/timeout were 68.28/26.16/5.56% over 2,049 episodes. Capture and crash passed, but 114 timeouts exceeded the 5% ceiling (maximum 102), so P3 remains blocked. A separate seed-317 diagnostic preserved the P2 decision but localized the failure: capture fell 78.05→55.94% from the nearest to farthest distance bin, while timeout rose 0.06→14.97%. In the farthest bin, CV timeout was 22.16% versus 7.96% for waypoint.",
     "active_experiment": {
       "ref5in_p2": true,
       "core_audit_complete": true,
@@ -2733,7 +2733,8 @@
       "p3_unlocked": false,
       "robot_name": "navrl_ref5in_quad",
       "checkpoint_sha256": "f1670a1d74dd92cb00d6a58898e9cc1b96eb9cbe155d1e85812a345e7aaae6bf",
-      "runtime_map_sha256": "bbd3f45447c7e2ba03c51d65149e6028085e4280970703cb9887b2c6eaa8fb3a"
+      "runtime_map_sha256": "bbd3f45447c7e2ba03c51d65149e6028085e4280970703cb9887b2c6eaa8fb3a",
+      "diagnostic_complete": true
     },
     "milestones": [
       {
@@ -2753,6 +2754,12 @@
         "value": "STRICT FAIL",
         "detail": "timeout 114/2,049 = 5.56% > 5%",
         "state": "warn"
+      },
+      {
+        "label": "POST-P2 DIAGNOSTIC",
+        "value": "COMPLETE · descriptive",
+        "detail": "q3 timeout 14.97% · CV 22.16% vs waypoint 7.96%",
+        "state": "pass"
       },
       {
         "label": "P3 FULL BUDGET",
@@ -2775,6 +2782,13 @@
         "capture": 0.6827720839433871,
         "unique": null,
         "verdict": "strict FAIL · crash 26.16% · timeout 5.56%"
+      },
+      {
+        "label": "diagnostic q3 · 22.5–28 m",
+        "bars": 70,
+        "capture": 0.5594231725509696,
+        "unique": null,
+        "verdict": "descriptive only · crash 29.09% · timeout 14.97%"
       }
     ],
     "gates": [
@@ -2795,7 +2809,7 @@
         "value": "PASS · P1/current/eval runtime maps identical"
       }
     ],
-    "decision": "Do not start P3 or relax the timeout gate after seeing the result. Add outcome-aware distance strata, then run a separately labelled diagnostic evaluation to distinguish long-range timeout from contact and arena-boundary failure."
+    "decision": "P2 remains a strict FAIL and P3 remains blocked. Treat longer episode time as a measurement ablation, not a fix: first test whether additional saturated-distance CV exposure removes the q3 timeout without increasing contact or OOB crashes."
   },
   "density_speed_map": {
     "task_version": "v2",

@@ -8623,3 +8623,21 @@ speed bin이 실제 지원범위 `[0.3,1.5]`가 아니라 역사적 `[0,1.5]`로
 추가한다. density training gate의 역사적 `[0,max]` bin은 건드리지 않는다. 동일 seed/checkpoint를
 재생해 global outcome/crash cause/distance/pattern/bearing가 v1과 완전히 같지 않으면 telemetry-only
 변경 주장을 기각한다. 이 replay도 P2 재시험이나 독립 seed가 아니다.
+
+### outcome diagnostic v2 종료 — parity PASS, 장거리 CV non-capture 분리
+
+동일 seed-317 replay는 global `captured/crash/timeout=5,574/2,129/491`과 distance/pattern/bearing/
+crash-cause가 v1과 완전히 같아 telemetry-only parity를 통과했다. corrected speed bins는 각 약 2천
+episode를 담았고 timeout이 `8.49→6.84→5.65→3.10%`로 감소했다. 빠른 표적이 timeout 주원인이라는
+설명은 기각한다.
+
+distance q0→q3의 capture/crash/timeout은 `78.05/21.89/0.06% → 55.94/29.09/14.97%`였다.
+q3에서 CV는 `48.84/29.00/22.16%`, waypoint는 `62.87/29.17/7.96%`였다. crash는 pattern과
+무관하게 비슷하게 증가하고, 추가 timeout은 CV에서 집중된다. global crash 2,129건의 81.59%는
+bar contact, 18.41%는 OOB이고 고도 crash는 0이었다. P2 seed313과 diagnostic seed317의 전체
+capture/crash/timeout 차이는 각각 `-0.25/-0.18/+0.43pp`이고 단순 두-비율 95% 구간이 모두 0을
+포함해, global 성능도 P2와 양립한다.
+
+사이트와 README는 P2 strict FAIL/P3 BLOCKED를 유지하면서 이 descriptive 진단을 최신 headline으로
+표시하도록 갱신한다. 다음 candidate는 full P3가 아니라 D1 1,000-epoch saturated-distance adaptation
+probe다. episode horizon 증가는 timeout을 crash로 바꿀 수 있어 원인 ablation으로만 남긴다.

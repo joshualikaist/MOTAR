@@ -35,6 +35,13 @@ P2 실패는 큰 붕괴가 아니라 **경계 실패**입니다. timeout의 Wils
 66.51–70.65%로 비교적 평평했습니다. 따라서 지금 필요한 것은 밀도 장기학습이 아니라
 “긴 초기 거리에서 crash와 timeout이 어떻게 갈리는지”를 outcome별로 다시 계측하는 일입니다.
 
+그 후속 계측도 완료했습니다. 별도 seed 317의 8,194 episodes에서 nearest→farthest distance bin은
+capture `78.05→55.94%`, crash `21.89→29.09%`, timeout `0.06→14.97%`였습니다. 특히 farthest
+CV target은 timeout `22.16%`, waypoint는 `7.96%`였습니다. 반면 실제 `[0.3,1.5] m/s`를 네 구간으로
+나눈 timeout은 속도가 높을수록 `8.49→3.10%`로 감소했습니다. 따라서 “빠른 표적이 주원인”이나
+“episode 시간만 늘리면 해결”이라고 볼 수 없고, **장거리의 지속 방향(CV) 추적과 충돌이 동시에
+남은 병목**입니다. 이 진단은 P2 FAIL을 뒤집지 않으며 P3는 계속 차단됩니다.
+
 ## 시스템을 짧게 보면
 
 현재 corrected-v2 baseline은 다음 흐름을 사용합니다.
@@ -221,9 +228,10 @@ run 폴더 이관과 TensorBoard 병합 절차는 [OPERATIONS.md](OPERATIONS.md)
 3. **P1b 완료·FAIL:** LR `1.5e-5`에서 KL/rollback/OOB/outcome은 전부 통과했지만, 750 epoch도 마지막 2,048-episode 거리 증거창을 채우지 못해 `[20,27] m`에서 끝났습니다.
 4. **P1c PASS:** budget만 900 epoch로 늘린 fresh run이 모든 engineering gate를 통과했습니다.
 5. **P2 strict FAIL:** held-out seed 313에서 capture/crash는 통과했지만 timeout 5.56%가 상한 5%를 넘었습니다. legacy anchor와 P3는 실행하지 않았습니다.
-6. **현재 단계:** outcome별 거리 strata를 추가해 긴 거리의 114 timeout과 536 crash를 분리 진단합니다. 같은 P2를 반복해 좋은 seed를 고르거나 기준을 사후 완화하지 않습니다.
-7. 진단 후에도 새 학습이 필요하면 먼저 짧은 preregistered intervention smoke를 만들고, 통과할 때만 full-budget seed 211을 새로 승인합니다.
-8. perception 연구는 corrected-v2 analytic baseline → learned detector arm → appearance-randomized arm 순으로 한 축씩 추가합니다.
+6. **진단 완료:** 장거리에서 timeout과 crash가 함께 증가했고, q3 timeout은 CV에서 waypoint보다 14.20pp 높았습니다. 표적 속도 alone 가설은 지지되지 않았습니다.
+7. **현재 단계:** full P3 대신 saturated-distance CV 노출을 늘리는 짧은 preregistered adaptation probe를 먼저 설계합니다. episode horizon 증가는 원인 확인용 ablation일 뿐 기본 해법으로 쓰지 않습니다.
+8. probe가 q3 timeout을 줄이면서 contact/OOB를 늘리지 않을 때만 full-budget seed 211의 새 gate를 논의합니다.
+9. perception 연구는 corrected-v2 analytic baseline → learned detector arm → appearance-randomized arm 순으로 한 축씩 추가합니다.
 
 현재 가장 큰 미해결 문제는 “더 오래 학습하면 되는가”가 아니라 **고밀도에서 pre-contact obstacle 정보, 제동 여유, detector 출력 분포, 기체 동역학 중 어느 축이 먼저 한계가 되는가**입니다.
 
