@@ -1,24 +1,39 @@
 # MOTAR
 
-**MOTAR는 카메라·LiDAR로 표적과 장애물을 보고, 시뮬레이터 ego-state로 자세와 속도를 아는 쿼드로터가 밀집 장애물 사이의 움직이는 표적을 어디까지 추적·요격할 수 있는지 측정하는 Aerial Gym 기반 연구 저장소입니다.**
+MOTAR는 **막대가 빽빽한 공간에서 움직이는 표적을 쫓는 드론**을 연구합니다. 드론은 카메라와
+LiDAR로 표적·장애물을 보고, 시뮬레이터 ego-state로 자신의 자세와 속도를 압니다. 목표는 멋진 한
+장면을 만드는 것보다 “얼마나 빽빽해지면, 왜 실패하는가?”를 재현 가능한 숫자로 답하는 것입니다.
 
-이 저장소의 목표는 “드론 요격이 해결됐다”는 데모를 만드는 것이 아닙니다. 표적을 빨리 따라갈수록 충돌 위험이 커지고, 장애물이 많아질수록 제한된 obstacle token에 정보가 빠지는 문제를 같은 조건에서 반복 측정하는 것이 먼저입니다. 그래서 성공률 하나보다 **환경 계약, checkpoint 계보, 실패 구성(capture/crash/timeout), seed와 신뢰구간**을 함께 남깁니다.
+쉽게 말하면 세 문제가 한꺼번에 걸립니다.
+
+- 빨리 쫓으면 잡기 쉽지만 제동거리가 길어져 막대에 부딪힙니다.
+- 장애물이 늘면 8개 obstacle token에 모든 막대를 담을 수 없습니다.
+- 학습 로그가 좋아 보여도 다른 seed·고정 조건에서 다시 평가하면 결과가 달라질 수 있습니다.
+
+그래서 이 저장소에서는 최고 성공률 한 줄보다 **어떤 환경·기체·checkpoint·seed로 돌렸는지**, 그리고
+실패가 capture/crash/timeout 중 무엇이었는지를 함께 보존합니다. 처음 보는 분은 아래 “현재 결론”과
+“5분 안에 확인하기”만 읽고, 실험을 직접 돌릴 때 `OPERATIONS.md`로 넘어가면 됩니다.
 
 > 현재 기준일: **2026-08-13**
 >
 > 자세한 변경 이력은 [WORKLOG.md](WORKLOG.md), 다음 실험의 순서와 중단 조건은 [RESEARCH_PLAN.md](RESEARCH_PLAN.md), 설치·운영 방법은 [OPERATIONS.md](OPERATIONS.md)에 있습니다.
 
-## 지금 어디까지 됐나
+## 현재 결론
 
 | 항목 | 현재 판정 | 여기서 말할 수 없는 것 |
 |---|---|---|
 | corrected-v2 episode 의미론 | **공학 스모크 통과**. fresh PPO 1,000 epoch에서 정확히 600 action 종료, rl_games `time_outs` 전달, finite PPO/KL, rollback 0, raw action OOB 0을 확인했습니다. | 이 run은 70 bars의 on-policy 학습 기록입니다. held-out 성능, 밀도 승급 능력, 알고리즘 우월성을 증명하지 않습니다. |
 | learned detector 연결 | frozen navigation policy에서 learned-v2가 analytic bootstrap 대비 비열등하다는 결과를 두 평가 seed에서 재현했습니다. | 더 최신인 learned-v7을 그대로 꽂으면 nominal 성능이 떨어집니다. threshold만 바꿔 해결되는 문제가 아니며, detector 출력 분포에 맞춘 별도 학습이 필요합니다. |
 | 고밀도 기하 | 수정된 좌표계의 정적 2-D 검사에서 333/333 장면에 경로가 존재했습니다. | 회전·제동·표적 이동·600-step 제한을 포함한 동적 도달 가능성은 아닙니다. “길이 있으니 정책 문제”라고 단정할 수 없습니다. |
-| `navrl_ref5in_quad` 후보 기체 | CPU 저장소 계약 **26/26**, canonical same-controller simulator gate **21/21**을 통과했습니다. P1b fresh 750 epoch의 last-100 outcome은 69.55/28.12/2.33%였고 KL/rollback/OOB/source gate도 통과했습니다. | P1b는 거리 `[20,27] m`에서 끝나 전체 FAIL입니다. 예산만 900으로 늘린 P1c를 통과하기 전에는 held-out/장기학습으로 가지 않습니다. 실기 비행, CAD, endurance, 열·전원 여유도 미검증입니다. |
+| `navrl_ref5in_quad` 후보 기체 | CPU 저장소 계약 **26/26**, canonical same-controller simulator gate **21/21**, P1c fresh 900-epoch engineering gate를 통과했습니다. P1c last-100은 72.77/23.94/3.30%였습니다. | held-out P2는 68.28/26.16/5.56%로 timeout 상한 5%를 12건 초과해 **strict FAIL**입니다. P3 장기학습은 중단했습니다. 실기 비행, CAD, endurance, 열·전원 여유도 미검증입니다. |
 | 과거 navigation 결과 | legacy evaluator 안에서는 비교 가능한 동결 기록으로 보존합니다. | old 601-action 결과를 corrected exact-600 결과와 합치거나, legacy 기체 결과를 ref5in 성능으로 부를 수 없습니다. |
 
-현재 판단의 근거는 [독립 검수 보고서](docs/codex_review_2026-08-12.md), [플랫폼 P0](results/navrl_ref_platform_verification/summary.md), [P1a](results/navrl_ref5in_smoke_seed197/summary.md), [P1b](results/navrl_ref5in_smoke_seed197/p1b/summary.md)에 있습니다. 위 표의 “통과”는 각 문서에 적힌 좁은 gate만 뜻합니다.
+현재 판단의 근거는 [독립 검수 보고서](docs/codex_review_2026-08-12.md), [플랫폼 P0](results/navrl_ref_platform_verification/summary.md), [P1a](results/navrl_ref5in_smoke_seed197/summary.md), [P1b](results/navrl_ref5in_smoke_seed197/p1b/summary.md), [P1c](results/navrl_ref5in_smoke_seed197/p1c/summary.md), [P2](results/navrl_ref5in_p2_seed313/summary.md)에 있습니다. 위 표의 “통과”는 각 문서에 적힌 좁은 gate만 뜻합니다.
+
+P2 실패는 큰 붕괴가 아니라 **경계 실패**입니다. timeout의 Wilson 95% CI는 4.65–6.64%라 5%를
+포함하고, capture는 거리 최장 사분위에서 53.17%까지 떨어졌지만 표적 속도 사분위에서는
+66.51–70.65%로 비교적 평평했습니다. 따라서 지금 필요한 것은 밀도 장기학습이 아니라
+“긴 초기 거리에서 crash와 timeout이 어떻게 갈리는지”를 outcome별로 다시 계측하는 일입니다.
 
 ## 시스템을 짧게 보면
 
@@ -54,12 +69,12 @@ MOTAR에는 **과제 계약**과 **기체 계약**이라는 서로 다른 두 �
 
 | robot name | 의미 | 주의점 |
 |---|---|---|
-| `navrl_quad` | 기존 checkpoint와 논리 연결을 보존하는 legacy simulation 기체 | 0.28 m 충돌 proxy, ±0.13 m motor 좌표, 0.25 kg stock dynamics가 한 실제 기체를 일관되게 나타내지는 않습니다. |
-| `navrl_ref5in_quad` | 1.20 kg, 220 mm motor diagonal, 0.28 m XY 충돌 proxy를 가정한 opt-in 5-inch hardware-informed simulation candidate | 저장소 내부 정합성과 canonical open-arena simulator gate, on-policy engineering outcome만 관측했습니다. held-out·장기 과제 성능은 아직 없으며 legacy curve에 수치를 이어 붙이지 않습니다. |
+| `navrl_quad` | 기존 checkpoint와 논리 연결을 보존하는 legacy simulation 기체 | 0.28 m 충돌 proxy, ±0.13 m motor 좌표, 0.25 kg stock dynamics 등 mixed-scale 개발 파라미터가 exact BOM/CAD의 단일 실제 플랫폼에 추적되지 않습니다. 어떤 실제 기체에도 대응할 수 없다고 증명한 것은 아닙니다. |
+| `navrl_ref5in_quad` | 1.20 kg, 220 mm motor diagonal, 0.28 m XY 충돌 proxy를 가정한 opt-in 5-inch hardware-informed simulation candidate | 저장소 정합성·canonical open-arena gate와 P1c engineering gate는 통과했지만, held-out P2는 timeout 상한을 넘었습니다. 장기 P3는 미실행이며 legacy curve에 수치를 이어 붙이지 않습니다. |
 
 따라서 “v2”라고 적혀 있어도 종료 의미론이 다르면 같은 실험이 아니고, observation shape가 같아 checkpoint가 로드되더라도 robot lineage가 다르면 같은 정책으로 평가하면 안 됩니다. 현재 evaluator는 checkpoint에 저장된 arena·sensor·robot provenance를 확인하고 불일치를 fail-closed하도록 설계되어 있습니다.
 
-## 빠르게 확인하기
+## 5분 안에 확인하기
 
 ### 1. 설치
 
@@ -138,7 +153,8 @@ python tools/verify_navrl_ref_platform.py \
   --output results/navrl_ref_platform_verification/flight_envelope.json
 ```
 
-그다음 **실행에 관여하는 source가 commit된 상태**에서 현재 사전등록된 P1c 스모크를 실행합니다.
+P1c는 이미 완료됐습니다. 아래 명령은 결과 재현이나 새 기체 파라미터를 바꾼 뒤 다시 gate를
+확인할 때만 사용합니다. **현재 다음 단계로 P3를 실행하면 안 됩니다.**
 
 ```bash
 cd ~/workspaces/aerial_gym_ws/src/aerial_gym_simulator
@@ -150,6 +166,13 @@ cd aerial_gym/rl_training/rl_games
 ```
 
 이 launcher는 seed 197, 900 epochs, LR `1.5e-5`, `navrl_ref5in_quad`, governor off와 corrected-v2 의미론을 고정합니다. CLI 인자와 `CKPT` resume를 일부러 거부합니다. P1a/P1b를 이어 돌리지 않고 매번 fresh weights로 시작합니다. 결과가 좋아도 이것은 **학습 가능성 engineering gate**일 뿐, legacy보다 낫다는 성능 주장이 아닙니다.
+
+완료된 P2 proof는 다음 명령으로 byte-level 무결성을 다시 확인할 수 있습니다.
+
+```bash
+cd ~/workspaces/aerial_gym_ws/src/aerial_gym_simulator
+/home/fair/miniconda3/envs/aerialgym/bin/python tools/attest_navrl_ref5in_p2.py verify
+```
 
 일반적인 `train_navrl.sh`는 여러 역사적 기본값을 허용하므로 현재 기준 실험의 시작 명령으로 추천하지 않습니다. 새 실험은 목적에 맞는 고정 launcher와 사전등록 문서를 먼저 추가합니다.
 
@@ -196,10 +219,11 @@ run 폴더 이관과 TensorBoard 병합 절차는 [OPERATIONS.md](OPERATIONS.md)
 1. **완료:** ref5in CPU 정합성 26/26과 canonical same-controller simulator gate 21/21을 고정했습니다.
 2. **P1a 완료·FAIL:** fresh 500 epoch에서 outcome은 gate를 넘었지만 epoch 432 behavior-KL rollback 1회와 거리 27 m 종료 때문에 전체 gate를 통과하지 못했습니다.
 3. **P1b 완료·FAIL:** LR `1.5e-5`에서 KL/rollback/OOB/outcome은 전부 통과했지만, 750 epoch도 마지막 2,048-episode 거리 증거창을 채우지 못해 `[20,27] m`에서 끝났습니다.
-4. **현재 단계:** task·seed·LR은 그대로 두고 budget만 900 epoch로 늘린 fresh P1c를 실행합니다. P1c가 통과해야만 같은 corrected-v2 계약의 held-out 평가를 수행합니다.
-5. held-out gate까지 통과하면 먼저 full-budget seed 1개를 완주하고, 그 결과가 사전등록 기준을 만족할 때만 나머지 training seed를 추가합니다. 한 seed는 데모로만 취급합니다.
-6. legacy와 ref5in을 비교할 때는 architecture·curriculum·예산·평가 seed를 맞추고 둘 다 fresh lineage로 만듭니다. 기존 legacy checkpoint를 ref5in에 그대로 재생하지 않습니다.
-7. perception 연구는 corrected-v2 analytic baseline → learned detector arm → appearance-randomized arm 순으로 한 축씩 추가합니다.
+4. **P1c PASS:** budget만 900 epoch로 늘린 fresh run이 모든 engineering gate를 통과했습니다.
+5. **P2 strict FAIL:** held-out seed 313에서 capture/crash는 통과했지만 timeout 5.56%가 상한 5%를 넘었습니다. legacy anchor와 P3는 실행하지 않았습니다.
+6. **현재 단계:** outcome별 거리 strata를 추가해 긴 거리의 114 timeout과 536 crash를 분리 진단합니다. 같은 P2를 반복해 좋은 seed를 고르거나 기준을 사후 완화하지 않습니다.
+7. 진단 후에도 새 학습이 필요하면 먼저 짧은 preregistered intervention smoke를 만들고, 통과할 때만 full-budget seed 211을 새로 승인합니다.
+8. perception 연구는 corrected-v2 analytic baseline → learned detector arm → appearance-randomized arm 순으로 한 축씩 추가합니다.
 
 현재 가장 큰 미해결 문제는 “더 오래 학습하면 되는가”가 아니라 **고밀도에서 pre-contact obstacle 정보, 제동 여유, detector 출력 분포, 기체 동역학 중 어느 축이 먼저 한계가 되는가**입니다.
 

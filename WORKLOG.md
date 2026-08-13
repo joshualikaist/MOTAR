@@ -8242,9 +8242,12 @@ Claude 최종 체크리스트와 그대로 복사할 전달 프롬프트를 포�
 
 ## 2026-08-13 — 기준 플랫폼 구현·검증 완료, 그리고 08-12 진단의 정정
 
-> **부분 SUPERSEDED:** 아래 472 g, “유일한 실질 회귀”, 출처가 고정되지 않은 cross-check와
-> 초기 5/5 검증 서술은 이후 `ref5in 전면 재감사`에서 교정됐다. 역사적 진행 기록으로만 읽고
-> 현재 주장에는 26/26 repository consistency와 21/21 canonical simulator gate를 사용한다.
+> **부분 SUPERSEDED:** 아래 472 g, “유일한 실질 회귀”, 출처가 고정되지 않은 cross-check,
+> 초기 5/5 검증, “0.12 m 높이는 바닥/천장만 바꾼다”는 설명과 k/RPM을 식별된 하드웨어
+> propulsion 값으로 읽는 해석은 이후 `ref5in 전면 재감사`에서 교정됐다. 현재 height 해석은
+> 45° projected support 약 **+2.83 cm**의 3-D geometry confound이고, `k=4.401e-5`와 implied
+> **28,023 RPM**은 fixed coordinate calibration일 뿐 thrust-stand 검증이 아니다. 역사적 진행
+> 기록으로만 읽고 현재 주장에는 26/26 repository consistency와 21/21 canonical simulator gate를 사용한다.
 
 사용자 지시 "파라미터 작성부터 시작해"에 따라 5인치 기준 플랫폼을 구현하고 두 층으로 검증했다.
 그 과정에서 **08-12 진단이 URDF 오독이었음**을 발견해 함께 정정한다.
@@ -8530,3 +8533,64 @@ commit `89afe43`에서 P1c를 fresh로 시작했으나, Codex가 실행 중
 source guard가 오염된 checkpoint 저장을 막은 것은 의도한 fail-closed 동작이다. 주석 정리와 문서
 수정을 먼저 commit한 뒤, 동일한 사전등록 계약(seed/LR/task/budget/gate 변경 없음)으로 P1c를 fresh
 재실행한다. 재실행 중에는 `aerial_gym/`, `resources/robots/`, source-bundle 도구를 수정하지 않는다.
+
+### P1c 두 번째 launch — 유효한 fresh run 진행 중
+
+문서와 runtime 주석 정리를 commit `0a570bffe67bef4e9ab033ba496dc6f34202af0e`로 닫은 뒤 같은
+사전등록 계약으로 P1c를 다시 fresh launch했다. 유효 run은
+`ppo_260813_0540_navrl_v2-ref5in-smoke-c-s197`, session log는
+`aerial_gym/rl_training/rl_games/train_session_logs/ref5in_smoke_c_260813_054048.log`다. seed 197,
+LR `1.5e-5`, 128 env, 70 bars, max 900 epoch이며 checkpoint resume 없이 fresh weights에서 시작했다.
+
+launch receipt는
+`aerial_gym/rl_training/rl_games/train_source_receipts/ref5in_smoke_c_s197_260813_054048_2228846/source_manifest.json`이고,
+runtime source **312 files**, commit `0a570bf`, `git_dirty=false`, manifest SHA-256
+`ce4a52b850014eab85ee57315ee1834da2d5d16a92e78dc86d2fa6996efcd1ff`를 기록했다. 이 항목 작성
+시점에는 run이 **진행 중**이므로 outcome/PASS/FAIL을 판정하지 않는다.
+
+이 run이 정상 종료되거나 명시적으로 VOID 처리될 때까지 `aerial_gym/**`, `resources/**`, `tools/**`
+runtime byte를 수정하지 않는다. 문서 변경은 runtime receipt 밖에서 수행하되, 실행 source를 건드린
+변경은 수치·로직 영향이 없어 보여도 source drift로 간주하고 해당 run을 판정에 사용하지 않는다.
+
+### P1c 종료·채점 — PASS, P2 한 셀만 해제
+
+유효 P1c는 epoch 900에서 `max_epochs`로 정상 종료했다. terminal checkpoint는
+`last_gen_ppo_ep_900_rew_137.08087.pth`, SHA-256은
+`f1670a1d74dd92cb00d6a58898e9cc1b96eb9cbe155d1e85812a345e7aaae6bf`다. 기계 분석기는 900개
+outcome block과 60개 TensorBoard scalar tag, checkpoint 전체 tensor, original/snapshot runtime
+source를 다시 검사했다.
+
+마지막 100 epoch pooled **3,338 episodes**의 capture/crash/timeout은
+**2,429/799/110 = 72.77/23.94/3.30%**였다. distance state `[20,28]`, PPO KL max
+`0.01239`, behavior-KL max `0.01774`, rollback/skipped minibatch/4축 raw OOB는 모두 0이었다.
+모든 P1c gate가 PASS했지만 이는 on-policy engineering result이므로 성능 주장은 허용하지 않고
+seed 313 held-out 70-bar P2 한 셀만 해제했다. 상세는
+`results/navrl_ref5in_smoke_seed197/p1c/summary.{md,json}`다.
+
+### P2 held-out seed 313 — timeout 경계 초과로 STRICT FAIL
+
+전용 `tools/run_navrl_ref5in_p2.sh`와 `tools/attest_navrl_ref5in_p2.py`를 추가했다. inherited
+`NAVRL_*`, profile, detector, force override를 제거하고 deterministic/original/governor-off,
+70 bars, target U[0.3,1.5] m/s, full goal/FOV, 2,049 requested episodes를 고정한다. P1c training
+manifest, 현재 repository, schema-2 eval manifest의 `aerial_gym/** + resources/robots/**` **311개
+path→SHA/size map**이 exact set-equality이고 Python environment/evaluator/checkpoint/robot SHA도
+일치해야만 결과를 쓴다. hostile-env/threshold/provenance CPU test는 **8/8 PASS**했다.
+
+실제 ref5in decision cell 결과는 다음과 같다.
+
+| outcome | count | rate | gate | verdict |
+|---|---:|---:|---:|---|
+| capture | 1,399 / 2,049 | 68.28% | ≥65% | PASS |
+| crash | 536 / 2,049 | 26.16% | ≤33% | PASS |
+| timeout | 114 / 2,049 | 5.56% | ≤5% | **FAIL** |
+
+timeout 상한은 최대 102건이라 12건 초과했다. Wilson 95% CI는 4.65–6.64%로 5%를 포함하지만,
+point estimate/count로 정한 사전등록 gate를 완화하지 않아 전체는 **STRICT FAIL**이다. primary
+PASS 후에만 실행하기로 한 legacy anchor와 P3 seed 211 장기학습은 시작하지 않았다.
+
+진단상 초기거리 사분위 capture는 `80.90→73.51→66.84→53.17%`로 하락했지만 속도 사분위는
+`68.79/70.65/67.67/66.51%`로 비교적 평평했다. crash 536건은 bar contact 416, OOB 120건이고,
+접촉 순간 actual speed 평균 1.109 m/s, stopping margin 평균 −1.098 m였다. timeout 114건은 모두
+exact action 600에서 발생해 legacy 601-step 회귀는 아니다. 현행 strata가 distance별 capture만
+보존해 crash/timeout 분리가 불가능하므로, 다음 허용 작업은 outcome-aware strata를 추가한 별도
+diagnostic evaluation이다. 원자료와 proof는 `results/navrl_ref5in_p2_seed313/`에 있다.

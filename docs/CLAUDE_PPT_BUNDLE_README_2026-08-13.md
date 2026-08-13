@@ -7,8 +7,8 @@
 1. 이 번들의 `01_CLAUDE_PPT_REVIEW_REQUEST.md`를 먼저 읽게 한다.
 2. 나머지 파일은 주장과 수치의 근거 자료로 사용하게 한다.
 3. Claude 대화에 현재 PPT/PPTX가 없다면 사용자가 가진 PPT 원본을 이 ZIP과 별도로 첨부한다.
-4. ref5in P1a/P1b는 strict FAIL이고 P1c가 진행 중이다. held-out P2와 full 5B `[미실행]` 자리를
-   P1의 on-policy 수치로 채우거나 PASS로 추정하면 안 된다.
+4. ref5in P1a/P1b는 strict FAIL, P1c는 PASS, held-out P2는 timeout 5.56%로 strict FAIL이다.
+   full P3/5B는 차단·미실행이며 P1의 on-policy 수치로 채우거나 PASS로 추정하면 안 된다.
 5. 기준 플랫폼은 실제 5B 결과의 `robot_name`, URDF SHA, config SHA를 확인한 뒤에만 확정한다.
 
 ## 파일 구성 (총 11개)
@@ -43,4 +43,4 @@
 
 ## 권장 첫 메시지
 
-> 첨부 ZIP의 `01_CLAUDE_PPT_REVIEW_REQUEST.md`를 최우선 지시문으로 읽고, 나머지 파일로 모든 숫자와 주장을 교차검증해 주세요. P1a/P1b FAIL과 P1c/P2/P3 상태를 구분하고, 검증 5B 미실행 값은 절대 추정하지 말고 placeholder로 남겨 주세요. 기존 PPT가 첨부되어 있다면 수정안과 슬라이드별 교체 지시를 만들고, 없다면 17장 본문 구조의 새 PPT 원고를 작성해 주세요.
+> 첨부 ZIP의 `01_CLAUDE_PPT_REVIEW_REQUEST.md`를 최우선 지시문으로 읽고, 나머지 파일로 모든 숫자와 주장을 교차검증해 주세요. P1a/P1b FAIL, P1c PASS, P2 strict FAIL, P3 차단 상태를 구분하고, 검증 5B 미실행 값은 절대 추정하지 말고 placeholder로 남겨 주세요. 기존 PPT가 첨부되어 있다면 수정안과 슬라이드별 교체 지시를 만들고, 없다면 17장 본문 구조의 새 PPT 원고를 작성해 주세요.

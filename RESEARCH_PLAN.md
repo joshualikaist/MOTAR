@@ -1,4 +1,4 @@
-# RESEARCH PLAN — 센서 전용 UAV 요격: 밀도 × 표적속도
+# RESEARCH PLAN — 카메라·LiDAR + 시뮬레이터 ego-state UAV 요격: 밀도 × 표적속도
 
 이 문서가 연구 charter다(가설·설계·계획). **현재 상태와 최신 수치는 여기 적지 않는다** —
 진행 기록은 `WORKLOG.md`(맨 아래가 최신), 라이브 지표는 `docs/status/`를 본다.
@@ -887,6 +887,10 @@ camera–LiDAR association과 uncertainty-aware release를 고친다. 전체 원
 
 ### 8.22 최종 계약 감사와 재개 gate (2026-08-10)
 
+> **HISTORICAL / SUPERSEDED:** 이 절의 실행 순서는 2026-08-10 당시 계획을 보존한 기록이다.
+> 현재 실행 authority는 바로 뒤 §8.23의 `P0 → P1a/P1b/P1c → P2 → P3` fail-closed 순서이며,
+> 상태 확인은 `WORKLOG.md`, 실제 명령은 `README.md`와 `OPERATIONS.md`를 따른다.
+
 §8.21의 policy/control 선택은 동결하되 publication 수치 계약은 재측정한다. frozen checkpoint는
 legacy 601-action horizon과 누락된 rl_games `time_outs` bootstrap 아래 학습됐으며, 과거 평가 receipt는
 imported runtime source를 보존하지 않았다. 현재 source는 정확히 action 600에서 종료하고 두 timeout key를
@@ -896,11 +900,14 @@ imported runtime source를 보존하지 않았다. 현재 source는 정확히 ac
 엄밀 PBRS가 아닌 ego-motion heuristic이다. actor z는 altitude PI에 덮여 직접 actuator authority가 없지만
 raw z가 다음 `prev_action`에 남아 간접 state channel일 수 있으므로 단순 dead dimension으로 삭제하지 않는다.
 
-다음 실행 순서는 `docs/NEXT_WEEK_HANDOFF_2026-08-10.md`를 단일 기준으로 삼는다: 동일 미사용 seed에서
+당시 실행 순서는 `docs/NEXT_WEEK_HANDOFF_2026-08-10.md`를 기준으로 동일 미사용 seed의
 governor/adaptation A/B/C 15 cells → ID speed interaction 16 cells/2 seed → detector offline dataset/loss/
-calibration gate다. 그 전에는 새 PPO, riskcap 재튜닝, dropout/H4 추가 분해를 시작하지 않는다.
+calibration gate를 계획했다. 이 순서와 새 PPO 금지 지시는 §8.23으로 supersede됐으며 현재 명령이 아니다.
 
 ### 8.23 검증 5B 진입 전 `ref5in` 후보의 fail-closed 순서 (2026-08-13)
+
+> **CURRENT EXECUTION AUTHORITY:** ref5in의 현재 단계 전환과 중단 조건은 이 절이 규정한다.
+> 앞 단계의 명시적 PASS 없이 다음 단계를 시작하지 않는다.
 
 08-12/13 기준 기체 기록을 다시 감사한 결과, `navrl_ref5in_quad`는 “실기 기준 기체”가 아니라
 **hardware-informed simulation candidate**로만 취급한다. 1.20 kg, 합성 관성, 9.60 N/motor,
@@ -939,20 +946,25 @@ calibration gate다. 그 전에는 새 PPO, riskcap 재튜닝, dropout/H4 추가
      distance가 `[20,27] m`에서 끝나 strict gate는 실패했다. promotion epoch가
      372/403/434/467/500/534/571/611/657/709로 늘어난 것은 장거리 episode가 길어져 동일
      2,048 completed-episode 증거에 더 많은 epoch가 필요했기 때문이다.
-   - **P1c corrective preregistration:** `train_navrl_v2_ref5in_smoke_c.sh`로 같은 seed 197,
-     LR `1.5e-5`, task/robot/representation을 fresh weights에서 재실행한다. P1b를 보고 바꾸는
-     좌표는 budget `750 -> 900`뿐이다. 정확히 900개 PPO scalar, terminal epoch 900,
-     `[20,28] m`, rollback/skipped 0, PPO/behavior KL `<0.04`, all-axis raw OOB 0, 마지막 100
-     epoch의 동일 outcome gate를 모두 요구한다. 이 예산은 예상 saturation 뒤 온전한 last-100
-     window를 남긴다. P1c 실패 시 P2와 full training은 시작하지 않는다.
+   - **P1c result (2026-08-13): PASS.** 같은 seed 197의 fresh 900 epoch에서 last-100 pooled
+     3,338 episodes의 capture/crash/timeout은 `72.77/23.94/3.30%`, distance `[20,28] m`,
+     PPO/behavior KL max `0.01239/0.01774`, rollback/skipped/OOB 0이었다. 60개 TensorBoard
+     scalar와 checkpoint/source receipt도 모두 finite·clean이었다. 이 PASS는 P2 한 셀만 허용했다.
 3. **P2 held-out 70-bar decision cell**
    - 미사용 eval seed **313**, deterministic action, full goal/FOV distribution, 최소 2,049 requested
      episodes. checkpoint의 robot/config/URDF hash와 runtime source가 다르면 시작 전에 실패한다.
    - absolute gate는 capture `>=65%`, crash `<=33%`, timeout `<=5%`. corrected-v2 legacy seed-197
      ep500 checkpoint도 같은 평가 seed로 재생해 descriptive anchor를 남긴다. 서로 다른 기체이므로
      이 차이를 순수 airframe causal effect나 우월성으로 부르지 않는다.
+   - **P2 result (2026-08-13): STRICT FAIL.** 2,049 episodes에서 capture/crash/timeout은
+     `1,399/536/114 = 68.28/26.16/5.56%`였다. capture와 crash는 통과했지만 timeout이 허용
+     102건보다 12건 많았다. Wilson 95% CI `4.65–6.64%`에 5%가 포함돼 경계 결과지만 point
+     estimate/count gate를 사후 완화하지 않는다. primary PASS 뒤에만 실행하기로 한 legacy anchor는
+     미실행이며 P3도 잠근다. 다음은 같은 seed 재시도가 아니라 distance/speed/pattern strata에
+     crash/timeout outcome을 추가한 별도 diagnostic evaluation이다.
 4. **P3 full-budget 첫 seed**
-   - P2까지 통과할 때만 fresh **training seed 211**을 시작한다. 평가 seed 313을 학습 seed로
+   - P2까지 통과할 때만 fresh **training seed 211**을 시작한다. 현재 P2 FAIL로 **실행 금지**다.
+     평가 seed 313을 학습 seed로
      재사용하지 않는다. 70→205 bars, +15, threshold
      `70:.82,85:.77,100:.72,115+:.70`, evidence 16,384 episodes, density dwell 1,000 epochs,
      30,000 epoch budget을 동결한다. unique checkpoint는 250 epoch 간격으로 제한해 디스크를
@@ -960,8 +972,8 @@ calibration gate다. 그 전에는 새 PPO, riskcap 재튜닝, dropout/H4 추가
    - 첫 seed의 held-out density curve와 optimizer/representation diagnostics를 본 뒤에만 seed
      223/227을 같은 계약으로 추가한다. training seed 하나의 결과에는 confirmatory 표현을 쓰지 않는다.
 
-P0/P1 결과 파일은 각각 `results/navrl_ref_platform_verification/`과
-`results/navrl_ref5in_smoke_seed197/`(P1b는 `p1b/`)을 canonical 위치로 사용한다. 모든 결과는 `WORKLOG.md`에도
+P0/P1/P2 결과 파일은 각각 `results/navrl_ref_platform_verification/`,
+`results/navrl_ref5in_smoke_seed197/`, `results/navrl_ref5in_p2_seed313/`을 canonical 위치로 사용한다. 모든 결과는 `WORKLOG.md`에도
 동일 날짜로 남긴다. Exact BOM, CAD/CG/FOV, inertia/actuator 식별, power/thermal/endurance와 실제 비행은
 별도의 hardware gate이며 P0–P3를 통과해도 자동으로 충족되지 않는다.
 

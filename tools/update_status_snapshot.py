@@ -17,6 +17,7 @@ import math
 from pathlib import Path
 import re
 from statistics import fmean
+import subprocess
 import sys
 from typing import Any, Dict, Iterable, List, Optional
 
@@ -2105,9 +2106,91 @@ def _v2_search_update(record: Dict[str, Any], *, is_live: bool) -> Dict[str, Any
     }
 
 
+def _ref5in_p2_update() -> Optional[Dict[str, Any]]:
+    """Use the current ref5in fail-closed chain when its attestation exists.
+
+    Older dashboard branches describe useful historical experiments, but selecting them merely
+    because the newest full-budget run predates P1/P2 made the public page look a week stale.
+    """
+    attestation_path = ROOT / "results/navrl_ref5in_p2_seed313/attestation.json"
+    if not attestation_path.is_file():
+        return None
+    try:
+        proof = json.loads(attestation_path.read_text(encoding="utf-8"))
+        cell = proof["decision_cell"]
+        outcome = cell["outcome"]
+        condition = cell["condition"]
+        checks = proof["checks"]
+    except (OSError, KeyError, TypeError, ValueError, json.JSONDecodeError):
+        return None
+    if proof.get("scope") != "ref5in_p2_heldout_70bar_decision":
+        return None
+    capture = float(outcome["capture_rate"])
+    crash = float(outcome["crash_rate"])
+    timeout = float(outcome["timeout_rate"])
+    episodes = int(outcome["captured"]) + int(outcome["crash"]) + int(outcome["timeout"])
+    experiment = {
+        "ref5in_p2": True,
+        "core_audit_complete": True,
+        "is_live": False,
+        "run": "ref5in P2 · seed313",
+        "epoch": 900,
+        "bars": int(condition["bars"]),
+        "deterministic_capture": capture,
+        "deterministic_crash": crash,
+        "deterministic_timeout": timeout,
+        "deterministic_episodes": episodes,
+        "heldout_capture": capture,
+        "heldout_crash": crash,
+        "heldout_timeout": timeout,
+        "heldout_episodes": episodes,
+        "p1c_verdict": "PASS",
+        "p2_verdict": str(proof.get("verdict", "UNKNOWN")),
+        "p3_unlocked": proof.get("unlocks") == "manual_p3_seed211_only",
+        "robot_name": condition.get("robot_name"),
+        "checkpoint_sha256": proof.get("p1c", {}).get("checkpoint_sha256"),
+        "runtime_map_sha256": proof.get("evaluation_runtime", {}).get("runtime_map_sha256"),
+    }
+    return {
+        "subtitle": "2026-08-13 · ref5in P1c PASS → held-out P2 strict FAIL",
+        "headline": "The ref5in policy learned, but missed the held-out timeout ceiling by 12 episodes.",
+        "summary": (
+            f"P1c passed every engineering gate. In the preregistered seed-313 held-out cell, "
+            f"capture/crash/timeout were {capture*100:.2f}/{crash*100:.2f}/{timeout*100:.2f}% "
+            f"over {episodes:,} episodes. Capture and crash passed, but 114 timeouts exceeded the "
+            "5% ceiling (maximum 102), so P3 remains blocked."
+        ),
+        "active_experiment": experiment,
+        "milestones": [
+            {"label": "PLATFORM P0", "value": "PASS · 26/26 + 21/21", "detail": "repository consistency + same-controller simulator gate", "state": "pass"},
+            {"label": "P1c ENGINEERING", "value": "PASS", "detail": "72.77/23.94/3.30% · [20,28] m · rollback 0", "state": "pass"},
+            {"label": "P2 HELD-OUT", "value": "STRICT FAIL", "detail": "timeout 114/2,049 = 5.56% > 5%", "state": "warn"},
+            {"label": "P3 FULL BUDGET", "value": "BLOCKED", "detail": "seed 211 was not started", "state": "warn"},
+        ],
+        "comparison": [
+            {"label": "P1c · on-policy last 100", "bars": 70, "capture": 0.7276812463, "unique": None, "verdict": "engineering-only · 3,338 episodes"},
+            {"label": "P2 · held-out seed313", "bars": 70, "capture": capture, "unique": None, "verdict": f"strict FAIL · crash {crash*100:.2f}% · timeout {timeout*100:.2f}%"},
+        ],
+        "gates": [
+            {"label": "capture", "value": f"PASS · {capture*100:.2f}% ≥ 65%"},
+            {"label": "crash", "value": f"PASS · {crash*100:.2f}% ≤ 33%"},
+            {"label": "timeout", "value": f"FAIL · {timeout*100:.2f}% > 5%"},
+            {"label": "provenance", "value": "PASS · P1/current/eval runtime maps identical"},
+        ],
+        "decision": (
+            "Do not start P3 or relax the timeout gate after seeing the result. Add outcome-aware "
+            "distance strata, then run a separately labelled diagnostic evaluation to distinguish "
+            "long-range timeout from contact and arena-boundary failure."
+        ),
+    }
+
+
 def _research_update(
     active: Optional[Dict[str, Any]], latest: Optional[Dict[str, Any]]
 ) -> Dict[str, Any]:
+    ref5in = _ref5in_p2_update()
+    if ref5in is not None:
+        return ref5in
     record = active or latest
     if _is_v2(record):
         return _v2_search_update(record, is_live=bool(active))
@@ -2767,6 +2850,33 @@ def _success_criteria(active: Optional[Dict[str, Any]]) -> Dict[str, Any]:
 
 def _research_contract() -> Dict[str, Any]:
     """Expose the exact frozen-policy and reward semantics, including known legacy defects."""
+    p2 = ROOT / "results/navrl_ref5in_p2_seed313/attestation.json"
+    if p2.is_file():
+        return {
+            "title": "Current ref5in P2 contract & reward audit",
+            "frozen_policy": "ref5in P1c ep900 · deterministic held-out P2 · governor off",
+            "checkpoint_sha256": "f1670a1d74dd92cb00d6a58898e9cc1b96eb9cbe155d1e85812a345e7aaae6bf",
+            "task": [
+                ["arena", "40×40×3 m · 70 bars · full 1600 m² placement area"],
+                ["actor input", "camera/LiDAR external scene + simulator ego-state; no GT target/bar state"],
+                ["target", "mixed motion · U[0.3,1.5] m/s · goal distance U[6,28] m"],
+                ["robot", "navrl_ref5in_quad · 1.20 kg synthetic design point · hardware unvalidated"],
+                ["evaluation", "seed 313 · deterministic · original reflection · 2,049 episodes"],
+            ],
+            "reward": [
+                ["range rate", "+1.0 · relative closing speed (m/s)"],
+                ["time", "−0.05 per step"],
+                ["static safety", "+1.5 · mean(log(d/range)) ≤ 0"],
+                ["smooth / height", "−0.1·Δv − 8.0·height² outside ±0.2 m"],
+                ["ego progress", "+1.0·(d(prev drone,target_new) − 0.99·d_new)"],
+                ["terminal", "+30 capture; crash reward overwritten to −20"],
+            ],
+            "audit": {
+                "frozen_training": "P1c exact-600/time_outs/source receipt PASS; on-policy result is not held-out performance.",
+                "current_source": "P2 runtime byte map and Python environment matched P1c; result/receipt/log/checkpoint hashes are attested.",
+                "comparison_rule": "P2 strict FAIL: timeout 5.56% exceeded 5%. P3 and legacy descriptive anchor were not run.",
+            },
+        }
     return {
         "title": "Frozen contract & reward audit",
         "frozen_policy": "ep25000 + sensor-only riskcap",
@@ -2826,7 +2936,36 @@ def build_snapshot() -> Dict[str, Any]:
     summaries = []
     for path in csv_paths:
         summaries.append(_summarize_run(path, is_active=(path == active_path)))
-    summaries.sort(key=lambda item: item["run"])
+
+    # TensorBoard runs are intentionally archived off the hot runs/ path.  Rebuilding the static
+    # site from only the currently mounted directories used to make those already-published runs
+    # disappear.  Preserve the checked-in history and replace records only when fresher local
+    # evidence for the same run is available.  status.legacy.json covers pre-v2 archives; the
+    # checked-in HEAD copy also protects history after a local status.json was regenerated once.
+    historical = list(status.get("runs") or [])
+    legacy_path = STATUS_PATH.with_name("status.legacy.json")
+    if legacy_path.is_file():
+        try:
+            historical.extend(
+                (json.loads(legacy_path.read_text(encoding="utf-8")).get("runs") or [])
+            )
+        except (OSError, TypeError, ValueError, json.JSONDecodeError):
+            pass
+    try:
+        checked_in = subprocess.check_output(
+            ["git", "-C", str(ROOT), "show", "HEAD:docs/status/status.json"],
+            stderr=subprocess.DEVNULL,
+        )
+        historical.extend((json.loads(checked_in).get("runs") or []))
+    except (OSError, subprocess.CalledProcessError, TypeError, ValueError, json.JSONDecodeError):
+        pass
+    by_run = {
+        item["run"]: item
+        for item in historical
+        if isinstance(item, dict) and isinstance(item.get("run"), str)
+    }
+    by_run.update({item["run"]: item for item in summaries})
+    summaries = sorted(by_run.values(), key=lambda item: item["run"])
 
     active = None
     if active_path is not None:

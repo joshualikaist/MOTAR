@@ -85,9 +85,9 @@ const status = JSON.parse(fs.readFileSync(path.join(repo, 'docs/status/status.js
 assert(status.research_update);
 assert(status.research_contract);
 assert.strictEqual(status.research_contract.checkpoint_sha256,
-  'f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40');
-assert(status.research_contract.audit.frozen_training.includes("infos['time_outs']"));
-assert(status.research_contract.audit.current_source.includes('action 600'));
+  'f1670a1d74dd92cb00d6a58898e9cc1b96eb9cbe155d1e85812a345e7aaae6bf');
+assert(status.research_contract.audit.frozen_training.includes('exact-600/time_outs'));
+assert(status.research_contract.audit.current_source.includes('runtime byte map'));
 const latestName = status.latest_run.run.toLowerCase();
 for (const rejected of ['integration', 'forced', 'preflight']) {
   assert(!latestName.includes(rejected), `${rejected} wiring run must not replace Latest`);
@@ -100,12 +100,23 @@ if (latestName.includes('smoke')) {
 // pinned name breaks the suite on each site refresh (it did twice). The representation
 // contract, by contrast, is stable and worth pinning.
 const activeExp = status.research_update.active_experiment;
-assert(typeof activeExp.run === 'string' && activeExp.run.startsWith('ppo_'));
-assert(['cluster_sector', 'ttc_sector'].includes(activeExp.selector));
-if (activeExp.ab_arm === 'ttc') assert.strictEqual(activeExp.selector, 'ttc_sector');
-if (activeExp.ab_arm === 'baseline') assert.strictEqual(activeExp.selector, 'cluster_sector');
-assert.strictEqual(activeExp.cluster_gap_m, 0.45);
-assert.strictEqual(activeExp.sectors, 8);
+assert(typeof activeExp.run === 'string');
+if (activeExp.ref5in_p2) {
+  assert.strictEqual(activeExp.run, 'ref5in P2 · seed313');
+  assert.strictEqual(activeExp.p1c_verdict, 'PASS');
+  assert.strictEqual(activeExp.p2_verdict, 'FAIL');
+  assert.strictEqual(activeExp.p3_unlocked, false);
+  assert.strictEqual(activeExp.robot_name, 'navrl_ref5in_quad');
+  assert.strictEqual(activeExp.deterministic_episodes, 2049);
+  assert(activeExp.deterministic_timeout > 0.05);
+} else {
+  assert(activeExp.run.startsWith('ppo_'));
+  assert(['cluster_sector', 'ttc_sector'].includes(activeExp.selector));
+  if (activeExp.ab_arm === 'ttc') assert.strictEqual(activeExp.selector, 'ttc_sector');
+  if (activeExp.ab_arm === 'baseline') assert.strictEqual(activeExp.selector, 'cluster_sector');
+  assert.strictEqual(activeExp.cluster_gap_m, 0.45);
+  assert.strictEqual(activeExp.sectors, 8);
+}
 assert(Array.isArray(status.research_update.comparison));
 // A recovery smoke is a gate, not an A/B result, so its comparison table may legitimately be
 // empty. Every ordinary research-stage snapshot still needs at least one evidence row.

@@ -4,9 +4,10 @@
 용도: 현재 PPT를 Claude에게 넘겨 **수치·주장·구조를 검수하고, 검증 5B 결과까지 반영한 최종 발표본**을
 만들게 할 때 사용하는 요청서다.
 
-> 중요: corrected-semantics 검증 5A와 ref5in P0는 완료됐다. ref5in P1a/P1b는 strict FAIL이고
-> P1c가 진행 중이다. held-out P2와 full-budget P3/검증 5B는 아직 실행되지 않았다. 아래
-> `[5B 결과 입력]` 자리는 실제 summary/receipt가 생긴 뒤에만 채운다.
+> 중요: corrected-semantics 검증 5A와 ref5in P0는 완료됐다. ref5in P1a/P1b는 strict FAIL,
+> P1c는 PASS했다. held-out P2는 capture/crash를 통과했지만 timeout 5.56%로 **strict FAIL**했고,
+> full-budget P3/검증 5B는 시작하지 않았다. 아래 `[5B 결과 입력]` 자리는 실제 full-budget
+> summary/receipt가 생긴 뒤에만 채운다.
 
 ---
 
@@ -27,9 +28,10 @@
 5. `docs/development_directions_2026-08.md` — 후속 연구 방향
 6. `docs/reference_platform_proposal_2026-08.md`와
    `results/navrl_ref_platform_verification/summary.md` — 5B 기체 계약 후보와 검증 한계
-7. `results/navrl_ref5in_smoke_seed197/summary.md`와 `p1b/summary.md` — P1a/P1b strict FAIL
-8. `WORKLOG.md`의 2026-08-12 이후 항목 — 수정 이력과 반증 기록
-9. 검증 5B 완료 후 생성될 `summary.md`, `summary.json`, source receipt, seed별 held-out 결과
+7. `results/navrl_ref5in_smoke_seed197/summary.md`, `p1b/summary.md`, `p1c/summary.md` — P1 계보
+8. `results/navrl_ref5in_p2_seed313/summary.md`와 `attestation.json` — P2 strict FAIL과 proof
+9. `WORKLOG.md`의 2026-08-12 이후 항목 — 수정 이력과 반증 기록
+10. 검증 5B 완료 후 생성될 `summary.md`, `summary.json`, source receipt, seed별 held-out 결과
 
 파일 사이 내용이 충돌하면 날짜가 최신인 독립 검수 문서를 우선하고, 어느 쪽이 맞는지 판단할 수
 없으면 슬라이드에 넣지 말고 `검수 필요`로 보고해 주세요.
@@ -85,7 +87,8 @@
 
 검증 5B 결과가 나오기 전의 가장 안전한 한 문장 결론은 다음이다.
 
-> 센서 전용 드론 요격 시스템을 고밀도 장애물까지 확장하고, 단순 성공률 경쟁을 넘어
+> actor에서 GT 표적·장애물 상태를 배제하고 카메라·LiDAR와 시뮬레이터 ego-state를 쓰는 드론
+> 요격 시스템을 고밀도 장애물까지 확장해, 단순 성공률 경쟁을 넘어
 > **정책–인지 결합, 시간 정합성, 장애물 표현 용량, 제동 실행가능성**을 계측했다. 독립 감사에서
 > legacy 학습의 601-step/no-bootstrap 의미 오류를 발견했고, exact-600/timeout-bootstrap fresh PPO
 > engineering smoke는 안정적으로 통과했다. 이제 clean multi-seed 5B가 corrected lineage의 최종
@@ -226,11 +229,15 @@
 
 ### 기준 플랫폼 후보 분기 — simulator gate와 학습·제작 가능성을 혼동하지 않는다
 
-- legacy `navrl_quad`는 0.250 kg, 모터 팔 ±0.13 m, collision XY 0.28 m가 섞인 개발용 모델로
-  실제 단일 플랫폼과 자기일관되지 않는다.
-- 신규 `navrl_ref5in_quad`: 1.20 kg, 220 mm motor diagonal, collision XY 0.28 m, T/W 3.2617,
-  motor tau 0.04 s. 5인치급 부품 자료를 참고한 **hardware-informed simulation candidate**이며,
-  exact BOM/CAD/CG/prop clearance/sensor FOV로 buildability가 검증된 reference platform은 아니다.
+- legacy `navrl_quad`는 0.250 kg, 모터 팔 ±0.13 m, collision XY 0.28 m 등 서로 다른 scale의
+  개발 파라미터가 섞여 있고 exact BOM/CAD로 단일 실제 플랫폼에 추적되지 않는 simulation model이다.
+  어떤 실제 기체에도 대응할 수 없다고 증명한 것은 아니다.
+- 신규 `navrl_ref5in_quad`: 1.20 kg, 220 mm motor diagonal, collision XY 0.28 m, collision height
+  0.12 m, T/W 3.2617, motor tau 0.04 s. 5인치급 부품 자료를 참고한 **hardware-informed simulation
+  candidate**이며, 9.60 N/motor와 0.04 s는 exact propulsion 조합에서 식별한 값이 아닌 synthetic
+  prior다. 높이 0.08→0.12 m는 45° tilt에서 한 축 projected support를 약 **+2.83 cm** 바꾸는
+  geometry confound다. exact BOM/CAD/CG/prop clearance/sensor FOV로 buildability가 검증된
+  reference platform은 아니다.
 - CPU repository consistency **26/26 PASS**, schema-2 **canonical same-controller simulator gate
   21/21 PASS**다. legacy/ref5in 각각 **16/16 env survival**, finite state/actuator와 선택한
   hover/step/reversal/yaw/100 Hz fixed-gain roll·pitch gate를 확인했다.
@@ -241,11 +248,13 @@
   않았고 hardware validation도 아니다. P1a/P1b on-policy outcome을 held-out 성능으로 쓰지 않는다.
 - 5B가 ref5in을 쓰려면 먼저 P1c fresh 900-epoch learning-viability gate와 held-out P2를 통과하고,
   실제 P3 receipt에 `robot_name`, URDF/config SHA를 기록해야 한다.
+- 현재 순서는 **P1a FAIL → P1b FAIL → P1c PASS → P2 seed 313 strict FAIL(timeout 5.56%)
+  → P3 seed 211 / full-budget 5B `[차단·미실행]`**이다. on-policy P1 수치로 뒤 단계 칸을 채우지 않는다.
 
 권장 문장: **“The hardware-informed simulation candidate passed repository consistency (26/26) and a
-canonical same-controller simulator gate (21/21; 16/16 env survival per model). P1a/P1b observed
-on-policy learning outcomes but failed their full gates; held-out capture and buildability remain
-unproven.”**
+canonical same-controller simulator gate (21/21; 16/16 env survival per model). P1c passed its
+on-policy engineering gate, but P2 failed the preregistered held-out timeout ceiling (5.56% > 5%);
+full-budget performance and buildability remain unproven.”**
 금지 문장: “ref5in은 legacy와 동등한 요격 성능이다”, “기체 현실화가 성능에 영향이 없다.”
 
 ---
@@ -254,14 +263,15 @@ unproven.”**
 
 ### 본문 17장
 
-1. **MOTAR는 센서만으로 밀집 장애물 속 이동표적을 요격한다**
+1. **MOTAR는 카메라·LiDAR와 시뮬레이터 ego-state로 밀집 장애물 속 이동표적을 요격한다**
    문제 장면, 한 문장 연구 질문, 40×40×3 m와 이동표적.
 
 2. **난점은 추격 속도가 아니라 인지·밀도·제동의 결합이다**
    partial observation, occlusion, moving target, dense bars를 한 그림으로.
 
 3. **Actor에서 GT를 차단하고 critic/reward에만 제한했다**
-   RGB-D+LiDAR→detector→tracker→tokens→Transformer PPO→riskcap 흐름도. GT 점선 분리.
+   RGB-D+LiDAR→detector→tracker→tokens와 simulator ego-state→Transformer PPO→riskcap 흐름도.
+   GT 표적·장애물 상태가 actor에는 없고 critic/reward에만 들어가는 경계를 점선으로 분리.
 
 4. **기존 계보는 고밀도에서 80% 수준에 도달했지만 legacy semantics였다**
    Gate 1의 205 bars ep25000/riskcap capture 80.28%와 crash 17.37%; 화면에
@@ -295,8 +305,9 @@ unproven.”**
 12. **hardware-informed candidate는 canonical simulator gate를 통과했지만 과제·제작 가능성은 아직 모른다**
     legacy/ref5in 파라미터 비교를 전부 보여주지 말고 mass, motor diagonal, collision XY, T/W와
     CPU **26/26 PASS**, **canonical same-controller simulator gate 21/21 PASS**, 각 기체 **16/16 env
-    survival**과 P1a/P1b strict FAIL을 요약. `held-out capture / buildability unproven` watermark. 실제 5B가 legacy를 쓰면
-    부록으로 이동.
+    survival**과 P1a/P1b strict FAIL을 요약. 0.12 m height의 45° projected-support **+2.83 cm**
+    confound와 9.60 N/motor·tau 0.04 s가 synthetic prior임을 각주로 표시. `held-out capture /
+    buildability unproven` watermark. 실제 5B가 legacy를 쓰면 부록으로 이동.
 
 13. **두 줄의 종료 의미 오류가 corrected fresh lineage를 필요하게 했다**
     `>600→>=600`, `timeouts→time_outs`를 작은 코드/sequence diagram으로. legacy 결과는 소급
@@ -306,12 +317,16 @@ unproven.”**
     KL/rollback/finite/checkpoint contract 위주. 최근 capture는 작은 보조 차트로만 표시하고
     `training-only, 70 bars, single seed` watermark.
 
-15. **5A는 density 성능을 검증하지 않았고 5B가 그 질문을 담당한다**
-    warmup 0–1000과 evidence 시작점을 타임라인으로. density accumulator=0이 예상임을 설명.
+15. **P1c→P2→P3 gate가 ref5in의 5B 진입을 통제한다**
+    `5A 완료 → P1a FAIL → P1b FAIL → P1c PASS → P2 seed 313 strict FAIL
+    (timeout 5.56% > 5%) → P3 seed 211/full 5B [차단·미실행]` 타임라인. P1c는 P1b에서
+    budget만 750→900으로 바꾼 engineering gate이고, P2의 capture/crash PASS가 timeout FAIL을
+    상쇄하지 않는다.
 
 16. **5B는 robot까지 동결한 clean multi-seed baseline으로 최종 결론을 결정한다**
-    실행 전에는 설계도와 `[미실행]`; 완료 후 seed별 density held-out plot으로 교체. 실제 receipt의
-    robot을 표기하고 성공/혼합/실패 분기 중 실제 결과 하나만 사용.
+    P2가 실패한 현재는 설계도와 `[차단·미실행]`; 새 gate를 사전등록해 통과한 뒤에만 seed별
+    density held-out plot으로 교체.
+    실제 receipt의 robot을 표기하고 성공/혼합/실패 분기 중 실제 결과 하나만 사용.
 
 17. **현재 기여는 최고 숫자보다 병목을 측정하고 분리한 방법에 있다**
     (a) dense-clutter moving-target interception, (b) policy–perception coupling 계측,
@@ -334,7 +349,7 @@ unproven.”**
 
 ### 유지
 
-- 연구 문제, sensor-only actor/privileged critic 분리도.
+- 연구 문제, actor의 카메라·LiDAR + simulator ego-state와 privileged critic/reward의 GT 경계 분리도.
 - v2 40×40×3 m 환경과 density/target-speed 계약.
 - Gate 1 riskcap 분해, Gate 2 density×speed interaction.
 - timestamp-aware pose correction의 공학적 교훈.
@@ -345,8 +360,10 @@ unproven.”**
 - `learned detector 비열등 → 문제 해결` 서사를 검증1/v7 검증2의 두 단계 서사로 교체.
 - `geometry가 원인이 아니다`를 `정적 final-target connectivity는 100%; dynamics는 미검증`으로 교체.
 - pose tolerance 사양을 isolated-RNG forest plot과 “hardware spec 아님”으로 교체.
-- `다음 fresh run` 계획을 5A 실제 결과 + 5B 설계/결과로 교체.
-- legacy 250 g 모델을 실기 기체로 설명한 그림은 ref5in 제안과 실제 5B robot 계약으로 교체.
+- `다음 fresh run` 계획을 5A 실제 결과 + P1a/P1b FAIL + P1c PASS + P2 strict FAIL + P3 차단 gate와
+  5B 설계/결과로 교체.
+- legacy 250 g 모델을 traceable BOM/CAD reference처럼 설명한 그림은 mixed-scale development model,
+  ref5in 제안과 실제 5B robot 계약으로 교체.
 - 자동 run summary의 peak capture나 단일 epoch 값은 가중 창/held-out 값으로 교체.
 
 ### 삭제 또는 부록 이동
@@ -365,7 +382,7 @@ unproven.”**
 | 단계 | PPT에 써도 되는 주장 |
 |---|---|
 | 확정 | Gate 1에서 riskcap ID pooled +5.82 pp; Gate 2 density×speed interaction p=0.000354; learned-v2 NI replication PASS; v7 nominal coupling loss; corrected static connectivity 333/333; 5A optimizer/semantics engineering PASS; ref5in CPU repository consistency 26/26 및 canonical same-controller simulator gate 21/21 PASS(각 기체 16/16 env survival) |
-| 조건부 | capture-time pose correction은 정확 timestamp/pose history 전제; yaw 민감도는 iid Gaussian 단일 seed; token/stopping diagnostics는 contact-time 기술 통계; ref5in은 hardware-informed simulation candidate일 뿐 hardware reference가 아님; legacy와 corrected lineage 비교는 기술적 참고 |
+| 조건부 | capture-time pose correction은 정확 timestamp/pose history 전제; yaw 민감도는 iid Gaussian 단일 seed; token/stopping diagnostics는 contact-time 기술 통계; ref5in은 hardware-informed simulation candidate일 뿐 hardware reference가 아님; 0.12 m height는 +2.83 cm projected-support confound이고 9.60 N/tau 0.04 s는 synthetic prior; legacy와 corrected lineage 비교는 기술적 참고 |
 | 미확정 | ref5in held-out/장기 capture와 buildability, 5B 최종 성능, density ceiling의 corrected-lineage 재현, token miss와 stopping margin의 독립 인과, real-world detector 성능, clock skew/jitter, hardware pose tolerance |
 
 ---
@@ -383,6 +400,9 @@ unproven.”**
 - [ ] token miss/stopping margin을 독립 인과로 더하지 않았다.
 - [ ] 5B 실패 seed나 early-stop이 있다면 숨기지 않았다.
 - [ ] 5B의 robot/URDF/config SHA가 표시됐고 legacy/ref5in 결과가 연속 계보처럼 연결되지 않았다.
+- [ ] P1a/P1b FAIL, P1c PASS, P2 strict FAIL, P3 차단·미실행이 한 타임라인에서 구분됐다.
+- [ ] actor 입력을 카메라·LiDAR + simulator ego-state로 표시하고 sensor-only라고 과장하지 않았다.
+- [ ] ref5in의 0.12 m height confound(+2.83 cm)와 9.60 N/tau 0.04 s synthetic prior를 표시했다.
 - [ ] ref5in을 hardware-informed simulation candidate로 표시하고, CPU 26/26 및 canonical
   same-controller simulator gate 21/21 PASS(각 기체 16/16 env survival)나 P1 on-policy outcome을
   held-out capture, 장기 재현성, buildability 또는 hardware validation으로 과장하지 않았다.

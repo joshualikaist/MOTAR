@@ -73,6 +73,7 @@ function renderLive(s) {
   const L = s.latest_run || {};
   const live = A && A.is_live;
   const E = ((s.research_update || {}).active_experiment || {});
+  const ref5inP2 = !live && E.ref5in_p2 === true;
   const finalAudit = !live && E.core_audit_complete === true;
   const riskcapFinal = !live && E.speed_governor_mode === 'riskcap'
     && E.post_evaluation_complete === true && E.generalization_pass === true;
@@ -80,7 +81,7 @@ function renderLive(s) {
   const completeAudit = finalAudit && E.causal_checks_complete === true;
   const abExperiment = E.ab_experiment === true;
   const src = live ? A : L;
-  const runName = ((src && src.run) || '—').replace(/_navrl$/, '');
+  const runName = (ref5inP2 ? E.run : ((src && src.run) || '—')).replace(/_navrl$/, '');
 
   const pill = document.getElementById('livepill');
   const pillTxt = document.getElementById('livepill-txt');
@@ -88,7 +89,7 @@ function renderLive(s) {
   const topContext = document.getElementById('top-context');
   const freshness = document.getElementById('live-freshness');
   if (pill) pill.className = 'pill ' + (live ? 'is-live' : 'is-snapshot');
-  if (pillTxt) pillTxt.textContent = live ? 'LIVE' : (riskcapFinal ? 'FINAL' : (abExperiment ? 'A/B' : (completeAudit ? 'AUDIT' : (causalAudit ? 'CAUSAL' : (finalAudit ? 'CORE' : 'LAST')))));
+  if (pillTxt) pillTxt.textContent = live ? 'LIVE' : (ref5inP2 ? E.p2_verdict : (riskcapFinal ? 'FINAL' : (abExperiment ? 'A/B' : (completeAudit ? 'AUDIT' : (causalAudit ? 'CAUSAL' : (finalAudit ? 'CORE' : 'LAST'))))));
   if (pillRun) pillRun.textContent = runName;
 
   const barsNow = live ? finite(A.n_bars_active)
@@ -97,7 +98,7 @@ function renderLive(s) {
     : ((abExperiment || riskcapFinal) ? finite(E.heldout_capture)
       : (finalAudit ? finite(E.deterministic_capture) : finite(L.last_captured_rate)));
   if (topContext) {
-    const state = live ? 'v2 · LIVE' : (riskcapFinal ? 'v2 · RISKCAP FINAL' : (abExperiment ? 'v2 · FIXED-205 A/B' : (completeAudit ? 'v2 · CAUSAL COMPLETE' : (causalAudit ? 'v2 · CAUSAL AUDIT' : (finalAudit ? 'v2 · CORE AUDIT' : 'v2 · SNAPSHOT')))));
+    const state = live ? 'v2 · LIVE' : (ref5inP2 ? 'corrected-v2 · REF5IN P2 FAIL' : (riskcapFinal ? 'v2 · RISKCAP FINAL' : (abExperiment ? 'v2 · FIXED-205 A/B' : (completeAudit ? 'v2 · CAUSAL COMPLETE' : (causalAudit ? 'v2 · CAUSAL AUDIT' : (finalAudit ? 'v2 · CORE AUDIT' : 'v2 · SNAPSHOT'))))));
     topContext.textContent = `${state} · ${barsNow == null ? '—' : Math.round(barsNow)} bars`
       + (tailCapture == null ? '' : ` · capture ${pct(tailCapture)}`);
   }
@@ -122,9 +123,11 @@ function renderLive(s) {
   const sub = document.getElementById('live-sub');
   const cards = document.getElementById('live-cards');
   const capEl = document.getElementById('live-cap');
-  if (h2) h2.textContent = live ? 'Live' : (riskcapFinal ? 'Riskcap held-out' : (causalAudit ? 'Causal held-out' : (finalAudit ? 'Final held-out' : 'Latest run')));
+  if (h2) h2.textContent = live ? 'Live' : (ref5inP2 ? 'Ref5in held-out gate' : (riskcapFinal ? 'Riskcap held-out' : (causalAudit ? 'Causal held-out' : (finalAudit ? 'Final held-out' : 'Latest run'))));
   if (sub) {
-    sub.textContent = riskcapFinal
+    sub.textContent = ref5inP2
+      ? `${runName} · frozen ep ${E.epoch} · deterministic · n=${E.deterministic_episodes}`
+      : riskcapFinal
       ? `${runName} · trained winner · seed45 deterministic · n=${E.heldout_episodes}`
       : finalAudit
       ? `${runName} · frozen ep ${E.epoch} · deterministic deployment · n=${E.deterministic_episodes}`
@@ -150,7 +153,9 @@ function renderLive(s) {
       { k: 'crash', v: pct(finalCrash), c: finalCrash <= 0.15 ? 'good' : finalCrash <= 0.35 ? 'warn' : 'bad', s: 'fail mode' },
       { k: 'timeout', v: pct(finalTo), c: 'acc', s: '' },
       { k: 'bars', v: bars != null ? String(Math.round(bars)) : '—', c: 'acc', s: 'active' },
-      riskcapFinal
+      ref5inP2
+        ? { k: 'P2 gate', v: E.p2_verdict, c: 'bad', s: `timeout ${pct(E.deterministic_timeout)}` }
+        : riskcapFinal
         ? { k: 'seed46', v: '3 / 3', c: 'good', s: 'speed gates' }
         : finalAudit
         ? { k: 'deploy−sample', v: '+' + ((E.deterministic_capture - E.stochastic_capture) * 100).toFixed(1) + 'pt', c: 'warn', s: `${pct(E.stochastic_capture)} sampled` }
@@ -163,7 +168,9 @@ function renderLive(s) {
     ).join('');
   }
   if (capEl) {
-    capEl.textContent = riskcapFinal
+    capEl.textContent = ref5inP2
+      ? `P1c PASS → held-out P2 STRICT FAIL; timeout ${pct(E.deterministic_timeout)} > 5%. P3 not started.`
+      : riskcapFinal
       ? `Trained ep ${E.epoch} + riskcap · unseen seed45 n=${E.heldout_episodes}; seed46 fixed-speed 3/3 PASS.`
       : finalAudit
       ? `Frozen ep ${E.epoch} · deterministic held-out n=${E.deterministic_episodes}; stochastic n=${E.stochastic_episodes}.`
