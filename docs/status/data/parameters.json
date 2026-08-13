@@ -1,14 +1,14 @@
 {
  "schema": "motar.parameters/1",
- "generated_at": "2026-08-13T08:40:22+00:00",
+ "generated_at": "2026-08-13T08:57:08+00:00",
  "generator": "tools/generate_parameter_catalog.py",
- "source_commit": "ff506a0",
+ "source_commit": "5086cea",
  "counts": {
   "authoritative": 176,
   "echo_only": 83,
   "files_scanned": 271,
   "launchers_scanned": 66,
-  "ablated": 38,
+  "ablated": 39,
   "mirrors": 5,
   "launcher_only": 65
  },
@@ -4284,9 +4284,11 @@
      "value": "${NAVRL_GENERAL_GOAL_DIST_MIN:-6}"
     }
    ],
-   "experiments": [],
-   "ablated": false,
-   "swept_but_not_ablated": true,
+   "experiments": [
+    "2026-08-13-ref5in-d1-adaptation"
+   ],
+   "ablated": true,
+   "swept_but_not_ablated": false,
    "frozen_by_contract": false,
    "origin": "launcher"
   },

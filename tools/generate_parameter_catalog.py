@@ -151,12 +151,23 @@ def _literal(node):
 class Harvester(ast.NodeVisitor):
     """Collect env-var reads with their enclosing class path and function depth."""
 
-    def __init__(self, rel_path):
+    def __init__(self, rel_path, source):
         self.rel = rel_path
+        self.source = source
         self.class_stack = []
         self.func_depth = 0
         self.sites = []          # dicts, one per read
         self.assign_line = {}    # id(Call node) -> (assign target path, assign lineno, expr)
+
+    def _expr(self, node):
+        if node is None:
+            return None
+        unparse = getattr(ast, "unparse", None)
+        if unparse is not None:
+            return unparse(node)
+        # Isaac Gym's supported environment is Python 3.8, before ast.unparse existed.  Source
+        # segments preserve the exact expression and are sufficient for this documentation field.
+        return ast.get_source_segment(self.source, node)
 
     def visit_ClassDef(self, node):
         self.class_stack.append(node.name)
@@ -220,12 +231,12 @@ class Harvester(ast.NodeVisitor):
                     "type": declared_type,
                     "default": default,
                     "default_literal": dlit,
-                    "default_expr": (ast.unparse(node.args[default_i])
+                    "default_expr": (self._expr(node.args[default_i])
                                      if (has_default and not dlit) else None),
                     "scope": ".".join(self.class_stack) or "<module>",
                     "attr": ".".join(self.class_stack + [target]) if target else None,
                     "authoritative": forced_authoritative or self.func_depth == 0,
-                    "assign_expr": ast.unparse(aexpr) if aexpr is not None else None,
+                    "assign_expr": self._expr(aexpr),
                 })
         self.generic_visit(node)
 
@@ -345,11 +356,12 @@ def build():
             if "__pycache__" in rel or "/source_snapshot/" in rel:
                 continue
             try:
-                tree = ast.parse(py.read_text(encoding="utf-8"))
+                source = py.read_text(encoding="utf-8")
+                tree = ast.parse(source)
             except SyntaxError:
                 continue
             files_scanned += 1
-            h = Harvester(rel)
+            h = Harvester(rel, source)
             h.visit(tree)
             if not h.sites:
                 continue

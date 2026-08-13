@@ -8771,3 +8771,52 @@ Chrome headless(`--use-gl=swiftshader`)로 6페이지 전부 렌더 확인. 분�
 "`research_update.experiment_id`인 실험을 렌더"로 축약되어 근원에서 사라지므로,
 재편 중에 손대지 않고 후속으로 남긴다. experiments.json은 손 큐레이션이며 린터가 규율을 강제한다 —
 자동 추출은 하지 않는다("이 실험이 무엇을 확립했는가"는 기계가 유도할 수 없다).
+
+## 2026-08-13 — ref5in D1 종료·held-out 판정: 개선은 실재, 절대 gate는 FAIL
+
+D0에서 최장 거리 CV timeout이 22.16%였던 원인을 노출 부족과 능력 한계로 분리하기 위해,
+결과 전에 고정한 D1 계약을 끝까지 실행했다. lineage는 P1c epoch 900, training seed 197,
+70 bars, 실제 goal range `[22.5,28] m`, mixed CV/waypoint, LR `1.5e-5`, governor off이며
+epoch 1900까지 정확히 1,000 epoch를 추가했다. 첫 시도는 첫 backward 전 VRAM fragmentation OOM으로
+0 epoch 종료돼 `results/navrl_ref5in_d1_void_oom0/`에 VOID로 보존했다. allocator만
+`expandable_segments:True`로 고친 재실행은 batch/env/과제 계약을 바꾸지 않고 완료됐다.
+
+terminal checkpoint SHA-256은
+`197ea26999d6bb9cf23c4e5a55acbe945f89985e2384687d60ab1dbae66a278e`다. PPO/behavior-KL max는
+`0.01155/0.01547`, rollback/skipped minibatch/raw action OOB는 모두 0이었다. 학습 last-100 pooled
+capture/crash/timeout은 `71.87/18.72/9.41%`; branch 초반 comparable trailing window의
+`56.52/34.80/8.68%`보다 capture와 crash는 크게 회복됐고 timeout은 거의 그대로였다.
+
+사전등록한 held-out seed 331, requested 8,193은 실제 8,194 episodes를 끝냈다.
+
+| stratum | capture | crash | timeout |
+|---|---:|---:|---:|
+| global | 76.82% | 18.62% | 4.55% |
+| q3 `[22.5,28] m` | 70.22% | 19.96% | 9.82% |
+| q3 / CV | 64.03% | 19.98% | **15.98%** |
+| q3 / waypoint | 76.25% | 19.94% | 3.80% |
+
+global crash `≤27%`와 q3 crash `≤30%`는 통과했지만 q3/CV timeout `15.98% > 12%`라 최종
+판정은 **D1 FAIL**이다. 기준을 사후 완화하지 않고 P2 strict FAIL과 P3 BLOCKED를 유지한다.
+
+D0→D1은 서로 다른 eval seed의 독립 비율 근사 비교이며 adaptation과 q3 학습분포 변경이 함께
+들어간 기술적 비교다. global capture/crash/timeout 변화는 `+8.80/-7.36/-1.44pp`, q3는
+`+14.28/-9.13/-5.15pp`, q3/CV는 `+15.19/-9.02/-6.17pp`였다. q3/CV의 95% normal approximation
+구간은 각각 `[+10.94,+19.44]`, `[-12.74,-5.31]`, `[-9.57,-2.77]pp`다. 따라서 “추가 노출이
+무의미했다”가 아니라 **유의한 개선은 있었으나 사전 절대 성능에 못 미쳤다**가 정확하다.
+
+D1 eval에서는 q3 학습 checkpoint를 full `[6,28] m` held-out에 재생해야 해 generic evaluator의
+훈련분포 일치 guard와 의도적으로 충돌했다. 강제 실행 전에 유일한 mismatch가
+`cfg_general_goal_dist_min: 22.5 vs 6.0`인지 확인하는 narrow preflight를 추가했고, 다른 mismatch가
+하나라도 있으면 거부한다. train/eval Python receipt 차이는 editable MOTAR 행의 commit metadata뿐임을
+양쪽 source manifest와 대조한 뒤에만 허용했다. D1 summary verifier는 FAIL artifact를 정상 검증할 때
+exit 0으로 끝난다.
+
+action negative-y rate는 D0 98.53%, D1 97.82%로 강한 키랄리티가 D1 전부터 존재했다. 대칭 arena의
+과거 mirror aggregate에서는 outcome penalty가 검출되지 않았으므로 D1 실패 원인으로 단정하지 않는다.
+다만 다음 tangent 진단에서 좌우를 합치면 이 축을 숨길 수 있어 tangent-left/right를 별도 cell로 둔다.
+
+다음 단계는 PPO 연장이 아니라 D1 terminal policy를 동결한 CV initial-heading 진단이다. 계약은
+`RESEARCH_PLAN.md` §8.25에 결과 전에 고정했다: 70 bars, `[22.5,28] m`, CV-only,
+`U[0.3,1.5] m/s`, exact 600, seed 337, cell당 requested 2,049, toward/tangent-left/
+tangent-right/away 네 cell이다. 결과는 P2/D1을 재판정하거나 P3를 자동 해제하지 않는다.

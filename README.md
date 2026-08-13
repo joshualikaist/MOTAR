@@ -25,7 +25,7 @@ LiDAR로 표적·장애물을 보고, 시뮬레이터 ego-state로 자신의 자
 | corrected-v2 episode 의미론 | **공학 스모크 통과**. fresh PPO 1,000 epoch에서 정확히 600 action 종료, rl_games `time_outs` 전달, finite PPO/KL, rollback 0, raw action OOB 0을 확인했습니다. | 이 run은 70 bars의 on-policy 학습 기록입니다. held-out 성능, 밀도 승급 능력, 알고리즘 우월성을 증명하지 않습니다. |
 | learned detector 연결 | frozen navigation policy에서 learned-v2가 analytic bootstrap 대비 비열등하다는 결과를 두 평가 seed에서 재현했습니다. | 더 최신인 learned-v7을 그대로 꽂으면 nominal 성능이 떨어집니다. threshold만 바꿔 해결되는 문제가 아니며, detector 출력 분포에 맞춘 별도 학습이 필요합니다. |
 | 고밀도 기하 | 수정된 좌표계의 정적 2-D 검사에서 333/333 장면에 경로가 존재했습니다. | 회전·제동·표적 이동·600-step 제한을 포함한 동적 도달 가능성은 아닙니다. “길이 있으니 정책 문제”라고 단정할 수 없습니다. |
-| `navrl_ref5in_quad` 후보 기체 | CPU 저장소 계약 **26/26**, canonical same-controller simulator gate **21/21**, P1c fresh 900-epoch engineering gate를 통과했습니다. P1c last-100은 72.77/23.94/3.30%였습니다. | held-out P2는 68.28/26.16/5.56%로 timeout 상한 5%를 12건 초과해 **strict FAIL**입니다. P3 장기학습은 중단했습니다. 실기 비행, CAD, endurance, 열·전원 여유도 미검증입니다. |
+| `navrl_ref5in_quad` 후보 기체 | CPU 저장소 계약 **26/26**, canonical same-controller simulator gate **21/21**, P1c fresh 900-epoch engineering gate를 통과했습니다. 장거리 D1은 q3/CV capture를 D0 대비 +15.19pp 개선했습니다. | held-out P2는 timeout 상한을 넘어 **strict FAIL**이고, D1도 q3/CV timeout 15.98%로 사전등록한 12%를 넘어 **FAIL**입니다. P3 장기학습은 차단했습니다. 실기 비행, CAD, endurance, 열·전원 여유도 미검증입니다. |
 | 과거 navigation 결과 | legacy evaluator 안에서는 비교 가능한 동결 기록으로 보존합니다. | old 601-action 결과를 corrected exact-600 결과와 합치거나, legacy 기체 결과를 ref5in 성능으로 부를 수 없습니다. |
 
 현재 판단의 근거는 [독립 검수 보고서](docs/codex_review_2026-08-12.md), [플랫폼 P0](results/navrl_ref_platform_verification/summary.md), [P1a](results/navrl_ref5in_smoke_seed197/summary.md), [P1b](results/navrl_ref5in_smoke_seed197/p1b/summary.md), [P1c](results/navrl_ref5in_smoke_seed197/p1c/summary.md), [P2](results/navrl_ref5in_p2_seed313/summary.md)에 있습니다. 위 표의 “통과”는 각 문서에 적힌 좁은 gate만 뜻합니다.
@@ -41,6 +41,13 @@ CV target은 timeout `22.16%`, waypoint는 `7.96%`였습니다. 반면 실제 `[
 나눈 timeout은 속도가 높을수록 `8.49→3.10%`로 감소했습니다. 따라서 “빠른 표적이 주원인”이나
 “episode 시간만 늘리면 해결”이라고 볼 수 없고, **장거리의 지속 방향(CV) 추적과 충돌이 동시에
 남은 병목**입니다. 이 진단은 P2 FAIL을 뒤집지 않으며 P3는 계속 차단됩니다.
+
+그 병목에만 노출을 늘린 D1은 P1c에서 1,000 epoch를 warm-start했고, 별도 seed 331의 8,194 episodes에서
+global capture/crash/timeout `76.82/18.62/4.55%`, 최장 거리 CV에서 `64.03/19.98/15.98%`를
+기록했습니다. D0보다 최장 거리 CV capture는 `+15.19pp`, crash는 `-9.02pp`, timeout은
+`-6.17pp` 개선됐지만 timeout 절대 기준 `≤12%`는 실패했습니다. 효과가 없다고 볼 수는 없지만,
+adaptation과 장거리 학습분포 변경이 함께 들어간 단일 training seed라 둘의 효과를 분리할 수도 없습니다.
+추가 epoch 대신 동결 정책으로 CV 초기 진행방향을 분리합니다.
 
 ## 시스템을 짧게 보면
 
@@ -229,9 +236,10 @@ run 폴더 이관과 TensorBoard 병합 절차는 [OPERATIONS.md](OPERATIONS.md)
 4. **P1c PASS:** budget만 900 epoch로 늘린 fresh run이 모든 engineering gate를 통과했습니다.
 5. **P2 strict FAIL:** held-out seed 313에서 capture/crash는 통과했지만 timeout 5.56%가 상한 5%를 넘었습니다. legacy anchor와 P3는 실행하지 않았습니다.
 6. **진단 완료:** 장거리에서 timeout과 crash가 함께 증가했고, q3 timeout은 CV에서 waypoint보다 14.20pp 높았습니다. 표적 속도 alone 가설은 지지되지 않았습니다.
-7. **현재 단계:** full P3 대신 `[22.5,28] m` CV 노출을 늘리는 1,000-epoch D1 adaptation probe와 held-out seed 331 평가를 먼저 수행합니다. episode horizon 증가는 원인 확인용 ablation일 뿐 기본 해법으로 쓰지 않습니다.
-8. probe가 q3 timeout을 줄이면서 contact/OOB를 늘리지 않을 때만 full-budget seed 211의 새 gate를 논의합니다.
-9. perception 연구는 corrected-v2 analytic baseline → learned detector arm → appearance-randomized arm 순으로 한 축씩 추가합니다.
+7. **D1 완료·FAIL:** `[22.5,28] m` exposure로 모든 outcome은 개선됐지만 q3/CV timeout `15.98% > 12%`라 사전 gate를 통과하지 못했습니다. P2 FAIL은 유지합니다.
+8. **현재 단계:** D1 terminal checkpoint를 동결하고 CV 초기 heading을 toward/tangent-left/tangent-right/away로 나눠 잔여 timeout이 단순 path-length인지, 접선 추적/좌우 정책인지 진단합니다. PPO와 episode horizon은 바꾸지 않습니다.
+9. 이 진단만으로 P3를 열지 않습니다. 결과에 따라 tracker/pursuit 또는 action chirality의 단일 intervention을 새로 사전등록합니다.
+10. perception 연구는 corrected-v2 analytic baseline → learned detector arm → appearance-randomized arm 순으로 한 축씩 추가합니다.
 
 현재 가장 큰 미해결 문제는 “더 오래 학습하면 되는가”가 아니라 **고밀도에서 pre-contact obstacle 정보, 제동 여유, detector 출력 분포, 기체 동역학 중 어느 축이 먼저 한계가 되는가**입니다.
 

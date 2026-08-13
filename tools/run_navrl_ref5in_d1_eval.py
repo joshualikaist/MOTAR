@@ -27,6 +27,7 @@ P1C_SHA = "f1670a1d74dd92cb00d6a58898e9cc1b96eb9cbe155d1e85812a345e7aaae6bf"
 OUTPUT = ROOT / "results/navrl_ref5in_d1_eval_seed331"
 CELL = OUTPUT / "ref5in"
 SOURCE_BUNDLE = OUTPUT / "source_bundle"
+BASELINE_OUTPUT = ROOT / "results/navrl_ref5in_outcome_diagnostic_v2_seed317"
 SEED = 331
 EPISODES = 8193
 SOURCE_EPOCH = 900
@@ -52,6 +53,46 @@ ORIGINAL_CANONICAL_ENV = BASE.canonical_env
 def require(condition: bool, message: str) -> None:
     if not condition:
         raise BASE.ContractError(message)
+
+
+def rate_difference(
+    new_successes: int, new_total: int, old_successes: int, old_total: int
+) -> dict:
+    """Unpooled Wald interval for a descriptive difference of independent proportions."""
+    require(new_total > 0 and old_total > 0, "rate-difference denominator must be positive")
+    p_new = new_successes / new_total
+    p_old = old_successes / old_total
+    delta = p_new - p_old
+    se = math.sqrt(
+        p_new * (1.0 - p_new) / new_total + p_old * (1.0 - p_old) / old_total
+    )
+    z = 1.959963984540054
+    return {
+        "new_rate": p_new,
+        "baseline_rate": p_old,
+        "difference": delta,
+        "difference_ci95": [delta - z * se, delta + z * se],
+        "method": "unpooled_normal_approximation_independent_proportions",
+    }
+
+
+def compare_outcomes(new: dict, old: dict) -> dict:
+    new_n = int(new["episodes"]) if "episodes" in new else sum(
+        int(new[key]) for key in ("captured", "crash", "timeout")
+    )
+    old_n = int(old["episodes"]) if "episodes" in old else sum(
+        int(old[key]) for key in ("captured", "crash", "timeout")
+    )
+    new_capture = int(new.get("captured", new.get("successes", -1)))
+    old_capture = int(old.get("captured", old.get("successes", -1)))
+    require(new_capture >= 0 and old_capture >= 0, "capture count missing from comparison cell")
+    return {
+        "capture": rate_difference(new_capture, new_n, old_capture, old_n),
+        "crash": rate_difference(int(new["crash"]), new_n, int(old["crash"]), old_n),
+        "timeout": rate_difference(
+            int(new["timeout"]), new_n, int(old["timeout"]), old_n
+        ),
+    }
 
 
 def configure_base(checkpoint: Path, checkpoint_sha: str) -> None:
@@ -243,6 +284,34 @@ def decision_summary(
     outcome = result["outcome"]
     q3 = base["strata"]["distance"]["q3"]
     q3_cv = base["strata"]["distance_by_pattern"]["q3"]["cv"]
+    baseline = BASE.load_json(BASELINE_OUTPUT / "summary.json")
+    baseline_raw = BASE.load_json(BASELINE_OUTPUT / "ref5in/70bars.json")
+    comparisons = {
+        "baseline_scope": baseline["scope"],
+        "note": (
+            "Descriptive D0-to-D1 comparison across different evaluation seeds. "
+            "It combines the 1,000-epoch adaptation with its q3 training distribution."
+        ),
+        "global": compare_outcomes(outcome, baseline["outcome"]),
+        "q3": compare_outcomes(q3, baseline["strata"]["distance"]["q3"]),
+        "q3_cv": compare_outcomes(
+            q3_cv, baseline["strata"]["distance_by_pattern"]["q3"]["cv"]
+        ),
+    }
+    action = result["action"]
+    baseline_action = baseline_raw["action"]
+    action_chirality = {
+        "baseline_negative_y_rate": baseline_action["negative_y_rate"],
+        "d1_negative_y_rate": action["negative_y_rate"],
+        "baseline_signed_mean_y": baseline_action["signed_mean_y"],
+        "d1_signed_mean_y": action["signed_mean_y"],
+        "baseline_sign_flip_y_rate": baseline_action["sign_flip_y_rate"],
+        "d1_sign_flip_y_rate": action["sign_flip_y_rate"],
+        "interpretation": (
+            "Strong negative-y action chirality predates D1 and persists after adaptation; "
+            "this comparison does not establish an outcome penalty."
+        ),
+    }
     gates = {
         "global_crash_lte_27pct": {
             "pass": float(outcome["crash_rate"]) <= 0.27,
@@ -259,7 +328,7 @@ def decision_summary(
     }
     passed = all(item["pass"] for item in gates.values())
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "producer": "tools/run_navrl_ref5in_d1_eval.py",
         "created_at_utc": datetime.now(timezone.utc).isoformat(),
         "scope": "ref5in_d1_heldout_seed331_decision",
@@ -283,6 +352,8 @@ def decision_summary(
         "condition": result["condition"],
         "outcome": outcome,
         "strata": base["strata"],
+        "descriptive_d0_to_d1": comparisons,
+        "action_chirality": action_chirality,
         "gates": gates,
         "limitations": [
             "one warm-start training seed and one held-out evaluation seed",
@@ -298,6 +369,11 @@ def write_summary(payload: dict) -> None:
     q3 = payload["strata"]["distance"]["q3"]
     cv = payload["strata"]["distance_by_pattern"]["q3"]["cv"]
     outcome = payload["outcome"]
+    comparison = payload["descriptive_d0_to_d1"]
+    def delta(cell: str, metric: str) -> str:
+        item = comparison[cell][metric]
+        lo, hi = item["difference_ci95"]
+        return f"{item['difference']*100:+.2f} pp [{lo*100:+.2f}, {hi*100:+.2f}]"
     lines = [
         f"# ref5in D1 held-out decision — {payload['verdict']}", "",
         "D1은 P2를 재채점하지 않으며 P3를 자동 해제하지 않는다.", "",
@@ -305,6 +381,13 @@ def write_summary(payload: dict) -> None:
         f"| global crash | {outcome['crash_rate']*100:.2f}% | ≤27% | {payload['gates']['global_crash_lte_27pct']['pass']} |",
         f"| q3 crash | {q3['crash_rate']*100:.2f}% | ≤30% | {payload['gates']['q3_crash_lte_30pct']['pass']} |",
         f"| q3/CV timeout | {cv['timeout_rate']*100:.2f}% | ≤12% | {payload['gates']['q3_cv_timeout_lte_12pct']['pass']} |",
+        "", "## D0 대비 기술적 변화 (서로 다른 평가 seed)", "",
+        "| stratum | capture | crash | timeout |", "|---|---:|---:|---:|",
+        f"| global | {delta('global', 'capture')} | {delta('global', 'crash')} | {delta('global', 'timeout')} |",
+        f"| q3 | {delta('q3', 'capture')} | {delta('q3', 'crash')} | {delta('q3', 'timeout')} |",
+        f"| q3/CV | {delta('q3_cv', 'capture')} | {delta('q3_cv', 'crash')} | {delta('q3_cv', 'timeout')} |",
+        "", "D1은 유의한 방향의 개선을 만들었지만 q3/CV timeout 절대 gate를 통과하지 못했다. "
+        "비교에는 adaptation과 q3 학습분포 변경이 함께 들어 있으므로 둘의 효과를 분리하지 않는다.",
         "", f"Checkpoint SHA-256: `{payload['checkpoint_sha256']}`", "",
     ]
     (OUTPUT / "summary.md").write_text("\n".join(lines), encoding="utf-8")
@@ -351,8 +434,8 @@ def main() -> int:
     recorded = BASE.load_json(OUTPUT / "summary.json")
     for key in ("scope", "verdict", "decision_authority", "p2_verdict_changed",
                 "p3_automatically_unlocked", "checkpoint_sha256", "condition", "outcome",
-                "generic_provenance_override", "python_environment_identity", "strata", "gates",
-                "limitations"):
+                "generic_provenance_override", "python_environment_identity", "strata",
+                "descriptive_d0_to_d1", "action_chirality", "gates", "limitations"):
         require(recorded.get(key) == expected.get(key), f"D1 summary changed: {key}")
     print(f"[ref5in-d1-eval] VERIFY {recorded['verdict']}")
     return 0

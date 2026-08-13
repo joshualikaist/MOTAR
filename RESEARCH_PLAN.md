@@ -1030,6 +1030,40 @@ governor 불변, 추가 1,000 epoch. safety/KL/rollback이 통과한 뒤 사전�
 seed, horizon을 바꾸지 않는다. D1 실패 시 다음은 학습 연장이 아니라 CV initial radial heading
 (toward/tangent/away) frozen-policy diagnostic이다.
 
+**D1 결과:** training은 사전 계약대로 epoch 901→1900의 1,000 epoch를 완료했고 PPO/behavior-KL
+max `0.01155/0.01547`, rollback/skipped/raw OOB 0이었다. held-out seed 331은 8,194 episodes에서
+global capture/crash/timeout `76.82/18.62/4.55%`, q3 `70.22/19.96/9.82%`, q3/CV
+`64.03/19.98/15.98%`였다. global crash와 q3 crash gate는 통과했으나 q3/CV timeout
+`15.98% > 12%`라 **D1 FAIL**이다. D0 대비 q3/CV 변화는 capture `+15.19pp` (95% normal
+approximation `[+10.94,+19.44]`), crash `-9.02pp` (`[-12.74,-5.31]`), timeout
+`-6.17pp` (`[-9.57,-2.77]`)다. 개선은 실재하지만 adaptation과 q3 학습분포 변경이 함께 들어간
+단일 seed 비교이므로 인과 기여를 분리하지 않는다. 절대 gate를 사후 완화하거나 epoch를 연장하지 않는다.
+
+### 8.25 D1 실패 후 CV 초기 heading 동결정책 진단 사전등록 (2026-08-13)
+
+목적은 D1의 잔여 q3/CV timeout이 초기 radial motion으로 늘어난 유효 path length인지, 접선 추적
+또는 기존 action chirality와 결합한 pursuit 문제인지 분리하는 것이다. PPO·reward·governor·episode
+horizon을 바꾸지 않는다.
+
+- checkpoint: D1 terminal epoch 1900, SHA-256 `197ea269...a278e`;
+- evaluation: 70 bars, deterministic/original, governor off, goal `[22.5,28] m`, CV-only,
+  target speed `U[0.3,1.5] m/s`, exact 600 actions;
+- cells: **toward**, **tangent-left**, **tangent-right**, **away**. tangent을 좌우로 나누는 이유는
+  D0와 D1 모두 negative-y action rate가 97%를 넘기 때문이다. pooled tangent는 보조 요약이다;
+- 각 cell은 seed 337, requested 2,049 episodes를 독립 실행한다. 같은 seed는 common-random-number
+  의도를 갖지만 비동기 reset 때문에 episode-paired 표본으로 주장하지 않는다;
+- primary report는 각 cell capture/crash/timeout과 Wilson 95% CI다. `away−toward timeout`,
+  `tangent-left−tangent-right` outcome 차이는 normal approximation CI와 함께 기술한다;
+- 사전 판독: away timeout이 toward보다 `>=8pp` 높고 tangent 양쪽이 그 사이면 path-length 설명을
+  지지한다. tangent 좌우 outcome 차이의 절댓값이 `>=5pp`면 chirality-sensitive 후속을 우선한다.
+  둘 다 아니면서 모든 cell timeout이 높으면 초기 heading alone 설명을 기각하고 tracker/progress
+  telemetry로 이동한다. 이는 가설 screen이지 P2/D1/P3 decision gate가 아니다;
+- runtime은 eval-only heading override와 해당 값을 receipt/result condition에 기록한다. CV가 아닌
+  pattern, training mode, 또는 허용되지 않은 값에서 override가 켜지면 fail-closed한다.
+
+결과를 보기 전에는 seed, episode 수, bin 경계, threshold를 바꾸지 않는다. 어느 결과도 P2 FAIL이나
+D1 FAIL을 소급 변경하지 않고 P3를 자동 해제하지 않는다.
+
 ---
 
 ## 9. 참고문헌

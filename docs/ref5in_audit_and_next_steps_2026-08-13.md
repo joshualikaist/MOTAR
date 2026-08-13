@@ -25,6 +25,7 @@
 | P1c fresh 900 epoch | PASS | 학습 가능성·안전·source provenance |
 | P2 seed313, 2,049 eps | STRICT FAIL | 68.28/26.16/5.56%; timeout 114 > 102 |
 | D0 seed317, 8,194 eps | descriptive complete | 장거리·pattern별 failure composition |
+| D1 warm-start + seed331, 8,194 eps | FAIL | global/q3 crash PASS, q3/CV timeout 15.98% > 12% |
 
 P1c는 성능 주장이 아니고 P2는 한 training seed/한 evaluation seed/70 bars뿐이다. 실기 성능은 어느
 단계에서도 측정하지 않았다.
@@ -56,17 +57,16 @@ P1c는 성능 주장이 아니고 P2는 한 training seed/한 evaluation seed/70
 
 ## 남은 순서
 
-1. **D1 adaptation probe:** P1c warm-start, 70 bars, 명시적 `[22.5,28] m`, mixed,
-   reward/policy/governor 불변,
-   추가 1,000 epoch. full P3나 publication run이 아니다.
-2. **D1 held-out gate:** 사전등록한 새 eval seed 331에서 최소 8,193 requested episodes를 사용한다.
-   q3 CV timeout ≤12%, 전체 crash ≤27%, q3 crash ≤30%, PPO rollback/OOB/NaN 0을 모두 요구하고,
-   하나라도 실패하면 연장하지 않는다.
-3. **실패 시 frozen diagnostic:** CV initial heading을 toward/tangent/away로 고정해 path-length와 tracker/
-   pursuit failure를 분리한다. PPO는 돌리지 않는다.
-4. **D1 통과 시에만 P3 재승인:** fresh seed211 70→205 curriculum을 다시 사전등록한다. seed223/227은
-   첫 seed와 held-out density curve를 본 뒤 추가한다.
-5. **hardware gate는 별도:** exact BOM/CAD/CG, thrust stand, inertia/actuator identification, power/thermal/
+1. **D1 완료·FAIL:** global `76.82/18.62/4.55%`, q3 `70.22/19.96/9.82%`, q3/CV
+   `64.03/19.98/15.98%`다. D0 대비 q3/CV capture `+15.19pp [10.94,19.44]`, crash
+   `-9.02pp [-12.74,-5.31]`, timeout `-6.17pp [-9.57,-2.77]`로 개선됐지만 사전등록 절대
+   timeout gate를 넘었다. 추가 epoch와 threshold 완화는 하지 않는다.
+2. **현재 frozen diagnostic:** D1 terminal policy에서 70 bars, `[22.5,28] m`, CV-only를 유지하고
+   초기 heading을 toward/tangent-left/tangent-right/away로 고정한다. 좌우 편향을 tangent 한 셀로
+   뭉개지 않고 두 방향을 따로 보고, pooled tangent는 보조값으로만 사용한다.
+3. **P3는 계속 차단:** heading 결과는 원인 분리용이라 어떤 셀 결과가 좋아도 P2나 D1을 PASS로
+   소급 변경하지 않는다. 다음 PPO는 단일 메커니즘 intervention과 새 gate를 먼저 문서화해야 한다.
+4. **hardware gate는 별도:** exact BOM/CAD/CG, thrust stand, inertia/actuator identification, power/thermal/
    endurance, camera/LiDAR FOV·latency, 실제 hover/step/collision-envelope 검증이 필요하다.
 
 이 순서는 한 run에서 airframe, reward, horizon, representation, governor를 동시에 바꾸지 않는다.
