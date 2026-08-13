@@ -8672,4 +8672,5 @@ commit `0877158`에서 D1을 시작했지만 run
 정상 적용됐음을 보여준다. 종료 직전 PyTorch reserved-but-unallocated는 216 MiB였고 학습 종료 뒤 GPU
 free는 6.2 GiB로 회복됐다. 따라서 batch/env/과제 의미론을 바꾸기 전에 launcher가
 `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True`를 고정하도록 했다. 이 설정은 allocator segment만
-바꾸며 128-env PPO 계약은 그대로 둔다. 0-epoch 폴더는 삭제하지 않고 `runs_void/`에 보존한다.
+바꾸며 128-env PPO 계약은 그대로 둔다. 0-epoch 폴더는 삭제하지 않고 runtime source root 밖의
+`results/navrl_ref5in_d1_void_oom0/run/`에 보존한다.
