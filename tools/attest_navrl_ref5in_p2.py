@@ -136,7 +136,13 @@ def map_digest(mapping: dict[str, tuple[str, int]]) -> str:
     return hashlib.sha256(payload).hexdigest()
 
 
-def manifest_map(path: Path, schema: int, roots_only: bool = True) -> tuple[dict[str, tuple[str, int]], dict]:
+def manifest_map(
+    path: Path,
+    schema: int,
+    roots_only: bool = True,
+    *,
+    require_original: bool = True,
+) -> tuple[dict[str, tuple[str, int]], dict]:
     manifest = load_json(path)
     require(manifest.get("schema_version") == schema, f"wrong manifest schema: {path}")
     entries = manifest.get("runtime_files")
@@ -157,9 +163,11 @@ def manifest_map(path: Path, schema: int, roots_only: bool = True) -> tuple[dict
         require(re.fullmatch(r"[0-9a-f]{64}", digest) is not None and size >= 0, f"bad manifest entry: {name}")
         original = (repository / relative).resolve()
         snapshot = (path.parent / str(entry.get("snapshot", ""))).resolve()
-        require(repository in original.parents and original.is_file(), f"missing manifest original: {name}")
+        require(repository in original.parents, f"manifest original escapes repository: {name}")
         require(path.parent in snapshot.parents and snapshot.is_file(), f"missing manifest snapshot: {name}")
-        require(sha256_file(original) == digest and original.stat().st_size == size, f"runtime byte drift: {name}")
+        if require_original:
+            require(original.is_file(), f"missing manifest original: {name}")
+            require(sha256_file(original) == digest and original.stat().st_size == size, f"runtime byte drift: {name}")
         require(sha256_file(snapshot) == digest and snapshot.stat().st_size == size, f"snapshot byte drift: {name}")
         mapping[name] = (digest, size)
     require(bool(mapping), "manifest root map is empty")
@@ -324,8 +332,12 @@ def verify_cell(
     require(manifest_path == SOURCE_BUNDLE / "source_manifest.json", "non-canonical evaluation manifest")
     require(sha256_file(manifest_path) == receipt.get("runtime_source_manifest_sha256"), "evaluation manifest hash mismatch")
     require(result.get("runtime_source_manifest_sha256") == receipt.get("runtime_source_manifest_sha256"), "result/receipt manifest mismatch")
-    eval_map, eval_manifest = manifest_map(manifest_path, 2)
-    training_map, _ = manifest_map(P1_MANIFEST, 1)
+    eval_map, eval_manifest = manifest_map(
+        manifest_path, 2, require_original=require_current_runtime
+    )
+    training_map, _ = manifest_map(
+        P1_MANIFEST, 1, require_original=require_current_runtime
+    )
     require(eval_map == training_map, "evaluation runtime differs from P1c")
     if require_current_runtime:
         require(current_runtime_map() == training_map, "current runtime differs from P1c/P2")

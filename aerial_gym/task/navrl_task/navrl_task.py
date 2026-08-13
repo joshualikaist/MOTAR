@@ -261,6 +261,34 @@ class NavRLTask(BaseTask):
         self._eval_bearing_crash = torch.zeros(3, dtype=torch.long, device=self.device)
         self._eval_bearing_timeout = torch.zeros(3, dtype=torch.long, device=self.device)
         self._eval_bearing_fin = torch.zeros(3, dtype=torch.long, device=self.device)
+        # Held-out outcome strata are deliberately separate from the density-curriculum counters.
+        # A resumed checkpoint may contain a partially accumulated training gate window; reusing
+        # it during evaluation would silently mix training episodes into the held-out denominator.
+        self._eval_speed_succ = torch.zeros(4, dtype=torch.long, device=self.device)
+        self._eval_speed_crash = torch.zeros(4, dtype=torch.long, device=self.device)
+        self._eval_speed_timeout = torch.zeros(4, dtype=torch.long, device=self.device)
+        self._eval_speed_fin = torch.zeros(4, dtype=torch.long, device=self.device)
+        self._eval_speed_crash_cause = torch.zeros(
+            (4, 4), dtype=torch.long, device=self.device
+        )
+        self._eval_dist_succ = torch.zeros(4, dtype=torch.long, device=self.device)
+        self._eval_dist_crash = torch.zeros(4, dtype=torch.long, device=self.device)
+        self._eval_dist_timeout = torch.zeros(4, dtype=torch.long, device=self.device)
+        self._eval_dist_fin = torch.zeros(4, dtype=torch.long, device=self.device)
+        self._eval_dist_crash_cause = torch.zeros(
+            (4, 4), dtype=torch.long, device=self.device
+        )
+        self._eval_pattern_succ = torch.zeros(3, dtype=torch.long, device=self.device)
+        self._eval_pattern_crash = torch.zeros(3, dtype=torch.long, device=self.device)
+        self._eval_pattern_timeout = torch.zeros(3, dtype=torch.long, device=self.device)
+        self._eval_pattern_fin = torch.zeros(3, dtype=torch.long, device=self.device)
+        self._eval_pattern_crash_cause = torch.zeros(
+            (3, 4), dtype=torch.long, device=self.device
+        )
+        # Per-env terminal attribution for the current step: contact, below, above, OOB.
+        self._crash_cause_code = torch.full(
+            (self.num_envs,), -1, dtype=torch.long, device=self.device
+        )
 
         # goal-distance curriculum state
         self.cur = self.task_config.curriculum
@@ -3327,6 +3355,7 @@ class NavRLTask(BaseTask):
         below = z < self.task_config.lower_height_bound
         above = z > self.task_config.upper_height_bound
         crashed_out = crashed | below | above
+        oob = torch.zeros_like(crashed)
         if self.vision_mode:
             # out-of-arena termination: with the target unobserved there is no implicit goal
             # attraction keeping the drone in-bounds, and there are no physical walls to crash on.
@@ -3354,15 +3383,23 @@ class NavRLTask(BaseTask):
         crashed_out = crashed_out & ~captured
         self.captured_now = captured
         self.crashed_now = crashed_out
+        # Assign exactly one cause to every crash before the task logs or resets the environment.
+        # Priority matches the global crash diagnostics and is exported per evaluation stratum.
+        d_contact = crashed & crashed_out
+        d_below = below & ~crashed & crashed_out
+        d_above = above & ~crashed & ~below & crashed_out
+        d_oob = oob & ~crashed & ~below & ~above & crashed_out
+        self._crash_cause_code.fill_(-1)
+        self._crash_cause_code[d_contact] = 0
+        self._crash_cause_code[d_below] = 1
+        self._crash_cause_code[d_above] = 2
+        self._crash_cause_code[d_oob] = 3
         if self._episode_dump_path:
             self._record_episode_dump(pos, captured, crashed_out, crashed, below, above)
 
         if self._crash_diag:
             # Attribute each crash to ONE cause, priority contact > below > above > oob (matching
             # the sources OR-ed into crashed_out above). Same-step captures already excluded.
-            d_contact = crashed & crashed_out
-            d_below = below & ~crashed & crashed_out
-            d_above = above & ~crashed & ~below & crashed_out
             self._diag["contact"] += int(d_contact.sum().item())
             self._diag["below"] += int(d_below.sum().item())
             self._diag["above"] += int(d_above.sum().item())
@@ -3408,7 +3445,6 @@ class NavRLTask(BaseTask):
                 b3z = (1.0 - 2.0 * (q[:, 0] ** 2 + q[:, 1] ** 2)).clamp(-1.0, 1.0)
                 self._diag_below_tilt += float(torch.rad2deg(torch.acos(b3z)).sum().item())
             if self.vision_mode:
-                d_oob = oob & ~crashed & ~below & ~above & crashed_out
                 if bool(d_oob.any()):
                     self._diag["oob"] += int(d_oob.sum().item())
                     self._diag["oob_w"] += int((d_oob & (pos[:, 0] < b_min[:, 0] - m_oob)).sum().item())
@@ -4047,13 +4083,7 @@ class NavRLTask(BaseTask):
             return
         captured = successes[idx].to(torch.float32)
 
-        speed_max = max(1e-6, float(self._target_speed_max()))
-        speed_bin = torch.floor(self._tm_speed[idx] * (4.0 / speed_max)).long().clamp(0, 3)
-        dist_span = max(1e-6, self.general_goal_dist_max - self.general_goal_dist_min)
-        dist_bin = torch.floor(
-            (self._episode_goal_dist[idx] - self.general_goal_dist_min) * (4.0 / dist_span)
-        ).long().clamp(0, 3)
-        pattern_bin = self._tm_pattern[idx].long().clamp(0, 2)
+        speed_bin, dist_bin, pattern_bin = self._episode_strata_bins(idx)
 
         for bins, succ_dst, fin_dst, size in (
             (speed_bin, self._density_speed_succ, self._density_speed_fin, 4),
@@ -4064,6 +4094,59 @@ class NavRLTask(BaseTask):
             succ_dst += torch.bincount(
                 bins, weights=captured, minlength=size
             ).to(succ_dst.dtype)
+
+    def _episode_strata_bins(self, idx):
+        """Return the preregistered speed/distance/pattern bins for completed episodes."""
+
+        speed_max = max(1e-6, float(self._target_speed_max()))
+        speed_bin = torch.floor(self._tm_speed[idx] * (4.0 / speed_max)).long().clamp(0, 3)
+        dist_span = max(1e-6, self.general_goal_dist_max - self.general_goal_dist_min)
+        dist_bin = torch.floor(
+            (self._episode_goal_dist[idx] - self.general_goal_dist_min) * (4.0 / dist_span)
+        ).long().clamp(0, 3)
+        pattern_bin = self._tm_pattern[idx].long().clamp(0, 2)
+        return speed_bin, dist_bin, pattern_bin
+
+    def _record_eval_outcome_strata(self, successes, crashes, timeouts, finished):
+        """Accumulate mutually exclusive held-out outcomes without touching training state."""
+        idx = finished.nonzero(as_tuple=False).squeeze(1)
+        if idx.numel() == 0:
+            return
+        captured = successes[idx].to(torch.float32)
+        crashed = (crashes[idx] > 0).to(torch.float32)
+        timed_out = timeouts[idx].to(torch.float32)
+        speed_bin, dist_bin, pattern_bin = self._episode_strata_bins(idx)
+
+        for bins, succ_dst, crash_dst, timeout_dst, cause_dst, fin_dst, size in (
+            (speed_bin, self._eval_speed_succ, self._eval_speed_crash,
+             self._eval_speed_timeout, self._eval_speed_crash_cause,
+             self._eval_speed_fin, 4),
+            (dist_bin, self._eval_dist_succ, self._eval_dist_crash,
+             self._eval_dist_timeout, self._eval_dist_crash_cause,
+             self._eval_dist_fin, 4),
+            (pattern_bin, self._eval_pattern_succ, self._eval_pattern_crash,
+             self._eval_pattern_timeout, self._eval_pattern_crash_cause,
+             self._eval_pattern_fin, 3),
+        ):
+            fin_dst += torch.bincount(bins, minlength=size).to(fin_dst.dtype)
+            succ_dst += torch.bincount(
+                bins, weights=captured, minlength=size
+            ).to(succ_dst.dtype)
+            crash_dst += torch.bincount(
+                bins, weights=crashed, minlength=size
+            ).to(crash_dst.dtype)
+            timeout_dst += torch.bincount(
+                bins, weights=timed_out, minlength=size
+            ).to(timeout_dst.dtype)
+            crashed_idx = crashed > 0
+            if bool(crashed_idx.any()):
+                cause = self._crash_cause_code[idx][crashed_idx].long()
+                valid = (cause >= 0) & (cause < 4)
+                if bool(valid.any()):
+                    flat = bins[crashed_idx][valid] * 4 + cause[valid]
+                    cause_dst += torch.bincount(
+                        flat, minlength=size * 4
+                    ).reshape(size, 4).to(cause_dst.dtype)
 
     @staticmethod
     def _density_rate_text(succ, fin, labels):
@@ -4325,10 +4408,48 @@ class NavRLTask(BaseTask):
             ),
         )
 
+    def _validate_eval_outcome_strata(self, total):
+        """Fail closed if any held-out stratum loses or duplicates a terminal outcome."""
+        expected = (
+            int(total),
+            int(self._succ_agg),
+            int(self._crash_agg),
+            int(self._to_agg),
+        )
+        for name, successes, crashes, timeouts, causes, episodes in (
+            ("speed", self._eval_speed_succ, self._eval_speed_crash,
+             self._eval_speed_timeout, self._eval_speed_crash_cause,
+             self._eval_speed_fin),
+            ("distance", self._eval_dist_succ, self._eval_dist_crash,
+             self._eval_dist_timeout, self._eval_dist_crash_cause,
+             self._eval_dist_fin),
+            ("pattern", self._eval_pattern_succ, self._eval_pattern_crash,
+             self._eval_pattern_timeout, self._eval_pattern_crash_cause,
+             self._eval_pattern_fin),
+        ):
+            observed = (
+                int(episodes.sum().item()),
+                int(successes.sum().item()),
+                int(crashes.sum().item()),
+                int(timeouts.sum().item()),
+            )
+            if observed != expected:
+                raise RuntimeError(
+                    "NavRL bulk eval %s strata mismatch: %s != %s"
+                    % (name, observed, expected)
+                )
+            n_causes = int(causes.sum().item())
+            if n_causes != expected[2]:
+                raise RuntimeError(
+                    "NavRL bulk eval %s crash-cause mismatch: %d != %d"
+                    % (name, n_causes, expected[2])
+                )
+
     def _export_bulk_eval_result(self, total, reach_rate, mean_nc, best):
         """Persist the exact outcome window consumed by a vectorized rl_games player."""
         if not self._bulk_eval_mode or self._bulk_eval_exported:
             return
+        self._validate_eval_outcome_strata(total)
 
         ad = self._action_diag
         n_action = max(1, int(ad["n"]))
@@ -4377,19 +4498,41 @@ class NavRLTask(BaseTask):
                 "p90": float(np.quantile(array, 0.90)),
             }
 
-        def stratum_payload(successes, episodes, labels):
+        def stratum_payload(
+            successes, crashes, timeouts, crash_causes, episodes, labels
+        ):
             result = {}
-            for label, n_success, n_episode in zip(
-                labels, successes.tolist(), episodes.tolist()
-            ):
+            for row, (label, n_success, n_crash, n_timeout, n_episode) in enumerate(zip(
+                labels,
+                successes.tolist(),
+                crashes.tolist(),
+                timeouts.tolist(),
+                episodes.tolist(),
+            )):
                 n_episode = int(n_episode)
                 n_success = int(n_success)
+                n_crash = int(n_crash)
+                n_timeout = int(n_timeout)
                 result[label] = {
                     "successes": n_success,
+                    "crash": n_crash,
+                    "timeout": n_timeout,
                     "episodes": n_episode,
                     "capture_rate": (
                         float(n_success / n_episode) if n_episode > 0 else None
                     ),
+                    "crash_rate": (
+                        float(n_crash / n_episode) if n_episode > 0 else None
+                    ),
+                    "timeout_rate": (
+                        float(n_timeout / n_episode) if n_episode > 0 else None
+                    ),
+                    "crash_causes": {
+                        cause: int(crash_causes[row, cause_index].item())
+                        for cause_index, cause in enumerate(
+                            ("bar_contact", "below", "above", "out_of_bounds")
+                        )
+                    },
                 }
             return result
 
@@ -4596,8 +4739,11 @@ class NavRLTask(BaseTask):
                     float(speed_max * i / 4.0) for i in range(5)
                 ],
                 "speed": stratum_payload(
-                    self._density_speed_succ,
-                    self._density_speed_fin,
+                    self._eval_speed_succ,
+                    self._eval_speed_crash,
+                    self._eval_speed_timeout,
+                    self._eval_speed_crash_cause,
+                    self._eval_speed_fin,
                     ("q0", "q1", "q2", "q3"),
                 ),
                 "distance_bin_edges_m": [
@@ -4605,13 +4751,19 @@ class NavRLTask(BaseTask):
                     for i in range(5)
                 ],
                 "distance": stratum_payload(
-                    self._density_dist_succ,
-                    self._density_dist_fin,
+                    self._eval_dist_succ,
+                    self._eval_dist_crash,
+                    self._eval_dist_timeout,
+                    self._eval_dist_crash_cause,
+                    self._eval_dist_fin,
                     ("q0", "q1", "q2", "q3"),
                 ),
                 "pattern": stratum_payload(
-                    self._density_pattern_succ,
-                    self._density_pattern_fin,
+                    self._eval_pattern_succ,
+                    self._eval_pattern_crash,
+                    self._eval_pattern_timeout,
+                    self._eval_pattern_crash_cause,
+                    self._eval_pattern_fin,
                     ("cv", "waypoint", "circle"),
                 ),
                 "initial_target_bearing": {
@@ -4662,9 +4814,10 @@ class NavRLTask(BaseTask):
         if finished is not None and finished.any():
             # Density curriculum is disabled during a held-out sweep, but the same episode labels
             # are essential for diagnosing whether a score is limited by speed, initial distance,
-            # or motion pattern. Reuse the audited gate accounting without altering task dynamics.
+            # or motion pattern. Keep these counters separate from the checkpointed curriculum
+            # window so held-out denominators cannot inherit training episodes.
             if self._bulk_eval_mode:
-                self._record_density_strata(successes, finished)
+                self._record_eval_outcome_strata(successes, crashes, timeouts, finished)
                 idx = finished.nonzero(as_tuple=False).squeeze(1)
                 bins = self._episode_bearing_bin[idx].long().clamp(0, 2)
                 self._eval_bearing_fin += torch.bincount(

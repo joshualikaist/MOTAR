@@ -977,6 +977,27 @@ P0/P1/P2 결과 파일은 각각 `results/navrl_ref_platform_verification/`,
 동일 날짜로 남긴다. Exact BOM, CAD/CG/FOV, inertia/actuator 식별, power/thermal/endurance와 실제 비행은
 별도의 hardware gate이며 P0–P3를 통과해도 자동으로 충족되지 않는다.
 
+### 8.24 P2 실패 후 outcome-strata 진단 사전등록 (2026-08-13)
+
+P2의 `114/2,049 = 5.56%` timeout은 strict gate를 실패했지만, 기존 JSON은 distance/speed/pattern별
+capture만 저장해 536 crash와 114 timeout의 구성을 분리할 수 없다. 따라서 정책·reward·episode
+length·기체·governor를 바꾸기 전에 **계측만 추가한** 기술적 진단을 한 번 수행한다.
+
+- lineage: P1c epoch 900 SHA `f1670a1d...ae6bf`, robot `navrl_ref5in_quad`;
+- 새 eval seed **317**, 70 bars, deterministic/original, governor off, target speed
+  `U[0.3,1.5] m/s`, goal distance `U[6,28] m`, requested **8,193 episodes**;
+- equal-width speed/distance 4-bin과 pattern별로 capture/crash/timeout을 전부 저장하고, crash는
+  `bar_contact/below/above/out_of_bounds` 네 원인으로 다시 합계가 맞아야 한다;
+- 각 axis에서 episode·outcome·cause 합계가 global count와 하나라도 다르면 결과 export가 실패한다;
+- 이 결과는 **P2 재시험이 아니고 decision authority가 0**이다. seed 313 판정과 5% gate를 바꾸거나
+  P3를 해제할 수 없다.
+
+결과를 보기 전에 정한 기술적 screen은 (a) distance q3−q0 timeout `>=3 pp`, (b) distance q3−q0
+crash `>=5 pp`, (c) speed-bin timeout max−min `>=3 pp`다. 이는 연관 신호일 뿐 통계적 인과 gate가
+아니다. (a)만 크면 600-step budget/장거리 진행 효율을, (b)와 contact가 크면 제동·회피를, OOB가
+크면 경계 관측/배치를 각각 다음 단일 intervention 후보로 만든다. 동시에 여러 reward·controller
+parameter를 바꾸지 않으며, 결과 검토 전에는 새 PPO를 시작하지 않는다.
+
 ---
 
 ## 9. 참고문헌

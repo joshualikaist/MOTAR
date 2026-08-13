@@ -89,10 +89,16 @@ class TestP2Decision(unittest.TestCase):
 
 
 class TestP2Provenance(unittest.TestCase):
-    def test_current_runtime_map_exactly_matches_p1c(self):
-        training, _ = P2.manifest_map(P2.P1_MANIFEST, 1)
-        self.assertEqual(P2.current_runtime_map(), training)
+    def test_frozen_p1c_snapshot_retains_exact_runtime_digest(self):
+        training, _ = P2.manifest_map(P2.P1_MANIFEST, 1, require_original=False)
         self.assertEqual(P2.map_digest(training), P2.P1_RUNTIME_MAP_SHA)
+
+    def test_historical_verify_does_not_require_current_runtime(self):
+        with mock.patch.object(
+            P2, "current_runtime_map", side_effect=AssertionError("must not be called")
+        ):
+            payload = P2.verify_attestation()
+        self.assertEqual(payload["verdict"], "FAIL")
 
     def test_map_digest_changes_on_added_path(self):
         mapping = {"aerial_gym/a.py": ("0" * 64, 1)}

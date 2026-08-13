@@ -8594,3 +8594,20 @@ PASS 후에만 실행하기로 한 legacy anchor와 P3 seed 211 장기학습은 
 exact action 600에서 발생해 legacy 601-step 회귀는 아니다. 현행 strata가 distance별 capture만
 보존해 crash/timeout 분리가 불가능하므로, 다음 허용 작업은 outcome-aware strata를 추가한 별도
 diagnostic evaluation이다. 원자료와 proof는 `results/navrl_ref5in_p2_seed313/`에 있다.
+
+### P2 후속 진단 구현·사전등록 — 학습과 decision 재시험은 금지
+
+P2를 좋은 seed로 다시 돌리거나 timeout 상한을 사후 완화하지 않고, 원인 분리용 계측을 추가했다.
+bulk evaluation의 distance/speed/pattern 각 bin은 이제 capture뿐 아니라 crash/timeout과
+`bar_contact/below/above/out_of_bounds` crash 원인을 별도 eval-only tensor에 누적한다. 이 tensor는
+checkpoint의 density curriculum window와 분리돼 학습 episode가 held-out denominator에 섞이지
+않는다. export 직전 각 axis의 episode/capture/crash/timeout/cause 합계가 global outcome과 정확히
+같지 않으면 `RuntimeError`로 결과 저장을 막는다.
+
+`tools/run_navrl_ref5in_outcome_diagnostic.py`와 닫힌 shell launcher를 추가했다. 계약은 P1c epoch 900,
+seed 317, 70 bars, deterministic/original, governor off, speed `U[0.3,1.5]`, distance `U[6,28]`,
+8,193 requested episodes다. P2 attestation이 FAIL/none 상태이고 checkpoint SHA가 맞아야 하며 tracked
+source가 clean한 commit이 아니면 실제 run을 거부한다. preflight는 evaluator provenance와
+robot/runtime/condition을 모두 확인해 PASS했고 output을 만들지 않았다. 이 평가는 descriptive이며
+`decision_authority=none`, `p3_unlocked=false`로 고정한다. 자세한 사전 판독 기준은
+`RESEARCH_PLAN.md` §8.24에 있다.
