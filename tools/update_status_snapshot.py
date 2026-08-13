@@ -26,7 +26,9 @@ ROOT = Path(__file__).resolve().parents[1]
 RL_ROOT = ROOT / "aerial_gym/rl_training/rl_games"
 RUNS_ROOT = RL_ROOT / "runs"
 STATUS_PATH = ROOT / "docs/status/status.json"
-HTML_PATH = ROOT / "docs/status/index.html"
+# The instant-paint copy of the snapshot. Was regex-substituted into index.html as an inline
+# <script id="fallback"> block until 2026-08-13; see write_snapshot() for why that was a bug.
+FALLBACK_JS_PATH = ROOT / "docs/status/status.fallback.js"
 CORRECTED_CURVE_PATH = ROOT / "results/corrected_chirality_density_curve.csv"
 RECOVERY_ATTESTATION_VERIFIER_PATH = ROOT / "tools/navrl_v2_recovery_attestation.py"
 LIMIT_AUDIT_PATH = ROOT / "results/navrl_v2_ep24000_limit_audit.json"
@@ -3093,20 +3095,41 @@ def build_snapshot() -> Dict[str, Any]:
     return status
 
 
+def write_js_data(path: Path, global_name: str, payload: Any) -> None:
+    """Write `window.<global_name> = <json>;` and prove it round-trips.
+
+    Every dashboard page needs its data before first paint, and `fetch()` is unavailable over
+    `file://` (which is how these pages get opened locally). A plain classic <script src> assigning
+    a global gives both, with the same ordering guarantee the old inline block had.
+
+    This replaces a regex substitution into index.html that was silently corrupting data. The old
+    code passed the compact JSON as the REPLACEMENT template of `re.subn`, where backslashes are
+    re-interpreted: `\\n` inside a JSON string expanded to a real newline (making the payload
+    unparseable, swallowed by the boot try/catch), `\\\\` collapsed to `\\`, and `\\uXXXX` raised
+    `re.error: bad escape`. It survived only because the snapshot happened to contain nothing but
+    `\\"`. Any Korean prose or file path in a future block would have broken it.
+
+    The round-trip check keeps the old fail-loud property: a malformed write must stop the run
+    rather than ship a dashboard that renders blank.
+    """
+    body = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
+    path.write_text(f"window.{global_name} = {body};\n", encoding="utf-8")
+    text = path.read_text(encoding="utf-8")
+    inner = text[text.index("=") + 1 :].rstrip().rstrip(";")
+    if json.loads(inner) != payload:
+        raise RuntimeError(f"{path.name} did not round-trip")
+
+
 def write_snapshot(status: Dict[str, Any]) -> None:
     STATUS_PATH.write_text(
         json.dumps(status, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
     )
-    html = HTML_PATH.read_text(encoding="utf-8")
-    compact = json.dumps(status, ensure_ascii=False, separators=(",", ":"))
-    pattern = re.compile(
-        r'(<script id="fallback" type="application/json">).*?(</script>)',
-        flags=re.DOTALL,
-    )
-    html, count = pattern.subn(rf"\g<1>{compact}\g<2>", html, count=1)
-    if count != 1:
-        raise RuntimeError("could not locate exactly one dashboard fallback JSON block")
-    HTML_PATH.write_text(html, encoding="utf-8")
+    # Deliberately NO ?v= cache-buster on the consuming <script src>. This file changes on every
+    # snapshot, so versioning it would mean rewriting every dashboard page each run -- reinstating
+    # exactly the HTML coupling this function was rewritten to remove. It is only the instant-paint
+    # layer; core.js re-renders from `fetch('status.json', {cache:'no-store'})` one frame later and
+    # self-corrects any staleness.
+    write_js_data(FALLBACK_JS_PATH, "__STATUS_FALLBACK__", status)
 
 
 def main() -> int:

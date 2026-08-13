@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="ko" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>기체 · 센싱 · MOTAR</title>
+<meta name="description" content="MOTAR NavRL 시뮬레이션 기체 스펙, 센서 구성, 그리고 실기 하드웨어와의 정량 격차.">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="style.css?v=20260813a">
+<script src="js/shell.js?v=20260813a"></script>
+</head>
+<body data-page-title="기체 · 센싱">
+
+<main class="page" id="main">
+
+  <p class="lead"><b>어떤 드론이 나는가.</b> 시뮬레이션 기체의 질량·관성·추력·충돌 기하와 센서 구성,
+  그리고 이 인지 스택을 실제로 올리려면 무엇이 필요한지. 표의 모든 숫자는 URDF와 robot config에서
+  <b>다시 계산한 것</b>이지 옮겨 적은 것이 아니다 — 2026-08-13 감사에서 legacy URDF가 3주 동안
+  서로 모순된 값을 들고 있었던 이유가 바로 아무도 그 숫자들을 서로 대조하지 않았기 때문이다.</p>
+
+  <section class="panel">
+    <div class="panel-h">
+      <h2>기체 비교</h2>
+      <p class="meta" id="drone-stamp">—</p>
+    </div>
+    <div id="drone-airframe"><p class="hint">불러오는 중…</p></div>
+    <div class="update-grid" id="drone-notes"></div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-h">
+      <h2>비행 포락선 게이트</h2>
+      <p class="meta">기체가 명령을 추종하는가 — 항법 성능 아님</p>
+    </div>
+    <div id="drone-envelope"><p class="hint">불러오는 중…</p></div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-h">
+      <h2>센싱과 제어</h2>
+      <p class="meta">관측 계약을 이루는 값들 · knob을 누르면 카탈로그로</p>
+    </div>
+    <div id="drone-sensing"><p class="hint">불러오는 중…</p></div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-h">
+      <h2>실기와의 격차</h2>
+      <p class="meta">이 인지 스택을 실제로 올리려면</p>
+    </div>
+    <div id="drone-gap"><p class="hint">불러오는 중…</p></div>
+    <h3>남은 제약, 순서대로</h3>
+    <ol class="lead">
+      <li><b>무게 · 기동성</b> — 인지 스택 472 g은 250 g 기체에 실을 수 없다. 기체를 키워 재학습하거나
+        센서를 경량화해야 한다. LiDAR 하나가 페이로드의 56%다.</li>
+      <li><b>상태추정 품질</b> — 시뮬레이터는 위치·속도·자세를 공짜로 준다. 실기에서는 VIO/LIO가 그 값을
+        만들어야 하고, 그 오차가 정책 성능을 직접 깎는다. <b>바이어스·드리프트 축은 아직 안 쟀다</b>
+        (측정한 것은 스텝별 iid 가우시안뿐).</li>
+      <li><b>검출기 연산</b> — 정책 자체는 제어 주기의 0.4%밖에 안 쓰지만, 검출기는 실기 해상도에서
+        CPU로 불가능하다. GPU/TensorRT 또는 해상도·백본 재설계가 필요하다.</li>
+      <li><b>정책 연산</b> — 제약이 아니다. 장애물 토큰 용량을 늘려도 Transformer 토큰 수가 늘지 않아
+        추론 시간이 사실상 불변이다.</li>
+    </ol>
+    <p class="hint">근거: <code>docs/sim_vs_hardware_gap_2026-08.md</code>,
+    <code>docs/reference_platform_proposal_2026-08.md</code>.
+    <b>실기 비행 시험은 0회다</b> — 이 절은 전부 스펙 비교이며 sim-to-real 성능 주장이 아니다.</p>
+  </section>
+
+  <footer class="foot">
+    MOTAR · <code>research/navrl-env</code> ·
+    <span id="foot-runs">—</span> runs
+  </footer>
+</main>
+
+<!-- Snapshot data for instant paint. Plain classic scripts: they execute in document order, so the
+     globals are assigned before the renderers boot. Do NOT add defer/type=module. -->
+<script src="status.fallback.js"></script>
+<script src="data/platform.js?v=20260813a"></script>
+<script src="data/parameters.js?v=20260813a"></script>
+<script src="js/page-drone.js?v=20260813a"></script>
+</body>
+</html>

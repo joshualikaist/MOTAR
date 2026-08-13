@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="ko" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>결과 · MOTAR</title>
+<meta name="description" content="MOTAR 정식 근거: 밀도 곡선, 속도 축, 밀도×속도 맵, 인지 강건성.">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="style.css?v=20260813a">
+<script src="js/shell.js?v=20260813a"></script>
+</head>
+<body data-page-title="결과">
+
+<main class="page" id="main">
+
+  <p class="lead">동결 정책 <code>ep25000+riskcap</code>의 <b>held-out 측정 결과</b>만 모았다. 여기 나오는 곡선은 전부 schema-v2 계약(정확히 600 스텝, source manifest 고정, SHA 피닝)에서 잰 것이고, 대체·철회된 과거 곡선은 자동으로 제외된다. 개별 A/B의 판정과 신뢰구간은 <a href="experiments.html">실험 인덱스</a>에 있다.</p>
+
+  <!-- CURVES -->
+  <section class="panel" id="panel-curves">
+    <div class="panel-h">
+      <h2>Curves</h2>
+      <div class="seg" role="tablist">
+        <button type="button" class="seg-btn on" data-curve="density">Density</button>
+        <button type="button" class="seg-btn" data-curve="speed">Speed</button>
+        <button type="button" class="seg-btn" data-curve="map">Map</button>
+      </div>
+    </div>
+
+    <div class="curve-pane on" id="pane-density">
+      <p class="meta" id="density-sub">held-out · sensor-only</p>
+      <div class="scrollx">
+        <svg class="plot" id="curve" viewBox="0 0 740 400" aria-label="density curve"></svg>
+      </div>
+      <div class="legend">
+        <span><i style="background:var(--sensor)"></i>capture</span>
+        <span><i style="background:var(--bad)"></i>crash</span>
+        <span><i class="dash"></i>GT ref</span>
+      </div>
+      <div class="scrollx"><table id="curve-tbl"></table></div>
+      <p class="hint" id="curve-cap"></p>
+    </div>
+
+    <div class="curve-pane" id="pane-speed">
+      <p class="meta" id="speed-sub">current v2 target-speed axis</p>
+      <div class="scrollx">
+        <svg class="plot" id="speedplot" viewBox="0 0 740 380" aria-label="speed curve"></svg>
+      </div>
+      <div class="legend" id="speed-legend">
+        <span><i style="background:var(--sensor)"></i>capture</span>
+        <span><i style="background:var(--bad)"></i>crash</span>
+      </div>
+      <div class="scrollx"><table id="speed-tbl"></table></div>
+      <p class="hint" id="speed-cap"></p>
+    </div>
+
+    <div class="curve-pane" id="pane-map">
+      <p class="meta" id="map-sub">density × target speed · held-out · shaded = trained range</p>
+      <div class="scrollx">
+        <svg class="plot" id="heatmap" viewBox="0 0 740 430" aria-label="density by target speed capture map"></svg>
+      </div>
+      <p class="hint" id="map-cap"></p>
+      <div id="ceiling-wrap" hidden>
+        <p class="meta" id="ceiling-sub">self-paced density curriculum · promote at capture ≥ 0.70 over 16,384 episodes</p>
+        <div class="scrollx"><table id="ceiling-tbl"></table></div>
+        <p class="hint" id="ceiling-cap"></p>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- HELD-OUT PERCEPTION ROBUSTNESS -->
+  <section class="panel" id="panel-robust">
+    <div class="panel-h">
+      <h2>Perception robustness</h2>
+      <p class="meta" id="robust-sub">held-out perturbation screen</p>
+    </div>
+    <p class="robust-finding" id="robust-finding"></p>
+    <div class="scrollx">
+      <table class="robust-table">
+        <thead>
+          <tr><th>perturbation</th><th>capture</th><th>crash</th><th>vs clean</th></tr>
+        </thead>
+        <tbody id="robust-rows"></tbody>
+      </table>
+    </div>
+    <p class="meta" id="robust-superseded"></p>
+  </section>
+
+  <!-- NEXT REPRESENTATION ABLATION -->
+  <section class="panel" id="panel-corridor">
+    <div class="panel-h">
+      <h2>Corridor token</h2>
+      <p class="meta" id="corridor-sub">free-space affordance · proposed, not yet in the actor</p>
+    </div>
+    <div class="corridor-intro">
+      <div>
+        <span class="eyebrow">WHY CHANGE THE REPRESENTATION?</span>
+        <strong id="corridor-title">Obstacle locations are visible; traversable openings are implicit.</strong>
+        <p id="corridor-definition"></p>
+      </div>
+      <p class="corridor-why" id="corridor-why"></p>
+    </div>
+    <div class="token-compare">
+      <article class="token-card current">
+        <span class="token-tag">CURRENT</span>
+        <h3 id="token-current-label">Obstacle token</h3>
+        <strong id="token-current-question">Where are the nearest bars?</strong>
+        <div class="token-sketch obstacle-sketch" aria-hidden="true">
+          <i></i><i></i><i></i><i></i><span class="drone-dot"></span>
+        </div>
+        <ul id="token-current-fields"></ul>
+        <p id="token-current-weakness"></p>
+      </article>
+      <div class="token-arrow" aria-hidden="true">→</div>
+      <article class="token-card proposed">
+        <span class="token-tag">PROPOSED</span>
+        <h3 id="token-proposed-label">Corridor token</h3>
+        <strong id="token-proposed-question">Where can the drone pass?</strong>
+        <div class="token-sketch corridor-sketch" aria-hidden="true">
+          <i class="wall left"></i><i class="wall right"></i>
+          <span class="gap-axis"></span><span class="gap-width">usable width</span>
+          <span class="drone-dot"></span>
+        </div>
+        <ul id="token-proposed-fields"></ul>
+        <p id="token-proposed-weakness"></p>
+      </article>
+    </div>
+    <div class="corridor-roadmap" id="corridor-steps"></div>
+    <p class="corridor-gate" id="corridor-gate"></p>
+  </section>
+
+  <footer class="foot">
+    MOTAR · <code>research/navrl-env</code> ·
+    <span id="foot-runs">—</span> runs
+  </footer>
+</main>
+
+<!-- Snapshot data for instant paint. Plain classic scripts: they execute in document order, so
+     __STATUS_FALLBACK__ is assigned before the renderers boot. Do NOT add defer/type=module. -->
+<script src="status.fallback.js"></script>
+<script src="js/core.js?v=20260813a"></script>
+<script src="js/panels-results.js?v=20260813a"></script>
+</body>
+</html>

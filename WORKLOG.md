@@ -8674,3 +8674,100 @@ free는 6.2 GiB로 회복됐다. 따라서 batch/env/과제 의미론을 바꾸�
 `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True`를 고정하도록 했다. 이 설정은 allocator segment만
 바꾸며 128-env PPO 계약은 그대로 둔다. 0-epoch 폴더는 삭제하지 않고 runtime source root 밖의
 `results/navrl_ref5in_d1_void_oom0/run/`에 보존한다.
+
+## 2026-08-13 — 상태 대시보드를 6페이지로 재편, 실험 인덱스 신설
+
+사용자 요청: "변수 하나하나가 어떻게 적용됐고 결과가 어땠는지"를 한 묶음으로 보기엔 너무 길다.
+조사해 보니 **문제는 길이가 아니라 데이터가 없다는 것**이었다.
+
+| 갖고 있다고 생각했던 것 | 실제 |
+|---|---|
+| `status.json.runs[]` 77건 = 실험 기록 | 학습 중 롤링 통계뿐. held-out 결과·시드·에피소드 수·SHA·판정 **전무** |
+| A/B 판정이 구조화돼 있음 | **현재 캠페인 1건**만, `research_update`의 영문 산문 안에 |
+| CI·시드가 필드로 있음 | 전부 문자열 (`"95% CI [-0.51,+3.66]"`). 구조화 delta는 2곳뿐 |
+| 통제 실험 ~60건 | **`WORKLOG.md` 산문에만 존재** |
+
+따라서 작업의 본체는 페이지 분할이 아니라 **실험 인덱스라는 데이터셋을 새로 만드는 것**이었다.
+
+### 착수 전 발견한 잠복 버그 (Phase 0, 단독 처리)
+
+`update_status_snapshot.py:write_snapshot()`이 압축 JSON을 `re.subn`의 **치환 템플릿**으로 넘기고
+있었다. 치환 템플릿에서는 백슬래시가 재해석되므로 재현 결과:
+
+- JSON 문자열 안 `\n` → 실제 개행 → `JSON.parse` 실패 → try/catch가 삼켜 **조용히** 초기 페인트 소실
+- `\\` → `\`로 붕괴, `\uXXXX` → `re.error: bad escape`로 스크립트 사망
+
+현재 `status.json`의 백슬래시가 `\"` 2개뿐이라 우연히 살아 있었다. 한국어 실험 산문을 넣는 순간
+깨졌을 것이다. `write_js_data()` + `docs/status/status.fallback.js`로 교체하고 round-trip
+자체검증으로 fail-loud 성질을 유지했다. 부수효과로 `index.html`이 112 KB → 23 KB가 됐다
+(88 KB짜리 한 줄이 매 스냅샷마다 diff에 찍히던 문제도 사라짐).
+
+### 결과 — 6페이지
+
+| 페이지 | 내용 |
+|---|---|
+| 개요 | 라이브 상태, 성공 기준, 현재 캠페인, 학습 운영 기록 |
+| 초기 세팅 | 동결 계약, 정보 방화벽 다이어그램, 3D 아레나 |
+| 기체 · 센싱 | legacy vs ref5in 스펙 17행, 포락선 게이트 21항, 센싱·제어 13행, 실기 격차 |
+| 파라미터 | `NAVRL_*` **176개** 카탈로그 |
+| 실험 인덱스 | 통제 실험 **58건** master/detail |
+| 결과 | 밀도 곡선 · 속도 축 · 밀도×속도 맵 · 인지 강건성 |
+
+좌측 고정 사이드바(`js/shell.js` 런타임 주입, 마크업 6벌 복제 회피), 테마 localStorage 영속화.
+
+### 신규 데이터 층 — 생성기 2 + 린터 1
+
+- `tools/generate_parameter_catalog.py` — AST로 `NAVRL_*` 전량 수집. regex로는 못 하는 5가지가
+  있다: 여러 줄 호출, 비리터럴 기본값, `.strip() or "x"` 후처리, 중첩 클래스 스코프, 동일 파일 내
+  중복 이름. **주석은 tokenize로 수확**(`latency_ego_motion_fix`의 9줄 설명이 이 페이지의 핵심 가치).
+  authoritative 176 / echo-only 83으로 분류 — 함수 본문 안의 `os.environ.get` 대부분은 영수증
+  기록용 재읽기라 동작 knob이 아니다. 파생 필드 3개가 특히 값어치 있다:
+  `mirrors`(5개 — 소스가 "동기화 필수"라 경고하는 것들), `swept_but_not_ablated`(런처가 값은
+  지정했지만 통제 A/B는 없음), `frozen_by_contract`(건드리면 898-D 계보가 끊김).
+- `tools/generate_platform_spec.py` — URDF + robot config에서 질량·관성·추력·기하를 **재계산**.
+  legacy URDF가 3주간 모순 상태였던 이유가 아무도 그 숫자들을 서로 대조하지 않은 것이므로,
+  대시보드가 손으로 옮겨 적은 표를 들고 있으면 안 된다.
+- `tools/lint_experiments.py` — 스키마·열거형·참조 무결성·`results_paths` 실재 여부를 fail-closed로.
+
+### 실험 인덱스의 설계 결정 — `verdict`와 `validity` 분리
+
+둘은 **직교한다**. 키랄리티 수정 이전 결과는 `PASS`(게이트 통과) + `superseded`(수치 무효)다.
+철회를 `FAIL`로 적으면 우리 기록을 우리가 왜곡하는 것이다. 그래서 칩 2개를 띄우고,
+기본 필터는 유효 근거만, **"검증으로 무효화 17건"**은 *긍정적* 라벨의 토글로 연다.
+
+현재 58건: 유효 36 · 대체됨 12 · 철회 5 · 탐색적 5 / PASS 32 · FAIL 13 · 미결 13.
+철회 5건은 사유별로 전부 노출된다 — RNG 오염, 좌표계 오류, 과대주장(+20 ms 스펙), 범위 이탈,
+구현 버그. `experiments.html?validity=void`가 그 목록의 공유 링크다.
+
+파라미터 ↔ 실험은 env var 이름으로 **단방향 조인**한다(생성기가 experiments.json을 읽어
+parameters.json에 `experiments[]`를 쓴다). 조인 결과 knob 38개에 실험 이력이 붙었다.
+
+### 함께 고친 것
+
+- `renderRuns`가 run **이름**으로 정렬 후 `.reverse()`해서 "최근 12개"가 사전순이었다
+  (`density_120`이 모든 `ppo_*`보다 앞). `finalized_at` 내림차순으로 수정하고,
+  한 번도 노출된 적 없던 `exit_reason`·`epochs_logged`·`reward_collapse`를 열로 추가했다.
+- `renderLive` 꼬리의 아레나 슬라이더 동기화 16줄을 `syncArenaToRun`으로 분리.
+  Live 패널(개요)과 아레나(초기 세팅)가 다른 페이지가 됐는데 이 코드는 전부 null-guard라
+  **조용히** 실패했을 것이다 — 슬라이더가 HTML 기본값에 머물고 HUD가 그럴듯하지만 틀린 밀도를
+  콘솔 에러 없이 표시. 인수 조건으로 "슬라이더가 캠페인 막대 수와 일치"를 박았다(현재 70).
+- `app.js`(966줄)를 `js/core.js` + `panels-{status,setup,results}.js`로 분할.
+  렌더러별 `try/catch`를 넣었다 — 이전에는 하나가 던지면 나머지가 통째로 중단됐다.
+
+### 검증
+
+Chrome headless(`--use-gl=swiftshader`)로 6페이지 전부 렌더 확인. 분할 전후 출력 동일:
+개요 패널 4 · runs 12행, 초기세팅 슬라이더 70 / HUD 밀도 4.4 / canvas 생성, 결과 곡선 SVG 2712 B
++ 히트맵 6500 B, 기체 스펙 17행, 파라미터 177행, 실험 36행(기본 필터). 3D 실패 0건.
+`--disable-gpu`에서만 WebGL이 없어 실패하는데 이는 헤드리스 환경 제약이지 회귀가 아니다.
+
+재현: `python3 -m http.server 8000 --directory docs` 후 6페이지 육안 확인.
+생성기는 `tools/generate_parameter_catalog.py`, `tools/generate_platform_spec.py`,
+`tools/lint_experiments.py` 순으로 돌린다.
+
+### 남은 것
+
+`research_update`의 5-branch 다형성은 그대로 뒀다. experiments.json이 자리잡으면
+"`research_update.experiment_id`인 실험을 렌더"로 축약되어 근원에서 사라지므로,
+재편 중에 손대지 않고 후속으로 남긴다. experiments.json은 손 큐레이션이며 린터가 규율을 강제한다 —
+자동 추출은 하지 않는다("이 실험이 무엇을 확립했는가"는 기계가 유도할 수 없다).

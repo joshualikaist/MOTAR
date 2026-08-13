@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="ko" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>파라미터 · MOTAR</title>
+<meta name="description" content="MOTAR NavRL의 NAVRL_* 환경변수 카탈로그 — 현재 값, 선언 위치, 소스 주석, 실험 이력.">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="style.css?v=20260813a">
+<script src="js/shell.js?v=20260813a"></script>
+</head>
+<body data-page-title="파라미터">
+
+<main class="page" id="main">
+
+  <p class="lead">이 시스템의 동작을 결정하는 <b>환경변수 전량</b>. 값을 손으로 옮겨 적은 표가 아니라
+  <b>소스에서 생성</b>한 것이라, 코드가 바뀌면 여기도 바뀐다. 각 knob이 무엇을 하는지는 소스 주석을
+  그대로 가져왔고, <b>통제 실험으로 검증한 적이 있는지</b>를 함께 표시한다 —
+  "런처에서 값만 지정했다"와 "A/B로 효과를 분리했다"는 전혀 다른 이야기다.</p>
+
+  <section class="panel">
+    <div class="panel-h">
+      <h2>NAVRL_* 카탈로그</h2>
+      <p class="meta" id="param-stamp">—</p>
+    </div>
+    <div class="pcontrols" id="param-controls"></div>
+    <div id="param-root"><p class="hint">파라미터 데이터를 불러오는 중…</p></div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-h">
+      <h2>이 카탈로그가 제외한 것</h2>
+      <p class="meta">동작을 바꾸지 않는 이름들</p>
+    </div>
+    <p class="hint">환경변수를 읽는 지점이 모두 파라미터인 것은 아니다. 함수 본문 안에서
+    <code>os.environ.get</code>으로 읽는 대부분은 <b>자기 설정을 영수증·매니페스트에 기록하려고
+    다시 읽는 것</b>이며(<code>NavRLTask.get_env_state</code> 등), 동작에는 영향을 주지 않는다.
+    런처 전용 플래그도 마찬가지다. 그런 이름은 위 목록에서 빼고 아래에 접어 둔다.</p>
+    <details class="prow"><summary><b id="echo-count">—</b> 개 — 영수증·런처 전용 이름</summary>
+      <div class="pdetail"><div id="echo-root"></div></div>
+    </details>
+  </section>
+
+  <footer class="foot">
+    MOTAR · <code>research/navrl-env</code> ·
+    <span id="foot-runs">—</span> runs
+  </footer>
+</main>
+
+<!-- Snapshot data for instant paint. Plain classic scripts: they execute in document order, so the
+     globals are assigned before the renderers boot. Do NOT add defer/type=module. -->
+<script src="status.fallback.js"></script>
+<script src="data/parameters.js?v=20260813a"></script>
+<script src="data/experiments.js?v=20260813a"></script>
+<script src="js/page-parameters.js?v=20260813a"></script>
+</body>
+</html>
