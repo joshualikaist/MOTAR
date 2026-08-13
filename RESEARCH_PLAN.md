@@ -1128,6 +1128,41 @@ CV-only, `[22.5,28] m`, `U[0.3,1.5] m/s`, deterministic/original, governor off, 
 계측 결과가 나온 뒤에만 FOV-memory/tracker 개입 또는 arena-size/reflection 대조 중 하나를 새로
 사전등록한다. 이 telemetry 진단 자체는 P3를 열지 않는다.
 
+**결과:** source/receipt/count 합계 검증을 통과했다. toward 2,050회는 capture/crash/timeout
+`94.29/5.37/0.34%`, away 2,049회는 `35.97/9.42/54.61%`로 seed 347 결과를 거의 재현했다.
+away capture의 step-weighted visible fraction은 `15.02%`, timeout은 `0.59%`여서 차이는
+`+14.43pp`였다. 연관 방향은 맞지만 사전 20pp screen에 미달했으므로 FOV/track-loss를 단독
+우선 intervention으로 올리지 않는다. away capture/timeout episode의 wall-reflection-any는 각각
+`99.73/99.64%`로 거의 같았고 평균 반사 수도 `4.024/4.630`이었다. speed quartile별로 반사 집단의
+capture가 높지만, 무반사 집단 118회 중 다수가 반사 전에 OOB crash로 종료되어 survival selection이
+강하다. 이 표에서 wall reflection의 인과 이득을 추정하지 않는다.
+
+코드 계약 감사에서 hard-distance `[22.5,28] m`가 target camera 최대 `20 m`와 LiDAR 최대 `12 m`를
+모두 넘는다는 더 직접적인 비관측 조건을 확인했다. target feature는 tracker가 inactive일 때 전부 0이고,
+초기 spawn은 target을 전방 거리 prior에 두므로 actor는 최초 취득 전까지 위치 prior만 쓸 수 있다.
+heading intervention은 이 최초 취득 시간과 wall turnaround를 함께 바꾼다. 따라서 다음은 FOV 확대나
+PPO가 아니라 first-acquisition telemetry를 추가한 동결 replay다.
+
+### 8.28 초기 비관측·최초 취득 진단 사전등록 (2026-08-13)
+
+동일 D1 terminal checkpoint, 1 bar, CV-only, `[22.5,28] m`, `U[0.3,1.5] m/s`, deterministic/
+original, governor off, exact 600을 유지한다. 새 eval seed **359**, toward/away 각 requested
+**2,049 episodes**다. policy/reward/sensor range/arena/horizon은 바꾸지 않는다.
+
+- episode별 `ever_visible`, first-visible observation step, visible→hidden transition 수를 누적한다;
+- capture/crash/timeout별 never-acquired count/rate와 acquired episode의 first-visible step 평균·중앙값을
+  저장하고, outcome 합계 및 observation chronology가 맞지 않으면 export를 중단한다;
+- primary screen은 away timeout의 never-acquired rate가 away capture보다 **30pp 이상 높은지**다.
+  통과하면 우선 병목을 장기 memory가 아니라 **초기 acquisition/range 계약**으로 분류한다;
+- 차이가 30pp 미만이면서 acquired timeout의 first-visible step이 capture보다 100 step 이상 늦으면
+  delayed acquisition channel로 분류한다. 둘 다 아니면 initial observability 단독 설명은 보류한다;
+- toward/away 비교는 보조 재현이며, 어느 결과도 P2/D1을 재판정하거나 P3를 열지 않는다.
+
+이 결과 뒤의 첫 개입은 동시에 여러 축을 바꾸지 않는다. acquisition channel이 지지되면 (a) 평가
+거리 상한을 실제 sensor range 안으로 제한하는 task-contract 대조와 (b) 28m까지 관측 가능한 장거리
+detector 대조 중 하나를 별도 사전등록한다. 전자는 과제를 바꾸고 후자는 센서를 바꾸므로 같은 A/B에
+섞지 않는다.
+
 ---
 
 ## 9. 참고문헌

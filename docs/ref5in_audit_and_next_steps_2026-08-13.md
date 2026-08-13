@@ -68,11 +68,16 @@ P1c는 성능 주장이 아니고 P2는 한 training seed/한 evaluation seed/70
 3. **near-open diagnostic 완료:** 1 bar away−toward timeout도 `+54.32pp`라 dense obstacle
    occlusion 필요성은 기각됐다. away의 hidden fraction은 95.09%, timeout은 저속 q0 77.16%에서
    고속 q3 30.95%로 감소해 FOV 이탈과 벽 반사가 함께 의심된다.
-4. **현재 telemetry diagnostic:** 같은 동결 policy에 outcome별 visible-step 비율과 wall/bar
-   reflection 횟수만 추가한다. reward, policy, horizon은 바꾸지 않는다.
-5. **P3는 계속 차단:** heading 결과는 원인 분리용이라 어떤 셀 결과가 좋아도 P2나 D1을 PASS로
+4. **outcome telemetry 완료:** seed 353에서 toward/away timeout `0.34/54.61%`가 재현됐다.
+   away capture/timeout visibility `15.02/0.59%` 차이는 +14.43pp로 사전 20pp screen 미달이다.
+   wall-reflection-any는 둘 다 99%를 넘어 반사 여부만으로 outcome을 설명하지 못하며, speed별 표는
+   반사 전에 OOB 종료되는 episode 때문에 생존 선택편향이 있다.
+5. **초기 관측 계약 결함:** hard-distance `[22.5,28]m`는 camera/LiDAR range `20/12m` 밖이다.
+   tracker inactive 시 target token이 0이므로 모든 episode가 위치 prior만 가진 채 시작한다. 다음은
+   정책을 바꾸지 않고 first acquisition/never-acquired를 outcome별로 재는 seed 359 진단이다.
+6. **P3는 계속 차단:** heading 결과는 원인 분리용이라 어떤 셀 결과가 좋아도 P2나 D1을 PASS로
    소급 변경하지 않는다. 다음 PPO는 단일 메커니즘 intervention과 새 gate를 먼저 문서화해야 한다.
-6. **hardware gate는 별도:** exact BOM/CAD/CG, thrust stand, inertia/actuator identification, power/thermal/
+7. **hardware gate는 별도:** exact BOM/CAD/CG, thrust stand, inertia/actuator identification, power/thermal/
    endurance, camera/LiDAR FOV·latency, 실제 hover/step/collision-envelope 검증이 필요하다.
 
 이 순서는 한 run에서 airframe, reward, horizon, representation, governor를 동시에 바꾸지 않는다.

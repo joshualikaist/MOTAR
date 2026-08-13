@@ -1094,6 +1094,29 @@
    "worklog_date": "2026-08-13",
    "results_paths": ["results/navrl_ref5in_cv_heading_near_open_seed347/"],
    "launcher": "tools/run_navrl_ref5in_cv_heading_near_open.py"}
+  ,
+  {"id": "2026-08-13-ref5in-cv-heading-telemetry",
+   "title_ko": "ref5in 동결정책 — outcome별 가시성·벽 반사",
+   "question": "away timeout은 FOV 손실과 벽 반사 중 어느 관측 채널과 더 연관되는가?",
+   "theme": "platform", "knob": null,
+   "levels": [{"label": "toward · 1 bar", "value": "toward", "is_baseline": true},
+              {"label": "away · 1 bar", "value": "away"}],
+   "metric": "timeout",
+   "effect": {"value_pp": 54.27, "ci95_pp": null, "ci_method": "none", "direction": "lower_is_better"},
+   "arms": [{"label": "toward", "capture": 0.9429, "crash": 0.0537, "timeout": 0.0034, "n_episodes": 2050,
+             "extra": {"capture_visible": 0.3538, "timeout_visible": 0.0152}},
+            {"label": "away", "capture": 0.3597, "crash": 0.0942, "timeout": 0.5461, "n_episodes": 2049,
+             "extra": {"capture_visible": 0.1502, "timeout_visible": 0.0059,
+                       "capture_wall_any": 0.9973, "timeout_wall_any": 0.9964}}],
+   "verdict": "INCONCLUSIVE", "validity": "exploratory",
+   "verdict_note": "away capture−timeout visibility +14.43 pp는 사전 20 pp FOV 우선 screen에 미달했다. wall-any는 양 outcome 모두 99% 이상이다.",
+   "confounded_by": "step-weighted visibility는 episode 길이의 영향을 받고, wall reflection 표에는 반사 전 OOB 종료에 의한 생존 선택편향이 있다.",
+   "seeds": [353], "episodes_per_cell": 2049,
+   "env": {"bars": 1, "machine": "rtx3070"},
+   "preregistered": true, "gate": "away capture−timeout visibility >=20 pp",
+   "worklog_date": "2026-08-13",
+   "results_paths": ["results/navrl_ref5in_cv_heading_telemetry_seed353/"],
+   "launcher": "tools/run_navrl_ref5in_cv_heading_telemetry.py"}
 
  ]
 }

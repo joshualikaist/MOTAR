@@ -8921,3 +8921,28 @@ seed 353 orchestrator는 seed 347 near-open 양성 screen, D1 checkpoint SHA, P2
 유일한 forced mismatch `cfg_target_pattern: mixed→cv`, 1 bar/두 heading/2,049 episode 계약을 모두
 검사한다. py_compile, shell syntax, target-motion 7개와 P2 contract 9개, historical artifact verify,
 GPU를 시작하지 않는 forced preflight를 통과했다.
+
+### outcome telemetry 완료 — FOV 단독 screen 미달, 초기 sensor-range 불일치 발견
+
+seed 353 toward/away는 각각 2,050/2,049 episode를 완료했고 `verify`가 source manifest, receipt,
+cell 합계, outcome telemetry와 speed×reflection 합계를 모두 재검증했다. 결과는 다음과 같다.
+
+| 1 bar | capture | crash | timeout | capture visible | timeout visible | capture wall-any | timeout wall-any |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| toward | 94.29% | 5.37% | 0.34% | 35.38% | 1.52% | 0.21% | 57.14% (n=7) |
+| away | 35.97% | 9.42% | 54.61% | 15.02% | 0.59% | 99.73% | 99.64% |
+
+away capture−timeout step-weighted visibility는 `+14.43pp`로 방향은 맞지만 사전등록 20pp에 못
+미쳤다. FOV-memory/tracker를 단독 최우선 개입으로 선언하지 않는다. away wall reflection 평균도
+capture/timeout `4.024/4.630`으로 둘 다 높다. speed별 반사 집단 capture가 높아 보이지만 무반사
+118회가 반사 전에 OOB로 끝난 짧은 episode에 집중되어 있어 인과효과가 아니라 survival selection이다.
+
+두 평가 seed 재현은 양호했다. seed 347→353의 toward timeout은 `0.15→0.34%`, away timeout은
+`54.47→54.61%`, away capture는 `36.85→35.97%`였다. 성능 drift보다 구조적 채널이 훨씬 크다.
+
+후속 코드 감사에서 D1/heading hard-distance `[22.5,28]m`가 camera detector 최대 `20m`와 LiDAR
+최대 `12m`를 모두 초과함을 확인했다. tracker inactive일 때 15-D target feature 전체에 0을 곱하므로
+actor는 최초 취득 전 target state를 받지 못한다. 모든 episode는 초기 표적 비관측이고, target spawn의
+전방 위치 prior로 먼저 움직여야 한다. toward/away가 acquisition time과 wall turnaround를 함께
+바꾸는 것이 현재 가장 강한 구조적 설명이다. `RESEARCH_PLAN.md` §8.28에 seed 359 first-acquisition
+telemetry replay를 결과 전에 고정했다. PPO, sensor range, arena, horizon은 바꾸지 않는다.

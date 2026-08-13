@@ -56,8 +56,17 @@ crash는 +1.37pp로 불확실했고, tangent 좌우 차이는 최대 2.19pp라 a
 지배한다는 설명은 지지되지 않았습니다. 다만 heading은 경로길이뿐 아니라 target visibility와
 벽 반사 시점도 함께 바꾸므로, 이 단계의 결론은 **radial-heading 환경 채널**까지였습니다. 후속 1-bar
 near-open 대조에서도 toward/away timeout이 `0.15/54.47%`로 `+54.32pp` 벌어졌습니다. 따라서 dense
-obstacle occlusion은 이 실패에 필요하지 않습니다. 현재는 결과별 FOV visibility와 벽 반사 횟수를
-계측해 kinematic/FOV와 finite-arena 반사를 분리하는 단계입니다.
+obstacle occlusion은 이 실패에 필요하지 않습니다. 별도 seed 353 outcome telemetry도 이를
+재현했습니다(toward/away timeout `0.34/54.61%`). away capture와 timeout의 step-weighted visibility는
+`15.02/0.59%`로 차이가 `+14.43pp`였지만, 사전등록한 20pp FOV 우선 screen에는 미달했습니다.
+벽 반사를 한 episode의 성공률이 높다는 표는 반사 전 OOB로 끝난 짧은 episode가 무반사 집단에 몰리는
+생존 선택편향 때문에 인과효과로 읽지 않습니다.
+
+코드 계약상 더 직접적인 문제가 확인됐습니다. 이 hard-distance 평가는 표적을 `22.5–28m`에 두지만
+actor의 target camera 최대거리는 `20m`, LiDAR는 `12m`입니다. 따라서 **모든 episode가 표적을 전혀
+관측하지 못한 상태로 시작**하며, 초기 행동은 고정된 spawn 방향 prior에 의존합니다. toward/away는
+표적 취득까지의 시간과 벽 반사 시점을 함께 바꾸므로, 현재는 최초 취득 시점·never-acquired 비율을
+outcome별로 계측하는 마지막 동결 진단 단계입니다.
 
 ## 시스템을 짧게 보면
 
@@ -249,8 +258,9 @@ run 폴더 이관과 TensorBoard 병합 절차는 [OPERATIONS.md](OPERATIONS.md)
 7. **D1 완료·FAIL:** `[22.5,28] m` exposure로 모든 outcome은 개선됐지만 q3/CV timeout `15.98% > 12%`라 사전 gate를 통과하지 못했습니다. P2 FAIL은 유지합니다.
 8. **heading 진단 완료:** away−toward timeout +23.32pp로 radial-heading 채널을 확인했고 tangent 좌우 outcome 차이는 기준 미달이었습니다.
 9. **near-open 완료:** 1 bar에서도 away−toward timeout `+54.32pp`여서 dense obstacle occlusion 필요성은 기각했습니다.
-10. **현재 단계:** 같은 동결 정책에 outcome별 visibility와 wall/bar reflection telemetry만 추가해 FOV 손실과 finite-arena 반사를 분리합니다. 이 진단만으로 P3를 열지 않습니다.
-11. perception 연구는 corrected-v2 analytic baseline → learned detector arm → appearance-randomized arm 순으로 한 축씩 추가합니다.
+10. **outcome telemetry 완료:** seed 353에서 away capture−timeout visibility는 `+14.43pp`로 20pp screen에 미달했습니다. wall-reflection 표는 생존 선택편향 때문에 인과 판정에 쓰지 않습니다.
+11. **현재 단계:** `[22.5,28]m` 시작거리와 camera/LiDAR `20/12m` 범위 불일치가 만드는 초기 비관측을 first-acquisition/never-seen 계측으로 확인합니다. 이 진단만으로 P3를 열지 않습니다.
+12. perception 연구는 corrected-v2 analytic baseline → learned detector arm → appearance-randomized arm 순으로 한 축씩 추가합니다.
 
 현재 가장 큰 미해결 문제는 “더 오래 학습하면 되는가”가 아니라 **고밀도에서 pre-contact obstacle 정보, 제동 여유, detector 출력 분포, 기체 동역학 중 어느 축이 먼저 한계가 되는가**입니다.
 
