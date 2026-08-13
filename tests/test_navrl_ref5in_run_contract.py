@@ -198,6 +198,8 @@ class Ref5inSmokeLauncherContract(unittest.TestCase):
             '"q3_cv_timeout_lte_12pct"',
             '"p2_verdict_changed": False',
             '"p3_automatically_unlocked": False',
+            'mismatch_lines == [expected]',
+            'env["NAVRL_V2_FORCE"] = "1"',
         ):
             self.assertIn(literal, source)
 

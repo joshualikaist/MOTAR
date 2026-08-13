@@ -45,6 +45,7 @@ BASE = load_module("ref5in_d1_base", ROOT / "tools/run_navrl_ref5in_outcome_diag
 V2 = load_module("ref5in_d1_v2", ROOT / "tools/run_navrl_ref5in_outcome_diagnostic_v2.py")
 SMOKE = load_module("ref5in_d1_smoke", ROOT / "tools/analyze_navrl_ref5in_smoke.py")
 P2 = load_module("ref5in_d1_p2", ROOT / "tools/attest_navrl_ref5in_p2.py")
+ORIGINAL_CANONICAL_ENV = BASE.canonical_env
 
 
 def require(condition: bool, message: str) -> None:
@@ -60,6 +61,34 @@ def configure_base(checkpoint: Path, checkpoint_sha: str) -> None:
     BASE.SOURCE_BUNDLE = SOURCE_BUNDLE
     BASE.SEED = SEED
     BASE.EPISODES = EPISODES
+    # The generic evaluator normally requires the checkpoint's TRAINING goal range to equal the
+    # held-out EVALUATION range. D1 intentionally trains on q3 [22.5,28] then tests the full
+    # [6,28] distribution.  Its only available bypass is broad, so verify_expected_rejection()
+    # proves that this single preregistered field is the sole mismatch before any forced run.
+    def d1_env(preflight: bool = False) -> dict[str, str]:
+        env = ORIGINAL_CANONICAL_ENV(preflight)
+        env["NAVRL_V2_FORCE"] = "1"
+        return env
+
+    BASE.canonical_env = d1_env
+
+
+def verify_expected_rejection(checkpoint: Path) -> str:
+    command = ["bash", str(BASE.EVALUATOR), str(checkpoint), str(EPISODES)]
+    completed = subprocess.run(
+        command,
+        cwd=ROOT,
+        env=ORIGINAL_CANONICAL_ENV(preflight=True),
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+    expected = "cfg_general_goal_dist_min: checkpoint=22.5 expected=6.0"
+    mismatch_lines = [line.strip() for line in completed.stdout.splitlines() if "checkpoint=" in line and "expected=" in line]
+    require(completed.returncode == 2, f"generic evaluator unexpectedly accepted D1 checkpoint: {completed.returncode}")
+    require(mismatch_lines == [expected], f"D1 forced-eval mismatch set is not exactly one field: {mismatch_lines}")
+    return expected
 
 
 def unique_d1_run() -> Path:
@@ -170,7 +199,7 @@ def verify_eval_source(training: dict) -> None:
             "D1 train/eval Python environment mismatch")
 
 
-def decision_summary(result: dict, training: dict) -> dict:
+def decision_summary(result: dict, training: dict, forced_mismatch: str) -> dict:
     base = BASE.summarize(result)
     base["strata"]["distance_by_pattern"] = V2.enriched_joint(result)
     outcome = result["outcome"]
@@ -203,6 +232,11 @@ def decision_summary(result: dict, training: dict) -> dict:
         "checkpoint": str(training["checkpoint"].relative_to(ROOT)),
         "checkpoint_sha256": training["checkpoint_sha256"],
         "training_source_manifest_sha256": training["manifest_sha256"],
+        "generic_provenance_override": {
+            "used": True,
+            "sole_verified_mismatch": forced_mismatch,
+            "reason": "q3 training distribution evaluated on preregistered full [6,28] m distribution",
+        },
         "training_safety": {
             "tensorboard": training["tensorboard"],
             "last100_training_outcomes": training["last100_training_outcomes"],
@@ -252,6 +286,7 @@ def main() -> int:
 
     training = verify_training()
     configure_base(training["checkpoint"], training["checkpoint_sha256"])
+    forced_mismatch = verify_expected_rejection(training["checkpoint"])
     if mode == "run":
         status = subprocess.check_output(
             [
@@ -269,7 +304,7 @@ def main() -> int:
     result = BASE.verify_result()
     V2.verify_joint(result)
     verify_eval_source(training)
-    expected = decision_summary(result, training)
+    expected = decision_summary(result, training, forced_mismatch)
     if mode in {"run", "finalize"}:
         write_summary(expected)
         print(f"[ref5in-d1-eval] {expected['verdict']}")
@@ -277,7 +312,7 @@ def main() -> int:
     recorded = BASE.load_json(OUTPUT / "summary.json")
     for key in ("scope", "verdict", "decision_authority", "p2_verdict_changed",
                 "p3_automatically_unlocked", "checkpoint_sha256", "condition", "outcome",
-                "strata", "gates", "limitations"):
+                "generic_provenance_override", "strata", "gates", "limitations"):
         require(recorded.get(key) == expected.get(key), f"D1 summary changed: {key}")
     print(f"[ref5in-d1-eval] VERIFY {recorded['verdict']}")
     return 0
