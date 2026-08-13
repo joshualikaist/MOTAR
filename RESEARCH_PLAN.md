@@ -998,6 +998,13 @@ crash `>=5 pp`, (c) speed-bin timeout max−min `>=3 pp`다. 이는 연관 신�
 크면 경계 관측/배치를 각각 다음 단일 intervention 후보로 만든다. 동시에 여러 reward·controller
 parameter를 바꾸지 않으며, 결과 검토 전에는 새 PPO를 시작하지 않는다.
 
+첫 진단 완료 후 무결성 검토에서 speed bin이 실제 `U[0.3,1.5]`가 아니라 curriculum의 역사적
+`[0,1.5]` 경계를 재사용한 것을 발견했다. 따라서 v1의 global/distance/pattern 결과는 보존하되 speed
+해석은 폐기한다. 계측만 고친 **동일 seed 317 deterministic replay**를 v2로 한 번 수행하며,
+global outcome·crash cause·distance/pattern/bearing JSON 값이 v1과 정확히 같아야 한다. 동시에
+distance×pattern joint cell을 추가해 장거리 효과가 CV/waypoint 중 한 generator에만 의존하는지
+기술한다. 이 정정 replay 역시 decision authority는 없고 독립 replication으로 세지 않는다.
+
 ---
 
 ## 9. 참고문헌

@@ -285,6 +285,21 @@ class NavRLTask(BaseTask):
         self._eval_pattern_crash_cause = torch.zeros(
             (3, 4), dtype=torch.long, device=self.device
         )
+        self._eval_dist_pattern_succ = torch.zeros(
+            (4, 3), dtype=torch.long, device=self.device
+        )
+        self._eval_dist_pattern_crash = torch.zeros(
+            (4, 3), dtype=torch.long, device=self.device
+        )
+        self._eval_dist_pattern_timeout = torch.zeros(
+            (4, 3), dtype=torch.long, device=self.device
+        )
+        self._eval_dist_pattern_fin = torch.zeros(
+            (4, 3), dtype=torch.long, device=self.device
+        )
+        self._eval_dist_pattern_crash_cause = torch.zeros(
+            (4, 3, 4), dtype=torch.long, device=self.device
+        )
         # Per-env terminal attribution for the current step: contact, below, above, OOB.
         self._crash_cause_code = torch.full(
             (self.num_envs,), -1, dtype=torch.long, device=self.device
@@ -4096,10 +4111,25 @@ class NavRLTask(BaseTask):
             ).to(succ_dst.dtype)
 
     def _episode_strata_bins(self, idx):
-        """Return the preregistered speed/distance/pattern bins for completed episodes."""
+        """Return historical curriculum-gate bins; speed intentionally starts at zero."""
 
         speed_max = max(1e-6, float(self._target_speed_max()))
         speed_bin = torch.floor(self._tm_speed[idx] * (4.0 / speed_max)).long().clamp(0, 3)
+        dist_span = max(1e-6, self.general_goal_dist_max - self.general_goal_dist_min)
+        dist_bin = torch.floor(
+            (self._episode_goal_dist[idx] - self.general_goal_dist_min) * (4.0 / dist_span)
+        ).long().clamp(0, 3)
+        pattern_bin = self._tm_pattern[idx].long().clamp(0, 2)
+        return speed_bin, dist_bin, pattern_bin
+
+    def _episode_eval_strata_bins(self, idx):
+        """Return bins over the distribution actually applied in held-out evaluation."""
+        speed_min = max(0.0, float(getattr(self.tm, "speed_min", 0.0)))
+        speed_max = max(speed_min, float(self._target_speed_max()))
+        speed_span = max(1e-6, speed_max - speed_min)
+        speed_bin = torch.floor(
+            (self._tm_speed[idx] - speed_min) * (4.0 / speed_span)
+        ).long().clamp(0, 3)
         dist_span = max(1e-6, self.general_goal_dist_max - self.general_goal_dist_min)
         dist_bin = torch.floor(
             (self._episode_goal_dist[idx] - self.general_goal_dist_min) * (4.0 / dist_span)
@@ -4115,7 +4145,7 @@ class NavRLTask(BaseTask):
         captured = successes[idx].to(torch.float32)
         crashed = (crashes[idx] > 0).to(torch.float32)
         timed_out = timeouts[idx].to(torch.float32)
-        speed_bin, dist_bin, pattern_bin = self._episode_strata_bins(idx)
+        speed_bin, dist_bin, pattern_bin = self._episode_eval_strata_bins(idx)
 
         for bins, succ_dst, crash_dst, timeout_dst, cause_dst, fin_dst, size in (
             (speed_bin, self._eval_speed_succ, self._eval_speed_crash,
@@ -4147,6 +4177,31 @@ class NavRLTask(BaseTask):
                     cause_dst += torch.bincount(
                         flat, minlength=size * 4
                     ).reshape(size, 4).to(cause_dst.dtype)
+
+        # Joint distance×pattern cells distinguish a long-range path-length effect from one motion
+        # generator dominating the marginal distance curve.  These remain descriptive strata.
+        joint = dist_bin * 3 + pattern_bin
+        self._eval_dist_pattern_fin += torch.bincount(
+            joint, minlength=12
+        ).reshape(4, 3).to(self._eval_dist_pattern_fin.dtype)
+        self._eval_dist_pattern_succ += torch.bincount(
+            joint, weights=captured, minlength=12
+        ).reshape(4, 3).to(self._eval_dist_pattern_succ.dtype)
+        self._eval_dist_pattern_crash += torch.bincount(
+            joint, weights=crashed, minlength=12
+        ).reshape(4, 3).to(self._eval_dist_pattern_crash.dtype)
+        self._eval_dist_pattern_timeout += torch.bincount(
+            joint, weights=timed_out, minlength=12
+        ).reshape(4, 3).to(self._eval_dist_pattern_timeout.dtype)
+        crashed_idx = crashed > 0
+        if bool(crashed_idx.any()):
+            cause = self._crash_cause_code[idx][crashed_idx].long()
+            valid = (cause >= 0) & (cause < 4)
+            if bool(valid.any()):
+                flat = joint[crashed_idx][valid] * 4 + cause[valid]
+                self._eval_dist_pattern_crash_cause += torch.bincount(
+                    flat, minlength=48
+                ).reshape(4, 3, 4).to(self._eval_dist_pattern_crash_cause.dtype)
 
     @staticmethod
     def _density_rate_text(succ, fin, labels):
@@ -4426,6 +4481,9 @@ class NavRLTask(BaseTask):
             ("pattern", self._eval_pattern_succ, self._eval_pattern_crash,
              self._eval_pattern_timeout, self._eval_pattern_crash_cause,
              self._eval_pattern_fin),
+            ("distance_pattern", self._eval_dist_pattern_succ,
+             self._eval_dist_pattern_crash, self._eval_dist_pattern_timeout,
+             self._eval_dist_pattern_crash_cause, self._eval_dist_pattern_fin),
         ):
             observed = (
                 int(episodes.sum().item()),
@@ -4733,10 +4791,11 @@ class NavRLTask(BaseTask):
                 },
             },
             "strata": {
-                # Speed bins preserve the training gate's historical boundaries: four equal
-                # intervals over [0, current maximum], not empirical equal-count quartiles.
+                # Evaluation speed bins cover the distribution actually applied.  Curriculum
+                # training counters retain their historical [0,max] definition separately.
                 "speed_bin_edges_mps": [
-                    float(speed_max * i / 4.0) for i in range(5)
+                    float(speed_min + (speed_max - speed_min) * i / 4.0)
+                    for i in range(5)
                 ],
                 "speed": stratum_payload(
                     self._eval_speed_succ,
@@ -4766,6 +4825,19 @@ class NavRLTask(BaseTask):
                     self._eval_pattern_fin,
                     ("cv", "waypoint", "circle"),
                 ),
+                "distance_by_pattern": {
+                    distance_label: stratum_payload(
+                        self._eval_dist_pattern_succ[distance_index],
+                        self._eval_dist_pattern_crash[distance_index],
+                        self._eval_dist_pattern_timeout[distance_index],
+                        self._eval_dist_pattern_crash_cause[distance_index],
+                        self._eval_dist_pattern_fin[distance_index],
+                        ("cv", "waypoint", "circle"),
+                    )
+                    for distance_index, distance_label in enumerate(
+                        ("q0", "q1", "q2", "q3")
+                    )
+                },
                 "initial_target_bearing": {
                     label: {
                         "captured": int(self._eval_bearing_succ[i].item()),

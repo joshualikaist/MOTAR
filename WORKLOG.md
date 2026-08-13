@@ -8611,3 +8611,15 @@ source가 clean한 commit이 아니면 실제 run을 거부한다. preflight는 
 robot/runtime/condition을 모두 확인해 PASS했고 output을 만들지 않았다. 이 평가는 descriptive이며
 `decision_authority=none`, `p3_unlocked=false`로 고정한다. 자세한 사전 판독 기준은
 `RESEARCH_PLAN.md` §8.24에 있다.
+
+첫 seed-317 진단은 8,194 episodes에서 global capture/crash/timeout
+`68.03/25.98/5.99%`를 기록했다. distance q0→q3는 capture `78.05→55.94%`, crash
+`21.89→29.09%`, timeout `0.06→14.97%`로 두 failure channel이 함께 증가했다. 다만 결과 검증 중
+speed bin이 실제 지원범위 `[0.3,1.5]`가 아니라 역사적 `[0,1.5]`로 나뉘어 q0가 509 episodes만
+담은 계약 오류를 발견했다. speed별 해석은 즉시 VOID 처리하고, 빈 circle cell의 Wilson CI를 JSON
+`NaN` 대신 `null`로 고쳐 기존 artifact 재검증은 PASS시켰다.
+
+정정 v2는 eval speed bin만 `[0.3,0.6,0.9,1.2,1.5]`로 바꾸고 distance×pattern joint outcome을
+추가한다. density training gate의 역사적 `[0,max]` bin은 건드리지 않는다. 동일 seed/checkpoint를
+재생해 global outcome/crash cause/distance/pattern/bearing가 v1과 완전히 같지 않으면 telemetry-only
+변경 주장을 기각한다. 이 replay도 P2 재시험이나 독립 seed가 아니다.

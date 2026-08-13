@@ -34,7 +34,8 @@ class TestOutcomeStrataWiring(unittest.TestCase):
         }
         self.assertTrue(
             {"successes", "crash", "timeout", "crash_causes", "capture_rate",
-             "crash_rate", "timeout_rate", "bar_contact", "out_of_bounds"}.issubset(strings)
+             "crash_rate", "timeout_rate", "bar_contact", "out_of_bounds",
+             "distance_by_pattern"}.issubset(strings)
         )
 
     def test_export_fails_closed_on_accounting(self):
@@ -58,6 +59,20 @@ class TestOutcomeStrataWiring(unittest.TestCase):
             {"_eval_speed_crash", "_eval_speed_timeout", "_eval_dist_crash",
              "_eval_dist_timeout", "_eval_pattern_crash_cause"}.issubset(attrs)
         )
+
+    def test_eval_bins_use_applied_speed_min_but_training_bins_stay_historical(self):
+        eval_bins = method("_episode_eval_strata_bins")
+        eval_strings = {
+            node.value for node in ast.walk(eval_bins)
+            if isinstance(node, ast.Constant) and isinstance(node.value, str)
+        }
+        self.assertIn("speed_min", eval_strings)
+        training_bins = method("_episode_strata_bins")
+        training_strings = {
+            node.value for node in ast.walk(training_bins)
+            if isinstance(node, ast.Constant) and isinstance(node.value, str)
+        }
+        self.assertNotIn("speed_min", training_strings)
 
 
 if __name__ == "__main__":

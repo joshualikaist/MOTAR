@@ -103,9 +103,11 @@ def run_evaluator(*, preflight: bool = False) -> None:
     subprocess.run(command, cwd=ROOT, env=canonical_env(preflight), check=True)
 
 
-def wilson(count: int, total: int, z: float = 1.959963984540054) -> list[float]:
+def wilson(
+    count: int, total: int, z: float = 1.959963984540054
+) -> list[float | None]:
     if total <= 0:
-        return [math.nan, math.nan]
+        return [None, None]
     p = count / total
     den = 1.0 + z * z / total
     center = (p + z * z / (2.0 * total)) / den
@@ -267,7 +269,10 @@ def write_summary(summary: dict[str, Any]) -> None:
 
 def main() -> int:
     mode = sys.argv[1] if len(sys.argv) == 2 else ""
-    require(mode in {"preflight", "run", "verify"}, "usage: ... {preflight|run|verify}")
+    require(
+        mode in {"preflight", "run", "finalize", "verify"},
+        "usage: ... {preflight|run|finalize|verify}",
+    )
     if mode == "preflight":
         verify_prerequisites(require_clean=False)
         require(not OUTPUT.exists(), f"output already exists: {OUTPUT}")
@@ -283,6 +288,12 @@ def main() -> int:
         summary = summarize(result)
         write_summary(summary)
         print(json.dumps(summary["mechanism_screen"], indent=2))
+        return 0
+    if mode == "finalize":
+        verify_prerequisites(require_clean=False)
+        result = verify_result()
+        write_summary(summarize(result))
+        print("[ref5in-outcome-diagnostic] FINALIZE PASS")
         return 0
     verify_prerequisites(require_clean=False)
     result = verify_result()
