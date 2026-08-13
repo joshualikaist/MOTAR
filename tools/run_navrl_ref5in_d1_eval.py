@@ -13,6 +13,7 @@ import importlib.util
 import json
 import math
 from pathlib import Path
+import re
 import subprocess
 import sys
 
@@ -189,17 +190,54 @@ def verify_training() -> dict:
     }
 
 
-def verify_eval_source(training: dict) -> None:
+def verify_python_environment_identity(
+    training_manifest: dict, training_manifest_path: Path,
+    eval_manifest: dict, eval_manifest_path: Path,
+) -> dict:
+    train_path = training_manifest_path.parent / str(training_manifest["python_environment"])
+    eval_path = eval_manifest_path.parent / str(eval_manifest["python_environment"])
+    train_text = train_path.read_text(encoding="utf-8")
+    eval_text = eval_path.read_text(encoding="utf-8")
+    pattern = re.compile(
+        r"(?m)^-e git\+ssh://git@github\.com/joshualikaist/MOTAR\.git@"
+        r"([0-9a-f]{40})#egg=aerial_gym$"
+    )
+    train_match = pattern.search(train_text)
+    eval_match = pattern.search(eval_text)
+    require(train_match is not None and eval_match is not None,
+            "editable aerial_gym package receipt line missing")
+    require(train_match.group(1) == training_manifest.get("git_commit"),
+            "training editable-package commit differs from training manifest")
+    require(eval_match.group(1) == eval_manifest.get("git_commit"),
+            "evaluation editable-package commit differs from evaluation manifest")
+    placeholder = "-e git+ssh://git@github.com/joshualikaist/MOTAR.git@<MANIFEST_COMMIT>#egg=aerial_gym"
+    require(pattern.sub(placeholder, train_text) == pattern.sub(placeholder, eval_text),
+            "D1 train/eval Python package environments differ beyond editable Git metadata")
+    return {
+        "exact_hash_match": training_manifest["python_environment_sha256"]
+        == eval_manifest["python_environment_sha256"],
+        "normalized_match": True,
+        "allowed_difference": "editable aerial_gym VCS commit metadata only",
+        "training_git_commit": train_match.group(1),
+        "evaluation_git_commit": eval_match.group(1),
+    }
+
+
+def verify_eval_source(training: dict) -> dict:
     receipt = BASE.load_json(CELL / "70bars.receipt.json")
     manifest = Path(str(receipt.get("runtime_source_manifest", ""))).resolve()
     require(manifest == SOURCE_BUNDLE / "source_manifest.json", "non-canonical D1 eval source bundle")
     eval_map, eval_manifest = P2.manifest_map(manifest, 2)
     require(eval_map == training["runtime_map"], "D1 train/eval runtime byte map mismatch")
-    require(eval_manifest.get("python_environment_sha256") == training["python_environment_sha256"],
-            "D1 train/eval Python environment mismatch")
+    training_manifest = BASE.load_json(training["manifest"])
+    return verify_python_environment_identity(
+        training_manifest, training["manifest"], eval_manifest, manifest
+    )
 
 
-def decision_summary(result: dict, training: dict, forced_mismatch: str) -> dict:
+def decision_summary(
+    result: dict, training: dict, forced_mismatch: str, python_environment: dict
+) -> dict:
     base = BASE.summarize(result)
     base["strata"]["distance_by_pattern"] = V2.enriched_joint(result)
     outcome = result["outcome"]
@@ -237,6 +275,7 @@ def decision_summary(result: dict, training: dict, forced_mismatch: str) -> dict
             "sole_verified_mismatch": forced_mismatch,
             "reason": "q3 training distribution evaluated on preregistered full [6,28] m distribution",
         },
+        "python_environment_identity": python_environment,
         "training_safety": {
             "tensorboard": training["tensorboard"],
             "last100_training_outcomes": training["last100_training_outcomes"],
@@ -303,8 +342,8 @@ def main() -> int:
         BASE.run_evaluator()
     result = BASE.verify_result()
     V2.verify_joint(result)
-    verify_eval_source(training)
-    expected = decision_summary(result, training, forced_mismatch)
+    python_environment = verify_eval_source(training)
+    expected = decision_summary(result, training, forced_mismatch, python_environment)
     if mode in {"run", "finalize"}:
         write_summary(expected)
         print(f"[ref5in-d1-eval] {expected['verdict']}")
@@ -312,7 +351,8 @@ def main() -> int:
     recorded = BASE.load_json(OUTPUT / "summary.json")
     for key in ("scope", "verdict", "decision_authority", "p2_verdict_changed",
                 "p3_automatically_unlocked", "checkpoint_sha256", "condition", "outcome",
-                "generic_provenance_override", "strata", "gates", "limitations"):
+                "generic_provenance_override", "python_environment_identity", "strata", "gates",
+                "limitations"):
         require(recorded.get(key) == expected.get(key), f"D1 summary changed: {key}")
     print(f"[ref5in-d1-eval] VERIFY {recorded['verdict']}")
     return 0

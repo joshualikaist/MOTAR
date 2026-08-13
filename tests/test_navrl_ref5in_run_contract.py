@@ -200,6 +200,8 @@ class Ref5inSmokeLauncherContract(unittest.TestCase):
             '"p3_automatically_unlocked": False',
             'mismatch_lines == [expected]',
             'env["NAVRL_V2_FORCE"] = "1"',
+            '"editable aerial_gym VCS commit metadata only"',
+            'pattern.sub(placeholder, train_text) == pattern.sub(placeholder, eval_text)',
         ):
             self.assertIn(literal, source)
 
