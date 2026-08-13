@@ -8903,3 +8903,21 @@ mean `13.03 m`, capture mean step `392`, speed q0→q3 timeout `77.16→30.95%`�
 60초 안에 벽 반사로 되돌아오지 않는 finite-arena 기하와 양립한다. 따라서 다음은 학습이 아니라
 outcome별 visible-step 비율과 wall/bar reflection 횟수를 추가한 seed 353 재평가다. 계약과 판정
 기준은 `RESEARCH_PLAN.md` §8.27에 결과 전에 고정했다.
+
+### outcome telemetry 구현·preflight PASS
+
+bulk evaluation에만 작동하는 네 개의 per-episode counter를 추가했다: target-visible observation
+steps, total observation steps, wall reflection 횟수, bar reflection 횟수. 종료 시 capture/crash/timeout
+별 합계와 speed quartile × wall-reflection(0/≥1) × outcome 표로 집계하며, 두 표의 outcome 합계와
+visibility step 합계가 전체 held-out 집계와 다르면 결과 export 전에 예외로 중단한다. 이 값은 actor,
+critic, reward, controller, termination, checkpoint state에 들어가지 않는다.
+
+schema-2 source manifest의 `git_dirty`가 결과 CSV까지 포함하던 문제도 수정했다. 이제 기존 이름은
+snapshot 대상 runtime root만 뜻하고 전체 repository 상태는 `repository_git_dirty/status`로 별도
+보존한다. 과거 진단 verifier는 오늘의 runtime과 억지로 같음을 요구하지 않고 당시 immutable source
+snapshot과 cell 간 byte-map 동일성을 검증한다.
+
+seed 353 orchestrator는 seed 347 near-open 양성 screen, D1 checkpoint SHA, P2/D1 fail-closed 상태,
+유일한 forced mismatch `cfg_target_pattern: mixed→cv`, 1 bar/두 heading/2,049 episode 계약을 모두
+검사한다. py_compile, shell syntax, target-motion 7개와 P2 contract 9개, historical artifact verify,
+GPU를 시작하지 않는 forced preflight를 통과했다.

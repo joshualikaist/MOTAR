@@ -325,6 +325,42 @@ class NavRLTask(BaseTask):
         self._tm_circle_angvel = torch.zeros(self.num_envs, device=self.device)  # signed rad/s
         self._tm_avoid_sign = torch.ones(self.num_envs, device=self.device)
         self._tm_heading = torch.zeros(self.num_envs, device=self.device)  # last flown XY heading
+        # Evaluation-only mechanism telemetry. These counters never enter observations, rewards,
+        # control, termination, or checkpoint state. Per-episode values are reset with the env;
+        # aggregate tensors are exported only by bulk evaluation.
+        self._tm_ep_wall_reflections = torch.zeros(
+            self.num_envs, dtype=torch.long, device=self.device
+        )
+        self._tm_ep_bar_reflections = torch.zeros(
+            self.num_envs, dtype=torch.long, device=self.device
+        )
+        self._tm_ep_visible_steps = torch.zeros(
+            self.num_envs, dtype=torch.long, device=self.device
+        )
+        self._tm_ep_observation_steps = torch.zeros(
+            self.num_envs, dtype=torch.long, device=self.device
+        )
+        # outcome order: capture, crash, timeout. Reflection state: zero, at least one wall hit.
+        self._tm_eval_outcome_fin = torch.zeros(3, dtype=torch.long, device=self.device)
+        self._tm_eval_outcome_wall_sum = torch.zeros(3, dtype=torch.long, device=self.device)
+        self._tm_eval_outcome_wall_any = torch.zeros(3, dtype=torch.long, device=self.device)
+        self._tm_eval_outcome_bar_sum = torch.zeros(3, dtype=torch.long, device=self.device)
+        self._tm_eval_outcome_bar_any = torch.zeros(3, dtype=torch.long, device=self.device)
+        self._tm_eval_outcome_visible_steps = torch.zeros(
+            3, dtype=torch.long, device=self.device
+        )
+        self._tm_eval_outcome_observation_steps = torch.zeros(
+            3, dtype=torch.long, device=self.device
+        )
+        self._tm_eval_speed_wall_outcome = torch.zeros(
+            (4, 2, 3), dtype=torch.long, device=self.device
+        )
+        self._tm_eval_speed_wall_visible_steps = torch.zeros(
+            (4, 2, 3), dtype=torch.long, device=self.device
+        )
+        self._tm_eval_speed_wall_observation_steps = torch.zeros(
+            (4, 2, 3), dtype=torch.long, device=self.device
+        )
 
         rp = self.task_config.reward_parameters
         self.rw = {k: float(v) for k, v in rp.items()}
@@ -2872,6 +2908,10 @@ class NavRLTask(BaseTask):
             self._episode_spawn[env_ids] = self.obs_dict["robot_position"][env_ids].clone()
         if self._action_diag_enabled:
             self._action_diag_prev_valid[env_ids] = False
+        self._tm_ep_wall_reflections[env_ids] = 0
+        self._tm_ep_bar_reflections[env_ids] = 0
+        self._tm_ep_visible_steps[env_ids] = 0
+        self._tm_ep_observation_steps[env_ids] = 0
         # Phase 3: per-episode target speed + trajectory pattern (all-static when the speed
         # ceiling is 0 -> Phases 1-2 behavior).
         self._sample_target_motion(env_ids)
@@ -3319,6 +3359,11 @@ class NavRLTask(BaseTask):
             for name, mask in (("target_visible", visible), ("target_hidden", hidden)):
                 self._action_diag[name + "_n"] += float(mask.sum().item())
                 self._action_diag[name + "_abs_y"] += float(abs_y[mask].sum().item())
+            if self._bulk_eval_mode:
+                # This labels exactly the observation consumed to select the current action.
+                # `valid_y_now` excludes non-finite policy rows from both numerator and denominator.
+                self._tm_ep_observation_steps += valid_y_now.to(torch.long)
+                self._tm_ep_visible_steps += visible.to(torch.long)
 
             valid = self._action_diag_prev_valid & finite[:, 1]
             if bool(valid.any()):
@@ -3961,11 +4006,14 @@ class NavRLTask(BaseTask):
         # -- cv: integrate the held heading, reflect position AND velocity at the wall margins
         cv = moving & (self._tm_pattern == 0)
         if bool(cv.any()):
+            cv_idx = cv.nonzero(as_tuple=False).squeeze(-1)
             p = old_xy[cv] + self._tm_cv_vel[cv] * dt
             v = self._tm_cv_vel[cv]
             for ax in (0, 1):
                 below = p[:, ax] < lo[cv, ax]
                 above = p[:, ax] > hi[cv, ax]
+                if self._bulk_eval_mode:
+                    self._tm_ep_wall_reflections[cv_idx] += (below | above).to(torch.long)
                 p[:, ax] = torch.where(below, 2.0 * lo[cv, ax] - p[:, ax], p[:, ax])
                 p[:, ax] = torch.where(above, 2.0 * hi[cv, ax] - p[:, ax], p[:, ax])
                 v[:, ax] = torch.where(below | above, -v[:, ax], v[:, ax])
@@ -4100,6 +4148,8 @@ class NavRLTask(BaseTask):
                 v = self._tm_cv_vel[idx]
                 into = (v * n_hat).sum(dim=1, keepdim=True)
                 hit = (into.squeeze(1) < 0.0).float()
+                if self._bulk_eval_mode:
+                    self._tm_ep_bar_reflections[idx] += hit.to(torch.long)
                 refl = v - 2.0 * into.clamp(max=0.0) * n_hat
                 jit = (torch.rand(len(idx), device=self.device) - 0.5) * (math.pi / 9.0) * hit
                 c, sn = torch.cos(jit), torch.sin(jit)
@@ -4262,6 +4312,62 @@ class NavRLTask(BaseTask):
                 self._eval_dist_pattern_crash_cause += torch.bincount(
                     flat, minlength=48
                 ).reshape(4, 3, 4).to(self._eval_dist_pattern_crash_cause.dtype)
+
+    def _record_target_motion_outcome_telemetry(
+        self, successes, crashes, timeouts, finished
+    ):
+        """Attribute visibility and target reflections to mutually exclusive eval outcomes."""
+        if not self._bulk_eval_mode:
+            return
+        idx = finished.nonzero(as_tuple=False).squeeze(1)
+        if idx.numel() == 0:
+            return
+        captured = successes[idx].to(torch.bool)
+        crashed = (crashes[idx] > 0)
+        timed_out = timeouts[idx].to(torch.bool)
+        exclusive = captured.to(torch.long) + crashed.to(torch.long) + timed_out.to(torch.long)
+        if not bool((exclusive == 1).all()):
+            raise RuntimeError("target-motion telemetry received non-exclusive outcomes")
+        outcome = torch.where(
+            captured,
+            torch.zeros_like(idx),
+            torch.where(crashed, torch.ones_like(idx), torch.full_like(idx, 2)),
+        )
+        wall = self._tm_ep_wall_reflections[idx]
+        bar = self._tm_ep_bar_reflections[idx]
+        wall_any = (wall > 0).to(torch.long)
+        bar_any = (bar > 0).to(torch.long)
+        visible_steps = self._tm_ep_visible_steps[idx]
+        observation_steps = self._tm_ep_observation_steps[idx]
+        if bool((visible_steps > observation_steps).any()) or bool(
+            (observation_steps <= 0).any()
+        ):
+            raise RuntimeError("target-motion visibility counter contract failed")
+
+        self._tm_eval_outcome_fin += torch.bincount(outcome, minlength=3).to(
+            self._tm_eval_outcome_fin.dtype
+        )
+        for source, destination in (
+            (wall, self._tm_eval_outcome_wall_sum),
+            (wall_any, self._tm_eval_outcome_wall_any),
+            (bar, self._tm_eval_outcome_bar_sum),
+            (bar_any, self._tm_eval_outcome_bar_any),
+            (visible_steps, self._tm_eval_outcome_visible_steps),
+            (observation_steps, self._tm_eval_outcome_observation_steps),
+        ):
+            destination.index_add_(0, outcome, source.to(destination.dtype))
+
+        speed_bin, _, _ = self._episode_eval_strata_bins(idx)
+        flat = speed_bin * 6 + wall_any * 3 + outcome
+        self._tm_eval_speed_wall_outcome += torch.bincount(
+            flat, minlength=24
+        ).reshape(4, 2, 3).to(self._tm_eval_speed_wall_outcome.dtype)
+        self._tm_eval_speed_wall_visible_steps.view(-1).index_add_(
+            0, flat, visible_steps.to(self._tm_eval_speed_wall_visible_steps.dtype)
+        )
+        self._tm_eval_speed_wall_observation_steps.view(-1).index_add_(
+            0, flat, observation_steps.to(self._tm_eval_speed_wall_observation_steps.dtype)
+        )
 
     @staticmethod
     def _density_rate_text(succ, fin, labels):
@@ -4562,6 +4668,29 @@ class NavRLTask(BaseTask):
                     "NavRL bulk eval %s crash-cause mismatch: %d != %d"
                     % (name, n_causes, expected[2])
                 )
+        telemetry_outcomes = tuple(
+            int(value) for value in self._tm_eval_outcome_fin.tolist()
+        )
+        if telemetry_outcomes != expected[1:]:
+            raise RuntimeError(
+                "NavRL target-motion outcome mismatch: %s != %s"
+                % (telemetry_outcomes, expected[1:])
+            )
+        speed_wall_outcomes = tuple(
+            int(value)
+            for value in self._tm_eval_speed_wall_outcome.sum(dim=(0, 1)).tolist()
+        )
+        if speed_wall_outcomes != expected[1:]:
+            raise RuntimeError(
+                "NavRL target-motion speed/reflection mismatch: %s != %s"
+                % (speed_wall_outcomes, expected[1:])
+            )
+        if int(self._tm_eval_outcome_observation_steps.sum().item()) != int(
+            self._tm_eval_speed_wall_observation_steps.sum().item()
+        ) or int(self._tm_eval_outcome_visible_steps.sum().item()) != int(
+            self._tm_eval_speed_wall_visible_steps.sum().item()
+        ):
+            raise RuntimeError("NavRL target-motion visibility aggregation mismatch")
 
     def _export_bulk_eval_result(self, total, reach_rate, mean_nc, best):
         """Persist the exact outcome window consumed by a vectorized rl_games player."""
@@ -4615,6 +4744,69 @@ class NavRLTask(BaseTask):
                 "p50": float(np.quantile(array, 0.50)),
                 "p90": float(np.quantile(array, 0.90)),
             }
+
+        def target_motion_outcome_payload(index):
+            episodes = int(self._tm_eval_outcome_fin[index].item())
+            observations = int(
+                self._tm_eval_outcome_observation_steps[index].item()
+            )
+            visible = int(self._tm_eval_outcome_visible_steps[index].item())
+            wall_total = int(self._tm_eval_outcome_wall_sum[index].item())
+            wall_any = int(self._tm_eval_outcome_wall_any[index].item())
+            bar_total = int(self._tm_eval_outcome_bar_sum[index].item())
+            bar_any = int(self._tm_eval_outcome_bar_any[index].item())
+            return {
+                "episodes": episodes,
+                "observation_steps": observations,
+                "visible_steps": visible,
+                "visible_fraction_step_weighted": (
+                    float(visible / observations) if observations > 0 else None
+                ),
+                "wall_reflections": wall_total,
+                "wall_reflections_mean_per_episode": (
+                    float(wall_total / episodes) if episodes > 0 else None
+                ),
+                "wall_reflection_any": wall_any,
+                "wall_reflection_any_rate": (
+                    float(wall_any / episodes) if episodes > 0 else None
+                ),
+                "bar_reflections": bar_total,
+                "bar_reflections_mean_per_episode": (
+                    float(bar_total / episodes) if episodes > 0 else None
+                ),
+                "bar_reflection_any": bar_any,
+                "bar_reflection_any_rate": (
+                    float(bar_any / episodes) if episodes > 0 else None
+                ),
+            }
+
+        def speed_wall_payload(speed_index, reflection_index):
+            counts = self._tm_eval_speed_wall_outcome[
+                speed_index, reflection_index
+            ]
+            observations = self._tm_eval_speed_wall_observation_steps[
+                speed_index, reflection_index
+            ]
+            visible = self._tm_eval_speed_wall_visible_steps[
+                speed_index, reflection_index
+            ]
+            episodes = int(counts.sum().item())
+            result = {
+                "episodes": episodes,
+                "captured": int(counts[0].item()),
+                "crash": int(counts[1].item()),
+                "timeout": int(counts[2].item()),
+            }
+            for index, label in enumerate(("capture", "crash", "timeout")):
+                n_observations = int(observations[index].item())
+                n_visible = int(visible[index].item())
+                result[label + "_rate"] = (
+                    float(counts[index].item() / episodes) if episodes > 0 else None
+                )
+                result[label + "_visible_fraction_step_weighted"] = (
+                    float(n_visible / n_observations) if n_observations > 0 else None
+                )
+            return result
 
         def stratum_payload(
             successes, crashes, timeouts, crash_causes, episodes, labels
@@ -4745,6 +4937,21 @@ class NavRLTask(BaseTask):
                 "initial_heading_max_contract_error": float(
                     self._eval_cv_heading_diag["max_contract_error"]
                 ),
+                "outcome_telemetry": {
+                    label: target_motion_outcome_payload(index)
+                    for index, label in enumerate(("capture", "crash", "timeout"))
+                },
+                "speed_by_wall_reflection": {
+                    speed_label: {
+                        reflection_label: speed_wall_payload(
+                            speed_index, reflection_index
+                        )
+                        for reflection_index, reflection_label in enumerate(
+                            ("zero", "one_or_more")
+                        )
+                    }
+                    for speed_index, speed_label in enumerate(("q0", "q1", "q2", "q3"))
+                },
             },
             "action": {
                 "policy": os.environ.get("NAVRL_ACTION_POLICY", "legacy"),
@@ -4966,6 +5173,9 @@ class NavRLTask(BaseTask):
             # window so held-out denominators cannot inherit training episodes.
             if self._bulk_eval_mode:
                 self._record_eval_outcome_strata(successes, crashes, timeouts, finished)
+                self._record_target_motion_outcome_telemetry(
+                    successes, crashes, timeouts, finished
+                )
                 idx = finished.nonzero(as_tuple=False).squeeze(1)
                 bins = self._episode_bearing_bin[idx].long().clamp(0, 2)
                 self._eval_bearing_fin += torch.bincount(

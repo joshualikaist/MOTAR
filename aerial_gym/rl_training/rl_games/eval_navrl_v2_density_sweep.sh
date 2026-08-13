@@ -947,7 +947,14 @@ environment_text = (
 )
 environment_path.write_text(environment_text, encoding="utf-8")
 
-git_status = subprocess.check_output(
+runtime_status = subprocess.check_output(
+    [
+        "git", "-C", str(repo), "status", "--porcelain=v1", "--untracked-files=all",
+        "--", *runtime_roots,
+    ],
+    text=True,
+).splitlines()
+repository_status = subprocess.check_output(
     ["git", "-C", str(repo), "status", "--porcelain=v1", "--untracked-files=all"],
     text=True,
 ).splitlines()
@@ -958,8 +965,12 @@ manifest = {
     "git_commit": subprocess.check_output(
         ["git", "-C", str(repo), "rev-parse", "HEAD"], text=True
     ).strip(),
-    "git_dirty": bool(git_status),
-    "git_status": git_status,
+    # Backward-compatible names describe executable bytes only. Result CSVs and Markdown drafts
+    # cannot change the rollout and are retained separately as repository-wide metadata.
+    "git_dirty": bool(runtime_status),
+    "git_status": runtime_status,
+    "repository_git_dirty": bool(repository_status),
+    "repository_git_status": repository_status,
     "runtime_roots": list(runtime_roots),
     "python_environment": environment_path.relative_to(manifest_path.parent).as_posix(),
     "python_environment_sha256": digest(environment_path),
