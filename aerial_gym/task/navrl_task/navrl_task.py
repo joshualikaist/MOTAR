@@ -340,6 +340,49 @@ class NavRLTask(BaseTask):
         self._tm_ep_observation_steps = torch.zeros(
             self.num_envs, dtype=torch.long, device=self.device
         )
+        # RESEARCH_PLAN 8.28 first-acquisition telemetry. Same non-interference contract as above:
+        # nothing here reaches observations, rewards, control, termination or checkpoint state.
+        #
+        # Why it is separate from the visible-fraction counters: a step-weighted visible fraction
+        # cannot distinguish "acquired late" from "never acquired at all", and the seed-353 result
+        # (away capture 15.02% vs timeout 0.59%) is consistent with both. The hard-distance
+        # contract [22.5, 28] m sits outside the target camera's 20 m and the LiDAR's 12 m, so
+        # every episode starts with the target token zeroed; whether the run ever escapes that
+        # state is the quantity this measures.
+        #
+        # -1 = not yet acquired. Never folded into a mean as 0 -- see _record_first_acquisition.
+        self._fa_ep_first_fused = torch.full(
+            (self.num_envs,), -1, dtype=torch.long, device=self.device
+        )
+        self._fa_ep_first_camera = torch.full(
+            (self.num_envs,), -1, dtype=torch.long, device=self.device
+        )
+        self._fa_ep_transitions = torch.zeros(
+            self.num_envs, dtype=torch.long, device=self.device
+        )
+        self._fa_ep_prev_visible = torch.zeros(
+            self.num_envs, dtype=torch.bool, device=self.device
+        )
+        # Independent observation-step counter. It must agree with _tm_ep_observation_steps; the
+        # validator checks that rather than sharing one counter, so a future edit to either
+        # telemetry cannot silently desynchronise the two chronologies.
+        self._fa_ep_obs_steps = torch.zeros(
+            self.num_envs, dtype=torch.long, device=self.device
+        )
+        self._fa_eval_outcome_fin = torch.zeros(3, dtype=torch.long, device=self.device)
+        self._fa_eval_outcome_never = torch.zeros(3, dtype=torch.long, device=self.device)
+        self._fa_eval_outcome_first_sum = torch.zeros(3, dtype=torch.long, device=self.device)
+        self._fa_eval_outcome_transitions = torch.zeros(3, dtype=torch.long, device=self.device)
+        self._fa_eval_outcome_camera_never = torch.zeros(3, dtype=torch.long, device=self.device)
+        self._fa_eval_outcome_camera_first_sum = torch.zeros(
+            3, dtype=torch.long, device=self.device
+        )
+        # Exact median needs the distribution, not a running mean. One bin per possible
+        # observation-step index (episode_len_steps + 1); bounded and cheap.
+        self._fa_hist_bins = int(self.task_config.episode_len_steps) + 2
+        self._fa_eval_outcome_first_hist = torch.zeros(
+            3, self._fa_hist_bins, dtype=torch.long, device=self.device
+        )
         # outcome order: capture, crash, timeout. Reflection state: zero, at least one wall hit.
         self._tm_eval_outcome_fin = torch.zeros(3, dtype=torch.long, device=self.device)
         self._tm_eval_outcome_wall_sum = torch.zeros(3, dtype=torch.long, device=self.device)
@@ -500,6 +543,12 @@ class NavRLTask(BaseTask):
         self.perception = None
         self.prev_action = torch.zeros((self.num_envs, 4), device=self.device)
         self._visible_now = torch.zeros(self.num_envs, dtype=torch.bool, device=self.device)
+        # 8.28 secondary channel. The preregistered PRIMARY stays the fused flag; this
+        # separates "the camera never framed it" from "neither sensor ever held it",
+        # which matters because the hard-distance contract exceeds both sensor ranges.
+        self._camera_visible_now = torch.zeros(
+            self.num_envs, dtype=torch.bool, device=self.device
+        )
         if self.vision_mode:
             if not self.has_vision_target:
                 raise RuntimeError(
@@ -2912,6 +2961,13 @@ class NavRLTask(BaseTask):
         self._tm_ep_bar_reflections[env_ids] = 0
         self._tm_ep_visible_steps[env_ids] = 0
         self._tm_ep_observation_steps[env_ids] = 0
+        # 8.28: full per-env reset. -1 is "not yet acquired", NOT step 0 -- an episode that never
+        # sees the target must stay distinguishable from one that saw it on its first observation.
+        self._fa_ep_first_fused[env_ids] = -1
+        self._fa_ep_first_camera[env_ids] = -1
+        self._fa_ep_transitions[env_ids] = 0
+        self._fa_ep_prev_visible[env_ids] = False
+        self._fa_ep_obs_steps[env_ids] = 0
         # Phase 3: per-episode target speed + trajectory pattern (all-static when the speed
         # ceiling is 0 -> Phases 1-2 behavior).
         self._sample_target_motion(env_ids)
@@ -3365,6 +3421,25 @@ class NavRLTask(BaseTask):
                 self._tm_ep_observation_steps += valid_y_now.to(torch.long)
                 self._tm_ep_visible_steps += visible.to(torch.long)
 
+                # RESEARCH_PLAN 8.28. Chronology is in OBSERVATION steps, not sim steps, so a
+                # first-visible index is directly comparable with the visible-fraction denominator
+                # the seed-353 telemetry already uses.
+                self._fa_ep_obs_steps += valid_y_now.to(torch.long)
+                camera_visible = self._camera_visible_now & valid_y_now
+                fresh = visible & (self._fa_ep_first_fused < 0)
+                if bool(fresh.any()):
+                    self._fa_ep_first_fused[fresh] = self._fa_ep_obs_steps[fresh]
+                fresh_cam = camera_visible & (self._fa_ep_first_camera < 0)
+                if bool(fresh_cam.any()):
+                    self._fa_ep_first_camera[fresh_cam] = self._fa_ep_obs_steps[fresh_cam]
+                # A visible->hidden transition only counts between two VALID observations; a step
+                # dropped for non-finite policy output is not evidence that the track was lost.
+                lost = self._fa_ep_prev_visible & ~visible & valid_y_now
+                self._fa_ep_transitions += lost.to(torch.long)
+                self._fa_ep_prev_visible = torch.where(
+                    valid_y_now, visible, self._fa_ep_prev_visible
+                )
+
             valid = self._action_diag_prev_valid & finite[:, 1]
             if bool(valid.any()):
                 current_y = safe[valid, 1]
@@ -3801,6 +3876,9 @@ class NavRLTask(BaseTask):
         )
         self.task_obs["observations"][:] = structured
         self._visible_now[:] = diagnostics["visible"]
+        self._camera_visible_now[:] = diagnostics.get(
+            "camera_visible", diagnostics["visible"]
+        )
 
         # Raw sensor and tracker diagnostics are available to evaluators, never concatenated into
         # actor observations. Semantic renderer buffers intentionally remain private.
@@ -4313,6 +4391,55 @@ class NavRLTask(BaseTask):
                     flat, minlength=48
                 ).reshape(4, 3, 4).to(self._eval_dist_pattern_crash_cause.dtype)
 
+    def _record_first_acquisition(self, idx, outcome, observation_steps):
+        """Attribute per-episode first-acquisition statistics to eval outcomes (RESEARCH_PLAN 8.28).
+
+        Answers a question the visible-fraction telemetry cannot: an episode with a 0.6% visible
+        fraction may have acquired the target once and lost it, or never acquired it at all, and
+        the intervention differs (tracker memory vs the range contract). The hard-distance cell
+        starts every episode with the target beyond both the 20 m camera and the 12 m LiDAR, so
+        "never acquired" is the specific failure this is built to count.
+
+        Never-acquired episodes contribute to `never`, and to NOTHING else -- folding their -1 (or
+        a stand-in 0) into the first-visible mean would report the strongest failures as the
+        fastest acquisitions.
+        """
+        first = self._fa_ep_first_fused[idx]
+        first_cam = self._fa_ep_first_camera[idx]
+        transitions = self._fa_ep_transitions[idx]
+        own_steps = self._fa_ep_obs_steps[idx]
+
+        # The two telemetries keep independent observation counters precisely so this can be
+        # checked; if they ever disagree the two chronologies are not comparable.
+        if not bool(torch.equal(own_steps, observation_steps)):
+            raise RuntimeError("first-acquisition observation chronology diverged")
+        acquired = first >= 0
+        if bool((first[acquired] > own_steps[acquired]).any()) or bool((first == 0).any()):
+            raise RuntimeError("first-acquisition step outside its own episode")
+        cam_acq = first_cam >= 0
+        # The camera is one of the two fused sources, so it cannot acquire before the fusion does.
+        if bool((first_cam[cam_acq & acquired] < first[cam_acq & acquired]).any()):
+            raise RuntimeError("camera acquisition precedes fused acquisition")
+
+        self._fa_eval_outcome_fin += torch.bincount(outcome, minlength=3).to(torch.long)
+        self._fa_eval_outcome_never.index_add_(0, outcome, (~acquired).to(torch.long))
+        self._fa_eval_outcome_camera_never.index_add_(0, outcome, (~cam_acq).to(torch.long))
+        self._fa_eval_outcome_transitions.index_add_(0, outcome, transitions)
+        self._fa_eval_outcome_first_sum.index_add_(
+            0, outcome, torch.where(acquired, first, torch.zeros_like(first))
+        )
+        self._fa_eval_outcome_camera_first_sum.index_add_(
+            0, outcome, torch.where(cam_acq, first_cam, torch.zeros_like(first_cam))
+        )
+        if bool(acquired.any()):
+            # Exact median needs the distribution; a flat (3 * bins) index_add is the cheapest way
+            # to keep one histogram per outcome.
+            bins = self._fa_hist_bins
+            flat = outcome[acquired] * bins + first[acquired].clamp(0, bins - 1)
+            self._fa_eval_outcome_first_hist.view(-1).index_add_(
+                0, flat, torch.ones_like(flat)
+            )
+
     def _record_target_motion_outcome_telemetry(
         self, successes, crashes, timeouts, finished
     ):
@@ -4343,6 +4470,12 @@ class NavRLTask(BaseTask):
             (observation_steps <= 0).any()
         ):
             raise RuntimeError("target-motion visibility counter contract failed")
+
+        # RESEARCH_PLAN 8.28, bucketed here rather than in a sibling recorder so that both
+        # telemetries are attributed by the SAME outcome tensor. A second copy of the
+        # capture/crash/timeout derivation is exactly the kind of drift the cross-sum check below
+        # is meant to catch, so there is no second copy.
+        self._record_first_acquisition(idx, outcome, observation_steps)
 
         self._tm_eval_outcome_fin += torch.bincount(outcome, minlength=3).to(
             self._tm_eval_outcome_fin.dtype
@@ -4692,6 +4825,27 @@ class NavRLTask(BaseTask):
         ):
             raise RuntimeError("NavRL target-motion visibility aggregation mismatch")
 
+        # RESEARCH_PLAN 8.28. The first-acquisition telemetry is bucketed by the same outcome
+        # tensor as the visibility telemetry, so any disagreement here means one of the two
+        # accumulators dropped or double-counted an episode -- fail rather than export.
+        fa_outcomes = [int(v) for v in self._fa_eval_outcome_fin.tolist()]
+        if fa_outcomes != expected[1:]:
+            raise RuntimeError(
+                "NavRL first-acquisition outcome mismatch: %s != %s"
+                % (fa_outcomes, expected[1:])
+            )
+        acquired = [
+            fa_outcomes[i] - int(self._fa_eval_outcome_never[i]) for i in range(3)
+        ]
+        if any(a < 0 for a in acquired):
+            raise RuntimeError("NavRL first-acquisition never-count exceeds episode count")
+        hist_totals = [int(v) for v in self._fa_eval_outcome_first_hist.sum(dim=1).tolist()]
+        if hist_totals != acquired:
+            raise RuntimeError(
+                "NavRL first-acquisition histogram mismatch: %s != %s"
+                % (hist_totals, acquired)
+            )
+
     def _export_bulk_eval_result(self, total, reach_rate, mean_nc, best):
         """Persist the exact outcome window consumed by a vectorized rl_games player."""
         if not self._bulk_eval_mode or self._bulk_eval_exported:
@@ -4743,6 +4897,54 @@ class NavRLTask(BaseTask):
                 "p10": float(np.quantile(array, 0.10)),
                 "p50": float(np.quantile(array, 0.50)),
                 "p90": float(np.quantile(array, 0.90)),
+            }
+
+        def first_acquisition_payload(index):
+            """RESEARCH_PLAN 8.28 per-outcome first-acquisition statistics.
+
+            Means and the median are over ACQUIRED episodes only, and are null when none acquired.
+            Reporting 0 for a never-acquired cohort would invert the finding -- the episodes that
+            never saw the target would read as the fastest to see it.
+            """
+            episodes = int(self._fa_eval_outcome_fin[index].item())
+            never = int(self._fa_eval_outcome_never[index].item())
+            acquired = episodes - never
+            cam_never = int(self._fa_eval_outcome_camera_never[index].item())
+            cam_acquired = episodes - cam_never
+
+            median = None
+            if acquired > 0:
+                hist = self._fa_eval_outcome_first_hist[index]
+                cumulative = torch.cumsum(hist, dim=0)
+                # Lower median: smallest step whose cumulative count reaches half the cohort.
+                target = (acquired + 1) // 2
+                pos = int(torch.searchsorted(cumulative, torch.tensor(
+                    target, device=cumulative.device, dtype=cumulative.dtype)).item())
+                median = int(min(pos, self._fa_hist_bins - 1))
+
+            return {
+                "episodes": episodes,
+                "never_acquired": never,
+                "never_acquired_rate": (never / episodes) if episodes else None,
+                "acquired": acquired,
+                "first_visible_step_mean": (
+                    int(self._fa_eval_outcome_first_sum[index].item()) / acquired
+                    if acquired else None
+                ),
+                "first_visible_step_median": median,
+                "visible_hidden_transitions": int(
+                    self._fa_eval_outcome_transitions[index].item()
+                ),
+                "visible_hidden_transitions_mean_per_episode": (
+                    int(self._fa_eval_outcome_transitions[index].item()) / episodes
+                    if episodes else None
+                ),
+                "camera_never_acquired": cam_never,
+                "camera_never_acquired_rate": (cam_never / episodes) if episodes else None,
+                "camera_first_visible_step_mean": (
+                    int(self._fa_eval_outcome_camera_first_sum[index].item()) / cam_acquired
+                    if cam_acquired else None
+                ),
             }
 
         def target_motion_outcome_payload(index):
@@ -4939,6 +5141,10 @@ class NavRLTask(BaseTask):
                 ),
                 "outcome_telemetry": {
                     label: target_motion_outcome_payload(index)
+                    for index, label in enumerate(("capture", "crash", "timeout"))
+                },
+                "first_acquisition": {
+                    label: first_acquisition_payload(index)
                     for index, label in enumerate(("capture", "crash", "timeout"))
                 },
                 "speed_by_wall_reflection": {
