@@ -281,6 +281,13 @@ class task_config:
         # range-dependent scale. Both default to the white/flat behaviour.
         detector_noise_range_rho = _env_float("NAVRL_DETNOISE_RANGE_RHO", 0.0)
         detector_noise_range_bias_m = _env_float("NAVRL_DETNOISE_RANGE_BIAS_M", 0.0)
+        # Optional piecewise-constant mean error by measured range. The first coupling probe used
+        # only one global mean and therefore omitted the v7 profile's sign-changing systematic
+        # bias (+0.2..+0.3 m nearby, -0.55 m far away). Format matches the sigma profile:
+        # "r0:b0,r1:b1,..." with upper range edges in metres. Empty preserves legacy behaviour.
+        detector_noise_range_bias_profile = os.environ.get(
+            "NAVRL_DETNOISE_RANGE_BIAS_PROFILE", ""
+        ).strip()
         # "r0:s0,r1:s1,..." -- piecewise-constant sigma multiplier by measured range, upper edges
         # in metres. Empty means flat.
         detector_noise_range_sigma_profile = os.environ.get(

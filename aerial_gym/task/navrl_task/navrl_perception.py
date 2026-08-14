@@ -724,6 +724,23 @@ class NavRLPerceptionModule:
         self._detector_noise_sigma_mults = (
             torch.tensor(mults, device=device) if mults else None
         )
+        bias_edges, bias_values = [], []
+        for chunk in str(
+            getattr(cfg, "detector_noise_range_bias_profile", "") or ""
+        ).split(","):
+            chunk = chunk.strip()
+            if not chunk:
+                continue
+            hi, value = chunk.split(":")
+            bias_edges.append(float(hi))
+            # The dose ladder scales systematic and random error together.
+            bias_values.append(float(value) * _dn_scale)
+        self._detector_noise_bias_edges = (
+            torch.tensor(bias_edges, device=device) if bias_edges else None
+        )
+        self._detector_noise_bias_values = (
+            torch.tensor(bias_values, device=device) if bias_values else None
+        )
         self.detector_noise_seed = int(getattr(cfg, "detector_noise_seed", 9409))
         self._detector_noise_generator = torch.Generator(device=device)
         self._detector_noise_generator.manual_seed(self.detector_noise_seed)
@@ -1075,9 +1092,15 @@ class NavRLPerceptionModule:
             unit = self._detector_noise_range_ar
         else:
             unit = white
-        return (
-            surface_range + unit * sigma + self.detector_noise_range_bias_m
-        ).clamp(0.0, self.max_camera_range)
+        bias = torch.full_like(surface_range, self.detector_noise_range_bias_m)
+        if self._detector_noise_bias_edges is not None:
+            # Select from the CLEAN analytic range, exactly as the profile bins were defined.
+            # A separate edge vector is intentional: it makes the contract explicit and prevents
+            # a future sigma-profile edit from silently changing which mean is injected.
+            bias_idx = torch.bucketize(surface_range, self._detector_noise_bias_edges)
+            bias_idx = bias_idx.clamp(max=self._detector_noise_bias_values.numel() - 1)
+            bias = self._detector_noise_bias_values[bias_idx]
+        return (surface_range + unit * sigma + bias).clamp(0.0, self.max_camera_range)
 
     def _detector_noise_visibility(self, visible):
         """Two-state Markov miss process on the detection flag.
