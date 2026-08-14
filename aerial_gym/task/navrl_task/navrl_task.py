@@ -4828,7 +4828,9 @@ class NavRLTask(BaseTask):
         # RESEARCH_PLAN 8.28. The first-acquisition telemetry is bucketed by the same outcome
         # tensor as the visibility telemetry, so any disagreement here means one of the two
         # accumulators dropped or double-counted an episode -- fail rather than export.
-        fa_outcomes = [int(v) for v in self._fa_eval_outcome_fin.tolist()]
+        # tuple, not list: `expected` is a tuple, and a list never compares equal to one, so a
+        # list here would make this guard fire on every run regardless of the counts.
+        fa_outcomes = tuple(int(v) for v in self._fa_eval_outcome_fin.tolist())
         if fa_outcomes != expected[1:]:
             raise RuntimeError(
                 "NavRL first-acquisition outcome mismatch: %s != %s"

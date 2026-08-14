@@ -396,3 +396,11 @@ class FirstAcquisitionContract(unittest.TestCase):
             "camera acquisition precedes fused acquisition",
         ):
             self.assertIn(guard, task, f"missing fail-closed guard: {guard}")
+
+    def test_outcome_sum_guard_compares_like_with_like(self):
+        """The guard is compared against a tuple; building a list here makes it fire on every run
+        no matter what the counts are, which is exactly how it failed on first use."""
+        task = self.TASK.read_text(encoding="utf-8")
+        block = task[task.index("fa_outcomes = "):task.index("NavRL first-acquisition outcome")]
+        self.assertIn("tuple(", block)
+        self.assertNotIn("fa_outcomes = [", block)
