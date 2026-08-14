@@ -157,10 +157,18 @@ def verify_all() -> dict[str, dict]:
     results: dict[str, dict] = {}
     runtime_maps = []
     for mode in MODES:
-        result, runtime_map = RUN.verify_cell(mode)
+        # verify_cell returns (result, RECEIPT). The receipt necessarily differs per cell -- it
+        # carries the completion timestamp, the evaluation nonce and the per-cell log/result
+        # hashes -- so comparing receipts across cells would always fail. The cross-cell invariant
+        # is over the runtime BYTE MAP, which has to be read out of the manifest the receipt
+        # points at.
+        result, receipt = RUN.verify_cell(mode)
         validate_first_acquisition(mode, result)
         results[mode] = result
-        runtime_maps.append(runtime_map)
+        manifest = Path(receipt["runtime_source_manifest"]).resolve()
+        mapping, metadata = P2.manifest_map(manifest, 2, require_original=False)
+        RUN.BASE.verify_runtime_clean_manifest(metadata, mode)
+        runtime_maps.append(mapping)
     require(
         runtime_maps[0] == runtime_maps[1],
         "first-acquisition cells used different runtime byte maps",
