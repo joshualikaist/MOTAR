@@ -218,7 +218,10 @@ class Ref5inSmokeLauncherContract(unittest.TestCase):
             '"d1_verdict_changed": False',
             '"p3_unlocked": False',
             'mismatch_lines == [expected]',
-            '"path_length_support"',
+            # Renamed from "path_length_support" when the screen was rewritten around the radial
+            # heading channel; the literal list was not updated, so this test had been failing
+            # against a key that no longer exists.
+            '"radial_heading_channel_support"',
             '"chirality_sensitive"',
         ):
             self.assertIn(literal, source)
@@ -315,3 +318,81 @@ class RuntimeCheckpointContract(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class FirstAcquisitionContract(unittest.TestCase):
+    """RESEARCH_PLAN 8.28 first-acquisition diagnostic (seed 359).
+
+    The failure this guards against is specific: an episode that never acquires the target must
+    never be averaged in as if it acquired at step 0, because that would report the strongest
+    failures as the fastest acquisitions and invert the finding the experiment exists to produce.
+    """
+
+    ORCHESTRATOR = ROOT / "tools/run_navrl_ref5in_cv_first_acquisition.py"
+    TASK = ROOT / "aerial_gym/task/navrl_task/navrl_task.py"
+
+    def test_preregistered_contract_literals_are_pinned(self):
+        source = self.ORCHESTRATOR.read_text(encoding="utf-8")
+        for literal in (
+            "SEED = 359",
+            'MODES = ("toward", "away")',
+            "NEVER_ACQUIRED_GAP_THRESHOLD = 0.30",
+            "DELAYED_ACQUISITION_STEP_THRESHOLD = 100",
+            '"p2_verdict_changed": False',
+            '"d1_verdict_changed": False',
+            '"p3_unlocked": False',
+            '"decision_authority": "none",',
+            '"primary_metric": "fused_never_acquired_rate"',
+        ):
+            self.assertIn(literal, source, f"missing preregistered literal: {literal}")
+
+    def test_thresholds_are_not_recomputed_from_results(self):
+        """Both screens must compare against the module constants, never against a value derived
+        from the cells."""
+        source = self.ORCHESTRATOR.read_text(encoding="utf-8")
+        self.assertIn("never_gap >= NEVER_ACQUIRED_GAP_THRESHOLD", source)
+        self.assertIn("delay_gap >= DELAYED_ACQUISITION_STEP_THRESHOLD", source)
+
+    def test_secondary_screen_only_applies_when_primary_fails(self):
+        source = self.ORCHESTRATOR.read_text(encoding="utf-8")
+        self.assertIn("(not primary_support)", source)
+
+    def test_empty_cohorts_must_report_null_not_zero(self):
+        source = self.ORCHESTRATOR.read_text(encoding="utf-8")
+        self.assertIn('acquired==0 must report null first-visible statistics', source)
+        task = self.TASK.read_text(encoding="utf-8")
+        # The payload builder must guard every mean/median behind the acquired count.
+        payload = task[task.index("def first_acquisition_payload"):]
+        payload = payload[:payload.index("def target_motion_outcome_payload")]
+        for guarded in ("if acquired else None", "if cam_acquired else None"):
+            self.assertIn(guarded, payload)
+        self.assertIn("median = None", payload)
+
+    def test_never_acquired_sentinel_is_negative(self):
+        task = self.TASK.read_text(encoding="utf-8")
+        self.assertIn("self._fa_ep_first_fused[env_ids] = -1", task)
+        self.assertIn("self._fa_ep_first_camera[env_ids] = -1", task)
+        self.assertIn("acquired = first >= 0", task)
+
+    def test_telemetry_is_bulk_eval_only_and_non_interfering(self):
+        task = self.TASK.read_text(encoding="utf-8")
+        block = task[task.index("self._fa_ep_obs_steps += valid_y_now"):]
+        self.assertLess(
+            task.index("if self._bulk_eval_mode:"),
+            task.index("self._fa_ep_obs_steps += valid_y_now"),
+            "first-acquisition counters must sit inside the bulk-eval guard",
+        )
+        # No observation/reward/termination consumer may read the counters back.
+        for sink in ("task_obs", "self.rewards", "self.terminations", "self.truncations"):
+            self.assertNotIn(sink, block[:block.index("def ")])
+
+    def test_export_is_fail_closed_on_outcome_sums(self):
+        task = self.TASK.read_text(encoding="utf-8")
+        for guard in (
+            "NavRL first-acquisition outcome mismatch",
+            "NavRL first-acquisition histogram mismatch",
+            "NavRL first-acquisition never-count exceeds episode count",
+            "first-acquisition observation chronology diverged",
+            "camera acquisition precedes fused acquisition",
+        ):
+            self.assertIn(guard, task, f"missing fail-closed guard: {guard}")
