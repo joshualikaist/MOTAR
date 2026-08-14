@@ -1163,6 +1163,59 @@ original, governor off, exact 600을 유지한다. 새 eval seed **359**, toward
 detector 대조 중 하나를 별도 사전등록한다. 전자는 과제를 바꾸고 후자는 센서를 바꾸므로 같은 A/B에
 섞지 않는다.
 
+**결과:** source/receipt/byte-map/count 검증을 통과했다. toward 2,049회 `94.29/5.61/0.10%`,
+away 2,049회 `37.19/9.22/53.59%`로 seed 353을 재현했다. outcome별 never-acquired rate는
+toward capture `0.00%` / away capture `0.00%` / away timeout `87.52%`였다. **primary screen인
+away timeout−capture never-acquired 차이는 `+87.52 pp`로 사전 30 pp를 통과**했으므로 우선 병목을
+장기 memory가 아니라 초기 acquisition/range 계약으로 분류한다. 두 capture cohort가 모두 정확히
+0.00%라는 것은 이 조건에서 **최초 취득이 capture의 필요조건처럼 동작**한다는 뜻이다.
+acquired episode의 first-visible 평균은 toward capture `82.1` step, away capture `318.8` step,
+away timeout `565.2` step(600 상한 근처)이었다. secondary screen은 primary 통과 시 미적용이다.
+
+독립 재계산에서 54개 값 불일치 0건, 불변식 전부 PASS였다. 다만 **fused와 camera 최초취득이 6개
+cohort 전부에서 정확히 일치**했다 — 두 카운터는 코드상 독립이므로 이는 camera `20 m`/LiDAR `12 m`
+구성에서 LiDAR가 camera보다 먼저 취득을 준 적이 없다는 경험적 결과이며, 사전등록 primary(fused)가
+이 조건에서 camera 채널 이상을 담지 않음을 뜻한다. toward/timeout은 n=2라 그 100%를 추정치로
+쓰지 않는다.
+
+실행 중 두 번 VOID했다. (1) 내가 새로 쓴 export 가드가 list와 tuple을 비교해 카운트와 무관하게
+항상 발화했다(`[1932,115,2] != (1932,115,2)`); export 이전이라 결과는 기록되지 않았다.
+(2) `verify_all`이 receipt를 runtime byte map으로 오인했고, 그것을 고치자 가드가 실제 위반을
+잡아냈다 — 다른 세션의 untracked 런처가 `aerial_gym/` 아래 있어 두 셀 모두 dirty tree에서
+실행됐다. 강제 우회하지 않고 런처를 커밋해 clean으로 만든 뒤 재실행했다. 두 경우 모두
+`summary.json`이 생성되지 않았고 primary screen은 계산된 적이 없어 같은 시드로 재실행했다.
+
+### 8.29 초기 관측가능성 인과 대조 사전등록 (2026-08-14)
+
+8.28은 연관을 보였다. away timeout의 87.52%가 표적을 한 번도 취득하지 못했고 capture는 0.00%였다.
+그러나 outcome은 궤적의 결과이므로 이것만으로 **초기 비관측이 timeout의 원인**이라고 말할 수 없다.
+다음 한 실험만 돌린다.
+
+**선택: (b) sensor-capability 대조.** (a) 목표거리를 camera range 안으로 제한하는 task-contract
+대조는 정보가치가 낮다 — D0에서 6–11.5 m의 timeout이 이미 `0.06%`로 알려져 있어 대부분 기지
+사실을 재도출하고, 거리를 줄이면 경로길이·시간예산·막대 노출이 함께 바뀌어 교란된다. (b)는
+**과제를 그대로 두고 관측가능성만** 바꾸므로 분리가 깨끗하다. 두 축을 같은 A/B에 섞지 않는다.
+
+동일 D1 terminal checkpoint, 1 bar, CV-only, `[22.5,28] m`, `U[0.3,1.5] m/s`, deterministic/
+original, governor off, exact 600을 유지한다. 새 eval seed **367**, away 단일 heading,
+requested **2,049 episodes**, 2 arm이다. policy/reward/arena/horizon은 바꾸지 않는다.
+
+- arm A(대조): 현행 target camera `20 m`;
+- arm B(개입): target camera range만 `28 m`로 확장한다. LiDAR range, FOV, 해상도, 검출 임계값,
+  tracker memory는 전부 불변이며 **오직 이 한 값만** 바꾼다;
+- primary gate: arm B의 away timeout rate가 arm A 대비 **20 pp 이상 감소**하면 초기 비관측을
+  timeout의 지배적 원인으로 분류한다;
+- secondary 기록: never-acquired rate, first-visible step, capture/crash rate. crash가 10 pp 이상
+  **증가**하면 관측가능성 개입이 실패모드를 이동시킨 것이므로 timeout 감소를 단독 성과로 쓰지 않는다;
+- 사전 명시한 해석 한계: 동결 정책은 `20 m` camera로 학습됐다. `28 m` 검출은 target token 분포를
+  학습 범위 밖으로 밀어내므로, **timeout이 줄지 않아도 "초기 비관측은 원인이 아니다"로 읽을 수
+  없다** — "이 정책이 장거리 검출을 활용하지 못한다"와 구분되지 않는다. 감소가 관측될 때만
+  단방향으로 강한 증거다;
+- 어느 결과도 P2/D1을 재판정하거나 P3를 열지 않으며, 새 PPO를 시작하지 않는다.
+
+이 대조 뒤에야 (그리고 결과가 지지할 때만) sensor range를 바꾼 재학습이나 task-contract 변경을
+별도 gate와 함께 사전등록한다.
+
 ---
 
 ## 9. 참고문헌

@@ -1,7 +1,7 @@
 {
  "schema": "motar.experiments/1",
  "source": "WORKLOG.md",
- "curated_at": "2026-08-13",
+ "curated_at": "2026-08-14",
  "_note": "Hand-curated from WORKLOG.md, results/*/summary.{md,json} and docs/codex_review_2026-08-12.md. `verdict` judges the HYPOTHESIS (PASS/FAIL/INCONCLUSIVE); `validity` judges the EVIDENCE (canonical/superseded/withdrawn/exploratory). They are orthogonal: a result can have passed its gate and still be void. Validated by tools/lint_experiments.py.",
  "themes": [
   {
@@ -3816,6 +3816,94 @@
    "results_paths": [
     "results/navrl_detector_v7_error_profile_seed401_VOID_governor_off/"
    ]
+  },
+  {
+   "id": "2026-08-14-ref5in-first-acquisition-seed359",
+   "title_ko": "★ 최초취득 진단 — away timeout의 87.5%가 표적을 한 번도 못 봤다",
+   "question": "hard-distance timeout은 표적을 놓쳐서인가, 애초에 한 번도 못 봐서인가?",
+   "theme": "perception",
+   "knob": null,
+   "knob_extra": [
+    "NAVRL_LIDAR_RANGE"
+   ],
+   "levels": [
+    {
+     "label": "away heading (주 관심)",
+     "value": "away",
+     "is_baseline": true
+    },
+    {
+     "label": "toward heading (보조 재현)",
+     "value": "toward"
+    }
+   ],
+   "metric": "other",
+   "metric_label": "never-acquired rate (outcome별)",
+   "effect": {
+    "value_pp": 87.52,
+    "ci95_pp": null,
+    "ci_method": "none",
+    "direction": "lower_is_better"
+   },
+   "arms": [
+    {
+     "label": "away capture",
+     "n_episodes": 762,
+     "extra": {
+      "never_acquired": "0.00%",
+      "first_visible_mean": 318.8
+     }
+    },
+    {
+     "label": "away crash",
+     "n_episodes": 189,
+     "extra": {
+      "never_acquired": "93.12%",
+      "first_visible_mean": 360.8
+     }
+    },
+    {
+     "label": "away timeout",
+     "n_episodes": 1098,
+     "extra": {
+      "never_acquired": "87.52%",
+      "first_visible_mean": 565.2
+     }
+    },
+    {
+     "label": "toward capture",
+     "n_episodes": 1932,
+     "extra": {
+      "never_acquired": "0.00%",
+      "first_visible_mean": 82.1
+     }
+    }
+   ],
+   "verdict": "PASS",
+   "validity": "canonical",
+   "verdict_note": "사전등록 primary(away timeout−capture never-acquired ≥ 30 pp)를 +87.52 pp로 통과했다. 임계보다 강한 신호는 두 capture cohort가 모두 정확히 0.00%라는 것 — 이 조건에서 최초 취득이 capture의 필요조건처럼 동작한다. 독립 재계산에서 fused와 camera 최초취득이 6개 cohort 전부 일치해, LiDAR가 camera보다 먼저 취득을 준 적이 없다: 사실상 camera range 발견이다.",
+   "confounded_by": "outcome은 궤적의 결과다. 일찍 crash한 episode는 취득 기회 자체가 적으므로 never-acquired와 outcome의 연관에는 생존 선택이 섞여 있다. 연관 계측이지 인과가 아니며 해결책도 아니다. toward/timeout은 n=2라 그 100%를 추정치로 쓰지 않는다.",
+   "seeds": [
+    359
+   ],
+   "episodes_per_cell": 2049,
+   "env": {
+    "bars": 1,
+    "target_speed_ms": null,
+    "machine": "rtx3070"
+   },
+   "policy": {
+    "checkpoint": "ref5in D1 terminal ep1900",
+    "sha256_prefix": "197ea26999d6"
+   },
+   "preregistered": true,
+   "gate": "RESEARCH_PLAN 8.28 — primary: away timeout−capture never-acquired ≥ 30 pp; secondary(미적용): first-visible ≥ 100 step",
+   "launcher": "tools/run_navrl_ref5in_cv_first_acquisition.py",
+   "results_paths": [
+    "results/navrl_ref5in_cv_first_acquisition_seed359/"
+   ],
+   "worklog_date": "2026-08-14",
+   "_note": "실행 중 2회 VOID(내 export 가드의 list/tuple 비교 버그, 그리고 다른 세션의 untracked 런처로 인한 dirty runtime). 둘 다 summary 미생성·primary screen 미계산이라 같은 시드로 재실행했고 근거를 각 VOID.md에 남겼다."
   }
  ]
 }

@@ -321,10 +321,16 @@ def write_summary(payload: dict) -> None:
             f"- primary: away timeout−capture never-acquired **{gap*100:+.2f} pp** "
             f"(임계 {screen['never_acquired_gap_threshold']*100:.0f} pp) → "
             f"{'통과' if screen['initial_acquisition_channel_support'] else '미달'}",
+            # "미달"은 secondary가 실제로 평가되어 탈락했을 때만 쓴다. primary가 통과하면 이
+            # screen은 사전등록상 적용 대상이 아니므로, 값이 임계를 넘더라도 "해당 없음"이다.
             f"- secondary: away timeout−capture first-visible "
             f"**{'—' if delay is None else f'{delay:+.1f} step'}** "
             f"(임계 {screen['delayed_acquisition_step_threshold']} step) → "
-            f"{'통과' if screen['delayed_acquisition_channel_support'] else '미달'}",
+            + (
+                "해당 없음 (primary 통과 시 미적용)"
+                if screen["initial_acquisition_channel_support"]
+                else ("통과" if screen["delayed_acquisition_channel_support"] else "미달")
+            ),
             "",
         ]
     )

@@ -9028,3 +9028,171 @@ desync되므로 `u`를 움직인다), 그리고 관측 전용 페어 프로파�
 3-arm(clean / 보정 1.0× / v7)을 재사전등록해 약 15분 돌리면 확정 가능하다.
 **5C 재학습은 요청대로 미착수.** 임계값 재튜닝 없음. 판정 기준 사후 변경 없음.
 상세: `results/navrl_detector_coupling_probe_seed409/summary.md`.
+## 2026-08-14 — 발표 전 4건 확인: detector bin-bias gate 통과, footprint·OPEN·5B 상태 확정
+
+- 첫 detector-coupling probe의 품질 게이트 실패 원인(거리 quartile별 mean bias 누락)만 수정했다.
+  `docs/prereg_2026-08-14_detector_coupling_binbias.md`에 seed 431, noise seed 9431, 3 arms와 기존
+  ±10% 게이트를 GPU 실행 전에 고정했다.
+- 주입 std 0.7085 m vs v7 profile 0.7053 m(+0.45%)로 gate PASS. 결과는 clean 80.29%, bin-bias
+  1.0× 76.72%(−3.57 pp [−6.09,−1.06]), v7 76.04%(−4.26 pp [−6.78,−1.73]). 고정 판정은
+  output-coupling hypothesis supported이나 causal confirmation에는 matched retraining이 필요하다.
+- bar W,D는 independent U(0.4,0.8)m. 이론 평균 area 0.36m², 205/1600m² gross occupancy 4.6125%.
+  실제 seed-42 40-file pool은 mean area 0.365313m², gross 4.6806%. touching overlap을 뺀 union
+  occupancy는 layout별 값이라 이 수치와 구분한다.
+- RA-L 2025 예외는 Chen et al., “Online Planning for Multi-UAV Pursuit-Evasion in Unknown
+  Environments Using Deep Reinforcement Learning,” RA-L 10(8), 8196–8203, DOI
+  10.1109/LRA.2025.3583620으로 특정했다.
+- 5B는 2026-08-14 01:34 KST 기준 미착수. full-budget summary/receipt와 실행 process 모두 없다.
+- 통합 보고: `docs/presentation_followup_2026-08-14.md`; 실험 결과:
+  `results/navrl_detector_coupling_binbias_seed431/summary.md`.
+
+## 2026-08-14 — MOTAR 발표 v21 read-only QA
+
+- `/home/fair/Downloads/MOTAR_발표_v21.pptx`의 17개 슬라이드·발표자 노트·OOXML 구조를 읽고,
+  LibreOffice PDF 렌더와 원자료를 교차검증했다. PPTX 자체는 수정하지 않았다.
+- 최신 detector bin-bias 3-arm 수치, 205-bar nominal 면적 점유율 4.61%, OPEN 서지, 5B
+  `NOT RUN / PENDING`은 본문에 정상 반영됐다.
+- 발표 전 필수 정정으로 (1) slide 12의 0.705 m를 v7 절대오차가 아닌 `v7−analytic paired output
+  difference std`로 명시, (2) slide 15의 corridor-token 상태를 제안에서 `pilot completed / gate
+  FAIL`로 변경, (3) slide 15·17의 contact-time 16.8%를 `never entered`가 아니라 `at contact
+  absent`로 제한, (4) slide 10 노트의 timeout 역산 문구 제거, (5) slide 3 동영상 poster/fallback
+  재생 확인을 판정했다.
+- 추가 정정 후보: slide 4에 moving-target 선행인 YOPOv2-Tracker를 명시하고 정지-goal 절대문장
+  제거, slide 6의 imitation/RL 필연성 완화 및 실제 reward 항 공개, slide 7 static-token 노트 오류,
+  slide 9 crash 감소 전량이 capture로 전환됐다는 서술, slide 14의 모든 within-lineage A/B가
+  자동 유효하다는 일반화를 제한한다.
+
+## 2026-08-14 — 발표 slide 6 reward 계약 계수 대조
+
+- 환경 원계수는 range-rate `+1.0`, ego-progress `+1.0`(gamma `0.99`), static safety `+1.5`,
+  detector-visible `+0.02/step`, time `−0.05/step`, velocity-change smoothness `−0.1`, height
+  violation `−8.0`, yaw alignment `−0.3`, yaw-command damping `−0.02`, capture `+30`, collision
+  overwrite `−20`이다. timeout terminal bonus는 없고 corrected semantics에서는 value bootstrap한다.
+- PPT 초안의 `action smoothness`는 실제 구현 `||v_t−v_{t−1}||`와 달라 `velocity smoothness`로
+  고쳐야 한다. capture는 기존 step reward에 +30을 더하지만 crash는 step reward 전체를 −20으로
+  덮어쓰므로 두 terminal 연산도 구분한다.
+- rl_games가 환경 total reward에 `scale_value=0.1`을 적용한다. 발표에는 위 환경 원계수를 쓰고
+  `PPO input: total reward ×0.1`을 각주로 분리한다.
+
+## 2026-08-14 — NavRL/NavRL++ 밀도 및 감지-footprint 주장 감사
+
+- NavRL RA-L 본문 계약은 50×50 m, static 350 고정, dynamic 60→120 curriculum이며 best는
+  dynamic 100에서 저장된다. 따라서 논문 기준 static 14.0, best total 18.0, maximum total
+  18.8 objects/100 m²이다. 다만 공개 코드 commit `3725bcc`는 `map_range=[20,20,4.5]`, 즉
+  40×40 m이고 기본 설정은 static 350 + dynamic 80이다. 논문 수치와 공개 코드 수치를 섞지 않는다.
+- NavRL++ Table I의 S5는 static 400 + dynamic 140임을 원문에서 확인했다. 원문이 명시한
+  40×40 m는 evaluation arena이며 training-stage arena 크기는 해당 문장에 직접 결속되어 있지 않아,
+  S5를 21.6/100 m²(50×50 가정)로 발표하는 것은 근거가 없다. 같은 40×40이라고 가정하면
+  33.75/100 m²지만 반드시 `inference`로 표시해야 한다.
+- `results/navrl_v2_bar_ceiling/episodes_seed167.npz`의 1,989개 205-bar episode를 재계산했다.
+  12 m 내 bar-center 개수는 spawn 평균 45.84(SD 10.56, p10–p90 31–59), terminal drone
+  평균 49.47(SD 9.78, p10–p90 35–60), target terminal 평균 49.60이다. 4 m에서는 각각
+  6.07, 6.20, 6.10이다. 이는 저장된 spawn/terminal snapshot 통계이며 trajectory-time 평균은 아니다.
+- `58`은 `205/1600 × π×12²`의 무경계 균일분포 기대값(57.96)으로, 40 m arena 경계와 실제
+  위치분포를 무시한다. 실제 평균으로 발표하지 않는다. NavRL의 `7`도 같은 방식의 nominal
+  expectation(`350/2500 × π×4²=7.04`)이며 측정값이 아니다.
+- 더 근본적으로 이를 "정책이 동시에 처리하는 장애물 수 49 vs 7"이라고 부를 수 없다. NavRL은
+  4 m ray distances와 nearest dynamic obstacle 5개를 입력한다. MOTAR는 12 m 4×72 scan을 한
+  static CNN token으로 압축하고, 8개 proposal을 각 history token 안에 넣는다. 따라서 footprint
+  안의 bar-center 수는 scene context 폭이지 개별 object-token 처리량이 아니다.
+- 발표 권고: density-superiority 주장은 철회하고 density를 task descriptor로만 둔다. NavRL을 숨기지
+  말고 `global density / sensing contract / task` 3행 표로 공개한다. MOTAR의 차별점은 moving-target
+  interception, actor information firewall, perception-policy coupling 및 timing/representation/braking
+  진단으로 둔다. 보조 혼잡도는 이미 측정된 `31.7 candidates in token FOV / K=8`과 contact-time
+  token absence `16.8%`를 사용하되, 후자는 접촉 순간 snapshot임을 명시한다.
+
+## 2026-08-14 — seed 359 최초취득 진단: away timeout의 87.52%가 표적을 한 번도 못 봤다
+
+RESEARCH_PLAN 8.28 사전등록대로 실행했다. 정책·보상·센서 range·아레나·horizon 무변경,
+D1 terminal checkpoint(SHA `197ea269…`), 1 bar, CV-only, `[22.5,28] m`, deterministic, governor off,
+exact 600, seed 359, toward/away 각 2,049 episodes.
+
+### 왜 이걸 쟀나
+
+seed 353 telemetry는 away timeout의 step-weighted visible fraction이 `0.59%`, capture가 `15.02%`로
+`+14.43 pp` 차이였고 사전 20 pp screen에 미달했다. 그런데 visible fraction은 **"한 번 잡았다 놓쳤다"와
+"한 번도 못 잡았다"를 구분하지 못한다.** 두 경우의 처방은 정반대다(tracker memory vs range 계약).
+게다가 hard-distance `[22.5,28] m`는 camera `20 m`·LiDAR `12 m` 밖이라 모든 episode가 target token
+0으로 시작한다. 그 상태를 벗어나기는 하는지를 센 적이 없었다.
+
+### 결과
+
+| heading | outcome | episodes | never-acq | first-visible 평균 | 중앙값 | vis→hid /ep |
+|---|---|---:|---:|---:|---:|---:|
+| toward | capture | 1,932 | **0.00%** | 82.1 | 72 | 2.068 |
+| toward | crash | 115 | 99.13% | 77.0 | 77 | 0.026 |
+| toward | timeout | 2 | 100.00% | — | — | 0.000 |
+| away | capture | 762 | **0.00%** | 318.8 | 312 | 2.142 |
+| away | crash | 189 | 93.12% | 360.8 | 381 | 0.249 |
+| away | timeout | 1,098 | **87.52%** | 565.2 | 569 | 0.173 |
+
+outcome split은 toward `94.29/5.61/0.10%`, away `37.19/9.22/53.59%`로 seed 353을 재현했다.
+
+**사전등록 primary: away timeout − capture never-acquired = `+87.52 pp` (임계 30 pp) → 통과.**
+판정 `initial_acquisition_range_contract_channel_supported`. secondary(first-visible 지연)는
+primary 통과 시 미적용이며, 값 `+246.4 step`을 "미달"로 적지 않도록 summary 표기를 고쳤다.
+
+가장 강한 신호는 임계가 아니라 **두 capture cohort가 모두 정확히 0.00%**라는 것이다. 이 조건에서
+최초 취득은 capture의 필요조건처럼 동작한다. away capture는 평균 318.8 step에야 처음 보고도
+잡아냈고, away timeout 중 취득한 12.48%는 평균 565.2 step으로 600 상한 직전이었다.
+
+### 말할 수 있는 것 / 없는 것
+
+말할 수 있다: 이 조건에서 timeout은 압도적으로 **표적을 한 번도 취득하지 못한 episode**다.
+말할 수 없다: 그것이 timeout의 **원인**이라는 것. outcome은 궤적의 결과이고, 일찍 crash한
+episode는 취득 기회 자체가 적다. 이건 연관 계측이지 인과가 아니며 해결책도 아니다.
+P2 STRICT FAIL·D1 FAIL·P3 BLOCKED 모두 그대로다.
+
+### VOID 2건 — 둘 다 가드가 작동했다
+
+1. 내가 새로 쓴 export 가드가 `fa_outcomes`를 list로 만들어 tuple인 `expected[1:]`과 비교했다.
+   list는 tuple과 절대 같지 않으므로 카운트와 무관하게 항상 발화한다
+   (`[1932,115,2] != (1932,115,2)`). export 앞단이라 결과 JSON·receipt 모두 미기록.
+   → `..._VOID_export_guard_bug/`. 회귀 테스트로 고정.
+2. `verify_all`이 `verify_cell`의 두 번째 반환값(receipt)을 runtime byte map으로 오인했다.
+   receipt는 timestamp·nonce·셀별 해시를 담으므로 셀 간 비교는 항상 실패한다. 이를 고치자
+   가드가 **실제 위반**을 잡았다 — 다른 세션의 untracked 런처가 `aerial_gym/` 아래 있어 두 셀
+   모두 dirty tree에서 실행됐다. 강제 우회하지 않고 런처를 커밋해 clean으로 만든 뒤 재실행.
+   → `..._VOID_dirty_runtime/`.
+
+두 경우 모두 `summary.json`이 생성되지 않았고 **primary screen은 계산된 적이 없다.** 관측된
+수치는 outcome split뿐이며 이는 seed 353을 재현하는 보조 지표라 어떤 screen에도 들어가지 않는다.
+따라서 "판정을 보고 재시도"가 아니라 "산출물 없는 실행 실패의 재실행"으로 보고 같은 시드를 썼다.
+근거를 각 VOID.md에 남겼으니 동의하지 않으면 새 시드로 재사전등록하면 된다.
+
+### 부수적으로
+
+- 기존 계약 테스트가 조용히 깨져 있었다. heading diagnostic의 screen key가
+  `path_length_support` → `radial_heading_channel_support`로 개명됐는데 테스트 리터럴이
+  갱신되지 않아 존재하지 않는 키의 존재를 단언하고 있었다. 함께 고쳐 11/12 → 20/20.
+- Codex 세션이 내가 남긴 detector-coupling 후속(거리 구간별 bias 주입)을 이미 구현·통과시켰다.
+  내 우선순위에서 제거한다. 그 미커밋 변경은 runtime-clean 게이트를 막고 있어 사용자 승인 후
+  저자를 명시해 별도 커밋했다.
+
+### 다음
+
+RESEARCH_PLAN 8.29에 **하나만** 사전등록했다: seed 367, away 단일 heading, 2 arm —
+target camera range `20 m`(대조) vs `28 m`(개입), **오직 이 한 값만** 변경. primary gate는
+timeout rate 20 pp 이상 감소. 목표거리를 줄이는 task-contract 대조는 D0에서 이미 6–11.5 m
+timeout이 `0.06%`로 알려져 정보가치가 낮고 경로길이·시간예산이 함께 바뀌어 교란되므로 택하지
+않았다. 사전 명시한 한계: 정책은 20 m로 학습됐으므로 **timeout이 줄지 않아도 "비관측이 원인이
+아니다"로 읽을 수 없다.** 감소가 관측될 때만 단방향으로 강한 증거다.
+
+### 독립 검증 (별도 세션 재계산)
+
+`verify` PASS(exit 0). raw cell JSON에서 9필드 × 3 outcome × 2 cell = 54개 값과 outcome
+카운트·비율·`actual_episodes`를 summary와 대조해 **불일치 0건**, 모든 비율이 자기 카운트에서
+1e-12 이내로 재도출된다. 불변식 전부 PASS: never+acquired=episodes, outcome 합=2,049,
+acquired=0 cohort가 0이 아닌 `null` 보고, 두 셀 manifest byte-identical(314 runtime files),
+runtime git status clean(commit `c01de65e`), checkpoint SHA `197ea269…` 일치.
+
+검증자가 짚은 해석 플래그 2개를 기록한다:
+
+1. **fused == camera가 6개 cohort 전부에서 정확히 같다.** 두 카운터는 코드상 독립인데
+   (`_fa_ep_first_fused` vs `_fa_ep_first_camera`) 값이 일치했다는 것은, camera `20 m` /
+   LiDAR `12 m` 구성에서 **LiDAR가 camera보다 먼저 최초취득을 준 적이 한 번도 없다**는
+   경험적 결과다. 따라서 사전등록 primary(fused)는 이 조건에서 camera 채널 이상의 정보를 담지
+   않으며, 이 발견은 사실상 **camera range 발견**이다. 8.29에서 camera range만 바꾸기로 한
+   선택이 이 관측과 정합적이다.
+2. toward/timeout은 n=2라 100% never-acquired가 의미 있게 추정된 값이 아니다. 어느 screen에도
+   들어가지 않는다.

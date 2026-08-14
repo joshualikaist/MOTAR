@@ -72,9 +72,15 @@ P1c는 성능 주장이 아니고 P2는 한 training seed/한 evaluation seed/70
    away capture/timeout visibility `15.02/0.59%` 차이는 +14.43pp로 사전 20pp screen 미달이다.
    wall-reflection-any는 둘 다 99%를 넘어 반사 여부만으로 outcome을 설명하지 못하며, speed별 표는
    반사 전에 OOB 종료되는 episode 때문에 생존 선택편향이 있다.
-5. **초기 관측 계약 결함:** hard-distance `[22.5,28]m`는 camera/LiDAR range `20/12m` 밖이다.
-   tracker inactive 시 target token이 0이므로 모든 episode가 위치 prior만 가진 채 시작한다. 다음은
-   정책을 바꾸지 않고 first acquisition/never-acquired를 outcome별로 재는 seed 359 진단이다.
+5. **초기 관측 계약 — seed 359로 계측 완료:** hard-distance `[22.5,28]m`는 camera/LiDAR range
+   `20/12m` 밖이라 모든 episode가 target token 0으로 시작한다. outcome별 never-acquired rate는
+   away timeout `87.52%`, away capture `0.00%`, toward capture `0.00%`로, 사전 30 pp screen을
+   `+87.52 pp`로 통과했다. 두 capture cohort가 모두 정확히 0%라는 것이 임계보다 강한 신호다 —
+   이 조건에서 최초 취득이 capture의 필요조건처럼 동작한다. 다만 outcome은 궤적의 결과이므로
+   연관이지 인과가 아니다. 독립 재계산에서 fused와 camera 최초취득이 6개 cohort 전부 일치해,
+   LiDAR가 camera보다 먼저 취득을 준 적이 없음이 드러났다 — 이 발견은 사실상 camera range
+   발견이다. 다음은 RESEARCH_PLAN 8.29의 seed 367 인과 대조(camera range 20m vs 28m, 그 한
+   값만 변경)다.
 6. **P3는 계속 차단:** heading 결과는 원인 분리용이라 어떤 셀 결과가 좋아도 P2나 D1을 PASS로
    소급 변경하지 않는다. 다음 PPO는 단일 메커니즘 intervention과 새 gate를 먼저 문서화해야 한다.
 7. **hardware gate는 별도:** exact BOM/CAD/CG, thrust stand, inertia/actuator identification, power/thermal/
