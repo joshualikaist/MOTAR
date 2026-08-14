@@ -1429,6 +1429,9 @@ payload["v2_evaluation_contract"] = {
     "target_speed_max_mps": fixed_speed if fixed_speed is not None else 1.5,
     "target_pattern": os.environ["NAVRL_TARGET_PATTERN"],
     "cv_initial_heading": os.environ["NAVRL_EVAL_CV_INITIAL_HEADING"],
+    # RESEARCH_PLAN 8.29: the observability arm identity. Without it the two arms of the
+    # camera-range control produce provenance that cannot tell them apart.
+    "target_camera_max_range_m": float(os.environ.get("NAVRL_DETECTOR_MAX_RANGE", 20.0)),
     "lidar_beams": [4, 72],
     "lidar_range_m": 12.0,
     "obstacle_tokens": 8,
@@ -1502,6 +1505,9 @@ receipt = {
     "goal_dist_max_m": expected_goal_max,
     "target_pattern": os.environ["NAVRL_TARGET_PATTERN"],
     "cv_initial_heading": os.environ["NAVRL_EVAL_CV_INITIAL_HEADING"],
+    # RESEARCH_PLAN 8.29: the observability arm identity. Without it the two arms of the
+    # camera-range control produce provenance that cannot tell them apart.
+    "target_camera_max_range_m": float(os.environ.get("NAVRL_DETECTOR_MAX_RANGE", 20.0)),
     "speed_governor_mode": os.environ["NAVRL_SPEED_GOVERNOR"],
     "speed_governor_target_exclusion": "camera_lidar_association",
     "perception_perturb": os.environ.get("NAVRL_PERCEPTION_PERTURB", "0") == "1",

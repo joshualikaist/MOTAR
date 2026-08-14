@@ -140,7 +140,12 @@ class task_config:
         legacy_actor_305 = _env_bool("NAVRL_LEGACY_VISION", False)
 
         # -- forward target camera (gimbal-level like the yaw-only LiDAR attach)
-        detector_max_range = 20.0   # [m] detection range (a segmentation camera covers this)
+        # [m] detection range. RESEARCH_PLAN 8.29 makes this the ONLY knob that differs
+        # between the two arms of the initial-observability causal control: seed 359 showed
+        # 87.52% of away timeouts never acquire the target at all, and the hard-distance
+        # contract [22.5, 28] m sits outside this range. Default unchanged, so every
+        # existing checkpoint and evaluation keeps its bytes.
+        detector_max_range = _env_float("NAVRL_DETECTOR_MAX_RANGE", 20.0)
         detector_hfov_deg = 87.0    # matches the D455-style forward depth camera
         detector_vfov_deg = 58.0
         tracker_memory_s = 5.0      # time_since_seen saturates at this many seconds
