@@ -225,12 +225,28 @@ class TestConfigDefaults(unittest.TestCase):
         ):
             self.assertIn(f'_env_float("{name}", {default})', cfg)
         self.assertIn('os.environ.get("NAVRL_DETPROFILE_CHECKPOINT", "")', cfg)
+        self.assertIn('"NAVRL_DETNOISE_RANGE_BIAS_PROFILE", ""', cfg)
 
     def test_activation_requires_a_nonzero_magnitude(self):
         gate = SOURCE[SOURCE.index("self._detector_noise_active = ("):]
         gate = gate[:gate.index(")") + 1]
         for knob in ("bearing_std_rad", "range_std_m", "dropout_p01"):
             self.assertIn(knob, gate)
+
+
+class TestRangeBiasProfile(unittest.TestCase):
+    """Source-level guards for the gate-passing bin-wise systematic-bias model."""
+
+    def test_profile_is_selected_from_clean_surface_range(self):
+        body = SOURCE[SOURCE.index("    def _detector_noise_range(self, surface_range):"):
+                      SOURCE.index("    def _detector_noise_visibility(self, visible):")]
+        self.assertIn("torch.bucketize(surface_range, self._detector_noise_bias_edges)", body)
+        self.assertIn("bias = self._detector_noise_bias_values[bias_idx]", body)
+
+    def test_bias_values_follow_dose_scale(self):
+        init = SOURCE[SOURCE.index("bias_edges, bias_values = [], []"):
+                      SOURCE.index("self.detector_noise_seed =")]
+        self.assertIn("float(value) * _dn_scale", init)
 
 
 if __name__ == "__main__":

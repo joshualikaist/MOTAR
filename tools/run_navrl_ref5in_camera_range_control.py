@@ -151,14 +151,21 @@ def verify_cell(arm: str, camera_range: float) -> tuple[dict, dict]:
         "target_camera_max_range_m": camera_range,
     }.items():
         require(receipt.get(key) == value, f"{arm} receipt mismatch: {key}")
-    condition = result["condition"]
+    # The evaluator records the manipulated value in the RECEIPT, not in the result condition
+    # block. The receipt is hash-bound to the result above, so this is equally strong provenance --
+    # but it only proves what was REQUESTED of the process. The behavioural confirmation that the
+    # perception module actually used the longer range lives in verify_all().
     require(
-        float(condition["target_camera_max_range_m"]) == camera_range,
-        f"{arm}: result condition camera range is not the arm's value",
+        float(receipt["target_camera_max_range_m"]) == camera_range,
+        f"{arm}: receipt camera range is not the arm's value",
     )
+    # The evaluator drains whole 128-env batches, so a cell finishes at or just past the request.
+    # The audited base verifier uses the same `requested == N and actual >= N` pair; asserting
+    # exact equality here was my error, not a contract violation -- one arm landed on 2,050.
     require(
-        int(result["actual_episodes"]) == RUN.EPISODES,
-        f"{arm}: episode count does not match the requested contract",
+        int(result.get("requested_episodes", -1)) == RUN.EPISODES
+        and int(result["actual_episodes"]) >= RUN.EPISODES,
+        f"{arm}: episode contract mismatch",
     )
     return result, receipt
 
@@ -187,12 +194,36 @@ def verify_all() -> dict[str, dict]:
             a["condition"].get(key) == b["condition"].get(key),
             f"arms differ in {key}, which must be held fixed",
         )
+
+    # Manipulation check, and the only one that is behavioural rather than bookkeeping. A receipt
+    # proves the env var was requested; it cannot prove the perception module honoured it. If the
+    # camera really reaches further, strictly fewer episodes should end without ever acquiring the
+    # target. Deliberately a DIRECTION test with no magnitude threshold: a tuned number here could
+    # be accused of being chosen to fit, whereas "strictly fewer" cannot.
+    def pooled_never(result):
+        rows = result["target_motion"]["first_acquisition"].values()
+        never = sum(int(r["never_acquired"]) for r in rows)
+        episodes = sum(int(r["episodes"]) for r in rows)
+        return never / episodes if episodes else None
+
+    control_never, treated_never = pooled_never(a), pooled_never(b)
     require(
-        a["condition"]["target_camera_max_range_m"]
-        != b["condition"]["target_camera_max_range_m"],
-        "arms do not differ in the manipulated variable",
+        control_never is not None and treated_never is not None,
+        "first-acquisition telemetry missing; cannot confirm the manipulation took effect",
+    )
+    require(
+        treated_never < control_never,
+        "the 28 m arm did not acquire the target more often than the 20 m arm -- the camera "
+        f"range change did not take effect ({treated_never:.4f} !< {control_never:.4f})",
     )
     return results
+
+
+def _pooled_never(result: dict):
+    rows = result["target_motion"]["first_acquisition"].values()
+    never = sum(int(r["never_acquired"]) for r in rows)
+    episodes = sum(int(r["episodes"]) for r in rows)
+    return never / episodes if episodes else None
 
 
 def first_acquisition_payload(row: dict) -> dict:
@@ -276,6 +307,13 @@ def build_summary(results: dict[str, dict], prior: dict) -> dict:
             "episode_len_steps": 600,
             "manipulated_variable": "vision.detector_max_range",
             "arms_m": {arm: rng for arm, rng in ARMS},
+        },
+        "manipulation_check": {
+            "metric": "pooled never-acquired rate (all outcomes)",
+            "control": _pooled_never(results["camera_20m"]),
+            "treated": _pooled_never(results["camera_28m"]),
+            "note": "direction test only; confirms the longer camera range actually changed what "
+                    "the perception module could see, which a receipt alone cannot show",
         },
         "seed359_away_timeout_never_acquired_rate": prior["screen"][
             "away_timeout_never_acquired_rate"

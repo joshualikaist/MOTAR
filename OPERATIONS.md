@@ -1,8 +1,8 @@
 # MOTAR 운영 가이드
 
 이 문서는 “어떤 명령을 복사해야 하는가”와 “결과를 어떻게 잃지 않는가”만 다룹니다. 연구 가설과
-중단 조건은 [`RESEARCH_PLAN.md`](RESEARCH_PLAN.md), 최신 상태는 [`README.md`](README.md), 날짜별
-기록은 [`WORKLOG.md`](WORKLOG.md)를 보세요.
+검증 gate와 다음 실험은 [`VERIFICATION.md`](VERIFICATION.md), charter는 [`RESEARCH_PLAN.md`](RESEARCH_PLAN.md),
+최신 요약은 [`README.md`](README.md), 날짜별 기록은 [`WORKLOG.md`](WORKLOG.md)를 보세요.
 
 > 기준일: 2026-08-13
 >

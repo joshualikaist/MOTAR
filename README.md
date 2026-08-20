@@ -14,9 +14,9 @@ LiDAR로 표적·장애물을 보고, 시뮬레이터 ego-state로 자신의 자
 실패가 capture/crash/timeout 중 무엇이었는지를 함께 보존합니다. 처음 보는 분은 아래 “현재 결론”과
 “5분 안에 확인하기”만 읽고, 실험을 직접 돌릴 때 `OPERATIONS.md`로 넘어가면 됩니다.
 
-> 현재 기준일: **2026-08-13**
+> 현재 기준일: **2026-08-20**
 >
-> 자세한 변경 이력은 [WORKLOG.md](WORKLOG.md), 다음 실험의 순서와 중단 조건은 [RESEARCH_PLAN.md](RESEARCH_PLAN.md), 설치·운영 방법은 [OPERATIONS.md](OPERATIONS.md)에 있습니다.
+> **문서 6개:** [VERIFICATION.md](VERIFICATION.md)(검증 gate·다음 실험) · [RESEARCH_PLAN.md](RESEARCH_PLAN.md)(charter) · [WORKLOG.md](WORKLOG.md)(기록) · [OPERATIONS.md](OPERATIONS.md)(명령) · [CRASH_TUNING_LOG.md](CRASH_TUNING_LOG.md)(진단) · [docs/status/](docs/status/)(대시보드)
 
 ## 현재 결론
 
@@ -28,45 +28,13 @@ LiDAR로 표적·장애물을 보고, 시뮬레이터 ego-state로 자신의 자
 | `navrl_ref5in_quad` 후보 기체 | CPU 저장소 계약 **26/26**, canonical same-controller simulator gate **21/21**, P1c fresh 900-epoch engineering gate를 통과했습니다. 장거리 D1은 q3/CV capture를 D0 대비 +15.19pp 개선했습니다. | held-out P2는 timeout 상한을 넘어 **strict FAIL**이고, D1도 q3/CV timeout 15.98%로 사전등록한 12%를 넘어 **FAIL**입니다. P3 장기학습은 차단했습니다. 실기 비행, CAD, endurance, 열·전원 여유도 미검증입니다. |
 | 과거 navigation 결과 | legacy evaluator 안에서는 비교 가능한 동결 기록으로 보존합니다. | old 601-action 결과를 corrected exact-600 결과와 합치거나, legacy 기체 결과를 ref5in 성능으로 부를 수 없습니다. |
 
-현재 판단의 근거는 [독립 검수 보고서](docs/codex_review_2026-08-12.md), [플랫폼 P0](results/navrl_ref_platform_verification/summary.md), [P1a](results/navrl_ref5in_smoke_seed197/summary.md), [P1b](results/navrl_ref5in_smoke_seed197/p1b/summary.md), [P1c](results/navrl_ref5in_smoke_seed197/p1c/summary.md), [P2](results/navrl_ref5in_p2_seed313/summary.md)에 있습니다. 위 표의 “통과”는 각 문서에 적힌 좁은 gate만 뜻합니다.
-
-P2 실패는 큰 붕괴가 아니라 **경계 실패**입니다. timeout의 Wilson 95% CI는 4.65–6.64%라 5%를
-포함하고, capture는 거리 최장 사분위에서 53.17%까지 떨어졌지만 표적 속도 사분위에서는
-66.51–70.65%로 비교적 평평했습니다. 따라서 지금 필요한 것은 밀도 장기학습이 아니라
-“긴 초기 거리에서 crash와 timeout이 어떻게 갈리는지”를 outcome별로 다시 계측하는 일입니다.
-
-그 후속 계측도 완료했습니다. 별도 seed 317의 8,194 episodes에서 nearest→farthest distance bin은
-capture `78.05→55.94%`, crash `21.89→29.09%`, timeout `0.06→14.97%`였습니다. 특히 farthest
-CV target은 timeout `22.16%`, waypoint는 `7.96%`였습니다. 반면 실제 `[0.3,1.5] m/s`를 네 구간으로
-나눈 timeout은 속도가 높을수록 `8.49→3.10%`로 감소했습니다. 따라서 “빠른 표적이 주원인”이나
-“episode 시간만 늘리면 해결”이라고 볼 수 없고, **장거리의 지속 방향(CV) 추적과 충돌이 동시에
-남은 병목**입니다. 이 진단은 P2 FAIL을 뒤집지 않으며 P3는 계속 차단됩니다.
-
-그 병목에만 노출을 늘린 D1은 P1c에서 1,000 epoch를 warm-start했고, 별도 seed 331의 8,194 episodes에서
-global capture/crash/timeout `76.82/18.62/4.55%`, 최장 거리 CV에서 `64.03/19.98/15.98%`를
-기록했습니다. D0보다 최장 거리 CV capture는 `+15.19pp`, crash는 `-9.02pp`, timeout은
-`-6.17pp` 개선됐지만 timeout 절대 기준 `≤12%`는 실패했습니다. 효과가 없다고 볼 수는 없지만,
-adaptation과 장거리 학습분포 변경이 함께 들어간 단일 training seed라 둘의 효과를 분리할 수도 없습니다.
-추가 epoch 대신 동결 정책으로 CV 초기 진행방향을 분리합니다.
-
-그 동결 진단도 완료했습니다. 최장 거리 CV에서 toward/tangent-left/tangent-right/away의
-capture/crash/timeout은 각각 `78.20/18.59/3.22`, `63.74/20.20/16.06`,
-`62.49/19.27/18.24`, `53.51/19.95/26.54%`였습니다. away−toward timeout은 +23.32pp지만
-crash는 +1.37pp로 불확실했고, tangent 좌우 차이는 최대 2.19pp라 action chirality가 outcome을
-지배한다는 설명은 지지되지 않았습니다. 다만 heading은 경로길이뿐 아니라 target visibility와
-벽 반사 시점도 함께 바꾸므로, 이 단계의 결론은 **radial-heading 환경 채널**까지였습니다. 후속 1-bar
-near-open 대조에서도 toward/away timeout이 `0.15/54.47%`로 `+54.32pp` 벌어졌습니다. 따라서 dense
-obstacle occlusion은 이 실패에 필요하지 않습니다. 별도 seed 353 outcome telemetry도 이를
-재현했습니다(toward/away timeout `0.34/54.61%`). away capture와 timeout의 step-weighted visibility는
-`15.02/0.59%`로 차이가 `+14.43pp`였지만, 사전등록한 20pp FOV 우선 screen에는 미달했습니다.
-벽 반사를 한 episode의 성공률이 높다는 표는 반사 전 OOB로 끝난 짧은 episode가 무반사 집단에 몰리는
-생존 선택편향 때문에 인과효과로 읽지 않습니다.
-
-코드 계약상 더 직접적인 문제가 확인됐습니다. 이 hard-distance 평가는 표적을 `22.5–28m`에 두지만
-actor의 target camera 최대거리는 `20m`, LiDAR는 `12m`입니다. 따라서 **모든 episode가 표적을 전혀
-관측하지 못한 상태로 시작**하며, 초기 행동은 고정된 spawn 방향 prior에 의존합니다. toward/away는
-표적 취득까지의 시간과 벽 반사 시점을 함께 바꾸므로, 현재는 최초 취득 시점·never-acquired 비율을
-outcome별로 계측하는 마지막 동결 진단 단계입니다.
+gate 표·진단 요약·다음 실험(camera range A/B)은 **[VERIFICATION.md](VERIFICATION.md)** 에 통합했습니다.
+canonical 결과 링크: [P0](results/navrl_ref_platform_verification/summary.md) ·
+[P1c](results/navrl_ref5in_smoke_seed197/p1c/summary.md) ·
+[P2](results/navrl_ref5in_p2_seed313/summary.md) ·
+[D0](results/navrl_ref5in_outcome_diagnostic_v2_seed317/summary.md) ·
+[D1](results/navrl_ref5in_d1_eval_seed331/summary.md) ·
+[first-acquisition seed359](results/navrl_ref5in_cv_first_acquisition_seed359/summary.md).
 
 ## 시스템을 짧게 보면
 

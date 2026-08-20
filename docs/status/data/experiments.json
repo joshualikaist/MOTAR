@@ -1,7 +1,7 @@
 {
  "schema": "motar.experiments/1",
  "source": "WORKLOG.md",
- "curated_at": "2026-08-14",
+ "curated_at": "2026-08-20",
  "_note": "Hand-curated from WORKLOG.md, results/*/summary.{md,json} and docs/codex_review_2026-08-12.md. `verdict` judges the HYPOTHESIS (PASS/FAIL/INCONCLUSIVE); `validity` judges the EVIDENCE (canonical/superseded/withdrawn/exploratory). They are orthogonal: a result can have passed its gate and still be void. Validated by tools/lint_experiments.py.",
  "themes": [
   {
@@ -3904,6 +3904,78 @@
    ],
    "worklog_date": "2026-08-14",
    "_note": "실행 중 2회 VOID(내 export 가드의 list/tuple 비교 버그, 그리고 다른 세션의 untracked 런처로 인한 dirty runtime). 둘 다 summary 미생성·primary screen 미계산이라 같은 시드로 재실행했고 근거를 각 VOID.md에 남겼다."
+  },
+  {
+   "id": "2026-08-20-ref5in-camera-range-control",
+   "title_ko": "★ camera range 20→28 m 인과 대조 — timeout 55.8%→18.2%",
+   "question": "장거리 CV timeout의 원인이 정말 초기 표적 미관측인가? (단일 변수 개입)",
+   "theme": "perception",
+   "knob": "NAVRL_DETECTOR_MAX_RANGE",
+   "levels": [
+    {
+     "label": "20 m (대조)",
+     "value": 20.0,
+     "is_baseline": true
+    },
+    {
+     "label": "28 m (개입)",
+     "value": 28.0
+    }
+   ],
+   "metric": "timeout",
+   "effect": {
+    "value_pp": -37.65,
+    "ci95_pp": null,
+    "ci_method": "none",
+    "direction": "lower_is_better"
+   },
+   "arms": [
+    {
+     "label": "camera_20m",
+     "capture": 0.3639,
+     "crash": 0.078,
+     "timeout": 0.558,
+     "n_episodes": 2050,
+     "extra": {
+      "pooled_never_acquired": "57.22%"
+     }
+    },
+    {
+     "label": "camera_28m",
+     "capture": 0.7496,
+     "crash": 0.0688,
+     "timeout": 0.1816,
+     "n_episodes": 2049,
+     "extra": {
+      "pooled_never_acquired": "20.30%"
+     }
+    }
+   ],
+   "verdict": "PASS",
+   "validity": "canonical",
+   "verdict_note": "사전등록 primary(timeout 감소 ≥20 pp)를 −37.65 pp로 통과했고, guard도 깨끗하다 — crash가 오르기는커녕 0.92 pp 내려 실패모드 이동이 아니다. 조작이 인지 계층에 실제로 먹혔는지는 receipt가 아니라 행동으로 확인했다: pooled never-acquired 57.22%→20.30%. 임계 없는 방향 검정이라 사후 조정 여지가 없다.",
+   "confounded_by": "진단이지 해결책 채택이 아니다. 28 m 검출은 정책의 학습 분포(20 m) 밖이라 정책이 그것을 잘 활용한다는 보장이 없고, capture 36.4→75.0%는 부수 관측이지 gate가 아니다. 20 m는 시뮬 파라미터이지 특정 센서 사양이 아니므로 실기 함의로 읽을 수 없다.",
+   "seeds": [
+    367
+   ],
+   "episodes_per_cell": 2049,
+   "env": {
+    "bars": 1,
+    "machine": "rtx3070"
+   },
+   "policy": {
+    "checkpoint": "ref5in D1 terminal ep1900",
+    "sha256_prefix": "197ea26999d6"
+   },
+   "preregistered": true,
+   "gate": "VERIFICATION.md §8.29 — primary: timeout 감소 ≥20 pp; guard: crash 증가 ≥10 pp면 실패모드 이동",
+   "launcher": "tools/run_navrl_ref5in_camera_range_control.py",
+   "results_paths": [
+    "results/navrl_ref5in_camera_range_control_seed367/"
+   ],
+   "worklog_date": "2026-08-20",
+   "supersedes": [],
+   "_note": "seed 359의 연관(never-acquired 87.52% vs 0.00%)을 단일 변수 개입으로 재현했다. P2/D1/P3 상태는 불변."
   }
  ]
 }

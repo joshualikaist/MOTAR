@@ -9101,6 +9101,31 @@ desync되므로 `u`를 움직인다), 그리고 관측 전용 페어 프로파�
   진단으로 둔다. 보조 혼잡도는 이미 측정된 `31.7 candidates in token FOV / K=8`과 contact-time
   token absence `16.8%`를 사용하되, 후자는 접촉 순간 snapshot임을 명시한다.
 
+## 2026-08-14 — 현재 drone safety 거리 용어 확인
+
+- inference `riskcap`의 sensor-surface hard margin은 **0.45 m**이고 command corridor half-width도
+  **0.45 m**이다. 3.0 m 이내에서는 기본 2.0 m/s cap, 3.0→5.0 m에서 free cap으로 완화된다.
+- 0.45 m는 인증된 minimum separation이 아니다. riskcap은 근거리에서 강제 정지하지 않으며,
+  `usable clearance = LiDAR surface range − 0.45 m`로 stopping margin을 진단하는 최소개입 필터다.
+- 실제 upright collision proxy는 0.28×0.28 m이므로 중심 기준 face half-width는 0.14 m,
+  half-diagonal은 약 0.198 m이다. static-safety reward는 고정 임계 거리가 아니라 12 m까지의
+  LiDAR log-distance 연속 shaping이고, target/bar placement clearance 1.0 m는 별도 조건이다.
+
+## 2026-08-14 — RNN 대비 Transformer 발표 주장 감사
+
+- MOTAR 계보에는 동일 입력·학습예산·seed로 수행한 LSTM/GRU 대 Transformer held-out ablation이
+  없다. LSTM은 2026-07-17 당시 10 epoch 저장/배선 sanity만 확인했으므로 성능 비교 자료가 아니다.
+- 따라서 MOTAR 결과로 "Transformer가 RNN보다 수치적으로 우수하다"고 말할 수 없다. 현재 slide 7의
+  `longer memory than an RNN? no, 2.0 s fixed window`는 올바른 제한 문구다.
+- NavRL++의 직접 ablation도 RNN 비교가 아니라 single-step convolutional NavRL-IT 대 temporal
+  Transformer NavRL-IT-T이다. combined success는 92.85→90.54%로 2.31 pp 낮아졌지만 control
+  effort는 0.093→0.043 m/s²로 53.8% 감소했다. full NavRL++ 94.08%는 Transformer와
+  perturbation-aware fine-tuning의 결합 결과라 backbone 단독 효과로 귀속하지 않는다.
+- 발표 답변은 우월성 대신 선택 근거로 제한한다: 5-step 고정 history에서 static/obstacle/robot/target
+  modality-time token에 직접 접근하고 NavRL++ 계보와 맞추기 위해 채택했다. RNN은 더 긴 history를
+  compact hidden state에 보존할 수 있고 유효한 대안이며, parameter/compute/seed-matched recurrent
+  ablation이 없다는 점은 명시적 limitation이다.
+
 ## 2026-08-14 — seed 359 최초취득 진단: away timeout의 87.52%가 표적을 한 번도 못 봤다
 
 RESEARCH_PLAN 8.28 사전등록대로 실행했다. 정책·보상·센서 range·아레나·horizon 무변경,
@@ -9196,3 +9221,76 @@ runtime git status clean(commit `c01de65e`), checkpoint SHA `197ea269…` 일치
    선택이 이 관측과 정합적이다.
 2. toward/timeout은 n=2라 100% never-acquired가 의미 있게 추정된 값이 아니다. 어느 screen에도
    들어가지 않는다.
+
+## 2026-08-20 — 문서 통합 (검증 단계용 6개 + archive)
+
+검증만 남은 단계에 맞춰 planning/review/PPT/handoff/prereg 일자별 md 17개와 RESEARCH_PLAN §8.1–8.22를
+`docs/archive/`로 이동했다. 실행 authority는 신규 [`VERIFICATION.md`](VERIFICATION.md)로 통합.
+
+| 유지 (루트) | 역할 |
+|---|---|
+| `README.md` | 입문 + 현재 결론 표 |
+| `VERIFICATION.md` | ref5in gate·진단 요약·다음 실험 |
+| `RESEARCH_PLAN.md` | charter (§1–7 + §8 pointer), 1231→353 lines |
+| `WORKLOG.md` | 날짜별 기록 |
+| `OPERATIONS.md` | 설치·launcher 명령 |
+| `CRASH_TUNING_LOG.md` | crash-cause 진단 |
+
+`results/*/summary.md`는 실험별 canonical 수치로 그대로 둔다. seed 367 camera-range A/B 원자료는
+`results/navrl_ref5in_camera_range_control_seed367/`에 있으나 formal summary는 아직 없음 — VERIFICATION.md에
+스냅샷만 기록.
+
+## 2026-08-20 — seed 367 camera-range 인과 대조: 초기 미관측이 timeout의 지배적 원인
+
+RESEARCH_PLAN 8.29 / VERIFICATION.md 사전등록대로 실행·동결했다. 정책·보상·아레나·horizon·heading
+불변, D1 terminal checkpoint(SHA `197ea269…`), seed 367, away heading, 1 bar, CV-only,
+`[22.5,28] m`, deterministic, governor off, exact 600, 2,049 요청/arm. **조작 변수는 오직
+`vision.detector_max_range` 하나**다.
+
+| arm | camera range | capture | crash | timeout | pooled never-acq |
+|---|---:|---:|---:|---:|---:|
+| A | 20 m | 36.39% | 7.80% | **55.80%** | 57.22% |
+| B | 28 m | 74.96% | 6.88% | **18.16%** | 20.30% |
+| Δ | — | +38.57 pp | −0.92 pp | **−37.65 pp** | −36.92 pp |
+
+**primary gate 통과** (timeout 감소 ≥ 20 pp). **guard 깨끗** — crash가 오르기는커녕 0.92 pp
+내렸으므로 "timeout을 crash로 바꾼 것"이 아니다. 판정
+`initial_unobservability_dominant_cause_supported`.
+
+### 조작이 실제로 먹혔는지를 receipt가 아니라 행동으로 확인했다
+
+receipt는 `NAVRL_DETECTOR_MAX_RANGE`를 요청했다는 것만 증명하지, 인지 모듈이 그 값을 썼다는 것을
+증명하지 않는다. seed 359에서 붙여둔 first-acquisition telemetry가 그 증거를 갖고 있어서
+manipulation check로 넣었다: pooled never-acquired가 `57.22% → 20.30%`로 떨어졌다. 임계를 두지
+않고 **방향 검정**(treated < control)으로 설계해 사후 조정 여지를 없앴다.
+
+### 말할 수 있는 것 / 없는 것
+
+말할 수 있다: 이 조건에서 **초기 표적 미관측이 timeout의 지배적 원인**이다. seed 359의 연관
+(never-acquired 87.52% vs 0.00%)이 단일 변수 개입으로 재현됐다.
+
+말할 수 없다: (1) camera range 확장이 **해결책**이라는 것 — 진단이지 채택이 아니며, 28 m 검출은
+정책의 학습 분포 밖이라 잘 활용한다는 보장이 없다. capture 36.4→75.0%는 부수 관측이지 gate가
+아니다. (2) 실기 함의 — 20 m는 시뮬 파라미터이지 센서 사양이 아니다. (3) **P2 STRICT FAIL ·
+D1 FAIL · P3 BLOCKED는 전부 그대로다.**
+
+### 요약 생성이 두 번 막혔다 (둘 다 내 verifier 오류, 데이터 무관)
+
+두 셀 평가는 08-14에 이미 끝나 있었고 요약만 못 만들고 있었다.
+
+1. `KeyError: target_camera_max_range_m` — 평가기가 그 값을 result `condition`이 아니라
+   **receipt**에 기록하는데 내가 condition에서 찾았다. receipt는 result와 해시로 묶여 있으므로
+   provenance 강도는 동일하다. receipt에서 읽도록 고치고, 대신 위의 행동 확인을 추가했다.
+2. `episode count does not match` — 내가 `== 2049`로 단정했는데 평가기는 128-env 배치를 비우므로
+   요청치를 살짝 넘긴다(A arm 2,050). 감사받은 base verifier와 동일하게
+   `requested == N and actual >= N`으로 맞췄다. 계약 위반이 아니라 내 단정 오류다.
+
+재실행 없이 `finalize`만으로 해결됐고 시드는 소모되지 않았다.
+
+### 다음은 진단이 아니라 설계 결정이다
+
+병목이 특정됐으므로 남은 선택은 **(a) 과제를 센서에 맞추기**(goal 거리를 관측 범위 안으로) vs
+**(b) 센서를 과제에 맞추기**(장거리 검출 전제로 재학습)다. 둘 다 재학습이 필요하므로 P3 차단
+해제 조건과 함께 **별도 사전등록**한다. 이번 결과만으로 재학습을 시작하지 않는다.
+
+상세: `results/navrl_ref5in_camera_range_control_seed367/summary.{md,json}`, `VERIFICATION.md`.

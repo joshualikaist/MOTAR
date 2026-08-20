@@ -23,9 +23,9 @@ substantive한 요청(학습·평가·분석·감사·구현)을 받으면:
   `cluster_sector` 셀렉터로 전방 240°에서 선택, LiDAR 72×4 @12 m, 17-token Transformer.
   폐기된 계보: 156(GT LiDAR) → 305(해석적 semantic) → 1265(vision CNN). 체크포인트 shape 불일치의
   원인이 되므로 섞지 말 것.
-- **canonical 현재 상태**: `WORKLOG.md`(맨 아래) + `docs/status/` 라이브 대시보드(status.json 구동).
-  `RESEARCH_PLAN.md`는 charter(가설·방법·P0–P7 단일 번호). 실무는 `OPERATIONS.md`,
-  진단 도구·측정된 음성 결과는 `CRASH_TUNING_LOG.md`. 문서는 2026-07-30에 14→6개로 통합됨.
+- **canonical 현재 상태**: `WORKLOG.md`(맨 아래) + `VERIFICATION.md`(ref5in gate·다음 실험) +
+  `docs/status/` 라이브 대시보드. `RESEARCH_PLAN.md`는 charter(가설·방법). 실무는 `OPERATIONS.md`,
+  진단은 `CRASH_TUNING_LOG.md`. 역사 문서는 `docs/archive/`.
 - **현재 상태(2026-08-03)**: recovery curriculum continuation
   `ppo_260802_0020_navrl_v2-recover-curriculum-continue-s1`은 사용자 결정으로 ep24010에서 안전 중단했다.
   canonical artifact는 ep24000 checkpoint(SHA-256 `82f7978b42d…`)이며 학습 프로세스는 없다.
