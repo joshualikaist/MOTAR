@@ -35,7 +35,7 @@ ENVELOPE = ROOT / "results/navrl_ref_platform_verification/flight_envelope.json"
 G = 9.81
 
 # The two robots the NavRL task can be built with, and the perception payload they would have to
-# carry for real. See docs/sim_vs_hardware_gap_2026-08.md.
+# carry for real. See docs/archive/sim_vs_hardware_gap_2026-08.md.
 ROBOTS = [
     {
         "key": "navrl_quad",
