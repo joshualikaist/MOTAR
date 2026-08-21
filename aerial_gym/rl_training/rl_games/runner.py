@@ -17,6 +17,22 @@ from aerial_gym.rl_training.rl_games.quiet_rl_io import (
     patch_rlgames_quiet_train_init,
     quiet_startup_enabled,
 )
+
+# Fail closed BEFORE isaacgym/torch load and before any GPU work: prove that the aerial_gym
+# package actually executing is the one the caller intended. An editable install's meta_path
+# finder hard-codes one worktree's absolute path, and play_navrl.sh cds into
+# aerial_gym/rl_training/rl_games where no aerial_gym/ package directory exists -- so a run
+# started from a different worktree silently executes the primary tree while its source
+# manifest hashes the worktree's bytes. Inert unless NAVRL_REQUIRE_SOURCE_ROOT is set.
+from aerial_gym.rl_training.rl_games.navrl_import_origin import assert_runtime_origin
+
+_origin_info = assert_runtime_origin()
+if _origin_info.get("enforced"):
+    print(
+        "[origin] aerial_gym %s sha256=%s (enforced)"
+        % (_origin_info.get("origin"), _origin_info.get("origin_sha256"))
+    )
+
 _real_print = __import__("builtins").print
 
 if quiet_startup_enabled():

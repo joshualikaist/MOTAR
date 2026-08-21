@@ -27,6 +27,10 @@ results/**/source_snapshot/
 results/**/source_snapshot
 results/**/python_environment.txt
 results/**/detector_snapshot.pth
+# N1 reflection-audit frame dumps are 30-60 MB.  Covered by the top-level `*.npz` rule; named
+# explicitly because prereg 2026-08-21 section 10 requires the npz to stay out of Git and be
+# pinned by SHA-256 in the summary instead.
+results/**/frames.npz
 
 # Closed training launchers create immutable local source receipts.  Checkpoints bind their path
 # and SHA; the bundles travel with experiment artifacts, not Git history.

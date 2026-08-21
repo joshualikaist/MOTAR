@@ -9373,3 +9373,174 @@ one-lever 후보 결과·Phase-1 부록은 다른 문서에 사본이 없다. ri
 재학습 전에 OOB 계측을 seed 367 조건으로 한 번 돌린다(2셀 ~10분). 후보는 A(camera range
 20→28 m, seed 367에서 인과 확인) / B(속도·틸트 상향, 근거 없음) / C(목표거리 축소)이며 한 run에서
 두 축을 바꾸지 않는다(`VERIFICATION.md:115`).
+
+## 2026-08-21 — N1 사전등록 + import-origin 버그 실증·fail-closed 가드
+
+`docs/diagnostic_synthesis_2026-08-21.md`의 N1(real-frame reflection audit) 착수. 별도 worktree
+`.codex_worktrees/navrl_reflection_audit` / branch `codex/reflection-audit`를 9f6929d에서 분기했다
+(dirty primary와 physical-target WIP에 merge하지 않는다는 조건).
+
+### N1은 중복이 아니지만 절반은 이미 존재한다 (감사 결과)
+
+| 이미 있는 것 | 위치 |
+|---|---|
+| 898-D reflection 변환(유일본, bin permutation은 물리 판정 완료) | `ppo_update_safety.py:357-417` |
+| involution·schema 단위테스트 | `test_navrl_action_models.py:205-275` |
+| real-frame side-forward(원본+거울 2회, `fork_rng`로 env RNG 격리) | `navrl_players.py:135-192` |
+| 실제 프레임 chirality 수치 | 2026-08-02, 548,736 obs — **legacy `navrl_quad` ep24000 계보** |
+
+따라서 N1이 새로 답하는 것은 (a) frozen ref5in 계보에서 실제 프레임 재현 여부, (b) 맥락 의존성,
+(c) 분포 꼬리(p90/p95/p99)다. 맥락 라벨은 새로 정의하지 않고 `navrl_task.py:3281
+_record_action_diagnostics`가 관측 소비 시점에 이미 계산하는 `front_blocked`/`front_clear`,
+`_visible_now`, `valid_y_now`를 그대로 기록한다.
+
+**재사용 시 반드시 고쳐야 하는 함정**: `mirror_navrl_structured_observation`의 env-var 기본값이
+`HBEAMS=36/VBEAMS=4/MAX_OBSTACLES=5`라 574-D를 기대하고 **898-D 입력에서 예외를 던진다**
+(`ppo_update_safety.py:362-364`). 값을 checkpoint metadata에서 읽도록 사전등록에 고정했다.
+
+### import-origin 버그 — 실측으로 확인, 저장소 전체에 가드 0곳이었다
+
+`find_spec("aerial_gym").origin` 실측:
+
+| cwd | PYTHONPATH | 해석 결과 |
+|---|---|---|
+| `<worktree>` | 없음 | `<worktree>/aerial_gym/__init__.py` |
+| `<worktree>` | `<worktree>` | `<worktree>/aerial_gym/__init__.py` |
+| **`<worktree>/aerial_gym/rl_training/rl_games`** | **없음** | **`src/aerial_gym_simulator/aerial_gym/__init__.py`** |
+| 〃 | `<worktree>` | `<worktree>/aerial_gym/__init__.py` |
+
+원인 3중첩: (1) `site-packages/__editable__.aerial_gym-2.0.0.pth`의 PEP 660 finder가 MAPPING을
+PRIMARY 절대경로로 하드코딩하고 `sys.meta_path`에 **append**(=PathFinder 뒤)한다, (2)
+`play_navrl.sh:19`가 `aerial_gym/rl_training/rl_games`로 `cd`하는데 거기엔 `aerial_gym/` 패키지
+디렉터리가 없다, (3) `attest_navrl_ref5in_p2.py:245`가 child env에서 `PYTHONPATH`를 삭제한다.
+
+→ **worktree에서 시작한 평가는 PRIMARY 소스를 실행하면서 worktree 바이트를 해싱해 영수증에
+적는다.** 영수증은 내부적으로 일관되지만 실행되지 않은 코드를 기술한다. 이는 codex의
+geofence/mode-probe/joint-telemetry/topology 4개 branch에 모두 해당하는 구조적 조건이다.
+실행된 파일 바이트가 두 트리에서 동일했다면 수치는 유효하므로 **어떤 기존 판정도 소급
+변경하지 않는다**. 동일성 확인은 별도 작업으로 남긴다.
+
+### 추가한 것
+
+- `aerial_gym/rl_training/rl_games/navrl_import_origin.py` — stdlib 전용, torch/isaacgym 불필요.
+  `NAVRL_REQUIRE_SOURCE_ROOT` 미설정 시 완전 무해(기존 run 영향 0), 설정 시 패키지 디렉터리가
+  `<root>/aerial_gym`과 **정확히 일치**하지 않으면 RuntimeError. 이미 import된 경우
+  `sys.modules["aerial_gym"].__file__`을 본다 — `find_spec`은 "지금 다시 찾으면 어디서 나올지"를
+  답하므로 "무엇이 실행 중인지"와 다를 수 있고, 그 차이가 바로 이 가드가 잡으려는 실패다.
+- `runner.py:20-31` 배선. `isaacgym`·`torch` import **이전**, `aerial_gym` 로드 **직후**라
+  Isaac Gym의 import 순서 요구를 건드리지 않으면서 GPU 작업 전에 fail-closed한다.
+- `tests/test_navrl_import_origin.py` — 10 tests, 전부 통과. 무해성, 발화, 정확 동등(부모 디렉터리
+  거부), py3.8 호환(`is_relative_to` 미사용), 무거운 의존성 미import를 검사한다.
+- 실증: cwd를 `aerial_gym/rl_training/rl_games`로 두고 worktree를 요구하면 가드가 발화하며
+  `actual origin`으로 PRIMARY 경로를 정확히 지목한다.
+
+`_is_within` 헬퍼는 삭제했다. 엄격 동등 매칭으로 바꾼 뒤 죽은 코드였고, 남으면 "하위경로도 허용"으로
+오독된다.
+
+### 사전등록
+
+`docs/prereg_2026-08-21_n1_real_frame_reflection_audit.md` (측정 개시 전 확정). 정책 ref5in D1
+ep1900 SHA `197ea269…`, 70 bars, **신규 seed 373**(전수검색 0건), deterministic, governor off,
+rollout의 reflection_mode는 `original`.
+
+설계의 핵심은 **rollout과 반사를 시간적으로 분리**한 것이다. rollout 중에는 표준 평가만 하고
+관측·맥락·outcome을 디스크에 덤프하며, 반사 forward는 rollout 종료 후 오프라인으로 한다.
+"probe action을 시뮬레이터에 투입하지 않는다"가 시간 순서로 자명해지고, 저장된 npz로 제3자가
+전 수치를 재계산할 수 있다(현재 저장소에 없는 성질).
+
+품질 게이트 Q1–Q9(involution=0.0, isometry≤1e-3, schema=898, index-set 정확 일치, scan 순열
+`i→(−i) mod 72` 고정점 `{0,36}`, import origin, checkpoint SHA/manifest, 결정론 bitwise, n≥4,096)를
+**정책 판정보다 먼저** 통과해야 하며, 하나라도 실패하면 `FAIL_CLOSED_TRANSFORM_QUALITY`로
+정책에 대한 주장을 하지 않는다.
+
+판정 임계(결과 보기 전 확정, `[-1,1]` 정규화 행동 단위이므로 기존 1.235/73.08%/1.8332와 직접 비교):
+`median(conj_err_lat) ≥ 0.30` **및** sign agreement `≤ 0.60` → CONFIRMED /
+`≤ 0.10` **및** `≥ 0.90` → ABSENT / 그 외 INCONCLUSIVE. 맥락 셀은 비교가능 행 ≥256에만 판정을 준다.
+
+측정 개시 전 개정 2건을 문서에 명시적으로 기록했다(§3-b, §3-c). §3-b: 고정 stride 37은 총 호출
+수를 미리 알아야 해서 조기 종료율에 따라 최소 표본 미달 또는 앞부분 편향이 된다 → 스트리밍
+데시메이션(매 `stride_eff`번째 보관, 상한 초과 시 하나 걸러 버리고 `stride_eff`를 2배)으로 교체해
+총 호출 수와 무관하게 전 구간 균일·8,192–16,384행을 보장한다.
+
+### 다음
+
+`NAVRL_OBS_DUMP` 훅과 오프라인 evaluator 구현 → CPU 단위테스트 → GPU smoke → 본 평가.
+이 항목 시점에 GPU 실행은 아직 없다.
+
+## 2026-08-21 — N1 구현 완료, 그리고 내 커밋 921fb1d가 ref5in 평가를 전면 차단하고 있다
+
+### 구현 (GPU 실행 전, 전부 CPU 테스트 통과)
+
+| 산출물 | 줄수 | 테스트 |
+|---|---|---|
+| `aerial_gym/task/navrl_task/navrl_task.py` `NAVRL_OBS_DUMP` 훅 | +298 / −1 | `tests/test_navrl_obs_dump.py` 20/20 |
+| `tools/navrl_reflection_offline_audit.py` 오프라인 evaluator | 1,331 | `tests/test_navrl_reflection_offline_audit.py` 47/47 |
+| `aerial_gym/rl_training/rl_games/navrl_import_origin.py` + `runner.py:20-31` | 145 + 16 | `tests/test_navrl_import_origin.py` 10/10 |
+| `tools/run_navrl_ref5in_reflection_audit.py` schema-v2 런처 | 700 | `ReflectionAuditContract` 11/11 |
+
+`navrl_task.py`에서 삭제된 유일한 줄은 `_record_action_diagnostics`의 조기 반환 가드이며
+`if not self._action_diag_enabled and not self._obs_dump_enabled:`로 넓혔다. `_action_diag_enabled`는
+`_bulk_eval_mode`에서 항상 True이므로(`navrl_task.py:824`) 본 실험에서 **행위 변화는 0**이다.
+나머지 297줄은 순수 추가다.
+
+**오프라인 forward가 live 경로와 동일함을 증명했다** — 손으로 만든 네트워크가 아니라 실제
+`NavRLPpoPlayerContinuous.restore()`를 시뮬레이터 없이 구동했다(`config['env_info']`를 주입하면
+rl_games가 vecenv를 만들지 않는다; `player.env is None` 확인).
+
+| 등가성 | 값 |
+|---|---|
+| 파라미터 sha256 (모델 / 체크포인트) | `b197ffbe4b128dd2…` / 동일 |
+| 파라미터 개수 | 428,953 / 428,953 |
+| `running_mean`/`running_var`/`count` bitwise 일치 | true |
+| `selected − tanh(mus)` 최대 | **0.0** |
+| `selected − mus` 최대 | **1.3355** |
+| Q8 결정론(2회 forward) | `torch.equal` true |
+
+함정 2건을 잡았다. (1) `cfg_action_mu_scale = [1.0, **0.4**, 1.0, 1.0]` — lateral만 pre-tanh
+스케일이 0.4다. 이걸 복원하지 않으면 다른 컨트롤러를 평가하게 된다. (2) 데시메이션에서 호출
+카운터가 1-based면 첫 보관 표본이 최종 stride 격자에서 영구히 벗어난다. 증가 **전에** 읽도록
+고쳐 200k 호출 시뮬레이션으로 고정했다(`test_uniform_after_decimation`).
+
+정규화기 대칭화(S1, 비게이트)의 대수도 명시해 둔다. mirror는 부호 있는 순열
+`(Mx)_j = s_j x_{p(j)}`이고, `N(Mx) = M N(x)`를 요구하면 정확히 `v_j = v_{p(j)}`,
+`m_j = s_j m_{p(j)}`가 나온다. 따라서 분산은 단순 쌍평균, 평균은 `(m_j + s_j m_{p(j)})/2`이며
+**부호 반전 필드는 `p(j)=j, s=−1`이라 평균이 0으로 붕괴한다** — 부호가 뒤집혀야 하는 좌표가
+가질 수 있는 유일한 평균이다. 단순 평균을 썼다면 아무것도 제거되지 않았을 것이다.
+
+### 차단: robot config provenance drift — 원인은 내 커밋이다
+
+`preflight`가 exit 2로 거부했다.
+
+```
+[eval_v2] robot config source drift: checkpoint=ebb71802f19b630b… runtime=cc8d90b6cf08bb1c…
+```
+
+| | sha256 |
+|---|---|
+| frozen ref5in 체크포인트가 기록한 값 | `ebb71802f19b630ba6c2ac4c04b113c269d8bbd3e40e094e126913caa8731297` |
+| 현재 런타임 | `cc8d90b6cf08bb1cd21ea01429ab5e953e7beaf6e16a453c4161b71dce22f7d9` |
+
+차이는 `aerial_gym/config/robot_config/navrl_ref5in_quad_config.py`의 **docstring 한 줄**이다
+(`docs/…` → `docs/archive/…`). 커밋 `921fb1d`(2026-08-20, 내가 함). 그 커밋 메시지 자체가
+"leaving them dirty would block the runtime-clean gate"라고 적혀 있다 — **runtime-clean 게이트를
+풀려고 커밋해서 robot-config provenance 게이트를 깼다.** 게이트 하나를 다른 게이트와 맞바꿨다.
+
+`eval_navrl_v2_density_sweep.sh:240-242`은 무조건 `exit 2`이며 `NAVRL_V2_FORCE`가 닿기 전에 죽는다.
+우회 수단이 없다.
+
+범위는 N1보다 넓다. `921fb1d`는 `research/navrl-env`를 포함한 **8개 브랜치 전부**에 있고 origin에
+푸시됐다. 즉 **현재 어느 브랜치 tip에서도 frozen ref5in 체크포인트를 byte-exact로 평가할 수 없다.**
+`navrl_mode_probe` worktree가 통과했던 건 체크아웃이 브랜치 tip보다 뒤에 있었기 때문이다.
+robot URDF(`5c160b0d…`)와 legacy `navrl_quad_config.py`는 영향 없다.
+
+**교훈**: `aerial_gym/config/robot_config/**`와 `resources/robots/**`는 기존 체크포인트에 대해
+**provenance-frozen 아티팩트**다. 주석 한 줄만 바꿔도 그 이전에 학습된 모든 체크포인트의
+byte-exact 평가가 막힌다. 문서 경로 정리 같은 무해해 보이는 편집을 이 파일들에 하면 안 된다.
+
+이 항목 시점에 GPU 실행은 없고 `results/navrl_ref5in_reflection_audit_seed373/`도 없다.
+
+### 다음
+
+사용자 결정 2건이 필요하다 — (a) `navrl_ref5in_quad_config.py`를 `ebb71802…`로 되돌릴지,
+(b) 지금까지의 코드를 커밋할지(런처의 dirty-runtime 게이트가 커밋을 요구한다). 둘 다 없이는
+`run`을 시작할 수 없다.
