@@ -9295,32 +9295,32 @@ D1 FAIL · P3 BLOCKED는 전부 그대로다.**
 
 상세: `results/navrl_ref5in_camera_range_control_seed367/summary.{md,json}`, `VERIFICATION.md`.
 
-## 2026-08-21 — OOB exit forensics 추가, 그리고 통로-planner 인과 서술 철회
+## 2026-08-21 — OOB exit forensics 추가, 그리고 두 `0.45 m` 계보 분리
 
-### 철회: "planner가 통로를 안전하지 않다고 판단해 돌아간다"는 메커니즘은 없다
+### 정정: seed 367 pursuer와 300-bar physical-target WIP를 같은 planner로 설명하면 안 된다
 
-앞선 통로 분석이 `0.28 + 0.45×2 = 1.18 m`를 "planner가 요구하는 통로 폭"으로 제시하고, 실제
-통로 0.55–0.68 m가 그보다 좁아 경로 불능이 생긴다고 결론냈다. 코드 확인 결과 이 인과는 성립하지
-않는다.
+앞선 설명과 첫 정정은 서로 다른 코드의 `0.45 m`를 하나로 취급했다. 실제 계약은 다음 두 개다.
 
-- planner가 없다. riskcap은 속도만 깎는 필터이고 재계획·진입거부 코드가 존재하지 않는다.
-- `path_half_width_m=0.45`는 "비워둬야 할 폭"이 아니라 **LiDAR 광선 선택창**이다
-  (`speed_governor.py:166` `in_path = ray_valid & (forward>0) & (lateral <= path_half_width_m)`).
-  명령축에서 가로 0.45 m 안의 광선만 clearance에 넣는다는 뜻이고 통과 가능 여부와 무관하다.
-- riskcap은 멈추지 않는다. 실측 cap: clearance 0.3/1.0/3.0 m 전부 **2.0 m/s**, 4.0 m에서 2.768,
-  5.0 m 이상에서 3.536. 주석도 "never creates a forced zero-speed deadlock".
-- `hard_margin_m`은 riskcap에서 **dead parameter**다. 0.45/0.05/0.0 모두 cap 동일
-  (`[2.0, 2.0, 2.0, 3.5355]`). `usable`은 clearance/ttc 모드와 stopping-margin 진단에만 쓰인다.
-  검증 4의 `stopping_margin −0.157 m`가 이 무효 파라미터를 정의에 포함한다는 점도 함께 기록한다.
-- **ref5in 계보는 governor가 꺼져 있다.** 실측 `intervention_rate=0.000`, `mode=off`
-  (README:55, VERIFICATION:63, `train_navrl_v2_ref5in_smoke_c.sh:58`).
+1. **동결 ref5in pursuer / seed 367:** 전역 또는 국소 경로 planner가 없다. riskcap은 속도 크기만
+   깎는 필터이며 재계획·진입거부를 하지 않는다. `speed_governor.path_half_width_m=0.45`는 명령축
+   좌우 0.45 m 안의 LiDAR 광선만 clearance 계산에 포함시키는 **광선 선택창**이다
+   (`speed_governor.py:166`). 게다가 이 계보의 governor는 `mode=off`, 실측 intervention 0이다.
+2. **별도 physical-target WIP / 300-bar gate:** `bounded_drone_target_step()`이 1초 동안 여러
+   방향·속도 후보를 rollout하는 receding-horizon local planner이며, 별도 tracking margin 0.45 m를
+   사용한다. 이 코드는 본 OOB 전용 branch에는 포함하지 않는다. riskcap의 동명 숫자와 무관하고,
+   전역 경로를 찾거나 통로 연결성을 판정하는 planner도 아니다.
 
-그리고 결정적으로, 통로 분석은 300막대 기하인데 현재 병목 실험은 **막대 1개**이고 crash의 98%가
-OOB다: seed 367 `camera_20m` crash 160 = bar_contact 2 / OOB 158, `camera_28m` 141 = 3 / 138.
-서로 다른 두 체제를 섞어 설명한 것이다.
+따라서 `0.28 + 0.45×2 = 1.18 m`는 physical-target WIP의 level OBB가 축정렬 평행 통로에서 양쪽
+tracking reserve까지 지키려 할 때의 **운용 폭** 계산으로만 유효하다. pursuer의 물리 통과 한계도,
+임의 yaw/대각 통로의 일반식도, seed 367 실패의 증거도 아니다. 300-bar 기하 probe의 최협
+표면간격 0.55–0.68 m와 대각 배치 이론 최저 0.469 m 역시 seed 367 원인에는 사용할 수 없다.
 
-기하 측정 자체(최협 표면간격 0.55–0.68 m, 대각 배치 이론 최저 0.469 m, 기존 "0.8 m 보장"은 축
-정렬에서만 성립)는 유효하다. 철회하는 것은 그 숫자를 governor 동작에 연결한 인과 서술뿐이다.
+seed 367은 **막대 1개**이고 crash의 약 98%가 OOB다: `camera_20m` crash 160 = bar_contact 2 /
+OOB 158, `camera_28m` 141 = 3 / 138. 이 체제는 아래 OOB 계측으로 따로 진단한다.
+
+riskcap 자체에 관한 확인은 유지한다. riskcap cap은 clearance 0.3/1.0/3.0 m에서 모두 2.0 m/s이고
+강제 zero-speed를 만들지 않는다. `hard_margin_m`은 riskcap의 cap 계산에는 쓰이지 않지만
+clearance/TTC mode 및 stopping-margin 진단에는 쓰인다.
 
 **riskcap 파라미터 탐색은 금지 규칙이다**(`CLAUDE.md:56`, `CRASH_TUNING_LOG.md:523`). 값들은
 제동 프로브(p10 감속 2.9609 m/s², 정지거리 1.047 m)에서 사전 도출됐다.
@@ -9337,6 +9337,11 @@ OOB다: seed 367 `camera_20m` crash 160 = bar_contact 2 / OOB 158, `camera_28m` 
 | `outward_radial_speed_mean_mps` | 양수면 능동적으로 밖으로 몰고 감(표류 아님) |
 | `speed_mean_mps` / `goal_distance_mean_m` / `step_median` | 속도·거리·중앙값 |
 
+초안은 acquisition 비율과 운동학 전체 평균만 따로 내서 두 집단이 평균 안에서 상쇄될 수 있었다.
+실행 전 감사에서 이를 발견해 `by_acquisition.{never_acquired,acquired}`마다 exit 수·비율·속도·목표거리·
+closing·outward를 교차 집계한다. 두 strata 합이 전체 exit와 다르거나 never-acquired 수가 기존 카운터와
+다르면 export를 중단하며, `robot_linvel`/first-acquisition 원천이 없을 때도 0으로 기록하지 않고 중단한다.
+
 구현에서 잡은 것 둘:
 
 1. **원인 귀속 마스크를 써야 했다.** 처음엔 raw `oob`에 걸었는데 crash 원인 표는
@@ -9347,7 +9352,9 @@ OOB다: seed 367 `camera_20m` crash 160 = bar_contact 2 / OOB 158, `camera_28m` 
    exit step을 쓰게 됐다.
 
 **교차검증**: 제 카운터와 `_diag["oob"]`를 독립으로 세고 export 전에 일치를 강제한다(불일치 시
-RuntimeError). 스모크 32 env/400 step에서 `126 = 126`, 방향버킷 `[25,36,28,38]` 동일.
+RuntimeError). 스모크 32 env/400 step에서 `126 = 126`, 방향버킷 `[25,36,28,38]` 동일. 네 방향
+버킷은 기존 진단과 마찬가지로 **비배타적**이다. 코너 이탈 한 건이 두 버킷에 들어가므로 이 예에서도
+합은 127이며, `edge_shares`를 합계 100%인 categorical distribution으로 해석하면 안 된다.
 bulk eval 전용이며 관측·보상·종료·체크포인트에 무접촉이다.
 
 ### 문서: CRASH_TUNING_LOG를 archival-in-place로 표시
@@ -9373,3 +9380,15 @@ one-lever 후보 결과·Phase-1 부록은 다른 문서에 사본이 없다. ri
 재학습 전에 OOB 계측을 seed 367 조건으로 한 번 돌린다(2셀 ~10분). 후보는 A(camera range
 20→28 m, seed 367에서 인과 확인) / B(속도·틸트 상향, 근거 없음) / C(목표거리 축소)이며 한 run에서
 두 축을 바꾸지 않는다(`VERIFICATION.md:115`).
+
+### clean 분리와 재평가 사전등록
+
+- physical-target WIP와 섞이지 않도록 `codex/oob-forensics-seed367` worktree를 HEAD `9f6929d`에서
+  분리했다. 이 branch에는 OOB 교차계측·문서 정정·전용 evaluator만 둔다.
+- checkpoint 이후 ref5in config의 문서 링크 한 줄이 `docs/`→`docs/archive/`로 바뀌어 파일 SHA가
+  달라진 것을 preflight가 차단했다. 이 evidence branch에서만 checkpoint가 기록한 exact config SHA
+  `ebb71802…`의 바이트를 복원하고 wrapper가 그 SHA를 다시 강제한다. 동역학 값 변경은 없다.
+- `tools/run_navrl_ref5in_oob_exit_forensics.py`는 기존 seed 367 base orchestrator의 checkpoint/seed/
+  1 bar/away CV/2,049 episodes/20·28 m arms를 그대로 재사용하며 실험 knob를 재정의하지 않는다.
+  출력은 새 경로 `results/navrl_ref5in_oob_exit_forensics_seed367/`이고 decision authority는 없다.
+- 결과를 보기 전 preflight PASS. 다음은 clean commit 후 두 셀 실행이다.

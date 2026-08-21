@@ -22,7 +22,7 @@ class NavRLRef5inQuadCfg(NavRLQuadCfg):
     the algebraic constant-thrust roll acceleration is about 0.586x legacy.  A policy trained here
     forms a new lineage and must never be numerically spliced into legacy checkpoint curves.
 
-    See `docs/archive/reference_platform_proposal_2026-08.md` for the evidence levels and required hardware
+    See `docs/reference_platform_proposal_2026-08.md` for the evidence levels and required hardware
     gates, and `tests/test_navrl_ref5in_platform.py` for simulator-internal consistency checks.
     """
 

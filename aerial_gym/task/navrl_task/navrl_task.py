@@ -388,6 +388,15 @@ class NavRLTask(BaseTask):
         # was moving AWAY from the goal as it left.
         self._oob_goal_closing_sum = 0.0
         self._oob_outward_sum = 0.0
+        # Cross-tab kinematics by acquisition state. Overall means alone can hide two opposite
+        # exit modes (blind search drifting out vs chasing an acquired target over the boundary).
+        self._oob_acquisition_groups = {
+            label: {
+                key: 0.0 if key != "n" else 0
+                for key in ("n", "speed_sum", "goal_dist_sum", "goal_closing_sum", "outward_sum")
+            }
+            for label in ("never_acquired", "acquired")
+        }
         self._fa_eval_outcome_fin = torch.zeros(3, dtype=torch.long, device=self.device)
         self._fa_eval_outcome_never = torch.zeros(3, dtype=torch.long, device=self.device)
         self._fa_eval_outcome_first_sum = torch.zeros(3, dtype=torch.long, device=self.device)
@@ -4454,23 +4463,41 @@ class NavRLTask(BaseTask):
         bounded = ep_steps.clamp(0, self._oob_step_hist.numel() - 1).to(torch.long)
         self._oob_step_hist.index_add_(0, bounded, torch.ones_like(bounded))
 
-        if hasattr(self, "_fa_ep_first_fused"):
-            self._oob_never_acquired += int((self._fa_ep_first_fused[idx] < 0).sum().item())
-
         vel = self.obs_dict.get("robot_linvel")
+        if not hasattr(self, "_fa_ep_first_fused"):
+            raise RuntimeError("NavRL OOB forensics require first-acquisition telemetry")
+        if vel is None:
+            raise RuntimeError("NavRL OOB forensics require robot_linvel")
+        never_acquired = self._fa_ep_first_fused[idx] < 0
+        self._oob_never_acquired += int(never_acquired.sum().item())
+
         to_goal = self.target_position[idx, 0:2] - pos[idx, 0:2]
         dist = to_goal.norm(dim=1)
+        speed = vel[idx, 0:2].norm(dim=1)
+        unit = to_goal / dist.clamp(min=1e-6).unsqueeze(1)
+        goal_closing = (vel[idx, 0:2] * unit).sum(dim=1)
+        centre = 0.5 * (b_min[idx] + b_max[idx])
+        radial = pos[idx, 0:2] - centre
+        radial = radial / radial.norm(dim=1, keepdim=True).clamp(min=1e-6)
+        outward = (vel[idx, 0:2] * radial).sum(dim=1)
+
         self._oob_goal_dist_sum += float(dist.sum().item())
-        if vel is not None:
-            self._oob_speed_sum += float(vel[idx, 0:2].norm(dim=1).sum().item())
-            unit = to_goal / dist.clamp(min=1e-6).unsqueeze(1)
-            # >0 closing on the goal as it crossed, <0 receding from it.
-            self._oob_goal_closing_sum += float((vel[idx, 0:2] * unit).sum(dim=1).sum().item())
-            centre = 0.5 * (b_min[idx] + b_max[idx])
-            radial = pos[idx, 0:2] - centre
-            radial = radial / radial.norm(dim=1, keepdim=True).clamp(min=1e-6)
-            # >0 actively driving outward rather than drifting across the line.
-            self._oob_outward_sum += float((vel[idx, 0:2] * radial).sum(dim=1).sum().item())
+        self._oob_speed_sum += float(speed.sum().item())
+        # >0 closing on the goal as it crossed, <0 receding from it.
+        self._oob_goal_closing_sum += float(goal_closing.sum().item())
+        # >0 actively driving outward rather than drifting across the line.
+        self._oob_outward_sum += float(outward.sum().item())
+
+        for label, group_mask in (
+            ("never_acquired", never_acquired),
+            ("acquired", ~never_acquired),
+        ):
+            group = self._oob_acquisition_groups[label]
+            group["n"] += int(group_mask.sum().item())
+            group["speed_sum"] += float(speed[group_mask].sum().item())
+            group["goal_dist_sum"] += float(dist[group_mask].sum().item())
+            group["goal_closing_sum"] += float(goal_closing[group_mask].sum().item())
+            group["outward_sum"] += float(outward[group_mask].sum().item())
 
     def _record_first_acquisition(self, idx, outcome, observation_steps):
         """Attribute per-episode first-acquisition statistics to eval outcomes (RESEARCH_PLAN 8.28).
@@ -5000,6 +5027,36 @@ class NavRLTask(BaseTask):
                 )
             if n == 0:
                 return {"exits": 0}
+            group_total = sum(int(row["n"]) for row in self._oob_acquisition_groups.values())
+            if group_total != n or int(self._oob_acquisition_groups["never_acquired"]["n"]) != int(
+                self._oob_never_acquired
+            ):
+                raise RuntimeError(
+                    "NavRL OOB acquisition strata disagree with the exit counter: %d/%d/%d"
+                    % (group_total, n, int(self._oob_never_acquired))
+                )
+
+            def acquisition_group_payload(label):
+                row = self._oob_acquisition_groups[label]
+                count = int(row["n"])
+                if count == 0:
+                    return {
+                        "exits": 0,
+                        "share": 0.0,
+                        "speed_mean_mps": None,
+                        "goal_distance_mean_m": None,
+                        "goal_closing_speed_mean_mps": None,
+                        "outward_radial_speed_mean_mps": None,
+                    }
+                return {
+                    "exits": count,
+                    "share": count / n,
+                    "speed_mean_mps": row["speed_sum"] / count,
+                    "goal_distance_mean_m": row["goal_dist_sum"] / count,
+                    "goal_closing_speed_mean_mps": row["goal_closing_sum"] / count,
+                    "outward_radial_speed_mean_mps": row["outward_sum"] / count,
+                }
+
             hist = self._oob_step_hist
             cumulative = torch.cumsum(hist, dim=0)
             half = (n + 1) // 2
@@ -5028,6 +5085,10 @@ class NavRLTask(BaseTask):
                 "goal_closing_speed_mean_mps": self._oob_goal_closing_sum / n,
                 # Positive means it was actively driving outward, not drifting.
                 "outward_radial_speed_mean_mps": self._oob_outward_sum / n,
+                "by_acquisition": {
+                    label: acquisition_group_payload(label)
+                    for label in ("never_acquired", "acquired")
+                },
             }
 
         def first_acquisition_payload(index):

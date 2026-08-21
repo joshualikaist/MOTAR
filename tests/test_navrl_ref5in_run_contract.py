@@ -315,11 +315,6 @@ class RuntimeCheckpointContract(unittest.TestCase):
         ):
             self.assertIn(literal, source)
 
-
-if __name__ == "__main__":
-    unittest.main()
-
-
 class FirstAcquisitionContract(unittest.TestCase):
     """RESEARCH_PLAN 8.28 first-acquisition diagnostic (seed 359).
 
@@ -404,3 +399,78 @@ class FirstAcquisitionContract(unittest.TestCase):
         block = task[task.index("fa_outcomes = "):task.index("NavRL first-acquisition outcome")]
         self.assertIn("tuple(", block)
         self.assertNotIn("fa_outcomes = [", block)
+
+
+class OOBExitForensicsContract(unittest.TestCase):
+    """The seed-367 exit telemetry must stay diagnostic-only and cause-aligned."""
+
+    TASK = ROOT / "aerial_gym/task/navrl_task/navrl_task.py"
+    ORCHESTRATOR = ROOT / "tools/run_navrl_ref5in_oob_exit_forensics.py"
+
+    def test_recorder_consumes_the_cause_attributed_oob_mask(self):
+        task = self.TASK.read_text(encoding="utf-8")
+        attribution = "d_oob = oob & ~crashed & ~below & ~above & crashed_out"
+        call = "self._record_oob_exit(d_oob, pos, b_min, b_max, m_oob, steps)"
+        self.assertIn(attribution, task)
+        self.assertIn(call, task)
+        self.assertLess(task.index(attribution), task.index(call))
+
+    def test_recorder_is_bulk_eval_only_and_non_interfering(self):
+        task = self.TASK.read_text(encoding="utf-8")
+        call = task.index("self._record_oob_exit(d_oob, pos, b_min, b_max, m_oob, steps)")
+        guard = task.rfind("if self._bulk_eval_mode:", 0, call)
+        self.assertGreater(guard, task.rfind("if bool(d_oob.any()):", 0, call))
+        block = task[task.index("def _record_oob_exit"):task.index("def _record_first_acquisition")]
+        for sink in ("task_obs", "self.rewards", "self.terminations", "self.truncations"):
+            self.assertNotIn(sink, block)
+
+    def test_export_fails_closed_against_crash_cause_count(self):
+        task = self.TASK.read_text(encoding="utf-8")
+        payload = task[task.index("def oob_exit_payload"):task.index("def first_acquisition_payload")]
+        self.assertIn('if n != int(self._diag["oob"]):', payload)
+        self.assertIn("NavRL OOB forensics disagree with the crash-cause counter", payload)
+        self.assertIn("NavRL OOB acquisition strata disagree with the exit counter", payload)
+        self.assertIn('"by_acquisition"', payload)
+        self.assertIn('("never_acquired", "acquired")', payload)
+        for field in (
+            '"never_acquired_share"',
+            '"goal_closing_speed_mean_mps"',
+            '"outward_radial_speed_mean_mps"',
+            '"speed_mean_mps"',
+            '"goal_distance_mean_m"',
+            '"step_median"',
+        ):
+            self.assertIn(field, payload)
+
+    def test_missing_source_telemetry_fails_closed(self):
+        task = self.TASK.read_text(encoding="utf-8")
+        recorder = task[task.index("def _record_oob_exit"):task.index("def _record_first_acquisition")]
+        self.assertIn("NavRL OOB forensics require first-acquisition telemetry", recorder)
+        self.assertIn("NavRL OOB forensics require robot_linvel", recorder)
+
+    def test_edge_buckets_are_explicitly_nonexclusive(self):
+        task = self.TASK.read_text(encoding="utf-8")
+        recorder = task[task.index("def _record_oob_exit"):task.index("def _record_first_acquisition")]
+        payload = task[task.index("def oob_exit_payload"):task.index("def first_acquisition_payload")]
+        self.assertIn("a diagonal corner exit lands", recorder)
+        self.assertIn("A corner crossing increments two edges", payload)
+
+    def test_rerun_reuses_frozen_seed367_contract(self):
+        source = self.ORCHESTRATOR.read_text(encoding="utf-8")
+        for literal in (
+            'OUTPUT = ROOT / "results/navrl_ref5in_oob_exit_forensics_seed367"',
+            "BASE.INCLUDE_OOB_FORENSICS = True",
+            'BASE.SUMMARY_SCOPE = "frozen_seed367_oob_exit_forensics_20m_28m"',
+            "CHECKPOINT_ROBOT_CONFIG_SHA256 = (",
+            "refusing robot config bytes that differ from the frozen checkpoint",
+            "return BASE.main()",
+        ):
+            self.assertIn(literal, source)
+        # The wrapper must not define a second set of experimental knobs that could drift from
+        # the audited base contract.
+        for forbidden in ("SEED =", "ARMS =", "EPISODES =", "TIMEOUT_DROP_THRESHOLD ="):
+            self.assertNotIn(forbidden, source)
+
+
+if __name__ == "__main__":
+    unittest.main()
