@@ -9520,3 +9520,18 @@ action 오차가 0.15를 넘으면 `INCONCLUSIVE_POLICY_CHIRALITY`로 닫는다.
 두 중앙 order가 모두 stall이고 네 perturb/order가 모두 움직임을 회복하는지 본다. 양성이라도 명칭과
 해석은 `MODE_AVERAGING_SUPPORTED_IN_SYNTHETIC_POLICY_SCREEN`이며 실제 고밀도 인과로 승격하지 않는다.
 physical-centre 회귀와 slot fail-closed 테스트를 포함한 CPU 테스트 **5/5 PASS**. GPU 미실행 상태 유지.
+
+### GPU 결과: mode averaging 판정 불가, policy chirality가 선행 교란
+
+seed431 evaluator host cell(70 bars, 257 episodes)과 동결 D1 ref5in checkpoint를 사용해 6-arm
+side-forward probe를 실행하고 `finalize`/`verify`까지 통과했다. 같은 geometry의 LR/RL token 순서
+최대 action 차이는 **0.0078**로 0.15 품질 gate 안이었지만, 정확한 반사 입력쌍의 최대 action 오차는
+**1.8332**로 0.15 gate를 크게 넘었다. 중앙 symmetric 두 arm도 horizontal command
+**3.349~3.352 m/s**, lateral action **-0.916~-0.917**로 정지하지 않았고, 좌·우 ±5° perturbation도
+모두 같은 음의 lateral 방향(**-0.904~-0.922**)을 냈다.
+
+따라서 결과는 사전등록 순서대로 **INCONCLUSIVE_POLICY_CHIRALITY**다. 이 fixture에서는 token slot
+순서가 병목이라는 증거가 없지만, policy reflection defect가 더 커 mode averaging을 지지하거나
+기각할 수 없다. 이 결과는 한 합성 fixture의 반복 forward이며 205-bar 정지나 capture/crash 인과로
+확대하지 않는다. artifact는
+`results/navrl_ref5in_symmetric_corridor_mode_probe_seed431/summary.json`에 저장했다.
