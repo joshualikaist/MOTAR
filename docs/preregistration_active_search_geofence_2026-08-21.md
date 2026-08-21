@@ -49,8 +49,9 @@ the control by at least **3.0 percentage points**. Guards: non-OOB crash may not
 occur. Capture and timeout are secondary and cannot rescue a failed primary/guard.
 
 If the geofence arm passes, run a predeclared inference ablation that replaces all four ranges by
-1 and all validity flags by 0. A material return toward control establishes that the policy used the
-token; absence of a change leaves mechanism attribution unresolved even if outcome improved.
+1 and all validity flags by 0. “Material return” is fixed before evaluation as losing at least
+**50% of the normal geofence arm's primary gain**. Passing that threshold supports token use;
+absence of a change leaves mechanism attribution unresolved even if outcome improved.
 
 ## Interpretation limits
 

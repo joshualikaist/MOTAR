@@ -9477,3 +9477,25 @@ launcher가 `PYTHONPATH` 첫 항목을 현재 git root로 고정하고, receipt 
 `importlib.util.find_spec("aerial_gym").origin`이 해당 worktree의 `aerial_gym/__init__.py`와 정확히
 같은지 검사하도록 수정했다. OOB evaluator에서 잡았던 동일 계열 문제를 training launcher에도
 fail-fast로 일반화한 것이다.
+
+## 2026-08-21 — Active-search held-out evaluator 사전 구현 (학습 결과 열람 전)
+
+두 training arm이 진행되는 동안 별도 `codex/active-search-geofence-eval` worktree에서 평가기를
+작성했다. training worktree의 runtime bytes는 건드리지 않았다.
+
+- `tools/run_navrl_ref5in_active_search_geofence_eval.py`가 완료 marker와 유일한 raw ep900
+  checkpoint를 요구한다. latest/best checkpoint를 임의 선택하지 않는다.
+- held-out 계약은 seed367, 1 bar, camera20m, goal 22.5..28m, away CV, 600 step,
+  deterministic, arm당 최소 2,049 episodes다.
+- 3 cells: fresh control / fresh geofence / 같은 geofence checkpoint의 token-force-invalid.
+- primary는 never-acquired OOB/all episodes `control - geofence >= 3pp`, guard는 non-OOB crash
+  `geofence - control <= 2pp`다.
+- mechanism gate의 “material return”을 결과 전에 수치화했다: force-invalid가 normal geofence
+  primary gain의 **50% 이상을 잃어야** token 사용을 지지한다.
+- evaluator result/receipt에 geofence on/noise/dropout/force-invalid를 명시했다. force-invalid는
+  906-D schema를 보존하며 range `[1,1,1,1]`, validity `[0,0,0,0]`만 주입한다.
+- P2/D1/P3 판정 권한은 없다.
+
+검증: force-invalid perception **31/31 PASS**, checkpoint preflight **15/15 PASS**, Python compile,
+shell syntax, `git diff --check` PASS. 현재 `status`는 control 진행 중/geofence 미시작을 정확히
+PENDING으로 표시하며, 두 `.aerial_training_finished`가 생기기 전 preflight/run은 fail-closed다.

@@ -190,6 +190,14 @@ class NavRLPerceptionTest(unittest.TestCase):
         self.assertTrue(torch.equal(feat[:, :4], torch.ones(2, 4)))
         self.assertTrue(torch.equal(feat[:, 4:], torch.zeros(2, 4)))
 
+    def test_force_invalid_ablation_preserves_schema_and_masks_token(self):
+        if not (_PERCEPTION.GEOFENCE_ACTOR and _PERCEPTION.GEOFENCE_FORCE_INVALID):
+            self.skipTest("requires geofence force-invalid evaluation schema")
+        obs, _ = self._observe()
+        self.assertEqual(tuple(obs.shape), (2, STRUCTURED_OBS_DIM))
+        self.assertTrue(torch.equal(obs[:, -8:-4], torch.ones(2, 4)))
+        self.assertTrue(torch.equal(obs[:, -4:], torch.zeros(2, 4)))
+
     def test_raw_rgbd_produces_track_without_semantic_input(self):
         obs, diag = self._observe()
         self.assertEqual(tuple(obs.shape), (2, STRUCTURED_OBS_DIM))

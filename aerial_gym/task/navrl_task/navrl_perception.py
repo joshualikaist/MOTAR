@@ -161,6 +161,11 @@ GEOFENCE_NOISE_STD_M = float(
     os.environ.get("NAVRL_GEOFENCE_NOISE_STD_M", "").strip() or 0.0
 )
 GEOFENCE_DROPOUT = float(os.environ.get("NAVRL_GEOFENCE_DROPOUT", "").strip() or 0.0)
+# Evaluation-only mechanism ablation. It preserves the 906-D schema while replacing all ranges by
+# the declared missing-value sentinel and clearing validity. Training launchers never set it.
+GEOFENCE_FORCE_INVALID = os.environ.get(
+    "NAVRL_GEOFENCE_FORCE_INVALID", "0"
+).strip().lower() in ("1", "true", "yes", "on")
 if not math.isfinite(GEOFENCE_NOISE_STD_M) or GEOFENCE_NOISE_STD_M < 0.0:
     raise ValueError("NAVRL_GEOFENCE_NOISE_STD_M must be finite and non-negative")
 if not math.isfinite(GEOFENCE_DROPOUT) or not 0.0 <= GEOFENCE_DROPOUT <= 1.0:
@@ -1802,16 +1807,18 @@ class NavRLPerceptionModule:
             )
             obs_parts.append(corridor_tokens.reshape(self.num_envs, -1))
         if GEOFENCE_ACTOR:
-            obs_parts.append(
-                body_geofence_features(
-                    drone_pos_w,
-                    vehicle_quat,
-                    env_bounds_min,
-                    env_bounds_max,
-                    noise_std_m=GEOFENCE_NOISE_STD_M,
-                    dropout=GEOFENCE_DROPOUT,
-                )
+            geofence = body_geofence_features(
+                drone_pos_w,
+                vehicle_quat,
+                env_bounds_min,
+                env_bounds_max,
+                noise_std_m=GEOFENCE_NOISE_STD_M,
+                dropout=GEOFENCE_DROPOUT,
             )
+            if GEOFENCE_FORCE_INVALID:
+                geofence[:, :GEOFENCE_RAYS] = 1.0
+                geofence[:, GEOFENCE_RAYS:] = 0.0
+            obs_parts.append(geofence)
         obs = torch.cat(obs_parts, dim=1)
         if obs.shape[1] != STRUCTURED_OBS_DIM:
             raise RuntimeError(
