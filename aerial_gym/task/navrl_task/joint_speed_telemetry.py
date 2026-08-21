@@ -20,11 +20,15 @@ METRIC_LABELS = (
     "actual_speed_mps",
     "requested_command_speed_mps",
     "executed_command_speed_mps",
-    "directional_min_clearance_m",
+    "actual_direction_min_clearance_m",
+    "requested_direction_min_clearance_m",
+    "executed_direction_min_clearance_m",
     "actual_stopping_distance_m",
     "requested_stopping_distance_m",
+    "executed_stopping_distance_m",
     "actual_stopping_margin_m",
     "requested_stopping_margin_m",
+    "executed_stopping_margin_m",
     "policy_action_delta_xy_norm",
     "requested_heading_rate_proxy_radps",
     "realized_heading_rate_proxy_radps",
@@ -139,31 +143,47 @@ class JointSpeedTelemetry:
         requested_command_xy: torch.Tensor,
         executed_command_xy: torch.Tensor,
         policy_action_xy: torch.Tensor,
-        clearance_m: torch.Tensor,
+        actual_direction_clearance_m: torch.Tensor,
+        requested_direction_clearance_m: torch.Tensor,
+        executed_direction_clearance_m: torch.Tensor,
     ) -> None:
         """Record the state at action selection, before physics advances by one control step."""
 
         vectors = (actual_velocity_xy, requested_command_xy, executed_command_xy, policy_action_xy)
         if any(v.shape != (self.num_envs, 2) for v in vectors):
             raise ValueError("joint telemetry vectors must be [num_envs, 2]")
-        if clearance_m.shape != (self.num_envs,):
-            raise ValueError("joint telemetry clearance must be [num_envs]")
-        finite = torch.isfinite(torch.cat(vectors, dim=1)).all(dim=1) & torch.isfinite(clearance_m)
+        clearances = (
+            actual_direction_clearance_m,
+            requested_direction_clearance_m,
+            executed_direction_clearance_m,
+        )
+        if any(value.shape != (self.num_envs,) for value in clearances):
+            raise ValueError("joint telemetry clearances must be [num_envs]")
+        finite = torch.isfinite(torch.cat(vectors, dim=1)).all(dim=1)
+        finite &= torch.stack(clearances, dim=1).isfinite().all(dim=1)
         if not bool(finite.all()):
             raise RuntimeError("non-finite joint speed telemetry input")
 
         actual_speed = actual_velocity_xy.norm(dim=1)
         requested_speed = requested_command_xy.norm(dim=1)
         executed_speed = executed_command_xy.norm(dim=1)
-        usable = (clearance_m - self.hard_margin_m).clamp(min=0.0)
+        actual_usable = (actual_direction_clearance_m - self.hard_margin_m).clamp(min=0.0)
+        requested_usable = (
+            requested_direction_clearance_m - self.hard_margin_m
+        ).clamp(min=0.0)
+        executed_usable = (
+            executed_direction_clearance_m - self.hard_margin_m
+        ).clamp(min=0.0)
 
         def stopping_distance(speed: torch.Tensor) -> torch.Tensor:
             return speed * self.reaction_s + speed.square() / (2.0 * self.brake_mps2)
 
         actual_stop = stopping_distance(actual_speed)
         requested_stop = stopping_distance(requested_speed)
-        actual_margin = usable - actual_stop
-        requested_margin = usable - requested_stop
+        executed_stop = stopping_distance(executed_speed)
+        actual_margin = actual_usable - actual_stop
+        requested_margin = requested_usable - requested_stop
+        executed_margin = executed_usable - executed_stop
 
         prev = self._prev_valid
         actual_turn_valid = (
@@ -193,11 +213,15 @@ class JointSpeedTelemetry:
                 actual_speed,
                 requested_speed,
                 executed_speed,
-                clearance_m,
+                actual_direction_clearance_m,
+                requested_direction_clearance_m,
+                executed_direction_clearance_m,
                 actual_stop,
                 requested_stop,
+                executed_stop,
                 actual_margin,
                 requested_margin,
+                executed_margin,
                 action_delta,
                 requested_rate,
                 actual_rate,
@@ -207,11 +231,11 @@ class JointSpeedTelemetry:
             dim=1,
         ).to(torch.float64)
         valid = torch.ones_like(values, dtype=torch.bool)
-        valid[:, 8] = prev
-        valid[:, 9] = requested_turn_valid
-        valid[:, 10] = actual_turn_valid
-        valid[:, 11] = requested_turn_valid
-        valid[:, 12] = actual_turn_valid
+        valid[:, 12] = prev
+        valid[:, 13] = requested_turn_valid
+        valid[:, 14] = actual_turn_valid
+        valid[:, 15] = requested_turn_valid
+        valid[:, 16] = actual_turn_valid
 
         risk = risk_bin_index(actual_margin)
         env = torch.arange(self.num_envs, device=self.device)
@@ -330,7 +354,7 @@ class JointSpeedTelemetry:
         return {
             "schema_version": self.schema_version,
             "evaluation_only": True,
-            "risk_variable": "decision_time_actual_stopping_margin_m",
+            "risk_variable": "decision_time_actual_direction_stopping_margin_m",
             "risk_bin_edges_m": list(RISK_EDGES_M),
             "risk_bin_labels": list(RISK_LABELS),
             "step_dt_s": self.step_dt,
@@ -339,7 +363,7 @@ class JointSpeedTelemetry:
                 "brake_mps2": self.brake_mps2,
                 "reaction_s": self.reaction_s,
                 "hard_margin_m": self.hard_margin_m,
-                "formula": "usable_clearance - (v*reaction + v^2/(2*brake))",
+                "formula": "same_direction_usable_clearance - (v*reaction + v^2/(2*brake))",
             },
             "proxy_notice": (
                 "heading-rate and curvature are finite-difference velocity/command proxies; "

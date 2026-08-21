@@ -9484,8 +9484,13 @@ fail-fast로 일반화한 것이다.
 속도 배분과 연관되는지 동결 정책으로 분리하기 위한 **평가 전용** 계측을 추가했다. 관측·보상·종료·
 정책·checkpoint에는 손대지 않았고 riskcap 파라미터 탐색도 하지 않는다.
 
-- action-selection 시점의 actual pursuer speed, requested/executed XY command, actor-safe directional
-  LiDAR clearance, braking distance/margin, policy action delta를 같은 step에 결합한다.
+- `NAVRL_JOINT_SPEED_TELEMETRY=1`에서만 recorder를 만들고 JSON key를 export한다. 일반 bulk eval은
+  기존 runtime/result 계약 그대로이며 launcher·condition·schema-2 receipt·analyzer가 opt-in을
+  교차 검증한다.
+- action-selection 시점의 actual pursuer speed, requested/executed XY command 각각의 방향으로
+  actor-safe directional minimum LiDAR clearance를 별도 계산한다. actual/requested/executed stopping
+  distance·margin은 반드시 같은 방향 clearance와 결합하며 primary risk는
+  **actual-velocity-direction margin**이다. 요청방향 clearance와 actual speed를 섞은 hybrid는 쓰지 않는다.
 - requested/realized heading rate와 curvature는 0.25 m/s 이상인 연속 두 sample의 유한차분
   **proxy**다. planned path curvature나 인과량으로 해석하지 않는다.
 - 각 step을 에피소드 종료 뒤 capture/crash/timeout과 actual stopping-margin 4구간
@@ -9501,7 +9506,7 @@ contact 직전 negative-margin 비율이 50% 이상이고 capture-outcome 대비
 `supports_descriptive_speed_risk_association`이다. PASS여도 causal claim이나 riskcap 사후튜닝 권한은
 생기지 않는다.
 
-CPU 검증은 joint telemetry **6/6**, 기존 speed-governor **10/10**, outcome strata **5/5**,
+CPU 검증은 joint telemetry **7/7**, 기존 speed-governor **10/10**, outcome strata **5/5**,
 verification guards **4/4**, Python compile·launcher `bash -n`·4097-episode preflight 모두 PASS했다.
 GPU 평가는 실행하지 않았다. 전용 실행기는
 `aerial_gym/rl_training/rl_games/eval_navrl_v2_joint_speed_telemetry.sh`; frozen ep25000+riskcap,

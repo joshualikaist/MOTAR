@@ -62,10 +62,14 @@ def main() -> None:
         raise SystemExit("joint telemetry source changed after the receipt-bound evaluation")
     if int(payload.get("actual_episodes", -1)) != int(receipt.get("actual_episodes", -2)):
         raise SystemExit("receipt/result episode count mismatch")
+    if receipt.get("joint_speed_telemetry") is not True:
+        raise SystemExit("evaluation receipt does not attest joint-speed telemetry")
     if int((payload.get("condition") or {}).get("bars", -1)) != 205:
         raise SystemExit("joint-speed gate is preregistered for exactly 205 bars")
     if (payload.get("condition") or {}).get("speed_governor_mode") != "riskcap":
         raise SystemExit("joint-speed gate requires the frozen riskcap condition")
+    if (payload.get("condition") or {}).get("joint_speed_telemetry") is not True:
+        raise SystemExit("bulk condition does not attest joint-speed telemetry")
 
     joint = payload.get("joint_speed_allocation")
     if not isinstance(joint, dict):

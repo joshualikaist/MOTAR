@@ -52,7 +52,7 @@ class JointSpeedTelemetryTests(unittest.TestCase):
             node.name: node for node in task.body if isinstance(node, ast.FunctionDef)
         }
         init_text = ast.get_source_segment(source, methods["__init__"])
-        self.assertIn("if self._bulk_eval_mode", init_text)
+        self.assertIn("if self._joint_speed_telemetry_enabled", init_text)
         self.assertIn("JointSpeedTelemetry", init_text)
         self.assertIn("_joint_speed_telemetry.reset_idx", ast.get_source_segment(source, methods["reset_idx"]))
         step_text = ast.get_source_segment(source, methods["step"])
@@ -60,6 +60,17 @@ class JointSpeedTelemetryTests(unittest.TestCase):
         self.assertIn("_joint_speed_telemetry.finish", step_text)
         export_text = ast.get_source_segment(source, methods["_export_bulk_eval_result"])
         self.assertIn('"joint_speed_allocation"', export_text)
+        self.assertIn("if self._joint_speed_telemetry is not None", export_text)
+
+        root = Path(__file__).resolve().parents[1]
+        launcher = (
+            root / "aerial_gym/rl_training/rl_games/eval_navrl_v2_joint_speed_telemetry.sh"
+        ).read_text(encoding="utf-8")
+        evaluator = (
+            root / "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh"
+        ).read_text(encoding="utf-8")
+        self.assertIn("export NAVRL_JOINT_SPEED_TELEMETRY=1", launcher)
+        self.assertIn('elif "joint_speed_allocation" in payload', evaluator)
 
     def test_risk_bin_boundaries_are_fixed(self):
         values = torch.tensor([-0.01, 0.0, 0.49, 0.5, 1.49, 1.5, 9.0])
@@ -75,7 +86,9 @@ class JointSpeedTelemetryTests(unittest.TestCase):
                 requested_command_xy=torch.tensor([[2.5, 0.2 * step], [0.5, 0.0]]),
                 executed_command_xy=torch.tensor([[2.0, 0.16 * step], [0.5, 0.0]]),
                 policy_action_xy=torch.tensor([[0.8, 0.05 * step], [0.2, 0.0]]),
-                clearance_m=torch.tensor([0.6, 5.0]),
+                actual_direction_clearance_m=torch.tensor([0.6, 5.0]),
+                requested_direction_clearance_m=torch.tensor([0.6, 5.0]),
+                executed_direction_clearance_m=torch.tensor([0.6, 5.0]),
             )
         recorder.finish(
             torch.tensor([True, True]),
@@ -103,7 +116,9 @@ class JointSpeedTelemetryTests(unittest.TestCase):
             requested_command_xy=torch.tensor([[1.0, 0.0]]),
             executed_command_xy=torch.tensor([[1.0, 0.0]]),
             policy_action_xy=torch.tensor([[0.4, 0.0]]),
-            clearance_m=torch.tensor([2.0]),
+            actual_direction_clearance_m=torch.tensor([2.0]),
+            requested_direction_clearance_m=torch.tensor([2.0]),
+            executed_direction_clearance_m=torch.tensor([2.0]),
         )
         recorder.finish(
             torch.tensor([True]),
@@ -122,6 +137,31 @@ class JointSpeedTelemetryTests(unittest.TestCase):
         self.assertTrue(result["quality"]["passed"])
         self.assertTrue(result["association_gate"]["passed"])
         self.assertFalse(result["causal_claim_allowed"])
+
+    def test_actual_risk_uses_actual_direction_not_requested_direction(self):
+        recorder = JointSpeedTelemetry(
+            1, "cpu", step_dt=0.1, brake_mps2=2.0, reaction_s=0.1, hard_margin_m=0.45
+        )
+        recorder.record_step(
+            actual_velocity_xy=torch.tensor([[2.0, 0.0]]),
+            requested_command_xy=torch.tensor([[0.0, 2.0]]),
+            executed_command_xy=torch.tensor([[0.0, 1.5]]),
+            policy_action_xy=torch.tensor([[0.0, 0.8]]),
+            # Actual path is blocked, requested/executed command direction is open.
+            actual_direction_clearance_m=torch.tensor([0.6]),
+            requested_direction_clearance_m=torch.tensor([5.0]),
+            executed_direction_clearance_m=torch.tensor([5.0]),
+        )
+        recorder.finish(
+            torch.tensor([True]), torch.tensor([True]), torch.tensor([False]),
+            torch.tensor([False]), torch.tensor([-1]),
+        )
+        payload = recorder.payload((1, 0, 0), expected_bar_contacts=0)
+        negative = payload["outcomes"]["capture"]["risk_bins"]["negative"]
+        self.assertEqual(negative["step_samples"], 1)
+        self.assertLess(negative["actual_stopping_margin_m"], 0.0)
+        self.assertGreater(negative["requested_stopping_margin_m"], 0.0)
+        self.assertGreater(negative["executed_stopping_margin_m"], 0.0)
 
     def test_preregistered_gate_does_not_move_for_weak_or_small_samples(self):
         weak = assess_preregistered_speed_gate(synthetic_joint(0.45, 0.30))

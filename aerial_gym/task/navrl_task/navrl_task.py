@@ -745,6 +745,18 @@ class NavRLTask(BaseTask):
             "NAVRL_BULK_EVAL_JSON", ""
         ).strip()
         self._bulk_eval_exported = False
+        self._joint_speed_telemetry_enabled = os.environ.get(
+            "NAVRL_JOINT_SPEED_TELEMETRY", "0"
+        ).strip().lower() in ("1", "true", "yes", "on")
+        if self._joint_speed_telemetry_enabled and (
+            not self._bulk_eval_mode
+            or not self._bulk_eval_output
+            or not os.environ.get("NAVRL_EVAL_CHECKPOINT", "").strip()
+        ):
+            raise RuntimeError(
+                "NAVRL_JOINT_SPEED_TELEMETRY is evaluation-only and requires "
+                "NAVRL_BULK_EVAL, NAVRL_BULK_EVAL_JSON and NAVRL_EVAL_CHECKPOINT"
+            )
         self._progress_log_interval = (
             self._bulk_eval_target if self._bulk_eval_mode else 2048
         )
@@ -803,7 +815,7 @@ class NavRLTask(BaseTask):
                 reaction_s=self.speed_governor_cfg.reaction_s,
                 hard_margin_m=self.speed_governor_cfg.hard_margin_m,
             )
-            if self._bulk_eval_mode
+            if self._joint_speed_telemetry_enabled
             else None
         )
         # --- crash-cause diagnosis (NAVRL_CRASH_DIAG=1): split the aggregate "crash" number into
@@ -3131,15 +3143,24 @@ class NavRLTask(BaseTask):
         if self._joint_speed_telemetry is not None:
             # Decision-time actual velocity and LiDAR clearance are sampled before physics moves.
             # This aligns the risk label with the observation/action that produced the command.
+            actual_velocity_xy = self.obs_dict["robot_vehicle_linvel"][:, 0:2].detach()
+            requested_command_xy = (
+                torch.clamp(actions[:, 0:2], -1.0, 1.0)
+                * float(self.task_config.max_velocity)
+            ).detach()
+            executed_command_xy = command[:, 0:2].detach()
+            actual_clearance = self._diagnostic_directional_clearance(actual_velocity_xy)
+            executed_clearance = self._diagnostic_directional_clearance(executed_command_xy)
             self._joint_speed_telemetry.record_step(
-                actual_velocity_xy=self.obs_dict["robot_vehicle_linvel"][:, 0:2].detach(),
-                requested_command_xy=(
-                    torch.clamp(actions[:, 0:2], -1.0, 1.0)
-                    * float(self.task_config.max_velocity)
-                ).detach(),
-                executed_command_xy=command[:, 0:2].detach(),
+                actual_velocity_xy=actual_velocity_xy,
+                requested_command_xy=requested_command_xy,
+                executed_command_xy=executed_command_xy,
                 policy_action_xy=torch.clamp(actions[:, 0:2], -1.0, 1.0).detach(),
-                clearance_m=self._speed_governor_last["clearance_m"].detach(),
+                actual_direction_clearance_m=actual_clearance,
+                requested_direction_clearance_m=self._speed_governor_last[
+                    "clearance_m"
+                ].detach(),
+                executed_direction_clearance_m=executed_clearance,
             )
         if self.vision_mode:
             # remembered as "previous action" in the NEXT observation (ego proprioception)
@@ -3360,6 +3381,36 @@ class NavRLTask(BaseTask):
                 telemetry["stopping_margin_executed_m"] < 0.0
             ).sum()
         return governed
+
+    def _diagnostic_directional_clearance(self, command_xy):
+        """Actor-safe LiDAR minimum in exactly ``command_xy``'s direction (diagnostic only)."""
+
+        if self._joint_speed_telemetry is None:
+            raise RuntimeError("joint directional clearance requested while telemetry is disabled")
+        depth = self.obs_dict.get("depth_range_pixels")
+        if not isinstance(depth, torch.Tensor) or depth.ndim < 4:
+            raise RuntimeError("NavRL joint telemetry requires depth_range_pixels")
+        scan_m = torch.nan_to_num(
+            depth.squeeze(1), nan=1.0, posinf=1.0, neginf=1.0
+        ).clamp(0.0, 1.0) * float(self.task_config.lidar_max_range)
+        if self._speed_governor_bearings is None:
+            raise RuntimeError("joint telemetry clearance ran before governor bearing setup")
+        target_return = None
+        if self.perception is not None:
+            candidate = self.perception.last_target_like
+            if candidate.shape != scan_m.shape:
+                raise RuntimeError(
+                    "sensor-associated target mask does not match the current LiDAR scan"
+                )
+            target_return = candidate
+        return directional_lidar_clearance(
+            scan_m,
+            self._speed_governor_bearings,
+            command_xy,
+            max_range_m=float(self.task_config.lidar_max_range),
+            path_half_width_m=self.speed_governor_cfg.path_half_width_m,
+            target_return_mask=target_return,
+        ).detach()
 
     def _record_action_diagnostics(self, actions):
         """Accumulate action tails plus context needed to separate avoidance from policy bias."""
@@ -5548,10 +5599,6 @@ class NavRLTask(BaseTask):
                     for label in ("capture", "crash", "timeout")
                 },
             },
-            "joint_speed_allocation": self._joint_speed_telemetry.payload(
-                (self._succ_agg, self._crash_agg, self._to_agg),
-                expected_bar_contacts=d["contact"],
-            ),
             "strata": {
                 # Evaluation speed bins cover the distribution actually applied.  Curriculum
                 # training counters retain their historical [0,max] definition separately.
@@ -5621,6 +5668,12 @@ class NavRLTask(BaseTask):
                 },
             },
         }
+        if self._joint_speed_telemetry is not None:
+            payload["condition"]["joint_speed_telemetry"] = True
+            payload["joint_speed_allocation"] = self._joint_speed_telemetry.payload(
+                (self._succ_agg, self._crash_agg, self._to_agg),
+                expected_bar_contacts=d["contact"],
+            )
         compact = json.dumps(payload, sort_keys=True, separators=(",", ":"))
         print("NAVRL_BULK_EVAL_RESULT " + compact, flush=True)
 
