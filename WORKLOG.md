@@ -9519,3 +9519,27 @@ GPU 평가는 실행하지 않았다. 전용 실행기는
 `f7022139…` 검사는 그대로다. default `RESULT_ROOT`는 checkpoint 위치를 따라가지 않고 현재
 diagnostic worktree의 `${REPO_ROOT}/results/`에 고정한다. 별도 `POLICY` 없이 worktree preflight를
 재실행해 PASS했다.
+
+### GPU 실행: 첫 run VOID 후 유효 재실행에서 speed-risk 연관 gate 통과
+
+첫 4,097-episode 실행은 simulator를 끝까지 돌렸지만 evaluator가 joint condition attestation 부재로
+fail-closed했다. 원인은 isolated worktree의 launcher가 checkpoint만 primary worktree에서 찾고,
+editable install의 `aerial_gym` import도 primary dirty source로 빠지는 것을 막지 않았기 때문이다.
+따라서 새 recorder가 생성되지 않은 첫 결과는 진단 증거로 **VOID**이며 삭제하지 않고
+`results/void_navrl_v2_joint_speed_allocation_seed379_primary_import_20260821/`에 보존했다.
+
+launcher가 `${REPO_ROOT}`를 `PYTHONPATH` 첫 항목으로 고정하고 `aerial_gym.__init__`의 resolved origin이
+현재 diagnostic worktree와 정확히 일치하는지 실행 전에 검사하도록 수정했다. `bash -n`, import
+origin guard, 4097-episode preflight가 PASS한 뒤 같은 checkpoint/seed/condition으로 재실행했다.
+
+유효 run은 205 bars, seed379, 4,097 episodes에서 capture **80.69%**, crash **16.77%**, timeout
+**2.54%**였고 crash 687건 중 bar contact는 **664건**이다. 사전등록 quality(접촉 100 episodes,
+pre-contact 500 steps, capture 1,000 steps)는 모두 통과했다. bar-contact 직전 1초 6,511 step의
+actual-direction negative stopping-margin 비율은 **67.58%**, capture outcome 전체 step은 **9.25%**로
+차이가 **+58.33pp**였다. 접촉 직전 평균은 requested command **2.895 m/s**, executed command
+**2.109 m/s**, actual speed **1.754 m/s**, actual-direction clearance **1.671 m**였다.
+
+판정은 **supports_descriptive_speed_risk_association**이다. 이는 위험한 실제 진행방향 speed-margin과
+bar contact의 강한 연관만 지지하며 speed를 원인으로 특정하거나 riskcap 사후 파라미터 탐색을
+허용하지 않는다. 유효 artifact와 source/receipt hash는
+`results/navrl_v2_joint_speed_allocation_seed379/assessment.json`에 고정했다.

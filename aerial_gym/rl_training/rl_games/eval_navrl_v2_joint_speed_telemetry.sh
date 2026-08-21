@@ -9,6 +9,26 @@ cd "${SCRIPT_DIR}"
 
 PYTHON="${PYTHON:-/home/fair/miniconda3/envs/aerialgym/bin/python}"
 export PYTHON PYTHONNOUSERSITE=1
+export PYTHONPATH="${REPO_ROOT}${PYTHONPATH:+:${PYTHONPATH}}"
+
+# Editable installs can otherwise resolve aerial_gym from the primary dirty worktree while this
+# diagnostic runs from an isolated worktree.  That silently drops the opt-in telemetry code.
+IMPORT_ORIGIN="$(${PYTHON} - "${REPO_ROOT}" <<'PY'
+import importlib.util
+import pathlib
+import sys
+
+root = pathlib.Path(sys.argv[1]).resolve()
+spec = importlib.util.find_spec("aerial_gym")
+if spec is None or spec.origin is None:
+    raise SystemExit("missing aerial_gym import")
+print(pathlib.Path(spec.origin).resolve())
+PY
+)"
+EXPECTED_ORIGIN="$(readlink -f -- "${REPO_ROOT}/aerial_gym/__init__.py")"
+[[ "${IMPORT_ORIGIN}" == "${EXPECTED_ORIGIN}" ]] || {
+    echo "[joint-speed] aerial_gym import escaped worktree: ${IMPORT_ORIGIN}" >&2; exit 3;
+}
 POLICY_REL="aerial_gym/rl_training/rl_games/runs/ppo_260805_0413_navrl_v2-speedgov-ep24000-205bars-main-riskcap-s1/nn/last_gen_ppo_ep_25000_rew_39.742134.pth"
 if [[ -n "${POLICY:-}" ]]; then
     if [[ "${POLICY}" != /* ]]; then
