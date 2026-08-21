@@ -9498,8 +9498,13 @@ fail-fast로 일반화한 것이다.
 `docs/topology_layout_snapshot_contract.md`에 고정했다. aggregate summary만 남은 과거 평가는
 레이아웃을 복원할 수 없어 소급 라벨링 불가다.
 
+배포 `cluster_sector`의 authoritative default가 `NAVRL_OBSTACLE_CLUSTER_GAP_M=0.45`임을
+`navrl_perception.py`와 v2 evaluation launcher에서 재확인했다. topology 도구 초안의 0.40 m에는 별도
+기하학적 근거가 없었으므로 CLI·문서·테스트·출력 metadata를 0.45 m로 통일했다.
+
 CPU synthetic 6개가 모두 PASS했다: open/direct, full-wall disconnected, two-exit corridor,
 one-exit U-shaped dead-end, sensor-range cluster grouping, metadata contract. arena boundary가 sensor disc를
 자른 open spawn을 dead-end로 오인하지 않도록 exit coverage를 arena-available angle로 정규화한다.
 이 라벨은 정적 2-D GT 진단이며 동역학·표적 이동·episode horizon 또는 planner의 경로 거부를 뜻하지
-않는다. GPU 실행 및 학습/평가 run은 수행하지 않았다.
+않는다. 기존 `tests/test_navrl_reachability.py`도 3/3 PASS했다. GPU 실행 및 학습/평가 run은 수행하지
+않았다.

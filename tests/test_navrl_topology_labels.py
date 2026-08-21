@@ -39,7 +39,7 @@ def label(item, sensor=4.0):
         vehicle_half_width_m=0.20,
         side_clearance_m=0.10,
         sensor_range_m=sensor,
-        cluster_gap_m=0.40,
+        cluster_gap_m=0.45,
         snap_radius_m=0.60,
     )
 
@@ -98,6 +98,7 @@ class TopologyLabelsTest(unittest.TestCase):
         self.assertEqual(metadata["vehicle_half_width_m"], 0.20)
         self.assertEqual(metadata["side_clearance_m"], 0.10)
         self.assertAlmostEqual(metadata["inflation_m"], 0.30)
+        self.assertEqual(metadata["cluster_surface_gap_m"], 0.45)
 
 
 if __name__ == "__main__":

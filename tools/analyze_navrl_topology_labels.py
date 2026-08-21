@@ -463,7 +463,7 @@ def main() -> None:
     parser.add_argument("--vehicle-half-width-m", type=float, default=0.14)
     parser.add_argument("--side-clearance-m", type=float, default=0.20)
     parser.add_argument("--sensor-range-m", type=float, default=12.0)
-    parser.add_argument("--cluster-gap-m", type=float, default=0.40)
+    parser.add_argument("--cluster-gap-m", type=float, default=0.45)
     parser.add_argument("--endpoint-snap-radius-m", type=float, default=0.60)
     parser.add_argument("--default-bar-size-m", type=float)
     parser.add_argument("--arena-min-xy-m", type=float, nargs=2, default=(0.0, 0.0))

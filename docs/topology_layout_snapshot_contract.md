@@ -23,12 +23,13 @@ python tools/analyze_navrl_topology_labels.py \
   --vehicle-half-width-m 0.14 \
   --side-clearance-m 0.20 \
   --sensor-range-m 12.0 \
-  --cluster-gap-m 0.40
+  --cluster-gap-m 0.45
 ```
 
 The defaults match the current 0.28 m collision-box width, 0.20 m diagnostic side-clearance,
-12 m LiDAR range, and the existing 0.10 m feasibility grid. They are recorded in every output
-row and must be changed explicitly when analysing another platform or clearance convention.
+12 m LiDAR range, the deployed `cluster_sector` representation's 0.45 m cluster gap, and the
+existing 0.10 m feasibility grid. They are recorded in every output row and must be changed
+explicitly when analysing another platform or clearance convention.
 
 ## Labels and boundaries of interpretation
 
