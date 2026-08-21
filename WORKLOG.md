@@ -9938,3 +9938,66 @@ manifest의 모든 runtime file을 worktree와 재해시하고, raw log의 impor
 따라서 기존 세 simulator 결과와 topology 판정은 바꾸지 않는다. 상세 증거와 경로는
 `docs/navrl_import_origin_audit_2026-08-22.md`에 기록했다. 앞으로 worktree launcher는
 `NAVRL_REQUIRE_SOURCE_ROOT`와 local `PYTHONPATH`를 canonical environment 생성 **뒤에** 주입해야 한다.
+
+## 2026-08-22 — paired-reflection consistency 사전등록 (실행 전, 구현 아님)
+
+N1이 `CHIRALITY_CONFIRMED_REAL_FRAME`을 냈으므로 사전등록 §8에 따라 개입 실험의 **사전등록을 쓸
+자격**이 생겼다. 구현·실행 권한은 아직 없다. `docs/prereg_2026-08-22_paired_reflection_consistency.md`.
+
+### 새로 만들 코드는 없다
+
+레버는 이미 배선돼 있다. `early_stop_a2c_agent.py:428-466`이 `NAVRL_REFLECTION_COEF`를 읽어
+`reflection_equivariance_loss(mu, reflected_mu)`를 더한다. 보조 forward 동안 running_mean_std를
+`eval()`로 얼려 정규화 표본을 이중 계수하지 않도록 이미 처리돼 있다.
+
+두 번째 레버 `NAVRL_LATERAL_BIAS_COEF`(`lateral_batch_bias_loss`, `:421`)는 **0으로 고정**한다.
+한 run 두 축 금지이기도 하지만 설계상으로도 부적합하다 — batch 평균 `mu[:,1]`만 눌러도 관측별
+chirality는 남는다(절반 좌·절반 우면 평균 0, equivariance는 아님). N1의 primary는 평균이 아니라
+관측별 `conj_err_lat`이다.
+
+### 설계상 함정: 손실과 지표가 다른 스케일에 있다
+
+손실은 `mus`(pre-tanh, 무계)에 걸리고 N1 지표는 `tanh(mu_scale ⊙ mus)`(post-tanh, `[-1,1]`)에서
+읽는다. `mu_scale`이 축별이고 tanh가 홀함수라 `M(tanh(s⊙mu)) = tanh(s⊙M(mu))`이므로 **영점은
+일치하지만** 포화 영역 불일치가 손실에서 과대 가중된다. 따라서 계수를 감으로 정하면 안 된다.
+
+계수는 **arm 실행 전 프로파일링 1회**로 정한다: optimizer step 없이 minibatch 64개를 통과시켜
+`median(|a_loss|)`와 `median(symmetry_penalty)`를 재고,
+`c = round_1sig(0.10 × median(|a_loss|) / median(symmetry_penalty))`. 보조항 초기 기여를 정책 손실의
+10%로 맞춘다는 뜻이며, 1 유효숫자 반올림이 "측정값이지 튜닝값이 아님"을 강제한다. 스윕은 금지다
+(`VERIFICATION.md` fail-closed 2).
+
+2026-07-27 Ablation B의 `0.01`은 재사용하지 않는다. 그 run은 **잘못된 mirror 연산자** 위에서 돌았고
+2026-07-29에 무효화됐다 — 현재 연산자에 대한 증거가 아니며, 동시에 새 실험의 근거로 인용할 수도 없다.
+
+### 계약과 게이트
+
+학습 seed **383**, 평가 seed **389**(둘 다 전수검색 0건). 양 arm 모두 ref5in D1 ep1900
+(SHA `197ea269…`)에서 warm-start, 1,000 epoch / 4.096M samples. 조작 변수는 `NAVRL_REFLECTION_COEF`
+하나뿐. 평가 rollout 1회가 `70bars.json`(성능)과 `reflection_audit.json`(chirality)을 동시에 낸다.
+
+| 게이트 | 조건 | 실패 시 |
+|---|---|---|
+| **Gate 0** 설계 타당성 | control이 chirality 유지: median ≥ 1.00 **및** agreement ≤ 0.20 | `INCONCLUSIVE_CONFOUNDED_BY_ADAPTATION` |
+| **Gate M** 메커니즘 | treatment median ≤ 0.50 **및** agreement ≥ 0.70 | `REFLECTION_CONSISTENCY_INEFFECTIVE` |
+| **Gate P** 성능 guard | capture ≥ control−2.00 pp **및** crash ≤ control+2.00 pp | `MECHANISM_PASS_PERFORMANCE_REGRESSION` |
+
+Gate 0이 핵심이다. control이 손실 없이도 chirality를 잃는다면 원인은 적응 예산 자체이지 손실이
+아니므로, treatment에 대해 아무 주장도 할 수 없다. 기준선은 1.454 / 0.0249이고 Gate M의 0.50은
+66% 축소, 0.70은 우연 수준 0.50보다 위다. N1의 `CHIRALITY_ABSENT` 구역(≤0.10/≥0.90)은 1,000 epoch
+예산에서 비현실적이라 채택하지 않았다.
+
+`INEFFECTIVE`가 나오면 그대로 기록하고 계수를 올려 재시도하지 않는다 — 그게 곧 금지된 스윕이다.
+
+### 우선순위 긴장을 문서에 박아뒀다
+
+P2/D1의 **진단된 병목은 chirality가 아니다.** 초기 표적 미관측(camera 20 m vs goal 22.5–28 m)이며
+seed 367에서 camera 20→28 m로 timeout `55.80 → 18.16%`(−37.65 pp)가 인과 확인됐다. 즉 인과가
+확인된 처방이 이미 있고 chirality는 성능 근거가 없는 별개 결함이다. 이 실험을 먼저 하는 것은
+"인과 확인된 것"보다 "메커니즘적으로 흥미로운 것"을 앞세우는 선택이며, 사전등록 §2에 그 선택을
+명시했다. 문서는 그 선택을 정당화하지 않는다 — 실행 여부는 별도 결정이다.
+
+비용: arm당 약 52분(`ppo_260813_1636_ref5in-d1-q3-adapt-s197` 실측), treatment는 update당 정책
+forward 1회 추가라 더 느리다. 평가 2셀 약 40분, 프로파일링 약 10분. **총 GPU 2.5–3시간.**
+
+P2 STRICT FAIL / D1 FAIL / P3 BLOCKED 변경 없음. 이 항목 시점에 학습·평가 실행은 없다.
