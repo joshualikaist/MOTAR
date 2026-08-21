@@ -178,14 +178,10 @@ def verify_artifacts():
     require(probe.get("decision_authority") == "diagnostic_only_no_training_or_replacement_authority",
             "mode-probe authority drift")
     fixture = probe.get("fixture_contract") or {}
-    pair_errors = fixture.get("reflection_pair_max_abs") or {}
-    require(
-        set(pair_errors)
-        == {"symmetric_lr_to_rl", "left_lr_to_right_rl", "left_rl_to_right_lr"},
-        "fixture reflection-pair contract is incomplete",
-    )
-    require(max(float(value) for value in pair_errors.values()) <= 1e-7,
-            "physical fixture pairs are not exact mirrors")
+    require(float(fixture.get("symmetric_reflection_max_abs", 1)) <= 1e-7,
+            "symmetric fixture is not reflection invariant")
+    require(float(fixture.get("left_right_reflection_max_abs", 1)) <= 1e-7,
+            "perturbation arms are not exact mirrors")
     return result_path, receipt_path, result, receipt, probe
 
 
@@ -195,7 +191,7 @@ def finalize():
         "schema_version": 1,
         "producer": "tools/run_navrl_ref5in_mode_probe.py",
         "created_at_utc": datetime.now(timezone.utc).isoformat(),
-        "scope": "frozen_ref5in_symmetric_corridor_synthetic_policy_screen",
+        "scope": "frozen_ref5in_symmetric_corridor_mode_averaging_diagnostic",
         "decision_authority": "diagnostic_only",
         "checkpoint": str(CHECKPOINT),
         "checkpoint_sha256": CHECKPOINT_SHA,
