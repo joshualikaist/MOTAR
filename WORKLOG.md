@@ -9531,3 +9531,16 @@ result에서, evaluator intervention 필드는 receipt에서 각각 검증하고
 일치시키도록 verifier를 수정했다. 재실행 없이 `finalize`와 `verify`가 PASS했다. 결과는
 `results/navrl_ref5in_active_search_geofence_seed367/{summary.md,summary.json}`이다. P2 STRICT FAIL,
 D1 FAIL, P3 BLOCKED는 바뀌지 않는다.
+
+## 2026-08-21 — 병렬 진단 종합과 다음 gate 고정
+
+active-search, symmetric mode probe, 205-bar joint speed telemetry, legacy topology label의 결과를
+`docs/diagnostic_synthesis_2026-08-21.md`에 계보별로 분리해 정리했다. 결론은 (1) speed/riskcap을
+바로 튜닝하지 않음, (2) chirality 때문에 multi-candidate head를 바로 구현하지 않음, (3) mapped
+geofence만 추가 fresh-seed confirmatory 후보로 승격, (4) timeout과 실제 bar footprint가 포함된 dump
+전에는 topology curriculum을 만들지 않음이다.
+
+다음 순서는 real-frame reflection audit → prospective geofence replication → frozen 205-bar 위험 step의
+시간적 원인 분해 → future dump contract다. 현재 masked 결과에서 OOB가 timeout으로 치환된 사실을
+반영해, **향후** replication의 mechanism 지표는 결과 전에 acquisition-failure/all로 고정한다. 이는
+현재 `PASS_MECHANISM_UNRESOLVED` 판정을 소급 변경하지 않는다.
