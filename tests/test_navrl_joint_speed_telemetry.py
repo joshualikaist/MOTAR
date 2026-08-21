@@ -70,6 +70,8 @@ class JointSpeedTelemetryTests(unittest.TestCase):
             root / "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh"
         ).read_text(encoding="utf-8")
         self.assertIn("export NAVRL_JOINT_SPEED_TELEMETRY=1", launcher)
+        self.assertIn("rev-parse --git-common-dir", launcher)
+        self.assertIn('RESULT_ROOT="${REPO_ROOT}/results/', launcher)
         self.assertIn('elif "joint_speed_allocation" in payload', evaluator)
 
     def test_risk_bin_boundaries_are_fixed(self):

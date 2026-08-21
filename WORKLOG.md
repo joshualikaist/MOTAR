@@ -9512,3 +9512,10 @@ GPU 평가는 실행하지 않았다. 전용 실행기는
 `aerial_gym/rl_training/rl_games/eval_navrl_v2_joint_speed_telemetry.sh`; frozen ep25000+riskcap,
 205 bars, deterministic, unused seed 379, 4,097 episodes 한 셀이다. 결과 예정 경로는
 `results/navrl_v2_joint_speed_allocation_seed379/assessment.json`이다.
+
+통합 전 재현성 검수에서 diagnostic worktree에는 ignored `runs/`가 없어 기본 checkpoint 상대경로가
+실패하는 것을 확인했다. launcher는 local checkpoint를 먼저 찾고, 없으면
+`git rev-parse --git-common-dir`로 primary worktree의 같은 고정 경로를 해석한다. SHA
+`f7022139…` 검사는 그대로다. default `RESULT_ROOT`는 checkpoint 위치를 따라가지 않고 현재
+diagnostic worktree의 `${REPO_ROOT}/results/`에 고정한다. 별도 `POLICY` 없이 worktree preflight를
+재실행해 PASS했다.

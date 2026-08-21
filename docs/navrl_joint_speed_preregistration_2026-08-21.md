@@ -12,6 +12,9 @@ does not alter or search riskcap parameters, and it does not train PPO.
   not construct the recorder or export its key
 - source bytes, checkpoint bytes, evaluator, Python environment and result are receipt-bound by
   `eval_navrl_v2_density_sweep.sh`
+- when an isolated Git worktree lacks ignored `runs/`, the launcher resolves the pinned checkpoint
+  from the primary worktree via `git rev-parse --git-common-dir`; SHA enforcement is unchanged,
+  while the default result directory remains under the diagnostic worktree's own repository root
 
 ## Measurements
 

@@ -2,13 +2,39 @@
 # Frozen-policy, one-cell descriptive diagnosis of speed allocation before bar contact.
 # This is evaluation only.  It does not compare or tune riskcap parameters.
 set -euo pipefail
-cd "$(dirname "${BASH_SOURCE[0]}")"
+CALLER_PWD="${PWD}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(git -C "${SCRIPT_DIR}" rev-parse --show-toplevel)"
+cd "${SCRIPT_DIR}"
 
 PYTHON="${PYTHON:-/home/fair/miniconda3/envs/aerialgym/bin/python}"
 export PYTHON PYTHONNOUSERSITE=1
-POLICY="${POLICY:-runs/ppo_260805_0413_navrl_v2-speedgov-ep24000-205bars-main-riskcap-s1/nn/last_gen_ppo_ep_25000_rew_39.742134.pth}"
+POLICY_REL="aerial_gym/rl_training/rl_games/runs/ppo_260805_0413_navrl_v2-speedgov-ep24000-205bars-main-riskcap-s1/nn/last_gen_ppo_ep_25000_rew_39.742134.pth"
+if [[ -n "${POLICY:-}" ]]; then
+    if [[ "${POLICY}" != /* ]]; then
+        POLICY="${CALLER_PWD}/${POLICY}"
+    fi
+else
+    POLICY="${REPO_ROOT}/${POLICY_REL}"
+    if [[ ! -f "${POLICY}" ]]; then
+        # Ignored runs/ are not duplicated into Git worktrees.  The shared common Git directory
+        # belongs to the primary worktree; checkpoint identity remains enforced by POLICY_SHA.
+        GIT_COMMON_DIR="$(git -C "${REPO_ROOT}" rev-parse --git-common-dir)"
+        if [[ "${GIT_COMMON_DIR}" != /* ]]; then
+            GIT_COMMON_DIR="${REPO_ROOT}/${GIT_COMMON_DIR}"
+        fi
+        PRIMARY_ROOT="$(dirname "$(readlink -f -- "${GIT_COMMON_DIR}")")"
+        POLICY="${PRIMARY_ROOT}/${POLICY_REL}"
+    fi
+fi
 POLICY_SHA="f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40"
-RESULT_ROOT="${RESULT_ROOT:-../../../results/navrl_v2_joint_speed_allocation_seed379}"
+if [[ -n "${RESULT_ROOT:-}" ]]; then
+    if [[ "${RESULT_ROOT}" != /* ]]; then
+        RESULT_ROOT="${CALLER_PWD}/${RESULT_ROOT}"
+    fi
+else
+    RESULT_ROOT="${REPO_ROOT}/results/navrl_v2_joint_speed_allocation_seed379"
+fi
 EPISODES="${EPISODES:-4097}"
 PREFLIGHT="${PREFLIGHT:-0}"
 
@@ -58,8 +84,8 @@ fi
 NAVRL_V2_RESULT_DIR="${RESULT_ROOT}" \
     ./eval_navrl_v2_density_sweep.sh "${POLICY}" "${EPISODES}"
 
-PYTHONPATH="../../../:${PYTHONPATH:-}" "${PYTHON}" \
-    ../../../tools/analyze_navrl_joint_speed.py \
+PYTHONPATH="${REPO_ROOT}:${PYTHONPATH:-}" "${PYTHON}" \
+    "${REPO_ROOT}/tools/analyze_navrl_joint_speed.py" \
     "${RESULT_ROOT}/205bars.json" "${RESULT_ROOT}/205bars.receipt.json" \
     --output "${RESULT_ROOT}/assessment.json"
 echo "[joint-speed] done -> ${RESULT_ROOT}/assessment.json"
