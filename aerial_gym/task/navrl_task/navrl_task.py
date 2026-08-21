@@ -30,6 +30,7 @@ from aerial_gym.task.navrl_task.speed_governor import (
     apply_speed_governor,
     directional_lidar_clearance,
 )
+from aerial_gym.task.navrl_task.joint_speed_telemetry import JointSpeedTelemetry
 from aerial_gym.sim.sim_builder import SimBuilder
 from aerial_gym.utils.math import quat_rotate, quat_rotate_inverse
 from aerial_gym.utils.logging import CustomLogger
@@ -790,6 +791,21 @@ class NavRLTask(BaseTask):
         self._speed_governor_outcome_steps = {
             "capture": [], "crash": [], "timeout": []
         }
+        # Evaluation-only joint kinematics.  It consumes the same actor-safe LiDAR clearance and
+        # action-selection state already used by the speed-governor diagnostics, but changes no
+        # command, observation, reward, termination, or checkpoint field.
+        self._joint_speed_telemetry = (
+            JointSpeedTelemetry(
+                self.num_envs,
+                self.device,
+                step_dt=self.step_dt,
+                brake_mps2=self.speed_governor_cfg.brake_mps2,
+                reaction_s=self.speed_governor_cfg.reaction_s,
+                hard_margin_m=self.speed_governor_cfg.hard_margin_m,
+            )
+            if self._bulk_eval_mode
+            else None
+        )
         # --- crash-cause diagnosis (NAVRL_CRASH_DIAG=1): split the aggregate "crash" number into
         # its termination source (bar contact / height bound / out-of-arena side) so a stuck run
         # can be diagnosed from measured counts instead of guesses. Off by default: zero overhead.
@@ -3024,6 +3040,8 @@ class NavRLTask(BaseTask):
             self._episode_spawn[env_ids] = self.obs_dict["robot_position"][env_ids].clone()
         if self._action_diag_enabled:
             self._action_diag_prev_valid[env_ids] = False
+        if self._joint_speed_telemetry is not None:
+            self._joint_speed_telemetry.reset_idx(env_ids)
         self._tm_ep_wall_reflections[env_ids] = 0
         self._tm_ep_bar_reflections[env_ids] = 0
         self._tm_ep_visible_steps[env_ids] = 0
@@ -3110,6 +3128,19 @@ class NavRLTask(BaseTask):
         # (No-op while all per-episode target speeds are 0, i.e. the static Phases 1-2 task.)
         self._advance_target()
         command = self.transform_action_to_command(actions)
+        if self._joint_speed_telemetry is not None:
+            # Decision-time actual velocity and LiDAR clearance are sampled before physics moves.
+            # This aligns the risk label with the observation/action that produced the command.
+            self._joint_speed_telemetry.record_step(
+                actual_velocity_xy=self.obs_dict["robot_vehicle_linvel"][:, 0:2].detach(),
+                requested_command_xy=(
+                    torch.clamp(actions[:, 0:2], -1.0, 1.0)
+                    * float(self.task_config.max_velocity)
+                ).detach(),
+                executed_command_xy=command[:, 0:2].detach(),
+                policy_action_xy=torch.clamp(actions[:, 0:2], -1.0, 1.0).detach(),
+                clearance_m=self._speed_governor_last["clearance_m"].detach(),
+            )
         if self.vision_mode:
             # remembered as "previous action" in the NEXT observation (ego proprioception)
             self.prev_action[:] = torch.clamp(actions[:, 0:4], -1.0, 1.0)
@@ -3160,6 +3191,10 @@ class NavRLTask(BaseTask):
                     )
 
         finished = (self.terminations > 0) | (self.truncations > 0)
+        if self._joint_speed_telemetry is not None:
+            self._joint_speed_telemetry.finish(
+                finished, successes, crashes, timeouts, self._crash_cause_code
+            )
         self._record_general_result(successes, crashes, timeouts, finished)
         self._log_progress(successes, crashes, timeouts, finished)
         self._update_curriculum(successes, finished)
@@ -5513,6 +5548,10 @@ class NavRLTask(BaseTask):
                     for label in ("capture", "crash", "timeout")
                 },
             },
+            "joint_speed_allocation": self._joint_speed_telemetry.payload(
+                (self._succ_agg, self._crash_agg, self._to_agg),
+                expected_bar_contacts=d["contact"],
+            ),
             "strata": {
                 # Evaluation speed bins cover the distribution actually applied.  Curriculum
                 # training counters retain their historical [0,max] definition separately.

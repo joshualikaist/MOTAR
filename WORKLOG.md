@@ -9477,3 +9477,33 @@ launcher가 `PYTHONPATH` 첫 항목을 현재 git root로 고정하고, receipt 
 `importlib.util.find_spec("aerial_gym").origin`이 해당 worktree의 `aerial_gym/__init__.py`와 정확히
 같은지 검사하도록 수정했다. OOB evaluator에서 잡았던 동일 계열 문제를 training launcher에도
 fail-fast로 일반화한 것이다.
+
+## 2026-08-21 — 고밀도 speed-allocation joint telemetry 사전등록·CPU 검증
+
+205막대에서 남은 bar contact가 단순 고속 때문인지, 좁은 clearance·큰 방향 변화와 결합된 위험한
+속도 배분과 연관되는지 동결 정책으로 분리하기 위한 **평가 전용** 계측을 추가했다. 관측·보상·종료·
+정책·checkpoint에는 손대지 않았고 riskcap 파라미터 탐색도 하지 않는다.
+
+- action-selection 시점의 actual pursuer speed, requested/executed XY command, actor-safe directional
+  LiDAR clearance, braking distance/margin, policy action delta를 같은 step에 결합한다.
+- requested/realized heading rate와 curvature는 0.25 m/s 이상인 연속 두 sample의 유한차분
+  **proxy**다. planned path curvature나 인과량으로 해석하지 않는다.
+- 각 step을 에피소드 종료 뒤 capture/crash/timeout과 actual stopping-margin 4구간
+  (`<0`, `0–0.5`, `0.5–1.5`, `>=1.5 m`)에 귀속하고, cause-attributed bar contact 직전 1.0초를
+  별도로 집계한다.
+- outcome 총계와 bar-contact 총계가 기존 bulk evaluator의 독립 counter와 다르면 JSON export를
+  중단한다. analyzer도 result SHA, schema-2 receipt, runtime source manifest와 계측 module snapshot을
+  다시 검증한다.
+
+결과를 보기 전에 gate를 `docs/navrl_joint_speed_preregistration_2026-08-21.md`에 고정했다. quality는
+bar-contact 100 episodes / pre-contact 500 steps / capture 1,000 steps 이상이다. quality 통과 뒤
+contact 직전 negative-margin 비율이 50% 이상이고 capture-outcome 대비 +10 pp 이상일 때만
+`supports_descriptive_speed_risk_association`이다. PASS여도 causal claim이나 riskcap 사후튜닝 권한은
+생기지 않는다.
+
+CPU 검증은 joint telemetry **6/6**, 기존 speed-governor **10/10**, outcome strata **5/5**,
+verification guards **4/4**, Python compile·launcher `bash -n`·4097-episode preflight 모두 PASS했다.
+GPU 평가는 실행하지 않았다. 전용 실행기는
+`aerial_gym/rl_training/rl_games/eval_navrl_v2_joint_speed_telemetry.sh`; frozen ep25000+riskcap,
+205 bars, deterministic, unused seed 379, 4,097 episodes 한 셀이다. 결과 예정 경로는
+`results/navrl_v2_joint_speed_allocation_seed379/assessment.json`이다.
