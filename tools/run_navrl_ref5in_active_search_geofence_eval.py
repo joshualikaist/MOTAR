@@ -26,7 +26,10 @@ SOURCE_BUNDLE = OUTPUT / "source_bundle"
 SEED = 367
 BARS = 1
 EPISODES = 2049
-EXPECTED_MISMATCH = "cfg_target_pattern: checkpoint=mixed expected=cv"
+EXPECTED_MISMATCHES = [
+    "cfg_general_goal_dist_min: checkpoint=6.0 expected=22.5",
+    "cfg_target_pattern: checkpoint=mixed expected=cv",
+]
 PRIMARY_DELTA_PP = 0.03
 NON_OOB_CRASH_RISE_PP = 0.02
 MASKED_FRACTION_OF_GAIN = 0.50
@@ -142,7 +145,7 @@ def verify_narrow_overrides():
             if line.strip().startswith("cfg_") and "checkpoint=" in line
         ]
         require(completed.returncode == 2, f"{arm}: evaluator accepted CV intervention without force")
-        require(lines == [EXPECTED_MISMATCH], f"{arm}: unexpected mismatch set: {lines}")
+        require(lines == EXPECTED_MISMATCHES, f"{arm}: unexpected mismatch set: {lines}")
         run_command(arm, preflight=True, force=True)
 
 

@@ -9499,3 +9499,11 @@ fail-fast로 일반화한 것이다.
 검증: force-invalid perception **31/31 PASS**, checkpoint preflight **15/15 PASS**, Python compile,
 shell syntax, `git diff --check` PASS. 현재 `status`는 control 진행 중/geofence 미시작을 정확히
 PENDING으로 표시하며, 두 `.aerial_training_finished`가 생기기 전 preflight/run은 fail-closed다.
+
+### 완료 후 첫 held-out preflight 차단과 계약 수정
+
+두 arm의 epoch-900 완료 뒤 첫 preflight는 평가를 시작하기 전에 차단됐다. held-out은 의도적으로
+학습 계약의 `goal_dist_min=6.0`을 `22.5`로, `target_pattern=mixed`를 `cv`로 바꾸는데, 평가기가
+후자 한 줄만 허용 mismatch로 등록해 전자도 source drift로 오인했다. 결과 episode는 0개였고
+checkpoint에는 영향이 없다. 관측된 두 mismatch 문자열을 순서까지 정확히 고정하고, 그 외 차이는
+계속 거부하도록 수정했다. 수정 후 세 arm preflight를 다시 통과해야만 실제 평가를 시작한다.
