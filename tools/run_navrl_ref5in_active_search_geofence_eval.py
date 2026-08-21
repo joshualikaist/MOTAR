@@ -166,7 +166,16 @@ def verify_cell(arm: str) -> tuple[dict, dict]:
     counts = [int(result["outcome"][key]) for key in ("captured", "crash", "timeout")]
     require(sum(counts) == actual, f"{arm}: outcome accounting")
     condition = result["condition"]
-    expected = {
+    expected_result = {
+        "seed": SEED,
+        "bars": BARS,
+        "target_pattern": "cv",
+        "cv_initial_heading": "away",
+        "goal_dist_min_m": 22.5,
+        "goal_dist_max_m": 28.0,
+        "episode_len_steps": 600,
+    }
+    expected_receipt = {
         "seed": SEED,
         "bars": BARS,
         "target_pattern": "cv",
@@ -174,14 +183,27 @@ def verify_cell(arm: str) -> tuple[dict, dict]:
         "goal_dist_min_m": 22.5,
         "goal_dist_max_m": 28.0,
         "target_camera_max_range_m": 20.0,
-        "episode_len_steps": 600,
         "geofence_actor": ARMS[arm]["geofence"],
         "geofence_noise_std_m": 0.0,
         "geofence_dropout": 0.0,
         "geofence_force_invalid": ARMS[arm]["masked"],
     }
-    mismatch = {key: (condition.get(key), value) for key, value in expected.items() if condition.get(key) != value}
-    require(not mismatch, f"{arm}: condition mismatch {mismatch}")
+    result_mismatch = {
+        key: (condition.get(key), value)
+        for key, value in expected_result.items()
+        if condition.get(key) != value
+    }
+    receipt_mismatch = {
+        key: (receipt.get(key), value)
+        for key, value in expected_receipt.items()
+        if receipt.get(key) != value
+    }
+    require(not result_mismatch, f"{arm}: result condition mismatch {result_mismatch}")
+    require(not receipt_mismatch, f"{arm}: receipt condition mismatch {receipt_mismatch}")
+    require(
+        receipt.get("evaluation_nonce") == condition.get("evaluation_nonce"),
+        f"{arm}: result/receipt evaluation nonce mismatch",
+    )
     oob = result["target_motion"]["oob_exit_forensics"]
     require(int(oob["exits"]) == int(result["crash_causes"]["out_of_bounds"]), f"{arm}: OOB accounting")
     require(

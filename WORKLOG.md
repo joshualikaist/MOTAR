@@ -9507,3 +9507,27 @@ PENDING으로 표시하며, 두 `.aerial_training_finished`가 생기기 전 pre
 후자 한 줄만 허용 mismatch로 등록해 전자도 source drift로 오인했다. 결과 episode는 0개였고
 checkpoint에는 영향이 없다. 관측된 두 mismatch 문자열을 순서까지 정확히 고정하고, 그 외 차이는
 계속 거부하도록 수정했다. 수정 후 세 arm preflight를 다시 통과해야만 실제 평가를 시작한다.
+
+### Held-out 3-arm 완료: 성능 이득은 크지만 사전등록 기전 gate는 미통과
+
+seed367, 1 bar, away-CV, camera 20m, goal 22.5..28m, 2,049 episodes/arm 평가를 완료했다.
+
+| arm | capture | crash | timeout | OOB | never-acq OOB/all | non-OOB crash |
+|---|---:|---:|---:|---:|---:|---:|
+| control | 39.04% | 22.21% | 38.75% | 21.96% | 21.28% | 0.24% |
+| geofence | 85.75% | 7.91% | 6.34% | 7.47% | 7.32% | 0.44% |
+| geofence masked | 39.78% | 5.22% | 55.00% | 4.93% | 4.88% | 0.29% |
+
+primary 개선은 **+13.96pp**로 3pp gate를 통과했고 non-OOB crash 증가는 **+0.20pp**로 2pp
+guard 안이다. 그러나 사전등록 mechanism 지표는 `never-acquired OOB/all`의 masked loss였고,
+masked 정책은 밖으로 나가는 대신 느리게 움직이며 timeout이 55.00%로 증가했다. 따라서 masked
+never-acquired OOB가 오히려 2.44pp 더 낮아져 50% loss gate를 통과하지 못했다. capture가
+85.75→39.78%로 붕괴한 것은 경계 token 사용의 강한 사후 증거지만, 결과 뒤에 지표를 바꾸지 않고
+공식 판정은 **PASS_MECHANISM_UNRESOLVED**로 유지한다.
+
+첫 finalize는 task result의 `condition`에 없는 evaluator-only intervention 필드까지 찾다가 종료 코드
+2로 fail-closed했다. raw 3-cell 결과와 receipt는 모두 완성·해시 고정돼 있었다. task/runtime 필드는
+result에서, evaluator intervention 필드는 receipt에서 각각 검증하고 두 artifact의 evaluation nonce도
+일치시키도록 verifier를 수정했다. 재실행 없이 `finalize`와 `verify`가 PASS했다. 결과는
+`results/navrl_ref5in_active_search_geofence_seed367/{summary.md,summary.json}`이다. P2 STRICT FAIL,
+D1 FAIL, P3 BLOCKED는 바뀌지 않는다.
