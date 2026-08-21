@@ -151,6 +151,97 @@ def _episode_outcome_info(successes, crashes, truncations):
     }
 
 
+# NAVRL_OBS_DUMP outcome codes (evaluation-only per-episode table). Written as a literal so a
+# CPU-only test can pin the exact contract without importing this module.
+OBS_DUMP_OUTCOME_CODES = {
+    0: "capture",
+    1: "crash_bar_contact",
+    2: "crash_oob",
+    3: "crash_other",
+    4: "timeout",
+    5: "unattributed",
+}
+
+
+def _obs_dump_retain_decision(call_index, stride_eff):
+    """Pure: retain this call's rows under the current streaming-decimation stride?
+
+    ``call_index`` is 0-based -- the number of ``_record_action_diagnostics`` calls strictly
+    before this one -- so the very first call is always retained regardless of stride, and after
+    any amount of ``_obs_dump_thin_step`` thinning the retained set stays EXACTLY the multiples of
+    the current ``stride_eff``, with no permanently-misaligned leftover sample. (A 1-based counter
+    breaks that: the first-ever retained call survives every thinning pass at list position 0 but
+    is never itself a multiple of the doubled stride.)
+    """
+    return stride_eff > 0 and call_index % stride_eff == 0
+
+
+def _obs_dump_thin_step(retained_len, stride_eff, max_rows, rows_per_call):
+    """Pure: after appending one retained call, does the row budget require thinning?
+
+    Every retained call contributes exactly ``rows_per_call`` rows (one row per env per sampled
+    call), so a retained-call list of length ``retained_len`` holds ``retained_len * rows_per_call``
+    rows. Thinning keeps list positions 0, 2, 4, ... (drops every other retained call) and doubles
+    ``stride_eff``. Net effect over the whole rollout: the final sample is exactly "every
+    stride_eff-th call from the start", uniform over the entire rollout even though the total call
+    count is unknown in advance, with a final row count between ``max_rows / 2`` and ``max_rows``.
+
+    Returns ``(new_retained_len, new_stride_eff, thinned)``. The caller loops on ``thinned`` in
+    case a single thinning event does not bring the row count back under budget.
+    """
+    if retained_len <= 1 or retained_len * rows_per_call <= max_rows:
+        return retained_len, stride_eff, False
+    new_len = (retained_len + 1) // 2  # == len(some_list[0::2])
+    return new_len, stride_eff * 2, True
+
+
+def _validate_obs_dump_export(frame_tables, episode_tables, live_obs_width, max_rows, live_episode_uids):
+    """Fail-closed export guard for NAVRL_OBS_DUMP (house style: see ``_record_oob_exit``).
+
+    Pure: dict-of-numpy-array tables plus a plain ``set`` of currently-live episode_uids, no
+    torch, no ``self`` -- a deliberately mismatched table can be unit-tested without Isaac Gym.
+    Raises ``RuntimeError`` naming the specific mismatch; never silently drops rows.
+    """
+    if "obs" not in frame_tables:
+        raise RuntimeError("obs_dump export: frame table is missing the 'obs' array")
+    n = int(frame_tables["obs"].shape[0])
+    for key, arr in frame_tables.items():
+        if int(arr.shape[0]) != n:
+            raise RuntimeError(
+                "obs_dump export: frame array '%s' has %d rows, 'obs' has %d rows"
+                % (key, int(arr.shape[0]), n)
+            )
+    obs_shape = frame_tables["obs"].shape
+    if len(obs_shape) != 2 or int(obs_shape[1]) != int(live_obs_width):
+        raise RuntimeError(
+            "obs_dump export: obs array shape %s does not match the live structured "
+            "observation width %d" % (tuple(obs_shape), int(live_obs_width))
+        )
+    if n > int(max_rows):
+        raise RuntimeError(
+            "obs_dump export: frame row count %d exceeds the configured cap %d" % (n, int(max_rows))
+        )
+    if "ep_uid" not in episode_tables:
+        raise RuntimeError("obs_dump export: episode table is missing the 'ep_uid' array")
+    m = int(episode_tables["ep_uid"].shape[0])
+    for key, arr in episode_tables.items():
+        if int(arr.shape[0]) != m:
+            raise RuntimeError(
+                "obs_dump export: episode array '%s' has %d rows, 'ep_uid' has %d rows"
+                % (key, int(arr.shape[0]), m)
+            )
+    if n > 0:
+        frame_uids = set(int(v) for v in frame_tables["episode_uid"].tolist())
+        finished_uids = frame_uids - set(int(v) for v in live_episode_uids)
+        outcome_uids = set(int(v) for v in episode_tables["ep_uid"].tolist())
+        missing = finished_uids - outcome_uids
+        if missing:
+            raise RuntimeError(
+                "obs_dump export: %d finished episode_uid(s) have frame rows but no outcome "
+                "row, e.g. %s" % (len(missing), sorted(missing)[:5])
+            )
+
+
 def vec_to_goal_frame(vec, goal_direction):
     """Express world-frame vector(s) in the goal coordinate frame.
 
@@ -895,6 +986,34 @@ class NavRLTask(BaseTask):
             import atexit
 
             atexit.register(self._flush_episode_dump)
+
+        # NAVRL_OBS_DUMP=<path>.npz: evaluation-only per-frame observation dump. One row per env
+        # per SAMPLED call to `_record_action_diagnostics`, tagged with a globally unique
+        # episode_uid and the context masks that method already computes (target visibility,
+        # front-blocked). A separate per-episode outcome table (joined by episode_uid) is filled
+        # from the EXISTING crash-cause/timeout attribution, never a new definition. No-op (no
+        # allocation, no GPU sync) when unset. See _collect_obs_dump_frame / _flush_obs_dump.
+        self._obs_dump_path = os.environ.get("NAVRL_OBS_DUMP", "").strip()
+        self._obs_dump_enabled = bool(self._obs_dump_path)
+        if self._obs_dump_enabled:
+            self._obs_dump_stride_eff = max(
+                1, int(os.environ.get("NAVRL_OBS_DUMP_STRIDE", "1"))
+            )
+            self._obs_dump_max_rows = max(
+                1, int(os.environ.get("NAVRL_OBS_DUMP_MAX", "16384"))
+            )
+            self._obs_dump_calls = 0
+            self._obs_dump_decimations = 0
+            self._obs_dump_frames = []
+            self._obs_dump_episode_rows = []
+            # -1 == "no episode yet"; the first reset_idx() call (full reset, at env construction)
+            # bumps every env to episode 0, so this never collides with a real episode index.
+            self._obs_dump_ep_idx = torch.full(
+                (self.num_envs,), -1, dtype=torch.int64, device=self.device
+            )
+            import atexit
+
+            atexit.register(self._flush_obs_dump)
 
         # NAVRL_BAR_PROBE=1: evaluation-only bar-contact forensics (zero overhead when off).
         # Probe v2 uses both bearing and range to associate LiDAR surface tokens with GT bars. It
@@ -2933,6 +3052,9 @@ class NavRLTask(BaseTask):
     def reset_idx(self, env_ids):
         if len(env_ids) == 0:
             return
+        if self._obs_dump_enabled:
+            # Global, monotonic, never wraps: episode_uid = env_id + num_envs * this counter.
+            self._obs_dump_ep_idx[env_ids] += 1
         if self.general_spawn_mode:
             self._randomize_general_drone_spawn(env_ids)
         # robot has already been respawned by the env manager when this is called mid-episode,
@@ -3241,6 +3363,11 @@ class NavRLTask(BaseTask):
         timeouts, self.infos = _episode_outcome_info(
             successes, crashes, self.truncations
         )
+        if self._obs_dump_enabled and bool(timeouts.any()):
+            # 4=timeout (OBS_DUMP_OUTCOME_CODES); mutually exclusive with the crash/capture site
+            # above by construction of `timeouts` (truncated & not success & not crash).
+            code = torch.full((self.num_envs,), 4, dtype=torch.int8, device=self.device)
+            self._record_obs_dump_outcome(timeouts, code)
 
         if self._bulk_eval_mode:
             steps = self.sim_env.sim_steps
@@ -3423,7 +3550,10 @@ class NavRLTask(BaseTask):
 
     def _record_action_diagnostics(self, actions):
         """Accumulate action tails plus context needed to separate avoidance from policy bias."""
-        if not self._action_diag_enabled:
+        # NAVRL_OBS_DUMP reuses this method's context masks (front-blocked, target-visible,
+        # valid_y_now) instead of recomputing them, so it must run the body even when action
+        # diagnostics themselves are off. Still a true no-op when BOTH are disabled.
+        if not self._action_diag_enabled and not self._obs_dump_enabled:
             return
         with torch.no_grad():
             action = actions[:, :4].detach()
@@ -3544,6 +3674,10 @@ class NavRLTask(BaseTask):
                 )
                 front_blocked = (front_min < blocked_threshold) & valid_y_now
                 front_clear = ~front_blocked & valid_y_now
+                # NAVRL_OBS_DUMP context tag: this branch is the only place `front_blocked` is
+                # actually defined (blocked/clear are known). Aliased, not renamed, so nothing
+                # about the existing action-diagnostics tensors changes.
+                _obs_dump_front_blocked = front_blocked
                 for name, mask in (
                     ("front_clear", front_clear),
                     ("front_blocked", front_blocked),
@@ -3552,6 +3686,9 @@ class NavRLTask(BaseTask):
                     self._action_diag[name + "_abs_y"] += float(abs_y[mask].sum().item())
             else:
                 front_clear = torch.zeros_like(valid_y_now)
+                # NAVRL_OBS_DUMP context tag: no depth scan this call, so blocked/clear is
+                # genuinely UNKNOWN here -- do not let it silently read as "clear" downstream.
+                _obs_dump_front_blocked = None
 
             # Ground truth is used only to label this diagnostic. The future v3 gate is derived
             # from the actor's structured target track instead; no oracle feature is introduced.
@@ -3577,6 +3714,8 @@ class NavRLTask(BaseTask):
             for name, mask in (("target_visible", visible), ("target_hidden", hidden)):
                 self._action_diag[name + "_n"] += float(mask.sum().item())
                 self._action_diag[name + "_abs_y"] += float(abs_y[mask].sum().item())
+            if self._obs_dump_enabled:
+                self._collect_obs_dump_frame(valid_y_now, visible, _obs_dump_front_blocked)
             if self._bulk_eval_mode:
                 # This labels exactly the observation consumed to select the current action.
                 # `valid_y_now` excludes non-finite policy rows from both numerator and denominator.
@@ -3619,6 +3758,159 @@ class NavRLTask(BaseTask):
 
             self._action_diag_prev[:] = safe
             self._action_diag_prev_valid[:] = finite.all(dim=1)
+
+    def _collect_obs_dump_frame(self, valid_y_now, visible, front_blocked):
+        """NAVRL_OBS_DUMP: append one row per env for this call, if the streaming decimation
+        (`_obs_dump_retain_decision` / `_obs_dump_thin_step`) retains it.
+
+        Reads only the exact observation tensor handed to the actor and context masks this method
+        already computed for action diagnostics -- nothing new is derived, and nothing here writes
+        back into `self.task_obs`, rewards, or terminations.
+        """
+        # 0-based on purpose: the streaming decimation (see `_obs_dump_thin_step`) only stays an
+        # EXACT "every stride_eff-th call from the start" grid -- with no permanently-misaligned
+        # leftover sample -- if the very first call is index 0, not 1. Verified by simulation.
+        this_call = self._obs_dump_calls
+        self._obs_dump_calls += 1
+        if not _obs_dump_retain_decision(this_call, self._obs_dump_stride_eff):
+            return
+        with torch.no_grad():
+            obs = self.task_obs["observations"].detach().to("cpu", torch.float32).numpy()
+        n = int(obs.shape[0])
+        env_id = np.arange(n, dtype=np.int32)
+        call_index = np.full(n, this_call, dtype=np.int64)
+        ep_idx_cpu = self._obs_dump_ep_idx.detach().cpu().numpy().astype(np.int64)
+        episode_uid = env_id.astype(np.int64) + self.num_envs * ep_idx_cpu
+        ep_step = self.sim_env.sim_steps.detach().to("cpu", torch.int64).numpy()
+        ctx_target_visible = visible.detach().to("cpu", torch.bool).numpy()
+        ctx_valid = valid_y_now.detach().to("cpu", torch.bool).numpy()
+        if front_blocked is None:
+            ctx_front_blocked = np.full(n, -1, dtype=np.int8)
+        else:
+            fb_cpu = front_blocked.detach().cpu().numpy()
+            ctx_front_blocked = fb_cpu.astype(np.int8)
+        self._obs_dump_frames.append(
+            {
+                "obs": obs,
+                "env_id": env_id,
+                "call_index": call_index,
+                "episode_uid": episode_uid,
+                "ep_step": ep_step,
+                "ctx_target_visible": ctx_target_visible,
+                "ctx_front_blocked": ctx_front_blocked,
+                "ctx_valid": ctx_valid,
+            }
+        )
+        while True:
+            _, new_stride_eff, thinned = _obs_dump_thin_step(
+                len(self._obs_dump_frames),
+                self._obs_dump_stride_eff,
+                self._obs_dump_max_rows,
+                self.num_envs,
+            )
+            if not thinned:
+                break
+            self._obs_dump_frames = self._obs_dump_frames[0::2]
+            self._obs_dump_stride_eff = new_stride_eff
+            self._obs_dump_decimations += 1
+
+    def _record_obs_dump_outcome(self, mask, code):
+        """NAVRL_OBS_DUMP: append one per-episode outcome row for every env set in `mask`.
+
+        `code` is a per-env int8 outcome-code tensor (see `OBS_DUMP_OUTCOME_CODES`); only the
+        entries selected by `mask` are used. Shared by the crash/capture site (compute_state_
+        reward_and_terminations) and the timeout site (step()) so both write the same row shape.
+        """
+        idx = mask.nonzero(as_tuple=False).squeeze(1)
+        if idx.numel() == 0:
+            return
+        ep_uid = idx.to(torch.int64) + self.num_envs * self._obs_dump_ep_idx[idx]
+        self._obs_dump_episode_rows.append(
+            {
+                "ep_uid": ep_uid.detach().cpu().numpy(),
+                "ep_env_id": idx.to(torch.int32).detach().cpu().numpy(),
+                "outcome": code[idx].detach().cpu().numpy(),
+                "ep_len": self.sim_env.sim_steps[idx].to(torch.int64).detach().cpu().numpy(),
+            }
+        )
+
+    def _record_obs_dump_crash_outcomes(
+        self, captured, crashed_out, d_contact, d_oob, d_below, d_above
+    ):
+        """NAVRL_OBS_DUMP: outcome rows for episodes ending in capture or a crash this step.
+
+        Remaps the SAME priority-attributed masks the crash-cause table above just computed
+        (contact > oob > below/above) onto the dump's outcome codes -- no new attribution logic.
+        Timeouts are not visible here; they are recorded separately in step() once
+        `_episode_outcome_info` resolves them. Any crashed_out env not covered by one of these
+        masks (should not happen given how `crashed_out` is built above) gets 5=unattributed
+        rather than a guess.
+        """
+        done_now = captured | crashed_out
+        if not bool(done_now.any()):
+            return
+        code = torch.full((self.num_envs,), 5, dtype=torch.int8, device=self.device)
+        code[captured] = 0
+        code[d_contact] = 1
+        code[d_oob] = 2
+        code[d_below | d_above] = 3
+        self._record_obs_dump_outcome(done_now, code)
+
+    def _flush_obs_dump(self):
+        """Write the NAVRL_OBS_DUMP frame + episode-outcome tables, fail-closed (see
+        `_validate_obs_dump_export`). Same lifecycle trigger as `_flush_episode_dump`: registered
+        with `atexit` in __init__, so it runs once when the process exits.
+        """
+        if not self._obs_dump_frames:
+            return
+        frame_tables = {
+            key: np.concatenate([chunk[key] for chunk in self._obs_dump_frames])
+            for key in self._obs_dump_frames[0]
+        }
+        if self._obs_dump_episode_rows:
+            episode_tables = {
+                key: np.concatenate([chunk[key] for chunk in self._obs_dump_episode_rows])
+                for key in self._obs_dump_episode_rows[0]
+            }
+        else:
+            episode_tables = {
+                "ep_uid": np.zeros(0, dtype=np.int64),
+                "ep_env_id": np.zeros(0, dtype=np.int32),
+                "outcome": np.zeros(0, dtype=np.int8),
+                "ep_len": np.zeros(0, dtype=np.int64),
+            }
+        ep_idx_cpu = self._obs_dump_ep_idx.detach().cpu().numpy().astype(np.int64)
+        live_episode_uids = set(
+            (np.arange(self.num_envs, dtype=np.int64) + self.num_envs * ep_idx_cpu).tolist()
+        )
+        _validate_obs_dump_export(
+            frame_tables,
+            episode_tables,
+            int(self.task_config.observation_space_dim),
+            self._obs_dump_max_rows,
+            live_episode_uids,
+        )
+        path = Path(self._obs_dump_path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        np.savez_compressed(
+            path,
+            **frame_tables,
+            **episode_tables,
+            stride_eff=np.int64(self._obs_dump_stride_eff),
+            decimations=np.int64(self._obs_dump_decimations),
+        )
+        sha256 = _sha256_file(path)
+        print(
+            "[obs_dump] path=%s frames=%d episodes=%d stride_eff=%d decimations=%d sha256=%s"
+            % (
+                path,
+                int(frame_tables["obs"].shape[0]),
+                int(episode_tables["ep_uid"].shape[0]),
+                int(self._obs_dump_stride_eff),
+                int(self._obs_dump_decimations),
+                sha256,
+            )
+        )
 
     def _lidar_distance_m(self):
         """Per-ray distance in meters, shape (N, vbeams*hbeams). Normalized pixels * max_range."""
@@ -3745,6 +4037,10 @@ class NavRLTask(BaseTask):
         self._crash_cause_code[d_oob] = 3
         if self._episode_dump_path:
             self._record_episode_dump(pos, captured, crashed_out, crashed, below, above)
+        if self._obs_dump_enabled:
+            self._record_obs_dump_crash_outcomes(
+                captured, crashed_out, d_contact, d_oob, d_below, d_above
+            )
 
         if self._crash_diag:
             # Attribute each crash to ONE cause, priority contact > below > above > oob (matching

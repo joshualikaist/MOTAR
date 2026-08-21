@@ -453,6 +453,120 @@ class OOBExitForensicsContract(unittest.TestCase):
         payload = task[task.index("def oob_exit_payload"):task.index("def first_acquisition_payload")]
         self.assertIn("a diagonal corner exit lands", recorder)
         self.assertIn("A corner crossing increments two edges", payload)
+class ReflectionAuditContract(unittest.TestCase):
+    """Prereg 2026-08-21 N1 real-frame reflection audit (seed 373).
+
+    Two failures this guards against.  First, a preregistered constant silently drifting: seed,
+    density, episode budget and the minimum frame count are the whole comparability of the cell.
+    Second, and worse, the launcher quietly acquiring authority it was never granted -- the three
+    ``*_changed`` / ``p3_unlocked`` literals must stay false in the emitted summary, because this
+    experiment cannot revise P2 or D1 and cannot unlock P3.
+    """
+
+    ORCHESTRATOR = ROOT / "tools/run_navrl_ref5in_reflection_audit.py"
+    OFFLINE_AUDIT = ROOT / "tools/navrl_reflection_offline_audit.py"
+    PREREG = ROOT / "docs/prereg_2026-08-21_n1_real_frame_reflection_audit.md"
+
+    def source(self):
+        return self.ORCHESTRATOR.read_text(encoding="utf-8")
+
+    def test_preregistered_contract_literals_are_pinned(self):
+        source = self.source()
+        for literal in (
+            "SEED = 373",
+            "BARS = 70",
+            "EPISODES = 1024",
+            "MIN_FRAMES = 4096",
+            "OBS_DUMP_STRIDE = 1",
+            "OBS_DUMP_MAX = 16384",
+            'CELL = "reflection_audit"',
+            '"navrl_ref5in_reflection_audit_seed373"',
+            "CHECKPOINT_SHA = "
+            '"197ea26999d6bb9cf23c4e5a55acbe945f89985e2384687d60ab1dbae66a278e"',
+            '"decision_authority": "none"',
+            '"p2_verdict_changed": False',
+            '"d1_verdict_changed": False',
+            '"p3_unlocked": False',
+            'PREREGISTRATION = "docs/prereg_2026-08-21_n1_real_frame_reflection_audit.md"',
+        ):
+            self.assertIn(literal, source, f"missing preregistered literal: {literal}")
+
+    def test_gates_compare_against_constants_and_do_not_recompute(self):
+        """Every gate must be a comparison against a module constant, never a value re-derived
+        from the cell it is judging."""
+        source = self.source()
+        self.assertIn("frames_valid >= MIN_FRAMES", source)
+        self.assertIn('"requested_episodes": EPISODES,', source)
+        self.assertIn("== EPISODES and actual >= EPISODES", source)
+        self.assertIn("P2.sha256_file(CHECKPOINT) == CHECKPOINT_SHA", source)
+        self.assertIn('P2.sha256_file(paths["snapshot"]) == CHECKPOINT_SHA', source)
+        self.assertIn('receipt.get("source_checkpoint_sha256") == CHECKPOINT_SHA', source)
+
+    def test_verdict_thresholds_are_not_duplicated_in_the_launcher(self):
+        """The prereg's decision thresholds live in exactly one place.  A second copy here could
+        drift from the tool that actually applies them."""
+        source = self.source()
+        for threshold in ("0.30", "0.60", "0.10", "0.90"):
+            self.assertNotIn(
+                threshold, source, f"verdict threshold {threshold} duplicated in the launcher"
+            )
+        self.assertIn("classify_verdict", self.OFFLINE_AUDIT.read_text(encoding="utf-8"))
+
+    def test_measurements_are_passed_through_verbatim(self):
+        source = self.source()
+        self.assertIn('audit.get("measurements_raw_normaliser")', source)
+        self.assertIn('"verdict": verdict,', source)
+        self.assertIn('"quality_gates": audit.get("quality_gates")', source)
+
+    def test_episode_contract_is_at_least_not_exactly(self):
+        """The evaluator drains whole 128-env batches, so a cell finishes at or just past the
+        request.  Asserting exact equality here has already broken one arm of an earlier run."""
+        source = self.source()
+        self.assertIn("actual >= EPISODES", source)
+        self.assertNotIn("actual == EPISODES", source)
+
+    def test_pythonpath_is_reinjected_after_canonical_env(self):
+        """P2.canonical_env deletes PYTHONPATH.  Setting it before that call is a no-op, and
+        without it the run executes the PRIMARY worktree while hashing this one's bytes."""
+        source = self.source()
+        canonical = source[source.index("def canonical_env("):source.index("def offline_env(")]
+        self.assertLess(
+            canonical.index("P2.canonical_env(cell_dir()"),
+            canonical.index('"PYTHONPATH": str(ROOT)'),
+            "PYTHONPATH must be re-injected AFTER P2.canonical_env deletes it",
+        )
+        self.assertIn('"NAVRL_REQUIRE_SOURCE_ROOT": str(ROOT)', canonical)
+
+    def test_import_origin_gate_fails_closed_on_a_missing_line(self):
+        """A missing [origin] line means the guard never ran; that must fail, not pass."""
+        source = self.source()
+        self.assertIn(r"^\[origin\] aerial_gym ", source)
+        self.assertIn(r"sha256=(?P<sha256>[0-9a-f]{64}) \(enforced\)$", source)
+        self.assertIn("the import-origin guard did not run", source)
+        self.assertIn("entry[0] == origin_sha", source)
+
+    def test_no_provenance_override_is_ever_set(self):
+        """This cell applies no target-pattern or CV intervention, so it must need no override."""
+        source = self.source()
+        self.assertNotIn('"NAVRL_V2_FORCE": "1"', source)
+        self.assertNotIn('env["NAVRL_V2_FORCE"]', source)
+        self.assertIn('"generic_provenance_override_used": False', source)
+
+    def test_frames_npz_is_hash_bound_to_the_offline_stage(self):
+        source = self.source()
+        self.assertIn('audit.get("frames_sha256") == frames_sha', source)
+        self.assertIn('"--frames-sha256", frames_sha', source)
+
+    def test_run_refuses_to_overwrite_and_gates_on_a_clean_runtime(self):
+        source = self.source()
+        run_block = source[source.index('if mode == "run":'):source.index("cell = verify_cell()\n    expected")]
+        self.assertIn("require(not OUTPUT.exists()", run_block)
+        self.assertIn("verify_prerequisites(require_clean=True)", run_block)
+
+    def test_preregistration_document_is_present_and_frozen_on_these_values(self):
+        prereg = self.PREREG.read_text(encoding="utf-8")
+        for literal in ("**373**", "**4,096**", "`NAVRL_OBS_DUMP_STRIDE = 1`", "16384", "1,024"):
+            self.assertIn(literal, prereg, f"preregistration lost: {literal}")
 
 
 if __name__ == "__main__":
