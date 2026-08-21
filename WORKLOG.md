@@ -9465,3 +9465,15 @@ guard와 token-mask inference ablation도 결과 전에 고정했다.
 학습은 아직 시작하지 않았다. 비교의 최소 단위가 두 fresh 900-epoch arm이므로 한쪽만 먼저 장시간
 돌려 결과를 해석하지 않는다. 실행기는
 `aerial_gym/rl_training/rl_games/train_navrl_ref5in_active_search_geofence_ab.sh`다.
+
+### 첫 launch VOID: editable install import를 source guard가 차단
+
+첫 control launch는 task 생성 중, PPO epoch 0 이전에 중단됐다. local `runner.py`를 실행했지만 host
+editable install이 primary dirty workspace의 `aerial_gym`을 import했고, clean branch에서 만든 source
+receipt와 실제 `navrl_ref5in_quad_config.py`가 다르다고 runtime guard가 거부했다. checkpoint와 유효
+run 결과는 생성되지 않았고 geofence arm도 `&&` 때문에 시작되지 않았다.
+
+launcher가 `PYTHONPATH` 첫 항목을 현재 git root로 고정하고, receipt 생성 전에
+`importlib.util.find_spec("aerial_gym").origin`이 해당 worktree의 `aerial_gym/__init__.py`와 정확히
+같은지 검사하도록 수정했다. OOB evaluator에서 잡았던 동일 계열 문제를 training launcher에도
+fail-fast로 일반화한 것이다.

@@ -28,6 +28,16 @@ export PYTHONNOUSERSITE=1
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
+# The host editable install points at the primary worktree. Pin this experiment to its audited
+# branch before creating a receipt or importing any aerial_gym module; otherwise source receipt
+# and executed code can diverge even though runner.py itself is local.
+export PYTHONPATH="${REPO_ROOT}${PYTHONPATH:+:${PYTHONPATH}}"
+EXPECTED_IMPORT="$(realpath "${REPO_ROOT}/aerial_gym/__init__.py")"
+ACTUAL_IMPORT="$(${PYTHON} -c 'import importlib.util,os; print(os.path.realpath(importlib.util.find_spec("aerial_gym").origin))')"
+if [[ "${ACTUAL_IMPORT}" != "${EXPECTED_IMPORT}" ]]; then
+    echo "[active-search-${ARM}] aerial_gym import escaped worktree: ${ACTUAL_IMPORT}" >&2
+    exit 2
+fi
 if [[ "${AS_PREFLIGHT}" != "1" ]]; then
     RUNTIME_DIRTY="$(git -C "${REPO_ROOT}" status --porcelain=v1 --untracked-files=all -- \
         aerial_gym resources/robots tools/create_navrl_source_bundle.py)"
@@ -91,5 +101,6 @@ fi
 
 echo "[active-search-${ARM}] prereg=docs/preregistration_active_search_geofence_2026-08-21.md"
 echo "[active-search-${ARM}] fresh=1 seed=${SEED} epochs=${MAX_EPOCHS} robot=${NAVRL_ROBOT} geofence=${NAVRL_GEOFENCE_ACTOR}"
+echo "[active-search-${ARM}] import_root=${ACTUAL_IMPORT}"
 echo "[active-search-${ARM}] camera=20m reward/horizon/speed/tilt/density=P1c-frozen noise=0 dropout=0"
 exec ./train_navrl_v2_search.sh
