@@ -9508,3 +9508,21 @@ one-exit U-shaped dead-end, sensor-range cluster grouping, metadata contract. ar
 이 라벨은 정적 2-D GT 진단이며 동역학·표적 이동·episode horizon 또는 planner의 경로 거부를 뜻하지
 않는다. 기존 `tests/test_navrl_reachability.py`도 3/3 PASS했다. GPU 실행 및 학습/평가 run은 수행하지
 않았다.
+
+### Seed167 legacy dump topology 전수 탐색 — timeout 누락으로 제한 판정
+
+기존 `results/navrl_v2_bar_ceiling/episodes_seed167.npz`의 1,989개 record를 0.60 m square bar 가정으로
+전수 라벨링했다. 원평가는 2,049 episodes였지만 legacy dump는 `captured | crashed_out`만 기록하므로
+**timeout 60개가 전부 누락**됐다. 기록 outcome은 capture 1,641 / bar contact 333 / below 10 / OOB
+5다. 따라서 timeout 또는 timeout-dead-end에 관한 결론은 금지한다.
+
+기록된 네 outcome 모두 path exists 100%, local cul-de-sac proxy 0%였다. capture 대 bar-contact의
+평균 detour ratio는 1.0692 대 1.0710, 선택된 grid-shortest path의 usable clearance는 0.2594 m 대
+0.2319 m, start의 12 m 내 obstacle 수는 48.79 대 45.92, cluster 수는 45.92 대 43.15였다. 이는
+randomised topology intervention이 아닌 outcome별 descriptive association이며 인과로 읽지 않는다.
+
+또한 legacy dump에 실제 `bars_size_xy`가 없어 0.4–0.8 m pool 전체를 0.60 m로 가정했다. 결과는
+exploratory-only이고 publication exact 수치가 아니다. 작은 재현 summary는
+`results/navrl_v2_bar_ceiling_topology_assumed0p60_summary/summary.{md,json}`에 저장했다. 2.9 MB raw
+per-layout JSON은 추적하지 않는다(raw SHA-256 `6ca8c405…`; input dump `c509c2fa…`). 다음 exact 분석은
+실제 bar footprint와 timeout을 모두 포함하는 새 evaluation-only snapshot이 필요하다.
