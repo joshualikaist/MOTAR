@@ -98,6 +98,10 @@ class asset_state_params:
     ]  # position, quat x, y, z, w
 
     use_collision_mesh_instead_of_visual = False
+    # Isaac Gym physics and Warp ray casting do not have to contain the same asset. Dynamic
+    # actors whose pose changes every physics step use an analytic sensor primitive instead of
+    # forcing an expensive full-scene mesh refit.
+    include_in_warp = True
 
 
 class panel_asset_params(asset_state_params):
@@ -732,6 +736,24 @@ class navrl_target_params(asset_state_params):
     # band no matter what bar_asset_params says.
     min_state_ratio = [_BAR_X_MIN, 0.0, 0.3333, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     max_state_ratio = [_BAR_X_MAX, 1.0, 0.3333, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+
+
+class navrl_physical_target_params(navrl_target_params):
+    """Dynamic 6-DoF target actor used by ``NAVRL_TARGET_DYNAMICS=physical``.
+
+    The URDF is a single rigid body carrying the ref5in design-point mass/inertia and exact
+    collision box. A task-side four-motor controller applies the equivalent body wrench at every
+    0.01 s PhysX step. The same oriented box is ray-tested by camera and LiDAR, so no stale Warp
+    mesh or sphere proxy can disagree with contact geometry.
+    """
+
+    collision_mask = 0
+    disable_gravity = False
+    density = 1.0
+    collapse_fixed_joints = True
+    fix_base_link = False
+    keep_in_env = True
+    include_in_warp = False
 
 
 class bar_asset_params(asset_state_params):

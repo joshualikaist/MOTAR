@@ -48,10 +48,10 @@ from aerial_gym.config.robot_config.navrl_ref5in_quad_config import (  # noqa: E
 G = 9.81
 PROP_RADIUS_5IN = 0.0635  # 127 mm diameter / 2
 
-# navrl_bars_env "navrl_band" placement: centres either touch (<= 0.4 m, bars merge into a wall) or
-# sit >= 1.6 m apart, so the worst-case SURFACE gap for two maximum-footprint 0.8 m bars is
-# 1.6 - 2*0.4 = 0.8 m. That is the corridor the drone's XY diagonal has to fit through.
-WORST_CASE_SURFACE_GAP_M = 0.8
+# With two maximum-footprint 0.8 m squares whose centres are exactly 1.6 m apart, the
+# smallest AABB corner gap occurs at a 45-degree centre vector. This is much tighter than the
+# incorrect axis-only 0.8 m estimate and is only a coarse static fit bound.
+MIN_THEORETICAL_CORNER_GAP_M = math.sqrt(2.0) * (1.6 / math.sqrt(2.0) - 0.8)
 
 
 def _urdf(name):
@@ -115,6 +115,9 @@ def _arm_from_allocation(cfg):
 
 LEGACY = _urdf("quad_navrl_collide.urdf")
 REF = _urdf("quad_navrl_ref5in.urdf")
+TARGET = ET.parse(
+    REPO / "resources/models/environment_assets/objects/navrl_target_drone.urdf"
+).getroot()
 
 
 class TestGeometryAgreesWithItself(unittest.TestCase):
@@ -185,16 +188,27 @@ class TestGeometryAgreesWithItself(unittest.TestCase):
         _w, _d, h = _collision_box(_links(REF)["base_link"])
         self.assertEqual(h, 0.12)
 
-    def test_conservative_3d_box_diagonal_clears_declared_corridor_gap(self):
+    def test_conservative_3d_box_diagonal_clears_theoretical_corner_gap(self):
         """A coarse geometric sanity bound, not a reachability or dynamic-flight proof."""
         w, d, h = _collision_box(_links(REF)["base_link"])
-        self.assertLess(math.sqrt(w * w + d * d + h * h), WORST_CASE_SURFACE_GAP_M)
+        self.assertLess(math.sqrt(w * w + d * d + h * h), MIN_THEORETICAL_CORNER_GAP_M)
 
 
 class TestMassAndInertiaAgree(unittest.TestCase):
 
     def test_total_mass_is_the_declared_candidate_1200_g(self):
         self.assertAlmostEqual(_total_mass(REF), 1.200, places=3)
+
+    def test_physical_target_rigid_body_matches_ref5in_equivalent_contract(self):
+        target_base = _links(TARGET)["base_link"]
+        ref_ixx, ref_izz = _assembled_inertia(REF)
+        self.assertAlmostEqual(_mass(target_base), _total_mass(REF), places=6)
+        self.assertAlmostEqual(_inertia(target_base)["ixx"], ref_ixx, places=6)
+        self.assertAlmostEqual(_inertia(target_base)["iyy"], ref_ixx, places=6)
+        self.assertAlmostEqual(_inertia(target_base)["izz"], ref_izz, places=6)
+        self.assertEqual(
+            _collision_box(target_base), _collision_box(_links(REF)["base_link"])
+        )
 
     def test_mass_budget_exposes_conditional_compute_and_integration_allowance(self):
         """Document the candidate arithmetic without treating an incomplete BOM as buildability.

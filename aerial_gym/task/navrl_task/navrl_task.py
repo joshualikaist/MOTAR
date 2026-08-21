@@ -20,8 +20,11 @@ from aerial_gym.task.navrl_task.navrl_curriculum import (
 )
 from aerial_gym.task.navrl_task.train_dashboard import record_navrl_epoch_episodes
 from aerial_gym.task.navrl_task.target_motion import (
+    BOUNDED_TARGET_MOTION_MODEL,
+    PHYSICAL_TARGET_MOTION_MODEL,
     CV_INITIAL_HEADING_MODES,
     TARGET_MOTION_MODEL,
+    bounded_drone_target_step,
     initial_cv_velocity,
     steer_target_step,
 )
@@ -31,7 +34,7 @@ from aerial_gym.task.navrl_task.speed_governor import (
     directional_lidar_clearance,
 )
 from aerial_gym.sim.sim_builder import SimBuilder
-from aerial_gym.utils.math import quat_rotate, quat_rotate_inverse
+from aerial_gym.utils.math import quat_rotate, quat_rotate_inverse, quat_to_rotation_matrix
 from aerial_gym.utils.logging import CustomLogger
 
 logger = CustomLogger("navrl_task")
@@ -316,6 +319,39 @@ class NavRLTask(BaseTask):
         # mesh, invisible to the LiDAR). All-zero speeds (the default) keep the task byte-
         # compatible with the static Phases 1-2.
         self.tm = self.task_config.target_motion
+        self._target_dynamics = str(getattr(self.tm, "dynamics", "legacy")).strip().lower()
+        if self._target_dynamics not in ("legacy", "bounded", "physical"):
+            raise ValueError("NAVRL_TARGET_DYNAMICS must be legacy|bounded|physical")
+        self._physical_target = self._target_dynamics == "physical"
+        self._bar_offset = 1 if self._physical_target else 0
+        if self._physical_target and self.task_config.robot_name != "navrl_ref5in_quad":
+            raise RuntimeError(
+                "NAVRL_TARGET_DYNAMICS=physical requires NAVRL_ROBOT=navrl_ref5in_quad; "
+                "mixing a physical ref5in target with the legacy 0.25 kg pursuer is not a valid "
+                "same-platform experiment"
+            )
+        if self._target_dynamics in ("bounded", "physical"):
+            if float(self.tm.max_accel) <= 0.0:
+                raise ValueError("NAVRL_TARGET_MAX_ACCEL must be positive in bounded mode")
+            if float(self.tm.max_turn_rate_deg) <= 0.0:
+                raise ValueError("NAVRL_TARGET_MAX_TURN_RATE_DEG must be positive in bounded mode")
+            _configured_rl_dt = float(self.sim_env.sim_config.sim.dt) * int(
+                self.sim_env.cfg.env.num_physics_steps_per_env_step_mean
+            )
+            if float(self.tm.avoidance_lookahead_s) < _configured_rl_dt:
+                raise ValueError("NAVRL_TARGET_LOOKAHEAD_S must be at least one RL step")
+            if float(self.tm.obstacle_clearance) <= 0.0:
+                raise ValueError("NAVRL_TARGET_OBSTACLE_CLEARANCE must be positive in bounded mode")
+        self._target_motion_model = (
+            PHYSICAL_TARGET_MOTION_MODEL
+            if self._physical_target
+            else BOUNDED_TARGET_MOTION_MODEL
+            if self._target_dynamics == "bounded"
+            else TARGET_MOTION_MODEL
+        )
+        self._target_controller = None
+        self.target_orientation = torch.zeros((self.num_envs, 4), device=self.device)
+        self.target_orientation[:, 3] = 1.0
         self.target_vel_w = torch.zeros((self.num_envs, 3), device=self.device)  # realized vel
         self._tm_speed = torch.zeros(self.num_envs, device=self.device)          # per-episode speed
         self._tm_pattern = torch.zeros(self.num_envs, dtype=torch.long, device=self.device)  # 0=cv 1=wp 2=circle
@@ -325,6 +361,9 @@ class NavRLTask(BaseTask):
         self._tm_circle_angvel = torch.zeros(self.num_envs, device=self.device)  # signed rad/s
         self._tm_avoid_sign = torch.ones(self.num_envs, device=self.device)
         self._tm_heading = torch.zeros(self.num_envs, device=self.device)  # last flown XY heading
+        self._tm_last_step_feasible = torch.ones(
+            self.num_envs, dtype=torch.bool, device=self.device
+        )
         # Evaluation-only mechanism telemetry. These counters never enter observations, rewards,
         # control, termination, or checkpoint state. Per-episode values are reset with the env;
         # aggregate tensors are exported only by bulk evaluation.
@@ -388,6 +427,15 @@ class NavRLTask(BaseTask):
         # was moving AWAY from the goal as it left.
         self._oob_goal_closing_sum = 0.0
         self._oob_outward_sum = 0.0
+        # Cross-tab kinematics by acquisition state. Overall means alone can hide two opposite
+        # exit modes (blind search drifting out vs chasing an acquired target over the boundary).
+        self._oob_acquisition_groups = {
+            label: {
+                key: 0.0 if key != "n" else 0
+                for key in ("n", "speed_sum", "goal_dist_sum", "goal_closing_sum", "outward_sum")
+            }
+            for label in ("never_acquired", "acquired")
+        }
         self._fa_eval_outcome_fin = torch.zeros(3, dtype=torch.long, device=self.device)
         self._fa_eval_outcome_never = torch.zeros(3, dtype=torch.long, device=self.device)
         self._fa_eval_outcome_first_sum = torch.zeros(3, dtype=torch.long, device=self.device)
@@ -429,6 +477,23 @@ class NavRLTask(BaseTask):
 
         # --- shared views into the environment tensors
         self.obs_dict = self.sim_env.get_obs()
+        if self._physical_target:
+            if int(self.obs_dict["obstacle_position"].shape[1]) < 1:
+                raise RuntimeError("physical target requested but no target actor was built")
+            # Actor state is the single source of truth used by rewards, rendering and contact.
+            self.target_position = self.obs_dict["obstacle_position"][:, 0]
+            self.target_orientation = self.obs_dict["obstacle_orientation"][:, 0]
+            self.target_vel_w = self.obs_dict["obstacle_linvel"][:, 0]
+            from aerial_gym.task.navrl_task.physical_target import PhysicalTargetController
+
+            self._target_controller = PhysicalTargetController(
+                self.obs_dict,
+                0,
+                self.tm,
+                self.device,
+                contact_threshold=float(self.sim_env.cfg.env.collision_force_threshold),
+            )
+            self.sim_env.set_physics_step_callback(self._target_controller)
         self.density = getattr(self.task_config, "density", None)
 
         # In vision mode the LiDAR renderer owns a per-environment analytic target center. The
@@ -524,8 +589,19 @@ class NavRLTask(BaseTask):
             )
         if float(self.tm.speed_final) > 0.0 or float(self.tm.speed_fixed) >= 0.0:
             logger.warning(
-                "NavRL moving target | pattern=%s speed_final=%.2f speed_fixed=%.2f rl_dt=%.3fs"
-                % (self.tm.pattern, self.tm.speed_final, self.tm.speed_fixed, self.step_dt)
+                "NavRL moving target | pattern=%s dynamics=%s speed_final=%.2f speed_fixed=%.2f "
+                "rl_dt=%.3fs accel=%.2fm/s2 turn=%.1fdeg/s lookahead=%.2fs clearance=%.2fm"
+                % (
+                    self.tm.pattern,
+                    self._target_dynamics,
+                    self.tm.speed_final,
+                    self.tm.speed_fixed,
+                    self.step_dt,
+                    self.tm.max_accel,
+                    self.tm.max_turn_rate_deg,
+                    self.tm.avoidance_lookahead_s,
+                    self.tm.obstacle_clearance,
+                )
             )
 
         # Critic privileged-state distance normalizer. Reads the SAME env var as
@@ -933,7 +1009,7 @@ class NavRLTask(BaseTask):
         for key in ("obstacle_position", "env_asset_state_tensor"):
             tensor = self.obs_dict.get(key, None)
             if tensor is not None and len(tensor.shape) >= 2:
-                return int(tensor.shape[1])
+                return max(0, int(tensor.shape[1]) - int(self._bar_offset))
         logger.warning(
             "NavRL density | obstacle-state tensor not found in obs_dict "
             "(tried obstacle_position, env_asset_state_tensor) -> max_bars=0. Density control is "
@@ -974,7 +1050,7 @@ class NavRLTask(BaseTask):
                 % (requested, self.max_bars_available, clamped)
             )
         self.n_bars_active = clamped
-        self.obs_dict["num_obstacles_in_env"] = clamped
+        self.obs_dict["num_obstacles_in_env"] = clamped + int(self._bar_offset)
         return clamped
 
     def set_runtime_bars(self, n_bars):
@@ -1108,7 +1184,9 @@ class NavRLTask(BaseTask):
             return
         b_min = self.obs_dict["env_bounds_min"][env_ids]
         b_max = self.obs_dict["env_bounds_max"][env_ids]
-        bars = self.obs_dict["obstacle_position"][env_ids, : self.n_bars_active, 0:2]
+        bars = self.obs_dict["obstacle_position"][
+            env_ids, self._bar_offset : self._bar_offset + self.n_bars_active, 0:2
+        ]
         lo = b_min[:, 0:2] + 1.0
         hi = b_max[:, 0:2] - 1.0
         chosen = lo + (hi - lo) * torch.rand((n, 2), device=self.device)
@@ -1379,12 +1457,31 @@ class NavRLTask(BaseTask):
         ``k_min_cur`` while actually accepting every distance above a hard-coded four metres.
         """
         n = len(env_ids)
-        lo = b_min[:, 0:2] + 1.0
-        hi = b_max[:, 0:2] - 1.0
+        spawn_wall_margin = 1.0
+        if self._physical_target:
+            # The legacy sampler's fixed 1 m inset can place a dynamic body inside the planner's
+            # own stopping reserve (wall_margin + physical_boundary_margin = 1.25 m by default).
+            # Start every physical actor inside the same admissible set used at runtime.
+            spawn_wall_margin = max(
+                spawn_wall_margin,
+                float(self.cur.wall_margin)
+                + float(getattr(self.tm, "physical_boundary_margin", 0.0)),
+            )
+        lo = b_min[:, 0:2] + spawn_wall_margin
+        hi = b_max[:, 0:2] - spawn_wall_margin
         chosen = lo + (hi - lo) * torch.rand((n, 2), device=self.device)
         todo = torch.ones(n, dtype=torch.bool, device=self.device)
         min_dist, max_dist, _ = self._general_goal_distance_bounds()
-        for _ in range(96):
+        spawn_clearance = (
+            self._target_spawn_center_clearance()
+            if self._target_dynamics in ("bounded", "physical") and self._target_speed_max() > 1e-6
+            else float(getattr(self.task_config, "goal_min_bar_clearance", 0.65))
+        )
+        # Dense physical-target runs must never inherit the unchecked initial random `chosen`
+        # sample when rejection exhausts. 1024 scalar rounds are cheap at reset relative to an RL
+        # episode and made the 150-bar spawn contract deterministic in the motion probe.
+        attempts = 1024 if self._target_dynamics in ("bounded", "physical") else 96
+        for _ in range(attempts):
             if not bool(todo.any()):
                 break
             ids = todo.nonzero(as_tuple=False).squeeze(-1)
@@ -1409,11 +1506,14 @@ class NavRLTask(BaseTask):
                     .min(1)
                     .values
                 )
-                accepted &= bar_dist >= float(
-                    getattr(self.task_config, "goal_min_bar_clearance", 0.65)
-                )
+                accepted &= bar_dist >= spawn_clearance
             chosen[ids[accepted]] = candidate[accepted]
             todo[ids[accepted]] = False
+        if self._target_dynamics in ("bounded", "physical") and bool(todo.any()):
+            raise RuntimeError(
+                "%s target spawn has no collision-free sample after %d attempts for %d envs"
+                % (self._target_dynamics, attempts, int(todo.sum()))
+            )
         goal = start_pos.clone()
         goal[:, 0:2] = chosen
         goal[:, 2] = float(self.task_config.flight_altitude)
@@ -1810,7 +1910,18 @@ class NavRLTask(BaseTask):
             "cfg_camera_fov_scale_err": float(
                 getattr(self.vis_cfg, "camera_fov_scale_err", 0.0)
             ),
-            "cfg_target_motion_model": TARGET_MOTION_MODEL,
+            "cfg_target_motion_model": self._target_motion_model,
+            "cfg_target_dynamics": self._target_dynamics,
+            "cfg_target_max_accel_mps2": float(self.tm.max_accel),
+            "cfg_target_max_turn_rate_degps": float(self.tm.max_turn_rate_deg),
+            "cfg_target_lookahead_s": float(self.tm.avoidance_lookahead_s),
+            "cfg_target_obstacle_clearance_m": float(self.tm.obstacle_clearance),
+            "cfg_target_physical_mass_kg": float(self.tm.physical_mass),
+            "cfg_target_physical_motor_arm_xy_m": float(self.tm.physical_motor_arm_xy),
+            "cfg_target_physical_max_motor_thrust_n": float(self.tm.physical_max_motor_thrust),
+            "cfg_target_physical_motor_tau_s": float(self.tm.physical_motor_tau),
+            "cfg_target_physical_yaw_torque_ratio_m": float(self.tm.physical_yaw_torque_ratio),
+            "cfg_target_physical_max_tilt_deg": float(self.tm.physical_max_tilt_deg),
             "cfg_target_pattern": str(self.tm.pattern),
             "cfg_target_speed_min": float(getattr(self.tm, "speed_min", 0.0)),
             "cfg_target_speed_final": float(self.tm.speed_final),
@@ -2098,7 +2209,9 @@ class NavRLTask(BaseTask):
                 ),
             ),
         )
-        bars = self.obs_dict["obstacle_position"][idx][:, : self.n_bars_active, 0:2]
+        bars = self.obs_dict["obstacle_position"][idx][
+            :, self._bar_offset : self._bar_offset + self.n_bars_active, 0:2
+        ]
         self._dump_records.append(
             {
                 "outcome": outcome.to(torch.int8).cpu(),
@@ -2142,7 +2255,9 @@ class NavRLTask(BaseTask):
         rng = float(self.task_config.lidar_max_range)
 
         # True bars, expressed in the drone's vehicle frame (yaw-only, matching the LiDAR frame).
-        bars_w = self.obs_dict["obstacle_position"][idx][:, : self.n_bars_active, 0:3]  # (K, B, 3)
+        bars_w = self.obs_dict["obstacle_position"][idx][
+            :, self._bar_offset : self._bar_offset + self.n_bars_active, 0:3
+        ]  # (K, B, 3)
         rel_w = bars_w - pos[idx].unsqueeze(1)
         quat = self.obs_dict["robot_vehicle_orientation"][idx]  # (K, 4)
         k, b = rel_w.shape[0], rel_w.shape[1]
@@ -2381,13 +2496,13 @@ class NavRLTask(BaseTask):
             saved_motion_model = str(
                 state.get("cfg_target_motion_model", "")
             ).strip()
-            if moving_target_requested and saved_motion_model != TARGET_MOTION_MODEL:
+            if moving_target_requested and saved_motion_model != self._target_motion_model:
                 density_evidence_changed = True
                 logger.warning(
                     "NavRL TARGET MOTION MISMATCH | checkpoint=%s running=%s. "
                     "Older checkpoints saw targets stall at bars; moving-target metrics and "
                     "fine-tuning are a changed environment contract."
-                    % (saved_motion_model or "legacy_bar_push", TARGET_MOTION_MODEL)
+                    % (saved_motion_model or "legacy_bar_push", self._target_motion_model)
                 )
             # Newer checkpoints record the complete moving-target/spawn/safety geometry. Missing
             # fields are tolerated for old checkpoints, but a present mismatch changes the task
@@ -2413,6 +2528,21 @@ class NavRLTask(BaseTask):
                     "cfg_target_speed_ramp_epochs",
                     float(self.tm.speed_ramp_epochs),
                     "NAVRL_TARGET_SPEED_RAMP_EPOCHS",
+                ),
+                (
+                    "cfg_target_physical_mass_kg",
+                    float(self.tm.physical_mass),
+                    "NAVRL_TARGET_MASS_KG",
+                ),
+                (
+                    "cfg_target_physical_max_motor_thrust_n",
+                    float(self.tm.physical_max_motor_thrust),
+                    "NAVRL_TARGET_MAX_MOTOR_THRUST_N",
+                ),
+                (
+                    "cfg_target_physical_motor_tau_s",
+                    float(self.tm.physical_motor_tau),
+                    "NAVRL_TARGET_MOTOR_TAU_S",
                 ),
                 ("cfg_general_train", bool(self.general_train_mode), "NAVRL_GENERAL_TRAIN"),
                 (
@@ -2820,7 +2950,7 @@ class NavRLTask(BaseTask):
         # every build-time slot as physical here makes a 25-bar episode avoid the parked/inactive
         # slots from the 150-bar capacity and silently changes the requested target dynamics.
         bars_xy = self.obs_dict["obstacle_position"][
-            env_ids, : self.n_bars_active, 0:2
+            env_ids, self._bar_offset : self._bar_offset + self.n_bars_active, 0:2
         ]
         # "Cross the bar field": the drone spawns at x~0, so placing the goal at x=k on the far
         # side forces a left->right traversal of the bars. k ~ U[k_min, k_max(epoch)] (k_max
@@ -2919,6 +3049,10 @@ class NavRLTask(BaseTask):
             # write avoids paying for two full simulator state updates on every episode reset.
             self.sim_env.robot_manager.robot.update_states()
             self.sim_env.IGE_env.write_to_sim()
+        elif self._physical_target:
+            # Unlike the historical virtual point, the target is an actor root state and must be
+            # committed after task-side goal sampling.
+            self.sim_env.IGE_env.write_to_sim()
         if self._oob_probe:
             self._probe_ep_start_y[env_ids] = start_pos[:, 1]
             self._probe_ep_target_start_y[env_ids] = goal[:, 1]
@@ -2990,6 +3124,13 @@ class NavRLTask(BaseTask):
         # Phase 3: per-episode target speed + trajectory pattern (all-static when the speed
         # ceiling is 0 -> Phases 1-2 behavior).
         self._sample_target_motion(env_ids)
+        if self._physical_target:
+            self.target_orientation[env_ids] = 0.0
+            self.target_orientation[env_ids, 3] = 1.0
+            self.target_vel_w[env_ids] = 0.0
+            self.obs_dict["obstacle_angvel"][env_ids, 0] = 0.0
+            self._target_controller.reset_idx(env_ids)
+            self.sim_env.IGE_env.write_to_sim()
         self.ep_min_goal_dist[env_ids] = float("inf")
         self.ep_reached[env_ids] = False
 
@@ -3060,6 +3201,8 @@ class NavRLTask(BaseTask):
         # Phase 3: move the virtual target FIRST — both agents move during this 0.1 s control
         # interval, and the end-of-interval reward is computed against the target's NEW position.
         # (No-op while all per-episode target speeds are 0, i.e. the static Phases 1-2 task.)
+        if self._physical_target:
+            self._target_controller.begin_control_interval()
         self._advance_target()
         command = self.transform_action_to_command(actions)
         if self.vision_mode:
@@ -3539,6 +3682,26 @@ class NavRLTask(BaseTask):
         below = z < self.task_config.lower_height_bound
         above = z > self.task_config.upper_height_bound
         crashed_out = crashed | below | above
+        target_contact = torch.zeros_like(crashed)
+        target_invalid = torch.zeros_like(crashed)
+        if self._physical_target:
+            target_contact = self._target_controller.contact_seen.clone()
+            target_z = self.target_position[:, 2]
+            target_support_xyz = self._physical_target_support_xyz()
+            target_invalid = (
+                (target_z - target_support_xyz[:, 2] < self.task_config.lower_height_bound)
+                | (target_z + target_support_xyz[:, 2] > self.task_config.upper_height_bound)
+            )
+            tb_min = self.obs_dict["env_bounds_min"][:, :2]
+            tb_max = self.obs_dict["env_bounds_max"][:, :2]
+            target_support_xy = target_support_xyz[:, :2]
+            target_invalid |= (
+                (self.target_position[:, :2] - target_support_xy < tb_min)
+                | (self.target_position[:, :2] + target_support_xy > tb_max)
+            ).any(dim=1)
+            crashed_out |= target_contact | target_invalid
+            self.obs_dict["navrl_target_contact"] = target_contact
+            self.obs_dict["navrl_target_invalid"] = target_invalid
         oob = torch.zeros_like(crashed)
         if self.vision_mode:
             # out-of-arena termination: with the target unobserved there is no implicit goal
@@ -3571,10 +3734,10 @@ class NavRLTask(BaseTask):
         self.crashed_now = crashed_out
         # Assign exactly one cause to every crash before the task logs or resets the environment.
         # Priority matches the global crash diagnostics and is exported per evaluation stratum.
-        d_contact = crashed & crashed_out
-        d_below = below & ~crashed & crashed_out
-        d_above = above & ~crashed & ~below & crashed_out
-        d_oob = oob & ~crashed & ~below & ~above & crashed_out
+        d_contact = (crashed | target_contact | target_invalid) & crashed_out
+        d_below = below & ~d_contact & crashed_out
+        d_above = above & ~d_contact & ~below & crashed_out
+        d_oob = oob & ~d_contact & ~below & ~above & crashed_out
         self._crash_cause_code.fill_(-1)
         self._crash_cause_code[d_contact] = 0
         self._crash_cause_code[d_below] = 1
@@ -3813,7 +3976,11 @@ class NavRLTask(BaseTask):
         rpos_veh = quat_rotate_inverse(q_veh, rpos_w)
 
         det_vec, visible = self.detector.detect(
-            pos, q_veh, self.target_position, update_tracker=True
+            pos,
+            q_veh,
+            self.target_position,
+            self.target_orientation,
+            update_tracker=True,
         )
         self._visible_now[:] = visible
         # Expose raw target-camera products for evaluation/debugging. Target mask/depth are reduced
@@ -3882,7 +4049,7 @@ class NavRLTask(BaseTask):
         q_veh = self.obs_dict["robot_vehicle_orientation"]
 
         raw_rgb, raw_depth = self.detector.render_raw_rgbd(
-            pos, q_veh, self.target_position
+            pos, q_veh, self.target_position, self.target_orientation
         )
         lidar_m = self._lidar_distance_m()
         structured, diagnostics = self.perception.observe(
@@ -3984,6 +4151,38 @@ class NavRLTask(BaseTask):
         frac = min(1.0, max(0.0, (self.num_task_steps - start_steps) / ramp_steps))
         return max(minimum, final * frac)
 
+    def _target_planner_clearance(self):
+        if not self._physical_target:
+            return float(self.tm.obstacle_clearance)
+        # Physical planner inflates each bar by the actor OBB's current world-XY support. The
+        # remaining scalar is only closed-loop tracking reserve, not another hull radius.
+        return float(getattr(self.tm, "physical_tracking_margin", 0.0))
+
+    def _physical_target_support_xyz(self):
+        """World-axis support radii of the current oriented physical collision box."""
+        if not self._physical_target:
+            return torch.zeros((self.num_envs, 3), device=self.device)
+        rotation = quat_to_rotation_matrix(self.target_orientation)
+        target_half = torch.tensor(
+            [0.5 * float(v) for v in self.tm.physical_box_xyz],
+            device=self.device,
+        )
+        return (rotation.abs() * target_half.view(1, 1, 3)).sum(dim=2)
+
+    def _target_spawn_center_clearance(self):
+        if not self._physical_target:
+            return self._target_planner_clearance()
+        # The reset sampler currently receives centers only. Add the largest active bar's XY
+        # half-diagonal so its conservative center test implies the exact surface clearance used
+        # by the runtime planner.
+        bar_half = self.obs_dict["asset_collision_half_extents"][
+            :, self._bar_offset : self._bar_offset + self.n_bars_active, 0:2
+        ]
+        bar_radius = float(bar_half.norm(dim=2).amax().item()) if bar_half.numel() else 0.0
+        half = [0.5 * float(v) for v in self.tm.physical_box_xyz]
+        target_radius = math.sqrt(sum(value * value for value in half))
+        return bar_radius + target_radius + self._target_planner_clearance()
+
     def _sample_target_motion(self, env_ids):
         """Per-episode target speed + trajectory pattern for reset envs. Training samples
         speed ~ U[speed_min, v_max(epoch)]; the default speed_min=0 keeps static/slow episodes
@@ -4075,6 +4274,8 @@ class NavRLTask(BaseTask):
         b_min = self.obs_dict["env_bounds_min"][env_ids]
         b_max = self.obs_dict["env_bounds_max"][env_ids]
         m = float(self.cur.wall_margin)
+        if self._physical_target:
+            m += float(getattr(self.tm, "physical_boundary_margin", 0.0))
         lo = b_min[:, 0:2] + m
         hi = b_max[:, 0:2] - m
         return lo + (hi - lo) * torch.rand(len(env_ids), 2, device=self.device)
@@ -4083,6 +4284,9 @@ class NavRLTask(BaseTask):
         """Mirror the moving target into the analytic semantic-LiDAR target buffer."""
         if self._sensor_target is not None:
             self._sensor_target[:] = self.target_position
+        sensor_orientation = self.obs_dict.get("navrl_target_orientation", None)
+        if sensor_orientation is not None:
+            sensor_orientation[:] = self.target_orientation
 
     def _advance_target(self):
         """Phase 3: integrate the virtual target one RL step (step_dt = 0.1 s). Patterns:
@@ -4103,8 +4307,121 @@ class NavRLTask(BaseTask):
         b_min = self.obs_dict["env_bounds_min"]
         b_max = self.obs_dict["env_bounds_max"]
         m = float(self.cur.wall_margin)
+        if self._physical_target:
+            m += float(getattr(self.tm, "physical_boundary_margin", 0.0))
         lo = b_min[:, 0:2] + m
         hi = b_max[:, 0:2] - m
+
+        if self._target_dynamics in ("bounded", "physical"):
+            desired_velocity = self._tm_cv_vel.clone()
+            wp = moving & (self._tm_pattern == 1)
+            if bool(wp.any()):
+                to_wp = self._tm_waypoint[wp] - old_xy[wp]
+                desired_velocity[wp] = (
+                    to_wp / to_wp.norm(dim=1, keepdim=True).clamp(min=1e-6)
+                    * self._tm_speed[wp].unsqueeze(1)
+                )
+            ci = moving & (self._tm_pattern == 2)
+            if bool(ci.any()):
+                rel_c = old_xy[ci] - self._tm_circle_center[ci]
+                radial = rel_c / rel_c.norm(dim=1, keepdim=True).clamp(min=1e-6)
+                sign = torch.sign(self._tm_circle_angvel[ci]).unsqueeze(1)
+                tangent = torch.stack((-radial[:, 1], radial[:, 0]), dim=1) * sign
+                desired_velocity[ci] = tangent * self._tm_speed[ci].unsqueeze(1)
+
+            bars_all = self.obs_dict["obstacle_position"][
+                :, self._bar_offset : self._bar_offset + self.n_bars_active, 0:2
+            ]
+            bars_half_extents = None
+            if self._physical_target:
+                bars_half_extents = self.obs_dict["asset_collision_half_extents"][
+                    :, self._bar_offset : self._bar_offset + self.n_bars_active, 0:2
+                ]
+                target_support_xy = self._physical_target_support_xyz()[:, :2]
+                bars_half_extents = bars_half_extents + target_support_xy.unsqueeze(1)
+            bounded_xy, bounded_velocity, _, feasible = bounded_drone_target_step(
+                old_xy,
+                self.target_vel_w[:, 0:2],
+                desired_velocity,
+                self._tm_speed,
+                dt,
+                bars_all,
+                lo,
+                hi,
+                self._target_planner_clearance(),
+                self._tm_avoid_sign,
+                torch.full_like(self._tm_speed, float(self.tm.max_accel)),
+                torch.full_like(
+                    self._tm_speed, math.radians(float(self.tm.max_turn_rate_deg))
+                ),
+                float(self.tm.avoidance_lookahead_s),
+                bars_half_extents,
+            )
+            if self._physical_target:
+                # The planner uses an additional tracking reserve. Crossing that soft reserve is
+                # not itself a dynamically infeasible state; retain the hard hull clearance and
+                # arena wall as the fail-closed feasibility contract.
+                hard_m = float(self.cur.wall_margin)
+                hard_lo = b_min[:, 0:2] + hard_m
+                hard_hi = b_max[:, 0:2] - hard_m
+                feasible = ((bounded_xy >= hard_lo) & (bounded_xy <= hard_hi)).all(dim=1)
+                if bars_all.shape[1] > 0:
+                    delta = (
+                        (bounded_xy.unsqueeze(1) - bars_all).abs() - bars_half_extents
+                    ).clamp(min=0.0)
+                    feasible &= delta.norm(dim=2).amin(dim=1) > 1e-4
+            # The physical mode never repairs a bad rollout with a teleport or velocity rewrite.
+            # `feasible` is retained for strict probes; if an initial state is already trapped the
+            # least-bad dynamically bounded step is executed and the environment generator, not
+            # the target dynamics, must be fixed.
+            self._tm_last_step_feasible = feasible
+            if self._physical_target:
+                command = torch.zeros((self.num_envs, 3), device=self.device)
+                command[:, 0:2] = torch.where(
+                    moving.unsqueeze(1), bounded_velocity, torch.zeros_like(old_xy)
+                )
+                self._target_controller.set_command(
+                    command,
+                    torch.full_like(self._tm_speed, float(self.task_config.flight_altitude)),
+                )
+                self._tm_heading[moving] = torch.atan2(
+                    bounded_velocity[moving, 1], bounded_velocity[moving, 0]
+                )
+                cv = moving & (self._tm_pattern == 0)
+                self._tm_cv_vel[cv] = bounded_velocity[cv]
+                if bool(wp.any()):
+                    reached = (self._tm_waypoint[wp] - old_xy[wp]).norm(dim=1) < float(
+                        self.tm.waypoint_reach_m
+                    )
+                    if bool(reached.any()):
+                        wp_idx = wp.nonzero(as_tuple=False).squeeze(-1)
+                        self._tm_waypoint[wp_idx[reached]] = self._sample_waypoints(
+                            wp_idx[reached]
+                        )
+                return
+            self.target_position[:, 0:2] = torch.where(
+                moving.unsqueeze(1), bounded_xy, old_xy
+            )
+            self.target_position[:, 2] = self.task_config.flight_altitude
+            self.target_vel_w[:, 0:2] = torch.where(
+                moving.unsqueeze(1), bounded_velocity, torch.zeros_like(old_xy)
+            )
+            self.target_vel_w[:, 2] = 0.0
+            self._tm_heading[moving] = torch.atan2(
+                bounded_velocity[moving, 1], bounded_velocity[moving, 0]
+            )
+            cv = moving & (self._tm_pattern == 0)
+            self._tm_cv_vel[cv] = bounded_velocity[cv]
+            if bool(wp.any()):
+                reached = (self._tm_waypoint[wp] - self.target_position[wp, 0:2]).norm(
+                    dim=1
+                ) < float(self.tm.waypoint_reach_m)
+                if bool(reached.any()):
+                    wp_idx = wp.nonzero(as_tuple=False).squeeze(-1)
+                    self._tm_waypoint[wp_idx[reached]] = self._sample_waypoints(
+                        wp_idx[reached]
+                    )
+            return
 
         # -- cv: integrate the held heading, reflect position AND velocity at the wall margins
         cv = moving & (self._tm_pattern == 0)
@@ -4162,7 +4479,7 @@ class NavRLTask(BaseTask):
         flown_velocity = (new_xy - old_xy) / dt
         if self.n_bars_active > 0:
             bars_all = self.obs_dict["obstacle_position"][
-                :, : self.n_bars_active, 0:2
+                :, self._bar_offset : self._bar_offset + self.n_bars_active, 0:2
             ]
             desired_velocity = (new_xy - old_xy) / dt
             # Circle is a held-out pattern and keeps its legacy smallest-turn behavior. Passing
@@ -4204,7 +4521,7 @@ class NavRLTask(BaseTask):
         if clearance > 0.0 and self.n_bars_active > 0:
             mov_idx = moving.nonzero(as_tuple=False).squeeze(-1)
             bars_xy = self.obs_dict["obstacle_position"][
-                mov_idx, : self.n_bars_active, 0:2
+                mov_idx, self._bar_offset : self._bar_offset + self.n_bars_active, 0:2
             ]  # (M, active B, 2)
             arangeM = torch.arange(len(mov_idx), device=self.device)
             for _ in range(6):
@@ -4454,23 +4771,41 @@ class NavRLTask(BaseTask):
         bounded = ep_steps.clamp(0, self._oob_step_hist.numel() - 1).to(torch.long)
         self._oob_step_hist.index_add_(0, bounded, torch.ones_like(bounded))
 
-        if hasattr(self, "_fa_ep_first_fused"):
-            self._oob_never_acquired += int((self._fa_ep_first_fused[idx] < 0).sum().item())
-
         vel = self.obs_dict.get("robot_linvel")
+        if not hasattr(self, "_fa_ep_first_fused"):
+            raise RuntimeError("NavRL OOB forensics require first-acquisition telemetry")
+        if vel is None:
+            raise RuntimeError("NavRL OOB forensics require robot_linvel")
+        never_acquired = self._fa_ep_first_fused[idx] < 0
+        self._oob_never_acquired += int(never_acquired.sum().item())
+
         to_goal = self.target_position[idx, 0:2] - pos[idx, 0:2]
         dist = to_goal.norm(dim=1)
+        speed = vel[idx, 0:2].norm(dim=1)
+        unit = to_goal / dist.clamp(min=1e-6).unsqueeze(1)
+        goal_closing = (vel[idx, 0:2] * unit).sum(dim=1)
+        centre = 0.5 * (b_min[idx] + b_max[idx])
+        radial = pos[idx, 0:2] - centre
+        radial = radial / radial.norm(dim=1, keepdim=True).clamp(min=1e-6)
+        outward = (vel[idx, 0:2] * radial).sum(dim=1)
+
         self._oob_goal_dist_sum += float(dist.sum().item())
-        if vel is not None:
-            self._oob_speed_sum += float(vel[idx, 0:2].norm(dim=1).sum().item())
-            unit = to_goal / dist.clamp(min=1e-6).unsqueeze(1)
-            # >0 closing on the goal as it crossed, <0 receding from it.
-            self._oob_goal_closing_sum += float((vel[idx, 0:2] * unit).sum(dim=1).sum().item())
-            centre = 0.5 * (b_min[idx] + b_max[idx])
-            radial = pos[idx, 0:2] - centre
-            radial = radial / radial.norm(dim=1, keepdim=True).clamp(min=1e-6)
-            # >0 actively driving outward rather than drifting across the line.
-            self._oob_outward_sum += float((vel[idx, 0:2] * radial).sum(dim=1).sum().item())
+        self._oob_speed_sum += float(speed.sum().item())
+        # >0 closing on the goal as it crossed, <0 receding from it.
+        self._oob_goal_closing_sum += float(goal_closing.sum().item())
+        # >0 actively driving outward rather than drifting across the line.
+        self._oob_outward_sum += float(outward.sum().item())
+
+        for label, group_mask in (
+            ("never_acquired", never_acquired),
+            ("acquired", ~never_acquired),
+        ):
+            group = self._oob_acquisition_groups[label]
+            group["n"] += int(group_mask.sum().item())
+            group["speed_sum"] += float(speed[group_mask].sum().item())
+            group["goal_dist_sum"] += float(dist[group_mask].sum().item())
+            group["goal_closing_sum"] += float(goal_closing[group_mask].sum().item())
+            group["outward_sum"] += float(outward[group_mask].sum().item())
 
     def _record_first_acquisition(self, idx, outcome, observation_steps):
         """Attribute per-episode first-acquisition statistics to eval outcomes (RESEARCH_PLAN 8.28).
@@ -5000,6 +5335,36 @@ class NavRLTask(BaseTask):
                 )
             if n == 0:
                 return {"exits": 0}
+            group_total = sum(int(row["n"]) for row in self._oob_acquisition_groups.values())
+            if group_total != n or int(self._oob_acquisition_groups["never_acquired"]["n"]) != int(
+                self._oob_never_acquired
+            ):
+                raise RuntimeError(
+                    "NavRL OOB acquisition strata disagree with the exit counter: %d/%d/%d"
+                    % (group_total, n, int(self._oob_never_acquired))
+                )
+
+            def acquisition_group_payload(label):
+                row = self._oob_acquisition_groups[label]
+                count = int(row["n"])
+                if count == 0:
+                    return {
+                        "exits": 0,
+                        "share": 0.0,
+                        "speed_mean_mps": None,
+                        "goal_distance_mean_m": None,
+                        "goal_closing_speed_mean_mps": None,
+                        "outward_radial_speed_mean_mps": None,
+                    }
+                return {
+                    "exits": count,
+                    "share": count / n,
+                    "speed_mean_mps": row["speed_sum"] / count,
+                    "goal_distance_mean_m": row["goal_dist_sum"] / count,
+                    "goal_closing_speed_mean_mps": row["goal_closing_sum"] / count,
+                    "outward_radial_speed_mean_mps": row["outward_sum"] / count,
+                }
+
             hist = self._oob_step_hist
             cumulative = torch.cumsum(hist, dim=0)
             half = (n + 1) // 2
@@ -5028,6 +5393,10 @@ class NavRLTask(BaseTask):
                 "goal_closing_speed_mean_mps": self._oob_goal_closing_sum / n,
                 # Positive means it was actively driving outward, not drifting.
                 "outward_radial_speed_mean_mps": self._oob_outward_sum / n,
+                "by_acquisition": {
+                    label: acquisition_group_payload(label)
+                    for label in ("never_acquired", "acquired")
+                },
             }
 
         def first_acquisition_payload(index):

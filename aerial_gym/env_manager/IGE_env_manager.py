@@ -503,6 +503,9 @@ class IsaacGymEnv(BaseManager):
             self.global_tensor_dict["obstacle_torque_tensor"] = self.global_tensor_dict[
                 "global_torque_tensor"
             ].view(self.num_envs, self.num_rigid_bodies_per_env, 3)[:, idx:, :]
+            self.global_tensor_dict["obstacle_contact_force_tensor"] = self.global_contact_force_tensor[
+                :, idx:, :
+            ]
 
         self.global_tensor_dict["env_bounds_max"] = self.env_upper_bound
         self.global_tensor_dict["env_bounds_min"] = self.env_lower_bound

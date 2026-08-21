@@ -28,13 +28,15 @@ LiDAR로 표적·장애물을 보고, 시뮬레이터 ego-state로 자신의 자
 | `navrl_ref5in_quad` 후보 기체 | CPU 저장소 계약 **26/26**, canonical same-controller simulator gate **21/21**, P1c fresh 900-epoch engineering gate를 통과했습니다. 장거리 D1은 q3/CV capture를 D0 대비 +15.19pp 개선했습니다. | held-out P2는 timeout 상한을 넘어 **strict FAIL**이고, D1도 q3/CV timeout 15.98%로 사전등록한 12%를 넘어 **FAIL**입니다. P3 장기학습은 차단했습니다. 실기 비행, CAD, endurance, 열·전원 여유도 미검증입니다. |
 | 과거 navigation 결과 | legacy evaluator 안에서는 비교 가능한 동결 기록으로 보존합니다. | old 601-action 결과를 corrected exact-600 결과와 합치거나, legacy 기체 결과를 ref5in 성능으로 부를 수 없습니다. |
 
-gate 표·진단 요약·다음 실험(camera range A/B)은 **[VERIFICATION.md](VERIFICATION.md)** 에 통합했습니다.
+gate 표와 진단 요약은 **[VERIFICATION.md](VERIFICATION.md)** 에 통합했습니다. camera-range A/B는
+완료된 원인 진단이며, 28 m camera를 채택했다는 뜻은 아닙니다.
 canonical 결과 링크: [P0](results/navrl_ref_platform_verification/summary.md) ·
 [P1c](results/navrl_ref5in_smoke_seed197/p1c/summary.md) ·
 [P2](results/navrl_ref5in_p2_seed313/summary.md) ·
 [D0](results/navrl_ref5in_outcome_diagnostic_v2_seed317/summary.md) ·
 [D1](results/navrl_ref5in_d1_eval_seed331/summary.md) ·
-[first-acquisition seed359](results/navrl_ref5in_cv_first_acquisition_seed359/summary.md).
+[first-acquisition seed359](results/navrl_ref5in_cv_first_acquisition_seed359/summary.md) ·
+[camera-range seed367](results/navrl_ref5in_camera_range_control_seed367/summary.md).
 
 ## 시스템을 짧게 보면
 
@@ -228,8 +230,8 @@ run 폴더 이관과 TensorBoard 병합 절차는 [OPERATIONS.md](OPERATIONS.md)
 9. **near-open 완료:** 1 bar에서도 away−toward timeout `+54.32pp`여서 dense obstacle occlusion 필요성은 기각했습니다.
 10. **outcome telemetry 완료:** seed 353에서 away capture−timeout visibility는 `+14.43pp`로 20pp screen에 미달했습니다. wall-reflection 표는 생존 선택편향 때문에 인과 판정에 쓰지 않습니다.
 11. **최초취득 계측 완료:** seed 359에서 outcome별 never-acquired rate는 away timeout `87.52%`, away capture `0.00%`, toward capture `0.00%`였습니다. 사전 30pp screen을 `+87.52pp`로 통과했고, 두 capture cohort가 모두 정확히 0%라는 점이 임계보다 강한 신호입니다 — 이 조건에서 최초 취득이 capture의 필요조건처럼 동작합니다. 독립 재계산에서 fused와 camera 최초취득이 6개 cohort 전부 일치해, 사실상 camera range 발견입니다. 다만 outcome은 궤적의 결과이므로 연관이지 인과가 아닙니다.
-12. **현재 단계:** RESEARCH_PLAN 8.29의 seed 367 인과 대조 — target camera range `20m` vs `28m`, 그 한 값만 바꿉니다. 정책은 `20m`로 학습됐으므로 timeout이 줄지 않아도 "비관측이 원인이 아니다"로 읽을 수 없다는 한계를 사전에 명시했습니다. 이 진단들은 P3를 열지 않습니다.
-12. perception 연구는 corrected-v2 analytic baseline → learned detector arm → appearance-randomized arm 순으로 한 축씩 추가합니다.
+12. **camera-range 진단 완료:** seed 367에서 target camera range `20→28 m` 한 값만 바꾸자 timeout이 `55.80→18.16%`로 줄었습니다. 초기 미관측의 인과 기여는 지지하지만, 사용자가 원하는 과제는 장거리 미관측 상태에서의 active search이므로 28 m camera는 positive control이지 자동 채택안이 아닙니다. 다음은 OOB exit를 acquired/never-acquired로 나눈 동결-policy 계측이며 P3는 계속 차단합니다.
+13. perception 연구는 corrected-v2 analytic baseline → learned detector arm → appearance-randomized arm 순으로 한 축씩 추가합니다.
 
 현재 가장 큰 미해결 문제는 “더 오래 학습하면 되는가”가 아니라 **고밀도에서 pre-contact obstacle 정보, 제동 여유, detector 출력 분포, 기체 동역학 중 어느 축이 먼저 한계가 되는가**입니다.
 

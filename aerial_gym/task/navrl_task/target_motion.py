@@ -6,11 +6,18 @@ import torch
 
 
 TARGET_MOTION_MODEL = "symmetric_local_steer_v2_heading_continuity90"
+BOUNDED_TARGET_MOTION_MODEL = "bounded_planar_drone_v1_rollout"
+PHYSICAL_TARGET_MOTION_MODEL = "physx_ref5in_6dof_motor_wrench_v2_same_substep"
 
 
 # Symmetric candidates keep obstacle avoidance from introducing a global left/right bias. The
 # per-episode turn_sign only breaks exact +/- ties and is sampled 50:50 by NavRLTask.
 TURN_ANGLES_DEG = (0.0, 30.0, -30.0, 60.0, -60.0, 90.0, -90.0, 120.0, -120.0, 180.0)
+BOUNDED_TURN_ANGLES_DEG = (
+    0.0, 15.0, -15.0, 30.0, -30.0, 45.0, -45.0, 60.0, -60.0,
+    75.0, -75.0, 90.0, -90.0, 105.0, -105.0, 120.0, -120.0,
+    135.0, -135.0, 150.0, -150.0, 165.0, -165.0, 180.0,
+)
 HEADING_CONTINUITY_RAD = math.radians(90.0)
 CV_INITIAL_HEADING_MODES = (
     "random",
@@ -19,6 +26,205 @@ CV_INITIAL_HEADING_MODES = (
     "tangent_right",
     "away",
 )
+
+
+def limit_planar_velocity(
+    current_velocity,
+    desired_velocity,
+    speed_limit,
+    dt,
+    max_accel,
+    max_turn_rate,
+):
+    """Apply a planar multirotor trajectory envelope for one control interval.
+
+    The bound is deliberately imposed on the *realized velocity state*, rather than merely on a
+    waypoint heading.  Acceleration is Euclidean (so diagonal commands get no free authority) and
+    the heading slew limit prevents an almost-stationary numerical state from snapping to a new
+    bearing as soon as it gains speed.  This is a trackable-trajectory contract, not a rigid-body
+    simulation: attitude, motor and battery states still belong to the actual robot actor.
+    """
+    if current_velocity.shape != desired_velocity.shape or current_velocity.ndim != 2:
+        raise ValueError("current_velocity and desired_velocity must have matching [N, 2] shape")
+    n = current_velocity.shape[0]
+    for name, value in (("speed_limit", speed_limit), ("max_accel", max_accel),
+                        ("max_turn_rate", max_turn_rate)):
+        if value.shape != (n,):
+            raise ValueError(f"{name} must have shape [N]")
+    if float(dt) <= 0.0:
+        raise ValueError("dt must be positive")
+
+    desired_speed = desired_velocity.norm(dim=1).minimum(speed_limit.clamp(min=0.0))
+    desired_heading = torch.atan2(desired_velocity[:, 1], desired_velocity[:, 0])
+    current_speed = current_velocity.norm(dim=1)
+    current_heading = torch.atan2(current_velocity[:, 1], current_velocity[:, 0])
+    # At rest there is no physical heading of travel. Starting in the requested direction is
+    # valid; acceleration below still ramps the speed from zero.
+    heading_delta = torch.atan2(
+        torch.sin(desired_heading - current_heading),
+        torch.cos(desired_heading - current_heading),
+    )
+    max_delta = max_turn_rate.clamp(min=0.0) * float(dt)
+    limited_heading = current_heading + heading_delta.clamp(min=-max_delta, max=max_delta)
+    limited_heading = torch.where(current_speed > 1e-5, limited_heading, desired_heading)
+    heading_limited_target = torch.stack(
+        (torch.cos(limited_heading), torch.sin(limited_heading)), dim=1
+    ) * desired_speed.unsqueeze(1)
+
+    delta_v = heading_limited_target - current_velocity
+    delta_norm = delta_v.norm(dim=1, keepdim=True)
+    max_delta_v = (max_accel.clamp(min=0.0) * float(dt)).unsqueeze(1)
+    delta_v = delta_v * torch.minimum(
+        torch.ones_like(delta_norm), max_delta_v / delta_norm.clamp(min=1e-9)
+    )
+    velocity = current_velocity + delta_v
+    velocity_norm = velocity.norm(dim=1, keepdim=True)
+    velocity = velocity * torch.minimum(
+        torch.ones_like(velocity_norm),
+        speed_limit.clamp(min=0.0).unsqueeze(1) / velocity_norm.clamp(min=1e-9),
+    )
+    return velocity
+
+
+def bounded_drone_target_step(
+    old_xy,
+    current_velocity,
+    desired_velocity,
+    speed_limit,
+    dt,
+    bars_xy,
+    lo,
+    hi,
+    clearance,
+    turn_sign,
+    max_accel,
+    max_turn_rate,
+    lookahead_s,
+    bars_half_extents_xy=None,
+):
+    """Choose and execute one dynamically bounded, collision-screened target step.
+
+    Every steering candidate is rolled forward with the same acceleration and heading-rate bounds
+    that govern the returned first step.  A candidate is considered feasible only when *all*
+    rollout samples remain inside the arena and outside the configured bar clearance.  No wall
+    reflection, positional clamp, obstacle push-out, or instantaneous velocity rewrite occurs.
+
+    Returns ``(new_xy, new_velocity, steered, feasible)``. ``feasible=False`` is an explicit
+    environment-geometry failure: the least-bad bounded trajectory is returned rather than hiding
+    the failure with a teleport.
+    """
+    if old_xy.ndim != 2 or old_xy.shape[1] != 2:
+        raise ValueError("old_xy must have shape [N, 2]")
+    n = old_xy.shape[0]
+    if current_velocity.shape != old_xy.shape or desired_velocity.shape != old_xy.shape:
+        raise ValueError("velocity tensors must match old_xy")
+    if bars_xy.ndim != 3 or bars_xy.shape[0] != n or bars_xy.shape[2] != 2:
+        raise ValueError("bars_xy must have shape [N, B, 2]")
+    if bars_half_extents_xy is not None and bars_half_extents_xy.shape != bars_xy.shape:
+        raise ValueError("bars_half_extents_xy must match bars_xy")
+    if lo.shape != old_xy.shape or hi.shape != old_xy.shape:
+        raise ValueError("lo and hi must match old_xy")
+    if float(lookahead_s) < float(dt):
+        raise ValueError("lookahead_s must be at least dt")
+
+    base_norm = desired_velocity.norm(dim=1, keepdim=True)
+    fallback = torch.zeros_like(desired_velocity)
+    fallback[:, 0] = 1.0
+    base = torch.where(base_norm > 1e-6, desired_velocity / base_norm.clamp(min=1e-6), fallback)
+    angles = torch.tensor(
+        [math.radians(value) for value in BOUNDED_TURN_ANGLES_DEG],
+        device=old_xy.device,
+        dtype=old_xy.dtype,
+    )
+    cosine, sine = torch.cos(angles).view(1, -1), torch.sin(angles).view(1, -1)
+    bx, by = base[:, 0:1], base[:, 1:2]
+    directions = torch.stack((bx * cosine - by * sine, bx * sine + by * cosine), dim=2)
+    # A real vehicle must be allowed to trade speed for clearance. Direction-only full-speed
+    # candidates recreate the old failure in a smoother form: when no full-speed arc fits, every
+    # rollout becomes infeasible even though braking would be safe. Use full and half-speed
+    # copies plus one stop command. Acceleration bounds make the stop a deceleration trajectory,
+    # never an instantaneous halt.
+    cruise_scales = torch.tensor((1.0, 0.5, 0.25), device=old_xy.device, dtype=old_xy.dtype)
+    directions = directions.unsqueeze(1).expand(-1, len(cruise_scales), -1, -1)
+    candidate_angles = angles.view(1, 1, -1).expand(n, len(cruise_scales), -1).reshape(n, -1)
+    candidate_scales = cruise_scales.view(1, -1, 1).expand(n, -1, len(angles)).reshape(n, -1)
+    candidates = (
+        directions * cruise_scales.view(1, -1, 1, 1)
+        * speed_limit.clamp(min=0.0).view(n, 1, 1, 1)
+    ).reshape(n, -1, 2)
+    candidates = torch.cat((candidates, torch.zeros(n, 1, 2, device=old_xy.device,
+                                                     dtype=old_xy.dtype)), dim=1)
+    candidate_angles = torch.cat((candidate_angles, torch.zeros(n, 1, device=old_xy.device,
+                                                                 dtype=old_xy.dtype)), dim=1)
+    candidate_scales = torch.cat((candidate_scales, torch.zeros(n, 1, device=old_xy.device,
+                                                                 dtype=old_xy.dtype)), dim=1)
+    count = candidates.shape[1]
+
+    pos = old_xy.unsqueeze(1).expand(-1, count, -1).clone()
+    vel = current_velocity.unsqueeze(1).expand(-1, count, -1).clone()
+    first_pos = None
+    first_vel = None
+    feasible = torch.ones((n, count), dtype=torch.bool, device=old_xy.device)
+    immediate_feasible = torch.zeros((n, count), dtype=torch.bool, device=old_xy.device)
+    safe_prefix_steps = torch.zeros((n, count), dtype=old_xy.dtype, device=old_xy.device)
+    prefix_alive = torch.ones((n, count), dtype=torch.bool, device=old_xy.device)
+    min_clearance = torch.full(
+        (n, count), float("inf"), device=old_xy.device, dtype=old_xy.dtype
+    )
+    steps = max(1, int(math.ceil(float(lookahead_s) / float(dt))))
+    flat_speed = speed_limit.unsqueeze(1).expand(-1, count).reshape(-1)
+    flat_accel = max_accel.unsqueeze(1).expand(-1, count).reshape(-1)
+    flat_turn = max_turn_rate.unsqueeze(1).expand(-1, count).reshape(-1)
+    flat_desired = candidates.reshape(-1, 2)
+    for step in range(steps):
+        vel = limit_planar_velocity(
+            vel.reshape(-1, 2), flat_desired, flat_speed, dt, flat_accel, flat_turn
+        ).reshape(n, count, 2)
+        pos = pos + vel * float(dt)
+        if step == 0:
+            first_pos, first_vel = pos.clone(), vel.clone()
+        inside = ((pos >= lo.unsqueeze(1)) & (pos <= hi.unsqueeze(1))).all(dim=2)
+        step_safe = inside
+        if bars_xy.shape[1] > 0 and float(clearance) > 0.0:
+            if bars_half_extents_xy is None:
+                dist = torch.cdist(pos, bars_xy).amin(dim=2)
+            else:
+                delta = (
+                    (pos.unsqueeze(2) - bars_xy.unsqueeze(1)).abs()
+                    - bars_half_extents_xy.unsqueeze(1)
+                ).clamp(min=0.0)
+                dist = delta.norm(dim=3).amin(dim=2)
+            min_clearance = torch.minimum(min_clearance, dist)
+            step_safe &= dist >= float(clearance) + 1e-4
+        if step == 0:
+            immediate_feasible[:] = step_safe
+        prefix_alive &= step_safe
+        safe_prefix_steps += prefix_alive.to(old_xy.dtype)
+        feasible &= step_safe
+
+    turn_cost = candidate_angles.abs()
+    tie = turn_sign.view(n, 1) * torch.sign(candidate_angles) * 1e-3
+    clear_score = 1000.0 + 10.0 * candidate_scales - turn_cost + tie
+    # A trapped rollout is not made "physical" by pretending it succeeded. Select the trajectory
+    # with the most clearance and expose feasible=False to telemetry/tests.
+    boundary_margin = torch.minimum(pos - lo.unsqueeze(1), hi.unsqueeze(1) - pos).amin(dim=2)
+    # Receding-horizon fallback: if no constant-heading candidate survives the whole horizon,
+    # prefer the candidate with the longest safe prefix, then replan next RL step. The old score
+    # used only final clearance and could select a candidate unsafe on its very first step merely
+    # because it ended farther from another obstacle.
+    trapped_score = (
+        100.0 * safe_prefix_steps
+        + min_clearance.clamp(max=10.0)
+        + boundary_margin.clamp(max=10.0)
+        - 0.01 * turn_cost
+        + tie
+    )
+    score = torch.where(feasible, clear_score, trapped_score)
+    chosen = score.argmax(dim=1)
+    rows = torch.arange(n, device=old_xy.device)
+    selected_pos = first_pos[rows, chosen]
+    selected_vel = first_vel[rows, chosen]
+    return selected_pos, selected_vel, chosen != 0, immediate_feasible[rows, chosen]
 
 
 def initial_cv_velocity(mode, speed, target_xy, pursuer_xy, random_angle):

@@ -13,6 +13,7 @@ RGB detector can replace the semantic mask while retaining the same 8-D detector
 """
 
 import math
+import os
 
 import torch
 import torch.nn.functional as F
@@ -53,7 +54,10 @@ def _render_target_camera_kernel(
     orientations: wp.array(dtype=wp.quat),
     ray_vectors: wp.array2d(dtype=wp.vec3),
     target_positions: wp.array(dtype=wp.vec3),
+    target_orientations: wp.array(dtype=wp.quat),
     target_radius: float,
+    target_half_extents: wp.vec3,
+    target_use_oriented_box: int,
     far_plane: float,
     target_mask: wp.array(dtype=wp.int32, ndim=3),
     target_depth: wp.array(dtype=float, ndim=3),
@@ -71,17 +75,46 @@ def _render_target_camera_kernel(
     target_mask[env_id, row, col] = wp.int32(0)
     target_depth[env_id, row, col] = far_plane
 
-    # Analytic ray-sphere intersection in world coordinates.
-    oc = ro - target_positions[env_id]
-    b = wp.dot(oc, rd)
-    c = wp.dot(oc, oc) - target_radius * target_radius
-    disc = b * b - c
-    if disc >= 0.0:
-        root = wp.sqrt(disc)
-        t_target = -b - root
-        if t_target < 0.0:
-            t_target = -b + root
-        if t_target >= 0.0 and t_target < far_plane:
+    t_target = -1.0
+    if target_use_oriented_box != 0:
+        q_inv = wp.quat_inverse(target_orientations[env_id])
+        ro_l = wp.quat_rotate(q_inv, ro - target_positions[env_id])
+        rd_l = wp.quat_rotate(q_inv, rd)
+        tmin = -1.0e20
+        tmax = 1.0e20
+        valid = int(1)
+        if wp.abs(rd_l[0]) < 1.0e-8:
+            if wp.abs(ro_l[0]) > target_half_extents[0]: valid = int(0)
+        else:
+            a = (-target_half_extents[0] - ro_l[0]) / rd_l[0]
+            b0 = (target_half_extents[0] - ro_l[0]) / rd_l[0]
+            tmin = wp.max(tmin, wp.min(a, b0)); tmax = wp.min(tmax, wp.max(a, b0))
+        if wp.abs(rd_l[1]) < 1.0e-8:
+            if wp.abs(ro_l[1]) > target_half_extents[1]: valid = int(0)
+        else:
+            a = (-target_half_extents[1] - ro_l[1]) / rd_l[1]
+            b0 = (target_half_extents[1] - ro_l[1]) / rd_l[1]
+            tmin = wp.max(tmin, wp.min(a, b0)); tmax = wp.min(tmax, wp.max(a, b0))
+        if wp.abs(rd_l[2]) < 1.0e-8:
+            if wp.abs(ro_l[2]) > target_half_extents[2]: valid = int(0)
+        else:
+            a = (-target_half_extents[2] - ro_l[2]) / rd_l[2]
+            b0 = (target_half_extents[2] - ro_l[2]) / rd_l[2]
+            tmin = wp.max(tmin, wp.min(a, b0)); tmax = wp.min(tmax, wp.max(a, b0))
+        if valid != 0 and tmax >= wp.max(tmin, 0.0):
+            t_target = tmin
+            if t_target < 0.0: t_target = tmax
+    else:
+        oc = ro - target_positions[env_id]
+        b = wp.dot(oc, rd)
+        c = wp.dot(oc, oc) - target_radius * target_radius
+        disc = b * b - c
+        if disc >= 0.0:
+            root = wp.sqrt(disc)
+            t_target = -b - root
+            if t_target < 0.0:
+                t_target = -b + root
+    if t_target >= 0.0 and t_target < far_plane:
             # A target pixel survives only if no bar surface lies before it.
             t = float(0.0)
             u = float(0.0)
@@ -135,6 +168,10 @@ class NavRLTargetDetector:
         self.half_hfov = self.hfov * 0.5
         self.half_vfov = self.vfov * 0.5
         self.target_radius = float(getattr(vis_cfg, "camera_target_radius", 0.15))
+        self.target_use_oriented_box = (
+            os.environ.get("NAVRL_TARGET_DYNAMICS", "legacy").strip().lower() == "physical"
+        )
+        self.target_half_extents = wp.vec3(0.14, 0.14, 0.06)
         self.min_pixels = max(1, int(getattr(vis_cfg, "camera_min_target_pixels", 1)))
         self.obstacle_width = int(getattr(vis_cfg, "camera_obstacle_width", 40))
         self.obstacle_height = int(getattr(vis_cfg, "camera_obstacle_height", 24))
@@ -209,6 +246,10 @@ class NavRLTargetDetector:
         )
         self._orientations[:, 3] = 1.0
         self._targets = torch.zeros((self.num_envs, 3), dtype=torch.float32, device=device)
+        self._target_orientations = torch.zeros(
+            (self.num_envs, 4), dtype=torch.float32, device=device
+        )
+        self._target_orientations[:, 3] = 1.0
         self.target_mask = torch.zeros(
             (self.num_envs, self.height, self.width), dtype=torch.int32, device=device
         )
@@ -225,6 +266,9 @@ class NavRLTargetDetector:
         self._origins_wp = wp.from_torch(self._origins, dtype=wp.vec3)
         self._orientations_wp = wp.from_torch(self._orientations, dtype=wp.quat)
         self._targets_wp = wp.from_torch(self._targets, dtype=wp.vec3)
+        self._target_orientations_wp = wp.from_torch(
+            self._target_orientations, dtype=wp.quat
+        )
         self._mask_wp = wp.from_torch(self.target_mask, dtype=wp.int32)
         self._depth_wp = wp.from_torch(self.target_depth, dtype=wp.float32)
         self._obstacle_depth_wp = wp.from_torch(self.obstacle_depth, dtype=wp.float32)
@@ -330,7 +374,7 @@ class NavRLTargetDetector:
         self.last_bbox[env_ids] = -1.0
         self.last_pixel_count[env_ids] = 0
 
-    def _render(self, drone_pos_w, vehicle_quat, target_pos_w):
+    def _render(self, drone_pos_w, vehicle_quat, target_pos_w, target_quat=None):
         offset = self.camera_offset_vehicle.expand(self.num_envs, -1)
         if self.mount_trans_m > 0.0:
             # Renderer-only mount error: perception keeps its nominal camera_offset copy, so the
@@ -343,6 +387,8 @@ class NavRLTargetDetector:
         else:
             self._orientations[:] = vehicle_quat
         self._targets[:] = target_pos_w
+        if target_quat is not None:
+            self._target_orientations[:] = target_quat
         wp.launch(
             kernel=_render_target_camera_kernel,
             dim=(self.num_envs, self.height, self.width),
@@ -352,7 +398,10 @@ class NavRLTargetDetector:
                 self._orientations_wp,
                 self._ray_vectors_wp,
                 self._targets_wp,
+                self._target_orientations_wp,
                 self.target_radius,
+                self.target_half_extents,
+                int(self.target_use_oriented_box),
                 self.max_range,
                 self._mask_wp,
                 self._depth_wp,
@@ -373,7 +422,7 @@ class NavRLTargetDetector:
             device=str(self.device),
         )
 
-    def render_raw_rgbd(self, drone_pos_w, vehicle_quat, target_pos_w):
+    def render_raw_rgbd(self, drone_pos_w, vehicle_quat, target_pos_w, target_quat=None):
         """Render an RGB-D camera frame; semantic buffers stay renderer-private.
 
         A simulator necessarily uses scene pose/geometry to rasterize pixels.  The information
@@ -382,7 +431,7 @@ class NavRLTargetDetector:
         the target drone uses a red appearance matching its URDF color.  This is deliberately a
         simple sim renderer; color/measurement perturbations are applied by the perception module.
         """
-        self._render(drone_pos_w, vehicle_quat, target_pos_w)
+        self._render(drone_pos_w, vehicle_quat, target_pos_w, target_quat)
 
         obstacle_depth_hi = F.interpolate(
             self.obstacle_depth.unsqueeze(1),
@@ -432,9 +481,11 @@ class NavRLTargetDetector:
         rgb = rgb.clamp(0.0, 1.0)
         return rgb.contiguous(), depth.contiguous()
 
-    def detect(self, drone_pos_w, vehicle_quat, target_pos_w, update_tracker=True):
+    def detect(
+        self, drone_pos_w, vehicle_quat, target_pos_w, target_quat=None, update_tracker=True
+    ):
         """Return the existing 8-D interface, derived exclusively from camera pixels."""
-        self._render(drone_pos_w, vehicle_quat, target_pos_w)
+        self._render(drone_pos_w, vehicle_quat, target_pos_w, target_quat)
         mask = self.target_mask > 0
         count = mask.sum(dim=(1, 2))
         visible = count >= self.min_pixels

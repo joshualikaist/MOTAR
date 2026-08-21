@@ -504,12 +504,49 @@ class task_config:
         easy_goal_min = _env_float("NAVRL_DENSITY_EASY_GOAL_MIN", 5.0)
         easy_goal_max = _env_float("NAVRL_DENSITY_EASY_GOAL_MAX", 10.0)
 
-    # Phase 3 moving target (RQ2). The target is a VIRTUAL point (task-side coordinates, no
-    # actor/mesh -> VRAM neutral; the LiDAR never sees it). speed_final = 0 (default) keeps the
-    # target STATIC and the whole task byte-compatible with Phases 1-2.
+    # Phase 3 moving target (RQ2). Legacy/bounded modes use a task-side virtual point; physical
+    # mode uses a gravity/contact-enabled 6-DoF actor. speed_final = 0 (default) keeps legacy mode
+    # static and byte-compatible with Phases 1-2.
     #   train:  NAVRL_TARGET_SPEED_FINAL=1.5 ./train_navrl.sh      (curriculum 0 -> 1.5 m/s)
     #   eval:   NAVRL_TARGET_SPEED=1.0 NAVRL_TARGET_PATTERN=cv ./play_navrl.sh <ckpt>  (exact cell)
     class target_motion:
+        # "legacy" reproduces published/checkpointed virtual-point trajectories. "bounded" emits
+        # a planar trajectory that a multirotor can track: finite acceleration and turn rate,
+        # rollout-based obstacle avoidance, and no instantaneous wall/bar corrections. "physical"
+        # uses that planner only as a velocity reference for a 6-DoF PhysX actor driven by four
+        # bounded first-order motors at the 0.01 s physics rate. Both are new training lineages.
+        dynamics = os.environ.get("NAVRL_TARGET_DYNAMICS", "legacy").strip().lower()
+        # 4 m/s^2 requires atan(a/g)=22.2 deg of horizontal tilt, well inside the ref5in 45-deg
+        # controller envelope. At 1.5 m/s it permits 153 deg/s of path curvature, so the matching
+        # 150 deg/s travel-heading bound is physically self-consistent rather than extra authority.
+        max_accel = _env_float("NAVRL_TARGET_MAX_ACCEL", 4.0)  # [m/s^2]
+        max_turn_rate_deg = _env_float("NAVRL_TARGET_MAX_TURN_RATE_DEG", 150.0)  # [deg/s]
+        avoidance_lookahead_s = _env_float("NAVRL_TARGET_LOOKAHEAD_S", 1.0)  # [s]
+        # Conservative centre-distance proxy: max 0.8 m square half-diagonal (0.566 m) +
+        # 0.14 m target half-width + 0.06 m modelling margin = 0.766 m. This is intentionally
+        # separate from goal_min_bar_clearance=1.0 m, which keeps the *capture sphere* flyable and
+        # is not the physical target's collision radius.
+        obstacle_clearance = _env_float("NAVRL_TARGET_OBSTACLE_CLEARANCE", 0.77)  # [m]
+        # Physical target contract. These values mirror the *synthetic* ref5in design point; they
+        # are internally consistent, not a substitute for a weighed BOM/CAD/thrust-stand ID.
+        physical_mass = _env_float("NAVRL_TARGET_MASS_KG", 1.20)
+        physical_motor_arm_xy = _env_float("NAVRL_TARGET_MOTOR_ARM_XY_M", 0.0777817)
+        physical_max_motor_thrust = _env_float("NAVRL_TARGET_MAX_MOTOR_THRUST_N", 9.60)
+        physical_motor_tau = _env_float("NAVRL_TARGET_MOTOR_TAU_S", 0.04)
+        physical_yaw_torque_ratio = _env_float("NAVRL_TARGET_YAW_TORQUE_RATIO_M", 0.01)
+        physical_max_tilt_deg = _env_float("NAVRL_TARGET_MAX_TILT_DEG", 45.0)
+        physical_velocity_kp = _env_float("NAVRL_TARGET_VEL_KP", 2.5)
+        physical_altitude_kp = _env_float("NAVRL_TARGET_ALT_KP", 4.0)
+        # Gains scale with the 0.004..0.006 kg m^2 inertia. Reusing the legacy Lee literals
+        # (1.0/0.15 N m) drove this single-body target through actuator saturation and >90 deg
+        # overshoot; these yield ~4.4 rad/s roll/pitch natural frequency with near-critical damping.
+        physical_attitude_kp = [0.08, 0.08, 0.04]
+        physical_rate_kp = [0.04, 0.04, 0.03]
+        physical_box_xyz = [0.28, 0.28, 0.12]
+        # Tracking-error reserve used by the planner around bars and walls. The collision hull is
+        # already included in obstacle_clearance; this additional term covers closed-loop lag.
+        physical_tracking_margin = _env_float("NAVRL_TARGET_TRACKING_MARGIN_M", 0.45)
+        physical_boundary_margin = _env_float("NAVRL_TARGET_BOUNDARY_MARGIN_M", 0.75)
         # Per-episode speed ~ U[speed_min, v_max(epoch)]; speed_min=0 keeps static/slow episodes
         # in-distribution for the default curriculum.
         # v_max(epoch) = speed_final * clamp((epoch - ramp_start) / ramp_epochs, 0, 1).

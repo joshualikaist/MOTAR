@@ -69,6 +69,10 @@ class EnvManager(BaseManager):
         self.keep_in_env = None
 
         self.global_tensor_dict = {}
+        # Optional task-owned hook executed once per *physics* step, after robot/environment
+        # controllers have filled the force tensors and immediately before Isaac Gym consumes
+        # them.  It is deliberately inert unless explicitly registered by a task.
+        self.physics_step_callback = None
 
         logger.info("Populating environments.")
         self.populate_env(env_cfg=self.cfg, sim_cfg=self.sim_config)
@@ -151,6 +155,7 @@ class EnvManager(BaseManager):
 
         self.asset_min_state_ratio = None
         self.asset_max_state_ratio = None
+        self.asset_collision_half_extents = None
 
         self.global_tensor_dict["crashes"] = torch.zeros(
             (self.num_envs), device=self.device, requires_grad=False, dtype=torch.bool
@@ -200,7 +205,7 @@ class EnvManager(BaseManager):
                 )
                 self.num_obs_in_env += 1
                 warp_segmentation_ctr = 0
-                if self.cfg.env.use_warp:
+                if self.cfg.env.use_warp and asset_info_dict.get("include_in_warp", True):
                     empty_handle, warp_segmentation_ctr = self.warp_env.add_asset_to_env(
                         asset_info_dict,
                         i,
@@ -230,6 +235,16 @@ class EnvManager(BaseManager):
                             torch.tensor(asset_info_dict["max_state_ratio"], requires_grad=False),
                         )
                     )
+                half = asset_info_dict.get("collision_half_extents")
+                half_tensor = torch.tensor(
+                    half if half is not None else [0.0, 0.0, 0.0], requires_grad=False
+                ).unsqueeze(0)
+                if self.asset_collision_half_extents is None:
+                    self.asset_collision_half_extents = half_tensor
+                else:
+                    self.asset_collision_half_extents = torch.vstack(
+                        (self.asset_collision_half_extents, half_tensor)
+                    )
 
             if self.cfg.env.create_ground_plane:
                 self.IGE_env.add_ground_actor_to_env(env_handle, i)
@@ -244,12 +259,20 @@ class EnvManager(BaseManager):
             self.global_tensor_dict["asset_max_state_ratio"] = self.asset_max_state_ratio.view(
                 self.cfg.env.num_envs, -1, 13
             )
+            self.global_tensor_dict["asset_collision_half_extents"] = (
+                self.asset_collision_half_extents.to(self.device).view(
+                    self.cfg.env.num_envs, -1, 3
+                )
+            )
         else:
             self.global_tensor_dict["asset_min_state_ratio"] = torch.zeros(
                 (self.cfg.env.num_envs, 0, 13), device=self.device
             )
             self.global_tensor_dict["asset_max_state_ratio"] = torch.zeros(
                 (self.cfg.env.num_envs, 0, 13), device=self.device
+            )
+            self.global_tensor_dict["asset_collision_half_extents"] = torch.zeros(
+                (self.cfg.env.num_envs, 0, 3), device=self.device
             )
 
         self.global_tensor_dict["num_obstacles_in_env"] = self.num_obs_in_env
@@ -336,6 +359,11 @@ class EnvManager(BaseManager):
         self.asset_manager.pre_physics_step(env_actions)
         # apply actions to obstacle manager
         self.obstacle_manager.pre_physics_step(env_actions)
+        # A task-owned substep controller writes into the shared rigid-body force/torque tensors.
+        # It must run *before* Isaac Gym submits those tensors below; running it after
+        # IGE_env.pre_physics_step silently delays every command by one physics step.
+        if self.physics_step_callback is not None:
+            self.physics_step_callback()
         # then the simulator applies them here
         self.IGE_env.pre_physics_step(actions)
         # if warp is used, the warp environment applies the actions here
@@ -352,9 +380,19 @@ class EnvManager(BaseManager):
         self.IGE_env.physics_step()
         self.post_physics_step(actions, env_actions)
 
+    def set_physics_step_callback(self, callback):
+        """Register a task-side substep controller (or ``None`` to detach it)."""
+        if callback is not None and not callable(callback):
+            raise TypeError("physics_step_callback must be callable or None")
+        self.physics_step_callback = callback
+
     def post_physics_step(self, actions, env_actions):
         self.IGE_env.post_physics_step()
         self.robot_manager.post_physics_step()
+        if self.physics_step_callback is not None and hasattr(
+            self.physics_step_callback, "post_physics_step"
+        ):
+            self.physics_step_callback.post_physics_step()
         if self.use_warp:
             self.warp_env.post_physics_step()
         self.asset_manager.post_physics_step()

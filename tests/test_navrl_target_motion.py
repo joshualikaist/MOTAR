@@ -16,6 +16,8 @@ _MODULE = importlib.util.module_from_spec(_SPEC)
 _SPEC.loader.exec_module(_MODULE)
 steer_target_step = _MODULE.steer_target_step
 initial_cv_velocity = _MODULE.initial_cv_velocity
+limit_planar_velocity = _MODULE.limit_planar_velocity
+bounded_drone_target_step = _MODULE.bounded_drone_target_step
 
 
 def _bounds(n):
@@ -165,3 +167,81 @@ def test_heading_window_is_preference_not_escape_veto():
     assert bool(clear.item())
     assert torch.allclose(velocity, desired)
     assert torch.allclose(new, torch.tensor([[-0.1, 0.0]]), atol=1e-6)
+
+
+def test_bounded_velocity_ramps_from_rest_without_exceeding_acceleration():
+    current = torch.zeros(1, 2)
+    desired = torch.tensor([[1.5, 0.0]])
+    velocity = limit_planar_velocity(
+        current,
+        desired,
+        torch.tensor([1.5]),
+        0.1,
+        torch.tensor([3.0]),
+        torch.tensor([torch.deg2rad(torch.tensor(120.0))]),
+    )
+    assert torch.allclose(velocity, torch.tensor([[0.3, 0.0]]), atol=1e-6)
+    assert float(((velocity - current) / 0.1).norm()) <= 3.0 + 1e-6
+
+
+def test_bounded_velocity_limits_heading_slew_and_vector_acceleration():
+    current = torch.tensor([[1.5, 0.0]])
+    desired = torch.tensor([[0.0, 1.5]])
+    max_turn = torch.deg2rad(torch.tensor([120.0]))
+    velocity = limit_planar_velocity(
+        current, desired, torch.tensor([1.5]), 0.1, torch.tensor([3.0]), max_turn
+    )
+    heading = torch.atan2(velocity[:, 1], velocity[:, 0])
+    assert float(heading.abs()) <= float(max_turn[0] * 0.1) + 1e-6
+    assert float(((velocity - current) / 0.1).norm()) <= 3.0 + 1e-6
+    assert float(velocity.norm()) <= 1.5 + 1e-6
+
+
+def test_bounded_rollout_avoids_bar_without_teleport_or_instant_turn():
+    old = torch.tensor([[0.0, 0.0]])
+    current = torch.tensor([[1.0, 0.0]])
+    desired = torch.tensor([[1.5, 0.0]])
+    speed = torch.tensor([1.5])
+    bars = torch.tensor([[[1.7, 0.0]]])
+    lo, hi = _bounds(1)
+    max_accel = torch.tensor([3.0])
+    max_turn = torch.deg2rad(torch.tensor([120.0]))
+    new, velocity, steered, feasible = bounded_drone_target_step(
+        old,
+        current,
+        desired,
+        speed,
+        0.1,
+        bars,
+        lo,
+        hi,
+        0.5,
+        torch.ones(1),
+        max_accel,
+        max_turn,
+        1.5,
+    )
+    assert bool(steered.item())
+    assert bool(feasible.item())
+    assert float(((velocity - current) / 0.1).norm()) <= 3.0 + 1e-6
+    heading = torch.atan2(velocity[:, 1], velocity[:, 0])
+    assert float(heading.abs()) <= float(max_turn[0] * 0.1) + 1e-6
+    assert torch.allclose(new, old + velocity * 0.1, atol=1e-6)
+
+
+def test_bounded_rollout_uses_bar_surface_not_center_when_half_extents_are_given():
+    old = torch.tensor([[0.0, 0.0]])
+    current = torch.zeros(1, 2)
+    desired = torch.tensor([[1.0, 0.0]])
+    bars = torch.tensor([[[1.5, 0.4]]])
+    # Huge X half-extent brings the rectangle surface near the direct path even though its center
+    # is sqrt(2) metres away. A center-distance planner would incorrectly choose straight ahead.
+    half = torch.tensor([[[1.30, 0.20]]])
+    lo, hi = _bounds(1)
+    new, velocity, steered, feasible = bounded_drone_target_step(
+        old, current, desired, torch.ones(1), 0.1, bars, lo, hi, 0.25,
+        torch.ones(1), torch.tensor([4.0]), torch.tensor([3.0]), 1.0, half,
+    )
+    assert bool(steered.item())
+    assert bool(feasible.item())
+    assert torch.isfinite(new).all() and torch.isfinite(velocity).all()

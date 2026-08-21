@@ -82,6 +82,11 @@ class NavRLLidarConfig(BaseLidarConfig):
     segmentation_camera = _NAVRL_VISION
     inject_target = _NAVRL_VISION
     target_radius = 0.20
+    # Physical mode replaces the historical sphere with the actor's exact oriented collision box.
+    target_box_half_extents = [0.14, 0.14, 0.06]
+    target_use_oriented_box = (
+        os.environ.get("NAVRL_TARGET_DYNAMICS", "legacy").strip().lower() == "physical"
+    )
     target_semantic_id = 50
 
     # --- NavRL ray caster: sensor at body center, no placement randomization, no noise

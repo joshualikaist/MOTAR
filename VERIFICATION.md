@@ -4,7 +4,7 @@
 [`RESEARCH_PLAN.md`](RESEARCH_PLAN.md), 날짜별 기록은 [`WORKLOG.md`](WORKLOG.md),
 명령어는 [`OPERATIONS.md`](OPERATIONS.md), 라이브 지표는 [`docs/status/`](docs/status/)를 본다.
 
-> 기준일: 2026-08-20
+> 기준일: 2026-08-21
 
 ## 한 줄 상태
 
@@ -126,6 +126,26 @@ P2 PASS 후에만: training seed **211**, eval seed 313 재사용 금지, 70→2
 P0–P3 PASS ≠ 실기 검증. BOM/CAD/CG, thrust stand, inertia 식별, FOV/latency, 실제 비행은
 [`docs/archive/reference_platform_proposal_2026-08.md`](docs/archive/reference_platform_proposal_2026-08.md),
 [`docs/archive/sim_vs_hardware_gap_2026-08.md`](docs/archive/sim_vs_hardware_gap_2026-08.md) 참고.
+
+## Physical-target fresh lineage (2026-08-21)
+
+`NAVRL_TARGET_DYNAMICS=physical`의 1–6단계 구현은 완료했지만, fresh PPO는 **BLOCKED**다.
+dynamic PhysX actor, 0.01 s four-motor controller, 동일 camera/LiDAR/contact OBB, exact bar AABB,
+fresh-only checkpoint guard까지 구현했다. 고정 seed 503 / 32 env / density별 280 measured step /
+1.5 m/s mixed target의 사전등록 gate에서 70/150/205/300 bars 모두 전체 PASS하지 못했다.
+
+| bars | speed ratio | tracking RMSE | contact | immediate infeasible | invalid OBB | verdict |
+|---:|---:|---:|---:|---:|---:|---|
+| 70 | 0.919 | 0.233 m/s | 0.257% | 1.574% | 0.089% | FAIL |
+| 150 | 0.880 | 0.279 m/s | 0.525% | 1.417% | 0.089% | FAIL |
+| 205 | 0.832 | 0.316 m/s | 0.904% | 1.384% | 0.045% | FAIL |
+| 300 | 0.738 | 0.351 m/s | 1.373% | 2.042% | 0.011% | FAIL |
+
+Authority: [`docs/navrl_physical_target_audit_2026-08-21.md`](docs/navrl_physical_target_audit_2026-08-21.md),
+raw summary: [`results/navrl_physical_target_verification/summary.json`](results/navrl_physical_target_verification/summary.json).
+다음은 장기학습이 아니라 global/corridor target route 또는 density-conditioned speed envelope를
+사전등록하고 같은 gate를 재실행하는 것이다. 실기 검증은 hardware identification manifest가
+미완료이므로 별도로 차단된다.
 
 ## 아카이브
 

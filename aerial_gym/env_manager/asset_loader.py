@@ -1,5 +1,6 @@
 import os
 import random
+import xml.etree.ElementTree as ET
 
 from isaacgym import gymapi
 from aerial_gym.assets.warp_asset import WarpAsset
@@ -63,6 +64,15 @@ class AssetLoader:
         asset_options_for_class = asset_class_to_AssetOptions(asset_class_config)
         filepath = os.path.join(asset_class_config.asset_folder, selected_file)
 
+        collision_half_extents = None
+        try:
+            root = ET.parse(filepath).getroot()
+            box = root.find(".//collision/geometry/box")
+            if box is not None and box.get("size"):
+                collision_half_extents = [0.5 * float(v) for v in box.get("size").split()]
+        except (ET.ParseError, OSError, ValueError):
+            collision_half_extents = None
+
         # check if  it exists in the buffer
         buffer_key = f"{asset_type}_{selected_file}"
 
@@ -90,6 +100,8 @@ class AssetLoader:
             "force_sensor_parent_link": asset_class_config.force_sensor_parent_link,
             "force_sensor_transform": asset_class_config.force_sensor_transform,
             "use_collision_mesh_instead_of_visual": asset_class_config.use_collision_mesh_instead_of_visual,
+            "include_in_warp": bool(getattr(asset_class_config, "include_in_warp", True)),
+            "collision_half_extents": collision_half_extents,
             # do stuff with position, randomization, etc
         }
         max_list_vals = 0

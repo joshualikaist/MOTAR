@@ -255,11 +255,12 @@ class AssetManager:
 
         A candidate is accepted only if EVERY already-placed obstacle is either touching it
         (center distance <= touch -> the boxes overlap for all footprints in the 0.4..0.8 m
-        pool, forming one compound wall) or at least ``gap`` away (worst-case surface gap
-        gap - 0.8 m, comfortably passable). Distances inside the band would create a slit
-        narrower than the drone and are never accepted; when the field saturates, the
+        pool, forming one compound wall) or at least ``gap`` away. The latter prevents box
+        overlap but is not a passability guarantee: diagonal 0.8 m squares at d=1.6 m can leave
+        only ~0.469 m corner gap. Distances inside the band can create an even narrower slit and
+        are never accepted; when the field saturates, the
         candidate snaps onto a random placed obstacle (guaranteed merge) instead of relaxing
-        the passable-gap guarantee -- the exact opposite failure mode of the legacy
+        the forbidden-band rule -- the exact opposite failure mode of the legacy
         "random" rule, whose *=0.8 relaxation produced ~2.2 impassable slits per 150-bar
         layout (tools/probe_placement_slits.py, 2026-07-31).
         """

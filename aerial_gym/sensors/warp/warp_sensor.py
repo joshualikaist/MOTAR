@@ -147,6 +147,8 @@ class WarpSensor(BaseSensor):
         # (the captured render graph reads this same storage). See warp_lidar.inject_target.
         if getattr(self.sensor, "target_positions", None) is not None:
             global_tensor_dict["navrl_target_position"] = self.sensor.target_positions
+        if getattr(self.sensor, "target_orientations", None) is not None:
+            global_tensor_dict["navrl_target_orientation"] = self.sensor.target_orientations
         self.reset()
 
         logger.debug(f"[DONE] Initializing sensor tensors")

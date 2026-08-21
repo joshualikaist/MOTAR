@@ -9295,32 +9295,307 @@ D1 FAIL · P3 BLOCKED는 전부 그대로다.**
 
 상세: `results/navrl_ref5in_camera_range_control_seed367/summary.{md,json}`, `VERIFICATION.md`.
 
-## 2026-08-21 — OOB exit forensics 추가, 그리고 통로-planner 인과 서술 철회
+## 2026-08-21 — seed 367 결과 인수검사와 다음 단계: 28 m는 진단 knob, hardware spec 아님
 
-### 철회: "planner가 통로를 안전하지 않다고 판단해 돌아간다"는 메커니즘은 없다
+- 첨부 보고와 canonical `results/navrl_ref5in_camera_range_control_seed367/summary.md`를 대조했다.
+  20→28 m 단일변수 개입에서 capture `36.39→74.96%`, crash `7.80→6.88%`, timeout
+  `55.80→18.16%`, pooled never-acquired `57.22→20.30%`; primary와 guard 판정은 유효하다.
+- 결론은 hard-distance/CV/away/1-bar 조건에서 **초기 미관측이 timeout의 지배적 원인**이라는
+  진단까지다. 28 m camera가 실기 해결책이거나 P2/D1/P3 gate를 통과시킨다는 뜻은 아니다.
+- 중요한 fidelity gap: 조작은 detector의 거리 cutoff만 바꿨다. 현재 renderer는 160×90,
+  HFOV 87°, target diameter 0.30 m이며, pinhole 근사상 28 m target 직경은 약 0.90 pixel
+  (22.5 m에서도 약 1.12 pixel)이다. 따라서 range cutoff 연장만으로 생긴 spawn acquisition은
+  실제 카메라의 해상도·MTF·노출·blur·배경·검출확률·거리추정 성능을 증명하지 않는다.
+- 다음 authority는 PPO가 아니라 hardware/perception feasibility gate다: (H0) 22.5–28 m에서 필요한
+  detection/range/latency 계약 정의, (H1) exact camera/lens/native resolution 및 range-source 후보 선정,
+  (H2) 실거리 정지·이동표적 bench로 recall/false-positive/range error/latency 측정, (H3) exact BOM·전력·
+  cooling·mount·CG 폐쇄, (H4) 측정한 distance-dependent observation model을 simulator에 반영한다.
+- 그 뒤에만 task를 20 m 안으로 축소할지, 28 m 장거리 RGB bearing + 근거리 LiDAR/depth의 단계형
+  인지를 유지할지 결정하고, fresh short gate→P2를 재사전등록한다. P3 full training은 계속 BLOCKED.
 
-앞선 통로 분석이 `0.28 + 0.45×2 = 1.18 m`를 "planner가 요구하는 통로 폭"으로 제시하고, 실제
-통로 0.55–0.68 m가 그보다 좁아 경로 불능이 생긴다고 결론냈다. 코드 확인 결과 이 인과는 성립하지
-않는다.
+## 2026-08-21 — 사용자 의도 재정의: 장거리 미관측은 sensor mismatch가 아니라 active search 과제
 
-- planner가 없다. riskcap은 속도만 깎는 필터이고 재계획·진입거부 코드가 존재하지 않는다.
-- `path_half_width_m=0.45`는 "비워둬야 할 폭"이 아니라 **LiDAR 광선 선택창**이다
-  (`speed_governor.py:166` `in_path = ray_valid & (forward>0) & (lateral <= path_half_width_m)`).
-  명령축에서 가로 0.45 m 안의 광선만 clearance에 넣는다는 뜻이고 통과 가능 여부와 무관하다.
-- riskcap은 멈추지 않는다. 실측 cap: clearance 0.3/1.0/3.0 m 전부 **2.0 m/s**, 4.0 m에서 2.768,
-  5.0 m 이상에서 3.536. 주석도 "never creates a forced zero-speed deadlock".
-- `hard_margin_m`은 riskcap에서 **dead parameter**다. 0.45/0.05/0.0 모두 cap 동일
-  (`[2.0, 2.0, 2.0, 3.5355]`). `usable`은 clearance/ttc 모드와 stopping-margin 진단에만 쓰인다.
-  검증 4의 `stopping_margin −0.157 m`가 이 무효 파라미터를 정의에 포함한다는 점도 함께 기록한다.
-- **ref5in 계보는 governor가 꺼져 있다.** 실측 `intervention_rate=0.000`, `mode=off`
-  (README:55, VERIFICATION:63, `train_navrl_v2_ref5in_smoke_c.sh:58`).
+- 사용자 목표는 28 m 표적을 spawn부터 보는 것이 아니라, **미관측 상태에서 안전하게 탐색→최초취득→
+  추적·요격**하는 것이다. 이 의도라면 task range와 sensor range가 같을 필요는 없고 seed 367은
+  해결책 선택이 아니라 현 정책에 search capability가 없음을 드러낸 진단으로 다시 해석한다.
+- episode horizon만 무한정 늘리는 것은 해결이 아니다. 현 PPO `gamma=0.99`, 0.1 s/step에서 reward
+  weight는 step 600에 `0.99^600=0.002405`, step 1200에 `5.78e-6`이다. actor temporal window는
+  2 s, tracker memory는 5 s라 이미 지나간 탐색 영역을 기억하지 못한다. visibility bonus도 보이는
+  동안 `+0.02`일 뿐 first-acquisition/새 영역/information gain을 직접 보상하지 않는다.
+- 더 근본적으로 unacquired target token은 zero인데 range-rate와 ego-progress reward는 GT target을
+  사용한다. actor가 방향을 관측하지 못한 상태에서는 대칭 위치의 hidden directional gradients가
+  평균상 상쇄되므로, 길이만 늘려도 체계적인 coverage policy가 생긴다고 보장할 수 없다. search용
+  visited/belief memory와 first-acquisition/coverage objective를 별도 설계해야 한다.
+- pursuer limit은 현재 **축별 2.5 m/s**(수평 norm 최대 3.536 m/s), target은 최대 1.5 m/s다.
+  전역 limit 상향은 acquisition을 직접 해결하지 않고 frozen policy의 action semantics를 바꾸며,
+  brake=2 m/s²·reaction=0.1 s 가정의 정지거리는 2.5 m/s에서 1.81 m, 3.0 m/s에서 2.55 m로
+  약 41% 증가한다. search/chase 속도와 clearance-aware cap을 분리한 fresh policy가 필요하다.
+- 현재 소스의 target motion을 70 bars, mixed CV/waypoint, exact 1.5 m/s, 64 env×300 step으로 재-probe:
+  CV `1.50 m/s`, waypoint `1.50 m/s`, 양쪽 stall/overspeed/clearance<1m 모두 `0.0%`.
+  `tests/test_navrl_target_motion.py`도 PASS. 즉 70-bar 기하에서는 막대를 정상 회피한다.
+- 단 target은 동역학 없는 virtual point다. 0/±30/±60/±90/±120/180° 후보 방향으로 0.1 s마다
+  full-speed 재지정하고 wall/bar에서 즉시 반사할 수 있어 실제 표적 드론의 acceleration/yaw-rate/
+  inertia를 재현하지 않는다. 따라서 "회피 동작 정상"은 geometry contract이고 hardware realism은 아니다.
+- 다음 실험은 학습 전 horizon-only frozen replay(60/120/180 s)로 `P(acquire by t)`와 capture CDF를
+  확인하고, speed-only는 2.5/3.0 m/s를 별도 arm으로 둔다. 그 결과와 무관하게 본 설계 후보는
+  SEARCH(coverage/belief memory)와 TRACK/INTERCEPT를 명시적으로 나누는 hierarchical policy다.
 
-그리고 결정적으로, 통로 분석은 300막대 기하인데 현재 병목 실험은 **막대 1개**이고 crash의 98%가
-OOB다: seed 367 `camera_20m` crash 160 = bar_contact 2 / OOB 158, `camera_28m` 141 = 3 / 138.
-서로 다른 두 체제를 섞어 설명한 것이다.
+## 2026-08-21 — 표적 물리성 감사와 opt-in bounded trajectory prototype
 
-기하 측정 자체(최협 표면간격 0.55–0.68 m, 대각 배치 이론 최저 0.469 m, 기존 "0.8 m 보장"은 축
-정렬에서만 성립)는 유효하다. 철회하는 것은 그 숫자를 governor 동작에 연결한 인과 서술뿐이다.
+- 사용자 지적대로 기존 표적은 물리 드론이 아니었다. `target_position`을 직접 갱신하는 virtual
+  point가 0.1 s마다 `0/±30/±60/±90/±120/180°` full-speed 후보를 골랐고, 벽에서는 즉시 반사,
+  막대 안에서는 위치 push-out을 했다. 기존 speed/clearance probe는 기하 결과만 검사했으므로 이
+  순간 가속·회전을 검출하지 못했다.
+- 기존 체크포인트 재현을 위해 default `NAVRL_TARGET_DYNAMICS=legacy`는 보존했다. 새 opt-in
+  `bounded`는 별도 model id `bounded_planar_drone_v1_rollout`을 checkpoint에 저장하므로 legacy
+  moving-target checkpoint와 resume guard가 불일치를 거부한다.
+- bounded prototype은 (1) XY vector acceleration ≤ **4.0 m/s²**, (2) 유의미한 이동 중 travel-heading
+  slew ≤ **150°/s**, (3) speed ≤ episode limit, (4) **1.0 s** forward rollout, (5) 보수적 bar-centre
+  clearance **0.77 m**를 계약으로 둔다. 4 m/s²는 `atan(a/g)=22.2°` tilt로 ref5in controller의
+  45° envelope 안이고, 1.5 m/s에서 `a/v=152.8°/s`라 150°/s 곡률 한계와 일관된다. 0.77 m는
+  max 0.8 m square half-diagonal 0.566 + target half-width 0.14 + modelling margin 0.06의 보수 proxy다.
+- planner는 방향만 바꾸지 않고 full/half/quarter/stop 목표속도를 함께 rollout한다. stop도 속도를
+  즉시 0으로 쓰지 않고 acceleration bound로 제동한다. 새 모드에서는 wall reflection, final clamp,
+  bar push-out을 전혀 사용하지 않는다. 초기 target velocity도 0에서 ramp한다.
+- reset 감사에서 general target sampler가 96회 rejection 뒤에도 실패하면 검증되지 않은 최초 난수를
+  쓰는 silent fallback을 발견했다. bounded mode는 1024회 뒤 fail-closed하며, 움직이는 표적 spawn은
+  capture-sphere clearance 1.0 m가 아니라 자기 충돌 계약 0.77 m를 적용한다. `probe_target_motion.py`의
+  `NAVRL_MAX_BARS=150` 하드코딩도 고쳐 205/300 probe가 실제 요청 밀도를 만들게 했다.
+
+### 측정 결과 (64 env × 300 target steps, exact 1.5 m/s, seed 42)
+
+| bars | pattern | realized mean | stall | clearance violation | rollout infeasible | accel / turn violation |
+|---:|---|---:|---:|---:|---:|---:|
+| 150 | CV | 1.32 m/s | 1.8% | **0.0%** | **0.0%** | **0.0 / 0.0%** |
+| 150 | waypoint | 1.39 m/s | 0.2% | **0.0%** | **0.0%** | **0.0 / 0.0%** |
+| 205 | CV | 1.11 m/s | 3.9% | **0.0%** | **0.0%** | **0.0 / 0.0%** |
+| 205 | waypoint | 1.13 m/s | 0.5% | **0.4%** | **0.4%** | **0.0 / 0.0%** |
+| 300 | CV | 0.84 m/s | 11.1% | **0.2%** | **0.2%** | **0.0 / 0.0%** |
+| 300 | waypoint | 0.76 m/s | 19.9% | **0.0%** | **0.0%** | **0.0 / 0.0%** |
+
+- 해석: 최고속 1.5 m/s는 명령 상한이지 고밀도에서 유지해야 할 실제 속도가 아니다. 물리 planner가
+  150→300 bars에서 평균속도를 약 1.3→0.8 m/s로 낮추는 것이 정상적인 결과다. 다만 205/300의
+  잔여 infeasible은 local constant-command rollout이 obstacle cluster의 cul-de-sac를 미리 기억하지
+  못하는 전역 계획 병목이다. 따라서 **bounded mode 본학습은 BLOCKED**다. 다음은 grid/global route
+  memory 또는 target collision을 명시적인 target-crash/reset 종료로 정의하고, 70/150/205/300에서
+  `initial/clearance/infeasible/accel/turn violation == 0` gate를 다시 통과시키는 것이다.
+- 이 prototype은 trackable planar trajectory 계약이지 6-DoF target rigid-body/rotor simulation의
+  증명이 아니다. 최종 “실제 드론” 주장을 위해서는 ref5in actor가 생성 궤적을 추종하는 closed-loop
+  harness에서 tracking error, tilt, motor saturation, energy를 추가 검증해야 한다. 새 PPO 학습은 하지 않았다.
+
+## 2026-08-21 — 물리 동역학 전면 감사: bounded trajectory와 실제 drone physics를 구분
+
+사용자 요청에 따라 현재 코드의 “실제 동역학” 주장을 표적·추적 드론·센서·환경으로 분리 감사했다.
+결론은 **추적 드론은 PhysX 강체로 동작하지만, 표적은 실제 동역학 시뮬레이션이 아니며, ref5in도
+실기 식별 모델이 아닌 합성 설계점**이라는 것이다. bounded prototype을 physical drone이라고 부르면 안
+되며, 아래 문제를 해결하기 전 새 본학습·논문 수치의 physical claim은 BLOCKED다.
+
+### 발견 사항과 심각도
+
+1. **BLOCKER — 표적은 PhysX actor가 아니다.** `NavRLBarsEnvCfg.env_config.include_asset_type`에는
+   `bars`만 들어가고 `navrl_target_params`/`navrl_target_drone.urdf`는 실제 환경에 등록되지 않는다.
+   `_advance_target()`가 매 RL step(0.1s) `target_position`과 `target_vel_w`를 직접 갱신하며, target의
+   질량·관성·추력·자세·모터 상태·접촉·중력은 PhysX에 존재하지 않는다. `collision_mask=0`,
+   `fix_base_link=True`, `disable_gravity=True`인 target asset 문서도 이 사실을 명시하지만 현재 env에서
+   asset 자체가 unused다. 따라서 bounded mode의 4.0 m/s²/150 deg/s는 강체에서 유도된 값이 아니라
+   trajectory envelope 상수다.
+
+2. **BLOCKER — target 기하가 세 경로에서 다르다.** (a) unused URDF는 0.30×0.30×0.14m box,
+   (b) camera analytic renderer는 `camera_target_radius=0.15m` sphere,
+   (c) LiDAR analytic injection은 `target_radius=0.20m` sphere다. 센서별 관측 크기와 실제 충돌
+   기하가 같지 않다. 28m에서 0.9px 수준의 표적을 논할 때 이 차이는 검출/가시성 결과를 바꿀 수 있다.
+
+3. **HIGH — 표적의 z/attitude가 고정이다.** 표적은 z=1.0m에 고정되고 XY만 움직인다. 실제 쿼드라면
+   4.0m/s² 횡가속에는 tilt와 `T=mg/cos(tilt)`가 필요하고, yaw/roll/pitch 동역학 및 자세 지연이
+   뒤따라야 한다. 현재 bounded planner는 travel-heading만 제한할 뿐 이 coupling을 계산하지 않는다.
+
+4. **HIGH — ref5in 자체가 실기 식별값이 아니다.** `1.20kg`, `9.60N/motor`, `4.401e-5 thrust k`,
+   `0.04s motor tau`, `0.01m thrust/torque ratio`, 관성은 문서상 analytic/synthetic design point다.
+   thrust stand, 모터·프롭·ESC·배터리 조합, 전압/열/전력, CG와 CAD가 없다. self-consistency test는
+   URDF/config 내부 일치만 보장하며 hardware truth를 보장하지 않는다.
+
+5. **HIGH — 현재 주 학습은 ref5in이 아니다.** `NAVRL_ROBOT` 기본값은 `navrl_quad`이고
+   `train_navrl_v2_search.sh`도 `NAVRL_ROBOT=navrl_ref5in_quad`를 설정하지 않는다. 기존 학습 결과는
+   0.25kg legacy robot lineage다. ref5in 결과로 해석하려면 새 robot 선택·fresh 학습·별도 checkpoint가
+   필요하다.
+
+6. **MEDIUM — 환경 경계가 물리 벽/바닥이 아니다.** `create_ground_plane=False`이고 arena bound는
+   task-level 수치 검사다. 추적 드론은 z<0.1에서 종료되지만 실제 바닥 접촉이 아니며, target/trajectory
+   bound도 수학적 clamp/샘플링이다. 실제 비행 환경을 주장하려면 floor/wall 또는 명시적인 boundary
+   collision contract가 필요하다.
+
+7. **MEDIUM — target update와 PhysX 시간 해상도가 다르다.** 추적 드론은 physics dt 0.01s × 10 =
+   RL step 0.1s로 실제 physics를 진행하지만, target은 RL step당 한 번 좌표를 바꾼다. 이는 “10Hz
+   trajectory command”로는 정의할 수 있으나 target rigid body contact를 0.01s에서 검증한 것이 아니다.
+
+8. **MEDIUM — target clearance가 실제 bar collision과 같은 수식이 아니다.** bars는 인스턴스별
+   0.4–0.8m axis-aligned box인데 planner는 모든 bar를 center-distance 0.77m circle로 본다. 이 값은
+   `0.566 + 0.14 + 0.06` 보수 proxy일 뿐 실제 AABB/tilted prop envelope와 동일하지 않다. 따라서
+   bounded probe의 `clearance=0%`는 “PhysX 충돌 0%”가 아니라 “proxy 위반 0%”다.
+
+9. **MEDIUM — 추적 드론도 완전한 실기 모델은 아니다.** 추적 기체는 PhysX rigid body + Lee velocity
+   controller + motor lag을 사용하지만, action은 축별 velocity setpoint이고 acceleration/norm cap이
+   직접 정의되지 않는다. yaw 2.5rad/s, tilt 45° 및 altitude PI는 task/controller engineering knob이다.
+   motor tau/thrust/inertia가 측정값이 아니므로 “물리적으로 가능한 시뮬레이션”과 “실기와 정량적으로
+   일치하는 시뮬레이션”을 구분해야 한다.
+
+### 현재 판정
+
+- `legacy`: 기존 결과 재현용 virtual-target 실험. physical claim 불가.
+- `bounded`: 가속도·travel-heading·속도·proxy clearance를 지키는 **동역학 가능 궤적 prototype**.
+  실제 target drone simulation 아님. 150 bars에서는 proxy gate가 통과했지만, 205/300의 local-planner
+  infeasible 표본과 target geometry mismatch가 남아 본학습 BLOCKED.
+- `ref5in`: 내부 수치 정합성 후보일 뿐 실기 동역학 검증 완료가 아님. 현재 main 학습에는 사용되지 않음.
+
+### physical claim을 열기 위한 필수 순서
+
+1. target도 `navrl_ref5in_quad` 계열 PhysX actor로 등록하거나, 최소한 동일 URDF/6-DoF rigid-body와
+   low-level controller를 별도 actor로 구현한다.
+2. camera/LiDAR/충돌에 동일 target mesh와 동일 pose/orientation을 사용한다. analytic sphere를 유지하면
+   센서 모델과 collision proxy를 동일 반지름/근거로 명시하고 실측 크기와 대조한다.
+3. exact BOM 기반 mass/CG/inertia, thrust-vs-RPM, motor rise/fall tau, torque ratio, battery sag를
+   식별하고 ref5in config를 교체한다.
+4. 0.01s physics substep에서 target actor를 제어하고, target tracking error/tilt/motor saturation/
+   contact를 계측한다. 70/150/205/300 bars에서 collision 및 infeasible gate를 다시 정의한다.
+5. 그 후에만 target dynamics를 포함한 fresh PPO를 시작한다.
+
+## 2026-08-21 — 실제 6-DoF target actor 구현 및 1–6단계 사전검증 완료
+
+- `NAVRL_TARGET_DYNAMICS=physical`을 새 lineage로 구현했다. target은 이제 gravity/contact가
+  활성화된 PhysX actor이며 task의 `target_position`, `target_orientation`, `target_vel_w`는 actor
+  root-state view다. 0.1 s 좌표 덮어쓰기는 physical 경로에서 사용하지 않는다.
+- ref5in 등가 rigid body(1.20 kg, I=0.004142/0.004142/0.005769 kg·m²), 4×9.60 N motor,
+  arm XY 0.0777817 m, motor τ=0.04 s, yaw ratio 0.01 m를 사용한다. velocity/attitude controller와
+  motor lag/saturation은 0.01 s physics substep마다 갱신한다. 초기 legacy gain을 그대로 쓴 첫
+  smoke는 tilt 143.7°로 실패했고, inertia-scaled gain(0.08/0.04 계열)으로 고쳐 최종 max tilt를
+  5.3° 수준으로 안정화했다.
+- transient target contact가 마지막 substep 전에 사라지는 결함을 발견해, 10개 physics substep
+  전체 contact를 OR 누적하도록 수정했다. target contact/invalid state는 명시적 episode crash/reset이다.
+- 센서/충돌 target 기하를 모두 actor pose의 **0.28×0.28×0.12 m OBB**로 통일했다. physical mode는
+  stale dynamic Warp mesh를 만들지 않고 camera/LiDAR가 같은 oriented box를 analytic ray-test한다.
+  legacy/bounded sphere는 재현성을 위해 그대로 남겼다.
+- 모든 bar URDF의 실제 collision half-extents를 tensor로 노출하고 physical planner를 center-circle
+  proxy에서 target OBB support를 포함한 point-to-AABB rollout으로 바꿨다. full-horizon constant-heading
+  후보가 없을 때는 safe-prefix 길이를 우선하는 receding-horizon fallback을 사용한다.
+- `NAVRL_ROBOT=navrl_ref5in_quad`가 아니면 physical mode가 fail-closed한다. 신규
+  `train_navrl_physical_fresh.sh`는 `CKPT/CHECKPOINT`를 exit 4로 거부한다. 실측이 아닌 ref5in 값을
+  hardware 검증으로 오독하지 않도록 `docs/navrl_hardware_identification_manifest.yaml`에 BOM/CG/CAD
+  inertia/thrust curve/tau/torque ratio/battery sag/thermal의 미측정 상태를 명시했다.
+
+### 고정 gate 결과 — 새 PPO는 아직 BLOCKED
+
+`results/navrl_physical_target_verification/summary.json`, seed 503, 32 env × density별 280 measured
+steps, mixed CV/waypoint, target command 1.5 m/s. 기준은 결과 전에 고정했고 사후 완화하지 않았다.
+
+| bars | speed ratio | tracking RMSE | contact | immediate infeasible | invalid | motor sat | max tilt |
+|---:|---:|---:|---:|---:|---:|---:|---:|
+| 70 | 0.919 | 0.233 | 0.257% | 1.574% | 0.089% | 0.000% | 5.26° |
+| 150 | 0.880 | 0.279 | 0.525% | 1.417% | 0.089% | 0.000% | 5.27° |
+| 205 | 0.832 | 0.316 | 0.904% | 1.384% | 0.045% | 0.000% | 5.25° |
+| 300 | 0.738 | 0.351 | 1.373% | 2.042% | 0.011% | 0.000% | 5.26° |
+
+- gate: RMSE≤0.35, speed ratio≥0.80, contact≤1%, infeasible≤1%, motor sat≤15%, tilt≤60°,
+  invalid=0. 네 밀도 모두 strict 전체 PASS는 아니다. 205부터 contact/speed 경계, 300은 명확한
+  physical density limit다. 따라서 학습을 시작하지 않았다.
+- 검증: py_compile PASS, ref5in/target URDF 27/27, run contract 12/12, target motion/AABB 11/11,
+  physical camera+LiDAR live smoke PASS, fresh-launcher checkpoint reject PASS.
+- 상세 설계·해석: `docs/navrl_physical_target_audit_2026-08-21.md`. 다음 선택은 target global/corridor
+  planner 또는 density-conditioned physical speed envelope이며, 같은 frozen gate 재통과 후에만 PPO smoke다.
+
+### 최종 교차감사 정정
+
+- 첫 잠정 gate 뒤 `EnvManager`의 실행 순서를 다시 추적해, target wrench 계산이 Isaac Gym force
+  tensor 제출보다 늦어 명령이 물리 1 substep(0.01 s) 지연되던 결함을 발견했다. callback을
+  `IGE_env.pre_physics_step()` 앞으로 이동해 같은 substep에 적용되도록 고쳤다.
+- target contact threshold의 0.05 N literal을 제거하고 활성 env의
+  `collision_force_threshold`를 controller에 주입했다.
+- general target reset의 legacy 1.0 m wall inset이 physical planner의 기본 admissible inset
+  1.25 m보다 작던 결함을 고쳤다. invalid-state 판정도 actor center가 아니라 회전된 전체 OBB가
+  arena 안에 있는지 검사한다.
+- 위 표는 이 세 수정 뒤 동일 seed 503/동일 frozen gate로 재실행한 최종 canonical 수치다. 이전
+  잠정 수치는 폐기한다. 205 bars까지 tracking/speed/contact는 통과하지만 planner/state gate가
+  남고, 300 bars에서는 tracking/speed/contact도 실패한다. PPO는 실행하지 않았다.
+- 최종 회귀검사: py_compile/diff-check PASS, ref5in platform 27/27, run contract 12/12,
+  target-motion 11/11, physical launcher의 env/CLI checkpoint 거부 PASS. legacy mode도 실제
+  Isaac Gym 2-env 1-step에서 finite observation `(2,156)`, `bar_offset=0`으로 PASS해 기존 계보를
+  깨지 않았음을 확인했다.
+
+## 2026-08-21 — navrl_band 중심거리·실제 footprint 중첩 감사
+
+- `navrl_band`는 최소 중심거리 1.6 m 규칙이 아니다. 모든 막대 쌍을 `d≤0.4 m`의 의도적
+  touch/overlap 또는 `d≥1.6 m`의 분리 상태로만 허용하고 중간 band를 금지한다. 막대 XY 한 변은
+  실제 `bars_h3` URDF에서 0.4–0.8 m, 회전은 0이므로 `d≥1.6`이면 AABB 중첩은 수학적으로
+  불가능하다. 축방향 중심 배치의 표면 gap은 0.8 m지만 대각 배치의 이론적 corner gap은 약
+  0.469 m까지 줄 수 있다. 반대로 `d≤0.4`는 모든 크기 조합에서 접촉 또는 중첩되어 compound
+  obstacle을 만든다.
+- 실제 40개 footprint pool과 배치기 mirror로 밀도별 50 layouts를 감사했다. merge fallback,
+  `0.4<d<1.6` 위반, `d≥1.6` overlap, `d≤0.4`인데 비접촉인 쌍은 모두 0건이었다. 의도적 overlap
+  pair는 70/150/205/300 bars에서 각각 총 `47/301/639/1926`쌍(평균 `0.94/6.02/12.78/38.52`
+  쌍/layout)으로 증가했다.
+- 따라서 고밀도에서 1.6 m를 자동 축소하지 않는다. 그러면 nominal count와 corridor width를 동시에
+  바꾸는 교란이 생긴다. 현 centre rule의 이론적 corner gap은 약 0.469 m이며, physical target의
+  level OBB 0.28 m + 양측 tracking reserve 0.45 m가 요구하는 축방향 1.18 m보다 이미 좁다. 먼저
+  hard-OBB/operational-reserve 두
+  configuration space의 연결성과 compound-wall/cage를 분리 측정한 뒤, 중심거리 상수가 아니라
+  footprint-aware surface-gap 및 connectivity 계약으로 재설계한다.
+
+### 300 bars의 실제 독립 덩어리 수와 no-cluster 가능성
+
+- 실제 `bars_h3` footprint와 배치기 mirror로 300 bars × 200 layouts를 연결성 계수했다. AABB가
+  접촉/중첩하면 같은 component로 묶었을 때 독립 덩어리는 평균 `263.785`, 중앙값 `264`, 범위
+  `252–276`개였다. 독립 단일 막대는 평균 `229.425`개, 2개 이상 군집은 평균 `34.36`개이고,
+  군집에 포함된 막대는 평균 `70.575/300`개였다.
+- 최대 군집 크기는 평균 `2.92`, 전체 200 layouts에서도 최대 `4`개였다. 따라서 이 표본에서는
+  거대한 compound wall/cage가 만들어진다는 앞선 우려는 지지되지 않으며, physical 경로 불능의
+  주원인으로 단정하지 않는다.
+- 군집을 완전히 금지해도 40×40 m 안에 300개 독립 배치가 가능하다. 최대 0.8 m footprint가 경계
+  안에 있도록 centre를 0.4–39.6 m에 둔 20×15 constructive grid는 최소 중심거리 `2.0632 m`로
+  1.6 m 계약을 여유 있게 통과하며 정확히 300 components를 만든다. 다만 규칙적인 grid는 현재
+  random layout 분포와 다르므로 실제 대체안은 footprint-aware Poisson/blue-noise sampler와 별도
+  connectivity audit가 필요하다.
+
+### 300 bars 통로 여유거리 감사 — centre gap 1.6 m의 대각선 함정 정정
+
+- 300 bars × 200 layouts에서 모든 비중첩 AABB 쌍 약 897만 개의 표면거리를 계산했다. layout별
+  최협 gap은 최소 `0.5495 m`, 5% `0.6073 m`, 중앙값 `0.6841 m`, 평균 `0.6806 m`, 95%
+  `0.7482 m`였다. 막대별 nearest-gap 분포는 5% `0.8040 m`, 중앙값 `1.1313 m`다.
+- `d≥1.6`에서 표면 gap이 항상 0.8 m라는 앞선 설명은 잘못이었다. 두 최대 0.8 m square의 중심이
+  대각선으로 1.6 m 떨어지면 이론적 AABB gap은
+  `sqrt(2)*(1.6/sqrt(2)-0.8)=0.4686 m`까지 감소한다. 코드 주석도 함께 정정했다.
+- 관측된 최협 `0.5495 m` 통로 중앙을 통과한다고 단순 보수 계산하면, level 0.28 m box는 총
+  `0.2695 m`/편측 `0.1347 m`, yaw-45° 수평 대각 0.396 m는 총 `0.1535 m`/편측 `0.0767 m`,
+  3-D box 외접폭 0.4138 m는 총 `0.1357 m`/편측 `0.0679 m`만 남는다. 이는 정적 기하 여유이며
+  tracking error·PhysX contact margin을 포함하지 않는다.
+
+## 2026-08-21 — OOB exit forensics 추가, 그리고 두 `0.45 m` 계보 분리
+
+### 정정: seed 367 pursuer와 300-bar physical target을 같은 planner로 설명하면 안 된다
+
+앞선 설명과 첫 정정은 서로 다른 코드의 `0.45 m`를 하나로 취급했다. 실제 계약은 다음 두 개다.
+
+1. **동결 ref5in pursuer / seed 367:** 전역 또는 국소 경로 planner가 없다. riskcap은 속도 크기만
+   깎는 필터이며 재계획·진입거부를 하지 않는다. `speed_governor.path_half_width_m=0.45`는 명령축
+   좌우 0.45 m 안의 LiDAR 광선만 clearance 계산에 포함시키는 **광선 선택창**이다
+   (`speed_governor.py:166`). 게다가 이 계보의 governor는 `mode=off`, 실측 intervention 0이다.
+2. **미커밋 physical-target fresh 계보 / 300-bar gate:** `bounded_drone_target_step()`이 1초 동안
+   여러 방향·속도 후보를 rollout하고 충돌 없는 후보를 선택하는 **receding-horizon local planner**다.
+   여기의 별도 `target_motion.physical_tracking_margin=0.45`는 target OBB로 팽창한 막대 표면 바깥에
+   추가하는 closed-loop tracking reserve다. riskcap의 동명 숫자와 무관하다. 전역 경로를 찾거나
+   통로를 위상적으로 판정하지는 않으며, 전 후보가 막히면 가장 긴 safe prefix의 bounded step을
+   실행하고 다음 control step에서 다시 계획하면서 `feasible=False`를 노출한다.
+
+따라서 `0.28 + 0.45×2 = 1.18 m`는 level OBB가 축정렬 평행 통로의 양쪽에서 tracking reserve까지
+지키려 할 때의 **운용 폭** 계산으로만 유효하다. pursuer의 물리 통과 한계도, 임의 yaw/대각 통로의
+일반식도, planner가 반드시 돌아선다는 증거도 아니다. 300-bar 기하 probe의 최협 표면간격
+0.55–0.68 m와 대각 배치 이론 최저 0.469 m는 physical-target 환경 난이도를 설명하지만 seed 367의
+실패 원인에는 사용할 수 없다.
+
+seed 367은 **막대 1개**이고 crash의 약 98%가 OOB다: `camera_20m` crash 160 = bar_contact 2 /
+OOB 158, `camera_28m` 141 = 3 / 138. 이 체제는 아래 OOB 계측으로 따로 진단한다.
+
+riskcap 자체에 관한 확인은 유지한다. riskcap cap은 clearance 0.3/1.0/3.0 m에서 모두 2.0 m/s이고
+강제 zero-speed를 만들지 않는다. `hard_margin_m`은 riskcap의 cap 계산에는 쓰이지 않지만
+clearance/TTC mode 및 stopping-margin 진단에는 쓰인다.
 
 **riskcap 파라미터 탐색은 금지 규칙이다**(`CLAUDE.md:56`, `CRASH_TUNING_LOG.md:523`). 값들은
 제동 프로브(p10 감속 2.9609 m/s², 정지거리 1.047 m)에서 사전 도출됐다.
@@ -9337,6 +9612,13 @@ OOB다: seed 367 `camera_20m` crash 160 = bar_contact 2 / OOB 158, `camera_28m` 
 | `outward_radial_speed_mean_mps` | 양수면 능동적으로 밖으로 몰고 감(표류 아님) |
 | `speed_mean_mps` / `goal_distance_mean_m` / `step_median` | 속도·거리·중앙값 |
 
+초안은 acquisition 비율과 운동학 전체 평균만 따로 내서 두 집단이 평균 안에서 상쇄될 수 있었다.
+실행 전 감사에서 이를 발견해 `by_acquisition.{never_acquired,acquired}`마다 exit 수·비율·속도·목표거리·
+closing·outward를 교차 집계한다. 두 strata 합이 전체 exit와 다르거나 never-acquired 수가 기존 카운터와
+다르면 export를 중단하며, `robot_linvel`/first-acquisition 원천이 없을 때도 0으로 기록하지 않고 중단한다.
+README의 `camera range A/B = 다음 실험` 잔존 문구도 완료된 seed 367 진단으로 고쳤다. 사용자가 원한
+active-search 과제에서는 28 m camera가 positive control이지 자동 채택안이 아니라는 범위를 명시했다.
+
 구현에서 잡은 것 둘:
 
 1. **원인 귀속 마스크를 써야 했다.** 처음엔 raw `oob`에 걸었는데 crash 원인 표는
@@ -9347,7 +9629,9 @@ OOB다: seed 367 `camera_20m` crash 160 = bar_contact 2 / OOB 158, `camera_28m` 
    exit step을 쓰게 됐다.
 
 **교차검증**: 제 카운터와 `_diag["oob"]`를 독립으로 세고 export 전에 일치를 강제한다(불일치 시
-RuntimeError). 스모크 32 env/400 step에서 `126 = 126`, 방향버킷 `[25,36,28,38]` 동일.
+RuntimeError). 스모크 32 env/400 step에서 `126 = 126`, 방향버킷 `[25,36,28,38]` 동일. 네 방향
+버킷은 기존 진단과 마찬가지로 **비배타적**이다. 코너 이탈 한 건이 두 버킷에 들어가므로 이 예에서도
+합은 127이며, `edge_shares`를 합계 100%인 categorical distribution으로 해석하면 안 된다.
 bulk eval 전용이며 관측·보상·종료·체크포인트에 무접촉이다.
 
 ### 문서: CRASH_TUNING_LOG를 archival-in-place로 표시
