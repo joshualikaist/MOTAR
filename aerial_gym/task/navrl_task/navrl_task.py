@@ -632,6 +632,9 @@ class NavRLTask(BaseTask):
                 # after the fact -- exactly what happened to ppo_260727_0930, whose token FOV could
                 # not be recovered from either the log or the checkpoint.
                 from aerial_gym.task.navrl_task.navrl_perception import (
+                    GEOFENCE_ACTOR,
+                    GEOFENCE_DROPOUT,
+                    GEOFENCE_NOISE_STD_M,
                     HBEAMS,
                     MAX_OBSTACLES,
                     OBSTACLE_CLUSTER_GAP_M,
@@ -663,6 +666,15 @@ class NavRLTask(BaseTask):
                         VBEAMS,
                         HBEAMS,
                         self.task_config.lidar_max_range,
+                    )
+                )
+                logger.warning(
+                    "NavRL active-search geofence | actor=%s rays=4 noise=%.3fm "
+                    "dropout=%.3f source=VIO/GPS+known-map fresh-policy-required"
+                    % (
+                        "on" if GEOFENCE_ACTOR else "off",
+                        GEOFENCE_NOISE_STD_M,
+                        GEOFENCE_DROPOUT,
                     )
                 )
 
@@ -1766,6 +1778,9 @@ class NavRLTask(BaseTask):
             "cfg_corridor_tokens": int(representation["corridor_tokens"]),
             "cfg_corridor_horizon_m": float(representation["corridor_horizon_m"]),
             "cfg_corridor_min_width_m": float(representation["corridor_min_width_m"]),
+            "cfg_geofence_actor": bool(representation["geofence_actor"]),
+            "cfg_geofence_noise_std_m": float(representation["geofence_noise_std_m"]),
+            "cfg_geofence_dropout": float(representation["geofence_dropout"]),
             "cfg_fov_curriculum_epochs": int(
                 getattr(self.vis_cfg, "fov_curriculum_epochs", 0)
             ),
@@ -2023,6 +2038,9 @@ class NavRLTask(BaseTask):
                 CORRIDOR_HORIZON_M,
                 CORRIDOR_MIN_WIDTH_M,
                 CORRIDOR_TOKENS,
+                GEOFENCE_ACTOR,
+                GEOFENCE_DROPOUT,
+                GEOFENCE_NOISE_STD_M,
                 HBEAMS,
                 MAX_OBSTACLES,
                 OBSTACLE_CLUSTER_GAP_M,
@@ -2056,6 +2074,9 @@ class NavRLTask(BaseTask):
                 "corridor_tokens": int(CORRIDOR_TOKENS),
                 "corridor_horizon_m": float(CORRIDOR_HORIZON_M),
                 "corridor_min_width_m": float(CORRIDOR_MIN_WIDTH_M),
+                "geofence_actor": bool(GEOFENCE_ACTOR),
+                "geofence_noise_std_m": float(GEOFENCE_NOISE_STD_M),
+                "geofence_dropout": float(GEOFENCE_DROPOUT),
             }
         except Exception:
             return {
@@ -2074,6 +2095,9 @@ class NavRLTask(BaseTask):
                 "corridor_tokens": 0,
                 "corridor_horizon_m": 0.0,
                 "corridor_min_width_m": 0.0,
+                "geofence_actor": False,
+                "geofence_noise_std_m": 0.0,
+                "geofence_dropout": 0.0,
             }
 
     @classmethod
@@ -2534,6 +2558,21 @@ class NavRLTask(BaseTask):
                     "cfg_corridor_min_width_m",
                     float(representation["corridor_min_width_m"]),
                     "NAVRL_CORRIDOR_MIN_WIDTH_M",
+                ),
+                (
+                    "cfg_geofence_actor",
+                    float(representation["geofence_actor"]),
+                    "NAVRL_GEOFENCE_ACTOR",
+                ),
+                (
+                    "cfg_geofence_noise_std_m",
+                    float(representation["geofence_noise_std_m"]),
+                    "NAVRL_GEOFENCE_NOISE_STD_M",
+                ),
+                (
+                    "cfg_geofence_dropout",
+                    float(representation["geofence_dropout"]),
+                    "NAVRL_GEOFENCE_DROPOUT",
                 ),
                 (
                     "cfg_fov_curriculum_epochs",
@@ -3907,6 +3946,8 @@ class NavRLTask(BaseTask):
             max_velocity=self.task_config.max_velocity,
             flight_altitude=self.task_config.flight_altitude,
             training=bool(self.perception_cfg.enable_perturbations),
+            env_bounds_min=self.obs_dict["env_bounds_min"],
+            env_bounds_max=self.obs_dict["env_bounds_max"],
         )
         self.task_obs["observations"][:] = structured
         self._visible_now[:] = diagnostics["visible"]

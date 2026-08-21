@@ -233,6 +233,7 @@ run 폴더 이관과 TensorBoard 병합 절차는 [OPERATIONS.md](OPERATIONS.md)
 12. **camera-range 진단 완료:** seed 367에서 target camera range `20→28 m` 한 값만 바꾸자 timeout이 `55.80→18.16%`로 줄었습니다. 초기 미관측의 인과 기여는 지지하지만, 사용자가 원하는 과제는 장거리 미관측 상태에서의 active search이므로 28 m camera는 positive control이지 자동 채택안이 아닙니다. 다음은 OOB exit를 acquired/never-acquired로 나눈 동결-policy 계측이며 P3는 계속 차단합니다.
 13. **OOB exit 진단 완료:** 20 m arm의 OOB 158건 중 152건(96.20%)은 표적을 한 번도 취득하지 못했고, outward 속도는 +1.002 m/s, target closing은 -0.834 m/s였습니다. actor에는 arena boundary/geofence/world XY가 없고 5-step(약 0.5 s) history만 있으므로, horizon·속도보다 boundary-observable active-search 계약이 다음 단일 변경축입니다. `results/navrl_ref5in_oob_exit_forensics_seed367/analysis.md`.
 14. perception 연구는 corrected-v2 analytic baseline → learned detector arm → appearance-randomized arm 순으로 한 축씩 추가합니다.
+15. **다음 사전등록 준비 완료, 미실행:** mapped geofence를 actor가 관측하는 active-search A/B를 별도 branch에 opt-in 구현했습니다. 기존은 898-D/17 tokens 그대로이고, geofence arm만 906-D/18 tokens fresh policy입니다. 두 fresh 900-epoch arm을 모두 실행하기 전에는 성능 결론을 내리지 않습니다. `docs/preregistration_active_search_geofence_2026-08-21.md`.
 
 현재 가장 큰 미해결 문제는 “더 오래 학습하면 되는가”가 아니라 **고밀도에서 pre-contact obstacle 정보, 제동 여유, detector 출력 분포, 기체 동역학 중 어느 축이 먼저 한계가 되는가**입니다.
 

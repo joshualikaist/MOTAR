@@ -218,6 +218,28 @@ class NavRLCheckpointPreflightTest(unittest.TestCase):
                 expected_contract={"cfg_corridor_horizon_m": 5.0},
             )
 
+    def test_legacy_checkpoint_implies_geofence_disabled(self):
+        path = self._save(_checkpoint())
+        info = _PREFLIGHT.inspect_checkpoint(
+            path,
+            max_epochs=45000,
+            density_final=110,
+            expected_contract={"cfg_geofence_actor": 0},
+        )
+        self.assertEqual(info["contract_overrides"], {})
+
+    def test_geofence_schema_mismatch_is_rejected(self):
+        path = self._save(_checkpoint())
+        with self.assertRaisesRegex(
+            _PREFLIGHT.CheckpointPreflightError, "cfg_geofence_actor"
+        ):
+            _PREFLIGHT.inspect_checkpoint(
+                path,
+                max_epochs=45000,
+                density_final=110,
+                expected_contract={"cfg_geofence_actor": 1},
+            )
+
     def test_nonfinite_checkpoint_is_rejected(self):
         checkpoint = _checkpoint()
         checkpoint["optimizer"]["state"][0]["exp_avg"] = torch.tensor([float("nan")])

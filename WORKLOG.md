@@ -9429,3 +9429,39 @@ policy A/B를 먼저 사전등록한다. global localization을 허용하지 않
 대안이지만 architecture+memory 동시변경이라 2순위다. 상세 수치·gate는
 `results/navrl_ref5in_oob_exit_forensics_seed367/analysis.md`에 고정했다. P2 STRICT FAIL, D1 FAIL,
 P3 BLOCKED는 바뀌지 않는다.
+
+## 2026-08-21 — Active-search geofence를 별도 branch에 opt-in 구현
+
+OOB 증거 branch `e6fe790`을 고정한 뒤 `codex/boundary-observable-search`를 분기했다. 기존
+898-D 정책과 physical-target WIP를 건드리지 않기 위해 기본값은 off다.
+
+### 구현 계약
+
+- `NAVRL_GEOFENCE_ACTOR=1`일 때만 actor 끝에 8-D를 append한다: body-frame
+  forward/left/back/right geofence ray range 4개(아레나 XY 대각선으로 정규화) + validity 4개.
+- Transformer에는 geofence projection token 1개를 마지막에 append한다. v2 search 실제 계약은
+  **898→906 D, 17→18 tokens**다. off는 898/17 그대로다.
+- feature는 target GT가 아니라 VIO/GPS pose + known-map flight boundary를 전제로 한다. 이 센서를
+  실기에 제공하지 않는다면 결과를 camera/LiDAR-only exploration으로 주장할 수 없다.
+- noise/dropout은 별도 provenance(`cfg_geofence_*`)로 checkpoint에 저장하고 resume mismatch를
+  preflight가 거부한다. 첫 A/B는 둘 다 0으로 고정한다.
+- schema 변경이므로 warm-start는 지원하지 않는다. fresh policy만 허용한다.
+
+`docs/preregistration_active_search_geofence_2026-08-21.md`에 결과 전 gate를 고정했다. 두 arm은
+seed197/P1c 900-epoch 계약에서 geofence off/on 한 값만 다르다. held-out seed367 primary는
+never-acquired OOB/all episodes이며 최소 3.0pp 개선(기존 약 7.4% 기준 약 40% 상대 감소)이 필요하다.
+이 3pp는 n≈2,049에서 단순 표본오차보다 충분히 크도록 정한 practical gate다. non-OOB crash +2pp
+guard와 token-mask inference ablation도 결과 전에 고정했다.
+
+### 검증
+
+- perception unit: off **30/30 PASS**, geofence-on **30/30 PASS**
+- checkpoint preflight: **15/15 PASS** (legacy off default와 on mismatch reject 포함)
+- ref5in run contract: worktree에 P1c run을 read-only symlink한 뒤 **26/26 PASS**
+- 실제 v2 env 상수로 network forward: off `898 D / 17 tokens`, on `906 D / 18 tokens` 모두 PASS
+- launcher `bash -n`, control/geofence child preflight 모두 PASS
+- Python compile와 `git diff --check` PASS
+
+학습은 아직 시작하지 않았다. 비교의 최소 단위가 두 fresh 900-epoch arm이므로 한쪽만 먼저 장시간
+돌려 결과를 해석하지 않는다. 실행기는
+`aerial_gym/rl_training/rl_games/train_navrl_ref5in_active_search_geofence_ab.sh`다.

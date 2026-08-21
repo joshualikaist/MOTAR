@@ -218,6 +218,11 @@ export NAVRL_OBSTACLE_TTC_MIN_SPEED=0.15
 export NAVRL_CORRIDOR_TOKENS=0
 export NAVRL_CORRIDOR_HORIZON_M=6.0
 export NAVRL_CORRIDOR_MIN_WIDTH_M=0.55
+# Opt-in mapped-geofence observation. Defaults keep the historical 898-D schema; the dedicated
+# active-search A/B launcher sets actor=1 for its fresh geofence arm.
+export NAVRL_GEOFENCE_ACTOR="${NAVRL_GEOFENCE_ACTOR:-0}"
+export NAVRL_GEOFENCE_NOISE_STD_M="${NAVRL_GEOFENCE_NOISE_STD_M:-0}"
+export NAVRL_GEOFENCE_DROPOUT="${NAVRL_GEOFENCE_DROPOUT:-0}"
 export NAVRL_LIDAR_HBEAMS=72
 export NAVRL_LIDAR_VBEAMS=4
 export NAVRL_LIDAR_RANGE=12
