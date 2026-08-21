@@ -25,7 +25,8 @@ substantive한 요청(학습·평가·분석·감사·구현)을 받으면:
   원인이 되므로 섞지 말 것.
 - **canonical 현재 상태**: `WORKLOG.md`(맨 아래) + `VERIFICATION.md`(ref5in gate·다음 실험) +
   `docs/status/` 라이브 대시보드. `RESEARCH_PLAN.md`는 charter(가설·방법). 실무는 `OPERATIONS.md`,
-  진단은 `CRASH_TUNING_LOG.md`. 역사 문서는 `docs/archive/`.
+  과거 crash 진단 기록은 `CRASH_TUNING_LOG.md`(2026-08-05 이후 미갱신, archival-in-place —
+  소스 4곳이 경로를 참조하므로 이동·삭제 금지). 역사 문서는 `docs/archive/`.
 - **현재 상태(2026-08-03)**: recovery curriculum continuation
   `ppo_260802_0020_navrl_v2-recover-curriculum-continue-s1`은 사용자 결정으로 ep24010에서 안전 중단했다.
   canonical artifact는 ep24000 checkpoint(SHA-256 `82f7978b42d…`)이며 학습 프로세스는 없다.
@@ -90,7 +91,8 @@ substantive한 요청(학습·평가·분석·감사·구현)을 받으면:
 
 **diff 검토를 요청하기 전에** 작성해서 코드와 문서가 같은 커밋에 들어가게 한다. 세션 예산이
 부족해도 WORKLOG 항목은 **마지막까지 자르지 않는다** — 다음 세션을 싸게 만드는 게 이것이다.
-장문의 메커니즘 설명은 `CRASH_TUNING_LOG.md`, `WORKLOG.md`엔 최소한 날짜별 요약을 항상 남긴다.
+장문의 메커니즘 설명은 `WORKLOG.md`에 날짜별로 남긴다(`CRASH_TUNING_LOG.md`는 2026-08-05에서
+멈춘 과거 기록이며 새 항목을 추가하지 않는다).
 
 ## 커밋 규칙
 - **커밋/푸시 전 사용자가 diff 검토·승인.** 자율 커밋 지양. 브랜치 `research/navrl-env`, 원격 joshualikaist/MOTAR.

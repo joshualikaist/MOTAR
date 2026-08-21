@@ -9294,3 +9294,82 @@ D1 FAIL · P3 BLOCKED는 전부 그대로다.**
 해제 조건과 함께 **별도 사전등록**한다. 이번 결과만으로 재학습을 시작하지 않는다.
 
 상세: `results/navrl_ref5in_camera_range_control_seed367/summary.{md,json}`, `VERIFICATION.md`.
+
+## 2026-08-21 — OOB exit forensics 추가, 그리고 통로-planner 인과 서술 철회
+
+### 철회: "planner가 통로를 안전하지 않다고 판단해 돌아간다"는 메커니즘은 없다
+
+앞선 통로 분석이 `0.28 + 0.45×2 = 1.18 m`를 "planner가 요구하는 통로 폭"으로 제시하고, 실제
+통로 0.55–0.68 m가 그보다 좁아 경로 불능이 생긴다고 결론냈다. 코드 확인 결과 이 인과는 성립하지
+않는다.
+
+- planner가 없다. riskcap은 속도만 깎는 필터이고 재계획·진입거부 코드가 존재하지 않는다.
+- `path_half_width_m=0.45`는 "비워둬야 할 폭"이 아니라 **LiDAR 광선 선택창**이다
+  (`speed_governor.py:166` `in_path = ray_valid & (forward>0) & (lateral <= path_half_width_m)`).
+  명령축에서 가로 0.45 m 안의 광선만 clearance에 넣는다는 뜻이고 통과 가능 여부와 무관하다.
+- riskcap은 멈추지 않는다. 실측 cap: clearance 0.3/1.0/3.0 m 전부 **2.0 m/s**, 4.0 m에서 2.768,
+  5.0 m 이상에서 3.536. 주석도 "never creates a forced zero-speed deadlock".
+- `hard_margin_m`은 riskcap에서 **dead parameter**다. 0.45/0.05/0.0 모두 cap 동일
+  (`[2.0, 2.0, 2.0, 3.5355]`). `usable`은 clearance/ttc 모드와 stopping-margin 진단에만 쓰인다.
+  검증 4의 `stopping_margin −0.157 m`가 이 무효 파라미터를 정의에 포함한다는 점도 함께 기록한다.
+- **ref5in 계보는 governor가 꺼져 있다.** 실측 `intervention_rate=0.000`, `mode=off`
+  (README:55, VERIFICATION:63, `train_navrl_v2_ref5in_smoke_c.sh:58`).
+
+그리고 결정적으로, 통로 분석은 300막대 기하인데 현재 병목 실험은 **막대 1개**이고 crash의 98%가
+OOB다: seed 367 `camera_20m` crash 160 = bar_contact 2 / OOB 158, `camera_28m` 141 = 3 / 138.
+서로 다른 두 체제를 섞어 설명한 것이다.
+
+기하 측정 자체(최협 표면간격 0.55–0.68 m, 대각 배치 이론 최저 0.469 m, 기존 "0.8 m 보장"은 축
+정렬에서만 성립)는 유효하다. 철회하는 것은 그 숫자를 governor 동작에 연결한 인과 서술뿐이다.
+
+**riskcap 파라미터 탐색은 금지 규칙이다**(`CLAUDE.md:56`, `CRASH_TUNING_LOG.md:523`). 값들은
+제동 프로브(p10 감속 2.9609 m/s², 정지거리 1.047 m)에서 사전 도출됐다.
+
+### 추가: OOB exit forensics
+
+기존 `_diag`의 `oob_w/e/s/n`과 평균 step은 이미 있었다. 그것으로 답할 수 없는 것만 추가한다 —
+**"쫓다가 넘어감"과 "헤매다 흘러나감"의 구분**이다. 처방이 정반대다.
+
+| 필드 | 가르는 것 |
+|---|---|
+| `never_acquired_share` | 나갈 때까지 표적을 한 번도 못 봤는가 (first-acquisition과 연결) |
+| `goal_closing_speed_mean_mps` | 음수면 목표에서 멀어지며 나감 |
+| `outward_radial_speed_mean_mps` | 양수면 능동적으로 밖으로 몰고 감(표류 아님) |
+| `speed_mean_mps` / `goal_distance_mean_m` / `step_median` | 속도·거리·중앙값 |
+
+구현에서 잡은 것 둘:
+
+1. **원인 귀속 마스크를 써야 했다.** 처음엔 raw `oob`에 걸었는데 crash 원인 표는
+   `d_oob = oob & ~contact & ~below & ~above & crashed_out`을 쓴다. 같은 step에 막대 접촉이
+   겹치면 원인이 그쪽으로 귀속되므로 두 집단이 다르다. 귀속 마스크로 옮겨
+   `crash_causes.out_of_bounds`와 직접 비교 가능하게 했다.
+2. **`sim_steps`가 env별 텐서였다.** 스칼라 변환이 실패해서 발견했고, 덕분에 episode별 정확한
+   exit step을 쓰게 됐다.
+
+**교차검증**: 제 카운터와 `_diag["oob"]`를 독립으로 세고 export 전에 일치를 강제한다(불일치 시
+RuntimeError). 스모크 32 env/400 step에서 `126 = 126`, 방향버킷 `[25,36,28,38]` 동일.
+bulk eval 전용이며 관측·보상·종료·체크포인트에 무접촉이다.
+
+### 문서: CRASH_TUNING_LOG를 archival-in-place로 표시
+
+2026-08-05 이후 미갱신이지만 **삭제·이동 금지**다. 소스 4곳이 경로를 주석으로 참조하고
+(`navrl_task_config.py:611`, `navrl_task.py:3883`, `navrl_lidar_config.py:17`,
+`results/general_12m_lookahead_speed_axis.csv:4`), crash 계측 방법론·07-22/23 원인 분해·
+one-lever 후보 결과·Phase-1 부록은 다른 문서에 사본이 없다. riskcap 금지 규칙도 `CLAUDE.md`
+외에는 여기에만 있다. 헤더에 사유를 명시하고 CLAUDE.md/README/RESEARCH_PLAN 라벨을 맞췄다.
+
+### 부수 기록: 속도·틸트 상한은 한 번도 ablate된 적이 없다
+
+`NAVRL_MAX_VELOCITY`(2.5), `NAVRL_MAX_TILT_DEG`(45), `NAVRL_YAW_RATE_MAX`(2.5) 모두 파라미터
+카탈로그에서 `ablated=False`, 실험 0건이다. `free_speed_cap_mps=3.5355`는 최적화 값이 아니라
+`2.5×√2`라는 축별 제한의 기하학적 귀결이다. 다만 `max_velocity`는 관측 정규화의 분모라
+(`navrl_task.py:3914,3958`) 바꾸면 동결 체크포인트와 계약이 어긋난다 — 사실상 재학습 knob이다.
+물리적으로도 정지거리 `v²/2a`와 선회반경 `v²/a`가 제곱으로 커진다(2.5 m/s에서 1.06/0.64 m,
+4.0 m/s에서 2.70/1.63 m). 올리려면 틸트 상한도 함께 올려야 하고, 틸트는 필요추력을 `1/cosθ`로
+키운다(60° 2배, 70° 2.9배; 현재 T/W 3.26).
+
+### 다음
+
+재학습 전에 OOB 계측을 seed 367 조건으로 한 번 돌린다(2셀 ~10분). 후보는 A(camera range
+20→28 m, seed 367에서 인과 확인) / B(속도·틸트 상향, 근거 없음) / C(목표거리 축소)이며 한 run에서
+두 축을 바꾸지 않는다(`VERIFICATION.md:115`).

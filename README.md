@@ -16,7 +16,7 @@ LiDAR로 표적·장애물을 보고, 시뮬레이터 ego-state로 자신의 자
 
 > 현재 기준일: **2026-08-20**
 >
-> **문서 6개:** [VERIFICATION.md](VERIFICATION.md)(검증 gate·다음 실험) · [RESEARCH_PLAN.md](RESEARCH_PLAN.md)(charter) · [WORKLOG.md](WORKLOG.md)(기록) · [OPERATIONS.md](OPERATIONS.md)(명령) · [CRASH_TUNING_LOG.md](CRASH_TUNING_LOG.md)(진단) · [docs/status/](docs/status/)(대시보드)
+> **문서 6개:** [VERIFICATION.md](VERIFICATION.md)(검증 gate·다음 실험) · [RESEARCH_PLAN.md](RESEARCH_PLAN.md)(charter) · [WORKLOG.md](WORKLOG.md)(기록) · [OPERATIONS.md](OPERATIONS.md)(명령) · [CRASH_TUNING_LOG.md](CRASH_TUNING_LOG.md)(과거 진단, archival) · [docs/status/](docs/status/)(대시보드)
 
 ## 현재 결론
 

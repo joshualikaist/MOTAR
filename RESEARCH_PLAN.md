@@ -2,7 +2,7 @@
 
 이 문서가 연구 charter다(가설·설계·계획). **현재 상태와 최신 수치는 여기 적지 않는다** —
 진행 기록은 `WORKLOG.md`(맨 아래가 최신), 검증 gate는 `VERIFICATION.md`, 라이브 지표는 `docs/status/`를 본다.
-실무(머신 셋업·GPU·이관)는 `OPERATIONS.md`, 진단 도구와 측정된 음성 결과는 `CRASH_TUNING_LOG.md`.
+실무(머신 셋업·GPU·이관)는 `OPERATIONS.md`, 과거 진단 도구와 측정된 음성 결과는 `CRASH_TUNING_LOG.md`(archival, 2026-08-05 정지).
 
 ## 1. 연구 질문과 기여
 
@@ -300,6 +300,7 @@ arena 자체를 확장한 뒤 `k_final`을 함께 높인다.
 | detector 오류 또는 PPO update가 정책을 붕괴 | perception freeze, confidence input, density-aware collapse guard, immutable-behavior KL 전수감사, model/RMS/Adam/AMP epoch rollback, 전축 latent margin |
 | semantic label 누출 | 별도 label dict/dataloader, actor observation schema test, code review gate |
 | sim-to-real gap | texture/light/noise/dropout randomization, calibration perturbation, real-log validation |
+| virtual target / unvalidated vehicle dynamics | physical-target fresh lineage; identical sensor/contact OBB; substep contact telemetry; hardware-ID manifest; PPO blocked until 70/150/205/300 gate |
 
 ---
 
@@ -338,6 +339,14 @@ VERIFICATION.md에 통합했다. v2 205-bar / TTC / riskcap 역사(구 §8.1–8
 
 검증 단계에서도 §1–3 정보 방화벽, §4 방법, §6 실험 설계의 **claim 범위**는 변하지 않는다.
 P0–P3 PASS는 hardware validation을 대체하지 않는다.
+
+### Physical-target prerequisite (fresh lineage)
+
+Moving-target physical claims require, in order: dynamic 6-DoF actor, identical camera/LiDAR/contact
+geometry and pose, a frozen vehicle evidence manifest, 0.01 s motor/control telemetry, then the
+predeclared 70/150/205/300 tracking/contact/feasibility gate. A same-shape checkpoint is not
+transferable across this transition. The gate authority and measured outcome live in
+`docs/navrl_physical_target_audit_2026-08-21.md`; failure blocks PPO rather than lowering thresholds.
 
 ---
 

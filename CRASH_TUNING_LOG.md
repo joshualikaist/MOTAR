@@ -1,5 +1,17 @@
 # NavRL perception PPO — crash-cause tuning log
 
+> **archival-in-place (2026-08-21).** 마지막 항목은 2026-08-05이고 이후 갱신되지 않는다. ref5in
+> 계보의 진단은 [`VERIFICATION.md`](VERIFICATION.md)와 [`WORKLOG.md`](WORKLOG.md)에 기록한다.
+>
+> **이 파일을 옮기거나 지우지 말 것.** 소스 4곳이 이 경로를 주석으로 참조한다 —
+> `aerial_gym/config/task_config/navrl_task_config.py:611`,
+> `aerial_gym/task/navrl_task/navrl_task.py:3883`,
+> `aerial_gym/config/sensor_config/lidar_config/navrl_lidar_config.py:17`,
+> `results/general_12m_lookahead_speed_axis.csv:4` (WORKLOG 2026-08-21에 재확인).
+> 또한 crash-cause 계측 방법론(아래 §계측), 2026-07-22/23 원인 분해, one-lever 후보 결과,
+> Phase-1 clearance-reward 부록은 **다른 문서에 사본이 없다**. riskcap 사후튜닝 금지 규칙도
+> `CLAUDE.md` 외에는 여기에만 남아 있다.
+
 Measured, not guessed. The sensor-only perception+Transformer PPO run was stuck at ~99% crash / no
 learning. Instead of guessing, we instrumented the exact termination cause (`NAVRL_CRASH_DIAG=1`)
 and fixed the top measured blockers one at a time, re-measuring each time.

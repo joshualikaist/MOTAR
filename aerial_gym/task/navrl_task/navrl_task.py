@@ -369,6 +369,25 @@ class NavRLTask(BaseTask):
         self._fa_ep_obs_steps = torch.zeros(
             self.num_envs, dtype=torch.long, device=self.device
         )
+        # OOB exit forensics (WORKLOG 2026-08-21). The ref5in hard-distance cells fail almost
+        # entirely by leaving the arena -- 158 of 160 crashes in the seed-367 control arm -- and
+        # nothing recorded WHERE or WHEN. Edge order is [x_min, x_max, y_min, y_max].
+        self._oob_edge_counts = torch.zeros(4, dtype=torch.long, device=self.device)
+        self._oob_n = 0
+        self._oob_step_sum = 0.0
+        self._oob_step_hist = torch.zeros(
+            int(self.task_config.episode_len_steps) + 2, dtype=torch.long, device=self.device
+        )
+        # Split by whether the target had EVER been acquired before the exit. If exits are
+        # concentrated in never-acquired episodes, leaving the arena is a symptom of searching
+        # blind rather than an independent control failure.
+        self._oob_never_acquired = 0
+        self._oob_speed_sum = 0.0
+        self._oob_goal_dist_sum = 0.0
+        # Signed progress along the goal direction at the moment of exit: negative means the drone
+        # was moving AWAY from the goal as it left.
+        self._oob_goal_closing_sum = 0.0
+        self._oob_outward_sum = 0.0
         self._fa_eval_outcome_fin = torch.zeros(3, dtype=torch.long, device=self.device)
         self._fa_eval_outcome_never = torch.zeros(3, dtype=torch.long, device=self.device)
         self._fa_eval_outcome_first_sum = torch.zeros(3, dtype=torch.long, device=self.device)
@@ -3527,7 +3546,9 @@ class NavRLTask(BaseTask):
             m_oob = float(self.vis_cfg.oob_margin)
             b_min = self.obs_dict["env_bounds_min"][:, 0:2]
             b_max = self.obs_dict["env_bounds_max"][:, 0:2]
-            oob = ((pos[:, 0:2] < b_min - m_oob) | (pos[:, 0:2] > b_max + m_oob)).any(dim=1)
+            below_min = pos[:, 0:2] < b_min - m_oob
+            above_max = pos[:, 0:2] > b_max + m_oob
+            oob = (below_min | above_max).any(dim=1)
             crashed_out = crashed_out | oob
             if self._oob_probe:
                 self._probe_ep_y_min = torch.minimum(self._probe_ep_y_min, pos[:, 1])
@@ -3617,6 +3638,10 @@ class NavRLTask(BaseTask):
                     self._diag["oob_s"] += int((d_oob & (pos[:, 1] < b_min[:, 1] - m_oob)).sum().item())
                     self._diag["oob_n"] += int((d_oob & (pos[:, 1] > b_max[:, 1] + m_oob)).sum().item())
                     self._diag_steps["oob"] += float(steps[d_oob].sum().item())
+                    if self._bulk_eval_mode:
+                        # Same mask the crash-cause table uses, so `exits` is directly comparable
+                        # with crash_causes.out_of_bounds rather than a second, larger population.
+                        self._record_oob_exit(d_oob, pos, b_min, b_max, m_oob, steps)
                     if self._oob_probe:
                         north = d_oob & (pos[:, 1] > b_max[:, 1] + m_oob)
                         south = d_oob & (pos[:, 1] < b_min[:, 1] - m_oob)
@@ -4391,6 +4416,62 @@ class NavRLTask(BaseTask):
                     flat, minlength=48
                 ).reshape(4, 3, 4).to(self._eval_dist_pattern_crash_cause.dtype)
 
+    def _record_oob_exit(self, d_oob, pos, b_min, b_max, m_oob, steps):
+        """Forensics for arena exits (WORKLOG 2026-08-21).
+
+        Evaluation-only and read-only: it describes an exit the caller already decided, and touches
+        no observation, reward, termination or checkpoint state.
+
+        Why it exists. The ref5in hard-distance cells fail almost entirely by leaving the arena --
+        158 of 160 crashes in the seed-367 control arm -- and the existing diagnostic recorded only
+        the count, the compass bucket and the mean step. That cannot distinguish the two failure
+        modes it lumps together: driving outward while chasing something, versus drifting out while
+        searching blind. The extra fields here are chosen to separate exactly those.
+
+        `d_oob` is the CAUSE-ATTRIBUTED mask, the same one the crash-cause table counts, so `exits`
+        is comparable with crash_causes.out_of_bounds instead of being a second, larger population.
+        """
+        idx = d_oob.nonzero(as_tuple=False).squeeze(1)
+        n = int(idx.numel())
+        if n == 0:
+            return
+        self._oob_n += n
+
+        # Edge attribution mirrors the existing oob_w/e/s/n buckets; a diagonal corner exit lands
+        # in two of them, so these can sum above `exits`. Kept independent of _diag so the export
+        # can cross-check the two counters against each other.
+        for slot, mask in (
+            (0, pos[idx, 0] < b_min[idx, 0] - m_oob),
+            (1, pos[idx, 0] > b_max[idx, 0] + m_oob),
+            (2, pos[idx, 1] < b_min[idx, 1] - m_oob),
+            (3, pos[idx, 1] > b_max[idx, 1] + m_oob),
+        ):
+            self._oob_edge_counts[slot] += int(mask.sum().item())
+
+        # Per-env step, i.e. the exact step each episode left on.
+        ep_steps = steps[idx]
+        self._oob_step_sum += float(ep_steps.sum().item())
+        bounded = ep_steps.clamp(0, self._oob_step_hist.numel() - 1).to(torch.long)
+        self._oob_step_hist.index_add_(0, bounded, torch.ones_like(bounded))
+
+        if hasattr(self, "_fa_ep_first_fused"):
+            self._oob_never_acquired += int((self._fa_ep_first_fused[idx] < 0).sum().item())
+
+        vel = self.obs_dict.get("robot_linvel")
+        to_goal = self.target_position[idx, 0:2] - pos[idx, 0:2]
+        dist = to_goal.norm(dim=1)
+        self._oob_goal_dist_sum += float(dist.sum().item())
+        if vel is not None:
+            self._oob_speed_sum += float(vel[idx, 0:2].norm(dim=1).sum().item())
+            unit = to_goal / dist.clamp(min=1e-6).unsqueeze(1)
+            # >0 closing on the goal as it crossed, <0 receding from it.
+            self._oob_goal_closing_sum += float((vel[idx, 0:2] * unit).sum(dim=1).sum().item())
+            centre = 0.5 * (b_min[idx] + b_max[idx])
+            radial = pos[idx, 0:2] - centre
+            radial = radial / radial.norm(dim=1, keepdim=True).clamp(min=1e-6)
+            # >0 actively driving outward rather than drifting across the line.
+            self._oob_outward_sum += float((vel[idx, 0:2] * radial).sum(dim=1).sum().item())
+
     def _record_first_acquisition(self, idx, outcome, observation_steps):
         """Attribute per-episode first-acquisition statistics to eval outcomes (RESEARCH_PLAN 8.28).
 
@@ -4901,6 +4982,54 @@ class NavRLTask(BaseTask):
                 "p90": float(np.quantile(array, 0.90)),
             }
 
+        def oob_exit_payload():
+            """Where and when episodes left the arena (WORKLOG 2026-08-21).
+
+            Rates are per EXIT, not per episode, because an exit is the event being described.
+            Everything is null when nothing left the arena, rather than 0 -- a zero here would read
+            as "exits happen at step 0 on edge x_min", which is the opposite of no exits at all.
+            """
+            n = int(self._oob_n)
+            # Two independent counters over the same mask. If they disagree, one of them is
+            # double-counting or dropping exits, and neither number is trustworthy -- fail rather
+            # than export. This is the same discipline the first-acquisition telemetry uses.
+            if n != int(self._diag["oob"]):
+                raise RuntimeError(
+                    "NavRL OOB forensics disagree with the crash-cause counter: %d != %d"
+                    % (n, int(self._diag["oob"]))
+                )
+            if n == 0:
+                return {"exits": 0}
+            hist = self._oob_step_hist
+            cumulative = torch.cumsum(hist, dim=0)
+            half = (n + 1) // 2
+            median_step = int(torch.searchsorted(
+                cumulative, torch.tensor(half, device=cumulative.device, dtype=cumulative.dtype)
+            ).item())
+            edges = [int(v) for v in self._oob_edge_counts.tolist()]
+            return {
+                "exits": n,
+                # A corner crossing increments two edges, so these can sum above `exits`.
+                "edge_counts": {
+                    "x_min": edges[0], "x_max": edges[1],
+                    "y_min": edges[2], "y_max": edges[3],
+                },
+                "edge_shares": {
+                    "x_min": edges[0] / n, "x_max": edges[1] / n,
+                    "y_min": edges[2] / n, "y_max": edges[3] / n,
+                },
+                "step_mean": self._oob_step_sum / n,
+                "step_median": min(median_step, hist.numel() - 1),
+                "never_acquired": int(self._oob_never_acquired),
+                "never_acquired_share": self._oob_never_acquired / n,
+                "speed_mean_mps": self._oob_speed_sum / n,
+                "goal_distance_mean_m": self._oob_goal_dist_sum / n,
+                # Negative means the drone was receding from the goal as it crossed the boundary.
+                "goal_closing_speed_mean_mps": self._oob_goal_closing_sum / n,
+                # Positive means it was actively driving outward, not drifting.
+                "outward_radial_speed_mean_mps": self._oob_outward_sum / n,
+            }
+
         def first_acquisition_payload(index):
             """RESEARCH_PLAN 8.28 per-outcome first-acquisition statistics.
 
@@ -5145,6 +5274,7 @@ class NavRLTask(BaseTask):
                     label: target_motion_outcome_payload(index)
                     for index, label in enumerate(("capture", "crash", "timeout"))
                 },
+                "oob_exit_forensics": oob_exit_payload(),
                 "first_acquisition": {
                     label: first_acquisition_payload(index)
                     for index, label in enumerate(("capture", "crash", "timeout"))
