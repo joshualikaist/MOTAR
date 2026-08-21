@@ -9544,3 +9544,95 @@ byte-exact 평가가 막힌다. 문서 경로 정리 같은 무해해 보이는 
 사용자 결정 2건이 필요하다 — (a) `navrl_ref5in_quad_config.py`를 `ebb71802…`로 되돌릴지,
 (b) 지금까지의 코드를 커밋할지(런처의 dirty-runtime 게이트가 커밋을 요구한다). 둘 다 없이는
 `run`을 시작할 수 없다.
+
+## 2026-08-21 — N1 결과: frozen ref5in의 chirality는 실제 프레임에서 압도적이고 맥락 무관하다
+
+seed 373, 70 bars, 1,024 에피소드, frozen ref5in D1 ep1900(SHA `197ea269…`), governor off,
+deterministic, rollout reflection_mode=`original`. 유효 프레임 **15,488**(사전등록 최소 4,096).
+`results/navrl_ref5in_reflection_audit_seed373/`. `run`/`finalize`/`verify` 3단계 모두 PASS.
+
+### 품질 게이트 — 정책 판정보다 먼저 전부 통과
+
+| 게이트 | 임계 | 실측 |
+|---|---|---|
+| Q1 involution `max abs(M(M(x))−x)` | `== 0.0` | **0.0** |
+| Q2 isometry | `≤ 1e-3` | 1.907e-06 |
+| Q3 schema (checkpoint metadata) | `== 898` | 72×4, obstacles 8, corridor 0 |
+| Q4 index-set byte-level | 완전 일치 | 부호반전 110 / 순열 280 / 불변 508 |
+| Q5 scan 순열 고정점 | `{0, 36}` | `{0, 36}` |
+| Q6 import origin | 강제 | worktree, sha `1ec09850…` |
+| Q7 checkpoint SHA / manifest | 일치 | 일치 |
+| Q8 결정론 2회 forward | bitwise | 원본·거울 모두 `torch.equal` |
+| Q9 표본 | `≥ 4,096` | **15,488** |
+
+### 판정: `CHIRALITY_CONFIRMED_REAL_FRAME`
+
+사전등록 임계는 `median(conj_err_lat) ≥ 0.30` **및** sign agreement `≤ 0.60`이었다.
+
+| context | n | median | p95 | p99 | agreement | signed bias | 판정 |
+|---|---|---|---|---|---|---|---|
+| **overall** | 15,488 | **1.454** | 1.703 | 1.764 | **0.0249** | −0.693 | CONFIRMED |
+| target_visible | 2,695 | 1.288 | 1.693 | 1.780 | 0.0427 | −0.631 | CONFIRMED |
+| target_hidden | 12,793 | 1.476 | 1.705 | 1.762 | 0.0212 | −0.706 | CONFIRMED |
+| front_blocked | 5,906 | 1.519 | 1.740 | 1.787 | 0.0243 | −0.722 | CONFIRMED |
+| front_clear | 9,582 | 1.419 | 1.650 | 1.714 | 0.0253 | −0.676 | CONFIRMED |
+| outcome_capture | 8,968 | 1.424 | 1.702 | 1.769 | 0.0292 | −0.679 | CONFIRMED |
+| outcome_crash_bar_contact | 1,373 | 1.422 | 1.705 | 1.772 | 0.0469 | −0.669 | CONFIRMED |
+| outcome_timeout | 3,492 | 1.504 | 1.707 | 1.754 | **0.0066** | −0.736 | CONFIRMED |
+| outcome_crash_oob | 125 | 1.129 | 1.675 | 1.736 | 0.0756 | −0.531 | 표본부족(<256) |
+| front_unknown / crash_other | 0 | — | — | — | — | — | 표본 0 |
+
+**맥락 의존성은 없다.** 표본이 충분한 7개 셀 전부가 CONFIRMED이고 median 범위는 1.42–1.52,
+agreement는 0.66–4.7%다. 즉 chirality는 "표적이 안 보일 때"나 "앞이 막혔을 때"의 국소 현상이
+아니라 정책의 전역 성질이다. 가장 심한 셀이 timeout(agreement 0.66%)인 것은 방향 편향이
+탐색 실패와 함께 나타난다는 뜻이지만, 이 자료로 인과는 말할 수 없다.
+
+**가장 결정적인 수치는 부호다.** `mean π(o)[1] = −0.623`, `mean π(Mo)[1] = −0.763`. equivariance라면
+둘은 부호가 반대여야 하는데 **둘 다 음수다.** 정책은 세계가 좌우로 뒤집혀도 같은 몸통 방향으로
+돈다. p99가 1.76이고 행동 범위가 `[-1,1]`(폭 2.0)이므로, 꼬리에서는 반사쌍이 사실상 정반대 극단에
+있다.
+
+yaw도 함께 chiral하다(median 1.029). x는 0.600, z는 0.222로 축별 크기 순서는 lateral > yaw > x > z다.
+
+### S1 — chirality는 정규화기가 아니라 네트워크에 있다 (exploratory, 비게이트)
+
+반사 짝 인덱스에 대해 running_mean_std를 대칭화하고(`v'_j=(v_j+v_{p(j)})/2`,
+`m'_j=(m_j+s_j m_{p(j)})/2`; 부호반전 필드는 `p(j)=j, s=−1`이라 평균이 0으로 붕괴) 동일 계산을 반복했다.
+
+| context | raw median | symmetrised median | 축소 |
+|---|---|---|---|
+| overall | 1.454 | 1.283 | **11.7%** |
+| target_visible | 1.288 | 0.988 | 23.3% |
+| front_clear | 1.419 | 1.231 | 13.3% |
+| outcome_timeout | 1.504 | 1.385 | 7.9% |
+
+sign agreement는 0.0249 → 0.0947로만 올랐다. **정규화기 통계의 비대칭은 관측된 chirality의
+10–20%만 설명한다.** 나머지는 네트워크 가중치에 있다. 따라서 관측 재정규화로는 고칠 수 없고,
+학습 신호(reflection augmentation 또는 equivariance consistency)가 올바른 레버다.
+
+### 이 결과가 주는 권한과 주지 않는 권한
+
+사전등록 §8에 따라 `CHIRALITY_CONFIRMED_REAL_FRAME`은 **reflection augmentation/consistency의
+사전등록을 작성할 자격**만 준다. 구현·실행 권한은 아직 없으며 별도 사전등록이 필요하다.
+
+주장하지 않는 것: 이 실험은 outcome을 측정하지 않았다(사전등록 L3). 2026-08-02에 legacy 계보의
+대칭 아레나에서 mirror outcome 차이는 capture −0.81 pp(95% CI −2.78..+1.17)로 **검출되지 않았다.**
+따라서 "chirality가 성능을 해친다"는 아직 근거가 없다. 단일 checkpoint·단일 seed·70막대 1셀이며
+계보 전반으로 일반화하지 않는다(L4). 장애물 토큰 순서는 반사 시 재배열되지 않는다(L1) —
+mode-probe가 그 영향을 0.0078로 측정해 무시 가능함을 보였고 본 실험은 재측정하지 않았다.
+
+2026-08-02 legacy ep24000의 sign mismatch 73.08%(=agreement 26.92%)와 비교하면 ref5in의
+agreement 2.49%는 한 자릿수 더 심하다. 다만 계보·아레나·조건이 모두 다르므로 엄밀한 비교가 아니다.
+
+### 부수 확인: import-origin 가드가 자기 값어치를 증명했다
+
+run 로그에 `[origin] aerial_gym <worktree>/aerial_gym/__init__.py sha256=1ec09850… (enforced)`가
+찍혔고, 그 sha가 source manifest의 `aerial_gym/__init__.py` 항목과 일치함을 verify가 확인했다.
+가드가 없었다면 이 run은 **PRIMARY의 dirty 소스**(physical-target WIP 22파일 포함)를 실행하면서
+worktree 바이트를 영수증에 적었을 것이다.
+
+### 다음
+
+reflection intervention의 사전등록 작성이 다음이며, 그 전에 사용자·Codex와 순서를 조율한다.
+N2(prospective geofence replication)와 N3(205막대 원인 분리)는 이 결과에 영향받지 않는다.
+P2 STRICT FAIL / D1 FAIL / P3 BLOCKED는 변경 없다.
