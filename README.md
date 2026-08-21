@@ -231,7 +231,8 @@ run 폴더 이관과 TensorBoard 병합 절차는 [OPERATIONS.md](OPERATIONS.md)
 10. **outcome telemetry 완료:** seed 353에서 away capture−timeout visibility는 `+14.43pp`로 20pp screen에 미달했습니다. wall-reflection 표는 생존 선택편향 때문에 인과 판정에 쓰지 않습니다.
 11. **최초취득 계측 완료:** seed 359에서 outcome별 never-acquired rate는 away timeout `87.52%`, away capture `0.00%`, toward capture `0.00%`였습니다. 사전 30pp screen을 `+87.52pp`로 통과했고, 두 capture cohort가 모두 정확히 0%라는 점이 임계보다 강한 신호입니다 — 이 조건에서 최초 취득이 capture의 필요조건처럼 동작합니다. 독립 재계산에서 fused와 camera 최초취득이 6개 cohort 전부 일치해, 사실상 camera range 발견입니다. 다만 outcome은 궤적의 결과이므로 연관이지 인과가 아닙니다.
 12. **camera-range 진단 완료:** seed 367에서 target camera range `20→28 m` 한 값만 바꾸자 timeout이 `55.80→18.16%`로 줄었습니다. 초기 미관측의 인과 기여는 지지하지만, 사용자가 원하는 과제는 장거리 미관측 상태에서의 active search이므로 28 m camera는 positive control이지 자동 채택안이 아닙니다. 다음은 OOB exit를 acquired/never-acquired로 나눈 동결-policy 계측이며 P3는 계속 차단합니다.
-13. perception 연구는 corrected-v2 analytic baseline → learned detector arm → appearance-randomized arm 순으로 한 축씩 추가합니다.
+13. **OOB exit 진단 완료:** 20 m arm의 OOB 158건 중 152건(96.20%)은 표적을 한 번도 취득하지 못했고, outward 속도는 +1.002 m/s, target closing은 -0.834 m/s였습니다. actor에는 arena boundary/geofence/world XY가 없고 5-step(약 0.5 s) history만 있으므로, horizon·속도보다 boundary-observable active-search 계약이 다음 단일 변경축입니다. `results/navrl_ref5in_oob_exit_forensics_seed367/analysis.md`.
+14. perception 연구는 corrected-v2 analytic baseline → learned detector arm → appearance-randomized arm 순으로 한 축씩 추가합니다.
 
 현재 가장 큰 미해결 문제는 “더 오래 학습하면 되는가”가 아니라 **고밀도에서 pre-contact obstacle 정보, 제동 여유, detector 출력 분포, 기체 동역학 중 어느 축이 먼저 한계가 되는가**입니다.
 

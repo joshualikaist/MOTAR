@@ -9399,3 +9399,33 @@ checkpoint `ebb71802…` vs 잘못 로드한 primary `cc8d90b…`를 검출해 �
 부분 artifact는 `results/navrl_ref5in_oob_exit_forensics_seed367_VOID_primary_editable_import/`에
 보존했다. wrapper가 자기 worktree를 `sys.path`/child `PYTHONPATH` 첫 항목으로 강제하고 import된
 `aerial_gym.__file__`이 worktree 밖이면 실행을 거부하도록 보완한 뒤 새 출력에서 재시도한다.
+
+### 실행 완료: blind search가 OOB의 주 채널이며 actor는 경계를 관측하지 못한다
+
+import pin 보완 뒤 같은 사전등록을 새 출력에서 재실행했고 verifier가 PASS했다.
+
+| arm | episodes | capture | crash | timeout | OOB | OOB never-acquired |
+|---|---:|---:|---:|---:|---:|---:|
+| camera 20 m | 2,050 | 36.39% | 7.80% | 55.80% | 158 | **152 / 158 (96.20%)** |
+| camera 28 m | 2,049 | 74.96% | 6.88% | 18.16% | 138 | **120 / 138 (86.96%)** |
+
+20 m never-acquired exit는 평균 speed 1.359 m/s, arena 중심 기준 outward radial
+**+1.002 m/s**, 실제 target closing **-0.834 m/s**, exit-step median 84였다. 따라서 표적을 못 본
+채 정지하거나 수동 표류한 것이 아니라, 약 8.4초 안에 목표에서 멀어지며 능동적으로 경계를 넘는다.
+28 m acquired OOB 18건은 target closing +0.371 m/s와 outward +0.619 m/s가 함께 양수라, 소수의
+“취득 후 arena 밖 표적을 추격” 채널도 별도로 존재한다. arm 간 평균 운동학 차이는 cohort selection이
+달라 causal delta로 읽지 않는다.
+
+관측 계약도 재감사했다. 898-D actor에는 world XY, arena 크기, 네 벽까지 거리, geofence,
+episode progress가 없다. `_arena_xy_norm`은 asymmetric critic의 privileged GT target distance에만
+쓰인다. 네트워크는 RNN이 아니며 5-step history는 0.1 s 기준 약 0.5 s다. arena boundary는 물리
+wall/LiDAR return도 아니므로 blind actor가 경계를 직접 관측할 경로가 없다.
+
+결론: episode 600을 늘리는 것은 median 84-step OOB를 막지 못하고, speed/tilt 상향은 이미 outward
+1.0 m/s인 채널과 정지거리·선회반경을 악화시킬 수 있다. 28 m camera는 계속 positive control이다.
+사용자가 원하는 sensor-outside active search의 다음 단일 변경축은 **boundary observability**다.
+실기 VIO/GPS/known-map geofence 계약을 명시한 body-frame boundary range 4개를 actor에 주는 fresh
+policy A/B를 먼저 사전등록한다. global localization을 허용하지 않으면 recurrent coverage belief가
+대안이지만 architecture+memory 동시변경이라 2순위다. 상세 수치·gate는
+`results/navrl_ref5in_oob_exit_forensics_seed367/analysis.md`에 고정했다. P2 STRICT FAIL, D1 FAIL,
+P3 BLOCKED는 바뀌지 않는다.
