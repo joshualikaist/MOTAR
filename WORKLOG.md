@@ -9499,3 +9499,24 @@ probe를 교란한 것이므로 `INCONCLUSIVE_POLICY_CHIRALITY`로 닫고 mode a
 checkpoint snapshot, probe JSON을 다시 검증한 뒤 hash-bound summary receipt를 만든다. GPU 평가는
 아직 실행하지 않았다. CPU fixture/gate/fail-closed/overwrite 테스트 **4/4 PASS**, Python compile과
 `git diff --check` PASS. 이후 실행 순서는 `preflight -> run -> finalize -> verify`다.
+
+## 2026-08-21 — Mode probe 중앙 fixture 교란 제거 (GPU 실행 전 정정)
+
+초기 `3fac1a3` 설계의 중앙 입력은 left/right 관측의 feature-wise 산술평균이었다. 정적 scan은
+대칭이지만 obstacle slot별 `y`가 각각 0으로 상쇄되어, 실제 ±12° 통로가 아니라 정면에 중복된
+장애물 두 개처럼 보이는 비물리 입력이 됐다. 이 상태의 stall은 mode averaging이 아니라 정면 차단
+반응일 수 있으므로 **초기 중앙 fixture와 그 판정 계약을 GPU 실행 전에 폐기**했다. 측정 결과는 없어
+무효화할 artifact도 없다.
+
+수정 probe는 산술평균을 전혀 쓰지 않는다. 정중앙 ±12°, 왼쪽 이동 +5°, 오른쪽 이동 -5°의 실제
+두-surface scan/token을 만들고, 각 geometry마다 두 obstacle token slot 순서(LR/RL)를 모두 넣어 총
+6 arm을 side-forward한다. 중앙 두 arm의 첫 두 token `y`는 각각 nonzero/opposite이며 합만 0이다.
+static scan은 3-beam 폭의 정확한 반사대칭이고, `symmetric LR↔RL`, `left LR↔right RL`,
+`left RL↔right LR` 입력 반사 오차는 CPU fixture에서 모두 0이다.
+
+새 품질 gate `slot_permutation_max_abs_action<=0.15`를 결과 전에 추가했다. 같은 물리 geometry의 token
+순서만 바꿨을 때 action 최대차가 이를 넘으면 `INCONCLUSIVE_SLOT_ORDER_SENSITIVITY`, 그다음 반사
+action 오차가 0.15를 넘으면 `INCONCLUSIVE_POLICY_CHIRALITY`로 닫는다. 두 품질 gate가 통과한 뒤에만
+두 중앙 order가 모두 stall이고 네 perturb/order가 모두 움직임을 회복하는지 본다. 양성이라도 명칭과
+해석은 `MODE_AVERAGING_SUPPORTED_IN_SYNTHETIC_POLICY_SCREEN`이며 실제 고밀도 인과로 승격하지 않는다.
+physical-centre 회귀와 slot fail-closed 테스트를 포함한 CPU 테스트 **5/5 PASS**. GPU 미실행 상태 유지.
