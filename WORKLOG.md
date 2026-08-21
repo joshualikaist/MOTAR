@@ -9392,3 +9392,10 @@ one-lever 후보 결과·Phase-1 부록은 다른 문서에 사본이 없다. ri
   1 bar/away CV/2,049 episodes/20·28 m arms를 그대로 재사용하며 실험 knob를 재정의하지 않는다.
   출력은 새 경로 `results/navrl_ref5in_oob_exit_forensics_seed367/`이고 decision authority는 없다.
 - 결과를 보기 전 preflight PASS. 다음은 clean commit 후 두 셀 실행이다.
+
+첫 `camera_20m` 시도는 episode 실행 전에 VOID 처리됐다. host의 editable install이 primary dirty
+workspace를 가리켜 worktree evaluator가 그쪽 `aerial_gym`을 import했고, task의 robot-source guard가
+checkpoint `ebb71802…` vs 잘못 로드한 primary `cc8d90b…`를 검출해 중단했다. 결과 JSON은 없으며
+부분 artifact는 `results/navrl_ref5in_oob_exit_forensics_seed367_VOID_primary_editable_import/`에
+보존했다. wrapper가 자기 worktree를 `sys.path`/child `PYTHONPATH` 첫 항목으로 강제하고 import된
+`aerial_gym.__file__`이 worktree 밖이면 실행을 거부하도록 보완한 뒤 새 출력에서 재시도한다.

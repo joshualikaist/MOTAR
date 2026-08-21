@@ -463,6 +463,8 @@ class OOBExitForensicsContract(unittest.TestCase):
             'BASE.SUMMARY_SCOPE = "frozen_seed367_oob_exit_forensics_20m_28m"',
             "CHECKPOINT_ROBOT_CONFIG_SHA256 = (",
             "refusing robot config bytes that differ from the frozen checkpoint",
+            'env["PYTHONPATH"] = str(ROOT)',
+            "refusing aerial_gym imported outside clean worktree",
             "return BASE.main()",
         ):
             self.assertIn(literal, source)

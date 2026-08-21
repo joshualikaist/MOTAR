@@ -11,11 +11,15 @@ Usage: tools/run_navrl_ref5in_oob_exit_forensics.py {preflight|run|finalize|veri
 from __future__ import annotations
 
 import importlib.util
+import os
 from pathlib import Path
 import sys
 
 
 ROOT = Path(__file__).resolve().parents[1]
+# The host environment has an editable aerial_gym installation pointing at the primary (dirty)
+# workspace. Put this clean evidence worktree first for this process and every evaluator child.
+sys.path.insert(0, str(ROOT))
 
 
 def load_base():
@@ -55,12 +59,30 @@ BASE.PRODUCER = "tools/run_navrl_ref5in_oob_exit_forensics.py"
 BASE.SUMMARY_SCOPE = "frozen_seed367_oob_exit_forensics_20m_28m"
 BASE.INCLUDE_OOB_FORENSICS = True
 
+_base_canonical_env = BASE.canonical_env
+
+
+def canonical_env_from_clean_worktree(*args, **kwargs):
+    env = _base_canonical_env(*args, **kwargs)
+    inherited = env.get("PYTHONPATH", "")
+    env["PYTHONPATH"] = str(ROOT) + (os.pathsep + inherited if inherited else "")
+    return env
+
+
+BASE.canonical_env = canonical_env_from_clean_worktree
+
 
 def main() -> int:
     if len(sys.argv) != 2 or sys.argv[1] not in {"preflight", "run", "finalize", "verify"}:
         raise SystemExit("usage: ... {preflight|run|finalize|verify}")
     if BASE.P2.sha256_file(ROBOT_CONFIG) != CHECKPOINT_ROBOT_CONFIG_SHA256:
         raise SystemExit("refusing robot config bytes that differ from the frozen checkpoint")
+    package_spec = importlib.util.find_spec("aerial_gym")
+    if package_spec is None or package_spec.origin is None:
+        raise SystemExit("refusing missing aerial_gym import spec")
+    loaded_package = Path(package_spec.origin).resolve()
+    if ROOT not in loaded_package.parents:
+        raise SystemExit(f"refusing aerial_gym imported outside clean worktree: {loaded_package}")
     return BASE.main()
 
 
