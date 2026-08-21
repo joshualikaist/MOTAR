@@ -9477,3 +9477,25 @@ launcher가 `PYTHONPATH` 첫 항목을 현재 git root로 고정하고, receipt 
 `importlib.util.find_spec("aerial_gym").origin`이 해당 worktree의 `aerial_gym/__init__.py`와 정확히
 같은지 검사하도록 수정했다. OOB evaluator에서 잡았던 동일 계열 문제를 training launcher에도
 fail-fast로 일반화한 것이다.
+
+## 2026-08-21 — 동결 ref5in 단일행동 mode-averaging probe 사전등록 구현
+
+고밀도 정지가 하나의 연속 action head가 좌·우 경로를 평균내는 현상인지 분리하기 위해, 학습과
+실행 명령을 바꾸지 않는 side-forward 진단을 별도 branch `codex/mode-probe`에 구현했다. 실제 player
+action은 원래 관측에서 한 번 계산해 그대로 실행하고, 추가로 고정된 898-D 합성 관측 세 개만 동결
+정책에 통과시킨다: 정중앙 corridor, 왼쪽 +5°, 오른쪽 -5°. 좌우 arm은 기존 structured-observation
+mirror 계약의 정확한 거울쌍이고, 중앙은 두 입력의 산술 중점이라 입력 반사 오차가 `1e-7`보다 크면
+정책 추론 전에 실패한다.
+
+결과에는 bounded deterministic action, latent mean/sigma(모델이 제공할 때), XY command m/s,
+near-zero 비율, 좌우 conjugacy 오차를 기록한다. 사전 고정 gate는 policy reflection action error
+`<=0.15`, 중앙 horizontal speed `<=0.25 m/s`, perturb arm 평균 `>=0.75 m/s`, 중앙 `|y|<=0.10`,
+perturb 평균 `|y|>=0.25`, 좌우 lateral sign 반대다. reflection gate가 먼저 실패하면 기존 chirality가
+probe를 교란한 것이므로 `INCONCLUSIVE_POLICY_CHIRALITY`로 닫고 mode averaging을 긍정/기각하지
+않는다. 전부 통과해도 진단 fixture에 한정된 지지이며 capture/crash 인과나 정책 교체 권한은 없다.
+
+`tools/run_navrl_ref5in_mode_probe.py`는 D1 ref5in checkpoint SHA-256
+`197ea26999d6…`와 deterministic/governor-off/seed431 계약을 고정하고, generic evaluator receipt,
+checkpoint snapshot, probe JSON을 다시 검증한 뒤 hash-bound summary receipt를 만든다. GPU 평가는
+아직 실행하지 않았다. CPU fixture/gate/fail-closed/overwrite 테스트 **4/4 PASS**, Python compile과
+`git diff --check` PASS. 이후 실행 순서는 `preflight -> run -> finalize -> verify`다.
