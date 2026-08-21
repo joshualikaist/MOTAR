@@ -9477,3 +9477,29 @@ launcher가 `PYTHONPATH` 첫 항목을 현재 git root로 고정하고, receipt 
 `importlib.util.find_spec("aerial_gym").origin`이 해당 worktree의 `aerial_gym/__init__.py`와 정확히
 같은지 검사하도록 수정했다. OOB evaluator에서 잡았던 동일 계열 문제를 training launcher에도
 fail-fast로 일반화한 것이다.
+
+## 2026-08-21 — 정책 무접촉 GT topology difficulty 라벨러 구현
+
+기존 막대 수/전역 연결성만으로 설명하지 못하던 에피소드별 공간 난이도를 정책·환경 변경 없이
+측정하기 위해 `tools/analyze_navrl_topology_labels.py`를 추가했다. JSON layout snapshot의 실제
+막대 중심·XY footprint를 받아 다음을 같은 0.10 m grid와 axis-aligned inflation 관례로 계산한다.
+
+- start→final goal 정적 path existence와 shortest-path detour ratio
+- 선택된 최단 경로의 최소 raw/vehicle-usable side clearance
+- start의 12 m sensor disc 안 obstacle 수와 surface-gap cluster 수
+- sensor-disc reachable exit arc 기반 local cul-de-sac/dead-end proxy
+- grid resolution, vehicle half-width, side-clearance, inflation, sensor range, cluster gap,
+  endpoint snap radius 및 arena bounds를 각 row에 명시
+
+과거 `NAVRL_EPISODE_DUMP`에는 `bars_xy/spawn/target_end/outcome`은 있지만 실제 `bars_size_xy`가
+없음을 확인했다. 따라서 legacy NPZ는 `--default-bar-size-m`을 의무화하고 모든 결과를
+`bar_size_source=assumed_default`로 표시한다. 0.4–0.8 m 실제 pool을 단일 크기로 가정한 값은 탐색적
+연관 분석에만 쓰며 publication exact 수치로 쓰지 않는다. 향후 exact JSON export 계약과 적용법은
+`docs/topology_layout_snapshot_contract.md`에 고정했다. aggregate summary만 남은 과거 평가는
+레이아웃을 복원할 수 없어 소급 라벨링 불가다.
+
+CPU synthetic 6개가 모두 PASS했다: open/direct, full-wall disconnected, two-exit corridor,
+one-exit U-shaped dead-end, sensor-range cluster grouping, metadata contract. arena boundary가 sensor disc를
+자른 open spawn을 dead-end로 오인하지 않도록 exit coverage를 arena-available angle로 정규화한다.
+이 라벨은 정적 2-D GT 진단이며 동역학·표적 이동·episode horizon 또는 planner의 경로 거부를 뜻하지
+않는다. GPU 실행 및 학습/평가 run은 수행하지 않았다.
