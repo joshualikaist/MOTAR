@@ -9570,6 +9570,9 @@ steps, mixed CV/waypoint, target command 1.5 m/s. 기준은 결과 전에 고정
 ## 2026-08-21 — OOB exit forensics 추가, 그리고 두 `0.45 m` 계보 분리
 
 ### 정정: seed 367 pursuer와 300-bar physical target을 같은 planner로 설명하면 안 된다
+## 2026-08-21 — OOB exit forensics 추가, 그리고 두 `0.45 m` 계보 분리
+
+### 정정: seed 367 pursuer와 300-bar physical-target WIP를 같은 planner로 설명하면 안 된다
 
 앞선 설명과 첫 정정은 서로 다른 코드의 `0.45 m`를 하나로 취급했다. 실제 계약은 다음 두 개다.
 
@@ -9589,6 +9592,15 @@ steps, mixed CV/waypoint, target command 1.5 m/s. 기준은 결과 전에 고정
 일반식도, planner가 반드시 돌아선다는 증거도 아니다. 300-bar 기하 probe의 최협 표면간격
 0.55–0.68 m와 대각 배치 이론 최저 0.469 m는 physical-target 환경 난이도를 설명하지만 seed 367의
 실패 원인에는 사용할 수 없다.
+2. **별도 physical-target WIP / 300-bar gate:** `bounded_drone_target_step()`이 1초 동안 여러
+   방향·속도 후보를 rollout하는 receding-horizon local planner이며, 별도 tracking margin 0.45 m를
+   사용한다. 이 코드는 본 OOB 전용 branch에는 포함하지 않는다. riskcap의 동명 숫자와 무관하고,
+   전역 경로를 찾거나 통로 연결성을 판정하는 planner도 아니다.
+
+따라서 `0.28 + 0.45×2 = 1.18 m`는 physical-target WIP의 level OBB가 축정렬 평행 통로에서 양쪽
+tracking reserve까지 지키려 할 때의 **운용 폭** 계산으로만 유효하다. pursuer의 물리 통과 한계도,
+임의 yaw/대각 통로의 일반식도, seed 367 실패의 증거도 아니다. 300-bar 기하 probe의 최협
+표면간격 0.55–0.68 m와 대각 배치 이론 최저 0.469 m 역시 seed 367 원인에는 사용할 수 없다.
 
 seed 367은 **막대 1개**이고 crash의 약 98%가 OOB다: `camera_20m` crash 160 = bar_contact 2 /
 OOB 158, `camera_28m` 141 = 3 / 138. 이 체제는 아래 OOB 계측으로 따로 진단한다.
@@ -10783,3 +10795,166 @@ P2 STRICT FAIL / D1 FAIL / P3 BLOCKED 변경 없음.
 
 이 재검은 (B)를 느슨하게 하는 근거가 **아니다**. 줄일 것은 의식이지 가드가 아니다.
 어떤 기존 판정도 변경하지 않는다.
+### clean 분리와 재평가 사전등록
+
+- physical-target WIP와 섞이지 않도록 `codex/oob-forensics-seed367` worktree를 HEAD `9f6929d`에서
+  분리했다. 이 branch에는 OOB 교차계측·문서 정정·전용 evaluator만 둔다.
+- checkpoint 이후 ref5in config의 문서 링크 한 줄이 `docs/`→`docs/archive/`로 바뀌어 파일 SHA가
+  달라진 것을 preflight가 차단했다. 이 evidence branch에서만 checkpoint가 기록한 exact config SHA
+  `ebb71802…`의 바이트를 복원하고 wrapper가 그 SHA를 다시 강제한다. 동역학 값 변경은 없다.
+- `tools/run_navrl_ref5in_oob_exit_forensics.py`는 기존 seed 367 base orchestrator의 checkpoint/seed/
+  1 bar/away CV/2,049 episodes/20·28 m arms를 그대로 재사용하며 실험 knob를 재정의하지 않는다.
+  출력은 새 경로 `results/navrl_ref5in_oob_exit_forensics_seed367/`이고 decision authority는 없다.
+- 결과를 보기 전 preflight PASS. 다음은 clean commit 후 두 셀 실행이다.
+
+첫 `camera_20m` 시도는 episode 실행 전에 VOID 처리됐다. host의 editable install이 primary dirty
+workspace를 가리켜 worktree evaluator가 그쪽 `aerial_gym`을 import했고, task의 robot-source guard가
+checkpoint `ebb71802…` vs 잘못 로드한 primary `cc8d90b…`를 검출해 중단했다. 결과 JSON은 없으며
+부분 artifact는 `results/navrl_ref5in_oob_exit_forensics_seed367_VOID_primary_editable_import/`에
+보존했다. wrapper가 자기 worktree를 `sys.path`/child `PYTHONPATH` 첫 항목으로 강제하고 import된
+`aerial_gym.__file__`이 worktree 밖이면 실행을 거부하도록 보완한 뒤 새 출력에서 재시도한다.
+
+### 실행 완료: blind search가 OOB의 주 채널이며 actor는 경계를 관측하지 못한다
+
+import pin 보완 뒤 같은 사전등록을 새 출력에서 재실행했고 verifier가 PASS했다.
+
+| arm | episodes | capture | crash | timeout | OOB | OOB never-acquired |
+|---|---:|---:|---:|---:|---:|---:|
+| camera 20 m | 2,050 | 36.39% | 7.80% | 55.80% | 158 | **152 / 158 (96.20%)** |
+| camera 28 m | 2,049 | 74.96% | 6.88% | 18.16% | 138 | **120 / 138 (86.96%)** |
+
+20 m never-acquired exit는 평균 speed 1.359 m/s, arena 중심 기준 outward radial
+**+1.002 m/s**, 실제 target closing **-0.834 m/s**, exit-step median 84였다. 따라서 표적을 못 본
+채 정지하거나 수동 표류한 것이 아니라, 약 8.4초 안에 목표에서 멀어지며 능동적으로 경계를 넘는다.
+28 m acquired OOB 18건은 target closing +0.371 m/s와 outward +0.619 m/s가 함께 양수라, 소수의
+“취득 후 arena 밖 표적을 추격” 채널도 별도로 존재한다. arm 간 평균 운동학 차이는 cohort selection이
+달라 causal delta로 읽지 않는다.
+
+관측 계약도 재감사했다. 898-D actor에는 world XY, arena 크기, 네 벽까지 거리, geofence,
+episode progress가 없다. `_arena_xy_norm`은 asymmetric critic의 privileged GT target distance에만
+쓰인다. 네트워크는 RNN이 아니며 5-step history는 0.1 s 기준 약 0.5 s다. arena boundary는 물리
+wall/LiDAR return도 아니므로 blind actor가 경계를 직접 관측할 경로가 없다.
+
+결론: episode 600을 늘리는 것은 median 84-step OOB를 막지 못하고, speed/tilt 상향은 이미 outward
+1.0 m/s인 채널과 정지거리·선회반경을 악화시킬 수 있다. 28 m camera는 계속 positive control이다.
+사용자가 원하는 sensor-outside active search의 다음 단일 변경축은 **boundary observability**다.
+실기 VIO/GPS/known-map geofence 계약을 명시한 body-frame boundary range 4개를 actor에 주는 fresh
+policy A/B를 먼저 사전등록한다. global localization을 허용하지 않으면 recurrent coverage belief가
+대안이지만 architecture+memory 동시변경이라 2순위다. 상세 수치·gate는
+`results/navrl_ref5in_oob_exit_forensics_seed367/analysis.md`에 고정했다. P2 STRICT FAIL, D1 FAIL,
+P3 BLOCKED는 바뀌지 않는다.
+
+## 2026-08-21 — Active-search geofence를 별도 branch에 opt-in 구현
+
+OOB 증거 branch `e6fe790`을 고정한 뒤 `codex/boundary-observable-search`를 분기했다. 기존
+898-D 정책과 physical-target WIP를 건드리지 않기 위해 기본값은 off다.
+
+### 구현 계약
+
+- `NAVRL_GEOFENCE_ACTOR=1`일 때만 actor 끝에 8-D를 append한다: body-frame
+  forward/left/back/right geofence ray range 4개(아레나 XY 대각선으로 정규화) + validity 4개.
+- Transformer에는 geofence projection token 1개를 마지막에 append한다. v2 search 실제 계약은
+  **898→906 D, 17→18 tokens**다. off는 898/17 그대로다.
+- feature는 target GT가 아니라 VIO/GPS pose + known-map flight boundary를 전제로 한다. 이 센서를
+  실기에 제공하지 않는다면 결과를 camera/LiDAR-only exploration으로 주장할 수 없다.
+- noise/dropout은 별도 provenance(`cfg_geofence_*`)로 checkpoint에 저장하고 resume mismatch를
+  preflight가 거부한다. 첫 A/B는 둘 다 0으로 고정한다.
+- schema 변경이므로 warm-start는 지원하지 않는다. fresh policy만 허용한다.
+
+`docs/preregistration_active_search_geofence_2026-08-21.md`에 결과 전 gate를 고정했다. 두 arm은
+seed197/P1c 900-epoch 계약에서 geofence off/on 한 값만 다르다. held-out seed367 primary는
+never-acquired OOB/all episodes이며 최소 3.0pp 개선(기존 약 7.4% 기준 약 40% 상대 감소)이 필요하다.
+이 3pp는 n≈2,049에서 단순 표본오차보다 충분히 크도록 정한 practical gate다. non-OOB crash +2pp
+guard와 token-mask inference ablation도 결과 전에 고정했다.
+
+### 검증
+
+- perception unit: off **30/30 PASS**, geofence-on **30/30 PASS**
+- checkpoint preflight: **15/15 PASS** (legacy off default와 on mismatch reject 포함)
+- ref5in run contract: worktree에 P1c run을 read-only symlink한 뒤 **26/26 PASS**
+- 실제 v2 env 상수로 network forward: off `898 D / 17 tokens`, on `906 D / 18 tokens` 모두 PASS
+- launcher `bash -n`, control/geofence child preflight 모두 PASS
+- Python compile와 `git diff --check` PASS
+
+학습은 아직 시작하지 않았다. 비교의 최소 단위가 두 fresh 900-epoch arm이므로 한쪽만 먼저 장시간
+돌려 결과를 해석하지 않는다. 실행기는
+`aerial_gym/rl_training/rl_games/train_navrl_ref5in_active_search_geofence_ab.sh`다.
+
+### 첫 launch VOID: editable install import를 source guard가 차단
+
+첫 control launch는 task 생성 중, PPO epoch 0 이전에 중단됐다. local `runner.py`를 실행했지만 host
+editable install이 primary dirty workspace의 `aerial_gym`을 import했고, clean branch에서 만든 source
+receipt와 실제 `navrl_ref5in_quad_config.py`가 다르다고 runtime guard가 거부했다. checkpoint와 유효
+run 결과는 생성되지 않았고 geofence arm도 `&&` 때문에 시작되지 않았다.
+
+launcher가 `PYTHONPATH` 첫 항목을 현재 git root로 고정하고, receipt 생성 전에
+`importlib.util.find_spec("aerial_gym").origin`이 해당 worktree의 `aerial_gym/__init__.py`와 정확히
+같은지 검사하도록 수정했다. OOB evaluator에서 잡았던 동일 계열 문제를 training launcher에도
+fail-fast로 일반화한 것이다.
+
+## 2026-08-21 — Active-search held-out evaluator 사전 구현 (학습 결과 열람 전)
+
+두 training arm이 진행되는 동안 별도 `codex/active-search-geofence-eval` worktree에서 평가기를
+작성했다. training worktree의 runtime bytes는 건드리지 않았다.
+
+- `tools/run_navrl_ref5in_active_search_geofence_eval.py`가 완료 marker와 유일한 raw ep900
+  checkpoint를 요구한다. latest/best checkpoint를 임의 선택하지 않는다.
+- held-out 계약은 seed367, 1 bar, camera20m, goal 22.5..28m, away CV, 600 step,
+  deterministic, arm당 최소 2,049 episodes다.
+- 3 cells: fresh control / fresh geofence / 같은 geofence checkpoint의 token-force-invalid.
+- primary는 never-acquired OOB/all episodes `control - geofence >= 3pp`, guard는 non-OOB crash
+  `geofence - control <= 2pp`다.
+- mechanism gate의 “material return”을 결과 전에 수치화했다: force-invalid가 normal geofence
+  primary gain의 **50% 이상을 잃어야** token 사용을 지지한다.
+- evaluator result/receipt에 geofence on/noise/dropout/force-invalid를 명시했다. force-invalid는
+  906-D schema를 보존하며 range `[1,1,1,1]`, validity `[0,0,0,0]`만 주입한다.
+- P2/D1/P3 판정 권한은 없다.
+
+검증: force-invalid perception **31/31 PASS**, checkpoint preflight **15/15 PASS**, Python compile,
+shell syntax, `git diff --check` PASS. 현재 `status`는 control 진행 중/geofence 미시작을 정확히
+PENDING으로 표시하며, 두 `.aerial_training_finished`가 생기기 전 preflight/run은 fail-closed다.
+
+### 완료 후 첫 held-out preflight 차단과 계약 수정
+
+두 arm의 epoch-900 완료 뒤 첫 preflight는 평가를 시작하기 전에 차단됐다. held-out은 의도적으로
+학습 계약의 `goal_dist_min=6.0`을 `22.5`로, `target_pattern=mixed`를 `cv`로 바꾸는데, 평가기가
+후자 한 줄만 허용 mismatch로 등록해 전자도 source drift로 오인했다. 결과 episode는 0개였고
+checkpoint에는 영향이 없다. 관측된 두 mismatch 문자열을 순서까지 정확히 고정하고, 그 외 차이는
+계속 거부하도록 수정했다. 수정 후 세 arm preflight를 다시 통과해야만 실제 평가를 시작한다.
+
+### Held-out 3-arm 완료: 성능 이득은 크지만 사전등록 기전 gate는 미통과
+
+seed367, 1 bar, away-CV, camera 20m, goal 22.5..28m, 2,049 episodes/arm 평가를 완료했다.
+
+| arm | capture | crash | timeout | OOB | never-acq OOB/all | non-OOB crash |
+|---|---:|---:|---:|---:|---:|---:|
+| control | 39.04% | 22.21% | 38.75% | 21.96% | 21.28% | 0.24% |
+| geofence | 85.75% | 7.91% | 6.34% | 7.47% | 7.32% | 0.44% |
+| geofence masked | 39.78% | 5.22% | 55.00% | 4.93% | 4.88% | 0.29% |
+
+primary 개선은 **+13.96pp**로 3pp gate를 통과했고 non-OOB crash 증가는 **+0.20pp**로 2pp
+guard 안이다. 그러나 사전등록 mechanism 지표는 `never-acquired OOB/all`의 masked loss였고,
+masked 정책은 밖으로 나가는 대신 느리게 움직이며 timeout이 55.00%로 증가했다. 따라서 masked
+never-acquired OOB가 오히려 2.44pp 더 낮아져 50% loss gate를 통과하지 못했다. capture가
+85.75→39.78%로 붕괴한 것은 경계 token 사용의 강한 사후 증거지만, 결과 뒤에 지표를 바꾸지 않고
+공식 판정은 **PASS_MECHANISM_UNRESOLVED**로 유지한다.
+
+첫 finalize는 task result의 `condition`에 없는 evaluator-only intervention 필드까지 찾다가 종료 코드
+2로 fail-closed했다. raw 3-cell 결과와 receipt는 모두 완성·해시 고정돼 있었다. task/runtime 필드는
+result에서, evaluator intervention 필드는 receipt에서 각각 검증하고 두 artifact의 evaluation nonce도
+일치시키도록 verifier를 수정했다. 재실행 없이 `finalize`와 `verify`가 PASS했다. 결과는
+`results/navrl_ref5in_active_search_geofence_seed367/{summary.md,summary.json}`이다. P2 STRICT FAIL,
+D1 FAIL, P3 BLOCKED는 바뀌지 않는다.
+
+## 2026-08-21 — 병렬 진단 종합과 다음 gate 고정
+
+active-search, symmetric mode probe, 205-bar joint speed telemetry, legacy topology label의 결과를
+`docs/diagnostic_synthesis_2026-08-21.md`에 계보별로 분리해 정리했다. 결론은 (1) speed/riskcap을
+바로 튜닝하지 않음, (2) chirality 때문에 multi-candidate head를 바로 구현하지 않음, (3) mapped
+geofence만 추가 fresh-seed confirmatory 후보로 승격, (4) timeout과 실제 bar footprint가 포함된 dump
+전에는 topology curriculum을 만들지 않음이다.
+
+다음 순서는 real-frame reflection audit → prospective geofence replication → frozen 205-bar 위험 step의
+시간적 원인 분해 → future dump contract다. 현재 masked 결과에서 OOB가 timeout으로 치환된 사실을
+반영해, **향후** replication의 mechanism 지표는 결과 전에 acquisition-failure/all로 고정한다. 이는
+현재 `PASS_MECHANISM_UNRESOLVED` 판정을 소급 변경하지 않는다.

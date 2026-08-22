@@ -28,6 +28,9 @@ _CONTRACT_ENV = {
     "cfg_corridor_tokens": "NAVRL_CORRIDOR_TOKENS",
     "cfg_corridor_horizon_m": "NAVRL_CORRIDOR_HORIZON_M",
     "cfg_corridor_min_width_m": "NAVRL_CORRIDOR_MIN_WIDTH_M",
+    "cfg_geofence_actor": "NAVRL_GEOFENCE_ACTOR",
+    "cfg_geofence_noise_std_m": "NAVRL_GEOFENCE_NOISE_STD_M",
+    "cfg_geofence_dropout": "NAVRL_GEOFENCE_DROPOUT",
     # Arena / task version (v2 search arena). These do NOT change the observation width, so a
     # mismatch loads without error and silently measures a different task -- exactly why they
     # belong in the preflight contract rather than only in a runtime warning.
@@ -62,6 +65,9 @@ _LEGACY_CONTRACT_DEFAULTS = {
     # these exact launcher defaults. Future checkpoints save both fields explicitly.
     "cfg_corridor_horizon_m": 6.0,
     "cfg_corridor_min_width_m": 0.55,
+    "cfg_geofence_actor": 0,
+    "cfg_geofence_noise_std_m": 0.0,
+    "cfg_geofence_dropout": 0.0,
 }
 
 

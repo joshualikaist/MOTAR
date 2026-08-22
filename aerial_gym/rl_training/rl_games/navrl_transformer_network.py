@@ -1,8 +1,8 @@
 """NavRL++-Target structured temporal Transformer policy.
 
-Token layout (17): [CLS] + static geometry + 5 obstacle-history + 5 robot-history +
-5 target-track-history. Raw RGB-D, raw point clouds, simulator semantics, and GT target state are
-not part of the input.
+Base token layout (17): [CLS] + static geometry + 5 obstacle-history + 5 robot-history +
+5 target-track-history. Opt-in corridor and mapped-geofence observations each append one token.
+Raw RGB-D, raw point clouds, simulator semantics, and GT target state are not part of the input.
 """
 
 import torch
@@ -13,6 +13,8 @@ from rl_games.algos_torch.network_builder import NetworkBuilder
 from aerial_gym.task.navrl_task.navrl_corridor import CORRIDOR_DIM
 from aerial_gym.task.navrl_task.navrl_perception import (
     CORRIDOR_TOKENS,
+    GEOFENCE_ACTOR,
+    GEOFENCE_DIM,
     HBEAMS,
     MAX_OBSTACLES,
     OBSTACLE_DIM,
@@ -32,8 +34,9 @@ EMBED_DIM = 64
 # depend on MAX_OBSTACLES: raising the obstacle capacity widens each obstacle token's input
 # (MAX_OBSTACLES * OBSTACLE_DIM) rather than adding tokens. When corridor tokens are enabled
 # (NAVRL_CORRIDOR_TOKENS > 0), ONE additional token carries all corridor slots, appended LAST so
-# position-embedding rows 0..16 keep their trained meaning across a corridor warm-start.
-NUM_TOKENS = 17 + (1 if CORRIDOR_TOKENS > 0 else 0)
+# position-embedding rows 0..16 keep their trained meaning across a corridor warm-start. Geofence
+# is a new fresh-policy-only token and is appended after corridor when both are enabled.
+NUM_TOKENS = 17 + (1 if CORRIDOR_TOKENS > 0 else 0) + (1 if GEOFENCE_ACTOR else 0)
 
 
 def _static_encoder_flat_dim(vbeams, hbeams, channels=16):
@@ -99,6 +102,10 @@ class NavRLTransformerBuilder(NetworkBuilder):
                     nn.ELU(),
                     nn.Linear(128, EMBED_DIM),
                 )
+            if GEOFENCE_ACTOR:
+                self.geofence_project = nn.Sequential(
+                    nn.Linear(GEOFENCE_DIM, 64), nn.ELU(), nn.Linear(64, EMBED_DIM)
+                )
             self.cls_token = nn.Parameter(torch.zeros(1, 1, EMBED_DIM))
             self.position_embedding = nn.Parameter(torch.zeros(1, NUM_TOKENS, EMBED_DIM))
             nn.init.normal_(self.cls_token, std=0.02)
@@ -163,6 +170,16 @@ class NavRLTransformerBuilder(NetworkBuilder):
             if CORRIDOR_TOKENS > 0:
                 corridor = obs[:, offset : offset + CORRIDOR_TOKENS * CORRIDOR_DIM]
                 token_list.append(self.corridor_project(corridor).unsqueeze(1))
+                offset += CORRIDOR_TOKENS * CORRIDOR_DIM
+            if GEOFENCE_ACTOR:
+                geofence = obs[:, offset : offset + GEOFENCE_DIM]
+                token_list.append(self.geofence_project(geofence).unsqueeze(1))
+                offset += GEOFENCE_DIM
+            if offset != STRUCTURED_OBS_DIM:
+                raise RuntimeError(
+                    "Transformer observation parse drift: %d != %d"
+                    % (offset, STRUCTURED_OBS_DIM)
+                )
             tokens = torch.cat(token_list, dim=1)
             if tokens.shape[1] != NUM_TOKENS:
                 raise RuntimeError("Transformer token schema drift: %d" % tokens.shape[1])
@@ -180,4 +197,3 @@ class NavRLTransformerBuilder(NetworkBuilder):
             # [-5, 0.4] (sigma in [0.007, 1.49], around the healthy early level) removes the runaway.
             log_std = (mu * 0.0 + self.sigma).clamp(-5.0, 0.4)
             return mu, log_std, value, None
-

@@ -145,6 +145,32 @@ if not math.isfinite(CORRIDOR_MIN_WIDTH_M) or CORRIDOR_MIN_WIDTH_M < 0.0:
 CORRIDOR_OBS_DIM = CORRIDOR_TOKENS * CORRIDOR_DIM
 STATIC_DIM = VBEAMS * HBEAMS
 
+# Opt-in active-search geofence token. Ranges are four body-ray distances
+# (forward/left/back/right) to a known arena geofence, obtainable from VIO/GPS plus a mapped flight
+# boundary. Disabled is byte-identical to the historical schema. Enabled appends four normalized
+# ranges and four validity flags and therefore requires a fresh policy.
+GEOFENCE_ACTOR = os.environ.get("NAVRL_GEOFENCE_ACTOR", "0").strip().lower() in (
+    "1",
+    "true",
+    "yes",
+    "on",
+)
+GEOFENCE_RAYS = 4
+GEOFENCE_DIM = 2 * GEOFENCE_RAYS if GEOFENCE_ACTOR else 0
+GEOFENCE_NOISE_STD_M = float(
+    os.environ.get("NAVRL_GEOFENCE_NOISE_STD_M", "").strip() or 0.0
+)
+GEOFENCE_DROPOUT = float(os.environ.get("NAVRL_GEOFENCE_DROPOUT", "").strip() or 0.0)
+# Evaluation-only mechanism ablation. It preserves the 906-D schema while replacing all ranges by
+# the declared missing-value sentinel and clearing validity. Training launchers never set it.
+GEOFENCE_FORCE_INVALID = os.environ.get(
+    "NAVRL_GEOFENCE_FORCE_INVALID", "0"
+).strip().lower() in ("1", "true", "yes", "on")
+if not math.isfinite(GEOFENCE_NOISE_STD_M) or GEOFENCE_NOISE_STD_M < 0.0:
+    raise ValueError("NAVRL_GEOFENCE_NOISE_STD_M must be finite and non-negative")
+if not math.isfinite(GEOFENCE_DROPOUT) or not 0.0 <= GEOFENCE_DROPOUT <= 1.0:
+    raise ValueError("NAVRL_GEOFENCE_DROPOUT must be in [0,1]")
+
 
 def lidar_bin_bearings(device=None):
     """Physical body-frame bearing of each horizontal scan bin, in radians.
@@ -411,7 +437,58 @@ STRUCTURED_OBS_DIM = (
     + OBSTACLE_HISTORY * MAX_OBSTACLES * OBSTACLE_DIM
     + STATIC_DIM
     + CORRIDOR_OBS_DIM
+    + GEOFENCE_DIM
 )
+
+
+def body_geofence_features(
+    drone_pos_w,
+    vehicle_quat,
+    env_bounds_min,
+    env_bounds_max,
+    noise_std_m=0.0,
+    dropout=0.0,
+):
+    """Return [F,L,B,R] ray ranges plus validity, normalized by the XY diagonal."""
+    if env_bounds_min is None or env_bounds_max is None:
+        raise ValueError("geofence actor requires per-environment bounds")
+    if env_bounds_min.shape[0] != drone_pos_w.shape[0] or env_bounds_max.shape[0] != drone_pos_w.shape[0]:
+        raise ValueError("geofence bounds batch must match drone batch")
+    n = drone_pos_w.shape[0]
+    body_dirs = torch.tensor(
+        [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [-1.0, 0.0, 0.0], [0.0, -1.0, 0.0]],
+        dtype=drone_pos_w.dtype,
+        device=drone_pos_w.device,
+    )
+    dirs_w = _quat_rotate_xyzw(
+        vehicle_quat[:, None, :].expand(-1, GEOFENCE_RAYS, -1).reshape(-1, 4),
+        body_dirs[None, :, :].expand(n, -1, -1).reshape(-1, 3),
+    ).reshape(n, GEOFENCE_RAYS, 3)[:, :, :2]
+    pos = drone_pos_w[:, None, :2]
+    lo = env_bounds_min[:, None, :2]
+    hi = env_bounds_max[:, None, :2]
+    eps = 1e-7
+    t = torch.where(
+        dirs_w > eps,
+        (hi - pos) / dirs_w.clamp(min=eps),
+        torch.where(
+            dirs_w < -eps,
+            (lo - pos) / dirs_w.clamp(max=-eps),
+            torch.full_like(dirs_w, float("inf")),
+        ),
+    )
+    ranges = t.masked_fill(t < 0.0, float("inf")).min(dim=2).values
+    # This is an always-on sensor contract, not generic perception augmentation: configured noise
+    # and dropout apply in both rollout and evaluation. Zero/zero is the causal first A/B.
+    if float(noise_std_m) > 0.0:
+        ranges = ranges + torch.randn_like(ranges) * float(noise_std_m)
+    span = (env_bounds_max[:, :2] - env_bounds_min[:, :2]).norm(dim=1, keepdim=True)
+    ranges = (ranges.clamp(min=0.0) / span.clamp(min=1e-6)).clamp(max=1.0)
+    valid = torch.ones_like(ranges)
+    if float(dropout) > 0.0:
+        valid = (torch.rand_like(ranges) >= float(dropout)).to(ranges.dtype)
+        ranges = torch.where(valid.bool(), ranges, torch.ones_like(ranges))
+    return torch.cat([ranges, valid], dim=1)
 
 
 def _quat_rotate_xyzw(q, v):
@@ -1801,6 +1878,8 @@ class NavRLPerceptionModule:
         max_velocity,
         flight_altitude,
         training=True,
+        env_bounds_min=None,
+        env_bounds_max=None,
     ):
         """Return actor-safe structured observation and sensor diagnostics."""
         meas_vehicle, surface_range, bearing, visible, confidence, pixels = self._detect_rgbd(
@@ -1924,6 +2003,19 @@ class NavRLPerceptionModule:
                 min_width_m=CORRIDOR_MIN_WIDTH_M,
             )
             obs_parts.append(corridor_tokens.reshape(self.num_envs, -1))
+        if GEOFENCE_ACTOR:
+            geofence = body_geofence_features(
+                drone_pos_w,
+                vehicle_quat,
+                env_bounds_min,
+                env_bounds_max,
+                noise_std_m=GEOFENCE_NOISE_STD_M,
+                dropout=GEOFENCE_DROPOUT,
+            )
+            if GEOFENCE_FORCE_INVALID:
+                geofence[:, :GEOFENCE_RAYS] = 1.0
+                geofence[:, GEOFENCE_RAYS:] = 0.0
+            obs_parts.append(geofence)
         obs = torch.cat(obs_parts, dim=1)
         if obs.shape[1] != STRUCTURED_OBS_DIM:
             raise RuntimeError(

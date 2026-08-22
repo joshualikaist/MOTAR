@@ -132,6 +132,8 @@ class NavRLPerceptionTest(unittest.TestCase):
         self.pos = torch.zeros(2, 3)
         self.vel = torch.zeros(2, 3)
         self.quat = torch.tensor([[0.0, 0.0, 0.0, 1.0]]).repeat(2, 1)
+        self.bounds_min = torch.tensor([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]])
+        self.bounds_max = torch.tensor([[40.0, 20.0, 3.0], [40.0, 20.0, 3.0]])
 
     def test_goal_centered_diagnostic_is_forward_only(self):
         goals = torch.tensor(
@@ -156,7 +158,45 @@ class NavRLPerceptionTest(unittest.TestCase):
             2.0,
             1.0,
             training=False,
+            env_bounds_min=self.bounds_min,
+            env_bounds_max=self.bounds_max,
         )
+
+    def test_body_geofence_ranges_rotate_with_vehicle(self):
+        pos = torch.tensor([[10.0, 5.0, 1.0], [10.0, 5.0, 1.0]])
+        half = math.sqrt(0.5)
+        quat = torch.tensor([[0.0, 0.0, 0.0, 1.0], [0.0, 0.0, half, half]])
+        feat = _PERCEPTION.body_geofence_features(
+            pos, quat, self.bounds_min, self.bounds_max
+        )
+        diagonal = math.sqrt(40.0**2 + 20.0**2)
+        expected = torch.tensor(
+            [
+                [30.0, 15.0, 10.0, 5.0],
+                [15.0, 10.0, 5.0, 30.0],
+            ]
+        ) / diagonal
+        self.assertTrue(torch.allclose(feat[:, :4], expected, atol=1e-6))
+        self.assertTrue(torch.equal(feat[:, 4:], torch.ones(2, 4)))
+
+    def test_body_geofence_dropout_marks_missing_ranges(self):
+        feat = _PERCEPTION.body_geofence_features(
+            self.pos,
+            self.quat,
+            self.bounds_min,
+            self.bounds_max,
+            dropout=1.0,
+        )
+        self.assertTrue(torch.equal(feat[:, :4], torch.ones(2, 4)))
+        self.assertTrue(torch.equal(feat[:, 4:], torch.zeros(2, 4)))
+
+    def test_force_invalid_ablation_preserves_schema_and_masks_token(self):
+        if not (_PERCEPTION.GEOFENCE_ACTOR and _PERCEPTION.GEOFENCE_FORCE_INVALID):
+            self.skipTest("requires geofence force-invalid evaluation schema")
+        obs, _ = self._observe()
+        self.assertEqual(tuple(obs.shape), (2, STRUCTURED_OBS_DIM))
+        self.assertTrue(torch.equal(obs[:, -8:-4], torch.ones(2, 4)))
+        self.assertTrue(torch.equal(obs[:, -4:], torch.zeros(2, 4)))
 
     def test_raw_rgbd_produces_track_without_semantic_input(self):
         obs, diag = self._observe()

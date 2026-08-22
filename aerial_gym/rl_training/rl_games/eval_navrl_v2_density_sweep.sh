@@ -468,6 +468,9 @@ export NAVRL_OBSTACLE_FOV_DEG=240
 export NAVRL_OBSTACLE_TTC_IDLE_S="${TTC_IDLE_S}"
 export NAVRL_OBSTACLE_TTC_MIN_SPEED="${TTC_MIN_SPEED}"
 export NAVRL_CORRIDOR_TOKENS=0
+export NAVRL_GEOFENCE_ACTOR="${NAVRL_GEOFENCE_ACTOR:-0}"
+export NAVRL_GEOFENCE_NOISE_STD_M="${NAVRL_GEOFENCE_NOISE_STD_M:-0}"
+export NAVRL_GEOFENCE_DROPOUT="${NAVRL_GEOFENCE_DROPOUT:-0}"
 export NAVRL_CORRIDOR_HORIZON_M=6.0
 export NAVRL_CORRIDOR_MIN_WIDTH_M=0.55
 export NAVRL_MAX_VELOCITY=2.5
@@ -1432,6 +1435,10 @@ payload["v2_evaluation_contract"] = {
     # RESEARCH_PLAN 8.29: the observability arm identity. Without it the two arms of the
     # camera-range control produce provenance that cannot tell them apart.
     "target_camera_max_range_m": float(os.environ.get("NAVRL_DETECTOR_MAX_RANGE", 20.0)),
+    "geofence_actor": os.environ.get("NAVRL_GEOFENCE_ACTOR", "0") == "1",
+    "geofence_noise_std_m": float(os.environ.get("NAVRL_GEOFENCE_NOISE_STD_M", 0.0)),
+    "geofence_dropout": float(os.environ.get("NAVRL_GEOFENCE_DROPOUT", 0.0)),
+    "geofence_force_invalid": os.environ.get("NAVRL_GEOFENCE_FORCE_INVALID", "0") == "1",
     "lidar_beams": [4, 72],
     "lidar_range_m": 12.0,
     "obstacle_tokens": 8,
@@ -1508,6 +1515,10 @@ receipt = {
     # RESEARCH_PLAN 8.29: the observability arm identity. Without it the two arms of the
     # camera-range control produce provenance that cannot tell them apart.
     "target_camera_max_range_m": float(os.environ.get("NAVRL_DETECTOR_MAX_RANGE", 20.0)),
+    "geofence_actor": os.environ.get("NAVRL_GEOFENCE_ACTOR", "0") == "1",
+    "geofence_noise_std_m": float(os.environ.get("NAVRL_GEOFENCE_NOISE_STD_M", 0.0)),
+    "geofence_dropout": float(os.environ.get("NAVRL_GEOFENCE_DROPOUT", 0.0)),
+    "geofence_force_invalid": os.environ.get("NAVRL_GEOFENCE_FORCE_INVALID", "0") == "1",
     "speed_governor_mode": os.environ["NAVRL_SPEED_GOVERNOR"],
     "speed_governor_target_exclusion": "camera_lidar_association",
     "perception_perturb": os.environ.get("NAVRL_PERCEPTION_PERTURB", "0") == "1",

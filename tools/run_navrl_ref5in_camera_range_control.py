@@ -44,6 +44,9 @@ HEADING = "away"
 # (arm directory name, target camera detection range in metres)
 ARMS = (("camera_20m", 20.0), ("camera_28m", 28.0))
 EXPECTED_MISMATCH = "cfg_target_pattern: checkpoint=mixed expected=cv"
+PRODUCER = "tools/run_navrl_ref5in_camera_range_control.py"
+SUMMARY_SCOPE = "post_d1_frozen_camera_range_causal_control_seed367"
+INCLUDE_OOB_FORENSICS = False
 
 # Preregistered gates. Fixed here before any measurement; never recomputed from the cells.
 TIMEOUT_DROP_THRESHOLD = 0.20   # arm A minus arm B timeout rate, primary
@@ -255,6 +258,12 @@ def verify_prerequisites(*, require_clean: bool) -> dict:
 
 
 def build_summary(results: dict[str, dict], prior: dict) -> dict:
+    try:
+        checkpoint_display = str(RUN.CHECKPOINT.relative_to(ROOT))
+    except ValueError:
+        # A clean git worktree may deliberately read the immutable checkpoint from the primary
+        # workspace so ignored multi-GB run artifacts do not have to be copied into the worktree.
+        checkpoint_display = str(RUN.CHECKPOINT)
     cells = {}
     for arm, camera_range in ARMS:
         result = results[arm]
@@ -264,6 +273,13 @@ def build_summary(results: dict[str, dict], prior: dict) -> dict:
             label: first_acquisition_payload(row)
             for label, row in result["target_motion"]["first_acquisition"].items()
         }
+        if INCLUDE_OOB_FORENSICS:
+            oob = result.get("target_motion", {}).get("oob_exit_forensics")
+            require(
+                isinstance(oob, dict) and isinstance(oob.get("by_acquisition"), dict),
+                f"{arm}: acquisition-stratified OOB forensics missing",
+            )
+            standard["oob_exit_forensics"] = oob
         cells[arm] = standard
 
     control, treated = cells["camera_20m"], cells["camera_28m"]
@@ -281,14 +297,14 @@ def build_summary(results: dict[str, dict], prior: dict) -> dict:
 
     return {
         "schema_version": 1,
-        "producer": "tools/run_navrl_ref5in_camera_range_control.py",
+        "producer": PRODUCER,
         "created_at_utc": datetime.now(timezone.utc).isoformat(),
-        "scope": "post_d1_frozen_camera_range_causal_control_seed367",
+        "scope": SUMMARY_SCOPE,
         "decision_authority": "none",
         "p2_verdict_changed": False,
         "d1_verdict_changed": False,
         "p3_unlocked": False,
-        "checkpoint": str(RUN.CHECKPOINT.relative_to(ROOT)),
+        "checkpoint": checkpoint_display,
         "checkpoint_sha256": RUN.CHECKPOINT_SHA,
         "generic_provenance_override": {
             "used": True,
