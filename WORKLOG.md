@@ -11080,3 +11080,51 @@ actual-direction negative stopping-margin 비율은 **67.58%**, capture outcome 
 bar contact의 강한 연관만 지지하며 speed를 원인으로 특정하거나 riskcap 사후 파라미터 탐색을
 허용하지 않는다. 유효 artifact와 source/receipt hash는
 `results/navrl_v2_joint_speed_allocation_seed379/assessment.json`에 고정했다.
+## 2026-08-21 — 정책 무접촉 GT topology difficulty 라벨러 구현
+
+기존 막대 수/전역 연결성만으로 설명하지 못하던 에피소드별 공간 난이도를 정책·환경 변경 없이
+측정하기 위해 `tools/analyze_navrl_topology_labels.py`를 추가했다. JSON layout snapshot의 실제
+막대 중심·XY footprint를 받아 다음을 같은 0.10 m grid와 axis-aligned inflation 관례로 계산한다.
+
+- start→final goal 정적 path existence와 shortest-path detour ratio
+- 선택된 최단 경로의 최소 raw/vehicle-usable side clearance
+- start의 12 m sensor disc 안 obstacle 수와 surface-gap cluster 수
+- sensor-disc reachable exit arc 기반 local cul-de-sac/dead-end proxy
+- grid resolution, vehicle half-width, side-clearance, inflation, sensor range, cluster gap,
+  endpoint snap radius 및 arena bounds를 각 row에 명시
+
+과거 `NAVRL_EPISODE_DUMP`에는 `bars_xy/spawn/target_end/outcome`은 있지만 실제 `bars_size_xy`가
+없음을 확인했다. 따라서 legacy NPZ는 `--default-bar-size-m`을 의무화하고 모든 결과를
+`bar_size_source=assumed_default`로 표시한다. 0.4–0.8 m 실제 pool을 단일 크기로 가정한 값은 탐색적
+연관 분석에만 쓰며 publication exact 수치로 쓰지 않는다. 향후 exact JSON export 계약과 적용법은
+`docs/topology_layout_snapshot_contract.md`에 고정했다. aggregate summary만 남은 과거 평가는
+레이아웃을 복원할 수 없어 소급 라벨링 불가다.
+
+배포 `cluster_sector`의 authoritative default가 `NAVRL_OBSTACLE_CLUSTER_GAP_M=0.45`임을
+`navrl_perception.py`와 v2 evaluation launcher에서 재확인했다. topology 도구 초안의 0.40 m에는 별도
+기하학적 근거가 없었으므로 CLI·문서·테스트·출력 metadata를 0.45 m로 통일했다.
+
+CPU synthetic 6개가 모두 PASS했다: open/direct, full-wall disconnected, two-exit corridor,
+one-exit U-shaped dead-end, sensor-range cluster grouping, metadata contract. arena boundary가 sensor disc를
+자른 open spawn을 dead-end로 오인하지 않도록 exit coverage를 arena-available angle로 정규화한다.
+이 라벨은 정적 2-D GT 진단이며 동역학·표적 이동·episode horizon 또는 planner의 경로 거부를 뜻하지
+않는다. 기존 `tests/test_navrl_reachability.py`도 3/3 PASS했다. GPU 실행 및 학습/평가 run은 수행하지
+않았다.
+
+### Seed167 legacy dump topology 전수 탐색 — timeout 누락으로 제한 판정
+
+기존 `results/navrl_v2_bar_ceiling/episodes_seed167.npz`의 1,989개 record를 0.60 m square bar 가정으로
+전수 라벨링했다. 원평가는 2,049 episodes였지만 legacy dump는 `captured | crashed_out`만 기록하므로
+**timeout 60개가 전부 누락**됐다. 기록 outcome은 capture 1,641 / bar contact 333 / below 10 / OOB
+5다. 따라서 timeout 또는 timeout-dead-end에 관한 결론은 금지한다.
+
+기록된 네 outcome 모두 path exists 100%, local cul-de-sac proxy 0%였다. capture 대 bar-contact의
+평균 detour ratio는 1.0692 대 1.0710, 선택된 grid-shortest path의 usable clearance는 0.2594 m 대
+0.2319 m, start의 12 m 내 obstacle 수는 48.79 대 45.92, cluster 수는 45.92 대 43.15였다. 이는
+randomised topology intervention이 아닌 outcome별 descriptive association이며 인과로 읽지 않는다.
+
+또한 legacy dump에 실제 `bars_size_xy`가 없어 0.4–0.8 m pool 전체를 0.60 m로 가정했다. 결과는
+exploratory-only이고 publication exact 수치가 아니다. 작은 재현 summary는
+`results/navrl_v2_bar_ceiling_topology_assumed0p60_summary/summary.{md,json}`에 저장했다. 2.9 MB raw
+per-layout JSON은 추적하지 않는다(raw SHA-256 `6ca8c405…`; input dump `c509c2fa…`). 다음 exact 분석은
+실제 bar footprint와 timeout을 모두 포함하는 새 evaluation-only snapshot이 필요하다.
