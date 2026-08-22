@@ -10722,3 +10722,64 @@ GPU를 재실행하지 않고 검증층만 고쳐 `finalize`했다.
 **별도 사전등록이 필요하다.**
 
 P2 STRICT FAIL / D1 FAIL / P3 BLOCKED 변경 없음.
+
+## 2026-08-22 — main 머지 + codex 결과 통합 (논문 초안용) + 규율 재검
+
+### research/navrl-env → main
+
+`5e75056`. 267 커밋. 충돌은 `.gitignore` 한 곳뿐이었고 세 hunk 전부 main 쪽이 비어 있어 합집합으로
+해소했다(main의 로컬 아티팩트 규칙과 우리 규칙 양쪽 보존 확인). 머지 후 provenance
+`ebb71802…`/`5c160b0d…` 유지, 테스트 598 통과.
+
+### codex 결과 6개 브랜치 — 런타임 코드를 빼고 결과·문서만 가져왔다
+
+**왜 전체 머지를 하지 않았나.** 6개 브랜치가 전부 main과 같은 4개 파일에서 겹친다:
+`navrl_ref5in_quad_config.py`(provenance-frozen), `navrl_perception.py`(오늘 넣은 검출 해상도 분리),
+`navrl_task.py`(오늘 넣은 obs dump 훅, 5,300줄), `test_navrl_ref5in_run_contract.py`.
+
+진짜 위험은 하나다 — perception/task에서 충돌을 잘못 해소해 **fail-closed 가드가 조용히 사라지는
+것**. provenance 깨짐은 오늘 만든 잠금 테스트가 잡지만 저 두 파일의 가드에는 그런 보호가 없고,
+6번 머지는 6번의 기회다.
+
+반면 `results/**`·`docs/**` 경로는 6개 브랜치 **전부 main과 겹침 0**이다. 논문이 인용할 것은
+코드가 아니라 결과·영수증·사전등록 문서이므로, 그것만 가져오면 위험 지점이 통째로 사라진다.
+
+가져온 것(18개 신규, 덮어쓰기 0): `docs/diagnostic_synthesis_2026-08-21.md`(evidence ledger),
+사전등록 3종(active-search geofence, joint speed, topology snapshot contract),
+결과 5종 — `navrl_ref5in_active_search_geofence_seed367`,
+`navrl_ref5in_oob_exit_forensics_seed367`, `navrl_ref5in_symmetric_corridor_mode_probe_seed431`,
+`navrl_v2_joint_speed_allocation_seed379`, `navrl_v2_bar_ceiling_topology_assumed0p60_summary`.
+
+**가져오지 않은 것**: codex의 런타임 도구(mode probe 스크립트, joint telemetry 평가기, topology
+도구, active-search 학습 런처). 그 실험들을 **재실행**할 때 필요하며, 그때 브랜치별로 머지한다.
+따라서 지금 main의 결과들은 인용 가능하지만 일부는 main만으로 재현 불가다 — 논문에 쓸 때
+이 사실을 알고 있어야 한다.
+
+### 규율 전면 재검 (사용자 요청)
+
+`docs/discipline_review_2026-08-22.md`. 요지:
+
+**한 이름 아래 두 가지가 섞여 있다.** (A) 주장 보호 = 측정 전 게이트·지표·seed 동결.
+(B) 기계 무결성 = 영수증·매니페스트·fail-closed·동등성 증명. **VOID 5건이 전부 (B)가 잡은
+것이고, (A)가 막은 사고는 이 저장소 기록에 없다** — 셀당 2,000+ 에피소드라 잡음이 적이 아니며,
+이 프로젝트의 실패 유형은 p-hacking이 아니라 조용한 기계 고장이다. (A)도 값어치는 있으나
+(오늘 +0.195 pp에서 밴드가 미리 고정돼 있지 않았다면 "방향은 맞다"는 서술이 가능했다) **싼 것에
+비싼 의식을 치르고 있다.**
+
+**규제가 실제로 막은 축이 하나 있다.** `NAVRL_MAX_VELOCITY`(2.5)·`NAVRL_MAX_TILT_DEG`(45)·
+`NAVRL_YAW_RATE_MAX`(2.5) 실험 이력 0건. riskcap 사후튜닝 금지 + 한 run 한 축 + max_velocity가
+관측 정규화 분모라는 것이 겹쳤다. 세 번째는 진짜 물리 제약이지만 **첫 번째는 오염된 데이터 때문에
+부과됐고 그 오염은 이미 수정됐다.** 아무도 "아직 필요한가"를 묻지 않았다 — **금지 조항에 만료나
+재검 트리거가 없는 것이 구조적 결함이다.**
+
+**가장 아픈 자기비판**: 오늘 가장 값어치 있는 발견 셋이 전부 코드 읽기와 계산에서 나왔고 GPU 0분이다.
+그중 "구속 조건은 20 m 클립"은 실험 전에 예측 가능했다 — 목표 22.5–28 m에 하드 클립 20 m면
+표적은 대부분 클립 밖이다. 30분 계산이 16분 GPU와 2–3시간 기계 구축을 대체할 수 있었다.
+실험이 무용하진 않았으나(예측을 측정으로 바꿨다) **최우선 다음 단계는 아니었다.**
+
+권고 4가지: (A)/(B) 문서 분리하고 (A)의 의식 축소 · 모든 금지에 이유와 재검 트리거 부착 ·
+비싼 기계 전에 싼 계산(사전등록에 "계산으로 예측 가능한가, 예측이 무엇인가"를 먼저 적는다) ·
+속도·틸트 축을 "금지"가 아니라 "비용이 큰 미탐색 축"으로 재분류.
+
+이 재검은 (B)를 느슨하게 하는 근거가 **아니다**. 줄일 것은 의식이지 가드가 아니다.
+어떤 기존 판정도 변경하지 않는다.
