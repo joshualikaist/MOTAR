@@ -146,7 +146,28 @@ knob이 아니라 설계 변경이며, detect == camera에서 bit-identical, app
 detect ≠ camera면 fail-closed, 모든 조합에서 관측 898-D 유지를 증명해야 한다. 실패 시
 `FAIL_CLOSED_IMPLEMENTATION`이며 센서 모델에 대한 주장을 하지 않는다.
 
-### 그 다음 (조건부, 사전등록 동결됨)
+### 다음 실험 (in force, 2026-08-22 갱신) — 검출 거리 2단계
+
+[`docs/prereg_2026-08-22_detection_range_2stage.md`](docs/prereg_2026-08-22_detection_range_2stage.md).
+
+seed 421이 `FIDELITY_NEUTRAL`(never-acquired +0.195 pp, `target_hidden_fraction` 양 arm 0.82)로
+**검출 임계가 아니라 20 m 클립이 구속 조건**임을 확정했다. 이제 정직한 고해상도 센서로 28 m를
+물리적으로 정당하게 볼 수 있으므로(28 m에서 92 px² > 임계 50), 조작 축을 **클립**으로 옮긴다.
+
+| | 1단계 (스크리닝) | 2단계 (확증, 조건부) |
+|---|---|---|
+| 초기화 | frozen ep1900 warm-start | **fresh** |
+| seed (학습/평가) | 457 / 461 | 463 / 467 |
+| 예산 | 1,000 epoch, 합 1.7 h | 10,000 epoch, 합 17 h |
+| arm | 클립 20 m vs 28 m, 그 외 전부 동일(detect 1920×1200 / `MIN_PIXELS=50`) | 동일 |
+| 게이트 | never-acquired `≤ −15 pp` → `RANGE_HELPS` | `≤ −15 pp` **및** capture `≥ +5 pp` → `RANGE_CONFIRMED` |
+
+**1단계 음성은 "효과 없음"이 아니라 "이 예산에서 미결"이다** — 양 arm이 20 m 정책에서 출발하므로
+설계가 arm B에 불리하다. `RANGE_HELPS`가 아니면 2단계를 실행하지 않는다.
+
+2단계는 70막대 고정 10k이므로 **P3가 아니며**(P3 = 70→205막대·30k·seed 211) P3 차단은 유지된다.
+
+### 대기 중 (조건 미충족, 사전등록 동결됨)
 
 **정직한 센서에서의 적응 학습** —
 [`docs/prereg_2026-08-22_honest_sensor_adaptation.md`](docs/prereg_2026-08-22_honest_sensor_adaptation.md)
