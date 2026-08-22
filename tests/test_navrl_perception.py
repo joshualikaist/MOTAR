@@ -117,6 +117,21 @@ def _configs():
     return camera, perception
 
 
+# VBEAMS/HBEAMS freeze from NAVRL_LIDAR_* the first time navrl_perception is imported, so under a
+# full `unittest discover` whichever test module imports it first fixes them for every other module.
+# tests/test_navrl_mode_probe.py sets HBEAMS=72 at import scope; the cases below are written against
+# the 4x36 geometry and index specific bins, so they cannot run under 72.  Skip them loudly instead
+# of silently passing or crashing -- running this file alone still exercises all of them.  Reloading
+# the module is NOT an option: other already-imported test modules hold references to it.
+_GEOMETRY = (_PERCEPTION.VBEAMS, _PERCEPTION.HBEAMS)
+_WRONG_GEOMETRY = _GEOMETRY != (4, 36)
+_SKIP_REASON = (
+    "navrl_perception was imported with VBEAMS/HBEAMS=%s by an earlier test module; these cases "
+    "assume 4x36 and index specific bins.  Run this file alone to exercise them." % (_GEOMETRY,)
+)
+
+
+@unittest.skipIf(_WRONG_GEOMETRY, _SKIP_REASON)
 class NavRLPerceptionTest(unittest.TestCase):
     def setUp(self):
         camera, perception = _configs()

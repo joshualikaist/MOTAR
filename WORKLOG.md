@@ -11128,3 +11128,71 @@ exploratory-only이고 publication exact 수치가 아니다. 작은 재현 summ
 `results/navrl_v2_bar_ceiling_topology_assumed0p60_summary/summary.{md,json}`에 저장했다. 2.9 MB raw
 per-layout JSON은 추적하지 않는다(raw SHA-256 `6ca8c405…`; input dump `c509c2fa…`). 다음 exact 분석은
 실제 bar footprint와 timeout을 모두 포함하는 새 evaluation-only snapshot이 필요하다.
+## 2026-08-01 — recovery run 독립 감사: entropy 완만한 상승은 붕괴 재발 아님
+
+ep10836 actor collapse 이후 recovery run(`ppo_260801_1235_navrl_v2-recover-curriculum-s1`,
+ep9601 branch)의 건강 상태를 사용자가 "entropy가 소폭 오르고 있어 긴장된다"고 문의해
+독립 감사했다. 옛 collapse 구간이 섞이는 걸 피하려 **이 run 고유 event 파일만** 사용
+(병합 뷰는 9601~10836 구간에서 옛 sched-s1과 겹쳐 오염됨 — 분석용으로는 부적합, TB
+표시 전용으로만 쓸 것).
+
+| 지표 | ep~9601 | ep~11700 | 판정 |
+|---|---|---|---|
+| entropy | -7.5 | -6.6 (기울기 +0.45/1000ep) | 완만, 붕괴 방향과 반대 |
+| KL | 0.001 | 0.001 | 게이트(0.04) 대비 40배 여유, rollback 0건 |
+| \|μ_x\| | ~1.9 | ~1.3 | 감소 — tanh 경계에서 멀어짐 |
+| capture (10-bin 평균) | 0.70~0.75 | 0.70~0.75 | 130→145막대 승급(ep10367) 관통 평탄 |
+
+**결론**: 붕괴 서명(entropy -8.77→-106 in 36 epoch, KL 0.04→2.7, μ.weight norm +12.8%/50ep)과
+질적으로 다르다. 지금의 완만한 entropy 상승은 `NAVRL_LATENT_MARGIN_COEF=0.01`(붕괴 당시
+0으로 방치돼 무효했던 페널티, 이번에 수정)이 의도대로 μ를 tanh 경계에서 밀어내는 부수효과로
+읽힌다. capture/crash 모두 밀도 승급을 관통해 평탄 — 개입 불필요.
+
+**남은 리스크**: 붕괴도 유사 지점(밀도 130대, 장시간 학습)에서 터졌으므로, 밀도가 더 오를
+때마다 이 감사를 반복할 것.
+
+## 2026-08-22 — codex 6개 브랜치 전체 머지 완료 (런타임 코드 포함)
+
+앞 항목에서 결과·문서만 가져오고 런타임은 미뤘으나, 미루면 격차만 커지고 나중 머지가 더 위험해진다는
+판단으로 전량 머지했다. 안전망으로 `pre-codex-merge` 태그를 남겼다.
+
+### 결과
+
+622 테스트 통과(머지 전 598). provenance `ebb71802…`/`5c160b0d…` 유지. 오늘 넣은 가드
+(`_obs_dump_*`, `NAVRL_DETECT_WIDTH`, `checked_by_launcher`) 전부 생존.
+
+**위험 파일이었던 `navrl_task.py`·`navrl_perception.py`는 전부 자동 병합됐다.** 실제 충돌은
+`README.md`·`WORKLOG.md`·`tests/test_navrl_ref5in_run_contract.py`(append 유형)뿐이었다.
+
+### 머지가 실제로 만든 문제 3건 — 전부 테스트가 잡았다
+
+**① 클래스 경계 훼손.** union 해소가 codex의 `test_rerun_reuses_frozen_seed367_contract`를 파일
+끝에 붙여 **내 `SensorFidelityContract` 안으로** 넣었다. 그 결과 `self.ORCHESTRATOR`가 codex의
+OOB orchestrator가 아니라 내 센서 런처를 가리켰다. 원래 자리(`OOBExitForensicsContract`)로 옮겼다.
+naive union은 append 충돌에만 안전하고 **클래스 안쪽 삽입에는 안전하지 않다.**
+
+**② 낡은 마스크 단언.** codex 테스트가 `d_oob = oob & ~crashed & ...`를 기대하는데 main은
+physical-target 병합 이후 `~d_contact`다(`d_contact = (crashed | target_contact | target_invalid)
+& crashed_out`). **코드가 옳고 테스트가 낡았다** — 병합이 최신 쪽을 올바르게 유지했다. 단언의
+의도(레코더가 원인귀속 마스크를 소비한다)는 그대로 두고 이름만 현행화했다.
+
+**③ 테스트 격리 붕괴 — 병합이 새로 들여왔다.** `tests/test_navrl_mode_probe.py`가 **import 시점에**
+`os.environ.update({"NAVRL_LIDAR_HBEAMS": "72", ...})`를 실행한다. `navrl_perception`의
+`VBEAMS`/`HBEAMS`는 첫 import에서 얼어붙는 모듈 상수이므로, 전체 discovery에서는 mode_probe가
+먼저 import하면서 **모든 모듈의 상수를 72로 결정한다.** `test_navrl_perception.py`는 4×36 기하를
+전제하고 특정 bin을 인덱싱하므로(`self.lidar = torch.full((2, 144), ...)`, `lidar[0, 18]`) 깨진다.
+머지 전 598은 OK였고 622에서 처음 나타났다.
+
+시도했다가 되돌린 것 둘을 기록한다. (a) lidar 크기를 모듈 상수에서 유도 → bin 인덱스 의존 테스트가
+여전히 실패. (b) `importlib.reload` → **이미 그 모듈을 import한 다른 테스트 모듈의 참조를 끊어**
+mode_probe·ttc_selector까지 깨졌다. reload는 선택지가 아니다.
+
+채택한 해법: 상수가 4×36이 아니면 `NavRLPerceptionTest`를 **사유와 함께 skip**한다. 조용한 통과도
+크래시도 아니고, **단독 실행하면 31개가 전부 돈다**(확인함). 근본 해결은 전역 모듈 상수를 없애거나
+그 테스트를 서브프로세스로 격리하는 것이며 별건으로 남긴다.
+
+### 남긴 위험
+
+전체 discovery에서 12개가 skip된다. `test_navrl_perception.py`를 단독으로도 돌리지 않으면 그
+커버리지가 사라진다. **CI가 파일별 실행을 하지 않는다면 이 skip은 오늘 고친 "실행되지 않는 테스트"
+문제의 재발이다.** 다음 세션에서 서브프로세스 격리로 제대로 고쳐야 한다.
