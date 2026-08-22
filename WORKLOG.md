@@ -10958,3 +10958,60 @@ geofence만 추가 fresh-seed confirmatory 후보로 승격, (4) timeout과 실�
 시간적 원인 분해 → future dump contract다. 현재 masked 결과에서 OOB가 timeout으로 치환된 사실을
 반영해, **향후** replication의 mechanism 지표는 결과 전에 acquisition-failure/all로 고정한다. 이는
 현재 `PASS_MECHANISM_UNRESOLVED` 판정을 소급 변경하지 않는다.
+## 2026-08-21 — 동결 ref5in 단일행동 mode-averaging probe 사전등록 구현
+
+고밀도 정지가 하나의 연속 action head가 좌·우 경로를 평균내는 현상인지 분리하기 위해, 학습과
+실행 명령을 바꾸지 않는 side-forward 진단을 별도 branch `codex/mode-probe`에 구현했다. 실제 player
+action은 원래 관측에서 한 번 계산해 그대로 실행하고, 추가로 고정된 898-D 합성 관측 세 개만 동결
+정책에 통과시킨다: 정중앙 corridor, 왼쪽 +5°, 오른쪽 -5°. 좌우 arm은 기존 structured-observation
+mirror 계약의 정확한 거울쌍이고, 중앙은 두 입력의 산술 중점이라 입력 반사 오차가 `1e-7`보다 크면
+정책 추론 전에 실패한다.
+
+결과에는 bounded deterministic action, latent mean/sigma(모델이 제공할 때), XY command m/s,
+near-zero 비율, 좌우 conjugacy 오차를 기록한다. 사전 고정 gate는 policy reflection action error
+`<=0.15`, 중앙 horizontal speed `<=0.25 m/s`, perturb arm 평균 `>=0.75 m/s`, 중앙 `|y|<=0.10`,
+perturb 평균 `|y|>=0.25`, 좌우 lateral sign 반대다. reflection gate가 먼저 실패하면 기존 chirality가
+probe를 교란한 것이므로 `INCONCLUSIVE_POLICY_CHIRALITY`로 닫고 mode averaging을 긍정/기각하지
+않는다. 전부 통과해도 진단 fixture에 한정된 지지이며 capture/crash 인과나 정책 교체 권한은 없다.
+
+`tools/run_navrl_ref5in_mode_probe.py`는 D1 ref5in checkpoint SHA-256
+`197ea26999d6…`와 deterministic/governor-off/seed431 계약을 고정하고, generic evaluator receipt,
+checkpoint snapshot, probe JSON을 다시 검증한 뒤 hash-bound summary receipt를 만든다. GPU 평가는
+아직 실행하지 않았다. CPU fixture/gate/fail-closed/overwrite 테스트 **4/4 PASS**, Python compile과
+`git diff --check` PASS. 이후 실행 순서는 `preflight -> run -> finalize -> verify`다.
+
+## 2026-08-21 — Mode probe 중앙 fixture 교란 제거 (GPU 실행 전 정정)
+
+초기 `3fac1a3` 설계의 중앙 입력은 left/right 관측의 feature-wise 산술평균이었다. 정적 scan은
+대칭이지만 obstacle slot별 `y`가 각각 0으로 상쇄되어, 실제 ±12° 통로가 아니라 정면에 중복된
+장애물 두 개처럼 보이는 비물리 입력이 됐다. 이 상태의 stall은 mode averaging이 아니라 정면 차단
+반응일 수 있으므로 **초기 중앙 fixture와 그 판정 계약을 GPU 실행 전에 폐기**했다. 측정 결과는 없어
+무효화할 artifact도 없다.
+
+수정 probe는 산술평균을 전혀 쓰지 않는다. 정중앙 ±12°, 왼쪽 이동 +5°, 오른쪽 이동 -5°의 실제
+두-surface scan/token을 만들고, 각 geometry마다 두 obstacle token slot 순서(LR/RL)를 모두 넣어 총
+6 arm을 side-forward한다. 중앙 두 arm의 첫 두 token `y`는 각각 nonzero/opposite이며 합만 0이다.
+static scan은 3-beam 폭의 정확한 반사대칭이고, `symmetric LR↔RL`, `left LR↔right RL`,
+`left RL↔right LR` 입력 반사 오차는 CPU fixture에서 모두 0이다.
+
+새 품질 gate `slot_permutation_max_abs_action<=0.15`를 결과 전에 추가했다. 같은 물리 geometry의 token
+순서만 바꿨을 때 action 최대차가 이를 넘으면 `INCONCLUSIVE_SLOT_ORDER_SENSITIVITY`, 그다음 반사
+action 오차가 0.15를 넘으면 `INCONCLUSIVE_POLICY_CHIRALITY`로 닫는다. 두 품질 gate가 통과한 뒤에만
+두 중앙 order가 모두 stall이고 네 perturb/order가 모두 움직임을 회복하는지 본다. 양성이라도 명칭과
+해석은 `MODE_AVERAGING_SUPPORTED_IN_SYNTHETIC_POLICY_SCREEN`이며 실제 고밀도 인과로 승격하지 않는다.
+physical-centre 회귀와 slot fail-closed 테스트를 포함한 CPU 테스트 **5/5 PASS**. GPU 미실행 상태 유지.
+
+### GPU 결과: mode averaging 판정 불가, policy chirality가 선행 교란
+
+seed431 evaluator host cell(70 bars, 257 episodes)과 동결 D1 ref5in checkpoint를 사용해 6-arm
+side-forward probe를 실행하고 `finalize`/`verify`까지 통과했다. 같은 geometry의 LR/RL token 순서
+최대 action 차이는 **0.0078**로 0.15 품질 gate 안이었지만, 정확한 반사 입력쌍의 최대 action 오차는
+**1.8332**로 0.15 gate를 크게 넘었다. 중앙 symmetric 두 arm도 horizontal command
+**3.349~3.352 m/s**, lateral action **-0.916~-0.917**로 정지하지 않았고, 좌·우 ±5° perturbation도
+모두 같은 음의 lateral 방향(**-0.904~-0.922**)을 냈다.
+
+따라서 결과는 사전등록 순서대로 **INCONCLUSIVE_POLICY_CHIRALITY**다. 이 fixture에서는 token slot
+순서가 병목이라는 증거가 없지만, policy reflection defect가 더 커 mode averaging을 지지하거나
+기각할 수 없다. 이 결과는 한 합성 fixture의 반복 forward이며 205-bar 정지나 capture/crash 인과로
+확대하지 않는다. artifact는
+`results/navrl_ref5in_symmetric_corridor_mode_probe_seed431/summary.json`에 저장했다.

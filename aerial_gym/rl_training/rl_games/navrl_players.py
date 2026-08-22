@@ -14,6 +14,11 @@ from aerial_gym.rl_training.rl_games.ppo_update_safety import (
     mirror_navrl_actions,
     mirror_navrl_structured_observation,
 )
+from aerial_gym.rl_training.rl_games.navrl_mode_probe import (
+    ModeProbeRecorder,
+    build_probe_observations,
+    model_outputs,
+)
 
 
 class NavRLPpoPlayerContinuous(PpoPlayerContinuous):
@@ -48,14 +53,33 @@ class NavRLPpoPlayerContinuous(PpoPlayerContinuous):
             "lateral_sign_mismatch": 0,
             "lateral_sign_comparable": 0,
         }
+        self._mode_probe_path = os.environ.get("NAVRL_MODE_PROBE_JSON", "").strip()
+        self._mode_probe = None
+        if self._mode_probe_path:
+            try:
+                max_velocity = float(os.environ.get("NAVRL_MAX_VELOCITY", "2.5"))
+                offset_deg = float(os.environ.get("NAVRL_MODE_PROBE_OFFSET_DEG", "5.0"))
+            except ValueError as exc:
+                raise ValueError("invalid NavRL mode-probe numeric setting") from exc
+            self._mode_probe = ModeProbeRecorder(
+                self._mode_probe_path,
+                max_velocity_mps=max_velocity,
+                offset_deg=offset_deg,
+            )
 
         # A recurrent hidden state also has a reflection transform. That transform is not part of
         # the current diagnostic, so refusing it is safer than silently auditing only half of a
         # recurrent policy. The deployed ep24000 transformer is feed-forward.
-        if (self._reflection_mode == "conjugate" or self._reflection_diag_path) and bool(
+        if (
+            self._reflection_mode == "conjugate"
+            or self._reflection_diag_path
+            or self._mode_probe is not None
+        ) and bool(
             getattr(self, "is_rnn", False)
         ):
-            raise RuntimeError("NavRL reflection evaluation currently supports feed-forward policies only")
+            raise RuntimeError(
+                "NavRL reflection/mode-probe evaluation supports feed-forward policies only"
+            )
 
     @staticmethod
     def _model_action(res_dict, deterministic):
@@ -131,6 +155,31 @@ class NavRLPpoPlayerContinuous(PpoPlayerContinuous):
             return super().run()
         finally:
             self._write_reflection_diag()
+            if self._mode_probe is not None:
+                self._mode_probe.write()
+
+    def _record_mode_probe(self, original_obs):
+        if self._mode_probe is None:
+            return
+        fixtures, contract = build_probe_observations(
+            original_obs, offset_deg=self._mode_probe.offset_deg
+        )
+        outputs = {}
+        fork_devices = [original_obs.device.index] if original_obs.is_cuda else []
+        # Side forwards must not consume random numbers used by environment reset or stochastic
+        # rollout action selection.  They are diagnostic only and never replace current_action.
+        with torch.random.fork_rng(devices=fork_devices), torch.no_grad():
+            for arm, fixture in fixtures.items():
+                result = self.model(
+                    {
+                        "is_train": False,
+                        "prev_actions": None,
+                        "obs": self._preproc_obs(fixture),
+                        "rnn_states": self.states,
+                    }
+                )
+                outputs[arm] = model_outputs(result)
+        self._mode_probe.record(outputs, contract)
 
     def get_action(self, obs, is_deterministic=False):
         if (self._reflection_mode == "conjugate" or self._reflection_diag_path) and not is_deterministic:
@@ -146,6 +195,7 @@ class NavRLPpoPlayerContinuous(PpoPlayerContinuous):
         }
         with torch.no_grad():
             original_result = self.model(original_input)
+        self._record_mode_probe(original_obs)
 
         need_mirror = self._reflection_mode == "conjugate" or bool(
             self._reflection_diag_path
