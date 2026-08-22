@@ -10447,3 +10447,81 @@ WORKLOG RULE 바로 위에 놓았다. 요지: **계획이 바뀌면 그것을 �
   사전등록 필요).
 
 P2 STRICT FAIL / D1 FAIL / P3 BLOCKED **변경 없음**(확인함). §8.29 seed 367의 공식 판정도 변경 없음.
+
+## 2026-08-22 — 게이트 0 PASS: 검출 해상도를 RGB 경로에서 분리했다
+
+사전등록 `docs/prereg_2026-08-22_sensor_fidelity.md` §4의 구현 타당성 게이트를 통과했다.
+
+### 설계
+
+`NAVRL_DETECT_WIDTH/HEIGHT` 신설, 기본값은 `camera_width/height` **knob**(리터럴 160/90이 아니라)
+이므로 카메라 해상도만 올려도 조용히 분리되지 않는다.
+
+**검출 해상도가 소유**: 표적 픽셀 수 → `visible`, 정수 centroid 합 → bearing/elevation, 마스크된
+depth 합 → `surface_range`, 표적 픽셀의 분할 점수 → `confidence`, `sigma_r`의 픽셀 지지.
+전부 `detect_fx/fy/cx/cy`로 변환하며 주입 bearing 오프셋(`u = u - detect_fx * d_bearing`)과
+`sigma_lat = 0.03 + range/detect_fx`도 포함한다.
+
+**카메라 해상도가 유지**: RGB 이미지, 합성 depth, 장애물 depth에서 지워내는 분할 마스크,
+LiDAR 열 매핑, `_reconstruct_target_pixels`, 프로파일 헤드. 섞으면 bearing이 `detect_W/W` 배로
+편향된다(1920 vs 160에서 12배). 단위 테스트가 5.65° vs 49.9°로 그 차이를 고정한다.
+
+**핵심 기법**: 검출 해상도에서 **이미지를 만들지 않는다.** 기존 커널을 검출 해상도 광선 테이블에
+행 블록(`NAVRL_DETECT_PIXEL_BUDGET`, 16 Mpx 상한)으로 재실행해 행별 부분합으로 리듀스한다.
+VRAM이 84 B/px가 아니라 **0.7 B/px**이고 블록 크기에 무관함이 16배 범위에서 bit-identical로
+확인됐다. 렌더러는 perception에 **env당 스칼라 요약**만 넘긴다 — 이미지도 마스크도 아니다.
+
+### fail-closed
+
+detect ≠ camera이면서 다음 중 하나라도면 raise: appearance 5종(hue/light/albedo/texture/blur),
+검출기 체크포인트 설정, 분할기가 bootstrap 1×1이 아님, depth 채널 가중 ≠ 0, `enable_perturbations`
+하의 RGB/depth 잡음, `detection_latency_s > 0`(지연 링버퍼가 카메라 해상도 마스크를 담으므로
+검출 해상도 카운트를 같은 박자로 지연시키는 건 미구현). detect < camera도 `ValueError`.
+GPU에서 5개 대표 케이스가 실제로 raise함을 확인했다.
+
+**검토 후 명시적으로 허용**: `camera_mount_*`(검출 렌더가 같은 교란 자세를 씀), `camera_fov_scale_err`,
+`NAVRL_TARGET_DYNAMICS=physical`, `detection_dropout_prob`, `range_error_m`, `detector_noise_*`,
+`target_mask_backfill`, `lidar_*`, `pixel_threshold`, `min_target_pixels` — 양 해상도에 동일하게
+작용하거나 env당 스칼라에 작용한다.
+
+### 증명
+
+| 게이트 | 요구 | 실측 |
+|---|---|---|
+| 동일 해상도 항등성 | bit-identical | `torch.equal=True`: obs(898)·states(906)·visible·camera_visible·confidence·track_state·track_age·det_vec·det_visible, 160×90과 480×300 양쪽. torch peak 201.97/388.30 MB 양쪽 동일 |
+| 비동일 해상도 동등성 | appearance 0에서 | 가시성 결정·픽셀 수 **정확히 일치**. bearing ≤1.19e-07 rad, range ≤1.43e-06 m, confidence ≤1.19e-07 — 부동소수 합산 순서 차이뿐 |
+| fail-closed | 거부 | 5/5 확인 |
+| 898-D | 모든 조합 | 9개 조합 전부 actor 898 / critic 906 |
+
+**해석상 결정적**: 분리 arm의 `static_scan`·`obstacle_history`·`robot_history`가 평범한 160×90
+실행과 **bit-identical**이고 `target_history`만 움직인다(≤2.4e-2). 즉 arm B는 "오늘의 장애물
+파이프라인 + 고충실도 검출"이며 **깨끗한 단일 축 조작**이 실제로 성립한다. `static_scan`/
+`obstacle_history`가 전체 고해상도 실행과 최대 0.88 다른 것은 결함이 아니라 설계다 — 그것들은
+40×24 장애물 카메라의 bilinear 업샘플에서 나오므로 카메라 해상도에 묶여 있다.
+
+### 비용 (128 env, 30 step)
+
+| 구성 | ms/step | 배수 | torch peak | device peak |
+|---|---|---|---|---|
+| (a) 160×90 both | 87.2 | 1.00 | 202 MB | 5586 MB |
+| (b) 480×300 both | 105.4 | 1.21 | 1529 MB | 7368 MB |
+| **(c) detect 1920×1200 + cam 160×90** | **167.6** | **1.92** | **402 MB** | 5864 MB |
+| (d) full 1920×1200 | **CUDA OOM** | — | 외삽 409 ms(4.7배)·23.6 GB | 카드의 3배 |
+
+분리 경로는 픽셀당 시간 4.0배·VRAM **118배** 싸고, 무엇보다 **실행된다**. 다만 "공짜"는 과한
+표현이다 — 295 Mpx에서 광선 추적이 +80 ms/step이다. **살아남는 주장은 상대값이다.**
+
+### 부수: 내 테스트가 전체 discovery에서 깨져 있었다
+
+`tests/test_navrl_import_origin.py`가 파일별 실행에서는 통과하고 **전체 `unittest discover`에서는
+5개 실패**했다. 앞서 "544개 전부 통과"라고 보고한 것은 **틀렸다** — 파일별로 돌려서 상호작용을
+놓쳤다. 원인은 다른 테스트가 Isaac Gym을 피하려고 `sys.modules`에 `aerial_gym` 스텁을 넣어두는데,
+`resolve_origin`이 의도적으로 `find_spec`보다 라이브 모듈을 신뢰하기 때문이다(가드의 존재 이유가
+그것이다). 스텁을 테스트 동안 걷어내고 정확히 되돌리도록 고쳤다. 하필 "조용한 오작동을 막는"
+가드의 테스트가 조용히 깨져 있었다.
+
+전체 discovery **578개 전부 통과**(구현 전 544, 신규 34). 단독 실행도 통과.
+
+### 다음
+
+센서 충실도 schema-v2 런처 구축 → preflight → arm A/B 실행.

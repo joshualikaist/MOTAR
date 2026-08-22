@@ -647,6 +647,28 @@ class NavRLPerceptionModule:
         self.fy = self.height / (2.0 * math.tan(self.vfov * 0.5))
         self.cx = (self.width - 1) * 0.5
         self.cy = (self.height - 1) * 0.5
+        # DETECT resolution: where the target measurement comes from. Equal to the camera
+        # resolution by default, in which case every expression below is the historical one on
+        # the historical operands and `detect_decoupled` is False.
+        self.detect_width = int(getattr(camera_cfg, "detect_width", self.width))
+        self.detect_height = int(getattr(camera_cfg, "detect_height", self.height))
+        self.detect_decoupled = (self.detect_width != self.width) or (
+            self.detect_height != self.height
+        )
+        # WHICH INTRINSICS GO WHERE. fx = (W/2)/tan(hfov/2) is resolution-dependent, so:
+        #   detect_fx/fy/cx/cy  -- anything derived from the DETECT-resolution mask: the target
+        #       centroid -> bearing/elevation ray, the injected bearing-noise centroid offset
+        #       (du = -fx*dbearing), and the lateral measurement sigma (surface_range/fx is the
+        #       metres-per-pixel of the image the centroid was measured on).
+        #   fx/fy/cx/cy         -- anything derived from the CAMERA-resolution image: the profile
+        #       head's centroid comparison. (The obstacle-map column mapping and the target-pixel
+        #       reconstruction use hfov and width directly, not fx, and stay camera-resolution.)
+        # Using the camera fx on a detect-resolution centroid would scale every bearing by
+        # width/detect_width -- a silent, systematic bearing bias, not noise.
+        self.detect_fx = self.detect_width / (2.0 * math.tan(self.hfov * 0.5))
+        self.detect_fy = self.detect_height / (2.0 * math.tan(self.vfov * 0.5))
+        self.detect_cx = (self.detect_width - 1) * 0.5
+        self.detect_cy = (self.detect_height - 1) * 0.5
         self.camera_offset = torch.tensor(
             camera_cfg.camera_translation, dtype=torch.float32, device=device
         ).view(1, 3)
@@ -878,6 +900,9 @@ class NavRLPerceptionModule:
                 import atexit
 
                 atexit.register(self._dump_detector_profile)
+
+        if self.detect_decoupled:
+            self._assert_detect_decoupling_is_equivalent(cfg)
 
         self.tracker = BatchedConstantVelocityTracker(
             num_envs, device, step_dt, float(camera_cfg.tracker_memory_s)
@@ -1196,7 +1221,124 @@ class NavRLPerceptionModule:
             "profile_count": p_count.detach().to("cpu", torch.int32).clone(),
         })
 
+    def _assert_detect_decoupling_is_equivalent(self, cfg):
+        """Refuse the decoupling whenever "segment the high-res RGB" stops equalling "read the
+        high-res target mask".
+
+        The decoupling rests on one claim: with the renderer's flat target paint and the
+        bootstrap colour rule, segmenting a high-resolution render selects EXACTLY the target
+        pixels the ray-cast already found, and nothing else. Everything that can falsify that is
+        refused here rather than approximated.
+
+        Refused:
+          detector_checkpoint            a learned head is not the flat-colour rule; nothing
+                                         proves it fires on exactly the painted pixels (and a
+                                         spatial head's answer depends on the neighbourhood,
+                                         which a per-frame scalar summary cannot carry at all).
+          detector_profile_checkpoint    the profile head scores the CAMERA-resolution image; a
+                                         paired error against a detect-resolution reference is
+                                         two different measurements, not a comparison.
+          a non-bootstrap / depth-weighted 1x1 head
+                                         the target-pixel score must be one number per env; a
+                                         non-zero depth weight makes it vary per pixel.
+          rgb_noise_std / depth_noise_std with perturbations enabled
+                                         per-PIXEL iid noise flips individual pixels across the
+                                         decision boundary. A high-resolution mask can only
+                                         reproduce that statistically, never frame-for-frame,
+                                         and the flip rate itself depends on the pixel count.
+          detection_latency_s > 0        the latency ring buffers the camera-resolution pixel
+                                         mask; the detect-resolution count/centroid would have
+                                         to be delayed in lockstep, which is not implemented.
+
+        Checked and ALLOWED (they act on per-env scalars, identically at either resolution):
+          detection_dropout_prob, range_error_m, detector_noise_* (bearing noise is injected as
+          a centroid offset scaled by detect_fx, so it stays an angle), latency_* compensation
+          flags at zero latency, lidar_* association flags, target_mask_backfill (it rebuilds a
+          CAMERA-resolution pixel mask from the fused bearing/range, and simply gets a better
+          bearing), pixel_threshold, min_target_pixels.
+        """
+        offenders = []
+        if str(getattr(cfg, "detector_checkpoint", "") or "").strip():
+            offenders.append("detector_checkpoint is set")
+        if str(getattr(cfg, "detector_profile_checkpoint", "") or "").strip():
+            offenders.append("detector_profile_checkpoint is set")
+        if not isinstance(self.segmenter, AppearanceTargetSegmenter):
+            offenders.append(
+                "segmenter is %s, not the flat-colour bootstrap head"
+                % type(self.segmenter).__name__
+            )
+        else:
+            depth_weight = float(self.segmenter.classifier.weight[0, 3].abs().max())
+            if depth_weight > 0.0:
+                offenders.append(
+                    "segmenter depth-channel weight is %g (must be 0 so the target-pixel score "
+                    "is one number per env)" % depth_weight
+                )
+        if bool(getattr(cfg, "enable_perturbations", False)):
+            if self.rgb_noise_std > 0.0:
+                offenders.append("rgb_noise_std=%g with perturbations on" % self.rgb_noise_std)
+            if self.depth_noise_std > 0.0:
+                offenders.append(
+                    "depth_noise_std=%g with perturbations on" % self.depth_noise_std
+                )
+        if self._latency_steps > 0:
+            offenders.append("detection_latency_s=%g" % self.detection_latency_s)
+        if offenders:
+            raise RuntimeError(
+                "NavRL detect-resolution decoupling (%dx%d detect vs %dx%d camera) is NOT "
+                "equivalent under: %s. Set NAVRL_DETECT_WIDTH/HEIGHT equal to "
+                "NAVRL_CAMERA_WIDTH/HEIGHT, or turn the listed perturbation(s) off."
+                % (
+                    self.detect_width,
+                    self.detect_height,
+                    self.width,
+                    self.height,
+                    "; ".join(offenders),
+                )
+            )
+
+    def _consume_detect_frame(self):
+        """Take this step's detect-resolution frame from the renderer channel and validate it."""
+        from aerial_gym.task.navrl_task.navrl_detector import DETECT_CHANNEL
+
+        frame = DETECT_CHANNEL.consume()
+        if (
+            int(frame["width"]) != self.detect_width
+            or int(frame["height"]) != self.detect_height
+        ):
+            raise RuntimeError(
+                "detect-resolution frame is %dx%d but this perception module expects %dx%d"
+                % (frame["width"], frame["height"], self.detect_width, self.detect_height)
+            )
+        if int(frame["num_envs"]) != self.num_envs:
+            raise RuntimeError(
+                "detect-resolution frame has %d envs, expected %d"
+                % (frame["num_envs"], self.num_envs)
+            )
+        if float(frame["far_plane"]) != self.max_camera_range:
+            # The camera-resolution mask applies `depth < max_camera_range` per pixel. The
+            # detect-resolution mask gets that for free ONLY because the renderer's far plane is
+            # the same number: a target pixel's depth is strictly below it by construction.
+            raise RuntimeError(
+                "detect-resolution renderer far plane %g != perception max_camera_range %g"
+                % (frame["far_plane"], self.max_camera_range)
+            )
+        return frame
+
     def _detect_rgbd(self, rgb, depth, training, drone_pos_w=None, vehicle_quat=None):
+        if (
+            self.detect_decoupled
+            and training
+            and (self.rgb_noise_std > 0.0 or self.depth_noise_std > 0.0)
+        ):
+            # Backstop for a caller that passes training=True while cfg.enable_perturbations is
+            # off (the __init__ guard cannot see that). Per-pixel image noise has no
+            # detect-resolution counterpart; see _assert_detect_decoupling_is_equivalent.
+            raise RuntimeError(
+                "detect-resolution decoupling is not equivalent under per-pixel image noise "
+                "(rgb_noise_std=%g, depth_noise_std=%g) with training=True"
+                % (self.rgb_noise_std, self.depth_noise_std)
+            )
         if training and self.rgb_noise_std > 0.0:
             rgb = (rgb + torch.randn_like(rgb) * self.rgb_noise_std).clamp(0.0, 1.0)
         if training and self.depth_noise_std > 0.0:
@@ -1213,16 +1355,53 @@ class NavRLPerceptionModule:
             and len(self.detector_profile_records) < self._detector_profile_max_steps
         ):
             self._record_detector_profile(rgb, depth, mask, count, visible)
+        detect_frame = None
+        if self.detect_decoupled:
+            # The target measurement moves to the detect-resolution mask. `mask` above stays the
+            # CAMERA-resolution one and keeps its jobs: it is what gets blanked out of the
+            # obstacle depth map, and what the latency ring buffers. Only count/centroid/range
+            # (and therefore visibility, bearing, elevation and confidence) come from the frame.
+            detect_frame = self._consume_detect_frame()
+            # Perception is not told what a target is: it runs its OWN segmenter, at its own
+            # threshold, on the RGB value a target pixel of that frame carries. The value is one
+            # number per env only because the fail-closed guard has ruled out every knob that
+            # would make the paint non-flat.
+            with torch.no_grad():
+                detect_score = self.segmenter(
+                    detect_frame["rgb"].view(self.num_envs, 3, 1, 1),
+                    detect_frame["depth_probe"].view(self.num_envs, 1, 1),
+                    self.max_camera_range,
+                ).view(self.num_envs)
+            # `depth < max_camera_range` needs no separate test: a detect-resolution target pixel
+            # is strictly inside the renderer far plane by construction, and _consume_detect_frame
+            # has already checked that far plane equals max_camera_range.
+            count = torch.where(
+                detect_score >= self.pixel_threshold,
+                detect_frame["count"],
+                torch.zeros_like(detect_frame["count"]),
+            )
+            visible = count >= self.min_pixels
         if training and self.dropout_prob > 0.0:
             visible &= torch.rand(self.num_envs, device=self.device) >= self.dropout_prob
         if self._detector_noise_active:
             visible = self._detector_noise_visibility(visible)
         mask &= visible.view(-1, 1, 1)
         denom = count.clamp(min=1).float()
-        mf = mask.float()
-        u = (mf * self._u).sum(dim=(1, 2)) / denom
-        v = (mf * self._v).sum(dim=(1, 2)) / denom
-        surface_range = (depth * mf).sum(dim=(1, 2)) / denom
+        if detect_frame is not None:
+            # Same gating as the camera-resolution path, where `mask &= visible` above zeroes
+            # every sum for an env that is not visible.
+            gate = visible.float()
+            self._last_detect_count = torch.where(
+                visible, count, torch.zeros_like(count)
+            )
+            u = gate * detect_frame["u_sum"] / denom
+            v = gate * detect_frame["v_sum"] / denom
+            surface_range = gate * detect_frame["depth_sum"] / denom
+        else:
+            mf = mask.float()
+            u = (mf * self._u).sum(dim=(1, 2)) / denom
+            v = (mf * self._v).sum(dim=(1, 2)) / denom
+            surface_range = (depth * mf).sum(dim=(1, 2)) / denom
         if training and self.range_error_m != 0.0:
             surface_range = (surface_range + self.range_error_m).clamp(
                 0.0, self.max_camera_range
@@ -1239,15 +1418,26 @@ class NavRLPerceptionModule:
                     self.num_envs, device=self.device, dtype=u.dtype,
                     generator=self._detector_noise_generator,
                 ) * self.detector_noise_bearing_std_rad
-                u = u - self.fx * d_bearing
+                u = u - self.detect_fx * d_bearing
             if self.detector_noise_range_std_m > 0.0:
                 surface_range = self._detector_noise_range(surface_range)
-        confidence = (score * mf).sum(dim=(1, 2)) / denom
+        if detect_frame is not None:
+            # Mean segmenter score over the mask, which is that one score wherever the mask is.
+            confidence = gate * detect_score
+        else:
+            confidence = (score * mf).sum(dim=(1, 2)) / denom
         confidence *= (count.float() / max(1.0, float(self.min_pixels * 4))).clamp(max=1.0)
         confidence = torch.where(visible, confidence, torch.zeros_like(confidence))
 
+        # Detect-resolution centroid -> detect-resolution intrinsics (identical floats to
+        # self.cx/fx when the resolutions are equal).
         ray = torch.stack(
-            [torch.ones_like(u), -(u - self.cx) / self.fx, -(v - self.cy) / self.fy], dim=1
+            [
+                torch.ones_like(u),
+                -(u - self.detect_cx) / self.detect_fx,
+                -(v - self.detect_cy) / self.detect_fy,
+            ],
+            dim=1,
         )
         ray = ray / ray.norm(dim=1, keepdim=True).clamp(min=1e-6)
         center_range = surface_range + self.target_radius
@@ -1627,9 +1817,16 @@ class NavRLPerceptionModule:
         if self.latency_ego_motion_fix and self._latency_delayed_pose is not None:
             meas_pos_w, meas_quat = self._latency_delayed_pose
         meas_world = meas_pos_w + _quat_rotate_xyzw(meas_quat, meas_vehicle)
-        pixel_count = pixels.sum(dim=(1, 2)).float().clamp(min=1.0)
+        if self.detect_decoupled:
+            # The measurement was made on the detect-resolution mask, so its pixel support --
+            # which sets the shot-noise term of sigma_r -- is the detect-resolution count, not
+            # the camera-resolution mask that is still used for the obstacle map.
+            pixel_count = self._last_detect_count.float().clamp(min=1.0)
+        else:
+            pixel_count = pixels.sum(dim=(1, 2)).float().clamp(min=1.0)
         sigma_r = 0.04 + 0.012 * surface_range + 0.15 / pixel_count.sqrt()
-        sigma_lat = 0.03 + surface_range / max(self.fx, 1.0)
+        # metres per pixel of the image the centroid was actually measured on.
+        sigma_lat = 0.03 + surface_range / max(self.detect_fx, 1.0)
         measurement_var = torch.stack(
             [sigma_r.square(), sigma_lat.square(), sigma_lat.square()], dim=1
         )

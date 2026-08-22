@@ -156,14 +156,21 @@ class TestSourceInvariants(unittest.TestCase):
     without someone noticing."""
 
     def setUp(self):
+        # Whole method, not a fixed-width window: _detect_rgbd grew when the detect-resolution
+        # branch landed (WORKLOG 2026-08-22) and a 4000-char slice silently stopped covering the
+        # noise-injection block it is supposed to guard -- a test that passes by truncation.
         start = SOURCE.index("    def _detect_rgbd(self")
-        self.detect = SOURCE[start:start + 4000]
+        end = SOURCE.index("\n    def ", start + 1) + 1
+        self.detect = SOURCE[start:end]
 
     def test_bearing_noise_is_injected_through_the_centroid(self):
         """Perturbing `bearing` after it is derived would desync it from measurement_vehicle: the
         tracker would get the clean position and only the obstacle-map carve-out the perturbed
         angle. The injection must move `u`."""
-        self.assertIn("u = u - self.fx * d_bearing", self.detect)
+        # detect_fx, not fx: the centroid `u` is measured on the DETECT-resolution image, whose
+        # pixels-per-radian is detect_width/(2 tan(hfov/2)). The two are the same number whenever
+        # the resolutions are equal, so this is unchanged for every historical configuration.
+        self.assertIn("u = u - self.detect_fx * d_bearing", self.detect)
         noise_block = self.detect[self.detect.index("_detector_noise_active"):]
         self.assertNotIn("bearing = bearing +", noise_block)
         self.assertNotIn("bearing +=", noise_block)

@@ -149,8 +149,33 @@ class task_config:
         detector_hfov_deg = 87.0    # matches the D455-style forward depth camera
         detector_vfov_deg = 58.0
         tracker_memory_s = 5.0      # time_since_seen saturates at this many seconds
-        camera_width = 160          # efficient target-only semantic render; aspect ratio 16:9
-        camera_height = 90
+        # Detection-camera resolution. WORKLOG 2026-08-22 measured what these two numbers cost:
+        # at 160x90 over 87 deg, fx = 84.3 px/rad, so the 0.30 m target spans 1.27 px (1.21 px^2)
+        # at 20 m and 0.90 px (0.62 px^2) at 28 m -- and because the mask is an exact ray-sphere
+        # test sampled at pixel centres with no sub-pixel coverage, an on-axis target clears the
+        # 2-px area threshold 24.6% of frames at 20 m and NEVER at 28 m. The comment on
+        # detector_hfov_deg below is true of the field of view and false of the resolution: a real
+        # D455 is 5.3x finer. These are env-hooked so the sensor-fidelity experiment can vary them
+        # without touching bytes; the defaults are unchanged, so every existing checkpoint and
+        # evaluation keeps its own. Raising them costs render time linearly in pixel count.
+        camera_width = _env_int("NAVRL_CAMERA_WIDTH", 160)   # aspect ratio 16:9 at the default
+        camera_height = _env_int("NAVRL_CAMERA_HEIGHT", 90)
+        # DETECTION resolution, decoupled from the RGB/perception resolution above.
+        # Measured on this hardware: the warp target ray-cast is essentially free (it is an
+        # analytic sphere/OBB test per pixel and only issues mesh_query_ray on a ray that
+        # actually hits the target), while everything DOWNSTREAM of it -- the bilinear upsample
+        # of the 40x24 obstacle depth to WxH, the (N,3,H,W) RGB image, and segmenting that image
+        # -- costs ~1 ms/Mpx and ~84 B/px. Raising ONLY the detection resolution therefore buys
+        # detection fidelity at near-zero cost, and at zero appearance perturbation it is not an
+        # approximation: the renderer paints the target a flat colour and the bootstrap segmenter
+        # is a per-pixel colour rule, so segmenting a high-resolution render is the identity on
+        # the high-resolution target mask. Defaults equal the camera resolution, so the default
+        # configuration takes exactly the historical code path, bit for bit.
+        # Decoupling FAILS CLOSED (raises) whenever that identity does not hold -- any non-zero
+        # appearance knob, a loaded segmenter checkpoint, image-level RGB/depth noise, or
+        # detection latency. See navrl_detector.py / navrl_perception.py for the full list.
+        detect_width = _env_int("NAVRL_DETECT_WIDTH", camera_width)
+        detect_height = _env_int("NAVRL_DETECT_HEIGHT", camera_height)
         camera_target_radius = 0.15 # [m], matches the 0.30 m target-drone footprint
         camera_min_target_pixels = 1
         camera_translation = [0.10, 0.0, 0.03]  # vehicle frame, forward/left/up [m]

@@ -28,18 +28,38 @@ origin_guard = _load_module()
 
 
 class EnvIsolation(unittest.TestCase):
-    """Every test restores NAVRL_REQUIRE_SOURCE_ROOT so ordering cannot leak state."""
+    """Restore the two pieces of global state these tests read.
+
+    NAVRL_REQUIRE_SOURCE_ROOT is obvious. The second one is not, and it cost a real bug: other
+    files in this suite install a bare stand-in for ``aerial_gym`` in ``sys.modules`` so they can
+    import task code without pulling in Isaac Gym. ``resolve_origin`` deliberately trusts the live
+    module object over ``find_spec`` -- that is the whole point of the guard -- so under a full
+    ``unittest discover`` it would read that stub, find no ``__file__``, and report
+    ``package_dir=None``. These tests passed per-file and failed in the full run, which is the
+    worst way for a test to be wrong. Drop a stub for the duration so the assertions are about the
+    real package, and put back exactly what was there.
+    """
 
     VAR = "NAVRL_REQUIRE_SOURCE_ROOT"
 
+    @staticmethod
+    def _is_stub(module):
+        return module is not None and getattr(module, "__file__", None) is None
+
     def setUp(self):
         self._saved = os.environ.get(self.VAR, None)
+        self._saved_module = sys.modules.get("aerial_gym", None)
+        self._dropped_module = self._is_stub(self._saved_module)
+        if self._dropped_module:
+            del sys.modules["aerial_gym"]
 
     def tearDown(self):
         if self._saved is None:
             os.environ.pop(self.VAR, None)
         else:
             os.environ[self.VAR] = self._saved
+        if self._dropped_module:
+            sys.modules["aerial_gym"] = self._saved_module
 
 
 class TestInert(EnvIsolation):
