@@ -1139,6 +1139,17 @@ if condition.get("speed_governor_target_exclusion") != "camera_lidar_association
     raise SystemExit(
         "[eval_v2] speed governor target exclusion is not actor-safe camera/LiDAR association"
     )
+joint_speed_requested = os.environ.get("NAVRL_JOINT_SPEED_TELEMETRY", "0").strip().lower() in {
+    "1", "true", "yes", "on"
+}
+if joint_speed_requested:
+    if condition.get("joint_speed_telemetry") is not True:
+        raise SystemExit("[eval_v2] requested joint-speed condition attestation is missing")
+    joint = payload.get("joint_speed_allocation")
+    if not isinstance(joint, dict) or joint.get("evaluation_only") is not True:
+        raise SystemExit("[eval_v2] requested joint-speed telemetry is missing or malformed")
+elif "joint_speed_allocation" in payload or "joint_speed_telemetry" in condition:
+    raise SystemExit("[eval_v2] unrequested joint-speed telemetry changed the canonical result")
 governor_numeric = {
     "speed_governor_fixed_mps": "NAVRL_SPEED_GOVERNOR_FIXED_MPS",
     "speed_governor_free_mps": "NAVRL_SPEED_GOVERNOR_FREE_MPS",
@@ -1382,6 +1393,7 @@ payload["v2_evaluation_contract"] = {
     "speed_governor_brake_mps2": float(os.environ["NAVRL_SPEED_GOVERNOR_BRAKE_MPS2"]),
     "speed_governor_reaction_s": float(os.environ["NAVRL_SPEED_GOVERNOR_REACTION_S"]),
     "speed_governor_target_exclusion": "camera_lidar_association",
+    **({"joint_speed_telemetry": True} if joint_speed_requested else {}),
     # Perception arm: WHICH perturbation was injected and WHICH compensation was enabled. Without
     # these, two cells of a robustness sweep produce byte-identical provenance and the archive
     # cannot say which arm a number came from.
@@ -1521,6 +1533,7 @@ receipt = {
     "geofence_force_invalid": os.environ.get("NAVRL_GEOFENCE_FORCE_INVALID", "0") == "1",
     "speed_governor_mode": os.environ["NAVRL_SPEED_GOVERNOR"],
     "speed_governor_target_exclusion": "camera_lidar_association",
+    **({"joint_speed_telemetry": True} if joint_speed_requested else {}),
     "perception_perturb": os.environ.get("NAVRL_PERCEPTION_PERTURB", "0") == "1",
     "perception_detection_dropout": float(os.environ.get("NAVRL_DETECTION_DROPOUT", 0.0)),
     "perception_detection_latency_s": float(os.environ.get("NAVRL_DETECTION_LATENCY_S", 0.0)),

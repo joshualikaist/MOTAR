@@ -11015,3 +11015,68 @@ side-forward probe를 실행하고 `finalize`/`verify`까지 통과했다. 같�
 기각할 수 없다. 이 결과는 한 합성 fixture의 반복 forward이며 205-bar 정지나 capture/crash 인과로
 확대하지 않는다. artifact는
 `results/navrl_ref5in_symmetric_corridor_mode_probe_seed431/summary.json`에 저장했다.
+## 2026-08-21 — 고밀도 speed-allocation joint telemetry 사전등록·CPU 검증
+
+205막대에서 남은 bar contact가 단순 고속 때문인지, 좁은 clearance·큰 방향 변화와 결합된 위험한
+속도 배분과 연관되는지 동결 정책으로 분리하기 위한 **평가 전용** 계측을 추가했다. 관측·보상·종료·
+정책·checkpoint에는 손대지 않았고 riskcap 파라미터 탐색도 하지 않는다.
+
+- `NAVRL_JOINT_SPEED_TELEMETRY=1`에서만 recorder를 만들고 JSON key를 export한다. 일반 bulk eval은
+  기존 runtime/result 계약 그대로이며 launcher·condition·schema-2 receipt·analyzer가 opt-in을
+  교차 검증한다.
+- action-selection 시점의 actual pursuer speed, requested/executed XY command 각각의 방향으로
+  actor-safe directional minimum LiDAR clearance를 별도 계산한다. actual/requested/executed stopping
+  distance·margin은 반드시 같은 방향 clearance와 결합하며 primary risk는
+  **actual-velocity-direction margin**이다. 요청방향 clearance와 actual speed를 섞은 hybrid는 쓰지 않는다.
+- requested/realized heading rate와 curvature는 0.25 m/s 이상인 연속 두 sample의 유한차분
+  **proxy**다. planned path curvature나 인과량으로 해석하지 않는다.
+- 각 step을 에피소드 종료 뒤 capture/crash/timeout과 actual stopping-margin 4구간
+  (`<0`, `0–0.5`, `0.5–1.5`, `>=1.5 m`)에 귀속하고, cause-attributed bar contact 직전 1.0초를
+  별도로 집계한다.
+- outcome 총계와 bar-contact 총계가 기존 bulk evaluator의 독립 counter와 다르면 JSON export를
+  중단한다. analyzer도 result SHA, schema-2 receipt, runtime source manifest와 계측 module snapshot을
+  다시 검증한다.
+
+결과를 보기 전에 gate를 `docs/navrl_joint_speed_preregistration_2026-08-21.md`에 고정했다. quality는
+bar-contact 100 episodes / pre-contact 500 steps / capture 1,000 steps 이상이다. quality 통과 뒤
+contact 직전 negative-margin 비율이 50% 이상이고 capture-outcome 대비 +10 pp 이상일 때만
+`supports_descriptive_speed_risk_association`이다. PASS여도 causal claim이나 riskcap 사후튜닝 권한은
+생기지 않는다.
+
+CPU 검증은 joint telemetry **7/7**, 기존 speed-governor **10/10**, outcome strata **5/5**,
+verification guards **4/4**, Python compile·launcher `bash -n`·4097-episode preflight 모두 PASS했다.
+GPU 평가는 실행하지 않았다. 전용 실행기는
+`aerial_gym/rl_training/rl_games/eval_navrl_v2_joint_speed_telemetry.sh`; frozen ep25000+riskcap,
+205 bars, deterministic, unused seed 379, 4,097 episodes 한 셀이다. 결과 예정 경로는
+`results/navrl_v2_joint_speed_allocation_seed379/assessment.json`이다.
+
+통합 전 재현성 검수에서 diagnostic worktree에는 ignored `runs/`가 없어 기본 checkpoint 상대경로가
+실패하는 것을 확인했다. launcher는 local checkpoint를 먼저 찾고, 없으면
+`git rev-parse --git-common-dir`로 primary worktree의 같은 고정 경로를 해석한다. SHA
+`f7022139…` 검사는 그대로다. default `RESULT_ROOT`는 checkpoint 위치를 따라가지 않고 현재
+diagnostic worktree의 `${REPO_ROOT}/results/`에 고정한다. 별도 `POLICY` 없이 worktree preflight를
+재실행해 PASS했다.
+
+### GPU 실행: 첫 run VOID 후 유효 재실행에서 speed-risk 연관 gate 통과
+
+첫 4,097-episode 실행은 simulator를 끝까지 돌렸지만 evaluator가 joint condition attestation 부재로
+fail-closed했다. 원인은 isolated worktree의 launcher가 checkpoint만 primary worktree에서 찾고,
+editable install의 `aerial_gym` import도 primary dirty source로 빠지는 것을 막지 않았기 때문이다.
+따라서 새 recorder가 생성되지 않은 첫 결과는 진단 증거로 **VOID**이며 삭제하지 않고
+`results/void_navrl_v2_joint_speed_allocation_seed379_primary_import_20260821/`에 보존했다.
+
+launcher가 `${REPO_ROOT}`를 `PYTHONPATH` 첫 항목으로 고정하고 `aerial_gym.__init__`의 resolved origin이
+현재 diagnostic worktree와 정확히 일치하는지 실행 전에 검사하도록 수정했다. `bash -n`, import
+origin guard, 4097-episode preflight가 PASS한 뒤 같은 checkpoint/seed/condition으로 재실행했다.
+
+유효 run은 205 bars, seed379, 4,097 episodes에서 capture **80.69%**, crash **16.77%**, timeout
+**2.54%**였고 crash 687건 중 bar contact는 **664건**이다. 사전등록 quality(접촉 100 episodes,
+pre-contact 500 steps, capture 1,000 steps)는 모두 통과했다. bar-contact 직전 1초 6,511 step의
+actual-direction negative stopping-margin 비율은 **67.58%**, capture outcome 전체 step은 **9.25%**로
+차이가 **+58.33pp**였다. 접촉 직전 평균은 requested command **2.895 m/s**, executed command
+**2.109 m/s**, actual speed **1.754 m/s**, actual-direction clearance **1.671 m**였다.
+
+판정은 **supports_descriptive_speed_risk_association**이다. 이는 위험한 실제 진행방향 speed-margin과
+bar contact의 강한 연관만 지지하며 speed를 원인으로 특정하거나 riskcap 사후 파라미터 탐색을
+허용하지 않는다. 유효 artifact와 source/receipt hash는
+`results/navrl_v2_joint_speed_allocation_seed379/assessment.json`에 고정했다.
