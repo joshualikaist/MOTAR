@@ -10560,3 +10560,93 @@ capture/crash/timeout은 **원값 보고, 판정 제외** — 서로 다른 센�
 seed 433(학습)·449(평가) 전수 검색 0건 확인.
 
 `VERIFICATION.md`도 같은 커밋에서 갱신했다(PLAN SYNC 규칙) — "그 다음(조건부)" 절 신설.
+
+## 2026-08-22 — 센서 충실도 런처를 만들고 preflight에서 막혔다: 평가기 provenance가 `detector_min_pixels`를 체크포인트에 고정한다
+
+`tools/run_navrl_ref5in_sensor_fidelity.py`(schema-v2, `preflight|run|finalize|verify`)를
+사전등록 `docs/prereg_2026-08-22_sensor_fidelity.md` §5/§6/§9/§10대로 구축했다. 계약 상수는
+seed 421 / 70 bars / arm당 2,049 / 목표 22.5–28 m / arm A(160×90, 2 px) · arm B(1920×1200, 50 px),
+판정 임계는 never-acquired 델타 **+10.00 pp / ±3.00 pp**다.
+
+### preflight 결과 (실행 로그 그대로)
+
+```
+[sensor-fidelity] arm baseline: evaluator preflight PASS (no override)
+[sensor-fidelity] FAIL: fidelity: generic evaluator preflight did not pass cleanly (returncode=2);
+this run is preregistered to need NO provenance override, so it stops here instead of forcing.
+mismatch lines: ['cfg_detector_min_pixels: checkpoint=2 expected=50.0']
+```
+
+**arm A는 통과, arm B는 거부다.** 원인은 우회가 아니라 구조다:
+`eval_navrl_v2_density_sweep.sh:675`가 `cfg_detector_min_pixels`를
+`float(os.environ["NAVRL_DETECTOR_MIN_PIXELS"])`와 **같아야 한다**고 요구한다. 즉 평가기는 검출
+임계를 "체크포인트가 학습된 값과 동일해야 하는 표현 계약"으로 취급한다. 동결 정책은 2 px²로
+학습됐으므로 **임계를 올리는 어떤 arm도 이 게이트를 통과할 수 없다.** 탈출로는 두 개뿐이고 둘 다
+현재 권한 밖이다 — (a) `NAVRL_V2_FORCE=1`(사전등록 §5가 "override 없음"을 명시), (b)
+`NAVRL_V2_ALLOW_DETECTOR_THRESHOLD_MISMATCH`와 같은 전용 허용 플래그를 min_pixels에도 추가
+(런타임 소스 변경 + 사전등록 개정).
+
+가설 기각: "detect 해상도 분리가 끝났으니 arm B는 그대로 돌아간다" — **틀렸다.** 분리는
+`navrl_detector.py`/`navrl_perception.py` 쪽에서 끝났지만 **평가기 provenance 게이트는 손대지
+않았고**, 임계 축은 그 게이트를 통과하지 못한다.
+
+### 그 밖에 기록해 둘 것
+
+- **p90을 기록하지 못한다.** `navrl_task.py first_acquisition_payload()`는 outcome별
+  `first_visible_step_mean`과 lower median만 export하고 히스토그램
+  (`_fa_eval_outcome_first_hist`)은 결과 JSON에 쓰지 않는다. 어떤 기록 필드에서도 p90을 유도할 수
+  없어 `first_visible_step_p90: null` + 사유 문자열로 남긴다(사전등록 §6은 중앙값·p90 둘 다 요구).
+- never-acquired는 **발명하지 않았다**:
+  `result["target_motion"]["first_acquisition"][outcome]["never_acquired"]`를 capture/crash/timeout
+  세 코호트에 대해 합산해 같은 코호트의 episode 합으로 나눈다(seed 367 `manipulation_check`와 동일
+  필드). 코호트 합 == `actual_episodes` 회계를 assert한다.
+- detect **해상도**는 receipt에도 `v2_evaluation_contract`에도 기록되지 않는다. 따라서 arm 정체성의
+  독립 증명은 `detector_min_pixels` 하나뿐이며, 요약에
+  `detect_resolution_not_recorded_by_evaluator: true`로 명시한다.
+- 테스트: `python -m unittest discover -s tests` **592개 전부 통과**(기존 578 + 신규
+  `SensorFidelityContract` 14).
+
+### 다음
+
+평가기 provenance가 임계 축을 막는 문제를 **결정한 뒤** 진행한다. 코드 우회는 하지 않았고 GPU
+시간도 쓰지 않았다.
+
+## 2026-08-22 (이어서) — 사전등록 §5-b 개정으로 해소: 담요식 force가 아니라 **좁은 단일 필드 override**
+
+사전등록에 §5-b(좁은 provenance override)와 §5-c(기록되지 않는 두 가지)가 **측정 전에** 추가됐고,
+런처가 그대로 구현했다. 해법은 새 플래그가 아니라 **저장소의 기존 패턴**
+(`run_navrl_ref5in_cv_heading_near_open.py:107-120` `verify_narrow_override`)이다.
+
+`verify_narrow_override()`는 arm B에 대해 **force 없이 먼저** preflight를 돌려
+`returncode == 2`이고 불일치 라인 집합이 **정확히** `["cfg_detector_min_pixels: checkpoint=2
+expected=50.0"]` 하나임을 증명한 **뒤에만** `NAVRL_V2_FORCE=1`을 적용한다. 두 줄이거나 다른
+필드면 중단한다. arm A는 override를 아예 쓰지 않으며, `arm_requires_force()`가 arm 이름의 함수라
+호출자가 실수로도 arm A에 force를 줄 수 없다(명시적 `force=True`는 거부된다).
+
+**이것은 담요식 force보다 느슨한 게 아니라 더 엄격하다.** 담요식 `NAVRL_V2_FORCE`는 다른 모든
+불일치까지 함께 가려주지만, 이 절차는 실행 시점에 불일치가 그 한 필드뿐임을 증명한다. 검증은
+`preflight`와 `run` **양쪽**에서 수행되므로 검증되지 않은 override 아래에서 셀이 생성될 수 없다.
+요약에는 arm별로 `narrow_provenance_override`가 기록된다 — baseline `{used: false}`,
+fidelity `{used: true, sole_verified_mismatch, reason}`.
+
+### preflight 결과 (양 arm 통과)
+
+```
+[sensor-fidelity] arm baseline: evaluator preflight PASS (no override)
+[sensor-fidelity] arm fidelity: narrow provenance override VERIFIED (sole mismatch: cfg_detector_min_pixels: checkpoint=2 expected=50.0) then preflight PASS
+[sensor-fidelity] PREFLIGHT PASS | seed=421 bars=70 episodes=2049/arm | narrow override on fidelity only
+[sensor-fidelity]   NAVRL_DETECTOR_MIN_PIXELS: {'baseline': '2', 'fidelity': '50'}
+[sensor-fidelity]   NAVRL_DETECT_HEIGHT: {'baseline': '90', 'fidelity': '1200'}
+[sensor-fidelity]   NAVRL_DETECT_WIDTH: {'baseline': '160', 'fidelity': '1920'}
+[sensor-fidelity]   NAVRL_V2_FORCE: {'baseline': None, 'fidelity': '1'}
+[sensor-fidelity]   NAVRL_DETECTOR_MAX_RANGE: never exported (config default 20.0 m, identical in both arms)
+```
+
+테스트: 전체 discovery **598개 전부 통과**(578 기존 + `SensorFidelityContract` 20). 신규 6개는
+기대 불일치 문자열이 모듈 상수일 것, arm A가 절대 force하지 않을 것, 검증이 `preflight`·`run`
+양쪽에서 일어날 것, 불일치 집합 길이가 1이 아니면(두 줄·다른 필드·불일치 없음·평가기가 거부를
+멈춤) 중단할 것을 고정한다.
+
+### 다음
+
+`run`은 사용자가 직접 시작한다. 런타임 루트는 clean이므로 dirty-runtime 게이트는 통과한다.

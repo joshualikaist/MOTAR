@@ -173,3 +173,53 @@ capture/crash/timeout은 **원값으로 보고하되 판정에 쓰지 않는다*
 동등성 증명 산출물, 무효·실패 실행, VOID 사유. 요약에
 `p2_verdict_changed: false`, `d1_verdict_changed: false`, `p3_unlocked: false`,
 `decision_authority: "none"`.
+
+---
+
+## 5-b. 좁은 provenance override (2026-08-22, **어떤 arm도 실행하기 전** 기록)
+
+§5는 "provenance override 없이 통과해야 한다"고 적었다. `preflight`에서 그것이 불가능함이
+드러났다:
+
+```
+[eval_v2] REFUSING: v2 contract mismatch:
+  cfg_detector_min_pixels: checkpoint=2 expected=50.0
+```
+
+`eval_navrl_v2_density_sweep.sh:675`가 `cfg_detector_min_pixels`를 v2 provenance 게이트의 `want`
+집합에 넣는다. 즉 평가기는 검출 임계가 **체크포인트가 학습된 값**과 같기를 요구한다. arm A(=2)는
+통과하고 arm B(=50)는 필연적으로 불일치한다.
+
+**이 불일치는 결함이 아니라 실험의 정의다.** 본 실험은 "학습 때와 다른 임계에서 동결 정책을
+평가한다"이며, 게이트는 정확히 그 차이를 잡아낸 것이다. §5의 "override 없이"는 이 게이트의 존재를
+모르고 쓴 문장이며, 측정 전에 정정한다.
+
+**채택: 좁은 단일 필드 override.** 저장소의 기존 패턴(`run_navrl_ref5in_cv_heading_near_open.py:107-120`
+`verify_narrow_override`)을 그대로 쓴다.
+
+- arm B에 대해 **force 없이** preflight를 먼저 돌려 `returncode == 2`임을 확인한다.
+- 불일치 라인 집합이 **정확히** `["cfg_detector_min_pixels: checkpoint=2 expected=50.0"]` 하나임을
+  요구한다. 두 개 이상이거나 다른 필드가 섞이면 **중단**한다.
+- 그 증명 이후에만 `NAVRL_V2_FORCE=1`로 preflight를 재실행해 통과를 확인한다.
+- arm A는 override를 쓰지 않으며, 쓰지 않았음을 요약에 기록한다.
+- 사용된 단일 불일치 문자열을 `summary.json`의 `narrow_provenance_override`에 고정한다.
+
+이는 게이트를 **느슨하게 하지 않는다.** 담요식 `NAVRL_V2_FORCE`는 다른 모든 불일치도 함께
+가려주지만, 이 절차는 실행 시점에 불일치가 정확히 그 한 필드임을 증명하므로 오히려 더 엄격하다.
+새 allow-flag를 런타임 소스에 추가하는 대안보다도 낫다 — 소스 변경이 없고, 검증이 실행 시점에
+일어난다.
+
+§6의 게이트·임계·판정 규칙은 **변경하지 않는다.**
+
+## 5-c. 기록되지 않는 두 가지 (2026-08-22, 실행 전 기록)
+
+1. **first-acquisition p90은 산출 불가.** `navrl_task.py first_acquisition_payload()`가
+   `first_visible_step_mean`과 하위 중앙값만 내보내고 per-outcome 히스토그램은 결과 JSON에 쓰지
+   않는다. §6이 요구한 p90은 기록된 어떤 필드에서도 유도할 수 없다. `null`과 사유
+   `FIRST_ACQUISITION_P90_UNAVAILABLE`로 기록한다. 런타임 소스를 고치는 것은 이 평가 전용
+   사전등록의 권한 밖이다.
+2. **검출 해상도가 영수증에 증명되지 않는다.** 평가기가 `detect_width/height`를 영수증에도
+   `v2_evaluation_contract`에도 기록하지 않으므로, **증명 가능한 arm 구분자는
+   `detector_min_pixels` 하나뿐**이다. 요약에 `detect_resolution_not_recorded_by_evaluator: true`로
+   명시한다. 두 값이 한 쌍으로 움직인다는 것은 런처 코드와 로그로만 확인되며, 이는 이 실험의
+   provenance 상 약점이다.

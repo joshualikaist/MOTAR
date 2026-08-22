@@ -966,5 +966,360 @@ class ReflectionAuditContract(unittest.TestCase):
                     )
 
 
+class SensorFidelityContract(unittest.TestCase):
+    """Prereg 2026-08-22 sensor-model fidelity evaluation (seed 421).
+
+    Four failures this guards against.  First, a preregistered constant drifting: seed, density,
+    episode budget, goal band and the two arm definitions are the whole comparability of the pair.
+    Second, the launcher acquiring authority it was never granted -- the three
+    ``*_changed`` / ``p3_unlocked`` literals must stay false, because this experiment cannot revise
+    P2 or D1 and cannot unlock P3.  Third, the seed-367 confound returning: ``detector_max_range``
+    must never become a per-arm value, because moving it also renormalises the actor's target
+    token.  Fourth, and most subtly, capture/crash/timeout leaking into the verdict -- the frozen
+    policy was trained against the dishonest sensor, so its outcome rates are a lineage fact and
+    the preregistration reports them raw and judges on never-acquired alone.
+    """
+
+    ORCHESTRATOR = ROOT / "tools/run_navrl_ref5in_sensor_fidelity.py"
+    PREREG = ROOT / "docs/prereg_2026-08-22_sensor_fidelity.md"
+
+    @classmethod
+    def launcher(cls):
+        """Import the launcher once for behavioural assertions (no GPU, no subprocess)."""
+        module = getattr(cls, "_launcher_module", None)
+        if module is None:
+            spec = importlib.util.spec_from_file_location(
+                "sensor_fidelity_launcher_under_test", cls.ORCHESTRATOR
+            )
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            cls._launcher_module = module
+        return module
+
+    def source(self):
+        return self.ORCHESTRATOR.read_text(encoding="utf-8")
+
+    def test_preregistered_contract_literals_are_pinned(self):
+        source = self.source()
+        for literal in (
+            "SEED = 421",
+            "BARS = 70",
+            "EPISODES = 2049",
+            "GOAL_DIST_MIN_M = 22.5",
+            "GOAL_DIST_MAX_M = 28.0",
+            'ARMS = (("baseline", 160, 90, 2), ("fidelity", 1920, 1200, 50))',
+            "NEVER_ACQUIRED_COST_THRESHOLD_PP = 10.00",
+            "NEVER_ACQUIRED_NEUTRAL_BAND_PP = 3.00",
+            "DETECTOR_MAX_RANGE_M = 20.0",
+            "CAMERA_WIDTH = 160",
+            "CAMERA_HEIGHT = 90",
+            '"navrl_ref5in_sensor_fidelity_seed421"',
+            "CHECKPOINT_SHA = "
+            '"197ea26999d6bb9cf23c4e5a55acbe945f89985e2384687d60ab1dbae66a278e"',
+            'PREREGISTRATION = "docs/prereg_2026-08-22_sensor_fidelity.md"',
+            '"decision_authority": "none"',
+            '"p2_verdict_changed": False',
+            '"d1_verdict_changed": False',
+            '"p3_unlocked": False',
+            '"schema_version": 1,',
+            'VERDICT_COST_CONFIRMED = "FIDELITY_COST_CONFIRMED"',
+            'VERDICT_NEUTRAL = "FIDELITY_NEUTRAL"',
+            'VERDICT_INCONCLUSIVE = "INCONCLUSIVE_SENSOR_FIDELITY"',
+        ):
+            self.assertIn(literal, source, f"missing preregistered literal: {literal}")
+
+    def test_the_preregistration_it_names_exists_and_is_the_one_it_implements(self):
+        self.assertTrue(self.PREREG.is_file(), "the named preregistration is missing")
+        prereg = self.PREREG.read_text(encoding="utf-8")
+        for literal in ("421", "2,049", "1920×1200", "20.0", "22.5–28 m"):
+            self.assertIn(literal, prereg, f"preregistration does not contain {literal}")
+
+    def test_arm_definitions_match_the_preregistration(self):
+        module = self.launcher()
+        self.assertEqual(
+            module.ARMS, (("baseline", 160, 90, 2), ("fidelity", 1920, 1200, 50))
+        )
+        self.assertEqual(module.SEED, 421)
+        self.assertEqual(module.BARS, 70)
+        self.assertEqual(module.EPISODES, 2049)
+        self.assertEqual(module.NEVER_ACQUIRED_COST_THRESHOLD_PP, 10.00)
+        self.assertEqual(module.NEVER_ACQUIRED_NEUTRAL_BAND_PP, 3.00)
+        self.assertEqual(module.DETECTOR_MAX_RANGE_M, 20.0)
+
+    def test_thresholds_are_constants_referenced_by_the_comparison(self):
+        """Both thresholds must be compared by NAME.  A literal 10.0 or 3.0 inside the verdict
+        would be a second copy that can drift from the preregistered value."""
+        source = self.source()
+        verdict = source[source.index("def classify_verdict("):source.index("# ------", source.index("def classify_verdict("))]
+        self.assertIn("delta_pp >= NEVER_ACQUIRED_COST_THRESHOLD_PP", verdict)
+        self.assertIn("abs(delta_pp) <= NEVER_ACQUIRED_NEUTRAL_BAND_PP", verdict)
+        for literal in ("10.0", "3.0", "0.10", "0.03"):
+            self.assertNotIn(
+                literal, verdict, f"verdict threshold {literal} duplicated inside the comparison"
+            )
+
+    def test_verdict_boundaries_are_exactly_the_preregistered_ones(self):
+        module = self.launcher()
+        for delta, expected in (
+            (10.00, "FIDELITY_COST_CONFIRMED"),
+            (37.42, "FIDELITY_COST_CONFIRMED"),
+            (9.99, "INCONCLUSIVE_SENSOR_FIDELITY"),
+            (3.01, "INCONCLUSIVE_SENSOR_FIDELITY"),
+            (3.00, "FIDELITY_NEUTRAL"),
+            (0.0, "FIDELITY_NEUTRAL"),
+            (-3.00, "FIDELITY_NEUTRAL"),
+            (-3.01, "INCONCLUSIVE_SENSOR_FIDELITY"),
+            (-50.0, "INCONCLUSIVE_SENSOR_FIDELITY"),
+        ):
+            with self.subTest(delta_pp=delta):
+                self.assertEqual(module.classify_verdict(delta), expected)
+
+    def test_capture_crash_and_timeout_cannot_enter_the_verdict(self):
+        """Prereg section 6 reports them raw and excludes them from the decision.  The verdict
+        function takes one number, so the exclusion is structural rather than a promise."""
+        module = self.launcher()
+        source = self.source()
+        verdict = source[source.index("def classify_verdict("):source.index("# ------", source.index("def classify_verdict("))]
+        # The docstring is allowed to NAME the excluded quantities; the executable body is not.
+        body = verdict[verdict.index('"""', verdict.index('"""') + 3) + 3:]
+        for forbidden in ("capture", "crash", "timeout", "outcome_raw"):
+            self.assertNotIn(
+                forbidden, body, f"{forbidden} appears inside the verdict function body"
+            )
+        self.assertEqual(
+            module.classify_verdict.__code__.co_argcount,
+            1,
+            "classify_verdict must take exactly the never-acquired delta",
+        )
+        # Nothing the function reads may name an outcome count: co_names is every global and
+        # attribute it touches, so this closes the "read it from a module global" route too.
+        for name in module.classify_verdict.__code__.co_names:
+            self.assertNotIn("capture", name.lower())
+            self.assertNotIn("crash", name.lower())
+            self.assertNotIn("timeout", name.lower())
+
+    def test_detector_max_range_is_never_set_per_arm(self):
+        """Seed 367 moved this value and renormalised the actor's target token with it.  The
+        preregistration turns on the range being untouched, so the launcher must not export it at
+        all -- and must assert its own environment does not."""
+        source = self.source()
+        self.assertNotIn('"NAVRL_DETECTOR_MAX_RANGE": ', source)
+        self.assertIn('"NAVRL_DETECTOR_MAX_RANGE" not in env', source)
+        self.assertIn('"target_camera_max_range_m": DETECTOR_MAX_RANGE_M', source)
+        for _, detect_w, detect_h, min_pixels in self.launcher().ARMS:
+            self.assertNotEqual((detect_w, detect_h, min_pixels), (0, 0, 0))
+
+    def test_arm_environments_differ_in_exactly_the_manipulated_variables(self):
+        module = self.launcher()
+        diff = module.arm_env_diff()
+        self.assertEqual(
+            sorted(diff),
+            ["NAVRL_DETECTOR_MIN_PIXELS", "NAVRL_DETECT_HEIGHT", "NAVRL_DETECT_WIDTH"],
+        )
+        self.assertEqual(
+            diff["NAVRL_DETECTOR_MIN_PIXELS"], {"baseline": "2", "fidelity": "50"}
+        )
+        self.assertEqual(diff["NAVRL_DETECT_WIDTH"], {"baseline": "160", "fidelity": "1920"})
+        self.assertEqual(diff["NAVRL_DETECT_HEIGHT"], {"baseline": "90", "fidelity": "1200"})
+
+    def test_min_pixels_override_lands_after_the_closed_environment(self):
+        """P2.canonical_env already contains NAVRL_DETECTOR_MIN_PIXELS=2.  Updating before that
+        call is silently overwritten and both arms would run the baseline threshold -- a two-arm
+        experiment with one arm."""
+        module = self.launcher()
+        source = self.source()
+        body = source[source.index("def canonical_env("):source.index("def arm_env_diff(")]
+        self.assertLess(
+            body.index("P2.canonical_env(cell_dir(arm)"),
+            body.index('"NAVRL_DETECTOR_MIN_PIXELS": str(min_pixels)'),
+            "the per-arm override must be applied AFTER P2.canonical_env",
+        )
+        self.assertLess(
+            body.index("P2.canonical_env(cell_dir(arm)"),
+            body.index('"PYTHONPATH": str(ROOT)'),
+            "PYTHONPATH must be re-injected AFTER P2.canonical_env, which deletes it",
+        )
+        for arm, detect_w, detect_h, min_pixels in module.ARMS:
+            env = module.canonical_env(arm, detect_w, detect_h, min_pixels, preflight=True)
+            self.assertEqual(env["NAVRL_DETECTOR_MIN_PIXELS"], str(min_pixels))
+            self.assertEqual(env["NAVRL_DETECT_WIDTH"], str(detect_w))
+            self.assertEqual(env["NAVRL_DETECT_HEIGHT"], str(detect_h))
+            self.assertEqual(env["NAVRL_CAMERA_WIDTH"], "160")
+            self.assertEqual(env["NAVRL_CAMERA_HEIGHT"], "90")
+            self.assertNotIn("NAVRL_DETECTOR_MAX_RANGE", env)
+            # The narrow override sits on the fidelity arm alone (prereg section 5-b).
+            self.assertEqual(
+                env.get("NAVRL_V2_FORCE"), "1" if arm == module.FORCE_ARM else None
+            )
+            self.assertEqual(env["PYTHONPATH"], str(ROOT))
+            self.assertEqual(env["NAVRL_REQUIRE_SOURCE_ROOT"], str(ROOT))
+
+    def test_episode_contract_is_at_least_not_exactly(self):
+        """The evaluator drains whole 128-env batches, so a cell finishes at or just past the
+        request.  Asserting exact equality has already broken one arm of an earlier run."""
+        source = self.source()
+        self.assertIn("actual >= EPISODES", source)
+        self.assertNotIn("actual == EPISODES", source)
+        self.assertIn("== EPISODES and actual >= EPISODES", source)
+
+    def test_expected_mismatch_is_a_module_constant_compared_by_name(self):
+        """Prereg section 5-b.  The one authorised mismatch is pinned as a constant and the
+        comparison references it; a literal string inside the check could drift from the value the
+        preregistration froze."""
+        module = self.launcher()
+        source = self.source()
+        self.assertEqual(
+            module.EXPECTED_MISMATCH, "cfg_detector_min_pixels: checkpoint=2 expected=50.0"
+        )
+        self.assertEqual(module.FORCE_ARM, "fidelity")
+        self.assertIn(
+            'EXPECTED_MISMATCH = "cfg_detector_min_pixels: checkpoint=2 expected=50.0"', source
+        )
+        self.assertIn("lines == [EXPECTED_MISMATCH]", source)
+        self.assertIn("unforced.returncode == 2", source)
+
+    def test_only_the_fidelity_arm_may_ever_force(self):
+        """Arm A must not use the override at all, and must not be able to acquire one even if a
+        caller asks for it."""
+        module = self.launcher()
+        self.assertTrue(module.arm_requires_force("fidelity"))
+        self.assertFalse(module.arm_requires_force("baseline"))
+        baseline = module.canonical_env("baseline", 160, 90, 2, preflight=True)
+        self.assertNotIn("NAVRL_V2_FORCE", baseline)
+        fidelity = module.canonical_env("fidelity", 1920, 1200, 50, preflight=True)
+        self.assertEqual(fidelity["NAVRL_V2_FORCE"], "1")
+        # The unforced fidelity environment is what the proof step needs, and it must be reachable.
+        unforced = module.canonical_env("fidelity", 1920, 1200, 50, preflight=True, force=False)
+        self.assertNotIn("NAVRL_V2_FORCE", unforced)
+        # An explicit force on the baseline arm is refused rather than honoured.
+        with self.assertRaises(module.ContractError):
+            module.canonical_env("baseline", 160, 90, 2, preflight=True, force=True)
+
+    def test_summary_records_the_override_per_arm(self):
+        source = self.source()
+        self.assertIn('"narrow_provenance_override"', source)
+        self.assertIn('"sole_verified_mismatch": EXPECTED_MISMATCH', source)
+        self.assertIn('else {"used": False}', source)
+        self.assertIn("narrow_provenance_override", self.launcher().SUMMARY_VERIFY_KEYS)
+
+    def test_override_verification_runs_in_both_preflight_and_run(self):
+        """A cell must never be produced under an override this process did not verify, so the
+        proof cannot live in the `preflight` subcommand alone."""
+        source = self.source()
+        main = source[source.index("def main() -> int:"):]
+        preflight_block = main[main.index('if mode == "preflight":'):main.index('if mode == "run":')]
+        run_block = main[main.index('if mode == "run":'):main.index("verified = verify_all()")]
+        self.assertIn("preflight_evaluator()", preflight_block)
+        self.assertIn("preflight_evaluator()", run_block)
+        self.assertLess(
+            run_block.index("preflight_evaluator()"),
+            run_block.index("run_arm("),
+            "the override must be verified BEFORE any arm is executed",
+        )
+        self.assertIn("verify_narrow_override()", source)
+
+    def test_a_mismatch_set_that_is_not_exactly_one_field_stops_the_run(self):
+        """Two mismatch lines, a different field, or an evaluator that stops refusing at all must
+        each abort -- that is what makes this stricter than a blanket force."""
+        module = self.launcher()
+
+        class FakeCompleted:
+            def __init__(self, returncode, stdout):
+                self.returncode = returncode
+                self.stdout = stdout
+
+        good = "  cfg_detector_min_pixels: checkpoint=2 expected=50.0"
+        other = "  cfg_detector_threshold: checkpoint=0.55 expected=0.7"
+        passing = "[eval_v2] PREFLIGHT PASS (evaluation not started)"
+        cases = {
+            "two mismatch lines": (2, "\n".join([good, other])),
+            "a different field": (2, other),
+            "no mismatch line at all": (2, "[eval_v2] REFUSING: something else"),
+            "evaluator stopped refusing": (0, passing),
+        }
+        for label, (code, stdout) in cases.items():
+            with self.subTest(case=label):
+                calls = []
+
+                def fake_run(arm, w, h, px, *, force, _code=code, _out=stdout):
+                    calls.append(force)
+                    return FakeCompleted(_code, _out)
+
+                original = module.run_preflight
+                module.run_preflight = fake_run
+                try:
+                    with self.assertRaises(module.ContractError):
+                        module.verify_narrow_override()
+                finally:
+                    module.run_preflight = original
+                self.assertEqual(
+                    calls, [False], "the unforced proof must run first and force must not follow"
+                )
+
+    def test_the_verified_single_field_override_is_accepted(self):
+        """The happy path: refused unforced with exactly one line, then passing under force."""
+        module = self.launcher()
+
+        class FakeCompleted:
+            def __init__(self, returncode, stdout):
+                self.returncode = returncode
+                self.stdout = stdout
+
+        calls = []
+
+        def fake_run(arm, w, h, px, *, force):
+            calls.append(force)
+            if force:
+                return FakeCompleted(0, "[eval_v2] PREFLIGHT PASS (evaluation not started)")
+            return FakeCompleted(
+                2,
+                "[eval_v2] REFUSING: v2 contract mismatch:\n"
+                "  cfg_detector_min_pixels: checkpoint=2 expected=50.0",
+            )
+
+        original = module.run_preflight
+        module.run_preflight = fake_run
+        try:
+            self.assertEqual(module.verify_narrow_override(), module.EXPECTED_MISMATCH)
+        finally:
+            module.run_preflight = original
+        self.assertEqual(calls, [False, True], "the unforced proof must precede the forced run")
+
+    def test_never_acquired_is_read_from_the_evaluator_not_invented(self):
+        """The primary measurand must come from the telemetry the evaluator already emits."""
+        source = self.source()
+        self.assertIn('(result.get("target_motion") or {}).get("first_acquisition")', source)
+        self.assertIn('int(rows[label]["never_acquired"])', source)
+        self.assertIn('result["action"]["context"]["target_hidden"]["fraction"]', source)
+        self.assertIn("NEVER_ACQUIRED_SOURCE", source)
+
+    def test_fail_closed_is_a_biconditional(self):
+        source = self.source()
+        self.assertIn(
+            "(verdict == VERDICT_FAIL_CLOSED) == (published is None)",
+            source,
+            "the fail-closed contract must be enforced in both directions",
+        )
+
+    def test_limitations_are_transcribed_from_the_preregistration(self):
+        module = self.launcher()
+        self.assertEqual(len(module.LIMITATIONS), 5)
+        for index, item in enumerate(module.LIMITATIONS, start=1):
+            self.assertTrue(
+                item.startswith(f"L{index}:"), f"limitation {index} is not labelled L{index}"
+            )
+
+    def test_summary_authority_literals_stay_false(self):
+        source = self.source()
+        authority = source[source.index('"schema_version": 1,'):source.index('"limitations": list(LIMITATIONS)')]
+        for literal in (
+            '"decision_authority": "none",',
+            '"p2_verdict_changed": False,',
+            '"d1_verdict_changed": False,',
+            '"p3_unlocked": False,',
+        ):
+            self.assertIn(literal, authority, f"summary lost the authority literal {literal}")
+
+
 if __name__ == "__main__":
     unittest.main()
