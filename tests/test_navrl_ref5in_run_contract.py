@@ -415,7 +415,7 @@ class OOBExitForensicsContract(unittest.TestCase):
 
     def test_recorder_consumes_the_cause_attributed_oob_mask(self):
         task = self.TASK.read_text(encoding="utf-8")
-        attribution = "d_oob = oob & ~crashed & ~below & ~above & crashed_out"
+        attribution = "d_oob = oob & ~d_contact & ~below & ~above & crashed_out"
         call = "self._record_oob_exit(d_oob, pos, b_min, b_max, m_oob, steps)"
         self.assertIn(attribution, task)
         self.assertIn(call, task)
@@ -460,6 +460,25 @@ class OOBExitForensicsContract(unittest.TestCase):
         payload = task[task.index("def oob_exit_payload"):task.index("def first_acquisition_payload")]
         self.assertIn("a diagonal corner exit lands", recorder)
         self.assertIn("A corner crossing increments two edges", payload)
+    def test_rerun_reuses_frozen_seed367_contract(self):
+        source = self.ORCHESTRATOR.read_text(encoding="utf-8")
+        for literal in (
+            'OUTPUT = ROOT / "results/navrl_ref5in_oob_exit_forensics_seed367"',
+            "BASE.INCLUDE_OOB_FORENSICS = True",
+            'BASE.SUMMARY_SCOPE = "frozen_seed367_oob_exit_forensics_20m_28m"',
+            "CHECKPOINT_ROBOT_CONFIG_SHA256 = (",
+            "refusing robot config bytes that differ from the frozen checkpoint",
+            'env["PYTHONPATH"] = str(ROOT)',
+            "refusing aerial_gym imported outside clean worktree",
+            "return BASE.main()",
+        ):
+            self.assertIn(literal, source)
+        # The wrapper must not define a second set of experimental knobs that could drift from
+        # the audited base contract.
+        for forbidden in ("SEED =", "ARMS =", "EPISODES =", "TIMEOUT_DROP_THRESHOLD ="):
+            self.assertNotIn(forbidden, source)
+
+
 class ReflectionAuditContract(unittest.TestCase):
     """Prereg 2026-08-21 N1 real-frame reflection audit (seed 373).
 
@@ -1324,25 +1343,6 @@ class SensorFidelityContract(unittest.TestCase):
             '"p3_unlocked": False,',
         ):
             self.assertIn(literal, authority, f"summary lost the authority literal {literal}")
-
-    def test_rerun_reuses_frozen_seed367_contract(self):
-        source = self.ORCHESTRATOR.read_text(encoding="utf-8")
-        for literal in (
-            'OUTPUT = ROOT / "results/navrl_ref5in_oob_exit_forensics_seed367"',
-            "BASE.INCLUDE_OOB_FORENSICS = True",
-            'BASE.SUMMARY_SCOPE = "frozen_seed367_oob_exit_forensics_20m_28m"',
-            "CHECKPOINT_ROBOT_CONFIG_SHA256 = (",
-            "refusing robot config bytes that differ from the frozen checkpoint",
-            'env["PYTHONPATH"] = str(ROOT)',
-            "refusing aerial_gym imported outside clean worktree",
-            "return BASE.main()",
-        ):
-            self.assertIn(literal, source)
-        # The wrapper must not define a second set of experimental knobs that could drift from
-        # the audited base contract.
-        for forbidden in ("SEED =", "ARMS =", "EPISODES =", "TIMEOUT_DROP_THRESHOLD ="):
-            self.assertNotIn(forbidden, source)
-
 
 if __name__ == "__main__":
     unittest.main()
