@@ -20,6 +20,62 @@ training logs into the main context — that is what subagents are for.
 Working dir for all training/eval: `aerial_gym/rl_training/rl_games`. Env: conda `aerialgym`, always
 `PYTHONNOUSERSITE=1`. Sensor-only mode = `NAVRL_VISION=1`.
 
+## TWO DISCIPLINES, ONE NAME — know which one you are paying for
+
+`docs/discipline_review_2026-08-22.md` found that "preregistration" here means two different things
+with very different track records. Keep them apart; they cost differently and fail differently.
+
+**(A) Claim protection** — freeze the gate, the metric, the seed, and the verdict rule BEFORE
+measuring, so the answer cannot be steered afterwards. This is cheap. It should be a short block:
+question, arms, primary metric, thresholds, what would falsify it, and what the result does NOT
+authorise. It does not need 150 lines of prose. Write it, freeze it, commit it before the machinery
+that runs it exists.
+
+**(B) Machinery integrity** — receipts, source manifests, checkpoint SHA pinning, runtime-clean
+gates, import-origin enforcement, fail-closed guards, equivalence proofs. This is expensive and it
+is what has actually saved this project: all five VOIDed runs (`governor_off`, `dirty_runtime`,
+`export_guard_bug`, `source_drift`, `guard`) were caught by (B), not by (A). With 2,000+ episodes a
+cell, noise is not the adversary — silent machinery failure is. **Do not economise here.**
+
+The failure mode to avoid is paying (B)-sized ceremony for an (A)-sized decision.
+
+## CHEAP CALCULATION BEFORE EXPENSIVE MACHINERY
+
+Before preregistering an experiment, write down: **can this result be predicted by calculation, and
+if so what is the prediction?** Put the answer in the preregistration.
+
+- If calculation gives a confident prediction, ask whether the experiment is still the highest-value
+  next step. Often a 30-minute derivation replaces hours of GPU and days of tooling.
+- If you run it anyway, a matching result confirms the model and a mismatch is a real discovery.
+  Either way you learn more than from an unanchored measurement.
+
+This is not hypothetical. On 2026-08-22 the three most valuable findings of the day — that 28 m
+detection is geometrically impossible in-sim, that `min_target_pixels` is an area rather than a
+diameter, and that the 20 m clip rather than the pixel threshold is what binds — all came from
+reading code and doing arithmetic with the GPU idle. The last one was predictable before the
+experiment that measured it.
+
+## PROHIBITIONS EXPIRE — every one carries a reason and a review trigger
+
+When you forbid something, write **why** and **what would make it reviewable again**. A prohibition
+whose cause has been fixed and which nobody has re-examined is not discipline, it is sediment.
+
+The live example: post-hoc riskcap tuning was banned because the speed-governor data was
+contaminated. The contamination was found and fixed long ago. Nobody asked whether the ban still
+applied, and as a consequence `NAVRL_MAX_VELOCITY` (2.5), `NAVRL_MAX_TILT_DEG` (45) and
+`NAVRL_YAW_RATE_MAX` (2.5) have **never once been ablated** — zero experiments, and `3.5355` is not
+an optimum but the geometric consequence of `2.5 x sqrt(2)`.
+
+Distinguish two things that look alike:
+- **Forbidden** — doing it would corrupt a claim or destroy provenance. Example: editing
+  `aerial_gym/config/robot_config/**` or `resources/robots/**`, which are byte-frozen against every
+  existing checkpoint.
+- **Expensive and unexplored** — legitimate, just costly. Example: the speed/tilt/yaw ceilings.
+  `max_velocity` is the observation-normalisation denominator, so changing it breaks the checkpoint
+  contract and forces a retrain. That is a price, not a prohibition. Say so, and price it.
+
+Never let the second quietly become the first.
+
 ## PLAN SYNC RULE — non-negotiable, and the one most often forgotten
 
 **When the plan changes, update the planning documents in the same commit as the work that changed

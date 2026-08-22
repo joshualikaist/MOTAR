@@ -54,12 +54,30 @@ substantive한 요청(학습·평가·분석·감사·구현)을 받으면:
   1,000 epoch/4.096M samples 적응한 checkpoint(SHA `f70221393660…`)는 새 seed45 uniform에서
   **81.94/15.67/2.39%**를 기록했다. source+riskcap 78.20/17.80/4.00% 대비 capture +3.75 pp이며,
   seed46 fixed 0.3/0.9/1.5 m/s도 capture↑/crash↓ 방향을 3/3 통과했다. 이 ep25000+riskcap을 현재
-  navigation/control candidate로 동결한다. fixed-density PPO 연장·riskcap 사후튜닝은 금지하며 다음은
-  learned detector/perception robustness다. 현재 학습/평가 프로세스는 없다.
+  navigation/control candidate로 동결한다. 다음은 learned detector/perception robustness다.
+  **금지 2건 — 사유와 재검 조건 (2026-08-22 부여, `docs/discipline_review_2026-08-22.md`)**:
+  ① fixed-density PPO 연장 금지 — 사유: 실패를 epoch 추가로 덮는 것을 막는다. 재검: 밀도가
+  아닌 축에서 병목이 특정되고 그 처방이 사전등록됐을 때. ② riskcap 사후튜닝 금지 — 사유:
+  seed 44 speed-governor 자료가 semantic-mask leak으로 오염됐었다. **그 오염은 이미 수정·재실행**
+  됐으므로 이 금지의 원인은 소멸했다. 재검: 깨끗한 재측정 위에서 사전등록된 A/B라면 허용. 현재 학습/평가 프로세스는 없다.
   핵심 보고는 `results/navrl_v2_ep24000_limit_audit.{md,json}`과
   `results/navrl_v2_riskcap_postadapt/summary.{md,json}`이다.
 - **하드웨어**: RTX 3070 8GB(학습 공장) + GTX 1650 Ti 4GB(평가 공장 — 학습은 N=128이라 ~10-15pt 약함,
   결과 섞지 말 것). RTX 50번대(Blackwell)는 Isaac Gym Preview4와 비호환 — 사지 말 것.
+
+## 비싸고 미탐색인 축 (금지 아님 — 값을 매겨서 다룰 것)
+
+`NAVRL_MAX_VELOCITY`(2.5) · `NAVRL_MAX_TILT_DEG`(45) · `NAVRL_YAW_RATE_MAX`(2.5) 는 **실험 이력
+0건**이다. `free_speed_cap_mps = 3.5355`도 최적값이 아니라 `2.5 x sqrt(2)`라는 축별 제한의 기하학적
+귀결일 뿐이다. 이것들은 **금지된 적이 없고**, riskcap 사후튜닝 금지 + 한 run 한 축이 겹쳐 사실상
+접근 불가처럼 취급돼 왔다(2026-08-22 재검에서 확인).
+
+실제 비용은 이것이다: `max_velocity`는 관측 정규화의 분모다(`navrl_task.py:3914,3958`). 바꾸면
+동결 체크포인트와의 계약이 어긋나므로 **재학습이 필요한 축**이다. 물리적으로도 정지거리 `v²/2a`와
+선회반경 `v²/a`가 제곱으로 커지고(2.5 m/s에서 1.06/0.64 m, 4.0 m/s에서 2.70/1.63 m), 올리려면 틸트
+상한도 함께 올려야 하며 틸트는 필요추력을 `1/cosθ`로 키운다(60° 2배, 70° 2.9배; 현재 T/W 3.26).
+
+**"금지"가 아니라 "값이 비싼 미탐색 축"으로 다룬다.** 손대려면 재학습 예산과 사전등록이 필요하다.
 
 ## 핵심 함정 (재학습 금지)
 

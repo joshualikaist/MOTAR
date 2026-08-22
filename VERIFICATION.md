@@ -179,6 +179,10 @@ detect ≠ camera면 fail-closed, 모든 조합에서 관측 898-D 유지를 증
 
 ## fail-closed 규칙
 
+> 각 규칙은 **사유**와 **재검 조건**을 함께 갖는다(2026-08-22,
+> [`docs/discipline_review_2026-08-22.md`](docs/discipline_review_2026-08-22.md)). 원인이 소멸한
+> 규칙은 만료 대상이며, 재검 없이 남은 금지는 규율이 아니라 퇴적물이다.
+
 1. 앞 gate **명시적 PASS** 없이 다음 단계 시작 금지.
 2. 실패를 epoch 추가·threshold 사후 완화·parameter sweep으로 덮지 않음.
 3. 한 run에서 airframe, reward, horizon, representation, governor **동시 변경 금지**.
