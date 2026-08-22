@@ -173,6 +173,18 @@ SMOKE_EPOCHS = 6
 SMOKE_ARM = TREATMENT_ARM
 VRAM_LIMIT_MIB = 8192           # RTX 3070 board limit
 
+# Adopting a run this launcher did not start.  ``train`` is not the only legal way to produce an
+# arm -- the trainer can be driven directly -- and the verification half must not be unusable just
+# because it did not press the button.  The operator names the run folder and the tee'd training
+# log; every Gate 0 fact is then RE-DERIVED from those artifacts exactly as for a launcher-started
+# run.  The one thing adoption cannot recover is which clip the run trained at: navrl_task records
+# no ``cfg_detector_max_range`` in env_state, so the arm assignment is the operator's assertion and
+# is recorded as such rather than presented as attested provenance.
+ADOPT_RUN_ROOT_ENV = "DETRANGE_STAGE1_RUN_ROOT_%s"
+ADOPT_TRAIN_LOG_ENV = "DETRANGE_STAGE1_TRAIN_LOG_%s"
+CLIP_EVIDENCE_LAUNCHER = "set_by_this_launcher_and_verified_in_the_trainer_effective_environment"
+CLIP_EVIDENCE_ADOPTED = "operator_assertion_at_adoption (checkpoint provenance records no clip)"
+
 PREREGISTRATION = "docs/prereg_2026-08-22_detection_range_2stage.md"
 PRODUCER = "tools/run_navrl_ref5in_detection_range_stage1.py"
 SCOPE = "detection_range_stage1_screening_s457_eval_s461"
@@ -222,6 +234,54 @@ KL_SKIP_LOG_MARKER = "[aerial RL] PPO epoch rejection latched"
 PPO_ROLLBACK_TOTAL_KEY = "aerial_ppo_rollback_total"
 PPO_ROLLBACK_STREAK_KEY = "aerial_ppo_rollback_streak"
 MAX_EPOCHS_EXIT_REASON = "max_epochs"
+
+# Every variable the preregistration pins, and what the script chain is allowed to do to it.  The
+# launcher sets these; the chain (train_navrl_v2_search.sh -> train_navrl.sh -> runner.py) runs
+# afterwards and can quietly erase any of them.  Three outcomes are legal and each must be
+# DECLARED here, so a new clobber is a failure rather than a discovery made after a run:
+#
+#   pass through          the chain never mentions the variable
+#   clobbered to the same the chain hard-codes exactly the value this launcher pins, so the run is
+#     value we pin        the intended one either way (the literal is checked, not assumed)
+#   conditionally erased  the chain unsets it under a condition this launcher pins OFF
+#
+# NAVRL_NUM_BARS is the live example of the third case and the reason this table exists: the chain
+# unsets it inside ``if NAVRL_DENSITY_CURRICULUM == 1``, handing bar count to the density
+# curriculum.  Arm clip28 acquires more easily, so it would promote sooner and the arms would have
+# differed in DENSITY as well as clip -- two axes, not one, with both runs looking healthy.
+CHAIN_SCRIPTS = ("train_navrl_v2_search.sh", "train_navrl.sh")
+PINNED_TRAINING_VARIABLES = (
+    "NAVRL_DETECTOR_MAX_RANGE",
+    "NAVRL_DETECT_WIDTH",
+    "NAVRL_DETECT_HEIGHT",
+    "NAVRL_DETECTOR_MIN_PIXELS",
+    "NAVRL_CAMERA_WIDTH",
+    "NAVRL_CAMERA_HEIGHT",
+    "NAVRL_NUM_BARS",
+    "NAVRL_DENSITY_CURRICULUM",
+    "NAVRL_GENERAL_GOAL_DIST_MIN",
+    "NAVRL_GENERAL_GOAL_DIST_MAX",
+    "NAVRL_SPEED_GOVERNOR",
+    "NAVRL_PERCEPTION_PERTURB",
+    "NAVRL_ROBOT",
+    "NAVRL_LEARNING_RATE",
+) + ZERO_PERTURBATION_KEYS + UNSET_MEANS_ZERO_KEYS
+# variable -> the exact literal the chain hard-codes, which must equal what this launcher pins.
+CHAIN_CLOBBERS_TO_PINNED_VALUE = {
+    "NAVRL_PERCEPTION_PERTURB": "0",
+}
+# variable -> (guard variable, guard value that triggers the erasure, reason it is safe here).
+CHAIN_CONDITIONAL_ERASURES = {
+    "NAVRL_NUM_BARS": (
+        "NAVRL_DENSITY_CURRICULUM",
+        "1",
+        "train_navrl_v2_search.sh unsets NAVRL_NUM_BARS only while the density curriculum owns the "
+        "bar count; this experiment pins NAVRL_DENSITY_CURRICULUM=0, so the fixed 70 bars survive "
+        "-- and the effective-environment check proves it did",
+    ),
+    "NAVRL_REFLECTION_COEF": (None, None, "unset unconditionally; the task reads unset as 0"),
+    "NAVRL_LATERAL_BIAS_COEF": (None, None, "unset unconditionally; the task reads unset as 0"),
+}
 
 # train_navrl_v2_search.sh must honour these as OVERRIDES rather than hard-coding them, or the
 # preregistered held-fixed condition silently does not happen.  ``NAVRL_DETECTOR_MIN_PIXELS`` is
@@ -865,6 +925,81 @@ def verify_evaluator_needs_no_range_override() -> dict:
     }
 
 
+def verify_pinned_variables_survive_the_script_chain() -> dict:
+    """Mechanically audit every pinned variable against the scripts that run after this launcher.
+
+    Reading what the launcher exports proves nothing: the chain executes afterwards and can
+    ``export VAR=literal`` over it or ``unset`` it outright.  Two real cases have already been
+    found by hand -- ``NAVRL_DETECTOR_MIN_PIXELS`` hard-coded to 2, and ``NAVRL_NUM_BARS`` unset
+    into the density curriculum -- and each would have produced two healthy-looking runs that were
+    not the preregistered experiment.  Doing it by hand does not scale to the next experiment, so
+    it is done here for every pinned variable, before any GPU time.
+
+    This is the STATIC half.  effective_training_env() is the behavioural half: it reads back the
+    environment the chain actually produced.  Neither replaces the other -- the static audit says
+    "nothing in the chain can erase this", the dump says "it did not".
+    """
+    findings = {}
+    for name in CHAIN_SCRIPTS:
+        path = RL_ROOT / name
+        require(path.is_file(), f"script chain member missing: {path}")
+        text = path.read_text(encoding="utf-8")
+        for variable in PINNED_TRAINING_VARIABLES:
+            clobbers = re.findall(
+                r"^\s*export\s+%s=(.*)$" % re.escape(variable), text, flags=re.MULTILINE
+            )
+            hard = [
+                value.strip()
+                for value in clobbers
+                if ("${%s:-" % variable) not in value
+            ]
+            erasures = re.findall(
+                r"^\s*unset\s+([^\n]*\b%s\b[^\n]*)$" % re.escape(variable),
+                text,
+                flags=re.MULTILINE,
+            )
+            if not hard and not erasures:
+                findings.setdefault(variable, []).append(f"{name}: pass-through")
+                continue
+            if hard:
+                expected = CHAIN_CLOBBERS_TO_PINNED_VALUE.get(variable)
+                require(
+                    expected is not None and all(value == expected for value in hard),
+                    f"{name} hard-codes {variable}={hard!r}, which this launcher pins but has not "
+                    "declared as a permitted clobber; the preregistered condition would silently "
+                    "not happen (use ${%s:-<default>} in the script, or declare it here with the "
+                    "literal it pins)" % variable,
+                )
+                findings.setdefault(variable, []).append(
+                    f"{name}: clobbered to the pinned value {expected!r}"
+                )
+            if erasures:
+                declared = CHAIN_CONDITIONAL_ERASURES.get(variable)
+                require(
+                    declared is not None,
+                    f"{name} unsets {variable} ({erasures!r}) and this launcher has not declared "
+                    "why that is safe; the preregistered condition would silently not happen",
+                )
+                _, _, reason = declared
+                findings.setdefault(variable, []).append(f"{name}: erased -- {reason}")
+    # The guard this launcher relies on for the conditional erasure must actually be pinned off.
+    guard, guard_value, _ = CHAIN_CONDITIONAL_ERASURES["NAVRL_NUM_BARS"]
+    pinned_guard = training_env(CONTROL_ARM, preflight=True)[guard]
+    require(
+        pinned_guard != guard_value,
+        f"{guard} is pinned to {pinned_guard!r}, the very value that makes the chain hand "
+        "NAVRL_NUM_BARS to the density curriculum; the arms would then differ in density as well "
+        "as clip",
+    )
+    return {
+        "checked_by_launcher": True,
+        "scripts": list(CHAIN_SCRIPTS),
+        "variables_audited": len(PINNED_TRAINING_VARIABLES),
+        "findings": {key: sorted(value) for key, value in sorted(findings.items())},
+        "density_curriculum_pinned_to": pinned_guard,
+    }
+
+
 def verify_prerequisites() -> dict:
     """Everything cheap, before any GPU second is spent."""
     require(CHECKPOINT.is_file(), f"pinned warm-start checkpoint missing: {CHECKPOINT}")
@@ -913,7 +1048,10 @@ def verify_prerequisites() -> dict:
             "the canonical trainer hard-codes a preregistered held-fixed condition instead of "
             f"honouring it as an override; expected: {literal}",
         )
-    return verify_evaluator_needs_no_range_override()
+    chain_audit = verify_pinned_variables_survive_the_script_chain()
+    override = verify_evaluator_needs_no_range_override()
+    override["chain_audit"] = chain_audit
+    return override
 
 
 # ----------------------------------------------------------------------------------------------
@@ -1007,15 +1145,21 @@ class RunWatcher(threading.Thread):
     def __init__(self, run_glob: str, interval: float = 1.0):
         super().__init__(daemon=True)
         self.run_glob = run_glob
+        # Folders that already match the tag are EARLIER runs.  Counting their rows would make the
+        # series start at some finished epoch count and then jump backwards when this run's folder
+        # appears, which silently destroys the per-epoch timing (it did, on the first smoke).
+        self.preexisting = set(glob.glob(run_glob))
         self.interval = interval
         self.peak_mib = 0
         self.total_mib = 0
         self.samples = 0
         self.epoch_marks = []          # (monotonic seconds, epoch rows)
-        self._stop = threading.Event()
+        # NOT ``self._stop``: threading.Thread already owns that name (Thread._stop is called by
+        # join()), and shadowing it with an Event makes join() raise instead of waiting.
+        self._stop_event = threading.Event()
 
     def run(self):
-        while not self._stop.is_set():
+        while not self._stop_event.is_set():
             used, total = self._gpu_memory()
             if used is not None:
                 self.samples += 1
@@ -1024,10 +1168,10 @@ class RunWatcher(threading.Thread):
             rows = self._epoch_rows()
             if rows is not None and (not self.epoch_marks or rows != self.epoch_marks[-1][1]):
                 self.epoch_marks.append((time.monotonic(), rows))
-            self._stop.wait(self.interval)
+            self._stop_event.wait(self.interval)
 
     def stop(self):
-        self._stop.set()
+        self._stop_event.set()
         self.join(timeout=5.0)
 
     @staticmethod
@@ -1049,7 +1193,7 @@ class RunWatcher(threading.Thread):
         return used, total
 
     def _epoch_rows(self):
-        matches = sorted(glob.glob(self.run_glob))
+        matches = sorted(set(glob.glob(self.run_glob)) - self.preexisting)
         if not matches:
             return None
         csv_path = Path(matches[-1]) / "aerial_run" / "epoch_metrics.csv"
@@ -1062,13 +1206,26 @@ class RunWatcher(threading.Thread):
             return None
 
     def seconds_per_epoch(self):
-        marks = [mark for mark in self.epoch_marks if mark[1] > 0]
-        if len(marks) < 2:
-            return None
-        (first_t, first_n), (last_t, last_n) = marks[0], marks[-1]
-        if last_n <= first_n:
-            return None
-        return (last_t - first_t) / (last_n - first_n)
+        """Seconds per epoch over the longest strictly increasing run of row counts.
+
+        Taking first-and-last would be wrong the moment the series is not monotone; the timing is
+        only meaningful across samples that are all from the same, still-growing CSV.  Startup is
+        excluded by construction because the first mark is the first epoch that finished.
+        """
+        best = None
+        segment = []
+        for mark in self.epoch_marks:
+            if mark[1] <= 0:
+                segment = []
+                continue
+            if segment and mark[1] <= segment[-1][1]:
+                segment = []
+            segment.append(mark)
+            if len(segment) >= 2:
+                span = (segment[-1][0] - segment[0][0]) / (segment[-1][1] - segment[0][1])
+                if best is None or len(segment) > best[0]:
+                    best = (len(segment), span)
+        return None if best is None else best[1]
 
 
 def find_run_root(tag: str) -> Path:
@@ -1224,7 +1381,9 @@ def train_arm(arm: str) -> dict:
         "producer": PRODUCER,
         "created_at_utc": datetime.now(timezone.utc).isoformat(),
         "arm": arm,
+        "adopted": False,
         "detector_max_range_m": clip,
+        "detector_max_range_evidence": CLIP_EVIDENCE_LAUNCHER,
         "run_root": str(run_root),
         "terminal_checkpoint": str(terminal_path),
         "terminal_checkpoint_sha256": terminal_sha,
@@ -1245,6 +1404,85 @@ def train_arm(arm: str) -> dict:
         f"next: evaluate {arm}",
         flush=True,
     )
+    return record
+
+
+def adopt_training_run(arm: str) -> dict:
+    """Build training/<arm>/ from a run folder this launcher did not start.
+
+    Named by two environment variables so the assignment is explicit and auditable rather than
+    guessed from a glob:
+
+        DETRANGE_STAGE1_RUN_ROOT_CLIP20=<runs/ppo_...>   DETRANGE_STAGE1_TRAIN_LOG_CLIP20=<...log>
+
+    The log is REQUIRED, not optional.  Gate 0's no-rollback check has two independent witnesses --
+    the durable counters inside the checkpoint and the ``PPO EPOCH ROLLBACK`` lines in the log --
+    and adopting a run without the log would quietly reduce that to one.
+    """
+    root_key = ADOPT_RUN_ROOT_ENV % arm.upper()
+    log_key = ADOPT_TRAIN_LOG_ENV % arm.upper()
+    raw_root = os.environ.get(root_key, "").strip()
+    raw_log = os.environ.get(log_key, "").strip()
+    require(
+        bool(raw_root) and bool(raw_log),
+        f"{arm}: no training record, and this run was not adopted. Either run `train {arm}`, or "
+        f"point the launcher at an existing run:\n  {root_key}=<runs/ppo_..._navrl_...>\n  "
+        f"{log_key}=<the tee'd training log for that run>",
+    )
+    run_root = Path(raw_root).expanduser().resolve()
+    log = Path(raw_log).expanduser().resolve()
+    require(run_root.is_dir(), f"{arm}: {root_key} is not a directory: {run_root}")
+    require(log.is_file(), f"{arm}: {log_key} is not a file: {log}")
+    summary_source = run_root / "aerial_run" / "run_summary.json"
+    require(summary_source.is_file(), f"{arm}: adopted run has no run summary: {summary_source}")
+    terminal = sorted((run_root / "nn").glob(f"last_gen_ppo_ep_{TERMINAL_EPOCH}_rew_*.pth"))
+    require(
+        len(terminal) == 1,
+        f"{arm}: expected exactly one terminal checkpoint for epoch {TERMINAL_EPOCH} in "
+        f"{run_root / 'nn'}, found {[path.name for path in terminal]}",
+    )
+    terminal_path = terminal[0].resolve()
+
+    import torch  # local: CPU-only callers must not pay for torch at import time
+
+    checkpoint = torch.load(str(terminal_path), map_location="cpu", weights_only=False)
+    state = checkpoint.get("env_state") or {}
+    manifest_path = Path(str(state.get("cfg_training_source_manifest", "")))
+    require(
+        manifest_path.is_file(),
+        f"{arm}: the adopted checkpoint names a training source manifest that is not present: "
+        f"{manifest_path}",
+    )
+    manifest = load_json(manifest_path)
+    train_dir(arm).mkdir(parents=True, exist_ok=True)
+    shutil.copy2(summary_source, train_paths(arm)["run_summary"])
+    shutil.copy2(log, train_paths(arm)["log"])
+    record = {
+        "schema_version": 1,
+        "producer": PRODUCER,
+        "created_at_utc": datetime.now(timezone.utc).isoformat(),
+        "arm": arm,
+        "adopted": True,
+        "detector_max_range_m": arm_clip(arm),
+        "detector_max_range_evidence": CLIP_EVIDENCE_ADOPTED,
+        "adopted_from": {"run_root_env": root_key, "train_log_env": log_key},
+        "run_root": str(run_root),
+        "terminal_checkpoint": str(terminal_path),
+        "terminal_checkpoint_sha256": P2.sha256_file(terminal_path),
+        "warm_start_checkpoint": str(CHECKPOINT),
+        "warm_start_checkpoint_sha256": CHECKPOINT_SHA,
+        "training_source_manifest": str(manifest_path),
+        "training_source_manifest_sha256": str(
+            state.get("cfg_training_source_manifest_sha256", "")
+        ),
+        "training_source_git_commit": str(manifest.get("git_commit", "")),
+        "epoch_metrics_csv": str(run_root / "aerial_run" / "epoch_metrics.csv"),
+        "finished_marker": str(run_root / ".aerial_training_finished"),
+    }
+    train_paths(arm)["record"].write_text(
+        json.dumps(record, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+    )
+    print(f"[detrange] arm {arm}: ADOPTED existing run {run_root.name}")
     return record
 
 
@@ -1288,49 +1526,44 @@ def verify_training(arm: str) -> dict:
 
     checkpoint = torch.load(str(terminal_path), map_location="cpu", weights_only=False)
     state = checkpoint.get("env_state") or {}
-    require(
-        int(checkpoint.get("epoch", -1)) == TERMINAL_EPOCH,
-        f"{arm}: terminal checkpoint is epoch {checkpoint.get('epoch')!r}, not {TERMINAL_EPOCH}",
-    )
-    require(
-        int(checkpoint.get("frame", -1)) == TERMINAL_FRAME,
-        f"{arm}: terminal checkpoint frame {checkpoint.get('frame')!r} is not the preregistered "
-        f"{TERMINAL_FRAME} ({ADAPT_SAMPLES:,} adaptation samples on top of the warm start)",
-    )
+    # Gate 0 is a VERDICT, not an abort.  A short arm is a real experimental outcome the
+    # preregistration has a name for -- VOID -- and a launcher that raised here would report an
+    # exception instead of reporting the outcome.  Identity failures above still abort, because a
+    # checkpoint that is not the file it claims to be is not evidence of anything.
+    epoch = int(checkpoint.get("epoch", -1))
+    frame = int(checkpoint.get("frame", -1))
     budget = {
         "checked_by_launcher": True,
-        "terminal_epoch": int(checkpoint["epoch"]),
-        "terminal_frame": int(checkpoint["frame"]),
+        "passed": epoch == TERMINAL_EPOCH and frame == TERMINAL_FRAME,
+        "terminal_epoch": epoch,
+        "terminal_frame": frame,
+        "expected_terminal_epoch": TERMINAL_EPOCH,
+        "expected_terminal_frame": TERMINAL_FRAME,
         "adaptation_epochs": ADAPT_EPOCHS,
         "adaptation_samples": ADAPT_SAMPLES,
     }
 
     summary = load_json(paths["run_summary"])
-    require(
-        summary.get("exit_reason") == MAX_EPOCHS_EXIT_REASON,
-        f"{arm}: training exit_reason is {summary.get('exit_reason')!r}, not "
-        f"{MAX_EPOCHS_EXIT_REASON!r}; the arm is VOID (prereg section 5, Gate 0)",
-    )
-    require(
-        int(summary.get("epochs_logged", -1)) == ADAPT_EPOCHS
-        and int(summary.get("first_epoch", -1)) == WARM_START_EPOCH + 1
-        and int(summary.get("last_epoch", -1)) == TERMINAL_EPOCH,
-        f"{arm}: epoch accounting is {summary.get('first_epoch')}..{summary.get('last_epoch')} "
-        f"({summary.get('epochs_logged')} rows), not {WARM_START_EPOCH + 1}..{TERMINAL_EPOCH} "
-        f"({ADAPT_EPOCHS} rows)",
-    )
     marker = Path(str(record.get("finished_marker", "")))
-    require(
-        marker.is_file() and marker.read_text(encoding="utf-8").strip() == f"epoch={TERMINAL_EPOCH}",
-        f"{arm}: normal-completion marker missing or not at epoch {TERMINAL_EPOCH}: {marker}",
+    marker_text = (
+        marker.read_text(encoding="utf-8").strip() if marker.is_file() else ""
     )
     exit_evidence = {
         "checked_by_launcher": True,
+        "passed": (
+            summary.get("exit_reason") == MAX_EPOCHS_EXIT_REASON
+            and int(summary.get("epochs_logged", -1)) == ADAPT_EPOCHS
+            and int(summary.get("first_epoch", -1)) == WARM_START_EPOCH + 1
+            and int(summary.get("last_epoch", -1)) == TERMINAL_EPOCH
+            and marker_text == f"epoch={TERMINAL_EPOCH}"
+        ),
         "exit_reason": summary.get("exit_reason"),
+        "expected_exit_reason": MAX_EPOCHS_EXIT_REASON,
         "epochs_logged": int(summary.get("epochs_logged", -1)),
         "first_epoch": int(summary.get("first_epoch", -1)),
         "last_epoch": int(summary.get("last_epoch", -1)),
         "finished_marker": str(marker),
+        "finished_marker_text": marker_text,
     }
 
     rollback_total = int(checkpoint.get(PPO_ROLLBACK_TOTAL_KEY, 0) or 0)
@@ -1343,20 +1576,15 @@ def verify_training(arm: str) -> dict:
                 rollback_lines.append(line.strip())
             elif KL_SKIP_LOG_MARKER in line:
                 kl_skip_lines.append(line.strip())
-    require(
-        rollback_total == 0 and rollback_streak == 0,
-        f"{arm}: the terminal checkpoint records {rollback_total} PPO rollback(s) "
-        f"(streak {rollback_streak}); Gate 0 forbids a KL-driven rollback, so the arm is VOID",
-    )
-    require(
-        not rollback_lines,
-        f"{arm}: the training log records PPO epoch rollbacks: {rollback_lines[:4]}",
-    )
     rollback = {
         "checked_by_launcher": True,
+        # Gate 0 forbids a KL-driven rollback.  Two independent witnesses must agree: the durable
+        # counters the agent writes into the checkpoint itself, and the training log.
+        "passed": rollback_total == 0 and rollback_streak == 0 and not rollback_lines,
         "rollback_total": rollback_total,
         "rollback_streak": rollback_streak,
-        "rollback_log_lines": 0,
+        "rollback_log_lines": len(rollback_lines),
+        "rollback_log_sample": rollback_lines[:4],
         # KL-rejected minibatches are NOT a rollback and are not a Gate 0 failure: the update is
         # skipped and the epoch commits normally.  Reported so a quiet drift is visible.
         "kl_skipped_log_lines": len(kl_skip_lines),
@@ -1373,8 +1601,20 @@ def verify_training(arm: str) -> dict:
         state.get("cfg_training_source_git_dirty") is False,
         f"{arm}: the checkpoint records a dirty training source",
     )
+    # The receipt the checkpoint NAMES must still hash to the digest the checkpoint RECORDS.  For
+    # an adopted run this is the check that carries T5: the record was written from env_state, so
+    # comparing the two would be circular, while re-hashing the manifest on disk is not.
+    receipt_manifest = Path(str(state.get("cfg_training_source_manifest", "")))
+    require(
+        receipt_manifest.is_file()
+        and P2.sha256_file(receipt_manifest) == manifest_sha
+        and len(manifest_sha) == 64,
+        f"{arm}: the training source manifest {receipt_manifest} does not hash to the digest the "
+        f"checkpoint records ({manifest_sha!r})",
+    )
     training_receipt = {
         "checked_by_launcher": True,
+        "passed": True,
         "manifest_sha256": manifest_sha,
         "manifest": str(record.get("training_source_manifest", "")),
         "git_commit": str(record.get("training_source_git_commit", "")),
@@ -1406,6 +1646,7 @@ def verify_training(arm: str) -> dict:
     require(not mismatch, f"{arm}: training condition mismatch (recorded, expected): {mismatch}")
     training_condition = {
         "checked_by_launcher": True,
+        "passed": True,
         "pinned": {key: state.get(key) for key in sorted(pinned)},
         # The clip itself is NOT in env_state -- navrl_task records no cfg_detector_max_range -- so
         # it is attested on the evaluation side instead (see verify_evaluator_needs_no_range_override).
@@ -1421,7 +1662,11 @@ def verify_training(arm: str) -> dict:
         "budget": budget,
         "exit": exit_evidence,
         "rollback": rollback,
-        "terminal_sha": {"checked_by_launcher": True, "sha256": terminal_sha},
+        "terminal_sha": {
+            "checked_by_launcher": True,
+            "passed": True,
+            "sha256": terminal_sha,
+        },
         "training_receipt": training_receipt,
         "training_condition": training_condition,
         "reward_at_end": summary.get("reward_at_end"),
@@ -1492,15 +1737,26 @@ def verify_no_override_needed(arm: str, checkpoint: Path) -> dict:
 
 
 def evaluate_arm(arm: str) -> None:
-    require(
-        train_paths(arm)["record"].is_file(),
-        f"{arm}: no training record; run `train {arm}` first",
-    )
+    if not train_paths(arm)["record"].is_file():
+        adopt_training_run(arm)
     require(
         not cell_dir(arm).exists(),
         f"refusing overwrite: {cell_dir(arm)} already exists",
     )
     trained = verify_training(arm)
+    require(
+        training_gates_passed(trained),
+        f"{arm}: Gate 0 failed, so this arm is VOID and must not be evaluated (prereg section 5). "
+        "Run `finalize` to publish the VOID summary. Gate 0 evidence: "
+        + json.dumps(
+            {
+                key: trained[key]
+                for key in TRAINING_GATES.values()
+                if not trained[key].get("passed")
+            },
+            ensure_ascii=False,
+        ),
+    )
     checkpoint = trained["terminal_checkpoint"]
     verify_no_override_needed(arm, checkpoint)
     OUTPUT.mkdir(parents=True, exist_ok=True)
@@ -1751,12 +2007,35 @@ def verify_cell(arm: str, trained: dict) -> dict:
     }
 
 
+def training_gates_passed(training: dict) -> bool:
+    """True when this arm cleared every Gate 0 check (prereg section 5)."""
+    return all(
+        bool((training.get(key) or {}).get("passed")) for key in TRAINING_GATES.values()
+    )
+
+
 def verify_all() -> dict:
     """Per-arm training (Gate 0) and evaluation verification, then the cross-arm invariants."""
     trainings = {}
-    cells = {}
     for arm, _ in ARMS:
         trainings[arm] = verify_training(arm)
+    void_arms = sorted(arm for arm, _ in ARMS if not training_gates_passed(trainings[arm]))
+    if void_arms:
+        # Gate 0 comes BEFORE the verdict (prereg section 5).  A VOID arm has no cell and must not
+        # acquire one, so verification stops here and reports the outcome instead of raising.
+        return {
+            "trainings": trainings,
+            "cells": {},
+            "order": tuple(arm for arm, _ in ARMS),
+            "void_arms": void_arms,
+            "held_fixed": {},
+            "runtime_map_identity": None,
+            "shared_training_receipt": None,
+            "single_axis": None,
+        }
+
+    cells = {}
+    for arm, _ in ARMS:
         cells[arm] = verify_cell(arm, trainings[arm])
 
     (name_a, cell_a), (name_b, cell_b) = ((arm, cells[arm]) for arm, _ in ARMS)
@@ -1867,6 +2146,7 @@ def verify_all() -> dict:
         "trainings": trainings,
         "cells": cells,
         "order": (name_a, name_b),
+        "void_arms": [],
         "held_fixed": held_fixed,
         "runtime_map_identity": runtime_map_identity,
         "shared_training_receipt": shared_training_receipt,
@@ -1979,13 +2259,24 @@ def gate_table(verified: dict) -> dict:
         for arm, _ in ARMS:
             evidence = verified["trainings"][arm].get(evidence_key)
             require(
-                isinstance(evidence, dict) and evidence.get("checked_by_launcher") is True,
+                isinstance(evidence, dict)
+                and evidence.get("checked_by_launcher") is True
+                and isinstance(evidence.get("passed"), bool),
                 f"{arm}: quality gate {gate} is owned by this launcher, but verify_training() "
-                f"produced no {evidence_key} evidence that the launcher ran the check",
+                f"produced no {evidence_key} evidence carrying a boolean verdict",
             )
-            per_arm[arm] = True
-        gates[gate] = {"owner": PRODUCER, "scope": "per_arm_training", "passed": True,
-                       "arms": per_arm}
+            per_arm[arm] = evidence["passed"]
+        gates[gate] = {
+            "owner": PRODUCER,
+            "scope": "per_arm_training",
+            "passed": all(per_arm.values()),
+            "arms": per_arm,
+        }
+    # An arm that failed Gate 0 was never evaluated, so there are no evaluation gates to judge.
+    # Emitting them as "failed" would claim checks were run and lost; omitting them says what is
+    # true -- the experiment stopped at Gate 0 (prereg section 5).
+    if verified["void_arms"]:
+        return gates
     for gate, evidence_key in sorted(PER_ARM_GATES.items()):
         per_arm = {}
         for arm, _ in ARMS:
@@ -2038,26 +2329,12 @@ def gate_tally(payload: dict) -> tuple:
 def build_summary(verified: dict) -> dict:
     gates = gate_table(verified)
     failed_gates = sorted(name for name, gate in gates.items() if gate.get("passed") is False)
-    void_arms = sorted(
-        {
-            arm
-            for gate, body in gates.items()
-            if gate in TRAINING_GATES and body.get("passed") is False
-            for arm, ok in (body.get("arms") or {}).items()
-            if ok is False
-        }
-    )
-
-    measurements = {arm: arm_measurements(verified["cells"][arm]) for arm, _ in ARMS}
-    control_name, treatment_name = verified["order"]
+    void_arms = list(verified["void_arms"])
+    control_name, treatment_name = (CONTROL_ARM, TREATMENT_ARM)
     require(
-        (control_name, treatment_name) == (CONTROL_ARM, TREATMENT_ARM),
-        f"arm order drifted: {(control_name, treatment_name)} is not "
+        tuple(verified["order"]) == (CONTROL_ARM, TREATMENT_ARM),
+        f"arm order drifted: {tuple(verified['order'])} is not "
         f"{(CONTROL_ARM, TREATMENT_ARM)}; the delta sign depends on it",
-    )
-    delta_pp = (
-        measurements[treatment_name]["never_acquired_rate_pp"]
-        - measurements[control_name]["never_acquired_rate_pp"]
     )
 
     # Gate 0 first (prereg section 5).  If any owned gate failed, nothing may be claimed about the
@@ -2065,12 +2342,18 @@ def build_summary(verified: dict) -> dict:
     # enforced rather than described: a VOID verdict carrying measurements would publish numbers
     # the preregistration says are not to be interpreted, and a null payload under any other
     # verdict would publish a verdict with nothing behind it.
-    if failed_gates:
+    if failed_gates or void_arms:
         verdict = VERDICT_VOID
         published = None
         basis = None
         published_delta = None
+        measurements = {}
     else:
+        measurements = {arm: arm_measurements(verified["cells"][arm]) for arm, _ in ARMS}
+        delta_pp = (
+            measurements[treatment_name]["never_acquired_rate_pp"]
+            - measurements[control_name]["never_acquired_rate_pp"]
+        )
         verdict = classify_verdict(delta_pp)
         published = measurements
         published_delta = delta_pp
@@ -2113,6 +2396,10 @@ def build_summary(verified: dict) -> dict:
                     ),
                 },
                 "training": {
+                    "adopted": bool(training["record"].get("adopted")),
+                    "detector_max_range_evidence": training["record"].get(
+                        "detector_max_range_evidence"
+                    ),
                     "run_root": training["run_root"],
                     "terminal_checkpoint": str(training["terminal_checkpoint"]),
                     "terminal_checkpoint_sha256": training["terminal_checkpoint_sha256"],
@@ -2194,7 +2481,11 @@ def build_summary(verified: dict) -> dict:
         "quality_gates": gates,
         "failed_gates": failed_gates,
         "held_fixed": verified["held_fixed"],
-        "import_origin": {arm: verified["cells"][arm]["import_origin"] for arm, _ in ARMS},
+        "import_origin": {
+            arm: verified["cells"][arm]["import_origin"]
+            for arm, _ in ARMS
+            if arm in verified["cells"]
+        },
         "limitations": list(LIMITATIONS),
         "sources": {
             arm: {
@@ -2281,7 +2572,10 @@ def write_summary(payload: dict) -> None:
     else:
         lines.append(
             "게이트 0(학습 건전성)이 실패했으므로 측정값을 게재하지 않는다 (사전등록 §5). "
-            f"VOID arm: {payload.get('void_arms') or '—'}"
+            f"**VOID arm: {', '.join(payload.get('void_arms') or []) or '—'}** "
+            f"실패 게이트: {', '.join(payload.get('failed_gates') or []) or '—'}. "
+            "VOID arm은 평가되지 않으므로 평가 게이트는 판정되지 않았고, 판정되지 않은 것을 "
+            "'실패'로 적지 않는다."
         )
 
     lines.extend([
@@ -2433,6 +2727,13 @@ def main() -> int:
                 print(f"[detrange] arm {name}: cell already exists, skipping")
                 continue
             evaluate_arm(name)
+        pending = [name for name, _ in ARMS if not cell_dir(name).exists()]
+        if pending:
+            # A per-arm invocation is the normal way to run this: the arms are 2,049 episodes each
+            # and may be days apart.  Summarising now would fail on the arm that does not exist yet
+            # and would report that as an error instead of as "not finished".
+            print(f"[detrange] EVALUATE COMPLETE {targets} | still pending: {pending}")
+            return 0
         verified = verify_all()
         payload = build_summary(verified)
         print(f"[detrange] EVALUATE COMPLETE | verdict={payload['verdict']} | next: finalize")

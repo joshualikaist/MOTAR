@@ -11302,3 +11302,145 @@ seed 457/461(1단계), 463/467(2단계) 전수검색 0건. 실측 epoch당 3.1 s
 교훈: **학습 런처는 자기가 실행하는 스크립트가 자기 변수를 덮어쓰는지 확인해야 한다.** 평가
 경로에는 checkpoint contract 대조가 있어 이런 드리프트가 드러나지만, 학습에는 그 대조가 없다 —
 체크포인트가 "무엇으로 학습됐는지"를 스스로 기록할 뿐 "무엇으로 학습하려 했는지"와 비교하지 않는다.
+
+## 2026-08-22 — stage 1 런처 완성: 학습 계약을 "전달한 값"이 아니라 "스크립트가 만들어낸 환경"에서 검증한다
+
+`tools/run_navrl_ref5in_detection_range_stage1.py` (`preflight|train|evaluate|finalize|verify`).
+평가 전용이던 기존 런처들과 달리 **학습을 포함**하므로 계약이 다르다.
+
+### 핵심 기법 — 실효 환경 덤프
+
+런처가 `export`한 값은 증거가 아니다. `train_navrl_v2_search.sh`가 그 뒤에 실행되며 자기 값으로
+덮어쓰거나 `unset`할 수 있다. 그래서 arm별로 정규 학습 스크립트를
+`NAVRL_V2_CONTRACT_PREFLIGHT_ONLY=1`로 **source**한 뒤 `trap 'env -0' EXIT`로 **실제로 만들어진
+환경을 덤프**하고, 그 위에서 대칭차를 계산한다. 측정된 arm 간 차이:
+
+| | clip20 | clip28 |
+|---|---|---|
+| `NAVRL_DETECTOR_MAX_RANGE` | 20.0 | 28.0 |
+
+그 외 허용 차이는 run 태그·세션로그·라이브로그 3개(결과 경로)뿐이며, 하나라도 더 벌어지면 중단한다.
+평가 쪽 대칭차도 `NAVRL_DETECTOR_MAX_RANGE` + 결과 디렉터리뿐이다.
+
+이 기법이 `NAVRL_DETECTOR_MIN_PIXELS` 하드코딩을 잡았다(별도 항목 참조). **반증 실험도 했다**:
+스크립트를 하드코딩 상태로 되돌리면 실효 환경이 `('2', '50')` 불일치로 preflight에서 즉시 실패한다.
+
+### 정적 감사 — 사전등록이 고정하는 26개 변수 전수
+
+실효 덤프는 "이번엔 살아남았다"를 말하고, 정적 감사는 "체인이 지울 수 있는가"를 말한다. 둘 다 한다.
+`train_navrl_v2_search.sh` + `train_navrl.sh`에서 각 변수의 `export VAR=`(단, `${VAR:-` 형태 제외)와
+`unset ... VAR`를 기계적으로 찾아, 다음 세 가지 중 **선언된** 경우만 통과시킨다.
+
+| 변수 | 체인의 처리 | 판정 |
+|---|---|---|
+| `NAVRL_PERCEPTION_PERTURB` | `export ...=0` 하드코딩 | 우리가 고정하는 값과 **동일**하므로 허용(리터럴 대조) |
+| `NAVRL_NUM_BARS` | `NAVRL_DENSITY_CURRICULUM=1`일 때만 `unset` | 우리가 커리큘럼을 0으로 고정하므로 허용 |
+| `NAVRL_REFLECTION_COEF`·`NAVRL_LATERAL_BIAS_COEF` | 무조건 `unset` | 태스크가 미설정을 0으로 읽으므로 허용(사전등록 §4의 "=0"과 동치) |
+
+나머지 22개는 pass-through. 손으로 한 감사와 결과가 일치했고, 이제 기계가 한다.
+
+### 게이트 0은 예외가 아니라 **판정**이다
+
+`max_epochs` 정상 종료 / KL 롤백 0 / 종단 SHA. 증거는 전부 산출물에서 재도출한다 — 체크포인트의
+`epoch`·`frame`(2900 / 11,878,400), `aerial_run/run_summary.json`의 `exit_reason`,
+`.aerial_training_finished`, 그리고 체크포인트에 내장된 `aerial_ppo_rollback_total`/`_streak`와
+학습 로그의 `PPO EPOCH ROLLBACK` 줄(**독립 증인 2개**). 실패한 arm은 raise가 아니라
+`STAGE1_VOID` 판정 + `void_arms`로 보고되고, 평가에 GPU를 쓰지 않으며, 실행되지 않은 평가 게이트를
+"실패"로 적지 않는다.
+
+### 평가 절반 — override 불필요를 증명했다
+
+각 arm을 **자기가 학습한 클립에서** 평가하므로 override가 필요 없다. 정적 증명: 평가기의 v2
+provenance `want` 집합에 검출 거리 필드가 **없고**(`navrl_task`도 `cfg_detector_max_range`를 기록하지
+않는다), `cfg_detector_min_pixels`는 `os.environ["NAVRL_DETECTOR_MIN_PIXELS"]`에 묶여 있는데 학습·평가
+모두 50이라 일치한다. 실행 증명: force 없는 preflight가 rc 0이어야 하며, 거부되면 담요식 force가
+아니라 **중단**한다. 센서 충실도 실험이 좁은 단일 필드 override를 필요로 했던 것과 대조된다.
+
+**약점 기록**: 클립은 체크포인트 provenance에 남지 않는다. 증명 가능한 arm 구분자는 평가 계약의
+`target_camera_max_range_m` 하나뿐이다.
+
+### VRAM·시간 스모크 (128 env, detect 1920×1200 + cam 160×90, warm-start 6 epoch)
+
+| | 값 |
+|---|---|
+| device peak | **6,667 MiB / 8,192** (headroom 1,525) |
+| epoch 시간 | **7.26 s** (D1의 160×90 3.1 s 대비 2.3배) |
+| arm당 예상 | **2.02 h** (1,000 epoch), 양 arm 약 4 h |
+
+`exit_reason=max_epochs`로 정상 종료. 1 s 폴링·5구간 측정이므로 epoch 시간은 ±0.5 s 수준이고
+warm-start 직후 컴파일 워밍업이 포함돼 **상한**으로 읽어야 한다.
+
+### 테스트
+
+`tests/test_navrl_ref5in_run_contract.py`에 `DetectionRangeStage1Contract` 28개 추가.
+전체 **622 → 650**. 학습이 GPU를 점유한 상태에서는 학습 런처를 subprocess로 부르는 12개
+(`Ref5inSmokeLauncherContract` 8 + v2 launcher/recovery/v5a 4)가 중복학습 가드로 실패한다.
+그 12개를 제외한 **638개는 0 failure / 1 skip**으로 확인했고, 650 전량 green 확인은 학습 종료 후
+재실행이 필요하다.
+
+### 외부 학습 run 입양(adoption)
+
+`train`이 arm을 만드는 유일한 합법 경로는 아니다. 학습 스크립트를 직접 돌린 run도
+`DETRANGE_STAGE1_RUN_ROOT_<ARM>` / `DETRANGE_STAGE1_TRAIN_LOG_<ARM>`로 지목하면 `evaluate`가
+입양해 training record를 만든다. 게이트 0 사실은 전부 그 run의 산출물에서 재도출한다. 로그는
+**필수**다 — 롤백 증인 2개 중 하나가 로그이기 때문이다. 다만 **클립은 입양으로 복원할 수 없다**
+(`env_state`에 `cfg_detector_max_range`가 없다). arm 배정은 운영자 주장이며
+`detector_max_range_evidence: operator_assertion_at_adoption`으로 요약에 명시된다.
+
+### 다음
+
+`train`은 실행하지 않았다(사용자/코디네이터가 직접 실행 중). arm 2개가 끝나면
+`evaluate <arm>` → `finalize` → `verify`.
+
+## 2026-08-22 — stage 1 학습 착수 (arm A 실행 중) + 학습 경로의 구조적 허점
+
+arm A(클립 20 m) 실행 중: `runs/ppo_260822_2322_navrl_detrange-stage1-clip20-s457`,
+seed 457, ep1900 → 2900, envs 128, `curriculum=False bars=70->70` 로그 확인.
+실측 epoch당 약 9 s → arm당 2.0–2.6 h, 양 arm 4–5 h.
+
+### 오늘 밤 잡힌 결함 3건 — 전부 실험을 조용히 무효화했을 것
+
+| | 결함 | 결과 |
+|---|---|---|
+| ① | `train_navrl_v2_search.sh`가 `NAVRL_DETECTOR_MIN_PIXELS=2` 하드코딩 | 양 arm이 **부정직한 센서로 학습**, 체크포인트에 `cfg_detector_min_pixels=2`가 박힌 채 겉보기 정상 |
+| ② | `NAVRL_DENSITY_CURRICULUM` 기본 1 → `:196`이 `NAVRL_NUM_BARS` unset | 커리큘럼이 막대 수를 70→300으로 올리고, arm B가 획득이 쉬워 먼저 승급 → **밀도까지 갈라져 축이 둘** |
+| ③ | `MAX_EPOCHS`가 절대 epoch 목표 | ep1900에서 `MAX_EPOCHS=1000`은 이미 지난 목표 → **1 epoch만 돌고 정상 종료**. 2900이어야 한다(riskcap 선례 ep24001→25000과 동일) |
+
+①은 런처 에이전트가, ②③은 내가 잡았다. ①을 실제로 막은 것은 **training source receipt 가드**다 —
+수정이 학습 중에 착지하자 체크포인트 저장에서 `training runtime source changed`로 거부했다.
+③은 1-epoch run이 **정상 종료로 보였다**는 점이 특히 위험하다. 부분 run 3개를 전부 폐기했다.
+
+### 구조적 발견 — 평가에 있는 안전장치가 학습에는 없다
+
+평가 경로는 런타임을 **체크포인트가 기록한 계약과 대조**하고 어긋나면 거부한다(seed 421에서
+`cfg_detector_min_pixels: checkpoint=2 expected=50`으로 실제 발화했다). 학습 경로에는 그 대조가
+없다 — 체크포인트는 "무엇으로 학습됐는지"를 기록할 뿐 **"무엇으로 학습하려 했는지"와 비교하지
+않는다.** ①·②가 조용히 통과했을 이유가 이것이다.
+
+대응: 런처 preflight에 `verify_pinned_variables_survive_the_script_chain()`을 넣었다.
+사전등록이 고정하는 **26개 변수 전부**에 대해 `train_navrl_v2_search.sh`/`train_navrl.sh`의
+`export VAR=`(`${VAR:-` 제외)와 `unset ... VAR`를 정적 스캔하고, 세 가지 합법 예외
+(`NAVRL_PERCEPTION_PERTURB` 하드코딩 값이 우리와 동일 / `NAVRL_NUM_BARS`는 우리가 가드를 0으로
+고정 / `REFLECTION_COEF`·`LATERAL_BIAS_COEF`는 unset이 곧 0)만 **선언된 경우에** 통과시킨다.
+그 위에 행동 검사가 붙는다 — `NAVRL_V2_CONTRACT_PREFLIGHT_ONLY=1`로 트레이너를 소스하고
+`trap 'env -0' EXIT`로 **실제 생성된 환경**을 두 arm 사이에서 diff한다. 측정 결과 차이는
+`NAVRL_DETECTOR_MAX_RANGE {20.0, 28.0}` + run tag/로그 경로뿐이다.
+
+### 남긴 provenance 구멍 2개 (해결 아님, 기록)
+
+1. **학습된 클립이 체크포인트에 없다.** `navrl_task`가 `env_state`에 `cfg_detector_max_range`를
+   쓰지 않으므로, 입양된 체크포인트가 어느 클립으로 학습됐는지 증명할 방법이 없다. arm 배정은
+   **운영자의 주장**이며 `detector_max_range_evidence: operator_assertion_at_adoption`으로 기록된다.
+   평가된 클립은 `v2_evaluation_contract.target_camera_max_range_m`로 증명된다.
+   **지금 고칠 수 없다** — `aerial_gym/` 수정은 실행 중인 학습의 source receipt를 깨뜨린다. stage 2 전에 한다.
+2. 검출 해상도가 평가기 영수증에 기록되지 않는다(seed 421에서 물려받은 것).
+
+### 평가는 override가 필요 없다 (증명됨)
+
+평가기의 v2 `want` 집합에 검출 거리 키가 없고 `navrl_task`도 `cfg_detector_max_range`를 쓰지
+않으므로 **조작 축이 게이트에 보이지 않는다.** `cfg_detector_min_pixels`는 학습·평가 양쪽 50으로
+일치한다. 런처는 `NAVRL_V2_FORCE`를 아예 도달 불가로 만들었고 테스트가 그 문자열이 대입으로
+나타나지 않음을 검사한다.
+
+테스트 622 → 650. 학습이 락을 쥐고 있는 동안 트레이너를 호출하는 12개가 duplicate 가드로 실패하며,
+그것을 제외하면 638 실행 0 실패 1 skip이다. GPU가 비면 650 전수 재확인이 필요하다.

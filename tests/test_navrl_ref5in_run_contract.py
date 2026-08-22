@@ -1344,5 +1344,520 @@ class SensorFidelityContract(unittest.TestCase):
         ):
             self.assertIn(literal, authority, f"summary lost the authority literal {literal}")
 
+
+class DetectionRangeStage1Contract(unittest.TestCase):
+    """Prereg 2026-08-22 detection-range stage 1 (screening): TRAIN two arms, then evaluate each.
+
+    This is the repository's first PREREGISTERED TRAINING launcher, so the failures it guards
+    against are not the evaluation ones.
+
+    First, a held-fixed condition that the canonical trainer hard-codes.  ``NAVRL_DETECTOR_MIN_PIXELS``
+    was exported literally as 2 by train_navrl_v2_search.sh: a child launcher asking for the
+    honest-sensor 50 would have trained at 2, both arms would still have trained normally, and the
+    resulting checkpoints would have carried the dishonest threshold.  The launcher therefore reads
+    back the environment the trainer actually produces instead of trusting what it passed in, and
+    the trainer must keep honouring the override.
+
+    Second, the budget being a delta instead of an absolute.  ``--max_epochs`` overwrites the yaml
+    value and the agent resumes at the checkpoint's epoch, so 1,000 epochs of adaptation from
+    ep1900 is 2900, not 1000; getting that wrong ends training instantly and silently.
+
+    Third, a blanket provenance override creeping in.  Each arm is evaluated at the clip it TRAINED
+    at, which is exactly the configuration that needs no override -- so NAVRL_V2_FORCE must be
+    unreachable here, unlike in the sensor fidelity launcher where one narrow override was earned.
+
+    Fourth, capture/crash/timeout leaking into the verdict.  They are measured under two different
+    sensor definitions, so the preregistration reports them raw and judges on never-acquired alone.
+    """
+
+    ORCHESTRATOR = ROOT / "tools/run_navrl_ref5in_detection_range_stage1.py"
+    PREREG = ROOT / "docs/prereg_2026-08-22_detection_range_2stage.md"
+    TRAINER = RL / "train_navrl_v2_search.sh"
+
+    @classmethod
+    def launcher(cls):
+        """Import the launcher once for behavioural assertions (no GPU, no training)."""
+        module = getattr(cls, "_launcher_module", None)
+        if module is None:
+            spec = importlib.util.spec_from_file_location(
+                "detection_range_stage1_launcher_under_test", cls.ORCHESTRATOR
+            )
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            cls._launcher_module = module
+        return module
+
+    def source(self):
+        return self.ORCHESTRATOR.read_text(encoding="utf-8")
+
+    def test_preregistered_contract_literals_are_pinned(self):
+        source = self.source()
+        for literal in (
+            "TRAIN_SEED = 457",
+            "EVAL_SEED = 461",
+            "BARS = 70",
+            "EPISODES = 2049",
+            "WARM_START_EPOCH = 1900",
+            "ADAPT_EPOCHS = 1000",
+            "NUM_ENVS = 128",
+            "PPO_HORIZON = 32",
+            'ARMS = (("clip20", 20.0), ("clip28", 28.0))',
+            'TREATMENT_ARM = "clip28"',
+            'CONTROL_ARM = "clip20"',
+            "NEVER_ACQUIRED_HELPS_THRESHOLD_PP = -15.00",
+            "DETECT_WIDTH = 1920",
+            "DETECT_HEIGHT = 1200",
+            "DETECTOR_MIN_PIXELS = 50",
+            "CAMERA_WIDTH = 160",
+            "CAMERA_HEIGHT = 90",
+            "GOAL_DIST_MIN_M = 22.5",
+            "GOAL_DIST_MAX_M = 28.0",
+            '"navrl_ref5in_detection_range_stage1_s457"',
+            "CHECKPOINT_SHA = "
+            '"197ea26999d6bb9cf23c4e5a55acbe945f89985e2384687d60ab1dbae66a278e"',
+            'PREREGISTRATION = "docs/prereg_2026-08-22_detection_range_2stage.md"',
+            '"decision_authority": "none"',
+            '"p2_verdict_changed": False',
+            '"d1_verdict_changed": False',
+            '"p3_unlocked": False',
+            '"schema_version": 1,',
+            'VERDICT_HELPS = "RANGE_HELPS"',
+            'VERDICT_INCONCLUSIVE = "RANGE_INCONCLUSIVE_AT_THIS_BUDGET"',
+            'VERDICT_VOID = "STAGE1_VOID"',
+        ):
+            self.assertIn(literal, source, f"missing preregistered literal: {literal}")
+
+    def test_the_preregistration_it_names_exists_and_is_the_one_it_implements(self):
+        self.assertTrue(self.PREREG.is_file(), "the named preregistration is missing")
+        prereg = self.PREREG.read_text(encoding="utf-8")
+        for literal in ("457", "461", "1,000 epoch", "4.096M", "−15.00 pp", "NAVRL_DETECTOR_MAX_RANGE"):
+            self.assertIn(literal, prereg, f"preregistration does not contain {literal}")
+
+    def test_arm_and_budget_constants_match_the_preregistration(self):
+        module = self.launcher()
+        self.assertEqual(module.ARMS, (("clip20", 20.0), ("clip28", 28.0)))
+        self.assertEqual(module.TRAIN_SEED, 457)
+        self.assertEqual(module.EVAL_SEED, 461)
+        self.assertEqual(module.BARS, 70)
+        self.assertEqual(module.EPISODES, 2049)
+        self.assertEqual(module.ADAPT_EPOCHS, 1000)
+        self.assertEqual(module.NEVER_ACQUIRED_HELPS_THRESHOLD_PP, -15.00)
+
+    def test_the_budget_is_an_absolute_terminal_epoch_not_a_delta(self):
+        """runner.py:850 overwrites the yaml max_epochs and the agent resumes at the checkpoint's
+        epoch, so 1,000 adaptation epochs from ep1900 must be requested as 2900.  4.096 M samples
+        is the same statement in frames: 128 envs x 32 horizon x 1,000 epochs."""
+        module = self.launcher()
+        self.assertEqual(module.TERMINAL_EPOCH, module.WARM_START_EPOCH + module.ADAPT_EPOCHS)
+        self.assertEqual(module.TERMINAL_EPOCH, 2900)
+        self.assertEqual(module.SAMPLES_PER_EPOCH, module.NUM_ENVS * module.PPO_HORIZON)
+        self.assertEqual(module.ADAPT_SAMPLES, 4_096_000)
+        self.assertEqual(module.TERMINAL_FRAME, module.TERMINAL_EPOCH * module.SAMPLES_PER_EPOCH)
+        env = module.training_env("clip28", preflight=True)
+        self.assertEqual(env["MAX_EPOCHS"], "2900")
+
+    def test_threshold_is_a_constant_referenced_by_the_comparison(self):
+        """A literal -15.0 inside the verdict would be a second copy that can drift from the
+        preregistered value."""
+        source = self.source()
+        start = source.index("def classify_verdict(")
+        verdict = source[start:source.index("# ------", start)]
+        self.assertIn("delta_pp <= NEVER_ACQUIRED_HELPS_THRESHOLD_PP", verdict)
+        for literal in ("15.0", "-15", "0.15"):
+            self.assertNotIn(
+                literal, verdict, f"verdict threshold {literal} duplicated inside the comparison"
+            )
+
+    def test_verdict_boundaries_are_exactly_the_preregistered_ones(self):
+        module = self.launcher()
+        for delta, expected in (
+            (-15.00, "RANGE_HELPS"),
+            (-15.01, "RANGE_HELPS"),
+            (-37.65, "RANGE_HELPS"),
+            (-14.99, "RANGE_INCONCLUSIVE_AT_THIS_BUDGET"),
+            (0.0, "RANGE_INCONCLUSIVE_AT_THIS_BUDGET"),
+            (+20.0, "RANGE_INCONCLUSIVE_AT_THIS_BUDGET"),
+        ):
+            with self.subTest(delta_pp=delta):
+                self.assertEqual(module.classify_verdict(delta), expected)
+
+    def test_capture_crash_and_timeout_cannot_enter_the_verdict(self):
+        """Prereg section 5 reports them raw and excludes them from the decision.  The verdict
+        function takes one number, so the exclusion is structural rather than a promise."""
+        module = self.launcher()
+        source = self.source()
+        start = source.index("def classify_verdict(")
+        verdict = source[start:source.index("# ------", start)]
+        # The docstring is allowed to NAME the excluded quantities; the executable body is not.
+        body = verdict[verdict.index('"""', verdict.index('"""') + 3) + 3:]
+        for forbidden in ("capture", "crash", "timeout", "outcome_raw"):
+            self.assertNotIn(
+                forbidden, body, f"{forbidden} appears inside the verdict function body"
+            )
+        self.assertEqual(
+            module.classify_verdict.__code__.co_argcount,
+            1,
+            "classify_verdict must take exactly the never-acquired delta",
+        )
+        # co_names is every global and attribute the function touches, so this closes the
+        # "read it from a module global" route too.
+        for name in module.classify_verdict.__code__.co_names:
+            self.assertNotIn("capture", name.lower())
+            self.assertNotIn("crash", name.lower())
+            self.assertNotIn("timeout", name.lower())
+
+    def test_the_manipulated_variable_is_per_arm_in_both_halves(self):
+        module = self.launcher()
+        for arm, clip in module.ARMS:
+            with self.subTest(arm=arm):
+                training = module.training_env(arm, preflight=True)
+                evaluation = module.evaluation_env(arm, preflight=True)
+                self.assertEqual(training["NAVRL_DETECTOR_MAX_RANGE"], f"{clip:.1f}")
+                self.assertEqual(evaluation["NAVRL_DETECTOR_MAX_RANGE"], f"{clip:.1f}")
+
+    def test_evaluation_environments_differ_in_exactly_the_manipulated_variable(self):
+        module = self.launcher()
+        diff = module.evaluation_env_diff()
+        self.assertEqual(sorted(diff), ["NAVRL_DETECTOR_MAX_RANGE"])
+        self.assertEqual(
+            diff["NAVRL_DETECTOR_MAX_RANGE"], {"clip20": "20.0", "clip28": "28.0"}
+        )
+
+    def test_the_honest_sensor_is_identical_in_both_arms_and_both_halves(self):
+        module = self.launcher()
+        for arm, _ in module.ARMS:
+            for label, env in (
+                ("training", module.training_env(arm, preflight=True)),
+                ("evaluation", module.evaluation_env(arm, preflight=True)),
+            ):
+                with self.subTest(arm=arm, half=label):
+                    self.assertEqual(env["NAVRL_DETECT_WIDTH"], "1920")
+                    self.assertEqual(env["NAVRL_DETECT_HEIGHT"], "1200")
+                    self.assertEqual(env["NAVRL_DETECTOR_MIN_PIXELS"], "50")
+                    self.assertEqual(env["NAVRL_CAMERA_WIDTH"], "160")
+                    self.assertEqual(env["NAVRL_CAMERA_HEIGHT"], "90")
+                    for key in module.ZERO_PERTURBATION_KEYS:
+                        self.assertEqual(float(env[key]), 0.0)
+
+    def test_min_pixels_override_lands_after_the_closed_evaluation_environment(self):
+        """P2.canonical_env already contains NAVRL_DETECTOR_MIN_PIXELS=2.  Updating before that
+        call is silently overwritten and both arms would evaluate at the dishonest threshold."""
+        module = self.launcher()
+        source = self.source()
+        body = source[source.index("def evaluation_env("):source.index("def evaluation_env_diff(")]
+        self.assertLess(
+            body.index("P2.canonical_env(cell_dir(arm)"),
+            body.index('"NAVRL_DETECTOR_MIN_PIXELS": str(DETECTOR_MIN_PIXELS)'),
+            "the honest-sensor threshold must be applied AFTER P2.canonical_env",
+        )
+        self.assertLess(
+            body.index("P2.canonical_env(cell_dir(arm)"),
+            body.index('"PYTHONPATH": str(ROOT)'),
+            "PYTHONPATH must be re-injected AFTER P2.canonical_env, which deletes it",
+        )
+
+    def test_the_canonical_trainer_honours_the_detection_threshold_as_an_override(self):
+        """The launcher cannot set a condition the trainer hard-codes.  Reverting this line would
+        train BOTH arms at the dishonest 2 px threshold while every log still looked normal."""
+        module = self.launcher()
+        trainer = self.TRAINER.read_text(encoding="utf-8")
+        self.assertIn('export NAVRL_DETECTOR_MIN_PIXELS="${NAVRL_DETECTOR_MIN_PIXELS:-2}"', trainer)
+        self.assertNotIn("export NAVRL_DETECTOR_MIN_PIXELS=2\n", trainer)
+        for literal in module.TRAINER_OVERRIDABLE_LITERALS:
+            self.assertIn(literal, trainer)
+
+    def test_reflection_and_lateral_bias_are_zero_by_being_unset(self):
+        """Prereg section 4 lists both as 0.  train_navrl_v2_search.sh UNSETS them and
+        navrl_task.py reads an unset value as 0, so exporting a literal 0 would be erased anyway --
+        absence is the assertion, and the launcher checks the trainer's own environment for it."""
+        module = self.launcher()
+        self.assertEqual(
+            module.UNSET_MEANS_ZERO_KEYS, ("NAVRL_REFLECTION_COEF", "NAVRL_LATERAL_BIAS_COEF")
+        )
+        trainer = self.TRAINER.read_text(encoding="utf-8")
+        self.assertIn("unset NAVRL_LATERAL_BIAS_COEF NAVRL_REFLECTION_COEF", trainer)
+        for key in module.UNSET_MEANS_ZERO_KEYS:
+            self.assertNotIn(key, module.training_env("clip20", preflight=True))
+        # A synthetic "effective" environment: what the launcher passes in, plus the values the
+        # canonical trainer adds.  It must verify clean, and adding a surviving coefficient must be
+        # what breaks it -- otherwise the assertion is only catching the missing keys.
+        effective = dict(module.training_env("clip20", preflight=True))
+        effective.update(
+            {
+                "NAVRL_SEED": str(module.TRAIN_SEED),
+                "NUM_ENVS": str(module.NUM_ENVS),
+                "FILE": "ppo_navrl_perception_transformer.yaml",
+                "TASK": "navrl_task",
+                "AERIAL_GYM_SIM_NAME": "base_sim",
+            }
+        )
+        module.verify_effective_training_env("clip20", effective)
+        for key in module.UNSET_MEANS_ZERO_KEYS:
+            with self.subTest(key=key):
+                polluted = dict(effective)
+                polluted[key] = "0.5"
+                with self.assertRaises(module.ContractError):
+                    module.verify_effective_training_env("clip20", polluted)
+
+    def test_no_arm_may_ever_carry_a_provenance_override(self):
+        """Unlike the sensor fidelity experiment, this one earns no override: each arm is evaluated
+        at the clip it was trained at, and the evaluator's provenance gate has no range field."""
+        module = self.launcher()
+        source = self.source()
+        for arm, _ in module.ARMS:
+            self.assertNotIn("NAVRL_V2_FORCE", module.evaluation_env(arm, preflight=True))
+        self.assertNotIn('env["NAVRL_V2_FORCE"] = "1"', source)
+        self.assertNotIn('"NAVRL_V2_FORCE": "1"', source)
+        self.assertIn('"NAVRL_V2_FORCE" not in env', source)
+        proof = module.verify_evaluator_needs_no_range_override()
+        self.assertIs(proof["override_required"], False)
+        self.assertIs(proof["clip_not_recorded_in_checkpoint_provenance"], True)
+
+    def test_a_refused_evaluator_preflight_stops_instead_of_forcing(self):
+        module = self.launcher()
+
+        class FakeCompleted:
+            def __init__(self, returncode, stdout):
+                self.returncode = returncode
+                self.stdout = stdout
+
+        passing = "[eval_v2] PREFLIGHT PASS (evaluation not started)"
+        cases = {
+            "a provenance mismatch": (
+                2,
+                "[eval_v2] REFUSING: v2 contract mismatch:\n"
+                "  cfg_detector_min_pixels: checkpoint=2 expected=50.0",
+            ),
+            "a silent zero without the marker": (0, "[eval_v2] something else"),
+            "a pass that still lists mismatches": (
+                0,
+                passing + "\n  cfg_max_tilt_deg: checkpoint=45.0 expected=50.0",
+            ),
+        }
+        for label, (code, stdout) in cases.items():
+            with self.subTest(case=label):
+                original = module.run_eval_preflight
+                module.run_eval_preflight = lambda arm, ckpt, _c=code, _o=stdout: FakeCompleted(
+                    _c, _o
+                )
+                try:
+                    with self.assertRaises(module.ContractError):
+                        module.verify_no_override_needed("clip20", Path("/nonexistent.pth"))
+                finally:
+                    module.run_eval_preflight = original
+
+    def test_gate_zero_covers_the_three_things_the_preregistration_demands(self):
+        """Prereg section 5 Gate 0: max_epochs reached normally, no KL-driven rollback, terminal
+        SHA recorded.  A failing arm is VOID, and VOID must be a verdict, not a footnote."""
+        module = self.launcher()
+        self.assertIn("T2_normal_max_epochs_exit", module.TRAINING_GATES)
+        self.assertIn("T3_no_kl_rollback", module.TRAINING_GATES)
+        self.assertIn("T4_terminal_sha_recorded", module.TRAINING_GATES)
+        source = self.source()
+        self.assertIn('summary.get("exit_reason") == MAX_EPOCHS_EXIT_REASON', source)
+        self.assertIn("rollback_total == 0 and rollback_streak == 0", source)
+        self.assertIn("ROLLBACK_LOG_MARKER", source)
+        self.assertIn('"void_arms"', source)
+        self.assertIn("VERDICT_VOID", source)
+        self.assertIn("void_arms", module.SUMMARY_VERIFY_KEYS)
+
+    def test_fail_closed_is_a_biconditional(self):
+        source = self.source()
+        self.assertIn(
+            "(verdict == VERDICT_VOID) == (published is None)",
+            source,
+            "the fail-closed contract must be enforced in both directions",
+        )
+
+    def test_episode_contract_is_at_least_not_exactly(self):
+        """The evaluator drains whole 128-env batches, so a cell finishes at or just past the
+        request.  Asserting exact equality has already broken one arm of an earlier run."""
+        source = self.source()
+        self.assertIn("actual >= EPISODES", source)
+        self.assertNotIn("actual == EPISODES", source)
+
+    def test_train_refuses_to_overwrite_an_existing_arm(self):
+        source = self.source()
+        train_block = source[source.index("def train_arm("):source.index("def verify_training(")]
+        self.assertIn("not train_dir(arm).exists()", train_block)
+        self.assertIn("refusing overwrite", train_block)
+        self.assertLess(
+            train_block.index("not train_dir(arm).exists()"),
+            train_block.index("tee_run("),
+            "the refusal must precede any training",
+        )
+
+    def test_stage_two_is_not_implemented_here(self):
+        """Prereg section 8 forbids running stage 2 on a negative stage 1.  Stage 2's seeds and
+        budget must not exist in this file at all, so it cannot be started by editing one number."""
+        source = self.source()
+        for literal in ("10000", "10_000", "463", "467"):
+            self.assertNotIn(literal, source, f"stage-2 constant {literal} leaked into stage 1")
+        self.assertIn('"stage": 1', source)
+        self.assertIn('"stage2_authorised"', source)
+
+    def test_limitations_are_transcribed_from_the_preregistration(self):
+        module = self.launcher()
+        self.assertEqual(len(module.LIMITATIONS), 5)
+        for index, item in enumerate(module.LIMITATIONS, start=1):
+            self.assertTrue(
+                item.startswith(f"L{index}:"), f"limitation {index} is not labelled L{index}"
+            )
+
+    def test_summary_authority_literals_stay_false(self):
+        source = self.source()
+        authority = source[
+            source.index('"stage": 1,'):source.index('"limitations": list(LIMITATIONS)')
+        ]
+        for literal in (
+            '"decision_authority": "none",',
+            '"p2_verdict_changed": False,',
+            '"d1_verdict_changed": False,',
+            '"p3_unlocked": False,',
+        ):
+            self.assertIn(literal, authority, f"summary lost the authority literal {literal}")
+
+    def test_the_script_chain_audit_declares_exactly_the_known_exceptions(self):
+        """Reading what the launcher exports proves nothing: the chain runs afterwards and can
+        ``export`` over a pinned variable or ``unset`` it.  The audit is mechanical so the next
+        experiment does not depend on somebody repeating it by hand, and its exception table is
+        pinned here so a NEW clobber cannot be waved through by adding a declaration."""
+        module = self.launcher()
+        audit = module.verify_pinned_variables_survive_the_script_chain()
+        self.assertEqual(audit["variables_audited"], len(module.PINNED_TRAINING_VARIABLES))
+        exceptions = sorted(
+            name
+            for name, notes in audit["findings"].items()
+            if any("pass-through" not in note for note in notes)
+        )
+        self.assertEqual(
+            exceptions,
+            [
+                "NAVRL_LATERAL_BIAS_COEF",
+                "NAVRL_NUM_BARS",
+                "NAVRL_PERCEPTION_PERTURB",
+                "NAVRL_REFLECTION_COEF",
+            ],
+            "the script chain now touches a pinned variable that is not declared",
+        )
+        self.assertEqual(module.CHAIN_CLOBBERS_TO_PINNED_VALUE, {"NAVRL_PERCEPTION_PERTURB": "0"})
+        for variable in ("NAVRL_DETECTOR_MAX_RANGE", "NAVRL_DETECTOR_MIN_PIXELS",
+                         "NAVRL_DETECT_WIDTH", "NAVRL_CAMERA_WIDTH"):
+            with self.subTest(variable=variable):
+                self.assertIn(variable, module.PINNED_TRAINING_VARIABLES)
+                self.assertNotIn(variable, exceptions)
+
+    def test_density_curriculum_is_pinned_off_so_bar_count_cannot_become_a_second_axis(self):
+        """train_navrl_v2_search.sh unsets NAVRL_NUM_BARS while the density curriculum owns it.
+        clip28 acquires more easily, so it would promote sooner and the arms would have differed in
+        DENSITY as well as clip -- two axes, with both runs looking perfectly healthy."""
+        module = self.launcher()
+        for arm, _ in module.ARMS:
+            env = module.training_env(arm, preflight=True)
+            self.assertEqual(env["NAVRL_DENSITY_CURRICULUM"], "0")
+            self.assertEqual(env["NAVRL_NUM_BARS"], str(module.BARS))
+            self.assertEqual(env["NAVRL_DENSITY_START"], str(module.BARS))
+            self.assertEqual(env["NAVRL_DENSITY_FINAL"], str(module.BARS))
+        # The effective-environment check is the behavioural half and must assert both.
+        effective = dict(module.training_env("clip20", preflight=True))
+        effective.update(
+            {
+                "NAVRL_SEED": str(module.TRAIN_SEED),
+                "NUM_ENVS": str(module.NUM_ENVS),
+                "FILE": "ppo_navrl_perception_transformer.yaml",
+                "TASK": "navrl_task",
+                "AERIAL_GYM_SIM_NAME": "base_sim",
+            }
+        )
+        module.verify_effective_training_env("clip20", effective)
+        for key, bad in (("NAVRL_DENSITY_CURRICULUM", "1"), ("NAVRL_NUM_BARS", "205")):
+            with self.subTest(key=key):
+                polluted = dict(effective)
+                polluted[key] = bad
+                with self.assertRaises(module.ContractError):
+                    module.verify_effective_training_env("clip20", polluted)
+
+    def test_a_gate_zero_failure_is_reported_as_VOID_not_raised(self):
+        """Prereg section 5: a failing arm is VOID.  A launcher that raised would report an
+        exception instead of the outcome, and the run would look like a tooling error."""
+        module = self.launcher()
+        good = {key: {"checked_by_launcher": True, "passed": True}
+                for key in module.TRAINING_GATES.values()}
+        self.assertTrue(module.training_gates_passed(good))
+        broken = {key: dict(value) for key, value in good.items()}
+        broken["exit"] = {
+            "checked_by_launcher": True,
+            "passed": False,
+            "exit_reason": "early_stop_collapse",
+        }
+        self.assertFalse(module.training_gates_passed(broken))
+        verified = {
+            "trainings": {"clip20": good, "clip28": broken},
+            "cells": {},
+            "order": ("clip20", "clip28"),
+            "void_arms": ["clip28"],
+            "held_fixed": {},
+            "runtime_map_identity": None,
+            "shared_training_receipt": None,
+            "single_axis": None,
+        }
+        payload = module.build_summary(verified)
+        self.assertEqual(payload["verdict"], "STAGE1_VOID")
+        self.assertEqual(payload["void_arms"], ["clip28"])
+        self.assertIsNone(payload["arms"])
+        self.assertIsNone(payload["never_acquired_delta_pp"])
+        self.assertIn("T2_normal_max_epochs_exit", payload["failed_gates"])
+        self.assertFalse(payload["stage2_authorised"])
+        # The evaluation gates were never run on a VOID arm, and "not judged" must not be
+        # published as "judged and passed".
+        for gate in module.PER_ARM_GATES:
+            self.assertNotIn(gate, payload["quality_gates"])
+
+    def test_evaluate_refuses_to_spend_gpu_time_on_a_void_arm(self):
+        source = self.source()
+        block = source[source.index("def evaluate_arm("):source.index("# ------", source.index("def evaluate_arm("))]
+        self.assertIn("training_gates_passed(trained)", block)
+        self.assertLess(
+            block.index("training_gates_passed(trained)"),
+            block.index("tee_run("),
+            "the VOID refusal must precede the 2,049-episode evaluation",
+        )
+
+    def test_an_externally_trained_run_can_be_adopted_for_evaluation(self):
+        """`train` is not the only legal way to produce an arm -- the trainer can be driven
+        directly -- and the verification half must not be unusable just because this launcher did
+        not press the button.  The adoption path names the run explicitly rather than guessing."""
+        module = self.launcher()
+        source = self.source()
+        self.assertEqual(module.ADOPT_RUN_ROOT_ENV % "CLIP20", "DETRANGE_STAGE1_RUN_ROOT_CLIP20")
+        self.assertEqual(module.ADOPT_TRAIN_LOG_ENV % "CLIP28", "DETRANGE_STAGE1_TRAIN_LOG_CLIP28")
+        block = source[source.index("def evaluate_arm("):source.index("# ------", source.index("def evaluate_arm("))]
+        self.assertIn("adopt_training_run(arm)", block)
+        # Both variables are required: the log is Gate 0's second, independent rollback witness.
+        for present in ({}, {"DETRANGE_STAGE1_RUN_ROOT_CLIP20": "/nonexistent"}):
+            with self.subTest(env=sorted(present)):
+                saved = {k: os.environ.get(k) for k in
+                         ("DETRANGE_STAGE1_RUN_ROOT_CLIP20", "DETRANGE_STAGE1_TRAIN_LOG_CLIP20")}
+                for key in saved:
+                    os.environ.pop(key, None)
+                os.environ.update(present)
+                try:
+                    with self.assertRaises(module.ContractError):
+                        module.adopt_training_run("clip20")
+                finally:
+                    for key, value in saved.items():
+                        os.environ.pop(key, None)
+                        if value is not None:
+                            os.environ[key] = value
+
+    def test_an_adopted_run_cannot_claim_its_clip_is_attested(self):
+        """navrl_task records no cfg_detector_max_range, so nothing in an adopted checkpoint proves
+        which clip it trained at.  That is a provenance hole and it is labelled, not papered over."""
+        module = self.launcher()
+        self.assertIn("operator_assertion", module.CLIP_EVIDENCE_ADOPTED)
+        self.assertNotIn("operator_assertion", module.CLIP_EVIDENCE_LAUNCHER)
+        self.assertIn('"detector_max_range_evidence"', self.source())
+
+
 if __name__ == "__main__":
     unittest.main()
