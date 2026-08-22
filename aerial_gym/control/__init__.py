@@ -24,6 +24,10 @@ from aerial_gym.config.controller_config.lee_controller_config_octarotor import 
     control as lee_controller_config_octarotor,
 )
 
+from aerial_gym.config.controller_config.lee_controller_config_navrl import (
+    control as lee_controller_config_navrl,
+)
+
 from aerial_gym.control.controllers.fully_actuated_control import FullyActuatedController
 from aerial_gym.config.controller_config.fully_actuated_controller_rov import (
     control as fully_actuated_controller_config,
@@ -45,6 +49,9 @@ controller_registry.register_controller(
 )
 controller_registry.register_controller(
     "lee_velocity_control", LeeVelocityController, lee_controller_config
+)
+controller_registry.register_controller(
+    "lee_velocity_control_navrl", LeeVelocityController, lee_controller_config_navrl
 )
 controller_registry.register_controller(
     "lee_position_control", LeePositionController, lee_controller_config

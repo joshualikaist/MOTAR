@@ -35,6 +35,34 @@ class WarpLidar:
         self.lidar_quat_array = None
         self.graph = None
 
+        # Phase-3 vision pivot: an analytically-injected moving spherical target (no mesh, no
+        # per-step refit). When enabled, the segmentation range kernel additionally ray-casts
+        # against a per-env target sphere whose center is held in self.target_positions (updated
+        # in place by the task each step -> the captured CUDA graph reads the new center). The
+        # center is parked far away by default so it is invisible until the task drives it.
+        self.inject_target = bool(getattr(config, "inject_target", False))
+        self.target_radius = float(getattr(config, "target_radius", 0.15))
+        self.target_use_oriented_box = bool(getattr(config, "target_use_oriented_box", False))
+        half = getattr(config, "target_box_half_extents", [0.14, 0.14, 0.06])
+        self.target_box_half_extents = wp.vec3(float(half[0]), float(half[1]), float(half[2]))
+        self.target_semantic = int(getattr(config, "target_semantic_id", 50))
+        self.target_positions = None
+        self.target_positions_wp = None
+        self.target_orientations = None
+        self.target_orientations_wp = None
+        if self.inject_target:
+            self.target_positions = torch.full(
+                (self.num_envs, 3), 1.0e6, dtype=torch.float32, device=self.device
+            )
+            self.target_positions_wp = wp.from_torch(self.target_positions, dtype=wp.vec3)
+            self.target_orientations = torch.zeros(
+                (self.num_envs, 4), dtype=torch.float32, device=self.device
+            )
+            self.target_orientations[:, 3] = 1.0
+            self.target_orientations_wp = wp.from_torch(
+                self.target_orientations, dtype=wp.quat
+            )
+
         self.initialize_ray_vectors()
 
     def initialize_ray_vectors(self):
@@ -117,7 +145,33 @@ class WarpLidar:
         if not debug:
             print(f"creating render graph")
             wp.capture_begin(device=self.device)
-        if self.cfg.segmentation_camera == True:
+        if self.cfg.segmentation_camera == True and self.inject_target:
+            wp.launch(
+                kernel=LidarWarpKernels.draw_optimized_kernel_range_segmentation_target,
+                dim=(
+                    self.num_envs,
+                    self.num_sensors,
+                    self.num_scan_lines,
+                    self.num_points_per_line,
+                ),
+                inputs=[
+                    self.mesh_ids_array,
+                    self.lidar_position_array,
+                    self.lidar_quat_array,
+                    self.ray_vectors,
+                    self.far_plane,
+                    self.pixels,
+                    self.segmentation_pixels,
+                    self.target_positions_wp,
+                    self.target_orientations_wp,
+                    self.target_radius,
+                    self.target_box_half_extents,
+                    int(self.target_use_oriented_box),
+                    self.target_semantic,
+                ],
+                device=self.device,
+            )
+        elif self.cfg.segmentation_camera == True:
             wp.launch(
                 kernel=LidarWarpKernels.draw_optimized_kernel_range_segmentation,
                 dim=(

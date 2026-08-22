@@ -7,6 +7,7 @@ from aerial_gym.utils.math import (
     tf_apply,
     torch_rand_float_tensor,
     quat_from_euler_xyz_tensor,
+    get_euler_xyz,
 )
 
 import torch
@@ -142,6 +143,12 @@ class WarpSensor(BaseSensor):
         self.sensor.set_image_tensors(
             pixels=self.pixels, segmentation_pixels=self.segmentation_pixels
         )
+        # Expose the analytic moving-target center so the task can drive it in place each step
+        # (the captured render graph reads this same storage). See warp_lidar.inject_target.
+        if getattr(self.sensor, "target_positions", None) is not None:
+            global_tensor_dict["navrl_target_position"] = self.sensor.target_positions
+        if getattr(self.sensor, "target_orientations", None) is not None:
+            global_tensor_dict["navrl_target_orientation"] = self.sensor.target_orientations
         self.reset()
 
         logger.debug(f"[DONE] Initializing sensor tensors")
@@ -176,13 +183,24 @@ class WarpSensor(BaseSensor):
 
     def update(self):
         # transform local position and orientation to world frame before performing ray_casting
+        # When yaw_only_attach is set, the sensor follows only the robot heading (yaw), keeping
+        # its frame level regardless of body roll/pitch (matches NavRL RayCaster attach_yaw_only).
+        if getattr(self.cfg, "yaw_only_attach", False):
+            flat_quat = self.robot_orientation.reshape(-1, 4)
+            _, _, yaw = get_euler_xyz(flat_quat)
+            zeros = torch.zeros_like(yaw)
+            attach_orientation = quat_from_euler_xyz(zeros, zeros, yaw).reshape(
+                self.robot_orientation.shape
+            )
+        else:
+            attach_orientation = self.robot_orientation
         # tf_apply(self.root_quats, self.root_positions, self.sensor_local_pos)
         self.sensor_position[:] = tf_apply(
-            self.robot_orientation, self.robot_position, self.sensor_local_position
+            attach_orientation, self.robot_position, self.sensor_local_position
         )
         # quat_mul(self.root_quats, quat_mul(self.sensor_local_quat, self.correct_sensor_frame_quat))
         self.sensor_orientation[:] = quat_mul(
-            self.robot_orientation,
+            attach_orientation,
             quat_mul(self.sensor_local_orientation, self.sensor_data_frame_quat),
         )
 

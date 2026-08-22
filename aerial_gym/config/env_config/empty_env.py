@@ -1,4 +1,4 @@
-# nothing to import here as the no other modules are needed to define base class
+from aerial_gym.config.asset_config.env_object_config import intercept_quad_target_params
 
 
 class EmptyEnvCfg:
@@ -31,6 +31,11 @@ class EmptyEnvCfg:
         upper_bound_max = [e_s, e_s, e_s]  # upper bound for the environment space
 
     class env_config:
-        include_asset_type = {}
+        # One stationary intercept target (same collision size as base quad) for intercept RL.
+        include_asset_type = {
+            "intercept_target": True,
+        }
 
-        asset_type_to_dict_map = {}
+        asset_type_to_dict_map = {
+            "intercept_target": intercept_quad_target_params,
+        }

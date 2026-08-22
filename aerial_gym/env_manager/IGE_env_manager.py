@@ -13,13 +13,15 @@ import os
 
 from aerial_gym.utils.math import torch_rand_float_tensor
 
+import math
+
+import numpy as np
 from aerial_gym.utils.helpers import (
     get_args,
     update_cfg_from_args,
     class_to_dict,
     parse_sim_params,
 )
-import numpy as np
 from aerial_gym.utils.logging import CustomLogger
 
 logger = CustomLogger("IsaacGymEnvManager")
@@ -133,13 +135,84 @@ class IsaacGymEnv(BaseManager):
         self.sim = self.gym.create_sim(
             self.sim_device_id, self.graphics_device_id, args.physics_engine, self.simulator_params
         )
+        self._apply_scene_lighting_for_viewer()
         logger.info("Created Isaac Gym Simulation Object")
         return self.gym, self.sim
 
+    def _apply_scene_lighting_for_viewer(self):
+        """Brighter default lighting for Isaac Gym viewer / RGB cameras."""
+        if self.graphics_device_id < 0:
+            return
+        sc = getattr(self.sim_config, "scene_lighting", None)
+        if sc is None or not getattr(sc, "enabled", True):
+            return
+        try:
+            idx = int(getattr(sc, "primary_light_index", 0))
+            di = getattr(sc, "directional_intensity", [0.9, 0.9, 0.92])
+            amb = getattr(sc, "ambient", [0.45, 0.45, 0.48])
+            d_raw = getattr(sc, "direction", [0.35, -0.55, -0.76])
+            nrm = math.sqrt(sum(float(x) * float(x) for x in d_raw))
+            if nrm < 1e-9:
+                nrm = 1.0
+            d = [float(x) / nrm for x in d_raw]
+            self.gym.set_light_parameters(
+                self.sim,
+                idx,
+                gymapi.Vec3(float(di[0]), float(di[1]), float(di[2])),
+                gymapi.Vec3(float(amb[0]), float(amb[1]), float(amb[2])),
+                gymapi.Vec3(d[0], d[1], d[2]),
+            )
+            logger.debug("Adjusted Isaac Gym scene_lighting primary index %s.", idx)
+        except Exception as exc:
+            logger.warning("scene_lighting: could not apply (%s); using Isaac Gym defaults.", exc)
+
     def create_ground_plane(self):
+        style = getattr(self.cfg.env, "ground_plane_style", "checkerboard")
+        if style == "white":
+            e_s = float(getattr(self.cfg.env, "env_spacing", 2.0))
+            extent = float(getattr(self.cfg.env, "ground_plane_extent_m", max(e_s * 4.0, 8.0)))
+            thickness = 0.02
+            asset_options = gymapi.AssetOptions()
+            asset_options.fix_base_link = True
+            self._ground_plane_style = "white"
+            self._ground_plane_asset = self.gym.create_box(
+                self.sim, extent, extent, thickness, asset_options
+            )
+            self._ground_plane_thickness = thickness
+            logger.info(
+                "Created solid white ground (%.1f x %.1f m) instead of checkerboard plane.",
+                extent,
+                extent,
+            )
+            return
+
+        self._ground_plane_style = "checkerboard"
         plane_params = gymapi.PlaneParams()
         plane_params.normal = gymapi.Vec3(0.0, 0.0, 1.0)
         self.gym.add_ground(self.sim, plane_params)
+        return
+
+    def add_ground_actor_to_env(self, env_handle, env_id):
+        if getattr(self, "_ground_plane_style", None) != "white":
+            return
+        if not hasattr(self, "_ground_plane_asset"):
+            return
+        pose = gymapi.Transform()
+        pose.p = gymapi.Vec3(0.0, 0.0, -self._ground_plane_thickness * 0.5)
+        g_filter = int(getattr(self.cfg.env, "ground_collision_filter", 0))
+        actor = self.gym.create_actor(
+            env_handle,
+            self._ground_plane_asset,
+            pose,
+            f"white_ground_{env_id}",
+            env_id,
+            0,
+            g_filter,
+        )
+        self.gym.set_rigid_body_color(
+            env_handle, actor, 0, gymapi.MESH_VISUAL, gymapi.Vec3(1.0, 1.0, 1.0)
+        )
+        self.asset_handles[env_id].append(actor)
         return
 
     def create_env(self, env_id):
@@ -274,6 +347,12 @@ class IsaacGymEnv(BaseManager):
             raise ValueError("All environments should have the same number of assets")
 
         self.num_assets_per_env = self.num_assets_per_env[0]
+        self.num_ground_actors_per_env = (
+            1 if getattr(self, "_ground_plane_style", None) == "white" else 0
+        )
+        self.num_obstacle_assets_per_env = (
+            self.num_assets_per_env - 1 - self.num_ground_actors_per_env
+        )
 
         # check that all environments have the same number of rigid bodies
         self.num_rigid_bodies_per_env = [
@@ -308,7 +387,12 @@ class IsaacGymEnv(BaseManager):
         self.global_tensor_dict["vec_root_tensor"] = self.vec_root_tensor
         # In case your simulation has multiple robots, use more than just index 0
         self.global_tensor_dict["robot_state_tensor"] = self.vec_root_tensor[:, 0, :]
-        self.global_tensor_dict["env_asset_state_tensor"] = self.vec_root_tensor[:, 1:, :]
+        if self.num_obstacle_assets_per_env > 0:
+            self.global_tensor_dict["env_asset_state_tensor"] = self.vec_root_tensor[
+                :, 1 : 1 + self.num_obstacle_assets_per_env, :
+            ]
+        else:
+            self.global_tensor_dict["env_asset_state_tensor"] = self.vec_root_tensor[:, 0:0, :]
         self.global_tensor_dict["unfolded_env_asset_state_tensor"] = self.unfolded_vec_root_tensor
         self.global_tensor_dict["unfolded_env_asset_state_tensor_const"] = self.global_tensor_dict[
             "unfolded_env_asset_state_tensor"
@@ -328,15 +412,26 @@ class IsaacGymEnv(BaseManager):
             requires_grad=False,
         )
 
-        self.global_tensor_dict["unfolded_dof_state_tensor"] = gymtorch.wrap_tensor(
-            self.gym.acquire_dof_state_tensor(self.sim)
-        )
-        # if not None, view the tensor as (num_envs, num_dofs, 2)
-        if not self.global_tensor_dict["unfolded_dof_state_tensor"] is None:
-            self.sim_has_dof = True
+        # Isaac Gym returns a null descriptor when the simulation has no DOFs. Passing that
+        # descriptor to gymtorch.wrap_tensor prints the alarming (but otherwise harmless)
+        # ``Can't create empty tensor`` message from the C++ binding. Query the count first and
+        # preserve the tensor-dictionary contract with real, zero-length Torch tensors instead.
+        self.sim_has_dof = int(self.gym.get_sim_dof_count(self.sim)) > 0
+        if self.sim_has_dof:
+            self.global_tensor_dict["unfolded_dof_state_tensor"] = gymtorch.wrap_tensor(
+                self.gym.acquire_dof_state_tensor(self.sim)
+            )
             self.global_tensor_dict["dof_state_tensor"] = self.global_tensor_dict[
                 "unfolded_dof_state_tensor"
             ].view(self.num_envs, -1, 2)
+        else:
+            dof_state_tensor = torch.empty(
+                (self.num_envs, 0, 2),
+                device=self.device,
+                dtype=torch.float32,
+            )
+            self.global_tensor_dict["dof_state_tensor"] = dof_state_tensor
+            self.global_tensor_dict["unfolded_dof_state_tensor"] = dof_state_tensor.reshape(0, 2)
 
         self.global_tensor_dict["global_contact_force_tensor"] = self.global_contact_force_tensor
         self.global_tensor_dict["robot_contact_force_tensor"] = self.global_contact_force_tensor[
@@ -377,7 +472,7 @@ class IsaacGymEnv(BaseManager):
 
         # ==============================
         # Populate obstacle tensors
-        if self.num_assets_per_env > 0:
+        if self.num_obstacle_assets_per_env > 0:
             self.global_tensor_dict["obstacle_position"] = self.global_tensor_dict[
                 "env_asset_state_tensor"
             ][:, :, 0:3]
@@ -408,6 +503,9 @@ class IsaacGymEnv(BaseManager):
             self.global_tensor_dict["obstacle_torque_tensor"] = self.global_tensor_dict[
                 "global_torque_tensor"
             ].view(self.num_envs, self.num_rigid_bodies_per_env, 3)[:, idx:, :]
+            self.global_tensor_dict["obstacle_contact_force_tensor"] = self.global_contact_force_tensor[
+                :, idx:, :
+            ]
 
         self.global_tensor_dict["env_bounds_max"] = self.env_upper_bound
         self.global_tensor_dict["env_bounds_min"] = self.env_lower_bound
@@ -492,7 +590,8 @@ class IsaacGymEnv(BaseManager):
         self.gym.refresh_force_sensor_tensor(self.sim)
         self.gym.refresh_actor_root_state_tensor(self.sim)
         self.gym.refresh_net_contact_force_tensor(self.sim)
-        self.gym.refresh_dof_state_tensor(self.sim)
+        if self.sim_has_dof:
+            self.gym.refresh_dof_state_tensor(self.sim)
 
     def step_graphics(self):
         if not self.graphics_are_stepped:

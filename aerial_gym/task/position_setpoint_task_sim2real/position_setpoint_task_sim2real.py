@@ -301,14 +301,15 @@ def compute_reward(
     dist = torch.norm(pos_error, dim=1)
 
     pos_reward = (
-        exp_func(dist, 2.0, 1.0) + exp_func(dist, 3.0, 10.0) + abs_exp_func(dist, 3.0, 50.0)
+        exp_func(dist, 2.3, 1.05) + exp_func(dist, 3.2, 10.5) + abs_exp_func(dist, 3.2, 52.0)
     )
 
     robot_speed = torch.norm(robot_linvels, dim=1)
 
-    speed_reward = exp_func(robot_speed, 1.0, 3.0)
+    # Less emphasis on "going fast"; prefer holding position accuracy.
+    speed_reward = 0.38 * exp_func(robot_speed, 1.0, 3.0)
 
-    dist_reward = (20 - dist) / 40.0
+    dist_reward = (20 - dist) / 34.0
 
     action_penalty = torch.sum(abs_exp_penalty_func(current_action, 0.2, 4.0), dim=1)
     action_difference = current_action - prev_actions
@@ -322,7 +323,7 @@ def compute_reward(
         (
             pos_reward
             + dist_reward
-            + pos_reward * (speed_reward + action_penalty + closer_reward / 10.0)
+            + pos_reward * (speed_reward + action_penalty + closer_reward / 8.0)
         )
         + action_penalty
         + action_difference_penalty

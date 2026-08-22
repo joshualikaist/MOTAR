@@ -106,6 +106,30 @@ task_registry.register_task(
     position_setpoint_task_config_morphy,
 )
 
+from aerial_gym.task.shooting_moving_target_task.shooting_moving_target_task import (
+    ShootingMovingTargetTask,
+)
+from aerial_gym.config.task_config.shooting_moving_target_task_config import (
+    task_config as shooting_moving_target_task_config,
+)
+
+task_registry.register_task(
+    "shooting_moving_target_task",
+    ShootingMovingTargetTask,
+    shooting_moving_target_task_config,
+)
+
+from aerial_gym.task.navrl_task.navrl_task import NavRLTask
+from aerial_gym.config.task_config.navrl_task_config import (
+    task_config as navrl_task_config,
+)
+
+task_registry.register_task(
+    "navrl_task",
+    NavRLTask,
+    navrl_task_config,
+)
+
 
 ## Uncomment this to use custom tasks
 

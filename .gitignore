@@ -12,9 +12,29 @@ train_dir/
 wandb/
 runs/
 
+# tee'd training logs
+*.log
+
 # local RL session artifacts and manually retained checkpoints
 train_session_logs/
 checkpoints_saved/
+
+# evaluator provenance copies are locally verified but too large to version; receipts carry hashes
+results/**/checkpoint_snapshot.pth
+# Evaluator receipts retain hashes for these reproducibility copies.  Track compact summaries,
+# CSV/JSON results and manifests; do not turn every evaluated cell into a second source checkout.
+results/**/source_snapshot/
+results/**/source_snapshot
+results/**/python_environment.txt
+results/**/detector_snapshot.pth
+# N1 reflection-audit frame dumps are 30-60 MB.  Covered by the top-level `*.npz` rule; named
+# explicitly because prereg 2026-08-21 section 10 requires the npz to stay out of Git and be
+# pinned by SHA-256 in the summary instead.
+results/**/frames.npz
+
+# Closed training launchers create immutable local source receipts.  Checkpoints bind their path
+# and SHA; the bundles travel with experiment artifacts, not Git history.
+train_source_receipts/
 
 # local experiment workspace (checkpoints/reports, ~1.4GB)
 aerial_gym/lms_rl_trial/
@@ -23,3 +43,6 @@ aerial_gym/lms_rl_trial/
 aerial_gym/examples/*_frame_100.png
 aerial_gym/examples/*_frames_100.png
 aerial_gym/examples/*_frames_100.gif
+
+# legacy scraper scratch output; never published
+docs/status/status.legacy.json

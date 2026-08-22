@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="ko" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MOTAR · NavRL research console</title>
+<meta name="description" content="MOTAR camera/LiDAR plus simulator ego-state drone interception research console: held-out evidence, arena geometry and failure modes.">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="style.css?v=20260813a">
+<script src="js/shell.js?v=20260813a"></script>
+</head>
+<body data-page-title="개요">
+
+<main class="page" id="main">
+
+  <p class="lead">센서 전용(카메라 + LiDAR) UAV 요격 정책의 연구 현황판. 현재 상태와 성공 기준, 진행 중인 캠페인을 담는다. 과제 정의는 <a href="setup.html">초기 세팅</a>, 측정 결과는 <a href="results.html">결과</a>, 어떤 변수를 어떻게 바꿔봤는지는 <a href="experiments.html">실험 인덱스</a>에 있다.</p>
+
+  <!-- LIVE METRICS -->
+  <section class="panel" id="panel-live">
+    <div class="panel-h">
+      <h2 id="live-h2">Live</h2>
+      <p class="meta" id="live-sub">—</p>
+    </div>
+    <div class="metrics" id="live-cards"></div>
+    <p class="hint" id="live-cap"></p>
+    <div class="live-trust" aria-live="polite">
+      <span id="live-freshness">data freshness —</span>
+      <span>tail = diagnostic · promotion gate = 16,384 episodes</span>
+    </div>
+  </section>
+
+  <!-- HOW SUCCESS IS JUDGED -->
+  <section class="panel" id="panel-criteria">
+    <div class="panel-h">
+      <h2>Success criteria</h2>
+      <p class="meta" id="criteria-sub">what counts as working — and what does not</p>
+    </div>
+    <p class="criteria-lead" id="criteria-headline"></p>
+    <div class="criteria-grid">
+      <div>
+        <h3>Primary metric</h3>
+        <div class="note" id="criteria-primary"></div>
+        <h3>Supporting metrics</h3>
+        <div class="scrollx"><table id="criteria-secondary"></table></div>
+      </div>
+      <div>
+        <h3>Not success metrics</h3>
+        <div class="scrollx"><table id="criteria-not"></table></div>
+      </div>
+    </div>
+    <div class="criteria-foot">
+      <div class="note" id="criteria-gate"></div>
+      <p class="hint" id="criteria-ckpt"></p>
+    </div>
+  </section>
+
+  <!-- CURRENT RESEARCH UPDATE -->
+  <section class="panel" id="panel-update">
+    <div class="panel-h">
+      <h2>Research update</h2>
+      <p class="meta" id="update-sub">85-bar obstacle-token coverage ablation</p>
+    </div>
+    <div class="update-hero" id="update-hero"></div>
+    <div class="milestones" id="update-milestones"></div>
+    <div class="update-grid">
+      <div>
+        <h3>Evidence ledger</h3>
+        <div class="scrollx"><table id="update-eval"></table></div>
+      </div>
+      <div>
+        <h3>Decision gate</h3>
+        <div class="note" id="update-decision"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- RUNS + NEXT -->
+  <section class="panel split" id="panel-runs">
+    <div>
+      <div class="panel-h"><h2>Runs</h2><p class="meta">peak → final gap = overfit signal</p></div>
+      <div class="scrollx"><table id="runs-tbl"></table></div>
+    </div>
+    <div>
+      <div class="panel-h"><h2>Now</h2></div>
+      <div class="note" id="nextplan">
+        <p><b>Latest</b> <span id="now-latest">Loading the current research snapshot…</span></p>
+        <p><b>Status</b> <span id="now-status">—</span></p>
+        <p><b>Next</b> <span id="now-next">—</span></p>
+        <p id="now-verification" hidden></p>
+      </div>
+      <div class="phases" id="phases"></div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    MOTAR · <code>research/navrl-env</code> ·
+    <span id="foot-runs">—</span> runs ·
+    updated <span id="foot-gen">—</span>
+  </footer>
+</main>
+
+<!-- Snapshot data for instant paint. Plain classic scripts: they execute in document order,
+     so __STATUS_FALLBACK__ is assigned before the renderers boot. Do NOT add defer/type=module. -->
+<script src="status.fallback.js"></script>
+
+<script src="js/core.js?v=20260813a"></script>
+<script src="js/panels-status.js?v=20260813a"></script>
+</body>
+</html>
