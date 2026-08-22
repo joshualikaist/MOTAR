@@ -48,7 +48,10 @@ Usage
         --out results/.../reflection_offline_audit.json
 
 Exit codes: 0 = audit completed (any verdict), 2 = precondition failure (bad SHA, bad schema,
-unsupported checkpoint), 3 = a preregistered quality gate failed (fail-closed).
+unsupported checkpoint), 3 = fail-closed: either a preregistered quality gate failed or a
+data-integrity invariant (dtype/domain, finiteness, context partition, outcome-join
+reconciliation, npz<->checkpoint identity) was violated.  In both cases no policy statistics and
+no policy claim are reported.
 """
 
 from __future__ import annotations
@@ -84,6 +87,15 @@ VERDICT_CHIRALITY_CONFIRMED = "CHIRALITY_CONFIRMED_REAL_FRAME"
 VERDICT_CHIRALITY_ABSENT = "CHIRALITY_ABSENT"
 VERDICT_INCONCLUSIVE = "INCONCLUSIVE_REAL_FRAME"
 VERDICT_FAIL_CLOSED = "FAIL_CLOSED_TRANSFORM_QUALITY"
+# Fail-closed outcome of a data-integrity invariant (dtype/domain, finiteness, partition,
+# reconciliation, identity binding).  Distinct from the transform-quality failure above so a
+# reader can tell WHICH kind of fail-closed happened.
+VERDICT_FAIL_CLOSED_INTEGRITY = "FAIL_CLOSED_DATA_INTEGRITY"
+# Prereg section 6 says a cell with fewer than MIN_CONTEXT_COMPARABLE_ROWS comparable rows gets NO
+# verdict.  When that cell is the OVERALL cell the run therefore has no verdict at all -- which is
+# NOT the same statement as INCONCLUSIVE_REAL_FRAME (a verdict the prereg reserves for a cell that
+# was measured with enough sample and matched neither region).
+VERDICT_NO_VERDICT_INSUFFICIENT_SAMPLE = "NO_VERDICT_INSUFFICIENT_SAMPLE"
 
 # Prereg section 6 -- "meaningful sign" floor, identical to navrl_players._record_reflection_pair.
 LATERAL_SIGN_THRESHOLD = 0.05
@@ -132,6 +144,49 @@ OUTCOME_CODES = {
 # context; its frame count is reported as diagnostics only).
 OUTCOME_CONTEXT_CODES = (0, 1, 2, 3, 4)
 
+# The OUTCOME-JOIN SENTINEL.  Deliberately NOT called "unattributed": OUTCOME_CODES[5] already owns
+# that name and means something else entirely.
+#   OUTCOME_CODES[5] == "unattributed": the episode FINISHED and has a row in the outcome table,
+#                                       but the dump could not attribute a cause to it.
+#   NO_OUTCOME_ROW   == -1            : the frame's episode has NO ROW in the outcome table at all
+#                                       (it was still running when the table closed).
+# The two used to be reported three lines apart under the same word, so a reader (or an aggregator
+# summing outcome_frame_counts) could conclude the split was complete when 9.9% of the frames were
+# outside it.  Every surface that reports the sentinel uses NO_OUTCOME_ROW_NAME.
+NO_OUTCOME_ROW = -1
+NO_OUTCOME_ROW_NAME = "no_outcome_row"
+NO_OUTCOME_ROW_MEANING = (
+    "the frame's episode has no row in the outcome table (it was still running when the table "
+    "closed); NOT the same as outcome code 5 'unattributed', which is a finished episode the dump "
+    "could not attribute"
+)
+
+# Prereg section 6 -- the context FAMILIES and the population each one must partition.  A family
+# whose cells do not sum to its population is a silent data loss (an out-of-domain label falls out
+# of every cell of the family with no gate firing), so the sums are asserted, not assumed.
+CONTEXT_FAMILY_FRONT = ("front_blocked", "front_clear", "front_unknown")
+CONTEXT_FAMILY_TARGET = ("target_visible", "target_hidden")
+CONTEXT_FAMILY_OUTCOME = tuple(
+    "outcome_" + OUTCOME_CODES[code] for code in OUTCOME_CONTEXT_CODES
+)
+CONTEXT_OVERALL_CELL = "overall"
+
+# Admissible domains of the dump's context columns.  Asserted rather than coerced: `.astype(bool)`
+# on an int8 column would silently turn a future -1 ("unknown") into True (= VISIBLE).
+CTX_TARGET_VISIBLE_DOMAIN = (0, 1)
+CTX_FRONT_BLOCKED_DOMAIN = (-1, 0, 1)
+CTX_VALID_DOMAIN = (0, 1)
+
+# The dtype this tool assumes for the dumped observation.  rl_games' BasePlayer._preproc_obs
+# divides uint8 observations by 255; this tool builds a float32 tensor from the npz and would
+# silently skip that path, evaluating a differently scaled observation than the live player.
+FRAMES_OBS_DTYPE = "float32"
+
+# NON-GATING diagnostic (H6): the fraction of excluded frames that must sit at or above the median
+# call_index of the population before the exclusion is flagged as tail-concentrated (i.e. not
+# missing at random).  Used for a generated caveat only; it feeds no verdict and no gate.
+EXCLUDED_TAIL_CONCENTRATION_MIN = 0.9
+
 # Action channel indices (prereg section 6): x, lateral, z, yaw.
 ACTION_CHANNELS = (("conj_err_x", 0), ("conj_err_lat", 1), ("conj_err_z", 2), ("conj_err_yaw", 3))
 LATERAL_ACTION_INDEX = 1
@@ -153,12 +208,61 @@ class AuditPreconditionError(RuntimeError):
 
 
 class GateFailure(RuntimeError):
-    """One or more preregistered quality gates failed; no policy claim may be made."""
+    """A fail-closed failure (quality gate or integrity invariant); no policy claim may be made."""
 
-    def __init__(self, gates, payload):
-        RuntimeError.__init__(self, "quality gates failed: %s" % ", ".join(gates))
+    def __init__(self, gates, payload, kind="quality gates"):
+        RuntimeError.__init__(self, "%s failed: %s" % (kind, ", ".join(gates)))
         self.gates = list(gates)
         self.payload = payload
+        self.kind = kind
+
+
+class IntegrityViolation(RuntimeError):
+    """A fail-closed data-integrity invariant was violated (dtype, domain, partition, finiteness).
+
+    Carries the same ``detail`` dict the passing path would have reported, so the JSON shows the
+    reader exactly what was checked and what was found.
+    """
+
+    def __init__(self, message, detail=None):
+        RuntimeError.__init__(self, message)
+        self.detail = dict(detail or {})
+
+
+# --------------------------------------------------------------------------------------------
+# Quality-gate bookkeeping (prereg section 5).
+#
+# A gate is in exactly one of THREE states, and they are counted separately:
+#   evaluated + passed   -- this tool ran the check and it held;
+#   evaluated + failed   -- this tool ran the check and it did not hold (fail-closed);
+#   delegated            -- this tool does NOT run the check; the launcher does.
+# Folding a delegated gate into the passed tally makes the headline "N evaluated, 0 failed" a
+# tautology: it would read identically if the delegated check had been deleted.
+# --------------------------------------------------------------------------------------------
+
+GATE_STATUS_EVALUATED = "evaluated"
+GATE_STATUS_DELEGATED = "delegated"
+
+# Machine-readable delegation contract.  A caller that quotes this audit's numbers must assert that
+# IT performed every check named here; ``caller_must_assert`` says what "performed" means.
+DELEGATED_GATES = {
+    "Q6_import_origin": {
+        "owner": "tools/run_navrl_ref5in_reflection_audit.py",
+        "check": "import_origin_enforcement",
+        "caller_must_assert": (
+            "the executing aerial_gym/__init__.py sha256 printed by the enforced [origin] line "
+            "equals the source manifest's runtime_files entry"
+        ),
+    },
+    "Q7_manifest_schema_version": {
+        "owner": "tools/run_navrl_ref5in_reflection_audit.py",
+        "check": "source_manifest_and_schema_version_2_receipt",
+        "caller_must_assert": (
+            "the run's source manifest and its schema_version 2 receipt were verified before this "
+            "audit's numbers are quoted"
+        ),
+    },
+}
 
 
 # --------------------------------------------------------------------------------------------
@@ -298,6 +402,85 @@ def classify_verdict(median_conj_err_lat, sign_agreement):
 def has_sufficient_sample(comparable_rows):
     """Prereg section 6: a cell receives a verdict only at >= 256 comparable rows."""
     return int(comparable_rows) >= MIN_CONTEXT_COMPARABLE_ROWS
+
+
+def overall_verdict(overall_cell):
+    """The run's verdict, or an explicit NO-VERDICT when the overall cell is under-sampled.
+
+    ``measure_cell`` returns ``verdict: None`` on purpose below MIN_CONTEXT_COMPARABLE_ROWS
+    comparable rows, because the preregistration says such a cell receives NO verdict.  Converting
+    that ``None`` into INCONCLUSIVE_REAL_FRAME would assert a verdict the prereg forbids, so the
+    driver reports the no-verdict outcome instead.  Returns ``(verdict, reason_or_None)``.
+    """
+    if overall_cell.get("verdict") is not None:
+        return overall_cell["verdict"], None
+    comparable = overall_cell.get("lateral_sign_comparable")
+    if overall_cell.get("insufficient_sample"):
+        reason = (
+            "the overall cell has %s comparable rows, below the preregistered minimum of %d; "
+            "prereg section 6 assigns NO verdict to such a cell"
+            % (comparable, MIN_CONTEXT_COMPARABLE_ROWS)
+        )
+    else:
+        reason = "the overall cell has no reportable statistics (median or sign agreement is null)"
+    return VERDICT_NO_VERDICT_INSUFFICIENT_SAMPLE, reason
+
+
+def summarise_gates(gates):
+    """Split the gate block into evaluated-passed / evaluated-failed / delegated / malformed.
+
+    ``malformed`` is counted as a FAILURE: a gate that claims neither state (no status, or a
+    non-boolean ``passed`` while claiming to be evaluated) must never be silently absorbed into the
+    passed tally.
+    """
+    evaluated_passed = []
+    evaluated_failed = []
+    delegated = []
+    malformed = []
+    for name in sorted(gates):
+        info = gates[name] if isinstance(gates[name], dict) else {}
+        status = info.get("status")
+        if status == GATE_STATUS_DELEGATED:
+            delegated.append(name)
+            continue
+        if status != GATE_STATUS_EVALUATED or not isinstance(info.get("passed"), bool):
+            malformed.append(name)
+            continue
+        if info["passed"]:
+            evaluated_passed.append(name)
+        else:
+            evaluated_failed.append(name)
+    return {
+        "n_gates_declared": len(gates),
+        "evaluated_passed": evaluated_passed,
+        "n_evaluated_passed": len(evaluated_passed),
+        "evaluated_failed": evaluated_failed,
+        "n_evaluated_failed": len(evaluated_failed),
+        "delegated": delegated,
+        "n_delegated": len(delegated),
+        "malformed": malformed,
+        "n_malformed": len(malformed),
+        "n_evaluated_here": len(evaluated_passed) + len(evaluated_failed),
+        "note": (
+            "delegated gates are NOT evaluated by this tool and are NOT counted as passed; a "
+            "caller quoting these numbers must assert that it performed every gate listed in "
+            "delegated_gates"
+        ),
+    }
+
+
+def stamp_gate_states(gates):
+    """Give every gate exactly one state, and force the delegated ones to report no result."""
+    for name, info in gates.items():
+        if name in DELEGATED_GATES:
+            info["status"] = GATE_STATUS_DELEGATED
+            info["passed"] = None
+            info["delegation"] = dict(DELEGATED_GATES[name])
+            info["evaluated_here"] = False
+        else:
+            info["status"] = GATE_STATUS_EVALUATED
+            info["evaluated_here"] = True
+    return gates
 
 
 # --------------------------------------------------------------------------------------------
@@ -632,6 +815,34 @@ EPISODE_KEYS = {
 REQUIRED_FRAME_KEYS = ("obs", "episode_uid", "ctx_target_visible", "ctx_front_blocked", "ctx_valid")
 REQUIRED_EPISODE_KEYS = ("ep_uid", "outcome")
 
+# Optional RUN IDENTITY the dump may carry.  Nothing in the original npz schema bound the frames to
+# a policy, so the link rested entirely on the caller's word.  Whatever of these the dump writes is
+# recorded, and a checkpoint SHA-256 is asserted against the audited checkpoint (check_npz_identity).
+IDENTITY_KEYS = {
+    "checkpoint_sha256": ("checkpoint_sha256", "policy_sha256", "ckpt_sha256"),
+    "checkpoint_path": ("checkpoint_path", "checkpoint"),
+    "run_name": ("run_name", "run_id"),
+    "dump_schema_version": ("dump_schema_version", "obs_dump_schema_version"),
+    "dump_producer": ("dump_producer", "producer"),
+    "run_seed": ("run_seed", "seed", "eval_seed"),
+    "run_bars": ("run_bars",),
+    "run_max_bars": ("run_max_bars",),
+    "run_num_envs": ("run_num_envs",),
+    "run_num_bars_env": ("run_num_bars_env",),
+    "run_pid": ("run_pid",),
+    "run_obs_dump_path": ("run_obs_dump_path",),
+    "obs_width_recorded": ("obs_width_recorded",),
+    "obs_width_live_alloc": ("obs_width_live_alloc",),
+    "obs_width_schema": ("obs_width_schema",),
+    "dropped_reset_orphan_frames": ("dropped_reset_orphan_frames",),
+    "dropped_reset_orphan_episodes": ("dropped_reset_orphan_episodes",),
+    "robot_name": ("robot_name",),
+}
+# The dump may travel with its OWN code -> name map.  This tool keeps its preregistered literal
+# (prereg section 4) and cross-checks the two rather than adopting either silently.
+OUTCOME_CODE_MAP_KEYS = ("outcome_code_map_json",)
+OUTCOME_CODE_ARRAY_KEYS = ("outcome_code_values", "outcome_code_names")
+
 
 def _bind_keys(archive, table, required):
     available = list(archive.keys())
@@ -648,6 +859,23 @@ def _bind_keys(archive, table, required):
             % (", ".join(missing), ", ".join(sorted(available)))
         )
     return binding
+
+
+def _scalar_value(value):
+    """Decode a 0-d / 1-element npz entry into a JSON-safe scalar (str, int or float)."""
+    array = np.asarray(value).reshape(-1)
+    if array.size != 1:
+        return None
+    item = array[0]
+    if isinstance(item, bytes):
+        return item.decode("utf-8", "replace")
+    if np.issubdtype(array.dtype, np.integer):
+        return int(item)
+    if np.issubdtype(array.dtype, np.floating):
+        return float(item)
+    if np.issubdtype(array.dtype, np.bool_):
+        return bool(item)
+    return str(item)
 
 
 def load_frames(frames_path):
@@ -684,31 +912,159 @@ def load_frames(frames_path):
             extras[key] = int(np.asarray(archive[key]).reshape(-1)[0])
         else:
             extras[key] = None
+    identity = {}
+    for canonical, aliases in sorted(IDENTITY_KEYS.items()):
+        for alias in aliases:
+            if alias in archive:
+                value = _scalar_value(archive[alias])
+                if value is not None:
+                    identity[canonical] = value
+                break
     return (
         frames,
         episodes,
-        {"frames": frame_binding, "episodes": episode_binding, "dump_provenance": extras},
+        {
+            "frames": frame_binding,
+            "episodes": episode_binding,
+            "dump_provenance": extras,
+            "identity_fields": identity,
+            "dump_outcome_code_map": read_dump_outcome_code_map(archive),
+        },
     )
 
 
+def read_dump_outcome_code_map(archive):
+    """The code -> name map the dump shipped with the data, if it shipped one."""
+    for key in OUTCOME_CODE_MAP_KEYS:
+        if key in archive:
+            text = _scalar_value(archive[key])
+            if not text:
+                continue
+            try:
+                loaded = json.loads(str(text))
+            except ValueError:
+                continue
+            return dict((int(code), str(name)) for code, name in loaded.items())
+    values_key, names_key = OUTCOME_CODE_ARRAY_KEYS
+    if values_key in archive and names_key in archive:
+        values = np.asarray(archive[values_key]).reshape(-1).tolist()
+        names = np.asarray(archive[names_key]).reshape(-1).tolist()
+        if len(values) == len(names):
+            return dict(
+                (int(code), name.decode("utf-8", "replace") if isinstance(name, bytes) else str(name))
+                for code, name in zip(values, names)
+            )
+    return None
+
+
 def join_outcomes(frame_episode_uid, episodes):
-    """Map each frame to its episode outcome code; -1 marks a frame with no table entry."""
+    """Map each frame to its episode outcome code.
+
+    Frames whose episode has NO ROW in the outcome table get ``NO_OUTCOME_ROW`` (-1).  That
+    sentinel is emphatically NOT outcome code 5 ("unattributed"), which is a code the dump itself
+    emits for a FINISHED episode it could not attribute; see NO_OUTCOME_ROW_MEANING.
+    """
     lookup = {}
     for uid, code in zip(
         np.asarray(episodes["ep_uid"]).tolist(), np.asarray(episodes["outcome"]).tolist()
     ):
         lookup[int(uid)] = int(code)
     return np.array(
-        [lookup.get(int(uid), -1) for uid in np.asarray(frame_episode_uid).tolist()],
+        [lookup.get(int(uid), NO_OUTCOME_ROW) for uid in np.asarray(frame_episode_uid).tolist()],
         dtype=np.int64,
     )
 
 
+def _domain_of(values):
+    return sorted(int(value) for value in np.unique(np.asarray(values)).tolist())
+
+
+def as_two_valued_bool(values, name, domain=CTX_VALID_DOMAIN):
+    """Boolean view of a two-valued column, asserting the dtype and the domain (never coercing).
+
+    ``np.asarray(x).astype(bool)`` maps EVERY nonzero to True, so an int8 column that later grows a
+    -1 = "unknown" state would silently be counted as True (for ctx_target_visible: as VISIBLE).
+    Bool dtype is accepted as-is; an integer dtype is accepted only if every value it actually
+    contains is inside ``domain``.
+    """
+    array = np.asarray(values)
+    if array.dtype == np.bool_:
+        return array
+    if np.issubdtype(array.dtype, np.integer):
+        observed = _domain_of(array)
+        if not set(observed) <= set(int(value) for value in domain):
+            raise IntegrityViolation(
+                "column %r is two-valued by contract but contains %s (allowed: %s); refusing to "
+                "coerce with .astype(bool), which would map every nonzero value to True"
+                % (name, observed, sorted(domain)),
+                {"column": name, "dtype": str(array.dtype), "observed_domain": observed,
+                 "allowed_domain": sorted(int(value) for value in domain)},
+            )
+        return array.astype(bool)
+    raise IntegrityViolation(
+        "column %r has dtype %s; a two-valued context column must be bool or integer"
+        % (name, array.dtype),
+        {"column": name, "dtype": str(array.dtype)},
+    )
+
+
+def as_front_code(values, name="ctx_front_blocked", domain=CTX_FRONT_BLOCKED_DOMAIN):
+    """Three-valued front column (-1 unknown / 0 clear / 1 blocked), domain asserted."""
+    array = np.asarray(values)
+    if not np.issubdtype(array.dtype, np.integer) and array.dtype != np.bool_:
+        raise IntegrityViolation(
+            "column %r has dtype %s; the three-valued front column must be an integer column"
+            % (name, array.dtype),
+            {"column": name, "dtype": str(array.dtype)},
+        )
+    observed = _domain_of(array)
+    if not set(observed) <= set(int(value) for value in domain):
+        raise IntegrityViolation(
+            "column %r contains %s, outside the preregistered domain %s; an out-of-domain label "
+            "would fall out of every cell of the front family without failing any gate"
+            % (name, observed, sorted(domain)),
+            {"column": name, "dtype": str(array.dtype), "observed_domain": observed,
+             "allowed_domain": sorted(int(value) for value in domain)},
+        )
+    return array.astype(np.int64)
+
+
+def check_context_columns(frames):
+    """Assert the dtype and the domain of every context column the split is built from."""
+    detail = {"columns": {}}
+    for name, domain, kind in (
+        ("ctx_valid", CTX_VALID_DOMAIN, "two_valued"),
+        ("ctx_target_visible", CTX_TARGET_VISIBLE_DOMAIN, "two_valued"),
+        ("ctx_front_blocked", CTX_FRONT_BLOCKED_DOMAIN, "three_valued"),
+    ):
+        array = np.asarray(frames[name])
+        if kind == "two_valued":
+            as_two_valued_bool(array, name, domain)
+        else:
+            as_front_code(array, name, domain)
+        detail["columns"][name] = {
+            "dtype": str(array.dtype),
+            "allowed_domain": sorted(int(value) for value in domain),
+            "observed_domain": (
+                [bool(value) for value in np.unique(array).tolist()]
+                if array.dtype == np.bool_
+                else _domain_of(array)
+            ),
+            "coerced_with_astype_bool": False,
+        }
+    return detail
+
+
 def build_contexts(frames, outcome_by_frame):
-    """Prereg section 6 -- first-order context splits only; never crossed."""
-    visible = np.asarray(frames["ctx_target_visible"]).astype(bool)
-    front = np.asarray(frames["ctx_front_blocked"]).astype(np.int64)
-    contexts = [("overall", np.ones(visible.shape[0], dtype=bool))]
+    """Prereg section 6 -- first-order context splits only; never crossed.
+
+    The context columns are validated (dtype + domain), never coerced: see as_two_valued_bool.
+    """
+    visible = as_two_valued_bool(
+        frames["ctx_target_visible"], "ctx_target_visible", CTX_TARGET_VISIBLE_DOMAIN
+    )
+    front = as_front_code(frames["ctx_front_blocked"])
+    contexts = [(CONTEXT_OVERALL_CELL, np.ones(visible.shape[0], dtype=bool))]
     contexts.append(("target_visible", visible))
     contexts.append(("target_hidden", ~visible))
     contexts.append(("front_blocked", front == 1))
@@ -717,6 +1073,395 @@ def build_contexts(frames, outcome_by_frame):
     for code in OUTCOME_CONTEXT_CODES:
         contexts.append(("outcome_" + OUTCOME_CODES[code], outcome_by_frame == code))
     return contexts
+
+
+def check_context_partitions(contexts, n_valid, n_no_outcome_row, n_non_context_outcome=0):
+    """Every context family must PARTITION the population it claims to cover.  Fail-closed.
+
+    Without this, an out-of-domain label vanishes from every cell of its family silently: a future
+    ``ctx_front_blocked == 2`` would leave front_blocked + front_clear + front_unknown short of the
+    valid-frame count, with entirely plausible per-cell numbers and no gate firing.
+
+    Populations (prereg section 6):
+      * front   {blocked, clear, unknown}  -> every valid frame;
+      * target  {visible, hidden}          -> every valid frame;
+      * outcome {the five preregistered}   -> every valid frame that HAS an outcome row, i.e.
+                                              n_valid minus the excluded no_outcome_row frames.
+        (Outcome code 5 "unattributed" IS an outcome row but is not a preregistered context, so it
+        is carried as an explicitly named allowance rather than being lost in the arithmetic.)
+
+    Cells are additionally required to be pairwise disjoint, so "sums to the total" cannot be
+    reached by double counting.  Returns the reconciliation the JSON reports.
+    """
+    masks = {}
+    for name, mask in contexts:
+        masks[name] = np.asarray(mask, dtype=bool)
+    n_valid = int(n_valid)
+    n_no_outcome_row = int(n_no_outcome_row)
+    n_non_context_outcome = int(n_non_context_outcome)
+
+    if CONTEXT_OVERALL_CELL not in masks:
+        raise IntegrityViolation("context list has no %r cell" % CONTEXT_OVERALL_CELL, {})
+    n_overall = int(masks[CONTEXT_OVERALL_CELL].sum())
+    n_outcome_population = n_valid - n_no_outcome_row - n_non_context_outcome
+
+    families = (
+        ("front", CONTEXT_FAMILY_FRONT, n_valid, "every valid frame"),
+        ("target", CONTEXT_FAMILY_TARGET, n_valid, "every valid frame"),
+        (
+            "outcome",
+            CONTEXT_FAMILY_OUTCOME,
+            n_outcome_population,
+            "every valid frame that has an outcome row carrying one of the five preregistered "
+            "codes (n_valid minus no_outcome_row frames minus non-context outcome codes)",
+        ),
+    )
+
+    report = {
+        "n_valid_frames": n_valid,
+        "n_frames_no_outcome_row": n_no_outcome_row,
+        "n_frames_non_context_outcome_code": n_non_context_outcome,
+        "overall_cell_rows": n_overall,
+        "overall_cell_reconciles": n_overall == n_valid,
+        "families": {},
+    }
+    failures = []
+    if n_overall != n_valid:
+        failures.append(
+            "overall cell covers %d rows but there are %d valid frames" % (n_overall, n_valid)
+        )
+    for family, cell_names, expected_total, covers in families:
+        missing = [name for name in cell_names if name not in masks]
+        if missing:
+            failures.append("family %r is missing cell(s) %s" % (family, ", ".join(missing)))
+            report["families"][family] = {
+                "covers": covers,
+                "missing_cells": missing,
+                "reconciles": False,
+            }
+            continue
+        counts = dict((name, int(masks[name].sum())) for name in cell_names)
+        total = int(sum(counts.values()))
+        covered = np.zeros(masks[cell_names[0]].shape[0], dtype=np.int64)
+        for name in cell_names:
+            covered += masks[name].astype(np.int64)
+        disjoint = bool(covered.size == 0 or int(covered.max()) <= 1)
+        reconciles = total == int(expected_total)
+        report["families"][family] = {
+            "covers": covers,
+            "cells": counts,
+            "cells_total": total,
+            "expected_total": int(expected_total),
+            "unassigned_frames": int(expected_total) - total,
+            "reconciles": reconciles,
+            "cells_disjoint": disjoint,
+        }
+        if not reconciles:
+            failures.append(
+                "family %r covers %d rows but must cover %d (%s): %d frame(s) are in NO cell of "
+                "the family" % (family, total, expected_total, covers, int(expected_total) - total)
+            )
+        if not disjoint:
+            failures.append("family %r has overlapping cells" % family)
+    report["partitions_complete"] = not failures
+    if failures:
+        raise IntegrityViolation("context partition check failed: " + "; ".join(failures), report)
+    return report
+
+
+def check_outcome_join(outcome_by_valid_frame, n_valid):
+    """Reconcile the outcome join: joined + excluded == n_valid, with both totals reported.
+
+    The payload used to place ``outcome_frame_counts["unattributed"] = 0`` (outcome code 5) three
+    lines from a sentinel count of 1530 frames reported under the same word.  Emitting the
+    joined total, the excluded total and n_valid together -- and asserting they add up -- makes it
+    impossible to read the code-5 zero as "the split is complete".
+    """
+    codes = np.asarray(outcome_by_valid_frame, dtype=np.int64)
+    n_valid = int(n_valid)
+    counts = dict(
+        (OUTCOME_CODES[code], int((codes == code).sum())) for code in sorted(OUTCOME_CODES)
+    )
+    n_no_row = int((codes == NO_OUTCOME_ROW).sum())
+    n_with_row = int(sum(counts.values()))
+    known = set(OUTCOME_CODES) | {NO_OUTCOME_ROW}
+    unknown_codes = sorted(
+        code for code in np.unique(codes).tolist() if int(code) not in known
+    )
+    n_unknown = int(sum(int((codes == code).sum()) for code in unknown_codes))
+    context_total = int(sum(counts[OUTCOME_CODES[code]] for code in OUTCOME_CONTEXT_CODES))
+
+    report = {
+        "sentinel": NO_OUTCOME_ROW,
+        "sentinel_name": NO_OUTCOME_ROW_NAME,
+        "sentinel_meaning": NO_OUTCOME_ROW_MEANING,
+        "not_to_be_confused_with": {
+            "outcome_code": 5,
+            "name": OUTCOME_CODES[5],
+            "meaning": (
+                "a code the dump emits for a FINISHED episode it could not attribute; it has an "
+                "outcome row and is counted in n_frames_with_outcome_row"
+            ),
+            "n_frames": counts[OUTCOME_CODES[5]],
+        },
+        "n_valid_frames": n_valid,
+        "n_frames_with_outcome_row": n_with_row,
+        "n_frames_no_outcome_row": n_no_row,
+        "n_frames_unknown_outcome_code": n_unknown,
+        "unknown_outcome_codes": [int(code) for code in unknown_codes],
+        "outcome_frame_counts": counts,
+        "outcome_context_cell_total": context_total,
+        "outcome_context_cell_codes": list(OUTCOME_CONTEXT_CODES),
+        "reconciliation": (
+            "n_frames_with_outcome_row + n_frames_no_outcome_row + n_frames_unknown_outcome_code "
+            "== n_valid_frames"
+        ),
+        "correct_denominator_for_outcome_shares": "n_frames_with_outcome_row",
+    }
+    reconciles = (n_with_row + n_no_row + n_unknown) == n_valid
+    report["reconciles"] = reconciles
+    if unknown_codes:
+        raise IntegrityViolation(
+            "outcome table contains code(s) %s outside OUTCOME_CODES; those frames belong to no "
+            "context cell" % (unknown_codes,),
+            report,
+        )
+    if not reconciles:
+        raise IntegrityViolation(
+            "outcome join does not reconcile: %d joined + %d without a row != %d valid frames"
+            % (n_with_row, n_no_row, n_valid),
+            report,
+        )
+    return report
+
+
+def characterise_excluded_frames(call_index, excluded_mask):
+    """Characterise the no_outcome_row exclusion FROM THE DATA (H6).  Non-gating diagnostic.
+
+    The excluded frames are not missing at random: they belong to episodes still running when the
+    outcome table closed, so they sit in the tail of the recording.  Computing the call_index range
+    of the excluded set against the population's, and flagging tail concentration, means the caveat
+    is generated every run instead of being remembered by a human.
+    """
+    excluded = np.asarray(excluded_mask, dtype=bool)
+    n_population = int(excluded.shape[0])
+    n_excluded = int(excluded.sum())
+    report = {
+        "gating": False,
+        "n_population": n_population,
+        "n_excluded": n_excluded,
+        "fraction_excluded": (float(n_excluded) / float(n_population)) if n_population else None,
+        "tail_concentration_threshold": EXCLUDED_TAIL_CONCENTRATION_MIN,
+        "tail_rule": (
+            "concentrated_in_tail is true when at least tail_concentration_threshold of the "
+            "excluded frames have call_index >= the population median call_index"
+        ),
+    }
+    if call_index is None:
+        report["call_index_available"] = False
+        report["concentrated_in_tail"] = None
+        report["caveat"] = (
+            "the dump carries no call_index column, so whether the excluded frames are missing at "
+            "random could NOT be characterised"
+        )
+        return report
+    report["call_index_available"] = True
+    values = np.asarray(call_index, dtype=np.float64)
+    if n_population == 0 or n_excluded == 0:
+        report["concentrated_in_tail"] = False
+        report["caveat"] = "no frames were excluded from the outcome split"
+        return report
+    population_median = percentile(values, 50.0)
+    excluded_values = values[excluded]
+    fraction_in_tail = float((excluded_values >= population_median).mean())
+    below = float((values < float(excluded_values.min())).mean())
+    report.update(
+        {
+            "population_call_index_min": float(values.min()),
+            "population_call_index_max": float(values.max()),
+            "population_call_index_median": population_median,
+            "excluded_call_index_min": float(excluded_values.min()),
+            "excluded_call_index_max": float(excluded_values.max()),
+            "excluded_call_index_median": percentile(excluded_values, 50.0),
+            "fraction_of_excluded_at_or_above_population_median": fraction_in_tail,
+            "excluded_min_call_index_percentile_of_population": 100.0 * below,
+        }
+    )
+    concentrated = bool(fraction_in_tail >= EXCLUDED_TAIL_CONCENTRATION_MIN)
+    report["concentrated_in_tail"] = concentrated
+    if concentrated:
+        report["caveat"] = (
+            "the %d frames excluded from the outcome split are NOT missing at random: %.1f%% of "
+            "them carry call_index >= %g (population median), the lowest being %g of a maximum "
+            "%g. They belong to episodes still running when the outcome table closed, so the "
+            "OUTCOME-SPLIT cells are biased toward episodes that terminated inside the recording "
+            "window. The overall cell is computed on all valid frames and is unaffected."
+            % (
+                n_excluded,
+                100.0 * fraction_in_tail,
+                population_median,
+                float(excluded_values.min()),
+                float(values.max()),
+            )
+        )
+    else:
+        report["caveat"] = (
+            "the %d excluded frames are spread across the recording (%.1f%% at or above the "
+            "population median call_index); no tail concentration flagged"
+            % (n_excluded, 100.0 * fraction_in_tail)
+        )
+    return report
+
+
+def check_frames_obs_dtype(obs):
+    """Assert the observation dtype this tool assumes (H5).
+
+    rl_games' ``BasePlayer._preproc_obs`` divides uint8 observations by 255.  This tool builds a
+    float32 tensor straight from the npz, so a uint8 dump would silently SKIP that scaling and
+    every number below would describe a different observation than the live path sees.
+    """
+    dtype = np.dtype(np.asarray(obs).dtype)
+    detail = {
+        "frames_obs_dtype": str(dtype),
+        "expected_dtype": FRAMES_OBS_DTYPE,
+        "why": (
+            "rl_games BasePlayer._preproc_obs scales uint8 observations by 1/255; this tool casts "
+            "the dump to float32 and would skip that path"
+        ),
+    }
+    if dtype != np.dtype(FRAMES_OBS_DTYPE):
+        raise IntegrityViolation(
+            "frames obs dtype is %s but this tool assumes %s (a uint8 dump would silently skip "
+            "the live path's /255)" % (dtype, FRAMES_OBS_DTYPE),
+            detail,
+        )
+    return detail
+
+
+def _as_numpy(values):
+    if hasattr(values, "detach"):
+        return values.detach().cpu().numpy()
+    return np.asarray(values)
+
+
+def check_finite(arrays, label):
+    """Fail closed on any non-finite value (H5).
+
+    A single NaN propagates straight through the statistics: ``np.percentile`` returns NaN, and
+    both ``NaN >= 0.30`` and ``NaN <= 0.10`` are False, so the verdict rule lands on INCONCLUSIVE
+    with no gate firing at all.  An INCONCLUSIVE that means "the arithmetic was corrupt" is
+    indistinguishable from one that means "the policy is mildly chiral", so this fails instead.
+    """
+    detail = {"label": label, "arrays": {}}
+    offenders = []
+    for name in sorted(arrays):
+        values = _as_numpy(arrays[name])
+        finite = np.isfinite(values)
+        n_bad = int(values.size) - int(finite.sum())
+        detail["arrays"][name] = {
+            "n_elements": int(values.size),
+            "n_non_finite": n_bad,
+            "all_finite": n_bad == 0,
+        }
+        if n_bad:
+            offenders.append("%s (%d non-finite of %d)" % (name, n_bad, int(values.size)))
+    detail["all_finite"] = not offenders
+    if offenders:
+        raise IntegrityViolation(
+            "%s contains non-finite values: %s" % (label, "; ".join(offenders)), detail
+        )
+    return detail
+
+
+def check_dump_outcome_code_map(dump_map):
+    """Cross-check the dump's own code -> name map against this tool's preregistered literal.
+
+    OUTCOME_CODES is preregistered and stays a literal (prereg section 4).  When the dump ships its
+    map, the two are compared on the codes they SHARE: a code that means something different on the
+    two sides would silently re-label a whole stratum.  Codes the dump knows and the prereg does
+    not are reported, not adopted -- frames actually carrying one of them fail check_outcome_join,
+    which is the correct fail-closed outcome for a stratum with no preregistered cell.
+    """
+    if not dump_map:
+        return {
+            "dump_ships_a_code_map": False,
+            "tool_outcome_code_map": dict((str(c), n) for c, n in OUTCOME_CODES.items()),
+            "note": (
+                "this dump ships no outcome-code map, so the tool's preregistered literal could "
+                "NOT be cross-checked against the producer's"
+            ),
+        }
+    shared = sorted(set(dump_map) & set(OUTCOME_CODES))
+    disagreements = dict(
+        (str(code), {"dump": dump_map[code], "tool": OUTCOME_CODES[code]})
+        for code in shared
+        if str(dump_map[code]) != str(OUTCOME_CODES[code])
+    )
+    detail = {
+        "dump_ships_a_code_map": True,
+        "dump_outcome_code_map": dict((str(c), n) for c, n in sorted(dump_map.items())),
+        "tool_outcome_code_map": dict((str(c), n) for c, n in OUTCOME_CODES.items()),
+        "shared_codes": shared,
+        "codes_only_in_dump": sorted(set(dump_map) - set(OUTCOME_CODES)),
+        "codes_only_in_tool": sorted(set(OUTCOME_CODES) - set(dump_map)),
+        "name_disagreements": disagreements,
+        "note": (
+            "codes_only_in_dump have no preregistered context cell; frames carrying one of them "
+            "fail the outcome-join check rather than being dropped from the split"
+        ),
+    }
+    if disagreements:
+        raise IntegrityViolation(
+            "the dump's outcome-code map disagrees with the preregistered map on code(s) %s"
+            % ", ".join(sorted(disagreements)),
+            detail,
+        )
+    return detail
+
+
+def check_npz_identity(identity, checkpoint_sha256, obs_width=None):
+    """Bind the frames to the checkpoint when the dump carries an identity; say so when it does not.
+
+    Nothing in the npz schema used to tie the frames to a policy: the caller's word was the only
+    link.  Whatever run identity the dump carries is recorded here, and a checkpoint SHA-256 in the
+    dump is ASSERTED against the audited checkpoint.  When the dump carries none, the JSON says so
+    explicitly rather than being silent about it.
+    """
+    fields = dict(identity or {})
+    report = {
+        "identity_fields_present": sorted(fields),
+        "identity_fields": fields,
+        "checkpoint_binding_verified": False,
+    }
+    recorded_width = fields.get("obs_width_recorded")
+    if recorded_width is not None and obs_width is not None:
+        report["obs_width_recorded_matches_loaded_obs"] = int(recorded_width) == int(obs_width)
+        if int(recorded_width) != int(obs_width):
+            raise IntegrityViolation(
+                "the dump records obs width %d but the loaded observation table is %d wide"
+                % (int(recorded_width), int(obs_width)),
+                report,
+            )
+    dumped_sha = fields.get("checkpoint_sha256")
+    if dumped_sha is None:
+        report["note"] = (
+            "this dump carries no checkpoint identity, so the binding between these frames and "
+            "the audited checkpoint is NOT machine-verified here; it rests on the caller, and on "
+            "the frames_sha256 / checkpoint_sha256 recorded in this file"
+        )
+        return report
+    matches = str(dumped_sha).strip().lower() == str(checkpoint_sha256).strip().lower()
+    report["npz_checkpoint_sha256"] = str(dumped_sha).strip().lower()
+    report["audited_checkpoint_sha256"] = str(checkpoint_sha256).strip().lower()
+    report["checkpoint_binding_verified"] = matches
+    if not matches:
+        raise IntegrityViolation(
+            "the frames npz was dumped from checkpoint %s but this audit is running checkpoint %s"
+            % (report["npz_checkpoint_sha256"], report["audited_checkpoint_sha256"]),
+            report,
+        )
+    report["note"] = "the dump's checkpoint identity matches the audited checkpoint"
+    return report
 
 
 # --------------------------------------------------------------------------------------------
@@ -854,23 +1599,53 @@ def gate_index_sets(mirror_fn, hbeams, vbeams, max_obstacles):
     return passed, detail, observed_source, observed_sign
 
 
+def observed_scan_fixed_points(observed_source, hbeams, vbeams):
+    """Beam indices the OBSERVED operator leaves in place on EVERY ring.
+
+    ``h`` is a fixed point only if ``observed_source[v*H + h] == v*H + h`` for every ring ``v`` --
+    a beam that is fixed on one ring and moved on another is not a fixed point of the operator.
+    """
+    hbeams = int(hbeams)
+    vbeams = int(vbeams)
+    fixed = set()
+    for h in range(hbeams):
+        if all(
+            int(observed_source[v * hbeams + h]) == v * hbeams + h for v in range(vbeams)
+        ):
+            fixed.add(h)
+    return fixed
+
+
 def gate_scan_permutation(observed_source, hbeams, vbeams):
-    """Q5 -- ring permutation h -> (-h) mod H with fixed points exactly {0, 36}."""
+    """Q5 -- ring permutation h -> (-h) mod H with fixed points exactly {0, 36}.
+
+    ``fixed_points`` is measured on the OBSERVED operator (the source map recovered from the real
+    mirror function by gate_index_sets), never on this tool's own preregistered map.  Reading the
+    preregistered map here made the reported evidence a tautology: at hbeams=72 it is the constant
+    {0, 36} and could not disagree with ``expected_fixed_points``, so the field a reader would cite
+    as proof proved nothing.
+    """
     hbeams = int(hbeams)
     vbeams = int(vbeams)
     expected = preregistered_scan_permutation(hbeams)
     rings_match = True
     for v in range(vbeams):
         for h in range(hbeams):
-            if observed_source[v * hbeams + h] != v * hbeams + expected[h]:
+            if int(observed_source[v * hbeams + h]) != v * hbeams + expected[h]:
                 rings_match = False
                 break
-    fixed_points = set(h for h in range(hbeams) if expected[h] == h)
+        if not rings_match:
+            break
+    fixed_points = observed_scan_fixed_points(observed_source, hbeams, vbeams)
     detail = {
         "hbeams": hbeams,
         "vbeams": vbeams,
         "ring_permutation_matches_all_rings": rings_match,
         "fixed_points": sorted(fixed_points),
+        "fixed_points_computed_from": (
+            "observed_source (the operator recovered from the mirror function), not the tool's "
+            "preregistered map"
+        ),
         "expected_fixed_points": sorted(GATE_SCAN_FIXED_POINTS),
     }
     passed = rings_match and fixed_points == set(GATE_SCAN_FIXED_POINTS)
@@ -1053,6 +1828,49 @@ def _base_payload(args, checkpoint_path, checkpoint_sha, frames_sha, schema, exp
     }
 
 
+def finalise_gate_block(payload, gates):
+    """Stamp every gate with its state, publish the block and its three-way count (H3)."""
+    stamp_gate_states(gates)
+    summary = summarise_gates(gates)
+    payload["quality_gates"] = gates
+    payload["quality_gate_summary"] = summary
+    payload["delegated_gates"] = dict(
+        (name, dict(contract)) for name, contract in DELEGATED_GATES.items()
+    )
+    return summary
+
+
+def record_integrity(payload, checks, name, thunk):
+    """Run one fail-closed integrity check, recording what it examined either way.
+
+    On violation the payload is stripped of every policy statistic (none may be reported behind a
+    failed invariant), stamped with VERDICT_FAIL_CLOSED_DATA_INTEGRITY and raised as a GateFailure
+    so the driver writes the evidence out and exits 3.
+    """
+    try:
+        detail = thunk()
+    except IntegrityViolation as exc:
+        failed = dict(exc.detail)
+        failed["passed"] = False
+        failed["violation"] = str(exc)
+        checks[name] = failed
+        for key in ("measurements_raw_normaliser", "s1_symmetrised_normaliser", "verdict_basis"):
+            payload.pop(key, None)
+        payload["integrity_checks"] = checks
+        payload["failed_integrity_checks"] = [name]
+        payload["verdict"] = VERDICT_FAIL_CLOSED_INTEGRITY
+        payload["note"] = (
+            "A fail-closed data-integrity invariant was violated. No policy statistics and no "
+            "policy claim are reported."
+        )
+        raise GateFailure([name], payload, kind="integrity checks")
+    entry = dict(detail or {})
+    entry["passed"] = True
+    checks[name] = entry
+    payload["integrity_checks"] = checks
+    return entry
+
+
 def run_audit(args):
     checkpoint_path = resolve_checkpoint(args.checkpoint)
     checkpoint_sha = sha256_file(checkpoint_path)
@@ -1082,11 +1900,40 @@ def run_audit(args):
     )
 
     frames, episodes, key_binding = load_frames(frames_path)
-    obs_all = torch.as_tensor(np.ascontiguousarray(frames["obs"]), dtype=torch.float32)
-    valid = np.asarray(frames["ctx_valid"]).astype(bool)
 
     payload = _base_payload(args, checkpoint_path, checkpoint_sha, frames_sha, schema, exported_env)
     payload["npz_key_binding"] = key_binding
+
+    # ---- fail-closed data-integrity invariants, BEFORE anything is measured -----------------
+    integrity = {}
+    payload["integrity_checks"] = integrity
+    record_integrity(
+        payload,
+        integrity,
+        "npz_run_identity",
+        lambda: check_npz_identity(
+            key_binding.get("identity_fields"),
+            checkpoint_sha,
+            obs_width=int(np.asarray(frames["obs"]).shape[1]),
+        ),
+    )
+    record_integrity(
+        payload,
+        integrity,
+        "dump_outcome_code_map",
+        lambda: check_dump_outcome_code_map(key_binding.get("dump_outcome_code_map")),
+    )
+    record_integrity(payload, integrity, "frames_obs_dtype", lambda: check_frames_obs_dtype(frames["obs"]))
+    record_integrity(
+        payload, integrity, "frames_obs_finite", lambda: check_finite({"obs": frames["obs"]}, "frames.obs")
+    )
+    record_integrity(
+        payload, integrity, "context_column_domains", lambda: check_context_columns(frames)
+    )
+
+    obs_all = torch.as_tensor(np.ascontiguousarray(frames["obs"]), dtype=torch.float32)
+    valid = as_two_valued_bool(frames["ctx_valid"], "ctx_valid", CTX_VALID_DOMAIN)
+
     payload["frames"] = {
         "n_frames_total": int(obs_all.shape[0]),
         "n_frames_valid": int(valid.sum()),
@@ -1134,20 +1981,32 @@ def run_audit(args):
     gates["Q1_involution"] = {"passed": q1_passed, **q1_detail}
     gates["Q2_isometry"] = {"passed": q2_passed, **q2_detail}
 
+    # Q6 and the manifest half of Q7 are NOT evaluated here.  They are declared as delegated (see
+    # DELEGATED_GATES) so that they cannot be folded into a "0 failed" tally, and so a caller can
+    # assert by name that IT performed them.
     gates["Q6_import_origin"] = {
-        "passed": None,
-        "owner": "launcher",
         "note": "import-origin enforcement is the launcher's gate; not evaluated here",
     }
-    gates["Q7_checkpoint_sha_and_manifest"] = {
-        "passed": True,
-        "checkpoint_sha256_matches": True,
-        "note": "manifest / schema_version 2 receipt checks are the launcher's gate",
+    gates["Q7_manifest_schema_version"] = {
+        "note": (
+            "the source manifest and the schema_version 2 receipt are the launcher's gate; not "
+            "evaluated here"
+        ),
+    }
+    # The half this tool really does verify: the checkpoint SHA-256, compared in run_audit before
+    # anything was loaded.  Recomputed from the actual values rather than hardcoded True.
+    checkpoint_sha_matches = checkpoint_sha == str(args.checkpoint_sha256).strip().lower()
+    gates["Q7_checkpoint_sha"] = {
+        "passed": bool(checkpoint_sha_matches),
+        "checkpoint_sha256_matches": bool(checkpoint_sha_matches),
+        "expected_checkpoint_sha256": str(args.checkpoint_sha256).strip().lower(),
+        "observed_checkpoint_sha256": checkpoint_sha,
+        "note": "verified here by re-comparing the digest of the file that was actually loaded",
     }
 
-    failed = [name for name, info in sorted(gates.items()) if info.get("passed") is False]
+    summary = finalise_gate_block(payload, gates)
+    failed = list(summary["evaluated_failed"]) + list(summary["malformed"])
     if failed:
-        payload["quality_gates"] = gates
         payload["verdict"] = VERDICT_FAIL_CLOSED
         payload["failed_gates"] = failed
         payload["note"] = (
@@ -1188,13 +2047,23 @@ def run_audit(args):
         "mirrored_actions_bitwise_identical": bool(torch.equal(mirrored_a, mirrored_b)),
         "repeats": 2,
     }
+    summary = finalise_gate_block(payload, gates)
     if not q8_passed:
-        payload["quality_gates"] = gates
         payload["verdict"] = VERDICT_FAIL_CLOSED
         payload["failed_gates"] = ["Q8_determinism"]
         raise GateFailure(["Q8_determinism"], payload)
+    payload["failed_gates"] = list(summary["evaluated_failed"]) + list(summary["malformed"])
 
-    payload["quality_gates"] = gates
+    # A NaN here would sail through np.percentile and land on INCONCLUSIVE without failing a gate.
+    record_integrity(
+        payload,
+        integrity,
+        "actions_finite",
+        lambda: check_finite(
+            {"original_actions": original_a, "mirrored_actions": mirrored_a},
+            "deterministic actions (raw normaliser)",
+        ),
+    )
 
     # ---- measurements ---------------------------------------------------------------------
     outcome_by_frame = join_outcomes(frames["episode_uid"], episodes)
@@ -1202,17 +2071,51 @@ def run_audit(args):
     valid_frames = dict(
         (key, np.asarray(value)[valid_index]) for key, value in frames.items() if key != "obs"
     )
-    contexts = build_contexts(valid_frames, outcome_by_frame[valid_index])
+    outcome_valid = outcome_by_frame[valid_index]
+    contexts = build_contexts(valid_frames, outcome_valid)
+
+    # ---- the join and the context families must reconcile before anything is measured -------
+    outcome_join = record_integrity(
+        payload, integrity, "outcome_join", lambda: check_outcome_join(outcome_valid, n_valid)
+    )
+    n_no_outcome_row = int(outcome_join["n_frames_no_outcome_row"])
+    n_non_context_outcome = int(
+        outcome_join["n_frames_with_outcome_row"] - outcome_join["outcome_context_cell_total"]
+    )
+    record_integrity(
+        payload,
+        integrity,
+        "context_partition",
+        lambda: check_context_partitions(
+            contexts, n_valid, n_no_outcome_row, n_non_context_outcome
+        ),
+    )
 
     original_np = original_a.numpy()[valid_index]
     mirrored_np = mirrored_a.numpy()[valid_index]
     payload["measurements_raw_normaliser"] = measure_all(original_np, mirrored_np, contexts)
-    payload["frames"]["n_frames_unattributed_outcome"] = int(
-        (outcome_by_frame[valid_index] == -1).sum()
+
+    # H6: characterise the exclusion from the data, every run, rather than relying on memory.
+    outcome_join["excluded_frames"] = characterise_excluded_frames(
+        valid_frames.get("call_index"), outcome_valid == NO_OUTCOME_ROW
     )
+    payload["frames"]["n_frames_no_outcome_row"] = n_no_outcome_row
+    payload["frames"]["outcome_join"] = outcome_join
     payload["frames"]["outcome_frame_counts"] = dict(
-        (OUTCOME_CODES[code], int((outcome_by_frame[valid_index] == code).sum()))
+        (OUTCOME_CODES[code], int((outcome_valid == code).sum()))
         for code in sorted(OUTCOME_CODES)
+    )
+    payload["frames"]["outcome_frame_counts_note"] = (
+        "keys are OUTCOME_CODES, so 'unattributed' here is outcome code 5 (a finished episode the "
+        "dump could not attribute) and NOT the join sentinel. These counts cover only the "
+        "%d frames that have an outcome row; %d further valid frames have no row at all "
+        "(frames.n_frames_no_outcome_row). The denominator for outcome shares is "
+        "frames.outcome_join.n_frames_with_outcome_row, not the sum of this dict."
+        % (int(outcome_join["n_frames_with_outcome_row"]), n_no_outcome_row)
+    )
+    caveat = (outcome_join["excluded_frames"] or {}).get("caveat")
+    payload["generated_caveats"] = (
+        [caveat] if caveat and outcome_join["excluded_frames"].get("concentrated_in_tail") else []
     )
 
     # ---- S1: exploratory, NON-GATING normaliser-symmetry decomposition ---------------------
@@ -1227,6 +2130,15 @@ def run_audit(args):
         sym_rms.running_var.copy_(sym_var)
     sym_original, sym_mirrored = forward_pairs(
         sym_player, obs_all, args.batch_size, mirror_navrl_structured_observation
+    )
+    record_integrity(
+        payload,
+        integrity,
+        "s1_actions_finite",
+        lambda: check_finite(
+            {"original_actions": sym_original, "mirrored_actions": sym_mirrored},
+            "deterministic actions (symmetrised normaliser, S1)",
+        ),
     )
     payload["s1_symmetrised_normaliser"] = {
         "gating": False,
@@ -1257,14 +2169,17 @@ def run_audit(args):
         ),
     }
 
-    overall = payload["measurements_raw_normaliser"]["overall"]
-    payload["verdict"] = overall["verdict"] if overall["verdict"] else VERDICT_INCONCLUSIVE
+    overall = payload["measurements_raw_normaliser"][CONTEXT_OVERALL_CELL]
+    verdict, no_verdict_reason = overall_verdict(overall)
+    payload["verdict"] = verdict
     payload["verdict_basis"] = {
-        "cell": "overall",
+        "cell": CONTEXT_OVERALL_CELL,
         "median_conj_err_lat": overall["channels"]["conj_err_lat"]["median"],
         "lateral_sign_agreement": overall["lateral_sign_agreement"],
         "comparable_rows": overall["lateral_sign_comparable"],
         "insufficient_sample": overall["insufficient_sample"],
+        "verdict_assigned": overall["verdict"] is not None,
+        "no_verdict_reason": no_verdict_reason,
     }
     payload["p2_verdict_changed"] = False
     payload["d1_verdict_changed"] = False
@@ -1306,8 +2221,13 @@ def main(argv=None):
     except GateFailure as failure:
         write_json(args.out, failure.payload)
         print(
-            "[reflection-audit] %s | failed gates: %s -> %s"
-            % (VERDICT_FAIL_CLOSED, ", ".join(failure.gates), args.out),
+            "[reflection-audit] %s | failed %s: %s -> %s"
+            % (
+                failure.payload.get("verdict", VERDICT_FAIL_CLOSED),
+                failure.kind,
+                ", ".join(failure.gates),
+                args.out,
+            ),
             file=sys.stderr,
         )
         return 3

@@ -1,4 +1,5 @@
 import importlib.util
+import unittest
 from pathlib import Path
 
 import torch
@@ -245,3 +246,52 @@ def test_bounded_rollout_uses_bar_surface_not_center_when_half_extents_are_given
     assert bool(steered.item())
     assert bool(feasible.item())
     assert torch.isfinite(new).all() and torch.isfinite(velocity).all()
+
+
+class TargetMotionFunctionTestCase(unittest.TestCase):
+    """Adapter so ``unittest discover`` collects the pytest-style functions above.
+
+    Each ``test_*`` function defined at module level is pytest-collectible but invisible
+    to ``unittest discover`` (this repo's only available runner -- pytest is not installed).
+    Without this class, `python -m unittest discover` silently reports "Ran 0 tests / OK"
+    for this file even if every assertion above is broken. Each wrapper method below
+    delegates, unmodified, to the corresponding module-level function so unittest reports
+    a separate named pass/fail per check -- the assertions themselves are never touched here.
+    """
+
+    def test_controlled_initial_cv_headings_follow_radial_contract(self):
+        test_controlled_initial_cv_headings_follow_radial_contract()
+
+    def test_random_initial_cv_heading_and_degenerate_radial_are_finite(self):
+        test_random_initial_cv_heading_and_degenerate_radial_are_finite()
+
+    def test_unobstructed_step_preserves_heading_and_speed(self):
+        test_unobstructed_step_preserves_heading_and_speed()
+
+    def test_bar_ahead_selects_a_full_speed_side_step(self):
+        test_bar_ahead_selects_a_full_speed_side_step()
+
+    def test_tie_break_is_mirror_symmetric(self):
+        test_tie_break_is_mirror_symmetric()
+
+    def test_heading_continuity_turns_toward_previous_flight_direction(self):
+        test_heading_continuity_turns_toward_previous_flight_direction()
+
+    def test_heading_window_is_preference_not_escape_veto(self):
+        test_heading_window_is_preference_not_escape_veto()
+
+    def test_bounded_velocity_ramps_from_rest_without_exceeding_acceleration(self):
+        test_bounded_velocity_ramps_from_rest_without_exceeding_acceleration()
+
+    def test_bounded_velocity_limits_heading_slew_and_vector_acceleration(self):
+        test_bounded_velocity_limits_heading_slew_and_vector_acceleration()
+
+    def test_bounded_rollout_avoids_bar_without_teleport_or_instant_turn(self):
+        test_bounded_rollout_avoids_bar_without_teleport_or_instant_turn()
+
+    def test_bounded_rollout_uses_bar_surface_not_center_when_half_extents_are_given(self):
+        test_bounded_rollout_uses_bar_surface_not_center_when_half_extents_are_given()
+
+
+if __name__ == "__main__":
+    unittest.main()

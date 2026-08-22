@@ -72,16 +72,48 @@ ROBOT_NAME = "navrl_ref5in_quad"
 ACTION_SELECTION = "deterministic"
 REFLECTION_MODE = "original"
 SPEED_GOVERNOR_MODE = "off"
+# Forced by the checkpoint contract, not chosen: frozen ref5in D1 ep1900 was trained at
+# 22.5-28 m and the generic evaluator refuses any other goal band (prereg 3-d).  Pinned here
+# so that a drifted band is a verification failure and not a silently different cell.
+GOAL_DIST_MIN_M = 22.5
+GOAL_DIST_MAX_M = 28.0
 VERDICT_FAIL_CLOSED = "FAIL_CLOSED_TRANSFORM_QUALITY"
+# Gates the offline audit deliberately does not decide: it records them with this launcher
+# named as their owner.  Each name maps to the verify_cell() key carrying the launcher's own
+# proof that it ran the check.  A delegated gate with no such proof is a hole in the tally,
+# so build_summary() fails closed on it rather than reporting "0 failed".
+# The offline audit owns the spelling of its own gate table, so both the name the frozen seed-373
+# report uses and the name the current tool uses map to the same evidence; an unrecognised
+# delegated gate is a check nobody performed and fails closed.
+LAUNCHER_OWNED_GATES = {
+    "Q6_import_origin": "import_origin",
+    "Q7_checkpoint_sha_and_manifest": "manifest_provenance",
+    "Q7_manifest_schema_version": "manifest_provenance",
+}
+GATE_STATUS_DELEGATED = "delegated"     # mirrors navrl_reflection_offline_audit.py's gate states
 
 # The `run` log line the fail-closed import-origin guard prints (runner.py:31-33).  A MISSING line
 # means the guard never ran, which is itself a failure -- see verify_import_origin().
-ORIGIN_LINE = re.compile(
-    r"^\[origin\] aerial_gym "
-    + re.escape(str(ROOT / "aerial_gym" / "__init__.py"))
-    + r" sha256=(?P<sha256>[0-9a-f]{64}) \(enforced\)$"
-)
+#
+# The tree this line must name is NOT the verifier's own tree.  Q6 asserts one relation internal to
+# the artifact: the aerial_gym that EXECUTED is the tree whose bytes the source manifest hashed.
+# Compiling the pattern against ROOT silently added a second, different claim -- "...and the
+# verifier happens to be standing in that tree" -- which makes a result produced in a git worktree
+# unverifiable from anywhere else, including after the worktree is deleted.  The expected path is
+# therefore derived per artifact from the manifest's repository_root; see verify_import_origin().
+ORIGIN_LOG_MARKER = "[origin] aerial_gym "
+ORIGIN_LINE_HEAD = r"^\[origin\] aerial_gym "
+ORIGIN_LINE_TAIL = r" sha256=(?P<sha256>[0-9a-f]{64}) \(enforced\)$"
 ORIGIN_MANIFEST_ENTRY = "aerial_gym/__init__.py"
+
+
+def origin_line_pattern(repository_root):
+    """Matcher for the enforced [origin] line of the tree ``repository_root`` names."""
+    return re.compile(
+        ORIGIN_LINE_HEAD
+        + re.escape(str(Path(repository_root) / ORIGIN_MANIFEST_ENTRY))
+        + ORIGIN_LINE_TAIL
+    )
 
 # Prereg section 2.  Transcribed, not summarised: the limitations travel with the numbers.
 LIMITATIONS = [
@@ -194,6 +226,32 @@ SUMMARY_JSON = OUTPUT / "summary.json"
 SUMMARY_MD = OUTPUT / "summary.md"
 
 
+def resolve_recorded_path(recorded, label: str) -> Path:
+    """Locate a receipt-recorded artifact without trusting the path the producer happened to write.
+
+    The evaluator records ABSOLUTE paths, so a receipt produced in a git worktree names files that
+    only exist there.  Migrating the result -- or deleting the worktree once the bytes are merged
+    -- would then make the cell unverifiable, even though every byte is present.  Two candidates
+    are tried, in order: the copy that travels with the cell, then the absolute path the receipt
+    recorded.  Neither is a trust boundary; identity is pinned by the digests the caller checks
+    (and P2.manifest_map re-hashes every snapshot it reads).  Nothing is resolved implicitly: if
+    neither candidate exists the message names both and the check fails closed.
+    """
+    raw = str(recorded or "")
+    require(bool(raw), f"receipt records no {label}")
+    recorded_path = Path(raw)
+    local = cell_dir() / recorded_path.name
+    if local.exists():
+        return local.resolve()
+    absolute = recorded_path if recorded_path.is_absolute() else (cell_dir() / recorded_path)
+    if absolute.exists():
+        return absolute.resolve()
+    raise ContractError(
+        f"{label} not found; neither the cell-local copy {local} nor the recorded path "
+        f"{absolute} exists"
+    )
+
+
 # ----------------------------------------------------------------------------------------------
 # Environment
 # ----------------------------------------------------------------------------------------------
@@ -235,6 +293,15 @@ def canonical_env(*, preflight: bool) -> dict:
             "NAVRL_OBS_DUMP_MAX": str(OBS_DUMP_MAX),
             "NAVRL_REQUIRE_SOURCE_ROOT": str(ROOT),
         }
+    )
+    # The band that is EXPORTED and the band that is later VERIFIED must be one value, or the
+    # receipt would be checked against a number the run never used.
+    require(
+        float(env["NAVRL_V2_GOAL_DIST_MIN"]) == GOAL_DIST_MIN_M
+        and float(env["NAVRL_V2_GOAL_DIST_MAX"]) == GOAL_DIST_MAX_M,
+        "exported goal band drifted from the pinned constants: "
+        f"{env['NAVRL_V2_GOAL_DIST_MIN']}-{env['NAVRL_V2_GOAL_DIST_MAX']} vs "
+        f"{GOAL_DIST_MIN_M}-{GOAL_DIST_MAX_M}",
     )
     return env
 
@@ -416,27 +483,50 @@ def run_offline_audit() -> None:
 # ----------------------------------------------------------------------------------------------
 
 
-def verify_import_origin(mapping: dict) -> dict:
-    """Q6: prove from the run log that the executing aerial_gym came from THIS worktree.
+def verify_import_origin(mapping: dict, metadata: dict) -> dict:
+    """Q6: prove from the run log that the executing aerial_gym IS the tree the manifest hashed.
 
-    Two independent facts must line up.  First, runner.py must have printed the enforced
-    `[origin]` line naming exactly <ROOT>/aerial_gym/__init__.py -- a MISSING line means the guard
-    never ran (NAVRL_REQUIRE_SOURCE_ROOT unset or a runner without the guard), which fails closed
-    rather than passing silently.  Second, the sha256 in that line must be the digest the source
-    manifest recorded for aerial_gym/__init__.py, which ties the bytes that executed to the bytes
-    that were hashed into the receipt.
+    The invariant is internal to the artifact and says nothing about where the verifier stands.
+    The expected tree is therefore read from the artifact -- the source manifest's
+    ``repository_root`` -- and never from the tree this process happens to be running in.
+
+    Three independent facts must line up.  First, runner.py must have printed the enforced
+    `[origin]` line naming exactly <repository_root>/aerial_gym/__init__.py; a MISSING line means
+    the guard never ran (NAVRL_REQUIRE_SOURCE_ROOT unset, or a runner without the guard), which
+    fails closed rather than passing silently, and an `[origin]` line naming any OTHER tree is a
+    failure too.  Second, all such lines must agree.  Third, the sha256 in that line must be the
+    digest the source manifest recorded for aerial_gym/__init__.py, which ties the bytes that
+    executed to the bytes that were hashed into the receipt.
     """
+    recorded_root = str(metadata.get("repository_root") or "")
+    require(
+        bool(recorded_root) and Path(recorded_root).is_absolute(),
+        f"Q6: source manifest records no absolute repository_root: {recorded_root!r}",
+    )
+    repository_root = Path(recorded_root)
+    expected_origin = repository_root / ORIGIN_MANIFEST_ENTRY
+    pattern = origin_line_pattern(repository_root)
+
     paths = cell_paths()
     matches = []
+    foreign = []
     with paths["log"].open("r", encoding="utf-8", errors="replace") as stream:
         for line in stream:
-            match = ORIGIN_LINE.match(line.rstrip("\r\n"))
+            text = line.rstrip("\r\n")
+            match = pattern.match(text)
             if match is not None:
                 matches.append(match.group("sha256"))
+            elif text.startswith(ORIGIN_LOG_MARKER):
+                foreign.append(text)
     require(
         bool(matches),
-        "Q6: the run log contains no enforced [origin] line for "
-        f"{ROOT / 'aerial_gym' / '__init__.py'}; the import-origin guard did not run",
+        f"Q6: the run log contains no enforced [origin] line for {expected_origin}; "
+        "the import-origin guard did not run",
+    )
+    require(
+        not foreign,
+        "Q6: the run log names an aerial_gym origin that is not the manifest's repository_root "
+        f"{repository_root}: {foreign[:4]}",
     )
     require(len(set(matches)) == 1, f"Q6: conflicting [origin] digests in the run log: {set(matches)}")
     origin_sha = matches[0]
@@ -452,14 +542,68 @@ def verify_import_origin(mapping: dict) -> dict:
     )
     return {
         "enforced": True,
-        "required_source_root": str(ROOT),
-        "origin": str(ROOT / "aerial_gym" / "__init__.py"),
+        "required_source_root": str(repository_root),
+        "origin": str(expected_origin),
         "origin_sha256": origin_sha,
         "manifest_entry": ORIGIN_MANIFEST_ENTRY,
         "manifest_sha256": entry[0],
         "log_line_occurrences": len(matches),
-        "pythonpath_reinjected": str(ROOT),
+        "pythonpath_reinjected": str(repository_root),
     }
+
+
+def require_import_origin_evidence(import_origin) -> None:
+    """Q6 is delegated to this launcher; this is the proof the launcher actually ran it.
+
+    verify_import_origin() is the only producer of this shape.  If it were removed -- or never
+    called -- the summary would otherwise still print "0 failed" while nobody had judged Q6.
+    """
+    require(
+        isinstance(import_origin, dict)
+        and import_origin.get("enforced") is True
+        and import_origin.get("manifest_entry") == ORIGIN_MANIFEST_ENTRY
+        and re.fullmatch(r"[0-9a-f]{64}", str(import_origin.get("origin_sha256", ""))) is not None
+        and import_origin.get("origin_sha256") == import_origin.get("manifest_sha256")
+        and int(import_origin.get("log_line_occurrences") or 0) >= 1,
+        "Q6_import_origin is delegated to this launcher, but the launcher produced no proof it "
+        f"ran the check (verify_import_origin evidence: {import_origin!r})",
+    )
+
+
+def gate_is_delegated(gate) -> bool:
+    """True when the offline audit did NOT decide this gate itself.
+
+    Three independent signals, because the report's shape belongs to the offline tool and one
+    missing signal must never quietly turn a delegated gate into a passing one: no boolean
+    verdict at all, an explicit delegated status, or an owner that is somebody else -- this
+    launcher included.
+    """
+    table = gate if isinstance(gate, dict) else {}
+    owners = {str(table.get("owner", "")), str((table.get("delegation") or {}).get("owner", ""))}
+    return (
+        not isinstance(table.get("passed"), bool)
+        or table.get("status") == GATE_STATUS_DELEGATED
+        or bool(owners & {"launcher", PRODUCER})
+    )
+
+
+def classify_gates(gates: dict) -> tuple:
+    """Split the offline gate table into gates it DECIDED and gates it delegated elsewhere.
+
+    ``len(gates)`` counts dictionary keys, which is true of any table and therefore reports
+    nothing.  A delegated gate carries no verdict from that report and may never be tallied as if
+    it did -- that is exactly how such a gate can never be counted as failed.
+    """
+    delegated = sorted(name for name, gate in gates.items() if gate_is_delegated(gate))
+    return sorted(set(gates) - set(delegated)), delegated
+
+
+def gate_tally(payload: dict) -> tuple:
+    """(evaluated, delegated, failed) for the summary line -- with the delegation proved."""
+    gates = payload.get("quality_gates") or {}
+    evaluated, delegated = classify_gates(gates)
+    require_import_origin_evidence(payload.get("import_origin"))
+    return evaluated, delegated, list(payload.get("failed_gates") or [])
 
 
 def verify_cell() -> dict:
@@ -489,6 +633,8 @@ def verify_cell() -> dict:
         "action_selection": ACTION_SELECTION,
         "reflection_mode": REFLECTION_MODE,
         "speed_governor_mode": SPEED_GOVERNOR_MODE,
+        "goal_dist_min_m": GOAL_DIST_MIN_M,
+        "goal_dist_max_m": GOAL_DIST_MAX_M,
     }
     receipt_mismatch = {
         key: (receipt.get(key), value) for key, value in pinned.items() if receipt.get(key) != value
@@ -505,6 +651,8 @@ def verify_cell() -> dict:
             "action_selection": ACTION_SELECTION,
             "reflection_mode": REFLECTION_MODE,
             "speed_governor_mode": SPEED_GOVERNOR_MODE,
+            "goal_dist_min_m": GOAL_DIST_MIN_M,
+            "goal_dist_max_m": GOAL_DIST_MAX_M,
         }.items()
         if condition.get(key) != value
     }
@@ -518,10 +666,38 @@ def verify_cell() -> dict:
         f"episode contract mismatch: requested={result.get('requested_episodes')} actual={actual}",
     )
 
-    manifest = Path(str(receipt.get("runtime_source_manifest", ""))).resolve()
+    # Q7's other half, delegated to this launcher by the offline audit: the schema-2 receipt and
+    # the manifest it names.  Both files are located by resolve_recorded_path -- the recorded
+    # absolute paths belong to the producing worktree, and a migrated artifact must still verify --
+    # and both are then pinned to the digests the receipt itself recorded, so the location may move
+    # but the bytes may not.
+    require(receipt.get("schema_version") == 2, "receipt is not a schema_version 2 receipt")
+    manifest = resolve_recorded_path(
+        receipt.get("runtime_source_manifest"), "runtime source manifest"
+    )
+    require(
+        P2.sha256_file(manifest) == receipt.get("runtime_source_manifest_sha256"),
+        f"runtime source manifest bytes differ from the receipt digest: {manifest}",
+    )
+    python_environment = resolve_recorded_path(
+        receipt.get("python_environment_manifest"), "python environment manifest"
+    )
+    require(
+        P2.sha256_file(python_environment) == receipt.get("python_environment_manifest_sha256"),
+        f"python environment manifest bytes differ from the receipt digest: {python_environment}",
+    )
     mapping, metadata = P2.manifest_map(manifest, 2, require_original=False)
     verify_runtime_clean_manifest(metadata, CELL)
-    import_origin = verify_import_origin(mapping)
+    import_origin = verify_import_origin(mapping, metadata)
+    manifest_provenance = {
+        "checked_by_launcher": True,
+        "receipt_schema_version": receipt.get("schema_version"),
+        "manifest_schema_version": metadata.get("schema_version"),
+        "manifest_sha256": receipt.get("runtime_source_manifest_sha256"),
+        "python_environment_manifest_sha256": receipt.get("python_environment_manifest_sha256"),
+        "runtime_file_count": metadata.get("runtime_file_count"),
+        "runtime_clean_verified": True,
+    }
 
     frames_sha = P2.sha256_file(paths["frames"])
     audit = load_json(paths["audit"])
@@ -555,6 +731,7 @@ def verify_cell() -> dict:
         "audit": audit,
         "frames_sha256": frames_sha,
         "import_origin": import_origin,
+        "manifest_provenance": manifest_provenance,
         "actual_episodes": actual,
         "condition": condition,
     }
@@ -571,9 +748,76 @@ def build_summary(cell: dict) -> dict:
     frames_block = audit.get("frames") or {}
     provenance = (audit.get("npz_key_binding") or {}).get("dump_provenance") or {}
     verdict = audit.get("verdict")
+    require(isinstance(verdict, str) and verdict, "offline audit reported no verdict")
     # Pass-through only.  Under FAIL_CLOSED the offline tool reports no policy statistics at all
-    # (prereg section 5), so there is nothing to carry and the key is explicitly null.
+    # (prereg section 5), so there is nothing to carry and the key is explicitly null.  That is a
+    # BICONDITIONAL, and it is enforced here rather than merely described: a FAIL_CLOSED verdict
+    # carrying measurements would publish statistics the prereg says were never computed, and a
+    # null measurements key under any other verdict would publish a verdict with nothing behind it.
     measurements = audit.get("measurements_raw_normaliser")
+    require(
+        (verdict == VERDICT_FAIL_CLOSED) == (measurements is None),
+        f"fail-closed contract violated: verdict={verdict} with measurements="
+        + ("null" if measurements is None else "present")
+        + f"; {VERDICT_FAIL_CLOSED} requires a null measurements key and a null measurements key "
+        f"requires {VERDICT_FAIL_CLOSED}",
+    )
+
+    # The gate tally must not be a tautology.  Three separate facts are established before the
+    # summary may report a count: every gate without a boolean verdict is one this launcher is
+    # named the owner of, this launcher really ran each of those checks, and the offline report's
+    # failed_gates list agrees with the per-gate verdicts it published.
+    gates = audit.get("quality_gates") or {}
+    evaluated_gates, delegated_gates = classify_gates(gates)
+    unowned = [name for name in delegated_gates if name not in LAUNCHER_OWNED_GATES]
+    require(
+        not unowned,
+        f"quality gates {unowned} carry no boolean verdict and name no owner; nobody judged them",
+    )
+    for evidence_key in sorted(set(LAUNCHER_OWNED_GATES.values())):
+        owned = sorted(name for name, key in LAUNCHER_OWNED_GATES.items() if key == evidence_key)
+        require(
+            any(name in gates for name in owned),
+            f"the offline audit report lists none of {owned}, so the launcher-owned check "
+            f"{evidence_key} answers a question this report never asked",
+        )
+        evidence = cell.get(evidence_key)
+        require(
+            isinstance(evidence, dict) and evidence,
+            f"quality gates {owned} are delegated to this launcher, but verify_cell() produced no "
+            f"{evidence_key} evidence that the launcher ran the check",
+        )
+    require_import_origin_evidence(cell.get("import_origin"))
+    provenance_evidence = cell["manifest_provenance"]
+    require(
+        provenance_evidence.get("checked_by_launcher") is True
+        and provenance_evidence.get("receipt_schema_version") == 2
+        and provenance_evidence.get("manifest_schema_version") == 2
+        and provenance_evidence.get("runtime_clean_verified") is True,
+        "Q7_checkpoint_sha_and_manifest delegates the manifest/schema half to this launcher, but "
+        f"the launcher's evidence is incomplete: {provenance_evidence!r}",
+    )
+    failing = {
+        name for name, gate in gates.items() if isinstance(gate, dict) and gate.get("passed") is False
+    }
+    recorded_failed = set(audit.get("failed_gates") or [])
+    require(
+        failing <= recorded_failed,
+        f"quality gates {sorted(failing - recorded_failed)} report passed=false but are missing "
+        "from failed_gates",
+    )
+    require(
+        recorded_failed <= set(gates),
+        f"failed_gates names gates that are not in the gate table: {sorted(recorded_failed - set(gates))}",
+    )
+    passing = {
+        name for name, gate in gates.items() if isinstance(gate, dict) and gate.get("passed") is True
+    }
+    require(
+        not (recorded_failed & passing),
+        f"failed_gates names gates that report passed=true: {sorted(recorded_failed & passing)}",
+    )
+
     paths = cell_paths()
     return {
         "schema_version": 1,
@@ -640,8 +884,10 @@ def write_summary(payload: dict) -> None:
     overall = (measurements.get("overall") or {}) if isinstance(measurements, dict) else {}
     channels = overall.get("channels") or {}
     lat = channels.get("conj_err_lat") or {}
-    gates = payload.get("quality_gates") or {}
-    failed = payload.get("failed_gates") or []
+    # Not len(quality_gates): that counts keys, not verdicts.  gate_tally reports how many gates
+    # the offline audit actually decided, how many it delegated to this launcher (and re-proves
+    # that the launcher judged them), and how many failed.
+    evaluated_gates, delegated_gates, failed = gate_tally(payload)
     lines = [
         "# N1 real-frame reflection audit (seed 373)",
         "",
@@ -660,7 +906,8 @@ def write_summary(payload: dict) -> None:
         f"{_fmt(payload['decimations'])} |",
         f"| 에피소드 (요청/실제) | {payload['condition']['requested_episodes']:,} / "
         f"{payload['condition']['actual_episodes']:,} |",
-        f"| 품질 게이트 | {len(gates)}개 평가, 실패 {len(failed)}개 |",
+        f"| 품질 게이트 | 오프라인 판정 {len(evaluated_gates)}개, 런처 위임·검증 "
+        f"{len(delegated_gates)}개, 실패 {len(failed)}개 |",
         "",
         f"- checkpoint SHA-256 `{payload['checkpoint_sha256'][:16]}…`, "
         f"frames.npz SHA-256 `{payload['frames_sha256'][:16]}…` (npz는 커밋하지 않는다)",

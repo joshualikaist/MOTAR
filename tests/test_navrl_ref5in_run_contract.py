@@ -1,7 +1,9 @@
 """CPU-only guards for the ref5in closed-run and provenance contracts."""
 
 from pathlib import Path
+import importlib.util
 import os
+import re
 import subprocess
 import tempfile
 import unittest
@@ -466,6 +468,10 @@ class ReflectionAuditContract(unittest.TestCase):
     ORCHESTRATOR = ROOT / "tools/run_navrl_ref5in_reflection_audit.py"
     OFFLINE_AUDIT = ROOT / "tools/navrl_reflection_offline_audit.py"
     PREREG = ROOT / "docs/prereg_2026-08-21_n1_real_frame_reflection_audit.md"
+    FROZEN_AUDIT = (
+        ROOT / "results/navrl_ref5in_reflection_audit_seed373/cells/reflection_audit"
+        "/reflection_audit.json"
+    )
 
     def source(self):
         return self.ORCHESTRATOR.read_text(encoding="utf-8")
@@ -567,6 +573,397 @@ class ReflectionAuditContract(unittest.TestCase):
         prereg = self.PREREG.read_text(encoding="utf-8")
         for literal in ("**373**", "**4,096**", "`NAVRL_OBS_DUMP_STRIDE = 1`", "16384", "1,024"):
             self.assertIn(literal, prereg, f"preregistration lost: {literal}")
+
+    # ------------------------------------------------------------------------------------------
+    # Behavioural guards.  The text assertions above cannot see whether a gate actually fires, so
+    # the checks below import the launcher and call it.
+    # ------------------------------------------------------------------------------------------
+
+    FAKE_ORIGIN_ROOT = "/nonexistent/produced/in/another/worktree"
+
+    @classmethod
+    def launcher(cls):
+        """Import the launcher once for behavioural assertions (no GPU, no subprocess)."""
+        module = getattr(cls, "_launcher_module", None)
+        if module is None:
+            spec = importlib.util.spec_from_file_location(
+                "reflection_audit_launcher_under_test", cls.ORCHESTRATOR
+            )
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            cls._launcher_module = module
+        return module
+
+    def temp_dir(self):
+        holder = tempfile.TemporaryDirectory()
+        self.addCleanup(holder.cleanup)
+        return Path(holder.name)
+
+    def fake_cell(self, module, log_lines):
+        """Repoint the launcher at a throwaway cell whose run log is exactly ``log_lines``."""
+        output = self.temp_dir() / "results/cell_under_test"
+        directory = output / "cells" / module.CELL
+        directory.mkdir(parents=True)
+        (directory / ("%dbars.log" % module.BARS)).write_text(
+            "".join(line + "\n" for line in log_lines), encoding="utf-8"
+        )
+        self.addCleanup(setattr, module, "OUTPUT", module.OUTPUT)
+        module.OUTPUT = output
+        return directory
+
+    def origin_log_line(self, root, digest):
+        return "[origin] aerial_gym %s/aerial_gym/__init__.py sha256=%s (enforced)" % (root, digest)
+
+    def launcher_cell(self, module, verdict, measurements, gates=None, failed_gates=None, **overrides):
+        """A minimal verify_cell() return value, good enough to drive build_summary()."""
+        table = gates if gates is not None else {
+            "Q1_involution": {"passed": True},
+            "Q6_import_origin": {"owner": "launcher", "passed": None},
+            "Q7_checkpoint_sha_and_manifest": {"passed": True},
+        }
+        cell = {
+            "result": {},
+            "receipt": {},
+            "audit": {
+                "verdict": verdict,
+                "measurements_raw_normaliser": measurements,
+                "quality_gates": table,
+                "failed_gates": failed_gates,
+                "frames": {"n_frames_total": 15488, "n_frames_valid": 15488},
+            },
+            "frames_sha256": "0" * 64,
+            "import_origin": {
+                "enforced": True,
+                "manifest_entry": "aerial_gym/__init__.py",
+                "origin_sha256": "b" * 64,
+                "manifest_sha256": "b" * 64,
+                "log_line_occurrences": 1,
+            },
+            "manifest_provenance": {
+                "checked_by_launcher": True,
+                "receipt_schema_version": 2,
+                "manifest_schema_version": 2,
+                "runtime_clean_verified": True,
+            },
+            "actual_episodes": 1024,
+            "condition": {},
+        }
+        cell.update(overrides)
+        return cell
+
+    # -- G1: Q6 belongs to the artifact, not to whoever happens to be verifying ------------------
+
+    def test_import_origin_is_bound_to_the_artifact_not_to_the_verifiers_own_tree(self):
+        """Q6 asserts one relation internal to the artifact: the aerial_gym that EXECUTED is the
+        tree whose bytes the manifest hashed.  Pinning it to the verifier's ROOT adds a second,
+        different claim and makes a worktree-produced result unverifiable from anywhere else."""
+        module = self.launcher()
+        digest = "a" * 64
+        self.fake_cell(
+            module,
+            ["prelude", self.origin_log_line(self.FAKE_ORIGIN_ROOT, digest), "epilogue"],
+        )
+        record = module.verify_import_origin(
+            {"aerial_gym/__init__.py": (digest, 271)},
+            {"repository_root": self.FAKE_ORIGIN_ROOT},
+        )
+        self.assertEqual(record["required_source_root"], self.FAKE_ORIGIN_ROOT)
+        self.assertEqual(record["origin"], self.FAKE_ORIGIN_ROOT + "/aerial_gym/__init__.py")
+        self.assertEqual(record["origin_sha256"], digest)
+        self.assertEqual(record["manifest_sha256"], digest)
+        self.assertEqual(record["enforced"], True)
+        self.assertNotIn(str(ROOT), repr(record), "Q6 must not depend on the verifier's own tree")
+
+    def test_import_origin_still_fails_closed_after_being_rebound_to_the_manifest(self):
+        """Deriving the expected tree from the artifact must not make the gate vacuous."""
+        module = self.launcher()
+        digest = "a" * 64
+        mapping = {"aerial_gym/__init__.py": (digest, 271)}
+        metadata = {"repository_root": self.FAKE_ORIGIN_ROOT}
+        other = "/nonexistent/some/other/tree"
+
+        cases = {
+            "no [origin] line at all": ([], mapping, metadata),
+            "guard line not marked enforced": (
+                [self.origin_log_line(self.FAKE_ORIGIN_ROOT, digest)[: -len(" (enforced)")]],
+                mapping,
+                metadata,
+            ),
+            "line names a different tree": (
+                [self.origin_log_line(other, digest)], mapping, metadata,
+            ),
+            "conflicting digests": (
+                [
+                    self.origin_log_line(self.FAKE_ORIGIN_ROOT, digest),
+                    self.origin_log_line(self.FAKE_ORIGIN_ROOT, "c" * 64),
+                ],
+                mapping,
+                metadata,
+            ),
+            "executed bytes are not the hashed bytes": (
+                [self.origin_log_line(self.FAKE_ORIGIN_ROOT, digest)],
+                {"aerial_gym/__init__.py": ("d" * 64, 271)},
+                metadata,
+            ),
+            "manifest has no entry for the origin": (
+                [self.origin_log_line(self.FAKE_ORIGIN_ROOT, digest)], {"aerial_gym/utils.py": (digest, 1)}, metadata,
+            ),
+            "manifest records no repository_root": (
+                [self.origin_log_line(self.FAKE_ORIGIN_ROOT, digest)], mapping, {},
+            ),
+            "repository_root is not absolute": (
+                [self.origin_log_line("relative/tree", digest)], mapping, {"repository_root": "relative/tree"},
+            ),
+        }
+        for label, (lines, entries, meta) in cases.items():
+            with self.subTest(case=label):
+                self.fake_cell(module, lines)
+                with self.assertRaises(module.ContractError):
+                    module.verify_import_origin(entries, meta)
+
+    def test_import_origin_pattern_is_not_compiled_against_the_verifiers_root(self):
+        source = self.source()
+        self.assertNotIn("ORIGIN_LINE = re.compile", source)
+        self.assertNotIn('re.escape(str(ROOT / "aerial_gym" / "__init__.py"))', source)
+        block = source[source.index("def verify_import_origin("):source.index("def require_import_origin_evidence(")]
+        self.assertIn('metadata.get("repository_root")', block)
+        self.assertIsNone(
+            re.search(r"\bROOT\b", block), "Q6 must not read the verifier's own ROOT"
+        )
+        self.assertIn("verify_import_origin(mapping, metadata)", source)
+
+    # -- G2: a receipt-recorded absolute path must not pin the artifact to one machine layout ----
+
+    def test_manifest_lookup_prefers_the_copy_that_travels_with_the_cell(self):
+        module = self.launcher()
+        directory = self.fake_cell(module, [])
+        elsewhere = self.temp_dir() / "source_manifest.json"
+        elsewhere.write_text("recorded", encoding="utf-8")
+        local = directory / "source_manifest.json"
+        local.write_text("cell-local", encoding="utf-8")
+
+        resolved = module.resolve_recorded_path(str(elsewhere), "runtime source manifest")
+        self.assertEqual(resolved.read_text(encoding="utf-8"), "cell-local")
+
+        local.unlink()
+        resolved = module.resolve_recorded_path(str(elsewhere), "runtime source manifest")
+        self.assertEqual(resolved.read_text(encoding="utf-8"), "recorded")
+
+    def test_manifest_lookup_fails_closed_and_names_both_candidates(self):
+        module = self.launcher()
+        directory = self.fake_cell(module, [])
+        missing = self.temp_dir() / "source_manifest.json"
+        with self.assertRaises(module.ContractError) as caught:
+            module.resolve_recorded_path(str(missing), "runtime source manifest")
+        message = str(caught.exception)
+        self.assertIn(str(directory / "source_manifest.json"), message)
+        self.assertIn(str(missing), message)
+        with self.assertRaises(module.ContractError):
+            module.resolve_recorded_path("", "runtime source manifest")
+
+    def test_both_recorded_manifests_are_located_by_bytes_not_by_path(self):
+        source = self.source()
+        block = source[source.index("def verify_cell("):source.index("def build_summary(")]
+        self.assertNotIn('Path(str(receipt.get("runtime_source_manifest", ""))).resolve()', block)
+        self.assertIn('resolve_recorded_path(\n        receipt.get("runtime_source_manifest")', block)
+        self.assertIn('receipt.get("python_environment_manifest")', block)
+        self.assertIn(
+            'P2.sha256_file(manifest) == receipt.get("runtime_source_manifest_sha256")', block
+        )
+        self.assertIn(
+            "P2.sha256_file(python_environment) == "
+            'receipt.get("python_environment_manifest_sha256")',
+            block,
+        )
+
+    # -- G3: the goal band is forced by the checkpoint contract, so it must be verified ----------
+
+    def test_goal_band_is_pinned_and_verified_in_receipt_and_result(self):
+        source = self.source()
+        self.assertIn("GOAL_DIST_MIN_M = 22.5", source)
+        self.assertIn("GOAL_DIST_MAX_M = 28.0", source)
+        verify = source[source.index("def verify_cell("):source.index("def build_summary(")]
+        receipt_block = verify[verify.index("pinned = {"):verify.index("receipt_mismatch = {")]
+        condition_block = verify[
+            verify.index("condition_mismatch = {"):verify.index("require(not condition_mismatch")
+        ]
+        for name, block in (("receipt", receipt_block), ("result condition", condition_block)):
+            self.assertIn('"goal_dist_min_m": GOAL_DIST_MIN_M', block, f"{name} goal band unpinned")
+            self.assertIn('"goal_dist_max_m": GOAL_DIST_MAX_M', block, f"{name} goal band unpinned")
+
+    def test_exported_goal_band_cannot_drift_from_the_pinned_constants(self):
+        """The band that is exported to the run and the band that is verified afterwards must be
+        one value, or the receipt is checked against a number the run never used."""
+        module = self.launcher()
+        env = module.canonical_env(preflight=True)
+        self.assertEqual(float(env["NAVRL_V2_GOAL_DIST_MIN"]), module.GOAL_DIST_MIN_M)
+        self.assertEqual(float(env["NAVRL_V2_GOAL_DIST_MAX"]), module.GOAL_DIST_MAX_M)
+        self.addCleanup(setattr, module, "GOAL_DIST_MAX_M", module.GOAL_DIST_MAX_M)
+        module.GOAL_DIST_MAX_M = 30.0
+        with self.assertRaises(module.ContractError):
+            module.canonical_env(preflight=True)
+
+    # -- G4: the fail-closed invariant is a biconditional, and it is code, not prose -------------
+
+    def test_fail_closed_verdict_may_not_carry_measurements(self):
+        module = self.launcher()
+        ok = module.build_summary(self.launcher_cell(module, module.VERDICT_FAIL_CLOSED, None))
+        self.assertEqual(ok["verdict"], module.VERDICT_FAIL_CLOSED)
+        self.assertIsNone(ok["measurements"])
+        with self.assertRaises(module.ContractError):
+            module.build_summary(
+                self.launcher_cell(module, module.VERDICT_FAIL_CLOSED, {"overall": {}})
+            )
+
+    def test_null_measurements_may_only_mean_fail_closed(self):
+        module = self.launcher()
+        ok = module.build_summary(
+            self.launcher_cell(module, "CHIRALITY_CONFIRMED_REAL_FRAME", {"overall": {}})
+        )
+        self.assertEqual(ok["measurements"], {"overall": {}})
+        with self.assertRaises(module.ContractError):
+            module.build_summary(self.launcher_cell(module, "CHIRALITY_CONFIRMED_REAL_FRAME", None))
+        with self.assertRaises(module.ContractError):
+            module.build_summary(self.launcher_cell(module, None, {"overall": {}}))
+
+    def test_fail_closed_constant_is_used_not_merely_defined(self):
+        source = self.source()
+        self.assertIn('VERDICT_FAIL_CLOSED = "FAIL_CLOSED_TRANSFORM_QUALITY"', source)
+        block = source[source.index("def build_summary("):source.index("def _fmt(")]
+        self.assertIn("(verdict == VERDICT_FAIL_CLOSED) == (measurements is None)", block)
+
+    # -- G5: the gate tally must not be a tautology ----------------------------------------------
+
+    def test_gate_tally_counts_verdicts_not_dictionary_keys(self):
+        module = self.launcher()
+        gates = {
+            "Q1_involution": {"passed": True},
+            "Q6_import_origin": {"owner": "launcher", "passed": None},
+            "Q7_checkpoint_sha_and_manifest": {"passed": True},
+        }
+        evaluated, delegated = module.classify_gates(gates)
+        self.assertEqual(delegated, ["Q6_import_origin"])
+        self.assertNotIn("Q6_import_origin", evaluated)
+        self.assertNotEqual(len(evaluated), len(gates), "the tally must not be len(quality_gates)")
+        source = self.source()
+        self.assertNotIn("{len(gates)}개 평가", source)
+        self.assertIn("gate_tally(payload)", source)
+
+    def test_summary_cannot_report_zero_failures_if_the_launcher_gate_is_gone(self):
+        """If verify_import_origin() were deleted -- or simply never called -- Q6 would be judged
+        by nobody, and the summary would still print a clean tally.  It must fail instead."""
+        module = self.launcher()
+        for label, cell in (
+            ("evidence missing", self.launcher_cell(module, "CHIRALITY_CONFIRMED_REAL_FRAME", {"overall": {}}, import_origin=None)),
+            ("evidence empty", self.launcher_cell(module, "CHIRALITY_CONFIRMED_REAL_FRAME", {"overall": {}}, import_origin={})),
+            ("evidence not enforced", self.launcher_cell(module, "CHIRALITY_CONFIRMED_REAL_FRAME", {"overall": {}}, import_origin={"enforced": False, "manifest_entry": "aerial_gym/__init__.py", "origin_sha256": "b" * 64, "manifest_sha256": "b" * 64, "log_line_occurrences": 1})),
+            ("executed bytes are not the hashed bytes", self.launcher_cell(module, "CHIRALITY_CONFIRMED_REAL_FRAME", {"overall": {}}, import_origin={"enforced": True, "manifest_entry": "aerial_gym/__init__.py", "origin_sha256": "b" * 64, "manifest_sha256": "e" * 64, "log_line_occurrences": 1})),
+            ("no manifest evidence", self.launcher_cell(module, "CHIRALITY_CONFIRMED_REAL_FRAME", {"overall": {}}, manifest_provenance={})),
+        ):
+            with self.subTest(case=label):
+                with self.assertRaises(module.ContractError):
+                    module.build_summary(cell)
+        payload = module.build_summary(
+            self.launcher_cell(module, "CHIRALITY_CONFIRMED_REAL_FRAME", {"overall": {}})
+        )
+        payload["import_origin"] = {}
+        with self.assertRaises(module.ContractError):
+            module.gate_tally(payload)
+
+    def test_every_delegated_gate_must_name_an_owner_the_launcher_recognises(self):
+        module = self.launcher()
+        self.assertEqual(module.LAUNCHER_OWNED_GATES["Q6_import_origin"], "import_origin")
+        # A gate this launcher does not know about must never be waved through, whether it is
+        # delegated by a null verdict, by an explicit status, or by naming this launcher as owner.
+        for label, unclaimed in (
+            ("no verdict", {"passed": None}),
+            ("delegated status", {"passed": True, "status": "delegated"}),
+            ("owner is this launcher", {"passed": True, "owner": module.PRODUCER}),
+            ("delegation block names this launcher",
+             {"passed": True, "delegation": {"owner": module.PRODUCER}}),
+        ):
+            with self.subTest(case=label):
+                gates = {
+                    "Q1_involution": {"passed": True},
+                    "Q6_import_origin": {"owner": "launcher", "passed": None},
+                    "Q7_checkpoint_sha_and_manifest": {"passed": True},
+                    "Q10_unclaimed": unclaimed,
+                }
+                with self.assertRaises(module.ContractError):
+                    module.build_summary(
+                        self.launcher_cell(
+                            module, "CHIRALITY_CONFIRMED_REAL_FRAME", {"overall": {}}, gates=gates
+                        )
+                    )
+        missing_q6 = {"Q1_involution": {"passed": True}, "Q7_checkpoint_sha_and_manifest": {"passed": True}}
+        with self.assertRaises(module.ContractError):
+            module.build_summary(
+                self.launcher_cell(module, "CHIRALITY_CONFIRMED_REAL_FRAME", {"overall": {}}, gates=missing_q6)
+            )
+
+    def test_launcher_owned_gates_track_the_offline_audits_delegation_contract(self):
+        """The offline audit owns the spelling of its gate table.  Every gate it hands to this
+        launcher must map to evidence this launcher actually produces, under either name."""
+        module = self.launcher()
+        offline = self.OFFLINE_AUDIT.read_text(encoding="utf-8")
+        frozen = (self.FROZEN_AUDIT.read_text(encoding="utf-8") if self.FROZEN_AUDIT.is_file() else "")
+        for name in module.LAUNCHER_OWNED_GATES:
+            self.assertTrue(
+                name in offline or name in frozen,
+                f"{name} is claimed by the launcher but named by neither the offline audit tool "
+                "nor the frozen seed-373 report",
+            )
+        delegated = offline[offline.index("DELEGATED_GATES = {"):offline.index("# ----", offline.index("DELEGATED_GATES = {"))]
+        for name in re.findall(r'"(Q\d+[A-Za-z_]*)":', delegated):
+            self.assertIn(
+                name,
+                module.LAUNCHER_OWNED_GATES,
+                f"the offline audit delegates {name} to this launcher, which does not claim it",
+            )
+        # Both spellings of the Q7 half resolve to the one piece of evidence verify_cell builds.
+        gates = {
+            "Q1_involution": {"passed": True},
+            "Q6_import_origin": {"passed": None, "status": "delegated"},
+            "Q7_manifest_schema_version": {"passed": None, "status": "delegated"},
+        }
+        payload = module.build_summary(
+            self.launcher_cell(module, "CHIRALITY_CONFIRMED_REAL_FRAME", {"overall": {}}, gates=gates)
+        )
+        evaluated, handed_off, failed = module.gate_tally(payload)
+        self.assertEqual(evaluated, ["Q1_involution"])
+        self.assertEqual(handed_off, ["Q6_import_origin", "Q7_manifest_schema_version"])
+        self.assertEqual(failed, [])
+
+    def test_failed_gate_list_must_agree_with_the_per_gate_verdicts(self):
+        module = self.launcher()
+        gates = {
+            "Q1_involution": {"passed": False},
+            "Q6_import_origin": {"owner": "launcher", "passed": None},
+            "Q7_checkpoint_sha_and_manifest": {"passed": True},
+        }
+        with self.assertRaises(module.ContractError):
+            module.build_summary(
+                self.launcher_cell(module, "CHIRALITY_CONFIRMED_REAL_FRAME", {"overall": {}}, gates=gates)
+            )
+        payload = module.build_summary(
+            self.launcher_cell(
+                module, "CHIRALITY_CONFIRMED_REAL_FRAME", {"overall": {}},
+                gates=gates, failed_gates=["Q1_involution"],
+            )
+        )
+        self.assertEqual(payload["failed_gates"], ["Q1_involution"])
+        for label, failed in (
+            ("unknown gate name", ["Q99_invented"]),
+            ("gate that reports passed=true", ["Q1_involution", "Q7_checkpoint_sha_and_manifest"]),
+        ):
+            with self.subTest(case=label):
+                with self.assertRaises(module.ContractError):
+                    module.build_summary(
+                        self.launcher_cell(
+                            module, "CHIRALITY_CONFIRMED_REAL_FRAME", {"overall": {}},
+                            gates=gates, failed_gates=failed,
+                        )
+                    )
 
 
 if __name__ == "__main__":

@@ -553,5 +553,479 @@ class NpzKeyBinding(unittest.TestCase):
         self.assertEqual(frame_aliases & episode_aliases, set())
 
 
+class OutcomeJoinSentinel(unittest.TestCase):
+    """H1 -- the join sentinel and outcome code 5 must not share a name in the payload."""
+
+    def test_sentinel_has_its_own_name(self):
+        self.assertEqual(AUDIT.NO_OUTCOME_ROW, -1)
+        self.assertNotEqual(AUDIT.NO_OUTCOME_ROW_NAME, AUDIT.OUTCOME_CODES[5])
+        self.assertNotIn(AUDIT.NO_OUTCOME_ROW_NAME, set(AUDIT.OUTCOME_CODES.values()))
+        self.assertNotIn("unattributed", AUDIT.NO_OUTCOME_ROW_NAME)
+
+    def test_the_ambiguous_payload_key_is_gone(self):
+        text = (REPO / "tools/navrl_reflection_offline_audit.py").read_text(encoding="utf-8")
+        self.assertNotIn("n_frames_unattributed_outcome", text)
+        self.assertIn("n_frames_no_outcome_row", text)
+
+    def test_join_reconciliation_reports_all_three_totals(self):
+        codes = np.array([0, 0, 4, 1, -1, -1, 5], dtype=np.int64)
+        report = AUDIT.check_outcome_join(codes, codes.size)
+        self.assertEqual(report["n_valid_frames"], 7)
+        self.assertEqual(report["n_frames_no_outcome_row"], 2)
+        self.assertEqual(report["n_frames_with_outcome_row"], 5)
+        self.assertTrue(report["reconciles"])
+        self.assertEqual(report["sentinel_name"], AUDIT.NO_OUTCOME_ROW_NAME)
+        # The code-5 count and the sentinel count are reported under DIFFERENT names.
+        self.assertEqual(report["not_to_be_confused_with"]["name"], AUDIT.OUTCOME_CODES[5])
+        self.assertEqual(report["not_to_be_confused_with"]["n_frames"], 1)
+        # The five context cells exclude code 5, so they do not cover every joined frame.
+        self.assertEqual(report["outcome_context_cell_total"], 4)
+        self.assertEqual(report["correct_denominator_for_outcome_shares"], "n_frames_with_outcome_row")
+
+    def test_join_that_does_not_reconcile_fails_closed(self):
+        codes = np.array([0, -1, 4], dtype=np.int64)
+        with self.assertRaises(AUDIT.IntegrityViolation):
+            AUDIT.check_outcome_join(codes, 5)
+
+    def test_outcome_code_outside_the_map_fails_closed(self):
+        codes = np.array([0, 4, 9], dtype=np.int64)
+        with self.assertRaises(AUDIT.IntegrityViolation) as context:
+            AUDIT.check_outcome_join(codes, codes.size)
+        self.assertIn("9", str(context.exception))
+
+    def test_join_still_marks_missing_episodes_with_the_sentinel(self):
+        episodes = {
+            "ep_uid": np.array([10, 11], dtype=np.int64),
+            "outcome": np.array([0, 4], dtype=np.int8),
+        }
+        joined = AUDIT.join_outcomes(np.array([11, 10, 99], dtype=np.int64), episodes)
+        self.assertEqual(joined.tolist(), [4, 0, AUDIT.NO_OUTCOME_ROW])
+
+
+class ContextPartitionCompleteness(unittest.TestCase):
+    """H2 -- every context family must partition the population it claims to cover."""
+
+    def _frames(self, front, visible=None):
+        n = len(front)
+        if visible is None:
+            visible = np.zeros(n, dtype=bool)
+        return {
+            "ctx_target_visible": np.asarray(visible),
+            "ctx_front_blocked": np.asarray(front, dtype=np.int64),
+        }
+
+    def test_complete_split_reconciles(self):
+        frames = self._frames([1, 0, -1, 1], [True, True, False, False])
+        outcomes = np.array([0, 1, 4, AUDIT.NO_OUTCOME_ROW], dtype=np.int64)
+        contexts = AUDIT.build_contexts(frames, outcomes)
+        report = AUDIT.check_context_partitions(contexts, 4, 1)
+        self.assertTrue(report["partitions_complete"])
+        self.assertEqual(report["families"]["front"]["cells_total"], 4)
+        self.assertEqual(report["families"]["target"]["cells_total"], 4)
+        self.assertEqual(report["families"]["outcome"]["expected_total"], 3)
+        self.assertEqual(report["families"]["outcome"]["cells_total"], 3)
+        for family in ("front", "target", "outcome"):
+            self.assertTrue(report["families"][family]["reconciles"])
+            self.assertTrue(report["families"][family]["cells_disjoint"])
+
+    def test_an_out_of_domain_front_label_cannot_vanish_silently(self):
+        # The concrete regression: a dump that later emits ctx_front_blocked == 2.  Those frames
+        # belong to no front cell, and nothing used to notice.
+        front = np.array([1, 0, -1, 2], dtype=np.int64)
+        masks = {
+            "overall": np.ones(4, dtype=bool),
+            "target_visible": np.array([True, True, False, False]),
+            "target_hidden": np.array([False, False, True, True]),
+            "front_blocked": front == 1,
+            "front_clear": front == 0,
+            "front_unknown": front == -1,
+        }
+        for code in AUDIT.OUTCOME_CONTEXT_CODES:
+            masks["outcome_" + AUDIT.OUTCOME_CODES[code]] = np.zeros(4, dtype=bool)
+        masks["outcome_capture"] = np.array([True, True, True, True])
+        with self.assertRaises(AUDIT.IntegrityViolation) as context:
+            AUDIT.check_context_partitions(list(masks.items()), 4, 0)
+        message = str(context.exception)
+        self.assertIn("front", message)
+        self.assertIn("NO cell", message)
+
+    def test_overlapping_cells_fail_even_when_the_total_is_right(self):
+        masks = {
+            "overall": np.ones(4, dtype=bool),
+            "target_visible": np.array([True, True, True, False]),
+            "target_hidden": np.array([True, False, False, True]),
+            "front_blocked": np.array([True, False, False, False]),
+            "front_clear": np.array([False, True, True, False]),
+            "front_unknown": np.array([False, False, False, True]),
+        }
+        for code in AUDIT.OUTCOME_CONTEXT_CODES:
+            masks["outcome_" + AUDIT.OUTCOME_CODES[code]] = np.zeros(4, dtype=bool)
+        masks["outcome_capture"] = np.ones(4, dtype=bool)
+        self.assertEqual(
+            int(masks["target_visible"].sum()) + int(masks["target_hidden"].sum()), 5
+        )
+        with self.assertRaises(AUDIT.IntegrityViolation):
+            AUDIT.check_context_partitions(list(masks.items()), 4, 0)
+
+    def test_outcome_family_population_is_n_valid_minus_the_excluded_frames(self):
+        frames = self._frames([1, 0, -1, 1], [True, True, False, False])
+        outcomes = np.array([0, 1, 4, AUDIT.NO_OUTCOME_ROW], dtype=np.int64)
+        contexts = AUDIT.build_contexts(frames, outcomes)
+        # Claiming no frames were excluded leaves the outcome family one frame short.
+        with self.assertRaises(AUDIT.IntegrityViolation) as context:
+            AUDIT.check_context_partitions(contexts, 4, 0)
+        self.assertIn("outcome", str(context.exception))
+
+    def test_families_cover_exactly_the_preregistered_cells(self):
+        self.assertEqual(
+            AUDIT.CONTEXT_FAMILY_FRONT, ("front_blocked", "front_clear", "front_unknown")
+        )
+        self.assertEqual(AUDIT.CONTEXT_FAMILY_TARGET, ("target_visible", "target_hidden"))
+        self.assertEqual(
+            AUDIT.CONTEXT_FAMILY_OUTCOME,
+            tuple("outcome_" + AUDIT.OUTCOME_CODES[c] for c in AUDIT.OUTCOME_CONTEXT_CODES),
+        )
+        names = set(
+            name
+            for name, _mask in AUDIT.build_contexts(
+                self._frames([1, 0, -1]), np.array([0, 1, -1], dtype=np.int64)
+            )
+        )
+        covered = set(AUDIT.CONTEXT_FAMILY_FRONT) | set(AUDIT.CONTEXT_FAMILY_TARGET) | set(
+            AUDIT.CONTEXT_FAMILY_OUTCOME
+        )
+        self.assertEqual(names - covered, {AUDIT.CONTEXT_OVERALL_CELL})
+
+
+class GateDelegationAccounting(unittest.TestCase):
+    """H3 -- delegated gates must never be folded into an 'evaluated, 0 failed' tally."""
+
+    def _gates(self):
+        return {
+            "Q1_involution": {"passed": True},
+            "Q2_isometry": {"passed": False},
+            "Q6_import_origin": {"note": "launcher"},
+            "Q7_manifest_schema_version": {"note": "launcher"},
+            "Q7_checkpoint_sha": {"passed": True},
+        }
+
+    def test_delegated_gates_are_counted_separately(self):
+        gates = AUDIT.stamp_gate_states(self._gates())
+        summary = AUDIT.summarise_gates(gates)
+        self.assertEqual(summary["delegated"], ["Q6_import_origin", "Q7_manifest_schema_version"])
+        self.assertEqual(summary["n_delegated"], 2)
+        self.assertEqual(summary["evaluated_passed"], ["Q1_involution", "Q7_checkpoint_sha"])
+        self.assertEqual(summary["evaluated_failed"], ["Q2_isometry"])
+        self.assertEqual(summary["n_evaluated_here"], 3)
+        self.assertEqual(summary["n_malformed"], 0)
+
+    def test_a_delegated_gate_cannot_report_passed(self):
+        gates = AUDIT.stamp_gate_states(
+            {"Q6_import_origin": {"passed": True, "note": "was hardcoded true"}}
+        )
+        self.assertIsNone(gates["Q6_import_origin"]["passed"])
+        self.assertEqual(gates["Q6_import_origin"]["status"], AUDIT.GATE_STATUS_DELEGATED)
+        self.assertFalse(gates["Q6_import_origin"]["evaluated_here"])
+        summary = AUDIT.summarise_gates(gates)
+        self.assertEqual(summary["evaluated_passed"], [])
+
+    def test_a_gate_with_no_result_is_malformed_not_passed(self):
+        summary = AUDIT.summarise_gates(
+            {"QX_mystery": {"status": AUDIT.GATE_STATUS_EVALUATED, "passed": None}}
+        )
+        self.assertEqual(summary["malformed"], ["QX_mystery"])
+        self.assertEqual(summary["evaluated_passed"], [])
+
+    def test_delegation_contract_is_machine_readable(self):
+        self.assertIn("Q6_import_origin", AUDIT.DELEGATED_GATES)
+        self.assertIn("Q7_manifest_schema_version", AUDIT.DELEGATED_GATES)
+        for name, contract in AUDIT.DELEGATED_GATES.items():
+            for key in ("owner", "check", "caller_must_assert"):
+                self.assertIn(key, contract, name)
+                self.assertTrue(str(contract[key]).strip(), name)
+
+    def test_the_tool_no_longer_claims_to_have_checked_the_manifest(self):
+        text = (REPO / "tools/navrl_reflection_offline_audit.py").read_text(encoding="utf-8")
+        self.assertNotIn("Q7_checkpoint_sha_and_manifest", text)
+        source = inspect.getsource(AUDIT.run_audit)
+        self.assertIn("checkpoint_sha_matches = checkpoint_sha ==", source)
+        self.assertIn("quality_gate_summary", inspect.getsource(AUDIT.finalise_gate_block))
+
+    def test_failed_gate_list_includes_malformed_gates(self):
+        summary = AUDIT.summarise_gates(
+            {
+                "Q1_involution": {"status": AUDIT.GATE_STATUS_EVALUATED, "passed": True},
+                "QX_mystery": {},
+            }
+        )
+        failed = list(summary["evaluated_failed"]) + list(summary["malformed"])
+        self.assertEqual(failed, ["QX_mystery"])
+
+
+class ObservedScanFixedPoints(unittest.TestCase):
+    """H4 -- Q5's evidence field must describe the OBSERVED operator, not the tool's own map."""
+
+    def test_identity_operator_reports_every_beam_as_fixed(self):
+        identity = list(range(HBEAMS * VBEAMS))
+        passed, detail = AUDIT.gate_scan_permutation(identity, HBEAMS, VBEAMS)
+        self.assertFalse(passed)
+        self.assertEqual(detail["fixed_points"], list(range(HBEAMS)))
+        self.assertNotEqual(detail["fixed_points"], sorted(AUDIT.GATE_SCAN_FIXED_POINTS))
+
+    def test_an_extra_fixed_point_is_visible_in_the_evidence(self):
+        source, _sign = AUDIT.preregistered_signed_permutation(HBEAMS, VBEAMS, MAX_OBSTACLES)
+        broken = list(source)
+        for v in range(VBEAMS):
+            # h = 1 and h = 71 were swapped by the mirror; pin both to themselves.
+            broken[v * HBEAMS + 1] = v * HBEAMS + 1
+            broken[v * HBEAMS + (HBEAMS - 1)] = v * HBEAMS + (HBEAMS - 1)
+        passed, detail = AUDIT.gate_scan_permutation(broken, HBEAMS, VBEAMS)
+        self.assertFalse(passed)
+        self.assertEqual(detail["fixed_points"], [0, 1, 36, HBEAMS - 1])
+
+    def test_a_beam_fixed_on_only_one_ring_is_not_a_fixed_point(self):
+        source, _sign = AUDIT.preregistered_signed_permutation(HBEAMS, VBEAMS, MAX_OBSTACLES)
+        broken = list(source)
+        broken[2 * HBEAMS + 5] = 2 * HBEAMS + 5  # fixed on ring 2 only
+        self.assertEqual(
+            AUDIT.observed_scan_fixed_points(broken, HBEAMS, VBEAMS), {0, 36}
+        )
+        passed, _detail = AUDIT.gate_scan_permutation(broken, HBEAMS, VBEAMS)
+        self.assertFalse(passed)
+
+    def test_evidence_field_states_where_it_came_from(self):
+        source, _sign = AUDIT.preregistered_signed_permutation(HBEAMS, VBEAMS, MAX_OBSTACLES)
+        _passed, detail = AUDIT.gate_scan_permutation(source, HBEAMS, VBEAMS)
+        self.assertIn("observed_source", detail["fixed_points_computed_from"])
+        self.assertEqual(detail["fixed_points"], [0, 36])
+        gate_source = inspect.getsource(AUDIT.gate_scan_permutation)
+        self.assertNotIn("if expected[h] == h", gate_source)
+
+
+class LatentGuards(unittest.TestCase):
+    """H5 -- guards that are unreachable on this npz but would silently corrupt a future run."""
+
+    def test_int8_target_visible_with_unknown_is_rejected_not_coerced(self):
+        column = np.array([1, 0, -1, 1], dtype=np.int8)
+        # The hazard being closed: plain coercion would count the unknown frame as VISIBLE.
+        self.assertTrue(bool(column.astype(bool)[2]))
+        with self.assertRaises(AUDIT.IntegrityViolation) as context:
+            AUDIT.as_two_valued_bool(
+                column, "ctx_target_visible", AUDIT.CTX_TARGET_VISIBLE_DOMAIN
+            )
+        self.assertIn("astype(bool)", str(context.exception))
+        frames = {
+            "ctx_target_visible": column,
+            "ctx_front_blocked": np.zeros(4, dtype=np.int64),
+        }
+        with self.assertRaises(AUDIT.IntegrityViolation):
+            AUDIT.build_contexts(frames, np.zeros(4, dtype=np.int64))
+
+    def test_two_valued_int_and_bool_columns_are_accepted(self):
+        for column in (
+            np.array([True, False], dtype=bool),
+            np.array([1, 0], dtype=np.int8),
+        ):
+            values = AUDIT.as_two_valued_bool(column, "ctx_target_visible")
+            self.assertEqual(values.tolist(), [True, False])
+
+    def test_float_context_column_is_rejected(self):
+        with self.assertRaises(AUDIT.IntegrityViolation):
+            AUDIT.as_two_valued_bool(np.array([1.0, 0.0]), "ctx_target_visible")
+
+    def test_front_column_domain_is_asserted(self):
+        self.assertEqual(
+            AUDIT.as_front_code(np.array([1, 0, -1], dtype=np.int8)).tolist(), [1, 0, -1]
+        )
+        with self.assertRaises(AUDIT.IntegrityViolation) as context:
+            AUDIT.as_front_code(np.array([1, 0, 2], dtype=np.int8))
+        self.assertIn("domain", str(context.exception))
+
+    def test_context_column_domains_are_reported(self):
+        frames = {
+            "ctx_valid": np.ones(3, dtype=bool),
+            "ctx_target_visible": np.array([True, False, True]),
+            "ctx_front_blocked": np.array([1, 0, -1], dtype=np.int8),
+        }
+        detail = AUDIT.check_context_columns(frames)
+        self.assertEqual(detail["columns"]["ctx_front_blocked"]["dtype"], "int8")
+        self.assertEqual(
+            detail["columns"]["ctx_front_blocked"]["allowed_domain"], [-1, 0, 1]
+        )
+        self.assertFalse(detail["columns"]["ctx_target_visible"]["coerced_with_astype_bool"])
+
+    def test_undersampled_overall_cell_gets_no_verdict_not_inconclusive(self):
+        original = np.zeros((255, 4))
+        original[:, 1] = 0.8
+        cell = AUDIT.measure_cell(original, original.copy(), np.ones(255, dtype=bool))
+        self.assertIsNone(cell["verdict"])
+        verdict, reason = AUDIT.overall_verdict(cell)
+        self.assertEqual(verdict, AUDIT.VERDICT_NO_VERDICT_INSUFFICIENT_SAMPLE)
+        self.assertNotEqual(verdict, AUDIT.VERDICT_INCONCLUSIVE)
+        self.assertIn("255", reason)
+        self.assertIn(str(AUDIT.MIN_CONTEXT_COMPARABLE_ROWS), reason)
+
+    def test_a_real_verdict_passes_through_unchanged(self):
+        original = np.zeros((512, 4))
+        original[:, 1] = 0.8
+        cell = AUDIT.measure_cell(original, original.copy(), np.ones(512, dtype=bool))
+        verdict, reason = AUDIT.overall_verdict(cell)
+        self.assertEqual(verdict, AUDIT.VERDICT_CHIRALITY_CONFIRMED)
+        self.assertIsNone(reason)
+
+    def test_driver_no_longer_rewrites_a_missing_verdict_as_inconclusive(self):
+        source = inspect.getsource(AUDIT.run_audit)
+        self.assertNotIn("else VERDICT_INCONCLUSIVE", source)
+        self.assertIn("overall_verdict(overall)", source)
+
+    def test_non_finite_actions_fail_closed_instead_of_reaching_inconclusive(self):
+        # Without the gate a NaN reaches the verdict rule, where both comparisons are False.
+        self.assertEqual(
+            AUDIT.classify_verdict(float("nan"), float("nan")), AUDIT.VERDICT_INCONCLUSIVE
+        )
+        clean = np.zeros((4, 4), dtype=np.float32)
+        detail = AUDIT.check_finite({"original_actions": clean}, "actions")
+        self.assertTrue(detail["all_finite"])
+        dirty = clean.copy()
+        dirty[2, 1] = np.nan
+        with self.assertRaises(AUDIT.IntegrityViolation) as context:
+            AUDIT.check_finite({"original_actions": dirty}, "actions")
+        self.assertIn("non-finite", str(context.exception))
+
+    def test_infinite_observation_fails_closed(self):
+        obs = np.zeros((4, 8), dtype=np.float32)
+        obs[1, 3] = np.inf
+        with self.assertRaises(AUDIT.IntegrityViolation):
+            AUDIT.check_finite({"obs": obs}, "frames.obs")
+
+    def test_obs_dtype_is_asserted_not_assumed(self):
+        detail = AUDIT.check_frames_obs_dtype(np.zeros((2, 3), dtype=np.float32))
+        self.assertEqual(detail["frames_obs_dtype"], "float32")
+        with self.assertRaises(AUDIT.IntegrityViolation) as context:
+            AUDIT.check_frames_obs_dtype(np.zeros((2, 3), dtype=np.uint8))
+        self.assertIn("255", str(context.exception))
+        with self.assertRaises(AUDIT.IntegrityViolation):
+            AUDIT.check_frames_obs_dtype(np.zeros((2, 3), dtype=np.float64))
+
+    def test_absent_npz_identity_is_stated_explicitly(self):
+        report = AUDIT.check_npz_identity({}, "a" * 64)
+        self.assertFalse(report["checkpoint_binding_verified"])
+        self.assertEqual(report["identity_fields_present"], [])
+        self.assertIn("NOT machine-verified", report["note"])
+
+    def test_npz_identity_binds_the_frames_to_the_checkpoint(self):
+        report = AUDIT.check_npz_identity({"checkpoint_sha256": "A" * 64}, "a" * 64)
+        self.assertTrue(report["checkpoint_binding_verified"])
+        with self.assertRaises(AUDIT.IntegrityViolation) as context:
+            AUDIT.check_npz_identity({"checkpoint_sha256": "b" * 64}, "a" * 64)
+        self.assertIn("dumped from checkpoint", str(context.exception))
+
+    def test_recorded_obs_width_is_checked_against_the_loaded_table(self):
+        report = AUDIT.check_npz_identity({"obs_width_recorded": 898}, "a" * 64, obs_width=898)
+        self.assertTrue(report["obs_width_recorded_matches_loaded_obs"])
+        with self.assertRaises(AUDIT.IntegrityViolation):
+            AUDIT.check_npz_identity({"obs_width_recorded": 574}, "a" * 64, obs_width=898)
+
+    def test_run_identity_the_dump_writes_is_recorded(self):
+        # The NAVRL_OBS_DUMP hook writes these; the audit must carry them into the JSON.
+        for key in ("run_seed", "run_bars", "run_num_envs", "run_pid", "obs_width_recorded"):
+            self.assertIn(key, AUDIT.IDENTITY_KEYS, key)
+        report = AUDIT.check_npz_identity({"run_seed": 373, "run_bars": 70}, "a" * 64)
+        self.assertEqual(report["identity_fields_present"], ["run_bars", "run_seed"])
+        self.assertEqual(report["identity_fields"]["run_seed"], 373)
+
+    def test_dump_outcome_code_map_is_cross_checked_not_adopted(self):
+        absent = AUDIT.check_dump_outcome_code_map(None)
+        self.assertFalse(absent["dump_ships_a_code_map"])
+        self.assertIn("NOT be cross-checked", absent["note"])
+
+        agreeing = dict(AUDIT.OUTCOME_CODES)
+        agreeing[6] = "crash_below_floor"  # a code the prereg does not know
+        detail = AUDIT.check_dump_outcome_code_map(agreeing)
+        self.assertEqual(detail["codes_only_in_dump"], [6])
+        self.assertEqual(detail["name_disagreements"], {})
+        # The tool keeps its preregistered literal; the extra code is reported, never adopted.
+        self.assertNotIn(6, AUDIT.OUTCOME_CODES)
+
+        relabelled = dict(AUDIT.OUTCOME_CODES)
+        relabelled[2] = "timeout"
+        with self.assertRaises(AUDIT.IntegrityViolation) as context:
+            AUDIT.check_dump_outcome_code_map(relabelled)
+        self.assertIn("2", str(context.exception))
+
+    def test_a_frame_carrying_an_unknown_outcome_code_fails_closed(self):
+        codes = np.array([0, 0, 6], dtype=np.int64)
+        with self.assertRaises(AUDIT.IntegrityViolation):
+            AUDIT.check_outcome_join(codes, codes.size)
+
+    def test_run_audit_wires_every_integrity_check(self):
+        source = inspect.getsource(AUDIT.run_audit)
+        for name in (
+            "check_npz_identity",
+            "check_dump_outcome_code_map",
+            "check_frames_obs_dtype",
+            "check_finite",
+            "check_context_columns",
+            "check_outcome_join",
+            "check_context_partitions",
+            "characterise_excluded_frames",
+        ):
+            self.assertIn(name, source)
+        # A failed invariant may not leave policy statistics in the payload.
+        recorder = inspect.getsource(AUDIT.record_integrity)
+        self.assertIn("measurements_raw_normaliser", recorder)
+        self.assertIn(AUDIT.VERDICT_FAIL_CLOSED_INTEGRITY, recorder)
+
+
+class ExcludedFrameDisclosure(unittest.TestCase):
+    """H6 -- the non-random exclusion is characterised from the data, not remembered."""
+
+    def test_tail_concentrated_exclusion_is_flagged_and_described(self):
+        call_index = np.arange(100, dtype=np.int64) * 10
+        excluded = np.zeros(100, dtype=bool)
+        excluded[80:] = True
+        report = AUDIT.characterise_excluded_frames(call_index, excluded)
+        self.assertTrue(report["concentrated_in_tail"])
+        self.assertFalse(report["gating"])
+        self.assertEqual(report["n_excluded"], 20)
+        self.assertEqual(report["excluded_call_index_min"], 800.0)
+        self.assertEqual(report["excluded_call_index_max"], 990.0)
+        self.assertEqual(report["population_call_index_max"], 990.0)
+        self.assertEqual(report["fraction_of_excluded_at_or_above_population_median"], 1.0)
+        self.assertEqual(report["excluded_min_call_index_percentile_of_population"], 80.0)
+        self.assertIn("NOT missing at random", report["caveat"])
+        self.assertIn("overall cell", report["caveat"])
+
+    def test_uniform_exclusion_is_not_flagged(self):
+        call_index = np.arange(100, dtype=np.int64)
+        excluded = np.zeros(100, dtype=bool)
+        excluded[::2] = True
+        report = AUDIT.characterise_excluded_frames(call_index, excluded)
+        self.assertFalse(report["concentrated_in_tail"])
+        self.assertLess(report["fraction_of_excluded_at_or_above_population_median"], 0.9)
+
+    def test_no_exclusion_is_reported_as_such(self):
+        report = AUDIT.characterise_excluded_frames(
+            np.arange(10, dtype=np.int64), np.zeros(10, dtype=bool)
+        )
+        self.assertEqual(report["n_excluded"], 0)
+        self.assertFalse(report["concentrated_in_tail"])
+        self.assertIn("no frames were excluded", report["caveat"])
+
+    def test_missing_call_index_is_disclosed_not_skipped(self):
+        report = AUDIT.characterise_excluded_frames(None, np.array([True, False]))
+        self.assertFalse(report["call_index_available"])
+        self.assertIsNone(report["concentrated_in_tail"])
+        self.assertIn("could NOT be characterised", report["caveat"])
+
+    def test_threshold_is_a_declared_constant(self):
+        self.assertEqual(AUDIT.EXCLUDED_TAIL_CONCENTRATION_MIN, 0.9)
+        text = (REPO / "tools/navrl_reflection_offline_audit.py").read_text(encoding="utf-8")
+        self.assertLess(
+            text.index("EXCLUDED_TAIL_CONCENTRATION_MIN = "),
+            text.index("def characterise_excluded_frames"),
+        )
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

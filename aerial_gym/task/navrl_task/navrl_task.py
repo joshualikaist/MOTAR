@@ -153,6 +153,22 @@ def _episode_outcome_info(successes, crashes, truncations):
 
 # NAVRL_OBS_DUMP outcome codes (evaluation-only per-episode table). Written as a literal so a
 # CPU-only test can pin the exact contract without importing this module.
+#
+# Codes 0-5 are FROZEN with the meaning they had at commit cff96c2, because the published
+# seed-373 dump is already on disk carrying them; renumbering would silently re-label data that
+# nobody can re-derive. In particular code 1 means DRONE-body contact ONLY -- exactly what it
+# meant there, before the physical-target merge widened the termination mask `d_contact` to
+# `(crashed | target_contact | target_invalid)`. The two TARGET-caused terminations that merge
+# folded into it therefore get NEW codes (8, 9) instead of borrowing 1, and the two height-band
+# causes the dump used to collapse into 3 get NEW codes (6, 7) instead of renumbering 3.
+#   3 = "crash_other" is retained for the published dump (there it meant below-or-above,
+#       collapsed) but is NO LONGER EMITTED by this code: new runs emit 6 or 7.
+# There are three integer encodings of crash cause in this repo -- `self._crash_cause_code`
+# (0=contact/1=below/2=above/3=oob, a DIFFERENT numbering, used by the live crash diagnostics),
+# this map, and a literal copy in tools/navrl_reflection_offline_audit.py (owned elsewhere, still
+# duplicated). This map is the authoritative one for the dump and is EXPORTED INTO THE NPZ
+# (outcome_code_values / outcome_code_names / outcome_code_map_json) so a consumer can read the
+# map from the data instead of hardcoding a stale copy.
 OBS_DUMP_OUTCOME_CODES = {
     0: "capture",
     1: "crash_bar_contact",
@@ -160,6 +176,10 @@ OBS_DUMP_OUTCOME_CODES = {
     3: "crash_other",
     4: "timeout",
     5: "unattributed",
+    6: "crash_below_floor",
+    7: "crash_above_ceiling",
+    8: "crash_target_contact",
+    9: "crash_target_invalid",
 }
 
 
@@ -195,12 +215,142 @@ def _obs_dump_thin_step(retained_len, stride_eff, max_rows, rows_per_call):
     return new_len, stride_eff * 2, True
 
 
-def _validate_obs_dump_export(frame_tables, episode_tables, live_obs_width, max_rows, live_episode_uids):
+def _obs_dump_outcome_code_table():
+    """Pure: `OBS_DUMP_OUTCOME_CODES` as npz-storable arrays plus a JSON string.
+
+    Exported with every dump so a CONSUMER reads the code->name map out of the data instead of
+    hardcoding a copy that can drift (tools/navrl_reflection_offline_audit.py still carries such a
+    literal; it is owned by another agent and left untouched on purpose).
+    """
+    values = np.array(sorted(int(k) for k in OBS_DUMP_OUTCOME_CODES), dtype=np.int64)
+    names = np.array(
+        [OBS_DUMP_OUTCOME_CODES[int(v)] for v in values.tolist()], dtype="<U32"
+    )
+    payload = json.dumps(
+        dict((str(int(v)), OBS_DUMP_OUTCOME_CODES[int(v)]) for v in values.tolist()),
+        sort_keys=True,
+    )
+    return values, names, payload
+
+
+def _obs_dump_assert_free_path(path, path_exists):
+    """Pure: refuse to write a NAVRL_OBS_DUMP over an already-existing file.
+
+    A multi-condition sweep (eval_navrl_v2_density_sweep.sh runs one subprocess per density and
+    every child inherits the SAME NAVRL_OBS_DUMP path) would otherwise leave the last successful
+    condition's bytes at that path when a later condition's flush dies -- and a downstream
+    ``require(frames.is_file())`` cannot tell stale bytes from fresh ones, so a receipt ends up
+    attesting one condition's provenance over another condition's data. Fail-closed: the caller
+    must use a per-condition path.
+    """
+    if path_exists:
+        raise RuntimeError(
+            "obs_dump export: refusing to overwrite an existing dump at %s -- another run "
+            "(e.g. the previous density in a sweep) already wrote there and NAVRL_OBS_DUMP was "
+            "inherited unchanged. Use a per-condition path (.../<condition>/frames.npz), or "
+            "delete the old file deliberately." % (path,)
+        )
+
+
+def _obs_dump_check_episode_budget(existing_rows, new_rows, max_rows):
+    """Pure: bound the per-episode outcome table; raise (never truncate) when it would overflow.
+
+    The frame table is capped by streaming decimation, but the outcome table grows one entry per
+    step in which any env finishes, so leaving NAVRL_OBS_DUMP set during a TRAINING run grew it
+    without limit until OOM. Silent truncation is not an option: frames join to outcomes by
+    episode_uid, and a truncated outcome table would either break that join or, worse, look like a
+    complete table. Fail loudly and early instead. Returns the new total.
+    """
+    total = int(existing_rows) + int(new_rows)
+    if total > int(max_rows):
+        raise RuntimeError(
+            "obs_dump export: per-episode outcome table would reach %d rows, over the cap %d. "
+            "NAVRL_OBS_DUMP is an EVALUATION-only hook -- unset it for training runs, or raise "
+            "NAVRL_OBS_DUMP_MAX_EPISODES deliberately." % (total, int(max_rows))
+        )
+    return total
+
+
+def _obs_dump_assign_crash_codes(
+    code, captured, crashed, target_contact, target_invalid, d_contact, d_oob, d_below, d_above
+):
+    """Pure (duck-typed over torch bool tensors and numpy bool arrays): fill per-env outcome codes.
+
+    Reads ONLY the priority-attributed termination masks the task already computed plus the three
+    raw sources `d_contact` is the union of; it defines no new attribution and writes nothing back.
+    `code` is modified in place and returned; entries the masks do not cover keep whatever the
+    caller pre-filled (5 = unattributed).
+
+    Sub-split of `d_contact` (drone body > target contact > target-invalid) exists because the
+    physical-target merge widened `d_contact` to `(crashed | target_contact | target_invalid)`,
+    which made a clean drone flight whose TARGET left the arena report as a drone-bar collision.
+    See OBS_DUMP_OUTCOME_CODES for why the new causes get new codes instead of renumbering.
+    """
+    code[captured] = 0
+    code[d_contact & crashed] = 1
+    code[d_contact & ~crashed & target_contact] = 8
+    code[d_contact & ~crashed & ~target_contact & target_invalid] = 9
+    code[d_oob] = 2
+    code[d_below] = 6
+    code[d_above] = 7
+    return code
+
+
+def _obs_dump_drop_reset_orphans(frame_tables, outcome_uids, reset_orphan_uids):
+    """Pure: drop frame rows whose episode was ended by a FULL ``reset()``, not by an outcome.
+
+    A full reset bumps every env's episode counter without emitting outcome rows (rl_games'
+    ``BasePlayer.run`` calls ``env_reset`` at the top of every ``n_games`` iteration, and that loop
+    runs more than once whenever ``max_steps`` trips first). Those frames belong to episodes that
+    are neither live nor in the outcome table, which used to make the export guard fatal and cost
+    the whole multi-hour dump. They are dropped here with a counted, reported reason; the guard
+    stays fatal for every OTHER finished-without-outcome episode, which is a genuine inconsistency.
+
+    Frames of episodes that are still running are NOT touched (they are legitimately orphaned and
+    the guard already tolerates them), and neither are frames of reset envs that did finish with an
+    outcome row in the same step. Returns ``(frame_tables, dropped_rows, dropped_episodes)``.
+    """
+    orphans = set(int(v) for v in reset_orphan_uids)
+    if not orphans or "episode_uid" not in frame_tables:
+        return frame_tables, 0, 0
+    orphans -= set(int(v) for v in np.asarray(outcome_uids).tolist())
+    if not orphans:
+        return frame_tables, 0, 0
+    uids = np.asarray(frame_tables["episode_uid"])
+    drop = np.isin(uids, np.array(sorted(orphans), dtype=np.int64))
+    dropped_rows = int(drop.sum())
+    if dropped_rows == 0:
+        return frame_tables, 0, 0
+    keep = ~drop
+    dropped_episodes = len(set(int(v) for v in uids[drop].tolist()))
+    kept_tables = dict((key, np.asarray(arr)[keep]) for key, arr in frame_tables.items())
+    return kept_tables, dropped_rows, dropped_episodes
+
+
+def _validate_obs_dump_export(
+    frame_tables,
+    episode_tables,
+    live_obs_width,
+    max_rows,
+    live_episode_uids,
+    schema_obs_width=None,
+):
     """Fail-closed export guard for NAVRL_OBS_DUMP (house style: see ``_record_oob_exit``).
 
     Pure: dict-of-numpy-array tables plus a plain ``set`` of currently-live episode_uids, no
     torch, no ``self`` -- a deliberately mismatched table can be unit-tested without Isaac Gym.
     Raises ``RuntimeError`` naming the specific mismatch; never silently drops rows.
+
+    On the two width arguments: ``live_obs_width`` is NOT an independent regression check and must
+    not be read as one. The frames are sliced from ``self.task_obs["observations"]``, which is
+    allocated with ``task_config.observation_space_dim`` -- the same number the caller passes in --
+    so that comparison is a value against itself. It is kept because it still pins the ONE thing a
+    consumer needs: the recorded width equals the width the consumer will assume when it joins
+    columns. ``schema_obs_width`` is the genuinely independent one: recomputed from the perception
+    schema's COMPONENTS (histories x per-token dims + static + corridor, see
+    ``NavRLTask._obs_dump_schema_obs_width``), it never passes through the allocation, so an
+    898->N schema regression that forgot to update one side is caught here. It is ``None`` only
+    when the run has no perception front-end to derive a width from.
     """
     if "obs" not in frame_tables:
         raise RuntimeError("obs_dump export: frame table is missing the 'obs' array")
@@ -216,6 +366,12 @@ def _validate_obs_dump_export(frame_tables, episode_tables, live_obs_width, max_
         raise RuntimeError(
             "obs_dump export: obs array shape %s does not match the live structured "
             "observation width %d" % (tuple(obs_shape), int(live_obs_width))
+        )
+    if schema_obs_width is not None and int(obs_shape[1]) != int(schema_obs_width):
+        raise RuntimeError(
+            "obs_dump export: obs array width %d does not match the width derived independently "
+            "from the perception schema components (%d)"
+            % (int(obs_shape[1]), int(schema_obs_width))
         )
     if n > int(max_rows):
         raise RuntimeError(
@@ -1010,6 +1166,30 @@ class NavRLTask(BaseTask):
             # bumps every env to episode 0, so this never collides with a real episode index.
             self._obs_dump_ep_idx = torch.full(
                 (self.num_envs,), -1, dtype=torch.int64, device=self.device
+            )
+            # Host mirror of the SAME counter, updated in lockstep in reset_idx(). The flush then
+            # needs no GPU access at all -- an atexit-time `.cpu()` on a device tensor runs after
+            # the simulator may already be torn down, which is a new failure mode for a hook that
+            # is supposed to be free.
+            self._obs_dump_ep_idx_host = np.full(self.num_envs, -1, dtype=np.int64)
+            # The frame table is capped by streaming decimation; the outcome table needs its own
+            # bound (see _obs_dump_check_episode_budget) or a training run with the var set grows
+            # it to multi-GB and is discovered only at OOM.
+            self._obs_dump_max_episode_rows = max(
+                1, int(os.environ.get("NAVRL_OBS_DUMP_MAX_EPISODES", "1048576"))
+            )
+            self._obs_dump_episode_row_count = 0
+            self._obs_dump_episode_overflow = ""
+            # episode_uids ended by a FULL reset() with no outcome row (see _flush_obs_dump).
+            self._obs_dump_reset_orphan_uids = set()
+            self._obs_dump_reset_orphan_cap = 1 << 22
+            self._obs_dump_flush_done = False
+            self._obs_dump_flush_active = False
+            # Fail fast: a sweep that inherited one NAVRL_OBS_DUMP path across conditions must not
+            # spend hours of rollout before discovering it cannot write. Same rule re-checked
+            # immediately before the write itself.
+            _obs_dump_assert_free_path(
+                self._obs_dump_path, Path(self._obs_dump_path).exists()
             )
             import atexit
 
@@ -1868,6 +2048,10 @@ class NavRLTask(BaseTask):
             self._hud.update(build_hud_lines(self, env_id), build_hud_pip(self, env_id))
 
     def close(self):
+        if self._obs_dump_enabled:
+            # Deterministic, in-process flush point (F7): does not depend on interpreter shutdown,
+            # and runs BEFORE the simulator is deleted below. Idempotent with the atexit trigger.
+            self._flush_obs_dump()
         if self._hud is not None:
             self._hud.close()
             self._hud = None
@@ -3035,6 +3219,13 @@ class NavRLTask(BaseTask):
 
     # ------------------------------------------------------------------ reset
     def reset(self):
+        if self._obs_dump_enabled:
+            # A full reset ends EVERY env's episode without an outcome row (rl_games'
+            # BasePlayer.run calls env_reset at the top of each n_games iteration). Remember those
+            # uids so the export can drop their frames with a counted reason instead of failing
+            # the entire dump; envs that legitimately finished this same step are excluded at
+            # flush time because they DO have an outcome row.
+            self._note_obs_dump_full_reset()
         # Respawn the robots (and re-place obstacles) BEFORE sampling goals. Without this, a
         # full reset leaves the robots at their build pose (overlapping the bars near the env
         # origin), so the first step crashes every env at once — which ends rl_games play mode
@@ -3055,6 +3246,9 @@ class NavRLTask(BaseTask):
         if self._obs_dump_enabled:
             # Global, monotonic, never wraps: episode_uid = env_id + num_envs * this counter.
             self._obs_dump_ep_idx[env_ids] += 1
+            # Kept EXACT (same envs, same increment) so the flush reads a host array, not a GPU
+            # tensor that may be gone by interpreter shutdown.
+            self._obs_dump_ep_idx_host[env_ids.detach().cpu().numpy()] += 1
         if self.general_spawn_mode:
             self._randomize_general_drone_spawn(env_ids)
         # robot has already been respawned by the env manager when this is called mid-episode,
@@ -3230,7 +3424,12 @@ class NavRLTask(BaseTask):
             self._visible_now[env_ids] = False
         if self._episode_dump_path:
             self._episode_spawn[env_ids] = self.obs_dict["robot_position"][env_ids].clone()
-        if self._action_diag_enabled:
+        if self._action_diag_enabled or self._obs_dump_enabled:
+            # Must match the WRITE gate in _record_action_diagnostics: that method runs its body
+            # (including the unconditional `_action_diag_prev` / `_action_diag_prev_valid` tail)
+            # whenever EITHER action diagnostics or the obs dump is on. Gating the clear on
+            # action-diag alone let delta_y_sum / sign_flip_y accumulate ACROSS episode boundaries
+            # in a dump-only run.
             self._action_diag_prev_valid[env_ids] = False
         self._tm_ep_wall_reflections[env_ids] = 0
         self._tm_ep_bar_reflections[env_ids] = 0
@@ -3779,7 +3978,9 @@ class NavRLTask(BaseTask):
         n = int(obs.shape[0])
         env_id = np.arange(n, dtype=np.int32)
         call_index = np.full(n, this_call, dtype=np.int64)
-        ep_idx_cpu = self._obs_dump_ep_idx.detach().cpu().numpy().astype(np.int64)
+        # Host mirror (kept exact in reset_idx) -- identical values to the device tensor, minus
+        # the per-call device->host sync.
+        ep_idx_cpu = self._obs_dump_ep_idx_host
         episode_uid = env_id.astype(np.int64) + self.num_envs * ep_idx_cpu
         ep_step = self.sim_env.sim_steps.detach().to("cpu", torch.int64).numpy()
         ctx_target_visible = visible.detach().to("cpu", torch.bool).numpy()
@@ -3824,6 +4025,18 @@ class NavRLTask(BaseTask):
         idx = mask.nonzero(as_tuple=False).squeeze(1)
         if idx.numel() == 0:
             return
+        try:
+            self._obs_dump_episode_row_count = _obs_dump_check_episode_budget(
+                self._obs_dump_episode_row_count,
+                int(idx.numel()),
+                self._obs_dump_max_episode_rows,
+            )
+        except RuntimeError as exc:
+            # Remember the overflow: the flush must then refuse to write at all, because a dump
+            # whose outcome table stopped growing mid-run looks complete but silently breaks the
+            # frame/outcome join. The raise still aborts the run at the first overflowing step.
+            self._obs_dump_episode_overflow = str(exc)
+            raise
         ep_uid = idx.to(torch.int64) + self.num_envs * self._obs_dump_ep_idx[idx]
         self._obs_dump_episode_rows.append(
             {
@@ -3835,12 +4048,28 @@ class NavRLTask(BaseTask):
         )
 
     def _record_obs_dump_crash_outcomes(
-        self, captured, crashed_out, d_contact, d_oob, d_below, d_above
+        self,
+        captured,
+        crashed_out,
+        d_contact,
+        d_oob,
+        d_below,
+        d_above,
+        crashed,
+        target_contact,
+        target_invalid,
     ):
         """NAVRL_OBS_DUMP: outcome rows for episodes ending in capture or a crash this step.
 
         Remaps the SAME priority-attributed masks the crash-cause table above just computed
-        (contact > oob > below/above) onto the dump's outcome codes -- no new attribution logic.
+        (contact > below > above > oob) onto the dump's outcome codes -- no new attribution logic,
+        and the task's masks are only READ here. `crashed` / `target_contact` / `target_invalid`
+        are the three raw sources the merged `d_contact` is the union of; they are passed in so
+        the dump can label a TARGET-caused termination as such (codes 8/9) instead of reporting a
+        clean drone flight as a drone-bar collision (code 1). `d_below` / `d_above` likewise get
+        their own codes (6/7) instead of being collapsed into 3, matching the distinction
+        `_crash_cause_code` already keeps.
+
         Timeouts are not visible here; they are recorded separately in step() once
         `_episode_outcome_info` resolves them. Any crashed_out env not covered by one of these
         masks (should not happen given how `crashed_out` is built above) gets 5=unattributed
@@ -3850,19 +4079,145 @@ class NavRLTask(BaseTask):
         if not bool(done_now.any()):
             return
         code = torch.full((self.num_envs,), 5, dtype=torch.int8, device=self.device)
-        code[captured] = 0
-        code[d_contact] = 1
-        code[d_oob] = 2
-        code[d_below | d_above] = 3
+        _obs_dump_assign_crash_codes(
+            code,
+            captured,
+            crashed,
+            target_contact,
+            target_invalid,
+            d_contact,
+            d_oob,
+            d_below,
+            d_above,
+        )
         self._record_obs_dump_outcome(done_now, code)
+
+    def _note_obs_dump_full_reset(self):
+        """NAVRL_OBS_DUMP: remember the episode_uids a full `reset()` is about to end silently.
+
+        Reads the host mirror only (no GPU sync, no behaviour change). Bounded: one entry per env
+        per FULL reset, and full resets are rare (once per rl_games `n_games` iteration). The cap
+        exists so a pathological caller cannot turn this into an unbounded set.
+        """
+        uids = (
+            np.arange(self.num_envs, dtype=np.int64)
+            + self.num_envs * self._obs_dump_ep_idx_host
+        )
+        self._obs_dump_reset_orphan_uids.update(int(v) for v in uids.tolist())
+        if len(self._obs_dump_reset_orphan_uids) > self._obs_dump_reset_orphan_cap:
+            raise RuntimeError(
+                "obs_dump export: %d full-reset orphan episode_uid(s) tracked, over the cap %d -- "
+                "NAVRL_OBS_DUMP is an EVALUATION-only hook and this run resets far more often "
+                "than any evaluation does."
+                % (len(self._obs_dump_reset_orphan_uids), self._obs_dump_reset_orphan_cap)
+            )
+
+    def _obs_dump_schema_obs_width(self):
+        """Structured-observation width recomputed from the perception schema's COMPONENTS.
+
+        Why this exists: the frames are sliced from `self.task_obs["observations"]`, which is
+        allocated with `task_config.observation_space_dim`, so checking the collected array's width
+        against that same number is a value compared to itself and can never catch the 898->N
+        regression the check was written for. This recomputes the width from the parts instead --
+        the per-history token dims from the perception module, plus the STATIC block's size taken
+        from the LIVE LiDAR tensor's own shape (a different allocation, made by the sensor config,
+        not by the observation buffer). Neither path runs through the observation allocation.
+
+        What it still cannot be independent of: every one of these numbers ultimately derives from
+        the same process's environment (NAVRL_LIDAR_HBEAMS / NAVRL_MAX_OBSTACLES / ...), so an
+        env-var change that is consistently applied everywhere is a legitimate reconfiguration, not
+        a regression, and is correctly NOT flagged. Returns None when the run has no perception
+        front-end -- there is then no second source at all, and the export guard falls back to
+        asserting only that the recorded width is the width the consumer will assume.
+        """
+        if not self.perception_mode:
+            return None
+        from aerial_gym.task.navrl_task.navrl_perception import (
+            CORRIDOR_OBS_DIM,
+            MAX_OBSTACLES,
+            OBSTACLE_DIM,
+            OBSTACLE_HISTORY,
+            ROBOT_DIM,
+            ROBOT_HISTORY,
+            STATIC_DIM,
+            TARGET_DIM,
+            TARGET_HISTORY,
+        )
+
+        static_dim = int(STATIC_DIM)
+        pixels = self.obs_dict.get("depth_range_pixels", None)
+        if pixels is not None and pixels.dim() >= 3:
+            # (N, [sensors,] vbeams, hbeams) -- the same layout _lidar_distance_m() relies on.
+            static_dim = int(pixels.shape[-1]) * int(pixels.shape[-2])
+        return int(
+            ROBOT_HISTORY * ROBOT_DIM
+            + TARGET_HISTORY * TARGET_DIM
+            + OBSTACLE_HISTORY * MAX_OBSTACLES * OBSTACLE_DIM
+            + static_dim
+            + CORRIDOR_OBS_DIM
+        )
 
     def _flush_obs_dump(self):
         """Write the NAVRL_OBS_DUMP frame + episode-outcome tables, fail-closed (see
-        `_validate_obs_dump_export`). Same lifecycle trigger as `_flush_episode_dump`: registered
-        with `atexit` in __init__, so it runs once when the process exits.
+        `_validate_obs_dump_export`).
+
+        Two triggers, one write: `atexit` (as `_flush_episode_dump` does) plus the deterministic
+        in-process call in `close()`. atexit alone loses the entire dump to a SIGKILL, an
+        `os._exit`, or a teardown segfault, and it is the worst moment to touch the simulator.
+        Idempotent by construction -- `_obs_dump_flush_done` makes whichever trigger fires second a
+        no-op, and the write itself goes to a temp file that is `os.replace`d into position, so the
+        dump path is either absent or complete, never half-written.
+
+        Any failure inside the write leaves `<path>.FAILED` next to the intended output holding the
+        traceback. atexit swallows exit codes (a raise there prints a traceback but still exits 0,
+        so `set -euo pipefail` does not trip), which previously let a downstream
+        `require(frames.is_file())` pass on a PREVIOUS condition's stale bytes; a marker on disk is
+        checkable after the fact regardless of exit code.
         """
+        if self._obs_dump_flush_done or self._obs_dump_flush_active:
+            return
         if not self._obs_dump_frames:
             return
+        self._obs_dump_flush_active = True
+        try:
+            self._write_obs_dump()
+        except BaseException:
+            import traceback
+
+            detail = traceback.format_exc()
+            marker = Path(str(self._obs_dump_path) + ".FAILED")
+            try:
+                marker.parent.mkdir(parents=True, exist_ok=True)
+                marker.write_text(detail, encoding="utf-8")
+                print(
+                    "[obs_dump] FLUSH FAILED -- wrote %s; %s does NOT contain this run's data"
+                    % (marker, self._obs_dump_path)
+                )
+            except Exception as marker_error:  # pragma: no cover - disk-level failure
+                print(
+                    "[obs_dump] FLUSH FAILED and the %s marker could not be written: %s"
+                    % (marker, marker_error)
+                )
+            print(detail)
+            raise
+        else:
+            self._obs_dump_flush_done = True
+        finally:
+            self._obs_dump_flush_active = False
+
+    def _write_obs_dump(self):
+        """Body of `_flush_obs_dump`, split out so EVERY failure path is wrapped by the
+        `.FAILED`-marker handler above (including the export guard's own RuntimeErrors)."""
+        if self._obs_dump_episode_overflow:
+            raise RuntimeError(
+                "obs_dump export: refusing to write -- the per-episode outcome table overflowed "
+                "earlier in this run, so the frame/outcome join is incomplete: %s"
+                % self._obs_dump_episode_overflow
+            )
+        path = Path(self._obs_dump_path)
+        # Re-checked here (also checked at construction): the file must not exist at write time
+        # either, e.g. when a sibling condition of the same sweep finished in between.
+        _obs_dump_assert_free_path(path, path.exists())
         frame_tables = {
             key: np.concatenate([chunk[key] for chunk in self._obs_dump_frames])
             for key in self._obs_dump_frames[0]
@@ -3879,35 +4234,92 @@ class NavRLTask(BaseTask):
                 "outcome": np.zeros(0, dtype=np.int8),
                 "ep_len": np.zeros(0, dtype=np.int64),
             }
-        ep_idx_cpu = self._obs_dump_ep_idx.detach().cpu().numpy().astype(np.int64)
+        # Host mirror, not the device tensor: this runs at interpreter shutdown too.
+        ep_idx_cpu = self._obs_dump_ep_idx_host.astype(np.int64)
         live_episode_uids = set(
             (np.arange(self.num_envs, dtype=np.int64) + self.num_envs * ep_idx_cpu).tolist()
         )
+        frame_tables, dropped_rows, dropped_episodes = _obs_dump_drop_reset_orphans(
+            frame_tables, episode_tables["ep_uid"], self._obs_dump_reset_orphan_uids
+        )
+        if dropped_rows:
+            print(
+                "[obs_dump] dropped %d frame row(s) from %d episode(s) ended by a full reset() "
+                "with no outcome row (reason=full_reset_orphan); every other "
+                "finished-without-outcome episode is still fatal"
+                % (dropped_rows, dropped_episodes)
+            )
+        schema_obs_width = self._obs_dump_schema_obs_width()
         _validate_obs_dump_export(
             frame_tables,
             episode_tables,
             int(self.task_config.observation_space_dim),
             self._obs_dump_max_rows,
             live_episode_uids,
+            schema_obs_width=schema_obs_width,
         )
-        path = Path(self._obs_dump_path)
+        outcome_code_values, outcome_code_names, outcome_code_map_json = (
+            _obs_dump_outcome_code_table()
+        )
         path.parent.mkdir(parents=True, exist_ok=True)
-        np.savez_compressed(
-            path,
-            **frame_tables,
-            **episode_tables,
-            stride_eff=np.int64(self._obs_dump_stride_eff),
-            decimations=np.int64(self._obs_dump_decimations),
-        )
+        # Atomic publish: a partially written .npz must never appear at `path`, or a downstream
+        # `require(frames.is_file())` would pass on a truncated archive.
+        tmp_path = path.parent / ("%s.partial-%d" % (path.name, os.getpid()))
+        try:
+            with open(str(tmp_path), "wb") as stream:
+                np.savez_compressed(
+                    stream,
+                    **frame_tables,
+                    **episode_tables,
+                    stride_eff=np.int64(self._obs_dump_stride_eff),
+                    decimations=np.int64(self._obs_dump_decimations),
+                    # Run identity: a stale file left by another condition of the same sweep is
+                    # detectable after the fact even if the overwrite guard was bypassed.
+                    run_bars=np.int64(int(self.n_bars_active)),
+                    run_max_bars=np.int64(int(self.max_bars_available)),
+                    run_seed=np.int64(int(getattr(self.task_config, "seed", -1))),
+                    run_num_envs=np.int64(int(self.num_envs)),
+                    run_pid=np.int64(os.getpid()),
+                    run_num_bars_env=np.array(
+                        os.environ.get("NAVRL_NUM_BARS", "").strip(), dtype="<U32"
+                    ),
+                    run_obs_dump_path=np.array(str(self._obs_dump_path), dtype="<U512"),
+                    # Widths: recorded vs the allocation the consumer assumes vs the independently
+                    # derived schema width (-1 = no perception front-end to derive one from).
+                    obs_width_recorded=np.int64(int(frame_tables["obs"].shape[1])),
+                    obs_width_live_alloc=np.int64(
+                        int(self.task_config.observation_space_dim)
+                    ),
+                    obs_width_schema=np.int64(
+                        -1 if schema_obs_width is None else int(schema_obs_width)
+                    ),
+                    dropped_reset_orphan_frames=np.int64(dropped_rows),
+                    dropped_reset_orphan_episodes=np.int64(dropped_episodes),
+                    # The outcome-code map travels WITH the data (see OBS_DUMP_OUTCOME_CODES).
+                    outcome_code_values=outcome_code_values,
+                    outcome_code_names=outcome_code_names,
+                    outcome_code_map_json=np.array(outcome_code_map_json, dtype="<U1024"),
+                )
+            os.replace(str(tmp_path), str(path))
+        finally:
+            if tmp_path.exists():
+                try:
+                    tmp_path.unlink()
+                except OSError:  # pragma: no cover - best effort cleanup
+                    pass
         sha256 = _sha256_file(path)
         print(
-            "[obs_dump] path=%s frames=%d episodes=%d stride_eff=%d decimations=%d sha256=%s"
+            "[obs_dump] path=%s frames=%d episodes=%d stride_eff=%d decimations=%d "
+            "dropped_reset_orphans=%d bars=%d seed=%d sha256=%s"
             % (
                 path,
                 int(frame_tables["obs"].shape[0]),
                 int(episode_tables["ep_uid"].shape[0]),
                 int(self._obs_dump_stride_eff),
                 int(self._obs_dump_decimations),
+                int(dropped_rows),
+                int(self.n_bars_active),
+                int(getattr(self.task_config, "seed", -1)),
                 sha256,
             )
         )
@@ -4039,7 +4451,15 @@ class NavRLTask(BaseTask):
             self._record_episode_dump(pos, captured, crashed_out, crashed, below, above)
         if self._obs_dump_enabled:
             self._record_obs_dump_crash_outcomes(
-                captured, crashed_out, d_contact, d_oob, d_below, d_above
+                captured,
+                crashed_out,
+                d_contact,
+                d_oob,
+                d_below,
+                d_above,
+                crashed,
+                target_contact,
+                target_invalid,
             )
 
         if self._crash_diag:
