@@ -4,7 +4,7 @@
 [`RESEARCH_PLAN.md`](RESEARCH_PLAN.md), 날짜별 기록은 [`WORKLOG.md`](WORKLOG.md),
 명령어는 [`OPERATIONS.md`](OPERATIONS.md), 라이브 지표는 [`docs/status/`](docs/status/)를 본다.
 
-> 기준일: 2026-08-21
+> 기준일: 2026-08-22
 
 ## 한 줄 상태
 
@@ -101,12 +101,60 @@ timeout에서 빠져나간다"**는 형태다.
 2. 실기 함의 — 20 m는 시뮬 파라미터이지 특정 센서 사양이 아니다.
 3. P2/D1 재판정이나 P3 해제 — 전부 그대로다.
 
-### 이제 남은 것은 설계 결정이다
+### 2026-08-22 정정 — 그 선택지 둘 다 전제가 틀렸다
 
-병목이 특정된 이상 다음은 진단이 아니라 선택이다. **(a) 과제를 센서에 맞춘다**(goal 거리를
-관측 범위 안으로) 또는 **(b) 센서를 과제에 맞춘다**(장거리 검출 전제로 재학습). 둘 다 재학습이
-필요하므로 P3 차단 해제 조건과 함께 **별도 사전등록**한다. 이번 결과만으로 재학습을 시작하지
-않는다.
+이전 판(2026-08-21)은 다음을 **(a) 과제를 센서에 맞춘다** / **(b) 센서를 과제에 맞춘다(장거리
+검출 전제로 재학습)** 의 선택으로 적었다. camera-first 1단계가 그 전제를 무너뜨렸다.
+
+seed 367은 **광학을 바꾸지 않았다.** 두 arm의 소스 스냅샷이 md5 동일이고 소프트웨어 far-plane만
+20→28 m로 풀렸다. 따라서 그 결과는 **정보의 가치**를 보인 것이지 28 m 검출 하드웨어의 실현성이
+아니다. 그리고 시뮬레이터 자신의 기하로는 28 m 광축 검출이 **불가능**하다 — 160×90 @ 87°에서
+fx 84.3 px/rad, 표적이 28 m에 0.90 px(0.62 px²)이고, 마스크가 서브픽셀 커버리지 없이 화소 중심
+표본화라 광축 표적이 2 px² 임계를 20 m에서 24.6%, 28 m에서 **0%** 통과한다. 이 광학 사슬의
+신뢰 검출 거리는 12–15 m다.
+
+**교란 (한계로 기록, 판정 소급 변경 아님)**: `detector_max_range` 변경은 순수 clip 변경이 아니다.
+actor 표적 토큰이 함께 재정규화된다(`navrl_perception.py:1574,1578`). 28 m arm은 20 m로 학습된
+정책에 0.714배 스케일 위치를 먹였으므로 timeout −37.65 pp 중 일부는 관측 인코딩 변화다.
+**§8.29의 공식 판정은 변경하지 않는다.**
+
+따라서 실제 결함은 과제/센서 정합이 아니라 **센서 모델이 세 방향으로 동시에 틀려 있다**는 것이다:
+해상도(실기 대비 13배 조악), 검출 임계(면적 2 px² ≈ 지름 1.6 px — Johnson 검출 기준 미만),
+거리(해석적 정확값, 오차 0 — 28 m 스테레오 시차는 1.2–2.4 px로 측정 불가).
+
+### 다음 실험 (in force) — 센서 충실도, 평가 전용
+
+사전등록: [`docs/prereg_2026-08-22_sensor_fidelity.md`](docs/prereg_2026-08-22_sensor_fidelity.md)
+(2026-08-22 동결, 커밋 `e2b95f8` — 구현 기계가 존재하기 전).
+
+| | |
+|---|---|
+| 성격 | **평가 전용.** 학습은 이 사전등록의 권한 밖 |
+| 정책 | frozen ref5in D1 ep1900 (`197ea269…`) |
+| seed | **421** (미사용), 70막대, arm당 2,049 ep |
+| arm A | detect 160×90, `NAVRL_DETECTOR_MIN_PIXELS=2` — 현행 |
+| arm B | detect **1920×1200**, `MIN_PIXELS=50` (지름 8 px, CNN 하늘배경 하한) |
+| 고정 | `NAVRL_DETECTOR_MAX_RANGE=20.0` **변경 금지** (토큰 재정규화 교란 회피), RGB 해상도 양 arm 160×90 |
+| 판정 | never-acquired가 A 대비 **+10 pp 이상** → `FIDELITY_COST_CONFIRMED` / ±3 pp → `FIDELITY_NEUTRAL` / 그 외 INCONCLUSIVE |
+
+**판정 방향에 주의**: 임계가 25배 오르므로 arm B가 나빠지는 것이 **예상된 결과**다. 그 크기가
+"지금까지의 성적 중 얼마가 존재할 수 없는 센서 덕분이었는가"의 추정치이며, 이 실험의 값어치는
+개선이 아니라 **정직한 기준선의 확립**이다. capture/crash/timeout은 원값 보고하되 판정에 쓰지 않는다.
+
+**게이트 0(구현 타당성)이 판정보다 먼저다.** 검출 해상도를 RGB/perception 해상도와 분리하는 것은
+knob이 아니라 설계 변경이며, detect == camera에서 bit-identical, appearance 교란 ≠ 0인데
+detect ≠ camera면 fail-closed, 모든 조합에서 관측 898-D 유지를 증명해야 한다. 실패 시
+`FAIL_CLOSED_IMPLEMENTATION`이며 센서 모델에 대한 주장을 하지 않는다.
+
+### 대기 중 (실행 결정 안 됨)
+
+- **paired-reflection consistency** — 사전등록
+  [`docs/prereg_2026-08-22_paired_reflection_consistency.md`](docs/prereg_2026-08-22_paired_reflection_consistency.md)
+  동결(`e8f9b3e`), 미실행. GPU 2.5–3 h. N1이 `CHIRALITY_CONFIRMED_REAL_FRAME`(실제 프레임 15,488,
+  median conj_err_lat 1.454, sign agreement 2.49%)을 냈으므로 자격은 있으나, 인과 근거가 있는
+  쪽은 센서이므로 우선순위가 낮다.
+- **거리 충실도(#3)** — 별도 사전등록 필요. 검출 임계와 달리 물리적으로 독립된 양이므로 함께
+  바꾸지 않는다.
 
 ## fail-closed 규칙
 

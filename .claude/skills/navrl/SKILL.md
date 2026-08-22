@@ -20,6 +20,36 @@ training logs into the main context — that is what subagents are for.
 Working dir for all training/eval: `aerial_gym/rl_training/rl_games`. Env: conda `aerialgym`, always
 `PYTHONNOUSERSITE=1`. Sensor-only mode = `NAVRL_VISION=1`.
 
+## PLAN SYNC RULE — non-negotiable, and the one most often forgotten
+
+**When the plan changes, update the planning documents in the same commit as the work that changed
+it.** A WORKLOG entry records what happened; it does NOT tell the next session what to do. That is
+`VERIFICATION.md`'s job (execution authority: gates, verdicts, the next experiment) and
+`RESEARCH_PLAN.md`'s job (charter: hypotheses and method).
+
+The failure this prevents is specific and has happened: WORKLOG grows six honest entries in a day
+while `VERIFICATION.md` still carries a stale `기준일` and still names an experiment that the day's
+findings superseded. The next session reads the authority document, believes it, and runs the wrong
+thing. WORKLOG being correct does not save you — nobody reads 9,000 lines to find out that the plan
+moved.
+
+Update `VERIFICATION.md` whenever ANY of these change:
+- the next experiment, or the reason for it
+- a gate, threshold, or the conditions that unblock a blocked stage
+- what the current bottleneck is believed to be
+- a prerequisite being satisfied or invalidated
+- the `기준일` — bump it every time you touch the file
+
+Update `RESEARCH_PLAN.md` when the hypothesis or the method changes, not when a number lands.
+
+**What you may NOT do while syncing**: change a recorded verdict. P2 / D1 / P3 status lines and any
+frozen result's judgement are historical facts. If new evidence reinterprets an old result, record
+the reinterpretation as a LIMITATION next to it — never by editing the verdict. A plan sync that
+quietly softens a FAIL is the worst possible outcome of this rule.
+
+Self-check before you end a session: `git log --oneline -5` and ask, for each commit, "would a fresh
+session reading only VERIFICATION.md do the right next thing?" If not, the sync is missing.
+
 ## WORKLOG RULE — non-negotiable
 
 **Every piece of work ends with a `WORKLOG.md` entry. No exceptions, no "I'll add it later".**
