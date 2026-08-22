@@ -10650,3 +10650,75 @@ fidelity `{used: true, sole_verified_mismatch, reason}`.
 ### 다음
 
 `run`은 사용자가 직접 시작한다. 런타임 루트는 clean이므로 dirty-runtime 게이트는 통과한다.
+
+## 2026-08-22 — 센서 충실도 결과: FIDELITY_NEUTRAL. 구속 조건은 임계가 아니라 20 m 클립이다
+
+seed 421, 70막대, arm당 2,049 에피소드, frozen ref5in D1 ep1900. 사전등록
+`docs/prereg_2026-08-22_sensor_fidelity.md`(§5-b/§5-c 개정 포함). 학습 없음.
+
+### 조작이 실제로 적용됐음을 두 갈래로 증명했다
+
+영수증이 `detect_width/height`를 기록하지 않는다는 §5-c의 약점을 직접 메웠다.
+
+| 증거 | |
+|---|---|
+| config 직접 인스턴스화 | `detect 1920×1200`, `decoupled=True`, `fx = 1011.6 px/rad` |
+| 20 m 표적 | 지름 **15.17 px**, 면적 **180.8 px²** (임계 50의 3.6배) |
+| 실행 시간 | arm B **646 s** vs arm A **307 s** = **2.10배** (미적용이면 동일해야 함) |
+
+예측 1.92배와 일치한다. 두 arm의 유일한 다른 점이 해상도와 임계인데 임계 비교는 스칼라라
+공짜이므로, 2.10배 감속은 1920×1200 광선 추적에서만 올 수 있다.
+
+### 결과
+
+| | baseline (160×90, 임계 2) | fidelity (1920×1200, 임계 50) | 델타 |
+|---|---|---|---|
+| **never-acquired** | **18.89%** (387/2049) | **19.08%** | **+0.195 pp** |
+| target_hidden_fraction | 0.8212 | 0.8223 | +0.0011 |
+| capture | 70.52% | 71.06% | +0.54 |
+| crash | 19.81% | 18.59% | −1.22 |
+| timeout | 9.66% | 10.35% | +0.68 |
+| capture cohort never-acq | 0.00% | 0.00% | — |
+| crash cohort never-acq | 54.19% | 55.91% | +1.72 |
+| timeout cohort never-acq | 84.34% | 83.96% | −0.38 |
+
+사전등록 밴드 ±3.00 pp → **`FIDELITY_NEUTRAL`**.
+
+### 왜 그런가 — 데이터가 답한다
+
+`target_hidden_fraction`이 양 arm 모두 **0.82**다(델타 +0.001). 표적이 프레임의 82%에서 안 보이는데
+그것은 임계 때문이 아니라 **`detector_max_range = 20 m` 하드 클립** 때문이다. 목표 거리가
+22.5–28 m이므로 표적은 대부분 클립 **밖**에 있다.
+
+**구속 조건은 픽셀 임계가 아니라 20 m 클립이다.** 클립 안에서는 조악한 센서로도 충분히 보이고
+(20 m에서 baseline 면적 1.3 px² vs 임계 2 — 한계선이지만 더 가까우면 통과), 클립 밖에서는 아무리
+좋은 센서라도 렌더러가 표적을 그리지 않는다.
+
+**따라서 "지금까지의 성적이 존재할 수 없는 센서 덕분이었는가"에 대한 답은 아니다(NO)이다.**
+검출 임계의 부정직함은 성적을 설명하지 않는다.
+
+### 재학습을 실행하지 않는다
+
+`docs/prereg_2026-08-22_honest_sensor_adaptation.md` §1이 `FIDELITY_COST_CONFIRMED`일 때만
+실행하라고 못박았고 결과는 `NEUTRAL`이다. 사용자가 오늘 학습을 승인했으나 **조건이 충족되지
+않았다.** "생각보다 작지만 그래도 돌려보자"는 그 문서가 명시적으로 금지한 것이다.
+
+### 부수: 런처 자신의 무결성 단언이 발화했다
+
+`run`이 `G5_import_origin is owned by this launcher, but verify_cell() produced no import_origin
+evidence`로 실패했다. 진단 결과 `verify_import_origin()`의 반환 딕셔너리에 `checked_by_launcher`
+키가 빠져 있었다 — 옆의 `manifest_provenance`는 넣는데 origin 쪽만 누락. 게이트 검사 자체는 전부
+통과했고(로그 origin 경로·sha가 매니페스트와 일치) **증거의 형식만 어긋났다.** 데이터가 온전하므로
+GPU를 재실행하지 않고 검증층만 고쳐 `finalize`했다.
+
+이것은 오탐이 아니다. 잘못된 형식의 증거는 증거가 아니며, 단언은 제 할 일을 했다.
+
+### 이 결과가 지목하는 다음 실험
+
+`detector_max_range`를 28 m로 올리되 **이번엔 정직한 고해상도 센서와 함께.** detect 1920×1200에서
+28 m 표적은 지름 10.8 px·면적 92 px²로 임계 50을 넘는다 — **처음으로 물리적으로 실현 가능한
+28 m 검출**이며, seed 367이 sub-pixel 사건으로 흉내만 냈던 것을 실제로 하는 것이다.
+클립 변경은 표적 토큰 정규화를 바꾸므로 동결 정책 평가로는 교란되지만 재학습에서는 일관된다.
+**별도 사전등록이 필요하다.**
+
+P2 STRICT FAIL / D1 FAIL / P3 BLOCKED 변경 없음.

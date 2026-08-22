@@ -771,6 +771,11 @@ def verify_import_origin(arm: str, mapping: dict, metadata: dict) -> dict:
         f"digest {entry[0]}",
     )
     return {
+        # The generic per-arm gate loop proves ownership by requiring this marker, the same way
+        # manifest_provenance carries it.  Omitting it made the launcher refuse to claim G5 had
+        # passed even though every check inside this function had -- which is the assertion doing
+        # its job, not a false alarm: evidence in the wrong shape is not evidence.
+        "checked_by_launcher": True,
         "enforced": True,
         "required_source_root": str(repository_root),
         "origin": str(expected_origin),
