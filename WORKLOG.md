@@ -11275,3 +11275,30 @@ seed 457/461(1단계), 463/467(2단계) 전수검색 0건. 실측 epoch당 3.1 s
 명시했다 — 주말 예산에 따른 선택이며 결과는 "10k epoch에서의 비교"다.
 
 `VERIFICATION.md`도 같은 커밋에서 갱신했다(PLAN SYNC 규칙).
+
+## 2026-08-22 — stage 1 첫 실행 VOID: 학습 스크립트가 min_pixels를 하드코딩하고 있었다
+
+`train_navrl_v2_search.sh:234`가 `export NAVRL_DETECTOR_MIN_PIXELS=2`를 **하드코딩**해, 사전등록이
+요구하는 50을 조용히 덮어썼다. 결과적으로:
+
+- VRAM 스모크는 **min_pixels=2로 돌았다**(내가 50이라고 보고한 것은 틀렸다). VRAM 수치
+  6,854/8,192 MiB는 min_pixels와 무관하므로 여전히 유효하다.
+- arm A가 완주했다면 **양 arm 모두 부정직한 센서로 학습**하고, 체크포인트에
+  `cfg_detector_min_pixels=2`가 박힌 채, 겉보기엔 완전히 정상이었을 것이다. 실험이 정의하는
+  "정직한 센서"가 그냥 일어나지 않는다.
+
+**이걸 막은 것은 training source receipt 가드다.** 학습 중 런타임 소스가 바뀌자 체크포인트 저장
+시점에 `NavRL training runtime source changed: train_navrl_v2_search.sh`로 거부했다. 부분 run은
+폐기했다(epoch_metrics.csv도 만들어지기 전). provenance 기계가 설계대로 작동한 사례를 하나 더 얻었다.
+
+수정: `export NAVRL_DETECTOR_MIN_PIXELS="${NAVRL_DETECTOR_MIN_PIXELS:-2}"` — 미설정 시 v2 기본값 2로
+동일하므로 기존 계보에 영향이 없다.
+
+**같은 유형을 전수 확인했다.** 사전등록이 지정하는 10개 변수 중 `train_navrl_v2_search.sh`/
+`train_navrl.sh`가 덮어쓰는 것은 `NAVRL_DETECTOR_MIN_PIXELS` 하나뿐이었다.
+`NAVRL_DETECTOR_MAX_RANGE`(조작 축)·`NAVRL_DETECT_WIDTH/HEIGHT`·`NAVRL_CAMERA_*`·`NAVRL_NUM_BARS`·
+`NAVRL_REFLECTION_COEF`·`NAVRL_LATERAL_BIAS_COEF`·`NAVRL_SPEED_GOVERNOR`는 안전하다.
+
+교훈: **학습 런처는 자기가 실행하는 스크립트가 자기 변수를 덮어쓰는지 확인해야 한다.** 평가
+경로에는 checkpoint contract 대조가 있어 이런 드리프트가 드러나지만, 학습에는 그 대조가 없다 —
+체크포인트가 "무엇으로 학습됐는지"를 스스로 기록할 뿐 "무엇으로 학습하려 했는지"와 비교하지 않는다.

@@ -231,7 +231,13 @@ export NAVRL_ALT_HOLD_VMAX=2.5
 export NAVRL_YAW_RATE_MAX=3.0
 export NAVRL_MAX_TILT_DEG=45.0
 export NAVRL_FOV_CURRICULUM_EPOCHS=3000
-export NAVRL_DETECTOR_MIN_PIXELS=2
+# Overridable so a sensor-model experiment (detection-range stage 1, prereg 2026-08-22) can train
+# at the Johnson/CNN-grounded 50 px^2 detection floor while inheriting the rest of this contract.
+# Hard-coding it did the same damage the selector comment above describes, but more quietly: a
+# child launcher exporting 50 would have trained at 2, both arms would still have trained
+# normally, and the resulting checkpoints would carry cfg_detector_min_pixels=2 -- so the honest
+# sensor the experiment is defined by would simply not have happened. Unset => 2, the v2 default.
+export NAVRL_DETECTOR_MIN_PIXELS="${NAVRL_DETECTOR_MIN_PIXELS:-2}"
 export NAVRL_DETECTOR_THRESHOLD=0.55
 unset NAVRL_DETECTOR_CHECKPOINT
 export NAVRL_DETECTION_DROPOUT=0.3
