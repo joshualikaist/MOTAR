@@ -146,6 +146,27 @@ knob이 아니라 설계 변경이며, detect == camera에서 bit-identical, app
 detect ≠ camera면 fail-closed, 모든 조합에서 관측 898-D 유지를 증명해야 한다. 실패 시
 `FAIL_CLOSED_IMPLEMENTATION`이며 센서 모델에 대한 주장을 하지 않는다.
 
+### 그 다음 (조건부, 사전등록 동결됨)
+
+**정직한 센서에서의 적응 학습** —
+[`docs/prereg_2026-08-22_honest_sensor_adaptation.md`](docs/prereg_2026-08-22_honest_sensor_adaptation.md)
+(2026-08-22 동결, **센서 충실도 결과를 보기 전**).
+
+**센서 충실도가 `FIDELITY_COST_CONFIRMED`일 때만 실행한다.** `FIDELITY_NEUTRAL`이나
+`INCONCLUSIVE`이면 실행하지 않으며, 이 조건을 결과를 본 뒤 완화하지 않는다.
+
+| | |
+|---|---|
+| 학습 seed **433** / 평가 seed **449** | 둘 다 미사용 |
+| 예산 | 1,000 epoch / 4.096M samples (riskcap 적응 선례) |
+| arm A | detect 160×90 / `MIN_PIXELS=2` — 예산 효과 분리용 control |
+| arm B | detect 1920×1200 / `MIN_PIXELS=50` |
+| 판정 | `NA_B ≤ NA_frozen − 10 pp` **및** `NA_B ≤ NA_A − 5 pp` → `ADAPTATION_RECOVERS` / `NA_B > NA_A − 5 pp` → `ADAPTATION_INEFFECTIVE` / 그 외 INCONCLUSIVE |
+
+**이것은 P3가 아니다.** P3는 70→205 bars · 30k epoch · seed 211이며, 본 실험은 70 bars 고정
+1,000 epoch다. 따라서 fail-closed 5(P3 금지)를 위반하지 않으며, **P3 차단은 그대로 유지된다.**
+`ADAPTATION_RECOVERS`가 나와도 정책을 채택하지 않는다 — 채택은 P2 gate 통과가 필요하고 별개 실행이다.
+
 ### 대기 중 (실행 결정 안 됨)
 
 - **paired-reflection consistency** — 사전등록
