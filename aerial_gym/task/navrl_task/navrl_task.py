@@ -2209,6 +2209,14 @@ class NavRLTask(BaseTask):
             "cfg_detector_min_pixels": int(
                 getattr(self.perception_cfg, "min_target_pixels", 0)
             ),
+            # These three fields define the target detector's geometric support.  Observation
+            # width does not change when they change, so a shape-compatible checkpoint can load
+            # under the wrong sensor contract unless the checkpoint records them explicitly.
+            "cfg_detector_max_range": float(
+                getattr(self.vis_cfg, "detector_max_range", 0.0)
+            ),
+            "cfg_detect_width": int(getattr(self.vis_cfg, "detect_width", 0)),
+            "cfg_detect_height": int(getattr(self.vis_cfg, "detect_height", 0)),
             "cfg_detector_threshold": float(
                 getattr(self.perception_cfg, "pixel_threshold", 0.0)
             ),
@@ -3035,6 +3043,21 @@ class NavRLTask(BaseTask):
                     "cfg_detector_min_pixels",
                     float(getattr(self.perception_cfg, "min_target_pixels", 0)),
                     "NAVRL_DETECTOR_MIN_PIXELS",
+                ),
+                (
+                    "cfg_detector_max_range",
+                    float(getattr(self.vis_cfg, "detector_max_range", 0.0)),
+                    "NAVRL_DETECTOR_MAX_RANGE",
+                ),
+                (
+                    "cfg_detect_width",
+                    float(getattr(self.vis_cfg, "detect_width", 0)),
+                    "NAVRL_DETECT_WIDTH",
+                ),
+                (
+                    "cfg_detect_height",
+                    float(getattr(self.vis_cfg, "detect_height", 0)),
+                    "NAVRL_DETECT_HEIGHT",
                 ),
                 (
                     "cfg_detector_threshold",

@@ -574,6 +574,9 @@ class HeldOutDistributionContractTest(unittest.TestCase):
                 "cfg_physics_substeps",
                 "cfg_physics_steps_per_rl_step",
                 "cfg_rl_step_dt_s",
+                "cfg_detector_max_range",
+                "cfg_detect_width",
+                "cfg_detect_height",
             }.issubset(checkpoint_strings)
         )
 

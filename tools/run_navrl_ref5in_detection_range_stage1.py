@@ -178,12 +178,12 @@ VRAM_LIMIT_MIB = 8192           # RTX 3070 board limit
 # because it did not press the button.  The operator names the run folder and the tee'd training
 # log; every Gate 0 fact is then RE-DERIVED from those artifacts exactly as for a launcher-started
 # run.  The one thing adoption cannot recover is which clip the run trained at: navrl_task records
-# no ``cfg_detector_max_range`` in env_state, so the arm assignment is the operator's assertion and
-# is recorded as such rather than presented as attested provenance.
+# older checkpoints had no detector-geometry provenance.  Stage 1 now refuses to adopt such a
+# checkpoint: the arm assignment must be attested by the checkpoint, not supplied by an operator.
 ADOPT_RUN_ROOT_ENV = "DETRANGE_STAGE1_RUN_ROOT_%s"
 ADOPT_TRAIN_LOG_ENV = "DETRANGE_STAGE1_TRAIN_LOG_%s"
 CLIP_EVIDENCE_LAUNCHER = "set_by_this_launcher_and_verified_in_the_trainer_effective_environment"
-CLIP_EVIDENCE_ADOPTED = "operator_assertion_at_adoption (checkpoint provenance records no clip)"
+CLIP_EVIDENCE_ADOPTED = "checkpoint_env_state_detector_geometry_attestation"
 
 PREREGISTRATION = "docs/prereg_2026-08-22_detection_range_2stage.md"
 PRODUCER = "tools/run_navrl_ref5in_detection_range_stage1.py"
@@ -872,14 +872,10 @@ def verify_evaluator_needs_no_range_override() -> dict:
       1. ``cfg_detector_min_pixels`` is bound to ``os.environ["NAVRL_DETECTOR_MIN_PIXELS"]``.  Both
          arms TRAIN at 50 and are EVALUATED at 50, so this field -- the one that forced the sensor
          fidelity experiment into a narrow single-field override -- matches here by construction.
-      2. No key in the gate mentions the detector range at all, and navrl_task.py records no
-         ``cfg_detector_max_range`` in ``env_state``.  The manipulated axis is therefore invisible
-         to the gate; there is nothing an override could be overriding.
-
-    Fact 2 is also this experiment's provenance WEAKNESS, and it is recorded rather than glossed:
-    the clip cannot be attested from the checkpoint.  It is attested on the evaluation side, where
-    the evaluator writes ``target_camera_max_range_m`` into both the receipt and the v2 evaluation
-    contract from the environment it ran with.
+      2. New checkpoints record the complete detector geometry triplet.  The evaluator compares
+         those fields only when present, preserving legacy checkpoint loadability while making
+         this new experiment fail closed.  Each arm is evaluated at the exact values it records,
+         so no override is necessary.
     """
     evaluator = EVALUATOR.read_text(encoding="utf-8")
     require(
@@ -887,25 +883,16 @@ def verify_evaluator_needs_no_range_override() -> dict:
         "the evaluator no longer binds cfg_detector_min_pixels to the exported threshold; the "
         "no-override claim rests on training and evaluation using the same value",
     )
-    want = evaluator[evaluator.index("want = {"):evaluator.index("bad = []")]
-    # ``cfg_lidar_max_range`` is a legitimate held-fixed field and is NOT the detector clip; the
-    # search names the two spellings the detection range could appear under.
-    offending = [
-        line.strip()
-        for line in want.splitlines()
-        if "detector_max_range" in line or "camera_max_range" in line
-    ]
-    require(
-        not offending,
-        "the evaluator's v2 provenance gate now pins a detector-range field, so evaluating an arm "
-        f"at its own clip may need an override after all: {offending}",
-    )
+    for literal in (
+        '"cfg_detector_max_range": float(os.environ["NAVRL_DETECTOR_MAX_RANGE"])',
+        '"cfg_detect_width": float(os.environ["NAVRL_DETECT_WIDTH"])',
+        '"cfg_detect_height": float(os.environ["NAVRL_DETECT_HEIGHT"])',
+        "if present_detector_geometry:",
+    ):
+        require(literal in evaluator, f"conditional detector provenance gate missing: {literal}")
     task_source = (ROOT / "aerial_gym/task/navrl_task/navrl_task.py").read_text(encoding="utf-8")
-    require(
-        "cfg_detector_max_range" not in task_source,
-        "navrl_task now records cfg_detector_max_range in env_state; re-derive whether the "
-        "evaluator's provenance gate compares it before claiming no override is needed",
-    )
+    for key in ("cfg_detector_max_range", "cfg_detect_width", "cfg_detect_height"):
+        require(key in task_source, f"navrl_task checkpoint provenance missing {key}")
     require(
         '"target_camera_max_range_m": float(os.environ.get("NAVRL_DETECTOR_MAX_RANGE", 20.0)),'
         in evaluator,
@@ -917,11 +904,10 @@ def verify_evaluator_needs_no_range_override() -> dict:
         "override_required": False,
         "reason": (
             "each arm is evaluated at the clip it was trained at; the evaluator's v2 provenance "
-            "want-set contains no detector-range key and cfg_detector_min_pixels matches because "
-            "training and evaluation both use 50"
+            "gate compares the checkpoint detector geometry to that arm's requested geometry"
         ),
-        "clip_not_recorded_in_checkpoint_provenance": True,
-        "clip_attested_by": "v2_evaluation_contract.target_camera_max_range_m",
+        "clip_not_recorded_in_checkpoint_provenance": False,
+        "clip_attested_by": "env_state.cfg_detector_max_range + v2_evaluation_contract.target_camera_max_range_m",
     }
 
 
@@ -1447,6 +1433,20 @@ def adopt_training_run(arm: str) -> dict:
 
     checkpoint = torch.load(str(terminal_path), map_location="cpu", weights_only=False)
     state = checkpoint.get("env_state") or {}
+    detector_geometry = {
+        "cfg_detector_max_range": arm_clip(arm),
+        "cfg_detect_width": DETECT_WIDTH,
+        "cfg_detect_height": DETECT_HEIGHT,
+    }
+    mismatch = {
+        key: (state.get(key), expected)
+        for key, expected in detector_geometry.items()
+        if state.get(key) != expected
+    }
+    require(
+        not mismatch,
+        f"{arm}: adopted checkpoint cannot attest the requested detector geometry: {mismatch}",
+    )
     manifest_path = Path(str(state.get("cfg_training_source_manifest", "")))
     require(
         manifest_path.is_file(),
@@ -1636,6 +1636,9 @@ def verify_training(arm: str) -> dict:
         "cfg_speed_governor_mode": SPEED_GOVERNOR_MODE,
         "cfg_perception_perturb": False,
         "cfg_detector_min_pixels": DETECTOR_MIN_PIXELS,
+        "cfg_detector_max_range": arm_clip(arm),
+        "cfg_detect_width": DETECT_WIDTH,
+        "cfg_detect_height": DETECT_HEIGHT,
         "cfg_general_goal_dist_min": GOAL_DIST_MIN_M,
         "cfg_general_goal_dist_max": GOAL_DIST_MAX_M,
         "n_bars_active": BARS,
@@ -1648,9 +1651,7 @@ def verify_training(arm: str) -> dict:
         "checked_by_launcher": True,
         "passed": True,
         "pinned": {key: state.get(key) for key in sorted(pinned)},
-        # The clip itself is NOT in env_state -- navrl_task records no cfg_detector_max_range -- so
-        # it is attested on the evaluation side instead (see verify_evaluator_needs_no_range_override).
-        "detector_max_range_recorded_in_checkpoint": False,
+        "detector_max_range_recorded_in_checkpoint": True,
     }
 
     return {
@@ -2605,12 +2606,12 @@ def write_summary(payload: dict) -> None:
         "## provenance override",
         "",
         "- **어느 arm도 override를 쓰지 않는다.** 각 arm은 **자기가 학습한 클립에서** 평가되고,"
-        " 평가기의 v2 provenance 게이트에는 검출 거리 필드가 없으며 `cfg_detector_min_pixels`는"
-        " 학습·평가 모두 50이라 일치한다. 실행 시점에 force 없는 preflight가 통과함을 요구하며,"
+        " 체크포인트의 `cfg_detector_max_range/cfg_detect_width/cfg_detect_height`를 평가기의"
+        " 요청값과 비교한다. `cfg_detector_min_pixels`도 학습·평가 모두 50이다. 실행 시점에"
+        " force 없는 preflight가 통과함을 요구하며,"
         " 거부되면 담요식 force 대신 **중단**한다.",
-        "- 약점 기록: 클립은 체크포인트 provenance에 기록되지 않는다"
-        " (`navrl_task`가 `cfg_detector_max_range`를 쓰지 않는다). 평가 계약의"
-        " `target_camera_max_range_m`만이 증명 가능한 arm 구분자다.",
+        "- arm 구분자는 체크포인트와 평가 계약 양쪽에 독립적으로 남는다:"
+        " `env_state.cfg_detector_max_range`와 `v2_evaluation_contract.target_camera_max_range_m`.",
         "",
         f"- warm start SHA-256 `{payload['warm_start_checkpoint_sha256'][:16]}…`",
         f"- 품질 게이트: 판정 {len(evaluated)}개, 실패 {len(failed)}개",

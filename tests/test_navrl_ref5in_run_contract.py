@@ -1611,7 +1611,7 @@ class DetectionRangeStage1Contract(unittest.TestCase):
         self.assertIn('"NAVRL_V2_FORCE" not in env', source)
         proof = module.verify_evaluator_needs_no_range_override()
         self.assertIs(proof["override_required"], False)
-        self.assertIs(proof["clip_not_recorded_in_checkpoint_provenance"], True)
+        self.assertIs(proof["clip_not_recorded_in_checkpoint_provenance"], False)
 
     def test_a_refused_evaluator_preflight_stops_instead_of_forcing(self):
         module = self.launcher()
@@ -1850,12 +1850,15 @@ class DetectionRangeStage1Contract(unittest.TestCase):
                         if value is not None:
                             os.environ[key] = value
 
-    def test_an_adopted_run_cannot_claim_its_clip_is_attested(self):
-        """navrl_task records no cfg_detector_max_range, so nothing in an adopted checkpoint proves
-        which clip it trained at.  That is a provenance hole and it is labelled, not papered over."""
+    def test_an_adopted_run_must_claim_only_checkpoint_attested_geometry(self):
+        """An operator-selected folder is not evidence of its sensor contract; env_state is."""
         module = self.launcher()
-        self.assertIn("operator_assertion", module.CLIP_EVIDENCE_ADOPTED)
+        self.assertNotIn("operator_assertion", module.CLIP_EVIDENCE_ADOPTED)
+        self.assertIn("checkpoint_env_state", module.CLIP_EVIDENCE_ADOPTED)
         self.assertNotIn("operator_assertion", module.CLIP_EVIDENCE_LAUNCHER)
+        source = self.source()
+        for key in ("cfg_detector_max_range", "cfg_detect_width", "cfg_detect_height"):
+            self.assertIn(key, source)
         self.assertIn('"detector_max_range_evidence"', self.source())
 
 

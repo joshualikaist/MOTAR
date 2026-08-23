@@ -695,7 +695,27 @@ want = {
     "cfg_action_std": "0.35,0.35,0.05,0.08",
     "cfg_action_mu_scale": "1.0,0.4,1.0,1.0",
 }
+# Detector geometry provenance was added after the frozen ref5in checkpoint lineage.  Preserve
+# legacy loadability, but once a checkpoint carries any of the new fields, require the complete
+# triplet and compare it to the requested evaluation sensor.  This makes new experiments fail
+# closed without retroactively making every older checkpoint unevaluable.
 bad = []
+detector_geometry_keys = {
+    "cfg_detector_max_range": float(os.environ["NAVRL_DETECTOR_MAX_RANGE"]),
+    "cfg_detect_width": float(os.environ["NAVRL_DETECT_WIDTH"]),
+    "cfg_detect_height": float(os.environ["NAVRL_DETECT_HEIGHT"]),
+}
+present_detector_geometry = [key for key in detector_geometry_keys if key in state]
+if present_detector_geometry:
+    missing_detector_geometry = [
+        key for key in detector_geometry_keys if key not in state
+    ]
+    if missing_detector_geometry:
+        bad.append(
+            "incomplete detector geometry provenance: missing "
+            + ", ".join(sorted(missing_detector_geometry))
+        )
+    want.update(detector_geometry_keys)
 checkpoint_robot = str(state.get("cfg_robot_name", "navrl_quad")).strip()
 if checkpoint_robot != os.environ["NAVRL_ROBOT"]:
     bad.append(

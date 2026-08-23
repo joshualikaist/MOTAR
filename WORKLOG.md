@@ -11480,3 +11480,66 @@ arm B의 이점이 먼 에피소드에서만 나타나므로 학습 신호가 �
 
 `navrl_task`가 `env_state`에 `cfg_detector_max_range`를 쓰지 않아 **체크포인트가 어느 클립으로
 학습됐는지 증명하지 못한다.** arm 배정이 운영자 주장으로만 남는다. 학습이 멈춘 지금이 고칠 때다.
+## 2026-08-23 — detection-range stage 1 재실행 전 계약·운영 전면 감사
+
+사용자 요청대로 Claude의 중단된 `/tmp` 체인을 재사용하지 않고 사전등록
+`docs/prereg_2026-08-22_detection_range_2stage.md`부터 다시 감사했다.
+
+### 확정한 계약
+
+- `NAVRL_GENERAL_TRAIN=1`에서는 `k_min/k_max`가 아니라
+  `NAVRL_GENERAL_GOAL_DIST_MIN/MAX`가 spawn band를 소유한다. 재실행은 22.5–28.0 m를
+  effective trainer environment에서 확인한다.
+- 70 bars 고정, density curriculum off, detect 1920×1200, RGB 160×90,
+  `min_pixels=50`, perturbation·latency·range error 0, governor off다.
+- 양 arm의 실제 trainer/evaluator environment 대칭차를 측정했다. bookkeeping 키를 빼면
+  `NAVRL_DETECTOR_MAX_RANGE` 20.0↔28.0 **한 키만** 달랐다.
+- frozen D1 ep1900 SHA `197ea269…a278e`, 학습 seed 457, 평가 seed 461, arm당 1,000 epoch
+  (4.096M samples), 평가 2,049 episodes를 유지한다.
+- primary verdict는 `never_acquired(clip28)-never_acquired(clip20) <= -15.00 pp`만 본다.
+  capture/crash/timeout은 원값 보고용이고 판정 함수에 들어가지 않는다.
+
+### 고친 provenance 결함
+
+shape-compatible checkpoint가 어느 detector geometry에서 학습됐는지 스스로 증명하지 못했다.
+`navrl_task.get_env_state()`에 다음을 추가했다.
+
+- `cfg_detector_max_range`
+- `cfg_detect_width`
+- `cfg_detect_height`
+
+restore는 legacy checkpoint에서 키가 없으면 허용하지만, 존재하는 키의 mismatch는 기존
+same-shape config drift와 같이 경고하고 density evidence를 reset한다. generic v2 evaluator도
+세 키 중 하나라도 있는 새 checkpoint라면 완전한 triplet을 요구하고 실행 환경과 비교한다.
+stage-1 Gate 0는 새 종단 checkpoint의 20/28 m와 1920×1200을 필수로 검사한다. 외부 run adoption도
+운영자 arm 주장만으로는 불가능하고 checkpoint-attested geometry가 맞아야 한다.
+
+### 고친 장시간 운영 결함
+
+`tools/run_navrl_ref5in_detection_range_stage1_campaign.py`를 추가했다. 하나의 PID와 non-blocking
+file lock이 `preflight → clip20 train/Gate0 → clip28 train/Gate0 → 2-cell eval → finalize → verify`를
+순서대로 소유한다. 매 phase 시작/성공과 최초 실패를 원자적 status JSON에 기록하며 실패하면
+즉시 non-zero로 끝나 다음 단계가 실행되지 않는다. global `pgrep`, latest-run glob, `/tmp` scratch
+chain을 쓰지 않는다.
+
+실행·GPU·판정 계획은 `docs/execution_plan_2026-08-23_detection_range_stage1.md`에 고정했다.
+기존 smoke 실측은 peak 6,667/8,192 MiB, 7.257 s/epoch라 arm당 2.02시간, 2-cell 평가를 포함한
+총 예상은 약 4시간 25분(여유 포함 4시간 45분)이다.
+
+### CPU 검증
+
+- stage-1 run contract: 101/101 PASS
+- detector/perception: 30 PASS, 1 SKIP
+- campaign contract: 3/3 PASS
+- trainer가 만든 effective env 및 chain-clobber 감사: PASS
+- train/eval arm diff: `NAVRL_DETECTOR_MAX_RANGE`만 차이, PASS
+- `py_compile`, `bash -n`, `git diff --check`: PASS
+
+frozen `aerial_gym/config/robot_config/**`와 `resources/robots/**`는 변경하지 않았다.
+
+기존 잘못된 결과는 삭제하지 않고 다음으로 격리했다.
+
+- `results/VOID_20260823_goal_band_6_28_navrl_ref5in_detection_range_stage1_s457/`
+- `results/VOID_20260823_pre_provenance_navrl_ref5in_detection_range_stage1_s457_preflight/`
+
+원래의 canonical output 경로는 새 사전등록 준수 campaign만 사용한다.
