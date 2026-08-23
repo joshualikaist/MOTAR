@@ -233,3 +233,32 @@ track_covariance, visibility_state`.
 
 72시간 종료 보고에는 “성능이 몇 % 올랐는가”보다 **어떤 실기 숫자가 측정됐고, 무엇이 아직
 가정이며, 그 결과 다음 학습의 조작축이 정확히 하나로 닫혔는가**를 먼저 쓴다.
+
+## 7. 하드웨어가 없을 때 먼저 실행할 software-only 단계
+
+부품·rosbag이 아직 없으면 실측값을 만들거나 noise를 추정하지 않는다. 대신
+[`tools/navrl_sim2real_telemetry.py`](../tools/navrl_sim2real_telemetry.py)의 독립 계약 검증기를
+먼저 실행해, 나중에 실제 로그를 넣었을 때 같은 판정 경로를 사용한다.
+
+```bash
+# 합성 입력은 구조 테스트일 뿐이며 실기 증거가 아니다.
+/home/fair/miniconda3/envs/aerialgym/bin/python tools/navrl_sim2real_telemetry.py \
+  fixture --output /tmp/navrl_telemetry_fixture.jsonl --groups 5
+/home/fair/miniconda3/envs/aerialgym/bin/python tools/navrl_sim2real_telemetry.py \
+  validate /tmp/navrl_telemetry_fixture.jsonl \
+  --report /tmp/navrl_telemetry_report.json \
+  --max-sync-skew-ms 20 --max-sensor-to-host-latency-ms 500
+```
+
+JSONL event에는 topic/sequence/source timestamp/host receive timestamp/frame edge를 기록하고,
+camera·LiDAR·ego-state에만 `sync_group`을 부여한다. 검증기는 다음을 fail-closed로 처리한다.
+
+- manifest/schema 누락, unknown topic, frame edge 불일치;
+- source/host timestamp 역행, sequence 중복·gap, 음수 latency;
+- sensor source→host latency와 synchronized sensor skew gate 초과;
+- policy-input→command latency와 topic별 p50/p95/p99/max 통계.
+
+보고서의 `claim_status=SYNTHETIC_ONLY`는 합성 fixture를 실측으로 승격하지 못하게 하는 표식이다.
+실제 rosbag/CSV를 변환한 JSONL에는 `source_kind=real_log`와 run/calibration manifest를 넣고,
+그때만 `MEASURED_CANDIDATE`로 바뀐다. 이 단계는 policy/reward/observation/checkpoint를
+변경하지 않으며, 5개 CPU 단위 테스트가 시간·frame·manifest 오류를 재현한다.

@@ -11765,6 +11765,19 @@ pitch 3.5, 3 blades, 3.9 g/개, 5 mm hub이며 기존 4개×3.9 g 질량 계산�
 추력계 측정 전에는 9.60 N/모터나 URDF actuator를 확정하지 않는다. 세부 출처와 gate는
 `docs/navrl_ref5in_component_screen_2026-08-23.md`와 `docs/navrl_ref5in_thrust_stand_protocol_2026-08-23.md`에 기록했다.
 
+### Day 1 hardware-independent sim-to-real telemetry 계약 구현
+
+하드웨어와 rosbag이 없어도 진행 가능한 소프트웨어 단계로 `tools/navrl_sim2real_telemetry.py`를
+추가했다. JSONL manifest/event 계약에서 topic·sequence·source/host timestamp·frame edge·sensor
+sync group을 읽고, timestamp 역행·sequence gap·unknown topic·frame mismatch·음수 latency를
+fail-closed로 판정한다. camera/LiDAR/ego-state skew와 sensor→host, policy→command latency의
+p50/p95/p99/max를 계산하며, 합성 fixture 결과는 `SYNTHETIC_ONLY`로만 표시한다. 관측·보상·정책·
+체크포인트에는 접촉하지 않는다.
+
+`tests/test_navrl_sim2real_telemetry.py` CPU 테스트 5/5, Python 3.8 compile과 fixture→validate
+연결을 통과했다. 사용법과 실제 로그로 승격되는 조건은 `docs/SIM2REAL_3DAY_EXECUTION_PLAN.md`
+7절에 기록했다.
+
 ### Day 1 구매·제조사 확인 요청서
 
 Orin NX 16GB, JNX42-LC, Hadron NGX012, low-profile cooling, NVMe, 6S1550, Nazgul F5 후보를
