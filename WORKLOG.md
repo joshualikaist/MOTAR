@@ -11765,6 +11765,13 @@ pitch 3.5, 3 blades, 3.9 g/개, 5 mm hub이며 기존 4개×3.9 g 질량 계산�
 추력계 측정 전에는 9.60 N/모터나 URDF actuator를 확정하지 않는다. 세부 출처와 gate는
 `docs/navrl_ref5in_component_screen_2026-08-23.md`와 `docs/navrl_ref5in_thrust_stand_protocol_2026-08-23.md`에 기록했다.
 
+### Day 1 구매·제조사 확인 요청서
+
+Orin NX 16GB, JNX42-LC, Hadron NGX012, low-profile cooling, NVMe, 6S1550, Nazgul F5 후보를
+실제 BOM으로 승격하기 전에 받아야 할 질량·CAD·전원·열·connector 자료를
+`docs/navrl_ref5in_vendor_request_2026-08-23.md`에 정리했다. 이 목록이 채워지고 packaging/CG/
+power/thermal gate를 통과하기 전에는 구매 확정이나 URDF·재학습을 진행하지 않는다.
+
 ### Day 1 Orin carrier 2순위 대조
 
 Connect Tech 공식 Hadron(NGX012) 사양도 대조했다. 82.6×58.8 mm, 49 g, USB 3.1×2,
