@@ -2,6 +2,14 @@ schema: navrl_hardware_identification_v1
 status: synthetic_simulation_design_point
 hardware_validated: false
 platform: navrl_ref5in_quad
+as_built:
+  assembly_state: unassembled
+  assembly_state_recorded_at: 2026-08-23
+  exact_bom_frozen: false
+  measured_auw_kg: null
+  note: >-
+    The user confirmed that no physical aircraft has been assembled. Simulation design-point
+    values below must not be copied into the as-built contract.
 identified:
   simulation_mass_kg: 1.20
   analytic_inertia_kg_m2: [0.004142, 0.004142, 0.005769]

@@ -11671,3 +11671,10 @@ topology의 reconstructable 2.9 MB 전수 row와 sample64 raw는 WORKLOG 기존 
 
 `generate_platform_spec.py` 재생성 결과 두 기체 파생값과 flight-envelope PASS는 유지됐고,
 payload 출력은 `incomplete named-part subtotal 404.2–411.8 g`으로 바뀌었다.
+
+### Day 1 사용자 확인 — 실제 기체 미조립
+
+사용자가 실제 기체는 **미조립**이라고 확인했다. hardware identification manifest에
+`as_built.assembly_state=unassembled`, `exact_bom_frozen=false`, `measured_auw_kg=null`을 기록했다.
+따라서 simulator의 1.20 kg, analytic inertia, motor/prop/thrust 좌표를 실측값으로 승격하지 않는다.
+다음 BOM 결정은 frame 보유·선정 여부부터 한 항목씩 닫는다.
