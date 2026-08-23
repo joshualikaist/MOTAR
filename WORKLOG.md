@@ -11715,3 +11715,7 @@ XING2 2207 1855KV 공식 제품 페이지를 다시 확인했다. 공개된 수�
 9.60 N 보증점은 페이지에 없다. 따라서 판매자·검색 결과의 단일 추정값을 simulation contract에 넣지
 않고, 실제 선택 prop·6S 배터리·ESC 조건의 thrust-stand 측정으로 남겼다. 다음 측정은 최소한 hover
 2.943 N/모터, 9.60 N/모터, 전류, 전압 sag, 30 s 열 상태를 같은 조건에서 기록해야 한다.
+
+측정 장비가 아직 없으므로 `docs/navrl_ref5in_thrust_stand_protocol_2026-08-23.md`에 원자료 CSV
+필드, 고정 조건, 반복수, 안전 중단 사유, 사전 `THRUST_CONTRACT_PASS/INCONCLUSIVE` 규칙을
+추가했다. 이 계약 전에는 인터넷 추정치나 단일 최대추력 숫자를 simulation actuator에 반영하지 않는다.

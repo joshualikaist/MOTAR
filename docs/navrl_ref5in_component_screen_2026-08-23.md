@@ -56,4 +56,6 @@
    등록한다. 기존 checkpoint를 조용히 덮어쓰지 않는다.
 
 현재 판정: **1550 mAh 조합 = 질량 screen 통과, 추진 성능 미판정; 1850 mAh 조합 = 질량 screen 통과,
-payload 여유가 더 작음. 둘 다 구매 확정 아님.**
+payload 여유가 더 작음. 둘 다 구매 확정 아님.** 실제 추력 측정의 필드와 판정 규칙은
+[`navrl_ref5in_thrust_stand_protocol_2026-08-23.md`](navrl_ref5in_thrust_stand_protocol_2026-08-23.md)에
+고정했다.
