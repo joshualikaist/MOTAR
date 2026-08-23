@@ -229,7 +229,12 @@ function renderSim2Real72h(s) {
       </article>`).join('');
   }
   if (blockers) {
-    blockers.innerHTML = `<p><b>학습 전 필수</b></p><ul>${(p.training_blockers || [])
+    const software = p.software_readiness || {};
+    const softwareHtml = software.status
+      ? `<p><b>소프트웨어 준비</b> ${software.status} · ${software.tests || '—'} · ${software.claim_status || '—'}</p>
+         <p class="hint">telemetry: ${software.tool || '—'} · ${software.next || ''}</p>`
+      : '';
+    blockers.innerHTML = softwareHtml + `<p><b>학습 전 필수</b></p><ul>${(p.training_blockers || [])
       .map(item => `<li>${item}</li>`).join('')}</ul>
       <p class="decision">하나라도 비면 Stage 2/P3/fresh PPO를 실행하지 않습니다.
       <a href="../SIM2REAL_3DAY_EXECUTION_PLAN.md">전체 계측 계약 보기</a></p>`;

@@ -11793,3 +11793,31 @@ locking IO harness/breakout 질량과 USB/CSI 수가 JNX42-LC보다 작다. 따�
 Hadron 2차 후보로 기록하고, 두 모델 모두 Orin module/heatsink/fan/NVMe/cable 및 전원
 transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출처와 비교표는
 `docs/navrl_ref5in_carrier_screen_2026-08-23.md`에 기록했다.
+
+### 2026-08-24 — 장기 진행 루프 정리·evaluator provenance 보완·사이트 동기화
+
+- 사용자가 매 단계마다 다음 작업을 다시 묻지 않아도 되도록, 현재 우선순위를
+  `docs/SIM2REAL_3DAY_EXECUTION_PLAN.md`의 단일 실행 목록으로 유지했다. 하드웨어가 없으므로
+  실측값을 추정하거나 PPO를 재시작하지 않고, 실제 로그가 들어올 때까지 software-only 계약 검증을
+  닫는 순서로 진행한다.
+- `tools/navrl_sim2real_telemetry.py`의 JSONL 계약(토픽·sequence·source/host timestamp·frame edge·
+  sync group)과 fail-closed 검증기를 사이트 상태에 연결했다. 합성 fixture는 구조 검증용으로만
+  `PASS / SYNTHETIC_ONLY`이며, 실기 성능·sim-to-real 증거로 승격하지 않는다. CPU 테스트 5/5.
+- `eval_navrl_v2_density_sweep.sh`에서 detector geometry provenance가 없는 레거시 체크포인트를
+  평가할 때 `NAVRL_DETECTOR_MAX_RANGE`, `NAVRL_DETECT_WIDTH`, `NAVRL_DETECT_HEIGHT`가 비어
+  복구 게이트가 `KeyError`로 중단되는 결함을 수정했다. 레거시는 역사적 20 m·160×90으로 명시하고,
+  신규 체크포인트는 저장된 geometry 값을 evaluator 환경에 그대로 pin한다. 복구 게이트 19/19 통과.
+- `tools/update_status_snapshot.py`와 MOTAR status panel에 `READY_FOR_REAL_LOG`, 테스트 결과,
+  `SYNTHETIC_ONLY`, 실제 로그로 승격하는 다음 단계가 표시되도록 반영했다. 3-day 패널의 기존
+  날짜 구조와 86개 run 집계는 변경하지 않았다.
+- 전체 unittest discover 결과: **659/659 PASS, 1 SKIP**. 의도된 예외 격리 테스트가 출력하는
+  `obs_dump FLUSH FAILED` 로그는 실패가 아니라 해당 guard가 작동했음을 확인하는 테스트 출력이다.
+  `git diff --check`도 통과했다.
+
+#### 현재 판단과 자동 진행 순서
+
+1. 현재는 실기 하드웨어·calibration·rosbag이 없으므로 새 PPO/URDF/reward/dynamics 변경을 하지 않는다.
+2. 실측 로그가 생기면 telemetry JSONL 변환 → validator PASS → trial 단위 sensor profile →
+   two-zone observation 계약 → held-out replay 순서로 진행한다.
+3. 위 산출물과 source/checkpoint hash가 모두 닫힌 뒤에만 한 축의 fresh PPO를 사전등록한다.
+   그 전까지 사이트 상태는 `MEASURE BEFORE RETRAINING`으로 유지한다.

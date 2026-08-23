@@ -100,6 +100,12 @@ defaults = {
     "cfg_fov_curriculum_epochs": 3000.0,
     "cfg_detector_min_pixels": 2.0,
     "cfg_detector_threshold": 0.55,
+    # Detector geometry was added after the first v2 checkpoints.  Keep the historical
+    # configuration as the explicit legacy default, then pin these values below so an
+    # inherited shell cannot silently change the sensor contract.
+    "cfg_detector_max_range": 20.0,
+    "cfg_detect_width": 160.0,
+    "cfg_detect_height": 90.0,
     "cfg_detector_checkpoint_sha256": "",
     "cfg_perception_perturb": False,
     "cfg_detection_dropout": 0.3,
@@ -110,7 +116,16 @@ defaults = {
     "cfg_max_tilt_deg": 45.0,
     "cfg_tilt_comp": True,
 }
-legacy_optional = {"cfg_detection_latency_s", "cfg_range_error_m"}
+legacy_optional = {
+    "cfg_detection_latency_s",
+    "cfg_range_error_m",
+    # Geometry provenance was introduced after the first v2 checkpoints.  Legacy checkpoints
+    # retain the historical 20 m / 160x90 contract; newer checkpoints carry these fields and
+    # are pinned to their recorded values below.
+    "cfg_detector_max_range",
+    "cfg_detect_width",
+    "cfg_detect_height",
+}
 missing = [key for key in defaults if key not in state and key not in legacy_optional]
 if missing and not force:
     raise SystemExit(
@@ -132,6 +147,9 @@ numeric_keys = {
     "cfg_fov_curriculum_epochs",
     "cfg_detector_min_pixels",
     "cfg_detector_threshold",
+    "cfg_detector_max_range",
+    "cfg_detect_width",
+    "cfg_detect_height",
     "cfg_detection_dropout",
     "cfg_detection_latency_s",
     "cfg_range_error_m",
@@ -190,6 +208,9 @@ print(
     int(float(value("cfg_fov_curriculum_epochs"))),
     int(float(value("cfg_detector_min_pixels"))),
     float(value("cfg_detector_threshold")),
+    float(value("cfg_detector_max_range")),
+    float(value("cfg_detect_width")),
+    float(value("cfg_detect_height")),
     float(value("cfg_detection_dropout")),
     float(value("cfg_rgb_noise_std")),
     float(value("cfg_depth_noise_std")),
@@ -203,7 +224,8 @@ PY
 read -r CHECKPOINT_SELECTOR CHECKPOINT_ROBOT ROBOT_CONTRACT_VERSION ROBOT_CONFIG_SHA \
     ROBOT_ASSET_FILE ROBOT_ASSET_SHA RECOVERY_STAGE CHECKPOINT_EPOCH RECOVERY_SOURCE_EPOCH \
     RECOVERY_REQUIRED_EPOCHS CHECKPOINT_BARS TTC_IDLE_S TTC_MIN_SPEED FOV_CURRICULUM_EPOCHS \
-    DETECTOR_MIN_PIXELS DETECTOR_THRESHOLD DETECTION_DROPOUT RGB_NOISE_STD DEPTH_NOISE_STD \
+    DETECTOR_MIN_PIXELS DETECTOR_THRESHOLD DETECTOR_MAX_RANGE DETECT_WIDTH DETECT_HEIGHT \
+    DETECTION_DROPOUT RGB_NOISE_STD DEPTH_NOISE_STD \
     MAX_TILT_DEG DETECTOR_SHA PERCEPTION_PERTURB TILT_COMP <<< "${CHECKPOINT_META}"
 
 # This must be exported before runner.py imports navrl_task_config.py.  Both robot lineages have
@@ -480,6 +502,9 @@ export NAVRL_MAX_TILT_DEG="${MAX_TILT_DEG}"
 export NAVRL_FOV_CURRICULUM_EPOCHS="${FOV_CURRICULUM_EPOCHS}"
 export NAVRL_DETECTOR_MIN_PIXELS="${NAVRL_DETECTOR_MIN_PIXELS:-${DETECTOR_MIN_PIXELS}}"
 export NAVRL_DETECTOR_THRESHOLD="${NAVRL_DETECTOR_THRESHOLD:-${DETECTOR_THRESHOLD}}"
+export NAVRL_DETECTOR_MAX_RANGE="${DETECTOR_MAX_RANGE}"
+export NAVRL_DETECT_WIDTH="${DETECT_WIDTH}"
+export NAVRL_DETECT_HEIGHT="${DETECT_HEIGHT}"
 export NAVRL_DETECTION_DROPOUT="${NAVRL_DETECTION_DROPOUT:-${DETECTION_DROPOUT}}"
 export NAVRL_DETECTION_LATENCY_S="${NAVRL_DETECTION_LATENCY_S:-0}"
 export NAVRL_RANGE_ERROR_M="${NAVRL_RANGE_ERROR_M:-0}"

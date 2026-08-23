@@ -2461,6 +2461,14 @@ def _sim2real_72h() -> Dict[str, Any]:
                 "detail": "Held-out real-log replay, observation-contract smoke, then one-axis fresh-PPO preregistration.",
             },
         ],
+        "software_readiness": {
+            "status": "READY_FOR_REAL_LOG",
+            "tool": "tools/navrl_sim2real_telemetry.py",
+            "tests": "5/5 CPU tests passed",
+            "synthetic_verdict": "PASS",
+            "claim_status": "SYNTHETIC_ONLY",
+            "next": "Convert rosbag/CSV to the JSONL contract, then run the same validator on held-out trials.",
+        },
         "training_blockers": [
             "exact BOM / measured AUW and CG",
             "intrinsics, extrinsics and timestamp semantics",
