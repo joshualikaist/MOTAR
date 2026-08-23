@@ -2248,9 +2248,234 @@ def _ref5in_p2_update() -> Optional[Dict[str, Any]]:
     }
 
 
+DETECTION_RANGE_STAGE1_PATH = (
+    ROOT / "results/navrl_ref5in_detection_range_stage1_s457/summary.json"
+)
+
+
+def _detection_range_stage1_result() -> Optional[Dict[str, Any]]:
+    """Load the completed two-arm screen, failing closed on its decision contract."""
+
+    if not DETECTION_RANGE_STAGE1_PATH.is_file():
+        return None
+    payload = json.loads(DETECTION_RANGE_STAGE1_PATH.read_text(encoding="utf-8"))
+    arms = payload.get("arms") or {}
+    problems = []
+    if payload.get("schema_version") != 1:
+        problems.append("schema_version must be 1")
+    if payload.get("verdict") != "RANGE_INCONCLUSIVE_AT_THIS_BUDGET":
+        problems.append("unexpected verdict")
+    if payload.get("stage2_authorised") is not False:
+        problems.append("stage2 must remain unauthorised")
+    if set(arms) != {"clip20", "clip28"}:
+        problems.append("requires exactly clip20 and clip28")
+    gates = payload.get("quality_gates") or {}
+    if len(gates) != 17 or any(gate.get("passed") is not True for gate in gates.values()):
+        problems.append("requires all 17 quality gates")
+
+    rows = {}
+    for name, expected_range in (("clip20", 20.0), ("clip28", 28.0)):
+        arm = arms.get(name) or {}
+        condition = arm.get("condition") or {}
+        measurements = arm.get("measurements") or {}
+        outcome = measurements.get("outcome_raw") or {}
+        training = arm.get("training") or {}
+        episodes = int(measurements.get("episodes", -1))
+        if episodes != 2049 or int(condition.get("actual_episodes", -1)) != episodes:
+            problems.append(f"{name}: requires 2049 episodes")
+        if not math.isclose(
+            float(condition.get("detector_max_range_m", -1.0)), expected_range,
+            rel_tol=0.0, abs_tol=1e-12,
+        ):
+            problems.append(f"{name}: detector range mismatch")
+        if int(condition.get("detect_width", -1)) != 1920 or int(
+            condition.get("detect_height", -1)
+        ) != 1200 or int(condition.get("detector_min_pixels", -1)) != 50:
+            problems.append(f"{name}: honest-detection condition mismatch")
+        if int(training.get("adaptation_epochs", -1)) != 1000:
+            problems.append(f"{name}: adaptation budget mismatch")
+        counts = sum(int(outcome.get(key, -episodes - 1)) for key in ("capture", "crash", "timeout"))
+        if counts != episodes:
+            problems.append(f"{name}: outcome counts do not sum to episodes")
+        rows[name] = {
+            "episodes": episodes,
+            "never_acquired": float(measurements.get("never_acquired_rate")),
+            "capture": float(outcome.get("capture_rate")),
+            "crash": float(outcome.get("crash_rate")),
+            "timeout": float(outcome.get("timeout_rate")),
+            "epoch": int(training.get("terminal_epoch", -1)),
+            "frame": int(training.get("terminal_frame", -1)),
+            "rollback_total": int(training.get("ppo_rollback_total", -1)),
+        }
+    if problems:
+        raise RuntimeError(
+            f"invalid detection-range Stage 1 result {DETECTION_RANGE_STAGE1_PATH}: "
+            + "; ".join(problems)
+        )
+    delta = {
+        key: rows["clip28"][key] - rows["clip20"][key]
+        for key in ("never_acquired", "capture", "crash", "timeout")
+    }
+    threshold = float((payload.get("threshold_pp") or {}).get("range_helps_at_or_below"))
+    if not math.isclose(threshold, -15.0, rel_tol=0.0, abs_tol=1e-12):
+        raise RuntimeError("detection-range Stage 1 threshold drift")
+    if delta["never_acquired"] * 100.0 <= threshold:
+        raise RuntimeError("Stage 1 values contradict the frozen inconclusive verdict")
+    return {
+        "payload": payload,
+        "rows": rows,
+        "delta": delta,
+        "threshold_pp": threshold,
+        "quality_gate_count": len(gates),
+    }
+
+
+def _detection_range_stage1_update() -> Optional[Dict[str, Any]]:
+    result = _detection_range_stage1_result()
+    if result is None:
+        return None
+    rows, delta = result["rows"], result["delta"]
+    clip20, clip28 = rows["clip20"], rows["clip28"]
+    return {
+        "subtitle": "2026-08-23 · detection-range Stage 1 complete",
+        "headline": "Longer range helped, but the preregistered gate did not open.",
+        "summary": (
+            "Under 1920×1200 / 50-pixel detection, 20 m and 28 m arms each adapted for "
+            "1,000 epochs and evaluated 2,049 episodes. Pooled never-acquired fell "
+            f"{clip20['never_acquired']*100:.3f}%→{clip28['never_acquired']*100:.3f}% "
+            f"({delta['never_acquired']*100:+.3f} pp), short of the frozen −15 pp gate. "
+            "Capture improved descriptively, but was excluded from the Stage 1 verdict."
+        ),
+        "experiment_id": "2026-08-23-ref5in-detection-range-stage1",
+        "active_experiment": {
+            "is_live": False,
+            "ab_experiment": True,
+            "ab_gate_complete": True,
+            "ab_gate_pass": False,
+            "run": "ref5in · detection-range Stage 1",
+            "epoch": clip28["epoch"],
+            "max_epochs": clip28["epoch"],
+            "bars": 70,
+            "heldout_capture": clip28["capture"],
+            "heldout_crash": clip28["crash"],
+            "heldout_timeout": clip28["timeout"],
+            "heldout_episodes": clip28["episodes"],
+            "stage2_authorised": False,
+        },
+        "milestones": [
+            {
+                "label": "QUALITY",
+                "value": "PASS · 17/17",
+                "detail": "source, checkpoint, receipt, import origin and arm identity",
+                "state": "pass",
+            },
+            {
+                "label": "PRIMARY",
+                "value": f"{delta['never_acquired']*100:+.3f} pp",
+                "detail": "never-acquired; required ≤ −15 pp",
+                "state": "warn",
+            },
+            {
+                "label": "CAPTURE",
+                "value": f"{delta['capture']*100:+.3f} pp",
+                "detail": "descriptive only; excluded from the Stage 1 verdict",
+                "state": "pass",
+            },
+            {
+                "label": "SIM-TO-REAL",
+                "value": "NOT CLAIMED",
+                "detail": "far range remained analytic and exact in both arms",
+                "state": "warn",
+            },
+        ],
+        "comparison": [
+            {
+                "label": "clip20 · control",
+                "bars": 70,
+                "capture": clip20["capture"],
+                "unique": None,
+                "verdict": (
+                    f"never-acq {clip20['never_acquired']*100:.3f}% · "
+                    f"crash {clip20['crash']*100:.3f}% · timeout {clip20['timeout']*100:.3f}%"
+                ),
+            },
+            {
+                "label": "clip28 · treatment",
+                "bars": 70,
+                "capture": clip28["capture"],
+                "unique": None,
+                "verdict": (
+                    f"never-acq {clip28['never_acquired']*100:.3f}% · "
+                    f"crash {clip28['crash']*100:.3f}% · timeout {clip28['timeout']*100:.3f}%"
+                ),
+            },
+        ],
+        "gates": [
+            {"label": "primary", "value": "CLOSED · −5.271 pp > −15 pp"},
+            {"label": "Stage 2", "value": "BLOCKED · stage2_authorised=false"},
+            {"label": "training integrity", "value": "PASS · normal exit, rollback 0 both arms"},
+            {"label": "hardware claim", "value": "NO-GO · real sensor profile not measured"},
+        ],
+        "decision": (
+            "Do not run the 10k Stage 2 or relax its threshold. For the next 72 hours, freeze the "
+            "exact BOM/calibration/time contract, measure real bearing/range/latency/dropout by "
+            "independent trial, then validate a far-bearing/near-range tracker before fresh PPO."
+        ),
+    }
+
+
+def _sim2real_72h() -> Dict[str, Any]:
+    result = _detection_range_stage1_result()
+    evidence = None
+    if result is not None:
+        rows, delta = result["rows"], result["delta"]
+        evidence = {
+            "verdict": "RANGE_INCONCLUSIVE_AT_THIS_BUDGET",
+            "stage2_authorised": False,
+            "episodes_per_arm": rows["clip20"]["episodes"],
+            "quality_gates": result["quality_gate_count"],
+            "never_acquired_20": rows["clip20"]["never_acquired"],
+            "never_acquired_28": rows["clip28"]["never_acquired"],
+            "never_acquired_delta_pp": delta["never_acquired"] * 100.0,
+            "capture_delta_pp": delta["capture"] * 100.0,
+        }
+    return {
+        "as_of": "2026-08-23",
+        "status": "MEASURE BEFORE RETRAINING",
+        "plan_path": "docs/SIM2REAL_3DAY_EXECUTION_PLAN.md",
+        "evidence": evidence,
+        "days": [
+            {
+                "day": "DAY 1",
+                "title": "hardware + raw data",
+                "detail": "Exact BOM/AUW/CG, calibration and time-sync; 210 independent sensor trials.",
+            },
+            {
+                "day": "DAY 2",
+                "title": "measured sensor profile",
+                "detail": "Trial-level bearing/range/latency/dropout statistics and a data-chosen near/far boundary.",
+            },
+            {
+                "day": "DAY 3",
+                "title": "tracker replay + preregistration",
+                "detail": "Held-out real-log replay, observation-contract smoke, then one-axis fresh-PPO preregistration.",
+            },
+        ],
+        "training_blockers": [
+            "exact BOM / measured AUW and CG",
+            "intrinsics, extrinsics and timestamp semantics",
+            "trial-level bearing/range/latency/dropout profile",
+            "range_valid / uncertainty-aware target token contract",
+        ],
+    }
+
+
 def _research_update(
     active: Optional[Dict[str, Any]], latest: Optional[Dict[str, Any]]
 ) -> Dict[str, Any]:
+    detection_range = _detection_range_stage1_update()
+    if detection_range is not None:
+        return detection_range
     ref5in = _ref5in_p2_update()
     if ref5in is not None:
         return ref5in
@@ -3063,6 +3288,7 @@ def build_snapshot() -> Dict[str, Any]:
             "latest_run": latest,
             "runs": summaries,
             "research_update": research_update,
+            "sim2real_72h": _sim2real_72h(),
             "corridor_token": _corridor_token_plan(),
             "perception_robustness": _perception_robustness(),
             "success_criteria": _success_criteria(active or latest),

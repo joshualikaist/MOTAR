@@ -6,8 +6,8 @@
 <title>기체 · 센싱 · MOTAR</title>
 <meta name="description" content="MOTAR NavRL 시뮬레이션 기체 스펙, 센서 구성, 그리고 실기 하드웨어와의 정량 격차.">
 <meta name="color-scheme" content="light dark">
-<link rel="stylesheet" href="style.css?v=20260813a">
-<script src="js/shell.js?v=20260813a"></script>
+<link rel="stylesheet" href="style.css?v=20260823a">
+<script src="js/shell.js?v=20260823a"></script>
 </head>
 <body data-page-title="기체 · 센싱">
 
@@ -51,19 +51,42 @@
     <div id="drone-gap"><p class="hint">불러오는 중…</p></div>
     <h3>남은 제약, 순서대로</h3>
     <ol class="lead">
-      <li><b>무게 · 기동성</b> — 인지 스택 472 g은 250 g 기체에 실을 수 없다. 기체를 키워 재학습하거나
-        센서를 경량화해야 한다. LiDAR 하나가 페이로드의 56%다.</li>
+      <li><b>무게 · 기동성</b> — 이름이 정해진 센서·연산·FCU 단품만 404.2–411.8 g이며 carrier,
+        냉각, 전원, 배선, mount는 아직 빠져 있다. legacy 250 g 기체보다 이미 무겁고,
+        ref5in 1.20 kg도 실측 AUW가 아닌 설계점이다. Livox Mid-360 265 g은 가장 큰 명시 단품이지만
+        exact BOM이 닫히기 전에는 payload 비율을 계산하지 않는다.</li>
       <li><b>상태추정 품질</b> — 시뮬레이터는 위치·속도·자세를 공짜로 준다. 실기에서는 VIO/LIO가 그 값을
         만들어야 하고, 그 오차가 정책 성능을 직접 깎는다. <b>바이어스·드리프트 축은 아직 안 쟀다</b>
         (측정한 것은 스텝별 iid 가우시안뿐).</li>
       <li><b>검출기 연산</b> — 정책 자체는 제어 주기의 0.4%밖에 안 쓰지만, 검출기는 실기 해상도에서
         CPU로 불가능하다. GPU/TensorRT 또는 해상도·백본 재설계가 필요하다.</li>
+      <li><b>거리 관측</b> — Stage 1의 28 m arm은 고해상도 검출을 썼지만 target range는 여전히
+        analytic exact다. 실기는 far zone에서 camera bearing/confidence를 쓰고, 측정 gate를 통과한
+        near zone에서만 LiDAR/stereo range를 융합하는 계약이 필요하다.</li>
       <li><b>정책 연산</b> — 제약이 아니다. 장애물 토큰 용량을 늘려도 Transformer 토큰 수가 늘지 않아
         추론 시간이 사실상 불변이다.</li>
     </ol>
     <p class="hint">근거: <code>docs/archive/sim_vs_hardware_gap_2026-08.md</code>,
     <code>docs/archive/reference_platform_proposal_2026-08.md</code>.
     <b>실기 비행 시험은 0회다</b> — 이 절은 전부 스펙 비교이며 sim-to-real 성능 주장이 아니다.</p>
+  </section>
+
+  <section class="panel">
+    <div class="panel-h">
+      <h2>실기 전 72시간 gate</h2>
+      <p class="meta">새 PPO보다 먼저 닫을 숫자</p>
+    </div>
+    <div class="milestones">
+      <article class="milestone"><span>DAY 1</span><b>기체·센서 원자료</b><p>exact BOM/AUW/CG,
+        intrinsics/extrinsics/time-sync와 거리×조명×운동 210개 독립 trial.</p></article>
+      <article class="milestone"><span>DAY 2</span><b>sensor profile</b><p>bearing/range 오차,
+        latency/skew, dropout burst를 trial 단위 CI로 계산하고 near/far 경계를 고정.</p></article>
+      <article class="milestone"><span>DAY 3</span><b>tracker replay</b><p>held-out real log에서
+        ego-motion·timestamp·uncertainty를 검증한 뒤 한 축짜리 fresh PPO를 사전등록.</p></article>
+    </div>
+    <p class="decision">Stage 1은 never-acquired <b>8.443→3.172%</b>(−5.271 pp)였지만
+      사전 −15 pp gate 미달로 Stage 2는 닫혀 있다. 전체 기준:
+      <a href="../SIM2REAL_3DAY_EXECUTION_PLAN.md">SIM2REAL_3DAY_EXECUTION_PLAN.md</a>.</p>
   </section>
 
   <footer class="foot">
@@ -75,8 +98,8 @@
 <!-- Snapshot data for instant paint. Plain classic scripts: they execute in document order, so the
      globals are assigned before the renderers boot. Do NOT add defer/type=module. -->
 <script src="status.fallback.js"></script>
-<script src="data/platform.js?v=20260813a"></script>
-<script src="data/parameters.js?v=20260813a"></script>
-<script src="js/page-drone.js?v=20260813a"></script>
+<script src="data/platform.js?v=20260823a"></script>
+<script src="data/parameters.js?v=20260823a"></script>
+<script src="js/page-drone.js?v=20260823a"></script>
 </body>
 </html>

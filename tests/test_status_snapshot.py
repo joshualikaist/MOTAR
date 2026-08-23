@@ -269,6 +269,24 @@ class StatusSnapshotTest(unittest.TestCase):
             )
         )
 
+    def test_detection_range_stage1_is_current_and_blocks_stage2(self):
+        result = _STATUS._detection_range_stage1_result()
+        self.assertIsNotNone(result)
+        self.assertEqual(result["quality_gate_count"], 17)
+        self.assertAlmostEqual(
+            result["delta"]["never_acquired"] * 100.0,
+            -5.270863836017569,
+        )
+        update = _STATUS._detection_range_stage1_update()
+        self.assertFalse(update["active_experiment"]["ab_gate_pass"])
+        self.assertFalse(update["active_experiment"]["stage2_authorised"])
+        self.assertIn("Do not run the 10k Stage 2", update["decision"])
+
+        plan = _STATUS._sim2real_72h()
+        self.assertEqual(plan["status"], "MEASURE BEFORE RETRAINING")
+        self.assertFalse(plan["evidence"]["stage2_authorised"])
+        self.assertEqual(len(plan["days"]), 3)
+
     def test_real_recovery_smoke_remains_a_research_stage(self):
         self.assertFalse(
             _STATUS._is_smoke_run("ppo_260801_1200_navrl_v2-recover-smoke-130bars-s1")

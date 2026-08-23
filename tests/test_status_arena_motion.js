@@ -29,7 +29,13 @@ const taskCfg = fs.readFileSync(path.join(
 const envCfg = fs.readFileSync(path.join(
   repo, 'aerial_gym/config/env_config/navrl_bars_env.py'
 ), 'utf8');
-const html = fs.readFileSync(path.join(repo, 'docs/status/index.html'), 'utf8');
+// The dashboard split arena/contract details into setup.html while the research update remains on
+// index.html.  Audit the public site contract across both pages instead of pinning old page layout.
+const html = [
+  fs.readFileSync(path.join(repo, 'docs/status/index.html'), 'utf8'),
+  fs.readFileSync(path.join(repo, 'docs/status/setup.html'), 'utf8'),
+].join('\n');
+const droneHtml = fs.readFileSync(path.join(repo, 'docs/status/drone.html'), 'utf8');
 const suppress15Launcher = fs.readFileSync(path.join(
   repo, 'aerial_gym/rl_training/rl_games/train_navrl_corrected_squashed_density_suppress15.sh'
 ), 'utf8');
@@ -55,7 +61,7 @@ assert(clusterSectorLauncher.includes('NAVRL_OBSTACLE_SECTORS'));
 assert(taskCfg.includes('waypoint_reach_m = 0.5'));
 assert(taskCfg.includes('goal_min_bar_clearance = 1.0'));
 assert(taskCfg.includes('detector_hfov_deg = 87.0'));
-assert(taskCfg.includes('detector_max_range = 20.0'));
+assert(taskCfg.includes('detector_max_range = _env_float("NAVRL_DETECTOR_MAX_RANGE", 20.0)'));
 // The motion module defaults to v1 for offline/backward compatibility, then the browser applies
 // status.json.arena_geometry before Arena.init(). Verify both the simulator default and the
 // configurable browser contract rather than pinning the rendered page to v1 forever.
@@ -83,6 +89,15 @@ assert(!html.includes('25 bars · FOV 240° vs 360°'));
 
 const status = JSON.parse(fs.readFileSync(path.join(repo, 'docs/status/status.json'), 'utf8'));
 assert(status.research_update);
+assert.strictEqual(status.research_update.experiment_id,
+  '2026-08-23-ref5in-detection-range-stage1');
+assert.strictEqual(status.sim2real_72h.status, 'MEASURE BEFORE RETRAINING');
+assert.strictEqual(status.sim2real_72h.evidence.stage2_authorised, false);
+assert.strictEqual(status.sim2real_72h.days.length, 3);
+assert(html.includes('id="panel-sim2real"'));
+assert(droneHtml.includes('실기 전 72시간 gate'));
+assert(!droneHtml.includes('인지 스택 472 g'));
+assert(!droneHtml.includes('페이로드의 56%'));
 assert(status.research_contract);
 assert.strictEqual(status.research_contract.checkpoint_sha256,
   'f1670a1d74dd92cb00d6a58898e9cc1b96eb9cbe155d1e85812a345e7aaae6bf');
@@ -109,6 +124,11 @@ if (activeExp.ref5in_p2) {
   assert.strictEqual(activeExp.robot_name, 'navrl_ref5in_quad');
   assert.strictEqual(activeExp.deterministic_episodes, 2049);
   assert(activeExp.deterministic_timeout > 0.05);
+} else if (activeExp.ab_experiment) {
+  assert.strictEqual(activeExp.ab_gate_complete, true);
+  assert.strictEqual(activeExp.ab_gate_pass, false);
+  assert.strictEqual(activeExp.stage2_authorised, false);
+  assert.strictEqual(activeExp.heldout_episodes, 2049);
 } else {
   assert(activeExp.run.startsWith('ppo_'));
   assert(['cluster_sector', 'ttc_sector'].includes(activeExp.selector));
@@ -127,15 +147,22 @@ assert(status.research_update.milestones.length >= 3);
 assert(status.density_curves.corrected_chirality_density_curve);
 
 // The Now/phase panel must follow research_update instead of preserving an old experiment name.
-const appJs = fs.readFileSync(path.join(repo, 'docs/status/app.js'), 'utf8');
+const appJs = [
+  'js/panels-status.js',
+  'js/panels-setup.js',
+  'js/panels-results.js',
+  'js/shell.js',
+].map(rel => fs.readFileSync(path.join(repo, 'docs/status', rel), 'utf8')).join('\n');
 assert(appJs.includes('function renderNow(s)'));
 assert(appJs.includes('function renderPhases(s)'));
 assert(appJs.includes('function renderContract(s)'));
+assert(appJs.includes('function renderSim2Real72h(s)'));
 assert(appJs.includes('pickSpeedPack(s)'));
 assert(!appJs.includes('c.corrected_sensorfix_legacy_speed_axis'));
 assert(!appJs.includes('This map is historical and predates the target heading-continuity fix.'));
-assert(appJs.includes('renderNow(s);'));
-assert(appJs.includes('renderPhases(s);'));
+assert(appJs.includes('MOTAR.register'));
+assert(appJs.includes('renderNow'));
+assert(appJs.includes('renderPhases'));
 assert(appJs.includes("'v2 · CAUSAL COMPLETE'"));
 assert(appJs.includes('CAUSAL COMPLETE'));
 assert(!html.includes('corridor6 ended at ep13800'));

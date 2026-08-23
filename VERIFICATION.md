@@ -4,13 +4,16 @@
 [`RESEARCH_PLAN.md`](RESEARCH_PLAN.md), 날짜별 기록은 [`WORKLOG.md`](WORKLOG.md),
 명령어는 [`OPERATIONS.md`](OPERATIONS.md), 라이브 지표는 [`docs/status/`](docs/status/)를 본다.
 
-> 기준일: 2026-08-22
+> 기준일: 2026-08-23
 
 ## 한 줄 상태
 
 `navrl_ref5in_quad`는 **hardware-informed simulation candidate**다. P0·P1c는 PASS, **P2·D1은 FAIL**,
-**P3 장기학습은 차단**. 병목은 장거리 CV에서의 **초기 표적 미관측(camera 20 m vs goal 22.5–28 m)** 으로
-좁혀졌다. seed 367 camera-range 인과 대조가 **완료·동결**됐고 primary gate를 통과했다 — camera 20→28 m에서 timeout `55.80% → 18.16%`(**−37.65 pp**). 이는 **진단**이며 P2/D1 FAIL과 P3 차단은 그대로다.
+**P3 장기학습은 차단**. seed 367은 초기 미관측의 인과 기여를 지지했지만 해결책 채택은 아니다.
+정직한 고해상도 검출 조건의 Stage 1(각 1,000 epoch, 2,049 ep)은 never-acquired
+`8.443→3.172%`(**−5.271 pp**)로 사전 `−15 pp` gate를 못 넘어
+`RANGE_INCONCLUSIVE_AT_THIS_BUDGET`; **Stage 2 권한 없음**. 다음 authority는
+[`docs/SIM2REAL_3DAY_EXECUTION_PLAN.md`](docs/SIM2REAL_3DAY_EXECUTION_PLAN.md)다.
 
 ## 지금 막혀 있는 것
 
@@ -166,6 +169,26 @@ seed 421이 `FIDELITY_NEUTRAL`(never-acquired +0.195 pp, `target_hidden_fraction
 설계가 arm B에 불리하다. `RANGE_HELPS`가 아니면 2단계를 실행하지 않는다.
 
 2단계는 70막대 고정 10k이므로 **P3가 아니며**(P3 = 70→205막대·30k·seed 211) P3 차단은 유지된다.
+
+### 2026-08-23 Stage 1 결과 — 종료, Stage 2 미승인
+
+| arm | pooled never-acquired | capture | crash | timeout |
+|---|---:|---:|---:|---:|
+| clip 20 m | 8.443% | 82.235% | 15.666% | 2.099% |
+| clip 28 m | 3.172% | 88.677% | 11.274% | 0.049% |
+| Δ (28−20) | **−5.271 pp** | +6.442 pp | −4.392 pp | −2.050 pp |
+
+두 arm은 train seed 457, eval seed 461, detect 1920×1200/50 px, 70 bars, hard-distance
+`[22.5,28] m`, deterministic/governor-off 조건이다. provenance/quality gate는 **17/17 PASS**이고
+각 arm은 terminal epoch 2900/frame 11,878,400에서 정상 종료했다.
+
+Primary `−5.271 pp`는 `−15 pp`에 미달했다. capture는 사전등록상 판정에서 제외된 부수 관측이므로
+공식 verdict는 `RANGE_INCONCLUSIVE_AT_THIS_BUDGET`, `stage2_authorised=false`다. 임계를 사후 완화하거나
+fresh 10k Stage 2를 실행하지 않는다. 원자료:
+[`results/navrl_ref5in_detection_range_stage1_s457/summary.md`](results/navrl_ref5in_detection_range_stage1_s457/summary.md).
+
+양 arm은 실기 far-range 오차를 넣지 않은 analytic exact range를 사용했다. 따라서 다음은 PPO가 아니라
+exact BOM/calibration/time-sync와 real-log bearing/range/latency/dropout profile을 닫는 72시간 계측이다.
 
 ### 대기 중 (조건 미충족, 사전등록 동결됨)
 

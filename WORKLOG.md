@@ -11576,3 +11576,78 @@ GPU 학습은 시작되지 않았고 해당 status/log는 `VOID_20260823_launche
 설명 문자열만 예전 “gate에 detector-range field가 없다” 문구를 유지한 것을 발견했다. 실제 gate는
 checkpoint의 `cfg_detector_max_range/cfg_detect_width/cfg_detect_height`를 요청 환경과 비교했고
 통과했다. **수치·gate·verdict 변경 없이 설명 문자열만 사후 정정**하고 finalize/verify를 다시 했다.
+
+## 2026-08-23 — sim-to-real 72시간 계약·대시보드·worktree 정리
+
+사용자 요청에 따라 장기 roadmap을 추가하지 않고, 앞으로 3일 동안 사용자가 실제로 해야 할 일과
+다음 학습 전에 기록해야 할 숫자를
+`docs/SIM2REAL_3DAY_EXECUTION_PLAN.md` 한 파일로 통합했다.
+
+### 실행 판단
+
+- detection-range Stage 1의 공식 값은 clip20/clip28 never-acquired
+  `8.443%→3.172%`(−5.271 pp), capture `82.235%→88.677%`(+6.442 pp)다.
+- provenance/quality gate는 17/17 PASS지만 primary `≤−15 pp`를 못 넘어
+  `RANGE_INCONCLUSIVE_AT_THIS_BUDGET`, `stage2_authorised=false`다.
+- 따라서 10k Stage 2나 P3를 돌리지 않는다. 다음 72시간은 exact BOM/AUW/CG,
+  intrinsics/extrinsics/time sync, real sensor trial, trial-level sensor profile, held-out tracker
+  replay를 닫는 기간이다.
+- 두 arm 모두 far target range가 analytic exact였으므로 capture 개선을 sim-to-real 준비 완료로
+  읽지 않는다. far zone은 camera bearing/confidence/uncertainty, near zone은 측정 gate를 통과한
+  LiDAR/stereo range fusion으로 분리하는 계약을 다음 후보로 명시했다.
+
+새 문서에는 Day 1의 7거리×3조명×2운동×5반복 = 210 independent trial, Day 2의 bearing/range/
+latency/dropout 통계와 trial-level bootstrap, Day 3의 real-log replay/go-no-go를 고정했다. 실행 전에는
+source/checkpoint/URDF/config/calibration/dataset SHA, dynamics/sensor/observation/reward/PPO/curriculum
+전 값을, 실행 중에는 outcome count-rate, first acquisition, tracker error, requested/actual/executed
+speed, directional stopping margin, PPO KL/rollback, compute thermal을, 실행 후에는 terminal checkpoint와
+held-out CI/receipt/source binding을 기록하도록 했다.
+
+`README.md`, `RESEARCH_PLAN.md`, `VERIFICATION.md`, `OPERATIONS.md`는 이 문서를 72시간의 단일 authority로
+가리키도록 정리했다. 과거 정량 감사인 `docs/archive/sim_vs_hardware_gap_2026-08.md`는 삭제하지 않고
+보존 문서로 표시했다.
+
+### MOTAR 사이트 갱신
+
+- `update_status_snapshot.py`가 canonical Stage 1 `summary.json`을 직접 검증한다. schema, 2 arm,
+  각 2,049 episode, 1920×1200/50 px, 1,000 adaptation epoch, outcome 합계, 17개 gate, 동결 −15 pp
+  threshold와 verdict가 어긋나면 사이트 생성을 중단한다.
+- 첫 화면 Research update를 최신 Stage 1 `A/B CLOSED`로 바꿨다. primary −5.271 pp, capture +6.442 pp,
+  Stage 2 blocked, exact-range 한계를 함께 표시한다.
+- 별도 `Sim-to-real · next 72 hours` 패널에 measure→profile→replay→preregister 순서와 학습 blocker를
+  데이터로 렌더링한다.
+- 실기 페이지의 폐기된 `인지 스택 472 g`, `LiDAR 56%`를 제거했다. 공식 부품 질량만의 불완전 부분합
+  404.2–411.8 g, Mid-360 265 g이 최대 명시 단품, exact BOM 전 비율 계산 금지로 고쳤다.
+- 실기 비행 0회, ref5in 1.20 kg은 실측 AUW가 아닌 설계점, 28 m exact range는 실기 증거가 아님을
+  명시하고 72시간 gate를 기체 페이지에도 추가했다.
+- 실험 인덱스를 67개로 갱신하고 `2026-08-23-ref5in-detection-range-stage1` canonical INCONCLUSIVE
+  항목과 parameter join을 추가했다. status snapshot은 86 runs, active none, latest clip28 ep2900이다.
+
+### Source Control/worktree 정리
+
+시작 시 main `9352fde`는 clean이었고, Source Control의 대량 변경은 main에 이미 병합된 6개 Codex
+worktree에 남은 평가 산출물이었다. 각 branch가 main ancestor인지 확인하고, untracked 결과는 먼저
+기본 저장소의 같은 `results/` 경로로 복사한 뒤 file/symlink/directory를 원본과 byte 비교했다.
+그 후 geofence, joint telemetry, mode probe, OOB/boundary search, reflection audit, topology worktree와
+병합 완료 local Codex branch를 제거했다. 현재 worktree는 main 하나뿐이다.
+
+이관 뒤 cell의 source symlink가 삭제된 worktree 절대경로를 유지한 것을 후속 검사에서 잡았다.
+geofence/mode/OOB/VOID symlink 17개를 보존 bundle의 상대경로로 고쳤다. OOB canonical bundle의 ignored
+source snapshot은 manifest가 기록한 clean commit `d54c737c…`에서 314 runtime file만 재구성하고,
+동일 SHA의 보존된 `python_environment.txt`를 연결했다. 네 bundle의 총 1,259 runtime snapshot을
+manifest SHA와 대조했고 전부 일치했다. 이 검증 전에는 worktree 정리를 완료로 간주하지 않았다.
+
+main에 올리는 것은 결과 재검증에 필요한 compact result/receipt/source-manifest와 명시적 VOID 증거다.
+topology의 reconstructable 2.9 MB 전수 row와 sample64 raw는 WORKLOG 기존 결정대로 추적하지 않고
+로컬 `.git/info/exclude`로 감췄으며, canonical aggregate summary는 기존 tracked 경로에 유지된다.
+
+### 검증
+
+- `tests/test_status_snapshot.py`: 12/12 PASS.
+- `tests/test_status_recovery_completion.py`: 3/3 PASS.
+- `tests/test_status_arena_motion.js`: PASS. 과거 단일 `app.js`/index layout에 고정된 stale assertion을
+  현재 split page/module 구조와 env-backed detector default 계약으로 갱신했다.
+- `tools/lint_experiments.py`: 67 experiments, 0 errors.
+- `tools/generate_parameter_catalog.py`: authoritative 216, echo-only 94, 294 files, 71 launchers,
+  ablated 45, mirrors 6.
+- `py_compile`, JSON parse, Markdown 기본 검사, `git diff --check`: PASS.

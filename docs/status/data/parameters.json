@@ -1,15 +1,15 @@
 {
  "schema": "motar.parameters/1",
- "generated_at": "2026-08-20T12:46:30+00:00",
+ "generated_at": "2026-08-23T12:23:08+00:00",
  "generator": "tools/generate_parameter_catalog.py",
- "source_commit": "f4061b3",
+ "source_commit": "9352fde",
  "counts": {
-  "authoritative": 192,
-  "echo_only": 86,
-  "files_scanned": 279,
-  "launchers_scanned": 68,
+  "authoritative": 216,
+  "echo_only": 94,
+  "files_scanned": 294,
+  "launchers_scanned": 71,
   "ablated": 45,
-  "mirrors": 5,
+  "mirrors": 6,
   "launcher_only": 69
  },
  "groups": [
@@ -70,7 +70,7 @@
    "echoes": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1840,
+     "line": 2324,
      "scope": "NavRLTask"
     }
    ],
@@ -708,7 +708,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 396,
+     "line": 421,
      "scope": "task_config",
      "type": "float",
      "default": 2.5
@@ -741,6 +741,10 @@
     },
     {
      "file": "aerial_gym/rl_training/rl_games/train_navrl_general_repr_density.sh",
+     "value": "2.5"
+    },
+    {
+     "file": "aerial_gym/rl_training/rl_games/train_navrl_ref5in_active_search_geofence_ab.sh",
      "value": "2.5"
     },
     {
@@ -787,7 +791,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 165,
+     "line": 190,
      "scope": "task_config.vision",
      "type": "float",
      "default": 0.0
@@ -801,6 +805,10 @@
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh",
      "value": "${NAVRL_APP_ALBEDO_JITTER:-0}"
+    },
+    {
+     "file": "aerial_gym/rl_training/rl_games/train_navrl_ref5in_active_search_geofence_ab.sh",
+     "value": "0"
     },
     {
      "file": "aerial_gym/rl_training/rl_games/train_navrl_v2_ref5in_smoke.sh",
@@ -834,7 +842,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 163,
+     "line": 188,
      "scope": "task_config.vision",
      "type": "float",
      "default": 0.0
@@ -848,6 +856,10 @@
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh",
      "value": "${NAVRL_APP_HUE_DEG:-0}"
+    },
+    {
+     "file": "aerial_gym/rl_training/rl_games/train_navrl_ref5in_active_search_geofence_ab.sh",
+     "value": "0"
     },
     {
      "file": "aerial_gym/rl_training/rl_games/train_navrl_v2_ref5in_smoke.sh",
@@ -883,7 +895,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 164,
+     "line": 189,
      "scope": "task_config.vision",
      "type": "float",
      "default": 0.0
@@ -897,6 +909,10 @@
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh",
      "value": "${NAVRL_APP_LIGHT_GAIN:-0}"
+    },
+    {
+     "file": "aerial_gym/rl_training/rl_games/train_navrl_ref5in_active_search_geofence_ab.sh",
+     "value": "0"
     },
     {
      "file": "aerial_gym/rl_training/rl_games/train_navrl_v2_ref5in_smoke.sh",
@@ -932,7 +948,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 167,
+     "line": 192,
      "scope": "task_config.vision",
      "type": "float",
      "default": 0.0
@@ -946,6 +962,10 @@
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh",
      "value": "${NAVRL_APP_MOTION_BLUR:-0}"
+    },
+    {
+     "file": "aerial_gym/rl_training/rl_games/train_navrl_ref5in_active_search_geofence_ab.sh",
+     "value": "0"
     },
     {
      "file": "aerial_gym/rl_training/rl_games/train_navrl_v2_ref5in_smoke.sh",
@@ -981,7 +1001,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 166,
+     "line": 191,
      "scope": "task_config.vision",
      "type": "float",
      "default": 0.0
@@ -995,6 +1015,10 @@
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh",
      "value": "${NAVRL_APP_TEXTURE_STD:-0}"
+    },
+    {
+     "file": "aerial_gym/rl_training/rl_games/train_navrl_ref5in_active_search_geofence_ab.sh",
+     "value": "0"
     },
     {
      "file": "aerial_gym/rl_training/rl_games/train_navrl_v2_ref5in_smoke.sh",
@@ -1028,7 +1052,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/env_config/navrl_bars_env.py",
-     "line": 19,
+     "line": 22,
      "scope": "<module>",
      "type": "float",
      "default": 24.0
@@ -1038,12 +1062,12 @@
    "echoes": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 517,
+     "line": 860,
      "scope": "NavRLTask"
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1969,
+     "line": 2453,
      "scope": "NavRLTask"
     }
    ],
@@ -1057,6 +1081,10 @@
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh",
      "value": "40"
+    },
+    {
+     "file": "aerial_gym/rl_training/rl_games/train_navrl_physical_fresh.sh",
+     "value": "${NAVRL_ARENA_XY:-40}"
     },
     {
      "file": "aerial_gym/rl_training/rl_games/train_navrl_v2_search.sh",
@@ -1082,7 +1110,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/env_config/navrl_bars_env.py",
-     "line": 20,
+     "line": 23,
      "scope": "<module>",
      "type": "float",
      "default": 3.0
@@ -1092,7 +1120,7 @@
    "echoes": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1970,
+     "line": 2454,
      "scope": "NavRLTask"
     }
    ],
@@ -1106,6 +1134,10 @@
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh",
      "value": "3"
+    },
+    {
+     "file": "aerial_gym/rl_training/rl_games/train_navrl_physical_fresh.sh",
+     "value": "${NAVRL_ARENA_Z:-3}"
     },
     {
      "file": "aerial_gym/rl_training/rl_games/train_navrl_v2_search.sh",
@@ -1131,7 +1163,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/asset_config/env_object_config.py",
-     "line": 761,
+     "line": 783,
      "scope": "bar_asset_params",
      "type": "str",
      "default": ""
@@ -1141,7 +1173,7 @@
    "echoes": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1971,
+     "line": 2455,
      "scope": "NavRLTask"
     }
    ],
@@ -1155,6 +1187,10 @@
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh",
      "value": "bars_h3"
+    },
+    {
+     "file": "aerial_gym/rl_training/rl_games/train_navrl_physical_fresh.sh",
+     "value": "${NAVRL_BAR_POOL:-bars_h3}"
     },
     {
      "file": "aerial_gym/rl_training/rl_games/train_navrl_v2_search.sh",
@@ -1190,7 +1226,7 @@
    "echoes": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1987,
+     "line": 2471,
      "scope": "NavRLTask"
     }
    ],
@@ -1200,6 +1236,10 @@
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh",
      "value": "1.0"
+    },
+    {
+     "file": "aerial_gym/rl_training/rl_games/train_navrl_physical_fresh.sh",
+     "value": "${NAVRL_BAR_X_MAX:-1}"
     },
     {
      "file": "aerial_gym/rl_training/rl_games/train_navrl_v2_search.sh",
@@ -1235,7 +1275,7 @@
    "echoes": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1986,
+     "line": 2470,
      "scope": "NavRLTask"
     }
    ],
@@ -1247,6 +1287,10 @@
      "value": "0.0"
     },
     {
+     "file": "aerial_gym/rl_training/rl_games/train_navrl_physical_fresh.sh",
+     "value": "${NAVRL_BAR_X_MIN:-0}"
+    },
+    {
      "file": "aerial_gym/rl_training/rl_games/train_navrl_v2_search.sh",
      "value": "0.0"
     }
@@ -1254,6 +1298,66 @@
    "experiments": [],
    "ablated": false,
    "swept_but_not_ablated": true,
+   "frozen_by_contract": false,
+   "origin": "python"
+  },
+  {
+   "name": "NAVRL_CAMERA_HEIGHT",
+   "group": "other",
+   "type": "int",
+   "default": 90,
+   "default_expr": null,
+   "effective_default": 90,
+   "effective_differs": false,
+   "unit": null,
+   "attr": "task_config.vision.camera_height",
+   "declarations": [
+    {
+     "file": "aerial_gym/config/task_config/navrl_task_config.py",
+     "line": 162,
+     "scope": "task_config.vision",
+     "type": "int",
+     "default": 90
+    }
+   ],
+   "mirrors": false,
+   "echoes": [],
+   "doc": "",
+   "doc_short": null,
+   "launchers": [],
+   "experiments": [],
+   "ablated": false,
+   "swept_but_not_ablated": false,
+   "frozen_by_contract": false,
+   "origin": "python"
+  },
+  {
+   "name": "NAVRL_CAMERA_WIDTH",
+   "group": "other",
+   "type": "int",
+   "default": 160,
+   "default_expr": null,
+   "effective_default": 160,
+   "effective_differs": false,
+   "unit": null,
+   "attr": "task_config.vision.camera_width",
+   "declarations": [
+    {
+     "file": "aerial_gym/config/task_config/navrl_task_config.py",
+     "line": 161,
+     "scope": "task_config.vision",
+     "type": "int",
+     "default": 160
+    }
+   ],
+   "mirrors": false,
+   "echoes": [],
+   "doc": "Detection-camera resolution. WORKLOG 2026-08-22 measured what these two numbers cost:\nat 160x90 over 87 deg, fx = 84.3 px/rad, so the 0.30 m target spans 1.27 px (1.21 px^2)\nat 20 m and 0.90 px (0.62 px^2) at 28 m -- and because the mask is an exact ray-sphere\ntest sampled at pixel centres with no sub-pixel coverage, an on-axis target clears the\n2-px area threshold 24.6% of frames at 20 m and NEVER at 28 m. The comment on\ndetector_hfov_deg below is true of the field of view and false of the resolution: a real\nD455 is 5.3x finer. These are env-hooked so the sensor-fidelity experiment can vary them\nwithout touching bytes; the defaults are unchanged, so every existing checkpoint and\nevaluation keeps its own. Raising them costs render time linearly in pixel count.\naspect ratio 16:9 at the default",
+   "doc_short": "Detection-camera resolution.",
+   "launchers": [],
+   "experiments": [],
+   "ablated": false,
+   "swept_but_not_ablated": false,
    "frozen_by_contract": false,
    "origin": "python"
   },
@@ -1270,7 +1374,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 174,
+     "line": 199,
      "scope": "task_config.vision",
      "type": "float",
      "default": 0.0
@@ -1284,6 +1388,10 @@
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh",
      "value": "${NAVRL_CAM_FOV_SCALE_ERR:-0}"
+    },
+    {
+     "file": "aerial_gym/rl_training/rl_games/train_navrl_ref5in_active_search_geofence_ab.sh",
+     "value": "0"
     },
     {
      "file": "aerial_gym/rl_training/rl_games/train_navrl_v2_ref5in_smoke.sh",
@@ -1317,7 +1425,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 172,
+     "line": 197,
      "scope": "task_config.vision",
      "type": "float",
      "default": 0.0
@@ -1331,6 +1439,10 @@
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh",
      "value": "${NAVRL_CAM_MOUNT_ROT_DEG:-0}"
+    },
+    {
+     "file": "aerial_gym/rl_training/rl_games/train_navrl_ref5in_active_search_geofence_ab.sh",
+     "value": "0"
     },
     {
      "file": "aerial_gym/rl_training/rl_games/train_navrl_v2_ref5in_smoke.sh",
@@ -1364,7 +1476,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 173,
+     "line": 198,
      "scope": "task_config.vision",
      "type": "float",
      "default": 0.0
@@ -1378,6 +1490,10 @@
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh",
      "value": "${NAVRL_CAM_MOUNT_TRANS_M:-0}"
+    },
+    {
+     "file": "aerial_gym/rl_training/rl_games/train_navrl_ref5in_active_search_geofence_ab.sh",
+     "value": "0"
     },
     {
      "file": "aerial_gym/rl_training/rl_games/train_navrl_v2_ref5in_smoke.sh",
@@ -1632,7 +1748,7 @@
    "echoes": [
     {
      "file": "aerial_gym/rl_training/rl_games/runner.py",
-     "line": 734,
+     "line": 750,
      "scope": "<module>"
     }
    ],
@@ -1677,7 +1793,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 486,
+     "line": 511,
      "scope": "task_config.density",
      "type": "int",
      "default": 2048
@@ -1736,7 +1852,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 461,
+     "line": 486,
      "scope": "task_config.density",
      "type": "bool",
      "default": false
@@ -1839,7 +1955,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 505,
+     "line": 530,
      "scope": "task_config.density",
      "type": "float",
      "default": 10.0
@@ -1882,7 +1998,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 504,
+     "line": 529,
      "scope": "task_config.density",
      "type": "float",
      "default": 5.0
@@ -1925,7 +2041,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 503,
+     "line": 528,
      "scope": "task_config.density",
      "type": "float",
      "default": 0.0
@@ -1968,7 +2084,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 464,
+     "line": 489,
      "scope": "task_config.density",
      "type": "int",
      "default": 150
@@ -1998,6 +2114,10 @@
     {
      "file": "aerial_gym/rl_training/rl_games/train_navrl_perception_staged.sh",
      "value": "110"
+    },
+    {
+     "file": "aerial_gym/rl_training/rl_games/train_navrl_ref5in_active_search_geofence_ab.sh",
+     "value": "205"
     },
     {
      "file": "aerial_gym/rl_training/rl_games/train_navrl_v2_ep24000_speed_governor.sh",
@@ -2311,7 +2431,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 492,
+     "line": 517,
      "scope": "task_config.density",
      "type": "int",
      "default": 0
@@ -2451,7 +2571,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 463,
+     "line": 488,
      "scope": "task_config.density",
      "type": "int",
      "default": 25
@@ -2522,7 +2642,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 484,
+     "line": 509,
      "scope": "task_config.density",
      "type": "int",
      "default": 15
@@ -2581,7 +2701,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 498,
+     "line": 523,
      "scope": "task_config.density",
      "type": "float",
      "default": 0.55
@@ -2624,7 +2744,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 497,
+     "line": 522,
      "scope": "task_config.density",
      "type": "bool",
      "default": false
@@ -2667,7 +2787,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 499,
+     "line": 524,
      "scope": "task_config.density",
      "type": "int",
      "default": 512
@@ -2710,7 +2830,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 465,
+     "line": 490,
      "scope": "task_config.density",
      "type": "float",
      "default": 0.8
@@ -2761,7 +2881,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 474,
+     "line": 499,
      "scope": "task_config.density",
      "type": "float",
      "default": null
@@ -2804,7 +2924,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 481,
+     "line": 506,
      "scope": "task_config.density",
      "type": "str",
      "default": ""
@@ -2847,7 +2967,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 473,
+     "line": 498,
      "scope": "task_config.density",
      "type": "float",
      "default": null
@@ -2890,7 +3010,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 485,
+     "line": 510,
      "scope": "task_config.density",
      "type": "int",
      "default": 2500
@@ -2912,6 +3032,10 @@
     {
      "file": "aerial_gym/rl_training/rl_games/train_navrl_perception_staged.sh",
      "value": "4000"
+    },
+    {
+     "file": "aerial_gym/rl_training/rl_games/train_navrl_ref5in_active_search_geofence_ab.sh",
+     "value": "1000"
     },
     {
      "file": "aerial_gym/rl_training/rl_games/train_navrl_v2_ep24000_speed_governor.sh",
@@ -2965,7 +3089,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 345,
+     "line": 370,
      "scope": "task_config.perception",
      "type": "float",
      "default": 0.02
@@ -3012,7 +3136,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 226,
+     "line": 251,
      "scope": "task_config.perception",
      "type": "float",
      "default": 0.3
@@ -3061,7 +3185,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 227,
+     "line": 252,
      "scope": "task_config.perception",
      "type": "float",
      "default": 0.0
@@ -3159,7 +3283,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 223,
+     "line": 248,
      "scope": "task_config.perception",
      "type": "str",
      "default": ""
@@ -3220,7 +3344,8 @@
    "doc_short": "-- forward target camera (gimbal-level like the yaw-only LiDAR attach) [m] detection range.",
    "launchers": [],
    "experiments": [
-    "2026-08-20-ref5in-camera-range-control"
+    "2026-08-20-ref5in-camera-range-control",
+    "2026-08-23-ref5in-detection-range-stage1"
    ],
    "ablated": true,
    "swept_but_not_ablated": false,
@@ -3240,7 +3365,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 221,
+     "line": 246,
      "scope": "task_config.perception",
      "type": "int",
      "default": 2
@@ -3261,7 +3386,7 @@
     },
     {
      "file": "aerial_gym/rl_training/rl_games/train_navrl_v2_search.sh",
-     "value": "2"
+     "value": "${NAVRL_DETECTOR_MIN_PIXELS:-2}"
     },
     {
      "file": "aerial_gym/rl_training/rl_games/train_navrl_v2_ttc_ab.sh",
@@ -3287,7 +3412,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 222,
+     "line": 247,
      "scope": "task_config.perception",
      "type": "float",
      "default": 0.55
@@ -3342,6 +3467,96 @@
    "origin": "python"
   },
   {
+   "name": "NAVRL_DETECT_HEIGHT",
+   "group": "other",
+   "type": "int",
+   "default": null,
+   "default_expr": "camera_height",
+   "effective_default": null,
+   "effective_differs": false,
+   "unit": null,
+   "attr": "task_config.vision.detect_height",
+   "declarations": [
+    {
+     "file": "aerial_gym/config/task_config/navrl_task_config.py",
+     "line": 178,
+     "scope": "task_config.vision",
+     "type": "int",
+     "default": null
+    }
+   ],
+   "mirrors": false,
+   "echoes": [],
+   "doc": "",
+   "doc_short": null,
+   "launchers": [],
+   "experiments": [],
+   "ablated": false,
+   "swept_but_not_ablated": false,
+   "frozen_by_contract": false,
+   "origin": "python"
+  },
+  {
+   "name": "NAVRL_DETECT_PIXEL_BUDGET",
+   "group": "other",
+   "type": "str",
+   "default": "",
+   "default_expr": null,
+   "effective_default": "",
+   "effective_differs": false,
+   "unit": null,
+   "attr": "DETECT_PIXEL_BUDGET",
+   "declarations": [
+    {
+     "file": "aerial_gym/task/navrl_task/navrl_detector.py",
+     "line": 210,
+     "scope": "<module>",
+     "type": "str",
+     "default": ""
+    }
+   ],
+   "mirrors": false,
+   "echoes": [],
+   "doc": "Peak pixels (envs x rows x cols) materialised at once by the detect-resolution render. The\ndetect render is row-blocked to this budget so its VRAM is bounded by the budget instead of\nnum_envs*detect_width*detect_height: at 128 envs x 1920x1200 a full-frame mask+depth pair\nwould be 2.4 GB on an 8 GB card. Per-row partial sums are stored, so the reduction result does\nNOT depend on the block size -- the knob trades peak VRAM against the number of launches and\ncannot change a number the policy sees.",
+   "doc_short": "Peak pixels (envs x rows x cols) materialised at once by the detect-resolution render.",
+   "launchers": [],
+   "experiments": [],
+   "ablated": false,
+   "swept_but_not_ablated": false,
+   "frozen_by_contract": false,
+   "origin": "python"
+  },
+  {
+   "name": "NAVRL_DETECT_WIDTH",
+   "group": "other",
+   "type": "int",
+   "default": null,
+   "default_expr": "camera_width",
+   "effective_default": null,
+   "effective_differs": false,
+   "unit": null,
+   "attr": "task_config.vision.detect_width",
+   "declarations": [
+    {
+     "file": "aerial_gym/config/task_config/navrl_task_config.py",
+     "line": 177,
+     "scope": "task_config.vision",
+     "type": "int",
+     "default": null
+    }
+   ],
+   "mirrors": false,
+   "echoes": [],
+   "doc": "DETECTION resolution, decoupled from the RGB/perception resolution above.\nMeasured on this hardware: the warp target ray-cast is essentially free (it is an\nanalytic sphere/OBB test per pixel and only issues mesh_query_ray on a ray that\nactually hits the target), while everything DOWNSTREAM of it -- the bilinear upsample\nof the 40x24 obstacle depth to WxH, the (N,3,H,W) RGB image, and segmenting that image\n-- costs ~1 ms/Mpx and ~84 B/px. Raising ONLY the detection resolution therefore buys\ndetection fidelity at near-zero cost, and at zero appearance perturbation it is not an\napproximation: the renderer paints the target a flat colour and the bootstrap segmenter\nis a per-pixel colour rule, so segmenting a high-resolution render is the identity on\nthe high-resolution target mask. Defaults equal the camera resolution, so the default\nconfiguration takes exactly the historical code path, bit for bit.\nDecoupling FAILS CLOSED (raises) whenever that identity does not hold -- any non-zero\nappearance knob, a loaded segmenter checkpoint, image-level RGB/depth noise, or\ndetection latency. See navrl_detector.py / navrl_perception.py for the full list.",
+   "doc_short": "DETECTION resolution, decoupled from the RGB/perception resolution above.",
+   "launchers": [],
+   "experiments": [],
+   "ablated": false,
+   "swept_but_not_ablated": false,
+   "frozen_by_contract": false,
+   "origin": "python"
+  },
+  {
    "name": "NAVRL_DETNOISE_BEARING_STD_RAD",
    "group": "other",
    "type": "float",
@@ -3354,7 +3569,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 279,
+     "line": 304,
      "scope": "task_config.perception",
      "type": "float",
      "default": 0.0
@@ -3386,7 +3601,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 301,
+     "line": 326,
      "scope": "task_config.perception",
      "type": "float",
      "default": 0.0
@@ -3418,7 +3633,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 302,
+     "line": 327,
      "scope": "task_config.perception",
      "type": "float",
      "default": 1.0
@@ -3448,7 +3663,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 288,
+     "line": 313,
      "scope": "task_config.perception",
      "type": "float",
      "default": 0.0
@@ -3478,7 +3693,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 293,
+     "line": 318,
      "scope": "task_config.perception",
      "type": "str",
      "default": ""
@@ -3508,7 +3723,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 287,
+     "line": 312,
      "scope": "task_config.perception",
      "type": "float",
      "default": 0.0
@@ -3540,7 +3755,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 298,
+     "line": 323,
      "scope": "task_config.perception",
      "type": "str",
      "default": ""
@@ -3570,7 +3785,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 280,
+     "line": 305,
      "scope": "task_config.perception",
      "type": "float",
      "default": 0.0
@@ -3602,7 +3817,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 305,
+     "line": 330,
      "scope": "task_config.perception",
      "type": "float",
      "default": 1.0
@@ -3632,7 +3847,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 308,
+     "line": 333,
      "scope": "task_config.perception",
      "type": "int",
      "default": 9409
@@ -3671,7 +3886,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 311,
+     "line": 336,
      "scope": "task_config.perception",
      "type": "str",
      "default": ""
@@ -3799,7 +4014,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 382,
+     "line": 407,
      "scope": "task_config",
      "type": "int",
      "default": 300
@@ -3809,7 +4024,7 @@
    "echoes": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1982,
+     "line": 2466,
      "scope": "NavRLTask"
     }
    ],
@@ -3850,7 +4065,7 @@
    "declarations": [
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh",
-     "line": 802,
+     "line": 825,
      "scope": "shell launcher",
      "type": "str",
      "default": null
@@ -3924,14 +4139,14 @@
    "declarations": [
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh",
-     "line": 579,
+     "line": 582,
      "scope": "shell launcher",
      "type": "str",
      "default": null
     },
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh",
-     "line": 801,
+     "line": 824,
      "scope": "shell launcher",
      "type": "str",
      "default": null
@@ -3998,7 +4213,7 @@
     },
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh",
-     "line": 802,
+     "line": 825,
      "scope": "shell launcher",
      "type": "str",
      "default": null
@@ -4047,6 +4262,10 @@
     },
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_governor_adaptation_abc.sh",
+     "value": "original"
+    },
+    {
+     "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_joint_speed_telemetry.sh",
      "value": "original"
     },
     {
@@ -4131,7 +4350,7 @@
    "declarations": [
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh",
-     "line": 1008,
+     "line": 1031,
      "scope": "shell launcher",
      "type": "str",
      "default": null
@@ -4404,7 +4623,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 198,
+     "line": 223,
      "scope": "task_config.vision",
      "type": "int",
      "default": 3000
@@ -4550,7 +4769,7 @@
     },
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh",
-     "line": 1611,
+     "line": 1655,
      "scope": "shell launcher",
      "type": "str",
      "default": null
@@ -4585,7 +4804,7 @@
     },
     {
      "file": "aerial_gym/rl_training/rl_games/train_navrl_v2_search.sh",
-     "line": 294,
+     "line": 305,
      "scope": "shell launcher",
      "type": "str",
      "default": null
@@ -4650,7 +4869,7 @@
     },
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh",
-     "line": 1611,
+     "line": 1655,
      "scope": "shell launcher",
      "type": "str",
      "default": null
@@ -4685,7 +4904,7 @@
     },
     {
      "file": "aerial_gym/rl_training/rl_games/train_navrl_v2_search.sh",
-     "line": 294,
+     "line": 305,
      "scope": "shell launcher",
      "type": "str",
      "default": null
@@ -4756,6 +4975,13 @@
      "scope": "shell launcher",
      "type": "str",
      "default": "1"
+    },
+    {
+     "file": "aerial_gym/rl_training/rl_games/train_navrl_physical_fresh.sh",
+     "line": 23,
+     "scope": "shell launcher",
+     "type": "str",
+     "default": "1"
     }
    ],
    "mirrors": false,
@@ -4800,6 +5026,10 @@
      "value": "1"
     },
     {
+     "file": "aerial_gym/rl_training/rl_games/train_navrl_physical_fresh.sh",
+     "value": "${NAVRL_GENERAL_TRAIN:-1}"
+    },
+    {
      "file": "aerial_gym/rl_training/rl_games/train_navrl_sensorfix_fresh_pilot.sh",
      "value": "1"
     },
@@ -4815,6 +5045,169 @@
    "origin": "launcher"
   },
   {
+   "name": "NAVRL_GEOFENCE_ACTOR",
+   "group": "other",
+   "type": "str",
+   "default": "0",
+   "default_expr": null,
+   "effective_default": "0",
+   "effective_differs": false,
+   "unit": null,
+   "attr": "GEOFENCE_ACTOR",
+   "declarations": [
+    {
+     "file": "aerial_gym/task/navrl_task/navrl_perception.py",
+     "line": 152,
+     "scope": "<module>",
+     "type": "str",
+     "default": "0"
+    }
+   ],
+   "mirrors": false,
+   "echoes": [],
+   "doc": "Opt-in active-search geofence token. Ranges are four body-ray distances\n(forward/left/back/right) to a known arena geofence, obtainable from VIO/GPS plus a mapped flight\nboundary. Disabled is byte-identical to the historical schema. Enabled appends four normalized\nranges and four validity flags and therefore requires a fresh policy.",
+   "doc_short": "Opt-in active-search geofence token.",
+   "launchers": [
+    {
+     "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh",
+     "value": "${NAVRL_GEOFENCE_ACTOR:-0}"
+    },
+    {
+     "file": "aerial_gym/rl_training/rl_games/train_navrl_ref5in_active_search_geofence_ab.sh",
+     "value": "1"
+    },
+    {
+     "file": "aerial_gym/rl_training/rl_games/train_navrl_ref5in_active_search_geofence_ab.sh",
+     "value": "0"
+    },
+    {
+     "file": "aerial_gym/rl_training/rl_games/train_navrl_v2_search.sh",
+     "value": "${NAVRL_GEOFENCE_ACTOR:-0}"
+    }
+   ],
+   "experiments": [],
+   "ablated": false,
+   "swept_but_not_ablated": true,
+   "frozen_by_contract": false,
+   "origin": "python"
+  },
+  {
+   "name": "NAVRL_GEOFENCE_DROPOUT",
+   "group": "other",
+   "type": "str",
+   "default": "",
+   "default_expr": null,
+   "effective_default": "",
+   "effective_differs": false,
+   "unit": null,
+   "attr": "GEOFENCE_DROPOUT",
+   "declarations": [
+    {
+     "file": "aerial_gym/task/navrl_task/navrl_perception.py",
+     "line": 163,
+     "scope": "<module>",
+     "type": "str",
+     "default": ""
+    }
+   ],
+   "mirrors": false,
+   "echoes": [],
+   "doc": "",
+   "doc_short": null,
+   "launchers": [
+    {
+     "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh",
+     "value": "${NAVRL_GEOFENCE_DROPOUT:-0}"
+    },
+    {
+     "file": "aerial_gym/rl_training/rl_games/train_navrl_ref5in_active_search_geofence_ab.sh",
+     "value": "0"
+    },
+    {
+     "file": "aerial_gym/rl_training/rl_games/train_navrl_v2_search.sh",
+     "value": "${NAVRL_GEOFENCE_DROPOUT:-0}"
+    }
+   ],
+   "experiments": [],
+   "ablated": false,
+   "swept_but_not_ablated": true,
+   "frozen_by_contract": false,
+   "origin": "python"
+  },
+  {
+   "name": "NAVRL_GEOFENCE_FORCE_INVALID",
+   "group": "other",
+   "type": "str",
+   "default": "0",
+   "default_expr": null,
+   "effective_default": "0",
+   "effective_differs": false,
+   "unit": null,
+   "attr": "GEOFENCE_FORCE_INVALID",
+   "declarations": [
+    {
+     "file": "aerial_gym/task/navrl_task/navrl_perception.py",
+     "line": 166,
+     "scope": "<module>",
+     "type": "str",
+     "default": "0"
+    }
+   ],
+   "mirrors": false,
+   "echoes": [],
+   "doc": "Evaluation-only mechanism ablation. It preserves the 906-D schema while replacing all ranges by\nthe declared missing-value sentinel and clearing validity. Training launchers never set it.",
+   "doc_short": "Evaluation-only mechanism ablation.",
+   "launchers": [],
+   "experiments": [],
+   "ablated": false,
+   "swept_but_not_ablated": false,
+   "frozen_by_contract": false,
+   "origin": "python"
+  },
+  {
+   "name": "NAVRL_GEOFENCE_NOISE_STD_M",
+   "group": "other",
+   "type": "str",
+   "default": "",
+   "default_expr": null,
+   "effective_default": "",
+   "effective_differs": false,
+   "unit": "m",
+   "attr": "GEOFENCE_NOISE_STD_M",
+   "declarations": [
+    {
+     "file": "aerial_gym/task/navrl_task/navrl_perception.py",
+     "line": 161,
+     "scope": "<module>",
+     "type": "str",
+     "default": ""
+    }
+   ],
+   "mirrors": false,
+   "echoes": [],
+   "doc": "",
+   "doc_short": null,
+   "launchers": [
+    {
+     "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh",
+     "value": "${NAVRL_GEOFENCE_NOISE_STD_M:-0}"
+    },
+    {
+     "file": "aerial_gym/rl_training/rl_games/train_navrl_ref5in_active_search_geofence_ab.sh",
+     "value": "0"
+    },
+    {
+     "file": "aerial_gym/rl_training/rl_games/train_navrl_v2_search.sh",
+     "value": "${NAVRL_GEOFENCE_NOISE_STD_M:-0}"
+    }
+   ],
+   "experiments": [],
+   "ablated": false,
+   "swept_but_not_ablated": true,
+   "frozen_by_contract": false,
+   "origin": "python"
+  },
+  {
    "name": "NAVRL_K_CHECK",
    "group": "curriculum",
    "type": "int",
@@ -4827,7 +5220,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 450,
+     "line": 475,
      "scope": "task_config.curriculum",
      "type": "int",
      "default": 2048
@@ -4866,7 +5259,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 447,
+     "line": 472,
      "scope": "task_config.curriculum",
      "type": "bool",
      "default": false
@@ -4925,7 +5318,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 433,
+     "line": 458,
      "scope": "task_config.curriculum",
      "type": "float",
      "default": 24.0
@@ -5000,7 +5393,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 424,
+     "line": 449,
      "scope": "task_config.curriculum",
      "type": "float",
      "default": 20.0
@@ -5075,7 +5468,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 430,
+     "line": 455,
      "scope": "task_config.curriculum",
      "type": "int",
      "default": 3000
@@ -5118,7 +5511,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 427,
+     "line": 452,
      "scope": "task_config.curriculum",
      "type": "int",
      "default": 2000
@@ -5161,7 +5554,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 449,
+     "line": 474,
      "scope": "task_config.curriculum",
      "type": "float",
      "default": 2.0
@@ -5200,7 +5593,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 448,
+     "line": 473,
      "scope": "task_config.curriculum",
      "type": "float",
      "default": 0.6
@@ -5239,7 +5632,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 434,
+     "line": 459,
      "scope": "task_config.curriculum",
      "type": "int",
      "default": 3000
@@ -5286,7 +5679,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 233,
+     "line": 258,
      "scope": "task_config.perception",
      "type": "bool",
      "default": false
@@ -5323,7 +5716,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 255,
+     "line": 280,
      "scope": "task_config.perception",
      "type": "bool",
      "default": true
@@ -5360,7 +5753,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 235,
+     "line": 260,
      "scope": "task_config.perception",
      "type": "bool",
      "default": false
@@ -5395,7 +5788,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 243,
+     "line": 268,
      "scope": "task_config.perception",
      "type": "str",
      "default": "off"
@@ -5439,7 +5832,7 @@
     },
     {
      "file": "aerial_gym/rl_training/rl_games/train_navrl_v2_search.sh",
-     "line": 299,
+     "line": 310,
      "scope": "shell launcher",
      "type": "str",
      "default": null
@@ -5538,7 +5931,7 @@
     },
     {
      "file": "aerial_gym/rl_training/rl_games/train_navrl_v2_search.sh",
-     "line": 299,
+     "line": 310,
      "scope": "shell launcher",
      "type": "str",
      "default": null
@@ -5931,6 +6324,10 @@
      "value": "${NAVRL_LEARNING_RATE:-3e-5}"
     },
     {
+     "file": "aerial_gym/rl_training/rl_games/train_navrl_ref5in_active_search_geofence_ab.sh",
+     "value": "1.5e-5"
+    },
+    {
      "file": "aerial_gym/rl_training/rl_games/train_navrl_sensorfix_fresh_pilot.sh",
      "value": "1e-4"
     },
@@ -6050,7 +6447,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 337,
+     "line": 362,
      "scope": "task_config.perception",
      "type": "float",
      "default": 0.0
@@ -6109,6 +6506,11 @@
    ],
    "mirrors": true,
    "echoes": [
+    {
+     "file": "aerial_gym/rl_training/rl_games/navrl_mode_probe.py",
+     "line": 43,
+     "scope": "<module>"
+    },
     {
      "file": "aerial_gym/rl_training/rl_games/ppo_update_safety.py",
      "line": 362,
@@ -6196,7 +6598,7 @@
     },
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 220,
+     "line": 245,
      "scope": "task_config.perception",
      "type": "float",
      "default": 4.0
@@ -6270,7 +6672,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 332,
+     "line": 357,
      "scope": "task_config.perception",
      "type": "bool",
      "default": false
@@ -6307,7 +6709,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 343,
+     "line": 368,
      "scope": "task_config.perception",
      "type": "bool",
      "default": false
@@ -6344,7 +6746,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 325,
+     "line": 350,
      "scope": "task_config.perception",
      "type": "bool",
      "default": true
@@ -6403,6 +6805,11 @@
    ],
    "mirrors": true,
    "echoes": [
+    {
+     "file": "aerial_gym/rl_training/rl_games/navrl_mode_probe.py",
+     "line": 44,
+     "scope": "<module>"
+    },
     {
      "file": "aerial_gym/rl_training/rl_games/ppo_update_safety.py",
      "line": 363,
@@ -6567,7 +6974,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/asset_config/env_object_config.py",
-     "line": 754,
+     "line": 776,
      "scope": "bar_asset_params",
      "type": "int",
      "default": 150
@@ -6609,6 +7016,10 @@
     {
      "file": "aerial_gym/rl_training/rl_games/train_navrl_perception_staged.sh",
      "value": "150"
+    },
+    {
+     "file": "aerial_gym/rl_training/rl_games/train_navrl_physical_fresh.sh",
+     "value": "${NAVRL_MAX_BARS:-300}"
     },
     {
      "file": "aerial_gym/rl_training/rl_games/train_navrl_sensorfix_fresh_pilot.sh",
@@ -6658,6 +7069,11 @@
    ],
    "mirrors": false,
    "echoes": [
+    {
+     "file": "aerial_gym/rl_training/rl_games/navrl_mode_probe.py",
+     "line": 45,
+     "scope": "<module>"
+    },
     {
      "file": "aerial_gym/rl_training/rl_games/ppo_update_safety.py",
      "line": 364,
@@ -6741,12 +7157,12 @@
    "echoes": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1720,
+     "line": 2182,
      "scope": "NavRLTask"
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 2447,
+     "line": 2959,
      "scope": "NavRLTask"
     }
    ],
@@ -6756,6 +7172,10 @@
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh",
      "value": "${MAX_TILT_DEG}"
+    },
+    {
+     "file": "aerial_gym/rl_training/rl_games/train_navrl_ref5in_active_search_geofence_ab.sh",
+     "value": "45.0"
     },
     {
      "file": "aerial_gym/rl_training/rl_games/train_navrl_v2_recover_safe.sh",
@@ -6805,14 +7225,20 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 389,
+     "line": 414,
      "scope": "task_config",
      "type": "float",
      "default": 2.0
     }
    ],
    "mirrors": false,
-   "echoes": [],
+   "echoes": [
+    {
+     "file": "aerial_gym/rl_training/rl_games/navrl_players.py",
+     "line": 60,
+     "scope": "NavRLPpoPlayerContinuous"
+    }
+   ],
    "doc": "Per-axis command limit, not a vector-norm limit. The attainable horizontal norm is\nsqrt(2)*max_velocity (3.54 m/s in v2), which is why the riskcap free-speed setting uses that\nvalue. Renaming the environment variable would break old launch recipes, so document the\nactual semantics here and in the dashboard.\n[m/s per commanded axis]",
    "doc_short": "Per-axis command limit, not a vector-norm limit.",
    "launchers": [
@@ -6868,7 +7294,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 462,
+     "line": 487,
      "scope": "task_config.density",
      "type": "int",
      "default": 48
@@ -6878,12 +7304,17 @@
    "echoes": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 929,
+     "line": 1363,
      "scope": "NavRLTask"
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 2695,
+     "line": 3237,
+     "scope": "NavRLTask"
+    },
+    {
+     "file": "aerial_gym/task/navrl_task/navrl_task.py",
+     "line": 4432,
      "scope": "NavRLTask"
     }
    ],
@@ -7390,7 +7821,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 187,
+     "line": 212,
      "scope": "task_config.vision",
      "type": "float",
      "default": 0.5
@@ -7449,7 +7880,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 213,
+     "line": 238,
      "scope": "task_config.perception",
      "type": "bool",
      "default": false
@@ -7497,6 +7928,10 @@
      "value": "1"
     },
     {
+     "file": "aerial_gym/rl_training/rl_games/train_navrl_physical_fresh.sh",
+     "value": "${NAVRL_PERCEPTION:-1}"
+    },
+    {
      "file": "aerial_gym/rl_training/rl_games/train_navrl_sensorfix_fresh_pilot.sh",
      "value": "1"
     },
@@ -7524,7 +7959,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 225,
+     "line": 250,
      "scope": "task_config.perception",
      "type": "bool",
      "default": false
@@ -7561,6 +7996,10 @@
     },
     {
      "file": "aerial_gym/rl_training/rl_games/train_navrl_general_repr_density.sh",
+     "value": "0"
+    },
+    {
+     "file": "aerial_gym/rl_training/rl_games/train_navrl_ref5in_active_search_geofence_ab.sh",
      "value": "0"
     },
     {
@@ -7607,7 +8046,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/env_config/navrl_bars_env.py",
-     "line": 81,
+     "line": 86,
      "scope": "NavRLBarsEnvCfg.env",
      "type": "float",
      "default": 1.6
@@ -7617,7 +8056,7 @@
    "echoes": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1976,
+     "line": 2460,
      "scope": "NavRLTask"
     }
    ],
@@ -7652,7 +8091,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/env_config/navrl_bars_env.py",
-     "line": 70,
+     "line": 74,
      "scope": "NavRLBarsEnvCfg.env",
      "type": "str",
      "default": ""
@@ -7662,11 +8101,11 @@
    "echoes": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1973,
+     "line": 2457,
      "scope": "NavRLTask"
     }
    ],
-   "doc": "Obstacle placement. \"random\" = legacy NavRL-style scatter with a min center-to-center\ndistance that RELAXES (*0.8) when saturated. Measured 2026-07-31\n(tools/probe_placement_slits.py): fine through 110 bars (0 impassable slits, free space\nfully connected), but at 150 bars the relaxation fires in 100% of layouts and produces\n~2.2 impassable (<0.40 m) + ~15 marginal (<0.60 m) surface gaps per layout.\n\"navrl_band\" = slit-free rule mirroring the reference NavRL terrain generator's\ngood_distance() forbidden band: a candidate is accepted only if every already-placed bar\nis either TOUCHING it (centers <= touch dist -> bars merge into a compound wall) or at\nleast gap dist away (worst-case SURFACE gap = gap - 2*0.4 >= 0.8 m, comfortably above\nthe 0.396 m drone-box diagonal). Saturation merges instead of slitting.",
+   "doc": "Obstacle placement. \"random\" = legacy NavRL-style scatter with a min center-to-center\ndistance that RELAXES (*0.8) when saturated. Measured 2026-07-31\n(tools/probe_placement_slits.py): fine through 110 bars (0 impassable slits, free space\nfully connected), but at 150 bars the relaxation fires in 100% of layouts and produces\n~2.2 impassable (<0.40 m) + ~15 marginal (<0.60 m) surface gaps per layout.\n\"navrl_band\" = slit-free rule mirroring the reference NavRL terrain generator's\ngood_distance() forbidden band: a candidate is accepted only if every already-placed bar\nis either TOUCHING it (centers <= touch dist -> bars merge into a compound wall) or at\nleast gap dist away. This centre-distance rule prevents overlap but does not guarantee\na fixed surface corridor; diagonal maximum-size bars can leave only ~0.469 m. Saturation\nmerges instead of relaxing the forbidden centre-distance band.",
    "doc_short": "Obstacle placement.",
    "launchers": [
     {
@@ -7676,6 +8115,10 @@
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh",
      "value": "navrl_band"
+    },
+    {
+     "file": "aerial_gym/rl_training/rl_games/train_navrl_physical_fresh.sh",
+     "value": "${NAVRL_PLACEMENT_MODE:-navrl_band}"
     },
     {
      "file": "aerial_gym/rl_training/rl_games/train_navrl_v2_search.sh",
@@ -7701,7 +8144,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/env_config/navrl_bars_env.py",
-     "line": 80,
+     "line": 85,
      "scope": "NavRLBarsEnvCfg.env",
      "type": "float",
      "default": 0.4
@@ -7711,12 +8154,12 @@
    "echoes": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1979,
+     "line": 2463,
      "scope": "NavRLTask"
     }
    ],
-   "doc": "navrl_band parameters (center-to-center): touch <= 0.4 guarantees overlap for every\nfootprint pair in the 0.4..0.8 m pool; gap >= 1.6 guarantees a passable corridor even\nfor two 0.8 m bars. Conservative by construction because the manager places by center\nwithout per-instance footprints.",
-   "doc_short": "navrl_band parameters (center-to-center): touch <= 0.4 guarantees overlap for every footprint pair in the 0.4..0.8 m pool; gap >= 1.6 guarantees a passable corridor even for two 0.8 m bars.",
+   "doc": "navrl_band parameters (center-to-center): touch <= 0.4 guarantees overlap for every\nfootprint pair in the 0.4..0.8 m pool. gap >= 1.6 prevents AABB overlap, but does NOT\nguarantee a 0.8 m surface corridor: with two 0.8 m squares separated diagonally the\ntheoretical corner-to-corner gap can be only ~0.469 m. This centre-only rule therefore\nneeds the separate footprint/connectivity audit before any passability claim.",
+   "doc_short": "navrl_band parameters (center-to-center): touch <= 0.4 guarantees overlap for every footprint pair in the 0.4..0.8 m pool.",
    "launchers": [
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh",
@@ -7746,7 +8189,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 262,
+     "line": 287,
      "scope": "task_config.perception",
      "type": "float",
      "default": 0.0
@@ -7760,6 +8203,10 @@
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh",
      "value": "${NAVRL_POSE_CLOCK_OFFSET_S:-0}"
+    },
+    {
+     "file": "aerial_gym/rl_training/rl_games/train_navrl_ref5in_active_search_geofence_ab.sh",
+     "value": "0"
     },
     {
      "file": "aerial_gym/rl_training/rl_games/train_navrl_v2_ref5in_smoke.sh",
@@ -7795,7 +8242,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 263,
+     "line": 288,
      "scope": "task_config.perception",
      "type": "float",
      "default": 0.0
@@ -7809,6 +8256,10 @@
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh",
      "value": "${NAVRL_POSE_NOISE_POS_M:-0}"
+    },
+    {
+     "file": "aerial_gym/rl_training/rl_games/train_navrl_ref5in_active_search_geofence_ab.sh",
+     "value": "0"
     },
     {
      "file": "aerial_gym/rl_training/rl_games/train_navrl_v2_ref5in_smoke.sh",
@@ -7845,7 +8296,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 267,
+     "line": 292,
      "scope": "task_config.perception",
      "type": "int",
      "default": 9163
@@ -7877,7 +8328,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 264,
+     "line": 289,
      "scope": "task_config.perception",
      "type": "float",
      "default": 0.0
@@ -7891,6 +8342,10 @@
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh",
      "value": "${NAVRL_POSE_NOISE_YAW_DEG:-0}"
+    },
+    {
+     "file": "aerial_gym/rl_training/rl_games/train_navrl_ref5in_active_search_geofence_ab.sh",
+     "value": "0"
     },
     {
      "file": "aerial_gym/rl_training/rl_games/train_navrl_v2_ref5in_smoke.sh",
@@ -7927,7 +8382,7 @@
    "declarations": [
     {
      "file": "aerial_gym/rl_training/rl_games/train_navrl_v2_search.sh",
-     "line": 299,
+     "line": 310,
      "scope": "shell launcher",
      "type": "str",
      "default": null
@@ -8019,7 +8474,7 @@
     },
     {
      "file": "aerial_gym/rl_training/rl_games/train_navrl_v2_search.sh",
-     "line": 299,
+     "line": 310,
      "scope": "shell launcher",
      "type": "str",
      "default": null
@@ -8180,7 +8635,7 @@
    "declarations": [
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh",
-     "line": 804,
+     "line": 827,
      "scope": "shell launcher",
      "type": "str",
      "default": "0"
@@ -8282,7 +8737,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 228,
+     "line": 253,
      "scope": "task_config.perception",
      "type": "float",
      "default": 0.0
@@ -8500,7 +8955,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 344,
+     "line": 369,
      "scope": "task_config.perception",
      "type": "float",
      "default": 0.015
@@ -8561,6 +9016,14 @@
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh",
      "value": "${CHECKPOINT_ROBOT}"
+    },
+    {
+     "file": "aerial_gym/rl_training/rl_games/train_navrl_physical_fresh.sh",
+     "value": "navrl_ref5in_quad"
+    },
+    {
+     "file": "aerial_gym/rl_training/rl_games/train_navrl_ref5in_active_search_geofence_ab.sh",
+     "value": "navrl_ref5in_quad"
     },
     {
      "file": "aerial_gym/rl_training/rl_games/train_navrl_v2_ref5in_d1_adapt.sh",
@@ -8626,6 +9089,10 @@
    "doc": "런처 스크립트가 직접 소비하는 값이다. 파이썬 코드는 이 이름을 읽지 않고, 런처가 셀마다 개별 knob으로 펼쳐서 전달한다.",
    "doc_short": "런처 전용 — 셀별 knob으로 펼쳐진다.",
    "launchers": [
+    {
+     "file": "aerial_gym/rl_training/rl_games/train_navrl_ref5in_active_search_geofence_ab.sh",
+     "value": "250"
+    },
     {
      "file": "aerial_gym/rl_training/rl_games/train_navrl_v2_ref5in_d1_adapt.sh",
      "value": "250"
@@ -8706,6 +9173,10 @@
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_governor_adaptation_abc.sh",
      "value": "${SEED}"
+    },
+    {
+     "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_joint_speed_telemetry.sh",
+     "value": "379"
     },
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_latency_budget.sh",
@@ -8819,7 +9290,7 @@
    "declarations": [
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh",
-     "line": 801,
+     "line": 824,
      "scope": "shell launcher",
      "type": "str",
      "default": null
@@ -8936,6 +9407,10 @@
      "value": "riskcap"
     },
     {
+     "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_joint_speed_telemetry.sh",
+     "value": "riskcap"
+    },
+    {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_latency_budget.sh",
      "value": "riskcap"
     },
@@ -8978,6 +9453,10 @@
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_target_mask_backfill.sh",
      "value": "riskcap"
+    },
+    {
+     "file": "aerial_gym/rl_training/rl_games/train_navrl_ref5in_active_search_geofence_ab.sh",
+     "value": "off"
     },
     {
      "file": "aerial_gym/rl_training/rl_games/train_navrl_v2_ep24000_speed_governor.sh",
@@ -9074,6 +9553,10 @@
     },
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_governor_adaptation_abc.sh",
+     "value": "2.9608856678"
+    },
+    {
+     "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_joint_speed_telemetry.sh",
      "value": "2.9608856678"
     },
     {
@@ -9208,6 +9691,10 @@
      "value": "2.0"
     },
     {
+     "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_joint_speed_telemetry.sh",
+     "value": "2.0"
+    },
+    {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_latency_budget.sh",
      "value": "2.0"
     },
@@ -9339,6 +9826,10 @@
      "value": "3.53553390593"
     },
     {
+     "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_joint_speed_telemetry.sh",
+     "value": "3.53553390593"
+    },
+    {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_latency_budget.sh",
      "value": "3.53553390593"
     },
@@ -9467,6 +9958,10 @@
     },
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_governor_adaptation_abc.sh",
+     "value": "0.45"
+    },
+    {
+     "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_joint_speed_telemetry.sh",
      "value": "0.45"
     },
     {
@@ -9605,6 +10100,10 @@
      "value": "0.45"
     },
     {
+     "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_joint_speed_telemetry.sh",
+     "value": "0.45"
+    },
+    {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_latency_budget.sh",
      "value": "0.45"
     },
@@ -9733,6 +10232,10 @@
     },
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_governor_adaptation_abc.sh",
+     "value": "0.1"
+    },
+    {
+     "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_joint_speed_telemetry.sh",
      "value": "0.1"
     },
     {
@@ -9871,6 +10374,10 @@
      "value": "5.0"
     },
     {
+     "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_joint_speed_telemetry.sh",
+     "value": "5.0"
+    },
+    {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_latency_budget.sh",
      "value": "5.0"
     },
@@ -9995,6 +10502,10 @@
     },
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_governor_adaptation_abc.sh",
+     "value": "3.0"
+    },
+    {
+     "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_joint_speed_telemetry.sh",
      "value": "3.0"
     },
     {
@@ -10133,6 +10644,10 @@
      "value": "1.2"
     },
     {
+     "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_joint_speed_telemetry.sh",
+     "value": "1.2"
+    },
+    {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_latency_budget.sh",
      "value": "1.2"
     },
@@ -10204,6 +10719,151 @@
    "origin": "python"
   },
   {
+   "name": "NAVRL_TARGET_ALT_KP",
+   "group": "other",
+   "type": "float",
+   "default": 4.0,
+   "default_expr": null,
+   "effective_default": 4.0,
+   "effective_differs": false,
+   "unit": null,
+   "attr": "task_config.target_motion.physical_altitude_kp",
+   "declarations": [
+    {
+     "file": "aerial_gym/config/task_config/navrl_task_config.py",
+     "line": 564,
+     "scope": "task_config.target_motion",
+     "type": "float",
+     "default": 4.0
+    }
+   ],
+   "mirrors": false,
+   "echoes": [],
+   "doc": "",
+   "doc_short": null,
+   "launchers": [],
+   "experiments": [],
+   "ablated": false,
+   "swept_but_not_ablated": false,
+   "frozen_by_contract": false,
+   "origin": "python"
+  },
+  {
+   "name": "NAVRL_TARGET_BOUNDARY_MARGIN_M",
+   "group": "other",
+   "type": "float",
+   "default": 0.75,
+   "default_expr": null,
+   "effective_default": 0.75,
+   "effective_differs": false,
+   "unit": "m",
+   "attr": "task_config.target_motion.physical_boundary_margin",
+   "declarations": [
+    {
+     "file": "aerial_gym/config/task_config/navrl_task_config.py",
+     "line": 574,
+     "scope": "task_config.target_motion",
+     "type": "float",
+     "default": 0.75
+    }
+   ],
+   "mirrors": false,
+   "echoes": [],
+   "doc": "",
+   "doc_short": null,
+   "launchers": [],
+   "experiments": [],
+   "ablated": false,
+   "swept_but_not_ablated": false,
+   "frozen_by_contract": false,
+   "origin": "python"
+  },
+  {
+   "name": "NAVRL_TARGET_DYNAMICS",
+   "group": "other",
+   "type": "str",
+   "default": "legacy",
+   "default_expr": null,
+   "effective_default": "legacy",
+   "effective_differs": false,
+   "unit": null,
+   "attr": "task_config.target_motion.dynamics",
+   "declarations": [
+    {
+     "file": "aerial_gym/config/env_config/navrl_bars_env.py",
+     "line": 102,
+     "scope": "NavRLBarsEnvCfg.env_config",
+     "type": "str",
+     "default": "legacy"
+    },
+    {
+     "file": "aerial_gym/config/sensor_config/lidar_config/navrl_lidar_config.py",
+     "line": 88,
+     "scope": "NavRLLidarConfig",
+     "type": "str",
+     "default": "legacy"
+    },
+    {
+     "file": "aerial_gym/config/task_config/navrl_task_config.py",
+     "line": 543,
+     "scope": "task_config.target_motion",
+     "type": "str",
+     "default": "legacy"
+    }
+   ],
+   "mirrors": true,
+   "echoes": [
+    {
+     "file": "aerial_gym/task/navrl_task/navrl_detector.py",
+     "line": 251,
+     "scope": "NavRLTargetDetector"
+    }
+   ],
+   "doc": "\"legacy\" reproduces published/checkpointed virtual-point trajectories. \"bounded\" emits\na planar trajectory that a multirotor can track: finite acceleration and turn rate,\nrollout-based obstacle avoidance, and no instantaneous wall/bar corrections. \"physical\"\nuses that planner only as a velocity reference for a 6-DoF PhysX actor driven by four\nbounded first-order motors at the 0.01 s physics rate. Both are new training lineages.",
+   "doc_short": "\"legacy\" reproduces published/checkpointed virtual-point trajectories.",
+   "launchers": [
+    {
+     "file": "aerial_gym/rl_training/rl_games/train_navrl_physical_fresh.sh",
+     "value": "physical"
+    }
+   ],
+   "experiments": [],
+   "ablated": false,
+   "swept_but_not_ablated": true,
+   "frozen_by_contract": false,
+   "origin": "python"
+  },
+  {
+   "name": "NAVRL_TARGET_LOOKAHEAD_S",
+   "group": "other",
+   "type": "float",
+   "default": 1.0,
+   "default_expr": null,
+   "effective_default": 1.0,
+   "effective_differs": false,
+   "unit": "s",
+   "attr": "task_config.target_motion.avoidance_lookahead_s",
+   "declarations": [
+    {
+     "file": "aerial_gym/config/task_config/navrl_task_config.py",
+     "line": 549,
+     "scope": "task_config.target_motion",
+     "type": "float",
+     "default": 1.0
+    }
+   ],
+   "mirrors": false,
+   "echoes": [],
+   "doc": "[s]",
+   "doc_short": "[s]",
+   "launchers": [],
+   "experiments": [],
+   "ablated": false,
+   "swept_but_not_ablated": false,
+   "frozen_by_contract": false,
+   "origin": "python"
+  },
+  {
    "name": "NAVRL_TARGET_MASK_BACKFILL",
    "group": "perception",
    "type": "bool",
@@ -10216,7 +10876,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 319,
+     "line": 344,
      "scope": "task_config.perception",
      "type": "bool",
      "default": false
@@ -10241,6 +10901,246 @@
    "origin": "python"
   },
   {
+   "name": "NAVRL_TARGET_MASS_KG",
+   "group": "other",
+   "type": "float",
+   "default": 1.2,
+   "default_expr": null,
+   "effective_default": 1.2,
+   "effective_differs": false,
+   "unit": null,
+   "attr": "task_config.target_motion.physical_mass",
+   "declarations": [
+    {
+     "file": "aerial_gym/config/task_config/navrl_task_config.py",
+     "line": 557,
+     "scope": "task_config.target_motion",
+     "type": "float",
+     "default": 1.2
+    }
+   ],
+   "mirrors": false,
+   "echoes": [],
+   "doc": "Physical target contract. These values mirror the *synthetic* ref5in design point; they\nare internally consistent, not a substitute for a weighed BOM/CAD/thrust-stand ID.",
+   "doc_short": "Physical target contract.",
+   "launchers": [],
+   "experiments": [],
+   "ablated": false,
+   "swept_but_not_ablated": false,
+   "frozen_by_contract": false,
+   "origin": "python"
+  },
+  {
+   "name": "NAVRL_TARGET_MAX_ACCEL",
+   "group": "other",
+   "type": "float",
+   "default": 4.0,
+   "default_expr": null,
+   "effective_default": 4.0,
+   "effective_differs": false,
+   "unit": null,
+   "attr": "task_config.target_motion.max_accel",
+   "declarations": [
+    {
+     "file": "aerial_gym/config/task_config/navrl_task_config.py",
+     "line": 547,
+     "scope": "task_config.target_motion",
+     "type": "float",
+     "default": 4.0
+    }
+   ],
+   "mirrors": false,
+   "echoes": [],
+   "doc": "4 m/s^2 requires atan(a/g)=22.2 deg of horizontal tilt, well inside the ref5in 45-deg\ncontroller envelope. At 1.5 m/s it permits 153 deg/s of path curvature, so the matching\n150 deg/s travel-heading bound is physically self-consistent rather than extra authority.\n[m/s^2]",
+   "doc_short": "4 m/s^2 requires atan(a/g)=22.2 deg of horizontal tilt, well inside the ref5in 45-deg controller envelope.",
+   "launchers": [],
+   "experiments": [],
+   "ablated": false,
+   "swept_but_not_ablated": false,
+   "frozen_by_contract": false,
+   "origin": "python"
+  },
+  {
+   "name": "NAVRL_TARGET_MAX_MOTOR_THRUST_N",
+   "group": "other",
+   "type": "float",
+   "default": 9.6,
+   "default_expr": null,
+   "effective_default": 9.6,
+   "effective_differs": false,
+   "unit": "N",
+   "attr": "task_config.target_motion.physical_max_motor_thrust",
+   "declarations": [
+    {
+     "file": "aerial_gym/config/task_config/navrl_task_config.py",
+     "line": 559,
+     "scope": "task_config.target_motion",
+     "type": "float",
+     "default": 9.6
+    }
+   ],
+   "mirrors": false,
+   "echoes": [],
+   "doc": "",
+   "doc_short": null,
+   "launchers": [],
+   "experiments": [],
+   "ablated": false,
+   "swept_but_not_ablated": false,
+   "frozen_by_contract": false,
+   "origin": "python"
+  },
+  {
+   "name": "NAVRL_TARGET_MAX_TILT_DEG",
+   "group": "other",
+   "type": "float",
+   "default": 45.0,
+   "default_expr": null,
+   "effective_default": 45.0,
+   "effective_differs": false,
+   "unit": "°",
+   "attr": "task_config.target_motion.physical_max_tilt_deg",
+   "declarations": [
+    {
+     "file": "aerial_gym/config/task_config/navrl_task_config.py",
+     "line": 562,
+     "scope": "task_config.target_motion",
+     "type": "float",
+     "default": 45.0
+    }
+   ],
+   "mirrors": false,
+   "echoes": [],
+   "doc": "",
+   "doc_short": null,
+   "launchers": [],
+   "experiments": [],
+   "ablated": false,
+   "swept_but_not_ablated": false,
+   "frozen_by_contract": false,
+   "origin": "python"
+  },
+  {
+   "name": "NAVRL_TARGET_MAX_TURN_RATE_DEG",
+   "group": "other",
+   "type": "float",
+   "default": 150.0,
+   "default_expr": null,
+   "effective_default": 150.0,
+   "effective_differs": false,
+   "unit": "°",
+   "attr": "task_config.target_motion.max_turn_rate_deg",
+   "declarations": [
+    {
+     "file": "aerial_gym/config/task_config/navrl_task_config.py",
+     "line": 548,
+     "scope": "task_config.target_motion",
+     "type": "float",
+     "default": 150.0
+    }
+   ],
+   "mirrors": false,
+   "echoes": [],
+   "doc": "[deg/s]",
+   "doc_short": "[deg/s]",
+   "launchers": [],
+   "experiments": [],
+   "ablated": false,
+   "swept_but_not_ablated": false,
+   "frozen_by_contract": false,
+   "origin": "python"
+  },
+  {
+   "name": "NAVRL_TARGET_MOTOR_ARM_XY_M",
+   "group": "other",
+   "type": "float",
+   "default": 0.0777817,
+   "default_expr": null,
+   "effective_default": 0.0777817,
+   "effective_differs": false,
+   "unit": "m",
+   "attr": "task_config.target_motion.physical_motor_arm_xy",
+   "declarations": [
+    {
+     "file": "aerial_gym/config/task_config/navrl_task_config.py",
+     "line": 558,
+     "scope": "task_config.target_motion",
+     "type": "float",
+     "default": 0.0777817
+    }
+   ],
+   "mirrors": false,
+   "echoes": [],
+   "doc": "",
+   "doc_short": null,
+   "launchers": [],
+   "experiments": [],
+   "ablated": false,
+   "swept_but_not_ablated": false,
+   "frozen_by_contract": false,
+   "origin": "python"
+  },
+  {
+   "name": "NAVRL_TARGET_MOTOR_TAU_S",
+   "group": "other",
+   "type": "float",
+   "default": 0.04,
+   "default_expr": null,
+   "effective_default": 0.04,
+   "effective_differs": false,
+   "unit": "s",
+   "attr": "task_config.target_motion.physical_motor_tau",
+   "declarations": [
+    {
+     "file": "aerial_gym/config/task_config/navrl_task_config.py",
+     "line": 560,
+     "scope": "task_config.target_motion",
+     "type": "float",
+     "default": 0.04
+    }
+   ],
+   "mirrors": false,
+   "echoes": [],
+   "doc": "",
+   "doc_short": null,
+   "launchers": [],
+   "experiments": [],
+   "ablated": false,
+   "swept_but_not_ablated": false,
+   "frozen_by_contract": false,
+   "origin": "python"
+  },
+  {
+   "name": "NAVRL_TARGET_OBSTACLE_CLEARANCE",
+   "group": "other",
+   "type": "float",
+   "default": 0.77,
+   "default_expr": null,
+   "effective_default": 0.77,
+   "effective_differs": false,
+   "unit": null,
+   "attr": "task_config.target_motion.obstacle_clearance",
+   "declarations": [
+    {
+     "file": "aerial_gym/config/task_config/navrl_task_config.py",
+     "line": 554,
+     "scope": "task_config.target_motion",
+     "type": "float",
+     "default": 0.77
+    }
+   ],
+   "mirrors": false,
+   "echoes": [],
+   "doc": "Conservative centre-distance proxy: max 0.8 m square half-diagonal (0.566 m) +\n0.14 m target half-width + 0.06 m modelling margin = 0.766 m. This is intentionally\nseparate from goal_min_bar_clearance=1.0 m, which keeps the *capture sphere* flyable and\nis not the physical target's collision radius.\n[m]",
+   "doc_short": "Conservative centre-distance proxy: max 0.8 m square half-diagonal (0.566 m) + 0.14 m target half-width + 0.06 m modelling margin = 0.766 m.",
+   "launchers": [],
+   "experiments": [],
+   "ablated": false,
+   "swept_but_not_ablated": false,
+   "frozen_by_contract": false,
+   "origin": "python"
+  },
+  {
    "name": "NAVRL_TARGET_PATTERN",
    "group": "curriculum",
    "type": "str",
@@ -10253,7 +11153,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 534,
+     "line": 596,
      "scope": "task_config.target_motion",
      "type": "str",
      "default": "mixed"
@@ -10263,7 +11163,7 @@
    "echoes": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 5078,
+     "line": 6442,
      "scope": "NavRLTask"
     }
    ],
@@ -10382,7 +11282,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 530,
+     "line": 592,
      "scope": "task_config.target_motion",
      "type": "float",
      "default": -1.0
@@ -10392,7 +11292,7 @@
    "echoes": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1054,
+     "line": 1488,
      "scope": "NavRLTask"
     }
    ],
@@ -10425,7 +11325,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 517,
+     "line": 579,
      "scope": "task_config.target_motion",
      "type": "float",
      "default": 0.0
@@ -10461,6 +11361,10 @@
      "value": "0.75"
     },
     {
+     "file": "aerial_gym/rl_training/rl_games/train_navrl_physical_fresh.sh",
+     "value": "${NAVRL_TARGET_SPEED_FINAL:-1.5}"
+    },
+    {
      "file": "aerial_gym/rl_training/rl_games/train_navrl_sensorfix_fresh_pilot.sh",
      "value": "1.5"
     },
@@ -10488,7 +11392,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 520,
+     "line": 582,
      "scope": "task_config.target_motion",
      "type": "float",
      "default": 0.0
@@ -10551,7 +11455,7 @@
    "declarations": [
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 528,
+     "line": 590,
      "scope": "task_config.target_motion",
      "type": "int",
      "default": 3000
@@ -10565,6 +11469,10 @@
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh",
      "value": "300"
+    },
+    {
+     "file": "aerial_gym/rl_training/rl_games/train_navrl_physical_fresh.sh",
+     "value": "${NAVRL_TARGET_SPEED_RAMP_EPOCHS:-1}"
     },
     {
      "file": "aerial_gym/rl_training/rl_games/train_navrl_v2_recover_safe.sh",
@@ -10582,6 +11490,96 @@
    "experiments": [],
    "ablated": false,
    "swept_but_not_ablated": true,
+   "frozen_by_contract": false,
+   "origin": "python"
+  },
+  {
+   "name": "NAVRL_TARGET_TRACKING_MARGIN_M",
+   "group": "other",
+   "type": "float",
+   "default": 0.45,
+   "default_expr": null,
+   "effective_default": 0.45,
+   "effective_differs": false,
+   "unit": "m",
+   "attr": "task_config.target_motion.physical_tracking_margin",
+   "declarations": [
+    {
+     "file": "aerial_gym/config/task_config/navrl_task_config.py",
+     "line": 573,
+     "scope": "task_config.target_motion",
+     "type": "float",
+     "default": 0.45
+    }
+   ],
+   "mirrors": false,
+   "echoes": [],
+   "doc": "Tracking-error reserve used by the planner around bars and walls. The collision hull is\nalready included in obstacle_clearance; this additional term covers closed-loop lag.",
+   "doc_short": "Tracking-error reserve used by the planner around bars and walls.",
+   "launchers": [],
+   "experiments": [],
+   "ablated": false,
+   "swept_but_not_ablated": false,
+   "frozen_by_contract": false,
+   "origin": "python"
+  },
+  {
+   "name": "NAVRL_TARGET_VEL_KP",
+   "group": "other",
+   "type": "float",
+   "default": 2.5,
+   "default_expr": null,
+   "effective_default": 2.5,
+   "effective_differs": false,
+   "unit": null,
+   "attr": "task_config.target_motion.physical_velocity_kp",
+   "declarations": [
+    {
+     "file": "aerial_gym/config/task_config/navrl_task_config.py",
+     "line": 563,
+     "scope": "task_config.target_motion",
+     "type": "float",
+     "default": 2.5
+    }
+   ],
+   "mirrors": false,
+   "echoes": [],
+   "doc": "",
+   "doc_short": null,
+   "launchers": [],
+   "experiments": [],
+   "ablated": false,
+   "swept_but_not_ablated": false,
+   "frozen_by_contract": false,
+   "origin": "python"
+  },
+  {
+   "name": "NAVRL_TARGET_YAW_TORQUE_RATIO_M",
+   "group": "other",
+   "type": "float",
+   "default": 0.01,
+   "default_expr": null,
+   "effective_default": 0.01,
+   "effective_differs": false,
+   "unit": "m",
+   "attr": "task_config.target_motion.physical_yaw_torque_ratio",
+   "declarations": [
+    {
+     "file": "aerial_gym/config/task_config/navrl_task_config.py",
+     "line": 561,
+     "scope": "task_config.target_motion",
+     "type": "float",
+     "default": 0.01
+    }
+   ],
+   "mirrors": false,
+   "echoes": [],
+   "doc": "",
+   "doc_short": null,
+   "launchers": [],
+   "experiments": [],
+   "ablated": false,
+   "swept_but_not_ablated": false,
    "frozen_by_contract": false,
    "origin": "python"
   },
@@ -10608,12 +11606,12 @@
    "echoes": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1722,
+     "line": 2184,
      "scope": "NavRLTask"
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 2406,
+     "line": 2918,
      "scope": "NavRLTask"
     }
    ],
@@ -10703,6 +11701,14 @@
    "doc": "런처 스크립트가 직접 소비하는 값이다. 파이썬 코드는 이 이름을 읽지 않고, 런처가 셀마다 개별 knob으로 펼쳐서 전달한다.",
    "doc_short": "런처 전용 — 셀별 knob으로 펼쳐진다.",
    "launchers": [
+    {
+     "file": "aerial_gym/rl_training/rl_games/train_navrl_ref5in_active_search_geofence_ab.sh",
+     "value": "/preflight/source_manifest.json"
+    },
+    {
+     "file": "aerial_gym/rl_training/rl_games/train_navrl_ref5in_active_search_geofence_ab.sh",
+     "value": "$(${PYTHON} -c 'import json,sys; print(json.loads(sys.argv[1])[\"manifest\"])' \"${RECEIPT_JSON}\")"
+    },
     {
      "file": "aerial_gym/rl_training/rl_games/train_navrl_v2_ref5in_d1_adapt.sh",
      "value": "/preflight/source_manifest.json"
@@ -10832,7 +11838,7 @@
     },
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh",
-     "line": 571,
+     "line": 574,
      "scope": "shell launcher",
      "type": "str",
      "default": null
@@ -10881,6 +11887,10 @@
     },
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_governor_adaptation_abc.sh",
+     "value": "deterministic"
+    },
+    {
+     "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_joint_speed_telemetry.sh",
      "value": "deterministic"
     },
     {
@@ -10966,7 +11976,7 @@
     },
     {
      "file": "aerial_gym/rl_training/rl_games/train_navrl_v2_search.sh",
-     "line": 289,
+     "line": 300,
      "scope": "shell launcher",
      "type": "str",
      "default": "0"
@@ -11017,7 +12027,7 @@
    "declarations": [
     {
      "file": "aerial_gym/rl_training/rl_games/train_navrl_v2_search.sh",
-     "line": 303,
+     "line": 314,
      "scope": "shell launcher",
      "type": "str",
      "default": "0"
@@ -11028,6 +12038,10 @@
    "doc": "런처 스크립트가 직접 소비하는 값이다. 파이썬 코드는 이 이름을 읽지 않고, 런처가 셀마다 개별 knob으로 펼쳐서 전달한다.",
    "doc_short": "런처 전용 — 셀별 knob으로 펼쳐진다.",
    "launchers": [
+    {
+     "file": "aerial_gym/rl_training/rl_games/train_navrl_ref5in_active_search_geofence_ab.sh",
+     "value": "${AS_PREFLIGHT}"
+    },
     {
      "file": "aerial_gym/rl_training/rl_games/train_navrl_v2_ep24000_speed_governor.sh",
      "value": "1"
@@ -11094,7 +12108,7 @@
     },
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh",
-     "line": 592,
+     "line": 595,
      "scope": "shell launcher",
      "type": "str",
      "default": "70 150 210 280"
@@ -11144,6 +12158,10 @@
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_governor_adaptation_abc.sh",
      "value": "130 160 190 205 220"
+    },
+    {
+     "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_joint_speed_telemetry.sh",
+     "value": "205"
     },
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_latency_budget.sh",
@@ -11263,14 +12281,14 @@
    "declarations": [
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh",
-     "line": 575,
+     "line": 578,
      "scope": "shell launcher",
      "type": "str",
      "default": "0"
     },
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh",
-     "line": 635,
+     "line": 638,
      "scope": "shell launcher",
      "type": "str",
      "default": "0"
@@ -11374,7 +12392,7 @@
     },
     {
      "file": "aerial_gym/rl_training/rl_games/train_navrl_v2_search.sh",
-     "line": 293,
+     "line": 304,
      "scope": "shell launcher",
      "type": "str",
      "default": "main"
@@ -11385,6 +12403,10 @@
    "doc": "런처 스크립트가 직접 소비하는 값이다. 파이썬 코드는 이 이름을 읽지 않고, 런처가 셀마다 개별 knob으로 펼쳐서 전달한다.",
    "doc_short": "런처 전용 — 셀별 knob으로 펼쳐진다.",
    "launchers": [
+    {
+     "file": "aerial_gym/rl_training/rl_games/train_navrl_ref5in_active_search_geofence_ab.sh",
+     "value": "main"
+    },
     {
      "file": "aerial_gym/rl_training/rl_games/train_navrl_v2_ep24000_speed_governor.sh",
      "value": "main"
@@ -11437,14 +12459,14 @@
    "declarations": [
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh",
-     "line": 811,
+     "line": 834,
      "scope": "shell launcher",
      "type": "str",
      "default": "train_session_logs/eval_v2_${RUN_NAME"
     },
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh",
-     "line": 814,
+     "line": 837,
      "scope": "shell launcher",
      "type": "str",
      "default": null
@@ -11474,7 +12496,7 @@
    "declarations": [
     {
      "file": "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh",
-     "line": 827,
+     "line": 850,
      "scope": "shell launcher",
      "type": "str",
      "default": null
@@ -11606,6 +12628,10 @@
      "value": "1"
     },
     {
+     "file": "aerial_gym/rl_training/rl_games/train_navrl_physical_fresh.sh",
+     "value": "${NAVRL_VISION:-1}"
+    },
+    {
      "file": "aerial_gym/rl_training/rl_games/train_navrl_sensorfix_fresh_pilot.sh",
      "value": "1"
     },
@@ -11644,7 +12670,7 @@
     },
     {
      "file": "aerial_gym/config/task_config/navrl_task_config.py",
-     "line": 400,
+     "line": 425,
      "scope": "task_config",
      "type": "float",
      "default": 2.5
@@ -11681,6 +12707,10 @@
     },
     {
      "file": "aerial_gym/rl_training/rl_games/train_navrl_general_repr_density.sh",
+     "value": "3.0"
+    },
+    {
+     "file": "aerial_gym/rl_training/rl_games/train_navrl_ref5in_active_search_geofence_ab.sh",
      "value": "3.0"
     },
     {
@@ -11796,7 +12826,7 @@
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 5420,
+     "line": 6791,
      "scope": "NavRLTask"
     }
    ]
@@ -11816,7 +12846,7 @@
    "sites": [
     {
      "file": "aerial_gym/rl_training/rl_games/runner.py",
-     "line": 524,
+     "line": 540,
      "scope": "<module>"
     }
    ]
@@ -11871,7 +12901,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1838,
+     "line": 2322,
      "scope": "NavRLTask"
     }
    ]
@@ -11881,7 +12911,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1474,
+     "line": 1932,
      "scope": "NavRLTask"
     }
    ]
@@ -11896,7 +12926,7 @@
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 714,
+     "line": 1081,
      "scope": "NavRLTask"
     }
    ]
@@ -11911,12 +12941,12 @@
     },
     {
      "file": "aerial_gym/rl_training/rl_games/runner.py",
-     "line": 590,
+     "line": 606,
      "scope": "<module>"
     },
     {
      "file": "aerial_gym/rl_training/rl_games/runner.py",
-     "line": 675,
+     "line": 691,
      "scope": "<module>"
     },
     {
@@ -11926,12 +12956,12 @@
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1821,
+     "line": 2305,
      "scope": "NavRLTask"
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 2347,
+     "line": 2844,
      "scope": "NavRLTask"
     }
    ]
@@ -11946,27 +12976,27 @@
     },
     {
      "file": "aerial_gym/rl_training/rl_games/runner.py",
-     "line": 580,
+     "line": 596,
      "scope": "<module>"
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1819,
+     "line": 2303,
      "scope": "NavRLTask"
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 2312,
+     "line": 2809,
      "scope": "NavRLTask"
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 5165,
+     "line": 6530,
      "scope": "NavRLTask"
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 5451,
+     "line": 6822,
      "scope": "NavRLTask"
     }
    ]
@@ -11981,12 +13011,12 @@
     },
     {
      "file": "aerial_gym/rl_training/rl_games/runner.py",
-     "line": 586,
+     "line": 602,
      "scope": "<module>"
     },
     {
      "file": "aerial_gym/rl_training/rl_games/runner.py",
-     "line": 674,
+     "line": 690,
      "scope": "<module>"
     },
     {
@@ -11996,17 +13026,17 @@
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1820,
+     "line": 2304,
      "scope": "NavRLTask"
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 2335,
+     "line": 2832,
      "scope": "NavRLTask"
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 5452,
+     "line": 6823,
      "scope": "NavRLTask"
     }
    ]
@@ -12016,7 +13046,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 808,
+     "line": 1242,
      "scope": "NavRLTask"
     }
    ]
@@ -12026,7 +13056,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 690,
+     "line": 1045,
      "scope": "NavRLTask"
     }
    ]
@@ -12036,7 +13066,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 703,
+     "line": 1058,
      "scope": "NavRLTask"
     }
    ]
@@ -12046,7 +13076,7 @@
    "sites": [
     {
      "file": "aerial_gym/rl_training/rl_games/runner.py",
-     "line": 731,
+     "line": 747,
      "scope": "<module>"
     }
    ]
@@ -12056,7 +13086,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 759,
+     "line": 1141,
      "scope": "NavRLTask"
     }
    ]
@@ -12066,7 +13096,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1846,
+     "line": 2330,
      "scope": "NavRLTask"
     }
    ]
@@ -12076,7 +13106,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1897,
+     "line": 2381,
      "scope": "NavRLTask"
     }
    ]
@@ -12086,7 +13116,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1891,
+     "line": 2375,
      "scope": "NavRLTask"
     }
    ]
@@ -12096,7 +13126,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1894,
+     "line": 2378,
      "scope": "NavRLTask"
     }
    ]
@@ -12106,7 +13136,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1900,
+     "line": 2384,
      "scope": "NavRLTask"
     }
    ]
@@ -12116,7 +13146,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1888,
+     "line": 2372,
      "scope": "NavRLTask"
     }
    ]
@@ -12126,7 +13156,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 2724,
+     "line": 3266,
      "scope": "NavRLTask"
     }
    ]
@@ -12136,7 +13166,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_perception.py",
-     "line": 768,
+     "line": 867,
      "scope": "NavRLPerceptionModule"
     }
    ]
@@ -12146,7 +13176,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_perception.py",
-     "line": 763,
+     "line": 862,
      "scope": "NavRLPerceptionModule"
     }
    ]
@@ -12156,12 +13186,12 @@
    "sites": [
     {
      "file": "aerial_gym/rl_training/rl_games/runner.py",
-     "line": 616,
+     "line": 632,
      "scope": "<module>"
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1823,
+     "line": 2307,
      "scope": "NavRLTask"
     }
    ]
@@ -12171,7 +13201,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 796,
+     "line": 1178,
      "scope": "NavRLTask"
     }
    ]
@@ -12181,12 +13211,12 @@
    "sites": [
     {
      "file": "aerial_gym/rl_training/rl_games/runner.py",
-     "line": 873,
+     "line": 889,
      "scope": "<module>"
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 5068,
+     "line": 6432,
      "scope": "NavRLTask"
     }
    ]
@@ -12196,12 +13226,17 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 859,
+     "line": 1068,
      "scope": "NavRLTask"
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 5057,
+     "line": 1293,
+     "scope": "NavRLTask"
+    },
+    {
+     "file": "aerial_gym/task/navrl_task/navrl_task.py",
+     "line": 6421,
      "scope": "NavRLTask"
     }
    ]
@@ -12211,7 +13246,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 847,
+     "line": 1281,
      "scope": "NavRLTask"
     }
    ]
@@ -12221,7 +13256,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 695,
+     "line": 1050,
      "scope": "NavRLTask"
     }
    ]
@@ -12231,12 +13266,12 @@
    "sites": [
     {
      "file": "aerial_gym/rl_training/rl_games/navrl_players.py",
-     "line": 30,
+     "line": 35,
      "scope": "NavRLPpoPlayerContinuous"
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 5073,
+     "line": 6437,
      "scope": "NavRLTask"
     }
    ]
@@ -12246,7 +13281,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 5104,
+     "line": 6468,
      "scope": "NavRLTask"
     }
    ]
@@ -12256,7 +13291,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 3952,
+     "line": 5010,
      "scope": "NavRLTask"
     }
    ]
@@ -12266,7 +13301,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_perception.py",
-     "line": 838,
+     "line": 937,
      "scope": "NavRLPerceptionModule"
     }
    ]
@@ -12276,7 +13311,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 881,
+     "line": 1315,
      "scope": "NavRLTask"
     }
    ]
@@ -12286,7 +13321,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 880,
+     "line": 1314,
      "scope": "NavRLTask"
     }
    ]
@@ -12296,7 +13331,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 841,
+     "line": 1275,
      "scope": "NavRLTask"
     }
    ]
@@ -12306,7 +13341,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 887,
+     "line": 1321,
      "scope": "NavRLTask"
     }
    ]
@@ -12316,7 +13351,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 883,
+     "line": 1317,
      "scope": "NavRLTask"
     }
    ]
@@ -12326,7 +13361,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 889,
+     "line": 1323,
      "scope": "NavRLTask"
     }
    ]
@@ -12336,7 +13371,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1047,
+     "line": 1481,
      "scope": "NavRLTask"
     }
    ]
@@ -12346,7 +13381,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 844,
+     "line": 1278,
      "scope": "NavRLTask"
     }
    ]
@@ -12356,7 +13391,17 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 838,
+     "line": 1272,
+     "scope": "NavRLTask"
+    }
+   ]
+  },
+  {
+   "name": "NAVRL_JOINT_SPEED_TELEMETRY",
+   "sites": [
+    {
+     "file": "aerial_gym/task/navrl_task/navrl_task.py",
+     "line": 1062,
      "scope": "NavRLTask"
     }
    ]
@@ -12371,7 +13416,7 @@
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1905,
+     "line": 2389,
      "scope": "NavRLTask"
     }
    ]
@@ -12386,7 +13431,7 @@
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1907,
+     "line": 2391,
      "scope": "NavRLTask"
     }
    ]
@@ -12401,7 +13446,7 @@
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1903,
+     "line": 2387,
      "scope": "NavRLTask"
     }
    ]
@@ -12416,7 +13461,7 @@
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1910,
+     "line": 2394,
      "scope": "NavRLTask"
     }
    ]
@@ -12426,18 +13471,38 @@
    "sites": [
     {
      "file": "aerial_gym/rl_training/rl_games/runner.py",
-     "line": 623,
+     "line": 639,
      "scope": "<module>"
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1843,
+     "line": 2327,
      "scope": "NavRLTask"
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1848,
+     "line": 2332,
      "scope": "NavRLTask"
+    }
+   ]
+  },
+  {
+   "name": "NAVRL_MODE_PROBE_JSON",
+   "sites": [
+    {
+     "file": "aerial_gym/rl_training/rl_games/navrl_players.py",
+     "line": 56,
+     "scope": "NavRLPpoPlayerContinuous"
+    }
+   ]
+  },
+  {
+   "name": "NAVRL_MODE_PROBE_OFFSET_DEG",
+   "sites": [
+    {
+     "file": "aerial_gym/rl_training/rl_games/navrl_players.py",
+     "line": 61,
+     "scope": "NavRLPpoPlayerContinuous"
     }
    ]
   },
@@ -12446,8 +13511,48 @@
    "sites": [
     {
      "file": "aerial_gym/rl_training/rl_games/runner.py",
-     "line": 888,
+     "line": 904,
      "scope": "<module>"
+    }
+   ]
+  },
+  {
+   "name": "NAVRL_OBS_DUMP",
+   "sites": [
+    {
+     "file": "aerial_gym/task/navrl_task/navrl_task.py",
+     "line": 1192,
+     "scope": "NavRLTask"
+    }
+   ]
+  },
+  {
+   "name": "NAVRL_OBS_DUMP_MAX",
+   "sites": [
+    {
+     "file": "aerial_gym/task/navrl_task/navrl_task.py",
+     "line": 1199,
+     "scope": "NavRLTask"
+    }
+   ]
+  },
+  {
+   "name": "NAVRL_OBS_DUMP_MAX_EPISODES",
+   "sites": [
+    {
+     "file": "aerial_gym/task/navrl_task/navrl_task.py",
+     "line": 1219,
+     "scope": "NavRLTask"
+    }
+   ]
+  },
+  {
+   "name": "NAVRL_OBS_DUMP_STRIDE",
+   "sites": [
+    {
+     "file": "aerial_gym/task/navrl_task/navrl_task.py",
+     "line": 1196,
+     "scope": "NavRLTask"
     }
    ]
   },
@@ -12456,7 +13561,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 756,
+     "line": 1138,
      "scope": "NavRLTask"
     }
    ]
@@ -12471,7 +13576,7 @@
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1647,
+     "line": 2109,
      "scope": "NavRLTask"
     }
    ]
@@ -12486,12 +13591,12 @@
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1652,
+     "line": 2114,
      "scope": "NavRLTask"
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1875,
+     "line": 2359,
      "scope": "NavRLTask"
     }
    ]
@@ -12506,7 +13611,7 @@
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1872,
+     "line": 2356,
      "scope": "NavRLTask"
     }
    ]
@@ -12521,7 +13626,7 @@
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1879,
+     "line": 2363,
      "scope": "NavRLTask"
     }
    ]
@@ -12536,7 +13641,7 @@
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1882,
+     "line": 2366,
      "scope": "NavRLTask"
     }
    ]
@@ -12551,7 +13656,7 @@
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1885,
+     "line": 2369,
      "scope": "NavRLTask"
     }
    ]
@@ -12561,7 +13666,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1868,
+     "line": 2352,
      "scope": "NavRLTask"
     }
    ]
@@ -12571,7 +13676,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1865,
+     "line": 2349,
      "scope": "NavRLTask"
     }
    ]
@@ -12581,7 +13686,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1863,
+     "line": 2347,
      "scope": "NavRLTask"
     }
    ]
@@ -12591,7 +13696,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1860,
+     "line": 2344,
      "scope": "NavRLTask"
     }
    ]
@@ -12601,7 +13706,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1854,
+     "line": 2338,
      "scope": "NavRLTask"
     }
    ]
@@ -12611,7 +13716,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1856,
+     "line": 2340,
      "scope": "NavRLTask"
     }
    ]
@@ -12621,7 +13726,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1852,
+     "line": 2336,
      "scope": "NavRLTask"
     }
    ]
@@ -12636,7 +13741,7 @@
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1913,
+     "line": 2397,
      "scope": "NavRLTask"
     }
    ]
@@ -12646,7 +13751,7 @@
    "sites": [
     {
      "file": "aerial_gym/rl_training/rl_games/navrl_players.py",
-     "line": 38,
+     "line": 43,
      "scope": "NavRLPpoPlayerContinuous"
     }
    ]
@@ -12656,8 +13761,18 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1256,
+     "line": 1692,
      "scope": "NavRLTask"
+    }
+   ]
+  },
+  {
+   "name": "NAVRL_REQUIRE_SOURCE_ROOT",
+   "sites": [
+    {
+     "file": "aerial_gym/rl_training/rl_games/navrl_import_origin.py",
+     "line": 113,
+     "scope": "<module>"
     }
    ]
   },
@@ -12666,7 +13781,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1253,
+     "line": 1689,
      "scope": "NavRLTask"
     }
    ]
@@ -12686,7 +13801,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 2218,
+     "line": 2715,
      "scope": "NavRLTask"
     }
    ]
@@ -12706,7 +13821,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 729,
+     "line": 1096,
      "scope": "NavRLTask"
     }
    ]
@@ -12726,7 +13841,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1249,
+     "line": 1685,
      "scope": "NavRLTask"
     }
    ]
@@ -12736,7 +13851,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1250,
+     "line": 1686,
      "scope": "NavRLTask"
     }
    ]
@@ -12751,12 +13866,12 @@
     },
     {
      "file": "aerial_gym/rl_training/rl_games/runner.py",
-     "line": 594,
+     "line": 610,
      "scope": "<module>"
     },
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1916,
+     "line": 2400,
      "scope": "NavRLTask"
     }
    ]
@@ -12766,7 +13881,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1841,
+     "line": 2325,
      "scope": "NavRLTask"
     }
    ]
@@ -12791,7 +13906,7 @@
    "sites": [
     {
      "file": "aerial_gym/task/navrl_task/navrl_task.py",
-     "line": 1839,
+     "line": 2323,
      "scope": "NavRLTask"
     }
    ]

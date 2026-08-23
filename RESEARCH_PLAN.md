@@ -181,7 +181,7 @@ env, 목표 거리 6–28 m 전체, 최종 FOV를 강제해 saved curriculum clo
 | P4 | 속도 상향 + 이동표적 요격 + PPO 안정화 |
 | P5 | 충돌 저감 — 고도 제어 → look-ahead → 장애물 표현 |
 | P6 | 밀도 커리큘럼 → **밀도 × 표적속도 지도** (논문 핵심 그림) |
-| P7 | sim-to-real: onboard latency, 센서 노이즈, 캘리브레이션 perturbation |
+| P7 | sim-to-real: exact BOM/calibration/time sync → real-log sensor profile → tracker replay → 측정 분포 기반 perturbation. 현재 72시간 실행 authority는 [`docs/SIM2REAL_3DAY_EXECUTION_PLAN.md`](docs/SIM2REAL_3DAY_EXECUTION_PLAN.md) |
 
 ### 5.1 완료 마일스톤 (B0–B5)
 
@@ -336,6 +336,10 @@ arena 자체를 확장한 뒤 `k_final`을 함께 높인다.
 P0–P3 fail-closed gate, D0/D1 진단, camera-range §8.29 사전등록·판정·다음 단계는
 VERIFICATION.md에 통합했다. v2 205-bar / TTC / riskcap 역사(구 §8.1–8.22)는
 [`docs/archive/RESEARCH_PLAN_v2_history.md`](docs/archive/RESEARCH_PLAN_v2_history.md)에 보관한다.
+
+2026-08-23 검출 거리 Stage 1은 `RANGE_INCONCLUSIVE_AT_THIS_BUDGET`로 종료되어 Stage 2 권한이 없다.
+P7의 다음 72시간은 [`docs/SIM2REAL_3DAY_EXECUTION_PLAN.md`](docs/SIM2REAL_3DAY_EXECUTION_PLAN.md)의
+실기 계측 계약을 따른다. 실제 log 없이 임의 noise를 정해 PPO를 재개하지 않는다.
 
 검증 단계에서도 §1–3 정보 방화벽, §4 방법, §6 실험 설계의 **claim 범위**는 변하지 않는다.
 P0–P3 PASS는 hardware validation을 대체하지 않는다.

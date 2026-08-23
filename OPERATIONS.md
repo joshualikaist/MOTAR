@@ -4,10 +4,12 @@
 검증 gate와 다음 실험은 [`VERIFICATION.md`](VERIFICATION.md), charter는 [`RESEARCH_PLAN.md`](RESEARCH_PLAN.md),
 최신 요약은 [`README.md`](README.md), 날짜별 기록은 [`WORKLOG.md`](WORKLOG.md)를 보세요.
 
-> 기준일: 2026-08-13
+> 기준일: 2026-08-23
 >
-> 현재 연구 run은 일반 `train_navrl.sh`를 직접 호출하지 않습니다. README에 적힌 **목적별 고정
-> launcher**를 사용합니다. 환경변수를 임의로 덧붙이면 같은 이름으로 다른 실험을 만들기 쉽습니다.
+> 현재 72시간은 새 PPO run 단계가 아닙니다. 사용자가 해야 할 exact BOM·calibration·sensor trial과
+> 다음 학습 전 숫자는 [`docs/SIM2REAL_3DAY_EXECUTION_PLAN.md`](docs/SIM2REAL_3DAY_EXECUTION_PLAN.md)를
+> 단일 기준으로 봅니다. 그 gate 이후에도 일반 `train_navrl.sh`를 직접 호출하지 않고 사전등록한
+> 목적별 launcher만 사용합니다.
 
 ## 1. 처음 설치할 때
 

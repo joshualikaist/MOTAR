@@ -206,6 +206,36 @@ function renderResearchUpdate(s) {
   }
 }
 
+function renderSim2Real72h(s) {
+  const p = s.sim2real_72h || {};
+  const evidence = p.evidence || {};
+  const hero = document.getElementById('sim2real-hero');
+  const days = document.getElementById('sim2real-days');
+  const blockers = document.getElementById('sim2real-blockers');
+  if (hero) {
+    const verdict = evidence.verdict || 'sensor contract pending';
+    const delta = Number(evidence.never_acquired_delta_pp);
+    hero.innerHTML = `<div><span class="eyebrow">${p.status || 'MEASURE BEFORE RETRAINING'}</span>
+      <strong>실기 숫자를 먼저 닫고, 그 분포로 다음 학습을 사전등록합니다.</strong>
+      <p>Stage 1: <b>${verdict}</b> · primary ${Number.isFinite(delta) ? delta.toFixed(3) + ' pp' : '—'}
+      · Stage 2 ${evidence.stage2_authorised === true ? 'authorised' : 'blocked'}.
+      28 m arm의 exact analytic range는 실기 증거가 아닙니다.</p></div>
+      <div class="update-run"><span class="update-snap">72 HOUR GATE</span>
+      <b>${p.as_of || '—'}</b><span>실기 비행 0회 · 새 PPO 보류</span></div>`;
+  }
+  if (days) {
+    days.innerHTML = (p.days || []).map(d => `<article class="milestone">
+      <span>${d.day || ''}</span><b>${d.title || ''}</b><p>${d.detail || ''}</p>
+      </article>`).join('');
+  }
+  if (blockers) {
+    blockers.innerHTML = `<p><b>학습 전 필수</b></p><ul>${(p.training_blockers || [])
+      .map(item => `<li>${item}</li>`).join('')}</ul>
+      <p class="decision">하나라도 비면 Stage 2/P3/fresh PPO를 실행하지 않습니다.
+      <a href="../SIM2REAL_3DAY_EXECUTION_PLAN.md">전체 계측 계약 보기</a></p>`;
+  }
+}
+
 function renderRuns(s) {
   // Sort by completion time, not by name. update_status_snapshot.py sorts `runs` by run NAME, and
   // this used to just .reverse() that -- so "the latest 12" was the lexicographically last 12, and
@@ -296,5 +326,5 @@ function renderPhases(s) {
   }));
 }
 
-MOTAR.register(renderLive, renderCriteria, renderResearchUpdate, renderRuns, renderNow,
+MOTAR.register(renderLive, renderCriteria, renderResearchUpdate, renderSim2Real72h, renderRuns, renderNow,
                renderPhases);

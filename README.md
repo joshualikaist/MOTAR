@@ -14,9 +14,9 @@ LiDAR로 표적·장애물을 보고, 시뮬레이터 ego-state로 자신의 자
 실패가 capture/crash/timeout 중 무엇이었는지를 함께 보존합니다. 처음 보는 분은 아래 “현재 결론”과
 “5분 안에 확인하기”만 읽고, 실험을 직접 돌릴 때 `OPERATIONS.md`로 넘어가면 됩니다.
 
-> 현재 기준일: **2026-08-20**
+> 현재 기준일: **2026-08-23**
 >
-> **문서 6개:** [VERIFICATION.md](VERIFICATION.md)(검증 gate·다음 실험) · [RESEARCH_PLAN.md](RESEARCH_PLAN.md)(charter) · [WORKLOG.md](WORKLOG.md)(기록) · [OPERATIONS.md](OPERATIONS.md)(명령) · [CRASH_TUNING_LOG.md](CRASH_TUNING_LOG.md)(과거 진단, archival) · [docs/status/](docs/status/)(대시보드)
+> **실행 문서:** [SIM2REAL_3DAY_EXECUTION_PLAN.md](docs/SIM2REAL_3DAY_EXECUTION_PLAN.md)(앞으로 72시간의 단일 작업·계측 계약) · [VERIFICATION.md](VERIFICATION.md)(검증 gate) · [RESEARCH_PLAN.md](RESEARCH_PLAN.md)(charter) · [WORKLOG.md](WORKLOG.md)(기록) · [OPERATIONS.md](OPERATIONS.md)(명령) · [docs/status/](docs/status/)(대시보드)
 
 ## 현재 결론
 
@@ -26,6 +26,7 @@ LiDAR로 표적·장애물을 보고, 시뮬레이터 ego-state로 자신의 자
 | learned detector 연결 | frozen navigation policy에서 learned-v2가 analytic bootstrap 대비 비열등하다는 결과를 두 평가 seed에서 재현했습니다. | 더 최신인 learned-v7을 그대로 꽂으면 nominal 성능이 떨어집니다. threshold만 바꿔 해결되는 문제가 아니며, detector 출력 분포에 맞춘 별도 학습이 필요합니다. |
 | 고밀도 기하 | 수정된 좌표계의 정적 2-D 검사에서 333/333 장면에 경로가 존재했습니다. | 회전·제동·표적 이동·600-step 제한을 포함한 동적 도달 가능성은 아닙니다. “길이 있으니 정책 문제”라고 단정할 수 없습니다. |
 | `navrl_ref5in_quad` 후보 기체 | CPU 저장소 계약 **26/26**, canonical same-controller simulator gate **21/21**, P1c fresh 900-epoch engineering gate를 통과했습니다. 장거리 D1은 q3/CV capture를 D0 대비 +15.19pp 개선했습니다. | held-out P2는 timeout 상한을 넘어 **strict FAIL**이고, D1도 q3/CV timeout 15.98%로 사전등록한 12%를 넘어 **FAIL**입니다. P3 장기학습은 차단했습니다. 실기 비행, CAD, endurance, 열·전원 여유도 미검증입니다. |
+| 검출 거리 Stage 1 | 20/28 m arm을 각 1,000 epoch 적응·2,049 episode 평가했고 quality/provenance gate **17/17 PASS**였습니다. never-acquired는 `8.443→3.172%`(−5.271 pp), capture는 `82.235→88.677%`였습니다. | 사전등록 primary `−15 pp`를 못 넘어 공식 판정은 **RANGE_INCONCLUSIVE_AT_THIS_BUDGET**입니다. capture는 부수 관측이고 Stage 2 권한은 없습니다. 두 arm 모두 far range가 analytic exact라 sim-to-real 증거가 아닙니다. |
 | 과거 navigation 결과 | legacy evaluator 안에서는 비교 가능한 동결 기록으로 보존합니다. | old 601-action 결과를 corrected exact-600 결과와 합치거나, legacy 기체 결과를 ref5in 성능으로 부를 수 없습니다. |
 
 gate 표와 진단 요약은 **[VERIFICATION.md](VERIFICATION.md)** 에 통합했습니다. camera-range A/B는
@@ -217,26 +218,19 @@ run 폴더 이관과 TensorBoard 병합 절차는 [OPERATIONS.md](OPERATIONS.md)
 
 과거 v1 density map과 v2 riskcap 실험은 실패 가설을 만드는 데 유용하지만 corrected-v2의 최종 성능표는 아닙니다. 숫자가 필요하면 메인 README의 요약보다 해당 `results/**/summary.md`의 계약·receipt·한계를 함께 읽으세요.
 
-## 다음 실행 순서
+## 앞으로 72시간
 
-1. **완료:** ref5in CPU 정합성 26/26과 canonical same-controller simulator gate 21/21을 고정했습니다.
-2. **P1a 완료·FAIL:** fresh 500 epoch에서 outcome은 gate를 넘었지만 epoch 432 behavior-KL rollback 1회와 거리 27 m 종료 때문에 전체 gate를 통과하지 못했습니다.
-3. **P1b 완료·FAIL:** LR `1.5e-5`에서 KL/rollback/OOB/outcome은 전부 통과했지만, 750 epoch도 마지막 2,048-episode 거리 증거창을 채우지 못해 max-state 27 m에서 끝났습니다. 실제 general-spawn 범위는 `[6,27] m`였습니다.
-4. **P1c PASS:** budget만 900 epoch로 늘린 fresh run이 모든 engineering gate를 통과했습니다.
-5. **P2 strict FAIL:** held-out seed 313에서 capture/crash는 통과했지만 timeout 5.56%가 상한 5%를 넘었습니다. legacy anchor와 P3는 실행하지 않았습니다.
-6. **진단 완료:** 장거리에서 timeout과 crash가 함께 증가했고, q3 timeout은 CV에서 waypoint보다 14.20pp 높았습니다. 표적 속도 alone 가설은 지지되지 않았습니다.
-7. **D1 완료·FAIL:** `[22.5,28] m` exposure로 모든 outcome은 개선됐지만 q3/CV timeout `15.98% > 12%`라 사전 gate를 통과하지 못했습니다. P2 FAIL은 유지합니다.
-8. **heading 진단 완료:** away−toward timeout +23.32pp로 radial-heading 채널을 확인했고 tangent 좌우 outcome 차이는 기준 미달이었습니다.
-9. **near-open 완료:** 1 bar에서도 away−toward timeout `+54.32pp`여서 dense obstacle occlusion 필요성은 기각했습니다.
-10. **outcome telemetry 완료:** seed 353에서 away capture−timeout visibility는 `+14.43pp`로 20pp screen에 미달했습니다. wall-reflection 표는 생존 선택편향 때문에 인과 판정에 쓰지 않습니다.
-11. **최초취득 계측 완료:** seed 359에서 outcome별 never-acquired rate는 away timeout `87.52%`, away capture `0.00%`, toward capture `0.00%`였습니다. 사전 30pp screen을 `+87.52pp`로 통과했고, 두 capture cohort가 모두 정확히 0%라는 점이 임계보다 강한 신호입니다 — 이 조건에서 최초 취득이 capture의 필요조건처럼 동작합니다. 독립 재계산에서 fused와 camera 최초취득이 6개 cohort 전부 일치해, 사실상 camera range 발견입니다. 다만 outcome은 궤적의 결과이므로 연관이지 인과가 아닙니다.
-12. **camera-range 진단 완료:** seed 367에서 target camera range `20→28 m` 한 값만 바꾸자 timeout이 `55.80→18.16%`로 줄었습니다. 초기 미관측의 인과 기여는 지지하지만, 사용자가 원하는 과제는 장거리 미관측 상태에서의 active search이므로 28 m camera는 positive control이지 자동 채택안이 아닙니다. 다음은 OOB exit를 acquired/never-acquired로 나눈 동결-policy 계측이며 P3는 계속 차단합니다.
-13. perception 연구는 corrected-v2 analytic baseline → learned detector arm → appearance-randomized arm 순으로 한 축씩 추가합니다.
-13. **OOB exit 진단 완료:** 20 m arm의 OOB 158건 중 152건(96.20%)은 표적을 한 번도 취득하지 못했고, outward 속도는 +1.002 m/s, target closing은 -0.834 m/s였습니다. actor에는 arena boundary/geofence/world XY가 없고 5-step(약 0.5 s) history만 있으므로, horizon·속도보다 boundary-observable active-search 계약이 다음 단일 변경축입니다. `results/navrl_ref5in_oob_exit_forensics_seed367/analysis.md`.
-14. perception 연구는 corrected-v2 analytic baseline → learned detector arm → appearance-randomized arm 순으로 한 축씩 추가합니다.
-15. **다음 사전등록 준비 완료, 미실행:** mapped geofence를 actor가 관측하는 active-search A/B를 별도 branch에 opt-in 구현했습니다. 기존은 898-D/17 tokens 그대로이고, geofence arm만 906-D/18 tokens fresh policy입니다. 두 fresh 900-epoch arm을 모두 실행하기 전에는 성능 결론을 내리지 않습니다. `docs/preregistration_active_search_geofence_2026-08-21.md`.
+단일 실행 목록은 **[docs/SIM2REAL_3DAY_EXECUTION_PLAN.md](docs/SIM2REAL_3DAY_EXECUTION_PLAN.md)** 다.
 
-현재 가장 큰 미해결 문제는 “더 오래 학습하면 되는가”가 아니라 **고밀도에서 pre-contact obstacle 정보, 제동 여유, detector 출력 분포, 기체 동역학 중 어느 축이 먼저 한계가 되는가**입니다.
+1. Day 1: exact BOM·AUW·CG·센서 serial/firmware/calibration/time-sync를 동결하고 거리×조명×운동 원자료를 독립 trial로 취득한다.
+2. Day 2: trial 단위 bearing/range/latency/dropout profile을 만들고 far bearing-only / near range-fusion 경계를 데이터로 정한다.
+3. Day 3: held-out real-log tracker replay와 schema smoke를 통과한 뒤에만 다음 fresh PPO 사전등록을 쓴다.
+4. 그전에는 검출 거리 Stage 2, P3 장기학습, reward/horizon/속도 동시 변경을 실행하지 않는다.
+
+과거 P0–D1과 camera-range/OOB/geofence 진단의 상세 순서는
+[VERIFICATION.md](VERIFICATION.md)와 [WORKLOG.md](WORKLOG.md)에 보존한다. 현재 가장 큰 미해결 문제는
+“더 오래 학습하면 되는가”가 아니라 **실기에서 actor에 들어갈 bearing·range·ego-state가 어느 오차·지연
+분포를 갖고, 그 계약으로도 추적과 제동이 닫히는가**다.
 
 ## 저장소 지도
 

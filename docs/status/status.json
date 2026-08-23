@@ -1,29 +1,29 @@
 {
-  "generated_at": "2026-08-13T07:32:45.521449+00:00",
+  "generated_at": "2026-08-23T12:19:19.004132+00:00",
   "repo": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator",
-  "n_runs": 77,
+  "n_runs": 86,
   "active_run": null,
   "latest_run": {
-    "run": "ppo_260805_0413_navrl_v2-speedgov-ep24000-205bars-main-riskcap-s1",
-    "finalized_at": "2026-08-04T20:18:15.101200+00:00",
+    "run": "ppo_260823_1347_navrl_v2-ref5in-detrange-clip28-s457",
+    "finalized_at": "2026-08-23T06:45:11.069979+00:00",
     "exit_reason": "max_epochs",
     "epochs_logged": 1000,
-    "first_epoch": 24001,
-    "last_epoch": 25000,
+    "first_epoch": 1901,
+    "last_epoch": 2900,
     "is_navrl": true,
-    "last_mean_reward": 39.7421,
-    "last_mean_episode_length": 147.306,
-    "last_captured_rate": 0.75,
-    "last_crash_rate": 0.25,
+    "last_mean_reward": 232.306,
+    "last_mean_episode_length": 120.678,
+    "last_captured_rate": 0.794118,
+    "last_crash_rate": 0.205882,
     "last_timeout_rate": 0.0,
-    "last_closest_approach_m": 0.40643,
-    "last_closest_min_m": 0.181831,
-    "last_curriculum_max_m": 9.7535,
-    "last_n_bars_active": 205,
+    "last_closest_approach_m": 0.427339,
+    "last_closest_min_m": 0.292018,
+    "last_curriculum_max_m": 25.5907,
+    "last_n_bars_active": 70,
     "peak_captured_rate": 1.0,
-    "peak_captured_epoch": 24271,
-    "peak_mean_reward": 77.4163,
-    "peak_epoch": 24006,
+    "peak_captured_epoch": 2261,
+    "peak_mean_reward": 250.546,
+    "peak_epoch": 2807,
     "reward_collapse": false
   },
   "runs": [
@@ -1799,6 +1799,213 @@
       "peak_mean_reward": 142.176,
       "peak_epoch": 849,
       "reward_collapse": false
+    },
+    {
+      "run": "ppo_260813_1636_navrl_v2-ref5in-d1-q3-adapt-s197",
+      "finalized_at": "2026-08-13T08:28:04.872206+00:00",
+      "exit_reason": "max_epochs",
+      "epochs_logged": 1000,
+      "first_epoch": 901,
+      "last_epoch": 1900,
+      "is_navrl": true,
+      "last_mean_reward": 182.114,
+      "last_mean_episode_length": 225.445,
+      "last_captured_rate": 0.787879,
+      "last_crash_rate": 0.181818,
+      "last_timeout_rate": 0.030303,
+      "last_closest_approach_m": 1.20579,
+      "last_closest_min_m": 0.248976,
+      "last_curriculum_max_m": 25.4324,
+      "last_n_bars_active": 70,
+      "peak_captured_rate": 1.0,
+      "peak_captured_epoch": 1760,
+      "peak_mean_reward": 188.373,
+      "peak_epoch": 1874,
+      "reward_collapse": false
+    },
+    {
+      "run": "ppo_260822_2309_navrl_v2-ref5in-detrange-smoke-clip28-s457",
+      "finalized_at": "2026-08-22T14:10:40.191991+00:00",
+      "exit_reason": "max_epochs",
+      "epochs_logged": 6,
+      "first_epoch": 1901,
+      "last_epoch": 1906,
+      "is_navrl": true,
+      "last_mean_reward": 225.37,
+      "last_mean_episode_length": 107.946,
+      "last_captured_rate": 0.833333,
+      "last_crash_rate": 0.166667,
+      "last_timeout_rate": 0.0,
+      "last_closest_approach_m": 0.418228,
+      "last_closest_min_m": 0.356111,
+      "last_curriculum_max_m": 27.3221,
+      "last_n_bars_active": 70,
+      "peak_captured_rate": 0.891892,
+      "peak_captured_epoch": 1904,
+      "peak_mean_reward": 225.37,
+      "peak_epoch": 1906,
+      "reward_collapse": false
+    },
+    {
+      "run": "ppo_260822_2312_navrl_v2-ref5in-detrange-smoke-clip28-s457",
+      "finalized_at": "2026-08-22T14:13:32.718144+00:00",
+      "exit_reason": "max_epochs",
+      "epochs_logged": 6,
+      "first_epoch": 1901,
+      "last_epoch": 1906,
+      "is_navrl": true,
+      "last_mean_reward": 225.871,
+      "last_mean_episode_length": 106.016,
+      "last_captured_rate": 0.9,
+      "last_crash_rate": 0.1,
+      "last_timeout_rate": 0.0,
+      "last_closest_approach_m": 0.412137,
+      "last_closest_min_m": 0.266617,
+      "last_curriculum_max_m": 23.5811,
+      "last_n_bars_active": 70,
+      "peak_captured_rate": 0.9,
+      "peak_captured_epoch": 1906,
+      "peak_mean_reward": 225.871,
+      "peak_epoch": 1906,
+      "reward_collapse": false
+    },
+    {
+      "run": "ppo_260822_2316_navrl_v2-ref5in-detrange-smoke-clip28-s457",
+      "finalized_at": "2026-08-22T14:17:30.623995+00:00",
+      "exit_reason": "max_epochs",
+      "epochs_logged": 6,
+      "first_epoch": 1901,
+      "last_epoch": 1906,
+      "is_navrl": true,
+      "last_mean_reward": 222.234,
+      "last_mean_episode_length": 109.286,
+      "last_captured_rate": 0.818182,
+      "last_crash_rate": 0.181818,
+      "last_timeout_rate": 0.0,
+      "last_closest_approach_m": 0.438248,
+      "last_closest_min_m": 0.342816,
+      "last_curriculum_max_m": 25.8144,
+      "last_n_bars_active": 70,
+      "peak_captured_rate": 0.828571,
+      "peak_captured_epoch": 1905,
+      "peak_mean_reward": 222.234,
+      "peak_epoch": 1906,
+      "reward_collapse": false
+    },
+    {
+      "run": "ppo_260822_2322_navrl_detrange-stage1-clip20-s457",
+      "finalized_at": "2026-08-22T16:19:00.172426+00:00",
+      "exit_reason": "max_epochs",
+      "epochs_logged": 1000,
+      "first_epoch": 1901,
+      "last_epoch": 2900,
+      "is_navrl": true,
+      "last_mean_reward": 152.245,
+      "last_mean_episode_length": 137.359,
+      "last_captured_rate": 0.844444,
+      "last_crash_rate": 0.155556,
+      "last_timeout_rate": 0.0,
+      "last_closest_approach_m": 0.390972,
+      "last_closest_min_m": 0.177821,
+      "last_curriculum_max_m": 9.64743,
+      "last_n_bars_active": 70,
+      "peak_captured_rate": 1.0,
+      "peak_captured_epoch": 1944,
+      "peak_mean_reward": 170.653,
+      "peak_epoch": 2713,
+      "reward_collapse": false
+    },
+    {
+      "run": "ppo_260823_0426_navrl_detrange-stage1-clip28-s457",
+      "finalized_at": "2026-08-22T21:40:14.629930+00:00",
+      "exit_reason": "max_epochs",
+      "epochs_logged": 1000,
+      "first_epoch": 1901,
+      "last_epoch": 2900,
+      "is_navrl": true,
+      "last_mean_reward": 172.331,
+      "last_mean_episode_length": 95.4145,
+      "last_captured_rate": 0.955556,
+      "last_crash_rate": 0.0444444,
+      "last_timeout_rate": 0.0,
+      "last_closest_approach_m": 0.417961,
+      "last_closest_min_m": 0.245005,
+      "last_curriculum_max_m": 16.8019,
+      "last_n_bars_active": 70,
+      "peak_captured_rate": 1.0,
+      "peak_captured_epoch": 2240,
+      "peak_mean_reward": 189.608,
+      "peak_epoch": 2646,
+      "reward_collapse": false
+    },
+    {
+      "run": "ppo_260823_1203_navrl_v2-ref5in-detrange-smoke-clip28-s457",
+      "finalized_at": "2026-08-23T03:04:17.440646+00:00",
+      "exit_reason": "max_epochs",
+      "epochs_logged": 6,
+      "first_epoch": 1901,
+      "last_epoch": 1906,
+      "is_navrl": true,
+      "last_mean_reward": 217.074,
+      "last_mean_episode_length": 106.694,
+      "last_captured_rate": 0.793103,
+      "last_crash_rate": 0.206897,
+      "last_timeout_rate": 0.0,
+      "last_closest_approach_m": 0.435769,
+      "last_closest_min_m": 0.310901,
+      "last_curriculum_max_m": 24.9617,
+      "last_n_bars_active": 70,
+      "peak_captured_rate": 0.810811,
+      "peak_captured_epoch": 1904,
+      "peak_mean_reward": 217.074,
+      "peak_epoch": 1906,
+      "reward_collapse": false
+    },
+    {
+      "run": "ppo_260823_1204_navrl_v2-ref5in-detrange-clip20-s457",
+      "finalized_at": "2026-08-23T04:47:44.635017+00:00",
+      "exit_reason": "max_epochs",
+      "epochs_logged": 1000,
+      "first_epoch": 1901,
+      "last_epoch": 2900,
+      "is_navrl": true,
+      "last_mean_reward": 221.481,
+      "last_mean_episode_length": 166.167,
+      "last_captured_rate": 0.842105,
+      "last_crash_rate": 0.157895,
+      "last_timeout_rate": 0.0,
+      "last_closest_approach_m": 0.420223,
+      "last_closest_min_m": 0.286212,
+      "last_curriculum_max_m": 26.6747,
+      "last_n_bars_active": 70,
+      "peak_captured_rate": 1.0,
+      "peak_captured_epoch": 1910,
+      "peak_mean_reward": 230.874,
+      "peak_epoch": 2688,
+      "reward_collapse": false
+    },
+    {
+      "run": "ppo_260823_1347_navrl_v2-ref5in-detrange-clip28-s457",
+      "finalized_at": "2026-08-23T06:45:11.069979+00:00",
+      "exit_reason": "max_epochs",
+      "epochs_logged": 1000,
+      "first_epoch": 1901,
+      "last_epoch": 2900,
+      "is_navrl": true,
+      "last_mean_reward": 232.306,
+      "last_mean_episode_length": 120.678,
+      "last_captured_rate": 0.794118,
+      "last_crash_rate": 0.205882,
+      "last_timeout_rate": 0.0,
+      "last_closest_approach_m": 0.427339,
+      "last_closest_min_m": 0.292018,
+      "last_curriculum_max_m": 25.5907,
+      "last_n_bars_active": 70,
+      "peak_captured_rate": 1.0,
+      "peak_captured_epoch": 2261,
+      "peak_mean_reward": 250.546,
+      "peak_epoch": 2807,
+      "reward_collapse": false
     }
   ],
   "density_curves": {
@@ -1992,7 +2199,7 @@
           "capture": 0.144
         }
       ],
-      "mtime": "2026-07-30T05:33:45.246286+00:00",
+      "mtime": "2026-08-22T13:14:07.342235+00:00",
       "task_version": "v1",
       "arena_xy_m": 24.0,
       "placement_area_m2": 478.0,
@@ -2710,106 +2917,86 @@
   },
   "other_curves": {},
   "research_update": {
-    "subtitle": "2026-08-13 · ref5in P1c PASS → held-out P2 strict FAIL",
-    "headline": "Long-range CV pursuit, not target speed alone, is the clearest ref5in bottleneck.",
-    "summary": "P1c passed every engineering gate. In the preregistered seed-313 held-out cell, capture/crash/timeout were 68.28/26.16/5.56% over 2,049 episodes. Capture and crash passed, but 114 timeouts exceeded the 5% ceiling (maximum 102), so P3 remains blocked. A separate seed-317 diagnostic preserved the P2 decision but localized the failure: capture fell 78.05→55.94% from the nearest to farthest distance bin, while timeout rose 0.06→14.97%. In the farthest bin, CV timeout was 22.16% versus 7.96% for waypoint.",
+    "subtitle": "2026-08-23 · detection-range Stage 1 complete",
+    "headline": "Longer range helped, but the preregistered gate did not open.",
+    "summary": "Under 1920×1200 / 50-pixel detection, 20 m and 28 m arms each adapted for 1,000 epochs and evaluated 2,049 episodes. Pooled never-acquired fell 8.443%→3.172% (-5.271 pp), short of the frozen −15 pp gate. Capture improved descriptively, but was excluded from the Stage 1 verdict.",
+    "experiment_id": "2026-08-23-ref5in-detection-range-stage1",
     "active_experiment": {
-      "ref5in_p2": true,
-      "core_audit_complete": true,
       "is_live": false,
-      "run": "ref5in P2 · seed313",
-      "epoch": 900,
+      "ab_experiment": true,
+      "ab_gate_complete": true,
+      "ab_gate_pass": false,
+      "run": "ref5in · detection-range Stage 1",
+      "epoch": 2900,
+      "max_epochs": 2900,
       "bars": 70,
-      "deterministic_capture": 0.6827720839433871,
-      "deterministic_crash": 0.26159102000976087,
-      "deterministic_timeout": 0.055636896046852125,
-      "deterministic_episodes": 2049,
-      "heldout_capture": 0.6827720839433871,
-      "heldout_crash": 0.26159102000976087,
-      "heldout_timeout": 0.055636896046852125,
+      "heldout_capture": 0.8867740361151781,
+      "heldout_crash": 0.11273792093704246,
+      "heldout_timeout": 0.0004880429477794046,
       "heldout_episodes": 2049,
-      "p1c_verdict": "PASS",
-      "p2_verdict": "FAIL",
-      "p3_unlocked": false,
-      "robot_name": "navrl_ref5in_quad",
-      "checkpoint_sha256": "f1670a1d74dd92cb00d6a58898e9cc1b96eb9cbe155d1e85812a345e7aaae6bf",
-      "runtime_map_sha256": "bbd3f45447c7e2ba03c51d65149e6028085e4280970703cb9887b2c6eaa8fb3a",
-      "diagnostic_complete": true
+      "stage2_authorised": false
     },
     "milestones": [
       {
-        "label": "PLATFORM P0",
-        "value": "PASS · 26/26 + 21/21",
-        "detail": "repository consistency + same-controller simulator gate",
+        "label": "QUALITY",
+        "value": "PASS · 17/17",
+        "detail": "source, checkpoint, receipt, import origin and arm identity",
         "state": "pass"
       },
       {
-        "label": "P1c ENGINEERING",
-        "value": "PASS",
-        "detail": "72.77/23.94/3.30% · applied [6,28] m · rollback 0",
-        "state": "pass"
-      },
-      {
-        "label": "P2 HELD-OUT",
-        "value": "STRICT FAIL",
-        "detail": "timeout 114/2,049 = 5.56% > 5%",
+        "label": "PRIMARY",
+        "value": "-5.271 pp",
+        "detail": "never-acquired; required ≤ −15 pp",
         "state": "warn"
       },
       {
-        "label": "POST-P2 DIAGNOSTIC",
-        "value": "COMPLETE · descriptive",
-        "detail": "q3 timeout 14.97% · CV 22.16% vs waypoint 7.96%",
+        "label": "CAPTURE",
+        "value": "+6.442 pp",
+        "detail": "descriptive only; excluded from the Stage 1 verdict",
         "state": "pass"
       },
       {
-        "label": "P3 FULL BUDGET",
-        "value": "BLOCKED",
-        "detail": "seed 211 was not started",
+        "label": "SIM-TO-REAL",
+        "value": "NOT CLAIMED",
+        "detail": "far range remained analytic and exact in both arms",
         "state": "warn"
       }
     ],
     "comparison": [
       {
-        "label": "P1c · on-policy last 100",
+        "label": "clip20 · control",
         "bars": 70,
-        "capture": 0.7276812463,
+        "capture": 0.8223523670082967,
         "unique": null,
-        "verdict": "engineering-only · 3,338 episodes"
+        "verdict": "never-acq 8.443% · crash 15.666% · timeout 2.099%"
       },
       {
-        "label": "P2 · held-out seed313",
+        "label": "clip28 · treatment",
         "bars": 70,
-        "capture": 0.6827720839433871,
+        "capture": 0.8867740361151781,
         "unique": null,
-        "verdict": "strict FAIL · crash 26.16% · timeout 5.56%"
-      },
-      {
-        "label": "diagnostic q3 · 22.5–28 m",
-        "bars": 70,
-        "capture": 0.5594231725509696,
-        "unique": null,
-        "verdict": "descriptive only · crash 29.09% · timeout 14.97%"
+        "verdict": "never-acq 3.172% · crash 11.274% · timeout 0.049%"
       }
     ],
     "gates": [
       {
-        "label": "capture",
-        "value": "PASS · 68.28% ≥ 65%"
+        "label": "primary",
+        "value": "CLOSED · −5.271 pp > −15 pp"
       },
       {
-        "label": "crash",
-        "value": "PASS · 26.16% ≤ 33%"
+        "label": "Stage 2",
+        "value": "BLOCKED · stage2_authorised=false"
       },
       {
-        "label": "timeout",
-        "value": "FAIL · 5.56% > 5%"
+        "label": "training integrity",
+        "value": "PASS · normal exit, rollback 0 both arms"
       },
       {
-        "label": "provenance",
-        "value": "PASS · P1/current/eval runtime maps identical"
+        "label": "hardware claim",
+        "value": "NO-GO · real sensor profile not measured"
       }
     ],
-    "decision": "P2 remains a strict FAIL and P3 remains blocked. Treat longer episode time as a measurement ablation, not a fix: first test whether additional saturated-distance CV exposure removes the q3 timeout without increasing contact or OOB crashes."
+    "decision": "Do not run the 10k Stage 2 or relax its threshold. For the next 72 hours, freeze the exact BOM/calibration/time contract, measure real bearing/range/latency/dropout by independent trial, then validate a far-bearing/near-range tracker before fresh PPO."
   },
   "density_speed_map": {
     "task_version": "v2",
@@ -3523,5 +3710,43 @@
       "current_source": "P2 runtime byte map and Python environment matched P1c; result/receipt/log/checkpoint hashes are attested.",
       "comparison_rule": "P2 strict FAIL: timeout 5.56% exceeded 5%. P3 and legacy descriptive anchor were not run."
     }
+  },
+  "sim2real_72h": {
+    "as_of": "2026-08-23",
+    "status": "MEASURE BEFORE RETRAINING",
+    "plan_path": "docs/SIM2REAL_3DAY_EXECUTION_PLAN.md",
+    "evidence": {
+      "verdict": "RANGE_INCONCLUSIVE_AT_THIS_BUDGET",
+      "stage2_authorised": false,
+      "episodes_per_arm": 2049,
+      "quality_gates": 17,
+      "never_acquired_20": 0.084431429965837,
+      "never_acquired_28": 0.0317227916056613,
+      "never_acquired_delta_pp": -5.27086383601757,
+      "capture_delta_pp": 6.44216691068814
+    },
+    "days": [
+      {
+        "day": "DAY 1",
+        "title": "hardware + raw data",
+        "detail": "Exact BOM/AUW/CG, calibration and time-sync; 210 independent sensor trials."
+      },
+      {
+        "day": "DAY 2",
+        "title": "measured sensor profile",
+        "detail": "Trial-level bearing/range/latency/dropout statistics and a data-chosen near/far boundary."
+      },
+      {
+        "day": "DAY 3",
+        "title": "tracker replay + preregistration",
+        "detail": "Held-out real-log replay, observation-contract smoke, then one-axis fresh-PPO preregistration."
+      }
+    ],
+    "training_blockers": [
+      "exact BOM / measured AUW and CG",
+      "intrinsics, extrinsics and timestamp semantics",
+      "trial-level bearing/range/latency/dropout profile",
+      "range_valid / uncertainty-aware target token contract"
+    ]
   }
 }
