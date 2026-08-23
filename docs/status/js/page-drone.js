@@ -139,18 +139,24 @@
     if (!el) return;
     var pay = PL.payload;
     var legacy = PL.robots[0];
-    var ratio = pay.total_grams / (legacy.mass_kg * 1000);
+    var ratioMin = pay.partial_grams_min / (legacy.mass_kg * 1000);
+    var ratioMax = pay.partial_grams_max / (legacy.mass_kg * 1000);
     var h = '<div class="scrollx"><table><thead><tr><th>부품</th><th>후보</th><th>무게</th></tr></thead><tbody>'
           + pay.parts.map(function (p) {
+              var grams = p.grams != null ? Number(p.grams).toFixed(p.grams % 1 ? 1 : 0) + ' g'
+                : Number(p.grams_min).toFixed(1) + '–' + Number(p.grams_max).toFixed(1) + ' g';
               return '<tr><td>' + esc(p.part) + '</td><td>' + esc(p.model) + '</td><td><code>'
-                   + p.grams + ' g</code></td></tr>';
+                   + grams + '</code>' + (p.note ? '<br><span class="dim">' + esc(p.note) + '</span>' : '')
+                   + '</td></tr>';
             }).join('')
-          + '<tr><td><b>합계 (센서+연산만)</b></td><td class="dim">프레임·배터리·모터 제외</td>'
-          + '<td><b><code>' + pay.total_grams + ' g</code></b></td></tr>'
+          + '<tr><td><b>불완전 부분합</b></td><td class="dim">carrier·냉각·전원·배선·mount와 기체 제외</td>'
+          + '<td><b><code>' + Number(pay.partial_grams_min).toFixed(1) + '–'
+          + Number(pay.partial_grams_max).toFixed(1) + ' g</code></b></td></tr>'
           + '</tbody></table></div>';
-    h += '<p class="criteria-lead">이 인지 스택은 legacy 기체 전체 질량('
-       + (legacy.mass_kg * 1000).toFixed(0) + ' g)의 <b>' + ratio.toFixed(1) + '배</b>다. '
-       + '즉 <b>legacy 기체는 자기 센서를 들 수 없다.</b></p>';
+    h += '<p class="criteria-lead">아직 빠진 부품이 있는데도 이 부분합은 legacy 기체 전체 질량('
+       + (legacy.mass_kg * 1000).toFixed(0) + ' g)의 <b>' + ratioMin.toFixed(2) + '–'
+       + ratioMax.toFixed(2) + '배</b>다. 완성 payload나 AUW로 부르지 않는다.</p>';
+    h += '<p class="hint">' + esc(pay.claim_guard || '') + '</p>';
     el.innerHTML = h;
   }
 

@@ -54,10 +54,21 @@ ROBOTS = [
 ]
 
 PAYLOAD = [
-    {"part": "온보드 연산", "model": "Jetson Orin NX (모듈+방열)", "grams": 100},
-    {"part": "360° LiDAR", "model": "Livox Mid-360", "grams": 265},
-    {"part": "깊이 카메라", "model": "Intel RealSense D435i", "grams": 72},
-    {"part": "비행 제어기", "model": "Pixhawk 6C mini", "grams": 35},
+    {
+        "part": "온보드 연산",
+        "model": "Jetson Orin NX SOM",
+        "grams": 28.0,
+        "note": "SOM only; carrier, cooling, storage and DC-DC excluded",
+    },
+    {"part": "360° LiDAR", "model": "Livox Mid-360", "grams": 265.0},
+    {"part": "깊이 카메라", "model": "Intel RealSense D435i", "grams": 72.0},
+    {
+        "part": "비행 제어기",
+        "model": "Pixhawk 6C Mini (revision not frozen)",
+        "grams_min": 39.2,
+        "grams_max": 46.8,
+        "note": "official revision range; exact installed revision pending",
+    },
 ]
 
 
@@ -184,14 +195,28 @@ def build():
             "source": str(ENVELOPE.relative_to(ROOT)),
         }
 
-    payload_g = sum(p["grams"] for p in PAYLOAD)
+    payload_min_g = sum(p.get("grams", p.get("grams_min", 0.0)) for p in PAYLOAD)
+    payload_max_g = sum(p.get("grams", p.get("grams_max", 0.0)) for p in PAYLOAD)
     return {
         "schema": "motar.platform/1",
         "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "generator": "tools/generate_platform_spec.py",
         "source_commit": git_commit(),
         "robots": robots,
-        "payload": {"parts": PAYLOAD, "total_grams": payload_g},
+        "payload": {
+            "parts": PAYLOAD,
+            "complete": False,
+            "partial_grams_min": payload_min_g,
+            "partial_grams_max": payload_max_g,
+            "excluded": [
+                "compute carrier/cooling/storage/DC-DC",
+                "wiring and mounts",
+                "frame, motors, ESCs, propellers, battery",
+            ],
+            "claim_guard": (
+                "This is an incomplete named-part subtotal, not payload mass or aircraft AUW."
+            ),
+        },
         "envelope": envelope,
     }
 
@@ -212,7 +237,9 @@ def main():
         print(f"{r['key']:20s} {r['mass_kg']:.3f} kg · T/W {d['thrust_to_weight']:.3f} · "
               f"box {r['collision_box_m'][0]:.2f}×{r['collision_box_m'][2]:.2f} m · "
               f"arm {r['arm_m']:.4f} m · roll α {d['roll_alpha_radps2']} rad/s²")
-    print(f"payload {data['payload']['total_grams']} g · envelope "
+    payload = data["payload"]
+    print(f"incomplete named-part subtotal {payload['partial_grams_min']:.1f}–"
+          f"{payload['partial_grams_max']:.1f} g · envelope "
           f"{(data['envelope'] or {}).get('verdict', 'not run')}")
     print(f"wrote {OUT_JSON.relative_to(ROOT)}")
     return 0

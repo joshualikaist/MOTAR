@@ -1,8 +1,8 @@
 {
  "schema": "motar.platform/1",
- "generated_at": "2026-08-13T08:57:13+00:00",
+ "generated_at": "2026-08-23T13:08:31+00:00",
  "generator": "tools/generate_platform_spec.py",
- "source_commit": "5086cea",
+ "source_commit": "b6fbddd",
  "robots": [
   {
    "key": "navrl_quad",
@@ -79,26 +79,37 @@
   "parts": [
    {
     "part": "온보드 연산",
-    "model": "Jetson Orin NX (모듈+방열)",
-    "grams": 100
+    "model": "Jetson Orin NX SOM",
+    "grams": 28.0,
+    "note": "SOM only; carrier, cooling, storage and DC-DC excluded"
    },
    {
     "part": "360° LiDAR",
     "model": "Livox Mid-360",
-    "grams": 265
+    "grams": 265.0
    },
    {
     "part": "깊이 카메라",
     "model": "Intel RealSense D435i",
-    "grams": 72
+    "grams": 72.0
    },
    {
     "part": "비행 제어기",
-    "model": "Pixhawk 6C mini",
-    "grams": 35
+    "model": "Pixhawk 6C Mini (revision not frozen)",
+    "grams_min": 39.2,
+    "grams_max": 46.8,
+    "note": "official revision range; exact installed revision pending"
    }
   ],
-  "total_grams": 472
+  "complete": false,
+  "partial_grams_min": 404.2,
+  "partial_grams_max": 411.8,
+  "excluded": [
+   "compute carrier/cooling/storage/DC-DC",
+   "wiring and mounts",
+   "frame, motors, ESCs, propellers, battery"
+  ],
+  "claim_guard": "This is an incomplete named-part subtotal, not payload mass or aircraft AUW."
  },
  "envelope": {
   "verdict": "PASS",

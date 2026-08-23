@@ -11651,3 +11651,23 @@ topology의 reconstructable 2.9 MB 전수 row와 sample64 raw는 WORKLOG 기존 
 - `tools/generate_parameter_catalog.py`: authoritative 216, echo-only 94, 294 files, 71 launchers,
   ablated 45, mirrors 6.
 - `py_compile`, JSON parse, Markdown 기본 검사, `git diff --check`: PASS.
+
+### Day 1 착수 — exact BOM 입력 전 사이트 payload 계약 정정
+
+`docs/navrl_hardware_identification_manifest.yaml`을 첫 항목부터 감사했다. 현재 확정된 것은
+`navrl_ref5in_quad`의 **합성 설계점**(1.20 kg, analytic inertia, 9.60 N/motor, τ=0.04 s)뿐이며,
+실제 as-built BOM/AUW/CG/thrust curve는 전부 pending이다. 따라서 첫 사용자 입력은 실제 기체의
+조립 상태와 battery·센서·compute를 포함한 AUW 또는 미조립 상태의 exact selected-parts BOM이다.
+
+이 과정에서 `drone.html` 본문은 고쳤지만 data-driven `platform.json` 생성기가 여전히 폐기된
+`100+265+72+35=472 g`을 완성 payload처럼 렌더링하는 잔여 오류를 발견했다. 생성기·브라우저 계약을
+다음으로 바꿨다.
+
+- Orin NX는 SOM-only **28.0 g**, Mid-360 **265.0 g**, D435i **72.0 g**.
+- Pixhawk 6C Mini는 revision 미동결이므로 공식 범위 **39.2–46.8 g**.
+- 합계 필드를 없애고 `complete=false`, 불완전 명시 단품 부분합 **404.2–411.8 g**만 export.
+- carrier/cooling/storage/DC-DC, wiring/mount, frame/motor/ESC/prop/battery가 빠졌음을 data contract와
+  화면 양쪽에 명시. legacy 250 g 대비 비율도 부분합의 1.62–1.65배로만 표시한다.
+
+`generate_platform_spec.py` 재생성 결과 두 기체 파생값과 flight-envelope PASS는 유지됐고,
+payload 출력은 `incomplete named-part subtotal 404.2–411.8 g`으로 바뀌었다.

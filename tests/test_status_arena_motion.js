@@ -36,6 +36,7 @@ const html = [
   fs.readFileSync(path.join(repo, 'docs/status/setup.html'), 'utf8'),
 ].join('\n');
 const droneHtml = fs.readFileSync(path.join(repo, 'docs/status/drone.html'), 'utf8');
+const platform = JSON.parse(fs.readFileSync(path.join(repo, 'docs/status/data/platform.json'), 'utf8'));
 const suppress15Launcher = fs.readFileSync(path.join(
   repo, 'aerial_gym/rl_training/rl_games/train_navrl_corrected_squashed_density_suppress15.sh'
 ), 'utf8');
@@ -98,6 +99,10 @@ assert(html.includes('id="panel-sim2real"'));
 assert(droneHtml.includes('실기 전 72시간 gate'));
 assert(!droneHtml.includes('인지 스택 472 g'));
 assert(!droneHtml.includes('페이로드의 56%'));
+assert.strictEqual(platform.payload.complete, false);
+assert.strictEqual(platform.payload.partial_grams_min, 404.2);
+assert.strictEqual(platform.payload.partial_grams_max, 411.8);
+assert(!Object.prototype.hasOwnProperty.call(platform.payload, 'total_grams'));
 assert(status.research_contract);
 assert.strictEqual(status.research_contract.checkpoint_sha256,
   'f1670a1d74dd92cb00d6a58898e9cc1b96eb9cbe155d1e85812a345e7aaae6bf');
