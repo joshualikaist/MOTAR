@@ -11543,3 +11543,36 @@ frozen `aerial_gym/config/robot_config/**`와 `resources/robots/**`는 변경하
 - `results/VOID_20260823_pre_provenance_navrl_ref5in_detection_range_stage1_s457_preflight/`
 
 원래의 canonical output 경로는 새 사전등록 준수 campaign만 사용한다.
+
+## 2026-08-23 — detection-range stage 1 완료 (`RANGE_INCONCLUSIVE_AT_THIS_BUDGET`)
+
+단일-owner campaign이 12:03 KST 시작해 16:00 KST 종료했다. preflight, 두 arm 학습과 각 Gate 0,
+두 held-out cell, finalize, verify가 모두 완료됐고 품질 게이트 17개 중 실패는 0개다.
+
+| arm | never-acquired | capture | crash | timeout | 종단 reward |
+|---|---:|---:|---:|---:|---:|
+| clip20 | 8.443% | 82.235% | 15.666% | 2.099% | 221.481 |
+| clip28 | 3.172% | 88.677% | 11.274% | 0.049% | 232.306 |
+| clip28−clip20 | **−5.271 pp** | +6.442 pp | −4.392 pp | −2.050 pp | +10.825 |
+
+양 arm은 ep1900→2900(각 1,000 epoch/4.096M samples)을 정상 완주했고 checkpoint epoch
+2900/frame 11,878,400, PPO rollback 0, KL skip 0이다. 하나의 clean training-source receipt
+`5123eae4…b9a97e6`를 공유한다. 평가 seed 461, 각 2,049 episodes다.
+
+사전등록 primary Gate S는 never-acquired delta `<= -15.00 pp`를 요구한다. 실측 −5.271 pp는
+방향은 예측대로지만 크기가 부족하므로 판정은 **`RANGE_INCONCLUSIVE_AT_THIS_BUDGET`**이고
+`stage2_authorised=false`다. 이것은 “거리 확장이 효과 없음”이 아니라 “warm-start 1,000 epoch
+예산에서 사전등록한 큰 효과를 입증하지 못함”이다. capture/crash/timeout 개선은 원시 보조 결과이며
+판정을 뒤집는 데 쓰지 않는다.
+
+GPU smoke는 peak 7,258/8,192 MiB(headroom 934 MiB), 7.31 s/epoch였다. 실제 clip20은
+1시간 43분, clip28은 1시간 57분, 두 평가는 합계 약 15분, 전체 wall time은 약 3시간 58분이었다.
+
+운영 기록: 최초 `nohup` 시작은 실행 환경의 process-group 정리로 preflight 직전에 종료됐다.
+GPU 학습은 시작되지 않았고 해당 status/log는 `VOID_20260823_launcher_startup_killed_*`로 보존했다.
+이후 unified execution session이 campaign을 직접 소유해 중단 없이 끝냈다.
+
+사후 QA에서 `summary.md`는 새 detector-geometry provenance를 정확히 설명했지만 `summary.json`의
+설명 문자열만 예전 “gate에 detector-range field가 없다” 문구를 유지한 것을 발견했다. 실제 gate는
+checkpoint의 `cfg_detector_max_range/cfg_detect_width/cfg_detect_height`를 요청 환경과 비교했고
+통과했다. **수치·gate·verdict 변경 없이 설명 문자열만 사후 정정**하고 finalize/verify를 다시 했다.

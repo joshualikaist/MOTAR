@@ -753,7 +753,7 @@ def evaluation_env(arm: str, *, preflight: bool) -> dict:
     that call or both arms would evaluate at the dishonest threshold.
 
     NAVRL_V2_FORCE is never set, in either arm.  Each arm is evaluated at the clip it was TRAINED
-    at, and the evaluator's provenance ``want`` set contains no detector-range key at all
+    at, and the evaluator's conditional provenance gate compares every detector-geometry key
     (eval_navrl_v2_density_sweep.sh:650-698), so there is nothing for an override to override.
     """
     clip = arm_clip(arm)
@@ -2468,7 +2468,7 @@ def build_summary(verified: dict) -> dict:
             arm: {
                 "used": False,
                 "reason": "each arm is evaluated at the clip it trained at, and the evaluator's v2 "
-                "provenance gate contains no detector-range field",
+                "provenance gate matches the checkpoint detector geometry to that arm",
             }
             for arm, _ in ARMS
         },

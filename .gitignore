@@ -15,6 +15,9 @@ runs/
 # tee'd training logs
 *.log
 
+# campaign locks are runtime ownership markers, not experimental evidence
+results/*_campaign.lock
+
 # local RL session artifacts and manually retained checkpoints
 train_session_logs/
 checkpoints_saved/
