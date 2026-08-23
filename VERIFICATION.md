@@ -264,6 +264,38 @@ raw summary: [`results/navrl_physical_target_verification/summary.json`](results
 사전등록하고 같은 gate를 재실행하는 것이다. 실기 검증은 hardware identification manifest가
 미완료이므로 별도로 차단된다.
 
+### 2026-08-24 속도 포락선 진단 — 완료, physical PPO 해제 아님
+
+`docs/prereg_2026-08-24_physical_target_speed_envelope.md`에 고정한 4×4 grid를 실행했다.
+seed 509, mixed target, 32 env, 280 measured steps/cell이며 기존 physical-target gate를 그대로
+사용했다. 각 speed arm은 Isaac Gym 프로세스를 분리해 실행했다.
+
+| bars | 0.6 m/s | 0.9 m/s | 1.2 m/s | 1.5 m/s | 최고 passing speed |
+|---:|:---:|:---:|:---:|:---:|---:|
+| 70 | PASS | FAIL | FAIL | FAIL | 0.6 |
+| 150 | PASS | PASS | FAIL | FAIL | 0.9 |
+| 205 | FAIL* | FAIL* | FAIL | FAIL | 없음 |
+| 300 | PASS | PASS | FAIL | FAIL | 0.9 |
+
+`*` 205 bars의 0.6/0.9 m/s는 tracking·contact·planner는 통과했지만 strict invalid-state
+`=0` gate에서 각각 1 sample(0.011%)이 남아 FAIL이다. 따라서 205 bars는 이 표본에서 “안전한
+속도”를 채택하지 않는다. 이 결과는 높은 속도를 무조건 풀자는 근거가 아니라, 205-bar의 희귀
+OBB/boundary event와 route feasibility를 먼저 고쳐야 한다는 진단이다. 모든 결과 원자료는
+[`results/navrl_physical_target_speed_envelope_seed509/summary.json`](results/navrl_physical_target_speed_envelope_seed509/summary.json).
+
+이 진단만으로 fixed-speed task를 density-conditioned task로 바꾸거나 PPO를 시작하지 않는다.
+physical-target fresh lineage는 여전히 **BLOCKED**다.
+
+### 2026-08-24 reflection·distance 상태
+
+- 기존 N1 real-frame reflection audit는 receipt를 다시 검증해 `CHIRALITY_CONFIRMED_REAL_FRAME`
+  PASS를 확인했다. paired-reflection consistency A/B는 별도 학습 계약이며, 사전등록 §5-b의
+  loss-profile 산출물과 dedicated arm launcher가 없어 실행하지 않았다. `NAVRL_REFLECTION_COEF=0.01`
+  을 임의 재사용하지 않는다.
+- 거리 충실도는 [`docs/prereg_2026-08-24_distance_fidelity.md`](docs/prereg_2026-08-24_distance_fidelity.md)
+  로 설계만 고정했다. 실제 range ground truth/profile이 없으므로 합성 noise를 만들거나 평가하지
+  않는다(`BLOCKED_NO_REAL_RANGE_PROFILE`).
+
 ## 아카이브
 
 2026-08-20 통합으로 아래를 `docs/archive/`로 이동했다.

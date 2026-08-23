@@ -11871,3 +11871,22 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
   launchers/evaluators는 provenance에 값을 pin하므로 기존 checkpoint는 변경하지 않았다.
 - 따라서 지금 단계에서 물리 파라미터를 임의로 고치거나 재학습하지 않는다. 실제 측정값이 들어오면
   한 축씩 새 lineage로 등록한다.
+
+### 2026-08-24 — physical target 속도 포락선·reflection/distance 상태 확정
+
+- `docs/prereg_2026-08-24_physical_target_speed_envelope.md`를 먼저 동결하고, 기존 physical
+  target gate를 그대로 사용한 4 densities × 4 fixed-speed diagnostic을 실행했다. seed 509,
+  mixed pattern, 32 env, 280 measured steps/cell이다. speed arm마다 Isaac Gym interpreter를
+  분리해 재현성/자원 해제를 보장했다.
+- 결과: 최고 passing speed는 70 bars `0.6 m/s`, 150 bars `0.9 m/s`, 300 bars `0.9 m/s`이며
+  205 bars는 0.6/0.9에서 invalid OBB state 1 sample 때문에 strict gate를 통과하지 못했다.
+  1.2/1.5 m/s는 각 밀도에서 planner/contact/ratio 중 하나 이상이 gate를 넘었다. 이는 target
+  속도 상향이나 PPO 재학습의 근거가 아니라, 205-bar route/boundary event를 고쳐야 한다는
+  diagnostic이다. 원자료: `results/navrl_physical_target_speed_envelope_seed509/summary.json`.
+- 기존 N1 real-frame reflection audit는 `VERIFY PASS | CHIRALITY_CONFIRMED_REAL_FRAME`으로
+  receipt 재검증했다. 다만 paired-reflection consistency A/B는 prereg §5-b의 loss-profile과
+  dedicated arm launcher가 없으므로 실행하지 않았다. 계수 `0.01`을 임의로 재사용하지 않는다.
+- 거리 충실도는 `docs/prereg_2026-08-24_distance_fidelity.md`로 설계만 동결했다. 실기 range
+  ground truth/profile이 없으므로 합성 noise나 range 성능 수치를 만들지 않고
+  `BLOCKED_NO_REAL_RANGE_PROFILE`로 남겼다.
+- 이번 변경은 physical target runtime, PPO, reward, observation schema, URDF를 바꾸지 않았다.
