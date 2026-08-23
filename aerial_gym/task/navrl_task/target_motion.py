@@ -10,6 +10,27 @@ BOUNDED_TARGET_MOTION_MODEL = "bounded_planar_drone_v1_rollout"
 PHYSICAL_TARGET_MOTION_MODEL = "physx_ref5in_6dof_motor_wrench_v2_same_substep"
 
 
+def support_aware_bounds(bounds_min_xy, bounds_max_xy, base_margin, support_xy):
+    """Return center bounds that keep an oriented target support inside the arena.
+
+    ``base_margin`` is the existing wall reserve. ``support_xy`` is the current world-axis OBB
+    support radius; it is deliberately passed in by the caller because a tilted rigid body can
+    change its XY support during flight.  This helper is geometry-only and does not clamp or
+    teleport a target.
+    """
+    if bounds_min_xy.shape != bounds_max_xy.shape or bounds_min_xy.shape != support_xy.shape:
+        raise ValueError("bounds_min_xy, bounds_max_xy, and support_xy must have matching shapes")
+    if bounds_min_xy.ndim != 2 or bounds_min_xy.shape[1] != 2:
+        raise ValueError("bounds and support must have shape [N, 2]")
+    margin = float(base_margin)
+    if not math.isfinite(margin) or margin < 0.0:
+        raise ValueError("base_margin must be finite and non-negative")
+    return (
+        bounds_min_xy + margin + support_xy,
+        bounds_max_xy - margin - support_xy,
+    )
+
+
 # Symmetric candidates keep obstacle avoidance from introducing a global left/right bias. The
 # per-episode turn_sign only breaks exact +/- ties and is sampled 50:50 by NavRLTask.
 TURN_ANGLES_DEG = (0.0, 30.0, -30.0, 60.0, -60.0, 90.0, -90.0, 120.0, -120.0, 180.0)

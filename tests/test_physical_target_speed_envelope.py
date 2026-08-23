@@ -21,6 +21,14 @@ class PhysicalTargetSpeedEnvelopeContractTest(unittest.TestCase):
     def test_gate_is_conjunctive(self):
         self.assertFalse(all({"tracking": True, "speed": True, "contact": False}.values()))
 
+    def test_invalid_forensics_contract_is_fixed(self):
+        path = ROOT / "tools/diagnose_navrl_physical_target_invalid_events.py"
+        self.assertTrue(path.exists())
+        text = path.read_text(encoding="utf-8")
+        for field in ("position_m", "velocity_mps", "command_mps", "obb_margin_m_xyz"):
+            self.assertIn(field, text)
+        self.assertIn('"bars": DENSITY', text)
+
 
 if __name__ == "__main__":
     unittest.main()

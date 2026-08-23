@@ -11890,3 +11890,21 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
   ground truth/profile이 없으므로 합성 noise나 range 성능 수치를 만들지 않고
   `BLOCKED_NO_REAL_RANGE_PROFILE`로 남겼다.
 - 이번 변경은 physical target runtime, PPO, reward, observation schema, URDF를 바꾸지 않았다.
+
+### 2026-08-24 — physical target OBB 경계 forensic 및 braking fallback
+
+- 사용자가 요청한 큰 실행 순서에 따라 205 bars/seed 509/mixed/32 env/0.6·0.9·1.2·1.5 m/s를
+  동일 contract로 조사했다. pre-fix invalid non-contact 이벤트는 유한 상태에서 OBB x/y
+  margin이 음수가 되는 경계 초과였고, NaN이나 planner 재계획은 아니었다. 원자료는
+  `results/navrl_physical_target_invalid_forensics_seed509/`에 보존했다.
+- center만 arena 안에 두던 wall reserve의 결함을 고쳐 현재 target OBB world-axis support를
+  planner center bounds에 반영했다. 또 첫 safe step이 없는 physical rollout에는 least-bad
+  outward command 대신 zero planar command를 보내 controller가 감속하도록 했다. teleport,
+  position clamp, invalid gate 완화, speed 추가는 하지 않았다.
+- 동일 gate/grid post-fix 결과: 70 bars 최고 0.9 m/s, 150/205/300 bars 최고 0.6 m/s.
+  1.2/1.5 m/s는 각 density에서 planner/tracking/state/contact 중 하나 이상 실패했다.
+  post-fix forensic은 0.6/0.9/1.2 m/s 0건, 1.5 m/s 1건(x-margin 약 −0.00006 m)으로
+  줄었지만 strict state gate는 아직 닫히지 않았다. 따라서 physical PPO는 계속 BLOCKED다.
+- 다음은 gate를 임의 완화하는 대신 잔여 1.5 m/s boundary-inertia 사건의 step 전후 동역학을
+  분리 계측하고, 그 결과로만 B 단계의 PASS/FAIL을 결정한다. B가 닫히기 전에는 C(실기 센서
+  로그), D(two-zone replay), E(reflection A/B), F(fresh PPO)의 순서를 유지한다.

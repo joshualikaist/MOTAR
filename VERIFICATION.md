@@ -286,6 +286,30 @@ OBB/boundary event와 route feasibility를 먼저 고쳐야 한다는 진단이�
 이 진단만으로 fixed-speed task를 density-conditioned task로 바꾸거나 PPO를 시작하지 않는다.
 physical-target fresh lineage는 여전히 **BLOCKED**다.
 
+### 2026-08-24 physical OBB boundary forensic 및 engineering fix — gate 여전히 BLOCKED
+
+205 bars, seed 509, mixed, 32 env, 0.6/0.9/1.2/1.5 m/s의 고정 contract에서 invalid
+non-contact event의 원자료를 기록했다. pre-fix 이벤트는 모두 finite position이었고, 주된
+음수 margin은 x/y arena boundary였다. NaN, contact 귀속 누락, target teleport 증거는 없었다.
+따라서 이를 경로 planner의 “진입 거부”로 설명하지 않는다. 이 코드는 planner가 아니라 velocity
+controller이며, 이전 구현은 infeasible first-step에서 least-bad command를 계속 실행했다.
+
+수정은 두 가지로 제한했다: (1) OBB의 현재 world-axis support를 반영한 center bounds,
+(2) infeasible first-step에서 zero planar command를 제출해 물리 controller가 감속하도록 하는
+fallback. strict counter와 gate는 그대로다. 결과는 기존 summary를 덮어쓰지 않고 다음에 보존했다.
+
+| bars | 0.6 m/s | 0.9 m/s | 1.2 m/s | 1.5 m/s | 최고 passing speed |
+|---:|:---:|:---:|:---:|:---:|---:|
+| 70 | PASS | PASS | FAIL | FAIL | 0.9 |
+| 150 | PASS | FAIL | FAIL | FAIL | 0.6 |
+| 205 | PASS | FAIL | FAIL | FAIL | 0.6 |
+| 300 | PASS | FAIL | FAIL | FAIL | 0.6 |
+
+post-fix forensic은 0.6/0.9/1.2 m/s에서 invalid event 0건, 1.5 m/s에서 1건(유한 OBB,
+x-margin 약 −0.00006 m)을 보였다. 이는 개선이지 해결이 아니다. physical PPO와 speed
+완화는 여전히 금지한다. 원자료: `results/navrl_physical_target_invalid_forensics_post_wall_brake_seed509/summary.json`,
+`results/navrl_physical_target_speed_envelope_post_wall_brake_seed509/summary.json`.
+
 ### 2026-08-24 reflection·distance 상태
 
 - 기존 N1 real-frame reflection audit는 receipt를 다시 검증해 `CHIRALITY_CONFIRMED_REAL_FRAME`

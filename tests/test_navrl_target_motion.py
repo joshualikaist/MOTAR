@@ -19,12 +19,31 @@ steer_target_step = _MODULE.steer_target_step
 initial_cv_velocity = _MODULE.initial_cv_velocity
 limit_planar_velocity = _MODULE.limit_planar_velocity
 bounded_drone_target_step = _MODULE.bounded_drone_target_step
+support_aware_bounds = _MODULE.support_aware_bounds
 
 
 def _bounds(n):
     lo = torch.full((n, 2), -10.0)
     hi = torch.full((n, 2), 10.0)
     return lo, hi
+
+
+class SupportAwareBoundsTest(unittest.TestCase):
+    def test_inflate_center_reserve(self):
+        lo, hi = support_aware_bounds(
+            torch.tensor([[0.0, 0.0]]),
+            torch.tensor([[40.0, 40.0]]),
+            1.0,
+            torch.tensor([[0.16, 0.14]]),
+        )
+        self.assertTrue(torch.allclose(lo, torch.tensor([[1.16, 1.14]])))
+        self.assertTrue(torch.allclose(hi, torch.tensor([[38.84, 38.86]])))
+
+    def test_rejects_shape_mismatch(self):
+        with self.assertRaises(ValueError):
+            support_aware_bounds(
+                torch.zeros(1, 2), torch.zeros(2, 2), 1.0, torch.zeros(1, 2)
+            )
 
 
 def test_controlled_initial_cv_headings_follow_radial_contract():

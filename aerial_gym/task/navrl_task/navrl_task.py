@@ -26,6 +26,7 @@ from aerial_gym.task.navrl_task.target_motion import (
     TARGET_MOTION_MODEL,
     bounded_drone_target_step,
     initial_cv_velocity,
+    support_aware_bounds,
     steer_target_step,
 )
 from aerial_gym.task.navrl_task.speed_governor import (
@@ -5206,6 +5207,15 @@ class NavRLTask(BaseTask):
                 ]
                 target_support_xy = self._physical_target_support_xyz()[:, :2]
                 bars_half_extents = bars_half_extents + target_support_xy.unsqueeze(1)
+                # The planner bounds are center bounds.  Inflate the wall reserve by the current
+                # world-axis OBB support so a feasible center trajectory cannot leave the actor's
+                # collision box straddling the arena boundary.  The previous code checked only
+                # the center, which produced rare finite-but-invalid OBB samples at 205+ bars.
+                planner_lo, planner_hi = support_aware_bounds(
+                    b_min[:, :2], b_max[:, :2], m, target_support_xy
+                )
+            else:
+                planner_lo, planner_hi = lo, hi
             bounded_xy, bounded_velocity, _, feasible = bounded_drone_target_step(
                 old_xy,
                 self.target_vel_w[:, 0:2],
@@ -5213,8 +5223,8 @@ class NavRLTask(BaseTask):
                 self._tm_speed,
                 dt,
                 bars_all,
-                lo,
-                hi,
+                planner_lo,
+                planner_hi,
                 self._target_planner_clearance(),
                 self._tm_avoid_sign,
                 torch.full_like(self._tm_speed, float(self.tm.max_accel)),
@@ -5228,31 +5238,35 @@ class NavRLTask(BaseTask):
                 # The planner uses an additional tracking reserve. Crossing that soft reserve is
                 # not itself a dynamically infeasible state; retain the hard hull clearance and
                 # arena wall as the fail-closed feasibility contract.
-                hard_m = float(self.cur.wall_margin)
-                hard_lo = b_min[:, 0:2] + hard_m
-                hard_hi = b_max[:, 0:2] - hard_m
+                hard_lo, hard_hi = support_aware_bounds(
+                    b_min[:, 0:2], b_max[:, 0:2], float(self.cur.wall_margin), target_support_xy
+                )
                 feasible = ((bounded_xy >= hard_lo) & (bounded_xy <= hard_hi)).all(dim=1)
                 if bars_all.shape[1] > 0:
                     delta = (
                         (bounded_xy.unsqueeze(1) - bars_all).abs() - bars_half_extents
                     ).clamp(min=0.0)
                     feasible &= delta.norm(dim=2).amin(dim=1) > 1e-4
-            # The physical mode never repairs a bad rollout with a teleport or velocity rewrite.
-            # `feasible` is retained for strict probes; if an initial state is already trapped the
-            # least-bad dynamically bounded step is executed and the environment generator, not
-            # the target dynamics, must be fixed.
+            # A physical actor cannot be teleported or position-clamped when the rollout has no
+            # safe first step.  Submit a zero planar command in that case: the real velocity
+            # controller then brakes with its declared dynamics, while the strict feasibility
+            # counter still records the event.  The old least-bad outward command could carry a
+            # finite OBB across the arena boundary before the next task step observed it.
             self._tm_last_step_feasible = feasible
             if self._physical_target:
                 command = torch.zeros((self.num_envs, 3), device=self.device)
+                safe_velocity = torch.where(
+                    feasible.unsqueeze(1), bounded_velocity, torch.zeros_like(bounded_velocity)
+                )
                 command[:, 0:2] = torch.where(
-                    moving.unsqueeze(1), bounded_velocity, torch.zeros_like(old_xy)
+                    moving.unsqueeze(1), safe_velocity, torch.zeros_like(old_xy)
                 )
                 self._target_controller.set_command(
                     command,
                     torch.full_like(self._tm_speed, float(self.task_config.flight_altitude)),
                 )
                 self._tm_heading[moving] = torch.atan2(
-                    bounded_velocity[moving, 1], bounded_velocity[moving, 0]
+                    safe_velocity[moving, 1], safe_velocity[moving, 0]
                 )
                 cv = moving & (self._tm_pattern == 0)
                 self._tm_cv_vel[cv] = bounded_velocity[cv]
