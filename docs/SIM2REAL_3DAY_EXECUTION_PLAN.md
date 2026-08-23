@@ -262,3 +262,68 @@ camera·LiDAR·ego-state에만 `sync_group`을 부여한다. 검증기는 다음
 실제 rosbag/CSV를 변환한 JSONL에는 `source_kind=real_log`와 run/calibration manifest를 넣고,
 그때만 `MEASURED_CANDIDATE`로 바뀐다. 이 단계는 policy/reward/observation/checkpoint를
 변경하지 않으며, 5개 CPU 단위 테스트가 시간·frame·manifest 오류를 재현한다.
+
+## 8. 로그가 들어왔을 때의 단일 실행 경로
+
+실제 장비가 아직 없으므로 아래 명령은 준비만 해 두며, 저장소의 simulation CSV를 실기 로그로
+대체해 실행하지 않는다. CSV의 frame/time/frame-edge를 사람이 보정해 주지 않고 원 recorder의 값을
+그대로 넣어야 한다.
+
+### 8.1 transport telemetry 변환 → 원본 계약 검증
+
+```bash
+PY=/home/fair/miniconda3/envs/aerialgym/bin/python
+$PY tools/navrl_sim2real_ingest.py \
+  /path/to/real_events.csv /path/to/real_events.jsonl \
+  --run-id trial_batch_001 --source-kind real_log \
+  --metadata-json /path/to/run_manifest.json
+$PY tools/navrl_sim2real_telemetry.py validate \
+  /path/to/real_events.jsonl \
+  --report /path/to/telemetry_report.json \
+  --max-sync-skew-ms 20 --max-sensor-to-host-latency-ms 50
+```
+
+`navrl_sim2real_ingest.py`는 `topic`, `seq`, source/host timestamp, frame edge를 필수로 요구하고
+원본 SHA-256을 manifest에 기록한다. 필수 열 누락·숫자 파싱 실패·빈 입력은 종료 코드 2로
+중단한다. unknown frame을 추정하지 않으며, `source_kind=real_log`를 명시하지 않으면 실측
+후보로 표시하지 않는다.
+
+### 8.2 trial 단위 sensor profile
+
+ground-truth와 detector join이 끝난 별도 measurement CSV에 대해 다음을 실행한다.
+
+```bash
+$PY tools/navrl_sensor_profile.py \
+  /path/to/heldout_measurements.csv /path/to/sensor_profile.json \
+  --run-id heldout_001 --source-kind real_log
+```
+
+필수 열은 `trial_id`, 거리/조명/운동 조건, target-present/detected/range-valid, GT·추정
+bearing/range, confidence, source/host timestamp다. 출력은 frame 수와 함께 trial 수, cell별
+trial-macro recall/range-valid fraction/latency를 남긴다. frame을 독립 반복으로 세지 않으며,
+threshold를 자동 적용하거나 simulator noise를 선택하지 않는다.
+
+### 8.3 two-zone replay 계약
+
+sensor profile 검토 후 사람이 근거와 함께 만든 JSON contract만 입력한다. 경계는 이 도구가
+결정하지 않는다.
+
+```json
+{
+  "schema_version": 1,
+  "source_kind": "real_log",
+  "near_boundary_m": 12.0,
+  "far_range_policy": "invalid"
+}
+```
+
+```bash
+$PY tools/navrl_two_zone_replay.py \
+  /path/to/heldout_target_tokens.jsonl /path/to/two_zone_contract.json \
+  --report /path/to/two_zone_replay_report.json
+```
+
+far zone에서 `range_valid=true`이거나 invalid range를 0 m로 채우면 fail-closed한다. near zone도
+dropout 자체는 허용하지만 그때 `range_valid=false`, `range_m=null`, `range_sigma_m=null`이어야
+한다. PASS는 관측 계약의 구조·시간 순서가 맞다는 뜻일 뿐, 정책 성능이나 sim-to-real 성공을
+주장하지 않는다.

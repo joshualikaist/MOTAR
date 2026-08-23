@@ -2462,12 +2462,12 @@ def _sim2real_72h() -> Dict[str, Any]:
             },
         ],
         "software_readiness": {
-            "status": "READY_FOR_REAL_LOG",
-            "tool": "tools/navrl_sim2real_telemetry.py",
-            "tests": "5/5 CPU tests passed",
+            "status": "READY_FOR_REAL_LOG_PIPELINE",
+            "tool": "tools/navrl_sim2real_ingest.py + tools/navrl_sim2real_telemetry.py + tools/navrl_sensor_profile.py + tools/navrl_two_zone_replay.py",
+            "tests": "16/16 CPU contract tests passed",
             "synthetic_verdict": "PASS",
             "claim_status": "SYNTHETIC_ONLY",
-            "next": "Convert rosbag/CSV to the JSONL contract, then run the same validator on held-out trials.",
+            "next": "Convert real rosbag/CSV, validate telemetry, build trial profile, then replay the measured two-zone contract.",
         },
         "training_blockers": [
             "exact BOM / measured AUW and CG",

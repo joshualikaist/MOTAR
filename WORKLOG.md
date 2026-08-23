@@ -11821,3 +11821,24 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
    two-zone observation 계약 → held-out replay 순서로 진행한다.
 3. 위 산출물과 source/checkpoint hash가 모두 닫힌 뒤에만 한 축의 fresh PPO를 사전등록한다.
    그 전까지 사이트 상태는 `MEASURE BEFORE RETRAINING`으로 유지한다.
+
+### 2026-08-24 — 3–5단계 software-only 파이프라인 완성
+
+- 실제 rosbag/MCAP/DB3가 아직 없어 1–2단계(기체 조립·원본 취득)는 완료로 표시하지 않았다. 저장소의
+  simulation CSV/NPZ를 실기 증거로 재분류하지 않았다.
+- `tools/navrl_sim2real_ingest.py`를 추가했다. 원본 CSV에서 topic/sequence/source·host timestamp/
+  frame edge를 그대로 JSONL로 옮기고, 입력 SHA-256·run ID·source kind를 manifest에 기록한다.
+  필수 열 누락·숫자 파싱 실패·빈 입력은 fail-closed한다. 테스트 4/4.
+- `tools/navrl_sensor_profile.py`를 추가했다. GT와 detector가 join된 measurement CSV를 trial 단위로
+  집계해 거리·조명·운동 cell별 detection recall, range-valid fraction, bearing/range error,
+  latency 분포를 남긴다. frame을 독립 반복으로 취급하지 않고 threshold나 simulator noise를
+  자동 선택하지 않는다. 테스트 3/3.
+- `tools/navrl_two_zone_replay.py`를 추가했다. 사람이 근거와 함께 정한 `near_boundary_m` JSON
+  contract만 받아 replay의 timestamp/uncertainty/range-valid 의미를 검사한다. far zone의 range
+  제공, invalid range의 0 m 대체, 음수 age/covariance, 비실기 contract는 fail-closed한다.
+  테스트 4/4.
+- telemetry 5/5와 신규 ingest/profile/replay 11/11을 합쳐 **software-only 계약 테스트 16/16**.
+  사이트 status는 `READY_FOR_REAL_LOG_PIPELINE` / `SYNTHETIC_ONLY`로 갱신했고, 실제 로그가 들어오면
+  변환→검증→profile→two-zone replay 순으로 이어지도록 실행계획 8절에 명령을 기록했다.
+- 이 변경으로도 PPO, reward, observation width, URDF, dynamics는 변경하지 않았다. 실제 하드웨어와
+  calibration/rosbag이 닫히기 전에는 fresh training을 시작하지 않는다.
