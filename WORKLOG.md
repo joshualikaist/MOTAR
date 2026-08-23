@@ -11678,3 +11678,20 @@ payload 출력은 `incomplete named-part subtotal 404.2–411.8 g`으로 바뀌�
 `as_built.assembly_state=unassembled`, `exact_bom_frozen=false`, `measured_auw_kg=null`을 기록했다.
 따라서 simulator의 1.20 kg, analytic inertia, motor/prop/thrust 좌표를 실측값으로 승격하지 않는다.
 다음 BOM 결정은 frame 보유·선정 여부부터 한 항목씩 닫는다.
+
+### Day 1 기준 프레임 후보 선정 — 현재 ref5in 형상 우선
+
+사용자는 보유/선정된 frame이 없으며 현재 simulation 사양에 맞는 추천을 사용하겠다고 확인했다.
+현행 제조사 공식 사양을 비교해 `navrl_ref5in_quad`의 220 mm/5-inch 설계점을 가장 적게 벗어나는
+**iFlight AOS 5 V5.1 Frame Kit**를 provisional packaging reference로 선정했다. 공식값은 wheelbase
+228 mm, frame 165±5 g, arm 6 mm, stack mount 20×20/30.5×30.5 mm다. 비교 후보인 AOS HS5와
+Nazgul Evoque/DC5/XL5는 233–245 mm, 226–256 g으로 geometry/mass 변화가 더 컸다.
+
+이를 구매 또는 실기 플랫폼 확정으로 기록하지 않았다. 공식 질량이 있는 센서/compute 부분합과
+frame만 564.2–581.8 g이므로 1.20 kg 설계점에 남는 618.2–635.8 g 안에 battery, motors,
+electronics, Orin carrier/cooling, mounts/wiring이 전부 들어가야 한다. 또한 228 mm+5-inch의 단순 prop
+envelope는 288.2 mm로 현 collision proxy보다 8.2 mm 크다. 따라서 scaled payload CAD, prop/sensor
+clearance, complete mass/CG, motor-prop thrust/thermal gate 전에는 구매 승인·URDF 수정·재학습을 하지
+않는다. 선정 근거와 승격 gate는 `docs/navrl_frame_selection_2026-08-23.md`에 고정했다.
+사이트 기체 페이지에도 같은 후보 상태와 문서 링크를 넣어, provisional 선정을 실제 기체 확정으로
+오독하지 않게 했다.

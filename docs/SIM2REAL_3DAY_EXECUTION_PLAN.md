@@ -57,6 +57,12 @@
 기존 [`navrl_hardware_identification_manifest.yaml`](navrl_hardware_identification_manifest.yaml)은
 식별값 입력 양식이다. `navrl_ref5in_quad`의 1.20 kg은 설계점일 뿐 실제 AUW가 아니다.
 
+실기 미조립과 frame 미보유를 확인한 뒤, 현재 220 mm/5-inch simulation 형상을 가장 적게 바꾸는
+**우선 설계 기준**으로 iFlight AOS 5 V5.1(공식 228 mm, 165±5 g)을 선정했다. 이는 구매 확정이
+아니며 [`navrl_frame_selection_2026-08-23.md`](navrl_frame_selection_2026-08-23.md)의 payload CAD,
+질량·CG, prop/sensor clearance, thrust-curve gate를 모두 통과해야 exact BOM으로 승격한다. gate 전에는
+URDF 질량/충돌 형상이나 frozen checkpoint contract를 바꾸지 않는다.
+
 ### 오후: 센서 거리·가림 원자료
 
 권장 최소 matrix:
