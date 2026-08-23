@@ -11908,3 +11908,13 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
 - 다음은 gate를 임의 완화하는 대신 잔여 1.5 m/s boundary-inertia 사건의 step 전후 동역학을
   분리 계측하고, 그 결과로만 B 단계의 PASS/FAIL을 결정한다. B가 닫히기 전에는 C(실기 센서
   로그), D(two-zone replay), E(reflection A/B), F(fresh PPO)의 순서를 유지한다.
+
+### 2026-08-24 — synthetic corridor mode probe 재검증
+
+- frozen ref5in checkpoint에 대해 symmetric ±12° 및 좌우 ±5° physical-geometry fixture를
+  token slot 순서 LR/RL 모두 평가했다. probe action은 실행하지 않는 side forward이며, 결과는
+  `INCONCLUSIVE_POLICY_CHIRALITY`였다. reflection error가 0.15 gate를 넘었으므로 mode averaging
+  또는 좌우 대칭을 개선책으로 채택하지 않는다.
+- 이 결과는 synthetic policy screen일 뿐 실제 고밀도 환경의 causal evidence가 아니다. paired
+  reflection A/B 학습은 별도 preregistration으로 남기고, physical/sensor contract 이후에만
+  실행한다. 원자료: `results/navrl_ref5in_symmetric_corridor_mode_probe_seed431/summary.json`.

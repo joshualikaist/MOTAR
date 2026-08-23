@@ -310,6 +310,14 @@ x-margin 약 −0.00006 m)을 보였다. 이는 개선이지 해결이 아니다
 완화는 여전히 금지한다. 원자료: `results/navrl_physical_target_invalid_forensics_post_wall_brake_seed509/summary.json`,
 `results/navrl_physical_target_speed_envelope_post_wall_brake_seed509/summary.json`.
 
+### 2026-08-24 synthetic corridor mode probe — 판정 보류
+
+고정 ref5in checkpoint/seed 431의 6-arm synthetic corridor screen은 policy action의 좌우
+reflection error가 사전 gate(0.15)를 초과해 `INCONCLUSIVE_POLICY_CHIRALITY`로 종료됐다.
+probe action은 실제 환경에 실행하지 않았고, 학습·reward·checkpoint를 바꾸지 않았다. 따라서
+이 결과로 mode averaging을 적용하거나 고밀도 병목의 원인을 확정하지 않는다. 원자료:
+`results/navrl_ref5in_symmetric_corridor_mode_probe_seed431/summary.json`.
+
 ### 2026-08-24 reflection·distance 상태
 
 - 기존 N1 real-frame reflection audit는 receipt를 다시 검증해 `CHIRALITY_CONFIRMED_REAL_FRAME`

@@ -62,9 +62,11 @@ sim-to-real PPO를 실행하지 않는다.
 
 ### E. 선택적 reflection consistency — 우선순위 낮음
 
-실행 권한은 이미 있지만, 먼저 preregistration §5-b의 loss profile을 만들고 dedicated A/B launcher를
-추가해야 한다. control/treatment 1,000 epoch + 평가까지 GPU 약 2.5–3시간이다. B/C/D가 닫히기 전에는
-주요 병목 처방으로 사용하지 않는다.
+합성 symmetric-corridor mode probe는 이미 고정 checkpoint로 실행했고 결과는
+`INCONCLUSIVE_POLICY_CHIRALITY`였다. 즉 좌우 reflection error가 gate를 넘었고, synthetic fixture에서
+mode averaging을 지지하는 근거가 나오지 않았다. 이 결과는 high-density 원인이나 capture 개선의
+증거가 아니다. preregistration §5-b의 실제 paired A/B 학습은 별도 control/treatment 1,000 epoch
++ 평가(약 2.5–3시간 GPU)가 필요하며, B/C/D가 닫히기 전에는 실행하지 않는다.
 
 ### F. fresh PPO — 마지막 단계
 
