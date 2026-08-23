@@ -11842,3 +11842,32 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
   변환→검증→profile→two-zone replay 순으로 이어지도록 실행계획 8절에 명령을 기록했다.
 - 이 변경으로도 PPO, reward, observation width, URDF, dynamics는 변경하지 않았다. 실제 하드웨어와
   calibration/rosbag이 닫히기 전에는 fresh training을 시작하지 않는다.
+
+### 2026-08-24 — ref5in 동역학 3중 교차검증
+
+실측 하드웨어가 없는 상태에서 같은 실험을 반복하지 않고, 서로 독립적인 세 관점으로 검증했다.
+
+1. **구조/계약(CPU)**: URDF·allocation matrix·robot config·physical target equivalent contract를
+   `test_navrl_ref5in_platform.py`로 재검증했다. **27/27 PASS**. 질량 1.200 kg, motor arm
+   0.0777817 m, collision proxy 0.28×0.28×0.12 m, assembled inertia 계산이 모두 일치했다.
+2. **독립 수치 계산**: URDF XML만 다시 읽어 질량·평행축 관성·T/W를 별도로 계산했다.
+   ref5in `ixx=0.00414219891`, `izz=0.00576919783 kg·m²`, `T/W=3.261978`,
+   `(T/W−1)g=22.19 m/s²`, 45° lateral acceleration limit `g·tan45°=9.81 m/s²`로
+   선언값과 일치했다. 이는 hardware identification이 아니라 simulator arithmetic 확인이다.
+3. **실행 동역학(GPU)**: 기존 결과를 덮어쓰지 않고 `/tmp/navrl_ref_platform_audit_20260824.json`에
+   16 env·seed 911·bars 0·governor off 조건으로 `verify_navrl_ref_platform.py`를 재실행했다.
+   hover/forward/reversal/yaw/100 Hz pitch-roll, finite state와 actuator saturation gate가
+   모두 PASS했다. ref5in forward 2.490 m/s, reversal t90 1.0 s, yaw 2.999 rad/s,
+   worst pre-clamp saturation 1.3%였다.
+
+#### 동역학 관련 결론
+
+- 현재 ref5in simulator 내부에 즉시 수정해야 할 **수치적 동역학 불일치**는 발견되지 않았다.
+- 다만 이것은 실제 기체가 맞다는 뜻이 아니다. thrust curve, motor time constant, yaw torque,
+  CG/inertia, power/thermal은 여전히 미측정이다. URDF의 1.20 kg과 9.60 N/motor는 synthetic
+  design point다.
+- task default `max_velocity=2.0`, `yaw_rate_max=2.5`와 canonical v2 launcher/evaluator의
+  `2.5 m/s`, `3.0 rad/s`가 다르다는 점을 코드 주석과 discipline 문서에 명시했다. canonical
+  launchers/evaluators는 provenance에 값을 pin하므로 기존 checkpoint는 변경하지 않았다.
+- 따라서 지금 단계에서 물리 파라미터를 임의로 고치거나 재학습하지 않는다. 실제 측정값이 들어오면
+  한 축씩 새 lineage로 등록한다.

@@ -12,7 +12,8 @@ except ValueError:
 class control(_base):
     """NavRL-scoped Lee velocity controller config.
 
-    Raises ONLY the yaw-rate ceiling from the shared default pi/3 (~1.047 rad/s) to 2.5 rad/s so the
+    Raises ONLY the yaw-rate ceiling from the shared default pi/3 (~1.047 rad/s). The task fallback
+    is 2.5 rad/s; canonical v2 launchers pin 3.0 rad/s so the
     learned 4th action (yaw-rate, option b) has the authority to track the ~1.75-2.4 rad/s velocity-
     direction slew in the tight weaves that cause corner-clips. Everything else is inherited from
     lee_controller_config. Scoped here (rather than editing the shared config) so position_setpoint_task

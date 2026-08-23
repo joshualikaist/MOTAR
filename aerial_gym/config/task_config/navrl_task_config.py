@@ -99,7 +99,9 @@ class task_config:
     # actuator calibration and the 0.12 m collision height make it a different vehicle/task
     # lineage. It is not CAD-, BOM- or flight-validated. See navrl_ref5in_quad_config.py.
     robot_name = os.environ.get("NAVRL_ROBOT", "").strip() or "navrl_quad"
-    controller_name = "lee_velocity_control_navrl"  # NavRL-scoped: raises yaw-rate clamp pi/3 -> 2.5
+    # NavRL-scoped controller. The class fallback remains 2.5 for legacy/import compatibility;
+    # canonical v2 launchers/evaluators pin NAVRL_YAW_RATE_MAX=3.0 and record it in provenance.
+    controller_name = "lee_velocity_control_navrl"
     args = {}
     num_envs = 256
     use_warp = True

@@ -3601,8 +3601,9 @@ class NavRLTask(BaseTask):
         _i_bound = _mv / _ki
         self._z_err_integral.clamp_(-_i_bound, _i_bound)
         self.command[:, 2] = torch.clamp(4.0 * z_err + _ki * self._z_err_integral, -_mv, _mv)
-        # (b) learned yaw-rate: action[:, 3] in [-1, 1] -> euler yaw-rate (was held at 0). yaw_rate_max
-        # matches the NavRL-scoped controller clamp (2.5 rad/s) so the mapping is linear (no dead band).
+        # (b) learned yaw-rate: action[:, 3] in [-1, 1] -> euler yaw-rate (was held at 0).
+        # yaw_rate_max matches the NavRL-scoped controller clamp; canonical v2 launchers pin 3.0
+        # rad/s while the task fallback remains 2.5 for legacy/import compatibility.
         self._yaw_cmd[:] = torch.clamp(actions[:, 3], -1.0, 1.0)
         self.command[:, 3] = self._yaw_cmd * self.task_config.yaw_rate_max
         return self.command

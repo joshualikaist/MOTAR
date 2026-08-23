@@ -44,7 +44,8 @@ worktree에서 PRIMARY 소스를 실행하며 worktree 바이트를 영수증에
 
 ### 마지막 항목이 이 재검의 핵심이다
 
-`NAVRL_MAX_VELOCITY`(2.5) · `NAVRL_MAX_TILT_DEG`(45) · `NAVRL_YAW_RATE_MAX`(2.5) —
+`NAVRL_MAX_VELOCITY`(2.5) · `NAVRL_MAX_TILT_DEG`(45) · canonical v2 `NAVRL_YAW_RATE_MAX`(3.0)
+(task fallback 2.5) —
 전부 실험 이력 0건이다. `free_speed_cap_mps = 3.5355`는 최적화 값이 아니라 `2.5×√2`라는
 기하학적 귀결일 뿐이다.
 
