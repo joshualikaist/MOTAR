@@ -11728,3 +11728,15 @@ prop swept volume, Mid-360 360°×59° FOV, D435i FOV, connector bend/maintenanc
 gate를 고정했다. 현재 공식 envelope는 Mid-360 65×65×60 mm/265 g, frame 228 mm/165±5 g이며,
 D435i bbox와 Orin complete assembly는 pending이다. exact parts와 도면/실측 SHA가 채워질 때까지
 구매 승인·URDF 변경·재학습을 하지 않는다.
+
+### Day 1 통합 BOM 방향 권장
+
+사용자는 필요한 센서와 연산을 모두 포함하는 방향에 동의했다. 최종 시스템은 Mid-360 + D435i +
+Orin NX + Pixhawk를 모두 탑재하고, 원인분리를 위해 bench/replay만 단계적으로 진행한다. Orin은
+개발키트가 아니라 compact carrier + low-profile cooling을 기준으로 후보를 찾고, 6S 1550 mAh를
+질량 우선 1차 배터리로 삼는다. 1850 mAh는 1550의 loaded sag/체공시간이 부족하면서도 complete
+AUW가 1.20 kg 안에 남을 때만 재검토한다.
+
+이는 권장 방향이지 구매·exact BOM 확정이 아니다. carrier 모델, D435i unit/cable, 배터리 외곽과
+전원/열/CG를 닫기 전에는 URDF 수정이나 재학습을 하지 않는다. 세부 기준은
+`docs/navrl_ref5in_bom_direction_2026-08-23.md`에 기록했다.
