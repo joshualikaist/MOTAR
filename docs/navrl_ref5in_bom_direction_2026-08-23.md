@@ -23,7 +23,7 @@ power, thermal, CG를 다시 측정한다.
 | frame | iFlight AOS 5 V5.1 provisional reference | 228 mm/165±5 g; packaging gate 전 구매 보류 |
 | propulsion | XING2 2207 1855KV + exact 5-inch prop | current screen만 통과; thrust curve 미확인 |
 | ESC | BLITZ Mini E55 4-in-1 | 2–6S, 55 A continuous; motor/prop current 실측 필요 |
-| compute carrier | **Auvidea JNX42-LC** 우선 후보 + low-profile heatsink/fan | 80×104.6 mm, 3×USB3/2×CSI, 12 V only; board mass pending |
+| compute carrier | **Auvidea JNX42-LC** 우선 / Connect Tech Hadron 2순위 + low-profile heatsink/fan | JNX42: 80×104.6 mm, 3×USB3/2×CSI, 12 V only; Hadron: 82.6×58.8 mm, 49 g, 9–60 V; full assembly pending |
 | battery | 6S 1550 mAh first screen | 1.20 kg 질량 여유 우선; voltage sag/endurance 측정 후 1850 검토 |
 | sensors | Mid-360 + D435i 동시 탑재 | target system requirement; FOV/prop interference pending |
 

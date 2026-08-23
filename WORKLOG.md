@@ -11748,3 +11748,12 @@ AUW가 1.20 kg 안에 남을 때만 재검토한다.
 인터페이스를 구성할 가능성이 있다. 단 base board는 12 V only라 6S에 직결할 수 없고, regulated
 12 V DC-DC가 필수다. 제조사 문서에서 board mass는 확인하지 못했으므로 exact AUW·구매 승격은 보류했다.
 JNX42-LC의 모델/전원/인터페이스/승격 gate는 `docs/navrl_ref5in_carrier_screen_2026-08-23.md`에 고정했다.
+
+### Day 1 Orin carrier 2순위 대조
+
+Connect Tech 공식 Hadron(NGX012) 사양도 대조했다. 82.6×58.8 mm, 49 g, USB 3.1×2,
+4-lane CSI-2×1, 1 GbE, 9–60 V 입력이라 6S 전원 범위와 질량 면에서 강점이 있다. 반면
+locking IO harness/breakout 질량과 USB/CSI 수가 JNX42-LC보다 작다. 따라서 JNX42-LC 1차,
+Hadron 2차 후보로 기록하고, 두 모델 모두 Orin module/heatsink/fan/NVMe/cable 및 전원
+transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출처와 비교표는
+`docs/navrl_ref5in_carrier_screen_2026-08-23.md`에 기록했다.

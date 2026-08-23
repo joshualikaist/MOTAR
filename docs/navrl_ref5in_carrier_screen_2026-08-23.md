@@ -40,3 +40,33 @@ JNX42-M2/LM은 기능은 늘지만 현재 센서 계약에 필요하지 않아 1
 
 JNX42의 12 V 제약 때문에 6S battery → regulated 12 V carrier rail → 5 V/3.3 V peripheral rail의
 전력 구조를 사용한다. 이 DC-DC를 빼고 “carrier가 6S를 지원한다”고 쓰지 않는다.
+
+## 2순위 후보: Connect Tech Hadron (NGX012)
+
+제조사 [Hadron product page](https://connecttech.com/product/hadron-carrier-for-nvidia-jetson-orin-nx/)의
+공개 사양을 확인했다.
+
+| 항목 | 공식 확인값 | MOTAR 적합성 |
+|---|---|---|
+| module | Jetson Orin NX/Nano 호환 | Orin NX 후보와 일치 |
+| size / mass | 82.6×58.8 mm; 49 g | JNX42-LC보다 작고 가벼움 |
+| USB / network | USB 3.1 ×2, 1 GbE ×1 | D435i 1포트와 여분 1포트; Mid-360 Ethernet 경로 가능 |
+| camera | 4-lane MIPI CSI-2 ×1 | 현재 센서 구성에는 충분할 가능성, 이중 CSI는 불가 |
+| storage / cooling | M.2 2242 NVMe, 5 V 4-pin fan | NVMe와 저 profile fan 별도 확인 필요 |
+| power | +9–60 V DC (nominal +12–48 V) | 6S 최대 25.2 V 범위에 들어가나 전원 커넥터/노이즈 검증 필요 |
+| connector | rugged locking IO connector | 일반 USB/Ethernet cable보다 harness/strain relief 설계가 필요 |
+
+현재 인터페이스만 보면 Hadron은 D435i(USB3), Mid-360(Ethernet), Pixhawk(UART) 조합을 수용할 수
+있다. 다만 공개 사양만으로는 선택 Orin NX SKU의 냉각 온도, 케이블/브레이크아웃의 실제 질량과
+외곽, 6S 전원 transient가 닫히지 않는다.
+
+## 후보 간 선택 규칙
+
+| 후보 | 장점 | 차단 위험 | 현재 순위 |
+|---|---|---|---|
+| JNX42-LC | USB3×3, CSI-2×2, 넉넉한 I/O | 12 V only라 regulated DC-DC 필수; board mass 미확인 | 1차 |
+| Hadron NGX012 | 49 g, 82.6×58.8 mm, 9–60 V 입력 | USB3×2/CSI×1; locking harness와 breakout 질량 필요 | 2차 |
+
+두 후보 모두 exact Orin NX module/heatsink/fan/NVMe/cable/DC-DC(or direct-6S protection)의
+질량·bbox·keepout을 확보하고, packaging contract의 prop/FOV/CG/thermal gate를 통과해야
+구매 후보로 승격한다. 현재는 어느 쪽도 exact BOM이나 URDF 변경 근거가 아니다.
