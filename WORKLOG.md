@@ -11929,3 +11929,19 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
   `all_cells_pass=false`이므로 fresh PPO는 계속 BLOCKED다. 다음 실제 입력은 hardware manifest,
   calibration SHA, 210개 독립 trial, timestamp contract다.
 - 결과 영수증: `results/navrl_sim2real_software_preflight_2026-08-24/summary.json`.
+
+### 2026-08-24 — 시뮬레이션 검증 종료 상태·사이트·논문 작성 브리프
+
+- 현재 가능한 시뮬레이션/소프트웨어 검증을 종료 상태로 정리했다. 사이트의 상태를
+  `SIMULATION VERIFIED · HARDWARE PENDING`으로 갱신하고, software preflight는
+  `SYNTHETIC_ONLY`, physical target gate와 fresh PPO는 `BLOCKED`로 명시했다. mode probe도
+  `INCONCLUSIVE_POLICY_CHIRALITY`를 유지한다. 즉 시뮬레이션 파이프라인의 계약·계측 검증이
+  끝났다는 뜻이지, 실제 센서·기체로 sim-to-real 성능이 입증됐다는 뜻은 아니다.
+- `tools/update_status_snapshot.py`가 preflight/physical-envelope/mode-probe 영수증을 읽어
+  `docs/status/status.json`의 simulation verification 요약을 자동 생성하도록 했다. 대시보드
+  `docs/status/index.html`·`docs/status/drone.html`은 이 한계와 다음 조건을 직접 표시한다.
+- 논문 초안 작성에 사용할 수 있도록 `docs/PAPER_WRITING_BRIEF_2026-08-24.md`를 만들었다.
+  corrected-v2 계약, 보상 계수, 밀도·속도 결과, latency 정정, physical gate, OOD/합성-only
+  주의사항과 출처 경로를 모았으며, 미검증 hardware/citation 주장은 GPT가 발명하지 않도록
+  명시적인 작성 규칙을 넣었다.
+- 이 시점에서 실기 측정값 없이 PPO를 새로 학습하거나 sim-to-real 성공을 주장하지 않는다.

@@ -47,6 +47,9 @@ RISKCAP_SCREEN_PATH = ROOT / "results/navrl_v2_ep24000_riskcap_seed44_screen/sum
 RISKCAP_POST_PATH = ROOT / "results/navrl_v2_riskcap_postadapt/summary.json"
 TTC_1650_PATH = ROOT / "results/v2_ttc_ab_1650ti.csv"
 MAIN_TTC_RESULT_ROOT = ROOT / "results"
+SIM2REAL_PREFLIGHT_PATH = ROOT / "results/navrl_sim2real_software_preflight_2026-08-24/summary.json"
+PHYSICAL_SPEED_ENVELOPE_PATH = ROOT / "results/navrl_physical_target_speed_envelope_post_wall_brake_seed509/summary.json"
+MODE_PROBE_PATH = ROOT / "results/navrl_ref5in_symmetric_corridor_mode_probe_seed431/summary.json"
 
 _MAIN_TTC_SOURCE_SHA256 = (
     "82f7978b42d9d9e95adcc638a40ae85fb3736fd897ae39cb8aa8333be39cf23f"
@@ -2439,11 +2442,43 @@ def _sim2real_72h() -> Dict[str, Any]:
             "never_acquired_delta_pp": delta["never_acquired"] * 100.0,
             "capture_delta_pp": delta["capture"] * 100.0,
         }
+    simulation_verification: Dict[str, Any] = {
+        "status": "COMPLETE_WITH_LIMITS",
+        "preflight_claim_status": "SYNTHETIC_ONLY",
+        "preflight_path": "results/navrl_sim2real_software_preflight_2026-08-24/summary.json",
+        "physical_gate": "BLOCKED",
+        "fresh_ppo": "BLOCKED",
+    }
+    if SIM2REAL_PREFLIGHT_PATH.exists():
+        try:
+            preflight = json.loads(SIM2REAL_PREFLIGHT_PATH.read_text(encoding="utf-8"))
+            simulation_verification["preflight_steps"] = preflight.get("steps", {})
+            simulation_verification["preflight_claim_status"] = preflight.get(
+                "claim_status", "SYNTHETIC_ONLY"
+            )
+        except (OSError, json.JSONDecodeError):
+            simulation_verification["status"] = "PRE_FLIGHT_READ_ERROR"
+    if PHYSICAL_SPEED_ENVELOPE_PATH.exists():
+        try:
+            physical = json.loads(PHYSICAL_SPEED_ENVELOPE_PATH.read_text(encoding="utf-8"))
+            simulation_verification["physical_gate_all_cells_pass"] = physical.get("all_cells_pass")
+            simulation_verification["highest_passing_speed_mps_by_density"] = physical.get(
+                "highest_passing_speed_mps_by_density"
+            )
+        except (OSError, json.JSONDecodeError):
+            simulation_verification["physical_gate"] = "RESULT_READ_ERROR"
+    if MODE_PROBE_PATH.exists():
+        try:
+            mode_probe = json.loads(MODE_PROBE_PATH.read_text(encoding="utf-8"))
+            simulation_verification["mode_probe_verdict"] = mode_probe.get("interpretation")
+        except (OSError, json.JSONDecodeError):
+            simulation_verification["mode_probe_verdict"] = "RESULT_READ_ERROR"
     return {
-        "as_of": "2026-08-23",
-        "status": "MEASURE BEFORE RETRAINING",
+        "as_of": "2026-08-24",
+        "status": "SIMULATION VERIFIED · HARDWARE PENDING",
         "plan_path": "docs/SIM2REAL_3DAY_EXECUTION_PLAN.md",
         "evidence": evidence,
+        "simulation_verification": simulation_verification,
         "days": [
             {
                 "day": "DAY 1",
@@ -2464,7 +2499,7 @@ def _sim2real_72h() -> Dict[str, Any]:
         "software_readiness": {
             "status": "READY_FOR_REAL_LOG_PIPELINE",
             "tool": "tools/navrl_sim2real_ingest.py + tools/navrl_sim2real_telemetry.py + tools/navrl_sensor_profile.py + tools/navrl_two_zone_replay.py",
-            "tests": "16/16 CPU contract tests passed",
+            "tests": "16/16 CPU contract tests + software preflight passed",
             "synthetic_verdict": "PASS",
             "claim_status": "SYNTHETIC_ONLY",
             "next": "Convert real rosbag/CSV, validate telemetry, build trial profile, then replay the measured two-zone contract.",

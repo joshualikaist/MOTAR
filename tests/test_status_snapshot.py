@@ -283,7 +283,12 @@ class StatusSnapshotTest(unittest.TestCase):
         self.assertIn("Do not run the 10k Stage 2", update["decision"])
 
         plan = _STATUS._sim2real_72h()
-        self.assertEqual(plan["status"], "MEASURE BEFORE RETRAINING")
+        self.assertEqual(plan["status"], "SIMULATION VERIFIED · HARDWARE PENDING")
+        self.assertEqual(
+            plan["simulation_verification"]["preflight_claim_status"],
+            "SYNTHETIC_ONLY",
+        )
+        self.assertEqual(plan["simulation_verification"]["physical_gate"], "BLOCKED")
         self.assertFalse(plan["evidence"]["stage2_authorised"])
         self.assertEqual(len(plan["days"]), 3)
 

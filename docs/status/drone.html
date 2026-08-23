@@ -6,8 +6,8 @@
 <title>기체 · 센싱 · MOTAR</title>
 <meta name="description" content="MOTAR NavRL 시뮬레이션 기체 스펙, 센서 구성, 그리고 실기 하드웨어와의 정량 격차.">
 <meta name="color-scheme" content="light dark">
-<link rel="stylesheet" href="style.css?v=20260823a">
-<script src="js/shell.js?v=20260823a"></script>
+<link rel="stylesheet" href="style.css?v=20260824a">
+<script src="js/shell.js?v=20260824a"></script>
 </head>
 <body data-page-title="기체 · 센싱">
 
@@ -86,8 +86,10 @@
       <article class="milestone"><span>DAY 3</span><b>tracker replay</b><p>held-out real log에서
         ego-motion·timestamp·uncertainty를 검증한 뒤 한 축짜리 fresh PPO를 사전등록.</p></article>
     </div>
-    <p class="decision">Stage 1은 never-acquired <b>8.443→3.172%</b>(−5.271 pp)였지만
-      사전 −15 pp gate 미달로 Stage 2는 닫혀 있다. 전체 기준:
+    <p class="decision">시뮬레이션 검증 파이프라인은 완료됐지만, 실기 센서 원자료는 아직 없다.
+      Stage 1은 never-acquired <b>8.443→3.172%</b>(−5.271 pp)였고 사전 −15 pp gate 미달로
+      Stage 2는 닫혀 있다. 따라서 현재 상태는 <b>simulation verified · hardware pending</b>이며,
+      전체 기준:
       <a href="../SIM2REAL_3DAY_EXECUTION_PLAN.md">SIM2REAL_3DAY_EXECUTION_PLAN.md</a>.</p>
   </section>
 
@@ -99,9 +101,9 @@
 
 <!-- Snapshot data for instant paint. Plain classic scripts: they execute in document order, so the
      globals are assigned before the renderers boot. Do NOT add defer/type=module. -->
-<script src="status.fallback.js"></script>
-<script src="data/platform.js?v=20260823a"></script>
-<script src="data/parameters.js?v=20260823a"></script>
-<script src="js/page-drone.js?v=20260823a"></script>
+<script src="status.fallback.js?v=20260824a"></script>
+<script src="data/platform.js?v=20260824a"></script>
+<script src="data/parameters.js?v=20260824a"></script>
+<script src="js/page-drone.js?v=20260824a"></script>
 </body>
 </html>

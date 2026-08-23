@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-23T17:56:10.372206+00:00",
+  "generated_at": "2026-08-23T18:12:41.469503+00:00",
   "repo": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator",
   "n_runs": 86,
   "active_run": null,
@@ -3712,8 +3712,8 @@
     }
   },
   "sim2real_72h": {
-    "as_of": "2026-08-23",
-    "status": "MEASURE BEFORE RETRAINING",
+    "as_of": "2026-08-24",
+    "status": "SIMULATION VERIFIED · HARDWARE PENDING",
     "plan_path": "docs/SIM2REAL_3DAY_EXECUTION_PLAN.md",
     "evidence": {
       "verdict": "RANGE_INCONCLUSIVE_AT_THIS_BUDGET",
@@ -3724,6 +3724,54 @@
       "never_acquired_28": 0.0317227916056613,
       "never_acquired_delta_pp": -5.27086383601757,
       "capture_delta_pp": 6.44216691068814
+    },
+    "simulation_verification": {
+      "status": "COMPLETE_WITH_LIMITS",
+      "preflight_claim_status": "SYNTHETIC_ONLY",
+      "preflight_path": "results/navrl_sim2real_software_preflight_2026-08-24/summary.json",
+      "physical_gate": "BLOCKED",
+      "fresh_ppo": "BLOCKED",
+      "preflight_steps": {
+        "telemetry": {
+          "verdict": "PASS",
+          "claim_status": "SYNTHETIC_ONLY"
+        },
+        "ingest": {
+          "verdict": "PASS",
+          "claim_status": "SYNTHETIC_ONLY",
+          "events": 5
+        },
+        "sensor_profile": {
+          "verdict": "PASS",
+          "claim_status": "SYNTHETIC_ONLY",
+          "trials": 2
+        },
+        "two_zone_replay": {
+          "verdict": "PASS",
+          "claim_status": "SYNTHETIC_ONLY",
+          "events": 2
+        },
+        "mode_probe": {
+          "verdict": "INCONCLUSIVE_POLICY_CHIRALITY",
+          "authority": "DIAGNOSTIC_ONLY"
+        },
+        "physical_target_gate": {
+          "all_cells_pass": false,
+          "authority": "NO_PPO_PERMISSION"
+        },
+        "fresh_ppo": {
+          "verdict": "BLOCKED",
+          "reason": "physical_gate_and_real_sensor_contract_not_passed"
+        }
+      },
+      "physical_gate_all_cells_pass": false,
+      "highest_passing_speed_mps_by_density": {
+        "70": 0.9,
+        "150": 0.6,
+        "205": 0.6,
+        "300": 0.6
+      },
+      "mode_probe_verdict": "INCONCLUSIVE_POLICY_CHIRALITY"
     },
     "days": [
       {
@@ -3745,7 +3793,7 @@
     "software_readiness": {
       "status": "READY_FOR_REAL_LOG_PIPELINE",
       "tool": "tools/navrl_sim2real_ingest.py + tools/navrl_sim2real_telemetry.py + tools/navrl_sensor_profile.py + tools/navrl_two_zone_replay.py",
-      "tests": "16/16 CPU contract tests passed",
+      "tests": "16/16 CPU contract tests + software preflight passed",
       "synthetic_verdict": "PASS",
       "claim_status": "SYNTHETIC_ONLY",
       "next": "Convert real rosbag/CSV, validate telemetry, build trial profile, then replay the measured two-zone contract."
