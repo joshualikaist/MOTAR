@@ -11719,3 +11719,12 @@ XING2 2207 1855KV 공식 제품 페이지를 다시 확인했다. 공개된 수�
 측정 장비가 아직 없으므로 `docs/navrl_ref5in_thrust_stand_protocol_2026-08-23.md`에 원자료 CSV
 필드, 고정 조건, 반복수, 안전 중단 사유, 사전 `THRUST_CONTRACT_PASS/INCONCLUSIVE` 규칙을
 추가했다. 이 계약 전에는 인터넷 추정치나 단일 최대추력 숫자를 simulation actuator에 반영하지 않는다.
+
+### Day 1 payload packaging 계약
+
+프레임이 미조립이고 Orin carrier/cooling/storage/DC-DC·배터리 revision이 없으므로 실제 fit을
+주장하지 않고, `docs/navrl_ref5in_payload_packaging_contract_2026-08-23.md`에 CAD 입력 형식과
+prop swept volume, Mid-360 360°×59° FOV, D435i FOV, connector bend/maintenance, CG, power/thermal
+gate를 고정했다. 현재 공식 envelope는 Mid-360 65×65×60 mm/265 g, frame 228 mm/165±5 g이며,
+D435i bbox와 Orin complete assembly는 pending이다. exact parts와 도면/실측 SHA가 채워질 때까지
+구매 승인·URDF 변경·재학습을 하지 않는다.
