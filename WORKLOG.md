@@ -11707,3 +11707,11 @@ XING2의 공식 peak 35.08 A/개와 Mini E55의 55 A continuous/개는 전류 �
 propeller별 thrust/current 표를 확보하지 못했으므로 9.60 N/모터 달성이나 실제 체공을 주장하지 않았다.
 추력표·payload CAD·CG·전압 sag/열 측정 전에는 구매·exact BOM 승격·URDF 수정·재학습을 하지 않는다.
 세부 계산은 `docs/navrl_ref5in_component_screen_2026-08-23.md`에 기록했다.
+
+### Day 1 공식 추력자료 audit
+
+XING2 2207 1855KV 공식 제품 페이지를 다시 확인했다. 공개된 수치는 KV(1855/2755), 질량 31.6 g,
+6S 입력, peak current 35.08 A, 16×16 mm mounting이며, 선택 propeller별 thrust/RPM/current 곡선이나
+9.60 N 보증점은 페이지에 없다. 따라서 판매자·검색 결과의 단일 추정값을 simulation contract에 넣지
+않고, 실제 선택 prop·6S 배터리·ESC 조건의 thrust-stand 측정으로 남겼다. 다음 측정은 최소한 hover
+2.943 N/모터, 9.60 N/모터, 전류, 전압 sag, 30 s 열 상태를 같은 조건에서 기록해야 한다.
