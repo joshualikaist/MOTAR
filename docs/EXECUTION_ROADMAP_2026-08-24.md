@@ -54,6 +54,10 @@ boundary inertia의 잔여 strict failure를 수치로 확인한 것이다.
 사용자가 기체를 조립하고 BOM/AUW/CG/inertia, thrust curve, camera/LiDAR calibration, timestamp 계약,
 210개 sensor trial을 취득한다. 그 전에는 URDF/질량/센서 noise를 임의로 수정하지 않는다.
 
+하드웨어가 없는 동안 software-only preflight를 실행했다. telemetry, CSV ingest, trial profile,
+two-zone replay는 모두 구조적으로 PASS했지만 결과의 claim status는 `SYNTHETIC_ONLY`다. 실제
+기체·센서가 생기면 같은 산출물 자리에 real-log 입력을 넣어 다시 실행한다.
+
 ### D. 실측 sensor profile과 two-zone replay — C 이후
 
 trial 단위 bearing/range error, valid fraction, dropout burst, latency/skew를 계산하고, far bearing-only /
@@ -73,6 +77,9 @@ mode averaging을 지지하는 근거가 나오지 않았다. 이 결과는 high
 physical gate PASS + 실제 sensor contract PASS + observation/reward/source receipt PASS 후에만 실행한다.
 순서는 500 epoch smoke → held-out 평가 → 한 축만 바꾼 본학습이다. 실패하면 epoch을 늘리거나 threshold를
 완화하지 않고 해당 축을 되돌린다.
+
+현재 software preflight 결과는 physical gate `all_cells_pass=false`와 real sensor contract 부재로
+fresh PPO를 명시적으로 `BLOCKED`로 기록했다.
 
 ## 금지사항
 

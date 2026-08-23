@@ -318,6 +318,14 @@ probe action은 실제 환경에 실행하지 않았고, 학습·reward·checkpo
 이 결과로 mode averaging을 적용하거나 고밀도 병목의 원인을 확정하지 않는다. 원자료:
 `results/navrl_ref5in_symmetric_corridor_mode_probe_seed431/summary.json`.
 
+### 2026-08-24 sim-to-real software-only preflight — 구조 PASS, 실기 주장 불가
+
+한 번의 preflight에서 telemetry 계약, CSV ingest, trial-level sensor profile, two-zone replay를
+연결했다. 네 단계 모두 구조상 `PASS`였고, synthetic fixture임을 각 결과와 receipt에 남겼다.
+mode probe는 기존 결과대로 `INCONCLUSIVE_POLICY_CHIRALITY`, physical-target speed envelope는
+`all_cells_pass=false`였다. 따라서 fresh PPO는 `BLOCKED`로 유지한다. 원자료:
+`results/navrl_sim2real_software_preflight_2026-08-24/summary.json`.
+
 ### 2026-08-24 reflection·distance 상태
 
 - 기존 N1 real-frame reflection audit는 receipt를 다시 검증해 `CHIRALITY_CONFIRMED_REAL_FRAME`

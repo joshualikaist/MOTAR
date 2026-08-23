@@ -11918,3 +11918,14 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
 - 이 결과는 synthetic policy screen일 뿐 실제 고밀도 환경의 causal evidence가 아니다. paired
   reflection A/B 학습은 별도 preregistration으로 남기고, physical/sensor contract 이후에만
   실행한다. 원자료: `results/navrl_ref5in_symmetric_corridor_mode_probe_seed431/summary.json`.
+
+### 2026-08-24 — 1~7 단계 software-only 일괄 preflight
+
+- telemetry → CSV ingest → trial sensor profile → two-zone replay를 한 명령으로 연결하는
+  `tools/run_navrl_sim2real_software_preflight.py`를 추가하고 실행했다.
+- telemetry/ingest/profile/replay는 모두 구조상 PASS였지만, 입력은 synthetic fixture라 claim은
+  `SYNTHETIC_ONLY`다. 실제 센서 성능·range noise·latency 수치로 승격하지 않는다.
+- 기존 mode probe는 `INCONCLUSIVE_POLICY_CHIRALITY`, physical target gate는
+  `all_cells_pass=false`이므로 fresh PPO는 계속 BLOCKED다. 다음 실제 입력은 hardware manifest,
+  calibration SHA, 210개 독립 trial, timestamp contract다.
+- 결과 영수증: `results/navrl_sim2real_software_preflight_2026-08-24/summary.json`.
