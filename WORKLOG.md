@@ -11695,3 +11695,15 @@ clearance, complete mass/CG, motor-prop thrust/thermal gate 전에는 구매 승
 않는다. 선정 근거와 승격 gate는 `docs/navrl_frame_selection_2026-08-23.md`에 고정했다.
 사이트 기체 페이지에도 같은 후보 상태와 문서 링크를 넣어, provisional 선정을 실제 기체 확정으로
 오독하지 않게 했다.
+
+### Day 1 추진계·배터리 1차 screen
+
+공식 제품 사양만으로 XING2 2207 1855KV ×4, BLITZ Mini E55 4-in-1, AOS 5 V5.1, 6S 1550/1850 mAh를
+screen했다. 5.1-inch prop 3.9 g/개를 포함하면 알려진 부품 합계는 1550 mAh에서 965.5–993.1 g,
+1850 mAh에서 1,014.5–1,042.1 g이다. 따라서 1.20 kg 설계점에 남는 공간은 각각 206.9–234.5 g,
+157.9–185.5 g뿐이며 Orin carrier/cooling/storage/DC-DC·배선·마운트가 아직 빠져 있다.
+
+XING2의 공식 peak 35.08 A/개와 Mini E55의 55 A continuous/개는 전류 정격상 맞지만, 모터의
+propeller별 thrust/current 표를 확보하지 못했으므로 9.60 N/모터 달성이나 실제 체공을 주장하지 않았다.
+추력표·payload CAD·CG·전압 sag/열 측정 전에는 구매·exact BOM 승격·URDF 수정·재학습을 하지 않는다.
+세부 계산은 `docs/navrl_ref5in_component_screen_2026-08-23.md`에 기록했다.
