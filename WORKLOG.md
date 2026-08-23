@@ -11757,6 +11757,14 @@ NVIDIA 공식 1KU+ volume MSRP는 16GB $999, 8GB $649로 $350 차이지만 단�
 우선하고, 실제 견적·전력·열·메모리 사용량이 닫힌 뒤 8GB downgrade를 검토한다. 구매나 URDF
 변경으로 승격하지 않았으며 세부 결정은 `docs/navrl_ref5in_bom_direction_2026-08-23.md`에 기록했다.
 
+### Day 1 프로펠러 provisional 결정
+
+공식 iFlight 사양이 확인되는 Nazgul F5 Tri-blade를 추진계 provisional prop으로 고정했다. 5.1 inch,
+pitch 3.5, 3 blades, 3.9 g/개, 5 mm hub이며 기존 4개×3.9 g 질량 계산과 일치한다. XING2 1855KV와
+6S에서의 thrust/current 곡선은 공개 자료로 확인되지 않았으므로, 실제 선택 prop·배터리·ESC 조합의
+추력계 측정 전에는 9.60 N/모터나 URDF actuator를 확정하지 않는다. 세부 출처와 gate는
+`docs/navrl_ref5in_component_screen_2026-08-23.md`와 `docs/navrl_ref5in_thrust_stand_protocol_2026-08-23.md`에 기록했다.
+
 ### Day 1 Orin carrier 2순위 대조
 
 Connect Tech 공식 Hadron(NGX012) 사양도 대조했다. 82.6×58.8 mm, 49 g, USB 3.1×2,

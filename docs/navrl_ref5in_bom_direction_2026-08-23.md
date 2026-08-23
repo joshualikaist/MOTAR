@@ -21,7 +21,7 @@ power, thermal, CG를 다시 측정한다.
 | 축 | 권장 방향 | 현재 판정 |
 |---|---|---|
 | frame | iFlight AOS 5 V5.1 provisional reference | 228 mm/165±5 g; packaging gate 전 구매 보류 |
-| propulsion | XING2 2207 1855KV + exact 5-inch prop | current screen만 통과; thrust curve 미확인 |
+| propulsion | XING2 2207 1855KV + **Nazgul F5 5.1-inch tri-blade provisional** | 3.9 g/개·pitch 3.5; thrust curve 미확인 |
 | ESC | BLITZ Mini E55 4-in-1 | 2–6S, 55 A continuous; motor/prop current 실측 필요 |
 | compute module | **Jetson Orin NX 16GB provisional** | 8GB 대비 메모리·CPU 여유 우선; 단품 견적/전력/열 확인 전 구매 보류 |
 | compute carrier | **Auvidea JNX42-LC** 우선 / Connect Tech Hadron 2순위 + low-profile heatsink/fan | JNX42: 80×104.6 mm, 3×USB3/2×CSI, 12 V only; Hadron: 82.6×58.8 mm, 49 g, 9–60 V; full assembly pending |

@@ -8,13 +8,15 @@
 | 부품 | 후보 | 공식 수치 | 출처 |
 |---|---|---|---|
 | 모터 | iFlight XING2 2207 1855KV | 31.6 g/개, 6S(24 V), peak 35.08 A, 16×16 mm | [공식 제품 페이지](https://shop.iflight.com/xing2-2207-4s-6s-fpv-motor-unibell-pro1464) |
+| 프로펠러 | iFlight Nazgul F5 Tri-blade (provisional) | 5.1 inch, pitch 3.5, 3 blades, 3.9 g/개, 5 mm hub | [공식 제품 페이지](https://shop.iflight.com/index.php?product_id=3196&route=product%2Fproduct) |
 | ESC | iFlight BLITZ Mini E55 4-in-1 | 11.3 g, 2–6S, 55 A continuous / 65 A burst, 20×20 mm | [공식 제품 페이지](https://shop.iflight.com/BLITZ-Mini-E55-4-IN-1-2-6S-ESC-Pro1663) |
 | 배터리 A | iFlight Fullsend 6S 1550 mAh 150C | 253±5 g, 34.41 Wh | [공식 제품 페이지](https://shop.iflight.com/iFlight-Fullsend-6S-1550mAh-150C-Battery-Pro2411) |
 | 배터리 B | iFlight Fullsend 6S 1850 mAh 150C | 302±5 g, 41.07 Wh | [공식 제품 페이지](https://shop.iflight.com/iFlight-Fullsend-6S-1850mAh-150C-Battery-Pro2412) |
 | 프레임 | iFlight AOS 5 V5.1 | 165±5 g, 228 mm | [공식 제품 페이지](https://shop.iflight.com/AOS5-V5-Pro3735) |
 
-5.1-inch tri-blade prop 후보는 3.9 g/개로 계산했지만, 모터의 **공식 propeller별 thrust/current 표는
-아직 확보하지 못했다**. 따라서 아래는 정적 질량 계산이며 “9.60 N 추력 달성”이 아니다.
+5.1-inch tri-blade는 iFlight Nazgul F5를 provisional 후보로 고정했다. 제품 페이지에는 직경·pitch·엽수·
+질량·hub가 공개되어 있지만, XING2와 6S 조합의 **공식 propeller별 thrust/current 표는 확보하지 못했다**.
+따라서 아래는 정적 질량 계산이며 “9.60 N 추력 달성”이 아니다.
 
 ## 질량 예산
 
