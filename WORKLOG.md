@@ -11740,3 +11740,11 @@ AUW가 1.20 kg 안에 남을 때만 재검토한다.
 이는 권장 방향이지 구매·exact BOM 확정이 아니다. carrier 모델, D435i unit/cable, 배터리 외곽과
 전원/열/CG를 닫기 전에는 URDF 수정이나 재학습을 하지 않는다. 세부 기준은
 `docs/navrl_ref5in_bom_direction_2026-08-23.md`에 기록했다.
+
+### Day 1 Orin carrier 후보 screen
+
+공식 Auvidea JNX42 technical reference를 확인해 JNX42-LC를 우선 carrier 후보로 선정했다. Orin NX
+기준 native USB 3.0×3, CSI-2×2, 5 V fan connector, 80×104.6 mm이며 필요한 D435i/Mid-360/Pixhawk
+인터페이스를 구성할 가능성이 있다. 단 base board는 12 V only라 6S에 직결할 수 없고, regulated
+12 V DC-DC가 필수다. 제조사 문서에서 board mass는 확인하지 못했으므로 exact AUW·구매 승격은 보류했다.
+JNX42-LC의 모델/전원/인터페이스/승격 gate는 `docs/navrl_ref5in_carrier_screen_2026-08-23.md`에 고정했다.

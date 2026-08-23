@@ -23,7 +23,7 @@ power, thermal, CG를 다시 측정한다.
 | frame | iFlight AOS 5 V5.1 provisional reference | 228 mm/165±5 g; packaging gate 전 구매 보류 |
 | propulsion | XING2 2207 1855KV + exact 5-inch prop | current screen만 통과; thrust curve 미확인 |
 | ESC | BLITZ Mini E55 4-in-1 | 2–6S, 55 A continuous; motor/prop current 실측 필요 |
-| compute carrier | Orin NX 호환 **compact carrier + low-profile heatsink/fan** | 모델 미선정; devkit급 보드는 크기/질량 때문에 우선 제외 |
+| compute carrier | **Auvidea JNX42-LC** 우선 후보 + low-profile heatsink/fan | 80×104.6 mm, 3×USB3/2×CSI, 12 V only; board mass pending |
 | battery | 6S 1550 mAh first screen | 1.20 kg 질량 여유 우선; voltage sag/endurance 측정 후 1850 검토 |
 | sensors | Mid-360 + D435i 동시 탑재 | target system requirement; FOV/prop interference pending |
 
@@ -62,3 +62,6 @@ carrier 모델은 다음을 만족하는 후보만 비교한다.
 3. packaging contract의 prop/FOV/connector/CG gate 실행;
 4. exact BOM이 닫히면 thrust-stand와 power/thermal 측정;
 5. 그 결과에 맞춰서만 URDF mass/inertia/collision/actuator를 변경하고 smoke부터 재검증.
+
+현재 carrier 후보의 공식 인터페이스/전원 제약은
+[`navrl_ref5in_carrier_screen_2026-08-23.md`](navrl_ref5in_carrier_screen_2026-08-23.md)에 기록했다.
