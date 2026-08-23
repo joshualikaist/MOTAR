@@ -11749,6 +11749,14 @@ AUW가 1.20 kg 안에 남을 때만 재검토한다.
 12 V DC-DC가 필수다. 제조사 문서에서 board mass는 확인하지 못했으므로 exact AUW·구매 승격은 보류했다.
 JNX42-LC의 모델/전원/인터페이스/승격 gate는 `docs/navrl_ref5in_carrier_screen_2026-08-23.md`에 고정했다.
 
+### Day 1 Orin 메모리 SKU provisional 결정
+
+사용자가 추천안대로 진행하기로 해 최종 통합 컴퓨트의 기본 SKU를 Jetson Orin NX 16GB로 기록했다.
+NVIDIA 공식 1KU+ volume MSRP는 16GB $999, 8GB $649로 $350 차이지만 단품 국내 실구매가는
+확인 전이다. Mid-360·D435i·Pixhawk와 detector/tracker/policy를 동시에 실행할 메모리 여유를
+우선하고, 실제 견적·전력·열·메모리 사용량이 닫힌 뒤 8GB downgrade를 검토한다. 구매나 URDF
+변경으로 승격하지 않았으며 세부 결정은 `docs/navrl_ref5in_bom_direction_2026-08-23.md`에 기록했다.
+
 ### Day 1 Orin carrier 2순위 대조
 
 Connect Tech 공식 Hadron(NGX012) 사양도 대조했다. 82.6×58.8 mm, 49 g, USB 3.1×2,

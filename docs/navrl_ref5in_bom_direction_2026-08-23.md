@@ -23,6 +23,7 @@ power, thermal, CG를 다시 측정한다.
 | frame | iFlight AOS 5 V5.1 provisional reference | 228 mm/165±5 g; packaging gate 전 구매 보류 |
 | propulsion | XING2 2207 1855KV + exact 5-inch prop | current screen만 통과; thrust curve 미확인 |
 | ESC | BLITZ Mini E55 4-in-1 | 2–6S, 55 A continuous; motor/prop current 실측 필요 |
+| compute module | **Jetson Orin NX 16GB provisional** | 8GB 대비 메모리·CPU 여유 우선; 단품 견적/전력/열 확인 전 구매 보류 |
 | compute carrier | **Auvidea JNX42-LC** 우선 / Connect Tech Hadron 2순위 + low-profile heatsink/fan | JNX42: 80×104.6 mm, 3×USB3/2×CSI, 12 V only; Hadron: 82.6×58.8 mm, 49 g, 9–60 V; full assembly pending |
 | battery | 6S 1550 mAh first screen | 1.20 kg 질량 여유 우선; voltage sag/endurance 측정 후 1850 검토 |
 | sensors | Mid-360 + D435i 동시 탑재 | target system requirement; FOV/prop interference pending |
@@ -65,3 +66,11 @@ carrier 모델은 다음을 만족하는 후보만 비교한다.
 
 현재 carrier 후보의 공식 인터페이스/전원 제약은
 [`navrl_ref5in_carrier_screen_2026-08-23.md`](navrl_ref5in_carrier_screen_2026-08-23.md)에 기록했다.
+
+## Orin 메모리 SKU provisional 결정
+
+최종 탑재 목표가 Mid-360 + D435i + Pixhawk + detector/tracker/policy 동시 실행이므로 Orin NX
+16GB를 우선 SKU로 둔다. NVIDIA 공식 volume MSRP(1KU+)는 16GB $999, 8GB $649로 차이는
+$350이지만, 단품·국내 유통가는 별도 견적이 필요하다. 8GB가 더 저렴하더라도 실제 시스템의
+메모리 여유·동시 센서 처리·로그/추론 버퍼를 먼저 확인한 뒤 downgrade한다. 이 결정은 구매
+승인이 아니며, exact module SKU·전력모드·냉각·carrier 조합이 닫힐 때까지 provisional이다.
