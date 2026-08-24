@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="ko" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>시스템 구조 · MOTAR</title>
+<meta name="description" content="MOTAR high-level perception-to-control pipeline, low-level observation schema, hardware candidate, and training contract.">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="style.css?v=20260824b">
+<script src="js/shell.js?v=20260824b"></script>
+</head>
+<body data-page-title="시스템 구조">
+
+<main class="page" id="main">
+  <p class="lead"><b>교수님께 설명할 때 보는 한 장.</b> 위쪽은 센서에서 정책·제어기로 이어지는
+  high-level 흐름, 아래쪽은 898-D observation과 4-D action이 실제 물리 동역학으로 내려가는
+  low-level 흐름이다. 녹색은 actor 경로, 회색 점선은 training-only privileged 경로다.</p>
+
+  <section class="panel system-status-panel">
+    <div class="panel-h"><h2>현재 연구 상태</h2><p class="meta">2026-08-24 snapshot</p></div>
+    <div class="metrics system-metrics">
+      <div class="stat good"><div class="v">SIM</div><div class="k">simulation contract</div><div class="s">677 PASS / 1 skip</div></div>
+      <div class="stat warn"><div class="v">SYN</div><div class="k">software preflight</div><div class="s">synthetic-only</div></div>
+      <div class="stat bad"><div class="v">BLOCK</div><div class="k">physical target gate</div><div class="s">fresh PPO 권한 없음</div></div>
+      <div class="stat warn"><div class="v">WAIT</div><div class="k">hardware</div><div class="s">조립·실측·비행 0</div></div>
+    </div>
+    <p class="hint">상태 원자료: <code>docs/status/status.json</code> · 상세: <a href="../MOTAR_SYSTEM_SPEC_2026-08-24.md">MOTAR_SYSTEM_SPEC_2026-08-24.md</a></p>
+  </section>
+
+  <section class="panel">
+    <div class="panel-h"><h2>High-level: sensor → policy → flight</h2><p class="meta">actor에 GT가 들어가지 않는 정보 방화벽</p></div>
+    <div class="arch-wrap" role="img" aria-label="센서에서 인지, Transformer, 제어기, 물리 시뮬레이터로 이어지는 high-level 흐름도">
+      <svg class="arch-svg" viewBox="0 0 1120 360" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="arrow-hi" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="currentColor"/></marker>
+          <marker id="arrow-gt" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#8a96a2"/></marker>
+        </defs>
+        <style>
+          .b{fill:var(--panel);stroke:var(--line);stroke-width:2}.g{fill:color-mix(in srgb,var(--accent) 12%,var(--panel));stroke:var(--accent);stroke-width:2}.p{fill:color-mix(in srgb,var(--sensor) 8%,var(--panel));stroke:var(--muted);stroke-width:2}.gt{fill:color-mix(in srgb,var(--gt) 12%,var(--panel));stroke:var(--gt);stroke-width:2}.t{font:600 15px system-ui,sans-serif;fill:var(--ink)}.s{font:12px system-ui,sans-serif;fill:var(--muted)}.ar{stroke:var(--accent);stroke-width:2.5;fill:none;marker-end:url(#arrow-hi)}.ag{stroke:var(--gt);stroke-width:2;stroke-dasharray:7 6;fill:none;marker-end:url(#arrow-gt)}
+        </style>
+        <rect class="p" x="20" y="44" width="150" height="74" rx="12"/><text class="t" x="95" y="72" text-anchor="middle">장애물장</text><text class="s" x="95" y="94" text-anchor="middle">이동 표적 + bars</text>
+        <rect class="b" x="20" y="228" width="150" height="74" rx="12"/><text class="t" x="95" y="256" text-anchor="middle">ego-state</text><text class="s" x="95" y="278" text-anchor="middle">body velocity · yaw · height</text>
+        <rect class="g" x="215" y="27" width="180" height="108" rx="12"/><text class="t" x="305" y="58" text-anchor="middle">RGB-D detector</text><text class="s" x="305" y="82" text-anchor="middle">target mask / bearing</text><text class="s" x="305" y="102" text-anchor="middle">confidence + timestamp</text>
+        <rect class="g" x="215" y="210" width="180" height="108" rx="12"/><text class="t" x="305" y="241" text-anchor="middle">LiDAR front-end</text><text class="s" x="305" y="265" text-anchor="middle">4×72 range @ 12 m</text><text class="s" x="305" y="285" text-anchor="middle">static scan + proposals</text>
+        <rect class="g" x="440" y="100" width="190" height="112" rx="12"/><text class="t" x="535" y="132" text-anchor="middle">fusion + KF tracker</text><text class="s" x="535" y="156" text-anchor="middle">relative track / covariance</text><text class="s" x="535" y="176" text-anchor="middle">age / camera·LiDAR confidence</text>
+        <rect class="g" x="675" y="100" width="190" height="112" rx="12"/><text class="t" x="770" y="132" text-anchor="middle">17-token Transformer</text><text class="s" x="770" y="156" text-anchor="middle">898-D structured history</text><text class="s" x="770" y="176" text-anchor="middle">actor mean + bounded std</text>
+        <rect class="g" x="910" y="100" width="185" height="112" rx="12"/><text class="t" x="1002" y="132" text-anchor="middle">controller + physics</text><text class="s" x="1002" y="156" text-anchor="middle">PI altitude · Lee velocity</text><text class="s" x="1002" y="176" text-anchor="middle">4 motors · 100 Hz</text>
+        <path class="ar" d="M170 80 H215"/><path class="ar" d="M170 265 H215"/><path class="ar" d="M395 81 L440 126"/><path class="ar" d="M395 264 L440 186"/><path class="ar" d="M630 156 H675"/><path class="ar" d="M865 156 H910"/>
+        <rect class="gt" x="440" y="265" width="190" height="64" rx="12"/><text class="t" x="535" y="291" text-anchor="middle">GT state</text><text class="s" x="535" y="311" text-anchor="middle">critic / reward / evaluation only</text>
+        <path class="ag" d="M535 265 V213"/><path class="ag" d="M630 297 H770 V213"/>
+      </svg>
+    </div>
+    <div class="legend"><span><i style="background:#0d8f82"></i>actor 실행 경로</span><span><i style="background:#8a96a2"></i>training-only privileged 경로</span></div>
+    <p class="hint">raw RGB-D·raw LiDAR semantic ID·GT target pose는 actor로 직접 전달되지 않는다. 시뮬레이터에서 GT는 센서 렌더링, reward, central critic, 평가 계측에만 사용한다.</p>
+  </section>
+
+  <section class="panel">
+    <div class="panel-h"><h2>Low-level: observation / token / action</h2><p class="meta">shape가 바뀌면 checkpoint lineage가 바뀐다</p></div>
+    <div class="arch-wrap" role="img" aria-label="898차원 관측이 17개 토큰으로 바뀌고 4차원 action으로 내려가는 low-level 흐름도">
+      <svg class="arch-svg" viewBox="0 0 1120 390" xmlns="http://www.w3.org/2000/svg">
+        <defs><marker id="arrow-lo" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#0d8f82"/></marker></defs>
+        <style>
+          .b{fill:var(--panel);stroke:var(--line);stroke-width:2}.g{fill:color-mix(in srgb,var(--accent) 12%,var(--panel));stroke:var(--accent);stroke-width:2}.t{font:600 14px system-ui,sans-serif;fill:var(--ink)}.s{font:12px system-ui,sans-serif;fill:var(--muted)}.ar{stroke:var(--accent);stroke-width:2.5;fill:none;marker-end:url(#arrow-lo)}.small{font:11px ui-monospace,monospace;fill:var(--muted)}
+        </style>
+        <rect class="b" x="18" y="35" width="230" height="300" rx="12"/><text class="t" x="133" y="66" text-anchor="middle">898-D observation</text>
+        <rect class="g" x="38" y="84" width="190" height="42" rx="8"/><text class="t" x="133" y="110" text-anchor="middle">static 4×72 = 288</text>
+        <rect class="g" x="38" y="137" width="190" height="42" rx="8"/><text class="t" x="133" y="163" text-anchor="middle">5×8×12 = 480</text>
+        <rect class="g" x="38" y="190" width="190" height="42" rx="8"/><text class="t" x="133" y="216" text-anchor="middle">5×10 = 50</text>
+        <rect class="g" x="38" y="243" width="190" height="42" rx="8"/><text class="t" x="133" y="269" text-anchor="middle">5×16 = 80</text>
+        <text class="small" x="133" y="313" text-anchor="middle">static · obstacle · robot · target</text>
+        <rect class="g" x="310" y="94" width="210" height="180" rx="12"/><text class="t" x="415" y="126" text-anchor="middle">17 tokens × 64-D</text><text class="s" x="415" y="157" text-anchor="middle">[CLS] + static</text><text class="s" x="415" y="180" text-anchor="middle">+ obstacle×5</text><text class="s" x="415" y="203" text-anchor="middle">+ robot×5</text><text class="s" x="415" y="226" text-anchor="middle">+ target×5</text><text class="small" x="415" y="253" text-anchor="middle">8 slots are inside one obstacle token</text>
+        <rect class="g" x="580" y="94" width="210" height="180" rx="12"/><text class="t" x="685" y="126" text-anchor="middle">Transformer encoder</text><text class="s" x="685" y="157" text-anchor="middle">4 layers · 4 heads</text><text class="s" x="685" y="180" text-anchor="middle">d_model 64 · FFN 128</text><text class="s" x="685" y="203" text-anchor="middle">dropout 0.0</text><text class="s" x="685" y="226" text-anchor="middle">CLS → actor / critic</text><text class="small" x="685" y="253" text-anchor="middle">history interval 0.5 s × 5</text>
+        <rect class="b" x="850" y="35" width="250" height="300" rx="12"/><text class="t" x="975" y="66" text-anchor="middle">4-D action → dynamics</text><rect class="g" x="875" y="91" width="200" height="42" rx="8"/><text class="t" x="975" y="117" text-anchor="middle">vx, vy ±2.5 m/s / axis</text><rect class="g" x="875" y="144" width="200" height="42" rx="8"/><text class="t" x="975" y="170" text-anchor="middle">vz → altitude PI</text><rect class="g" x="875" y="197" width="200" height="42" rx="8"/><text class="t" x="975" y="223" text-anchor="middle">yaw ±3.0 rad/s</text><text class="small" x="975" y="276" text-anchor="middle">10 Hz action · 100 Hz physics</text><text class="small" x="975" y="298" text-anchor="middle">tilt cap 45° · governor off</text>
+        <path class="ar" d="M248 185 H310"/><path class="ar" d="M520 185 H580"/><path class="ar" d="M790 185 H850"/>
+      </svg>
+    </div>
+    <div class="scrollx"><table><thead><tr><th>관측 블록</th><th>한 시점 필드</th><th>정규화/역할</th></tr></thead><tbody>
+      <tr><td>robot (10)</td><td>body velocity 3 · yaw-rate 1 · previous action 4 · height 1 · valid 1</td><td>ego-state; policy가 실제 실행 명령을 기억</td></tr>
+      <tr><td>target (16)</td><td>relative position 3 · relative velocity 3 · position variance 3 · velocity variance 3 · camera confidence 1 · LiDAR confidence 1 · age 1 · radius 1</td><td>tracker 출력; 보이지 않으면 active mask로 zero</td></tr>
+      <tr><td>obstacle (12)</td><td>surface position 3 · velocity(0) 3 · radius 1 · proximity 1 · covariance 3 · valid 1</td><td>cluster-sector가 선택한 최대 8개 surface proposal</td></tr>
+    </tbody></table></div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-h"><h2>하드웨어와 학습 파라미터 한눈에</h2><p class="meta">값을 바꾼 것이 아니라 현재 계약을 문서화</p></div>
+    <div class="scrollx"><table><thead><tr><th>범주</th><th>현재 기준값</th><th>상태</th><th>출처</th></tr></thead><tbody>
+      <tr><td>arena / obstacle</td><td>40×40×3 m · 70→300 bars · 3 m bars · navrl_band · 1,600 m²</td><td><span class="chip chip-lock">contract</span></td><td><code>train_navrl_v2_search.sh</code></td></tr>
+      <tr><td>target / episode</td><td>goal 6–28 m · speed U[0.3,1.5] · mixed · 600 actions · capture 0.5 m</td><td><span class="chip chip-lock">contract</span></td><td><code>navrl_task_config.py</code></td></tr>
+      <tr><td>PPO</td><td>seed 1 · 128 env · horizon 32 · batch 2048 · epochs 4 · γ .99 · τ .95 · LR 3e-5</td><td><span class="chip chip-lock">launcher</span></td><td><code>ppo_navrl_perception_transformer.yaml</code></td></tr>
+      <tr><td>stability</td><td>KL stop .04 · rollback on · LR×.5 · log-ratio clamp 10 · entropy 0</td><td><span class="chip chip-lock">guard</span></td><td><code>train_navrl_v2_search.sh</code></td></tr>
+      <tr><td>reward</td><td>range +1 · time −.05 · safety +1.5 · progress +1 · smooth −.1 · height −8 · capture +30 · collision −20</td><td><span class="chip chip-lock">contract</span></td><td><code>navrl_task_config.py</code></td></tr>
+      <tr><td>real hardware</td><td>AUW/CG/inertia/thrust curve/calibration/time-sync pending</td><td><span class="chip chip-bad">not measured</span></td><td><code>docs/SIM2REAL_3DAY_EXECUTION_PLAN.md</code></td></tr>
+    </tbody></table></div>
+    <p class="hint">전체 사양서: <a href="../MOTAR_SYSTEM_SPEC_2026-08-24.md">MOTAR_SYSTEM_SPEC_2026-08-24.md</a> · 환경변수 전량: <a href="parameters.html">파라미터 카탈로그</a> · 기체 계산표: <a href="drone.html">기체·센싱</a></p>
+  </section>
+
+  <section class="panel">
+    <div class="panel-h"><h2>무엇이 학습되고 무엇이 고정되는가</h2><p class="meta">parameter confusion 방지</p></div>
+    <div class="scrollx"><table><thead><tr><th>범주</th><th>내용</th><th>발표 때의 표현</th></tr></thead><tbody>
+      <tr><td><span class="chip chip-good">PPO learned</span></td><td>Transformer projection/attention/CLS, actor MLP, 4-D action mean/log-std, asymmetric central critic</td><td>고정된 계약 위에서 network weight를 최적화</td></tr>
+      <tr><td><span class="chip chip-lock">fixed contract</span></td><td>arena/bar, sensor geometry, 898-D field order·scale·history timing, action bounds, controller·URDF, reward coefficients</td><td>실험마다 함부로 바꾸지 않으며 바꾸면 새 lineage</td></tr>
+      <tr><td><span class="chip chip-warn">schedule</span></td><td>density promotion, goal-distance competence, target-speed ramp</td><td>policy weight가 아니라 난이도 제어</td></tr>
+      <tr><td><span class="chip chip-lock">training-only</span></td><td>GT target/vehicle state를 사용하는 reward·central critic·termination label</td><td>actor 입력으로는 전달되지 않음</td></tr>
+      <tr><td><span class="chip chip-warn">evaluation-only</span></td><td>risk governor screen, joint telemetry, physical target envelope, mode probe</td><td>이 결과로 PPO가 학습됐다고 말하지 않음</td></tr>
+    </tbody></table></div>
+  </section>
+
+  <footer class="foot">MOTAR · <code>research/navrl-env</code> · source-backed system map</footer>
+</main>
+
+<script src="status.fallback.js?v=20260824b"></script>
+</body>
+</html>

@@ -11945,3 +11945,20 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
   주의사항과 출처 경로를 모았으며, 미검증 hardware/citation 주장은 GPT가 발명하지 않도록
   명시적인 작성 규칙을 넣었다.
 - 이 시점에서 실기 측정값 없이 PPO를 새로 학습하거나 sim-to-real 성공을 주장하지 않는다.
+
+### 2026-08-24 — 하드웨어·학습 계약·자료구조 사이트/문서 통합
+
+- 발표와 논문에서 같은 숫자를 보도록 `docs/MOTAR_SYSTEM_SPEC_2026-08-24.md`를 추가했다.
+  legacy/ref5in 플랫폼의 질량·관성·추력·충돌 proxy, 실제 탑재 후보의 불완전 부분합, corrected-v2
+  arena/sensor/episode/action/PPO/reward 계약을 한 문서에 모았다. ref5in 값은 hardware-informed
+  simulation candidate이며 AUW/CG/thrust curve/calibration은 여전히 미측정임을 명시했다.
+- 898-D actor observation을 `288 static + 480 obstacle history + 50 robot history + 80 target
+  history`로 분해하고, `[CLS]+static+obstacle×5+robot×5+target×5`의 17-token 구조와
+  Transformer/PI altitude/Lee controller/100 Hz physics 흐름을 Mermaid와 SVG로 기록했다.
+  8 obstacle slots가 8개의 독립 Transformer token이 아니라 한 history token 안의 proposal이라는
+  점도 명시했다.
+- README의 기준일·현재 판정을 2026-08-24로 갱신하고 canonical system-spec/dashboard 링크를
+  추가했다. `RESEARCH_PLAN.md`의 오래된 Transformer dropout 0.1 표기를 실제 network dropout 0.0
+  (sensor dropout 0.3과 구분)으로 정정했다.
+- 대시보드에 `system.html`을 추가하고 모든 페이지의 shell/cache-bust를 갱신했다. 기체·파라미터
+  데이터도 generator로 재생성해 source commit과 파일 목록을 최신화했다.

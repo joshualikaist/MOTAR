@@ -228,6 +228,7 @@ v2 주 결과와 직접 결합하지 않는다.
 
 ## 14. 원자료 링크
 
+- [canonical system specification](MOTAR_SYSTEM_SPEC_2026-08-24.md)
 - [VERIFICATION.md](../VERIFICATION.md)
 - [WORKLOG.md](../WORKLOG.md)
 - [RESEARCH_PLAN.md](../RESEARCH_PLAN.md)

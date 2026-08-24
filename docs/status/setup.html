@@ -6,14 +6,14 @@
 <title>초기 세팅 · MOTAR</title>
 <meta name="description" content="MOTAR NavRL 과제 정의, 동결된 관측·보상 계약, 아레나 기하와 정책 구조.">
 <meta name="color-scheme" content="light dark">
-<link rel="stylesheet" href="style.css?v=20260813a">
-<script src="js/shell.js?v=20260813a"></script>
+<link rel="stylesheet" href="style.css?v=20260824b">
+<script src="js/shell.js?v=20260824b"></script>
 </head>
 <body data-page-title="초기 세팅">
 
 <main class="page" id="main">
 
-  <p class="lead">이 정책이 <b>무엇을 보고 무엇을 하도록</b> 정의됐는지. 관측 계약(actor 898-D / critic 906-D)과 보상 항, 아레나 기하, 그리고 GT가 actor로 새지 못하게 막는 정보 방화벽 구조를 담는다. 여기 있는 값들은 <b>실험 변수가 아니라 고정 계약</b>이다 — 바꾸면 체크포인트 계보가 끊긴다.</p>
+  <p class="lead">이 정책이 <b>무엇을 보고 무엇을 하도록</b> 정의됐는지. 관측 계약(actor 898-D / critic 906-D)과 보상 항, 아레나 기하, 그리고 GT가 actor로 새지 못하게 막는 정보 방화벽 구조를 담는다. 여기 있는 값들은 <b>실험 변수가 아니라 고정 계약</b>이다 — 바꾸면 체크포인트 계보가 끊긴다. 전체 high/low-level 흐름은 <a href="system.html">시스템 구조 페이지</a>에 별도로 그려 두었다.</p>
 
   <!-- EXACT FROZEN-POLICY CONTRACT -->
   <section class="panel" id="panel-contract">
@@ -243,13 +243,13 @@
 
 <!-- Snapshot data for instant paint. Plain classic scripts: they execute in document order, so
      __STATUS_FALLBACK__ is assigned before the renderers boot. Do NOT add defer/type=module. -->
-<script src="status.fallback.js?v=20260824a"></script>
+<script src="status.fallback.js?v=20260824b"></script>
 <!-- Local vendor — no CDN. ?v= busts GitHub Pages / browser cache. -->
 <script src="vendor/three.min.js?v=20260728d"></script>
 <script src="vendor/OrbitControls.js?v=20260728d"></script>
 <script src="arena_motion.js?v=20260731b"></script>
 <script src="arena.js?v=20260731b"></script>
-<script src="js/core.js?v=20260813a"></script>
-<script src="js/panels-setup.js?v=20260813a"></script>
+<script src="js/core.js?v=20260824b"></script>
+<script src="js/panels-setup.js?v=20260824b"></script>
 </body>
 </html>

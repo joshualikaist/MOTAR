@@ -14,9 +14,29 @@ LiDAR로 표적·장애물을 보고, 시뮬레이터 ego-state로 자신의 자
 실패가 capture/crash/timeout 중 무엇이었는지를 함께 보존합니다. 처음 보는 분은 아래 “현재 결론”과
 “5분 안에 확인하기”만 읽고, 실험을 직접 돌릴 때 `OPERATIONS.md`로 넘어가면 됩니다.
 
-> 현재 기준일: **2026-08-23**
+> 현재 기준일: **2026-08-24**
 >
 > **실행 문서:** [SIM2REAL_3DAY_EXECUTION_PLAN.md](docs/SIM2REAL_3DAY_EXECUTION_PLAN.md)(앞으로 72시간의 단일 작업·계측 계약) · [VERIFICATION.md](VERIFICATION.md)(검증 gate) · [RESEARCH_PLAN.md](RESEARCH_PLAN.md)(charter) · [WORKLOG.md](WORKLOG.md)(기록) · [OPERATIONS.md](OPERATIONS.md)(명령) · [docs/status/](docs/status/)(대시보드)
+
+> **발표용 시스템 사양:** [MOTAR_SYSTEM_SPEC_2026-08-24.md](docs/MOTAR_SYSTEM_SPEC_2026-08-24.md)(하드웨어 후보, 898-D 자료구조, high/low-level 흐름도, PPO·보상 계약) · [대시보드 시스템 구조](docs/status/system.html)
+
+## 현재 상태 — 시뮬레이션 완료, 하드웨어 대기
+
+2026-08-24 기준으로 현재 컴퓨터에서 가능한 시뮬레이션·소프트웨어 검증을 종료 상태로 정리했다.
+소프트웨어 preflight의 구조 검사는 통과했지만 입력은 synthetic fixture이고, physical target gate는
+모든 속도·밀도 셀을 통과하지 못했다. 따라서 **fresh PPO 재학습과 sim-to-real 성공 주장은 보류**한다.
+
+| 축 | 상태 | 정확한 의미 |
+|---|---|---|
+| 시뮬레이션 계약/회귀 | **677 PASS / 1 skip** | 코드·자료구조·계측 계약이 재현됨 |
+| software-only preflight | **PASS · SYNTHETIC_ONLY** | telemetry → ingest → profile → replay의 구조 확인; 실기 성능 아님 |
+| physical target envelope | **BLOCKED** | 70 bars 0.9 m/s, 150/205/300 bars 0.6 m/s까지만 최고 strict PASS |
+| reflection mode probe | **INCONCLUSIVE** | 정책 chirality gate 실패; mode averaging 근거 없음 |
+| 실제 하드웨어 | **PENDING** | 기체 미조립, 센서 calibration/실측 로그/비행 0 |
+
+하드웨어·학습·자료구조를 교수님께 설명할 때는 위 사양서와 [시스템 구조 페이지](docs/status/system.html)를
+먼저 본다. 여기의 상세 결과는 [docs/status/status.json](docs/status/status.json)과
+[VERIFICATION.md](VERIFICATION.md)가 원자료 경로다.
 
 ## 현재 결론
 

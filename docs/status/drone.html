@@ -6,8 +6,8 @@
 <title>기체 · 센싱 · MOTAR</title>
 <meta name="description" content="MOTAR NavRL 시뮬레이션 기체 스펙, 센서 구성, 그리고 실기 하드웨어와의 정량 격차.">
 <meta name="color-scheme" content="light dark">
-<link rel="stylesheet" href="style.css?v=20260824a">
-<script src="js/shell.js?v=20260824a"></script>
+<link rel="stylesheet" href="style.css?v=20260824b">
+<script src="js/shell.js?v=20260824b"></script>
 </head>
 <body data-page-title="기체 · 센싱">
 
@@ -17,6 +17,17 @@
   그리고 이 인지 스택을 실제로 올리려면 무엇이 필요한지. 표의 모든 숫자는 URDF와 robot config에서
   <b>다시 계산한 것</b>이지 옮겨 적은 것이 아니다 — 2026-08-13 감사에서 legacy URDF가 3주 동안
   서로 모순된 값을 들고 있었던 이유가 바로 아무도 그 숫자들을 서로 대조하지 않았기 때문이다.</p>
+
+  <section class="panel">
+    <div class="panel-h"><h2>현재 플랫폼 판정</h2><p class="meta">실기와 시뮬레이션을 분리</p></div>
+    <div class="update-hero">
+      <div><span class="eyebrow">HARDWARE-INFORMED SIMULATION CANDIDATE</span>
+        <strong><code>navrl_ref5in_quad</code>는 실제 제작 완료 기체가 아니다.</strong>
+        <p>1.20 kg·220 mm motor diagonal·0.28 m XY proxy를 가진 내부 정합성 후보다. AUW/CG/관성/thrust curve/전원·열/센서 calibration은 아직 측정 전이며, 실제 비행은 0회다.</p></div>
+      <div class="update-run"><span class="update-snap">SIMULATION ONLY</span><b>physical gate BLOCKED</b><span>fresh PPO 보류</span></div>
+    </div>
+    <p class="hint">구조도·저수준 controller·관측 차원은 <a href="system.html">시스템 구조</a>, 계산 원자료는 <code>docs/MOTAR_SYSTEM_SPEC_2026-08-24.md</code>에 모아 두었다.</p>
+  </section>
 
   <section class="panel">
     <div class="panel-h">
@@ -101,9 +112,9 @@
 
 <!-- Snapshot data for instant paint. Plain classic scripts: they execute in document order, so the
      globals are assigned before the renderers boot. Do NOT add defer/type=module. -->
-<script src="status.fallback.js?v=20260824a"></script>
-<script src="data/platform.js?v=20260824a"></script>
-<script src="data/parameters.js?v=20260824a"></script>
-<script src="js/page-drone.js?v=20260824a"></script>
+<script src="status.fallback.js?v=20260824b"></script>
+<script src="data/platform.js?v=20260824b"></script>
+<script src="data/parameters.js?v=20260824b"></script>
+<script src="js/page-drone.js?v=20260824b"></script>
 </body>
 </html>

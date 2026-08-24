@@ -6,8 +6,8 @@
 <title>파라미터 · MOTAR</title>
 <meta name="description" content="MOTAR NavRL의 NAVRL_* 환경변수 카탈로그 — 현재 값, 선언 위치, 소스 주석, 실험 이력.">
 <meta name="color-scheme" content="light dark">
-<link rel="stylesheet" href="style.css?v=20260813a">
-<script src="js/shell.js?v=20260813a"></script>
+<link rel="stylesheet" href="style.css?v=20260824b">
+<script src="js/shell.js?v=20260824b"></script>
 </head>
 <body data-page-title="파라미터">
 
@@ -17,6 +17,22 @@
   <b>소스에서 생성</b>한 것이라, 코드가 바뀌면 여기도 바뀐다. 각 knob이 무엇을 하는지는 소스 주석을
   그대로 가져왔고, <b>통제 실험으로 검증한 적이 있는지</b>를 함께 표시한다 —
   "런처에서 값만 지정했다"와 "A/B로 효과를 분리했다"는 전혀 다른 이야기다.</p>
+
+  <section class="panel" id="canonical-contract">
+    <div class="panel-h">
+      <h2>canonical-v2 학습 계약</h2>
+      <p class="meta">파라미터 카탈로그의 기준 런처</p>
+    </div>
+    <div class="scrollx"><table><thead><tr><th>축</th><th>현재 값</th><th>해석</th></tr></thead><tbody>
+      <tr><td>환경</td><td><code>40×40×3 m</code>, <code>70→300 bars</code>, <code>navrl_band</code>, 1,600 m²</td><td>3 m 막대, +15 bars, density dwell 1,000 epochs</td></tr>
+      <tr><td>센서</td><td><code>4×72 LiDAR @12 m</code>, camera 160×90 / HFOV 87° / range 20 m</td><td>detector threshold .55, min pixels 2, sensor dropout .3</td></tr>
+      <tr><td>표현</td><td><code>MAX_OBSTACLES=8</code>, cluster-sector, FOV 240°, gap .45 m</td><td>898-D actor observation, 17 Transformer tokens</td></tr>
+      <tr><td>행동/물리</td><td>vx/vy ±2.5 m/s per axis, yaw ±3.0 rad/s, tilt 45°</td><td>10 Hz RL action, 100 Hz physics, altitude PI</td></tr>
+      <tr><td>PPO</td><td>seed 1, env 128, horizon 32, batch 2048, mini-epochs 4, LR 3e-5</td><td>γ .99, GAE τ .95, clip .2, entropy 0, KL stop .04, rollback on</td></tr>
+      <tr><td>학습 권한</td><td><span class="chip chip-bad">fresh PPO BLOCKED</span></td><td>physical gate와 실제 센서 계약이 닫히기 전에는 재학습하지 않음</td></tr>
+    </tbody></table></div>
+    <p class="hint">상세 low/high-level 그림과 898-D 분해는 <a href="system.html">시스템 구조</a>에서 확인할 수 있다. YAML 기본 LR 1e-4와 달리 canonical launcher가 3e-5를 명시적으로 override한다.</p>
+  </section>
 
   <section class="panel">
     <div class="panel-h">
@@ -49,9 +65,9 @@
 
 <!-- Snapshot data for instant paint. Plain classic scripts: they execute in document order, so the
      globals are assigned before the renderers boot. Do NOT add defer/type=module. -->
-<script src="status.fallback.js?v=20260824a"></script>
-<script src="data/parameters.js?v=20260813a"></script>
-<script src="data/experiments.js?v=20260813a"></script>
-<script src="js/page-parameters.js?v=20260813a"></script>
+<script src="status.fallback.js?v=20260824b"></script>
+<script src="data/parameters.js?v=20260824b"></script>
+<script src="data/experiments.js?v=20260824b"></script>
+<script src="js/page-parameters.js?v=20260824b"></script>
 </body>
 </html>

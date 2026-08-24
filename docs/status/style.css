@@ -260,6 +260,20 @@ code { font-family: var(--mono); font-size: 12px; }
 .good-ink { color: var(--good); }
 .warn-ink { color: var(--warn); }
 
+/* system.html architecture diagrams */
+.arch-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--bg);
+  padding: 8px;
+}
+.arch-svg { display: block; width: 100%; min-width: 760px; height: auto; }
+.system-metrics { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 760px) {
+  .system-metrics { grid-template-columns: 1fr 1fr; }
+}
+
 /* Page lead: one paragraph under the top bar saying what this page is for. */
 .lead {
   margin: 2px 0 0; max-width: 74ch; color: var(--muted); font-size: 13px; line-height: 1.6;

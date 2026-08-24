@@ -3,6 +3,8 @@
 이 문서가 연구 charter다(가설·설계·계획). **현재 상태와 최신 수치는 여기 적지 않는다** —
 진행 기록은 `WORKLOG.md`(맨 아래가 최신), 검증 gate는 `VERIFICATION.md`, 라이브 지표는 `docs/status/`를 본다.
 실무(머신 셋업·GPU·이관)는 `OPERATIONS.md`, 과거 진단 도구와 측정된 음성 결과는 `CRASH_TUNING_LOG.md`(archival, 2026-08-05 정지).
+현재의 하드웨어·학습 파라미터·low/high-level 자료구조는 중복 표기를 피하기 위해
+[`docs/MOTAR_SYSTEM_SPEC_2026-08-24.md`](docs/MOTAR_SYSTEM_SPEC_2026-08-24.md)에 고정한다.
 
 ## 1. 연구 질문과 기여
 
@@ -85,7 +87,8 @@ control effort를 절반 이하로 줄였다. Transformer와 perturbation-aware 
   `[existence, relative position, relative velocity, size, camera confidence, LiDAR confidence,
   covariance, measurement age]`.
 
-NavRL++에 맞춰 1차 설정은 history 2초/0.5초, dim 64, 4 heads, 4 layers, FFN 128, dropout 0.1로 둔다.
+현재 corrected-v2 설정은 history 2초/0.5초, dim 64, 4 heads, 4 layers, FFN 128,
+**Transformer dropout 0.0**이다. 센서 detector dropout 0.3은 네트워크 dropout과 다른 입력 교란이다.
 0.1초 관측을 모두 token으로 늘리지 않고 tracker는 10 Hz로 갱신하되 policy history는 2 Hz로 sampling한다.
 `[CLS]`에서 target state, uncertainty, obstacle latent와 velocity action을 예측한다. 원시 camera/LiDAR patch
 token을 직접 attention하는 기존 아이디어는 1차 구조가 아니라 후속 ablation으로 내린다.

@@ -18,6 +18,7 @@
 
   var NAV = [
     { href: 'index.html',       label: '개요',        desc: '한 줄 결론과 라이브 상태' },
+    { href: 'system.html',      label: '시스템 구조', desc: 'high/low-level과 자료구조' },
     { href: 'setup.html',       label: '초기 세팅',   desc: '과제 · 관측 계약 · 아레나' },
     { href: 'drone.html',       label: '기체 · 센싱', desc: '플랫폼과 센서, 실기 격차' },
     { href: 'parameters.html',  label: '파라미터',    desc: 'NAVRL_* 카탈로그' },
