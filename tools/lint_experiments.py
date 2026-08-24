@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate docs/status/data/experiments.json and regenerate its .js wrapper.
+"""Validate docs/status/data/experiments.json.
 
 experiments.json is hand-curated -- it is the one dataset on the dashboard that a machine cannot
 derive, because "what did this experiment actually establish" lives in WORKLOG prose. That makes it
@@ -30,7 +30,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 EXPERIMENTS = ROOT / "docs/status/data/experiments.json"
 PARAMETERS = ROOT / "docs/status/data/parameters.json"
-OUT_JS = ROOT / "docs/status/data/experiments.js"
 
 VERDICTS = {"PASS", "FAIL", "INCONCLUSIVE"}
 VALIDITIES = {"canonical", "superseded", "withdrawn", "exploratory"}
@@ -152,13 +151,7 @@ def main():
         print(f"\nFAILED: {len(errors)} error(s)")
         return 1
 
-    import importlib.util
-    spec = importlib.util.spec_from_file_location("uss", ROOT / "tools/update_status_snapshot.py")
-    uss = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(uss)
-    uss.write_js_data(OUT_JS, "__EXPERIMENTS__", data)
-    print(f"OK · wrote {OUT_JS.relative_to(ROOT)}"
-          + (f" ({len(warnings)} warning(s))" if warnings else ""))
+    print("OK" + (f" · {len(warnings)} warning(s)" if warnings else ""))
     return 0
 
 

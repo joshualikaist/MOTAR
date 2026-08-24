@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="520" viewBox="0 0 1440 520" role="img" aria-labelledby="title desc">
+  <title id="title">MOTAR control stack</title>
+  <desc id="desc">The policy output is scaled into bounded body velocity and yaw-rate commands, altitude is held by a PI loop, and a Lee velocity controller and motor allocator drive rigid-body physics.</desc>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#66756f"/></marker>
+    <style>.h{font:700 24px Arial,sans-serif;fill:#17231f}.p{font:500 16px Arial,sans-serif;fill:#5f6e68}.k{font:700 13px Arial,sans-serif;fill:#087f6d;letter-spacing:.08em}.b{fill:#fff;stroke:#cbd8d3;stroke-width:2}.g{fill:#e0f0eb;stroke:#acd2c6;stroke-width:2}.d{fill:#edf0ef;stroke:#cbd3d0;stroke-width:2}.l{fill:none;stroke:#66756f;stroke-width:3;marker-end:url(#a)}.dash{fill:none;stroke:#8d9b96;stroke-width:2.5;stroke-dasharray:7 6;marker-end:url(#a)}</style>
+  </defs>
+  <rect width="1440" height="520" rx="30" fill="#f7faf8"/>
+  <text x="64" y="62" class="k">CONTROL CONTRACT · CORRECTED-V2</text>
+  <text x="64" y="101" class="h" font-size="31">Learned navigation, fixed flight dynamics</text>
+  <g transform="translate(64 160)">
+    <rect class="g" width="205" height="150" rx="18"/><text x="22" y="39" class="k">POLICY</text><text x="22" y="78" class="h">4-D action</text><text x="22" y="108" class="p">squashed Gaussian</text><text x="22" y="132" class="p">values in [−1, 1]</text>
+  </g>
+  <path class="l" d="M281 235h58"/>
+  <g transform="translate(351 139)">
+    <rect class="b" width="252" height="192" rx="18"/><text x="22" y="39" class="k">COMMAND MAPPING</text><text x="22" y="76" class="h">Bounded setpoints</text><text x="22" y="110" class="p">body vx / vy · ±2.5 m/s</text><text x="22" y="138" class="p">yaw-rate · ±3.0 rad/s</text><text x="22" y="166" class="p">tilt limit · 45°</text>
+  </g>
+  <path class="l" d="M615 235h58"/>
+  <g transform="translate(685 139)">
+    <rect class="b" width="230" height="192" rx="18"/><text x="22" y="39" class="k">ALTITUDE LOOP</text><text x="22" y="76" class="h">PI hold</text><text x="22" y="110" class="p">target · 1.0 m</text><text x="22" y="138" class="p">Kp 4.0 · Ki 1.0</text><text x="22" y="166" class="p">vertical cap · 2.5 m/s</text>
+  </g>
+  <path class="l" d="M927 235h58"/>
+  <g transform="translate(997 139)">
+    <rect class="g" width="205" height="192" rx="18"/><text x="22" y="39" class="k">FLIGHT CONTROL</text><text x="22" y="76" class="h">Lee velocity</text><text x="22" y="110" class="p">velocity error</text><text x="22" y="138" class="p">attitude / rates</text><text x="22" y="166" class="p">motor allocation</text>
+  </g>
+  <path class="l" d="M1214 235h47"/>
+  <g transform="translate(1273 160)">
+    <rect class="d" width="116" height="150" rx="18"/><text x="18" y="39" class="k">PLANT</text><text x="18" y="75" class="h">4 motors</text><text x="18" y="103" class="p">τ 0.04 s</text><text x="18" y="129" class="p">100 Hz</text>
+  </g>
+  <path class="dash" d="M1331 322v98H800v-77"/>
+  <text x="1017" y="453" class="p">measured state feedback</text>
+  <g transform="translate(351 365)"><rect class="d" width="252" height="66" rx="14"/><text x="18" y="27" class="k">SAFETY GOVERNOR</text><text x="18" y="51" class="p">canonical baseline: OFF</text></g>
+  <path class="dash" d="M477 365v-22"/>
+</svg>

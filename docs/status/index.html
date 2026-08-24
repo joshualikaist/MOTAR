@@ -1,120 +1,135 @@
 <!doctype html>
-<html lang="ko" data-theme="light">
+<html lang="ko">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>MOTAR · NavRL research console</title>
-<meta name="description" content="MOTAR camera/LiDAR plus simulator ego-state drone interception research console: held-out evidence, arena geometry and failure modes.">
-<meta name="color-scheme" content="light dark">
-<link rel="stylesheet" href="style.css?v=20260824b">
-<script src="js/shell.js?v=20260824b"></script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="MOTAR — sensor-only UAV moving-target interception research overview.">
+  <meta name="theme-color" content="#f7faf8">
+  <title>MOTAR · Moving-target interception</title>
+  <link rel="stylesheet" href="style.css">
 </head>
-<body data-page-title="개요">
+<body>
+  <header class="site-header">
+    <a class="brand" href="#top" aria-label="MOTAR home">MOTAR</a>
+    <nav aria-label="페이지 탐색">
+      <a href="#method">Method</a>
+      <a href="#evidence">Evidence</a>
+      <a href="#platform">Platform</a>
+      <a href="#next">Next</a>
+      <a href="https://github.com/joshualikaist/MOTAR">GitHub ↗</a>
+    </nav>
+  </header>
 
-<main class="page" id="main">
+  <main id="top">
+    <section class="hero wrap">
+      <div class="eyebrow">UAV · REINFORCEMENT LEARNING · SIM-TO-REAL</div>
+      <h1>Perceive. Decide.<br><span>Intercept.</span></h1>
+      <p class="hero-copy">카메라와 LiDAR만으로 밀집 장애물 속 움직이는 표적을 추적하는 드론 정책.
+        성공률 경쟁보다 <strong>언제, 왜 실패하는지</strong>를 재현 가능한 수치로 설명합니다.</p>
+      <div class="actions">
+        <a class="button primary" href="#method">시스템 보기</a>
+        <a class="button" href="../MOTAR_SYSTEM_SPEC_2026-08-24.md">전체 사양서</a>
+      </div>
+      <div class="status-line">
+        <span class="status-dot" aria-hidden="true"></span>
+        <strong>Simulation verified</strong><span>Hardware pending · 2026-08-24</span>
+      </div>
+    </section>
 
-  <p class="lead">센서 전용(카메라 + LiDAR) UAV 요격 정책의 연구 현황판. 현재 상태와 성공 기준, 진행 중인 캠페인을 담는다. 시스템 전체 그림은 <a href="system.html">시스템 구조</a>, 과제 정의는 <a href="setup.html">초기 세팅</a>, 측정 결과는 <a href="results.html">결과</a>, 어떤 변수를 어떻게 바꿔봤는지는 <a href="experiments.html">실험 인덱스</a>에 있다.</p>
+    <section class="visual wrap" aria-labelledby="overview-title">
+      <div class="section-head">
+        <p>01 · OVERVIEW</p>
+        <h2 id="overview-title">센서 입력에서 비행까지</h2>
+      </div>
+      <img src="../assets/motar-system-overview.svg" alt="MOTAR의 센서, 구조화 이력, Transformer 정책, 비행 제어 흐름">
+    </section>
 
-  <!-- LIVE METRICS -->
-  <section class="panel" id="panel-live">
-    <div class="panel-h">
-      <h2 id="live-h2">Live</h2>
-      <p class="meta" id="live-sub">—</p>
-    </div>
-    <div class="metrics" id="live-cards"></div>
-    <p class="hint" id="live-cap"></p>
-    <div class="live-trust" aria-live="polite">
-      <span id="live-freshness">data freshness —</span>
-      <span>tail = diagnostic · promotion gate = 16,384 episodes</span>
-    </div>
-  </section>
+    <section class="section wrap" id="method">
+      <div class="section-head">
+        <p>02 · METHOD</p>
+        <h2>학습하는 것과 고정하는 것을 분리했습니다.</h2>
+      </div>
+      <div class="three-col">
+        <article><span>Sense</span><h3>Structured perception</h3><p>RGB-D target track, 4×72 LiDAR, ego velocity·yaw·height를 898-D history로 구성합니다.</p></article>
+        <article><span>Learn</span><h3>Temporal policy</h3><p>17개 token을 4-layer Transformer가 처리합니다. PPO는 actor와 asymmetric critic weight를 학습합니다.</p></article>
+        <article><span>Fly</span><h3>Bounded control</h3><p>출력은 유한한 body velocity와 yaw-rate 명령이며 altitude PI와 Lee controller를 거쳐 동역학에 적용됩니다.</p></article>
+      </div>
+      <figure class="diagram">
+        <img src="../assets/motar-control-stack.svg" alt="정책 action에서 명령 매핑, altitude PI, Lee controller와 motor dynamics로 이어지는 제어 구조">
+        <figcaption>Navigation은 learned policy, 비행 제어와 motor/URDF dynamics는 고정된 실험 계약입니다.</figcaption>
+      </figure>
+    </section>
 
-  <!-- HOW SUCCESS IS JUDGED -->
-  <section class="panel" id="panel-criteria">
-    <div class="panel-h">
-      <h2>Success criteria</h2>
-      <p class="meta" id="criteria-sub">what counts as working — and what does not</p>
-    </div>
-    <p class="criteria-lead" id="criteria-headline"></p>
-    <div class="criteria-grid">
+    <section class="section evidence" id="evidence">
+      <div class="wrap">
+        <div class="section-head light">
+          <p>03 · EVIDENCE</p>
+          <h2>좋아 보이는 숫자보다 판정 범위를 함께 남깁니다.</h2>
+        </div>
+        <div class="metrics">
+          <article><strong>600</strong><span>exact actions / episode</span><p>timeout bootstrap과 corrected-v2 의미론 검증</p></article>
+          <article><strong>333/333</strong><span>static scenes reachable</span><p>2-D 기하 경로만 의미하며 동역학은 미포함</p></article>
+          <article><strong>−0.0145 pp</strong><span>learned-v2 vs analytic</span><p>95% CI [−1.752, +1.723], 비열등 gate 통과</p></article>
+          <article><strong>8.443→3.172%</strong><span>never acquired</span><p>camera-range 진단; primary gate 미달로 inconclusive</p></article>
+        </div>
+        <div class="limits">
+          <h3>현재 주장할 수 없는 것</h3>
+          <p>실제 비행 성능, sim-to-real 성공, 300-bar 전 구간 성능, Transformer의 보편적 우월성.
+            실제 기체가 미조립이고 실제 센서 로그가 없으므로 현재 software-only gate의 판정은
+            <strong>SYNTHETIC_ONLY</strong>이며 실기 성능을 뜻하지 않습니다.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section wrap" id="platform">
+      <div class="section-head">
+        <p>04 · CONTRACT</p>
+        <h2>하나의 숫자는 하나의 계보에서만 읽습니다.</h2>
+      </div>
+      <div class="contract-grid">
+        <div class="spec-card">
+          <h3>Task</h3>
+          <dl><div><dt>Arena</dt><dd>40 × 40 × 3 m</dd></div><div><dt>Bars</dt><dd>70 → 300</dd></div><div><dt>Target</dt><dd>0.3–1.5 m/s</dd></div><div><dt>Episode</dt><dd>60 s · 600 actions</dd></div></dl>
+        </div>
+        <div class="spec-card">
+          <h3>Policy</h3>
+          <dl><div><dt>Observation</dt><dd>898-D</dd></div><div><dt>Tokens</dt><dd>17 × 64-D</dd></div><div><dt>History</dt><dd>5 samples · ≈2 s</dd></div><div><dt>Action</dt><dd>4-D bounded</dd></div></dl>
+        </div>
+        <div class="spec-card">
+          <h3>ref5in candidate</h3>
+          <dl><div><dt>Mass</dt><dd>1.20 kg</dd></div><div><dt>Motor diagonal</dt><dd>220 mm</dd></div><div><dt>Collision proxy</dt><dd>0.28 × 0.28 × 0.12 m</dd></div><div><dt>T/W</dt><dd>3.262</dd></div></dl>
+        </div>
+      </div>
+      <p class="note">ref5in은 hardware-informed simulation candidate입니다. CAD/BOM, 실측 관성·추력,
+        열·전원 및 비행 식별을 완료한 실제 플랫폼 사양이 아닙니다.</p>
+    </section>
+
+    <section class="section next" id="next">
+      <div class="wrap next-grid">
+        <div class="section-head">
+          <p>05 · NEXT</p>
+          <h2>다음 병목은 더 긴 학습이 아니라 실제 센서 계약입니다.</h2>
+        </div>
+        <ol>
+          <li><span>01</span><div><strong>Freeze hardware</strong><p>AUW, CG, sensor serial·firmware, calibration과 time sync를 기록합니다.</p></div></li>
+          <li><span>02</span><div><strong>Measure perception</strong><p>거리·조명·운동별 bearing, range, latency, dropout 원자료를 수집합니다.</p></div></li>
+          <li><span>03</span><div><strong>Replay before PPO</strong><p>held-out real-log tracker replay와 schema gate를 통과한 뒤 fresh 학습을 사전등록합니다.</p></div></li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="resources wrap">
+      <h2>원자료와 실행 계약</h2>
       <div>
-        <h3>Primary metric</h3>
-        <div class="note" id="criteria-primary"></div>
-        <h3>Supporting metrics</h3>
-        <div class="scrollx"><table id="criteria-secondary"></table></div>
+        <a href="../MOTAR_SYSTEM_SPEC_2026-08-24.md">System spec</a>
+        <a href="../../VERIFICATION.md">Verification</a>
+        <a href="../../OPERATIONS.md">Operations</a>
+        <a href="../../WORKLOG.md">Worklog</a>
+        <a href="../PAPER_WRITING_BRIEF_2026-08-24.md">Paper brief</a>
       </div>
-      <div>
-        <h3>Not success metrics</h3>
-        <div class="scrollx"><table id="criteria-not"></table></div>
-      </div>
-    </div>
-    <div class="criteria-foot">
-      <div class="note" id="criteria-gate"></div>
-      <p class="hint" id="criteria-ckpt"></p>
-    </div>
-  </section>
+    </section>
+  </main>
 
-  <!-- CURRENT RESEARCH UPDATE -->
-  <section class="panel" id="panel-update">
-    <div class="panel-h">
-      <h2>Research update</h2>
-      <p class="meta" id="update-sub">85-bar obstacle-token coverage ablation</p>
-    </div>
-    <div class="update-hero" id="update-hero"></div>
-    <div class="milestones" id="update-milestones"></div>
-    <div class="update-grid">
-      <div>
-        <h3>Evidence ledger</h3>
-        <div class="scrollx"><table id="update-eval"></table></div>
-      </div>
-      <div>
-        <h3>Decision gate</h3>
-        <div class="note" id="update-decision"></div>
-      </div>
-    </div>
-  </section>
-
-  <!-- SIM-TO-REAL 72 HOUR CONTRACT -->
-  <section class="panel" id="panel-sim2real">
-    <div class="panel-h">
-      <h2>Sim-to-real · next 72 hours</h2>
-      <p class="meta">measure → profile → replay → preregister</p>
-    </div>
-    <div class="update-hero" id="sim2real-hero"></div>
-    <div class="milestones" id="sim2real-days"></div>
-    <div class="note" id="sim2real-blockers"></div>
-  </section>
-
-  <!-- RUNS + NEXT -->
-  <section class="panel split" id="panel-runs">
-    <div>
-      <div class="panel-h"><h2>Runs</h2><p class="meta">peak → final gap = overfit signal</p></div>
-      <div class="scrollx"><table id="runs-tbl"></table></div>
-    </div>
-    <div>
-      <div class="panel-h"><h2>Now</h2></div>
-      <div class="note" id="nextplan">
-        <p><b>Latest</b> <span id="now-latest">Loading the current research snapshot…</span></p>
-        <p><b>Status</b> <span id="now-status">—</span></p>
-        <p><b>Next</b> <span id="now-next">—</span></p>
-        <p id="now-verification" hidden></p>
-      </div>
-      <div class="phases" id="phases"></div>
-    </div>
-  </section>
-
-  <footer class="foot">
-    MOTAR · <code>research/navrl-env</code> ·
-    <span id="foot-runs">—</span> runs ·
-    updated <span id="foot-gen">—</span>
-  </footer>
-</main>
-
-<!-- Snapshot data for instant paint. Plain classic scripts: they execute in document order,
-     so __STATUS_FALLBACK__ is assigned before the renderers boot. Do NOT add defer/type=module. -->
-<script src="status.fallback.js?v=20260824b"></script>
-
-<script src="js/core.js?v=20260824b"></script>
-<script src="js/panels-status.js?v=20260824b"></script>
+  <footer><div class="wrap"><strong>MOTAR</strong><span>Simulation research · hardware pending</span><span>BSD-3-Clause</span></div></footer>
 </body>
 </html>

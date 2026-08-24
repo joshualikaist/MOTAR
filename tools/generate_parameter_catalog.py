@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Generate the dashboard's NAVRL_* parameter catalogue from the source, not from prose.
 
-Writes `docs/status/data/parameters.json` (+ a `.js` wrapper) describing every environment knob
+Writes `docs/status/data/parameters.json` describing every environment knob
 this project reads: its current default, where it is declared, what the code comment says about it,
 which launcher scripts set it, and -- joined from `data/experiments.json` -- whether it has ever
 been the subject of a controlled ablation.
@@ -39,7 +39,6 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT_JSON = ROOT / "docs/status/data/parameters.json"
-OUT_JS = ROOT / "docs/status/data/parameters.js"
 EXPERIMENTS_JSON = ROOT / "docs/status/data/experiments.json"
 LAUNCHER_DIR = ROOT / "aerial_gym/rl_training/rl_games"
 SCAN_DIRS = ["aerial_gym", "tools"]
@@ -508,16 +507,7 @@ def main():
     OUT_JSON.parent.mkdir(parents=True, exist_ok=True)
     OUT_JSON.write_text(json.dumps(data, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
 
-    # Same reasoning as status.fallback.js: fetch() is unavailable over file://, and these pages get
-    # opened locally. Reuses the snapshot tool's writer so the round-trip check is shared.
-    import importlib.util
-    spec = importlib.util.spec_from_file_location("uss", ROOT / "tools/update_status_snapshot.py")
-    uss = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(uss)
-    uss.write_js_data(OUT_JS, "__PARAMETERS__", data)
-
-    print(f"wrote {OUT_JSON.relative_to(ROOT)} ({OUT_JSON.stat().st_size} B) "
-          f"and {OUT_JS.relative_to(ROOT)}")
+    print(f"wrote {OUT_JSON.relative_to(ROOT)} ({OUT_JSON.stat().st_size} B)")
     return 0
 
 

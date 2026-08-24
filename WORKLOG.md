@@ -11962,3 +11962,24 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
   (sensor dropout 0.3과 구분)으로 정정했다.
 - 대시보드에 `system.html`을 추가하고 모든 페이지의 shell/cache-bust를 갱신했다. 기체·파라미터
   데이터도 generator로 재생성해 source commit과 파일 목록을 최신화했다.
+
+### 2026-08-24 — README 연구 구조도와 public site 전면 단순화
+
+- 이전 변경은 시스템 그림을 별도 `system.html`과 Markdown 문서에만 두어 GitHub README 첫 화면에서
+  연구 구조를 바로 파악할 수 없었다. 이를 철회하고 `docs/assets/motar-system-overview.svg`와
+  `docs/assets/motar-control-stack.svg`를 추가해 README와 public site에 동일 원본을 직접 렌더링했다.
+  첫 그림은 RGB-D/LiDAR/ego-state → 898-D history → 17-token Transformer → controller/physics를,
+  두 번째 그림은 bounded action → altitude PI → Lee velocity controller → motor dynamics를 나타낸다.
+- `docs/status/`의 7개 HTML, sidebar/dark-mode shell, 3-D browser arena, 동적 panel renderer,
+  Three.js vendor와 JavaScript data mirror를 제거했다. 새 사이트는 `index.html + style.css` 단일
+  정적 페이지이며 overview/method/evidence/contract/next만 남겼다. 머신용 `status.json`, platform/
+  parameter/experiment JSON과 과거 문서는 삭제하지 않아 실험 원자료와 감사 가능성은 보존했다.
+- README도 연구 질문, 두 구조도, 현재 근거 5개, canonical 계약, 최소 재현 명령, 저장소 지도와
+  physical gate 중심으로 다시 썼다. `SIMULATION VERIFIED · HARDWARE PENDING`, `SYNTHETIC_ONLY`,
+  실제 기체 미조립·실측 로그 0이라는 claim boundary를 첫 화면과 evidence section에 반복 명시했다.
+- 더 이상 브라우저 JavaScript wrapper를 만들지 않도록 status/platform/parameter/experiment 생성기를
+  JSON-only로 정리했다. 삭제한 arena simulator 전용 테스트 대신 `tests/test_status_site.js`를 추가해
+  단일 페이지 구조, SVG 접근성, local link, ref5in generated values와 overclaim guard를 검사한다.
+- 검증: static site contract PASS, status snapshot unit tests 15/15 PASS, parameter catalog source audit
+  PASS, 67-experiment lint PASS, `git diff --check` PASS. Chrome headless 1440 px desktop 전체 렌더를
+  확인했으며 외부 font/JavaScript 의존성은 없다.

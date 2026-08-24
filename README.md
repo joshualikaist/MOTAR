@@ -1,108 +1,82 @@
 # MOTAR
 
-MOTAR는 **막대가 빽빽한 공간에서 움직이는 표적을 쫓는 드론**을 연구합니다. 드론은 카메라와
-LiDAR로 표적·장애물을 보고, 시뮬레이터 ego-state로 자신의 자세와 속도를 압니다. 목표는 멋진 한
-장면을 만드는 것보다 “얼마나 빽빽해지면, 왜 실패하는가?”를 재현 가능한 숫자로 답하는 것입니다.
+**Moving-target interception in dense obstacle fields with a sensor-only UAV policy.**
 
-쉽게 말하면 세 문제가 한꺼번에 걸립니다.
+MOTAR는 카메라, LiDAR, ego-state만으로 움직이는 표적을 추적하면서 장애물을 회피하는 드론 정책을
+연구합니다. 최고 성공률 하나보다 **어느 조건에서 왜 capture·crash·timeout이 발생하는지**를 재현
+가능한 실험 계약으로 설명하는 데 초점을 둡니다.
 
-- 빨리 쫓으면 잡기 쉽지만 제동거리가 길어져 막대에 부딪힙니다.
-- 장애물이 늘면 8개 obstacle token에 모든 막대를 담을 수 없습니다.
-- 학습 로그가 좋아 보여도 다른 seed·고정 조건에서 다시 평가하면 결과가 달라질 수 있습니다.
+![MOTAR perception-to-control system](docs/assets/motar-system-overview.svg)
 
-그래서 이 저장소에서는 최고 성공률 한 줄보다 **어떤 환경·기체·checkpoint·seed로 돌렸는지**, 그리고
-실패가 capture/crash/timeout 중 무엇이었는지를 함께 보존합니다. 처음 보는 분은 아래 “현재 결론”과
-“5분 안에 확인하기”만 읽고, 실험을 직접 돌릴 때 `OPERATIONS.md`로 넘어가면 됩니다.
+> **Status · 2026-08-24** — Simulation verified, hardware pending. 실제 기체는 아직 미조립이며
+> 실제 센서 로그와 비행 데이터는 없습니다. 현재 결과는 sim-to-real 성능 주장이 아니라
+> 재현 가능한 시뮬레이션 및 software-only 검증입니다.
 
-> 현재 기준일: **2026-08-24**
->
-> **실행 문서:** [SIM2REAL_3DAY_EXECUTION_PLAN.md](docs/SIM2REAL_3DAY_EXECUTION_PLAN.md)(앞으로 72시간의 단일 작업·계측 계약) · [VERIFICATION.md](VERIFICATION.md)(검증 gate) · [RESEARCH_PLAN.md](RESEARCH_PLAN.md)(charter) · [WORKLOG.md](WORKLOG.md)(기록) · [OPERATIONS.md](OPERATIONS.md)(명령) · [docs/status/](docs/status/)(대시보드)
+[Research site](docs/status/) · [System specification](docs/MOTAR_SYSTEM_SPEC_2026-08-24.md) ·
+[Verification](VERIFICATION.md) · [Operations](OPERATIONS.md) · [Worklog](WORKLOG.md)
 
-> **발표용 시스템 사양:** [MOTAR_SYSTEM_SPEC_2026-08-24.md](docs/MOTAR_SYSTEM_SPEC_2026-08-24.md)(하드웨어 후보, 898-D 자료구조, high/low-level 흐름도, PPO·보상 계약) · [대시보드 시스템 구조](docs/status/system.html)
+## Research question
 
-## 현재 상태 — 시뮬레이션 완료, 하드웨어 대기
+> 제한된 센서 표현과 실제적인 비행 명령 범위만으로, 밀집 장애물 속 이동 표적을 얼마나 안정적으로
+> 요격할 수 있으며 밀도가 증가할 때 실패 원인은 어떻게 달라지는가?
 
-2026-08-24 기준으로 현재 컴퓨터에서 가능한 시뮬레이션·소프트웨어 검증을 종료 상태로 정리했다.
-소프트웨어 preflight의 구조 검사는 통과했지만 입력은 synthetic fixture이고, physical target gate는
-모든 속도·밀도 셀을 통과하지 못했다. 따라서 **fresh PPO 재학습과 sim-to-real 성공 주장은 보류**한다.
+문제는 세 가지가 결합되어 있습니다.
 
-| 축 | 상태 | 정확한 의미 |
-|---|---|---|
-| 시뮬레이션 계약/회귀 | **677 PASS / 1 skip** | 코드·자료구조·계측 계약이 재현됨 |
-| software-only preflight | **PASS · SYNTHETIC_ONLY** | telemetry → ingest → profile → replay의 구조 확인; 실기 성능 아님 |
-| physical target envelope | **BLOCKED** | 70 bars 0.9 m/s, 150/205/300 bars 0.6 m/s까지만 최고 strict PASS |
-| reflection mode probe | **INCONCLUSIVE** | 정책 chirality gate 실패; mode averaging 근거 없음 |
-| 실제 하드웨어 | **PENDING** | 기체 미조립, 센서 calibration/실측 로그/비행 0 |
+- 빠른 추적은 표적 접근을 돕지만 제동거리와 충돌 위험을 키웁니다.
+- 장애물 수가 증가하면 제한된 obstacle representation이 장면을 충분히 보존하지 못할 수 있습니다.
+- 표적 미취득, 충돌, 시간 초과는 서로 다른 원인이므로 하나의 평균 reward로 합치면 진단이 흐려집니다.
 
-하드웨어·학습·자료구조를 교수님께 설명할 때는 위 사양서와 [시스템 구조 페이지](docs/status/system.html)를
-먼저 본다. 여기의 상세 결과는 [docs/status/status.json](docs/status/status.json)과
-[VERIFICATION.md](VERIFICATION.md)가 원자료 경로다.
+## Method
 
-## 현재 결론
+| Stage | Contract |
+|---|---|
+| Perception | RGB-D target track + `4×72` LiDAR at 12 m + ego velocity/yaw/height |
+| Representation | 898-D structured history → 17 tokens, 5 temporal samples |
+| Policy | 4-layer, 4-head Transformer actor with asymmetric critic during training |
+| Action | bounded body `vx/vy`, altitude hold, yaw-rate |
+| Control | altitude PI + Lee velocity controller + 4-motor allocation |
+| Simulation | 100 Hz physics, 10 Hz policy action, exact 600-action episode |
 
-| 항목 | 현재 판정 | 여기서 말할 수 없는 것 |
-|---|---|---|
-| corrected-v2 episode 의미론 | **공학 스모크 통과**. fresh PPO 1,000 epoch에서 정확히 600 action 종료, rl_games `time_outs` 전달, finite PPO/KL, rollback 0, raw action OOB 0을 확인했습니다. | 이 run은 70 bars의 on-policy 학습 기록입니다. held-out 성능, 밀도 승급 능력, 알고리즘 우월성을 증명하지 않습니다. |
-| learned detector 연결 | frozen navigation policy에서 learned-v2가 analytic bootstrap 대비 비열등하다는 결과를 두 평가 seed에서 재현했습니다. | 더 최신인 learned-v7을 그대로 꽂으면 nominal 성능이 떨어집니다. threshold만 바꿔 해결되는 문제가 아니며, detector 출력 분포에 맞춘 별도 학습이 필요합니다. |
-| 고밀도 기하 | 수정된 좌표계의 정적 2-D 검사에서 333/333 장면에 경로가 존재했습니다. | 회전·제동·표적 이동·600-step 제한을 포함한 동적 도달 가능성은 아닙니다. “길이 있으니 정책 문제”라고 단정할 수 없습니다. |
-| `navrl_ref5in_quad` 후보 기체 | CPU 저장소 계약 **26/26**, canonical same-controller simulator gate **21/21**, P1c fresh 900-epoch engineering gate를 통과했습니다. 장거리 D1은 q3/CV capture를 D0 대비 +15.19pp 개선했습니다. | held-out P2는 timeout 상한을 넘어 **strict FAIL**이고, D1도 q3/CV timeout 15.98%로 사전등록한 12%를 넘어 **FAIL**입니다. P3 장기학습은 차단했습니다. 실기 비행, CAD, endurance, 열·전원 여유도 미검증입니다. |
-| 검출 거리 Stage 1 | 20/28 m arm을 각 1,000 epoch 적응·2,049 episode 평가했고 quality/provenance gate **17/17 PASS**였습니다. never-acquired는 `8.443→3.172%`(−5.271 pp), capture는 `82.235→88.677%`였습니다. | 사전등록 primary `−15 pp`를 못 넘어 공식 판정은 **RANGE_INCONCLUSIVE_AT_THIS_BUDGET**입니다. capture는 부수 관측이고 Stage 2 권한은 없습니다. 두 arm 모두 far range가 analytic exact라 sim-to-real 증거가 아닙니다. |
-| 과거 navigation 결과 | legacy evaluator 안에서는 비교 가능한 동결 기록으로 보존합니다. | old 601-action 결과를 corrected exact-600 결과와 합치거나, legacy 기체 결과를 ref5in 성능으로 부를 수 없습니다. |
+![MOTAR learned navigation and fixed flight-control stack](docs/assets/motar-control-stack.svg)
 
-gate 표와 진단 요약은 **[VERIFICATION.md](VERIFICATION.md)** 에 통합했습니다. camera-range A/B는
-완료된 원인 진단이며, 28 m camera를 채택했다는 뜻은 아닙니다.
-canonical 결과 링크: [P0](results/navrl_ref_platform_verification/summary.md) ·
-[P1c](results/navrl_ref5in_smoke_seed197/p1c/summary.md) ·
-[P2](results/navrl_ref5in_p2_seed313/summary.md) ·
-[D0](results/navrl_ref5in_outcome_diagnostic_v2_seed317/summary.md) ·
-[D1](results/navrl_ref5in_d1_eval_seed331/summary.md) ·
-[first-acquisition seed359](results/navrl_ref5in_cv_first_acquisition_seed359/summary.md) ·
-[camera-range seed367](results/navrl_ref5in_camera_range_control_seed367/summary.md).
+PPO는 navigation policy와 critic network weight를 학습합니다. 센서 geometry, observation field order,
+action bound, controller gain, motor/URDF dynamics, reward coefficient는 고정된 실험 계약입니다.
+Ground-truth target/vehicle state는 reward, central critic, termination 및 평가 계측에만 사용하며 actor에는
+직접 제공하지 않습니다.
 
-## 시스템을 짧게 보면
+## Current evidence
 
-현재 corrected-v2 baseline은 다음 흐름을 사용합니다.
+| Evidence | Result | Scope |
+|---|---:|---|
+| Corrected-v2 semantics | exact 600 actions, finite PPO/KL, timeout bootstrap verified | engineering smoke; held-out superiority 아님 |
+| Detector navigation A/B | learned-v2 vs analytic: **−0.0145 pp**, 95% CI `[−1.752, +1.723]` | preregistered −2 pp non-inferiority margin 통과 |
+| Static reachability audit | **333 / 333** scenes have a 2-D path | dynamics, braking, moving target는 포함하지 않음 |
+| Camera-range diagnostic | never-acquired **8.443 → 3.172%**; capture **82.235 → 88.677%** | primary −15 pp gate 미달, 따라서 inconclusive |
+| Hardware/software gate | software pipeline PASS · `SYNTHETIC_ONLY` | 실기 성능 아님 |
 
-```text
-camera target track ─┐
-                     ├─ structured observation ─ Transformer actor ─ bounded velocity/yaw command
-72×4 LiDAR @ 12 m ───┘        8 cluster-sector obstacle tokens, token FOV 240°
+현재 `navrl_ref5in_quad`는 1.20 kg, 220 mm motor diagonal, 0.28 m collision proxy를 가정한
+**hardware-informed simulation candidate**입니다. 저장소 정합성과 simulator gate는 통과했지만 실제
+BOM/CAD/관성/추력/열/전원/비행 식별값은 아닙니다.
 
-training only: ground-truth state ─ asymmetric critic + reward
-```
+## Canonical experiment contract
 
-- actor에는 ground-truth 표적 위치나 semantic mask를 직접 넣지 않습니다.
-- navigation/control을 분리해서 볼 때는 analytic detector를 기준선으로 씁니다.
-- learned detector는 오프라인 gate와 navigation A/B를 따로 통과해야 합니다.
-- action은 squashed Gaussian으로 유한 범위 안에 두며, 평가 때 deterministic/stochastic 모드를 반드시 기록합니다.
-- 현재 corrected-v2 공학 baseline은 governor를 끈 조건입니다. 과거 `riskcap` 결과는 별도 legacy 계보입니다.
+| Item | Value |
+|---|---|
+| Arena | `40 × 40 × 3 m`, `navrl_band` bar placement |
+| Density curriculum | 70 → 300 bars, +15 steps, minimum 1,000 epochs per level |
+| Target | mixed constant-velocity / waypoint, `0.3–1.5 m/s`, goal distance `6–28 m` |
+| Actor observation | 898-D; static 288 + obstacle 480 + robot 50 + target 80 |
+| Horizontal command | per-axis `±2.5 m/s`; yaw `±3.0 rad/s`; tilt limit `45°` |
+| PPO | 128 envs, horizon 32, minibatch 2048, 4 mini-epochs, LR `3e-5` |
+| Reward | range-rate, ego-progress, clearance, time, smoothness, height, capture +30, collision −20 |
 
-## 이름이 비슷한 결과를 섞지 않는 법
+Exact coefficients and their source locations are frozen in
+[the system specification](docs/MOTAR_SYSTEM_SPEC_2026-08-24.md). Historical v1, archived v2, corrected-v2,
+legacy robot and ref5in robot results must not be merged into one performance curve.
 
-MOTAR에는 **과제 계약**과 **기체 계약**이라는 서로 다른 두 축이 있습니다.
+## Reproduce
 
-### 과제·평가 계약
-
-| 계보 | 핵심 차이 | 용도 |
-|---|---|---|
-| historical v1 | 24×24 m arena와 과거 observation/배치 계약 | 초기 아이디어와 실패 양상 참고용 |
-| archived v2 | 40×40×3 m arena지만 과거 종료 조건은 600 설정에서 action 601까지 실행됐고 `time_outs` bootstrap이 없었습니다. | 같은 evaluator로 만든 동결 결과끼리만 비교 |
-| **corrected-v2** | 40×40×3 m, exact 600 actions, `time_outs`, checkpoint/평가 receipt와 source provenance guard | 앞으로의 재현·비교 기준 |
-
-### 기체 계약
-
-| robot name | 의미 | 주의점 |
-|---|---|---|
-| `navrl_quad` | 기존 checkpoint와 논리 연결을 보존하는 legacy simulation 기체 | 0.28 m 충돌 proxy, ±0.13 m motor 좌표, 0.25 kg stock dynamics 등 mixed-scale 개발 파라미터가 exact BOM/CAD의 단일 실제 플랫폼에 추적되지 않습니다. 어떤 실제 기체에도 대응할 수 없다고 증명한 것은 아닙니다. |
-| `navrl_ref5in_quad` | 1.20 kg, 220 mm motor diagonal, 0.28 m XY 충돌 proxy를 가정한 opt-in 5-inch hardware-informed simulation candidate | 저장소 정합성·canonical open-arena gate와 P1c engineering gate는 통과했지만, held-out P2는 timeout 상한을 넘었습니다. 장기 P3는 미실행이며 legacy curve에 수치를 이어 붙이지 않습니다. |
-
-따라서 “v2”라고 적혀 있어도 종료 의미론이 다르면 같은 실험이 아니고, observation shape가 같아 checkpoint가 로드되더라도 robot lineage가 다르면 같은 정책으로 평가하면 안 됩니다. 현재 evaluator는 checkpoint에 저장된 arena·sensor·robot provenance를 확인하고 불일치를 fail-closed하도록 설계되어 있습니다.
-
-## 5분 안에 확인하기
-
-### 1. 설치
-
-Isaac Gym Preview 4와 NVIDIA GPU가 먼저 필요합니다. 저장소는 공개 clone이 가능하지만 Isaac Gym은 NVIDIA 계정으로 직접 받아야 합니다.
+Isaac Gym Preview 4 and an NVIDIA GPU are required. Isaac Gym itself is not redistributed here.
 
 ```bash
 mkdir -p ~/workspaces/aerial_gym_ws/src
@@ -111,19 +85,12 @@ git clone https://github.com/joshualikaist/MOTAR.git aerial_gym_simulator
 cd aerial_gym_simulator
 ./bootstrap_second_machine.sh
 conda activate aerialgym
+export PYTHONNOUSERSITE=1
 ```
 
-Isaac Gym 경로, Python 3.8, 4 GB GPU 설정과 `PYTHONNOUSERSITE` 문제는 [OPERATIONS.md](OPERATIONS.md)를 먼저 확인하세요.
-
-### 2. 코드 계약 검사
-
-GPU 학습 전에 CPU에서 빠르게 실패를 잡습니다.
+Run the CPU contracts before using GPU time:
 
 ```bash
-cd ~/workspaces/aerial_gym_ws/src/aerial_gym_simulator
-conda activate aerialgym
-export PYTHONNOUSERSITE=1
-
 python tests/test_navrl_v5a_semantics_smoke.py
 python tests/test_navrl_ref5in_platform.py
 
@@ -131,163 +98,41 @@ cd aerial_gym/rl_training/rl_games
 REF5IN_PREFLIGHT_ONLY=1 ./train_navrl_v2_ref5in_smoke_c.sh
 ```
 
-마지막 명령은 GPU 학습을 시작하지 않고 ref5in launcher가 고정한 fresh/no-checkpoint 계약만 검사합니다.
-
-### 3. 3-D로 환경 보기
-
-저장소 루트에서 수동 조작으로 실제 Isaac Gym 환경을 볼 수 있습니다.
+Held-out evaluation must use an explicit last checkpoint and record the action mode:
 
 ```bash
-cd ~/workspaces/aerial_gym_ws/src/aerial_gym_simulator
-
-./launch_navrl_3d.sh --manual
-
-```
-
-현재 public 3-D policy path는 구형 574D Transformer 전용이라 corrected-v2 898D/ref5in checkpoint를
-거부합니다. robot·sensor·token·action metadata를 import 전에 복원하는 fail-closed playback이 회귀검사를
-통과하기 전에는 현행 checkpoint를 이 UI로 재생하지 마세요. formal 평가는 아래 evaluator를 사용합니다.
-
-### 4. corrected-v2 held-out 평가
-
-끝 밀도 정책은 반드시 `last_gen_ppo_ep_*.pth`로 평가합니다.
-
-```bash
-cd ~/workspaces/aerial_gym_ws/src/aerial_gym_simulator/aerial_gym/rl_training/rl_games
-
+cd aerial_gym/rl_training/rl_games
 CKPT=/absolute/path/to/last_gen_ppo_ep_XXXX_rew_YY.pth
 NAVRL_V2_ACTION_MODE=deterministic \
 NAVRL_V2_DENSITIES="130 160 190 205 220" \
 ./eval_navrl_v2_density_sweep.sh "$CKPT" 2049
 ```
 
-evaluator는 checkpoint의 selector, detector, arena, robot 및 source receipt를 확인합니다. 강제 옵션으로 provenance 오류를 덮은 결과는 정식 비교표에 넣지 않습니다.
+Checkpoints are intentionally excluded from Git. Preserve the checkpoint, SHA-256, `aerial_run/`, summaries,
+evaluation receipt and source manifest together. Complete installation, transfer and troubleshooting instructions
+are in [OPERATIONS.md](OPERATIONS.md).
 
-### 5. ref5in canonical gate와 학습 스모크
+## Repository map
 
-먼저 open-arena 명령 추종을 재측정합니다.
-
-```bash
-cd ~/workspaces/aerial_gym_ws/src/aerial_gym_simulator
-conda activate aerialgym
-export PYTHONNOUSERSITE=1
-
-python tools/verify_navrl_ref_platform.py \
-  --num-envs 16 \
-  --output results/navrl_ref_platform_verification/flight_envelope.json
-```
-
-P1c는 이미 완료됐습니다. 아래 명령은 결과 재현이나 새 기체 파라미터를 바꾼 뒤 다시 gate를
-확인할 때만 사용합니다. **현재 다음 단계로 P3를 실행하면 안 됩니다.**
-
-```bash
-cd ~/workspaces/aerial_gym_ws/src/aerial_gym_simulator
-git status --short -- aerial_gym resources/robots tools/create_navrl_source_bundle.py
-# 아무것도 출력되지 않아야 함. results/와 문서 초안은 실행 바이트가 아니므로 별도 표시됩니다.
-
-cd aerial_gym/rl_training/rl_games
-./train_navrl_v2_ref5in_smoke_c.sh
-```
-
-이 launcher는 seed 197, 900 epochs, LR `1.5e-5`, `navrl_ref5in_quad`, governor off와 corrected-v2 의미론을 고정합니다. CLI 인자와 `CKPT` resume를 일부러 거부합니다. P1a/P1b를 이어 돌리지 않고 매번 fresh weights로 시작합니다. 결과가 좋아도 이것은 **학습 가능성 engineering gate**일 뿐, legacy보다 낫다는 성능 주장이 아닙니다.
-
-완료된 P2 proof는 다음 명령으로 byte-level 무결성을 다시 확인할 수 있습니다.
-
-```bash
-cd ~/workspaces/aerial_gym_ws/src/aerial_gym_simulator
-/home/fair/miniconda3/envs/aerialgym/bin/python tools/attest_navrl_ref5in_p2.py verify
-```
-
-일반적인 `train_navrl.sh`는 여러 역사적 기본값을 허용하므로 현재 기준 실험의 시작 명령으로 추천하지 않습니다. 새 실험은 목적에 맞는 고정 launcher와 사전등록 문서를 먼저 추가합니다.
-
-## checkpoint는 저장소에 없습니다
-
-`runs/`와 `.pth` snapshot은 크기와 provenance 문제 때문에 `.gitignore` 대상입니다. README와 결과 문서에 보이는 `runs/ppo_.../nn/...pth`는 **그 실험을 수행한 로컬 경로**이지, clone 후 자동으로 생기는 다운로드 파일이 아닙니다.
-
-다른 머신으로 옮길 때는 최소한 다음을 함께 보관하세요.
-
-- `last_gen_ppo_ep_*.pth`
-- run의 `aerial_run/`과 `summaries/`
-- evaluation JSON/CSV와 receipt
-- source manifest 또는 source bundle
-- checkpoint SHA-256
-
-```bash
-sha256sum /absolute/path/to/last_gen_ppo_ep_XXXX_rew_YY.pth
-```
-
-run 폴더 이관과 TensorBoard 병합 절차는 [OPERATIONS.md](OPERATIONS.md)에 있습니다.
-
-## 결과를 읽는 규칙
-
-1. **끝 정책은 `last_gen_ppo_ep_*.pth`입니다.** `gen_ppo.pth`는 reward 최고점을 저장하는데, density curriculum에서는 쉬운 저밀도 시점이 선택될 수 있어 끝 밀도 정책을 대표하지 않습니다.
-2. **exact-600과 old 601-action을 섞지 않습니다.** 종료 한 step 차이뿐 아니라 timeout value bootstrap 의미도 다릅니다.
-3. **학습 로그의 capture는 성능표가 아닙니다.** curriculum과 stochastic exploration이 섞인 on-policy 진단값입니다. 주장은 동결 checkpoint의 held-out fixed-condition 평가에서 만듭니다.
-4. **episode 수와 training seed 수는 다른 표본입니다.** 한 정책을 2,049 episodes 평가해 얻은 좁은 CI가 한 training seed의 우연을 제거하지 않습니다. full result를 주장하려면 최소 2개, 가급적 3개 training seed를 같은 예산으로 반복합니다.
-5. **deterministic와 stochastic을 표시합니다.** 전자는 배포 평균 action, 후자는 PPO gate와 탐색 잡음의 영향을 봅니다. 둘을 한 열에 합치지 않습니다.
-6. **결과에는 계약을 붙입니다.** checkpoint SHA, source SHA/dirty 여부, training/eval seed, episodes, bars, target speed, detector와 threshold, action mode, robot, episode semantics를 함께 기록합니다.
-7. **한 셀의 최고 epoch를 고르지 않습니다.** 사전등록한 checkpoint와 seed를 사용하고 capture/crash/timeout을 pooled count와 95% CI로 보고합니다.
-
-## 현재 근거에서 실제로 말할 수 있는 것
-
-- learned-v2 detector navigation A/B 재현에서는 analytic이 3,271/4,098, learned-v2가 3,272/4,100 captures였습니다. 차이는 **-0.0145 percentage point**, 95% CI는 **[-1.752, +1.723] pp**로 사전등록한 -2 pp 비열등 margin을 통과했습니다. 원자료는 [replication summary](results/navrl_v2_detector_navigation_ab_replication_seed97_101_schema2/summary.md)에 있습니다.
-- corrected-v2 seed-197 스모크는 exact-600, `time_outs`, finite PPO와 checkpoint provenance 경로가 실제 학습 중 작동한다는 것을 보였습니다. 그러나 epoch 1,000이 density warmup 경계와 같아 **밀도 승급은 시험하지 못했습니다**.
-- corrected reachability audit의 333/333은 정적 경로 존재 증거입니다. 고밀도 정지나 충돌이 representation, control, dynamics 중 어디서 생기는지는 pre-contact trajectory를 맞춘 추가 평가가 필요합니다.
-- isolated pose-noise audit에서는 한 environment seed에서 위치 1/3/10 cm와 yaw 0.5°의 손실을 검출하지 못했고, yaw 2°와 5°에서는 손실을 검출했습니다. 이는 step-wise iid Gaussian simulation sensitivity이며 실제 센서 허용오차 규격이 아닙니다.
-- learned-v7은 선택한 appearance stress envelope에서 일부 장점이 있었지만 nominal analytic-trained actor와는 분포가 맞지 않았습니다. 그러므로 “detector가 좋아졌으니 기존 PPO에 교체”하거나 appearance randomization까지 한 번에 넣는 실험은 하지 않습니다.
-
-과거 v1 density map과 v2 riskcap 실험은 실패 가설을 만드는 데 유용하지만 corrected-v2의 최종 성능표는 아닙니다. 숫자가 필요하면 메인 README의 요약보다 해당 `results/**/summary.md`의 계약·receipt·한계를 함께 읽으세요.
-
-## 앞으로 72시간
-
-단일 실행 목록은 **[docs/SIM2REAL_3DAY_EXECUTION_PLAN.md](docs/SIM2REAL_3DAY_EXECUTION_PLAN.md)** 다.
-
-1. Day 1: exact BOM·AUW·CG·센서 serial/firmware/calibration/time-sync를 동결하고 거리×조명×운동 원자료를 독립 trial로 취득한다.
-2. Day 2: trial 단위 bearing/range/latency/dropout profile을 만들고 far bearing-only / near range-fusion 경계를 데이터로 정한다.
-3. Day 3: held-out real-log tracker replay와 schema smoke를 통과한 뒤에만 다음 fresh PPO 사전등록을 쓴다.
-4. 그전에는 검출 거리 Stage 2, P3 장기학습, reward/horizon/속도 동시 변경을 실행하지 않는다.
-
-과거 P0–D1과 camera-range/OOB/geofence 진단의 상세 순서는
-[VERIFICATION.md](VERIFICATION.md)와 [WORKLOG.md](WORKLOG.md)에 보존한다. 현재 가장 큰 미해결 문제는
-“더 오래 학습하면 되는가”가 아니라 **실기에서 actor에 들어갈 bearing·range·ego-state가 어느 오차·지연
-분포를 갖고, 그 계약으로도 추적과 제동이 닫히는가**다.
-
-## 저장소 지도
-
-| 경로 | 내용 |
+| Path | Purpose |
 |---|---|
-| `aerial_gym/task/navrl_task/` | observation, reward, termination, curriculum, telemetry |
-| `aerial_gym/task/navrl_task/navrl_perception.py` | analytic/learned target front-end와 LiDAR association |
-| `aerial_gym/config/task_config/navrl_task_config.py` | task와 curriculum 기본 계약 |
-| `aerial_gym/config/env_config/navrl_bars_env.py` | v1/v2 arena와 bar 배치 |
-| `aerial_gym/config/robot_config/` | `navrl_quad`, `navrl_ref5in_quad` 동역학·allocator 설정 |
-| `resources/robots/quad/` | URDF와 충돌/관성 기하 |
-| `aerial_gym/rl_training/rl_games/` | PPO config, network, 고정 train/eval launcher |
-| `tests/` | 의미론·계보·수학·launcher 회귀검사 |
-| `tools/` | 데이터셋, receipt, geometry/platform 검증 도구 |
-| `results/` | 원자료와 조건별 `summary.md`; 성능 숫자의 근거 |
-| `docs/` | 독립 검수, handoff, 기준 기체 제안, 발표 자료 |
-| [WORKLOG.md](WORKLOG.md) | 날짜순 변경·실험 기록 |
-| [RESEARCH_PLAN.md](RESEARCH_PLAN.md) | 가설, gate, 장기 순서와 중단 조건 |
-| [OPERATIONS.md](OPERATIONS.md) | 설치, GPU별 실행, 결과 이관, 문제 해결 |
+| `aerial_gym/task/navrl_task/` | observation, perception, reward, termination, telemetry |
+| `aerial_gym/config/` | task, environment, controller and robot contracts |
+| `aerial_gym/rl_training/rl_games/` | Transformer, PPO config, fixed train/eval launchers |
+| `resources/robots/quad/` | URDF and collision/inertia geometry |
+| `tests/` | semantics, provenance, dynamics and launcher regression tests |
+| `tools/` | dataset, receipt, geometry and platform verification tools |
+| `results/` | condition-specific raw evidence and summaries |
+| `docs/` | system spec, execution plans, review and presentation material |
 
-## 기반 프로젝트와 크레딧
+## Next physical gate
 
-MOTAR는 [Aerial Gym Simulator](https://github.com/ntnu-arl/aerial_gym_simulator)의 연구 fork입니다. 병렬 Isaac Gym 환경, multirotor/controller 구조와 sensor rendering 기반을 사용합니다. 장애물장과 LiDAR navigation 구성은 [NavRL](https://github.com/Zhefan-Xu/NavRL)을 참고해 Aerial Gym 안에서 다시 구현했습니다. PPO 실행은 [rl_games](https://github.com/Denys88/rl_games)를 사용합니다.
+Fresh PPO and sim-to-real claims remain blocked until the actual platform provides measured AUW/CG, sensor
+extrinsics, timestamp synchronization and real-log bearing/range/latency/dropout profiles. The next 72-hour
+measurement contract is [SIM2REAL_3DAY_EXECUTION_PLAN.md](docs/SIM2REAL_3DAY_EXECUTION_PLAN.md).
 
-MOTAR 결과를 인용할 때는 이 저장소의 실험 계약과 함께 기반 프로젝트의 citation도 확인해 주세요.
+## Credits
 
-```bibtex
-@article{kulkarni2025aerial,
-  author  = {Kulkarni, Mihir and Rehberg, Welf and Alexis, Kostas},
-  title   = {Aerial Gym Simulator: A Framework for Highly Parallelized Simulation of Aerial Robots},
-  journal = {IEEE Robotics and Automation Letters},
-  year    = {2025},
-  volume  = {10},
-  number  = {4},
-  pages   = {4093--4100},
-  doi     = {10.1109/LRA.2025.3548507}
-}
-```
-
-라이선스는 [BSD-3-Clause](LICENSE)입니다. 이 저장소의 결과나 문구가 Aerial Gym 또는 NavRL 원 저자들의 검증을 대신하지 않습니다.
+MOTAR builds on [Aerial Gym Simulator](https://github.com/ntnu-arl/aerial_gym_simulator), uses
+[rl_games](https://github.com/Denys88/rl_games), and adapts ideas from
+[NavRL](https://github.com/Zhefan-Xu/NavRL). Licensed under [BSD-3-Clause](LICENSE).

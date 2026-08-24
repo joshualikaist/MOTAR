@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Generate the dashboard's platform + sensor spec from the URDFs and robot configs.
+"""Generate the machine-readable platform + sensor spec from URDFs and robot configs.
 
-Writes `docs/status/data/platform.json` (+ a `.js` wrapper) for `drone.html`: airframe mass,
+Writes `docs/status/data/platform.json`: airframe mass,
 inertia, thrust, collision geometry and the derived flight envelope for every NavRL robot, plus the
 sensor contract, plus the measured flight-envelope gate if it has been run.
 
@@ -28,7 +28,6 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT_JSON = ROOT / "docs/status/data/platform.json"
-OUT_JS = ROOT / "docs/status/data/platform.js"
 URDF_DIR = ROOT / "resources/robots/quad"
 ENVELOPE = ROOT / "results/navrl_ref_platform_verification/flight_envelope.json"
 
@@ -225,12 +224,6 @@ def main():
     data = build()
     OUT_JSON.parent.mkdir(parents=True, exist_ok=True)
     OUT_JSON.write_text(json.dumps(data, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
-
-    import importlib.util
-    spec = importlib.util.spec_from_file_location("uss", ROOT / "tools/update_status_snapshot.py")
-    uss = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(uss)
-    uss.write_js_data(OUT_JS, "__PLATFORM__", data)
 
     for r in data["robots"]:
         d = r["derived"]
