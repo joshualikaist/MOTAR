@@ -44,6 +44,10 @@ action bound, controller gain, motor/URDF dynamics, reward coefficient는 고정
 Ground-truth target/vehicle state는 reward, central critic, termination 및 평가 계측에만 사용하며 actor에는
 직접 제공하지 않습니다.
 
+제어 경로는 `actor → body-frame command → altitude PI → Lee velocity loop → tilt-limited force →
+attitude/rate torque → motor allocation → 100 Hz rigid-body physics` 순서입니다. Actor의 z 출력은
+실행하지 않고 1 m altitude PI가 덮어쓰며, canonical baseline의 safety governor는 꺼져 있습니다.
+
 ## Current evidence
 
 | Evidence | Result | Scope |

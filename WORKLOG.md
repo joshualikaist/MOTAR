@@ -11983,3 +11983,21 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
 - 검증: static site contract PASS, status snapshot unit tests 15/15 PASS, parameter catalog source audit
   PASS, 67-experiment lint PASS, `git diff --check` PASS. Chrome headless 1440 px desktop 전체 렌더를
   확인했으며 외부 font/JavaScript 의존성은 없다.
+
+### 2026-08-24 — 단일 페이지 3-D arena 복원·제어 구조 상세화
+
+- 단일 페이지 정보 구조는 유지하면서 사용성이 좋았던 3-D arena만 독립 섹션으로 복원했다.
+  Three.js/OrbitControls를 다시 로컬 vendor로 포함하고, 기존 `arena_motion.js`와 `arena.js`의
+  corrected-v2 geometry configurator를 사용한다. 40×40×3 m, bar 10–300, 3 m 높이,
+  `navrl_band` touch 0.4 m/gap 1.6 m, goal 6–28 m와 target 0.3–1.5 m/s를 viewer boot에서 고정했다.
+- viewer 기본은 205 bars이며 bar density, target max speed, pause/play, overview/chase/sensor 시점,
+  camera FOV/LiDAR/trail을 직접 조절한다. 표적은 mixed CV/waypoint motion을 사용하지만 pursuer는
+  설명용 steering이므로 화면 바로 위에 **PPO rollout이나 성능 측정이 아님**을 명시했다.
+- `motar-control-stack.svg`를 5개 추상 block에서 실제 실행 순서 8단계로 교체했다. Transformer의
+  bounded action, body-frame ±2.5 m/s와 yaw ±3 rad/s mapping, actor z overwrite, altitude PI
+  `Kp=4/Ki=1`, Lee velocity `Kv=2.5`, 45° force clamp/tilt thrust compensation, attitude/rate gain,
+  ref5in allocation, 0.04 s motor lag와 100 Hz physics를 식과 함께 표시했다. 사이트에는 각 단계의
+  역할을 네 개 설명 카드로 추가하고 README도 실제 제어 경로를 명시했다.
+- 검증: viewer asset/order/local-link contract PASS, v2 motion bounds·goal/speed·speed-zero age reset
+  PASS, Chrome headless에서 WebGL canvas 생성과 205-bar desktop render 확인, 상세 SVG 렌더 확인,
+  status unit tests와 experiment/catalog lint 재통과, `git diff --check` PASS.

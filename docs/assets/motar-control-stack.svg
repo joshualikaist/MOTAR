@@ -1,34 +1,29 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="520" viewBox="0 0 1440 520" role="img" aria-labelledby="title desc">
-  <title id="title">MOTAR control stack</title>
-  <desc id="desc">The policy output is scaled into bounded body velocity and yaw-rate commands, altitude is held by a PI loop, and a Lee velocity controller and motor allocator drive rigid-body physics.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="790" viewBox="0 0 1440 790" role="img" aria-labelledby="title desc">
+  <title id="title">Detailed MOTAR control stack</title>
+  <desc id="desc">A detailed flow from the learned four-dimensional policy action through command scaling, altitude PI, Lee velocity and attitude control, wrench allocation, motor lag and rigid-body state feedback.</desc>
   <defs>
-    <marker id="a" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#66756f"/></marker>
-    <style>.h{font:700 24px Arial,sans-serif;fill:#17231f}.p{font:500 16px Arial,sans-serif;fill:#5f6e68}.k{font:700 13px Arial,sans-serif;fill:#087f6d;letter-spacing:.08em}.b{fill:#fff;stroke:#cbd8d3;stroke-width:2}.g{fill:#e0f0eb;stroke:#acd2c6;stroke-width:2}.d{fill:#edf0ef;stroke:#cbd3d0;stroke-width:2}.l{fill:none;stroke:#66756f;stroke-width:3;marker-end:url(#a)}.dash{fill:none;stroke:#8d9b96;stroke-width:2.5;stroke-dasharray:7 6;marker-end:url(#a)}</style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#687670"/></marker>
+    <style>.title{font:700 29px Arial,sans-serif;fill:#17231f}.head{font:700 20px Arial,sans-serif;fill:#17231f}.body{font:500 14px Arial,sans-serif;fill:#586861}.eq{font:600 14px Consolas,monospace;fill:#075f56}.tag{font:700 12px Arial,sans-serif;fill:#087f6d;letter-spacing:.09em}.box{fill:#fff;stroke:#cad8d2;stroke-width:2}.learn{fill:#dceee8;stroke:#9ccabd;stroke-width:2}.fixed{fill:#f2f5f3;stroke:#cbd5d1;stroke-width:2}.line{fill:none;stroke:#687670;stroke-width:3;marker-end:url(#arrow)}.feedback{fill:none;stroke:#8a9893;stroke-width:2.5;stroke-dasharray:8 6;marker-end:url(#arrow)}</style>
   </defs>
-  <rect width="1440" height="520" rx="30" fill="#f7faf8"/>
-  <text x="64" y="62" class="k">CONTROL CONTRACT · CORRECTED-V2</text>
-  <text x="64" y="101" class="h" font-size="31">Learned navigation, fixed flight dynamics</text>
-  <g transform="translate(64 160)">
-    <rect class="g" width="205" height="150" rx="18"/><text x="22" y="39" class="k">POLICY</text><text x="22" y="78" class="h">4-D action</text><text x="22" y="108" class="p">squashed Gaussian</text><text x="22" y="132" class="p">values in [−1, 1]</text>
-  </g>
-  <path class="l" d="M281 235h58"/>
-  <g transform="translate(351 139)">
-    <rect class="b" width="252" height="192" rx="18"/><text x="22" y="39" class="k">COMMAND MAPPING</text><text x="22" y="76" class="h">Bounded setpoints</text><text x="22" y="110" class="p">body vx / vy · ±2.5 m/s</text><text x="22" y="138" class="p">yaw-rate · ±3.0 rad/s</text><text x="22" y="166" class="p">tilt limit · 45°</text>
-  </g>
-  <path class="l" d="M615 235h58"/>
-  <g transform="translate(685 139)">
-    <rect class="b" width="230" height="192" rx="18"/><text x="22" y="39" class="k">ALTITUDE LOOP</text><text x="22" y="76" class="h">PI hold</text><text x="22" y="110" class="p">target · 1.0 m</text><text x="22" y="138" class="p">Kp 4.0 · Ki 1.0</text><text x="22" y="166" class="p">vertical cap · 2.5 m/s</text>
-  </g>
-  <path class="l" d="M927 235h58"/>
-  <g transform="translate(997 139)">
-    <rect class="g" width="205" height="192" rx="18"/><text x="22" y="39" class="k">FLIGHT CONTROL</text><text x="22" y="76" class="h">Lee velocity</text><text x="22" y="110" class="p">velocity error</text><text x="22" y="138" class="p">attitude / rates</text><text x="22" y="166" class="p">motor allocation</text>
-  </g>
-  <path class="l" d="M1214 235h47"/>
-  <g transform="translate(1273 160)">
-    <rect class="d" width="116" height="150" rx="18"/><text x="18" y="39" class="k">PLANT</text><text x="18" y="75" class="h">4 motors</text><text x="18" y="103" class="p">τ 0.04 s</text><text x="18" y="129" class="p">100 Hz</text>
-  </g>
-  <path class="dash" d="M1331 322v98H800v-77"/>
-  <text x="1017" y="453" class="p">measured state feedback</text>
-  <g transform="translate(351 365)"><rect class="d" width="252" height="66" rx="14"/><text x="18" y="27" class="k">SAFETY GOVERNOR</text><text x="18" y="51" class="p">canonical baseline: OFF</text></g>
-  <path class="dash" d="M477 365v-22"/>
+  <rect width="1440" height="790" rx="30" fill="#f7faf8"/>
+  <text x="58" y="58" class="tag">CORRECTED-V2 · LEARNED NAVIGATION / FIXED FLIGHT CONTROL</text>
+  <text x="58" y="99" class="title">Policy action → force and torque → motor dynamics</text>
+  <g transform="translate(58 142)"><rect class="learn" width="240" height="190" rx="17"/><text x="20" y="34" class="tag">1 · LEARNED POLICY</text><text x="20" y="70" class="head">Transformer actor</text><text x="20" y="101" class="body">squashed Gaussian action</text><text x="20" y="128" class="eq">a = [aₓ, aᵧ, a_z, aψ]</text><text x="20" y="155" class="eq">aᵢ ∈ [−1, 1]</text><text x="20" y="178" class="body">a_z is observed, not executed</text></g>
+  <path class="line" d="M310 237H354"/>
+  <g transform="translate(366 142)"><rect class="box" width="270" height="190" rx="17"/><text x="20" y="34" class="tag">2 · COMMAND MAPPING</text><text x="20" y="70" class="head">Body-frame setpoints</text><text x="20" y="103" class="eq">v*ₓᵧ = 2.5 · [aₓ, aᵧ]</text><text x="20" y="130" class="eq">ω*ψ = 3.0 · aψ</text><text x="20" y="157" class="body">per-axis clamp · m/s, rad/s</text><text x="20" y="180" class="body">speed governor: OFF in baseline</text></g>
+  <path class="line" d="M648 237H692"/>
+  <g transform="translate(704 142)"><rect class="box" width="300" height="190" rx="17"/><text x="20" y="34" class="tag">3 · ALTITUDE SUPERVISOR</text><text x="20" y="70" class="head">Policy-independent PI hold</text><text x="20" y="102" class="eq">e_z = 1.0 m − z</text><text x="20" y="129" class="eq">I_z ← clip(I_z + e_zΔt, ±2.5)</text><text x="20" y="156" class="eq">v*z = clip(4e_z + I_z, ±2.5)</text><text x="20" y="180" class="body">overwrites the policy z channel</text></g>
+  <path class="line" d="M1016 237H1060"/>
+  <g transform="translate(1072 142)"><rect class="box" width="310" height="190" rx="17"/><text x="20" y="34" class="tag">4 · VELOCITY LOOP</text><text x="20" y="70" class="head">Lee velocity controller</text><text x="20" y="102" class="eq">e_v = R_yaw v* − v_world</text><text x="20" y="129" class="eq">a* = K_v e_v,  K_v = [2.5,2.5,2.5]</text><text x="20" y="156" class="eq">f* = m(a* − g)</text><text x="20" y="180" class="body">position term is zero in velocity mode</text></g>
+  <path class="line" d="M1227 344V392"/>
+  <g transform="translate(1002 404)"><rect class="box" width="380" height="216" rx="17"/><text x="20" y="34" class="tag">5 · FORCE → ATTITUDE</text><text x="20" y="70" class="head">Tilt-limited desired orientation</text><text x="20" y="101" class="eq">‖f*xy‖ ≤ f*z tan(45°)</text><text x="20" y="128" class="eq">b*₃ = f* / ‖f*‖  →  R*</text><text x="20" y="155" class="eq">T = f*z / b₃z  if b₃z &gt; 0.5</text><text x="20" y="182" class="body">otherwise standard projection T = f*·b₃</text><text x="20" y="204" class="body">altitude-priority tilt compensation</text></g>
+  <path class="line" d="M990 512H946"/>
+  <g transform="translate(606 404)"><rect class="box" width="328" height="216" rx="17"/><text x="20" y="34" class="tag">6 · ATTITUDE / RATE LOOP</text><text x="20" y="70" class="head">Body torque command</text><text x="20" y="101" class="eq">τ* = −K_R e_R − K_ω e_ω + ω×Jω</text><text x="20" y="128" class="eq">K_R = [1.0, 1.0, 0.5]</text><text x="20" y="155" class="eq">K_ω = [0.15, 0.15, 0.15]</text><text x="20" y="182" class="body">desired yaw rate comes from ω*ψ</text><text x="20" y="204" class="body">gains fixed; randomization disabled</text></g>
+  <path class="line" d="M594 512H550"/>
+  <g transform="translate(306 404)"><rect class="fixed" width="232" height="216" rx="17"/><text x="20" y="34" class="tag">7 · ALLOCATION</text><text x="20" y="70" class="head">Wrench → 4 motors</text><text x="20" y="101" class="eq">w* = [0, 0, T, τx, τy, τz]</text><text x="20" y="128" class="body">220 mm motor diagonal</text><text x="20" y="155" class="body">9.6 N max per motor</text><text x="20" y="182" class="body">allocation matrix is fixed</text><text x="20" y="204" class="body">ref5in candidate values</text></g>
+  <path class="line" d="M294 512H250"/>
+  <g transform="translate(58 404)"><rect class="fixed" width="180" height="216" rx="17"/><text x="18" y="34" class="tag">8 · PLANT</text><text x="18" y="70" class="head">Rigid body</text><text x="18" y="101" class="eq">τ_motor = 0.04 s</text><text x="18" y="128" class="body">100 Hz physics</text><text x="18" y="155" class="body">10 physics steps</text><text x="18" y="178" class="body">per policy action</text><text x="18" y="204" class="body">mass · inertia · contact</text></g>
+  <path class="feedback" d="M148 632V704H1227V634"/>
+  <text x="565" y="738" class="body">state feedback: position · world velocity · attitude · body angular velocity</text>
+  <text x="58" y="770" class="body">Green = learned policy output. White/gray = fixed task, controller and vehicle contracts.</text>
 </svg>

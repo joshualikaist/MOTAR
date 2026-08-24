@@ -13,6 +13,7 @@
     <a class="brand" href="#top" aria-label="MOTAR home">MOTAR</a>
     <nav aria-label="페이지 탐색">
       <a href="#method">Method</a>
+      <a href="#arena">3D Arena</a>
       <a href="#evidence">Evidence</a>
       <a href="#platform">Platform</a>
       <a href="#next">Next</a>
@@ -44,9 +45,48 @@
       <img src="../assets/motar-system-overview.svg" alt="MOTAR의 센서, 구조화 이력, Transformer 정책, 비행 제어 흐름">
     </section>
 
+    <section class="section arena-section" id="arena">
+      <div class="wrap">
+        <div class="section-head">
+          <p>02 · 3D ARENA</p>
+          <h2>환경 밀도와 센서 시야를 직접 확인하세요.</h2>
+        </div>
+        <p class="arena-intro">corrected-v2의 40×40×3 m arena와 <code>navrl_band</code> 배치 규칙을
+          브라우저에서 재현합니다. 표적은 mixed CV/waypoint 규칙으로 움직이며 pursuer 경로는 설명용입니다.
+          이 화면은 PPO 실행 영상이나 성능 측정값이 아닙니다.</p>
+        <div class="viewer-shell">
+          <div id="stage" role="img" aria-label="막대 장애물, 이동 표적, 추적 드론과 LiDAR 광선을 보여주는 3D arena">
+            <p class="viewer-error">Loading 3D arena…</p>
+          </div>
+          <div class="viewer-hud" aria-live="polite">
+            <strong><span id="hud-bars">205</span> bars</strong>
+            <span><span id="hud-density">12.8</span> / 100 m²</span>
+            <span id="hud-camera" class="seen">DETECTED</span>
+            <span id="hud-range">— m</span>
+            <span id="hud-pattern" hidden></span>
+            <span id="hud-target-speed" hidden></span>
+          </div>
+        </div>
+        <div class="viewer-controls">
+          <label>Bars <strong id="lbl-bars">205</strong><input type="range" id="sl-bars" min="10" max="300" step="1" value="205"></label>
+          <label>Target max <strong id="lbl-speed">1.5</strong> m/s<input type="range" id="sl-speed" min="0" max="20" step="1" value="15"></label>
+          <div class="viewer-buttons">
+            <button id="btn-play" type="button" aria-pressed="true">Pause</button>
+            <button id="btn-view" type="button">시점 · overview</button>
+            <button id="btn-preset" type="button">205-bar preset</button>
+          </div>
+          <div class="viewer-toggles">
+            <label><input type="checkbox" id="cb-camera" checked> Camera FOV</label>
+            <label><input type="checkbox" id="cb-lidar" checked> LiDAR</label>
+            <label><input type="checkbox" id="cb-trails" checked> Trails</label>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <section class="section wrap" id="method">
       <div class="section-head">
-        <p>02 · METHOD</p>
+        <p>03 · METHOD</p>
         <h2>학습하는 것과 고정하는 것을 분리했습니다.</h2>
       </div>
       <div class="three-col">
@@ -56,14 +96,20 @@
       </div>
       <figure class="diagram">
         <img src="../assets/motar-control-stack.svg" alt="정책 action에서 명령 매핑, altitude PI, Lee controller와 motor dynamics로 이어지는 제어 구조">
-        <figcaption>Navigation은 learned policy, 비행 제어와 motor/URDF dynamics는 고정된 실험 계약입니다.</figcaption>
+        <figcaption>Navigation은 learned policy, 비행 제어와 motor/URDF dynamics는 고정된 실험 계약입니다. 화살표는 실제 코드의 실행 순서입니다.</figcaption>
       </figure>
+      <div class="control-details">
+        <article><span>01</span><div><h3>Actor가 정하는 것</h3><p><code>aₓ, aᵧ, aψ</code>가 수평 속도와 yaw-rate를 정합니다. actor가 출력한 <code>a_z</code>는 실행되지 않고 altitude PI가 수직 명령을 덮어씁니다.</p></div></article>
+        <article><span>02</span><div><h3>속도 오차에서 힘으로</h3><p>body-frame setpoint를 yaw로 world frame에 회전한 뒤 실제 world velocity와 비교합니다. 고정 gain <code>Kv=[2.5,2.5,2.5]</code>로 가속도와 요구 힘을 만듭니다.</p></div></article>
+        <article><span>03</span><div><h3>기울기와 고도 우선권</h3><p>요구 힘의 수평 성분을 45° 이내로 제한합니다. upright 상태에서는 <code>T=fz/b3z</code> 보상으로 기울어진 동안에도 수직 힘을 우선 보존합니다.</p></div></article>
+        <article><span>04</span><div><h3>토크에서 실제 운동으로</h3><p>attitude/rate error가 body torque가 되고 allocation matrix가 네 모터 명령으로 바꿉니다. 모터는 0.04 s 1차 지연을 거쳐 100 Hz rigid-body physics에 적용됩니다.</p></div></article>
+      </div>
     </section>
 
     <section class="section evidence" id="evidence">
       <div class="wrap">
         <div class="section-head light">
-          <p>03 · EVIDENCE</p>
+          <p>04 · EVIDENCE</p>
           <h2>좋아 보이는 숫자보다 판정 범위를 함께 남깁니다.</h2>
         </div>
         <div class="metrics">
@@ -83,7 +129,7 @@
 
     <section class="section wrap" id="platform">
       <div class="section-head">
-        <p>04 · CONTRACT</p>
+        <p>05 · CONTRACT</p>
         <h2>하나의 숫자는 하나의 계보에서만 읽습니다.</h2>
       </div>
       <div class="contract-grid">
@@ -107,7 +153,7 @@
     <section class="section next" id="next">
       <div class="wrap next-grid">
         <div class="section-head">
-          <p>05 · NEXT</p>
+          <p>06 · NEXT</p>
           <h2>다음 병목은 더 긴 학습이 아니라 실제 센서 계약입니다.</h2>
         </div>
         <ol>
@@ -131,5 +177,10 @@
   </main>
 
   <footer><div class="wrap"><strong>MOTAR</strong><span>Simulation research · hardware pending</span><span>BSD-3-Clause</span></div></footer>
+  <script src="vendor/three.min.js?v=20260824"></script>
+  <script src="vendor/OrbitControls.js?v=20260824"></script>
+  <script src="arena_motion.js?v=20260824"></script>
+  <script src="arena.js?v=20260824"></script>
+  <script src="viewer.js?v=20260824"></script>
 </body>
 </html>
