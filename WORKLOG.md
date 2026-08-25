@@ -12598,6 +12598,13 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
   controller vector before comparing the frozen three-axis gains. No gain value was changed and
   the rejected cell produced no accepted measurement.
 
+### 2026-08-26 — route-off braking support attestation
+
+- The zero-bar braking probe intentionally instantiates `route_mode=off`, where the route support
+  cache is zero by construction. The attestation now accepts that declared zero cache while still
+  recording the geometry-derived certified support; route-on evaluator children retain the strict
+  nonzero support check. No obstacle, controller, or physical parameter changed.
+
 ### 2026-08-26 — pinned ninja PATH handoff
 
 - The second probe attempt reached Isaac Gym but its child could not build `gymtorch`: exporting

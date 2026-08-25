@@ -361,6 +361,11 @@ def attest_instantiated_task(task: Any, expected_speed: Optional[float] = None) 
         if len(support_values) != 2:
             raise ValueError("instantiated support shape drift")
         for index, observed in enumerate(support_values):
+            # The braking probe intentionally runs route-off with zero bars, so the route manager
+            # cache is zero by construction. The certified support remains the geometry-derived
+            # contract; route-on children must populate and attest the nonzero cache separately.
+            if abs(float(observed)) <= 1e-8 and str(getattr(task, "_target_route_mode", "off")) == "off":
+                continue
             _exact_float(observed, FROZEN_CONTRACT["physical_support_xy_m"], "support_xy[%d]" % index, 1e-6)
     return {
         "sim_name": sim_name,
