@@ -17,10 +17,12 @@ window.Arena = (() => {
   let pursuerTrail, targetTrail, targetHalo, resizeObserver;
   let groundMat, gridHelper, rimLight;
   let bars = [], playing = true, speedCeiling = 1.5, viewMode = 0;
+  let targetMotionMode = 'bounded';
   let currentBars = 25, layoutSeed = 20260728, episode;
   let showTrails = true, frame = 0, visible = true;
   let host, lastDrone = { x: 1, y: 0 }, trailA = [], trailB = [];
-  let lastT = 0, vel = { x: 0, y: 0 }, heading = 0;
+  let lastT = 0, vel = { x: 0, y: 0 }, heading = 0, simPrev, simCurr;
+  const simClock = Motion.createFixedStepClock(0.1, 0.25, 8);
   const motionRng = Motion.seededRng(8675309);
 
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -119,6 +121,7 @@ window.Arena = (() => {
     heading = motionRng() * Math.PI * 2 - Math.PI;
     vel = { x: 0, y: 0 };
     lastDrone = { x: episode.drone.x, y: episode.drone.y };
+    simPrev = simCurr = snapshotSimulation();
     trailA.length = 0;
     trailB.length = 0;
     if (pursuerTrail) pursuerTrail.geometry.setFromPoints([]);
@@ -126,11 +129,36 @@ window.Arena = (() => {
     updateMotionHud();
   }
 
+  function snapshotSimulation() {
+    const targetHeading = episode && Math.hypot(
+      episode.realizedVelocity.x, episode.realizedVelocity.y
+    ) > .02 ? Math.atan2(episode.realizedVelocity.y, episode.realizedVelocity.x)
+      : (episode ? episode.heading : 0);
+    return {
+      droneX: drone ? drone.position.x : lastDrone.x,
+      droneY: drone ? drone.position.z : lastDrone.y,
+      droneHeading: heading,
+      targetX: episode ? episode.target.x : 0,
+      targetY: episode ? episode.target.y : 0,
+      targetHeading: targetHeading,
+      targetRoll: episode && targetMotionMode === 'physical-style'
+        ? Math.atan(episode.physicalStyle.roll) : 0,
+      targetPitch: episode && targetMotionMode === 'physical-style'
+        ? Math.atan(episode.physicalStyle.pitch) : 0,
+    };
+  }
+
   function updateMotionHud() {
     const mode = document.getElementById('hud-pattern');
     const sampled = document.getElementById('hud-target-speed');
     if (mode && episode) mode.textContent = `mixed → ${episode.mode}`;
     if (sampled && episode) sampled.textContent = `${episode.speed.toFixed(2)} m/s sampled`;
+    const lineage = document.getElementById('hud-motion-lineage');
+    if (lineage) lineage.textContent = {
+      legacy: 'legacy · checkpointed virtual point',
+      bounded: 'bounded · new trajectory lineage',
+      'physical-style': 'physical-style · illustrative, not PhysX',
+    }[targetMotionMode];
   }
 
   function makeDrone(color, accent, scale = 1) {
@@ -406,59 +434,69 @@ window.Arena = (() => {
     }
   }
 
+  function lerpAngle(a, b, t) {
+    return a + Math.atan2(Math.sin(b - a), Math.cos(b - a)) * t;
+  }
+
+  function simulationStep(dt) {
+    if (!episode) resetEpisode(false);
+    simPrev = simCurr || snapshotSimulation();
+    Motion.advanceTarget(episode, dt, bars, motionRng, targetMotionMode);
+    const proposed = Motion.steerPursuerStep(
+      simPrev.droneX, simPrev.droneY, episode.target.x, episode.target.y,
+      Motion.CONTRACT.pursuerSpeedMax, dt, bars, heading, episode.avoidSign
+    );
+    if (proposed.hit) {
+      resetEpisode(true);
+      return;
+    }
+    lastDrone = { x: proposed.x, y: proposed.y };
+    vel = { x: proposed.vx, y: proposed.vy };
+    if (proposed.heading != null && Math.hypot(proposed.vx, proposed.vy) > .05) {
+      heading = proposed.heading;
+    }
+    // Keep the Three objects' authoritative simulation positions at the latest 10 Hz state.
+    // Rendering below interpolates without feeding interpolated values back into simulation.
+    drone.position.x = proposed.x;
+    drone.position.z = proposed.y;
+    simCurr = snapshotSimulation();
+    if (episode.age >= 30 || Math.hypot(
+      episode.target.x - proposed.x, episode.target.y - proposed.y
+    ) < .5) resetEpisode(true);
+  }
+
   function animate() {
     requestAnimationFrame(animate);
-    if (!visible || !renderer) { lastT = 0; return; }
+    if (!visible || !renderer) { lastT = 0; simClock.reset(); return; }
     controls.update();
 
     const now = performance.now();
-    const dt = Math.min((now - (lastT || now)) / 1000, 0.05); lastT = now;
+    const renderDt = Math.min((now - (lastT || now)) / 1000, 0.05); lastT = now;
     if (!episode) resetEpisode(false);
-    if (playing) Motion.advanceTarget(episode, dt, bars, motionRng);
-    let dx = drone.position.x, dy = drone.position.z;
-    if (playing && dt > 0) {
-      const proposed = Motion.steerPursuerStep(
-        dx, dy, episode.target.x, episode.target.y,
-        Motion.CONTRACT.pursuerSpeedMax, dt, bars, heading, episode.avoidSign
-      );
-      if (proposed.hit) {
-        // Match sim termination: contact with a bar ends the episode.
-        resetEpisode(true);
-        lastT = now;
-        frame++;
-        renderer.render(scene, cam);
-        return;
-      }
-      dx = proposed.x;
-      dy = proposed.y;
-      if (proposed.heading != null && Math.hypot(proposed.vx, proposed.vy) > 0.05) {
-        heading = proposed.heading;
-      }
-    }
-
-    vel.x += ((dx - lastDrone.x) / Math.max(dt, 1e-3) - vel.x) * (1 - Math.exp(-dt * 6));
-    vel.y += ((dy - lastDrone.y) / Math.max(dt, 1e-3) - vel.y) * (1 - Math.exp(-dt * 6));
-    if (Math.hypot(vel.x, vel.y) > 0.05) {
-      const want = Math.atan2(vel.y, vel.x);
-      const d = Math.atan2(Math.sin(want - heading), Math.cos(want - heading));
-      heading += d * (1 - Math.exp(-dt * 7));
-    }
+    const tick = simClock.advance(now / 1000, playing, simulationStep);
+    const previous = simPrev || snapshotSimulation();
+    const current = simCurr || previous;
+    const alpha = tick.alpha;
+    const dx = previous.droneX + (current.droneX - previous.droneX) * alpha;
+    const dy = previous.droneY + (current.droneY - previous.droneY) * alpha;
+    const renderHeading = lerpAngle(previous.droneHeading, current.droneHeading, alpha);
     drone.position.set(dx, 1 + .03 * Math.sin(frame * .12), dy);
-    drone.rotation.y = -heading;
+    drone.rotation.y = -renderHeading;
     const bank = THREE.MathUtils.clamp(-vel.y * 0.12, -.28, .28);
-    drone.rotation.z += (bank - drone.rotation.z) * (1 - Math.exp(-dt * 8));
+    drone.rotation.z += (bank - drone.rotation.z) * (1 - Math.exp(-renderDt * 8));
     // Spin rotors for visible motion even when path is slow.
     drone.children.forEach(ch => {
-      if (ch.geometry && ch.geometry.type === 'RingGeometry') ch.rotation.z += dt * 18;
+      if (ch.geometry && ch.geometry.type === 'RingGeometry') ch.rotation.z += renderDt * 18;
     });
-    lastDrone = { x: dx, y: dy };
 
-    const tx = episode.target.x, ty = episode.target.y;
+    const tx = previous.targetX + (current.targetX - previous.targetX) * alpha;
+    const ty = previous.targetY + (current.targetY - previous.targetY) * alpha;
     target.position.set(tx, 1 + .04 * Math.sin(frame * .1), ty);
-    const tv = episode.realizedVelocity;
-    if (Math.hypot(tv.x, tv.y) > .02) target.rotation.y = -Math.atan2(tv.y, tv.x);
+    target.rotation.y = -lerpAngle(previous.targetHeading, current.targetHeading, alpha);
+    target.rotation.z = previous.targetRoll + (current.targetRoll - previous.targetRoll) * alpha;
+    target.rotation.x = previous.targetPitch + (current.targetPitch - previous.targetPitch) * alpha;
 
-    const vis = visibility(dx, dy, tx, ty, heading);
+    const vis = visibility(dx, dy, tx, ty, renderHeading);
     const state = document.getElementById('hud-camera');
     if (state) {
       state.textContent = vis.visible ? 'DETECTED' : vis.occluded ? 'OCCLUDED' : 'OUT OF FOV';
@@ -482,7 +520,6 @@ window.Arena = (() => {
     updateTrail(target, trailB, targetTrail);
     updateCamera(); frame++;
     renderer.render(scene, cam);
-    if (playing && (episode.age >= 30 || vis.range < 0.5)) resetEpisode(true);
   }
 
   function cycleView() {
@@ -519,12 +556,23 @@ window.Arena = (() => {
       currentBars = Math.max(1, Math.round(n));
       makeBars(currentBars);
       resetEpisode(false);
+      simClock.reset();
     },
     setSpeed(s) {
       speedCeiling = Math.max(0, Number(s) || 0);
       resetEpisode(false);
+      simClock.reset();
     },
-    setPlaying(p) { playing = p; },
+    setPlaying(p) { playing = p; simClock.reset(); },
+    setTargetMotionMode(mode) {
+      if (!['legacy', 'bounded', 'physical-style'].includes(mode)) {
+        throw new Error('unknown target display mode: ' + mode);
+      }
+      targetMotionMode = mode;
+      resetEpisode(false);
+      simClock.reset();
+      return targetMotionMode;
+    },
     setLidar(v) { lidarLines.visible = v; },
     setCamera(v) { cameraFov.visible = v; },
     setTrails(v) { showTrails = v; pursuerTrail.visible = v; targetTrail.visible = v; },

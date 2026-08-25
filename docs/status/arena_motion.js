@@ -29,6 +29,12 @@
     spawnMargin: 1.0,
     spawnBarClearance: 0.65,
     targetBarClearance: 1.0,
+    boundedObstacleClearance: 0.77,
+    boundedMaxAccel: 4.0,
+    boundedMaxTurnRate: 150 * Math.PI / 180,
+    boundedLookaheadSeconds: 1.0,
+    physicalStyleTimeConstant: 0.24,
+    physicalStyleMaxTilt: 45 * Math.PI / 180,
     targetDistanceMin: 4.0,
     targetDistanceMax: 16.0,
     waypointReach: 0.5,
@@ -40,6 +46,12 @@
   };
   const TURN_ANGLES = Object.freeze(
     [0, 30, -30, 60, -60, 90, -90, 120, -120, 180].map(
+      function (degrees) { return degrees * Math.PI / 180; }
+    )
+  );
+  const BOUNDED_TURN_ANGLES = Object.freeze(
+    [0, 15, -15, 30, -30, 45, -45, 60, -60, 75, -75, 90, -90,
+      105, -105, 120, -120, 135, -135, 150, -150, 165, -165, 180].map(
       function (degrees) { return degrees * Math.PI / 180; }
     )
   );
@@ -56,6 +68,44 @@
 
   function clamp(v, lo, hi) {
     return Math.max(lo, Math.min(hi, v));
+  }
+
+  function angleDelta(to, from) {
+    return Math.atan2(Math.sin(to - from), Math.cos(to - from));
+  }
+
+  /* Fixed 10 Hz simulation clock. Rendering may run at any refresh rate and receives alpha for
+   * interpolation between the two latest simulation states. Long background-tab gaps are dropped
+   * deliberately instead of creating an unbounded catch-up burst. */
+  function createFixedStepClock(stepSeconds, maxFrameSeconds, maxStepsPerFrame) {
+    const step = stepSeconds == null ? 0.1 : Number(stepSeconds);
+    const maxFrame = maxFrameSeconds == null ? 0.25 : Number(maxFrameSeconds);
+    const maxSteps = maxStepsPerFrame == null ? 8 : Math.max(1, Math.floor(maxStepsPerFrame));
+    if (!(step > 0) || !(maxFrame >= step) || !Number.isFinite(step + maxFrame)) {
+      throw new Error('invalid fixed-step clock contract');
+    }
+    let last = null, accumulator = 0, simulationTime = 0;
+    return {
+      stepSeconds: step,
+      reset(nowSeconds) { last = nowSeconds == null ? null : Number(nowSeconds); accumulator = 0; },
+      advance(nowSeconds, running, stepFn) {
+        const now = Number(nowSeconds);
+        if (!Number.isFinite(now)) throw new Error('clock time must be finite');
+        if (last == null) { last = now; return { steps: 0, alpha: 0, simulationTime }; }
+        let elapsed = clamp(now - last, 0, maxFrame); last = now;
+        if (!running) { accumulator = 0; return { steps: 0, alpha: 0, simulationTime }; }
+        accumulator += elapsed;
+        let steps = 0;
+        while (accumulator + 1e-12 >= step && steps < maxSteps) {
+          stepFn(step);
+          accumulator -= step;
+          simulationTime += step;
+          steps++;
+        }
+        if (steps === maxSteps && accumulator >= step) accumulator %= step;
+        return { steps, alpha: clamp(accumulator / step, 0, 1), simulationTime };
+      },
+    };
   }
 
   function configure(cfg) {
@@ -247,6 +297,9 @@
       waypoint: sampleWaypoint(rng),
       avoidSign: rng() < 0.5 ? -1 : 1,
       realizedVelocity: { x: 0, y: 0 },
+      boundedVelocity: { x: 0, y: 0 },
+      physicalStyle: { velocity: { x: 0, y: 0 }, roll: 0, pitch: 0 },
+      plannerFeasible: true,
       age: 0,
     };
   }
@@ -450,8 +503,150 @@
     };
   }
 
-  function advanceTarget(episode, dt, bars, rng) {
+  function limitPlanarVelocity(current, desired, speedLimit, dt, maxAccel, maxTurnRate) {
+    const desiredNorm = Math.hypot(desired.x, desired.y);
+    const desiredSpeed = Math.min(Math.max(0, speedLimit), desiredNorm);
+    const desiredHeading = desiredNorm > 1e-9 ? Math.atan2(desired.y, desired.x) : 0;
+    const currentSpeed = Math.hypot(current.x, current.y);
+    const currentHeading = currentSpeed > 1e-5 ? Math.atan2(current.y, current.x) : desiredHeading;
+    const turn = clamp(angleDelta(desiredHeading, currentHeading), -maxTurnRate * dt, maxTurnRate * dt);
+    const limitedHeading = currentSpeed > 1e-5 ? currentHeading + turn : desiredHeading;
+    const target = {
+      x: Math.cos(limitedHeading) * desiredSpeed,
+      y: Math.sin(limitedHeading) * desiredSpeed,
+    };
+    let dvx = target.x - current.x, dvy = target.y - current.y;
+    const delta = Math.hypot(dvx, dvy), maxDelta = Math.max(0, maxAccel) * dt;
+    if (delta > maxDelta && delta > 1e-9) { dvx *= maxDelta / delta; dvy *= maxDelta / delta; }
+    let x = current.x + dvx, y = current.y + dvy;
+    const speed = Math.hypot(x, y);
+    if (speed > speedLimit && speed > 1e-9) { x *= speedLimit / speed; y *= speedLimit / speed; }
+    return { x, y };
+  }
+
+  // Python bounded_drone_target_step uses centre-to-centre clearance for the non-physical lineage.
+  // 0.77 m already conservatively contains max bar half-diagonal + target half-width + margin.
+  function boundedTargetStep(old, currentVelocity, desiredVelocity, speedLimit, dt, bars, turnSign) {
+    const b = CONTRACT.bounds;
+    const loX = b.x0 + CONTRACT.wallMargin, hiX = b.x1 - CONTRACT.wallMargin;
+    const loY = b.y0 + CONTRACT.wallMargin, hiY = b.y1 - CONTRACT.wallMargin;
+    const desiredNorm = Math.hypot(desiredVelocity.x, desiredVelocity.y);
+    const baseHeading = desiredNorm > 1e-6 ? Math.atan2(desiredVelocity.y, desiredVelocity.x) : 0;
+    const scales = [1, 0.5, 0.25];
+    const candidates = [];
+    scales.forEach(function (scale) {
+      BOUNDED_TURN_ANGLES.forEach(function (angle) {
+        candidates.push({
+          desired: {
+            x: Math.cos(baseHeading + angle) * speedLimit * scale,
+            y: Math.sin(baseHeading + angle) * speedLimit * scale,
+          },
+          angle, scale,
+        });
+      });
+    });
+    candidates.push({ desired: { x: 0, y: 0 }, angle: 0, scale: 0 });
+    const rolloutSteps = Math.max(1, Math.ceil(CONTRACT.boundedLookaheadSeconds / dt));
+    let best = null;
+    candidates.forEach(function (candidate, index) {
+      let pos = { x: old.x, y: old.y };
+      let velocity = { x: currentVelocity.x, y: currentVelocity.y };
+      let firstPos, firstVelocity, feasible = true, immediateFeasible = false;
+      let safePrefix = 0, prefixAlive = true, minClearance = Infinity;
+      for (let step = 0; step < rolloutSteps; step++) {
+        velocity = limitPlanarVelocity(
+          velocity, candidate.desired, speedLimit, dt,
+          CONTRACT.boundedMaxAccel, CONTRACT.boundedMaxTurnRate
+        );
+        pos = { x: pos.x + velocity.x * dt, y: pos.y + velocity.y * dt };
+        if (step === 0) { firstPos = { x: pos.x, y: pos.y }; firstVelocity = { x: velocity.x, y: velocity.y }; }
+        const inside = pos.x >= loX && pos.x <= hiX && pos.y >= loY && pos.y <= hiY;
+        const barDistance = distanceToBars(pos.x, pos.y, bars);
+        minClearance = Math.min(minClearance, barDistance);
+        const safe = inside && barDistance >= CONTRACT.boundedObstacleClearance + 1e-4;
+        if (step === 0) immediateFeasible = safe;
+        prefixAlive = prefixAlive && safe;
+        if (prefixAlive) safePrefix += 1;
+        feasible = feasible && safe;
+      }
+      const tie = (turnSign || 1) * Math.sign(candidate.angle) * 1e-3;
+      const boundaryMargin = Math.min(pos.x - loX, hiX - pos.x, pos.y - loY, hiY - pos.y);
+      const score = feasible
+        ? 1000 + 10 * candidate.scale - Math.abs(candidate.angle) + tie
+        : 100 * safePrefix + Math.min(minClearance, 10) + Math.min(boundaryMargin, 10)
+          - 0.01 * Math.abs(candidate.angle) + tie;
+      if (!best || score > best.score) {
+        best = { index, score, firstPos, firstVelocity, feasible: immediateFeasible };
+      }
+    });
+    return best;
+  }
+
+  function desiredTargetVelocity(episode) {
+    if (episode.mode === 'waypoint') {
+      const dx = episode.waypoint.x - episode.target.x;
+      const dy = episode.waypoint.y - episode.target.y;
+      const norm = Math.max(Math.hypot(dx, dy), 1e-6);
+      return { x: dx / norm * episode.speed, y: dy / norm * episode.speed };
+    }
+    return { x: episode.cvVelocity.x, y: episode.cvVelocity.y };
+  }
+
+  function advanceBoundedTarget(episode, dt, bars, rng, physicalStyle) {
+    episode.age += dt;
+    if (episode.speed <= 1e-6) return episode;
+    const old = { x: episode.target.x, y: episode.target.y };
+    const current = physicalStyle ? episode.physicalStyle.velocity : episode.boundedVelocity;
+    const planned = boundedTargetStep(
+      old, current, desiredTargetVelocity(episode), episode.speed, dt, bars, episode.avoidSign
+    );
+    episode.plannerFeasible = planned.feasible;
+    let velocity = planned.firstVelocity;
+    if (physicalStyle) {
+      // Illustrative only: this is not PhysX. A first-order velocity response stands in for
+      // rigid-body/controller lag and its acceleration implies a bounded display attitude.
+      const alpha = 1 - Math.exp(-dt / CONTRACT.physicalStyleTimeConstant);
+      const desired = velocity;
+      let next = {
+        x: current.x + (desired.x - current.x) * alpha,
+        y: current.y + (desired.y - current.y) * alpha,
+      };
+      const dvx = next.x - current.x, dvy = next.y - current.y;
+      const dv = Math.hypot(dvx, dvy), maxDv = CONTRACT.boundedMaxAccel * dt;
+      if (dv > maxDv && dv > 1e-9) {
+        next = { x: current.x + dvx * maxDv / dv, y: current.y + dvy * maxDv / dv };
+      }
+      velocity = next;
+      const ax = (velocity.x - current.x) / dt, ay = (velocity.y - current.y) / dt;
+      episode.physicalStyle.roll = clamp(-ay / 9.81, -Math.tan(CONTRACT.physicalStyleMaxTilt), Math.tan(CONTRACT.physicalStyleMaxTilt));
+      episode.physicalStyle.pitch = clamp(ax / 9.81, -Math.tan(CONTRACT.physicalStyleMaxTilt), Math.tan(CONTRACT.physicalStyleMaxTilt));
+      episode.physicalStyle.velocity = { x: velocity.x, y: velocity.y };
+      episode.target.x = old.x + velocity.x * dt;
+      episode.target.y = old.y + velocity.y * dt;
+    } else {
+      episode.target.x = planned.firstPos.x;
+      episode.target.y = planned.firstPos.y;
+      episode.boundedVelocity = { x: velocity.x, y: velocity.y };
+    }
+    episode.realizedVelocity = {
+      x: (episode.target.x - old.x) / dt,
+      y: (episode.target.y - old.y) / dt,
+    };
+    episode.heading = Math.atan2(velocity.y, velocity.x);
+    if (episode.mode === 'cv') episode.cvVelocity = { x: velocity.x, y: velocity.y };
+    if (episode.mode === 'waypoint'
+        && Math.hypot(episode.waypoint.x - old.x, episode.waypoint.y - old.y) < CONTRACT.waypointReach) {
+      episode.waypoint = sampleWaypoint(rng);
+    }
+    return episode;
+  }
+
+  function advanceTarget(episode, dt, bars, rng, mode) {
     if (!episode || dt <= 0) return episode;
+    const dynamics = mode || 'bounded';
+    if (dynamics === 'bounded') return advanceBoundedTarget(episode, dt, bars, rng, false);
+    if (dynamics === 'physical-style') return advanceBoundedTarget(episode, dt, bars, rng, true);
+    if (dynamics !== 'legacy') throw new Error('unknown illustrative target mode: ' + dynamics);
     // episode.age drives arena.js's 30 s watchdog: it must measure WALL CLOCK, not
     // target-motion time, or a speed-0 episode (speed slider at its 0 notch) never resets.
     episode.age += dt;
@@ -522,6 +717,9 @@
     CONTRACT: CONTRACT,
     configure: configure,
     seededRng: seededRng,
+    createFixedStepClock: createFixedStepClock,
+    limitPlanarVelocity: limitPlanarVelocity,
+    boundedTargetStep: boundedTargetStep,
     distanceToBars: distanceToBars,
     pursuerClearance: pursuerClearance,
     segmentPursuerClearance: segmentPursuerClearance,

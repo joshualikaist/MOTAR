@@ -12001,3 +12001,25 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
 - 검증: viewer asset/order/local-link contract PASS, v2 motion bounds·goal/speed·speed-zero age reset
   PASS, Chrome headless에서 WebGL canvas 생성과 205-bar desktop render 확인, 상세 SVG 렌더 확인,
   status unit tests와 experiment/catalog lint 재통과, `git diff --check` PASS.
+
+### 2026-08-25 — 사이트 표적 동작 계보 분리·10 Hz 고정 시계
+
+- 3-D arena의 표적·추적자 적분을 브라우저 refresh rate에서 분리했다. simulation은 10 Hz
+  fixed step으로만 갱신하고 30/60/144 Hz 화면은 직전·현재 상태를 보간한다. 5 s 합성 fixture에서
+  세 refresh rate 모두 정확히 50 step, simulation time 5.0 s, 동일한 최종 표적 위치·속도를 냈다.
+  긴 background-tab 공백은 무제한 catch-up하지 않고 버리며, pause/visibility/mode 변경 때 clock을
+  reset한다.
+- Target display UI를 `legacy` / `bounded` / `physical-style`로 분리했다. 기본은 `bounded`이며
+  legacy는 checkpointed virtual-point lineage, bounded와 physical-style은 새 trajectory lineage임을
+  HUD와 설명에 표시한다. 모드 간 화면 결과는 정책 성능 비교가 아니다.
+- JavaScript bounded step은 Python `target_motion.py` 계약의 가속도 4.0 m/s², 선회율 150°/s,
+  lookahead 1.0 s, 후보 각도·속도 scale·fail-closed score, 비물리 lineage의 0.77 m 중심거리
+  obstacle proxy를 미러링한다. `(10,0)`에서 1.5 m 앞에 막대가 있는 golden fixture는 Python과
+  첫 위치가 1e-7 m, 첫 속도가 1e-7 m/s 이내로 일치했다.
+- `physical-style`은 bounded command에 1차 속도 lag와 45° attitude display limit만 추가한
+  **설명용 시각화**다. 실제 PhysX, 6-DoF rollout, 정책 평가가 아님을 selector·HUD·본문에 명시했다.
+  arena 배치, 막대 3-D geometry와 기존 viewer controls는 유지했다.
+- 검증: `node --check` 3개 JS PASS, `tests/test_status_site.js` PASS,
+  `tests/test_status_arena_motion.js` PASS(고정 시계·보간·Python golden·가속/속도/선회/attitude
+  limit), 기존 target-motion 13/13·status snapshot 12/12·recovery completion 3/3 PASS,
+  `git diff --check` PASS. 학습·GPU 평가·환경 Python 코드는 실행하거나 변경하지 않았다.
