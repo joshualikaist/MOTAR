@@ -23,6 +23,7 @@ from probe_navrl_physical_target_braking import (
     WARMUP_STEPS,
     BRAKE_STEPS_BUDGET,
     PHYSICS_SUBSTEPS,
+    PHYSICS_DT_S,
     RL_DT_S,
     SATURATION_MAX,
     STOP_THRESHOLD_MPS,
@@ -139,17 +140,17 @@ def _validate_trace_and_rows(payload: Mapping[str, Any], speed: float, rows: Lis
         raise ValueError("physics trace is missing")
     warmup = [trace for trace in traces if isinstance(trace, dict) and trace.get("phase") == "warmup"]
     brake = [trace for trace in traces if isinstance(trace, dict) and trace.get("phase") == "brake"]
-    if len(warmup) != WARMUP_STEPS or not (1 <= len(brake) <= BRAKE_STEPS_BUDGET):
+    if len(warmup) != WARMUP_STEPS * PHYSICS_SUBSTEPS or not (PHYSICS_SUBSTEPS <= len(brake) <= BRAKE_STEPS_BUDGET * PHYSICS_SUBSTEPS):
         raise ValueError("physics trace sample counts are invalid")
     for index, trace in enumerate(warmup, 1):
         if int(trace.get("sample_index", -1)) != index:
             raise ValueError("warmup trace order mismatch")
-        _close(trace.get("elapsed_s"), index * RL_DT_S, "warmup elapsed", 1e-9)
+        _close(trace.get("elapsed_s"), index * PHYSICS_DT_S, "warmup elapsed", 1e-9)
         _trace_arrays(trace, REGISTERED_ENVS)
     for index, trace in enumerate(brake, 1):
         if int(trace.get("sample_index", -1)) != index:
             raise ValueError("brake trace order mismatch")
-        _close(trace.get("elapsed_s"), index * RL_DT_S, "brake elapsed", 1e-9)
+        _close(trace.get("elapsed_s"), index * PHYSICS_DT_S, "brake elapsed", 1e-9)
         _trace_arrays(trace, REGISTERED_ENVS)
     previous = centers
     previous_path = [0.0] * REGISTERED_ENVS
