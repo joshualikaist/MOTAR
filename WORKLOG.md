@@ -12381,3 +12381,23 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
 - Receipts are finite-only canonical JSON with exact source/runtime contract, valid recorded git
   object, per-cell/tool/core hashes, completion marker, atomic non-overwrite finalization, and
   post-rename standalone verification. GPU execution is intentionally not run in CPU preflight.
+
+### 2026-08-25 — recovery-v2 dedicated 32-cell evaluator (CPU implementation)
+
+- Added a new opt-in evaluator for `off` versus `global_astar_recovery_v2` on the frozen
+  2×4×4 grid (seed 827, 32 envs, 300 intervals). The original v1 evaluator remains byte-identical.
+- Added evaluation-only packed telemetry with exact hard/soft AABB margins and reason codes,
+  state/phase ages and timeouts, actual PhysX state, command, anchor/connector/candidate evidence,
+  watchdog/contact/OBB data, and recovery outcome/reset attribution. Raw denominators and reason/
+  transition identities are recomputed by the standalone verifier.
+- The evaluator snapshots and re-verifies the complete raw-first physical-target braking receipt,
+  records the measured p95 stop distance separately from the p05 formula, uses hidden-directory
+  atomic finalization, and verifies before and after rename. Source/import/software/child/raw/
+  summary/receipt hashes are bound; post-result-commit verification does not require HEAD equality.
+- CPU adversarial tests cover atomic non-overwrite, exact 32-cell identity, throughput regression,
+  v1 byte preservation, schema pairing, continuous AABB reserve, illegal/cross-interval state
+  changes, duplicate timeout prevention, no-connector zero command, position/reset mutation, and
+  raw SHA/geometry failures. No GPU/PhysX/PPO execution was performed.
+- GPU launch remains blocked until the core accepts the finalized braking receipt schema pair and
+  exposes an unambiguous recovery-only selected-candidate full-horizon certificate; first-step
+  velocity cannot identify the selected candidate when acceleration saturation aliases candidates.

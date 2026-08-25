@@ -8,6 +8,7 @@ import tempfile
 import unittest
 
 import numpy as np
+import torch
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -29,36 +30,66 @@ def fixture(steps=3, substeps=2, envs=2, connect=True):
     prefix = np.full(shape, -1, dtype=np.int16)
     full = np.full(shape, -1, dtype=np.int16)
     if connect:
+        # One NORMAL->BRAKE entry remains open in CONNECT at cell end.
+        state_after[0, 0] = PACKED.STATE_BRAKE
         state_before[1, 0] = PACKED.STATE_BRAKE
         state_after[1, 0] = PACKED.STATE_CONNECT
+        state_before[2, 0] = PACKED.STATE_CONNECT
+        state_after[2, 0] = PACKED.STATE_CONNECT
+        candidate[2, 0] = 73
+        horizon[2, 0] = 10
+        prefix[2, 0] = 10
+        full[2, 0] = 1
         candidate[1, 0] = 73
         horizon[1, 0] = 10
         prefix[1, 0] = 10
         full[1, 0] = 1
     metadata = {
         "schema": PACKED.SCHEMA,
+        "route_mode": "global_astar_recovery_v2",
         "steps": steps,
         "envs": envs,
         "physics_substeps": substeps,
         "interval_denominator": steps * envs,
         "substep_denominator": steps * substeps * envs,
+        "measured_stop_distance_p95_m": 0.2,
+        "speed_mps": 0.6,
+        "brake_timeout_steps": 20,
     }
     arrays = {
         "state_before": state_before,
         "state_after": state_after,
         "age_before": np.zeros(shape, dtype=np.int16),
         "age_after": np.zeros(shape, dtype=np.int16),
+        "brake_age_before": np.zeros(shape, dtype=np.int16),
+        "brake_age_after": np.zeros(shape, dtype=np.int16),
+        "connect_age_before": np.zeros(shape, dtype=np.int16),
+        "connect_age_after": np.zeros(shape, dtype=np.int16),
+        "connect_timeout_steps": np.ones(shape, dtype=np.int16) * 37,
         "status_after": np.zeros(shape, dtype=np.int16),
+        "hard_reason_before": np.ones(shape, dtype=np.int16),
+        "soft_reason_before": np.ones(shape, dtype=np.int16),
+        "hard_reason_after": np.ones(shape, dtype=np.int16),
+        "soft_reason_after": np.ones(shape, dtype=np.int16),
         "hard_margin_before_m": np.ones(shape, dtype=np.float32),
         "soft_margin_before_m": np.ones(shape, dtype=np.float32),
         "hard_margin_after_m": np.ones(shape, dtype=np.float32),
         "soft_margin_after_m": np.ones(shape, dtype=np.float32),
+        "connector_clearance_m": np.ones(shape, dtype=np.float32),
+        "anchor_distance_m": np.ones(shape, dtype=np.float32),
+        "anchor_distance_after_m": np.ones(shape, dtype=np.float32),
+        "anchor_cell_i": np.ones(shape, dtype=np.int16),
+        "anchor_cell_j": np.ones(shape, dtype=np.int16),
+        "stop_distance_m": np.ones(shape, dtype=np.float32) * 0.2,
+        "formula_stop_distance_m": np.ones(shape, dtype=np.float32) * 0.3,
+        "stop_margin_m": np.ones(shape, dtype=np.float32) * 0.8,
         "position_before_xy": np.zeros(shape + (2,), dtype=np.float32),
         "position_after_xy": np.zeros(shape + (2,), dtype=np.float32),
         "velocity_before_xy": np.zeros(shape + (2,), dtype=np.float32),
         "velocity_after_xy": np.zeros(shape + (2,), dtype=np.float32),
         "command_xy": np.zeros(shape + (2,), dtype=np.float32),
         "anchor_xy": np.zeros(shape + (2,), dtype=np.float32),
+        "anchor_before_xy": np.zeros(shape + (2,), dtype=np.float32),
         "direct_position_write": np.zeros(shape, dtype=np.int32),
         "reset_call_during_advance": np.zeros(shape, dtype=np.int32),
         "runner_reset_after_interval": np.zeros(shape, dtype=np.int32),
@@ -66,6 +97,7 @@ def fixture(steps=3, substeps=2, envs=2, connect=True):
         "resume_delta": np.zeros(shape, dtype=np.int32),
         "no_connector_delta": np.zeros(shape, dtype=np.int32),
         "hard_breach_delta": np.zeros(shape, dtype=np.int32),
+        "candidate_binding_error": np.zeros(shape, dtype=np.int32),
         "timeout_event": np.zeros(shape, dtype=np.int32),
         "candidate_count": candidate,
         "candidate_horizon_steps": horizon,
@@ -84,6 +116,9 @@ def fixture(steps=3, substeps=2, envs=2, connect=True):
             json.dumps(metadata, sort_keys=True, separators=(",", ":")).encode(), dtype=np.uint8
         ),
     }
+    if connect:
+        arrays["entry_delta"][0, 0] = 1
+        arrays["age_after"][0:, 0] = np.asarray([1, 2, 3], dtype=np.int16)
     return arrays
 
 
@@ -105,6 +140,14 @@ class PackedTelemetryTest(unittest.TestCase):
         path = self.write(arrays)
         with self.assertRaisesRegex(RuntimeError, "overwrite"):
             PACKED._atomic_npz(path, arrays)
+
+    def test_segment_certificate_uses_passed_reachable_tube_once(self):
+        p0 = torch.tensor([[[-1.0, 0.61]]])
+        p1 = torch.tensor([[[1.0, 0.61]]])
+        bars = torch.tensor([[[0.0, 0.0]]])
+        half = torch.tensor([[[0.5, 0.5]]])
+        self.assertFalse(bool(PACKED._segments_hit_closed_aabb(p0, p1, bars, half, 0.10).item()))
+        self.assertTrue(bool(PACKED._segments_hit_closed_aabb(p0, p1, bars, half, 0.12).item()))
 
     def test_connect_without_safe_prefix_is_rejected(self):
         arrays = fixture()
@@ -131,8 +174,18 @@ class PackedTelemetryTest(unittest.TestCase):
 
     def test_no_connector_requires_zero_command(self):
         arrays = fixture(connect=False)
+        arrays["state_after"][0, 0] = PACKED.STATE_CONNECT
+        arrays["candidate_count"][0, 0] = 73
+        arrays["candidate_horizon_steps"][0, 0] = 10
+        arrays["candidate_safe_prefix_steps"][0, 0] = 10
+        arrays["candidate_full_horizon_safe"][0, 0] = 1
+        arrays["age_after"][0, 0] = 1
         arrays["state_before"][1, 0] = PACKED.STATE_CONNECT
         arrays["state_after"][1, 0] = PACKED.STATE_NO_CONNECTOR
+        arrays["state_before"][2, 0] = PACKED.STATE_NO_CONNECTOR
+        arrays["state_after"][2, 0] = PACKED.STATE_NO_CONNECTOR
+        arrays["status_after"][1:, 0] = 19
+        arrays["no_connector_delta"][1, 0] = 1
         arrays["command_xy"][1, 0, 0] = 0.01
         path = self.write(arrays)
         with self.assertRaisesRegex(RuntimeError, "nonzero"):
@@ -149,6 +202,33 @@ class PackedTelemetryTest(unittest.TestCase):
         path = self.write(fixture())
         with self.assertRaisesRegex(RuntimeError, "SHA256"):
             PACKED.load_and_verify(path, "0" * 64)
+
+    def test_latched_timeout_is_not_recounted(self):
+        arrays = fixture(connect=False)
+        arrays["state_after"][0, 0] = PACKED.STATE_CONNECT
+        arrays["candidate_count"][0, 0] = 73
+        arrays["candidate_horizon_steps"][0, 0] = 10
+        arrays["candidate_safe_prefix_steps"][0, 0] = 10
+        arrays["candidate_full_horizon_safe"][0, 0] = 1
+        arrays["age_after"][0, 0] = 1
+        arrays["state_before"][1, 0] = PACKED.STATE_CONNECT
+        arrays["state_after"][1, 0] = PACKED.STATE_NO_CONNECTOR
+        arrays["state_before"][2, 0] = PACKED.STATE_NO_CONNECTOR
+        arrays["state_after"][2, 0] = PACKED.STATE_NO_CONNECTOR
+        arrays["status_after"][1:, 0] = PACKED.STATUS_TIMEOUT
+        arrays["timeout_event"][1, 0] = 1
+        arrays["entry_delta"][0, 0] = 1
+        arrays["no_connector_delta"][1, 0] = 1
+        path = self.write(arrays)
+        result = PACKED.load_and_verify(path)
+        self.assertEqual(result["timeout_env_intervals"], 1)
+
+    def test_cross_interval_state_discontinuity_is_rejected(self):
+        arrays = fixture(connect=False)
+        arrays["state_after"][0, 0] = PACKED.STATE_BRAKE
+        path = self.write(arrays)
+        with self.assertRaisesRegex(RuntimeError, "cross-interval"):
+            PACKED.load_and_verify(path)
 
 
 if __name__ == "__main__":

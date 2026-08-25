@@ -14,6 +14,7 @@ import json
 import math
 import os
 from pathlib import Path
+import time
 from typing import Dict, Mapping
 
 import numpy as np
@@ -72,6 +73,25 @@ def _signed_aabb_margin(position_xy, bars_xy, half_xy, lo_xy, hi_xy):
     return torch.minimum(wall, obstacle)
 
 
+def _signed_aabb_margin_reason(position_xy, bars_xy, half_xy, lo_xy, hi_xy):
+    """Return signed margin and stable reason (wall 1..4, bar 1000+index)."""
+    wall_values = torch.stack(
+        (position_xy[:, 0] - lo_xy[:, 0], hi_xy[:, 0] - position_xy[:, 0],
+         position_xy[:, 1] - lo_xy[:, 1], hi_xy[:, 1] - position_xy[:, 1]), dim=1
+    )
+    wall, wall_index = wall_values.min(dim=1)
+    wall_reason = wall_index.to(torch.int16) + 1
+    if bars_xy.shape[1] == 0:
+        return wall, wall_reason
+    delta = (position_xy.unsqueeze(1) - bars_xy).abs() - half_xy
+    inside = (delta <= 0.0).all(dim=2)
+    per_bar = torch.where(inside, delta.amax(dim=2), delta.clamp(min=0.0).norm(dim=2))
+    obstacle, bar_index = per_bar.min(dim=1)
+    use_bar = obstacle <= wall
+    reason = torch.where(use_bar, bar_index.to(torch.int16) + 1000, wall_reason)
+    return torch.minimum(wall, obstacle), reason
+
+
 def _geometry_valid(position_xy, bars_xy, half_xy, lo_xy, hi_xy):
     valid = torch.isfinite(position_xy).all(dim=1)
     valid &= torch.isfinite(lo_xy).all(dim=1) & torch.isfinite(hi_xy).all(dim=1)
@@ -83,14 +103,14 @@ def _geometry_valid(position_xy, bars_xy, half_xy, lo_xy, hi_xy):
     return valid
 
 
-def _segments_hit_closed_aabb(p0, p1, bars, half):
+def _segments_hit_closed_aabb(p0, p1, bars, half, hard_epsilon_m=HARD_EPSILON_M):
     """Vectorized [N,C] continuous segment/AABB intersection."""
     if bars.shape[1] == 0:
         return torch.zeros(p0.shape[:2], dtype=torch.bool, device=p0.device)
     start = p0.unsqueeze(2)
     direction = (p1 - p0).unsqueeze(2)
-    box_lo = bars.unsqueeze(1) - half.unsqueeze(1) - HARD_EPSILON_M
-    box_hi = bars.unsqueeze(1) + half.unsqueeze(1) + HARD_EPSILON_M
+    box_lo = bars.unsqueeze(1) - half.unsqueeze(1) - float(hard_epsilon_m)
+    box_hi = bars.unsqueeze(1) + half.unsqueeze(1) + float(hard_epsilon_m)
     parallel = direction.abs() <= 1e-9
     parallel_inside = (~parallel) | ((start >= box_lo) & (start <= box_hi))
     safe_direction = torch.where(parallel, torch.ones_like(direction), direction)
@@ -124,8 +144,9 @@ def _candidate_metrics(call_args, call_kwargs, selected_velocity):
     speed_limit = values["speed_limit"]
     dt = float(values["dt"])
     bars = values["bars_xy"]
-    lo = values["lo"] + HARD_EPSILON_M
-    hi = values["hi"] - HARD_EPSILON_M
+    hard_epsilon = float(values.get("hard_epsilon_m", HARD_EPSILON_M))
+    lo = values["lo"]
+    hi = values["hi"]
     half = values.get("bars_half_extents_xy")
     max_accel = values["max_accel"]
     max_turn = values["max_turn_rate"]
@@ -170,21 +191,24 @@ def _candidate_metrics(call_args, call_kwargs, selected_velocity):
         pos = prior + vel * dt
         if step == 0:
             first_velocity = vel.clone()
-        endpoint_safe = ((pos > lo[:, None]) & (pos < hi[:, None])).all(dim=2)
-        segment_safe = ~_segments_hit_closed_aabb(prior, pos, bars, half)
+        # The runtime passes the already support-aware bounds and a frozen hard epsilon. Keep the
+        # same non-strict wall convention as the core; AABB inflation carries epsilon+tube.
+        endpoint_safe = ((pos >= lo[:, None]) & (pos <= hi[:, None])).all(dim=2)
+        segment_safe = ~_segments_hit_closed_aabb(
+            prior, pos, bars, half, hard_epsilon_m=hard_epsilon
+        )
         alive &= endpoint_safe & segment_safe
         prefix += alive.to(torch.int16)
     difference = ((first_velocity - selected_velocity[:, None]) ** 2).sum(dim=2)
     chosen = difference.argmin(dim=1)
     rows = torch.arange(n, device=old_xy.device)
-    if bool((difference[rows, chosen] > 1e-8).any()):
-        raise RuntimeError("cannot bind selected CONNECT command to candidate set")
     return {
         "old_xy": old_xy.detach().clone(),
         "count": count,
         "horizon": steps,
         "safe_prefix": prefix[rows, chosen],
         "full_horizon_safe": alive[rows, chosen],
+        "selected_binding_error": difference[rows, chosen] > 1e-8,
     }
 
 
@@ -219,6 +243,23 @@ class RecoveryPackedObserver:
         if self.steps <= 0 or self.physics_substeps <= 0 or self.envs <= 0:
             raise ValueError("observer dimensions must be positive")
         self.route_enabled = bool(getattr(task, "_target_route_recovery_enabled", False))
+        from aerial_gym.task.navrl_task.target_route_planner import (
+            TARGET_ROUTE_HARD_EPSILON_M,
+            TARGET_ROUTE_REACHABLE_TUBE_MARGIN_M,
+        )
+        box = [float(value) for value in task.tm.physical_box_xyz]
+        declared_support = 0.5 * math.sqrt(sum(value * value for value in box))
+        self.support_xy = torch.full(
+            (self.envs, 2), declared_support, dtype=task.target_position.dtype,
+            device=self.device,
+        )
+        self.hard_reserve_m = float(
+            TARGET_ROUTE_HARD_EPSILON_M + TARGET_ROUTE_REACHABLE_TUBE_MARGIN_M
+        )
+        measured_stop = os.environ.get("NAVRL_TARGET_RECOVERY_STOP_DISTANCE_P95_M", "")
+        self.measured_stop_distance_p95_m = (
+            float(measured_stop) if self.route_enabled and measured_stop else float("nan")
+        )
         self.interval = -1
         self.substep = 0
         self._in_advance = False
@@ -236,7 +277,11 @@ class RecoveryPackedObserver:
         self.i16 = {
             name: torch.full(shape, -1, dtype=torch.int16, device=self.device)
             for name in (
-                "state_before", "state_after", "age_before", "age_after", "status_after",
+                "state_before", "state_after", "age_before", "age_after", "brake_age_before",
+                "brake_age_after", "connect_age_before", "connect_age_after",
+                "connect_timeout_steps", "status_after",
+                "hard_reason_before", "soft_reason_before", "hard_reason_after",
+                "soft_reason_after",
                 "anchor_cell_i", "anchor_cell_j", "candidate_count", "candidate_horizon_steps",
                 "candidate_safe_prefix_steps", "candidate_full_horizon_safe",
             )
@@ -246,7 +291,7 @@ class RecoveryPackedObserver:
             for name in (
                 "entry_delta", "resume_delta", "no_connector_delta", "hard_breach_delta",
                 "timeout_event", "direct_position_write", "reset_call_during_advance",
-                "runner_reset_after_interval",
+                "runner_reset_after_interval", "candidate_binding_error",
             )
         }
         self.f32 = {
@@ -255,13 +300,13 @@ class RecoveryPackedObserver:
                 "hard_margin_before_m", "soft_margin_before_m", "hard_margin_after_m",
                 "soft_margin_after_m", "speed_before_mps", "speed_after_mps",
                 "stop_distance_m", "stop_margin_m", "anchor_distance_m",
-                "connector_clearance_m",
+                "anchor_distance_after_m", "connector_clearance_m", "formula_stop_distance_m",
             )
         }
         self.xy = {
             name: torch.full(shape + (2,), float("nan"), dtype=torch.float32, device=self.device)
             for name in ("position_before_xy", "position_after_xy", "velocity_before_xy",
-                         "velocity_after_xy", "command_xy", "anchor_xy")
+                         "velocity_after_xy", "command_xy", "anchor_xy", "anchor_before_xy")
         }
         self.sub_f32 = {
             name: torch.full(subshape, float("nan"), dtype=torch.float32, device=self.device)
@@ -277,6 +322,13 @@ class RecoveryPackedObserver:
         self._before_position = None
         self._before_counters = None
         self._exact_calls = []
+        self._candidate_event_pairs = []
+        self._candidate_cpu_s = 0.0
+        self._candidate_calls = 0
+        self._connector_cpu_s = 0.0
+        self._connector_clearance_cache = torch.full(
+            (self.envs,), float("nan"), dtype=torch.float32, device=self.device
+        )
         self._install_candidate_probe()
 
     def _install_candidate_probe(self):
@@ -289,7 +341,19 @@ class RecoveryPackedObserver:
             if not exact and len(args) >= 15:
                 exact = bool(args[14])
             if exact:
-                self._exact_calls.append(_candidate_metrics(args, kwargs, result[1]))
+                self._candidate_calls += 1
+                if self.device.type == "cuda":
+                    start = torch.cuda.Event(enable_timing=True)
+                    end = torch.cuda.Event(enable_timing=True)
+                    start.record()
+                    details = _candidate_metrics(args, kwargs, result[1])
+                    end.record()
+                    self._candidate_event_pairs.append((start, end))
+                else:
+                    started = time.perf_counter()
+                    details = _candidate_metrics(args, kwargs, result[1])
+                    self._candidate_cpu_s += time.perf_counter() - started
+                self._exact_calls.append(details)
             return result
 
         self._task_module.bounded_drone_target_step = observed
@@ -327,6 +391,17 @@ class RecoveryPackedObserver:
             return torch.full((self.envs,), -1, dtype=torch.int16, device=self.device)
         return self.task._target_route_manager.recovery_age_steps.to(torch.int16)
 
+    def _phase_ages(self):
+        if not self.route_enabled:
+            missing = torch.full((self.envs,), -1, dtype=torch.int16, device=self.device)
+            return missing, missing, missing
+        manager = self.task._target_route_manager
+        return (
+            manager.recovery_brake_age_steps.to(torch.int16),
+            manager.recovery_connect_age_steps.to(torch.int16),
+            manager.recovery_connect_timeout_steps.to(torch.int16),
+        )
+
     def _status(self):
         if self.task._target_route_manager is None:
             return torch.full((self.envs,), -1, dtype=torch.int16, device=self.device)
@@ -334,10 +409,12 @@ class RecoveryPackedObserver:
 
     def _counters(self):
         if not self.route_enabled:
-            return (0, 0, 0, 0)
+            return tuple(
+                torch.zeros((), dtype=torch.long, device=self.device) for _ in range(4)
+            )
         manager = self.task._target_route_manager
         return tuple(
-            int(value.item())
+            value.detach().clone()
             for value in (
                 manager.recovery_entries, manager.recovery_route_resumes,
                 manager.recovery_no_connector_count, manager.recovery_hard_breach_count,
@@ -345,38 +422,58 @@ class RecoveryPackedObserver:
         )
 
     def _geometry(self, position_xy):
-        if not self.route_enabled:
-            nan = torch.full((self.envs,), float("nan"), device=self.device)
-            return nan, nan
         bars = self.task.obs_dict["obstacle_position"][
             :, self.task._bar_offset:self.task._bar_offset + self.task.n_bars_active, :2
         ]
         half = self.task.obs_dict["asset_collision_half_extents"][
             :, self.task._bar_offset:self.task._bar_offset + self.task.n_bars_active, :2
         ]
-        support = self.task._target_route_support_xy
-        hard_free, soft_free, soft_margin, hard_margin, _, _, _ = (
-            self.task._route_recovery_geometry(position_xy, bars, half, support)
+        bounds_lo = self.task.obs_dict["env_bounds_min"][:, :2]
+        bounds_hi = self.task.obs_dict["env_bounds_max"][:, :2]
+        wall = float(self.task.cur.wall_margin)
+        hard_lo = bounds_lo + wall + self.support_xy + self.hard_reserve_m
+        hard_hi = bounds_hi - wall - self.support_xy - self.hard_reserve_m
+        hard_half = half + self.support_xy.unsqueeze(1) + self.hard_reserve_m
+        soft_wall = wall + float(self.task.tm.physical_boundary_margin)
+        soft_lo = bounds_lo + soft_wall + self.support_xy
+        soft_hi = bounds_hi - soft_wall - self.support_xy
+        soft_half = (
+            half + self.support_xy.unsqueeze(1)
+            + float(self.task.tm.physical_tracking_margin) + self.hard_reserve_m
         )
-        # Preserve the signed values; booleans are independently reconstructable from <=0.
-        del hard_free, soft_free
-        return hard_margin, soft_margin
+        hard, hard_reason = _signed_aabb_margin_reason(
+            position_xy, bars, hard_half, hard_lo, hard_hi
+        )
+        soft, soft_reason = _signed_aabb_margin_reason(
+            position_xy, bars, soft_half, soft_lo, soft_hi
+        )
+        return hard, soft, hard_reason, soft_reason
 
     def begin_interval(self, interval: int):
         if interval != self.interval + 1 or not 0 <= interval < self.steps:
             raise RuntimeError("non-monotone observer interval")
         self.interval = interval
         self.substep = 0
-        pos = self.task.target_position[:, :2].detach()
-        vel = self.task.target_vel_w[:, :2].detach()
-        hard, soft = self._geometry(pos)
+        pos = self.ctrl.position[:, :2].detach()
+        vel = self.ctrl.linvel[:, :2].detach()
+        hard, soft, hard_reason, soft_reason = self._geometry(pos)
         self.i16["state_before"][interval] = self._state()
         self.i16["age_before"][interval] = self._age()
+        brake_age, connect_age, connect_timeout = self._phase_ages()
+        self.i16["brake_age_before"][interval] = brake_age
+        self.i16["connect_age_before"][interval] = connect_age
+        self.i16["connect_timeout_steps"][interval] = connect_timeout
+        self.i16["hard_reason_before"][interval] = hard_reason
+        self.i16["soft_reason_before"][interval] = soft_reason
         self.f32["hard_margin_before_m"][interval] = hard
         self.f32["soft_margin_before_m"][interval] = soft
         self.f32["speed_before_mps"][interval] = vel.norm(dim=1)
         self.xy["position_before_xy"][interval] = pos
         self.xy["velocity_before_xy"][interval] = vel
+        if self.route_enabled:
+            self.xy["anchor_before_xy"][interval] = (
+                self.task._target_route_manager.recovery_anchor.detach()
+            )
         self._before_position = pos.clone()
         self._before_counters = self._counters()
         self.ctrl.begin_control_interval()
@@ -391,12 +488,16 @@ class RecoveryPackedObserver:
         finally:
             self._in_advance = False
         row = self.interval
-        after_direct = self.task.target_position[:, :2].detach()
+        after_direct = self.ctrl.position[:, :2].detach()
         changed = (after_direct != self._before_position).any(dim=1)
         self.i32["direct_position_write"][row] = changed.to(torch.int32)
         self.i32["reset_call_during_advance"][row] = self._reset_calls_in_advance[row]
         self.i16["state_after"][row] = self._state()
         self.i16["age_after"][row] = self._age()
+        brake_age, connect_age, connect_timeout = self._phase_ages()
+        self.i16["brake_age_after"][row] = brake_age
+        self.i16["connect_age_after"][row] = connect_age
+        self.i16["connect_timeout_steps"][row] = connect_timeout
         self.i16["status_after"][row] = self._status()
         after = self._counters()
         for name, before, final in zip(
@@ -404,12 +505,15 @@ class RecoveryPackedObserver:
             self._before_counters, after,
         ):
             delta = final - before
-            if delta < 0:
-                raise RuntimeError("recovery counter decreased: %s" % name)
             # Scalar event counts are retained in env slot zero; the summary denominator is explicit.
-            self.i32[name][row, 0] = delta
+            self.i32[name][row, 0] = delta.to(torch.int32)
+        # Count the transition event once.  STATUS_TIMEOUT remains latched while the manager is
+        # in NO_CONNECTOR, so counting status alone would turn one timeout into every remaining
+        # interval in the cell.
         self.i32["timeout_event"][row] = (
-            self.i16["status_after"][row] == STATUS_TIMEOUT
+            (self.i16["state_after"][row] == STATE_NO_CONNECTOR)
+            & (self.i16["state_before"][row] != STATE_NO_CONNECTOR)
+            & (self.i16["status_after"][row] == STATUS_TIMEOUT)
         ).to(torch.int32)
         self.xy["command_xy"][row] = self.ctrl.velocity_command[:, :2]
 
@@ -421,6 +525,50 @@ class RecoveryPackedObserver:
             active = self.i16["state_after"][row] == STATE_CONNECT
             self.f32["anchor_distance_m"][row] = torch.where(
                 active, distance, torch.full_like(distance, float("nan"))
+            )
+            new_connector = active & (self.i16["state_before"][row] != STATE_CONNECT)
+            if bool(new_connector.any()):
+                connector_started = time.perf_counter()
+                from aerial_gym.task.navrl_task.target_route_planner import _segment_aabb_distance
+
+                bars = self.task.obs_dict["obstacle_position"][
+                    :, self.task._bar_offset:self.task._bar_offset + self.task.n_bars_active, :2
+                ]
+                raw_half = self.task.obs_dict["asset_collision_half_extents"][
+                    :, self.task._bar_offset:self.task._bar_offset + self.task.n_bars_active, :2
+                ]
+                _, _, _, _, hard_lo, hard_hi, hard_half = self.task._route_recovery_geometry(
+                    self._before_position, bars, raw_half, self.task._target_route_support_xy
+                )
+                ids = new_connector.nonzero(as_tuple=False).squeeze(-1)
+                selected = [
+                    value[ids].detach().cpu().numpy()
+                    for value in (
+                        self._before_position, anchor, bars, hard_half, hard_lo, hard_hi,
+                    )
+                ]
+                starts, anchors, bar_rows, half_rows, lows, highs = selected
+                clearances = []
+                for start, endpoint, centers, extents, low, high in zip(
+                    starts, anchors, bar_rows, half_rows, lows, highs
+                ):
+                    obstacle = min(
+                        (_segment_aabb_distance(start, endpoint, center - extent, center + extent)
+                         for center, extent in zip(centers, extents)),
+                        default=float("inf"),
+                    )
+                    boundary = min(
+                        float(np.minimum(start - low, high - start).min()),
+                        float(np.minimum(endpoint - low, high - endpoint).min()),
+                    )
+                    clearances.append(min(obstacle, boundary))
+                self._connector_clearance_cache[ids] = torch.as_tensor(
+                    clearances, dtype=torch.float32, device=self.device
+                )
+                self._connector_cpu_s += time.perf_counter() - connector_started
+            self.f32["connector_clearance_m"][row] = torch.where(
+                active, self._connector_clearance_cache,
+                torch.full_like(self._connector_clearance_cache, float("nan")),
             )
             lo = self.task.obs_dict["env_bounds_min"][:, :2]
             resolution = float(self.task.tm.route_resolution_m)
@@ -445,10 +593,13 @@ class RecoveryPackedObserver:
                 distance_to_global = torch.cdist(details["old_xy"], self._before_position)
                 global_ids = distance_to_global.argmin(dim=1)
                 rows = torch.arange(len(global_ids), device=self.device)
-                if bool((distance_to_global[rows, global_ids] > 1e-7).any()):
-                    raise RuntimeError("cannot bind CONNECT telemetry rows to task environments")
-                if len(torch.unique(global_ids)) != len(global_ids):
-                    raise RuntimeError("CONNECT telemetry environment binding is not unique")
+                counts = torch.bincount(global_ids, minlength=self.envs)
+                binding_error = (
+                    (distance_to_global[rows, global_ids] > 1e-7)
+                    | (counts[global_ids] != 1)
+                    | details["selected_binding_error"]
+                )
+                self.i32["candidate_binding_error"][row, global_ids] = binding_error.to(torch.int32)
                 self.i16["candidate_count"][row, global_ids] = int(details["count"])
                 self.i16["candidate_horizon_steps"][row, global_ids] = int(details["horizon"])
                 self.i16["candidate_safe_prefix_steps"][row, global_ids] = details["safe_prefix"]
@@ -456,30 +607,41 @@ class RecoveryPackedObserver:
                     details["full_horizon_safe"].to(torch.int16)
                 )
 
-        speed = self.task.target_vel_w[:, :2].norm(dim=1)
+        speed = self.ctrl.linvel[:, :2].norm(dim=1)
         decel = float(getattr(self.task.tm, "recovery_brake_decel_p05", 0.0))
-        stop = speed.square() / (2.0 * decel) if math.isfinite(decel) and decel > 0 else torch.full_like(speed, float("nan"))
-        self.f32["stop_distance_m"][row] = stop
-        self.f32["stop_margin_m"][row] = self.f32["hard_margin_before_m"][row] - stop
+        formula = speed.square() / (2.0 * decel) if math.isfinite(decel) and decel > 0 else torch.full_like(speed, float("nan"))
+        measured = torch.full_like(speed, self.measured_stop_distance_p95_m)
+        self.f32["formula_stop_distance_m"][row] = formula
+        self.f32["stop_distance_m"][row] = measured
+        self.f32["stop_margin_m"][row] = self.f32["hard_margin_before_m"][row] - measured
 
     def record_substep(self):
         if self.interval < 0 or self.substep >= self.physics_substeps:
             raise RuntimeError("unexpected physics callback count")
         i, j = self.interval, self.substep
         pos = self.ctrl.position[:, :2]
-        bars = self.ctrl.watchdog_bars
-        half = self.ctrl.watchdog_half
-        lo = self.ctrl.watchdog_lo
-        hi = self.ctrl.watchdog_hi
-        if bars is None:
-            margin = torch.full((self.envs,), float("nan"), device=self.device)
-            valid = torch.zeros((self.envs,), dtype=torch.bool, device=self.device)
-        else:
-            margin = _signed_aabb_margin(pos, bars, half, lo, hi)
-            valid = _geometry_valid(pos, bars, half, lo, hi)
+        margin, _, _, _ = self._geometry(pos)
+        bars = self.task.obs_dict["obstacle_position"][
+            :, self.task._bar_offset:self.task._bar_offset + self.task.n_bars_active, :2
+        ]
+        raw_half = self.task.obs_dict["asset_collision_half_extents"][
+            :, self.task._bar_offset:self.task._bar_offset + self.task.n_bars_active, :2
+        ]
+        lo = (
+            self.task.obs_dict["env_bounds_min"][:, :2] + float(self.task.cur.wall_margin)
+            + self.support_xy + self.hard_reserve_m
+        )
+        hi = (
+            self.task.obs_dict["env_bounds_max"][:, :2] - float(self.task.cur.wall_margin)
+            - self.support_xy - self.hard_reserve_m
+        )
+        hard_half = raw_half + self.support_xy.unsqueeze(1) + self.hard_reserve_m
+        valid = _geometry_valid(pos, bars, hard_half, lo, hi)
+        geometry_invalid = getattr(self.ctrl, "watchdog_geometry_invalid", None)
+        if geometry_invalid is not None and self.route_enabled:
+            valid &= ~geometry_invalid
         self.sub_f32["hard_margin_m"][i, j] = margin
-        support = float(self.task._target_route_support_xy[0, 0]) if self.route_enabled else float("nan")
-        self.sub_f32["support_xy_m"][i, j] = support
+        self.sub_f32["support_xy_m"][i, j] = self.support_xy[:, 0]
         self.sub_f32["contact_force_n"][i, j] = self.ctrl.contact_force.norm(dim=1)
         self.sub_f32["velocity_error_mps"][i, j] = self.ctrl.last_velocity_error.norm(dim=1)
         self.sub_f32["tilt_deg"][i, j] = torch.rad2deg(self.ctrl.last_tilt_rad)
@@ -499,19 +661,29 @@ class RecoveryPackedObserver:
                 "physics callback count drift: %d != %d" % (self.substep, self.physics_substeps)
             )
         i = self.interval
-        pos = self.task.target_position[:, :2].detach()
-        vel = self.task.target_vel_w[:, :2].detach()
-        hard, soft = self._geometry(pos)
+        pos = self.ctrl.position[:, :2].detach()
+        vel = self.ctrl.linvel[:, :2].detach()
+        hard, soft, hard_reason, soft_reason = self._geometry(pos)
         self.f32["hard_margin_after_m"][i] = hard
         self.f32["soft_margin_after_m"][i] = soft
+        self.i16["hard_reason_after"][i] = hard_reason
+        self.i16["soft_reason_after"][i] = soft_reason
         self.f32["speed_after_mps"][i] = vel.norm(dim=1)
         self.xy["position_after_xy"][i] = pos
         self.xy["velocity_after_xy"][i] = vel
+        if self.route_enabled:
+            anchor = self.task._target_route_manager.recovery_anchor.detach()
+            active = self.i16["state_after"][i] == STATE_CONNECT
+            distance = (anchor - pos).norm(dim=1)
+            self.f32["anchor_distance_after_m"][i] = torch.where(
+                active, distance, torch.full_like(distance, float("nan"))
+            )
 
     def mark_runner_reset(self, env_ids):
         if self.interval < 0:
             raise RuntimeError("runner reset before interval")
         self.i32["runner_reset_after_interval"][self.interval, env_ids] += 1
+        self._connector_clearance_cache[env_ids] = float("nan")
 
     def write(self, path: Path, metadata: Mapping[str, object]) -> Dict[str, object]:
         if self.interval + 1 != self.steps:
@@ -521,6 +693,10 @@ class RecoveryPackedObserver:
             for name, tensor in collection.items():
                 arrays[name] = tensor.detach().cpu().contiguous().numpy()
         meta = dict(metadata)
+        candidate_ms = 1000.0 * self._candidate_cpu_s
+        if self._candidate_event_pairs:
+            torch.cuda.synchronize(self.device)
+            candidate_ms += sum(start.elapsed_time(end) for start, end in self._candidate_event_pairs)
         meta.update({
             "schema": SCHEMA,
             "steps": self.steps,
@@ -533,8 +709,20 @@ class RecoveryPackedObserver:
                 "connect": STATE_CONNECT, "route": STATE_ROUTE,
                 "no_connector": STATE_NO_CONNECTOR,
             },
+            "status_codes": {
+                "recovery_no_connector": 19, "recovery_hard_breach": 20,
+                "recovery_local_infeasible_soft_free": 21, "recovery_timeout": 22,
+            },
+            "geometry_reason_codes": {
+                "wall_x_min": 1, "wall_x_max": 2, "wall_y_min": 3, "wall_y_max": 4,
+                "bar_index": "1000 + zero_based_active_bar_index",
+            },
             "missing_int16": -1,
             "missing_float": "NaN",
+            "measured_stop_distance_p95_m": self.measured_stop_distance_p95_m,
+            "candidate_recompute_calls": self._candidate_calls,
+            "candidate_recompute_device_ms": candidate_ms,
+            "connector_observer_cpu_ms": 1000.0 * self._connector_cpu_s,
         })
         arrays["metadata_json_u8"] = np.frombuffer(
             json.dumps(meta, sort_keys=True, separators=(",", ":")).encode("utf-8"),
@@ -553,12 +741,19 @@ def load_and_verify(path: Path, expected_sha256: str = "") -> Dict[str, object]:
         raise RuntimeError("telemetry artifact SHA256 mismatch")
     with np.load(str(path), allow_pickle=False) as payload:
         required = {
-            "state_before", "state_after", "age_before", "age_after", "status_after",
+            "state_before", "state_after", "age_before", "age_after", "brake_age_before",
+            "brake_age_after", "connect_age_before", "connect_age_after",
+            "connect_timeout_steps", "status_after",
+            "hard_reason_before", "soft_reason_before", "hard_reason_after", "soft_reason_after",
             "hard_margin_before_m", "soft_margin_before_m", "hard_margin_after_m",
             "soft_margin_after_m", "position_before_xy", "position_after_xy", "command_xy",
+            "stop_distance_m", "formula_stop_distance_m", "stop_margin_m",
             "direct_position_write", "reset_call_during_advance", "runner_reset_after_interval",
             "candidate_count", "candidate_horizon_steps", "candidate_safe_prefix_steps",
-            "candidate_full_horizon_safe",
+            "candidate_full_horizon_safe", "timeout_event", "entry_delta", "resume_delta",
+            "no_connector_delta", "hard_breach_delta", "connector_clearance_m",
+            "candidate_binding_error", "anchor_xy", "anchor_before_xy", "anchor_distance_m",
+            "anchor_distance_after_m", "anchor_cell_i", "anchor_cell_j",
             "hard_margin_m", "contact_force_n", "geometry_valid", "obb_valid",
             "motor_saturated", "watchdog_breach", "metadata_json_u8",
         }
@@ -595,6 +790,10 @@ def load_and_verify(path: Path, expected_sha256: str = "") -> Dict[str, object]:
         # starts NORMAL and is therefore excluded from cross-interval transition accounting.
         if not bool(allowed.all()):
             raise RuntimeError("illegal within-interval recovery transition")
+        if steps > 1:
+            cross_allowed = runner_reset[:-1] | (after[:-1] == before[1:])
+            if not bool(cross_allowed.all()):
+                raise RuntimeError("illegal cross-interval recovery transition")
         direct_writes = int(payload["direct_position_write"].sum())
         reset_calls = int(payload["reset_call_during_advance"].sum())
         if direct_writes != 0 or reset_calls != 0:
@@ -607,14 +806,106 @@ def load_and_verify(path: Path, expected_sha256: str = "") -> Dict[str, object]:
                 raise RuntimeError("CONNECT horizon missing")
             if (payload["candidate_safe_prefix_steps"][active] < 0).any():
                 raise RuntimeError("CONNECT safe-prefix hook missing")
+            if (payload["candidate_full_horizon_safe"][active] != 1).any():
+                raise RuntimeError("CONNECT selected command lacks full-horizon certificate")
+            if (payload["candidate_safe_prefix_steps"][active]
+                    != payload["candidate_horizon_steps"][active]).any():
+                raise RuntimeError("CONNECT selected command safe-prefix is incomplete")
+            if not np.isfinite(payload["connector_clearance_m"][active]).all():
+                raise RuntimeError("CONNECT connector clearance missing/nonfinite")
+            if (payload["connector_clearance_m"][active] <= 0.0).any():
+                raise RuntimeError("CONNECT connector is not hard-safe")
+            if (payload["connect_age_after"][active] < 0).any():
+                raise RuntimeError("CONNECT age missing")
+            if (payload["connect_timeout_steps"][active] <= 0).any():
+                raise RuntimeError("CONNECT timeout budget missing")
+            for field in ("anchor_distance_m", "anchor_xy"):
+                if not np.isfinite(payload[field][active]).all():
+                    raise RuntimeError("CONNECT %s is missing/nonfinite" % field)
+            if (payload["anchor_cell_i"][active] < 0).any() or (payload["anchor_cell_j"][active] < 0).any():
+                raise RuntimeError("CONNECT anchor cell is missing")
+            if (payload["candidate_binding_error"][active] != 0).any():
+                raise RuntimeError("CONNECT candidate/environment binding is ambiguous")
+            if not np.isfinite(payload["anchor_distance_after_m"][active]).all():
+                raise RuntimeError("CONNECT post-physics anchor distance is missing")
+            if (payload["anchor_distance_after_m"][active]
+                    > payload["anchor_distance_m"][active] + 1e-5).any():
+                raise RuntimeError("CONNECT made negative fixed-anchor progress")
+            continuing = active & (before == STATE_CONNECT)
+            if continuing.any() and not np.allclose(
+                payload["anchor_before_xy"][continuing], payload["anchor_xy"][continuing],
+                rtol=0.0, atol=1e-7,
+            ):
+                raise RuntimeError("CONNECT anchor changed within an interval")
+            if steps > 1:
+                carried = active[1:] & active[:-1] & ~runner_reset[:-1]
+                if carried.any() and not np.allclose(
+                    payload["anchor_xy"][1:][carried], payload["anchor_xy"][:-1][carried],
+                    rtol=0.0, atol=1e-7,
+                ):
+                    raise RuntimeError("CONNECT anchor changed across intervals")
+            speed = float(metadata.get("speed_mps", float("nan")))
+            expected_connect_timeout = int(math.ceil((
+                math.sqrt(2.0) * 3.5 * 0.25 / max(speed, 0.10)
+                + max(speed, 0.10) / 4.0
+                + math.pi / math.radians(150.0) + 0.20
+            ) / 0.1))
+            if (payload["connect_timeout_steps"][active] != expected_connect_timeout).any():
+                raise RuntimeError("CONNECT timeout budget differs from frozen derivation")
+        brake = after == STATE_BRAKE
+        if brake.any() and (payload["brake_age_after"][brake] < 0).any():
+            raise RuntimeError("BRAKE age is missing")
+        brake_timeout = int(metadata.get("brake_timeout_steps", 0))
+        if brake.any() and (brake_timeout <= 0 or (payload["brake_age_after"][brake] > brake_timeout).any()):
+            raise RuntimeError("BRAKE timeout budget/age drift")
+        recovery_active = np.isin(after, [STATE_BRAKE, STATE_CONNECT])
+        if recovery_active.any() and (payload["age_after"][recovery_active] <= 0).any():
+            raise RuntimeError("recovery age is missing/nonpositive")
+        for field in ("hard_reason_before", "soft_reason_before", "hard_reason_after", "soft_reason_after"):
+            if (payload[field] <= 0).any():
+                raise RuntimeError("hard/soft geometry reason is missing: %s" % field)
+        recovery_arm = metadata.get("route_mode") == "global_astar_recovery_v2"
+        if recovery_arm:
+            registered_stop = float(metadata.get("measured_stop_distance_p95_m", float("nan")))
+            if not math.isfinite(registered_stop) or registered_stop < 0.0:
+                raise RuntimeError("measured p95 stop distance is missing")
+            if not np.allclose(payload["stop_distance_m"], registered_stop, rtol=0.0, atol=1e-7):
+                raise RuntimeError("per-cell measured p95 stop distance drift")
+            if (payload["formula_stop_distance_m"] + 1e-7 < payload["stop_distance_m"]).any():
+                raise RuntimeError("p05 formula does not dominate measured p95 stop distance")
         if not np.isfinite(payload["hard_margin_m"]).all():
             raise RuntimeError("substep hard margin is nonfinite")
-        if not (payload["geometry_valid"] == 1).all() or not (payload["obb_valid"] == 1).all():
-            raise RuntimeError("geometry/OBB validity gate failed")
+        if not (payload["geometry_valid"] == 1).all():
+            raise RuntimeError("geometry validity gate failed")
+        if not (payload["obb_valid"] == 1).all():
+            raise RuntimeError("OBB validity gate failed")
         no_connector = after == STATE_NO_CONNECTOR
         nonzero_no_connector = np.linalg.norm(payload["command_xy"], axis=2) > 1e-7
         if bool((no_connector & nonzero_no_connector).any()):
             raise RuntimeError("NO_CONNECTOR emitted nonzero planar command")
+        new_no_connector = (after == STATE_NO_CONNECTOR) & (before != STATE_NO_CONNECTOR)
+        scalar_no_connector = int(payload["no_connector_delta"][:, 0].sum())
+        if int(new_no_connector.sum()) != scalar_no_connector:
+            raise RuntimeError("no-connector event/aggregate partition mismatch")
+        reason_codes = payload["status_after"][new_no_connector]
+        allowed_reasons = np.asarray([19, 20, 21, 22], dtype=np.int16)
+        if reason_codes.size and not np.isin(reason_codes, allowed_reasons).all():
+            raise RuntimeError("unknown no-connector reason")
+        expected_timeout = new_no_connector & (payload["status_after"] == STATUS_TIMEOUT)
+        if not np.array_equal(payload["timeout_event"] > 0, expected_timeout):
+            raise RuntimeError("timeout event is not the unique NO_CONNECTOR transition")
+        entries = int(payload["entry_delta"][:, 0].sum())
+        resumes = int(payload["resume_delta"][:, 0].sum())
+        active_recovery = np.isin(after, [STATE_BRAKE, STATE_CONNECT])
+        reset_active = int((runner_reset & active_recovery).sum())
+        current_open = int((active_recovery[-1] & ~runner_reset[-1]).sum())
+        open_entries = entries - resumes - scalar_no_connector - reset_active
+        if open_entries != current_open:
+            raise RuntimeError(
+                "recovery entry outcome partition mismatch: entries=%d resumes=%d "
+                "no_connector=%d reset_active=%d open=%d expected_open=%d"
+                % (entries, resumes, scalar_no_connector, reset_active, open_entries, current_open)
+            )
         return {
             "schema": SCHEMA,
             "sha256": actual,
@@ -623,14 +914,22 @@ def load_and_verify(path: Path, expected_sha256: str = "") -> Dict[str, object]:
             "physics_substeps": substeps,
             "interval_denominator": steps * envs,
             "substep_denominator": steps * substeps * envs,
-            "recovery_entries": int(payload["entry_delta"][:, 0].sum()),
-            "route_resumes": int(payload["resume_delta"][:, 0].sum()),
-            "no_connector_events": int(payload["no_connector_delta"][:, 0].sum()),
+            "recovery_entries": entries,
+            "route_resumes": resumes,
+            "no_connector_events": scalar_no_connector,
+            "runner_reset_during_recovery": reset_active,
+            "open_recoveries_at_cell_end": open_entries,
+            "no_connector_reason_counts": {
+                str(code): int((reason_codes == code).sum()) for code in allowed_reasons.tolist()
+            },
             "hard_breach_events": int(payload["hard_breach_delta"][:, 0].sum()),
             "timeout_env_intervals": int(payload["timeout_event"].sum()),
             "watchdog_breach_substeps": int(payload["watchdog_breach"].sum()),
             "contact_substeps": int((payload["contact_force_n"] > 0.05).sum()),
             "runner_reset_envs": int(runner_reset.sum()),
+            "candidate_recompute_calls": int(metadata.get("candidate_recompute_calls", 0)),
+            "candidate_recompute_device_ms": float(metadata.get("candidate_recompute_device_ms", 0.0)),
+            "connector_observer_cpu_ms": float(metadata.get("connector_observer_cpu_ms", 0.0)),
             "direct_position_writes": direct_writes,
             "reset_calls_during_advance": reset_calls,
         }
