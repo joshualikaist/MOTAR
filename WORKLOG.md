@@ -12653,3 +12653,11 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
   the child exits. This is diagnostic-only and does not alter the preregistered convergence gate;
   the probe hash is re-pinned to
   `a4c74e16ac0e39093549925187a1c4d180800afe6dde1e1c1b22764a3aa71bbf`.
+
+### 2026-08-26 — measured 1.5 m/s warmup failure magnitude
+
+- A diagnostic-only 1.5 m/s child (not part of a finalized receipt) measured final speed
+  `min=1.441824`, `mean=1.442577`, `max=1.443260 m/s`; absolute error was
+  `min=0.056740`, `mean=0.057423`, `max=0.058176 m/s`. This is a small steady-state tracking
+  deficit, not divergence or collision. The frozen `0.05 m/s` convergence gate therefore remains
+  NO-GO; no tolerance/controller/speed parameter was changed.
