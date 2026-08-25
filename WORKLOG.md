@@ -12575,6 +12575,15 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
   source compilation pass. The first GPU launch attempt correctly failed closed because the old
   base commit was not an ancestor; no simulator or PPO step ran.
 
+### 2026-08-26 — target-motion attestation object fix
+
+- The live probe reached PhysX but rejected `physical_mass=None` because its attestation read
+  physical target fields from `task.task_config`; those fields are instantiated on `task.tm`.
+  The probe now attests the instantiated target-motion object without changing any physical value.
+  The probe source hash is re-pinned to
+  `d903ad80bec73e19117ebda42f37a5efadd012eed4126c6b566b78dfa7e0b52f`; no measurement was accepted
+  from the failed cell.
+
 ### 2026-08-26 — pinned ninja PATH handoff
 
 - The second probe attempt reached Isaac Gym but its child could not build `gymtorch`: exporting

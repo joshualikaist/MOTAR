@@ -334,7 +334,7 @@ def attest_instantiated_task(task: Any, expected_speed: Optional[float] = None) 
         ("physical_velocity_kp", "physical_velocity_kp"),
         ("physical_altitude_kp", "physical_altitude_kp"),
     ):
-        _exact_float(getattr(cfg, attr, None), FROZEN_CONTRACT[key], attr)
+        _exact_float(getattr(tm, attr, None), FROZEN_CONTRACT[key], "tm." + attr)
     for attr, key in (("physical_attitude_kp", "physical_attitude_kp"), ("physical_rate_kp", "physical_rate_kp")):
         actual = list(getattr(cfg, attr, ()))
         expected = FROZEN_CONTRACT[key]
