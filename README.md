@@ -57,7 +57,7 @@ attitude/rate torque → motor allocation → 100 Hz rigid-body physics` 순서�
 | Detector navigation A/B | learned-v2 vs analytic: **−0.0145 pp**, 95% CI `[−1.752, +1.723]` | preregistered −2 pp non-inferiority margin 통과 |
 | Historical static endpoint oracle | **333 / 333** selected 205-bar contact episodes had a spawn→final-target path | centre-disk oracle; global/random-pair/300-bar connectivity 및 동역학은 미포함 |
 | Camera-range diagnostic | never-acquired **8.443 → 3.172%**; capture **82.235 → 88.677%** | primary −15 pp gate 미달, 따라서 inconclusive |
-| Routed physical-target gate (attempt 2) | **32 / 32 integrity PASS; route mechanism FAIL; physical PPO BLOCKED** | 70 bars × 0.6 m/s: plan **14.55%** (gate 99%), fallback **35.93%** (gate 1%), **0.25 goals/env** (gate 0.5) |
+| Routed physical-target gate (attempt 2) | **32 / 32 integrity PASS; route mechanism FAIL; physical PPO BLOCKED** | 70-bar 4-speed pool: plan **14.55%** (gate 99%), fallback **35.93%** (gate 1%); 70 bars × 0.6 m/s: **0.25 goals/env** (gate 0.5) |
 | Hardware/software gate | software pipeline PASS · `SYNTHETIC_ONLY` | 실기 성능 아님 |
 
 현재 `navrl_ref5in_quad`는 1.20 kg, 220 mm motor diagonal, 0.28 m collision proxy를 가정한
@@ -137,13 +137,15 @@ An isolated candidate target-motion lineage now exists under model id
 `physx_ref5in_6dof_global_astar_aabb_v1`. It supplies exact-AABB, fail-closed global waypoints to
 the physical target controller; it is not a planner for the pursuer and no route information is
 an actor observation. Attempt 2 passed 32/32 execution-integrity checks, but the simulator route
-mechanism failed: at 70 bars × 0.6 m/s, plan success was 14.55%, fallback was 35.93%, and only
-0.25 goals/env completed (gates 99%, 1%, and 0.5). Repeated `unsafe_start` recovery trapped the
+mechanism failed: across the four 70-bar speed cells, pooled plan success was 14.55% and fallback
+was 35.93%; the 70 bars × 0.6 m/s cell completed only 0.25 goals/env (gates 99%, 1%, and 0.5).
+Repeated `unsafe_start` recovery trapped the
 route manager in a fail-closed zero-command fallback deadlock. Motor saturation, tilt, and contact
 gates passed, so they are not the supported explanation for this failure. Physical PPO remains
 blocked and no PPO policy was loaded for this mechanism gate. See the
 [frozen preregistration](docs/preregistration_physical_target_global_route_2026-08-25.md) and
-[CPU benchmark](results/navrl_target_route_cpu_benchmark_seed825/summary.md).
+[CPU benchmark](results/navrl_target_route_cpu_benchmark_seed825/summary.md), and
+[GPU gate summary](results/navrl_physical_target_routed_gate_seed827_attempt2/summary.md).
 
 Fresh PPO and sim-to-real claims remain blocked until the actual platform provides measured AUW/CG, sensor
 extrinsics, timestamp synchronization and real-log bearing/range/latency/dropout profiles. The next 72-hour

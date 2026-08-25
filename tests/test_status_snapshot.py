@@ -283,12 +283,28 @@ class StatusSnapshotTest(unittest.TestCase):
         self.assertIn("Do not run the 10k Stage 2", update["decision"])
 
         plan = _STATUS._sim2real_72h()
-        self.assertEqual(plan["status"], "SIMULATION VERIFIED · HARDWARE PENDING")
+        self.assertEqual(
+            plan["status"],
+            "SIMULATION VERIFIED · ROUTE MECHANISM FAILED · PHYSICAL PPO BLOCKED · HARDWARE PENDING",
+        )
         self.assertEqual(
             plan["simulation_verification"]["preflight_claim_status"],
             "SYNTHETIC_ONLY",
         )
         self.assertEqual(plan["simulation_verification"]["physical_gate"], "BLOCKED")
+        routed = plan["simulation_verification"]["routed_physical_target_gate_attempt2"]
+        self.assertEqual(routed["integrity"], "PASS_32_CELL_INTEGRITY")
+        self.assertEqual(routed["route_mechanism"], "FAIL_ROUTE_MECHANISM")
+        self.assertEqual(
+            routed["highest_passing_speed_mps_by_density"],
+            {"70": None, "150": None, "205": None, "300": None},
+        )
+        self.assertEqual(routed["plan_success_70bar_4speed_pool_pct"], 14.5467)
+        historical = plan["simulation_verification"]["historical_post_wall_brake_speed_envelope"]
+        self.assertEqual(historical["route_mode"], "off_historical_lineage")
+        self.assertEqual(historical["highest_passing_speed_mps_by_density"]["70"], 0.9)
+        stored = json.loads(_STATUS.STATUS_PATH.read_text(encoding="utf-8"))["sim2real_72h"]
+        self.assertEqual(stored, plan)
         self.assertFalse(plan["evidence"]["stage2_authorised"])
         self.assertEqual(len(plan["days"]), 3)
 

@@ -378,9 +378,10 @@ attempt 1은 `ninja` PATH 오류로 0/32 `VOID_EXECUTION`이며 수치 결과가
 | 205 | off P / on F | off P / on F | off F / on F | off F / on F |
 | 300 | off P / on F | off F / on F | off F / on F | off F / on F |
 
-70-bar aggregate route-on values are plan success `0.1454668471` vs gate ≥0.99, fallback
-`0.359296875` vs gate ≤0.01, and goal completions/env `0.25` vs gate ≥0.5; same-goal reselection
-is 0. Across route-on cells, local invalidation is 0.125–0.635% while fallback is 32.6–85.0%.
+The four 70-bar route-on speed cells pooled together give plan success `0.1454668471` vs gate
+≥0.99 and fallback `0.359296875` vs gate ≤0.01. The separately gated 70 bars × 0.6 m/s cell gives
+goal completions/env `0.25` vs gate ≥0.5; same-goal reselection is 0. Across route-on cells, local
+invalidation is 0.125–0.635% while fallback is 32.6–85.0%.
 The route status counters are dominated by `unsafe_start` (420 vs 80 `ok`; 6 `no_path`, 6
 `local_step_infeasible`), supporting a soft-envelope recovery deadlock diagnosis. This does not
 prove global disconnection, and does not make motor/tilt/contact the primary cause; tracking remains

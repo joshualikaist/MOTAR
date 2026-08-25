@@ -6,7 +6,7 @@
   <meta name="description" content="MOTAR — sensor-only UAV moving-target interception research overview.">
   <meta name="theme-color" content="#f7faf8">
   <title>MOTAR · Moving-target interception</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=20260825r3">
 </head>
 <body>
   <header class="site-header">
@@ -135,16 +135,16 @@
           <article><strong>−0.0145 pp</strong><span>learned-v2 vs analytic</span><p>95% CI [−1.752, +1.723], 비열등 gate 통과</p></article>
           <article><strong>8.443→3.172%</strong><span>never acquired</span><p>camera-range 진단; primary gate 미달로 inconclusive</p></article>
           <article><strong>32/32</strong><span>attempt 2 integrity</span><p>실행 무결성 PASS; route mechanism은 FAIL</p></article>
-          <article><strong>14.55%</strong><span>70-bar plan success</span><p>gate 99%; fallback 35.93% (gate 1%)</p></article>
+          <article><strong>14.55%</strong><span>70-bar · 4-speed pooled plan success</span><p>gate 99%; pooled fallback 35.93% (gate 1%)</p></article>
           <article><strong>0.25</strong><span>goals/env · 70 bars × 0.6 m/s</span><p>gate 0.5; physical PPO BLOCKED</p></article>
         </div>
         <div class="limits">
           <h3>현재 주장할 수 없는 것</h3>
           <p>실제 비행 성능, sim-to-real 성공, 300-bar 전 구간 성능, Transformer의 보편적 우월성.
             실제 기체가 미조립이고 실제 센서 로그가 없으므로 현재 software-only gate의 판정은
-            <strong>SYNTHETIC_ONLY</strong>이며 실기 성능을 뜻하지 않습니다. 이번 route 실패는
-            반복된 <code>unsafe_start</code> recovery가 fail-closed zero-command fallback deadlock에
-            빠진 결과이며 motor·tilt·contact gate 실패로 해석하지 않습니다.</p>
+            <strong>SYNTHETIC_ONLY</strong>이며 실기 성능을 뜻하지 않습니다. 현재 원자료가 지지하는
+            진단은 반복된 <code>unsafe_start</code> recovery가 fail-closed zero-command fallback에
+            머무는 현상입니다. motor·tilt·contact gate 실패가 주원인이라는 증거는 없습니다.</p>
         </div>
       </div>
     </section>

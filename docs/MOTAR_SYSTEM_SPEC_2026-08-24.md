@@ -236,9 +236,10 @@ loaded, no hardware validation, and no arena-wide 300-bar connectivity claim.
 | 205 | off P / on F | off P / on F | off F / on F | off F / on F |
 | 300 | off P / on F | off F / on F | off F / on F | off F / on F |
 
-Route-on local invalidation is 0.125–0.635%, yet fallback is 32.6–85.0%. At 70 bars × 0.6 m/s,
-plan success is `0.1454668471` (≥0.99 gate), fallback `0.359296875` (≤0.01 gate), and goal
-completions/env `0.25` (≥0.5 gate); same-goal reselection is 0. Status counters support an
+Route-on local invalidation is 0.125–0.635%, yet fallback is 32.6–85.0%. Pooled across the four
+70-bar speed cells, plan success is `0.1454668471` (≥0.99 gate) and fallback `0.359296875`
+(≤0.01 gate). The 70 bars × 0.6 m/s cell has goal completions/env `0.25` (≥0.5 gate);
+same-goal reselection is 0. Status counters support an
 `unsafe_start` soft-envelope recovery deadlock diagnosis. This is not a global connectivity proof
 and does not make motor/tilt/contact the primary cause; tracking remains a separately gated metric. Keep evaluator, thresholds, PPO
 authority, hardware claims, and arena-wide 300-bar claims unchanged.

@@ -226,8 +226,9 @@ route-off/on 결과를 `P/F`로 요약하면 다음과 같다(각 셀은 off/on 
 | 300 | P / F | F / F | F / F | F / F |
 
 route-on local invalidation은 0.125–0.635%로 보이지만 fallback은 32.6–85.0%까지 증폭됐다.
-70-bar aggregate에서도 plan success `0.1454668471` (gate ≥0.99), fallback `0.359296875`
-(gate ≤0.01), goal completions/env `0.25` (gate ≥0.5)다. same-goal reselection은 0이라 해당
+70-bar 4-speed pool의 plan success는 `0.1454668471` (gate ≥0.99), fallback은
+`0.359296875` (gate ≤0.01)이고, 별도 70×0.6 cell의 goal completions/env는 `0.25`
+(gate ≥0.5)다. same-goal reselection은 전체 routed cell에서 0이라 해당
 guard는 원인이 아니다. 16 route-on cell의 status counter 합계는 `unsafe_start` 420,
 `ok` 80, `no_path` 6, `local_step_infeasible` 6으로, 현재 가장 강한 진단은 작은 local
 invalidation 뒤 soft-envelope recovery가 `unsafe_start`에서 되돌지 못하는 deadlock이다.

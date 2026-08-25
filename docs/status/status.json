@@ -3756,32 +3756,66 @@
           "authority": "DIAGNOSTIC_ONLY"
         },
       "physical_target_gate": {
+        "source": "results/navrl_physical_target_routed_gate_seed827_attempt2/summary.json",
         "all_cells_pass": false,
         "authority": "NO_PPO_PERMISSION",
         "attempt": 2,
         "integrity": "PASS_32_CELL_INTEGRITY",
-        "route_mechanism": "FAIL",
+        "route_mechanism": "FAIL_ROUTE_MECHANISM",
         "physical_ppo": "BLOCKED",
-        "plan_success_70bar_pct": 14.5467,
+        "highest_passing_speed_mps_by_density": {
+          "70": null,
+          "150": null,
+          "205": null,
+          "300": null
+        },
+        "plan_success_70bar_4speed_pool_pct": 14.5467,
         "plan_success_gate_pct": 99.0,
-        "fallback_70bar_pct": 35.9297,
+        "fallback_70bar_4speed_pool_pct": 35.9297,
         "fallback_gate_pct": 1.0,
         "goals_per_env_70bar_0_6mps": 0.25,
         "goals_per_env_gate": 0.5,
-        "failure_mode": "unsafe_start recovery deadlock in fail-closed zero-command fallback",
-        "excluded_causes": ["motor_saturation", "tilt", "contact"]
+        "supported_diagnosis": "unsafe_start recovery deadlock in fail-closed zero-command fallback",
+        "non_failing_gates": ["tracking", "local_feasibility", "motor_saturation", "tilt", "contact", "state"]
       },
         "fresh_ppo": {
           "verdict": "BLOCKED",
           "reason": "physical_gate_and_real_sensor_contract_not_passed"
         }
       },
-      "physical_gate_all_cells_pass": false,
-      "highest_passing_speed_mps_by_density": {
-        "70": 0.9,
-        "150": 0.6,
-        "205": 0.6,
-        "300": 0.6
+      "routed_physical_target_gate_attempt2": {
+        "source": "results/navrl_physical_target_routed_gate_seed827_attempt2/summary.json",
+        "attempt": 2,
+        "all_cells_pass": false,
+        "integrity": "PASS_32_CELL_INTEGRITY",
+        "route_mechanism": "FAIL_ROUTE_MECHANISM",
+        "physical_ppo": "BLOCKED",
+        "highest_passing_speed_mps_by_density": {
+          "70": null,
+          "150": null,
+          "205": null,
+          "300": null
+        },
+        "plan_success_70bar_4speed_pool_pct": 14.5467,
+        "plan_success_gate_pct": 99.0,
+        "fallback_70bar_4speed_pool_pct": 35.9297,
+        "fallback_gate_pct": 1.0,
+        "goals_per_env_70bar_0_6mps": 0.25,
+        "goals_per_env_gate": 0.5,
+        "authority": "NO_PPO_PERMISSION",
+        "supported_diagnosis": "unsafe_start recovery deadlock in fail-closed zero-command fallback",
+        "non_failing_gates": ["tracking", "local_feasibility", "motor_saturation", "tilt", "contact", "state"]
+      },
+      "historical_post_wall_brake_speed_envelope": {
+        "source": "results/navrl_physical_target_speed_envelope_post_wall_brake_seed509/summary.json",
+        "route_mode": "off_historical_lineage",
+        "all_cells_pass": false,
+        "highest_passing_speed_mps_by_density": {
+          "70": 0.9,
+          "150": 0.6,
+          "205": 0.6,
+          "300": 0.6
+        }
       },
       "mode_probe_verdict": "INCONCLUSIVE_POLICY_CHIRALITY"
     },

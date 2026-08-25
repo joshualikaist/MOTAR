@@ -1,0 +1,38 @@
+Using /home/fair/.cache/torch_extensions/py38_cu121 as PyTorch extensions root...
+Importing module 'gym_38' (/home/fair/isaacgym/python/isaacgym/_bindings/linux-x86_64/gym_38.so)
+Setting GYM_USD_PLUG_INFO_PATH to /home/fair/isaacgym/python/isaacgym/_bindings/linux-x86_64/usd/plugInfo.json
+PyTorch version 2.4.1+cu121
+Device count 1
+/home/fair/isaacgym/python/isaacgym/_bindings/src/gymtorch
+Traceback (most recent call last):
+  File "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/tools/verify_navrl_physical_target_routed_simulator_gate.py", line 1371, in <module>
+    raise SystemExit(main())
+  File "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/tools/verify_navrl_physical_target_routed_simulator_gate.py", line 1363, in main
+    return child_main(args)
+  File "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/tools/verify_navrl_physical_target_routed_simulator_gate.py", line 946, in child_main
+    from aerial_gym.registry.task_registry import task_registry  # Isaac Gym before torch
+  File "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/aerial_gym/__init__.py", line 6, in <module>
+    from .task import *
+  File "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/aerial_gym/task/__init__.py", line 1, in <module>
+    from aerial_gym.task.position_setpoint_task.position_setpoint_task import (
+  File "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/aerial_gym/task/position_setpoint_task/position_setpoint_task.py", line 2, in <module>
+    from aerial_gym.sim.sim_builder import SimBuilder
+  File "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/aerial_gym/sim/sim_builder.py", line 1, in <module>
+    from aerial_gym.env_manager.env_manager import EnvManager
+  File "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/aerial_gym/env_manager/env_manager.py", line 1, in <module>
+    from aerial_gym.env_manager.IGE_env_manager import IsaacGymEnv
+  File "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/aerial_gym/env_manager/IGE_env_manager.py", line 2, in <module>
+    from isaacgym import gymtorch
+  File "/home/fair/isaacgym/python/isaacgym/gymtorch.py", line 109, in <module>
+    _import_gymtorch()
+  File "/home/fair/isaacgym/python/isaacgym/gymtorch.py", line 45, in _import_gymtorch
+    gt = torch.utils.cpp_extension.load(name="gymtorch", sources=sources, extra_cflags=cflags, verbose=True)
+  File "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/torch/utils/cpp_extension.py", line 1312, in load
+    return _jit_compile(
+  File "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/torch/utils/cpp_extension.py", line 1722, in _jit_compile
+    _write_ninja_file_and_build_library(
+  File "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/torch/utils/cpp_extension.py", line 1804, in _write_ninja_file_and_build_library
+    verify_ninja_availability()
+  File "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/torch/utils/cpp_extension.py", line 1853, in verify_ninja_availability
+    raise RuntimeError("Ninja is required to load C++ extensions")
+RuntimeError: Ninja is required to load C++ extensions

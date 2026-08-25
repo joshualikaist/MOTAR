@@ -4070,9 +4070,13 @@
    "knob": null,
    "levels": [
     {
-     "label": "global A* routed",
-     "value": "global_astar_v1",
+     "label": "route off",
+     "value": "off",
      "is_baseline": true
+    },
+    {
+     "label": "global A* routed",
+     "value": "global_astar_v1"
     }
    ],
    "metric": "other",
@@ -4123,9 +4127,13 @@
    },
    "preregistered": true,
    "gate": "docs/preregistration_physical_target_routed_simulator_gate_2026-08-25.md — plan ≥99%, fallback ≤1%, goals/env ≥0.5; integrity fail-closed",
-   "launcher": "tools/eval_navrl_physical_target_routed_gate.py",
+   "launcher": "tools/verify_navrl_physical_target_routed_simulator_gate.py",
    "results_paths": [
-    "results/navrl_physical_target_routed_gate_seed827_attempt2/summary.json"
+    "results/navrl_physical_target_routed_gate_seed827_attempt2/summary.json",
+    "results/navrl_physical_target_routed_gate_seed827_attempt2/receipt.json",
+    "results/navrl_physical_target_routed_gate_seed827_attempt2/execution_manifest.json",
+    "results/navrl_physical_target_routed_gate_seed827_attempt2/source_manifest.json",
+    "results/navrl_physical_target_routed_gate_seed827_attempt2/children/"
    ],
    "worklog_date": "2026-08-25",
    "_note": "Verdicts: PASS_32_CELL_INTEGRITY / FAIL_ROUTE_MECHANISM / BLOCKED_PHYSICAL_TRAINING. Motor·tilt·contact는 이번 route 실패의 주원인으로 지지되지 않는다."

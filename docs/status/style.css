@@ -37,7 +37,7 @@ h1 span { color: var(--green); }
 .button.primary { color: #fff; border-color: var(--green); background: var(--green); }
 .status-line { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 38px; padding-top: 18px; border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; }
 .status-line strong { color: var(--ink); }
-.status-dot { width: 9px; height: 9px; border-radius: 50%; background: #d99b37; box-shadow: 0 0 0 5px #f4ead7; }
+.status-dot { width: 9px; height: 9px; border-radius: 50%; background: #c4554d; box-shadow: 0 0 0 5px #f3dfdd; }
 
 .section { padding-block: 76px; }
 .section-head { max-width: 760px; margin-bottom: 34px; }

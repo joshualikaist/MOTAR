@@ -393,9 +393,10 @@ strict cell map is:
 | 205 | P / F | P / F | F / F | F / F |
 | 300 | P / F | F / F | F / F | F / F |
 
-At 70 bars × 0.6 m/s, route-on plan success is `0.1454668471` (gate ≥0.99), fallback is
-`0.359296875` (gate ≤0.01), goal completions/env is `0.25` (gate ≥0.5), and same-goal reselection
-is zero. Across route-on cells, 0.125–0.635% local invalidation expands to 32.6–85.0% fallback;
+Across all four routed 70-bar speed cells, pooled plan success is `0.1454668471` (gate ≥0.99) and
+fallback is `0.359296875` (gate ≤0.01). The separately gated 70 bars × 0.6 m/s cell records
+`0.25` goal completions/env (gate ≥0.5), and same-goal reselection is zero. Across route-on cells,
+0.125–0.635% local invalidation expands to 32.6–85.0% fallback;
 status counts are dominated by `unsafe_start`, consistent with a soft-envelope recovery deadlock.
 This is a controller/planner diagnostic, not a global-connectivity proof. PPO, hardware claims, and
 arena-wide 300-bar claims remain out of scope. Thresholds and evaluator code remain frozen.

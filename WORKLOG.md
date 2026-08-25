@@ -12314,8 +12314,9 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
   300-bar arena-wide connectivity claim은 없다.
 - compact cell map(off/on)은 70 bars `P/F, P/F, F/F, F/F`, 150 bars `P/F, P/F, P/F, F/F`,
   205 bars `P/F, P/F, F/F, F/F`, 300 bars `P/F, F/F, F/F, F/F` (속도 0.6→1.5 순)이다.
-- route-on 70×0.6 aggregate는 plan success `0.1454668471` (gate ≥.99), fallback
-  `0.359296875` (gate ≤.01), goal completions/env `.25` (gate ≥.5), same-goal `0`이다.
+- route-on 70-bar 4-speed pool은 plan success `0.1454668471` (gate ≥.99), fallback
+  `0.359296875` (gate ≤.01)이고, 별도 70×0.6 cell은 goal completions/env `.25` (gate ≥.5)다.
+  same-goal은 전체 routed cell에서 `0`이다.
   전체 route-on에서 local invalidation `.125–.635%`가 fallback `32.6–85.0%`로 증폭됐고,
   status 합계 `unsafe_start=420`, `ok=80`, `no_path=6`, `local_step_infeasible=6`이었다.
   따라서 현재 engineering diagnosis는 unsafe_start soft-envelope recovery deadlock이며,
@@ -12325,3 +12326,26 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
   safe-prefix/full-horizon 및 unsafe-start recovery 계측 후 새 lineage에서 재실행하는 것이다.
   상세: [`attempt 2 summary`](results/navrl_physical_target_routed_gate_seed827_attempt2/summary.md),
   [`attempt 1 VOID`](results/navrl_physical_target_routed_gate_seed827/VOID.md).
+
+### 2026-08-25 — routed 결과 공개 반영과 status-site compact pass
+
+- README, status JSON/experiment registry와 live site를 attempt 2의 정확한 판정으로 맞췄다:
+  `32/32 integrity PASS`, `FAIL_ROUTE_MECHANISM`, `BLOCKED_PHYSICAL_TRAINING`. 설명용 3-D
+  routed preview는 계속 `NOT PhysX/PPO`로 표시한다.
+- 교차검수에서 plan success `14.5467%`와 fallback `35.9297%`가 70×0.6 단일 cell이 아니라
+  **70-bar 네 속도 cell pool**임을 확인해 모든 공개 문서에서 정정했다. `0.25 goals/env`만
+  70 bars × 0.6 m/s cell 값이다. experiment registry의 실제 evaluator 경로도
+  `tools/verify_navrl_physical_target_routed_simulator_gate.py`로 고쳤다.
+- 사이트 hero/section/metric typography와 간격을 줄이고, 3-D stage를 desktop
+  `clamp(360px,55vh,620px)`, mobile `clamp(320px,72vw,380px)`로 제한했다. HUD는 11–13 px,
+  control row는 compact layout으로 바꾸되 body 16 px와 route geometry 동작은 보존했다.
+- 1366×768 및 390×844 headless Chrome screenshot을 직접 확인했다. hero와 현재 판정이 첫 화면에
+  함께 들어오며 가로 overflow는 없었다. JSON/lint, static site, 30/60/144 Hz motion, routed parity,
+  headless WebGL, Python gate/planner/motion/environment/envelope/status suites, py_compile, bash-n,
+  artifact SHA/32-cell semantic 재검산과 code/docs `git diff --check`가 모두 PASS했다. 보조 `.log`
+  파일은 ANSI와 원출력 공백을 byte 그대로 보존하므로 whitespace 검사에서만 제외했다.
+- 최종 공개자료 적대검수에서 status snapshot의 옛 seed-509 route-off speed envelope가 attempt 2
+  결과처럼 보일 수 있음을 발견했다. generator와 JSON을 고쳐 옛 값은
+  `historical_post_wall_brake_speed_envelope`로 lineage를 명시하고, routed attempt 2의 밀도별 통과
+  속도는 네 밀도 모두 `null`로 따로 기록했다. 사이트 카드에는 `70-bar · 4-speed pooled`를
+  명시했고 registry가 summary/receipt/execution/source manifest와 children까지 연결하도록 보강했다.

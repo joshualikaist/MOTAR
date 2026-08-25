@@ -282,7 +282,8 @@ attempt 1은 conda Python의 inherited `PATH`에 matching `ninja`가 없어 0/32
   route-on/off 32-cell 표와 receipt SHA를 확인한다.
 - route-on의 `unsafe_start` soft-envelope recovery deadlock을 safe-prefix/full-horizon 계측으로
   분리한다. local invalidation 0.125–0.635%와 fallback 32.6–85.0%를 같은 지표로 합치지 않는다.
-- 70×0.6 aggregate의 plan success `.1454668471`, fallback `.359296875`, goal/env `.25`가 각각
-  `.99`, `.01`, `.5` gate를 못 넘는 것을 확인한다. same-goal은 0이다.
+- 70-bar 4-speed pool의 plan success `.1454668471`, fallback `.359296875`가 각각 `.99`, `.01`
+  gate를 못 넘고, 별도 70×0.6 cell의 goal/env `.25`가 `.5` gate를 못 넘는 것을 확인한다.
+  same-goal은 0이다.
 - evaluator와 preregistered threshold를 수정하거나 300-bar arena-wide connectivity를 주장하지
   않는다. physical PPO는 새 preregistered lineage에서 동일 32-cell gate가 닫힌 뒤에만 검토한다.

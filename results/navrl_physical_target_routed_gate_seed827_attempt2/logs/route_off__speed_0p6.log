@@ -1,0 +1,139 @@
+Importing module 'gym_38' (/home/fair/isaacgym/python/isaacgym/_bindings/linux-x86_64/gym_38.so)
+Setting GYM_USD_PLUG_INFO_PATH to /home/fair/isaacgym/python/isaacgym/_bindings/linux-x86_64/usd/plugInfo.json
+PyTorch version 2.4.1+cu121
+Device count 1
+/home/fair/isaacgym/python/isaacgym/_bindings/src/gymtorch
+Using /home/fair/.cache/torch_extensions/py38_cu121 as PyTorch extensions root...
+Emitting ninja build file /home/fair/.cache/torch_extensions/py38_cu121/gymtorch/build.ninja...
+Building extension module gymtorch...
+Allowing ninja to set a default number of workers... (overridable by setting the environment variable MAX_JOBS=N)
+ninja: no work to do.
+Loading extension module gymtorch...
+Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+[37m[1441 ms][base_task] - INFO : Setting seed: 827 (base_task.py:38)[0m
+[37m[1441 ms][navrl_task] - INFO : Building NavRL task | sim=base_sim env=navrl_bars_env robot=navrl_ref5in_quad controller=lee_velocity_control_navrl (navrl_task.py:468)[0m
+[37m[1441 ms][env_manager] - INFO : Populating environments. (env_manager.py:77)[0m
+[37m[1441 ms][env_manager] - INFO : Creating simulation instance. (env_manager.py:91)[0m
+[37m[1441 ms][env_manager] - INFO : Instantiating IGE object. (env_manager.py:92)[0m
+[37m[1441 ms][IsaacGymEnvManager] - INFO : Creating Isaac Gym Environment (IGE_env_manager.py:43)[0m
+[37m[1441 ms][IsaacGymEnvManager] - INFO : Acquiring gym object (IGE_env_manager.py:75)[0m
+[37m[1441 ms][IsaacGymEnvManager] - INFO : Acquired gym object (IGE_env_manager.py:77)[0m
+[37m[1442 ms][IsaacGymEnvManager] - INFO : Fixing devices (IGE_env_manager.py:91)[0m
+[37m[1442 ms][IsaacGymEnvManager] - INFO : Using GPU pipeline for simulation. (IGE_env_manager.py:104)[0m
+[37m[1442 ms][IsaacGymEnvManager] - INFO : Sim Device type: cuda, Sim Device ID: 0 (IGE_env_manager.py:107)[0m
+[31;1m[1442 ms][IsaacGymEnvManager] - CRITICAL : 
+ Setting graphics device to -1.
+ This is done because the simulation is run in headless mode and no Isaac Gym cameras are used.
+ No need to worry. The simulation and warp rendering will work as expected. (IGE_env_manager.py:114)[0m
+[37m[1442 ms][IsaacGymEnvManager] - INFO : Graphics Device ID: -1 (IGE_env_manager.py:121)[0m
+[37m[1442 ms][IsaacGymEnvManager] - INFO : Creating Isaac Gym Simulation Object (IGE_env_manager.py:122)[0m
+[33;20m[1442 ms][IsaacGymEnvManager] - WARNING : If you have set the CUDA_VISIBLE_DEVICES environment variable, please ensure that you set it
+to a particular one that works for your system to use the viewer or Isaac Gym cameras.
+If you want to run parallel simulations on multiple GPUs with camera sensors,
+please disable Isaac Gym and use warp (by setting use_warp=True), set the viewer to headless. (IGE_env_manager.py:129)[0m
+[33;20m[1442 ms][IsaacGymEnvManager] - WARNING : If you see a segfault in the next lines, it is because of the discrepancy between the CUDA device and the graphics device.
+Please ensure that the CUDA device and the graphics device are the same. (IGE_env_manager.py:134)[0m
+Not connected to PVD
++++ Using GPU PhysX
+Physics Engine: PhysX
+Physics Device: cuda:0
+GPU Pipeline: enabled
+[37m[2276 ms][IsaacGymEnvManager] - INFO : Created Isaac Gym Simulation Object (IGE_env_manager.py:139)[0m
+[37m[2277 ms][IsaacGymEnvManager] - INFO : Created Isaac Gym Environment (IGE_env_manager.py:45)[0m
+[37m[2484 ms][env_manager] - INFO : IGE object instantiated. (env_manager.py:113)[0m
+[37m[2484 ms][env_manager] - INFO : Creating warp environment. (env_manager.py:116)[0m
+[37m[2484 ms][env_manager] - INFO : Warp environment created. (env_manager.py:118)[0m
+[37m[2484 ms][env_manager] - INFO : Creating robot manager. (env_manager.py:122)[0m
+[37m[2484 ms][BaseRobot] - INFO : [DONE] Initializing controller (base_robot.py:26)[0m
+[37m[2484 ms][BaseRobot] - INFO : Initializing controller lee_velocity_control_navrl (base_robot.py:29)[0m
+[33;20m[2485 ms][base_multirotor] - WARNING : Creating 32 multirotors. (base_multirotor.py:32)[0m
+[37m[2485 ms][env_manager] - INFO : [DONE] Creating robot manager. (env_manager.py:127)[0m
+[37m[2485 ms][env_manager] - INFO : [DONE] Creating simulation instance. (env_manager.py:129)[0m
+[37m[2485 ms][asset_loader] - INFO : Loading asset: quad_navrl_ref5in.urdf for the first time. Next use of this asset will be via the asset buffer. (asset_loader.py:82)[0m
+[37m[2486 ms][asset_loader] - INFO : Loading asset: navrl_target_drone.urdf for the first time. Next use of this asset will be via the asset buffer. (asset_loader.py:82)[0m
+/home/fair/workspaces/aerial_gym_ws/src/urdfpy/urdfpy/urdf.py:898: DeprecationWarning: `np.float` is a deprecated alias for the builtin `float`. To silence this warning, use `float` by itself. Doing this will not modify any behavior and is safe. If you specifically wanted the numpy scalar type, use `np.float64` here.
+Deprecated in NumPy 1.20; for more details and guidance: https://numpy.org/devdocs/release/1.20.0-notes.html#deprecations
+  value = np.asanyarray(value).astype(np.float)
+[37m[2490 ms][asset_loader] - INFO : Loading asset: bar_019.urdf for the first time. Next use of this asset will be via the asset buffer. (asset_loader.py:82)[0m
+[37m[2492 ms][asset_loader] - INFO : Loading asset: bar_017.urdf for the first time. Next use of this asset will be via the asset buffer. (asset_loader.py:82)[0m
+[37m[2493 ms][asset_loader] - INFO : Loading asset: bar_033.urdf for the first time. Next use of this asset will be via the asset buffer. (asset_loader.py:82)[0m
+[37m[2495 ms][asset_loader] - INFO : Loading asset: bar_026.urdf for the first time. Next use of this asset will be via the asset buffer. (asset_loader.py:82)[0m
+[37m[2497 ms][asset_loader] - INFO : Loading asset: bar_028.urdf for the first time. Next use of this asset will be via the asset buffer. (asset_loader.py:82)[0m
+[37m[2498 ms][asset_loader] - INFO : Loading asset: bar_030.urdf for the first time. Next use of this asset will be via the asset buffer. (asset_loader.py:82)[0m
+[37m[2500 ms][asset_loader] - INFO : Loading asset: bar_010.urdf for the first time. Next use of this asset will be via the asset buffer. (asset_loader.py:82)[0m
+[37m[2502 ms][asset_loader] - INFO : Loading asset: bar_032.urdf for the first time. Next use of this asset will be via the asset buffer. (asset_loader.py:82)[0m
+[37m[2503 ms][asset_loader] - INFO : Loading asset: bar_037.urdf for the first time. Next use of this asset will be via the asset buffer. (asset_loader.py:82)[0m
+[37m[2505 ms][asset_loader] - INFO : Loading asset: bar_035.urdf for the first time. Next use of this asset will be via the asset buffer. (asset_loader.py:82)[0m
+[37m[2506 ms][asset_loader] - INFO : Loading asset: bar_018.urdf for the first time. Next use of this asset will be via the asset buffer. (asset_loader.py:82)[0m
+[37m[2508 ms][asset_loader] - INFO : Loading asset: bar_023.urdf for the first time. Next use of this asset will be via the asset buffer. (asset_loader.py:82)[0m
+[37m[2510 ms][asset_loader] - INFO : Loading asset: bar_029.urdf for the first time. Next use of this asset will be via the asset buffer. (asset_loader.py:82)[0m
+[37m[2511 ms][asset_loader] - INFO : Loading asset: bar_009.urdf for the first time. Next use of this asset will be via the asset buffer. (asset_loader.py:82)[0m
+[37m[2513 ms][asset_loader] - INFO : Loading asset: bar_006.urdf for the first time. Next use of this asset will be via the asset buffer. (asset_loader.py:82)[0m
+[37m[2515 ms][asset_loader] - INFO : Loading asset: bar_012.urdf for the first time. Next use of this asset will be via the asset buffer. (asset_loader.py:82)[0m
+[37m[2516 ms][asset_loader] - INFO : Loading asset: bar_016.urdf for the first time. Next use of this asset will be via the asset buffer. (asset_loader.py:82)[0m
+[37m[2518 ms][asset_loader] - INFO : Loading asset: bar_005.urdf for the first time. Next use of this asset will be via the asset buffer. (asset_loader.py:82)[0m
+[37m[2520 ms][asset_loader] - INFO : Loading asset: bar_000.urdf for the first time. Next use of this asset will be via the asset buffer. (asset_loader.py:82)[0m
+[37m[2521 ms][asset_loader] - INFO : Loading asset: bar_027.urdf for the first time. Next use of this asset will be via the asset buffer. (asset_loader.py:82)[0m
+[37m[2523 ms][asset_loader] - INFO : Loading asset: bar_020.urdf for the first time. Next use of this asset will be via the asset buffer. (asset_loader.py:82)[0m
+[37m[2525 ms][asset_loader] - INFO : Loading asset: bar_038.urdf for the first time. Next use of this asset will be via the asset buffer. (asset_loader.py:82)[0m
+[37m[2527 ms][asset_loader] - INFO : Loading asset: bar_034.urdf for the first time. Next use of this asset will be via the asset buffer. (asset_loader.py:82)[0m
+[37m[2529 ms][asset_loader] - INFO : Loading asset: bar_011.urdf for the first time. Next use of this asset will be via the asset buffer. (asset_loader.py:82)[0m
+[37m[2530 ms][asset_loader] - INFO : Loading asset: bar_021.urdf for the first time. Next use of this asset will be via the asset buffer. (asset_loader.py:82)[0m
+[37m[2532 ms][asset_loader] - INFO : Loading asset: bar_007.urdf for the first time. Next use of this asset will be via the asset buffer. (asset_loader.py:82)[0m
+[37m[2534 ms][asset_loader] - INFO : Loading asset: bar_004.urdf for the first time. Next use of this asset will be via the asset buffer. (asset_loader.py:82)[0m
+[37m[2536 ms][asset_loader] - INFO : Loading asset: bar_036.urdf for the first time. Next use of this asset will be via the asset buffer. (asset_loader.py:82)[0m
+[37m[2537 ms][asset_loader] - INFO : Loading asset: bar_008.urdf for the first time. Next use of this asset will be via the asset buffer. (asset_loader.py:82)[0m
+[37m[2539 ms][asset_loader] - INFO : Loading asset: bar_024.urdf for the first time. Next use of this asset will be via the asset buffer. (asset_loader.py:82)[0m
+[37m[2541 ms][asset_loader] - INFO : Loading asset: bar_022.urdf for the first time. Next use of this asset will be via the asset buffer. (asset_loader.py:82)[0m
+[37m[2542 ms][asset_loader] - INFO : Loading asset: bar_014.urdf for the first time. Next use of this asset will be via the asset buffer. (asset_loader.py:82)[0m
+[37m[2545 ms][asset_loader] - INFO : Loading asset: bar_002.urdf for the first time. Next use of this asset will be via the asset buffer. (asset_loader.py:82)[0m
+[37m[2546 ms][asset_loader] - INFO : Loading asset: bar_015.urdf for the first time. Next use of this asset will be via the asset buffer. (asset_loader.py:82)[0m
+[37m[2548 ms][asset_loader] - INFO : Loading asset: bar_031.urdf for the first time. Next use of this asset will be via the asset buffer. (asset_loader.py:82)[0m
+[37m[2550 ms][asset_loader] - INFO : Loading asset: bar_001.urdf for the first time. Next use of this asset will be via the asset buffer. (asset_loader.py:82)[0m
+[37m[2553 ms][asset_loader] - INFO : Loading asset: bar_003.urdf for the first time. Next use of this asset will be via the asset buffer. (asset_loader.py:82)[0m
+[37m[2556 ms][asset_loader] - INFO : Loading asset: bar_039.urdf for the first time. Next use of this asset will be via the asset buffer. (asset_loader.py:82)[0m
+[37m[2558 ms][asset_loader] - INFO : Loading asset: bar_013.urdf for the first time. Next use of this asset will be via the asset buffer. (asset_loader.py:82)[0m
+[37m[2569 ms][asset_loader] - INFO : Loading asset: bar_025.urdf for the first time. Next use of this asset will be via the asset buffer. (asset_loader.py:82)[0m
+[37m[3050 ms][env_manager] - INFO : Populating environment 0 (env_manager.py:184)[0m
+[33;20m[3249 ms][robot_manager] - WARNING : 
+Robot mass: 1.2000003731779145,
+Inertia: tensor([[4.1422e-03, 0.0000e+00, 8.2718e-25],
+        [0.0000e+00, 4.1422e-03, 1.6544e-24],
+        [8.2718e-25, 1.6544e-24, 5.7692e-03]], device='cuda:0'),
+Robot COM: tensor([[0.0000e+00, 0.0000e+00, 2.9492e-15, 1.0000e+00]], device='cuda:0') (robot_manager.py:427)[0m
+[33;20m[3249 ms][robot_manager] - WARNING : Calculated robot mass and inertia for this robot. This code assumes that your robot is the same across environments. (robot_manager.py:430)[0m
+[31;1m[3249 ms][robot_manager] - CRITICAL : If your robot differs across environments you need to perform this computation for each different robot here. (robot_manager.py:433)[0m
+[37m[4734 ms][env_manager] - INFO : [DONE] Populating environments. (env_manager.py:79)[0m
+[33;20m[5214 ms][IsaacGymEnvManager] - WARNING : Headless: True (IGE_env_manager.py:522)[0m
+[37m[5214 ms][IsaacGymEnvManager] - INFO : Headless mode. Viewer not created. (IGE_env_manager.py:532)[0m
+[33;20m[5810 ms][asset_manager] - WARNING : Number of obstacles to be kept in the environment: 1 (asset_manager.py:59)[0m
+[33;20m[5810 ms][asset_manager] - WARNING : Obstacle placement | mode=navrl_band min_xy_spacing=1.500 relax_factor=0.800 candidate_batch=32 touch=0.40 gap=1.60 (asset_manager.py:60)[0m
+/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/aerial_gym/control/motor_model.py:45: UserWarning: To copy construct from a tensor, it is recommended to use sourceTensor.clone().detach() or sourceTensor.clone().detach().requires_grad_(True), rather than torch.tensor(sourceTensor).
+  torch.tensor(self.min_thrust, device=self.device, dtype=torch.float32).expand(
+/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/aerial_gym/control/motor_model.py:48: UserWarning: To copy construct from a tensor, it is recommended to use sourceTensor.clone().detach() or sourceTensor.clone().detach().requires_grad_(True), rather than torch.tensor(sourceTensor).
+  torch.tensor(self.max_thrust, device=self.device, dtype=torch.float32).expand(
+[33;20m[6207 ms][control_allocation] - WARNING : Control allocation does not account for actuator limits. This leads to suboptimal allocation (control_allocation.py:48)[0m
+[37m[6233 ms][WarpSensor] - INFO : Lidar sensor initialized (warp_sensor.py:42)[0m
+[33;20m[7176 ms][navrl_task] - WARNING : NavRL density config | initial_bars=70 max_bars=300 curriculum=False final=150 step=15 threshold=0.800 check_eps=2048 (navrl_task.py:848)[0m
+[33;20m[7176 ms][navrl_task] - WARNING : NavRL moving target | pattern=waypoint dynamics=physical speed_final=0.60 speed_fixed=0.60 rl_dt=0.100s accel=4.00m/s2 turn=150.0deg/s lookahead=1.00s clearance=0.77m (navrl_task.py:891)[0m
+[37m[7237 ms][base_task] - INFO : Setting seed: 827 (base_task.py:38)[0m
+[37m[22192 ms][base_task] - INFO : Setting seed: 827 (base_task.py:38)[0m
+[37m[35412 ms][base_task] - INFO : Setting seed: 827 (base_task.py:38)[0m
+[37m[48445 ms][base_task] - INFO : Setting seed: 827 (base_task.py:38)[0m
+Warp 1.0.0 initialized:
+   CUDA Toolkit 11.5, Driver 12.8
+   Devices:
+     "cpu"      : "x86_64"
+     "cuda:0"   : "NVIDIA GeForce RTX 3070" (8 GiB, sm_86, mempool enabled)
+   Kernel cache:
+     /home/fair/.cache/warp/1.0.0
+[isaacgym:gymutil.py] Unknown args:  []
+WARNING: allocation matrix is not full rank. Rank: 4
+creating render graph
+Module warp.utils load on device 'cuda:0' took 1.88 ms
+Module aerial_gym.sensors.warp.warp_kernels.warp_camera_kernels load on device 'cuda:0' took 5.62 ms
+Module aerial_gym.sensors.warp.warp_kernels.warp_stereo_camera_kernels load on device 'cuda:0' took 8.26 ms
+Module aerial_gym.sensors.warp.warp_kernels.warp_lidar_kernels load on device 'cuda:0' took 7.75 ms
+finishing capture of render graph

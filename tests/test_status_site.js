@@ -22,6 +22,7 @@ for (const id of ['arena', 'method', 'evidence', 'platform', 'next']) {
 }
 assert(!css.includes('@import'));
 assert(!css.includes('fonts.googleapis.com'));
+assert(html.includes('style.css?v=20260825r3'), 'compact site CSS cache-bust must advance with the layout');
 assert(css.includes('height: clamp(360px, 55vh, 620px)'), 'desktop viewer must stay within a viewport-friendly clamp');
 assert(css.includes('height: clamp(320px, 72vw, 380px)'), 'mobile viewer must retain a compact height clamp');
 assert(css.includes('font-size: 11px'), 'viewer HUD must remain compact');
@@ -95,6 +96,7 @@ assert(html.includes('selected 205-bar contact endpoints'));
 assert(html.includes('−0.0145 pp'));
 assert(html.includes('8.443→3.172%'));
 assert(html.includes('14.55%'));
+assert(html.includes('70-bar · 4-speed pooled plan success'));
 assert(html.includes('fallback 35.93% (gate 1%)'));
 assert(html.includes('0.25'));
 assert(html.includes('70 bars × 0.6 m/s'));
@@ -120,8 +122,16 @@ assert.strictEqual(routedGate.validity, 'canonical');
 assert.strictEqual(routedGate.arms[0].extra.cells_passed, '32/32');
 assert(routedGate.verdict_note.includes('unsafe_start'));
 assert.strictEqual(status.sim2real_72h.simulation_verification.preflight_steps.physical_target_gate.integrity, 'PASS_32_CELL_INTEGRITY');
-assert.strictEqual(status.sim2real_72h.simulation_verification.preflight_steps.physical_target_gate.route_mechanism, 'FAIL');
+assert.strictEqual(status.sim2real_72h.simulation_verification.preflight_steps.physical_target_gate.route_mechanism, 'FAIL_ROUTE_MECHANISM');
 assert.strictEqual(status.sim2real_72h.simulation_verification.preflight_steps.physical_target_gate.physical_ppo, 'BLOCKED');
+assert.deepStrictEqual(
+  status.sim2real_72h.simulation_verification.routed_physical_target_gate_attempt2.highest_passing_speed_mps_by_density,
+  {'70': null, '150': null, '205': null, '300': null},
+);
+assert.strictEqual(
+  status.sim2real_72h.simulation_verification.historical_post_wall_brake_speed_envelope.route_mode,
+  'off_historical_lineage',
+);
 assert(status.sim2real_72h.status.includes('ROUTE MECHANISM FAILED'));
 assert(status.sim2real_72h.status.includes('PHYSICAL PPO BLOCKED'));
 

@@ -24,14 +24,15 @@ bounded local-step infeasibility ranges from 0.094% to 4.250%; route-on local in
 from 0.125% to 0.635%, but route fallback is 32.6%–85.0%. Route-on plan success is only
 3.846%–17.330% across cells. These are controller/planner diagnostics, not capture rates.
 
-At 70 bars × 0.6 m/s, the aggregate route-on inputs recorded by `receipt.json` are:
+For the four routed 70-bar cells pooled across all speeds, `receipt.json` records plan success and
+fallback below. Goal completion is the separately preregistered 70 bars × 0.6 m/s cell:
 
 | metric | observed | preregistered gate |
 |---|---:|---:|
-| plan success fraction | 0.1454668471 | ≥ 0.99 |
-| fallback interval fraction | 0.359296875 | ≤ 0.01 |
-| goal completions / env | 0.25 | ≥ 0.5 |
-| same-goal reselection count | 0 | 0 required |
+| plan success fraction, 70-bar 4-speed pool | 0.1454668471 | ≥ 0.99 |
+| fallback interval fraction, 70-bar 4-speed pool | 0.359296875 | ≤ 0.01 |
+| goal completions / env, 70 bars × 0.6 m/s | 0.25 | ≥ 0.5 |
+| same-goal reselection count, all routed cells | 0 | 0 required |
 
 The same-goal guard is therefore not the cause. The route status counters across all 16 route-on
 cells are dominated by `unsafe_start` (420 observations, versus 80 `ok`; only 6 `no_path` and 6

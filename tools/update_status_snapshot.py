@@ -46,6 +46,7 @@ TTC_1650_PATH = ROOT / "results/v2_ttc_ab_1650ti.csv"
 MAIN_TTC_RESULT_ROOT = ROOT / "results"
 SIM2REAL_PREFLIGHT_PATH = ROOT / "results/navrl_sim2real_software_preflight_2026-08-24/summary.json"
 PHYSICAL_SPEED_ENVELOPE_PATH = ROOT / "results/navrl_physical_target_speed_envelope_post_wall_brake_seed509/summary.json"
+ROUTED_PHYSICAL_GATE_PATH = ROOT / "results/navrl_physical_target_routed_gate_seed827_attempt2/summary.json"
 MODE_PROBE_PATH = ROOT / "results/navrl_ref5in_symmetric_corridor_mode_probe_seed431/summary.json"
 
 _MAIN_TTC_SOURCE_SHA256 = (
@@ -2458,12 +2459,58 @@ def _sim2real_72h() -> Dict[str, Any]:
     if PHYSICAL_SPEED_ENVELOPE_PATH.exists():
         try:
             physical = json.loads(PHYSICAL_SPEED_ENVELOPE_PATH.read_text(encoding="utf-8"))
-            simulation_verification["physical_gate_all_cells_pass"] = physical.get("all_cells_pass")
-            simulation_verification["highest_passing_speed_mps_by_density"] = physical.get(
-                "highest_passing_speed_mps_by_density"
-            )
+            simulation_verification["historical_post_wall_brake_speed_envelope"] = {
+                "source": str(PHYSICAL_SPEED_ENVELOPE_PATH.relative_to(ROOT)),
+                "route_mode": "off_historical_lineage",
+                "all_cells_pass": physical.get("all_cells_pass"),
+                "highest_passing_speed_mps_by_density": physical.get(
+                    "highest_passing_speed_mps_by_density"
+                ),
+            }
         except (OSError, json.JSONDecodeError):
             simulation_verification["physical_gate"] = "RESULT_READ_ERROR"
+    if ROUTED_PHYSICAL_GATE_PATH.exists():
+        try:
+            routed = json.loads(ROUTED_PHYSICAL_GATE_PATH.read_text(encoding="utf-8"))
+            verdicts = routed["verdicts"]
+            inputs = verdicts["route_mechanism_inputs"]
+            routed_gate = {
+                "source": str(ROUTED_PHYSICAL_GATE_PATH.relative_to(ROOT)),
+                "attempt": 2,
+                "all_cells_pass": False,
+                "integrity": verdicts["execution_integrity"],
+                "route_mechanism": verdicts["route_mechanism"],
+                "physical_ppo": "BLOCKED",
+                "highest_passing_speed_mps_by_density": verdicts[
+                    "highest_passing_speed_mps_by_density"
+                ],
+                "plan_success_70bar_4speed_pool_pct": round(
+                    100.0 * inputs["plan_success_fraction_70"], 4
+                ),
+                "plan_success_gate_pct": 99.0,
+                "fallback_70bar_4speed_pool_pct": round(
+                    100.0 * inputs["fallback_interval_fraction_70"], 4
+                ),
+                "fallback_gate_pct": 1.0,
+                "goals_per_env_70bar_0_6mps": inputs[
+                    "goal_completions_per_env_70_speed_0p6"
+                ],
+                "goals_per_env_gate": 0.5,
+                "authority": "NO_PPO_PERMISSION",
+                "supported_diagnosis": (
+                    "unsafe_start recovery deadlock in fail-closed zero-command fallback"
+                ),
+                "non_failing_gates": [
+                    "tracking", "local_feasibility", "motor_saturation", "tilt", "contact",
+                    "state",
+                ],
+            }
+            simulation_verification["routed_physical_target_gate_attempt2"] = routed_gate
+            simulation_verification.setdefault("preflight_steps", {})[
+                "physical_target_gate"
+            ] = routed_gate
+        except (KeyError, OSError, TypeError, json.JSONDecodeError):
+            simulation_verification["physical_gate"] = "ROUTED_RESULT_READ_ERROR"
     if MODE_PROBE_PATH.exists():
         try:
             mode_probe = json.loads(MODE_PROBE_PATH.read_text(encoding="utf-8"))
@@ -2471,8 +2518,8 @@ def _sim2real_72h() -> Dict[str, Any]:
         except (OSError, json.JSONDecodeError):
             simulation_verification["mode_probe_verdict"] = "RESULT_READ_ERROR"
     return {
-        "as_of": "2026-08-24",
-        "status": "SIMULATION VERIFIED · HARDWARE PENDING",
+        "as_of": "2026-08-25",
+        "status": "SIMULATION VERIFIED · ROUTE MECHANISM FAILED · PHYSICAL PPO BLOCKED · HARDWARE PENDING",
         "plan_path": "docs/SIM2REAL_3DAY_EXECUTION_PLAN.md",
         "evidence": evidence,
         "simulation_verification": simulation_verification,
