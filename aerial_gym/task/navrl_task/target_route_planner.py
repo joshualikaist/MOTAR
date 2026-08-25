@@ -29,6 +29,10 @@ TARGET_ROUTE_MODES = (TARGET_ROUTE_MODE_OFF, TARGET_ROUTE_MODE_GLOBAL_ASTAR)
 TARGET_ROUTE_MODEL = "physx_ref5in_6dof_global_astar_aabb_v1"
 TARGET_ROUTE_RECOVERY_MODEL = "physx_ref5in_6dof_global_astar_aabb_v2_two_envelope_recovery"
 TARGET_ROUTE_RECOVERY_SCHEMA = "navrl_target_route_two_envelope_recovery_v1"
+TARGET_ROUTE_HARD_EPSILON_M = 1e-4
+# Derived reachable-tube reserve: ceil(g*tan(45deg)*0.01^2/8) = 0.0001226 m,
+# rounded upward to 0.00013 m for the continuous substep chord certificate.
+TARGET_ROUTE_REACHABLE_TUBE_MARGIN_M = 0.00013
 
 RECOVERY_NORMAL = 0
 RECOVERY_BRAKE = 1
@@ -205,7 +209,7 @@ def route_handoff_clearance_certificates(
     admissible_hi,
     bars_xy,
     inflated_half_extents_xy,
-    safety_epsilon_m: float = 1e-4,
+    safety_epsilon_m: float = TARGET_ROUTE_HARD_EPSILON_M,
 ) -> np.ndarray:
     """Certify safe early/overshoot handoff balls for every outgoing route segment.
 
@@ -267,6 +271,7 @@ def nearest_soft_free_anchor(
     radius_cells=3,
     tracking_margin_m=0.45,
     soft_hysteresis_m=0.25,
+    hard_epsilon_m=TARGET_ROUTE_HARD_EPSILON_M,
 ):
     """Find the deterministic nearest 7x7 soft-free anchor with a hard-safe connector.
 
@@ -288,6 +293,7 @@ def nearest_soft_free_anchor(
         radius = int(radius_cells)
         tracking = float(tracking_margin_m)
         hysteresis = float(soft_hysteresis_m)
+        hard_epsilon = float(hard_epsilon_m)
     except (TypeError, ValueError, FloatingPointError):
         return {"exists": None, "xy_m": None, "cell_ij": None,
                 "distance_m": None, "hard_connector_safe": None,
@@ -310,6 +316,8 @@ def nearest_soft_free_anchor(
         or tracking < 0.0
         or not math.isfinite(hysteresis)
         or hysteresis < 0.0
+        or not math.isfinite(hard_epsilon)
+        or hard_epsilon < 0.0
     ):
         return {"exists": None, "xy_m": None, "cell_ij": None,
                 "distance_m": None, "hard_connector_safe": None,
@@ -321,13 +329,13 @@ def nearest_soft_free_anchor(
         for k in (0, 1)
     )
     base = tuple(int(np.argmin(np.abs(axes[k] - point[k]))) for k in (0, 1))
-    hard_lo = lo + hard_boundary + support
-    hard_hi = hi - hard_boundary - support
+    hard_lo = lo + hard_boundary + support + hard_epsilon
+    hard_hi = hi - hard_boundary - support - hard_epsilon
     # Anchor clearance includes the registered release hysteresis.  A merely soft-free anchor
     # could otherwise leave CONNECT at its threshold and immediately re-enter it.
     soft_lo = lo + soft_boundary + support + hysteresis
     soft_hi = hi - soft_boundary - support - hysteresis
-    hard_half = bar_half + support[None, :]
+    hard_half = bar_half + support[None, :] + hard_epsilon
     soft_half = hard_half + tracking + hysteresis
     candidates = []
     for di in range(-radius, radius + 1):
@@ -787,6 +795,9 @@ class BatchedTargetRouteManager:
         )
         self.recovery_anchor = torch.zeros_like(self.goal)
         self.recovery_age_steps = torch.zeros(self.num_envs, dtype=torch.long, device=device)
+        self.recovery_brake_age_steps = torch.zeros(self.num_envs, dtype=torch.long, device=device)
+        self.recovery_connect_age_steps = torch.zeros(self.num_envs, dtype=torch.long, device=device)
+        self.recovery_connect_timeout_steps = torch.zeros(self.num_envs, dtype=torch.long, device=device)
         self.recovery_entries = torch.zeros((), dtype=torch.long, device=device)
         self.recovery_brake_intervals = torch.zeros((), dtype=torch.long, device=device)
         self.recovery_connect_intervals = torch.zeros((), dtype=torch.long, device=device)
@@ -837,6 +848,9 @@ class BatchedTargetRouteManager:
         self.recovery_state[env_ids] = RECOVERY_NORMAL
         self.recovery_anchor[env_ids] = 0.0
         self.recovery_age_steps[env_ids] = 0
+        self.recovery_brake_age_steps[env_ids] = 0
+        self.recovery_connect_age_steps[env_ids] = 0
+        self.recovery_connect_timeout_steps[env_ids] = 0
 
     def invalidate(self, mask, reason: str, current_step: int) -> None:
         if reason not in self.STATUS_CODES:
@@ -859,6 +873,9 @@ class BatchedTargetRouteManager:
             self.recovery_entries += fresh.sum()
         self.recovery_state[fresh] = RECOVERY_BRAKE
         self.recovery_age_steps[fresh] = 0
+        self.recovery_brake_age_steps[fresh] = 0
+        self.recovery_connect_age_steps[fresh] = 0
+        self.recovery_connect_timeout_steps[fresh] = 0
         self.valid[fresh] = False
         self.status_code[fresh] = self.STATUS_CODES["soft_envelope_violation"]
         self.next_replan_step[fresh] = int(current_step)
@@ -897,6 +914,7 @@ class BatchedTargetRouteManager:
                 radius_cells=3,
                 tracking_margin_m=self.config.tracking_margin_m,
                 soft_hysteresis_m=self.config.resolution_m,
+                hard_epsilon_m=TARGET_ROUTE_HARD_EPSILON_M + TARGET_ROUTE_REACHABLE_TUBE_MARGIN_M,
             )
             if anchor.get("exists") is True and anchor.get("hard_connector_safe") is True:
                 self.recovery_anchor[env_id] = torch.as_tensor(
@@ -936,9 +954,10 @@ class BatchedTargetRouteManager:
             distance = speed * speed / (2.0 * float(decel_mps2))
             direction = velocities[local] / speed if speed > 1e-9 else np.zeros(2)
             stop = positions[local] + direction * distance
-            hard_lo = lows[local] + float(hard_boundary_margin_m) + supports[local]
-            hard_hi = highs[local] - float(hard_boundary_margin_m) - supports[local]
-            hard_half = half[local] + supports[local][None, :]
+            hard_margin = TARGET_ROUTE_HARD_EPSILON_M + TARGET_ROUTE_REACHABLE_TUBE_MARGIN_M
+            hard_lo = lows[local] + float(hard_boundary_margin_m) + supports[local] + hard_margin
+            hard_hi = highs[local] - float(hard_boundary_margin_m) - supports[local] - hard_margin
+            hard_half = half[local] + supports[local][None, :] + hard_margin
             result[env_id] = segment_is_safe(
                 positions[local], stop, hard_lo, hard_hi, bars[local], hard_half
             )
@@ -948,6 +967,9 @@ class BatchedTargetRouteManager:
         if mask.dtype != torch.bool or mask.shape != (self.num_envs,):
             raise ValueError("recovery mask must have shape [N] and bool dtype")
         self.recovery_state[mask] = RECOVERY_NO_CONNECTOR
+        self.recovery_brake_age_steps[mask] = 0
+        self.recovery_connect_age_steps[mask] = 0
+        self.recovery_connect_timeout_steps[mask] = 0
         self.valid[mask] = False
         reason = "recovery_hard_breach" if hard_breach else "recovery_timeout" if timeout else "recovery_no_connector"
         self.status_code[mask] = self.STATUS_CODES[reason]
@@ -1198,9 +1220,8 @@ class BatchedTargetRouteManager:
             reverse.get(int(code), f"unknown_{int(code)}"): int(count)
             for code, count in zip(codes.detach().cpu(), counts.detach().cpu())
         }
-        return {
+        payload = {
             "mode": TARGET_ROUTE_MODE_RECOVERY if self.recovery_enabled else TARGET_ROUTE_MODE_GLOBAL_ASTAR,
-            "model": TARGET_ROUTE_RECOVERY_MODEL if self.recovery_enabled else TARGET_ROUTE_MODEL,
             "plan_attempts": self.plan_attempts,
             "plan_successes": self.plan_successes,
             "replan_attempts": self.replan_attempts,
@@ -1229,13 +1250,23 @@ class BatchedTargetRouteManager:
             "raw_waypoints": self.raw_waypoints,
             "smoothed_waypoints": self.smoothed_waypoints,
             "currently_valid": int(self.valid.sum().item()),
+            "status_counts": status_counts,
+        }
+        if not self.recovery_enabled:
+            return payload
+        payload.update({
+            "model": TARGET_ROUTE_RECOVERY_MODEL,
             "recovery_schema": TARGET_ROUTE_RECOVERY_SCHEMA,
             "recovery_hard_envelope": "closed_aabb_support_v1",
             "recovery_soft_envelope": "closed_aabb_support_plus_tracking_v1",
             "recovery_hard_epsilon_m": 1e-4,
+            "recovery_reachable_tube_margin_m": TARGET_ROUTE_REACHABLE_TUBE_MARGIN_M,
             "recovery_hysteresis_m": self.config.resolution_m,
             "recovery_anchor_radius_cells": 3,
             "recovery_age_steps_max": int(self.recovery_age_steps.max().item()),
+            "recovery_brake_age_steps_max": int(self.recovery_brake_age_steps.max().item()),
+            "recovery_connect_age_steps_max": int(self.recovery_connect_age_steps.max().item()),
+            "recovery_connect_timeout_steps_max": int(self.recovery_connect_timeout_steps.max().item()),
             "recovery_state_counts": {
                 "normal": int((self.recovery_state == RECOVERY_NORMAL).sum().item()),
                 "brake": int((self.recovery_state == RECOVERY_BRAKE).sum().item()),
@@ -1249,5 +1280,5 @@ class BatchedTargetRouteManager:
             "recovery_no_connector_count": int(self.recovery_no_connector_count.item()),
             "recovery_hard_breach_count": int(self.recovery_hard_breach_count.item()),
             "recovery_route_resumes": int(self.recovery_route_resumes.item()),
-            "status_counts": status_counts,
-        }
+        })
+        return payload

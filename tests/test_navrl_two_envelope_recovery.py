@@ -121,6 +121,36 @@ class TwoEnvelopeRecoveryTest(unittest.TestCase):
         self.assertEqual(ROUTE.TARGET_ROUTE_MODE_RECOVERY, "global_astar_recovery_v2")
         self.assertNotEqual(ROUTE.TARGET_ROUTE_MODEL, ROUTE.TARGET_ROUTE_RECOVERY_MODEL)
 
+    def test_v1_diagnostics_shape_is_unchanged(self):
+        manager = ROUTE.BatchedTargetRouteManager(
+            1, torch.device("cpu"), ROUTE.RoutePlannerConfig(), recovery_enabled=False
+        )
+        self.assertEqual(
+            set(manager.diagnostics()),
+            {
+                "mode", "plan_attempts", "plan_successes", "replan_attempts",
+                "connected_goal_replans", "same_goal_reselection_count", "no_path_count",
+                "invalid_count", "local_step_invalidations", "fallback_intervals",
+                "goal_completions", "invalidation_counts", "planning_batches", "planning_envs",
+                "total_planning_wall_s", "max_batch_wall_s", "max_batch_size",
+                "planning_wall_ms_per_env", "expanded_nodes", "raw_waypoints",
+                "smoothed_waypoints", "currently_valid", "status_counts",
+            },
+        )
+
+    def test_recovery_geometry_malformed_rows_fail_closed(self):
+        task = (ROOT / "aerial_gym/task/navrl_task/navrl_task.py").read_text()
+        self.assertIn("geometry_valid", task)
+        self.assertIn("torch.isfinite(bars_xy)", task)
+        self.assertIn('float("-inf")', task)
+
+    def test_timeout_and_tube_contract_are_explicit(self):
+        source = (ROOT / "aerial_gym/task/navrl_task/navrl_task.py").read_text()
+        self.assertIn("recovery_brake_age_steps", source)
+        self.assertIn("recovery_connect_age_steps", source)
+        self.assertIn("max_anchor_distance", source)
+        self.assertIn("TARGET_ROUTE_REACHABLE_TUBE_MARGIN_M", source)
+
 
 if __name__ == "__main__":
     unittest.main()

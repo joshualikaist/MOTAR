@@ -12448,3 +12448,17 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
 - 결과: [`summary`](results/navrl_physical_target_route_recovery_forensics_seed827/summary.md),
   [`machine-readable summary`](results/navrl_physical_target_route_recovery_forensics_seed827/summary.json),
   [`receipt`](results/navrl_physical_target_route_recovery_forensics_seed827/receipt.json).
+
+### 2026-08-25 — recovery core P0 audit (GPU/PPO not run)
+
+- Kept the legacy `global_astar_v1` route manager diagnostics and runtime branches unchanged;
+  `global_astar_recovery_v2` remains an explicit fresh-only mode.
+- Added central hard-envelope strictness (`1e-4 m`) and the derived `0.00013 m` continuous
+  PhysX-substep reachable-tube reserve (`ceil(9.81*0.01^2/8)`). Recovery point, brake, anchor,
+  CONNECT rollout, and watchdog certificates use the same reserve.
+- Split BRAKE/CONNECT age and timeout tensors. BRAKE uses measured stop-time p95 + 0.20 s;
+  CONNECT derives a budget from the fixed 7x7 radius-3 diagonal, acceleration ramp, worst half-turn,
+  and the same reserve. Malformed per-environment geometry and repeated local-soft-free failures
+  latch `NO_CONNECTOR`.
+- Recovery scalar p05/p95 values cannot arm the controller without the common probe-receipt
+  validator hook (`NAVRL_TARGET_RECOVERY_PROBE_VALIDATED=1`); no probe or GPU/PPO execution was run.
