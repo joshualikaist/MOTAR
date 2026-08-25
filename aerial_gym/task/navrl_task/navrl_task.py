@@ -68,11 +68,11 @@ logger = CustomLogger("navrl_task")
 RECOVERY_HYSTERESIS_M = 0.25  # route grid resolution, one cell
 RECOVERY_STOP_SPEED_MPS = 0.10  # existing braking-probe stop threshold
 RECOVERY_CONNECT_PROGRESS_TOLERANCE_M = 1e-6  # fixed numerical non-regression tolerance
-# SHA-256 of the exact raw-first validator sources from probe lineage 7f2d806.  If the common
-# verifier changes (for example to expose its recomputed core handoff), this constant and the
-# receipt/source lineage must change together; a mutable manifest alone cannot authorize code.
+# SHA-256 of the exact raw-first validator sources from probe lineage 7f2d806 plus its required
+# returned core handoff.  If the common verifier changes, this constant and receipt/source
+# lineage must change together; a mutable manifest alone cannot authorize code.
 RECOVERY_PROBE_VALIDATOR_SHA256 = "fedc22ffeb1610b6a23cf487607864838eb35236b16ae170bf7e0bc40b93237b"
-RECOVERY_RECEIPT_VALIDATOR_SHA256 = "aab5ba20a2e1f0f9eb098dc49602f9f79c1feac0e7ed0cabbf35f6fa4aa370db"
+RECOVERY_RECEIPT_VALIDATOR_SHA256 = "26913b091b89bdb5d0bdfa651d67eca803bbf8076b4180b8b689bb1a873f6df5"
 
 
 def _load_recovery_receipt_validator(repo_root):
