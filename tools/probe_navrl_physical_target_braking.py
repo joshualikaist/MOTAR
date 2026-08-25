@@ -420,7 +420,7 @@ def runtime_provenance(repo_root: Optional[Path] = None) -> Dict[str, Any]:
             origin_record = str(origin)
             root_bound = False
         imported[module_name] = {"path": origin_record, "sha256": sha256_file(origin), "root_bound": root_bound}
-    ninja = shutil.which("ninja")
+    ninja = os.environ.get("NAVRL_NINJA", "") or shutil.which("ninja")
     if not ninja:
         raise ValueError("ninja is required for runtime provenance")
     ninja_version = subprocess.run([ninja, "--version"], text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
