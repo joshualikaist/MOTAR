@@ -12581,8 +12581,16 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
   physical target fields from `task.task_config`; those fields are instantiated on `task.tm`.
   The probe now attests the instantiated target-motion object without changing any physical value.
   The probe source hash is re-pinned to
-  `d903ad80bec73e19117ebda42f37a5efadd012eed4126c6b566b78dfa7e0b52f`; no measurement was accepted
+  `c585fd71f1f8f7de6cd173eec6f9b83c014c69530bcf15a0d38df676235dec02`; no measurement was accepted
   from the failed cell.
+
+### 2026-08-26 — controller gain attestation object fix
+
+- The physical target's attitude/rate gains are materialized as CUDA tensors on
+  `_target_controller`, not as list attributes on `task.tm`. The probe now reads the controller
+  tensors, transfers only this attestation vector to CPU, and compares with the frozen gains. No
+  controller gain or physics parameter was changed; the previous cell was rejected before data
+  collection.
 
 ### 2026-08-26 — pinned ninja PATH handoff
 

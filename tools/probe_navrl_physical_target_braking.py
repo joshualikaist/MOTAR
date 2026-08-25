@@ -335,8 +335,15 @@ def attest_instantiated_task(task: Any, expected_speed: Optional[float] = None) 
         ("physical_altitude_kp", "physical_altitude_kp"),
     ):
         _exact_float(getattr(tm, attr, None), FROZEN_CONTRACT[key], "tm." + attr)
-    for attr, key in (("physical_attitude_kp", "physical_attitude_kp"), ("physical_rate_kp", "physical_rate_kp")):
-        actual = list(getattr(cfg, attr, ()))
+    controller = getattr(task, "_target_controller", None)
+    if controller is None:
+        raise ValueError("physical target controller was not instantiated")
+    for attr, key in (("attitude_kp", "physical_attitude_kp"), ("rate_kp", "physical_rate_kp")):
+        tensor = getattr(controller, attr, None)
+        try:
+            actual = tensor.detach().cpu().tolist()
+        except (AttributeError, RuntimeError):
+            raise ValueError("controller.%s is not a finite gain vector" % attr)
         expected = FROZEN_CONTRACT[key]
         if len(actual) != len(expected):
             raise ValueError("%s length drift" % attr)
@@ -344,9 +351,6 @@ def attest_instantiated_task(task: Any, expected_speed: Optional[float] = None) 
             _exact_float(observed, want, "%s[%d]" % (attr, index), 1e-6)
     if int(getattr(task, "num_envs", -1)) != REGISTERED_ENVS:
         raise ValueError("instantiated env count drift")
-    controller = getattr(task, "_target_controller", None)
-    if controller is None:
-        raise ValueError("physical target controller was not instantiated")
     _exact_float(getattr(controller, "dt", None), PHYSICS_DT_S, "controller.dt")
     support = getattr(task, "_target_route_support_xy", None)
     if support is not None:
