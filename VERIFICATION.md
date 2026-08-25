@@ -364,6 +364,33 @@ mode probe는 기존 결과대로 `INCONCLUSIVE_POLICY_CHIRALITY`, physical-targ
   로 설계만 고정했다. 실제 range ground truth/profile이 없으므로 합성 noise를 만들거나 평가하지
   않는다(`BLOCKED_NO_REAL_RANGE_PROFILE`).
 
+## 2026-08-25 routed physical gate — attempt 2 판정
+
+별도 attempt 2는 preregistered route-off/on × 4 speeds × 4 densities의 32 JSON cell을 모두
+기록해 `PASS_32_CELL_INTEGRITY`를 얻었다. 그러나 route mechanism은 `FAIL_ROUTE_MECHANISM`,
+density-conditioned envelope는 FAIL, physical training은 `BLOCKED_PHYSICAL_TRAINING`이다.
+attempt 1은 `ninja` PATH 오류로 0/32 `VOID_EXECUTION`이며 수치 결과가 아니다.
+
+| bars \ speed | 0.6 | 0.9 | 1.2 | 1.5 |
+|---:|:---:|:---:|:---:|:---:|
+| 70 | off P / on F | off P / on F | off F / on F | off F / on F |
+| 150 | off P / on F | off P / on F | off P / on F | off F / on F |
+| 205 | off P / on F | off P / on F | off F / on F | off F / on F |
+| 300 | off P / on F | off F / on F | off F / on F | off F / on F |
+
+70-bar aggregate route-on values are plan success `0.1454668471` vs gate ≥0.99, fallback
+`0.359296875` vs gate ≤0.01, and goal completions/env `0.25` vs gate ≥0.5; same-goal reselection
+is 0. Across route-on cells, local invalidation is 0.125–0.635% while fallback is 32.6–85.0%.
+The route status counters are dominated by `unsafe_start` (420 vs 80 `ok`; 6 `no_path`, 6
+`local_step_infeasible`), supporting a soft-envelope recovery deadlock diagnosis. This does not
+prove global disconnection, and does not make motor/tilt/contact the primary cause; tracking remains
+a separately gated metric.
+
+No PPO policy was loaded, no hardware was validated, and no 300-bar arena-wide connectivity claim
+is authorized. Do not alter evaluator code, preregistered thresholds, or the physical-training
+block. Raw evidence and hashes: [`attempt 2 summary`](results/navrl_physical_target_routed_gate_seed827_attempt2/summary.md),
+[`attempt 1 VOID`](results/navrl_physical_target_routed_gate_seed827/VOID.md).
+
 ## 아카이브
 
 2026-08-20 통합으로 아래를 `docs/archive/`로 이동했다.

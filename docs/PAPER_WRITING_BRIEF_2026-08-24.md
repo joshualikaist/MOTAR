@@ -240,3 +240,31 @@ v2 주 결과와 직접 결합하지 않는다.
 
 이 파일 자체가 논문 원고는 아니다. GPT에게 전달할 때 “위 근거와 제한을 지켜 6–8쪽 논문 초안을
 작성하고, 외부 인용은 placeholder로 표시하며, 모든 수치 옆에 원자료 경로를 각주로 달라”고 요청한다.
+
+## 2026-08-25 physical-target route-gate addendum
+
+The seed-827 routed physical-target run is a **feasibility diagnostic**, not a PPO experiment. Attempt
+1 is `VOID_EXECUTION` (0/32) because the conda `ninja` executable was absent from inherited `PATH`.
+Attempt 2 has `PASS_32_CELL_INTEGRITY`, but `FAIL_ROUTE_MECHANISM` and
+`BLOCKED_PHYSICAL_TRAINING`; its JSON claim boundary says no PPO policy, no hardware validation, and
+no arena-wide 300-bar connectivity claim.
+
+Compact strict cell map (`route-off / route-on`, P/F):
+
+| bars \ speed | 0.6 | 0.9 | 1.2 | 1.5 |
+|---:|:---:|:---:|:---:|:---:|
+| 70 | P / F | P / F | F / F | F / F |
+| 150 | P / F | P / F | P / F | F / F |
+| 205 | P / F | P / F | F / F | F / F |
+| 300 | P / F | F / F | F / F | F / F |
+
+At 70 bars × 0.6 m/s, route-on plan success is `0.1454668471` (gate ≥0.99), fallback is
+`0.359296875` (gate ≤0.01), goal completions/env is `0.25` (gate ≥0.5), and same-goal reselection
+is `0`. Across route-on cells, local invalidation 0.125–0.635% is amplified to 32.6–85.0%
+fallback; `unsafe_start` dominates the status counters. Write this as a soft-envelope recovery
+deadlock diagnosis, not as proof of global disconnection. Motor/tilt/contact are not the primary
+diagnosis; tracking remains separately gated, and route-off cells are not learned-policy results.
+
+Use the raw [attempt 2 summary](../results/navrl_physical_target_routed_gate_seed827_attempt2/summary.md)
+and [attempt 1 VOID](../results/navrl_physical_target_routed_gate_seed827/VOID.md) with their listed
+hashes. Do not lower preregistered thresholds or promote this gate to PPO/hardware evidence.

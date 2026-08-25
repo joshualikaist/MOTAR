@@ -378,3 +378,27 @@ transferable across this transition. The gate authority and measured outcome liv
 - [GAFusion, CVPR 2024](https://openaccess.thecvf.com/content/CVPR2024/html/Li_GAFusion_Adaptive_Fusing_LiDAR_and_Camera_with_Multiple_Guidance_for_CVPR_2024_paper.html): LiDAR–camera adaptive fusion.
 - [ORTrack, CVPR 2025](https://openaccess.thecvf.com/content/CVPR2025/html/Wu_Learning_Occlusion-Robust_Vision_Transformers_for_Real-Time_UAV_Tracking_CVPR_2025_paper.html): UAV occlusion-robust tracking.
 - [TransFusion, CVPR 2022](https://openaccess.thecvf.com/content/CVPR2022/html/Bai_TransFusion_Robust_LiDAR-Camera_Fusion_for_3D_Object_Detection_With_Transformers_CVPR_2022_paper.html): object-query 기반 camera–LiDAR fusion 비교안.
+
+## 2026-08-25 routed physical-target gate update
+
+The fresh physical lineage remains blocked. Attempt 1 is a preserved 0/32 `VOID_EXECUTION` caused by
+the conda `ninja` PATH failure. Attempt 2 records all 32 preregistered cells and passes execution
+integrity, but fails the route mechanism and therefore does not authorize PPO. Its route-off/on
+strict cell map is:
+
+| bars \ speed | 0.6 | 0.9 | 1.2 | 1.5 |
+|---:|:---:|:---:|:---:|:---:|
+| 70 | P / F | P / F | F / F | F / F |
+| 150 | P / F | P / F | P / F | F / F |
+| 205 | P / F | P / F | F / F | F / F |
+| 300 | P / F | F / F | F / F | F / F |
+
+At 70 bars × 0.6 m/s, route-on plan success is `0.1454668471` (gate ≥0.99), fallback is
+`0.359296875` (gate ≤0.01), goal completions/env is `0.25` (gate ≥0.5), and same-goal reselection
+is zero. Across route-on cells, 0.125–0.635% local invalidation expands to 32.6–85.0% fallback;
+status counts are dominated by `unsafe_start`, consistent with a soft-envelope recovery deadlock.
+This is a controller/planner diagnostic, not a global-connectivity proof. PPO, hardware claims, and
+arena-wide 300-bar claims remain out of scope. Thresholds and evaluator code remain frozen.
+
+Authority: [`VERIFICATION.md`](VERIFICATION.md), [`attempt 2 summary`](results/navrl_physical_target_routed_gate_seed827_attempt2/summary.md),
+and [`target-motion audit`](docs/target_motion_training_environment_audit_2026-08-25.md).

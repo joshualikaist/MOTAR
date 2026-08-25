@@ -220,3 +220,28 @@ canonical v2 launcher(`train_navrl_v2_search.sh`) 기준:
 - canonical 학습 launcher: `aerial_gym/rl_training/rl_games/train_navrl_v2_search.sh`
 - PPO YAML: `aerial_gym/rl_training/rl_games/ppo_navrl_perception_transformer.yaml`
 - 최신 상태: `docs/status/status.json`, `docs/VERIFICATION.md`, `WORKLOG.md`
+
+## 9. 2026-08-25 routed physical-target gate status
+
+The seed-827 physical-target route diagnostic is not part of the canonical PPO result set. Attempt 1
+is preserved as 0/32 `VOID_EXECUTION` after a conda `ninja` PATH failure. Attempt 2 records the exact
+32-cell grid with `PASS_32_CELL_INTEGRITY`, but its route mechanism is `FAIL_ROUTE_MECHANISM` and
+physical training is `BLOCKED_PHYSICAL_TRAINING`. The JSON claim boundary remains: no PPO policy
+loaded, no hardware validation, and no arena-wide 300-bar connectivity claim.
+
+| bars \ speed | 0.6 | 0.9 | 1.2 | 1.5 |
+|---:|:---:|:---:|:---:|:---:|
+| 70 | off P / on F | off P / on F | off F / on F | off F / on F |
+| 150 | off P / on F | off P / on F | off P / on F | off F / on F |
+| 205 | off P / on F | off P / on F | off F / on F | off F / on F |
+| 300 | off P / on F | off F / on F | off F / on F | off F / on F |
+
+Route-on local invalidation is 0.125–0.635%, yet fallback is 32.6–85.0%. At 70 bars × 0.6 m/s,
+plan success is `0.1454668471` (≥0.99 gate), fallback `0.359296875` (≤0.01 gate), and goal
+completions/env `0.25` (≥0.5 gate); same-goal reselection is 0. Status counters support an
+`unsafe_start` soft-envelope recovery deadlock diagnosis. This is not a global connectivity proof
+and does not make motor/tilt/contact the primary cause; tracking remains a separately gated metric. Keep evaluator, thresholds, PPO
+authority, hardware claims, and arena-wide 300-bar claims unchanged.
+
+Raw evidence: [`attempt 2 summary`](../results/navrl_physical_target_routed_gate_seed827_attempt2/summary.md),
+[`attempt 1 VOID`](../results/navrl_physical_target_routed_gate_seed827/VOID.md).
