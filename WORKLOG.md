@@ -12422,7 +12422,6 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
   physics timing, exact speed min/final, and robot source hashes cross-bound to the manifest.
 - GPU provenance requires CUDA/current device identity and a non-empty `nvidia-smi` query with
   executable hash and driver/GPU/UUID text. CPU regression suite: 15/15 PASS; no GPU was run.
-
 ### 2026-08-25 — routed recovery forensics: `RECOVERY_DOMINANT`
 
 - 사전등록한 seed 827, route-on, 32 env × 300 steps, 70/150/205/300 bars × 0.6/1.5 m/s의
