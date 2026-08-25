@@ -12352,3 +12352,5 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
 - GitHub Pages는 정적 HTML/CSS/JS만 사용하므로 `docs/.nojekyll`을 추가했다. 첫 push 뒤 raw branch는
   최신이었지만 Pages branch-source workflow가 생성되지 않아, Jekyll 변환을 명시적으로 끄는 실제
   publishing-source 변경으로 재배포 이벤트를 다시 발생시켰다.
+- 두 ref를 한 receive에서 갱신한 push가 Pages 이벤트를 만들지 않아, Pages/default source인
+  `research/navrl-env`를 단독 ref push로 한 번 갱신한 뒤 `main`을 같은 commit으로 fast-forward한다.
