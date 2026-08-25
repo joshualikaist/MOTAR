@@ -349,8 +349,18 @@ def core_integration_object(summary: Mapping[str, Any]) -> Dict[str, Any]:
             "NAVRL_TARGET_RECOVERY_BRAKE_PROBE_RECEIPT_SHA256": "SHA256(final receipt JSON bytes)",
             "NAVRL_TARGET_RECOVERY_PROBE_VALIDATED": "1 only after standalone verify_receipt passes",
             "core_distance_lookup": "certified_monotone_speed_to_p95_lookup",
+            "certified_lookup_api": "certified_lookup_for_speed(summary, speed_mps)",
         },
     }
+
+
+def certified_lookup_for_speed(summary: Mapping[str, Any], speed_mps: float) -> Dict[str, Any]:
+    """Return the exact canonical certified handoff cell for one registered speed."""
+    key = format(float(speed_mps), ".1f")
+    lookup = summary["certified_monotone_speed_to_p95_lookup"]
+    if key not in lookup or abs(float(lookup[key]["speed_mps"]) - float(speed_mps)) > 1e-12:
+        raise ValueError("speed is not present in the certified braking lookup")
+    return dict(lookup[key])
 
 
 def _verify_git_object(repo_root: Path, recorded_head: str) -> None:
