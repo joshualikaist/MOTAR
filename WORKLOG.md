@@ -12465,3 +12465,7 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
 - BRAKE and CONNECT timeout reasons now have distinct status codes/counters. Braking uses a
   validated monotone speed-indexed p95 stop-distance lookup with ceiling-speed selection; the
   scalar `v^2/(2*a)` fallback remains legacy-only and cannot arm recovery.
+- Core receipt integration now validates canonical `core_integration`, certified lookup, measured
+  lateral stopping tube, and hashed clean source manifest; watchdog brake certificates inflate
+  bars/shrink walls by the lateral tube. CONNECT requires full-horizon certificate plus fixed
+  nonnegative anchor progress; no GPU/PPO was run.
