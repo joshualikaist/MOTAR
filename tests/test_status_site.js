@@ -79,15 +79,18 @@ for (const asset of ['motar-system-overview.svg', 'motar-control-stack.svg']) {
 }
 
 // Presentation claims remain explicitly bounded by the current evidence and hardware status.
-assert(html.includes('Simulation verified'));
+assert(html.includes('Simulation evidence scoped'));
+assert(html.includes('Physical routed gate pending'));
 assert(html.includes('Hardware pending'));
 assert(html.includes('SYNTHETIC_ONLY'));
 assert(html.includes('333/333'));
+assert(html.includes('selected 205-bar contact endpoints'));
 assert(html.includes('−0.0145 pp'));
 assert(html.includes('8.443→3.172%'));
 assert(html.includes('실제 기체가 미조립'));
-assert(readme.includes('Simulation verified, hardware pending'));
-assert(readme.includes('실제 센서 로그와 비행 데이터는 없습니다'));
+assert(readme.includes('Status · 2026-08-25'));
+assert(readme.includes('routed physical-target\n> simulator gate and hardware are pending'));
+assert(readme.includes('실제 센서 로그와 비행\n> 데이터는 없습니다'));
 assert(readme.includes('altitude PI → Lee velocity loop'));
 assert(fs.readFileSync(path.join(repo, 'docs/assets/motar-control-stack.svg'), 'utf8').includes('K_v e_v'));
 assert(html.includes('0.04 s 1차 지연'));

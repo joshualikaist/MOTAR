@@ -12010,10 +12010,11 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
 - legacy는 순간 wall mirror/bar push-out을 쓰는 재현 계보, bounded는 10 Hz 2-D kinematic 중간
   계보, physical만 100 Hz rigid-body/motor 계보임을 분리했다. 최신 physical speed-envelope receipt는
   1.5 m/s 전 density strict FAIL이라 physical PPO 차단을 유지한다.
-- v2 geometry CPU probe(seed 825, 20 layouts/density, 0.2 m grid)는 70/150/205/300 bars에서 sampled
-  global connectivity를 유지했지만, `navrl_band` center gap 1.6 m는 footprint/tilt/dynamic corridor
-  보증이 아님을 명시했다. bar 평균 footprint는 0.3653 m², 205 bars/1600 m² nominal occupancy는
-  4.681%다.
+- v2 geometry CPU probe(seed 825, **12 layouts/density, 0.15 m grid**, side-clearance 0/0.1 m)는
+  70/150/205/300 bars에서 해당 작은-margin sampled connectivity를 유지했다. 이것은 이후 physical
+  routed all-orientation support+tracking 계약의 전역 연결성 근거가 아니다. `navrl_band` center gap
+  1.6 m도 footprint/tilt/dynamic corridor 보증이 아니다. bar 평균 footprint는 0.3653 m²,
+  205 bars/1600 m² nominal occupancy는 4.681%다.
 - checkpoint에 저장만 하고 restore 시 비교하지 않던 target accel/turn/lookahead/clearance와 physical
   authority를 fail-loud drift guard에 추가했다. tracking/boundary margin도 저장·검사한다. 옛
   checkpoint의 missing field는 계속 허용하므로 policy/legacy transition semantics는 그대로다.
@@ -12126,9 +12127,10 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
   seed 825 actual-AABB CPU benchmark(16 layouts/density)는 70/150/205/300 bars 평균
   46.18/48.71/58.34/64.01 ms/env, p95 최대 115.52 ms, 128-env 직렬 보수 투영 최대 8.19 s,
   connected goal 64/64 성공으로 preregistered CPU gate를 통과했다.
-- 이 64/64는 same-component goal availability일 뿐 arena-wide connectivity가 아니다. 같은 inflation의
-  독립 20-layout topology probe에서 300-bar largest component 0.3998, pair connectivity 0.2247,
-  crossing 0.3이므로 300 bars arena-wide roaming 주장을 금지한다. 상태는
+- 이 64/64는 same-component goal availability일 뿐 arena-wide connectivity가 아니다.
+  route-equivalent **obstacle inflation**(boundary/grid/corner 계약은 다름)의 독립 20-layout raster
+  topology probe에서 300-bar largest component 0.3998, pair connectivity 0.2247, crossing 0.3이므로
+  300 bars arena-wide roaming 주장을 금지한다. 상태는
   `PASS_CPU_ENGINEERING_GATE / SIMULATOR_UNMEASURED`;
   다음은 short fresh PhysX smoke이며 PPO 본학습 권한은 없다.
 
@@ -12228,3 +12230,21 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
   30/60/144 Hz는 동일 50-step/5 s 상태를 냈고, 30 s 연속 fixture는 re-goal ≥1·long stall 0이었다.
 - 검증은 Node route parity/source SHA, exact AABB/no-path/no-alternative/zero-command, site/motion contract,
   headless SwiftShader WebGL을 대상으로 수행했다. Python·PhysX·PPO·GPU 실행 코드는 변경하지 않았다.
+
+### 2026-08-25 — topology claim 범위 정정 및 원자료 추적
+
+- primary에 untracked로 남아 있던 seed-825 topology CSV를 저장소에 추가하고 생성 명령·수치·한계를
+  `results/navrl_physical_target_route_topology_seed825_summary.md`에 고정했다. 20 layouts/density,
+  0.15 m raster, 70/150/205/300 bars, side-clearance 0.517 m 조건이다.
+- analyzer의 `side_clearance=0.517`은 level box half-width 0.14 m와 합쳐 total obstacle inflation
+  0.6570 m다. routed target의 all-orientation support 0.2068816 m + tracking 0.45 m = 0.6568816 m보다
+  반올림상 0.118 mm 보수적이다. 그러나 analyzer는 full boundary, diagonal corner connection,
+  floor/ceil raster stamp를 써 route의 boundary 1.25 m+support/no-corner-cut/exact LOS와 동일하지 않다.
+- route-equivalent obstacle-inflation raster 결과는 205 bars LCC/pair/crossing
+  0.9577/0.9211/1.0, 300 bars 0.3998/0.2247/0.3이다. 따라서 300-bar arena-wide roaming 주장은
+  금지하되 exact planner reachability 증명으로도 과대해석하지 않는다.
+- README/site의 `333/333 scenes reachable`를 seed167의 **selected 205-bar bar-contact endpoint pair**
+  결과로 정확히 축소했다. 이 historical centre-disk oracle은 global/random-pair/300-bar connectivity나
+  actual per-bar AABB를 검증하지 않으므로 “기하는 무죄” 문구를 철회했다.
+- site 상태일을 2026-08-25로 갱신하고 corrected-v2 simulation evidence와 routed physical simulator
+  gate pending, hardware pending을 분리했다. evaluator/preregistered simulator gate 코드는 변경하지 않았다.
