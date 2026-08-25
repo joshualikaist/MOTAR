@@ -93,7 +93,9 @@
         if (!Number.isFinite(now)) throw new Error('clock time must be finite');
         if (last == null) { last = now; return { steps: 0, alpha: 0, simulationTime }; }
         let elapsed = clamp(now - last, 0, maxFrame); last = now;
-        if (!running) { accumulator = 0; return { steps: 0, alpha: 0, simulationTime }; }
+        // A paused renderer shows the latest committed state, not the previous interpolation
+        // endpoint. The arena also collapses prev/current on pause so resume cannot jump back.
+        if (!running) { accumulator = 0; return { steps: 0, alpha: 1, simulationTime }; }
         accumulator += elapsed;
         let steps = 0;
         while (accumulator + 1e-12 >= step && steps < maxSteps) {
@@ -618,8 +620,16 @@
       }
       velocity = next;
       const ax = (velocity.x - current.x) / dt, ay = (velocity.y - current.y) / dt;
-      episode.physicalStyle.roll = clamp(-ay / 9.81, -Math.tan(CONTRACT.physicalStyleMaxTilt), Math.tan(CONTRACT.physicalStyleMaxTilt));
-      episode.physicalStyle.pitch = clamp(ax / 9.81, -Math.tan(CONTRACT.physicalStyleMaxTilt), Math.tan(CONTRACT.physicalStyleMaxTilt));
+      // Convert world-planar acceleration into the displayed target body frame. Using world ay
+      // as roll and world ax as pitch only happened to look right at yaw=0; after a 90° turn it
+      // swapped forward pitch and lateral roll.
+      const motionHeading = Math.hypot(velocity.x, velocity.y) > 1e-6
+        ? Math.atan2(velocity.y, velocity.x) : episode.heading;
+      const ch = Math.cos(motionHeading), sh = Math.sin(motionHeading);
+      const forwardAccel = ax * ch + ay * sh;
+      const lateralAccel = -ax * sh + ay * ch;
+      episode.physicalStyle.roll = clamp(-lateralAccel / 9.81, -Math.tan(CONTRACT.physicalStyleMaxTilt), Math.tan(CONTRACT.physicalStyleMaxTilt));
+      episode.physicalStyle.pitch = clamp(forwardAccel / 9.81, -Math.tan(CONTRACT.physicalStyleMaxTilt), Math.tan(CONTRACT.physicalStyleMaxTilt));
       episode.physicalStyle.velocity = { x: velocity.x, y: velocity.y };
       episode.target.x = old.x + velocity.x * dt;
       episode.target.y = old.y + velocity.y * dt;
@@ -634,11 +644,29 @@
     };
     episode.heading = Math.atan2(velocity.y, velocity.x);
     if (episode.mode === 'cv') episode.cvVelocity = { x: velocity.x, y: velocity.y };
+    // Python bounded mode checks the virtual point AFTER committing firstPos. Physical mode can
+    // only check the actor's pre-physics position here because its rigid body moves afterwards.
+    const waypointPosition = physicalStyle ? old : episode.target;
     if (episode.mode === 'waypoint'
-        && Math.hypot(episode.waypoint.x - old.x, episode.waypoint.y - old.y) < CONTRACT.waypointReach) {
+        && Math.hypot(
+          episode.waypoint.x - waypointPosition.x,
+          episode.waypoint.y - waypointPosition.y
+        ) < CONTRACT.waypointReach) {
       episode.waypoint = sampleWaypoint(rng);
     }
     return episode;
+  }
+
+  // Match NavRLTask's target-relative swept-segment capture test. Endpoint-only range misses a
+  // grazing crossing whose two endpoints both remain just outside the 0.5 m capture sphere.
+  function sweptCapture(prevRelative, nextRelative, radius) {
+    const sx = nextRelative.x - prevRelative.x;
+    const sy = nextRelative.y - prevRelative.y;
+    const denom = sx * sx + sy * sy;
+    const t = denom > 1e-12
+      ? clamp(-(prevRelative.x * sx + prevRelative.y * sy) / denom, 0, 1)
+      : 0;
+    return Math.hypot(prevRelative.x + t * sx, prevRelative.y + t * sy) < radius;
   }
 
   function advanceTarget(episode, dt, bars, rng, mode) {
@@ -729,6 +757,7 @@
     pushPursuerOut: pushPursuerOut,
     steerTargetStep: steerTargetStep,
     steerPursuerStep: steerPursuerStep,
+    sweptCapture: sweptCapture,
     advanceTarget: advanceTarget,
   };
 });

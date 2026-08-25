@@ -12048,3 +12048,27 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
   `tests/test_status_arena_motion.js` PASS(고정 시계·보간·Python golden·가속/속도/선회/attitude
   limit), 기존 target-motion 13/13·status snapshot 12/12·recovery completion 3/3 PASS,
   `git diff --check` PASS. 학습·GPU 평가·환경 Python 코드는 실행하거나 변경하지 않았다.
+
+### 2026-08-25 — 3-D arena 동작 통합 독립 감사
+
+- 통합 기준 commit `6ef603f`의 fixed-step/interpolation 상태 소유권, pause/reset/background-tab,
+  30/60/144 Hz 결정성, Python bounded parity, collision/waypoint/CV 의미, 3-D 자세·trail·capture를
+  별도 worktree에서 재감사했다. global route planner와 학습환경·정책 코드는 변경하지 않았다.
+- pause가 직전 snapshot(`alpha=0`)을 렌더하던 오류를 최신 committed snapshot(`alpha=1`)으로
+  고쳤고, pause 진입 시 보간 상태를 접었다. `visibilitychange`와 intersection 변화 때 clock을
+  reset해 background-tab 경과시간을 재개 시 catch-up하지 않도록 했다.
+- bounded waypoint 도달 검사를 Python과 동일하게 virtual first-step 이후 위치에서 수행하도록
+  수정했다. physical-style은 실제 actor pre-step 위치를 계속 사용한다. Python golden fixture와
+  5 s full target+pursuer fixture에서 30/60/144 Hz 모두 50 step·5.0 s·동일 상태를 확인했다.
+- endpoint 거리만 보던 capture를 Python과 같은 target-relative swept segment-sphere 검사로 바꿔,
+  양 endpoint가 0.5 m 밖이어도 한 step 중 포획 구를 관통하면 capture하도록 했다.
+- Three.js의 +X forward/y-up 좌표에 맞춰 drone bank와 target roll을 X축, target pitch를 Z축에
+  적용했다. physical-style의 world-frame 가속도를 target body frame으로 회전한 뒤 roll/pitch를
+  계산해 북향 전진 가속이 roll로 잘못 표시되던 오류도 제거했다.
+- `physical-style`은 계속 10 Hz bounded command에 lag/attitude 표시만 더한 설명용 proxy이며
+  PhysX·6-DoF 성능 주장이 아니다. trail의 local-coordinate ownership과 CV/bar push-out 의미에서는
+  추가 결함을 찾지 못했다.
+- 사이트 스크립트 5개의 cache-bust를 `20260825`로 통일하고 local-link test에 고정했다.
+  `test_status_arena_motion.js`, `test_status_site.js`, `git diff --check` 모두 PASS했고,
+  Chrome headless SwiftShader에서 실제 WebGL canvas(723×452) 생성과 모든 20260825 asset 응답을
+  확인했다. GPU job·학습·평가는 실행하지 않았다.

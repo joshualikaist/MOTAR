@@ -11,6 +11,7 @@ const css = fs.readFileSync(path.join(site, 'style.css'), 'utf8');
 const readme = fs.readFileSync(path.join(repo, 'README.md'), 'utf8');
 const platform = JSON.parse(fs.readFileSync(path.join(site, 'data/platform.json'), 'utf8'));
 const Motion = require('../docs/status/arena_motion.js');
+const arenaSource = fs.readFileSync(path.join(site, 'arena.js'), 'utf8');
 
 // The public site is one presentation page. JavaScript is limited to the self-contained 3-D
 // arena; evidence and claims remain static HTML and never depend on a dashboard renderer.
@@ -32,12 +33,19 @@ assert(html.indexOf('three.min.js') < html.indexOf('OrbitControls.js'));
 assert(html.indexOf('OrbitControls.js') < html.indexOf('arena_motion.js'));
 assert(html.indexOf('arena_motion.js') < html.indexOf('arena.js'));
 assert(html.indexOf('arena.js') < html.indexOf('viewer.js'));
+for (const script of [
+  'vendor/three.min.js', 'vendor/OrbitControls.js', 'arena_motion.js', 'arena.js', 'viewer.js',
+]) assert(html.includes(`${script}?v=20260825`), `stale cache-bust for ${script}`);
 assert(html.includes('이 화면은 PPO 실행 영상'));
 assert(html.includes('10 Hz 고정 simulation clock'));
 assert(html.includes('PhysX 재생'));
 assert(html.includes('value="bounded" selected'));
 assert(html.includes('Physical-style illustration · NOT PhysX'));
 assert(html.includes('id="hud-motion-lineage"'));
+assert(arenaSource.includes("document.addEventListener('visibilitychange'"));
+assert(arenaSource.includes('drone.rotation.x += (bank - drone.rotation.x)'));
+assert(arenaSource.includes('target.rotation.x = previous.targetRoll'));
+assert(arenaSource.includes('target.rotation.z = previous.targetPitch'));
 
 Motion.configure({arena_xy_m: 40, goal_dist_m: [6, 28], target_speed_m: [0.3, 1.5]});
 assert.deepStrictEqual(Motion.CONTRACT.bounds, {x0: 0, x1: 40, y0: -20, y1: 20});
