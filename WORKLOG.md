@@ -12049,6 +12049,33 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
   limit), 기존 target-motion 13/13·status snapshot 12/12·recovery completion 3/3 PASS,
   `git diff --check` PASS. 학습·GPU 평가·환경 Python 코드는 실행하거나 변경하지 않았다.
 
+### 2026-08-25 — 3-D arena global routed-preview 추가
+
+- 개발 중인 Python `target_route_planner.py`를 다시 읽고 사이트용 DOM-independent mirror
+  `docs/status/arena_route.js`를 추가했다. 기준 계약은 0.25 m grid, exact closed bar AABB,
+  ref5in target 3-D box half-diagonal XY support 0.2064 m, tracking reserve 0.45 m,
+  boundary 1.25 m + support, deterministic A*/Dijkstra, diagonal corner cutting 금지,
+  continuous exact-LOS smoothing, connected goal 최소 6 m다. endpoint의 nearest grid centre가
+  막힌 경우에도 연속 connector가 안전한 7×7 anchor를 결정론적으로 찾는다.
+  최종 source receipt는 topology branch `fcec3d2`, planner SHA-256 `99ff8fe88525…`다.
+- viewer 기본 target display를 `routed-preview`로 바꾸고 smoothed route polyline을 표시한다.
+  line은 매 10 Hz step마다 현재 target에서 cursor 이후 waypoint만 잇는다. HUD와 selector에는
+  **global route + bounded/lagged browser preview · NOT PhysX/PPO**를 표시해 global planner,
+  target display dynamics, pursuer policy를 혼동하지 않도록 했다.
+- route follower는 task가 실제 전달하는 `waypoint_reach_m=0.5`를 사용한다. planner의 0.05 m
+  goal tolerance를 follower reach로 오용하지 않는다. 목표 완료 시 같은 control interval에서
+  새 selector로 최소 6 m connected goal을 다시 계획하고 reference를 재계산한다. 새 경로가
+  없으면 random/local fallback 없이 target command와 velocity를 0으로 만드는 fail-closed HUD
+  경고를 낸다.
+- Python golden fixture와 JS가 empty-arena expanded nodes 21,904/path endpoint, exact-AABB corner
+  fixture expanded 280/raw 34/4개 좌표, occupied-nearest-cell anchor fixture expanded 91/raw 28/4개
+  좌표까지 일치했다. 최종 합성 dense fixture route runtime은 Node에서 205 bars 41.1 ms,
+  300 bars 27.9 ms였고 둘 다 `ok`였다. 이는 브라우저 설명용 runtime이지 simulator 성능값이 아니다.
+- 검증: 30/60/144 Hz routed target 5 s 결과 동일(각 50 step), 30 s continuous route에서 goal
+  replacement ≥1·유효 route long stall 0, exact AABB corner/no-path/zero-command PASS,
+  기존 arena motion/site contract PASS, Chrome headless SwiftShader WebGL canvas·route HUD PASS,
+  JS syntax와 `git diff --check` PASS. GPU 학습·평가와 Python 환경 코드는 변경/실행하지 않았다.
+
 ### 2026-08-25 — 3-D arena 동작 통합 독립 감사
 
 - 통합 기준 commit `6ef603f`의 fixed-step/interpolation 상태 소유권, pause/reset/background-tab,

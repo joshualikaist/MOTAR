@@ -27,21 +27,29 @@ for (const retired of [
   assert(!fs.existsSync(path.join(site, retired)), `retired dashboard asset remains: ${retired}`);
 }
 for (const viewerAsset of [
-  'arena.js', 'arena_motion.js', 'viewer.js', 'vendor/three.min.js', 'vendor/OrbitControls.js',
+  'arena.js', 'arena_route.js', 'arena_motion.js', 'viewer.js',
+  'vendor/three.min.js', 'vendor/OrbitControls.js',
 ]) assert(fs.existsSync(path.join(site, viewerAsset)), `missing viewer asset: ${viewerAsset}`);
 assert(html.indexOf('three.min.js') < html.indexOf('OrbitControls.js'));
-assert(html.indexOf('OrbitControls.js') < html.indexOf('arena_motion.js'));
+assert(html.indexOf('OrbitControls.js') < html.indexOf('arena_route.js'));
+assert(html.indexOf('arena_route.js') < html.indexOf('arena_motion.js'));
 assert(html.indexOf('arena_motion.js') < html.indexOf('arena.js'));
 assert(html.indexOf('arena.js') < html.indexOf('viewer.js'));
 for (const script of [
-  'vendor/three.min.js', 'vendor/OrbitControls.js', 'arena_motion.js', 'arena.js', 'viewer.js',
+  'vendor/three.min.js', 'vendor/OrbitControls.js', 'arena_route.js',
+  'arena_motion.js', 'arena.js', 'viewer.js',
 ]) assert(html.includes(`${script}?v=20260825`), `stale cache-bust for ${script}`);
 assert(html.includes('이 화면은 PPO 실행 영상'));
 assert(html.includes('10 Hz 고정 simulation clock'));
 assert(html.includes('PhysX 재생'));
-assert(html.includes('value="bounded" selected'));
+assert(html.includes('value="routed-preview" selected'));
 assert(html.includes('Physical-style illustration · NOT PhysX'));
+assert(html.includes('Global route + bounded/lagged browser preview · NOT PhysX/PPO'));
+assert(html.includes('id="hud-route-state"'));
 assert(html.includes('id="hud-motion-lineage"'));
+assert(arenaSource.includes('routeLine.geometry.setFromPoints'));
+assert(arenaSource.includes('route.waypoints.slice(route.cursor)'));
+assert(arenaSource.includes('waypointReachM: Motion.CONTRACT.waypointReach'));
 assert(arenaSource.includes("document.addEventListener('visibilitychange'"));
 assert(arenaSource.includes('drone.rotation.x += (bank - drone.rotation.x)'));
 assert(arenaSource.includes('target.rotation.x = previous.targetRoll'));
