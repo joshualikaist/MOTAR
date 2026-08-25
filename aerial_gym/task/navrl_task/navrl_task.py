@@ -67,7 +67,7 @@ logger = CustomLogger("navrl_task")
 # existing 0.45 m tracking reserve.
 RECOVERY_HYSTERESIS_M = 0.25  # route grid resolution, one cell
 RECOVERY_STOP_SPEED_MPS = 0.10  # existing braking-probe stop threshold
-RECOVERY_CONNECT_PROGRESS_TOLERANCE_M = 1e-4  # fixed numerical non-regression tolerance
+RECOVERY_CONNECT_PROGRESS_TOLERANCE_M = 1e-6  # fixed numerical non-regression tolerance
 # SHA-256 of the exact raw-first validator sources from probe lineage 7f2d806.  If the common
 # verifier changes (for example to expose its recomputed core handoff), this constant and the
 # receipt/source lineage must change together; a mutable manifest alone cannot authorize code.
@@ -6137,6 +6137,7 @@ class NavRLTask(BaseTask):
                     exact_aabb_clearance=True,
                     hard_epsilon_m=TARGET_ROUTE_HARD_EPSILON_M + TARGET_ROUTE_REACHABLE_TUBE_MARGIN_M,
                     return_certificate=True,
+                    certificate_row_ids=connect_ids,
                 )
                 connect_xy, connect_velocity, _, _, connect_certificate = connect_result
                 # Recovery never accepts the ordinary longest-safe-prefix fallback.  CONNECT is
@@ -6153,7 +6154,7 @@ class NavRLTask(BaseTask):
                 ).norm(dim=1)
                 new_anchor_distance = (
                     self._target_route_manager.recovery_anchor[connect_ids]
-                    - connect_certificate["selected_final_pos"]
+                    - connect_certificate["selected_final_position_xy"]
                 ).norm(dim=1)
                 connect_feasible &= (
                     old_anchor_distance - new_anchor_distance

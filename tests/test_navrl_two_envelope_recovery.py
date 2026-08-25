@@ -212,6 +212,8 @@ class TwoEnvelopeRecoveryTest(unittest.TestCase):
         self.assertTrue(bool(certificate["full_horizon_safe"].all()))
         self.assertTrue(bool((certificate["safe_prefix_steps"] == 10).all()))
         self.assertEqual(tuple(certificate["selected_final_pos"].shape), (1, 2))
+        self.assertEqual(tuple(certificate["selected_final_position_xy"].shape), (1, 2))
+        self.assertTrue(torch.equal(certificate["row_ids"], torch.tensor([0])))
 
     def test_connect_consumes_full_horizon_not_immediate_only(self):
         source = (ROOT / "aerial_gym/task/navrl_task/navrl_task.py").read_text()
@@ -312,6 +314,7 @@ class TwoEnvelopeRecoveryTest(unittest.TestCase):
         ):
             self.assertIn(field, task)
         self.assertIn('"selected_final_pos"', (ROOT / "aerial_gym/task/navrl_task/target_motion.py").read_text())
+        self.assertIn('"selected_final_position_xy"', (ROOT / "aerial_gym/task/navrl_task/target_motion.py").read_text())
 
 
 if __name__ == "__main__":
