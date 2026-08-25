@@ -12629,3 +12629,11 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
   step-distance continuity now use the existing 1e-4 m path tolerance; cumulative path and stop
   statistics remain raw-trace derived. The verifier hash is re-pinned to
   `23ed75817120668e7404b902fdd35a6290d964af245ec25d4fdd2f91c523487d`.
+
+### 2026-08-26 — stale root-tensor baseline exclusion
+
+- A raw-cell inspection showed the first 28.27 m “step” was not target motion: Isaac Gym refreshed
+  the just-written center root on the first callback while the recorder baseline still held the
+  stale pre-write tensor. The recorder now receives the declared center XY as the warmup baseline;
+  brake phase still rebases to the live controller pose. The probe hash is re-pinned to
+  `55a2aef0dd60b7b1eab826eb35a03949f19b5df611f696a216e3307d23946f93`.

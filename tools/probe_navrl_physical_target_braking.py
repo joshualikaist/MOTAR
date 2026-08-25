@@ -475,12 +475,13 @@ def _invalid_obb(task: Any, torch: Any) -> Any:
 class _PhysicsSubstepRecorder:
     """Transparent callback proxy: controller force semantics stay byte-for-byte delegated."""
 
-    def __init__(self, controller: Any, bmin: Any, bmax: Any, support: Any, torch: Any) -> None:
+    def __init__(self, controller: Any, bmin: Any, bmax: Any, support: Any, torch: Any, initial_xy: Any = None) -> None:
         self.controller = controller
         self.bmin = bmin
         self.bmax = bmax
         self.support = support
         self.torch = torch
+        self.initial_xy = initial_xy
         self.phase = ""
         self.interval_index = 0
         self.substep_index = 0
@@ -499,7 +500,10 @@ class _PhysicsSubstepRecorder:
         self.phase = phase
         self.interval_index = 0
         self.substep_index = 0
-        self.previous_position = self.controller.position[:, :2].detach().clone()
+        if phase == "warmup" and self.initial_xy is not None:
+            self.previous_position = self.initial_xy[:, :2].detach().clone()
+        else:
+            self.previous_position = self.controller.position[:, :2].detach().clone()
         self.path_distance = self.torch.zeros(
             self.controller.position.shape[0], device=self.controller.position.device
         )
@@ -653,7 +657,7 @@ def run_speed_cell(speed: float, output: Path, envs: int = REGISTERED_ENVS, warm
     altitude = torch.full((envs,), float(task.task_config.flight_altitude), device=task.device)
     direction = torch.zeros((envs, 3), device=task.device)
     direction[:, 0] = float(speed)
-    recorder = _PhysicsSubstepRecorder(ctrl, bmin, bmax, support, torch)
+    recorder = _PhysicsSubstepRecorder(ctrl, bmin, bmax, support, torch, initial_xy=center)
     task.sim_env.set_physics_step_callback(recorder)
     recorder.begin_phase("warmup")
     for sample_index in range(1, warmup_steps + 1):
