@@ -12179,3 +12179,34 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
   route-off/legacy target semantics는 건드리지 않았으며 GPU 학습·평가는 실행하지 않았다.
 - 검증: route planner 13/13, target environment contract 8/8, target motion 13/13,
   physical speed envelope 3/3 PASS. `py_compile`, routed launcher `bash -n`, `git diff --check` PASS.
+
+### 2026-08-25 — routed physical-target 32-cell simulator gate 평가기 구현
+
+- 동결 문서 `docs/preregistration_physical_target_routed_simulator_gate_2026-08-25.md`의
+  route off/global_astar_v1 × speed 0.6/0.9/1.2/1.5 × 70/150/205/300 bars를 seed 827,
+  32 env, 300 step, warmup 20으로 실행하는 전용 도구
+  `tools/verify_navrl_physical_target_routed_simulator_gate.py`를 추가했다. route arm×speed마다 fresh
+  Isaac Gym child를 만들고 density 4개만 공유하므로 총 8 child/32 record다. GPU 실행은 하지 않았다.
+- 각 cell은 initial reset을 포함한 route counter delta로 plan success/fallback/goal completion,
+  reason별 invalidation, same-goal reselection, planning wall time을 기록한다. route-on의 역사적
+  `_tm_last_step_feasible`은 route cooldown까지 섞으므로 immediate local failure로 쓰지 않고,
+  warmup 이후 `local_step_infeasible` counter delta만 사용한다. route-off는 기존 field를 유지한다.
+- controller의 task-lifetime diagnostics를 cell 끝에서 그대로 읽지 않는다. 각 physics interval의
+  `saturation_substeps/substeps` 비음수 증가량을 failed-env reset 전에 합산하고, tilt도 reset 전 전구간
+  max를 보존한다. initial/mid-cell reset GPU-synchronized wall time과 rollout RL steps/s·env-intervals/s도
+  별도로 기록한다.
+- 모든 child는 stale `NAVRL_*` shell 변수를 제거하고 physical authority, AABB route, goal exclusion
+  1.0 m를 재고정한다. density별 initial bar center/AABB SHA가 8개 arm에서 동일해야만 matched delta를
+  허용한다. evaluator/task/planner/task config/ref5in robot config+URDF와 전체 `aerial_gym` runtime을
+  source manifest로 묶고 local repo import origin을 강제한다.
+- 환경변수 선언만 믿지 않고 실제 생성된 task에서 physics dt 0.01 s, RL당 physics 10 step,
+  RL step 0.1 s, ref5in robot config/URDF SHA, physical box 0.28×0.28×0.12 m, routed conservative
+  support 0.206881609 m, bar offset 1과 density별 active AABB 수를 child/summary에 증명한다.
+- 결과 `summary.json`, 8개 child summary, source/execution manifest, receipt를 상호 SHA로 묶는다.
+  `--verify --require-contract full_1p5|density_conditioned`은 원 child 32개에서 gate/verdict를 다시
+  계산하며 `PASS_ROUTE_MECHANISM`과 요청 contract가 없으면 nonzero다. density-conditioned pass만으로
+  canonical full-1.5 launcher를 해제하지 않고 `BLOCKED_PHYSICAL_TRAINING`을 유지한다.
+- CPU helper 7/7, upstream route planner 13/13, target environment 13/13, physical envelope 3/3,
+  Python 3.8 `py_compile`, launcher `bash -n`, `git diff --check` PASS. 다음은 clean committed tree에서
+  GPU grid 1회 실행 후 receipt verify이며, 그 전 상태는 계속 `SIMULATOR_UNMEASURED`다. 예정 결과:
+  `results/navrl_physical_target_routed_gate_seed827/`.

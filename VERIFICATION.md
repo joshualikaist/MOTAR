@@ -4,7 +4,7 @@
 [`RESEARCH_PLAN.md`](RESEARCH_PLAN.md), 날짜별 기록은 [`WORKLOG.md`](WORKLOG.md),
 명령어는 [`OPERATIONS.md`](OPERATIONS.md), 라이브 지표는 [`docs/status/`](docs/status/)를 본다.
 
-> 기준일: 2026-08-23
+> 기준일: 2026-08-25
 
 ## 후보 R0 — global-routed physical target (기존 P0–P3와 독립)
 
@@ -13,10 +13,14 @@ checkpoint에 소급 적용하지 않는다. actual AABB, all-orientation suppor
 fail-closed A*의 CPU unit/launcher/latency gate는 **PASS**했다. 70/150/205/300 bars에서 순차
 평균은 46.18/48.71/58.34/64.01 ms/env, 128-env 직렬 보수 투영은 최대 8.19 s였다.
 
-판정은 `PASS_CPU_ENGINEERING_GATE / SIMULATOR_UNMEASURED`다. 다음 권한은 fresh short PhysX
-smoke뿐이며 PPO 본학습은 금지한다. 300 bars arena-wide connectivity 주장은 금지한다. 근거:
+판정은 `PASS_CPU_ENGINEERING_GATE / SIMULATOR_UNMEASURED`다. 다음 권한은 사전등록된 32-cell
+routed PhysX simulator gate 실행뿐이며 PPO 본학습은 금지한다. 평가기는
+`tools/verify_navrl_physical_target_routed_simulator_gate.py`이고 아직 GPU에서 실행하지 않았다.
+route-off/on × 4 speeds × 4 densities를 8개 fresh child process로 측정하고 exact 32-cell receipt를
+검증한다. 300 bars arena-wide connectivity 주장은 금지한다. 근거:
 [`preregistration`](docs/preregistration_physical_target_global_route_2026-08-25.md),
-[`CPU benchmark`](results/navrl_target_route_cpu_benchmark_seed825/summary.md).
+[`CPU benchmark`](results/navrl_target_route_cpu_benchmark_seed825/summary.md),
+[`simulator gate preregistration`](docs/preregistration_physical_target_routed_simulator_gate_2026-08-25.md).
 
 ## 한 줄 상태
 
