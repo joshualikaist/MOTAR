@@ -12605,6 +12605,15 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
   recording the geometry-derived certified support; route-on evaluator children retain the strict
   nonzero support check. No obstacle, controller, or physical parameter changed.
 
+### 2026-08-26 — braking setup reset-order correction
+
+- The raw trace exposed a 28.27 m first-step path jump: the probe wrote its center pose before
+  `reset_idx`, so reset overwrote the recorder baseline while the receipt still declared the center.
+  Reset now runs first, followed by the center pose/zero-velocity write and tensor refresh. This is
+  a measurement setup correction; no data from the invalid cell is retained or accepted. Probe
+  source hash is re-pinned to
+  `c2dbde62c53ef8b6dae8d476ea47039081e2127de0b4be75da15c267333b37b2`.
+
 ### 2026-08-26 — pinned ninja PATH handoff
 
 - The second probe attempt reached Isaac Gym but its child could not build `gymtorch`: exporting

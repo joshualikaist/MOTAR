@@ -635,10 +635,12 @@ def run_speed_cell(speed: float, output: Path, envs: int = REGISTERED_ENVS, warm
     center[:, 2] = float(task.task_config.flight_altitude)
     center[:, 2] = torch.maximum(center[:, 2], bmin[:, 2] + 0.5)
     center[:, 2] = torch.minimum(center[:, 2], bmax[:, 2] - 0.5)
+    ctrl.reset_idx(torch.arange(envs, device=task.device))
+    # reset_idx restores the task's sampled target state; apply the declared obstacle-free center
+    # pose after reset so the recorder baseline, setup receipt, and first PhysX substep agree.
     ctrl.position[:] = center
     ctrl.linvel.zero_()
     ctrl.angvel_world.zero_()
-    ctrl.reset_idx(torch.arange(envs, device=task.device))
     task.sim_env.IGE_env.write_to_sim()
     task.sim_env.IGE_env.refresh_tensors()
     support = task._physical_target_support_xyz()
