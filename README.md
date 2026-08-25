@@ -8,10 +8,10 @@ MOTAR는 카메라, LiDAR, ego-state만으로 움직이는 표적을 추적하�
 
 ![MOTAR perception-to-control system](docs/assets/motar-system-overview.svg)
 
-> **Status · 2026-08-25** — Corrected-v2 simulation evidence is scoped; the routed physical-target
-> simulator gate and hardware are pending. 실제 기체는 아직 미조립이며 실제 센서 로그와 비행
-> 데이터는 없습니다. 현재 결과는 sim-to-real 성능 주장이 아니라 재현 가능한 시뮬레이션 및
-> software-only 검증입니다.
+> **Status · 2026-08-25** — Corrected-v2 simulation evidence is scoped. Attempt 2 passed
+> **32/32 integrity checks**, but the route mechanism **failed**; physical PPO and hardware claims
+> remain **blocked**. 실제 기체는 아직 미조립이며 실제 센서 로그와 비행 데이터는 없습니다.
+> 현재 결과는 sim-to-real 성능 주장이 아니라 재현 가능한 시뮬레이션 및 software-only 검증입니다.
 
 [Research site](docs/status/) · [System specification](docs/MOTAR_SYSTEM_SPEC_2026-08-24.md) ·
 [Verification](VERIFICATION.md) · [Operations](OPERATIONS.md) · [Worklog](WORKLOG.md)
@@ -57,11 +57,12 @@ attitude/rate torque → motor allocation → 100 Hz rigid-body physics` 순서�
 | Detector navigation A/B | learned-v2 vs analytic: **−0.0145 pp**, 95% CI `[−1.752, +1.723]` | preregistered −2 pp non-inferiority margin 통과 |
 | Historical static endpoint oracle | **333 / 333** selected 205-bar contact episodes had a spawn→final-target path | centre-disk oracle; global/random-pair/300-bar connectivity 및 동역학은 미포함 |
 | Camera-range diagnostic | never-acquired **8.443 → 3.172%**; capture **82.235 → 88.677%** | primary −15 pp gate 미달, 따라서 inconclusive |
+| Routed physical-target gate (attempt 2) | **32 / 32 integrity PASS; route mechanism FAIL; physical PPO BLOCKED** | 70 bars × 0.6 m/s: plan **14.55%** (gate 99%), fallback **35.93%** (gate 1%), **0.25 goals/env** (gate 0.5) |
 | Hardware/software gate | software pipeline PASS · `SYNTHETIC_ONLY` | 실기 성능 아님 |
 
 현재 `navrl_ref5in_quad`는 1.20 kg, 220 mm motor diagonal, 0.28 m collision proxy를 가정한
-**hardware-informed simulation candidate**입니다. 저장소 정합성과 simulator gate는 통과했지만 실제
-BOM/CAD/관성/추력/열/전원/비행 식별값은 아닙니다.
+**hardware-informed simulation candidate**입니다. 저장소 정합성은 통과했지만 route mechanism은
+실패했고 physical PPO는 차단되어 있습니다. 실제 BOM/CAD/관성/추력/열/전원/비행 식별값은 아닙니다.
 
 ## Canonical experiment contract
 
@@ -130,13 +131,17 @@ are in [OPERATIONS.md](OPERATIONS.md).
 | `results/` | condition-specific raw evidence and summaries |
 | `docs/` | system spec, execution plans, review and presentation material |
 
-## Next physical gate
+## Routed physical gate result
 
 An isolated candidate target-motion lineage now exists under model id
 `physx_ref5in_6dof_global_astar_aabb_v1`. It supplies exact-AABB, fail-closed global waypoints to
 the physical target controller; it is not a planner for the pursuer and no route information is
-an actor observation. Its CPU engineering gate passed, but simulator tracking is unmeasured and
-training remains blocked. See the
+an actor observation. Attempt 2 passed 32/32 execution-integrity checks, but the simulator route
+mechanism failed: at 70 bars × 0.6 m/s, plan success was 14.55%, fallback was 35.93%, and only
+0.25 goals/env completed (gates 99%, 1%, and 0.5). Repeated `unsafe_start` recovery trapped the
+route manager in a fail-closed zero-command fallback deadlock. Motor saturation, tilt, and contact
+gates passed, so they are not the supported explanation for this failure. Physical PPO remains
+blocked and no PPO policy was loaded for this mechanism gate. See the
 [frozen preregistration](docs/preregistration_physical_target_global_route_2026-08-25.md) and
 [CPU benchmark](results/navrl_target_route_cpu_benchmark_seed825/summary.md).
 
