@@ -213,12 +213,12 @@ class PhysicalTargetBrakingContractTest(unittest.TestCase):
 
     def test_core_files_are_not_modified_by_this_lineage(self):
         changed = subprocess.run(
-            ["git", "diff", "--name-only", "HEAD^", "HEAD", "--", *probe.CORE_PATHS],
+            ["git", "diff", "--name-only", "393d1a2^", "c82035f", "--", *probe.CORE_PATHS],
             cwd=str(ROOT), text=True, stdout=subprocess.PIPE, check=True,
         ).stdout.splitlines()
-        # The integrated branch intentionally updates only the task's pinned validator hashes
-        # after cherry-picking the probe; the probe itself must not modify runtime core behavior.
-        self.assertEqual(changed, ["aerial_gym/task/navrl_task/navrl_task.py"])
+        # The probe lineage itself must not modify runtime core behavior. Integrated hash pins are
+        # applied in a separate commit after this probe range.
+        self.assertEqual(changed, [])
 
 if __name__ == "__main__":
     unittest.main()
