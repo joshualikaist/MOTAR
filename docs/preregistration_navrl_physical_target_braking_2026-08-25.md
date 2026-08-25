@@ -23,7 +23,8 @@ within both 0.05 m/s and 10% of the requested speed. The raw row for every envir
 requested and measured initial speed, integrated interval-path stop distance (not endpoint
 displacement), stop time, effective deceleration, lateral deviation from the initial velocity
 ray, contact, invalid-OBB, braking-phase motor saturation, and braking-phase maximum tilt. The
-trace retains per-sample position, speed, path, contact, invalid-OBB, saturation, and tilt.
+trace retains every `0.01 s` PhysX callback sample (exactly 10 callbacks per `0.1 s` interval),
+including position, speed, path, contact, invalid-OBB, saturation, and tilt.
 
 ## Analysis and gates
 
