@@ -190,6 +190,33 @@ class TwoEnvelopeRecoveryTest(unittest.TestCase):
             [[-0.0689, 0.0943], [-0.3561, -0.2915], [-1.1884, 0.2692], [-0.9628, -0.6859]]
         ), atol=1e-4))
 
+    def test_recovery_only_candidate_certificate_preserves_default_api(self):
+        kwargs = dict(
+            old_xy=torch.zeros(1, 2), current_velocity=torch.zeros(1, 2),
+            desired_velocity=torch.tensor([[1.0, 0.0]]), speed_limit=torch.ones(1), dt=0.1,
+            bars_xy=torch.zeros(1, 0, 2), lo=torch.full((1, 2), -2.0),
+            hi=torch.full((1, 2), 2.0), clearance=0.0, turn_sign=torch.ones(1),
+            max_accel=torch.full((1,), 4.0), max_turn_rate=torch.full((1,), 2.6),
+            lookahead_s=1.0, bars_half_extents_xy=torch.zeros(1, 0, 2),
+            exact_aabb_clearance=True, hard_epsilon_m=0.0124,
+        )
+        legacy = MOTION.bounded_drone_target_step(**kwargs)
+        certified = MOTION.bounded_drone_target_step(**kwargs, return_certificate=True)
+        self.assertEqual(len(legacy), 4)
+        self.assertEqual(len(certified), 5)
+        for left, right in zip(legacy, certified[:4]):
+            self.assertTrue(torch.equal(left, right))
+        certificate = certified[4]
+        self.assertEqual(certificate["candidate_count"], 73)
+        self.assertEqual(certificate["horizon_steps"], 10)
+        self.assertTrue(bool(certificate["full_horizon_safe"].all()))
+        self.assertTrue(bool((certificate["safe_prefix_steps"] == 10).all()))
+
+    def test_connect_consumes_full_horizon_not_immediate_only(self):
+        source = (ROOT / "aerial_gym/task/navrl_task/navrl_task.py").read_text()
+        self.assertIn('connect_certificate["full_horizon_safe"]', source)
+        self.assertIn('connect_certificate["safe_prefix_steps"]', source)
+
     def test_watchdog_install_point_breach_latches_after_interval_begin(self):
         tensors = {
             "dt": 0.01,

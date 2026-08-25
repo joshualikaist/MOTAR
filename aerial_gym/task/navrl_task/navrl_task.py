@@ -5998,7 +5998,7 @@ class NavRLTask(BaseTask):
                 to_anchor = self._target_route_manager.recovery_anchor[connect_ids] - old_xy[connect_ids]
                 anchor_speed = to_anchor.norm(dim=1).clamp(min=1e-6)
                 anchor_desired = to_anchor / anchor_speed.unsqueeze(1) * self._tm_speed[connect_ids].unsqueeze(1)
-                connect_xy, connect_velocity, _, connect_feasible = bounded_drone_target_step(
+                connect_result = bounded_drone_target_step(
                     old_xy[connect_ids],
                     self.target_vel_w[connect_ids, 0:2],
                     anchor_desired,
@@ -6017,6 +6017,17 @@ class NavRLTask(BaseTask):
                     bars_half_extents[connect_ids],
                     exact_aabb_clearance=True,
                     hard_epsilon_m=TARGET_ROUTE_HARD_EPSILON_M + TARGET_ROUTE_REACHABLE_TUBE_MARGIN_M,
+                    return_certificate=True,
+                )
+                connect_xy, connect_velocity, _, _, connect_certificate = connect_result
+                # Recovery never accepts the ordinary longest-safe-prefix fallback.  CONNECT is
+                # multi-interval, but every submitted interval must carry its own complete fixed
+                # 1.0 s hard-envelope certificate.
+                connect_feasible = (
+                    connect_certificate["immediate_feasible"]
+                    & connect_certificate["full_horizon_safe"]
+                    & (connect_certificate["safe_prefix_steps"]
+                       == int(connect_certificate["horizon_steps"]))
                 )
                 bounded_xy[connect_ids] = connect_xy
                 bounded_velocity[connect_ids] = connect_velocity

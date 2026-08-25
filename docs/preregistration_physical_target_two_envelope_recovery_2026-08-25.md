@@ -47,9 +47,13 @@ position or resets the actor.
   threshold and the measured lower-bound braking stop distance fits the hard certificate.
   If zero braking is not certified, test the same-step deterministic escape candidates under the
   fixed dynamics bounds; if none is certified, submit zero and latch `NO_CONNECTOR`.
-* `CONNECT`: after braking, search the deterministic 7x7 anchor set. Submit an escape command
-  only if its bounded rollout (fixed `4 m/s²`, `150 deg/s`, `0.1 s` RL step, `1.0 s` lookahead)
-  stays hard-safe at every sample and ends soft-free. The anchor segment is exact hard-safe.
+* `CONNECT`: after braking, search the deterministic 7x7 anchor set. The fixed anchor may require
+  multiple RL intervals because the maximum certified connector is 1.237 m while a 0.6 m/s target
+  cannot traverse it in one second. Every submitted interval must independently carry a complete
+  bounded rollout certificate (fixed `4 m/s²`, `150 deg/s`, `0.1 s` RL step, `1.0 s` lookahead),
+  stay hard-safe at every sample, and make nonnegative progress toward the unchanged anchor. It is
+  not required to reach the soft-free endpoint in one interval. The full anchor segment is exact
+  hard-safe, and ROUTE handoff still requires the actual actor to be soft-free beyond hysteresis.
   PhysX position is never assigned by the recovery code.
 * `ROUTE`: require soft clearance greater than the hysteresis and a newly planned route whose
   first handoff connector certificate covers the current position. Resume cached waypoint
