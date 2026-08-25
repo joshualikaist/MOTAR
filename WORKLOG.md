@@ -12273,3 +12273,17 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
   존재함을 확인했다. CPU helper 9/9, route planner 13/13, target environment 13/13, physical envelope
   3/3, target motion 13/13과 `py_compile`/launcher `bash -n`/`diff --check`가 PASS했다. GPU는 계속
   미실행이며 다음 권한은 이 v2 exact 32-cell grid뿐이다.
+
+### 2026-08-25 — routed simulator gate 최종 NO-GO 3건 해소
+
+- child summary의 4개 row가 header의 route/speed를 실제로 따르는지 종전에는 aggregation 단계에서만
+  간접 검사했다. 이제 각 row를 header route/speed, frozen density 순서, 재계산한 record ID와 즉시
+  결합한다. route-on cell을 off child에 끼운 경우와 density row 순서를 바꾼 경우 모두 fail-closed
+  회귀를 추가했다.
+- pursuer를 정지시키려던 `[N,4]` zero policy action을 `sim_env.step`에 raw command로 넘기던 오류를
+  수정했다. canonical `NavRLTask.step`과 같이 target begin→target advance→
+  `transform_action_to_command(zero_policy_action)` 순으로 호출하고 finite `[N,4]` command만 physics에
+  전달한다. 따라서 zero action이어도 altitude PI/yaw 및 실제 action mapping 계약은 유지된다.
+- receipt verify가 child cell/verdict는 재계산했지만 summary의 matched route-on-minus-off 표 자체는
+  재계산하지 않았다. 16개 matched row를 child 원자료에서 다시 계산해 byte-equivalent 비교하며,
+  summary SHA를 다시 맞춘 뒤 delta만 변조한 fixture도 거부한다. GPU는 여전히 미실행이다.

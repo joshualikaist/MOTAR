@@ -20,7 +20,9 @@ route-off/on × 4 speeds × 4 densities를 8개 fresh child process로 측정하
 검증한다. GPU 전 적대적 감사에서 발견된 clock/warmup/provenance confound를 제거한 v2 계약은
 task clock 300회 증가, safety 전 300 step 계측, `base_sim` 및 Python/torch/CUDA/Isaac/module SHA,
 초기 bar·robot·target pose matched digest를 fail-closed 검증한다. route-off bounded infeasible와
-route-on invalidation은 서로 다른 지표라 matched delta에서 제외한다. 300 bars arena-wide
+route-on invalidation은 서로 다른 지표라 matched delta에서 제외한다. neutral pursuer도 raw zero
+command가 아니라 canonical task action mapping을 거친다. child header↔cell과 matched delta 표는
+receipt verify에서 원자료로 재계산한다. 300 bars arena-wide
 connectivity 주장은 금지한다. 근거:
 [`preregistration`](docs/preregistration_physical_target_global_route_2026-08-25.md),
 [`CPU benchmark`](results/navrl_target_route_cpu_benchmark_seed825/summary.md),

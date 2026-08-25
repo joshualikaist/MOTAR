@@ -65,6 +65,14 @@ def cell(route, speed, bars, *, passing=True):
             "start_num_task_steps": 0, "end_num_task_steps": MOD.STEPS,
             "increments": MOD.STEPS,
         },
+        "neutral_pursuer_command_contract": {
+            "policy_action": "all_zero_[N,4]",
+            "mapping": "NavRLTask.transform_action_to_command",
+            "mapping_order": "after_target_advance_before_sim_step",
+            "mapping_calls": MOD.STEPS,
+            "command_shape": [MOD.ENVS, 4],
+            "all_commands_finite": True,
+        },
         "route": {
             "mode": route,
             "counter_delta": counter if route == "global_astar_v1" else {},
@@ -165,6 +173,30 @@ class RoutedSimulatorGateContractTest(unittest.TestCase):
         self.assertTrue(bool(manager.needs_replan(goal, support, task.num_task_steps).item()))
         with self.assertRaises(MOD.IntegrityError):
             MOD.finish_low_level_evaluation_interval(task, 9)
+
+    def test_neutral_pursuer_uses_canonical_mapping_after_target_advance(self):
+        events = []
+
+        class Controller:
+            def begin_control_interval(self):
+                events.append("target_begin")
+
+        class FakeTask:
+            num_task_steps = 4
+            _target_controller = Controller()
+
+            def _advance_target(self):
+                events.append("target_advance")
+
+            def transform_action_to_command(self, action):
+                events.append("canonical_action_map")
+                return action + 0.25
+
+        action = torch.zeros((2, 4))
+        start, command = MOD.prepare_neutral_pursuer_interval(FakeTask(), action)
+        self.assertEqual(start, 4)
+        self.assertEqual(events, ["target_begin", "target_advance", "canonical_action_map"])
+        torch.testing.assert_close(command, torch.full((2, 4), 0.25))
 
     def test_mechanism_or_missing_density_fails_closed(self):
         records = full_grid()
@@ -375,6 +407,26 @@ class RoutedSimulatorGateContractTest(unittest.TestCase):
                     software_provenance.append({
                         "route_mode": route, "speed_mps": speed, "provenance": provenance,
                     })
+            off_payload = json.loads(
+                (directory / "child_off_0.6.json").read_text(encoding="utf-8")
+            )
+            routed_payload = json.loads(
+                (directory / "child_global_astar_v1_0.6.json").read_text(encoding="utf-8")
+            )
+            swapped_arm = json.loads(json.dumps(off_payload))
+            swapped_arm["cells"][0] = routed_payload["cells"][0]
+            swapped_arm_path = directory / "bad_swapped_arm.json"
+            MOD.atomic_json(swapped_arm_path, swapped_arm)
+            with self.assertRaises(MOD.IntegrityError):
+                MOD.validate_child(swapped_arm_path, "off", 0.6, source_sha, hashes)
+            swapped_density = json.loads(json.dumps(off_payload))
+            swapped_density["cells"][0], swapped_density["cells"][1] = (
+                swapped_density["cells"][1], swapped_density["cells"][0]
+            )
+            swapped_density_path = directory / "bad_swapped_density.json"
+            MOD.atomic_json(swapped_density_path, swapped_density)
+            with self.assertRaises(MOD.IntegrityError):
+                MOD.validate_child(swapped_density_path, "off", 0.6, source_sha, hashes)
             execution = {
                 "schema": MOD.EXECUTION_SCHEMA, "integrity_ok": True,
                 "children": child_entries,
@@ -389,6 +441,7 @@ class RoutedSimulatorGateContractTest(unittest.TestCase):
                 "execution_manifest_sha256": MOD.sha256_file(execution_path),
                 "instantiated_contracts": instantiated_contracts,
                 "software_provenance": software_provenance,
+                "matched_route_on_minus_off": MOD.matched_deltas(records),
                 "cells": records, "verdicts": verdicts,
             }
             summary_path = directory / "summary.json"
@@ -415,8 +468,10 @@ class RoutedSimulatorGateContractTest(unittest.TestCase):
             }
             MOD.atomic_json(directory / "receipt.json", receipt)
             self.assertEqual(MOD.verify_result(summary_path, "full_1p5"), 0)
-            summary["cells"][0]["mean_speed_ratio"] = 0.1
+            summary["matched_route_on_minus_off"][0]["deltas"]["mean_speed_ratio"] += 0.1
             MOD.atomic_json(summary_path, summary)
+            receipt["summary_sha256"] = MOD.sha256_file(summary_path)
+            MOD.atomic_json(directory / "receipt.json", receipt)
             with self.assertRaises(MOD.IntegrityError):
                 MOD.verify_result(summary_path, "full_1p5")
 

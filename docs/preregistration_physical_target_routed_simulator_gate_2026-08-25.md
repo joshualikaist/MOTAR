@@ -30,6 +30,10 @@ a real-hardware claim, a pursuer-policy improvement claim, or arena-wide connect
   controller counters, and failed-environment resets cover all `300` intervals;
 - physics `dt=0.01 s`, `10` physics steps per RL interval (`10 Hz` command update);
 - ref5in target, `40 x 40 x 3 m`, `bars_h3`, `navrl_band`, waypoint pattern;
+- the pursuer policy action is the neutral all-zero `[N,4]` tensor, but it is never sent directly
+  to the simulator. Every interval calls the canonical `NavRLTask.transform_action_to_command`
+  after target advance and sends its finite `[N,4]` command to physics. This preserves the task's
+  altitude/yaw controller semantics while removing learned pursuer behavior;
 - route geometry: actual per-asset axis-aligned bar AABBs, all-orientation target support,
   `0.45 m` tracking reserve, `0.25 m` grid, exact continuous AABB line-of-sight checks;
 - each route arm and speed is created in a fresh process. Density cells share only that process and
@@ -101,8 +105,10 @@ causal effects. No claim requires a favorable delta; safety and route gates dete
 ## Runtime and matched-state receipt
 
 Every low-level evaluation interval mirrors `NavRLTask.step`: `_advance_target` observes the current
-`num_task_steps`, physics and any failed-environment reset complete, and the clock increments exactly
-once. This is required for the frozen 10-step route-replan cooldown to become eligible.
+`num_task_steps`, the neutral policy action passes through the canonical task action mapping, physics
+and any failed-environment reset complete, and the clock increments exactly once. This is required
+for the frozen 10-step route-replan cooldown to become eligible. Raw policy actions are never used as
+simulator commands.
 
 The launcher pins `AERIAL_GYM_SIM_NAME=base_sim`. Every child records and hashes its actual Python,
 torch/CUDA, Isaac Gym, GPU/driver, imported `navrl_task` and `target_route_planner`, instantiated sim

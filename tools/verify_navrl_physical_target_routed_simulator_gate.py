@@ -486,6 +486,16 @@ def validate_grid_records(records: Sequence[Mapping]) -> None:
             and clock.get("end_num_task_steps") - clock.get("start_num_task_steps") == STEPS,
             "task clock did not advance once per evaluation interval",
         )
+        neutral = row.get("neutral_pursuer_command_contract", {})
+        require(
+            neutral.get("policy_action") == "all_zero_[N,4]"
+            and neutral.get("mapping") == "NavRLTask.transform_action_to_command"
+            and neutral.get("mapping_order") == "after_target_advance_before_sim_step"
+            and neutral.get("mapping_calls") == STEPS
+            and neutral.get("command_shape") == [ENVS, 4]
+            and neutral.get("all_commands_finite") is True,
+            "neutral pursuer canonical action-mapping contract drift",
+        )
     for density in DENSITIES:
         digests = {row["initial_layout_sha256"] for row in records if row["bars"] == density}
         require(len(digests) == 1, f"matched-arm initial layout drift at {density} bars")
@@ -712,6 +722,18 @@ def finish_low_level_evaluation_interval(task, interval_start_step: int) -> None
             "task clock did not advance exactly once")
 
 
+def prepare_neutral_pursuer_interval(task, zero_policy_action):
+    """Mirror NavRLTask.step's target-advance then policy-action mapping order."""
+    interval_start_step = begin_low_level_evaluation_interval(task)
+    task._target_controller.begin_control_interval()
+    task._advance_target()
+    command = task.transform_action_to_command(zero_policy_action)
+    require(tuple(command.shape) == tuple(zero_policy_action.shape),
+            "canonical neutral pursuer command shape drift")
+    require(bool(command.isfinite().all()), "canonical neutral pursuer command is nonfinite")
+    return interval_start_step, command
+
+
 def run_cell(task, torch, route_mode: str, speed: float, density: int, import_origin: Mapping) -> Dict:
     # Re-establish the frozen seed before every density so route-specific RNG consumption in the
     # preceding density cannot silently change the next cell's initial bar layout.
@@ -751,7 +773,7 @@ def run_cell(task, torch, route_mode: str, speed: float, density: int, import_or
     reset_max_s = initial_reset_s
 
     ctrl = task._target_controller
-    zero_pursuer = torch.zeros((ENVS, 4), device=task.device)
+    zero_policy_action = torch.zeros((ENVS, 4), device=task.device)
     speed_sum = err_sq_sum = 0.0
     tracking_samples = 0
     safety_samples = contact_samples = off_infeasible_samples = invalid_samples = 0
@@ -765,13 +787,15 @@ def run_cell(task, torch, route_mode: str, speed: float, density: int, import_or
     _sync_cuda(torch)
     rollout_started = time.perf_counter()
     cell_clock_start = int(task.num_task_steps)
+    canonical_mapping_calls = 0
     for step in range(STEPS):
-        interval_start_step = begin_low_level_evaluation_interval(task)
-        ctrl.begin_control_interval()
-        task._advance_target()
+        interval_start_step, pursuer_command = prepare_neutral_pursuer_interval(
+            task, zero_policy_action
+        )
+        canonical_mapping_calls += 1
         saturation_before = ctrl.saturation_substeps.clone()
         substeps_before = ctrl.substeps.clone()
-        task.sim_env.step(actions=zero_pursuer)
+        task.sim_env.step(actions=pursuer_command)
         saturation_delta = ctrl.saturation_substeps - saturation_before
         substep_delta = ctrl.substeps - substeps_before
         controller_counter_decrease |= (saturation_delta < 0).any() | (substep_delta < 0).any()
@@ -858,6 +882,14 @@ def run_cell(task, torch, route_mode: str, speed: float, density: int, import_or
             "end_num_task_steps": int(task.num_task_steps),
             "increments": int(task.num_task_steps) - cell_clock_start,
             "increment_order": "after physics and any failed-env reset, once per interval",
+        },
+        "neutral_pursuer_command_contract": {
+            "policy_action": "all_zero_[N,4]",
+            "mapping": "NavRLTask.transform_action_to_command",
+            "mapping_order": "after_target_advance_before_sim_step",
+            "mapping_calls": canonical_mapping_calls,
+            "command_shape": [ENVS, 4],
+            "all_commands_finite": True,
         },
         "mean_speed_mps": mean_speed,
         "mean_speed_ratio": mean_speed / speed,
@@ -1055,6 +1087,17 @@ def validate_child(
     cells = payload.get("cells")
     require(isinstance(cells, list) and len(cells) == 4, f"child must contain four cells: {path}")
     require([row.get("bars") for row in cells] == list(DENSITIES), f"child density order drift: {path}")
+    for row, density in zip(cells, DENSITIES):
+        require(
+            row.get("route_mode") == route_mode
+            and row.get("speed_mps") == speed
+            and row.get("bars") == density,
+            f"child header/cell arm mismatch at {density} bars: {path}",
+        )
+        require(
+            row.get("record_id") == record_id(route_mode, speed, density),
+            f"child cell record_id mismatch at {density} bars: {path}",
+        )
     return payload
 
 
@@ -1267,6 +1310,8 @@ def verify_result(summary_path: Path, required_contract: str) -> int:
             "summary instantiated contracts differ from child summaries")
     require(child_provenance == summary.get("software_provenance"),
             "summary software provenance differs from child summaries")
+    require(matched_deltas(child_records) == summary.get("matched_route_on_minus_off"),
+            "summary matched route deltas differ from child recomputation")
     require(receipt.get("record_count") == 32 and len(receipt.get("record_ids", [])) == 32,
             "receipt does not bind exact 32-cell accounting")
     require(receipt.get("record_ids") == [row["record_id"] for row in child_records],
