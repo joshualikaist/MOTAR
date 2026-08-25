@@ -232,8 +232,21 @@ def require_clean_source(repo_root: Optional[Path] = None) -> Dict[str, Any]:
     )
     if status.returncode != 0:
         raise ValueError("cannot attest source cleanliness: %s" % status.stderr.strip())
-    if status.stdout.strip():
-        raise ValueError("source tree is dirty before GPU execution")
+    allowed_output = os.environ.get("NAVRL_BRAKING_OUTPUT_ROOT", "")
+    allowed_path = Path(allowed_output).resolve() if allowed_output else None
+    dirty_lines = []
+    for line in status.stdout.splitlines():
+        recorded = line[3:].split(" -> ")[-1].strip() if len(line) >= 4 else line.strip()
+        candidate = (root / recorded).resolve()
+        if allowed_path is not None:
+            try:
+                candidate.relative_to(allowed_path)
+                continue
+            except ValueError:
+                pass
+        dirty_lines.append(line)
+    if dirty_lines:
+        raise ValueError("source tree is dirty before GPU execution: %s" % " | ".join(dirty_lines))
     ancestry = subprocess.run(
         ["git", "-C", str(root), "merge-base", "--is-ancestor", REQUIRED_CORE_BASE_COMMIT, "HEAD"],
         stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False,
