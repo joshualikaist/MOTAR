@@ -77,9 +77,11 @@ The fixed 45-degree tilt bound implies the derived horizontal acceleration bound
 the declared `9.60 N`, `1.20 kg` values.
 
 A dedicated zero-command PhysX probe must record stop-time and stop-distance quantiles for every
-registered target speed. The implementation uses the preregistered lower effective deceleration
-`a_brake_p05` and p95 stop time; these are measured inputs, not post-hoc tuning, and are supplied
-only through a hashed receipt with schema `navrl_target_recovery_braking_probe_v1`. The probe must
+registered target speed. The p05 deceleration and p95 stop time are gate inputs; the stopping
+certificate uses the validated monotone speed-indexed p95 stop-distance lookup with a ceiling
+speed selection (never interpolation). These are measured inputs, not post-hoc tuning, and are
+supplied only through a hashed receipt with `schema=navrl_target_recovery_braking_receipt_v1` and
+`probe_schema=navrl_target_recovery_braking_probe_v1`. The probe must
 show `a_brake_p05 > 0`, finite stop distance, no contact, no invalid OBB, motor saturation
 `<=0.15`, and max tilt `<=60°`; otherwise this lineage is blocked. `T_brake_budget` is the
 probe p95 stop time plus the existing 0.20 s diagnostic reserve, not a new learned parameter.
@@ -90,6 +92,7 @@ NaN/Inf, empty/invalid geometry, hard-envelope breach, contact, watchdog failure
 unsafe connector, route-plan failure, or recovery timeout emits zero planar command, increments a
 reason-specific counter, and never clamps/teleports/resets the physical target. An unavoidable
 subsequent PhysX contact is a normal terminal failure, not a recovery success.
+BRAKE timeout and CONNECT timeout are distinct status/reason codes and counters.
 
 Each interval records state and transition, recovery age and fixed timeout budget, signed hard/soft minimum clearances, violating bar or
 wall, target position/velocity, command, stop distance/margin, anchor cell/distance, connector
