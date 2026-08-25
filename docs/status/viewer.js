@@ -49,6 +49,7 @@
         legacy: '<strong>Legacy:</strong> checkpointed virtual-point lineage; instantaneous steering and push-out corrections.',
         bounded: '<strong>Bounded:</strong> 4.0 m/s², 150°/s, 1.0 s lookahead, 0.77 m centre-clearance. 새 trajectory lineage입니다.',
         'physical-style': '<strong>Physical-style illustration:</strong> bounded command에 rigid-body-like low-pass와 attitude limit을 그립니다. 실제 PhysX나 정책 평가는 아닙니다.',
+        'routed-preview': '<strong>Routed preview:</strong> 0.25 m deterministic global route, exact bar AABB, 0.45 m tracking reserve, target 3-D box half-diagonal support(약 0.206 m), boundary 1.25 m + support를 적용합니다. Global route + bounded/lagged browser preview · NOT PhysX/PPO.',
       };
       const setTargetMotion = function () {
         const mode = targetMotion.value;

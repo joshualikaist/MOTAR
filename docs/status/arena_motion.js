@@ -302,6 +302,7 @@
       boundedVelocity: { x: 0, y: 0 },
       physicalStyle: { velocity: { x: 0, y: 0 }, roll: 0, pitch: 0 },
       plannerFeasible: true,
+      route: null,
       age: 0,
     };
   }
@@ -657,6 +658,114 @@
     return episode;
   }
 
+  function routeVelocityReference(episode, allowReplan) {
+    const route = episode.route;
+    if (!route || !route.valid || !Array.isArray(route.waypoints) || !route.waypoints.length) {
+      return {x: 0, y: 0, active: false, complete: false};
+    }
+    route.cursor = Math.max(0, Math.min(route.waypoints.length - 1, route.cursor || 0));
+    route.segmentStart = route.segmentStart || {x: episode.target.x, y: episode.target.y};
+    // Mirrors BatchedTargetRouteManager.velocity_reference: advance already-reached or overshot
+    // smoothed waypoints repeatedly, capped at four transitions per 10 Hz control interval.
+    for (let iteration = 0; iteration < 4; iteration++) {
+      const waypoint = route.waypoints[route.cursor];
+      const sx = waypoint.x - route.segmentStart.x, sy = waypoint.y - route.segmentStart.y;
+      const passed = (episode.target.x - waypoint.x) * sx
+        + (episode.target.y - waypoint.y) * sy >= 0;
+      const reached = Math.hypot(
+        waypoint.x - episode.target.x, waypoint.y - episode.target.y
+      ) <= route.waypointReachM || passed;
+      if (!(reached && route.cursor + 1 < route.waypoints.length)) break;
+      route.segmentStart = {x: waypoint.x, y: waypoint.y};
+      route.cursor += 1;
+    }
+    const waypoint = route.waypoints[route.cursor];
+    const sx = waypoint.x - route.segmentStart.x, sy = waypoint.y - route.segmentStart.y;
+    const dx = waypoint.x - episode.target.x, dy = waypoint.y - episode.target.y;
+    const passedFinal = (episode.target.x - waypoint.x) * sx
+      + (episode.target.y - waypoint.y) * sy >= 0;
+    const complete = route.cursor + 1 >= route.waypoints.length
+      && (Math.hypot(dx, dy) <= route.waypointReachM || passedFinal);
+    route.complete = complete;
+    if (complete && allowReplan !== false && typeof route.replan === 'function') {
+      const replacement = route.replan({x: episode.target.x, y: episode.target.y});
+      if (replacement) {
+        episode.route = replacement;
+        episode.routeGoalReplacements = (episode.routeGoalReplacements || 0) + 1;
+        return routeVelocityReference(episode, false);
+      }
+    }
+    const norm = Math.max(Math.hypot(dx, dy), 1e-6);
+    return complete
+      ? {x: 0, y: 0, active: false, complete: true}
+      : {x: dx / norm * episode.speed, y: dy / norm * episode.speed,
+        active: true, complete: false};
+  }
+
+  function advanceRoutedPreview(episode, dt) {
+    episode.age += dt;
+    if (!episode.route || !episode.route.valid) {
+      // Explicit fail-closed preview contract: no route means no target motion. Do not silently
+      // fall back to a random waypoint or least-bad local command.
+      episode.plannerFeasible = false;
+      episode.boundedVelocity = {x: 0, y: 0};
+      episode.physicalStyle.velocity = {x: 0, y: 0};
+      episode.physicalStyle.roll = 0; episode.physicalStyle.pitch = 0;
+      episode.realizedVelocity = {x: 0, y: 0};
+      return episode;
+    }
+    const old = {x: episode.target.x, y: episode.target.y};
+    const current = episode.physicalStyle.velocity;
+    const reference = routeVelocityReference(episode);
+    if (!episode.route || !episode.route.valid) {
+      episode.plannerFeasible = false;
+      episode.boundedVelocity = {x: 0, y: 0};
+      episode.physicalStyle.velocity = {x: 0, y: 0};
+      episode.physicalStyle.roll = 0; episode.physicalStyle.pitch = 0;
+      episode.realizedVelocity = {x: 0, y: 0};
+      return episode;
+    }
+    episode.plannerFeasible = true;
+    const bounded = limitPlanarVelocity(
+      current, reference, episode.speed, dt,
+      CONTRACT.boundedMaxAccel, CONTRACT.boundedMaxTurnRate
+    );
+    // Browser-only rigid-body-like lag. The global route and bounded command mirror code
+    // contracts; this response is explicitly NOT a PhysX or PPO rollout.
+    const alpha = 1 - Math.exp(-dt / CONTRACT.physicalStyleTimeConstant);
+    let velocity = {
+      x: current.x + (bounded.x - current.x) * alpha,
+      y: current.y + (bounded.y - current.y) * alpha,
+    };
+    const dvx = velocity.x - current.x, dvy = velocity.y - current.y;
+    const delta = Math.hypot(dvx, dvy), maxDelta = CONTRACT.boundedMaxAccel * dt;
+    if (delta > maxDelta && delta > 1e-9) {
+      velocity = {x: current.x + dvx * maxDelta / delta,
+        y: current.y + dvy * maxDelta / delta};
+    }
+    episode.target.x = old.x + velocity.x * dt;
+    episode.target.y = old.y + velocity.y * dt;
+    episode.realizedVelocity = {x: velocity.x, y: velocity.y};
+    episode.boundedVelocity = {x: bounded.x, y: bounded.y};
+    episode.physicalStyle.velocity = {x: velocity.x, y: velocity.y};
+    const ax = (velocity.x - current.x) / dt, ay = (velocity.y - current.y) / dt;
+    const motionHeading = Math.hypot(velocity.x, velocity.y) > 1e-6
+      ? Math.atan2(velocity.y, velocity.x) : episode.heading;
+    const ch = Math.cos(motionHeading), sh = Math.sin(motionHeading);
+    const forwardAccel = ax * ch + ay * sh;
+    const lateralAccel = -ax * sh + ay * ch;
+    episode.physicalStyle.roll = clamp(
+      -lateralAccel / 9.81,
+      -Math.tan(CONTRACT.physicalStyleMaxTilt), Math.tan(CONTRACT.physicalStyleMaxTilt)
+    );
+    episode.physicalStyle.pitch = clamp(
+      forwardAccel / 9.81,
+      -Math.tan(CONTRACT.physicalStyleMaxTilt), Math.tan(CONTRACT.physicalStyleMaxTilt)
+    );
+    if (Math.hypot(velocity.x, velocity.y) > 1e-6) episode.heading = motionHeading;
+    return episode;
+  }
+
   // Match NavRLTask's target-relative swept-segment capture test. Endpoint-only range misses a
   // grazing crossing whose two endpoints both remain just outside the 0.5 m capture sphere.
   function sweptCapture(prevRelative, nextRelative, radius) {
@@ -674,6 +783,7 @@
     const dynamics = mode || 'bounded';
     if (dynamics === 'bounded') return advanceBoundedTarget(episode, dt, bars, rng, false);
     if (dynamics === 'physical-style') return advanceBoundedTarget(episode, dt, bars, rng, true);
+    if (dynamics === 'routed-preview') return advanceRoutedPreview(episode, dt);
     if (dynamics !== 'legacy') throw new Error('unknown illustrative target mode: ' + dynamics);
     // episode.age drives arena.js's 30 s watchdog: it must measure WALL CLOCK, not
     // target-motion time, or a speed-0 episode (speed slider at its 0 notch) never resets.
@@ -748,6 +858,7 @@
     createFixedStepClock: createFixedStepClock,
     limitPlanarVelocity: limitPlanarVelocity,
     boundedTargetStep: boundedTargetStep,
+    routeVelocityReference: routeVelocityReference,
     distanceToBars: distanceToBars,
     pursuerClearance: pursuerClearance,
     segmentPursuerClearance: segmentPursuerClearance,

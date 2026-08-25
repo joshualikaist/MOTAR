@@ -12,18 +12,21 @@ window.Arena = (() => {
   const LIDAR_ELEVATION_MAX = THREE.MathUtils.degToRad(20);
   const Motion = window.NavRLArenaMotion;
   if (!Motion) throw new Error('NavRLArenaMotion missing (arena_motion.js)');
+  const Route = window.NavRLArenaRoute;
+  if (!Route) throw new Error('NavRLArenaRoute missing (arena_route.js)');
 
   let scene, cam, renderer, controls, root, barMesh, drone, target, cameraFov, lidarLines;
-  let pursuerTrail, targetTrail, targetHalo, resizeObserver;
+  let pursuerTrail, targetTrail, routeLine, targetHalo, resizeObserver;
   let groundMat, gridHelper, rimLight;
   let bars = [], playing = true, speedCeiling = 1.5, viewMode = 0;
-  let targetMotionMode = 'bounded';
+  let targetMotionMode = 'routed-preview';
   let currentBars = 25, layoutSeed = 20260728, episode;
   let showTrails = true, frame = 0, visible = true;
   let host, lastDrone = { x: 1, y: 0 }, trailA = [], trailB = [];
   let lastT = 0, vel = { x: 0, y: 0 }, heading = 0, simPrev, simCurr;
   const simClock = Motion.createFixedStepClock(0.1, 0.25, 8);
   const motionRng = Motion.seededRng(8675309);
+  const routeSupport = Route.conservativeXYSupportFromBox(Route.CONTRACT.physicalBoxXYZ);
 
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const coarsePointer = matchMedia('(pointer: coarse)').matches;
@@ -116,6 +119,7 @@ window.Arena = (() => {
     if (!drone || !target) return;
     if (regenerateBars) makeBars(currentBars);
     episode = Motion.createEpisode(motionRng, bars, speedCeiling);
+    if (targetMotionMode === 'routed-preview') planRoutedEpisode();
     drone.position.set(episode.drone.x, 1, episode.drone.y);
     target.position.set(episode.target.x, 1, episode.target.y);
     heading = motionRng() * Math.PI * 2 - Math.PI;
@@ -127,6 +131,73 @@ window.Arena = (() => {
     if (pursuerTrail) pursuerTrail.geometry.setFromPoints([]);
     if (targetTrail) targetTrail.geometry.setFromPoints([]);
     updateMotionHud();
+    updateRouteLine();
+  }
+
+  function planRoutedEpisode() {
+    let result = null;
+    // Start sampling is still the browser's explanatory episode sampler. Retry only unsafe starts;
+    // the route planner itself chooses a proven connected goal at least 6 m away. A genuine
+    // no-connected-goal result is retained and displayed fail-closed rather than hidden.
+    for (let attempt = 0; attempt < 12; attempt++) {
+      result = Route.planToConnectedGoal(
+        episode.target, bars, {x: X0, y: Y0}, {x: X1, y: Y1},
+        routeSupport, motionRng()
+      );
+      if (result.valid || !['unsafe_start', 'unsafe_start_cell'].includes(result.status)) break;
+      episode = Motion.createEpisode(motionRng, bars, speedCeiling);
+    }
+    episode.mode = 'waypoint';
+    episode.route = makeRouteState(result, episode.target);
+    episode.routeGoalReplacements = 0;
+    episode.plannerFeasible = episode.route.valid;
+    if (episode.route.valid) {
+      const goal = episode.route.waypoints[episode.route.waypoints.length - 1];
+      episode.waypoint = {x: goal.x, y: goal.y};
+    }
+  }
+
+  function makeRouteState(result, start) {
+    const state = {
+      valid: Boolean(result && result.valid),
+      status: result ? result.status : 'invalid_input',
+      waypoints: result && result.valid ? result.waypoints.map(p => ({x: p.x, y: p.y})) : [],
+      cursor: 0,
+      segmentStart: {x: start.x, y: start.y},
+      // Python passes task waypoint_reach_m=0.5 to velocity_reference. The route planner's
+      // 0.05 m goal tolerance is a goal-change/replan contract, not waypoint following reach.
+      waypointReachM: Motion.CONTRACT.waypointReach,
+      goalToleranceM: Route.CONTRACT.goalToleranceM,
+      complete: false,
+      expandedNodes: result ? result.expandedNodes : 0,
+      pathLengthM: result ? result.pathLengthM : 0,
+      replan: replanRoutedGoal,
+    };
+    return state;
+  }
+
+  function replanRoutedGoal(start) {
+    const result = Route.planToConnectedGoal(
+      start, bars, {x: X0, y: Y0}, {x: X1, y: Y1}, routeSupport, motionRng()
+    );
+    return makeRouteState(result, start);
+  }
+
+  function updateRouteLine() {
+    if (!routeLine) return;
+    const route = episode && episode.route;
+    const visible = targetMotionMode === 'routed-preview' && route && route.valid;
+    routeLine.visible = Boolean(visible);
+    const points = visible ? [new THREE.Vector3(episode.target.x, .10, episode.target.y)] : [];
+    if (visible) {
+      route.waypoints.slice(route.cursor).forEach(p => {
+        const previous = points[points.length - 1];
+        if (!previous || Math.hypot(previous.x - p.x, previous.z - p.y) > 1e-6) {
+          points.push(new THREE.Vector3(p.x, .10, p.y));
+        }
+      });
+    }
+    routeLine.geometry.setFromPoints(points);
   }
 
   function snapshotSimulation() {
@@ -141,9 +212,9 @@ window.Arena = (() => {
       targetX: episode ? episode.target.x : 0,
       targetY: episode ? episode.target.y : 0,
       targetHeading: targetHeading,
-      targetRoll: episode && targetMotionMode === 'physical-style'
+      targetRoll: episode && ['physical-style', 'routed-preview'].includes(targetMotionMode)
         ? Math.atan(episode.physicalStyle.roll) : 0,
-      targetPitch: episode && targetMotionMode === 'physical-style'
+      targetPitch: episode && ['physical-style', 'routed-preview'].includes(targetMotionMode)
         ? Math.atan(episode.physicalStyle.pitch) : 0,
     };
   }
@@ -158,7 +229,21 @@ window.Arena = (() => {
       legacy: 'legacy · checkpointed virtual point',
       bounded: 'bounded · new trajectory lineage',
       'physical-style': 'physical-style · illustrative, not PhysX',
+      'routed-preview': 'global route + bounded/lagged browser preview · NOT PhysX/PPO',
     }[targetMotionMode];
+    const routeState = document.getElementById('hud-route-state');
+    if (routeState) {
+      const route = episode && episode.route;
+      if (targetMotionMode !== 'routed-preview') {
+        routeState.textContent = ''; routeState.classList.remove('route-warning');
+      } else if (route && route.valid) {
+        routeState.textContent = `ROUTE OK · ${route.waypoints.length} points · ${route.pathLengthM.toFixed(1)} m · goals ${episode.routeGoalReplacements || 0}`;
+        routeState.classList.remove('route-warning');
+      } else {
+        routeState.textContent = `NO ROUTE · ZERO COMMAND · ${(route && route.status) || 'unplanned'}`;
+        routeState.classList.add('route-warning');
+      }
+    }
   }
 
   function makeDrone(color, accent, scale = 1) {
@@ -327,7 +412,9 @@ window.Arena = (() => {
       color: 0x0a7f88, transparent: true, opacity: .55 }));
     root.add(lidarLines);
     pursuerTrail = line([], 0x178a52, .85); targetTrail = line([], 0xe04545, .7);
-    root.add(pursuerTrail, targetTrail);
+    routeLine = line([], 0xf3a536, .95);
+    routeLine.material.depthTest = false; routeLine.renderOrder = 4;
+    root.add(pursuerTrail, targetTrail, routeLine);
 
     makeBars(currentBars);
     resetEpisode(false);
@@ -451,6 +538,10 @@ window.Arena = (() => {
     if (!episode) resetEpisode(false);
     simPrev = simCurr || snapshotSimulation();
     Motion.advanceTarget(episode, dt, bars, motionRng, targetMotionMode);
+    if (targetMotionMode === 'routed-preview') {
+      updateRouteLine();
+      updateMotionHud();
+    }
     const proposed = Motion.steerPursuerStep(
       simPrev.droneX, simPrev.droneY, episode.target.x, episode.target.y,
       Motion.CONTRACT.pursuerSpeedMax, dt, bars, heading, episode.avoidSign
@@ -582,7 +673,7 @@ window.Arena = (() => {
       simClock.reset();
     },
     setTargetMotionMode(mode) {
-      if (!['legacy', 'bounded', 'physical-style'].includes(mode)) {
+      if (!['legacy', 'bounded', 'physical-style', 'routed-preview'].includes(mode)) {
         throw new Error('unknown target display mode: ' + mode);
       }
       targetMotionMode = mode;
