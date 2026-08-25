@@ -28,7 +28,9 @@ STATE_BRAKE = 1
 STATE_CONNECT = 2
 STATE_ROUTE = 3
 STATE_NO_CONNECTOR = 4
-STATUS_TIMEOUT = 22
+STATUS_BRAKE_TIMEOUT = 22
+STATUS_CONNECT_TIMEOUT = 23
+STATUS_TIMEOUT = STATUS_BRAKE_TIMEOUT  # compatibility name for existing synthetic fixtures
 HARD_EPSILON_M = 1e-4
 
 
@@ -124,94 +126,6 @@ def _segments_hit_closed_aabb(p0, p1, bars, half, hard_epsilon_m=HARD_EPSILON_M)
     return hit.any(dim=2)
 
 
-def _candidate_metrics(call_args, call_kwargs, selected_velocity):
-    """Recompute intended continuous CONNECT safety without changing the selected action."""
-    from aerial_gym.task.navrl_task.target_motion import (
-        BOUNDED_TURN_ANGLES_DEG,
-        limit_planar_velocity,
-    )
-
-    names = (
-        "old_xy", "current_velocity", "desired_velocity", "speed_limit", "dt", "bars_xy",
-        "lo", "hi", "clearance", "turn_sign", "max_accel", "max_turn_rate", "lookahead_s",
-        "bars_half_extents_xy", "exact_aabb_clearance",
-    )
-    values = {name: value for name, value in zip(names, call_args)}
-    values.update(call_kwargs)
-    old_xy = values["old_xy"]
-    current = values["current_velocity"]
-    desired = values["desired_velocity"]
-    speed_limit = values["speed_limit"]
-    dt = float(values["dt"])
-    bars = values["bars_xy"]
-    hard_epsilon = float(values.get("hard_epsilon_m", HARD_EPSILON_M))
-    lo = values["lo"]
-    hi = values["hi"]
-    half = values.get("bars_half_extents_xy")
-    max_accel = values["max_accel"]
-    max_turn = values["max_turn_rate"]
-    lookahead = float(values["lookahead_s"])
-    if half is None:
-        raise RuntimeError("exact CONNECT telemetry requires AABB half extents")
-    n = old_xy.shape[0]
-    norm = desired.norm(dim=1, keepdim=True)
-    fallback = torch.zeros_like(desired)
-    fallback[:, 0] = 1.0
-    base = torch.where(norm > 1e-6, desired / norm.clamp(min=1e-6), fallback)
-    angles = torch.tensor(
-        [math.radians(value) for value in BOUNDED_TURN_ANGLES_DEG],
-        device=old_xy.device, dtype=old_xy.dtype,
-    )
-    cosine, sine = torch.cos(angles).view(1, -1), torch.sin(angles).view(1, -1)
-    bx, by = base[:, 0:1], base[:, 1:2]
-    direction = torch.stack((bx * cosine - by * sine, bx * sine + by * cosine), dim=2)
-    scales = torch.tensor((1.0, 0.5, 0.25), device=old_xy.device, dtype=old_xy.dtype)
-    candidates = (
-        direction.unsqueeze(1).expand(-1, len(scales), -1, -1)
-        * scales.view(1, -1, 1, 1)
-        * speed_limit.clamp(min=0.0).view(n, 1, 1, 1)
-    ).reshape(n, -1, 2)
-    candidates = torch.cat((candidates, torch.zeros((n, 1, 2), device=old_xy.device)), dim=1)
-    count = candidates.shape[1]
-    pos = old_xy.unsqueeze(1).expand(-1, count, -1).clone()
-    vel = current.unsqueeze(1).expand(-1, count, -1).clone()
-    alive = torch.ones((n, count), dtype=torch.bool, device=old_xy.device)
-    prefix = torch.zeros((n, count), dtype=torch.int16, device=old_xy.device)
-    first_velocity = None
-    steps = max(1, int(math.ceil(lookahead / dt)))
-    flat_speed = speed_limit[:, None].expand(-1, count).reshape(-1)
-    flat_accel = max_accel[:, None].expand(-1, count).reshape(-1)
-    flat_turn = max_turn[:, None].expand(-1, count).reshape(-1)
-    flat_desired = candidates.reshape(-1, 2)
-    for step in range(steps):
-        prior = pos
-        vel = limit_planar_velocity(
-            vel.reshape(-1, 2), flat_desired, flat_speed, dt, flat_accel, flat_turn
-        ).reshape(n, count, 2)
-        pos = prior + vel * dt
-        if step == 0:
-            first_velocity = vel.clone()
-        # The runtime passes the already support-aware bounds and a frozen hard epsilon. Keep the
-        # same non-strict wall convention as the core; AABB inflation carries epsilon+tube.
-        endpoint_safe = ((pos >= lo[:, None]) & (pos <= hi[:, None])).all(dim=2)
-        segment_safe = ~_segments_hit_closed_aabb(
-            prior, pos, bars, half, hard_epsilon_m=hard_epsilon
-        )
-        alive &= endpoint_safe & segment_safe
-        prefix += alive.to(torch.int16)
-    difference = ((first_velocity - selected_velocity[:, None]) ** 2).sum(dim=2)
-    chosen = difference.argmin(dim=1)
-    rows = torch.arange(n, device=old_xy.device)
-    return {
-        "old_xy": old_xy.detach().clone(),
-        "count": count,
-        "horizon": steps,
-        "safe_prefix": prefix[rows, chosen],
-        "full_horizon_safe": alive[rows, chosen],
-        "selected_binding_error": difference[rows, chosen] > 1e-8,
-    }
-
-
 class _SubstepProxy:
     """Transparent task physics callback that records after the real controller callback."""
 
@@ -283,13 +197,15 @@ class RecoveryPackedObserver:
                 "hard_reason_before", "soft_reason_before", "hard_reason_after",
                 "soft_reason_after",
                 "anchor_cell_i", "anchor_cell_j", "candidate_count", "candidate_horizon_steps",
-                "candidate_safe_prefix_steps", "candidate_full_horizon_safe",
+                "candidate_selected_index", "candidate_safe_prefix_steps",
+                "candidate_full_horizon_safe",
             )
         }
         self.i32 = {
             name: torch.zeros(shape, dtype=torch.int32, device=self.device)
             for name in (
                 "entry_delta", "resume_delta", "no_connector_delta", "hard_breach_delta",
+                "brake_timeout_delta", "connect_timeout_delta",
                 "timeout_event", "direct_position_write", "reset_call_during_advance",
                 "runner_reset_after_interval", "candidate_binding_error",
             )
@@ -301,6 +217,7 @@ class RecoveryPackedObserver:
                 "soft_margin_after_m", "speed_before_mps", "speed_after_mps",
                 "stop_distance_m", "stop_margin_m", "anchor_distance_m",
                 "anchor_distance_after_m", "connector_clearance_m", "formula_stop_distance_m",
+                "planned_first_progress_m", "planned_horizon_progress_m",
             )
         }
         self.xy = {
@@ -324,7 +241,7 @@ class RecoveryPackedObserver:
         self._exact_calls = []
         self._candidate_event_pairs = []
         self._candidate_cpu_s = 0.0
-        self._candidate_calls = 0
+        self._certificate_calls = 0
         self._connector_cpu_s = 0.0
         self._connector_clearance_cache = torch.full(
             (self.envs,), float("nan"), dtype=torch.float32, device=self.device
@@ -341,19 +258,32 @@ class RecoveryPackedObserver:
             if not exact and len(args) >= 15:
                 exact = bool(args[14])
             if exact:
-                self._candidate_calls += 1
-                if self.device.type == "cuda":
-                    start = torch.cuda.Event(enable_timing=True)
-                    end = torch.cuda.Event(enable_timing=True)
-                    start.record()
-                    details = _candidate_metrics(args, kwargs, result[1])
-                    end.record()
-                    self._candidate_event_pairs.append((start, end))
-                else:
-                    started = time.perf_counter()
-                    details = _candidate_metrics(args, kwargs, result[1])
-                    self._candidate_cpu_s += time.perf_counter() - started
-                self._exact_calls.append(details)
+                self._certificate_calls += 1
+                if len(result) != 5 or not isinstance(result[4], Mapping):
+                    raise RuntimeError("exact CONNECT call omitted its selected-candidate certificate")
+                certificate = result[4]
+                old_xy = kwargs.get("old_xy", args[0] if args else None)
+                required = {
+                    "selected_index", "candidate_count", "horizon_steps",
+                    "safe_prefix_steps", "full_horizon_safe", "immediate_feasible",
+                    "selected_final_position_xy", "row_ids",
+                }
+                if old_xy is None or not required.issubset(certificate):
+                    raise RuntimeError("CONNECT selected-candidate certificate is incomplete")
+                self._exact_calls.append({
+                    "old_xy": old_xy.detach().clone(),
+                    "selected_first_xy": result[0].detach().clone(),
+                    "selected_final_xy": certificate["selected_final_position_xy"].detach().clone(),
+                    "row_ids": certificate["row_ids"].detach().clone(),
+                    "selected_index": certificate["selected_index"].detach().clone(),
+                    "count": int(certificate["candidate_count"]),
+                    "horizon": int(certificate["horizon_steps"]),
+                    "safe_prefix": certificate["safe_prefix_steps"],
+                    "full_horizon_safe": certificate["full_horizon_safe"],
+                    "selected_binding_error": torch.zeros_like(
+                        certificate["full_horizon_safe"], dtype=torch.bool
+                    ),
+                })
             return result
 
         self._task_module.bounded_drone_target_step = observed
@@ -409,15 +339,14 @@ class RecoveryPackedObserver:
 
     def _counters(self):
         if not self.route_enabled:
-            return tuple(
-                torch.zeros((), dtype=torch.long, device=self.device) for _ in range(4)
-            )
+            return tuple(torch.zeros((), dtype=torch.long, device=self.device) for _ in range(6))
         manager = self.task._target_route_manager
         return tuple(
             value.detach().clone()
             for value in (
                 manager.recovery_entries, manager.recovery_route_resumes,
                 manager.recovery_no_connector_count, manager.recovery_hard_breach_count,
+                manager.recovery_brake_timeout_count, manager.recovery_connect_timeout_count,
             )
         )
 
@@ -501,7 +430,8 @@ class RecoveryPackedObserver:
         self.i16["status_after"][row] = self._status()
         after = self._counters()
         for name, before, final in zip(
-            ("entry_delta", "resume_delta", "no_connector_delta", "hard_breach_delta"),
+            ("entry_delta", "resume_delta", "no_connector_delta", "hard_breach_delta",
+             "brake_timeout_delta", "connect_timeout_delta"),
             self._before_counters, after,
         ):
             delta = final - before
@@ -513,7 +443,10 @@ class RecoveryPackedObserver:
         self.i32["timeout_event"][row] = (
             (self.i16["state_after"][row] == STATE_NO_CONNECTOR)
             & (self.i16["state_before"][row] != STATE_NO_CONNECTOR)
-            & (self.i16["status_after"][row] == STATUS_TIMEOUT)
+            & (
+                (self.i16["status_after"][row] == STATUS_BRAKE_TIMEOUT)
+                | (self.i16["status_after"][row] == STATUS_CONNECT_TIMEOUT)
+            )
         ).to(torch.int32)
         self.xy["command_xy"][row] = self.ctrl.velocity_command[:, :2]
 
@@ -589,22 +522,33 @@ class RecoveryPackedObserver:
             )
             self.i16["candidate_safe_prefix_steps"][row] = -1
             self.i16["candidate_full_horizon_safe"][row] = -1
+            self.i16["candidate_selected_index"][row] = -1
             for details in self._exact_calls:
-                distance_to_global = torch.cdist(details["old_xy"], self._before_position)
-                global_ids = distance_to_global.argmin(dim=1)
-                rows = torch.arange(len(global_ids), device=self.device)
-                counts = torch.bincount(global_ids, minlength=self.envs)
+                global_ids = details["row_ids"].to(device=self.device, dtype=torch.long)
+                in_range = (global_ids >= 0) & (global_ids < self.envs)
+                safe_ids = global_ids.clamp(min=0, max=self.envs - 1)
+                counts = torch.bincount(safe_ids, minlength=self.envs)
                 binding_error = (
-                    (distance_to_global[rows, global_ids] > 1e-7)
-                    | (counts[global_ids] != 1)
+                    ~in_range
+                    | (counts[safe_ids] != 1)
                     | details["selected_binding_error"]
                 )
-                self.i32["candidate_binding_error"][row, global_ids] = binding_error.to(torch.int32)
-                self.i16["candidate_count"][row, global_ids] = int(details["count"])
-                self.i16["candidate_horizon_steps"][row, global_ids] = int(details["horizon"])
-                self.i16["candidate_safe_prefix_steps"][row, global_ids] = details["safe_prefix"]
-                self.i16["candidate_full_horizon_safe"][row, global_ids] = (
+                self.i32["candidate_binding_error"][row, safe_ids] = binding_error.to(torch.int32)
+                self.i16["candidate_count"][row, safe_ids] = int(details["count"])
+                self.i16["candidate_horizon_steps"][row, safe_ids] = int(details["horizon"])
+                self.i16["candidate_selected_index"][row, safe_ids] = details["selected_index"].to(torch.int16)
+                self.i16["candidate_safe_prefix_steps"][row, safe_ids] = details["safe_prefix"]
+                self.i16["candidate_full_horizon_safe"][row, safe_ids] = (
                     details["full_horizon_safe"].to(torch.int16)
+                )
+                initial_distance = (anchor[safe_ids] - details["old_xy"]).norm(dim=1)
+                self.f32["planned_first_progress_m"][row, safe_ids] = (
+                    initial_distance
+                    - (anchor[safe_ids] - details["selected_first_xy"]).norm(dim=1)
+                )
+                self.f32["planned_horizon_progress_m"][row, safe_ids] = (
+                    initial_distance
+                    - (anchor[safe_ids] - details["selected_final_xy"]).norm(dim=1)
                 )
 
         speed = self.ctrl.linvel[:, :2].norm(dim=1)
@@ -711,7 +655,8 @@ class RecoveryPackedObserver:
             },
             "status_codes": {
                 "recovery_no_connector": 19, "recovery_hard_breach": 20,
-                "recovery_local_infeasible_soft_free": 21, "recovery_timeout": 22,
+                "recovery_local_infeasible_soft_free": 21,
+                "recovery_brake_timeout": 22, "recovery_connect_timeout": 23,
             },
             "geometry_reason_codes": {
                 "wall_x_min": 1, "wall_x_max": 2, "wall_y_min": 3, "wall_y_max": 4,
@@ -720,8 +665,8 @@ class RecoveryPackedObserver:
             "missing_int16": -1,
             "missing_float": "NaN",
             "measured_stop_distance_p95_m": self.measured_stop_distance_p95_m,
-            "candidate_recompute_calls": self._candidate_calls,
-            "candidate_recompute_device_ms": candidate_ms,
+            "candidate_certificate_calls": self._certificate_calls,
+            "candidate_observer_device_ms": candidate_ms,
             "connector_observer_cpu_ms": 1000.0 * self._connector_cpu_s,
         })
         arrays["metadata_json_u8"] = np.frombuffer(
@@ -748,10 +693,13 @@ def load_and_verify(path: Path, expected_sha256: str = "") -> Dict[str, object]:
             "hard_margin_before_m", "soft_margin_before_m", "hard_margin_after_m",
             "soft_margin_after_m", "position_before_xy", "position_after_xy", "command_xy",
             "stop_distance_m", "formula_stop_distance_m", "stop_margin_m",
+            "planned_first_progress_m", "planned_horizon_progress_m",
             "direct_position_write", "reset_call_during_advance", "runner_reset_after_interval",
             "candidate_count", "candidate_horizon_steps", "candidate_safe_prefix_steps",
-            "candidate_full_horizon_safe", "timeout_event", "entry_delta", "resume_delta",
-            "no_connector_delta", "hard_breach_delta", "connector_clearance_m",
+            "candidate_selected_index", "candidate_full_horizon_safe", "timeout_event",
+            "entry_delta", "resume_delta",
+            "no_connector_delta", "hard_breach_delta", "brake_timeout_delta",
+            "connect_timeout_delta", "connector_clearance_m",
             "candidate_binding_error", "anchor_xy", "anchor_before_xy", "anchor_distance_m",
             "anchor_distance_after_m", "anchor_cell_i", "anchor_cell_j",
             "hard_margin_m", "contact_force_n", "geometry_valid", "obb_valid",
@@ -802,6 +750,9 @@ def load_and_verify(path: Path, expected_sha256: str = "") -> Dict[str, object]:
         if active.any():
             if (payload["candidate_count"][active] != 73).any():
                 raise RuntimeError("CONNECT candidate count drift")
+            selected = payload["candidate_selected_index"][active]
+            if (selected < 0).any() or (selected >= payload["candidate_count"][active]).any():
+                raise RuntimeError("CONNECT selected candidate index is missing/out of range")
             if (payload["candidate_horizon_steps"][active] <= 0).any():
                 raise RuntimeError("CONNECT horizon missing")
             if (payload["candidate_safe_prefix_steps"][active] < 0).any():
@@ -826,6 +777,9 @@ def load_and_verify(path: Path, expected_sha256: str = "") -> Dict[str, object]:
                 raise RuntimeError("CONNECT anchor cell is missing")
             if (payload["candidate_binding_error"][active] != 0).any():
                 raise RuntimeError("CONNECT candidate/environment binding is ambiguous")
+            for field in ("planned_first_progress_m", "planned_horizon_progress_m"):
+                if not np.isfinite(payload[field][active]).all() or (payload[field][active] < -1e-6).any():
+                    raise RuntimeError("CONNECT certificate has negative fixed-anchor progress: %s" % field)
             if not np.isfinite(payload["anchor_distance_after_m"][active]).all():
                 raise RuntimeError("CONNECT post-physics anchor distance is missing")
             if (payload["anchor_distance_after_m"][active]
@@ -871,8 +825,6 @@ def load_and_verify(path: Path, expected_sha256: str = "") -> Dict[str, object]:
                 raise RuntimeError("measured p95 stop distance is missing")
             if not np.allclose(payload["stop_distance_m"], registered_stop, rtol=0.0, atol=1e-7):
                 raise RuntimeError("per-cell measured p95 stop distance drift")
-            if (payload["formula_stop_distance_m"] + 1e-7 < payload["stop_distance_m"]).any():
-                raise RuntimeError("p05 formula does not dominate measured p95 stop distance")
         if not np.isfinite(payload["hard_margin_m"]).all():
             raise RuntimeError("substep hard margin is nonfinite")
         if not (payload["geometry_valid"] == 1).all():
@@ -888,12 +840,20 @@ def load_and_verify(path: Path, expected_sha256: str = "") -> Dict[str, object]:
         if int(new_no_connector.sum()) != scalar_no_connector:
             raise RuntimeError("no-connector event/aggregate partition mismatch")
         reason_codes = payload["status_after"][new_no_connector]
-        allowed_reasons = np.asarray([19, 20, 21, 22], dtype=np.int16)
+        allowed_reasons = np.asarray([19, 20, 21, 22, 23], dtype=np.int16)
         if reason_codes.size and not np.isin(reason_codes, allowed_reasons).all():
             raise RuntimeError("unknown no-connector reason")
-        expected_timeout = new_no_connector & (payload["status_after"] == STATUS_TIMEOUT)
+        expected_timeout = new_no_connector & np.isin(
+            payload["status_after"], [STATUS_BRAKE_TIMEOUT, STATUS_CONNECT_TIMEOUT]
+        )
         if not np.array_equal(payload["timeout_event"] > 0, expected_timeout):
             raise RuntimeError("timeout event is not the unique NO_CONNECTOR transition")
+        brake_timeout_events = int((reason_codes == STATUS_BRAKE_TIMEOUT).sum())
+        connect_timeout_events = int((reason_codes == STATUS_CONNECT_TIMEOUT).sum())
+        if int(payload["brake_timeout_delta"][:, 0].sum()) != brake_timeout_events:
+            raise RuntimeError("BRAKE timeout status/counter partition mismatch")
+        if int(payload["connect_timeout_delta"][:, 0].sum()) != connect_timeout_events:
+            raise RuntimeError("CONNECT timeout status/counter partition mismatch")
         entries = int(payload["entry_delta"][:, 0].sum())
         resumes = int(payload["resume_delta"][:, 0].sum())
         active_recovery = np.isin(after, [STATE_BRAKE, STATE_CONNECT])
@@ -927,8 +887,8 @@ def load_and_verify(path: Path, expected_sha256: str = "") -> Dict[str, object]:
             "watchdog_breach_substeps": int(payload["watchdog_breach"].sum()),
             "contact_substeps": int((payload["contact_force_n"] > 0.05).sum()),
             "runner_reset_envs": int(runner_reset.sum()),
-            "candidate_recompute_calls": int(metadata.get("candidate_recompute_calls", 0)),
-            "candidate_recompute_device_ms": float(metadata.get("candidate_recompute_device_ms", 0.0)),
+            "candidate_certificate_calls": int(metadata.get("candidate_certificate_calls", 0)),
+            "candidate_observer_device_ms": float(metadata.get("candidate_observer_device_ms", 0.0)),
             "connector_observer_cpu_ms": float(metadata.get("connector_observer_cpu_ms", 0.0)),
             "direct_position_writes": direct_writes,
             "reset_calls_during_advance": reset_calls,

@@ -83,6 +83,8 @@ def fixture(steps=3, substeps=2, envs=2, connect=True):
         "stop_distance_m": np.ones(shape, dtype=np.float32) * 0.2,
         "formula_stop_distance_m": np.ones(shape, dtype=np.float32) * 0.3,
         "stop_margin_m": np.ones(shape, dtype=np.float32) * 0.8,
+        "planned_first_progress_m": np.zeros(shape, dtype=np.float32),
+        "planned_horizon_progress_m": np.zeros(shape, dtype=np.float32),
         "position_before_xy": np.zeros(shape + (2,), dtype=np.float32),
         "position_after_xy": np.zeros(shape + (2,), dtype=np.float32),
         "velocity_before_xy": np.zeros(shape + (2,), dtype=np.float32),
@@ -97,10 +99,13 @@ def fixture(steps=3, substeps=2, envs=2, connect=True):
         "resume_delta": np.zeros(shape, dtype=np.int32),
         "no_connector_delta": np.zeros(shape, dtype=np.int32),
         "hard_breach_delta": np.zeros(shape, dtype=np.int32),
+        "brake_timeout_delta": np.zeros(shape, dtype=np.int32),
+        "connect_timeout_delta": np.zeros(shape, dtype=np.int32),
         "candidate_binding_error": np.zeros(shape, dtype=np.int32),
         "timeout_event": np.zeros(shape, dtype=np.int32),
         "candidate_count": candidate,
         "candidate_horizon_steps": horizon,
+        "candidate_selected_index": np.where(candidate > 0, 0, -1).astype(np.int16),
         "candidate_safe_prefix_steps": prefix,
         "candidate_full_horizon_safe": full,
         "hard_margin_m": np.ones(subshape, dtype=np.float32),
@@ -156,6 +161,13 @@ class PackedTelemetryTest(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "safe-prefix"):
             PACKED.load_and_verify(path)
 
+    def test_connect_negative_planned_anchor_progress_is_rejected(self):
+        arrays = fixture()
+        arrays["planned_horizon_progress_m"][1, 0] = -0.01
+        path = self.write(arrays)
+        with self.assertRaisesRegex(RuntimeError, "negative fixed-anchor progress"):
+            PACKED.load_and_verify(path)
+
     def test_illegal_brake_to_route_transition_is_rejected(self):
         arrays = fixture(connect=False)
         arrays["state_before"][1, 0] = PACKED.STATE_BRAKE
@@ -177,6 +189,7 @@ class PackedTelemetryTest(unittest.TestCase):
         arrays["state_after"][0, 0] = PACKED.STATE_CONNECT
         arrays["candidate_count"][0, 0] = 73
         arrays["candidate_horizon_steps"][0, 0] = 10
+        arrays["candidate_selected_index"][0, 0] = 0
         arrays["candidate_safe_prefix_steps"][0, 0] = 10
         arrays["candidate_full_horizon_safe"][0, 0] = 1
         arrays["age_after"][0, 0] = 1
@@ -208,6 +221,7 @@ class PackedTelemetryTest(unittest.TestCase):
         arrays["state_after"][0, 0] = PACKED.STATE_CONNECT
         arrays["candidate_count"][0, 0] = 73
         arrays["candidate_horizon_steps"][0, 0] = 10
+        arrays["candidate_selected_index"][0, 0] = 0
         arrays["candidate_safe_prefix_steps"][0, 0] = 10
         arrays["candidate_full_horizon_safe"][0, 0] = 1
         arrays["age_after"][0, 0] = 1
@@ -217,6 +231,7 @@ class PackedTelemetryTest(unittest.TestCase):
         arrays["state_after"][2, 0] = PACKED.STATE_NO_CONNECTOR
         arrays["status_after"][1:, 0] = PACKED.STATUS_TIMEOUT
         arrays["timeout_event"][1, 0] = 1
+        arrays["brake_timeout_delta"][1, 0] = 1
         arrays["entry_delta"][0, 0] = 1
         arrays["no_connector_delta"][1, 0] = 1
         path = self.write(arrays)

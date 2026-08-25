@@ -12401,6 +12401,23 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
   v1 byte preservation, schema pairing, continuous AABB reserve, illegal/cross-interval state
   changes, duplicate timeout prevention, no-connector zero command, position/reset mutation, and
   raw SHA/geometry failures. No GPU/PhysX/PPO execution was performed.
-- GPU launch remains blocked until the core accepts the finalized braking receipt schema pair and
-  exposes an unambiguous recovery-only selected-candidate full-horizon certificate; first-step
-  velocity cannot identify the selected candidate when acceleration saturation aliases candidates.
+- Core integration now accepts only the finalized braking receipt/probe schema pair, consumes the
+  validated monotone measured stop-distance lookup, separates BRAKE/CONNECT timeout reasons, and
+  exposes an unambiguous recovery-only selected-candidate full-horizon certificate. GPU launch is
+  still blocked until the fresh target braking probe produces its first real finalized receipt.
+- The final integration binds the standalone verifier's canonical speed-to-p95 lookup and lateral
+  stopping tube. Probe verification reconstructs source bytes from the receipt's immutable git
+  object, so the later recovery-core commit cannot invalidate an otherwise valid probe receipt.
+- CONNECT certificates now carry explicit global environment rows and selected candidate indices;
+  coordinate matching was removed because multiple simulator environments can have identical local
+  coordinates. First-step, full-horizon, and actual post-physics fixed-anchor progress are all
+  fail-closed. The progress tolerance is frozen at `1e-6 m`.
+- The 32-cell evaluator names and verifies the local metrics separately: rounded bounded-step
+  infeasibility for `off`, rounded normal-route invalidation for recovery, each with an explicit
+  `32×300` denominator. Exact CONNECT failures remain in the recovery reason partition.
+
+### 2026-08-26 — evaluator source-object fixture correction
+
+- The synthetic braking-receipt contract now builds its manifest and tool hashes from the recorded
+  git object, matching the immutable post-commit receipt semantics used by the evaluator.
+- CPU contracts pass after this correction; no GPU, PhysX, or PPO execution was performed.

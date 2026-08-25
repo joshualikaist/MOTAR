@@ -17,7 +17,9 @@ partition. The task is reset and reseeded before each density. `NAVRL_NUM_BARS=7
 The target-specific braking result must first pass its standalone raw-first verifier. Its entire
 finalized directory is copied into the partial result and hash-bound. The common validator alone
 sets `NAVRL_TARGET_RECOVERY_PROBE_VALIDATED=1`. The registered speed's measured p95 stop distance
-is recorded separately from `v²/(2*a_p05)`; the latter must conservatively dominate it.
+is recorded separately from `v²/(2*a_p05)`; recovery safety uses the standalone verifier's
+monotone-certified ceiling-speed lookup and its p95 lateral braking tube, not the formula. The
+child task independently revalidates the copied receipt, source manifest, lookup, and lateral tube.
 
 ## Packed evaluation telemetry
 
@@ -25,7 +27,8 @@ Every cell writes one device-packed NPZ with fixed denominators `32×300` interv
 `32×300×10` substeps. It records state/status transitions, general/BRAKE/CONNECT ages and phase
 timeouts, exact hard/soft signed AABB margin and wall/bar reason, actual PhysX pose/velocity,
 submitted command, measured and formula braking distances, anchor/cell/connector clearance,
-selected candidate count/horizon/safe prefix, route/no-connector reasons, watchdog/contact/OBB/
+selected candidate row/index/count/horizon/safe prefix/final rollout endpoint, fixed-anchor first/
+horizon/actual progress, route/no-connector reasons, watchdog/contact/OBB/
 geometry/motor/tilt traces, and evaluator-attributed reset/position-write counts.
 
 Verification is raw-first and enforces legal within- and cross-interval transitions, phase-field
@@ -35,15 +38,20 @@ NO_CONNECTOR, no target pose write/reset from recovery, unique timeout events, a
 all no-connector transitions. Runner resets are attributed after the recorded interval and are
 the only permitted cross-interval discontinuity.
 
-The candidate mirror is evaluation-only. Its CUDA device time and call count are reported
-separately. The operational throughput gate conservatively uses total instrumented wall time;
-the observer-adjusted value is descriptive only. Matched recovery/off throughput must be at
-least 0.50.
+The recovery-only helper returns the selected candidate's explicit environment row plus exact
+index/count/horizon/safe-prefix/full-horizon/final-position certificate; the evaluator does not
+infer identity from coordinates or the first velocity, because environments can share coordinates
+and acceleration saturation can alias multiple candidates. Any optional evaluator recomputation and
+connector attribution time is reported separately. The operational throughput gate conservatively
+uses total instrumented wall time; the observer-adjusted value is descriptive only. Matched
+recovery/off throughput must be at least 0.50.
 
 ## Existing gates and decision
 
 Per-cell gates remain: tracking RMSE ≤0.35 m/s, realized/requested speed ≥0.80, contact ≤0.01,
-arm-specific local infeasibility ≤0.01, motor saturation ≤0.15, tilt ≤60°, invalid state 0,
+arm-specific local infeasibility ≤0.01 (off: rounded bounded-step infeasible; recovery: rounded
+normal-route invalidation only; each numerator divided by exactly `32×300` intervals), motor
+saturation ≤0.15, tilt ≤60°, invalid state 0,
 watchdog hard breach 0, direct target-position write 0, and reset-during-target-advance 0.
 The 70-bar route mechanism requires plan success ≥0.99, fallback ≤0.01, and at speed 0.6 at
 least 0.5 goal completions/environment. A scientific FAIL is finalized rather than discarded;

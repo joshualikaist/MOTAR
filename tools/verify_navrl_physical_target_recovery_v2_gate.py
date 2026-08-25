@@ -38,6 +38,7 @@ PACKED_SPEC.loader.exec_module(PACKED)
 BRAKE_VERIFY_PATH = ROOT / "tools/verify_navrl_physical_target_braking.py"
 BRAKE_PROBE_PATH = ROOT / "tools/probe_navrl_physical_target_braking.py"
 BRAKE_PREREG_PATH = ROOT / "docs/preregistration_navrl_physical_target_braking_2026-08-25.md"
+SOURCE_BUNDLE_PATH = ROOT / "tools/create_navrl_source_bundle.py"
 BRAKE_PROBE_SPEC = importlib.util.spec_from_file_location(
     "probe_navrl_physical_target_braking", BRAKE_PROBE_PATH
 )
@@ -50,6 +51,12 @@ BRAKE_SPEC = importlib.util.spec_from_file_location(
 BRAKE_VERIFY = importlib.util.module_from_spec(BRAKE_SPEC)
 sys.modules[BRAKE_SPEC.name] = BRAKE_VERIFY
 BRAKE_SPEC.loader.exec_module(BRAKE_VERIFY)
+SOURCE_BUNDLE_SPEC = importlib.util.spec_from_file_location(
+    "navrl_recovery_training_source_bundle", SOURCE_BUNDLE_PATH
+)
+SOURCE_BUNDLE = importlib.util.module_from_spec(SOURCE_BUNDLE_SPEC)
+sys.modules[SOURCE_BUNDLE_SPEC.name] = SOURCE_BUNDLE
+SOURCE_BUNDLE_SPEC.loader.exec_module(SOURCE_BUNDLE)
 
 PREREG = ROOT / "docs/preregistration_physical_target_recovery_v2_gate_2026-08-25.md"
 RECOVERY_PREREG = ROOT / "docs/preregistration_physical_target_two_envelope_recovery_2026-08-25.md"
@@ -73,8 +80,8 @@ GATES = {
     "tracking_rmse_mps_max": 0.35,
     "mean_speed_ratio_min": 0.80,
     "contact_step_fraction_max": 0.01,
-    "off_local_infeasible_fraction_max": 0.01,
-    "recovery_local_invalidation_fraction_max": 0.01,
+    "off_rounded_local_infeasible_fraction_max": 0.01,
+    "recovery_normal_route_rounded_invalidation_fraction_max": 0.01,
     "motor_saturation_fraction_max": 0.15,
     "max_tilt_deg_max": 60.0,
     "invalid_state_fraction_max": 0.0,
@@ -134,12 +141,13 @@ def runtime_source_paths() -> List[Path]:
         str(PACKED_PATH.relative_to(ROOT)), str(BASE_PATH.relative_to(ROOT)),
         str(BRAKE_VERIFY_PATH.relative_to(ROOT)),
         str(BRAKE_PROBE_PATH.relative_to(ROOT)), str(BRAKE_PREREG_PATH.relative_to(ROOT)),
+        str(SOURCE_BUNDLE_PATH.relative_to(ROOT)),
     ]
     tracked = git("ls-files", *requested).splitlines()
     paths = sorted({ROOT / name for name in tracked if name})
     required = {
         PREREG, RECOVERY_PREREG, Path(__file__).resolve(), PACKED_PATH, BASE_PATH,
-        BRAKE_VERIFY_PATH, BRAKE_PROBE_PATH, BRAKE_PREREG_PATH,
+        BRAKE_VERIFY_PATH, BRAKE_PROBE_PATH, BRAKE_PREREG_PATH, SOURCE_BUNDLE_PATH,
     }
     require(required.issubset(set(paths)), "evaluator/prereg source is not fully tracked")
     require(all(path.is_file() for path in paths), "source manifest contains missing path")
@@ -184,7 +192,7 @@ def verify_source_manifest(path: Path, expected_sha: str) -> Dict[str, object]:
         require(sha256_file(source) == entry.get("sha256"), "source hash drift: %s" % relative)
     for required in (
         PREREG, RECOVERY_PREREG, Path(__file__).resolve(), PACKED_PATH, BASE_PATH,
-        BRAKE_VERIFY_PATH, BRAKE_PROBE_PATH, BRAKE_PREREG_PATH,
+        BRAKE_VERIFY_PATH, BRAKE_PROBE_PATH, BRAKE_PREREG_PATH, SOURCE_BUNDLE_PATH,
     ):
         require(str(required.relative_to(ROOT)) in seen, "required source not bound: %s" % required)
     return payload
@@ -237,17 +245,39 @@ def validate_braking_probe_values(values: Mapping[str, str]) -> Dict[str, str]:
             "braking p05 differs from receipt")
     require(abs(float(payload.get("stop_time_p95_s")) - stop) <= 1e-9,
             "stop-time p95 differs from receipt")
-    lookup = verified["summary"].get("measured_speed_to_p95_lookup")
+    summary = verified["summary"]
+    lookup = summary.get("measured_speed_to_p95_lookup")
+    certified = summary.get("certified_monotone_speed_to_p95_lookup")
     require(isinstance(lookup, Mapping) and sorted(float(key) for key in lookup) == list(SPEEDS),
             "receipt does not contain the exact registered speed lookup")
+    require(isinstance(certified, Mapping) and sorted(float(key) for key in certified) == list(SPEEDS),
+            "receipt does not contain the exact certified speed lookup")
     for speed_key, cell in lookup.items():
         measured = float(cell.get("p95_stop_distance_m", float("nan")))
         require(math.isfinite(measured) and measured >= 0.0,
                 "speed cell p95 stop distance missing")
-        formula = float(speed_key) ** 2 / (2.0 * decel)
-        require(formula + 1e-9 >= measured,
-                "v^2/(2*a_p05) does not dominate measured p95 stop distance")
+    ordered_distances = []
+    for speed in SPEEDS:
+        key = format(speed, ".1f")
+        measured = float(lookup[key]["p95_stop_distance_m"])
+        certified_distance = float(certified[key]["p95_stop_distance_m"])
+        require(math.isfinite(certified_distance) and certified_distance + 1e-12 >= measured,
+                "certified stop distance is nonfinite or below the measured p95")
+        ordered_distances.append(certified_distance)
+    require(all(right + 1e-12 >= left for left, right in zip(
+        ordered_distances, ordered_distances[1:]
+    )), "certified speed/stop-distance lookup is not monotone")
+    core = payload.get("core_integration")
+    lateral = core.get("certified_lateral_tube_p95_m") if isinstance(core, Mapping) else None
+    require(core == BRAKE_VERIFY.core_integration_object(summary),
+            "receipt core integration is not the standalone verifier recomputation")
+    require(isinstance(lateral, (int, float)) and math.isfinite(float(lateral))
+            and float(lateral) >= 0.0, "certified braking lateral tube is missing")
     values["__MEASURED_LOOKUP_JSON"] = json.dumps(lookup, sort_keys=True, separators=(",", ":"))
+    values["__CERTIFIED_LOOKUP_JSON"] = json.dumps(
+        certified, sort_keys=True, separators=(",", ":")
+    )
+    values["__LATERAL_TUBE_P95_M"] = repr(float(lateral))
     values[names[2]] = str(receipt)
     return values
 
@@ -282,11 +312,28 @@ def frozen_environment(route_mode: str, speed: float, probe: Mapping[str, str]) 
         "NAVRL_NUM_BARS": "70", "NAVRL_MAX_BARS": "300",
         "NAVRL_TARGET_RECOVERY_EVAL_TELEMETRY": "1",
     })
+    for name in (
+        "NAVRL_TRAINING_SOURCE_MANIFEST", "NAVRL_TRAINING_SOURCE_MANIFEST_SHA256",
+        "NAVRL_REQUIRE_TRAINING_SOURCE_RECEIPT", "NAVRL_REQUIRE_CLEAN_TRAINING_SOURCE",
+    ):
+        require(probe.get(name), "training source contract is incomplete: %s" % name)
+        values[name] = str(probe[name])
     if route_mode == "global_astar_recovery_v2":
         values.update({key: value for key, value in probe.items() if not key.startswith("__")})
-        lookup = json.loads(probe["__MEASURED_LOOKUP_JSON"])
+        measured_lookup = json.loads(probe["__MEASURED_LOOKUP_JSON"])
+        certified_lookup = json.loads(probe["__CERTIFIED_LOOKUP_JSON"])
+        values["NAVRL_TARGET_RECOVERY_BRAKE_SPEEDS_MPS"] = ",".join(
+            format(value, ".1f") for value in SPEEDS
+        )
+        values["NAVRL_TARGET_RECOVERY_BRAKE_STOP_DISTANCES_M"] = ",".join(
+            str(certified_lookup[format(value, ".1f")]["p95_stop_distance_m"])
+            for value in SPEEDS
+        )
         values["NAVRL_TARGET_RECOVERY_STOP_DISTANCE_P95_M"] = str(
-            lookup[format(speed, ".1f")]["p95_stop_distance_m"]
+            measured_lookup[format(speed, ".1f")]["p95_stop_distance_m"]
+        )
+        values["NAVRL_TARGET_RECOVERY_BRAKE_LATERAL_TUBE_P95_M"] = (
+            probe["__LATERAL_TUBE_P95_M"]
         )
         # This evaluator is the common fail-closed receipt validator for this run.  The flag is
         # emitted only after the hash, subject, per-speed cells, safety gates and provenance above
@@ -298,6 +345,7 @@ def frozen_environment(route_mode: str, speed: float, probe: Mapping[str, str]) 
 RECOVERY_COUNTERS = (
     "recovery_entries", "recovery_brake_intervals", "recovery_connect_intervals",
     "recovery_no_connector_count", "recovery_hard_breach_count", "recovery_route_resumes",
+    "recovery_brake_timeout_count", "recovery_connect_timeout_count",
 )
 
 
@@ -341,11 +389,11 @@ def record_id(route: str, speed: float, density: int) -> str:
 
 
 def row_gates(row: Mapping) -> Dict[str, bool]:
-    local = row["off_local_infeasible_fraction"] if row["route_mode"] == "off" else (
-        row["recovery_local_invalidation_fraction"]
+    local = row["off_rounded_local_infeasible_fraction"] if row["route_mode"] == "off" else (
+        row["recovery_normal_route_rounded_invalidation_fraction"]
     )
-    local_max = GATES["off_local_infeasible_fraction_max"] if row["route_mode"] == "off" else (
-        GATES["recovery_local_invalidation_fraction_max"]
+    local_max = GATES["off_rounded_local_infeasible_fraction_max"] if row["route_mode"] == "off" else (
+        GATES["recovery_normal_route_rounded_invalidation_fraction_max"]
     )
     telemetry = row["telemetry_summary"]
     return {
@@ -471,7 +519,7 @@ def run_cell(task, torch, route_mode: str, speed: float, density: int,
         )) if route_mode != "off" else 0,
     })
     telemetry_summary = PACKED.load_and_verify(raw_path, telemetry_artifact["sha256"])
-    observer_device_s = telemetry_summary["candidate_recompute_device_ms"] / 1000.0
+    observer_device_s = telemetry_summary["candidate_observer_device_ms"] / 1000.0
     observer_connector_s = telemetry_summary["connector_observer_cpu_ms"] / 1000.0
     adjusted_wall = max(rollout_wall - observer_device_s - observer_connector_s, 1e-9)
     require(tracking_samples == ENVS * (STEPS - WARMUP_STEPS), "tracking denominator drift")
@@ -487,10 +535,10 @@ def run_cell(task, torch, route_mode: str, speed: float, density: int,
         "mean_speed_mps": mean_speed, "mean_speed_ratio": mean_speed / speed,
         "tracking_rmse_mps": math.sqrt(err_sq_sum / max(1, tracking_samples)),
         "contact_step_fraction": contact_samples / max(1, safety_samples),
-        "off_local_infeasible_fraction": (
+        "off_rounded_local_infeasible_fraction": (
             off_infeasible / max(1, safety_samples) if route_mode == "off" else None
         ),
-        "recovery_local_invalidation_fraction": (
+        "recovery_normal_route_rounded_invalidation_fraction": (
             local_invalid / max(1, safety_samples) if route_mode != "off" else None
         ),
         "invalid_state_fraction": invalid_samples / max(1, safety_samples),
@@ -499,6 +547,15 @@ def run_cell(task, torch, route_mode: str, speed: float, density: int,
         "measurement_denominators": {
             "tracking_env_intervals": tracking_samples, "safety_env_intervals": safety_samples,
             "controller_substeps": int(substeps.item()),
+        },
+        "local_metric_contract": {
+            "numerator": off_infeasible if route_mode == "off" else local_invalid,
+            "denominator": safety_samples,
+            "geometry": (
+                "bounded rounded Euclidean surface clearance"
+                if route_mode == "off"
+                else "normal-route rounded invalidation only; exact CONNECT failures are in recovery reasons"
+            ),
         },
         "route": route,
         "telemetry": {"path": raw_path.name, "sha256": telemetry_artifact["sha256"],
@@ -567,6 +624,12 @@ def child_main(args) -> int:
     # make the receipt claim that a different state machine was instantiated.
     contract = BASE.attest_instantiated_contract(task, "off", source)
     contract["actual_route_mode"] = args.route_mode
+    contract["training_source_manifest_sha256"] = str(
+        task._training_source_provenance.get("manifest_sha256", "")
+    )
+    require(contract["training_source_manifest_sha256"]
+            == probe["NAVRL_TRAINING_SOURCE_MANIFEST_SHA256"],
+            "instantiated training source receipt drift")
     if args.route_mode != "off":
         support = [float(value) for value in task._target_route_support_xy[0].tolist()]
         declared = contract["declared_conservative_support_xy_m"]
@@ -586,6 +649,9 @@ def child_main(args) -> int:
         rows.append(run_cell(task, torch, args.route_mode, args.speed, density, import_origin, raw))
     verify_source_manifest(manifest_path, args.source_manifest_sha256)
     recorded_environment = dict(environment)
+    recorded_environment["NAVRL_TRAINING_SOURCE_MANIFEST"] = (
+        "inputs/training_source/source_manifest.json"
+    )
     if args.route_mode != "off":
         recorded_environment["NAVRL_TARGET_RECOVERY_BRAKE_PROBE_RECEIPT"] = (
             "inputs/braking_probe/receipt.json"
@@ -639,6 +705,24 @@ def validate_grid(records: Sequence[Mapping]) -> None:
                 "tracking denominator mismatch")
         require(row["measurement_denominators"]["safety_env_intervals"] == ENVS * STEPS,
                 "safety denominator mismatch")
+        local_contract = row.get("local_metric_contract", {})
+        require(local_contract.get("denominator") == ENVS * STEPS,
+                "local metric denominator mismatch")
+        local_value = (
+            row["off_rounded_local_infeasible_fraction"]
+            if row["route_mode"] == "off"
+            else row["recovery_normal_route_rounded_invalidation_fraction"]
+        )
+        require(abs(float(local_value) - float(local_contract.get("numerator", -1))
+                    / float(ENVS * STEPS)) <= 1e-15,
+                "local metric numerator/fraction identity mismatch")
+        expected_geometry = (
+            "bounded rounded Euclidean surface clearance"
+            if row["route_mode"] == "off"
+            else "normal-route rounded invalidation only; exact CONNECT failures are in recovery reasons"
+        )
+        require(local_contract.get("geometry") == expected_geometry,
+                "local metric geometry semantics drift")
 
 
 def matched_deltas(records: Sequence[Mapping]) -> List[Dict[str, object]]:
@@ -693,6 +777,13 @@ def validate_child(path: Path, route: str, speed: float, source_sha: str,
     require(payload.get("environment_contract", {}).get("NAVRL_NUM_BARS") == "70"
             and payload.get("environment_contract", {}).get("NAVRL_MAX_BARS") == "300",
             "child density pool contract drift")
+    training_sha = payload.get("environment_contract", {}).get(
+        "NAVRL_TRAINING_SOURCE_MANIFEST_SHA256"
+    )
+    require(len(str(training_sha or "")) == 64
+            and payload.get("instantiated_contract", {}).get(
+                "training_source_manifest_sha256"
+            ) == training_sha, "child training source receipt drift")
     nvidia = payload.get("software_provenance", {}).get("nvidia_smi", {})
     require(Path(str(nvidia.get("path", ""))).is_absolute()
             and len(str(nvidia.get("sha256", ""))) == 64 and nvidia.get("identity"),
@@ -740,6 +831,21 @@ def parent_main(args) -> int:
             for path in sorted(probe_input.parent.rglob("*")) if path.is_file()
         ]
         require(probe_bundle, "snapshotted braking receipt bundle is empty")
+        training_dir = stage / "inputs/training_source"
+        training_contract = SOURCE_BUNDLE.create(training_dir, require_clean=True)
+        SOURCE_BUNDLE.verify(
+            Path(training_contract["manifest"]), training_contract["manifest_sha256"]
+        )
+        training_bundle = [
+            file_entry(path, stage) for path in sorted(training_dir.rglob("*")) if path.is_file()
+        ]
+        require(training_bundle, "training source snapshot is empty")
+        probe.update({
+            "NAVRL_TRAINING_SOURCE_MANIFEST": training_contract["manifest"],
+            "NAVRL_TRAINING_SOURCE_MANIFEST_SHA256": training_contract["manifest_sha256"],
+            "NAVRL_REQUIRE_TRAINING_SOURCE_RECEIPT": "1",
+            "NAVRL_REQUIRE_CLEAN_TRAINING_SOURCE": "1",
+        })
         base_env = BASE.build_child_environment()
         records, child_entries, contracts, software = [], [], [], []
         for route in ROUTE_ARMS:
@@ -778,6 +884,8 @@ def parent_main(args) -> int:
             "probe_receipt_sha256": probe["NAVRL_TARGET_RECOVERY_BRAKE_PROBE_RECEIPT_SHA256"],
             "probe_receipt": probe_entry,
             "probe_bundle": probe_bundle,
+            "training_source_bundle": training_bundle,
+            "training_source_manifest_sha256": training_contract["manifest_sha256"],
             "children": child_entries, "raw_artifacts": raw_entries,
             "record_ids": [row["record_id"] for row in records], "record_count": len(records),
         }
@@ -798,6 +906,10 @@ def parent_main(args) -> int:
                 "bundle": probe_bundle,
             },
             "instantiated_contracts": contracts, "software_provenance": software,
+            "training_source_contract": {
+                "manifest_sha256": training_contract["manifest_sha256"],
+                "bundle": training_bundle,
+            },
             "cells": records, "matched_recovery_minus_off": matched_deltas(records),
             "verdict": derive_verdict(records),
             "claim_boundary": {"ppo_policy_loaded": False, "hardware_validation": False,
@@ -814,6 +926,8 @@ def parent_main(args) -> int:
             "probe_receipt_sha256": probe["NAVRL_TARGET_RECOVERY_BRAKE_PROBE_RECEIPT_SHA256"],
             "probe_receipt": probe_entry,
             "probe_bundle": probe_bundle,
+            "training_source_bundle": training_bundle,
+            "training_source_manifest_sha256": training_contract["manifest_sha256"],
             "record_count": 32, "record_ids": [row["record_id"] for row in records],
             "children": child_entries, "raw_artifacts": raw_entries,
             "verdict": summary["verdict"],
@@ -888,6 +1002,20 @@ def verify_result(root: Path) -> Dict[str, object]:
     require(execution.get("probe_bundle") == receipt.get("probe_bundle")
             == probe_contract.get("bundle") and len(receipt.get("probe_bundle", [])) >= 8,
             "probe bundle binding drift")
+    for entry in receipt.get("training_source_bundle", []):
+        verify_entry(root, entry)
+    training_contract = summary.get("training_source_contract", {})
+    require(execution.get("training_source_bundle") == receipt.get("training_source_bundle")
+            == training_contract.get("bundle") and receipt.get("training_source_bundle"),
+            "training source bundle binding drift")
+    require(execution.get("training_source_manifest_sha256")
+            == receipt.get("training_source_manifest_sha256")
+            == training_contract.get("manifest_sha256"),
+            "training source manifest binding drift")
+    SOURCE_BUNDLE.verify(
+        root / "inputs/training_source/source_manifest.json",
+        receipt["training_source_manifest_sha256"],
+    )
     for entry in receipt.get("raw_artifacts", []):
         path = verify_entry(root, entry)
         PACKED.load_and_verify(path, entry["sha256"])
