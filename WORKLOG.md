@@ -12592,6 +12592,12 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
   controller gain or physics parameter was changed; the previous cell was rejected before data
   collection.
 
+### 2026-08-26 — controller gain tensor shape normalization
+
+- The instantiated gain tensors have shape `[1, 3]`; the attestation now flattens the single
+  controller vector before comparing the frozen three-axis gains. No gain value was changed and
+  the rejected cell produced no accepted measurement.
+
 ### 2026-08-26 — pinned ninja PATH handoff
 
 - The second probe attempt reached Isaac Gym but its child could not build `gymtorch`: exporting

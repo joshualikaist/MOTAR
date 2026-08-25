@@ -341,7 +341,7 @@ def attest_instantiated_task(task: Any, expected_speed: Optional[float] = None) 
     for attr, key in (("attitude_kp", "physical_attitude_kp"), ("rate_kp", "physical_rate_kp")):
         tensor = getattr(controller, attr, None)
         try:
-            actual = tensor.detach().cpu().tolist()
+            actual = tensor.detach().cpu().reshape(-1).tolist()
         except (AttributeError, RuntimeError):
             raise ValueError("controller.%s is not a finite gain vector" % attr)
         expected = FROZEN_CONTRACT[key]
