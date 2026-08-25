@@ -12646,3 +12646,10 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
   is evidence that the current physical target/controller contract does not yet sustain the upper
   arm; no threshold, speed arm, or controller parameter was changed. Recovery-v2 simulator gate
   and PPO remain blocked until this measurement contract is resolved.
+
+### 2026-08-26 — upper-speed diagnostic detail
+
+- Warmup-gate failures now report final speed min/mean/max and absolute-error min/mean/max before
+  the child exits. This is diagnostic-only and does not alter the preregistered convergence gate;
+  the probe hash is re-pinned to
+  `a4c74e16ac0e39093549925187a1c4d180800afe6dde1e1c1b22764a3aa71bbf`.

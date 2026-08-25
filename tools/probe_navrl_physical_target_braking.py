@@ -675,7 +675,17 @@ def run_speed_cell(speed: float, output: Path, envs: int = REGISTERED_ENVS, warm
         warmup_error / max(float(speed), FINITE_EPS) <= INITIAL_SPEED_REL_TOLERANCE
     )
     if not bool(warmup_converged.all()):
-        raise RuntimeError("warmup did not converge to the requested target speed")
+        final_cpu = warmup_final_speed.detach().cpu()
+        error_cpu = warmup_error.detach().cpu()
+        raise RuntimeError(
+            "warmup did not converge to the requested target speed: "
+            "final_speed_mps[min=%.6f mean=%.6f max=%.6f] "
+            "abs_error_mps[min=%.6f mean=%.6f max=%.6f]"
+            % (
+                float(final_cpu.min().item()), float(final_cpu.mean().item()), float(final_cpu.max().item()),
+                float(error_cpu.min().item()), float(error_cpu.mean().item()), float(error_cpu.max().item()),
+            )
+        )
     warmup_diag = ctrl.diagnostics()
     warmup_saturation = warmup_diag["motor_saturation_fraction"].detach().clone()
     warmup_tilt = warmup_diag["max_tilt_deg"].detach().clone()
