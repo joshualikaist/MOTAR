@@ -33,9 +33,17 @@ from aerial_gym.task.navrl_task.target_route_planner import (
     BatchedTargetRouteManager,
     RoutePlannerConfig,
     TARGET_ROUTE_MODE_GLOBAL_ASTAR,
+    TARGET_ROUTE_MODE_RECOVERY,
     TARGET_ROUTE_MODE_OFF,
     TARGET_ROUTE_MODES,
     TARGET_ROUTE_MODEL,
+    TARGET_ROUTE_RECOVERY_MODEL,
+    TARGET_ROUTE_RECOVERY_SCHEMA,
+    RECOVERY_NORMAL,
+    RECOVERY_BRAKE,
+    RECOVERY_CONNECT,
+    RECOVERY_ROUTE,
+    RECOVERY_NO_CONNECTOR,
     conservative_xy_support_from_box,
 )
 from aerial_gym.task.navrl_task.speed_governor import (
@@ -49,6 +57,12 @@ from aerial_gym.utils.math import quat_rotate, quat_rotate_inverse, quat_to_rota
 from aerial_gym.utils.logging import CustomLogger
 
 logger = CustomLogger("navrl_task")
+
+# Fresh routed-recovery contract.  These are intentionally source constants, not environment
+# knobs: changing them creates a new source/checkpoint lineage and must not silently retune the
+# existing 0.45 m tracking reserve.
+RECOVERY_HYSTERESIS_M = 0.25  # route grid resolution, one cell
+RECOVERY_STOP_SPEED_MPS = 0.10  # existing braking-probe stop threshold
 
 
 def _full_eval_distribution_enabled(bulk_eval_mode, env_value):
@@ -584,20 +598,56 @@ class NavRLTask(BaseTask):
         self._target_route_mode = str(
             getattr(self.tm, "route_mode", TARGET_ROUTE_MODE_OFF)
         ).strip().lower()
-        if self._target_route_mode not in TARGET_ROUTE_MODES:
+        if self._target_route_mode not in TARGET_ROUTE_MODES + (TARGET_ROUTE_MODE_RECOVERY,):
             raise ValueError(
-                "NAVRL_TARGET_ROUTE_MODE must be %s" % "|".join(TARGET_ROUTE_MODES)
+                "NAVRL_TARGET_ROUTE_MODE must be %s" % "|".join(TARGET_ROUTE_MODES + (TARGET_ROUTE_MODE_RECOVERY,))
             )
-        self._target_route_enabled = (
-            self._target_route_mode == TARGET_ROUTE_MODE_GLOBAL_ASTAR
+        self._target_route_enabled = self._target_route_mode in (
+            TARGET_ROUTE_MODE_GLOBAL_ASTAR, TARGET_ROUTE_MODE_RECOVERY
         )
-        if self._target_route_enabled and (
+        self._target_route_recovery_enabled = self._target_route_mode == TARGET_ROUTE_MODE_RECOVERY
+        if self._target_route_recovery_enabled and (
             not self._physical_target or str(self.tm.pattern) != "waypoint"
         ):
             raise RuntimeError(
-                "NAVRL_TARGET_ROUTE_MODE=global_astar_v1 is a fresh physical+waypoint-only "
+                "NAVRL_TARGET_ROUTE_MODE=global_astar_recovery_v2 is a fresh physical+waypoint-only "
                 "lineage; mixed/cv/circle and virtual targets are refused"
             )
+        if self._target_route_recovery_enabled and float(
+            getattr(self.tm, "recovery_brake_decel_p05", 0.0)
+        ) <= 0.0:
+            raise RuntimeError(
+                "two-envelope recovery requires a positive target-specific zero-command "
+                "PhysX braking p05; run the preregistered braking probe first"
+            )
+        self._recovery_probe_receipt_sha256 = ""
+        if self._target_route_recovery_enabled:
+            p95 = float(getattr(self.tm, "recovery_brake_stop_time_p95", 0.0))
+            receipt = str(getattr(self.tm, "recovery_brake_probe_receipt", ""))
+            declared_sha = str(
+                getattr(self.tm, "recovery_brake_probe_receipt_sha256", "")
+            ).lower()
+            if not (math.isfinite(p95) and p95 > 0.0 and receipt and len(declared_sha) == 64):
+                raise RuntimeError(
+                    "recovery mode requires measured stop-time p95 and a hashed braking-probe receipt"
+                )
+            receipt_path = Path(receipt)
+            if not receipt_path.is_file():
+                raise RuntimeError("missing recovery braking-probe receipt: %s" % receipt)
+            actual_sha = hashlib.sha256(receipt_path.read_bytes()).hexdigest()
+            if actual_sha != declared_sha:
+                raise RuntimeError("recovery braking-probe receipt SHA256 mismatch")
+            try:
+                probe = json.loads(receipt_path.read_text(encoding="utf-8"))
+            except (OSError, ValueError) as exc:
+                raise RuntimeError("invalid recovery braking-probe receipt JSON") from exc
+            if (
+                probe.get("schema") != "navrl_target_recovery_braking_probe_v1"
+                or abs(float(probe.get("decel_p05_mps2", -1.0)) - float(self.tm.recovery_brake_decel_p05)) > 1e-9
+                or abs(float(probe.get("stop_time_p95_s", -1.0)) - p95) > 1e-9
+            ):
+                raise RuntimeError("recovery braking-probe receipt contract mismatch")
+            self._recovery_probe_receipt_sha256 = actual_sha
         self._bar_offset = 1 if self._physical_target else 0
         if self._physical_target and self.task_config.robot_name != "navrl_ref5in_quad":
             raise RuntimeError(
@@ -618,8 +668,10 @@ class NavRLTask(BaseTask):
             if float(self.tm.obstacle_clearance) <= 0.0:
                 raise ValueError("NAVRL_TARGET_OBSTACLE_CLEARANCE must be positive in bounded mode")
         self._target_motion_model = (
-            TARGET_ROUTE_MODEL
-            if self._target_route_enabled
+            TARGET_ROUTE_RECOVERY_MODEL
+            if self._target_route_recovery_enabled
+            else TARGET_ROUTE_MODEL
+            if self._target_route_mode == TARGET_ROUTE_MODE_GLOBAL_ASTAR
             else PHYSICAL_TARGET_MOTION_MODEL
             if self._physical_target
             else BOUNDED_TARGET_MOTION_MODEL
@@ -648,7 +700,8 @@ class NavRLTask(BaseTask):
                 goal_exclusion_radius_m=float(self.tm.route_goal_exclusion_radius_m),
             )
             self._target_route_manager = BatchedTargetRouteManager(
-                self.num_envs, self.device, route_config
+                self.num_envs, self.device, route_config,
+                recovery_enabled=self._target_route_recovery_enabled,
             )
         self.target_orientation = torch.zeros((self.num_envs, 4), device=self.device)
         self.target_orientation[:, 3] = 1.0
@@ -2317,6 +2370,22 @@ class NavRLTask(BaseTask):
                 getattr(self.vis_cfg, "camera_fov_scale_err", 0.0)
             ),
             "cfg_target_motion_model": self._target_motion_model,
+            "cfg_target_route_recovery_schema": (
+                TARGET_ROUTE_RECOVERY_SCHEMA if self._target_route_recovery_enabled else "off"
+            ),
+            "cfg_target_route_recovery_model": (
+                TARGET_ROUTE_RECOVERY_MODEL if self._target_route_recovery_enabled else "off"
+            ),
+            "cfg_target_route_recovery_hard_envelope": (
+                "closed_aabb_support_v1" if self._target_route_recovery_enabled else "off"
+            ),
+            "cfg_target_route_recovery_soft_envelope": (
+                "closed_aabb_support_plus_tracking_v1" if self._target_route_recovery_enabled else "off"
+            ),
+            "cfg_target_route_recovery_hard_epsilon_m": 1e-4 if self._target_route_recovery_enabled else 0.0,
+            "cfg_target_route_recovery_hysteresis_m": RECOVERY_HYSTERESIS_M if self._target_route_recovery_enabled else 0.0,
+            "cfg_target_route_recovery_stop_speed_mps": RECOVERY_STOP_SPEED_MPS if self._target_route_recovery_enabled else 0.0,
+            "cfg_target_route_recovery_anchor_radius_cells": 3 if self._target_route_recovery_enabled else 0,
             "cfg_target_dynamics": self._target_dynamics,
             "cfg_target_max_accel_mps2": float(self.tm.max_accel),
             "cfg_target_max_turn_rate_degps": float(self.tm.max_turn_rate_deg),
@@ -2333,6 +2402,17 @@ class NavRLTask(BaseTask):
             ],
             "cfg_target_physical_tracking_margin_m": float(self.tm.physical_tracking_margin),
             "cfg_target_physical_boundary_margin_m": float(self.tm.physical_boundary_margin),
+            "cfg_target_recovery_brake_decel_p05_mps2": float(
+                getattr(self.tm, "recovery_brake_decel_p05", 0.0)
+            ),
+            "cfg_target_recovery_stop_time_p95_s": float(
+                getattr(self.tm, "recovery_brake_stop_time_p95", 0.0)
+            ),
+            "cfg_target_recovery_probe_receipt_sha256": self._recovery_probe_receipt_sha256,
+            "cfg_target_recovery_timeout_steps": (
+                max(1, int(math.ceil((float(getattr(self.tm, "recovery_brake_stop_time_p95", 0.0)) + 0.20) / self.step_dt)))
+                if self._target_route_recovery_enabled else 0
+            ),
             "cfg_target_route_mode": self._target_route_mode,
             "cfg_target_route_resolution_m": float(self.tm.route_resolution_m),
             "cfg_target_route_max_expansions": int(self.tm.route_max_expansions),
@@ -2951,7 +3031,7 @@ class NavRLTask(BaseTask):
                 raise RuntimeError(
                     "target route checkpoint cannot load with route mode %s" % self._target_route_mode
                 )
-            if self._target_route_enabled:
+            if self._target_route_recovery_enabled:
                 saved_support = state.get("cfg_target_route_support_xy_m")
                 current_support = self._target_route_support_xy[0].detach().cpu().tolist()
                 if (
@@ -2965,6 +3045,43 @@ class NavRLTask(BaseTask):
                     raise RuntimeError(
                         "fresh-only routed target support contract mismatch or missing provenance"
                     )
+                recovery_contract = (
+                    ("cfg_target_route_recovery_schema", TARGET_ROUTE_RECOVERY_SCHEMA),
+                    ("cfg_target_route_recovery_model", TARGET_ROUTE_RECOVERY_MODEL),
+                    ("cfg_target_route_recovery_hard_envelope", "closed_aabb_support_v1"),
+                    (
+                        "cfg_target_route_recovery_soft_envelope",
+                        "closed_aabb_support_plus_tracking_v1",
+                    ),
+                    ("cfg_target_route_recovery_hard_epsilon_m", 1e-4),
+                    ("cfg_target_route_recovery_hysteresis_m", RECOVERY_HYSTERESIS_M),
+                    ("cfg_target_route_recovery_stop_speed_mps", RECOVERY_STOP_SPEED_MPS),
+                    ("cfg_target_route_recovery_anchor_radius_cells", 3),
+                    (
+                        "cfg_target_recovery_brake_decel_p05_mps2",
+                        float(getattr(self.tm, "recovery_brake_decel_p05", 0.0)),
+                    ),
+                    (
+                        "cfg_target_recovery_stop_time_p95_s",
+                        float(getattr(self.tm, "recovery_brake_stop_time_p95", 0.0)),
+                    ),
+                    (
+                        "cfg_target_recovery_probe_receipt_sha256",
+                        self._recovery_probe_receipt_sha256,
+                    ),
+                )
+                for key, expected in recovery_contract:
+                    saved = state.get(key)
+                    if saved is None or (
+                        isinstance(expected, float)
+                        and abs(float(saved) - expected) > 1e-9
+                    ) or (
+                        not isinstance(expected, float) and saved != expected
+                    ):
+                        raise RuntimeError(
+                            "fresh-only routed recovery contract mismatch or missing provenance: %s"
+                            % key
+                        )
             # Newer checkpoints record the complete moving-target/spawn/safety geometry. Missing
             # fields are tolerated for old checkpoints, but a present mismatch changes the task
             # distribution and invalidates accumulated density evidence.
@@ -4738,6 +4855,8 @@ class NavRLTask(BaseTask):
                 (self.target_position[:, :2] - target_support_xy < tb_min)
                 | (self.target_position[:, :2] + target_support_xy > tb_max)
             ).any(dim=1)
+            if self._target_route_recovery_enabled and hasattr(self._target_controller, "watchdog_breach"):
+                target_invalid |= self._target_controller.watchdog_breach
             crashed_out |= target_contact | target_invalid
             self.obs_dict["navrl_target_contact"] = target_contact
             self.obs_dict["navrl_target_invalid"] = target_invalid
@@ -5211,6 +5330,55 @@ class NavRLTask(BaseTask):
         # remaining scalar is only closed-loop tracking reserve, not another hull radius.
         return float(getattr(self.tm, "physical_tracking_margin", 0.0))
 
+    def _route_recovery_geometry(self, position_xy, bars_xy, bar_half_extents, support_xy):
+        """Return exact closed-AABB hard/soft masks for the physical route recovery contract."""
+        b_min = self.obs_dict["env_bounds_min"][:, 0:2]
+        b_max = self.obs_dict["env_bounds_max"][:, 0:2]
+        hard_lo, hard_hi = support_aware_bounds(
+            b_min, b_max, float(self.cur.wall_margin), support_xy
+        )
+        soft_margin = float(self.cur.wall_margin) + float(self.tm.physical_boundary_margin)
+        soft_lo, soft_hi = support_aware_bounds(b_min, b_max, soft_margin, support_xy)
+        hard_bounds_free = ((position_xy > hard_lo) & (position_xy < hard_hi)).all(dim=1)
+        soft_bounds_free = ((position_xy > soft_lo) & (position_xy < soft_hi)).all(dim=1)
+        hard_half = bar_half_extents + support_xy.unsqueeze(1)
+        soft_half = hard_half + float(self.tm.physical_tracking_margin)
+        if bars_xy.shape[1] == 0:
+            hard_inside = torch.zeros(position_xy.shape[0], dtype=torch.bool, device=self.device)
+            soft_inside = torch.zeros_like(hard_inside)
+            soft_clearance = torch.full_like(position_xy[:, 0], float("inf"))
+        else:
+            hard_delta = (position_xy.unsqueeze(1) - bars_xy).abs() - hard_half
+            soft_delta = (position_xy.unsqueeze(1) - bars_xy).abs() - soft_half
+            hard_inside = (hard_delta <= 0.0).all(dim=2).any(dim=1)
+            soft_inside_rows = (soft_delta <= 0.0).all(dim=2)
+            soft_inside = soft_inside_rows.any(dim=1)
+            outside_distance = soft_delta.clamp(min=0.0).norm(dim=2)
+            inside_depth = soft_delta.amax(dim=2)
+            signed_bar = torch.where(soft_inside_rows, inside_depth, outside_distance)
+            soft_clearance = signed_bar.amin(dim=1)
+        soft_boundary_clearance = torch.minimum(
+            position_xy - soft_lo, soft_hi - position_xy
+        ).amin(dim=1)
+        soft_clearance = torch.minimum(soft_clearance, soft_boundary_clearance)
+        hard_free = hard_bounds_free & ~hard_inside
+        soft_free = soft_bounds_free & ~soft_inside
+        if bars_xy.shape[1] == 0:
+            hard_signed_bar = torch.full_like(position_xy[:, 0], float("inf"))
+        else:
+            hard_delta = (position_xy.unsqueeze(1) - bars_xy).abs() - hard_half
+            hard_inside_rows = (hard_delta <= 0.0).all(dim=2)
+            hard_outside_distance = hard_delta.clamp(min=0.0).norm(dim=2)
+            hard_inside_depth = hard_delta.amax(dim=2)
+            hard_signed_bar = torch.where(
+                hard_inside_rows, hard_inside_depth, hard_outside_distance
+            ).amin(dim=1)
+        hard_boundary_clearance = torch.minimum(
+            position_xy - hard_lo, hard_hi - position_xy
+        ).amin(dim=1)
+        hard_clearance = torch.minimum(hard_signed_bar, hard_boundary_clearance)
+        return hard_free, soft_free, soft_clearance, hard_clearance, hard_lo, hard_hi, hard_half
+
     def _plan_target_routes(
         self, env_ids, *, connected_goal, is_replan=False, exclude_previous_goal=False
     ):
@@ -5409,6 +5577,128 @@ class NavRLTask(BaseTask):
         lo = b_min[:, 0:2] + m
         hi = b_max[:, 0:2] - m
 
+        recovery_enabled = self._target_route_recovery_enabled and self._physical_target
+        recovery_state = torch.full_like(moving, RECOVERY_NORMAL, dtype=torch.long)
+        recovery_connect = torch.zeros_like(moving)
+        recovery_route = torch.zeros_like(moving)
+        recovery_hard_free = torch.ones_like(moving)
+        recovery_soft_free = torch.ones_like(moving)
+        recovery_soft_clearance = torch.full_like(self._tm_speed, float("inf"))
+        recovery_hard_clearance = torch.full_like(self._tm_speed, float("inf"))
+        hard_lo = hard_hi = hard_half = None
+        recovery_bars = self.obs_dict["obstacle_position"][
+            :, self._bar_offset : self._bar_offset + self.n_bars_active, 0:2
+        ]
+        recovery_bar_half = self.obs_dict["asset_collision_half_extents"][
+            :, self._bar_offset : self._bar_offset + self.n_bars_active, 0:2
+        ]
+        recovery_support = self._target_route_support_xy
+        if recovery_enabled:
+            (
+                recovery_hard_free,
+                recovery_soft_free,
+                recovery_soft_clearance,
+                recovery_hard_clearance,
+                hard_lo,
+                hard_hi,
+                hard_half,
+            ) = self._route_recovery_geometry(
+                old_xy, recovery_bars, recovery_bar_half, recovery_support
+            )
+            recovery_state = self._target_route_manager.recovery_state
+            prior_local_soft_free = (
+                moving
+                & (self._target_route_manager.status_code == self._target_route_manager.STATUS_CODES["local_step_infeasible"])
+                & recovery_hard_free
+                & recovery_soft_free
+                & (recovery_state == RECOVERY_NORMAL)
+            )
+            if bool(prior_local_soft_free.any()):
+                self._target_route_manager.mark_local_infeasible_soft_free(prior_local_soft_free)
+                recovery_state = self._target_route_manager.recovery_state
+            # A hard breach is never converted into an escape/reset.  It remains a terminal
+            # simulator event and the watchdog records it as a recovery failure.
+            hard_breach = moving & ~recovery_hard_free & (
+                recovery_state != RECOVERY_NO_CONNECTOR
+            )
+            if bool(hard_breach.any()):
+                self._target_route_manager.mark_no_connector(hard_breach, hard_breach=True)
+            soft_violation = moving & recovery_hard_free & ~recovery_soft_free
+            self._target_route_manager.enter_recovery(
+                soft_violation & ((recovery_state == RECOVERY_NORMAL) | (recovery_state == RECOVERY_ROUTE)),
+                int(self.num_task_steps),
+            )
+            recovery_state = self._target_route_manager.recovery_state
+            recovery_active = moving & ((recovery_state == RECOVERY_BRAKE) | (recovery_state == RECOVERY_CONNECT))
+            self._target_route_manager.recovery_age_steps[recovery_active] += 1
+            timeout_steps = max(
+                1,
+                int(math.ceil((float(self.tm.recovery_brake_stop_time_p95) + 0.20) / dt)),
+            )
+            recovery_timeout = recovery_active & (
+                self._target_route_manager.recovery_age_steps > timeout_steps
+            )
+            if bool(recovery_timeout.any()):
+                self._target_route_manager.mark_no_connector(recovery_timeout, timeout=True)
+                recovery_state = self._target_route_manager.recovery_state
+            brake_rows = moving & (recovery_state == RECOVERY_BRAKE)
+            self._target_route_manager.recovery_brake_intervals += brake_rows.sum()
+            brake_decel = float(getattr(self.tm, "recovery_brake_decel_p05", 0.0))
+            brake_ids = brake_rows.nonzero(as_tuple=False).squeeze(-1)
+            brake_safe = self._target_route_manager.brake_connector_idx(
+                brake_ids,
+                old_xy,
+                self.target_vel_w[:, 0:2],
+                recovery_bars,
+                recovery_bar_half,
+                b_min,
+                b_max,
+                recovery_support,
+                float(self.cur.wall_margin),
+                brake_decel,
+            )
+            unsafe_brake = brake_rows & ~brake_safe
+            anchor_rows = brake_rows & (
+                self.target_vel_w[:, 0:2].norm(dim=1) <= RECOVERY_STOP_SPEED_MPS
+            ) & recovery_hard_free
+            anchor_rows |= unsafe_brake & recovery_hard_free
+            if bool(anchor_rows.any()):
+                anchor_ids = anchor_rows.nonzero(as_tuple=False).squeeze(-1)
+                anchor_ok = self._target_route_manager.recovery_anchor_idx(
+                    anchor_ids,
+                    old_xy,
+                    recovery_bars,
+                    recovery_bar_half,
+                    b_min,
+                    b_max,
+                    recovery_support,
+                    float(self.cur.wall_margin),
+                    float(self.cur.wall_margin) + float(self.tm.physical_boundary_margin),
+                )
+                no_anchor = anchor_rows & ~anchor_ok
+                if bool(no_anchor.any()):
+                    self._target_route_manager.mark_no_connector(no_anchor)
+                good_anchor = anchor_rows & anchor_ok & ~no_anchor
+                self._target_route_manager.recovery_state[good_anchor] = RECOVERY_CONNECT
+            recovery_state = self._target_route_manager.recovery_state
+            recovery_connect = moving & (recovery_state == RECOVERY_CONNECT)
+            self._target_route_manager.recovery_connect_intervals += recovery_connect.sum()
+            resume_ready = recovery_connect & recovery_soft_free & (
+                recovery_soft_clearance > RECOVERY_HYSTERESIS_M
+            )
+            if bool(resume_ready.any()):
+                resume_ids = resume_ready.nonzero(as_tuple=False).squeeze(-1)
+                self._plan_target_routes(resume_ids, connected_goal=False, is_replan=True)
+                resumed = resume_ready & self._target_route_manager.valid
+                failed_resume = resume_ready & ~resumed
+                if bool(failed_resume.any()):
+                    self._target_route_manager.mark_no_connector(failed_resume)
+                if bool(resumed.any()):
+                    self._target_route_manager.mark_route_resume(resumed)
+            recovery_state = self._target_route_manager.recovery_state
+            recovery_connect = moving & (recovery_state == RECOVERY_CONNECT)
+            recovery_route = moving & (recovery_state == RECOVERY_ROUTE)
+
         if self._target_dynamics in ("bounded", "physical"):
             desired_velocity = self._tm_cv_vel.clone()
             route_active = torch.ones_like(moving)
@@ -5417,7 +5707,10 @@ class NavRLTask(BaseTask):
                     self._tm_waypoint,
                     self._target_route_support_xy,
                     int(self.num_task_steps),
-                ) & moving
+                ) & moving & (
+                    (self._target_route_manager.recovery_state == RECOVERY_NORMAL)
+                    | (self._target_route_manager.recovery_state == RECOVERY_ROUTE)
+                )
                 if bool(needs_replan.any()):
                     local_failure = needs_replan & (
                         (
@@ -5512,7 +5805,11 @@ class NavRLTask(BaseTask):
             else:
                 planner_lo, planner_hi = lo, hi
             bounded_speed_limit = (
-                torch.where(route_active, self._tm_speed, torch.zeros_like(self._tm_speed))
+                torch.where(
+                    route_active | recovery_connect,
+                    self._tm_speed,
+                    torch.zeros_like(self._tm_speed),
+                )
                 if self._target_route_enabled
                 else self._tm_speed
             )
@@ -5535,6 +5832,42 @@ class NavRLTask(BaseTask):
                 bars_half_extents,
             )
             local_rollout_feasible = feasible.clone()
+            if recovery_enabled and bool(recovery_connect.any()):
+                # CONNECT is screened against the exact hard AABB, never the rounded local
+                # clearance model.  The anchor itself was certified by the exact CPU connector;
+                # this second rollout prevents an unmodelled turn/acceleration step from cutting
+                # the hard envelope on the way there.
+                connect_ids = recovery_connect.nonzero(as_tuple=False).squeeze(-1)
+                to_anchor = self._target_route_manager.recovery_anchor[connect_ids] - old_xy[connect_ids]
+                anchor_speed = to_anchor.norm(dim=1).clamp(min=1e-6)
+                anchor_desired = to_anchor / anchor_speed.unsqueeze(1) * self._tm_speed[connect_ids].unsqueeze(1)
+                connect_xy, connect_velocity, _, connect_feasible = bounded_drone_target_step(
+                    old_xy[connect_ids],
+                    self.target_vel_w[connect_ids, 0:2],
+                    anchor_desired,
+                    self._tm_speed[connect_ids],
+                    dt,
+                    recovery_bars[connect_ids],
+                    hard_lo[connect_ids],
+                    hard_hi[connect_ids],
+                    0.0,
+                    self._tm_avoid_sign[connect_ids],
+                    torch.full_like(self._tm_speed[connect_ids], float(self.tm.max_accel)),
+                    torch.full_like(
+                        self._tm_speed[connect_ids], math.radians(float(self.tm.max_turn_rate_deg))
+                    ),
+                    float(self.tm.avoidance_lookahead_s),
+                    bars_half_extents[connect_ids],
+                    exact_aabb_clearance=True,
+                )
+                bounded_xy[connect_ids] = connect_xy
+                bounded_velocity[connect_ids] = connect_velocity
+                local_rollout_feasible[connect_ids] = connect_feasible
+                failed_connect = recovery_connect.clone()
+                failed_connect[connect_ids] = ~connect_feasible
+                if bool(failed_connect.any()):
+                    self._target_route_manager.mark_no_connector(failed_connect)
+                    recovery_connect[failed_connect] = False
             if self._physical_target:
                 # The planner uses an additional tracking reserve. Crossing that soft reserve is
                 # not itself a dynamically infeasible state; retain the hard hull clearance and
@@ -5546,10 +5879,17 @@ class NavRLTask(BaseTask):
                 if bars_all.shape[1] > 0:
                     delta = (
                         (bounded_xy.unsqueeze(1) - bars_all).abs() - bars_half_extents
-                    ).clamp(min=0.0)
-                    feasible &= delta.norm(dim=2).amin(dim=1) > 1e-4
+                    )
+                    if recovery_enabled:
+                        # v2 recovery uses the same closed AABB hard envelope as the route
+                        # certificate.  v1/legacy physical transitions retain their historical
+                        # rounded local check because this branch is fresh-only.
+                        feasible &= ~(delta <= 0.0).all(dim=2).any(dim=1)
+                    else:
+                        feasible &= delta.clamp(min=0.0).norm(dim=2).amin(dim=1) > 1e-4
                 if self._target_route_enabled:
-                    feasible &= local_rollout_feasible & route_active
+                    allowed_route = route_active | recovery_connect
+                    feasible &= local_rollout_feasible & allowed_route
                     local_invalid = moving & route_active & ~local_rollout_feasible
                     if bool(local_invalid.any()):
                         self._target_route_selector[local_invalid] = torch.rand_like(
@@ -5566,6 +5906,14 @@ class NavRLTask(BaseTask):
             self._tm_last_step_feasible = feasible
             if self._physical_target:
                 command = torch.zeros((self.num_envs, 3), device=self.device)
+                if recovery_enabled:
+                    self._target_controller.set_hard_watchdog(
+                        recovery_bars,
+                        bars_half_extents,
+                        hard_lo,
+                        hard_hi,
+                        active=moving,
+                    )
                 safe_velocity = torch.where(
                     feasible.unsqueeze(1), bounded_velocity, torch.zeros_like(bounded_velocity)
                 )
@@ -6768,6 +7116,17 @@ class NavRLTask(BaseTask):
                 "target_pattern": os.environ.get("NAVRL_TARGET_PATTERN", "static"),
                 "target_motion_model": self._target_motion_model,
                 "target_route_mode": self._target_route_mode,
+                "target_route_recovery_schema": (
+                    TARGET_ROUTE_RECOVERY_SCHEMA if self._target_route_recovery_enabled else "off"
+                ),
+                "target_route_recovery_hard_envelope": (
+                    "closed_aabb_support_v1" if self._target_route_recovery_enabled else "off"
+                ),
+                "target_route_recovery_soft_envelope": (
+                    "closed_aabb_support_plus_tracking_v1" if self._target_route_recovery_enabled else "off"
+                ),
+                "target_route_recovery_hysteresis_m": RECOVERY_HYSTERESIS_M if self._target_route_recovery_enabled else 0.0,
+                "target_route_recovery_stop_speed_mps": RECOVERY_STOP_SPEED_MPS if self._target_route_recovery_enabled else 0.0,
                 "cv_initial_heading": self._eval_cv_initial_heading,
                 "target_speed_mode": target_speed_mode,
                 "target_speed_mps": target_speed_mps,

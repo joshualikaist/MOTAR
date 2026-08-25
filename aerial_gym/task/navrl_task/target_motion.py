@@ -122,6 +122,7 @@ def bounded_drone_target_step(
     max_turn_rate,
     lookahead_s,
     bars_half_extents_xy=None,
+    exact_aabb_clearance=False,
 ):
     """Choose and execute one dynamically bounded, collision-screened target step.
 
@@ -208,17 +209,26 @@ def bounded_drone_target_step(
             first_pos, first_vel = pos.clone(), vel.clone()
         inside = ((pos >= lo.unsqueeze(1)) & (pos <= hi.unsqueeze(1))).all(dim=2)
         step_safe = inside
-        if bars_xy.shape[1] > 0 and float(clearance) > 0.0:
+        if bars_xy.shape[1] > 0 and (float(clearance) > 0.0 or exact_aabb_clearance):
             if bars_half_extents_xy is None:
                 dist = torch.cdist(pos, bars_xy).amin(dim=2)
+                step_safe &= dist >= float(clearance) + 1e-4
             else:
                 delta = (
                     (pos.unsqueeze(2) - bars_xy.unsqueeze(1)).abs()
                     - bars_half_extents_xy.unsqueeze(1)
-                ).clamp(min=0.0)
-                dist = delta.norm(dim=3).amin(dim=2)
-            min_clearance = torch.minimum(min_clearance, dist)
-            step_safe &= dist >= float(clearance) + 1e-4
+                )
+                if exact_aabb_clearance:
+                    # Recovery's hard envelope is a closed AABB.  The normal route path retains
+                    # the historical rounded Euclidean clearance behavior; callers must opt in
+                    # explicitly so legacy/bounded transitions remain byte-compatible.
+                    inside = (delta <= 0.0).all(dim=3)
+                    dist = delta.clamp(min=0.0).amax(dim=3).amin(dim=2)
+                    step_safe &= ~inside.any(dim=2)
+                else:
+                    dist = delta.clamp(min=0.0).norm(dim=3).amin(dim=2)
+                    step_safe &= dist >= float(clearance) + 1e-4
+                min_clearance = torch.minimum(min_clearance, dist)
         if step == 0:
             immediate_feasible[:] = step_safe
         prefix_alive &= step_safe

@@ -17,6 +17,10 @@ for arg in "$@"; do
       ;;
   esac
 done
+if [[ "${NAVRL_TARGET_ROUTE_MODE:-}" == "global_astar_recovery_v2" ]]; then
+  echo "[physical-routed] refusing recovery_v2 in the immutable global_astar_v1 launcher; use the recovery preflight" >&2
+  exit 4
+fi
 
 # This is a frozen experiment tuple, not a convenient collection of defaults.  Assign every
 # geometry/dynamics input unconditionally so a stale interactive shell cannot create a different

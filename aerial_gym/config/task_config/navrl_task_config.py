@@ -574,6 +574,19 @@ class task_config:
         # already included in obstacle_clearance; this additional term covers closed-loop lag.
         physical_tracking_margin = _env_float("NAVRL_TARGET_TRACKING_MARGIN_M", 0.45)
         physical_boundary_margin = _env_float("NAVRL_TARGET_BOUNDARY_MARGIN_M", 0.75)
+        # Required by the fresh two-envelope route-recovery lineage.  Zero is deliberately not a
+        # usable default: a target-specific zero-command PhysX probe must provide this p05 lower
+        # bound before a routed recovery task can be instantiated.
+        recovery_brake_decel_p05 = _env_float("NAVRL_TARGET_RECOVERY_BRAKE_P05", 0.0)
+        recovery_brake_stop_time_p95 = _env_float(
+            "NAVRL_TARGET_RECOVERY_STOP_TIME_P95_S", 0.0
+        )
+        recovery_brake_probe_receipt = os.environ.get(
+            "NAVRL_TARGET_RECOVERY_BRAKE_PROBE_RECEIPT", ""
+        ).strip()
+        recovery_brake_probe_receipt_sha256 = os.environ.get(
+            "NAVRL_TARGET_RECOVERY_BRAKE_PROBE_RECEIPT_SHA256", ""
+        ).strip().lower()
         # Opt-in global route for the NEW physical+waypoint lineage. Off preserves every legacy
         # target transition byte-for-byte. The planner consumes simulator GT bar AABBs only to
         # drive the target actor; no route feature reaches the pursuer policy.
