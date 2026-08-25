@@ -12637,3 +12637,12 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
   stale pre-write tensor. The recorder now receives the declared center XY as the warmup baseline;
   brake phase still rebases to the live controller pose. The probe hash is re-pinned to
   `55a2aef0dd60b7b1eab826eb35a03949f19b5df611f696a216e3307d23946f93`.
+
+### 2026-08-26 — braking probe upper-speed gate is NO-GO
+
+- The fresh RTX 3070 probe reached all four registered arms. The 0.6/0.9/1.2 m/s cells passed
+  setup and raw trace validation; the 1.5 m/s cell failed the preregistered 5 s warmup convergence
+  gate, so the launcher discarded the partial stage and produced no finalized receipt. The failure
+  is evidence that the current physical target/controller contract does not yet sustain the upper
+  arm; no threshold, speed arm, or controller parameter was changed. Recovery-v2 simulator gate
+  and PPO remain blocked until this measurement contract is resolved.
