@@ -341,8 +341,17 @@ window.Arena = (() => {
     addEventListener('keydown', e => { if (e.key.toLowerCase() === 'v') cycleView(); });
     new IntersectionObserver(([entry]) => {
       visible = entry.isIntersecting;
-      if (visible) lastT = 0;
+      // Drop off-screen elapsed time immediately. Depending on the browser, RAF may be suspended
+      // before animate() gets one last hidden frame, so resetting only inside animate is too late.
+      lastT = 0;
+      simClock.reset();
     }, { threshold: 0.05 }).observe(el);
+    document.addEventListener('visibilitychange', () => {
+      // IntersectionObserver does not report a background tab. Without this, restoring a tab
+      // advances two synthetic steps from the clamped 250 ms gap before rendering resumes.
+      lastT = 0;
+      simClock.reset();
+    });
 
     animate();
   }
@@ -460,9 +469,12 @@ window.Arena = (() => {
     drone.position.x = proposed.x;
     drone.position.z = proposed.y;
     simCurr = snapshotSimulation();
-    if (episode.age >= 30 || Math.hypot(
-      episode.target.x - proposed.x, episode.target.y - proposed.y
-    ) < .5) resetEpisode(true);
+    const captured = Motion.sweptCapture(
+      { x: simPrev.droneX - simPrev.targetX, y: simPrev.droneY - simPrev.targetY },
+      { x: proposed.x - episode.target.x, y: proposed.y - episode.target.y },
+      0.5
+    );
+    if (episode.age >= 30 || captured) resetEpisode(true);
   }
 
   function animate() {
@@ -483,7 +495,8 @@ window.Arena = (() => {
     drone.position.set(dx, 1 + .03 * Math.sin(frame * .12), dy);
     drone.rotation.y = -renderHeading;
     const bank = THREE.MathUtils.clamp(-vel.y * 0.12, -.28, .28);
-    drone.rotation.z += (bank - drone.rotation.z) * (1 - Math.exp(-renderDt * 8));
+    // Model forward is +X in this y-up scene: roll/bank is rotation.x, pitch is rotation.z.
+    drone.rotation.x += (bank - drone.rotation.x) * (1 - Math.exp(-renderDt * 8));
     // Spin rotors for visible motion even when path is slow.
     drone.children.forEach(ch => {
       if (ch.geometry && ch.geometry.type === 'RingGeometry') ch.rotation.z += renderDt * 18;
@@ -493,8 +506,8 @@ window.Arena = (() => {
     const ty = previous.targetY + (current.targetY - previous.targetY) * alpha;
     target.position.set(tx, 1 + .04 * Math.sin(frame * .1), ty);
     target.rotation.y = -lerpAngle(previous.targetHeading, current.targetHeading, alpha);
-    target.rotation.z = previous.targetRoll + (current.targetRoll - previous.targetRoll) * alpha;
-    target.rotation.x = previous.targetPitch + (current.targetPitch - previous.targetPitch) * alpha;
+    target.rotation.x = previous.targetRoll + (current.targetRoll - previous.targetRoll) * alpha;
+    target.rotation.z = previous.targetPitch + (current.targetPitch - previous.targetPitch) * alpha;
 
     const vis = visibility(dx, dy, tx, ty, renderHeading);
     const state = document.getElementById('hud-camera');
@@ -563,7 +576,11 @@ window.Arena = (() => {
       resetEpisode(false);
       simClock.reset();
     },
-    setPlaying(p) { playing = p; simClock.reset(); },
+    setPlaying(p) {
+      playing = p;
+      if (!playing && simCurr) simPrev = simCurr;
+      simClock.reset();
+    },
     setTargetMotionMode(mode) {
       if (!['legacy', 'bounded', 'physical-style'].includes(mode)) {
         throw new Error('unknown target display mode: ' + mode);
