@@ -12131,3 +12131,30 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
   crossing 0.3이므로 300 bars arena-wide roaming 주장을 금지한다. 상태는
   `PASS_CPU_ENGINEERING_GATE / SIMULATOR_UNMEASURED`;
   다음은 short fresh PhysX smoke이며 PPO 본학습 권한은 없다.
+
+### 2026-08-25 — routed fresh launcher 재현성·source provenance 차단
+
+- `d047073`에서 분리한 `codex/routed-launcher-provenance` worktree에서 launcher/provenance만
+  수정했다. target planner, task transition, observation/reward/termination과 정책은 변경하지 않았고
+  GPU 학습·평가도 실행하지 않았다.
+- canonical `train_navrl_physical_routed_fresh.sh`가 호출 cwd와 무관하게 `SCRIPT_DIR` 기준으로
+  physical→v2→base launcher를 실행하도록 했다. hostile shell이 child marker를 미리 넣어도 두 lower
+  launcher가 token과 exact tuple을 각각 재검증한다.
+- frozen tuple은 physical+waypoint+`global_astar_v1`, arena 40×40×3, `bars_h3`, full-width
+  `navrl_band`, route grid 0.25 m/expansion 50000/waypoint 128/cooldown 10/goal tolerance 0.05 m/
+  minimum goal 6 m/**goal exclusion 1.0 m**, target tracking 0.45 m/boundary 0.75 m,
+  ref5in authority(1.20 kg, 0.0777817 m arm, 9.60 N, 0.04 s, 45°)로 고정했다. fixed
+  0.28×0.28×0.12 m box에서 source-bound된 conservative XY support는 0.206881609 m다.
+- 같은 canonical 이름 아래 학습 의미가 변하지 않도록 128 env, density 70→300(step 15),
+  gate `70:0.82,85:0.77,100:0.72,115:0.70`, dwell 1000/evidence 16384,
+  target speed 0.3→1.5 m/s(ramp 1 epoch), `cluster_sector`, LR 3e-5, governor off도
+  unconditional pin+이중 validation 대상으로 만들었다. seed, `MAX_EPOCHS`, run tag/log path만 실행
+  시점 선택으로 남겼다.
+- dirty worktree에서도 `NAVRL_TARGET_CONTRACT_PREFLIGHT_ONLY=1`은 receipt를 만들거나 Isaac Gym을
+  시작하지 않고 exact handoff를 검사한다. 실제 training은 `create_navrl_source_bundle.py
+  create --require-clean`으로 clean committed runtime source receipt와 manifest SHA-256을 만든 뒤에만
+  진행하고, lower launcher도 receipt/clean flag와 manifest 형식을 fail-closed로 확인한다.
+- hostile env를 넣고 repository root에서 preflight한 결과 exact 128 env/70→300/speed ramp 1/
+  selector/LR/governor 계약으로 PASS했다. 반대로 실제 launcher 진입은 현재 dirty source 3개를
+  열거하고 exit 1로 GPU 초기화 전에 차단됐다. launcher contract unit test 13/13,
+  세 launcher `bash -n`, `git diff --check`가 PASS했다.
