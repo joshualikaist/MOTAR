@@ -674,11 +674,6 @@ def run_speed_cell(speed: float, output: Path, envs: int = REGISTERED_ENVS, warm
     start_speed = ctrl.linvel[:, :2].norm(dim=1).detach().clone()
     if not bool(torch.allclose(start_speed, warmup_final_speed, atol=1e-7, rtol=0.0)):
         raise RuntimeError("braking start speed changed during diagnostic snapshot")
-    stopped = torch.zeros(envs, dtype=torch.bool, device=task.device)
-    stop_time = torch.full((envs,), float("nan"), device=task.device)
-    stop_distance = torch.zeros(envs, device=task.device)
-    stop_position = torch.zeros((envs, 2), device=task.device)
-    path_distance = torch.zeros(envs, device=task.device)
     recorder.begin_phase("brake")
     traces = list(warmup_traces)
     for sample_index in range(1, brake_steps + 1):
