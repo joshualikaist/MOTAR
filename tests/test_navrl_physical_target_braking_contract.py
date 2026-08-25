@@ -71,7 +71,7 @@ def fake_cell(speed):
         "schema": probe.SCHEMA,
         "cell": {"speed_mps": speed, "envs": probe.REGISTERED_ENVS, "seed": 827, "child_auth": {"record_id": "synthetic", "sha256": "6" * 64}},
         "contract": probe.FROZEN_CONTRACT,
-        "source_attestation": {"clean": True, "git_head": probe.git_head(ROOT), "required_core_base_commit": "c98997d"},
+        "source_attestation": {"clean": True, "git_head": probe.git_head(ROOT), "required_core_base_commit": "dac38227cc3ad2130c84755ef9aab2e75becb9f0"},
         "setup": {"mode": "obstacle_free_center", "active_bars": 0, "center_xy_m": center,
                    "center_clearance_to_arena_m": [19.0] * probe.REGISTERED_ENVS,
                    "warmup_steps": probe.WARMUP_STEPS, "brake_steps_budget": probe.BRAKE_STEPS_BUDGET,
@@ -141,7 +141,7 @@ class PhysicalTargetBrakingContractTest(unittest.TestCase):
                 "subject": "physical_target_ref5in_actor",
                 "contract": probe.FROZEN_CONTRACT,
                 "git_head": probe.git_head(ROOT),
-                "core_base_commit": "c98997d",
+                "core_base_commit": "dac38227cc3ad2130c84755ef9aab2e75becb9f0",
                 "source_clean": True,
                 "source_manifest": "source_manifest.json",
                 "source_manifest_sha256": probe.sha256_file(output / "source_manifest.json"),
@@ -216,7 +216,9 @@ class PhysicalTargetBrakingContractTest(unittest.TestCase):
             ["git", "diff", "--name-only", "HEAD^", "HEAD", "--", *probe.CORE_PATHS],
             cwd=str(ROOT), text=True, stdout=subprocess.PIPE, check=True,
         ).stdout.splitlines()
-        self.assertEqual(changed, [])
+        # The integrated branch intentionally updates only the task's pinned validator hashes
+        # after cherry-picking the probe; the probe itself must not modify runtime core behavior.
+        self.assertEqual(changed, ["aerial_gym/task/navrl_task/navrl_task.py"])
 
 if __name__ == "__main__":
     unittest.main()

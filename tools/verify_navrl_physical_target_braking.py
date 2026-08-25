@@ -229,7 +229,7 @@ def validate_cell(payload: Mapping[str, Any]) -> Dict[str, Any]:
     _same_contract(payload.get("contract"), FROZEN_CONTRACT)
     _validate_provenance(payload)
     source_attestation = payload.get("source_attestation")
-    if not isinstance(source_attestation, dict) or source_attestation.get("clean") is not True or not source_attestation.get("git_head") or source_attestation.get("required_core_base_commit") != "c98997d":
+    if not isinstance(source_attestation, dict) or source_attestation.get("clean") is not True or not source_attestation.get("git_head") or source_attestation.get("required_core_base_commit") != "dac38227cc3ad2130c84755ef9aab2e75becb9f0":
         raise ValueError("cell source-clean attestation is missing")
     cell = payload.get("cell")
     if not isinstance(cell, dict):
@@ -388,13 +388,13 @@ def verify_receipt(output: Path, repo_root: Optional[Path] = None) -> Dict[str, 
     receipt = _read_json(output / "receipt.json")
     if receipt.get("schema") != RECEIPT_SCHEMA or receipt.get("probe_schema") != SCHEMA or receipt.get("subject") != "physical_target_ref5in_actor":
         raise ValueError("receipt schema mismatch")
-    if receipt.get("core_base_commit") != "c98997d" or receipt.get("source_clean") is not True:
-        raise ValueError("receipt does not bind the clean c98997d core lineage")
+    if receipt.get("core_base_commit") != "dac38227cc3ad2130c84755ef9aab2e75becb9f0" or receipt.get("source_clean") is not True:
+        raise ValueError("receipt does not bind the clean integrated core lineage")
     _same_contract(receipt.get("contract"), FROZEN_CONTRACT)
     _verify_git_object(root, str(receipt.get("git_head", "")))
-    base_check = subprocess.run(["git", "-C", str(root), "cat-file", "-e", "c98997d^{commit}"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
+    base_check = subprocess.run(["git", "-C", str(root), "cat-file", "-e", "dac38227cc3ad2130c84755ef9aab2e75becb9f0^{commit}"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
     if base_check.returncode != 0:
-        raise ValueError("required c98997d core commit is unavailable")
+        raise ValueError("required integrated core commit is unavailable")
     manifest_rel = str(receipt.get("source_manifest", ""))
     if Path(manifest_rel).is_absolute() or manifest_rel != "source_manifest.json":
         raise ValueError("source manifest must be receipt-relative")

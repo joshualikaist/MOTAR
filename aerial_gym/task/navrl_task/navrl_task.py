@@ -73,8 +73,8 @@ RECOVERY_BRAKING_PROBE_SCHEMA = "navrl_target_recovery_braking_probe_v1"
 # SHA-256 of the exact raw-first validator sources from probe lineage 7f2d806 plus its required
 # returned core handoff.  If the common verifier changes, this constant and receipt/source
 # lineage must change together; a mutable manifest alone cannot authorize code.
-RECOVERY_PROBE_VALIDATOR_SHA256 = "fedc22ffeb1610b6a23cf487607864838eb35236b16ae170bf7e0bc40b93237b"
-RECOVERY_RECEIPT_VALIDATOR_SHA256 = "26913b091b89bdb5d0bdfa651d67eca803bbf8076b4180b8b689bb1a873f6df5"
+RECOVERY_PROBE_VALIDATOR_SHA256 = "169c43d4d9d950d41fe9abd8c6e198f0be8c51348cc4ce243943ef97274c0434"
+RECOVERY_RECEIPT_VALIDATOR_SHA256 = "33923918fead5f85f919336a5c82f9135202f7a68238411b6ea1ec42286fa365"
 
 
 def _load_recovery_receipt_validator(repo_root):

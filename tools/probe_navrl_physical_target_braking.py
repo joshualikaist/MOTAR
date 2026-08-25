@@ -42,7 +42,7 @@ WARMUP_STEPS = 50
 BRAKE_STEPS_BUDGET = 100
 INITIAL_SPEED_ABS_TOLERANCE_MPS = 0.05
 INITIAL_SPEED_REL_TOLERANCE = 0.10
-REQUIRED_CORE_BASE_COMMIT = "c98997d"
+REQUIRED_CORE_BASE_COMMIT = "dac38227cc3ad2130c84755ef9aab2e75becb9f0"
 CHILD_AUTH_SCHEMA = "navrl_target_recovery_braking_child_auth_v1"
 
 # This is an attestation tuple, not a tuning surface.  Values are repeated here so a result is

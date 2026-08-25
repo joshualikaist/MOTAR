@@ -12563,3 +12563,14 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
 - Added explicit receipt/probe schema constants to the task source and reran 22 recovery-core,
   8 braking, 12 packed-telemetry, and 5 evaluator CPU tests. No GPU, PhysX, or PPO execution was
   performed.
+
+### 2026-08-26 — integrated lineage pin before GPU probe
+
+- The probe's original `c98997d` short hash was not an ancestor after cherry-picking into the clean
+  integration worktree. The contract now pins the exact integrated core commit
+  `dac38227cc3ad2130c84755ef9aab2e75becb9f0`; no runtime tuning or semantic change was made.
+- Recomputed and pinned the final validator sources: probe
+  `169c43d4d9d950d41fe9abd8c6e198f0be8c51348cc4ce243943ef97274c0434`, verifier
+  `33923918fead5f85f919336a5c82f9135202f7a68238411b6ea1ec42286fa365`. CPU braking/core tests and
+  source compilation pass. The first GPU launch attempt correctly failed closed because the old
+  base commit was not an ancestor; no simulator or PPO step ran.
