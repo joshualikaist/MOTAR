@@ -6,7 +6,9 @@ they do not claim dynamic feasibility or policy performance.
 """
 
 from pathlib import Path
+import os
 import re
+import subprocess
 import unittest
 
 
@@ -18,6 +20,11 @@ PHYSICAL_LAUNCHER = (
 V2_LAUNCHER = (
     ROOT / "aerial_gym/rl_training/rl_games/train_navrl_v2_search.sh"
 ).read_text(encoding="utf-8")
+ROUTED_LAUNCHER_PATH = (
+    ROOT / "aerial_gym/rl_training/rl_games/train_navrl_physical_routed_fresh.sh"
+)
+ROUTED_LAUNCHER = ROUTED_LAUNCHER_PATH.read_text(encoding="utf-8")
+RL = ROOT / "aerial_gym/rl_training/rl_games"
 
 
 class TargetCheckpointContractTest(unittest.TestCase):
@@ -32,6 +39,13 @@ class TargetCheckpointContractTest(unittest.TestCase):
             "cfg_target_physical_max_tilt_deg",
             "cfg_target_physical_tracking_margin_m",
             "cfg_target_physical_boundary_margin_m",
+            "cfg_target_route_mode",
+            "cfg_target_route_resolution_m",
+            "cfg_target_route_max_expansions",
+            "cfg_target_route_max_waypoints",
+            "cfg_target_route_replan_cooldown_steps",
+            "cfg_target_route_goal_tolerance_m",
+            "cfg_target_route_min_goal_distance_m",
         )
         # One occurrence serializes the field and a second occurrence compares it during restore.
         for key in keys:
@@ -54,6 +68,44 @@ class TargetLauncherContractTest(unittest.TestCase):
         self.assertIn("refusing inherited target dynamics", V2_LAUNCHER)
         self.assertIn('export NAVRL_TARGET_DYNAMICS="${_TARGET_DYNAMICS_REQUESTED}"', V2_LAUNCHER)
         self.assertIn('if [[ "${NAVRL_V2_PHYSICAL_FRESH_CHILD:-0}" == "1" ]]', V2_LAUNCHER)
+
+    def test_route_lineage_has_distinct_marker_and_fresh_guard(self):
+        self.assertIn("refusing CKPT/CHECKPOINT", ROUTED_LAUNCHER)
+        self.assertIn("export NAVRL_PHYSICAL_ROUTED_CHILD=1", ROUTED_LAUNCHER)
+        self.assertIn("export NAVRL_TARGET_ROUTE_MODE=global_astar_v1", ROUTED_LAUNCHER)
+        self.assertIn("export NAVRL_TARGET_PATTERN=waypoint", ROUTED_LAUNCHER)
+        self.assertIn("canonical physical lineage refuses target route", PHYSICAL_LAUNCHER)
+
+    def _preflight(self, launcher, **updates):
+        env = {
+            **os.environ,
+            "NAVRL_TARGET_CONTRACT_PREFLIGHT_ONLY": "1",
+            "PYTHONNOUSERSITE": "1",
+            **updates,
+        }
+        return subprocess.run(
+            [str(launcher)], cwd=RL, env=env, text=True,
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=False,
+        )
+
+    def test_base_physical_and_routed_preflight_contracts(self):
+        base = self._preflight(
+            RL / "train_navrl_v2_search.sh",
+            NAVRL_TARGET_DYNAMICS="legacy", NAVRL_TARGET_ROUTE_MODE="off",
+        )
+        self.assertEqual(base.returncode, 0, base.stdout)
+        self.assertIn("route=off pattern=mixed", base.stdout)
+
+        stale = self._preflight(
+            RL / "train_navrl_physical_fresh.sh",
+            NAVRL_TARGET_ROUTE_MODE="global_astar_v1", NAVRL_TARGET_PATTERN="waypoint",
+        )
+        self.assertNotEqual(stale.returncode, 0, stale.stdout)
+        self.assertIn("canonical physical lineage refuses target route", stale.stdout)
+
+        routed = self._preflight(ROUTED_LAUNCHER_PATH)
+        self.assertEqual(routed.returncode, 0, routed.stdout)
+        self.assertIn("route=global_astar_v1 pattern=waypoint", routed.stdout)
 
     def test_v2_pins_timing_geometry_and_motion_distribution(self):
         required = {

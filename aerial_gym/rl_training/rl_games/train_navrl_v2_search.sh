@@ -57,9 +57,14 @@ export PYTHONNOUSERSITE=1
 # the child invocation. In particular, do not inherit a stale NAVRL_TARGET_DYNAMICS=bounded or
 # =physical from an interactive shell.
 _TARGET_DYNAMICS_REQUESTED="${NAVRL_TARGET_DYNAMICS:-legacy}"
+_TARGET_ROUTE_REQUESTED="${NAVRL_TARGET_ROUTE_MODE:-off}"
 if [[ "${NAVRL_V2_PHYSICAL_FRESH_CHILD:-0}" == "1" ]]; then
     if [[ "${_TARGET_DYNAMICS_REQUESTED}" != "physical" ]]; then
         echo "[v2-search] physical child marker requires NAVRL_TARGET_DYNAMICS=physical" >&2
+        exit 2
+    fi
+    if [[ "${_TARGET_ROUTE_REQUESTED}" != "off" && "${_TARGET_ROUTE_REQUESTED}" != "global_astar_v1" ]]; then
+        echo "[v2-search] unsupported physical target route: ${_TARGET_ROUTE_REQUESTED}" >&2
         exit 2
     fi
 else
@@ -68,8 +73,13 @@ else
         echo "[v2-search] use train_navrl_physical_fresh.sh for physical; bounded has no canonical launcher." >&2
         exit 2
     fi
+    if [[ "${_TARGET_ROUTE_REQUESTED}" != "off" ]]; then
+        echo "[v2-search] target route requires the dedicated physical routed fresh launcher" >&2
+        exit 2
+    fi
 fi
 export NAVRL_TARGET_DYNAMICS="${_TARGET_DYNAMICS_REQUESTED}"
+export NAVRL_TARGET_ROUTE_MODE="${_TARGET_ROUTE_REQUESTED}"
 unset NAVRL_V2_PHYSICAL_FRESH_CHILD
 
 # This entry point is fresh-training by default.  Its CLI is deliberately a closed contract:
@@ -271,8 +281,16 @@ export NAVRL_DEPTH_NOISE_STD=0.02
 export NAVRL_TARGET_SPEED_MIN=0.3
 export NAVRL_TARGET_SPEED_FINAL=1.5
 export NAVRL_TARGET_SPEED_RAMP_EPOCHS="${NAVRL_TARGET_SPEED_RAMP_EPOCHS:-300}"
-export NAVRL_TARGET_PATTERN=mixed
+if [[ "${NAVRL_TARGET_ROUTE_MODE}" == "global_astar_v1" ]]; then
+    export NAVRL_TARGET_PATTERN=waypoint
+else
+    export NAVRL_TARGET_PATTERN=mixed
+fi
 unset NAVRL_TARGET_SPEED
+if [[ "${NAVRL_TARGET_CONTRACT_PREFLIGHT_ONLY:-0}" == "1" ]]; then
+    echo "[v2-search] TARGET CONTRACT PREFLIGHT PASS | dynamics=${NAVRL_TARGET_DYNAMICS} route=${NAVRL_TARGET_ROUTE_MODE} pattern=${NAVRL_TARGET_PATTERN}"
+    exit 0
+fi
 export NAVRL_ACTION_POLICY=squashed_gaussian
 export NAVRL_ACTION_STD=0.35,0.35,0.05,0.08
 export NAVRL_ACTION_MU_SCALE=1.0,0.4,1.0,1.0
@@ -320,7 +338,7 @@ V2_RUN_KIND="FRESH"
 if [[ "${NAVRL_V2_ALLOW_RESUME:-0}" == "1" ]]; then
     V2_RUN_KIND="CONTINUATION"
 fi
-echo "[v2-search] ${V2_RUN_KIND} | arena=${NAVRL_ARENA_XY}m pool=${NAVRL_BAR_POOL} placement=${NAVRL_PLACEMENT_MODE} target=${NAVRL_TARGET_DYNAMICS}"
+echo "[v2-search] ${V2_RUN_KIND} | arena=${NAVRL_ARENA_XY}m pool=${NAVRL_BAR_POOL} placement=${NAVRL_PLACEMENT_MODE} target=${NAVRL_TARGET_DYNAMICS} route=${NAVRL_TARGET_ROUTE_MODE} pattern=${NAVRL_TARGET_PATTERN}"
 echo "[v2-search] executable | profile=${NAVRL_V2_PROFILE:-main} file=${FILE} task=${TASK} sim=${AERIAL_GYM_SIM_NAME} envs=${NUM_ENVS} seed=${SEED}"
 echo "[v2-search] goal ${NAVRL_GENERAL_GOAL_DIST_MIN}..${NAVRL_GENERAL_GOAL_DIST_MAX}m (camera 20m -> search) episode=${NAVRL_EPISODE_LEN_STEPS} steps"
 DENSITY_START_PER_100M2="$(awk -v bars="${NAVRL_DENSITY_START}" 'BEGIN {printf "%.2f", bars / 16.0}')"

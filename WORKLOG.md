@@ -12026,3 +12026,26 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
 - CPU 검증: target motion 13/13, ref5in platform 27/27, physical envelope helper 3/3,
   perception 30 pass+1 skip, reachability 3/3, 신규 contract 5/5 PASS. ref5in run-contract 101개 중
   1개는 독립 worktree에 ignored historical checkpoint가 없어 fixture-missing, 나머지 100개 PASS.
+
+### 2026-08-25 — fresh-only physical target global route 후보 구현
+
+- 기존 target transition은 route `off`로 보존하고, 새 model id
+  `physx_ref5in_6dof_global_astar_aabb_v1`을 별도 opt-in으로 구현했다. routed mode는
+  physical + waypoint만 허용하고 전용 fresh launcher 외의 stale shell/resume/checkpoint를 거부한다.
+- planner는 actual per-asset bar AABB, 0.28×0.28×0.12 m box의 3-D half-diagonal을 쓴
+  all-orientation XY support, tracking/boundary reserve로 2-D occupancy를 만든다. deterministic
+  8-neighbour A*, diagonal corner-cut 금지, 동일 continuous inflated AABB LOS smoothing을 사용한다.
+  invalid/no-path/local rollout failure는 zero velocity로 fail-closed하며 이유를 export한다.
+- reset/replan 때만 선택 env를 CPU로 보내며, 같은 component를 Dijkstra 한 번만 확장해 6 m 이상
+  goal과 parent path를 함께 얻는다. 후보마다 occupancy/A*를 최대 64회 만들던 초안은 폐기했다.
+  일반 step은 padded GPU waypoint cache로 vectorize했고 runtime counter의 interval별 GPU sync도 없앴다.
+  0.5 m task reach와 waypoint 통과 판정으로 overshoot 정지를 막았다.
+- synthetic route test 9/9와 launcher/checkpoint contract 7/7 PASS, py_compile/bash syntax PASS.
+  seed 825 actual-AABB CPU benchmark(16 layouts/density)는 70/150/205/300 bars 평균
+  46.18/48.71/58.34/64.01 ms/env, p95 최대 115.52 ms, 128-env 직렬 보수 투영 최대 8.19 s,
+  connected goal 64/64 성공으로 preregistered CPU gate를 통과했다.
+- 이 64/64는 same-component goal availability일 뿐 arena-wide connectivity가 아니다. 같은 inflation의
+  독립 20-layout topology probe에서 300-bar largest component 0.3998, pair connectivity 0.2247,
+  crossing 0.3이므로 300 bars arena-wide roaming 주장을 금지한다. 상태는
+  `PASS_CPU_ENGINEERING_GATE / SIMULATOR_UNMEASURED`;
+  다음은 short fresh PhysX smoke이며 PPO 본학습 권한은 없다.

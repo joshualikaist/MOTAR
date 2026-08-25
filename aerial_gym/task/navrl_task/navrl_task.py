@@ -29,6 +29,15 @@ from aerial_gym.task.navrl_task.target_motion import (
     support_aware_bounds,
     steer_target_step,
 )
+from aerial_gym.task.navrl_task.target_route_planner import (
+    BatchedTargetRouteManager,
+    RoutePlannerConfig,
+    TARGET_ROUTE_MODE_GLOBAL_ASTAR,
+    TARGET_ROUTE_MODE_OFF,
+    TARGET_ROUTE_MODES,
+    TARGET_ROUTE_MODEL,
+    conservative_xy_support_from_box,
+)
 from aerial_gym.task.navrl_task.speed_governor import (
     SpeedGovernorConfig,
     apply_speed_governor,
@@ -572,6 +581,23 @@ class NavRLTask(BaseTask):
         if self._target_dynamics not in ("legacy", "bounded", "physical"):
             raise ValueError("NAVRL_TARGET_DYNAMICS must be legacy|bounded|physical")
         self._physical_target = self._target_dynamics == "physical"
+        self._target_route_mode = str(
+            getattr(self.tm, "route_mode", TARGET_ROUTE_MODE_OFF)
+        ).strip().lower()
+        if self._target_route_mode not in TARGET_ROUTE_MODES:
+            raise ValueError(
+                "NAVRL_TARGET_ROUTE_MODE must be %s" % "|".join(TARGET_ROUTE_MODES)
+            )
+        self._target_route_enabled = (
+            self._target_route_mode == TARGET_ROUTE_MODE_GLOBAL_ASTAR
+        )
+        if self._target_route_enabled and (
+            not self._physical_target or str(self.tm.pattern) != "waypoint"
+        ):
+            raise RuntimeError(
+                "NAVRL_TARGET_ROUTE_MODE=global_astar_v1 is a fresh physical+waypoint-only "
+                "lineage; mixed/cv/circle and virtual targets are refused"
+            )
         self._bar_offset = 1 if self._physical_target else 0
         if self._physical_target and self.task_config.robot_name != "navrl_ref5in_quad":
             raise RuntimeError(
@@ -592,13 +618,37 @@ class NavRLTask(BaseTask):
             if float(self.tm.obstacle_clearance) <= 0.0:
                 raise ValueError("NAVRL_TARGET_OBSTACLE_CLEARANCE must be positive in bounded mode")
         self._target_motion_model = (
-            PHYSICAL_TARGET_MOTION_MODEL
+            TARGET_ROUTE_MODEL
+            if self._target_route_enabled
+            else PHYSICAL_TARGET_MOTION_MODEL
             if self._physical_target
             else BOUNDED_TARGET_MOTION_MODEL
             if self._target_dynamics == "bounded"
             else TARGET_MOTION_MODEL
         )
         self._target_controller = None
+        self._target_route_manager = None
+        self._target_route_support_xy = torch.zeros((self.num_envs, 2), device=self.device)
+        self._target_route_selector = torch.zeros(self.num_envs, device=self.device)
+        if self._target_route_enabled:
+            support = conservative_xy_support_from_box(self.tm.physical_box_xyz)
+            self._target_route_support_xy[:] = torch.as_tensor(
+                support, dtype=self._target_route_support_xy.dtype, device=self.device
+            )
+            route_config = RoutePlannerConfig(
+                resolution_m=float(self.tm.route_resolution_m),
+                tracking_margin_m=float(self.tm.physical_tracking_margin),
+                boundary_margin_m=(
+                    float(self.cur.wall_margin) + float(self.tm.physical_boundary_margin)
+                ),
+                max_expansions=int(self.tm.route_max_expansions),
+                max_waypoints=int(self.tm.route_max_waypoints),
+                replan_cooldown_steps=int(self.tm.route_replan_cooldown_steps),
+                goal_tolerance_m=float(self.tm.route_goal_tolerance_m),
+            )
+            self._target_route_manager = BatchedTargetRouteManager(
+                self.num_envs, self.device, route_config
+            )
         self.target_orientation = torch.zeros((self.num_envs, 4), device=self.device)
         self.target_orientation[:, 3] = 1.0
         self.target_vel_w = torch.zeros((self.num_envs, 3), device=self.device)  # realized vel
@@ -2277,8 +2327,25 @@ class NavRLTask(BaseTask):
             "cfg_target_physical_motor_tau_s": float(self.tm.physical_motor_tau),
             "cfg_target_physical_yaw_torque_ratio_m": float(self.tm.physical_yaw_torque_ratio),
             "cfg_target_physical_max_tilt_deg": float(self.tm.physical_max_tilt_deg),
+            "cfg_target_physical_box_xyz_m": [
+                float(value) for value in self.tm.physical_box_xyz
+            ],
             "cfg_target_physical_tracking_margin_m": float(self.tm.physical_tracking_margin),
             "cfg_target_physical_boundary_margin_m": float(self.tm.physical_boundary_margin),
+            "cfg_target_route_mode": self._target_route_mode,
+            "cfg_target_route_resolution_m": float(self.tm.route_resolution_m),
+            "cfg_target_route_max_expansions": int(self.tm.route_max_expansions),
+            "cfg_target_route_max_waypoints": int(self.tm.route_max_waypoints),
+            "cfg_target_route_replan_cooldown_steps": int(
+                self.tm.route_replan_cooldown_steps
+            ),
+            "cfg_target_route_goal_tolerance_m": float(self.tm.route_goal_tolerance_m),
+            "cfg_target_route_min_goal_distance_m": float(
+                self.tm.route_min_goal_distance_m
+            ),
+            "cfg_target_route_support_xy_m": [
+                float(value) for value in self._target_route_support_xy[0].tolist()
+            ],
             "cfg_target_pattern": str(self.tm.pattern),
             "cfg_target_speed_min": float(getattr(self.tm, "speed_min", 0.0)),
             "cfg_target_speed_final": float(self.tm.speed_final),
@@ -2870,6 +2937,30 @@ class NavRLTask(BaseTask):
                     "fine-tuning are a changed environment contract."
                     % (saved_motion_model or "legacy_bar_push", self._target_motion_model)
                 )
+            saved_route_mode = str(state.get("cfg_target_route_mode", "")).strip().lower()
+            if self._target_route_enabled and saved_route_mode != self._target_route_mode:
+                raise RuntimeError(
+                    "fresh-only routed target checkpoint contract: checkpoint route=%s running=%s"
+                    % (saved_route_mode or "missing/off", self._target_route_mode)
+                )
+            if saved_route_mode not in ("", TARGET_ROUTE_MODE_OFF, self._target_route_mode):
+                raise RuntimeError(
+                    "target route checkpoint cannot load with route mode %s" % self._target_route_mode
+                )
+            if self._target_route_enabled:
+                saved_support = state.get("cfg_target_route_support_xy_m")
+                current_support = self._target_route_support_xy[0].detach().cpu().tolist()
+                if (
+                    not isinstance(saved_support, (list, tuple))
+                    or len(saved_support) != 2
+                    or any(
+                        abs(float(saved) - float(current)) > 1e-6
+                        for saved, current in zip(saved_support, current_support)
+                    )
+                ):
+                    raise RuntimeError(
+                        "fresh-only routed target support contract mismatch or missing provenance"
+                    )
             # Newer checkpoints record the complete moving-target/spawn/safety geometry. Missing
             # fields are tolerated for old checkpoints, but a present mismatch changes the task
             # distribution and invalidates accumulated density evidence.
@@ -2954,6 +3045,41 @@ class NavRLTask(BaseTask):
                     "cfg_target_physical_boundary_margin_m",
                     float(self.tm.physical_boundary_margin),
                     "NAVRL_TARGET_BOUNDARY_MARGIN_M",
+                ),
+                (
+                    "cfg_target_route_mode",
+                    self._target_route_mode,
+                    "NAVRL_TARGET_ROUTE_MODE",
+                ),
+                (
+                    "cfg_target_route_resolution_m",
+                    float(self.tm.route_resolution_m),
+                    "NAVRL_TARGET_ROUTE_RESOLUTION_M",
+                ),
+                (
+                    "cfg_target_route_max_expansions",
+                    float(self.tm.route_max_expansions),
+                    "NAVRL_TARGET_ROUTE_MAX_EXPANSIONS",
+                ),
+                (
+                    "cfg_target_route_max_waypoints",
+                    float(self.tm.route_max_waypoints),
+                    "NAVRL_TARGET_ROUTE_MAX_WAYPOINTS",
+                ),
+                (
+                    "cfg_target_route_replan_cooldown_steps",
+                    float(self.tm.route_replan_cooldown_steps),
+                    "NAVRL_TARGET_ROUTE_REPLAN_COOLDOWN_STEPS",
+                ),
+                (
+                    "cfg_target_route_goal_tolerance_m",
+                    float(self.tm.route_goal_tolerance_m),
+                    "NAVRL_TARGET_ROUTE_GOAL_TOLERANCE_M",
+                ),
+                (
+                    "cfg_target_route_min_goal_distance_m",
+                    float(self.tm.route_min_goal_distance_m),
+                    "NAVRL_TARGET_ROUTE_MIN_GOAL_DISTANCE_M",
                 ),
                 ("cfg_general_train", bool(self.general_train_mode), "NAVRL_GENERAL_TRAIN"),
                 (
@@ -3592,6 +3718,9 @@ class NavRLTask(BaseTask):
             self.obs_dict["obstacle_angvel"][env_ids, 0] = 0.0
             self._target_controller.reset_idx(env_ids)
             self.sim_env.IGE_env.write_to_sim()
+        if self._target_route_enabled:
+            self._target_route_manager.reset_idx(env_ids)
+            self._plan_target_routes(env_ids, connected_goal=True, is_replan=False)
         self.ep_min_goal_dist[env_ids] = float("inf")
         self.ep_reached[env_ids] = False
 
@@ -5073,6 +5202,39 @@ class NavRLTask(BaseTask):
         # remaining scalar is only closed-loop tracking reserve, not another hull radius.
         return float(getattr(self.tm, "physical_tracking_margin", 0.0))
 
+    def _plan_target_routes(self, env_ids, *, connected_goal, is_replan=False):
+        """CPU-plan selected environments only; ordinary route following remains on GPU."""
+        if not self._target_route_enabled or len(env_ids) == 0:
+            return {}
+        bars = self.obs_dict["obstacle_position"][
+            :, self._bar_offset : self._bar_offset + self.n_bars_active, 0:2
+        ]
+        bar_half = self.obs_dict["asset_collision_half_extents"][
+            :, self._bar_offset : self._bar_offset + self.n_bars_active, 0:2
+        ]
+        selector = self._target_route_selector if connected_goal else None
+        status = self._target_route_manager.plan_idx(
+            env_ids,
+            self.target_position[:, 0:2],
+            self._tm_waypoint,
+            bars,
+            bar_half,
+            self.obs_dict["env_bounds_min"][:, 0:2],
+            self.obs_dict["env_bounds_max"][:, 0:2],
+            self._target_route_support_xy,
+            int(self.num_task_steps),
+            is_replan=is_replan,
+            connected_goal_selector=selector,
+            min_goal_distance_m=float(self.tm.route_min_goal_distance_m),
+        )
+        # A successful connected-goal plan owns the waypoint. Failed rows retain their prior goal
+        # but valid=False, so the only command they can emit is the fail-closed zero reference.
+        valid = self._target_route_manager.valid[env_ids]
+        if bool(valid.any()):
+            valid_ids = env_ids[valid]
+            self._tm_waypoint[valid_ids] = self._target_route_manager.goal[valid_ids]
+        return status
+
     def _physical_target_support_xyz(self):
         """World-axis support radii of the current oriented physical collision box."""
         if not self._physical_target:
@@ -5181,6 +5343,8 @@ class NavRLTask(BaseTask):
             torch.full((n,), -1.0, device=self.device),
             torch.full((n,), 1.0, device=self.device),
         )
+        if self._target_route_enabled:
+            self._target_route_selector[env_ids] = torch.rand(n, device=self.device)
         # realized velocity starts at zero; _advance_target sets it from actual displacement
         self.target_vel_w[env_ids] = 0.0
 
@@ -5229,8 +5393,43 @@ class NavRLTask(BaseTask):
 
         if self._target_dynamics in ("bounded", "physical"):
             desired_velocity = self._tm_cv_vel.clone()
+            route_active = torch.ones_like(moving)
+            if self._target_route_enabled:
+                needs_replan = self._target_route_manager.needs_replan(
+                    self._tm_waypoint,
+                    self._target_route_support_xy,
+                    int(self.num_task_steps),
+                ) & moving
+                if bool(needs_replan.any()):
+                    self._plan_target_routes(
+                        needs_replan.nonzero(as_tuple=False).squeeze(-1),
+                        connected_goal=False,
+                        is_replan=True,
+                    )
+                desired_velocity, route_active, route_complete = (
+                    self._target_route_manager.velocity_reference(
+                        old_xy, self._tm_speed, float(self.tm.waypoint_reach_m)
+                    )
+                )
+                # A reached global goal is replaced only by a new, sufficiently distant goal for
+                # which the same planner proves start-goal connectivity. The current interval is
+                # recomputed after planning; failure remains a zero reference.
+                complete = route_complete & moving
+                if bool(complete.any()):
+                    complete_ids = complete.nonzero(as_tuple=False).squeeze(-1)
+                    self._target_route_selector[complete_ids] = torch.rand(
+                        len(complete_ids), device=self.device
+                    )
+                    self._plan_target_routes(
+                        complete_ids, connected_goal=True, is_replan=True
+                    )
+                    desired_velocity, route_active, _ = (
+                        self._target_route_manager.velocity_reference(
+                            old_xy, self._tm_speed, float(self.tm.waypoint_reach_m)
+                        )
+                    )
             wp = moving & (self._tm_pattern == 1)
-            if bool(wp.any()):
+            if not self._target_route_enabled and bool(wp.any()):
                 to_wp = self._tm_waypoint[wp] - old_xy[wp]
                 desired_velocity[wp] = (
                     to_wp / to_wp.norm(dim=1, keepdim=True).clamp(min=1e-6)
@@ -5252,7 +5451,11 @@ class NavRLTask(BaseTask):
                 bars_half_extents = self.obs_dict["asset_collision_half_extents"][
                     :, self._bar_offset : self._bar_offset + self.n_bars_active, 0:2
                 ]
-                target_support_xy = self._physical_target_support_xyz()[:, :2]
+                target_support_xy = (
+                    self._target_route_support_xy
+                    if self._target_route_enabled
+                    else self._physical_target_support_xyz()[:, :2]
+                )
                 bars_half_extents = bars_half_extents + target_support_xy.unsqueeze(1)
                 # The planner bounds are center bounds.  Inflate the wall reserve by the current
                 # world-axis OBB support so a feasible center trajectory cannot leave the actor's
@@ -5263,11 +5466,16 @@ class NavRLTask(BaseTask):
                 )
             else:
                 planner_lo, planner_hi = lo, hi
+            bounded_speed_limit = (
+                torch.where(route_active, self._tm_speed, torch.zeros_like(self._tm_speed))
+                if self._target_route_enabled
+                else self._tm_speed
+            )
             bounded_xy, bounded_velocity, _, feasible = bounded_drone_target_step(
                 old_xy,
                 self.target_vel_w[:, 0:2],
                 desired_velocity,
-                self._tm_speed,
+                bounded_speed_limit,
                 dt,
                 bars_all,
                 planner_lo,
@@ -5281,6 +5489,7 @@ class NavRLTask(BaseTask):
                 float(self.tm.avoidance_lookahead_s),
                 bars_half_extents,
             )
+            local_rollout_feasible = feasible.clone()
             if self._physical_target:
                 # The planner uses an additional tracking reserve. Crossing that soft reserve is
                 # not itself a dynamically infeasible state; retain the hard hull clearance and
@@ -5294,6 +5503,12 @@ class NavRLTask(BaseTask):
                         (bounded_xy.unsqueeze(1) - bars_all).abs() - bars_half_extents
                     ).clamp(min=0.0)
                     feasible &= delta.norm(dim=2).amin(dim=1) > 1e-4
+                if self._target_route_enabled:
+                    feasible &= local_rollout_feasible & route_active
+                    local_invalid = moving & route_active & ~local_rollout_feasible
+                    self._target_route_manager.invalidate(
+                        local_invalid, "local_step_infeasible", int(self.num_task_steps)
+                    )
             # A physical actor cannot be teleported or position-clamped when the rollout has no
             # safe first step.  Submit a zero planar command in that case: the real velocity
             # controller then brakes with its declared dynamics, while the strict feasibility
@@ -5317,7 +5532,7 @@ class NavRLTask(BaseTask):
                 )
                 cv = moving & (self._tm_pattern == 0)
                 self._tm_cv_vel[cv] = bounded_velocity[cv]
-                if bool(wp.any()):
+                if not self._target_route_enabled and bool(wp.any()):
                     reached = (self._tm_waypoint[wp] - old_xy[wp]).norm(dim=1) < float(
                         self.tm.waypoint_reach_m
                     )
@@ -5340,7 +5555,7 @@ class NavRLTask(BaseTask):
             )
             cv = moving & (self._tm_pattern == 0)
             self._tm_cv_vel[cv] = bounded_velocity[cv]
-            if bool(wp.any()):
+            if not self._target_route_enabled and bool(wp.any()):
                 reached = (self._tm_waypoint[wp] - self.target_position[wp, 0:2]).norm(
                     dim=1
                 ) < float(self.tm.waypoint_reach_m)
@@ -6502,6 +6717,8 @@ class NavRLTask(BaseTask):
                 "seed": int(self.task_config.seed),
                 "bars": int(self.n_bars_active),
                 "target_pattern": os.environ.get("NAVRL_TARGET_PATTERN", "static"),
+                "target_motion_model": self._target_motion_model,
+                "target_route_mode": self._target_route_mode,
                 "cv_initial_heading": self._eval_cv_initial_heading,
                 "target_speed_mode": target_speed_mode,
                 "target_speed_mps": target_speed_mps,
@@ -6587,6 +6804,11 @@ class NavRLTask(BaseTask):
                     }
                     for speed_index, speed_label in enumerate(("q0", "q1", "q2", "q3"))
                 },
+                "route": (
+                    self._target_route_manager.diagnostics()
+                    if self._target_route_enabled
+                    else {"mode": TARGET_ROUTE_MODE_OFF}
+                ),
             },
             "action": {
                 "policy": os.environ.get("NAVRL_ACTION_POLICY", "legacy"),

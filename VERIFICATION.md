@@ -6,6 +6,18 @@
 
 > 기준일: 2026-08-23
 
+## 후보 R0 — global-routed physical target (기존 P0–P3와 독립)
+
+새 fresh-only model id는 `physx_ref5in_6dof_global_astar_aabb_v1`이다. 기존 physical/legacy
+checkpoint에 소급 적용하지 않는다. actual AABB, all-orientation support, same-component goal,
+fail-closed A*의 CPU unit/launcher/latency gate는 **PASS**했다. 70/150/205/300 bars에서 순차
+평균은 46.18/48.71/58.34/64.01 ms/env, 128-env 직렬 보수 투영은 최대 8.19 s였다.
+
+판정은 `PASS_CPU_ENGINEERING_GATE / SIMULATOR_UNMEASURED`다. 다음 권한은 fresh short PhysX
+smoke뿐이며 PPO 본학습은 금지한다. 300 bars arena-wide connectivity 주장은 금지한다. 근거:
+[`preregistration`](docs/preregistration_physical_target_global_route_2026-08-25.md),
+[`CPU benchmark`](results/navrl_target_route_cpu_benchmark_seed825/summary.md).
+
 ## 한 줄 상태
 
 `navrl_ref5in_quad`는 **hardware-informed simulation candidate**다. P0·P1c는 PASS, **P2·D1은 FAIL**,

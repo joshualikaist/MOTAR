@@ -6,6 +6,17 @@
 현재의 하드웨어·학습 파라미터·low/high-level 자료구조는 중복 표기를 피하기 위해
 [`docs/MOTAR_SYSTEM_SPEC_2026-08-24.md`](docs/MOTAR_SYSTEM_SPEC_2026-08-24.md)에 고정한다.
 
+### 2026-08-25 후보 계보 — physical target global route
+
+기존 계보의 표적 동작은 보존한다. 별도 후보
+`physx_ref5in_6dof_global_astar_aabb_v1`만 actual bar AABB와 전 자세 target support를
+inflation한 deterministic A* 경로를 physical 6-DoF 표적의 velocity reference로 사용한다.
+이는 pursuer planner나 actor 입력이 아니라 **시뮬레이션 표적 동역학 생성기**다. 300 bars에서
+configuration space가 분절되므로 목적지는 현재 connected component 안에서만 고르며,
+arena-wide roaming은 주장하지 않는다. CPU engineering gate는 통과했지만 PhysX smoke 전까지 PPO
+학습 권한은 없다. 고정 계약과 gate는
+[`docs/preregistration_physical_target_global_route_2026-08-25.md`](docs/preregistration_physical_target_global_route_2026-08-25.md)를 따른다.
+
 ## 1. 연구 질문과 기여
 
 ## 1. 연구 질문
