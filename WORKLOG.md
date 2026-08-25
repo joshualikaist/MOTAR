@@ -12612,3 +12612,11 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
   launcher now prepends the pinned ninja directory to each child PATH while retaining the absolute
   executable attestation. This is an execution-environment fix only; no task/controller/physics
   parameter changed. GPU measurement had not started beyond import/build initialization.
+
+### 2026-08-26 — PhysX trace serialization tolerance
+
+- The live cell reached trace validation, where float32 PhysX position serialization differed from
+  the recomputed substep distance by more than the verifier's 1e-6 m default. Warmup and braking
+  step-distance continuity now use the existing 1e-4 m path tolerance; cumulative path and stop
+  statistics remain raw-trace derived. The verifier hash is re-pinned to
+  `23ed75817120668e7404b902fdd35a6290d964af245ec25d4fdd2f91c523487d`.

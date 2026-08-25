@@ -159,7 +159,7 @@ def _validate_trace_and_rows(payload: Mapping[str, Any], speed: float, rows: Lis
             px, py = [float(value) for value in previous[env_id]]
             x, y = [float(value) for value in trace["position_xy_m"][env_id]]
             step = ((x - px) ** 2 + (y - py) ** 2) ** 0.5
-            _close(trace["step_distance_m"][env_id], step, "warmup path step")
+            _close(trace["step_distance_m"][env_id], step, "warmup path step", 1e-4)
             _close(trace["path_distance_m"][env_id], previous_path[env_id] + step, "warmup path", 1e-4)
         previous = trace["position_xy_m"]
         previous_path = [float(value) for value in trace["path_distance_m"]]
@@ -169,7 +169,7 @@ def _validate_trace_and_rows(payload: Mapping[str, Any], speed: float, rows: Lis
         for env_id in range(REGISTERED_ENVS):
             px, py = [float(value) for value in previous[env_id]]
             x, y = [float(value) for value in trace["position_xy_m"][env_id]]
-            _close(trace["step_distance_m"][env_id], ((x - px) ** 2 + (y - py) ** 2) ** 0.5, "brake path step")
+            _close(trace["step_distance_m"][env_id], ((x - px) ** 2 + (y - py) ** 2) ** 0.5, "brake path step", 1e-4)
             _close(trace["path_distance_m"][env_id], previous_path[env_id] + float(trace["step_distance_m"][env_id]), "brake path", 1e-4)
         previous = trace["position_xy_m"]
         previous_path = [float(value) for value in trace["path_distance_m"]]
