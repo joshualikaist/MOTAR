@@ -33,7 +33,7 @@
       </div>
       <div class="status-line">
         <span class="status-dot" aria-hidden="true"></span>
-        <strong>Attempt 2 · 32/32 integrity PASS</strong><span>Route mechanism FAIL · Physical PPO BLOCKED · Hardware pending · 2026-08-25</span>
+        <strong>Attempt 2 · 32/32 integrity PASS</strong><span>Route mechanism FAIL · recovery forensics RECOVERY_DOMINANT · Physical PPO BLOCKED · Hardware pending · 2026-08-25</span>
       </div>
     </section>
 
@@ -137,6 +137,7 @@
           <article><strong>32/32</strong><span>attempt 2 integrity</span><p>실행 무결성 PASS; route mechanism은 FAIL</p></article>
           <article><strong>14.55%</strong><span>70-bar · 4-speed pooled plan success</span><p>gate 99%; pooled fallback 35.93% (gate 1%)</p></article>
           <article><strong>0.25</strong><span>goals/env · 70 bars × 0.6 m/s</span><p>gate 0.5; physical PPO BLOCKED</p></article>
+          <article><strong>99.6257×</strong><span>local fallback amplification</span><p>358 invalidations → 35,666 intervals; 200 unique origins</p></article>
         </div>
         <div class="limits">
           <h3>현재 주장할 수 없는 것</h3>
@@ -144,7 +145,10 @@
             실제 기체가 미조립이고 실제 센서 로그가 없으므로 현재 software-only gate의 판정은
             <strong>SYNTHETIC_ONLY</strong>이며 실기 성능을 뜻하지 않습니다. 현재 원자료가 지지하는
             진단은 반복된 <code>unsafe_start</code> recovery가 fail-closed zero-command fallback에
-            머무는 현상입니다. motor·tilt·contact gate 실패가 주원인이라는 증거는 없습니다.</p>
+            머무는 현상입니다. recovery forensics는 hard-free/soft-unsafe 97.0% (Wilson lower
+            93.61%)와 exact hard-safe connector 96.5% (lower 92.95%)를 보였지만, 이는
+            evaluation-only 진단이며 0.45 m margin tuning이나 PPO 권한을 의미하지 않습니다.
+            motor·tilt·contact gate 실패가 주원인이라는 증거는 없습니다.</p>
         </div>
       </div>
     </section>
@@ -194,6 +198,7 @@
         <a href="../../OPERATIONS.md">Operations</a>
         <a href="../../WORKLOG.md">Worklog</a>
         <a href="../PAPER_WRITING_BRIEF_2026-08-24.md">Paper brief</a>
+        <a href="../physical_target_route_recovery_result_2026-08-25.md">Recovery forensics</a>
       </div>
     </section>
   </main>
