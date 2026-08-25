@@ -19,23 +19,24 @@ import verify_navrl_physical_target_braking as verifier
 def fake_cell(speed):
     center = [[20.0, 20.0] for _ in range(probe.REGISTERED_ENVS)]
     traces = []
-    for index in range(1, probe.WARMUP_STEPS + 1):
-        position = [[20.0 + 0.06 * index, 20.0] for _ in range(probe.REGISTERED_ENVS)]
+    for index in range(1, probe.WARMUP_STEPS * probe.PHYSICS_SUBSTEPS + 1):
+        position = [[20.0 + 0.006 * index, 20.0] for _ in range(probe.REGISTERED_ENVS)]
         traces.append({
-            "phase": "warmup", "sample_index": index, "elapsed_s": index * probe.RL_DT_S,
+            "phase": "warmup", "sample_index": index, "elapsed_s": index * probe.PHYSICS_DT_S,
             "speed_mps": [speed] * probe.REGISTERED_ENVS, "position_xy_m": position,
-            "step_distance_m": [0.06] * probe.REGISTERED_ENVS,
-            "path_distance_m": [0.06 * index] * probe.REGISTERED_ENVS,
+            "step_distance_m": [0.006] * probe.REGISTERED_ENVS,
+            "path_distance_m": [0.006 * index] * probe.REGISTERED_ENVS,
             "contact": [False] * probe.REGISTERED_ENVS, "invalid_obb": [False] * probe.REGISTERED_ENVS,
             "motor_saturation_fraction": [0.01] * probe.REGISTERED_ENVS, "max_tilt_deg": [10.0] * probe.REGISTERED_ENVS,
         })
-    for index, current_speed in enumerate((speed * 0.5, 0.05), 1):
-        position = [[20.0 + 3.0 + 0.05 * index, 20.0] for _ in range(probe.REGISTERED_ENVS)]
+    for index in range(1, probe.PHYSICS_SUBSTEPS * 2 + 1):
+        current_speed = speed * 0.5 if index <= probe.PHYSICS_SUBSTEPS else 0.05
+        position = [[20.0 + 3.0 + 0.005 * index, 20.0] for _ in range(probe.REGISTERED_ENVS)]
         traces.append({
-            "phase": "brake", "sample_index": index, "elapsed_s": index * probe.RL_DT_S,
+            "phase": "brake", "sample_index": index, "elapsed_s": index * probe.PHYSICS_DT_S,
             "speed_mps": [current_speed] * probe.REGISTERED_ENVS, "position_xy_m": position,
-            "step_distance_m": [0.05] * probe.REGISTERED_ENVS,
-            "path_distance_m": [0.05 * index] * probe.REGISTERED_ENVS,
+            "step_distance_m": [0.005] * probe.REGISTERED_ENVS,
+            "path_distance_m": [0.005 * index] * probe.REGISTERED_ENVS,
             "contact": [False] * probe.REGISTERED_ENVS, "invalid_obb": [False] * probe.REGISTERED_ENVS,
             "motor_saturation_fraction": [0.02] * probe.REGISTERED_ENVS, "max_tilt_deg": [12.0] * probe.REGISTERED_ENVS,
         })
@@ -58,8 +59,8 @@ def fake_cell(speed):
             "requested_speed_mps": speed,
             "measured_initial_speed_mps": speed,
             "warmup_final_speed_mps": speed, "warmup_speed_error_mps": 0.0, "warmup_converged": True,
-            "stop_time_s": 0.20, "stop_distance_m": 0.10, "endpoint_displacement_m": 0.10, "max_lateral_deviation_m": 0.0,
-            "effective_deceleration_mps2": speed * speed / 0.20,
+            "stop_time_s": 0.11, "stop_distance_m": 0.055, "endpoint_displacement_m": 0.055, "max_lateral_deviation_m": 0.0,
+            "effective_deceleration_mps2": speed * speed / 0.11,
             "warmup_contact": False, "warmup_invalid_obb": False,
             "contact": False,
             "invalid_obb": False,
@@ -183,7 +184,7 @@ class PhysicalTargetBrakingContractTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             verifier.validate_cell(forged)
         forged = fake_cell(0.6)
-        forged["physics_samples"][50]["speed_mps"][0] = 0.05
+        forged["physics_samples"][500]["speed_mps"][0] = 0.05
         with self.assertRaises(ValueError):
             verifier.validate_cell(forged)
         forged = fake_cell(0.6)
@@ -201,6 +202,14 @@ class PhysicalTargetBrakingContractTest(unittest.TestCase):
             existing.mkdir()
             with self.assertRaises(SystemExit):
                 launcher._safe_output(existing, Path(temporary))
+
+    def test_substep_curve_exceeds_endpoint_chord_and_records_lateral_peak(self):
+        points = [(0.0, 0.0), (0.05, 0.05), (0.10, 0.0), (0.15, -0.05), (0.20, 0.0)]
+        path = sum(((x1 - x0) ** 2 + (y1 - y0) ** 2) ** 0.5 for (x0, y0), (x1, y1) in zip(points, points[1:]))
+        chord = ((points[-1][0] - points[0][0]) ** 2 + (points[-1][1] - points[0][1]) ** 2) ** 0.5
+        lateral_peak = max(abs(y) for _, y in points)
+        self.assertGreater(path, chord)
+        self.assertEqual(lateral_peak, 0.05)
 
     def test_core_files_are_not_modified_by_this_lineage(self):
         changed = subprocess.run(

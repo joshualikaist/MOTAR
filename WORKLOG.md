@@ -12504,3 +12504,14 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
 - Added parent-only child authorization records, pinned executable/ninja environment, clean-source
   and `c98997d` ancestry attestations, identical runtime provenance across all four cells, and the
   canonical core integration handoff object. GPU execution remains intentionally unrun.
+
+### 2026-08-25 — PhysX-substep braking evidence
+
+- Replaced interval-only telemetry with a transparent callback proxy around the unchanged physical
+  target controller. The proxy delegates force computation, calls the controller post-step hook,
+  and records every `0.01 s` PhysX substep on device before one compact cell transfer. Stop
+  first-crossing, integrated path, lateral deviation, contact, invalid OBB, saturation, and tilt
+  are now substep-derived; the 10-callback-per-0.1 s contract is bound and validated.
+- The certified speed lookup remains raw p95 plus cumulative maximum; core handoff consumers must
+  use `certified_lookup_for_speed(summary, speed_mps)` and the certified lateral tube. GPU remains
+  prohibited for this audit.

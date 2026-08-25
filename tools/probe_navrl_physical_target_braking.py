@@ -463,6 +463,114 @@ def _invalid_obb(task: Any, torch: Any) -> Any:
     return invalid
 
 
+class _PhysicsSubstepRecorder:
+    """Transparent callback proxy: controller force semantics stay byte-for-byte delegated."""
+
+    def __init__(self, controller: Any, bmin: Any, bmax: Any, support: Any, torch: Any) -> None:
+        self.controller = controller
+        self.bmin = bmin
+        self.bmax = bmax
+        self.support = support
+        self.torch = torch
+        self.phase = ""
+        self.interval_index = 0
+        self.substep_index = 0
+        self.previous_position = None
+        self.path_distance = None
+        self.last = None
+        self.samples = []
+        self.phase_contact_any = None
+        self.phase_invalid_any = None
+        self.stopped = None
+        self.stop_time = None
+        self.stop_distance = None
+        self.stop_position = None
+
+    def begin_phase(self, phase: str) -> None:
+        self.phase = phase
+        self.interval_index = 0
+        self.substep_index = 0
+        self.previous_position = self.controller.position[:, :2].detach().clone()
+        self.path_distance = self.torch.zeros(
+            self.controller.position.shape[0], device=self.controller.position.device
+        )
+        self.last = None
+        self.samples = []
+        n = self.controller.position.shape[0]
+        self.phase_contact_any = self.torch.zeros(n, dtype=self.torch.bool, device=self.controller.position.device)
+        self.phase_invalid_any = self.torch.zeros(n, dtype=self.torch.bool, device=self.controller.position.device)
+        self.stopped = self.torch.zeros(n, dtype=self.torch.bool, device=self.controller.position.device)
+        self.stop_time = self.torch.full((n,), float("nan"), device=self.controller.position.device)
+        self.stop_distance = self.torch.zeros(n, device=self.controller.position.device)
+        self.stop_position = self.torch.zeros((n, 2), device=self.controller.position.device)
+
+    def begin_interval(self) -> None:
+        self.interval_index += 1
+
+    def __call__(self) -> None:
+        self.controller()
+
+    def post_physics_step(self) -> None:
+        self.controller.post_physics_step()
+        position = self.controller.position[:, :2].detach().clone()
+        step_distance = (position - self.previous_position).norm(dim=1)
+        self.path_distance = self.path_distance + step_distance
+        self.previous_position = position
+        self.substep_index += 1
+        invalid = ~torch_isfinite(self.controller.position, self.torch).all(dim=1)
+        invalid |= ((self.controller.position - self.support < self.bmin) | (self.controller.position + self.support > self.bmax)).any(dim=1)
+        diag = self.controller.diagnostics()
+        contact = self.controller.contact_seen.detach().clone()
+        invalid = invalid.detach()
+        self.phase_contact_any |= contact
+        self.phase_invalid_any |= invalid
+        if self.phase == "brake":
+            newly = (~self.stopped) & (self.controller.linvel[:, :2].norm(dim=1) <= STOP_THRESHOLD_MPS)
+            self.stop_time = self.torch.where(newly, self.torch.full_like(self.stop_time, self.substep_index * PHYSICS_DT_S), self.stop_time)
+            self.stop_distance = self.torch.where(newly, self.path_distance, self.stop_distance)
+            self.stop_position[newly] = position[newly]
+            self.stopped |= newly
+        self.last = {
+            "speed_mps": self.controller.linvel[:, :2].norm(dim=1).detach(),
+            "position_xy_m": position,
+            "step_distance_m": step_distance.detach(),
+            "path_distance_m": self.path_distance.detach().clone(),
+            "contact": contact,
+            "invalid_obb": invalid.detach(),
+            "motor_saturation_fraction": diag["motor_saturation_fraction"].detach().clone(),
+            "max_tilt_deg": diag["max_tilt_deg"].detach().clone(),
+            "sample_index": self.substep_index,
+            "elapsed_s": (self.interval_index * PHYSICS_SUBSTEPS - (PHYSICS_SUBSTEPS - self.substep_index)) * PHYSICS_DT_S,
+        }
+        self.samples.append(self.last)
+
+    def export(self) -> List[Dict[str, Any]]:
+        if not self.samples:
+            return []
+        fields = ("speed_mps", "position_xy_m", "step_distance_m", "path_distance_m", "contact", "invalid_obb", "motor_saturation_fraction", "max_tilt_deg")
+        stacked = {field: self.torch.stack([sample[field] for sample in self.samples], dim=0).detach().cpu() for field in fields}
+        result = []
+        for index in range(len(self.samples)):
+            result.append({
+                "phase": self.phase,
+                "sample_index": index + 1,
+                "elapsed_s": float((index + 1) * PHYSICS_DT_S),
+                "speed_mps": [float(value) for value in stacked["speed_mps"][index].tolist()],
+                "position_xy_m": [[float(x), float(y)] for x, y in stacked["position_xy_m"][index].tolist()],
+                "step_distance_m": [float(value) for value in stacked["step_distance_m"][index].tolist()],
+                "path_distance_m": [float(value) for value in stacked["path_distance_m"][index].tolist()],
+                "contact": [bool(value) for value in stacked["contact"][index].tolist()],
+                "invalid_obb": [bool(value) for value in stacked["invalid_obb"][index].tolist()],
+                "motor_saturation_fraction": [float(value) for value in stacked["motor_saturation_fraction"][index].tolist()],
+                "max_tilt_deg": [float(value) for value in stacked["max_tilt_deg"][index].tolist()],
+            })
+        return result
+
+
+def torch_isfinite(value: Any, torch: Any) -> Any:
+    return torch.isfinite(value)
+
+
 def run_speed_cell(speed: float, output: Path, envs: int = REGISTERED_ENVS, warmup_steps: int = WARMUP_STEPS, brake_steps: int = BRAKE_STEPS_BUDGET, auth_file: Optional[Path] = None) -> None:
     """Run exactly one speed arm in a fresh Isaac Gym process.
 
@@ -534,37 +642,18 @@ def run_speed_cell(speed: float, output: Path, envs: int = REGISTERED_ENVS, warm
     altitude = torch.full((envs,), float(task.task_config.flight_altitude), device=task.device)
     direction = torch.zeros((envs, 3), device=task.device)
     direction[:, 0] = float(speed)
-    warmup_traces = []
-    warmup_contact_any = torch.zeros(envs, dtype=torch.bool, device=task.device)
-    warmup_invalid_any = torch.zeros(envs, dtype=torch.bool, device=task.device)
-    warmup_path = torch.zeros(envs, device=task.device)
-    previous_position = ctrl.position[:, :2].detach().clone()
+    recorder = _PhysicsSubstepRecorder(ctrl, bmin, bmax, support, torch)
+    task.sim_env.set_physics_step_callback(recorder)
+    recorder.begin_phase("warmup")
     for sample_index in range(1, warmup_steps + 1):
+        recorder.begin_interval()
         ctrl.begin_control_interval()
         ctrl.set_command(direction, altitude)
         task.sim_env.step(actions=torch.zeros((envs, 4), device=task.device))
-        position = ctrl.position[:, :2].detach().clone()
-        step_distance = (position - previous_position).norm(dim=1)
-        warmup_path += step_distance
-        previous_position = position
-        contact_now = ctrl.contact_seen.clone()
-        invalid_now = _invalid_obb(task, torch)
-        warmup_contact_any |= contact_now
-        warmup_invalid_any |= invalid_now
-        diag = ctrl.diagnostics()
-        warmup_traces.append({
-            "phase": "warmup",
-            "sample_index": sample_index,
-            "elapsed_s": sample_index * RL_DT_S,
-            "speed_mps": [float(v) for v in ctrl.linvel[:, :2].norm(dim=1).detach().cpu().tolist()],
-            "position_xy_m": [[float(x), float(y)] for x, y in position.detach().cpu().tolist()],
-            "step_distance_m": [float(v) for v in step_distance.detach().cpu().tolist()],
-            "path_distance_m": [float(v) for v in warmup_path.detach().cpu().tolist()],
-            "contact": [bool(v) for v in contact_now.detach().cpu().tolist()],
-            "invalid_obb": [bool(v) for v in invalid_now.detach().cpu().tolist()],
-            "motor_saturation_fraction": [float(v) for v in diag["motor_saturation_fraction"].detach().cpu().tolist()],
-            "max_tilt_deg": [float(v) for v in diag["max_tilt_deg"].detach().cpu().tolist()],
-        })
+    warmup_traces = recorder.export()
+    warmup_contact_any = recorder.phase_contact_any.detach().clone()
+    warmup_invalid_any = recorder.phase_invalid_any.detach().clone()
+    warmup_path = recorder.path_distance.detach().clone()
     warmup_final_speed = ctrl.linvel[:, :2].norm(dim=1).detach().clone()
     warmup_error = (warmup_final_speed - float(speed)).abs()
     warmup_converged = (warmup_error <= INITIAL_SPEED_ABS_TOLERANCE_MPS) & (
@@ -590,47 +679,23 @@ def run_speed_cell(speed: float, output: Path, envs: int = REGISTERED_ENVS, warm
     stop_distance = torch.zeros(envs, device=task.device)
     stop_position = torch.zeros((envs, 2), device=task.device)
     path_distance = torch.zeros(envs, device=task.device)
+    recorder.begin_phase("brake")
     traces = list(warmup_traces)
-    contact_any = warmup_contact_any.clone()
-    invalid_any = warmup_invalid_any.clone()
-    previous_position = start_pos.clone()
     for sample_index in range(1, brake_steps + 1):
+        recorder.begin_interval()
         ctrl.begin_control_interval()
         ctrl.set_command(torch.zeros_like(direction), altitude)
         task.sim_env.step(actions=torch.zeros((envs, 4), device=task.device))
-        speed_now = ctrl.linvel[:, :2].norm(dim=1)
-        elapsed = float(sample_index) * PHYSICS_SUBSTEPS * PHYSICS_DT_S
-        position = ctrl.position[:, :2].detach().clone()
-        step_distance = (position - previous_position).norm(dim=1)
-        path_distance += step_distance
-        previous_position = position
-        newly = (~stopped) & (speed_now <= STOP_THRESHOLD_MPS)
-        stop_time = torch.where(newly, torch.full_like(stop_time, elapsed), stop_time)
-        stop_distance = torch.where(newly, path_distance, stop_distance)
-        stop_position[newly] = position[newly]
-        stopped |= newly
-        diag = ctrl.diagnostics()
-        contact_now = ctrl.contact_seen.clone()
-        invalid_now = _invalid_obb(task, torch)
-        contact_any |= contact_now
-        invalid_any |= invalid_now
-        traces.append({
-            "phase": "brake",
-            "sample_index": sample_index,
-            "elapsed_s": elapsed,
-            "speed_mps": [float(v) for v in speed_now.detach().cpu().tolist()],
-            "position_xy_m": [[float(x), float(y)] for x, y in position.detach().cpu().tolist()],
-            "step_distance_m": [float(v) for v in step_distance.detach().cpu().tolist()],
-            "path_distance_m": [float(v) for v in path_distance.detach().cpu().tolist()],
-            "contact": [bool(v) for v in contact_now.detach().cpu().tolist()],
-            "invalid_obb": [bool(v) for v in invalid_now.detach().cpu().tolist()],
-            "motor_saturation_fraction": [float(v) for v in diag["motor_saturation_fraction"].detach().cpu().tolist()],
-            "max_tilt_deg": [float(v) for v in diag["max_tilt_deg"].detach().cpu().tolist()],
-        })
-        if bool(stopped.all()):
+        if bool(recorder.stopped.all()):
             break
-    if not bool(stopped.all()):
+    if not bool(recorder.stopped.all()):
         raise RuntimeError("not every physical target stopped within the frozen budget")
+    traces.extend(recorder.export())
+    stop_time = recorder.stop_time
+    stop_distance = recorder.stop_distance
+    stop_position = recorder.stop_position
+    contact_any = warmup_contact_any | recorder.phase_contact_any
+    invalid_any = warmup_invalid_any | recorder.phase_invalid_any
     sat = ctrl.diagnostics()["motor_saturation_fraction"].detach().cpu().tolist()
     tilt = ctrl.diagnostics()["max_tilt_deg"].detach().cpu().tolist()
     brake_trace = [trace for trace in traces if trace["phase"] == "brake"]
