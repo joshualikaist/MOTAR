@@ -316,6 +316,16 @@ class TwoEnvelopeRecoveryTest(unittest.TestCase):
         self.assertIn('"selected_final_pos"', (ROOT / "aerial_gym/task/navrl_task/target_motion.py").read_text())
         self.assertIn('"selected_final_position_xy"', (ROOT / "aerial_gym/task/navrl_task/target_motion.py").read_text())
 
+    def test_raw_mutation_cannot_be_hidden_by_receipt_or_validated_flag(self):
+        task = (ROOT / "aerial_gym/task/navrl_task/navrl_task.py").read_text()
+        self.assertIn("validator.verify_receipt(receipt_file.parent", task)
+        self.assertIn("RECOVERY_RECEIPT_VALIDATOR_SHA256", task)
+        self.assertIn("RECOVERY_PROBE_VALIDATOR_SHA256", task)
+        # The task must consume verifier-returned data; producer receipt fields are deliberately
+        # absent from the recovery arm path, so forging receipt.json/manifest/VALIDATED cannot
+        # bypass raw-cell recomputation.
+        self.assertNotIn("probe.get(\"core_integration\")", task)
+
 
 if __name__ == "__main__":
     unittest.main()
