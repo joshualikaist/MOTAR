@@ -124,6 +124,7 @@ def bounded_drone_target_step(
     bars_half_extents_xy=None,
     exact_aabb_clearance=False,
     hard_epsilon_m=0.0,
+    return_certificate=False,
 ):
     """Choose and execute one dynamically bounded, collision-screened target step.
 
@@ -277,7 +278,18 @@ def bounded_drone_target_step(
     rows = torch.arange(n, device=old_xy.device)
     selected_pos = first_pos[rows, chosen]
     selected_vel = first_vel[rows, chosen]
-    return selected_pos, selected_vel, chosen != 0, immediate_feasible[rows, chosen]
+    base_result = (selected_pos, selected_vel, chosen != 0, immediate_feasible[rows, chosen])
+    if not return_certificate:
+        return base_result
+    certificate = {
+        "selected_index": chosen,
+        "candidate_count": count,
+        "horizon_steps": steps,
+        "safe_prefix_steps": safe_prefix_steps[rows, chosen].to(torch.int16),
+        "full_horizon_safe": feasible[rows, chosen],
+        "immediate_feasible": immediate_feasible[rows, chosen],
+    }
+    return base_result + (certificate,)
 
 
 def initial_cv_velocity(mode, speed, target_xy, pursuer_xy, random_angle):
