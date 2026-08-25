@@ -237,6 +237,25 @@ class TwoEnvelopeRecoveryTest(unittest.TestCase):
         task = (ROOT / "aerial_gym/task/navrl_task/navrl_task.py").read_text()
         self.assertIn("(3.0 + 0.5)", task)
 
+    def test_timeout_reasons_and_stop_distance_lookup_contract(self):
+        manager = ROUTE.BatchedTargetRouteManager(
+            1, torch.device("cpu"), ROUTE.RoutePlannerConfig(), recovery_enabled=True
+        )
+        mask = torch.tensor([True])
+        manager.mark_no_connector(mask, timeout_kind="brake")
+        self.assertEqual(int(manager.status_code[0]), manager.STATUS_CODES["recovery_brake_timeout"])
+        self.assertEqual(int(manager.recovery_brake_timeout_count.item()), 1)
+        manager.reset_idx(torch.tensor([0]))
+        manager.mark_no_connector(mask, timeout_kind="connect")
+        self.assertEqual(int(manager.status_code[0]), manager.STATUS_CODES["recovery_connect_timeout"])
+        self.assertEqual(int(manager.recovery_connect_timeout_count.item()), 1)
+        self.assertIn("brake_speed_samples_mps", (ROOT / "aerial_gym/task/navrl_task/navrl_task.py").read_text())
+
+    def test_probe_receipt_requires_receipt_and_probe_schema(self):
+        task = (ROOT / "aerial_gym/task/navrl_task/navrl_task.py").read_text()
+        self.assertIn('"navrl_target_recovery_braking_receipt_v1"', task)
+        self.assertIn('"navrl_target_recovery_braking_probe_v1"', task)
+
 
 if __name__ == "__main__":
     unittest.main()

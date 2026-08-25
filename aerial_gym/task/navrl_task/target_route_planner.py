@@ -762,7 +762,8 @@ class BatchedTargetRouteManager:
         "recovery_no_connector": 19,
         "recovery_hard_breach": 20,
         "recovery_local_infeasible_soft_free": 21,
-        "recovery_timeout": 22,
+        "recovery_brake_timeout": 22,
+        "recovery_connect_timeout": 23,
     }
 
     def __init__(self, num_envs: int, device, config: RoutePlannerConfig, *, recovery_enabled=False):
@@ -804,6 +805,8 @@ class BatchedTargetRouteManager:
         self.recovery_connect_intervals = torch.zeros((), dtype=torch.long, device=device)
         self.recovery_no_connector_count = torch.zeros((), dtype=torch.long, device=device)
         self.recovery_hard_breach_count = torch.zeros((), dtype=torch.long, device=device)
+        self.recovery_brake_timeout_count = torch.zeros((), dtype=torch.long, device=device)
+        self.recovery_connect_timeout_count = torch.zeros((), dtype=torch.long, device=device)
         self.recovery_route_resumes = torch.zeros((), dtype=torch.long, device=device)
         self.plan_attempts = 0
         self.plan_successes = 0
@@ -936,10 +939,33 @@ class BatchedTargetRouteManager:
         support_xy,
         hard_boundary_margin_m: float,
         decel_mps2: float,
+        brake_speed_samples_mps=None,
+        brake_stop_distance_samples_m=None,
     ) -> torch.Tensor:
-        """Certify the straight swept zero-command stopping segment in the hard envelope."""
+        """Certify the straight swept stopping segment in the hard envelope.
+
+        Recovery callers must provide the validated monotone speed/stop-distance lookup. The
+        deceleration formula remains only as a legacy planner API fallback and is not a recovery
+        certificate.
+        """
         result = torch.zeros(self.num_envs, dtype=torch.bool, device=self.device)
-        if len(env_ids) == 0 or not math.isfinite(float(decel_mps2)) or float(decel_mps2) <= 0.0:
+        if len(env_ids) == 0:
+            return result
+        use_lookup = brake_speed_samples_mps is not None or brake_stop_distance_samples_m is not None
+        if use_lookup:
+            try:
+                sample_speeds = np.asarray(brake_speed_samples_mps, dtype=np.float64).reshape(-1)
+                sample_distances = np.asarray(brake_stop_distance_samples_m, dtype=np.float64).reshape(-1)
+            except (TypeError, ValueError):
+                return result
+            if (
+                sample_speeds.size == 0 or sample_speeds.shape != sample_distances.shape
+                or not np.isfinite(sample_speeds).all() or not np.isfinite(sample_distances).all()
+                or np.any(sample_speeds <= 0.0) or np.any(sample_distances < 0.0)
+                or np.any(np.diff(sample_speeds) <= 0.0) or np.any(np.diff(sample_distances) < 0.0)
+            ):
+                return result
+        elif not math.isfinite(float(decel_mps2)) or float(decel_mps2) <= 0.0:
             return result
         selected = [
             value[env_ids].detach().to("cpu", dtype=torch.float64).numpy()
@@ -952,7 +978,15 @@ class BatchedTargetRouteManager:
         ids = env_ids.detach().to("cpu", dtype=torch.long).tolist()
         for local, env_id in enumerate(ids):
             speed = float(np.linalg.norm(velocities[local]))
-            distance = speed * speed / (2.0 * float(decel_mps2))
+            if use_lookup:
+                sample_index = int(np.searchsorted(sample_speeds, speed, side="left"))
+                if sample_index >= sample_speeds.size:
+                    continue
+                # Ceiling lookup is conservative for a monotone measured stop-distance curve;
+                # interpolation is deliberately avoided because it is not a certificate.
+                distance = float(sample_distances[sample_index])
+            else:
+                distance = speed * speed / (2.0 * float(decel_mps2))
             direction = velocities[local] / speed if speed > 1e-9 else np.zeros(2)
             stop = positions[local] + direction * distance
             hard_margin = TARGET_ROUTE_HARD_EPSILON_M + TARGET_ROUTE_REACHABLE_TUBE_MARGIN_M
@@ -964,20 +998,33 @@ class BatchedTargetRouteManager:
             )
         return result
 
-    def mark_no_connector(self, mask, hard_breach: bool = False, timeout: bool = False) -> None:
+    def mark_no_connector(
+        self, mask, hard_breach: bool = False, timeout_kind: Optional[str] = None
+    ) -> None:
         if mask.dtype != torch.bool or mask.shape != (self.num_envs,):
             raise ValueError("recovery mask must have shape [N] and bool dtype")
+        if timeout_kind not in (None, "brake", "connect"):
+            raise ValueError("timeout_kind must be None, brake, or connect")
         self.recovery_state[mask] = RECOVERY_NO_CONNECTOR
         self.recovery_brake_age_steps[mask] = 0
         self.recovery_connect_age_steps[mask] = 0
         self.recovery_connect_timeout_steps[mask] = 0
         self.valid[mask] = False
-        reason = "recovery_hard_breach" if hard_breach else "recovery_timeout" if timeout else "recovery_no_connector"
+        reason = (
+            "recovery_hard_breach" if hard_breach
+            else "recovery_brake_timeout" if timeout_kind == "brake"
+            else "recovery_connect_timeout" if timeout_kind == "connect"
+            else "recovery_no_connector"
+        )
         self.status_code[mask] = self.STATUS_CODES[reason]
         if bool(mask.any()):
             self.recovery_no_connector_count += mask.sum()
             if hard_breach:
                 self.recovery_hard_breach_count += mask.sum()
+            if timeout_kind == "brake":
+                self.recovery_brake_timeout_count += mask.sum()
+            if timeout_kind == "connect":
+                self.recovery_connect_timeout_count += mask.sum()
 
     def mark_local_infeasible_soft_free(self, mask) -> None:
         """Keep a local dynamics failure fail-closed even when geometry is soft-free."""
@@ -1280,6 +1327,8 @@ class BatchedTargetRouteManager:
             "recovery_connect_intervals": int(self.recovery_connect_intervals.item()),
             "recovery_no_connector_count": int(self.recovery_no_connector_count.item()),
             "recovery_hard_breach_count": int(self.recovery_hard_breach_count.item()),
+            "recovery_brake_timeout_count": int(self.recovery_brake_timeout_count.item()),
+            "recovery_connect_timeout_count": int(self.recovery_connect_timeout_count.item()),
             "recovery_route_resumes": int(self.recovery_route_resumes.item()),
         })
         return payload

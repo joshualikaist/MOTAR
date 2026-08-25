@@ -51,6 +51,17 @@ def _env_bool(name, default=False):
         return bool(default)
 
 
+def _env_float_list(name, default=()):
+    raw = os.environ.get(name)
+    if raw is None or raw.strip() == "":
+        return tuple(default)
+    try:
+        return tuple(float(item.strip()) for item in raw.split(",") if item.strip())
+    except ValueError:
+        _warn_bad_env(name, raw, default)
+        return tuple(default)
+
+
 def _perception_obs_dim():
     """Structured observation width, imported from navrl_perception (the single source of truth).
 
@@ -592,6 +603,14 @@ class task_config:
         recovery_brake_probe_validated = os.environ.get(
             "NAVRL_TARGET_RECOVERY_PROBE_VALIDATED", "0"
         ).strip().lower() in ("1", "true", "yes", "on")
+        # These arrays are populated and provenance-validated by the common probe receipt
+        # validator. The task refuses to arm recovery when either array is absent.
+        recovery_brake_speed_samples_mps = _env_float_list(
+            "NAVRL_TARGET_RECOVERY_BRAKE_SPEEDS_MPS"
+        )
+        recovery_brake_stop_distance_samples_m = _env_float_list(
+            "NAVRL_TARGET_RECOVERY_BRAKE_STOP_DISTANCES_M"
+        )
         # Opt-in global route for the NEW physical+waypoint lineage. Off preserves every legacy
         # target transition byte-for-byte. The planner consumes simulator GT bar AABBs only to
         # drive the target actor; no route feature reaches the pursuer policy.
