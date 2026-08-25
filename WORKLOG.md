@@ -12462,6 +12462,7 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
   latch `NO_CONNECTOR`.
 - Recovery scalar p05/p95 values cannot arm the controller without the common probe-receipt
   validator hook (`NAVRL_TARGET_RECOVERY_PROBE_VALIDATED=1`); no probe or GPU/PPO execution was run.
+<<<<<<< HEAD
 - BRAKE and CONNECT timeout reasons now have distinct status codes/counters. Braking uses a
   validated monotone speed-indexed p95 stop-distance lookup with ceiling-speed selection; the
   scalar `v^2/(2*a)` fallback remains legacy-only and cannot arm recovery.
@@ -12476,3 +12477,16 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
   full-horizon final position, with explicit row-id certificate telemetry. The common verifier
   must expose `core_integration` in its returned result; CPU pycompile/diff checks passed, with
   no GPU/PhysX/PPO execution.
+
+### 2026-08-25 — fresh physical-target zero-command braking probe scaffold
+
+- Added the independent `navrl_target_recovery_braking_probe_v1` generator, raw-first standalone
+  verifier, and fresh-only v2 launcher. The probe is physical-target-only and does not edit the
+  routed task/controller/planner or reuse the pursuer braking probe.
+- Frozen arms are 0.6/0.9/1.2/1.5 m/s × 32 envs, seed 827, base_sim/ref5in, `0.01 s × 10`, and
+  stop threshold 0.10 m/s. Raw rows retain stop time/distance/effective deceleration and the
+  contact/invalid-OBB/saturation/tilt gates; the validator recomputes p05/p95 and the measured
+  speed-to-p95 lookup from raw rows.
+- Receipts are finite-only canonical JSON with exact source/runtime contract, valid recorded git
+  object, per-cell/tool/core hashes, completion marker, atomic non-overwrite finalization, and
+  post-rename standalone verification. GPU execution is intentionally not run in CPU preflight.
