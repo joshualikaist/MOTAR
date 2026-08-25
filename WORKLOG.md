@@ -12302,3 +12302,26 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
   verify 때 파일 bytes와 version을 다시 검사한다. numerical gate·grid·seed·physics는 바꾸지 않았다.
   attempt 2는 명시적 별도 출력 `results/navrl_physical_target_routed_gate_seed827_attempt2/summary.json`
   만 사용한다. 이 수정 과정에서는 GPU를 실행하지 않았다.
+
+### 2026-08-25 — routed simulator gate attempt 2 integrity PASS, route mechanism FAIL
+
+- attempt 1은 task 생성 전 `ninja` PATH 오류로 0/32 `VOID_EXECUTION`이었다. 별도
+  `results/navrl_physical_target_routed_gate_seed827_attempt2/`에 재실행 결과를 보존했으며,
+  attempt 1 raw artifact는 덮어쓰지 않았다.
+- attempt 2는 route-off/on × 0.6/0.9/1.2/1.5 m/s × 70/150/205/300 bars의 **32/32 JSON
+  integrity PASS**를 기록했다. 그러나 receipt는 `FAIL_ROUTE_MECHANISM` 및
+  `BLOCKED_PHYSICAL_TRAINING`으로 판정했다. PPO policy는 로드하지 않았고 hardware validation과
+  300-bar arena-wide connectivity claim은 없다.
+- compact cell map(off/on)은 70 bars `P/F, P/F, F/F, F/F`, 150 bars `P/F, P/F, P/F, F/F`,
+  205 bars `P/F, P/F, F/F, F/F`, 300 bars `P/F, F/F, F/F, F/F` (속도 0.6→1.5 순)이다.
+- route-on 70×0.6 aggregate는 plan success `0.1454668471` (gate ≥.99), fallback
+  `0.359296875` (gate ≤.01), goal completions/env `.25` (gate ≥.5), same-goal `0`이다.
+  전체 route-on에서 local invalidation `.125–.635%`가 fallback `32.6–85.0%`로 증폭됐고,
+  status 합계 `unsafe_start=420`, `ok=80`, `no_path=6`, `local_step_infeasible=6`이었다.
+  따라서 현재 engineering diagnosis는 unsafe_start soft-envelope recovery deadlock이며,
+  global route 부재의 증명이나 motor/tilt/contact 주원인 판정은 아니다. tracking은 별도 gate
+  metric으로 유지한다.
+- evaluator와 preregistered threshold는 수정하지 않았다. 다음 authority는 동일 32-cell gate를
+  safe-prefix/full-horizon 및 unsafe-start recovery 계측 후 새 lineage에서 재실행하는 것이다.
+  상세: [`attempt 2 summary`](results/navrl_physical_target_routed_gate_seed827_attempt2/summary.md),
+  [`attempt 1 VOID`](results/navrl_physical_target_routed_gate_seed827/VOID.md).

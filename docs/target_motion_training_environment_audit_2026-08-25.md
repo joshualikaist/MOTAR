@@ -207,3 +207,37 @@ fixture-missing 한 건은 test가 요구하는 historical checkpoint가 main wo
    “local first-step failure”와 “global route unavailable”을 분리한다.
 4. **그 뒤에만 smoke:** 새 physical task contract가 고정되면 fresh 500 epochs + held-out cells.
 5. legacy/bounded checkpoint 결과는 historical baseline으로 보존하고 physical claim으로 승격하지 않는다.
+
+## 2026-08-25 routed PhysX gate 결과 (seed 827)
+
+attempt 1은 task 생성 전 conda `ninja` PATH 문제로 0/32 record의 `VOID_EXECUTION`이었다. 이
+실행은 수치 결과가 아니며, 원자료는 별도 보존했다. PATH를 고친 별도 attempt 2는 정확한 32-cell
+grid를 모두 기록해 **execution integrity 32/32 PASS**를 얻었지만, route mechanism은 FAIL이고
+physical PPO는 `BLOCKED_PHYSICAL_TRAINING`이다. `summary.json`의 claim boundary는 PPO policy
+미탑재, hardware validation 없음, 300-bar arena-wide connectivity claim 금지를 그대로 명시한다.
+
+route-off/on 결과를 `P/F`로 요약하면 다음과 같다(각 셀은 off/on strict gate).
+
+| bars \ speed | 0.6 | 0.9 | 1.2 | 1.5 |
+|---:|:---:|:---:|:---:|:---:|
+| 70 | P / F | P / F | F / F | F / F |
+| 150 | P / F | P / F | P / F | F / F |
+| 205 | P / F | P / F | F / F | F / F |
+| 300 | P / F | F / F | F / F | F / F |
+
+route-on local invalidation은 0.125–0.635%로 보이지만 fallback은 32.6–85.0%까지 증폭됐다.
+70-bar aggregate에서도 plan success `0.1454668471` (gate ≥0.99), fallback `0.359296875`
+(gate ≤0.01), goal completions/env `0.25` (gate ≥0.5)다. same-goal reselection은 0이라 해당
+guard는 원인이 아니다. 16 route-on cell의 status counter 합계는 `unsafe_start` 420,
+`ok` 80, `no_path` 6, `local_step_infeasible` 6으로, 현재 가장 강한 진단은 작은 local
+invalidation 뒤 soft-envelope recovery가 `unsafe_start`에서 되돌지 못하는 deadlock이다.
+이는 global route 부재의 증명이 아니다. motor saturation·tilt·contact을 주원인으로 승격하지
+않으며 tracking은 별도 gate metric으로 유지한다. 다음에는 safe-prefix/full-horizon 및 unsafe-start recovery를 별도 계측하고,
+threshold/evaluator/preregistration은 바꾸지 않은 채 동일 grid를 재실행한다.
+
+attempt 2 provenance: summary `e5e4560464dc3a2080d904c2f8d2247e0c65e671dd63ea08d1b507ec65fc7197`,
+execution manifest `896b05c9bf2cea672aad5e95a8e2a893d6eaa6999c56d5ab8ab60fc4c0de4291`, source
+manifest `9af2f58b42176c4800cf5f8795dbf8f009097d3ae5f74c9ef16937730d6a1aad`, receipt
+`bd840ef6dd157aa317dfeccfbf347235ac858d541e1e35e9e50c130084fc7771`. 상세 표와 raw links는
+[`attempt 2 summary`](../results/navrl_physical_target_routed_gate_seed827_attempt2/summary.md)와
+[`attempt 1 VOID`](../results/navrl_physical_target_routed_gate_seed827/VOID.md)다.
