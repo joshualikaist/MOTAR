@@ -1,6 +1,7 @@
 """CPU contracts for the opt-in physical-target global route planner."""
 
 import importlib.util
+import inspect
 from pathlib import Path
 import sys
 import unittest
@@ -38,6 +39,11 @@ def plan(p, bars, half, start=(1.0, 5.0), goal=(9.0, 5.0), support=(0.2, 0.2)):
 
 
 class TargetRoutePlannerTest(unittest.TestCase):
+    def test_ordinary_gpu_follower_has_no_cpu_materialization_or_sync(self):
+        source = inspect.getsource(ROUTE.BatchedTargetRouteManager.velocity_reference)
+        for forbidden in (".cpu(", ".item(", ".numpy(", "bool("):
+            self.assertNotIn(forbidden, source)
+
     def test_support_envelope_is_full_orientation_half_diagonal(self):
         support = ROUTE.conservative_xy_support_from_box((0.28, 0.28, 0.12))
         expected = 0.5 * np.linalg.norm([0.28, 0.28, 0.12])
@@ -133,6 +139,7 @@ class TargetRoutePlannerTest(unittest.TestCase):
         manager.length[0] = 2
         manager.cursor[0] = 0
         manager.segment_start[0] = torch.tensor([0.0, 0.0])
+        manager.handoff_clearance[0, 0] = 10.0
         manager.waypoints[0, 0] = torch.tensor([1.0, 0.0])
         manager.waypoints[0, 1] = torch.tensor([2.0, 0.0])
         velocity, active, complete = manager.velocity_reference(
@@ -189,9 +196,14 @@ class TargetRoutePlannerTest(unittest.TestCase):
         manager.plan_idx(
             ids, start, arbitrary_goal, bars, bars, bounds_lo, bounds_hi, support,
             current_step=13, is_replan=True,
-            connected_goal_selector=torch.tensor([0.8]), min_goal_distance_m=2.0,
+            connected_goal_selector=torch.tensor([0.1]), min_goal_distance_m=2.0,
+            excluded_goal_xy=first_goal,
+            goal_exclusion_radius_m=config.goal_exclusion_radius_m,
         )
         self.assertFalse(torch.equal(first_goal, manager.goal))
+        self.assertGreater(
+            float((first_goal - manager.goal).norm()), config.goal_exclusion_radius_m
+        )
         self.assertEqual(manager.diagnostics()["local_step_invalidations"], 1)
         self.assertEqual(manager.diagnostics()["connected_goal_replans"], 1)
         diagnostics = manager.diagnostics()
@@ -201,6 +213,123 @@ class TargetRoutePlannerTest(unittest.TestCase):
         self.assertGreaterEqual(diagnostics["total_planning_wall_s"], 0.0)
         self.assertGreaterEqual(diagnostics["max_batch_wall_s"], 0.0)
         self.assertGreaterEqual(diagnostics["planning_wall_ms_per_env"], 0.0)
+        self.assertEqual(diagnostics["same_goal_reselection_count"], 0)
+
+    def test_corner_handoff_requires_exact_clearance_certificate(self):
+        p = planner()
+        # Match runtime float32 geometry exactly; raster occupancy is deliberately sensitive to
+        # closed-AABB boundaries, so constructing a separate float64 fixture can choose a
+        # neighbouring (also safe) grid centre.
+        bars = np.array([[5.0, 5.0]], dtype=np.float32)
+        half = np.array([[0.8, 2.4]], dtype=np.float32)
+        support = np.array([0.2, 0.2], dtype=np.float32)
+        result = p.plan(
+            np.array([1.0, 5.0]), np.array([9.0, 5.0]), bars, half,
+            np.array([0.0, 0.0]), np.array([10.0, 10.0]), support,
+        )
+        self.assertTrue(result.valid, result.status)
+        inflated = half + support[None, :] + p.config.tracking_margin_m
+        certificates = ROUTE.route_handoff_clearance_certificates(
+            result.waypoints_xy,
+            np.array([0.0, 0.0]) + support,
+            np.array([10.0, 10.0]) - support,
+            bars,
+            inflated,
+        )
+        corner, next_waypoint = result.waypoints_xy[1], result.waypoints_xy[2]
+        self.assertLess(certificates[1], 0.5)
+        unsafe_early = np.array([3.65, 2.30])
+        self.assertLess(np.linalg.norm(unsafe_early - corner), 0.5)
+        self.assertGreater(np.linalg.norm(unsafe_early - corner), certificates[1])
+        self.assertFalse(
+            ROUTE.segment_is_safe(
+                unsafe_early, next_waypoint, np.array([0.2, 0.2]),
+                np.array([9.8, 9.8]), bars, inflated,
+            )
+        )
+
+        manager = ROUTE.BatchedTargetRouteManager(1, torch.device("cpu"), p.config)
+        manager.plan_idx(
+            torch.tensor([0]),
+            torch.tensor([[1.0, 5.0]]),
+            torch.tensor([[9.0, 5.0]]),
+            torch.as_tensor(bars[None, :, :], dtype=torch.float32),
+            torch.as_tensor(half[None, :, :], dtype=torch.float32),
+            torch.tensor([[0.0, 0.0]]),
+            torch.tensor([[10.0, 10.0]]),
+            torch.as_tensor(support[None, :], dtype=torch.float32),
+            current_step=0,
+        )
+        self.assertTrue(bool(manager.valid[0]))
+        self.assertTrue(
+            np.allclose(manager.waypoints[0, :2].numpy(), result.waypoints_xy[1:3])
+        )
+        self.assertAlmostEqual(
+            float(manager.handoff_clearance[0, 0]), float(certificates[1]), places=6
+        )
+        manager.velocity_reference(
+            torch.as_tensor(unsafe_early[None, :], dtype=torch.float32),
+            torch.tensor([1.0]), reach_m=0.5,
+        )
+        self.assertEqual(int(manager.cursor[0]), 0, "unsafe corner shortcut was accepted")
+
+        safe_near = corner + np.array([0.25 * certificates[1], 0.0])
+        self.assertTrue(
+            ROUTE.segment_is_safe(
+                safe_near, next_waypoint, np.array([0.2, 0.2]),
+                np.array([9.8, 9.8]), bars, inflated,
+            )
+        )
+        manager.velocity_reference(
+            torch.as_tensor(safe_near[None, :], dtype=torch.float32),
+            torch.tensor([1.0]), reach_m=0.5,
+        )
+        self.assertEqual(int(manager.cursor[0]), 1)
+
+    def test_connected_replan_excludes_previous_goal_and_counts_regression(self):
+        config = ROUTE.RoutePlannerConfig(
+            boundary_margin_m=0.0, goal_exclusion_radius_m=1.0
+        )
+        manager = ROUTE.BatchedTargetRouteManager(1, torch.device("cpu"), config)
+        ids = torch.tensor([0])
+        start = torch.tensor([[5.0, 5.0]])
+        requested_goal = torch.tensor([[8.0, 5.0]])
+        bars = torch.empty((1, 0, 2))
+        bounds_lo = torch.tensor([[0.0, 0.0]])
+        bounds_hi = torch.tensor([[10.0, 10.0]])
+        support = torch.tensor([[0.1, 0.1]])
+        selector = torch.tensor([0.37])
+        manager.plan_idx(
+            ids, start, requested_goal, bars, bars, bounds_lo, bounds_hi, support,
+            current_step=0, connected_goal_selector=selector, min_goal_distance_m=2.0,
+        )
+        previous_goal = manager.goal.clone()
+        manager.plan_idx(
+            ids, start, requested_goal, bars, bars, bounds_lo, bounds_hi, support,
+            current_step=1, is_replan=True, connected_goal_selector=selector,
+            min_goal_distance_m=2.0, excluded_goal_xy=previous_goal,
+            goal_exclusion_radius_m=1.0,
+        )
+        self.assertTrue(bool(manager.valid[0]))
+        self.assertGreater(float((manager.goal - previous_goal).norm()), 1.0)
+        self.assertEqual(manager.diagnostics()["same_goal_reselection_count"], 0)
+
+        original = manager.planner.plan_to_connected_goal
+        manager.planner.plan_to_connected_goal = lambda *args, **kwargs: ROUTE.RoutePlan(
+            "ok", previous_goal.numpy().copy(), 0, 2, 2, 0.0
+        )
+        manager.plan_idx(
+            ids, start, requested_goal, bars, bars, bounds_lo, bounds_hi, support,
+            current_step=2, is_replan=True, connected_goal_selector=selector,
+            min_goal_distance_m=2.0, excluded_goal_xy=previous_goal,
+            goal_exclusion_radius_m=1.0,
+        )
+        manager.planner.plan_to_connected_goal = original
+        self.assertFalse(bool(manager.valid[0]))
+        self.assertEqual(
+            int(manager.status_code[0]), manager.STATUS_CODES["same_goal_reselected"]
+        )
+        self.assertEqual(manager.diagnostics()["same_goal_reselection_count"], 1)
 
 
 if __name__ == "__main__":

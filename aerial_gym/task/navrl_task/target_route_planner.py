@@ -46,6 +46,7 @@ class RoutePlannerConfig:
     max_waypoints: int = 128
     replan_cooldown_steps: int = 10
     goal_tolerance_m: float = 0.05
+    goal_exclusion_radius_m: float = 1.0
 
     def validate(self) -> None:
         if not math.isfinite(self.resolution_m) or self.resolution_m <= 0.0:
@@ -60,6 +61,11 @@ class RoutePlannerConfig:
             raise ValueError("route replan cooldown must be at least one step")
         if not math.isfinite(self.goal_tolerance_m) or self.goal_tolerance_m < 0.0:
             raise ValueError("route goal tolerance must be finite and non-negative")
+        if (
+            not math.isfinite(self.goal_exclusion_radius_m)
+            or self.goal_exclusion_radius_m <= 0.0
+        ):
+            raise ValueError("route goal exclusion radius must be finite and positive")
 
 
 @dataclass(frozen=True)
@@ -147,6 +153,94 @@ def segment_is_safe(
         if _segment_intersects_closed_aabb(p0, p1, center - extent, center + extent):
             return False
     return True
+
+
+def _point_segment_distance(point, p0, p1) -> float:
+    delta = p1 - p0
+    denominator = float(np.dot(delta, delta))
+    fraction = (
+        float(np.clip(np.dot(point - p0, delta) / denominator, 0.0, 1.0))
+        if denominator > 1e-24
+        else 0.0
+    )
+    return float(np.linalg.norm(point - (p0 + fraction * delta)))
+
+
+def _point_aabb_distance(point, lo, hi) -> float:
+    offset = np.maximum(np.maximum(lo - point, point - hi), 0.0)
+    return float(np.linalg.norm(offset))
+
+
+def _segment_aabb_distance(p0, p1, lo, hi) -> float:
+    """Exact Euclidean clearance between a segment and a closed 2-D AABB."""
+    if _segment_intersects_closed_aabb(p0, p1, lo, hi):
+        return 0.0
+    corners = (
+        np.array([lo[0], lo[1]]),
+        np.array([lo[0], hi[1]]),
+        np.array([hi[0], lo[1]]),
+        np.array([hi[0], hi[1]]),
+    )
+    return min(
+        _point_aabb_distance(p0, lo, hi),
+        _point_aabb_distance(p1, lo, hi),
+        *(_point_segment_distance(corner, p0, p1) for corner in corners),
+    )
+
+
+def route_handoff_clearance_certificates(
+    waypoints_xy,
+    admissible_lo,
+    admissible_hi,
+    bars_xy,
+    inflated_half_extents_xy,
+    safety_epsilon_m: float = 1e-4,
+) -> np.ndarray:
+    """Certify safe early/overshoot handoff balls for every outgoing route segment.
+
+    If ``q`` is within radius ``r`` of waypoint ``p``, the segment ``q -> next`` stays within
+    ``r`` of the planned segment ``p -> next`` under equal interpolation.  Therefore any radius
+    strictly below that planned segment's exact obstacle/boundary clearance proves the connector
+    safe without retaining bar geometry in the ordinary GPU control path.
+    """
+    points = np.asarray(waypoints_xy, dtype=np.float64).reshape((-1, 2))
+    lo = _finite_xy(admissible_lo, "admissible_lo")
+    hi = _finite_xy(admissible_hi, "admissible_hi")
+    bars = np.asarray(bars_xy, dtype=np.float64).reshape((-1, 2))
+    half = np.asarray(inflated_half_extents_xy, dtype=np.float64).reshape((-1, 2))
+    epsilon = float(safety_epsilon_m)
+    if (
+        points.shape[0] < 2
+        or bars.shape != half.shape
+        or not np.isfinite(points).all()
+        or not np.isfinite(bars).all()
+        or not np.isfinite(half).all()
+        or np.any(half < 0.0)
+        or np.any(hi <= lo)
+        or not math.isfinite(epsilon)
+        or epsilon <= 0.0
+    ):
+        raise ValueError("invalid route handoff certificate geometry")
+    result = np.zeros(points.shape[0], dtype=np.float64)
+    for index, (p0, p1) in enumerate(zip(points[:-1], points[1:])):
+        if not segment_is_safe(p0, p1, lo, hi, bars, half):
+            raise ValueError("cannot certify an unsafe planned route segment")
+        boundary_clearance = min(
+            float(np.min(p0 - lo)),
+            float(np.min(p1 - lo)),
+            float(np.min(hi - p0)),
+            float(np.min(hi - p1)),
+        )
+        obstacle_clearance = min(
+            (
+                _segment_aabb_distance(p0, p1, center - extent, center + extent)
+                for center, extent in zip(bars, half)
+            ),
+            default=float("inf"),
+        )
+        result[index] = max(0.0, min(boundary_clearance, obstacle_clearance) - epsilon)
+    # The final waypoint has no outgoing connector; its radius is deliberately zero and unused.
+    return result
 
 
 class DeterministicAStarRoutePlanner:
@@ -350,6 +444,8 @@ class DeterministicAStarRoutePlanner:
         target_support_xy,
         min_goal_distance_m: float,
         selector: float,
+        excluded_goal_xy=None,
+        exclusion_radius_m: float = 0.0,
     ) -> RoutePlan:
         """Choose a sufficiently distant goal proven reachable by the same planner contract.
 
@@ -363,12 +459,21 @@ class DeterministicAStarRoutePlanner:
             arena_hi = _finite_xy(arena_hi_xy, "arena_hi_xy")
             selector = float(selector)
             minimum = float(min_goal_distance_m)
+            exclusion_radius = float(exclusion_radius_m)
+            excluded_goal = (
+                None
+                if excluded_goal_xy is None
+                else _finite_xy(excluded_goal_xy, "excluded_goal_xy")
+            )
         except (TypeError, ValueError):
             return RoutePlan("invalid_input", np.empty((0, 2)), 0, 0, 0, 0.0)
         if (
             not math.isfinite(selector)
             or not math.isfinite(minimum)
             or minimum <= 0.0
+            or not math.isfinite(exclusion_radius)
+            or exclusion_radius < 0.0
+            or (excluded_goal is not None and exclusion_radius <= 0.0)
         ):
             return RoutePlan("invalid_input", np.empty((0, 2)), 0, 0, 0, 0.0)
         try:
@@ -445,9 +550,15 @@ class DeterministicAStarRoutePlanner:
             (axes[0][reachable_i], axes[1][reachable_j]), axis=1
         )
         distant = np.linalg.norm(reachable_points - start[None, :], axis=1) >= minimum
+        if excluded_goal is not None:
+            distant &= (
+                np.linalg.norm(reachable_points - excluded_goal[None, :], axis=1)
+                > exclusion_radius
+            )
         reachable_i, reachable_j = reachable_i[distant], reachable_j[distant]
         if not len(reachable_i):
-            return RoutePlan("no_connected_goal", np.empty((0, 2)), 0, 0, 0, 0.0)
+            status = "no_alternative_goal" if excluded_goal is not None else "no_connected_goal"
+            return RoutePlan(status, np.empty((0, 2)), 0, 0, 0, 0.0)
         choice = min(len(reachable_i) - 1, int(math.floor((selector % 1.0) * len(reachable_i))))
         goal_cell = (int(reachable_i[choice]), int(reachable_j[choice]))
         goal = np.array([axes[0][goal_cell[0]], axes[1][goal_cell[1]]])
@@ -511,6 +622,8 @@ class BatchedTargetRouteManager:
         "support_contract_changed": 13,
         "goal_changed": 14,
         "no_connected_goal": 15,
+        "no_alternative_goal": 16,
+        "same_goal_reselected": 17,
     }
 
     def __init__(self, num_envs: int, device, config: RoutePlannerConfig):
@@ -527,6 +640,9 @@ class BatchedTargetRouteManager:
         self.valid = torch.zeros(self.num_envs, dtype=torch.bool, device=device)
         self.goal = torch.zeros((self.num_envs, 2), dtype=torch.float32, device=device)
         self.segment_start = torch.zeros_like(self.goal)
+        self.handoff_clearance = torch.zeros(
+            (self.num_envs, config.max_waypoints), dtype=torch.float32, device=device
+        )
         self.completion_reported = torch.zeros(
             self.num_envs, dtype=torch.bool, device=device
         )
@@ -554,6 +670,7 @@ class BatchedTargetRouteManager:
         self.goal_completions = torch.zeros((), dtype=torch.long, device=device)
         self.fallback_intervals = torch.zeros((), dtype=torch.long, device=device)
         self.connected_goal_replans = 0
+        self.same_goal_reselection_count = 0
         self.expanded_nodes = 0
         self.raw_waypoints = 0
         self.smoothed_waypoints = 0
@@ -568,6 +685,7 @@ class BatchedTargetRouteManager:
             return
         self.length[env_ids] = 0
         self.cursor[env_ids] = 0
+        self.handoff_clearance[env_ids] = 0.0
         self.valid[env_ids] = False
         self.completion_reported[env_ids] = False
         self.goal_change_reported[env_ids] = False
@@ -619,6 +737,8 @@ class BatchedTargetRouteManager:
         is_replan: bool = False,
         connected_goal_selector=None,
         min_goal_distance_m: float = 0.0,
+        excluded_goal_xy=None,
+        goal_exclusion_radius_m: float = 0.0,
     ) -> Dict[str, int]:
         if len(env_ids) == 0:
             return {}
@@ -645,6 +765,18 @@ class BatchedTargetRouteManager:
                 connected_goal_selector[env_ids]
                 .detach().to("cpu", dtype=torch.float64).numpy()
             )
+        excluded_goals = None
+        if excluded_goal_xy is not None:
+            if excluded_goal_xy.shape != self.goal.shape:
+                raise ValueError("excluded_goal_xy must have shape [N,2]")
+            if connected_goal_selector is None or float(goal_exclusion_radius_m) <= 0.0:
+                raise ValueError(
+                    "goal exclusion requires connected-goal planning and a positive radius"
+                )
+            excluded_goals = (
+                excluded_goal_xy[env_ids]
+                .detach().to("cpu", dtype=torch.float64).numpy()
+            )
         batch_counts: Dict[str, int] = {}
         for local, env_id in enumerate(ids):
             if connected_goal_selector is None:
@@ -656,7 +788,24 @@ class BatchedTargetRouteManager:
                 selector = float(selectors[local])
                 result = self.planner.plan_to_connected_goal(
                     starts[local], bars[local], half[local], arena_lo[local],
-                    arena_hi[local], support[local], min_goal_distance_m, selector
+                    arena_hi[local], support[local], min_goal_distance_m, selector,
+                    excluded_goal_xy=(
+                        excluded_goals[local] if excluded_goals is not None else None
+                    ),
+                    exclusion_radius_m=(
+                        float(goal_exclusion_radius_m) if excluded_goals is not None else 0.0
+                    ),
+                )
+            if result.valid and excluded_goals is not None and (
+                np.linalg.norm(result.waypoints_xy[-1] - excluded_goals[local])
+                <= float(goal_exclusion_radius_m)
+            ):
+                # Defense in depth: a planner regression cannot reintroduce the failed goal.
+                self.same_goal_reselection_count += 1
+                result = RoutePlan(
+                    "same_goal_reselected", np.empty((0, 2)),
+                    result.expanded_nodes, result.raw_grid_nodes,
+                    result.smoothed_nodes, 0.0,
                 )
             self.plan_attempts += 1
             self.replan_attempts += int(is_replan)
@@ -681,6 +830,7 @@ class BatchedTargetRouteManager:
             if not result.valid:
                 self.valid[env_id] = False
                 self.length[env_id] = 0
+                self.handoff_clearance[env_id] = 0.0
                 self.no_path_count += int(result.status == "no_path")
                 self.invalid_count += int(result.status != "no_path")
                 continue
@@ -690,6 +840,23 @@ class BatchedTargetRouteManager:
             )
             self.waypoints[env_id].zero_()
             self.waypoints[env_id, :count] = route
+            admissible_lo = arena_lo[local] + self.config.boundary_margin_m + support[local]
+            admissible_hi = arena_hi[local] - self.config.boundary_margin_m - support[local]
+            inflated_half = (
+                half[local] + support[local][None, :] + self.config.tracking_margin_m
+            )
+            certificates = route_handoff_clearance_certificates(
+                result.waypoints_xy,
+                admissible_lo,
+                admissible_hi,
+                bars[local],
+                inflated_half,
+            )
+            cached_certificates = torch.as_tensor(
+                certificates[1:], dtype=self.handoff_clearance.dtype, device=self.device
+            )
+            self.handoff_clearance[env_id].zero_()
+            self.handoff_clearance[env_id, :count] = cached_certificates
             self.segment_start[env_id] = start_xy[env_id]
             self.length[env_id] = count
             self.cursor[env_id] = 0
@@ -720,9 +887,13 @@ class BatchedTargetRouteManager:
             passed = ((offset * segment).sum(dim=1) >= 0.0) & (
                 cross_track <= float(reach_m)
             )
+            connector_certified = (
+                (waypoint - position_xy).norm(dim=1)
+                <= self.handoff_clearance[rows, safe_cursor]
+            )
             reached = self.valid & (
                 ((waypoint - position_xy).norm(dim=1) <= float(reach_m)) | passed
-            )
+            ) & connector_certified
             can_advance = reached & (self.cursor + 1 < self.length)
             self.segment_start[can_advance] = waypoint[can_advance]
             self.cursor += can_advance.long()
@@ -766,6 +937,7 @@ class BatchedTargetRouteManager:
             "plan_successes": self.plan_successes,
             "replan_attempts": self.replan_attempts,
             "connected_goal_replans": self.connected_goal_replans,
+            "same_goal_reselection_count": self.same_goal_reselection_count,
             "no_path_count": self.no_path_count,
             "invalid_count": self.invalid_count + int(self.runtime_invalid_count.item()),
             "local_step_invalidations": int(self.local_step_invalidations.item()),

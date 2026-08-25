@@ -645,6 +645,7 @@ class NavRLTask(BaseTask):
                 max_waypoints=int(self.tm.route_max_waypoints),
                 replan_cooldown_steps=int(self.tm.route_replan_cooldown_steps),
                 goal_tolerance_m=float(self.tm.route_goal_tolerance_m),
+                goal_exclusion_radius_m=float(self.tm.route_goal_exclusion_radius_m),
             )
             self._target_route_manager = BatchedTargetRouteManager(
                 self.num_envs, self.device, route_config
@@ -2343,6 +2344,9 @@ class NavRLTask(BaseTask):
             "cfg_target_route_min_goal_distance_m": float(
                 self.tm.route_min_goal_distance_m
             ),
+            "cfg_target_route_goal_exclusion_radius_m": float(
+                self.tm.route_goal_exclusion_radius_m
+            ),
             "cfg_target_route_support_xy_m": [
                 float(value) for value in self._target_route_support_xy[0].tolist()
             ],
@@ -3080,6 +3084,11 @@ class NavRLTask(BaseTask):
                     "cfg_target_route_min_goal_distance_m",
                     float(self.tm.route_min_goal_distance_m),
                     "NAVRL_TARGET_ROUTE_MIN_GOAL_DISTANCE_M",
+                ),
+                (
+                    "cfg_target_route_goal_exclusion_radius_m",
+                    float(self.tm.route_goal_exclusion_radius_m),
+                    "NAVRL_TARGET_ROUTE_GOAL_EXCLUSION_M",
                 ),
                 ("cfg_general_train", bool(self.general_train_mode), "NAVRL_GENERAL_TRAIN"),
                 (
@@ -5202,7 +5211,9 @@ class NavRLTask(BaseTask):
         # remaining scalar is only closed-loop tracking reserve, not another hull radius.
         return float(getattr(self.tm, "physical_tracking_margin", 0.0))
 
-    def _plan_target_routes(self, env_ids, *, connected_goal, is_replan=False):
+    def _plan_target_routes(
+        self, env_ids, *, connected_goal, is_replan=False, exclude_previous_goal=False
+    ):
         """CPU-plan selected environments only; ordinary route following remains on GPU."""
         if not self._target_route_enabled or len(env_ids) == 0:
             return {}
@@ -5226,6 +5237,13 @@ class NavRLTask(BaseTask):
             is_replan=is_replan,
             connected_goal_selector=selector,
             min_goal_distance_m=float(self.tm.route_min_goal_distance_m),
+            excluded_goal_xy=(
+                self._target_route_manager.goal if exclude_previous_goal else None
+            ),
+            goal_exclusion_radius_m=(
+                float(self.tm.route_goal_exclusion_radius_m)
+                if exclude_previous_goal else 0.0
+            ),
         )
         # A successful connected-goal plan owns the waypoint. Failed rows retain their prior goal
         # but valid=False, so the only command they can emit is the fail-closed zero reference.
@@ -5402,8 +5420,18 @@ class NavRLTask(BaseTask):
                 ) & moving
                 if bool(needs_replan.any()):
                     local_failure = needs_replan & (
-                        self._target_route_manager.status_code
-                        == self._target_route_manager.STATUS_CODES["local_step_infeasible"]
+                        (
+                            self._target_route_manager.status_code
+                            == self._target_route_manager.STATUS_CODES["local_step_infeasible"]
+                        )
+                        | (
+                            self._target_route_manager.status_code
+                            == self._target_route_manager.STATUS_CODES["no_alternative_goal"]
+                        )
+                        | (
+                            self._target_route_manager.status_code
+                            == self._target_route_manager.STATUS_CODES["same_goal_reselected"]
+                        )
                     )
                     if bool(local_failure.any()):
                         local_ids = local_failure.nonzero(as_tuple=False).squeeze(-1)
@@ -5411,7 +5439,10 @@ class NavRLTask(BaseTask):
                         # livelock. The selector was resampled when failure was detected; after the
                         # cooldown, choose a different reachable destination in this component.
                         self._plan_target_routes(
-                            local_ids, connected_goal=True, is_replan=True
+                            local_ids,
+                            connected_goal=True,
+                            is_replan=True,
+                            exclude_previous_goal=True,
                         )
                     ordinary_replan = needs_replan & ~local_failure
                     if bool(ordinary_replan.any()):
