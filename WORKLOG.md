@@ -12423,3 +12423,28 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
   physics timing, exact speed min/final, and robot source hashes cross-bound to the manifest.
 - GPU provenance requires CUDA/current device identity and a non-empty `nvidia-smi` query with
   executable hash and driver/GPU/UUID text. CPU regression suite: 15/15 PASS; no GPU was run.
+
+### 2026-08-25 — routed recovery forensics: `RECOVERY_DOMINANT`
+
+- 사전등록한 seed 827, route-on, 32 env × 300 steps, 70/150/205/300 bars × 0.6/1.5 m/s의
+  8/8 GPU PhysX cells가 완료됐고, 별도 `--verify`가 execution commit/source/runtime/software/
+  robot/simulator receipt와 모든 raw cell을 재검증했다. PPO와 reward/observation/termination,
+  target command 및 route decision은 변경하지 않았다.
+- 총 local invalidation 358건이 local-origin fallback 35,666 intervals로 증폭됐다
+  (`99.6257 intervals/invalidation`; cooldown 10보다 큼). fallback age는 median 101,
+  p90 219, max 287 steps였다. 최초 unique local-origin unsafe-start replan 200건 중
+  hard-free/soft-unsafe는 97.0% (Wilson 95% lower 93.61%), 가까운 soft-free anchor까지 exact
+  hard-safe connector가 존재한 비율은 96.5% (lower 92.95%)였다. 세 사전등록 gate가 모두
+  통과해 verdict는 `RECOVERY_DOMINANT`다.
+- plan status는 replan에서 `unsafe_start=3774`, `ok=101`, `no_path=82`, `unsafe_goal=79`이며,
+  initial plan은 `ok=349`, `unsafe_start=17`, `no_connected_goal=6`이다. 즉 주병목은 global
+  topology 부재가 아니라 local rollout 실패 뒤 zero-command/cooldown이 hard-safe이지만 route
+  soft-envelope 밖인 상태를 탈출시키지 못하는 복구 state machine이다. 300 bars의 no-path와
+  topology fragmentation은 별도 제한으로 남는다.
+- rounded local envelope와 square route envelope disagreement 1,832건도 관측됐지만, 이 결과는
+  `.45 m` margin을 낮추거나 geometry를 사후튜닝할 권한이 아니다. 다음 단계는 measured braking을
+  보존한 hard-safe connector recovery를 새 lineage에 사전등록하고, 짧은 simulator smoke 뒤
+  변경하지 않은 32-cell routed gate를 재실행하는 것이다.
+- 결과: [`summary`](results/navrl_physical_target_route_recovery_forensics_seed827/summary.md),
+  [`machine-readable summary`](results/navrl_physical_target_route_recovery_forensics_seed827/summary.json),
+  [`receipt`](results/navrl_physical_target_route_recovery_forensics_seed827/receipt.json).
