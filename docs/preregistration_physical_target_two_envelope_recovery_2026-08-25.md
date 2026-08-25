@@ -26,8 +26,9 @@ is `S = 0.2068816087` m. A bar's asset-specific XY AABB half-extents are `b_i`.
 * Both envelopes use exact AABB slab/segment tests. The rounded Euclidean local check is not a
   recovery certificate; corner disagreement is recorded as a safety failure. Continuous
   PhysX-substep chord certificates inflate the hard AABB by the central `1e-4` strictness plus
-  a derived `0.00013` m reachable-tube reserve. The latter is the upward ceiling of
-  `g*tan(45deg)*0.01^2/8 = 0.0001226` m; it is not a tuning knob.
+  a derived `0.0123` m reachable-tube reserve. The latter is the upward ceiling of the
+  prospective CONNECT RL-step chord, `g*tan(45deg)*0.1^2/8 = 0.0122625` m; it also dominates
+  the ten 0.01 s PhysX-substep chord bound and is not a tuning knob.
 * Recovery may leave the soft envelope only while the hard envelope remains certified. A
   7x7 nearest-cell search (radius 3 cells at the fixed 0.25 m grid) chooses the nearest anchor
   outside an additional fixed 0.25 m soft hysteresis envelope. The point-to-anchor connector is accepted only after an exact continuous
@@ -61,7 +62,8 @@ soft clearances exceed `0.25` m and the route handoff certificate is valid. The 
 unchecked cooldown bypass.
 
 BRAKE timeout is the measured stop-time p95 plus the existing 0.20 s reserve. CONNECT timeout is
-derived per environment from the worst 7x7 diagonal distance `sqrt(2)*3*0.25`, the fixed
+derived per environment from the worst point-to-anchor 7x7 diagonal distance
+`sqrt(2)*(3+0.5)*0.25` (the nearest cell center may be 0.5 cell away on each axis), the fixed
 acceleration ramp `v/4`, worst half-turn `pi/(150 deg/s)`, and the same 0.20 s reserve, divided
 by the fixed 0.1 s RL interval and rounded up. These are budgets, not tuning parameters.
 

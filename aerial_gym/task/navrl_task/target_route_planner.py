@@ -30,9 +30,10 @@ TARGET_ROUTE_MODEL = "physx_ref5in_6dof_global_astar_aabb_v1"
 TARGET_ROUTE_RECOVERY_MODEL = "physx_ref5in_6dof_global_astar_aabb_v2_two_envelope_recovery"
 TARGET_ROUTE_RECOVERY_SCHEMA = "navrl_target_route_two_envelope_recovery_v1"
 TARGET_ROUTE_HARD_EPSILON_M = 1e-4
-# Derived reachable-tube reserve: ceil(g*tan(45deg)*0.01^2/8) = 0.0001226 m,
-# rounded upward to 0.00013 m for the continuous substep chord certificate.
-TARGET_ROUTE_REACHABLE_TUBE_MARGIN_M = 0.00013
+# Derived reachable-tube reserve for the prospective CONNECT RL-step chord: the fixed 0.1 s
+# command interval and the 45-degree horizontal acceleration bound give
+# ceil(g*tan(45deg)*0.1^2/8) = 0.0122625 m, rounded upward.
+TARGET_ROUTE_REACHABLE_TUBE_MARGIN_M = 0.0123
 
 RECOVERY_NORMAL = 0
 RECOVERY_BRAKE = 1

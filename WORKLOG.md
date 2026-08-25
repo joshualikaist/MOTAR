@@ -12453,8 +12453,8 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
 
 - Kept the legacy `global_astar_v1` route manager diagnostics and runtime branches unchanged;
   `global_astar_recovery_v2` remains an explicit fresh-only mode.
-- Added central hard-envelope strictness (`1e-4 m`) and the derived `0.00013 m` continuous
-  PhysX-substep reachable-tube reserve (`ceil(9.81*0.01^2/8)`). Recovery point, brake, anchor,
+- Added central hard-envelope strictness (`1e-4 m`) and the derived `0.0123 m` prospective
+  CONNECT reachable-tube reserve (`ceil(9.81*0.1^2/8)`). Recovery point, brake, anchor,
   CONNECT rollout, and watchdog certificates use the same reserve.
 - Split BRAKE/CONNECT age and timeout tensors. BRAKE uses measured stop-time p95 + 0.20 s;
   CONNECT derives a budget from the fixed 7x7 radius-3 diagonal, acceleration ramp, worst half-turn,

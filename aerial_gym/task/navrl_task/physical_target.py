@@ -132,6 +132,21 @@ class PhysicalTargetController:
         if requested.shape != self.watchdog_active.shape:
             raise ValueError("watchdog active mask must have shape [N]")
         self.watchdog_active[:] = requested | ~geometry_valid
+        point_inside_bounds = (
+            torch.isfinite(self.position[:, :2]).all(dim=1)
+            & (self.position[:, :2] > hard_lo).all(dim=1)
+            & (self.position[:, :2] < hard_hi).all(dim=1)
+        )
+        if bars_xy.shape[1] > 0:
+            point_delta = (self.position[:, None, :2] - bars_xy).abs() - hard_half_extents_xy
+            point_outside_bars = ~(point_delta <= 0.0).all(dim=2).any(dim=1)
+        else:
+            point_outside_bars = torch.ones_like(point_inside_bounds)
+        install_breach = self.watchdog_active & (
+            self.watchdog_geometry_invalid | ~(point_inside_bounds & point_outside_bars)
+        )
+        self.watchdog_breach |= install_breach
+        self.velocity_command[install_breach, :2] = 0.0
         # The first substep certificate starts at the actual pose at command installation; no
         # stale cross-interval segment is attributed to this interval.
         self.watchdog_prev_xy[:] = self.position[:, :2]

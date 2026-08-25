@@ -3,10 +3,12 @@
 import importlib.util
 from pathlib import Path
 import sys
+import types
 import unittest
 
 import numpy as np
 import torch
+from types import SimpleNamespace
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -23,6 +25,19 @@ def _load(name, path):
 
 ROUTE = _load("route_recovery_route", "aerial_gym/task/navrl_task/target_route_planner.py")
 MOTION = _load("route_recovery_motion", "aerial_gym/task/navrl_task/target_motion.py")
+# Keep this CPU fixture independent of Isaac Gym's package initializer.
+_aerial_stub = types.ModuleType("aerial_gym")
+_utils_stub = types.ModuleType("aerial_gym.utils")
+_math_stub = types.ModuleType("aerial_gym.utils.math")
+_math_stub.get_euler_xyz_tensor = lambda q: torch.zeros(q.shape[0], 3, device=q.device)
+_math_stub.quat_rotate_inverse = lambda q, v: v
+_math_stub.quat_to_rotation_matrix = lambda q: torch.eye(3, device=q.device).expand(q.shape[0], 3, 3)
+sys.modules["aerial_gym"] = _aerial_stub
+sys.modules["aerial_gym.utils"] = _utils_stub
+sys.modules["aerial_gym.utils.math"] = _math_stub
+PHYS = _load("route_recovery_physical", "aerial_gym/task/navrl_task/physical_target.py")
+for _name in ("aerial_gym.utils.math", "aerial_gym.utils", "aerial_gym"):
+    sys.modules.pop(_name, None)
 
 
 class TwoEnvelopeRecoveryTest(unittest.TestCase):
@@ -120,6 +135,8 @@ class TwoEnvelopeRecoveryTest(unittest.TestCase):
         self.assertEqual(ROUTE.TARGET_ROUTE_MODE_GLOBAL_ASTAR, "global_astar_v1")
         self.assertEqual(ROUTE.TARGET_ROUTE_MODE_RECOVERY, "global_astar_recovery_v2")
         self.assertNotEqual(ROUTE.TARGET_ROUTE_MODEL, ROUTE.TARGET_ROUTE_RECOVERY_MODEL)
+        task = (ROOT / "aerial_gym/task/navrl_task/navrl_task.py").read_text()
+        self.assertIn("if self._target_route_enabled and (", task)
 
     def test_v1_diagnostics_shape_is_unchanged(self):
         manager = ROUTE.BatchedTargetRouteManager(
@@ -150,6 +167,75 @@ class TwoEnvelopeRecoveryTest(unittest.TestCase):
         self.assertIn("recovery_connect_age_steps", source)
         self.assertIn("max_anchor_distance", source)
         self.assertIn("TARGET_ROUTE_REACHABLE_TUBE_MARGIN_M", source)
+
+    def test_min_clearance_bars_without_half_extents_is_fixed_and_deterministic(self):
+        torch.manual_seed(123)
+        kwargs = dict(
+            old_xy=torch.randn(4, 2),
+            current_velocity=torch.randn(4, 2) * 0.3,
+            desired_velocity=torch.randn(4, 2),
+            speed_limit=torch.tensor([1.2, 0.8, 1.5, 1.0]), dt=0.1,
+            bars_xy=torch.tensor([[[0.4, 0.2], [-0.3, 0.6]], [[0.1, -0.2], [0.8, 0.8]],
+                                  [[0.0, 0.0], [0.5, -0.5]], [[0.2, 0.3], [-0.7, 0.2]]]),
+            lo=torch.full((4, 2), -2.0), hi=torch.full((4, 2), 2.0), clearance=0.25,
+            turn_sign=torch.ones(4), max_accel=torch.full((4,), 4.0),
+            max_turn_rate=torch.full((4,), 2.6), lookahead_s=0.2,
+            bars_half_extents_xy=None,
+        )
+        first = MOTION.bounded_drone_target_step(**kwargs)
+        second = MOTION.bounded_drone_target_step(**kwargs)
+        for left, right in zip(first, second):
+            self.assertTrue(torch.equal(left, right))
+        self.assertTrue(torch.allclose(first[0], torch.tensor(
+            [[-0.0689, 0.0943], [-0.3561, -0.2915], [-1.1884, 0.2692], [-0.9628, -0.6859]]
+        ), atol=1e-4))
+
+    def test_watchdog_install_point_breach_latches_after_interval_begin(self):
+        tensors = {
+            "dt": 0.01,
+            "obstacle_position": torch.tensor([[[2.0, 0.0, 0.0]]]),
+            "obstacle_orientation": torch.tensor([[[0.0, 0.0, 0.0, 1.0]]]),
+            "obstacle_linvel": torch.zeros(1, 1, 3),
+            "obstacle_angvel": torch.zeros(1, 1, 3),
+            "obstacle_force_tensor": torch.zeros(1, 1, 3),
+            "obstacle_torque_tensor": torch.zeros(1, 1, 3),
+            "obstacle_contact_force_tensor": torch.zeros(1, 1, 3),
+            "gravity": torch.tensor([[0.0, 0.0, -9.81]]),
+        }
+        cfg = SimpleNamespace(
+            physical_mass=1.2, physical_max_motor_thrust=9.6, physical_motor_tau=0.04,
+            physical_max_tilt_deg=45.0, physical_velocity_kp=2.5, physical_altitude_kp=4.0,
+            physical_attitude_kp=[0.08, 0.08, 0.04], physical_rate_kp=[0.04, 0.04, 0.03],
+            physical_yaw_torque_ratio=0.01, physical_motor_arm_xy=0.0777817,
+        )
+        controller = PHYS.PhysicalTargetController(tensors, 0, cfg, torch.device("cpu"))
+        controller.begin_control_interval()
+        controller.set_hard_watchdog(
+            torch.empty(1, 0, 2), torch.empty(1, 0, 2),
+            torch.tensor([[-1.0, -1.0]]), torch.tensor([[1.0, 1.0]]),
+            active=torch.tensor([True]),
+        )
+        self.assertTrue(bool(controller.watchdog_breach[0]))
+        controller.begin_control_interval()
+        self.assertFalse(bool(controller.watchdog_breach[0]))
+
+    def test_recovery_checkpoint_requires_fixed_runtime_and_source_fields(self):
+        task = (ROOT / "aerial_gym/task/navrl_task/navrl_task.py").read_text()
+        for key in (
+            "cfg_target_max_accel_mps2", "cfg_target_max_turn_rate_degps",
+            "cfg_target_lookahead_s", "cfg_physics_dt_s", "cfg_physics_substeps",
+            "cfg_physics_steps_per_rl_step", "cfg_rl_step_dt_s",
+            "cfg_target_physical_tracking_margin_m", "cfg_target_physical_boundary_margin_m",
+            "cfg_target_route_support_xy_m", "cfg_training_source_manifest",
+            "cfg_training_source_manifest_sha256", "cfg_target_recovery_probe_receipt_sha256",
+        ):
+            self.assertIn(key, task)
+        self.assertIn("missing provenance", task)
+
+    def test_connect_budget_uses_cell_projection_half_cell(self):
+        self.assertAlmostEqual((2.0 ** 0.5) * 3.5 * 0.25, 1.237436867, places=7)
+        task = (ROOT / "aerial_gym/task/navrl_task/navrl_task.py").read_text()
+        self.assertIn("(3.0 + 0.5)", task)
 
 
 if __name__ == "__main__":
