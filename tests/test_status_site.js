@@ -10,6 +10,8 @@ const html = fs.readFileSync(path.join(site, 'index.html'), 'utf8');
 const css = fs.readFileSync(path.join(site, 'style.css'), 'utf8');
 const readme = fs.readFileSync(path.join(repo, 'README.md'), 'utf8');
 const platform = JSON.parse(fs.readFileSync(path.join(site, 'data/platform.json'), 'utf8'));
+const status = JSON.parse(fs.readFileSync(path.join(site, 'status.json'), 'utf8'));
+const experiments = JSON.parse(fs.readFileSync(path.join(site, 'data/experiments.json'), 'utf8')).experiments;
 const Motion = require('../docs/status/arena_motion.js');
 const arenaSource = fs.readFileSync(path.join(site, 'arena.js'), 'utf8');
 
@@ -20,6 +22,10 @@ for (const id of ['arena', 'method', 'evidence', 'platform', 'next']) {
 }
 assert(!css.includes('@import'));
 assert(!css.includes('fonts.googleapis.com'));
+assert(css.includes('height: clamp(360px, 55vh, 620px)'), 'desktop viewer must stay within a viewport-friendly clamp');
+assert(css.includes('height: clamp(320px, 72vw, 380px)'), 'mobile viewer must retain a compact height clamp');
+assert(css.includes('font-size: 11px'), 'viewer HUD must remain compact');
+assert(css.includes('body { margin: 0; overflow-x: hidden; color: var(--ink); background: var(--paper); font: 16px'), 'body text must remain accessible');
 for (const retired of [
   'system.html', 'setup.html', 'results.html', 'experiments.html', 'parameters.html', 'drone.html',
   'status.fallback.js', 'js',
@@ -79,21 +85,45 @@ for (const asset of ['motar-system-overview.svg', 'motar-control-stack.svg']) {
 }
 
 // Presentation claims remain explicitly bounded by the current evidence and hardware status.
-assert(html.includes('Simulation evidence scoped'));
-assert(html.includes('Physical routed gate pending'));
+assert(html.includes('Attempt 2 · 32/32 integrity PASS'));
+assert(html.includes('Route mechanism FAIL'));
+assert(html.includes('Physical PPO BLOCKED'));
 assert(html.includes('Hardware pending'));
 assert(html.includes('SYNTHETIC_ONLY'));
 assert(html.includes('333/333'));
 assert(html.includes('selected 205-bar contact endpoints'));
 assert(html.includes('−0.0145 pp'));
 assert(html.includes('8.443→3.172%'));
+assert(html.includes('14.55%'));
+assert(html.includes('fallback 35.93% (gate 1%)'));
+assert(html.includes('0.25'));
+assert(html.includes('70 bars × 0.6 m/s'));
+assert(html.includes('unsafe_start'));
+assert(html.includes('NOT PhysX/PPO'));
 assert(html.includes('실제 기체가 미조립'));
 assert(readme.includes('Status · 2026-08-25'));
-assert(readme.includes('routed physical-target\n> simulator gate and hardware are pending'));
-assert(readme.includes('실제 센서 로그와 비행\n> 데이터는 없습니다'));
+assert(readme.includes('32/32 integrity checks'));
+assert(readme.includes('route mechanism **failed**'));
+assert(readme.includes('physical PPO and hardware claims\n> remain **blocked**'));
+assert(readme.includes('0.25 goals/env'));
+assert(readme.includes('`unsafe_start` recovery'));
+assert(readme.includes('Motor saturation, tilt, and contact'));
+assert(readme.includes('gates passed, so they are not the supported explanation'));
 assert(readme.includes('altitude PI → Lee velocity loop'));
 assert(fs.readFileSync(path.join(repo, 'docs/assets/motar-control-stack.svg'), 'utf8').includes('K_v e_v'));
 assert(html.includes('0.04 s 1차 지연'));
+
+const routedGate = experiments.find((entry) => entry.id === '2026-08-25-physical-target-routed-simulator-gate-seed827-attempt2');
+assert(routedGate, 'canonical attempt-2 routed gate entry missing');
+assert.strictEqual(routedGate.verdict, 'FAIL');
+assert.strictEqual(routedGate.validity, 'canonical');
+assert.strictEqual(routedGate.arms[0].extra.cells_passed, '32/32');
+assert(routedGate.verdict_note.includes('unsafe_start'));
+assert.strictEqual(status.sim2real_72h.simulation_verification.preflight_steps.physical_target_gate.integrity, 'PASS_32_CELL_INTEGRITY');
+assert.strictEqual(status.sim2real_72h.simulation_verification.preflight_steps.physical_target_gate.route_mechanism, 'FAIL');
+assert.strictEqual(status.sim2real_72h.simulation_verification.preflight_steps.physical_target_gate.physical_ppo, 'BLOCKED');
+assert(status.sim2real_72h.status.includes('ROUTE MECHANISM FAILED'));
+assert(status.sim2real_72h.status.includes('PHYSICAL PPO BLOCKED'));
 
 // The concise platform card must remain tied to the generated source-of-truth values.
 const ref = platform.robots.find((robot) => robot.key === 'navrl_ref5in_quad');

@@ -4061,6 +4061,74 @@
    ],
    "worklog_date": "2026-08-23",
    "_note": "Stage 2는 자동으로 시작하지 않았고 실행 권한도 없다. 다음 authority는 docs/SIM2REAL_3DAY_EXECUTION_PLAN.md다."
+  },
+  {
+   "id": "2026-08-25-physical-target-routed-simulator-gate-seed827-attempt2",
+   "title_ko": "★ routed physical-target simulator gate attempt 2 — 실행 무결성 통과, route mechanism 실패",
+   "question": "exact-AABB global route를 실제 ref5in target controller에 연결했을 때 사전등록한 경로·추종 계약을 통과하는가?",
+   "theme": "protocol",
+   "knob": null,
+   "levels": [
+    {
+     "label": "global A* routed",
+     "value": "global_astar_v1",
+     "is_baseline": true
+    }
+   ],
+   "metric": "other",
+   "metric_label": "routed mechanism gate",
+   "effect": {
+    "value_pp": null,
+    "ci95_pp": null,
+    "ci_method": "none; preregistered deterministic threshold screen",
+    "direction": "higher_is_better"
+   },
+   "arms": [
+    {
+     "label": "execution integrity",
+     "extra": {
+      "cells_passed": "32/32",
+      "verdict": "PASS_32_CELL_INTEGRITY"
+     }
+    },
+    {
+     "label": "routed, 70 bars pooled over 4 speeds",
+     "extra": {
+      "plan_success": "14.5467% (gate ≥99%)",
+      "fallback_intervals": "35.9297% (gate ≤1%)"
+     }
+    },
+    {
+     "label": "routed, 70 bars, 0.6 m/s",
+     "extra": {
+      "goal_completions_per_env": "0.25 (gate ≥0.5)"
+     }
+    }
+   ],
+   "verdict": "FAIL",
+   "validity": "canonical",
+   "verdict_note": "32/32 cell source·contract integrity는 통과했지만 route mechanism은 실패했다. 70 bars에서도 pooled plan success 14.5467%, fallback 35.9297%, 0.6 m/s goals/env 0.25로 세 사전 gate를 모두 놓쳤다. 모든 routed cell은 motor saturation·tilt·contact gate를 통과했으며, 반복되는 unsafe_start recovery와 fail-closed zero-command fallback deadlock이 주 병목이다. 따라서 physical PPO training은 BLOCKED다.",
+   "confounded_by": "이것은 neutral pursuer command를 사용한 target-route mechanism gate이며 PPO policy를 로드하지 않았다. 요격 capture 성능이나 hardware 검증으로 해석할 수 없다.",
+   "seeds": [827],
+   "env": {
+    "bars": [70, 150, 205, 300],
+    "target_speed_mps": [0.6, 0.9, 1.2, 1.5],
+    "envs_per_cell": 32,
+    "steps_per_cell": 300,
+    "machine": "rtx3070"
+   },
+   "policy": {
+    "loaded": false,
+    "pursuer_action": "neutral/all-zero policy action"
+   },
+   "preregistered": true,
+   "gate": "docs/preregistration_physical_target_routed_simulator_gate_2026-08-25.md — plan ≥99%, fallback ≤1%, goals/env ≥0.5; integrity fail-closed",
+   "launcher": "tools/eval_navrl_physical_target_routed_gate.py",
+   "results_paths": [
+    "results/navrl_physical_target_routed_gate_seed827_attempt2/summary.json"
+   ],
+   "worklog_date": "2026-08-25",
+   "_note": "Verdicts: PASS_32_CELL_INTEGRITY / FAIL_ROUTE_MECHANISM / BLOCKED_PHYSICAL_TRAINING. Motor·tilt·contact는 이번 route 실패의 주원인으로 지지되지 않는다."
   }
- ]
+]
 }

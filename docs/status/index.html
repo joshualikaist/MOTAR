@@ -33,7 +33,7 @@
       </div>
       <div class="status-line">
         <span class="status-dot" aria-hidden="true"></span>
-        <strong>Simulation evidence scoped</strong><span>Physical routed gate pending · Hardware pending · 2026-08-25</span>
+        <strong>Attempt 2 · 32/32 integrity PASS</strong><span>Route mechanism FAIL · Physical PPO BLOCKED · Hardware pending · 2026-08-25</span>
       </div>
     </section>
 
@@ -134,12 +134,17 @@
           <article><strong>333/333</strong><span>selected 205-bar contact endpoints</span><p>spawn→final-target centre-disk oracle; 전역·300-bar 연결성 아님</p></article>
           <article><strong>−0.0145 pp</strong><span>learned-v2 vs analytic</span><p>95% CI [−1.752, +1.723], 비열등 gate 통과</p></article>
           <article><strong>8.443→3.172%</strong><span>never acquired</span><p>camera-range 진단; primary gate 미달로 inconclusive</p></article>
+          <article><strong>32/32</strong><span>attempt 2 integrity</span><p>실행 무결성 PASS; route mechanism은 FAIL</p></article>
+          <article><strong>14.55%</strong><span>70-bar plan success</span><p>gate 99%; fallback 35.93% (gate 1%)</p></article>
+          <article><strong>0.25</strong><span>goals/env · 70 bars × 0.6 m/s</span><p>gate 0.5; physical PPO BLOCKED</p></article>
         </div>
         <div class="limits">
           <h3>현재 주장할 수 없는 것</h3>
           <p>실제 비행 성능, sim-to-real 성공, 300-bar 전 구간 성능, Transformer의 보편적 우월성.
             실제 기체가 미조립이고 실제 센서 로그가 없으므로 현재 software-only gate의 판정은
-            <strong>SYNTHETIC_ONLY</strong>이며 실기 성능을 뜻하지 않습니다.</p>
+            <strong>SYNTHETIC_ONLY</strong>이며 실기 성능을 뜻하지 않습니다. 이번 route 실패는
+            반복된 <code>unsafe_start</code> recovery가 fail-closed zero-command fallback deadlock에
+            빠진 결과이며 motor·tilt·contact gate 실패로 해석하지 않습니다.</p>
         </div>
       </div>
     </section>
@@ -171,12 +176,12 @@
       <div class="wrap next-grid">
         <div class="section-head">
           <p>06 · NEXT</p>
-          <h2>다음 병목은 더 긴 학습이 아니라 실제 센서 계약입니다.</h2>
+          <h2>다음 병목은 PPO가 아니라 routed target recovery입니다.</h2>
         </div>
         <ol>
-          <li><span>01</span><div><strong>Freeze hardware</strong><p>AUW, CG, sensor serial·firmware, calibration과 time sync를 기록합니다.</p></div></li>
-          <li><span>02</span><div><strong>Measure perception</strong><p>거리·조명·운동별 bearing, range, latency, dropout 원자료를 수집합니다.</p></div></li>
-          <li><span>03</span><div><strong>Replay before PPO</strong><p>held-out real-log tracker replay와 schema gate를 통과한 뒤 fresh 학습을 사전등록합니다.</p></div></li>
+          <li><span>01</span><div><strong>Fix unsafe-start recovery</strong><p>유효 route가 깨진 뒤 반복되는 unsafe_start와 zero-command fallback deadlock을 먼저 제거합니다.</p></div></li>
+          <li><span>02</span><div><strong>Repeat the frozen gate</strong><p>70-bar plan ≥99%, fallback ≤1%, 0.6 m/s goals/env ≥0.5를 결과를 본 뒤 바꾸지 않고 재검증합니다.</p></div></li>
+          <li><span>03</span><div><strong>Keep PPO blocked</strong><p>route mechanism 통과 전에는 fresh physical PPO를 시작하지 않습니다. motor·tilt·contact 한계가 이번 실패의 주원인은 아닙니다.</p></div></li>
         </ol>
       </div>
     </section>
