@@ -10,26 +10,31 @@ used here.
 
 The four registered target-speed arms are exactly `0.6`, `0.9`, `1.2`, and `1.5 m/s`; every arm
 uses 32 environments, seed `827`, `base_sim`, `navrl_ref5in_quad`, physical target dynamics,
-`NAVRL_NUM_BARS=70`, `NAVRL_MAX_BARS=300`, `bars_h3`/`navrl_band`, and a fresh Isaac Gym child
-process. PhysX is `0.01 s × 10` per `0.1 s` control interval. The source/config/robot/URDF tuple
+`NAVRL_NUM_BARS=0` (an obstacle-free certified-center setup), `NAVRL_MAX_BARS=300`,
+`bars_h3`/`navrl_band`, and a fresh Isaac Gym child process. PhysX is `0.01 s × 10` per `0.1 s`
+control interval. The source/config/robot/URDF tuple
 is recorded and exact-attested in the receipt. Missing GPU, driver, import origin, tool hash,
 or instantiated physical parameter is a hard refusal.
 
-Each child first commands the existing target controller at its registered world-frame speed,
-then submits a zero target-velocity command. No position write, reset, planner call, or pursuer
-action is used to produce the braking measurement. The stop threshold is frozen at `0.10 m/s`.
-The raw row for every environment contains requested and measured initial speed, stop time,
-stop distance, effective deceleration, contact, invalid-OBB, motor-saturation fraction, and
-maximum tilt. The physics trace retains per-sample speed/contact/invalid-OBB observations.
+Each child places the actor at the arena center with recorded clearance, commands the existing
+target controller at its registered world-frame speed for a 5 s convergence warmup, then submits
+a zero target-velocity command. The stop threshold is frozen at `0.10 m/s`; warmup must converge
+within both 0.05 m/s and 10% of the requested speed. The raw row for every environment contains
+requested and measured initial speed, integrated interval-path stop distance (not endpoint
+displacement), stop time, effective deceleration, lateral deviation from the initial velocity
+ray, contact, invalid-OBB, braking-phase motor saturation, and braking-phase maximum tilt. The
+trace retains per-sample position, speed, path, contact, invalid-OBB, saturation, and tilt.
 
 ## Analysis and gates
 
 The standalone validator recomputes all statistics from raw rows using linear interpolation on
 the sorted `n-1` probability index. The measured lookup is keyed by the exact decimal speed and
 contains `p95_stop_time_s`, `p95_stop_distance_m`, and `p05_effective_deceleration_mps2`. A result
-is accepted only when contact count and invalid-OBB count are zero, saturation is at most `0.15`,
+is accepted only when warmup and braking contact/invalid-OBB counts are zero, saturation is at most `0.15`,
 tilt is at most `60°`, all 32 environments stop within the fixed child budget, and every value
-is finite. Summary values supplied by a producer are never trusted.
+is finite. Summary values supplied by a producer are never trusted: rows and p05/p95 are recomputed
+from the trace. Raw speed-specific p95 distance is also emitted as a cumulative-maximum certified
+lookup for the recovery handoff, with a separately certified lateral-deviation tube.
 
 The probe is a measurement, not a tuning loop. No margin (`0.45` or otherwise), acceleration,
 turn limit, lookahead, or controller gain may be changed after seeing these data. The resulting
