@@ -8,9 +8,10 @@ MOTAR는 카메라, LiDAR, ego-state만으로 움직이는 표적을 추적하�
 
 ![MOTAR perception-to-control system](docs/assets/motar-system-overview.svg)
 
-> **Status · 2026-08-24** — Simulation verified, hardware pending. 실제 기체는 아직 미조립이며
-> 실제 센서 로그와 비행 데이터는 없습니다. 현재 결과는 sim-to-real 성능 주장이 아니라
-> 재현 가능한 시뮬레이션 및 software-only 검증입니다.
+> **Status · 2026-08-25** — Corrected-v2 simulation evidence is scoped; the routed physical-target
+> simulator gate and hardware are pending. 실제 기체는 아직 미조립이며 실제 센서 로그와 비행
+> 데이터는 없습니다. 현재 결과는 sim-to-real 성능 주장이 아니라 재현 가능한 시뮬레이션 및
+> software-only 검증입니다.
 
 [Research site](docs/status/) · [System specification](docs/MOTAR_SYSTEM_SPEC_2026-08-24.md) ·
 [Verification](VERIFICATION.md) · [Operations](OPERATIONS.md) · [Worklog](WORKLOG.md)
@@ -54,7 +55,7 @@ attitude/rate torque → motor allocation → 100 Hz rigid-body physics` 순서�
 |---|---:|---|
 | Corrected-v2 semantics | exact 600 actions, finite PPO/KL, timeout bootstrap verified | engineering smoke; held-out superiority 아님 |
 | Detector navigation A/B | learned-v2 vs analytic: **−0.0145 pp**, 95% CI `[−1.752, +1.723]` | preregistered −2 pp non-inferiority margin 통과 |
-| Static reachability audit | **333 / 333** scenes have a 2-D path | dynamics, braking, moving target는 포함하지 않음 |
+| Historical static endpoint oracle | **333 / 333** selected 205-bar contact episodes had a spawn→final-target path | centre-disk oracle; global/random-pair/300-bar connectivity 및 동역학은 미포함 |
 | Camera-range diagnostic | never-acquired **8.443 → 3.172%**; capture **82.235 → 88.677%** | primary −15 pp gate 미달, 따라서 inconclusive |
 | Hardware/software gate | software pipeline PASS · `SYNTHETIC_ONLY` | 실기 성능 아님 |
 

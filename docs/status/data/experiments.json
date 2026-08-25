@@ -1,7 +1,7 @@
 {
  "schema": "motar.experiments/1",
  "source": "WORKLOG.md",
- "curated_at": "2026-08-23",
+ "curated_at": "2026-08-25",
  "_note": "Hand-curated from WORKLOG.md, results/*/summary.{md,json} and docs/codex_review_2026-08-12.md. `verdict` judges the HYPOTHESIS (PASS/FAIL/INCONCLUSIVE); `validity` judges the EVIDENCE (canonical/superseded/withdrawn/exploratory). They are orthogonal: a result can have passed its gate and still be void. Validated by tools/lint_experiments.py.",
  "themes": [
   {
@@ -2847,13 +2847,13 @@
     {
      "label": "0.40 / 0.65 / 0.766 m",
      "extra": {
-      "connected": "333/333 (100%) 전 반경"
+      "connected": "333/333 (100%) selected 205-bar contact endpoint pairs, 전 반경"
      }
     }
    ],
    "verdict": "PASS",
    "validity": "canonical",
-   "verdict_note": "정적 2-D 경로는 전부 존재했다 — 기하는 무죄. 단 이것은 필요조건일 뿐이며 동역학·선회반경·제동·이동 표적·600스텝 예산은 전혀 검증하지 않는다.",
+   "verdict_note": "seed167의 205-bar bar-contact 종료 episode 333개에서 spawn→그 episode의 final target 경로가 centre-disk oracle(반경 0.40/0.65/0.766 m)상 존재했다. 이는 선택된 endpoint pair의 필요조건만 통과한 것이며 global/random-pair/300-bar 연결성, actual per-bar AABB, 동역학·선회반경·제동·이동 표적·600스텝 예산은 검증하지 않는다.",
    "supersedes": [
     "2026-08-12-reachability-wrong-frame"
    ],

@@ -107,9 +107,17 @@ physical caller는 이를 hard AABB first-step check로 다시 계산한다. 기
 대각 배치에서는 표면 gap이 약 0.469 m까지 줄 수 있다. 0.28 m level box는 0.189 m 총 여유만 남고,
 tilt/추종/제동 reserve는 포함하지 않는다.
 
-CPU topology probe에서는 20/20 layouts 전 density에서 largest free component fraction=1.000
-(300 bars, side clearance 0.1 m에서 0.999 반올림), random-pair connectivity=1.000 또는 0.999였다.
-즉 샘플된 global free-space 단절 증거는 없지만, local dynamic corridor 안전성을 증명하지도 않는다.
+초기 CPU topology probe(seed 825, **12 layouts/density**, 0.15 m grid)는 작은 side-clearance
+0/0.1 m에서 70/150/205/300 bars의 sampled connectivity가 거의 1이었다. 이것은 level 0.28 m box의
+half-width 0.14 m에 작은 여유만 더한 옛 계약이며 physical routed contract의 all-orientation support와
+0.45 m tracking reserve를 포함하지 않는다.
+
+후속 20-layout **route-equivalent obstacle-inflation raster probe**는 side-clearance 0.517 m를 사용해
+총 obstacle inflation을 0.6570 m로 만들었다(route의 0.2068816+0.45=0.6568816 m보다 0.118 mm
+보수적). largest-component/random-pair/crossing은 205 bars에서 0.9577/0.9211/1.0,
+300 bars에서 0.3998/0.2247/0.3이었다. 따라서 300-bar sampled free space는 명확히 분절됐다.
+다만 이 probe는 0.15 m raster, diagonal corner-cut 허용, full-arena boundary를 쓰므로 route planner의
+0.25 m/no-corner-cut/exact LOS/1.25 m+support boundary 계약과 동일한 reachability 증명은 아니다.
 
 **권장.** 환경 배치 규칙을 지금 바꾸면 기존 연구와 다른 task가 된다. 다음 physical lineage에서만
 footprint-aware placement 또는 exact configuration-space route receipt를 preregister하고, legacy/v2
@@ -184,7 +192,8 @@ CPU `test_navrl_perception.py`의 oracle-API guard도 통과했다.
 | reachability oracle regression | 3/3 PASS |
 | 신규 checkpoint/launcher guards | 5/5 PASS |
 | ref5in run-contract suite | 100 PASS, 1 fixture-missing (ignored `runs/`가 독립 worktree에 없음) |
-| v2 static topology | 70/150/205/300 bars × margin 0/0.1 m에서 sampled connectivity 유지 |
+| v2 static topology (old small margin) | 70/150/205/300 bars × margin 0/0.1 m, 12 layouts/density에서 sampled connectivity 유지 |
+| routed obstacle-inflation raster topology | 20 layouts/density; 205 pair 0.9211, 300 pair 0.2247/crossing 0.3; exact route reachability 아님 |
 
 fixture-missing 한 건은 test가 요구하는 historical checkpoint가 main worktree의 ignored `runs/`에만
 있고 감사 worktree에는 없어서 발생했다. 소스 assertion failure로 계산하지 않았다.

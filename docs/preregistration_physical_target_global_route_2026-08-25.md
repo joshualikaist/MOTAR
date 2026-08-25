@@ -57,14 +57,18 @@ No GPU or PhysX behavior is tested here.
 
 ## Known geometric ceiling and claim boundary
 
-An independent seed-825 topology probe using the same conservative support and reserve
-(20 layouts/density, 0.15 m analysis grid) found largest-component / sampled-pair
+An independent seed-825 raster topology probe used route-equivalent **obstacle inflation**
+(20 layouts/density, 0.15 m analysis grid): its 0.14 m level-box half-width plus 0.517 m
+side-clearance totals 0.6570 m, 0.118 mm above the route's 0.2068816 m support plus 0.45 m
+tracking reserve. It found largest-component / sampled-pair
 connectivity of 0.9999/0.9998 at 70 bars, 0.9966/0.9932 at 150, 0.9577/0.9211 at 205,
 and 0.3998/0.2247 at 300; arena-crossing availability was 1/1/1/0.3. The 300-bar
-configuration space is therefore genuinely fragmented.
+rasterized free space is therefore strongly fragmented in this probe.
 Same-component target roaming can prevent commanding an impossible crossing, but it cannot
 support an arena-wide roaming claim at 300 bars. These external probe values are contextual
-evidence and are not substituted for the benchmark gates above.
+evidence and are not substituted for the benchmark gates above. The probe does not mirror the
+route's 1.25 m + support boundary exclusion, 0.25 m grid, diagonal no-corner-cutting, or exact LOS,
+so it is not an exact planner reachability certificate.
 
 ## After a pass
 
