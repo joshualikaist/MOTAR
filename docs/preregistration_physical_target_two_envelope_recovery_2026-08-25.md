@@ -4,8 +4,9 @@ Date frozen: 2026-08-25, after route-recovery forensics and before implementatio
 
 ## Scope and lineage
 
-This is a fresh-only safety-lineage change for
-`physx_ref5in_6dof_global_astar_aabb_v2_two_envelope_recovery`. It does not alter legacy,
+This is a fresh-only safety-lineage change for the explicit route mode
+`global_astar_recovery_v2`, model `physx_ref5in_6dof_global_astar_aabb_v2_two_envelope_recovery`.
+It does not alter legacy,
 bounded, route-off physical, or the existing `global_astar_v1` transition. Existing checkpoints
 are inadmissible; no PPO training is authorized by this document.
 
@@ -25,8 +26,8 @@ is `S = 0.2068816087` m. A bar's asset-specific XY AABB half-extents are `b_i`.
 * Both envelopes use exact AABB slab/segment tests. The rounded Euclidean local check is not a
   recovery certificate; corner disagreement is recorded as a safety failure.
 * Recovery may leave the soft envelope only while the hard envelope remains certified. A
-  7x7 nearest-cell search (radius 3 cells at the fixed 0.25 m grid) chooses the nearest
-  soft-free anchor. The point-to-anchor connector is accepted only after an exact continuous
+  7x7 nearest-cell search (radius 3 cells at the fixed 0.25 m grid) chooses the nearest anchor
+  outside an additional fixed 0.25 m soft hysteresis envelope. The point-to-anchor connector is accepted only after an exact continuous
   hard-envelope segment certificate (including walls). No straight-line, random, or unchecked
   fallback is allowed.
 
@@ -67,7 +68,8 @@ the declared `9.60 N`, `1.20 kg` values.
 
 A dedicated zero-command PhysX probe must record stop-time and stop-distance quantiles for every
 registered target speed. The implementation uses the preregistered lower effective deceleration
-`a_brake_p05` and p95 stop time; these are measured inputs, not post-hoc tuning. The probe must
+`a_brake_p05` and p95 stop time; these are measured inputs, not post-hoc tuning, and are supplied
+only through a hashed receipt with schema `navrl_target_recovery_braking_probe_v1`. The probe must
 show `a_brake_p05 > 0`, finite stop distance, no contact, no invalid OBB, motor saturation
 `<=0.15`, and max tilt `<=60°`; otherwise this lineage is blocked. `T_brake_budget` is the
 probe p95 stop time plus the existing 0.20 s diagnostic reserve, not a new learned parameter.
@@ -79,7 +81,7 @@ unsafe connector, route-plan failure, or recovery timeout emits zero planar comm
 reason-specific counter, and never clamps/teleports/resets the physical target. An unavoidable
 subsequent PhysX contact is a normal terminal failure, not a recovery success.
 
-Each interval records state and transition, signed hard/soft minimum clearances, violating bar or
+Each interval records state and transition, recovery age and fixed timeout budget, signed hard/soft minimum clearances, violating bar or
 wall, target position/velocity, command, stop distance/margin, anchor cell/distance, connector
 clearance, candidate count/full-horizon/safe-prefix, route status, and no-connector reason.
 Each physics substep records hard margin, support, contact force, OBB validity, velocity error,
