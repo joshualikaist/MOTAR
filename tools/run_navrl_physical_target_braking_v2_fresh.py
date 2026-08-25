@@ -85,7 +85,6 @@ def _make_receipt(stage: Path, root: Path, cells: list) -> Dict[str, Any]:
 
 def run(output: Path) -> Dict[str, Any]:
     root = Path(__file__).resolve().parents[1]
-    probe.require_clean_source(root)
     python_bin = Path(os.environ.get("NAVRL_BRAKING_PYTHON", sys.executable)).resolve()
     if not python_bin.is_file() or not os.access(str(python_bin), os.X_OK):
         raise SystemExit("selected aerialgym Python is not executable: %s" % python_bin)
@@ -94,8 +93,9 @@ def run(output: Path) -> Dict[str, Any]:
     ninja = os.environ.get("NAVRL_NINJA", "")
     if not ninja or not Path(ninja).is_file():
         raise SystemExit("NAVRL_NINJA must name the pinned ninja executable")
-    output = output.resolve()
     _safe_output(output, root)
+    probe.require_clean_source(root)
+    output = output.resolve()
     stage = output.parent / (output.name + ".partial-%d" % os.getpid())
     if stage.exists():
         raise SystemExit("refusing to reuse partial output: %s" % stage)
@@ -124,6 +124,7 @@ def run(output: Path) -> Dict[str, Any]:
                 "NAVRL_NUM_BARS": "0",
                 "NAVRL_MAX_BARS": "300",
                 "NAVRL_BRAKING_CHILD_TOKEN": token,
+                "NAVRL_BRAKING_OUTPUT_ROOT": str(stage.resolve()),
                 "NAVRL_REQUIRE_SOURCE_ROOT": str(root),
                 "PYTHONPATH": str(root) + os.pathsep + str(root / "tools"),
                 "NAVRL_BRAKING_PYTHON": str(python_bin),
