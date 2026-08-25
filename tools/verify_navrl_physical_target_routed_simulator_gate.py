@@ -11,9 +11,12 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib
+import inspect
 import json
 import math
 import os
+import platform
 from pathlib import Path
 import subprocess
 import sys
@@ -23,8 +26,8 @@ from typing import Dict, List, Mapping, Optional, Sequence
 
 ROOT = Path(__file__).resolve().parents[1]
 PREREG = ROOT / "docs/preregistration_physical_target_routed_simulator_gate_2026-08-25.md"
-SCHEMA = "navrl_physical_target_routed_simulator_gate_v1"
-CHILD_SCHEMA = "navrl_physical_target_routed_simulator_child_v1"
+SCHEMA = "navrl_physical_target_routed_simulator_gate_v2"
+CHILD_SCHEMA = "navrl_physical_target_routed_simulator_child_v2"
 SOURCE_SCHEMA = "navrl_physical_target_routed_source_manifest_v1"
 EXECUTION_SCHEMA = "navrl_physical_target_routed_execution_manifest_v1"
 
@@ -41,7 +44,8 @@ GATES = {
     "tracking_rmse_mps_max": 0.35,
     "mean_speed_ratio_min": 0.80,
     "contact_step_fraction_max": 0.01,
-    "immediate_local_step_infeasible_fraction_max": 0.01,
+    "off_bounded_local_step_infeasible_fraction_max": 0.01,
+    "routed_local_step_invalidation_fraction_max": 0.01,
     "motor_saturation_fraction_max": 0.15,
     "max_tilt_deg_max": 60.0,
     "invalid_state_fraction_max": 0.0,
@@ -167,6 +171,68 @@ def source_hash_map(manifest: Mapping) -> Dict[str, str]:
     return {str(entry["path"]): str(entry["sha256"]) for entry in manifest["runtime_files"]}
 
 
+def attest_repo_module(module_name: str, expected_relative: str, source: Mapping) -> Dict[str, object]:
+    module = importlib.import_module(module_name)
+    path = Path(str(getattr(module, "__file__", ""))).resolve()
+    expected = (ROOT / expected_relative).resolve()
+    require(path == expected, f"{module_name} import origin drift: {path}")
+    hashes = source_hash_map(source)
+    digest = sha256_file(path)
+    require(digest == hashes.get(expected_relative), f"{module_name} imported bytes drift")
+    return {
+        "module": module_name, "path": str(path), "relative_path": expected_relative,
+        "sha256": digest, "manifest_sha256": hashes[expected_relative],
+    }
+
+
+def runtime_software_provenance(torch, source: Mapping) -> Dict[str, object]:
+    require(torch.cuda.is_available(), "CUDA is unavailable in routed simulator GPU gate")
+    python_path = Path(sys.executable).resolve()
+    torch_path = Path(str(torch.__file__)).resolve()
+    isaacgym = importlib.import_module("isaacgym")
+    isaac_path = Path(str(getattr(isaacgym, "__file__", ""))).resolve()
+    require(python_path.is_file(), "Python executable is not a file")
+    require(torch_path.is_file(), "torch module origin is not a file")
+    require(isaac_path.is_file(), "Isaac Gym module origin is not a file")
+    driver = subprocess.run(
+        ["nvidia-smi", "--query-gpu=driver_version", "--format=csv,noheader"],
+        text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False,
+    )
+    require(driver.returncode == 0, f"nvidia-smi driver query failed: {driver.stderr.strip()}")
+    driver_versions = sorted(set(line.strip() for line in driver.stdout.splitlines() if line.strip()))
+    require(driver_versions, "GPU driver version is empty")
+    device_count = int(torch.cuda.device_count())
+    require(device_count >= 1, "CUDA reports zero devices")
+    return {
+        "python": {
+            "executable": str(python_path), "executable_sha256": sha256_file(python_path),
+            "version": sys.version, "implementation": platform.python_implementation(),
+        },
+        "torch": {
+            "version": str(torch.__version__), "origin": str(torch_path),
+            "origin_sha256": sha256_file(torch_path), "compiled_cuda_version": str(torch.version.cuda),
+        },
+        "isaac_gym": {"origin": str(isaac_path), "origin_sha256": sha256_file(isaac_path)},
+        "cuda": {
+            "available": True, "device_count": device_count,
+            "current_device": int(torch.cuda.current_device()),
+            "gpu_names": [torch.cuda.get_device_name(index) for index in range(device_count)],
+            "driver_versions": driver_versions,
+            "cuda_visible_devices": os.environ.get("CUDA_VISIBLE_DEVICES"),
+        },
+        "repo_modules": {
+            "navrl_task": attest_repo_module(
+                "aerial_gym.task.navrl_task.navrl_task",
+                "aerial_gym/task/navrl_task/navrl_task.py", source,
+            ),
+            "target_route_planner": attest_repo_module(
+                "aerial_gym.task.navrl_task.target_route_planner",
+                "aerial_gym/task/navrl_task/target_route_planner.py", source,
+            ),
+        },
+    }
+
+
 def _is_number(value) -> bool:
     return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value)
 
@@ -206,9 +272,17 @@ def attest_instantiated_contract(task, route_mode: str, source: Mapping) -> Dict
     require(abs(float(physics["physics_dt_s"]) - 0.01) < 1e-12, "runtime physics dt drift")
     require(int(physics["physics_steps_per_rl_step"]) == 10, "runtime physics-step count drift")
     require(abs(float(physics["rl_step_dt_s"]) - 0.1) < 1e-12, "runtime RL dt drift")
+    require(task.task_config.sim_name == "base_sim", "runtime sim name is not base_sim")
+    sim_config = task.sim_env.sim_config
+    sim_config_path = Path(inspect.getsourcefile(sim_config) or "").resolve()
+    expected_sim_config_path = (ROOT / "aerial_gym/config/sim_config/base_sim_config.py").resolve()
+    require(sim_config_path == expected_sim_config_path, "runtime sim config source drift")
+    hashes = source_hash_map(source)
+    sim_relative = str(sim_config_path.relative_to(ROOT))
+    require(sha256_file(sim_config_path) == hashes.get(sim_relative),
+            "runtime sim config bytes differ from source manifest")
     robot = task._runtime_robot_provenance()
     require(robot["robot_name"] == "navrl_ref5in_quad", "runtime robot is not ref5in")
-    hashes = source_hash_map(source)
     require(robot["robot_config_sha256"] == hashes.get(robot["robot_config_path"]),
             "instantiated robot config differs from source manifest")
     require(robot["robot_asset_sha256"] == hashes.get(robot["robot_asset_path"]),
@@ -225,6 +299,12 @@ def attest_instantiated_contract(task, route_mode: str, source: Mapping) -> Dict
     require(int(task._bar_offset) == 1, "physical target bar offset must be one")
     return {
         "physics": physics,
+        "sim": {
+            "name": str(task.task_config.sim_name),
+            "config_class": getattr(sim_config, "__name__", type(sim_config).__name__),
+            "config_path": sim_relative,
+            "config_sha256": sha256_file(sim_config_path),
+        },
         "robot": robot,
         "physical_target_box_xyz_m": box,
         "declared_conservative_support_xy_m": [support, support],
@@ -266,12 +346,21 @@ def route_cell_delta(before: Mapping, after: Mapping, commanded_intervals: int) 
 
 
 def physical_gate_metrics(row: Mapping) -> Dict[str, bool]:
+    if row["route_mode"] == "off":
+        local_feasibility = (
+            row["off_bounded_local_step_infeasible_fraction"]
+            <= GATES["off_bounded_local_step_infeasible_fraction_max"]
+        )
+    else:
+        local_feasibility = (
+            row["routed_local_step_invalidation_fraction"]
+            <= GATES["routed_local_step_invalidation_fraction_max"]
+        )
     return {
         "tracking": row["tracking_rmse_mps"] <= GATES["tracking_rmse_mps_max"],
         "speed": row["mean_speed_ratio"] >= GATES["mean_speed_ratio_min"],
         "contact": row["contact_step_fraction"] <= GATES["contact_step_fraction_max"],
-        "planner": row["immediate_local_step_infeasible_fraction"]
-        <= GATES["immediate_local_step_infeasible_fraction_max"],
+        "arm_specific_local_feasibility": local_feasibility,
         "motors": row["motor_saturation_fraction"] <= GATES["motor_saturation_fraction_max"],
         "tilt": row["max_tilt_deg"] <= GATES["max_tilt_deg_max"],
         "state": row["invalid_state_fraction"] <= GATES["invalid_state_fraction_max"],
@@ -280,6 +369,21 @@ def physical_gate_metrics(row: Mapping) -> Dict[str, bool]:
 
 def record_id(route_mode: str, speed: float, density: int) -> str:
     return f"route_{route_mode}__speed_{speed:.1f}__bars_{density}"
+
+
+def record_contract_sha256(row: Mapping) -> str:
+    payload = {
+        "record_id": row["record_id"], "route_mode": row["route_mode"],
+        "speed_mps": row["speed_mps"], "bars": row["bars"], "seed": row["seed"],
+        "initial_layout_sha256": row["initial_layout_sha256"],
+        "initial_robot_pose_sha256": row["initial_robot_pose_sha256"],
+        "initial_target_pose_sha256": row["initial_target_pose_sha256"],
+        "initial_task_waypoint_sha256": row["initial_task_waypoint_sha256"],
+        "initial_route_goal_sha256": row["initial_route_goal_sha256"],
+    }
+    return hashlib.sha256(
+        json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
 
 
 def validate_grid_records(records: Sequence[Mapping]) -> None:
@@ -292,6 +396,11 @@ def validate_grid_records(records: Sequence[Mapping]) -> None:
     require(len(set(actual)) == len(actual), "duplicate cell record")
     require(set(actual) == expected, f"grid mismatch missing={sorted(expected-set(actual))} extra={sorted(set(actual)-expected)}")
     for row in records:
+        require(
+            row.get("record_id")
+            == record_id(str(row.get("route_mode")), float(row.get("speed_mps")), int(row.get("bars"))),
+            "record_id does not match its route/speed/density fields",
+        )
         require(row.get("seed") == SEED and row.get("envs") == ENVS, "seed/env contract drift")
         require(row.get("steps") == STEPS and row.get("warmup_steps") == WARMUP_STEPS,
                 "step contract drift")
@@ -299,11 +408,22 @@ def validate_grid_records(records: Sequence[Mapping]) -> None:
         require(row.get("bar_offset") == 1, "cell physical-target bar offset drift")
         require(row.get("active_bar_aabb_count") == row.get("bars"),
                 "cell active AABB count differs from density")
+        for digest_name in (
+            "initial_layout_sha256", "initial_robot_pose_sha256",
+            "initial_target_pose_sha256", "initial_task_waypoint_sha256",
+            "record_contract_sha256",
+        ):
+            require(isinstance(row.get(digest_name), str) and len(row[digest_name]) == 64,
+                    f"initial/record digest missing: {digest_name}")
+        route_goal_digest = row.get("initial_route_goal_sha256")
         require(
-            isinstance(row.get("initial_layout_sha256"), str)
-            and len(row["initial_layout_sha256"]) == 64,
-            "initial layout digest missing",
+            (row["route_mode"] == "off" and route_goal_digest is None)
+            or (row["route_mode"] == "global_astar_v1" and isinstance(route_goal_digest, str)
+                and len(route_goal_digest) == 64),
+            "route-goal digest arm contract drift",
         )
+        require(row["record_contract_sha256"] == record_contract_sha256(row),
+                "record contract digest mismatch")
         require(row.get("route_mode") in ROUTE_ARMS, "cell route mode invalid")
         route = row.get("route")
         require(isinstance(route, Mapping) and route.get("mode") == row["route_mode"],
@@ -311,14 +431,25 @@ def validate_grid_records(records: Sequence[Mapping]) -> None:
         require(route.get("initial_reset_included") is True, "cell route delta excludes initial reset")
         metrics = (
             "mean_speed_mps", "mean_speed_ratio", "tracking_rmse_mps",
-            "contact_step_fraction", "immediate_local_step_infeasible_fraction",
-            "invalid_state_fraction", "motor_saturation_fraction", "max_tilt_deg",
+            "contact_step_fraction", "invalid_state_fraction", "motor_saturation_fraction",
+            "max_tilt_deg",
         )
+        local_key = (
+            "off_bounded_local_step_infeasible_fraction" if row["route_mode"] == "off"
+            else "routed_local_step_invalidation_fraction"
+        )
+        absent_local_key = (
+            "routed_local_step_invalidation_fraction" if row["route_mode"] == "off"
+            else "off_bounded_local_step_infeasible_fraction"
+        )
+        require(row.get(absent_local_key) is None,
+                "inapplicable arm-specific local metric must be null")
+        metrics += (local_key,)
         for key in metrics:
             require(_is_number(row.get(key)) and row[key] >= 0.0, f"invalid cell metric: {key}")
         for key in (
-            "contact_step_fraction", "immediate_local_step_infeasible_fraction",
-            "invalid_state_fraction", "motor_saturation_fraction",
+            "contact_step_fraction", local_key, "invalid_state_fraction",
+            "motor_saturation_fraction",
         ):
             require(row[key] <= 1.0, f"fraction outside [0,1]: {key}")
         reset_wall = row.get("reset_wall")
@@ -341,16 +472,47 @@ def validate_grid_records(records: Sequence[Mapping]) -> None:
                         f"routed counter missing: {key}")
         require(row.get("gates") == physical_gate_metrics(row), "cell gate recomputation mismatch")
         require(row.get("pass") == all(row["gates"].values()), "cell conjunctive gate mismatch")
+        require(row.get("tracking_measurement_env_intervals") == ENVS * (STEPS - WARMUP_STEPS),
+                "tracking warmup denominator drift")
+        require(row.get("safety_measurement_env_intervals") == ENVS * STEPS,
+                "safety denominator does not cover all intervals")
+        require(row.get("position_measurement_env_intervals") == ENVS * STEPS,
+                "position envelope does not cover all intervals")
+        require(row.get("failed_reset_monitoring_env_intervals") == ENVS * STEPS,
+                "failed reset monitoring does not cover all intervals")
+        clock = row.get("task_clock", {})
+        require(
+            clock.get("increments") == STEPS
+            and clock.get("end_num_task_steps") - clock.get("start_num_task_steps") == STEPS,
+            "task clock did not advance once per evaluation interval",
+        )
     for density in DENSITIES:
         digests = {row["initial_layout_sha256"] for row in records if row["bars"] == density}
         require(len(digests) == 1, f"matched-arm initial layout drift at {density} bars")
+        for digest_name in ("initial_robot_pose_sha256", "initial_target_pose_sha256"):
+            digests = {row[digest_name] for row in records if row["bars"] == density}
+            require(len(digests) == 1, f"matched-arm {digest_name} drift at {density} bars")
+        for route_mode in ROUTE_ARMS:
+            waypoint_digests = {
+                row["initial_task_waypoint_sha256"] for row in records
+                if row["bars"] == density and row["route_mode"] == route_mode
+            }
+            require(len(waypoint_digests) == 1,
+                    f"speed-arm initial waypoint drift at {route_mode}/{density} bars")
+            if route_mode == "global_astar_v1":
+                goal_digests = {
+                    row["initial_route_goal_sha256"] for row in records
+                    if row["bars"] == density and row["route_mode"] == route_mode
+                }
+                require(len(goal_digests) == 1,
+                        f"speed-arm routed goal drift at {density} bars")
 
 
 def matched_deltas(records: Sequence[Mapping]) -> List[Dict[str, object]]:
     index = {(row["speed_mps"], row["bars"], row["route_mode"]): row for row in records}
     metrics = (
         "mean_speed_ratio", "tracking_rmse_mps", "contact_step_fraction",
-        "immediate_local_step_infeasible_fraction", "invalid_state_fraction",
+        "invalid_state_fraction",
     )
     rows = []
     for speed in SPEEDS:
@@ -435,6 +597,7 @@ def derive_verdicts(records: Sequence[Mapping], integrity_ok: bool) -> Dict[str,
 
 def frozen_environment(route_mode: str, speed: float) -> Dict[str, str]:
     return {
+        "AERIAL_GYM_SIM_NAME": "base_sim",
         "NAVRL_ROBOT": "navrl_ref5in_quad",
         "NAVRL_TARGET_DYNAMICS": "physical",
         "NAVRL_TARGET_ROUTE_MODE": route_mode,
@@ -523,12 +686,37 @@ def initial_layout_sha256(task, density: int) -> str:
     return digest.hexdigest()
 
 
+def tensor_digest_sha256(*tensors) -> str:
+    digest = hashlib.sha256()
+    for tensor in tensors:
+        value = tensor.detach().cpu().contiguous()
+        digest.update(str(tuple(value.shape)).encode("ascii"))
+        digest.update(str(value.dtype).encode("ascii"))
+        digest.update(value.numpy().tobytes())
+    return digest.hexdigest()
+
+
+def begin_low_level_evaluation_interval(task) -> int:
+    """Capture the task clock used by _advance_target in canonical NavRLTask.step."""
+    value = int(task.num_task_steps)
+    require(value >= 0, "task clock is negative")
+    return value
+
+
+def finish_low_level_evaluation_interval(task, interval_start_step: int) -> None:
+    """Mirror NavRLTask.step's single end-of-interval num_task_steps increment."""
+    require(int(task.num_task_steps) == interval_start_step,
+            "task clock changed outside the canonical evaluation increment")
+    task.num_task_steps += 1
+    require(int(task.num_task_steps) == interval_start_step + 1,
+            "task clock did not advance exactly once")
+
+
 def run_cell(task, torch, route_mode: str, speed: float, density: int, import_origin: Mapping) -> Dict:
     # Re-establish the frozen seed before every density so route-specific RNG consumption in the
     # preceding density cannot silently change the next cell's initial bar layout.
     task.seed(SEED)
     route_before = normalized_route_diagnostics(task)
-    route_after_warmup = None
     _sync_cuda(torch)
     initial_started = time.perf_counter()
     task._set_active_bars(density)
@@ -536,6 +724,15 @@ def run_cell(task, torch, route_mode: str, speed: float, density: int, import_or
     _sync_cuda(torch)
     initial_reset_s = time.perf_counter() - initial_started
     layout_sha = initial_layout_sha256(task, density)
+    initial_robot_pose_sha = tensor_digest_sha256(
+        task.obs_dict["robot_position"], task.obs_dict["robot_orientation"]
+    )
+    initial_target_pose_sha = tensor_digest_sha256(task.target_position, task.target_orientation)
+    initial_task_waypoint_sha = tensor_digest_sha256(task._tm_waypoint)
+    initial_route_goal_sha = (
+        tensor_digest_sha256(task._target_route_manager.goal)
+        if route_mode == "global_astar_v1" else None
+    )
     active_centers = task.obs_dict["obstacle_position"][
         :, task._bar_offset : task._bar_offset + task.n_bars_active, :2
     ]
@@ -556,7 +753,8 @@ def run_cell(task, torch, route_mode: str, speed: float, density: int, import_or
     ctrl = task._target_controller
     zero_pursuer = torch.zeros((ENVS, 4), device=task.device)
     speed_sum = err_sq_sum = 0.0
-    samples = contact_samples = infeasible_samples = invalid_samples = 0
+    tracking_samples = 0
+    safety_samples = contact_samples = off_infeasible_samples = invalid_samples = 0
     invalid_axis_samples = [0, 0, 0]
     position_min = torch.full((3,), float("inf"), device=task.device)
     position_max = torch.full((3,), -float("inf"), device=task.device)
@@ -566,7 +764,9 @@ def run_cell(task, torch, route_mode: str, speed: float, density: int, import_or
     max_tilt_seen_rad = torch.zeros((), dtype=task.target_position.dtype, device=task.device)
     _sync_cuda(torch)
     rollout_started = time.perf_counter()
+    cell_clock_start = int(task.num_task_steps)
     for step in range(STEPS):
+        interval_start_step = begin_low_level_evaluation_interval(task)
         ctrl.begin_control_interval()
         task._advance_target()
         saturation_before = ctrl.saturation_substeps.clone()
@@ -578,19 +778,17 @@ def run_cell(task, torch, route_mode: str, speed: float, density: int, import_or
         saturation_substeps += saturation_delta.clamp(min=0).sum()
         controller_substeps += substep_delta.clamp(min=0).sum()
         max_tilt_seen_rad = torch.maximum(max_tilt_seen_rad, ctrl.max_tilt_seen_rad.max())
-        if step == WARMUP_STEPS - 1:
-            route_after_warmup = normalized_route_diagnostics(task)
-        if step < WARMUP_STEPS:
-            continue
-        actual = task.target_vel_w[:, :2]
-        desired = ctrl.velocity_command[:, :2]
-        speed_sum += float(actual.norm(dim=1).sum().item())
-        err_sq_sum += float(((actual - desired) ** 2).sum(dim=1).sum().item())
-        samples += ENVS
+        if step >= WARMUP_STEPS:
+            actual = task.target_vel_w[:, :2]
+            desired = ctrl.velocity_command[:, :2]
+            speed_sum += float(actual.norm(dim=1).sum().item())
+            err_sq_sum += float(((actual - desired) ** 2).sum(dim=1).sum().item())
+            tracking_samples += ENVS
+        safety_samples += ENVS
         contact = ctrl.contact_seen.clone()
         contact_samples += int(contact.sum().item())
         if route_mode == "off":
-            infeasible_samples += int((~task._tm_last_step_feasible).sum().item())
+            off_infeasible_samples += int((~task._tm_last_step_feasible).sum().item())
         bmin = task.obs_dict["env_bounds_min"]
         bmax = task.obs_dict["env_bounds_max"]
         support = task._physical_target_support_xyz()
@@ -621,37 +819,59 @@ def run_cell(task, torch, route_mode: str, speed: float, density: int, import_or
             reset_envs += timing["envs"]
             reset_total_s += timing["wall_s"]
             reset_max_s = max(reset_max_s, timing["wall_s"])
+        finish_low_level_evaluation_interval(task, interval_start_step)
     _sync_cuda(torch)
     rollout_wall_s = time.perf_counter() - rollout_started
     route_after = normalized_route_diagnostics(task)
-    require(route_after_warmup is not None, "warmup route counter snapshot missing")
+    routed_local_invalidations = None
     if route_mode == "global_astar_v1":
-        measured_route_delta = recursive_counter_delta(route_after_warmup, route_after)
-        invalidations = measured_route_delta.get("invalidation_counts", {})
+        full_route_delta = recursive_counter_delta(route_before, route_after)
+        invalidations = full_route_delta.get("invalidation_counts", {})
         require("local_step_infeasible" in invalidations,
                 "local-step invalidation counter missing from routed diagnostics")
-        infeasible_samples = int(invalidations["local_step_infeasible"])
+        routed_local_invalidations = int(invalidations["local_step_infeasible"])
     route = route_cell_delta(route_before, route_after, ENVS * STEPS)
     require(not bool(controller_counter_decrease.item()), "controller counters decreased before reset")
-    mean_speed = speed_sum / max(1, samples)
+    require(tracking_samples == ENVS * (STEPS - WARMUP_STEPS),
+            "tracking sample count drift")
+    require(safety_samples == ENVS * STEPS, "safety sample count drift")
+    mean_speed = speed_sum / max(1, tracking_samples)
     row = {
         "record_id": record_id(route_mode, speed, density),
         "seed": SEED, "route_mode": route_mode, "speed_mps": speed, "bars": density,
         "envs": ENVS, "steps": STEPS, "warmup_steps": WARMUP_STEPS,
         "route_goal_exclusion_m": float(task.tm.route_goal_exclusion_radius_m),
         "initial_layout_sha256": layout_sha,
+        "initial_robot_pose_sha256": initial_robot_pose_sha,
+        "initial_target_pose_sha256": initial_target_pose_sha,
+        "initial_task_waypoint_sha256": initial_task_waypoint_sha,
+        "initial_route_goal_sha256": initial_route_goal_sha,
         "bar_offset": int(task._bar_offset),
         "active_bar_aabb_count": int(active_half.shape[1]),
-        "measured_env_intervals": samples,
+        "tracking_measurement_env_intervals": tracking_samples,
+        "safety_measurement_env_intervals": safety_samples,
+        "position_measurement_env_intervals": safety_samples,
+        "failed_reset_monitoring_env_intervals": safety_samples,
         "commanded_env_intervals": ENVS * STEPS,
+        "task_clock": {
+            "start_num_task_steps": cell_clock_start,
+            "end_num_task_steps": int(task.num_task_steps),
+            "increments": int(task.num_task_steps) - cell_clock_start,
+            "increment_order": "after physics and any failed-env reset, once per interval",
+        },
         "mean_speed_mps": mean_speed,
         "mean_speed_ratio": mean_speed / speed,
-        "tracking_rmse_mps": math.sqrt(err_sq_sum / max(1, samples)),
-        "contact_step_fraction": contact_samples / max(1, samples),
-        "immediate_local_step_infeasible_fraction": infeasible_samples / max(1, samples),
-        "planner_infeasible_fraction_legacy_alias": infeasible_samples / max(1, samples),
-        "invalid_state_fraction": invalid_samples / max(1, samples),
-        "invalid_axis_fraction_xyz": [v / max(1, samples) for v in invalid_axis_samples],
+        "tracking_rmse_mps": math.sqrt(err_sq_sum / max(1, tracking_samples)),
+        "contact_step_fraction": contact_samples / max(1, safety_samples),
+        "off_bounded_local_step_infeasible_fraction": (
+            off_infeasible_samples / max(1, safety_samples) if route_mode == "off" else None
+        ),
+        "routed_local_step_invalidation_fraction": (
+            routed_local_invalidations / max(1, safety_samples)
+            if route_mode == "global_astar_v1" else None
+        ),
+        "invalid_state_fraction": invalid_samples / max(1, safety_samples),
+        "invalid_axis_fraction_xyz": [v / max(1, safety_samples) for v in invalid_axis_samples],
         "position_min_xyz": [float(v) for v in position_min.tolist()],
         "position_max_xyz": [float(v) for v in position_max.tolist()],
         "motor_saturation_fraction": float(
@@ -677,6 +897,7 @@ def run_cell(task, torch, route_mode: str, speed: float, density: int, import_or
         },
         "import_origin": dict(import_origin),
     }
+    row["record_contract_sha256"] = record_contract_sha256(row)
     row["gates"] = physical_gate_metrics(row)
     row["pass"] = all(row["gates"].values())
     return row
@@ -717,6 +938,7 @@ def child_main(args) -> int:
     require(abs(float(task.tm.route_goal_exclusion_radius_m) - 1.0) < 1e-9,
             "task route goal exclusion drift")
     instantiated_contract = attest_instantiated_contract(task, args.route_mode, source)
+    software_provenance = runtime_software_provenance(torch, source)
     rows = [run_cell(task, torch, args.route_mode, args.speed, density, import_origin)
             for density in DENSITIES]
     verify_source_manifest(manifest_path, args.source_manifest_sha256)
@@ -728,6 +950,7 @@ def child_main(args) -> int:
         "source_manifest_sha256": args.source_manifest_sha256,
         "import_origin": import_origin, "environment_contract": environment_contract,
         "instantiated_contract": instantiated_contract,
+        "software_provenance": software_provenance,
         "cells": rows,
     }
     atomic_json(Path(args.child_output), payload)
@@ -763,6 +986,12 @@ def validate_child(
             f"child conservative support drift: {path}")
     require(contract.get("robot", {}).get("robot_name") == "navrl_ref5in_quad",
             f"child robot identity drift: {path}")
+    sim_contract = contract.get("sim", {})
+    require(
+        sim_contract.get("name") == "base_sim"
+        and sim_contract.get("config_class") == "BaseSimConfig",
+        f"child simulator identity drift: {path}",
+    )
     if expected_source_hashes is not None:
         robot = contract["robot"]
         require(
@@ -772,6 +1001,47 @@ def validate_child(
             == expected_source_hashes.get(str(robot.get("robot_asset_path", ""))),
             f"child instantiated robot bytes differ from source manifest: {path}",
         )
+        require(
+            sim_contract.get("config_sha256")
+            == expected_source_hashes.get(str(sim_contract.get("config_path", ""))),
+            f"child instantiated sim config differs from source manifest: {path}",
+        )
+    provenance = payload.get("software_provenance")
+    require(isinstance(provenance, Mapping), f"child software provenance missing: {path}")
+    python = provenance.get("python", {})
+    torch_info = provenance.get("torch", {})
+    isaac = provenance.get("isaac_gym", {})
+    cuda = provenance.get("cuda", {})
+    require(bool(python.get("version")) and bool(python.get("executable")),
+            f"child Python identity missing: {path}")
+    require(bool(torch_info.get("version")) and bool(torch_info.get("compiled_cuda_version")),
+            f"child torch/CUDA identity missing: {path}")
+    require(
+        cuda.get("available") is True and cuda.get("device_count", 0) >= 1
+        and cuda.get("gpu_names") and cuda.get("driver_versions"),
+        f"child CUDA/GPU/driver identity missing: {path}",
+    )
+    for label, entry, path_key, hash_key in (
+        ("Python", python, "executable", "executable_sha256"),
+        ("torch", torch_info, "origin", "origin_sha256"),
+        ("Isaac Gym", isaac, "origin", "origin_sha256"),
+    ):
+        external = Path(str(entry.get(path_key, ""))).resolve()
+        require(external.is_file() and sha256_file(external) == entry.get(hash_key),
+                f"child {label} origin bytes drift: {path}")
+    repo_modules = provenance.get("repo_modules", {})
+    if expected_source_hashes is not None:
+        for name, relative in (
+            ("navrl_task", "aerial_gym/task/navrl_task/navrl_task.py"),
+            ("target_route_planner", "aerial_gym/task/navrl_task/target_route_planner.py"),
+        ):
+            module = repo_modules.get(name, {})
+            require(
+                module.get("relative_path") == relative
+                and module.get("sha256") == expected_source_hashes.get(relative)
+                and module.get("manifest_sha256") == expected_source_hashes.get(relative),
+                f"child {name} module origin/hash drift: {path}",
+            )
     origin = payload.get("import_origin")
     require(isinstance(origin, Mapping) and origin.get("enforced") is True,
             f"child import origin missing: {path}")
@@ -805,9 +1075,13 @@ def parent_main(args) -> int:
     children = []
     records = []
     instantiated_contracts = []
+    software_provenance = []
     errors = []
     # Do not let an interactive shell silently alter any unfrozen NavRL parameter.
-    base_env = {key: value for key, value in os.environ.items() if not key.startswith("NAVRL_")}
+    base_env = {
+        key: value for key, value in os.environ.items()
+        if not key.startswith("NAVRL_") and key != "AERIAL_GYM_SIM_NAME"
+    }
     base_env.update({"PYTHONNOUSERSITE": "1", "PYTHONPATH": str(ROOT)})
     for route_mode in ROUTE_ARMS:
         for speed in SPEEDS:
@@ -847,6 +1121,10 @@ def parent_main(args) -> int:
                     "route_mode": route_mode, "speed_mps": speed,
                     "contract": payload["instantiated_contract"],
                 })
+                software_provenance.append({
+                    "route_mode": route_mode, "speed_mps": speed,
+                    "provenance": payload["software_provenance"],
+                })
             except Exception as exc:  # retained in VOID manifest; never interpreted as a result
                 errors.append(f"{label}: {exc}")
             children.append(entry)
@@ -877,6 +1155,7 @@ def parent_main(args) -> int:
         "execution_manifest": "execution_manifest.json",
         "execution_manifest_sha256": sha256_file(execution_manifest_path),
         "instantiated_contracts": instantiated_contracts if integrity_ok else [],
+        "software_provenance": software_provenance if integrity_ok else [],
         "cells": records if integrity_ok else [],
         "matched_route_on_minus_off": matched_deltas(records) if integrity_ok else [],
         "verdicts": verdicts,
@@ -884,11 +1163,13 @@ def parent_main(args) -> int:
             "ppo_policy_loaded": False, "hardware_validation": False,
             "arena_wide_connectivity_300_claim": False,
             "long_training_authorized": False,
+            "matched_initial_bar_robot_target_pose": True,
+            "route_goal_intentionally_differs_between_arms": True,
         },
     }
     atomic_json(output, summary)
     receipt = {
-        "schema": "navrl_physical_target_routed_gate_receipt_v1",
+        "schema": "navrl_physical_target_routed_gate_receipt_v2",
         "summary": output.name, "summary_sha256": sha256_file(output),
         "execution_manifest_sha256": sha256_file(execution_manifest_path),
         "source_manifest_sha256": source_sha,
@@ -899,6 +1180,7 @@ def parent_main(args) -> int:
                 "aerial_gym/task/navrl_task/target_route_planner.py",
                 "aerial_gym/task/navrl_task/navrl_task.py",
                 "aerial_gym/config/task_config/navrl_task_config.py",
+                "aerial_gym/config/sim_config/base_sim_config.py",
                 "aerial_gym/config/robot_config/navrl_ref5in_quad_config.py",
                 "resources/robots/quad/quad_navrl_ref5in.urdf",
             )
@@ -919,7 +1201,7 @@ def verify_result(summary_path: Path, required_contract: str) -> int:
     receipt_path = directory / "receipt.json"
     require(receipt_path.is_file(), "receipt missing")
     receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
-    require(receipt.get("schema") == "navrl_physical_target_routed_gate_receipt_v1",
+    require(receipt.get("schema") == "navrl_physical_target_routed_gate_receipt_v2",
             "wrong receipt schema")
     require(receipt.get("summary") == summary_path.name, "receipt summary path mismatch")
     require(receipt.get("summary_sha256") == sha256_file(summary_path), "summary bytes drift")
@@ -939,6 +1221,7 @@ def verify_result(summary_path: Path, required_contract: str) -> int:
             "aerial_gym/task/navrl_task/target_route_planner.py",
             "aerial_gym/task/navrl_task/navrl_task.py",
             "aerial_gym/config/task_config/navrl_task_config.py",
+            "aerial_gym/config/sim_config/base_sim_config.py",
             "aerial_gym/config/robot_config/navrl_ref5in_quad_config.py",
             "resources/robots/quad/quad_navrl_ref5in.urdf",
         )
@@ -959,6 +1242,7 @@ def verify_result(summary_path: Path, required_contract: str) -> int:
     require(isinstance(children, list) and len(children) == 8, "exactly eight child summaries required")
     child_records = []
     child_contracts = []
+    child_provenance = []
     for child in children:
         child_path = directory / str(child.get("summary", ""))
         require(child_path.is_file(), f"child summary missing during verify: {child_path}")
@@ -973,10 +1257,16 @@ def verify_result(summary_path: Path, required_contract: str) -> int:
             "route_mode": child["route_mode"], "speed_mps": child["speed_mps"],
             "contract": payload["instantiated_contract"],
         })
+        child_provenance.append({
+            "route_mode": child["route_mode"], "speed_mps": child["speed_mps"],
+            "provenance": payload["software_provenance"],
+        })
     validate_grid_records(child_records)
     require(child_records == summary.get("cells"), "summary cells differ from child summaries")
     require(child_contracts == summary.get("instantiated_contracts"),
             "summary instantiated contracts differ from child summaries")
+    require(child_provenance == summary.get("software_provenance"),
+            "summary software provenance differs from child summaries")
     require(receipt.get("record_count") == 32 and len(receipt.get("record_ids", [])) == 32,
             "receipt does not bind exact 32-cell accounting")
     require(receipt.get("record_ids") == [row["record_id"] for row in child_records],

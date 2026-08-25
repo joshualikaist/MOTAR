@@ -7,6 +7,8 @@ import sys
 import tempfile
 import unittest
 
+import torch
+
 
 ROOT = Path(__file__).resolve().parents[1]
 TOOL = ROOT / "tools/verify_navrl_physical_target_routed_simulator_gate.py"
@@ -14,6 +16,11 @@ SPEC = importlib.util.spec_from_file_location("routed_simulator_gate", TOOL)
 MOD = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = MOD
 SPEC.loader.exec_module(MOD)
+ROUTE_PATH = ROOT / "aerial_gym/task/navrl_task/target_route_planner.py"
+ROUTE_SPEC = importlib.util.spec_from_file_location("routed_gate_route_module", ROUTE_PATH)
+ROUTE = importlib.util.module_from_spec(ROUTE_SPEC)
+sys.modules[ROUTE_SPEC.name] = ROUTE
+ROUTE_SPEC.loader.exec_module(ROUTE)
 
 
 def cell(route, speed, bars, *, passing=True):
@@ -21,7 +28,6 @@ def cell(route, speed, bars, *, passing=True):
         "mean_speed_ratio": 0.9,
         "tracking_rmse_mps": 0.2,
         "contact_step_fraction": 0.0,
-        "immediate_local_step_infeasible_fraction": 0.0,
         "motor_saturation_fraction": 0.1,
         "max_tilt_deg": 40.0,
         "invalid_state_fraction": 0.0,
@@ -42,7 +48,23 @@ def cell(route, speed, bars, *, passing=True):
         "bar_offset": 1,
         "active_bar_aabb_count": bars,
         "initial_layout_sha256": (f"{bars:04x}" * 16)[:64],
+        "initial_robot_pose_sha256": (f"{bars + 1:04x}" * 16)[:64],
+        "initial_target_pose_sha256": (f"{bars + 2:04x}" * 16)[:64],
+        "initial_task_waypoint_sha256": (
+            (f"{bars + (3 if route == 'off' else 4):04x}" * 16)[:64]
+        ),
+        "initial_route_goal_sha256": (
+            (f"{bars + 5:04x}" * 16)[:64] if route == "global_astar_v1" else None
+        ),
         "commanded_env_intervals": MOD.ENVS * MOD.STEPS,
+        "tracking_measurement_env_intervals": MOD.ENVS * (MOD.STEPS - MOD.WARMUP_STEPS),
+        "safety_measurement_env_intervals": MOD.ENVS * MOD.STEPS,
+        "position_measurement_env_intervals": MOD.ENVS * MOD.STEPS,
+        "failed_reset_monitoring_env_intervals": MOD.ENVS * MOD.STEPS,
+        "task_clock": {
+            "start_num_task_steps": 0, "end_num_task_steps": MOD.STEPS,
+            "increments": MOD.STEPS,
+        },
         "route": {
             "mode": route,
             "counter_delta": counter if route == "global_astar_v1" else {},
@@ -56,6 +78,11 @@ def cell(route, speed, bars, *, passing=True):
         "import_origin": {"enforced": True, "sha256": "a", "manifest_sha256": "a"},
         **good,
     }
+    row["off_bounded_local_step_infeasible_fraction"] = 0.0 if route == "off" else None
+    row["routed_local_step_invalidation_fraction"] = (
+        0.0 if route == "global_astar_v1" else None
+    )
+    row["record_contract_sha256"] = MOD.record_contract_sha256(row)
     row["gates"] = MOD.physical_gate_metrics(row)
     row["pass"] = all(row["gates"].values())
     return row
@@ -77,6 +104,7 @@ class RoutedSimulatorGateContractTest(unittest.TestCase):
         self.assertEqual((MOD.ENVS, MOD.STEPS, MOD.WARMUP_STEPS), (32, 300, 20))
         self.assertEqual(MOD.GATES["tracking_rmse_mps_max"], 0.35)
         self.assertEqual(MOD.GATES["invalid_state_fraction_max"], 0.0)
+        self.assertEqual(MOD.frozen_environment("off", 0.6)["AERIAL_GYM_SIM_NAME"], "base_sim")
 
     def test_counter_delta_preserves_nested_future_counters_and_excludes_gauges(self):
         before = {
@@ -107,6 +135,36 @@ class RoutedSimulatorGateContractTest(unittest.TestCase):
         )
         self.assertFalse(verdicts["long_training_authority"])
         self.assertEqual(len(MOD.matched_deltas(records)), 16)
+        self.assertNotIn(
+            "routed_local_step_invalidation_fraction",
+            MOD.matched_deltas(records)[0]["deltas"],
+        )
+
+    def test_low_level_clock_mirrors_task_step_and_releases_ten_step_cooldown(self):
+        class FakeTask:
+            num_task_steps = 0
+
+        task = FakeTask()
+        manager = ROUTE.BatchedTargetRouteManager(
+            1, "cpu", ROUTE.RoutePlannerConfig(replan_cooldown_steps=10)
+        )
+        manager.valid[:] = True
+        manager.goal[:] = 0.0
+        manager.planned_support[:] = 0.2
+        manager.invalidate(torch.tensor([True]), "local_step_infeasible", current_step=0)
+        goal = torch.zeros((1, 2))
+        support = torch.full((1, 2), 0.2)
+        observed_steps = []
+        for _ in range(10):
+            start = MOD.begin_low_level_evaluation_interval(task)
+            observed_steps.append(start)
+            self.assertFalse(bool(manager.needs_replan(goal, support, start).item()))
+            MOD.finish_low_level_evaluation_interval(task, start)
+        self.assertEqual(observed_steps, list(range(10)))
+        self.assertEqual(task.num_task_steps, 10)
+        self.assertTrue(bool(manager.needs_replan(goal, support, task.num_task_steps).item()))
+        with self.assertRaises(MOD.IntegrityError):
+            MOD.finish_low_level_evaluation_interval(task, 9)
 
     def test_mechanism_or_missing_density_fails_closed(self):
         records = full_grid()
@@ -123,6 +181,16 @@ class RoutedSimulatorGateContractTest(unittest.TestCase):
         void = MOD.derive_verdicts([], False)
         self.assertEqual(void["execution_integrity"], "VOID_EXECUTION")
         self.assertEqual(void["physical_training"], "BLOCKED_PHYSICAL_TRAINING")
+
+    def test_safety_denominator_and_record_identity_fail_closed(self):
+        records = full_grid()
+        records[0]["safety_measurement_env_intervals"] -= MOD.ENVS * MOD.WARMUP_STEPS
+        with self.assertRaises(MOD.IntegrityError):
+            MOD.validate_grid_records(records)
+        records = full_grid()
+        records[0]["record_id"] = MOD.record_id("off", 0.9, 70)
+        with self.assertRaises(MOD.IntegrityError):
+            MOD.validate_grid_records(records)
 
     def test_density_conditioned_pass_does_not_unblock_full_speed_launcher(self):
         records = full_grid()
@@ -174,6 +242,7 @@ class RoutedSimulatorGateContractTest(unittest.TestCase):
                 ROOT / "aerial_gym/task/navrl_task/target_route_planner.py",
                 ROOT / "aerial_gym/task/navrl_task/navrl_task.py",
                 ROOT / "aerial_gym/config/task_config/navrl_task_config.py",
+                ROOT / "aerial_gym/config/sim_config/base_sim_config.py",
                 ROOT / "aerial_gym/config/robot_config/navrl_ref5in_quad_config.py",
                 ROOT / "resources/robots/quad/quad_navrl_ref5in.urdf",
             )
@@ -202,6 +271,7 @@ class RoutedSimulatorGateContractTest(unittest.TestCase):
                 }
             child_entries = []
             instantiated_contracts = []
+            software_provenance = []
             for route in MOD.ROUTE_ARMS:
                 for speed in MOD.SPEEDS:
                     child_path = directory / f"child_{route}_{speed}.json"
@@ -213,6 +283,13 @@ class RoutedSimulatorGateContractTest(unittest.TestCase):
                         "physics": {
                             "physics_dt_s": 0.01, "physics_steps_per_rl_step": 10,
                             "rl_step_dt_s": 0.1,
+                        },
+                        "sim": {
+                            "name": "base_sim", "config_class": "BaseSimConfig",
+                            "config_path": "aerial_gym/config/sim_config/base_sim_config.py",
+                            "config_sha256": hashes[
+                                "aerial_gym/config/sim_config/base_sim_config.py"
+                            ],
                         },
                         "robot": {
                             "robot_name": "navrl_ref5in_quad",
@@ -237,6 +314,43 @@ class RoutedSimulatorGateContractTest(unittest.TestCase):
                         ),
                         "bar_offset": 1,
                     }
+                    external_path = str(TOOL.resolve())
+                    external_sha = MOD.sha256_file(TOOL)
+                    provenance = {
+                        "python": {
+                            "executable": external_path, "executable_sha256": external_sha,
+                            "version": "3.8-test", "implementation": "CPython",
+                        },
+                        "torch": {
+                            "version": "test", "origin": external_path,
+                            "origin_sha256": external_sha, "compiled_cuda_version": "test",
+                        },
+                        "isaac_gym": {"origin": external_path, "origin_sha256": external_sha},
+                        "cuda": {
+                            "available": True, "device_count": 1, "current_device": 0,
+                            "gpu_names": ["test-gpu"], "driver_versions": ["test-driver"],
+                        },
+                        "repo_modules": {
+                            "navrl_task": {
+                                "relative_path": "aerial_gym/task/navrl_task/navrl_task.py",
+                                "sha256": hashes["aerial_gym/task/navrl_task/navrl_task.py"],
+                                "manifest_sha256": hashes[
+                                    "aerial_gym/task/navrl_task/navrl_task.py"
+                                ],
+                            },
+                            "target_route_planner": {
+                                "relative_path": (
+                                    "aerial_gym/task/navrl_task/target_route_planner.py"
+                                ),
+                                "sha256": hashes[
+                                    "aerial_gym/task/navrl_task/target_route_planner.py"
+                                ],
+                                "manifest_sha256": hashes[
+                                    "aerial_gym/task/navrl_task/target_route_planner.py"
+                                ],
+                            },
+                        },
+                    }
                     child = {
                         "schema": MOD.CHILD_SCHEMA, "route_mode": route, "speed_mps": speed,
                         "source_manifest_sha256": source_sha,
@@ -246,6 +360,7 @@ class RoutedSimulatorGateContractTest(unittest.TestCase):
                             "manifest_sha256": origin_sha,
                         },
                         "instantiated_contract": instantiated,
+                        "software_provenance": provenance,
                         "cells": cells,
                     }
                     MOD.atomic_json(child_path, child)
@@ -256,6 +371,9 @@ class RoutedSimulatorGateContractTest(unittest.TestCase):
                     })
                     instantiated_contracts.append({
                         "route_mode": route, "speed_mps": speed, "contract": instantiated,
+                    })
+                    software_provenance.append({
+                        "route_mode": route, "speed_mps": speed, "provenance": provenance,
                     })
             execution = {
                 "schema": MOD.EXECUTION_SCHEMA, "integrity_ok": True,
@@ -270,6 +388,7 @@ class RoutedSimulatorGateContractTest(unittest.TestCase):
                 "execution_manifest": execution_path.name,
                 "execution_manifest_sha256": MOD.sha256_file(execution_path),
                 "instantiated_contracts": instantiated_contracts,
+                "software_provenance": software_provenance,
                 "cells": records, "verdicts": verdicts,
             }
             summary_path = directory / "summary.json"
@@ -278,11 +397,12 @@ class RoutedSimulatorGateContractTest(unittest.TestCase):
                 "aerial_gym/task/navrl_task/target_route_planner.py",
                 "aerial_gym/task/navrl_task/navrl_task.py",
                 "aerial_gym/config/task_config/navrl_task_config.py",
+                "aerial_gym/config/sim_config/base_sim_config.py",
                 "aerial_gym/config/robot_config/navrl_ref5in_quad_config.py",
                 "resources/robots/quad/quad_navrl_ref5in.urdf",
             )
             receipt = {
-                "schema": "navrl_physical_target_routed_gate_receipt_v1",
+                "schema": "navrl_physical_target_routed_gate_receipt_v2",
                 "summary": summary_path.name,
                 "summary_sha256": MOD.sha256_file(summary_path),
                 "execution_manifest_sha256": MOD.sha256_file(execution_path),

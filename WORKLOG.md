@@ -12248,3 +12248,28 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
   actual per-bar AABB를 검증하지 않으므로 “기하는 무죄” 문구를 철회했다.
 - site 상태일을 2026-08-25로 갱신하고 corrected-v2 simulation evidence와 routed physical simulator
   gate pending, hardware pending을 분리했다. evaluator/preregistered simulator gate 코드는 변경하지 않았다.
+
+### 2026-08-25 — routed simulator gate GPU 전 적대적 감사 보강
+
+- GPU 실행 전에 평가기 v1을 다시 감사해 두 가지 판정 오염을 발견했다. low-level loop가 canonical
+  `NavRLTask.step`의 `num_task_steps += 1`을 생략해 10-step replan cooldown이 영원히 풀리지 않았고,
+  warmup `continue`가 속도/RMSE뿐 아니라 contact·invalid·position·failed reset까지 첫 20 step에서
+  제외했다. GPU 결과는 아직 없으므로 폐기할 결과는 없으며 evaluator/receipt schema를 v2로 올렸다.
+- 각 300-step interval은 `_advance_target`이 현재 clock을 본 뒤 physics와 failed-env reset을 끝내고
+  정확히 한 번 clock을 증가시킨다. 실제 route manager를 쓰는 CPU 회귀에서 step 0~9는 cooldown,
+  step 10은 replan eligible임을 확인한다. warmup 20은 speed/RMSE에만 적용하고 safety·position·reset
+  denominator는 `32×300`으로 별도 기록·검증한다.
+- route-off의 bounded-step feasible boolean과 route-on의 `local_step_infeasible` invalidation event는
+  정의가 달라 각각 명시적 arm-specific gate로 유지하되 matched subtraction에서는 제거했다.
+  preregistration을 GPU 실행 전에 같은 내용으로 정정했으며 ambiguous legacy alias도 제거했다.
+- `AERIAL_GYM_SIM_NAME=base_sim`을 강제하고 실제 sim class/source SHA를 증명한다. child receipt에 Python
+  executable/version, torch/CUDA, Isaac Gym origin/hash, GPU name/driver와 실제 import된 `navrl_task` 및
+  planner origin/source SHA를 추가했다. ref5in config/URDF와 함께 어느 하나라도 다르면 VOID다.
+- density별 bar AABB·robot pose·target pose digest는 8 arm 모두 같아야 한다. waypoint/route goal은
+  속도 arm 안에서는 같아야 하지만 route-on은 connected goal을 선택하는 조작이므로 off/on goal
+  동일성은 의도적으로 요구하지 않는다. row ID를 route/speed/density에서 재계산하고 이 초기 digest를
+  포함한 record-contract SHA도 검증한다.
+- 중복으로 지적된 hidden `--source-manifest`와 `active_support` 대입은 integrated main에 각각 1개만
+  존재함을 확인했다. CPU helper 9/9, route planner 13/13, target environment 13/13, physical envelope
+  3/3, target motion 13/13과 `py_compile`/launcher `bash -n`/`diff --check`가 PASS했다. GPU는 계속
+  미실행이며 다음 권한은 이 v2 exact 32-cell grid뿐이다.

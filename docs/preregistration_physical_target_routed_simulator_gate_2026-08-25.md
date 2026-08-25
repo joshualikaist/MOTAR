@@ -25,7 +25,9 @@ a real-hardware claim, a pursuer-policy improvement claim, or arena-wide connect
 - densities: `70, 150, 205, 300` bars;
 - exact target speeds: `0.6, 0.9, 1.2, 1.5 m/s`;
 - `32` environments per cell;
-- `300` RL intervals per cell, first `20` excluded from tracking metrics;
+- `300` RL intervals per cell. The first `20` are excluded **only** from realized-speed and
+  tracking-RMSE metrics. Contact, arm-specific local failure, invalid state, position envelope,
+  controller counters, and failed-environment resets cover all `300` intervals;
 - physics `dt=0.01 s`, `10` physics steps per RL interval (`10 Hz` command update);
 - ref5in target, `40 x 40 x 3 m`, `bars_h3`, `navrl_band`, waypoint pattern;
 - route geometry: actual per-asset axis-aligned bar AABBs, all-orientation target support,
@@ -44,13 +46,19 @@ Each cell is evaluated against the previously used limits, unchanged:
 | tracking RMSE | `<= 0.35 m/s` |
 | realized/requested mean speed ratio | `>= 0.80` |
 | target contact-step fraction | `<= 0.01` |
-| immediate local-step infeasible fraction | `<= 0.01` |
+| route-off bounded-step infeasible fraction | `<= 0.01` |
+| routed local-step invalidation fraction | `<= 0.01` |
 | motor saturation fraction | `<= 0.15` |
 | maximum tilt | `<= 60 deg` |
 | finite but invalid OBB state fraction | `0` |
 
-The historical `planner_infeasible_fraction` field is interpreted only as an immediate local-step
-failure, never as proof that no global route exists.
+The two local-feasibility rows share the previously used `0.01` engineering threshold but are
+**arm-specific observables, not a matched metric**. Route-off samples the bounded local step's
+per-environment feasible boolean every interval. Route-on counts `local_step_infeasible`
+invalidations emitted by the routed manager. They differ in event semantics and therefore are gated
+inside their own arm, reported under distinct names, and never subtracted from each other. Neither
+is proof that no global route exists. The ambiguous historical `planner_infeasible_fraction` alias
+is not emitted by this evaluator.
 
 ## Routed-mechanism quality gates
 
@@ -85,7 +93,23 @@ does not authorize checkpoint reuse or a long training run.
 
 ## Matched-arm interpretation
 
-For every density-speed cell, route-on minus route-off deltas are reported for speed ratio, tracking
-RMSE, contact, immediate infeasibility, and invalid state. With one seed these are descriptive
-mechanism checks, not confidence-bounded causal effects. No claim requires a favorable delta; safety
-and route gates determine the verdict.
+For every density-speed cell, route-on minus route-off deltas are reported only for speed ratio,
+tracking RMSE, contact, and invalid state. The arm-specific local-feasibility metrics above are
+explicitly excluded. With one seed these are descriptive mechanism checks, not confidence-bounded
+causal effects. No claim requires a favorable delta; safety and route gates determine the verdict.
+
+## Runtime and matched-state receipt
+
+Every low-level evaluation interval mirrors `NavRLTask.step`: `_advance_target` observes the current
+`num_task_steps`, physics and any failed-environment reset complete, and the clock increments exactly
+once. This is required for the frozen 10-step route-replan cooldown to become eligible.
+
+The launcher pins `AERIAL_GYM_SIM_NAME=base_sim`. Every child records and hashes its actual Python,
+torch/CUDA, Isaac Gym, GPU/driver, imported `navrl_task` and `target_route_planner`, instantiated sim
+config, robot config and URDF. A missing or mismatched origin makes execution void.
+
+At each cell's initial reset, separate digests bind bar AABBs, robot pose, target pose, task waypoint,
+and routed final goal. Bar layout and robot/target pose must match across all route/speed arms at a
+density. Waypoints must match across speeds within each route arm. Route-off and route-on goals are
+intentionally not required to match: choosing a reachable connected-component goal is the mechanism
+being evaluated, not an accidental uncontrolled covariate.
