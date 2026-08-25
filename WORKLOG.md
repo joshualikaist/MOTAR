@@ -12053,7 +12053,7 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
 
 - 개발 중인 Python `target_route_planner.py`를 다시 읽고 사이트용 DOM-independent mirror
   `docs/status/arena_route.js`를 추가했다. 기준 계약은 0.25 m grid, exact closed bar AABB,
-  ref5in target 3-D box half-diagonal XY support 0.2064 m, tracking reserve 0.45 m,
+  ref5in target 3-D box half-diagonal XY support 0.2069 m, tracking reserve 0.45 m,
   boundary 1.25 m + support, deterministic A*/Dijkstra, diagonal corner cutting 금지,
   continuous exact-LOS smoothing, connected goal 최소 6 m다. endpoint의 nearest grid centre가
   막힌 경우에도 연속 connector가 안전한 7×7 anchor를 결정론적으로 찾는다.
@@ -12210,3 +12210,21 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
   Python 3.8 `py_compile`, launcher `bash -n`, `git diff --check` PASS. 다음은 clean committed tree에서
   GPU grid 1회 실행 후 receipt verify이며, 그 전 상태는 계속 `SIMULATOR_UNMEASURED`다. 예정 결과:
   `results/navrl_physical_target_routed_gate_seed827/`.
+
+### 2026-08-25 — routed-preview를 final Python safety contract에 동기화
+
+- 사이트 mirror의 기준을 final main Python safety commit `a373202`, planner SHA-256
+  `7fec3015e5de…`로 다시 고정했다. target 0.28×0.28×0.12 m box의 3-D half-diagonal은
+  `0.2068816… m`이므로 기존 `0.2064 m` 표기를 **0.2069 m**로 정정했다.
+- JavaScript planner도 Python과 같은 exact segment↔closed-AABB 거리와 boundary 거리를 계산해
+  waypoint별 handoff clearance certificate를 plan 결과에 저장한다. route follower는 0.5 m reach 또는
+  cross-track 제한을 만족한 overshoot에 더해, current position이 certificate 안에 있을 때만 다음
+  waypoint로 전환한다. certificate가 없거나 유한하지 않으면 전환하지 않는 fail-closed 계약이다.
+- browser local re-goal은 직전 goal 중심 1.0 m를 reachable 후보에서 제외한다. 대안이 없으면
+  `no_alternative_goal`과 zero command를 유지하고, 방어 재검사에서 같은 goal이면
+  `same_goal_reselected`로 거부한다. HUD에 successful re-goal 수와 same-goal block 수를 분리했다.
+- a373202의 exact-corner fixture를 Node에서 독립 재현해 기존 0.5 m reach 안의 unsafe shortcut은
+  거부하고 약 0.0180 m certificate 안의 handoff는 허용했다. open-space overshoot도 유지했다.
+  30/60/144 Hz는 동일 50-step/5 s 상태를 냈고, 30 s 연속 fixture는 re-goal ≥1·long stall 0이었다.
+- 검증은 Node route parity/source SHA, exact AABB/no-path/no-alternative/zero-command, site/motion contract,
+  headless SwiftShader WebGL을 대상으로 수행했다. Python·PhysX·PPO·GPU 실행 코드는 변경하지 않았다.

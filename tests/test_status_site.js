@@ -38,13 +38,15 @@ assert(html.indexOf('arena.js') < html.indexOf('viewer.js'));
 for (const script of [
   'vendor/three.min.js', 'vendor/OrbitControls.js', 'arena_route.js',
   'arena_motion.js', 'arena.js', 'viewer.js',
-]) assert(html.includes(`${script}?v=20260825`), `stale cache-bust for ${script}`);
+]) assert(html.includes(`${script}?v=20260825r2`), `stale cache-bust for ${script}`);
 assert(html.includes('이 화면은 PPO 실행 영상'));
 assert(html.includes('10 Hz 고정 simulation clock'));
 assert(html.includes('PhysX 재생'));
 assert(html.includes('value="routed-preview" selected'));
 assert(html.includes('Physical-style illustration · NOT PhysX'));
 assert(html.includes('Global route + bounded/lagged browser preview · NOT PhysX/PPO'));
+assert(html.includes('half-diagonal support(0.2069 m)'));
+assert(html.includes('직전 goal 1.0 m exclusion'));
 assert(html.includes('id="hud-route-state"'));
 assert(html.includes('id="hud-motion-lineage"'));
 assert(arenaSource.includes('routeLine.geometry.setFromPoints'));
