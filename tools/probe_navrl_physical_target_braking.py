@@ -1,0 +1,531 @@
+#!/usr/bin/env python3
+"""Fresh-only zero-command braking probe for the physical NavRL target.
+
+This module is deliberately independent of the pursuer braking calibration.  It measures the
+already-instantiated :class:`PhysicalTargetController` by commanding a physical target at one
+registered speed and then submitting a zero *target velocity* command.  It never changes the
+target task implementation, planner, observations, reward, or termination logic.
+
+The simulator path is intentionally lazy: importing this module is CPU-safe and is sufficient
+for the receipt validator and contract tests.  A real probe must be run in a fresh Isaac Gym
+process for each speed; the launcher enforces that rule.
+"""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import math
+import os
+from pathlib import Path
+import shutil
+import subprocess
+import sys
+import tempfile
+from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
+
+
+SCHEMA = "navrl_target_recovery_braking_probe_v1"
+RECEIPT_SCHEMA = "navrl_target_recovery_braking_receipt_v1"
+COMPLETE_MARKER = "COMPLETE"
+REGISTERED_SPEEDS = (0.6, 0.9, 1.2, 1.5)
+REGISTERED_ENVS = 32
+PHYSICS_DT_S = 0.01
+PHYSICS_SUBSTEPS = 10
+RL_DT_S = 0.1
+STOP_THRESHOLD_MPS = 0.10
+SATURATION_MAX = 0.15
+TILT_MAX_DEG = 60.0
+FINITE_EPS = 1e-12
+
+# This is an attestation tuple, not a tuning surface.  Values are repeated here so a result is
+# refused when a future task/config silently changes the physical experiment.
+FROZEN_CONTRACT: Dict[str, Any] = {
+    "sim_name": "base_sim",
+    "robot": "navrl_ref5in_quad",
+    "target_dynamics": "physical",
+    "target_pattern": "waypoint",
+    "route_mode": "off",
+    "seed": 827,
+    "envs": REGISTERED_ENVS,
+    "num_bars": 70,
+    "max_bars": 300,
+    "arena_xy_m": 40.0,
+    "arena_z_m": 3.0,
+    "bar_pool": "bars_h3",
+    "placement_mode": "navrl_band",
+    "placement_touch_m": 0.4,
+    "placement_gap_m": 1.6,
+    "bar_x_min": 0.0,
+    "bar_x_max": 1.0,
+    "target_max_accel_mps2": 4.0,
+    "target_max_turn_rate_deg_s": 150.0,
+    "target_lookahead_s": 1.0,
+    "target_obstacle_clearance_m": 0.77,
+    "physical_box_xyz_m": [0.28, 0.28, 0.12],
+    "physical_support_xy_m": 0.2068816087,
+    "physical_mass_kg": 1.20,
+    "physical_motor_arm_xy_m": 0.0777817,
+    "physical_max_motor_thrust_n": 9.60,
+    "physical_motor_tau_s": 0.04,
+    "physical_yaw_torque_ratio": 0.01,
+    "physical_max_tilt_deg": 45.0,
+    "physical_velocity_kp": 2.5,
+    "physical_altitude_kp": 4.0,
+    "physical_attitude_kp": [0.08, 0.08, 0.04],
+    "physical_rate_kp": [0.04, 0.04, 0.03],
+    "tracking_margin_m": 0.45,
+    "boundary_margin_m": 0.75,
+    "route_resolution_m": 0.25,
+    "route_goal_tol_m": 0.05,
+    "route_max_expansions": 50000,
+    "route_max_waypoints": 128,
+    "route_replan_cooldown_steps": 10,
+    "route_min_goal_distance_m": 6.0,
+    "route_goal_exclusion_m": 1.0,
+    "physics_dt_s": PHYSICS_DT_S,
+    "physics_substeps": PHYSICS_SUBSTEPS,
+    "rl_step_dt_s": RL_DT_S,
+}
+
+CORE_PATHS = (
+    "aerial_gym/task/navrl_task/navrl_task.py",
+    "aerial_gym/task/navrl_task/target_motion.py",
+    "aerial_gym/task/navrl_task/target_route_planner.py",
+    "aerial_gym/task/navrl_task/physical_target.py",
+    "aerial_gym/config/task_config/navrl_task_config.py",
+    "aerial_gym/config/robot_config/navrl_ref5in_quad_config.py",
+    "aerial_gym/config/sim_config/base_sim_config.py",
+    "resources/robots/quad/quad_navrl_ref5in.urdf",
+)
+TOOL_SOURCE_PATHS = (
+    "tools/probe_navrl_physical_target_braking.py",
+    "tools/verify_navrl_physical_target_braking.py",
+    "tools/run_navrl_physical_target_braking_v2_fresh.py",
+    "tools/run_navrl_physical_target_braking_v2_fresh.sh",
+    "docs/preregistration_navrl_physical_target_braking_2026-08-25.md",
+)
+RECOVERY_SOURCE_PATHS = CORE_PATHS + TOOL_SOURCE_PATHS
+
+
+def canonical_json_bytes(value: Any) -> bytes:
+    """Return the only JSON representation accepted by the receipt contract."""
+    return (json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=True) + "\n").encode("utf-8")
+
+
+def sha256_bytes(value: bytes) -> str:
+    return hashlib.sha256(value).hexdigest()
+
+
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _is_finite(value: Any) -> bool:
+    if isinstance(value, bool) or value is None or isinstance(value, str):
+        return True
+    if isinstance(value, (int, float)):
+        return math.isfinite(float(value))
+    if isinstance(value, Mapping):
+        return all(isinstance(k, str) and _is_finite(v) for k, v in value.items())
+    if isinstance(value, (list, tuple)):
+        return all(_is_finite(v) for v in value)
+    return False
+
+
+def require_finite(value: Any, label: str = "payload") -> None:
+    if not _is_finite(value):
+        raise ValueError("non-finite or unsupported value in %s" % label)
+
+
+def quantile(values: Sequence[float], probability: float) -> float:
+    """NumPy-compatible linear quantile without importing NumPy in CPU verification."""
+    if not values:
+        raise ValueError("quantile requires at least one value")
+    ordered = sorted(float(v) for v in values)
+    if len(ordered) == 1:
+        return ordered[0]
+    position = (len(ordered) - 1) * float(probability)
+    lo = int(math.floor(position))
+    hi = int(math.ceil(position))
+    if lo == hi:
+        return ordered[lo]
+    return ordered[lo] + (ordered[hi] - ordered[lo]) * (position - lo)
+
+
+def quantile_stats(values: Sequence[float]) -> Dict[str, float]:
+    require_finite(list(values), "quantile values")
+    return {
+        "p05": quantile(values, 0.05),
+        "p50": quantile(values, 0.50),
+        "p95": quantile(values, 0.95),
+    }
+
+
+def _repo_root() -> Path:
+    return Path(__file__).resolve().parents[1]
+
+
+def source_manifest(repo_root: Optional[Path] = None, extra_paths: Iterable[str] = ()) -> Dict[str, Any]:
+    root = (repo_root or _repo_root()).resolve()
+    paths = list(CORE_PATHS) + list(extra_paths)
+    entries = []
+    for relative in sorted(set(paths)):
+        path = root / relative
+        if not path.is_file():
+            raise ValueError("required source is missing: %s" % relative)
+        entries.append({"path": relative, "sha256": sha256_file(path), "bytes": path.stat().st_size})
+    return {
+        "schema": "navrl_target_recovery_braking_source_manifest_v1",
+        "root_policy": "repository-relative exact paths",
+        "entries": entries,
+    }
+
+
+def recovery_source_manifest(repo_root: Optional[Path] = None) -> Dict[str, Any]:
+    return source_manifest(repo_root, TOOL_SOURCE_PATHS)
+
+
+def git_head(repo_root: Optional[Path] = None) -> str:
+    root = str((repo_root or _repo_root()).resolve())
+    completed = subprocess.run(["git", "-C", root, "rev-parse", "HEAD"], text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
+    if completed.returncode != 0:
+        raise ValueError("cannot attest git HEAD: %s" % completed.stderr.strip())
+    head = completed.stdout.strip()
+    if len(head) != 40 or any(ch not in "0123456789abcdef" for ch in head):
+        raise ValueError("invalid git HEAD")
+    return head
+
+
+def _exact_float(actual: Any, expected: float, label: str, tolerance: float = 0.0) -> None:
+    try:
+        observed = float(actual)
+    except (TypeError, ValueError):
+        raise ValueError("%s is not numeric" % label)
+    if not math.isfinite(observed) or abs(observed - expected) > tolerance:
+        raise ValueError("%s drift: observed=%r expected=%r tolerance=%r" % (label, observed, expected, tolerance))
+
+
+def attest_instantiated_task(task: Any, expected_speed: Optional[float] = None) -> Dict[str, Any]:
+    """Fail-closed attestation of the instantiated task/controller, used only in GPU child."""
+    cfg = task.task_config
+    if str(getattr(cfg, "robot_name", "")) != FROZEN_CONTRACT["robot"]:
+        raise ValueError("instantiated robot drift")
+    tm = getattr(task, "tm", None)
+    if tm is None:
+        raise ValueError("target-motion config was not instantiated")
+    for attr, key in (
+        ("max_accel", "target_max_accel_mps2"),
+        ("max_turn_rate_deg", "target_max_turn_rate_deg_s"),
+        ("avoidance_lookahead_s", "target_lookahead_s"),
+        ("obstacle_clearance", "target_obstacle_clearance_m"),
+        ("physical_tracking_margin", "tracking_margin_m"),
+        ("physical_boundary_margin", "boundary_margin_m"),
+        ("route_resolution_m", "route_resolution_m"),
+        ("route_goal_tolerance_m", "route_goal_tol_m"),
+        ("route_min_goal_distance_m", "route_min_goal_distance_m"),
+        ("route_goal_exclusion_radius_m", "route_goal_exclusion_m"),
+    ):
+        _exact_float(getattr(tm, attr, None), FROZEN_CONTRACT[key], "tm." + attr)
+    for attr, key in (("route_max_expansions", "route_max_expansions"), ("route_max_waypoints", "route_max_waypoints"), ("route_replan_cooldown_steps", "route_replan_cooldown_steps")):
+        if int(getattr(tm, attr, -1)) != int(FROZEN_CONTRACT[key]):
+            raise ValueError("tm.%s drift" % attr)
+    if str(getattr(tm, "dynamics", "")) != FROZEN_CONTRACT["target_dynamics"] or str(getattr(tm, "pattern", "")) != FROZEN_CONTRACT["target_pattern"]:
+        raise ValueError("target dynamics/pattern drift")
+    if str(getattr(task, "_target_route_mode", "off")) != FROZEN_CONTRACT["route_mode"]:
+        raise ValueError("route mode drift")
+    box = list(getattr(tm, "physical_box_xyz", ()))
+    if len(box) != 3:
+        raise ValueError("physical box shape drift")
+    for index, (observed, expected) in enumerate(zip(box, FROZEN_CONTRACT["physical_box_xyz_m"])):
+        _exact_float(observed, expected, "tm.physical_box_xyz[%d]" % index)
+    if expected_speed is not None:
+        _exact_float(getattr(tm, "speed_fixed", None), expected_speed, "tm.speed_fixed")
+    sim_name = getattr(cfg, "sim_name", None)
+    if sim_name != FROZEN_CONTRACT["sim_name"]:
+        raise ValueError("instantiated sim_name drift")
+    for attr, key in (
+        ("physical_mass", "physical_mass_kg"),
+        ("physical_motor_arm_xy", "physical_motor_arm_xy_m"),
+        ("physical_max_motor_thrust", "physical_max_motor_thrust_n"),
+        ("physical_motor_tau", "physical_motor_tau_s"),
+        ("physical_yaw_torque_ratio", "physical_yaw_torque_ratio"),
+        ("physical_max_tilt_deg", "physical_max_tilt_deg"),
+        ("physical_velocity_kp", "physical_velocity_kp"),
+        ("physical_altitude_kp", "physical_altitude_kp"),
+    ):
+        _exact_float(getattr(cfg, attr, None), FROZEN_CONTRACT[key], attr)
+    for attr, key in (("physical_attitude_kp", "physical_attitude_kp"), ("physical_rate_kp", "physical_rate_kp")):
+        actual = list(getattr(cfg, attr, ()))
+        expected = FROZEN_CONTRACT[key]
+        if len(actual) != len(expected):
+            raise ValueError("%s length drift" % attr)
+        for index, (observed, want) in enumerate(zip(actual, expected)):
+            _exact_float(observed, want, "%s[%d]" % (attr, index), 1e-6)
+    if int(getattr(task, "num_envs", -1)) != REGISTERED_ENVS:
+        raise ValueError("instantiated env count drift")
+    controller = getattr(task, "_target_controller", None)
+    if controller is None:
+        raise ValueError("physical target controller was not instantiated")
+    _exact_float(getattr(controller, "dt", None), PHYSICS_DT_S, "controller.dt")
+    support = getattr(task, "_target_route_support_xy", None)
+    if support is not None:
+        try:
+            support_values = support[0].detach().cpu().tolist()
+        except (AttributeError, IndexError, TypeError):
+            raise ValueError("instantiated support tensor is malformed")
+        if len(support_values) != 2:
+            raise ValueError("instantiated support shape drift")
+        for index, observed in enumerate(support_values):
+            _exact_float(observed, FROZEN_CONTRACT["physical_support_xy_m"], "support_xy[%d]" % index, 1e-6)
+    return {
+        "sim_name": sim_name,
+        "envs": int(task.num_envs),
+        "controller_dt_s": float(controller.dt),
+        "controller_substeps_per_rl_step": PHYSICS_SUBSTEPS,
+        "physical_box_xyz_m": list(FROZEN_CONTRACT["physical_box_xyz_m"]),
+        "physical_support_xy_m": FROZEN_CONTRACT["physical_support_xy_m"],
+    }
+
+
+def runtime_provenance(repo_root: Optional[Path] = None) -> Dict[str, Any]:
+    """Collect required software/GPU provenance; missing GPU identity is a hard error."""
+    root = (repo_root or _repo_root()).resolve()
+    import importlib
+    import platform
+
+    try:
+        import torch
+    except Exception as exc:
+        raise ValueError("torch import failed: %s" % exc)
+    if not bool(torch.cuda.is_available()):
+        raise ValueError("CUDA is unavailable; physical probe is GPU-only")
+    smi = shutil.which("nvidia-smi")
+    if not smi:
+        raise ValueError("nvidia-smi is required for GPU provenance")
+    query = subprocess.run([smi, "--query-gpu=driver_version,name,uuid", "--format=csv,noheader"], text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
+    if query.returncode != 0 or not query.stdout.strip():
+        raise ValueError("nvidia-smi GPU identity query failed")
+    gpu_rows = [line.strip() for line in query.stdout.splitlines() if line.strip()]
+    driver_version = gpu_rows[0].split(",", 1)[0].strip() if gpu_rows else ""
+    if not driver_version:
+        raise ValueError("nvidia-smi driver identity is empty")
+    imported = {}
+    module_names = (
+        "isaacgym",
+        "aerial_gym",
+        "aerial_gym.task.navrl_task.navrl_task",
+        "aerial_gym.task.navrl_task.target_motion",
+        "aerial_gym.task.navrl_task.target_route_planner",
+        "aerial_gym.task.navrl_task.physical_target",
+        "aerial_gym.config.task_config.navrl_task_config",
+        "aerial_gym.config.sim_config.base_sim_config",
+        "aerial_gym.config.robot_config.navrl_ref5in_quad_config",
+    )
+    for module_name in module_names:
+        module = importlib.import_module(module_name)
+        origin = Path(str(getattr(module, "__file__", ""))).resolve()
+        if not origin.is_file():
+            raise ValueError("import origin is not a file: %s" % origin)
+        try:
+            relative_origin = origin.relative_to(root)
+            origin_record = str(relative_origin)
+            root_bound = True
+        except ValueError:
+            if module_name != "isaacgym":
+                raise ValueError("import origin is outside repository: %s" % origin)
+            origin_record = str(origin)
+            root_bound = False
+        imported[module_name] = {"path": origin_record, "sha256": sha256_file(origin), "root_bound": root_bound}
+    ninja = shutil.which("ninja")
+    if not ninja:
+        raise ValueError("ninja is required for runtime provenance")
+    ninja_version = subprocess.run([ninja, "--version"], text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
+    if ninja_version.returncode != 0 or not ninja_version.stdout.strip():
+        raise ValueError("ninja version query failed")
+    tool_hashes = {}
+    for relative in TOOL_SOURCE_PATHS:
+        path = root / relative
+        if not path.is_file():
+            raise ValueError("missing bound tool: %s" % relative)
+        tool_hashes[relative] = sha256_file(path)
+    return {
+        "python_executable": str(Path(sys.executable).resolve()),
+        "python_version": platform.python_version(),
+        "torch_version": str(torch.__version__),
+        "torch_cuda_version": str(getattr(torch.version, "cuda", None)),
+        "cuda_device": str(torch.cuda.get_device_name(torch.cuda.current_device())),
+        "nvidia_smi_path": str(Path(smi).resolve()),
+        "nvidia_smi_sha256": sha256_file(Path(smi)),
+        "nvidia_smi_identity": query.stdout.strip(),
+        "gpu_driver_version": driver_version,
+        "ninja_path": str(Path(ninja).resolve()),
+        "ninja_sha256": sha256_file(Path(ninja)),
+        "ninja_version": ninja_version.stdout.strip(),
+        "tool_hashes": tool_hashes,
+        "imported_modules": imported,
+    }
+
+
+def _invalid_obb(task: Any, torch: Any) -> Any:
+    """Return a finite/arena/physical-support invalid mask for raw safety telemetry."""
+    position = task._target_controller.position
+    support = task._physical_target_support_xyz()
+    bmin = task.obs_dict["env_bounds_min"]
+    bmax = task.obs_dict["env_bounds_max"]
+    invalid = ~torch.isfinite(position).all(dim=1)
+    invalid |= ((position - support < bmin) | (position + support > bmax)).any(dim=1)
+    return invalid
+
+
+def run_speed_cell(speed: float, output: Path, envs: int = REGISTERED_ENVS, warmup_steps: int = 50, brake_steps: int = 100) -> None:
+    """Run exactly one speed arm in a fresh Isaac Gym process.
+
+    The caller has already isolated this process.  No PPO action is used to produce target
+    motion: the target controller receives a world-frame velocity command, then zero velocity.
+    """
+    if envs != REGISTERED_ENVS or speed not in REGISTERED_SPEEDS:
+        raise ValueError("speed cell does not match the frozen grid")
+    if output.exists():
+        raise ValueError("refusing to overwrite cell: %s" % output)
+    os.environ.update({
+        "AERIAL_GYM_SIM_NAME": "base_sim",
+        "NAVRL_ROBOT": "navrl_ref5in_quad",
+        "NAVRL_TARGET_DYNAMICS": "physical",
+        "NAVRL_TARGET_PATTERN": "waypoint",
+        "NAVRL_TARGET_ROUTE_MODE": "off",
+        "NAVRL_TARGET_SPEED": str(speed),
+        "NAVRL_NUM_BARS": "70",
+        "NAVRL_MAX_BARS": "300",
+        "NAVRL_ARENA_XY": "40",
+        "NAVRL_ARENA_Z": "3",
+        "NAVRL_BAR_POOL": "bars_h3",
+        "NAVRL_PLACEMENT_MODE": "navrl_band",
+        "NAVRL_PLACEMENT_TOUCH_M": "0.4",
+        "NAVRL_PLACEMENT_GAP_M": "1.6",
+        "NAVRL_BAR_X_MIN": "0",
+        "NAVRL_BAR_X_MAX": "1",
+        "NAVRL_TARGET_MAX_ACCEL": "4.0",
+        "NAVRL_TARGET_MAX_TURN_RATE_DEG": "150",
+        "NAVRL_TARGET_LOOKAHEAD_S": "1.0",
+    })
+    # Isaac Gym consumes command-line flags while importing; hide probe flags first.
+    sys.argv[:] = [sys.argv[0]]
+    import isaacgym  # noqa: F401
+    import torch
+    from aerial_gym.registry.task_registry import task_registry
+
+    task = task_registry.make_task("navrl_task", seed=827, num_envs=envs, headless=True, use_warp=True)
+    if hasattr(task, "seed"):
+        task.seed(827)
+    if hasattr(task, "_set_active_bars"):
+        task._set_active_bars(70)
+    task.reset()
+    instantiated = attest_instantiated_task(task, speed)
+    ctrl = task._target_controller
+    altitude = torch.full((envs,), float(task.task_config.flight_altitude), device=task.device)
+    direction = torch.zeros((envs, 3), device=task.device)
+    direction[:, 0] = float(speed)
+    for _ in range(warmup_steps):
+        ctrl.begin_control_interval()
+        ctrl.set_command(direction, altitude)
+        task.sim_env.step(actions=torch.zeros((envs, 4), device=task.device))
+    start_pos = ctrl.position[:, :2].detach().clone()
+    start_speed = ctrl.linvel[:, :2].norm(dim=1).detach().clone()
+    stopped = torch.zeros(envs, dtype=torch.bool, device=task.device)
+    stop_time = torch.full((envs,), float("nan"), device=task.device)
+    stop_distance = torch.full((envs,), float("nan"), device=task.device)
+    traces = []
+    contact_any = torch.zeros(envs, dtype=torch.bool, device=task.device)
+    invalid_any = torch.zeros(envs, dtype=torch.bool, device=task.device)
+    for sample_index in range(1, brake_steps + 1):
+        ctrl.begin_control_interval()
+        ctrl.set_command(torch.zeros_like(direction), altitude)
+        task.sim_env.step(actions=torch.zeros((envs, 4), device=task.device))
+        speed_now = ctrl.linvel[:, :2].norm(dim=1)
+        elapsed = float(sample_index) * PHYSICS_SUBSTEPS * PHYSICS_DT_S
+        distance = (ctrl.position[:, :2] - start_pos).norm(dim=1)
+        newly = (~stopped) & (speed_now <= STOP_THRESHOLD_MPS)
+        stop_time = torch.where(newly, torch.full_like(stop_time, elapsed), stop_time)
+        stop_distance = torch.where(newly, distance, stop_distance)
+        stopped |= newly
+        diag = ctrl.diagnostics()
+        contact_now = ctrl.contact_seen.clone()
+        invalid_now = _invalid_obb(task, torch)
+        contact_any |= contact_now
+        invalid_any |= invalid_now
+        traces.append({
+            "sample_index": sample_index,
+            "elapsed_s": elapsed,
+            "speed_mps": [float(v) for v in speed_now.detach().cpu().tolist()],
+            "contact": [bool(v) for v in contact_now.detach().cpu().tolist()],
+            "invalid_obb": [bool(v) for v in invalid_now.detach().cpu().tolist()],
+        })
+        if bool(stopped.all()):
+            break
+    if not bool(stopped.all()):
+        raise RuntimeError("not every physical target stopped within the frozen budget")
+    sat = ctrl.diagnostics()["motor_saturation_fraction"].detach().cpu().tolist()
+    tilt = ctrl.diagnostics()["max_tilt_deg"].detach().cpu().tolist()
+    rows = []
+    for env_id in range(envs):
+        distance = float(stop_distance[env_id].item())
+        initial = float(start_speed[env_id].item())
+        rows.append({
+            "env_id": env_id,
+            "requested_speed_mps": float(speed),
+            "measured_initial_speed_mps": initial,
+            "stop_time_s": float(stop_time[env_id].item()),
+            "stop_distance_m": distance,
+            "effective_deceleration_mps2": initial * initial / max(2.0 * distance, FINITE_EPS),
+            "contact": bool(contact_any[env_id].item()),
+            "invalid_obb": bool(invalid_any[env_id].item()),
+            "motor_saturation_fraction": float(sat[env_id]),
+            "max_tilt_deg": float(tilt[env_id]),
+        })
+    payload = {
+        "schema": SCHEMA,
+        "cell": {"speed_mps": float(speed), "envs": envs, "seed": 827},
+        "contract": FROZEN_CONTRACT,
+        "instantiated": instantiated,
+        "raw_samples": rows,
+        "physics_samples": traces,
+        "provenance": runtime_provenance(_repo_root()),
+    }
+    require_finite(payload)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_bytes(canonical_json_bytes(payload))
+
+
+def _parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--output", required=True)
+    parser.add_argument("--preflight", action="store_true")
+    parser.add_argument("--speed", type=float, choices=REGISTERED_SPEEDS)
+    parser.add_argument("--envs", type=int, default=REGISTERED_ENVS)
+    parser.add_argument("--_single-speed", action="store_true", help=argparse.SUPPRESS)
+    args = parser.parse_args(argv)
+    if not args.preflight and args.speed is None:
+        parser.error("--speed is required for a cell")
+    return args
+
+
+def main(argv: Optional[Sequence[str]] = None) -> int:
+    args = _parse_args(argv)
+    root = _repo_root()
+    if args.preflight:
+        manifest = recovery_source_manifest(root)
+        require_finite({"contract": FROZEN_CONTRACT, "manifest": manifest})
+        print(json.dumps({"schema": SCHEMA, "contract": FROZEN_CONTRACT, "manifest": manifest}, sort_keys=True))
+        return 0
+    run_speed_cell(float(args.speed), Path(args.output), int(args.envs))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
