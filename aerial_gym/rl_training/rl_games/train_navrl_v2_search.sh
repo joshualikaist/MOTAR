@@ -52,6 +52,26 @@ export PYTHON
 export PATH="$(dirname "${PYTHON}"):${PATH}"
 export PYTHONNOUSERSITE=1
 
+# Target transition is checkpoint-compatible in tensor shape but not in meaning. Keep this base
+# entry point on the historical legacy transition unless the physical-fresh wrapper marks
+# the child invocation. In particular, do not inherit a stale NAVRL_TARGET_DYNAMICS=bounded or
+# =physical from an interactive shell.
+_TARGET_DYNAMICS_REQUESTED="${NAVRL_TARGET_DYNAMICS:-legacy}"
+if [[ "${NAVRL_V2_PHYSICAL_FRESH_CHILD:-0}" == "1" ]]; then
+    if [[ "${_TARGET_DYNAMICS_REQUESTED}" != "physical" ]]; then
+        echo "[v2-search] physical child marker requires NAVRL_TARGET_DYNAMICS=physical" >&2
+        exit 2
+    fi
+else
+    if [[ "${_TARGET_DYNAMICS_REQUESTED}" != "legacy" ]]; then
+        echo "[v2-search] refusing inherited target dynamics: ${_TARGET_DYNAMICS_REQUESTED}" >&2
+        echo "[v2-search] use train_navrl_physical_fresh.sh for physical; bounded has no canonical launcher." >&2
+        exit 2
+    fi
+fi
+export NAVRL_TARGET_DYNAMICS="${_TARGET_DYNAMICS_REQUESTED}"
+unset NAVRL_V2_PHYSICAL_FRESH_CHILD
+
 # This entry point is fresh-training by default.  Its CLI is deliberately a closed contract:
 # fresh runs accept no runner arguments, while a dedicated continuation wrapper may pass only the
 # exact checkpoint tuple below.  Appending arbitrary arguments after our pinned flags would let a
@@ -300,7 +320,7 @@ V2_RUN_KIND="FRESH"
 if [[ "${NAVRL_V2_ALLOW_RESUME:-0}" == "1" ]]; then
     V2_RUN_KIND="CONTINUATION"
 fi
-echo "[v2-search] ${V2_RUN_KIND} | arena=${NAVRL_ARENA_XY}m pool=${NAVRL_BAR_POOL} placement=${NAVRL_PLACEMENT_MODE}"
+echo "[v2-search] ${V2_RUN_KIND} | arena=${NAVRL_ARENA_XY}m pool=${NAVRL_BAR_POOL} placement=${NAVRL_PLACEMENT_MODE} target=${NAVRL_TARGET_DYNAMICS}"
 echo "[v2-search] executable | profile=${NAVRL_V2_PROFILE:-main} file=${FILE} task=${TASK} sim=${AERIAL_GYM_SIM_NAME} envs=${NUM_ENVS} seed=${SEED}"
 echo "[v2-search] goal ${NAVRL_GENERAL_GOAL_DIST_MIN}..${NAVRL_GENERAL_GOAL_DIST_MAX}m (camera 20m -> search) episode=${NAVRL_EPISODE_LEN_STEPS} steps"
 DENSITY_START_PER_100M2="$(awk -v bars="${NAVRL_DENSITY_START}" 'BEGIN {printf "%.2f", bars / 16.0}')"

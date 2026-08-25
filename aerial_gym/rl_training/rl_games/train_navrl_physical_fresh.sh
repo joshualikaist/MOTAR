@@ -18,6 +18,9 @@ done
 
 export NAVRL_ROBOT=navrl_ref5in_quad
 export NAVRL_TARGET_DYNAMICS=physical
+# Explicit child-entry marker. The base v2 launcher otherwise forces legacy dynamics so a stale
+# interactive-shell NAVRL_TARGET_DYNAMICS cannot silently switch the canonical training lineage.
+export NAVRL_V2_PHYSICAL_FRESH_CHILD=1
 export NAVRL_VISION="${NAVRL_VISION:-1}"
 export NAVRL_PERCEPTION="${NAVRL_PERCEPTION:-1}"
 export NAVRL_GENERAL_TRAIN="${NAVRL_GENERAL_TRAIN:-1}"
