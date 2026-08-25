@@ -69,6 +69,13 @@ class PhysicalTargetController:
         self.saturation_substeps = torch.zeros(n, dtype=torch.long, device=device)
         self.max_tilt_seen_rad = torch.zeros(n, device=device)
         self.contact_seen = torch.zeros(n, dtype=torch.bool, device=device)
+        self.watchdog_bars = None
+        self.watchdog_half = None
+        self.watchdog_lo = None
+        self.watchdog_hi = None
+        self.watchdog_active = torch.zeros(n, dtype=torch.bool, device=device)
+        self.watchdog_breach = torch.zeros(n, dtype=torch.bool, device=device)
+        self.watchdog_prev_xy = self.position[:, :2].clone()
 
     def set_command(self, velocity_world, altitude, yaw=None):
         self.velocity_command[:] = velocity_world
@@ -94,13 +101,71 @@ class PhysicalTargetController:
         self.max_tilt_seen_rad[env_ids] = 0.0
         self.substeps[env_ids] = 0
         self.contact_seen[env_ids] = False
+        self.watchdog_breach[env_ids] = False
+        self.watchdog_prev_xy[env_ids] = self.position[env_ids, :2]
+
+    def set_hard_watchdog(self, bars_xy, hard_half_extents_xy, hard_lo, hard_hi, active=None):
+        """Install a substep hard-envelope watchdog; it never writes a position."""
+        if bars_xy.ndim != 3 or bars_xy.shape[2] != 2:
+            raise ValueError("watchdog bars must have shape [N,B,2]")
+        if hard_half_extents_xy.shape != bars_xy.shape:
+            raise ValueError("watchdog half extents must match bars")
+        if hard_lo.shape != (bars_xy.shape[0], 2) or hard_hi.shape != hard_lo.shape:
+            raise ValueError("watchdog bounds must have shape [N,2]")
+        self.watchdog_bars = bars_xy
+        self.watchdog_half = hard_half_extents_xy
+        self.watchdog_lo = hard_lo
+        self.watchdog_hi = hard_hi
+        self.watchdog_active[:] = True if active is None else active
+        # The first substep certificate starts at the actual pose at command installation; no
+        # stale cross-interval segment is attributed to this interval.
+        self.watchdog_prev_xy[:] = self.position[:, :2]
 
     def begin_control_interval(self):
         self.contact_seen.zero_()
+        self.watchdog_breach.zero_()
 
     def post_physics_step(self):
         # Called after every PhysX refresh, not merely at the end of the 10-substep RL interval.
         self.contact_seen |= self.contact_force.norm(dim=1) > self.contact_threshold
+        if self.watchdog_bars is not None:
+            inside_bounds = ((self.position[:, :2] > self.watchdog_lo)
+                             & (self.position[:, :2] < self.watchdog_hi)).all(dim=1)
+            if self.watchdog_bars.shape[1] > 0:
+                delta = (self.position[:, None, :2] - self.watchdog_bars).abs() - self.watchdog_half
+                outside_bars = ~(delta <= 0.0).all(dim=2).any(dim=1)
+                # Endpoint-only checks can miss a diagonal corner crossing.  Use a closed-AABB
+                # slab certificate for the continuous previous-substep -> current segment.
+                p0 = self.watchdog_prev_xy[:, None, :]
+                p1 = self.position[:, None, :2]
+                direction = p1 - p0
+                box_lo = self.watchdog_bars - self.watchdog_half
+                box_hi = self.watchdog_bars + self.watchdog_half
+                parallel = direction.abs() <= 1e-9
+                safe_parallel = (~parallel) | ((p0 >= box_lo) & (p0 <= box_hi))
+                t0 = torch.where(
+                    parallel,
+                    torch.full_like(direction, float("-inf")),
+                    (box_lo - p0) / direction,
+                )
+                t1 = torch.where(
+                    parallel,
+                    torch.full_like(direction, float("inf")),
+                    (box_hi - p0) / direction,
+                )
+                t_enter = torch.maximum(torch.minimum(t0, t1)[:, :, 0], torch.minimum(t0, t1)[:, :, 1])
+                t_exit = torch.minimum(torch.maximum(t0, t1)[:, :, 0], torch.maximum(t0, t1)[:, :, 1])
+                segment_hits_bar = safe_parallel.all(dim=2) & (t_enter <= t_exit) & (t_exit >= 0.0) & (t_enter <= 1.0)
+                outside_segments = ~segment_hits_bar.any(dim=1)
+            else:
+                outside_bars = torch.ones_like(inside_bounds)
+                outside_segments = outside_bars
+            breach = self.watchdog_active & ~(inside_bounds & outside_bars & outside_segments)
+            self.watchdog_breach |= breach
+            # A breach cannot be repaired by a position write.  Stop requesting planar motion;
+            # the physical controller's own dynamics then decelerate the actor.
+            self.velocity_command[breach, :2] = 0.0
+            self.watchdog_prev_xy[:] = self.position[:, :2]
 
     def __call__(self):
         # Translational velocity controller with explicit altitude hold. Commands are in world
@@ -167,5 +232,6 @@ class PhysicalTargetController:
             "velocity_error_mean_mps": self.velocity_error_integral / (denom * self.dt),
             "max_tilt_deg": torch.rad2deg(self.max_tilt_seen_rad),
             "motor_saturation_fraction": self.saturation_substeps.float() / denom,
+            "hard_watchdog_breach": self.watchdog_breach,
             "motor_thrust": self.motor_thrust,
         }
