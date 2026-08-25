@@ -201,6 +201,13 @@ def runtime_software_provenance(torch, source: Mapping) -> Dict[str, object]:
     require(driver.returncode == 0, f"nvidia-smi driver query failed: {driver.stderr.strip()}")
     driver_versions = sorted(set(line.strip() for line in driver.stdout.splitlines() if line.strip()))
     require(driver_versions, "GPU driver version is empty")
+    ninja_path = require_conda_ninja(sys.executable)
+    ninja_version = subprocess.run(
+        [str(ninja_path), "--version"], text=True, stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE, check=False,
+    )
+    require(ninja_version.returncode == 0 and ninja_version.stdout.strip(),
+            f"ninja version query failed: {ninja_version.stderr.strip()}")
     device_count = int(torch.cuda.device_count())
     require(device_count >= 1, "CUDA reports zero devices")
     return {
@@ -213,6 +220,10 @@ def runtime_software_provenance(torch, source: Mapping) -> Dict[str, object]:
             "origin_sha256": sha256_file(torch_path), "compiled_cuda_version": str(torch.version.cuda),
         },
         "isaac_gym": {"origin": str(isaac_path), "origin_sha256": sha256_file(isaac_path)},
+        "ninja": {
+            "path": str(ninja_path), "sha256": sha256_file(ninja_path),
+            "version": ninja_version.stdout.strip(),
+        },
         "cuda": {
             "available": True, "device_count": device_count,
             "current_device": int(torch.cuda.current_device()),
@@ -662,6 +673,33 @@ def configure_child(route_mode: str, speed: float) -> Dict[str, str]:
     return values
 
 
+def require_conda_ninja(executable: str) -> Path:
+    executable_path = Path(executable).absolute()
+    ninja = executable_path.parent / "ninja"
+    require(ninja.is_file(), f"ninja missing next to Python executable: {ninja}")
+    require(os.access(str(ninja), os.X_OK), f"ninja is not executable: {ninja}")
+    return ninja
+
+
+def build_child_environment(parent_environment=None, executable: Optional[str] = None) -> Dict[str, str]:
+    """Create a hermetic child env with the selected Python's build tools first on PATH."""
+    source = dict(os.environ if parent_environment is None else parent_environment)
+    python_executable = sys.executable if executable is None else executable
+    ninja = require_conda_ninja(python_executable)
+    python_bin = str(ninja.parent)
+    old_path = str(source.get("PATH", ""))
+    path_parts = [part for part in old_path.split(os.pathsep) if part and part != python_bin]
+    source["PATH"] = os.pathsep.join([python_bin] + path_parts)
+    source = {
+        key: value for key, value in source.items()
+        if not key.startswith("NAVRL_") and key != "AERIAL_GYM_SIM_NAME"
+    }
+    source.update({"PYTHONNOUSERSITE": "1", "PYTHONPATH": str(ROOT)})
+    require(source["PATH"].split(os.pathsep)[0] == python_bin,
+            "selected Python bin is not first on child PATH")
+    return source
+
+
 def _sync_cuda(torch) -> None:
     if torch.cuda.is_available():
         torch.cuda.synchronize()
@@ -1043,6 +1081,7 @@ def validate_child(
     python = provenance.get("python", {})
     torch_info = provenance.get("torch", {})
     isaac = provenance.get("isaac_gym", {})
+    ninja = provenance.get("ninja", {})
     cuda = provenance.get("cuda", {})
     require(bool(python.get("version")) and bool(python.get("executable")),
             f"child Python identity missing: {path}")
@@ -1057,10 +1096,22 @@ def validate_child(
         ("Python", python, "executable", "executable_sha256"),
         ("torch", torch_info, "origin", "origin_sha256"),
         ("Isaac Gym", isaac, "origin", "origin_sha256"),
+        ("ninja", ninja, "path", "sha256"),
     ):
         external = Path(str(entry.get(path_key, ""))).resolve()
         require(external.is_file() and sha256_file(external) == entry.get(hash_key),
                 f"child {label} origin bytes drift: {path}")
+        if label == "ninja":
+            require(os.access(str(external), os.X_OK), f"child ninja is not executable: {path}")
+    ninja_version = subprocess.run(
+        [str(ninja.get("path", "")), "--version"], text=True, stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE, check=False,
+    )
+    require(
+        ninja_version.returncode == 0
+        and ninja_version.stdout.strip() == ninja.get("version"),
+        f"child ninja version drift: {path}",
+    )
     repo_modules = provenance.get("repo_modules", {})
     if expected_source_hashes is not None:
         for name, relative in (
@@ -1120,12 +1171,8 @@ def parent_main(args) -> int:
     instantiated_contracts = []
     software_provenance = []
     errors = []
-    # Do not let an interactive shell silently alter any unfrozen NavRL parameter.
-    base_env = {
-        key: value for key, value in os.environ.items()
-        if not key.startswith("NAVRL_") and key != "AERIAL_GYM_SIM_NAME"
-    }
-    base_env.update({"PYTHONNOUSERSITE": "1", "PYTHONPATH": str(ROOT)})
+    # Do not let an interactive shell alter NavRL or hide the selected conda build tools.
+    base_env = build_child_environment()
     for route_mode in ROUTE_ARMS:
         for speed in SPEEDS:
             label = f"route_{route_mode}__speed_{speed:.1f}".replace(".", "p")

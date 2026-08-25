@@ -3,6 +3,7 @@
 import importlib.util
 import json
 from pathlib import Path
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -198,6 +199,23 @@ class RoutedSimulatorGateContractTest(unittest.TestCase):
         self.assertEqual(events, ["target_begin", "target_advance", "canonical_action_map"])
         torch.testing.assert_close(command, torch.full((2, 4), 0.25))
 
+    def test_child_environment_repairs_hostile_path_and_requires_conda_ninja(self):
+        hostile = {
+            "PATH": "/hostile/only", "NAVRL_STALE": "1",
+            "AERIAL_GYM_SIM_NAME": "base_sim_4gb", "KEEP_ME": "yes",
+        }
+        child = MOD.build_child_environment(hostile, sys.executable)
+        expected_bin = str(Path(sys.executable).absolute().parent)
+        self.assertEqual(child["PATH"].split(":"), [expected_bin, "/hostile/only"])
+        self.assertNotIn("NAVRL_STALE", child)
+        self.assertNotIn("AERIAL_GYM_SIM_NAME", child)
+        self.assertEqual(child["KEEP_ME"], "yes")
+        with tempfile.TemporaryDirectory() as directory:
+            fake_python = Path(directory) / "python"
+            fake_python.touch()
+            with self.assertRaises(MOD.IntegrityError):
+                MOD.build_child_environment(hostile, str(fake_python))
+
     def test_mechanism_or_missing_density_fails_closed(self):
         records = full_grid()
         routed70 = next(
@@ -348,6 +366,11 @@ class RoutedSimulatorGateContractTest(unittest.TestCase):
                     }
                     external_path = str(TOOL.resolve())
                     external_sha = MOD.sha256_file(TOOL)
+                    ninja_path = MOD.require_conda_ninja(sys.executable)
+                    ninja_version = subprocess.run(
+                        [str(ninja_path), "--version"], text=True,
+                        stdout=subprocess.PIPE, check=True,
+                    ).stdout.strip()
                     provenance = {
                         "python": {
                             "executable": external_path, "executable_sha256": external_sha,
@@ -358,6 +381,10 @@ class RoutedSimulatorGateContractTest(unittest.TestCase):
                             "origin_sha256": external_sha, "compiled_cuda_version": "test",
                         },
                         "isaac_gym": {"origin": external_path, "origin_sha256": external_sha},
+                        "ninja": {
+                            "path": str(ninja_path), "sha256": MOD.sha256_file(ninja_path),
+                            "version": ninja_version,
+                        },
                         "cuda": {
                             "available": True, "device_count": 1, "current_device": 0,
                             "gpu_names": ["test-gpu"], "driver_versions": ["test-driver"],
