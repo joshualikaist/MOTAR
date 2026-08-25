@@ -12354,3 +12354,96 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
   publishing-source 변경으로 재배포 이벤트를 다시 발생시켰다.
 - 두 ref를 한 receive에서 갱신한 push가 Pages 이벤트를 만들지 않아, Pages/default source인
   `research/navrl-env`를 단독 ref push로 한 번 갱신한 뒤 `main`을 같은 commit으로 fast-forward한다.
+### 2026-08-25 — routed recovery evaluation-only forensics preregistration
+
+- 기존 attempt2의 route-on local invalidation `.125–.635%`, fallback `32.6–85.0%`,
+  `unsafe_start=420` 진단을 원인 분해하기 위한 별도 observer를 추가했다. observer는 child
+  process에서만 manager 호출을 monkey-patch하며 simulator source의 target command, planner
+  decision, reward, observation, termination, PPO에는 연결되지 않는다. attempt2 evaluator와
+  artifact 경로는 read-only로 고정했다.
+- frozen slice는 seed 827, route-on, 32 env × 300 steps, 70/150/205/300 bars × 0.6/1.5 m/s의
+  8 cells다. 0.25 m planner grid와 동일한 ±3-cell anchor search를 사용하고 obstacle soft
+  reserve는 정확히 `.45 m`로 유지한다. runtime boundary hard=`wall_margin .50 + support`,
+  route boundary soft=`1.25 + support`를 별도 attestation하며 boundary 차이는 `.75 m`다.
+- 각 invalidation/replan/fallback에 exact hard/soft bar·boundary clearance, obstacle/boundary
+  unsafe-start reason, active cross-track/whole-polyline error, requested/realized target speed,
+  originating invalidation, fallback age·per-origin intervals, nearest soft-free anchor와 exact
+  hard-free connector를 기록한다. exact closed-AABB segment/corner clearance도 별도 저장하며
+  malformed geometry는 null로 fail-closed한다. 분석 결과로 `.45`를 낮추거나 margin/tuning을
+  변경하지 않는다.
+- CPU test `tests/test_navrl_route_recovery_forensics.py` 7/7 PASS, diagnostic `py_compile`,
+  preflight, `git diff --check` PASS. Existing route-planner suite could not import because the
+  system Python lacks torch; no GPU command/runtime was executed. New preregistration:
+  `docs/preregistration_physical_target_route_recovery_forensics_2026-08-25.md`.
+
+### 2026-08-25 — routed recovery forensic adversarial contract hardening
+
+- Added explicit bounded-rollout rounded-corner soft-bar geometry (`support-inflated AABB`
+  Euclidean distance ≥ `.4501 m`) beside route square-AABB soft-free geometry and a disagreement
+  flag. The `.45 m` reserve and planner geometry were not changed. Added exact corner fixture and
+  synthetic anchor CPU timing test; forensic suite is now 9/9.
+- Forensic observer now batches one geometry transfer per manager hook, skips 7×7 anchors for
+  fallback/invalidation, and searches anchors only for unsafe-start plans. Receipt records event
+  count, observer wall time, rollout wall time, and share. All 300 transitions are recorded;
+  warmup=20 is a parity marker only.
+- Summary decisions use only the first unsafe replan per unique `local_step_infeasible` origin;
+  repeats, unattributed initial failures, and other-origin rows are separate. Fallback amplification
+  numerator is local-origin only, and pooled plus per-cell status/reason/origin tables are emitted.
+- Added full aerial_gym/resources runtime source manifest, clean committed HEAD/tool/import hashes,
+  authorized fresh child token, canonical output-only atomic partial→final rename, completion marker,
+  and receipt semantic summary recomputation. Existing attempt2 output is hard-rejected; reruns or
+  mixed/partial cells fail closed. GPU remains prohibited and unexecuted.
+
+### 2026-08-25 — forensic receipt post-commit and instantiated-runtime provenance
+
+- Receipt verification now validates the recorded execution commit object with `git cat-file` and
+  rechecks the tool/source/runtime bytes, without requiring current HEAD equality. This permits a
+  result commit or descendant/cherry-pick to verify when bytes match and rejects byte drift or a
+  forged/missing commit. Execution itself still requires a clean committed worktree.
+- Every child records Python/torch/CUDA/Isaac Gym/GPU-driver/ninja identities, exact imported
+  module origins, target-motion/controller bytes, and post-reset instantiated contract values for
+  density/speed, BaseSimConfig/physics timing, ref5in config+URDF, arena/bar placement, physical
+  target parameters, route resolution/cooldown/goal distance/exclusion, and margins. Parent
+  receipt requires all eight children to carry identical software provenance and stores each
+  runtime contract.
+- Summary origin tables now expose per-cell origin id/reason/first unsafe status/repeats/fallback
+  age and intervals; other-origin rows are excluded from local amplification and repeats. Public
+  `--summarize` cannot mutate a finalized artifact. CPU regression suite: 12/12 PASS; no GPU was
+  run.
+
+### 2026-08-25 — final runtime and fallback-cache hardening
+
+- Fallback geometry now reuses route-vs-bar segment clearance cached at the observed plan; route
+  polyline/cross-track telemetry remains live, but fallback no longer repeats the 300-bars ×
+  128-segments calculation. A CPU call-count fixture proves the cache path.
+- Every per-origin summary row now carries fallback intervals and maximum age for every reason,
+  with local intervals additionally split for amplification. The instantiated contract now
+  fail-closes on target gains/box/motor values, bar capacity/placement, route limits/support,
+  physics timing, exact speed min/final, and robot source hashes cross-bound to the manifest.
+- GPU provenance requires CUDA/current device identity and a non-empty `nvidia-smi` query with
+  executable hash and driver/GPU/UUID text. CPU regression suite: 15/15 PASS; no GPU was run.
+
+### 2026-08-25 — routed recovery forensics: `RECOVERY_DOMINANT`
+
+- 사전등록한 seed 827, route-on, 32 env × 300 steps, 70/150/205/300 bars × 0.6/1.5 m/s의
+  8/8 GPU PhysX cells가 완료됐고, 별도 `--verify`가 execution commit/source/runtime/software/
+  robot/simulator receipt와 모든 raw cell을 재검증했다. PPO와 reward/observation/termination,
+  target command 및 route decision은 변경하지 않았다.
+- 총 local invalidation 358건이 local-origin fallback 35,666 intervals로 증폭됐다
+  (`99.6257 intervals/invalidation`; cooldown 10보다 큼). fallback age는 median 101,
+  p90 219, max 287 steps였다. 최초 unique local-origin unsafe-start replan 200건 중
+  hard-free/soft-unsafe는 97.0% (Wilson 95% lower 93.61%), 가까운 soft-free anchor까지 exact
+  hard-safe connector가 존재한 비율은 96.5% (lower 92.95%)였다. 세 사전등록 gate가 모두
+  통과해 verdict는 `RECOVERY_DOMINANT`다.
+- plan status는 replan에서 `unsafe_start=3774`, `ok=101`, `no_path=82`, `unsafe_goal=79`이며,
+  initial plan은 `ok=349`, `unsafe_start=17`, `no_connected_goal=6`이다. 즉 주병목은 global
+  topology 부재가 아니라 local rollout 실패 뒤 zero-command/cooldown이 hard-safe이지만 route
+  soft-envelope 밖인 상태를 탈출시키지 못하는 복구 state machine이다. 300 bars의 no-path와
+  topology fragmentation은 별도 제한으로 남는다.
+- rounded local envelope와 square route envelope disagreement 1,832건도 관측됐지만, 이 결과는
+  `.45 m` margin을 낮추거나 geometry를 사후튜닝할 권한이 아니다. 다음 단계는 measured braking을
+  보존한 hard-safe connector recovery를 새 lineage에 사전등록하고, 짧은 simulator smoke 뒤
+  변경하지 않은 32-cell routed gate를 재실행하는 것이다.
+- 결과: [`summary`](results/navrl_physical_target_route_recovery_forensics_seed827/summary.md),
+  [`machine-readable summary`](results/navrl_physical_target_route_recovery_forensics_seed827/summary.json),
+  [`receipt`](results/navrl_physical_target_route_recovery_forensics_seed827/receipt.json).
