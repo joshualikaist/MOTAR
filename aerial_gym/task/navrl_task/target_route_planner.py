@@ -13,6 +13,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import heapq
 import math
+import time
 from typing import Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
@@ -526,6 +527,11 @@ class BatchedTargetRouteManager:
         self.valid = torch.zeros(self.num_envs, dtype=torch.bool, device=device)
         self.goal = torch.zeros((self.num_envs, 2), dtype=torch.float32, device=device)
         self.segment_start = torch.zeros_like(self.goal)
+        self.completion_reported = torch.zeros(
+            self.num_envs, dtype=torch.bool, device=device
+        )
+        self.goal_change_reported = torch.zeros_like(self.completion_reported)
+        self.support_change_reported = torch.zeros_like(self.completion_reported)
         self.planned_support = torch.zeros_like(self.goal)
         self.next_replan_step = torch.zeros(self.num_envs, dtype=torch.long, device=device)
         self.status_code = torch.zeros(self.num_envs, dtype=torch.long, device=device)
@@ -538,10 +544,24 @@ class BatchedTargetRouteManager:
         # force a GPU synchronization every interval.  They are materialized only
         # when bulk-evaluation diagnostics are exported.
         self.runtime_invalid_count = torch.zeros((), dtype=torch.long, device=device)
+        self.local_step_invalidations = torch.zeros((), dtype=torch.long, device=device)
+        self.support_contract_invalidations = torch.zeros(
+            (), dtype=torch.long, device=device
+        )
+        self.goal_changed_invalidations = torch.zeros(
+            (), dtype=torch.long, device=device
+        )
+        self.goal_completions = torch.zeros((), dtype=torch.long, device=device)
         self.fallback_intervals = torch.zeros((), dtype=torch.long, device=device)
+        self.connected_goal_replans = 0
         self.expanded_nodes = 0
         self.raw_waypoints = 0
         self.smoothed_waypoints = 0
+        self.planning_batches = 0
+        self.planning_envs = 0
+        self.total_planning_wall_s = 0.0
+        self.max_batch_wall_s = 0.0
+        self.max_batch_size = 0
 
     def reset_idx(self, env_ids) -> None:
         if len(env_ids) == 0:
@@ -549,6 +569,9 @@ class BatchedTargetRouteManager:
         self.length[env_ids] = 0
         self.cursor[env_ids] = 0
         self.valid[env_ids] = False
+        self.completion_reported[env_ids] = False
+        self.goal_change_reported[env_ids] = False
+        self.support_change_reported[env_ids] = False
         self.status_code[env_ids] = self.STATUS_CODES["unplanned"]
         self.next_replan_step[env_ids] = 0
 
@@ -561,12 +584,21 @@ class BatchedTargetRouteManager:
         self.status_code[mask] = self.STATUS_CODES[reason]
         self.next_replan_step[mask] = int(current_step) + self.config.replan_cooldown_steps
         self.runtime_invalid_count += mask.sum()
+        if reason == "local_step_infeasible":
+            self.local_step_invalidations += mask.sum()
 
     def needs_replan(self, goal_xy, support_xy, current_step: int):
         if goal_xy.shape != self.goal.shape or support_xy.shape != self.planned_support.shape:
             raise ValueError("goal/support must have shape [N, 2]")
         goal_changed = (goal_xy - self.goal).norm(dim=1) > self.config.goal_tolerance_m
         support_changed = (support_xy > self.planned_support + 1e-6).any(dim=1)
+        goal_event = goal_changed & ~self.goal_change_reported
+        support_event = support_changed & ~self.support_change_reported
+        self.goal_change_reported |= goal_changed
+        self.support_change_reported |= support_changed
+        self.goal_changed_invalidations += goal_event.sum()
+        self.support_contract_invalidations += support_event.sum()
+        self.runtime_invalid_count += goal_event.sum() + support_event.sum()
         self.status_code[goal_changed] = self.STATUS_CODES["goal_changed"]
         self.status_code[support_changed] = self.STATUS_CODES["support_contract_changed"]
         self.valid[goal_changed | support_changed] = False
@@ -590,6 +622,8 @@ class BatchedTargetRouteManager:
     ) -> Dict[str, int]:
         if len(env_ids) == 0:
             return {}
+        batch_started = time.perf_counter()
+        batch_size = len(env_ids)
         ids = env_ids.detach().to("cpu", dtype=torch.long).tolist()
         selected = [
             value.detach().to("cpu", dtype=torch.float64).numpy()
@@ -604,6 +638,13 @@ class BatchedTargetRouteManager:
             )
         ]
         starts, goals, bars, half, arena_lo, arena_hi, support = selected
+        selectors = None
+        if connected_goal_selector is not None:
+            # One batch transfer avoids one synchronizing .item() call per environment.
+            selectors = (
+                connected_goal_selector[env_ids]
+                .detach().to("cpu", dtype=torch.float64).numpy()
+            )
         batch_counts: Dict[str, int] = {}
         for local, env_id in enumerate(ids):
             if connected_goal_selector is None:
@@ -612,13 +653,14 @@ class BatchedTargetRouteManager:
                     arena_lo[local], arena_hi[local], support[local]
                 )
             else:
-                selector = float(connected_goal_selector[env_ids[local]].item())
+                selector = float(selectors[local])
                 result = self.planner.plan_to_connected_goal(
                     starts[local], bars[local], half[local], arena_lo[local],
                     arena_hi[local], support[local], min_goal_distance_m, selector
                 )
             self.plan_attempts += 1
             self.replan_attempts += int(is_replan)
+            self.connected_goal_replans += int(is_replan and selectors is not None)
             self.expanded_nodes += result.expanded_nodes
             self.raw_waypoints += result.raw_grid_nodes
             self.smoothed_waypoints += result.smoothed_nodes
@@ -632,6 +674,8 @@ class BatchedTargetRouteManager:
             )
             self.goal[env_id] = selected_goal
             self.planned_support[env_id] = support_xy[env_id]
+            self.goal_change_reported[env_id] = False
+            self.support_change_reported[env_id] = False
             self.next_replan_step[env_id] = int(current_step) + self.config.replan_cooldown_steps
             self.status_code[env_id] = self.STATUS_CODES[result.status]
             if not result.valid:
@@ -649,8 +693,15 @@ class BatchedTargetRouteManager:
             self.segment_start[env_id] = start_xy[env_id]
             self.length[env_id] = count
             self.cursor[env_id] = 0
+            self.completion_reported[env_id] = False
             self.valid[env_id] = count > 0
             self.plan_successes += 1
+        elapsed = time.perf_counter() - batch_started
+        self.planning_batches += 1
+        self.planning_envs += batch_size
+        self.total_planning_wall_s += elapsed
+        self.max_batch_wall_s = max(self.max_batch_wall_s, elapsed)
+        self.max_batch_size = max(self.max_batch_size, batch_size)
         return batch_counts
 
     def velocity_reference(self, position_xy, speed, reach_m: float):
@@ -690,6 +741,9 @@ class BatchedTargetRouteManager:
         complete = self.valid & (self.cursor + 1 >= self.length) & (
             (delta.norm(dim=1) <= float(reach_m)) | passed_final
         )
+        new_completion = complete & ~self.completion_reported
+        self.goal_completions += new_completion.sum()
+        self.completion_reported |= complete
         active = self.valid & ~complete
         direction = delta / delta.norm(dim=1, keepdim=True).clamp(min=1e-6)
         velocity = torch.where(
@@ -711,9 +765,26 @@ class BatchedTargetRouteManager:
             "plan_attempts": self.plan_attempts,
             "plan_successes": self.plan_successes,
             "replan_attempts": self.replan_attempts,
+            "connected_goal_replans": self.connected_goal_replans,
             "no_path_count": self.no_path_count,
             "invalid_count": self.invalid_count + int(self.runtime_invalid_count.item()),
+            "local_step_invalidations": int(self.local_step_invalidations.item()),
             "fallback_intervals": int(self.fallback_intervals.item()),
+            "goal_completions": int(self.goal_completions.item()),
+            "invalidation_counts": {
+                "local_step_infeasible": int(self.local_step_invalidations.item()),
+                "support_contract_changed": int(self.support_contract_invalidations.item()),
+                "goal_changed": int(self.goal_changed_invalidations.item()),
+            },
+            "planning_batches": self.planning_batches,
+            "planning_envs": self.planning_envs,
+            "total_planning_wall_s": self.total_planning_wall_s,
+            "max_batch_wall_s": self.max_batch_wall_s,
+            "max_batch_size": self.max_batch_size,
+            "planning_wall_ms_per_env": (
+                1000.0 * self.total_planning_wall_s / self.planning_envs
+                if self.planning_envs else 0.0
+            ),
             "expanded_nodes": self.expanded_nodes,
             "raw_waypoints": self.raw_waypoints,
             "smoothed_waypoints": self.smoothed_waypoints,

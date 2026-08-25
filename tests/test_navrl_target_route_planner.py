@@ -151,6 +151,57 @@ class TargetRoutePlannerTest(unittest.TestCase):
         )
         self.assertEqual(int(manager.cursor[0]), 0)
 
+        manager.cursor[0] = 1
+        manager.segment_start[0] = torch.tensor([1.0, 0.0])
+        _, _, complete = manager.velocity_reference(
+            torch.tensor([[2.2, 0.0]]), torch.tensor([1.0]), reach_m=0.5
+        )
+        self.assertTrue(bool(complete[0]))
+        manager.velocity_reference(
+            torch.tensor([[2.2, 0.0]]), torch.tensor([1.0]), reach_m=0.5
+        )
+        self.assertEqual(manager.diagnostics()["goal_completions"], 1)
+
+    def test_local_failure_is_distinct_and_requires_connected_goal_replacement(self):
+        config = ROUTE.RoutePlannerConfig(replan_cooldown_steps=3)
+        manager = ROUTE.BatchedTargetRouteManager(1, torch.device("cpu"), config)
+        ids = torch.tensor([0])
+        start = torch.tensor([[5.0, 5.0]])
+        arbitrary_goal = torch.tensor([[8.0, 5.0]])
+        bars = torch.empty((1, 0, 2))
+        bounds_lo = torch.tensor([[0.0, 0.0]])
+        bounds_hi = torch.tensor([[10.0, 10.0]])
+        support = torch.tensor([[0.1, 0.1]])
+        manager.plan_idx(
+            ids, start, arbitrary_goal, bars, bars, bounds_lo, bounds_hi, support,
+            current_step=0, connected_goal_selector=torch.tensor([0.1]),
+            min_goal_distance_m=2.0,
+        )
+        first_goal = manager.goal.clone()
+        manager.invalidate(
+            torch.tensor([True]), "local_step_infeasible", current_step=10
+        )
+        self.assertEqual(
+            int(manager.status_code[0]), manager.STATUS_CODES["local_step_infeasible"]
+        )
+        self.assertFalse(bool(manager.needs_replan(manager.goal, manager.planned_support, 12)[0]))
+        self.assertTrue(bool(manager.needs_replan(manager.goal, manager.planned_support, 13)[0]))
+        manager.plan_idx(
+            ids, start, arbitrary_goal, bars, bars, bounds_lo, bounds_hi, support,
+            current_step=13, is_replan=True,
+            connected_goal_selector=torch.tensor([0.8]), min_goal_distance_m=2.0,
+        )
+        self.assertFalse(torch.equal(first_goal, manager.goal))
+        self.assertEqual(manager.diagnostics()["local_step_invalidations"], 1)
+        self.assertEqual(manager.diagnostics()["connected_goal_replans"], 1)
+        diagnostics = manager.diagnostics()
+        self.assertEqual(diagnostics["invalidation_counts"]["local_step_infeasible"], 1)
+        self.assertGreaterEqual(diagnostics["planning_batches"], 2)
+        self.assertGreaterEqual(diagnostics["planning_envs"], 2)
+        self.assertGreaterEqual(diagnostics["total_planning_wall_s"], 0.0)
+        self.assertGreaterEqual(diagnostics["max_batch_wall_s"], 0.0)
+        self.assertGreaterEqual(diagnostics["planning_wall_ms_per_env"], 0.0)
+
 
 if __name__ == "__main__":
     unittest.main()
