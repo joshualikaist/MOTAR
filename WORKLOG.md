@@ -12406,3 +12406,11 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
 - The certified speed lookup remains raw p95 plus cumulative maximum; core handoff consumers must
   use `certified_lookup_for_speed(summary, speed_mps)` and the certified lateral tube. GPU remains
   prohibited for this audit.
+
+### 2026-08-26 — braking receipt core-handoff return contract
+
+- The standalone braking receipt verifier now returns the canonical `core_integration` object in
+  its verified result, matching the raw-first validator contract consumed by recovery v2.
+- The exact verifier source hash is pinned as
+  `26913b091b89bdb5d0bdfa651d67eca803bbf8076b4180b8b689bb1a873f6df5` after py_compile and
+  diff-check. No GPU, PhysX, or PPO execution was performed.

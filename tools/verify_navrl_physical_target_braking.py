@@ -467,7 +467,7 @@ def verify_receipt(output: Path, repo_root: Optional[Path] = None) -> Dict[str, 
         raise ValueError("receipt certified monotone lookup mismatch")
     if receipt.get("core_integration") != core_integration_object(recomputed):
         raise ValueError("core integration handoff is not canonical")
-    return {"verified": True, "schema": receipt["schema"], "summary": recomputed, "git_head": receipt["git_head"]}
+    return {"verified": True, "schema": receipt["schema"], "summary": recomputed, "core_integration": core_integration_object(recomputed), "git_head": receipt["git_head"]}
 
 
 def _parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
