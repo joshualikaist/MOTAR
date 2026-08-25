@@ -12462,7 +12462,6 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
   latch `NO_CONNECTOR`.
 - Recovery scalar p05/p95 values cannot arm the controller without the common probe-receipt
   validator hook (`NAVRL_TARGET_RECOVERY_PROBE_VALIDATED=1`); no probe or GPU/PPO execution was run.
-<<<<<<< HEAD
 - BRAKE and CONNECT timeout reasons now have distinct status codes/counters. Braking uses a
   validated monotone speed-indexed p95 stop-distance lookup with ceiling-speed selection; the
   scalar `v^2/(2*a)` fallback remains legacy-only and cannot arm recovery.
