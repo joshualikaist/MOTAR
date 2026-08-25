@@ -219,6 +219,7 @@ class TwoEnvelopeRecoveryTest(unittest.TestCase):
         source = (ROOT / "aerial_gym/task/navrl_task/navrl_task.py").read_text()
         self.assertIn('connect_certificate["full_horizon_safe"]', source)
         self.assertIn('connect_certificate["safe_prefix_steps"]', source)
+        self.assertIn('connect_certificate["selected_final_position_xy"]', source)
 
     def test_watchdog_install_point_breach_latches_after_interval_begin(self):
         tensors = {
