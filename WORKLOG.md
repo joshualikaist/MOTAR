@@ -12001,3 +12001,28 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
 - 검증: viewer asset/order/local-link contract PASS, v2 motion bounds·goal/speed·speed-zero age reset
   PASS, Chrome headless에서 WebGL canvas 생성과 205-bar desktop render 확인, 상세 SVG 렌더 확인,
   status unit tests와 experiment/catalog lint 재통과, `git diff --check` PASS.
+
+### 2026-08-25 — legacy/bounded/physical 표적 학습환경 독립 감사
+
+- 별도 worktree/branch에서 target update rate와 `dt`, reset/CV/waypoint sampling, bar center-band와
+  AABB gap, wall reflection/push-out, speed·acceleration·turn authority, static route topology,
+  pose/velocity/sensor synchronization, actor/critic oracle 경계, launcher/checkpoint 계약을 감사했다.
+- legacy는 순간 wall mirror/bar push-out을 쓰는 재현 계보, bounded는 10 Hz 2-D kinematic 중간
+  계보, physical만 100 Hz rigid-body/motor 계보임을 분리했다. 최신 physical speed-envelope receipt는
+  1.5 m/s 전 density strict FAIL이라 physical PPO 차단을 유지한다.
+- v2 geometry CPU probe(seed 825, 20 layouts/density, 0.2 m grid)는 70/150/205/300 bars에서 sampled
+  global connectivity를 유지했지만, `navrl_band` center gap 1.6 m는 footprint/tilt/dynamic corridor
+  보증이 아님을 명시했다. bar 평균 footprint는 0.3653 m², 205 bars/1600 m² nominal occupancy는
+  4.681%다.
+- checkpoint에 저장만 하고 restore 시 비교하지 않던 target accel/turn/lookahead/clearance와 physical
+  authority를 fail-loud drift guard에 추가했다. tracking/boundary margin도 저장·검사한다. 옛
+  checkpoint의 missing field는 계속 허용하므로 policy/legacy transition semantics는 그대로다.
+- base v2 launcher가 shell의 stale `NAVRL_TARGET_DYNAMICS`를 상속하던 경로를 닫았다. canonical base는
+  legacy만 허용하고, physical은 fresh wrapper의 명시적 child marker로만 통과하며 bounded는 전용
+  launcher가 없으므로 거부한다.
+- `bounded_drone_target_step`의 마지막 반환값이 full-horizon route certificate가 아니라 selected
+  first-step feasibility라는 사실을 docstring에 고정했다. 상세 증거와 후속 순서는
+  `docs/target_motion_training_environment_audit_2026-08-25.md`에 기록했다.
+- CPU 검증: target motion 13/13, ref5in platform 27/27, physical envelope helper 3/3,
+  perception 30 pass+1 skip, reachability 3/3, 신규 contract 5/5 PASS. ref5in run-contract 101개 중
+  1개는 독립 worktree에 ignored historical checkpoint가 없어 fixture-missing, 나머지 100개 PASS.

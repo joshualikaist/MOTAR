@@ -2277,6 +2277,8 @@ class NavRLTask(BaseTask):
             "cfg_target_physical_motor_tau_s": float(self.tm.physical_motor_tau),
             "cfg_target_physical_yaw_torque_ratio_m": float(self.tm.physical_yaw_torque_ratio),
             "cfg_target_physical_max_tilt_deg": float(self.tm.physical_max_tilt_deg),
+            "cfg_target_physical_tracking_margin_m": float(self.tm.physical_tracking_margin),
+            "cfg_target_physical_boundary_margin_m": float(self.tm.physical_boundary_margin),
             "cfg_target_pattern": str(self.tm.pattern),
             "cfg_target_speed_min": float(getattr(self.tm, "speed_min", 0.0)),
             "cfg_target_speed_final": float(self.tm.speed_final),
@@ -2872,6 +2874,26 @@ class NavRLTask(BaseTask):
             # fields are tolerated for old checkpoints, but a present mismatch changes the task
             # distribution and invalidates accumulated density evidence.
             for key, current, name in (
+                (
+                    "cfg_target_max_accel_mps2",
+                    float(self.tm.max_accel),
+                    "NAVRL_TARGET_MAX_ACCEL",
+                ),
+                (
+                    "cfg_target_max_turn_rate_degps",
+                    float(self.tm.max_turn_rate_deg),
+                    "NAVRL_TARGET_MAX_TURN_RATE_DEG",
+                ),
+                (
+                    "cfg_target_lookahead_s",
+                    float(self.tm.avoidance_lookahead_s),
+                    "NAVRL_TARGET_LOOKAHEAD_S",
+                ),
+                (
+                    "cfg_target_obstacle_clearance_m",
+                    float(self.tm.obstacle_clearance),
+                    "NAVRL_TARGET_OBSTACLE_CLEARANCE",
+                ),
                 ("cfg_target_pattern", str(self.tm.pattern), "NAVRL_TARGET_PATTERN"),
                 (
                     "cfg_target_speed_min",
@@ -2907,6 +2929,31 @@ class NavRLTask(BaseTask):
                     "cfg_target_physical_motor_tau_s",
                     float(self.tm.physical_motor_tau),
                     "NAVRL_TARGET_MOTOR_TAU_S",
+                ),
+                (
+                    "cfg_target_physical_motor_arm_xy_m",
+                    float(self.tm.physical_motor_arm_xy),
+                    "NAVRL_TARGET_MOTOR_ARM_XY_M",
+                ),
+                (
+                    "cfg_target_physical_yaw_torque_ratio_m",
+                    float(self.tm.physical_yaw_torque_ratio),
+                    "NAVRL_TARGET_YAW_TORQUE_RATIO_M",
+                ),
+                (
+                    "cfg_target_physical_max_tilt_deg",
+                    float(self.tm.physical_max_tilt_deg),
+                    "NAVRL_TARGET_MAX_TILT_DEG",
+                ),
+                (
+                    "cfg_target_physical_tracking_margin_m",
+                    float(self.tm.physical_tracking_margin),
+                    "NAVRL_TARGET_TRACKING_MARGIN_M",
+                ),
+                (
+                    "cfg_target_physical_boundary_margin_m",
+                    float(self.tm.physical_boundary_margin),
+                    "NAVRL_TARGET_BOUNDARY_MARGIN_M",
                 ),
                 ("cfg_general_train", bool(self.general_train_mode), "NAVRL_GENERAL_TRAIN"),
                 (

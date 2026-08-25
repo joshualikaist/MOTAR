@@ -130,9 +130,11 @@ def bounded_drone_target_step(
     rollout samples remain inside the arena and outside the configured bar clearance.  No wall
     reflection, positional clamp, obstacle push-out, or instantaneous velocity rewrite occurs.
 
-    Returns ``(new_xy, new_velocity, steered, feasible)``. ``feasible=False`` is an explicit
-    environment-geometry failure: the least-bad bounded trajectory is returned rather than hiding
-    the failure with a teleport.
+    Returns ``(new_xy, new_velocity, steered, immediate_feasible)``. The final boolean says only
+    whether the selected receding-horizon candidate's *first* step is safe.  If no candidate is
+    safe for the complete lookahead, selection falls back to the longest safe prefix and replans
+    next RL step; a safe first step therefore remains ``True``.  Do not interpret this value as a
+    full-route or full-lookahead feasibility certificate.
     """
     if old_xy.ndim != 2 or old_xy.shape[1] != 2:
         raise ValueError("old_xy must have shape [N, 2]")
