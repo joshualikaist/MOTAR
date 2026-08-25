@@ -6080,6 +6080,7 @@ class NavRLTask(BaseTask):
                     exact_aabb_clearance=True,
                     hard_epsilon_m=TARGET_ROUTE_HARD_EPSILON_M + TARGET_ROUTE_REACHABLE_TUBE_MARGIN_M,
                     return_certificate=True,
+                    certificate_row_ids=connect_ids,
                 )
                 connect_xy, connect_velocity, _, _, connect_certificate = connect_result
                 # Recovery never accepts the ordinary longest-safe-prefix fallback.  CONNECT is

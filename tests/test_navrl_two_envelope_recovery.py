@@ -201,7 +201,9 @@ class TwoEnvelopeRecoveryTest(unittest.TestCase):
             exact_aabb_clearance=True, hard_epsilon_m=0.0124,
         )
         legacy = MOTION.bounded_drone_target_step(**kwargs)
-        certified = MOTION.bounded_drone_target_step(**kwargs, return_certificate=True)
+        certified = MOTION.bounded_drone_target_step(
+            **kwargs, return_certificate=True, certificate_row_ids=torch.tensor([17])
+        )
         self.assertEqual(len(legacy), 4)
         self.assertEqual(len(certified), 5)
         for left, right in zip(legacy, certified[:4]):
@@ -211,6 +213,7 @@ class TwoEnvelopeRecoveryTest(unittest.TestCase):
         self.assertEqual(certificate["horizon_steps"], 10)
         self.assertTrue(bool(certificate["full_horizon_safe"].all()))
         self.assertTrue(bool((certificate["safe_prefix_steps"] == 10).all()))
+        self.assertEqual(certificate["row_ids"].tolist(), [17])
 
     def test_connect_consumes_full_horizon_not_immediate_only(self):
         source = (ROOT / "aerial_gym/task/navrl_task/navrl_task.py").read_text()

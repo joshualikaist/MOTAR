@@ -134,6 +134,7 @@ def bounded_drone_target_step(
     exact_aabb_clearance=False,
     hard_epsilon_m=0.0,
     return_certificate=False,
+    certificate_row_ids=None,
 ):
     """Choose and execute one dynamically bounded, collision-screened target step.
 
@@ -163,6 +164,11 @@ def bounded_drone_target_step(
         raise ValueError("lookahead_s must be at least dt")
     if not math.isfinite(float(hard_epsilon_m)) or float(hard_epsilon_m) < 0.0:
         raise ValueError("hard_epsilon_m must be finite and non-negative")
+    if certificate_row_ids is not None:
+        if not return_certificate:
+            raise ValueError("certificate_row_ids requires return_certificate=True")
+        if certificate_row_ids.shape != (n,):
+            raise ValueError("certificate_row_ids must have shape [N]")
 
     base_norm = desired_velocity.norm(dim=1, keepdim=True)
     fallback = torch.zeros_like(desired_velocity)
@@ -298,6 +304,11 @@ def bounded_drone_target_step(
         "full_horizon_safe": feasible[rows, chosen],
         "immediate_feasible": immediate_feasible[rows, chosen],
         "selected_final_position_xy": pos[rows, chosen],
+        "row_ids": (
+            certificate_row_ids.detach().clone()
+            if certificate_row_ids is not None
+            else rows.detach().clone()
+        ),
     }
     return base_result + (certificate,)
 
