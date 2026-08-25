@@ -941,6 +941,7 @@ class BatchedTargetRouteManager:
         decel_mps2: float,
         brake_speed_samples_mps=None,
         brake_stop_distance_samples_m=None,
+        certified_lateral_tube_m=0.0,
     ) -> torch.Tensor:
         """Certify the straight swept stopping segment in the hard envelope.
 
@@ -950,6 +951,8 @@ class BatchedTargetRouteManager:
         """
         result = torch.zeros(self.num_envs, dtype=torch.bool, device=self.device)
         if len(env_ids) == 0:
+            return result
+        if not math.isfinite(float(certified_lateral_tube_m)) or float(certified_lateral_tube_m) < 0.0:
             return result
         use_lookup = brake_speed_samples_mps is not None or brake_stop_distance_samples_m is not None
         if use_lookup:
@@ -989,7 +992,10 @@ class BatchedTargetRouteManager:
                 distance = speed * speed / (2.0 * float(decel_mps2))
             direction = velocities[local] / speed if speed > 1e-9 else np.zeros(2)
             stop = positions[local] + direction * distance
-            hard_margin = TARGET_ROUTE_HARD_EPSILON_M + TARGET_ROUTE_REACHABLE_TUBE_MARGIN_M
+            hard_margin = (
+                TARGET_ROUTE_HARD_EPSILON_M + TARGET_ROUTE_REACHABLE_TUBE_MARGIN_M
+                + float(certified_lateral_tube_m)
+            )
             hard_lo = lows[local] + float(hard_boundary_margin_m) + supports[local] + hard_margin
             hard_hi = highs[local] - float(hard_boundary_margin_m) - supports[local] - hard_margin
             hard_half = half[local] + supports[local][None, :] + hard_margin

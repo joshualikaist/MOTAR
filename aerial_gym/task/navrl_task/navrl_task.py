@@ -65,6 +65,7 @@ logger = CustomLogger("navrl_task")
 # existing 0.45 m tracking reserve.
 RECOVERY_HYSTERESIS_M = 0.25  # route grid resolution, one cell
 RECOVERY_STOP_SPEED_MPS = 0.10  # existing braking-probe stop threshold
+RECOVERY_CONNECT_PROGRESS_TOLERANCE_M = 1e-4  # fixed numerical non-regression tolerance
 
 
 def _full_eval_distribution_enabled(bulk_eval_mode, env_value):
@@ -625,6 +626,7 @@ class NavRLTask(BaseTask):
         self._recovery_probe_receipt_sha256 = ""
         self._recovery_brake_speed_samples_mps = ()
         self._recovery_brake_stop_distance_samples_m = ()
+        self._recovery_brake_lateral_tube_p95_m = 0.0
         if self._target_route_recovery_enabled:
             # Integration point for the common probe-receipt validator. Until that validator
             # arms this immutable flag, scalar environment values are deliberately unusable.
@@ -680,6 +682,52 @@ class NavRLTask(BaseTask):
                 or abs(float(probe.get("stop_time_p95_s", -1.0)) - p95) > 1e-9
             ):
                 raise RuntimeError("recovery braking-probe receipt contract mismatch")
+            core = probe.get("core_integration")
+            certified = core.get("certified_monotone_speed_to_p95_lookup") if isinstance(core, dict) else None
+            lateral_tube = core.get("certified_lateral_tube_p95_m") if isinstance(core, dict) else None
+            if (
+                not isinstance(core, dict)
+                or core.get("schema") != "navrl_target_recovery_braking_probe_v1"
+                or core.get("measured_speed_to_p95_lookup") != probe.get("measured_speed_to_p95_lookup")
+                or certified != probe.get("certified_monotone_speed_to_p95_lookup")
+                or not math.isfinite(float(lateral_tube)) or float(lateral_tube) < 0.0
+                or abs(float(core.get("decel_p05_mps2", -1.0)) - float(probe["decel_p05_mps2"])) > 1e-12
+                or abs(float(core.get("stop_time_p95_s", -1.0)) - float(probe["stop_time_p95_s"])) > 1e-12
+            ):
+                raise RuntimeError("recovery core_integration handoff is not canonical")
+            source_name = str(probe.get("source_manifest", ""))
+            source_sha = str(probe.get("source_manifest_sha256", "")).lower()
+            source_path = (receipt_path.parent / source_name).resolve() if source_name else None
+            if (
+                source_path is None or not source_path.is_file() or len(source_sha) != 64
+                or hashlib.sha256(source_path.read_bytes()).hexdigest() != source_sha
+                or probe.get("source_clean") is not True
+            ):
+                raise RuntimeError("recovery source manifest is missing, dirty, or hash-mismatched")
+            try:
+                source_payload = json.loads(source_path.read_text(encoding="utf-8"))
+            except (OSError, ValueError) as exc:
+                raise RuntimeError("recovery source manifest is unreadable") from exc
+            if (
+                source_payload.get("schema") != "navrl_target_recovery_braking_source_manifest_v1"
+                or not isinstance(source_payload.get("entries"), list)
+                or len(str(probe.get("git_head", ""))) != 40
+            ):
+                raise RuntimeError("recovery source manifest provenance is incomplete")
+            lookup_speeds = np.asarray(self._recovery_brake_speed_samples_mps, dtype=np.float64)
+            lookup_distances = np.asarray(self._recovery_brake_stop_distance_samples_m, dtype=np.float64)
+            canonical_rows = [certified[key] for key in sorted(certified, key=lambda key: float(key))]
+            if (
+                lookup_speeds.shape != (len(canonical_rows),)
+                or lookup_distances.shape != lookup_speeds.shape
+                or not np.allclose(lookup_speeds, [float(row["speed_mps"]) for row in canonical_rows], rtol=0.0, atol=1e-12)
+                or not np.allclose(lookup_distances, [float(row["p95_stop_distance_m"]) for row in canonical_rows], rtol=0.0, atol=1e-12)
+            ):
+                raise RuntimeError("recovery environment braking lookup differs from canonical receipt")
+            lateral_env = float(getattr(self.tm, "recovery_brake_lateral_tube_p95_m", -1.0))
+            if not math.isfinite(lateral_env) or lateral_env < 0.0 or abs(lateral_env - float(lateral_tube)) > 1e-12:
+                raise RuntimeError("recovery lateral stopping tube differs from canonical receipt")
+            self._recovery_brake_lateral_tube_p95_m = lateral_env
             self._recovery_probe_receipt_sha256 = actual_sha
         self._bar_offset = 1 if self._physical_target else 0
         if self._physical_target and self.task_config.robot_name != "navrl_ref5in_quad":
@@ -2421,6 +2469,9 @@ class NavRLTask(BaseTask):
             ),
             "cfg_target_route_recovery_hysteresis_m": RECOVERY_HYSTERESIS_M if self._target_route_recovery_enabled else 0.0,
             "cfg_target_route_recovery_stop_speed_mps": RECOVERY_STOP_SPEED_MPS if self._target_route_recovery_enabled else 0.0,
+            "cfg_target_route_recovery_progress_tolerance_m": (
+                RECOVERY_CONNECT_PROGRESS_TOLERANCE_M if self._target_route_recovery_enabled else 0.0
+            ),
             "cfg_target_route_recovery_anchor_radius_cells": 3 if self._target_route_recovery_enabled else 0,
             "cfg_target_dynamics": self._target_dynamics,
             "cfg_target_max_accel_mps2": float(self.tm.max_accel),
@@ -2448,6 +2499,7 @@ class NavRLTask(BaseTask):
             "cfg_target_recovery_probe_receipt_sha256": self._recovery_probe_receipt_sha256,
             "cfg_target_recovery_brake_speed_samples_mps": list(self._recovery_brake_speed_samples_mps),
             "cfg_target_recovery_brake_stop_distance_samples_m": list(self._recovery_brake_stop_distance_samples_m),
+            "cfg_target_recovery_brake_lateral_tube_p95_m": self._recovery_brake_lateral_tube_p95_m,
             "cfg_target_recovery_timeout_steps": (
                 max(1, int(math.ceil((float(getattr(self.tm, "recovery_brake_stop_time_p95", 0.0)) + 0.20) / self.step_dt)))
                 if self._target_route_recovery_enabled else 0
@@ -3102,6 +3154,10 @@ class NavRLTask(BaseTask):
                     ),
                     ("cfg_target_route_recovery_hysteresis_m", RECOVERY_HYSTERESIS_M),
                     ("cfg_target_route_recovery_stop_speed_mps", RECOVERY_STOP_SPEED_MPS),
+                    (
+                        "cfg_target_route_recovery_progress_tolerance_m",
+                        RECOVERY_CONNECT_PROGRESS_TOLERANCE_M,
+                    ),
                     ("cfg_target_route_recovery_anchor_radius_cells", 3),
                     (
                         "cfg_target_recovery_brake_decel_p05_mps2",
@@ -3122,6 +3178,10 @@ class NavRLTask(BaseTask):
                     (
                         "cfg_target_recovery_brake_stop_distance_samples_m",
                         list(self._recovery_brake_stop_distance_samples_m),
+                    ),
+                    (
+                        "cfg_target_recovery_brake_lateral_tube_p95_m",
+                        self._recovery_brake_lateral_tube_p95_m,
                     ),
                     (
                         "cfg_target_max_accel_mps2",
@@ -5792,6 +5852,7 @@ class NavRLTask(BaseTask):
                 brake_decel,
                 brake_speed_samples_mps=self._recovery_brake_speed_samples_mps,
                 brake_stop_distance_samples_m=self._recovery_brake_stop_distance_samples_m,
+                certified_lateral_tube_m=self._recovery_brake_lateral_tube_p95_m,
             )
             unsafe_brake = brake_rows & ~brake_safe
             anchor_rows = brake_rows & (
@@ -6028,6 +6089,16 @@ class NavRLTask(BaseTask):
                     & connect_certificate["full_horizon_safe"]
                     & (connect_certificate["safe_prefix_steps"]
                        == int(connect_certificate["horizon_steps"]))
+                )
+                old_anchor_distance = (
+                    self._target_route_manager.recovery_anchor[connect_ids] - old_xy[connect_ids]
+                ).norm(dim=1)
+                new_anchor_distance = (
+                    self._target_route_manager.recovery_anchor[connect_ids] - connect_xy
+                ).norm(dim=1)
+                connect_feasible &= (
+                    old_anchor_distance - new_anchor_distance
+                    >= -RECOVERY_CONNECT_PROGRESS_TOLERANCE_M
                 )
                 bounded_xy[connect_ids] = connect_xy
                 bounded_velocity[connect_ids] = connect_velocity
@@ -7306,6 +7377,9 @@ class NavRLTask(BaseTask):
                 "target_route_recovery_reachable_tube_margin_m": TARGET_ROUTE_REACHABLE_TUBE_MARGIN_M if self._target_route_recovery_enabled else 0.0,
                 "target_route_recovery_hysteresis_m": RECOVERY_HYSTERESIS_M if self._target_route_recovery_enabled else 0.0,
                 "target_route_recovery_stop_speed_mps": RECOVERY_STOP_SPEED_MPS if self._target_route_recovery_enabled else 0.0,
+                "target_route_recovery_brake_lateral_tube_p95_m": (
+                    self._recovery_brake_lateral_tube_p95_m if self._target_route_recovery_enabled else 0.0
+                ),
                 "cv_initial_heading": self._eval_cv_initial_heading,
                 "target_speed_mode": target_speed_mode,
                 "target_speed_mps": target_speed_mps,

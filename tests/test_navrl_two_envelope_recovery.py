@@ -283,6 +283,33 @@ class TwoEnvelopeRecoveryTest(unittest.TestCase):
         self.assertIn('"navrl_target_recovery_braking_receipt_v1"', task)
         self.assertIn('"navrl_target_recovery_braking_probe_v1"', task)
 
+    def test_brake_certificate_uses_ceiling_lookup_and_lateral_tube(self):
+        manager = ROUTE.BatchedTargetRouteManager(
+            1, torch.device("cpu"), ROUTE.RoutePlannerConfig(), recovery_enabled=True
+        )
+        result = manager.brake_connector_idx(
+            torch.tensor([0]), torch.tensor([[0.0, 0.0]]), torch.tensor([[0.0, 0.8]]),
+            torch.empty(1, 0, 2), torch.empty(1, 0, 2),
+            torch.tensor([[-2.0, -2.0]]), torch.tensor([[2.0, 2.0]]),
+            torch.zeros(1, 2), 0.1, 4.0,
+            brake_speed_samples_mps=(0.6, 1.0),
+            brake_stop_distance_samples_m=(0.2, 0.5),
+            certified_lateral_tube_m=0.1,
+        )
+        self.assertTrue(bool(result[0]))
+        planner = (ROOT / "aerial_gym/task/navrl_task/target_route_planner.py").read_text()
+        self.assertIn("np.searchsorted(sample_speeds, speed, side=\"left\")", planner)
+        self.assertIn("certified_lateral_tube_m", planner)
+
+    def test_validated_flag_cannot_bypass_canonical_receipt_handoff(self):
+        task = (ROOT / "aerial_gym/task/navrl_task/navrl_task.py").read_text()
+        for field in (
+            "core_integration", "certified_monotone_speed_to_p95_lookup",
+            "certified_lateral_tube_p95_m", "source_manifest_sha256",
+            "recovery environment braking lookup differs from canonical receipt",
+        ):
+            self.assertIn(field, task)
+
 
 if __name__ == "__main__":
     unittest.main()

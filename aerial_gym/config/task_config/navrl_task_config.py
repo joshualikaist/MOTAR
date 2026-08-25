@@ -611,6 +611,9 @@ class task_config:
         recovery_brake_stop_distance_samples_m = _env_float_list(
             "NAVRL_TARGET_RECOVERY_BRAKE_STOP_DISTANCES_M"
         )
+        recovery_brake_lateral_tube_p95_m = _env_float(
+            "NAVRL_TARGET_RECOVERY_BRAKE_LATERAL_TUBE_P95_M", -1.0
+        )
         # Opt-in global route for the NEW physical+waypoint lineage. Off preserves every legacy
         # target transition byte-for-byte. The planner consumes simulator GT bar AABBs only to
         # drive the target actor; no route feature reaches the pursuer policy.

@@ -50,8 +50,9 @@ position or resets the actor.
 * `CONNECT`: after braking, search the deterministic 7x7 anchor set. The fixed anchor may require
   multiple RL intervals because the maximum certified connector is 1.237 m while a 0.6 m/s target
   cannot traverse it in one second. Every submitted interval must independently carry a complete
-  bounded rollout certificate (fixed `4 m/s²`, `150 deg/s`, `0.1 s` RL step, `1.0 s` lookahead),
-  stay hard-safe at every sample, and make nonnegative progress toward the unchanged anchor. It is
+bounded rollout certificate (fixed `4 m/s²`, `150 deg/s`, `0.1 s` RL step, `1.0 s` lookahead),
+  stay hard-safe at every sample, and make nonnegative progress toward the unchanged anchor
+  (fixed tolerance `1e-4` m per interval). It is
   not required to reach the soft-free endpoint in one interval. The full anchor segment is exact
   hard-safe, and ROUTE handoff still requires the actual actor to be soft-free beyond hysteresis.
   PhysX position is never assigned by the recovery code.
@@ -83,7 +84,9 @@ the declared `9.60 N`, `1.20 kg` values.
 A dedicated zero-command PhysX probe must record stop-time and stop-distance quantiles for every
 registered target speed. The p05 deceleration and p95 stop time are gate inputs; the stopping
 certificate uses the validated monotone speed-indexed p95 stop-distance lookup with a ceiling
-speed selection (never interpolation). These are measured inputs, not post-hoc tuning, and are
+speed selection (never interpolation), plus the measured p95 lateral stopping tube. The brake
+certificate inflates bars and shrinks walls by that lateral tube in addition to the central hard
+reserve. These are measured inputs, not post-hoc tuning, and are
 supplied only through a hashed receipt with `schema=navrl_target_recovery_braking_receipt_v1` and
 `probe_schema=navrl_target_recovery_braking_probe_v1`. The probe must
 show `a_brake_p05 > 0`, finite stop distance, no contact, no invalid OBB, motor saturation
