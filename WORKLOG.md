@@ -12131,3 +12131,24 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
   crossing 0.3이므로 300 bars arena-wide roaming 주장을 금지한다. 상태는
   `PASS_CPU_ENGINEERING_GATE / SIMULATOR_UNMEASURED`;
   다음은 short fresh PhysX smoke이며 PPO 본학습 권한은 없다.
+
+### 2026-08-25 — routed fresh planner 안전 blocker 2건 수정
+
+- 0.5 m waypoint reach/overshoot가 코너에서 다음 waypoint로 너무 일찍 넘어가면, 현재 위치에서
+  다음 waypoint로 향하는 새 connector가 원래 exact inflated-AABB 경로를 자를 수 있었다. planning
+  CPU 단계에서 각 outgoing segment의 장애물·arena boundary 최소 Euclidean clearance를 정확히 계산해
+  waypoint별 **handoff clearance certificate**로 GPU cache에 저장했다. runtime follower는 기존
+  reach/overshoot 조건과 함께 현재 위치가 이 certified ball 안에 있을 때만 다음 waypoint로 전환한다.
+  일반 control path는 bar geometry를 보거나 `.cpu()`/`.item()`/`.numpy()`로 sync하지 않는다.
+- closed-AABB corner regression에서 기존 reach 0.5 m 안이지만 장애물을 자르는 connector를 구성했다.
+  해당 코너 certificate는 약 0.033 m였고 unsafe shortcut은 거부했으며, certificate 안의 safe 위치에서는
+  정상 전환했다. empty/open route는 큰 certificate를 유지해 기존 overshoot 전환도 보존했다.
+- local-step infeasible 이후 같은 deterministic goal/route로 돌아가는 livelock을 막기 위해 이전 goal을
+  중심으로 1.0 m exclusion radius를 connected-goal planner에 전달한다. reachable component 안에서
+  radius 밖 후보를 같은 deterministic selector 계약으로 고르고, 후보가 없으면
+  `no_alternative_goal` zero/fail-closed 상태로 남는다. planner 회귀가 같은 goal을 반환해도 manager가
+  재검증해 `same_goal_reselected`로 차단하고 cumulative `same_goal_reselection_count`를 export한다.
+- 변경은 opt-in `physx_ref5in_6dof_global_astar_aabb_v1` fresh routed lineage에만 연결했다.
+  route-off/legacy target semantics는 건드리지 않았으며 GPU 학습·평가는 실행하지 않았다.
+- 검증: route planner 13/13, target environment contract 8/8, target motion 13/13,
+  physical speed envelope 3/3 PASS. `py_compile`, routed launcher `bash -n`, `git diff --check` PASS.

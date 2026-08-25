@@ -586,6 +586,9 @@ class task_config:
         )
         route_goal_tolerance_m = _env_float("NAVRL_TARGET_ROUTE_GOAL_TOLERANCE_M", 0.05)
         route_min_goal_distance_m = _env_float("NAVRL_TARGET_ROUTE_MIN_GOAL_DISTANCE_M", 6.0)
+        route_goal_exclusion_radius_m = _env_float(
+            "NAVRL_TARGET_ROUTE_GOAL_EXCLUSION_M", 1.0
+        )
         # Per-episode speed ~ U[speed_min, v_max(epoch)]; speed_min=0 keeps static/slow episodes
         # in-distribution for the default curriculum.
         # v_max(epoch) = speed_final * clamp((epoch - ramp_start) / ramp_epochs, 0, 1).

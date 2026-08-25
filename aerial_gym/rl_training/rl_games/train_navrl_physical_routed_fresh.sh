@@ -25,7 +25,8 @@ export NAVRL_TARGET_ROUTE_MAX_WAYPOINTS=128
 export NAVRL_TARGET_ROUTE_REPLAN_COOLDOWN_STEPS=10
 export NAVRL_TARGET_ROUTE_GOAL_TOLERANCE_M=0.05
 export NAVRL_TARGET_ROUTE_MIN_GOAL_DISTANCE_M=6.0
+export NAVRL_TARGET_ROUTE_GOAL_EXCLUSION_M=1.0
 
 echo "[physical-routed] model=physx_ref5in_6dof_global_astar_aabb_v1 fresh=1"
-echo "[physical-routed] route=global_astar_v1 pattern=waypoint grid=0.25m fail_closed=1"
+echo "[physical-routed] route=global_astar_v1 pattern=waypoint grid=0.25m goal_exclusion=1.0m fail_closed=1"
 exec ./train_navrl_physical_fresh.sh "$@"

@@ -46,6 +46,7 @@ class TargetCheckpointContractTest(unittest.TestCase):
             "cfg_target_route_replan_cooldown_steps",
             "cfg_target_route_goal_tolerance_m",
             "cfg_target_route_min_goal_distance_m",
+            "cfg_target_route_goal_exclusion_radius_m",
         )
         # One occurrence serializes the field and a second occurrence compares it during restore.
         for key in keys:
@@ -62,6 +63,10 @@ class TargetCheckpointContractTest(unittest.TestCase):
         ordinary_branch = TASK_SOURCE.index("ordinary_replan =", local_branch)
         self.assertIn(
             "connected_goal=True",
+            TASK_SOURCE[local_branch:ordinary_branch],
+        )
+        self.assertIn(
+            "exclude_previous_goal=True",
             TASK_SOURCE[local_branch:ordinary_branch],
         )
         invalidation = TASK_SOURCE.index("local_invalid =")
@@ -88,6 +93,7 @@ class TargetLauncherContractTest(unittest.TestCase):
         self.assertIn("export NAVRL_PHYSICAL_ROUTED_CHILD=1", ROUTED_LAUNCHER)
         self.assertIn("export NAVRL_TARGET_ROUTE_MODE=global_astar_v1", ROUTED_LAUNCHER)
         self.assertIn("export NAVRL_TARGET_PATTERN=waypoint", ROUTED_LAUNCHER)
+        self.assertIn("export NAVRL_TARGET_ROUTE_GOAL_EXCLUSION_M=1.0", ROUTED_LAUNCHER)
         self.assertIn("canonical physical lineage refuses target route", PHYSICAL_LAUNCHER)
 
     def _preflight(self, launcher, **updates):
