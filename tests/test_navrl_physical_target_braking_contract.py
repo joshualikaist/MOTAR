@@ -108,6 +108,7 @@ class PhysicalTargetBrakingContractTest(unittest.TestCase):
         self.assertEqual(sorted(lookup), ["0.6", "0.9", "1.2", "1.5"])
         expected = verifier.quantile_stats([row["stop_distance_m"] for row in cells[0]["raw_samples"]])["p95"]
         self.assertEqual(lookup["0.6"]["p95_stop_distance_m"], expected)
+        self.assertEqual(verifier.certified_lookup_for_speed(summary, 1.2)["speed_mps"], 1.2)
         cells[0]["raw_samples"][0]["contact"] = True
         with self.assertRaises(ValueError):
             verifier.validate_cell(cells[0])
