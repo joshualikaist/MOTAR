@@ -12469,3 +12469,10 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
   lateral stopping tube, and hashed clean source manifest; watchdog brake certificates inflate
   bars/shrink walls by the lateral tube. CONNECT requires full-horizon certificate plus fixed
   nonnegative anchor progress; no GPU/PPO was run.
+- Follow-up raw-receipt hardening calls the pinned `tools/verify_navrl_physical_target_braking.py`
+  verifier at recovery task construction and consumes only its raw-recomputed summary and
+  returned core handoff. Receipt/manifest/`VALIDATED` producer fields cannot arm recovery; the
+  verifier and probe origins/SHA are pinned. CONNECT progress is measured against the selected
+  full-horizon final position, with explicit row-id certificate telemetry. The common verifier
+  must expose `core_integration` in its returned result; CPU pycompile/diff checks passed, with
+  no GPU/PhysX/PPO execution.
