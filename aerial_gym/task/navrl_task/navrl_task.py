@@ -623,6 +623,8 @@ class NavRLTask(BaseTask):
                 "PhysX braking p05; run the preregistered braking probe first"
             )
         self._recovery_probe_receipt_sha256 = ""
+        self._recovery_brake_speed_samples_mps = ()
+        self._recovery_brake_stop_distance_samples_m = ()
         if self._target_route_recovery_enabled:
             # Integration point for the common probe-receipt validator. Until that validator
             # arms this immutable flag, scalar environment values are deliberately unusable.
@@ -635,6 +637,23 @@ class NavRLTask(BaseTask):
                 raise RuntimeError(
                     "recovery mode requires a verified training source manifest"
                 )
+            brake_speeds = np.asarray(
+                getattr(self.tm, "recovery_brake_speed_samples_mps", ()), dtype=np.float64
+            ).reshape(-1)
+            brake_distances = np.asarray(
+                getattr(self.tm, "recovery_brake_stop_distance_samples_m", ()), dtype=np.float64
+            ).reshape(-1)
+            if (
+                brake_speeds.size == 0 or brake_speeds.shape != brake_distances.shape
+                or not np.isfinite(brake_speeds).all() or not np.isfinite(brake_distances).all()
+                or np.any(brake_speeds <= 0.0) or np.any(brake_distances < 0.0)
+                or np.any(np.diff(brake_speeds) <= 0.0) or np.any(np.diff(brake_distances) < 0.0)
+            ):
+                raise RuntimeError(
+                    "recovery mode requires a validated monotone speed/stop-distance lookup"
+                )
+            self._recovery_brake_speed_samples_mps = tuple(brake_speeds.tolist())
+            self._recovery_brake_stop_distance_samples_m = tuple(brake_distances.tolist())
             p95 = float(getattr(self.tm, "recovery_brake_stop_time_p95", 0.0))
             receipt = str(getattr(self.tm, "recovery_brake_probe_receipt", ""))
             declared_sha = str(
@@ -655,7 +674,8 @@ class NavRLTask(BaseTask):
             except (OSError, ValueError) as exc:
                 raise RuntimeError("invalid recovery braking-probe receipt JSON") from exc
             if (
-                probe.get("schema") != "navrl_target_recovery_braking_probe_v1"
+                probe.get("schema") != "navrl_target_recovery_braking_receipt_v1"
+                or probe.get("probe_schema") != "navrl_target_recovery_braking_probe_v1"
                 or abs(float(probe.get("decel_p05_mps2", -1.0)) - float(self.tm.recovery_brake_decel_p05)) > 1e-9
                 or abs(float(probe.get("stop_time_p95_s", -1.0)) - p95) > 1e-9
             ):
@@ -2426,6 +2446,8 @@ class NavRLTask(BaseTask):
                 getattr(self.tm, "recovery_brake_stop_time_p95", 0.0)
             ),
             "cfg_target_recovery_probe_receipt_sha256": self._recovery_probe_receipt_sha256,
+            "cfg_target_recovery_brake_speed_samples_mps": list(self._recovery_brake_speed_samples_mps),
+            "cfg_target_recovery_brake_stop_distance_samples_m": list(self._recovery_brake_stop_distance_samples_m),
             "cfg_target_recovery_timeout_steps": (
                 max(1, int(math.ceil((float(getattr(self.tm, "recovery_brake_stop_time_p95", 0.0)) + 0.20) / self.step_dt)))
                 if self._target_route_recovery_enabled else 0
@@ -3092,6 +3114,14 @@ class NavRLTask(BaseTask):
                     (
                         "cfg_target_recovery_probe_receipt_sha256",
                         self._recovery_probe_receipt_sha256,
+                    ),
+                    (
+                        "cfg_target_recovery_brake_speed_samples_mps",
+                        list(self._recovery_brake_speed_samples_mps),
+                    ),
+                    (
+                        "cfg_target_recovery_brake_stop_distance_samples_m",
+                        list(self._recovery_brake_stop_distance_samples_m),
                     ),
                     (
                         "cfg_target_max_accel_mps2",
@@ -5739,8 +5769,11 @@ class NavRLTask(BaseTask):
                 > self._target_route_manager.recovery_connect_timeout_steps
             )
             recovery_timeout = brake_timeout | connect_timeout
+            if bool(brake_timeout.any()):
+                self._target_route_manager.mark_no_connector(brake_timeout, timeout_kind="brake")
+            if bool(connect_timeout.any()):
+                self._target_route_manager.mark_no_connector(connect_timeout, timeout_kind="connect")
             if bool(recovery_timeout.any()):
-                self._target_route_manager.mark_no_connector(recovery_timeout, timeout=True)
                 recovery_state = self._target_route_manager.recovery_state
             brake_rows = moving & (recovery_state == RECOVERY_BRAKE)
             self._target_route_manager.recovery_brake_intervals += brake_rows.sum()
@@ -5757,6 +5790,8 @@ class NavRLTask(BaseTask):
                 recovery_support,
                 float(self.cur.wall_margin),
                 brake_decel,
+                brake_speed_samples_mps=self._recovery_brake_speed_samples_mps,
+                brake_stop_distance_samples_m=self._recovery_brake_stop_distance_samples_m,
             )
             unsafe_brake = brake_rows & ~brake_safe
             anchor_rows = brake_rows & (
