@@ -24,7 +24,10 @@ is `S = 0.2068816087` m. A bar's asset-specific XY AABB half-extents are `b_i`.
 * Soft/normal envelope: the closed AABBs `b_i + S + tracking_margin(0.45)` and center wall
   bounds `arena + route_boundary_margin(1.25) + S`. The `0.45` value is unchanged.
 * Both envelopes use exact AABB slab/segment tests. The rounded Euclidean local check is not a
-  recovery certificate; corner disagreement is recorded as a safety failure.
+  recovery certificate; corner disagreement is recorded as a safety failure. Continuous
+  PhysX-substep chord certificates inflate the hard AABB by the central `1e-4` strictness plus
+  a derived `0.00013` m reachable-tube reserve. The latter is the upward ceiling of
+  `g*tan(45deg)*0.01^2/8 = 0.0001226` m; it is not a tuning knob.
 * Recovery may leave the soft envelope only while the hard envelope remains certified. A
   7x7 nearest-cell search (radius 3 cells at the fixed 0.25 m grid) chooses the nearest anchor
   outside an additional fixed 0.25 m soft hysteresis envelope. The point-to-anchor connector is accepted only after an exact continuous
@@ -56,6 +59,11 @@ resolution; it does not tune `0.45`. Enter at soft clearance `<= 0`; leave CONNE
 soft clearances exceed `0.25` m and the route handoff certificate is valid. The existing 10-step
 (1.0 s) ordinary replan cooldown is retained for ordinary route invalidations; recovery has no
 unchecked cooldown bypass.
+
+BRAKE timeout is the measured stop-time p95 plus the existing 0.20 s reserve. CONNECT timeout is
+derived per environment from the worst 7x7 diagonal distance `sqrt(2)*3*0.25`, the fixed
+acceleration ramp `v/4`, worst half-turn `pi/(150 deg/s)`, and the same 0.20 s reserve, divided
+by the fixed 0.1 s RL interval and rounded up. These are budgets, not tuning parameters.
 
 ## Dynamics and PhysX watchdog
 
@@ -105,7 +113,7 @@ converted into an arena-wide connectivity claim.
 ## Provenance/checkpoint contract
 
 The source manifest must hash `target_route_planner.py`, `target_motion.py`, `physical_target.py`,
-`navrl_task.py`, the recovery launcher, and this preregistration. Checkpoints must record the
+`navrl_task.py`, `navrl_task_config.py`, the recovery launcher, and this preregistration. Checkpoints must record the
 recovery schema/model id, both envelope margins, `S`, strict epsilon, hysteresis, fixed dynamics,
 braking-probe digest and source digest. Missing or mismatched recovery fields are a hard refusal;
 no shape-compatible v1 or older checkpoint may load. This document and implementation are separate

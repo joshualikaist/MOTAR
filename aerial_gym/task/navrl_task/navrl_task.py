@@ -34,6 +34,8 @@ from aerial_gym.task.navrl_task.target_route_planner import (
     RoutePlannerConfig,
     TARGET_ROUTE_MODE_GLOBAL_ASTAR,
     TARGET_ROUTE_MODE_RECOVERY,
+    TARGET_ROUTE_HARD_EPSILON_M,
+    TARGET_ROUTE_REACHABLE_TUBE_MARGIN_M,
     TARGET_ROUTE_MODE_OFF,
     TARGET_ROUTE_MODES,
     TARGET_ROUTE_MODEL,
@@ -622,6 +624,13 @@ class NavRLTask(BaseTask):
             )
         self._recovery_probe_receipt_sha256 = ""
         if self._target_route_recovery_enabled:
+            # Integration point for the common probe-receipt validator. Until that validator
+            # arms this immutable flag, scalar environment values are deliberately unusable.
+            if not bool(getattr(self.tm, "recovery_brake_probe_validated", False)):
+                raise RuntimeError(
+                    "recovery mode requires the common braking-probe receipt validator; "
+                    "scalar p05/p95 values cannot arm recovery"
+                )
             p95 = float(getattr(self.tm, "recovery_brake_stop_time_p95", 0.0))
             receipt = str(getattr(self.tm, "recovery_brake_probe_receipt", ""))
             declared_sha = str(
@@ -2383,6 +2392,9 @@ class NavRLTask(BaseTask):
                 "closed_aabb_support_plus_tracking_v1" if self._target_route_recovery_enabled else "off"
             ),
             "cfg_target_route_recovery_hard_epsilon_m": 1e-4 if self._target_route_recovery_enabled else 0.0,
+            "cfg_target_route_recovery_reachable_tube_margin_m": (
+                TARGET_ROUTE_REACHABLE_TUBE_MARGIN_M if self._target_route_recovery_enabled else 0.0
+            ),
             "cfg_target_route_recovery_hysteresis_m": RECOVERY_HYSTERESIS_M if self._target_route_recovery_enabled else 0.0,
             "cfg_target_route_recovery_stop_speed_mps": RECOVERY_STOP_SPEED_MPS if self._target_route_recovery_enabled else 0.0,
             "cfg_target_route_recovery_anchor_radius_cells": 3 if self._target_route_recovery_enabled else 0,
@@ -3054,6 +3066,10 @@ class NavRLTask(BaseTask):
                         "closed_aabb_support_plus_tracking_v1",
                     ),
                     ("cfg_target_route_recovery_hard_epsilon_m", 1e-4),
+                    (
+                        "cfg_target_route_recovery_reachable_tube_margin_m",
+                        TARGET_ROUTE_REACHABLE_TUBE_MARGIN_M,
+                    ),
                     ("cfg_target_route_recovery_hysteresis_m", RECOVERY_HYSTERESIS_M),
                     ("cfg_target_route_recovery_stop_speed_mps", RECOVERY_STOP_SPEED_MPS),
                     ("cfg_target_route_recovery_anchor_radius_cells", 3),
@@ -5337,12 +5353,31 @@ class NavRLTask(BaseTask):
         hard_lo, hard_hi = support_aware_bounds(
             b_min, b_max, float(self.cur.wall_margin), support_xy
         )
+        hard_margin = TARGET_ROUTE_HARD_EPSILON_M + TARGET_ROUTE_REACHABLE_TUBE_MARGIN_M
+        hard_lo = hard_lo + hard_margin
+        hard_hi = hard_hi - hard_margin
         soft_margin = float(self.cur.wall_margin) + float(self.tm.physical_boundary_margin)
         soft_lo, soft_hi = support_aware_bounds(b_min, b_max, soft_margin, support_xy)
-        hard_bounds_free = ((position_xy > hard_lo) & (position_xy < hard_hi)).all(dim=1)
-        soft_bounds_free = ((position_xy > soft_lo) & (position_xy < soft_hi)).all(dim=1)
-        hard_half = bar_half_extents + support_xy.unsqueeze(1)
-        soft_half = hard_half + float(self.tm.physical_tracking_margin)
+        geometry_valid = (
+            torch.isfinite(position_xy).all(dim=1)
+            & torch.isfinite(b_min).all(dim=1)
+            & torch.isfinite(b_max).all(dim=1)
+            & (b_max > b_min).all(dim=1)
+            & torch.isfinite(support_xy).all(dim=1)
+            & (support_xy >= 0.0).all(dim=1)
+            & torch.isfinite(bars_xy).all(dim=(1, 2))
+            & torch.isfinite(bar_half_extents).all(dim=(1, 2))
+            & (bar_half_extents >= 0.0).all(dim=(1, 2))
+        )
+        hard_bounds_free = ((position_xy > hard_lo) & (position_xy < hard_hi)).all(dim=1) & geometry_valid
+        soft_bounds_free = ((position_xy > soft_lo) & (position_xy < soft_hi)).all(dim=1) & geometry_valid
+        hard_half = bar_half_extents + support_xy.unsqueeze(1) + hard_margin
+        soft_half = (
+            bar_half_extents
+            + support_xy.unsqueeze(1)
+            + float(self.tm.physical_tracking_margin)
+            + hard_margin
+        )
         if bars_xy.shape[1] == 0:
             hard_inside = torch.zeros(position_xy.shape[0], dtype=torch.bool, device=self.device)
             soft_inside = torch.zeros_like(hard_inside)
@@ -5361,8 +5396,11 @@ class NavRLTask(BaseTask):
             position_xy - soft_lo, soft_hi - position_xy
         ).amin(dim=1)
         soft_clearance = torch.minimum(soft_clearance, soft_boundary_clearance)
-        hard_free = hard_bounds_free & ~hard_inside
-        soft_free = soft_bounds_free & ~soft_inside
+        hard_free = hard_bounds_free & ~hard_inside & geometry_valid
+        soft_free = soft_bounds_free & ~soft_inside & geometry_valid
+        soft_clearance = torch.where(
+            geometry_valid, soft_clearance, torch.full_like(soft_clearance, float("-inf"))
+        )
         if bars_xy.shape[1] == 0:
             hard_signed_bar = torch.full_like(position_xy[:, 0], float("inf"))
         else:
@@ -5377,6 +5415,9 @@ class NavRLTask(BaseTask):
             position_xy - hard_lo, hard_hi - position_xy
         ).amin(dim=1)
         hard_clearance = torch.minimum(hard_signed_bar, hard_boundary_clearance)
+        hard_clearance = torch.where(
+            geometry_valid, hard_clearance, torch.full_like(hard_clearance, float("-inf"))
+        )
         return hard_free, soft_free, soft_clearance, hard_clearance, hard_lo, hard_hi, hard_half
 
     def _plan_target_routes(
@@ -5611,7 +5652,7 @@ class NavRLTask(BaseTask):
                 & (self._target_route_manager.status_code == self._target_route_manager.STATUS_CODES["local_step_infeasible"])
                 & recovery_hard_free
                 & recovery_soft_free
-                & (recovery_state == RECOVERY_NORMAL)
+                & ((recovery_state == RECOVERY_NORMAL) | (recovery_state == RECOVERY_ROUTE))
             )
             if bool(prior_local_soft_free.any()):
                 self._target_route_manager.mark_local_infeasible_soft_free(prior_local_soft_free)
@@ -5631,13 +5672,22 @@ class NavRLTask(BaseTask):
             recovery_state = self._target_route_manager.recovery_state
             recovery_active = moving & ((recovery_state == RECOVERY_BRAKE) | (recovery_state == RECOVERY_CONNECT))
             self._target_route_manager.recovery_age_steps[recovery_active] += 1
-            timeout_steps = max(
+            brake_timeout_steps = max(
                 1,
                 int(math.ceil((float(self.tm.recovery_brake_stop_time_p95) + 0.20) / dt)),
             )
-            recovery_timeout = recovery_active & (
-                self._target_route_manager.recovery_age_steps > timeout_steps
+            brake_active = moving & (recovery_state == RECOVERY_BRAKE)
+            connect_active = moving & (recovery_state == RECOVERY_CONNECT)
+            self._target_route_manager.recovery_brake_age_steps[brake_active] += 1
+            self._target_route_manager.recovery_connect_age_steps[connect_active] += 1
+            brake_timeout = brake_active & (
+                self._target_route_manager.recovery_brake_age_steps > brake_timeout_steps
             )
+            connect_timeout = connect_active & (
+                self._target_route_manager.recovery_connect_age_steps
+                > self._target_route_manager.recovery_connect_timeout_steps
+            )
+            recovery_timeout = brake_timeout | connect_timeout
             if bool(recovery_timeout.any()):
                 self._target_route_manager.mark_no_connector(recovery_timeout, timeout=True)
                 recovery_state = self._target_route_manager.recovery_state
@@ -5680,6 +5730,25 @@ class NavRLTask(BaseTask):
                     self._target_route_manager.mark_no_connector(no_anchor)
                 good_anchor = anchor_rows & anchor_ok & ~no_anchor
                 self._target_route_manager.recovery_state[good_anchor] = RECOVERY_CONNECT
+                if bool(good_anchor.any()):
+                    # Derived CONNECT budget: worst 7x7 radius-3 diagonal distance, acceleration
+                    # ramp from the declared stop threshold, worst half-turn, and the existing
+                    # 0.20 s reserve. No learned/tuned timeout is introduced.
+                    max_anchor_distance = math.sqrt(2.0) * 3.0 * float(self.tm.route_resolution_m)
+                    speed_floor = torch.full_like(self._tm_speed, RECOVERY_STOP_SPEED_MPS)
+                    connect_speed = torch.maximum(self._tm_speed, speed_floor)
+                    accel_time = connect_speed / max(float(self.tm.max_accel), 1e-6)
+                    turn_time = math.pi / max(math.radians(float(self.tm.max_turn_rate_deg)), 1e-6)
+                    connect_budget_s = (
+                        max_anchor_distance / connect_speed
+                        + accel_time
+                        + turn_time
+                        + 0.20
+                    )
+                    self._target_route_manager.recovery_connect_timeout_steps[good_anchor] = torch.ceil(
+                        connect_budget_s[good_anchor] / dt
+                    ).to(torch.long).clamp(min=1)
+                    self._target_route_manager.recovery_connect_age_steps[good_anchor] = 0
             recovery_state = self._target_route_manager.recovery_state
             recovery_connect = moving & (recovery_state == RECOVERY_CONNECT)
             self._target_route_manager.recovery_connect_intervals += recovery_connect.sum()
@@ -5859,6 +5928,7 @@ class NavRLTask(BaseTask):
                     float(self.tm.avoidance_lookahead_s),
                     bars_half_extents[connect_ids],
                     exact_aabb_clearance=True,
+                    hard_epsilon_m=TARGET_ROUTE_HARD_EPSILON_M + TARGET_ROUTE_REACHABLE_TUBE_MARGIN_M,
                 )
                 bounded_xy[connect_ids] = connect_xy
                 bounded_velocity[connect_ids] = connect_velocity
@@ -5884,7 +5954,11 @@ class NavRLTask(BaseTask):
                         # v2 recovery uses the same closed AABB hard envelope as the route
                         # certificate.  v1/legacy physical transitions retain their historical
                         # rounded local check because this branch is fresh-only.
-                        feasible &= ~(delta <= 0.0).all(dim=2).any(dim=1)
+                        feasible &= ~(
+                            (delta - (TARGET_ROUTE_HARD_EPSILON_M + TARGET_ROUTE_REACHABLE_TUBE_MARGIN_M) <= 0.0)
+                            .all(dim=2)
+                            .any(dim=1)
+                        )
                     else:
                         feasible &= delta.clamp(min=0.0).norm(dim=2).amin(dim=1) > 1e-4
                 if self._target_route_enabled:
@@ -7125,6 +7199,8 @@ class NavRLTask(BaseTask):
                 "target_route_recovery_soft_envelope": (
                     "closed_aabb_support_plus_tracking_v1" if self._target_route_recovery_enabled else "off"
                 ),
+                "target_route_recovery_hard_epsilon_m": TARGET_ROUTE_HARD_EPSILON_M if self._target_route_recovery_enabled else 0.0,
+                "target_route_recovery_reachable_tube_margin_m": TARGET_ROUTE_REACHABLE_TUBE_MARGIN_M if self._target_route_recovery_enabled else 0.0,
                 "target_route_recovery_hysteresis_m": RECOVERY_HYSTERESIS_M if self._target_route_recovery_enabled else 0.0,
                 "target_route_recovery_stop_speed_mps": RECOVERY_STOP_SPEED_MPS if self._target_route_recovery_enabled else 0.0,
                 "cv_initial_heading": self._eval_cv_initial_heading,

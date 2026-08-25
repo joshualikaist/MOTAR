@@ -75,6 +75,7 @@ class PhysicalTargetController:
         self.watchdog_hi = None
         self.watchdog_active = torch.zeros(n, dtype=torch.bool, device=device)
         self.watchdog_breach = torch.zeros(n, dtype=torch.bool, device=device)
+        self.watchdog_geometry_invalid = torch.zeros(n, dtype=torch.bool, device=device)
         self.watchdog_prev_xy = self.position[:, :2].clone()
 
     def set_command(self, velocity_world, altitude, yaw=None):
@@ -102,6 +103,8 @@ class PhysicalTargetController:
         self.substeps[env_ids] = 0
         self.contact_seen[env_ids] = False
         self.watchdog_breach[env_ids] = False
+        self.watchdog_geometry_invalid[env_ids] = False
+        self.watchdog_active[env_ids] = False
         self.watchdog_prev_xy[env_ids] = self.position[env_ids, :2]
 
     def set_hard_watchdog(self, bars_xy, hard_half_extents_xy, hard_lo, hard_hi, active=None):
@@ -116,7 +119,19 @@ class PhysicalTargetController:
         self.watchdog_half = hard_half_extents_xy
         self.watchdog_lo = hard_lo
         self.watchdog_hi = hard_hi
-        self.watchdog_active[:] = True if active is None else active
+        geometry_valid = (
+            torch.isfinite(bars_xy).all(dim=(1, 2))
+            & torch.isfinite(hard_half_extents_xy).all(dim=(1, 2))
+            & (hard_half_extents_xy >= 0.0).all(dim=(1, 2))
+            & torch.isfinite(hard_lo).all(dim=1)
+            & torch.isfinite(hard_hi).all(dim=1)
+            & (hard_hi > hard_lo).all(dim=1)
+        )
+        self.watchdog_geometry_invalid[:] = ~geometry_valid
+        requested = torch.ones_like(self.watchdog_active) if active is None else active
+        if requested.shape != self.watchdog_active.shape:
+            raise ValueError("watchdog active mask must have shape [N]")
+        self.watchdog_active[:] = requested | ~geometry_valid
         # The first substep certificate starts at the actual pose at command installation; no
         # stale cross-interval segment is attributed to this interval.
         self.watchdog_prev_xy[:] = self.position[:, :2]
@@ -160,7 +175,9 @@ class PhysicalTargetController:
             else:
                 outside_bars = torch.ones_like(inside_bounds)
                 outside_segments = outside_bars
-            breach = self.watchdog_active & ~(inside_bounds & outside_bars & outside_segments)
+            breach = self.watchdog_active & (
+                self.watchdog_geometry_invalid | ~(inside_bounds & outside_bars & outside_segments)
+            )
             self.watchdog_breach |= breach
             # A breach cannot be repaired by a position write.  Stop requesting planar motion;
             # the physical controller's own dynamics then decelerate the actor.
@@ -233,5 +250,6 @@ class PhysicalTargetController:
             "max_tilt_deg": torch.rad2deg(self.max_tilt_seen_rad),
             "motor_saturation_fraction": self.saturation_substeps.float() / denom,
             "hard_watchdog_breach": self.watchdog_breach,
+            "hard_watchdog_geometry_invalid": self.watchdog_geometry_invalid,
             "motor_thrust": self.motor_thrust,
         }

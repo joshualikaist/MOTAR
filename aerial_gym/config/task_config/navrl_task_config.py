@@ -587,6 +587,11 @@ class task_config:
         recovery_brake_probe_receipt_sha256 = os.environ.get(
             "NAVRL_TARGET_RECOVERY_BRAKE_PROBE_RECEIPT_SHA256", ""
         ).strip().lower()
+        # Set only by the common probe-receipt validator. A scalar p05/p95 pair alone is never
+        # sufficient to arm the recovery controller.
+        recovery_brake_probe_validated = os.environ.get(
+            "NAVRL_TARGET_RECOVERY_PROBE_VALIDATED", "0"
+        ).strip().lower() in ("1", "true", "yes", "on")
         # Opt-in global route for the NEW physical+waypoint lineage. Off preserves every legacy
         # target transition byte-for-byte. The planner consumes simulator GT bar AABBs only to
         # drive the target actor; no route feature reaches the pursuer policy.

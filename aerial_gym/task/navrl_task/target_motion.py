@@ -123,6 +123,7 @@ def bounded_drone_target_step(
     lookahead_s,
     bars_half_extents_xy=None,
     exact_aabb_clearance=False,
+    hard_epsilon_m=0.0,
 ):
     """Choose and execute one dynamically bounded, collision-screened target step.
 
@@ -150,6 +151,8 @@ def bounded_drone_target_step(
         raise ValueError("lo and hi must match old_xy")
     if float(lookahead_s) < float(dt):
         raise ValueError("lookahead_s must be at least dt")
+    if not math.isfinite(float(hard_epsilon_m)) or float(hard_epsilon_m) < 0.0:
+        raise ValueError("hard_epsilon_m must be finite and non-negative")
 
     base_norm = desired_velocity.norm(dim=1, keepdim=True)
     fallback = torch.zeros_like(desired_velocity)
@@ -201,6 +204,7 @@ def bounded_drone_target_step(
     flat_turn = max_turn_rate.unsqueeze(1).expand(-1, count).reshape(-1)
     flat_desired = candidates.reshape(-1, 2)
     for step in range(steps):
+        previous_pos = pos
         vel = limit_planar_velocity(
             vel.reshape(-1, 2), flat_desired, flat_speed, dt, flat_accel, flat_turn
         ).reshape(n, count, 2)
@@ -222,9 +226,25 @@ def bounded_drone_target_step(
                     # Recovery's hard envelope is a closed AABB.  The normal route path retains
                     # the historical rounded Euclidean clearance behavior; callers must opt in
                     # explicitly so legacy/bounded transitions remain byte-compatible.
+                    delta = delta - float(hard_epsilon_m)
                     inside = (delta <= 0.0).all(dim=3)
                     dist = delta.clamp(min=0.0).amax(dim=3).amin(dim=2)
                     step_safe &= ~inside.any(dim=2)
+                    # Closed-AABB slab test on every continuous substep segment. Endpoint
+                    # checks alone can miss a diagonal corner crossing.
+                    p0 = previous_pos.unsqueeze(2)
+                    p1 = pos.unsqueeze(2)
+                    direction = p1 - p0
+                    box_lo = bars_xy.unsqueeze(1) - bars_half_extents_xy.unsqueeze(1) - float(hard_epsilon_m)
+                    box_hi = bars_xy.unsqueeze(1) + bars_half_extents_xy.unsqueeze(1) + float(hard_epsilon_m)
+                    parallel = direction.abs() <= 1e-9
+                    safe_parallel = (~parallel) | ((p0 >= box_lo) & (p0 <= box_hi))
+                    t0 = torch.where(parallel, torch.full_like(direction, float("-inf")), (box_lo - p0) / direction)
+                    t1 = torch.where(parallel, torch.full_like(direction, float("inf")), (box_hi - p0) / direction)
+                    t_enter = torch.maximum(torch.minimum(t0, t1)[:, :, :, 0], torch.minimum(t0, t1)[:, :, :, 1])
+                    t_exit = torch.minimum(torch.maximum(t0, t1)[:, :, :, 0], torch.maximum(t0, t1)[:, :, :, 1])
+                    segment_hits = safe_parallel.all(dim=3) & (t_enter <= t_exit) & (t_exit >= 0.0) & (t_enter <= 1.0)
+                    step_safe &= ~segment_hits.any(dim=2)
                 else:
                     dist = delta.clamp(min=0.0).norm(dim=3).amin(dim=2)
                     step_safe &= dist >= float(clearance) + 1e-4
