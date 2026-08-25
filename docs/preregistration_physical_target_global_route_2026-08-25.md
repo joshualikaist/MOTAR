@@ -27,15 +27,22 @@ reward, and pursuer policy remain unchanged.
 - a goal is selected at least 6 m away inside the start's connected component and A* runs
   once. Occupancy and connectivity are not recomputed for candidate goals;
 - no path, invalid geometry, expansion exhaustion, local rollout failure, or stale support
-  yields zero velocity and an explicit reason. There is no unchecked straight-line fallback;
+  yields zero velocity and an explicit reason. There is no unchecked straight-line fallback.
+  A local rollout failure remains stopped through cooldown, then resamples a destination in the
+  current connected component instead of deterministically recreating the failed route;
 - route cursor reach uses the task's 0.5 m waypoint reach and a passed-waypoint test.
+
+Bulk-evaluation telemetry keeps cumulative goal completions separate from connected-goal
+replans and invalidations by reason (`local_step_infeasible`, `support_contract_changed`,
+`goal_changed`). It also measures planning batch count/size and wall time around the complete
+device-to-host copy plus CPU plan. Timing is observational only and never changes control.
 
 ## Gates
 
 1. Synthetic CPU tests must pass for blocked-straight detour, complete disconnection,
    narrow-corridor pass/fail, reflection and repeated-call determinism, AABB-corner LOS,
    invalid numeric input, conservative support, connected-goal selection, and waypoint
-   overshoot.
+   overshoot, and local-failure route replacement.
 2. Launcher preflights must show: canonical base = route off; canonical physical rejects a
    stale route request; only the routed fresh wrapper admits `global_astar_v1 + waypoint`.
 3. At 70/150/205/300 bars, 16 deterministic `navrl_band` layouts use actual `bars_h3`

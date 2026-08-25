@@ -56,6 +56,20 @@ class TargetCheckpointContractTest(unittest.TestCase):
         # evidence. This is the compatibility rule that keeps legacy checkpoints loadable.
         self.assertRegex(TASK_SOURCE, r"saved_value = state\.get\(key\)\s+if saved_value is None:\s+continue")
 
+    def test_local_route_failure_replaces_goal_after_cooldown(self):
+        self.assertIn('STATUS_CODES["local_step_infeasible"]', TASK_SOURCE)
+        local_branch = TASK_SOURCE.index("if bool(local_failure.any()):")
+        ordinary_branch = TASK_SOURCE.index("ordinary_replan =", local_branch)
+        self.assertIn(
+            "connected_goal=True",
+            TASK_SOURCE[local_branch:ordinary_branch],
+        )
+        invalidation = TASK_SOURCE.index("local_invalid =")
+        self.assertIn(
+            "torch.rand_like",
+            TASK_SOURCE[invalidation:invalidation + 700],
+        )
+
 
 class TargetLauncherContractTest(unittest.TestCase):
     def test_physical_lineage_is_fresh_only_and_forces_matching_airframe(self):

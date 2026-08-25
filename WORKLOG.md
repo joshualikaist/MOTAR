@@ -12040,7 +12040,16 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
   goal과 parent path를 함께 얻는다. 후보마다 occupancy/A*를 최대 64회 만들던 초안은 폐기했다.
   일반 step은 padded GPU waypoint cache로 vectorize했고 runtime counter의 interval별 GPU sync도 없앴다.
   0.5 m task reach와 waypoint 통과 판정으로 overshoot 정지를 막았다.
-- synthetic route test 9/9와 launcher/checkpoint contract 7/7 PASS, py_compile/bash syntax PASS.
+- 후속 검수에서 local rollout failure 뒤 동일 waypoint로 deterministic replan하면 같은 명령을
+  반복할 수 있는 livelock을 발견했다. cooldown 중 zero command는 유지하고, 이후 selector를 다시
+  뽑아 같은 connected component의 새 goal로 계획하도록 수정했다. telemetry에
+  `local_step_invalidations`와 `connected_goal_replans`를 분리했고 selector GPU→CPU 전송은 env별
+  `.item()` 대신 batch 1회로 바꿨다.
+- healthy 재목표화와 failure replan을 구분하도록 cumulative `goal_completions`, reason별 invalidation,
+  connected-goal replan을 export한다. 실제 PhysX reset 비용을 다음 smoke에서 숨김없이 측정하도록
+  GPU→CPU copy 전부터 plan 종료까지 planning batch/환경수/total/max wall time도 기록한다. 시간값은
+  계측 전용이며 제어 분기에 사용하지 않는다.
+- synthetic route test 10/10와 launcher/checkpoint contract 8/8 PASS, py_compile/bash syntax PASS.
   seed 825 actual-AABB CPU benchmark(16 layouts/density)는 70/150/205/300 bars 평균
   46.18/48.71/58.34/64.01 ms/env, p95 최대 115.52 ms, 128-env 직렬 보수 투영 최대 8.19 s,
   connected goal 64/64 성공으로 preregistered CPU gate를 통과했다.

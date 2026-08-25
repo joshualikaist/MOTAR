@@ -5401,11 +5401,25 @@ class NavRLTask(BaseTask):
                     int(self.num_task_steps),
                 ) & moving
                 if bool(needs_replan.any()):
-                    self._plan_target_routes(
-                        needs_replan.nonzero(as_tuple=False).squeeze(-1),
-                        connected_goal=False,
-                        is_replan=True,
+                    local_failure = needs_replan & (
+                        self._target_route_manager.status_code
+                        == self._target_route_manager.STATUS_CODES["local_step_infeasible"]
                     )
+                    if bool(local_failure.any()):
+                        local_ids = local_failure.nonzero(as_tuple=False).squeeze(-1)
+                        # Reusing the same deterministic route after a local dynamics failure can
+                        # livelock. The selector was resampled when failure was detected; after the
+                        # cooldown, choose a different reachable destination in this component.
+                        self._plan_target_routes(
+                            local_ids, connected_goal=True, is_replan=True
+                        )
+                    ordinary_replan = needs_replan & ~local_failure
+                    if bool(ordinary_replan.any()):
+                        self._plan_target_routes(
+                            ordinary_replan.nonzero(as_tuple=False).squeeze(-1),
+                            connected_goal=False,
+                            is_replan=True,
+                        )
                 desired_velocity, route_active, route_complete = (
                     self._target_route_manager.velocity_reference(
                         old_xy, self._tm_speed, float(self.tm.waypoint_reach_m)
@@ -5506,6 +5520,10 @@ class NavRLTask(BaseTask):
                 if self._target_route_enabled:
                     feasible &= local_rollout_feasible & route_active
                     local_invalid = moving & route_active & ~local_rollout_feasible
+                    if bool(local_invalid.any()):
+                        self._target_route_selector[local_invalid] = torch.rand_like(
+                            self._target_route_selector[local_invalid]
+                        )
                     self._target_route_manager.invalidate(
                         local_invalid, "local_step_infeasible", int(self.num_task_steps)
                     )
