@@ -68,6 +68,8 @@ logger = CustomLogger("navrl_task")
 RECOVERY_HYSTERESIS_M = 0.25  # route grid resolution, one cell
 RECOVERY_STOP_SPEED_MPS = 0.10  # existing braking-probe stop threshold
 RECOVERY_CONNECT_PROGRESS_TOLERANCE_M = 1e-6  # fixed numerical non-regression tolerance
+RECOVERY_BRAKING_RECEIPT_SCHEMA = "navrl_target_recovery_braking_receipt_v1"
+RECOVERY_BRAKING_PROBE_SCHEMA = "navrl_target_recovery_braking_probe_v1"
 # SHA-256 of the exact raw-first validator sources from probe lineage 7f2d806 plus its required
 # returned core handoff.  If the common verifier changes, this constant and receipt/source
 # lineage must change together; a mutable manifest alone cannot authorize code.

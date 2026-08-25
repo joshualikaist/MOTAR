@@ -12554,8 +12554,12 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
   infeasibility for `off`, rounded normal-route invalidation for recovery, each with an explicit
   `32×300` denominator. Exact CONNECT failures remain in the recovery reason partition.
 
-### 2026-08-26 — evaluator source-object fixture correction
+### 2026-08-26 — recovery evaluator integration contract reconciliation
 
-- The synthetic braking-receipt contract now builds its manifest and tool hashes from the recorded
-  git object, matching the immutable post-commit receipt semantics used by the evaluator.
-- CPU contracts pass after this correction; no GPU, PhysX, or PPO execution was performed.
+- Integrated the evaluator and braking probe into one clean lineage. The standalone verifier keeps
+  the pinned current-source manifest contract and exact `core_integration` return hash
+  `26913b091b89bdb5d0bdfa651d67eca803bbf8076b4180b8b689bb1a873f6df5`; the evaluator consumes the
+  same raw-first result without introducing a second verifier semantics.
+- Added explicit receipt/probe schema constants to the task source and reran 22 recovery-core,
+  8 braking, 12 packed-telemetry, and 5 evaluator CPU tests. No GPU, PhysX, or PPO execution was
+  performed.
