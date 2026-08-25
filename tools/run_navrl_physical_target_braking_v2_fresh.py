@@ -130,6 +130,10 @@ def run(output: Path) -> Dict[str, Any]:
                 "NAVRL_BRAKING_PYTHON": str(python_bin),
                 "NAVRL_NINJA": str(Path(ninja).resolve()),
             })
+            # PyTorch's extension loader discovers ninja through PATH, not NAVRL_NINJA. Pin the
+            # selected executable's directory ahead of any inherited toolchain to prevent a stale
+            # or missing ninja from changing the Isaac Gym runtime build.
+            env["PATH"] = str(Path(ninja).resolve().parent) + os.pathsep + env.get("PATH", "")
             command = [str(python_bin), str(root / "tools/probe_navrl_physical_target_braking.py"), "--output", str(cell_path), "--speed", format(speed, ".1f"), "--envs", str(probe.REGISTERED_ENVS), "--_single-speed", "--_auth-file", str(auth_path)]
             completed = subprocess.run(command, cwd=str(root), env=env, check=False)
             if completed.returncode != 0:

@@ -12574,3 +12574,11 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
   `33923918fead5f85f919336a5c82f9135202f7a68238411b6ea1ec42286fa365`. CPU braking/core tests and
   source compilation pass. The first GPU launch attempt correctly failed closed because the old
   base commit was not an ancestor; no simulator or PPO step ran.
+
+### 2026-08-26 — pinned ninja PATH handoff
+
+- The second probe attempt reached Isaac Gym but its child could not build `gymtorch`: exporting
+  `NAVRL_NINJA` alone does not affect PyTorch's PATH-based ninja discovery. The fresh braking
+  launcher now prepends the pinned ninja directory to each child PATH while retaining the absolute
+  executable attestation. This is an execution-environment fix only; no task/controller/physics
+  parameter changed. GPU measurement had not started beyond import/build initialization.
