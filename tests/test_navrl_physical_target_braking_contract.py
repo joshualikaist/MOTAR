@@ -17,43 +17,73 @@ import verify_navrl_physical_target_braking as verifier
 
 
 def fake_cell(speed):
+    center = [[20.0, 20.0] for _ in range(probe.REGISTERED_ENVS)]
+    traces = []
+    for index in range(1, probe.WARMUP_STEPS + 1):
+        position = [[20.0 + 0.06 * index, 20.0] for _ in range(probe.REGISTERED_ENVS)]
+        traces.append({
+            "phase": "warmup", "sample_index": index, "elapsed_s": index * probe.RL_DT_S,
+            "speed_mps": [speed] * probe.REGISTERED_ENVS, "position_xy_m": position,
+            "step_distance_m": [0.06] * probe.REGISTERED_ENVS,
+            "path_distance_m": [0.06 * index] * probe.REGISTERED_ENVS,
+            "contact": [False] * probe.REGISTERED_ENVS, "invalid_obb": [False] * probe.REGISTERED_ENVS,
+            "motor_saturation_fraction": [0.01] * probe.REGISTERED_ENVS, "max_tilt_deg": [10.0] * probe.REGISTERED_ENVS,
+        })
+    for index, current_speed in enumerate((speed * 0.5, 0.05), 1):
+        position = [[20.0 + 3.0 + 0.05 * index, 20.0] for _ in range(probe.REGISTERED_ENVS)]
+        traces.append({
+            "phase": "brake", "sample_index": index, "elapsed_s": index * probe.RL_DT_S,
+            "speed_mps": [current_speed] * probe.REGISTERED_ENVS, "position_xy_m": position,
+            "step_distance_m": [0.05] * probe.REGISTERED_ENVS,
+            "path_distance_m": [0.05 * index] * probe.REGISTERED_ENVS,
+            "contact": [False] * probe.REGISTERED_ENVS, "invalid_obb": [False] * probe.REGISTERED_ENVS,
+            "motor_saturation_fraction": [0.02] * probe.REGISTERED_ENVS, "max_tilt_deg": [12.0] * probe.REGISTERED_ENVS,
+        })
+    provenance = {
+        "python_executable": "synthetic", "python_executable_sha256": "7" * 64, "python_version": "3.8", "torch_version": "synthetic",
+        "torch_cuda_version": "synthetic", "cuda_device": "synthetic", "nvidia_smi_path": "synthetic",
+        "nvidia_smi_sha256": "0" * 64, "nvidia_smi_identity": "synthetic", "gpu_driver_version": "synthetic",
+        "ninja_path": "synthetic", "ninja_sha256": "1" * 64, "ninja_version": "synthetic",
+        "selected_python_contract": "synthetic",
+        "imported_modules": {"isaacgym": {"path": "/synthetic/isaacgym.py", "sha256": "4" * 64, "root_bound": False}},
+        "tool_hashes": {path: "3" * 64 for path in probe.TOOL_SOURCE_PATHS},
+    }
+    for module, path in probe.EXPECTED_REPO_IMPORTS.items():
+        provenance["imported_modules"][module] = {"path": path, "sha256": probe.sha256_file(ROOT / path), "root_bound": True}
+    provenance["tool_hashes"] = {path: probe.sha256_file(ROOT / path) for path in probe.TOOL_SOURCE_PATHS}
     rows = []
     for env_id in range(probe.REGISTERED_ENVS):
         rows.append({
             "env_id": env_id,
             "requested_speed_mps": speed,
             "measured_initial_speed_mps": speed,
-            "stop_time_s": 0.20 + env_id * 0.001,
-            "stop_distance_m": 0.08 + env_id * 0.0001,
-            "effective_deceleration_mps2": speed * speed / (2.0 * (0.08 + env_id * 0.0001)),
+            "warmup_final_speed_mps": speed, "warmup_speed_error_mps": 0.0, "warmup_converged": True,
+            "stop_time_s": 0.20, "stop_distance_m": 0.10, "endpoint_displacement_m": 0.10, "max_lateral_deviation_m": 0.0,
+            "effective_deceleration_mps2": speed * speed / 0.20,
+            "warmup_contact": False, "warmup_invalid_obb": False,
             "contact": False,
             "invalid_obb": False,
-            "motor_saturation_fraction": 0.01,
-            "max_tilt_deg": 12.0,
+            "warmup_motor_saturation_fraction": 0.01, "warmup_max_tilt_deg": 10.0,
+            "motor_saturation_fraction": 0.02, "max_tilt_deg": 12.0,
         })
     return {
         "schema": probe.SCHEMA,
-        "cell": {"speed_mps": speed, "envs": probe.REGISTERED_ENVS, "seed": 827},
+        "cell": {"speed_mps": speed, "envs": probe.REGISTERED_ENVS, "seed": 827, "child_auth": {"record_id": "synthetic", "sha256": "6" * 64}},
         "contract": probe.FROZEN_CONTRACT,
-        "instantiated": {"sim_name": "base_sim", "envs": probe.REGISTERED_ENVS},
+        "source_attestation": {"clean": True, "git_head": probe.git_head(ROOT), "required_core_base_commit": "c98997d"},
+        "setup": {"mode": "obstacle_free_center", "active_bars": 0, "center_xy_m": center,
+                   "center_clearance_to_arena_m": [19.0] * probe.REGISTERED_ENVS,
+                   "warmup_steps": probe.WARMUP_STEPS, "brake_steps_budget": probe.BRAKE_STEPS_BUDGET,
+                   "warmup_substeps": [probe.WARMUP_STEPS * probe.PHYSICS_SUBSTEPS] * probe.REGISTERED_ENVS,
+                   "warmup_path_distance_m": [3.0] * probe.REGISTERED_ENVS},
+        "instantiated": {"sim_name": "base_sim", "envs": probe.REGISTERED_ENVS,
+                          "controller_dt_s": probe.PHYSICS_DT_S,
+                          "controller_substeps_per_rl_step": probe.PHYSICS_SUBSTEPS,
+                          "physical_box_xyz_m": probe.FROZEN_CONTRACT["physical_box_xyz_m"],
+                          "physical_support_xy_m": probe.FROZEN_CONTRACT["physical_support_xy_m"]},
         "raw_samples": rows,
-        "physics_samples": [],
-        "provenance": {
-            "python_executable": "synthetic",
-            "python_version": "3.8",
-            "torch_version": "synthetic",
-            "torch_cuda_version": "synthetic",
-            "cuda_device": "synthetic",
-            "nvidia_smi_path": "synthetic",
-            "nvidia_smi_sha256": "0" * 64,
-            "nvidia_smi_identity": "synthetic",
-            "gpu_driver_version": "synthetic",
-            "ninja_path": "synthetic",
-            "ninja_sha256": "1" * 64,
-            "ninja_version": "synthetic",
-            "imported_modules": {"synthetic": {"path": "synthetic", "sha256": "2" * 64}},
-            "tool_hashes": {path: "3" * 64 for path in probe.TOOL_SOURCE_PATHS},
-        },
+        "physics_samples": traces,
+        "provenance": provenance,
     }
 
 
@@ -101,21 +131,28 @@ class PhysicalTargetBrakingContractTest(unittest.TestCase):
             manifest = probe.source_manifest(ROOT, launcher.TOOL_PATHS)
             (output / "source_manifest.json").write_bytes(probe.canonical_json_bytes(manifest))
             summary = verifier.summarize_cells([fake_cell(speed) for speed in probe.REGISTERED_SPEEDS])
+            core_handoff = verifier.core_integration_object(summary)
             (output / "summary.json").write_bytes(probe.canonical_json_bytes(summary))
             receipt = {
                 "schema": probe.RECEIPT_SCHEMA,
                 "probe_schema": probe.SCHEMA,
+                "subject": "physical_target_ref5in_actor",
                 "contract": probe.FROZEN_CONTRACT,
                 "git_head": probe.git_head(ROOT),
+                "core_base_commit": "c98997d",
+                "source_clean": True,
                 "source_manifest": "source_manifest.json",
                 "source_manifest_sha256": probe.sha256_file(output / "source_manifest.json"),
                 "cells": cells,
                 "summary_path": "summary.json",
                 "summary_sha256": probe.sha256_file(output / "summary.json"),
                 "summary": summary,
+                "speed_cells": summary["speed_cells"],
                 "decel_p05_mps2": min(row["p05_effective_deceleration_mps2"] for row in summary["measured_speed_to_p95_lookup"].values()),
                 "stop_time_p95_s": max(row["p95_stop_time_s"] for row in summary["measured_speed_to_p95_lookup"].values()),
                 "measured_speed_to_p95_lookup": summary["measured_speed_to_p95_lookup"],
+                "certified_monotone_speed_to_p95_lookup": summary["certified_monotone_speed_to_p95_lookup"],
+                "core_integration": core_handoff,
                 "fresh_only": True,
                 "process_isolation": "one fresh Isaac Gym child per registered speed",
             }
@@ -138,6 +175,31 @@ class PhysicalTargetBrakingContractTest(unittest.TestCase):
         )
         self.assertEqual(completed.returncode, 1)
         self.assertIn("fresh-only", completed.stdout)
+
+    def test_adversarial_trace_row_and_warmup_gates_fail_closed(self):
+        forged = fake_cell(0.6)
+        forged["physics_samples"][-1]["path_distance_m"][0] = 999.0
+        with self.assertRaises(ValueError):
+            verifier.validate_cell(forged)
+        forged = fake_cell(0.6)
+        forged["physics_samples"][50]["speed_mps"][0] = 0.05
+        with self.assertRaises(ValueError):
+            verifier.validate_cell(forged)
+        forged = fake_cell(0.6)
+        forged["physics_samples"][0]["contact"][0] = True
+        with self.assertRaises(ValueError):
+            verifier.validate_cell(forged)
+        forged = fake_cell(0.6)
+        forged["provenance"]["imported_modules"]["aerial_gym"]["path"] = "hostile.py"
+        with self.assertRaises(ValueError):
+            verifier.validate_cell(forged)
+
+    def test_nonoverwrite_output_gate_is_hard(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            existing = Path(temporary) / "existing"
+            existing.mkdir()
+            with self.assertRaises(SystemExit):
+                launcher._safe_output(existing, Path(temporary))
 
     def test_core_files_are_not_modified_by_this_lineage(self):
         changed = subprocess.run(

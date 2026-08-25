@@ -12490,3 +12490,17 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
 - Receipts are finite-only canonical JSON with exact source/runtime contract, valid recorded git
   object, per-cell/tool/core hashes, completion marker, atomic non-overwrite finalization, and
   post-rename standalone verification. GPU execution is intentionally not run in CPU preflight.
+
+### 2026-08-25 — braking probe adversarial safety hardening
+
+- Replaced random 70-bar warmup with an explicitly recorded obstacle-free (`NUM_BARS=0`) arena-center
+  setup and a 5 s speed-convergence gate (absolute and relative tolerance frozen before execution).
+  Warmup contact/OBB/saturation/tilt are separate from braking-phase diagnostics; braking counters
+  are reset only in evaluation telemetry accumulators.
+- Raw traces now carry positions, interval path length, speed, safety flags, saturation, tilt, and
+  lateral deviation. The validator derives stop first-crossing, integrated stop distance, effective
+  deceleration, p05/p95, and a cumulative-maximum certified speed lookup from trace data; forged rows,
+  collision traces, low initial speed, and path/provenance inconsistencies fail closed.
+- Added parent-only child authorization records, pinned executable/ninja environment, clean-source
+  and `c98997d` ancestry attestations, identical runtime provenance across all four cells, and the
+  canonical core integration handoff object. GPU execution remains intentionally unrun.

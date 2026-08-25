@@ -38,6 +38,12 @@ STOP_THRESHOLD_MPS = 0.10
 SATURATION_MAX = 0.15
 TILT_MAX_DEG = 60.0
 FINITE_EPS = 1e-12
+WARMUP_STEPS = 50
+BRAKE_STEPS_BUDGET = 100
+INITIAL_SPEED_ABS_TOLERANCE_MPS = 0.05
+INITIAL_SPEED_REL_TOLERANCE = 0.10
+REQUIRED_CORE_BASE_COMMIT = "c98997d"
+CHILD_AUTH_SCHEMA = "navrl_target_recovery_braking_child_auth_v1"
 
 # This is an attestation tuple, not a tuning surface.  Values are repeated here so a result is
 # refused when a future task/config silently changes the physical experiment.
@@ -49,7 +55,7 @@ FROZEN_CONTRACT: Dict[str, Any] = {
     "route_mode": "off",
     "seed": 827,
     "envs": REGISTERED_ENVS,
-    "num_bars": 70,
+    "num_bars": 0,
     "max_bars": 300,
     "arena_xy_m": 40.0,
     "arena_z_m": 3.0,
@@ -87,9 +93,15 @@ FROZEN_CONTRACT: Dict[str, Any] = {
     "physics_dt_s": PHYSICS_DT_S,
     "physics_substeps": PHYSICS_SUBSTEPS,
     "rl_step_dt_s": RL_DT_S,
+    "setup_mode": "obstacle_free_center",
+    "warmup_steps": WARMUP_STEPS,
+    "brake_steps_budget": BRAKE_STEPS_BUDGET,
+    "initial_speed_abs_tolerance_mps": INITIAL_SPEED_ABS_TOLERANCE_MPS,
+    "initial_speed_rel_tolerance": INITIAL_SPEED_REL_TOLERANCE,
 }
 
 CORE_PATHS = (
+    "aerial_gym/__init__.py",
     "aerial_gym/task/navrl_task/navrl_task.py",
     "aerial_gym/task/navrl_task/target_motion.py",
     "aerial_gym/task/navrl_task/target_route_planner.py",
@@ -107,6 +119,16 @@ TOOL_SOURCE_PATHS = (
     "docs/preregistration_navrl_physical_target_braking_2026-08-25.md",
 )
 RECOVERY_SOURCE_PATHS = CORE_PATHS + TOOL_SOURCE_PATHS
+EXPECTED_REPO_IMPORTS = {
+    "aerial_gym": "aerial_gym/__init__.py",
+    "aerial_gym.task.navrl_task.navrl_task": "aerial_gym/task/navrl_task/navrl_task.py",
+    "aerial_gym.task.navrl_task.target_motion": "aerial_gym/task/navrl_task/target_motion.py",
+    "aerial_gym.task.navrl_task.target_route_planner": "aerial_gym/task/navrl_task/target_route_planner.py",
+    "aerial_gym.task.navrl_task.physical_target": "aerial_gym/task/navrl_task/physical_target.py",
+    "aerial_gym.config.task_config.navrl_task_config": "aerial_gym/config/task_config/navrl_task_config.py",
+    "aerial_gym.config.sim_config.base_sim_config": "aerial_gym/config/sim_config/base_sim_config.py",
+    "aerial_gym.config.robot_config.navrl_ref5in_quad_config": "aerial_gym/config/robot_config/navrl_ref5in_quad_config.py",
+}
 
 
 def canonical_json_bytes(value: Any) -> bytes:
@@ -200,6 +222,46 @@ def git_head(repo_root: Optional[Path] = None) -> str:
     if len(head) != 40 or any(ch not in "0123456789abcdef" for ch in head):
         raise ValueError("invalid git HEAD")
     return head
+
+
+def require_clean_source(repo_root: Optional[Path] = None) -> Dict[str, Any]:
+    root = (repo_root or _repo_root()).resolve()
+    status = subprocess.run(
+        ["git", "-C", str(root), "status", "--porcelain", "--untracked-files=all"],
+        text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False,
+    )
+    if status.returncode != 0:
+        raise ValueError("cannot attest source cleanliness: %s" % status.stderr.strip())
+    if status.stdout.strip():
+        raise ValueError("source tree is dirty before GPU execution")
+    ancestry = subprocess.run(
+        ["git", "-C", str(root), "merge-base", "--is-ancestor", REQUIRED_CORE_BASE_COMMIT, "HEAD"],
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False,
+    )
+    if ancestry.returncode != 0:
+        raise ValueError("required core base %s is not an ancestor" % REQUIRED_CORE_BASE_COMMIT)
+    return {
+        "clean": True,
+        "git_head": git_head(root),
+        "required_core_base_commit": REQUIRED_CORE_BASE_COMMIT,
+    }
+
+
+def verify_child_auth(auth_file: Path, speed: float) -> Dict[str, str]:
+    token = os.environ.get("NAVRL_BRAKING_CHILD_TOKEN", "")
+    if not token or not auth_file.is_file():
+        raise ValueError("missing parent-only child authorization")
+    try:
+        auth = json.loads(auth_file.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise ValueError("invalid child authorization") from exc
+    if auth.get("schema") != CHILD_AUTH_SCHEMA or auth.get("token") != token:
+        raise ValueError("child authorization token mismatch")
+    if abs(float(auth.get("speed_mps", -1.0)) - speed) > 1e-12 or not auth.get("record_id"):
+        raise ValueError("child authorization speed/record mismatch")
+    if canonical_json_bytes(auth) != auth_file.read_bytes():
+        raise ValueError("child authorization is not canonical")
+    return {"record_id": str(auth["record_id"]), "sha256": sha256_file(auth_file)}
 
 
 def _exact_float(actual: Any, expected: float, label: str, tolerance: float = 0.0) -> None:
@@ -305,6 +367,9 @@ def runtime_provenance(repo_root: Optional[Path] = None) -> Dict[str, Any]:
         raise ValueError("torch import failed: %s" % exc)
     if not bool(torch.cuda.is_available()):
         raise ValueError("CUDA is unavailable; physical probe is GPU-only")
+    expected_python = os.environ.get("NAVRL_BRAKING_PYTHON", "")
+    if expected_python and Path(sys.executable).resolve() != Path(expected_python).resolve():
+        raise ValueError("selected Python executable drift")
     smi = shutil.which("nvidia-smi")
     if not smi:
         raise ValueError("nvidia-smi is required for GPU provenance")
@@ -356,6 +421,7 @@ def runtime_provenance(repo_root: Optional[Path] = None) -> Dict[str, Any]:
         tool_hashes[relative] = sha256_file(path)
     return {
         "python_executable": str(Path(sys.executable).resolve()),
+        "python_executable_sha256": sha256_file(Path(sys.executable)),
         "python_version": platform.python_version(),
         "torch_version": str(torch.__version__),
         "torch_cuda_version": str(getattr(torch.version, "cuda", None)),
@@ -369,6 +435,7 @@ def runtime_provenance(repo_root: Optional[Path] = None) -> Dict[str, Any]:
         "ninja_version": ninja_version.stdout.strip(),
         "tool_hashes": tool_hashes,
         "imported_modules": imported,
+        "selected_python_contract": str(Path(expected_python).resolve()) if expected_python else str(Path(sys.executable).resolve()),
     }
 
 
@@ -383,7 +450,7 @@ def _invalid_obb(task: Any, torch: Any) -> Any:
     return invalid
 
 
-def run_speed_cell(speed: float, output: Path, envs: int = REGISTERED_ENVS, warmup_steps: int = 50, brake_steps: int = 100) -> None:
+def run_speed_cell(speed: float, output: Path, envs: int = REGISTERED_ENVS, warmup_steps: int = WARMUP_STEPS, brake_steps: int = BRAKE_STEPS_BUDGET, auth_file: Optional[Path] = None) -> None:
     """Run exactly one speed arm in a fresh Isaac Gym process.
 
     The caller has already isolated this process.  No PPO action is used to produce target
@@ -393,6 +460,10 @@ def run_speed_cell(speed: float, output: Path, envs: int = REGISTERED_ENVS, warm
         raise ValueError("speed cell does not match the frozen grid")
     if output.exists():
         raise ValueError("refusing to overwrite cell: %s" % output)
+    if auth_file is None:
+        raise ValueError("parent child authorization is required")
+    child_auth = verify_child_auth(auth_file, speed)
+    source_attestation = require_clean_source(_repo_root())
     os.environ.update({
         "AERIAL_GYM_SIM_NAME": "base_sim",
         "NAVRL_ROBOT": "navrl_ref5in_quad",
@@ -400,7 +471,7 @@ def run_speed_cell(speed: float, output: Path, envs: int = REGISTERED_ENVS, warm
         "NAVRL_TARGET_PATTERN": "waypoint",
         "NAVRL_TARGET_ROUTE_MODE": "off",
         "NAVRL_TARGET_SPEED": str(speed),
-        "NAVRL_NUM_BARS": "70",
+        "NAVRL_NUM_BARS": "0",
         "NAVRL_MAX_BARS": "300",
         "NAVRL_ARENA_XY": "40",
         "NAVRL_ARENA_Z": "3",
@@ -424,35 +495,106 @@ def run_speed_cell(speed: float, output: Path, envs: int = REGISTERED_ENVS, warm
     if hasattr(task, "seed"):
         task.seed(827)
     if hasattr(task, "_set_active_bars"):
-        task._set_active_bars(70)
+        task._set_active_bars(0)
     task.reset()
     instantiated = attest_instantiated_task(task, speed)
     ctrl = task._target_controller
+    bmin = task.obs_dict["env_bounds_min"]
+    bmax = task.obs_dict["env_bounds_max"]
+    center = ((bmin + bmax) * 0.5).clone()
+    center[:, 2] = float(task.task_config.flight_altitude)
+    center[:, 2] = torch.maximum(center[:, 2], bmin[:, 2] + 0.5)
+    center[:, 2] = torch.minimum(center[:, 2], bmax[:, 2] - 0.5)
+    ctrl.position[:] = center
+    ctrl.linvel.zero_()
+    ctrl.angvel_world.zero_()
+    ctrl.reset_idx(torch.arange(envs, device=task.device))
+    task.sim_env.IGE_env.write_to_sim()
+    task.sim_env.IGE_env.refresh_tensors()
+    support = task._physical_target_support_xyz()
+    setup_margin = torch.minimum(
+        center[:, :2] - bmin[:, :2] - support[:, :2],
+        bmax[:, :2] - center[:, :2] - support[:, :2],
+    ).amin(dim=1)
+    if bool((setup_margin <= 0.5).any()):
+        raise RuntimeError("obstacle-free center setup lacks certified arena clearance")
     altitude = torch.full((envs,), float(task.task_config.flight_altitude), device=task.device)
     direction = torch.zeros((envs, 3), device=task.device)
     direction[:, 0] = float(speed)
-    for _ in range(warmup_steps):
+    warmup_traces = []
+    warmup_contact_any = torch.zeros(envs, dtype=torch.bool, device=task.device)
+    warmup_invalid_any = torch.zeros(envs, dtype=torch.bool, device=task.device)
+    warmup_path = torch.zeros(envs, device=task.device)
+    previous_position = ctrl.position[:, :2].detach().clone()
+    for sample_index in range(1, warmup_steps + 1):
         ctrl.begin_control_interval()
         ctrl.set_command(direction, altitude)
         task.sim_env.step(actions=torch.zeros((envs, 4), device=task.device))
+        position = ctrl.position[:, :2].detach().clone()
+        step_distance = (position - previous_position).norm(dim=1)
+        warmup_path += step_distance
+        previous_position = position
+        contact_now = ctrl.contact_seen.clone()
+        invalid_now = _invalid_obb(task, torch)
+        warmup_contact_any |= contact_now
+        warmup_invalid_any |= invalid_now
+        diag = ctrl.diagnostics()
+        warmup_traces.append({
+            "phase": "warmup",
+            "sample_index": sample_index,
+            "elapsed_s": sample_index * RL_DT_S,
+            "speed_mps": [float(v) for v in ctrl.linvel[:, :2].norm(dim=1).detach().cpu().tolist()],
+            "position_xy_m": [[float(x), float(y)] for x, y in position.detach().cpu().tolist()],
+            "step_distance_m": [float(v) for v in step_distance.detach().cpu().tolist()],
+            "path_distance_m": [float(v) for v in warmup_path.detach().cpu().tolist()],
+            "contact": [bool(v) for v in contact_now.detach().cpu().tolist()],
+            "invalid_obb": [bool(v) for v in invalid_now.detach().cpu().tolist()],
+            "motor_saturation_fraction": [float(v) for v in diag["motor_saturation_fraction"].detach().cpu().tolist()],
+            "max_tilt_deg": [float(v) for v in diag["max_tilt_deg"].detach().cpu().tolist()],
+        })
+    warmup_final_speed = ctrl.linvel[:, :2].norm(dim=1).detach().clone()
+    warmup_error = (warmup_final_speed - float(speed)).abs()
+    warmup_converged = (warmup_error <= INITIAL_SPEED_ABS_TOLERANCE_MPS) & (
+        warmup_error / max(float(speed), FINITE_EPS) <= INITIAL_SPEED_REL_TOLERANCE
+    )
+    if not bool(warmup_converged.all()):
+        raise RuntimeError("warmup did not converge to the requested target speed")
+    warmup_diag = ctrl.diagnostics()
+    warmup_saturation = warmup_diag["motor_saturation_fraction"].detach().clone()
+    warmup_tilt = warmup_diag["max_tilt_deg"].detach().clone()
+    warmup_substeps = ctrl.substeps.detach().clone()
+    # Diagnostic-only accumulators; force/command/PhysX state is unchanged.
+    ctrl.substeps.zero_()
+    ctrl.saturation_substeps.zero_()
+    ctrl.max_tilt_seen_rad.zero_()
+    ctrl.velocity_error_integral.zero_()
     start_pos = ctrl.position[:, :2].detach().clone()
     start_speed = ctrl.linvel[:, :2].norm(dim=1).detach().clone()
+    if not bool(torch.allclose(start_speed, warmup_final_speed, atol=1e-7, rtol=0.0)):
+        raise RuntimeError("braking start speed changed during diagnostic snapshot")
     stopped = torch.zeros(envs, dtype=torch.bool, device=task.device)
     stop_time = torch.full((envs,), float("nan"), device=task.device)
-    stop_distance = torch.full((envs,), float("nan"), device=task.device)
-    traces = []
-    contact_any = torch.zeros(envs, dtype=torch.bool, device=task.device)
-    invalid_any = torch.zeros(envs, dtype=torch.bool, device=task.device)
+    stop_distance = torch.zeros(envs, device=task.device)
+    stop_position = torch.zeros((envs, 2), device=task.device)
+    path_distance = torch.zeros(envs, device=task.device)
+    traces = list(warmup_traces)
+    contact_any = warmup_contact_any.clone()
+    invalid_any = warmup_invalid_any.clone()
+    previous_position = start_pos.clone()
     for sample_index in range(1, brake_steps + 1):
         ctrl.begin_control_interval()
         ctrl.set_command(torch.zeros_like(direction), altitude)
         task.sim_env.step(actions=torch.zeros((envs, 4), device=task.device))
         speed_now = ctrl.linvel[:, :2].norm(dim=1)
         elapsed = float(sample_index) * PHYSICS_SUBSTEPS * PHYSICS_DT_S
-        distance = (ctrl.position[:, :2] - start_pos).norm(dim=1)
+        position = ctrl.position[:, :2].detach().clone()
+        step_distance = (position - previous_position).norm(dim=1)
+        path_distance += step_distance
+        previous_position = position
         newly = (~stopped) & (speed_now <= STOP_THRESHOLD_MPS)
         stop_time = torch.where(newly, torch.full_like(stop_time, elapsed), stop_time)
-        stop_distance = torch.where(newly, distance, stop_distance)
+        stop_distance = torch.where(newly, path_distance, stop_distance)
+        stop_position[newly] = position[newly]
         stopped |= newly
         diag = ctrl.diagnostics()
         contact_now = ctrl.contact_seen.clone()
@@ -460,11 +602,17 @@ def run_speed_cell(speed: float, output: Path, envs: int = REGISTERED_ENVS, warm
         contact_any |= contact_now
         invalid_any |= invalid_now
         traces.append({
+            "phase": "brake",
             "sample_index": sample_index,
             "elapsed_s": elapsed,
             "speed_mps": [float(v) for v in speed_now.detach().cpu().tolist()],
+            "position_xy_m": [[float(x), float(y)] for x, y in position.detach().cpu().tolist()],
+            "step_distance_m": [float(v) for v in step_distance.detach().cpu().tolist()],
+            "path_distance_m": [float(v) for v in path_distance.detach().cpu().tolist()],
             "contact": [bool(v) for v in contact_now.detach().cpu().tolist()],
             "invalid_obb": [bool(v) for v in invalid_now.detach().cpu().tolist()],
+            "motor_saturation_fraction": [float(v) for v in diag["motor_saturation_fraction"].detach().cpu().tolist()],
+            "max_tilt_deg": [float(v) for v in diag["max_tilt_deg"].detach().cpu().tolist()],
         })
         if bool(stopped.all()):
             break
@@ -472,6 +620,11 @@ def run_speed_cell(speed: float, output: Path, envs: int = REGISTERED_ENVS, warm
         raise RuntimeError("not every physical target stopped within the frozen budget")
     sat = ctrl.diagnostics()["motor_saturation_fraction"].detach().cpu().tolist()
     tilt = ctrl.diagnostics()["max_tilt_deg"].detach().cpu().tolist()
+    brake_trace = [trace for trace in traces if trace["phase"] == "brake"]
+    max_lateral = [
+        max(abs(float(trace["position_xy_m"][env_id][1]) - float(start_pos[env_id, 1].item())) for trace in brake_trace)
+        for env_id in range(envs)
+    ]
     rows = []
     for env_id in range(envs):
         distance = float(stop_distance[env_id].item())
@@ -480,18 +633,38 @@ def run_speed_cell(speed: float, output: Path, envs: int = REGISTERED_ENVS, warm
             "env_id": env_id,
             "requested_speed_mps": float(speed),
             "measured_initial_speed_mps": initial,
+            "warmup_final_speed_mps": float(warmup_final_speed[env_id].item()),
+            "warmup_speed_error_mps": float(warmup_error[env_id].item()),
+            "warmup_converged": bool(warmup_converged[env_id].item()),
             "stop_time_s": float(stop_time[env_id].item()),
             "stop_distance_m": distance,
+            "endpoint_displacement_m": float((stop_position[env_id] - start_pos[env_id]).norm().item()),
+            "max_lateral_deviation_m": float(max_lateral[env_id]),
             "effective_deceleration_mps2": initial * initial / max(2.0 * distance, FINITE_EPS),
+            "warmup_contact": bool(warmup_contact_any[env_id].item()),
+            "warmup_invalid_obb": bool(warmup_invalid_any[env_id].item()),
             "contact": bool(contact_any[env_id].item()),
             "invalid_obb": bool(invalid_any[env_id].item()),
+            "warmup_motor_saturation_fraction": float(warmup_saturation[env_id].item()),
+            "warmup_max_tilt_deg": float(warmup_tilt[env_id].item()),
             "motor_saturation_fraction": float(sat[env_id]),
             "max_tilt_deg": float(tilt[env_id]),
         })
     payload = {
         "schema": SCHEMA,
-        "cell": {"speed_mps": float(speed), "envs": envs, "seed": 827},
+        "cell": {"speed_mps": float(speed), "envs": envs, "seed": 827, "child_auth": child_auth},
         "contract": FROZEN_CONTRACT,
+        "source_attestation": source_attestation,
+        "setup": {
+            "mode": "obstacle_free_center",
+            "active_bars": 0,
+            "center_xy_m": [[float(x), float(y)] for x, y in center[:, :2].detach().cpu().tolist()],
+            "center_clearance_to_arena_m": [float(v) for v in setup_margin.detach().cpu().tolist()],
+            "warmup_steps": warmup_steps,
+            "brake_steps_budget": brake_steps,
+            "warmup_substeps": [int(v) for v in warmup_substeps.detach().cpu().tolist()],
+            "warmup_path_distance_m": [float(v) for v in warmup_path.detach().cpu().tolist()],
+        },
         "instantiated": instantiated,
         "raw_samples": rows,
         "physics_samples": traces,
@@ -509,6 +682,7 @@ def _parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     parser.add_argument("--speed", type=float, choices=REGISTERED_SPEEDS)
     parser.add_argument("--envs", type=int, default=REGISTERED_ENVS)
     parser.add_argument("--_single-speed", action="store_true", help=argparse.SUPPRESS)
+    parser.add_argument("--_auth-file", type=Path, help=argparse.SUPPRESS)
     args = parser.parse_args(argv)
     if not args.preflight and args.speed is None:
         parser.error("--speed is required for a cell")
@@ -523,7 +697,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         require_finite({"contract": FROZEN_CONTRACT, "manifest": manifest})
         print(json.dumps({"schema": SCHEMA, "contract": FROZEN_CONTRACT, "manifest": manifest}, sort_keys=True))
         return 0
-    run_speed_cell(float(args.speed), Path(args.output), int(args.envs))
+    run_speed_cell(float(args.speed), Path(args.output), int(args.envs), auth_file=args._auth_file)
     return 0
 
 
