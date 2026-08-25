@@ -12349,3 +12349,6 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
   `historical_post_wall_brake_speed_envelope`로 lineage를 명시하고, routed attempt 2의 밀도별 통과
   속도는 네 밀도 모두 `null`로 따로 기록했다. 사이트 카드에는 `70-bar · 4-speed pooled`를
   명시했고 registry가 summary/receipt/execution/source manifest와 children까지 연결하도록 보강했다.
+- GitHub Pages는 정적 HTML/CSS/JS만 사용하므로 `docs/.nojekyll`을 추가했다. 첫 push 뒤 raw branch는
+  최신이었지만 Pages branch-source workflow가 생성되지 않아, Jekyll 변환을 명시적으로 끄는 실제
+  publishing-source 변경으로 재배포 이벤트를 다시 발생시켰다.
