@@ -119,3 +119,11 @@ and routed final goal. Bar layout and robot/target pose must match across all ro
 density. Waypoints must match across speeds within each route arm. Route-off and route-on goals are
 intentionally not required to match: choosing a reachable connected-component goal is the mechanism
 being evaluated, not an accidental uncontrolled covariate.
+
+## Execution note (does not change any numerical gate)
+
+Attempt 1 ended before task creation with `VOID_EXECUTION` and zero cell records because the inherited
+child `PATH` did not expose the selected conda Python's `ninja`. Its artifact is retained and never
+interpreted. Attempt 2 uses a new output directory; the evaluator prefixes the selected Python's
+`bin` to child `PATH` and binds the executable `ninja` path, hash, and version in provenance. No grid,
+seed, physics, metric, or threshold changed.

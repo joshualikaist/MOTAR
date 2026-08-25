@@ -28,6 +28,12 @@ connectivity 주장은 금지한다. 근거:
 [`CPU benchmark`](results/navrl_target_route_cpu_benchmark_seed825/summary.md),
 [`simulator gate preregistration`](docs/preregistration_physical_target_routed_simulator_gate_2026-08-25.md).
 
+첫 GPU 실행은 task 생성 전 **VOID_EXECUTION (0/32 records)** 이다. absolute conda Python을
+호출했지만 inherited `PATH`에 같은 env의 `bin`이 없어 torch cpp extension이 `ninja`를 찾지 못했다.
+원 artifact `results/navrl_physical_target_routed_gate_seed827/`는 보존한다. evaluator는 선택된 Python의
+`bin`을 child `PATH` 맨 앞에 고정하고 `ninja` path/SHA/version을 fail-closed provenance로 추가했다.
+재실행은 별도 `results/navrl_physical_target_routed_gate_seed827_attempt2/`만 사용한다.
+
 ## 한 줄 상태
 
 `navrl_ref5in_quad`는 **hardware-informed simulation candidate**다. P0·P1c는 PASS, **P2·D1은 FAIL**,

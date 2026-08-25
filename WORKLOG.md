@@ -12287,3 +12287,18 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
 - receipt verify가 child cell/verdict는 재계산했지만 summary의 matched route-on-minus-off 표 자체는
   재계산하지 않았다. 16개 matched row를 child 원자료에서 다시 계산해 byte-equivalent 비교하며,
   summary SHA를 다시 맞춘 뒤 delta만 변조한 fixture도 거부한다. GPU는 여전히 미실행이다.
+
+### 2026-08-25 — routed simulator gate attempt 1 VOID와 conda build-tool 고정
+
+- 첫 GPU 시도는 task 생성 전 torch cpp extension 초기화에서 종료되어 **0/32 record,
+  VOID_EXECUTION**이다. absolute `/home/fair/miniconda3/envs/aerialgym/bin/python`을 썼지만 inherited
+  `PATH`가 해당 `bin`을 포함하지 않아 같은 환경의 `ninja`를 찾지 못했다. 수치 gate나 planner가
+  실행된 실패가 아니며 원 artifact `results/navrl_physical_target_routed_gate_seed827/`는 덮어쓰지 않는다.
+- child 환경 생성을 `build_child_environment`로 분리했다. 선택된 `sys.executable`의 parent `bin`을
+  `PATH` 첫 항목으로 강제하고, 그 옆 `ninja`가 executable이 아니거나 없으면 child launch 전에
+  fail-closed한다. hostile `PATH=/hostile/only` fixture에서 conda bin prefix와 stale NavRL/sim env 제거를
+  확인했다.
+- software provenance에 `ninja` absolute path, SHA-256, `--version`을 추가하고 aggregation/receipt
+  verify 때 파일 bytes와 version을 다시 검사한다. numerical gate·grid·seed·physics는 바꾸지 않았다.
+  attempt 2는 명시적 별도 출력 `results/navrl_physical_target_routed_gate_seed827_attempt2/summary.json`
+  만 사용한다. 이 수정 과정에서는 GPU를 실행하지 않았다.
