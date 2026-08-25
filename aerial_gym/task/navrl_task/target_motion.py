@@ -288,6 +288,9 @@ def bounded_drone_target_step(
         "safe_prefix_steps": safe_prefix_steps[rows, chosen].to(torch.int16),
         "full_horizon_safe": feasible[rows, chosen],
         "immediate_feasible": immediate_feasible[rows, chosen],
+        # Recovery progress is a property of the certified horizon, not merely the command's
+        # first sample.  Keep this opt-in field out of the legacy four-tuple/API path.
+        "selected_final_pos": pos[rows, chosen].clone(),
     }
     return base_result + (certificate,)
 

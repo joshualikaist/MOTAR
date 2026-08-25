@@ -1,9 +1,11 @@
 import hashlib
 import importlib
+import importlib.util
 import json
 import math
 import os
 from pathlib import Path
+import sys
 
 import numpy as np
 import torch
@@ -66,6 +68,103 @@ logger = CustomLogger("navrl_task")
 RECOVERY_HYSTERESIS_M = 0.25  # route grid resolution, one cell
 RECOVERY_STOP_SPEED_MPS = 0.10  # existing braking-probe stop threshold
 RECOVERY_CONNECT_PROGRESS_TOLERANCE_M = 1e-4  # fixed numerical non-regression tolerance
+# SHA-256 of the exact raw-first validator sources from probe lineage 7f2d806.  If the common
+# verifier changes (for example to expose its recomputed core handoff), this constant and the
+# receipt/source lineage must change together; a mutable manifest alone cannot authorize code.
+RECOVERY_PROBE_VALIDATOR_SHA256 = "fedc22ffeb1610b6a23cf487607864838eb35236b16ae170bf7e0bc40b93237b"
+RECOVERY_RECEIPT_VALIDATOR_SHA256 = "aab5ba20a2e1f0f9eb098dc49602f9f79c1feac0e7ed0cabbf35f6fa4aa370db"
+
+
+def _load_recovery_receipt_validator(repo_root):
+    """Load the pinned raw-first receipt verifier without changing ``sys.path``.
+
+    The probe and verifier are tools rather than importable package modules.  The verifier's
+    dependency is installed in ``sys.modules`` only for the duration of its import, and any
+    pre-existing module is restored.  This keeps task imports deterministic while binding the
+    validator to the repository checkout that the receipt verifier itself attests.
+    """
+    root = Path(repo_root).resolve()
+    probe_path = (root / "tools/probe_navrl_physical_target_braking.py").resolve()
+    verifier_path = (root / "tools/verify_navrl_physical_target_braking.py").resolve()
+    if not probe_path.is_file() or not verifier_path.is_file():
+        raise RuntimeError("recovery receipt validator sources are missing")
+    if probe_path.parent != verifier_path.parent or probe_path.parent != (root / "tools").resolve():
+        raise RuntimeError("recovery receipt validator source origin is invalid")
+    if hashlib.sha256(probe_path.read_bytes()).hexdigest() != RECOVERY_PROBE_VALIDATOR_SHA256:
+        raise RuntimeError("recovery probe validator source SHA256 is not pinned")
+    if hashlib.sha256(verifier_path.read_bytes()).hexdigest() != RECOVERY_RECEIPT_VALIDATOR_SHA256:
+        raise RuntimeError("recovery receipt validator source SHA256 is not pinned")
+    probe_spec = importlib.util.spec_from_file_location(
+        "_navrl_recovery_probe_validator", str(probe_path)
+    )
+    verifier_spec = importlib.util.spec_from_file_location(
+        "_navrl_recovery_receipt_validator", str(verifier_path)
+    )
+    if probe_spec is None or probe_spec.loader is None or verifier_spec is None or verifier_spec.loader is None:
+        raise RuntimeError("recovery receipt validator cannot be loaded")
+    probe_module = importlib.util.module_from_spec(probe_spec)
+    verifier_module = importlib.util.module_from_spec(verifier_spec)
+    dependency_name = "probe_navrl_physical_target_braking"
+    previous_dependency = sys.modules.get(dependency_name)
+    if previous_dependency is not None:
+        previous_origin = getattr(previous_dependency, "__file__", None)
+        if not previous_origin or Path(previous_origin).resolve() != probe_path:
+            raise RuntimeError("recovery probe validator dependency origin is not pinned")
+    sys.modules[dependency_name] = probe_module
+    try:
+        probe_spec.loader.exec_module(probe_module)
+        if Path(getattr(probe_module, "__file__", "")).resolve() != probe_path:
+            raise RuntimeError("recovery probe validator origin is not pinned")
+        verifier_spec.loader.exec_module(verifier_module)
+    finally:
+        if previous_dependency is None:
+            sys.modules.pop(dependency_name, None)
+        else:
+            sys.modules[dependency_name] = previous_dependency
+    if Path(getattr(verifier_module, "__file__", "")).resolve() != verifier_path:
+        raise RuntimeError("recovery receipt validator origin is not pinned")
+    return verifier_module, probe_path, verifier_path
+
+
+def _verify_recovery_braking_receipt(receipt_path, declared_sha256, repo_root):
+    """Return only raw-recomputed braking data accepted by the common verifier.
+
+    No producer-provided ``VALIDATED`` bit, top-level lookup, or manifest claim is trusted here.
+    ``verify_receipt`` must return both its raw-cell summary and canonical integration handoff;
+    a verifier that predates that API fails closed.
+    """
+    receipt_file = Path(receipt_path).resolve()
+    if not receipt_file.is_file() or len(str(declared_sha256)) != 64:
+        raise RuntimeError("recovery braking receipt path/hash is invalid")
+    actual_sha = hashlib.sha256(receipt_file.read_bytes()).hexdigest()
+    if actual_sha != str(declared_sha256).lower():
+        raise RuntimeError("recovery braking-probe receipt SHA256 mismatch")
+    validator, probe_path, verifier_path = _load_recovery_receipt_validator(repo_root)
+    try:
+        result = validator.verify_receipt(receipt_file.parent, Path(repo_root).resolve())
+    except Exception as exc:
+        raise RuntimeError("common recovery braking receipt validation failed") from exc
+    if not isinstance(result, dict) or result.get("verified") is not True:
+        raise RuntimeError("common recovery braking receipt validator did not verify")
+    summary = result.get("summary")
+    core = result.get("core_integration")
+    if not isinstance(summary, dict) or not isinstance(core, dict):
+        raise RuntimeError("common validator did not return raw summary/core handoff")
+    # The verifier checks the current source manifest against every recorded source byte.  Bind
+    # the dynamically loaded validator itself to those same attested bytes before consuming its
+    # result, so a shadowed tool cannot issue an otherwise valid-looking handoff.
+    manifest_path = receipt_file.parent / "source_manifest.json"
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        entries = {str(row["path"]): str(row["sha256"]) for row in manifest["entries"]}
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        raise RuntimeError("validated recovery source manifest is unreadable") from exc
+    for path in (probe_path, verifier_path):
+        relative = path.relative_to(Path(repo_root).resolve()).as_posix()
+        digest = hashlib.sha256(path.read_bytes()).hexdigest()
+        if entries.get(relative) != digest:
+            raise RuntimeError("recovery validator source is not bound by source manifest")
+    return receipt_file, actual_sha, summary, core
 
 
 def _full_eval_distribution_enabled(bulk_eval_mode, env_value):
@@ -628,8 +727,8 @@ class NavRLTask(BaseTask):
         self._recovery_brake_stop_distance_samples_m = ()
         self._recovery_brake_lateral_tube_p95_m = 0.0
         if self._target_route_recovery_enabled:
-            # Integration point for the common probe-receipt validator. Until that validator
-            # arms this immutable flag, scalar environment values are deliberately unusable.
+            # The environment flag is only an opt-in declaration.  It is not evidence: the raw
+            # receipt verifier below must recompute every cell and return the canonical handoff.
             if not bool(getattr(self.tm, "recovery_brake_probe_validated", False)):
                 raise RuntimeError(
                     "recovery mode requires the common braking-probe receipt validator; "
@@ -639,23 +738,6 @@ class NavRLTask(BaseTask):
                 raise RuntimeError(
                     "recovery mode requires a verified training source manifest"
                 )
-            brake_speeds = np.asarray(
-                getattr(self.tm, "recovery_brake_speed_samples_mps", ()), dtype=np.float64
-            ).reshape(-1)
-            brake_distances = np.asarray(
-                getattr(self.tm, "recovery_brake_stop_distance_samples_m", ()), dtype=np.float64
-            ).reshape(-1)
-            if (
-                brake_speeds.size == 0 or brake_speeds.shape != brake_distances.shape
-                or not np.isfinite(brake_speeds).all() or not np.isfinite(brake_distances).all()
-                or np.any(brake_speeds <= 0.0) or np.any(brake_distances < 0.0)
-                or np.any(np.diff(brake_speeds) <= 0.0) or np.any(np.diff(brake_distances) < 0.0)
-            ):
-                raise RuntimeError(
-                    "recovery mode requires a validated monotone speed/stop-distance lookup"
-                )
-            self._recovery_brake_speed_samples_mps = tuple(brake_speeds.tolist())
-            self._recovery_brake_stop_distance_samples_m = tuple(brake_distances.tolist())
             p95 = float(getattr(self.tm, "recovery_brake_stop_time_p95", 0.0))
             receipt = str(getattr(self.tm, "recovery_brake_probe_receipt", ""))
             declared_sha = str(
@@ -665,57 +747,27 @@ class NavRLTask(BaseTask):
                 raise RuntimeError(
                     "recovery mode requires measured stop-time p95 and a hashed braking-probe receipt"
                 )
-            receipt_path = Path(receipt)
-            if not receipt_path.is_file():
-                raise RuntimeError("missing recovery braking-probe receipt: %s" % receipt)
-            actual_sha = hashlib.sha256(receipt_path.read_bytes()).hexdigest()
-            if actual_sha != declared_sha:
-                raise RuntimeError("recovery braking-probe receipt SHA256 mismatch")
-            try:
-                probe = json.loads(receipt_path.read_text(encoding="utf-8"))
-            except (OSError, ValueError) as exc:
-                raise RuntimeError("invalid recovery braking-probe receipt JSON") from exc
+            receipt_path, actual_sha, summary, core = _verify_recovery_braking_receipt(
+                receipt, declared_sha, Path(__file__).resolve().parents[3]
+            )
+            certified = core.get("certified_monotone_speed_to_p95_lookup")
+            lateral_tube = core.get("certified_lateral_tube_p95_m")
             if (
-                probe.get("schema") != "navrl_target_recovery_braking_receipt_v1"
-                or probe.get("probe_schema") != "navrl_target_recovery_braking_probe_v1"
-                or abs(float(probe.get("decel_p05_mps2", -1.0)) - float(self.tm.recovery_brake_decel_p05)) > 1e-9
-                or abs(float(probe.get("stop_time_p95_s", -1.0)) - p95) > 1e-9
-            ):
-                raise RuntimeError("recovery braking-probe receipt contract mismatch")
-            core = probe.get("core_integration")
-            certified = core.get("certified_monotone_speed_to_p95_lookup") if isinstance(core, dict) else None
-            lateral_tube = core.get("certified_lateral_tube_p95_m") if isinstance(core, dict) else None
-            if (
-                not isinstance(core, dict)
-                or core.get("schema") != "navrl_target_recovery_braking_probe_v1"
-                or core.get("measured_speed_to_p95_lookup") != probe.get("measured_speed_to_p95_lookup")
-                or certified != probe.get("certified_monotone_speed_to_p95_lookup")
+                core.get("schema") != "navrl_target_recovery_braking_probe_v1"
+                or not isinstance(lateral_tube, (int, float))
                 or not math.isfinite(float(lateral_tube)) or float(lateral_tube) < 0.0
-                or abs(float(core.get("decel_p05_mps2", -1.0)) - float(probe["decel_p05_mps2"])) > 1e-12
-                or abs(float(core.get("stop_time_p95_s", -1.0)) - float(probe["stop_time_p95_s"])) > 1e-12
+                or abs(float(core.get("decel_p05_mps2", -1.0)) - float(self.tm.recovery_brake_decel_p05)) > 1e-12
+                or abs(float(core.get("stop_time_p95_s", -1.0)) - p95) > 1e-12
             ):
-                raise RuntimeError("recovery core_integration handoff is not canonical")
-            source_name = str(probe.get("source_manifest", ""))
-            source_sha = str(probe.get("source_manifest_sha256", "")).lower()
-            source_path = (receipt_path.parent / source_name).resolve() if source_name else None
-            if (
-                source_path is None or not source_path.is_file() or len(source_sha) != 64
-                or hashlib.sha256(source_path.read_bytes()).hexdigest() != source_sha
-                or probe.get("source_clean") is not True
-            ):
-                raise RuntimeError("recovery source manifest is missing, dirty, or hash-mismatched")
-            try:
-                source_payload = json.loads(source_path.read_text(encoding="utf-8"))
-            except (OSError, ValueError) as exc:
-                raise RuntimeError("recovery source manifest is unreadable") from exc
-            if (
-                source_payload.get("schema") != "navrl_target_recovery_braking_source_manifest_v1"
-                or not isinstance(source_payload.get("entries"), list)
-                or len(str(probe.get("git_head", ""))) != 40
-            ):
-                raise RuntimeError("recovery source manifest provenance is incomplete")
-            lookup_speeds = np.asarray(self._recovery_brake_speed_samples_mps, dtype=np.float64)
-            lookup_distances = np.asarray(self._recovery_brake_stop_distance_samples_m, dtype=np.float64)
+                raise RuntimeError("recovery raw braking handoff does not match task contract")
+            if not isinstance(certified, dict) or not certified:
+                raise RuntimeError("recovery raw braking handoff has no certified lookup")
+            lookup_speeds = np.asarray(
+                getattr(self.tm, "recovery_brake_speed_samples_mps", ()), dtype=np.float64
+            ).reshape(-1)
+            lookup_distances = np.asarray(
+                getattr(self.tm, "recovery_brake_stop_distance_samples_m", ()), dtype=np.float64
+            ).reshape(-1)
             canonical_rows = [certified[key] for key in sorted(certified, key=lambda key: float(key))]
             if (
                 lookup_speeds.shape != (len(canonical_rows),)
@@ -727,6 +779,12 @@ class NavRLTask(BaseTask):
             lateral_env = float(getattr(self.tm, "recovery_brake_lateral_tube_p95_m", -1.0))
             if not math.isfinite(lateral_env) or lateral_env < 0.0 or abs(lateral_env - float(lateral_tube)) > 1e-12:
                 raise RuntimeError("recovery lateral stopping tube differs from canonical receipt")
+            # Keep the recomputed summary in the contract path so a future verifier cannot return
+            # a handoff disconnected from the raw 32-cell population.
+            if not isinstance(summary.get("measured_speed_to_p95_lookup"), dict):
+                raise RuntimeError("recovery raw braking summary is incomplete")
+            self._recovery_brake_speed_samples_mps = tuple(lookup_speeds.tolist())
+            self._recovery_brake_stop_distance_samples_m = tuple(lookup_distances.tolist())
             self._recovery_brake_lateral_tube_p95_m = lateral_env
             self._recovery_probe_receipt_sha256 = actual_sha
         self._bar_offset = 1 if self._physical_target else 0
@@ -6094,7 +6152,8 @@ class NavRLTask(BaseTask):
                     self._target_route_manager.recovery_anchor[connect_ids] - old_xy[connect_ids]
                 ).norm(dim=1)
                 new_anchor_distance = (
-                    self._target_route_manager.recovery_anchor[connect_ids] - connect_xy
+                    self._target_route_manager.recovery_anchor[connect_ids]
+                    - connect_certificate["selected_final_pos"]
                 ).norm(dim=1)
                 connect_feasible &= (
                     old_anchor_distance - new_anchor_distance

@@ -211,6 +211,7 @@ class TwoEnvelopeRecoveryTest(unittest.TestCase):
         self.assertEqual(certificate["horizon_steps"], 10)
         self.assertTrue(bool(certificate["full_horizon_safe"].all()))
         self.assertTrue(bool((certificate["safe_prefix_steps"] == 10).all()))
+        self.assertEqual(tuple(certificate["selected_final_pos"].shape), (1, 2))
 
     def test_connect_consumes_full_horizon_not_immediate_only(self):
         source = (ROOT / "aerial_gym/task/navrl_task/navrl_task.py").read_text()
@@ -304,11 +305,13 @@ class TwoEnvelopeRecoveryTest(unittest.TestCase):
     def test_validated_flag_cannot_bypass_canonical_receipt_handoff(self):
         task = (ROOT / "aerial_gym/task/navrl_task/navrl_task.py").read_text()
         for field in (
-            "core_integration", "certified_monotone_speed_to_p95_lookup",
+            "validator.verify_receipt", "result.get(\"summary\")", "result.get(\"core_integration\")",
+            "certified_monotone_speed_to_p95_lookup",
             "certified_lateral_tube_p95_m", "source_manifest_sha256",
             "recovery environment braking lookup differs from canonical receipt",
         ):
             self.assertIn(field, task)
+        self.assertIn('"selected_final_pos"', (ROOT / "aerial_gym/task/navrl_task/target_motion.py").read_text())
 
 
 if __name__ == "__main__":
