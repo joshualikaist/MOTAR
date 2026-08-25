@@ -54,7 +54,8 @@
         <p class="arena-intro">corrected-v2의 40×40×3 m arena와 <code>navrl_band</code> 배치 규칙을
           브라우저에서 재현합니다. 표적은 10 Hz 고정 simulation clock에서 움직이고 화면만 보간합니다.
           기본 <strong>routed-preview</strong>는 exact-AABB global route를 bounded/lagged browser motion으로
-          설명합니다. pursuer와 target motion은 설명용이며, 이 화면은 PPO 실행 영상·PhysX 재생·성능 측정값이 아닙니다.</p>
+          설명합니다. 코너 전환은 planning-time clearance certificate로 검사하고 실패 재계획은 직전 목표
+          1.0 m 이내를 제외합니다. pursuer와 target motion은 설명용이며, 이 화면은 PPO 실행 영상·PhysX 재생·성능 측정값이 아닙니다.</p>
         <div class="viewer-shell">
           <div id="stage" role="img" aria-label="막대 장애물, 이동 표적, 추적 드론과 LiDAR 광선을 보여주는 3D arena">
             <p class="viewer-error">Loading 3D arena…</p>
@@ -83,7 +84,8 @@
           </label>
           <p class="motion-mode-note" id="motion-mode-note"><strong>Routed preview:</strong> 0.25 m
             deterministic global route, exact bar AABB, 0.45 m tracking reserve, target 3-D box
-            half-diagonal support(약 0.206 m), boundary 1.25 m + support를 적용합니다.
+            half-diagonal support(0.2069 m), boundary 1.25 m + support, certified corner handoff,
+            실패 후 직전 goal 1.0 m exclusion을 적용합니다. 대안 경로가 없으면 zero command입니다.
             Global route + bounded/lagged browser preview · NOT PhysX/PPO.</p>
           <div class="viewer-buttons">
             <button id="btn-play" type="button" aria-pressed="true">Pause</button>
@@ -192,11 +194,11 @@
   </main>
 
   <footer><div class="wrap"><strong>MOTAR</strong><span>Simulation research · hardware pending</span><span>BSD-3-Clause</span></div></footer>
-  <script src="vendor/three.min.js?v=20260825"></script>
-  <script src="vendor/OrbitControls.js?v=20260825"></script>
-  <script src="arena_route.js?v=20260825"></script>
-  <script src="arena_motion.js?v=20260825"></script>
-  <script src="arena.js?v=20260825"></script>
-  <script src="viewer.js?v=20260825"></script>
+  <script src="vendor/three.min.js?v=20260825r2"></script>
+  <script src="vendor/OrbitControls.js?v=20260825r2"></script>
+  <script src="arena_route.js?v=20260825r2"></script>
+  <script src="arena_motion.js?v=20260825r2"></script>
+  <script src="arena.js?v=20260825r2"></script>
+  <script src="viewer.js?v=20260825r2"></script>
 </body>
 </html>

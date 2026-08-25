@@ -666,15 +666,24 @@
     route.cursor = Math.max(0, Math.min(route.waypoints.length - 1, route.cursor || 0));
     route.segmentStart = route.segmentStart || {x: episode.target.x, y: episode.target.y};
     // Mirrors BatchedTargetRouteManager.velocity_reference: advance already-reached or overshot
-    // smoothed waypoints repeatedly, capped at four transitions per 10 Hz control interval.
+    // smoothed waypoints repeatedly, capped at four transitions per 10 Hz control interval. A
+    // transition additionally needs the planning-time exact-AABB handoff certificate: being
+    // merely inside the task's 0.5 m reach radius is not safe at a tight corner.
     for (let iteration = 0; iteration < 4; iteration++) {
       const waypoint = route.waypoints[route.cursor];
       const sx = waypoint.x - route.segmentStart.x, sy = waypoint.y - route.segmentStart.y;
-      const passed = (episode.target.x - waypoint.x) * sx
-        + (episode.target.y - waypoint.y) * sy >= 0;
-      const reached = Math.hypot(
-        waypoint.x - episode.target.x, waypoint.y - episode.target.y
-      ) <= route.waypointReachM || passed;
+      const ox = episode.target.x - waypoint.x, oy = episode.target.y - waypoint.y;
+      const segmentNorm = Math.max(Math.hypot(sx, sy), 1e-6);
+      const crossTrack = Math.abs(ox * sy - oy * sx) / segmentNorm;
+      const passed = ox * sx + oy * sy >= 0 && crossTrack <= route.waypointReachM;
+      const waypointDistance = Math.hypot(waypoint.x - episode.target.x,
+        waypoint.y - episode.target.y);
+      const certificate = Array.isArray(route.handoffClearanceM)
+        ? Number(route.handoffClearanceM[route.cursor]) : NaN;
+      const connectorCertified = Number.isFinite(certificate)
+        && certificate >= 0 && waypointDistance <= certificate;
+      const reached = (waypointDistance <= route.waypointReachM || passed)
+        && connectorCertified;
       if (!(reached && route.cursor + 1 < route.waypoints.length)) break;
       route.segmentStart = {x: waypoint.x, y: waypoint.y};
       route.cursor += 1;
@@ -688,7 +697,11 @@
       && (Math.hypot(dx, dy) <= route.waypointReachM || passedFinal);
     route.complete = complete;
     if (complete && allowReplan !== false && typeof route.replan === 'function') {
-      const replacement = route.replan({x: episode.target.x, y: episode.target.y});
+      const previousGoal = route.goal || route.waypoints[route.waypoints.length - 1];
+      const replacement = route.replan(
+        {x: episode.target.x, y: episode.target.y},
+        {x: previousGoal.x, y: previousGoal.y}
+      );
       if (replacement) {
         episode.route = replacement;
         episode.routeGoalReplacements = (episode.routeGoalReplacements || 0) + 1;

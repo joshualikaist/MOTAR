@@ -1,8 +1,8 @@
 /*
  * Browser-only mirror of target_route_planner.py's deterministic geometry contract.
- * Source receipt (development WIP inspected 2026-08-25):
- *   topology branch fcec3d2, target_route_planner.py SHA-256
- *   99ff8fe8852595dfc11fb52091c219fbf39da792b67167e229a6a01b131a465b
+ * Source receipt (final routed safety contract inspected 2026-08-25):
+ *   main commit a373202, target_route_planner.py SHA-256
+ *   7fec3015e5dee667b8cd64d145d29b9244c18eb0c79b4af12020be44b503cb83
  *
  * This module explains the target's global route. It is NOT the pursuer PPO, PhysX, or a
  * performance measurement. Keep it DOM/THREE independent so Node can audit geometry exactly.
@@ -22,6 +22,7 @@
     maxWaypoints: 128,
     goalToleranceM: 0.05,
     minGoalDistanceM: 6.0,
+    goalExclusionRadiusM: 1.0,
     physicalBoxXYZ: Object.freeze([0.28, 0.28, 0.12]),
   });
   const NEIGHBORS = Object.freeze([
@@ -84,6 +85,72 @@
     return true;
   }
 
+  function pointSegmentDistance(point, p0, p1) {
+    const dx = p1.x - p0.x, dy = p1.y - p0.y;
+    const denominator = dx * dx + dy * dy;
+    const fraction = denominator > 1e-24
+      ? Math.max(0, Math.min(1, ((point.x - p0.x) * dx + (point.y - p0.y) * dy)
+        / denominator)) : 0;
+    return Math.hypot(point.x - (p0.x + fraction * dx),
+      point.y - (p0.y + fraction * dy));
+  }
+
+  function pointAABBDistance(point, lo, hi) {
+    const dx = Math.max(lo.x - point.x, point.x - hi.x, 0);
+    const dy = Math.max(lo.y - point.y, point.y - hi.y, 0);
+    return Math.hypot(dx, dy);
+  }
+
+  function segmentAABBDistance(p0, p1, lo, hi) {
+    if (segmentIntersectsClosedAABB(p0, p1, lo, hi)) return 0;
+    const corners = [
+      {x: lo.x, y: lo.y}, {x: lo.x, y: hi.y},
+      {x: hi.x, y: lo.y}, {x: hi.x, y: hi.y},
+    ];
+    return Math.min(
+      pointAABBDistance(p0, lo, hi), pointAABBDistance(p1, lo, hi),
+      ...corners.map(function (corner) { return pointSegmentDistance(corner, p0, p1); })
+    );
+  }
+
+  function routeHandoffClearanceCertificates(
+    waypoints, admissibleLo, admissibleHi, bars, inflatedHalf, safetyEpsilonM
+  ) {
+    const epsilon = safetyEpsilonM == null ? 1e-4 : Number(safetyEpsilonM);
+    if (!Array.isArray(waypoints) || waypoints.length < 2
+        || !waypoints.every(finitePoint) || !finitePoint(admissibleLo)
+        || !finitePoint(admissibleHi) || admissibleHi.x <= admissibleLo.x
+        || admissibleHi.y <= admissibleLo.y || !Array.isArray(bars)
+        || !Array.isArray(inflatedHalf) || bars.length !== inflatedHalf.length
+        || !Number.isFinite(epsilon) || epsilon <= 0) {
+      throw new Error('invalid route handoff certificate geometry');
+    }
+    const result = new Array(waypoints.length).fill(0);
+    for (let index = 0; index + 1 < waypoints.length; index++) {
+      const p0 = waypoints[index], p1 = waypoints[index + 1];
+      if (!segmentIsSafe(p0, p1, admissibleLo, admissibleHi, bars, inflatedHalf)) {
+        throw new Error('cannot certify an unsafe planned route segment');
+      }
+      const boundaryClearance = Math.min(
+        p0.x - admissibleLo.x, p0.y - admissibleLo.y,
+        p1.x - admissibleLo.x, p1.y - admissibleLo.y,
+        admissibleHi.x - p0.x, admissibleHi.y - p0.y,
+        admissibleHi.x - p1.x, admissibleHi.y - p1.y
+      );
+      let obstacleClearance = Infinity;
+      for (let obstacle = 0; obstacle < bars.length; obstacle++) {
+        const center = bars[obstacle], half = inflatedHalf[obstacle];
+        obstacleClearance = Math.min(obstacleClearance, segmentAABBDistance(
+          p0, p1,
+          {x: center.x - half.x, y: center.y - half.y},
+          {x: center.x + half.x, y: center.y + half.y}
+        ));
+      }
+      result[index] = Math.max(0, Math.min(boundaryClearance, obstacleClearance) - epsilon);
+    }
+    return result;
+  }
+
   class MinHeap {
     constructor(compare) { this.values = []; this.compare = compare; }
     get length() { return this.values.length; }
@@ -128,7 +195,7 @@
   function emptyPlan(status, expanded) {
     return {
       status: status, valid: false, waypoints: [], expandedNodes: expanded || 0,
-      rawGridNodes: 0, smoothedNodes: 0, pathLengthM: 0,
+      rawGridNodes: 0, smoothedNodes: 0, pathLengthM: 0, handoffClearanceM: [],
     };
   }
 
@@ -232,7 +299,7 @@
     return smoothed;
   }
 
-  function finishPlan(points, expanded, rawCount, config) {
+  function finishPlan(points, expanded, rawCount, config, prepared) {
     if (!points) return emptyPlan('smoothing_invalid', expanded);
     if (points.length > config.maxWaypoints) {
       const result = emptyPlan('waypoint_limit', expanded);
@@ -245,6 +312,10 @@
     return {
       status: 'ok', valid: true, waypoints: points, expandedNodes: expanded,
       rawGridNodes: rawCount, smoothedNodes: points.length, pathLengthM: length,
+      handoffClearanceM: routeHandoffClearanceCertificates(
+        points, prepared.admissibleLo, prepared.admissibleHi,
+        prepared.geometry.centers, prepared.geometry.half
+      ),
     };
   }
 
@@ -275,7 +346,9 @@
     if (!segmentIsSafe(goal, goal, admissibleLo, admissibleHi,
       geometry.centers, geometry.half)) return emptyPlan('unsafe_goal');
     if (segmentIsSafe(start, goal, admissibleLo, admissibleHi,
-      geometry.centers, geometry.half)) return finishPlan([start, goal], 0, 2, config);
+      geometry.centers, geometry.half)) return finishPlan(
+      [start, goal], 0, 2, config, prepared
+    );
 
     const mesh = grid(arenaLo, arenaHi, config.resolutionM);
     const free = occupancy(mesh, admissibleLo, admissibleHi, geometry, 0);
@@ -328,12 +401,19 @@
     }
     const previous = raw[raw.length - 1];
     if (Math.hypot(goal.x - previous.x, goal.y - previous.y) > 1e-9) raw.push(goal);
-    return finishPlan(smoothRaw(raw, admissibleLo, admissibleHi, geometry), expanded, raw.length, config);
+    return finishPlan(
+      smoothRaw(raw, admissibleLo, admissibleHi, geometry),
+      expanded, raw.length, config, prepared
+    );
   }
 
   function planToConnectedGoal(start, bars, arenaLo, arenaHi, support, selector, overrides) {
     const config = normalizedConfig(overrides);
-    if (!Number.isFinite(selector) || !(config.minGoalDistanceM > 0)) {
+    const excludedGoal = config.excludedGoal == null ? null : config.excludedGoal;
+    const exclusionRadius = Number(config.goalExclusionRadiusM);
+    if (!Number.isFinite(selector) || !(config.minGoalDistanceM > 0)
+        || (excludedGoal != null && (!finitePoint(excludedGoal)
+          || !Number.isFinite(exclusionRadius) || exclusionRadius <= 0))) {
       return emptyPlan('invalid_input');
     }
     const prepared = prepare(start, bars, arenaLo, arenaHi, support, config);
@@ -376,9 +456,13 @@
       const flat = indexOf(i, j, mesh.shapeY);
       if (Number.isFinite(distance[flat]) && Math.hypot(
         mesh.axisX[i] - start.x, mesh.axisY[j] - start.y
-      ) >= config.minGoalDistanceM) reachable.push(flat);
+      ) >= config.minGoalDistanceM && (excludedGoal == null || Math.hypot(
+        mesh.axisX[i] - excludedGoal.x, mesh.axisY[j] - excludedGoal.y
+      ) > exclusionRadius)) reachable.push(flat);
     }
-    if (!reachable.length) return emptyPlan('no_connected_goal');
+    if (!reachable.length) return emptyPlan(
+      excludedGoal == null ? 'no_connected_goal' : 'no_alternative_goal'
+    );
     const wrapped = ((selector % 1) + 1) % 1;
     const choice = Math.min(reachable.length - 1, Math.floor(wrapped * reachable.length));
     const goalIndex = reachable[choice], reverse = [];
@@ -394,7 +478,17 @@
       const previous = raw[raw.length - 1];
       if (Math.hypot(point.x - previous.x, point.y - previous.y) > 1e-9) raw.push(point);
     }
-    return finishPlan(smoothRaw(raw, admissibleLo, admissibleHi, geometry), expanded, raw.length, config);
+    const result = finishPlan(
+      smoothRaw(raw, admissibleLo, admissibleHi, geometry),
+      expanded, raw.length, config, prepared
+    );
+    if (result.valid && excludedGoal != null) {
+      const selectedGoal = result.waypoints[result.waypoints.length - 1];
+      if (Math.hypot(
+        selectedGoal.x - excludedGoal.x, selectedGoal.y - excludedGoal.y
+      ) <= exclusionRadius) return emptyPlan('same_goal_reselected', result.expandedNodes);
+    }
+    return result;
   }
 
   return {
@@ -402,6 +496,7 @@
     conservativeXYSupportFromBox,
     segmentIntersectsClosedAABB,
     segmentIsSafe,
+    routeHandoffClearanceCertificates,
     plan,
     planToConnectedGoal,
   };

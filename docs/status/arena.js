@@ -150,6 +150,7 @@ window.Arena = (() => {
     episode.mode = 'waypoint';
     episode.route = makeRouteState(result, episode.target);
     episode.routeGoalReplacements = 0;
+    episode.sameGoalReselectionCount = 0;
     episode.plannerFeasible = episode.route.valid;
     if (episode.route.valid) {
       const goal = episode.route.waypoints[episode.route.waypoints.length - 1];
@@ -161,7 +162,11 @@ window.Arena = (() => {
     const state = {
       valid: Boolean(result && result.valid),
       status: result ? result.status : 'invalid_input',
-      waypoints: result && result.valid ? result.waypoints.map(p => ({x: p.x, y: p.y})) : [],
+      // Python manager excludes the continuous planning start from its GPU waypoint cache.
+      waypoints: result && result.valid
+        ? result.waypoints.slice(1).map(p => ({x: p.x, y: p.y})) : [],
+      handoffClearanceM: result && result.valid
+        ? result.handoffClearanceM.slice(1).map(value => Number(value)) : [],
       cursor: 0,
       segmentStart: {x: start.x, y: start.y},
       // Python passes task waypoint_reach_m=0.5 to velocity_reference. The route planner's
@@ -171,15 +176,21 @@ window.Arena = (() => {
       complete: false,
       expandedNodes: result ? result.expandedNodes : 0,
       pathLengthM: result ? result.pathLengthM : 0,
+      goal: result && result.valid
+        ? Object.assign({}, result.waypoints[result.waypoints.length - 1]) : null,
       replan: replanRoutedGoal,
     };
     return state;
   }
 
-  function replanRoutedGoal(start) {
+  function replanRoutedGoal(start, previousGoal) {
     const result = Route.planToConnectedGoal(
-      start, bars, {x: X0, y: Y0}, {x: X1, y: Y1}, routeSupport, motionRng()
+      start, bars, {x: X0, y: Y0}, {x: X1, y: Y1}, routeSupport, motionRng(),
+      {excludedGoal: previousGoal, goalExclusionRadiusM: Route.CONTRACT.goalExclusionRadiusM}
     );
+    if (result.status === 'same_goal_reselected') {
+      episode.sameGoalReselectionCount = (episode.sameGoalReselectionCount || 0) + 1;
+    }
     return makeRouteState(result, start);
   }
 
@@ -237,10 +248,10 @@ window.Arena = (() => {
       if (targetMotionMode !== 'routed-preview') {
         routeState.textContent = ''; routeState.classList.remove('route-warning');
       } else if (route && route.valid) {
-        routeState.textContent = `ROUTE OK · ${route.waypoints.length} points · ${route.pathLengthM.toFixed(1)} m · goals ${episode.routeGoalReplacements || 0}`;
+        routeState.textContent = `ROUTE OK · ${route.waypoints.length} points · ${route.pathLengthM.toFixed(1)} m · goals ${episode.routeGoalReplacements || 0} · same-goal blocks ${episode.sameGoalReselectionCount || 0}`;
         routeState.classList.remove('route-warning');
       } else {
-        routeState.textContent = `NO ROUTE · ZERO COMMAND · ${(route && route.status) || 'unplanned'}`;
+        routeState.textContent = `NO ROUTE · ZERO COMMAND · ${(route && route.status) || 'unplanned'} · same-goal blocks ${episode && episode.sameGoalReselectionCount || 0}`;
         routeState.classList.add('route-warning');
       }
     }
