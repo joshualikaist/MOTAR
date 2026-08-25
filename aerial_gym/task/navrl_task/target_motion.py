@@ -107,6 +107,15 @@ def limit_planar_velocity(
     return velocity
 
 
+def recovery_connector_progress_safe(old_xy, first_xy, final_xy, anchor_xy, tolerance_m=1e-6):
+    """Certify nonnegative fixed-anchor progress for the first step and full rollout."""
+    initial = (anchor_xy - old_xy).norm(dim=1)
+    first = (anchor_xy - first_xy).norm(dim=1)
+    final = (anchor_xy - final_xy).norm(dim=1)
+    tolerance = float(tolerance_m)
+    return (first <= initial + tolerance) & (final <= initial + tolerance)
+
+
 def bounded_drone_target_step(
     old_xy,
     current_velocity,
@@ -288,6 +297,7 @@ def bounded_drone_target_step(
         "safe_prefix_steps": safe_prefix_steps[rows, chosen].to(torch.int16),
         "full_horizon_safe": feasible[rows, chosen],
         "immediate_feasible": immediate_feasible[rows, chosen],
+        "selected_final_position_xy": pos[rows, chosen],
     }
     return base_result + (certificate,)
 

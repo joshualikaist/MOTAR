@@ -26,6 +26,7 @@ from aerial_gym.task.navrl_task.target_motion import (
     TARGET_MOTION_MODEL,
     bounded_drone_target_step,
     initial_cv_velocity,
+    recovery_connector_progress_safe,
     support_aware_bounds,
     steer_target_step,
 )
@@ -6028,6 +6029,12 @@ class NavRLTask(BaseTask):
                     & connect_certificate["full_horizon_safe"]
                     & (connect_certificate["safe_prefix_steps"]
                        == int(connect_certificate["horizon_steps"]))
+                )
+                connect_feasible &= recovery_connector_progress_safe(
+                    old_xy[connect_ids], connect_xy,
+                    connect_certificate["selected_final_position_xy"],
+                    self._target_route_manager.recovery_anchor[connect_ids],
+                    tolerance_m=1e-6,
                 )
                 bounded_xy[connect_ids] = connect_xy
                 bounded_velocity[connect_ids] = connect_velocity

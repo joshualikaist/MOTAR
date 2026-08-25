@@ -217,6 +217,14 @@ class TwoEnvelopeRecoveryTest(unittest.TestCase):
         self.assertIn('connect_certificate["full_horizon_safe"]', source)
         self.assertIn('connect_certificate["safe_prefix_steps"]', source)
 
+    def test_connector_progress_rejects_full_safe_motion_away_from_fixed_anchor(self):
+        old = torch.tensor([[0.0, 0.0], [0.0, 0.0]])
+        anchor = torch.tensor([[1.0, 0.0], [1.0, 0.0]])
+        first = torch.tensor([[-0.01, 0.0], [0.01, 0.0]])
+        final = torch.tensor([[-0.10, 0.0], [0.10, 0.0]])
+        safe = MOTION.recovery_connector_progress_safe(old, first, final, anchor)
+        self.assertEqual(safe.tolist(), [False, True])
+
     def test_watchdog_install_point_breach_latches_after_interval_begin(self):
         tensors = {
             "dt": 0.01,
