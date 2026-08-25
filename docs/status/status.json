@@ -3713,7 +3713,7 @@
   },
   "sim2real_72h": {
   "as_of": "2026-08-25",
-  "status": "SIMULATION VERIFIED · ROUTE MECHANISM FAILED · PHYSICAL PPO BLOCKED · HARDWARE PENDING",
+  "status": "SIMULATION VERIFIED · ROUTE MECHANISM FAILED · ROUTE RECOVERY DOMINANT · PHYSICAL PPO BLOCKED · HARDWARE PENDING",
     "plan_path": "docs/SIM2REAL_3DAY_EXECUTION_PLAN.md",
     "evidence": {
       "verdict": "RANGE_INCONCLUSIVE_AT_THIS_BUDGET",
@@ -3778,7 +3778,30 @@
         "supported_diagnosis": "unsafe_start recovery deadlock in fail-closed zero-command fallback",
         "non_failing_gates": ["tracking", "local_feasibility", "motor_saturation", "tilt", "contact", "state"]
       },
-        "fresh_ppo": {
+      "route_recovery_forensics": {
+        "source": "results/navrl_physical_target_route_recovery_forensics_seed827/summary.json",
+        "summary_markdown": "results/navrl_physical_target_route_recovery_forensics_seed827/summary.md",
+        "receipt": "results/navrl_physical_target_route_recovery_forensics_seed827/receipt.json",
+        "preregistration": "docs/preregistration_physical_target_route_recovery_forensics_2026-08-25.md",
+        "cells_verified": "8/8",
+        "diagnostic_verdict": "RECOVERY_DOMINANT",
+        "claim_scope": "evaluation-only; no PPO/fix/tuning authority",
+        "local_invalidations": 358,
+        "local_fallback_intervals": 35666,
+        "fallback_amplification": 99.6257,
+        "fallback_age_steps": {"median": 101, "p90": 219, "max": 287},
+        "unique_local_origins": 200,
+        "hard_free_soft_unsafe_pct": 97.0,
+        "hard_free_soft_unsafe_wilson_lower_pct": 93.61,
+        "exact_hard_connector_pct": 96.5,
+        "exact_hard_connector_wilson_lower_pct": 92.95,
+        "replan_status": {"unsafe_start": 3774, "ok": 101, "no_path": 82, "unsafe_goal": 79},
+        "initial_plan_status": {"ok": 349, "unsafe_start": 17, "no_connected_goal": 6},
+        "rounded_vs_square_disagreements": 1832,
+        "margin_tuning_allowed": false,
+        "physical_ppo": "BLOCKED"
+      },
+      "fresh_ppo": {
           "verdict": "BLOCKED",
           "reason": "physical_gate_and_real_sensor_contract_not_passed"
         }
@@ -3805,6 +3828,29 @@
         "authority": "NO_PPO_PERMISSION",
         "supported_diagnosis": "unsafe_start recovery deadlock in fail-closed zero-command fallback",
         "non_failing_gates": ["tracking", "local_feasibility", "motor_saturation", "tilt", "contact", "state"]
+      },
+      "route_recovery_forensics": {
+        "source": "results/navrl_physical_target_route_recovery_forensics_seed827/summary.json",
+        "summary_markdown": "results/navrl_physical_target_route_recovery_forensics_seed827/summary.md",
+        "receipt": "results/navrl_physical_target_route_recovery_forensics_seed827/receipt.json",
+        "preregistration": "docs/preregistration_physical_target_route_recovery_forensics_2026-08-25.md",
+        "cells_verified": "8/8",
+        "diagnostic_verdict": "RECOVERY_DOMINANT",
+        "claim_scope": "evaluation-only; no PPO/fix/tuning authority",
+        "local_invalidations": 358,
+        "local_fallback_intervals": 35666,
+        "fallback_amplification": 99.6257,
+        "fallback_age_steps": {"median": 101, "p90": 219, "max": 287},
+        "unique_local_origins": 200,
+        "hard_free_soft_unsafe_pct": 97.0,
+        "hard_free_soft_unsafe_wilson_lower_pct": 93.61,
+        "exact_hard_connector_pct": 96.5,
+        "exact_hard_connector_wilson_lower_pct": 92.95,
+        "replan_status": {"unsafe_start": 3774, "ok": 101, "no_path": 82, "unsafe_goal": 79},
+        "initial_plan_status": {"ok": 349, "unsafe_start": 17, "no_connected_goal": 6},
+        "rounded_vs_square_disagreements": 1832,
+        "margin_tuning_allowed": false,
+        "physical_ppo": "BLOCKED"
       },
       "historical_post_wall_brake_speed_envelope": {
         "source": "results/navrl_physical_target_speed_envelope_post_wall_brake_seed509/summary.json",

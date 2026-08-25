@@ -10,7 +10,9 @@ MOTAR는 카메라, LiDAR, ego-state만으로 움직이는 표적을 추적하�
 
 > **Status · 2026-08-25** — Corrected-v2 simulation evidence is scoped. Attempt 2 passed
 > **32/32 integrity checks**, but the route mechanism **failed**; physical PPO and hardware claims
-> remain **blocked**. 실제 기체는 아직 미조립이며 실제 센서 로그와 비행 데이터는 없습니다.
+> remain **blocked**. Follow-up evaluation-only forensics support **RECOVERY_DOMINANT**: 358 local
+> invalidations produced 35,666 attributed fallback intervals (99.6257×), with 200 unique local
+> origins. 실제 기체는 아직 미조립이며 실제 센서 로그와 비행 데이터는 없습니다.
 > 현재 결과는 sim-to-real 성능 주장이 아니라 재현 가능한 시뮬레이션 및 software-only 검증입니다.
 
 [Research site](docs/status/) · [System specification](docs/MOTAR_SYSTEM_SPEC_2026-08-24.md) ·
@@ -58,6 +60,7 @@ attitude/rate torque → motor allocation → 100 Hz rigid-body physics` 순서�
 | Historical static endpoint oracle | **333 / 333** selected 205-bar contact episodes had a spawn→final-target path | centre-disk oracle; global/random-pair/300-bar connectivity 및 동역학은 미포함 |
 | Camera-range diagnostic | never-acquired **8.443 → 3.172%**; capture **82.235 → 88.677%** | primary −15 pp gate 미달, 따라서 inconclusive |
 | Routed physical-target gate (attempt 2) | **32 / 32 integrity PASS; route mechanism FAIL; physical PPO BLOCKED** | 70-bar 4-speed pool: plan **14.55%** (gate 99%), fallback **35.93%** (gate 1%); 70 bars × 0.6 m/s: **0.25 goals/env** (gate 0.5) |
+| Routed recovery forensics | **8 / 8 receipt verified; `RECOVERY_DOMINANT` (evaluation-only)** | 358 local invalidations → 35,666 local fallback intervals (`99.6257×`); unique origins `200`; hard-free/soft-unsafe `97.0%` (Wilson lower `93.61%`) |
 | Hardware/software gate | software pipeline PASS · `SYNTHETIC_ONLY` | 실기 성능 아님 |
 
 현재 `navrl_ref5in_quad`는 1.20 kg, 220 mm motor diagonal, 0.28 m collision proxy를 가정한
@@ -146,6 +149,16 @@ blocked and no PPO policy was loaded for this mechanism gate. See the
 [frozen preregistration](docs/preregistration_physical_target_global_route_2026-08-25.md) and
 [CPU benchmark](results/navrl_target_route_cpu_benchmark_seed825/summary.md), and
 [GPU gate summary](results/navrl_physical_target_routed_gate_seed827_attempt2/summary.md).
+
+The follow-up [route-recovery forensics result](docs/physical_target_route_recovery_result_2026-08-25.md)
+separates initial planning from recovery: pooled replans were `unsafe_start=3774`, `ok=101`,
+`no_path=82`, `unsafe_goal=79`, while initial plans were `ok=349`, `unsafe_start=17`,
+`no_connected_goal=6`. The first unsafe replan per unique local origin gives hard-free /
+soft-unsafe `97.0%` (Wilson lower `93.61%`) and exact hard-safe connector `96.5%` (lower
+`92.95%`). This supports a recovery state-machine deadlock hypothesis, not a justification to
+lower the frozen `0.45 m` margin or to start PPO. The diagnostic is evaluation-only and leaves
+target commands, planner decisions, reward, observations, termination, PPO, and attempt2
+artifacts unchanged.
 
 Fresh PPO and sim-to-real claims remain blocked until the actual platform provides measured AUW/CG, sensor
 extrinsics, timestamp synchronization and real-log bearing/range/latency/dropout profiles. The next 72-hour

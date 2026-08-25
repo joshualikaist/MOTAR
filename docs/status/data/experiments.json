@@ -4137,6 +4137,83 @@
    ],
    "worklog_date": "2026-08-25",
    "_note": "Verdicts: PASS_32_CELL_INTEGRITY / FAIL_ROUTE_MECHANISM / BLOCKED_PHYSICAL_TRAINING. Motor·tilt·contact는 이번 route 실패의 주원인으로 지지되지 않는다."
+  },
+  {
+   "id": "2026-08-25-physical-target-route-recovery-forensics-seed827",
+   "title_ko": "★ routed target recovery forensics — RECOVERY_DOMINANT",
+   "question": "local-step invalidation 뒤 route recovery가 initial planning보다 fallback을 지배하는가?",
+   "theme": "protocol",
+   "knob": null,
+   "levels": [
+    {
+     "label": "global_astar_v1 · 8-cell frozen slice",
+     "value": "route-on recovery",
+     "is_baseline": true
+    }
+   ],
+   "metric": "other",
+   "metric_label": "evaluation-only recovery diagnosis",
+   "effect": {
+    "value_pp": null,
+    "ci95_pp": null,
+    "ci_method": "Wilson 95% lower bounds on unique local origins; descriptive rule frozen before data",
+    "direction": "higher_is_better"
+   },
+   "arms": [
+    {
+     "label": "receipt",
+     "extra": {
+      "cells_verified": "8/8",
+      "diagnostic_verdict": "RECOVERY_DOMINANT"
+     }
+    },
+    {
+     "label": "local invalidation → fallback",
+     "extra": {
+      "local_invalidations": 358,
+      "local_fallback_intervals": 35666,
+      "amplification": "99.6257x",
+      "fallback_age_steps": "median 101; p90 219; max 287"
+     }
+    },
+    {
+     "label": "unique-origin envelope",
+     "extra": {
+      "n": 200,
+      "hard_free_soft_unsafe": "97.0% (Wilson lower 93.61%)",
+      "exact_hard_connector": "96.5% (Wilson lower 92.95%)"
+     }
+    }
+   ],
+   "verdict": "PASS",
+   "validity": "canonical",
+   "diagnostic_verdict": "RECOVERY_DOMINANT",
+   "verdict_note": "Initial plans were ok=349, unsafe_start=17, no_connected_goal=6; replans were unsafe_start=3774, ok=101, no_path=82, unsafe_goal=79. The result supports a recovery state-machine deadlock hypothesis, not a global connectivity proof.",
+   "confounded_by": "Evaluation-only observer with neutral pursuer command; no PPO policy. It changed no target commands, planner decisions, reward, observations, termination, PPO, or attempt2 artifacts. The 0.45 m reserve was not lowered or tuned.",
+   "seeds": [827],
+   "env": {
+    "bars": [70, 150, 205, 300],
+    "target_speed_mps": [0.6, 1.5],
+    "envs_per_cell": 32,
+    "steps_per_cell": 300,
+    "machine": "rtx3070"
+   },
+   "policy": {
+    "loaded": false,
+    "pursuer_action": "neutral/all-zero policy action"
+   },
+   "preregistered": true,
+   "gate": "docs/preregistration_physical_target_route_recovery_forensics_2026-08-25.md — unique-origin n ≥64; Wilson lower bounds >0.5; local amplification > cooldown 10",
+   "launcher": "tools/diagnose_navrl_physical_target_route_recovery.py",
+   "results_paths": [
+    "docs/physical_target_route_recovery_result_2026-08-25.md",
+    "results/navrl_physical_target_route_recovery_forensics_seed827/summary.json",
+    "results/navrl_physical_target_route_recovery_forensics_seed827/summary.md",
+    "results/navrl_physical_target_route_recovery_forensics_seed827/receipt.json",
+    "results/navrl_physical_target_route_recovery_forensics_seed827/.COMPLETE.json"
+   ],
+   "worklog_date": "2026-08-25",
+   "_note": "RECOVERY_DOMINANT is a descriptive evaluation-only label. Physical PPO remains BLOCKED until a separately preregistered recovery change passes the unchanged routed gate."
   }
 ]
 }
