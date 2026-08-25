@@ -59,6 +59,10 @@ h2 { margin: 0; font-size: clamp(34px, 5vw, 58px); line-height: 1.12; letter-spa
 .viewer-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 18px 28px; padding: 24px 4px 0; }
 .viewer-controls > label { display: grid; grid-template-columns: auto auto; justify-content: space-between; gap: 8px 14px; color: var(--muted); font-size: 13px; }
 .viewer-controls > label input { grid-column: 1 / -1; width: 100%; accent-color: var(--green); }
+.viewer-controls .motion-mode-control { align-content: start; }
+.viewer-controls .motion-mode-control select { grid-column: 1 / -1; width: 100%; min-height: 40px; padding: 0 10px; border: 1px solid #bdcdc7; border-radius: 6px; background: var(--white); color: var(--ink); font: inherit; }
+.motion-mode-note { margin: 0; padding: 11px 13px; border-left: 3px solid var(--green); background: rgba(8,127,109,.06); color: var(--muted); font-size: 12px; line-height: 1.55; }
+.motion-mode-note strong { color: var(--ink); }
 .viewer-buttons, .viewer-toggles { display: flex; flex-wrap: wrap; gap: 9px; align-items: center; }
 .viewer-controls button { min-height: 38px; padding: 0 13px; border: 1px solid #bdcdc7; border-radius: 6px; background: var(--white); color: var(--ink); cursor: pointer; font-weight: 700; }
 .viewer-controls button:hover { border-color: var(--green); color: var(--green); }

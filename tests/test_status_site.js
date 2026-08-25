@@ -32,7 +32,12 @@ assert(html.indexOf('three.min.js') < html.indexOf('OrbitControls.js'));
 assert(html.indexOf('OrbitControls.js') < html.indexOf('arena_motion.js'));
 assert(html.indexOf('arena_motion.js') < html.indexOf('arena.js'));
 assert(html.indexOf('arena.js') < html.indexOf('viewer.js'));
-assert(html.includes('이 화면은 PPO 실행 영상이나 성능 측정값이 아닙니다'));
+assert(html.includes('이 화면은 PPO 실행 영상'));
+assert(html.includes('10 Hz 고정 simulation clock'));
+assert(html.includes('PhysX 재생'));
+assert(html.includes('value="bounded" selected'));
+assert(html.includes('Physical-style illustration · NOT PhysX'));
+assert(html.includes('id="hud-motion-lineage"'));
 
 Motion.configure({arena_xy_m: 40, goal_dist_m: [6, 28], target_speed_m: [0.3, 1.5]});
 assert.deepStrictEqual(Motion.CONTRACT.bounds, {x0: 0, x1: 40, y0: -20, y1: 20});
