@@ -574,6 +574,18 @@ class task_config:
         # already included in obstacle_clearance; this additional term covers closed-loop lag.
         physical_tracking_margin = _env_float("NAVRL_TARGET_TRACKING_MARGIN_M", 0.45)
         physical_boundary_margin = _env_float("NAVRL_TARGET_BOUNDARY_MARGIN_M", 0.75)
+        # Opt-in global route for the NEW physical+waypoint lineage. Off preserves every legacy
+        # target transition byte-for-byte. The planner consumes simulator GT bar AABBs only to
+        # drive the target actor; no route feature reaches the pursuer policy.
+        route_mode = os.environ.get("NAVRL_TARGET_ROUTE_MODE", "off").strip().lower()
+        route_resolution_m = _env_float("NAVRL_TARGET_ROUTE_RESOLUTION_M", 0.25)
+        route_max_expansions = _env_int("NAVRL_TARGET_ROUTE_MAX_EXPANSIONS", 50000)
+        route_max_waypoints = _env_int("NAVRL_TARGET_ROUTE_MAX_WAYPOINTS", 128)
+        route_replan_cooldown_steps = _env_int(
+            "NAVRL_TARGET_ROUTE_REPLAN_COOLDOWN_STEPS", 10
+        )
+        route_goal_tolerance_m = _env_float("NAVRL_TARGET_ROUTE_GOAL_TOLERANCE_M", 0.05)
+        route_min_goal_distance_m = _env_float("NAVRL_TARGET_ROUTE_MIN_GOAL_DISTANCE_M", 6.0)
         # Per-episode speed ~ U[speed_min, v_max(epoch)]; speed_min=0 keeps static/slow episodes
         # in-distribution for the default curriculum.
         # v_max(epoch) = speed_final * clamp((epoch - ramp_start) / ramp_epochs, 0, 1).

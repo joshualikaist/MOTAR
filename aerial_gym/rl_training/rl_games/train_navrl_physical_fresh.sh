@@ -18,6 +18,19 @@ done
 
 export NAVRL_ROBOT=navrl_ref5in_quad
 export NAVRL_TARGET_DYNAMICS=physical
+if [[ "${NAVRL_PHYSICAL_ROUTED_CHILD:-0}" == "1" ]]; then
+  if [[ "${NAVRL_TARGET_ROUTE_MODE:-}" != "global_astar_v1" || "${NAVRL_TARGET_PATTERN:-}" != "waypoint" ]]; then
+    echo "[physical-fresh] routed child requires global_astar_v1 + waypoint" >&2
+    exit 4
+  fi
+else
+  if [[ "${NAVRL_TARGET_ROUTE_MODE:-off}" != "off" ]]; then
+    echo "[physical-fresh] canonical physical lineage refuses target route; use train_navrl_physical_routed_fresh.sh" >&2
+    exit 4
+  fi
+  export NAVRL_TARGET_ROUTE_MODE=off
+fi
+unset NAVRL_PHYSICAL_ROUTED_CHILD
 # Explicit child-entry marker. The base v2 launcher otherwise forces legacy dynamics so a stale
 # interactive-shell NAVRL_TARGET_DYNAMICS cannot silently switch the canonical training lineage.
 export NAVRL_V2_PHYSICAL_FRESH_CHILD=1

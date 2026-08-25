@@ -131,6 +131,14 @@ are in [OPERATIONS.md](OPERATIONS.md).
 
 ## Next physical gate
 
+An isolated candidate target-motion lineage now exists under model id
+`physx_ref5in_6dof_global_astar_aabb_v1`. It supplies exact-AABB, fail-closed global waypoints to
+the physical target controller; it is not a planner for the pursuer and no route information is
+an actor observation. Its CPU engineering gate passed, but simulator tracking is unmeasured and
+training remains blocked. See the
+[frozen preregistration](docs/preregistration_physical_target_global_route_2026-08-25.md) and
+[CPU benchmark](results/navrl_target_route_cpu_benchmark_seed825/summary.md).
+
 Fresh PPO and sim-to-real claims remain blocked until the actual platform provides measured AUW/CG, sensor
 extrinsics, timestamp synchronization and real-log bearing/range/latency/dropout profiles. The next 72-hour
 measurement contract is [SIM2REAL_3DAY_EXECUTION_PLAN.md](docs/SIM2REAL_3DAY_EXECUTION_PLAN.md).
