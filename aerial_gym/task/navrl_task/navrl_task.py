@@ -608,12 +608,12 @@ class NavRLTask(BaseTask):
             TARGET_ROUTE_MODE_GLOBAL_ASTAR, TARGET_ROUTE_MODE_RECOVERY
         )
         self._target_route_recovery_enabled = self._target_route_mode == TARGET_ROUTE_MODE_RECOVERY
-        if self._target_route_recovery_enabled and (
+        if self._target_route_enabled and (
             not self._physical_target or str(self.tm.pattern) != "waypoint"
         ):
             raise RuntimeError(
-                "NAVRL_TARGET_ROUTE_MODE=global_astar_recovery_v2 is a fresh physical+waypoint-only "
-                "lineage; mixed/cv/circle and virtual targets are refused"
+                "NAVRL_TARGET_ROUTE_MODE=%s is a physical+waypoint-only lineage; "
+                "mixed/cv/circle and virtual targets are refused" % self._target_route_mode
             )
         if self._target_route_recovery_enabled and float(
             getattr(self.tm, "recovery_brake_decel_p05", 0.0)
@@ -630,6 +630,10 @@ class NavRLTask(BaseTask):
                 raise RuntimeError(
                     "recovery mode requires the common braking-probe receipt validator; "
                     "scalar p05/p95 values cannot arm recovery"
+                )
+            if not str(self._training_source_provenance.get("manifest", "")):
+                raise RuntimeError(
+                    "recovery mode requires a verified training source manifest"
                 )
             p95 = float(getattr(self.tm, "recovery_brake_stop_time_p95", 0.0))
             receipt = str(getattr(self.tm, "recovery_brake_probe_receipt", ""))
@@ -2414,6 +2418,7 @@ class NavRLTask(BaseTask):
             ],
             "cfg_target_physical_tracking_margin_m": float(self.tm.physical_tracking_margin),
             "cfg_target_physical_boundary_margin_m": float(self.tm.physical_boundary_margin),
+            "cfg_target_route_wall_margin_m": float(self.cur.wall_margin),
             "cfg_target_recovery_brake_decel_p05_mps2": float(
                 getattr(self.tm, "recovery_brake_decel_p05", 0.0)
             ),
@@ -3043,7 +3048,7 @@ class NavRLTask(BaseTask):
                 raise RuntimeError(
                     "target route checkpoint cannot load with route mode %s" % self._target_route_mode
                 )
-            if self._target_route_recovery_enabled:
+            if self._target_route_enabled:
                 saved_support = state.get("cfg_target_route_support_xy_m")
                 current_support = self._target_route_support_xy[0].detach().cpu().tolist()
                 if (
@@ -3057,7 +3062,10 @@ class NavRLTask(BaseTask):
                     raise RuntimeError(
                         "fresh-only routed target support contract mismatch or missing provenance"
                     )
-                recovery_contract = (
+                if not self._target_route_recovery_enabled:
+                    recovery_contract = ()
+                else:
+                    recovery_contract = (
                     ("cfg_target_route_recovery_schema", TARGET_ROUTE_RECOVERY_SCHEMA),
                     ("cfg_target_route_recovery_model", TARGET_ROUTE_RECOVERY_MODEL),
                     ("cfg_target_route_recovery_hard_envelope", "closed_aabb_support_v1"),
@@ -3065,7 +3073,7 @@ class NavRLTask(BaseTask):
                         "cfg_target_route_recovery_soft_envelope",
                         "closed_aabb_support_plus_tracking_v1",
                     ),
-                    ("cfg_target_route_recovery_hard_epsilon_m", 1e-4),
+                    ("cfg_target_route_recovery_hard_epsilon_m", TARGET_ROUTE_HARD_EPSILON_M),
                     (
                         "cfg_target_route_recovery_reachable_tube_margin_m",
                         TARGET_ROUTE_REACHABLE_TUBE_MARGIN_M,
@@ -3084,6 +3092,49 @@ class NavRLTask(BaseTask):
                     (
                         "cfg_target_recovery_probe_receipt_sha256",
                         self._recovery_probe_receipt_sha256,
+                    ),
+                    (
+                        "cfg_target_max_accel_mps2",
+                        float(self.tm.max_accel),
+                    ),
+                    (
+                        "cfg_target_max_turn_rate_degps",
+                        float(self.tm.max_turn_rate_deg),
+                    ),
+                    (
+                        "cfg_target_lookahead_s",
+                        float(self.tm.avoidance_lookahead_s),
+                    ),
+                    ("cfg_target_physical_tracking_margin_m", float(self.tm.physical_tracking_margin)),
+                    ("cfg_target_physical_boundary_margin_m", float(self.tm.physical_boundary_margin)),
+                    ("cfg_target_physical_mass_kg", float(self.tm.physical_mass)),
+                    (
+                        "cfg_target_physical_box_xyz_m",
+                        [float(value) for value in self.tm.physical_box_xyz],
+                    ),
+                    ("cfg_target_route_wall_margin_m", float(self.cur.wall_margin)),
+                    ("cfg_physics_dt_s", float(self._runtime_physics_contract()["physics_dt_s"])),
+                    ("cfg_physics_substeps", int(self._runtime_physics_contract()["physics_substeps"])),
+                    (
+                        "cfg_physics_steps_per_rl_step",
+                        int(self._runtime_physics_contract()["physics_steps_per_rl_step"]),
+                    ),
+                    ("cfg_rl_step_dt_s", float(self._runtime_physics_contract()["rl_step_dt_s"])),
+                    (
+                        "cfg_training_source_manifest",
+                        self._training_source_provenance["manifest"],
+                    ),
+                    (
+                        "cfg_training_source_manifest_sha256",
+                        self._training_source_provenance["manifest_sha256"],
+                    ),
+                    (
+                        "cfg_training_source_git_commit",
+                        self._training_source_provenance["git_commit"],
+                    ),
+                    (
+                        "cfg_training_source_git_dirty",
+                        self._training_source_provenance["git_dirty"],
                     ),
                 )
                 for key, expected in recovery_contract:
@@ -5734,7 +5785,9 @@ class NavRLTask(BaseTask):
                     # Derived CONNECT budget: worst 7x7 radius-3 diagonal distance, acceleration
                     # ramp from the declared stop threshold, worst half-turn, and the existing
                     # 0.20 s reserve. No learned/tuned timeout is introduced.
-                    max_anchor_distance = math.sqrt(2.0) * 3.0 * float(self.tm.route_resolution_m)
+                    # The nearest-cell projection can be 0.5 cell from the point on each axis;
+                    # radius-3 opposite corner therefore bounds point->anchor by (3.5 cells).
+                    max_anchor_distance = math.sqrt(2.0) * (3.0 + 0.5) * float(self.tm.route_resolution_m)
                     speed_floor = torch.full_like(self._tm_speed, RECOVERY_STOP_SPEED_MPS)
                     connect_speed = torch.maximum(self._tm_speed, speed_floor)
                     accel_time = connect_speed / max(float(self.tm.max_accel), 1e-6)
@@ -5945,6 +5998,10 @@ class NavRLTask(BaseTask):
                 hard_lo, hard_hi = support_aware_bounds(
                     b_min[:, 0:2], b_max[:, 0:2], float(self.cur.wall_margin), target_support_xy
                 )
+                if recovery_enabled:
+                    hard_margin = TARGET_ROUTE_HARD_EPSILON_M + TARGET_ROUTE_REACHABLE_TUBE_MARGIN_M
+                    hard_lo = hard_lo + hard_margin
+                    hard_hi = hard_hi - hard_margin
                 feasible = ((bounded_xy >= hard_lo) & (bounded_xy <= hard_hi)).all(dim=1)
                 if bars_all.shape[1] > 0:
                     delta = (
@@ -5983,7 +6040,7 @@ class NavRLTask(BaseTask):
                 if recovery_enabled:
                     self._target_controller.set_hard_watchdog(
                         recovery_bars,
-                        bars_half_extents,
+                        hard_half if hard_half is not None else bars_half_extents,
                         hard_lo,
                         hard_hi,
                         active=moving,

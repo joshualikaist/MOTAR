@@ -248,7 +248,7 @@ def bounded_drone_target_step(
                 else:
                     dist = delta.clamp(min=0.0).norm(dim=3).amin(dim=2)
                     step_safe &= dist >= float(clearance) + 1e-4
-                min_clearance = torch.minimum(min_clearance, dist)
+            min_clearance = torch.minimum(min_clearance, dist)
         if step == 0:
             immediate_feasible[:] = step_safe
         prefix_alive &= step_safe
