@@ -119,18 +119,30 @@ class PhysicalTargetBrakingContractTest(unittest.TestCase):
             output = Path(temporary) / "braking"
             output.mkdir()
             (output / "cells").mkdir()
+            recorded_manifest = verifier._source_manifest_at_commit(
+                ROOT, probe.git_head(ROOT), probe.CORE_PATHS + launcher.TOOL_PATHS
+            )
+            recorded_hashes = {
+                entry["path"]: entry["sha256"] for entry in recorded_manifest["entries"]
+            }
             cells = []
             for speed in probe.REGISTERED_SPEEDS:
                 path = output / "cells" / ("speed_%s.json" % format(speed, ".1f").replace(".", "p"))
-                path.write_bytes(probe.canonical_json_bytes(fake_cell(speed)))
-                cell_payload = json.loads(path.read_text(encoding="utf-8"))
+                cell_payload = fake_cell(speed)
+                cell_payload["provenance"]["tool_hashes"] = {
+                    key: recorded_hashes[key] for key in probe.TOOL_SOURCE_PATHS
+                }
+                path.write_bytes(probe.canonical_json_bytes(cell_payload))
                 cells.append({
                     "path": str(path.relative_to(output)),
                     "speed_mps": speed,
                     "sha256": probe.sha256_file(path),
                     "provenance_sha256": probe.sha256_bytes(probe.canonical_json_bytes(cell_payload["provenance"])),
                 })
-            manifest = probe.source_manifest(ROOT, launcher.TOOL_PATHS)
+            # The receipt binds immutable bytes from its recorded commit, not an uncommitted
+            # evaluator worktree. Build the synthetic manifest from that git object as a real
+            # post-commit receipt would.
+            manifest = recorded_manifest
             (output / "source_manifest.json").write_bytes(probe.canonical_json_bytes(manifest))
             summary = verifier.summarize_cells([fake_cell(speed) for speed in probe.REGISTERED_SPEEDS])
             core_handoff = verifier.core_integration_object(summary)
@@ -213,10 +225,17 @@ class PhysicalTargetBrakingContractTest(unittest.TestCase):
 
     def test_core_files_are_not_modified_by_this_lineage(self):
         changed = subprocess.run(
-            ["git", "diff", "--name-only", "HEAD^", "HEAD", "--", *probe.CORE_PATHS],
+            ["git", "diff", "--name-only", "037e461^", "7f2d806", "--", *probe.CORE_PATHS],
             cwd=str(ROOT), text=True, stdout=subprocess.PIPE, check=True,
         ).stdout.splitlines()
         self.assertEqual(changed, [])
+
+    def test_receipt_source_verification_uses_recorded_git_object(self):
+        manifest = verifier._source_manifest_at_commit(
+            ROOT, "7f2d806", probe.RECOVERY_SOURCE_PATHS
+        )
+        paths = {entry["path"] for entry in manifest["entries"]}
+        self.assertEqual(paths, set(probe.RECOVERY_SOURCE_PATHS))
 
 
 if __name__ == "__main__":

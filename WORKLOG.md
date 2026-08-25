@@ -12522,3 +12522,40 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
 - The exact verifier source hash is pinned as
   `26913b091b89bdb5d0bdfa651d67eca803bbf8076b4180b8b689bb1a873f6df5` after py_compile and
   diff-check. No GPU, PhysX, or PPO execution was performed.
+
+### 2026-08-25 — recovery-v2 dedicated 32-cell evaluator (CPU implementation)
+
+- Added a new opt-in evaluator for `off` versus `global_astar_recovery_v2` on the frozen
+  2×4×4 grid (seed 827, 32 envs, 300 intervals). The original v1 evaluator remains byte-identical.
+- Added evaluation-only packed telemetry with exact hard/soft AABB margins and reason codes,
+  state/phase ages and timeouts, actual PhysX state, command, anchor/connector/candidate evidence,
+  watchdog/contact/OBB data, and recovery outcome/reset attribution. Raw denominators and reason/
+  transition identities are recomputed by the standalone verifier.
+- The evaluator snapshots and re-verifies the complete raw-first physical-target braking receipt,
+  records the measured p95 stop distance separately from the p05 formula, uses hidden-directory
+  atomic finalization, and verifies before and after rename. Source/import/software/child/raw/
+  summary/receipt hashes are bound; post-result-commit verification does not require HEAD equality.
+- CPU adversarial tests cover atomic non-overwrite, exact 32-cell identity, throughput regression,
+  v1 byte preservation, schema pairing, continuous AABB reserve, illegal/cross-interval state
+  changes, duplicate timeout prevention, no-connector zero command, position/reset mutation, and
+  raw SHA/geometry failures. No GPU/PhysX/PPO execution was performed.
+- Core integration now accepts only the finalized braking receipt/probe schema pair, consumes the
+  validated monotone measured stop-distance lookup, separates BRAKE/CONNECT timeout reasons, and
+  exposes an unambiguous recovery-only selected-candidate full-horizon certificate. GPU launch is
+  still blocked until the fresh target braking probe produces its first real finalized receipt.
+- The final integration binds the standalone verifier's canonical speed-to-p95 lookup and lateral
+  stopping tube. Probe verification reconstructs source bytes from the receipt's immutable git
+  object, so the later recovery-core commit cannot invalidate an otherwise valid probe receipt.
+- CONNECT certificates now carry explicit global environment rows and selected candidate indices;
+  coordinate matching was removed because multiple simulator environments can have identical local
+  coordinates. First-step, full-horizon, and actual post-physics fixed-anchor progress are all
+  fail-closed. The progress tolerance is frozen at `1e-6 m`.
+- The 32-cell evaluator names and verifies the local metrics separately: rounded bounded-step
+  infeasibility for `off`, rounded normal-route invalidation for recovery, each with an explicit
+  `32×300` denominator. Exact CONNECT failures remain in the recovery reason partition.
+
+### 2026-08-26 — evaluator source-object fixture correction
+
+- The synthetic braking-receipt contract now builds its manifest and tool hashes from the recorded
+  git object, matching the immutable post-commit receipt semantics used by the evaluator.
+- CPU contracts pass after this correction; no GPU, PhysX, or PPO execution was performed.

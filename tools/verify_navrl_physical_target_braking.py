@@ -67,6 +67,33 @@ def _read_json(path: Path) -> Dict[str, Any]:
     return payload
 
 
+def _source_manifest_at_commit(root: Path, commit: str, paths: Sequence[str]) -> Dict[str, Any]:
+    """Reconstruct the source manifest from the immutable recorded git object.
+
+    Recovery consumes this probe from a later commit that necessarily changes the core files.
+    Comparing against the verifier's current worktree would therefore reject a valid immutable
+    receipt (and contradict the receipt's explicit post-commit verification contract).
+    """
+    entries = []
+    for relative in sorted(set(paths)):
+        completed = subprocess.run(
+            ["git", "-C", str(root), "show", "%s:%s" % (commit, relative)],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False,
+        )
+        if completed.returncode != 0:
+            raise ValueError("recorded source is absent from git object: %s" % relative)
+        entries.append({
+            "path": relative,
+            "sha256": sha256_bytes(completed.stdout),
+            "bytes": len(completed.stdout),
+        })
+    return {
+        "schema": "navrl_target_recovery_braking_source_manifest_v1",
+        "root_policy": "repository-relative exact paths",
+        "entries": entries,
+    }
+
+
 def _validate_provenance(payload: Mapping[str, Any]) -> None:
     provenance = payload.get("provenance")
     if not isinstance(provenance, dict):
@@ -410,9 +437,11 @@ def verify_receipt(output: Path, repo_root: Optional[Path] = None) -> Dict[str, 
         raise ValueError("source manifest contains an unsafe path")
     if set(recorded_paths) != set(RECOVERY_SOURCE_PATHS):
         raise ValueError("source manifest path set is not the recovery contract")
-    current_manifest = source_manifest(root, tuple(recorded_paths))
-    if current_manifest != manifest:
-        raise ValueError("runtime source bytes differ from receipt manifest")
+    recorded_manifest = _source_manifest_at_commit(
+        root, str(receipt.get("git_head", "")), tuple(recorded_paths)
+    )
+    if recorded_manifest != manifest:
+        raise ValueError("recorded git source bytes differ from receipt manifest")
     cell_payloads = []
     for cell in receipt.get("cells", []):
         path = Path(str(cell.get("path", "")))
