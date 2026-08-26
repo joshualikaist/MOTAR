@@ -12976,3 +12976,22 @@ primary로 복사하면 source root drift로 거부되며 이는 의도된 fail-
   `main`과 Pages source `research/navrl-env`를 같은 commit으로 fast-forward해 배포 일관성을
   유지하며, Settings에서 source/default를 `main`/`docs`로 바꾸는 1회 작업은 계정 UI authority가
   필요하다.
+
+## 2026-08-26 — 캐시 정리, leftover worktree는 main에 머지하지 않음
+
+- `__pycache__` / `*.pyc` / `aerial_gym.egg-info`를 simulator와 Codex worktree에서 삭제했다
+  (정리 전 pyc 1015개, `__pycache__` 172개; 정리 후 0). 실험 영수증·worktree 자체는 건드리지
+  않았다. `two_envelope_recovery_integration` 절대경로 영수증은 유지.
+- `src/aerial_gym_simulator`의 `main`은 이미 `origin/main`과 동일(`4c62dbb`)했고 working tree는
+  깨끗했다. 커밋할 신규 코드 변경은 없었다.
+- leftover Codex 브랜치 16개는 `main`보다 68–396커밋 뒤다. 3-dot diff는 “추가”처럼 보이지만
+  2-dot은 파일 73–1518개가 달라서, 지금 머지하면 최신 Track A/B 동결을 예전 스냅샷으로
+  되돌린다. 머지하지 않았다.
+- `codex/routed-gate-site-status` worktree에 README/experiments/index/test 미커밋 4파일이
+  남아 있다. 내용은 08-25 attempt-1 FAIL 문구이고, `main`은 이미 attempt-2 + recovery-v2 +
+  08-26 authority 동결을 갖고 있어 덮어쓰면 후퇴다. 커밋·머지하지 않았다.
+- 로컬 `research/navrl-env`만 `504b985`에 160커밋 뒤쳐져 있어서 `main`/`origin/research/navrl-env`
+  와 같은 `4c62dbb`로 fast-forward했다. GitHub default branch 이름은 여전히
+  `research/navrl-env`다 (`gh` 미설치, Settings UI 필요).
+- 워크스페이스 루트 `/home/fair/workspaces/aerial_gym_ws/.git`은 2026-07-13에 생긴 커밋 0개
+  빈 저장소다. `reference/`·worktree·결과물까지 포함한 12GB+를 여기에 커밋하지 않았다.
