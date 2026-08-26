@@ -12796,3 +12796,17 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
   of this gate. Do not retune gain 2.5 / `0.45 m` / 1.5 after seeing FAIL. Next eligible GPU is
   the separately preregistered 70-bar no-anchor geometry probe, not another 32-cell grid.
 
+## 2026-08-26 — recovery-v2 no-anchor forensics preregistration frozen
+
+- Replaced the same-day stub with the frozen evaluation-only contract
+  `docs/preregistration_physical_target_recovery_v2_no_connector_forensics_2026-08-26.md`.
+  The probe is 70-bar × `{0.6,0.9,1.2,1.25}` only, seed 827, 32 env, `baseline_1p25`, gain 2.5.
+  It binds the verified gate summary SHA `a85e9576…` and heading-rest braking receipt
+  `4e87eb9d…`. The 32-cell artifacts are read-only.
+- CPU contract tests lock recovery-v2 `nearest_soft_free_anchor` kwargs
+  (`hysteresis=0.25`, `hard_epsilon=1e-4+0.0123`) so the observer cannot silently reuse the v1
+  forensic search. Descriptive labels are `ANCHOR_PRESENT_LATCH` /
+  `ANCHOR_ABSENT_AT_LATCH` / `INCONCLUSIVE`; none of them pass the 32-cell mechanism or authorize
+  retune/PPO. GPU `--run` is not part of this freeze.
+
+

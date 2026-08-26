@@ -421,7 +421,7 @@ env 32 / 1.5를 이 FAIL 보고 바꾸지 않는다. 32-cell을 재실행하지 
 원자료: [`gate summary`](results/navrl_physical_target_recovery_v2_gate_lower1p25_seed827/summary.json),
 [`result note`](docs/physical_target_recovery_v2_lower1p25_result_2026-08-26.md).
 다음 GPU는 [`no-anchor forensics preregistration`](docs/preregistration_physical_target_recovery_v2_no_connector_forensics_2026-08-26.md)
-뿐이며 아직 실행하지 않았다.
+이 동결한 70-bar 4-speed probe뿐이다. 계약·CPU replica는 고정됐고 observer `--run`은 아직 없다.
 
 ## 아카이브
 

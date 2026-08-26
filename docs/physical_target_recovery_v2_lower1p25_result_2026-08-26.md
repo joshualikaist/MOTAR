@@ -83,10 +83,9 @@ when rechecked on VOID and finalized raw.
 
 ## Next authority
 
-Evaluation-only packed diagnosis is complete. The next eligible GPU is a separately
-preregistered no-anchor geometry probe
-([preregistration](preregistration_physical_target_recovery_v2_no_connector_forensics_2026-08-26.md)),
-not another 32-cell gate.
+Evaluation-only packed diagnosis is complete and the no-anchor geometry
+[preregistration](preregistration_physical_target_recovery_v2_no_connector_forensics_2026-08-26.md)
+is frozen. The GPU observer is not part of that CPU freeze.
 
 Evidence: [gate summary](../results/navrl_physical_target_recovery_v2_gate_lower1p25_seed827/summary.json),
 [receipt](../results/navrl_physical_target_recovery_v2_gate_lower1p25_seed827/receipt.json),
