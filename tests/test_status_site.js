@@ -1,6 +1,7 @@
 'use strict';
 
 const assert = require('assert');
+const { execFileSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
@@ -14,6 +15,18 @@ const status = JSON.parse(fs.readFileSync(path.join(site, 'status.json'), 'utf8'
 const experiments = JSON.parse(fs.readFileSync(path.join(site, 'data/experiments.json'), 'utf8')).experiments;
 const Motion = require('../docs/status/arena_motion.js');
 const arenaSource = fs.readFileSync(path.join(site, 'arena.js'), 'utf8');
+const trackedFiles = new Set(
+  execFileSync('git', ['ls-files', '--cached', '-z'], {
+    cwd: repo,
+    encoding: 'utf8',
+  }).split('\0').filter(Boolean),
+);
+const pendingDocs = new Set(
+  execFileSync('git', ['ls-files', '--others', '--exclude-standard', '-z'], {
+    cwd: repo,
+    encoding: 'utf8',
+  }).split('\0').filter((file) => file.startsWith('docs/')),
+);
 
 // The public site is one presentation page. JavaScript is limited to the self-contained 3-D
 // arena; evidence and claims remain static HTML and never depend on a dashboard renderer.
@@ -86,54 +99,74 @@ for (const asset of ['motar-system-overview.svg', 'motar-control-stack.svg']) {
 }
 
 // Presentation claims remain explicitly bounded by the current evidence and hardware status.
-assert(html.includes('Attempt 2 · 32/32 integrity PASS'));
+assert(html.includes('Recovery-v2 lower-1.25 · 32/32 integrity PASS'));
 assert(html.includes('Route mechanism FAIL'));
-assert(html.includes('Physical PPO BLOCKED'));
-assert(html.includes('Hardware pending'));
+assert(html.includes('no-anchor forensics INCONCLUSIVE'));
+assert(html.includes('no further Track B GPU/PPO/retune/rerun authority'));
+assert(html.includes('hardware SIM2REAL_3DAY next'));
 assert(html.includes('SYNTHETIC_ONLY'));
 assert(html.includes('333/333'));
 assert(html.includes('selected 205-bar contact endpoints'));
 assert(html.includes('−0.0145 pp'));
 assert(html.includes('8.443→3.172%'));
-assert(html.includes('14.55%'));
-assert(html.includes('70-bar · 4-speed pooled plan success'));
-assert(html.includes('fallback 35.93% (gate 1%)'));
-assert(html.includes('0.25'));
+assert(html.includes('190/203'));
+assert(html.includes('93.60%'));
+assert(html.includes('18,381/38,400'));
+assert(html.includes('47.87%'));
+assert(html.includes('0.21875'));
 assert(html.includes('70 bars × 0.6 m/s'));
+assert(html.includes('96,854/153,600'));
+assert(html.includes('63.06%'));
+assert(html.includes('0/534'));
+assert(html.includes('primary_n=1'));
+assert(html.includes('identity_void=false'));
+assert(html.includes('certificate 49 + brake_timeout 32 +'));
+assert(html.includes('resume 23 + connect_timeout 1 + brake_no_anchor 1'));
+assert(html.includes('baseline_1p25'));
+assert(html.includes('canonical 1.5 m/s'));
+assert(html.includes('RANGE_INCONCLUSIVE'));
+assert(html.includes('추가 Track B'));
 assert(html.includes('RECOVERY_DOMINANT'));
-assert(html.includes('99.6257×'));
-assert(html.includes('35,666'));
-assert(html.includes('93.61%'));
-assert(html.includes('92.95%'));
-assert(html.includes('unsafe_start'));
 assert(html.includes('NOT PhysX/PPO'));
 assert(html.includes('실제 기체가 미조립'));
-assert(readme.includes('Status · 2026-08-25'));
-assert(readme.includes('32/32 integrity checks'));
-assert(readme.includes('route mechanism **failed**'));
-assert(readme.includes('physical PPO and hardware claims\n> remain **blocked**'));
-assert(readme.includes('0.25 goals/env'));
-assert(readme.includes('`unsafe_start` recovery'));
-assert(readme.includes('RECOVERY_DOMINANT'));
-assert(readme.includes('35,666'));
-assert(readme.includes('Motor saturation, tilt, and contact'));
-assert(readme.includes('gates passed, so they are not the supported explanation'));
-assert(readme.includes('altitude PI → Lee velocity loop'));
 assert(fs.readFileSync(path.join(repo, 'docs/assets/motar-control-stack.svg'), 'utf8').includes('K_v e_v'));
 assert(html.includes('0.04 s 1차 지연'));
 
+const recoveryV2Gate = experiments.find((entry) => entry.id === '2026-08-26-physical-target-recovery-v2-lower1p25-gate-seed827');
+assert(recoveryV2Gate, 'canonical recovery-v2 lower-1.25 gate entry missing');
+assert.strictEqual(recoveryV2Gate.verdict, 'FAIL');
+assert.strictEqual(recoveryV2Gate.validity, 'canonical');
+assert.strictEqual(recoveryV2Gate.env.contract_variant, 'baseline_1p25');
+assert.strictEqual(recoveryV2Gate.arms[0].extra.cells_passed, '7/32, all route-off');
+assert(recoveryV2Gate.arms[1].extra.plan_success.includes('190/203'));
+assert(recoveryV2Gate.arms[1].extra.fallback.includes('18381/38400'));
+assert(recoveryV2Gate.verdict_note.includes('canonical 1.5'));
+assert(recoveryV2Gate.verdict_note.includes('hardware'));
+
+const noAnchor = experiments.find((entry) => entry.id === '2026-08-26-recovery-v2-no-connector-forensics-seed827');
+assert(noAnchor, 'canonical recovery-v2 no-anchor entry missing');
+assert.strictEqual(noAnchor.verdict, 'INCONCLUSIVE');
+assert.strictEqual(noAnchor.validity, 'canonical');
+assert.strictEqual(noAnchor.arms[0].extra.primary_n, 1);
+assert.strictEqual(noAnchor.arms[0].extra.identity_void, false);
+assert.strictEqual(noAnchor.arms[1].extra.failed_certificate, 49);
+assert.strictEqual(noAnchor.arms[1].extra.brake_timeout, 32);
+assert.strictEqual(noAnchor.arms[1].extra.failed_resume, 23);
+assert.strictEqual(noAnchor.arms[1].extra.connect_timeout, 1);
+assert.strictEqual(noAnchor.arms[1].extra.brake_no_anchor, 1);
+
+// Attempt 2 and RECOVERY_DOMINANT remain inspectable historical lineage.
 const routedGate = experiments.find((entry) => entry.id === '2026-08-25-physical-target-routed-simulator-gate-seed827-attempt2');
 assert(routedGate, 'canonical attempt-2 routed gate entry missing');
 assert.strictEqual(routedGate.verdict, 'FAIL');
 assert.strictEqual(routedGate.validity, 'canonical');
+assert.strictEqual(routedGate.lineage_status, 'historical_attempt2');
 assert.strictEqual(routedGate.arms[0].extra.cells_passed, '32/32');
 assert(routedGate.verdict_note.includes('unsafe_start'));
-assert.strictEqual(status.sim2real_72h.simulation_verification.preflight_steps.physical_target_gate.integrity, 'PASS_32_CELL_INTEGRITY');
-assert.strictEqual(status.sim2real_72h.simulation_verification.preflight_steps.physical_target_gate.route_mechanism, 'FAIL_ROUTE_MECHANISM');
-assert.strictEqual(status.sim2real_72h.simulation_verification.preflight_steps.physical_target_gate.physical_ppo, 'BLOCKED');
 const recovery = status.sim2real_72h.simulation_verification.preflight_steps.route_recovery_forensics;
 assert(recovery, 'route recovery forensics status missing');
 assert.strictEqual(recovery.diagnostic_verdict, 'RECOVERY_DOMINANT');
+assert.strictEqual(recovery.lineage_status, 'HISTORICAL_V1_DIAGNOSTIC');
 assert.strictEqual(recovery.cells_verified, '8/8');
 assert.strictEqual(recovery.local_invalidations, 358);
 assert.strictEqual(recovery.local_fallback_intervals, 35666);
@@ -143,7 +176,48 @@ assert.strictEqual(recovery.margin_tuning_allowed, false);
 const recoveryExperiment = experiments.find((entry) => entry.id === '2026-08-25-physical-target-route-recovery-forensics-seed827');
 assert(recoveryExperiment, 'recovery forensics experiment entry missing');
 assert.strictEqual(recoveryExperiment.diagnostic_verdict, 'RECOVERY_DOMINANT');
+assert.strictEqual(recoveryExperiment.lineage_status, 'historical_v1_diagnostic');
 assert(recoveryExperiment.results_paths.includes('results/navrl_physical_target_route_recovery_forensics_seed827/receipt.json'));
+
+assert.strictEqual(status.sim2real_72h.as_of, '2026-08-26');
+const currentGate = status.sim2real_72h.simulation_verification.recovery_v2_lower1p25_gate;
+assert.strictEqual(currentGate.integrity, 'PASS_32_CELL_INTEGRITY');
+assert.strictEqual(currentGate.route_mechanism, 'FAIL_ROUTE_MECHANISM');
+assert.deepStrictEqual(currentGate.cells, {
+  passed: 7,
+  total: 32,
+  route_off_passed: 7,
+  route_off_total: 16,
+  recovery_passed: 0,
+  recovery_total: 16,
+  passing_lineage: 'route_off_only',
+});
+assert.strictEqual(currentGate.plan_success_70bar_4speed.numerator, 190);
+assert.strictEqual(currentGate.plan_success_70bar_4speed.denominator, 203);
+assert.strictEqual(currentGate.fallback_70bar_4speed.numerator, 18381);
+assert.strictEqual(currentGate.fallback_70bar_4speed.denominator, 38400);
+assert.strictEqual(currentGate.goals_per_env_70bar_0_6mps.value, 0.21875);
+assert.strictEqual(currentGate.no_connector_occupancy.numerator, 96854);
+assert.strictEqual(currentGate.no_connector_occupancy.denominator, 153600);
+assert.strictEqual(currentGate.hard_breach_no_connector_entries.numerator, 0);
+assert.strictEqual(currentGate.hard_breach_no_connector_entries.denominator, 534);
+assert.strictEqual(currentGate.hardware_claim, false);
+assert.strictEqual(currentGate.canonical_1p5_contract, 'SEPARATE_UNCHANGED_NOT_PASSED');
+assert.deepStrictEqual(
+  status.sim2real_72h.simulation_verification.preflight_steps.physical_target_gate,
+  currentGate,
+);
+const currentForensics = status.sim2real_72h.simulation_verification.recovery_v2_no_connector_forensics;
+assert.strictEqual(currentForensics.decision_rule.label, 'INCONCLUSIVE');
+assert.strictEqual(currentForensics.decision_rule.primary_n, 1);
+assert.strictEqual(currentForensics.decision_rule.anchor_present, 0);
+assert.strictEqual(currentForensics.decision_rule.hard_free_soft_unsafe, 1);
+assert.strictEqual(currentForensics.decision_rule.identity_void, false);
+assert.strictEqual(currentForensics.no_connector_classes.total, 106);
+assert.strictEqual(
+  status.sim2real_72h.simulation_verification.track_b_authority,
+  'CLOSED_NO_FURTHER_GPU_PPO_RETUNE_RERUN',
+);
 assert.deepStrictEqual(
   status.sim2real_72h.simulation_verification.routed_physical_target_gate_attempt2.highest_passing_speed_mps_by_density,
   {'70': null, '150': null, '205': null, '300': null},
@@ -152,8 +226,8 @@ assert.strictEqual(
   status.sim2real_72h.simulation_verification.historical_post_wall_brake_speed_envelope.route_mode,
   'off_historical_lineage',
 );
-assert(status.sim2real_72h.status.includes('ROUTE MECHANISM FAILED'));
-assert(status.sim2real_72h.status.includes('PHYSICAL PPO BLOCKED'));
+assert(status.sim2real_72h.status.includes('NO FURTHER TRACK B AUTHORITY'));
+assert(status.sim2real_72h.status.includes('HARDWARE NEXT'));
 
 // The concise platform card must remain tied to the generated source-of-truth values.
 const ref = platform.robots.find((robot) => robot.key === 'navrl_ref5in_quad');
@@ -173,7 +247,15 @@ while ((match = refPattern.exec(html)) !== null) refs.push(match[1]);
 for (const refPath of refs) {
   if (refPath.startsWith('#') || /^https?:/.test(refPath)) continue;
   const clean = refPath.split('#')[0].split('?')[0];
-  assert(fs.existsSync(path.resolve(site, clean)), `broken local reference: ${refPath}`);
+  const target = path.resolve(site, clean);
+  assert(fs.existsSync(target), `broken local reference: ${refPath}`);
+  const relative = path.relative(repo, target);
+  assert(
+    !relative.startsWith('..') &&
+      !path.isAbsolute(relative) &&
+      (trackedFiles.has(relative) || pendingDocs.has(relative)),
+    `local reference is not tracked or a pending docs file: ${refPath}`,
+  );
 }
 
 console.log('MOTAR static site contract: PASS');

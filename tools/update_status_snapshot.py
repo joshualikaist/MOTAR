@@ -9,11 +9,14 @@ HTML or create a JavaScript mirror.
 from __future__ import annotations
 
 import csv
+import contextlib
 from datetime import datetime, timezone
 import hashlib
 import importlib.util
+import io
 import json
 import math
+import os
 from pathlib import Path
 import re
 from statistics import fmean
@@ -47,7 +50,105 @@ MAIN_TTC_RESULT_ROOT = ROOT / "results"
 SIM2REAL_PREFLIGHT_PATH = ROOT / "results/navrl_sim2real_software_preflight_2026-08-24/summary.json"
 PHYSICAL_SPEED_ENVELOPE_PATH = ROOT / "results/navrl_physical_target_speed_envelope_post_wall_brake_seed509/summary.json"
 ROUTED_PHYSICAL_GATE_PATH = ROOT / "results/navrl_physical_target_routed_gate_seed827_attempt2/summary.json"
+ROUTE_RECOVERY_FORENSICS_PATH = (
+    ROOT / "results/navrl_physical_target_route_recovery_forensics_seed827/summary.json"
+)
+RECOVERY_V2_LOWER1P25_GATE_PATH = (
+    ROOT
+    / "results/navrl_physical_target_recovery_v2_gate_lower1p25_seed827/summary.json"
+)
+RECOVERY_V2_NO_CONNECTOR_FORENSICS_PATH = (
+    ROOT
+    / "results/navrl_physical_target_recovery_v2_no_connector_forensics_seed827/summary.json"
+)
+RECOVERY_V2_PACKED_DIAGNOSTIC_PATH = (
+    ROOT / "tools/diagnose_navrl_physical_target_recovery_v2_packed.py"
+)
+RECOVERY_V2_GATE_VERIFIER_PATH = (
+    ROOT / "tools/verify_navrl_physical_target_recovery_v2_gate.py"
+)
+RECOVERY_V2_NO_CONNECTOR_VERIFIER_PATH = (
+    ROOT / "tools/diagnose_navrl_physical_target_recovery_v2_no_connector.py"
+)
 MODE_PROBE_PATH = ROOT / "results/navrl_ref5in_symmetric_corridor_mode_probe_seed431/summary.json"
+REPOSITORY_ID = "joshualikaist/MOTAR"
+
+_RECOVERY_V2_ROUTE_MODES = ("off", "global_astar_recovery_v2")
+_RECOVERY_V2_SPEEDS = (0.6, 0.9, 1.2, 1.25)
+_RECOVERY_V2_DENSITIES = (70, 150, 205, 300)
+_RECOVERY_V2_PRIMARY_CLASSES = {
+    "brake_no_anchor_likely",
+    "same_interval_brake_no_anchor_likely",
+}
+_RECOVERY_V2_COUNTER_INTEGER_KEYS = {
+    "connected_goal_replans",
+    "expanded_nodes",
+    "fallback_intervals",
+    "goal_completions",
+    "invalid_count",
+    "local_step_invalidations",
+    "no_path_count",
+    "plan_attempts",
+    "plan_successes",
+    "planning_batches",
+    "planning_envs",
+    "raw_waypoints",
+    "recovery_brake_intervals",
+    "recovery_brake_timeout_count",
+    "recovery_connect_intervals",
+    "recovery_connect_timeout_count",
+    "recovery_entries",
+    "recovery_hard_breach_count",
+    "recovery_no_connector_count",
+    "recovery_route_resumes",
+    "replan_attempts",
+    "same_goal_reselection_count",
+    "smoothed_waypoints",
+}
+_RECOVERY_V2_COUNTER_KEYS = _RECOVERY_V2_COUNTER_INTEGER_KEYS | {
+    "invalidation_counts",
+    "total_planning_wall_s",
+}
+_RECOVERY_V2_INVALIDATION_KEYS = {
+    "goal_changed",
+    "local_step_infeasible",
+    "support_contract_changed",
+}
+_RECOVERY_V2_TELEMETRY_INTEGER_KEYS = {
+    "candidate_certificate_calls",
+    "connect_actual_regressions",
+    "connect_intervals",
+    "contact_substeps",
+    "direct_position_writes",
+    "envs",
+    "hard_breach_events",
+    "interval_denominator",
+    "no_connector_events",
+    "open_recoveries_at_cell_end",
+    "physics_substeps",
+    "recovery_entries",
+    "reset_calls_during_advance",
+    "route_resumes",
+    "runner_reset_during_recovery",
+    "runner_reset_envs",
+    "steps",
+    "substep_denominator",
+    "timeout_env_intervals",
+    "watchdog_breach_substeps",
+}
+_RECOVERY_V2_TELEMETRY_FLOAT_KEYS = {
+    "candidate_observer_device_ms",
+    "connect_actual_max_increase_m",
+    "connector_observer_cpu_ms",
+}
+_RECOVERY_V2_TELEMETRY_KEYS = (
+    _RECOVERY_V2_TELEMETRY_INTEGER_KEYS
+    | _RECOVERY_V2_TELEMETRY_FLOAT_KEYS
+    | {"no_connector_reason_counts", "schema", "sha256"}
+)
+_NO_CONNECTOR_MARKER_SCHEMA = (
+    "navrl_physical_target_recovery_v2_no_connector_forensics_v1_complete"
+)
 
 _MAIN_TTC_SOURCE_SHA256 = (
     "82f7978b42d9d9e95adcc638a40ae85fb3736fd897ae39cb8aa8333be39cf23f"
@@ -226,6 +327,758 @@ def _finite_number(value: Any) -> Optional[float]:
     except (TypeError, ValueError):
         return None
     return number if math.isfinite(number) else None
+
+
+def _read_json_object(path: Path) -> Optional[Dict[str, Any]]:
+    """Read a JSON object without allowing absent or corrupt evidence to crash the snapshot."""
+
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError):
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
+def _unavailable_evidence(path: Path) -> Dict[str, Any]:
+    try:
+        source = str(path.relative_to(ROOT))
+    except ValueError:
+        source = str(path)
+    return {
+        "source": source,
+        "status": "RESULT_UNAVAILABLE_OR_MALFORMED",
+        "authority": "NO_FURTHER_TRACK_B_GPU_PPO_RETUNE_RERUN",
+        "physical_ppo": "BLOCKED",
+        "hardware_claim": False,
+    }
+
+
+def _load_status_module(path: Path, module_name: str) -> Any:
+    spec = importlib.util.spec_from_file_location(module_name, path)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"module loader unavailable: {path}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _canonical_recovery_v2_gate_summary() -> Optional[Dict[str, Any]]:
+    """Verify the immutable gate receipt before reading its summary."""
+
+    env_key = "NAVRL_TARGET_BRAKING_CONTRACT_VARIANT"
+    previous_variant = os.environ.get(env_key)
+    try:
+        os.environ[env_key] = "baseline_1p25"
+        module = _load_status_module(
+            RECOVERY_V2_GATE_VERIFIER_PATH,
+            "_recovery_v2_gate_verifier_for_status",
+        )
+        verifier = getattr(module, "verify_result", None)
+        if not callable(verifier):
+            raise AttributeError("verify_result is unavailable")
+        with contextlib.redirect_stdout(io.StringIO()):
+            payload = verifier(RECOVERY_V2_LOWER1P25_GATE_PATH.parent)
+        if not isinstance(payload, dict):
+            raise TypeError("canonical verifier returned a non-object")
+        return payload
+    except Exception:
+        return None
+    finally:
+        if previous_variant is None:
+            os.environ.pop(env_key, None)
+        else:
+            os.environ[env_key] = previous_variant
+
+
+def _canonical_no_connector_summary() -> Optional[Dict[str, Any]]:
+    """Verify the forensic receipt and completion marker before reading its summary."""
+
+    output_dir = RECOVERY_V2_NO_CONNECTOR_FORENSICS_PATH.parent
+    receipt_path = output_dir / "receipt.json"
+    summary_path = output_dir / "summary.json"
+    marker_path = output_dir / ".COMPLETE.json"
+    try:
+        module = _load_status_module(
+            RECOVERY_V2_NO_CONNECTOR_VERIFIER_PATH,
+            "_recovery_v2_no_connector_verifier_for_status",
+        )
+        verifier = getattr(module, "verify_receipt", None)
+        if not callable(verifier):
+            raise AttributeError("verify_receipt is unavailable")
+        with contextlib.redirect_stdout(io.StringIO()):
+            result = verifier(output_dir)
+        if result != 0:
+            raise RuntimeError(f"forensic verifier returned {result}")
+
+        marker = json.loads(marker_path.read_text(encoding="utf-8"))
+        if (
+            not isinstance(marker, dict)
+            or set(marker) != {"schema", "receipt_sha256", "summary_sha256"}
+            or marker["schema"] != _NO_CONNECTOR_MARKER_SCHEMA
+            or marker["receipt_sha256"] != _sha256(receipt_path)
+            or marker["summary_sha256"] != _sha256(summary_path)
+        ):
+            raise ValueError("forensic completion marker mismatch")
+        payload = _read_json_object(summary_path)
+        if payload is None:
+            raise ValueError("forensic summary is unavailable or malformed")
+        return payload
+    except Exception:
+        return None
+
+
+def _require_real_bool(value: Any, label: str) -> bool:
+    if not isinstance(value, bool):
+        raise ValueError(f"{label} must be a boolean")
+    return value
+
+
+def _require_nonnegative_int(value: Any, label: str) -> int:
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        raise ValueError(f"{label} must be a nonnegative integer")
+    return value
+
+
+def _require_finite_number(value: Any, label: str, *, nonnegative: bool = False) -> float:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError(f"{label} must be a finite number")
+    number = float(value)
+    if not math.isfinite(number) or (nonnegative and number < 0.0):
+        raise ValueError(f"{label} must be a finite number")
+    return number
+
+
+def _validate_recovery_v2_telemetry(telemetry: Any, label: str) -> None:
+    if not isinstance(telemetry, dict) or set(telemetry) != _RECOVERY_V2_TELEMETRY_KEYS:
+        raise ValueError(f"{label} schema mismatch")
+    if telemetry["schema"] != "navrl_target_recovery_packed_telemetry_v1":
+        raise ValueError(f"{label}.schema mismatch")
+    if (
+        not isinstance(telemetry["sha256"], str)
+        or not re.fullmatch(r"[0-9a-f]{64}", telemetry["sha256"])
+    ):
+        raise ValueError(f"{label}.sha256 mismatch")
+    for key in _RECOVERY_V2_TELEMETRY_INTEGER_KEYS:
+        _require_nonnegative_int(telemetry[key], f"{label}.{key}")
+    for key in _RECOVERY_V2_TELEMETRY_FLOAT_KEYS:
+        _require_finite_number(
+            telemetry[key],
+            f"{label}.{key}",
+            nonnegative=key != "connect_actual_max_increase_m",
+        )
+    reason_counts = telemetry["no_connector_reason_counts"]
+    if not isinstance(reason_counts, dict):
+        raise ValueError(f"{label}.no_connector_reason_counts must be an object")
+    for key, value in reason_counts.items():
+        if not isinstance(key, str):
+            raise ValueError(f"{label}.no_connector_reason_counts key mismatch")
+        _require_nonnegative_int(value, f"{label}.no_connector_reason_counts[{key}]")
+    if sum(reason_counts.values()) != telemetry["no_connector_events"]:
+        raise ValueError(f"{label}.no_connector_reason_counts arithmetic mismatch")
+    if telemetry["interval_denominator"] != telemetry["envs"] * telemetry["steps"]:
+        raise ValueError(f"{label}.interval_denominator mismatch")
+    if telemetry["no_connector_events"] > telemetry["interval_denominator"]:
+        raise ValueError(f"{label}.no_connector_events exceeds denominator")
+    if telemetry["hard_breach_events"] > telemetry["no_connector_events"]:
+        raise ValueError(f"{label}.hard_breach_events exceeds entries")
+
+
+def _validate_recovery_v2_cell(cell: Any, expected: tuple[str, float, int]) -> None:
+    if not isinstance(cell, dict):
+        raise ValueError("recovery-v2 cell is not an object")
+    route_mode, speed, bars = expected
+    if (
+        cell.get("route_mode") != route_mode
+        or cell.get("bars") != bars
+        or cell.get("speed_mps") != speed
+    ):
+        raise ValueError("recovery-v2 cell identity mismatch")
+    if not isinstance(cell.get("record_id"), str):
+        raise ValueError("recovery-v2 record ID missing")
+    if cell.get("seed") != 827 or cell.get("envs") != 32:
+        raise ValueError("recovery-v2 seed/env contract mismatch")
+    if cell.get("steps") != 300 or cell.get("warmup_steps") != 20:
+        raise ValueError("recovery-v2 interval contract mismatch")
+    _require_real_bool(cell.get("pass"), "cell.pass")
+    for key in (
+        "mean_speed_mps",
+        "mean_speed_ratio",
+        "tracking_rmse_mps",
+        "contact_step_fraction",
+        "invalid_state_fraction",
+        "motor_saturation_fraction",
+        "max_tilt_deg",
+    ):
+        _require_finite_number(cell[key], f"cell.{key}", nonnegative=True)
+    local_key = (
+        "off_rounded_local_infeasible_fraction"
+        if route_mode == "off"
+        else "recovery_normal_route_rounded_invalidation_fraction"
+    )
+    _require_finite_number(cell[local_key], f"cell.{local_key}", nonnegative=True)
+    telemetry = cell.get("telemetry_summary")
+    _validate_recovery_v2_telemetry(telemetry, "cell.telemetry_summary")
+    if telemetry["envs"] != cell["envs"] or telemetry["steps"] != cell["steps"]:
+        raise ValueError("cell telemetry contract mismatch")
+
+    route = cell.get("route")
+    if not isinstance(route, dict) or route.get("mode") != route_mode:
+        raise ValueError("cell.route schema mismatch")
+    counter = route.get("counter_delta")
+    if not isinstance(counter, dict):
+        raise ValueError("cell.route.counter_delta schema mismatch")
+    if route_mode == "off":
+        if counter:
+            raise ValueError("off cell has route counters")
+        if any(route.get(key) is not None for key in (
+            "plan_success_fraction",
+            "fallback_interval_fraction",
+            "goal_completions_per_env",
+        )):
+            raise ValueError("off cell has route metrics")
+        _require_finite_number(route.get("planning_wall_s"), "route.planning_wall_s", nonnegative=True)
+        return
+    if set(counter) != _RECOVERY_V2_COUNTER_KEYS:
+        raise ValueError("recovery cell counter schema mismatch")
+    for key in _RECOVERY_V2_COUNTER_INTEGER_KEYS:
+        _require_nonnegative_int(counter[key], f"cell.route.counter_delta.{key}")
+    _require_finite_number(
+        counter["total_planning_wall_s"],
+        "cell.route.counter_delta.total_planning_wall_s",
+        nonnegative=True,
+    )
+    invalidation_counts = counter["invalidation_counts"]
+    if not isinstance(invalidation_counts, dict) or set(invalidation_counts) != _RECOVERY_V2_INVALIDATION_KEYS:
+        raise ValueError("cell invalidation counter schema mismatch")
+    for key in _RECOVERY_V2_INVALIDATION_KEYS:
+        _require_nonnegative_int(invalidation_counts[key], f"cell.invalidation_counts.{key}")
+    if counter["plan_successes"] > counter["plan_attempts"]:
+        raise ValueError("plan successes exceed attempts")
+    if counter["fallback_intervals"] > telemetry["interval_denominator"]:
+        raise ValueError("fallback intervals exceed denominator")
+    for key in (
+        "plan_success_fraction",
+        "fallback_interval_fraction",
+        "goal_completions_per_env",
+    ):
+        value = _require_finite_number(route[key], f"cell.route.{key}", nonnegative=True)
+        if key != "goal_completions_per_env" and value > 1.0:
+            raise ValueError(f"cell.route.{key} exceeds one")
+    _require_finite_number(route["planning_wall_s"], "route.planning_wall_s", nonnegative=True)
+
+
+def _recovery_v2_packed_report() -> Optional[Dict[str, Any]]:
+    """Recompute occupancy from finalized packed telemetry without launching a simulator."""
+
+    try:
+        spec = importlib.util.spec_from_file_location(
+            "_recovery_v2_packed_for_status", RECOVERY_V2_PACKED_DIAGNOSTIC_PATH
+        )
+        if spec is None or spec.loader is None:
+            return None
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        report = module.diagnose_gate(RECOVERY_V2_LOWER1P25_GATE_PATH.parent)
+    except Exception:
+        return None
+    return report if isinstance(report, dict) else None
+
+
+def _recovery_v2_lower1p25_gate() -> Dict[str, Any]:
+    """Build the current Track-B gate block from the finalized 32-cell summary."""
+
+    payload = _canonical_recovery_v2_gate_summary()
+    if payload is None:
+        return _unavailable_evidence(RECOVERY_V2_LOWER1P25_GATE_PATH)
+    try:
+        if payload["schema"] != "navrl_physical_target_recovery_v2_gate_v1":
+            raise ValueError("unexpected schema")
+        if payload["contract_variant"] != "baseline_1p25":
+            raise ValueError("unexpected contract variant")
+        verdict = payload["verdict"]
+        cells = payload["cells"]
+        if not isinstance(verdict, dict) or not isinstance(cells, list) or len(cells) != 32:
+            raise ValueError("invalid verdict or cell grid")
+
+        expected_cells = {
+            (route, speed, bars)
+            for route in _RECOVERY_V2_ROUTE_MODES
+            for speed in _RECOVERY_V2_SPEEDS
+            for bars in _RECOVERY_V2_DENSITIES
+        }
+        seen_cells = set()
+        for cell in cells:
+            if not isinstance(cell, dict):
+                raise ValueError("recovery-v2 cell is not an object")
+            identity = (cell.get("route_mode"), cell.get("speed_mps"), cell.get("bars"))
+            if identity in seen_cells or identity not in expected_cells:
+                raise ValueError("invalid or duplicate recovery-v2 cell identity")
+            seen_cells.add(identity)
+            _validate_recovery_v2_cell(cell, identity)
+        if seen_cells != expected_cells:
+            raise ValueError("recovery-v2 grid is incomplete")
+
+        route_off = [cell for cell in cells if cell["route_mode"] == "off"]
+        recovery = [cell for cell in cells if cell["route_mode"] != "off"]
+        route_off_pass = sum(cell["pass"] is True for cell in route_off)
+        recovery_pass = sum(cell["pass"] is True for cell in recovery)
+        cells_pass = route_off_pass + recovery_pass
+
+        pool70 = [cell for cell in recovery if int(cell["bars"]) == 70]
+        if len(pool70) != 4:
+            raise ValueError("invalid 70-bar pool")
+        plan_attempts = sum(
+            int(cell["route"]["counter_delta"]["plan_attempts"]) for cell in pool70
+        )
+        plan_successes = sum(
+            int(cell["route"]["counter_delta"]["plan_successes"]) for cell in pool70
+        )
+        fallback_intervals_70 = sum(
+            int(cell["route"]["counter_delta"]["fallback_intervals"])
+            for cell in pool70
+        )
+        interval_denominator_70 = sum(
+            int(cell["telemetry_summary"]["interval_denominator"]) for cell in pool70
+        )
+        low_speed = [
+            cell for cell in pool70 if math.isclose(float(cell["speed_mps"]), 0.6)
+        ]
+        if len(low_speed) != 1:
+            raise ValueError("missing 70-bar 0.6 m/s cell")
+        low_speed_cell = low_speed[0]
+        goals = int(low_speed_cell["route"]["counter_delta"]["goal_completions"])
+        goal_envs = int(low_speed_cell["envs"])
+
+        packed = _recovery_v2_packed_report()
+        if packed is None:
+            raise ValueError("packed telemetry unavailable")
+        occupancy = packed["pooled_occupancy"]
+        if not isinstance(occupancy, dict):
+            raise ValueError("packed occupancy is not an object")
+        no_connector_intervals = _require_nonnegative_int(
+            occupancy["no_connector"], "packed occupancy.no_connector"
+        )
+        recovery_intervals = _require_nonnegative_int(
+            occupancy["intervals"], "packed occupancy.intervals"
+        )
+        hard_breaches = sum(
+            int(cell["telemetry_summary"]["hard_breach_events"]) for cell in recovery
+        )
+        no_connector_entries = sum(
+            int(cell["telemetry_summary"]["no_connector_events"]) for cell in recovery
+        )
+        if plan_attempts <= 0 or interval_denominator_70 <= 0 or goal_envs <= 0:
+            raise ValueError("invalid denominator")
+        if plan_successes > plan_attempts:
+            raise ValueError("pooled plan successes exceed attempts")
+        if fallback_intervals_70 > interval_denominator_70:
+            raise ValueError("pooled fallback exceeds denominator")
+        if recovery_intervals <= 0 or no_connector_entries <= 0:
+            raise ValueError("invalid recovery denominator")
+        if no_connector_intervals > recovery_intervals:
+            raise ValueError("pooled occupancy exceeds denominator")
+        if hard_breaches > no_connector_entries:
+            raise ValueError("pooled hard breaches exceed entries")
+        if recovery_intervals != sum(
+            cell["telemetry_summary"]["interval_denominator"] for cell in recovery
+        ):
+            raise ValueError("pooled occupancy denominator mismatch")
+        if (
+            verdict["execution_integrity"] != "PASS_32_CELL_INTEGRITY"
+            or verdict["route_mechanism"] != "FAIL_ROUTE_MECHANISM"
+            or _require_real_bool(
+                verdict["long_training_authorized"], "verdict.long_training_authorized"
+            )
+            or _require_real_bool(
+                verdict["all_cell_controller_and_recovery_gates"],
+                "verdict.all_cell_controller_and_recovery_gates",
+            )
+            != (cells_pass == len(cells))
+            or packed["execution_integrity"] != verdict["execution_integrity"]
+            or packed["route_mechanism"] != verdict["route_mechanism"]
+            or _require_nonnegative_int(
+                packed["pooled_no_connector_classes"]["entries"],
+                "packed pooled_no_connector_classes.entries",
+            )
+            != no_connector_entries
+        ):
+            raise ValueError("unexpected gate verdict")
+    except (KeyError, TypeError, ValueError, OverflowError):
+        return _unavailable_evidence(RECOVERY_V2_LOWER1P25_GATE_PATH)
+
+    return {
+        "source": str(RECOVERY_V2_LOWER1P25_GATE_PATH.relative_to(ROOT)),
+        "receipt": (
+            "results/navrl_physical_target_recovery_v2_gate_lower1p25_seed827/"
+            "receipt.json"
+        ),
+        "result_doc": "docs/physical_target_recovery_v2_lower1p25_result_2026-08-26.md",
+        "preregistration": (
+            "docs/preregistration_physical_target_recovery_v2_lower1p25_gate_"
+            "2026-08-26.md"
+        ),
+        "tool": "tools/verify_navrl_physical_target_recovery_v2_gate.py",
+        "status": "VERIFIED_FAIL",
+        "contract_variant": "baseline_1p25",
+        "canonical_1p5_contract": "SEPARATE_UNCHANGED_NOT_PASSED",
+        "integrity": verdict["execution_integrity"],
+        "route_mechanism": verdict["route_mechanism"],
+        "cells": {
+            "passed": cells_pass,
+            "total": len(cells),
+            "route_off_passed": route_off_pass,
+            "route_off_total": len(route_off),
+            "recovery_passed": recovery_pass,
+            "recovery_total": len(recovery),
+            "passing_lineage": "route_off_only",
+        },
+        "plan_success_70bar_4speed": {
+            "numerator": plan_successes,
+            "denominator": plan_attempts,
+            "fraction": plan_successes / plan_attempts,
+            "pct": round(100.0 * plan_successes / plan_attempts, 2),
+            "gate_pct": 99.0,
+        },
+        "fallback_70bar_4speed": {
+            "numerator": fallback_intervals_70,
+            "denominator": interval_denominator_70,
+            "fraction": fallback_intervals_70 / interval_denominator_70,
+            "pct": round(100.0 * fallback_intervals_70 / interval_denominator_70, 2),
+            "gate_pct": 1.0,
+        },
+        "goals_per_env_70bar_0_6mps": {
+            "numerator": goals,
+            "denominator": goal_envs,
+            "value": goals / goal_envs,
+            "gate": 0.5,
+        },
+        "no_connector_occupancy": {
+            "numerator": no_connector_intervals,
+            "denominator": recovery_intervals,
+            "fraction": no_connector_intervals / recovery_intervals,
+            "pct": round(100.0 * no_connector_intervals / recovery_intervals, 2),
+        },
+        "hard_breach_no_connector_entries": {
+            "numerator": hard_breaches,
+            "denominator": no_connector_entries,
+        },
+        "physical_ppo": "BLOCKED",
+        "hardware_claim": False,
+        "authority": "NO_FURTHER_TRACK_B_GPU_PPO_RETUNE_RERUN",
+    }
+
+
+def _historical_route_recovery_forensics() -> Dict[str, Any]:
+    """Rebuild the v1 diagnostic lineage from its finalized summary."""
+
+    payload = _read_json_object(ROUTE_RECOVERY_FORENSICS_PATH)
+    if payload is None:
+        unavailable = _unavailable_evidence(ROUTE_RECOVERY_FORENSICS_PATH)
+        unavailable["lineage_status"] = "HISTORICAL_V1_DIAGNOSTIC"
+        return unavailable
+    try:
+        if payload["schema"] != "navrl_physical_target_route_recovery_forensics_v1_summary":
+            raise ValueError("unexpected schema")
+        rule = payload["decision_rule"]
+        event_counts = payload["event_counts"]
+        plans = payload["plan_status_counts"]
+        ages = payload["metric_stats"]["fallback_age_steps"]
+        per_cell = payload["per_cell"]
+        if rule["verdict"] != "RECOVERY_DOMINANT" or len(per_cell) != 8:
+            raise ValueError("unexpected historical verdict")
+    except (KeyError, TypeError, ValueError):
+        unavailable = _unavailable_evidence(ROUTE_RECOVERY_FORENSICS_PATH)
+        unavailable["lineage_status"] = "HISTORICAL_V1_DIAGNOSTIC"
+        return unavailable
+    return {
+        "source": str(ROUTE_RECOVERY_FORENSICS_PATH.relative_to(ROOT)),
+        "summary_markdown": (
+            "results/navrl_physical_target_route_recovery_forensics_seed827/"
+            "summary.md"
+        ),
+        "receipt": (
+            "results/navrl_physical_target_route_recovery_forensics_seed827/"
+            "receipt.json"
+        ),
+        "preregistration": (
+            "docs/preregistration_physical_target_route_recovery_forensics_"
+            "2026-08-25.md"
+        ),
+        "cells_verified": f"{len(per_cell)}/{len(per_cell)}",
+        "diagnostic_verdict": rule["verdict"],
+        "claim_scope": "evaluation-only; no PPO/fix/tuning authority",
+        "local_invalidations": int(event_counts["invalidation"]),
+        "local_fallback_intervals": int(payload["local_fallback_intervals"]),
+        "fallback_amplification": round(
+            float(rule["attributed_fallback_to_local_invalidation"]), 4
+        ),
+        "fallback_age_steps": {
+            "median": int(ages["median"]),
+            "p90": int(ages["p90"]),
+            "max": int(ages["max"]),
+        },
+        "unique_local_origins": int(rule["unsafe_start_replan_n"]),
+        "hard_free_soft_unsafe_pct": round(
+            100.0 * float(rule["hard_free_soft_unsafe_ratio"]), 2
+        ),
+        "hard_free_soft_unsafe_wilson_lower_pct": round(
+            100.0 * float(rule["hard_free_soft_unsafe_wilson95_lower"]), 2
+        ),
+        "exact_hard_connector_pct": round(
+            100.0 * float(rule["exact_hard_connector_ratio"]), 2
+        ),
+        "exact_hard_connector_wilson_lower_pct": round(
+            100.0 * float(rule["exact_hard_connector_wilson95_lower"]), 2
+        ),
+        "replan_status": dict(plans["replan"]),
+        "initial_plan_status": dict(plans["initial_plan"]),
+        "rounded_vs_square_disagreements": int(
+            payload["rounded_vs_aabb_soft_disagreements"]
+        ),
+        "margin_tuning_allowed": False,
+        "physical_ppo": "BLOCKED",
+        "lineage_status": "HISTORICAL_V1_DIAGNOSTIC",
+    }
+
+
+def _validate_no_connector_class_counts(
+    classes: Any, *, allow_empty: bool = False
+) -> Dict[str, int]:
+    if not isinstance(classes, dict) or (not classes and not allow_empty):
+        raise ValueError("forensic class counts are missing")
+    result: Dict[str, int] = {}
+    for key, value in classes.items():
+        if not isinstance(key, str) or not key:
+            raise ValueError("forensic class name is invalid")
+        result[key] = _require_nonnegative_int(value, f"forensic class {key}")
+    return result
+
+
+def _validate_no_connector_wilson(value: Any, label: str) -> None:
+    if value is None:
+        return
+    if not isinstance(value, dict) or set(value) != {"lower", "upper"}:
+        raise ValueError(f"{label} schema mismatch")
+    lower = _require_finite_number(value["lower"], f"{label}.lower")
+    upper = _require_finite_number(value["upper"], f"{label}.upper")
+    if not 0.0 <= lower <= upper <= 1.0:
+        raise ValueError(f"{label} bounds mismatch")
+
+
+def _validate_no_connector_decision(
+    decision: Any,
+    primary_n: int,
+    anchor_present: int,
+    identity_void: bool,
+    label: str,
+) -> None:
+    if not isinstance(decision, dict):
+        raise ValueError(f"{label}.decision_rule is not an object")
+    if decision["label"] != "INCONCLUSIVE":
+        raise ValueError(f"{label}.decision_rule label mismatch")
+    if (
+        _require_nonnegative_int(decision["primary_n"], f"{label}.decision_rule.primary_n")
+        != primary_n
+        or _require_nonnegative_int(
+            decision["anchor_present"], f"{label}.decision_rule.anchor_present"
+        )
+        != anchor_present
+        or _require_real_bool(
+            decision["identity_void"], f"{label}.decision_rule.identity_void"
+        )
+        != identity_void
+    ):
+        raise ValueError(f"{label}.decision_rule count mismatch")
+    if (
+        _require_real_bool(
+            decision["passes_32_cell_mechanism"],
+            f"{label}.decision_rule.passes_32_cell_mechanism",
+        )
+        or _require_real_bool(
+            decision["authorizes_retune_or_ppo"],
+            f"{label}.decision_rule.authorizes_retune_or_ppo",
+        )
+    ):
+        raise ValueError(f"{label}.decision_rule authority mismatch")
+    _validate_no_connector_wilson(
+        decision["wilson_present"], f"{label}.decision_rule.wilson_present"
+    )
+    _validate_no_connector_wilson(
+        decision["wilson_absent"], f"{label}.decision_rule.wilson_absent"
+    )
+
+
+def _recovery_v2_no_connector_forensics() -> Dict[str, Any]:
+    """Build the current descriptive forensics block from its decision rule."""
+
+    payload = _canonical_no_connector_summary()
+    if payload is None:
+        return _unavailable_evidence(RECOVERY_V2_NO_CONNECTOR_FORENSICS_PATH)
+    try:
+        if (
+            payload["schema"]
+            != "navrl_physical_target_recovery_v2_no_connector_forensics_v1_summary"
+        ):
+            raise ValueError("unexpected schema")
+        if payload.get("interpretation") != "descriptive_only_no_gate_or_tuning_authority":
+            raise ValueError("unexpected forensic interpretation")
+        if _require_real_bool(
+            payload["passes_32_cell_mechanism"], "forensics.passes_32_cell_mechanism"
+        ):
+            raise ValueError("forensic result cannot pass the 32-cell mechanism")
+
+        expected_cells = {(70, speed) for speed in _RECOVERY_V2_SPEEDS}
+        seen_cells = set()
+        aggregate_classes: Dict[str, int] = {}
+        aggregate_primary = 0
+        aggregate_anchor = 0
+        aggregate_hard_free = 0
+        aggregate_identity_void = False
+        cells = payload["cells"]
+        if not isinstance(cells, list):
+            raise ValueError("forensic cells are not a list")
+        for cell in cells:
+            if not isinstance(cell, dict):
+                raise ValueError("forensic cell is not an object")
+            density = _require_nonnegative_int(cell["density"], "forensic cell.density")
+            speed = _require_finite_number(cell["speed_mps"], "forensic cell.speed_mps")
+            identity = (density, speed)
+            if identity in seen_cells or identity not in expected_cells:
+                raise ValueError("invalid or duplicate forensic cell identity")
+            seen_cells.add(identity)
+            analysis = cell["analysis"]
+            if not isinstance(analysis, dict):
+                raise ValueError("forensic cell analysis is not an object")
+            cell_classes = _validate_no_connector_class_counts(
+                analysis["class_counts"], allow_empty=True
+            )
+            for key, value in cell_classes.items():
+                aggregate_classes[key] = aggregate_classes.get(key, 0) + value
+            cell_primary = _require_nonnegative_int(
+                analysis["primary_n"], "forensic cell.primary_n"
+            )
+            cell_anchor = _require_nonnegative_int(
+                analysis["anchor_present"], "forensic cell.anchor_present"
+            )
+            cell_hard_free = _require_nonnegative_int(
+                analysis["hard_free_soft_unsafe"],
+                "forensic cell.hard_free_soft_unsafe",
+            )
+            cell_identity_void = _require_real_bool(
+                analysis["identity_void"], "forensic cell.identity_void"
+            )
+            if (
+                cell_primary
+                != sum(
+                    cell_classes.get(name, 0)
+                    for name in _RECOVERY_V2_PRIMARY_CLASSES
+                )
+                or cell_anchor > cell_primary
+                or cell_hard_free > cell_primary
+            ):
+                raise ValueError("forensic cell count arithmetic mismatch")
+            _validate_no_connector_decision(
+                analysis["decision_rule"],
+                cell_primary,
+                cell_anchor,
+                cell_identity_void,
+                f"forensic cell {density}/{speed}",
+            )
+            aggregate_primary += cell_primary
+            aggregate_anchor += cell_anchor
+            aggregate_hard_free += cell_hard_free
+            aggregate_identity_void = aggregate_identity_void or cell_identity_void
+        if seen_cells != expected_cells:
+            raise ValueError("forensic cell grid is incomplete")
+
+        pooled = payload["pooled"]
+        if not isinstance(pooled, dict):
+            raise ValueError("forensic pooled data is not an object")
+        class_counts = _validate_no_connector_class_counts(
+            pooled["class_counts"]
+        )
+        total_entries = sum(class_counts.values())
+        pooled_primary = _require_nonnegative_int(
+            pooled["primary_n"], "forensics.pooled.primary_n"
+        )
+        pooled_anchor = _require_nonnegative_int(
+            pooled["anchor_present"], "forensics.pooled.anchor_present"
+        )
+        pooled_hard_free = _require_nonnegative_int(
+            pooled["hard_free_soft_unsafe"],
+            "forensics.pooled.hard_free_soft_unsafe",
+        )
+        pooled_identity_void = _require_real_bool(
+            pooled["identity_void"], "forensics.pooled.identity_void"
+        )
+        if (
+            total_entries <= 0
+            or class_counts != aggregate_classes
+            or pooled_primary != aggregate_primary
+            or pooled_anchor != aggregate_anchor
+            or pooled_hard_free != aggregate_hard_free
+            or pooled_identity_void != aggregate_identity_void
+            or pooled_primary > total_entries
+            or pooled_anchor > pooled_primary
+            or pooled_hard_free > pooled_primary
+            or pooled_primary
+            != sum(class_counts.get(name, 0) for name in _RECOVERY_V2_PRIMARY_CLASSES)
+        ):
+            raise ValueError("pooled forensic count arithmetic mismatch")
+        decision = payload["decision_rule"]
+        _validate_no_connector_decision(
+            decision,
+            pooled_primary,
+            pooled_anchor,
+            pooled_identity_void,
+            "forensics",
+        )
+        if decision != pooled["decision_rule"]:
+            raise ValueError("pooled/top-level forensic decision mismatch")
+    except (KeyError, TypeError, ValueError, OverflowError):
+        return _unavailable_evidence(RECOVERY_V2_NO_CONNECTOR_FORENSICS_PATH)
+
+    return {
+        "source": str(RECOVERY_V2_NO_CONNECTOR_FORENSICS_PATH.relative_to(ROOT)),
+        "receipt": (
+            "results/navrl_physical_target_recovery_v2_no_connector_forensics_"
+            "seed827/receipt.json"
+        ),
+        "result_doc": (
+            "docs/physical_target_recovery_v2_no_connector_forensics_result_"
+            "2026-08-26.md"
+        ),
+        "preregistration": (
+            "docs/preregistration_physical_target_recovery_v2_no_connector_"
+            "forensics_2026-08-26.md"
+        ),
+        "tool": (
+            "tools/diagnose_navrl_physical_target_recovery_v2_no_connector.py"
+        ),
+        "status": "DESCRIPTIVE_ONLY",
+        "decision_rule": {
+            "label": decision["label"],
+            "primary_n": int(decision["primary_n"]),
+            "anchor_present": int(decision["anchor_present"]),
+            "hard_free_soft_unsafe": pooled_hard_free,
+            "identity_void": bool(decision["identity_void"]),
+            "passes_32_cell_mechanism": bool(
+                decision["passes_32_cell_mechanism"]
+            ),
+            "authorizes_retune_or_ppo": bool(
+                decision["authorizes_retune_or_ppo"]
+            ),
+        },
+        "no_connector_classes": {
+            "total": total_entries,
+            **class_counts,
+        },
+        "claim_scope": "DESCRIPTIVE_ONLY_NO_GATE_TUNING_RERUN_PPO_OR_HARDWARE_AUTHORITY",
+        "physical_ppo": "BLOCKED",
+        "hardware_claim": False,
+        "canonical_1p5_claim": False,
+        "authority": "NO_FURTHER_TRACK_B_GPU_PPO_RETUNE_RERUN",
+    }
 
 
 def _contract_value_matches(actual: Any, expected: Any) -> bool:
@@ -2427,6 +3280,9 @@ def _detection_range_stage1_update() -> Optional[Dict[str, Any]]:
 
 def _sim2real_72h() -> Dict[str, Any]:
     result = _detection_range_stage1_result()
+    historical_recovery = _historical_route_recovery_forensics()
+    recovery_v2_gate = _recovery_v2_lower1p25_gate()
+    recovery_v2_forensics = _recovery_v2_no_connector_forensics()
     evidence = None
     if result is not None:
         rows, delta = result["rows"], result["delta"]
@@ -2505,10 +3361,8 @@ def _sim2real_72h() -> Dict[str, Any]:
                     "state",
                 ],
             }
+            routed_gate["lineage_status"] = "HISTORICAL_ATTEMPT2"
             simulation_verification["routed_physical_target_gate_attempt2"] = routed_gate
-            simulation_verification.setdefault("preflight_steps", {})[
-                "physical_target_gate"
-            ] = routed_gate
         except (KeyError, OSError, TypeError, json.JSONDecodeError):
             simulation_verification["physical_gate"] = "ROUTED_RESULT_READ_ERROR"
     if MODE_PROBE_PATH.exists():
@@ -2517,9 +3371,33 @@ def _sim2real_72h() -> Dict[str, Any]:
             simulation_verification["mode_probe_verdict"] = mode_probe.get("interpretation")
         except (OSError, json.JSONDecodeError):
             simulation_verification["mode_probe_verdict"] = "RESULT_READ_ERROR"
+    preflight_steps = simulation_verification.setdefault("preflight_steps", {})
+    preflight_steps["route_recovery_forensics"] = historical_recovery
+    preflight_steps["physical_target_gate"] = recovery_v2_gate
+    simulation_verification["route_recovery_forensics"] = historical_recovery
+    simulation_verification["recovery_v2_lower1p25_gate"] = recovery_v2_gate
+    simulation_verification[
+        "recovery_v2_no_connector_forensics"
+    ] = recovery_v2_forensics
+    simulation_verification[
+        "track_b_authority"
+    ] = "CLOSED_NO_FURTHER_GPU_PPO_RETUNE_RERUN"
+    track_b_ready = (
+        isinstance(recovery_v2_gate, dict)
+        and recovery_v2_gate.get("status") == "VERIFIED_FAIL"
+        and isinstance(recovery_v2_forensics, dict)
+        and recovery_v2_forensics.get("status") == "DESCRIPTIVE_ONLY"
+    )
+    track_b_status = (
+        "TRACK B RECOVERY-V2 ROUTE MECHANISM FAILED · NO FURTHER TRACK B AUTHORITY"
+        if track_b_ready
+        else "TRACK B EVIDENCE UNAVAILABLE/MALFORMED · NO TRACK B AUTHORITY"
+    )
     return {
-        "as_of": "2026-08-25",
-        "status": "SIMULATION VERIFIED · ROUTE MECHANISM FAILED · PHYSICAL PPO BLOCKED · HARDWARE PENDING",
+        "as_of": "2026-08-26",
+        "status": (
+            f"TRACK A STAGE 1 RANGE INCONCLUSIVE · {track_b_status} · HARDWARE NEXT"
+        ),
         "plan_path": "docs/SIM2REAL_3DAY_EXECUTION_PLAN.md",
         "evidence": evidence,
         "simulation_verification": simulation_verification,
@@ -2527,7 +3405,10 @@ def _sim2real_72h() -> Dict[str, Any]:
             {
                 "day": "DAY 1",
                 "title": "hardware + raw data",
-                "detail": "Exact BOM/AUW/CG, calibration and time-sync; 210 independent sensor trials.",
+                "detail": (
+                    "Next authority: execute the hardware SIM2REAL_3DAY plan; exact "
+                    "BOM/AUW/CG, calibration and time-sync, then 210 independent sensor trials."
+                ),
             },
             {
                 "day": "DAY 2",
@@ -3369,7 +4250,7 @@ def build_snapshot() -> Dict[str, Any]:
     status.update(
         {
             "generated_at": generated_at,
-            "repo": str(ROOT),
+            "repo": REPOSITORY_ID,
             "n_runs": len(summaries),
             "active_run": active,
             "latest_run": latest,

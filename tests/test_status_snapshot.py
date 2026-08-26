@@ -1,4 +1,5 @@
 import importlib.util
+import copy
 import hashlib
 import json
 from pathlib import Path
@@ -285,16 +286,103 @@ class StatusSnapshotTest(unittest.TestCase):
         plan = _STATUS._sim2real_72h()
         self.assertEqual(
             plan["status"],
-            "SIMULATION VERIFIED · ROUTE MECHANISM FAILED · PHYSICAL PPO BLOCKED · HARDWARE PENDING",
+            "TRACK A STAGE 1 RANGE INCONCLUSIVE · TRACK B RECOVERY-V2 ROUTE "
+            "MECHANISM FAILED · NO FURTHER TRACK B AUTHORITY · HARDWARE NEXT",
         )
+        self.assertEqual(plan["as_of"], "2026-08-26")
         self.assertEqual(
             plan["simulation_verification"]["preflight_claim_status"],
             "SYNTHETIC_ONLY",
         )
         self.assertEqual(plan["simulation_verification"]["physical_gate"], "BLOCKED")
+        current = plan["simulation_verification"]["recovery_v2_lower1p25_gate"]
+        self.assertEqual(current["status"], "VERIFIED_FAIL")
+        self.assertEqual(current["contract_variant"], "baseline_1p25")
+        self.assertEqual(
+            current["canonical_1p5_contract"], "SEPARATE_UNCHANGED_NOT_PASSED"
+        )
+        self.assertEqual(current["integrity"], "PASS_32_CELL_INTEGRITY")
+        self.assertEqual(current["route_mechanism"], "FAIL_ROUTE_MECHANISM")
+        self.assertEqual(
+            current["cells"],
+            {
+                "passed": 7,
+                "total": 32,
+                "route_off_passed": 7,
+                "route_off_total": 16,
+                "recovery_passed": 0,
+                "recovery_total": 16,
+                "passing_lineage": "route_off_only",
+            },
+        )
+        self.assertEqual(
+            current["plan_success_70bar_4speed"]["numerator"], 190
+        )
+        self.assertEqual(
+            current["plan_success_70bar_4speed"]["denominator"], 203
+        )
+        self.assertEqual(current["plan_success_70bar_4speed"]["pct"], 93.60)
+        self.assertEqual(current["fallback_70bar_4speed"]["numerator"], 18381)
+        self.assertEqual(current["fallback_70bar_4speed"]["denominator"], 38400)
+        self.assertEqual(current["fallback_70bar_4speed"]["pct"], 47.87)
+        self.assertEqual(
+            current["goals_per_env_70bar_0_6mps"],
+            {"numerator": 7, "denominator": 32, "value": 0.21875, "gate": 0.5},
+        )
+        self.assertEqual(current["no_connector_occupancy"]["numerator"], 96854)
+        self.assertEqual(current["no_connector_occupancy"]["denominator"], 153600)
+        self.assertEqual(current["no_connector_occupancy"]["pct"], 63.06)
+        self.assertEqual(
+            current["hard_breach_no_connector_entries"],
+            {"numerator": 0, "denominator": 534},
+        )
+        self.assertEqual(
+            current["authority"], "NO_FURTHER_TRACK_B_GPU_PPO_RETUNE_RERUN"
+        )
+
+        forensics = plan["simulation_verification"][
+            "recovery_v2_no_connector_forensics"
+        ]
+        self.assertEqual(forensics["status"], "DESCRIPTIVE_ONLY")
+        self.assertEqual(
+            forensics["decision_rule"],
+            {
+                "label": "INCONCLUSIVE",
+                "primary_n": 1,
+                "anchor_present": 0,
+                "hard_free_soft_unsafe": 1,
+                "identity_void": False,
+                "passes_32_cell_mechanism": False,
+                "authorizes_retune_or_ppo": False,
+            },
+        )
+        self.assertEqual(
+            forensics["no_connector_classes"],
+            {
+                "total": 106,
+                "connect_failed_certificate_likely": 49,
+                "brake_timeout": 32,
+                "connect_failed_resume_likely": 23,
+                "connect_timeout": 1,
+                "brake_no_anchor_likely": 1,
+            },
+        )
+        self.assertEqual(
+            plan["simulation_verification"]["track_b_authority"],
+            "CLOSED_NO_FURTHER_GPU_PPO_RETUNE_RERUN",
+        )
+        self.assertEqual(
+            plan["simulation_verification"]["preflight_steps"][
+                "physical_target_gate"
+            ],
+            current,
+        )
+
+        # Attempt 2 and the v1 RECOVERY_DOMINANT diagnosis remain visible as history.
         routed = plan["simulation_verification"]["routed_physical_target_gate_attempt2"]
         self.assertEqual(routed["integrity"], "PASS_32_CELL_INTEGRITY")
         self.assertEqual(routed["route_mechanism"], "FAIL_ROUTE_MECHANISM")
+        self.assertEqual(routed["lineage_status"], "HISTORICAL_ATTEMPT2")
         self.assertEqual(
             routed["highest_passing_speed_mps_by_density"],
             {"70": None, "150": None, "205": None, "300": None},
@@ -303,10 +391,180 @@ class StatusSnapshotTest(unittest.TestCase):
         historical = plan["simulation_verification"]["historical_post_wall_brake_speed_envelope"]
         self.assertEqual(historical["route_mode"], "off_historical_lineage")
         self.assertEqual(historical["highest_passing_speed_mps_by_density"]["70"], 0.9)
-        stored = json.loads(_STATUS.STATUS_PATH.read_text(encoding="utf-8"))["sim2real_72h"]
+        v1 = plan["simulation_verification"]["preflight_steps"][
+            "route_recovery_forensics"
+        ]
+        self.assertEqual(v1["diagnostic_verdict"], "RECOVERY_DOMINANT")
+        self.assertEqual(v1["lineage_status"], "HISTORICAL_V1_DIAGNOSTIC")
+        stored_snapshot = json.loads(_STATUS.STATUS_PATH.read_text(encoding="utf-8"))
+        self.assertEqual(stored_snapshot["repo"], _STATUS.REPOSITORY_ID)
+        stored = stored_snapshot["sim2real_72h"]
         self.assertEqual(stored, plan)
         self.assertFalse(plan["evidence"]["stage2_authorised"])
         self.assertEqual(len(plan["days"]), 3)
+
+    def test_recovery_v2_readers_fail_closed_on_missing_or_malformed_data(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            missing = root / "missing.json"
+            malformed = root / "malformed.json"
+            malformed.write_text("{not json", encoding="utf-8")
+            with mock.patch.object(
+                _STATUS, "RECOVERY_V2_LOWER1P25_GATE_PATH", missing
+            ):
+                gate = _STATUS._recovery_v2_lower1p25_gate()
+            with mock.patch.object(
+                _STATUS, "RECOVERY_V2_NO_CONNECTOR_FORENSICS_PATH", malformed
+            ):
+                forensics = _STATUS._recovery_v2_no_connector_forensics()
+        for block in (gate, forensics):
+            self.assertEqual(block["status"], "RESULT_UNAVAILABLE_OR_MALFORMED")
+            self.assertEqual(
+                block["authority"], "NO_FURTHER_TRACK_B_GPU_PPO_RETUNE_RERUN"
+            )
+            self.assertEqual(block["physical_ppo"], "BLOCKED")
+            self.assertFalse(block["hardware_claim"])
+
+    def test_recovery_v2_canonical_receipt_verifiers_run_on_real_evidence(self):
+        with mock.patch.object(
+            _STATUS, "_load_status_module", wraps=_STATUS._load_status_module
+        ) as loader:
+            gate = _STATUS._recovery_v2_lower1p25_gate()
+            forensics = _STATUS._recovery_v2_no_connector_forensics()
+        self.assertEqual(gate["status"], "VERIFIED_FAIL")
+        self.assertEqual(forensics["status"], "DESCRIPTIVE_ONLY")
+        loader.assert_any_call(
+            _STATUS.RECOVERY_V2_GATE_VERIFIER_PATH,
+            "_recovery_v2_gate_verifier_for_status",
+        )
+        loader.assert_any_call(
+            _STATUS.RECOVERY_V2_NO_CONNECTOR_VERIFIER_PATH,
+            "_recovery_v2_no_connector_verifier_for_status",
+        )
+
+    def test_recovery_v2_gate_rejects_malformed_and_receipt_unbound_temp_summary(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            malformed = root / "malformed.json"
+            malformed.write_text("{not json", encoding="utf-8")
+            with mock.patch.object(
+                _STATUS, "RECOVERY_V2_LOWER1P25_GATE_PATH", malformed
+            ):
+                block = _STATUS._recovery_v2_lower1p25_gate()
+            self.assertEqual(block["status"], "RESULT_UNAVAILABLE_OR_MALFORMED")
+
+            unbound = root / "summary.json"
+            payload = json.loads(
+                _STATUS.RECOVERY_V2_LOWER1P25_GATE_PATH.read_text(encoding="utf-8")
+            )
+            payload["cells"][0]["pass"] = False
+            self._write_json(unbound, payload)
+            with mock.patch.object(
+                _STATUS, "RECOVERY_V2_LOWER1P25_GATE_PATH", unbound
+            ):
+                block = _STATUS._recovery_v2_lower1p25_gate()
+            self.assertEqual(block["status"], "RESULT_UNAVAILABLE_OR_MALFORMED")
+
+    def test_recovery_v2_gate_rejects_duplicate_identity_and_impossible_fallback(self):
+        payload = json.loads(
+            _STATUS.RECOVERY_V2_LOWER1P25_GATE_PATH.read_text(encoding="utf-8")
+        )
+        duplicate = copy.deepcopy(payload)
+        for cell in duplicate["cells"]:
+            if (
+                cell["route_mode"] == "global_astar_recovery_v2"
+                and cell["bars"] == 70
+                and cell["speed_mps"] == 1.2
+            ):
+                cell["speed_mps"] = 0.9
+                break
+        with mock.patch.object(
+            _STATUS, "_canonical_recovery_v2_gate_summary", return_value=duplicate
+        ):
+            block = _STATUS._recovery_v2_lower1p25_gate()
+        self.assertEqual(block["status"], "RESULT_UNAVAILABLE_OR_MALFORMED")
+
+        impossible = copy.deepcopy(payload)
+        for cell in impossible["cells"]:
+            if cell["route_mode"] == "global_astar_recovery_v2" and cell["bars"] == 70:
+                cell["route"]["counter_delta"]["fallback_intervals"] = (
+                    cell["telemetry_summary"]["interval_denominator"] + 1
+                )
+                break
+        with mock.patch.object(
+            _STATUS, "_canonical_recovery_v2_gate_summary", return_value=impossible
+        ):
+            block = _STATUS._recovery_v2_lower1p25_gate()
+        self.assertEqual(block["status"], "RESULT_UNAVAILABLE_OR_MALFORMED")
+
+    def test_recovery_v2_no_anchor_rejects_impossible_counts(self):
+        payload = json.loads(
+            _STATUS.RECOVERY_V2_NO_CONNECTOR_FORENSICS_PATH.read_text(encoding="utf-8")
+        )
+        impossible = copy.deepcopy(payload)
+        impossible["pooled"]["anchor_present"] = 999
+        impossible["pooled"]["decision_rule"]["anchor_present"] = 999
+        impossible["decision_rule"]["anchor_present"] = 999
+        with mock.patch.object(
+            _STATUS,
+            "_canonical_no_connector_summary",
+            return_value=impossible,
+        ):
+            block = _STATUS._recovery_v2_no_connector_forensics()
+        self.assertEqual(block["status"], "RESULT_UNAVAILABLE_OR_MALFORMED")
+
+        non_integer = copy.deepcopy(payload)
+        non_integer["pooled"]["class_counts"]["brake_timeout"] = True
+        with mock.patch.object(
+            _STATUS,
+            "_canonical_no_connector_summary",
+            return_value=non_integer,
+        ):
+            block = _STATUS._recovery_v2_no_connector_forensics()
+        self.assertEqual(block["status"], "RESULT_UNAVAILABLE_OR_MALFORMED")
+
+    def test_recovery_v2_no_anchor_rejects_malformed_completion_marker(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            summary = root / "summary.json"
+            receipt = root / "receipt.json"
+            marker = root / ".COMPLETE.json"
+            summary.write_text("{}", encoding="utf-8")
+            receipt.write_text("{}", encoding="utf-8")
+            marker.write_text(
+                json.dumps(
+                    {
+                        "schema": "wrong",
+                        "receipt_sha256": self._digest(receipt),
+                        "summary_sha256": self._digest(summary),
+                    }
+                ),
+                encoding="utf-8",
+            )
+            verifier = mock.Mock()
+            verifier.verify_receipt.return_value = 0
+            with mock.patch.object(
+                _STATUS, "RECOVERY_V2_NO_CONNECTOR_FORENSICS_PATH", summary
+            ), mock.patch.object(
+                _STATUS, "_load_status_module", return_value=verifier
+            ):
+                self.assertIsNone(_STATUS._canonical_no_connector_summary())
+            verifier.verify_receipt.assert_called_once_with(root)
+
+    def test_recovery_v2_top_level_status_has_no_positive_claim_when_evidence_unavailable(self):
+        for gate, forensics in (
+            (None, {"status": "DESCRIPTIVE_ONLY"}),
+            ({"status": "VERIFIED_FAIL"}, None),
+        ):
+            with self.subTest(gate=gate is None), mock.patch.object(
+                _STATUS, "_recovery_v2_lower1p25_gate", return_value=gate
+            ), mock.patch.object(
+                _STATUS, "_recovery_v2_no_connector_forensics", return_value=forensics
+            ):
+                plan = _STATUS._sim2real_72h()
+            self.assertIn("TRACK B EVIDENCE UNAVAILABLE/MALFORMED", plan["status"])
+            self.assertIn("NO TRACK B AUTHORITY", plan["status"])
+            self.assertNotIn("ROUTE MECHANISM FAILED", plan["status"])
 
     def test_real_recovery_smoke_remains_a_research_stage(self):
         self.assertFalse(

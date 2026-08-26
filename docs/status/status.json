@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-25T00:00:00+00:00",
-  "repo": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator",
+  "generated_at": "2026-08-26T09:13:12.764493+00:00",
+  "repo": "joshualikaist/MOTAR",
   "n_runs": 86,
   "active_run": null,
   "latest_run": {
@@ -2199,7 +2199,7 @@
           "capture": 0.144
         }
       ],
-      "mtime": "2026-08-22T13:14:07.342235+00:00",
+      "mtime": "2026-08-25T13:38:33.937086+00:00",
       "task_version": "v1",
       "arena_xy_m": 24.0,
       "placement_area_m2": 478.0,
@@ -3712,8 +3712,8 @@
     }
   },
   "sim2real_72h": {
-  "as_of": "2026-08-25",
-  "status": "SIMULATION VERIFIED · ROUTE MECHANISM FAILED · ROUTE RECOVERY DOMINANT · PHYSICAL PPO BLOCKED · HARDWARE PENDING",
+    "as_of": "2026-08-26",
+    "status": "TRACK A STAGE 1 RANGE INCONCLUSIVE · TRACK B RECOVERY-V2 ROUTE MECHANISM FAILED · NO FURTHER TRACK B AUTHORITY · HARDWARE NEXT",
     "plan_path": "docs/SIM2REAL_3DAY_EXECUTION_PLAN.md",
     "evidence": {
       "verdict": "RANGE_INCONCLUSIVE_AT_THIS_BUDGET",
@@ -3755,102 +3755,101 @@
           "verdict": "INCONCLUSIVE_POLICY_CHIRALITY",
           "authority": "DIAGNOSTIC_ONLY"
         },
-      "physical_target_gate": {
-        "source": "results/navrl_physical_target_routed_gate_seed827_attempt2/summary.json",
-        "all_cells_pass": false,
-        "authority": "NO_PPO_PERMISSION",
-        "attempt": 2,
-        "integrity": "PASS_32_CELL_INTEGRITY",
-        "route_mechanism": "FAIL_ROUTE_MECHANISM",
-        "physical_ppo": "BLOCKED",
-        "highest_passing_speed_mps_by_density": {
-          "70": null,
-          "150": null,
-          "205": null,
-          "300": null
+        "physical_target_gate": {
+          "source": "results/navrl_physical_target_recovery_v2_gate_lower1p25_seed827/summary.json",
+          "receipt": "results/navrl_physical_target_recovery_v2_gate_lower1p25_seed827/receipt.json",
+          "result_doc": "docs/physical_target_recovery_v2_lower1p25_result_2026-08-26.md",
+          "preregistration": "docs/preregistration_physical_target_recovery_v2_lower1p25_gate_2026-08-26.md",
+          "tool": "tools/verify_navrl_physical_target_recovery_v2_gate.py",
+          "status": "VERIFIED_FAIL",
+          "contract_variant": "baseline_1p25",
+          "canonical_1p5_contract": "SEPARATE_UNCHANGED_NOT_PASSED",
+          "integrity": "PASS_32_CELL_INTEGRITY",
+          "route_mechanism": "FAIL_ROUTE_MECHANISM",
+          "cells": {
+            "passed": 7,
+            "total": 32,
+            "route_off_passed": 7,
+            "route_off_total": 16,
+            "recovery_passed": 0,
+            "recovery_total": 16,
+            "passing_lineage": "route_off_only"
+          },
+          "plan_success_70bar_4speed": {
+            "numerator": 190,
+            "denominator": 203,
+            "fraction": 0.9359605911330049,
+            "pct": 93.6,
+            "gate_pct": 99.0
+          },
+          "fallback_70bar_4speed": {
+            "numerator": 18381,
+            "denominator": 38400,
+            "fraction": 0.478671875,
+            "pct": 47.87,
+            "gate_pct": 1.0
+          },
+          "goals_per_env_70bar_0_6mps": {
+            "numerator": 7,
+            "denominator": 32,
+            "value": 0.21875,
+            "gate": 0.5
+          },
+          "no_connector_occupancy": {
+            "numerator": 96854,
+            "denominator": 153600,
+            "fraction": 0.6305598958333334,
+            "pct": 63.06
+          },
+          "hard_breach_no_connector_entries": {
+            "numerator": 0,
+            "denominator": 534
+          },
+          "physical_ppo": "BLOCKED",
+          "hardware_claim": false,
+          "authority": "NO_FURTHER_TRACK_B_GPU_PPO_RETUNE_RERUN"
         },
-        "plan_success_70bar_4speed_pool_pct": 14.5467,
-        "plan_success_gate_pct": 99.0,
-        "fallback_70bar_4speed_pool_pct": 35.9297,
-        "fallback_gate_pct": 1.0,
-        "goals_per_env_70bar_0_6mps": 0.25,
-        "goals_per_env_gate": 0.5,
-        "supported_diagnosis": "unsafe_start recovery deadlock in fail-closed zero-command fallback",
-        "non_failing_gates": ["tracking", "local_feasibility", "motor_saturation", "tilt", "contact", "state"]
-      },
-      "route_recovery_forensics": {
-        "source": "results/navrl_physical_target_route_recovery_forensics_seed827/summary.json",
-        "summary_markdown": "results/navrl_physical_target_route_recovery_forensics_seed827/summary.md",
-        "receipt": "results/navrl_physical_target_route_recovery_forensics_seed827/receipt.json",
-        "preregistration": "docs/preregistration_physical_target_route_recovery_forensics_2026-08-25.md",
-        "cells_verified": "8/8",
-        "diagnostic_verdict": "RECOVERY_DOMINANT",
-        "claim_scope": "evaluation-only; no PPO/fix/tuning authority",
-        "local_invalidations": 358,
-        "local_fallback_intervals": 35666,
-        "fallback_amplification": 99.6257,
-        "fallback_age_steps": {"median": 101, "p90": 219, "max": 287},
-        "unique_local_origins": 200,
-        "hard_free_soft_unsafe_pct": 97.0,
-        "hard_free_soft_unsafe_wilson_lower_pct": 93.61,
-        "exact_hard_connector_pct": 96.5,
-        "exact_hard_connector_wilson_lower_pct": 92.95,
-        "replan_status": {"unsafe_start": 3774, "ok": 101, "no_path": 82, "unsafe_goal": 79},
-        "initial_plan_status": {"ok": 349, "unsafe_start": 17, "no_connected_goal": 6},
-        "rounded_vs_square_disagreements": 1832,
-        "margin_tuning_allowed": false,
-        "physical_ppo": "BLOCKED"
-      },
-      "fresh_ppo": {
+        "fresh_ppo": {
           "verdict": "BLOCKED",
           "reason": "physical_gate_and_real_sensor_contract_not_passed"
-        }
-      },
-      "routed_physical_target_gate_attempt2": {
-        "source": "results/navrl_physical_target_routed_gate_seed827_attempt2/summary.json",
-        "attempt": 2,
-        "all_cells_pass": false,
-        "integrity": "PASS_32_CELL_INTEGRITY",
-        "route_mechanism": "FAIL_ROUTE_MECHANISM",
-        "physical_ppo": "BLOCKED",
-        "highest_passing_speed_mps_by_density": {
-          "70": null,
-          "150": null,
-          "205": null,
-          "300": null
         },
-        "plan_success_70bar_4speed_pool_pct": 14.5467,
-        "plan_success_gate_pct": 99.0,
-        "fallback_70bar_4speed_pool_pct": 35.9297,
-        "fallback_gate_pct": 1.0,
-        "goals_per_env_70bar_0_6mps": 0.25,
-        "goals_per_env_gate": 0.5,
-        "authority": "NO_PPO_PERMISSION",
-        "supported_diagnosis": "unsafe_start recovery deadlock in fail-closed zero-command fallback",
-        "non_failing_gates": ["tracking", "local_feasibility", "motor_saturation", "tilt", "contact", "state"]
-      },
-      "route_recovery_forensics": {
-        "source": "results/navrl_physical_target_route_recovery_forensics_seed827/summary.json",
-        "summary_markdown": "results/navrl_physical_target_route_recovery_forensics_seed827/summary.md",
-        "receipt": "results/navrl_physical_target_route_recovery_forensics_seed827/receipt.json",
-        "preregistration": "docs/preregistration_physical_target_route_recovery_forensics_2026-08-25.md",
-        "cells_verified": "8/8",
-        "diagnostic_verdict": "RECOVERY_DOMINANT",
-        "claim_scope": "evaluation-only; no PPO/fix/tuning authority",
-        "local_invalidations": 358,
-        "local_fallback_intervals": 35666,
-        "fallback_amplification": 99.6257,
-        "fallback_age_steps": {"median": 101, "p90": 219, "max": 287},
-        "unique_local_origins": 200,
-        "hard_free_soft_unsafe_pct": 97.0,
-        "hard_free_soft_unsafe_wilson_lower_pct": 93.61,
-        "exact_hard_connector_pct": 96.5,
-        "exact_hard_connector_wilson_lower_pct": 92.95,
-        "replan_status": {"unsafe_start": 3774, "ok": 101, "no_path": 82, "unsafe_goal": 79},
-        "initial_plan_status": {"ok": 349, "unsafe_start": 17, "no_connected_goal": 6},
-        "rounded_vs_square_disagreements": 1832,
-        "margin_tuning_allowed": false,
-        "physical_ppo": "BLOCKED"
+        "route_recovery_forensics": {
+          "source": "results/navrl_physical_target_route_recovery_forensics_seed827/summary.json",
+          "summary_markdown": "results/navrl_physical_target_route_recovery_forensics_seed827/summary.md",
+          "receipt": "results/navrl_physical_target_route_recovery_forensics_seed827/receipt.json",
+          "preregistration": "docs/preregistration_physical_target_route_recovery_forensics_2026-08-25.md",
+          "cells_verified": "8/8",
+          "diagnostic_verdict": "RECOVERY_DOMINANT",
+          "claim_scope": "evaluation-only; no PPO/fix/tuning authority",
+          "local_invalidations": 358,
+          "local_fallback_intervals": 35666,
+          "fallback_amplification": 99.6257,
+          "fallback_age_steps": {
+            "median": 101,
+            "p90": 219,
+            "max": 287
+          },
+          "unique_local_origins": 200,
+          "hard_free_soft_unsafe_pct": 97.0,
+          "hard_free_soft_unsafe_wilson_lower_pct": 93.61,
+          "exact_hard_connector_pct": 96.5,
+          "exact_hard_connector_wilson_lower_pct": 92.95,
+          "replan_status": {
+            "unsafe_start": 3774,
+            "ok": 101,
+            "no_path": 82,
+            "unsafe_goal": 79
+          },
+          "initial_plan_status": {
+            "ok": 349,
+            "unsafe_start": 17,
+            "no_connected_goal": 6
+          },
+          "rounded_vs_square_disagreements": 1832,
+          "margin_tuning_allowed": false,
+          "physical_ppo": "BLOCKED",
+          "lineage_status": "HISTORICAL_V1_DIAGNOSTIC"
+        }
       },
       "historical_post_wall_brake_speed_envelope": {
         "source": "results/navrl_physical_target_speed_envelope_post_wall_brake_seed509/summary.json",
@@ -3863,13 +3862,166 @@
           "300": 0.6
         }
       },
-      "mode_probe_verdict": "INCONCLUSIVE_POLICY_CHIRALITY"
+      "routed_physical_target_gate_attempt2": {
+        "source": "results/navrl_physical_target_routed_gate_seed827_attempt2/summary.json",
+        "attempt": 2,
+        "all_cells_pass": false,
+        "integrity": "PASS_32_CELL_INTEGRITY",
+        "route_mechanism": "FAIL_ROUTE_MECHANISM",
+        "physical_ppo": "BLOCKED",
+        "highest_passing_speed_mps_by_density": {
+          "150": null,
+          "205": null,
+          "300": null,
+          "70": null
+        },
+        "plan_success_70bar_4speed_pool_pct": 14.5467,
+        "plan_success_gate_pct": 99.0,
+        "fallback_70bar_4speed_pool_pct": 35.9297,
+        "fallback_gate_pct": 1.0,
+        "goals_per_env_70bar_0_6mps": 0.25,
+        "goals_per_env_gate": 0.5,
+        "authority": "NO_PPO_PERMISSION",
+        "supported_diagnosis": "unsafe_start recovery deadlock in fail-closed zero-command fallback",
+        "non_failing_gates": [
+          "tracking",
+          "local_feasibility",
+          "motor_saturation",
+          "tilt",
+          "contact",
+          "state"
+        ],
+        "lineage_status": "HISTORICAL_ATTEMPT2"
+      },
+      "mode_probe_verdict": "INCONCLUSIVE_POLICY_CHIRALITY",
+      "route_recovery_forensics": {
+        "source": "results/navrl_physical_target_route_recovery_forensics_seed827/summary.json",
+        "summary_markdown": "results/navrl_physical_target_route_recovery_forensics_seed827/summary.md",
+        "receipt": "results/navrl_physical_target_route_recovery_forensics_seed827/receipt.json",
+        "preregistration": "docs/preregistration_physical_target_route_recovery_forensics_2026-08-25.md",
+        "cells_verified": "8/8",
+        "diagnostic_verdict": "RECOVERY_DOMINANT",
+        "claim_scope": "evaluation-only; no PPO/fix/tuning authority",
+        "local_invalidations": 358,
+        "local_fallback_intervals": 35666,
+        "fallback_amplification": 99.6257,
+        "fallback_age_steps": {
+          "median": 101,
+          "p90": 219,
+          "max": 287
+        },
+        "unique_local_origins": 200,
+        "hard_free_soft_unsafe_pct": 97.0,
+        "hard_free_soft_unsafe_wilson_lower_pct": 93.61,
+        "exact_hard_connector_pct": 96.5,
+        "exact_hard_connector_wilson_lower_pct": 92.95,
+        "replan_status": {
+          "unsafe_start": 3774,
+          "ok": 101,
+          "no_path": 82,
+          "unsafe_goal": 79
+        },
+        "initial_plan_status": {
+          "ok": 349,
+          "unsafe_start": 17,
+          "no_connected_goal": 6
+        },
+        "rounded_vs_square_disagreements": 1832,
+        "margin_tuning_allowed": false,
+        "physical_ppo": "BLOCKED",
+        "lineage_status": "HISTORICAL_V1_DIAGNOSTIC"
+      },
+      "recovery_v2_lower1p25_gate": {
+        "source": "results/navrl_physical_target_recovery_v2_gate_lower1p25_seed827/summary.json",
+        "receipt": "results/navrl_physical_target_recovery_v2_gate_lower1p25_seed827/receipt.json",
+        "result_doc": "docs/physical_target_recovery_v2_lower1p25_result_2026-08-26.md",
+        "preregistration": "docs/preregistration_physical_target_recovery_v2_lower1p25_gate_2026-08-26.md",
+        "tool": "tools/verify_navrl_physical_target_recovery_v2_gate.py",
+        "status": "VERIFIED_FAIL",
+        "contract_variant": "baseline_1p25",
+        "canonical_1p5_contract": "SEPARATE_UNCHANGED_NOT_PASSED",
+        "integrity": "PASS_32_CELL_INTEGRITY",
+        "route_mechanism": "FAIL_ROUTE_MECHANISM",
+        "cells": {
+          "passed": 7,
+          "total": 32,
+          "route_off_passed": 7,
+          "route_off_total": 16,
+          "recovery_passed": 0,
+          "recovery_total": 16,
+          "passing_lineage": "route_off_only"
+        },
+        "plan_success_70bar_4speed": {
+          "numerator": 190,
+          "denominator": 203,
+          "fraction": 0.9359605911330049,
+          "pct": 93.6,
+          "gate_pct": 99.0
+        },
+        "fallback_70bar_4speed": {
+          "numerator": 18381,
+          "denominator": 38400,
+          "fraction": 0.478671875,
+          "pct": 47.87,
+          "gate_pct": 1.0
+        },
+        "goals_per_env_70bar_0_6mps": {
+          "numerator": 7,
+          "denominator": 32,
+          "value": 0.21875,
+          "gate": 0.5
+        },
+        "no_connector_occupancy": {
+          "numerator": 96854,
+          "denominator": 153600,
+          "fraction": 0.6305598958333334,
+          "pct": 63.06
+        },
+        "hard_breach_no_connector_entries": {
+          "numerator": 0,
+          "denominator": 534
+        },
+        "physical_ppo": "BLOCKED",
+        "hardware_claim": false,
+        "authority": "NO_FURTHER_TRACK_B_GPU_PPO_RETUNE_RERUN"
+      },
+      "recovery_v2_no_connector_forensics": {
+        "source": "results/navrl_physical_target_recovery_v2_no_connector_forensics_seed827/summary.json",
+        "receipt": "results/navrl_physical_target_recovery_v2_no_connector_forensics_seed827/receipt.json",
+        "result_doc": "docs/physical_target_recovery_v2_no_connector_forensics_result_2026-08-26.md",
+        "preregistration": "docs/preregistration_physical_target_recovery_v2_no_connector_forensics_2026-08-26.md",
+        "tool": "tools/diagnose_navrl_physical_target_recovery_v2_no_connector.py",
+        "status": "DESCRIPTIVE_ONLY",
+        "decision_rule": {
+          "label": "INCONCLUSIVE",
+          "primary_n": 1,
+          "anchor_present": 0,
+          "hard_free_soft_unsafe": 1,
+          "identity_void": false,
+          "passes_32_cell_mechanism": false,
+          "authorizes_retune_or_ppo": false
+        },
+        "no_connector_classes": {
+          "total": 106,
+          "connect_failed_resume_likely": 23,
+          "brake_timeout": 32,
+          "connect_failed_certificate_likely": 49,
+          "connect_timeout": 1,
+          "brake_no_anchor_likely": 1
+        },
+        "claim_scope": "DESCRIPTIVE_ONLY_NO_GATE_TUNING_RERUN_PPO_OR_HARDWARE_AUTHORITY",
+        "physical_ppo": "BLOCKED",
+        "hardware_claim": false,
+        "canonical_1p5_claim": false,
+        "authority": "NO_FURTHER_TRACK_B_GPU_PPO_RETUNE_RERUN"
+      },
+      "track_b_authority": "CLOSED_NO_FURTHER_GPU_PPO_RETUNE_RERUN"
     },
     "days": [
       {
         "day": "DAY 1",
         "title": "hardware + raw data",
-        "detail": "Exact BOM/AUW/CG, calibration and time-sync; 210 independent sensor trials."
+        "detail": "Next authority: execute the hardware SIM2REAL_3DAY plan; exact BOM/AUW/CG, calibration and time-sync, then 210 independent sensor trials."
       },
       {
         "day": "DAY 2",

@@ -33,7 +33,7 @@
       </div>
       <div class="status-line">
         <span class="status-dot" aria-hidden="true"></span>
-        <strong>Attempt 2 · 32/32 integrity PASS</strong><span>Route mechanism FAIL · recovery forensics RECOVERY_DOMINANT · Physical PPO BLOCKED · Hardware pending · 2026-08-25</span>
+        <strong>Recovery-v2 lower-1.25 · 32/32 integrity PASS</strong><span>Route mechanism FAIL · no-anchor forensics INCONCLUSIVE · no further Track B GPU/PPO/retune/rerun authority · hardware SIM2REAL_3DAY next · 2026-08-26</span>
       </div>
     </section>
 
@@ -134,21 +134,27 @@
           <article><strong>333/333</strong><span>selected 205-bar contact endpoints</span><p>spawn→final-target centre-disk oracle; 전역·300-bar 연결성 아님</p></article>
           <article><strong>−0.0145 pp</strong><span>learned-v2 vs analytic</span><p>95% CI [−1.752, +1.723], 비열등 gate 통과</p></article>
           <article><strong>8.443→3.172%</strong><span>never acquired</span><p>camera-range 진단; primary gate 미달로 inconclusive</p></article>
-          <article><strong>32/32</strong><span>attempt 2 integrity</span><p>실행 무결성 PASS; route mechanism은 FAIL</p></article>
-          <article><strong>14.55%</strong><span>70-bar · 4-speed pooled plan success</span><p>gate 99%; pooled fallback 35.93% (gate 1%)</p></article>
-          <article><strong>0.25</strong><span>goals/env · 70 bars × 0.6 m/s</span><p>gate 0.5; physical PPO BLOCKED</p></article>
-          <article><strong>99.6257×</strong><span>local fallback amplification</span><p>358 invalidations → 35,666 intervals; 200 unique origins</p></article>
+          <article><strong>7/32</strong><span>lower-1.25 cells passed</span><p>모두 route-off; recovery-v2는 0/16</p></article>
+          <article><strong>190/203</strong><span>70-bar · 4-speed plan success</span><p>93.60%; 사전 gate 99% 미달</p></article>
+          <article><strong>18,381/38,400</strong><span>70-bar fallback intervals</span><p>47.87%; 사전 gate 1% 초과</p></article>
+          <article><strong>7/32</strong><span>goals · 70 bars × 0.6 m/s</span><p>0.21875 goals/env; gate 0.5 미달</p></article>
+          <article><strong>96,854/153,600</strong><span>NO_CONNECTOR occupancy</span><p>63.06% of recovery-v2 intervals</p></article>
+          <article><strong>0/534</strong><span>hard-breach NO_CONNECTOR entries</span><p>hard breach는 관측되지 않았지만 mechanism은 FAIL</p></article>
+          <article><strong>n=1</strong><span>no-anchor primary</span><p>anchor 0/1 · identity_void=false · INCONCLUSIVE</p></article>
         </div>
         <div class="limits">
           <h3>현재 주장할 수 없는 것</h3>
           <p>실제 비행 성능, sim-to-real 성공, 300-bar 전 구간 성능, Transformer의 보편적 우월성.
             실제 기체가 미조립이고 실제 센서 로그가 없으므로 현재 software-only gate의 판정은
-            <strong>SYNTHETIC_ONLY</strong>이며 실기 성능을 뜻하지 않습니다. 현재 원자료가 지지하는
-            진단은 반복된 <code>unsafe_start</code> recovery가 fail-closed zero-command fallback에
-            머무는 현상입니다. recovery forensics는 hard-free/soft-unsafe 97.0% (Wilson lower
-            93.61%)와 exact hard-safe connector 96.5% (lower 92.95%)를 보였지만, 이는
-            evaluation-only 진단이며 0.45 m margin tuning이나 PPO 권한을 의미하지 않습니다.
-            motor·tilt·contact gate 실패가 주원인이라는 증거는 없습니다.</p>
+            <strong>SYNTHETIC_ONLY</strong>이며 실기 성능을 뜻하지 않습니다. 이번
+            <code>baseline_1p25</code>는 canonical 1.5 m/s 계약과 분리된 lower-contract이므로
+            1.25 결과를 1.5 성공으로 읽을 수 없습니다. 현재 병목은 recovery-v2의
+            <code>NO_CONNECTOR</code> 점유입니다. 후속 no-anchor probe는 primary_n=1,
+            anchor_present=0, hard_free_soft_unsafe=1, identity_void=false로
+            <strong>INCONCLUSIVE</strong>이며, 106개 class는 certificate 49 + brake_timeout 32 +
+            resume 23 + connect_timeout 1 + brake_no_anchor 1입니다. 이 결과들에는 추가 Track B
+            GPU/PPO, gain·margin·env retune, cell/grid rerun 또는 hardware claim 권한이 없습니다.
+            Attempt 2와 v1 <code>RECOVERY_DOMINANT</code>는 역사적 계보일 뿐 현재 병목 판정이 아닙니다.</p>
         </div>
       </div>
     </section>
@@ -180,12 +186,12 @@
       <div class="wrap next-grid">
         <div class="section-head">
           <p>06 · NEXT</p>
-          <h2>다음 병목은 PPO가 아니라 routed target recovery입니다.</h2>
+          <h2>다음 authority는 hardware SIM2REAL_3DAY 실행입니다.</h2>
         </div>
         <ol>
-          <li><span>01</span><div><strong>Fix unsafe-start recovery</strong><p>유효 route가 깨진 뒤 반복되는 unsafe_start와 zero-command fallback deadlock을 먼저 제거합니다.</p></div></li>
-          <li><span>02</span><div><strong>Repeat the frozen gate</strong><p>70-bar plan ≥99%, fallback ≤1%, 0.6 m/s goals/env ≥0.5를 결과를 본 뒤 바꾸지 않고 재검증합니다.</p></div></li>
-          <li><span>03</span><div><strong>Keep PPO blocked</strong><p>route mechanism 통과 전에는 fresh physical PPO를 시작하지 않습니다. motor·tilt·contact 한계가 이번 실패의 주원인은 아닙니다.</p></div></li>
+          <li><span>01</span><div><strong>Keep Track A honest</strong><p>Detection-range Stage 1은 RANGE_INCONCLUSIVE이며 Stage 2는 승인되지 않았습니다.</p></div></li>
+          <li><span>02</span><div><strong>Execute hardware Day 1</strong><p>실제 BOM/AUW/CG, calibration, timestamp semantics와 독립 sensor trial을 수집합니다.</p></div></li>
+          <li><span>03</span><div><strong>Close Track B</strong><p>Recovery-v2 FAIL과 no-anchor INCONCLUSIVE 이후 추가 GPU/PPO/retune/rerun은 승인되지 않습니다.</p></div></li>
         </ol>
       </div>
     </section>
@@ -198,7 +204,9 @@
         <a href="../../OPERATIONS.md">Operations</a>
         <a href="../../WORKLOG.md">Worklog</a>
         <a href="../PAPER_WRITING_BRIEF_2026-08-24.md">Paper brief</a>
-        <a href="../physical_target_route_recovery_result_2026-08-25.md">Recovery forensics</a>
+        <a href="../SIM2REAL_3DAY_EXECUTION_PLAN.md">Hardware 3-day plan</a>
+        <a href="../physical_target_recovery_v2_lower1p25_result_2026-08-26.md">Recovery-v2 lower-1.25 result</a>
+        <a href="../physical_target_recovery_v2_no_connector_forensics_result_2026-08-26.md">No-anchor forensics</a>
       </div>
     </section>
   </main>

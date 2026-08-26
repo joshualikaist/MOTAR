@@ -1,7 +1,7 @@
 {
  "schema": "motar.experiments/1",
  "source": "WORKLOG.md",
- "curated_at": "2026-08-25",
+ "curated_at": "2026-08-26",
  "_note": "Hand-curated from WORKLOG.md, results/*/summary.{md,json} and docs/codex_review_2026-08-12.md. `verdict` judges the HYPOTHESIS (PASS/FAIL/INCONCLUSIVE); `validity` judges the EVIDENCE (canonical/superseded/withdrawn/exploratory). They are orthogonal: a result can have passed its gate and still be void. Validated by tools/lint_experiments.py.",
  "themes": [
   {
@@ -4111,6 +4111,7 @@
    ],
    "verdict": "FAIL",
    "validity": "canonical",
+   "lineage_status": "historical_attempt2",
    "verdict_note": "32/32 cell source·contract integrity는 통과했지만 route mechanism은 실패했다. 70 bars에서도 pooled plan success 14.5467%, fallback 35.9297%, 0.6 m/s goals/env 0.25로 세 사전 gate를 모두 놓쳤다. 모든 routed cell은 motor saturation·tilt·contact gate를 통과했으며, 반복되는 unsafe_start recovery와 fail-closed zero-command fallback deadlock이 주 병목이다. 따라서 physical PPO training은 BLOCKED다.",
    "confounded_by": "이것은 neutral pursuer command를 사용한 target-route mechanism gate이며 PPO policy를 로드하지 않았다. 요격 capture 성능이나 hardware 검증으로 해석할 수 없다.",
    "seeds": [827],
@@ -4187,6 +4188,7 @@
    ],
    "verdict": "PASS",
    "validity": "canonical",
+   "lineage_status": "historical_v1_diagnostic",
    "diagnostic_verdict": "RECOVERY_DOMINANT",
    "verdict_note": "Initial plans were ok=349, unsafe_start=17, no_connected_goal=6; replans were unsafe_start=3774, ok=101, no_path=82, unsafe_goal=79. The result supports a recovery state-machine deadlock hypothesis, not a global connectivity proof.",
    "confounded_by": "Evaluation-only observer with neutral pursuer command; no PPO policy. It changed no target commands, planner decisions, reward, observations, termination, PPO, or attempt2 artifacts. The 0.45 m reserve was not lowered or tuned.",
@@ -4213,7 +4215,183 @@
     "results/navrl_physical_target_route_recovery_forensics_seed827/.COMPLETE.json"
    ],
    "worklog_date": "2026-08-25",
-   "_note": "RECOVERY_DOMINANT is a descriptive evaluation-only label. Physical PPO remains BLOCKED until a separately preregistered recovery change passes the unchanged routed gate."
+   "_note": "RECOVERY_DOMINANT is a descriptive evaluation-only historical label. It is not the current Track B bottleneck or tuning authority."
+  },
+  {
+   "id": "2026-08-26-physical-target-recovery-v2-lower1p25-gate-seed827",
+   "title_ko": "★ recovery-v2 lower-1.25 게이트 — 무결성 통과, route mechanism 실패",
+   "question": "baseline_1p25 계약에서 recovery-v2가 사전등록한 32-cell route mechanism gate를 통과하는가?",
+   "theme": "protocol",
+   "knob": null,
+   "levels": [
+    {
+     "label": "route off",
+     "value": "off",
+     "is_baseline": true
+    },
+    {
+     "label": "global A* recovery-v2",
+     "value": "global_astar_recovery_v2"
+    }
+   ],
+   "metric": "other",
+   "metric_label": "recovery-v2 lower-1.25 mechanism gate",
+   "effect": {
+    "value_pp": null,
+    "ci95_pp": null,
+    "ci_method": "none; preregistered deterministic threshold screen",
+    "direction": "higher_is_better"
+   },
+   "arms": [
+    {
+     "label": "32-cell integrity",
+     "extra": {
+      "cells_passed": "7/32, all route-off",
+      "recovery_cells_passed": "0/16",
+      "verdict": "PASS_32_CELL_INTEGRITY"
+     }
+    },
+    {
+     "label": "70-bar · four-speed pool",
+     "extra": {
+      "plan_success": "190/203 = 93.60% (gate ≥99%)",
+      "fallback": "18381/38400 = 47.87% (gate ≤1%)"
+     }
+    },
+    {
+     "label": "70 bars × 0.6 m/s",
+     "extra": {
+      "goal_completions_per_env": "7/32 = 0.21875 (gate ≥0.5)"
+     }
+    },
+    {
+     "label": "recovery occupancy",
+     "extra": {
+      "no_connector": "96854/153600 = 63.06%",
+      "hard_breach_entries": "0/534"
+     }
+    }
+   ],
+   "verdict": "FAIL",
+   "validity": "canonical",
+   "verdict_note": "PASS_32_CELL_INTEGRITY / FAIL_ROUTE_MECHANISM. recovery-v2는 plan success를 v1보다 높였지만 NO_CONNECTOR 점유와 fallback 때문에 gate를 통과하지 못했다. baseline_1p25는 canonical 1.5와 별도 계약이며, 이 결과는 1.5 성공·hardware 검증·PPO·retune·rerun 권한을 만들지 않는다.",
+   "confounded_by": "Neutral pursuer command의 target-route mechanism gate이며 PPO policy를 로드하지 않았다. baseline_1p25를 canonical 1.5 m/s 계약과 합치거나 hardware 성능으로 읽을 수 없다.",
+   "seeds": [
+    827
+   ],
+   "episodes_per_cell": null,
+   "env": {
+    "bars": [
+     70,
+     150,
+     205,
+     300
+    ],
+    "target_speed_mps": [
+     0.6,
+     0.9,
+     1.2,
+     1.25
+    ],
+    "envs_per_cell": 32,
+    "steps_per_cell": 300,
+    "contract_variant": "baseline_1p25",
+    "machine": "rtx3070"
+   },
+   "policy": {
+    "loaded": false,
+    "pursuer_action": "neutral/all-zero policy action"
+   },
+   "preregistered": true,
+   "gate": "docs/preregistration_physical_target_recovery_v2_lower1p25_gate_2026-08-26.md — plan ≥99%, fallback ≤1%, goals/env ≥0.5; integrity fail-closed",
+   "launcher": "tools/verify_navrl_physical_target_recovery_v2_gate.py",
+   "results_paths": [
+    "results/navrl_physical_target_recovery_v2_gate_lower1p25_seed827/summary.json",
+    "results/navrl_physical_target_recovery_v2_gate_lower1p25_seed827/receipt.json",
+    "docs/physical_target_recovery_v2_lower1p25_result_2026-08-26.md",
+    "docs/preregistration_physical_target_recovery_v2_lower1p25_gate_2026-08-26.md"
+   ],
+   "worklog_date": "2026-08-26",
+   "_note": "Current Track B gate authority. The finalized result closes further Track B GPU/PPO/retune/rerun work."
+  },
+  {
+   "id": "2026-08-26-recovery-v2-no-connector-forensics-seed827",
+   "title_ko": "★ recovery-v2 NO_CONNECTOR no-anchor forensics — INCONCLUSIVE",
+   "question": "70-bar NO_CONNECTOR latch 직전에 7×7 hard-safe connector가 이미 존재했는가?",
+   "theme": "protocol",
+   "knob": null,
+   "levels": [
+    {
+     "label": "70 bars × four speeds · pre-latch observer",
+     "value": "no_connector_forensics",
+     "is_baseline": true
+    }
+   ],
+   "metric": "other",
+   "metric_label": "descriptive no-anchor decision rule",
+   "effect": {
+    "value_pp": null,
+    "ci95_pp": null,
+    "ci_method": "Wilson 95%; primary requires n ≥20",
+    "direction": "higher_is_better"
+   },
+   "arms": [
+    {
+     "label": "frozen primary",
+     "extra": {
+      "decision_rule": "INCONCLUSIVE",
+      "primary_n": 1,
+      "anchor_present": "0/1",
+      "hard_free_soft_unsafe": "1/1",
+      "identity_void": false
+     }
+    },
+    {
+     "label": "106 NO_CONNECTOR classes",
+     "extra": {
+      "failed_certificate": 49,
+      "brake_timeout": 32,
+      "failed_resume": 23,
+      "connect_timeout": 1,
+      "brake_no_anchor": 1
+     }
+    }
+   ],
+   "verdict": "INCONCLUSIVE",
+   "validity": "canonical",
+   "verdict_note": "Primary n=1은 사전등록 최소 n=20에 미달했다. identity_void=false지만 32-cell FAIL을 바꾸지 않으며 cell/grid rerun, gain·margin·env retune, PPO, hardware 또는 canonical 1.5 m/s 주장을 허가하지 않는다.",
+   "seeds": [
+    827
+   ],
+   "episodes_per_cell": null,
+   "env": {
+    "bars": 70,
+    "target_speed_mps": [
+     0.6,
+     0.9,
+     1.2,
+     1.25
+    ],
+    "envs_per_cell": 32,
+    "steps_per_cell": 300,
+    "contract_variant": "baseline_1p25",
+    "machine": "rtx3070"
+   },
+   "policy": {
+    "loaded": false,
+    "pursuer_action": "neutral/all-zero policy action"
+   },
+   "preregistered": true,
+   "gate": "docs/preregistration_physical_target_recovery_v2_no_connector_forensics_2026-08-26.md — primary n ≥20; frozen descriptive decision rule; identity fail-closed",
+   "launcher": "tools/diagnose_navrl_physical_target_recovery_v2_no_connector.py",
+   "results_paths": [
+    "results/navrl_physical_target_recovery_v2_no_connector_forensics_seed827/summary.json",
+    "results/navrl_physical_target_recovery_v2_no_connector_forensics_seed827/receipt.json",
+    "docs/physical_target_recovery_v2_no_connector_forensics_result_2026-08-26.md",
+    "docs/preregistration_physical_target_recovery_v2_no_connector_forensics_2026-08-26.md"
+   ],
+   "worklog_date": "2026-08-26",
+   "_note": "Evaluation-only current forensic authority; descriptive and terminal for Track B."
   }
 ]
 }
