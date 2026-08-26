@@ -40,6 +40,10 @@ BOUNDED_TURN_ANGLES_DEG = (
     135.0, -135.0, 150.0, -150.0, 165.0, -165.0, 180.0,
 )
 HEADING_CONTINUITY_RAD = math.radians(90.0)
+# Residual PhysX speed is not a heading of travel.  This is the same 0.10 m/s threshold the
+# frozen braking probe uses as "stopped" (STOP_THRESHOLD_MPS).  A 1e-5 m/s epsilon treats
+# millimetre-per-second hover noise as a real course and slews CONNECT away from the anchor.
+HEADING_VALID_SPEED_MPS = 0.10
 CV_INITIAL_HEADING_MODES = (
     "random",
     "toward",
@@ -60,10 +64,11 @@ def limit_planar_velocity(
     """Apply a planar multirotor trajectory envelope for one control interval.
 
     The bound is deliberately imposed on the *realized velocity state*, rather than merely on a
-    waypoint heading.  Acceleration is Euclidean (so diagonal commands get no free authority) and
-    the heading slew limit prevents an almost-stationary numerical state from snapping to a new
-    bearing as soon as it gains speed.  This is a trackable-trajectory contract, not a rigid-body
-    simulation: attitude, motor and battery states still belong to the actual robot actor.
+    waypoint heading.  Acceleration is Euclidean (so diagonal commands get no free authority).
+    Below ``HEADING_VALID_SPEED_MPS`` there is no heading of travel, so the first command starts
+    in the requested direction; above that speed the heading slew limit applies.  This is a
+    trackable-trajectory contract, not a rigid-body simulation: attitude, motor and battery
+    states still belong to the actual robot actor.
     """
     if current_velocity.shape != desired_velocity.shape or current_velocity.ndim != 2:
         raise ValueError("current_velocity and desired_velocity must have matching [N, 2] shape")
@@ -80,14 +85,18 @@ def limit_planar_velocity(
     current_speed = current_velocity.norm(dim=1)
     current_heading = torch.atan2(current_velocity[:, 1], current_velocity[:, 0])
     # At rest there is no physical heading of travel. Starting in the requested direction is
-    # valid; acceleration below still ramps the speed from zero.
+    # valid; acceleration below still ramps the speed from zero.  The rest threshold is the
+    # frozen braking stop speed, not a numeric epsilon: PhysX residuals of a few mm/s are
+    # typical after a commanded stop and must not lock the slew limiter onto a noise heading.
     heading_delta = torch.atan2(
         torch.sin(desired_heading - current_heading),
         torch.cos(desired_heading - current_heading),
     )
     max_delta = max_turn_rate.clamp(min=0.0) * float(dt)
     limited_heading = current_heading + heading_delta.clamp(min=-max_delta, max=max_delta)
-    limited_heading = torch.where(current_speed > 1e-5, limited_heading, desired_heading)
+    limited_heading = torch.where(
+        current_speed > HEADING_VALID_SPEED_MPS, limited_heading, desired_heading
+    )
     heading_limited_target = torch.stack(
         (torch.cos(limited_heading), torch.sin(limited_heading)), dim=1
     ) * desired_speed.unsqueeze(1)

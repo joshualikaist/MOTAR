@@ -1,4 +1,6 @@
 import importlib.util
+import math
+import sys
 import unittest
 from pathlib import Path
 
@@ -267,6 +269,55 @@ def test_bounded_rollout_uses_bar_surface_not_center_when_half_extents_are_given
     assert torch.isfinite(new).all() and torch.isfinite(velocity).all()
 
 
+def test_heading_valid_speed_matches_braking_stop_threshold():
+    tools = Path(__file__).resolve().parents[1] / "tools"
+    if str(tools) not in sys.path:
+        sys.path.insert(0, str(tools))
+    import probe_navrl_physical_target_braking as probe
+
+    assert _MODULE.HEADING_VALID_SPEED_MPS == probe.STOP_THRESHOLD_MPS
+    assert _MODULE.HEADING_VALID_SPEED_MPS == 0.10
+
+
+def test_physx_residual_speed_is_not_a_heading_of_travel():
+    # VOID.3656376 env 3, CONNECT interval 1: 3 mm/s residual after a rest start.  The old
+    # 1e-5 m/s epsilon treated that noise heading as a real course and slewed 15 deg/step
+    # away from the anchor.  Below the braking stop threshold the command must start toward
+    # the requested bearing; acceleration still ramps from the residual velocity.
+    residual_heading = math.radians(-143.6)
+    desired_heading = math.radians(-176.1)
+    current = torch.tensor([[
+        0.003 * math.cos(residual_heading),
+        0.003 * math.sin(residual_heading),
+    ]])
+    desired = torch.tensor([[
+        0.6 * math.cos(desired_heading),
+        0.6 * math.sin(desired_heading),
+    ]])
+    max_turn = torch.deg2rad(torch.tensor([150.0]))
+    velocity = limit_planar_velocity(
+        current, desired, torch.tensor([0.6]), 0.1, torch.tensor([4.0]), max_turn
+    )
+    heading = float(torch.atan2(velocity[0, 1], velocity[0, 0]))
+    slewed = residual_heading - math.radians(15.0)
+    assert abs(heading - desired_heading) <= math.radians(1.0)
+    assert abs(heading - slewed) > math.radians(10.0)
+    assert float(((velocity - current) / 0.1).norm()) <= 4.0 + 1e-6
+
+
+def test_cruise_speed_heading_remains_slew_limited():
+    current = torch.tensor([[0.6, 0.0]])
+    desired = torch.tensor([[0.0, 0.6]])
+    max_turn = torch.deg2rad(torch.tensor([150.0]))
+    velocity = limit_planar_velocity(
+        current, desired, torch.tensor([0.6]), 0.1, torch.tensor([4.0]), max_turn
+    )
+    heading = float(torch.atan2(velocity[0, 1], velocity[0, 0]))
+    assert heading <= float(max_turn[0] * 0.1) + 1e-6
+    assert heading >= 0.0
+    assert float(velocity.norm()) <= 0.6 + 1e-6
+
+
 class TargetMotionFunctionTestCase(unittest.TestCase):
     """Adapter so ``unittest discover`` collects the pytest-style functions above.
 
@@ -310,6 +361,15 @@ class TargetMotionFunctionTestCase(unittest.TestCase):
 
     def test_bounded_rollout_uses_bar_surface_not_center_when_half_extents_are_given(self):
         test_bounded_rollout_uses_bar_surface_not_center_when_half_extents_are_given()
+
+    def test_heading_valid_speed_matches_braking_stop_threshold(self):
+        test_heading_valid_speed_matches_braking_stop_threshold()
+
+    def test_physx_residual_speed_is_not_a_heading_of_travel(self):
+        test_physx_residual_speed_is_not_a_heading_of_travel()
+
+    def test_cruise_speed_heading_remains_slew_limited(self):
+        test_cruise_speed_heading_remains_slew_limited()
 
 
 if __name__ == "__main__":
