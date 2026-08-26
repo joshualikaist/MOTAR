@@ -12721,3 +12721,10 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
 - This receipt authorizes only the lower-contract recovery-v2 simulator gate. It does not repair
   or supersede the failed canonical 1.5 m/s contract, load a PPO policy, authorize training, or
   constitute hardware validation.
+- The first lower-contract gate attempt stopped before task creation: the hermetic child builder
+  correctly stripped inherited `NAVRL_*` state but failed to reinsert the frozen
+  `baseline_1p25` variant before the child imported its module-level speed grid. The child
+  therefore expected the canonical preregistration and rejected the lower manifest. The VOID
+  artifact is retained. The evaluator now explicitly re-pins the exact variant in the fresh-child
+  environment; a CPU subprocess contract test prevents regression. No scientific cell ran and no
+  gate or measured parameter changed.

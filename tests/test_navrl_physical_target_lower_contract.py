@@ -26,7 +26,8 @@ import verify_navrl_physical_target_recovery_v2_gate as g
 print(json.dumps({'variant':p.CONTRACT_VARIANT,'speeds':p.REGISTERED_SPEEDS,
  'keys':[v.speed_key(x) for x in p.REGISTERED_SPEEDS],
  'gate_speeds':g.SPEEDS,'ids':[g.record_id('off',x,70) for x in g.SPEEDS],
- 'prereg':g.PREREG.name,'default':g.DEFAULT_DIR.name}))
+ 'prereg':g.PREREG.name,'default':g.DEFAULT_DIR.name,
+ 'child_variant':g.build_child_environment().get('NAVRL_TARGET_BRAKING_CONTRACT_VARIANT')}))
 """
     completed = subprocess.run([PYTHON, "-c", code], cwd=str(ROOT), env=env, text=True,
                                stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
@@ -49,6 +50,7 @@ class LowerContractTest(unittest.TestCase):
         self.assertEqual(len(set(payload["ids"])), 4)
         self.assertIn("lower1p25", payload["prereg"])
         self.assertIn("lower1p25", payload["default"])
+        self.assertEqual(payload["child_variant"], "baseline_1p25")
 
     def test_unknown_variant_fails_closed(self):
         env = os.environ.copy(); env.update({"NAVRL_TARGET_BRAKING_CONTRACT_VARIANT": "unknown",

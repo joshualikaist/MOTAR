@@ -303,6 +303,18 @@ def braking_probe_contract() -> Dict[str, str]:
     return validate_braking_probe_values({name: os.environ.get(name, "") for name in names})
 
 
+def build_child_environment() -> Dict[str, str]:
+    """Build the hermetic child environment while preserving the frozen speed lineage.
+
+    The v1 helper intentionally strips every ``NAVRL_*`` variable.  Recovery-v2 imports its
+    speed grid at module load, before the per-child environment is installed, so the exact
+    contract variant must be reintroduced for the fresh interpreter itself.
+    """
+    values = BASE.build_child_environment()
+    values["NAVRL_TARGET_BRAKING_CONTRACT_VARIANT"] = CONTRACT_VARIANT
+    return values
+
+
 def snapshot_braking_probe(probe: Mapping[str, str], stage: Path) -> Dict[str, str]:
     source = Path(probe["NAVRL_TARGET_RECOVERY_BRAKE_PROBE_RECEIPT"]).resolve()
     target_dir = stage / "inputs/braking_probe"
@@ -860,7 +872,7 @@ def parent_main(args) -> int:
             "NAVRL_REQUIRE_TRAINING_SOURCE_RECEIPT": "1",
             "NAVRL_REQUIRE_CLEAN_TRAINING_SOURCE": "1",
         })
-        base_env = BASE.build_child_environment()
+        base_env = build_child_environment()
         records, child_entries, contracts, software = [], [], [], []
         for route in ROUTE_ARMS:
             for speed in SPEEDS:
