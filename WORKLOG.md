@@ -12809,4 +12809,23 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
   `ANCHOR_ABSENT_AT_LATCH` / `INCONCLUSIVE`; none of them pass the 32-cell mechanism or authorize
   retune/PPO. GPU `--run` is not part of this freeze.
 
+## 2026-08-26 — recovery-v2 no-anchor observer implemented (CPU only)
+
+- Implemented the evaluation-only observer in
+  `tools/diagnose_navrl_physical_target_recovery_v2_no_connector.py`. It wraps
+  `mark_no_connector`, `mark_local_infeasible_soft_free`, `recovery_anchor_idx`,
+  `brake_connector_idx`, and `plan_idx` without changing return values. Packed
+  classes come from the already-frozen packed diagnostic. The CPU replica uses
+  recovery-v2 kwargs, not the 2026-08-25 v1 forensic search.
+- Parent `--run` is now wired (fresh `OUTPUT_ROOT` only, one child per 70-bar
+  speed, heading-rest braking receipt + gate training-source manifest, no packed
+  telemetry flag). It refuses the 32-cell gate directory. GPU children were not
+  launched.
+- CPU tests: 11 passed, including observer identity, primary-only pooling,
+  `VOID_OBSERVER_IDENTITY`, child-env variant/70-bar/no-1.5, and immutable
+  summarize. Next is the preregistered 4-cell GPU probe (step 3), not a 32-cell
+  rerun.
+
+
+
 
