@@ -12903,3 +12903,23 @@ braking probe의 `STOP_THRESHOLD_MPS`에 묶어놨다. env var를 만들면 런�
 origin/main push와 GitHub Pages 배포 확인. 원시 결과 영수증은 integration worktree의 절대경로에
 묶여 있으므로 **`.codex_worktrees/two_envelope_recovery_integration`을 삭제하면 안 된다** —
 primary로 복사하면 source root drift로 거부되며 이는 의도된 fail-closed 동작이다.
+
+## 2026-08-26 — GitHub Pages 소스 불일치 진단 및 배포 복구
+
+- 로컬/원격 Git graph와 공개 GitHub deployment를 대조했다. `main`과 `origin/main`은
+  `3e8facc`로 일치했지만 Pages의 실제 source는 저장소 workflow나 `gh-pages`가 아니라
+  **`research/navrl-env`의 `/docs`**였다. 원격 기본 브랜치도 여전히
+  `research/navrl-env`였다.
+- 최신 공개 deployment가 `research/navrl-env@71ba73d`였으므로 `main`만 push해서는 사이트가
+  갱신되지 않았다. `.github/workflows` 부재는 원인이 아니며, GitHub가 생성하는 dynamic
+  `pages build and deployment`가 정상 배포 경로다.
+- `origin/research/navrl-env`가 `main`의 조상임을 확인한 뒤 강제 push 없이
+  `git push origin main:research/navrl-env`로 `71ba73d -> 3e8facc` fast-forward했다.
+  Pages run `32956107111`이 success로 종료됐다.
+- cache-busting URL로 공개 자산을 다시 받았다. 공개/로컬 `docs/status/style.css` MD5는
+  `2b28d40f4a38f222e0ea1729fba81cb7`, `status.json` MD5는
+  `37a1eb9d180aa4fae898eb87f33740bc`로 각각 동일했다. 공개 UI는 h1 최대 76px,
+  3-D stage 최대 500px이며 08-26 Track A/B 상태를 표시한다.
+- 장기 정리 권고: GitHub Settings -> Pages source와 default branch를 `main`/`docs`로 바꿔
+  이중 브랜치 배포 의존성을 제거한다. 웹 설정 전까지는 사이트 변경 때 두 ref를 같은 커밋으로
+  fast-forward해야 한다.
