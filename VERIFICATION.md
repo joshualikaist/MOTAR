@@ -4,7 +4,7 @@
 [`RESEARCH_PLAN.md`](RESEARCH_PLAN.md), 날짜별 기록은 [`WORKLOG.md`](WORKLOG.md),
 명령어는 [`OPERATIONS.md`](OPERATIONS.md), 라이브 지표는 [`docs/status/`](docs/status/)를 본다.
 
-> 기준일: 2026-08-25
+> 기준일: 2026-08-26
 
 ## 후보 R0 — global-routed physical target (기존 P0–P3와 독립)
 
@@ -40,8 +40,10 @@ connectivity 주장은 금지한다. 근거:
 **P3 장기학습은 차단**. seed 367은 초기 미관측의 인과 기여를 지지했지만 해결책 채택은 아니다.
 정직한 고해상도 검출 조건의 Stage 1(각 1,000 epoch, 2,049 ep)은 never-acquired
 `8.443→3.172%`(**−5.271 pp**)로 사전 `−15 pp` gate를 못 넘어
-`RANGE_INCONCLUSIVE_AT_THIS_BUDGET`; **Stage 2 권한 없음**. 다음 authority는
-[`docs/SIM2REAL_3DAY_EXECUTION_PLAN.md`](docs/SIM2REAL_3DAY_EXECUTION_PLAN.md)다.
+`RANGE_INCONCLUSIVE_AT_THIS_BUDGET`; **Stage 2 권한 없음**. Track A 다음 authority는
+[`docs/SIM2REAL_3DAY_EXECUTION_PLAN.md`](docs/SIM2REAL_3DAY_EXECUTION_PLAN.md).
+Track B (R0) recovery-v2 lower-1.25 32-cell은 **`PASS_32_CELL_INTEGRITY` / `FAIL_ROUTE_MECHANISM`**;
+다음 authority는 70-bar no-anchor geometry probe이며 32-cell 재실행·게인·PPO·1.5·env 수 변경이 아니다.
 
 ## 지금 막혀 있는 것
 
@@ -50,6 +52,7 @@ connectivity 주장은 금지한다. 근거:
 | P2 held-out (seed 313) | **STRICT FAIL** | 68.28 / 26.16 / **5.56%** timeout (허용 102건, 실제 114) |
 | D1 adaptation (seed 331) | **FAIL** | q3/CV timeout **15.98%** > 12% |
 | P3 full-budget | **BLOCKED** | P2 PASS 전까지 실행 금지 |
+| R0 recovery-v2 lower-1.25 | **FAIL_ROUTE_MECHANISM** | 7/32 (off만); recovery 0/16; 70-bar plan 93.60%, fallback 47.87% |
 
 어느 진단 결과도 P2/D1 FAIL을 소급 변경하거나 P3를 자동 해제하지 **않는다**.
 
@@ -391,6 +394,34 @@ No PPO policy was loaded, no hardware was validated, and no 300-bar arena-wide c
 is authorized. Do not alter evaluator code, preregistered thresholds, or the physical-training
 block. Raw evidence and hashes: [`attempt 2 summary`](results/navrl_physical_target_routed_gate_seed827_attempt2/summary.md),
 [`attempt 1 VOID`](results/navrl_physical_target_routed_gate_seed827/VOID.md).
+
+## 2026-08-26 recovery-v2 lower-1.25 32-cell 판정
+
+별도 `baseline_1p25` 계약의 recovery-v2 32-cell이 원자료 32개를 모두 기록해
+`PASS_32_CELL_INTEGRITY`를 얻었다. route mechanism은 `FAIL_ROUTE_MECHANISM`이고 physical
+training은 계속 `long_training_authorized=false`다. 7/32만 통과했고 전부 route-off다.
+recovery 16 cell은 0통과. 70-bar 4-speed pool: plan success `190/203=0.9360` (gate ≥0.99),
+fallback `18381/38400=0.4787` (gate ≤0.01), 70×0.6 goals/env `0.21875` (gate ≥0.5).
+canonical 1.5 결과를 대체하거나 1.25를 1.5 성공으로 읽지 않는다. VOID/incomplete 형제는
+합치지 않는다.
+
+| bars \ speed | 0.6 | 0.9 | 1.2 | 1.25 |
+|---:|:---:|:---:|:---:|:---:|
+| 70 | off P / on F | off P / on F | off F / on F | off F / on F |
+| 150 | off P / on F | off P / on F | off F / on F | off F / on F |
+| 205 | off P / on F | off P / on F | off F / on F | off F / on F |
+| 300 | off P / on F | off F / on F | off F / on F | off F / on F |
+
+v1 attempt 2의 `unsafe_start` deadlock과 다른 FAIL이다. recovery-v2는 합법
+`BRAKE→CONNECT→ROUTE`와 93.6% plan success까지 갔고, 그다음 `NO_CONNECTOR`에 63% occupancy로
+붙는다 (hard breach 0/534). CONNECT rest-heading 수정은 명령이 앵커를 향하게 했지만 실현 속도는
+정지 근처에서 ~0.055 m/s이고 CONNECT 자체는 recovery-arm 시간의 1.22%다. 게인 2.5 / `0.45 m` /
+env 32 / 1.5를 이 FAIL 보고 바꾸지 않는다. 32-cell을 재실행하지 않는다.
+
+원자료: [`gate summary`](results/navrl_physical_target_recovery_v2_gate_lower1p25_seed827/summary.json),
+[`result note`](docs/physical_target_recovery_v2_lower1p25_result_2026-08-26.md).
+다음 GPU는 [`no-anchor forensics preregistration`](docs/preregistration_physical_target_recovery_v2_no_connector_forensics_2026-08-26.md)
+뿐이며 아직 실행하지 않았다.
 
 ## 아카이브
 

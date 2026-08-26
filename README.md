@@ -8,12 +8,12 @@ MOTAR는 카메라, LiDAR, ego-state만으로 움직이는 표적을 추적하�
 
 ![MOTAR perception-to-control system](docs/assets/motar-system-overview.svg)
 
-> **Status · 2026-08-25** — Corrected-v2 simulation evidence is scoped. Attempt 2 passed
-> **32/32 integrity checks**, but the route mechanism **failed**; physical PPO and hardware claims
-> remain **blocked**. Follow-up evaluation-only forensics support **RECOVERY_DOMINANT**: 358 local
-> invalidations produced 35,666 attributed fallback intervals (99.6257×), with 200 unique local
-> origins. 실제 기체는 아직 미조립이며 실제 센서 로그와 비행 데이터는 없습니다.
-> 현재 결과는 sim-to-real 성능 주장이 아니라 재현 가능한 시뮬레이션 및 software-only 검증입니다.
+> **Status · 2026-08-26** — Recovery-v2 lower-1.25 passed **32/32 integrity checks** and
+> **failed the route mechanism**; physical PPO and hardware claims remain **blocked**. Attempt 2
+> (canonical 1.5) is a separate `FAIL_ROUTE_MECHANISM`. Packed diagnosis: recovery occupancy is
+> **63% `NO_CONNECTOR`**, not v1 `unsafe_start`. 실제 기체는 아직 미조립이며 실제 센서 로그와
+> 비행 데이터는 없습니다. 현재 결과는 sim-to-real 성능 주장이 아니라 재현 가능한 시뮬레이션 및
+> software-only 검증입니다.
 
 [Research site](docs/status/) · [System specification](docs/MOTAR_SYSTEM_SPEC_2026-08-24.md) ·
 [Verification](VERIFICATION.md) · [Operations](OPERATIONS.md) · [Worklog](WORKLOG.md)
@@ -61,6 +61,7 @@ attitude/rate torque → motor allocation → 100 Hz rigid-body physics` 순서�
 | Camera-range diagnostic | never-acquired **8.443 → 3.172%**; capture **82.235 → 88.677%** | primary −15 pp gate 미달, 따라서 inconclusive |
 | Routed physical-target gate (attempt 2) | **32 / 32 integrity PASS; route mechanism FAIL; physical PPO BLOCKED** | 70-bar 4-speed pool: plan **14.55%** (gate 99%), fallback **35.93%** (gate 1%); 70 bars × 0.6 m/s: **0.25 goals/env** (gate 0.5) |
 | Routed recovery forensics | **8 / 8 receipt verified; `RECOVERY_DOMINANT` (evaluation-only)** | 358 local invalidations → 35,666 local fallback intervals (`99.6257×`); unique origins `200`; hard-free/soft-unsafe `97.0%` (Wilson lower `93.61%`) |
+| Recovery-v2 lower-1.25 32-cell | **32 / 32 integrity PASS; route mechanism FAIL; not a 1.5 result** | 7/32 pass (off only); 70-bar plan **93.60%**, fallback **47.87%**, 0.6 goals/env **0.21875**; `NO_CONNECTOR` occupancy **63.06%** |
 | Hardware/software gate | software pipeline PASS · `SYNTHETIC_ONLY` | 실기 성능 아님 |
 
 현재 `navrl_ref5in_quad`는 1.20 kg, 220 mm motor diagonal, 0.28 m collision proxy를 가정한
@@ -159,6 +160,13 @@ soft-unsafe `97.0%` (Wilson lower `93.61%`) and exact hard-safe connector `96.5%
 lower the frozen `0.45 m` margin or to start PPO. The diagnostic is evaluation-only and leaves
 target commands, planner decisions, reward, observations, termination, PPO, and attempt2
 artifacts unchanged.
+
+The follow-up [recovery-v2 lower-1.25 gate](docs/physical_target_recovery_v2_lower1p25_result_2026-08-26.md)
+is a separate speed-ceiling contract, not a 1.5 success. It also passed 32/32 integrity and
+failed the route mechanism: 70-bar plan success rose to 93.60%, but fallback is 47.87% because
+recovery-arm occupancy is 63% latched `NO_CONNECTOR` (0 hard-breach entries). Packed diagnosis
+does not authorize retuning `0.45 m`, gain 2.5, env count, or another 32-cell run. The next
+eligible GPU is the frozen [no-anchor geometry probe](docs/preregistration_physical_target_recovery_v2_no_connector_forensics_2026-08-26.md).
 
 Fresh PPO and sim-to-real claims remain blocked until the actual platform provides measured AUW/CG, sensor
 extrinsics, timestamp synchronization and real-log bearing/range/latency/dropout profiles. The next 72-hour

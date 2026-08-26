@@ -12761,3 +12761,38 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
   horizon progress `>= -1e-6`, and retains the actual no-regression check. The in-flight rerun was
   stopped before this known-failing verifier path to avoid wasting GPU time; its incomplete bundle
   is retained and cannot be finalized or combined with another run.
+
+## 2026-08-26 — recovery-v2 lower-1.25 32-cell gate is FAIL_ROUTE_MECHANISM
+
+- After the rest-heading snap, a new lower-contract braking receipt was issued at
+  `results/navrl_physical_target_braking_lower1p25_headingrest_seed827/` (SHA-256
+  `4e87eb9ddf5dd9cea1fc0354d272a5d18ec6a05427e0f41e672749a57df9047a`; `decel_p05=0.5052572863`,
+  `stop_time_p95=0.89 s`). It still does not repair canonical 1.5. CONNECT actual-interval
+  regression was reclassified from an integrity VOID into a cell gate, and recovery waypoint
+  identity was matched to the v1 route-goal contract (cross-arm layout/robot/target only). Those
+  two commits are telemetry/evaluator only; they do not change CORE_PATHS bound by the braking
+  receipt.
+- The 32-cell lower-1.25 recovery-v2 gate then finalized at
+  `results/navrl_physical_target_recovery_v2_gate_lower1p25_seed827/` on commit `2b151d9`.
+  Standalone verify: `PASS_32_CELL_INTEGRITY` / `FAIL_ROUTE_MECHANISM` /
+  `long_training_authorized=false`. Pass 7/32, all route-off; recovery 0/16. 70-bar pool plan
+  success is 190/203=0.9360 vs gate ≥0.99; fallback 18381/38400=0.4787 vs ≤0.01; 0.6 goals/env
+  0.21875 vs ≥0.5. VOID/incomplete siblings remain uncombined.
+- The earlier note that “the actual PhysX interval reduced anchor distance” is false. On both
+  VOID.3656376 and the finalized 0.6/70 cell, the 1 s horizon stayed positive while many actual
+  0.1 s PhysX intervals receded (finalized 0.6/70: 59/176 regressions, max +5.3 cm). After the
+  0.10 m/s heading snap, rest-start CONNECT commands stay toward the frozen anchor (fraction 1.0);
+  realized rest speed is ~0.055 m/s against a ~0.41 m/s command and a 0.40 m/s accel-envelope Δv.
+  CONNECT is 1.22% of recovery-arm time. It explains the `connect_actual_progress` cell fail, not
+  the fallback occupancy.
+- Packed diagnosis of the frozen raw (`tools/diagnose_navrl_physical_target_recovery_v2_packed.py`):
+  recovery-arm occupancy is 63.06% `NO_CONNECTOR`, 31.51% `NORMAL`, 2.13% `BRAKE`, 2.09% `ROUTE`,
+  1.22% `CONNECT`. Of 534 `NO_CONNECTOR` entries, 0 are hard-breach; 219 are same-interval BRAKE
+  then generic no-anchor, 136 BRAKE timeout, 93 in-phase BRAKE no-anchor, 50 CONNECT failed-resume
+  (soft-free), 29 CONNECT failed-certificate (still soft-unsafe). This is not v1 `unsafe_start`
+  deadlock. Recovery-v2 reached legal compressed `BRAKE→ROUTE` and 93.6% plan success, then latched
+  fail-closed zero command.
+- Env count stays at the preregistered 32. Raising it would be a different experiment, not more
+  of this gate. Do not retune gain 2.5 / `0.45 m` / 1.5 after seeing FAIL. Next eligible GPU is
+  the separately preregistered 70-bar no-anchor geometry probe, not another 32-cell grid.
+
