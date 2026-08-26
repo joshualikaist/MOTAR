@@ -782,9 +782,14 @@ def load_and_verify(path: Path, expected_sha256: str = "") -> Dict[str, object]:
                 raise RuntimeError("CONNECT anchor cell is missing")
             if (payload["candidate_binding_error"][active] != 0).any():
                 raise RuntimeError("CONNECT candidate/environment binding is ambiguous")
-            for field in ("planned_first_progress_m", "planned_horizon_progress_m"):
-                if not np.isfinite(payload[field][active]).all() or (payload[field][active] < -1e-6).any():
-                    raise RuntimeError("CONNECT certificate has negative fixed-anchor progress: %s" % field)
+            # The first kinematic sample is descriptive: a physical actor can initially coast
+            # away while its velocity reverses.  The certified 1 s horizon must progress, and the
+            # actual PhysX interval below must not increase anchor distance.
+            if not np.isfinite(payload["planned_first_progress_m"][active]).all():
+                raise RuntimeError("CONNECT first-sample progress is missing/nonfinite")
+            if (not np.isfinite(payload["planned_horizon_progress_m"][active]).all()
+                    or (payload["planned_horizon_progress_m"][active] < -1e-6).any()):
+                raise RuntimeError("CONNECT certificate has negative fixed-anchor progress: horizon")
             if not np.isfinite(payload["anchor_distance_after_m"][active]).all():
                 raise RuntimeError("CONNECT post-physics anchor distance is missing")
             if (payload["anchor_distance_after_m"][active]

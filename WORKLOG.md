@@ -12752,3 +12752,12 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
   only when the total BRAKE/CONNECT-to-ROUTE pairs equal the immutable resume counter; missing or
   forged counter evidence still fails. `BRAKE -> NORMAL` remains illegal. This is a telemetry
   interpretation fix, not a state-machine, gate, or controller change.
+- Raw CONNECT telemetry then showed that 146/290 active interval predictions had a short initial
+  coast away from the fixed anchor (minimum -0.04292 m) while every certified 1 s horizon made
+  positive progress (minimum +0.00920 m), and the actual PhysX interval reduced anchor distance.
+  This follows the existing core contract comment: recovery progress is certified over the full
+  horizon, while the submitted physical interval is separately checked against actual anchor
+  distance. The verifier now treats first-sample progress as finite descriptive telemetry, keeps
+  horizon progress `>= -1e-6`, and retains the actual no-regression check. The in-flight rerun was
+  stopped before this known-failing verifier path to avoid wasting GPU time; its incomplete bundle
+  is retained and cannot be finalized or combined with another run.

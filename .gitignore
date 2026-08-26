@@ -45,6 +45,7 @@ results/navrl_physical_target_braking_lower1p25_seed827/
 results/navrl_physical_target_braking_lower1p25_postxyfix_seed827/
 results/navrl_physical_target_recovery_v2_gate_lower1p25_seed827/
 results/.navrl_physical_target_recovery_v2_gate_lower1p25_seed827.VOID.*/
+results/.navrl_physical_target_recovery_v2_gate_lower1p25_seed827.incomplete.*/
 
 # Closed training launchers create immutable local source receipts.  Checkpoints bind their path
 # and SHA; the bundles travel with experiment artifacts, not Git history.

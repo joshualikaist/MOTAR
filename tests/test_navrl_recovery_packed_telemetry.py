@@ -168,6 +168,15 @@ class PackedTelemetryTest(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "negative fixed-anchor progress"):
             PACKED.load_and_verify(path)
 
+    def test_initial_coast_is_descriptive_when_horizon_and_actual_interval_progress(self):
+        arrays = fixture()
+        arrays["planned_first_progress_m"][1, 0] = -0.04
+        arrays["planned_horizon_progress_m"][1, 0] = 0.01
+        arrays["anchor_distance_m"][1, 0] = 0.30
+        arrays["anchor_distance_after_m"][1, 0] = 0.29
+        result = PACKED.load_and_verify(self.write(arrays))
+        self.assertEqual(result["schema"], PACKED.SCHEMA)
+
     def test_compressed_brake_connect_route_requires_exact_resume_counter(self):
         arrays = fixture(connect=False)
         arrays["state_after"][0, 0] = PACKED.STATE_BRAKE
