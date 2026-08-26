@@ -12706,3 +12706,18 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
 - CPU verification: canonical braking 8/8, recovery-v2 evaluator 5/5, recovery core 22/22,
   target environment 13/13, lower-contract isolation 3/3, compilation/diff check PASS. No
   lower-contract braking receipt or recovery GPU result existed at this entry.
+
+## 2026-08-26 — lower-1.25 braking receipt finalized
+
+- Ran the separately preregistered `baseline_1p25` physical-target braking probe on the RTX 3070
+  at 0.6/0.9/1.2/1.25 m/s. The atomic result finalized at
+  `results/navrl_physical_target_braking_lower1p25_seed827/` and its standalone verifier passed;
+  final receipt SHA-256 is
+  `259e5333e4bd109547df00b4dd0295244f471de55490f128bbf74f3f89de9663`.
+- Measured deceleration p05 is 0.5052572863 m/s^2, stop-time p95 is 0.89 s, and certified lateral
+  braking tube p95 is 0.00041199 m. Stop-distance p95 is 0.32814/0.49835/0.67084/0.69944 m at
+  0.6/0.9/1.2/1.25 m/s respectively. All four cells recorded zero contact, invalid geometry, and
+  braking saturation events.
+- This receipt authorizes only the lower-contract recovery-v2 simulator gate. It does not repair
+  or supersede the failed canonical 1.5 m/s contract, load a PPO policy, authorize training, or
+  constitute hardware validation.
