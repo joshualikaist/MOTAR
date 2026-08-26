@@ -6,6 +6,11 @@
 
 > 기준일: 2026-08-26
 
+현재 판정의 기계 판독 원본은
+[`docs/research_authority_2026-08-26.json`](docs/research_authority_2026-08-26.json)이다.
+`python tools/check_research_authority.py --json`은 세 frozen summary의 SHA와 Track A/B 판정 필드를
+직접 대조하며 어떤 학습·평가도 실행하지 않는다.
+
 ## 2026-08-26 현재 실행 authority
 
 - **Track A — perception/sim-to-real:** P2 `STRICT FAIL`, D1 `FAIL`, P3 `BLOCKED`; detection

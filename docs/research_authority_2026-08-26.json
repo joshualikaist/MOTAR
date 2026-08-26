@@ -1,0 +1,70 @@
+{
+  "schema": "motar_research_execution_authority_v1",
+  "frozen_at": "2026-08-26",
+  "scope": "post_track_a_stage1_and_track_b_recovery_v2",
+  "hardware_state": {
+    "assembled_airframe": false,
+    "real_sensor_logs": 0,
+    "real_flights": 0,
+    "sim_to_real_claim_authorized": false
+  },
+  "track_a": {
+    "result": "RANGE_INCONCLUSIVE_AT_THIS_BUDGET",
+    "stage2_authorised": false,
+    "p2": "STRICT FAIL",
+    "d1": "FAIL",
+    "p3": "BLOCKED",
+    "allowed_next": [
+      "exact_hardware_bom_and_geometry",
+      "sensor_calibration_and_timestamp_contract",
+      "210_independent_sensor_trials",
+      "real_log_profile_and_offline_replay"
+    ],
+    "prohibited_without_new_preregistration_and_hardware_evidence": [
+      "detection_range_stage2",
+      "fresh_ppo",
+      "threshold_relaxation"
+    ]
+  },
+  "track_b": {
+    "execution_integrity": "PASS_32_CELL_INTEGRITY",
+    "route_mechanism": "FAIL_ROUTE_MECHANISM",
+    "no_anchor_followup": "INCONCLUSIVE",
+    "long_training_authorized": false,
+    "allowed_next": [
+      "archive_and_report_frozen_evidence"
+    ],
+    "prohibited": [
+      "additional_gpu_probe",
+      "ppo_training",
+      "gain_or_margin_retune",
+      "canonical_1p5_claim",
+      "environment_count_change",
+      "cell_or_grid_rerun"
+    ]
+  },
+  "evidence": [
+    {
+      "path": "results/navrl_ref5in_detection_range_stage1_s457/summary.json",
+      "sha256": "228e7d212bdf5564f1d877600d543140029ce4f2330775c45823c3f041ce0b75"
+    },
+    {
+      "path": "results/navrl_physical_target_recovery_v2_gate_lower1p25_seed827/summary.json",
+      "sha256": "a85e95764061b7b20cacaa622efc44e2d7e31e054e398f57cfdf48ec98e6c04f"
+    },
+    {
+      "path": "results/navrl_physical_target_recovery_v2_no_connector_forensics_seed827/summary.json",
+      "sha256": "bc5d05a3f36da9213989c84ae28eda9ad65b0ba60b55dc2bbe4b5d262a12b8ee"
+    }
+  ],
+  "claim_boundary": {
+    "supported": "simulation failure analysis under frozen contracts",
+    "unsupported": [
+      "working_route_recovery",
+      "physical_target_training_success",
+      "hardware_validation",
+      "sim_to_real_performance",
+      "transformer_is_universally_better_than_rnn"
+    ]
+  }
+}

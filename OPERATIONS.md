@@ -13,6 +13,17 @@
 > `FAIL_ROUTE_MECHANISM` 뒤 no-anchor probe까지 `INCONCLUSIVE`로 종료됐으며 추가
 > GPU/PPO/retune/rerun authority가 없습니다.
 
+GPU 명령을 찾기 전에 아래 동결 receipt를 먼저 검사합니다. 이 명령은 학습이나 평가를 실행하지
+않고, Track A/B 원자료 SHA와 `Stage 2=false`, `long training=false`를 fail-closed로 확인합니다.
+
+```bash
+cd /home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator
+/home/fair/miniconda3/envs/aerialgym/bin/python tools/check_research_authority.py --json
+```
+
+기계 판독 계약은 [`docs/research_authority_2026-08-26.json`](docs/research_authority_2026-08-26.json)이며,
+허용된 다음 작업은 hardware BOM/calibration/210 trials/real-log offline replay뿐입니다.
+
 ## 1. 처음 설치할 때
 
 필수 조건은 Linux, NVIDIA GPU, Miniconda, Isaac Gym Preview 4입니다. Isaac Gym은 NVIDIA 계정으로

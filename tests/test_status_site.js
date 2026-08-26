@@ -35,11 +35,13 @@ for (const id of ['arena', 'method', 'evidence', 'platform', 'next']) {
 }
 assert(!css.includes('@import'));
 assert(!css.includes('fonts.googleapis.com'));
-assert(html.includes('style.css?v=20260825r3'), 'compact site CSS cache-bust must advance with the layout');
-assert(css.includes('height: clamp(360px, 55vh, 620px)'), 'desktop viewer must stay within a viewport-friendly clamp');
-assert(css.includes('height: clamp(320px, 72vw, 380px)'), 'mobile viewer must retain a compact height clamp');
+assert(html.includes('style.css?v=20260826r9'), 'compact site CSS cache-bust must advance with the layout');
+assert(css.includes('height: clamp(300px, 44vh, 500px)'), 'desktop viewer must stay within a viewport-friendly clamp');
+assert(css.includes('height: clamp(260px, 64vw, 340px)'), 'mobile viewer must retain a compact height clamp');
 assert(css.includes('font-size: 11px'), 'viewer HUD must remain compact');
-assert(css.includes('body { margin: 0; overflow-x: hidden; color: var(--ink); background: var(--paper); font: 16px'), 'body text must remain accessible');
+assert(css.includes('body { margin: 0; overflow-x: hidden; color: var(--ink); background: var(--paper); font: 15px'), 'body text must remain compact and readable');
+assert(css.includes('word-break: break-word'), 'mobile authority status must not clip long slash-delimited tokens');
+assert(html.includes('../research_authority_2026-08-26.json'), 'frozen authority receipt must be linked');
 for (const retired of [
   'system.html', 'setup.html', 'results.html', 'experiments.html', 'parameters.html', 'drone.html',
   'status.fallback.js', 'js',
@@ -58,11 +60,13 @@ assert(html.indexOf('arena.js') < html.indexOf('viewer.js'));
 for (const script of [
   'vendor/three.min.js', 'vendor/OrbitControls.js', 'arena_route.js',
   'arena_motion.js', 'arena.js', 'viewer.js',
-]) assert(html.includes(`${script}?v=20260825r2`), `stale cache-bust for ${script}`);
+]) assert(html.includes(`${script}?v=20260826r3`), `stale cache-bust for ${script}`);
 assert(html.includes('이 화면은 PPO 실행 영상'));
 assert(html.includes('10 Hz 고정 simulation clock'));
 assert(html.includes('PhysX 재생'));
 assert(html.includes('value="routed-preview" selected'));
+assert(html.includes('historical <code>global_astar_v1</code>'));
+assert(html.includes('recovery-v2 state machine'));
 assert(html.includes('Physical-style illustration · NOT PhysX'));
 assert(html.includes('Global route + bounded/lagged browser preview · NOT PhysX/PPO'));
 assert(html.includes('half-diagonal support(0.2069 m)'));

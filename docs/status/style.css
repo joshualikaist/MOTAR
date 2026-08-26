@@ -147,7 +147,7 @@ footer strong { color: #fff; letter-spacing: .12em; }
   .status-line { display: block; font-size: 13px; }
   .status-line .status-dot { display: inline-block; margin-right: 8px; vertical-align: middle; }
   .status-line strong { vertical-align: middle; }
-  .status-line > span:not(.status-dot) { display: block; width: 100%; max-width: 100%; margin-top: 8px; white-space: normal; overflow-wrap: anywhere; word-break: normal; }
+  .status-line > span:not(.status-dot) { display: block; width: 100%; max-width: 100%; margin-top: 8px; white-space: normal; overflow-wrap: anywhere; word-break: break-word; }
   .visual img, .diagram img { border-radius: 10px; }
   footer .wrap { flex-direction: column; }
 }

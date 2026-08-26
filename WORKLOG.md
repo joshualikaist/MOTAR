@@ -12923,3 +12923,56 @@ primary로 복사하면 source root drift로 거부되며 이는 의도된 fail-
 - 장기 정리 권고: GitHub Settings -> Pages source와 default branch를 `main`/`docs`로 바꿔
   이중 브랜치 배포 의존성을 제거한다. 웹 설정 전까지는 사이트 변경 때 두 ref를 같은 커밋으로
   fast-forward해야 한다.
+
+## 2026-08-26 — 실행 authority 동결, 사이트 적대 QA, 교수님 PPT 마스터 브리프
+
+### Track A/B를 기계 판독 계약으로 동결
+
+- `docs/research_authority_2026-08-26.json`을 추가해 Track A
+  `RANGE_INCONCLUSIVE_AT_THIS_BUDGET / stage2=false`, Track B
+  `PASS_32_CELL_INTEGRITY / FAIL_ROUTE_MECHANISM / long_training=false`, no-anchor
+  `INCONCLUSIVE`, hardware flight/log 0을 한 receipt로 고정했다.
+- receipt는 세 canonical summary의 SHA-256(`228e7d…`, `a85e95…`, `bc5d05…`)을 포함한다.
+  `tools/check_research_authority.py`가 실제 파일 SHA와 verdict/claim-boundary 필드를 직접 대조하고
+  drift를 fail-closed한다. 이 도구는 GPU·학습·평가를 실행하지 않는다.
+- OPERATIONS/VERIFICATION에 `python tools/check_research_authority.py --json`을 현재 명령의
+  시작점으로 연결했다. 허용된 다음 작업은 exact hardware BOM/calibration, 210 independent sensor
+  trials, real-log profile/offline replay뿐이다.
+
+### 공개 사이트/그림/3D 렌더 감사
+
+- 공개와 로컬을 Chrome 1440×900, 390×844 및 full-page로 렌더했다. system overview와 low-level
+  control SVG는 정상이고 routed-preview WebGL canvas도 SwiftShader headless에서 생성됐다.
+- 모바일 긴 authority 문장의 slash-delimited token이 잘리지 않도록 `word-break: break-word`를
+  적용하고 CSS cache를 `20260826r9`로 올렸다. iframe computed-layout 감사에서 document/body
+  scrollWidth=clientWidth=375, hero/status/SVG/stage 모두 viewport 안에 있음을 확인했다.
+- stale parity test를 발견했다. viewer는 2026-08-25의 frozen `global_astar_v1` geometry를
+  설명하지만 test가 recovery-v2가 추가된 **현재 전체** Python 파일 SHA를 과거 SHA와 비교해
+  실패했다. 단순 SHA 갱신 대신 test가 `a373202` historical blob을 검증하도록 수정하고, 사이트에
+  recovery-v2 state machine을 재현하거나 성공으로 표시하지 않는다고 명시했다. JS cache는
+  `20260826r3`으로 일괄 갱신했다.
+- 사이트 resource에 frozen authority와 교수님 PPT master brief를 추가했다. 모든 local src/href가
+  존재하고 GitHub link가 HTTP 200임을 확인했다.
+
+### 교수님 발표 제작 계약
+
+- `docs/CLAUDE_PPT_MASTER_BRIEF_2026-08-26.md`를 추가했다. 본편 18장 + appendix 12장으로,
+  연구질문, expected hardware, task/sensor contract, 898-D/17-token 구조, Transformer high-level,
+  altitude PI/Lee/allocation/motor low-level, reward/PPO/curriculum, held-out density×speed,
+  perception/latency, physical target/recovery FAIL, claim boundary와 72-hour hardware plan을 모두
+  포함한다.
+- 각 슬라이드에 목적, 정확 수치, 권장 그림, 발표 멘트, 원자료와 예상 교수 질문 답변을 지정했다.
+  `PASS integrity != mechanism PASS`, simulation-only, hardware pending, pp/% 단위, RNN overclaim,
+  riskcap inference-only, raw RGB-D 오해 금지를 명시했다.
+
+### 검증
+
+- research authority current + SHA-drift negative tests 3개 PASS.
+- target motion 25/25, target environment 13/13, ref5in run contract 101/101 PASS.
+- status snapshot 19개(1 historical fixture skip), static site, fixed-clock motion, routed geometry,
+  WebGL routed-preview PASS.
+- experiment lint 71개 OK; JSON syntax, JS syntax, Python compile, `git diff --check` PASS.
+- GitHub Pages/default branch UI 자체는 API/CLI 인증이 없어 이 머신에서 변경할 수 없다. 현재
+  `main`과 Pages source `research/navrl-env`를 같은 commit으로 fast-forward해 배포 일관성을
+  유지하며, Settings에서 source/default를 `main`/`docs`로 바꾸는 1회 작업은 계정 UI authority가
+  필요하다.

@@ -6,7 +6,7 @@
   <meta name="description" content="MOTAR — sensor-only UAV moving-target interception research overview.">
   <meta name="theme-color" content="#f7faf8">
   <title>MOTAR · Moving-target interception</title>
-  <link rel="stylesheet" href="style.css?v=20260826r8">
+  <link rel="stylesheet" href="style.css?v=20260826r9">
 </head>
 <body>
   <header class="site-header">
@@ -53,8 +53,9 @@
         </div>
         <p class="arena-intro">corrected-v2의 40×40×3 m arena와 <code>navrl_band</code> 배치 규칙을
           브라우저에서 재현합니다. 표적은 10 Hz 고정 simulation clock에서 움직이고 화면만 보간합니다.
-          기본 <strong>routed-preview</strong>는 exact-AABB global route를 bounded/lagged browser motion으로
-          설명합니다. 코너 전환은 planning-time clearance certificate로 검사하고 실패 재계획은 직전 목표
+          기본 <strong>routed-preview</strong>는 동결된 historical <code>global_astar_v1</code>
+          exact-AABB route를 bounded/lagged browser motion으로 설명합니다. recovery-v2 state machine을
+          재현하거나 성공으로 표시하지 않습니다. 코너 전환은 planning-time clearance certificate로 검사하고 실패 재계획은 직전 목표
           1.0 m 이내를 제외합니다. pursuer와 target motion은 설명용이며, 이 화면은 PPO 실행 영상·PhysX 재생·성능 측정값이 아닙니다.</p>
         <div class="viewer-shell">
           <div id="stage" role="img" aria-label="막대 장애물, 이동 표적, 추적 드론과 LiDAR 광선을 보여주는 3D arena">
@@ -204,19 +205,21 @@
         <a href="../../OPERATIONS.md">Operations</a>
         <a href="../../WORKLOG.md">Worklog</a>
         <a href="../PAPER_WRITING_BRIEF_2026-08-24.md">Paper brief</a>
+        <a href="../CLAUDE_PPT_MASTER_BRIEF_2026-08-26.md">Professor presentation brief</a>
         <a href="../SIM2REAL_3DAY_EXECUTION_PLAN.md">Hardware 3-day plan</a>
         <a href="../physical_target_recovery_v2_lower1p25_result_2026-08-26.md">Recovery-v2 lower-1.25 result</a>
         <a href="../physical_target_recovery_v2_no_connector_forensics_result_2026-08-26.md">No-anchor forensics</a>
+        <a href="../research_authority_2026-08-26.json">Frozen execution authority</a>
       </div>
     </section>
   </main>
 
   <footer><div class="wrap"><strong>MOTAR</strong><span>Simulation research · hardware pending</span><span>BSD-3-Clause</span></div></footer>
-  <script src="vendor/three.min.js?v=20260825r2"></script>
-  <script src="vendor/OrbitControls.js?v=20260825r2"></script>
-  <script src="arena_route.js?v=20260825r2"></script>
-  <script src="arena_motion.js?v=20260825r2"></script>
-  <script src="arena.js?v=20260825r2"></script>
-  <script src="viewer.js?v=20260825r2"></script>
+  <script src="vendor/three.min.js?v=20260826r3"></script>
+  <script src="vendor/OrbitControls.js?v=20260826r3"></script>
+  <script src="arena_route.js?v=20260826r3"></script>
+  <script src="arena_motion.js?v=20260826r3"></script>
+  <script src="arena.js?v=20260826r3"></script>
+  <script src="viewer.js?v=20260826r3"></script>
 </body>
 </html>

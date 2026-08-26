@@ -24,6 +24,10 @@ MOTAR는 카메라, LiDAR, ego-state만으로 움직이는 표적을 추적하�
 [Research site](docs/status/) · [System specification](docs/MOTAR_SYSTEM_SPEC_2026-08-24.md) ·
 [Verification](VERIFICATION.md) · [Operations](OPERATIONS.md) · [Worklog](WORKLOG.md)
 
+교수님 발표를 다시 만들 때는 [PPT master brief](docs/CLAUDE_PPT_MASTER_BRIEF_2026-08-26.md)를
+최상위 계약으로 사용한다. 이 문서는 hardware 예상치, high/low-level 구조, reward/PPO/curriculum,
+최종 Track A/B 판정과 발표 claim boundary를 한곳에 묶는다.
+
 ## Research question
 
 > 제한된 센서 표현과 실제적인 비행 명령 범위만으로, 밀집 장애물 속 이동 표적을 얼마나 안정적으로

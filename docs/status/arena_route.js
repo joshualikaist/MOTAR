@@ -1,11 +1,13 @@
 /*
- * Browser-only mirror of target_route_planner.py's deterministic geometry contract.
- * Source receipt (final routed safety contract inspected 2026-08-25):
+ * Browser-only mirror of the historical global_astar_v1 deterministic geometry contract.
+ * Source receipt (frozen global-route safety contract inspected 2026-08-25):
  *   main commit a373202, target_route_planner.py SHA-256
  *   7fec3015e5dee667b8cd64d145d29b9244c18eb0c79b4af12020be44b503cb83
  *
- * This module explains the target's global route. It is NOT the pursuer PPO, PhysX, or a
- * performance measurement. Keep it DOM/THREE independent so Node can audit geometry exactly.
+ * The current Python file also contains the later recovery-v2 state machine; this preview does
+ * NOT mirror or claim that failed mechanism. It explains the target's base global route and is
+ * NOT the pursuer PPO, PhysX, or a performance measurement. Keep it DOM/THREE independent so
+ * Node can audit geometry exactly.
  */
 (function (root, factory) {
   const api = factory();

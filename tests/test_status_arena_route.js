@@ -2,15 +2,20 @@
 
 const assert = require('assert');
 const crypto = require('crypto');
+const {execFileSync} = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const {performance} = require('perf_hooks');
 const Route = require('../docs/status/arena_route.js');
 const Motion = require('../docs/status/arena_motion.js');
 
-const pythonPlanner = fs.readFileSync(path.resolve(
-  __dirname, '../aerial_gym/task/navrl_task/target_route_planner.py'
-));
+// The browser preview mirrors the frozen global_astar_v1 geometry from a373202.  The current
+// Python file additionally contains the failed recovery-v2 state machine, which this explanatory
+// viewer must not silently present as implemented or successful.
+const repo = path.resolve(__dirname, '..');
+const pythonPlanner = execFileSync('git', [
+  'show', 'a373202:aerial_gym/task/navrl_task/target_route_planner.py',
+], {cwd: repo});
 assert.strictEqual(
   crypto.createHash('sha256').update(pythonPlanner).digest('hex'),
   '7fec3015e5dee667b8cd64d145d29b9244c18eb0c79b4af12020be44b503cb83'
