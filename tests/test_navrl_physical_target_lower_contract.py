@@ -60,5 +60,23 @@ class LowerContractTest(unittest.TestCase):
                                    stderr=subprocess.PIPE, check=False)
         self.assertNotEqual(completed.returncode, 0)
 
+    def test_fresh_child_imports_isaacgym_before_packed_torch(self):
+        env = os.environ.copy()
+        env.update({"NAVRL_TARGET_BRAKING_CONTRACT_VARIANT": "baseline_1p25",
+                    "PYTHONNOUSERSITE": "1",
+                    "PYTHONPATH": str(ROOT) + os.pathsep + str(ROOT / "tools"),
+                    "PATH": str(Path(PYTHON).parent) + os.pathsep + env.get("PATH", "")})
+        code = """
+import sys
+sys.argv = ['recovery-v2-test', '--_child']
+import verify_navrl_physical_target_recovery_v2_gate
+import aerial_gym
+print(aerial_gym.__file__)
+"""
+        completed = subprocess.run([PYTHON, "-c", code], cwd=str(ROOT), env=env, text=True,
+                                   stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        self.assertIn(str(ROOT / "aerial_gym"), completed.stdout)
+
 
 if __name__ == "__main__": unittest.main()

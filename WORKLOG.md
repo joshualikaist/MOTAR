@@ -12728,3 +12728,9 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
   artifact is retained. The evaluator now explicitly re-pins the exact variant in the fresh-child
   environment; a CPU subprocess contract test prevents regression. No scientific cell ran and no
   gate or measured parameter changed.
+- A second task-creation attempt exposed an older evaluator import-order defect: the packed
+  telemetry module imported PyTorch before Isaac Gym, which Isaac Gym rejects before creating a
+  simulator. The evaluator now imports Isaac Gym first only in its private fresh-child process,
+  before loading the packed observer; parent preflight/verification remains CPU-safe. A fresh
+  subprocess regression test imports the evaluator and local `aerial_gym` in the exact child
+  order. This attempt also ran zero scientific cells and is retained as VOID.

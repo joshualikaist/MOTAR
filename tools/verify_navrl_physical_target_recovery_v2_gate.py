@@ -29,6 +29,12 @@ BASE = importlib.util.module_from_spec(BASE_SPEC)
 sys.modules[BASE_SPEC.name] = BASE
 BASE_SPEC.loader.exec_module(BASE)
 
+# The packed observer imports torch.  Isaac Gym requires its extension loader to run first in a
+# simulator child; the parent/verify paths stay CPU-safe and do not import Isaac Gym.  Detecting
+# the private child token here preserves that mandatory import order before loading the observer.
+if "--_child" in sys.argv:
+    import isaacgym  # noqa: F401  # must precede torch; imported for side effects
+
 PACKED_PATH = ROOT / "tools/navrl_recovery_packed_telemetry.py"
 PACKED_SPEC = importlib.util.spec_from_file_location("navrl_recovery_packed_runtime", PACKED_PATH)
 PACKED = importlib.util.module_from_spec(PACKED_SPEC)
