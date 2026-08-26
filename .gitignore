@@ -63,3 +63,8 @@ aerial_gym/examples/*_frames_100.gif
 
 # legacy scraper scratch output; never published
 docs/status/status.legacy.json
+
+# git worktrees for concurrent Codex sessions; never part of the tree.  Result receipts
+# inside them are bound to their absolute paths, so they must survive on disk but must
+# not be committed (an accidental `git add -A` made one a gitlink on 2026-08-26).
+.codex_worktrees/
