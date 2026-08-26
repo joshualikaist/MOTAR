@@ -144,6 +144,7 @@ class NoConnectorForensicsContractTest(unittest.TestCase):
             "event": "no_connector",
             "packed_class": "brake_no_anchor_likely",
             "runtime_replica_agree": True,
+            "runtime_anchor_ok": True,
             "nearest_soft_free_anchor": replica,
             "hard_free": True,
             "soft_free": False,
@@ -184,6 +185,11 @@ class NoConnectorForensicsContractTest(unittest.TestCase):
         missing["runtime_replica_agree"] = None
         missing["runtime_anchor_ok"] = None
         self.assertTrue(MOD.analyze_events([missing])["identity_void"])
+        malformed = dict(primary)
+        malformed["runtime_replica_agree"] = True
+        malformed["runtime_anchor_ok"] = False
+        malformed["nearest_soft_free_anchor"] = {"exists": None, "hard_connector_safe": None}
+        self.assertTrue(MOD.analyze_events([malformed])["identity_void"])
 
     def test_attach_observer_does_not_change_returns_and_records_packed_replica(self):
         class FakeManager:

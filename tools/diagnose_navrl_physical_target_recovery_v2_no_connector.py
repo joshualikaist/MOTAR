@@ -454,7 +454,12 @@ def analyze_events(events: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
         class_counts[packed] += 1
         if packed in PRIMARY_PACKED_CLASSES:
             primary.append(event)
+            replica = event.get("nearest_soft_free_anchor") or {}
             if event.get("runtime_replica_agree") is not True:
+                identity_void = True
+            if replica.get("exists") not in (True, False):
+                identity_void = True
+            if event.get("runtime_anchor_ok") not in (True, False):
                 identity_void = True
         if packed == "connect_failed_resume_likely":
             resume_status[str(event.get("resume_replan_status") or "missing")] += 1
@@ -806,6 +811,12 @@ def runtime_contract_attestation(task, density: int, speed: float) -> dict[str, 
         "route": {
             "resolution_m": float(route.config.resolution_m),
             "support_xy_m": [float(v) for v in task._target_route_support_xy[0].detach().cpu().tolist()],
+            "replan_cooldown_steps": int(route.config.replan_cooldown_steps),
+            "goal_tolerance_m": float(route.config.goal_tolerance_m),
+            "min_goal_distance_m": float(tm.route_min_goal_distance_m),
+            "goal_exclusion_radius_m": float(route.config.goal_exclusion_radius_m),
+            "max_expansions": int(route.config.max_expansions),
+            "max_waypoints": int(route.config.max_waypoints),
         },
         "recovery": {
             "hysteresis_m": float(route.config.resolution_m),
@@ -813,6 +824,7 @@ def runtime_contract_attestation(task, density: int, speed: float) -> dict[str, 
             "reachable_tube_margin_m": REACHABLE_TUBE_MARGIN_M,
         },
         "arena": {"bounds_xyz_m": bounds_xyz, **arena},
+        "bar_capacity": int(task.obs_dict["obstacle_position"].shape[1] - task._bar_offset),
         "physics": physics,
         "robot": {key: robot[key] for key in (
             "robot_name", "robot_config_path", "robot_config_sha256",
@@ -821,18 +833,58 @@ def runtime_contract_attestation(task, density: int, speed: float) -> dict[str, 
     }
     if contract["route_mode"] != ROUTE_MODE or contract["contract_variant"] != CONTRACT_VARIANT:
         raise RuntimeError("instantiated recovery-v2/lower-1.25 contract drift")
+    if contract["target_dynamics"] != "physical" or contract["target_pattern"] != "waypoint":
+        raise RuntimeError("instantiated target dynamics/pattern drift")
     if abs(float(contract["target"]["velocity_kp"]) - VEL_KP) > 1e-9:
         raise RuntimeError("instantiated velocity gain drift")
     if abs(float(contract["target"]["tracking_margin_m"]) - TRACKING_MARGIN_M) > 1e-9:
         raise RuntimeError("instantiated tracking margin drift")
+    if abs(float(contract["target"]["boundary_margin_m"]) - 0.75) > 1e-9:
+        raise RuntimeError("instantiated physical boundary margin drift")
     if int(contract["density"]) != 70 or abs(float(contract["speed_mps"]) - float(speed)) > 1e-12:
         raise RuntimeError("instantiated density/speed drift")
+    if abs(float(tm.speed_fixed) - float(speed)) > 1e-9:
+        raise RuntimeError("instantiated target speed_fixed drift")
+    if abs(float(tm.speed_min) - float(speed)) > 1e-9 or abs(float(tm.speed_final) - float(speed)) > 1e-9:
+        raise RuntimeError("instantiated speed min/final drift")
     if bounds_xyz != [40.0, 40.0, 3.0]:
         raise RuntimeError("instantiated arena bounds drift")
     if abs(float(contract["recovery"]["hysteresis_m"]) - SOFT_HYSTERESIS_M) > 1e-9:
         raise RuntimeError("instantiated recovery hysteresis drift")
     if abs(float(contract["recovery"]["hard_epsilon_m"]) - RECOVERY_HARD_EPSILON_M) > 1e-9:
         raise RuntimeError("instantiated recovery hard-epsilon drift")
+    exact = {
+        "target.max_accel_mps2": (contract["target"]["max_accel_mps2"], 4.0),
+        "target.max_turn_rate_degps": (contract["target"]["max_turn_rate_degps"], 150.0),
+        "target.lookahead_s": (contract["target"]["lookahead_s"], 1.0),
+        "route.resolution_m": (contract["route"]["resolution_m"], 0.25),
+        "route.replan_cooldown_steps": (contract["route"]["replan_cooldown_steps"], 10),
+        "route.min_goal_distance_m": (contract["route"]["min_goal_distance_m"], 6.0),
+        "route.goal_tolerance_m": (contract["route"]["goal_tolerance_m"], 0.05),
+        "route.goal_exclusion_radius_m": (contract["route"]["goal_exclusion_radius_m"], 1.0),
+        "route.max_expansions": (contract["route"]["max_expansions"], 50000),
+        "route.max_waypoints": (contract["route"]["max_waypoints"], 128),
+        "physics.physics_dt_s": (contract["physics"]["physics_dt_s"], 0.01),
+        "physics.physics_substeps": (contract["physics"]["physics_substeps"], 1),
+        "physics.physics_steps_per_rl_step": (contract["physics"]["physics_steps_per_rl_step"], 10),
+        "physics.rl_step_dt_s": (contract["physics"]["rl_step_dt_s"], 0.10),
+    }
+    for name, (actual, expected_value) in exact.items():
+        if abs(float(actual) - float(expected_value)) > 1e-9:
+            raise RuntimeError("instantiated runtime contract drift: %s=%r" % (name, actual))
+    if contract["bar_capacity"] != 300 or contract["target"]["box_xyz_m"] != [0.28, 0.28, 0.12]:
+        raise RuntimeError("instantiated bar capacity/target box contract drift")
+    if (contract["arena"].get("cfg_bar_pool") != "bars_h3"
+            or contract["arena"].get("cfg_placement_mode") != "navrl_band"
+            or contract["arena"].get("cfg_placement_gap_m") != 1.6
+            or contract["arena"].get("cfg_placement_touch_m") != 0.4
+            or contract["arena"].get("cfg_bar_x_min") != 0.0
+            or contract["arena"].get("cfg_bar_x_max") != 1.0
+            or contract["arena"].get("cfg_arena_xy") != 40.0
+            or contract["arena"].get("cfg_arena_z") != 3.0):
+        raise RuntimeError("instantiated bar placement contract drift")
+    if contract["robot"].get("robot_name") != "navrl_ref5in_quad":
+        raise RuntimeError("instantiated robot provenance contract drift")
     _require_float32_close(
         contract["route"]["support_xy_m"],
         [0.2068816086567407, 0.2068816086567407],
@@ -868,6 +920,10 @@ def run_cell(density: int, speed: float, output: Path) -> None:
         raise RuntimeError("runtime wall margin drift")
     if abs(float(task._target_route_manager.config.boundary_margin_m) - ROUTE_BOUNDARY_MARGIN_M) > 1e-9:
         raise RuntimeError("route boundary margin drift")
+    if abs(float(task.tm.physical_boundary_margin) - 0.75) > 1e-9:
+        raise RuntimeError("physical boundary margin drift")
+    if abs(float(task.tm.physical_tracking_margin) - TRACKING_MARGIN_M) > 1e-9:
+        raise RuntimeError("tracking margin drift")
     recorder = attach_observer(task)
     task.reset()
     runtime_contract = runtime_contract_attestation(task, density, speed)

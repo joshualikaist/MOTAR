@@ -12826,6 +12826,19 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
   summarize. Next is the preregistered 4-cell GPU probe (step 3), not a 32-cell
   rerun.
 
+## 2026-08-26 — no-anchor observer fail-closed before GPU
+
+- Rechecked the 2.5–4 h step-2 budget against v1 forensic / recovery-v2 child
+  contracts. CORE_PATHS still match gate `2b151d9` (361/361). Training-source
+  snapshot 325/325 and heading-rest braking tools still bind. GPU idle except
+  display/rustdesk.
+- Tightened GPU fail-closed holes before the 4-cell child: instantiated speed /
+  box / bar-capacity / arena-band / robot attestation, physical `0.75 m`
+  boundary check, and primary-event VOID if the replica `exists` flag is not a
+  real boolean (malformed must not count as absence). CPU tests still 11/11.
+
+
+
 
 
 
