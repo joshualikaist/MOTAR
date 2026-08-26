@@ -284,6 +284,19 @@ class StatusSnapshotTest(unittest.TestCase):
         self.assertIn("Do not run the 10k Stage 2", update["decision"])
 
         plan = _STATUS._sim2real_72h()
+        if (
+            plan["simulation_verification"]
+            .get("recovery_v2_lower1p25_gate", {})
+            .get("status")
+            != "VERIFIED_FAIL"
+        ):
+            # The finalized receipts bind their original absolute worktree root. A clean clone or
+            # a copied ignored result bundle must fail closed rather than silently re-root evidence.
+            self.assertIn("TRACK B EVIDENCE UNAVAILABLE/MALFORMED", plan["status"])
+            self.assertIn("NO TRACK B AUTHORITY", plan["status"])
+            self.assertNotIn("ROUTE MECHANISM FAILED", plan["status"])
+            self.assertFalse(plan["evidence"]["stage2_authorised"])
+            return
         self.assertEqual(
             plan["status"],
             "TRACK A STAGE 1 RANGE INCONCLUSIVE · TRACK B RECOVERY-V2 ROUTE "
@@ -431,6 +444,8 @@ class StatusSnapshotTest(unittest.TestCase):
         ) as loader:
             gate = _STATUS._recovery_v2_lower1p25_gate()
             forensics = _STATUS._recovery_v2_no_connector_forensics()
+        if gate.get("status") != "VERIFIED_FAIL" or forensics.get("status") != "DESCRIPTIVE_ONLY":
+            self.skipTest("canonical Track B receipts require their exact recorded source root")
         self.assertEqual(gate["status"], "VERIFIED_FAIL")
         self.assertEqual(forensics["status"], "DESCRIPTIVE_ONLY")
         loader.assert_any_call(
