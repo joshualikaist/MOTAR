@@ -35,6 +35,11 @@ results/**/detector_snapshot.pth
 # pinned by SHA-256 in the summary instead.
 results/**/frames.npz
 
+# Fresh speed/controller calibration bundles contain per-substep JSON traces. Their compact
+# receipts bind every raw cell; retain locally without making the source worktree dirty.
+results/navrl_physical_target_speed_controller_calibration_seed829/
+results/navrl_physical_target_speed_controller_calibration_stage2_seed829/
+
 # Closed training launchers create immutable local source receipts.  Checkpoints bind their path
 # and SHA; the bundles travel with experiment artifacts, not Git history.
 train_source_receipts/
