@@ -909,6 +909,11 @@ class BatchedTargetRouteManager:
             )
         ]
         positions, bars, half, lows, highs, supports = selected
+        # NavRL stores arena bounds as XYZ even though route recovery is an XY planner.
+        # Project here as a defensive API boundary; adding a 2-D support vector to XYZ bounds
+        # otherwise raises before the first recovery interval.
+        lows = lows[..., :2]
+        highs = highs[..., :2]
         ids = env_ids.detach().to("cpu", dtype=torch.long).tolist()
         for local, env_id in enumerate(ids):
             anchor = nearest_soft_free_anchor(
@@ -978,6 +983,8 @@ class BatchedTargetRouteManager:
             )
         ]
         positions, velocities, bars, half, lows, highs, supports = selected
+        lows = lows[..., :2]
+        highs = highs[..., :2]
         ids = env_ids.detach().to("cpu", dtype=torch.long).tolist()
         for local, env_id in enumerate(ids):
             speed = float(np.linalg.norm(velocities[local]))

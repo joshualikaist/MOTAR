@@ -12734,3 +12734,9 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
   before loading the packed observer; parent preflight/verification remains CPU-safe. A fresh
   subprocess regression test imports the evaluator and local `aerial_gym` in the exact child
   order. This attempt also ran zero scientific cells and is retained as VOID.
+- The next attempt completed all 16 route-off cells, then the first recovery interval exposed an
+  XY/XYZ interface bug in both recovery geometry helpers: NavRL supplied its native XYZ arena
+  bounds while the helpers added a two-axis support vector. Both helpers now project arena bounds
+  to XY at their API boundary, with a regression test exercising the real XYZ-shaped input for
+  braking and anchor certification. The completed off-arm traces remain in the VOID bundle; they
+  are not combined with a later attempt because every accepted grid must be process-consistent.

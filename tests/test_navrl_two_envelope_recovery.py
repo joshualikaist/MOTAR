@@ -305,6 +305,30 @@ class TwoEnvelopeRecoveryTest(unittest.TestCase):
         self.assertIn("np.searchsorted(sample_speeds, speed, side=\"left\")", planner)
         self.assertIn("certified_lateral_tube_m", planner)
 
+    def test_recovery_geometry_projects_xyz_arena_bounds_to_xy(self):
+        manager = ROUTE.BatchedTargetRouteManager(
+            1, torch.device("cpu"), ROUTE.RoutePlannerConfig(), recovery_enabled=True
+        )
+        env_ids = torch.tensor([0])
+        position = torch.tensor([[0.0, 0.0]])
+        bars = torch.empty(1, 0, 2)
+        half = torch.empty(1, 0, 2)
+        lo_xyz = torch.tensor([[-2.0, -2.0, 0.0]])
+        hi_xyz = torch.tensor([[2.0, 2.0, 3.0]])
+        support = torch.zeros(1, 2)
+        brake = manager.brake_connector_idx(
+            env_ids, position, torch.tensor([[0.0, 0.8]]), bars, half,
+            lo_xyz, hi_xyz, support, 0.1, 4.0,
+            brake_speed_samples_mps=(0.6, 1.0),
+            brake_stop_distance_samples_m=(0.2, 0.5),
+            certified_lateral_tube_m=0.1,
+        )
+        anchor = manager.recovery_anchor_idx(
+            env_ids, position, bars, half, lo_xyz, hi_xyz, support, 0.1, 0.2
+        )
+        self.assertTrue(bool(brake[0]))
+        self.assertTrue(bool(anchor[0]))
+
     def test_validated_flag_cannot_bypass_canonical_receipt_handoff(self):
         task = (ROOT / "aerial_gym/task/navrl_task/navrl_task.py").read_text()
         for field in (
