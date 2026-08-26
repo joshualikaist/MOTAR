@@ -12837,8 +12837,19 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
   boundary check, and primary-event VOID if the replica `exists` flag is not a
   real boolean (malformed must not count as absence). CPU tests still 11/11.
 
+## 2026-08-26 — recovery-v2 70-bar no-anchor GPU probe is INCONCLUSIVE
 
-
-
-
-
+- Ran the preregistered 4-cell diagnostic from commit `9a8f0d6` (after the
+  fail-closed attestation patch). Wall ~103 s on the RTX 3070. Standalone
+  `--verify` passed. Identity VOID did not fire. Artifacts:
+  `results/navrl_physical_target_recovery_v2_no_connector_forensics_seed827/`
+  (`receipt` SHA-256 `81f53f49…`, `summary` SHA-256 `bc5d05a3…`).
+- Pooled primary n = 1 (`brake_no_anchor_likely` only, speed 1.2). Replica and
+  runtime both `exists=False` / `runtime_anchor_ok=False`; hard-free and
+  soft-unsafe at latch. Wilson n < 20 → descriptive label `INCONCLUSIVE`.
+  Other latches (do not vote): CONNECT failed-certificate 49, BRAKE timeout 32,
+  CONNECT failed-resume 23, CONNECT timeout 1. No hard-breach.
+- This is not a 32-cell mechanism pass, not a 1.5 result, and does not authorize
+  retune, PPO, env-count change, or a denser-grid rerun. BRAKE generic no-anchor
+  is rare in these four 70-bar cells; most fail-closed zero commands come from
+  CONNECT certificate/resume failure and BRAKE timeout.

@@ -33,3 +33,17 @@ Evidence and contracts:
 - [forensic receipt](../results/navrl_physical_target_route_recovery_forensics_seed827/receipt.json)
 - [forensic preregistration](preregistration_physical_target_route_recovery_forensics_2026-08-25.md)
 - [original attempt2 gate](../results/navrl_physical_target_routed_gate_seed827_attempt2/summary.md)
+
+## 2026-08-26 supersession addendum
+
+This result remains a valid historical diagnosis, but its final sentence does not create current
+authority for another recovery change or routed-gate rerun. Recovery-v2 lower-1.25 subsequently
+recorded `PASS_32_CELL_INTEGRITY / FAIL_ROUTE_MECHANISM`: 7/32 cells passed (all route-off),
+recovery passed 0/16, and the 70-bar diagnostics were plan `93.60%`, fallback `47.87%`,
+70×0.6 goals/env `0.21875`, and `NO_CONNECTOR` occupancy `63.06%`.
+
+The preregistered no-anchor follow-up was verified but `INCONCLUSIVE` (primary `n=1`, observer
+identity disagreement `0`). Track B is closed with no further GPU, PPO, retune, 1.5 m/s,
+environment-count, or 32-cell rerun authority. Current next authority is Track A hardware
+BOM/calibration, 210 sensor trials, and real-log replay under the
+[72-hour contract](SIM2REAL_3DAY_EXECUTION_PLAN.md); without hardware/logs, no GPU work is authorized.

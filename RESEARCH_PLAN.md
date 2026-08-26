@@ -6,15 +6,21 @@
 현재의 하드웨어·학습 파라미터·low/high-level 자료구조는 중복 표기를 피하기 위해
 [`docs/MOTAR_SYSTEM_SPEC_2026-08-24.md`](docs/MOTAR_SYSTEM_SPEC_2026-08-24.md)에 고정한다.
 
-### 2026-08-25 후보 계보 — physical target global route
+> **2026-08-26 authority pointer:** Track A/Track B의 실행 결과와 허용된 다음 단계는
+> [`VERIFICATION.md`](VERIFICATION.md)가 규정한다. Track A의 유일한 다음 계약은
+> [`docs/SIM2REAL_3DAY_EXECUTION_PLAN.md`](docs/SIM2REAL_3DAY_EXECUTION_PLAN.md)의
+> hardware/real-log 계측이며, Track B는 recovery-v2 FAIL과 no-anchor `INCONCLUSIVE` 뒤 종료됐다.
+> 이 charter의 후보 실험 설명은 그 자체로 실행 권한을 만들지 않는다.
+
+### 2026-08-25 역사적 후보 계보 — physical target global route
 
 기존 계보의 표적 동작은 보존한다. 별도 후보
 `physx_ref5in_6dof_global_astar_aabb_v1`만 actual bar AABB와 전 자세 target support를
 inflation한 deterministic A* 경로를 physical 6-DoF 표적의 velocity reference로 사용한다.
 이는 pursuer planner나 actor 입력이 아니라 **시뮬레이션 표적 동역학 생성기**다. 300 bars에서
 configuration space가 분절되므로 목적지는 현재 connected component 안에서만 고르며,
-arena-wide roaming은 주장하지 않는다. CPU engineering gate는 통과했지만 PhysX smoke 전까지 PPO
-학습 권한은 없다. 고정 계약과 gate는
+arena-wide roaming은 주장하지 않는다. 당시 CPU engineering gate는 통과했지만 PhysX smoke 전까지
+PPO 학습 권한은 없었다. 이후 실행 결과와 현행 차단은 `VERIFICATION.md`를 따른다. 고정 계약과 gate는
 [`docs/preregistration_physical_target_global_route_2026-08-25.md`](docs/preregistration_physical_target_global_route_2026-08-25.md)를 따른다.
 
 ## 1. 연구 질문과 기여
@@ -351,9 +357,11 @@ P0–P3 fail-closed gate, D0/D1 진단, camera-range §8.29 사전등록·판정
 VERIFICATION.md에 통합했다. v2 205-bar / TTC / riskcap 역사(구 §8.1–8.22)는
 [`docs/archive/RESEARCH_PLAN_v2_history.md`](docs/archive/RESEARCH_PLAN_v2_history.md)에 보관한다.
 
-2026-08-23 검출 거리 Stage 1은 `RANGE_INCONCLUSIVE_AT_THIS_BUDGET`로 종료되어 Stage 2 권한이 없다.
-P7의 다음 72시간은 [`docs/SIM2REAL_3DAY_EXECUTION_PLAN.md`](docs/SIM2REAL_3DAY_EXECUTION_PLAN.md)의
-실기 계측 계약을 따른다. 실제 log 없이 임의 noise를 정해 PPO를 재개하지 않는다.
+2026-08-23 검출 거리 Stage 1은 `RANGE_INCONCLUSIVE_AT_THIS_BUDGET`로 실행 종료되어 Stage 2
+권한이 없다. P2 `STRICT FAIL`, D1 `FAIL`, P3 `BLOCKED`도 유지된다. P7의 유일한 다음 authority는
+[`docs/SIM2REAL_3DAY_EXECUTION_PLAN.md`](docs/SIM2REAL_3DAY_EXECUTION_PLAN.md)의 exact
+BOM/calibration, 210 trials와 real-log replay다. hardware/log 없이 임의 noise를 정하거나 GPU/PPO를
+재개하지 않는다.
 
 검증 단계에서도 §1–3 정보 방화벽, §4 방법, §6 실험 설계의 **claim 범위**는 변하지 않는다.
 P0–P3 PASS는 hardware validation을 대체하지 않는다.
@@ -403,3 +411,14 @@ arena-wide 300-bar claims remain out of scope. Thresholds and evaluator code rem
 
 Authority: [`VERIFICATION.md`](VERIFICATION.md), [`attempt 2 summary`](results/navrl_physical_target_routed_gate_seed827_attempt2/summary.md),
 and [`target-motion audit`](docs/target_motion_training_environment_audit_2026-08-25.md).
+
+## 2026-08-26 Track B 실행 종료 addendum
+
+Recovery-v2 lower-1.25는 `PASS_32_CELL_INTEGRITY / FAIL_ROUTE_MECHANISM`으로 실행됐다. 7/32만
+PASS했고 모두 route-off이며, recovery는 0/16이다. 70-bar plan success는 `93.60%`, fallback은
+`47.87%`, 70×0.6 goals/env는 `0.21875`, `NO_CONNECTOR` occupancy는 `63.06%`다.
+
+사전등록된 no-anchor follow-up도 실행·검증됐으나 primary `n=1`, identity disagreement `0`으로
+`INCONCLUSIVE`다. 따라서 이 charter의 route/recovery 후보들은 추가 Track B GPU, PPO, retune,
+1.5 m/s, env-count 변경 또는 32-cell rerun을 승인하지 않는다. 현행 실행 authority는 Track A의
+hardware/real-log 계약뿐이다.

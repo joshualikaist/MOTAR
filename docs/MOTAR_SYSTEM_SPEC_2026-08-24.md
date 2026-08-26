@@ -8,15 +8,28 @@
 
 | 항목 | 현재 판정 |
 |---|---|
-| 시뮬레이션 계약/계측 | 완료. 677 tests PASS, 1 intentional skip |
+| 시뮬레이션 계약/계측 | 2026-08-24 snapshot에서 677 tests PASS, 1 intentional skip; 정확한 현행 test count 주장은 하지 않음 |
 | software-only sim-to-real preflight | 구조 PASS, `SYNTHETIC_ONLY` |
-| physical target speed gate | `BLOCKED`; 전 밀도·속도 격자 전체 PASS 아님 |
+| physical target Track B | recovery-v2 32/32 integrity PASS, `FAIL_ROUTE_MECHANISM`; no-anchor follow-up `INCONCLUSIVE`; 종료 |
 | mode probe | `INCONCLUSIVE_POLICY_CHIRALITY`; 개선 근거로 채택하지 않음 |
 | fresh PPO | physical gate와 실제 센서 계약이 없어 `BLOCKED` |
 | 실제 기체/센서 로그 | 미조립·0회 비행·0개 실측 로그 |
 
 따라서 현재 논문에서 주장할 수 있는 것은 **재현 가능한 시뮬레이션 failure analysis**까지다.
 sim-to-real 성능이나 실제 비행 가능성을 주장하지 않는다.
+
+### 2026-08-26 current-status addendum
+
+Track A는 P2 `STRICT FAIL`, D1 `FAIL`, P3 `BLOCKED`이며 detection Stage 1은
+`RANGE_INCONCLUSIVE_AT_THIS_BUDGET`, Stage 2는 미승인이다. 유일한 다음 authority는
+[`SIM2REAL_3DAY_EXECUTION_PLAN.md`](SIM2REAL_3DAY_EXECUTION_PLAN.md)의 exact BOM/calibration,
+210 trials, real-log profile과 offline replay다. hardware/log가 없으면 GPU 작업은 없다.
+
+Track B recovery-v2 lower-1.25는 `PASS_32_CELL_INTEGRITY / FAIL_ROUTE_MECHANISM`이다:
+7/32 PASS(모두 route-off), recovery 0/16, 70-bar plan `93.60%`, fallback `47.87%`,
+70×0.6 goals/env `0.21875`, `NO_CONNECTOR` occupancy `63.06%`. 후속 no-anchor probe는
+primary `n=1`, identity disagreement `0`으로 `INCONCLUSIVE`다. 이 addendum은 추가 Track B
+GPU/PPO/retune/1.5/env-count/32-cell rerun을 승인하지 않는다.
 
 ## 2. 플랫폼 하드웨어 사양
 
@@ -202,6 +215,8 @@ canonical v2 launcher(`train_navrl_v2_search.sh`) 기준:
 
 ## 7. 현재 결과의 읽는 법
 
+- 아래 physical target envelope bullet은 2026-08-24 predecessor snapshot이다. 현행 Track B
+  판정과 authority는 §1의 2026-08-26 addendum가 supersede한다.
 - v2 held-out map에서 density cost는 약 −11.36 pp, speed cost는 약 −2.67 pp이며, trained
   density support 안 interaction은 확인되지 않았다(`p=.337/.817`). 220 bars는 OOD다.
 - curriculum ceiling은 이 특정 sensor-only policy에서 100 bars 부근(plateau 약 0.56)이다.
@@ -219,7 +234,7 @@ canonical v2 launcher(`train_navrl_v2_search.sh`) 기준:
 - Transformer: `aerial_gym/rl_training/rl_games/navrl_transformer_network.py`
 - canonical 학습 launcher: `aerial_gym/rl_training/rl_games/train_navrl_v2_search.sh`
 - PPO YAML: `aerial_gym/rl_training/rl_games/ppo_navrl_perception_transformer.yaml`
-- 최신 상태: `docs/status/status.json`, `docs/VERIFICATION.md`, `WORKLOG.md`
+- 최신 상태: `status/status.json`, [`../VERIFICATION.md`](../VERIFICATION.md), `../WORKLOG.md`
 
 ## 9. 2026-08-25 routed physical-target gate status
 

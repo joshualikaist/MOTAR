@@ -6,33 +6,20 @@
 
 > 기준일: 2026-08-26
 
-## 후보 R0 — global-routed physical target (기존 P0–P3와 독립)
+## 2026-08-26 현재 실행 authority
 
-새 fresh-only model id는 `physx_ref5in_6dof_global_astar_aabb_v1`이다. 기존 physical/legacy
-checkpoint에 소급 적용하지 않는다. actual AABB, all-orientation support, same-component goal,
-fail-closed A*의 CPU unit/launcher/latency gate는 **PASS**했다. 70/150/205/300 bars에서 순차
-평균은 46.18/48.71/58.34/64.01 ms/env, 128-env 직렬 보수 투영은 최대 8.19 s였다.
+- **Track A — perception/sim-to-real:** P2 `STRICT FAIL`, D1 `FAIL`, P3 `BLOCKED`; detection
+  Stage 1은 `RANGE_INCONCLUSIVE_AT_THIS_BUDGET`, Stage 2는 미승인이다. 유일한 다음 authority는
+  [`docs/SIM2REAL_3DAY_EXECUTION_PLAN.md`](docs/SIM2REAL_3DAY_EXECUTION_PLAN.md)의 exact
+  BOM/calibration, 210개 독립 sensor trial, real-log profile/replay다. 실제 hardware나 real log가
+  없으면 GPU 작업 권한이 없다.
+- **Track B — routed physical target:** recovery-v2 lower-1.25는
+  `PASS_32_CELL_INTEGRITY / FAIL_ROUTE_MECHANISM`이고, 후속 no-anchor probe는 primary `n=1`,
+  observer identity disagreement `0`으로 `INCONCLUSIVE`다. 이 계보는 닫혔으며 PPO, retune,
+  1.5 m/s, env 수 변경, 32-cell 재실행 또는 다른 GPU probe 권한이 없다.
 
-판정은 `PASS_CPU_ENGINEERING_GATE / SIMULATOR_UNMEASURED`다. 다음 권한은 사전등록된 32-cell
-routed PhysX simulator gate 실행뿐이며 PPO 본학습은 금지한다. 평가기는
-`tools/verify_navrl_physical_target_routed_simulator_gate.py`이고 아직 GPU에서 실행하지 않았다.
-route-off/on × 4 speeds × 4 densities를 8개 fresh child process로 측정하고 exact 32-cell receipt를
-검증한다. GPU 전 적대적 감사에서 발견된 clock/warmup/provenance confound를 제거한 v2 계약은
-task clock 300회 증가, safety 전 300 step 계측, `base_sim` 및 Python/torch/CUDA/Isaac/module SHA,
-초기 bar·robot·target pose matched digest를 fail-closed 검증한다. route-off bounded infeasible와
-route-on invalidation은 서로 다른 지표라 matched delta에서 제외한다. neutral pursuer도 raw zero
-command가 아니라 canonical task action mapping을 거친다. child header↔cell과 matched delta 표는
-receipt verify에서 원자료로 재계산한다. 300 bars arena-wide
-connectivity 주장은 금지한다. 근거:
-[`preregistration`](docs/preregistration_physical_target_global_route_2026-08-25.md),
-[`CPU benchmark`](results/navrl_target_route_cpu_benchmark_seed825/summary.md),
-[`simulator gate preregistration`](docs/preregistration_physical_target_routed_simulator_gate_2026-08-25.md).
-
-첫 GPU 실행은 task 생성 전 **VOID_EXECUTION (0/32 records)** 이다. absolute conda Python을
-호출했지만 inherited `PATH`에 같은 env의 `bin`이 없어 torch cpp extension이 `ninja`를 찾지 못했다.
-원 artifact `results/navrl_physical_target_routed_gate_seed827/`는 보존한다. evaluator는 선택된 Python의
-`bin`을 child `PATH` 맨 앞에 고정하고 `ninja` path/SHA/version을 fail-closed provenance로 추가했다.
-재실행은 별도 `results/navrl_physical_target_routed_gate_seed827_attempt2/`만 사용한다.
+R0 CPU gate, 최초 0/32 VOID, attempt 2, recovery forensics와 recovery-v2의 실행 이력과 수치는
+아래 날짜별 절에 보존한다. 역사적 preregistration은 현재 실행 authority가 아니다.
 
 ## 한 줄 상태
 
@@ -43,7 +30,8 @@ connectivity 주장은 금지한다. 근거:
 `RANGE_INCONCLUSIVE_AT_THIS_BUDGET`; **Stage 2 권한 없음**. Track A 다음 authority는
 [`docs/SIM2REAL_3DAY_EXECUTION_PLAN.md`](docs/SIM2REAL_3DAY_EXECUTION_PLAN.md).
 Track B (R0) recovery-v2 lower-1.25 32-cell은 **`PASS_32_CELL_INTEGRITY` / `FAIL_ROUTE_MECHANISM`**;
-다음 authority는 70-bar no-anchor geometry probe이며 32-cell 재실행·게인·PPO·1.5·env 수 변경이 아니다.
+후속 70-bar no-anchor geometry probe는 primary `n=1`로 **`INCONCLUSIVE`**다. 32-cell FAIL은
+유지되며 재실행·게인·PPO·1.5·env 수 변경 권한은 없다.
 
 ## 지금 막혀 있는 것
 
@@ -53,6 +41,7 @@ Track B (R0) recovery-v2 lower-1.25 32-cell은 **`PASS_32_CELL_INTEGRITY` / `FAI
 | D1 adaptation (seed 331) | **FAIL** | q3/CV timeout **15.98%** > 12% |
 | P3 full-budget | **BLOCKED** | P2 PASS 전까지 실행 금지 |
 | R0 recovery-v2 lower-1.25 | **FAIL_ROUTE_MECHANISM** | 7/32 (off만); recovery 0/16; 70-bar plan 93.60%, fallback 47.87% |
+| R0 no-anchor forensics | **INCONCLUSIVE** | primary 1/106; identity disagreement 0; Wilson 최소 n=20 미달 |
 
 어느 진단 결과도 P2/D1 FAIL을 소급 변경하거나 P3를 자동 해제하지 **않는다**.
 
@@ -156,7 +145,7 @@ actor 표적 토큰이 함께 재정규화된다(`navrl_perception.py:1574,1578`
 해상도(실기 대비 13배 조악), 검출 임계(면적 2 px² ≈ 지름 1.6 px — Johnson 검출 기준 미만),
 거리(해석적 정확값, 오차 0 — 28 m 스테레오 시차는 1.2–2.4 px로 측정 불가).
 
-### 다음 실험 (in force) — 센서 충실도, 평가 전용
+### 역사적 계약 — 센서 충실도 평가(실행 완료)
 
 사전등록: [`docs/prereg_2026-08-22_sensor_fidelity.md`](docs/prereg_2026-08-22_sensor_fidelity.md)
 (2026-08-22 동결, 커밋 `e2b95f8` — 구현 기계가 존재하기 전).
@@ -180,7 +169,7 @@ knob이 아니라 설계 변경이며, detect == camera에서 bit-identical, app
 detect ≠ camera면 fail-closed, 모든 조합에서 관측 898-D 유지를 증명해야 한다. 실패 시
 `FAIL_CLOSED_IMPLEMENTATION`이며 센서 모델에 대한 주장을 하지 않는다.
 
-### 다음 실험 (in force, 2026-08-22 갱신) — 검출 거리 2단계
+### 역사적 계약 — 검출 거리 2단계(Stage 1 완료, Stage 2 미승인)
 
 [`docs/prereg_2026-08-22_detection_range_2stage.md`](docs/prereg_2026-08-22_detection_range_2stage.md).
 
@@ -221,7 +210,7 @@ fresh 10k Stage 2를 실행하지 않는다. 원자료:
 양 arm은 실기 far-range 오차를 넣지 않은 analytic exact range를 사용했다. 따라서 다음은 PPO가 아니라
 exact BOM/calibration/time-sync와 real-log bearing/range/latency/dropout profile을 닫는 72시간 계측이다.
 
-### 대기 중 (조건 미충족, 사전등록 동결됨)
+### 동결된 역사적 계약 (현행 실행 authority 아님)
 
 **정직한 센서에서의 적응 학습** —
 [`docs/prereg_2026-08-22_honest_sensor_adaptation.md`](docs/prereg_2026-08-22_honest_sensor_adaptation.md)
@@ -242,7 +231,7 @@ exact BOM/calibration/time-sync와 real-log bearing/range/latency/dropout profil
 1,000 epoch다. 따라서 fail-closed 5(P3 금지)를 위반하지 않으며, **P3 차단은 그대로 유지된다.**
 `ADAPTATION_RECOVERS`가 나와도 정책을 채택하지 않는다 — 채택은 P2 gate 통과가 필요하고 별개 실행이다.
 
-### 대기 중 (실행 결정 안 됨)
+### 동결된 후보 (현행 실행 authority 아님)
 
 - **paired-reflection consistency** — 사전등록
   [`docs/prereg_2026-08-22_paired_reflection_consistency.md`](docs/prereg_2026-08-22_paired_reflection_consistency.md)
@@ -291,8 +280,9 @@ fresh-only checkpoint guard까지 구현했다. 고정 seed 503 / 32 env / densi
 
 Authority: [`docs/navrl_physical_target_audit_2026-08-21.md`](docs/navrl_physical_target_audit_2026-08-21.md),
 raw summary: [`results/navrl_physical_target_verification/summary.json`](results/navrl_physical_target_verification/summary.json).
-다음은 장기학습이 아니라 global/corridor target route 또는 density-conditioned speed envelope를
-사전등록하고 같은 gate를 재실행하는 것이다. 실기 검증은 hardware identification manifest가
+당시 후속 후보는 장기학습이 아니라 global/corridor target route 또는 density-conditioned speed
+envelope를 사전등록하고 같은 gate를 재실행하는 것이었다. 이후 실행 이력은 아래 날짜별 절에
+보존하며, 이 문장은 현재 rerun authority가 아니다. 실기 검증은 hardware identification manifest가
 미완료이므로 별도로 차단된다.
 
 ### 2026-08-24 속도 포락선 진단 — 완료, physical PPO 해제 아님
@@ -420,8 +410,12 @@ env 32 / 1.5를 이 FAIL 보고 바꾸지 않는다. 32-cell을 재실행하지 
 
 원자료: [`gate summary`](results/navrl_physical_target_recovery_v2_gate_lower1p25_seed827/summary.json),
 [`result note`](docs/physical_target_recovery_v2_lower1p25_result_2026-08-26.md).
-다음 GPU는 [`no-anchor forensics preregistration`](docs/preregistration_physical_target_recovery_v2_no_connector_forensics_2026-08-26.md)
-이 동결한 70-bar 4-speed probe뿐이다. 계약·CPU replica는 고정됐고 observer `--run`은 아직 없다.
+[`no-anchor forensics preregistration`](docs/preregistration_physical_target_recovery_v2_no_connector_forensics_2026-08-26.md)
+의 70-bar 4-speed GPU probe도 완료·검증됐다. 106개 `NO_CONNECTOR` 중 사전 primary는 1개뿐이고
+runtime anchor boolean과 CPU replica가 일치해 VOID는 아니다. 최소 `n=20`을 못 채워
+`INCONCLUSIVE`; [`result note`](docs/physical_target_recovery_v2_no_connector_forensics_result_2026-08-26.md)를
+따른다. 이 결과를 보고 셀을 재실행하거나 32-cell grid, gain 2.5, `0.45 m`, PPO, 1.5, env 수를
+변경하지 않는다. Track B에서 추가 GPU authority는 없다.
 
 ## 아카이브
 

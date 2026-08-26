@@ -4,12 +4,14 @@
 검증 gate와 다음 실험은 [`VERIFICATION.md`](VERIFICATION.md), charter는 [`RESEARCH_PLAN.md`](RESEARCH_PLAN.md),
 최신 요약은 [`README.md`](README.md), 날짜별 기록은 [`WORKLOG.md`](WORKLOG.md)를 보세요.
 
-> 기준일: 2026-08-23
+> 기준일: 2026-08-26
 >
-> 현재 72시간은 새 PPO run 단계가 아닙니다. 사용자가 해야 할 exact BOM·calibration·sensor trial과
-> 다음 학습 전 숫자는 [`docs/SIM2REAL_3DAY_EXECUTION_PLAN.md`](docs/SIM2REAL_3DAY_EXECUTION_PLAN.md)를
-> 단일 기준으로 봅니다. 그 gate 이후에도 일반 `train_navrl.sh`를 직접 호출하지 않고 사전등록한
-> 목적별 launcher만 사용합니다.
+> 현재 실행 authority는 새 PPO run이 아닙니다. Track A는 exact BOM·calibration·210개 sensor
+> trial·real-log replay만
+> [`docs/SIM2REAL_3DAY_EXECUTION_PLAN.md`](docs/SIM2REAL_3DAY_EXECUTION_PLAN.md)에 따라 진행합니다.
+> 실제 hardware나 real log가 없으면 GPU 작업을 시작하지 않습니다. Track B recovery-v2는
+> `FAIL_ROUTE_MECHANISM` 뒤 no-anchor probe까지 `INCONCLUSIVE`로 종료됐으며 추가
+> GPU/PPO/retune/rerun authority가 없습니다.
 
 ## 1. 처음 설치할 때
 
@@ -65,7 +67,8 @@ RTX 50 계열처럼 Isaac Gym Preview 4가 지원하지 않는 새 CUDA architec
 
 ## 3. 지금 실행할 명령 찾기
 
-README의 “다음 실행 순서”가 현재 상태입니다. ref5in gate는 앞 단계 PASS만 다음 단계를 허용합니다.
+현재 명령 authority는 `VERIFICATION.md`와 sim-to-real 72시간 계약이 정합니다. 아래 P0–P3 도식과
+학습 명령은 계보 재현을 위한 역사적 운영 참고이며, 현재 GPU 실행 허가가 아닙니다.
 
 ```text
 P0 repository/simulator gate
@@ -269,14 +272,14 @@ formal result에는 force로 만든 셀을 넣지 않습니다.
 과거 recovery/riskcap/1650Ti 실험의 세부 명령은 Git history와 WORKLOG에 남아 있습니다. 현재 계보를
 시작할 때는 이 문서와 README의 고정 launcher만 사용하세요.
 
-## 2026-08-25 routed physical gate 운영 상태
+## 2026-08-25 routed physical gate 운영 기록
 
 attempt 1은 conda Python의 inherited `PATH`에 matching `ninja`가 없어 0/32
 `VOID_EXECUTION`이었다. attempt 2는 별도 output directory에서 32/32 JSON integrity PASS를
 기록했지만 `FAIL_ROUTE_MECHANISM`과 `BLOCKED_PHYSICAL_TRAINING`이다. 따라서 이 결과를 PPO
 학습 명령이나 hardware validation 명령으로 재사용하지 않는다.
 
-재개 전 확인할 것:
+당시 후속 진단 전에 확인하도록 기록한 항목:
 
 - [`attempt 2 summary`](results/navrl_physical_target_routed_gate_seed827_attempt2/summary.md)의
   route-on/off 32-cell 표와 receipt SHA를 확인한다.
@@ -287,3 +290,14 @@ attempt 1은 conda Python의 inherited `PATH`에 matching `ninja`가 없어 0/32
   same-goal은 0이다.
 - evaluator와 preregistered threshold를 수정하거나 300-bar arena-wide connectivity를 주장하지
   않는다. physical PPO는 새 preregistered lineage에서 동일 32-cell gate가 닫힌 뒤에만 검토한다.
+
+## 2026-08-26 Track B 종료 상태
+
+Recovery-v2 lower-1.25는 32/32 integrity를 통과했지만 7/32만 PASS(모두 route-off), recovery
+0/16으로 `FAIL_ROUTE_MECHANISM`이다. 70-bar pool은 plan success `93.60%`, fallback `47.87%`,
+70×0.6 goal completions/env `0.21875`, recovery `NO_CONNECTOR` occupancy `63.06%`다.
+
+후속 no-anchor observer probe는 primary `n=1`, identity disagreement `0`으로 유효하게 검증됐지만
+최소 `n=20`을 못 채워 `INCONCLUSIVE`다. 이 결과는 32-cell FAIL을 바꾸지 않는다. Track B에서
+gain 2.5, `0.45 m`, PPO, 1.5 m/s, env 수, 32-cell rerun 또는 추가 GPU probe를 위한 운영 명령은
+없다. 다음 실행은 Track A의 hardware/real-log 조건이 충족될 때만 72시간 계약에서 찾는다.

@@ -83,9 +83,11 @@ when rechecked on VOID and finalized raw.
 
 ## Next authority
 
-Evaluation-only packed diagnosis is complete and the no-anchor geometry
-[preregistration](preregistration_physical_target_recovery_v2_no_connector_forensics_2026-08-26.md)
-is frozen. The GPU observer is not part of that CPU freeze.
+The evaluation-only no-anchor geometry
+[probe](physical_target_recovery_v2_no_connector_forensics_result_2026-08-26.md) completed and
+verified with primary `n=1`, identity agreement, and verdict `INCONCLUSIVE`. It does not alter
+this 32-cell FAIL and creates no authority for a cell/grid rerun, retuning, PPO, 1.5 m/s, or an
+environment-count change.
 
 Evidence: [gate summary](../results/navrl_physical_target_recovery_v2_gate_lower1p25_seed827/summary.json),
 [receipt](../results/navrl_physical_target_recovery_v2_gate_lower1p25_seed827/receipt.json),

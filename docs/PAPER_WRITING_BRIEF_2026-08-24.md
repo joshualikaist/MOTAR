@@ -269,3 +269,25 @@ diagnosis; tracking remains separately gated, and route-off cells are not learne
 Use the raw [attempt 2 summary](../results/navrl_physical_target_routed_gate_seed827_attempt2/summary.md)
 and [attempt 1 VOID](../results/navrl_physical_target_routed_gate_seed827/VOID.md) with their listed
 hashes. Do not lower preregistered thresholds or promote this gate to PPO/hardware evidence.
+
+## 2026-08-26 claim-boundary addendum
+
+For the current paper boundary, separate the two tracks:
+
+- **Track A:** P2 is `STRICT FAIL`, D1 is `FAIL`, and P3 is `BLOCKED`. Detection Stage 1 is
+  `RANGE_INCONCLUSIVE_AT_THIS_BUDGET`; Stage 2 was not authorized. The only next evidence contract is
+  exact hardware BOM/calibration, 210 independent sensor trials, and real-log profile/offline replay.
+  With no hardware or real logs, report that there is no authorized GPU work.
+- **Track B:** recovery-v2 lower-1.25 is `PASS_32_CELL_INTEGRITY / FAIL_ROUTE_MECHANISM`, not a
+  1.5 m/s result. Only 7/32 cells passed (all route-off), recovery passed 0/16, and the 70-bar
+  diagnostics were plan `93.60%`, fallback `47.87%`, 70×0.6 goals/env `0.21875`, and
+  `NO_CONNECTOR` occupancy `63.06%`. The no-anchor follow-up was valid but `INCONCLUSIVE`
+  (primary `n=1`, observer identity disagreement `0`).
+
+Do not write the no-anchor result as evidence for or against typical anchor availability, and do not
+turn it into authority for another probe, 32-cell rerun, PPO, retuning, 1.5 m/s, or an env-count
+change. The supported contribution remains simulation failure analysis with explicit blocked and
+inconclusive outcomes, not route recovery, physical training, hardware validation, or sim-to-real
+performance. Current evidence:
+[recovery-v2 32-cell result](physical_target_recovery_v2_lower1p25_result_2026-08-26.md) and
+[no-anchor result](physical_target_recovery_v2_no_connector_forensics_result_2026-08-26.md).

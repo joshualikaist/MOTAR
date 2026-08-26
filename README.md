@@ -11,7 +11,13 @@ MOTAR는 카메라, LiDAR, ego-state만으로 움직이는 표적을 추적하�
 > **Status · 2026-08-26** — Recovery-v2 lower-1.25 passed **32/32 integrity checks** and
 > **failed the route mechanism**; physical PPO and hardware claims remain **blocked**. Attempt 2
 > (canonical 1.5) is a separate `FAIL_ROUTE_MECHANISM`. Packed diagnosis: recovery occupancy is
-> **63% `NO_CONNECTOR`**, not v1 `unsafe_start`. 실제 기체는 아직 미조립이며 실제 센서 로그와
+> **63% `NO_CONNECTOR`**, not v1 `unsafe_start`. The preregistered 70-bar no-anchor follow-up
+> is **`INCONCLUSIVE`** (primary `n=1`, identity disagreement `0`), closing Track B with no further
+> GPU authority.
+> Track A remains P2 `STRICT FAIL`, D1 `FAIL`, P3 `BLOCKED`, and detection Stage 1
+> `RANGE_INCONCLUSIVE_AT_THIS_BUDGET`; its only next authority is the
+> [real-hardware/offline 72-hour contract](docs/SIM2REAL_3DAY_EXECUTION_PLAN.md). 실제 기체는 아직
+> 미조립이며 실제 센서 로그와
 > 비행 데이터는 없습니다. 현재 결과는 sim-to-real 성능 주장이 아니라 재현 가능한 시뮬레이션 및
 > software-only 검증입니다.
 
@@ -62,6 +68,7 @@ attitude/rate torque → motor allocation → 100 Hz rigid-body physics` 순서�
 | Routed physical-target gate (attempt 2) | **32 / 32 integrity PASS; route mechanism FAIL; physical PPO BLOCKED** | 70-bar 4-speed pool: plan **14.55%** (gate 99%), fallback **35.93%** (gate 1%); 70 bars × 0.6 m/s: **0.25 goals/env** (gate 0.5) |
 | Routed recovery forensics | **8 / 8 receipt verified; `RECOVERY_DOMINANT` (evaluation-only)** | 358 local invalidations → 35,666 local fallback intervals (`99.6257×`); unique origins `200`; hard-free/soft-unsafe `97.0%` (Wilson lower `93.61%`) |
 | Recovery-v2 lower-1.25 32-cell | **32 / 32 integrity PASS; route mechanism FAIL; not a 1.5 result** | 7/32 pass (off only); 70-bar plan **93.60%**, fallback **47.87%**, 0.6 goals/env **0.21875**; `NO_CONNECTOR` occupancy **63.06%** |
+| Recovery-v2 no-anchor follow-up | **`INCONCLUSIVE`; Track B closed** | primary `n=1`; observer identity disagreement `0`; no further GPU/PPO/retune/rerun authority |
 | Hardware/software gate | software pipeline PASS · `SYNTHETIC_ONLY` | 실기 성능 아님 |
 
 현재 `navrl_ref5in_quad`는 1.20 kg, 220 mm motor diagonal, 0.28 m collision proxy를 가정한
@@ -165,12 +172,15 @@ The follow-up [recovery-v2 lower-1.25 gate](docs/physical_target_recovery_v2_low
 is a separate speed-ceiling contract, not a 1.5 success. It also passed 32/32 integrity and
 failed the route mechanism: 70-bar plan success rose to 93.60%, but fallback is 47.87% because
 recovery-arm occupancy is 63% latched `NO_CONNECTOR` (0 hard-breach entries). Packed diagnosis
-does not authorize retuning `0.45 m`, gain 2.5, env count, or another 32-cell run. The next
-eligible GPU is the frozen [no-anchor geometry probe](docs/preregistration_physical_target_recovery_v2_no_connector_forensics_2026-08-26.md).
+does not authorize retuning `0.45 m`, gain 2.5, env count, or another 32-cell run. The frozen
+[no-anchor geometry probe](docs/physical_target_recovery_v2_no_connector_forensics_result_2026-08-26.md)
+completed with only one primary event and is `INCONCLUSIVE`; it does not supersede the 32-cell
+FAIL or create further Track B GPU/training authority.
 
 Fresh PPO and sim-to-real claims remain blocked until the actual platform provides measured AUW/CG, sensor
 extrinsics, timestamp synchronization and real-log bearing/range/latency/dropout profiles. The next 72-hour
-measurement contract is [SIM2REAL_3DAY_EXECUTION_PLAN.md](docs/SIM2REAL_3DAY_EXECUTION_PLAN.md).
+measurement contract is [SIM2REAL_3DAY_EXECUTION_PLAN.md](docs/SIM2REAL_3DAY_EXECUTION_PLAN.md). If neither
+hardware nor real logs are available, there is no authorized GPU work on either track.
 
 ## Credits
 

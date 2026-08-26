@@ -1,10 +1,24 @@
 # MOTAR sim-to-real 72시간 실행·계측 계약
 
-> 기준 시각: **2026-08-23 (Asia/Seoul)**  
-> 상태: **실기 비행 0회 · 센서/BOM 실측 계약 미완료 · 새 PPO 장기학습 보류**  
+> 기준 시각: **2026-08-26 (Asia/Seoul)**
+> 상태: **실기 비행 0회 · 센서/BOM 실측 계약 미완료 · Track A/B GPU 작업 미승인**
 > 이 문서가 앞으로 3일의 **단일 실행 목록**이다. 장기 연구 질문은
 > [`RESEARCH_PLAN.md`](../RESEARCH_PLAN.md), gate 판정은 [`VERIFICATION.md`](../VERIFICATION.md),
 > 날짜별 사실 기록은 [`WORKLOG.md`](../WORKLOG.md)를 따른다.
+
+## Authority split — Track A / Track B
+
+- **Track A (이 문서의 실행 범위):** P2 `STRICT FAIL`, D1 `FAIL`, P3 `BLOCKED`; detection Stage 1
+  `RANGE_INCONCLUSIVE_AT_THIS_BUDGET`, Stage 2 미승인이다. 유일한 다음 authority는 exact hardware
+  BOM/calibration, 아래 210개 독립 sensor trial, real-log profile과 offline replay다.
+- **Track B (종료):** recovery-v2 lower-1.25는
+  `PASS_32_CELL_INTEGRITY / FAIL_ROUTE_MECHANISM`이다(7/32, 모두 off; recovery 0/16; 70-bar
+  plan `93.60%`, fallback `47.87%`, 70×0.6 goals/env `0.21875`, `NO_CONNECTOR` occupancy
+  `63.06%`). 후속 no-anchor probe는 primary `n=1`, identity disagreement `0`으로
+  `INCONCLUSIVE`다. 추가 GPU/PPO/retune/1.5/env-count/32-cell rerun authority는 없다.
+
+실제 hardware가 없고 real log도 없으면 이 계획에서 실행할 GPU 작업은 **없다**. 합성
+software-only preflight를 반복하거나 Track B를 다시 여는 것으로 실측 조건을 대체하지 않는다.
 
 ## 0. 출발점과 72시간의 목표
 
@@ -234,11 +248,11 @@ track_covariance, visibility_state`.
 72시간 종료 보고에는 “성능이 몇 % 올랐는가”보다 **어떤 실기 숫자가 측정됐고, 무엇이 아직
 가정이며, 그 결과 다음 학습의 조작축이 정확히 하나로 닫혔는가**를 먼저 쓴다.
 
-## 7. 하드웨어가 없을 때 먼저 실행할 software-only 단계
+## 7. 완료된 software-only preflight (현행 실행 authority 아님)
 
-부품·rosbag이 아직 없으면 실측값을 만들거나 noise를 추정하지 않는다. 대신
-[`tools/navrl_sim2real_telemetry.py`](../tools/navrl_sim2real_telemetry.py)의 독립 계약 검증기를
-먼저 실행해, 나중에 실제 로그를 넣었을 때 같은 판정 경로를 사용한다.
+부품·rosbag이 없을 때 아래 합성 구조 검사는 이미 완료돼 `SYNTHETIC_ONLY`를 기록했다. 이 명령은
+재실행 권한이나 실측 증거가 아니다. 실제 로그가 들어오면 §8의 같은 fail-closed 판정 경로를
+사용하며, 그 전에는 noise를 추정하거나 GPU 작업을 시작하지 않는다.
 
 ```bash
 # 합성 입력은 구조 테스트일 뿐이며 실기 증거가 아니다.

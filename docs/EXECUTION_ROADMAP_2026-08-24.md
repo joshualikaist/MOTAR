@@ -1,7 +1,11 @@
-# MOTAR 다음 실행 로드맵
+# MOTAR 실행 로드맵 — 2026-08-24 snapshot
 
 기준일: 2026-08-24. 이 문서는 실험을 조금씩 추가하지 않고, **다음 의사결정까지 필요한 전체 순서**를
 한 곳에 고정한다. 현재 상태는 실기 미조립·센서 원자료 없음이며, 새 PPO는 허가하지 않는다.
+
+> **Supersession notice · 2026-08-26:** 아래 A–F는 2026-08-24 의사결정 snapshot이다. 실행된
+> route/recovery 후속과 현행 authority는 문서 끝 addendum 및
+> [`../VERIFICATION.md`](../VERIFICATION.md)를 따른다.
 
 ## 현재 판정
 
@@ -92,3 +96,18 @@ fresh PPO를 명시적으로 `BLOCKED`로 기록했다.
 
 각 단계 종료 시 결과·실패 원인·남은 blocker·다음 단계 권한을 한 번에 갱신한다. “학습을 돌렸다”보다
 `어떤 계약이 닫혔고 어떤 숫자가 아직 가정인지`를 우선 보고한다.
+
+## 2026-08-26 closure addendum
+
+Track B의 B 단계는 성공으로 닫힌 것이 아니라 실행 결과로 **종료**됐다. Recovery-v2 lower-1.25는
+32/32 integrity를 통과했지만 `FAIL_ROUTE_MECHANISM`이다: 7/32 PASS(모두 route-off), recovery
+0/16, 70-bar plan `93.60%`, fallback `47.87%`, 70×0.6 goals/env `0.21875`,
+`NO_CONNECTOR` occupancy `63.06%`. 후속 no-anchor probe는 primary `n=1`, observer identity
+disagreement `0`으로 유효하지만 `INCONCLUSIVE`다. F의 fresh PPO와 추가 Track B
+GPU/retune/1.5/env-count/32-cell rerun은 승인되지 않는다.
+
+Track A는 P2 `STRICT FAIL`, D1 `FAIL`, P3 `BLOCKED`, detection Stage 1
+`RANGE_INCONCLUSIVE_AT_THIS_BUDGET`, Stage 2 미승인이다. 다음 실행은 C/D에 해당하는 exact
+BOM/calibration, 210 sensor trials, real-log profile/offline replay뿐이며
+[`SIM2REAL_3DAY_EXECUTION_PLAN.md`](SIM2REAL_3DAY_EXECUTION_PLAN.md)를 따른다. hardware와 real
+log가 모두 없으면 GPU 작업을 하지 않는다.

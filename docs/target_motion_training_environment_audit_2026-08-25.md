@@ -242,3 +242,17 @@ manifest `9af2f58b42176c4800cf5f8795dbf8f009097d3ae5f74c9ef16937730d6a1aad`, rec
 `bd840ef6dd157aa317dfeccfbf347235ac858d541e1e35e9e50c130084fc7771`. 상세 표와 raw links는
 [`attempt 2 summary`](../results/navrl_physical_target_routed_gate_seed827_attempt2/summary.md)와
 [`attempt 1 VOID`](../results/navrl_physical_target_routed_gate_seed827/VOID.md)다.
+
+## 2026-08-26 supersession addendum
+
+위 “다음 순서”와 attempt 2 말미의 동일-grid 재실행 문구는 2026-08-25 당시 권고이며 현행
+authority가 아니다. 후속 recovery-v2 lower-1.25는 32/32 integrity를 통과했지만
+`FAIL_ROUTE_MECHANISM`이다: 7/32 PASS(모두 route-off), recovery 0/16, 70-bar plan `93.60%`,
+fallback `47.87%`, 70×0.6 goals/env `0.21875`, `NO_CONNECTOR` occupancy `63.06%`.
+사전등록된 no-anchor probe도 실행·검증됐지만 primary `n=1`, identity disagreement `0`으로
+`INCONCLUSIVE`다.
+
+따라서 이 감사는 역사적 원인 분석으로 보존하되, 추가 Track B GPU/PPO/retune/1.5/env-count/32-cell
+rerun을 승인하지 않는다. 현재의 유일한 다음 authority는
+[`SIM2REAL_3DAY_EXECUTION_PLAN.md`](SIM2REAL_3DAY_EXECUTION_PLAN.md)의 hardware BOM/calibration,
+210 trials와 real-log replay이며, hardware/log가 없으면 GPU 작업은 없다.
