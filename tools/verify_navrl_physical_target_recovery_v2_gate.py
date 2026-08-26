@@ -721,7 +721,7 @@ def validate_grid(records: Sequence[Mapping]) -> None:
             recovery = index[(speed, density, "global_astar_recovery_v2")]
             for digest in (
                 "initial_layout_sha256", "initial_robot_pose_sha256",
-                "initial_target_pose_sha256", "initial_task_waypoint_sha256",
+                "initial_target_pose_sha256",
             ):
                 require(off[digest] == recovery[digest], "matched arm initial-state drift: %s" % digest)
             ratio = recovery["throughput"]["env_intervals_per_s"] / max(
@@ -729,6 +729,26 @@ def validate_grid(records: Sequence[Mapping]) -> None:
             )
             require(ratio >= GATES["matched_recovery_vs_off_throughput_ratio_min"],
                     "matched recovery/off throughput ratio below preregistered bound")
+    for density in DENSITIES:
+        for route in ROUTE_ARMS:
+            subset = [
+                row for row in records
+                if row["bars"] == density and row["route_mode"] == route
+            ]
+            waypoints = {row["initial_task_waypoint_sha256"] for row in subset}
+            require(len(waypoints) == 1,
+                    "speed-arm initial waypoint drift at %s/%s bars" % (route, density))
+            if route == "off":
+                require(all(row.get("initial_route_goal_sha256") is None for row in subset),
+                        "off arm must not record a route goal digest")
+            else:
+                goals = {row.get("initial_route_goal_sha256") for row in subset}
+                require(len(goals) == 1 and None not in goals,
+                        "speed-arm routed goal drift at %s bars" % density)
+                require(all(
+                    row["initial_task_waypoint_sha256"] == row["initial_route_goal_sha256"]
+                    for row in subset
+                ), "recovery waypoint digest must equal the owned route goal")
     for row in records:
         require(row.get("seed") == SEED and row.get("envs") == ENVS
                 and row.get("steps") == STEPS and row.get("warmup_steps") == WARMUP_STEPS,

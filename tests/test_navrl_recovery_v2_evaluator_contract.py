@@ -61,7 +61,8 @@ def rows(throughput=100.0):
                     "initial_layout_sha256": "a" * 64,
                     "initial_robot_pose_sha256": "b" * 64,
                     "initial_target_pose_sha256": "c" * 64,
-                    "initial_task_waypoint_sha256": "d" * 64,
+                    "initial_task_waypoint_sha256": ("d" if route == "off" else "e") * 64,
+                    "initial_route_goal_sha256": None if route == "off" else "e" * 64,
                 }
                 row["gates"] = GATE.row_gates(row)
                 row["pass"] = all(row["gates"].values())
@@ -83,6 +84,24 @@ class RecoveryV2EvaluatorContractTest(unittest.TestCase):
             if row["route_mode"] != "off" and row["speed_mps"] == 0.6 and row["bars"] == 70:
                 row["throughput"]["env_intervals_per_s"] = 49.0
         with self.assertRaisesRegex(GATE.IntegrityError, "throughput"):
+            GATE.validate_grid(records)
+
+    def test_recovery_waypoint_may_differ_from_off_when_it_owns_the_route_goal(self):
+        records = rows()
+        GATE.validate_grid(records)
+        off = next(row for row in records if row["route_mode"] == "off")
+        recovery = next(row for row in records if row["route_mode"] != "off")
+        self.assertNotEqual(off["initial_task_waypoint_sha256"], recovery["initial_task_waypoint_sha256"])
+        self.assertEqual(recovery["initial_task_waypoint_sha256"], recovery["initial_route_goal_sha256"])
+
+    def test_within_arm_waypoint_drift_is_refused(self):
+        records = rows()
+        for row in records:
+            if row["route_mode"] != "off" and row["speed_mps"] == GATE.SPEEDS[-1] and row["bars"] == 70:
+                row["initial_task_waypoint_sha256"] = "f" * 64
+                row["initial_route_goal_sha256"] = "f" * 64
+                break
+        with self.assertRaisesRegex(GATE.IntegrityError, "waypoint drift"):
             GATE.validate_grid(records)
 
     def test_atomic_json_refuses_overwrite(self):
