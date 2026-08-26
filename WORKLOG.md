@@ -12853,3 +12853,53 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
   retune, PPO, env-count change, or a denser-grid rerun. BRAKE generic no-anchor
   is rare in these four 70-bar cells; most fail-closed zero commands come from
   CONNECT certificate/resume failure and BRAKE timeout.
+
+## 2026-08-26 — 사이트 compact 병합 + heading 계약 provenance 고정
+
+Track B 종료 후 남은 마무리 3건 중 2건을 처리했다. **어떤 판정도 재판정하지 않는다** —
+`FAIL_ROUTE_MECHANISM`, `PASS_32_CELL_INTEGRITY`, recovery 0/16, 전체 7/32(전부 route-off),
+70막대 plan success 93.60%(기준 ≥99%), fallback 47.87%(기준 ≤1%)는 그대로다.
+
+### ① compact 사이트 패치 병합
+
+`codex/status-compact-layout` (`0dde2ef`)를 main에 병합. 충돌 0건, `docs/status/` 2파일만 변경.
+`h1` 최대 88 → **76px**, `#stage` 최대 620 → **500px**로 실제 축소 확인.
+
+### ② heading 계약을 checkpoint provenance에 고정 — 그리고 전제가 틀렸다는 발견
+
+`HEADING_VALID_SPEED_MPS = 0.10`(`target_motion.py:46`)은 recovery 전용이 아니라 모든
+bounded/physical target motion에 적용되는데 계약에 기록되지 않아, 향후 학습이 조용히 바꿔도
+아무도 모르는 상태였다.
+
+**핵심 발견**: `git log -p` 검증 결과 이 상수는 `0d1def2`(2026-08-26)에서 `0.10`으로 도입됐고
+다른 값이었던 적이 없다. **그러나 그것이 대체한 것은 인라인 `1e-5`였다.** 즉 2026-08-26 이전
+체크포인트는 전부 `1e-5`로 학습됐고 0.10이 아니다 — **10,000배 차이다.**
+
+따라서 **과거 체크포인트를 지금 재개하면 계보가 바뀐다.** 이번 평가 결과를 무효화하지는 않지만
+(평가는 동일 코드에서 수행됐다), fresh 학습이나 warm-start 전에 반드시 인지해야 할 사실이다.
+
+구현(순수 provenance, 수치 동작 변경 0 — diff에 삭제 라인 0):
+- `env_state`에 **두 필드를 항상 함께** 기록한다: `cfg_target_motion_heading_valid_speed_mps`
+  (실제로 힘을 발휘하는 값)와 `..._provenance`(`source_literal` / `checkpoint_attested` /
+  `assumed_pre_key_default`). **추정이 측정처럼 보이지 않게** 토큰이 분리되고 테스트가 양방향으로 고정한다.
+- 키 없음 → 0.10으로 간주하되 메시지가 `1e-5` 사실을 직접 명시한다(거부하면 모든 기존 체크포인트가
+  죽는다). 키 있고 다름 → 거부. 읽을 수 없음 → 거부(읽을 수 없는 provenance는 없는 것과 다르다).
+- 실제 체크포인트(`transfers/navrl_truncated_1650ti/...ep_19050`)로 검증: 키 없음 →
+  `0.1 / assumed_pre_key_default`로 정상 로드.
+
+**env var 대신 리터럴로 둔 이유**: `tests/test_navrl_target_motion.py:278`이 이 상수를 동결된
+braking probe의 `STOP_THRESHOLD_MPS`에 묶어놨다. env var를 만들면 런타임에 그 둘을 어긋나게 할 수
+있고 그 테스트가 못 본다. 리터럴은 git에 남아 변경이 추적되며, 이제 재개 시 하드 거부까지 붙는다.
+
+테스트 818 → **827**, OK(skip 2). 로드베어링 단언을 mutation 테스트로 확인했다 — 게이트를 `1e-5`로
+되돌리면 `test_recorded_value_is_the_threshold_actually_in_force`가 실패한다(상수 사본이 아니라
+실제 동작에 묶여 있다).
+
+미처리(의도): 평가 영수증(`navrl_task.py:7446`)에는 넣지 않았다 — 동결 영수증의 해시를 흔들 위험이
+있고 이번 범위는 `env_state`였다. preflight `_CONTRACT_ENV`도 env var가 없으므로 손대지 않았다.
+
+### 남은 것
+
+origin/main push와 GitHub Pages 배포 확인. 원시 결과 영수증은 integration worktree의 절대경로에
+묶여 있으므로 **`.codex_worktrees/two_envelope_recovery_integration`을 삭제하면 안 된다** —
+primary로 복사하면 source root drift로 거부되며 이는 의도된 fail-closed 동작이다.

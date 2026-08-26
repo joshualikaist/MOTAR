@@ -25,7 +25,12 @@ from aerial_gym.task.navrl_task.target_motion import (
     BOUNDED_TARGET_MOTION_MODEL,
     PHYSICAL_TARGET_MOTION_MODEL,
     CV_INITIAL_HEADING_MODES,
+    HEADING_VALID_SPEED_MPS,
+    HEADING_VALID_SPEED_KEY,
+    HEADING_VALID_SPEED_PROVENANCE_KEY,
+    HEADING_VALID_SPEED_SOURCE,
     TARGET_MOTION_MODEL,
+    resolve_heading_valid_speed_contract,
     bounded_drone_target_step,
     initial_cv_velocity,
     support_aware_bounds,
@@ -826,6 +831,11 @@ class NavRLTask(BaseTask):
             if self._target_dynamics == "bounded"
             else TARGET_MOTION_MODEL
         )
+        # Heading-validity threshold provenance. Until a checkpoint is restored the value in force
+        # is simply the running literal; set_env_state() replaces the provenance with either an
+        # attestation or an explicit assumption.
+        self._heading_valid_speed_mps = float(HEADING_VALID_SPEED_MPS)
+        self._heading_valid_speed_provenance = HEADING_VALID_SPEED_SOURCE
         self._target_controller = None
         self._target_route_manager = None
         self._target_route_support_xy = torch.zeros((self.num_envs, 2), device=self.device)
@@ -2518,6 +2528,10 @@ class NavRLTask(BaseTask):
                 getattr(self.vis_cfg, "camera_fov_scale_err", 0.0)
             ),
             "cfg_target_motion_model": self._target_motion_model,
+            # The heading-validity threshold is a target-motion contract term, not a tuning
+            # knob: record the value actually in force and whether it was attested or assumed.
+            HEADING_VALID_SPEED_KEY: float(self._heading_valid_speed_mps),
+            HEADING_VALID_SPEED_PROVENANCE_KEY: self._heading_valid_speed_provenance,
             "cfg_target_route_recovery_schema": (
                 TARGET_ROUTE_RECOVERY_SCHEMA if self._target_route_recovery_enabled else "off"
             ),
@@ -3182,6 +3196,15 @@ class NavRLTask(BaseTask):
                     "fine-tuning are a changed environment contract."
                     % (saved_motion_model or "legacy_bar_push", self._target_motion_model)
                 )
+            # Same contract, one field over: a checkpoint either attests the heading-validity
+            # threshold or is refused.  Absent (every pre-key checkpoint) is assumed, never
+            # silently promoted to an attestation -- the provenance string carries which it was.
+            (
+                self._heading_valid_speed_mps,
+                self._heading_valid_speed_provenance,
+                heading_contract_message,
+            ) = resolve_heading_valid_speed_contract(state)
+            logger.warning(heading_contract_message)
             saved_route_mode = str(state.get("cfg_target_route_mode", "")).strip().lower()
             if self._target_route_enabled and saved_route_mode != self._target_route_mode:
                 raise RuntimeError(

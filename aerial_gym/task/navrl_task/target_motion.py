@@ -44,6 +44,78 @@ HEADING_CONTINUITY_RAD = math.radians(90.0)
 # frozen braking probe uses as "stopped" (STOP_THRESHOLD_MPS).  A 1e-5 m/s epsilon treats
 # millimetre-per-second hover noise as a real course and slews CONNECT away from the anchor.
 HEADING_VALID_SPEED_MPS = 0.10
+# --- checkpoint provenance for the threshold above -------------------------------------------
+# The threshold applies to *all* bounded/physical target motion, not just the recovery path, so a
+# future run that edits it silently changes what every moving-target metric means.  These keys
+# put it in the same env_state contract as ``cfg_target_motion_model`` so a resume either attests
+# the value or is refused.
+HEADING_VALID_SPEED_KEY = "cfg_target_motion_heading_valid_speed_mps"
+HEADING_VALID_SPEED_PROVENANCE_KEY = "cfg_target_motion_heading_valid_speed_provenance"
+# Written by a run that never restored a checkpoint: the value is the running literal, full stop.
+HEADING_VALID_SPEED_SOURCE = "source_literal"
+# The checkpoint carried the key and it matched the running literal.  This is a measurement.
+HEADING_VALID_SPEED_ATTESTED = "checkpoint_attested"
+# The checkpoint predates the key.  The running literal is ASSUMED to be what it trained under.
+# This is not a measurement and must never be reported as one.
+HEADING_VALID_SPEED_ASSUMED = "assumed_pre_key_default"
+# Tight enough to catch any deliberate retune (0.05, 0.11, ...) while ignoring nothing real: the
+# value round-trips through pickle as an exact Python float, so equal values compare exactly.
+HEADING_VALID_SPEED_TOLERANCE = 1e-9
+
+
+def resolve_heading_valid_speed_contract(state, current=None):
+    """Resolve the heading-validity threshold contract for a restored ``env_state``.
+
+    Returns ``(value_in_force, provenance, message)``.  ``value_in_force`` is always the running
+    literal, because that is what the simulator will actually use; ``provenance`` says whether the
+    checkpoint attested to it or whether it was merely assumed, so a reader can never mistake an
+    assumption for a measurement.
+
+    Raises ``RuntimeError`` when the checkpoint carries a *different* value, matching the
+    fail-closed treatment the routed-target contract fields already get.
+    """
+    running = float(HEADING_VALID_SPEED_MPS if current is None else current)
+    saved = None if not isinstance(state, dict) else state.get(HEADING_VALID_SPEED_KEY)
+
+    if saved is None:
+        # Every checkpoint written before this key existed lands here.  Do not refuse: refusing
+        # would void every existing checkpoint.  Do label it, loudly.
+        return (
+            running,
+            HEADING_VALID_SPEED_ASSUMED,
+            "NavRL TARGET HEADING CONTRACT | value_in_force=%.10g provenance=%s. "
+            "The checkpoint predates this key, so %.10g is ASSUMED, not attested: it is the "
+            "value the running code holds, not a value the checkpoint recorded. Note that "
+            "checkpoints saved before the threshold was introduced ran an inline 1e-05 m/s "
+            "epsilon, so an older lineage may not in fact have trained under %.10g."
+            % (running, HEADING_VALID_SPEED_ASSUMED, running, running),
+        )
+
+    try:
+        saved_value = float(saved)
+    except (TypeError, ValueError):
+        raise RuntimeError(
+            "NavRL TARGET HEADING CONTRACT | checkpoint=%r is not a number. The heading-validity "
+            "threshold provenance is unreadable, so the target-motion contract cannot be "
+            "attested." % (saved,)
+        )
+
+    if not abs(saved_value - running) <= HEADING_VALID_SPEED_TOLERANCE:
+        raise RuntimeError(
+            "NavRL TARGET HEADING MISMATCH | checkpoint=%.10g running=%.10g. The heading-validity "
+            "threshold decides when residual speed counts as a heading of travel; changing it "
+            "changes what every moving-target metric means, so this is a changed environment "
+            "contract and not a resumable one." % (saved_value, running)
+        )
+
+    return (
+        running,
+        HEADING_VALID_SPEED_ATTESTED,
+        "NavRL TARGET HEADING CONTRACT | value_in_force=%.10g provenance=%s checkpoint=%.10g."
+        % (running, HEADING_VALID_SPEED_ATTESTED, saved_value),
+    )
+
+
 CV_INITIAL_HEADING_MODES = (
     "random",
     "toward",

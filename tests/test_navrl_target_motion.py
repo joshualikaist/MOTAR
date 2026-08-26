@@ -318,6 +318,118 @@ def test_cruise_speed_heading_remains_slew_limited():
     assert float(velocity.norm()) <= 0.6 + 1e-6
 
 
+class HeadingValidSpeedContractTestCase(unittest.TestCase):
+    """The heading-validity threshold is a checkpoint contract term, not a free knob.
+
+    ``HEADING_VALID_SPEED_MPS`` gates *all* bounded/physical target motion, so a future run that
+    edits it would silently change what every moving-target metric means.  These cases pin the
+    provenance behaviour: a checkpoint either attests the value or is refused, and a value that
+    was merely assumed can never be mistaken for one that was measured.
+    """
+
+    def test_absent_key_is_assumed_at_the_historical_value_not_refused(self):
+        # Every checkpoint predating the key lands here (verified: frozen ref5in D1 ep1900 has no
+        # heading key at all).  Refusing would void all of them, so this must pass -- but it must
+        # come back labelled as an assumption.
+        value, provenance, message = _MODULE.resolve_heading_valid_speed_contract({})
+        self.assertEqual(value, 0.10)
+        self.assertEqual(provenance, _MODULE.HEADING_VALID_SPEED_ASSUMED)
+        self.assertIn("ASSUMED", message)
+        # The attestation token must NOT appear: an assumption may not print like a measurement.
+        self.assertNotIn(_MODULE.HEADING_VALID_SPEED_ATTESTED, message)
+
+    def test_absent_key_records_the_pre_key_epsilon_caveat(self):
+        # Before the constant existed the code used an inline 1e-5 epsilon, so an older lineage
+        # may not in fact have trained at 0.10.  The assumed path has to say so rather than
+        # asserting 0.10 as this checkpoint's history.
+        _, _, message = _MODULE.resolve_heading_valid_speed_contract({})
+        self.assertIn("1e-05", message)
+
+    def test_missing_state_entirely_is_also_assumed(self):
+        for state in (None, "not-a-dict", 17):
+            value, provenance, _ = _MODULE.resolve_heading_valid_speed_contract(state)
+            self.assertEqual(value, 0.10)
+            self.assertEqual(provenance, _MODULE.HEADING_VALID_SPEED_ASSUMED)
+
+    def test_present_and_equal_key_is_attested(self):
+        state = {_MODULE.HEADING_VALID_SPEED_KEY: 0.10}
+        value, provenance, message = _MODULE.resolve_heading_valid_speed_contract(state)
+        self.assertEqual(value, 0.10)
+        self.assertEqual(provenance, _MODULE.HEADING_VALID_SPEED_ATTESTED)
+        # Symmetrically: a measurement may not print like an assumption.
+        self.assertNotIn(_MODULE.HEADING_VALID_SPEED_ASSUMED, message)
+
+    def test_attested_and_assumed_provenance_tokens_are_distinguishable(self):
+        # The whole point of the field: a reader can tell the two paths apart.
+        tokens = {
+            _MODULE.HEADING_VALID_SPEED_SOURCE,
+            _MODULE.HEADING_VALID_SPEED_ATTESTED,
+            _MODULE.HEADING_VALID_SPEED_ASSUMED,
+        }
+        self.assertEqual(len(tokens), 3)
+        _, absent_provenance, _ = _MODULE.resolve_heading_valid_speed_contract({})
+        _, present_provenance, _ = _MODULE.resolve_heading_valid_speed_contract(
+            {_MODULE.HEADING_VALID_SPEED_KEY: 0.10}
+        )
+        self.assertNotEqual(absent_provenance, present_provenance)
+
+    def test_present_and_different_key_is_refused(self):
+        for other in (0.05, 0.11, 1e-5, 0.0, 1.0):
+            state = {_MODULE.HEADING_VALID_SPEED_KEY: other}
+            with self.assertRaises(RuntimeError) as caught:
+                _MODULE.resolve_heading_valid_speed_contract(state)
+            self.assertIn("HEADING", str(caught.exception))
+
+    def test_unreadable_key_is_refused_rather_than_assumed(self):
+        # Fail closed: unreadable provenance is not the same as absent provenance.
+        for junk in ("fast", [0.10], {}):
+            with self.assertRaises(RuntimeError):
+                _MODULE.resolve_heading_valid_speed_contract(
+                    {_MODULE.HEADING_VALID_SPEED_KEY: junk}
+                )
+
+    def test_recorded_value_is_the_threshold_actually_in_force(self):
+        # Bind the recorded number to real behaviour: it is not enough that the resolver returns
+        # 0.10, it has to be the same 0.10 that limit_planar_velocity actually gates on.
+        recorded, _, _ = _MODULE.resolve_heading_valid_speed_contract({})
+        self.assertEqual(recorded, _MODULE.HEADING_VALID_SPEED_MPS)
+
+        desired_heading = math.radians(180.0)
+        max_turn = torch.deg2rad(torch.tensor([1.0]))  # 0.1 deg per 0.1 s step: nearly frozen
+
+        def _heading_after(speed):
+            current = torch.tensor([[speed, 0.0]])  # travelling along +X
+            desired = torch.tensor([[
+                0.6 * math.cos(desired_heading),
+                0.6 * math.sin(desired_heading),
+            ]])
+            out = limit_planar_velocity(
+                current, desired, torch.tensor([0.6]), 0.1, torch.tensor([50.0]), max_turn
+            )
+            return math.degrees(math.atan2(float(out[0, 1]), float(out[0, 0])))
+
+        # Just below the recorded threshold there is no heading of travel: the command starts in
+        # the requested direction (180 deg) despite the near-zero slew limit.
+        below = _heading_after(recorded * 0.99)
+        self.assertAlmostEqual(abs(below), 180.0, delta=1.0)
+
+        # Just above it the slew limit binds and the heading stays essentially along +X.
+        above = _heading_after(recorded * 1.01)
+        self.assertLess(abs(above), 1.0)
+
+    def test_navrl_task_writes_and_compares_the_contract_key(self):
+        # navrl_task imports isaacgym, so the wiring is checked statically rather than by import.
+        task_src = (
+            Path(__file__).resolve().parents[1]
+            / "aerial_gym" / "task" / "navrl_task" / "navrl_task.py"
+        ).read_text(encoding="utf-8")
+        self.assertIn("HEADING_VALID_SPEED_KEY: float(self._heading_valid_speed_mps)", task_src)
+        self.assertIn(
+            "HEADING_VALID_SPEED_PROVENANCE_KEY: self._heading_valid_speed_provenance", task_src
+        )
+        self.assertIn("resolve_heading_valid_speed_contract(state)", task_src)
+
+
 class TargetMotionFunctionTestCase(unittest.TestCase):
     """Adapter so ``unittest discover`` collects the pytest-style functions above.
 
