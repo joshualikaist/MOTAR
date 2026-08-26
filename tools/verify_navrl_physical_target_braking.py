@@ -40,6 +40,11 @@ from probe_navrl_physical_target_braking import (
 )
 
 
+def speed_key(value: float) -> str:
+    """Canonical decimal key without collapsing the 1.25 lower-contract arm to 1.2."""
+    return format(float(value), ".12g")
+
+
 def _same_contract(observed: Any, expected: Any, path: str = "contract") -> None:
     if isinstance(expected, float):
         if not isinstance(observed, (int, float)) or abs(float(observed) - expected) > 1e-9:
@@ -287,7 +292,7 @@ def summarize_cells(cells: Sequence[Mapping[str, Any]]) -> Dict[str, Any]:
     summaries.sort(key=lambda item: item["speed_mps"])
     lookup = {}
     for row in summaries:
-        key = format(float(row["speed_mps"]), ".1f")
+        key = speed_key(float(row["speed_mps"]))
         lookup[key] = {
             "speed_mps": row["speed_mps"],
             "p95_stop_time_s": row["stop_time_s"]["p95"],
@@ -357,7 +362,7 @@ def core_integration_object(summary: Mapping[str, Any]) -> Dict[str, Any]:
 
 def certified_lookup_for_speed(summary: Mapping[str, Any], speed_mps: float) -> Dict[str, Any]:
     """Return the exact canonical certified handoff cell for one registered speed."""
-    key = format(float(speed_mps), ".1f")
+    key = speed_key(float(speed_mps))
     lookup = summary["certified_monotone_speed_to_p95_lookup"]
     if key not in lookup or abs(float(lookup[key]["speed_mps"]) - float(speed_mps)) > 1e-12:
         raise ValueError("speed is not present in the certified braking lookup")

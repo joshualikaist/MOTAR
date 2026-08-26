@@ -73,8 +73,8 @@ RECOVERY_BRAKING_PROBE_SCHEMA = "navrl_target_recovery_braking_probe_v1"
 # SHA-256 of the exact raw-first validator sources from probe lineage 7f2d806 plus its required
 # returned core handoff.  If the common verifier changes, this constant and receipt/source
 # lineage must change together; a mutable manifest alone cannot authorize code.
-RECOVERY_PROBE_VALIDATOR_SHA256 = "a4c74e16ac0e39093549925187a1c4d180800afe6dde1e1c1b22764a3aa71bbf"
-RECOVERY_RECEIPT_VALIDATOR_SHA256 = "23ed75817120668e7404b902fdd35a6290d964af245ec25d4fdd2f91c523487d"
+RECOVERY_PROBE_VALIDATOR_SHA256 = "963f76e3485c78e411856fd719b1a55e664f9c61d24a2917fc61e4392605c71e"
+RECOVERY_RECEIPT_VALIDATOR_SHA256 = "786da78338bc1f03d3abd0f08fd0f2dedff6d74578f56d294a277b9c6d587ae0"
 
 
 def _load_recovery_receipt_validator(repo_root):
@@ -710,6 +710,13 @@ class NavRLTask(BaseTask):
             TARGET_ROUTE_MODE_GLOBAL_ASTAR, TARGET_ROUTE_MODE_RECOVERY
         )
         self._target_route_recovery_enabled = self._target_route_mode == TARGET_ROUTE_MODE_RECOVERY
+        recovery_contract_variant = str(
+            getattr(self.tm, "recovery_braking_contract_variant", "canonical_1p5")
+        ).strip().lower()
+        if self._target_route_recovery_enabled and recovery_contract_variant not in (
+            "canonical_1p5", "baseline_1p25"
+        ):
+            raise RuntimeError("unknown routed-recovery braking contract variant")
         if self._target_route_enabled and (
             not self._physical_target or str(self.tm.pattern) != "waypoint"
         ):
@@ -2557,6 +2564,9 @@ class NavRLTask(BaseTask):
                 getattr(self.tm, "recovery_brake_stop_time_p95", 0.0)
             ),
             "cfg_target_recovery_probe_receipt_sha256": self._recovery_probe_receipt_sha256,
+            "cfg_target_recovery_braking_contract_variant": str(
+                getattr(self.tm, "recovery_braking_contract_variant", "canonical_1p5")
+            ),
             "cfg_target_recovery_brake_speed_samples_mps": list(self._recovery_brake_speed_samples_mps),
             "cfg_target_recovery_brake_stop_distance_samples_m": list(self._recovery_brake_stop_distance_samples_m),
             "cfg_target_recovery_brake_lateral_tube_p95_m": self._recovery_brake_lateral_tube_p95_m,
@@ -3232,6 +3242,10 @@ class NavRLTask(BaseTask):
                         self._recovery_probe_receipt_sha256,
                     ),
                     (
+                        "cfg_target_recovery_braking_contract_variant",
+                        str(getattr(self.tm, "recovery_braking_contract_variant", "canonical_1p5")),
+                    ),
+                    (
                         "cfg_target_recovery_brake_speed_samples_mps",
                         list(self._recovery_brake_speed_samples_mps),
                     ),
@@ -3383,6 +3397,11 @@ class NavRLTask(BaseTask):
                     "cfg_target_physical_boundary_margin_m",
                     float(self.tm.physical_boundary_margin),
                     "NAVRL_TARGET_BOUNDARY_MARGIN_M",
+                ),
+                (
+                    "cfg_target_recovery_braking_contract_variant",
+                    str(getattr(self.tm, "recovery_braking_contract_variant", "canonical_1p5")),
+                    "NAVRL_TARGET_BRAKING_CONTRACT_VARIANT",
                 ),
                 (
                     "cfg_target_route_mode",

@@ -29,7 +29,15 @@ from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 SCHEMA = "navrl_target_recovery_braking_probe_v1"
 RECEIPT_SCHEMA = "navrl_target_recovery_braking_receipt_v1"
 COMPLETE_MARKER = "COMPLETE"
-REGISTERED_SPEEDS = (0.6, 0.9, 1.2, 1.5)
+CONTRACT_VARIANT = os.environ.get(
+    "NAVRL_TARGET_BRAKING_CONTRACT_VARIANT", "canonical_1p5"
+).strip().lower()
+if CONTRACT_VARIANT == "canonical_1p5":
+    REGISTERED_SPEEDS = (0.6, 0.9, 1.2, 1.5)
+elif CONTRACT_VARIANT == "baseline_1p25":
+    REGISTERED_SPEEDS = (0.6, 0.9, 1.2, 1.25)
+else:
+    raise RuntimeError("unknown NAVRL_TARGET_BRAKING_CONTRACT_VARIANT=%r" % CONTRACT_VARIANT)
 REGISTERED_ENVS = 32
 PHYSICS_DT_S = 0.01
 PHYSICS_SUBSTEPS = 10
@@ -48,6 +56,7 @@ CHILD_AUTH_SCHEMA = "navrl_target_recovery_braking_child_auth_v1"
 # This is an attestation tuple, not a tuning surface.  Values are repeated here so a result is
 # refused when a future task/config silently changes the physical experiment.
 FROZEN_CONTRACT: Dict[str, Any] = {
+    "contract_variant": CONTRACT_VARIANT,
     "sim_name": "base_sim",
     "robot": "navrl_ref5in_quad",
     "target_dynamics": "physical",
@@ -117,7 +126,10 @@ TOOL_SOURCE_PATHS = (
     "tools/run_navrl_physical_target_braking_v2_fresh.py",
     "tools/run_navrl_physical_target_braking_v2_fresh.sh",
     "docs/preregistration_navrl_physical_target_braking_2026-08-25.md",
-)
+) + ((
+    "tools/run_navrl_physical_target_braking_lower1p25_fresh.sh",
+    "docs/preregistration_navrl_physical_target_braking_lower1p25_2026-08-26.md",
+) if CONTRACT_VARIANT == "baseline_1p25" else ())
 RECOVERY_SOURCE_PATHS = CORE_PATHS + TOOL_SOURCE_PATHS
 EXPECTED_REPO_IMPORTS = {
     "aerial_gym": "aerial_gym/__init__.py",

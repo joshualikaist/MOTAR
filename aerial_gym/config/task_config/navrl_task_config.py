@@ -598,6 +598,9 @@ class task_config:
         recovery_brake_probe_receipt_sha256 = os.environ.get(
             "NAVRL_TARGET_RECOVERY_BRAKE_PROBE_RECEIPT_SHA256", ""
         ).strip().lower()
+        recovery_braking_contract_variant = os.environ.get(
+            "NAVRL_TARGET_BRAKING_CONTRACT_VARIANT", "canonical_1p5"
+        ).strip().lower()
         # Set only by the common probe-receipt validator. A scalar p05/p95 pair alone is never
         # sufficient to arm the recovery controller.
         recovery_brake_probe_validated = os.environ.get(

@@ -106,7 +106,8 @@ def run(output: Path) -> Dict[str, Any]:
         token = secrets.token_hex(16)
         cells = []
         for speed in probe.REGISTERED_SPEEDS:
-            name = "speed_%s.json" % format(speed, ".1f").replace(".", "p")
+            speed_text = format(speed, ".12g")
+            name = "speed_%s.json" % speed_text.replace(".", "p")
             cell_path = cells_dir / name
             record_id = secrets.token_hex(16)
             auth_path = stage / ("child_auth_%s.json" % record_id)
@@ -120,7 +121,7 @@ def run(output: Path) -> Dict[str, Any]:
                 "NAVRL_TARGET_DYNAMICS": "physical",
                 "NAVRL_TARGET_PATTERN": "waypoint",
                 "NAVRL_TARGET_ROUTE_MODE": "off",
-                "NAVRL_TARGET_SPEED": format(speed, ".1f"),
+                "NAVRL_TARGET_SPEED": speed_text,
                 "NAVRL_NUM_BARS": "0",
                 "NAVRL_MAX_BARS": "300",
                 "NAVRL_BRAKING_CHILD_TOKEN": token,
@@ -134,7 +135,7 @@ def run(output: Path) -> Dict[str, Any]:
             # selected executable's directory ahead of any inherited toolchain to prevent a stale
             # or missing ninja from changing the Isaac Gym runtime build.
             env["PATH"] = str(Path(ninja).resolve().parent) + os.pathsep + env.get("PATH", "")
-            command = [str(python_bin), str(root / "tools/probe_navrl_physical_target_braking.py"), "--output", str(cell_path), "--speed", format(speed, ".1f"), "--envs", str(probe.REGISTERED_ENVS), "--_single-speed", "--_auth-file", str(auth_path)]
+            command = [str(python_bin), str(root / "tools/probe_navrl_physical_target_braking.py"), "--output", str(cell_path), "--speed", speed_text, "--envs", str(probe.REGISTERED_ENVS), "--_single-speed", "--_auth-file", str(auth_path)]
             completed = subprocess.run(command, cwd=str(root), env=env, check=False)
             if completed.returncode != 0:
                 raise SystemExit("braking speed cell failed: %s" % speed)

@@ -12689,3 +12689,20 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
   <=15% overshoot, >=50% overshoot reduction, and no stopping/lateral regression.
 - Added explicit diagnostic rate-gain scaling only inside the calibration child. Task defaults,
   observations, reward, termination, recovery, PPO, and existing receipt tools remain unchanged.
+
+## 2026-08-26 — stage-2 result and lower-1.25 follow-up lineage
+
+- Stage 2 finalized at
+  `results/navrl_physical_target_speed_controller_calibration_stage2_seed829/`. The unchanged
+  controller passed the original five-second endpoint plus 4–5 s stability gate at 1.20 and
+  1.25 m/s, but 1.30 m/s missed by 0.00102 m/s. Thus the measured baseline ceiling is 1.25 m/s.
+- No damping candidate passed the complete frozen selection rule. Rate scaling could improve a
+  single 5 s sample, but none simultaneously sustained the 4–5 s band and reduced overshoot/
+  stopping behavior. Controller modification remains blocked rather than being tuned again.
+- Added an opt-in `baseline_1p25` braking/recovery contract. The default remains canonical 1.5.
+  The new exact speed grid is 0.6/0.9/1.2/1.25; decimal keys and record IDs were made lossless so
+  1.25 cannot alias 1.2. Task checkpoint state records the selected contract variant. Separate
+  preregistrations and launchers prevent the lower result from being read as a 1.5 result.
+- CPU verification: canonical braking 8/8, recovery-v2 evaluator 5/5, recovery core 22/22,
+  target environment 13/13, lower-contract isolation 3/3, compilation/diff check PASS. No
+  lower-contract braking receipt or recovery GPU result existed at this entry.

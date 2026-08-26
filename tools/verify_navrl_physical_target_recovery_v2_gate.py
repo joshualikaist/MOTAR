@@ -58,7 +58,11 @@ SOURCE_BUNDLE = importlib.util.module_from_spec(SOURCE_BUNDLE_SPEC)
 sys.modules[SOURCE_BUNDLE_SPEC.name] = SOURCE_BUNDLE
 SOURCE_BUNDLE_SPEC.loader.exec_module(SOURCE_BUNDLE)
 
-PREREG = ROOT / "docs/preregistration_physical_target_recovery_v2_gate_2026-08-25.md"
+PREREG = ROOT / (
+    "docs/preregistration_physical_target_recovery_v2_lower1p25_gate_2026-08-26.md"
+    if BRAKE_PROBE.CONTRACT_VARIANT == "baseline_1p25"
+    else "docs/preregistration_physical_target_recovery_v2_gate_2026-08-25.md"
+)
 RECOVERY_PREREG = ROOT / "docs/preregistration_physical_target_two_envelope_recovery_2026-08-25.md"
 SCHEMA = "navrl_physical_target_recovery_v2_gate_v1"
 CHILD_SCHEMA = "navrl_physical_target_recovery_v2_child_v1"
@@ -68,13 +72,18 @@ RECEIPT_SCHEMA = "navrl_physical_target_recovery_v2_receipt_v1"
 
 SEED = 827
 ROUTE_ARMS = ("off", "global_astar_recovery_v2")
-SPEEDS = (0.6, 0.9, 1.2, 1.5)
+CONTRACT_VARIANT = BRAKE_PROBE.CONTRACT_VARIANT
+SPEEDS = tuple(BRAKE_PROBE.REGISTERED_SPEEDS)
 DENSITIES = (70, 150, 205, 300)
 ENVS = 32
 STEPS = 300
 WARMUP_STEPS = 20
 PHYSICS_SUBSTEPS = 10
-DEFAULT_DIR = ROOT / "results/navrl_physical_target_recovery_v2_gate_seed827"
+DEFAULT_DIR = ROOT / (
+    "results/navrl_physical_target_recovery_v2_gate_lower1p25_seed827"
+    if CONTRACT_VARIANT == "baseline_1p25"
+    else "results/navrl_physical_target_recovery_v2_gate_seed827"
+)
 
 GATES = {
     "tracking_rmse_mps_max": 0.35,
@@ -143,6 +152,8 @@ def runtime_source_paths() -> List[Path]:
         str(BRAKE_PROBE_PATH.relative_to(ROOT)), str(BRAKE_PREREG_PATH.relative_to(ROOT)),
         str(SOURCE_BUNDLE_PATH.relative_to(ROOT)),
     ]
+    if CONTRACT_VARIANT == "baseline_1p25":
+        requested.append("tools/run_navrl_physical_target_recovery_v2_lower1p25_gate.sh")
     tracked = git("ls-files", *requested).splitlines()
     paths = sorted({ROOT / name for name in tracked if name})
     required = {
@@ -238,8 +249,8 @@ def validate_braking_probe_values(values: Mapping[str, str]) -> Dict[str, str]:
     except (OSError, ValueError, KeyError, TypeError) as exc:
         raise IntegrityError("raw braking receipt verification failed: %s" % exc)
     payload = json.loads(receipt.read_text(encoding="utf-8"))
-    require(payload.get("schema") == "navrl_target_recovery_braking_receipt_v1"
-            and payload.get("probe_schema") == "navrl_target_recovery_braking_probe_v1",
+    require(payload.get("schema") == BRAKE_PROBE.RECEIPT_SCHEMA
+            and payload.get("probe_schema") == BRAKE_PROBE.SCHEMA,
             "wrong braking receipt/probe schema pair")
     require(abs(float(payload.get("decel_p05_mps2")) - decel) <= 1e-9,
             "braking p05 differs from receipt")
@@ -258,7 +269,7 @@ def validate_braking_probe_values(values: Mapping[str, str]) -> Dict[str, str]:
                 "speed cell p95 stop distance missing")
     ordered_distances = []
     for speed in SPEEDS:
-        key = format(speed, ".1f")
+        key = BRAKE_VERIFY.speed_key(speed)
         measured = float(lookup[key]["p95_stop_distance_m"])
         certified_distance = float(certified[key]["p95_stop_distance_m"])
         require(math.isfinite(certified_distance) and certified_distance + 1e-12 >= measured,
@@ -308,6 +319,7 @@ def snapshot_braking_probe(probe: Mapping[str, str], stage: Path) -> Dict[str, s
 def frozen_environment(route_mode: str, speed: float, probe: Mapping[str, str]) -> Dict[str, str]:
     values = BASE.frozen_environment("off", speed)
     values.update({
+        "NAVRL_TARGET_BRAKING_CONTRACT_VARIANT": CONTRACT_VARIANT,
         "NAVRL_TARGET_ROUTE_MODE": route_mode,
         "NAVRL_NUM_BARS": "70", "NAVRL_MAX_BARS": "300",
         "NAVRL_TARGET_RECOVERY_EVAL_TELEMETRY": "1",
@@ -323,14 +335,14 @@ def frozen_environment(route_mode: str, speed: float, probe: Mapping[str, str]) 
         measured_lookup = json.loads(probe["__MEASURED_LOOKUP_JSON"])
         certified_lookup = json.loads(probe["__CERTIFIED_LOOKUP_JSON"])
         values["NAVRL_TARGET_RECOVERY_BRAKE_SPEEDS_MPS"] = ",".join(
-            format(value, ".1f") for value in SPEEDS
+            BRAKE_VERIFY.speed_key(value) for value in SPEEDS
         )
         values["NAVRL_TARGET_RECOVERY_BRAKE_STOP_DISTANCES_M"] = ",".join(
-            str(certified_lookup[format(value, ".1f")]["p95_stop_distance_m"])
+            str(certified_lookup[BRAKE_VERIFY.speed_key(value)]["p95_stop_distance_m"])
             for value in SPEEDS
         )
         values["NAVRL_TARGET_RECOVERY_STOP_DISTANCE_P95_M"] = str(
-            measured_lookup[format(speed, ".1f")]["p95_stop_distance_m"]
+            measured_lookup[BRAKE_VERIFY.speed_key(speed)]["p95_stop_distance_m"]
         )
         values["NAVRL_TARGET_RECOVERY_BRAKE_LATERAL_TUBE_P95_M"] = (
             probe["__LATERAL_TUBE_P95_M"]
@@ -385,7 +397,9 @@ def route_delta(before: Mapping, after: Mapping, commanded: int) -> Dict[str, ob
 
 
 def record_id(route: str, speed: float, density: int) -> str:
-    return "route_%s__speed_%.1f__bars_%d" % (route, speed, density)
+    return "route_%s__speed_%s__bars_%d" % (
+        route, BRAKE_VERIFY.speed_key(speed), density
+    )
 
 
 def row_gates(row: Mapping) -> Dict[str, bool]:
@@ -850,7 +864,9 @@ def parent_main(args) -> int:
         records, child_entries, contracts, software = [], [], [], []
         for route in ROUTE_ARMS:
             for speed in SPEEDS:
-                label = ("route_%s__speed_%.1f" % (route, speed)).replace(".", "p")
+                label = ("route_%s__speed_%s" % (
+                    route, BRAKE_VERIFY.speed_key(speed)
+                )).replace(".", "p")
                 child = stage / "children" / (label + ".json")
                 log = stage / "logs" / (label + ".log")
                 command = [
@@ -893,7 +909,8 @@ def parent_main(args) -> int:
         atomic_json(execution_path, execution)
         summary = {
             "schema": SCHEMA, "preregistration": str(PREREG.relative_to(ROOT)),
-            "seed": SEED, "route_arms": list(ROUTE_ARMS), "speeds_mps": list(SPEEDS),
+            "seed": SEED, "contract_variant": CONTRACT_VARIANT,
+            "route_arms": list(ROUTE_ARMS), "speeds_mps": list(SPEEDS),
             "densities": list(DENSITIES), "envs": ENVS, "steps": STEPS,
             "physics_substeps": PHYSICS_SUBSTEPS, "gates_preregistered": GATES,
             "source_manifest_sha256": source_sha,
@@ -1078,6 +1095,7 @@ def main(argv=None) -> int:
         print(json.dumps({
             "schema": SCHEMA, "gpu_started": False, "git_commit": source["git_commit"],
             "runtime_file_count": source["runtime_file_count"], "cell_count": 32,
+            "contract_variant": CONTRACT_VARIANT,
             "route_arms": ROUTE_ARMS, "speeds_mps": SPEEDS, "densities": DENSITIES,
             "envs": ENVS, "steps": STEPS,
             "probe_receipt_sha256": probe["NAVRL_TARGET_RECOVERY_BRAKE_PROBE_RECEIPT_SHA256"],
