@@ -12661,3 +12661,17 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
   `min=0.056740`, `mean=0.057423`, `max=0.058176 m/s`. This is a small steady-state tracking
   deficit, not divergence or collision. The frozen `0.05 m/s` convergence gate therefore remains
   NO-GO; no tolerance/controller/speed parameter was changed.
+## 2026-08-26 — speed ceiling/controller calibration preregistration
+
+- The failed canonical braking receipt remains immutable: gain 2.5 at requested 1.5 m/s reached
+  mean 1.442577 m/s after 5 s and missed the absolute tracking gate by about 0.0074 m/s.
+- Added an independent six-cell, fresh-process diagnostic instead of changing that gate after the
+  result: gain 2.5 at 1.35/1.40/1.45/1.50 m/s and gains 3.0/3.5 at 1.50 m/s, 32 env, seed 829.
+  It records 5/6/8/10 s tracking, the whole 4–5 s stability window, saturation/tilt/contact/OBB,
+  and zero-command braking. The frozen rule selects the highest passing baseline speed and the
+  lowest safe controller gain; longer convergence is descriptive and cannot rescue a 5 s fail.
+- Added `tools/run_navrl_physical_target_speed_controller_calibration.py`, its preregistration,
+  atomic fresh result/verification contract, and four CPU contract tests. Existing braking and
+  recovery-v2 tools were not edited. GPU has not yet been run at this entry.
+- Validation: calibration 4/4, braking contract 8/8, recovery-v2 evaluator 5/5, target motion
+  13/13, Python compilation and `git diff --check` PASS.
