@@ -12740,3 +12740,8 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
   to XY at their API boundary, with a regression test exercising the real XYZ-shaped input for
   braking and anchor certification. The completed off-arm traces remain in the VOID bundle; they
   are not combined with a later attempt because every accepted grid must be process-consistent.
+- Because the recovery fix changes a runtime source file bound by the lower braking receipt, the
+  evaluator correctly rejected reuse of the earlier receipt against the new planner bytes. A
+  fresh lower-contract braking receipt must therefore be generated from the corrected commit
+  before the 32-cell gate is eligible; measured values are not copied around this provenance
+  boundary.

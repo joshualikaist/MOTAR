@@ -42,6 +42,7 @@ results/navrl_physical_target_speed_controller_calibration_stage2_seed829/
 # Lower-contract probe/gate bundles are immutable local receipts with raw traces.  Their compact
 # manifests bind the bytes; keep the generated bundles out of the source-cleanliness contract.
 results/navrl_physical_target_braking_lower1p25_seed827/
+results/navrl_physical_target_braking_lower1p25_seed827_attempt2/
 results/navrl_physical_target_recovery_v2_gate_lower1p25_seed827/
 results/.navrl_physical_target_recovery_v2_gate_lower1p25_seed827.VOID.*/
 
