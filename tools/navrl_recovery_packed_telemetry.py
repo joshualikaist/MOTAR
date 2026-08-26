@@ -751,6 +751,9 @@ def load_and_verify(path: Path, expected_sha256: str = "") -> Dict[str, object]:
         reset_calls = int(payload["reset_call_during_advance"].sum())
         if direct_writes != 0 or reset_calls != 0:
             raise RuntimeError("recovery path wrote target position or invoked reset")
+        connect_intervals = 0
+        connect_actual_regressions = 0
+        connect_actual_max_increase_m = 0.0
         active = after == STATE_CONNECT
         if active.any():
             if (payload["candidate_count"][active] != 73).any():
@@ -783,8 +786,10 @@ def load_and_verify(path: Path, expected_sha256: str = "") -> Dict[str, object]:
             if (payload["candidate_binding_error"][active] != 0).any():
                 raise RuntimeError("CONNECT candidate/environment binding is ambiguous")
             # The first kinematic sample is descriptive: a physical actor can initially coast
-            # away while its velocity reverses.  The certified 1 s horizon must progress, and the
-            # actual PhysX interval below must not increase anchor distance.
+            # away while its velocity reverses.  The certified 1 s horizon must still progress.
+            # Actual PhysX interval regression is a scientific cell failure, not an integrity
+            # VOID: the artifact remains interpretable, and the preregistered 32-cell gate must
+            # finalize a FAIL rather than discard it.
             if not np.isfinite(payload["planned_first_progress_m"][active]).all():
                 raise RuntimeError("CONNECT first-sample progress is missing/nonfinite")
             if (not np.isfinite(payload["planned_horizon_progress_m"][active]).all()
@@ -792,9 +797,12 @@ def load_and_verify(path: Path, expected_sha256: str = "") -> Dict[str, object]:
                 raise RuntimeError("CONNECT certificate has negative fixed-anchor progress: horizon")
             if not np.isfinite(payload["anchor_distance_after_m"][active]).all():
                 raise RuntimeError("CONNECT post-physics anchor distance is missing")
-            if (payload["anchor_distance_after_m"][active]
-                    > payload["anchor_distance_m"][active] + 1e-5).any():
-                raise RuntimeError("CONNECT made negative fixed-anchor progress")
+            actual_increase = (
+                payload["anchor_distance_after_m"][active] - payload["anchor_distance_m"][active]
+            )
+            connect_intervals = int(active.sum())
+            connect_actual_regressions = int((actual_increase > 1e-5).sum())
+            connect_actual_max_increase_m = float(np.max(actual_increase))
             continuing = active & (before == STATE_CONNECT)
             if continuing.any() and not np.allclose(
                 payload["anchor_before_xy"][continuing], payload["anchor_xy"][continuing],
@@ -910,4 +918,7 @@ def load_and_verify(path: Path, expected_sha256: str = "") -> Dict[str, object]:
             "connector_observer_cpu_ms": float(metadata.get("connector_observer_cpu_ms", 0.0)),
             "direct_position_writes": direct_writes,
             "reset_calls_during_advance": reset_calls,
+            "connect_intervals": connect_intervals,
+            "connect_actual_regressions": connect_actual_regressions,
+            "connect_actual_max_increase_m": connect_actual_max_increase_m,
         }

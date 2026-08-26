@@ -103,6 +103,7 @@ GATES = {
     "watchdog_breach_substeps_max": 0,
     "direct_position_writes_max": 0,
     "reset_calls_during_advance_max": 0,
+    "connect_actual_regressions_max": 0,
     # Operational gate only: more than 2x matched wall-time overhead makes the fixed 32-cell gate
     # impractical and is reported as an implementation regression, not a navigation claim.
     "matched_recovery_vs_off_throughput_ratio_min": 0.50,
@@ -439,6 +440,9 @@ def row_gates(row: Mapping) -> Dict[str, bool]:
         "watchdog": telemetry["watchdog_breach_substeps"] <= GATES["watchdog_breach_substeps_max"],
         "no_position_write": telemetry["direct_position_writes"] <= GATES["direct_position_writes_max"],
         "no_reset_in_advance": telemetry["reset_calls_during_advance"] <= GATES["reset_calls_during_advance_max"],
+        "connect_actual_progress": (
+            int(telemetry["connect_actual_regressions"]) <= GATES["connect_actual_regressions_max"]
+        ),
     }
 
 

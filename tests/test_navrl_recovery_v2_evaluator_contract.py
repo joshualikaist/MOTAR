@@ -28,6 +28,9 @@ def rows(throughput=100.0):
                     "watchdog_breach_substeps": 0,
                     "direct_position_writes": 0,
                     "reset_calls_during_advance": 0,
+                    "connect_actual_regressions": 0,
+                    "connect_intervals": 0,
+                    "connect_actual_max_increase_m": 0.0,
                 }
                 row = {
                     "record_id": GATE.record_id(route, speed, bars),
@@ -135,6 +138,21 @@ class RecoveryV2EvaluatorContractTest(unittest.TestCase):
     def test_v1_evaluator_bytes_remain_unchanged(self):
         expected = GATE.git("show", "afb48c4:%s" % GATE.BASE_PATH.relative_to(ROOT))
         self.assertEqual(GATE.BASE_PATH.read_text(encoding="utf-8").rstrip(), expected.rstrip())
+
+    def test_connect_actual_regression_fails_the_cell_not_the_artifact(self):
+        records = rows()
+        for row in records:
+            if row["route_mode"] != "off" and row["speed_mps"] == 0.6 and row["bars"] == 70:
+                row["telemetry_summary"]["connect_actual_regressions"] = 1
+                row["telemetry_summary"]["connect_intervals"] = 10
+                row["telemetry_summary"]["connect_actual_max_increase_m"] = 0.05
+                row["gates"] = GATE.row_gates(row)
+                row["pass"] = all(row["gates"].values())
+                self.assertFalse(row["gates"]["connect_actual_progress"])
+                self.assertFalse(row["pass"])
+                break
+        else:
+            self.fail("missing recovery 0.6/70 cell")
 
 
 if __name__ == "__main__":

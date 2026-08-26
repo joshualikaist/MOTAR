@@ -176,6 +176,18 @@ class PackedTelemetryTest(unittest.TestCase):
         arrays["anchor_distance_after_m"][1, 0] = 0.29
         result = PACKED.load_and_verify(self.write(arrays))
         self.assertEqual(result["schema"], PACKED.SCHEMA)
+        self.assertEqual(result["connect_actual_regressions"], 0)
+
+    def test_actual_interval_regression_is_counted_not_an_integrity_refuse(self):
+        arrays = fixture()
+        arrays["planned_first_progress_m"][1, 0] = -0.04
+        arrays["planned_horizon_progress_m"][1, 0] = 0.01
+        arrays["anchor_distance_m"][1, 0] = 0.30
+        arrays["anchor_distance_after_m"][1, 0] = 0.35
+        result = PACKED.load_and_verify(self.write(arrays))
+        self.assertGreaterEqual(result["connect_intervals"], 1)
+        self.assertEqual(result["connect_actual_regressions"], 1)
+        self.assertGreater(result["connect_actual_max_increase_m"], 0.04)
 
     def test_compressed_brake_connect_route_requires_exact_resume_counter(self):
         arrays = fixture(connect=False)
