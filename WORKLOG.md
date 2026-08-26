@@ -12675,3 +12675,17 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
   recovery-v2 tools were not edited. GPU has not yet been run at this entry.
 - Validation: calibration 4/4, braking contract 8/8, recovery-v2 evaluator 5/5, target motion
   13/13, Python compilation and `git diff --check` PASS.
+
+## 2026-08-26 — stage-1 GPU calibration and frozen stage-2 bracket
+
+- Stage 1 completed six fresh RTX 3070 cells. Gain 2.5 missed the five-second absolute band at
+  every 1.35–1.50 m/s arm; the 1.50 m/s mean was 1.44265 m/s. Velocity gains 3.0/3.5 entered the
+  band permanently only at 7.96/7.05 s and increased peak overshoot, so neither lower-contract nor
+  controller follow-up was eligible under the first frozen grid. The finalized calibration result
+  is `results/navrl_physical_target_speed_controller_calibration_seed829/`.
+- Before any new GPU child, froze stage 2: unchanged-controller lower-speed bracket
+  1.20/1.25/1.30/1.35 m/s plus a shared 1.50 reference and three rate-damping candidates. The
+  lower contract retains the original braking gates; controller selection additionally requires
+  <=15% overshoot, >=50% overshoot reduction, and no stopping/lateral regression.
+- Added explicit diagnostic rate-gain scaling only inside the calibration child. Task defaults,
+  observations, reward, termination, recovery, PPO, and existing receipt tools remain unchanged.

@@ -34,6 +34,13 @@ CELLS: Tuple[Tuple[float, float], ...] = (
     (2.5, 1.35), (2.5, 1.40), (2.5, 1.45), (2.5, 1.50),
     (3.0, 1.50), (3.5, 1.50),
 )
+# Stage 2 was frozen only after stage 1 established that the baseline ceiling is below 1.35 m/s
+# and velocity gain alone increases oscillation.  It brackets the lower ceiling and tests explicit
+# rate-damping interventions.  Stage-1 summaries never consume this grid.
+STAGE2_CELLS: Tuple[Tuple[float, float, float], ...] = (
+    (2.5, 1.20, 1.0), (2.5, 1.25, 1.0), (2.5, 1.30, 1.0), (2.5, 1.35, 1.0),
+    (2.5, 1.50, 1.0), (2.5, 1.50, 1.5), (3.0, 1.50, 1.5), (3.0, 1.50, 2.0),
+)
 ABS_TOL = 0.05
 REL_TOL = 0.10
 SAT_MAX = 0.15
@@ -105,18 +112,21 @@ def cell_key(kp: float, speed: float) -> str:
     )
 
 
-def _authorize(path: Path, kp: float, speed: float) -> Mapping[str, Any]:
+def _authorize(path: Path, kp: float, speed: float, rate_scale: float) -> Mapping[str, Any]:
     payload = json.loads(path.read_text(encoding="utf-8"))
     if payload.get("schema") != SCHEMA + "_child_auth" or float(payload.get("kp", -1)) != kp \
-            or float(payload.get("speed", -1)) != speed:
+            or float(payload.get("speed", -1)) != speed \
+            or float(payload.get("rate_scale", 1.0)) != rate_scale:
         raise RuntimeError("child authorization mismatch")
     return payload
 
 
-def _run_child(output: Path, kp: float, speed: float, auth_path: Path) -> None:
-    if (kp, speed) not in CELLS or output.exists():
+def _run_child(output: Path, kp: float, speed: float, auth_path: Path,
+               rate_scale: float = 1.0) -> None:
+    allowed = {(a, b, 1.0) for a, b in CELLS} | set(STAGE2_CELLS)
+    if (kp, speed, rate_scale) not in allowed or output.exists():
         raise RuntimeError("child cell/output violates fixed grid")
-    auth = _authorize(auth_path, kp, speed)
+    auth = _authorize(auth_path, kp, speed, rate_scale)
     source = require_clean()
     os.environ.update({
         "AERIAL_GYM_SIM_NAME": "base_sim",
@@ -154,6 +164,12 @@ def _run_child(output: Path, kp: float, speed: float, auth_path: Path) -> None:
     ctrl = task._target_controller
     if abs(float(ctrl.velocity_kp) - kp) > 1e-6:
         raise RuntimeError("instantiated velocity gain drift")
+    base_rate_kp = ctrl.rate_kp.detach().clone()
+    ctrl.rate_kp.mul_(float(rate_scale))
+    expected_rate_kp = [float(v) * float(rate_scale) for v in brake.FROZEN_CONTRACT["physical_rate_kp"]]
+    actual_rate_kp = [float(v) for v in ctrl.rate_kp.detach().cpu().reshape(-1).tolist()]
+    if any(abs(a - b) > 1e-6 for a, b in zip(actual_rate_kp, expected_rate_kp)):
+        raise RuntimeError("diagnostic rate gain scale drift")
     bmin, bmax = task.obs_dict["env_bounds_min"], task.obs_dict["env_bounds_max"]
     center = ((bmin + bmax) * 0.5).clone()
     center[:, 2] = float(task.task_config.flight_altitude)
@@ -231,8 +247,11 @@ def _run_child(output: Path, kp: float, speed: float, auth_path: Path) -> None:
     )
     payload = {
         "schema": SCHEMA + "_cell", "git_commit": source, "auth": auth,
-        "condition": {"velocity_kp": kp, "requested_speed_mps": speed, "seed": SEED, "envs": ENVS},
-        "instantiated": dict(instantiated, physical_velocity_kp=kp),
+        "condition": {"velocity_kp": kp, "requested_speed_mps": speed,
+                      "rate_kp_scale": rate_scale, "seed": SEED, "envs": ENVS},
+        "instantiated": dict(instantiated, physical_velocity_kp=kp,
+                             base_rate_kp=[float(v) for v in base_rate_kp.cpu().reshape(-1).tolist()],
+                             diagnostic_rate_kp=actual_rate_kp),
         "horizon": horizon, "sustained_4_to_5s": sustained, "overshoot_max_mps": overshoot,
         "warmup": {"contact_count": int(warmup_contact.sum().item()),
                    "invalid_count": int(warmup_invalid.sum().item()),
@@ -400,12 +419,14 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser.add_argument("--kp", type=float, help=argparse.SUPPRESS)
     parser.add_argument("--speed", type=float, help=argparse.SUPPRESS)
     parser.add_argument("--auth", type=Path, help=argparse.SUPPRESS)
+    parser.add_argument("--rate-scale", type=float, default=1.0, help=argparse.SUPPRESS)
     args = parser.parse_args(argv)
     if args.preflight:
         print(json.dumps({"schema": SCHEMA, "cells": CELLS, "clean": not bool(git("status", "--porcelain", "--untracked-files=no"))}, sort_keys=True))
         return 0
     if args._child:
-        _run_child(Path(args.output), float(args.kp), float(args.speed), args.auth)
+        _run_child(Path(args.output), float(args.kp), float(args.speed), args.auth,
+                   float(args.rate_scale))
         return 0
     if args.verify:
         print(json.dumps(verify(Path(args.verify))["summary"], indent=2, sort_keys=True))
