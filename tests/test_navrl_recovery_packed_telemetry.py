@@ -168,10 +168,28 @@ class PackedTelemetryTest(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "negative fixed-anchor progress"):
             PACKED.load_and_verify(path)
 
-    def test_illegal_brake_to_route_transition_is_rejected(self):
+    def test_compressed_brake_connect_route_requires_exact_resume_counter(self):
         arrays = fixture(connect=False)
+        arrays["state_after"][0, 0] = PACKED.STATE_BRAKE
         arrays["state_before"][1, 0] = PACKED.STATE_BRAKE
         arrays["state_after"][1, 0] = PACKED.STATE_ROUTE
+        arrays["state_before"][2, 0] = PACKED.STATE_ROUTE
+        arrays["state_after"][2, 0] = PACKED.STATE_ROUTE
+        arrays["entry_delta"][0, 0] = 1
+        arrays["age_after"][0, 0] = 1
+        arrays["brake_age_after"][0, 0] = 1
+        path = self.write(arrays)
+        with self.assertRaisesRegex(RuntimeError, "route-resume transition"):
+            PACKED.load_and_verify(path)
+        arrays["resume_delta"][1, 0] = 1
+        path = self.write(arrays)
+        result = PACKED.load_and_verify(path)
+        self.assertEqual(result["route_resumes"], 1)
+
+    def test_brake_to_normal_transition_remains_illegal(self):
+        arrays = fixture(connect=False)
+        arrays["state_before"][1, 0] = PACKED.STATE_BRAKE
+        arrays["state_after"][1, 0] = PACKED.STATE_NORMAL
         path = self.write(arrays)
         with self.assertRaisesRegex(RuntimeError, "illegal"):
             PACKED.load_and_verify(path)

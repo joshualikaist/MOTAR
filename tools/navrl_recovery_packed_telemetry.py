@@ -729,7 +729,12 @@ def load_and_verify(path: Path, expected_sha256: str = "") -> Dict[str, object]:
             (before == STATE_OFF) & (after == STATE_OFF)
             | np.isin(before, [STATE_NORMAL, STATE_ROUTE])
               & np.isin(after, [STATE_NORMAL, STATE_BRAKE, STATE_CONNECT, STATE_ROUTE, STATE_NO_CONNECTOR])
-            | (before == STATE_BRAKE) & np.isin(after, [STATE_BRAKE, STATE_CONNECT, STATE_NO_CONNECTOR])
+            # A stopped actor can obtain its anchor, certify the route handoff and resume in one
+            # task interval.  The boundary samples then compress BRAKE->CONNECT->ROUTE to
+            # BRAKE->ROUTE; the exact resume-counter identity below proves the hidden transition.
+            | (before == STATE_BRAKE) & np.isin(
+                after, [STATE_BRAKE, STATE_CONNECT, STATE_ROUTE, STATE_NO_CONNECTOR]
+              )
             | (before == STATE_CONNECT) & np.isin(after, [STATE_CONNECT, STATE_ROUTE, STATE_NO_CONNECTOR])
             | (before == STATE_NO_CONNECTOR) & (after == STATE_NO_CONNECTOR)
         )
@@ -856,6 +861,14 @@ def load_and_verify(path: Path, expected_sha256: str = "") -> Dict[str, object]:
             raise RuntimeError("CONNECT timeout status/counter partition mismatch")
         entries = int(payload["entry_delta"][:, 0].sum())
         resumes = int(payload["resume_delta"][:, 0].sum())
+        observed_resumes = int(
+            ((after == STATE_ROUTE) & np.isin(before, [STATE_BRAKE, STATE_CONNECT])).sum()
+        )
+        if resumes != observed_resumes:
+            raise RuntimeError(
+                "route-resume transition/counter mismatch: transitions=%d resumes=%d"
+                % (observed_resumes, resumes)
+            )
         active_recovery = np.isin(after, [STATE_BRAKE, STATE_CONNECT])
         reset_active = int((runner_reset & active_recovery).sum())
         current_open = int((active_recovery[-1] & ~runner_reset[-1]).sum())

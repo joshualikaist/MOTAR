@@ -12745,3 +12745,10 @@ transient/thermal/CG를 닫기 전 구매·URDF·재학습을 금지했다. 출�
   fresh lower-contract braking receipt must therefore be generated from the corrected commit
   before the 32-cell gate is eligible; measured values are not copied around this provenance
   boundary.
+- With the corrected geometry, the first recovery-on cell reached a legitimate same-interval
+  `BRAKE -> CONNECT -> ROUTE` sequence. The boundary observer sampled only BRAKE before and ROUTE
+  after and incorrectly rejected the compressed pair. The raw cell showed exactly one such pair
+  and exactly one route-resume counter increment. Verification now permits the compressed pair
+  only when the total BRAKE/CONNECT-to-ROUTE pairs equal the immutable resume counter; missing or
+  forged counter evidence still fails. `BRAKE -> NORMAL` remains illegal. This is a telemetry
+  interpretation fix, not a state-machine, gate, or controller change.
