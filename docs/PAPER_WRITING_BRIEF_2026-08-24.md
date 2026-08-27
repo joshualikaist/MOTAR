@@ -14,8 +14,9 @@
    아니라 **hardware-informed simulation candidate**다. 질량·추력·관성은 설계점이며
    hardware identification 결과가 아니다.
 3. v1 결과(24×24 m, 478 m²)는 chirality/phantom-wall 문제로 superseded다. 논문의 주 결과로 쓰지 않는다.
-4. v2의 held-out capture/crash/timeout은 반드시 density, target speed, arena, evaluator semantics,
-   checkpoint, seed, episode 수와 함께 쓴다.
+4. historical v2 held-out capture/crash/timeout은 반드시 `overlap-permitting navrl_band`로 표시하고
+   density, target speed, arena, evaluator semantics, checkpoint, seed, episode 수와 함께 쓴다.
+   corrected non-overlap 결과로 재사용하지 않는다.
 5. reward/PPO loss/KL은 성공률이 아니다. 주 결과는 held-out capture rate와 crash/timeout이다.
 6. mode probe의 `INCONCLUSIVE_POLICY_CHIRALITY`는 mode averaging의 근거가 아니다.
 7. 외부 논문 제목·저자·DOI는 확인된 자료가 없으면 `[CITATION NEEDED]` placeholder로 남긴다.
@@ -50,7 +51,7 @@ held-out simulation protocol로 분해한다.
 | 항목 | 현재 기준 |
 |---|---|
 | simulator | Isaac Gym/Aerial Gym/Warp/rl_games |
-| corrected-v2 arena | 40×40×3 m |
+| corrected-v2 arena (fresh-only; PPO NOT RUN) | 40×40×3 m |
 | placement area | 1,600 m² |
 | obstacle | historical: 높이 3 m + overlap-permitting `navrl_band`; corrected fresh lineage: footprint-aware non-overlap, 0.45 m surface clearance |
 | actor observation | camera/LiDAR structured scene + simulator ego-state |
@@ -59,7 +60,7 @@ held-out simulation protocol로 분해한다.
 | obstacle representation | 8 cluster-sector tokens, 240° selection FOV, ±10° suppression (계보별 차이 명시) |
 | target | mixed motion; learned-task distribution U[0.3, 1.5] m/s, goal distance U[6, 28] m |
 | pursuer command | bounded squashed-Gaussian velocity/yaw action |
-| episode | corrected-v2 exact 600 actions, `time_outs` 전달 |
+| episode | shared task contract: exact 600 actions, `time_outs` 전달; corrected-v2 PPO 결과는 아직 없음 |
 | primary metric | held-out capture: pursuer가 target 0.5 m 이내로 종료한 episode 비율 |
 | secondary metrics | crash, timeout, bar contact, OOB/below cause, latency/track metrics |
 
@@ -67,6 +68,11 @@ held-out simulation protocol로 분해한다.
 fresh-only hardware-informed simulation candidate다. historical `navrl_ref5in_quad`의 0.280 m
 자산은 과거 체크포인트 provenance 때문에 그대로 보존한다. 실제 AUW/CG/inertia/thrust
 curve/thermal/power는 미측정이다.
+
+2026-08-27 실행 계약: corrected fresh training은 `70→205 bars`, step 15이며
+`NAVRL_MAX_BARS=300`은 OOD/geometry evaluation ceiling이다. YOPOv2의 count-density reference는
+64 bars(4/100m², 5 m spacing)와 100 bars(6.25/100m², 4 m spacing)다. 205 bars는
+12.81/100m²지만 새 PPO 성능은 아직 `NOT RUN`이다.
 
 ## 4. Reward와 정책
 
@@ -87,11 +93,12 @@ RNN보다 우월하다”고 쓰지 말고, 본 연구에서 비교한 지표와
 주장한다. capture 하나만으로 architecture superiority를 판정하지 않는다; smoothness, latency, crash,
 OOD density, parameter/FLOP budget을 함께 보고한다.
 
-## 5. 주 결과 A — v2 density × speed held-out map
+## 5. Historical 결과 A — overlap-permitting v2 density × speed map
 
 원자료: `docs/status/status.json`의 `density_speed_map`, 관련 evaluator receipt/summary.
-조건: v2 40×40 m arena, ep25000 + riskcap frozen candidate, deterministic, 약 2,050 episodes/cell,
-seed 47. 130–205 bars는 trained density support, 220 bars는 OOD다.
+조건: historical `navrl_band` 40×40 m arena, ep25000 + riskcap frozen candidate, deterministic,
+약 2,050 episodes/cell, seed 47. 130–205 bars는 당시 trained support, 220 bars는 당시 OOD다.
+이 표에는 `HISTORICAL · NOT VALID FOR CORRECTED NON-OVERLAP LINEAGE`를 붙인다.
 
 ### Density effect at target speed 0.3 m/s
 
@@ -116,7 +123,7 @@ seed 47. 130–205 bars는 trained density support, 220 bars는 OOD다.
 훈련된 density support 안에서 density×speed interaction은 확인되지 않았다(continuous likelihood-ratio
 `p=0.337`, categorical omnibus `p=0.817`). 220 bars 결과는 OOD generalization으로 분리한다.
 
-## 6. 주 결과 B — curriculum ceiling
+## 6. Historical 결과 B — curriculum ceiling
 
 원자료: `docs/status/status.json`의 `density_ceiling`.
 
@@ -127,7 +134,8 @@ seed 47. 130–205 bars는 trained density support, 220 bars는 OOD다.
 | 95 | 0.670 → 0.709 | first hold 후 promoted |
 | 100 | 0.521–0.631, 17 windows | ceiling; plateau 약 0.56 |
 
-해석: 100 bars는 해당 sensor-only cluster-sector policy의 **관측된 trainable ceiling**이다. 기하학적
+해석: 100 bars는 historical overlap-permitting 환경의 해당 sensor-only cluster-sector policy에서
+**관측된 trainable ceiling**이다. corrected non-overlap ceiling은 `NOT RUN`이다. 기하학적
 절대 한계나 모든 알고리즘의 한계라고 쓰지 않는다.
 
 ## 7. 주 결과 C — physical-target feasibility envelope
@@ -183,9 +191,9 @@ v2 주 결과와 직접 결합하지 않는다.
 
 ## 10. 실패 원인에 대한 현재 결론
 
-1. 학습된 sensor-only policy는 density가 증가할수록 capture가 감소하고 bar contact가 지배적 crash
-   cause가 된다.
-2. target speed 효과는 현재 v2 trained support 안에서 density 효과보다 작다.
+1. historical sensor-only policy는 historical `navrl_band`에서 density가 증가할수록 capture가
+   감소하고 bar contact가 지배적 crash cause가 됐다.
+2. target speed 효과는 그 historical trained support 안에서 density 효과보다 작았다.
 3. 8-token/selector representation, stopping margin, target boundary feasibility는 서로 다른 축이다.
    하나의 원인으로 합치지 않는다.
 4. physical-target gate 실패는 PPO 발산과 같은 현상이 아니다. target controller/arena OBB validity와
@@ -198,11 +206,12 @@ v2 주 결과와 직접 결합하지 않는다.
 2. Related Work — NavRL/NavRL++/UAV tracking/occlusion/active perception (확인된 서지만 인용)
 3. Problem Formulation — sensor-only actor, no-GT information firewall, moving target and dense bars
 4. Method — camera/LiDAR structured observation, token selector, temporal policy, bounded action, reward
-5. Evaluation Protocol — corrected-v2 contract, held-out seeds/episodes, provenance/VOID rules
-6. Results — density×speed map, curriculum ceiling, crash causes, latency correction
-7. Feasibility and Limitations — physical target envelope, synthetic ref5in, no hardware/logs
-8. Discussion — density dominates speed in the tested support; representation and stopping are separate
-9. Conclusion — reproducible simulation evidence, not sim-to-real claim
+5. Evaluation Protocol — historical/corrected lineage split, held-out seeds/episodes, provenance/VOID rules
+6. Historical Results — density×speed map, curriculum ceiling, crash causes, latency correction
+7. Corrected Environment — non-overlap geometry, v2 airframe PASS, PPO NOT RUN, 70→205 plan
+8. Feasibility and Limitations — physical target envelope, synthetic ref5in, no hardware/logs
+9. Discussion — historical findings and corrected-lineage questions are separate
+10. Conclusion — reproducible simulation evidence, not sim-to-real claim
 
 ## 12. 초록 초안 방향
 
@@ -212,9 +221,11 @@ v2 주 결과와 직접 결합하지 않는다.
 > actor receives camera/LiDAR-derived structured observations and ego-state, while privileged target
 > state is excluded from the policy path. Using a provenance-bound Isaac Gym protocol, we evaluate
 > held-out capture, crash causes, timeout, density, target speed, and timestamp-aware perception delay.
-> In the corrected-v2 arena, density produced a substantially larger performance change than target
-> speed within the trained support, while the density-by-speed interaction was not statistically
-> confirmed. A separate physical-target feasibility audit exposed strict planner/OBB boundary failures
+> In the historical overlap-permitting v2 arena, density produced a substantially larger performance
+> change than target speed within the trained support, while the density-by-speed interaction was not
+> statistically confirmed. We subsequently found that the placement rule merged nominal bars into
+> compound obstacles and introduced a fresh non-overlap lineage whose PPO performance remains unmeasured.
+> A separate historical physical-target feasibility audit exposed strict planner/OBB boundary failures
 > at high command speeds. These results establish a reproducible simulation benchmark and failure
 > decomposition; they do not claim sim-to-real transfer because the reference airframe and sensor
 > distribution remain unmeasured.

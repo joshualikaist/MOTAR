@@ -13022,3 +13022,19 @@ primary로 복사하면 source root drift로 거부되며 이는 의도된 fail-
   분리했다. 3-D viewer도 non-overlap sampler를 사용하며 merge fallback을 제거했다.
 - 최종 회귀는 Python `834 tests OK (2 skipped)`, target/launcher 계약 13/13, v1 provenance
   freeze 3/3, 비중첩 배치 4/4, 사이트 static/motion/route contract 전부 PASS였다.
+
+## 2026-08-27 — PPT 근거 패키지 및 밀도 계보 정리
+
+- 교수님 발표 재제작용 `docs/PPT_PACKAGE_README_2026-08-27.md`를 추가했다. Claude가 이전 PPT를
+  권위 자료로 복사하지 않도록 historical v1/v2와 corrected fresh v2를 별도 표로 고정하고,
+  각 수치의 사용 범위와 `NOT RUN` 경계를 명시했다.
+- corrected fresh physical launcher의 학습 목표를 `70→205 bars`(+15)로 통일했다. `300 bars`는
+  자산·평가 상한/OOD 조건으로만 남겼고, 과거 v2의 70→300 기록은 historical로 보존했다.
+- YOPOv2 count-density 비교는 공식 4 m/5 m spacing(6.25/4 trees per 100 m²)만 사용하고, 원문에
+  tree diameter가 없어 면적 점유율 비교를 만들지 않도록 했다. MOTAR density/footprint 표는 패키지
+  README와 PPT brief에 동일하게 반영했다.
+- `research_authority_2026-08-26.json`에 fresh training start/final/step, evaluation ceiling 및
+  YOPO reference fields를 추가했다. 새 corrected-v2 PPO 성능은 여전히 `NOT RUN`이다.
+- 전달 패키지: `/home/fair/Downloads/MOTAR_PPT_MASTER_BUNDLE_2026-08-27.zip` (24 files,
+  `unzip -t` PASS, 내부 `MANIFEST.sha256` 포함). 포함된 원자료는 platform gate와 historical
+  density/recovery/detection summaries이며 파일명에 historical 범위를 표시했다.

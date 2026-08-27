@@ -1,6 +1,7 @@
 # MOTAR 시스템 사양서 — 2026-08-24
 
-이 문서는 발표·논문·사이트에서 공통으로 사용하는 **corrected-v2 기준 사양**이다. 숫자는
+이 문서는 발표·논문·사이트에서 공통으로 사용하는 시스템 사양이다. 2026-08-27 이후의
+**corrected non-overlap physical v2**와 그 이전 historical `navrl_band` 결과를 반드시 분리한다. 숫자는
 설정값 또는 시뮬레이터 내부 계산값이며, `MEASURED`라고 표시하지 않은 하드웨어 값은 실제 기체
 식별값이 아니다.
 
@@ -8,11 +9,11 @@
 
 | 항목 | 현재 판정 |
 |---|---|
-| 시뮬레이션 계약/계측 | 2026-08-24 snapshot에서 677 tests PASS, 1 intentional skip; 정확한 현행 test count 주장은 하지 않음 |
+| 시뮬레이션 계약/계측 | 2026-08-27 full regression 834 tests PASS, 2 intentional skips |
 | software-only sim-to-real preflight | 구조 PASS, `SYNTHETIC_ONLY` |
 | physical target Track B | recovery-v2 32/32 integrity PASS, `FAIL_ROUTE_MECHANISM`; no-anchor follow-up `INCONCLUSIVE`; 종료 |
 | mode probe | `INCONCLUSIVE_POLICY_CHIRALITY`; 개선 근거로 채택하지 않음 |
-| fresh PPO | physical gate와 실제 센서 계약이 없어 `BLOCKED` |
+| corrected non-overlap fresh PPO | `NOT RUN`; route/physical engineering gate와 500-epoch smoke 전 장기학습 금지 |
 | 실제 기체/센서 로그 | 미조립·0회 비행·0개 실측 로그 |
 
 따라서 현재 논문에서 주장할 수 있는 것은 **재현 가능한 시뮬레이션 failure analysis**까지다.
@@ -31,26 +32,40 @@ Track B recovery-v2 lower-1.25는 `PASS_32_CELL_INTEGRITY / FAIL_ROUTE_MECHANISM
 primary `n=1`, identity disagreement `0`으로 `INCONCLUSIVE`다. 이 addendum은 추가 Track B
 GPU/PPO/retune/1.5/env-count/32-cell rerun을 승인하지 않는다.
 
+### 2026-08-27 corrected non-overlap addendum — 현행 제작 기준
+
+- historical `navrl_band`는 가까운 막대를 겹치거나 merge fallback으로 compound obstacle로 만들었다.
+  nominal 300 bars 표본은 평균 약 264 independent component였으므로 과거 성능을 새 환경 성능으로
+  재표기하지 않는다.
+- fresh-only pursuer/target은 `navrl_ref5in_v2_quad` / `navrl_target_drone_v2.urdf`, collision proxy
+  `0.283×0.283×0.12 m`다. historical v1 파일은 checkpoint provenance 때문에 byte 보존한다.
+- placement는 actual collision footprint circumcircle, surface clearance `0.45 m`, overlap 0,
+  merge fallback 0이며 불가능한 layout은 fail-closed한다.
+- 학습 목표는 `70→205 bars`, step 15, minimum dwell 1,000 epochs/level이다. `MAX_BARS=300`은
+  220/250/300 OOD evaluation과 geometry stress를 위한 asset ceiling이지 학습 목표가 아니다.
+- 새 airframe open-arena GPU envelope는 PASS지만 corrected route/physical engineering gate와 PPO
+  성능은 아직 `NOT RUN`이다. 기존 ep25000 capture/crash 수치는 모두 historical evidence다.
+
 ## 2. 플랫폼 하드웨어 사양
 
 ### 2.1 시뮬레이션 기체 비교
 
-| 값 | `navrl_quad` legacy | `navrl_ref5in_quad` reference candidate |
-|---|---:|---:|
-| 총 질량 | 0.250 kg | 1.200 kg |
-| 모터 팔 좌표의 절댓값 | 0.1300 m | 0.0777817 m |
-| 모터 간 대각 | 0.3677 m | 0.2200 m |
-| 충돌 proxy (W×D×H) | 0.28×0.28×0.08 m | 0.28×0.28×0.12 m |
-| 조립 관성 `ixx=iyy` | 8.450×10⁻⁴ kg·m² | 4.142×10⁻³ kg·m² |
-| 조립 관성 `izz` | 1.690×10⁻³ kg·m² | 5.769×10⁻³ kg·m² |
-| 모터 수 / 모터당 최대 추력 | 4 / 2.0 N | 4 / 9.6 N |
-| 총 최대 추력 | 8.0 N | 38.4 N |
-| nominal T/W | 3.262 | 3.262 |
-| 모터 시상수 | 0.04 s | 0.04 s |
-| 45° 수평 가속 상한 | 9.81 m/s² | 9.81 m/s² |
-| 대수적 roll 각가속 상한 | 377.3 rad/s² | 221.1 rad/s² |
+| 값 | `navrl_quad` legacy | historical `navrl_ref5in_quad` | fresh `navrl_ref5in_v2_quad` |
+|---|---:|---:|---:|
+| 총 질량 | 0.250 kg | 1.200 kg | 1.200 kg |
+| 모터 팔 좌표의 절댓값 | 0.1300 m | 0.0777817 m | 0.0777817 m |
+| 모터 간 대각 | 0.3677 m | 0.2200 m | 0.2200 m |
+| 충돌 proxy (W×D×H) | 0.28×0.28×0.08 m | 0.280×0.280×0.12 m | **0.283×0.283×0.12 m** |
+| 조립 관성 `ixx=iyy` | 8.450×10⁻⁴ kg·m² | 4.142×10⁻³ kg·m² | 4.142×10⁻³ kg·m² |
+| 조립 관성 `izz` | 1.690×10⁻³ kg·m² | 5.769×10⁻³ kg·m² | 5.769×10⁻³ kg·m² |
+| 모터 수 / 모터당 최대 추력 | 4 / 2.0 N | 4 / 9.6 N | 4 / 9.6 N |
+| 총 최대 추력 | 8.0 N | 38.4 N | 38.4 N |
+| nominal T/W | 3.262 | 3.262 | 3.262 |
+| 모터 시상수 | 0.04 s | 0.04 s | 0.04 s |
+| 45° 수평 가속 상한 | 9.81 m/s² | 9.81 m/s² | 9.81 m/s² |
+| 대수적 roll 각가속 상한 | 377.3 rad/s² | 221.1 rad/s² | 221.1 rad/s² |
 
-`navrl_ref5in_quad`는 220 mm/5-inch급으로 **모델링한 후보 플랫폼**이다. 질량 1.20 kg, 관성,
+`navrl_ref5in_v2_quad`는 220 mm/5-inch급으로 **모델링한 fresh 후보 플랫폼**이다. 질량 1.20 kg, 관성,
 추력계수, 모터 시상수, yaw torque, 전원·열·CG는 아직 실측되지 않았다. URDF와 allocator의
 내부 정합성은 검증했지만 CAD/BOM/flight identification은 아니다.
 
@@ -168,7 +183,9 @@ canonical v2 action parameters:
 
 ## 6. 학습 계약과 보상
 
-canonical v2 launcher(`train_navrl_v2_search.sh`) 기준:
+공통 PPO 값은 `train_navrl_v2_search.sh`를 계승하지만, corrected physical fresh 계약은
+`train_navrl_physical_routed_fresh.sh → train_navrl_physical_fresh.sh → train_navrl_v2_search.sh`
+3단 launcher가 고정한다:
 
 | 항목 | 값 |
 |---|---|
@@ -180,7 +197,8 @@ canonical v2 launcher(`train_navrl_v2_search.sh`) 기준:
 | clip / grad norm / critic coef | 0.2 / 1.0 / 2.0 |
 | entropy coefficient | 0.0 |
 | KL stop / rollback | 0.04 / on, LR×0.5, min 1e-6, patience 5 |
-| density curriculum | 70→300 bars, +15, dwell 1000 epochs, 16,384-episode gate |
+| corrected physical density curriculum | **70→205 bars**, +15, dwell 1000 epochs, 16,384-episode gate |
+| asset/evaluation ceiling | `NAVRL_MAX_BARS=300`; 220/250/300은 OOD/geometry stress |
 | promotion schedule | 70:0.82, 85:0.77, 100:0.72, 115+:0.70 |
 | target speed | U[0.3,1.5] m/s, mixed CV/waypoint, 300-epoch ramp |
 | episode | exact 600 RL actions, 60 s maximum |
@@ -217,9 +235,12 @@ canonical v2 launcher(`train_navrl_v2_search.sh`) 기준:
 
 - 아래 physical target envelope bullet은 2026-08-24 predecessor snapshot이다. 현행 Track B
   판정과 authority는 §1의 2026-08-26 addendum가 supersede한다.
-- v2 held-out map에서 density cost는 약 −11.36 pp, speed cost는 약 −2.67 pp이며, trained
+- 아래 ep24000/ep25000 held-out map은 **historical overlap-permitting `navrl_band` evidence**다.
+  corrected non-overlap 성능이 아니다. 이 historical map에서 density cost는 약 −11.36 pp,
+  speed cost는 약 −2.67 pp이며, trained
   density support 안 interaction은 확인되지 않았다(`p=.337/.817`). 220 bars는 OOD다.
-- curriculum ceiling은 이 특정 sensor-only policy에서 100 bars 부근(plateau 약 0.56)이다.
+- historical curriculum ceiling은 이 특정 sensor-only policy에서 100 bars 부근(plateau 약 0.56)이다.
+- corrected fresh 계보의 capture/crash/timeout, ceiling, 205 mastery는 모두 `NOT RUN`이다.
 - physical target envelope는 70 bars에서 0.9 m/s, 150/205/300 bars에서 0.6 m/s까지 strict PASS했고,
   모든 grid를 통과하지 못해 fresh PPO 권한이 없다.
 - 실제 센서가 없으므로 현재 range noise/dropout/latency 수치는 실기 분포가 아니라 simulation
@@ -227,12 +248,15 @@ canonical v2 launcher(`train_navrl_v2_search.sh`) 기준:
 
 ## 8. 출처
 
-- 하드웨어/URDF: `resources/robots/quad/quad_navrl_ref5in.urdf`,
-  `aerial_gym/config/robot_config/navrl_ref5in_quad_config.py`
+- fresh 하드웨어/URDF: `resources/robots/quad/quad_navrl_ref5in_v2.urdf`,
+  `aerial_gym/config/robot_config/navrl_ref5in_v2_quad_config.py`,
+  `resources/models/environment_assets/objects/navrl_target_drone_v2.urdf`
+- historical provenance: `quad_navrl_ref5in.urdf`, `navrl_ref5in_quad_config.py`
 - 과제/보상/동역학: `aerial_gym/config/task_config/navrl_task_config.py`
 - 인지/자료구조: `aerial_gym/task/navrl_task/navrl_perception.py`
 - Transformer: `aerial_gym/rl_training/rl_games/navrl_transformer_network.py`
-- canonical 학습 launcher: `aerial_gym/rl_training/rl_games/train_navrl_v2_search.sh`
+- corrected physical 학습 launcher: `train_navrl_physical_routed_fresh.sh`,
+  `train_navrl_physical_fresh.sh`, `train_navrl_v2_search.sh`
 - PPO YAML: `aerial_gym/rl_training/rl_games/ppo_navrl_perception_transformer.yaml`
 - 최신 상태: `status/status.json`, [`../VERIFICATION.md`](../VERIFICATION.md), `../WORKLOG.md`
 

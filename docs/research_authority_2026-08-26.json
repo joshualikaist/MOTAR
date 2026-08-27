@@ -51,6 +51,11 @@
     "collision_proxy_xyz_m": [0.283, 0.283, 0.12],
     "existing_checkpoint_compatible": false,
     "fresh_ppo_required": true,
+    "training_density_start_bars": 70,
+    "training_density_final_bars": 205,
+    "training_density_step_bars": 15,
+    "asset_and_evaluation_max_bars": 300,
+    "yopov2_count_density_reference_bars": [64, 100],
     "long_training_authorized": false,
     "next_gate": "corrected environment route/physical engineering gate and fresh PPO smoke"
   },

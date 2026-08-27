@@ -92,7 +92,7 @@ _validate_routed_contract() {
   _require_routed_value NAVRL_GENERAL_GOAL_DIST_MAX 28
   _require_routed_value NAVRL_DENSITY_CURRICULUM 1
   _require_routed_value NAVRL_DENSITY_START 70
-  _require_routed_value NAVRL_DENSITY_FINAL 300
+  _require_routed_value NAVRL_DENSITY_FINAL 205
   _require_routed_value NAVRL_DENSITY_STEP 15
   _require_routed_value NAVRL_DENSITY_THRESHOLD_START 0.80
   _require_routed_value NAVRL_DENSITY_THRESHOLD_END 0.70

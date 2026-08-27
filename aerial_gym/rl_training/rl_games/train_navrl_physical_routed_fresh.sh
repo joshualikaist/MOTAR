@@ -73,7 +73,7 @@ export NAVRL_GENERAL_GOAL_DIST_MIN=6
 export NAVRL_GENERAL_GOAL_DIST_MAX=28
 export NAVRL_DENSITY_CURRICULUM=1
 export NAVRL_DENSITY_START=70
-export NAVRL_DENSITY_FINAL=300
+export NAVRL_DENSITY_FINAL=205
 export NAVRL_DENSITY_STEP=15
 export NAVRL_DENSITY_THRESHOLD_START=0.80
 export NAVRL_DENSITY_THRESHOLD_END=0.70
@@ -136,6 +136,6 @@ echo "[physical-routed] model=physx_ref5in_6dof_global_astar_aabb_nonoverlap_v2 
 echo "[physical-routed] route=global_astar_v1 pattern=waypoint grid=0.25m goal_exclusion=1.0m fail_closed=1"
 echo "[physical-routed] frozen | arena=40x40x3 pool=bars_h3 placement=footprint_clearance surface=0.45m overlap_fallback=off tracking=0.45 boundary=0.75 support=0.208912661m"
 echo "[physical-routed] authority | mass=1.20kg thrust=9.60N arm=0.0777817m tau=0.04s tilt=45deg accel=4.0mps2 turn=150degps"
-echo "[physical-routed] training | envs=128 density=70:15:300 gate=70:0.82,85:0.77,100:0.72,115:0.70 dwell=1000 evidence=16384 speed=0.3:1.5@1 selector=cluster_sector lr=3e-5 governor=off"
+echo "[physical-routed] training | envs=128 density=70:15:205 max_pool=300 gate=70:0.82,85:0.77,100:0.72,115:0.70 dwell=1000 evidence=16384 speed=0.3:1.5@1 selector=cluster_sector lr=3e-5 governor=off"
 echo "[physical-routed] source | preflight=${ROUTED_PREFLIGHT} receipt_required=${NAVRL_REQUIRE_TRAINING_SOURCE_RECEIPT} clean_required=${NAVRL_REQUIRE_CLEAN_TRAINING_SOURCE}"
 exec "${SCRIPT_DIR}/train_navrl_physical_fresh.sh" "$@"

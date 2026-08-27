@@ -1,6 +1,6 @@
 # MOTAR 교수님 발표용 PPT 제작 마스터 브리프
 
-작성 기준: 2026-08-26  
+작성 기준: 2026-08-27 revision
 청중: 지도교수 및 드론·강화학습·제어 연구자  
 권장 발표 시간: 본편 18–22분 + 질의응답 10분  
 권장 분량: 본편 18장, appendix 10–12장  
@@ -22,6 +22,12 @@ INCONCLUSIVE여도 지우지 말고, 왜 그 판정이 다음 연구 방향을 �
 > 0회입니다. simulation·synthetic·hardware-pending을 모든 관련 슬라이드에 표시하세요.
 > 외부 논문의 제목·수치·DOI는 원문 확인이 없으면 `[CITATION NEEDED]`로 남기고 만들어내지 마세요.
 > 각 수치의 speaker note에 이 문서가 지정한 원자료 경로를 적으세요.
+>
+> **2026-08-27 lineage 정정을 최우선으로 적용하세요.** 기존 capture/crash 수치는 중첩을 허용한
+> historical `navrl_band` 환경의 결과이며, 새 `footprint_clearance` 환경의 성능으로 표시하면
+> 안 됩니다. 새 환경은 arena 40×40×3 m, `navrl_ref5in_v2_quad`, collision proxy 0.283 m,
+> surface clearance 0.45 m, overlap/merge fallback 0, 학습 목표 70→205 bars, 평가 asset ceiling
+> 300 bars입니다. 새 환경의 PPO 성능은 아직 `NOT RUN`입니다.
 >
 > 디자인은 흰색/짙은 녹색/민트의 단순한 연구발표 스타일로 통일하고, 본문 24 pt 이상,
 > 제목 34 pt 이상, 표 18 pt 이상을 유지하세요. 한 슬라이드에는 하나의 결론만 두고, 긴 문장 대신
@@ -48,9 +54,10 @@ MOTAR는 camera/LiDAR 기반 구조화 관측만 받는 UAV가 밀집 장애물�
 | 범주 | 최종 판정 | 의미 |
 |---|---|---|
 | Track A · detection Stage 1 | `RANGE_INCONCLUSIVE_AT_THIS_BUDGET` | 28 m clip이 관측을 개선했지만 사전 primary −15 pp gate 미달 |
-| Track A · P2/D1/P3 | `STRICT FAIL / FAIL / BLOCKED` | 실제 센서·BOM 없이 Stage 2와 fresh PPO 금지 |
-| Track B · recovery-v2 | `PASS_32_CELL_INTEGRITY / FAIL_ROUTE_MECHANISM` | 32셀 실행은 유효하지만 recovery 0/16 |
+| Track A · P2/D1/P3 | `STRICT FAIL / FAIL / BLOCKED` | historical sensor-range Track A의 Stage 2 금지 |
+| Historical Track B · recovery-v2 | `PASS_32_CELL_INTEGRITY / FAIL_ROUTE_MECHANISM` | overlap-permitting 환경의 32셀; recovery 0/16 |
 | Track B · no-anchor | `INCONCLUSIVE`, primary `n=1` | 전형적 원인을 판정할 표본 없음 |
+| Corrected non-overlap v2 | airframe GPU gate PASS · PPO `NOT RUN` | route/physical engineering gate와 500-epoch smoke 전 장기학습 금지 |
 | hardware | 미조립·real log 0·flight 0 | sim-to-real 성공 주장 금지 |
 
 기계 판독 원본: `docs/research_authority_2026-08-26.json`  
@@ -62,7 +69,7 @@ MOTAR는 camera/LiDAR 기반 구조화 관측만 받는 UAV가 밀집 장애물�
 
 1. 이동 표적 요격은 navigation보다 target visibility와 relative motion이 추가된다.
 2. 이를 sensor-only structured observation + temporal policy + fixed flight control로 구성했다.
-3. corrected-v2 계약을 세워 기존 의미론/평가 오류를 제거했다.
+3. historical 환경의 의미론·평가 오류를 분리하고, 중첩 없는 corrected-v2 계약을 새로 세웠다.
 4. held-out 결과에서 density 영향이 speed 영향보다 컸다.
 5. 인지 지연·미취득을 분해하니 timestamp와 range contract의 중요성이 드러났다.
 6. 더 실제적인 target dynamics를 넣자 route/controller feasibility가 먼저 실패했다.
@@ -147,7 +154,7 @@ Training-only:
 |---|---:|
 | arena | 40×40×3 m, area 1,600 m² |
 | obstacles | height 3 m, square footprint 0.4–0.8 m side distribution |
-| density | 70→300 bars; main held-out 130/160/190/205/220 |
+| density | fresh training target 70→205 bars; asset/evaluation ceiling 300; YOPOv2 count-density reference cells 64/100 |
 | 205-bar count density | 12.81 / 100 m² |
 | 205-bar nominal occupancy | 약 4.681% |
 | target speed | training U[0.3,1.5] m/s, mixed CV/waypoint |
@@ -156,11 +163,24 @@ Training-only:
 | episode | exact 600 actions, 60 s |
 | rates | 100 Hz physics / 10 Hz policy |
 
+밀도 환산표(40×40 m = 1,600 m², finite bar pool 평균 footprint 0.365313 m²):
+
+| bars | count /100m² | nominal gross occupancy | 발표 역할 |
+|---:|---:|---:|---|
+| 64 | 4.00 | 1.46% | YOPOv2 5 m count-density reference |
+| 100 | 6.25 | 2.28% | YOPOv2 4 m count-density reference |
+| 205 | 12.81 | 4.68% | corrected fresh ID training target |
+| 250 | 15.63 | 5.71% | OOD evaluation only |
+| 300 | 18.75 | 6.85% | OOD/geometry stress only |
+
 그림: arena top view + camera/LiDAR range circles. 12 m LiDAR와 target-camera clip 20 m를 서로 다른
 원으로 표시한다.
 
-주의: NavRL/YOPOv2와의 개수 밀도 비교는 obstacle 크기·sensor horizon·task가 달라 직접 우월성으로
-쓰지 않는다. 문헌 수치는 원문 확인 후 appendix에만 둔다.
+YOPOv2-Tracker의 simulation navigation은 평균 간격 5 m/4 m를 각각 `4/6.25 trees/100m²`로
+명시한다. MOTAR의 같은 개수 밀도는 64/100 bars이고, 205 bars는 12.81/100m²로 YOPOv2 최밀집
+조건의 2.05배다. 이는 **count-density context**일 뿐 난이도·성공률 우월성 주장이 아니다.
+YOPOv2 본문이 이 비교 절에서 나무 직경 분포를 주지 않으므로 `0.6 m tree` 기반 면적 비교를
+공식 수치처럼 쓰지 않는다. 원문: arXiv:2505.06923, Sec. IV-C1.
 
 ### Slide 5 — Expected hardware platform
 
@@ -348,7 +368,7 @@ Terminal:
 | clip / grad norm / critic coef | 0.2 / 1.0 / 2.0 |
 | canonical entropy | 0.0 |
 | KL stop/rollback | 0.04 / rollback on, LR×0.5 |
-| density | 70→300, +15 |
+| density | fresh physical training 70→205, +15; `NAVRL_MAX_BARS=300`은 OOD 평가용 asset ceiling |
 | dwell / evidence | 1,000 epochs / 16,384 episodes |
 | promotion | 70:.82, 85:.77, 100:.72, 115+:.70 |
 | target speed | U[0.3,1.5], 300-epoch ramp |
@@ -356,7 +376,8 @@ Terminal:
 주의:
 
 - YAML default LR 1e-4·entropy 0.003과 canonical launcher override를 구분한다.
-- curriculum max 300은 “항상 300까지 성공”이 아니라 task budget의 상한이다.
+- 205는 ID 학습 상한이고 220/250/300은 새 정책 평가 시 OOD로 표시한다.
+- generic historical v2 launcher의 300 기본값과 fresh physical launcher의 205 목표를 섞지 않는다.
 - best reward checkpoint가 아니라 terminal/last checkpoint와 SHA를 평가에 사용한다.
 
 ### Slide 12 — Evaluation protocol before results
@@ -378,7 +399,7 @@ Terminal:
 
 ### Slide 13 — Main held-out density × speed result
 
-제목: **Density cost was larger than speed cost in the tested support**
+제목: **Historical density map — not the corrected non-overlap result**
 
 왼쪽 그래프: speed 0.3에서 bars별 capture.
 
@@ -406,12 +427,14 @@ Terminal:
 - trained support 내 interaction 미확인: p=.337/.817.
 - 220 bars는 OOD로 별도 표시.
 
-조건: ep25000 frozen policy + post-training riskcap candidate, seed 47, 약 2,050 ep/cell.
+조건: historical overlap-permitting `navrl_band`, ep25000 frozen policy + post-training riskcap
+candidate, seed 47, 약 2,050 ep/cell. 슬라이드 전체에 `HISTORICAL · NOT VALID FOR NEW LINEAGE`
+watermark를 둔다.
 riskcap은 학습 layer가 아님을 각주로 명시한다.
 
 ### Slide 14 — Curriculum ceiling and representation limit
 
-제목: **Observed trainable ceiling near 100 bars**
+제목: **Historical trainable ceiling near 100 bars**
 
 그래프:
 
@@ -426,6 +449,7 @@ riskcap은 학습 layer가 아님을 각주로 명시한다.
 - geometry의 절대 한계나 모든 algorithm의 한계가 아님.
 - 8 obstacle token은 밀집 장면을 압축하므로 representation bottleneck 후보지만 인과 확정은 아님.
 - corridor-token pilot은 capture 66.10%, gain +1.57 pp로 사전 gate를 통과하지 못했다.
+- 새 비중첩 physical lineage의 trainable ceiling은 아직 측정하지 않았다(`NOT RUN`).
 
 ### Slide 15 — Perception and timing lessons
 
@@ -451,7 +475,7 @@ riskcap은 학습 layer가 아님을 각주로 명시한다.
 
 ### Slide 16 — Physical target and route recovery failure
 
-제목: **A valid 32-cell run can still fail the mechanism**
+제목: **Historical route gate: a valid 32-cell run can still fail the mechanism**
 
 상단 흐름:
 
@@ -473,6 +497,7 @@ virtual/bounded target → 6-DoF physical target → global route → local reco
 - fail-closed route/recovery state machine이 executable connector를 안정적으로 만들지 못했다.
 - 1.25 contract는 canonical 1.5 성공이 아니다.
 - planner는 pursuer planner가 아니라 **target-side environment motion controller**다.
+- 이 결과는 old `navrl_band` geometry이며 corrected non-overlap gate 결과가 아니다.
 
 ### Slide 17 — What is proven, what is not
 
@@ -482,48 +507,46 @@ virtual/bounded target → 6-DoF physical target → global route → local reco
 
 Supported:
 
-- corrected-v2 semantic and receipt pipeline.
+- historical semantic/receipt pipeline의 교정 기록과 corrected-v2 계약(성능 NOT RUN).
 - density/speed held-out map under frozen simulation contract.
 - learned detector non-inferiority: −0.0145 pp, CI [−1.752,+1.723].
 - timestamp-aware latency diagnosis.
 - physical target route mechanism failure and bottleneck counters.
+- corrected v2 airframe open-arena GPU envelope and non-overlap placement implementation.
 
 Not supported:
 
 - actual flight or sim-to-real performance.
 - successful route recovery or physical target PPO.
 - 300-bar full connectivity/performance.
+- corrected non-overlap PPO capture/crash/timeout 또는 205-bar mastery.
 - universal Transformer superiority over RNN.
 - real sensor range/noise/latency distribution.
 - exact 5-inch hardware feasibility.
 
 중앙 문구: **“The result is a reproducible failure map, not a deployment claim.”**
 
-### Slide 18 — Next 72 hours / closing
+### Slide 18 — Corrected-environment execution plan / closing
 
-제목: **Measure before training again**
+제목: **Validate geometry, smoke once, then train only to 205**
 
-Day 1:
+Immediate simulation sequence:
 
-- exact BOM/serial/firmware, AUW, CG, CAD envelope.
-- camera/LiDAR/ego coordinate frames and timestamp semantics.
-- thrust stand and motor lag/thermal envelope.
+1. 64/70/100/130/160/190/205/220/250/300 bars exact topology audit: random-pair
+   connectivity, no-route, passage width, reset latency. 예상 2–4 h.
+2. corrected non-overlap route/physical engineering gate. 예상 1–2 h.
+3. 70 bars fresh PPO 500-epoch smoke. 예상 1–1.5 h.
+4. gate 통과 시 single-seed 70→205 fresh PPO. 예상 2–4 days.
+5. held-out 64/70/100/130/160/190/205 + OOD 220/250/300. 예상 2–4 h.
 
-Day 2:
-
-- 7 distances × 3 bearings × 2 target motions × 5 repeats = 210 trials.
-- bearing/range bias and p90, recall, confidence, latency p50/p95/p99, skew, dropout burst.
-
-Day 3:
-
-- manifest-bound real-log ingest and offline replay.
-- far-bearing/near-range tracker decision.
-- 한 개 조작축만 선택해 새 preregistration 후 fresh PPO 여부 판단.
+300 bars는 asset/evaluation ceiling이며 자동 학습 목표가 아니다. 205→300 continuation은 topology와
+205 held-out 결과를 보기 전에는 승인하지 않는다. 실제 hardware track의 BOM/calibration/210 trials는
+이 simulation sequence와 별도이며 여전히 미실행이다.
 
 마지막 문장:
 
-> “다음 성능 향상은 epoch를 더 쓰는 데서가 아니라, simulation에서 가정한 센서와 동역학을 실제
-> 측정값으로 바꾸는 데서 시작합니다.”
+> “먼저 중첩 없는 환경이 실제로 풀 수 있는 과제인지 확인하고, 205 bars까지만 새 계보로 학습한 뒤,
+> 300 bars는 성능 절벽과 기하학적 한계를 측정하는 OOD 조건으로 남깁니다.”
 
 ## 4. Appendix 권장 구성
 
@@ -553,7 +576,8 @@ target-side physical controller는 별도 작은 표로 분리한다.
 
 ### A6 — PPO/curriculum table
 
-launcher override와 YAML default를 두 열로 나눠 혼동을 방지한다.
+launcher override와 YAML default를 두 열로 나눠 혼동을 방지한다. 특히 generic historical
+v2 `70→300`과 corrected physical fresh `70→205`, `MAX_BARS=300`을 세 개의 독립 필드로 표시한다.
 
 ### A7 — Crash taxonomy
 
@@ -572,10 +596,11 @@ analytic detector, learned-v2 detector, target track, range clipping/normalizati
 - frozen parameter derivation과 causal/confounded comparison을 구분.
 - riskcap 사후 tuning으로 결과를 만들지 않았음을 명시.
 
-### A10 — Route mechanism cell map
+### A10 — Historical route mechanism cell map
 
 bars 70/150/205/300 × speed 0.6/0.9/1.2/1.25 × route off/on의 32셀 pass/fail 표.
 integrity와 mechanism verdict를 색상으로 분리한다.
+`HISTORICAL navrl_band · NOT THE NEW NON-OVERLAP GATE` 라벨을 표 위에 둔다.
 
 ### A11 — Superseded/VOID registry
 
@@ -621,10 +646,11 @@ Slide 10 답변을 사용한다. 특히 formal PBRS 과대주장 금지, held-ou
 
 ### Q6. 205 bars가 NavRL/YOPOv2보다 정말 어려운가?
 
-> 단순 개수 밀도로 우월성을 말할 수 없습니다. arena, obstacle footprint, sensor horizon, 동적 장애물,
-> goal navigation과 interception의 차이가 있습니다. 본 연구 내부에서는 12.81 bars/100 m²와 nominal
-> footprint occupancy 4.681%를 함께 보고하고, 외부 비교는 원문에서 동일 정의를 확인한 뒤 제한적으로
-> 사용합니다.
+> YOPOv2 navigation simulation은 평균 간격 5 m와 4 m를 각각 4와 6.25 trees/100m²로 정의합니다.
+> MOTAR의 동일 count-density cell은 64와 100 bars이고, 205 bars는 12.81/100m²로 YOPOv2 최밀집
+> 조건의 2.05배입니다. 그러나 obstacle shape, speed(4–10 m/s 대 0.3–1.5 m/s target), sensor,
+> success definition과 moving-target interception task가 달라 “2배 어렵다”고 말하지 않습니다.
+> 새 비중첩 계보의 205-bar 성능은 아직 NOT RUN입니다.
 
 ### Q7. 표적이 화면에서 부자연스럽게 움직이던데 학습 환경도 그런가?
 
@@ -678,6 +704,9 @@ Slide 10 답변을 사용한다. 특히 formal PBRS 과대주장 금지, held-ou
 7. `docs/research_authority_2026-08-26.json` — 최종 실행 authority.
 8. `VERIFICATION.md` — gate 결과.
 9. `README.md` — 공개 요약.
+10. `docs/PPT_PACKAGE_README_2026-08-27.md` — 이번 revision의 우선순위·금지사항·파일 SHA.
+11. `results/navrl_ref_platform_verification_20260827_v2/summary.json` — 새 v2 airframe GPU envelope.
+12. `docs/status/data/platform.json` — v1/v2 platform 구조화 사양.
 
 원자료를 추가로 요구할 때만:
 
@@ -701,6 +730,10 @@ Slide 10 답변을 사용한다. 특히 formal PBRS 과대주장 금지, held-ou
 - [ ] export 후 모든 한글/수식/SVG/표가 16:9 화면 밖으로 잘리지 않는지 100% zoom QA.
 - [ ] `pp`와 `%` 단위 일관성.
 - [ ] “hardware validated”, “sim-to-real achieved”, “route recovery solved”, “Transformer is better” 금지.
+- [ ] historical 결과 슬라이드에 `HISTORICAL navrl_band` watermark.
+- [ ] corrected non-overlap 성능은 전부 `NOT RUN`; 임의 그래프/보간 금지.
+- [ ] fresh training target `205`와 asset/evaluation ceiling `300`을 서로 바꾸지 않음.
+- [ ] YOPOv2 대응 count-density는 `64/100`, 205는 2.05× context이며 난이도 우월성 주장이 아님.
 
 ## 9. 발표 직전 실행할 검증 명령
 

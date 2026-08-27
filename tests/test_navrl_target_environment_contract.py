@@ -30,7 +30,9 @@ ROUTED_LAUNCHER = ROUTED_LAUNCHER_PATH.read_text(encoding="utf-8")
 RL = ROOT / "aerial_gym/rl_training/rl_games"
 
 ROUTED_FROZEN = {
-    "NAVRL_ROBOT": "navrl_ref5in_quad",
+    "NAVRL_ROBOT": "navrl_ref5in_v2_quad",
+    "NAVRL_PHYSICAL_GEOMETRY_VERSION": "v2",
+    "NAVRL_TARGET_BOX_XY_M": "0.283",
     "NAVRL_TARGET_DYNAMICS": "physical",
     "NAVRL_TARGET_ROUTE_MODE": "global_astar_v1",
     "NAVRL_TARGET_PATTERN": "waypoint",
@@ -39,9 +41,8 @@ ROUTED_FROZEN = {
     "NAVRL_BAR_POOL": "bars_h3",
     "NAVRL_BAR_X_MIN": "0",
     "NAVRL_BAR_X_MAX": "1",
-    "NAVRL_PLACEMENT_MODE": "navrl_band",
-    "NAVRL_PLACEMENT_GAP_M": "1.6",
-    "NAVRL_PLACEMENT_TOUCH_M": "0.4",
+    "NAVRL_PLACEMENT_MODE": "footprint_clearance",
+    "NAVRL_PLACEMENT_SURFACE_CLEARANCE_M": "0.45",
     "NAVRL_MAX_BARS": "300",
     "NAVRL_TARGET_ROUTE_RESOLUTION_M": "0.25",
     "NAVRL_TARGET_ROUTE_MAX_EXPANSIONS": "50000",
@@ -74,7 +75,7 @@ ROUTED_FROZEN = {
     "NAVRL_GENERAL_GOAL_DIST_MAX": "28",
     "NAVRL_DENSITY_CURRICULUM": "1",
     "NAVRL_DENSITY_START": "70",
-    "NAVRL_DENSITY_FINAL": "300",
+    "NAVRL_DENSITY_FINAL": "205",
     "NAVRL_DENSITY_STEP": "15",
     "NAVRL_DENSITY_THRESHOLD_START": "0.80",
     "NAVRL_DENSITY_THRESHOLD_END": "0.70",
@@ -223,7 +224,7 @@ class TargetLauncherContractTest(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stdout)
         self.assertIn("arena=40x40x3 pool=bars_h3", result.stdout)
         self.assertIn("tracking=0.45 boundary=0.75", result.stdout)
-        self.assertIn("envs=128 density=70:15:300", result.stdout)
+        self.assertIn("envs=128 density=70:15:205 max_pool=300", result.stdout)
         self.assertIn("speed=0.3:1.5@1 selector=cluster_sector lr=3e-5 governor=off", result.stdout)
         self.assertIn("receipt_required=0 clean_required=0", result.stdout)
 

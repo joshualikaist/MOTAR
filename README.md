@@ -84,7 +84,7 @@ attitude/rate torque → motor allocation → 100 Hz rigid-body physics` 순서�
 | Item | Value |
 |---|---|
 | Arena | `40 × 40 × 3 m`; fresh physical lineage는 footprint-aware non-overlap placement (`0.45 m` surface clearance) |
-| Density curriculum | 70 → 300 bars, +15 steps, minimum 1,000 epochs per level |
+| Density curriculum | fresh physical: 70 → 205 bars, +15; asset/evaluation ceiling 300 bars; minimum 1,000 epochs per level |
 | Target | mixed constant-velocity / waypoint, `0.3–1.5 m/s`, goal distance `6–28 m` |
 | Actor observation | 898-D; static 288 + obstacle 480 + robot 50 + target 80 |
 | Horizontal command | per-axis `±2.5 m/s`; yaw `±3.0 rad/s`; tilt limit `45°` |
