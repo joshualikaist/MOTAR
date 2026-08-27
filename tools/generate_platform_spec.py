@@ -235,7 +235,7 @@ def main():
     for r in data["robots"]:
         d = r["derived"]
         print(f"{r['key']:20s} {r['mass_kg']:.3f} kg · T/W {d['thrust_to_weight']:.3f} · "
-              f"box {r['collision_box_m'][0]:.2f}×{r['collision_box_m'][2]:.2f} m · "
+              f"box {r['collision_box_m'][0]:.3f}×{r['collision_box_m'][2]:.3f} m · "
               f"arm {r['arm_m']:.4f} m · roll α {d['roll_alpha_radps2']} rad/s²")
     payload = data["payload"]
     print(f"incomplete named-part subtotal {payload['partial_grams_min']:.1f}–"
