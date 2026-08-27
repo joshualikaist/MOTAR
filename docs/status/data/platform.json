@@ -1,8 +1,8 @@
 {
  "schema": "motar.platform/1",
- "generated_at": "2026-08-27T03:29:38+00:00",
+ "generated_at": "2026-08-27T03:37:50+00:00",
  "generator": "tools/generate_platform_spec.py",
- "source_commit": "821d03c",
+ "source_commit": "670c227",
  "robots": [
   {
    "key": "navrl_quad",
