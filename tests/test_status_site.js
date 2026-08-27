@@ -35,7 +35,7 @@ for (const id of ['arena', 'method', 'evidence', 'platform', 'next']) {
 }
 assert(!css.includes('@import'));
 assert(!css.includes('fonts.googleapis.com'));
-assert(html.includes('style.css?v=20260827r5'), 'compact site CSS cache-bust must advance with the layout');
+assert(html.includes('style.css?v=20260827r6'), 'compact site CSS cache-bust must advance with the layout');
 assert(css.includes('height: clamp(300px, 44vh, 500px)'), 'desktop viewer must stay within a viewport-friendly clamp');
 assert(css.includes('height: clamp(260px, 64vw, 340px)'), 'mobile viewer must retain a compact height clamp');
 assert(css.includes('font-size: 11px'), 'viewer HUD must remain compact');
@@ -60,7 +60,7 @@ assert(html.indexOf('arena.js') < html.indexOf('viewer.js'));
 for (const script of [
   'vendor/three.min.js', 'vendor/OrbitControls.js', 'arena_route.js',
   'arena_motion.js', 'arena.js', 'viewer.js',
-]) assert(html.includes(`${script}?v=20260827r5`), `stale cache-bust for ${script}`);
+]) assert(html.includes(`${script}?v=20260827r6`), `stale cache-bust for ${script}`);
 assert(html.includes('이 화면은 PPO 실행 영상'));
 assert(html.includes('10 Hz 고정 simulation clock'));
 assert(html.includes('PhysX 재생'));

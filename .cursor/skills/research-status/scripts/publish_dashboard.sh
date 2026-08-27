@@ -41,6 +41,11 @@ MSG="$(mktemp)"
 trap 'rm -f "$MSG"' EXIT
 printf 'status: update research dashboard (%s)\n' "$(date -u +%Y-%m-%dT%H:%MZ)" > "$MSG"
 git commit -F "$MSG"
-git push origin "$BRANCH"
-echo "pushed docs/ to origin/$BRANCH"
-echo "live (after Pages is enabled on $BRANCH:/docs): https://joshualikaist.github.io/MOTAR/status/"
+# Pages source is research/navrl-env:/docs. Pushing main and that ref in one
+# receive does not create a Pages build — source ref must go out alone first.
+git push origin HEAD:research/navrl-env
+if [ "$BRANCH" != "research/navrl-env" ]; then
+  git push origin "$BRANCH"
+fi
+echo "pushed docs/ to origin/research/navrl-env (Pages source) then origin/$BRANCH"
+echo "live (after Pages is enabled on research/navrl-env:/docs): https://joshualikaist.github.io/MOTAR/status/"

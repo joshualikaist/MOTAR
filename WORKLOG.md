@@ -13070,3 +13070,8 @@ Hard 22.5–28 m 밴드와 placer latency 스크립트는 이번 동결에 넣�
 건드리지 않아 재배포가 안 떴다. status 히어로/메트릭/캐시(`20260827r5`)에 205 PASS · 300
 FAIL을 넣고 `main`과 `research/navrl-env`를 같은 커밋으로 다시 맞춘다. PPO 권한은 여전히 없다.
 
+`1982349`는 내용이 맞았지만 `git push origin main main:research/navrl-env` 한 receive라
+Pages run이 안 생겼다. 캐시를 `20260827r6`으로 올리고 `.nojekyll` rebuild marker를 넣은 뒤
+Pages source인 `research/navrl-env`만 단독 push하고, 그다음 `main`을 같은 커밋으로
+fast-forward한다.
+
