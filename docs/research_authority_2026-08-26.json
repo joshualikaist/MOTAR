@@ -57,7 +57,16 @@
     "asset_and_evaluation_max_bars": 300,
     "yopov2_count_density_reference_bars": [64, 100],
     "long_training_authorized": false,
-    "next_gate": "corrected environment route/physical engineering gate and fresh PPO smoke"
+    "density_geometry_audit": {
+      "binding_inflation": "body_plus_tracking",
+      "goal_band": "canonical_6_28",
+      "training_cap_bars": 205,
+      "training_cap_passes": true,
+      "highest_passing_density_bars": 250,
+      "disconnected_at_bars": 300,
+      "authorizes_ppo": false
+    },
+    "next_gate": "corrected environment route/physical engineering gate and fresh PPO smoke; still blocked until hardware Track A or a new GPU authority"
   },
   "evidence": [
     {
@@ -71,6 +80,10 @@
     {
       "path": "results/navrl_physical_target_recovery_v2_no_connector_forensics_seed827/summary.json",
       "sha256": "bc5d05a3f36da9213989c84ae28eda9ad65b0ba60b55dc2bbe4b5d262a12b8ee"
+    },
+    {
+      "path": "results/navrl_v2_density_geometry_audit_2026-08-27/density_geometry_canonical_6_28.json",
+      "sha256": "6b1f1b36cf73409d0c09483c3e1767b7ff196aecf0b95769f0e07d8dffa268d5"
     }
   ],
   "claim_boundary": {

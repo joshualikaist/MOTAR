@@ -19,6 +19,11 @@ class TestResearchAuthorityFreeze(unittest.TestCase):
         self.assertFalse(receipt["track_a"]["stage2_authorised"])
         self.assertFalse(receipt["track_b"]["long_training_authorized"])
         self.assertEqual(receipt["hardware_state"]["real_flights"], 0)
+        geometry = receipt["corrected_environment_v2_2026_08_27"]["density_geometry_audit"]
+        self.assertTrue(geometry["training_cap_passes"])
+        self.assertEqual(geometry["training_cap_bars"], 205)
+        self.assertEqual(geometry["disconnected_at_bars"], 300)
+        self.assertFalse(geometry["authorizes_ppo"])
 
     def test_track_b_prohibits_training_and_retuning(self):
         receipt = MODULE.verify_authority()

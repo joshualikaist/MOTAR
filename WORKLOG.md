@@ -13038,3 +13038,29 @@ primary로 복사하면 source root drift로 거부되며 이는 의도된 fail-
 - 전달 패키지: `/home/fair/Downloads/MOTAR_PPT_MASTER_BUNDLE_2026-08-27.zip` (24 files,
   `unzip -t` PASS, 내부 `MANIFEST.sha256` 포함). 포함된 원자료는 platform gate와 historical
   density/recovery/detection summaries이며 파일명에 historical 범위를 표시했다.
+
+## 2026-08-27 — 기하 감사 205 PASS, 밀도 계약 동결 (Claude 세션 한도 이후 재개)
+
+클로드 세션이 감사 JSON을 쓴 직후(13:52, 세션 한도 13:54) 끊겼다. 0번 계보 문서와 1번 CPU
+감사는 이미 끝나 있었고, 2번 밀도 사전등록이 미완이었다.
+
+Canonical 6–28 m, body+tracking 팽창 0.650 m, 60×128:
+
+| bars | connectivity | no-route | 판정 |
+|---:|---:|---:|---|
+| 205 | 99.167% | 0.833% | PASS |
+| 250 | 97.813% | 2.187% | 최고 통과 |
+| 300 | 94.661% | 5.339% | FAIL |
+
+게이트는 결과 파일보다 먼저 VERIFICATION에 고정돼 있었다(≥95% / ≤5% / 생성실패 0).
+본학습 상한은 약속대로 205 유지. 220/250은 연결 OOD, 300은 단절 스트레스.
+SHA-256 `6b1f1b36…a268d5`. 도구는 실 placer + `bars_h3` URDF를 썼고, 팽창 반경은
+prop-tip AABB 0.2825634 m의 circumradius다. v2 collision box 0.283 m와의 차이는
++0.31 mm라 205/300 판정을 뒤집지 않는다.
+
+PPO·smoke·Track A/B GPU는 여전히 권한 없음. 다음 GPU 단계는 별도 권한 해제 뒤에만.
+Hard 22.5–28 m 밴드와 placer latency 스크립트는 이번 동결에 넣지 않았다.
+
+문서: `docs/preregistration_navrl_v2_corrected_density_geometry_2026-08-27.md`,
+`results/navrl_v2_density_geometry_audit_2026-08-27/summary.md`.
+

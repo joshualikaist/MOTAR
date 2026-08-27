@@ -26,6 +26,46 @@
 R0 CPU gate, 최초 0/32 VOID, attempt 2, recovery forensics와 recovery-v2의 실행 이력과 수치는
 아래 날짜별 절에 보존한다. 역사적 preregistration은 현재 실행 authority가 아니다.
 
+## 계보 단절 (2026-08-27 고정) — 과거 결과는 corrected v2로 이월되지 않는다
+
+corrected v2 계보(40×40×3 m, **비중첩 배치**, surface clearance 0.45 m, 학습 70→205)와 그 이전
+결과 사이에는 **세 개의 독립적인 단절**이 있다. 하나만으로도 이월이 불가능하며, 셋이 겹친다.
+
+| 단절 | 내용 | 영향 |
+|---|---|---|
+| 배치 기하 | 중첩 허용 → **비중첩**, 아레나 40×40×3 | 관측 분포가 다르다 |
+| **heading 임계** | `HEADING_VALID_SPEED_MPS`가 인라인 `1e-5`를 **0.10으로 대체**(`0d1def2`, 2026-08-26) | 표적 heading 판정이 **10,000배** 달라진다. 2026-08-26 **이전 모든 체크포인트**는 `1e-5`로 학습됐다 |
+| 밀도 계보 | 70→300 → **70→205** | 커리큘럼 수준 구성 자체가 다르다 |
+
+따라서 **corrected v2에서의 PPO 성능은 NOT RUN이다.** 과거 205-bar 수치·capture·density curve는
+`historical`로만 인용하며, 새 계보의 성능 주장으로 쓰지 않는다. 이 규칙은 문서·PPT·논문 브리프에
+동일하게 적용된다.
+
+heading 단절은 재개(warm-start)에도 적용된다. `env_state`가 이제
+`cfg_target_motion_heading_valid_speed_mps`와 `..._provenance`를 함께 기록하며, 키가 없는 과거
+체크포인트는 `assumed_pre_key_default`로 로드되되 그 메시지가 `1e-5` 사실을 직접 명시한다.
+**추정을 측정으로 읽지 않는다.**
+
+### 205 학습 상한은 기하 감사 PASS (2026-08-27 측정)
+
+학습 상한 205의 **선택 이유**는 여전히 YOPOv2 count density 대비 약 2.05배라는 밀도 문맥이다.
+연결 여부는 더 이상 유추가 아니다. 게이트(connectivity ≥ 95%, no-route ≤ 5%, 생성 실패 0)를
+결과 파일보다 먼저 `VERIFICATION.md`에 고정한 뒤 CPU 감사를 돌렸다.
+
+Canonical 6–28 m, **body+tracking** 팽창(0.650 m), 60 layout × 128 pair:
+
+| bars | connectivity | no-route | 판정 |
+|---:|---:|---:|---|
+| 205 | 99.167% | 0.833% | **PASS** |
+| 250 | 97.813% | 2.187% | PASS (최고 통과 밀도) |
+| 300 | 94.661% | 5.339% | **FAIL** |
+
+원자료
+[`results/navrl_v2_density_geometry_audit_2026-08-27/`](results/navrl_v2_density_geometry_audit_2026-08-27/summary.md).
+본학습 상한은 약속대로 **205로 유지**한다. 220/250은 연결 OOD, 300은 단절 스트레스다.
+이 측정은 PPO·smoke·Track A/B GPU 권한을 만들지 않는다. 밀도 계약:
+[`docs/preregistration_navrl_v2_corrected_density_geometry_2026-08-27.md`](docs/preregistration_navrl_v2_corrected_density_geometry_2026-08-27.md).
+
 ## 한 줄 상태
 
 `navrl_ref5in_quad`는 **hardware-informed simulation candidate**다. P0·P1c는 PASS, **P2·D1은 FAIL**,

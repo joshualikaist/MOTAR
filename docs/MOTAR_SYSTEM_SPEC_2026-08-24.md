@@ -198,7 +198,7 @@ canonical v2 action parameters:
 | entropy coefficient | 0.0 |
 | KL stop / rollback | 0.04 / on, LR×0.5, min 1e-6, patience 5 |
 | corrected physical density curriculum | **70→205 bars**, +15, dwell 1000 epochs, 16,384-episode gate |
-| asset/evaluation ceiling | `NAVRL_MAX_BARS=300`; 220/250/300은 OOD/geometry stress |
+| asset/evaluation ceiling | `NAVRL_MAX_BARS=300`; 220/250은 연결 OOD, 300은 2026-08-27 기하 감사에서 단절 FAIL |
 | promotion schedule | 70:0.82, 85:0.77, 100:0.72, 115+:0.70 |
 | target speed | U[0.3,1.5] m/s, mixed CV/waypoint, 300-epoch ramp |
 | episode | exact 600 RL actions, 60 s maximum |

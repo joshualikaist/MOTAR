@@ -19,9 +19,11 @@
 | Historical v2 (`navrl_band`) | 40×40×3 m, 1,600 m², overlap-permitting | 기존 capture/crash/timeout은 이 계보로만 표시 |
 | Corrected fresh v2 | 40×40×3 m, `navrl_ref5in_v2_quad`, 0.283 m proxy, footprint-aware non-overlap, surface clearance 0.45 m, merge fallback 0 | airframe/engineering gate만 PASS; PPO 성능은 **NOT RUN** |
 
-새 계보의 실행 계약은 `70→205 bars`(step 15, level당 minimum dwell 1,000 epochs)이며, `300 bars`는
-자산·평가 상한/OOD 조건이지 자동 학습 목표가 아니다. 따라서 “300 bars에서 학습했다”라고 쓰지 않는다.
-과거 v2의 `70→300` 표기는 historical launcher 기록으로 남기되 새 계보와 연결하지 않는다.
+새 계보의 실행 계약은 `70→205 bars`(step 15, level당 minimum dwell 1,000 epochs)이다.
+2026-08-27 기하 감사에서 body+tracking 팽창 기준 205는 PASS, 250까지 연결, **300은 단절
+FAIL**이다. 따라서 300을 “연결 OOD”로 쓰지 말고 disconnected-stress로만 표시한다.
+“300 bars에서 학습했다”라고 쓰지 않는다. 과거 v2의 `70→300` 표기는 historical launcher
+기록으로 남기되 새 계보와 연결하지 않는다.
 
 ## 밀도 숫자 계약
 
