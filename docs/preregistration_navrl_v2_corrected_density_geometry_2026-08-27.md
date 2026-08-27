@@ -59,3 +59,23 @@ pairs, 205-bar free space is connected after body+tracking inflation.
 Unsupported: corrected-v2 PPO performance; hard 22.5–28 m connectivity; hardware
 validation; carrying historical overlap-permitting capture curves into this
 lineage.
+
+## 후속 메모 (2026-08-27, 같은 날) — spawn 캐비어트 해소
+
+이 문서와 위 receipt가 인용하는 `start_in_inflated_obstacle_frac`(205막대 27.45%)은
+스폰 로직이 막대 **중심**으로부터 flat 0.65 m만 확인하고 막대별 실제 반경(circumradius
+0.3133–0.5465 m)을 몰랐던 결함 때문이었다. `navrl_task.py`의 스폰 수락 술어를 막대별
+표면 여유 판정으로 고쳤다(요구 여유 = robot inflation 0.19980 + tracking reserve 0.45 =
+0.649802 m, 이 문서의 binding inflation과 동일).
+
+재측정(60×128, 205막대 단독): `start_in_inflated_obstacle_frac` **27.45% → 0.104%**,
+connectivity 99.987%, no-route 0.013%. 잔여 0.104%는 실제 위반이 아니라 감사 도구의
+0.05 m 격자 스냅 오차다(정확 좌표 기준 위반 0건, 최소 여유 0.652342 m > 요구 0.649802 m).
+64회 rejection sampling 예산은 소진되지 않았다.
+
+**위 receipt(SHA `6b1f1b36…`)는 이 캐비어트를 아직 안고 있던 스폰 로직으로 측정된 것이며
+수정하지 않는다** — connectivity/no-route/generation-failure 판정 자체(205 PASS, 300 FAIL)는
+스폰 버그와 무관하므로 유효하다. 이 메모는 그 판정을 재판정하지 않고, 캐비어트가 코드에서는
+해소됐음을 기록한다. 상세: `WORKLOG.md` 2026-08-27 "스폰 clearance를 막대별로" 항목.
+
+여전히 이 사전등록은 PPO, 500-epoch smoke, Track A/B GPU 어느 것도 승인하지 않는다.

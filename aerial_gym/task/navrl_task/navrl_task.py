@@ -6,6 +6,7 @@ import math
 import os
 from pathlib import Path
 import sys
+import xml.etree.ElementTree as ET
 
 import numpy as np
 import torch
@@ -80,6 +81,34 @@ RECOVERY_BRAKING_PROBE_SCHEMA = "navrl_target_recovery_braking_probe_v1"
 # lineage must change together; a mutable manifest alone cannot authorize code.
 RECOVERY_PROBE_VALIDATOR_SHA256 = "963f76e3485c78e411856fd719b1a55e664f9c61d24a2917fc61e4392605c71e"
 RECOVERY_RECEIPT_VALIDATOR_SHA256 = "786da78338bc1f03d3abd0f08fd0f2dedff6d74578f56d294a277b9c6d587ae0"
+
+# 5-inch propeller radius (127 mm diameter / 2).  The prop-tip AABB documented in the header of
+# resources/robots/quad/quad_navrl_ref5in.urdf is exactly 2 * (motor arm xy + this radius), an
+# identity pinned by tests/test_navrl_ref5in_platform.py.  The motor arm itself is read from the
+# live allocation matrix, so this is the only propeller literal the spawn geometry needs.
+PROP_RADIUS_5IN_M = 0.0635
+
+
+def _spawn_footprint_clearance_accepted(
+    candidate_xy, bar_center_xy, bar_half_xy, required_surface_margin_m
+):
+    """Per-bar surface-clearance acceptance test for a batch of spawn candidates.
+
+    `candidate_xy` is [N, 2], `bar_center_xy` / `bar_half_xy` are [N, A, 2].  A candidate is
+    accepted when it clears the surface of EVERY bar by at least `required_surface_margin_m`,
+    where each bar is inflated by its own XY circumradius ||half||.  A single flat centre
+    distance cannot express this: the `bars_h3` pool spans circumradius 0.3133..0.5465 m, so a
+    constant centre clearance leaves a large bar with a third of the surface margin a small one
+    gets.  Using each bar's circumradius (rather than the exact rectangle distance) is the
+    conservative direction: it implies the exact-rectangle clearance the geometry audit measures.
+    """
+    if bar_center_xy.shape[1] == 0:
+        return torch.ones(
+            candidate_xy.shape[0], dtype=torch.bool, device=candidate_xy.device
+        )
+    center_distance = torch.cdist(candidate_xy.unsqueeze(1), bar_center_xy).squeeze(1)
+    surface_clearance = center_distance - bar_half_xy.norm(dim=2)
+    return surface_clearance.amin(dim=1) >= float(required_surface_margin_m)
 
 
 def _load_recovery_receipt_validator(repo_root):
@@ -1794,8 +1823,72 @@ class NavRLTask(BaseTask):
             logger.warning("NavRL general results export failed: %s" % exc)
         self._general_results_exported = True
 
+    def _robot_spawn_inflation_radius_m(self):
+        """Yaw-invariant robot circumradius (m) that spawn feasibility must inflate bars by.
+
+        Read from the LIVE vehicle rather than copied from the audit tool, so v1/v2 geometry (and
+        any future frame) cannot drift away from what the CPU geometry audit inflates free space
+        by in tools/audit_navrl_v2_density_geometry.py:
+
+          * prop-tip span = 2 * (motor arm xy + PROP_RADIUS_5IN_M).  The arm comes from the live
+            allocation matrix (navrl_ref5in_quad_config.py); quad_navrl_ref5in.urdf's header
+            documents the same identity and test_navrl_ref5in_platform.py pins it.
+          * base_link collision box from the live URDF.  quad_navrl_ref5in_v2.urdf's 0.283 m box
+            slightly exceeds the 0.2825634 m tip span, so the actual support is the larger of the
+            two.
+
+        The disk is the half-diagonal of that square span and is therefore invariant to the random
+        spawn yaw.  For the legacy 0.13 m-arm body the 5-inch propeller radius over-estimates the
+        tip span; spawn inflation is deliberately conservative rather than under-bounding it.
+        """
+        cached = getattr(self, "_spawn_inflation_radius_cache", None)
+        if cached is not None:
+            return cached
+        robot_cfg = self.sim_env.robot_manager.cfg
+        allocation = robot_cfg.control_allocator_config.allocation_matrix
+        arms = {round(abs(float(v)), 9) for row in allocation[3:5] for v in row}
+        arms.discard(0.0)
+        if len(arms) != 1:
+            raise RuntimeError(
+                "spawn geometry needs a square motor-arm layout; allocation matrix gives %s"
+                % sorted(arms)
+            )
+        prop_tip_span = 2.0 * (arms.pop() + PROP_RADIUS_5IN_M)
+        asset_cfg = robot_cfg.robot_asset
+        asset_path = (Path(asset_cfg.asset_folder) / asset_cfg.file).resolve()
+        box = ET.parse(str(asset_path)).getroot().find(
+            "link[@name='base_link']/collision/geometry/box"
+        )
+        if box is None:
+            raise RuntimeError(
+                "robot URDF has no base_link collision box for spawn geometry: %s" % asset_path
+            )
+        box_xy = max(float(v) for v in box.get("size").split()[0:2])
+        radius = 0.5 * max(prop_tip_span, box_xy) * math.sqrt(2.0)
+        self._spawn_inflation_radius_cache = radius
+        return radius
+
+    def _spawn_required_surface_margin_m(self):
+        """Surface clearance a spawn point must keep from every bar's own footprint.
+
+        Identical to the inflation the geometry audit's connectivity graph uses: the yaw-invariant
+        robot disk plus the closed-loop tracking reserve (`physical_tracking_margin`, read live
+        from navrl_task_config.py, not a copied literal).  Spawning inside that inflated obstacle
+        set puts the episode's first step in a cell the audit calls infeasible.
+        """
+        return self._robot_spawn_inflation_radius_m() + float(
+            self.tm.physical_tracking_margin
+        )
+
     def _randomize_general_drone_spawn(self, env_ids):
-        """Place the drone at a collision-free random XY/yaw for generalized evaluation."""
+        """Place the drone at a collision-free random XY/yaw for generalized evaluation.
+
+        Acceptance is footprint aware: each candidate must clear EVERY bar's own surface by
+        `_spawn_required_surface_margin_m()`.  The earlier flat 0.65 m bar-CENTRE test was blind
+        to bar size, so a 0.5465 m-circumradius bar left only 0.10 m of real surface clearance and
+        27.45% of 205-bar spawns started inside the inflated obstacle set
+        (results/navrl_v2_density_geometry_audit_2026-08-27/summary.md).
+        """
         n = len(env_ids)
         if n == 0:
             return
@@ -1804,6 +1897,13 @@ class NavRLTask(BaseTask):
         bars = self.obs_dict["obstacle_position"][
             env_ids, self._bar_offset : self._bar_offset + self.n_bars_active, 0:2
         ]
+        # Same slice on the same asset axis as the runtime planner geometry
+        # (`_target_spawn_center_clearance`), so row j of `bar_half` is the footprint of the bar
+        # whose centre is row j of `bars`.
+        bar_half = self.obs_dict["asset_collision_half_extents"][
+            env_ids, self._bar_offset : self._bar_offset + self.n_bars_active, 0:2
+        ]
+        required_margin = self._spawn_required_surface_margin_m()
         lo = b_min[:, 0:2] + 1.0
         hi = b_max[:, 0:2] - 1.0
         chosen = lo + (hi - lo) * torch.rand((n, 2), device=self.device)
@@ -1815,11 +1915,9 @@ class NavRLTask(BaseTask):
             candidate = lo[ids] + (hi[ids] - lo[ids]) * torch.rand(
                 (len(ids), 2), device=self.device
             )
-            if bars.shape[1] > 0:
-                clearance = torch.cdist(candidate.unsqueeze(1), bars[ids]).squeeze(1).min(1).values
-                accepted = clearance >= 0.65
-            else:
-                accepted = torch.ones(len(ids), dtype=torch.bool, device=self.device)
+            accepted = _spawn_footprint_clearance_accepted(
+                candidate, bars[ids], bar_half[ids], required_margin
+            )
             chosen[ids[accepted]] = candidate[accepted]
             todo[ids[accepted]] = False
 

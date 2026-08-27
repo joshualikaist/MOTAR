@@ -13075,3 +13075,44 @@ Pages run이 안 생겼다. 캐시를 `20260827r6`으로 올리고 `.nojekyll` r
 Pages source인 `research/navrl-env`만 단독 push하고, 그다음 `main`을 같은 커밋으로
 fast-forward한다.
 
+
+## 2026-08-27 — spawn clearance를 bar별 footprint 기준으로 수정 (27.45% 미스매치 해소)
+
+기하 감사가 남긴 열린 caveat(205 bars에서 `start_in_inflated_obstacle_frac` 27.45%)의
+원인을 코드에서 특정했다. `_randomize_general_drone_spawn`은 bar **중심**까지의 거리만
+0.65 m로 검사했고 bar 크기에는 눈이 멀어 있었다. `bars_h3` 풀의 XY circumradius는
+0.3133–0.5465 m이므로 같은 0.65 m가 작은 bar에서는 표면 여유 0.34 m, 가장 큰 bar에서는
+0.10 m였다. 감사의 연결성 그래프는 bar마다 자기 footprint로 0.649802 m
+(robot inflation 0.199802 + `physical_tracking_margin` 0.45)를 요구하므로 이 둘이 어긋났다.
+
+수정: 후보마다 **모든 bar에 대해** `중심거리 − 그 bar의 circumradius ≥ 0.649802 m`.
+평탄 상수를 키우는 대신 bar별로 판정한다(작은 bar 주변의 유효 spawn 면적을 버리지 않음).
+half-extents는 런타임 planner와 동일한 축·슬라이스(`asset_collision_half_extents`)에서 읽고,
+robot inflation은 live allocation matrix의 모터 암 + 5인치 프로펠러 반경으로 유도한
+prop-tip span과 live URDF collision box 중 큰 쪽에서, tracking reserve는
+`self.tm.physical_tracking_margin`에서 그때그때 읽는다(감사 도구 상수 복사 아님).
+64회 rejection sampling 구조·`env_bounds` 마진·fallback은 그대로 두고 수락 술어만 바꿨다.
+
+205 bars 재측정(60 layouts × 128 pairs, canonical 6–28 m, body+tracking 0.649802):
+
+| spawn 규칙 | start_in_inflated | connectivity | no-route | start_rejection_exhausted | gen fail |
+|---|---:|---:|---:|---:|---:|
+| center 0.65 m (기존) | 28.294% | 99.154% | 0.846% | 0.000% | 0 |
+| footprint (수정) | **0.104%** | 99.987% | 0.013% | **0.000%** | 0 |
+
+동결 receipt의 27.45%와 28.29% 차이는 단일 밀도 실행이라 placer RNG 상태가 다르기 때문이며
+규칙 차이가 아니다. 남은 0.104%는 실제 위반이 아니라 감사의 0.05 m 격자 스냅이다:
+1,024 spawn의 **정확 좌표** 표면 여유는 위반 0건, 최소 0.652342 m였고 같은 표본에서
+셀 중심 기준으로만 3건(0.293%)이 걸렸다(`check_residual_205.py`).
+64회 예산은 7,680 spawn 전부에서 소진되지 않았다 — 새 실패 모드 없음.
+
+동결된 `results/navrl_v2_density_geometry_audit_2026-08-27/`는 손대지 않았다(재측정은
+scratchpad에만 기록). 그 receipt와 두 문서는 수정 **이전** 측정의 역사 기록으로 그대로 둔다.
+감사 도구는 이제 기본이 footprint mirror이고 `--spawn-clearance center`로 옛 규칙을 재현한다.
+
+CPU 스위트 836 → 848 OK(skipped 2). 신규 `tests/test_navrl_spawn_footprint_clearance.py` 12건은
+서로 다른 bar 크기 여러 개로 검증하므로 평탄 상수로의 회귀를 잡는다. GPU/PPO 실행 없음.
+
+파일: `aerial_gym/task/navrl_task/navrl_task.py`(`_spawn_footprint_clearance_accepted`,
+`_robot_spawn_inflation_radius_m`, `_spawn_required_surface_margin_m`,
+`_randomize_general_drone_spawn`), `tools/audit_navrl_v2_density_geometry.py`.

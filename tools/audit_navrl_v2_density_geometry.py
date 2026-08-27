@@ -8,7 +8,10 @@ used by ``train_navrl_physical_fresh.sh``), with the REAL sampled bar footprints
 topology dump in docs/diagnostic_synthesis_2026-08-21.md).
 
 Start/goal pairs mirror ``NavRLTask._randomize_general_drone_spawn`` and
-``NavRLTask._sample_general_target`` rather than a uniform box.
+``NavRLTask._sample_general_target`` rather than a uniform box.  Since 2026-08-27 the spawn
+mirror is footprint aware (each bar inflated by its own circumradius, matching the task); pass
+``--spawn-clearance center`` to reproduce the frozen receipt, which was measured with the older
+flat 0.65 m bar-centre rule and recorded a 27.45% start-in-inflated-obstacle rate at 205 bars.
 
 Every distance is exact rectangle geometry: bars are axis aligned (bar min/max_state_ratio fix
 roll=pitch=yaw=0), so the clearance field is min over bars of ||max(|p-c| - h, 0)||.
@@ -69,7 +72,14 @@ ROBOT_BOX_XY = 0.28             # resources/robots/quad/quad_navrl_ref5in.urdf c
 ROBOT_TIP_AABB = 0.2825634      # documented prop-tip span in the same URDF header
 TRACKING_RESERVE = 0.45         # navrl_task_config.py:587 physical_tracking_margin
 
-SPAWN_BAR_CENTER_CLEARANCE = 0.65   # navrl_task.py:1822
+# Legacy (pre-2026-08-27) spawn rule: flat distance to the nearest bar CENTRE, blind to that
+# bar's footprint.  Kept only so `--spawn-clearance center` reproduces the frozen receipt
+# results/navrl_v2_density_geometry_audit_2026-08-27/density_geometry_canonical_6_28.json.
+SPAWN_BAR_CENTER_CLEARANCE = 0.65
+# Current spawn rule, mirroring NavRLTask._spawn_required_surface_margin_m: every candidate must
+# clear EACH bar's own surface (centre distance minus that bar's circumradius) by the same
+# inflation the connectivity graph below uses.
+SPAWN_SURFACE_MARGIN_M = 0.5 * ROBOT_TIP_AABB * math.sqrt(2.0) + TRACKING_RESERVE
 SPAWN_WALL_MARGIN = 1.0             # navrl_task.py:1808
 GOAL_WALL_MARGIN = 1.25             # max(1.0, wall_margin 0.5 + boundary_margin 0.75)
 TARGET_BOX_XYZ = (0.28, 0.28, 0.12)
@@ -194,9 +204,19 @@ def label_near(labels, i, j, n, res, snap=SNAP_RADIUS):
 # --------------------------------------------------------------------------------------------
 # Start/goal sampling mirroring the task.
 # --------------------------------------------------------------------------------------------
-def sample_pairs(centers, halves, rng, n_pairs, goal_band):
-    """Mirror _randomize_general_drone_spawn + _sample_general_target (physical target)."""
+def sample_pairs(centers, halves, rng, n_pairs, goal_band, spawn_clearance="footprint"):
+    """Mirror _randomize_general_drone_spawn + _sample_general_target (physical target).
+
+    `spawn_clearance` selects the spawn acceptance predicate:
+      footprint - current task code: min over bars of (centre distance - that bar's circumradius)
+                  >= SPAWN_SURFACE_MARGIN_M.
+      center    - the pre-fix flat rule, for reproducing the frozen 2026-08-27 receipt.
+    """
     bar_tree = cKDTree(centers)
+    bar_circumradius = np.linalg.norm(halves, axis=1)
+    neighbours = min(24, centers.shape[0])
+    # Only a bar whose centre is nearer than this can decide the footprint-aware test.
+    violation_bound = SPAWN_SURFACE_MARGIN_M + float(bar_circumradius.max())
     lo_s, hi_s = SPAWN_WALL_MARGIN, ARENA_XY - SPAWN_WALL_MARGIN
     lo_g, hi_g = GOAL_WALL_MARGIN, ARENA_XY - GOAL_WALL_MARGIN
     bar_radius = float(np.linalg.norm(halves, axis=1).max())
@@ -213,7 +233,21 @@ def sample_pairs(centers, halves, rng, n_pairs, goal_band):
         ok = False
         for _ in range(64):                       # navrl_task.py:1815
             cand = np.array([rng.uniform(lo_s, hi_s), rng.uniform(lo_s, hi_s)])
-            if bar_tree.query(cand)[0] >= SPAWN_BAR_CENTER_CLEARANCE:
+            if spawn_clearance == "center":
+                accepted = bar_tree.query(cand)[0] >= SPAWN_BAR_CENTER_CLEARANCE
+            else:
+                dist, idx = bar_tree.query(cand, k=neighbours)
+                dist = np.atleast_1d(dist)
+                idx = np.atleast_1d(idx)
+                if dist[-1] < violation_bound:
+                    # A farther bar could still be the binding one; fall back to the full scan.
+                    worst = float(
+                        (np.linalg.norm(centers - cand, axis=1) - bar_circumradius).min()
+                    )
+                else:
+                    worst = float((dist - bar_circumradius[idx]).min())
+                accepted = worst >= SPAWN_SURFACE_MARGIN_M
+            if accepted:
                 s, ok = cand, True
                 break
         start_rejected += 0 if ok else 1
@@ -234,7 +268,7 @@ def sample_pairs(centers, halves, rng, n_pairs, goal_band):
 
 
 # --------------------------------------------------------------------------------------------
-def analyse_layout(centers, halves, rng, n_pairs, inflation, goal_band):
+def analyse_layout(centers, halves, rng, n_pairs, inflation, goal_band, spawn_clearance="footprint"):
     field, n, res = clearance_field(centers, halves)
     levels = [inflation + i * WIDTH_STEP for i in range(WIDTH_LEVELS)]
     structure = np.array([[0, 1, 0], [1, 1, 1], [0, 1, 0]], dtype=bool)   # 4-connectivity
@@ -253,7 +287,9 @@ def analyse_layout(centers, halves, rng, n_pairs, inflation, goal_band):
     else:
         lcc_frac = 0.0
 
-    starts, goals, s_rej, g_rej, goal_clearance = sample_pairs(centers, halves, rng, n_pairs, goal_band)
+    starts, goals, s_rej, g_rej, goal_clearance = sample_pairs(
+        centers, halves, rng, n_pairs, goal_band, spawn_clearance=spawn_clearance
+    )
     start_infeasible = int((~free0[tuple(np.array([cell_of(s, n, res) for s in starts]).T)]).sum())
     goal_infeasible = int((~free0[tuple(np.array([cell_of(g, n, res) for g in goals]).T)]).sum())
 
@@ -295,6 +331,11 @@ def main():
     ap.add_argument("--pairs", type=int, default=128)
     ap.add_argument("--seed", type=int, default=20260827)
     ap.add_argument("--band", default="canonical_6_28", choices=sorted(GOAL_DIST_BANDS))
+    ap.add_argument("--spawn-clearance", default="footprint", choices=("footprint", "center"),
+                    dest="spawn_clearance",
+                    help="footprint (default): mirror the current per-bar surface test in "
+                         "NavRLTask._randomize_general_drone_spawn. center: the pre-2026-08-27 "
+                         "flat 0.65 m bar-centre rule, kept to reproduce the frozen receipt.")
     ap.add_argument("--output", type=Path,
                     default=ROOT / "results/navrl_v2_density_geometry_audit_2026-08-27/density_geometry.json")
     args = ap.parse_args()
@@ -341,7 +382,12 @@ def main():
             rng = random.Random(args.seed * 1000 + density)
             agg = []
             for e in range(len(centers_b)):
-                agg.append(analyse_layout(centers_b[e], halves_b[e], rng, args.pairs, infl, band))
+                agg.append(
+                    analyse_layout(
+                        centers_b[e], halves_b[e], rng, args.pairs, infl, band,
+                        spawn_clearance=args.spawn_clearance,
+                    )
+                )
             pairs_total = sum(a["pairs"] for a in agg)
             conn = sum(a["connected"] for a in agg)
             widths = np.concatenate([np.asarray(a["widths"]) for a in agg]) if conn else np.zeros(0)
@@ -391,6 +437,7 @@ def main():
         "schema_version": "navrl.v2-density-geometry-audit.v1",
         "generated_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "goal_band": {"name": args.band, "min_m": band[0], "max_m": band[1]},
+        "spawn_clearance_mode": args.spawn_clearance,
         "layouts_per_density": args.layouts,
         "pairs_per_layout": args.pairs,
         "grid_res_m": GRID_RES,
@@ -411,7 +458,20 @@ def main():
             "robot_prop_tip_aabb_m": [ROBOT_TIP_AABB, "quad_navrl_ref5in.urdf header / navrl_ref5in_quad_config.py:11"],
             "robot_inflation_radius_m": [robot_radius, "half of prop-tip AABB * sqrt(2) (yaw invariant)"],
             "tracking_reserve_m": [TRACKING_RESERVE, "navrl_task_config.py:587 physical_tracking_margin"],
-            "spawn_bar_center_clearance_m": [SPAWN_BAR_CENTER_CLEARANCE, "navrl_task.py:1822"],
+            "spawn_clearance_mode": [
+                args.spawn_clearance,
+                "footprint = navrl_task.py _randomize_general_drone_spawn per-bar surface test; "
+                "center = pre-2026-08-27 flat rule kept only to reproduce the frozen receipt",
+            ],
+            "spawn_surface_margin_m": [
+                SPAWN_SURFACE_MARGIN_M,
+                "navrl_task.py _spawn_required_surface_margin_m "
+                "(robot inflation radius + physical_tracking_margin)",
+            ],
+            "spawn_bar_center_clearance_m": [
+                SPAWN_BAR_CENTER_CLEARANCE,
+                "legacy flat centre rule, applied only with --spawn-clearance center",
+            ],
             "spawn_wall_margin_m": [SPAWN_WALL_MARGIN, "navrl_task.py:1808"],
             "goal_wall_margin_m": [GOAL_WALL_MARGIN, "navrl_task.py:2070-2086 max(1.0, 0.5+0.75)"],
         },
