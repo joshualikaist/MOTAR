@@ -43,6 +43,17 @@
       "cell_or_grid_rerun"
     ]
   },
+  "corrected_environment_v2_2026_08_27": {
+    "reason": "navrl_band silently merged nominal bars into compound obstacles",
+    "placement": "footprint_clearance",
+    "surface_clearance_m": 0.45,
+    "overlap_fallback": false,
+    "collision_proxy_xyz_m": [0.283, 0.283, 0.12],
+    "existing_checkpoint_compatible": false,
+    "fresh_ppo_required": true,
+    "long_training_authorized": false,
+    "next_gate": "corrected environment route/physical engineering gate and fresh PPO smoke"
+  },
   "evidence": [
     {
       "path": "results/navrl_ref5in_detection_range_stage1_s457/summary.json",

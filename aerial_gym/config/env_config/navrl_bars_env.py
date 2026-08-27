@@ -3,6 +3,7 @@ import os
 from aerial_gym.config.asset_config.env_object_config import (
     bar_asset_params,
     navrl_physical_target_params,
+    navrl_physical_target_v2_params,
 )
 
 
@@ -84,6 +85,12 @@ class NavRLBarsEnvCfg:
         # needs the separate footprint/connectivity audit before any passability claim.
         obstacle_touch_dist = _env_float("NAVRL_PLACEMENT_TOUCH_M", 0.4)
         obstacle_gap_dist = _env_float("NAVRL_PLACEMENT_GAP_M", 1.6)
+        # New physical-lineage placement contract.  Uses each URDF collision footprint, forbids
+        # overlap, remains valid under yaw via a circumcircle bound, and fails closed instead of
+        # merging bars. Historical navrl_band checkpoints retain their original contract.
+        obstacle_surface_clearance = _env_float(
+            "NAVRL_PLACEMENT_SURFACE_CLEARANCE_M", 0.45
+        )
 
         # Arena (min == max so every env is identical). Ground-referenced: z in [0, Z].
         # Default 24 x 24 x 3 m (v1); NAVRL_ARENA_XY=40 gives the NavRL-scale search arena.
@@ -100,10 +107,17 @@ class NavRLBarsEnvCfg:
         # excluded from Warp and the actor's current OBB is ray-tested analytically, avoiding a
         # full-scene refit. Walls, panels, objects, trees stay OFF.
         _physical_target = os.environ.get("NAVRL_TARGET_DYNAMICS", "legacy").strip().lower() == "physical"
+        _physical_geometry_v2 = os.environ.get(
+            "NAVRL_PHYSICAL_GEOMETRY_VERSION", "v1"
+        ).strip().lower() == "v2"
         include_asset_type = {"physical_target": _physical_target, "bars": True}
 
         asset_type_to_dict_map = {
             # keep_in_env puts this at obstacle index 0; NavRLTask offsets every bar slice by one.
-            "physical_target": navrl_physical_target_params,
+            "physical_target": (
+                navrl_physical_target_v2_params
+                if _physical_geometry_v2
+                else navrl_physical_target_params
+            ),
             "bars": bar_asset_params,
         }

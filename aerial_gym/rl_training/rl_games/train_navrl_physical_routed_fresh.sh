@@ -25,20 +25,22 @@ fi
 # This is a frozen experiment tuple, not a convenient collection of defaults.  Assign every
 # geometry/dynamics input unconditionally so a stale interactive shell cannot create a different
 # route lineage under the canonical name.  Both lower launchers independently validate the tuple.
-export NAVRL_ROBOT=navrl_ref5in_quad
+export NAVRL_ROBOT=navrl_ref5in_v2_quad
+export NAVRL_PHYSICAL_GEOMETRY_VERSION=v2
+export NAVRL_TARGET_BOX_XY_M=0.283
 export NAVRL_TARGET_DYNAMICS=physical
 export NAVRL_TARGET_ROUTE_MODE=global_astar_v1
 export NAVRL_TARGET_PATTERN=waypoint
 export NAVRL_PHYSICAL_ROUTED_CHILD=1
-export NAVRL_ROUTED_CONTRACT_TOKEN=physx_ref5in_6dof_global_astar_aabb_v1_frozen_v1
+export NAVRL_ROUTED_CONTRACT_TOKEN=physx_ref5in_6dof_global_astar_aabb_nonoverlap_v2
 export NAVRL_ARENA_XY=40
 export NAVRL_ARENA_Z=3
 export NAVRL_BAR_POOL=bars_h3
 export NAVRL_BAR_X_MIN=0
 export NAVRL_BAR_X_MAX=1
-export NAVRL_PLACEMENT_MODE=navrl_band
-export NAVRL_PLACEMENT_GAP_M=1.6
-export NAVRL_PLACEMENT_TOUCH_M=0.4
+export NAVRL_PLACEMENT_MODE=footprint_clearance
+export NAVRL_PLACEMENT_SURFACE_CLEARANCE_M=0.45
+unset NAVRL_PLACEMENT_GAP_M NAVRL_PLACEMENT_TOUCH_M
 export NAVRL_MAX_BARS=300
 export NAVRL_TARGET_ROUTE_RESOLUTION_M=0.25
 export NAVRL_TARGET_ROUTE_MAX_EXPANSIONS=50000
@@ -130,9 +132,9 @@ else
   export NAVRL_REQUIRE_CLEAN_TRAINING_SOURCE=1
 fi
 
-echo "[physical-routed] model=physx_ref5in_6dof_global_astar_aabb_v1 fresh=1"
+echo "[physical-routed] model=physx_ref5in_6dof_global_astar_aabb_nonoverlap_v2 fresh=1"
 echo "[physical-routed] route=global_astar_v1 pattern=waypoint grid=0.25m goal_exclusion=1.0m fail_closed=1"
-echo "[physical-routed] frozen | arena=40x40x3 pool=bars_h3 placement=navrl_band[0,1] gap=1.6 touch=0.4 tracking=0.45 boundary=0.75 support=0.206881609m"
+echo "[physical-routed] frozen | arena=40x40x3 pool=bars_h3 placement=footprint_clearance surface=0.45m overlap_fallback=off tracking=0.45 boundary=0.75 support=0.208912661m"
 echo "[physical-routed] authority | mass=1.20kg thrust=9.60N arm=0.0777817m tau=0.04s tilt=45deg accel=4.0mps2 turn=150degps"
 echo "[physical-routed] training | envs=128 density=70:15:300 gate=70:0.82,85:0.77,100:0.72,115:0.70 dwell=1000 evidence=16384 speed=0.3:1.5@1 selector=cluster_sector lr=3e-5 governor=off"
 echo "[physical-routed] source | preflight=${ROUTED_PREFLIGHT} receipt_required=${NAVRL_REQUIRE_TRAINING_SOURCE_RECEIPT} clean_required=${NAVRL_REQUIRE_CLEAN_TRAINING_SOURCE}"

@@ -75,7 +75,7 @@ attitude/rate torque → motor allocation → 100 Hz rigid-body physics` 순서�
 | Recovery-v2 no-anchor follow-up | **`INCONCLUSIVE`; Track B closed** | primary `n=1`; observer identity disagreement `0`; no further GPU/PPO/retune/rerun authority |
 | Hardware/software gate | software pipeline PASS · `SYNTHETIC_ONLY` | 실기 성능 아님 |
 
-현재 `navrl_ref5in_quad`는 1.20 kg, 220 mm motor diagonal, 0.28 m collision proxy를 가정한
+새 physical lineage의 `navrl_ref5in_v2_quad`는 1.20 kg, 220 mm motor diagonal, 0.283 m collision proxy를 가정한
 **hardware-informed simulation candidate**입니다. 저장소 정합성은 통과했지만 route mechanism은
 실패했고 physical PPO는 차단되어 있습니다. 실제 BOM/CAD/관성/추력/열/전원/비행 식별값은 아닙니다.
 
@@ -83,7 +83,7 @@ attitude/rate torque → motor allocation → 100 Hz rigid-body physics` 순서�
 
 | Item | Value |
 |---|---|
-| Arena | `40 × 40 × 3 m`, `navrl_band` bar placement |
+| Arena | `40 × 40 × 3 m`; fresh physical lineage는 footprint-aware non-overlap placement (`0.45 m` surface clearance) |
 | Density curriculum | 70 → 300 bars, +15 steps, minimum 1,000 epochs per level |
 | Target | mixed constant-velocity / waypoint, `0.3–1.5 m/s`, goal distance `6–28 m` |
 | Actor observation | 898-D; static 288 + obstacle 480 + robot 50 + target 80 |
@@ -94,6 +94,10 @@ attitude/rate torque → motor allocation → 100 Hz rigid-body physics` 순서�
 Exact coefficients and their source locations are frozen in
 [the system specification](docs/MOTAR_SYSTEM_SPEC_2026-08-24.md). Historical v1, archived v2, corrected-v2,
 legacy robot and ref5in robot results must not be merged into one performance curve.
+
+2026-08-27 이전 `navrl_band` 결과는 가까운 막대를 compound obstacle로 중첩시켰다. 그 결과는
+historical evidence로만 보존한다. 중첩이 없는 새 physical lineage의 최종 정책은 반드시 fresh
+PPO로 다시 학습하며 기존 체크포인트의 warm-start 또는 성능곡선 연결은 허용하지 않는다.
 
 ## Reproduce
 

@@ -33,7 +33,7 @@
       </div>
       <div class="status-line">
         <span class="status-dot" aria-hidden="true"></span>
-        <strong>Recovery-v2 lower-1.25 · 32/32 integrity PASS</strong><span>Route mechanism FAIL · no-anchor forensics INCONCLUSIVE · no further Track B GPU/PPO/retune/rerun authority · hardware SIM2REAL_3DAY next · 2026-08-26</span>
+        <strong>Non-overlap physical lineage · engineering validation</strong><span>Historical navrl_band results retained but not reusable · overlap 0 · surface clearance 0.45 m · fresh PPO required after route/physical gate · 2026-08-27</span>
       </div>
     </section>
 
@@ -51,8 +51,11 @@
           <p>02 · 3D ARENA</p>
           <h2>환경 밀도와 센서 시야를 직접 확인하세요.</h2>
         </div>
-        <p class="arena-intro">corrected-v2의 40×40×3 m arena와 <code>navrl_band</code> 배치 규칙을
-          브라우저에서 재현합니다. 표적은 10 Hz 고정 simulation clock에서 움직이고 화면만 보간합니다.
+        <p class="arena-intro">새 physical fresh lineage의 40×40×3 m arena와
+          <code>footprint_clearance</code> 배치를 재현합니다. 실제 collision footprint의 외접원을
+          사용해 막대 중첩을 금지하고 표면 여유 0.45 m를 유지하며 merge fallback도 쓰지 않습니다.
+          과거 정량 결과의 <code>navrl_band</code>는 중첩을 허용한 historical 환경입니다.
+          표적은 10 Hz 고정 simulation clock에서 움직이고 화면만 보간합니다.
           기본 <strong>routed-preview</strong>는 동결된 historical <code>global_astar_v1</code>
           exact-AABB route를 bounded/lagged browser motion으로 설명합니다. recovery-v2 state machine을
           재현하거나 성공으로 표시하지 않습니다. 코너 전환은 planning-time clearance certificate로 검사하고 실패 재계획은 직전 목표
@@ -176,7 +179,7 @@
         </div>
         <div class="spec-card">
           <h3>ref5in candidate</h3>
-          <dl><div><dt>Mass</dt><dd>1.20 kg</dd></div><div><dt>Motor diagonal</dt><dd>220 mm</dd></div><div><dt>Collision proxy</dt><dd>0.28 × 0.28 × 0.12 m</dd></div><div><dt>T/W</dt><dd>3.262</dd></div></dl>
+          <dl><div><dt>Mass</dt><dd>1.20 kg</dd></div><div><dt>Motor diagonal</dt><dd>220 mm</dd></div><div><dt>Collision proxy</dt><dd>0.283 × 0.283 × 0.12 m</dd></div><div><dt>T/W</dt><dd>3.262</dd></div></dl>
         </div>
       </div>
       <p class="note">ref5in은 hardware-informed simulation candidate입니다. CAD/BOM, 실측 관성·추력,
@@ -215,11 +218,11 @@
   </main>
 
   <footer><div class="wrap"><strong>MOTAR</strong><span>Simulation research · hardware pending</span><span>BSD-3-Clause</span></div></footer>
-  <script src="vendor/three.min.js?v=20260826r3"></script>
-  <script src="vendor/OrbitControls.js?v=20260826r3"></script>
-  <script src="arena_route.js?v=20260826r3"></script>
-  <script src="arena_motion.js?v=20260826r3"></script>
-  <script src="arena.js?v=20260826r3"></script>
-  <script src="viewer.js?v=20260826r3"></script>
+  <script src="vendor/three.min.js?v=20260827r4"></script>
+  <script src="vendor/OrbitControls.js?v=20260827r4"></script>
+  <script src="arena_route.js?v=20260827r4"></script>
+  <script src="arena_motion.js?v=20260827r4"></script>
+  <script src="arena.js?v=20260827r4"></script>
+  <script src="viewer.js?v=20260827r4"></script>
 </body>
 </html>

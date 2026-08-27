@@ -301,6 +301,9 @@ class EnvManager(BaseManager):
             ),
             placement_touch_dist=getattr(self.cfg.env, "obstacle_touch_dist", 0.4),
             placement_gap_dist=getattr(self.cfg.env, "obstacle_gap_dist", 1.6),
+            placement_surface_clearance=getattr(
+                self.cfg.env, "obstacle_surface_clearance", 0.45
+            ),
         )
         self.asset_manager.prepare_for_sim()
         self.robot_manager.prepare_for_sim(self.global_tensor_dict)

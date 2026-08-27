@@ -6,6 +6,7 @@
 window.Arena = (() => {
   let X0 = 0, X1 = 24, Y0 = -12, Y1 = 12, BX0 = 3.1, BX1 = 23;
   let BAR_HEIGHT = 2, PLACEMENT = 'random', TOUCH_M = 0.4, GAP_M = 1.6;
+  let SURFACE_CLEARANCE_M = 0.45;
   const CAMERA_RANGE = 20, CAMERA_HALF_FOV = THREE.MathUtils.degToRad(43.5), LIDAR_RANGE = 12;
   const LIDAR_HBEAMS = 72, LIDAR_VBEAMS = 4;
   const LIDAR_ELEVATION_MIN = THREE.MathUtils.degToRad(-10);
@@ -55,6 +56,25 @@ window.Arena = (() => {
     const r = Motion.seededRng(layoutSeed++); const pts = [];
     const bw = () => 0.4 + r() * 0.4;
     let guard = 0;
+
+    if (PLACEMENT === 'footprint_clearance') {
+      // Mirror the physical fresh-lineage guarantee. The browser bars are squares, so w/sqrt(2)
+      // is their yaw-invariant circumcircle radius. There is no overlap/merge fallback.
+      while (pts.length < n && guard < n * 2000) {
+        guard++;
+        const w = bw(), support = w / Math.sqrt(2);
+        const x = BX0 + support + r() * Math.max(0, BX1 - BX0 - 2 * support);
+        const y = Y0 + support + r() * Math.max(0, Y1 - Y0 - 2 * support);
+        let ok = true;
+        for (const p of pts) {
+          const required = support + p.support + SURFACE_CLEARANCE_M;
+          if (Math.hypot(x - p.x, y - p.y) < required) { ok = false; break; }
+        }
+        if (ok) pts.push({ x, y, w, support });
+      }
+      if (pts.length !== n) throw new Error(`non-overlap layout failed closed at ${pts.length}/${n}`);
+      return pts;
+    }
 
     if (PLACEMENT === 'navrl_band') {
       // Mirrors AssetManager._navrl_band_xy_spacing: a candidate is accepted only if EVERY
@@ -666,6 +686,9 @@ window.Arena = (() => {
       if (cfg.placement_mode) PLACEMENT = String(cfg.placement_mode);
       if (cfg.placement_touch_m != null) TOUCH_M = Number(cfg.placement_touch_m);
       if (cfg.placement_gap_m != null) GAP_M = Number(cfg.placement_gap_m);
+      if (cfg.placement_surface_clearance_m != null) {
+        SURFACE_CLEARANCE_M = Number(cfg.placement_surface_clearance_m);
+      }
     },
     setBars(n) {
       currentBars = Math.max(1, Math.round(n));

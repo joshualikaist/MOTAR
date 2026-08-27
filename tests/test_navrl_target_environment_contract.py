@@ -150,7 +150,11 @@ class TargetCheckpointContractTest(unittest.TestCase):
 class TargetLauncherContractTest(unittest.TestCase):
     def test_physical_lineage_is_fresh_only_and_forces_matching_airframe(self):
         self.assertIn("refusing CKPT/CHECKPOINT", PHYSICAL_LAUNCHER)
-        self.assertIn("export NAVRL_ROBOT=navrl_ref5in_quad", PHYSICAL_LAUNCHER)
+        self.assertIn("export NAVRL_ROBOT=navrl_ref5in_v2_quad", PHYSICAL_LAUNCHER)
+        self.assertIn("export NAVRL_PHYSICAL_GEOMETRY_VERSION=v2", PHYSICAL_LAUNCHER)
+        self.assertIn("export NAVRL_TARGET_BOX_XY_M=0.283", PHYSICAL_LAUNCHER)
+        self.assertIn('export NAVRL_PLACEMENT_MODE="${NAVRL_PLACEMENT_MODE:-footprint_clearance}"', PHYSICAL_LAUNCHER)
+        self.assertIn('export NAVRL_PLACEMENT_SURFACE_CLEARANCE_M="${NAVRL_PLACEMENT_SURFACE_CLEARANCE_M:-0.45}"', PHYSICAL_LAUNCHER)
         self.assertIn("export NAVRL_TARGET_DYNAMICS=physical", PHYSICAL_LAUNCHER)
         self.assertIn("export NAVRL_V2_PHYSICAL_FRESH_CHILD=1", PHYSICAL_LAUNCHER)
 
@@ -264,7 +268,7 @@ class TargetLauncherContractTest(unittest.TestCase):
     def test_fixed_box_support_and_non_env_gains_are_source_bound(self):
         self.assertIn("physical_attitude_kp = [0.08, 0.08, 0.04]", TASK_CONFIG_SOURCE)
         self.assertIn("physical_rate_kp = [0.04, 0.04, 0.03]", TASK_CONFIG_SOURCE)
-        self.assertIn("physical_box_xyz = [0.28, 0.28, 0.12]", TASK_CONFIG_SOURCE)
+        self.assertIn("physical_box_xyz = [physical_box_xy, physical_box_xy, 0.12]", TASK_CONFIG_SOURCE)
         self.assertIn("conservative_xy_support_from_box(self.tm.physical_box_xyz)", TASK_SOURCE)
 
     def test_all_launcher_handoffs_use_script_dir(self):

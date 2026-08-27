@@ -580,7 +580,8 @@ class task_config:
         # overshoot; these yield ~4.4 rad/s roll/pitch natural frequency with near-critical damping.
         physical_attitude_kp = [0.08, 0.08, 0.04]
         physical_rate_kp = [0.04, 0.04, 0.03]
-        physical_box_xyz = [0.28, 0.28, 0.12]
+        physical_box_xy = _env_float("NAVRL_TARGET_BOX_XY_M", 0.28)
+        physical_box_xyz = [physical_box_xy, physical_box_xy, 0.12]
         # Tracking-error reserve used by the planner around bars and walls. The collision hull is
         # already included in obstacle_clearance; this additional term covers closed-loop lag.
         physical_tracking_margin = _env_float("NAVRL_TARGET_TRACKING_MARGIN_M", 0.45)

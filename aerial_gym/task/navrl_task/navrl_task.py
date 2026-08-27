@@ -802,12 +802,27 @@ class NavRLTask(BaseTask):
             self._recovery_brake_lateral_tube_p95_m = lateral_env
             self._recovery_probe_receipt_sha256 = actual_sha
         self._bar_offset = 1 if self._physical_target else 0
-        if self._physical_target and self.task_config.robot_name != "navrl_ref5in_quad":
+        if self._physical_target and self.task_config.robot_name not in (
+            "navrl_ref5in_quad", "navrl_ref5in_v2_quad"
+        ):
             raise RuntimeError(
-                "NAVRL_TARGET_DYNAMICS=physical requires NAVRL_ROBOT=navrl_ref5in_quad; "
+                "NAVRL_TARGET_DYNAMICS=physical requires a ref5in platform; "
                 "mixing a physical ref5in target with the legacy 0.25 kg pursuer is not a valid "
                 "same-platform experiment"
             )
+        _physical_geometry_version = os.environ.get(
+            "NAVRL_PHYSICAL_GEOMETRY_VERSION", "v1"
+        ).strip().lower()
+        if self._physical_target:
+            expected_robot = (
+                "navrl_ref5in_v2_quad" if _physical_geometry_version == "v2"
+                else "navrl_ref5in_quad"
+            )
+            if self.task_config.robot_name != expected_robot:
+                raise RuntimeError(
+                    "physical geometry/robot mismatch: version=%s requires %s"
+                    % (_physical_geometry_version, expected_robot)
+                )
         if self._target_dynamics in ("bounded", "physical"):
             if float(self.tm.max_accel) <= 0.0:
                 raise ValueError("NAVRL_TARGET_MAX_ACCEL must be positive in bounded mode")
@@ -2791,6 +2806,9 @@ class NavRLTask(BaseTask):
             "cfg_placement_touch_m": float(
                 os.environ.get("NAVRL_PLACEMENT_TOUCH_M", "").strip() or 0.4
             ),
+            "cfg_placement_surface_clearance_m": float(
+                os.environ.get("NAVRL_PLACEMENT_SURFACE_CLEARANCE_M", "").strip() or 0.0
+            ),
             "cfg_episode_len_steps": float(
                 os.environ.get("NAVRL_EPISODE_LEN_STEPS", "").strip() or 300
             ),
@@ -3698,6 +3716,11 @@ class NavRLTask(BaseTask):
                     "cfg_placement_touch_m",
                     arena["cfg_placement_touch_m"],
                     "NAVRL_PLACEMENT_TOUCH_M",
+                ),
+                (
+                    "cfg_placement_surface_clearance_m",
+                    arena["cfg_placement_surface_clearance_m"],
+                    "NAVRL_PLACEMENT_SURFACE_CLEARANCE_M",
                 ),
                 (
                     "cfg_episode_len_steps",

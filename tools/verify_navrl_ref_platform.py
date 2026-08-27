@@ -291,7 +291,11 @@ def _runtime_vehicle_contract(task, robot_name):
     inertias = manager.robot_inertias.detach()
     if not bool(torch.isfinite(masses).all() and torch.isfinite(inertias).all()):
         raise RuntimeError(f"{robot_name}: non-finite runtime mass/inertia")
-    expected_mass = {"navrl_quad": 0.250, "navrl_ref5in_quad": 1.200}[robot_name]
+    expected_mass = {
+        "navrl_quad": 0.250,
+        "navrl_ref5in_quad": 1.200,
+        "navrl_ref5in_v2_quad": 1.200,
+    }[robot_name]
     if not bool(torch.allclose(masses, torch.full_like(masses, expected_mass), atol=1e-5)):
         raise RuntimeError(
             f"{robot_name}: runtime mass {masses.min().item():.6f}..{masses.max().item():.6f} "
@@ -302,6 +306,9 @@ def _runtime_vehicle_contract(task, robot_name):
             torch.tensor([8.45e-4, 8.45e-4, 1.69e-3], device=task.device)
         ),
         "navrl_ref5in_quad": torch.diag(
+            torch.tensor([4.1422e-3, 4.1422e-3, 5.7692e-3], device=task.device)
+        ),
+        "navrl_ref5in_v2_quad": torch.diag(
             torch.tensor([4.1422e-3, 4.1422e-3, 5.7692e-3], device=task.device)
         ),
     }[robot_name]
@@ -928,6 +935,7 @@ def _verdict(
 def _run_worker(robot, args):
     """Re-exec this file for one platform and read its JSON back."""
     out = os.path.join(os.path.dirname(os.path.abspath(args.output or "./")), f".{robot}.json")
+    os.makedirs(os.path.dirname(out), exist_ok=True)
     cmd = [sys.executable, os.path.abspath(__file__), "--robot", robot,
            "--num-envs", str(args.num_envs), "--seed", str(args.seed), "--worker-output", out]
     print(f"[{robot}] launching worker ...", flush=True)
@@ -954,6 +962,12 @@ def main():
     p.add_argument("--max-attitude-response-s", type=float, default=0.25)
     p.add_argument("--max-attitude-overshoot-deg", type=float, default=5.0)
     p.add_argument("--output", default=None)
+    p.add_argument(
+        "--candidate-robot",
+        default="navrl_ref5in_quad",
+        choices=("navrl_ref5in_quad", "navrl_ref5in_v2_quad"),
+        help="candidate used by parent comparison; default preserves the historical verifier",
+    )
     p.add_argument("--robot", default=None, help="worker mode: measure this one platform")
     p.add_argument("--worker-output", default=None)
     args = p.parse_args()
@@ -983,7 +997,7 @@ def main():
         },
     }
     report["legacy"] = _run_worker("navrl_quad", args)
-    report["ref5in"] = _run_worker("navrl_ref5in_quad", args)
+    report["ref5in"] = _run_worker(args.candidate_robot, args)
     report["checks"] = _verdict(
         report["legacy"],
         report["ref5in"],

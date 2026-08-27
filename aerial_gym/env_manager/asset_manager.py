@@ -20,6 +20,7 @@ class AssetManager:
         placement_candidate_batch_size=32,
         placement_touch_dist=0.4,
         placement_gap_dist=1.6,
+        placement_surface_clearance=0.45,
     ):
         # min_xy_spacing > 0 enforces a minimum ground-plane (XY) center-to-center distance
         # between the kept obstacles so they never overlap. Default 0.0 = off (unchanged behavior).
@@ -36,12 +37,16 @@ class AssetManager:
         # reference NavRL terrain generator's good_distance() behavior).
         self.placement_touch_dist = max(0.0, float(placement_touch_dist))
         self.placement_gap_dist = max(self.placement_touch_dist, float(placement_gap_dist))
+        self.placement_surface_clearance = float(placement_surface_clearance)
+        if not math.isfinite(self.placement_surface_clearance) or self.placement_surface_clearance < 0.0:
+            raise ValueError("placement_surface_clearance must be finite and non-negative")
         self.init_tensors(global_tensor_dict, num_keep_in_env)
 
     def init_tensors(self, global_tensor_dict, num_keep_in_env):
         self.env_asset_state_tensor = global_tensor_dict["env_asset_state_tensor"]
         self.asset_min_state_ratio = global_tensor_dict["asset_min_state_ratio"]
         self.asset_max_state_ratio = global_tensor_dict["asset_max_state_ratio"]
+        self.asset_collision_half_extents = global_tensor_dict.get("asset_collision_half_extents")
         self.env_bounds_min = (
             global_tensor_dict["env_bounds_min"]
             .unsqueeze(1)
@@ -59,7 +64,7 @@ class AssetManager:
         logger.warning(f"Number of obstacles to be kept in the environment: {self.num_keep_in_env}")
         logger.warning(
             "Obstacle placement | mode=%s min_xy_spacing=%.3f relax_factor=%.3f "
-            "candidate_batch=%d touch=%.2f gap=%.2f"
+            "candidate_batch=%d touch=%.2f gap=%.2f surface_clearance=%.2f"
             % (
                 self.placement_mode,
                 self.min_xy_spacing,
@@ -67,6 +72,7 @@ class AssetManager:
                 self.placement_candidate_batch_size,
                 self.placement_touch_dist,
                 self.placement_gap_dist,
+                self.placement_surface_clearance,
             )
         )
 
@@ -124,6 +130,8 @@ class AssetManager:
         return torch.as_tensor(env_ids, device=device, dtype=torch.long).view(-1)
 
     def _enforce_min_xy_spacing(self, positions, num_used, env_ids):
+        if self.placement_mode in ("footprint_clearance", "nonoverlap", "surface_clearance"):
+            return self._footprint_clearance_xy_spacing(positions, num_used, env_ids)
         if self.placement_mode == "navrl_band":
             return self._navrl_band_xy_spacing(positions, num_used, env_ids)
         if self.placement_mode in ("random", "rejection", "navrl_random"):
@@ -138,6 +146,91 @@ class AssetManager:
         by0 = self.env_bounds_min[:, 0, 1] + self.asset_min_state_ratio[:, 0, 1] * span_y
         by1 = self.env_bounds_min[:, 0, 1] + self.asset_max_state_ratio[:, 0, 1] * span_y
         return bx0, bx1, by0, by1
+
+    def _footprint_clearance_xy_spacing(self, positions, num_used, env_ids):
+        """Place assets without overlap using their real collision footprints.
+
+        Each collision box is conservatively replaced by its XY circumcircle.  Therefore the
+        guarantee survives any sampled yaw, unlike the old centre-distance ``navrl_band`` rule.
+        Every accepted pair has at least ``placement_surface_clearance`` metres between those
+        circumcircles and every circle remains inside the placement band.  There is deliberately
+        no merge/overlap fallback: an infeasible layout fails closed instead of silently changing
+        the requested obstacle count into a smaller number of compound obstacles.
+        """
+        num_assets = positions.shape[1]
+        n = int(min(num_used, num_assets))
+        if n <= 0 or len(env_ids) == 0:
+            return positions
+        if self.asset_collision_half_extents is None:
+            raise RuntimeError("footprint_clearance requires asset_collision_half_extents")
+        half = self.asset_collision_half_extents
+        if half.ndim != 3 or half.shape[:2] != positions.shape[:2] or half.shape[2] < 2:
+            raise RuntimeError("asset_collision_half_extents shape does not match asset positions")
+        if not torch.isfinite(half[env_ids, :n, :2]).all() or (half[env_ids, :n, :2] <= 0.0).any():
+            raise RuntimeError("footprint_clearance received invalid collision half-extents")
+
+        device = positions.device
+        num_envs = len(env_ids)
+        clearance = self.placement_surface_clearance
+        support = torch.linalg.vector_norm(half[env_ids, :n, :2], dim=2)
+        bx0, bx1, by0, by1 = self._placement_band()
+        bx0, bx1, by0, by1 = bx0[env_ids], bx1[env_ids], by0[env_ids], by1[env_ids]
+        placed_x = torch.empty((num_envs, n), device=device)
+        placed_y = torch.empty((num_envs, n), device=device)
+        batch = max(32, self.placement_candidate_batch_size)
+        # This is a hard engineering limit, not a relaxation trigger. With the canonical
+        # 40x40m/300-bar contract it gives 40960 candidates per obstacle before refusing.
+        max_candidates = max(batch, self.placement_attempts_before_relax * 320)
+
+        for k in range(n):
+            radius = support[:, k]
+            lo_x, hi_x = bx0 + radius, bx1 - radius
+            lo_y, hi_y = by0 + radius, by1 - radius
+            invalid_band = (hi_x <= lo_x) | (hi_y <= lo_y)
+            if invalid_band.any():
+                bad = env_ids[invalid_band].detach().cpu().tolist()
+                raise RuntimeError("collision footprint does not fit placement band for envs %s" % bad)
+            pending = torch.ones(num_envs, dtype=torch.bool, device=device)
+            attempted = torch.zeros(num_envs, dtype=torch.int64, device=device)
+            while pending.any():
+                idx = pending.nonzero(as_tuple=False).squeeze(-1)
+                local_n = len(idx)
+                cand_x = lo_x[idx].unsqueeze(1) + (hi_x - lo_x)[idx].unsqueeze(1) * torch.rand(
+                    local_n, batch, device=device
+                )
+                cand_y = lo_y[idx].unsqueeze(1) + (hi_y - lo_y)[idx].unsqueeze(1) * torch.rand(
+                    local_n, batch, device=device
+                )
+                if k == 0:
+                    valid = torch.ones((local_n, batch), dtype=torch.bool, device=device)
+                else:
+                    dx = placed_x[idx, :k].unsqueeze(1) - cand_x.unsqueeze(2)
+                    dy = placed_y[idx, :k].unsqueeze(1) - cand_y.unsqueeze(2)
+                    required = support[idx, :k].unsqueeze(1) + radius[idx, None, None] + clearance
+                    valid = ((dx * dx + dy * dy) >= required * required).all(dim=2)
+                has_valid = valid.any(dim=1)
+                if has_valid.any():
+                    accepted = idx[has_valid]
+                    local = torch.arange(local_n, device=device)[has_valid]
+                    chosen = valid[has_valid].to(torch.int64).argmax(dim=1)
+                    placed_x[accepted, k] = cand_x[local, chosen]
+                    placed_y[accepted, k] = cand_y[local, chosen]
+                    pending[accepted] = False
+                rejected = idx[~has_valid]
+                if len(rejected) > 0:
+                    attempted[rejected] += batch
+                    exhausted = attempted[rejected] >= max_candidates
+                    if exhausted.any():
+                        bad = env_ids[rejected[exhausted]].detach().cpu().tolist()
+                        raise RuntimeError(
+                            "non-overlap placement exhausted %d candidates at asset %d/%d for envs %s; "
+                            "refusing overlap fallback" % (max_candidates, k + 1, n, bad)
+                        )
+
+        result = positions.clone()
+        result[env_ids, :n, 0] = placed_x
+        result[env_ids, :n, 1] = placed_y
+        return result
 
     def _grid_xy_spacing(self, positions, num_used, env_ids):
         """Place the kept obstacles on a per-env jittered grid so that no two are closer than

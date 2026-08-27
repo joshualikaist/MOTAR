@@ -12995,3 +12995,30 @@ primary로 복사하면 source root drift로 거부되며 이는 의도된 fail-
   `research/navrl-env`다 (`gh` 미설치, Settings UI 필요).
 - 워크스페이스 루트 `/home/fair/workspaces/aerial_gym_ws/.git`은 2026-07-13에 생긴 커밋 0개
   빈 저장소다. `reference/`·worktree·결과물까지 포함한 12GB+를 여기에 커밋하지 않았다.
+
+## 2026-08-27 — 막대 중첩 제거 및 physical fresh lineage 기하 정정
+
+- 기존 `navrl_band`가 `d<=0.4 m` 막대를 의도적으로 겹치고 포화 시 merge fallback을 수행하는
+  사실을 최종 환경 결함으로 판정했다. 과거 300-bar 표본은 평균 약 264개 독립 component였으므로
+  해당 결과를 300개 독립 장애물 성능으로 표현하지 않는다.
+- 새 `footprint_clearance` 배치기를 추가했다. 실제 URDF collision half-extents의 XY 외접원을
+  사용하므로 yaw와 무관하게 중첩이 불가능하며, canonical surface clearance는 0.45 m다. 후보가
+  고갈되면 merge/spacing relaxation 없이 RuntimeError로 fail-closed한다.
+- 합성 300 bars × 128 env 생성은 0.261 s, 최소 squared clearance margin 양수였다. 실제 Isaac Gym
+  4 env × 300 bars reset/1-step 스모크도 AABB overlap directed pair `0`, finite output PASS였다.
+- 기존 `navrl_ref5in_quad`와 `navrl_target_drone.urdf`는 과거 체크포인트 provenance를 위해 byte
+  단위로 보존했다. 대신 fresh-only `navrl_ref5in_v2_quad`와 `navrl_target_drone_v2.urdf`를 추가해
+  collision proxy를 `0.280 -> 0.283 m`로 함께 수정했다. 계산된 5-inch prop-tip span
+  0.2825634 m를 2.56 mm under-bound하던 문제를 바깥쪽 반올림으로 제거했다.
+- 동일 controller GPU 비교(seed 20260827, 16 env)는 새 v2 자산으로 최종 PASS: hover error 0.000 m, forward
+  2.490/2.50 m/s와 t90 0.8 s, reversal t90 1.0 s, yaw 2.999/3.00 rad/s, roll/pitch 20 deg
+  response 0.13 s, peak 25.0 deg, worst motor request saturation 1.3%, 전 env 생존/finite.
+  결과: `results/navrl_ref_platform_verification_20260827_v2/summary.json`.
+- 이 변경은 observation shape는 유지하지만 장애물 component 수, corridor, contact distribution과
+  collision hull을 바꾸므로 기존 PPO와 호환되지 않는다. physical launchers는 checkpoint를 계속
+  거부하고 새 mode/surface clearance를 양쪽 하위 launcher에서 재검증한다. 새 성능은 route/physical
+  engineering gate와 500-epoch smoke 뒤 fresh PPO로만 생성하며 warm-start/곡선 연결을 금지한다.
+- README, paper/PPT brief, status site에 historical `navrl_band` 범위와 새 `NOT RUN` lineage를
+  분리했다. 3-D viewer도 non-overlap sampler를 사용하며 merge fallback을 제거했다.
+- 최종 회귀는 Python `834 tests OK (2 skipped)`, target/launcher 계약 13/13, v1 provenance
+  freeze 3/3, 비중첩 배치 4/4, 사이트 static/motion/route contract 전부 PASS였다.

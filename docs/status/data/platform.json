@@ -1,8 +1,8 @@
 {
  "schema": "motar.platform/1",
- "generated_at": "2026-08-24T02:45:11+00:00",
+ "generated_at": "2026-08-27T03:29:38+00:00",
  "generator": "tools/generate_platform_spec.py",
- "source_commit": "a3c8457",
+ "source_commit": "821d03c",
  "robots": [
   {
    "key": "navrl_quad",
@@ -71,6 +71,41 @@
     "roll_alpha_radps2": 221.1,
     "motor_diagonal_m": 0.22,
     "box_diagonal_m": 0.396,
+    "implied_max_rpm": 28023
+   }
+  },
+  {
+   "key": "navrl_ref5in_v2_quad",
+   "label": "fresh · navrl_ref5in_v2_quad",
+   "config": "aerial_gym.config.robot_config.navrl_ref5in_v2_quad_config.NavRLRef5inV2QuadCfg",
+   "cls": "NavRLRef5inV2QuadCfg",
+   "note": "prop-tip span을 바깥쪽으로 반올림한 fresh-only geometry correction.",
+   "urdf": "quad_navrl_ref5in_v2.urdf",
+   "mass_kg": 1.2,
+   "base_mass_kg": 1.048,
+   "ixx_assembled": 0.004142198913943279,
+   "izz_assembled": 0.005769197827886559,
+   "collision_box_m": [
+    0.283,
+    0.283,
+    0.12
+   ],
+   "arm_m": 0.0777817,
+   "max_thrust_n": 9.6,
+   "motor_tau_s": 0.04,
+   "thrust_k_min": 4.401e-05,
+   "thrust_k_max": 4.401e-05,
+   "thrust_to_torque_ratio": 0.01,
+   "num_motors": 4,
+   "derived": {
+    "thrust_total_n": 38.4,
+    "thrust_to_weight": 3.262,
+    "hover_per_motor_n": 2.943,
+    "climb_accel_mps2": 22.19,
+    "horizontal_accel_mps2": 9.81,
+    "roll_alpha_radps2": 221.1,
+    "motor_diagonal_m": 0.22,
+    "box_diagonal_m": 0.4002,
     "implied_max_rpm": 28023
    }
   }

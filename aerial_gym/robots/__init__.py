@@ -2,6 +2,7 @@
 from aerial_gym.config.robot_config.moving_intercept_quad_config import MovingInterceptQuadCfg
 from aerial_gym.config.robot_config.navrl_quad_config import NavRLQuadCfg
 from aerial_gym.config.robot_config.navrl_ref5in_quad_config import NavRLRef5inQuadCfg
+from aerial_gym.config.robot_config.navrl_ref5in_v2_quad_config import NavRLRef5inV2QuadCfg
 from aerial_gym.config.robot_config.base_octarotor_config import BaseOctarotorCfg
 from aerial_gym.config.robot_config.base_random_config import BaseRandCfg
 from aerial_gym.config.robot_config.base_rov_config import BaseROVCfg
@@ -38,6 +39,7 @@ robot_registry.register("base_quadrotor", BaseMultirotor, BaseQuadCfg)
 robot_registry.register("moving_intercept_quadrotor", BaseMultirotor, MovingInterceptQuadCfg)
 robot_registry.register("navrl_quad", BaseMultirotor, NavRLQuadCfg)
 robot_registry.register("navrl_ref5in_quad", BaseMultirotor, NavRLRef5inQuadCfg)
+robot_registry.register("navrl_ref5in_v2_quad", BaseMultirotor, NavRLRef5inV2QuadCfg)
 robot_registry.register("base_octarotor", BaseMultirotor, BaseOctarotorCfg)
 robot_registry.register("base_random", BaseMultirotor, BaseRandCfg)
 robot_registry.register("base_quad_root_link_control", BaseMultirotor, BaseQuadRootLinkControlCfg)
@@ -64,4 +66,3 @@ robot_registry.register("base_quadrotor_with_faceid_normal_camera", BaseMultirot
 robot_registry.register("base_quadrotor_with_stereo_camera", BaseMultirotor, BaseQuadWithStereoCameraCfg)
 
 robot_registry.register("tinyprop", BaseMultirotor, TinyPropCfg)
-

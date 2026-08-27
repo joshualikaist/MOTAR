@@ -8,9 +8,8 @@
     bar_x_min_ratio: 0,
     bar_x_max_ratio: 1,
     bar_height_m: 3,
-    placement_mode: 'navrl_band',
-    placement_touch_m: 0.4,
-    placement_gap_m: 1.6,
+    placement_mode: 'footprint_clearance',
+    placement_surface_clearance_m: 0.45,
   };
 
   function byId(id) { return document.getElementById(id); }

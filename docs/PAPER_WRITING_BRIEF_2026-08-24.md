@@ -10,8 +10,9 @@
 
 1. **simulation 결과와 sim-to-real 결과를 절대 섞지 않는다.** 현재 실제 기체 조립, 센서 calibration,
    실제 비행 및 real sensor log는 없다.
-2. `navrl_ref5in_quad`는 실제 기체가 아니라 **hardware-informed simulation candidate**다.
-   질량·추력·관성은 설계점이며 hardware identification 결과가 아니다.
+2. historical `navrl_ref5in_quad`와 fresh-only `navrl_ref5in_v2_quad`는 모두 실제 기체가
+   아니라 **hardware-informed simulation candidate**다. 질량·추력·관성은 설계점이며
+   hardware identification 결과가 아니다.
 3. v1 결과(24×24 m, 478 m²)는 chirality/phantom-wall 문제로 superseded다. 논문의 주 결과로 쓰지 않는다.
 4. v2의 held-out capture/crash/timeout은 반드시 density, target speed, arena, evaluator semantics,
    checkpoint, seed, episode 수와 함께 쓴다.
@@ -51,7 +52,7 @@ held-out simulation protocol로 분해한다.
 | simulator | Isaac Gym/Aerial Gym/Warp/rl_games |
 | corrected-v2 arena | 40×40×3 m |
 | placement area | 1,600 m² |
-| obstacle | 높이 3 m 막대, `navrl_band` 배치, density sweep 70–300 bars |
+| obstacle | historical: 높이 3 m + overlap-permitting `navrl_band`; corrected fresh lineage: footprint-aware non-overlap, 0.45 m surface clearance |
 | actor observation | camera/LiDAR structured scene + simulator ego-state |
 | privileged actor input | GT target position/velocity/visibility/semantic mask 금지 |
 | LiDAR | 4×72 beams, 12 m nominal range |
@@ -62,8 +63,10 @@ held-out simulation protocol로 분해한다.
 | primary metric | held-out capture: pursuer가 target 0.5 m 이내로 종료한 episode 비율 |
 | secondary metrics | crash, timeout, bar contact, OOB/below cause, latency/track metrics |
 
-`navrl_ref5in_quad`는 1.20 kg, 220 mm motor diagonal, 0.28 m XY collision proxy를 사용하는
-hardware-informed simulation candidate다. 실제 AUW/CG/inertia/thrust curve/thermal/power는 미측정이다.
+새 `navrl_ref5in_v2_quad`는 1.20 kg, 220 mm motor diagonal, 0.283 m XY collision proxy를 사용하는
+fresh-only hardware-informed simulation candidate다. historical `navrl_ref5in_quad`의 0.280 m
+자산은 과거 체크포인트 provenance 때문에 그대로 보존한다. 실제 AUW/CG/inertia/thrust
+curve/thermal/power는 미측정이다.
 
 ## 4. Reward와 정책
 

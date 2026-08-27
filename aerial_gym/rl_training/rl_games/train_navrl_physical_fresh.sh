@@ -11,8 +11,10 @@ _require_routed_value() {
 }
 
 _validate_routed_contract() {
-  _require_routed_value NAVRL_ROUTED_CONTRACT_TOKEN physx_ref5in_6dof_global_astar_aabb_v1_frozen_v1
-  _require_routed_value NAVRL_ROBOT navrl_ref5in_quad
+  _require_routed_value NAVRL_ROUTED_CONTRACT_TOKEN physx_ref5in_6dof_global_astar_aabb_nonoverlap_v2
+  _require_routed_value NAVRL_ROBOT navrl_ref5in_v2_quad
+  _require_routed_value NAVRL_PHYSICAL_GEOMETRY_VERSION v2
+  _require_routed_value NAVRL_TARGET_BOX_XY_M 0.283
   _require_routed_value NAVRL_TARGET_DYNAMICS physical
   _require_routed_value NAVRL_TARGET_ROUTE_MODE global_astar_v1
   _require_routed_value NAVRL_TARGET_PATTERN waypoint
@@ -21,9 +23,8 @@ _validate_routed_contract() {
   _require_routed_value NAVRL_BAR_POOL bars_h3
   _require_routed_value NAVRL_BAR_X_MIN 0
   _require_routed_value NAVRL_BAR_X_MAX 1
-  _require_routed_value NAVRL_PLACEMENT_MODE navrl_band
-  _require_routed_value NAVRL_PLACEMENT_GAP_M 1.6
-  _require_routed_value NAVRL_PLACEMENT_TOUCH_M 0.4
+  _require_routed_value NAVRL_PLACEMENT_MODE footprint_clearance
+  _require_routed_value NAVRL_PLACEMENT_SURFACE_CLEARANCE_M 0.45
   _require_routed_value NAVRL_MAX_BARS 300
   _require_routed_value NAVRL_TARGET_ROUTE_RESOLUTION_M 0.25
   _require_routed_value NAVRL_TARGET_ROUTE_MAX_EXPANSIONS 50000
@@ -110,7 +111,9 @@ for arg in "$@"; do
   esac
 done
 
-export NAVRL_ROBOT=navrl_ref5in_quad
+export NAVRL_ROBOT=navrl_ref5in_v2_quad
+export NAVRL_PHYSICAL_GEOMETRY_VERSION=v2
+export NAVRL_TARGET_BOX_XY_M=0.283
 export NAVRL_TARGET_DYNAMICS=physical
 if [[ "${NAVRL_PHYSICAL_ROUTED_CHILD:-0}" == "1" ]]; then
   _validate_routed_contract
@@ -136,11 +139,13 @@ export NAVRL_ARENA_Z="${NAVRL_ARENA_Z:-3}"
 export NAVRL_BAR_POOL="${NAVRL_BAR_POOL:-bars_h3}"
 export NAVRL_BAR_X_MIN="${NAVRL_BAR_X_MIN:-0}"
 export NAVRL_BAR_X_MAX="${NAVRL_BAR_X_MAX:-1}"
-export NAVRL_PLACEMENT_MODE="${NAVRL_PLACEMENT_MODE:-navrl_band}"
+export NAVRL_PLACEMENT_MODE="${NAVRL_PLACEMENT_MODE:-footprint_clearance}"
+export NAVRL_PLACEMENT_SURFACE_CLEARANCE_M="${NAVRL_PLACEMENT_SURFACE_CLEARANCE_M:-0.45}"
 export NAVRL_MAX_BARS="${NAVRL_MAX_BARS:-300}"
 export NAVRL_TARGET_SPEED_FINAL="${NAVRL_TARGET_SPEED_FINAL:-1.5}"
 export NAVRL_TARGET_SPEED_RAMP_EPOCHS="${NAVRL_TARGET_SPEED_RAMP_EPOCHS:-1}"
 
 echo "[physical-fresh] robot=$NAVRL_ROBOT target=$NAVRL_TARGET_DYNAMICS fresh=1"
+echo "[physical-fresh] placement=$NAVRL_PLACEMENT_MODE surface_clearance=${NAVRL_PLACEMENT_SURFACE_CLEARANCE_M}m overlap_fallback=off"
 echo "[physical-fresh] WARNING: ref5in is an internally consistent simulation design point; hardware BOM/ID is pending"
 exec "${SCRIPT_DIR}/train_navrl_v2_search.sh" "$@"

@@ -60,7 +60,7 @@ assert(html.indexOf('arena.js') < html.indexOf('viewer.js'));
 for (const script of [
   'vendor/three.min.js', 'vendor/OrbitControls.js', 'arena_route.js',
   'arena_motion.js', 'arena.js', 'viewer.js',
-]) assert(html.includes(`${script}?v=20260826r3`), `stale cache-bust for ${script}`);
+]) assert(html.includes(`${script}?v=20260827r4`), `stale cache-bust for ${script}`);
 assert(html.includes('이 화면은 PPO 실행 영상'));
 assert(html.includes('10 Hz 고정 simulation clock'));
 assert(html.includes('PhysX 재생'));
@@ -103,11 +103,10 @@ for (const asset of ['motar-system-overview.svg', 'motar-control-stack.svg']) {
 }
 
 // Presentation claims remain explicitly bounded by the current evidence and hardware status.
-assert(html.includes('Recovery-v2 lower-1.25 · 32/32 integrity PASS'));
-assert(html.includes('Route mechanism FAIL'));
-assert(html.includes('no-anchor forensics INCONCLUSIVE'));
-assert(html.includes('no further Track B GPU/PPO/retune/rerun authority'));
-assert(html.includes('hardware SIM2REAL_3DAY next'));
+assert(html.includes('Non-overlap physical lineage · engineering validation'));
+assert(html.includes('Historical navrl_band results retained but not reusable'));
+assert(html.includes('overlap 0'));
+assert(html.includes('fresh PPO required'));
 assert(html.includes('SYNTHETIC_ONLY'));
 assert(html.includes('333/333'));
 assert(html.includes('selected 205-bar contact endpoints'));
@@ -239,9 +238,12 @@ assert(ref);
 assert.strictEqual(ref.mass_kg, 1.2);
 assert.strictEqual(ref.derived.motor_diagonal_m, 0.22);
 assert.deepStrictEqual(ref.collision_box_m, [0.28, 0.28, 0.12]);
+const refV2 = platform.robots.find((robot) => robot.key === 'navrl_ref5in_v2_quad');
+assert(refV2);
+assert.deepStrictEqual(refV2.collision_box_m, [0.283, 0.283, 0.12]);
 assert(html.includes('1.20 kg'));
 assert(html.includes('220 mm'));
-assert(html.includes('0.28 × 0.28 × 0.12 m'));
+assert(html.includes('0.283 × 0.283 × 0.12 m'));
 
 // Every local href and image source resolves from the static page.
 const refs = [];

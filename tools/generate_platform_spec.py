@@ -50,6 +50,13 @@ ROBOTS = [
         "cls": "NavRLRef5inQuadCfg",
         "note": "내부 정합성을 맞춘 5인치급 시뮬레이션 후보. 실기 검증된 기체가 아니다.",
     },
+    {
+        "key": "navrl_ref5in_v2_quad",
+        "label": "fresh · navrl_ref5in_v2_quad",
+        "config": "aerial_gym.config.robot_config.navrl_ref5in_v2_quad_config",
+        "cls": "NavRLRef5inV2QuadCfg",
+        "note": "prop-tip span을 바깥쪽으로 반올림한 fresh-only geometry correction.",
+    },
 ]
 
 PAYLOAD = [

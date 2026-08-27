@@ -172,10 +172,10 @@ Simulation candidate:
 
 | 항목 | 값 |
 |---|---:|
-| name | `navrl_ref5in_quad` |
+| name | `navrl_ref5in_v2_quad` (fresh-only) |
 | nominal mass | 1.20 kg |
 | motor-to-motor diagonal | 220 mm |
-| collision proxy | 0.28×0.28×0.12 m |
+| collision proxy | 0.283×0.283×0.12 m (0.2826 m prop-tip span을 바깥쪽으로 반올림) |
 | maximum thrust | 9.60 N/motor |
 | nominal T/W | 3.262 |
 | motor lag | 0.04 s first order |
@@ -189,8 +189,17 @@ Simulation candidate:
 
 슬라이드 우측에 큰 문구: **“Repository-consistent candidate ≠ flight-validated hardware.”**
 
-원자료: `aerial_gym/config/robot_config/navrl_ref5in_quad_config.py`,
-`resources/robots/quad/quad_navrl_ref5in.urdf`.
+2026-08-27 정정(본 발표에서 반드시 반영): 기존 정량 결과는 `navrl_band`가 가까운 막대를
+의도적으로 겹쳐 compound obstacle로 만들던 historical 환경이다. 300 bars가 실제로 평균 약
+264개 독립 component였으므로 이를 “서로 독립인 300개 막대”라고 표현하면 안 된다. 새 코드는
+실제 collision footprint 외접원 기준 최소 0.45 m 표면 여유, overlap 0, merge fallback 0을
+강제한다. 이 변경은 새로운 task distribution이므로 기존 PPO 성능곡선과 연결하지 말고,
+engineering gate 뒤 fresh PPO가 완료되기 전까지 새 환경의 capture 수치는 `NOT RUN`으로 둔다.
+
+원자료: `aerial_gym/config/robot_config/navrl_ref5in_v2_quad_config.py`,
+`resources/robots/quad/quad_navrl_ref5in_v2.urdf`,
+`resources/models/environment_assets/objects/navrl_target_drone_v2.urdf`.
+Historical v1 파일은 과거 checkpoint provenance 때문에 수정하지 않았다.
 
 ### Slide 6 — End-to-end high-level architecture
 

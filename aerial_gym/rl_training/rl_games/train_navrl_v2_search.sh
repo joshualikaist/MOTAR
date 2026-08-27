@@ -46,8 +46,10 @@ _require_routed_value() {
 }
 
 _validate_routed_contract() {
-    _require_routed_value NAVRL_ROUTED_CONTRACT_TOKEN physx_ref5in_6dof_global_astar_aabb_v1_frozen_v1
-    _require_routed_value NAVRL_ROBOT navrl_ref5in_quad
+    _require_routed_value NAVRL_ROUTED_CONTRACT_TOKEN physx_ref5in_6dof_global_astar_aabb_nonoverlap_v2
+    _require_routed_value NAVRL_ROBOT navrl_ref5in_v2_quad
+    _require_routed_value NAVRL_PHYSICAL_GEOMETRY_VERSION v2
+    _require_routed_value NAVRL_TARGET_BOX_XY_M 0.283
     _require_routed_value NAVRL_TARGET_DYNAMICS physical
     _require_routed_value NAVRL_TARGET_ROUTE_MODE global_astar_v1
     _require_routed_value NAVRL_TARGET_PATTERN waypoint
@@ -56,9 +58,8 @@ _validate_routed_contract() {
     _require_routed_value NAVRL_BAR_POOL bars_h3
     _require_routed_value NAVRL_BAR_X_MIN 0
     _require_routed_value NAVRL_BAR_X_MAX 1
-    _require_routed_value NAVRL_PLACEMENT_MODE navrl_band
-    _require_routed_value NAVRL_PLACEMENT_GAP_M 1.6
-    _require_routed_value NAVRL_PLACEMENT_TOUCH_M 0.4
+    _require_routed_value NAVRL_PLACEMENT_MODE footprint_clearance
+    _require_routed_value NAVRL_PLACEMENT_SURFACE_CLEARANCE_M 0.45
     _require_routed_value NAVRL_MAX_BARS 300
     _require_routed_value NAVRL_TARGET_ROUTE_RESOLUTION_M 0.25
     _require_routed_value NAVRL_TARGET_ROUTE_MAX_EXPANSIONS 50000
@@ -258,9 +259,16 @@ unset NAVRL_NETWORK_OVERRIDE NAVRL_V2_FORCE ALLOW_CONCURRENT
 export NAVRL_ARENA_XY=40
 export NAVRL_ARENA_Z=3
 export NAVRL_BAR_POOL=bars_h3
-export NAVRL_PLACEMENT_MODE=navrl_band
-export NAVRL_PLACEMENT_TOUCH_M=0.4
-export NAVRL_PLACEMENT_GAP_M=1.6
+if [[ "${NAVRL_V2_PHYSICAL_FRESH_CHILD:-0}" == "1" ]]; then
+    export NAVRL_PLACEMENT_MODE=footprint_clearance
+    export NAVRL_PLACEMENT_SURFACE_CLEARANCE_M=0.45
+    unset NAVRL_PLACEMENT_TOUCH_M NAVRL_PLACEMENT_GAP_M
+else
+    export NAVRL_PLACEMENT_MODE=navrl_band
+    export NAVRL_PLACEMENT_TOUCH_M=0.4
+    export NAVRL_PLACEMENT_GAP_M=1.6
+    unset NAVRL_PLACEMENT_SURFACE_CLEARANCE_M
+fi
 export NAVRL_EPISODE_LEN_STEPS=600
 export NAVRL_MAX_BARS=300
 # Full-width obstacle band. The legacy 0.13..0.96 window kept the v1 left-to-right spawn strip

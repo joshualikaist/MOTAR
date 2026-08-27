@@ -756,6 +756,12 @@ class navrl_physical_target_params(navrl_target_params):
     include_in_warp = False
 
 
+class navrl_physical_target_v2_params(navrl_physical_target_params):
+    """Fresh-only target whose collision proxy rounds the declared prop span outward."""
+
+    file = "navrl_target_drone_v2.urdf"
+
+
 class bar_asset_params(asset_state_params):
     """Variable-size vertical obstacle bars ("막대") for the controlled NavRL bars environment.
 
