@@ -35,7 +35,7 @@ for (const id of ['arena', 'method', 'evidence', 'platform', 'next']) {
 }
 assert(!css.includes('@import'));
 assert(!css.includes('fonts.googleapis.com'));
-assert(html.includes('style.css?v=20260826r9'), 'compact site CSS cache-bust must advance with the layout');
+assert(html.includes('style.css?v=20260827r5'), 'compact site CSS cache-bust must advance with the layout');
 assert(css.includes('height: clamp(300px, 44vh, 500px)'), 'desktop viewer must stay within a viewport-friendly clamp');
 assert(css.includes('height: clamp(260px, 64vw, 340px)'), 'mobile viewer must retain a compact height clamp');
 assert(css.includes('font-size: 11px'), 'viewer HUD must remain compact');
@@ -60,7 +60,7 @@ assert(html.indexOf('arena.js') < html.indexOf('viewer.js'));
 for (const script of [
   'vendor/three.min.js', 'vendor/OrbitControls.js', 'arena_route.js',
   'arena_motion.js', 'arena.js', 'viewer.js',
-]) assert(html.includes(`${script}?v=20260827r4`), `stale cache-bust for ${script}`);
+]) assert(html.includes(`${script}?v=20260827r5`), `stale cache-bust for ${script}`);
 assert(html.includes('이 화면은 PPO 실행 영상'));
 assert(html.includes('10 Hz 고정 simulation clock'));
 assert(html.includes('PhysX 재생'));
@@ -103,10 +103,14 @@ for (const asset of ['motar-system-overview.svg', 'motar-control-stack.svg']) {
 }
 
 // Presentation claims remain explicitly bounded by the current evidence and hardware status.
-assert(html.includes('Non-overlap physical lineage · engineering validation'));
+assert(html.includes('Non-overlap physical lineage · 205-bar geometry PASS'));
 assert(html.includes('Historical navrl_band results retained but not reusable'));
 assert(html.includes('overlap 0'));
 assert(html.includes('fresh PPO required'));
+assert(html.includes('99.167%'));
+assert(html.includes('300 bars disconnected FAIL'));
+assert(html.includes('70→205 train · 300 disconnected'));
+assert(html.includes('preregistration_navrl_v2_corrected_density_geometry_2026-08-27.md'));
 assert(html.includes('SYNTHETIC_ONLY'));
 assert(html.includes('333/333'));
 assert(html.includes('selected 205-bar contact endpoints'));

@@ -13064,3 +13064,9 @@ Hard 22.5–28 m 밴드와 placer latency 스크립트는 이번 동결에 넣�
 문서: `docs/preregistration_navrl_v2_corrected_density_geometry_2026-08-27.md`,
 `results/navrl_v2_density_geometry_audit_2026-08-27/summary.md`.
 
+## 2026-08-27 — GitHub Pages를 기하 감사 결과와 재동기화
+
+공개 Pages가 `research/navrl-env@7459e91`에 멈춰 있고 `079def1` push는 `docs/status/`를
+건드리지 않아 재배포가 안 떴다. status 히어로/메트릭/캐시(`20260827r5`)에 205 PASS · 300
+FAIL을 넣고 `main`과 `research/navrl-env`를 같은 커밋으로 다시 맞춘다. PPO 권한은 여전히 없다.
+
