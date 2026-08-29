@@ -322,5 +322,124 @@ class RandomizeGeneralSpawnTest(unittest.TestCase):
         self.assertTrue(torch.equal(obs["robot_position"], before))
 
 
+_sample_general_target = _load_task_method(
+    "_sample_general_target",
+    {"_spawn_footprint_clearance_accepted": _accepted},
+)
+
+
+class SampleGeneralTargetTest(unittest.TestCase):
+    """`_sample_general_target`'s static-goal fallback (2026-08-30).
+
+    Same defect as the drone spawn fix, one call site over: the fallback used when the target
+    is not `bounded`/`physical` compared a candidate goal to `goal_min_bar_clearance` (1.0 m)
+    from each bar's CENTRE, blind to the bar's own footprint.  Measured impact was small
+    (`goal_in_inflated_obstacle_frac` ~0.013% at 205 bars per the 2026-08-27 audit) because the
+    real default is 1.0 m, not the function's 0.65 m getattr fallback -- but it is the identical
+    bug shape, so it is fixed with the identical helper (`_spawn_footprint_clearance_accepted`).
+
+    The bounded/physical branch (`_target_spawn_center_clearance`, navrl_task.py:5840) is left
+    untouched: it already derives clearance from the pool's max bar radius and was not part of
+    what the audit flagged. `_sample_general_target` is a plain module-level free function here
+    (not a class attribute) -- storing it on the class would let attribute lookup auto-bind
+    `self` as its first positional argument on top of the explicit stub `self` it already takes.
+    """
+
+    def _scenario(self, num_envs, spacing=4.0, arena=40.0):
+        torch.manual_seed(20260830)
+        sizes = torch.tensor(
+            [
+                [0.4430, 0.4430],  # pool minimum footprint
+                [0.7728, 0.7728],  # pool maximum footprint
+                [0.8000, 0.3000],
+                [0.3000, 0.8000],
+            ]
+        )
+        coords = torch.arange(spacing, arena - spacing + 1e-6, spacing)
+        grid = torch.stack(torch.meshgrid(coords, coords), dim=-1).reshape(-1, 2)
+        n_bars = grid.shape[0]
+        half = 0.5 * sizes[torch.arange(n_bars) % sizes.shape[0]]
+        margin = 0.649802
+        bars_xy = grid.unsqueeze(0).expand(num_envs, -1, -1).clone()
+        bar_half = half.unsqueeze(0).expand(num_envs, -1, -1).clone()
+        b_min = torch.zeros((num_envs, 3))
+        b_max = torch.tensor([arena, arena, 3.0]).repeat(num_envs, 1)
+        start_pos = torch.full((num_envs, 3), arena / 2.0)
+        stub = types.SimpleNamespace(
+            device="cpu",
+            n_bars_active=n_bars,
+            _physical_target=False,
+            _target_dynamics="static",
+            _target_speed_max=lambda: 0.0,
+            _general_goal_distance_bounds=lambda: (2.0, 15.0, None),
+            _spawn_required_surface_margin_m=lambda: margin,
+            task_config=types.SimpleNamespace(goal_min_bar_clearance=1.0, flight_altitude=1.5),
+        )
+        env_ids = torch.arange(num_envs)
+        return stub, env_ids, start_pos, b_min, b_max, bars_xy, bar_half, grid, half, margin
+
+    def test_every_goal_clears_each_bar_actual_surface(self):
+        num_envs = 256
+        stub, env_ids, start_pos, b_min, b_max, bars_xy, bar_half, grid, half, margin = (
+            self._scenario(num_envs)
+        )
+        goal = _sample_general_target(
+            stub, env_ids, start_pos, b_min, b_max, bars_xy, bar_half
+        )
+        centers = grid.unsqueeze(0).expand(num_envs, -1, -1)
+        halves = half.unsqueeze(0).expand(num_envs, -1, -1)
+        surface = _rectangle_surface_distance(goal[:, 0:2], centers, halves).amin(dim=1)
+        worst = float(surface.min())
+        self.assertGreaterEqual(
+            worst,
+            margin - 1e-6,
+            "a static-fallback goal cleared the nearest bar surface by only %.4f m (need %.4f m)"
+            % (worst, margin),
+        )
+        self.assertTrue(bool((goal[:, 2] == 1.5).all()) or bool(torch.isfinite(goal[:, 2]).all()))
+
+    def test_flat_default_clearance_would_have_failed_this_scenario(self):
+        """Guards the guard, using the REAL default (1.0 m), not the unreachable 0.65 m literal."""
+        num_envs = 256
+        stub, env_ids, start_pos, b_min, b_max, bars_xy, bar_half, grid, half, margin = (
+            self._scenario(num_envs)
+        )
+        torch.manual_seed(11)
+        lo, hi = 1.0, 39.0
+        candidates = lo + (hi - lo) * torch.rand((num_envs, 2))
+        centers = grid.unsqueeze(0).expand(num_envs, -1, -1)
+        halves = half.unsqueeze(0).expand(num_envs, -1, -1)
+        flat_ok = (
+            torch.cdist(candidates.unsqueeze(1), centers).squeeze(1).amin(dim=1)
+            >= stub.task_config.goal_min_bar_clearance
+        )
+        surface = _rectangle_surface_distance(candidates, centers, halves).amin(dim=1)
+        violating = flat_ok & (surface < margin)
+        self.assertGreater(
+            int(violating.sum()),
+            0,
+            "scenario is too sparse to detect the flat-clearance bug at the real 1.0 m default",
+        )
+
+    def test_bounded_physical_branch_keeps_its_own_clearance_source(self):
+        """Structural guard: the untouched branch must still call _target_spawn_center_clearance
+        and must NOT route through the footprint-aware helper."""
+        method_src = ast.get_source_segment(
+            _TASK_PATH.read_text(encoding="utf-8"),
+            next(
+                n
+                for n in next(
+                    c
+                    for c in _TASK_TREE.body
+                    if isinstance(c, ast.ClassDef) and c.name == "NavRLTask"
+                ).body
+                if isinstance(n, ast.FunctionDef) and n.name == "_sample_general_target"
+            ),
+        )
+        self.assertIn("_target_spawn_center_clearance", method_src)
+        self.assertIn("use_center_clearance", method_src)
+        self.assertIn("goal_required_margin is None", method_src)
+
+
 if __name__ == "__main__":
     unittest.main()

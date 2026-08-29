@@ -13116,3 +13116,62 @@ CPU 스위트 836 → 848 OK(skipped 2). 신규 `tests/test_navrl_spawn_footprin
 파일: `aerial_gym/task/navrl_task/navrl_task.py`(`_spawn_footprint_clearance_accepted`,
 `_robot_spawn_inflation_radius_m`, `_spawn_required_surface_margin_m`,
 `_randomize_general_drone_spawn`), `tools/audit_navrl_v2_density_geometry.py`.
+
+## 2026-08-30 — worktree 정리(20→3) + goal 배치의 동종 결함 마무리
+
+세션 도중 사용자가 "다 검토해서 알려달라"고 위임한 정리 작업 3건.
+
+### worktree 20개 → 3개, 브랜치는 하나도 안 지웠다
+
+`.codex_worktrees/`에 오래 쌓인 worktree 20개를 원칙 하나로 정리했다 — **로컬 체크아웃만 지우고
+브랜치·커밋은 반드시 origin에 push해서 보존한다.** 병합 여부만으로 안전 판정하지 않는다(어제
+`two_envelope_recovery_integration`이 병합됐어도 결과 영수증이 절대경로로 묶여 있어 지우면 안
+된다는 걸 확인했다).
+
+- **즉시 삭제 3개**(병합 완료·클린·참조 0건): `routed_gate_site_status`, `status_compact_layout`,
+  `routed_attempt2_docs`(미커밋 파일 2개는 primary의 더 완성된 최신본과 비교해 고유 정보 없음을
+  확인 후 삭제).
+- **push 후 로컬 체크아웃만 삭제 15개**: 전부 origin에 미push 상태였다(로컬에만 존재 —
+  디스크 손실 시 영구 소실 위험). `codex/*` 15개 브랜치를 origin에 push해 sha 일치를 확인한 뒤
+  worktree 디렉터리만 제거했다. 브랜치는 로컬·원격에 그대로 있어 언제든
+  `git checkout -b <name> origin/codex/<name>`로 복구된다.
+- **손대지 않은 2개**: `two_envelope_recovery_integration`, `route_recovery_forensics` — 결과
+  영수증이 절대경로 provenance로 묶여 있어 fail-closed 검증 게이트가 지우면 영구 재검증 불가로
+  만든다.
+
+### `_sample_general_target`의 static 폴백 — 어제 스폰 버그와 동종
+
+어제 드론 스폰에서 고친 것과 정확히 같은 결함이 goal(목표) 배치에도 있었다. `goal_min_bar_clearance`
+사용처 4곳을 전수 확인했다:
+
+| 함수 | 상태 |
+|---|---|
+| `_sample_general_target` (static 폴백) | **결함** — flat 중심거리, 어제 감사에서 0.013% 측정됨 |
+| `_target_spawn_center_clearance` (bounded/physical) | **이미 안전** — 막대 풀 최댓값 반경을 이미 반영 |
+| `reset_idx`의 legacy "cross the bar field" | **미측정, 손대지 않음** — v1식 레거시 경로 |
+| `_advance_target` 2곳 | **미측정, 손대지 않음** |
+
+**측정된 곳 하나만 고쳤다.** 나머지 둘은 지금 근거 없이 바꾸면 이 프로젝트가 반복해서 당한
+"조용한 기계 결함"을 내가 새로 만드는 것이므로 범위 밖에 뒀다.
+
+수정: `_sample_general_target`에 `bar_half`를 추가 인자로 threading(호출부는 이미
+`asset_collision_half_extents`를 같은 슬라이스로 읽고 있어 배선만 추가), static 폴백 분기에서
+`_spawn_footprint_clearance_accepted`(어제 만든 헬퍼)를 재사용한다. bounded/physical 분기는
+`use_center_clearance` 플래그로 완전히 분리해 구조를 건드리지 않았다.
+
+`goal_min_bar_clearance`가 실제로 지키려는 것도 확인했다 — "0.5 m capture sphere가 실제로 비행
+가능하게" (`navrl_task_config.py:670-671`). 이는 로봇 발자국 도달가능성 문제이므로 어제와 같은
+required margin(robot inflation + tracking reserve = 0.649802 m)을 그대로 재사용하는 것이 의미상
+정확하다.
+
+신규 테스트 3건(`SampleGeneralTargetTest`): 실제 표면 여유 검증, 실제 기본값(1.0 m, getattr
+0.65가 아니라)로도 결함이 재현됨을 보이는 회귀 가드, bounded/physical 분기가 안 바뀌었다는 구조
+검사. 작성 중 직접 잡은 실수 하나 — 추출한 함수를 클래스 속성으로 저장해 `self`가 자동 바인딩되며
+인자 수가 어긋났다(수정), 그리고 `cat >>`가 기존 `if __name__` 블록 뒤에 새 클래스를 붙여
+**어제 고친 것과 같은 함정**(직접 실행 시 뒤 클래스가 등록 전에 `unittest.main()`이 먼저 실행)이
+재발할 뻔했다(수정, 단일 `__main__` 블록만 남김, 직접 실행으로 재확인).
+
+부수: `env_object_config.py:47`의 주석이 "두 스폰 샘플러 모두 flat 0.65 m"라고 말하던 게 어제
+수정으로 더 이상 사실이 아니어서 현행화했다.
+
+851 테스트 전부 통과(848→851), provenance-frozen 무사, 실행 범위는 CPU뿐 GPU 없음.

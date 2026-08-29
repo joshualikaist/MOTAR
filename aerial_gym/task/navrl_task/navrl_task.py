@@ -2164,7 +2164,7 @@ class NavRLTask(BaseTask):
                     % (label, filename)
                 )
 
-    def _sample_general_target(self, env_ids, start_pos, b_min, b_max, bars_xy):
+    def _sample_general_target(self, env_ids, start_pos, b_min, b_max, bars_xy, bar_half):
         """Sample a range-controlled, collision-free target in a random direction.
 
         General-spawn training is deliberately direction agnostic, unlike the legacy left-to-right
@@ -2187,10 +2187,22 @@ class NavRLTask(BaseTask):
         chosen = lo + (hi - lo) * torch.rand((n, 2), device=self.device)
         todo = torch.ones(n, dtype=torch.bool, device=self.device)
         min_dist, max_dist, _ = self._general_goal_distance_bounds()
+        use_center_clearance = (
+            self._target_dynamics in ("bounded", "physical") and self._target_speed_max() > 1e-6
+        )
         spawn_clearance = (
             self._target_spawn_center_clearance()
-            if self._target_dynamics in ("bounded", "physical") and self._target_speed_max() > 1e-6
+            if use_center_clearance
             else float(getattr(self.task_config, "goal_min_bar_clearance", 0.65))
+        )
+        # The static-goal fallback (else branch above) was flat-clearance-from-centre, blind to
+        # each bar's own footprint -- the same defect fixed for drone spawn on 2026-08-27
+        # (_spawn_footprint_clearance_accepted). goal_min_bar_clearance exists to keep the 0.5 m
+        # capture sphere actually flyable (navrl_task_config.py:670-671), which is exactly the
+        # robot-footprint reachability question the geometry audit checks, so the same required
+        # margin applies here.
+        goal_required_margin = (
+            None if use_center_clearance else self._spawn_required_surface_margin_m()
         )
         # Dense physical-target runs must never inherit the unchecked initial random `chosen`
         # sample when rejection exhausts. 1024 scalar rounds are cheap at reset relative to an RL
@@ -2215,13 +2227,21 @@ class NavRLTask(BaseTask):
                 & (drone_dist <= max_dist)
             )
             if bars_xy.shape[1] > 0:
-                bar_dist = (
-                    torch.cdist(candidate.unsqueeze(1), bars_xy[ids, : self.n_bars_active])
-                    .squeeze(1)
-                    .min(1)
-                    .values
-                )
-                accepted &= bar_dist >= spawn_clearance
+                if goal_required_margin is None:
+                    bar_dist = (
+                        torch.cdist(candidate.unsqueeze(1), bars_xy[ids, : self.n_bars_active])
+                        .squeeze(1)
+                        .min(1)
+                        .values
+                    )
+                    accepted &= bar_dist >= spawn_clearance
+                else:
+                    accepted &= _spawn_footprint_clearance_accepted(
+                        candidate,
+                        bars_xy[ids, : self.n_bars_active],
+                        bar_half[ids, : self.n_bars_active],
+                        goal_required_margin,
+                    )
             chosen[ids[accepted]] = candidate[accepted]
             todo[ids[accepted]] = False
         if self._target_dynamics in ("bounded", "physical") and bool(todo.any()):
@@ -4038,12 +4058,15 @@ class NavRLTask(BaseTask):
         bars_xy = self.obs_dict["obstacle_position"][
             env_ids, self._bar_offset : self._bar_offset + self.n_bars_active, 0:2
         ]
+        bar_half_extents = self.obs_dict["asset_collision_half_extents"][
+            env_ids, self._bar_offset : self._bar_offset + self.n_bars_active, 0:2
+        ]
         # "Cross the bar field": the drone spawns at x~0, so placing the goal at x=k on the far
         # side forces a left->right traversal of the bars. k ~ U[k_min, k_max(epoch)] (k_max
         # grows with training via _goal_x_max), y is free across the arena minus a wall margin.
         # Resample any goal within `clearance` of a bar so the 0.5 m capture sphere is flyable.
         if self.general_spawn_mode:
-            goal = self._sample_general_target(env_ids, start_pos, b_min, b_max, bars_xy)
+            goal = self._sample_general_target(env_ids, start_pos, b_min, b_max, bars_xy, bar_half_extents)
             sampled_dist = torch.norm(goal[:, 0:2] - start_pos[:, 0:2], dim=1)
             k_min = float(sampled_dist.min().item())
             k_max = float(sampled_dist.max().item())

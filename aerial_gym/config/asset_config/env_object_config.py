@@ -43,8 +43,11 @@ def _env_float(name, default):
 # target spawn uniformly over the whole arena), which voids that premise and leaves 17% of the v2
 # arena permanently obstacle free -- episodes spawning there degenerate into straight-line pursuit
 # no matter how high the density curriculum climbs, and reported density is inflated because the
-# real flyable area exceeds the placement band. Both spawn samplers already reject positions
-# within 0.65 m of a bar and stay 1 m inside the walls, so a full-width band is safe.
+# real flyable area exceeds the placement band. Both spawn samplers stay 1 m inside the walls and reject positions too close to a bar --
+# the general drone spawn now checks each bar's own footprint surface (2026-08-27, see
+# navrl_task.py's _spawn_footprint_clearance_accepted), not a flat 0.65 m from centre; the
+# static-target goal fallback still uses the flat 0.65 m `goal_min_bar_clearance`. Either
+# way a full-width band is safe.
 # Defaults preserve v1 exactly.
 _BAR_X_MIN = _env_float("NAVRL_BAR_X_MIN", 0.13)
 _BAR_X_MAX = _env_float("NAVRL_BAR_X_MAX", 0.96)
