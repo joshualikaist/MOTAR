@@ -200,7 +200,7 @@ canonical v2 action parameters:
 | corrected physical density curriculum | **70→205 bars**, +15, dwell 1000 epochs, 16,384-episode gate |
 | asset/evaluation ceiling | `NAVRL_MAX_BARS=300`; 220/250은 연결 OOD, 300은 2026-08-27 기하 감사에서 단절 FAIL |
 | promotion schedule | 70:0.82, 85:0.77, 100:0.72, 115+:0.70 |
-| target speed | U[0.3,1.5] m/s, mixed CV/waypoint, 300-epoch ramp |
+| target speed / pattern | base fresh(route off): mixed CV/waypoint; routed fresh(`global_astar_v1`): waypoint-only; both U[0.3,1.5] m/s and 1-epoch ramp. Historical generic v2's mixed/300-epoch setting is a different lineage |
 | episode | exact 600 RL actions, 60 s maximum |
 
 보상 계수:
@@ -213,6 +213,9 @@ canonical v2 action parameters:
 | ego-progress | +1.0 · (`d_prev − 0.99 d_new`) |
 | action smoothness | −0.1 · Δv |
 | height penalty | −8.0 outside ±0.2 m band |
+| yaw alignment | −0.3 · speed-gated crab misalignment |
+| yaw-rate damping | −0.02 · yaw-command² |
+| visibility | +0.02 / step while the detector reports visible |
 | capture terminal | +30 at 0.5 m |
 | collision terminal | −20 |
 | timeout bonus | 없음 |

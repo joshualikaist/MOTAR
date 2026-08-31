@@ -168,7 +168,7 @@ Training-only:
 | density | fresh training target 70→205 bars; asset/evaluation ceiling 300; YOPOv2 count-density reference cells 64/100 |
 | 205-bar count density | 12.81 / 100 m² |
 | 205-bar nominal occupancy | 약 4.681% |
-| target speed | training U[0.3,1.5] m/s, mixed CV/waypoint |
+| target speed | base fresh(route off): mixed CV/waypoint; routed fresh(`global_astar_v1`): waypoint-only; both U[0.3,1.5] m/s with a 1-epoch ramp. Historical generic v2 mixed/300-epoch values must not be spliced in |
 | goal distance | U[6,28] m; hard diagnostic U[22.5,28] m |
 | capture | swept relative segment enters 0.5 m radius |
 | episode | exact 600 actions, 60 s |
@@ -344,6 +344,7 @@ Regularization/cost:
 - time `−0.05/step`.
 - action smoothness `−0.1`.
 - height `−8.0`, yaw alignment `−0.3`, yaw-rate² `−0.02`.
+- detector-visible bonus `+0.02/step` (현재 live reward; 후보 항이 아님).
 
 Terminal:
 
@@ -382,7 +383,7 @@ Terminal:
 | density | fresh physical training 70→205, +15; `NAVRL_MAX_BARS=300`은 OOD 평가용 asset ceiling |
 | dwell / evidence | 1,000 epochs / 16,384 episodes |
 | promotion | 70:.82, 85:.77, 100:.72, 115+:.70 |
-| target speed | U[0.3,1.5], 300-epoch ramp |
+| target speed | U[0.3,1.5], 1-epoch ramp; base fresh is mixed, routed fresh is waypoint-only |
 
 주의:
 

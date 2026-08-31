@@ -85,11 +85,11 @@ attitude/rate torque → motor allocation → 100 Hz rigid-body physics` 순서�
 |---|---|
 | Arena | `40 × 40 × 3 m`; fresh physical lineage는 footprint-aware non-overlap placement (`0.45 m` surface clearance) |
 | Density curriculum | fresh physical: 70 → 205 bars, +15; asset/evaluation ceiling 300 bars; minimum 1,000 epochs per level |
-| Target | mixed constant-velocity / waypoint, `0.3–1.5 m/s`, goal distance `6–28 m` |
+| Target | base fresh(route off): mixed constant-velocity/waypoint; routed fresh(`global_astar_v1`): waypoint-only; both `0.3–1.5 m/s`, 1-epoch speed ramp, goal distance `6–28 m` |
 | Actor observation | 898-D; static 288 + obstacle 480 + robot 50 + target 80 |
 | Horizontal command | per-axis `±2.5 m/s`; yaw `±3.0 rad/s`; tilt limit `45°` |
 | PPO | 128 envs, horizon 32, minibatch 2048, 4 mini-epochs, LR `3e-5` |
-| Reward | range-rate, ego-progress, clearance, time, smoothness, height, capture +30, collision −20 |
+| Reward | range-rate +1, ego-progress +1, static safety +1.5, visibility +0.02/visible step, time −0.05/step, smoothness −0.1, height −8, yaw alignment −0.3, yaw-rate² −0.02, capture +30, collision overwrite −20 |
 
 Exact coefficients and their source locations are frozen in
 [the system specification](docs/MOTAR_SYSTEM_SPEC_2026-08-24.md). Historical v1, archived v2, corrected-v2,

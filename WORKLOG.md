@@ -13175,3 +13175,60 @@ required margin(robot inflation + tracking reserve = 0.649802 m)을 그대로 �
 수정으로 더 이상 사실이 아니어서 현행화했다.
 
 851 테스트 전부 통과(848→851), provenance-frozen 무사, 실행 범위는 CPU뿐 GPU 없음.
+
+## 2026-08-30 — `MOTAR_deck (4)` 26장 독립 검수 + Claude v5 재제작 계약
+
+사용자 제공 PPT와 `MOTAR_검증요청.md`를 원본 그대로 보존하고, 26장 본문/발표자 note를 PDF·PNG로
+전수 렌더한 뒤 코드·result receipt·research authority·주요 원문 논문과 대조했다. slide 23 C1–C4와
+C6은 PASS, C5의 crash 수치와 carve-out 코드 경로는 확인했으나 삭제된 실제 bar 수를 세는 직접
+계측은 없어 causal wording은 FAIL로 낮췄다.
+
+추가로 PPT 밖의 authority 문서에서도 두 개의 drift를 발견했다. 첫째, fresh physical target을
+historical generic v2의 `mixed + 300-epoch ramp`와 섞고 있었다. live launcher는 base fresh(route
+off)가 mixed, routed fresh가 waypoint-only이며 둘 다 speed ramp 1 epoch다. 둘째, vision-mode live
+reward의 `visibility_bonus=+0.02/visible step`가 시스템 명세에서 누락되고 PPT에서는 후보 항으로
+잘못 적혀 있었다. `README.md`, `docs/MOTAR_SYSTEM_SPEC_2026-08-24.md`,
+`docs/CLAUDE_PPT_MASTER_BRIEF_2026-08-26.md`를 실행 코드에 맞췄다.
+
+PPT 자체에서 새로 확정한 주요 오류: YOPOv2 inference input에 ESDF/GT target pose를 잘못 배치,
+898-D를 target 4-D로 잘못 분해, literature tier count `6/9/4/1`(실제 `6/10/3/1`), NavRL/MAVRL을
+`sensor-based target state`로 표기, detector/tracker까지 PPO reward로 공동학습하는 듯한 문장,
+YOPOv2 actual/reference mismatch를 timestamp 선행실험처럼 연결, 160×90 clip 진단을 일반 camera
+한계로 확장, 서로 다른 lineage를 slide 24에서 badge 없이 혼합, 현재 authority보다 E1/E2가 먼저인
+것처럼 쓴 slide 25다.
+
+Claude용 완전 교체 문구·18장 본편 구조·appendix·신규 figure 6종(system boundary, 898→17 token,
+timestamp alignment, lineage rail, reward equation, 10/100 Hz control)을
+`docs/MOTAR_PPT_V5_CORRECTION_HANDOFF_2026-08-30.md`에 고정했다.
+
+재검증: research authority verified(`Track A RANGE_INCONCLUSIVE_AT_THIS_BUDGET`, Track B
+`FAIL_ROUTE_MECHANISM`, long training false), Python 851 OK(skipped 2), site/WebGL/snapshot PASS.
+PPT export는 26/26 성공, clipping/font corruption은 없지만 8–11.5 pt 본문은 projector용으로 부적합해
+v5 계약에서 본문 17–20 pt 하한을 뒀다. GPU/PPO/새 실험 실행 없음.
+
+## 2026-08-30 — historical speed-ramp receipt 확정
+
+PPT v5 handoff의 임시 문구 `historical receipt 확인`을 실제 체크포인트로 해소했다.
+Slide 19 계보의 ep25000 checkpoint `env_state`는 mixed target,
+`speed_min=0.3`, `speed_final=1.5`, `ramp_start=0`, `ramp_epochs=300`을 기록한다. 따라서 학습
+계약은 `U[0.3, v_max]`의 상한을 첫 300 epoch 동안 0.3→1.5 m/s로 올린 것이다. 반면 held-out
+speed-density 결과는 각 셀에서 0.3/0.7/1.1/1.5 m/s를 정확히 고정했으므로 평가 중 ramp는
+적용되지 않았다. 내부 확인 메모가 슬라이드에 노출되지 않도록 Claude handoff를 확정 문구로 교체했다.
+
+## 2026-08-31 — corrected non-overlap fresh 재학습 실행 계획 및 route gate 동결
+
+막대 겹침 제거는 환경 전이·관측·통로 분포를 바꾸므로 historical `navrl_band` checkpoint와 성능곡선을
+새 계보에 연결할 수 없고 fresh PPO가 필요하다는 판단을 재확정했다. 다만 장기학습보다 먼저 표적이 새
+기하에서 실제로 경로를 수행하는지 fail-closed로 확인한다.
+
+사전등록 `docs/preregistration_corrected_nonoverlap_route_gate_2026-08-31.md`와 독립 evaluator
+`tools/verify_navrl_corrected_nonoverlap_route_gate.py`를 추가했다. 계약은 seed 829, 32 env,
+route off/global_astar_v1 × 0.6/0.9/1.2/1.5 m/s × 70/115/160/205 bars의 32셀이다.
+`navrl_ref5in_v2_quad`, target proxy 0.283 m, `footprint_clearance`, surface 0.45 m,
+`NAVRL_MAX_BARS=300`을 source/runtime receipt에 고정한다. 기하 감사에서 단절된 300 bars는 PPO 허가
+게이트에서 제외하고 후속 OOD 평가로 남겼다.
+
+과거 evaluator를 상수화해 재사용하려는 첫 구현은 전체 테스트의
+`test_v1_evaluator_bytes_remain_unchanged`가 의도대로 거부했다. 해당 파일은 HEAD와 byte-identical로
+원상복구하고 새 evaluator를 완전히 분리했다. historical gate 기본 계약도 별도 subprocess test로
+고정했다. 최종 CPU 회귀는 854 tests PASS, 2 skipped. GPU/PPO는 이 기록 시점에 아직 실행 전이다.
