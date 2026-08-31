@@ -1,7 +1,8 @@
 {
   "schema": "motar_research_execution_authority_v1",
   "frozen_at": "2026-08-26",
-  "scope": "post_track_a_stage1_and_track_b_recovery_v2",
+  "amended_at": "2026-08-31",
+  "scope": "post_track_a_stage1_track_b_recovery_v2_and_corrected_nonoverlap_route_gate_r2",
   "hardware_state": {
     "assembled_airframe": false,
     "real_sensor_logs": 0,
@@ -66,7 +67,26 @@
       "disconnected_at_bars": 300,
       "authorizes_ppo": false
     },
-    "next_gate": "corrected environment route/physical engineering gate and fresh PPO smoke; still blocked until hardware Track A or a new GPU authority"
+    "route_physical_gate_r2": {
+      "preregistration": "docs/preregistration_corrected_nonoverlap_route_gate_r2_2026-08-31.md",
+      "result": "results/navrl_corrected_nonoverlap_route_gate_r2_seed829/summary.json",
+      "execution_integrity": "PASS_32_CELL_INTEGRITY",
+      "route_mechanism": "FAIL_ROUTE_MECHANISM",
+      "full_1p5_contract": "FAIL_FULL_1P5_CONTRACT",
+      "plan_success_fraction_70": 0.17783094098883573,
+      "fallback_interval_fraction_70": 0.30015625,
+      "goal_completions_per_env_70_speed_0p6": 0.21875,
+      "highest_passing_speed_mps_by_density": {
+        "70": null,
+        "115": null,
+        "160": null,
+        "205": null
+      },
+      "ppo_policy_loaded": false,
+      "fresh_ppo_epochs_run": 0,
+      "authorizes_ppo": false
+    },
+    "next_gate": "new independently preregistered braking-aware target route/controller mechanism gate; fresh PPO smoke remains blocked until that gate passes"
   },
   "evidence": [
     {
@@ -84,6 +104,10 @@
     {
       "path": "results/navrl_v2_density_geometry_audit_2026-08-27/density_geometry_canonical_6_28.json",
       "sha256": "6b1f1b36cf73409d0c09483c3e1767b7ff196aecf0b95769f0e07d8dffa268d5"
+    },
+    {
+      "path": "results/navrl_corrected_nonoverlap_route_gate_r2_seed829/summary.json",
+      "sha256": "4a464521015c110805d46392b0355297c7328ac5b006be368f6b9a23dcf389d7"
     }
   ],
   "claim_boundary": {

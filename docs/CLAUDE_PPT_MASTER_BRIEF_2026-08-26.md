@@ -68,7 +68,7 @@ MOTAR는 camera/LiDAR 기반 구조화 관측만 받는 UAV가 밀집 장애물�
 | Track A · P2/D1/P3 | `STRICT FAIL / FAIL / BLOCKED` | historical sensor-range Track A의 Stage 2 금지 |
 | Historical Track B · recovery-v2 | `PASS_32_CELL_INTEGRITY / FAIL_ROUTE_MECHANISM` | overlap-permitting 환경의 32셀; recovery 0/16 |
 | Track B · no-anchor | `INCONCLUSIVE`, primary `n=1` | 전형적 원인을 판정할 표본 없음 |
-| Corrected non-overlap v2 | airframe GPU gate PASS · PPO `NOT RUN` | route/physical engineering gate와 500-epoch smoke 전 장기학습 금지 |
+| Corrected non-overlap v2 | route gate r2 32/32 integrity PASS · `FAIL_ROUTE_MECHANISM` · PPO `NOT RUN`(0 epoch) | 70-bar plan 17.78%, fallback 30.02%, 0.6 goals/env 0.21875; smoke·장기학습 차단 |
 | hardware | 미조립·real log 0·flight 0 | sim-to-real 성공 주장 금지 |
 
 기계 판독 원본: `docs/research_authority_2026-08-26.json`  
@@ -544,12 +544,14 @@ Not supported:
 
 Immediate simulation sequence:
 
-1. 64/70/100/130/160/190/205/220/250/300 bars exact topology audit: random-pair
-   connectivity, no-route, passage width, reset latency. 예상 2–4 h.
-2. corrected non-overlap route/physical engineering gate. 예상 1–2 h.
-3. 70 bars fresh PPO 500-epoch smoke. 예상 1–1.5 h.
-4. gate 통과 시 single-seed 70→205 fresh PPO. 예상 2–4 days.
-5. held-out 64/70/100/130/160/190/205 + OOD 220/250/300. 예상 2–4 h.
+1. 64/70/100/130/160/190/205/220/250/300 bars exact topology audit: **완료**. 205 PASS,
+   300 FAIL이며 이는 geometry 판정이지 PPO 성능이 아니다.
+2. corrected non-overlap route/physical engineering gate: **완료, FAIL_ROUTE_MECHANISM**.
+3. 70 bars fresh PPO 500-epoch smoke: **미실행, 선수 gate 실패로 차단**.
+4. single-seed 70→205 fresh PPO: **미실행, smoke 이전 단계에서 차단**.
+5. 다음 software 후보는 braking-aware safe-state를 보존하는 target route/controller를 새로
+   사전등록한 뒤 mechanism gate부터 다시 통과하는 것이다. 현재 결과로 threshold 완화 금지.
+6. held-out 64/70/100/130/160/190/205 + OOD 220/250/300: **fresh PPO 이전 단계에서 차단**.
 
 300 bars는 asset/evaluation ceiling이며 자동 학습 목표가 아니다. 205→300 continuation은 topology와
 205 held-out 결과를 보기 전에는 승인하지 않는다. 실제 hardware track의 BOM/calibration/210 trials는
@@ -667,8 +669,8 @@ Slide 10 답변을 사용한다. 특히 formal PBRS 과대주장 금지, held-ou
 ### Q7. 표적이 화면에서 부자연스럽게 움직이던데 학습 환경도 그런가?
 
 > 브라우저 viewer는 설명용이며 PhysX/PPO replay가 아닙니다. 학습에는 legacy/bounded 계보가 있고,
-> physical/routed target은 별도 feasibility diagnostic입니다. 실제적인 6-DoF target 계보는 route
-> mechanism gate를 통과하지 못해 PPO를 시작하지 않았습니다.
+> physical/routed target은 별도 feasibility diagnostic입니다. corrected non-overlap 6-DoF target
+> 계보도 2026-08-31 32셀 route mechanism gate를 통과하지 못해 PPO를 시작하지 않았습니다(0 epoch).
 
 ### Q8. Timeout을 줄이려고 episode를 무한히 늘리면 되지 않나?
 

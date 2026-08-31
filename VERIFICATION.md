@@ -4,11 +4,12 @@
 [`RESEARCH_PLAN.md`](RESEARCH_PLAN.md), 날짜별 기록은 [`WORKLOG.md`](WORKLOG.md),
 명령어는 [`OPERATIONS.md`](OPERATIONS.md), 라이브 지표는 [`docs/status/`](docs/status/)를 본다.
 
-> 기준일: 2026-08-26
+> 기준일: 2026-08-31
 
 현재 판정의 기계 판독 원본은
 [`docs/research_authority_2026-08-26.json`](docs/research_authority_2026-08-26.json)이다.
-`python tools/check_research_authority.py --json`은 세 frozen summary의 SHA와 Track A/B 판정 필드를
+`python tools/check_research_authority.py --json`은 frozen summary의 SHA와 Track A/B 및 corrected
+non-overlap 판정 필드를
 직접 대조하며 어떤 학습·평가도 실행하지 않는다.
 
 ## 2026-08-26 현재 실행 authority
@@ -22,6 +23,11 @@
   `PASS_32_CELL_INTEGRITY / FAIL_ROUTE_MECHANISM`이고, 후속 no-anchor probe는 primary `n=1`,
   observer identity disagreement `0`으로 `INCONCLUSIVE`다. 이 계보는 닫혔으며 PPO, retune,
   1.5 m/s, env 수 변경, 32-cell 재실행 또는 다른 GPU probe 권한이 없다.
+- **Corrected non-overlap — current fresh lineage:** seed 829 route/physical gate r2는
+  `PASS_32_CELL_INTEGRITY / FAIL_ROUTE_MECHANISM / BLOCKED_PHYSICAL_TRAINING`이다. 70-bar plan
+  `17.7831%`(gate ≥99%), fallback `30.0156%`(gate ≤1%), 0.6 m/s goals/env `0.21875`(gate ≥0.5)다.
+  500-epoch smoke와 70→205 장기학습은 모두 미실행(새 PPO 0 epoch)이다. 막대 겹침 수정 때문에
+  fresh PPO는 결국 필요하지만, 새 braking-aware route/controller gate가 먼저 통과해야 한다.
 
 R0 CPU gate, 최초 0/32 VOID, attempt 2, recovery forensics와 recovery-v2의 실행 이력과 수치는
 아래 날짜별 절에 보존한다. 역사적 preregistration은 현재 실행 authority가 아니다.
@@ -37,7 +43,7 @@ corrected v2 계보(40×40×3 m, **비중첩 배치**, surface clearance 0.45 m,
 | **heading 임계** | `HEADING_VALID_SPEED_MPS`가 인라인 `1e-5`를 **0.10으로 대체**(`0d1def2`, 2026-08-26) | 표적 heading 판정이 **10,000배** 달라진다. 2026-08-26 **이전 모든 체크포인트**는 `1e-5`로 학습됐다 |
 | 밀도 계보 | 70→300 → **70→205** | 커리큘럼 수준 구성 자체가 다르다 |
 
-따라서 **corrected v2에서의 PPO 성능은 NOT RUN이다.** 과거 205-bar 수치·capture·density curve는
+따라서 **corrected v2에서의 PPO 성능은 NOT RUN(0 epoch)이다.** 과거 205-bar 수치·capture·density curve는
 `historical`로만 인용하며, 새 계보의 성능 주장으로 쓰지 않는다. 이 규칙은 문서·PPT·논문 브리프에
 동일하게 적용된다.
 
@@ -87,6 +93,7 @@ Track B (R0) recovery-v2 lower-1.25 32-cell은 **`PASS_32_CELL_INTEGRITY` / `FAI
 | P3 full-budget | **BLOCKED** | P2 PASS 전까지 실행 금지 |
 | R0 recovery-v2 lower-1.25 | **FAIL_ROUTE_MECHANISM** | 7/32 (off만); recovery 0/16; 70-bar plan 93.60%, fallback 47.87% |
 | R0 no-anchor forensics | **INCONCLUSIVE** | primary 1/106; identity disagreement 0; Wilson 최소 n=20 미달 |
+| corrected non-overlap route r2 | **FAIL_ROUTE_MECHANISM** | 32/32 integrity; plan 17.78%, fallback 30.02%, goals/env 0.21875; PPO 0 epoch |
 
 어느 진단 결과도 P2/D1 FAIL을 소급 변경하거나 P3를 자동 해제하지 **않는다**.
 

@@ -4392,6 +4392,88 @@
    ],
    "worklog_date": "2026-08-26",
    "_note": "Evaluation-only current forensic authority; descriptive and terminal for Track B."
+  },
+  {
+   "id": "2026-08-31-corrected-nonoverlap-route-gate-r2-seed829",
+   "title_ko": "★ corrected non-overlap route gate r2 — 32셀 완주, 경로 메커니즘 실패",
+   "question": "막대 겹침을 제거한 현행 환경에서 physical target route/controller가 fresh PPO 전 사전등록 gate를 통과하는가?",
+   "theme": "protocol",
+   "knob": null,
+   "levels": [
+    {
+     "label": "route off",
+     "value": "off",
+     "is_baseline": true
+    },
+    {
+     "label": "global A* routed",
+     "value": "global_astar_v1"
+    }
+   ],
+   "metric": "other",
+   "metric_label": "corrected non-overlap route mechanism gate",
+   "effect": {
+    "value_pp": null,
+    "ci95_pp": null,
+    "ci_method": "none; frozen deterministic threshold screen",
+    "direction": "higher_is_better"
+   },
+   "arms": [
+    {
+     "label": "execution integrity",
+     "extra": {
+      "cells": "32/32",
+      "verdict": "PASS_32_CELL_INTEGRITY"
+     }
+    },
+    {
+     "label": "routed 70 bars pooled over 4 speeds",
+     "extra": {
+      "plan_success": "17.7831% (gate ≥99%)",
+      "fallback_intervals": "30.0156% (gate ≤1%)"
+     }
+    },
+    {
+     "label": "routed 70 bars × 0.6 m/s",
+     "extra": {
+      "goal_completions_per_env": "0.21875 (gate ≥0.5)"
+     }
+    }
+   ],
+   "verdict": "FAIL",
+   "validity": "canonical",
+   "lineage_status": "corrected_nonoverlap_current",
+   "verdict_note": "source/import/runtime receipt를 포함한 32/32 integrity는 통과했지만 route mechanism과 full 1.5 m/s contract는 실패했다. 어떤 밀도에서도 승인 가능한 routed speed가 없으며 unsafe_start가 지배했다. fresh PPO 500-epoch smoke와 70→205 long run은 시작하지 않았다(0 epoch).",
+   "confounded_by": "Neutral pursuer/no-policy target mechanism diagnostic이다. capture/crash/timeout, learned density ceiling, hardware 또는 sim-to-real 성능으로 해석할 수 없다.",
+   "seeds": [829],
+   "episodes_per_cell": null,
+   "env": {
+    "bars": [70, 115, 160, 205],
+    "target_speed_mps": [0.6, 0.9, 1.2, 1.5],
+    "envs_per_cell": 32,
+    "steps_per_cell": 300,
+    "placement": "footprint_clearance",
+    "surface_clearance_m": 0.45,
+    "machine": "rtx3070"
+   },
+   "policy": {
+    "loaded": false,
+    "fresh_ppo_epochs_run": 0,
+    "pursuer_action": "neutral/all-zero policy action"
+   },
+   "preregistered": true,
+   "gate": "docs/preregistration_corrected_nonoverlap_route_gate_r2_2026-08-31.md — plan ≥99%, fallback ≤1%, goals/env ≥0.5, all 1.5 cells pass; integrity fail-closed",
+   "launcher": "tools/verify_navrl_corrected_nonoverlap_route_gate_r2.py",
+   "results_paths": [
+    "results/navrl_corrected_nonoverlap_route_gate_r2_seed829/summary.json",
+    "results/navrl_corrected_nonoverlap_route_gate_r2_seed829/receipt.json",
+    "results/navrl_corrected_nonoverlap_route_gate_r2_seed829/execution_manifest.json",
+    "results/navrl_corrected_nonoverlap_route_gate_r2_seed829/source_manifest.json",
+    "docs/corrected_nonoverlap_route_gate_r2_result_2026-08-31.md",
+    "docs/preregistration_corrected_nonoverlap_route_gate_r2_2026-08-31.md"
+   ],
+   "worklog_date": "2026-08-31",
+   "_note": "Current corrected-environment authority: PASS_32_CELL_INTEGRITY / FAIL_ROUTE_MECHANISM / BLOCKED_PHYSICAL_TRAINING. PPO remains required eventually but unauthorized now."
   }
-]
+ ]
 }

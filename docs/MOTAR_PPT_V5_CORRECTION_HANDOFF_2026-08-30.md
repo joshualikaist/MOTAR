@@ -306,9 +306,9 @@ sensor-to-command latency, timestamp synchronization, power/thermal/endurance.
 | target dynamics | historical receipt별 legacy/bounded | physical 6-DoF |
 | target pattern | mixed CV/waypoint | base fresh(route off): mixed; routed fresh: waypoint-only |
 | speed ramp | training: `U[0.3, v_max]`, `v_max` 0.3→1.5 m/s over epoch 0–300; held-out evaluation: exact fixed speed, ramp N/A | 1 epoch |
-| density results | 130–220 held-out map exists | PPO NOT RUN |
+| density results | 130–220 held-out map exists | PPO NOT RUN (0 epoch) |
 | density target | historical policy lineage | training 70→205, +15; 300 evaluation/asset ceiling |
-| route | historical condition | routed candidate `global_astar_v1`, mechanism FAIL, long training blocked |
+| route | historical condition | corrected r2: 32/32 integrity PASS, `FAIL_ROUTE_MECHANISM`; plan 17.78%, fallback 30.02%, 0.6 goals/env 0.21875; smoke/long training blocked |
 
 공통 arena는 40×40×3 m, bars_h3 높이 3 m, side 0.4–0.8 m, goal distance 6–28 m,
 episode 600 actions/60 s, policy 10 Hz, physics 100 Hz다.
@@ -516,7 +516,7 @@ carve-out은 `hypothesized code-consistent channel; not directly instrumented`�
 
 ```text
 Historical overlap-permitting ── held-out density/speed, latency, detector results
-Corrected non-overlap fresh  ─── geometry PASS205 / FAIL300, PPO NOT RUN
+Corrected non-overlap fresh  ─── geometry PASS205 / FAIL300, route gate FAIL, PPO NOT RUN (0 epoch)
 Hardware track              ──── candidate model only → BOM/calibration/logs pending
 ```
 

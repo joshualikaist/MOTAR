@@ -33,7 +33,7 @@
       </div>
       <div class="status-line">
         <span class="status-dot" aria-hidden="true"></span>
-        <strong>Non-overlap physical lineage · 205-bar geometry PASS</strong><span>Historical navrl_band results retained but not reusable · overlap 0 · surface clearance 0.45 m · body+tracking connectivity 99.167% at 205 · 300 bars disconnected FAIL · fresh PPO required · 2026-08-27</span>
+        <strong>Non-overlap physical lineage · route gate FAIL · PPO 0 epochs</strong><span>205-bar geometry PASS is not policy performance · 32/32 route-gate integrity PASS · 70-bar plan 17.78% / fallback 30.02% / 0.6 goals per env 0.21875 · fresh PPO blocked · 2026-08-31</span>
       </div>
     </section>
 
@@ -146,6 +146,10 @@
           <article><strong>0/534</strong><span>hard-breach NO_CONNECTOR entries</span><p>hard breach는 관측되지 않았지만 mechanism은 FAIL</p></article>
           <article><strong>n=1</strong><span>no-anchor primary</span><p>anchor 0/1 · identity_void=false · INCONCLUSIVE</p></article>
           <article><strong>99.167%</strong><span>205-bar body+tracking connectivity</span><p>canonical 6–28 m geometry audit; 300 bars FAIL 94.661%; PPO NOT RUN</p></article>
+          <article><strong>32/32</strong><span>corrected route-gate integrity</span><p>execution/source receipts PASS; route mechanism FAIL</p></article>
+          <article><strong>17.78%</strong><span>corrected 70-bar plan success</span><p>frozen gate ≥99%; neutral pursuer, no PPO loaded</p></article>
+          <article><strong>30.02%</strong><span>corrected 70-bar fallback</span><p>frozen gate ≤1%; unsafe_start dominated</p></article>
+          <article><strong>0</strong><span>corrected fresh PPO epochs</span><p>500-epoch smoke and 70→205 run intentionally not started</p></article>
         </div>
         <div class="limits">
           <h3>현재 주장할 수 없는 것</h3>
@@ -159,7 +163,10 @@
             <strong>INCONCLUSIVE</strong>이며, 106개 class는 certificate 49 + brake_timeout 32 +
             resume 23 + connect_timeout 1 + brake_no_anchor 1입니다. 이 결과들에는 추가 Track B
             GPU/PPO, gain·margin·env retune, cell/grid rerun 또는 hardware claim 권한이 없습니다.
-            Attempt 2와 v1 <code>RECOVERY_DOMINANT</code>는 역사적 계보일 뿐 현재 병목 판정이 아닙니다.</p>
+            Attempt 2와 v1 <code>RECOVERY_DOMINANT</code>는 역사적 계보일 뿐 현재 병목 판정이 아닙니다.
+            corrected non-overlap r2도 32/32 실행은 완주했지만 plan 17.78%, fallback 30.02%,
+            0.6 m/s goals/env 0.21875로 route mechanism에 실패했습니다. 따라서 새 PPO는 0 epoch이며,
+            재학습이 불필요한 것이 아니라 선수 route/controller가 아직 유효하지 않은 상태입니다.</p>
         </div>
       </div>
     </section>
@@ -191,12 +198,12 @@
       <div class="wrap next-grid">
         <div class="section-head">
           <p>06 · NEXT</p>
-          <h2>다음 authority는 hardware SIM2REAL_3DAY 실행입니다.</h2>
+          <h2>Hardware evidence와 route redesign을 서로 분리합니다.</h2>
         </div>
         <ol>
           <li><span>01</span><div><strong>Keep Track A honest</strong><p>Detection-range Stage 1은 RANGE_INCONCLUSIVE이며 Stage 2는 승인되지 않았습니다.</p></div></li>
           <li><span>02</span><div><strong>Execute hardware Day 1</strong><p>실제 BOM/AUW/CG, calibration, timestamp semantics와 독립 sensor trial을 수집합니다.</p></div></li>
-          <li><span>03</span><div><strong>Close Track B</strong><p>Recovery-v2 FAIL과 no-anchor INCONCLUSIVE 이후 추가 GPU/PPO/retune/rerun은 승인되지 않습니다.</p></div></li>
+          <li><span>03</span><div><strong>Repair before learning</strong><p>Corrected route gate도 FAIL했습니다. braking-aware safe-state를 유지하는 target route/controller를 별도 사전등록해 통과하기 전에는 PPO를 시작하지 않습니다.</p></div></li>
         </ol>
       </div>
     </section>
@@ -215,6 +222,8 @@
         <a href="../physical_target_recovery_v2_no_connector_forensics_result_2026-08-26.md">No-anchor forensics</a>
         <a href="../research_authority_2026-08-26.json">Frozen execution authority</a>
         <a href="../preregistration_navrl_v2_corrected_density_geometry_2026-08-27.md">Density geometry contract</a>
+        <a href="../corrected_nonoverlap_route_gate_r2_result_2026-08-31.md">Corrected non-overlap route gate r2</a>
+        <a href="../preregistration_corrected_nonoverlap_route_gate_r2_2026-08-31.md">Corrected route gate preregistration</a>
       </div>
     </section>
   </main>

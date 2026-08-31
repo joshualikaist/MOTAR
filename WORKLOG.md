@@ -13250,3 +13250,27 @@ proposal을 유지하면서 첫 accepted proposal을 택하는 batch rejection�
 결과를 본 뒤 threshold를 움직이지 않도록 revision 2를 별도 사전등록·evaluator·result namespace로
 분리했다. seed/cell/속도/밀도/clearance/gate는 revision 1과 동일하다. revision 1의 부분 셀은 r2와
 pool하지 않는다. 다음은 전체 CPU 회귀와 clean commit 뒤 r2 32셀 처음부터 재실행이다.
+
+### Revision 2 실행 — 32/32 완주, route mechanism FAIL, PPO 미실행
+
+sampler 수정과 전체 CPU 회귀(857 PASS, 2 skipped)를 clean commit `46b441a`로 고정한 뒤 revision 2
+32셀을 처음부터 실행했다. source/import/runtime/record receipt가 모두 일치해
+`PASS_32_CELL_INTEGRITY`였지만, 사전등록한 route gate는 세 핵심 항목에서 실패했다:
+
+- 70-bar pooled plan success `17.7831%` (gate ≥99%);
+- 70-bar fallback interval `30.0156%` (gate ≤1%);
+- 70 bars × 0.6 m/s goal completion `0.21875/env` (gate ≥0.5).
+
+same-goal reselection은 0으로 통과했지만 routed 1.5 m/s는 4개 밀도 모두 실패했고, 어떤 밀도에서도
+승인 가능한 routed speed가 없었다. routed speed ratio는 속도·밀도가 올라갈수록 `0.7882→0.2292`
+범위로 크게 낮아졌다. contact·motor saturation·tilt·finite-state가 주된 실패축은 아니며 route gauge는
+`unsafe_start`가 지배했다(70×0.6 종료 13/32, 205×1.5 종료 31/32). 물리 표적이 관성으로 soft-safe
+영역을 벗어난 뒤 fail-closed zero command와 `unsafe_start` 재계획을 반복하는 환경/controller 병목이다.
+
+최종 판정은 `FAIL_ROUTE_MECHANISM / FAIL_FULL_1P5_CONTRACT / BLOCKED_PHYSICAL_TRAINING`이며
+long-training authority는 false다. 사전등록대로 fresh 500-epoch PPO smoke와
+70→205 장기학습은 시작하지 않았다(새 PPO 0 epoch). 막대 중첩 수정 때문에 fresh 재학습은 여전히
+필요하지만, 현 route/controller로 학습하면 잘못된 표적 정지 패턴을 정책이 학습하므로 선수 조건이
+충족되지 않았다. 상세 결과는
+`docs/corrected_nonoverlap_route_gate_r2_result_2026-08-31.md`, 원자료는
+`results/navrl_corrected_nonoverlap_route_gate_r2_seed829/summary.json`이다.

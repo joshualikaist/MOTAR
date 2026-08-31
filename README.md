@@ -8,12 +8,12 @@ MOTAR는 카메라, LiDAR, ego-state만으로 움직이는 표적을 추적하�
 
 ![MOTAR perception-to-control system](docs/assets/motar-system-overview.svg)
 
-> **Status · 2026-08-26** — Recovery-v2 lower-1.25 passed **32/32 integrity checks** and
-> **failed the route mechanism**; physical PPO and hardware claims remain **blocked**. Attempt 2
-> (canonical 1.5) is a separate `FAIL_ROUTE_MECHANISM`. Packed diagnosis: recovery occupancy is
-> **63% `NO_CONNECTOR`**, not v1 `unsafe_start`. The preregistered 70-bar no-anchor follow-up
-> is **`INCONCLUSIVE`** (primary `n=1`, identity disagreement `0`), closing Track B with no further
-> GPU authority.
+> **Status · 2026-08-31** — The corrected, footprint-aware non-overlap route gate completed
+> **32/32 integrity checks** and **failed the route mechanism**. At 70 bars, routed plan success was
+> **17.78%** (gate 99%), fallback **30.02%** (gate 1%), and 0.6 m/s goal completion
+> **0.21875/env** (gate 0.5). Therefore corrected fresh PPO remains **NOT RUN (0 epochs)**;
+> neither the 500-epoch smoke nor the 70→205 long run was started. Historical recovery-v2 is a
+> separate overlap-permitting lineage and remains `FAIL_ROUTE_MECHANISM`/`INCONCLUSIVE` evidence.
 > Track A remains P2 `STRICT FAIL`, D1 `FAIL`, P3 `BLOCKED`, and detection Stage 1
 > `RANGE_INCONCLUSIVE_AT_THIS_BUDGET`; its only next authority is the
 > [real-hardware/offline 72-hour contract](docs/SIM2REAL_3DAY_EXECUTION_PLAN.md). 실제 기체는 아직
@@ -73,6 +73,7 @@ attitude/rate torque → motor allocation → 100 Hz rigid-body physics` 순서�
 | Routed recovery forensics | **8 / 8 receipt verified; `RECOVERY_DOMINANT` (evaluation-only)** | 358 local invalidations → 35,666 local fallback intervals (`99.6257×`); unique origins `200`; hard-free/soft-unsafe `97.0%` (Wilson lower `93.61%`) |
 | Recovery-v2 lower-1.25 32-cell | **32 / 32 integrity PASS; route mechanism FAIL; not a 1.5 result** | 7/32 pass (off only); 70-bar plan **93.60%**, fallback **47.87%**, 0.6 goals/env **0.21875**; `NO_CONNECTOR` occupancy **63.06%** |
 | Recovery-v2 no-anchor follow-up | **`INCONCLUSIVE`; Track B closed** | primary `n=1`; observer identity disagreement `0`; no further GPU/PPO/retune/rerun authority |
+| Corrected non-overlap route gate r2 | **32 / 32 integrity PASS; route mechanism FAIL; fresh PPO 0 epochs** | 70-bar plan **17.78%**, fallback **30.02%**, 0.6 goals/env **0.21875**; routed speed gate passed at no density |
 | Hardware/software gate | software pipeline PASS · `SYNTHETIC_ONLY` | 실기 성능 아님 |
 
 새 physical lineage의 `navrl_ref5in_v2_quad`는 1.20 kg, 220 mm motor diagonal, 0.283 m collision proxy를 가정한
@@ -97,7 +98,21 @@ legacy robot and ref5in robot results must not be merged into one performance cu
 
 2026-08-27 이전 `navrl_band` 결과는 가까운 막대를 compound obstacle로 중첩시켰다. 그 결과는
 historical evidence로만 보존한다. 중첩이 없는 새 physical lineage의 최종 정책은 반드시 fresh
-PPO로 다시 학습하며 기존 체크포인트의 warm-start 또는 성능곡선 연결은 허용하지 않는다.
+PPO로 다시 학습하며 기존 체크포인트의 warm-start 또는 성능곡선 연결은 허용하지 않는다. 다만
+2026-08-31 선수 route/physical gate가 실패했으므로 아직 재학습을 시작할 수 없다. 먼저 braking-aware
+safe-state를 유지하는 표적 route/controller를 별도 사전등록·검증해야 한다.
+
+### Corrected non-overlap gate result
+
+The corrected gate is not the historical Track B result. It ran seed 829 on the new
+`footprint_clearance` geometry at 70/115/160/205 bars and 0.6/0.9/1.2/1.5 m/s. All 32 records and
+source receipts completed, but every routed density lacked an authorized passing speed. The
+dominant end gauge was `unsafe_start`; contact, motor saturation and tilt did not explain the
+failure. No PPO policy was loaded—the pursuer action was neutral—so this is an environment-side
+target route/controller result. See the
+[result report](docs/corrected_nonoverlap_route_gate_r2_result_2026-08-31.md),
+[preregistration](docs/preregistration_corrected_nonoverlap_route_gate_r2_2026-08-31.md) and
+[raw summary](results/navrl_corrected_nonoverlap_route_gate_r2_seed829/summary.json).
 
 ## Reproduce
 

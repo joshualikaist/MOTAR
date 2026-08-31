@@ -103,14 +103,18 @@ for (const asset of ['motar-system-overview.svg', 'motar-control-stack.svg']) {
 }
 
 // Presentation claims remain explicitly bounded by the current evidence and hardware status.
-assert(html.includes('Non-overlap physical lineage · 205-bar geometry PASS'));
-assert(html.includes('Historical navrl_band results retained but not reusable'));
-assert(html.includes('overlap 0'));
-assert(html.includes('fresh PPO required'));
+assert(html.includes('Non-overlap physical lineage · route gate FAIL · PPO 0 epochs'));
+assert(html.includes('205-bar geometry PASS is not policy performance'));
+assert(html.includes('fresh PPO blocked'));
+assert(html.includes('32/32 route-gate integrity PASS'));
+assert(html.includes('70-bar plan 17.78%'));
+assert(html.includes('fallback 30.02%'));
 assert(html.includes('99.167%'));
-assert(html.includes('300 bars disconnected FAIL'));
+assert(html.includes('300 bars FAIL 94.661%'));
 assert(html.includes('70→205 train · 300 disconnected'));
 assert(html.includes('preregistration_navrl_v2_corrected_density_geometry_2026-08-27.md'));
+assert(html.includes('corrected_nonoverlap_route_gate_r2_result_2026-08-31.md'));
+assert(html.includes('preregistration_corrected_nonoverlap_route_gate_r2_2026-08-31.md'));
 assert(html.includes('SYNTHETIC_ONLY'));
 assert(html.includes('333/333'));
 assert(html.includes('selected 205-bar contact endpoints'));

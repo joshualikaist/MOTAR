@@ -76,6 +76,34 @@ def verify_authority(receipt_path=DEFAULT_RECEIPT):
     if followup.get("passes_32_cell_mechanism") is not False:
         raise RuntimeError("Track B no-anchor follow-up unexpectedly supersedes 32-cell FAIL")
 
+    corrected = receipt["corrected_environment_v2_2026_08_27"]
+    corrected_gate = corrected["route_physical_gate_r2"]
+    corrected_result = evidence[
+        "results/navrl_corrected_nonoverlap_route_gate_r2_seed829/summary.json"
+    ]
+    corrected_verdict = corrected_result.get("verdicts", {})
+    for field in ("execution_integrity", "route_mechanism", "full_1p5_contract"):
+        if corrected_verdict.get(field) != corrected_gate[field]:
+            raise RuntimeError("corrected route gate %s drift" % field)
+    corrected_inputs = corrected_verdict.get("route_mechanism_inputs", {})
+    for field in (
+        "plan_success_fraction_70",
+        "fallback_interval_fraction_70",
+        "goal_completions_per_env_70_speed_0p6",
+    ):
+        if corrected_inputs.get(field) != corrected_gate[field]:
+            raise RuntimeError("corrected route gate %s drift" % field)
+    if corrected_verdict.get("highest_passing_speed_mps_by_density") != (
+        corrected_gate["highest_passing_speed_mps_by_density"]
+    ):
+        raise RuntimeError("corrected route gate density envelope drift")
+    if corrected_verdict.get("long_training_authority") is not False:
+        raise RuntimeError("corrected route gate unexpectedly authorizes long training")
+    if corrected_gate.get("authorizes_ppo") is not False:
+        raise RuntimeError("corrected route gate receipt unexpectedly authorizes PPO")
+    if corrected_gate.get("fresh_ppo_epochs_run") != 0:
+        raise RuntimeError("corrected route gate receipt unexpectedly claims fresh PPO epochs")
+
     if receipt.get("hardware_state") != {
         "assembled_airframe": False,
         "real_sensor_logs": 0,
@@ -98,6 +126,12 @@ def main():
         "track_a_stage2_authorised": receipt["track_a"]["stage2_authorised"],
         "track_b": receipt["track_b"]["route_mechanism"],
         "track_b_long_training_authorized": receipt["track_b"]["long_training_authorized"],
+        "corrected_route_gate": receipt["corrected_environment_v2_2026_08_27"][
+            "route_physical_gate_r2"
+        ]["route_mechanism"],
+        "corrected_fresh_ppo_epochs_run": receipt["corrected_environment_v2_2026_08_27"][
+            "route_physical_gate_r2"
+        ]["fresh_ppo_epochs_run"],
         "next": receipt["track_a"]["allowed_next"],
     }
     if args.json:
@@ -106,6 +140,7 @@ def main():
         print("PASS_RESEARCH_AUTHORITY_FREEZE")
         print("Track A: %s; Stage 2=false" % summary["track_a"])
         print("Track B: %s; long training=false" % summary["track_b"])
+        print("Corrected route gate: %s; fresh PPO epochs=0" % summary["corrected_route_gate"])
         print("Next: hardware BOM/calibration/210 trials/real-log offline replay")
 
 

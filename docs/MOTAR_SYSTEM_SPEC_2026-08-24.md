@@ -13,7 +13,8 @@
 | software-only sim-to-real preflight | 구조 PASS, `SYNTHETIC_ONLY` |
 | physical target Track B | recovery-v2 32/32 integrity PASS, `FAIL_ROUTE_MECHANISM`; no-anchor follow-up `INCONCLUSIVE`; 종료 |
 | mode probe | `INCONCLUSIVE_POLICY_CHIRALITY`; 개선 근거로 채택하지 않음 |
-| corrected non-overlap fresh PPO | `NOT RUN`; route/physical engineering gate와 500-epoch smoke 전 장기학습 금지 |
+| corrected non-overlap route gate r2 | 32/32 integrity PASS, `FAIL_ROUTE_MECHANISM`; 70-bar plan 17.78%, fallback 30.02%, 0.6 goals/env 0.21875 |
+| corrected non-overlap fresh PPO | `NOT RUN` (0 epoch); route gate 실패로 500-epoch smoke와 장기학습 모두 미실행 |
 | 실제 기체/센서 로그 | 미조립·0회 비행·0개 실측 로그 |
 
 따라서 현재 논문에서 주장할 수 있는 것은 **재현 가능한 시뮬레이션 failure analysis**까지다.
@@ -43,8 +44,9 @@ GPU/PPO/retune/1.5/env-count/32-cell rerun을 승인하지 않는다.
   merge fallback 0이며 불가능한 layout은 fail-closed한다.
 - 학습 목표는 `70→205 bars`, step 15, minimum dwell 1,000 epochs/level이다. `MAX_BARS=300`은
   220/250/300 OOD evaluation과 geometry stress를 위한 asset ceiling이지 학습 목표가 아니다.
-- 새 airframe open-arena GPU envelope는 PASS지만 corrected route/physical engineering gate와 PPO
-  성능은 아직 `NOT RUN`이다. 기존 ep25000 capture/crash 수치는 모두 historical evidence다.
+- 새 airframe open-arena GPU envelope는 PASS지만 corrected route/physical engineering gate r2는
+  `PASS_32_CELL_INTEGRITY / FAIL_ROUTE_MECHANISM`이다. PPO 성능은 `NOT RUN`(0 epoch)이며 기존
+  ep25000 capture/crash 수치는 모두 historical evidence다.
 
 ## 2. 플랫폼 하드웨어 사양
 
@@ -243,9 +245,12 @@ canonical v2 action parameters:
   speed cost는 약 −2.67 pp이며, trained
   density support 안 interaction은 확인되지 않았다(`p=.337/.817`). 220 bars는 OOD다.
 - historical curriculum ceiling은 이 특정 sensor-only policy에서 100 bars 부근(plateau 약 0.56)이다.
-- corrected fresh 계보의 capture/crash/timeout, ceiling, 205 mastery는 모두 `NOT RUN`이다.
-- physical target envelope는 70 bars에서 0.9 m/s, 150/205/300 bars에서 0.6 m/s까지 strict PASS했고,
-  모든 grid를 통과하지 못해 fresh PPO 권한이 없다.
+- corrected fresh 계보의 capture/crash/timeout, learned ceiling, 205 mastery는 모두 `NOT RUN`이다.
+- corrected non-overlap route gate r2는 32/32 완주했지만 70-bar plan `17.7831%`(≥99%), fallback
+  `30.0156%`(≤1%), 0.6 m/s goals/env `0.21875`(≥0.5)로 실패했다. neutral pursuer/no-policy
+  environment diagnostic이므로 PPO 성능으로 읽지 않는다.
+- historical physical target envelope는 70 bars에서 0.9 m/s, 150/205/300 bars에서 0.6 m/s까지
+  strict PASS했지만 corrected r2와 다른 overlap-permitting 계보다. 어느 결과도 fresh PPO 권한을 주지 않는다.
 - 실제 센서가 없으므로 현재 range noise/dropout/latency 수치는 실기 분포가 아니라 simulation
   contract 또는 synthetic preflight다.
 

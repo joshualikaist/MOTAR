@@ -24,6 +24,11 @@ class TestResearchAuthorityFreeze(unittest.TestCase):
         self.assertEqual(geometry["training_cap_bars"], 205)
         self.assertEqual(geometry["disconnected_at_bars"], 300)
         self.assertFalse(geometry["authorizes_ppo"])
+        gate = receipt["corrected_environment_v2_2026_08_27"]["route_physical_gate_r2"]
+        self.assertEqual(gate["execution_integrity"], "PASS_32_CELL_INTEGRITY")
+        self.assertEqual(gate["route_mechanism"], "FAIL_ROUTE_MECHANISM")
+        self.assertFalse(gate["authorizes_ppo"])
+        self.assertEqual(gate["fresh_ppo_epochs_run"], 0)
 
     def test_track_b_prohibits_training_and_retuning(self):
         receipt = MODULE.verify_authority()

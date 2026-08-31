@@ -6,10 +6,12 @@
 현재의 하드웨어·학습 파라미터·low/high-level 자료구조는 중복 표기를 피하기 위해
 [`docs/MOTAR_SYSTEM_SPEC_2026-08-24.md`](docs/MOTAR_SYSTEM_SPEC_2026-08-24.md)에 고정한다.
 
-> **2026-08-26 authority pointer:** Track A/Track B의 실행 결과와 허용된 다음 단계는
+> **2026-08-31 authority pointer:** Track A/Track B/corrected non-overlap의 실행 결과와 허용된 다음 단계는
 > [`VERIFICATION.md`](VERIFICATION.md)가 규정한다. Track A의 유일한 다음 계약은
 > [`docs/SIM2REAL_3DAY_EXECUTION_PLAN.md`](docs/SIM2REAL_3DAY_EXECUTION_PLAN.md)의
 > hardware/real-log 계측이며, Track B는 recovery-v2 FAIL과 no-anchor `INCONCLUSIVE` 뒤 종료됐다.
+> corrected non-overlap route gate r2도 `FAIL_ROUTE_MECHANISM`이므로 fresh PPO smoke와 장기학습은
+> 아직 권한이 없다.
 > 이 charter의 후보 실험 설명은 그 자체로 실행 권한을 만들지 않는다.
 
 ### 2026-08-25 역사적 후보 계보 — physical target global route
@@ -22,6 +24,15 @@ configuration space가 분절되므로 목적지는 현재 connected component �
 arena-wide roaming은 주장하지 않는다. 당시 CPU engineering gate는 통과했지만 PhysX smoke 전까지
 PPO 학습 권한은 없었다. 이후 실행 결과와 현행 차단은 `VERIFICATION.md`를 따른다. 고정 계약과 gate는
 [`docs/preregistration_physical_target_global_route_2026-08-25.md`](docs/preregistration_physical_target_global_route_2026-08-25.md)를 따른다.
+
+### 2026-08-31 corrected non-overlap authority addendum
+
+중첩 없는 `footprint_clearance` 환경은 historical checkpoint와 분포가 달라 fresh PPO가 필요하다.
+그러나 이를 곧바로 학습 권한으로 해석하지 않는다. seed 829의 독립 route/physical gate r2가 32셀
+무결성은 통과했지만 route mechanism을 통과하지 못했으므로, 500-epoch smoke와 70→205 본학습은
+0 epoch 상태로 차단한다. 다음 software 후보는 target route/controller가 braking-aware safe-state를
+보존하도록 설계한 뒤, 결과를 보기 전 새 gate를 사전등록하는 것이다. 수치·판정·claim boundary는
+`docs/corrected_nonoverlap_route_gate_r2_result_2026-08-31.md`와 `VERIFICATION.md`를 따른다.
 
 ## 1. 연구 질문과 기여
 
