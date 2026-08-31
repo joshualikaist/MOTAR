@@ -4,14 +4,16 @@
 검증 gate와 다음 실험은 [`VERIFICATION.md`](VERIFICATION.md), charter는 [`RESEARCH_PLAN.md`](RESEARCH_PLAN.md),
 최신 요약은 [`README.md`](README.md), 날짜별 기록은 [`WORKLOG.md`](WORKLOG.md)를 보세요.
 
-> 기준일: 2026-08-26
+> 기준일: 2026-09-01
 >
 > 현재 실행 authority는 새 PPO run이 아닙니다. Track A는 exact BOM·calibration·210개 sensor
 > trial·real-log replay만
 > [`docs/SIM2REAL_3DAY_EXECUTION_PLAN.md`](docs/SIM2REAL_3DAY_EXECUTION_PLAN.md)에 따라 진행합니다.
 > 실제 hardware나 real log가 없으면 GPU 작업을 시작하지 않습니다. Track B recovery-v2는
 > `FAIL_ROUTE_MECHANISM` 뒤 no-anchor probe까지 `INCONCLUSIVE`로 종료됐으며 추가
-> GPU/PPO/retune/rerun authority가 없습니다.
+> GPU/PPO/retune/rerun authority가 없습니다. corrected non-overlap r2는
+> `FAIL_ROUTE_MECHANISM`이고 새 PPO는 0 epoch입니다. braking-aware route v3는 **구현/CPU 계약
+> 중**이며 GPU authority는 아직 없습니다.
 
 GPU 명령을 찾기 전에 아래 동결 receipt를 먼저 검사합니다. 이 명령은 학습이나 평가를 실행하지
 않고, Track A/B 원자료 SHA와 `Stage 2=false`, `long training=false`를 fail-closed로 확인합니다.
@@ -23,6 +25,39 @@ cd /home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator
 
 기계 판독 계약은 [`docs/research_authority_2026-08-26.json`](docs/research_authority_2026-08-26.json)이며,
 허용된 다음 작업은 hardware BOM/calibration/210 trials/real-log offline replay뿐입니다.
+
+현재 software MECHANISM_GATE(`global_astar_braking_v3`)는 CPU 계약만 허용합니다. 아래는 구현
+검사 명령이며, GPU/PPO/simulator 평가를 실행하지 않습니다.
+
+```bash
+cd /home/fair/workspaces/aerial_gym_ws/.codex_worktrees/braking_route_v3
+export PYTHONNOUSERSITE=1
+python -m unittest discover -s tests -p 'test_navrl_braking_route_v3*.py'
+python -m unittest discover -s tests -p 'test_navrl_target_route_planner.py'
+python -m unittest discover -s tests -p 'test_navrl_target_motion.py'
+python -m unittest discover -s tests -p 'test_navrl_two_envelope_recovery.py'
+git diff --check
+```
+
+Pilot/confirmatory 명령은 CPU 통과 뒤, 그리고 `VERIFICATION.md`가 GPU를 열 때만 준비됩니다.
+지금은 실행하지 마세요.
+
+```bash
+# NOT AUTHORISED YET — development pilot, 8 cells, seed 829, 70 bars
+NAVRL_V3_OUTPUT_ROOT=/path/to/new/unique/pilot_root \
+NAVRL_V3_CELL_RUNNER=/path/to/tracked/executable/cell_adapter \
+NAVRL_V3_BRAKING_RECEIPT=/path/to/canonical/receipt.json \
+NAVRL_V3_BRAKING_RECEIPT_SHA256=<exact sha256> \
+bash tools/run_navrl_braking_route_v3_pilot.sh
+
+# NOT AUTHORISED YET — confirmatory only if every pilot cell passed
+NAVRL_V3_OUTPUT_ROOT=/path/to/new/unique/confirmatory_root \
+NAVRL_V3_CELL_RUNNER=/path/to/tracked/executable/cell_adapter \
+NAVRL_V3_BRAKING_RECEIPT=/path/to/canonical/receipt.json \
+NAVRL_V3_BRAKING_RECEIPT_SHA256=<exact sha256> \
+NAVRL_V3_PILOT_SUMMARY=/path/to/verified/pilot/summary.json \
+bash tools/run_navrl_braking_route_v3_confirmatory.sh
+```
 
 ## 1. 처음 설치할 때
 

@@ -4,7 +4,7 @@
 [`RESEARCH_PLAN.md`](RESEARCH_PLAN.md), 날짜별 기록은 [`WORKLOG.md`](WORKLOG.md),
 명령어는 [`OPERATIONS.md`](OPERATIONS.md), 라이브 지표는 [`docs/status/`](docs/status/)를 본다.
 
-> 기준일: 2026-08-31
+> 기준일: 2026-09-01
 
 현재 판정의 기계 판독 원본은
 [`docs/research_authority_2026-08-26.json`](docs/research_authority_2026-08-26.json)이다.
@@ -12,7 +12,24 @@
 non-overlap 판정 필드를
 직접 대조하며 어떤 학습·평가도 실행하지 않는다.
 
-## 2026-08-26 현재 실행 authority
+## 2026-09-01 현재 실행 authority
+
+- **Track A — perception/sim-to-real:** 아래 2026-08-26 절의 판정 그대로다. P2 `STRICT FAIL`,
+  D1 `FAIL`, P3 `BLOCKED`. 실제 hardware나 real log가 없으면 GPU 작업 권한이 없다.
+- **Track B — routed physical target:** recovery-v2 계보는 닫혔다. 기록된
+  `FAIL_ROUTE_MECHANISM` / no-anchor `INCONCLUSIVE` 수치는 수정하지 않는다.
+- **Corrected non-overlap — current fresh lineage:** seed 829 route/physical gate r2는
+  `PASS_32_CELL_INTEGRITY / FAIL_ROUTE_MECHANISM / BLOCKED_PHYSICAL_TRAINING`이다. 70-bar plan
+  `17.7831%`(gate ≥99%), fallback `30.0156%`(gate ≤1%), 0.6 m/s goals/env `0.21875`(gate ≥0.5)다.
+  이 FAIL 판정과 수치는 유지한다. 500-epoch smoke와 70→205 장기학습은 모두 미실행(새 PPO 0 epoch).
+- **Braking-aware route v3:** `global_astar_braking_v3` 구현이 진행 중이다. 사전등록
+  [`docs/preregistration_braking_aware_route_v3_2026-09-01.md`](docs/preregistration_braking_aware_route_v3_2026-09-01.md)
+  (SHA-256 `cceecb9ad4a538e7bc2bc9171436e823ef18652e9c971e0d6fa8174279df6056`)는 결과를 보기 전에
+  고정됐다. **GPU authority는 아직 없다.** CPU 계약 검사가 통과하고 사용자가 실행을 지시하기
+  전에는 pilot/confirmatory simulator 평가와 PPO를 시작하지 않는다. 현재 stage는
+  `MECHANISM_GATE`다.
+
+## 2026-08-26 기록된 실행 authority (판정 보존)
 
 - **Track A — perception/sim-to-real:** P2 `STRICT FAIL`, D1 `FAIL`, P3 `BLOCKED`; detection
   Stage 1은 `RANGE_INCONCLUSIVE_AT_THIS_BUDGET`, Stage 2는 미승인이다. 유일한 다음 authority는

@@ -13274,3 +13274,32 @@ long-training authority는 false다. 사전등록대로 fresh 500-epoch PPO smok
 충족되지 않았다. 상세 결과는
 `docs/corrected_nonoverlap_route_gate_r2_result_2026-08-31.md`, 원자료는
 `results/navrl_corrected_nonoverlap_route_gate_r2_seed829/summary.json`이다.
+
+## 2026-09-01 — braking-aware route v3 MECHANISM_GATE 구현 (GPU 미실행)
+
+corrected non-overlap r2 `FAIL_ROUTE_MECHANISM` 이후, 사전등록된 fresh-only 모드
+`global_astar_braking_v3`를 구현했다. 사전등록
+`docs/preregistration_braking_aware_route_v3_2026-09-01.md`의 SHA-256
+`cceecb9ad4a538e7bc2bc9171436e823ef18652e9c971e0d6fa8174279df6056`는 결과를 보기 전에
+고정됐고, 이 작업에서 바이트를 수정하지 않았다.
+
+구현 범위: spawn/A*/local/watchdog가 공유하는 exact closed-AABB soft envelope, full-horizon
+수락(longest-safe-prefix 실행 금지), canonical 1.5 m/s monotone p95 ceiling lookup,
+terminal zero-command 정지 증명, tangent/cross-track + stop-turn-go, unsafe_start에서 A* 반복
+금지, reset/goal-completion/runtime-replan 분리 계측. `global_astar_v1`과
+`global_astar_recovery_v2`의 동작·diagnostics shape는 유지했다. reward/obs/termination/PPO/
+물리 동역학은 변경하지 않았다. `CRASH_TUNING_LOG.md`는 archival-in-place로 새 기록을 넣지
+않았다.
+
+navrl skill은 stage router(`ENVIRONMENT_CONTRACT` → `MECHANISM_GATE` → `PPO_SMOKE` →
+`PPO_CURRICULUM` → `HELD_OUT_EVAL` → `SIM_TO_REAL`)로 개정했고, 과거 25/50/75/110/130/150과
+`NAVRL_DENSITY_THRESHOLD=0.6`는 historical recipe로 내렸다. 현재 계보는 70/115/160/205,
+300 bars는 disconnected stress다.
+
+GPU/PPO/simulator 평가는 실행하지 않았다. 포커스 CPU 테스트는
+`test_navrl_braking_route_v3*` 24, planner 13, target_motion 25, two-envelope 23,
+environment contract 13, recovery evaluator 8, corrected-gate 4, braking-contract 8로
+전부 PASS였고 `git diff --check`는 깨끗하다. 커밋/푸시는 사용자 diff 승인 전 금지.
+
+다음: CPU 통과를 확인한 뒤, 사용자가 지시하면 seed 829 / 70 bars / 8-cell pilot만 실행한다.
+pilot 실패 시 confirmatory(seed 839, 32 cell)는 금지다.

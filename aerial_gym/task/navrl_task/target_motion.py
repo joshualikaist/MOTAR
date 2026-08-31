@@ -1,8 +1,30 @@
 """Simulator-independent local steering for NavRL's virtual moving target."""
 
+import importlib.util
 import math
+from pathlib import Path
+import sys
 
 import torch
+
+
+def _load_target_route_geometry():
+    """Load geometry without importing the aerial_gym package (Isaac Gym stays out of CPU tests)."""
+    name = "_navrl_target_route_geometry_standalone"
+    existing = sys.modules.get(name)
+    if existing is not None:
+        return existing
+    path = Path(__file__).with_name("target_route_geometry.py")
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+_GEO = _load_target_route_geometry()
+terminal_stop_certificate = _GEO.terminal_stop_certificate
+torch_segments_soft_safe = _GEO.torch_segments_soft_safe
 
 
 TARGET_MOTION_MODEL = "symmetric_local_steer_v2_heading_continuity90"
@@ -387,6 +409,161 @@ def bounded_drone_target_step(
         ),
     }
     return base_result + (certificate,)
+
+
+def braking_aware_route_step(
+    old_xy,
+    current_velocity,
+    desired_velocity,
+    speed_limit,
+    dt,
+    bars_xy,
+    admissible_lo,
+    admissible_hi,
+    inflated_bar_half_xy,
+    turn_sign,
+    max_accel,
+    max_turn_rate,
+    lookahead_s,
+    brake_speed_knots,
+    brake_distance_knots,
+    lateral_tube_m,
+):
+    """Fresh-v3 route step with a recursively safe terminal-stop certificate.
+
+    Unlike :func:`bounded_drone_target_step`, this function never executes a longest-safe-prefix
+    candidate.  A progress command is eligible only when its complete rollout and a subsequent
+    measured zero-command stop stay inside the same exact soft envelope.  If no progress command
+    is certified, the zero-command candidate is selected as a pre-brake action when certified.
+    """
+    if old_xy.ndim != 2 or old_xy.shape[1] != 2:
+        raise ValueError("old_xy must have shape [N,2]")
+    n = old_xy.shape[0]
+    if current_velocity.shape != old_xy.shape or desired_velocity.shape != old_xy.shape:
+        raise ValueError("velocity tensors must match old_xy")
+    if admissible_lo.shape != old_xy.shape or admissible_hi.shape != old_xy.shape:
+        raise ValueError("admissible bounds must match old_xy")
+    if bars_xy.ndim != 3 or bars_xy.shape[0] != n or bars_xy.shape[2] != 2:
+        raise ValueError("bars_xy must have shape [N,B,2]")
+    if inflated_bar_half_xy.shape != bars_xy.shape:
+        raise ValueError("inflated bar half extents must match bars_xy")
+    if float(lookahead_s) < float(dt):
+        raise ValueError("lookahead_s must be at least dt")
+
+    base_norm = desired_velocity.norm(dim=1, keepdim=True)
+    current_norm = current_velocity.norm(dim=1, keepdim=True)
+    fallback = torch.zeros_like(desired_velocity)
+    fallback[:, 0] = 1.0
+    base = torch.where(
+        base_norm > 1e-6,
+        desired_velocity / base_norm.clamp(min=1e-6),
+        torch.where(current_norm > 1e-6, current_velocity / current_norm.clamp(min=1e-6), fallback),
+    )
+    angles = torch.tensor(
+        [math.radians(value) for value in BOUNDED_TURN_ANGLES_DEG],
+        device=old_xy.device,
+        dtype=old_xy.dtype,
+    )
+    cosine, sine = torch.cos(angles).view(1, -1), torch.sin(angles).view(1, -1)
+    bx, by = base[:, 0:1], base[:, 1:2]
+    directions = torch.stack((bx * cosine - by * sine, bx * sine + by * cosine), dim=2)
+    cruise_scales = torch.tensor((1.0, 0.5, 0.25), device=old_xy.device, dtype=old_xy.dtype)
+    directions = directions.unsqueeze(1).expand(-1, len(cruise_scales), -1, -1)
+    candidate_angles = angles.view(1, 1, -1).expand(n, len(cruise_scales), -1).reshape(n, -1)
+    candidate_scales = cruise_scales.view(1, -1, 1).expand(n, -1, len(angles)).reshape(n, -1)
+    candidates = (
+        directions
+        * cruise_scales.view(1, -1, 1, 1)
+        * speed_limit.clamp(min=0.0).view(n, 1, 1, 1)
+    ).reshape(n, -1, 2)
+    candidates = torch.cat(
+        (candidates, torch.zeros((n, 1, 2), device=old_xy.device, dtype=old_xy.dtype)), dim=1
+    )
+    candidate_angles = torch.cat(
+        (candidate_angles, torch.zeros((n, 1), device=old_xy.device, dtype=old_xy.dtype)), dim=1
+    )
+    candidate_scales = torch.cat(
+        (candidate_scales, torch.zeros((n, 1), device=old_xy.device, dtype=old_xy.dtype)), dim=1
+    )
+    count = candidates.shape[1]
+    pos = old_xy.unsqueeze(1).expand(-1, count, -1).clone()
+    vel = current_velocity.unsqueeze(1).expand(-1, count, -1).clone()
+    full_horizon_safe = torch.ones((n, count), dtype=torch.bool, device=old_xy.device)
+    first_pos = pos.clone()
+    first_vel = vel.clone()
+    flat_speed = speed_limit.unsqueeze(1).expand(-1, count).reshape(-1)
+    flat_accel = max_accel.unsqueeze(1).expand(-1, count).reshape(-1)
+    flat_turn = max_turn_rate.unsqueeze(1).expand(-1, count).reshape(-1)
+    flat_desired = candidates.reshape(-1, 2)
+    horizon_steps = max(1, int(math.ceil(float(lookahead_s) / float(dt))))
+    for step in range(horizon_steps):
+        previous = pos
+        vel = limit_planar_velocity(
+            vel.reshape(-1, 2), flat_desired, flat_speed, dt, flat_accel, flat_turn
+        ).reshape(n, count, 2)
+        pos = pos + vel * float(dt)
+        if step == 0:
+            first_pos = pos.clone()
+            first_vel = vel.clone()
+        full_horizon_safe &= torch_segments_soft_safe(
+            previous, pos, admissible_lo, admissible_hi, bars_xy, inflated_bar_half_xy
+        )
+
+    stop_safe, stop_xy, stop_distance = terminal_stop_certificate(
+        pos,
+        vel,
+        admissible_lo,
+        admissible_hi,
+        bars_xy,
+        inflated_bar_half_xy,
+        brake_speed_knots,
+        brake_distance_knots,
+        lateral_tube_m,
+    )
+    certified = full_horizon_safe & stop_safe
+    progress = candidate_scales > 0.0
+    progress_certified = certified & progress
+    # Prefer forward route progress, then the highest cruise scale, then the smallest turn.
+    desired_dir = torch.where(
+        base_norm > 1e-6, desired_velocity / base_norm.clamp(min=1e-6), base
+    )
+    route_progress = ((pos - old_xy.unsqueeze(1)) * desired_dir.unsqueeze(1)).sum(dim=2)
+    tie = turn_sign.view(n, 1) * torch.sign(candidate_angles) * 1e-6
+    score = (
+        100.0 * route_progress
+        + 10.0 * candidate_scales
+        - candidate_angles.abs()
+        + tie
+    )
+    score = torch.where(progress_certified, score, torch.full_like(score, float("-inf")))
+    best_progress = score.argmax(dim=1)
+    has_progress = progress_certified.any(dim=1)
+    stop_index = count - 1
+    stop_certified = certified[:, stop_index]
+    chosen = torch.where(has_progress, best_progress, torch.full_like(best_progress, stop_index))
+    rows = torch.arange(n, device=old_xy.device)
+    accepted = has_progress | stop_certified
+    # Uncertified rows still submit the zero-command first step so PhysX brakes with declared
+    # dynamics.  Instantaneous velocity rewrite is not a certificate.
+    selected_pos = first_pos[rows, chosen]
+    selected_vel = first_vel[rows, chosen]
+    prebrake = ~has_progress & stop_certified
+    certificate_failure = ~accepted
+    certificate = {
+        "selected_index": chosen,
+        "candidate_count": count,
+        "horizon_steps": horizon_steps,
+        "full_horizon_safe": full_horizon_safe[rows, chosen] & accepted,
+        "terminal_stop_safe": stop_safe[rows, chosen] & accepted,
+        "terminal_stop_xy": stop_xy[rows, chosen],
+        "terminal_stop_distance_m": stop_distance[rows, chosen],
+        "accepted": accepted,
+        "prebrake": prebrake,
+        "progress": has_progress,
+        "certificate_failure": certificate_failure,
+        "safe_prefix_rejected": (~full_horizon_safe).any(dim=1) & ~accepted,
+    }
+    return selected_pos, selected_vel, accepted, prebrake, certificate
 
 
 def initial_cv_velocity(mode, speed, target_xy, pursuer_xy, random_angle):

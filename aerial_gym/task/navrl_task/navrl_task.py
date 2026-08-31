@@ -33,6 +33,7 @@ from aerial_gym.task.navrl_task.target_motion import (
     TARGET_MOTION_MODEL,
     resolve_heading_valid_speed_contract,
     bounded_drone_target_step,
+    braking_aware_route_step,
     initial_cv_velocity,
     support_aware_bounds,
     steer_target_step,
@@ -42,6 +43,7 @@ from aerial_gym.task.navrl_task.target_route_planner import (
     RoutePlannerConfig,
     TARGET_ROUTE_MODE_GLOBAL_ASTAR,
     TARGET_ROUTE_MODE_RECOVERY,
+    TARGET_ROUTE_MODE_BRAKING_V3,
     TARGET_ROUTE_HARD_EPSILON_M,
     TARGET_ROUTE_REACHABLE_TUBE_MARGIN_M,
     TARGET_ROUTE_MODE_OFF,
@@ -49,12 +51,21 @@ from aerial_gym.task.navrl_task.target_route_planner import (
     TARGET_ROUTE_MODEL,
     TARGET_ROUTE_RECOVERY_MODEL,
     TARGET_ROUTE_RECOVERY_SCHEMA,
+    TARGET_ROUTE_BRAKING_V3_MODEL,
+    TARGET_ROUTE_BRAKING_V3_SCHEMA,
     RECOVERY_NORMAL,
     RECOVERY_BRAKE,
     RECOVERY_CONNECT,
     RECOVERY_ROUTE,
     RECOVERY_NO_CONNECTOR,
     conservative_xy_support_from_box,
+)
+from aerial_gym.task.navrl_task.target_route_geometry import (
+    SoftEnvelopeSpec,
+    TARGET_ROUTE_BRAKING_GEOMETRY_SCHEMA,
+    torch_segments_soft_safe,
+    torch_soft_envelope,
+    validate_brake_lookup,
 )
 from aerial_gym.task.navrl_task.speed_governor import (
     SpeedGovernorConfig,
@@ -736,14 +747,21 @@ class NavRLTask(BaseTask):
         self._target_route_mode = str(
             getattr(self.tm, "route_mode", TARGET_ROUTE_MODE_OFF)
         ).strip().lower()
-        if self._target_route_mode not in TARGET_ROUTE_MODES + (TARGET_ROUTE_MODE_RECOVERY,):
+        accepted_route_modes = TARGET_ROUTE_MODES + (
+            TARGET_ROUTE_MODE_RECOVERY, TARGET_ROUTE_MODE_BRAKING_V3,
+        )
+        if self._target_route_mode not in accepted_route_modes:
             raise ValueError(
-                "NAVRL_TARGET_ROUTE_MODE must be %s" % "|".join(TARGET_ROUTE_MODES + (TARGET_ROUTE_MODE_RECOVERY,))
+                "NAVRL_TARGET_ROUTE_MODE must be %s" % "|".join(accepted_route_modes)
             )
         self._target_route_enabled = self._target_route_mode in (
-            TARGET_ROUTE_MODE_GLOBAL_ASTAR, TARGET_ROUTE_MODE_RECOVERY
+            TARGET_ROUTE_MODE_GLOBAL_ASTAR, TARGET_ROUTE_MODE_RECOVERY,
+            TARGET_ROUTE_MODE_BRAKING_V3,
         )
         self._target_route_recovery_enabled = self._target_route_mode == TARGET_ROUTE_MODE_RECOVERY
+        self._target_route_braking_v3_enabled = (
+            self._target_route_mode == TARGET_ROUTE_MODE_BRAKING_V3
+        )
         recovery_contract_variant = str(
             getattr(self.tm, "recovery_braking_contract_variant", "canonical_1p5")
         ).strip().lower()
@@ -751,6 +769,8 @@ class NavRLTask(BaseTask):
             "canonical_1p5", "baseline_1p25"
         ):
             raise RuntimeError("unknown routed-recovery braking contract variant")
+        if self._target_route_braking_v3_enabled and recovery_contract_variant != "canonical_1p5":
+            raise RuntimeError("braking-v3 requires the canonical 1.5 m/s braking receipt")
         if self._target_route_enabled and (
             not self._physical_target or str(self.tm.pattern) != "waypoint"
         ):
@@ -830,6 +850,64 @@ class NavRLTask(BaseTask):
             self._recovery_brake_stop_distance_samples_m = tuple(lookup_distances.tolist())
             self._recovery_brake_lateral_tube_p95_m = lateral_env
             self._recovery_probe_receipt_sha256 = actual_sha
+        if self._target_route_braking_v3_enabled:
+            if not bool(getattr(self.tm, "recovery_brake_probe_validated", False)):
+                raise RuntimeError(
+                    "braking-v3 requires the common braking-probe receipt validator; "
+                    "scalar p05/p95 values cannot arm v3"
+                )
+            if not str(self._training_source_provenance.get("manifest", "")):
+                raise RuntimeError("braking-v3 requires a verified training source manifest")
+            p95 = float(getattr(self.tm, "recovery_brake_stop_time_p95", 0.0))
+            receipt = str(getattr(self.tm, "recovery_brake_probe_receipt", ""))
+            declared_sha = str(
+                getattr(self.tm, "recovery_brake_probe_receipt_sha256", "")
+            ).lower()
+            if not (math.isfinite(p95) and p95 > 0.0 and receipt and len(declared_sha) == 64):
+                raise RuntimeError(
+                    "braking-v3 requires measured stop-time p95 and a hashed braking-probe receipt"
+                )
+            receipt_path, actual_sha, summary, core = _verify_recovery_braking_receipt(
+                receipt, declared_sha, Path(__file__).resolve().parents[3]
+            )
+            certified = core.get("certified_monotone_speed_to_p95_lookup")
+            lateral_tube = core.get("certified_lateral_tube_p95_m")
+            if (
+                core.get("schema") != "navrl_target_recovery_braking_probe_v1"
+                or not isinstance(lateral_tube, (int, float))
+                or not math.isfinite(float(lateral_tube)) or float(lateral_tube) < 0.0
+                or abs(float(core.get("stop_time_p95_s", -1.0)) - p95) > 1e-12
+            ):
+                raise RuntimeError("braking-v3 raw braking handoff does not match task contract")
+            if not isinstance(certified, dict) or not certified:
+                raise RuntimeError("braking-v3 raw braking handoff has no certified lookup")
+            lookup_speeds = np.asarray(
+                getattr(self.tm, "recovery_brake_speed_samples_mps", ()), dtype=np.float64
+            ).reshape(-1)
+            lookup_distances = np.asarray(
+                getattr(self.tm, "recovery_brake_stop_distance_samples_m", ()), dtype=np.float64
+            ).reshape(-1)
+            canonical_rows = [certified[key] for key in sorted(certified, key=lambda key: float(key))]
+            if (
+                lookup_speeds.shape != (len(canonical_rows),)
+                or lookup_distances.shape != lookup_speeds.shape
+                or not np.allclose(lookup_speeds, [float(row["speed_mps"]) for row in canonical_rows], rtol=0.0, atol=1e-12)
+                or not np.allclose(lookup_distances, [float(row["p95_stop_distance_m"]) for row in canonical_rows], rtol=0.0, atol=1e-12)
+            ):
+                raise RuntimeError("braking-v3 environment braking lookup differs from canonical receipt")
+            try:
+                validate_brake_lookup(lookup_speeds.tolist(), lookup_distances.tolist())
+            except ValueError as exc:
+                raise RuntimeError("braking-v3 lookup is not a monotone ceiling table") from exc
+            lateral_env = float(getattr(self.tm, "recovery_brake_lateral_tube_p95_m", -1.0))
+            if not math.isfinite(lateral_env) or lateral_env < 0.0 or abs(lateral_env - float(lateral_tube)) > 1e-12:
+                raise RuntimeError("braking-v3 lateral stopping tube differs from canonical receipt")
+            if not isinstance(summary.get("measured_speed_to_p95_lookup"), dict):
+                raise RuntimeError("braking-v3 raw braking summary is incomplete")
+            self._recovery_brake_speed_samples_mps = tuple(lookup_speeds.tolist())
+            self._recovery_brake_stop_distance_samples_m = tuple(lookup_distances.tolist())
+            self._recovery_brake_lateral_tube_p95_m = lateral_env
+            self._recovery_probe_receipt_sha256 = actual_sha
         self._bar_offset = 1 if self._physical_target else 0
         if self._physical_target and self.task_config.robot_name not in (
             "navrl_ref5in_quad", "navrl_ref5in_v2_quad"
@@ -865,7 +943,9 @@ class NavRLTask(BaseTask):
             if float(self.tm.obstacle_clearance) <= 0.0:
                 raise ValueError("NAVRL_TARGET_OBSTACLE_CLEARANCE must be positive in bounded mode")
         self._target_motion_model = (
-            TARGET_ROUTE_RECOVERY_MODEL
+            TARGET_ROUTE_BRAKING_V3_MODEL
+            if self._target_route_braking_v3_enabled
+            else TARGET_ROUTE_RECOVERY_MODEL
             if self._target_route_recovery_enabled
             else TARGET_ROUTE_MODEL
             if self._target_route_mode == TARGET_ROUTE_MODE_GLOBAL_ASTAR
@@ -904,6 +984,7 @@ class NavRLTask(BaseTask):
             self._target_route_manager = BatchedTargetRouteManager(
                 self.num_envs, self.device, route_config,
                 recovery_enabled=self._target_route_recovery_enabled,
+                braking_v3_enabled=self._target_route_braking_v3_enabled,
             )
         self.target_orientation = torch.zeros((self.num_envs, 4), device=self.device)
         self.target_orientation[:, 3] = 1.0
@@ -2190,6 +2271,7 @@ class NavRLTask(BaseTask):
         """
         n = len(env_ids)
         spawn_wall_margin = 1.0
+        v3_inflated_half = None
         if self._physical_target:
             # The legacy sampler's fixed 1 m inset can place a dynamic body inside the planner's
             # own stopping reserve (wall_margin + physical_boundary_margin = 1.25 m by default).
@@ -2201,6 +2283,16 @@ class NavRLTask(BaseTask):
             )
         lo = b_min[:, 0:2] + spawn_wall_margin
         hi = b_max[:, 0:2] - spawn_wall_margin
+        if self._target_route_braking_v3_enabled:
+            spec = SoftEnvelopeSpec(
+                wall_margin_m=float(self.cur.wall_margin),
+                boundary_reserve_m=float(self.tm.physical_boundary_margin),
+                tracking_margin_m=float(self.tm.physical_tracking_margin),
+            )
+            support = self._target_route_support_xy[env_ids]
+            lo, hi, v3_inflated_half = torch_soft_envelope(
+                b_min[:, 0:2], b_max[:, 0:2], bar_half, support, spec
+            )
         chosen = lo + (hi - lo) * torch.rand((n, 2), device=self.device)
         todo = torch.ones(n, dtype=torch.bool, device=self.device)
         min_dist, max_dist, _ = self._general_goal_distance_bounds()
@@ -2250,7 +2342,15 @@ class NavRLTask(BaseTask):
                 & (drone_dist >= min_dist)
                 & (drone_dist <= max_dist)
             )
-            if bars_xy.shape[1] > 0:
+            if self._target_route_braking_v3_enabled:
+                # Open admissible centre + continuous closed-AABB bars.  Degenerate point
+                # segments still exercise the shared envelope, including the zero-bar case.
+                accepted &= torch_segments_soft_safe(
+                    candidate, candidate, lo[ids], hi[ids],
+                    bars_xy[ids],
+                    v3_inflated_half[ids],
+                )
+            elif bars_xy.shape[1] > 0:
                 if goal_required_margin is None:
                     bar_dist = (
                         torch.cdist(candidate, bars_xy[ids, : self.n_bars_active])
@@ -2754,6 +2854,15 @@ class NavRLTask(BaseTask):
                 if self._target_route_recovery_enabled else 0
             ),
             "cfg_target_route_mode": self._target_route_mode,
+            "cfg_target_route_braking_v3_schema": (
+                TARGET_ROUTE_BRAKING_V3_SCHEMA if self._target_route_braking_v3_enabled else "off"
+            ),
+            "cfg_target_route_braking_v3_model": (
+                TARGET_ROUTE_BRAKING_V3_MODEL if self._target_route_braking_v3_enabled else "off"
+            ),
+            "cfg_target_route_braking_v3_soft_envelope": (
+                TARGET_ROUTE_BRAKING_GEOMETRY_SCHEMA if self._target_route_braking_v3_enabled else "off"
+            ),
             "cfg_target_route_resolution_m": float(self.tm.route_resolution_m),
             "cfg_target_route_max_expansions": int(self.tm.route_max_expansions),
             "cfg_target_route_max_waypoints": int(self.tm.route_max_waypoints),
@@ -3504,6 +3613,46 @@ class NavRLTask(BaseTask):
                             "fresh-only routed recovery contract mismatch or missing provenance: %s"
                             % key
                         )
+                if self._target_route_braking_v3_enabled:
+                    v3_contract = (
+                        ("cfg_target_route_braking_v3_schema", TARGET_ROUTE_BRAKING_V3_SCHEMA),
+                        ("cfg_target_route_braking_v3_model", TARGET_ROUTE_BRAKING_V3_MODEL),
+                        (
+                            "cfg_target_route_braking_v3_soft_envelope",
+                            TARGET_ROUTE_BRAKING_GEOMETRY_SCHEMA,
+                        ),
+                        (
+                            "cfg_target_recovery_probe_receipt_sha256",
+                            self._recovery_probe_receipt_sha256,
+                        ),
+                        (
+                            "cfg_target_recovery_brake_speed_samples_mps",
+                            list(self._recovery_brake_speed_samples_mps),
+                        ),
+                        (
+                            "cfg_target_recovery_brake_stop_distance_samples_m",
+                            list(self._recovery_brake_stop_distance_samples_m),
+                        ),
+                        (
+                            "cfg_target_recovery_brake_lateral_tube_p95_m",
+                            self._recovery_brake_lateral_tube_p95_m,
+                        ),
+                        ("cfg_target_physical_tracking_margin_m", float(self.tm.physical_tracking_margin)),
+                        ("cfg_target_physical_boundary_margin_m", float(self.tm.physical_boundary_margin)),
+                        ("cfg_target_route_wall_margin_m", float(self.cur.wall_margin)),
+                    )
+                    for key, expected in v3_contract:
+                        saved = state.get(key)
+                        if saved is None or (
+                            isinstance(expected, float)
+                            and abs(float(saved) - expected) > 1e-9
+                        ) or (
+                            not isinstance(expected, float) and saved != expected
+                        ):
+                            raise RuntimeError(
+                                "fresh-only braking-v3 contract mismatch or missing provenance: %s"
+                                % key
+                            )
             # Newer checkpoints record the complete moving-target/spawn/safety geometry. Missing
             # fields are tolerated for old checkpoints, but a present mismatch changes the task
             # distribution and invalidates accumulated density evidence.
@@ -4281,7 +4430,9 @@ class NavRLTask(BaseTask):
             self.sim_env.IGE_env.write_to_sim()
         if self._target_route_enabled:
             self._target_route_manager.reset_idx(env_ids)
-            self._plan_target_routes(env_ids, connected_goal=True, is_replan=False)
+            self._plan_target_routes(
+                env_ids, connected_goal=True, is_replan=False, plan_cause="reset"
+            )
         self.ep_min_goal_dist[env_ids] = float("inf")
         self.ep_reached[env_ids] = False
 
@@ -5840,7 +5991,8 @@ class NavRLTask(BaseTask):
         return hard_free, soft_free, soft_clearance, hard_clearance, hard_lo, hard_hi, hard_half
 
     def _plan_target_routes(
-        self, env_ids, *, connected_goal, is_replan=False, exclude_previous_goal=False
+        self, env_ids, *, connected_goal, is_replan=False, exclude_previous_goal=False,
+        plan_cause=None,
     ):
         """CPU-plan selected environments only; ordinary route following remains on GPU."""
         if not self._target_route_enabled or len(env_ids) == 0:
@@ -5872,6 +6024,7 @@ class NavRLTask(BaseTask):
                 float(self.tm.route_goal_exclusion_radius_m)
                 if exclude_previous_goal else 0.0
             ),
+            plan_cause=plan_cause,
         )
         # A successful connected-goal plan owns the waypoint. Failed rows retain their prior goal
         # but valid=False, so the only command they can emit is the fail-closed zero reference.
@@ -6003,6 +6156,10 @@ class NavRLTask(BaseTask):
             m += float(getattr(self.tm, "physical_boundary_margin", 0.0))
         lo = b_min[:, 0:2] + m
         hi = b_max[:, 0:2] - m
+        if self._target_route_braking_v3_enabled:
+            support = self._target_route_support_xy[env_ids]
+            lo = lo + support
+            hi = hi - support
         return lo + (hi - lo) * torch.rand(len(env_ids), 2, device=self.device)
 
     def _sync_target_to_sensor(self):
@@ -6012,6 +6169,146 @@ class NavRLTask(BaseTask):
         sensor_orientation = self.obs_dict.get("navrl_target_orientation", None)
         if sensor_orientation is not None:
             sensor_orientation[:] = self.target_orientation
+
+    def _braking_v3_soft_envelope(self, bars_xy, bar_half, support_xy, b_min, b_max):
+        spec = SoftEnvelopeSpec(
+            wall_margin_m=float(self.cur.wall_margin),
+            boundary_reserve_m=float(self.tm.physical_boundary_margin),
+            tracking_margin_m=float(self.tm.physical_tracking_margin),
+        )
+        return torch_soft_envelope(b_min[:, 0:2], b_max[:, 0:2], bar_half, support_xy, spec)
+
+    def _advance_target_braking_v3(self, moving, dt, old_xy, b_min, b_max):
+        """Fresh-only GPU route step: shared envelope, full-horizon certificate, stop then replan."""
+        manager = self._target_route_manager
+        bars = self.obs_dict["obstacle_position"][
+            :, self._bar_offset : self._bar_offset + self.n_bars_active, 0:2
+        ]
+        bar_half = self.obs_dict["asset_collision_half_extents"][
+            :, self._bar_offset : self._bar_offset + self.n_bars_active, 0:2
+        ]
+        support = self._target_route_support_xy
+        admissible_lo, admissible_hi, inflated_half = self._braking_v3_soft_envelope(
+            bars, bar_half, support, b_min, b_max
+        )
+        current_safe = torch_segments_soft_safe(
+            old_xy.unsqueeze(1), old_xy.unsqueeze(1),
+            admissible_lo, admissible_hi, bars, inflated_half,
+        )[:, 0]
+        exited = moving & ~current_safe
+        manager.v3_soft_envelope_exit_count += exited.to(torch.long).sum()
+        speed = self.target_vel_w[:, 0:2].norm(dim=1)
+        stopped = speed <= RECOVERY_STOP_SPEED_MPS
+        needs = manager.needs_replan(
+            self._tm_waypoint, support, int(self.num_task_steps)
+        )
+        may_plan = moving & current_safe & stopped & needs
+        if bool(may_plan.any()):
+            local_failure = may_plan & (
+                (manager.status_code == manager.STATUS_CODES["local_step_infeasible"])
+                | (manager.status_code == manager.STATUS_CODES["no_alternative_goal"])
+                | (manager.status_code == manager.STATUS_CODES["same_goal_reselected"])
+            )
+            if bool(local_failure.any()):
+                self._plan_target_routes(
+                    local_failure.nonzero(as_tuple=False).squeeze(-1),
+                    connected_goal=True, is_replan=True, exclude_previous_goal=True,
+                    plan_cause="runtime_replan",
+                )
+            ordinary = may_plan & ~local_failure
+            if bool(ordinary.any()):
+                self._plan_target_routes(
+                    ordinary.nonzero(as_tuple=False).squeeze(-1),
+                    connected_goal=False, is_replan=True,
+                    plan_cause="runtime_replan",
+                )
+        follow_kwargs = dict(
+            reach_m=float(self.tm.waypoint_reach_m),
+            admissible_lo=admissible_lo,
+            admissible_hi=admissible_hi,
+            bars_xy=bars,
+            inflated_half=inflated_half,
+            max_turn_rate=torch.full_like(
+                self._tm_speed, math.radians(float(self.tm.max_turn_rate_deg))
+            ),
+            stop_speed_mps=RECOVERY_STOP_SPEED_MPS,
+            brake_speed_knots=self._recovery_brake_speed_samples_mps,
+            brake_distance_knots=self._recovery_brake_stop_distance_samples_m,
+            dt=float(dt),
+        )
+        desired, speed_limit, route_active, route_complete, stop_turn_go, corner_prebrake, _fillet = (
+            manager.braking_v3_follow_reference(
+                old_xy, self.target_vel_w[:, 0:2], self._tm_speed, **follow_kwargs
+            )
+        )
+        complete = route_complete & moving & current_safe & stopped
+        if bool(complete.any()):
+            complete_ids = complete.nonzero(as_tuple=False).squeeze(-1)
+            self._target_route_selector[complete_ids] = torch.rand(
+                len(complete_ids), device=self.device
+            )
+            self._plan_target_routes(
+                complete_ids, connected_goal=True, is_replan=True,
+                plan_cause="goal_completion",
+            )
+            desired, speed_limit, route_active, _, stop_turn_go, corner_prebrake, _fillet = (
+                manager.braking_v3_follow_reference(
+                    old_xy, self.target_vel_w[:, 0:2], self._tm_speed,
+                    count_intervals=False, **follow_kwargs
+                )
+            )
+        speed_limit = torch.where(
+            moving & current_safe & route_active,
+            speed_limit,
+            torch.zeros_like(speed_limit),
+        )
+        _pos, command_xy, accepted, prebrake, certificate = braking_aware_route_step(
+            old_xy,
+            self.target_vel_w[:, 0:2],
+            desired,
+            speed_limit,
+            dt,
+            bars,
+            admissible_lo,
+            admissible_hi,
+            inflated_half,
+            self._tm_avoid_sign,
+            torch.full_like(self._tm_speed, float(self.tm.max_accel)),
+            torch.full_like(self._tm_speed, math.radians(float(self.tm.max_turn_rate_deg))),
+            float(self.tm.avoidance_lookahead_s),
+            self._recovery_brake_speed_samples_mps,
+            self._recovery_brake_stop_distance_samples_m,
+            self._recovery_brake_lateral_tube_p95_m,
+        )
+        command_xy = torch.where(
+            (moving & current_safe).unsqueeze(1), command_xy, torch.zeros_like(command_xy)
+        )
+        manager.v3_accepted_command_count += (moving & accepted).to(torch.long).sum()
+        manager.v3_accepted_terminal_stop_certificate_count += (
+            moving & accepted & certificate["terminal_stop_safe"]
+        ).to(torch.long).sum()
+        manager.v3_prebrake_intervals += (moving & (prebrake | corner_prebrake)).to(torch.long).sum()
+        manager.v3_certificate_failure_count += (
+            moving & certificate["certificate_failure"]
+        ).to(torch.long).sum()
+        local_invalid = moving & current_safe & route_active & ~accepted
+        self._target_route_selector = torch.where(
+            local_invalid, torch.rand_like(self._target_route_selector), self._target_route_selector
+        )
+        manager.invalidate(local_invalid, "local_step_infeasible", int(self.num_task_steps))
+        self._tm_last_step_feasible = moving & current_safe & accepted
+        command = torch.zeros((self.num_envs, 3), device=self.device)
+        command[:, 0:2] = torch.where(
+            moving.unsqueeze(1), command_xy, torch.zeros_like(old_xy)
+        )
+        self._target_controller.set_hard_watchdog(
+            bars, inflated_half, admissible_lo, admissible_hi, active=moving,
+        )
+        self._target_controller.set_command(
+            command,
+            torch.full_like(self._tm_speed, float(self.task_config.flight_altitude)),
+        )
+        self._tm_heading[moving] = torch.atan2(command_xy[moving, 1], command_xy[moving, 0])
 
     def _advance_target(self):
         """Phase 3: integrate the virtual target one RL step (step_dt = 0.1 s). Patterns:
@@ -6036,6 +6333,10 @@ class NavRLTask(BaseTask):
             m += float(getattr(self.tm, "physical_boundary_margin", 0.0))
         lo = b_min[:, 0:2] + m
         hi = b_max[:, 0:2] - m
+
+        if self._target_route_braking_v3_enabled and self._physical_target:
+            self._advance_target_braking_v3(moving, dt, old_xy, b_min, b_max)
+            return
 
         recovery_enabled = self._target_route_recovery_enabled and self._physical_target
         recovery_state = torch.full_like(moving, RECOVERY_NORMAL, dtype=torch.long)
@@ -7659,6 +7960,15 @@ class NavRLTask(BaseTask):
                 "target_route_recovery_stop_speed_mps": RECOVERY_STOP_SPEED_MPS if self._target_route_recovery_enabled else 0.0,
                 "target_route_recovery_brake_lateral_tube_p95_m": (
                     self._recovery_brake_lateral_tube_p95_m if self._target_route_recovery_enabled else 0.0
+                ),
+                "target_route_braking_v3_schema": (
+                    TARGET_ROUTE_BRAKING_V3_SCHEMA if self._target_route_braking_v3_enabled else "off"
+                ),
+                "target_route_braking_v3_model": (
+                    TARGET_ROUTE_BRAKING_V3_MODEL if self._target_route_braking_v3_enabled else "off"
+                ),
+                "target_route_braking_v3_soft_envelope": (
+                    TARGET_ROUTE_BRAKING_GEOMETRY_SCHEMA if self._target_route_braking_v3_enabled else "off"
                 ),
                 "cv_initial_heading": self._eval_cv_initial_heading,
                 "target_speed_mode": target_speed_mode,

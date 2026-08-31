@@ -1,7 +1,7 @@
 {
   "schema": "motar_research_execution_authority_v1",
   "frozen_at": "2026-08-26",
-  "amended_at": "2026-08-31",
+  "amended_at": "2026-09-01",
   "scope": "post_track_a_stage1_track_b_recovery_v2_and_corrected_nonoverlap_route_gate_r2",
   "hardware_state": {
     "assembled_airframe": false,
@@ -86,7 +86,15 @@
       "fresh_ppo_epochs_run": 0,
       "authorizes_ppo": false
     },
-    "next_gate": "new independently preregistered braking-aware target route/controller mechanism gate; fresh PPO smoke remains blocked until that gate passes"
+    "braking_aware_route_v3": {
+      "preregistration": "docs/preregistration_braking_aware_route_v3_2026-09-01.md",
+      "preregistration_sha256": "cceecb9ad4a538e7bc2bc9171436e823ef18652e9c971e0d6fa8174279df6056",
+      "mode": "global_astar_braking_v3",
+      "implementation_status": "in_progress_cpu_only",
+      "gpu_authority": false,
+      "authorizes_ppo": false
+    },
+    "next_gate": "braking-aware route v3 MECHANISM_GATE is in progress (CPU only); GPU/PPO remain blocked until that preregistered gate passes"
   },
   "evidence": [
     {
