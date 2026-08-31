@@ -1906,20 +1906,37 @@ class NavRLTask(BaseTask):
         required_margin = self._spawn_required_surface_margin_m()
         lo = b_min[:, 0:2] + 1.0
         hi = b_max[:, 0:2] - 1.0
-        chosen = lo + (hi - lo) * torch.rand((n, 2), device=self.device)
+        chosen = torch.zeros((n, 2), device=self.device)
         todo = torch.ones(n, dtype=torch.bool, device=self.device)
-        for _ in range(64):
+        candidates_per_round = 64
+        rounds = 128
+        for _ in range(rounds):
             if not bool(todo.any()):
                 break
             ids = todo.nonzero(as_tuple=False).squeeze(-1)
-            candidate = lo[ids] + (hi[ids] - lo[ids]) * torch.rand(
-                (len(ids), 2), device=self.device
+            candidate = lo[ids].unsqueeze(1) + (
+                hi[ids] - lo[ids]
+            ).unsqueeze(1) * torch.rand(
+                (len(ids), candidates_per_round, 2), device=self.device
             )
+            flat_count = len(ids) * candidates_per_round
             accepted = _spawn_footprint_clearance_accepted(
-                candidate, bars[ids], bar_half[ids], required_margin
+                candidate.reshape(flat_count, 2),
+                bars[ids].repeat_interleave(candidates_per_round, dim=0),
+                bar_half[ids].repeat_interleave(candidates_per_round, dim=0),
+                required_margin,
+            ).reshape(len(ids), candidates_per_round)
+            has_candidate = accepted.any(dim=1)
+            if bool(has_candidate.any()):
+                first = accepted.to(dtype=torch.int64).argmax(dim=1)
+                resolved = ids[has_candidate]
+                chosen[resolved] = candidate[has_candidate, first[has_candidate]]
+                todo[resolved] = False
+        if bool(todo.any()):
+            raise RuntimeError(
+                "drone spawn has no footprint-clear sample after %d attempts for %d envs"
+                % (candidates_per_round * rounds, int(todo.sum()))
             )
-            chosen[ids[accepted]] = candidate[accepted]
-            todo[ids[accepted]] = False
 
         self.obs_dict["robot_position"][env_ids, 0:2] = chosen
         self.obs_dict["robot_position"][env_ids, 2] = float(self.task_config.flight_altitude)
@@ -2204,46 +2221,61 @@ class NavRLTask(BaseTask):
         goal_required_margin = (
             None if use_center_clearance else self._spawn_required_surface_margin_m()
         )
-        # Dense physical-target runs must never inherit the unchecked initial random `chosen`
-        # sample when rejection exhausts. 1024 scalar rounds are cheap at reset relative to an RL
-        # episode and made the 150-bar spawn contract deterministic in the motion probe.
-        attempts = 1024 if self._target_dynamics in ("bounded", "physical") else 96
-        for _ in range(attempts):
+        # Draw candidates in batches. The former one-candidate-per-env loop exhausted after 1024
+        # samples in a valid 205-bar corrected layout during the 2026-08-31 gate. Every proposal
+        # remains iid uniform and we retain the first accepted proposal, so batching increases the
+        # fail-closed search budget without changing the conditional accepted distribution.
+        candidates_per_round = 64
+        rounds = 256 if self._target_dynamics in ("bounded", "physical") else 16
+        attempts = candidates_per_round * rounds
+        for _ in range(rounds):
             if not bool(todo.any()):
                 break
             ids = todo.nonzero(as_tuple=False).squeeze(-1)
             # Uniform arena positions preserve the validated general-spawn task distribution.
             # The explicit radial acceptance range below makes its real contract observable.
-            candidate = lo[ids] + (hi[ids] - lo[ids]) * torch.rand(
-                (len(ids), 2), device=self.device
+            candidate = lo[ids].unsqueeze(1) + (
+                hi[ids] - lo[ids]
+            ).unsqueeze(1) * torch.rand(
+                (len(ids), candidates_per_round, 2), device=self.device
             )
-            drone_dist = torch.norm(candidate - start_pos[ids, 0:2], dim=1)
+            drone_dist = torch.norm(
+                candidate - start_pos[ids, 0:2].unsqueeze(1), dim=2
+            )
             accepted = (
-                (candidate[:, 0] >= lo[ids, 0])
-                & (candidate[:, 0] <= hi[ids, 0])
-                & (candidate[:, 1] >= lo[ids, 1])
-                & (candidate[:, 1] <= hi[ids, 1])
+                (candidate[:, :, 0] >= lo[ids, 0].unsqueeze(1))
+                & (candidate[:, :, 0] <= hi[ids, 0].unsqueeze(1))
+                & (candidate[:, :, 1] >= lo[ids, 1].unsqueeze(1))
+                & (candidate[:, :, 1] <= hi[ids, 1].unsqueeze(1))
                 & (drone_dist >= min_dist)
                 & (drone_dist <= max_dist)
             )
             if bars_xy.shape[1] > 0:
                 if goal_required_margin is None:
                     bar_dist = (
-                        torch.cdist(candidate.unsqueeze(1), bars_xy[ids, : self.n_bars_active])
-                        .squeeze(1)
-                        .min(1)
+                        torch.cdist(candidate, bars_xy[ids, : self.n_bars_active])
+                        .min(2)
                         .values
                     )
                     accepted &= bar_dist >= spawn_clearance
                 else:
+                    flat_count = len(ids) * candidates_per_round
                     accepted &= _spawn_footprint_clearance_accepted(
-                        candidate,
-                        bars_xy[ids, : self.n_bars_active],
-                        bar_half[ids, : self.n_bars_active],
+                        candidate.reshape(flat_count, 2),
+                        bars_xy[ids, : self.n_bars_active].repeat_interleave(
+                            candidates_per_round, dim=0
+                        ),
+                        bar_half[ids, : self.n_bars_active].repeat_interleave(
+                            candidates_per_round, dim=0
+                        ),
                         goal_required_margin,
-                    )
-            chosen[ids[accepted]] = candidate[accepted]
-            todo[ids[accepted]] = False
+                    ).reshape(len(ids), candidates_per_round)
+            has_candidate = accepted.any(dim=1)
+            if bool(has_candidate.any()):
+                first = accepted.to(dtype=torch.int64).argmax(dim=1)
+                resolved = ids[has_candidate]
+                chosen[resolved] = candidate[has_candidate, first[has_candidate]]
+                todo[resolved] = False
         if self._target_dynamics in ("bounded", "physical") and bool(todo.any()):
             raise RuntimeError(
                 "%s target spawn has no collision-free sample after %d attempts for %d envs"

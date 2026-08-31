@@ -71,6 +71,23 @@ class CorrectedNonOverlapRouteGateTest(unittest.TestCase):
         )
         self.assertFalse(values["stale_survives"])
 
+    def test_revision_two_changes_only_provenance_namespace(self):
+        values = probe(
+            "tools.verify_navrl_corrected_nonoverlap_route_gate_r2",
+            "{'schema': m.SCHEMA, 'child': m.CHILD_SCHEMA, 'seed': m.SEED, "
+            "'densities': m.DENSITIES, 'env': m.frozen_environment('global_astar_v1', 1.5), "
+            "'prereg': str(m.PREREG.relative_to(m.ROOT))}",
+        )
+        self.assertEqual(values["schema"], "navrl_corrected_nonoverlap_route_gate_v2")
+        self.assertEqual(values["child"], "navrl_corrected_nonoverlap_route_child_v2")
+        self.assertEqual(values["seed"], 829)
+        self.assertEqual(values["densities"], [70, 115, 160, 205])
+        self.assertEqual(values["env"]["NAVRL_PLACEMENT_SURFACE_CLEARANCE_M"], "0.45")
+        self.assertEqual(
+            values["prereg"],
+            "docs/preregistration_corrected_nonoverlap_route_gate_r2_2026-08-31.md",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

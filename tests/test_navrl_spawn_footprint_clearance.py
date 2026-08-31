@@ -321,6 +321,30 @@ class RandomizeGeneralSpawnTest(unittest.TestCase):
         _randomize_spawn(stub, torch.zeros(0, dtype=torch.long))
         self.assertTrue(torch.equal(obs["robot_position"], before))
 
+    def test_exhaustion_fails_closed_instead_of_using_unchecked_candidate(self):
+        obs = {
+            "env_bounds_min": torch.zeros((1, 3)),
+            "env_bounds_max": torch.tensor([[40.0, 40.0, 3.0]]),
+            "obstacle_position": torch.tensor([[[0.0, 0.0], [20.0, 20.0]]]),
+            "asset_collision_half_extents": torch.tensor(
+                [[[0.1, 0.1], [20.0, 20.0]]]
+            ),
+            "robot_position": torch.zeros((1, 3)),
+            "robot_orientation": torch.zeros((1, 4)),
+            "robot_linvel": torch.zeros((1, 3)),
+            "robot_angvel": torch.zeros((1, 3)),
+        }
+        stub = types.SimpleNamespace(
+            device="cpu",
+            obs_dict=obs,
+            _bar_offset=1,
+            n_bars_active=1,
+            _spawn_required_surface_margin_m=lambda: 0.65,
+            task_config=types.SimpleNamespace(flight_altitude=1.5),
+        )
+        with self.assertRaisesRegex(RuntimeError, "8192 attempts"):
+            _randomize_spawn(stub, torch.tensor([0]))
+
 
 _sample_general_target = _load_task_method(
     "_sample_general_target",
@@ -439,6 +463,28 @@ class SampleGeneralTargetTest(unittest.TestCase):
         self.assertIn("_target_spawn_center_clearance", method_src)
         self.assertIn("use_center_clearance", method_src)
         self.assertIn("goal_required_margin is None", method_src)
+
+    def test_physical_exhaustion_reports_full_batched_budget(self):
+        stub = types.SimpleNamespace(
+            device="cpu",
+            n_bars_active=1,
+            _physical_target=True,
+            _target_dynamics="physical",
+            _target_speed_max=lambda: 1.5,
+            _target_spawn_center_clearance=lambda: 100.0,
+            _general_goal_distance_bounds=lambda: (6.0, 28.0, None),
+            cur=types.SimpleNamespace(wall_margin=0.5),
+            tm=types.SimpleNamespace(physical_boundary_margin=0.75),
+            task_config=types.SimpleNamespace(goal_min_bar_clearance=1.0, flight_altitude=1.5),
+        )
+        env_ids = torch.tensor([0])
+        start = torch.tensor([[20.0, 20.0, 1.5]])
+        b_min = torch.zeros((1, 3))
+        b_max = torch.tensor([[40.0, 40.0, 3.0]])
+        bars = torch.tensor([[[20.0, 20.0]]])
+        half = torch.tensor([[[20.0, 20.0]]])
+        with self.assertRaisesRegex(RuntimeError, "16384 attempts"):
+            _sample_general_target(stub, env_ids, start, b_min, b_max, bars, half)
 
 
 if __name__ == "__main__":

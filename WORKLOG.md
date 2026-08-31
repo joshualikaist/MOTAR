@@ -13232,3 +13232,21 @@ route off/global_astar_v1 × 0.6/0.9/1.2/1.5 m/s × 70/115/160/205 bars의 32셀
 `test_v1_evaluator_bytes_remain_unchanged`가 의도대로 거부했다. 해당 파일은 HEAD와 byte-identical로
 원상복구하고 새 evaluator를 완전히 분리했다. historical gate 기본 계약도 별도 subprocess test로
 고정했다. 최종 CPU 회귀는 854 tests PASS, 2 skipped. GPU/PPO는 이 기록 시점에 아직 실행 전이다.
+
+### Revision 1 실행 — VOID, sampler exhaustion 발견
+
+commit `fc3de8c`에서 corrected gate를 실행했다. route-off 0.6/0.9/1.2 arm의 12셀은 child receipt를
+썼지만, route-off 1.5의 205-bar reset에서 physical target spawn 한 환경이 1,024개의 iid uniform
+후보를 모두 거부해 child exit 1이 발생했다. 전체 결과는 의도대로 `12/32`,
+`VOID_EXECUTION`, 모든 mechanism/performance verdict `NOT_INTERPRETED`, PPO blocked다.
+원본은 `results/navrl_corrected_nonoverlap_route_gate_seed829/`에 보존한다.
+
+원인은 기준 완화가 아니라 검색 구현이었다. target sampler는 env당 round마다 후보 한 개만 보며
+1,024회 뒤 fail-closed했고, pursuer sampler는 더 위험하게 64회 뒤 미해결 env에 최초 unchecked
+후보를 사용할 수 있었다. 동일한 wall/range/footprint/support/tracking predicate와 iid uniform
+proposal을 유지하면서 첫 accepted proposal을 택하는 batch rejection으로 바꿨다: target
+64×256=16,384, pursuer 64×128=8,192. pursuer도 exhaustion 시 fail-closed한다.
+
+결과를 본 뒤 threshold를 움직이지 않도록 revision 2를 별도 사전등록·evaluator·result namespace로
+분리했다. seed/cell/속도/밀도/clearance/gate는 revision 1과 동일하다. revision 1의 부분 셀은 r2와
+pool하지 않는다. 다음은 전체 CPU 회귀와 clean commit 뒤 r2 32셀 처음부터 재실행이다.
