@@ -13420,3 +13420,36 @@ envelope-inset spawn에서도 speed ratio·soft-exit·fallback·0.6 goals/env가
 밑돈다. spawn을 넓히면 in-flight 지표가 나아지지 않고 reset `unsafe_start`만 늘 수 있다.
 이 예측은 공식 판정이 아니다. spawn 바이트가 바뀌므로 `dd8b4a4` receipt는 다음 GPU를
 무장하지 못한다. PPO는 0 epoch, confirmatory는 닫혀 있다.
+
+## 2026-09-01 — matched-spawn CPU forensic 통과와 제한 GPU authority
+
+사용자가 CPU forensic부터 새 receipt·8-cell pilot까지 끊지 않고 진행하도록 명시적으로
+지시했다. 기존 matched-spawn 구현을 먼저 감사했다. spawn 상자만 `off`와 같고 soft envelope는
+A*/rollout/watchdog에 남아 있으며 pose 해시 검사는 유지된다.
+
+기존 120개 계약을 정확한 unittest discovery 방식으로 재현했고 모두 PASS했다. 이어 세 가지
+forensic 계약을 추가했다: (1) seeds 1/59/367/827/829/839/65521에서 off/v3 general-target 및
+waypoint RNG identity, (2) obstacle-rich 512-row 이상적 controller 모델에서 accepted first step의
+다음 주기 terminal-stop certificate 보존, (3) randomized 256-row에서 certificate와 physical
+substep watchdog의 exact closed-AABB 판정 일치. 총계는 **123 tests PASS**
+(v3 40 + planner 13 + motion 25 + recovery 24 + lower 4 + spawn 17)다.
+
+첫 VOID 원자료의 routed 셀은 accepted command와 accepted terminal certificate가 각 셀에서
+완전히 같았다(9030/9030, 8438/8438, 7273/7273, 7112/7112). certificate failure와 다음
+soft-envelope exit는 570/569, 1162/1159, 2327/2305, 2488/2473으로 거의 일대일이다. CPU의
+재귀 인증과 watchdog 기하는 일치하므로 현재 가장 강한 가설은 sampler/좌표/endpoint 버그가 아니라
+**PhysX 추종 오차가 다음 제어 주기의 stopping certificate를 소실시키는 것**이다. 공식 첫 pilot은
+여전히 `VOID_EXECUTION / NOT_INTERPRETED`이고 이 진단 숫자로 FAIL을 소급하지 않는다.
+
+옛 `dd8b4a4` receipt 폴더는 삭제하지 않고 저장소 밖
+`/home/fair/workspaces/aerial_gym_ws/navrl_v3_receipts/archive_braking_lower1p25_dd8b4a4_2026-09-01/`
+로 보존했다(receipt SHA-256 `6d71b0be34ffb166d23aff9f6897cf41b5bb82a4a488d24403d735cf97852485`).
+worktree에서 빠졌던 frozen evidence 두 개는 primary 사본의 계약 SHA
+`a85e9576...` / `bc5d05a3...`를 확인해 복구했고 `check_research_authority.py --json`이 PASS했다.
+
+방법·grid·threshold를 바꾸지 않는 execution-only addendum
+`docs/preregistration_braking_aware_route_v3_lower1p25_matched_spawn_gpu_authority_2026-09-01.md`
+(SHA-256 `70b8a08f0c95040a86c43e1be5ac11d0b688b9a6874f3cfc4548f914882f085f`)를 고정했다.
+허용 범위는 현재 clean commit의 fresh `baseline_1p25` receipt 1회와 seed-829/70 bars/8-cell
+pilot 1회뿐이다. FAIL이면 confirmatory와 PPO를 닫고, PASS일 때만 frozen seed-839
+confirmatory가 열린다. 어느 경우에도 이 addendum가 PPO나 장기학습 권한을 만들지 않는다.

@@ -64,6 +64,11 @@ spawn/waypoint를 `off`와 같은 상자에서 뽑고, shared envelope는 plan/w
 만들지 않는다. 사전등록은
 [`docs/preregistration_braking_aware_route_v3_lower1p25_matched_spawn_2026-09-01.md`](docs/preregistration_braking_aware_route_v3_lower1p25_matched_spawn_2026-09-01.md)다.
 
+CPU forensic 뒤 고정된 execution addendum는 방법을 바꾸지 않고 새 braking receipt 1회와
+seed-829 8-cell pilot 1회만 허용한다. 이 예외는 confirmatory·PPO·threshold/gain retune 권한을
+만들지 않는다. 문서는
+[`docs/preregistration_braking_aware_route_v3_lower1p25_matched_spawn_gpu_authority_2026-09-01.md`](docs/preregistration_braking_aware_route_v3_lower1p25_matched_spawn_gpu_authority_2026-09-01.md)다.
+
 ## 1. 연구 질문과 기여
 
 ## 1. 연구 질문

@@ -52,8 +52,12 @@ non-overlap 판정 필드를
   (SHA-256 `17e7f35e350087bf2733aca70dfca7210efe667ad1845dd053f7334ddf1645b4`).
   v3 spawn/waypoint는 off와 같은 physical wall+boundary 상자·bar-clearance를 쓰고,
   envelope는 A*/rollout/watchdog에만 남긴다. `initial_target_pose_sha256` 매칭은 유지한다.
-  CPU 계약만 허용한다. spawn 바이트가 바뀌므로 `dd8b4a4` receipt는 다음 GPU를 무장하지 못한다.
-  confirmatory와 PPO는 열리지 않는다. 현재 stage는 `MECHANISM_GATE`다.
+  CPU forensic 123개가 통과했고, 별도 execution addendum
+  [`docs/preregistration_braking_aware_route_v3_lower1p25_matched_spawn_gpu_authority_2026-09-01.md`](docs/preregistration_braking_aware_route_v3_lower1p25_matched_spawn_gpu_authority_2026-09-01.md)
+  (SHA-256 `70b8a08f0c95040a86c43e1be5ac11d0b688b9a6874f3cfc4548f914882f085f`)가 새
+  `baseline_1p25` receipt 1회와 seed-829 8-cell pilot 1회만 허용한다. spawn 바이트가
+  바뀌었으므로 `dd8b4a4` receipt는 무장할 수 없다. confirmatory와 PPO는 pilot PASS 전까지
+  열리지 않는다. 현재 stage는 `MECHANISM_GATE`다.
 
 ## 2026-08-26 기록된 실행 authority (판정 보존)
 

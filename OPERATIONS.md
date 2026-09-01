@@ -7,38 +7,40 @@
 > 기준일: 2026-09-01
 >
 > 현재 실행 authority는 새 PPO run이 아닙니다. Track A는 exact BOM·calibration·210개 sensor
-> trial·real-log replay만
+> trial·real-log replay를
 > [`docs/SIM2REAL_3DAY_EXECUTION_PLAN.md`](docs/SIM2REAL_3DAY_EXECUTION_PLAN.md)에 따라 진행합니다.
 > 실제 hardware나 real log가 없으면 GPU 작업을 시작하지 않습니다. Track B recovery-v2는
 > `FAIL_ROUTE_MECHANISM` 뒤 no-anchor probe까지 `INCONCLUSIVE`로 종료됐으며 추가
 > GPU/PPO/retune/rerun authority가 없습니다. corrected non-overlap r2는
 > `FAIL_ROUTE_MECHANISM`이고 새 PPO는 0 epoch입니다. canonical 1.5 v3 receipt는 NO-GO입니다.
-> 현재 software GPU 후보는 별도 사전등록된 **matched-spawn lower v3**입니다.
+> software 쪽에서는 별도 execution addendum가 **새 baseline_1p25 receipt 1회와
+> matched-spawn lower-v3 8-cell pilot 1회만** 허용합니다.
 > 직전 8-cell pilot는 `VOID_EXECUTION`(matched-arm target pose drift)입니다. spawn 바이트가
-> 바뀌므로 `dd8b4a4` receipt와 아래 L3 출력 루트는 재사용하지 않습니다. 지금은 CPU 계약만
-> 허용합니다.
+> 바뀌므로 `dd8b4a4` receipt와 첫 L3 출력 루트는 재사용하지 않습니다. confirmatory와 PPO는
+> pilot PASS 전까지 계속 차단합니다.
 
 GPU 명령을 찾기 전에 아래 동결 receipt를 먼저 검사합니다. 이 명령은 학습이나 평가를 실행하지
 않고, Track A/B 원자료 SHA와 `Stage 2=false`, `long training=false`를 fail-closed로 확인합니다.
 
 ```bash
-cd /home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator
+cd /home/fair/workspaces/aerial_gym_ws/.codex_worktrees/braking_route_v3
 /home/fair/miniconda3/envs/aerialgym/bin/python tools/check_research_authority.py --json
 ```
 
 기계 판독 계약은 [`docs/research_authority_2026-08-26.json`](docs/research_authority_2026-08-26.json)이며,
-허용된 다음 작업은 hardware BOM/calibration/210 trials/real-log offline replay뿐입니다.
+hardware 작업 외 software 예외 범위는
+[`matched-spawn GPU authority`](docs/preregistration_braking_aware_route_v3_lower1p25_matched_spawn_gpu_authority_2026-09-01.md)에
+고정된 receipt 1회와 pilot 1회뿐입니다.
 
-현재 software MECHANISM_GATE(`global_astar_braking_v3`)는 CPU 계약만 허용합니다. 아래는 구현
-검사 명령이며, GPU/PPO/simulator 평가를 실행하지 않습니다.
+현재 software MECHANISM_GATE(`global_astar_braking_v3`)의 CPU 계약은 아래와 같습니다.
 
 ```bash
 cd /home/fair/workspaces/aerial_gym_ws/.codex_worktrees/braking_route_v3
 export PYTHONNOUSERSITE=1
-python -m unittest discover -s tests -p 'test_navrl_braking_route_v3*.py'
-python -m unittest discover -s tests -p 'test_navrl_target_route_planner.py'
-python -m unittest discover -s tests -p 'test_navrl_target_motion.py'
-python -m unittest discover -s tests -p 'test_navrl_two_envelope_recovery.py'
+/home/fair/miniconda3/envs/aerialgym/bin/python -m unittest discover -s tests -p 'test_navrl_braking_route_v3*.py'
+/home/fair/miniconda3/envs/aerialgym/bin/python -m unittest discover -s tests -p 'test_navrl_target_route_planner.py'
+/home/fair/miniconda3/envs/aerialgym/bin/python -m unittest discover -s tests -p 'test_navrl_target_motion.py'
+/home/fair/miniconda3/envs/aerialgym/bin/python -m unittest discover -s tests -p 'test_navrl_two_envelope_recovery.py'
 git diff --check
 ```
 
@@ -59,8 +61,8 @@ NAVRL_BRAKING_PYTHON=/home/fair/miniconda3/envs/aerialgym/bin/python \
 NAVRL_NINJA=/home/fair/miniconda3/envs/aerialgym/bin/ninja \
 /home/fair/miniconda3/envs/aerialgym/bin/python \
   tools/run_navrl_physical_target_braking_v2_fresh.py \
-  --output results/navrl_physical_target_braking_lower1p25_seed827_2026-09-01
-sha256sum results/navrl_physical_target_braking_lower1p25_seed827_2026-09-01/receipt.json
+  --output results/navrl_physical_target_braking_lower1p25_matched_spawn_seed827_2026-09-01
+sha256sum results/navrl_physical_target_braking_lower1p25_matched_spawn_seed827_2026-09-01/receipt.json
 ```
 
 **단계 L2 — training source bundle (CPU, receipt 이후, 저장소 밖).**
@@ -69,8 +71,8 @@ sha256sum results/navrl_physical_target_braking_lower1p25_seed827_2026-09-01/rec
 cd /home/fair/workspaces/aerial_gym_ws/.codex_worktrees/braking_route_v3
 /home/fair/miniconda3/envs/aerialgym/bin/python tools/create_navrl_source_bundle.py create \
   --require-clean \
-  --output /home/fair/workspaces/aerial_gym_ws/navrl_v3_receipts/training_source_lower1p25_2026-09-01
-export MOTAR_V3_TRAINING_SOURCE_MANIFEST=/home/fair/workspaces/aerial_gym_ws/navrl_v3_receipts/training_source_lower1p25_2026-09-01/source_manifest.json
+  --output /home/fair/workspaces/aerial_gym_ws/navrl_v3_receipts/training_source_lower1p25_matched_spawn_2026-09-01
+export MOTAR_V3_TRAINING_SOURCE_MANIFEST=/home/fair/workspaces/aerial_gym_ws/navrl_v3_receipts/training_source_lower1p25_matched_spawn_2026-09-01/source_manifest.json
 export MOTAR_V3_TRAINING_SOURCE_MANIFEST_SHA256=<create 출력의 manifest_sha256>
 ```
 
@@ -83,9 +85,9 @@ matched-spawn 수정 뒤에는 **새 커밋에서 뜬 새 L1 receipt**와 새 �
 cd /home/fair/workspaces/aerial_gym_ws/.codex_worktrees/braking_route_v3
 export PYTHONNOUSERSITE=1
 export NAVRL_TARGET_BRAKING_CONTRACT_VARIANT=baseline_1p25
-NAVRL_V3_OUTPUT_ROOT=/home/fair/workspaces/aerial_gym_ws/navrl_v3_runs/pilot_lower1p25_seed829_2026-09-01 \
+NAVRL_V3_OUTPUT_ROOT=/home/fair/workspaces/aerial_gym_ws/navrl_v3_runs/pilot_lower1p25_matched_spawn_seed829_2026-09-01 \
 NAVRL_V3_CELL_RUNNER=$PWD/tools/run_navrl_braking_route_v3_cell.py \
-NAVRL_V3_BRAKING_RECEIPT=$PWD/results/navrl_physical_target_braking_lower1p25_seed827_2026-09-01/receipt.json \
+NAVRL_V3_BRAKING_RECEIPT=$PWD/results/navrl_physical_target_braking_lower1p25_matched_spawn_seed827_2026-09-01/receipt.json \
 NAVRL_V3_BRAKING_RECEIPT_SHA256=<단계 L1 sha256sum 값> \
 bash tools/run_navrl_braking_route_v3_pilot.sh
 ```

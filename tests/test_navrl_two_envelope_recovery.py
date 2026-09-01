@@ -250,6 +250,48 @@ class TwoEnvelopeRecoveryTest(unittest.TestCase):
         controller.begin_control_interval()
         self.assertFalse(bool(controller.watchdog_breach[0]))
 
+    def test_watchdog_and_soft_segment_geometry_match_on_randomized_batch(self):
+        """The PhysX substep watchdog and v3 certificate use the same closed geometry."""
+        torch.manual_seed(829)
+        n, bars_n = 256, 4
+        p0 = torch.rand(n, 2) * 12.0 - 6.0
+        p1 = p0 + torch.rand(n, 2) * 3.0 - 1.5
+        bars = torch.rand(n, bars_n, 2) * 12.0 - 6.0
+        half = torch.rand(n, bars_n, 2) * 0.5 + 0.2
+        lo = torch.full((n, 2), -7.0)
+        hi = torch.full((n, 2), 7.0)
+        tensors = {
+            "dt": 0.01,
+            "obstacle_position": torch.cat(
+                (p0, torch.zeros(n, 1)), dim=1
+            ).view(n, 1, 3),
+            "obstacle_orientation": torch.tensor(
+                [0.0, 0.0, 0.0, 1.0]
+            ).repeat(n, 1).view(n, 1, 4),
+            "obstacle_linvel": torch.zeros(n, 1, 3),
+            "obstacle_angvel": torch.zeros(n, 1, 3),
+            "obstacle_force_tensor": torch.zeros(n, 1, 3),
+            "obstacle_torque_tensor": torch.zeros(n, 1, 3),
+            "obstacle_contact_force_tensor": torch.zeros(n, 1, 3),
+            "gravity": torch.tensor([0.0, 0.0, -9.81]).repeat(n, 1),
+        }
+        cfg = SimpleNamespace(
+            physical_mass=1.2, physical_max_motor_thrust=9.6, physical_motor_tau=0.04,
+            physical_max_tilt_deg=45.0, physical_velocity_kp=2.5,
+            physical_altitude_kp=4.0, physical_attitude_kp=[0.08, 0.08, 0.04],
+            physical_rate_kp=[0.04, 0.04, 0.03], physical_yaw_torque_ratio=0.01,
+            physical_motor_arm_xy=0.0777817,
+        )
+        controller = PHYS.PhysicalTargetController(tensors, 0, cfg, torch.device("cpu"))
+        controller.begin_control_interval()
+        controller.set_hard_watchdog(bars, half, lo, hi, active=torch.ones(n, dtype=torch.bool))
+        controller.position[:, :2] = p1
+        controller.post_physics_step()
+        certificate_safe = MOTION.torch_segments_soft_safe(
+            p0[:, None, :], p1[:, None, :], lo, hi, bars, half
+        )[:, 0]
+        self.assertTrue(torch.equal(controller.watchdog_breach, ~certificate_safe))
+
     def test_recovery_checkpoint_requires_fixed_runtime_and_source_fields(self):
         task = (ROOT / "aerial_gym/task/navrl_task/navrl_task.py").read_text()
         for key in (

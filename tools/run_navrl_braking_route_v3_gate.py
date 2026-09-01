@@ -37,7 +37,7 @@ def git(*args: str) -> str:
 def tracked_hashes(cell_runner: Path) -> dict[str, str]:
     dirty = git("status", "--porcelain", "--untracked-files=no")
     verify.require(not dirty, f"runtime-clean guard failed: {dirty}")
-    required = (
+    required = [
         verify.PREREG,
         Path(__file__).resolve(),
         Path(verify.__file__).resolve(),
@@ -51,7 +51,9 @@ def tracked_hashes(cell_runner: Path) -> dict[str, str]:
         ROOT / "aerial_gym/config/sim_config/base_sim_config.py",
         ROOT / "aerial_gym/config/robot_config/navrl_ref5in_v2_quad_config.py",
         ROOT / "resources/robots/quad/quad_navrl_ref5in_v2.urdf",
-    )
+    ]
+    if verify.EXECUTION_AUTHORITY is not None:
+        required.append(verify.EXECUTION_AUTHORITY)
     tracked = set(git("ls-files").splitlines())
     for path in required:
         verify.require(path.is_file(), f"required runtime source missing: {path}")
@@ -135,6 +137,8 @@ def main() -> int:
             "cell_runner_sha256": verify.sha256_file(runner),
             "braking_receipt_sha256": args.braking_receipt_sha256.lower(),
         }
+        if verify.EXECUTION_AUTHORITY is not None:
+            identity["execution_authority_sha256"] = verify.EXECUTION_AUTHORITY_SHA256
         config = verify.STAGES[args.stage]
         cells = []
         for route in verify.ROUTE_ARMS:

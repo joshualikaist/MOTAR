@@ -29,6 +29,15 @@ class TestResearchAuthorityFreeze(unittest.TestCase):
         self.assertEqual(gate["route_mechanism"], "FAIL_ROUTE_MECHANISM")
         self.assertFalse(gate["authorizes_ppo"])
         self.assertEqual(gate["fresh_ppo_epochs_run"], 0)
+        lower_v3 = receipt["corrected_environment_v2_2026_08_27"][
+            "braking_aware_route_v3_lower1p25"
+        ]
+        self.assertTrue(lower_v3["gpu_authority"])
+        self.assertFalse(lower_v3["authorizes_ppo"])
+        self.assertEqual(
+            lower_v3["gpu_authority_scope"],
+            "one fresh baseline_1p25 receipt and one seed-829 70-bar 8-cell pilot only",
+        )
 
     def test_track_b_prohibits_training_and_retuning(self):
         receipt = MODULE.verify_authority()

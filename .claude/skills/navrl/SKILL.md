@@ -173,9 +173,13 @@ Current lower-contract preregistration (frozen, do not edit; VOID under extra sp
 Current matched-spawn preregistration (frozen, do not edit):
 `docs/preregistration_braking_aware_route_v3_lower1p25_matched_spawn_2026-09-01.md`
 
+Current execution-only GPU authority (frozen, do not edit):
+`docs/preregistration_braking_aware_route_v3_lower1p25_matched_spawn_gpu_authority_2026-09-01.md`
+
 1. CPU tests only until they pass: focused v3 tests plus v1/recovery regression.
-2. If `VERIFICATION.md` still says no GPU authority for the current lineage, **stop**.
-3. Current GPU path is blocked on a fresh `baseline_1p25` receipt at the matched-spawn commit.
+2. If `VERIFICATION.md` still says no GPU authority for the current lineage, **stop**. The current
+   addendum permits exactly one fresh receipt and one seed-829 pilot, not PPO.
+3. Current GPU path requires a fresh `baseline_1p25` receipt at the matched-spawn commit.
    The seed-829 8-cell under the previous spawn bytes is `VOID_EXECUTION`
    (`matched-arm identity drift: initial_target_pose_sha256`). Do not drop the target-pose hash
    check. Do not reuse the spent output root. Do not arm from the `dd8b4a4` receipt after the

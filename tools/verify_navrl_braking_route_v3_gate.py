@@ -28,12 +28,21 @@ CONTRACT_VARIANT = os.environ.get(
 if CONTRACT_VARIANT == "canonical_1p5":
     PREREG = ROOT / "docs/preregistration_braking_aware_route_v3_2026-09-01.md"
     PREREG_SHA256 = "cceecb9ad4a538e7bc2bc9171436e823ef18652e9c971e0d6fa8174279df6056"
+    EXECUTION_AUTHORITY = None
+    EXECUTION_AUTHORITY_SHA256 = None
     SPEEDS = (0.6, 0.9, 1.2, 1.5)
 elif CONTRACT_VARIANT == "baseline_1p25":
     PREREG = ROOT / (
         "docs/preregistration_braking_aware_route_v3_lower1p25_matched_spawn_2026-09-01.md"
     )
     PREREG_SHA256 = "17e7f35e350087bf2733aca70dfca7210efe667ad1845dd053f7334ddf1645b4"
+    EXECUTION_AUTHORITY = ROOT / (
+        "docs/preregistration_braking_aware_route_v3_lower1p25_"
+        "matched_spawn_gpu_authority_2026-09-01.md"
+    )
+    EXECUTION_AUTHORITY_SHA256 = (
+        "70b8a08f0c95040a86c43e1be5ac11d0b688b9a6874f3cfc4548f914882f085f"
+    )
     SPEEDS = (0.6, 0.9, 1.2, 1.25)
 else:
     raise RuntimeError(
@@ -144,6 +153,11 @@ def validate_identity(identity: Mapping) -> None:
     require(identity.get("robot_name") == "navrl_ref5in_v2_quad", "robot identity drift")
     require(identity.get("target_dynamics") == "physical", "target is not physical")
     require(identity.get("target_pattern") == "waypoint", "target pattern is not waypoint")
+    if EXECUTION_AUTHORITY is not None:
+        require(
+            identity.get("execution_authority_sha256") == EXECUTION_AUTHORITY_SHA256,
+            "GPU execution-authority SHA drift",
+        )
     for name in IDENTITY_HASH_FIELDS:
         require(_hash(identity.get(name)), f"missing/invalid identity hash: {name}")
 
@@ -191,6 +205,12 @@ def validate_cell(row: Mapping, stage: str, identity: Mapping) -> None:
 
 def validate_payload(payload: Mapping, pilot_summary_sha256: str | None = None) -> None:
     require(sha256_file(PREREG) == PREREG_SHA256, "working-tree preregistration bytes drift")
+    if EXECUTION_AUTHORITY is not None:
+        require(
+            EXECUTION_AUTHORITY.is_file()
+            and sha256_file(EXECUTION_AUTHORITY) == EXECUTION_AUTHORITY_SHA256,
+            "working-tree GPU execution-authority bytes drift",
+        )
     require(payload.get("schema") == SCHEMA, "wrong v3 gate schema")
     stage = payload.get("stage")
     require(stage in STAGES, "unknown stage")

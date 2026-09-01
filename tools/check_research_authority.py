@@ -77,6 +77,16 @@ def verify_authority(receipt_path=DEFAULT_RECEIPT):
         raise RuntimeError("Track B no-anchor follow-up unexpectedly supersedes 32-cell FAIL")
 
     corrected = receipt["corrected_environment_v2_2026_08_27"]
+    lower_v3 = corrected["braking_aware_route_v3_lower1p25"]
+    authority_path = ROOT / lower_v3["execution_authority"]
+    if not authority_path.is_file():
+        raise RuntimeError("missing matched-spawn GPU execution authority")
+    if _sha256(authority_path) != lower_v3["execution_authority_sha256"]:
+        raise RuntimeError("matched-spawn GPU execution-authority SHA drift")
+    if lower_v3.get("gpu_authority") is not True:
+        raise RuntimeError("matched-spawn pilot GPU authority is not explicit")
+    if lower_v3.get("authorizes_ppo") is not False:
+        raise RuntimeError("matched-spawn execution authority unexpectedly authorizes PPO")
     corrected_gate = corrected["route_physical_gate_r2"]
     corrected_result = evidence[
         "results/navrl_corrected_nonoverlap_route_gate_r2_seed829/summary.json"

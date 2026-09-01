@@ -253,6 +253,62 @@ class BrakingAwareRouteStepTest(unittest.TestCase):
         self.assertTrue(bool(cert["terminal_stop_safe"][0]))
         self.assertGreater(float(vel[0, 0]), 0.0)
 
+    def test_certified_first_step_preserves_recursive_certificate_in_ideal_model(self):
+        """A certified receding-horizon step must remain certifiable under its own model.
+
+        This is deliberately an obstacle-rich randomized property fixture.  It does not claim
+        PhysX tracking equivalence; it separates a controller-model bug from the physical
+        tracking loss measured by the GPU gate.
+        """
+        torch.manual_seed(839)
+        n, bars_n = 512, 8
+        old_xy = torch.rand(n, 2) * 12.0 - 6.0
+        current_velocity = torch.rand(n, 2) * 2.0 - 1.0
+        current_velocity = (
+            current_velocity
+            / current_velocity.norm(dim=1, keepdim=True).clamp(min=1e-6)
+            * (torch.rand(n, 1) * 1.25)
+        )
+        desired_velocity = torch.rand(n, 2) * 2.0 - 1.0
+        desired_velocity = (
+            desired_velocity
+            / desired_velocity.norm(dim=1, keepdim=True).clamp(min=1e-6)
+            * 1.25
+        )
+        bars = torch.rand(n, bars_n, 2) * 14.0 - 7.0
+        inflated_half = torch.rand(n, bars_n, 2) * 0.35 + 0.35
+        lo = torch.full((n, 2), -8.0)
+        hi = torch.full((n, 2), 8.0)
+        turn_sign = torch.where(torch.rand(n) < 0.5, -torch.ones(n), torch.ones(n))
+        kwargs = dict(
+            speed_limit=torch.full((n,), 1.25), dt=0.1,
+            bars_xy=bars, admissible_lo=lo, admissible_hi=hi,
+            inflated_bar_half_xy=inflated_half, turn_sign=turn_sign,
+            max_accel=torch.full((n,), 4.0), max_turn_rate=torch.full((n,), 2.6),
+            lookahead_s=1.0, brake_speed_knots=BRAKE_SPEEDS,
+            brake_distance_knots=BRAKE_DISTS, lateral_tube_m=0.02,
+        )
+        current_safe = GEO.torch_segments_soft_safe(
+            old_xy[:, None, :], old_xy[:, None, :], lo, hi, bars, inflated_half
+        )[:, 0]
+        next_xy, next_velocity, accepted, _prebrake, certificate = (
+            MOTION.braking_aware_route_step(
+                old_xy, current_velocity, desired_velocity, **kwargs
+            )
+        )
+        _next2, _velocity2, accepted_next, _prebrake2, _certificate2 = (
+            MOTION.braking_aware_route_step(
+                next_xy, next_velocity, desired_velocity, **kwargs
+            )
+        )
+        certified_rows = current_safe & accepted
+        self.assertGreater(int(certified_rows.sum()), 450)
+        self.assertFalse(bool((certified_rows & ~accepted_next).any()))
+        self.assertFalse(bool((
+            certified_rows
+            & ~(certificate["full_horizon_safe"] & certificate["terminal_stop_safe"])
+        ).any()))
+
     def test_gpu_hot_path_has_no_cpu_sync(self):
         for fn in (
             MOTION.braking_aware_route_step,
@@ -540,6 +596,43 @@ class BrakingV3MatchedSpawnTest(unittest.TestCase):
         routed = draw(True)
         self.assertTrue(torch.equal(off, routed))
         self.assertTrue(torch.isfinite(off).all())
+
+    def test_spawn_identity_is_stable_across_preregistered_and_adversarial_seeds(self):
+        general = _load_task_method("_sample_general_target")
+        waypoints = _load_task_method("_sample_waypoints")
+        env_ids = torch.arange(32)
+        b_min = torch.zeros((32, 3))
+        b_max = torch.tensor([40.0, 40.0, 3.0]).repeat(32, 1)
+        start = torch.full((32, 3), 20.0)
+        bars = torch.tensor([[[10.0, 10.0], [30.0, 30.0]]]).expand(32, 2, 2).clone()
+        half = torch.tensor([[[0.3, 0.3], [0.4, 0.5]]]).expand(32, 2, 2).clone()
+
+        def stub(flag):
+            return types.SimpleNamespace(
+                device="cpu", _physical_target=True,
+                _target_route_braking_v3_enabled=flag, _target_dynamics="physical",
+                _target_speed_max=lambda: 1.25,
+                _general_goal_distance_bounds=lambda: (2.0, 15.0, None),
+                _target_spawn_center_clearance=lambda: 1.0, n_bars_active=2,
+                cur=types.SimpleNamespace(wall_margin=0.5),
+                tm=types.SimpleNamespace(
+                    physical_boundary_margin=0.75, physical_tracking_margin=0.45,
+                ),
+                task_config=types.SimpleNamespace(flight_altitude=1.5),
+                obs_dict={"env_bounds_min": b_min, "env_bounds_max": b_max},
+            )
+
+        for seed in (1, 59, 367, 827, 829, 839, 65521):
+            torch.manual_seed(seed)
+            off_general = general(stub(False), env_ids, start, b_min, b_max, bars, half)
+            torch.manual_seed(seed)
+            v3_general = general(stub(True), env_ids, start, b_min, b_max, bars, half)
+            self.assertTrue(torch.equal(off_general, v3_general), seed)
+            torch.manual_seed(seed)
+            off_waypoints = waypoints(stub(False), env_ids)
+            torch.manual_seed(seed)
+            v3_waypoints = waypoints(stub(True), env_ids)
+            self.assertTrue(torch.equal(off_waypoints, v3_waypoints), seed)
 
 
 if __name__ == "__main__":

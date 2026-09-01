@@ -178,6 +178,10 @@ class BrakingRouteV3GateContractTest(unittest.TestCase):
                 "17e7f35e350087bf2733aca70dfca7210efe667ad1845dd053f7334ddf1645b4",
             )
             self.assertTrue(lower.PREREG.name.endswith("matched_spawn_2026-09-01.md"))
+            self.assertEqual(
+                lower.sha256_file(lower.EXECUTION_AUTHORITY),
+                "70b8a08f0c95040a86c43e1be5ac11d0b688b9a6874f3cfc4548f914882f085f",
+            )
             historical = ROOT / "docs/preregistration_braking_aware_route_v3_lower1p25_2026-09-01.md"
             self.assertEqual(
                 lower.sha256_file(historical),
