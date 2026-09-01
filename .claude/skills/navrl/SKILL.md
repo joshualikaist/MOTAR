@@ -34,8 +34,10 @@ If a command in this file disagrees with `VERIFICATION.md`, follow `VERIFICATION
 1. Read `VERIFICATION.md` (current stage, GPU/PPO authority, frozen FAILs).
 2. Do **not** launch training, eval, or simulator GPU work unless that document currently
    authorizes it.
-3. Identify the stage below. The current stage is **MECHANISM_GATE** until `VERIFICATION.md`
-   says otherwise.
+3. Identify the stage below. Routed v3 is `MECHANISM_GATE_FAIL_CLOSED`. The separately
+   authorized route-off curriculum is **PPO_CURRICULUM and already RUNNING**
+   (`ppo_260901_1259_navrl_corrected-nonoverlap-physical-off-curriculum-s911`).
+   Do not start a second curriculum or any routed PPO.
 4. `CRASH_TUNING_LOG.md` is archival-in-place. Do not append. Use `WORKLOG.md` and a separate
    diagnostic document.
 

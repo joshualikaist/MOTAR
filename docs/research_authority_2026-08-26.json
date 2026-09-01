@@ -151,13 +151,17 @@
       "density_bars": [70, 205, 15],
       "target_speed_max_mps": 1.25,
       "fresh_only": true,
-      "gpu_authority": true,
+      "gpu_authority": false,
+      "gpu_authority_consumed": true,
       "gpu_authority_scope": "one seed-911 fresh route-off 70-to-205 curriculum run only",
       "authorizes_routed_ppo": false,
       "authorizes_hardware_claim": false,
-      "status": "AUTHORIZED_NOT_STARTED"
+      "status": "RUNNING",
+      "run": "ppo_260901_1259_navrl_corrected-nonoverlap-physical-off-curriculum-s911",
+      "session_log": "aerial_gym/rl_training/rl_games/train_session_logs/corrected_nonoverlap_physical_off_curriculum_260901_125953.log",
+      "source_manifest_sha256": "ade7098ccb16cb0e3847c5b77f9d68cf651255d9cb57c60c498e67f641f1e6c8"
     },
-    "next_gate": "run the separately preregistered fresh route-off 70-to-205 curriculum once; routed confirmatory/PPO remains blocked"
+    "next_gate": "seed-911 route-off 70-to-205 curriculum is RUNNING; do not start a second run; routed confirmatory/PPO remains blocked"
   },
   "evidence": [
     {

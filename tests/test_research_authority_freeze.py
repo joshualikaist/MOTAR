@@ -62,8 +62,9 @@ class TestResearchAuthorityFreeze(unittest.TestCase):
         self.assertFalse(smoke["authorizes_routed_ppo"])
         self.assertFalse(smoke["authorizes_long_training"])
         curriculum = corrected["route_off_curriculum"]
-        self.assertEqual(curriculum["status"], "AUTHORIZED_NOT_STARTED")
-        self.assertTrue(curriculum["gpu_authority"])
+        self.assertEqual(curriculum["status"], "RUNNING")
+        self.assertFalse(curriculum["gpu_authority"])
+        self.assertTrue(curriculum["gpu_authority_consumed"])
         self.assertTrue(curriculum["fresh_only"])
         self.assertEqual(curriculum["density_bars"], [70, 205, 15])
         self.assertFalse(curriculum["authorizes_routed_ppo"])

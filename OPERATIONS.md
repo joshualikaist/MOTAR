@@ -50,11 +50,15 @@ echo $!
 root를 강제한다. 판정은
 [`preregistration_corrected_nonoverlap_physical_off_smoke_2026-09-01.md`](docs/preregistration_corrected_nonoverlap_physical_off_smoke_2026-09-01.md)를 따른다.
 
-위 smoke는 완료됐으므로 다시 실행하지 않는다. 현재 허용된 장기 run은 다음 하나다.
+위 smoke는 완료됐으므로 다시 실행하지 않는다. seed 911 curriculum은 이미 실행 중이다
+(`ppo_260901_1259_navrl_corrected-nonoverlap-physical-off-curriculum-s911`). 아래 명령은
+provenance이며 두 번째 run을 시작하지 않는다.
 
 ```bash
 cd /home/fair/workspaces/aerial_gym_ws/.codex_worktrees/braking_route_v3/aerial_gym/rl_training/rl_games
-./train_navrl_corrected_nonoverlap_physical_curriculum.sh
+# already running — do not relaunch
+# ./train_navrl_corrected_nonoverlap_physical_curriculum.sh
+./watch_navrl_training.sh
 ```
 
 fresh seed 911, 30,000 epochs, density 70→205/step 15/dwell 1,000, route off,

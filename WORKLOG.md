@@ -13574,3 +13574,21 @@ hardware 주장은 허용하지 않는다.
 (SHA-256 `d10a19fe570aa2a73e88cc8e1a301618738fee55ee592f24675ba84117ae5ec8`)를 고정했다. 다음 run은
 smoke checkpoint를 쓰지 않는 fresh seed 911, 30,000 epochs, route-off 1.25 m/s, density
 70→205/step15/dwell1000/evidence16384 한 번이다.
+
+### seed 911 curriculum 시작 확인 (Codex 중단 이후)
+
+사용량 제한으로 Codex가 launcher 시작 직후 끊겼다. 재확인 결과 이미 정상 기동됐다. 두 번째
+run은 시작하지 않았다.
+
+- run `ppo_260901_1259_navrl_corrected-nonoverlap-physical-off-curriculum-s911`
+- bash PID 1496735, trainer PID 1496818, GPU ~6160 MiB
+- session `train_session_logs/corrected_nonoverlap_physical_off_curriculum_260901_125953.log`
+- source receipt `train_source_receipts/corrected_nonoverlap_curriculum_s911_260901_125953_1496735`,
+  manifest SHA-256 `ade7098ccb16cb0e3847c5b77f9d68cf651255d9cb57c60c498e67f641f1e6c8`
+- 계약: seed 911, fresh weights, 128 env, 30,000 epoch, route-off, physical mixed,
+  `U[0.3,1.25]`, `footprint_clearance`/0.45 m, density 70→205/step15,
+  schedule `70:0.82,85:0.77,100:0.72,115:0.70`, dwell 1000, evidence 16384, LR 1.5e-5
+- import-origin은 이 worktree `aerial_gym/__init__.py` enforced
+- 13:13 확인 시점 epoch 208/30000, 단일 epoch capture 54–65%, pooled n≈2049 capture 59.3%
+
+종료 전에는 공식 판정을 하지 않는다. 끝나면 분석만 하고 routed PPO는 열지 않는다.

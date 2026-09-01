@@ -72,8 +72,12 @@ non-overlap 판정 필드를
   launcher는 `train_navrl_corrected_nonoverlap_physical_smoke.sh`다. 공식 판정은
   `PASS_LEARNING_VIABILITY`: 초기→후기 100-epoch capture `11.01→60.39%`(+49.38pp), reward
   `-131.00→+93.08`, KL max `0.01119`, rollback/skipped 0이다. 이 PASS로 별도 사전등록된 fresh
-  route-off 70→205 curriculum 1회만 열렸다. `global_astar_*`, 1.5 m/s와 hardware claim은 계속
-  차단한다.
+  route-off 70→205 curriculum 1회만 열렸다. 그 1회는 이미 실행 중이다:
+  `ppo_260901_1259_navrl_corrected-nonoverlap-physical-off-curriculum-s911`,
+  trainer PID 1496818, session
+  `train_session_logs/corrected_nonoverlap_physical_off_curriculum_260901_125953.log`.
+  두 번째 curriculum이나 routed PPO는 시작하지 않는다. `global_astar_*`, 1.5 m/s와
+  hardware claim은 계속 차단한다.
 
 ## 2026-08-26 기록된 실행 authority (판정 보존)
 

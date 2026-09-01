@@ -163,10 +163,16 @@ def verify_authority(receipt_path=DEFAULT_RECEIPT):
         "preregistration_sha256"
     ]:
         raise RuntimeError("route-off curriculum preregistration missing or SHA drift")
-    if curriculum.get("status") != "AUTHORIZED_NOT_STARTED" or curriculum.get(
+    if curriculum.get("status") != "RUNNING" or curriculum.get(
         "gpu_authority"
-    ) is not True or curriculum.get("fresh_only") is not True:
+    ) is not False or curriculum.get("gpu_authority_consumed") is not True or curriculum.get(
+        "fresh_only"
+    ) is not True:
         raise RuntimeError("route-off curriculum execution authority drift")
+    if curriculum.get("run") != (
+        "ppo_260901_1259_navrl_corrected-nonoverlap-physical-off-curriculum-s911"
+    ):
+        raise RuntimeError("route-off curriculum live-run identity drift")
     if curriculum.get("authorizes_routed_ppo") is not False or curriculum.get(
         "authorizes_hardware_claim"
     ) is not False:
