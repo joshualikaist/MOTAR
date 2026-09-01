@@ -1088,8 +1088,34 @@ class SolidObstacleOffsetArithmetic(unittest.TestCase):
             self.assertNotIn(
                 "self._bar_offset : self._bar_offset + self.n_bars_active", source
             )
-        # Two methods x two slices, plus the single definition in __init__.
-        self.assertEqual(TASK_SOURCE.count("self._solid_obstacle_offset :"), 4)
+        # Two methods x two slices.  The WIDENED slice -- distractors AND active bars -- may appear
+        # nowhere else, because every other consumer of an obstacle slice wants bars only.
+        self.assertEqual(
+            TASK_SOURCE.count(
+                "self._solid_obstacle_offset : self._bar_offset + self.n_bars_active"
+            ),
+            4,
+        )
+        # The one other legal reader of the offset is the evaluation-only distractor-lock
+        # telemetry, and it takes the DISTRACTOR-ONLY slice, which STOPS at _bar_offset instead of
+        # running past it into the bars.  The trailing comma is the whole point of matching on it:
+        # it proves the slice ends there rather than being the widened one with a line break.  A
+        # site that wanted distractors and silently got bars too would classify the detector's
+        # reported measurement against a bar centre and produce a plausible FTLR that means
+        # nothing.
+        distractor_only = "self._solid_obstacle_offset : self._bar_offset,"
+        self.assertEqual(TASK_SOURCE.count(distractor_only), 1)
+        self.assertIn(
+            distractor_only,
+            _method_source(TASK_SOURCE, "NavRLTask", "_record_distractor_lock_frame"),
+        )
+        self.assertEqual(
+            TASK_SOURCE.count("self._solid_obstacle_offset :"),
+            5,
+            "a new reader of the solid-obstacle offset appeared; decide explicitly whether it "
+            "wants the widened [distractors + active bars] slice or the distractor-only one, and "
+            "pin it here",
+        )
         # The five deliberately untouched sites still read the bars-only slice.
         self.assertGreaterEqual(
             TASK_SOURCE.count("self._bar_offset : self._bar_offset + self.n_bars_active"), 5

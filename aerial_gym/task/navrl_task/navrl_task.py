@@ -490,6 +490,99 @@ def _obs_dump_drop_reset_orphans(frame_tables, outcome_uids, reset_orphan_uids):
     return kept_tables, dropped_rows, dropped_episodes
 
 
+# Appearance-distractor lock classification radius, in metres
+# (docs/prereg_2026-09-01_distractor_envelope.md section 4, frozen before any measurement).
+# 0.5 m = the 0.15 m target radius plus roughly twice the detector's measured 0.178 m range MAE.
+# It is a preregistered threshold, so it is a module constant that the measurement reads, never a
+# number any measurement path may recompute.
+DISTRACTOR_LOCK_RADIUS_M = 0.5
+
+# Category order of the three-way classification, fixed here so the accumulator index, the export
+# key and the preregistration table cannot drift apart.
+DISTRACTOR_LOCK_CATEGORIES = ("target_lock", "distractor_lock", "ghost_lock")
+
+
+def _validate_distractor_lock_export(
+    num_distractors,
+    frames_total,
+    visible_frames,
+    target_lock,
+    distractor_lock,
+    ghost_lock,
+    ambiguous,
+    radius_m,
+):
+    """Fail-closed export guard for the appearance-distractor lock telemetry.
+
+    House style: see ``_validate_obs_dump_export`` above and the OOB / first-acquisition
+    cross-checks in ``_export_bulk_eval_result``.  Pure -- plain Python integers and floats, no
+    torch and no ``self`` -- so a deliberately miscounted table can be unit-tested without Isaac
+    Gym.  Raises ``RuntimeError`` naming the specific mismatch; it never repairs a count and never
+    silently drops a frame.
+
+    The load-bearing check is the PARTITION one.  ``visible_frames`` is accumulated straight from
+    the detector's own visibility mask, while the three category counts are accumulated from three
+    separately constructed masks; the only way those two totals can agree is if every visible frame
+    landed in exactly one category.  A double-counted frame (overlapping masks) or a dropped one
+    (a gap between them) changes one side and not the other, so a miscount cannot ship as a
+    plausible-looking False Target Lock Rate.
+    """
+    if int(num_distractors) < 1:
+        raise RuntimeError(
+            "distractor_lock export: the telemetry ran with %d distractor(s); it is defined only "
+            "when the scene contains at least one" % int(num_distractors)
+        )
+    counts = {
+        "frames_total": int(frames_total),
+        "visible_frames": int(visible_frames),
+        "target_lock": int(target_lock),
+        "distractor_lock": int(distractor_lock),
+        "ghost_lock": int(ghost_lock),
+        "ambiguous": int(ambiguous),
+    }
+    negative = sorted(name for name, value in counts.items() if value < 0)
+    if negative:
+        raise RuntimeError("distractor_lock export: negative count(s) %s in %s" % (negative, counts))
+    if counts["frames_total"] <= 0:
+        raise RuntimeError(
+            "distractor_lock export: no frames were observed at all, so no rate has a denominator"
+        )
+    if counts["visible_frames"] > counts["frames_total"]:
+        raise RuntimeError(
+            "distractor_lock export: %d visible frame(s) out of %d observed frame(s)"
+            % (counts["visible_frames"], counts["frames_total"])
+        )
+    classified = counts["target_lock"] + counts["distractor_lock"] + counts["ghost_lock"]
+    if classified != counts["visible_frames"]:
+        raise RuntimeError(
+            "distractor_lock export: the three categories cover %d frame(s) but the detector "
+            "reported visible on %d (target=%d distractor=%d ghost=%d); the classification is not "
+            "a partition of the visible frames"
+            % (
+                classified,
+                counts["visible_frames"],
+                counts["target_lock"],
+                counts["distractor_lock"],
+                counts["ghost_lock"],
+            )
+        )
+    # An ambiguous frame -- measurement inside BOTH radii -- is resolved to TARGET_LOCK by the
+    # preregistration's category order, so it must be a subset of the target-lock frames.  If it
+    # ever exceeds them, the precedence in the classifier and the bookkeeping here have diverged
+    # and the FTLR numerator is not what the preregistration defines.
+    if counts["ambiguous"] > counts["target_lock"]:
+        raise RuntimeError(
+            "distractor_lock export: %d ambiguous frame(s) exceed the %d target-lock frame(s); "
+            "ambiguous frames are resolved to TARGET_LOCK and must be a subset of them"
+            % (counts["ambiguous"], counts["target_lock"])
+        )
+    if float(radius_m) != float(DISTRACTOR_LOCK_RADIUS_M):
+        raise RuntimeError(
+            "distractor_lock export: classification radius %r is not the preregistered %r"
+            % (float(radius_m), float(DISTRACTOR_LOCK_RADIUS_M))
+        )
+
+
 def _validate_obs_dump_export(
     frame_tables,
     episode_tables,
@@ -1382,6 +1475,51 @@ class NavRLTask(BaseTask):
             self._bulk_eval_mode,
             os.environ.get("NAVRL_EVAL_FULL_DISTRIBUTION", "0"),
         )
+        # --- appearance-distractor lock telemetry (EVALUATION ONLY).
+        # docs/prereg_2026-09-01_distractor_envelope.md section 4.  Classifies the 3D position the
+        # RGB-D detector REPORTED against the ground-truth target and distractor centres, so the
+        # preregistration can say what the detector calls "the target" when something else in the
+        # scene is painted the same colour.
+        #
+        # Ground truth is consumed for the METRIC only, exactly as the first-acquisition telemetry
+        # and the OOB exit forensics consume it (CLAUDE.md observation contract: no GT target
+        # information in the actor observation; permitted in detector supervision, reward,
+        # termination, critic and evaluation metrics).  Nothing computed by this telemetry is
+        # written into task_obs, a reward, a termination, or any checkpointed field.
+        #
+        # The enable condition is derived, not a new knob: bulk EVALUATION and a scene that
+        # actually contains distractors.  With NAVRL_DISTRACTOR_COUNT unset or 0 the flag is False,
+        # no accumulator is allocated, and _process_obs_perception never calls the recorder -- so
+        # the historical world runs the historical code path.  Gate 0.1 of the preregistration
+        # (default-off bit-identity) therefore stays a property of the code rather than a promise.
+        self._distractor_metric_enabled = bool(
+            self._bulk_eval_mode and self._num_distractors > 0
+        )
+        if self._distractor_metric_enabled:
+            # Row j of [_solid_obstacle_offset : _bar_offset] is distractor j, by construction:
+            # _solid_obstacle_offset is defined as _bar_offset - _num_distractors.  Asserted here
+            # rather than assumed, because an off-by-one would silently classify the measurement
+            # against a bar centre and produce a plausible FTLR that means nothing.
+            if self._bar_offset - self._solid_obstacle_offset != self._num_distractors:
+                raise RuntimeError(
+                    "NavRL distractor telemetry: the [%d:%d] obstacle slice holds %d row(s), not "
+                    "the %d configured distractor(s)"
+                    % (
+                        self._solid_obstacle_offset,
+                        self._bar_offset,
+                        self._bar_offset - self._solid_obstacle_offset,
+                        self._num_distractors,
+                    )
+                )
+            # Accumulated on-device as int64/float64 totals and read exactly once, at export.  No
+            # per-step .item() and therefore no per-step host synchronisation: this telemetry may
+            # not be allowed to change the timing of the run it is measuring.
+            #   0 frames_total  1 visible  2 target_lock  3 distractor_lock  4 ghost  5 ambiguous
+            self._dl_counts = torch.zeros(6, dtype=torch.long, device=self.device)
+            #   0 pixel-count sum  1 confidence sum  2 |meas-target| sum  3 |meas-distractor| sum
+            #   (all four summed over the DETECTOR-VISIBLE frames only)
+            self._dl_sums = torch.zeros(4, dtype=torch.float64, device=self.device)
+
         try:
             self._bulk_eval_target = max(
                 1, int(os.environ.get("PLAY_GAMES_NUM", "1000"))
@@ -5710,6 +5848,11 @@ class NavRLTask(BaseTask):
             "camera_visible", diagnostics["visible"]
         )
 
+        # Evaluation-only, and only when the scene actually contains distractors.  Placed AFTER the
+        # observation has already been written above, so it cannot participate in building it.
+        if self._distractor_metric_enabled:
+            self._record_distractor_lock_frame(diagnostics)
+
         # Raw sensor and tracker diagnostics are available to evaluators, never concatenated into
         # actor observations. Semantic renderer buffers intentionally remain private.
         self.obs_dict["navrl_raw_rgb"] = raw_rgb
@@ -5739,6 +5882,117 @@ class NavRLTask(BaseTask):
             ],
             dim=1,
         )
+
+    def _record_distractor_lock_frame(self, diagnostics):
+        """Classify this frame's detector measurement: TARGET / DISTRACTOR / GHOST lock.
+
+        docs/prereg_2026-09-01_distractor_envelope.md section 4.  Called once per observation, only
+        while ``_distractor_metric_enabled`` (bulk evaluation AND at least one distractor).
+
+        WHAT IS CLASSIFIED.  ``camera_measurement_world`` is the position ``_detect_rgbd`` produced
+        and handed to the tracker as its observation -- the detector's own answer, before any
+        filtering.  The visibility gate is the CAMERA flag, not the fused one: a frame the camera
+        lost and LiDAR is holding has no camera measurement to classify, and counting it would put
+        a stale value in the numerator of a rate about the camera detector.
+
+        WHAT GROUND TRUTH IS USED FOR.  Labelling, and nothing else.  ``self.target_position`` and
+        the distractor centres are read here to decide which bucket a frame falls in; no tensor
+        computed in this method reaches ``task_obs``, the reward, a termination, the curriculum, or
+        get_env_state.  This is the same evaluation-only use of ground truth the first-acquisition
+        telemetry and the OOB exit forensics already make.
+
+        CATEGORY PRECEDENCE.  The preregistration lists TARGET_LOCK first, so a measurement inside
+        both radii is a TARGET_LOCK.  Placement clearance makes that overlap unlikely, so instead of
+        assuming it away the count is accumulated and exported (``ambiguous``): a reader can then
+        see whether precedence changed any number at all.
+        """
+        visible = diagnostics["camera_visible"]
+        measurement = diagnostics["camera_measurement_world"]
+        distractors = self.obs_dict["obstacle_position"][
+            :, self._solid_obstacle_offset : self._bar_offset, 0:3
+        ]
+
+        target_distance = (measurement - self.target_position).norm(dim=1)
+        # (num_envs, num_distractors) -> nearest distractor centre per env.
+        distractor_distance = (
+            (measurement.unsqueeze(1) - distractors).norm(dim=2).min(dim=1).values
+        )
+        near_target = target_distance <= DISTRACTOR_LOCK_RADIUS_M
+        near_distractor = distractor_distance <= DISTRACTOR_LOCK_RADIUS_M
+
+        target_lock = visible & near_target
+        distractor_lock = visible & near_distractor & ~near_target
+        ghost_lock = visible & ~near_target & ~near_distractor
+        ambiguous = visible & near_target & near_distractor
+
+        self._dl_counts += torch.stack(
+            [
+                torch.full_like(self._dl_counts[0], int(self.num_envs)),
+                visible.sum(),
+                target_lock.sum(),
+                distractor_lock.sum(),
+                ghost_lock.sum(),
+                ambiguous.sum(),
+            ]
+        )
+        visible_f = visible.to(torch.float64)
+        self._dl_sums += torch.stack(
+            [
+                (diagnostics["target_pixels"].to(torch.float64) * visible_f).sum(),
+                (diagnostics["camera_confidence"].to(torch.float64) * visible_f).sum(),
+                (target_distance.to(torch.float64) * visible_f).sum(),
+                (distractor_distance.to(torch.float64) * visible_f).sum(),
+            ]
+        )
+
+    def _distractor_lock_payload(self):
+        """The section-4 measurement block, validated by the fail-closed export guard first."""
+        counts = [int(v) for v in self._dl_counts.tolist()]
+        sums = [float(v) for v in self._dl_sums.tolist()]
+        frames_total, visible_frames, target_lock, distractor_lock, ghost_lock, ambiguous = counts
+        _validate_distractor_lock_export(
+            self._num_distractors,
+            frames_total,
+            visible_frames,
+            target_lock,
+            distractor_lock,
+            ghost_lock,
+            ambiguous,
+            DISTRACTOR_LOCK_RADIUS_M,
+        )
+
+        def rate(count):
+            # None, not 0.0, when nothing was visible: "0% of no frames" is not a measurement, and
+            # a 0.0 here would read as a detector that never once misattributed.
+            return (count / visible_frames) if visible_frames > 0 else None
+
+        def mean(total):
+            return (total / visible_frames) if visible_frames > 0 else None
+
+        return {
+            "schema_version": 1,
+            "distractor_count": int(self._num_distractors),
+            "classification_radius_m": float(DISTRACTOR_LOCK_RADIUS_M),
+            "visible_source": "camera_visible",
+            "measurement_source": "perception.observe -> camera_measurement_world (the tracker's "
+            "own input, pre-filter)",
+            "frames_total": frames_total,
+            "visible_frames": visible_frames,
+            "visible_frame_rate": visible_frames / frames_total,
+            "target_lock": target_lock,
+            "distractor_lock": distractor_lock,
+            "ghost_lock": ghost_lock,
+            "ambiguous_target_and_distractor": ambiguous,
+            "target_lock_rate": rate(target_lock),
+            "distractor_lock_rate": rate(distractor_lock),
+            "ghost_lock_rate": rate(ghost_lock),
+            # The preregistered primary: (DISTRACTOR_LOCK + GHOST_LOCK) / visible frames.
+            "false_target_lock_rate": rate(distractor_lock + ghost_lock),
+            "camera_pixel_count_mean": mean(sums[0]),
+            "camera_confidence_mean": mean(sums[1]),
+            "measurement_to_target_mean_m": mean(sums[2]),
+            "measurement_to_nearest_distractor_mean_m": mean(sums[3]),
+        }
 
     def _goal_x_max(self):
         """Epoch-proportional goal-x ceiling: ramps k_start -> k_final over k_warmup_epochs, then
@@ -7987,6 +8241,13 @@ class NavRLTask(BaseTask):
                 (self._succ_agg, self._crash_agg, self._to_agg),
                 expected_bar_contacts=d["contact"],
             )
+        # The appearance-distractor axis, attested by the process that BUILT the scene rather than
+        # by an echo of the request.  Unconditional and 0 in the historical world, so a cell that
+        # ran with no distractors says so instead of being silent about it -- which is what lets a
+        # cross-cell verifier prove the axis is the only thing that moved.
+        payload["condition"]["distractor_count"] = int(self._num_distractors)
+        if self._distractor_metric_enabled:
+            payload["distractor_lock"] = self._distractor_lock_payload()
         compact = json.dumps(payload, sort_keys=True, separators=(",", ":"))
         print("NAVRL_BULK_EVAL_RESULT " + compact, flush=True)
 

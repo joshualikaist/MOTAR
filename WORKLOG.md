@@ -13456,3 +13456,246 @@ token 수와 bar 수의 일치를 요구하지 않는다. 따라서 outright cra
 
 다음 단계는 앞 항목대로 카메라-해상도 경로에서 `NAVRL_DISTRACTOR_COUNT`를 올려가며 detector v7의
 frame precision 붕괴를 재는 것이다.
+
+## 2026-09-02 — distractor envelope 측정 런처와 FTLR 계측을 구현했다 (GPU 미실행)
+
+`docs/prereg_2026-09-01_distractor_envelope.md`(동결)의 측정 장치를 만들었다. 아직 아무것도
+측정하지 않았다 — GPU는 다른 worktree의 PPO run이 쓰고 있다.
+
+### FTLR 분류를 어디에 두었나
+
+`navrl_task._record_distractor_lock_frame`. 검출기가 낸 3D 측정 위치와 GT 표적·distractor 중심이
+동시에 존재하는 유일한 지점이며, GT를 metric에만 쓰는 기존 소비자(first_acquisition telemetry,
+OOB exit forensics)가 이미 사는 곳이다. `navrl_perception.observe`의 diagnostics에
+`camera_measurement_world`(= tracker에 넣는 관측, 필터 이전)와 `camera_confidence`를 노출했다 —
+둘 다 이미 계산된 텐서라 참조만 추가한다. 가시 판정은 `camera_visible`(융합 아님): LiDAR가 잡고
+있는 프레임에는 분류할 카메라 측정이 없다.
+
+- 분류: `|meas − target| ≤ 0.5` → TARGET, 아니고 `|meas − 최근접 distractor| ≤ 0.5` → DISTRACTOR,
+  둘 다 아니면 GHOST. 사전등록 표 순서대로 TARGET 우선이며, 양쪽 반경에 동시에 드는
+  `ambiguous` 프레임 수를 따로 세어 내보낸다(우선순위가 숫자를 바꿨는지 독자가 볼 수 있게).
+- 누산은 device 위 int64/float64 총계 2개뿐이고 export 때 한 번만 `.tolist()` 한다 —
+  step마다 `.item()`으로 host sync를 걸어 재는 대상의 타이밍을 바꾸지 않는다.
+
+### 기본값에서 진짜 no-op인가
+
+`self._distractor_metric_enabled = bool(self._bulk_eval_mode and self._num_distractors > 0)`.
+파생값이며 새 env-var가 아니다. False면 누산기가 **할당되지 않고** recorder가 **호출되지 않으며**
+export 블록도 없다. `_num_distractors`는 실제로 build된 env config에서 읽는다(작업이 knob을 직접
+읽지 않는다 — 장면과 계측이 어긋날 수 없다). N=0 회귀 셀이 손대지 않은 계보를 재는 것이 Gate 0.1의
+요구사항이므로, 그 대가로 **N=0 셀에는 FTLR도 count/confidence 평균도 없다**(사전등록 §8의
+"셀당 FTLR"을 문자 그대로는 만족하지 못한다). count/confidence의 N 의존성은 N=1·3·5로 읽는다.
+
+### export guard
+
+`_validate_distractor_lock_export` — `_validate_obs_dump_export` 스타일의 순수 함수(torch·self
+없음). 핵심은 **분할 검사**: `visible_frames`는 검출기 가시 마스크에서, 세 범주는 별도로 만든 세
+마스크에서 누산되므로, 이중 계수나 누락이 있으면 두 총계가 어긋나 export가 죽는다. 그 외 음수,
+`visible > total`, 프레임 0, `ambiguous > target_lock`, 반경 불일치를 잡는다. 7개 음성 케이스를
+테스트로 확인했다.
+
+### N=0 회귀 허용오차
+
+**±3.75 pp** (`N0_REGRESSION_TOLERANCE_PP`). 계보 참조는 sensor-fidelity `baseline` arm
+(seed 421, capture/crash/timeout **70.52/19.81/9.66%**, sha256 `57d0bbef819ad0f7…`)이며 seed가
+다른 독립 표본이므로 동치 비교가 불가능하다. n1=n2=2049, 최악 p=0.5에서 차이의 SE는
+`sqrt(0.25/2049+0.25/2049)=1.5620 pp`, outcome 3개에 대한 Bonferroni z(0.05/3)=2.39398 →
+3.739 pp를 올림했다. 오탐 VOID는 4셀분 GPU를 버리는 반면 이 게이트가 잡아야 할 실제 회귀는
+크다(flat spawn-clearance 결함이 27.45 pp였다). never-acquired는 함께 보고하되 게이트하지 않는다.
+
+### 셀별 env 차이 (실측)
+
+`NAVRL_DISTRACTOR_COUNT: {n0:'0', n1:'1', n3:'3', n5:'5'}` — 네 환경의 **모든 쌍**을 비교해 실제
+대칭차가 이것과 `NAVRL_V2_RESULT_DIR`뿐임을 확인한다. 실행 후에는 결과 문서의 `condition` 사전을
+셀 간 대칭차로 비교해 `distractor_count`만 움직였음을 확인하고, evaluator contract는 전 키가
+동일해야 한다(그 문서에는 distractor 필드가 없다).
+
+### Gate 0을 런처가 강제한다
+
+- 0.1/0.2는 `tests/test_navrl_distractors.py`의 `DefaultOffIsUnchanged`,
+  `DefaultOffIsBitIdentical`, `FailsClosedOnDistractorsPlusDecoupling`를 런처가 subprocess로
+  돌리고(테스트 모듈 sha256을 함께 기록) + 계측 게이팅·거부문·전 셀 카메라 해상도 경로 정적
+  검사를 더한다. 실패하면 셀을 만들지 않고 `FAIL_CLOSED_IMPLEMENTATION` 요약을 낸다.
+- 0.3은 위 허용오차로 판정한다.
+- 카메라 해상도 경로는 런타임 거부에 기대지 않고 `evaluation_env()`가 전 셀에서
+  `DETECT == CAMERA`를 assert한다 — N=0 셀은 그 거부를 그냥 통과해 버리기 때문이다.
+
+### 검증
+
+- `preflight` 실행(CPU만, GPU 점유 6900→6895 MiB 무변화): Gate 0.1 PASS(10 tests),
+  0.2 PASS(5 tests), **네 셀 모두 evaluator preflight를 force 없이 통과**. 마지막에 dirty
+  runtime으로 정상 FAIL(내 런타임 편집이 미커밋).
+- `python -m unittest discover -s tests`: **916 → 933**(신규 17). failures 8 / errors 8 /
+  skipped 2로 실패 집합은 **이름 단위까지 동일**. 학습 중복 lock(PID 12683)과 이 worktree에 없는
+  gitignored `results/` 건이다.
+- `test_navrl_distractors.SolidObstacleOffsetArithmetic.test_both_widened_sites_...`를 갱신했다.
+  telemetry가 `[_solid_obstacle_offset : _bar_offset]`(distractor 전용, 막대 미포함)을 읽는 세
+  번째 소비자라서다. 넓힌 슬라이스(4회)와 distractor 전용 슬라이스(1회, recorder 안)를 구분해
+  각각 고정했다 — 후자가 실수로 막대까지 읽으면 검출기 측정을 막대 중심과 비교하게 된다.
+- GPU 측정은 없다. 판정도 없다.
+
+다음 단계는 GPU가 비는 대로 `evaluate n0 → n1 → n3 → n5` 후 `finalize`다.
+
+## 2026-09-02 — distractor envelope를 2×4 요인설계로 확장했다 (검출기 축 추가, GPU 미실행)
+
+앞 항목의 런처는 기본 검출기만 쟀다. 사전등록 §3이 "현행 기본값과 학습형 v7 **둘 다**"를 명시하므로
+검출기를 **두 번째 요인**으로 올렸다. 기본값만 재는 것은 5-파라미터 색 규칙이 색 구별에 실패하는
+것을 재는 것이라 거의 항진명제다. 열린 질문은 **학습된 v7이 색 shortcut을 벗어났는가**이고,
+0.99766 frame precision 주장을 지고 있는 것도 v7이다.
+
+### 셀 격자
+
+`검출기 {default, v7} × distractor {0,1,3,5}` = **8 셀**
+(`default_n0`…`default_n5`, `v7_n0`…`v7_n5`). 손으로 나열하지 않고 두 요인에서 유도한 뒤
+완전 요인설계인지(8개, 중복 없음) 즉시 assert한다.
+
+### v7 아티팩트 — 무엇을 고정했나
+
+- `artifacts/navrl_target_detector_v7_confirmatory.pth`
+- sha256 `85c7974bcd85c627170c5bd63030144d1c5dc2a11e5d64829cad38f615c5d5d7`
+- **동작점 threshold 0.700**
+
+`artifacts/`에는 검출기 체크포인트가 7개 있으므로 "v7 파일"은 이름이 아니라 **v7 게이트가 채점한
+바이트**로 정의해야 한다. 런처는 `results/navrl_detector_offline_gate_v7_confirmatory/summary.json`의
+`artifact_sha256`·`selected_threshold`·`gate_passed`와 교차검증한다(실측: frame precision
+0.99765625 @ thr 0.7 — 게이트 요약과 일치).
+
+**동작점이 0.55가 아니라 0.700인 이유**: 0.99766은
+`tools/train_navrl_target_detector_v2.py`가 held-out test를 `selected_threshold`에서 채점한 값이다.
+0.55에서 재면 그 주장이 속한 동작점이 아닌 다른 동작점을 재게 된다. 기존 유일한 v7 실행
+(`results/navrl_detector_domain_shift_v7/`)은 205막대·thr **0.55**의 오프라인 프레임 스크리닝이라
+비교 대상이 아니다. 따라서 **검출기 = 아티팩트 + 동작점**을 하나의 요인 수준으로 묶었다.
+
+### 좁은 override (담요식 force 아님)
+
+동결 정책은 thr 0.55에서 학습됐으므로 evaluator의 v2 provenance gate가 v7 셀에서 반드시 한 필드를
+문제 삼는다. `NAVRL_V2_FORCE`(전 필드 무력화) 대신 목적 전용
+`NAVRL_V2_ALLOW_DETECTOR_THRESHOLD_MISMATCH`를 쓴다 — sensor-fidelity가 만든 좁은 override 패턴이며
+담요식보다 **더 엄격하다**. force 없는 실행이 정확히
+`cfg_detector_threshold: checkpoint=0.55 expected=0.7` **한 줄로만** 거부되는 것을 실행 시점에
+증명한 뒤에야 적용하고, override 실행에서 evaluator가 **그 필드를 허용했다고 announce한 것**까지
+확인한다. 두 줄이거나 다른 필드면 중단한다.
+
+**실측으로 버그 하나를 잡았다.** evaluator는 허용한 필드를 거부 라인과 **같은 모양**으로 출력한다
+(`[eval_v2] ALLOWED mismatch: ... checkpoint=... expected=...`). `checkpoint=`/`expected=`만 보고
+거르던 파서가 override의 성공 announce를 잔여 거부로 읽어 v7 preflight를 실패시켰다. 정반대 사실이라
+`mismatch_lines`(거부)와 `allowed_mismatch_lines`(허용)로 분리했다.
+
+### 두 방향 단일축 검증
+
+한 번에 뭉뚱그리면 검출기를 따라 움직인 엉뚱한 변수가 "검출기 축의 일부"로 변명될 수 있으므로
+**따로** 검사한다.
+
+| 고정 | 허용된 차이 | 검사 |
+|---|---|---|
+| 검출기 | `NAVRL_DISTRACTOR_COUNT` | 각 검출기 4환경의 모든 쌍 |
+| distractor 수 | `NAVRL_DETECTOR_CHECKPOINT`·`NAVRL_DETECTOR_THRESHOLD`·`NAVRL_V2_ALLOW_DETECTOR_THRESHOLD_MISMATCH` | 각 N에서 2환경 |
+
+실행 후에는 결과 문서로 같은 두 방향을 다시 본다: 검출기 안에서는 `condition.distractor_count`만,
+N 안에서는 contract의 `detector_threshold`/`detector_checkpoint_sha256`만 움직여야 한다. 후자는
+`navrl_perception`이 로드한 바이트에서 재도출해 raise하는 값이라 "요청한 경로"가 아니라
+"실제 로드된 가중치"에 대한 진술이다.
+
+### 판정은 검출기마다 따로
+
+Gate F는 각 검출기의 N=5 셀에서 내려 **판정이 2개**다. `summary.json`에는 `verdicts`(복수)만 있고
+단수 `verdict` 키는 **없다** — 통합 판정으로 오독할 여지를 키 이름 수준에서 없앴다. 각
+`verdict_basis`는 `applies_only_to`를 달고 있고, `summary.md`는 두 판정이 서로에 대한 근거가
+아님을 명시한다.
+
+### Gate 0.3 범위
+
+`default_n0`에만 적용한다(±3.75 pp, 계보 = sensor-fidelity baseline seed 421).
+**`v7_n0`에는 계보 기준점이 없다** — 이 체크포인트의 기존 70막대 항법 셀은 전부 내장 segmenter였고
+유일한 v7 실행은 조건·동작점이 다른 오프라인 스크리닝이다. 따라서 기술적(descriptive) 셀로 두고
+v7 자신의 FTLR 추이 기준으로만 쓰며 **아무것도 게이트하지 않는다**. v7 셀의 outcome은 계보와 비교할
+수 없다: 동결 정책이 학습한 적 없는 검출기로 날고 있으므로 궤적 자체가 다르다.
+
+### 비용 추정 (GPU 확보 전 사전 통지)
+
+기존 영수증 기준 2,049 에피소드 1셀 wall-clock: **카메라 해상도 경로 5.11분**
+(`sensor_fidelity/cells/baseline`, 본 실험과 동일한 센서 조건), 참고로 1920×1200 detect는 10.77분.
+distractor 렌더는 카메라 해상도 Warp 커널 1회 추가(+수%), FTLR 계측은 per-step host sync 없음(무시).
+v7은 1×1 conv가 아니라 spatial CNN이라 step time이 늘어난다.
+
+| | 셀 | 셀당 | 소계 |
+|---|---:|---:|---:|
+| default | 4 | ~5.1–5.5분 | ~21분 |
+| v7 | 4 | ~6–7분 | ~26분 |
+| **합계** | **8** | | **~50분** |
+
+**보수적 상한 ~1시간 20분**(v7이 예상의 2배로 느릴 경우). 요청받은 ~1시간 예산 안이다.
+VRAM 추가분은 distractor mask/depth 128×90×160×8 B ≈ 15 MB로 무시할 수준이지만, 평가는 학습이
+점유한 6.9 GB와 **동시 실행 불가**다(기존 평가 셀도 단독 실행이었다).
+
+### 검증
+
+- `preflight`(CPU만, GPU 6902→6906 MiB 무변화, PID 12683 무영향): **8셀 전부 통과**.
+  default 4셀은 force 없이 PASS, v7 4셀은 좁은 override를 실행 시점에 검증한 뒤 PASS.
+  Gate 0.1 PASS(10 tests), 0.2 PASS(5 tests), v7 게이트 교차검증 통과. 마지막에 dirty runtime으로
+  정상 FAIL(런타임 편집 미커밋).
+- `python -m unittest discover -s tests`: **916 → 938**(신규 22). failures 8 / errors 8 /
+  skipped 2로 실패 집합은 **이름 단위까지 동일**.
+- GPU 측정은 없다. 판정도 없다.
+
+다음 단계는 GPU가 비는 대로 `evaluate` 8셀 후 `finalize`다.
+
+## 2026-09-02 — L6(검출기 간 FTLR 비교 금지)을 코드로 강제했다
+
+사전등록 §3-c가 추가됐다. 앞 항목에서 나는 "동결 정책이 v7을 학습한 적 없는 검출기로 날린다"를
+**주석에만** 적었다. 결과는 그보다 무겁다: 궤적이 다르면 프레임이 다르고, 프레임이 다르면
+시야 기하 분포(거리·베어링·가림, 특히 **표적과 distractor가 동시에 보이는 빈도**)가 다르다.
+FTLR은 그 분포 **위에서** 정의되므로 `FTLR_v7 − FTLR_default`는 검출기 강건성과 궤적 분포를
+뒤섞은 값이고 이 셀들로는 분리할 수 없다. 각 검출기의 FTLR은 그 검출기가 실제로 만든 프레임
+위에서 계산되므로 **검출기 안에서 N에 따른 비교는 그대로 유효**하다.
+
+- `LIMITATIONS`에 **L6** 추가(L1–L5와 같은 한국어 서술). outcome 3종에도 적용됨을 명시했다 —
+  v7 셀 값은 계보와도, default 셀과도 비교하지 않는다.
+- `summary.json`에 `comparability` 필드(`between_detectors: false`,
+  `cross_detector_difference_computed: false`)를 넣었다.
+- `summary.md`는 **두 줄짜리 판정표 바로 밑**에 인용 블록으로 경고를 놓는다. 한계 절은
+  독자의 눈이 닿는 곳이 아니다.
+- 교차 검출기 차이는 **어디에도 계산하지 않는다.** 원래도 없었음을 확인했고(유일한 뺄셈은
+  Gate 0.3의 계보 회귀로, 검출기 안이며 FTLR이 아니다), 앞으로도 못 생기게 테스트를 걸었다.
+
+### 테스트가 실제로 잡는지 확인
+
+이름 기반 검사(published key에 delta/difference/gap 류 토큰 금지)와 **AST 검사**(다중 셀 FTLR
+컨테이너 — `ftlr_by_cell`/`measurements`/`verdict_basis`/`cells_payload` — 를 건드리는 뺄셈 금지,
+그리고 `build_summary`/`write_summary` 안에서는 FTLR 뺄셈 자체 금지) 두 겹이다.
+`"ftlr_v7_minus_default_pp": 100.0 * (ftlr_by_cell["v7_n5"] - ftlr_by_cell["default_n5"])`를
+일부러 주입해 테스트가 **실패하는 것을 확인**한 뒤 되돌렸다. `verify_lock_block`의 셀 내부
+자기일관성 검사(같은 셀의 재계산 FTLR vs 내보낸 값)는 걸리지 않는다 — 다중 셀 컨테이너를
+건드리지 않기 때문이며, 걸렸다면 그 검사는 고쳐지는 대신 삭제됐을 것이다.
+이름 검사는 `preregistration`에 `ratio`가 들어 있어 부분문자열 매칭이 오탐을 냈다 — 밑줄 토큰
+단위 비교로 바꿨다.
+
+### v7 forward 비용 — CPU 전용 상한 (GPU 미사용)
+
+앞 항목의 "+10–40%"는 CNN 크기를 추측한 값이었다. 실제로 재고 세었다.
+
+- 아키텍처 `SpatialTargetSegmenterWide/cnn9x9x24-RGBD`: `Conv(4→24,3×3)` → `Conv(24→24,3×3,d=2)`
+  → `Conv(24→24,3×3)` → `Conv(24→1,1×1)`, **11,329 파라미터**(부트스트랩은 5개).
+- CPU forward(128×90×160, 4스레드): 부트스트랩 15.8 ms, v7 248 ms → **15.8배**.
+  다만 이 비율은 **CPU 아티팩트**다. 24채널 3×3 스택은 GPU가 잘하고 4스레드 CPU가 못하는
+  워크로드이며, 1×1 conv는 양쪽 다 메모리 바운드다.
+- 기계적 상한(스레딩 무관): **20.75 GMAC = 41.5 GFLOP/step**(부트스트랩 0.007 GMAC, 2,814배).
+  RTX 3070 fp32 peak ~20.3 TFLOP/s, 이 shape의 현실적 효율 15–35% → **6–14 ms/step**.
+  baseline 셀의 step time은 306 s / 대략 4,000–6,400 sim step ≈ **50–80 ms**이므로 **+10–30%**.
+
+수정 추정: default 4셀 ~21분, v7 4셀 ~22–39분, **합계 ~45–60분**. 상한 ~1시간 20분은 유지하되
+**여유롭지 않다** — GPU가 이 shape에서 유효 1 TFLOP/s밖에 못 내면 41 ms/step이 되어 step time이
+거의 두 배가 되고 정확히 상한에 닿는다.
+
+### verify_detector_artifacts()는 항진명제가 아니다
+
+파일 바이트의 digest를 **모듈 상수**(`DETECTORS`의 하드코딩 리터럴)와 비교하고, **별도로**
+게이트 요약의 `artifact_sha256`을 같은 상수와 비교한다. 파일을 자기 자신과 비교하는 지점은 없다.
+실증: v7 경로에 v6 체크포인트를 끼워 넣으면 첫 비교에서 잡히고, 게이트 요약의 sha를 위조하면
+둘째 비교에서 잡힌다. 둘 다 확인했다.
+
+### 검증
+
+- `python -m unittest discover -s tests`: **916 → 941**(신규 25). failures 8 / errors 8 /
+  skipped 2로 실패 집합 **이름 단위까지 동일**.
+- GPU 실행 없음(위 timing은 CPU 전용). PID 12683 무영향.
