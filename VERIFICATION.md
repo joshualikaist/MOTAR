@@ -34,8 +34,7 @@ non-overlap 판정 필드를
   [`docs/preregistration_braking_aware_route_v3_lower1p25_2026-09-01.md`](docs/preregistration_braking_aware_route_v3_lower1p25_2026-09-01.md)
   (SHA-256 `cd1347121c24ecd10273189360bed9ca76ffa80673aa89addf3ff0eaebc16252`).
   속도 grid는 0.6/0.9/1.2/1.25이며 `NAVRL_TARGET_BRAKING_CONTRACT_VARIANT=baseline_1p25`로만
-  무장한다. 기본값은 여전히 `canonical_1p5`다. 다음 GPU는 현재 커밋에서 새로 뜰
-  `baseline_1p25` raw braking receipt이고, 그 뒤에만 seed 829 8-cell lower pilot가 열린다.
+  무장한다. 기본값은 여전히 `canonical_1p5`다.
   08-26 lower receipt는 옛 core 바이트에 묶여 재사용하지 않는다. PID나 0.05 완화는 이 계보에서
   하지 않는다. **2026-09-01 현재 커밋 `dd8b4a4`에서 새 `baseline_1p25` raw receipt가
   검증됐다** (`results/navrl_physical_target_braking_lower1p25_seed827_2026-09-01/receipt.json`,
