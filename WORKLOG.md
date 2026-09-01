@@ -13274,3 +13274,71 @@ long-training authority는 false다. 사전등록대로 fresh 500-epoch PPO smok
 충족되지 않았다. 상세 결과는
 `docs/corrected_nonoverlap_route_gate_r2_result_2026-08-31.md`, 원자료는
 `results/navrl_corrected_nonoverlap_route_gate_r2_seed829/summary.json`이다.
+
+## 2026-09-02 — distractor envelope: 구현·게이트 통과, 측정만 대기
+
+빨간 물체가 나오면 어떻게 되느냐는 질문에서 시작했다. 코드를 읽어보니 기본 검출기
+`AppearanceTargetSegmenter`(`navrl_perception.py:591`)는 파라미터 5개짜리 1×1 conv로
+`3.0·R − 2.0·G − 2.0·B − 0.9`를 계산한다 — 문자 그대로 "빨간가?"다. 렌더러가 표적을 평평한
+`[0.88, 0.08, 0.045]`로 칠하고 다른 어떤 물체도 빨갛지 않으므로 **"빨간 픽셀 = 표적"이 학습이 아니라
+정의상 참**이다.
+
+v7 offline gate는 8/8 PASS(frame precision **0.99766**, far 14–20 m recall 0.99688, bearing MAE
+0.0244°)인데 **그 요약 JSON에 distractor 키가 0개**다. 즉 그 숫자는 "표적과 닮은 것이 하나도 없는
+세계"에서 잰 값이다. `docs/archive/development_directions_2026-08.md:107`이 이 축을
+"D9 (보너스, eval-only)"로 이미 제안했으나 구현되지 않았다.
+
+더 근본적으로, `_detect_rgbd`는 임계를 넘은 **이미지 전체** 양성 픽셀을 무게중심 하나로 축약한다
+(`navrl_perception.py:1428`, `:1480`). 연결 성분 분석이 없다. 따라서 표적과 distractor가 동시에
+보이면 무게중심은 둘 사이 허공을, range는 두 거리의 평균을 가리키고, count는 합이므로
+**confidence가 오히려 올라간다.**
+
+### 구현 (branch `codex/distractor-envelope`, `3711f87`)
+
+물리적 실체가 있는 distractor 3종(구 r=0.15 — 표적과 **동일 크기**, 박스, 기둥)을 막대와 같은
+`footprint_clearance` 파이프라인으로 배치하고 표적과 **같은 색**으로 칠한다. 최악 조건부터 재는 것이
+목적이다. `NAVRL_DISTRACTOR_COUNT` 기본 0.
+
+**기본값 off가 구조적으로 보장된다** — `select_and_order_assets`의 `if num_assets > 0` 가드가 폴더
+나열과 RNG 추첨 **이전에** 걸려서 자산 집합·순서·배치 스트림이 불변이고 렌더러는 버퍼조차 할당하지
+않는다. 단언이 아니라 AST로 변경 전 슬라이스를 복원해 동일 시드로 `torch.equal` 비교했다.
+
+**fail-closed 가드**(`navrl_detector.py:614`): distractor > 0이면 decoupled 검출 해상도를 거부한다.
+그 항등성("perception 분할기가 발화하는 픽셀 = detect 광선추적이 만든 픽셀")은 **표적만 칠해진
+세계에서만** 성립하는데, 같은 색 distractor는 분할기를 발화시키되 detect 마스크에는 없어서 둘이
+**조용히** 어긋난다. 그러면 detect 경로는 깨끗한 표적을 보고하는데 정책이 보는 이미지는 미끼로
+가득한 상태가 된다. 측정은 카메라 해상도 경로로 한다.
+
+**`_bar_offset` 확장의 부작용 7곳** 중 1차 지표를 오염시키는 **2곳만** 고쳤다 — 드론 스폰
+clearance(안 고치면 드론이 distractor 안에서 스폰)와 표적 경로 planner(안 고치면 경로가 관통해
+가림 통계가 틀어짐). `_solid_obstacle_offset = _bar_offset − num_distractors`로 연속 슬라이스
+`[distractors][active bars]`를 만들어 넘긴다. 나머지 5곳(정적 goal, recovery clearance,
+bar-contact probe)은 사전등록 L5로 기록했고 전부 crash가 아니라 모델링 격차임을 확인했다.
+
+**정렬 테스트가 핵심이다**: 중심 배열과 half-extents 배열의 j행이 distractor→bar 경계를 넘어서도
+같은 물체를 가리키는지 태그로 검사한다. off-by-one이 나면 distractor 중심에 막대 footprint가
+짝지어지는데, 이는 지난주 flat-clearance 결함과 **정확히 같은 형태**다. 뮤테이션 5종을 전부 잡았고,
+그중 하나가 `assertIn` 부분문자열 매칭을 통과하는 것을 발견해 정확한 줄 매칭 + AST 검사로 강화했다.
+
+테스트 59개 신규, 857 → **916**. 실패 집합 불변(트레이너 호출 8건은 실행 중 학습의 duplicate 락,
+error 8건은 worktree에 gitignore된 `results/`가 없어서 나는 아티팩트 — 둘 다 회귀 아님).
+
+### Gate 0 통과 (직접 검증)
+
+기본값 off bit-identical · decoupled+distractor 거부 · 신규 테스트 59/59. 세 조건 모두 확인했다.
+
+### 측정을 미룬 이유
+
+GPU를 다른 worktree(`braking_route_v3`)의 PPO가 쓰고 있다 — PID 12683, 10시간째, 9,846 epoch,
+6.8/8.2 GB. 여유 1.4 GB로 128-env 평가를 겹치면 OOM이다. **A4 측정(GPU 약 30분)은 그 학습 종료 후.**
+
+그 학습은 `NAVRL_REQUIRE_SOURCE_ROOT`와 `PYTHONPATH`가 모두 자기 worktree를 가리켜 격리돼 있음을
+확인했다(8-27에 만든 import-origin 가드가 실제로 작동 중). 이번 작업은 전부 별도 worktree에서
+했고 primary의 런타임 경로는 건드리지 않았다.
+
+### 다음
+
+학습 종료 후 A4: seed 479, distractor 0/1/3/5, 셀당 2,049 ep, FTLR 측정. 판정 규칙은
+`docs/prereg_2026-09-01_distractor_envelope.md`에 동결돼 있다. `COLOR_SHORTCUT_CONFIRMED`
+(FTLR ≥ 50%)는 **예상된 결과이며 실험 실패가 아니다** — 이 실험의 값어치는 개선이 아니라 결함의
+정량화다.
