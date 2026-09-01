@@ -13274,3 +13274,185 @@ long-training authority는 false다. 사전등록대로 fresh 500-epoch PPO smok
 충족되지 않았다. 상세 결과는
 `docs/corrected_nonoverlap_route_gate_r2_result_2026-08-31.md`, 원자료는
 `results/navrl_corrected_nonoverlap_route_gate_r2_seed829/summary.json`이다.
+
+## 2026-09-01 — 외관 distractor 축(D9) 구축: 자산·배치·페인팅·fail-closed 가드
+
+detector v7의 frame precision ~99.77%는 **표적을 닮은 물체가 0개인 세계**에서 측정된 값이다.
+기본 detector는 `AppearanceTargetSegmenter`(navrl_perception.py:591), 즉 1×1 conv
+`3.0·R − 2.0·G − 2.0·B − 0.9` — 문자 그대로 red detector다. 렌더러는 표적만 평탄한
+`[0.88, 0.08, 0.045]`로 칠하고(navrl_detector.py:466) 씬의 다른 무엇도 붉지 않으므로
+"red pixel ⇒ target"은 구성상 참이다. `docs/archive/development_directions_2026-08.md:107`이
+"D9 (bonus, eval-only) add a distractor axis to the envelope"로 이미 제안했으나 구현된 적이 없다.
+이번 작업은 **그 실패를 측정 가능하게** 만든 것이고, detector를 고친 것이 아니다.
+
+### 만든 것
+
+`resources/models/environment_assets/objects/`에 정적·충돌 가능 URDF 3종.
+visual 프리미티브와 collision 프리미티브가 동일하므로 LiDAR가 보고 드론이 부딪힌다.
+
+| 파일 | 형상 | 치수 | 질량 | 의도 |
+|---|---|---|---|---|
+| `navrl_distractor_sphere.urdf` | sphere | r = 0.15 m | 0.5 kg | `camera_target_radius`(0.15)와 **동일** — 크기-거리 일관성으로 분리 불가 |
+| `navrl_distractor_box.urdf` | box | 0.30³ m | 1.0 kg | 표적 스케일(0.28×0.28×0.12), 다른 종횡비 |
+| `navrl_distractor_pole.urdf` | cylinder | r = 0.06, h = 1.60 m | 1.5 kg | 더 높고 더 가늚 |
+
+관성은 각 프리미티브의 해석해다(구 2/5mr², 정육면체 m(a²+b²)/12, 실린더 m(3r²+h²)/12 · mr²/2).
+
+### 노브 (기본 OFF는 절대 조건)
+
+- `NAVRL_DISTRACTOR_COUNT` (기본 **0**) — env당 총 distractor 수.
+- `NAVRL_DISTRACTOR_SHAPES` (기본 `"sphere,box,pole"`) — 형상 배합. 적힌 순서로 round-robin 분배.
+  알 수 없는 형상은 `ValueError`로 fail-closed.
+
+count=0이면 세 param 클래스 모두 `num_assets == 0`이고, `AssetLoader.select_and_order_assets`의
+`if num_assets > 0` 가드가 폴더 listing·RNG 추출 이전에 해당 asset type을 건너뛴다 → 자산 목록,
+정렬 순서, 배치 스트림이 모두 historical과 동일하다. 렌더러도 버퍼를 할당하지 않고 커널을
+launch하지 않는다.
+
+### 배치 — 막대와 같은 footprint_clearance 경로
+
+distractor는 `keep_in_env = True`로 **표적 바로 뒤·막대 앞**에 놓인다
+(`[target?] [distractors...] [bars...]`). 막대 뒤에 두면 밀도 커리큘럼이 build-time 상한보다 낮을 때
+AssetManager가 `num_obstacles_in_env` 밖의 자산을 -1000으로 주차해버려 distractor가 사라진다.
+`navrl_bars_env.py`의 `asset_type_to_dict_map`에서 distractor를 `physical_target`보다 **먼저**
+선언한 것은 AssetLoader가 keep_in_env 자산을 `appendleft`하기 때문이다 — 마지막에 적재된
+keep_in_env 자산이 index 0이 되고, index 0은 표적이어야 한다(`obstacle_position[:, 0]`).
+`navrl_task.py`의 `_bar_offset`을 `(1 if physical else 0) + num_distractors`로 넓혀
+모든 막대 slice가 계속 막대만 가리키게 했다.
+
+`asset_loader.py`의 collision half-extent 추출이 box만 이해했으므로 sphere/cylinder를 추가했다
+(`_urdf_collision_half_extents`). box 조회는 기존과 동일하게 전체 트리에서 **먼저** 수행되므로
+기존 자산의 수치는 한 개도 바뀌지 않는다. 파싱 실패는 여전히 `[0,0,0]` → 배치기가 명시적으로 거부.
+
+### 렌더러 — 같은 색으로 칠하고, 정체성이 깨지면 raise
+
+`_render_distractor_camera_kernel`(navrl_detector.py:134)이 카메라 해상도에서 첫 씬 히트의
+per-vertex segmentation id(warp_env_manager가 velocity 채널에 심는 값)를 읽어
+`DISTRACTOR_SEMANTIC_ID = 51`인 픽셀만 마스크한다. 첫 히트만 쓰므로 가림은 자동으로 옳다.
+페인팅은 표적 페인트 **직전**에 같은 per-env `target_color`와 자기 자신의 정확한 카메라-해상도
+depth로 이뤄진다 — 최악의 경우를 먼저 재려는 의도적 선택이다.
+
+**핵심 가드**: `_assert_detect_decoupling_is_equivalent`(navrl_detector.py:614)에 기존 appearance
+offender 목록 **앞에** 전용 raise를 넣었다. decoupling은 "고해상도 RGB 렌더 + 분할"을
+"고해상도 **표적** 마스크 읽기"로 치환하는데, 이는 렌더러가 칠하는 물체가 표적뿐일 때만 항등이다.
+distractor를 같은 색으로 칠하면 perception의 segmenter가 detect-해상도 표적 ray-cast가 만든 적 없는
+픽셀에서 발화하고, 둘은 **조용히** 어긋난다. 그래서 `NAVRL_DISTRACTOR_COUNT > 0`이면서 detect
+해상도가 카메라 해상도와 다르면 즉시 raise한다. 측정은 카메라-해상도 경로에서 한다.
+
+### "칠해짐 ⇒ 표적"을 가정하는 다른 지점 (기록)
+
+- **obstacle map carve-out** (`_fuse_static_and_extract_obstacles`, `_reconstruct_target_pixels`):
+  bearing+range 일치만 쓰고 semantic id를 보지 않는다. distractor 오검출은 실제 고체 장애물을
+  LiDAR scan과 융합 depth에서 지워버릴 수 있다 — 이는 detector 오차의 **정당한 전파**이며
+  측정 대상이지 오염이 아니다. 손대지 않았다.
+- **LiDAR 연관** (`_associate_lidar_target`): 순수 기하. 위와 동일 판단.
+- **profiling head** (`_record_detector_profile`): 두 head가 같은 프레임을 채점하는 **쌍대 비교**라
+  distractor가 있어도 비교는 유효하다. 단 `ref_*` 필드는 ground truth가 아니다.
+- **미처리(범위 밖, 명시 flag)**: 드론 spawn clearance(navrl_task.py:1912), 정적 goal
+  배치(:4102), target route planner(:5858), recovery clearance(:6058), bar-contact
+  probe(:3081, :3127)는 모두 `[_bar_offset : _bar_offset + n_bars_active]`만 읽으므로
+  **distractor를 자유공간으로 취급**한다. distractor 배치 자체는 막대·서로와 0.45 m surface
+  clearance를 지키지만, 스폰/목표/경로가 distractor를 통과하거나 그 안에 놓일 수 있다.
+  eval에서 distractor를 켜기 전에 이 7개 slice를 처리해야 한다.
+
+### 검증
+
+- `python -m unittest discover -s tests`: **857 → 898** (신규 `tests/test_navrl_distractors.py` 41개).
+  실패 집합은 분기점 `b5850a2`의 기존 16건(failures 8 / errors 8, skipped 2)과 **완전히 동일**하다.
+  즉 신규 41개 전부 PASS, 기존 회귀 0건.
+- GPU 측정은 하지 않았다. Warp distractor 커널이 페인트가 기대하는 값을 쓰는지, distractor가 있는
+  씬의 end-to-end 픽셀 거동은 GPU에서 별도 확인이 필요하다.
+
+다음 단계는 카메라-해상도 경로에서 `NAVRL_DISTRACTOR_COUNT`를 올려가며 detector v7의 frame
+precision이 어떻게 무너지는지 재는 것이다. `_detect_rgbd`가 연결요소 분리 없이 모든 양성 픽셀을
+하나의 centroid로 뭉개므로(navrl_perception.py:1428, :1480), 두 붉은 blob은 그 사이 빈 공간의
+centroid와 어느 쪽에도 속하지 않는 평균 depth를 만든다 — 그것이 다음 측정의 1차 가설이다.
+
+## 2026-09-01 — distractor를 고체로 취급: spawn clearance와 target route planner 2곳만 확장
+
+앞 항목이 flag한 7개 slice 중 **사전등록 측정을 직접 오염시키는 2곳**만 고쳤다.
+나머지 5곳은 preregistration limitation으로 남긴다(아래 감사 결과 참조).
+
+### 인덱스 산술
+
+에셋 축 layout은 `[target?] [distractors...] [bars...]`이고
+`_bar_offset = (1 if physical else 0) + num_distractors`이다. 따라서 distractor 블록은
+`_bar_offset` **직전**의 `num_distractors`행이다. 새 앵커를 하나 도입했다
+(`navrl_task.py:859`):
+
+```
+self._solid_obstacle_offset = self._bar_offset - self._num_distractors
+solid slice = [_solid_obstacle_offset : _bar_offset + n_bars_active]
+```
+
+이 slice는 연속이며 `[distractors...][active bars...]`만 담는다 — index 0의 target actor도,
+active window 밖의 parked bar도 포함하지 않는다. `NAVRL_DISTRACTOR_COUNT` 미설정이면
+`_num_distractors == 0`이므로 `_solid_obstacle_offset == _bar_offset`이고 slice는 기존과 동일하다.
+
+layout은 추정이 아니라 확인했다. `env_manager.py:238-246`이 `asset_collision_half_extents`를
+actor를 만드는 **같은 loop iteration**에서 vstack한 뒤 `[num_envs, -1, 3]`으로 view하고,
+`IGE_env_manager.py:476`의 `obstacle_position`은 `env_asset_state_tensor[:, :, 0:3]`으로 같은
+에셋 축이다. 즉 두 배열의 행 j는 같은 에셋이다. 순서는 `navrl_bars_env.py:131-147`의
+`keep_in_env` 선언 순서와 `asset_loader.select_and_order_assets`의 `appendleft`가 정한다.
+
+### 변경 2곳
+
+| 위치 | 함수 | 변경 |
+|---|---|---|
+| `navrl_task.py:1929,1935` | `_randomize_general_drone_spawn` | 중심·XY half-extent 두 slice를 solid slice로 확장. `_spawn_footprint_clearance_accepted`의 per-obstacle circumradius 규칙은 그대로 — distractor가 자기 크기로 inflate된다 |
+| `navrl_task.py:5890,5893` | `_plan_target_routes` | `plan_idx`에 넘기는 중심·half-extent를 solid slice로 확장. `plan_idx`/`RoutePlanner.plan`은 장애물 개수에 대해 generic(`reshape(-1,2)` + 두 배열 shape 일치 요구)이므로 계약 변경이 아니라 장애물 추가다 |
+
+`_bar_offset` 자체와 bar 전용 slice의 의미는 건드리지 않았다. detector·segmenter·
+`robot_config/**`·`resources/robots/**`도 무변경이다.
+
+### default-off 동일성 — 주장이 아니라 측정
+
+`tests/test_navrl_distractors.py`에 AST로 메서드를 lift하면서 `self._solid_obstacle_offset`을
+`self._bar_offset`으로 되돌린 **변경 전 사본**을 만들고(`_lift_task_method(historical=True)`),
+같은 입력·같은 `torch.manual_seed`로 실제 메서드와 나란히 돌려 텐서를 `torch.equal`로 비교했다.
+`bar_offset` 0(legacy)/1(physical) 양쪽에서 spawn의 `robot_position/orientation/linvel/angvel`,
+route planner가 `plan_idx`로 넘긴 중심·half-extent 모두 bit-identical이다. rename이 no-op이면
+헬퍼가 raise하므로 비교가 공허해질 수 없다.
+
+### 신규 테스트 18개 (41 → 59)
+
+- `SolidObstacleOffsetArithmetic` — 산술 pin(**exact-line**; `+ 1` off-by-one이 `assertIn`을
+  통과하는 걸 발견해 강화했다), 대입이 단 1회임을 AST로 확인, 확장된 곳이 정확히 2곳이고
+  나머지 5곳은 bars-only로 남아 있음.
+- `SolidObstacleSliceAlignment` — 행 k에 자기 인덱스를 tag로 심은 합성 월드로, 중심 배열 행 j와
+  half-extent 배열 행 j가 **distractor→bar 경계를 넘어서도** 같은 에셋임을 확인. 절대 앵커
+  (첫 행 == `_solid_obstacle_offset`, 마지막 행 == `_bar_offset + n_bars_active - 1`)를 함께 걸어
+  두 slice가 같이 밀리는 경우도 잡는다. legacy(physical target 없음) 계보도 포함.
+- `DefaultOffIsBitIdentical` — 위의 historical 비교 4건.
+- `SpawnTreatsDistractorsAsSolid` — 실제 URDF footprint 3종(sphere/box XY 0.15, pole XY 0.06)
+  24개 + 막대 16개가 있는 24 m 아레나에서 256 env spawn. 모든 spawn이 모든 장애물의
+  **정확한 직사각형 표면**을 0.649802 m 이상 확보. 변경 전 코드로 같은 seed를 돌리면 distractor
+  안쪽에 spawn이 생긴다(guard the guard). 수용 경계가 shape별 `|half| + margin`임을 직접 확인 —
+  sphere 반경을 pole에 쓰면 거부, pole 반경을 sphere에 쓰면 수용되는 지점을 명시했다.
+- `RouteTreatsDistractorsAsSolid` — 실제 `DeterministicAStarRoutePlanner`로 계획. 변경 전에는
+  planner가 장애물을 **0개** 받아 start→goal 직선 2-waypoint를 반환하고 그 직선은 distractor를
+  관통한다(`segment_is_safe` False). 변경 후에는 우회 경로가 나오고 모든 구간이 safe다. 3종 모두.
+
+**mutation test 5건 전부 검출됨**: 두 slice 동시 되돌림, spawn half-extent만 되돌림(정렬 붕괴),
+route half-extent 1행 shift, offset 정의 off-by-one, 그리고 no-op rewrite.
+
+### 남긴 5곳 — crash가 아니라 modelling gap임을 확인
+
+정적 goal 배치(`:4122/:4125`), recovery clearance(`:6091/:6094`),
+bar-contact probe(`:3104`, `:3150`), `_target_spawn_center_clearance`(`:5943`),
+그리고 `:6322/:6327`·`:6591`·`:6633`은 모두 중심과 half-extent를 **같은 offset**에서 읽으므로
+shape 불일치가 발생할 수 없다. `bar_probe.associate_surface_tokens_to_bars`도 `B >= 1`만 요구하며
+token 수와 bar 수의 일치를 요구하지 않는다. 따라서 outright crash는 없고 순수한 modelling gap이다.
+사전등록 한계로 기록한다.
+
+### 검증
+
+- `python -m unittest discover -s tests`: **898 → 916**(신규 18). 실패 집합은
+  failures 8 / errors 8 / skipped 2로 **변경 전과 완전히 동일**(16건 이름 단위 diff 0).
+  이 실패들은 학습 중복 실행 lock(`refusing duplicate NavRL training; active PID(s): 12683`)과
+  없는 run 폴더·receipt를 읽는 기존 건이며 이번 변경과 무관하다. baseline은 내 편집을 되돌린
+  사본으로 실제 재측정했다(Ran 898, 동일 16건).
+- GPU 측정은 없다.
+
+다음 단계는 앞 항목대로 카메라-해상도 경로에서 `NAVRL_DISTRACTOR_COUNT`를 올려가며 detector v7의
+frame precision 붕괴를 재는 것이다.

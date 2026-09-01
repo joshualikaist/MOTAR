@@ -830,7 +830,33 @@ class NavRLTask(BaseTask):
             self._recovery_brake_stop_distance_samples_m = tuple(lookup_distances.tolist())
             self._recovery_brake_lateral_tube_p95_m = lateral_env
             self._recovery_probe_receipt_sha256 = actual_sha
-        self._bar_offset = 1 if self._physical_target else 0
+        # Obstacle-tensor layout is [target?] [distractors...] [bars...] (see
+        # navrl_bars_env.NavRLBarsEnvCfg.env_config: distractors are keep_in_env and declared
+        # before the target so the target keeps index 0). Every bar slice in this file starts at
+        # _bar_offset, so widening it by the distractor count is what keeps those slices bars-only.
+        # num_distractors is 0 unless NAVRL_DISTRACTOR_COUNT is set, and on an env config that has
+        # never heard of distractors, so the offset is the historical one by default.
+        self._num_distractors = max(
+            0, int(getattr(getattr(self.sim_env.cfg, "env_config", None), "num_distractors", 0))
+        )
+        self._bar_offset = (1 if self._physical_target else 0) + self._num_distractors
+        # First asset row of the SOLID obstacle block. Because _bar_offset is
+        # (target?) + num_distractors, the distractors are exactly the num_distractors rows
+        # IMMEDIATELY BEFORE _bar_offset, so
+        #     [_solid_obstacle_offset : _bar_offset + n_bars_active]
+        # is one contiguous slice holding [distractors...] [active bars...] and nothing else --
+        # never the target at index 0, never a parked bar past the active window. Row j of that
+        # slice is the same asset in obstacle_position and in asset_collision_half_extents:
+        # EnvManager builds both on the same per-asset axis in one pass over the ordered asset
+        # list (env_manager.py: asset_collision_half_extents is vstacked in the same loop
+        # iteration that creates the actor, then viewed as [num_envs, -1, 3], and
+        # obstacle_position is env_asset_state_tensor[:, :, 0:3] on that same axis).
+        # With NAVRL_DISTRACTOR_COUNT unset num_distractors == 0, this equals _bar_offset, and
+        # every slice below is byte-for-byte the historical bars-only one.
+        # Only the two sites that must not treat a painted distractor as free space use this --
+        # the generalized drone spawn sampler and the target route planner. Bar-only logic
+        # (density curriculum, bar-contact probes, goal placement) keeps _bar_offset.
+        self._solid_obstacle_offset = self._bar_offset - self._num_distractors
         if self._physical_target and self.task_config.robot_name not in (
             "navrl_ref5in_quad", "navrl_ref5in_v2_quad"
         ):
@@ -1883,25 +1909,30 @@ class NavRLTask(BaseTask):
     def _randomize_general_drone_spawn(self, env_ids):
         """Place the drone at a collision-free random XY/yaw for generalized evaluation.
 
-        Acceptance is footprint aware: each candidate must clear EVERY bar's own surface by
-        `_spawn_required_surface_margin_m()`.  The earlier flat 0.65 m bar-CENTRE test was blind
-        to bar size, so a 0.5465 m-circumradius bar left only 0.10 m of real surface clearance and
-        27.45% of 205-bar spawns started inside the inflated obstacle set
+        Acceptance is footprint aware: each candidate must clear EVERY solid obstacle's own
+        surface by `_spawn_required_surface_margin_m()`.  The earlier flat 0.65 m bar-CENTRE test
+        was blind to bar size, so a 0.5465 m-circumradius bar left only 0.10 m of real surface
+        clearance and 27.45% of 205-bar spawns started inside the inflated obstacle set
         (results/navrl_v2_density_geometry_audit_2026-08-27/summary.md).
+
+        The obstacle set is `_solid_obstacle_offset`-based, not `_bar_offset`-based: the painted
+        distractors are solid collidable bodies, so a spawn INSIDE one is a physically impossible
+        frame whose detection outcome means nothing.  With no distractors configured the slice is
+        identical to the historical bars-only one.
         """
         n = len(env_ids)
         if n == 0:
             return
         b_min = self.obs_dict["env_bounds_min"][env_ids]
         b_max = self.obs_dict["env_bounds_max"][env_ids]
-        bars = self.obs_dict["obstacle_position"][
-            env_ids, self._bar_offset : self._bar_offset + self.n_bars_active, 0:2
+        obstacles = self.obs_dict["obstacle_position"][
+            env_ids, self._solid_obstacle_offset : self._bar_offset + self.n_bars_active, 0:2
         ]
         # Same slice on the same asset axis as the runtime planner geometry
-        # (`_target_spawn_center_clearance`), so row j of `bar_half` is the footprint of the bar
-        # whose centre is row j of `bars`.
-        bar_half = self.obs_dict["asset_collision_half_extents"][
-            env_ids, self._bar_offset : self._bar_offset + self.n_bars_active, 0:2
+        # (`_plan_target_routes`), so row j of `obstacle_half` is the footprint of the obstacle
+        # whose centre is row j of `obstacles`, across the distractor->bar boundary too.
+        obstacle_half = self.obs_dict["asset_collision_half_extents"][
+            env_ids, self._solid_obstacle_offset : self._bar_offset + self.n_bars_active, 0:2
         ]
         required_margin = self._spawn_required_surface_margin_m()
         lo = b_min[:, 0:2] + 1.0
@@ -1922,8 +1953,8 @@ class NavRLTask(BaseTask):
             flat_count = len(ids) * candidates_per_round
             accepted = _spawn_footprint_clearance_accepted(
                 candidate.reshape(flat_count, 2),
-                bars[ids].repeat_interleave(candidates_per_round, dim=0),
-                bar_half[ids].repeat_interleave(candidates_per_round, dim=0),
+                obstacles[ids].repeat_interleave(candidates_per_round, dim=0),
+                obstacle_half[ids].repeat_interleave(candidates_per_round, dim=0),
                 required_margin,
             ).reshape(len(ids), candidates_per_round)
             has_candidate = accepted.any(dim=1)
@@ -5842,22 +5873,32 @@ class NavRLTask(BaseTask):
     def _plan_target_routes(
         self, env_ids, *, connected_goal, is_replan=False, exclude_previous_goal=False
     ):
-        """CPU-plan selected environments only; ordinary route following remains on GPU."""
+        """CPU-plan selected environments only; ordinary route following remains on GPU.
+
+        The planner's obstacle set is `_solid_obstacle_offset`-based, not `_bar_offset`-based:
+        the painted distractors are solid collidable bodies, so a route allowed to pass straight
+        through one would let the target teleport through geometry and would corrupt the
+        occlusion statistics the distractor measurement reads.  `plan_idx`/`RoutePlanner.plan`
+        are generic in the obstacle count (they reshape to [-1, 2] and require centres and
+        half-extents to have the same shape), so widening the slice adds obstacles rather than
+        changing the contract.  With no distractors configured the slice is identical to the
+        historical bars-only one.
+        """
         if not self._target_route_enabled or len(env_ids) == 0:
             return {}
-        bars = self.obs_dict["obstacle_position"][
-            :, self._bar_offset : self._bar_offset + self.n_bars_active, 0:2
+        obstacles = self.obs_dict["obstacle_position"][
+            :, self._solid_obstacle_offset : self._bar_offset + self.n_bars_active, 0:2
         ]
-        bar_half = self.obs_dict["asset_collision_half_extents"][
-            :, self._bar_offset : self._bar_offset + self.n_bars_active, 0:2
+        obstacle_half = self.obs_dict["asset_collision_half_extents"][
+            :, self._solid_obstacle_offset : self._bar_offset + self.n_bars_active, 0:2
         ]
         selector = self._target_route_selector if connected_goal else None
         status = self._target_route_manager.plan_idx(
             env_ids,
             self.target_position[:, 0:2],
             self._tm_waypoint,
-            bars,
-            bar_half,
+            obstacles,
+            obstacle_half,
             self.obs_dict["env_bounds_min"][:, 0:2],
             self.obs_dict["env_bounds_max"][:, 0:2],
             self._target_route_support_xy,

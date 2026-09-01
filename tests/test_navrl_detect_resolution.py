@@ -175,6 +175,10 @@ def _detector_guard_stub(**knobs):
         detect_width=1920, detect_height=1200, width=160, height=90,
         app_hue_deg=0.0, app_light_gain=0.0, app_albedo_jitter=0.0,
         app_texture_std=0.0, app_motion_blur=0.0,
+        # Appearance distractors break the identity too (they are painted the target colour, so
+        # perception's segmenter fires on pixels the target ray-cast never produced). The
+        # distractor arm of the guard lives in tests/test_navrl_distractors.py.
+        num_distractors=0,
     )
     for key, value in knobs.items():
         setattr(stub, key, value)

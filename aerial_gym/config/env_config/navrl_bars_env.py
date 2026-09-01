@@ -1,7 +1,11 @@
 import os
 
 from aerial_gym.config.asset_config.env_object_config import (
+    NAVRL_DISTRACTOR_COUNT,
     bar_asset_params,
+    navrl_distractor_box_params,
+    navrl_distractor_pole_params,
+    navrl_distractor_sphere_params,
     navrl_physical_target_params,
     navrl_physical_target_v2_params,
 )
@@ -110,10 +114,31 @@ class NavRLBarsEnvCfg:
         _physical_geometry_v2 = os.environ.get(
             "NAVRL_PHYSICAL_GEOMETRY_VERSION", "v1"
         ).strip().lower() == "v2"
-        include_asset_type = {"physical_target": _physical_target, "bars": True}
+        # Appearance distractors (NAVRL_DISTRACTOR_COUNT, default 0). Each shape class already
+        # reports num_assets == 0 when the knob is unset, and AssetLoader skips a zero-count asset
+        # type before it reads the folder or draws from the RNG, so leaving the knob unset changes
+        # nothing: same assets, same order, same placement stream.
+        num_distractors = NAVRL_DISTRACTOR_COUNT
 
+        include_asset_type = {
+            "distractor_sphere": True,
+            "distractor_box": True,
+            "distractor_pole": True,
+            "physical_target": _physical_target,
+            "bars": True,
+        }
+
+        # ORDER MATTERS. AssetLoader.select_and_order_assets appendleft()s every keep_in_env asset,
+        # so the LAST keep_in_env asset loaded ends up at obstacle index 0. The physical target
+        # must stay at index 0 (NavRLTask reads obstacle_position[:, 0] as the target actor), so
+        # the distractors -- also keep_in_env -- are declared BEFORE it. The resulting layout is
+        #   [target?] [distractors...] [bars...]
+        # and NavRLTask's _bar_offset is 1(target) + num_distractors.
         asset_type_to_dict_map = {
-            # keep_in_env puts this at obstacle index 0; NavRLTask offsets every bar slice by one.
+            "distractor_sphere": navrl_distractor_sphere_params,
+            "distractor_box": navrl_distractor_box_params,
+            "distractor_pole": navrl_distractor_pole_params,
+            # keep_in_env puts this at obstacle index 0; NavRLTask offsets every bar slice past it.
             "physical_target": (
                 navrl_physical_target_v2_params
                 if _physical_geometry_v2
