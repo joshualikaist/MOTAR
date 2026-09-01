@@ -19,8 +19,8 @@
 > 직전 8-cell pilot는 `VOID_EXECUTION`(matched-arm target pose drift)입니다. spawn 바이트가
 > `dd8b4a4` receipt와 두 pilot 출력 루트는 재사용하지 않습니다. confirmatory와 PPO는
 > 차단됐고, 아래 L1–L3 명령은 provenance 기록일 뿐 다시 실행할 authority가 아닙니다.
-> 별도로, 막대 비중첩 수정의 학습 가능성만 분리하는 route-off 70-bar/500-epoch fresh smoke
-> 1회가 사전등록·승인돼 있습니다. 이것은 routed PPO나 장기학습 권한이 아닙니다.
+> 별도 route-off 70-bar/500-epoch fresh smoke는 `PASS_LEARNING_VIABILITY`로 끝났습니다. 이에 따라
+> 별도 사전등록된 fresh route-off 70→205 curriculum 1회만 열렸습니다. routed PPO 권한은 아닙니다.
 
 GPU 명령을 찾기 전에 아래 동결 receipt를 먼저 검사합니다. 이 명령은 학습이나 평가를 실행하지
 않고, Track A/B 원자료 SHA와 `Stage 2=false`, `long training=false`를 fail-closed로 확인합니다.
@@ -31,7 +31,7 @@ cd /home/fair/workspaces/aerial_gym_ws/.codex_worktrees/braking_route_v3
 ```
 
 기계 판독 계약은 [`docs/research_authority_2026-08-26.json`](docs/research_authority_2026-08-26.json)이다.
-matched-spawn receipt/pilot 권한은 소비됐고, 현재 software 예외는 아래 route-off learning smoke
+matched-spawn receipt/pilot 권한은 소비됐고, 현재 software 예외는 아래 route-off curriculum
 1회뿐이다.
 
 ## Corrected non-overlap route-off learning smoke (1회)
@@ -49,6 +49,17 @@ echo $!
 `U[0.3,1.25] m/s`, LR `1.5e-5`다. checkpoint/CLI override를 거부하며 source receipt와 정확한 import
 root를 강제한다. 판정은
 [`preregistration_corrected_nonoverlap_physical_off_smoke_2026-09-01.md`](docs/preregistration_corrected_nonoverlap_physical_off_smoke_2026-09-01.md)를 따른다.
+
+위 smoke는 완료됐으므로 다시 실행하지 않는다. 현재 허용된 장기 run은 다음 하나다.
+
+```bash
+cd /home/fair/workspaces/aerial_gym_ws/.codex_worktrees/braking_route_v3/aerial_gym/rl_training/rl_games
+./train_navrl_corrected_nonoverlap_physical_curriculum.sh
+```
+
+fresh seed 911, 30,000 epochs, density 70→205/step 15/dwell 1,000, route off,
+`U[0.3,1.25] m/s`, 비중첩 surface 0.45 m다. 계약은
+[`preregistration_corrected_nonoverlap_physical_off_curriculum_2026-09-01.md`](docs/preregistration_corrected_nonoverlap_physical_off_curriculum_2026-09-01.md)를 따른다.
 
 현재 software MECHANISM_GATE(`global_astar_braking_v3`)의 CPU 계약은 아래와 같습니다.
 

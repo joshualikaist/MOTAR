@@ -66,12 +66,14 @@ non-overlap 판정 필드를
   고정했다. GPU authority는 소비·폐쇄됐고 confirmatory와 PPO는 열리지 않는다. 현재 stage는
   `MECHANISM_GATE_FAIL_CLOSED`다.
 - **Corrected non-overlap route-off learning baseline (2026-09-01 user-priority split):** routed
-  method의 FAIL을 덮지 않는 별도 70-bar/500-epoch fresh smoke 1회만 승인한다. 근거는 동일-layout
+  method의 FAIL을 덮지 않는 별도 70-bar/500-epoch fresh smoke를 실행했다. 근거는 동일-layout
   70-bar route-off 0.6/0.9/1.2/1.25 m/s 셀이 모두 physical PASS였다는 독립 계측이다. 계약은
   [`docs/preregistration_corrected_nonoverlap_physical_off_smoke_2026-09-01.md`](docs/preregistration_corrected_nonoverlap_physical_off_smoke_2026-09-01.md),
-  launcher는 `train_navrl_corrected_nonoverlap_physical_smoke.sh`다. 이 실행은 막대 배치 수정의
-  학습 가능성만 묻고, `global_astar_*`, 1.5 m/s, 70→205 장기학습과 hardware claim을 승인하지
-  않는다. PASS일 때도 장기학습은 새 사전등록이 필요하다.
+  launcher는 `train_navrl_corrected_nonoverlap_physical_smoke.sh`다. 공식 판정은
+  `PASS_LEARNING_VIABILITY`: 초기→후기 100-epoch capture `11.01→60.39%`(+49.38pp), reward
+  `-131.00→+93.08`, KL max `0.01119`, rollback/skipped 0이다. 이 PASS로 별도 사전등록된 fresh
+  route-off 70→205 curriculum 1회만 열렸다. `global_astar_*`, 1.5 m/s와 hardware claim은 계속
+  차단한다.
 
 ## 2026-08-26 기록된 실행 authority (판정 보존)
 

@@ -132,9 +132,11 @@ def verify_authority(receipt_path=DEFAULT_RECEIPT):
     smoke_prereg = ROOT / smoke["preregistration"]
     if not smoke_prereg.is_file() or _sha256(smoke_prereg) != smoke["preregistration_sha256"]:
         raise RuntimeError("route-off learning-smoke preregistration missing or SHA drift")
-    if smoke.get("status") != "AUTHORIZED_NOT_STARTED":
+    if smoke.get("status") != "PASS_LEARNING_VIABILITY":
         raise RuntimeError("route-off learning-smoke status drift")
-    if smoke.get("gpu_authority") is not True or smoke.get("fresh_only") is not True:
+    if smoke.get("gpu_authority") is not False or smoke.get(
+        "gpu_authority_consumed"
+    ) is not True or smoke.get("fresh_only") is not True:
         raise RuntimeError("route-off learning-smoke one-shot authority drift")
     if smoke.get("authorizes_routed_ppo") is not False or smoke.get(
         "authorizes_long_training"
@@ -142,6 +144,33 @@ def verify_authority(receipt_path=DEFAULT_RECEIPT):
         raise RuntimeError("route-off smoke unexpectedly authorizes routed/long PPO")
     if smoke.get("fixed_bars") != 70 or smoke.get("max_epochs") != 500:
         raise RuntimeError("route-off learning-smoke execution tuple drift")
+    smoke_result_path = ROOT / smoke["result"]
+    if not smoke_result_path.is_file() or _sha256(smoke_result_path) != smoke["result_sha256"]:
+        raise RuntimeError("route-off learning-smoke result missing or SHA drift")
+    smoke_result = json.loads(smoke_result_path.read_text(encoding="utf-8"))
+    if smoke_result.get("verdict") != "PASS_LEARNING_VIABILITY" or not all(
+        smoke_result.get("checks", {}).values()
+    ):
+        raise RuntimeError("route-off learning-smoke result no longer passes")
+    if smoke_result.get("authority", {}).get(
+        "route_off_curriculum_preregistration"
+    ) is not True or smoke_result.get("authority", {}).get("routed_ppo") is not False:
+        raise RuntimeError("route-off learning-smoke authority boundary drift")
+
+    curriculum = corrected["route_off_curriculum"]
+    curriculum_prereg = ROOT / curriculum["preregistration"]
+    if not curriculum_prereg.is_file() or _sha256(curriculum_prereg) != curriculum[
+        "preregistration_sha256"
+    ]:
+        raise RuntimeError("route-off curriculum preregistration missing or SHA drift")
+    if curriculum.get("status") != "AUTHORIZED_NOT_STARTED" or curriculum.get(
+        "gpu_authority"
+    ) is not True or curriculum.get("fresh_only") is not True:
+        raise RuntimeError("route-off curriculum execution authority drift")
+    if curriculum.get("authorizes_routed_ppo") is not False or curriculum.get(
+        "authorizes_hardware_claim"
+    ) is not False:
+        raise RuntimeError("route-off curriculum unexpectedly authorizes broader claims")
 
     if receipt.get("hardware_state") != {
         "assembled_airframe": False,

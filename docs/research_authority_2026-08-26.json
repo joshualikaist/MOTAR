@@ -130,13 +130,34 @@
       "fixed_bars": 70,
       "max_epochs": 500,
       "fresh_only": true,
-      "gpu_authority": true,
+      "gpu_authority": false,
+      "gpu_authority_consumed": true,
       "gpu_authority_scope": "one seed-907 500-epoch fixed-70 learning-viability smoke only",
       "authorizes_routed_ppo": false,
       "authorizes_long_training": false,
+      "status": "PASS_LEARNING_VIABILITY",
+      "result": "results/navrl_corrected_nonoverlap_physical_off_smoke_seed907/summary.json",
+      "result_sha256": "85758ba6b6bef7b0097afe6e14c6dbcf6f127d1d80595a70da2fcbf699ec1a89",
+      "capture_delta_pp": 49.3840394595888,
+      "reward_delta": 224.07996500000002,
+      "authorizes_route_off_curriculum_preregistration": true
+    },
+    "route_off_curriculum": {
+      "preregistration": "docs/preregistration_corrected_nonoverlap_physical_off_curriculum_2026-09-01.md",
+      "preregistration_sha256": "d10a19fe570aa2a73e88cc8e1a301618738fee55ee592f24675ba84117ae5ec8",
+      "launcher": "aerial_gym/rl_training/rl_games/train_navrl_corrected_nonoverlap_physical_curriculum.sh",
+      "seed": 911,
+      "max_epochs": 30000,
+      "density_bars": [70, 205, 15],
+      "target_speed_max_mps": 1.25,
+      "fresh_only": true,
+      "gpu_authority": true,
+      "gpu_authority_scope": "one seed-911 fresh route-off 70-to-205 curriculum run only",
+      "authorizes_routed_ppo": false,
+      "authorizes_hardware_claim": false,
       "status": "AUTHORIZED_NOT_STARTED"
     },
-    "next_gate": "run the separately preregistered route-off fixed-70 learning-viability smoke once; routed confirmatory/PPO remains blocked and any future routed controller redesign requires a new preregistration"
+    "next_gate": "run the separately preregistered fresh route-off 70-to-205 curriculum once; routed confirmatory/PPO remains blocked"
   },
   "evidence": [
     {
@@ -162,6 +183,10 @@
     {
       "path": "results/navrl_braking_route_v3_lower1p25_matched_spawn_seed829/summary.json",
       "sha256": "8e4b71bc9095f64065140f2838904bab8b7be868c7d97025953fb451041a49fc"
+    },
+    {
+      "path": "results/navrl_corrected_nonoverlap_physical_off_smoke_seed907/summary.json",
+      "sha256": "85758ba6b6bef7b0097afe6e14c6dbcf6f127d1d80595a70da2fcbf699ec1a89"
     }
   ],
   "claim_boundary": {

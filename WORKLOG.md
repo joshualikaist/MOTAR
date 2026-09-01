@@ -13548,3 +13548,29 @@ guard는 이 worktree의 `aerial_gym/__init__.py`를 enforced PASS했다.
 `speed_final=1.25`, fresh weights, 128 env, max 500 epoch를 확인했다. epoch 12까지 finite하게
 진행됐고 GPU 사용량은 약 6.16 GiB였다. 초기 crash 100%는 fresh PPO의 예상 cold start이며
 사전등록상 epoch 500의 early-vs-late window로만 판정한다.
+
+### 공식 smoke 종료·판정 PASS
+
+run은 max epoch 500에서 exit 0으로 정상 종료했고 terminal checkpoint는
+`last_gen_ppo_ep_500_rew_91.16469.pth`다. 전용 fail-closed analyzer
+`tools/analyze_navrl_corrected_nonoverlap_physical_smoke.py`가 source original/snapshot 329개,
+checkpoint/TensorBoard finite, robot/environment 계약과 outcome accounting을 재검증했다. 결과는
+`results/navrl_corrected_nonoverlap_physical_off_smoke_seed907/summary.json`, SHA-256
+`85758ba6b6bef7b0097afe6e14c6dbcf6f127d1d80595a70da2fcbf699ec1a89`다.
+
+| window | capture | crash | timeout | mean reward |
+|---|---:|---:|---:|---:|
+| epoch 2–101 | 11.01% | 73.94% | 15.05% | −131.00 |
+| epoch 401–500 | 60.39% | 39.22% | 0.39% | +93.08 |
+
+capture 개선은 +49.38pp, reward 개선은 +224.08이다. PPO KL max 0.01119,
+behavior-KL max 0.01568, rollback/skipped minibatch 0, 모든 60개 TB scalar finite, checkpoint tensor
+finite, density 70 고정이다. 사전등록 gate 전부 PASS해 verdict는
+**`PASS_LEARNING_VIABILITY`**다. 이는 route-off curriculum 사전등록만 허용하고 routed-v3/1.5 m/s/
+hardware 주장은 허용하지 않는다.
+
+결과를 본 뒤 별도 장기 사전등록
+`docs/preregistration_corrected_nonoverlap_physical_off_curriculum_2026-09-01.md`
+(SHA-256 `d10a19fe570aa2a73e88cc8e1a301618738fee55ee592f24675ba84117ae5ec8`)를 고정했다. 다음 run은
+smoke checkpoint를 쓰지 않는 fresh seed 911, 30,000 epochs, route-off 1.25 m/s, density
+70→205/step15/dwell1000/evidence16384 한 번이다.
