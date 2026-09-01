@@ -13324,3 +13324,25 @@ GPU 직전 상태에서 남은 실제 선행물은 **canonical 1.5 m/s braking r
 NO-GO면 pilot은 열리지 않으며, threshold 완화 없이 중단·보고한다. 실행 시퀀스(probe →
 training source bundle → pilot)는 `OPERATIONS.md`에 고정했다. GPU/PPO는 이 엔트리 시점까지
 실행하지 않았다.
+
+## 2026-09-01 — canonical 1.5 braking probe 재측정 NO-GO 재현, pilot 차단
+
+사용자 지시로 커밋 `fb9fa50`에서 canonical_1p5 braking probe를 RTX 3070에서 실행했다.
+0.6/0.9/1.2 m/s 세 셀은 warmup/raw 게이트를 통과했으나 1.5 m/s 셀이 5 s warmup 수렴 게이트에서
+실패했다: final speed `min=1.441824 / mean=1.442577 / max=1.443260 m/s`, 절대 오차
+`min=0.056740 / mean=0.057423 / max=0.058176 m/s` (게이트 0.05 m/s). 이 수치는 2026-08-26
+진단 측정과 소수 6자리까지 동일하므로 controller의 결정론적 정상상태 추적 한계이지 노이즈가
+아니다. launcher가 fail-closed로 partial stage를 삭제해 receipt는 발급되지 않았다
+(`results/`에 산출물 없음, 트리 clean 유지). 사전등록 규칙대로 threshold·controller·속도 grid는
+변경하지 않았다.
+
+같은 날 training source bundle은 저장소 밖
+`/home/fair/workspaces/aerial_gym_ws/navrl_v3_receipts/training_source_2026-09-01/`에 생성했다
+(`manifest_sha256=0fb6dbb4551cd1a2d8ab6bd341447de3a1f5ae5e69e57c95947d71ed51cc25fd`,
+git_commit `fb9fa50`, 328 files, verify PASS). pilot 단계 3의 나머지 입력은 준비돼 있다.
+
+결정 지점: v3 사전등록은 canonical_1p5 receipt를 요구하고 controller retune을 금지하므로,
+**1.5 m/s warmup 게이트가 서 있는 한 v3 pilot은 열리지 않는다.** 다음 선택지는 사용자 결정
+사항이다 — (a) 이 한계를 근거로 v3 계보를 lower-contract(예: 1.25 상한) 방향으로 새로
+사전등록, (b) warmup 수렴 게이트 자체를 재검토하는 새 사전등록(측정 후 완화가 아니라 독립
+근거 필요), (c) 중단. 본 세션은 어느 것도 자동 선택하지 않는다.
