@@ -102,11 +102,13 @@
       "mode": "global_astar_braking_v3",
       "contract_variant": "baseline_1p25",
       "speeds_mps": [0.6, 0.9, 1.2, 1.25],
-      "implementation_status": "preregistered_awaiting_fresh_receipt",
+      "implementation_status": "fresh_receipt_verified_pilot_not_run",
       "gpu_authority": false,
-      "authorizes_ppo": false
+      "authorizes_ppo": false,
+      "braking_receipt": "results/navrl_physical_target_braking_lower1p25_seed827_2026-09-01/receipt.json",
+      "braking_receipt_sha256": "6d71b0be34ffb166d23aff9f6897cf41b5bb82a4a488d24403d735cf97852485"
     },
-    "next_gate": "canonical 1.5 v3 receipt is NO-GO; next MECHANISM_GATE is the separately preregistered baseline_1p25 v3 lineage (fresh lower braking receipt, then 8-cell pilot)"
+    "next_gate": "canonical 1.5 v3 receipt is NO-GO; lower-1.25 raw receipt is verified at dd8b4a4; next GPU is the seed-829 8-cell lower v3 pilot"
   },
   "evidence": [
     {

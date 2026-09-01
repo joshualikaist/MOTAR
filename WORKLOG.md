@@ -13366,3 +13366,21 @@ controller/PID는 변경하지 않았다. 08-26 lower receipt는 재사용하지
 
 다음 GPU는 현재 커밋에서 새로 뜰 `baseline_1p25` raw braking receipt다. 이 엔트리 시점까지
 lower receipt와 lower pilot는 실행하지 않았다.
+
+## 2026-09-01 — lower-1.25 braking receipt 검증, 8-cell pilot 미실행
+
+커밋 `dd8b4a4`에서 `NAVRL_TARGET_BRAKING_CONTRACT_VARIANT=baseline_1p25`로 새 raw probe를
+RTX 3070에서 실행했다. standalone verifier PASS.
+`results/navrl_physical_target_braking_lower1p25_seed827_2026-09-01/receipt.json`
+SHA-256 `6d71b0be34ffb166d23aff9f6897cf41b5bb82a4a488d24403d735cf97852485`.
+속도 0.6/0.9/1.2/1.25, decel p05 0.5052572863 m/s², stop-time p95 0.89 s, certified lateral
+tube p95 0.00041199 m, 정지거리 p95 0.32814/0.49835/0.67084/0.69944 m. 0.05 warmup 게이트와
+P-only 게인 2.5는 그대로다. 이 숫자는 08-26 lower receipt와 같은 컨트롤러 천장과 일치하지만
+바이트 바인딩이 현재 커밋이므로 옛 receipt를 재사용하지 않는다.
+
+training source bundle은 저장소 밖
+`/home/fair/workspaces/aerial_gym_ws/navrl_v3_receipts/training_source_lower1p25_2026-09-01/`
+(`manifest_sha256=5de7fdbfa56811b71284d454195239d8490e8a5db0b54a22d3e8b9c58263964c`,
+git_commit `dd8b4a4`, 328 files, git_dirty false).
+
+8-cell lower pilot는 아직 실행하지 않았다. PPO는 여전히 0 epoch다.

@@ -37,8 +37,14 @@ non-overlap 판정 필드를
   무장한다. 기본값은 여전히 `canonical_1p5`다. 다음 GPU는 현재 커밋에서 새로 뜰
   `baseline_1p25` raw braking receipt이고, 그 뒤에만 seed 829 8-cell lower pilot가 열린다.
   08-26 lower receipt는 옛 core 바이트에 묶여 재사용하지 않는다. PID나 0.05 완화는 이 계보에서
-  하지 않는다. confirmatory PASS도 별도 사전등록 500-epoch PPO smoke만 연다. 현재 stage는
-  `MECHANISM_GATE`다.
+  하지 않는다. **2026-09-01 현재 커밋 `dd8b4a4`에서 새 `baseline_1p25` raw receipt가
+  검증됐다** (`results/navrl_physical_target_braking_lower1p25_seed827_2026-09-01/receipt.json`,
+  SHA-256 `6d71b0be34ffb166d23aff9f6897cf41b5bb82a4a488d24403d735cf97852485`).
+  속도 0.6/0.9/1.2/1.25, decel p05 0.505257, stop-time p95 0.89 s, 정지거리 p95
+  0.32814/0.49835/0.67084/0.69944 m. training source bundle SHA
+  `5de7fdbfa56811b71284d454195239d8490e8a5db0b54a22d3e8b9c58263964c`.
+  다음 GPU는 seed 829 8-cell lower pilot다. confirmatory PASS도 별도 사전등록 500-epoch PPO
+  smoke만 연다. 현재 stage는 `MECHANISM_GATE`다.
 
 ## 2026-08-26 기록된 실행 authority (판정 보존)
 
