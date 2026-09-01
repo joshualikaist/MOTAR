@@ -13,11 +13,12 @@
 > `FAIL_ROUTE_MECHANISM` 뒤 no-anchor probe까지 `INCONCLUSIVE`로 종료됐으며 추가
 > GPU/PPO/retune/rerun authority가 없습니다. corrected non-overlap r2는
 > `FAIL_ROUTE_MECHANISM`이고 새 PPO는 0 epoch입니다. canonical 1.5 v3 receipt는 NO-GO입니다.
-> software 쪽에서는 별도 execution addendum가 **새 baseline_1p25 receipt 1회와
-> matched-spawn lower-v3 8-cell pilot 1회만** 허용합니다.
+> software 쪽의 별도 execution addendum가 허용한 **새 baseline_1p25 receipt 1회와
+> matched-spawn lower-v3 8-cell pilot 1회는 모두 소비됐습니다.** 결과는
+> `PASS_8_CELL_INTEGRITY / FAIL_BLOCKS_CONFIRMATORY`입니다.
 > 직전 8-cell pilot는 `VOID_EXECUTION`(matched-arm target pose drift)입니다. spawn 바이트가
-> 바뀌므로 `dd8b4a4` receipt와 첫 L3 출력 루트는 재사용하지 않습니다. confirmatory와 PPO는
-> pilot PASS 전까지 계속 차단합니다.
+> `dd8b4a4` receipt와 두 pilot 출력 루트는 재사용하지 않습니다. confirmatory와 PPO는
+> 차단됐고, 아래 L1–L3 명령은 provenance 기록일 뿐 다시 실행할 authority가 아닙니다.
 
 GPU 명령을 찾기 전에 아래 동결 receipt를 먼저 검사합니다. 이 명령은 학습이나 평가를 실행하지
 않고, Track A/B 원자료 SHA와 `Stage 2=false`, `long training=false`를 fail-closed로 확인합니다.
@@ -50,8 +51,7 @@ canonical 1.5 v3 단계 1은 2026-09-01에 NO-GO로 재현됐습니다(1.5 warmu
 tracked `tools/run_navrl_braking_route_v3_cell.py`입니다. 2026-08-26 lower receipt는 재사용하지
 않습니다.
 
-**단계 L1 — baseline_1p25 braking receipt (GPU).** 현재 커밋 바이트에 바인딩된 새 receipt가
-필요합니다. 속도는 0.6/0.9/1.2/1.25입니다.
+**단계 L1 — 완료·소비됨, 재실행 금지.** 속도는 0.6/0.9/1.2/1.25였습니다.
 
 ```bash
 cd /home/fair/workspaces/aerial_gym_ws/.codex_worktrees/braking_route_v3
@@ -65,18 +65,18 @@ NAVRL_NINJA=/home/fair/miniconda3/envs/aerialgym/bin/ninja \
 sha256sum results/navrl_physical_target_braking_lower1p25_matched_spawn_seed827_2026-09-01/receipt.json
 ```
 
-**단계 L2 — training source bundle (CPU, receipt 이후, 저장소 밖).**
+**단계 L2 — 완료·소비됨, provenance 기록.**
 
 ```bash
 cd /home/fair/workspaces/aerial_gym_ws/.codex_worktrees/braking_route_v3
 /home/fair/miniconda3/envs/aerialgym/bin/python tools/create_navrl_source_bundle.py create \
   --require-clean \
-  --output /home/fair/workspaces/aerial_gym_ws/navrl_v3_receipts/training_source_lower1p25_matched_spawn_2026-09-01
-export MOTAR_V3_TRAINING_SOURCE_MANIFEST=/home/fair/workspaces/aerial_gym_ws/navrl_v3_receipts/training_source_lower1p25_matched_spawn_2026-09-01/source_manifest.json
+  --output /home/fair/workspaces/aerial_gym_ws/navrl_v3_receipts/training_source_lower1p25_matched_spawn_b054f07_2026-09-01
+export MOTAR_V3_TRAINING_SOURCE_MANIFEST=/home/fair/workspaces/aerial_gym_ws/navrl_v3_receipts/training_source_lower1p25_matched_spawn_b054f07_2026-09-01/source_manifest.json
 export MOTAR_V3_TRAINING_SOURCE_MANIFEST_SHA256=<create 출력의 manifest_sha256>
 ```
 
-**단계 L3 — development pilot (GPU, 8 cells, seed 829, 70 bars, 1.25 상한).**
+**단계 L3 — 완료·FAIL, 재실행 금지 (GPU, 8 cells, seed 829, 70 bars).**
 2026-09-01 첫 실행은 `VOID_EXECUTION`이다. 아래 출력 루트는 unique-root 계약상 재사용 금지.
 matched-spawn 수정 뒤에는 **새 커밋에서 뜬 새 L1 receipt**와 새 디렉터리가 필요하다.
 같은 명령을 다시 돌리려면 새 디렉터리 이름이 필요하다.
@@ -92,7 +92,8 @@ NAVRL_V3_BRAKING_RECEIPT_SHA256=<단계 L1 sha256sum 값> \
 bash tools/run_navrl_braking_route_v3_pilot.sh
 ```
 
-confirmatory는 lower pilot 8/8 PASS일 때만, seed 839, bars 70/115/160/205. 어느 단계도
+실측은 `PASS_8_CELL_INTEGRITY / FAIL_BLOCKS_CONFIRMATORY`이므로 여기서 중단한다. confirmatory는
+lower pilot 8/8 PASS일 때만 seed 839, bars 70/115/160/205였으나 열리지 않았다. 어느 단계도
 0.05 warmup 게이트나 PID를 바꾸지 않습니다. confirmatory PASS가 여는 것은 별도 사전등록할
 500-epoch PPO smoke뿐이며, 장기학습 authority는 만들지 않습니다.
 

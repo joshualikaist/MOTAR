@@ -32,8 +32,12 @@ class TestResearchAuthorityFreeze(unittest.TestCase):
         lower_v3 = receipt["corrected_environment_v2_2026_08_27"][
             "braking_aware_route_v3_lower1p25"
         ]
-        self.assertTrue(lower_v3["gpu_authority"])
+        self.assertFalse(lower_v3["gpu_authority"])
+        self.assertTrue(lower_v3["gpu_authority_consumed"])
         self.assertFalse(lower_v3["authorizes_ppo"])
+        self.assertFalse(lower_v3["confirmatory_authorized"])
+        self.assertEqual(lower_v3["pilot_execution_integrity"], "PASS_8_CELL_INTEGRITY")
+        self.assertEqual(lower_v3["pilot_gate"], "FAIL_BLOCKS_CONFIRMATORY")
         self.assertEqual(
             lower_v3["gpu_authority_scope"],
             "one fresh baseline_1p25 receipt and one seed-829 70-bar 8-cell pilot only",

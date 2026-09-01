@@ -104,16 +104,24 @@
       "mode": "global_astar_braking_v3",
       "contract_variant": "baseline_1p25",
       "speeds_mps": [0.6, 0.9, 1.2, 1.25],
-      "implementation_status": "matched_spawn_pilot_authorized",
-      "gpu_authority": true,
+      "implementation_status": "matched_spawn_pilot_failed",
+      "gpu_authority": false,
+      "gpu_authority_consumed": true,
       "gpu_authority_scope": "one fresh baseline_1p25 receipt and one seed-829 70-bar 8-cell pilot only",
       "execution_authority": "docs/preregistration_braking_aware_route_v3_lower1p25_matched_spawn_gpu_authority_2026-09-01.md",
       "execution_authority_sha256": "70b8a08f0c95040a86c43e1be5ac11d0b688b9a6874f3cfc4548f914882f085f",
       "authorizes_ppo": false,
-      "fresh_braking_receipt_required": true,
+      "fresh_braking_receipt_required": false,
+      "braking_receipt": "results/navrl_physical_target_braking_lower1p25_matched_spawn_seed827_2026-09-01/receipt.json",
+      "braking_receipt_sha256": "18425bfc9cb618834b37435b8d83a07dc1af69e56aa02459f00a94c544e075cc",
+      "pilot_result": "results/navrl_braking_route_v3_lower1p25_matched_spawn_seed829/summary.json",
+      "pilot_result_sha256": "8e4b71bc9095f64065140f2838904bab8b7be868c7d97025953fb451041a49fc",
+      "pilot_execution_integrity": "PASS_8_CELL_INTEGRITY",
+      "pilot_gate": "FAIL_BLOCKS_CONFIRMATORY",
+      "confirmatory_authorized": false,
       "superseded_braking_receipt_sha256": "6d71b0be34ffb166d23aff9f6897cf41b5bb82a4a488d24403d735cf97852485"
     },
-    "next_gate": "run exactly one fresh baseline_1p25 receipt and one matched-spawn seed-829 70-bar 8-cell pilot; any FAIL blocks confirmatory and PPO"
+    "next_gate": "matched-spawn lower-v3 pilot failed with clean integrity; confirmatory and PPO are blocked; any future controller redesign requires a new preregistration"
   },
   "evidence": [
     {
@@ -135,6 +143,10 @@
     {
       "path": "results/navrl_corrected_nonoverlap_route_gate_r2_seed829/summary.json",
       "sha256": "4a464521015c110805d46392b0355297c7328ac5b006be368f6b9a23dcf389d7"
+    },
+    {
+      "path": "results/navrl_braking_route_v3_lower1p25_matched_spawn_seed829/summary.json",
+      "sha256": "8e4b71bc9095f64065140f2838904bab8b7be868c7d97025953fb451041a49fc"
     }
   ],
   "claim_boundary": {

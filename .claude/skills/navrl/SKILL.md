@@ -177,13 +177,12 @@ Current execution-only GPU authority (frozen, do not edit):
 `docs/preregistration_braking_aware_route_v3_lower1p25_matched_spawn_gpu_authority_2026-09-01.md`
 
 1. CPU tests only until they pass: focused v3 tests plus v1/recovery regression.
-2. If `VERIFICATION.md` still says no GPU authority for the current lineage, **stop**. The current
-   addendum permits exactly one fresh receipt and one seed-829 pilot, not PPO.
-3. Current GPU path requires a fresh `baseline_1p25` receipt at the matched-spawn commit.
-   The seed-829 8-cell under the previous spawn bytes is `VOID_EXECUTION`
-   (`matched-arm identity drift: initial_target_pose_sha256`). Do not drop the target-pose hash
-   check. Do not reuse the spent output root. Do not arm from the `dd8b4a4` receipt after the
-   spawn-byte change. CPU work is the matched-spawn identity contract and v3 unit tests.
+2. The one-shot GPU addendum is consumed. The matched-spawn pilot is
+   `PASS_8_CELL_INTEGRITY / FAIL_BLOCKS_CONFIRMATORY`; **stop** before any rerun, confirmatory,
+   retune, or PPO.
+3. The prior seed-829 run remains `VOID_EXECUTION` and the integrity-clean matched-spawn run is a
+   separate official FAIL. Do not drop the target-pose hash, reuse either output root, or arm from
+   the `dd8b4a4` receipt.
 4. Confirmatory (32 cells): seed 839, bars 70/115/160/205, same speeds/arms. Thresholds stay as
    written in the lower preregistration. Do not reuse the 2026-08-26 lower receipt.
 5. Confirmatory PASS authorises only a **separate** preregistered 500-epoch PPO smoke inside the

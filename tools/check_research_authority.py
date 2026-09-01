@@ -83,10 +83,23 @@ def verify_authority(receipt_path=DEFAULT_RECEIPT):
         raise RuntimeError("missing matched-spawn GPU execution authority")
     if _sha256(authority_path) != lower_v3["execution_authority_sha256"]:
         raise RuntimeError("matched-spawn GPU execution-authority SHA drift")
-    if lower_v3.get("gpu_authority") is not True:
-        raise RuntimeError("matched-spawn pilot GPU authority is not explicit")
+    if lower_v3.get("gpu_authority") is not False or lower_v3.get(
+        "gpu_authority_consumed"
+    ) is not True:
+        raise RuntimeError("matched-spawn pilot GPU authority was not closed after use")
     if lower_v3.get("authorizes_ppo") is not False:
         raise RuntimeError("matched-spawn execution authority unexpectedly authorizes PPO")
+    pilot_path = ROOT / lower_v3["pilot_result"]
+    if not pilot_path.is_file() or _sha256(pilot_path) != lower_v3["pilot_result_sha256"]:
+        raise RuntimeError("matched-spawn pilot result missing or SHA drift")
+    pilot = json.loads(pilot_path.read_text(encoding="utf-8"))
+    pilot_verdict = pilot.get("verdict", {})
+    if pilot_verdict.get("execution_integrity") != "PASS_8_CELL_INTEGRITY":
+        raise RuntimeError("matched-spawn pilot integrity drift")
+    if pilot_verdict.get("gate") != "FAIL_BLOCKS_CONFIRMATORY":
+        raise RuntimeError("matched-spawn pilot gate drift")
+    if lower_v3.get("confirmatory_authorized") is not False:
+        raise RuntimeError("matched-spawn FAIL unexpectedly authorizes confirmatory")
     corrected_gate = corrected["route_physical_gate_r2"]
     corrected_result = evidence[
         "results/navrl_corrected_nonoverlap_route_gate_r2_seed829/summary.json"

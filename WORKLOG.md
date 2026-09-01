@@ -13467,3 +13467,37 @@ pilot 직전 verifier가 무결성-clean `FAIL_BLOCKS_CONFIRMATORY`까지 예외
 프로세스 종료 의미만 틀렸다. `verify_summary`가 integrity-valid FAIL을 정상 검증하도록 고치고,
 `PASS_8_CELL_INTEGRITY + FAIL_BLOCKS_CONFIRMATORY` fixture가 VOID가 되지 않는 회귀 테스트를
 추가했다. 이 수정은 simulator·controller·grid·threshold·receipt runtime source를 바꾸지 않는다.
+
+## 2026-09-01 — matched-spawn lower-v3 8-cell 공식 FAIL, GPU authority 폐쇄
+
+verifier 표시 수정 후 commit `b054f07`에서 runtime source bundle을 다시 고정했다:
+`/home/fair/workspaces/aerial_gym_ws/navrl_v3_receipts/training_source_lower1p25_matched_spawn_b054f07_2026-09-01/`,
+manifest SHA-256 `a34618e91a12d6a94f4a48f9b145cf72531c2ce54aa6f40eeec71db002c39840`,
+runtime 328 files, `git_dirty=false`. 새 receipt
+`18425bfc9cb618834b37435b8d83a07dc1af69e56aa02459f00a94c544e075cc`를 사용해
+seed 829 / 70 bars / 32 envs / 300 measured steps / 20 warmup / 4 speeds × 2 arms를 실행했다.
+
+원자료:
+`/home/fair/workspaces/aerial_gym_ws/navrl_v3_runs/pilot_lower1p25_matched_spawn_seed829_2026-09-01/summary.json`,
+SHA-256 `8e4b71bc9095f64065140f2838904bab8b7be868c7d97025953fb451041a49fc`.
+공식 verdict는 **`PASS_8_CELL_INTEGRITY / FAIL_BLOCKS_CONFIRMATORY`**다. 각 속도의 off/v3
+layout·robot pose·target pose SHA가 모두 한 종류로 일치해 이전 VOID 원인은 해소됐다.
+
+| speed | off ratio | v3 ratio | v3 tracking RMSE | v3 soft exit | v3 cert fail | fallback | goals |
+|---:|---:|---:|---:|---:|---:|---:|---:|
+| 0.60 | 0.9475 | 0.7872 | 0.1400 | 573 | 573 | 0 | 7 |
+| 0.90 | 0.9458 | 0.7681 | 0.1867 | 1,387 | 1,395 | 634 | 10 |
+| 1.20 | 0.9352 | 0.5984 | 0.2495 | 2,583 | 2,597 | 1,547 | 14 |
+| 1.25 | 0.9458 | 0.6297 | 0.2652 | 2,282 | 2,296 | 1,242 | 15 |
+
+모든 routed 셀은 contact/motor/tilt/state/tracking/local-feasibility를 통과하고 speed ratio ≥0.80만
+실패했다. mechanism pooled 값은 unsafe start 0(PASS), soft exits 6,825(FAIL, gate 0), terminal
+certificate fraction 1.0(PASS), plan success 99.468%(PASS), fallback 8.914%(FAIL, gate ≤1%),
+0.6 m/s goals/env 0.21875(FAIL, gate ≥0.5)다. matched spawn은 identity를 고쳤지만 in-flight
+mechanism을 고치지 않았고, 계산-first FAIL 예측이 확인됐다.
+
+one-shot GPU authority는 소비·폐쇄했다. seed-839 confirmatory, PPO smoke, 장기학습,
+gain/margin/threshold 사후 탐색은 실행하지 않는다. 새 시도는 physical tracking uncertainty를
+명시적으로 포함하는 controller의 **새 방법**이어야 하며 별도 사전등록 전에는 구현·GPU를 열지
+않는다. 공식 요약은
+`docs/braking_aware_route_v3_lower1p25_matched_spawn_result_2026-09-01.md`에 보존했다.

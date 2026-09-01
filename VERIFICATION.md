@@ -55,9 +55,16 @@ non-overlap 판정 필드를
   CPU forensic 123개가 통과했고, 별도 execution addendum
   [`docs/preregistration_braking_aware_route_v3_lower1p25_matched_spawn_gpu_authority_2026-09-01.md`](docs/preregistration_braking_aware_route_v3_lower1p25_matched_spawn_gpu_authority_2026-09-01.md)
   (SHA-256 `70b8a08f0c95040a86c43e1be5ac11d0b688b9a6874f3cfc4548f914882f085f`)가 새
-  `baseline_1p25` receipt 1회와 seed-829 8-cell pilot 1회만 허용한다. spawn 바이트가
-  바뀌었으므로 `dd8b4a4` receipt는 무장할 수 없다. confirmatory와 PPO는 pilot PASS 전까지
-  열리지 않는다. 현재 stage는 `MECHANISM_GATE`다.
+  `baseline_1p25` receipt 1회와 seed-829 8-cell pilot 1회만 허용했다. spawn 바이트가
+  바뀌었으므로 `dd8b4a4` receipt는 사용하지 않았다.
+  **새 pilot은 `PASS_8_CELL_INTEGRITY / FAIL_BLOCKS_CONFIRMATORY`로 종료됐다.** 모든 속도에서
+  off/v3 layout·robot pose·target pose 해시가 일치해 옛 VOID 원인은 해결됐다. 그러나 routed
+  speed ratio는 0.7872/0.7681/0.5984/0.6297로 모두 0.80 게이트 미달, soft exits 6,825
+  (gate 0), fallback 8.914%(gate ≤1%), 0.6 m/s goals/env 0.21875(gate ≥0.5)다. plan success
+  99.468%와 terminal certificate fraction 1.0은 통과했다. 원자료와 판정은
+  [`docs/braking_aware_route_v3_lower1p25_matched_spawn_result_2026-09-01.md`](docs/braking_aware_route_v3_lower1p25_matched_spawn_result_2026-09-01.md)에
+  고정했다. GPU authority는 소비·폐쇄됐고 confirmatory와 PPO는 열리지 않는다. 현재 stage는
+  `MECHANISM_GATE_FAIL_CLOSED`다.
 
 ## 2026-08-26 기록된 실행 authority (판정 보존)
 

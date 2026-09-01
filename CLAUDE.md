@@ -19,11 +19,11 @@ substantive한 요청(학습·평가·분석·감사·구현)을 받으면:
 
 - **현재 실행 단계(2026-09-01)**: corrected non-overlap route r2는
   `FAIL_ROUTE_MECHANISM`이고 새 PPO는 **0 epoch**다. canonical 1.5 v3 receipt는 NO-GO다.
-  다음 software 작업은 별도 사전등록된 **matched-spawn lower v3**다. 첫 8-cell pilot는
-  `VOID_EXECUTION`(표적 초기 자세 matched-arm drift)이며 confirmatory와 PPO는 열리지
-  않는다. CPU forensic 123개 통과 뒤 execution addendum가 **새 receipt 1회 + seed-829
-  pilot 1회만** 허용한다. spawn 수정 뒤에도 `dd8b4a4` receipt는 재무장할 수 없다. 0.05
-  warmup 게이트와 PID/게인은 바꾸지 않는다.
+  matched-spawn lower-v3 재실행은 pose/layout/robot 해시가 일치해
+  `PASS_8_CELL_INTEGRITY`였지만 공식 판정은 **`FAIL_BLOCKS_CONFIRMATORY`**다. routed speed
+  ratio 0.7872/0.7681/0.5984/0.6297, soft exits 6,825, fallback 8.914%, 0.6 goals/env
+  0.21875다. 제한 GPU authority는 소비됐고 confirmatory/PPO는 닫혀 있다. 새 방법
+  사전등록 없이 rerun·retune하지 않는다. 0.05 warmup 게이트와 PID/게인은 바꾸지 않는다.
   현재 계보 밀도는 **70/115/160/205**이고 **300 bars는 disconnected stress**다.
 - **주제**: 센서 전용 UAV 요격. actor 관측에 GT 표적(semantic id/mask, bearing/range, `target_position`,
   GT visibility) **절대 금지** — detector supervision·reward·종료판정·critic·평가 metric에만 사용.

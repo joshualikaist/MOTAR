@@ -68,6 +68,8 @@ CPU forensic 뒤 고정된 execution addendum는 방법을 바꾸지 않고 새 
 seed-829 8-cell pilot 1회만 허용한다. 이 예외는 confirmatory·PPO·threshold/gain retune 권한을
 만들지 않는다. 문서는
 [`docs/preregistration_braking_aware_route_v3_lower1p25_matched_spawn_gpu_authority_2026-09-01.md`](docs/preregistration_braking_aware_route_v3_lower1p25_matched_spawn_gpu_authority_2026-09-01.md)다.
+이 one-shot 실행은 `PASS_8_CELL_INTEGRITY / FAIL_BLOCKS_CONFIRMATORY`로 종료돼 소비됐다.
+따라서 이 v3 방법은 닫혔고 새 controller 방법은 별도 사전등록이 필요하다.
 
 ## 1. 연구 질문과 기여
 
