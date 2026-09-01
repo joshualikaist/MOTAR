@@ -13303,3 +13303,24 @@ environment contract 13, recovery evaluator 8, corrected-gate 4, braking-contrac
 
 다음: CPU 통과를 확인한 뒤, 사용자가 지시하면 seed 829 / 70 bars / 8-cell pilot만 실행한다.
 pilot 실패 시 confirmatory(seed 839, 32 cell)는 금지다.
+
+## 2026-09-01 — v3 셀 어댑터 완성, GPU pilot 직전 준비 (GPU 미실행)
+
+사용자가 diff를 승인해 braking-v3 구현을 `6b13441`로 커밋했고, 이어 pilot 진행을 지시했다.
+게이트가 요구하는 tracked 실행 파일 `tools/run_navrl_braking_route_v3_cell.py`를 추가했다.
+어댑터는 `NAVRL_V3_*` 셀 계약을 fail-closed로 파싱하고, corrected-r2 평가기의
+`frozen_environment`/neutral-pursuer 인터벌 헬퍼를 바이트 그대로 재사용해 셀 하나를 돌린 뒤,
+v3 verifier의 `validate_cell`을 자기 payload에 먼저 적용하고 나서야 JSON을 원자적으로 쓴다.
+identity의 cell-runner/braking-receipt/사전등록 SHA 자기검증, `MOTAR_V3_*` passthrough로
+training source manifest 전달(게이트가 `NAVRL_*`를 제거하므로), off arm의 manager 부재 확인을
+포함한다. v1/v2/기존 verifier는 수정하지 않았다.
+
+CPU 검증: 새 `test_navrl_braking_route_v3_cell_runner` 9/9, `test_navrl_braking_route_v3*`
+합계 33/33, planner 13/13, target_motion 25/25, braking-contract 8/8 PASS.
+
+GPU 직전 상태에서 남은 실제 선행물은 **canonical 1.5 m/s braking receipt**다. receipt는 현재
+커밋의 core 바이트에 바인딩되므로 재측정이 필수인데, 2026-08-26 기록상 1.5 m/s warmup 수렴이
+1.4426 m/s로 0.05 m/s 게이트를 못 넘겨 NO-GO였고 controller는 변경 금지다. 재측정이 다시
+NO-GO면 pilot은 열리지 않으며, threshold 완화 없이 중단·보고한다. 실행 시퀀스(probe →
+training source bundle → pilot)는 `OPERATIONS.md`에 고정했다. GPU/PPO는 이 엔트리 시점까지
+실행하지 않았다.

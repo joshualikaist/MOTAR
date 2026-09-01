@@ -39,25 +39,65 @@ python -m unittest discover -s tests -p 'test_navrl_two_envelope_recovery.py'
 git diff --check
 ```
 
-Pilot/confirmatory 명령은 CPU 통과 뒤, 그리고 `VERIFICATION.md`가 GPU를 열 때만 준비됩니다.
-지금은 실행하지 마세요.
+2026-09-01 사용자 지시로 pilot 준비가 완료됐습니다. GPU 순서는 아래 세 단계이며, 모두 conda
+`aerialgym` Python과 `PYTHONNOUSERSITE=1`, 그리고 **커밋된 clean tree**에서 실행합니다.
+셀 어댑터는 tracked `tools/run_navrl_braking_route_v3_cell.py`입니다.
+
+**단계 1 — canonical 1.5 m/s braking receipt (GPU, 첫 실행).** v3는 canonical_1p5 raw
+receipt를 요구하는데, receipt는 현재 커밋의 `navrl_task.py`/`target_motion.py`/
+`target_route_planner.py` 바이트에 바인딩되므로 지금 커밋에서 새로 떠야 합니다. 알려진 위험:
+2026-08-26 측정에서 1.5 m/s warmup이 1.4426 m/s로 수렴해 0.05 m/s 절대 게이트를 0.0074 m/s
+차이로 못 넘겼고(NO-GO), 이후 controller는 변경 금지라 그대로입니다. 다시 NO-GO면 threshold를
+바꾸지 말고 중단·보고합니다.
 
 ```bash
-# NOT AUTHORISED YET — development pilot, 8 cells, seed 829, 70 bars
-NAVRL_V3_OUTPUT_ROOT=/path/to/new/unique/pilot_root \
-NAVRL_V3_CELL_RUNNER=/path/to/tracked/executable/cell_adapter \
-NAVRL_V3_BRAKING_RECEIPT=/path/to/canonical/receipt.json \
-NAVRL_V3_BRAKING_RECEIPT_SHA256=<exact sha256> \
+cd /home/fair/workspaces/aerial_gym_ws/.codex_worktrees/braking_route_v3
+export PYTHONNOUSERSITE=1
+NAVRL_BRAKING_PYTHON=/home/fair/miniconda3/envs/aerialgym/bin/python \
+NAVRL_NINJA=/home/fair/miniconda3/envs/aerialgym/bin/ninja \
+/home/fair/miniconda3/envs/aerialgym/bin/python \
+  tools/run_navrl_physical_target_braking_v2_fresh.py \
+  --output results/navrl_physical_target_braking_canonical_seed827_2026-09-01
+sha256sum results/navrl_physical_target_braking_canonical_seed827_2026-09-01/receipt.json
+```
+
+**단계 2 — training source bundle (CPU, receipt 이후).** v3 task는 verified training source
+manifest를 요구합니다. bundle은 저장소 밖에 만듭니다(안에 만들면 untracked 파일이 생겨 이후
+receipt/clean 게이트를 오염). 출력 JSON의 `manifest`/`manifest_sha256`를 그대로 내보냅니다.
+
+```bash
+cd /home/fair/workspaces/aerial_gym_ws/.codex_worktrees/braking_route_v3
+/home/fair/miniconda3/envs/aerialgym/bin/python tools/create_navrl_source_bundle.py create \
+  --require-clean \
+  --output /home/fair/workspaces/aerial_gym_ws/navrl_v3_receipts/training_source_2026-09-01
+export MOTAR_V3_TRAINING_SOURCE_MANIFEST=/home/fair/workspaces/aerial_gym_ws/navrl_v3_receipts/training_source_2026-09-01/source_manifest.json
+export MOTAR_V3_TRAINING_SOURCE_MANIFEST_SHA256=<create 출력의 manifest_sha256>
+```
+
+**단계 3 — development pilot (GPU, 8 cells, seed 829, 70 bars).** output root는 게이트 계약상
+저장소 **밖**의 새 경로여야 합니다. `MOTAR_V3_*`는 게이트가 어댑터로 통과시키는 passthrough
+변수라 export가 유지된 셸에서 실행합니다.
+
+```bash
+cd /home/fair/workspaces/aerial_gym_ws/.codex_worktrees/braking_route_v3
+export PYTHONNOUSERSITE=1
+NAVRL_V3_OUTPUT_ROOT=/home/fair/workspaces/aerial_gym_ws/navrl_v3_runs/pilot_seed829_2026-09-01 \
+NAVRL_V3_CELL_RUNNER=$PWD/tools/run_navrl_braking_route_v3_cell.py \
+NAVRL_V3_BRAKING_RECEIPT=$PWD/results/navrl_physical_target_braking_canonical_seed827_2026-09-01/receipt.json \
+NAVRL_V3_BRAKING_RECEIPT_SHA256=<단계 1 sha256sum 값> \
 bash tools/run_navrl_braking_route_v3_pilot.sh
 
-# NOT AUTHORISED YET — confirmatory only if every pilot cell passed
-NAVRL_V3_OUTPUT_ROOT=/path/to/new/unique/confirmatory_root \
-NAVRL_V3_CELL_RUNNER=/path/to/tracked/executable/cell_adapter \
-NAVRL_V3_BRAKING_RECEIPT=/path/to/canonical/receipt.json \
-NAVRL_V3_BRAKING_RECEIPT_SHA256=<exact sha256> \
-NAVRL_V3_PILOT_SUMMARY=/path/to/verified/pilot/summary.json \
+# confirmatory는 pilot 8/8 PASS일 때만 (seed 839, 70/115/160/205, 32 cells)
+NAVRL_V3_OUTPUT_ROOT=/home/fair/workspaces/aerial_gym_ws/navrl_v3_runs/confirmatory_seed839_2026-09-01 \
+NAVRL_V3_CELL_RUNNER=$PWD/tools/run_navrl_braking_route_v3_cell.py \
+NAVRL_V3_BRAKING_RECEIPT=$PWD/results/navrl_physical_target_braking_canonical_seed827_2026-09-01/receipt.json \
+NAVRL_V3_BRAKING_RECEIPT_SHA256=<단계 1 sha256sum 값> \
+NAVRL_V3_PILOT_SUMMARY=/home/fair/workspaces/aerial_gym_ws/navrl_v3_runs/pilot_seed829_2026-09-01/summary.json \
 bash tools/run_navrl_braking_route_v3_confirmatory.sh
 ```
+
+confirmatory PASS가 여는 것은 별도 사전등록할 500-epoch PPO smoke뿐이며, 장기학습 authority는
+어떤 단계도 만들지 않습니다.
 
 ## 1. 처음 설치할 때
 

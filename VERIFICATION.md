@@ -22,12 +22,18 @@ non-overlap 판정 필드를
   `PASS_32_CELL_INTEGRITY / FAIL_ROUTE_MECHANISM / BLOCKED_PHYSICAL_TRAINING`이다. 70-bar plan
   `17.7831%`(gate ≥99%), fallback `30.0156%`(gate ≤1%), 0.6 m/s goals/env `0.21875`(gate ≥0.5)다.
   이 FAIL 판정과 수치는 유지한다. 500-epoch smoke와 70→205 장기학습은 모두 미실행(새 PPO 0 epoch).
-- **Braking-aware route v3:** `global_astar_braking_v3` 구현이 진행 중이다. 사전등록
+- **Braking-aware route v3:** `global_astar_braking_v3` 구현은 CPU 계약까지 완료·커밋됐다
+  (`6b13441`). 사전등록
   [`docs/preregistration_braking_aware_route_v3_2026-09-01.md`](docs/preregistration_braking_aware_route_v3_2026-09-01.md)
   (SHA-256 `cceecb9ad4a538e7bc2bc9171436e823ef18652e9c971e0d6fa8174279df6056`)는 결과를 보기 전에
-  고정됐다. **GPU authority는 아직 없다.** CPU 계약 검사가 통과하고 사용자가 실행을 지시하기
-  전에는 pilot/confirmatory simulator 평가와 PPO를 시작하지 않는다. 현재 stage는
-  `MECHANISM_GATE`다.
+  고정됐다. 2026-09-01 사용자가 pilot 진행을 지시해 tracked 셀 어댑터
+  `tools/run_navrl_braking_route_v3_cell.py`와 GPU 실행 시퀀스(`OPERATIONS.md`)를 준비했다.
+  **GPU 실행 순서는 (1) canonical 1.5 m/s braking receipt 재측정 → (2) training source bundle →
+  (3) seed 829 8-cell pilot**이다. canonical receipt는 현재 커밋 바이트에 바인딩되므로 새로 떠야
+  하며, 2026-08-26 기록상 1.5 m/s warmup 수렴(1.4426 vs 0.05 m/s 게이트)이 NO-GO였던 위험이
+  그대로 남아 있다. receipt가 다시 NO-GO면 threshold/controller를 바꾸지 말고 중단·보고한다.
+  pilot 실패는 confirmatory를 차단하고, confirmatory PASS도 별도 사전등록 500-epoch PPO smoke만
+  연다. 현재 stage는 `MECHANISM_GATE`다.
 
 ## 2026-08-26 기록된 실행 authority (판정 보존)
 
