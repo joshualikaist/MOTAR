@@ -769,8 +769,13 @@ class NavRLTask(BaseTask):
             "canonical_1p5", "baseline_1p25"
         ):
             raise RuntimeError("unknown routed-recovery braking contract variant")
-        if self._target_route_braking_v3_enabled and recovery_contract_variant != "canonical_1p5":
-            raise RuntimeError("braking-v3 requires the canonical 1.5 m/s braking receipt")
+        if self._target_route_braking_v3_enabled and recovery_contract_variant not in (
+            "canonical_1p5", "baseline_1p25"
+        ):
+            raise RuntimeError(
+                "braking-v3 requires the canonical 1.5 m/s braking receipt or the separately "
+                "preregistered baseline_1p25 lower-contract receipt"
+            )
         if self._target_route_enabled and (
             not self._physical_target or str(self.tm.pattern) != "waypoint"
         ):

@@ -157,7 +157,7 @@ def main() -> int:
                         "NAVRL_TARGET_RECOVERY_BRAKE_PROBE_RECEIPT": str(receipt),
                         "NAVRL_TARGET_RECOVERY_BRAKE_PROBE_RECEIPT_SHA256": args.braking_receipt_sha256.lower(),
                         "NAVRL_TARGET_RECOVERY_PROBE_VALIDATED": "1",
-                        "NAVRL_TARGET_BRAKING_CONTRACT_VARIANT": "canonical_1p5",
+                        "NAVRL_TARGET_BRAKING_CONTRACT_VARIANT": verify.CONTRACT_VARIANT,
                         "NAVRL_TARGET_RECOVERY_BRAKE_P05": str(core["decel_p05_mps2"]),
                         "NAVRL_TARGET_RECOVERY_STOP_TIME_P95_S": str(core["stop_time_p95_s"]),
                         "NAVRL_TARGET_RECOVERY_BRAKE_SPEEDS_MPS": speed_csv,
@@ -166,7 +166,10 @@ def main() -> int:
                         "NAVRL_V3_IDENTITY_JSON": json.dumps(identity, sort_keys=True, separators=(",", ":")),
                     })
                     with log_path.open("x", encoding="utf-8") as log:
-                        completed = subprocess.run([str(runner)], cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT)
+                        completed = subprocess.run(
+                            [sys.executable, str(runner)],
+                            cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT,
+                        )
                     verify.require(completed.returncode == 0, f"cell runner failed: {rid}")
                     verify.require(cell_path.is_file(), f"cell runner produced no payload: {rid}")
                     row = json.loads(cell_path.read_text(encoding="utf-8"))

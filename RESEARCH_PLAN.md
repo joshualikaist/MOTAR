@@ -46,6 +46,16 @@ tangent/cross-track 추종과 stop-turn-go, 그리고 reset/goal-completion/runt
 만들지 않는다. 사전등록은
 [`docs/preregistration_braking_aware_route_v3_2026-09-01.md`](docs/preregistration_braking_aware_route_v3_2026-09-01.md)다.
 
+### 2026-09-01 lower-contract v3 method addendum
+
+canonical 1.5 m/s warmup 게이트가 동일 숫자로 두 번 NO-GO이므로, 같은 P-only 컨트롤러와 같은
+0.05/5 s 계약을 유지한 채 인증 가능 상한만 1.25 m/s로 내리는 별도 방법을 추가한다. 개입 바이트
+(`global_astar_braking_v3`)는 그대로이고, 선택되는 것은
+`NAVRL_TARGET_BRAKING_CONTRACT_VARIANT=baseline_1p25`와 그 variant의 raw braking receipt뿐이다.
+0.05 완화나 PID/게인 변경은 이 방법의 일부가 아니다. 이 절은 GPU나 PPO 권한을 만들지 않는다.
+사전등록은
+[`docs/preregistration_braking_aware_route_v3_lower1p25_2026-09-01.md`](docs/preregistration_braking_aware_route_v3_lower1p25_2026-09-01.md)다.
+
 ## 1. 연구 질문과 기여
 
 ## 1. 연구 질문

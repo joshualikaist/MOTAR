@@ -164,17 +164,22 @@ the WORKLOG entry is the LAST thing to cut. `CRASH_TUNING_LOG.md` is archival-in
 
 ## Current MECHANISM_GATE procedure (braking-v3)
 
-Preregistration (frozen, do not edit):
+Canonical preregistration (frozen, do not edit; 1.5 receipt is NO-GO):
 `docs/preregistration_braking_aware_route_v3_2026-09-01.md`
 
+Current lower-contract preregistration (frozen, do not edit):
+`docs/preregistration_braking_aware_route_v3_lower1p25_2026-09-01.md`
+
 1. CPU tests only until they pass: focused v3 tests plus v1/recovery regression.
-2. If `VERIFICATION.md` still says no GPU authority, **stop**. Prepare commands; do not execute.
-3. Development pilot (8 cells): seed 829, 70 bars, speeds 0.6/0.9/1.2/1.5, arms `off` /
+2. If `VERIFICATION.md` still says no GPU authority for the current lineage, **stop**.
+3. Current GPU path is `baseline_1p25` only: fresh lower braking receipt at the current commit,
+   then development pilot (8 cells): seed 829, 70 bars, speeds 0.6/0.9/1.2/1.25, arms `off` /
    `global_astar_braking_v3`. Any fail blocks confirmatory.
 4. Confirmatory (32 cells): seed 839, bars 70/115/160/205, same speeds/arms. Thresholds stay as
-   written in the preregistration.
-5. Confirmatory PASS authorises only a **separate** preregistered 500-epoch PPO smoke. It does not
-   itself start training.
+   written in the lower preregistration. Do not reuse the 2026-08-26 lower receipt.
+5. Confirmatory PASS authorises only a **separate** preregistered 500-epoch PPO smoke inside the
+   lower envelope. It does not itself start training. Do not retune the 0.05 warmup gate or add PID
+   to pass a mechanism gate.
 
 ```bash
 # CPU only — current allowed work

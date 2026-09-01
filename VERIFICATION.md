@@ -26,18 +26,19 @@ non-overlap 판정 필드를
   (`6b13441`). 사전등록
   [`docs/preregistration_braking_aware_route_v3_2026-09-01.md`](docs/preregistration_braking_aware_route_v3_2026-09-01.md)
   (SHA-256 `cceecb9ad4a538e7bc2bc9171436e823ef18652e9c971e0d6fa8174279df6056`)는 결과를 보기 전에
-  고정됐다. 2026-09-01 사용자가 pilot 진행을 지시해 tracked 셀 어댑터
-  `tools/run_navrl_braking_route_v3_cell.py`와 GPU 실행 시퀀스(`OPERATIONS.md`)를 준비했다.
-  **GPU 실행 순서는 (1) canonical 1.5 m/s braking receipt 재측정 → (2) training source bundle →
-  (3) seed 829 8-cell pilot**이다. **2026-09-01 재측정 결과: 단계 1이 NO-GO로 재현됐다.**
+  고정됐다. **2026-09-01 재측정 결과: canonical 1.5 m/s braking receipt는 NO-GO다.**
   커밋 `fb9fa50`에서 0.6/0.9/1.2 m/s는 통과했으나 1.5 m/s warmup이 mean 1.442577 m/s
   (절대 오차 0.057423 > 게이트 0.05)로 실패했고, 이 수치는 2026-08-26 측정과 동일한 결정론적
-  controller 한계다. receipt는 발급되지 않았고 threshold/controller는 변경하지 않았다.
-  **따라서 v3 pilot은 canonical receipt 부재로 차단 상태다.** training source bundle
-  (`navrl_v3_receipts/training_source_2026-09-01`, SHA `0fb6dbb4…25fd`)과 tracked 셀 어댑터는
-  준비돼 있다. 재개에는 사용자 결정이 필요하다: lower-contract v3 재사전등록, warmup 게이트에
-  대한 독립 근거 기반 새 사전등록, 또는 중단. pilot 실패는 confirmatory를 차단하고,
-  confirmatory PASS도 별도 사전등록 500-epoch PPO smoke만 연다. 현재 stage는 `MECHANISM_GATE`다.
+  controller 한계다. 이 판정과 수치는 유지한다. threshold/controller/0.05 게이트는 바꾸지 않았다.
+  **현재 다음 software 작업은 별도 사전등록된 lower-contract v3다.**
+  [`docs/preregistration_braking_aware_route_v3_lower1p25_2026-09-01.md`](docs/preregistration_braking_aware_route_v3_lower1p25_2026-09-01.md)
+  (SHA-256 `cd1347121c24ecd10273189360bed9ca76ffa80673aa89addf3ff0eaebc16252`).
+  속도 grid는 0.6/0.9/1.2/1.25이며 `NAVRL_TARGET_BRAKING_CONTRACT_VARIANT=baseline_1p25`로만
+  무장한다. 기본값은 여전히 `canonical_1p5`다. 다음 GPU는 현재 커밋에서 새로 뜰
+  `baseline_1p25` raw braking receipt이고, 그 뒤에만 seed 829 8-cell lower pilot가 열린다.
+  08-26 lower receipt는 옛 core 바이트에 묶여 재사용하지 않는다. PID나 0.05 완화는 이 계보에서
+  하지 않는다. confirmatory PASS도 별도 사전등록 500-epoch PPO smoke만 연다. 현재 stage는
+  `MECHANISM_GATE`다.
 
 ## 2026-08-26 기록된 실행 authority (판정 보존)
 

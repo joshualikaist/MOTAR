@@ -148,6 +148,46 @@ class BrakingRouteV3GateContractTest(unittest.TestCase):
         verdict = GATE.derive_verdict(_summary("pilot", physical_gates_preregistered=gates))
         self.assertEqual(verdict["execution_integrity"], "VOID_EXECUTION")
 
+    def test_default_grid_stays_canonical_and_does_not_alias_1p25(self):
+        self.assertEqual(GATE.CONTRACT_VARIANT, "canonical_1p5")
+        self.assertEqual(list(GATE.SPEEDS), [0.6, 0.9, 1.2, 1.5])
+        self.assertNotIn(1.25, GATE.SPEEDS)
+        self.assertEqual(GATE.record_id("off", 1.2, 70), "route_off__speed_1.2__bars_70")
+        self.assertEqual(GATE.record_id("off", 1.5, 70), "route_off__speed_1.5__bars_70")
+
+    def test_lower_contract_grid_is_isolated(self):
+        import os
+        previous = os.environ.get("NAVRL_TARGET_BRAKING_CONTRACT_VARIANT")
+        os.environ["NAVRL_TARGET_BRAKING_CONTRACT_VARIANT"] = "baseline_1p25"
+        try:
+            spec = importlib.util.spec_from_file_location(
+                "braking_v3_gate_lower_standalone",
+                ROOT / "tools/verify_navrl_braking_route_v3_gate.py",
+            )
+            lower = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(lower)
+            self.assertEqual(lower.CONTRACT_VARIANT, "baseline_1p25")
+            self.assertEqual(list(lower.SPEEDS), [0.6, 0.9, 1.2, 1.25])
+            self.assertNotIn(1.5, lower.SPEEDS)
+            self.assertEqual(
+                lower.sha256_file(lower.PREREG),
+                "cd1347121c24ecd10273189360bed9ca76ffa80673aa89addf3ff0eaebc16252",
+            )
+            self.assertEqual(
+                lower.record_id("off", 1.25, 70),
+                "route_off__speed_1.25__bars_70",
+            )
+            self.assertNotEqual(
+                lower.record_id("off", 1.25, 70),
+                lower.record_id("off", 1.2, 70),
+            )
+        finally:
+            if previous is None:
+                os.environ.pop("NAVRL_TARGET_BRAKING_CONTRACT_VARIANT", None)
+            else:
+                os.environ["NAVRL_TARGET_BRAKING_CONTRACT_VARIANT"] = previous
+        self.assertEqual(list(GATE.SPEEDS), [0.6, 0.9, 1.2, 1.5])
+
 
 if __name__ == "__main__":
     unittest.main()

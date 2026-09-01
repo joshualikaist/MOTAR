@@ -13346,3 +13346,23 @@ git_commit `fb9fa50`, 328 files, verify PASS). pilot 단계 3의 나머지 입�
 사항이다 — (a) 이 한계를 근거로 v3 계보를 lower-contract(예: 1.25 상한) 방향으로 새로
 사전등록, (b) warmup 수렴 게이트 자체를 재검토하는 새 사전등록(측정 후 완화가 아니라 독립
 근거 필요), (c) 중단. 본 세션은 어느 것도 자동 선택하지 않는다.
+
+## 2026-09-01 — lower-contract v3 사전등록 고정, canonical 1.5/PID/0.05는 유지
+
+canonical 1.5 warmup NO-GO 이후 사용자는 규약을 지키는 방향으로 진행하되, 규약을 깨는 편이
+나은지만 판단하라고 했다. 판단: **지금은 깨지 않는 편이 맞다.** 0.05를 0.06으로 올리면
+1.5 receipt는 숫자상 통과하지만 lookup이 실제 1.443 m/s 정지 거리를 1.5 칸으로 위장한다.
+PID는 정상상태 오차를 없앨 수 있으나 stage 1–2가 이미 게인/damping으로 1.5를 살리지 못했고,
+표적 동역학을 바꾸면 기존 receipt·r2·v3 정지 증명이 다른 물리가 된다. 둘 다 “게이트를 통과시키기
+위한 사후 변경”이 된다.
+
+따라서 별도 사전등록
+`docs/preregistration_braking_aware_route_v3_lower1p25_2026-09-01.md`(SHA-256
+`cd1347121c24ecd10273189360bed9ca76ffa80673aa89addf3ff0eaebc16252`)를 결과 전에 고정했다.
+속도 grid는 0.6/0.9/1.2/1.25이고 기본값은 여전히 `canonical_1p5`다. task는 명시적
+`baseline_1p25` variant만 추가로 받고, 게이트/셀 어댑터는 동일 구현 바이트에 그 receipt만
+묶는다. record id는 lossless decimal이라 1.25가 1.2로 alias되지 않는다. 0.05 게이트와
+controller/PID는 변경하지 않았다. 08-26 lower receipt는 재사용하지 않는다.
+
+다음 GPU는 현재 커밋에서 새로 뜰 `baseline_1p25` raw braking receipt다. 이 엔트리 시점까지
+lower receipt와 lower pilot는 실행하지 않았다.

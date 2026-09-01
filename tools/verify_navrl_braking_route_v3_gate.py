@@ -12,18 +12,34 @@ import argparse
 import hashlib
 import json
 import math
+import os
 from pathlib import Path
 import sys
 from typing import Mapping, Sequence
 
 
 ROOT = Path(__file__).resolve().parents[1]
-PREREG = ROOT / "docs/preregistration_braking_aware_route_v3_2026-09-01.md"
-PREREG_SHA256 = "cceecb9ad4a538e7bc2bc9171436e823ef18652e9c971e0d6fa8174279df6056"
+# The lower contract is an explicit environment declaration, exactly like the braking probe's
+# variant contract.  The canonical grid stays the byte-frozen default; the lower grid replaces
+# only the top registered speed per its own preregistration.
+CONTRACT_VARIANT = os.environ.get(
+    "NAVRL_TARGET_BRAKING_CONTRACT_VARIANT", "canonical_1p5"
+).strip().lower()
+if CONTRACT_VARIANT == "canonical_1p5":
+    PREREG = ROOT / "docs/preregistration_braking_aware_route_v3_2026-09-01.md"
+    PREREG_SHA256 = "cceecb9ad4a538e7bc2bc9171436e823ef18652e9c971e0d6fa8174279df6056"
+    SPEEDS = (0.6, 0.9, 1.2, 1.5)
+elif CONTRACT_VARIANT == "baseline_1p25":
+    PREREG = ROOT / "docs/preregistration_braking_aware_route_v3_lower1p25_2026-09-01.md"
+    PREREG_SHA256 = "cd1347121c24ecd10273189360bed9ca76ffa80673aa89addf3ff0eaebc16252"
+    SPEEDS = (0.6, 0.9, 1.2, 1.25)
+else:
+    raise RuntimeError(
+        "unknown NAVRL_TARGET_BRAKING_CONTRACT_VARIANT=%r" % CONTRACT_VARIANT
+    )
 SCHEMA = "navrl_braking_route_v3_gate_v1"
 ROUTE_MODE = "global_astar_braking_v3"
 ROUTE_ARMS = ("off", ROUTE_MODE)
-SPEEDS = (0.6, 0.9, 1.2, 1.5)
 STAGES = {
     "pilot": {"seed": 829, "densities": (70,), "cells": 8},
     "confirmatory": {"seed": 839, "densities": (70, 115, 160, 205), "cells": 32},
@@ -94,7 +110,9 @@ def _hash(value) -> bool:
 
 
 def record_id(route_mode: str, speed: float, bars: int) -> str:
-    return f"route_{route_mode}__speed_{speed:.1f}__bars_{bars}"
+    # Lossless decimal key: identical bytes to the historical one-decimal ids for the canonical
+    # grid, while 1.25 in the lower contract can never alias 1.2.
+    return f"route_{route_mode}__speed_{format(float(speed), '.12g')}__bars_{bars}"
 
 
 def physical_gate_metrics(row: Mapping) -> dict[str, bool]:

@@ -18,11 +18,10 @@ substantive한 요청(학습·평가·분석·감사·구현)을 받으면:
 ## 프로젝트 현재 상태 (재도출 금지 — 여기 요약)
 
 - **현재 실행 단계(2026-09-01)**: corrected non-overlap route r2는
-  `FAIL_ROUTE_MECHANISM`이고 새 PPO는 **0 epoch**다. 다음 software 작업은 braking-aware
-  route v3(`global_astar_braking_v3`) MECHANISM_GATE이며, GPU/PPO/simulator 평가는
-  `VERIFICATION.md`가 허가하기 전에는 실행하지 않는다. 현재 계보 밀도는 **70/115/160/205**이고
-  **300 bars는 disconnected stress**다. 과거 25/50/75/110/130/150과
-  `NAVRL_DENSITY_THRESHOLD=0.6`는 historical recipe다.
+  `FAIL_ROUTE_MECHANISM`이고 새 PPO는 **0 epoch**다. canonical 1.5 v3 receipt는 NO-GO다.
+  다음 software 작업은 별도 사전등록된 **lower-contract v3**(`baseline_1p25`, 속도
+  0.6/0.9/1.2/1.25) MECHANISM_GATE다. 0.05 warmup 게이트와 PID/게인은 바꾸지 않는다.
+  현재 계보 밀도는 **70/115/160/205**이고 **300 bars는 disconnected stress**다.
 - **주제**: 센서 전용 UAV 요격. actor 관측에 GT 표적(semantic id/mask, bearing/range, `target_position`,
   GT visibility) **절대 금지** — detector supervision·reward·종료판정·critic·평가 metric에만 사용.
 - **현재 방향(2026-07-22 피벗)**: NavRL++식 **학습형 인지(RGB-D 카메라 + LiDAR detector/tracker) +
