@@ -13531,3 +13531,20 @@ v2 launcher 5/5, physical-target 관련 30/30 PASS. `test_navrl_ref5in_run_contr
 100개 PASS, 1개는 이 worktree에 historical P1c checkpoint 폴더가 없어 실패했으며 변경 코드와
 무관하다. bash syntax/preflight와 `git diff --check`도 PASS했다. GPU 학습은 clean commit 뒤
 source receipt를 만든 다음 1회 시작한다.
+
+### 공식 smoke 실행 시작
+
+clean commit `1ce6a6f`에서 공식 1회를 시작했다. run은
+`ppo_260901_1220_navrl_corrected-nonoverlap-physical-off-smoke-s907`, trainer PID는 launch 확인
+시점 `1445290`, session log는
+`aerial_gym/rl_training/rl_games/train_session_logs/corrected_nonoverlap_physical_off_smoke_260901_122019.log`다.
+source receipt는 runtime 329 files, `git_dirty=false`, commit
+`1ce6a6faf395826498885b5aa550f357303468d9`, manifest SHA-256
+`f7708cf210584af27b9c84101e163c489ac13f38b3c6a85c5a686cb436a11a22`다. runner import-origin
+guard는 이 worktree의 `aerial_gym/__init__.py`를 enforced PASS했다.
+
+실제 runtime 시작 로그도 `placement=footprint_clearance`, `surface_clearance=0.45`,
+`curriculum=False`, `initial_bars=70`, `final=70`, physical mixed target,
+`speed_final=1.25`, fresh weights, 128 env, max 500 epoch를 확인했다. epoch 12까지 finite하게
+진행됐고 GPU 사용량은 약 6.16 GiB였다. 초기 crash 100%는 fresh PPO의 예상 cold start이며
+사전등록상 epoch 500의 early-vs-late window로만 판정한다.
