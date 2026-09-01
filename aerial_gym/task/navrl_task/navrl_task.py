@@ -2276,7 +2276,6 @@ class NavRLTask(BaseTask):
         """
         n = len(env_ids)
         spawn_wall_margin = 1.0
-        v3_inflated_half = None
         if self._physical_target:
             # The legacy sampler's fixed 1 m inset can place a dynamic body inside the planner's
             # own stopping reserve (wall_margin + physical_boundary_margin = 1.25 m by default).
@@ -2288,16 +2287,6 @@ class NavRLTask(BaseTask):
             )
         lo = b_min[:, 0:2] + spawn_wall_margin
         hi = b_max[:, 0:2] - spawn_wall_margin
-        if self._target_route_braking_v3_enabled:
-            spec = SoftEnvelopeSpec(
-                wall_margin_m=float(self.cur.wall_margin),
-                boundary_reserve_m=float(self.tm.physical_boundary_margin),
-                tracking_margin_m=float(self.tm.physical_tracking_margin),
-            )
-            support = self._target_route_support_xy[env_ids]
-            lo, hi, v3_inflated_half = torch_soft_envelope(
-                b_min[:, 0:2], b_max[:, 0:2], bar_half, support, spec
-            )
         chosen = lo + (hi - lo) * torch.rand((n, 2), device=self.device)
         todo = torch.ones(n, dtype=torch.bool, device=self.device)
         min_dist, max_dist, _ = self._general_goal_distance_bounds()
@@ -2347,15 +2336,7 @@ class NavRLTask(BaseTask):
                 & (drone_dist >= min_dist)
                 & (drone_dist <= max_dist)
             )
-            if self._target_route_braking_v3_enabled:
-                # Open admissible centre + continuous closed-AABB bars.  Degenerate point
-                # segments still exercise the shared envelope, including the zero-bar case.
-                accepted &= torch_segments_soft_safe(
-                    candidate, candidate, lo[ids], hi[ids],
-                    bars_xy[ids],
-                    v3_inflated_half[ids],
-                )
-            elif bars_xy.shape[1] > 0:
+            if bars_xy.shape[1] > 0:
                 if goal_required_margin is None:
                     bar_dist = (
                         torch.cdist(candidate, bars_xy[ids, : self.n_bars_active])
@@ -6161,10 +6142,6 @@ class NavRLTask(BaseTask):
             m += float(getattr(self.tm, "physical_boundary_margin", 0.0))
         lo = b_min[:, 0:2] + m
         hi = b_max[:, 0:2] - m
-        if self._target_route_braking_v3_enabled:
-            support = self._target_route_support_xy[env_ids]
-            lo = lo + support
-            hi = hi - support
         return lo + (hi - lo) * torch.rand(len(env_ids), 2, device=self.device)
 
     def _sync_target_to_sensor(self):

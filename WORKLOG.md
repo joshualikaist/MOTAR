@@ -13384,3 +13384,39 @@ training source bundle은 저장소 밖
 git_commit `dd8b4a4`, 328 files, git_dirty false).
 
 8-cell lower pilot는 아직 실행하지 않았다. PPO는 여전히 0 epoch다.
+
+## 2026-09-01 — lower v3 8-cell pilot VOID (matched-arm target pose)
+
+seed 829, 70 bars, 0.6/0.9/1.2/1.25, arms `off`/`global_astar_braking_v3`를 RTX 3070에서
+실행했다. 8개 셀 JSON은 모두 쓰였으나 parent verifier가
+`matched-arm identity drift: initial_target_pose_sha256`으로 `VOID_EXECUTION` /
+`NOT_INTERPRETED`다. 원자료
+`/home/fair/workspaces/aerial_gym_ws/navrl_v3_runs/pilot_lower1p25_seed829_2026-09-01/summary.json`.
+
+레이아웃 SHA와 로봇 자세 SHA는 8셀·두 arm이 모두 같다. 표적 초기 자세만 arm 사이에서
+갈라지고, 같은 arm 안에서는 속도 4개가 동일하다. 원인: v3 `_sample_waypoints`가
+wall+boundary에 target support를 더 inset해서 off와 다른 균일 상자에서 샘플한다. 게이트
+threshold·controller·사전등록 바이트는 바꾸지 않았다. confirmatory는 열리지 않는다.
+
+VOID라 공식 메커니즘 판정은 없다. 셀 파일을 진단으로만 보면(권한 아님) routed 70-bar는
+runtime `unsafe_start` 0, plan success 38/38–54/54, 0.6 goals/env 7/32=0.21875,
+fallback 277/9600≈2.89%, soft-envelope exit 569, speed ratio 0.80 미만
+(0.7955/0.7475/0.6551/0.6535). 이 숫자는 VOID를 FAIL로 바꾸지 않는다.
+
+## 2026-09-01 — matched-spawn 사전등록·CPU 계약, GPU 미실행
+
+VOID 이후 선택지는 (1) off와 같은 상자로 샘플 (2) pose 매칭을 사후에 끄기 (3) 중단이다.
+평가: (2)는 VOID를 본 뒤 무결성 검사를 빼는 것이라 기각. (1)이 맞다. envelope는
+A*/rollout/watchdog에 남기고 spawn RNG 상자만 off와 같게 한다.
+
+사전등록
+`docs/preregistration_braking_aware_route_v3_lower1p25_matched_spawn_2026-09-01.md`
+SHA-256 `17e7f35e350087bf2733aca70dfca7210efe667ad1845dd053f7334ddf1645b4`를 구현 전에
+고정했다. 옛 lower-1.25 사전등록 바이트는 그대로다. `_sample_general_target`과
+`_sample_waypoints`의 v3-only inset/AABB 필터를 제거했다. pose 해시 검사는 유지한다.
+
+계산 예측: identity는 통과하고 메커니즘은 실패한다. VOID 셀의 비공식 숫자는 더 보수적인
+envelope-inset spawn에서도 speed ratio·soft-exit·fallback·0.6 goals/env가 이미 게이트를
+밑돈다. spawn을 넓히면 in-flight 지표가 나아지지 않고 reset `unsafe_start`만 늘 수 있다.
+이 예측은 공식 판정이 아니다. spawn 바이트가 바뀌므로 `dd8b4a4` receipt는 다음 GPU를
+무장하지 못한다. PPO는 0 epoch, confirmatory는 닫혀 있다.

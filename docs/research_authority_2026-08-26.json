@@ -99,16 +99,18 @@
     "braking_aware_route_v3_lower1p25": {
       "preregistration": "docs/preregistration_braking_aware_route_v3_lower1p25_2026-09-01.md",
       "preregistration_sha256": "cd1347121c24ecd10273189360bed9ca76ffa80673aa89addf3ff0eaebc16252",
+      "matched_spawn_preregistration": "docs/preregistration_braking_aware_route_v3_lower1p25_matched_spawn_2026-09-01.md",
+      "matched_spawn_preregistration_sha256": "17e7f35e350087bf2733aca70dfca7210efe667ad1845dd053f7334ddf1645b4",
       "mode": "global_astar_braking_v3",
       "contract_variant": "baseline_1p25",
       "speeds_mps": [0.6, 0.9, 1.2, 1.25],
-      "implementation_status": "fresh_receipt_verified_pilot_not_run",
+      "implementation_status": "matched_spawn_cpu_only",
       "gpu_authority": false,
       "authorizes_ppo": false,
       "braking_receipt": "results/navrl_physical_target_braking_lower1p25_seed827_2026-09-01/receipt.json",
       "braking_receipt_sha256": "6d71b0be34ffb166d23aff9f6897cf41b5bb82a4a488d24403d735cf97852485"
     },
-    "next_gate": "canonical 1.5 v3 receipt is NO-GO; lower-1.25 raw receipt is verified at dd8b4a4; next GPU is the seed-829 8-cell lower v3 pilot"
+    "next_gate": "canonical 1.5 v3 receipt is NO-GO; lower-1.25 8-cell pilot is VOID_EXECUTION; matched-spawn amendment is CPU-only until a fresh baseline_1p25 receipt at the spawn-amended commit; confirmatory and PPO remain blocked"
   },
   "evidence": [
     {

@@ -13,6 +13,8 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 RUNNER_PATH = ROOT / "tools/run_navrl_braking_route_v3_cell.py"
 
+os.environ.pop("NAVRL_TARGET_BRAKING_CONTRACT_VARIANT", None)
+
 
 def _load(name, relative):
     spec = importlib.util.spec_from_file_location(name, ROOT / relative)

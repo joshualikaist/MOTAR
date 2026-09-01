@@ -1,14 +1,19 @@
 """CPU contracts for the fresh braking-aware route v3 lineage."""
 
+import ast
 import inspect
 import importlib.util
+import os
 from pathlib import Path
 import sys
+import types
 import unittest
 
 import numpy as np
 import torch
 
+
+os.environ.pop("NAVRL_TARGET_BRAKING_CONTRACT_VARIANT", None)
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -440,6 +445,101 @@ class BrakingV3GateVerifierTest(unittest.TestCase):
         self.assertEqual(GATE.PREREG_SHA256, GATE.sha256_file(GATE.PREREG))
         self.assertEqual(GATE.ROUTE_ARMS, ("off", "global_astar_braking_v3"))
         self.assertNotIn(300, GATE.STAGES["confirmatory"]["densities"])
+
+
+def _load_task_method(name):
+    tree = ast.parse(
+        (ROOT / "aerial_gym/task/navrl_task/navrl_task.py").read_text(encoding="utf-8")
+    )
+    task_class = next(
+        node for node in tree.body
+        if isinstance(node, ast.ClassDef) and node.name == "NavRLTask"
+    )
+    fn_node = next(
+        node for node in task_class.body
+        if isinstance(node, ast.FunctionDef) and node.name == name
+    )
+    module = ast.Module(body=[fn_node], type_ignores=[])
+    namespace = {"torch": torch}
+    exec(compile(ast.fix_missing_locations(module), "navrl_task.py", "exec"), namespace)
+    return namespace[name]
+
+
+class BrakingV3MatchedSpawnTest(unittest.TestCase):
+    def test_samplers_do_not_branch_on_v3(self):
+        tree = ast.parse(
+            (ROOT / "aerial_gym/task/navrl_task/navrl_task.py").read_text(encoding="utf-8")
+        )
+        task_class = next(
+            node for node in tree.body
+            if isinstance(node, ast.ClassDef) and node.name == "NavRLTask"
+        )
+        forbidden = {
+            "_target_route_braking_v3_enabled",
+            "torch_soft_envelope",
+            "torch_segments_soft_safe",
+        }
+        for name in ("_sample_general_target", "_sample_waypoints"):
+            fn_node = next(
+                node for node in task_class.body
+                if isinstance(node, ast.FunctionDef) and node.name == name
+            )
+            used = {node.id for node in ast.walk(fn_node) if isinstance(node, ast.Name)}
+            self.assertTrue(forbidden.isdisjoint(used), used & forbidden)
+
+    def test_waypoint_samples_ignore_v3_flag(self):
+        sample = _load_task_method("_sample_waypoints")
+        b_min = torch.zeros((4, 3))
+        b_max = torch.tensor([40.0, 40.0, 3.0]).repeat(4, 1)
+        env_ids = torch.arange(4)
+
+        def draw(flag):
+            torch.manual_seed(829)
+            stub = types.SimpleNamespace(
+                device="cpu",
+                _physical_target=True,
+                _target_route_braking_v3_enabled=flag,
+                cur=types.SimpleNamespace(wall_margin=0.5),
+                tm=types.SimpleNamespace(physical_boundary_margin=0.75),
+                obs_dict={"env_bounds_min": b_min, "env_bounds_max": b_max},
+            )
+            return sample(stub, env_ids)
+
+        self.assertTrue(torch.equal(draw(False), draw(True)))
+
+    def test_general_target_samples_ignore_v3_flag(self):
+        sample = _load_task_method("_sample_general_target")
+        env_ids = torch.arange(8)
+        start = torch.full((8, 3), 20.0)
+        b_min = torch.zeros((8, 3))
+        b_max = torch.tensor([40.0, 40.0, 3.0]).repeat(8, 1)
+        bars = torch.tensor([[[10.0, 10.0]]]).expand(8, 1, 2).clone()
+        half = torch.tensor([[[0.3, 0.3]]]).expand(8, 1, 2).clone()
+
+        def draw(flag):
+            torch.manual_seed(829)
+            stub = types.SimpleNamespace(
+                device="cpu",
+                _physical_target=True,
+                _target_route_braking_v3_enabled=flag,
+                _target_dynamics="physical",
+                _target_speed_max=lambda: 1.25,
+                _general_goal_distance_bounds=lambda: (2.0, 15.0, None),
+                _target_spawn_center_clearance=lambda: 1.0,
+                n_bars_active=1,
+                cur=types.SimpleNamespace(wall_margin=0.5),
+                tm=types.SimpleNamespace(
+                    physical_boundary_margin=0.75,
+                    physical_tracking_margin=0.45,
+                ),
+                task_config=types.SimpleNamespace(flight_altitude=1.5),
+            )
+            return sample(stub, env_ids, start, b_min, b_max, bars, half)
+
+        off = draw(False)
+        routed = draw(True)
+        self.assertTrue(torch.equal(off, routed))
+        self.assertTrue(torch.isfinite(off).all())
 
 
 if __name__ == "__main__":

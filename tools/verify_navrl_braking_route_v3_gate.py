@@ -30,8 +30,10 @@ if CONTRACT_VARIANT == "canonical_1p5":
     PREREG_SHA256 = "cceecb9ad4a538e7bc2bc9171436e823ef18652e9c971e0d6fa8174279df6056"
     SPEEDS = (0.6, 0.9, 1.2, 1.5)
 elif CONTRACT_VARIANT == "baseline_1p25":
-    PREREG = ROOT / "docs/preregistration_braking_aware_route_v3_lower1p25_2026-09-01.md"
-    PREREG_SHA256 = "cd1347121c24ecd10273189360bed9ca76ffa80673aa89addf3ff0eaebc16252"
+    PREREG = ROOT / (
+        "docs/preregistration_braking_aware_route_v3_lower1p25_matched_spawn_2026-09-01.md"
+    )
+    PREREG_SHA256 = "17e7f35e350087bf2733aca70dfca7210efe667ad1845dd053f7334ddf1645b4"
     SPEEDS = (0.6, 0.9, 1.2, 1.25)
 else:
     raise RuntimeError(

@@ -1,10 +1,14 @@
 """CPU-only contract tests for the braking-route-v3 verifier and frozen grid."""
 
 import importlib.util
+import os
 from pathlib import Path
 import sys
 import unittest
 
+# The verifier binds the speed grid at import time.  Canonical-default tests must not inherit a
+# leftover GPU-shell export of NAVRL_TARGET_BRAKING_CONTRACT_VARIANT.
+os.environ.pop("NAVRL_TARGET_BRAKING_CONTRACT_VARIANT", None)
 
 ROOT = Path(__file__).resolve().parents[1]
 SPEC = importlib.util.spec_from_file_location(
@@ -171,6 +175,12 @@ class BrakingRouteV3GateContractTest(unittest.TestCase):
             self.assertNotIn(1.5, lower.SPEEDS)
             self.assertEqual(
                 lower.sha256_file(lower.PREREG),
+                "17e7f35e350087bf2733aca70dfca7210efe667ad1845dd053f7334ddf1645b4",
+            )
+            self.assertTrue(lower.PREREG.name.endswith("matched_spawn_2026-09-01.md"))
+            historical = ROOT / "docs/preregistration_braking_aware_route_v3_lower1p25_2026-09-01.md"
+            self.assertEqual(
+                lower.sha256_file(historical),
                 "cd1347121c24ecd10273189360bed9ca76ffa80673aa89addf3ff0eaebc16252",
             )
             self.assertEqual(

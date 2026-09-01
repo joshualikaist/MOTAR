@@ -56,6 +56,14 @@ canonical 1.5 m/s warmup 게이트가 동일 숫자로 두 번 NO-GO이므로, �
 사전등록은
 [`docs/preregistration_braking_aware_route_v3_lower1p25_2026-09-01.md`](docs/preregistration_braking_aware_route_v3_lower1p25_2026-09-01.md)다.
 
+### 2026-09-01 matched-spawn amendment
+
+lower-1.25 8-cell은 표적 초기 자세 matched-arm drift로 VOID됐다. 다음 방법 후보는 v3가
+spawn/waypoint를 `off`와 같은 상자에서 뽑고, shared envelope는 plan/watchdog에만 쓰는
+것이다. pose 해시 매칭을 VOID 이후에 끄는 것은 방법이 아니다. 이 절은 GPU나 PPO 권한을
+만들지 않는다. 사전등록은
+[`docs/preregistration_braking_aware_route_v3_lower1p25_matched_spawn_2026-09-01.md`](docs/preregistration_braking_aware_route_v3_lower1p25_matched_spawn_2026-09-01.md)다.
+
 ## 1. 연구 질문과 기여
 
 ## 1. 연구 질문

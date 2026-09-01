@@ -13,7 +13,10 @@
 > `FAIL_ROUTE_MECHANISM` 뒤 no-anchor probe까지 `INCONCLUSIVE`로 종료됐으며 추가
 > GPU/PPO/retune/rerun authority가 없습니다. corrected non-overlap r2는
 > `FAIL_ROUTE_MECHANISM`이고 새 PPO는 0 epoch입니다. canonical 1.5 v3 receipt는 NO-GO입니다.
-> 현재 software GPU 후보는 별도 사전등록된 **lower-contract v3**(`baseline_1p25`)입니다.
+> 현재 software GPU 후보는 별도 사전등록된 **matched-spawn lower v3**입니다.
+> 직전 8-cell pilot는 `VOID_EXECUTION`(matched-arm target pose drift)입니다. spawn 바이트가
+> 바뀌므로 `dd8b4a4` receipt와 아래 L3 출력 루트는 재사용하지 않습니다. 지금은 CPU 계약만
+> 허용합니다.
 
 GPU 명령을 찾기 전에 아래 동결 receipt를 먼저 검사합니다. 이 명령은 학습이나 평가를 실행하지
 않고, Track A/B 원자료 SHA와 `Stage 2=false`, `long training=false`를 fail-closed로 확인합니다.
@@ -72,6 +75,9 @@ export MOTAR_V3_TRAINING_SOURCE_MANIFEST_SHA256=<create 출력의 manifest_sha25
 ```
 
 **단계 L3 — development pilot (GPU, 8 cells, seed 829, 70 bars, 1.25 상한).**
+2026-09-01 첫 실행은 `VOID_EXECUTION`이다. 아래 출력 루트는 unique-root 계약상 재사용 금지.
+matched-spawn 수정 뒤에는 **새 커밋에서 뜬 새 L1 receipt**와 새 디렉터리가 필요하다.
+같은 명령을 다시 돌리려면 새 디렉터리 이름이 필요하다.
 
 ```bash
 cd /home/fair/workspaces/aerial_gym_ws/.codex_worktrees/braking_route_v3

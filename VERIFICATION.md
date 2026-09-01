@@ -42,8 +42,18 @@ non-overlap 판정 필드를
   속도 0.6/0.9/1.2/1.25, decel p05 0.505257, stop-time p95 0.89 s, 정지거리 p95
   0.32814/0.49835/0.67084/0.69944 m. training source bundle SHA
   `5de7fdbfa56811b71284d454195239d8490e8a5db0b54a22d3e8b9c58263964c`.
-  다음 GPU는 seed 829 8-cell lower pilot다. confirmatory PASS도 별도 사전등록 500-epoch PPO
-  smoke만 연다. 현재 stage는 `MECHANISM_GATE`다.
+  **2026-09-01 lower 8-cell pilot는 `VOID_EXECUTION`이다** (reason:
+  `matched-arm identity drift: initial_target_pose_sha256`). 레이아웃·로봇 자세 해시는
+  off/v3가 일치했으나 표적 초기 자세가 갈라졌다. v3 `_sample_general_target` /
+  `_sample_waypoints`가 support를 추가로 inset하고 spawn AABB 필터를 썼기 때문이다.
+  공식 판정은 NOT_INTERPRETED이며 그 VOID를 FAIL로 바꾸지 않는다.
+  **현재 software 작업은 별도 사전등록된 matched-spawn 수정이다.**
+  [`docs/preregistration_braking_aware_route_v3_lower1p25_matched_spawn_2026-09-01.md`](docs/preregistration_braking_aware_route_v3_lower1p25_matched_spawn_2026-09-01.md)
+  (SHA-256 `17e7f35e350087bf2733aca70dfca7210efe667ad1845dd053f7334ddf1645b4`).
+  v3 spawn/waypoint는 off와 같은 physical wall+boundary 상자·bar-clearance를 쓰고,
+  envelope는 A*/rollout/watchdog에만 남긴다. `initial_target_pose_sha256` 매칭은 유지한다.
+  CPU 계약만 허용한다. spawn 바이트가 바뀌므로 `dd8b4a4` receipt는 다음 GPU를 무장하지 못한다.
+  confirmatory와 PPO는 열리지 않는다. 현재 stage는 `MECHANISM_GATE`다.
 
 ## 2026-08-26 기록된 실행 authority (판정 보존)
 
