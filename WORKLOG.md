@@ -13501,3 +13501,33 @@ gain/margin/threshold 사후 탐색은 실행하지 않는다. 새 시도는 phy
 명시적으로 포함하는 controller의 **새 방법**이어야 하며 별도 사전등록 전에는 구현·GPU를 열지
 않는다. 공식 요약은
 `docs/braking_aware_route_v3_lower1p25_matched_spawn_result_2026-09-01.md`에 보존했다.
+
+## 2026-09-01 — 막대 비중첩 fresh PPO 우선순위 분리 및 500-epoch route-off smoke 준비
+
+사용자가 막대 겹침 수정의 fresh PPO를 우선 진행하도록 명시했다. routed-v3 FAIL을 무시해 같은
+실패 메커니즘으로 장기학습하지 않고, 이미 동일-layout 70-bar에서 physical PASS한 route-off
+0.6/0.9/1.2/1.25 m/s envelope만 사용하는 **고정 70-bar learning-viability baseline**으로 분리했다.
+500 epoch PASS도 routed target이나 205-bar 성능을 뜻하지 않으며, 장기 70→205는 별도 사전등록한다.
+
+실행 전 런처 chain을 재감사해 두 개의 은닉 결함을 발견·수정했다.
+
+1. `train_navrl_physical_fresh.sh`가 `footprint_clearance`를 넘겨도 하위
+   `train_navrl_v2_search.sh`가 child marker를 배치 선택 전에 unset해 실제로는 옛
+   `navrl_band`를 다시 설정했다. marker를 shell-local에 보존해 실제 task까지 비중첩 계약이
+   유지되도록 했다.
+2. 하위 런처가 `NAVRL_TARGET_SPEED_FINAL=1.5`를 무조건 덮어써 1.25라고 출력한 child 실험도
+   실제로는 1.5가 될 수 있었다. canonical default 1.5는 유지하되 명시적 closed child override를
+   보존하도록 바꿨다.
+
+preflight는 이제 최종 `placement=footprint_clearance`, `surface_clearance=0.45`,
+`density=70->70`, `fixed_bars=70`, `speed_final=1.25`, `ramp=1`을 한 줄에서 증명한다. 새 launcher
+`train_navrl_corrected_nonoverlap_physical_smoke.sh`는 checkpoint/CLI/dirty runtime을 거부하고,
+exact import root와 clean source receipt를 강제한다. 사전등록은
+`docs/preregistration_corrected_nonoverlap_physical_off_smoke_2026-09-01.md`
+(SHA-256 `23181001d29e9d34295f63f153791e6ee4492a00431b209edc7454db885974d1`)다.
+
+검증: launcher/target environment 14/14, 신규 smoke contract 3/3, non-overlap placement 4/4,
+v2 launcher 5/5, physical-target 관련 30/30 PASS. `test_navrl_ref5in_run_contract.py` 101개 중
+100개 PASS, 1개는 이 worktree에 historical P1c checkpoint 폴더가 없어 실패했으며 변경 코드와
+무관하다. bash syntax/preflight와 `git diff --check`도 PASS했다. GPU 학습은 clean commit 뒤
+source receipt를 만든 다음 1회 시작한다.

@@ -159,10 +159,20 @@ class TargetLauncherContractTest(unittest.TestCase):
         self.assertIn("export NAVRL_TARGET_DYNAMICS=physical", PHYSICAL_LAUNCHER)
         self.assertIn("export NAVRL_V2_PHYSICAL_FRESH_CHILD=1", PHYSICAL_LAUNCHER)
 
+    def test_physical_child_marker_survives_until_placement_selection(self):
+        self.assertIn(
+            '_PHYSICAL_FRESH_CHILD="${NAVRL_V2_PHYSICAL_FRESH_CHILD:-0}"',
+            V2_LAUNCHER,
+        )
+        self.assertIn('if [[ "${_PHYSICAL_FRESH_CHILD}" == "1" ]]; then', V2_LAUNCHER)
+
     def test_base_v2_refuses_stale_nonlegacy_target_dynamics(self):
         self.assertIn("refusing inherited target dynamics", V2_LAUNCHER)
         self.assertIn('export NAVRL_TARGET_DYNAMICS="${_TARGET_DYNAMICS_REQUESTED}"', V2_LAUNCHER)
-        self.assertIn('if [[ "${NAVRL_V2_PHYSICAL_FRESH_CHILD:-0}" == "1" ]]', V2_LAUNCHER)
+        self.assertIn(
+            '_PHYSICAL_FRESH_CHILD="${NAVRL_V2_PHYSICAL_FRESH_CHILD:-0}"',
+            V2_LAUNCHER,
+        )
 
     def test_route_lineage_has_distinct_marker_and_fresh_guard(self):
         self.assertIn("refusing CKPT/CHECKPOINT", ROUTED_LAUNCHER)
@@ -198,6 +208,11 @@ class TargetLauncherContractTest(unittest.TestCase):
         )
         self.assertNotEqual(stale.returncode, 0, stale.stdout)
         self.assertIn("canonical physical lineage refuses target route", stale.stdout)
+
+        physical = self._preflight(RL / "train_navrl_physical_fresh.sh")
+        self.assertEqual(physical.returncode, 0, physical.stdout)
+        self.assertIn("placement=footprint_clearance", physical.stdout)
+        self.assertIn("surface_clearance=0.45", physical.stdout)
 
         routed = self._preflight(ROUTED_LAUNCHER_PATH)
         self.assertEqual(routed.returncode, 0, routed.stdout)

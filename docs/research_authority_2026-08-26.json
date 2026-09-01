@@ -121,7 +121,22 @@
       "confirmatory_authorized": false,
       "superseded_braking_receipt_sha256": "6d71b0be34ffb166d23aff9f6897cf41b5bb82a4a488d24403d735cf97852485"
     },
-    "next_gate": "matched-spawn lower-v3 pilot failed with clean integrity; confirmatory and PPO are blocked; any future controller redesign requires a new preregistration"
+    "route_off_learning_viability_smoke": {
+      "preregistration": "docs/preregistration_corrected_nonoverlap_physical_off_smoke_2026-09-01.md",
+      "preregistration_sha256": "23181001d29e9d34295f63f153791e6ee4492a00431b209edc7454db885974d1",
+      "launcher": "aerial_gym/rl_training/rl_games/train_navrl_corrected_nonoverlap_physical_smoke.sh",
+      "mode": "route_off",
+      "target_speed_max_mps": 1.25,
+      "fixed_bars": 70,
+      "max_epochs": 500,
+      "fresh_only": true,
+      "gpu_authority": true,
+      "gpu_authority_scope": "one seed-907 500-epoch fixed-70 learning-viability smoke only",
+      "authorizes_routed_ppo": false,
+      "authorizes_long_training": false,
+      "status": "AUTHORIZED_NOT_STARTED"
+    },
+    "next_gate": "run the separately preregistered route-off fixed-70 learning-viability smoke once; routed confirmatory/PPO remains blocked and any future routed controller redesign requires a new preregistration"
   },
   "evidence": [
     {

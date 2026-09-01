@@ -10,10 +10,11 @@
 > [`VERIFICATION.md`](VERIFICATION.md)가 규정한다. Track A의 유일한 다음 계약은
 > [`docs/SIM2REAL_3DAY_EXECUTION_PLAN.md`](docs/SIM2REAL_3DAY_EXECUTION_PLAN.md)의
 > hardware/real-log 계측이며, Track B는 recovery-v2 FAIL과 no-anchor `INCONCLUSIVE` 뒤 종료됐다.
-> corrected non-overlap route gate r2도 `FAIL_ROUTE_MECHANISM`이므로 fresh PPO smoke와 장기학습은
-> 아직 권한이 없다. 현재 software 방법 후보는 사전등록된 braking-aware route v3
-> (`global_astar_braking_v3`) MECHANISM_GATE다. 이 charter의 후보 실험 설명은 그 자체로 실행
-> 권한을 만들지 않는다.
+> corrected non-overlap routed 계보는 `FAIL_ROUTE_MECHANISM`이고 routed PPO/장기학습 권한이 없다.
+> 다만 2026-09-01 사용자 우선순위에 따라 route-off physical PASS envelope만 사용하는 별도
+> 70-bar/500-epoch learning-viability baseline 1회를 사전등록했다. 이는 overlap 수정의 fresh 학습
+> 가능성을 먼저 분리하는 진단이며 routed method 성공으로 합치지 않는다. 이 charter의 후보 실험
+> 설명은 그 자체로 추가 실행 권한을 만들지 않는다.
 
 ### 2026-08-25 역사적 후보 계보 — physical target global route
 

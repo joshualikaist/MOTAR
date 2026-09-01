@@ -48,6 +48,18 @@ class TestResearchAuthorityFreeze(unittest.TestCase):
         prohibited = set(receipt["track_b"]["prohibited"])
         self.assertTrue({"ppo_training", "gain_or_margin_retune", "cell_or_grid_rerun"} <= prohibited)
 
+    def test_route_off_smoke_is_narrow_and_does_not_reverse_routed_fail(self):
+        receipt = MODULE.verify_authority()
+        corrected = receipt["corrected_environment_v2_2026_08_27"]
+        self.assertFalse(corrected["route_physical_gate_r2"]["authorizes_ppo"])
+        smoke = corrected["route_off_learning_viability_smoke"]
+        self.assertEqual(smoke["status"], "AUTHORIZED_NOT_STARTED")
+        self.assertEqual(smoke["fixed_bars"], 70)
+        self.assertEqual(smoke["max_epochs"], 500)
+        self.assertTrue(smoke["fresh_only"])
+        self.assertFalse(smoke["authorizes_routed_ppo"])
+        self.assertFalse(smoke["authorizes_long_training"])
+
     def test_evidence_sha_drift_fails_closed(self):
         receipt = json.loads(MODULE.DEFAULT_RECEIPT.read_text(encoding="utf-8"))
         receipt["evidence"][0]["sha256"] = "0" * 64

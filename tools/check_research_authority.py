@@ -127,6 +127,22 @@ def verify_authority(receipt_path=DEFAULT_RECEIPT):
     if corrected_gate.get("fresh_ppo_epochs_run") != 0:
         raise RuntimeError("corrected route gate receipt unexpectedly claims fresh PPO epochs")
 
+    # This narrow route-off smoke does not reverse the frozen routed-mechanism failure.
+    smoke = corrected["route_off_learning_viability_smoke"]
+    smoke_prereg = ROOT / smoke["preregistration"]
+    if not smoke_prereg.is_file() or _sha256(smoke_prereg) != smoke["preregistration_sha256"]:
+        raise RuntimeError("route-off learning-smoke preregistration missing or SHA drift")
+    if smoke.get("status") != "AUTHORIZED_NOT_STARTED":
+        raise RuntimeError("route-off learning-smoke status drift")
+    if smoke.get("gpu_authority") is not True or smoke.get("fresh_only") is not True:
+        raise RuntimeError("route-off learning-smoke one-shot authority drift")
+    if smoke.get("authorizes_routed_ppo") is not False or smoke.get(
+        "authorizes_long_training"
+    ) is not False:
+        raise RuntimeError("route-off smoke unexpectedly authorizes routed/long PPO")
+    if smoke.get("fixed_bars") != 70 or smoke.get("max_epochs") != 500:
+        raise RuntimeError("route-off learning-smoke execution tuple drift")
+
     if receipt.get("hardware_state") != {
         "assembled_airframe": False,
         "real_sensor_logs": 0,
