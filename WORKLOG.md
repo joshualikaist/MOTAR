@@ -13453,3 +13453,17 @@ worktree에서 빠졌던 frozen evidence 두 개는 primary 사본의 계약 SHA
 허용 범위는 현재 clean commit의 fresh `baseline_1p25` receipt 1회와 seed-829/70 bars/8-cell
 pilot 1회뿐이다. FAIL이면 confirmatory와 PPO를 닫고, PASS일 때만 frozen seed-839
 confirmatory가 열린다. 어느 경우에도 이 addendum가 PPO나 장기학습 권한을 만들지 않는다.
+
+새 commit `2769f5d`에서 fresh `baseline_1p25` braking receipt를 실행해 standalone verification
+PASS했다. 경로는
+`results/navrl_physical_target_braking_lower1p25_matched_spawn_seed827_2026-09-01/receipt.json`,
+SHA-256 `18425bfc9cb618834b37435b8d83a07dc1af69e56aa02459f00a94c544e075cc`다.
+receipt의 `git_head=2769f5d692ff124802a8e11b83393c31585bae7b`, `source_clean=true`다.
+decel p05 0.5052572863 m/s², stop-time p95 0.89 s, 정지거리 p95는
+0.328143/0.498352/0.670841/0.699436 m로 이전 결정론적 lower receipt와 일치한다.
+
+pilot 직전 verifier가 무결성-clean `FAIL_BLOCKS_CONFIRMATORY`까지 예외로 던져 stderr에
+`VOID_EXECUTION`이라고 표시하는 판정 표시 버그를 발견했다. threshold나 verdict 계산은 맞고
+프로세스 종료 의미만 틀렸다. `verify_summary`가 integrity-valid FAIL을 정상 검증하도록 고치고,
+`PASS_8_CELL_INTEGRITY + FAIL_BLOCKS_CONFIRMATORY` fixture가 VOID가 되지 않는 회귀 테스트를
+추가했다. 이 수정은 simulator·controller·grid·threshold·receipt runtime source를 바꾸지 않는다.

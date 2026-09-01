@@ -313,7 +313,6 @@ def verify_summary(path: Path, pilot_path: Path | None = None) -> int:
     validate_payload(payload, pilot_sha)
     recomputed = derive_verdict(payload)
     require(payload.get("verdict") == recomputed, "stored verdict differs from recomputation")
-    require(recomputed["gate"].startswith("PASS_"), recomputed["gate"])
     print(f"VERIFIED {path} {recomputed['gate']}")
     return 0
 

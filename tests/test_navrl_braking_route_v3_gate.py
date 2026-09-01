@@ -1,9 +1,11 @@
 """CPU-only contract tests for the braking-route-v3 verifier and frozen grid."""
 
 import importlib.util
+import json
 import os
 from pathlib import Path
 import sys
+import tempfile
 import unittest
 
 # The verifier binds the speed grid at import time.  Canonical-default tests must not inherit a
@@ -134,6 +136,26 @@ class BrakingRouteV3GateContractTest(unittest.TestCase):
         verdict = GATE.derive_verdict(_summary("pilot", identity=identity, cells=cells))
         self.assertEqual(verdict["gate"], "FAIL_BLOCKS_CONFIRMATORY")
         self.assertFalse(verdict["mechanism_pass"])
+
+    def test_integrity_clean_fail_verifies_as_fail_not_void(self):
+        identity = _identity()
+        cells = []
+        for route in GATE.ROUTE_ARMS:
+            for speed in GATE.SPEEDS:
+                extras = {}
+                if route != "off":
+                    extras["v3_diagnostics"] = _diagnostics(
+                        soft_envelope_exit_count=1
+                    )
+                cells.append(_cell(route, speed, 70, 829, identity, **extras))
+        payload = _summary("pilot", identity=identity, cells=cells)
+        payload["verdict"] = GATE.derive_verdict(payload)
+        self.assertEqual(payload["verdict"]["execution_integrity"], "PASS_8_CELL_INTEGRITY")
+        self.assertEqual(payload["verdict"]["gate"], "FAIL_BLOCKS_CONFIRMATORY")
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "summary.json"
+            path.write_text(json.dumps(payload), encoding="utf-8")
+            self.assertEqual(GATE.verify_summary(path), 0)
 
     def test_confirmatory_without_pilot_pass_is_void(self):
         verdict = GATE.derive_verdict(_summary("confirmatory"))
