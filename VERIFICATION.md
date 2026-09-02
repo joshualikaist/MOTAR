@@ -293,6 +293,38 @@ exact BOM/calibration/time-sync와 real-log bearing/range/latency/dropout profil
 - **거리 충실도(#3)** — 별도 사전등록 필요. 검출 임계와 달리 물리적으로 독립된 양이므로 함께
   바꾸지 않는다.
 
+## 2026-09-02 distractor envelope 판정 — 색 지름길 정량화 (PLAN SYNC)
+
+**두 detector 모두 `COLOR_SHORTCUT_CONFIRMED`.** 사전등록
+[`prereg`](docs/prereg_2026-09-01_distractor_envelope.md), 원자료
+[`summary`](results/navrl_detector_distractor_envelope_seed479/summary.md).
+
+seed 479, 2 detector x N=0/1/3/5 = 8 cell, 2,049 ep/cell. FTLR = (DISTRACTOR_LOCK + GHOST_LOCK) /
+가시 프레임, 분류 반경 0.5 m.
+
+| detector | N=1 | N=3 | N=5 | 판정 |
+|---|---:|---:|---:|---|
+| default (5-param 색 규칙) | 52.7% | 79.7% | 88.5% | `COLOR_SHORTCUT_CONFIRMED` |
+| **v7 (11,329-param 학습 CNN)** | 60.7% | 83.1% | **90.3%** | `COLOR_SHORTCUT_CONFIRMED` |
+
+**학습된 인지가 시뮬레이터의 색 지름길을 학습했다.** frame precision 0.99766인 v7이 동색 디코이
+앞에서는 가시 프레임의 90.27%에서 틀린 물체를 잡는다. 게다가 **distractor 수가 늘수록 confidence가
+올라간다**(0.826 → 0.892) — `count`가 픽셀 합이라 디코이가 많을수록 점수가 커지기 때문이다.
+평균 픽셀 수 147–181인데 표적 자체는 2–5 px다.
+
+Gate 0 셋 다 PASS(N=0 계보 회귀는 기기 변경에도 ±3.75 pp 이내). **detector 간 FTLR·outcome 비교는
+금지**(prereg §3-c, L6): 서로 다른 궤적 → 서로 다른 프레임 분포.
+
+이 결과는 개선이 아니라 **결함의 정량화**이며, 후보 기반 detector(C/D 단계) 설계 근거다.
+이 판정을 보고 임계값·detector·prereg를 바꾸지 않는다.
+
+### 검증 이력 (2기기)
+
+GTX 1650 Ti에서 측정·verify PASS → gitignore 아티팩트(61 MB) 전송 후 **RTX 3070에서도 verify PASS**.
+재검증 과정에서 이식성 결함 2건을 고쳤다(host 절대 심링크 24개, `gate0.artifact_path`의 host 절대경로).
+**게이트·임계값·판정 무변경**이며, 수정 전 recorded-vs-recomputed 전수 비교에서 차이는
+`artifact_path` 한 필드뿐이었음을 확인했다. 상세는 WORKLOG 2026-09-02 병합 노트.
+
 ## fail-closed 규칙
 
 > 각 규칙은 **사유**와 **재검 조건**을 함께 갖는다(2026-08-22,

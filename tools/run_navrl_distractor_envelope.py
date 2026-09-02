@@ -403,6 +403,23 @@ NO_CROSS_DETECTOR_COMPARISON = (
     "over that distribution (prereg section 3-c)"
 )
 
+# Host-absolute locations are not identity.  source + source_sha256 already pin the artifact.
+_VERIFY_IGNORE_KEYS = frozenset({"artifact_path"})
+
+
+def _verify_payload(value):
+    """Drop host-absolute path fields before recorded-vs-recomputed summary compare."""
+    if isinstance(value, dict):
+        return {
+            key: _verify_payload(item)
+            for key, item in value.items()
+            if key not in _VERIFY_IGNORE_KEYS
+        }
+    if isinstance(value, list):
+        return [_verify_payload(item) for item in value]
+    return value
+
+
 SUMMARY_VERIFY_KEYS = (
     "schema_version",
     "producer",
@@ -1101,7 +1118,9 @@ def lineage_reference() -> dict:
         f"seed={LINEAGE_SEED}",
     )
     reference["artifact_reachable"] = True
-    reference["artifact_path"] = str(path)
+    # Identity is source (repo-relative) + source_sha256.  A host-absolute path would make
+    # cross-machine verify fail after an otherwise identical tar extract.
+    reference["artifact_path"] = LINEAGE_RESULT_REL
     return reference
 
 
@@ -2980,7 +2999,10 @@ def main() -> int:
     require(SUMMARY_JSON.is_file(), f"summary missing: {SUMMARY_JSON}")
     recorded = load_json(SUMMARY_JSON)
     for key in SUMMARY_VERIFY_KEYS:
-        require(recorded.get(key) == expected.get(key), f"summary changed: {key}")
+        require(
+            _verify_payload(recorded.get(key)) == _verify_payload(expected.get(key)),
+            f"summary changed: {key}",
+        )
     print(f"[distractor] VERIFY PASS | {recorded['verdicts']}")
     return 0
 
