@@ -33,6 +33,7 @@ const pendingDocs = new Set(
 for (const id of ['arena', 'method', 'perception', 'safety-filter', 'evidence', 'platform', 'next']) {
   assert(html.includes(`id="${id}"`), `missing section #${id}`);
 }
+assert(html.includes('id="panel-runs"'), 'legacy #panel-runs deep link must remain valid');
 assert(!css.includes('@import'));
 assert(!css.includes('fonts.googleapis.com'));
 assert(html.includes('style.css?v=20260827r6'), 'compact site CSS cache-bust must advance with the layout');
