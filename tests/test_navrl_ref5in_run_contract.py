@@ -1,11 +1,14 @@
 """CPU-only guards for the ref5in closed-run and provenance contracts."""
 
 from pathlib import Path
+import ast
 import importlib.util
+import inspect
 import os
 import re
 import subprocess
 import tempfile
+import types
 import unittest
 
 
@@ -1860,6 +1863,631 @@ class DetectionRangeStage1Contract(unittest.TestCase):
         for key in ("cfg_detector_max_range", "cfg_detect_width", "cfg_detect_height"):
             self.assertIn(key, source)
         self.assertIn('"detector_max_range_evidence"', self.source())
+
+
+class DistractorEnvelopeContract(unittest.TestCase):
+    """Prereg 2026-09-01 distractor envelope: four EVALUATION cells, one manipulated variable.
+
+    The failures this guards against are specific to an eval-only sweep whose primary metric is
+    produced by the runtime rather than read off an existing field.
+
+    First, the measurement quietly running where it must not.  The classifier consumes ground truth
+    to label frames, which is legal only in an evaluation metric, and it must be a structural no-op
+    at zero distractors -- otherwise the N=0 regression cell stops measuring the unmodified lineage
+    and Gate 0.3 compares the new code against itself.
+
+    Second, the decoupled detect-resolution path.  It is an identity only while the target is the
+    only painted object; with distractors it silently reports a clean target while the image the
+    policy sees is full of decoys.  The runtime refuses the combination, but a launcher that relies
+    on that refusal would let the N=0 cell -- which sails straight past it -- be measured on a path
+    the other three cells cannot use.
+
+    Third, the episode contract.  The evaluator drains whole 128-env batches, so a cell finishes at
+    or just past the request; exact equality has already broken one arm that landed on 2,050.
+
+    Fourth, capture/crash/timeout leaking into the verdict.  Five code paths still read a distractor
+    as free space (prereg L5), so those numbers are supporting reports and the verdict function is
+    written so that it cannot see them.
+    """
+
+    ORCHESTRATOR = ROOT / "tools/run_navrl_distractor_envelope.py"
+    PREREG = ROOT / "docs/prereg_2026-09-01_distractor_envelope.md"
+    TASK = ROOT / "aerial_gym/task/navrl_task/navrl_task.py"
+    PERCEPTION = ROOT / "aerial_gym/task/navrl_task/navrl_perception.py"
+
+    @classmethod
+    def launcher(cls):
+        """Import the launcher once for behavioural assertions (no GPU, no evaluation)."""
+        module = getattr(cls, "_launcher_module", None)
+        if module is None:
+            spec = importlib.util.spec_from_file_location(
+                "distractor_envelope_launcher_under_test", cls.ORCHESTRATOR
+            )
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            cls._launcher_module = module
+        return module
+
+    def source(self):
+        return self.ORCHESTRATOR.read_text(encoding="utf-8")
+
+    def test_preregistered_contract_literals_are_pinned(self):
+        source = self.source()
+        for literal in (
+            "SEED = 479",
+            "BARS = 70",
+            "EPISODES = 2049",
+            "DISTRACTOR_COUNTS = (0, 1, 3, 5)",
+            'DEFAULT_DETECTOR = "default"',
+            'V7_DETECTOR = "v7"',
+            '"artifacts/navrl_target_detector_v7_confirmatory.pth"',
+            '"85c7974bcd85c627170c5bd63030144d1c5dc2a11e5d64829cad38f615c5d5d7"',
+            'REGRESSION_CELL = "default_n0"',
+            "VERDICT_DISTRACTOR_COUNT = 5",
+            'MANIPULATED_VARIABLE = "NAVRL_DISTRACTOR_COUNT"',
+            'NARROW_OVERRIDE_DETECTOR = "v7"',
+            'NARROW_OVERRIDE_VARIABLE = "NAVRL_V2_ALLOW_DETECTOR_THRESHOLD_MISMATCH"',
+            'EXPECTED_THRESHOLD_MISMATCH = "cfg_detector_threshold: checkpoint=0.55 expected=0.7"',
+            "CLASSIFICATION_RADIUS_M = 0.5",
+            "FTLR_SHORTCUT_THRESHOLD = 0.50",
+            "FTLR_ROBUST_THRESHOLD = 0.05",
+            "N0_REGRESSION_TOLERANCE_PP = 3.75",
+            "CAMERA_WIDTH = 160",
+            "CAMERA_HEIGHT = 90",
+            "DETECT_WIDTH = CAMERA_WIDTH",
+            "DETECT_HEIGHT = CAMERA_HEIGHT",
+            "DETECTOR_MIN_PIXELS = 2",
+            "GOAL_DIST_MIN_M = 22.5",
+            "GOAL_DIST_MAX_M = 28.0",
+            'ACTION_SELECTION = "deterministic"',
+            'REFLECTION_MODE = "original"',
+            'SPEED_GOVERNOR_MODE = "off"',
+            "CHECKPOINT_SHA = "
+            '"197ea26999d6bb9cf23c4e5a55acbe945f89985e2384687d60ab1dbae66a278e"',
+            'PREREGISTRATION = "docs/prereg_2026-09-01_distractor_envelope.md"',
+            '"navrl_detector_distractor_envelope_seed479"',
+            '"decision_authority": "none"',
+            '"p2_verdict_changed": False',
+            '"d1_verdict_changed": False',
+            '"p3_unlocked": False',
+            '"schema_version": 1,',
+            'VERDICT_SHORTCUT = "COLOR_SHORTCUT_CONFIRMED"',
+            'VERDICT_ROBUST = "DETECTOR_ROBUST_TO_DISTRACTORS"',
+            'VERDICT_INCONCLUSIVE = "INCONCLUSIVE_DISTRACTOR_ENVELOPE"',
+            'VERDICT_FAIL_CLOSED = "FAIL_CLOSED_IMPLEMENTATION"',
+        ):
+            self.assertIn(literal, source, f"missing preregistered literal: {literal}")
+
+    def test_the_preregistration_it_names_exists_and_is_the_one_it_implements(self):
+        self.assertTrue(self.PREREG.is_file(), "the named preregistration is missing")
+        prereg = self.PREREG.read_text(encoding="utf-8")
+        for literal in (
+            "479",
+            "2,049",
+            "0 / 1 / 3 / 5",
+            "0.5 m",
+            "COLOR_SHORTCUT_CONFIRMED",
+            "DETECTOR_ROBUST_TO_DISTRACTORS",
+            "INCONCLUSIVE_DISTRACTOR_ENVELOPE",
+            "NAVRL_DISTRACTOR_COUNT",
+            "197ea269",
+        ):
+            self.assertIn(literal, prereg, f"preregistration does not contain {literal}")
+
+    def test_cell_and_threshold_constants_match_the_preregistration(self):
+        module = self.launcher()
+        self.assertEqual(module.SEED, 479)
+        self.assertEqual(module.BARS, 70)
+        self.assertEqual(module.EPISODES, 2049)
+        self.assertEqual(module.CLASSIFICATION_RADIUS_M, 0.5)
+        self.assertEqual(module.FTLR_SHORTCUT_THRESHOLD, 0.50)
+        self.assertEqual(module.FTLR_ROBUST_THRESHOLD, 0.05)
+        self.assertEqual(module.REGRESSION_CELL, "default_n0")
+        self.assertEqual(module.VERDICT_DISTRACTOR_COUNT, 5)
+
+    def test_the_grid_is_a_complete_two_by_four_factorial(self):
+        """Prereg section 3 names BOTH detectors, so the detector is a factor, not a fixed level."""
+        module = self.launcher()
+        self.assertEqual(module.DISTRACTOR_COUNTS, (0, 1, 3, 5))
+        self.assertEqual([name for name, _, _, _ in module.DETECTORS], ["default", "v7"])
+        self.assertEqual(len(module.CELLS), 8)
+        self.assertEqual(
+            [cell for cell, _, _ in module.CELLS],
+            ["default_n0", "default_n1", "default_n3", "default_n5",
+             "v7_n0", "v7_n1", "v7_n3", "v7_n5"],
+        )
+        # Every (detector, count) combination present exactly once.
+        self.assertEqual(
+            sorted((d, n) for _, d, n in module.CELLS),
+            sorted((d, n) for d, _, _, _ in module.DETECTORS for n in module.DISTRACTOR_COUNTS),
+        )
+        for detector, _, _, _ in module.DETECTORS:
+            self.assertEqual(module.verdict_cell(detector), f"{detector}_n5")
+            self.assertEqual(module.zero_cell(detector), f"{detector}_n0")
+
+    def test_the_v7_level_is_pinned_to_the_artifact_the_v7_gate_scored(self):
+        """`artifacts/` holds seven detector checkpoints; the claim belongs to exactly one."""
+        module = self.launcher()
+        relative, sha, threshold = module.detector_spec("v7")
+        self.assertEqual(relative, "artifacts/navrl_target_detector_v7_confirmatory.pth")
+        self.assertEqual(
+            sha, "85c7974bcd85c627170c5bd63030144d1c5dc2a11e5d64829cad38f615c5d5d7"
+        )
+        # v7 runs at ITS OWN validation-selected operating point -- the one its 0.99766 frame
+        # precision was measured at -- not at the policy's 0.55.
+        self.assertEqual(threshold, 0.70)
+        self.assertEqual(module.detector_spec("default"), ("", "", 0.55))
+        evidence = module.verify_detector_artifacts()
+        self.assertEqual(evidence["v7"]["artifact_sha256"], sha)
+        self.assertIsNone(evidence["default"]["artifact"])
+        if evidence["v7"].get("gate_reachable"):
+            self.assertAlmostEqual(evidence["v7"]["gate_selected_threshold"], 0.70)
+            self.assertAlmostEqual(
+                evidence["v7"]["gate_frame_precision"], 0.99766, places=4
+            )
+
+    def test_the_two_thresholds_are_applied_by_name_and_at_the_boundary(self):
+        """Both thresholds are inclusive in the preregistration; the boundary is where that shows."""
+        module = self.launcher()
+        self.assertEqual(module.classify_verdict(0.50), module.VERDICT_SHORTCUT)
+        self.assertEqual(module.classify_verdict(0.9999), module.VERDICT_SHORTCUT)
+        self.assertEqual(module.classify_verdict(0.05), module.VERDICT_ROBUST)
+        self.assertEqual(module.classify_verdict(0.0), module.VERDICT_ROBUST)
+        self.assertEqual(module.classify_verdict(0.0500001), module.VERDICT_INCONCLUSIVE)
+        self.assertEqual(module.classify_verdict(0.4999999), module.VERDICT_INCONCLUSIVE)
+
+    def test_outcome_rates_cannot_reach_the_verdict(self):
+        """The verdict function takes ONE rate: capture/crash/timeout are not in scope for it."""
+        module = self.launcher()
+        body = inspect.getsource(module.classify_verdict)
+        signature = inspect.signature(module.classify_verdict)
+        self.assertEqual(list(signature.parameters), ["ftlr"])
+        for forbidden in ("capture", "crash", "timeout", "never_acquired", "outcome"):
+            self.assertNotIn(
+                forbidden,
+                body.split('"""')[-1],
+                f"{forbidden} is reachable from classify_verdict's body",
+            )
+
+    def test_each_factor_is_isolated_in_its_own_direction(self):
+        """A 2x4 factorial has TWO single-axis claims, and both must be asserted separately.
+
+        Lumping them into one cross-cell diff would let a stray variable hide: anything that
+        happened to move with the detector would be excused as "part of the detector axis".
+        """
+        module = self.launcher()
+        environments = {
+            cell: module.evaluation_env(cell, preflight=True) for cell, _, _ in module.CELLS
+        }
+
+        def difference(a, b):
+            env_a, env_b = environments[a], environments[b]
+            return {k for k in set(env_a) | set(env_b) if env_a.get(k) != env_b.get(k)}
+
+        # direction 1: inside a detector, only the distractor count moves.
+        for detector, _, _, _ in module.DETECTORS:
+            names = module.cells_for_detector(detector)
+            self.assertEqual(len(names), 4)
+            for i, a in enumerate(names):
+                for b in names[i + 1:]:
+                    self.assertEqual(
+                        difference(a, b),
+                        {"NAVRL_DISTRACTOR_COUNT", "NAVRL_V2_RESULT_DIR"},
+                        f"{a} vs {b} moved more than the distractor axis",
+                    )
+        # direction 2: inside a distractor count, only the detector-selection set moves.
+        detector_axis = set(module.DETECTOR_SELECTION_VARIABLES) | {"NAVRL_V2_RESULT_DIR"}
+        for count in module.DISTRACTOR_COUNTS:
+            names = module.cells_for_count(count)
+            self.assertEqual(len(names), 2)
+            self.assertEqual(
+                difference(names[0], names[1]),
+                detector_axis,
+                f"at N={count} the two detector cells moved more than the detector axis",
+            )
+        self.assertEqual(
+            module.DETECTOR_SELECTION_VARIABLES,
+            (
+                "NAVRL_DETECTOR_CHECKPOINT",
+                "NAVRL_DETECTOR_THRESHOLD",
+                "NAVRL_V2_ALLOW_DETECTOR_THRESHOLD_MISMATCH",
+            ),
+        )
+        self.assertEqual(
+            {cell: environments[cell]["NAVRL_DISTRACTOR_COUNT"] for cell, _, _ in module.CELLS},
+            {"default_n0": "0", "default_n1": "1", "default_n3": "3", "default_n5": "5",
+             "v7_n0": "0", "v7_n1": "1", "v7_n3": "3", "v7_n5": "5"},
+        )
+        # evaluation_env_diff() is the launcher's own version of both checks; it must agree.
+        diff = module.evaluation_env_diff()
+        self.assertEqual(sorted(diff), ["detector_axis", "distractor_axis"])
+        self.assertEqual(
+            diff["detector_axis"]["NAVRL_DETECTOR_THRESHOLD"], {"default": "0.55", "v7": "0.7"}
+        )
+
+    def test_only_the_v7_cells_carry_the_narrow_override_and_none_carry_a_blanket_force(self):
+        """The narrow override admits ONE field; a blanket force would admit the whole contract."""
+        module = self.launcher()
+        for cell, detector, _ in module.CELLS:
+            env = module.evaluation_env(cell, preflight=True)
+            self.assertNotIn("NAVRL_V2_FORCE", env, cell)
+            self.assertEqual(
+                env["NAVRL_V2_ALLOW_DETECTOR_THRESHOLD_MISMATCH"],
+                "1" if detector == "v7" else "0",
+                cell,
+            )
+        # A default-detector cell can never acquire the override, even if a caller asks for it.
+        with self.assertRaises(Exception):
+            module.evaluation_env("default_n5", preflight=True, force=True)
+        self.assertNotIn('"NAVRL_V2_FORCE"] = ', self.source())
+
+    def test_every_cell_runs_the_camera_resolution_path(self):
+        """Prereg section 5, Gate 0.2 -- asserted by the launcher, not left to the runtime raise."""
+        module = self.launcher()
+        for cell, _, _ in module.CELLS:
+            env = module.evaluation_env(cell, preflight=True)
+            self.assertEqual(env["NAVRL_DETECT_WIDTH"], env["NAVRL_CAMERA_WIDTH"], cell)
+            self.assertEqual(env["NAVRL_DETECT_HEIGHT"], env["NAVRL_CAMERA_HEIGHT"], cell)
+        self.assertIn(
+            "is DECOUPLED ",
+            self.source(),
+            "the launcher no longer refuses a decoupled detect resolution itself",
+        )
+
+    def test_episode_contract_accepts_the_drained_batch(self):
+        """`actual >= EPISODES`, never `==`: the evaluator drains whole 128-env batches."""
+        source = self.source()
+        self.assertIn(
+            'int(result.get("requested_episodes", -1)) == EPISODES and actual >= EPISODES',
+            source,
+        )
+        self.assertIn('"comparator": "requested == EPISODES and actual >= EPISODES"', source)
+        self.assertNotIn("actual == EPISODES", source)
+
+    def test_the_launcher_and_the_runtime_agree_on_the_classification_radius(self):
+        """A preregistered threshold applied by two files is two thresholds unless they are pinned."""
+        module = self.launcher()
+        match = re.search(
+            r"^DISTRACTOR_LOCK_RADIUS_M = ([0-9.]+)$",
+            self.TASK.read_text(encoding="utf-8"),
+            flags=re.MULTILINE,
+        )
+        self.assertIsNotNone(match, "the runtime no longer defines the classification radius")
+        self.assertEqual(float(match.group(1)), module.CLASSIFICATION_RADIUS_M)
+
+    def test_the_classifier_is_a_structural_no_op_by_default(self):
+        """Not disabled -- absent.  Gate 0.1 turns on this being a property of the code."""
+        task = self.TASK.read_text(encoding="utf-8")
+        self.assertIn(
+            "self._distractor_metric_enabled = bool(\n"
+            "            self._bulk_eval_mode and self._num_distractors > 0\n"
+            "        )",
+            task,
+        )
+        self.assertIn(
+            "if self._distractor_metric_enabled:\n"
+            "            self._record_distractor_lock_frame(diagnostics)",
+            task,
+        )
+        self.assertIn(
+            "if self._distractor_metric_enabled:\n"
+            '            payload["distractor_lock"] = self._distractor_lock_payload()',
+            task,
+        )
+        # The accumulators are allocated exactly once, inside the guard.
+        self.assertEqual(task.count("self._dl_counts = "), 1)
+        self.assertEqual(task.count("self._dl_sums = "), 1)
+
+    def test_ground_truth_reaches_the_metric_and_nothing_else(self):
+        """The recorder runs AFTER the observation is written and never writes anything back."""
+        task = self.TASK.read_text(encoding="utf-8")
+        recorder = task.split("def _record_distractor_lock_frame(self, diagnostics):")[1]
+        recorder = recorder.split("\n    def ")[0]
+        # The docstring is prose ABOUT the contract and names the very things the body may not
+        # touch, so the check is on the code that follows it.
+        recorder = recorder.split('"""')[2]
+        for forbidden in (
+            "task_obs",
+            "self.rewards",
+            "self.terminations",
+            "self.truncations",
+            "prev_action",
+        ):
+            self.assertNotIn(
+                forbidden,
+                recorder,
+                f"the distractor-lock recorder touches {forbidden}; ground truth may label an "
+                "evaluation metric and nothing else (CLAUDE.md observation contract)",
+            )
+        # The observation is written before the recorder is ever reached.
+        process = task.split("def _process_obs_perception(self):")[1].split("\n    def ")[0]
+        self.assertLess(
+            process.index('self.task_obs["observations"][:] = structured'),
+            process.index("self._record_distractor_lock_frame(diagnostics)"),
+        )
+
+    def test_the_export_guard_fails_closed_on_a_miscount(self):
+        """A partition that is not a partition must stop the export, not round itself off."""
+        task_module = self.distractor_lock_module()
+        ok = dict(
+            num_distractors=1,
+            frames_total=10,
+            visible_frames=5,
+            target_lock=2,
+            distractor_lock=2,
+            ghost_lock=1,
+            ambiguous=0,
+            radius_m=0.5,
+        )
+        task_module._validate_distractor_lock_export(**ok)  # the happy path raises nothing
+        for override, why in (
+            ({"num_distractors": 0}, "no distractors in the scene"),
+            ({"ghost_lock": 0}, "the categories no longer cover the visible frames"),
+            ({"frames_total": 3}, "more visible frames than observed frames"),
+            ({"ambiguous": 3}, "ambiguous frames are not a subset of the target-lock frames"),
+            ({"radius_m": 0.4}, "a radius that is not the preregistered one"),
+            ({"frames_total": 0, "visible_frames": 0, "target_lock": 0,
+              "distractor_lock": 0, "ghost_lock": 0}, "no frames at all"),
+            ({"target_lock": -2, "ghost_lock": 5}, "a negative count"),
+        ):
+            payload = dict(ok)
+            payload.update(override)
+            with self.assertRaises(RuntimeError, msg=f"not caught: {why}"):
+                task_module._validate_distractor_lock_export(**payload)
+
+    def test_the_perception_module_exposes_the_detector_measurement_not_the_filtered_track(self):
+        perception = self.PERCEPTION.read_text(encoding="utf-8")
+        self.assertIn('"camera_measurement_world": meas_world,', perception)
+        self.assertIn('"camera_confidence": confidence,', perception)
+        # meas_world is what the tracker is CORRECTED with, so exporting it measures the detector.
+        self.assertIn("self.tracker.step(meas_world, visible, measurement_var)", perception)
+
+    def test_the_regression_tolerance_is_pinned_with_its_derivation(self):
+        module = self.launcher()
+        self.assertEqual(module.N0_REGRESSION_TOLERANCE_PP, 3.75)
+        source = self.source()
+        self.assertIn("sqrt(0.25/2049 + 0.25/2049)", source)
+        self.assertIn("Bonferroni", source)
+        self.assertEqual(module.LINEAGE_SEED, 421)
+        self.assertNotEqual(
+            module.LINEAGE_SEED,
+            module.SEED,
+            "the lineage reference must be an INDEPENDENT sample, or the tolerance is meaningless",
+        )
+
+    def test_an_allowed_mismatch_is_not_read_as_a_refusal(self):
+        """The evaluator announces the field it LET THROUGH in the same shape as a refusal.
+
+        Both lines carry `checkpoint=` and `expected=`, so a parser that matches on that alone
+        reads the narrow override's own success announcement as a leftover refusal and fails the
+        overridden preflight.  That happened; these are opposite facts and are parsed apart.
+        """
+        module = self.launcher()
+
+        class Completed:
+            def __init__(self, stdout):
+                self.stdout = stdout
+                self.returncode = 0
+
+        refused = Completed(
+            "[eval_v2] REFUSING: v2 contract mismatch:\n"
+            "  cfg_detector_threshold: checkpoint=0.55 expected=0.7\n"
+        )
+        self.assertEqual(
+            module.mismatch_lines(refused), [module.EXPECTED_THRESHOLD_MISMATCH]
+        )
+        self.assertEqual(module.allowed_mismatch_lines(refused), [])
+
+        allowed = Completed(
+            "[eval_v2] ALLOWED mismatch: cfg_detector_threshold: checkpoint=0.55 expected=0.7\n"
+            "[eval_v2] PREFLIGHT PASS (evaluation not started)\n"
+        )
+        self.assertEqual(module.mismatch_lines(allowed), [])
+        self.assertEqual(
+            module.allowed_mismatch_lines(allowed), [module.EXPECTED_THRESHOLD_MISMATCH]
+        )
+        # The override must be required to land on the authorised field, not merely to leave no
+        # refusals behind.
+        self.assertIn("allowed == [EXPECTED_THRESHOLD_MISMATCH]", self.source())
+
+    def test_l6_records_that_ftlr_is_not_comparable_between_detectors(self):
+        """Prereg section 3-c: the two detectors fly different trajectories.
+
+        The frozen policy acts on whatever its detector reports, so swapping the detector changes
+        the trajectories, hence the frame distribution -- range, bearing, occlusion, and above all
+        how often target and distractor are visible at once.  FTLR is defined OVER that
+        distribution, so a between-detector difference confounds detector robustness with
+        trajectory distribution and these cells cannot separate the two.  Within a detector the
+        comparison across N is still valid, because each FTLR is computed over the frames that
+        detector actually produced.
+        """
+        module = self.launcher()
+        l6 = module.LIMITATIONS[5]
+        self.assertTrue(l6.startswith("L6:"))
+        for fragment in ("§3-c", "궤적", "동시에 보이는 빈도", "계산하지도 게재하지도 않는다"):
+            self.assertIn(fragment, l6, f"L6 does not say: {fragment}")
+        # It must cover the outcome triple as well, and name both things v7 is not compared to.
+        self.assertIn("capture/crash/timeout", l6)
+        self.assertIn("계보와도, default 셀과도 비교하지 않는다", l6)
+        # Within-detector comparability must be affirmed, not merely left unstated.
+        self.assertIn("한 검출기 안에서 N에 따른 비교는", l6)
+
+    def test_no_cross_detector_difference_is_computed_anywhere(self):
+        """L6 with teeth: the launcher must not be able to produce such a delta at all.
+
+        Two independent checks.  The NAME check catches a field called something like
+        `ftlr_delta_pp` appearing in the published payload.  The AST check catches the arithmetic
+        itself -- any subtraction whose two sides both mention an FTLR -- which is how such a field
+        would come to exist in the first place.  Gate 0.3's lineage delta is untouched by both: it
+        subtracts outcome rates, not FTLRs, and it is within one detector.
+        """
+        module = self.launcher()
+        rule = module.NO_CROSS_DETECTOR_COMPARISON
+        self.assertIn("WITHIN a detector", rule)
+        self.assertIn("NOT between detectors", rule)
+        self.assertIn("section 3-c", rule)
+        source = self.source()
+        self.assertIn('"between_detectors": False,', source)
+        self.assertIn('"cross_detector_difference_computed": False,', source)
+        self.assertIn('"within_detector_across_distractor_count": True,', source)
+
+        # Whole underscore-separated tokens, not substrings: "preregistration" contains "ratio"
+        # and matching on substrings would flag it, which is the kind of false positive that gets
+        # a real check deleted rather than fixed.
+        forbidden = {"delta", "difference", "differences", "diff", "minus", "gap", "vs", "versus"}
+        offending = [
+            key for key in module.SUMMARY_VERIFY_KEYS if forbidden & set(key.lower().split("_"))
+        ]
+        self.assertEqual(
+            offending, [], f"published summary keys look like a comparison: {offending}"
+        )
+
+        tree = ast.parse(source, filename=str(self.ORCHESTRATOR))
+        ftlr = re.compile(r"(ftlr|false_target_lock)", re.I)
+        # The containers that hold MORE THAN ONE cell's FTLR.  A cross-detector difference has to
+        # read from one of them, so a subtraction touching one is the shape being forbidden.  The
+        # within-cell self-consistency check in verify_lock_block subtracts a cell's recomputed
+        # FTLR from that same cell's exported field and touches none of these -- it is not the
+        # thing L6 forbids, and a check that flagged it would be deleted rather than fixed.
+        multi_cell = re.compile(
+            r"(ftlr_by_cell|measurements|verdict_basis|cells_payload|CELLS|DETECTORS)"
+        )
+
+        def names_in(node):
+            found = []
+            for child in ast.walk(node):
+                if isinstance(child, ast.Name):
+                    found.append(child.id)
+                elif isinstance(child, ast.Attribute):
+                    found.append(child.attr)
+                elif isinstance(child, ast.Str):
+                    found.append(child.s)
+            return found
+
+        def mentions(node, pattern):
+            return any(pattern.search(name) for name in names_in(node))
+
+        subtractions = [
+            node.lineno
+            for node in ast.walk(tree)
+            if isinstance(node, ast.BinOp)
+            and isinstance(node.op, ast.Sub)
+            and (mentions(node, multi_cell) or mentions(node.left, ftlr))
+            and mentions(node, multi_cell)
+        ]
+        self.assertEqual(
+            subtractions,
+            [],
+            "the launcher subtracts across a multi-cell FTLR container; a cross-detector "
+            "difference confounds detector robustness with trajectory distribution "
+            "(prereg section 3-c, L6)",
+        )
+
+        # And nothing in the two functions that BUILD the published artifacts may subtract FTLRs
+        # at all -- that is where such a field would come into existence.
+        for function in ("build_summary", "write_summary"):
+            node = next(
+                n for n in ast.walk(tree)
+                if isinstance(n, ast.FunctionDef) and n.name == function
+            )
+            offenders = [
+                child.lineno
+                for child in ast.walk(node)
+                if isinstance(child, ast.BinOp)
+                and isinstance(child.op, ast.Sub)
+                and (mentions(child.left, ftlr) or mentions(child.right, ftlr))
+            ]
+            self.assertEqual(
+                offenders, [], f"{function} subtracts FTLR values (prereg section 3-c, L6)"
+            )
+
+    def test_the_no_comparison_warning_sits_beside_the_verdict_table(self):
+        """A limitations section further down is not where a reader's eye lands."""
+        source = self.source()
+        table_marker = '"| 검출기 | 동작점 | 판정 | N=5 FTLR | 가시 프레임 |",'
+        warning_marker = "위 두 FTLR을 빼지 마시오"
+        limitations_marker = '"## 한계 (사전등록 §6)",'
+        self.assertIn(table_marker, source)
+        self.assertIn(warning_marker, source)
+        self.assertLess(
+            source.index(table_marker),
+            source.index(warning_marker),
+            "the warning must follow the verdict table",
+        )
+        self.assertLess(
+            source.index(warning_marker),
+            source.index(limitations_marker),
+            "the warning must appear well before the limitations section, not only inside it",
+        )
+        self.assertIn("한계 L6", source)
+
+    def test_gate_f_is_applied_per_detector_with_no_pooled_verdict(self):
+        """Two verdicts, one per detector, each on its own N=5 cell -- and never one combined."""
+        source = self.source()
+        module = self.launcher()
+        # The summary key is plural and there is no singular one to misread as an overall verdict.
+        self.assertIn('"verdicts": verdicts,', source)
+        self.assertNotIn('"verdict": verdict,', source)
+        self.assertIn("verdicts", module.SUMMARY_VERIFY_KEYS)
+        self.assertNotIn("verdict", module.SUMMARY_VERIFY_KEYS)
+        self.assertNotIn("verdict_cell", module.SUMMARY_VERIFY_KEYS)
+        self.assertIn("verdict_cells", module.SUMMARY_VERIFY_KEYS)
+        # Each basis says which detector it applies to, so one cannot be read as the other.
+        self.assertIn('"applies_only_to": detector,', source)
+
+    def test_gate_zero_three_is_scoped_to_the_detector_that_has_a_lineage(self):
+        module = self.launcher()
+        self.assertEqual(module.REGRESSION_CELL, module.zero_cell(module.DEFAULT_DETECTOR))
+        source = self.source()
+        # v7's zero cell is named and its role stated, rather than silently gated or omitted.
+        self.assertIn('"v7_zero_cell": zero_cell(V7_DETECTOR),', source)
+        self.assertIn("descriptive within-detector reference", source)
+        self.assertIn("no lineage anchor exists for v7", source)
+
+    def test_the_summary_carries_the_frozen_authority_statements(self):
+        source = self.source()
+        for literal in (
+            '"decision_authority": "none"',
+            '"p2_verdict_changed": False',
+            '"d1_verdict_changed": False',
+            '"p3_unlocked": False',
+        ):
+            self.assertIn(literal, source)
+        module = self.launcher()
+        self.assertEqual(len(module.LIMITATIONS), 6)
+        for index, item in enumerate(module.LIMITATIONS, start=1):
+            self.assertTrue(item.startswith(f"L{index}:"), item)
+
+    def test_the_expected_outcome_is_named_as_expected_and_not_as_a_failure(self):
+        source = self.source()
+        self.assertIn("is the preregistered PREDICTION and is not a failure", source)
+        self.assertIn("실험 실패가 아니다", source)
+
+    @classmethod
+    def distractor_lock_module(cls):
+        """The runtime's pure export guard, loaded without Isaac Gym.
+
+        navrl_task imports the simulator, so the guard is extracted by source rather than by
+        import -- the same technique tests/test_navrl_distractors.py uses on this file.
+        """
+        module = getattr(cls, "_lock_module", None)
+        if module is None:
+            source = cls.TASK.read_text(encoding="utf-8")
+            lines = source.splitlines()
+            pieces = ["DISTRACTOR_LOCK_RADIUS_M = 0.5"]
+            for node in ast.walk(ast.parse(source)):
+                if (
+                    isinstance(node, ast.FunctionDef)
+                    and node.name == "_validate_distractor_lock_export"
+                ):
+                    pieces.append("\n".join(lines[node.lineno - 1: node.end_lineno]))
+            if len(pieces) != 2:
+                raise AssertionError("_validate_distractor_lock_export was not found in navrl_task")
+            module = types.ModuleType("navrl_distractor_lock_guard_under_test")
+            exec(compile("\n\n".join(pieces), "<guard>", "exec"), module.__dict__)
+            cls._lock_module = module
+        return module
+
 
 
 if __name__ == "__main__":

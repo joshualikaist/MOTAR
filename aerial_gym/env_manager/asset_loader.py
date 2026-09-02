@@ -14,6 +14,45 @@ from aerial_gym.utils.logging import CustomLogger
 logger = CustomLogger("asset_loader")
 
 
+def _urdf_collision_half_extents(filepath):
+    """Axis-aligned half extents of the first <collision> primitive, or None.
+
+    These feed ``AssetManager._footprint_clearance_xy_spacing``, which turns the XY pair into a
+    circumcircle radius sqrt(hx^2 + hy^2) so the non-overlap guarantee survives any sampled yaw.
+    Every shape below is therefore reported as the half extents of its bounding box, which keeps
+    that bound conservative (never optimistic) for the round shapes:
+
+      box       size="sx sy sz"            -> (sx, sy, sz) / 2      (exact; the historical case)
+      sphere    radius="r"                 -> (r, r, r)             (circumcircle r*sqrt(2) >= r)
+      cylinder  radius="r" length="h"      -> (r, r, h/2)           (axis is +z in URDF)
+
+    A mesh collision, a missing/necessarily-malformed primitive or an unreadable file still
+    returns None, which the caller records as [0, 0, 0] -- the footprint-clearance sampler then
+    refuses that asset explicitly ("received invalid collision half-extents") instead of placing
+    it with a zero footprint.
+
+    The box branch is the historical lookup, unchanged and tried FIRST on the whole tree, so every
+    asset that resolved before this function existed resolves to exactly the same numbers. The
+    sphere/cylinder branches only ever run where the old code returned None.
+    """
+    try:
+        root = ET.parse(filepath).getroot()
+        box = root.find(".//collision/geometry/box")
+        if box is not None and box.get("size"):
+            return [0.5 * float(v) for v in box.get("size").split()]
+        sphere = root.find(".//collision/geometry/sphere")
+        if sphere is not None and sphere.get("radius"):
+            radius = float(sphere.get("radius"))
+            return [radius, radius, radius]
+        cylinder = root.find(".//collision/geometry/cylinder")
+        if cylinder is not None and cylinder.get("radius") and cylinder.get("length"):
+            radius = float(cylinder.get("radius"))
+            return [radius, radius, 0.5 * float(cylinder.get("length"))]
+    except (ET.ParseError, OSError, ValueError):
+        return None
+    return None
+
+
 def asset_class_to_AssetOptions(asset_class):
     asset_options = gymapi.AssetOptions()
     asset_options.collapse_fixed_joints = asset_class.collapse_fixed_joints
@@ -64,14 +103,7 @@ class AssetLoader:
         asset_options_for_class = asset_class_to_AssetOptions(asset_class_config)
         filepath = os.path.join(asset_class_config.asset_folder, selected_file)
 
-        collision_half_extents = None
-        try:
-            root = ET.parse(filepath).getroot()
-            box = root.find(".//collision/geometry/box")
-            if box is not None and box.get("size"):
-                collision_half_extents = [0.5 * float(v) for v in box.get("size").split()]
-        except (ET.ParseError, OSError, ValueError):
-            collision_half_extents = None
+        collision_half_extents = _urdf_collision_half_extents(filepath)
 
         # check if  it exists in the buffer
         buffer_key = f"{asset_type}_{selected_file}"

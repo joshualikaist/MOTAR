@@ -260,6 +260,9 @@ class RandomizeGeneralSpawnTest(unittest.TestCase):
             obs_dict=obs,
             device="cpu",
             _bar_offset=0,
+            # No distractors in this scenario, so the solid-obstacle slice the sampler reads
+            # ([_solid_obstacle_offset : _bar_offset + n_bars_active]) is exactly these bars.
+            _solid_obstacle_offset=0,
             n_bars_active=n_bars,
             task_config=types.SimpleNamespace(flight_altitude=1.5),
             _spawn_required_surface_margin_m=lambda: margin,
@@ -338,6 +341,7 @@ class RandomizeGeneralSpawnTest(unittest.TestCase):
             device="cpu",
             obs_dict=obs,
             _bar_offset=1,
+            _solid_obstacle_offset=1,
             n_bars_active=1,
             _spawn_required_surface_margin_m=lambda: 0.65,
             task_config=types.SimpleNamespace(flight_altitude=1.5),

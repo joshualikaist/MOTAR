@@ -490,6 +490,99 @@ def _obs_dump_drop_reset_orphans(frame_tables, outcome_uids, reset_orphan_uids):
     return kept_tables, dropped_rows, dropped_episodes
 
 
+# Appearance-distractor lock classification radius, in metres
+# (docs/prereg_2026-09-01_distractor_envelope.md section 4, frozen before any measurement).
+# 0.5 m = the 0.15 m target radius plus roughly twice the detector's measured 0.178 m range MAE.
+# It is a preregistered threshold, so it is a module constant that the measurement reads, never a
+# number any measurement path may recompute.
+DISTRACTOR_LOCK_RADIUS_M = 0.5
+
+# Category order of the three-way classification, fixed here so the accumulator index, the export
+# key and the preregistration table cannot drift apart.
+DISTRACTOR_LOCK_CATEGORIES = ("target_lock", "distractor_lock", "ghost_lock")
+
+
+def _validate_distractor_lock_export(
+    num_distractors,
+    frames_total,
+    visible_frames,
+    target_lock,
+    distractor_lock,
+    ghost_lock,
+    ambiguous,
+    radius_m,
+):
+    """Fail-closed export guard for the appearance-distractor lock telemetry.
+
+    House style: see ``_validate_obs_dump_export`` above and the OOB / first-acquisition
+    cross-checks in ``_export_bulk_eval_result``.  Pure -- plain Python integers and floats, no
+    torch and no ``self`` -- so a deliberately miscounted table can be unit-tested without Isaac
+    Gym.  Raises ``RuntimeError`` naming the specific mismatch; it never repairs a count and never
+    silently drops a frame.
+
+    The load-bearing check is the PARTITION one.  ``visible_frames`` is accumulated straight from
+    the detector's own visibility mask, while the three category counts are accumulated from three
+    separately constructed masks; the only way those two totals can agree is if every visible frame
+    landed in exactly one category.  A double-counted frame (overlapping masks) or a dropped one
+    (a gap between them) changes one side and not the other, so a miscount cannot ship as a
+    plausible-looking False Target Lock Rate.
+    """
+    if int(num_distractors) < 1:
+        raise RuntimeError(
+            "distractor_lock export: the telemetry ran with %d distractor(s); it is defined only "
+            "when the scene contains at least one" % int(num_distractors)
+        )
+    counts = {
+        "frames_total": int(frames_total),
+        "visible_frames": int(visible_frames),
+        "target_lock": int(target_lock),
+        "distractor_lock": int(distractor_lock),
+        "ghost_lock": int(ghost_lock),
+        "ambiguous": int(ambiguous),
+    }
+    negative = sorted(name for name, value in counts.items() if value < 0)
+    if negative:
+        raise RuntimeError("distractor_lock export: negative count(s) %s in %s" % (negative, counts))
+    if counts["frames_total"] <= 0:
+        raise RuntimeError(
+            "distractor_lock export: no frames were observed at all, so no rate has a denominator"
+        )
+    if counts["visible_frames"] > counts["frames_total"]:
+        raise RuntimeError(
+            "distractor_lock export: %d visible frame(s) out of %d observed frame(s)"
+            % (counts["visible_frames"], counts["frames_total"])
+        )
+    classified = counts["target_lock"] + counts["distractor_lock"] + counts["ghost_lock"]
+    if classified != counts["visible_frames"]:
+        raise RuntimeError(
+            "distractor_lock export: the three categories cover %d frame(s) but the detector "
+            "reported visible on %d (target=%d distractor=%d ghost=%d); the classification is not "
+            "a partition of the visible frames"
+            % (
+                classified,
+                counts["visible_frames"],
+                counts["target_lock"],
+                counts["distractor_lock"],
+                counts["ghost_lock"],
+            )
+        )
+    # An ambiguous frame -- measurement inside BOTH radii -- is resolved to TARGET_LOCK by the
+    # preregistration's category order, so it must be a subset of the target-lock frames.  If it
+    # ever exceeds them, the precedence in the classifier and the bookkeeping here have diverged
+    # and the FTLR numerator is not what the preregistration defines.
+    if counts["ambiguous"] > counts["target_lock"]:
+        raise RuntimeError(
+            "distractor_lock export: %d ambiguous frame(s) exceed the %d target-lock frame(s); "
+            "ambiguous frames are resolved to TARGET_LOCK and must be a subset of them"
+            % (counts["ambiguous"], counts["target_lock"])
+        )
+    if float(radius_m) != float(DISTRACTOR_LOCK_RADIUS_M):
+        raise RuntimeError(
+            "distractor_lock export: classification radius %r is not the preregistered %r"
+            % (float(radius_m), float(DISTRACTOR_LOCK_RADIUS_M))
+        )
+
+
 def _validate_obs_dump_export(
     frame_tables,
     episode_tables,
@@ -830,7 +923,33 @@ class NavRLTask(BaseTask):
             self._recovery_brake_stop_distance_samples_m = tuple(lookup_distances.tolist())
             self._recovery_brake_lateral_tube_p95_m = lateral_env
             self._recovery_probe_receipt_sha256 = actual_sha
-        self._bar_offset = 1 if self._physical_target else 0
+        # Obstacle-tensor layout is [target?] [distractors...] [bars...] (see
+        # navrl_bars_env.NavRLBarsEnvCfg.env_config: distractors are keep_in_env and declared
+        # before the target so the target keeps index 0). Every bar slice in this file starts at
+        # _bar_offset, so widening it by the distractor count is what keeps those slices bars-only.
+        # num_distractors is 0 unless NAVRL_DISTRACTOR_COUNT is set, and on an env config that has
+        # never heard of distractors, so the offset is the historical one by default.
+        self._num_distractors = max(
+            0, int(getattr(getattr(self.sim_env.cfg, "env_config", None), "num_distractors", 0))
+        )
+        self._bar_offset = (1 if self._physical_target else 0) + self._num_distractors
+        # First asset row of the SOLID obstacle block. Because _bar_offset is
+        # (target?) + num_distractors, the distractors are exactly the num_distractors rows
+        # IMMEDIATELY BEFORE _bar_offset, so
+        #     [_solid_obstacle_offset : _bar_offset + n_bars_active]
+        # is one contiguous slice holding [distractors...] [active bars...] and nothing else --
+        # never the target at index 0, never a parked bar past the active window. Row j of that
+        # slice is the same asset in obstacle_position and in asset_collision_half_extents:
+        # EnvManager builds both on the same per-asset axis in one pass over the ordered asset
+        # list (env_manager.py: asset_collision_half_extents is vstacked in the same loop
+        # iteration that creates the actor, then viewed as [num_envs, -1, 3], and
+        # obstacle_position is env_asset_state_tensor[:, :, 0:3] on that same axis).
+        # With NAVRL_DISTRACTOR_COUNT unset num_distractors == 0, this equals _bar_offset, and
+        # every slice below is byte-for-byte the historical bars-only one.
+        # Only the two sites that must not treat a painted distractor as free space use this --
+        # the generalized drone spawn sampler and the target route planner. Bar-only logic
+        # (density curriculum, bar-contact probes, goal placement) keeps _bar_offset.
+        self._solid_obstacle_offset = self._bar_offset - self._num_distractors
         if self._physical_target and self.task_config.robot_name not in (
             "navrl_ref5in_quad", "navrl_ref5in_v2_quad"
         ):
@@ -1356,6 +1475,51 @@ class NavRLTask(BaseTask):
             self._bulk_eval_mode,
             os.environ.get("NAVRL_EVAL_FULL_DISTRIBUTION", "0"),
         )
+        # --- appearance-distractor lock telemetry (EVALUATION ONLY).
+        # docs/prereg_2026-09-01_distractor_envelope.md section 4.  Classifies the 3D position the
+        # RGB-D detector REPORTED against the ground-truth target and distractor centres, so the
+        # preregistration can say what the detector calls "the target" when something else in the
+        # scene is painted the same colour.
+        #
+        # Ground truth is consumed for the METRIC only, exactly as the first-acquisition telemetry
+        # and the OOB exit forensics consume it (CLAUDE.md observation contract: no GT target
+        # information in the actor observation; permitted in detector supervision, reward,
+        # termination, critic and evaluation metrics).  Nothing computed by this telemetry is
+        # written into task_obs, a reward, a termination, or any checkpointed field.
+        #
+        # The enable condition is derived, not a new knob: bulk EVALUATION and a scene that
+        # actually contains distractors.  With NAVRL_DISTRACTOR_COUNT unset or 0 the flag is False,
+        # no accumulator is allocated, and _process_obs_perception never calls the recorder -- so
+        # the historical world runs the historical code path.  Gate 0.1 of the preregistration
+        # (default-off bit-identity) therefore stays a property of the code rather than a promise.
+        self._distractor_metric_enabled = bool(
+            self._bulk_eval_mode and self._num_distractors > 0
+        )
+        if self._distractor_metric_enabled:
+            # Row j of [_solid_obstacle_offset : _bar_offset] is distractor j, by construction:
+            # _solid_obstacle_offset is defined as _bar_offset - _num_distractors.  Asserted here
+            # rather than assumed, because an off-by-one would silently classify the measurement
+            # against a bar centre and produce a plausible FTLR that means nothing.
+            if self._bar_offset - self._solid_obstacle_offset != self._num_distractors:
+                raise RuntimeError(
+                    "NavRL distractor telemetry: the [%d:%d] obstacle slice holds %d row(s), not "
+                    "the %d configured distractor(s)"
+                    % (
+                        self._solid_obstacle_offset,
+                        self._bar_offset,
+                        self._bar_offset - self._solid_obstacle_offset,
+                        self._num_distractors,
+                    )
+                )
+            # Accumulated on-device as int64/float64 totals and read exactly once, at export.  No
+            # per-step .item() and therefore no per-step host synchronisation: this telemetry may
+            # not be allowed to change the timing of the run it is measuring.
+            #   0 frames_total  1 visible  2 target_lock  3 distractor_lock  4 ghost  5 ambiguous
+            self._dl_counts = torch.zeros(6, dtype=torch.long, device=self.device)
+            #   0 pixel-count sum  1 confidence sum  2 |meas-target| sum  3 |meas-distractor| sum
+            #   (all four summed over the DETECTOR-VISIBLE frames only)
+            self._dl_sums = torch.zeros(4, dtype=torch.float64, device=self.device)
+
         try:
             self._bulk_eval_target = max(
                 1, int(os.environ.get("PLAY_GAMES_NUM", "1000"))
@@ -1883,25 +2047,30 @@ class NavRLTask(BaseTask):
     def _randomize_general_drone_spawn(self, env_ids):
         """Place the drone at a collision-free random XY/yaw for generalized evaluation.
 
-        Acceptance is footprint aware: each candidate must clear EVERY bar's own surface by
-        `_spawn_required_surface_margin_m()`.  The earlier flat 0.65 m bar-CENTRE test was blind
-        to bar size, so a 0.5465 m-circumradius bar left only 0.10 m of real surface clearance and
-        27.45% of 205-bar spawns started inside the inflated obstacle set
+        Acceptance is footprint aware: each candidate must clear EVERY solid obstacle's own
+        surface by `_spawn_required_surface_margin_m()`.  The earlier flat 0.65 m bar-CENTRE test
+        was blind to bar size, so a 0.5465 m-circumradius bar left only 0.10 m of real surface
+        clearance and 27.45% of 205-bar spawns started inside the inflated obstacle set
         (results/navrl_v2_density_geometry_audit_2026-08-27/summary.md).
+
+        The obstacle set is `_solid_obstacle_offset`-based, not `_bar_offset`-based: the painted
+        distractors are solid collidable bodies, so a spawn INSIDE one is a physically impossible
+        frame whose detection outcome means nothing.  With no distractors configured the slice is
+        identical to the historical bars-only one.
         """
         n = len(env_ids)
         if n == 0:
             return
         b_min = self.obs_dict["env_bounds_min"][env_ids]
         b_max = self.obs_dict["env_bounds_max"][env_ids]
-        bars = self.obs_dict["obstacle_position"][
-            env_ids, self._bar_offset : self._bar_offset + self.n_bars_active, 0:2
+        obstacles = self.obs_dict["obstacle_position"][
+            env_ids, self._solid_obstacle_offset : self._bar_offset + self.n_bars_active, 0:2
         ]
         # Same slice on the same asset axis as the runtime planner geometry
-        # (`_target_spawn_center_clearance`), so row j of `bar_half` is the footprint of the bar
-        # whose centre is row j of `bars`.
-        bar_half = self.obs_dict["asset_collision_half_extents"][
-            env_ids, self._bar_offset : self._bar_offset + self.n_bars_active, 0:2
+        # (`_plan_target_routes`), so row j of `obstacle_half` is the footprint of the obstacle
+        # whose centre is row j of `obstacles`, across the distractor->bar boundary too.
+        obstacle_half = self.obs_dict["asset_collision_half_extents"][
+            env_ids, self._solid_obstacle_offset : self._bar_offset + self.n_bars_active, 0:2
         ]
         required_margin = self._spawn_required_surface_margin_m()
         lo = b_min[:, 0:2] + 1.0
@@ -1922,8 +2091,8 @@ class NavRLTask(BaseTask):
             flat_count = len(ids) * candidates_per_round
             accepted = _spawn_footprint_clearance_accepted(
                 candidate.reshape(flat_count, 2),
-                bars[ids].repeat_interleave(candidates_per_round, dim=0),
-                bar_half[ids].repeat_interleave(candidates_per_round, dim=0),
+                obstacles[ids].repeat_interleave(candidates_per_round, dim=0),
+                obstacle_half[ids].repeat_interleave(candidates_per_round, dim=0),
                 required_margin,
             ).reshape(len(ids), candidates_per_round)
             has_candidate = accepted.any(dim=1)
@@ -5679,6 +5848,11 @@ class NavRLTask(BaseTask):
             "camera_visible", diagnostics["visible"]
         )
 
+        # Evaluation-only, and only when the scene actually contains distractors.  Placed AFTER the
+        # observation has already been written above, so it cannot participate in building it.
+        if self._distractor_metric_enabled:
+            self._record_distractor_lock_frame(diagnostics)
+
         # Raw sensor and tracker diagnostics are available to evaluators, never concatenated into
         # actor observations. Semantic renderer buffers intentionally remain private.
         self.obs_dict["navrl_raw_rgb"] = raw_rgb
@@ -5708,6 +5882,117 @@ class NavRLTask(BaseTask):
             ],
             dim=1,
         )
+
+    def _record_distractor_lock_frame(self, diagnostics):
+        """Classify this frame's detector measurement: TARGET / DISTRACTOR / GHOST lock.
+
+        docs/prereg_2026-09-01_distractor_envelope.md section 4.  Called once per observation, only
+        while ``_distractor_metric_enabled`` (bulk evaluation AND at least one distractor).
+
+        WHAT IS CLASSIFIED.  ``camera_measurement_world`` is the position ``_detect_rgbd`` produced
+        and handed to the tracker as its observation -- the detector's own answer, before any
+        filtering.  The visibility gate is the CAMERA flag, not the fused one: a frame the camera
+        lost and LiDAR is holding has no camera measurement to classify, and counting it would put
+        a stale value in the numerator of a rate about the camera detector.
+
+        WHAT GROUND TRUTH IS USED FOR.  Labelling, and nothing else.  ``self.target_position`` and
+        the distractor centres are read here to decide which bucket a frame falls in; no tensor
+        computed in this method reaches ``task_obs``, the reward, a termination, the curriculum, or
+        get_env_state.  This is the same evaluation-only use of ground truth the first-acquisition
+        telemetry and the OOB exit forensics already make.
+
+        CATEGORY PRECEDENCE.  The preregistration lists TARGET_LOCK first, so a measurement inside
+        both radii is a TARGET_LOCK.  Placement clearance makes that overlap unlikely, so instead of
+        assuming it away the count is accumulated and exported (``ambiguous``): a reader can then
+        see whether precedence changed any number at all.
+        """
+        visible = diagnostics["camera_visible"]
+        measurement = diagnostics["camera_measurement_world"]
+        distractors = self.obs_dict["obstacle_position"][
+            :, self._solid_obstacle_offset : self._bar_offset, 0:3
+        ]
+
+        target_distance = (measurement - self.target_position).norm(dim=1)
+        # (num_envs, num_distractors) -> nearest distractor centre per env.
+        distractor_distance = (
+            (measurement.unsqueeze(1) - distractors).norm(dim=2).min(dim=1).values
+        )
+        near_target = target_distance <= DISTRACTOR_LOCK_RADIUS_M
+        near_distractor = distractor_distance <= DISTRACTOR_LOCK_RADIUS_M
+
+        target_lock = visible & near_target
+        distractor_lock = visible & near_distractor & ~near_target
+        ghost_lock = visible & ~near_target & ~near_distractor
+        ambiguous = visible & near_target & near_distractor
+
+        self._dl_counts += torch.stack(
+            [
+                torch.full_like(self._dl_counts[0], int(self.num_envs)),
+                visible.sum(),
+                target_lock.sum(),
+                distractor_lock.sum(),
+                ghost_lock.sum(),
+                ambiguous.sum(),
+            ]
+        )
+        visible_f = visible.to(torch.float64)
+        self._dl_sums += torch.stack(
+            [
+                (diagnostics["target_pixels"].to(torch.float64) * visible_f).sum(),
+                (diagnostics["camera_confidence"].to(torch.float64) * visible_f).sum(),
+                (target_distance.to(torch.float64) * visible_f).sum(),
+                (distractor_distance.to(torch.float64) * visible_f).sum(),
+            ]
+        )
+
+    def _distractor_lock_payload(self):
+        """The section-4 measurement block, validated by the fail-closed export guard first."""
+        counts = [int(v) for v in self._dl_counts.tolist()]
+        sums = [float(v) for v in self._dl_sums.tolist()]
+        frames_total, visible_frames, target_lock, distractor_lock, ghost_lock, ambiguous = counts
+        _validate_distractor_lock_export(
+            self._num_distractors,
+            frames_total,
+            visible_frames,
+            target_lock,
+            distractor_lock,
+            ghost_lock,
+            ambiguous,
+            DISTRACTOR_LOCK_RADIUS_M,
+        )
+
+        def rate(count):
+            # None, not 0.0, when nothing was visible: "0% of no frames" is not a measurement, and
+            # a 0.0 here would read as a detector that never once misattributed.
+            return (count / visible_frames) if visible_frames > 0 else None
+
+        def mean(total):
+            return (total / visible_frames) if visible_frames > 0 else None
+
+        return {
+            "schema_version": 1,
+            "distractor_count": int(self._num_distractors),
+            "classification_radius_m": float(DISTRACTOR_LOCK_RADIUS_M),
+            "visible_source": "camera_visible",
+            "measurement_source": "perception.observe -> camera_measurement_world (the tracker's "
+            "own input, pre-filter)",
+            "frames_total": frames_total,
+            "visible_frames": visible_frames,
+            "visible_frame_rate": visible_frames / frames_total,
+            "target_lock": target_lock,
+            "distractor_lock": distractor_lock,
+            "ghost_lock": ghost_lock,
+            "ambiguous_target_and_distractor": ambiguous,
+            "target_lock_rate": rate(target_lock),
+            "distractor_lock_rate": rate(distractor_lock),
+            "ghost_lock_rate": rate(ghost_lock),
+            # The preregistered primary: (DISTRACTOR_LOCK + GHOST_LOCK) / visible frames.
+            "false_target_lock_rate": rate(distractor_lock + ghost_lock),
+            "camera_pixel_count_mean": mean(sums[0]),
+            "camera_confidence_mean": mean(sums[1]),
+            "measurement_to_target_mean_m": mean(sums[2]),
+            "measurement_to_nearest_distractor_mean_m": mean(sums[3]),
+        }
 
     def _goal_x_max(self):
         """Epoch-proportional goal-x ceiling: ramps k_start -> k_final over k_warmup_epochs, then
@@ -5842,22 +6127,32 @@ class NavRLTask(BaseTask):
     def _plan_target_routes(
         self, env_ids, *, connected_goal, is_replan=False, exclude_previous_goal=False
     ):
-        """CPU-plan selected environments only; ordinary route following remains on GPU."""
+        """CPU-plan selected environments only; ordinary route following remains on GPU.
+
+        The planner's obstacle set is `_solid_obstacle_offset`-based, not `_bar_offset`-based:
+        the painted distractors are solid collidable bodies, so a route allowed to pass straight
+        through one would let the target teleport through geometry and would corrupt the
+        occlusion statistics the distractor measurement reads.  `plan_idx`/`RoutePlanner.plan`
+        are generic in the obstacle count (they reshape to [-1, 2] and require centres and
+        half-extents to have the same shape), so widening the slice adds obstacles rather than
+        changing the contract.  With no distractors configured the slice is identical to the
+        historical bars-only one.
+        """
         if not self._target_route_enabled or len(env_ids) == 0:
             return {}
-        bars = self.obs_dict["obstacle_position"][
-            :, self._bar_offset : self._bar_offset + self.n_bars_active, 0:2
+        obstacles = self.obs_dict["obstacle_position"][
+            :, self._solid_obstacle_offset : self._bar_offset + self.n_bars_active, 0:2
         ]
-        bar_half = self.obs_dict["asset_collision_half_extents"][
-            :, self._bar_offset : self._bar_offset + self.n_bars_active, 0:2
+        obstacle_half = self.obs_dict["asset_collision_half_extents"][
+            :, self._solid_obstacle_offset : self._bar_offset + self.n_bars_active, 0:2
         ]
         selector = self._target_route_selector if connected_goal else None
         status = self._target_route_manager.plan_idx(
             env_ids,
             self.target_position[:, 0:2],
             self._tm_waypoint,
-            bars,
-            bar_half,
+            obstacles,
+            obstacle_half,
             self.obs_dict["env_bounds_min"][:, 0:2],
             self.obs_dict["env_bounds_max"][:, 0:2],
             self._target_route_support_xy,
@@ -7946,6 +8241,13 @@ class NavRLTask(BaseTask):
                 (self._succ_agg, self._crash_agg, self._to_agg),
                 expected_bar_contacts=d["contact"],
             )
+        # The appearance-distractor axis, attested by the process that BUILT the scene rather than
+        # by an echo of the request.  Unconditional and 0 in the historical world, so a cell that
+        # ran with no distractors says so instead of being silent about it -- which is what lets a
+        # cross-cell verifier prove the axis is the only thing that moved.
+        payload["condition"]["distractor_count"] = int(self._num_distractors)
+        if self._distractor_metric_enabled:
+            payload["distractor_lock"] = self._distractor_lock_payload()
         compact = json.dumps(payload, sort_keys=True, separators=(",", ":"))
         print("NAVRL_BULK_EVAL_RESULT " + compact, flush=True)
 

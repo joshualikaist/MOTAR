@@ -837,3 +837,133 @@ class bar_asset_params(asset_state_params):
     per_link_semantic = False
     semantic_id = OBJECT_SEMANTIC_ID
     color = [170, 66, 66]
+
+
+# ---------------------------------------------------------------------------------------------
+# Appearance distractors (D9 of docs/archive/development_directions_2026-08.md).
+#
+# The bootstrap detector is a 1x1 conv computing 3.0*R - 2.0*G - 2.0*B - 0.9 (a red detector),
+# and the renderer paints the target a flat [0.88, 0.08, 0.045] while NOTHING else in the scene
+# is red. "red pixel => target" is therefore true by construction, and the ~99.77% frame precision
+# v7 reports was measured in a world containing zero objects that resemble the target. These
+# assets add that missing axis: static, collidable bodies the renderer paints the SAME nominal
+# target colour, so the colour rule fires on something that is not the target.
+#
+# DEFAULT OFF. NAVRL_DISTRACTOR_COUNT defaults to 0, every class below then reports
+# num_assets == 0, and AssetLoader.select_and_order_assets skips a zero-count asset type before
+# it touches the filesystem or the RNG -- so with the knob unset the built world, the asset
+# ordering and the placement stream are bit-identical to the historical ones.
+DISTRACTOR_SEMANTIC_ID = 51  # target = 50, bars/objects = 3
+
+_DISTRACTOR_SHAPES = ("sphere", "box", "pole")
+
+# Total number of distractors per env. 0 = the historical world.
+NAVRL_DISTRACTOR_COUNT = max(0, _env_int("NAVRL_DISTRACTOR_COUNT", 0))
+
+# Shape mix, as a comma-separated subset of _DISTRACTOR_SHAPES. The count is dealt out
+# round-robin over this list in the order written, so "sphere" alone gives an all-sphere field
+# and the default gives a 1:1:1 mix (rounded in list order).
+_DISTRACTOR_SHAPE_MIX_RAW = (
+    os.environ.get("NAVRL_DISTRACTOR_SHAPES", "").strip() or "sphere,box,pole"
+)
+_DISTRACTOR_SHAPE_MIX = tuple(
+    s.strip().lower() for s in _DISTRACTOR_SHAPE_MIX_RAW.split(",") if s.strip()
+)
+if not _DISTRACTOR_SHAPE_MIX:
+    raise ValueError("NAVRL_DISTRACTOR_SHAPES must name at least one shape")
+_unknown_shapes = [s for s in _DISTRACTOR_SHAPE_MIX if s not in _DISTRACTOR_SHAPES]
+if _unknown_shapes:
+    raise ValueError(
+        "NAVRL_DISTRACTOR_SHAPES contains unknown shape(s) %s; valid shapes are %s"
+        % (", ".join(sorted(set(_unknown_shapes))), ", ".join(_DISTRACTOR_SHAPES))
+    )
+
+
+def _distractor_shape_counts(total, mix):
+    """Deal `total` distractors round-robin over `mix`, in the order `mix` is written."""
+    counts = {shape: 0 for shape in _DISTRACTOR_SHAPES}
+    if total <= 0:
+        return counts
+    for i in range(int(total)):
+        counts[mix[i % len(mix)]] += 1
+    return counts
+
+
+_DISTRACTOR_COUNTS = _distractor_shape_counts(NAVRL_DISTRACTOR_COUNT, _DISTRACTOR_SHAPE_MIX)
+
+
+class _navrl_distractor_base(asset_state_params):
+    """Static, collidable body painted the nominal target colour by the NavRL renderer.
+
+    Physically real, not a decal: the URDF collision primitive equals the visual primitive, so the
+    LiDAR returns it, the drone can crash into it, and it occludes the target exactly like a bar.
+    ``include_in_warp`` therefore stays True -- the renderer's distractor mask is a mesh ray cast
+    keyed on ``semantic_id``, so an asset excluded from Warp would be invisible to the camera
+    while still being solid, which is the one combination that would be a lie.
+
+    ``keep_in_env = True`` puts these right behind the target (index 0) and in front of the bars,
+    so they exist at every density: AssetManager parks assets beyond
+    ``num_obstacles_in_env = _bar_offset + n_bars_active`` at -1000, and a distractor placed after
+    the bars would be parked whenever the density curriculum ran below the build-time bar ceiling.
+    NavRLTask widens ``_bar_offset`` by the distractor count so every bar slice keeps addressing
+    bars only.
+
+    The XY state ratio is the SAME band as bar_asset_params / navrl_target_params, for the reason
+    documented there: AssetManager._placement_band reads asset index 0's ratio for ALL obstacles,
+    and in a legacy (non-physical-target) lineage index 0 is one of THESE.
+    """
+
+    num_assets = 0
+    asset_folder = f"{AERIAL_GYM_DIRECTORY}/resources/models/environment_assets/objects"
+
+    collision_mask = 1  # same as bars: distractors do not collide with each other
+    disable_gravity = True
+    density = 0.000001
+    replace_cylinder_with_capsule = False
+    flip_visual_attachments = True
+    collapse_fixed_joints = True
+    fix_base_link = True
+    keep_in_env = True
+    per_link_semantic = False
+    semantic_id = DISTRACTOR_SEMANTIC_ID
+    color = [224, 20, 11]  # 255 * [0.88, 0.08, 0.045], for the Isaac Gym viewer only
+
+    # Per-shape state ratios are written out below as literal 13-vectors, exactly as
+    # bar_asset_params does:
+    #   [x_ratio, y_ratio, z_ratio, roll, pitch, yaw, 1.0, vx, vy, vz, wx, wy, wz]
+    # The z ratio puts the body's centre at its intended height in the default 3 m arena, the
+    # same assumption bar_asset_params._bar_z_ratio makes.
+
+
+class navrl_distractor_sphere_params(_navrl_distractor_base):
+    """0.15 m sphere -- deliberately the target's own camera_target_radius.
+
+    Centre at 1.0 m in the default 3 m arena: the pursuer's cruise altitude, so it sits in the
+    forward camera's FOV rather than at the edge of it.
+    """
+
+    num_assets = _DISTRACTOR_COUNTS["sphere"]
+    file = "navrl_distractor_sphere.urdf"
+    min_state_ratio = [_BAR_X_MIN, 0.0, 0.3333, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    max_state_ratio = [_BAR_X_MAX, 1.0, 0.3333, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+
+
+class navrl_distractor_box_params(_navrl_distractor_base):
+    """0.30 m cube -- target-scale, different aspect ratio. Same cruise-altitude centre."""
+
+    num_assets = _DISTRACTOR_COUNTS["box"]
+    file = "navrl_distractor_box.urdf"
+    min_state_ratio = [_BAR_X_MIN, 0.0, 0.3333, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    max_state_ratio = [_BAR_X_MAX, 1.0, 0.3333, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+
+
+class navrl_distractor_pole_params(_navrl_distractor_base):
+    """0.06 m radius x 1.60 m pole -- taller and thinner than the target.
+
+    Floor-standing like a bar: the centre sits at h/2 = 0.80 m, i.e. 0.80/3 of the default arena.
+    """
+
+    num_assets = _DISTRACTOR_COUNTS["pole"]
+    file = "navrl_distractor_pole.urdf"
+    min_state_ratio = [_BAR_X_MIN, 0.0, 0.26667, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    max_state_ratio = [_BAR_X_MAX, 1.0, 0.26667, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]

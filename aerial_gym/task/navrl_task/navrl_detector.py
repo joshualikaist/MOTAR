@@ -130,6 +130,53 @@ def _render_target_camera_kernel(
                 target_depth[env_id, row, col] = t_target
 
 
+@wp.kernel
+def _render_distractor_camera_kernel(
+    mesh_ids: wp.array(dtype=wp.uint64),
+    origins: wp.array(dtype=wp.vec3),
+    orientations: wp.array(dtype=wp.quat),
+    ray_vectors: wp.array2d(dtype=wp.vec3),
+    distractor_segmentation_id: int,
+    far_plane: float,
+    distractor_mask: wp.array(dtype=wp.int32, ndim=3),
+    distractor_depth: wp.array(dtype=float, ndim=3),
+):
+    """Render the CAMERA-resolution mask of the appearance distractors.
+
+    Distractors are ordinary scene geometry (they are in the Warp mesh so the LiDAR returns them
+    and the drone can hit them), so unlike the target they cannot be ray-tested analytically
+    against a primitive the scene does not contain -- their own mesh would occlude the test. The
+    mask instead comes from the FIRST scene hit and its per-vertex segmentation id, the same
+    hijacked-velocity channel the LiDAR segmentation kernel reads
+    (warp_env_manager.py: ``vertex_velocities[:, 0] = segmentation_tensor``).
+
+    Taking the first hit is what makes occlusion correct for free: a bar in front of a distractor
+    returns the bar's id and the distractor pixel simply never fires, and a distractor in front of
+    the target already removes that target pixel inside _render_target_camera_kernel, whose mesh
+    query is blocked by the distractor's own geometry.
+    """
+    env_id, row, col = wp.tid()
+    ro = origins[env_id]
+    rd = wp.normalize(wp.quat_rotate(orientations[env_id], ray_vectors[row, col]))
+
+    distractor_mask[env_id, row, col] = wp.int32(0)
+    distractor_depth[env_id, row, col] = far_plane
+
+    t = float(0.0)
+    u = float(0.0)
+    v = float(0.0)
+    sign = float(0.0)
+    normal = wp.vec3()
+    face = int(0)
+    if wp.mesh_query_ray(mesh_ids[env_id], ro, rd, far_plane, t, u, v, sign, normal, face):
+        mesh_obj = wp.mesh_get(mesh_ids[env_id])
+        vertex_index = mesh_obj.indices[face * 3]
+        segmentation_value = wp.int32(mesh_obj.velocities[vertex_index][0])
+        if segmentation_value == wp.int32(distractor_segmentation_id):
+            distractor_mask[env_id, row, col] = wp.int32(1)
+            distractor_depth[env_id, row, col] = t
+
+
 def _rotate_hue_rgb(rgb, radians):
     """Rotate RGB rows (N,3) about the grey axis by per-row angles (N,) -- a pure hue shift.
 
@@ -212,6 +259,28 @@ DETECT_PIXEL_BUDGET = int(
 if DETECT_PIXEL_BUDGET <= 0:
     raise ValueError("NAVRL_DETECT_PIXEL_BUDGET must be positive")
 
+# Warp/LiDAR segmentation id of the appearance distractors. Must equal
+# aerial_gym.config.asset_config.env_object_config.DISTRACTOR_SEMANTIC_ID; it is duplicated rather
+# than imported so this module keeps its "no config imports" property (it is loaded by file path
+# in the CPU-only tests). tests/test_navrl_distractors.py pins the two together.
+DISTRACTOR_SEMANTIC_ID = 51
+
+
+def _distractor_count():
+    """Number of appearance distractors per env; 0 (the historical world) unless asked for.
+
+    Read from the environment rather than from vis_cfg because the knob is an ASSET-side one:
+    the same variable sizes navrl_distractor_*_params.num_assets in env_object_config, and the
+    renderer must agree with what the env actually built.
+    """
+    raw = os.environ.get("NAVRL_DISTRACTOR_COUNT", "").strip()
+    if not raw:
+        return 0
+    try:
+        return max(0, int(raw))
+    except ValueError:
+        return 0
+
 
 class NavRLTargetDetector:
     """Pixel-derived camera detection plus short detector-side tracking memory."""
@@ -246,6 +315,9 @@ class NavRLTargetDetector:
         self.vfov = math.radians(float(vis_cfg.detector_vfov_deg))
         self.half_hfov = self.hfov * 0.5
         self.half_vfov = self.vfov * 0.5
+        # Appearance distractors: scene bodies this renderer paints the SAME nominal target
+        # colour. 0 = the historical world, in which the target is the only painted object.
+        self.num_distractors = _distractor_count()
         self.target_radius = float(getattr(vis_cfg, "camera_target_radius", 0.15))
         self.target_use_oriented_box = (
             os.environ.get("NAVRL_TARGET_DYNAMICS", "legacy").strip().lower() == "physical"
@@ -362,6 +434,19 @@ class NavRLTargetDetector:
         self._mask_wp = wp.from_torch(self.target_mask, dtype=wp.int32)
         self._depth_wp = wp.from_torch(self.target_depth, dtype=wp.float32)
         self._obstacle_depth_wp = wp.from_torch(self.obstacle_depth, dtype=wp.float32)
+
+        # -- appearance distractors (only when some exist). No buffer, no ray table entry and no
+        # kernel launch at zero count, so the default render is the historical one.
+        if self.num_distractors > 0:
+            self.distractor_mask = torch.zeros(
+                (self.num_envs, self.height, self.width), dtype=torch.int32, device=device
+            )
+            self.distractor_depth = torch.full(
+                (self.num_envs, self.height, self.width), self.max_range,
+                dtype=torch.float32, device=device,
+            )
+            self._distractor_mask_wp = wp.from_torch(self.distractor_mask, dtype=wp.int32)
+            self._distractor_depth_wp = wp.from_torch(self.distractor_depth, dtype=wp.float32)
 
         # -- detect-resolution target render (only when the two resolutions differ).
         # The SAME kernel, the same origins/orientations and the same target geometry are used;
@@ -519,7 +604,36 @@ class NavRLTargetDetector:
           camera_fov_scale_err -- the detect ray table is built from the same scaled render FOV
             while self.detect_fx/cx stay nominal, reproducing the mis-calibration one-for-one.
           NAVRL_TARGET_DYNAMICS=physical (oriented-box target) -- same kernel, same geometry.
+
+        Refused ahead of the appearance knobs, because it breaks a different half of the identity:
+          NAVRL_DISTRACTOR_COUNT > 0  the paint is still flat, but it is no longer applied to the
+                                      target ALONE, so "the pixels the colour rule fires on" and
+                                      "the pixels the target ray-cast produced" stop being the
+                                      same set. See the raise below.
         """
+        if self.num_distractors > 0:
+            raise RuntimeError(
+                "NavRL detect-resolution decoupling (%dx%d detect vs %dx%d camera) is NOT "
+                "equivalent with %d appearance distractor(s) in the scene. The decoupling "
+                "replaces the high-resolution RGB render + segmentation with the high-resolution "
+                "TARGET mask, which is an identity only while the target is the sole object the "
+                "renderer paints: perception's segmenter then fires on exactly the pixels the "
+                "target ray-cast produced. Distractors are painted the same nominal target "
+                "colour, so perception's segmenter fires on distractor pixels that the "
+                "detect-resolution target ray-cast never produced, and the two disagree "
+                "SILENTLY -- the detect-resolution count/centroid/range would report a clean "
+                "target while the camera-resolution image the same policy sees is full of "
+                "false-positive blobs. Measure the distractor axis on the camera-resolution "
+                "path: set NAVRL_DETECT_WIDTH/HEIGHT equal to NAVRL_CAMERA_WIDTH/HEIGHT, or set "
+                "NAVRL_DISTRACTOR_COUNT=0."
+                % (
+                    self.detect_width,
+                    self.detect_height,
+                    self.width,
+                    self.height,
+                    self.num_distractors,
+                )
+            )
         offenders = []
         for name, value in (
             ("appearance_hue_deg", self.app_hue_deg),
@@ -727,6 +841,24 @@ class NavRLTargetDetector:
             ],
             device=str(self.device),
         )
+        if self.num_distractors > 0:
+            # Same origins/orientations and the same camera ray table as the target render above,
+            # so the distractor mask is registered pixel-for-pixel with the target mask.
+            wp.launch(
+                kernel=_render_distractor_camera_kernel,
+                dim=(self.num_envs, self.height, self.width),
+                inputs=[
+                    self.mesh_ids,
+                    self._origins_wp,
+                    self._orientations_wp,
+                    self._ray_vectors_wp,
+                    int(DISTRACTOR_SEMANTIC_ID),
+                    self.max_range,
+                    self._distractor_mask_wp,
+                    self._distractor_depth_wp,
+                ],
+                device=str(self.device),
+            )
         if self.detect_decoupled:
             self._render_detect()
 
@@ -763,6 +895,22 @@ class NavRLTargetDetector:
             luminance = luminance * self.texture_field
         rgb = luminance.unsqueeze(1) * self.albedo_tint
         depth = obstacle_depth_hi.clone()
+
+        # Appearance distractors are painted FIRST, with the same per-env target colour and their
+        # own exact camera-resolution depth. Deliberately indistinguishable from the target in the
+        # RGB-D frame: that is the worst case this axis exists to measure, and giving them a
+        # coarser depth than the target would hand a detector a cue no real scene provides.
+        # Painting before the target is also the correct depth order -- where target_mask fires
+        # the target is unoccluded, because the target kernel's mesh query is blocked by any
+        # distractor in front of it.
+        if self.num_distractors > 0:
+            visible_distractor_pixels = self.distractor_mask > 0
+            rgb = torch.where(
+                visible_distractor_pixels.unsqueeze(1),
+                self.target_color.view(-1, 3, 1, 1),
+                rgb,
+            )
+            depth = torch.where(visible_distractor_pixels, self.distractor_depth, depth)
 
         # Renderer-only class mask paints the visible target mesh appearance. The mask itself is
         # never returned to the perception module or actor.

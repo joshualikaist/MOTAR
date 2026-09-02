@@ -2027,6 +2027,17 @@ class NavRLPerceptionModule:
             "camera_visible": visible,
             "lidar_visible": lidar_visible,
             "confidence": torch.maximum(confidence, lidar_confidence),
+            # The CAMERA half of the two fields above, unfused. Both are already computed above --
+            # these keys add references, not work. They exist because the appearance-distractor
+            # measurement (docs/prereg_2026-09-01_distractor_envelope.md section 4) classifies the
+            # position the RGB-D detector reported, and the fused fields would attribute a
+            # LiDAR-only track to the camera. Diagnostics are evaluator-facing: the actor
+            # observation is `obs`, which is built above and never reads this dict.
+            "camera_confidence": confidence,
+            # `meas_world` IS the detector's reported 3D measurement -- the same tensor handed to
+            # self.tracker.step() as the KF observation. Exporting the tracker's posterior instead
+            # would measure the filter, not the detector.
+            "camera_measurement_world": meas_world,
             "target_pixels": pixel_count,
             "track_age": self.tracker.age,
             "track_covariance": self.tracker.cov,
