@@ -156,12 +156,48 @@
       "gpu_authority_scope": "one seed-911 fresh route-off 70-to-205 curriculum run only",
       "authorizes_routed_ppo": false,
       "authorizes_hardware_claim": false,
-      "status": "RUNNING",
-      "run": "ppo_260901_1259_navrl_corrected-nonoverlap-physical-off-curriculum-s911",
-      "session_log": "aerial_gym/rl_training/rl_games/train_session_logs/corrected_nonoverlap_physical_off_curriculum_260901_125953.log",
-      "source_manifest_sha256": "ade7098ccb16cb0e3847c5b77f9d68cf651255d9cb57c60c498e67f641f1e6c8"
+      "status": "OPERATOR_STOPPED_INCOMPLETE",
+      "run": "ppo_260901_1431_navrl_corrected-nonoverlap-physical-off-curriculum-s911",
+      "superseded_incomplete_run": "ppo_260901_1259_navrl_corrected-nonoverlap-physical-off-curriculum-s911",
+      "session_log": "aerial_gym/rl_training/rl_games/train_session_logs/corrected_nonoverlap_physical_off_curriculum_260901_143136.log",
+      "source_manifest_sha256": "42ee349201ae5220d13fdee3dd9e756502cabb70ba7ece0faab9836dcd2b03a3",
+      "stop_epoch": 21973,
+      "stop_bars": 145,
+      "resume_forbidden": true
     },
-    "next_gate": "seed-911 route-off 70-to-205 curriculum is RUNNING; do not start a second run; routed confirmatory/PPO remains blocked"
+    "route_off_heldout_eval": {
+      "preregistration": "docs/preregistration_corrected_nonoverlap_physical_off_heldout_eval_2026-09-02.md",
+      "preregistration_sha256": "072060a82421ea67c6b1abfbb541d67ca89b7a26dd091a849f893edc520708c5",
+      "launcher": "aerial_gym/rl_training/rl_games/eval_navrl_corrected_nonoverlap_physical_off_heldout.sh",
+      "parent_run": "ppo_260901_1431_navrl_corrected-nonoverlap-physical-off-curriculum-s911",
+      "checkpoint": "aerial_gym/rl_training/rl_games/runs/ppo_260901_1431_navrl_corrected-nonoverlap-physical-off-curriculum-s911/nn/last_gen_ppo_ep_21750_rew_83.1572.pth",
+      "checkpoint_sha256": "541b36bdcabacf8bb14c6fbb0ad07054dd9735ad24777a3222655ba8ca9c8132",
+      "eval_seed": 313,
+      "training_seed_forbidden": 911,
+      "episodes_per_cell": 2049,
+      "densities": [70, 85, 100, 115, 130, 145],
+      "ood_205_included": false,
+      "gen_ppo_forbidden": true,
+      "action_mode": "deterministic",
+      "target_speed_max_mps": 1.25,
+      "target_route_mode": "off",
+      "placement": "footprint_clearance",
+      "gpu_authority": false,
+      "gpu_authority_consumed": true,
+      "gpu_authority_scope": "one seed-313 held-out density sweep of last_gen_ppo_ep_21750 at trained densities 70-145 only",
+      "authorizes_routed_ppo": false,
+      "authorizes_second_curriculum": false,
+      "authorizes_resume": false,
+      "status": "COMPLETE_VALID_WITH_METADATA_ERRATUM",
+      "result_root": "results/navrl_corrected_nonoverlap_physical_off_heldout_seed313",
+      "result_summary": "results/navrl_corrected_nonoverlap_physical_off_heldout_seed313/summary.json",
+      "result_summary_sha256": "fd52ad6c4d4a9ba564510fd556cfd561b48ab9771a22799ecdc9956f84249559",
+      "capture_rate_70": 0.8369936554416789,
+      "capture_rate_145": 0.6554416788677404,
+      "capture_delta_70_to_145_pp": -18.155197657393852,
+      "metadata_erratum": "redundant v2_evaluation_contract target_speed_max recorded 1.5; measured condition and runtime validator attest 1.25; raw evidence unchanged"
+    },
+    "next_gate": "held-out sweep is complete; offline bottleneck analysis and a new preregistration are required before any GPU work; do not resume 1431, start a second curriculum, evaluate 205 as mastery, or open routed PPO"
   },
   "evidence": [
     {
@@ -191,6 +227,10 @@
     {
       "path": "results/navrl_corrected_nonoverlap_physical_off_smoke_seed907/summary.json",
       "sha256": "85758ba6b6bef7b0097afe6e14c6dbcf6f127d1d80595a70da2fcbf699ec1a89"
+    },
+    {
+      "path": "results/navrl_corrected_nonoverlap_physical_off_heldout_seed313/summary.json",
+      "sha256": "fd52ad6c4d4a9ba564510fd556cfd561b48ab9771a22799ecdc9956f84249559"
     }
   ],
   "claim_boundary": {

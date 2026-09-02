@@ -4,7 +4,7 @@
 [`RESEARCH_PLAN.md`](RESEARCH_PLAN.md), 날짜별 기록은 [`WORKLOG.md`](WORKLOG.md),
 명령어는 [`OPERATIONS.md`](OPERATIONS.md), 라이브 지표는 [`docs/status/`](docs/status/)를 본다.
 
-> 기준일: 2026-09-01
+> 기준일: 2026-09-02
 
 현재 판정의 기계 판독 원본은
 [`docs/research_authority_2026-08-26.json`](docs/research_authority_2026-08-26.json)이다.
@@ -72,12 +72,25 @@ non-overlap 판정 필드를
   launcher는 `train_navrl_corrected_nonoverlap_physical_smoke.sh`다. 공식 판정은
   `PASS_LEARNING_VIABILITY`: 초기→후기 100-epoch capture `11.01→60.39%`(+49.38pp), reward
   `-131.00→+93.08`, KL max `0.01119`, rollback/skipped 0이다. 이 PASS로 별도 사전등록된 fresh
-  route-off 70→205 curriculum 1회만 열렸다. 그 1회는 이미 실행 중이다:
-  `ppo_260901_1259_navrl_corrected-nonoverlap-physical-off-curriculum-s911`,
-  trainer PID 1496818, session
-  `train_session_logs/corrected_nonoverlap_physical_off_curriculum_260901_125953.log`.
-  두 번째 curriculum이나 routed PPO는 시작하지 않는다. `global_astar_*`, 1.5 m/s와
-  hardware claim은 계속 차단한다.
+  route-off 70→205 curriculum 1회만 열렸다. 그 1회는 2026-09-02 사용자 요청으로
+  **운영자 중지**됐다 (`OPERATOR_STOPPED_INCOMPLETE`). 재개 금지, 두 번째 curriculum 금지,
+  routed PPO 금지. `global_astar_*`, 1.5 m/s와 hardware claim은 계속 차단한다.
+  - run `ppo_260901_1431_navrl_corrected-nonoverlap-physical-off-curriculum-s911`
+  - 중지 epoch 21973/30000, 막대 145 (160+ 미도달), 마지막 공식 hold capture 0.647 / gate 0.70
+  - 평가용 체크포인트는 `nn/last_gen_ppo_ep_21750_rew_83.1572.pth`뿐이며 `gen_ppo.pth`는 쓰지 않는다
+  - 학습 로그 capture를 held-out로 부르지 않는다
+  held-out 평가 사전등록은
+  [`docs/preregistration_corrected_nonoverlap_physical_off_heldout_eval_2026-09-02.md`](docs/preregistration_corrected_nonoverlap_physical_off_heldout_eval_2026-09-02.md)
+  이다. 셀은 학습한 70/85/100/115/130/145뿐이고, 205는 넣지 않았다. 체크포인트는
+  `last_gen_ppo_ep_21750`만, seed 313, `gen_ppo.pth` 금지. 기본 evaluator 밀도
+  `70 150 210 280`과 `navrl_band`/`U[0.3,1.5]`는 이 체크포인트에 쓰면 VOID다.
+  평가는 완료되어 `COMPLETE_VALID_WITH_METADATA_ERRATUM`으로 봉인됐다. capture는
+  70/85/100/115/130/145 bars에서 각각
+  **83.70/80.94/77.75/73.45/69.17/65.54%**, timeout은 전 셀 0.4% 이하다.
+  70→145의 −18.16 pp는 거의 전부 bar contact 증가(+18.25 pp)다. 보조 contract JSON의
+  speed max `1.5`는 serializer 하드코딩 오류이고, 실제 condition/log/validator/속도 strata는
+  모두 `1.25`를 증명한다. 원본은 수정하지 않았고 향후 serializer만 고쳤다. 현재 GPU 권한은 없다.
+  결과: [`summary.md`](results/navrl_corrected_nonoverlap_physical_off_heldout_seed313/summary.md).
 
 ## 2026-08-26 기록된 실행 authority (판정 보존)
 

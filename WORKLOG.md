@@ -13592,3 +13592,150 @@ run은 시작하지 않았다.
 - 13:13 확인 시점 epoch 208/30000, 단일 epoch capture 54–65%, pooled n≈2049 capture 59.3%
 
 종료 전에는 공식 판정을 하지 않는다. 끝나면 분석만 하고 routed PPO는 열지 않는다.
+
+### seed 911 curriculum 세션 단절 후 fresh 재시작
+
+`1259` 런은 epoch 1374/30000, 70 bars에서 로그가 대시보드 중간에 끊겼다. same-density
+guard/NaN/OOM 표식은 없다. 마지막 주기 체크포인트는 `last_gen_ppo_ep_1250`. 사용자는
+재실행을 요청했고, 계약이 fresh-only라 그 체크포인트는 쓰지 않았다.
+
+재시작: `setsid nohup`으로
+`ppo_260901_1431_navrl_corrected-nonoverlap-physical-off-curriculum-s911`,
+trainer PID 12683, session
+`train_session_logs/corrected_nonoverlap_physical_off_curriculum_260901_143136.log`,
+receipt SHA-256 `42ee349201ae5220d13fdee3dd9e756502cabb70ba7ece0faab9836dcd2b03a3`.
+첫 epoch는 fresh weights, seed 911, 70 bars를 다시 확인했다.
+
+### seed 911 curriculum 감시 재개 (Cursor, 17:51)
+
+세션 단절 후 프로세스는 살아 있었다. 두 번째 curriculum은 시작하지 않았다.
+
+- trainer PID 12683, bash SID 12602, TTY 없음(세션 죽어도 유지), GPU 6162 MiB / 61% / 56°C
+- 확인 시점 epoch 3278/30000, bars 70 고정, 최신 주기 체크포인트 `last_gen_ppo_ep_3250`
+- 초기 100 epoch capture ~11% / reward ~−129 → 최근 100 epoch capture 76.5% / reward +133
+- 승급 창(최근 455 epoch, 약 16k episode 규모) capture 75.6% — 70-bar gate 0.82 미달, 밀도는 아직 70
+- same-density guard 미발화(현재 50-epoch 평균 대비 peak drop ~0.02, 한도 0.25)
+- 거리 커리큘럼만 k_max 7→28 m로 승급됨. NaN/OOM/rollback 표식 없음
+- 기존 TensorBoard :6007은 `src/aerial_gym_simulator/.../runs`를 보고 있어 이 런이 안 보인다. 이 런 전용 TB는 :6008
+
+종료 전 공식 판정 금지. 끝나면 분석만 하고 routed PPO는 열지 않는다.
+
+### seed 911 감시 계속 — TensorBoard 경로 수정과 완료 분석기
+
+사용자가 기존 :6007 화면으로 진행을 요청했다. 학습 PID 12683은 그대로 두고 TensorBoard :6007 logdir만
+worktree `.../rl_games/runs`로 바꿨다. :6008도 같은 경로를 가리킨다.
+
+완료 즉시 판정용 `tools/analyze_navrl_corrected_nonoverlap_physical_curriculum.py`를 추가했다.
+`--live`는 판정 없이 스냅샷만 내고, 공식 analyze는 종료 표식이 있을 때만 연다. routed PPO 권한은
+어느 경로에서도 false다. 17:55 live 스냅샷: epoch 3359/30000, bars 70, 최근 100 epoch capture 77.4%,
+reward +135, 밀도 승급 0회.
+
+### seed 911 밀도 70→85 승급 (20:53)
+
+공식 로그: `bars 70 -> 85 after 16385 eps, capture=0.829 (threshold=0.820) dwell=6327 epochs`.
+trainer PID 12683 유지, 두 번째 run 없음. 확인 시점 epoch 6331/30000, bars 85, 최근 20 epoch
+capture 84.1% / reward +154. 다음 게이트는 85:0.77, dwell 1,000, evidence 16,384. 가드·NaN·OOM 없음.
+routed PPO는 열지 않는다.
+
+### seed 911 밀도 85→100 승급 (22:16)
+
+공식 로그: `bars 85 -> 100 after 16386 eps, capture=0.792 (threshold=0.770) dwell=1248 epochs`.
+trainer PID 12683 유지. 확인 시점 epoch 7687/30000, bars 100(이 밀도 112 epoch). 다음 게이트는
+100:0.72. 가드 없음. routed PPO는 열지 않는다.
+
+### seed 911 밀도 100→115 승급 (23:38)
+
+공식 로그: `bars 100 -> 115 after 16385 eps, capture=0.746 (threshold=0.720) dwell=1232 epochs`.
+trainer PID 12683 유지. 확인 시점 epoch 8977/30000, bars 115(이 밀도 171 epoch). 다음 게이트는
+115:0.70. 가드 없음. routed PPO는 열지 않는다.
+
+### seed 911 밀도 115→130 승급 (00:59)
+
+공식 로그: 115-bar hold `capture=0.696` then `0.700`, then `bars 115 -> 130 after 16384 eps, capture=0.701 (threshold=0.700) dwell=1224 epochs`.
+trainer PID 12683 유지. 확인 시점 epoch 10211/30000, bars 130(이 밀도 181 epoch). 다음 게이트는
+130:0.70. 가드 없음. routed PPO는 열지 않는다.
+
+### seed 911 밀도 130→145 승급 (08:09)
+
+공식 로그: 130-bar holds 후 `bars 130 -> 145 after 16384 eps, capture=0.715 (threshold=0.700) dwell=6196 epochs`.
+trainer PID 12683 유지. 확인 시점 epoch 16416/30000, bars 145(이 밀도 190 epoch). 130 말기 last100 capture 71.9% → 145 진입 first100 65.2% (−6.7pp). 다음 게이트는 145:0.70. 가드 없음. routed PPO는 열지 않는다.
+
+### seed 911 curriculum 운영자 중지 (14:48)
+
+사용자가 145-bar stall에서 중단을 요청했다. trainer PID 12683 / bash SID 12602를 종료했다.
+가드·OOM·max_epochs가 아니다. fresh-only라 이 런은 재개하지 않는다. 두 번째 curriculum과
+routed PPO는 열지 않는다. GPU one-shot 권한은 이미 소모된 상태다.
+
+- run `ppo_260901_1431_navrl_corrected-nonoverlap-physical-off-curriculum-s911`
+- 중지 시점 epoch 21973/30000, bars 145 (~5739 epoch at 145), last100 capture 64.3%
+- 최신 주기 체크포인트 `last_gen_ppo_ep_21750_rew_83.1572.pth`
+  SHA-256 `541b36bdcabacf8bb14c6fbb0ad07054dd9735ad24777a3222655ba8ca9c8132`
+- 마지막 공식 145 hold capture=0.647 / gate 0.70
+- 승급 경로: 70→85→100→115→130→145. 160 이상은 도달하지 않음
+- GPU 학습 프로세스 없음 (잔여 ~736 MiB, rustdesk만)
+
+다음 단계는 이 런을 205 성공으로 읽거나 재개하는 것이 아니다. held-out 평가 사전등록
+(체크포인트 `last_gen_ppo_ep_21750`, 학습 밀도 70/85/100/115/130/145, seed≠911,
+`gen_ppo.pth` 금지) 후에만 평가 GPU를 연다.
+
+### seed 911 last_gen_21750 held-out 평가 사전등록 (2026-09-02)
+
+결과 보기 전에 계약을 고정했다.
+[`docs/preregistration_corrected_nonoverlap_physical_off_heldout_eval_2026-09-02.md`](docs/preregistration_corrected_nonoverlap_physical_off_heldout_eval_2026-09-02.md)
+SHA-256 `072060a82421ea67c6b1abfbb541d67ca89b7a26dd091a849f893edc520708c5`.
+셀 70/85/100/115/130/145, seed 313, n=2049, route-off, `U[0.3,1.25]`,
+`footprint_clearance` 0.45 m. 205는 학습하지 않은 OOD라 넣지 않았다. `gen_ppo.pth` 금지.
+이 숫자는 145-terminal 정책의 held-out capture/crash일 뿐이며, 다음 학습을 열지는
+결과가 나온 뒤에 새 사전등록으로만 정한다.
+
+### seed 911 last_gen_21750 held-out 평가 시작 (2026-09-02)
+
+GPU는 rustdesk만 점유 중이었고 메인 트리 체크아웃은 하지 않았다. braking_route_v3 worktree에서
+`eval_navrl_corrected_nonoverlap_physical_off_heldout.sh`를 한 번 띄웠다. 결과 루트는
+`results/navrl_corrected_nonoverlap_physical_off_heldout_seed313`이다. 205 없음. 재실행 금지.
+첫 시도는 evaluator가 `navrl_ref5in_v2_quad`를 거부해서 즉시 종료됐다. 두 번째는
+`cfg_target_motion_model`이 역사적 analytic 문자열과 달라 거부됐다. v2 로봇 계보,
+physical motion model, `NAVRL_PHYSICAL_GEOMETRY_VERSION=v2` / box 0.283을 계약 분기에
+넣은 뒤 다시 한 번만 띄운다. 세 번째 시도는 provenance OK로 70-bar 셀에 진입했다.
+- PID 3618494 (eval wrapper/sweep), python 3618744
+- log `train_session_logs/corrected_nonoverlap_physical_off_heldout_260902_180023.log`
+- seed 313, densities 70 85 100 115 130 145, `U[0.3,1.25]`, `footprint_clearance`, robot `navrl_ref5in_v2_quad`
+- 학습 seed 911 vs 평가 seed 313 mismatch 경고는 의도된 것이다 (density evidence reset)
+
+### seed 313 held-out 완료·봉인 (2026-09-02 18:20 KST)
+
+6셀은 모두 끝났고 GPU 프로세스는 없다. 체크포인트 SHA, 셀별 result/receipt/log SHA,
+서로 다른 nonce, source manifest 330개 파일, evaluator hash, outcome 분모와 CSV를 재검증했다.
+판정은 `COMPLETE_VALID_WITH_METADATA_ERRATUM`; raw artifact는 수정하지 않았다.
+
+| bars | n | capture (Wilson 95%) | crash | timeout | bar contact |
+|---:|---:|---:|---:|---:|---:|
+| 70 | 2049 | 83.70% [82.04, 85.24] | 15.91% | 0.39% | 15.67% |
+| 85 | 2051 | 80.94% [79.18, 82.58] | 18.82% | 0.24% | 18.43% |
+| 100 | 2049 | 77.75% [75.89, 79.49] | 21.86% | 0.39% | 21.67% |
+| 115 | 2049 | 73.45% [71.50, 75.32] | 26.35% | 0.20% | 26.06% |
+| 130 | 2050 | 69.17% [67.14, 71.13] | 30.44% | 0.39% | 30.24% |
+| 145 | 2049 | 65.54% [63.46, 67.57] | 34.16% | 0.29% | 34.16% |
+
+70→145 capture는 −18.16 pp, 평균 −3.63 pp/15 bars다. crash는 +18.25 pp이고 timeout은
+전 셀 0.4% 이하여서 병목은 탐색시간이 아니라 막대 접촉이다. lateral action의 양의 방향
+비율도 모든 셀에서 98.58–99.20%, mean |y| 0.921–0.938로 남아 있어 고밀도 충돌과 함께
+다음 offline 원인분석의 1순위다. 이 결과만으로 205 mastery, routed, hardware/sim-to-real을
+주장하지 않는다.
+
+메타데이터 정정: raw `v2_evaluation_contract.target_speed_max_mps`만 과거 상수 1.5를
+기록했다. 실제 `condition.target_speed_max_mps`, 시작 로그, 결과 저장 전 validator와 speed
+strata 상단은 모두 1.25다. outcome 비영향 직렬화 결함으로 판정하고 raw는 보존했으며,
+향후 evaluator는 `NAVRL_TARGET_SPEED_FINAL`을 기록하도록 수정·회귀 테스트했다.
+
+- 결과: `results/navrl_corrected_nonoverlap_physical_off_heldout_seed313/summary.{json,md}`
+- summary SHA-256: `fd52ad6c4d4a9ba564510fd556cfd561b48ab9771a22799ecdc9956f84249559`
+- 다음: offline 병목 분석과 새 사전등록 전에는 GPU 없음. 1431 재개/두 번째 curriculum/205
+  mastery 평가/routed PPO 모두 금지.
+
+검증: corrected-nonoverlap/authority 관련 24 tests PASS, authority freeze PASS, clean-clone식
+source 검증(ignored source snapshot을 잠시 제외하고 tracked bytes + archived evaluator 사용) PASS.
+전체 suite는 917 tests 중 913 PASS / 2 skipped / 4 historical-artifact failures였다. 실패 4개는
+이 변경의 assertion이 아니라 이 worktree에 없는 과거 P1c checkpoint·P2 log·P1c source manifest
+3건과 frozen heading-rest braking receipt provenance 1건이다. held-out 결과/런처/요약 테스트에는
+실패가 없다.

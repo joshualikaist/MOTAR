@@ -163,20 +163,64 @@ def verify_authority(receipt_path=DEFAULT_RECEIPT):
         "preregistration_sha256"
     ]:
         raise RuntimeError("route-off curriculum preregistration missing or SHA drift")
-    if curriculum.get("status") != "RUNNING" or curriculum.get(
+    if curriculum.get("status") != "OPERATOR_STOPPED_INCOMPLETE" or curriculum.get(
         "gpu_authority"
     ) is not False or curriculum.get("gpu_authority_consumed") is not True or curriculum.get(
         "fresh_only"
-    ) is not True:
+    ) is not True or curriculum.get("resume_forbidden") is not True:
         raise RuntimeError("route-off curriculum execution authority drift")
     if curriculum.get("run") != (
-        "ppo_260901_1259_navrl_corrected-nonoverlap-physical-off-curriculum-s911"
+        "ppo_260901_1431_navrl_corrected-nonoverlap-physical-off-curriculum-s911"
     ):
         raise RuntimeError("route-off curriculum live-run identity drift")
     if curriculum.get("authorizes_routed_ppo") is not False or curriculum.get(
         "authorizes_hardware_claim"
     ) is not False:
         raise RuntimeError("route-off curriculum unexpectedly authorizes broader claims")
+
+    heldout = corrected["route_off_heldout_eval"]
+    heldout_prereg = ROOT / heldout["preregistration"]
+    if not heldout_prereg.is_file() or _sha256(heldout_prereg) != heldout[
+        "preregistration_sha256"
+    ]:
+        raise RuntimeError("route-off held-out eval preregistration missing or SHA drift")
+    if heldout.get("eval_seed") != 313 or heldout.get("training_seed_forbidden") != 911:
+        raise RuntimeError("route-off held-out eval seed contract drift")
+    if heldout.get("densities") != [70, 85, 100, 115, 130, 145]:
+        raise RuntimeError("route-off held-out eval density contract drift")
+    if heldout.get("ood_205_included") is not False or heldout.get(
+        "gen_ppo_forbidden"
+    ) is not True:
+        raise RuntimeError("route-off held-out eval OOD/gen_ppo contract drift")
+    if heldout.get("checkpoint_sha256") != (
+        "541b36bdcabacf8bb14c6fbb0ad07054dd9735ad24777a3222655ba8ca9c8132"
+    ):
+        raise RuntimeError("route-off held-out eval checkpoint digest drift")
+    if heldout.get("authorizes_routed_ppo") is not False or heldout.get(
+        "authorizes_second_curriculum"
+    ) is not False or heldout.get("authorizes_resume") is not False:
+        raise RuntimeError("route-off held-out eval unexpectedly authorizes broader work")
+    if heldout.get("status") != "COMPLETE_VALID_WITH_METADATA_ERRATUM" or heldout.get(
+        "gpu_authority"
+    ) is not False or heldout.get("gpu_authority_consumed") is not True:
+        raise RuntimeError("route-off held-out completion authority drift")
+    heldout_result = ROOT / heldout["result_summary"]
+    if not heldout_result.is_file() or _sha256(heldout_result) != heldout[
+        "result_summary_sha256"
+    ]:
+        raise RuntimeError("route-off held-out result summary missing or SHA drift")
+    heldout_payload = json.loads(heldout_result.read_text(encoding="utf-8"))
+    if heldout_payload.get("status") != "COMPLETE_VALID_WITH_METADATA_ERRATUM":
+        raise RuntimeError("route-off held-out result verdict drift")
+    if heldout_payload.get("interpretation", {}).get("routed_ppo_authorized") is not False:
+        raise RuntimeError("route-off held-out result unexpectedly authorizes routed PPO")
+    if heldout.get("target_speed_max_mps") != 1.25 or heldout.get(
+        "target_route_mode"
+    ) != "off" or heldout.get("placement") != "footprint_clearance":
+        raise RuntimeError("route-off held-out eval environment-contract drift")
+    launcher = ROOT / heldout["launcher"]
+    if not launcher.is_file():
+        raise RuntimeError("route-off held-out eval launcher missing")
 
     if receipt.get("hardware_state") != {
         "assembled_airframe": False,
@@ -206,7 +250,10 @@ def main():
         "corrected_fresh_ppo_epochs_run": receipt["corrected_environment_v2_2026_08_27"][
             "route_physical_gate_r2"
         ]["fresh_ppo_epochs_run"],
-        "next": receipt["track_a"]["allowed_next"],
+        "corrected_nonoverlap_heldout": receipt["corrected_environment_v2_2026_08_27"][
+            "route_off_heldout_eval"
+        ]["status"],
+        "next": receipt["corrected_environment_v2_2026_08_27"]["next_gate"],
     }
     if args.json:
         print(json.dumps(summary, indent=2, ensure_ascii=False))
@@ -215,7 +262,8 @@ def main():
         print("Track A: %s; Stage 2=false" % summary["track_a"])
         print("Track B: %s; long training=false" % summary["track_b"])
         print("Corrected route gate: %s; fresh PPO epochs=0" % summary["corrected_route_gate"])
-        print("Next: hardware BOM/calibration/210 trials/real-log offline replay")
+        print("Corrected route-off held-out: %s" % summary["corrected_nonoverlap_heldout"])
+        print("Next: %s" % summary["next"])
 
 
 if __name__ == "__main__":

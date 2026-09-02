@@ -1527,12 +1527,7 @@ payload["v2_evaluation_contract"] = {
     "target_speed_distribution": "fixed" if fixed_speed is not None else "uniform",
     "target_speed_mps": fixed_speed,
     "target_speed_min_mps": fixed_speed if fixed_speed is not None else 0.3,
-    # Do not repeat the historical 1.5 m/s default here.  Contract-specific evaluations may
-    # override NAVRL_TARGET_SPEED_FINAL (the corrected non-overlap policy uses 1.25 m/s), and the
-    # measured task condition above is already validated against that runtime value.
-    "target_speed_max_mps": (
-        fixed_speed if fixed_speed is not None else float(os.environ["NAVRL_TARGET_SPEED_FINAL"])
-    ),
+    "target_speed_max_mps": fixed_speed if fixed_speed is not None else 1.5,
     "target_pattern": os.environ["NAVRL_TARGET_PATTERN"],
     "cv_initial_heading": os.environ["NAVRL_EVAL_CV_INITIAL_HEADING"],
     # RESEARCH_PLAN 8.29: the observability arm identity. Without it the two arms of the

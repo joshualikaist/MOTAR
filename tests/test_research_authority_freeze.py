@@ -62,12 +62,35 @@ class TestResearchAuthorityFreeze(unittest.TestCase):
         self.assertFalse(smoke["authorizes_routed_ppo"])
         self.assertFalse(smoke["authorizes_long_training"])
         curriculum = corrected["route_off_curriculum"]
-        self.assertEqual(curriculum["status"], "RUNNING")
+        self.assertEqual(curriculum["status"], "OPERATOR_STOPPED_INCOMPLETE")
+        self.assertTrue(curriculum["resume_forbidden"])
         self.assertFalse(curriculum["gpu_authority"])
         self.assertTrue(curriculum["gpu_authority_consumed"])
         self.assertTrue(curriculum["fresh_only"])
         self.assertEqual(curriculum["density_bars"], [70, 205, 15])
         self.assertFalse(curriculum["authorizes_routed_ppo"])
+        heldout = corrected["route_off_heldout_eval"]
+        self.assertEqual(heldout["eval_seed"], 313)
+        self.assertEqual(heldout["densities"], [70, 85, 100, 115, 130, 145])
+        self.assertFalse(heldout["ood_205_included"])
+        self.assertTrue(heldout["gen_ppo_forbidden"])
+        self.assertFalse(heldout["authorizes_routed_ppo"])
+        self.assertFalse(heldout["authorizes_resume"])
+        self.assertFalse(heldout["authorizes_second_curriculum"])
+        self.assertFalse(heldout["gpu_authority"])
+        self.assertTrue(heldout["gpu_authority_consumed"])
+        self.assertEqual(heldout["status"], "COMPLETE_VALID_WITH_METADATA_ERRATUM")
+        self.assertEqual(
+            heldout["result_summary_sha256"],
+            "fd52ad6c4d4a9ba564510fd556cfd561b48ab9771a22799ecdc9956f84249559",
+        )
+        self.assertEqual(heldout["checkpoint_sha256"], (
+            "541b36bdcabacf8bb14c6fbb0ad07054dd9735ad24777a3222655ba8ca9c8132"
+        ))
+        self.assertEqual(
+            heldout["preregistration_sha256"],
+            "072060a82421ea67c6b1abfbb541d67ca89b7a26dd091a849f893edc520708c5",
+        )
 
     def test_evidence_sha_drift_fails_closed(self):
         receipt = json.loads(MODULE.DEFAULT_RECEIPT.read_text(encoding="utf-8"))

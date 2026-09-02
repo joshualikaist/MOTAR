@@ -50,19 +50,24 @@ echo $!
 root를 강제한다. 판정은
 [`preregistration_corrected_nonoverlap_physical_off_smoke_2026-09-01.md`](docs/preregistration_corrected_nonoverlap_physical_off_smoke_2026-09-01.md)를 따른다.
 
-위 smoke는 완료됐으므로 다시 실행하지 않는다. seed 911 curriculum은 이미 실행 중이다
-(`ppo_260901_1259_navrl_corrected-nonoverlap-physical-off-curriculum-s911`). 아래 명령은
-provenance이며 두 번째 run을 시작하지 않는다.
+위 smoke는 완료됐으므로 다시 실행하지 않는다. seed 911 curriculum
+(`ppo_260901_1431_navrl_corrected-nonoverlap-physical-off-curriculum-s911`)은 운영자 중지로
+`OPERATOR_STOPPED_INCOMPLETE`다. 재개 금지. 직전 `1259`는 세션 단절로 중단됐다.
+
+그 런의 `last_gen_ppo_ep_21750` held-out 평가는 완료됐다. 계약은
+[`preregistration_corrected_nonoverlap_physical_off_heldout_eval_2026-09-02.md`](docs/preregistration_corrected_nonoverlap_physical_off_heldout_eval_2026-09-02.md)를
+따랐고, 결과는
+[`summary.md`](results/navrl_corrected_nonoverlap_physical_off_heldout_seed313/summary.md)에 있다.
+다시 실행하지 않는다. 기본 density sweep `70 150 210 280`도 쓰지 않는다.
 
 ```bash
-cd /home/fair/workspaces/aerial_gym_ws/.codex_worktrees/braking_route_v3/aerial_gym/rl_training/rl_games
-# already running — do not relaunch
-# ./train_navrl_corrected_nonoverlap_physical_curriculum.sh
-./watch_navrl_training.sh
+cd /home/fair/workspaces/aerial_gym_ws/.codex_worktrees/braking_route_v3
+/home/fair/miniconda3/envs/aerialgym/bin/python tools/check_research_authority.py --json
+# No training/evaluation command is currently authorized.
 ```
 
-fresh seed 911, 30,000 epochs, density 70→205/step 15/dwell 1,000, route off,
-`U[0.3,1.25] m/s`, 비중첩 surface 0.45 m다. 계약은
+fresh seed 911 curriculum은 이미 소비됐다. 밀도 70→205/step 15/dwell 1,000, route off,
+`U[0.3,1.25] m/s`, 비중첩 surface 0.45 m. 학습 계약은
 [`preregistration_corrected_nonoverlap_physical_off_curriculum_2026-09-01.md`](docs/preregistration_corrected_nonoverlap_physical_off_curriculum_2026-09-01.md)를 따른다.
 
 현재 software MECHANISM_GATE(`global_astar_braking_v3`)의 CPU 계약은 아래와 같습니다.
