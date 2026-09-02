@@ -14,6 +14,8 @@
     <nav aria-label="페이지 탐색">
       <a href="#method">Method</a>
       <a href="#arena">3D Arena</a>
+      <a href="#perception">Perception</a>
+      <a href="#safety-filter">Filter</a>
       <a href="#evidence">Evidence</a>
       <a href="#platform">Platform</a>
       <a href="#next">Next</a>
@@ -33,7 +35,7 @@
       </div>
       <div class="status-line">
         <span class="status-dot" aria-hidden="true"></span>
-        <strong>Non-overlap physical lineage · route gate FAIL · PPO 0 epochs</strong><span>205-bar geometry PASS is not policy performance · 32/32 route-gate integrity PASS · 70-bar plan 17.78% / fallback 30.02% / 0.6 goals per env 0.21875 · fresh PPO blocked · 2026-08-31</span>
+        <strong>Non-overlap route-off PPO · held-out complete to 145 bars</strong><span>fresh smoke PASS · seed-911 stopped at epoch 21,973 after reaching 145 bars · seed-313 capture 83.70% @70 → 65.54% @145 · routed mechanism still FAIL · 2026-09-02</span>
       </div>
     </section>
 
@@ -111,7 +113,7 @@
         <h2>학습하는 것과 고정하는 것을 분리했습니다.</h2>
       </div>
       <div class="three-col">
-        <article><span>Sense</span><h3>Structured perception</h3><p>RGB-D target track, 4×72 LiDAR, ego velocity·yaw·height를 898-D history로 구성합니다.</p></article>
+        <article><span>Sense</span><h3>Structured perception</h3><p>RGB-D target track, 4×72 LiDAR, ego velocity·yaw·height를 898-D history로 구성합니다. 탐지기는 YOLO가 아니라 1×1 conv 색 분류기이며 <strong>동색 디코이를 구분하지 못합니다</strong>.</p></article>
         <article><span>Learn</span><h3>Temporal policy</h3><p>17개 token을 4-layer Transformer가 처리합니다. PPO는 actor와 asymmetric critic weight를 학습합니다.</p></article>
         <article><span>Fly</span><h3>Bounded control</h3><p>출력은 유한한 body velocity와 yaw-rate 명령이며 altitude PI와 Lee controller를 거쳐 동역학에 적용됩니다.</p></article>
       </div>
@@ -127,29 +129,49 @@
       </div>
     </section>
 
+    <section class="visual wrap" id="perception" aria-labelledby="perception-title">
+      <div class="section-head">
+        <p>04 · PERCEPTION</p>
+        <h2 id="perception-title">표적을 어떻게 찾는가 — 그리고 언제 틀리는가</h2>
+        <p>탐지기는 YOLO가 아닙니다. 1&times;1 conv 색 분류기가 픽셀을 고르고, 양성 픽셀
+          <strong>전부가 하나의 중심점으로 붕괴</strong>합니다. connected components가 없어
+          후보는 언제나 1개이므로, 같은 색 물체가 하나만 더 있어도 구분하지 못합니다.
+          v7 학습 CNN(frame precision 0.99766)조차 디코이 5개에서 가시 프레임의
+          <strong>90.27%</strong>에서 틀린 물체를 잡습니다. confidence는 N=1/3/5에서
+          0.826→0.896→0.892로, 단조 증가는 아닙니다. 개선이 아니라 결함의 정량화입니다.</p>
+      </div>
+      <img src="../assets/motar-perception-detection.svg" alt="RGB-D 프레임에서 색 분류기, 단일 중심점 붕괴, LiDAR 연관으로 이어지는 탐지 파이프라인과 동색 디코이가 걸러지지 않는 지점">
+    </section>
+
+    <section class="visual wrap" id="safety-filter" aria-labelledby="filter-title">
+      <div class="section-head">
+        <p>05 · SAFETY FILTER</p>
+        <h2 id="filter-title">속도 제한은 무엇을 보고, 무엇을 못 보는가</h2>
+        <p>거버너는 명령 방향 주위 반폭 0.45 m 직선 회랑 안의 LiDAR ray만 보고
+          <strong>수평 명령의 크기만</strong> 조정합니다. 방향은 정책이 정합니다.
+          하한을 없앤 <code>stopcap</code>은 접촉 시 정지여유를 양수(+0.395 m)로 만들었는데도
+          crash가 올랐습니다 &mdash; 즉 <strong>부딪히는 장애물이 회랑 안에 없습니다</strong>.
+          맹점은 측방, 수직(z 무규제), 미지 공간(무반사=자유), 직선 가정 넷입니다.</p>
+      </div>
+      <img src="../assets/motar-safety-filter.svg" alt="LiDAR에서 방향 회랑 선택, cap 법칙, 크기 스케일로 이어지는 speed governor 구조와 네 가지 맹점 및 측정 판정">
+    </section>
+
     <section class="section evidence" id="evidence">
       <div class="wrap">
         <div class="section-head light">
-          <p>04 · EVIDENCE</p>
+          <p>06 · EVIDENCE</p>
           <h2>좋아 보이는 숫자보다 판정 범위를 함께 남깁니다.</h2>
         </div>
         <div class="metrics">
           <article><strong>600</strong><span>exact actions / episode</span><p>timeout bootstrap과 corrected-v2 의미론 검증</p></article>
-          <article><strong>333/333</strong><span>selected 205-bar contact endpoints</span><p>spawn→final-target centre-disk oracle; 전역·300-bar 연결성 아님</p></article>
-          <article><strong>−0.0145 pp</strong><span>learned-v2 vs analytic</span><p>95% CI [−1.752, +1.723], 비열등 gate 통과</p></article>
-          <article><strong>8.443→3.172%</strong><span>never acquired</span><p>camera-range 진단; primary gate 미달로 inconclusive</p></article>
-          <article><strong>7/32</strong><span>lower-1.25 cells passed</span><p>모두 route-off; recovery-v2는 0/16</p></article>
-          <article><strong>190/203</strong><span>70-bar · 4-speed plan success</span><p>93.60%; 사전 gate 99% 미달</p></article>
-          <article><strong>18,381/38,400</strong><span>70-bar fallback intervals</span><p>47.87%; 사전 gate 1% 초과</p></article>
-          <article><strong>7/32</strong><span>goals · 70 bars × 0.6 m/s</span><p>0.21875 goals/env; gate 0.5 미달</p></article>
-          <article><strong>96,854/153,600</strong><span>NO_CONNECTOR occupancy</span><p>63.06% of recovery-v2 intervals</p></article>
-          <article><strong>0/534</strong><span>hard-breach NO_CONNECTOR entries</span><p>hard breach는 관측되지 않았지만 mechanism은 FAIL</p></article>
-          <article><strong>n=1</strong><span>no-anchor primary</span><p>anchor 0/1 · identity_void=false · INCONCLUSIVE</p></article>
-          <article><strong>99.167%</strong><span>205-bar body+tracking connectivity</span><p>canonical 6–28 m geometry audit; 300 bars FAIL 94.661%; PPO NOT RUN</p></article>
+          <article><strong>99.167%</strong><span>205-bar body+tracking connectivity</span><p>geometry audit only; 300 bars FAIL 94.661%; no 205 policy evidence</p></article>
           <article><strong>32/32</strong><span>corrected route-gate integrity</span><p>execution/source receipts PASS; route mechanism FAIL</p></article>
           <article><strong>17.78%</strong><span>corrected 70-bar plan success</span><p>frozen gate ≥99%; neutral pursuer, no PPO loaded</p></article>
           <article><strong>30.02%</strong><span>corrected 70-bar fallback</span><p>frozen gate ≤1%; unsafe_start dominated</p></article>
-          <article><strong>0</strong><span>corrected fresh PPO epochs</span><p>500-epoch smoke and 70→205 run intentionally not started</p></article>
+          <article><strong>500</strong><span>route-off fresh smoke epochs</span><p>seed 907 · PASS_LEARNING_VIABILITY; held-out 성능 아님</p></article>
+          <article><strong>21,973</strong><span>seed-911 curriculum stop epoch</span><p>145 bars 도달; 160/205 미도달, 재개하지 않음</p></article>
+          <article><strong>83.70%</strong><span>route-off held-out · 70 bars</span><p>seed 313 · Wilson 95% [82.04, 85.24]</p></article>
+          <article><strong>65.54%</strong><span>route-off held-out · 145 bars</span><p>Wilson 95% [63.46, 67.57]; crash 34.16%</p></article>
         </div>
         <div class="limits">
           <h3>현재 주장할 수 없는 것</h3>
@@ -157,29 +179,26 @@
             실제 기체가 미조립이고 실제 센서 로그가 없으므로 현재 software-only gate의 판정은
             <strong>SYNTHETIC_ONLY</strong>이며 실기 성능을 뜻하지 않습니다. 이번
             <code>baseline_1p25</code>는 canonical 1.5 m/s 계약과 분리된 lower-contract이므로
-            1.25 결과를 1.5 성공으로 읽을 수 없습니다. 현재 병목은 recovery-v2의
-            <code>NO_CONNECTOR</code> 점유입니다. 후속 no-anchor probe는 primary_n=1,
-            anchor_present=0, hard_free_soft_unsafe=1, identity_void=false로
-            <strong>INCONCLUSIVE</strong>이며, 106개 class는 certificate 49 + brake_timeout 32 +
-            resume 23 + connect_timeout 1 + brake_no_anchor 1입니다. 이 결과들에는 추가 Track B
-            GPU/PPO, gain·margin·env retune, cell/grid rerun 또는 hardware claim 권한이 없습니다.
-            Attempt 2와 v1 <code>RECOVERY_DOMINANT</code>는 역사적 계보일 뿐 현재 병목 판정이 아닙니다.
-            corrected non-overlap r2도 32/32 실행은 완주했지만 plan 17.78%, fallback 30.02%,
-            0.6 m/s goals/env 0.21875로 route mechanism에 실패했습니다. 따라서 새 PPO는 0 epoch이며,
-            재학습이 불필요한 것이 아니라 선수 route/controller가 아직 유효하지 않은 상태입니다.</p>
+            1.25 결과를 1.5 성공으로 읽을 수 없습니다. route-off 정책은 145 bars까지만
+            학습·평가됐으므로 160/205 mastery를 주장할 수 없습니다.
+            corrected routed gate도 plan 17.78%, fallback 30.02%, 0.6 m/s goals/env 0.21875로 실패해
+            <strong>routed PPO는 여전히 차단</strong>돼 있습니다. 또한 표적 식별을 주장할 수 없습니다:
+            두 detector 모두 <code>COLOR_SHORTCUT_CONFIRMED</code>이고 N=5 v7 false target lock은
+            90.27%입니다. 마지막으로 <code>riskcap</code> 해제 기구와 off 대비 +9.23 pp 판정은
+            frozen ep25000 stopcap screen의 결과일 뿐 일반 평가 계약이 아닙니다.</p>
         </div>
       </div>
     </section>
 
     <section class="section wrap" id="platform">
       <div class="section-head">
-        <p>05 · CONTRACT</p>
+        <p>07 · CONTRACT</p>
         <h2>하나의 숫자는 하나의 계보에서만 읽습니다.</h2>
       </div>
       <div class="contract-grid">
         <div class="spec-card">
           <h3>Task</h3>
-          <dl><div><dt>Arena</dt><dd>40 × 40 × 3 m</dd></div><div><dt>Bars</dt><dd>70→205 train · 300 disconnected</dd></div><div><dt>Target</dt><dd>0.3–1.5 m/s</dd></div><div><dt>Episode</dt><dd>60 s · 600 actions</dd></div></dl>
+          <dl><div><dt>Arena</dt><dd>40 × 40 × 3 m</dd></div><div><dt>Bars</dt><dd>route-off measured 70→145 · 205 not reached</dd></div><div><dt>Target</dt><dd>route-off 0.3–1.25 m/s · routed gate ≤1.5</dd></div><div><dt>Episode</dt><dd>60 s · 600 actions</dd></div></dl>
         </div>
         <div class="spec-card">
           <h3>Policy</h3>
@@ -197,13 +216,13 @@
     <section class="section next" id="next">
       <div class="wrap next-grid">
         <div class="section-head">
-          <p>06 · NEXT</p>
+          <p>08 · NEXT</p>
           <h2>Hardware evidence와 route redesign을 서로 분리합니다.</h2>
         </div>
         <ol>
           <li><span>01</span><div><strong>Keep Track A honest</strong><p>Detection-range Stage 1은 RANGE_INCONCLUSIVE이며 Stage 2는 승인되지 않았습니다.</p></div></li>
           <li><span>02</span><div><strong>Execute hardware Day 1</strong><p>실제 BOM/AUW/CG, calibration, timestamp semantics와 독립 sensor trial을 수집합니다.</p></div></li>
-          <li><span>03</span><div><strong>Repair before learning</strong><p>Corrected route gate도 FAIL했습니다. braking-aware safe-state를 유지하는 target route/controller를 별도 사전등록해 통과하기 전에는 PPO를 시작하지 않습니다.</p></div></li>
+          <li><span>03</span><div><strong>Separate route-off from routed</strong><p>route-off PPO는 145 bars에서 중지됐고 routed gate는 FAIL입니다. 새 사전등록 전에는 205 mastery나 routed PPO를 열지 않습니다.</p></div></li>
         </ol>
       </div>
     </section>

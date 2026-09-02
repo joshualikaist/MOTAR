@@ -8,12 +8,12 @@ MOTAR는 카메라, LiDAR, ego-state만으로 움직이는 표적을 추적하�
 
 ![MOTAR perception-to-control system](docs/assets/motar-system-overview.svg)
 
-> **Status · 2026-08-31** — The corrected, footprint-aware non-overlap route gate completed
-> **32/32 integrity checks** and **failed the route mechanism**. At 70 bars, routed plan success was
-> **17.78%** (gate 99%), fallback **30.02%** (gate 1%), and 0.6 m/s goal completion
-> **0.21875/env** (gate 0.5). Therefore corrected fresh PPO remains **NOT RUN (0 epochs)**;
-> neither the 500-epoch smoke nor the 70→205 long run was started. Historical recovery-v2 is a
-> separate overlap-permitting lineage and remains `FAIL_ROUTE_MECHANISM`/`INCONCLUSIVE` evidence.
+> **Status · 2026-09-02** — The corrected non-overlap **route-off** lineage completed a fresh
+> 500-epoch learning-viability smoke, then a fresh seed-911 density curriculum. The curriculum was
+> stopped at epoch 21,973 after reaching 145 bars (not 205). A sealed seed-313 held-out sweep measured
+> capture **83.70% at 70 bars → 65.54% at 145 bars**; timeout stayed below 0.4% and the loss was mostly
+> bar contact. This is one incomplete route-off policy, not 205-bar mastery. The separate routed gate
+> still fails its mechanism contract, so routed PPO remains blocked.
 > Track A remains P2 `STRICT FAIL`, D1 `FAIL`, P3 `BLOCKED`, and detection Stage 1
 > `RANGE_INCONCLUSIVE_AT_THIS_BUDGET`; its only next authority is the
 > [real-hardware/offline 72-hour contract](docs/SIM2REAL_3DAY_EXECUTION_PLAN.md). 실제 기체는 아직
@@ -59,7 +59,9 @@ Ground-truth target/vehicle state는 reward, central critic, termination 및 평
 
 제어 경로는 `actor → body-frame command → altitude PI → Lee velocity loop → tilt-limited force →
 attitude/rate torque → motor allocation → 100 Hz rigid-body physics` 순서입니다. Actor의 z 출력은
-실행하지 않고 1 m altitude PI가 덮어쓰며, canonical baseline의 safety governor는 꺼져 있습니다.
+실행하지 않고 1 m altitude PI가 덮어씁니다. Speed governor의 canonical train/eval 기본값은 모두
+`off`입니다. 아래 필터 수치는 frozen ep25000 정책을 별도 stopcap screen에서 `off`, `fixed`,
+`riskcap`, `stopcap`, `ttc`로 비교한 결과이며 일반 평가 계약이 아닙니다.
 
 ## Current evidence
 
@@ -73,20 +75,88 @@ attitude/rate torque → motor allocation → 100 Hz rigid-body physics` 순서�
 | Routed recovery forensics | **8 / 8 receipt verified; `RECOVERY_DOMINANT` (evaluation-only)** | 358 local invalidations → 35,666 local fallback intervals (`99.6257×`); unique origins `200`; hard-free/soft-unsafe `97.0%` (Wilson lower `93.61%`) |
 | Recovery-v2 lower-1.25 32-cell | **32 / 32 integrity PASS; route mechanism FAIL; not a 1.5 result** | 7/32 pass (off only); 70-bar plan **93.60%**, fallback **47.87%**, 0.6 goals/env **0.21875**; `NO_CONNECTOR` occupancy **63.06%** |
 | Recovery-v2 no-anchor follow-up | **`INCONCLUSIVE`; Track B closed** | primary `n=1`; observer identity disagreement `0`; no further GPU/PPO/retune/rerun authority |
-| Corrected non-overlap route gate r2 | **32 / 32 integrity PASS; route mechanism FAIL; fresh PPO 0 epochs** | 70-bar plan **17.78%**, fallback **30.02%**, 0.6 goals/env **0.21875**; routed speed gate passed at no density |
+| Corrected non-overlap route gate r2 | **32 / 32 integrity PASS; route mechanism FAIL; routed PPO blocked** | 70-bar plan **17.78%**, fallback **30.02%**, 0.6 goals/env **0.21875**; routed speed gate passed at no density |
+| Corrected route-off fresh smoke | **500 epochs; `PASS_LEARNING_VIABILITY`** | seed 907, 70 bars fixed, target `U[0.3,1.25]`; held-out 성능 주장이 아님 |
+| Corrected route-off curriculum | **epoch 21,973에서 운영자 중지; 145 bars 도달** | fresh seed 911; 70→85→100→115→130→145, 160/205 미도달 |
+| Corrected route-off held-out | **83.70% capture @70 → 65.54% @145** | seed 313, 6 trained-density cells; one incomplete route-off policy, no 205/routed claim |
+| Detector colour shortcut (distractor envelope) | **both detectors `COLOR_SHORTCUT_CONFIRMED`**; v7 FTLR **90.27%** at N=5 | seed 479, 8 cells, 2,049 ep/cell; cross-detector comparison forbidden (prereg §3-c) |
+| Speed-governor stopcap screen | **Q1 `MECHANISM_UNSUPPORTED`, Q3 `FILTER_DEPENDENT`, stopcap NO-GO** | seed 49, 5 arms, 2,049 ep/cell; riskcap does not beat a constant 2.0 m/s cap |
 | Hardware/software gate | software pipeline PASS · `SYNTHETIC_ONLY` | 실기 성능 아님 |
 
 새 physical lineage의 `navrl_ref5in_v2_quad`는 1.20 kg, 220 mm motor diagonal, 0.283 m collision proxy를 가정한
-**hardware-informed simulation candidate**입니다. 저장소 정합성은 통과했지만 route mechanism은
-실패했고 physical PPO는 차단되어 있습니다. 실제 BOM/CAD/관성/추력/열/전원/비행 식별값은 아닙니다.
+**hardware-informed simulation candidate**입니다. route-off PPO는 145 bars까지 학습·평가됐지만
+routed mechanism은 실패해 routed PPO가 차단돼 있습니다. 실제 BOM/CAD/관성/추력/열/전원/비행
+식별값은 아닙니다.
+
+## Perception — how the target is detected
+
+![MOTAR camera target detection pipeline](docs/assets/motar-perception-detection.svg)
+
+탐지기는 YOLO가 아닙니다. `AppearanceTargetSegmenter`는 **1×1 conv 하나**로 RGB-D 픽셀을 분류하고
+(`R·3 − G·2 − B·2 − 0.9`), `_detect_rgbd`가 **양성 픽셀 전부를 하나의 중심점으로 붕괴**시킵니다.
+connected components가 없으므로 후보는 언제나 1개이고, 그 중심점을 LiDAR return과 연관시켜
+(`bearing ±15°`, `range ±0.55 m`) 표적 토큰을 만듭니다.
+
+이 설계에는 측정된 결함이 있습니다. **동색 물체가 하나 더 있으면 구분하지 못합니다.**
+
+| detector | N=1 | N=3 | N=5 | verdict |
+|---|---:|---:|---:|---|
+| default (5-param colour rule) | 52.7% | 79.7% | 88.5% | `COLOR_SHORTCUT_CONFIRMED` |
+| **v7 (11,329-param learned CNN)** | 60.7% | 83.1% | **90.3%** | `COLOR_SHORTCUT_CONFIRMED` |
+
+frame precision `0.99766`인 v7이 디코이 앞에서는 가시 프레임의 **90.27%**에서 틀린 물체를 잡습니다.
+confidence는 N=1/3/5에서 `0.826 → 0.896 → 0.892`였습니다. N=1보다 높은 수준을 유지하지만 N에
+따라 단조 증가하지는 않습니다. `count`가 후보별 값이 아니라 양성 픽셀의 합이라는 구조적 문제는
+남습니다. 평균 픽셀 수 147–181인데 표적 자체는 2–5 px입니다.
+
+**이 결과는 개선이 아니라 결함의 정량화이며**, 후보 기반 detector(C/D 단계)의 설계 근거입니다.
+detector 간 FTLR/outcome 비교는 금지입니다(서로 다른 궤적 → 서로 다른 프레임 분포, prereg §3-c L6).
+원자료: [`summary`](results/navrl_detector_distractor_envelope_seed479/summary.md).
+
+## Safety filter — the speed governor
+
+![MOTAR speed governor structure and blind spots](docs/assets/motar-safety-filter.svg)
+
+거버너는 LiDAR ray 중 **명령 방향 주위 반폭 0.45 m 직선 회랑** 안의 것만 골라 최소 전방거리를
+`clearance`로 삼고, cap 법칙 하나를 적용해 **수평 명령의 크기만** 조정합니다. 방향은 절대
+바꾸지 않습니다 — 방향은 정책이 고릅니다.
+
+측정 결과(frozen ep25000, seed 49, 205 bars, 2,049~2,051 ep/cell):
+
+| mode | capture | crash | timeout | intervention | contact executed |
+|---|---:|---:|---:|---:|---:|
+| off | 73.16% | 25.18% | 1.66% | 0% | 3.044 m/s |
+| **fixed 2.0** | 81.31% | **14.06%** | 4.64% | 95.67% | 1.972 m/s |
+| riskcap | 81.71% | 15.95% | 2.34% | 25.66% | 2.024 m/s |
+| stopcap | 69.19% | 21.31% | 9.51% | 36.85% | 0.302 m/s |
+| ttc | 74.70% | **4.24%** | 21.06% | 55.94% | 0.255 m/s |
+
+두 가지가 확정됐습니다.
+
+**① 충돌은 종방향 정지 실패가 아닙니다.** `stopcap`은 속도 하한을 없애 접촉 직전 속도를
+`2.024 → 0.302 m/s`로 낮추고 접촉 시 정지여유를 `−0.026 → +0.395 m`(양수)로 만들었는데도
+crash가 `15.95 → 21.31%`로 **올랐습니다**. 접촉 순간 필터 자신의 안전 모델이 "정지 가능"이라고
+말한다는 뜻이고, 따라서 부딪히는 장애물이 **회랑 안에 없습니다**. 회랑의 맹점은 넷입니다 —
+측방(반폭 밖), 수직(z 명령 무규제), 미지 공간(무반사 ray를 자유로 간주), 직선 가정.
+
+**② `riskcap`의 해제 기구는 실증되지 않았습니다.** 동일 seed 최초 비교에서
+`riskcap − fixed 2.0` capture는 `+0.40 pp, 95% CI [−1.98, +2.78]`로 0을 포함하고,
+crash는 오히려 `fixed 2.0`이 **1.89 pp 낮습니다**. 개입률이 `95.67%` 대 `25.66%`로 완전히 다른데
+결과는 동률 이하입니다.
+
+이 **ep25000 stopcap screen 안에서만**, `off`는 `riskcap`보다 crash가 `+9.23 pp` 높아
+`FILTER_DEPENDENT`로 판정됐습니다. 다른 평가나 모든 정책에 일반화할 수 있는 수치가 아닙니다.
+사전등록 [`prereg`](docs/prereg_2026-09-02_speed_governor_stopcap_screen.md),
+문헌 대조 [`survey`](docs/safety_filter_survey_2026-09-02.md),
+원자료 [`summary`](results/navrl_v2_ep25000_stopcap_seed49_screen/summary.md).
 
 ## Canonical experiment contract
 
 | Item | Value |
 |---|---|
 | Arena | `40 × 40 × 3 m`; fresh physical lineage는 footprint-aware non-overlap placement (`0.45 m` surface clearance) |
-| Density curriculum | fresh physical: 70 → 205 bars, +15; asset/evaluation ceiling 300 bars; minimum 1,000 epochs per level |
-| Target | base fresh(route off): mixed constant-velocity/waypoint; routed fresh(`global_astar_v1`): waypoint-only; both `0.3–1.5 m/s`, 1-epoch speed ramp, goal distance `6–28 m` |
+| Density curriculum | route-off run: planned 70 → 205 bars, +15; stopped at 145; asset/evaluation ceiling 300 bars |
+| Target | measured route-off lineage: mixed constant-velocity/waypoint, `0.3–1.25 m/s`; routed gate: waypoint-only, `0.3–1.5 m/s`; 두 계보를 합치지 않음 |
 | Actor observation | 898-D; static 288 + obstacle 480 + robot 50 + target 80 |
 | Horizontal command | per-axis `±2.5 m/s`; yaw `±3.0 rad/s`; tilt limit `45°` |
 | PPO | 128 envs, horizon 32, minibatch 2048, 4 mini-epochs, LR `3e-5` |
@@ -97,10 +167,9 @@ Exact coefficients and their source locations are frozen in
 legacy robot and ref5in robot results must not be merged into one performance curve.
 
 2026-08-27 이전 `navrl_band` 결과는 가까운 막대를 compound obstacle로 중첩시켰다. 그 결과는
-historical evidence로만 보존한다. 중첩이 없는 새 physical lineage의 최종 정책은 반드시 fresh
-PPO로 다시 학습하며 기존 체크포인트의 warm-start 또는 성능곡선 연결은 허용하지 않는다. 다만
-2026-08-31 선수 route/physical gate가 실패했으므로 아직 재학습을 시작할 수 없다. 먼저 braking-aware
-safe-state를 유지하는 표적 route/controller를 별도 사전등록·검증해야 한다.
+historical evidence로만 보존한다. 중첩이 없는 route-off physical lineage는 fresh PPO로 학습됐고
+145 bars에서 중지됐다. 기존 체크포인트의 warm-start 또는 historical 성능곡선 연결은 허용하지
+않는다. routed lineage는 2026-08-31 route/physical gate가 실패했으므로 여전히 학습할 수 없다.
 
 ### Corrected non-overlap gate result
 

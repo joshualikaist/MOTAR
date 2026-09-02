@@ -30,7 +30,7 @@ const pendingDocs = new Set(
 
 // The public site is one presentation page. JavaScript is limited to the self-contained 3-D
 // arena; evidence and claims remain static HTML and never depend on a dashboard renderer.
-for (const id of ['arena', 'method', 'evidence', 'platform', 'next']) {
+for (const id of ['arena', 'method', 'perception', 'safety-filter', 'evidence', 'platform', 'next']) {
   assert(html.includes(`id="${id}"`), `missing section #${id}`);
 }
 assert(!css.includes('@import'));
@@ -93,7 +93,10 @@ Motion.advanceTarget(episode, 0.1, [], Motion.seededRng(1));
 assert.strictEqual(episode.age, age + 0.1, 'speed-zero viewer episodes must still age/reset');
 
 // GitHub README and the site must render the same canonical architecture assets directly.
-for (const asset of ['motar-system-overview.svg', 'motar-control-stack.svg']) {
+for (const asset of [
+  'motar-system-overview.svg', 'motar-control-stack.svg',
+  'motar-perception-detection.svg', 'motar-safety-filter.svg',
+]) {
   const assetPath = path.join(repo, 'docs/assets', asset);
   const svg = fs.readFileSync(assetPath, 'utf8');
   assert(svg.includes('<title'));
@@ -103,43 +106,35 @@ for (const asset of ['motar-system-overview.svg', 'motar-control-stack.svg']) {
 }
 
 // Presentation claims remain explicitly bounded by the current evidence and hardware status.
-assert(html.includes('Non-overlap physical lineage · route gate FAIL · PPO 0 epochs'));
-assert(html.includes('205-bar geometry PASS is not policy performance'));
-assert(html.includes('fresh PPO blocked'));
-assert(html.includes('32/32 route-gate integrity PASS'));
-assert(html.includes('70-bar plan 17.78%'));
-assert(html.includes('fallback 30.02%'));
+assert(html.includes('Non-overlap route-off PPO · held-out complete to 145 bars'));
+assert(html.includes('seed-911 stopped at epoch 21,973'));
+assert(html.includes('seed-313 capture 83.70% @70 → 65.54% @145'));
+assert(html.includes('routed mechanism still FAIL'));
+assert(html.includes('<strong>32/32</strong><span>corrected route-gate integrity</span>'));
+assert(html.includes('<strong>17.78%</strong><span>corrected 70-bar plan success</span>'));
+assert(html.includes('<strong>30.02%</strong><span>corrected 70-bar fallback</span>'));
 assert(html.includes('99.167%'));
 assert(html.includes('300 bars FAIL 94.661%'));
-assert(html.includes('70→205 train · 300 disconnected'));
+assert(html.includes('route-off measured 70→145 · 205 not reached'));
 assert(html.includes('preregistration_navrl_v2_corrected_density_geometry_2026-08-27.md'));
 assert(html.includes('corrected_nonoverlap_route_gate_r2_result_2026-08-31.md'));
 assert(html.includes('preregistration_corrected_nonoverlap_route_gate_r2_2026-08-31.md'));
 assert(html.includes('SYNTHETIC_ONLY'));
-assert(html.includes('333/333'));
-assert(html.includes('selected 205-bar contact endpoints'));
-assert(html.includes('−0.0145 pp'));
-assert(html.includes('8.443→3.172%'));
-assert(html.includes('190/203'));
-assert(html.includes('93.60%'));
-assert(html.includes('18,381/38,400'));
-assert(html.includes('47.87%'));
 assert(html.includes('0.21875'));
-assert(html.includes('70 bars × 0.6 m/s'));
-assert(html.includes('96,854/153,600'));
-assert(html.includes('63.06%'));
-assert(html.includes('0/534'));
-assert(html.includes('primary_n=1'));
-assert(html.includes('identity_void=false'));
-assert(html.includes('certificate 49 + brake_timeout 32 +'));
-assert(html.includes('resume 23 + connect_timeout 1 + brake_no_anchor 1'));
+assert(html.includes('PASS_LEARNING_VIABILITY'));
+assert(html.includes('160/205 미도달'));
+assert(html.includes('Wilson 95% [82.04, 85.24]'));
+assert(html.includes('Wilson 95% [63.46, 67.57]'));
+assert(html.includes('90.27%'));
+assert(html.includes('0.826→0.896→0.892'));
+assert(html.includes('frozen ep25000 stopcap screen의 결과일 뿐'));
 assert(html.includes('baseline_1p25'));
 assert(html.includes('canonical 1.5 m/s'));
 assert(html.includes('RANGE_INCONCLUSIVE'));
-assert(html.includes('추가 Track B'));
-assert(html.includes('RECOVERY_DOMINANT'));
 assert(html.includes('NOT PhysX/PPO'));
 assert(html.includes('실제 기체가 미조립'));
+assert(!html.includes('PPO 0 epochs'));
+assert(!html.includes('corrected fresh PPO epochs'));
 assert(fs.readFileSync(path.join(repo, 'docs/assets/motar-control-stack.svg'), 'utf8').includes('K_v e_v'));
 assert(html.includes('0.04 s 1차 지연'));
 

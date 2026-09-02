@@ -14010,3 +14010,65 @@ ep25000은 마지막 1,000 epoch을 **riskcap과 함께** 학습했다. riskcap�
 
 `b4639ec`는 이 세션이 만든 산출물을 **Cursor 세션이 커밋**한 것이다(사용자 diff 검토 전 커밋).
 본 항목은 그 위에 얹는 보론이다.
+
+## 2026-09-03 — 인지·안전필터 문서화: 두 축 모두 문서가 없었다
+
+사용자 요청은 "safety filter 구조도와 카메라 탐지 자료가 잘 되어 있을 테니 바뀐 부분을 고쳐달라"였다.
+**감사 결과 전제가 사실과 달랐다 — 두 축 모두 사실상 문서가 없었다.**
+
+| 대상 | 감사 전 실제 상태 |
+|---|---|
+| README safety filter | 한 줄 (`canonical baseline의 safety governor는 꺼져 있습니다`) |
+| `motar-control-stack.svg` | 텍스트 한 줄 `speed governor: OFF in baseline`. 구조도 아님 |
+| README 인지/탐지 | 표 한 칸 (`RGB-D target track + 4×72 LiDAR`). 탐지 방식 설명 0 |
+| 사이트 `index.html` | detector·governor·riskcap·segmenter 언급 **0건** |
+| `status.json` | 인지·필터 구조화 데이터 없음 |
+
+따라서 "수정"이 아니라 **신규 작성**이다. 지금이 정확한 시점인 이유는 이번 주에 두 축 모두
+판정이 나왔기 때문이다(distractor envelope, stopcap screen).
+
+### 신규 자산 2개
+
+- `docs/assets/motar-perception-detection.svg` — RGB-D → 1×1 conv 색 분류기 → **단일 중심점 붕괴**
+  (connected components 없음) → LiDAR 연관. **동색 디코이가 분류기에서 들어와 걸러지지 않는 경로**를
+  붉은 점선 화살표로 표시했고, FTLR 표(default 88.5% / v7 90.3% at N=5)와 confidence
+  N=1/3/5 실측(0.826→0.896→0.892)을 함께 실었다. N에 따른 단조 증가 주장은 하지 않는다.
+- `docs/assets/motar-safety-filter.svg` — LiDAR → 방향 회랑(반폭 0.45 m 직선) → cap 법칙 →
+  **크기만 스케일(방향 불변)**. 핵심은 **회랑의 맹점 4개**(측방·수직 z 무규제·미지 공간
+  무반사=자유·직선 가정)를 전면에 낸 것이다. seed49 5-arm 측정표와 두 확정 판정을 함께 실었다.
+
+두 SVG 모두 XML 파싱 검증 통과. 기존 `motar-control-stack.svg`는
+`baseline governor: OFF`로 유지했다. canonical evaluator의 기본값도 `off`이며, 필터 arm은
+ep25000 stopcap screen처럼 명시적으로 켠 별도 실험이다.
+
+### README
+
+- `## Perception — how the target is detected` 신설: 탐지기가 YOLO가 아님을 명시,
+  FTLR 표, confidence 역설, "개선이 아니라 결함의 정량화", detector 간 비교 금지(L6).
+- `## Safety filter — the speed governor` 신설: 5-arm 측정표 + 두 확정
+  (① 충돌은 종방향 정지 실패가 아니다 ② riskcap 해제 기구 무실증). `+9.23 pp`는 이
+  ep25000 screen의 off−riskcap 비교로만 한정했다.
+- Current evidence 표에 두 캠페인 행 추가.
+- Method 절의 낡은 governor 한 줄을 정정하고 신설 절로 링크.
+
+### 사이트 (기존 껍데기 유지, 현재 상태로 갱신)
+
+기존 8개 섹션을 모두 유지한 채 낡은 서술만 고치고 패널 2개를 신설했다.
+
+- `04 · PERCEPTION`, `05 · SAFETY FILTER` 신설(기존 overview/control-stack과 동일한 `<img>` 패턴).
+- 하위 섹션 번호 재정렬(EVIDENCE 04→06, CONTRACT 05→07, NEXT 06→08). 중복 번호 없음을 확인.
+- `Structured perception` 카드: "탐지기는 YOLO가 아니라 1×1 conv 색 분류기이며 동색 디코이를
+  구분하지 못합니다" 추가.
+- 상단 탐색에 Perception/Filter anchor를 추가했다.
+- **"현재 주장할 수 없는 것"에 두 항목 추가** — 표적 식별을 주장할 수 없음(색 외 단서 없이는
+  "표적 인식"이 아니라 "빨간 것 찾기"), riskcap 해제 기구 무실증.
+- Evidence는 20개 혼합 카드에서 핵심 9개로 줄였다. route-off fresh smoke(500 epochs),
+  seed-911 curriculum 중지(epoch 21,973, 145 bars), seed-313 held-out(70 bars 83.70%,
+  145 bars 65.54%)을 현재 상태로 올리고, perception/filter 수치는 각 전용 절에만 남겼다.
+- hero의 낡은 0-epoch·smoke 미실행 문구를 제거했다. route-off 학습·평가와
+  routed mechanism FAIL을 별도 계보로 표시한다.
+- perception SVG의 “안전층은 탐지기를 소비하면 안 된다”는 미래 제안으로 표기하고, 현재 governor가
+  `camera_lidar_association`으로 표적 return을 제외하는 detector-dependent 구현임을 함께 적었다.
+
+검증: SVG 3개 XML 파싱, HTML anchor/asset 감사, Chrome headless 렌더, `test_status_site.js`,
+`test_status_arena_route.js`, `test_status_arena_motion.js`, `test_status_webgl_headless.js` PASS.
