@@ -13699,3 +13699,41 @@ FTLR은 그 분포 **위에서** 정의되므로 `FTLR_v7 − FTLR_default`는 �
 - `python -m unittest discover -s tests`: **916 → 941**(신규 25). failures 8 / errors 8 /
   skipped 2로 실패 집합 **이름 단위까지 동일**.
 - GPU 실행 없음(위 timing은 CPU 전용). PID 12683 무영향.
+
+## 2026-09-02 — distractor envelope (seed 479) 1650 Ti 측정 완료: default·v7 둘 다 COLOR_SHORTCUT_CONFIRMED
+
+`tools/run_navrl_distractor_envelope.py` preflight→evaluate→finalize→verify를 **1650 Ti(평가 공장)**에서
+완주. 동결 정책 ref5in D1 ep1900(`197ea269…`), seed 479, 셀당 2049 에피소드, 카메라 해상도 160×90,
+70막대. 프로파일 = GPU4GB=1(64 env · `base_sim_4gb` · `base_sim_4gb_dt0.01_buffers`).
+
+**결과 (2×4 요인, 1차지표 FTLR — 검출기가 무엇을 표적이라 락온하는가):**
+
+| 검출기 | N=1 | N=3 | **N=5 FTLR** | 판정(N=5) |
+|---|---|---|---|---|
+| `default` (thr 0.55) | 52.7% | 79.7% | **88.53%** | `COLOR_SHORTCUT_CONFIRMED` |
+| `v7` (thr 0.70) | 60.7% | 83.1% | **90.27%** | `COLOR_SHORTCUT_CONFIRMED` |
+
+- N=0은 회귀 셀(FTLR 미정의). §3-c대로 **`FTLR_v7 − FTLR_default`는 계산·게재하지 않음.**
+- distractor↑ → FTLR 단조 증가, target_lock 급감(default 0.473→0.115), capture 하락(0.726→0.132).
+- **판정 검출기별 2개, 둘 다 COLOR_SHORTCUT_CONFIRMED** (FTLR ≥ 50%) — 사전등록이 예측한 결과.
+  학습형 v7도 색 지름길 미탈출(v7 FTLR이 오히려 높으나 §3-c로 직접 비교 안 함).
+
+**게이트:** 0.1 default-off bit-identity PASS · 0.2 decoupling refusal PASS · **0.3 N=0 계보 회귀 PASS**
+(`default_n0` vs 계보 seed421, timeout 차 +0.34pp, ±3.75pp band 이내).
+
+**반증:** "1650 Ti 프로파일(64env·base_sim_4gb)이라 Gate 0.3이 머신-프로파일 불일치로 실패할 것"이라는
+사전 예측을 **기각** — N=0 outcome이 3070 계보(128env·base_sim) ±3.75pp 안에 들어와 실제 PASS.
+사전등록 §3-d(머신 프로파일 편차 서술적 강등)는 **불필요**했음. 이 머신 측정이 예상보다 더 신뢰됨.
+
+**경로:** `results/navrl_detector_distractor_envelope_seed479/summary.{json,md}` +
+`cells/*/70bars.json`. 계보 참조 `results/navrl_ref5in_sensor_fidelity_seed421/cells/baseline/70bars.json`.
+
+**머신 이식 편차(기록·정리됨):** 1650 Ti 실행 위해 `tools/`를 임시 편집했다 — (a) canonical python
+경로 `/home/fair`→`/home/joshuali` 2곳, (b) `canonical_env` GPU4GB `0`→`1`(프로파일 셀렉터). 이 셋은
+**머신 로컬이라 커밋 전 원복**(3070은 /home/fair·GPU4GB=0). (c) `condition_differences`에서 랜덤
+`evaluation_nonce` 제외 — **사전존재 버그 수정**(랜덤 토큰을 조작축 차이로 오판해 모든 머신에서
+finalize가 실패하던 게이트; `evaluation_env_diff`가 `NAVRL_V2_RESULT_DIR`를 제외하는 것과 동일 패턴).
+이 버그 수정만 커밋한다. **측정 로직·FTLR 정의·셀 조건·seed·에피소드 수는 무변경.**
+
+**다음:** 원하면 3070에서 canonical 128env·base_sim 프로파일로 재확인(옵션 ②) — 단 Gate 0.3이 이미
+1650 Ti에서 통과했으므로 우선순위 낮음. PID 12683 학습 무영향.

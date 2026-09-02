@@ -2017,9 +2017,14 @@ def verify_all() -> dict:
         )
 
     def condition_differences(group):
+        # evaluation_nonce is a per-cell random token (secrets.token_hex, minted per cell by the eval
+        # script) -- a within-cell integrity tie, NOT an experimental condition. It differs across
+        # every cell by design on ANY machine, so exclude it from the single-axis comparison, exactly
+        # as evaluation_env_diff() excludes its NAVRL_V2_RESULT_DIR bookkeeping field.
+        bookkeeping = {"evaluation_nonce"}
         return sorted(
             key
-            for key in set(reference["condition"])
+            for key in set(reference["condition"]) - bookkeeping
             if len(
                 set(
                     json.dumps(cells[name]["condition"].get(key), sort_keys=True)
