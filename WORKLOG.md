@@ -13342,3 +13342,128 @@ GPU를 다른 worktree(`braking_route_v3`)의 PPO가 쓰고 있다 — PID 12683
 `docs/prereg_2026-09-01_distractor_envelope.md`에 동결돼 있다. `COLOR_SHORTCUT_CONFIRMED`
 (FTLR ≥ 50%)는 **예상된 결과이며 실험 실패가 아니다** — 이 실험의 값어치는 개선이 아니라 결함의
 정량화다.
+
+## 2026-09-02 — safety filter 문헌조사: riskcap의 2.0 m/s 하한이 충돌의 구조적 원인
+
+`docs/safety_filter_survey_2026-09-02.md` 작성. **조사·진단만이며 코드 변경 없음.** GPU 미사용,
+신규 평가 실행 없음 — 모든 수치는 기존 receipt 재인용.
+
+### 핵심 발견 — 세 갈래 독립 수렴
+
+기존 `results/navrl_v2_ep24000_riskcap_seed44_screen/summary.json`에 이미 기록돼 있었으나
+지금까지 해석되지 않은 두 지표를 읽었다. riskcap은 정지여유 위반율을 요청 13.69% → 실행 **9.87%**로
+3.82 pp만 줄이고, **접촉 직전 실행 속도가 2.029 m/s** — 하한 2.0과 사실상 같다. 충돌은 하한에서 난다.
+
+거버너 자신의 파라미터(brake 2.9609 실측, reaction 0.1, margin 0.45)로 풀면
+**clearance < 1.33 m에서 2.0 m/s 하한은 정지를 물리적으로 불가능하게 만든다.**
+`stopping_margin`은 `speed_governor.py:229`에서 계산되지만 진단 전용이고 아무것도 gate 하지 않는다.
+
+이론적으로도 정지 장애물의 velocity obstacle은 양의 원뿔이라 `λv ∈ VO ⟺ v ∈ VO`이다. 즉
+**양수 하한을 가진 magnitude-only 필터는 forward invariance를 원리적으로 가질 수 없고 충돌을 지연시킬 뿐이다.**
+crash 17.62%는 튜닝 부족이 아니라 구조적 귀결이며, λ→0을 허용한 TTC mode만 6.83%를 달성했던 이유다.
+
+### 문헌조사 진단의 정정
+
+조사는 `cap ∝ clearance`가 접근·측면 운동을 동일 처벌해 deadlock이 났다고 보나 우리 구현에는 해당하지 않는다.
+`directional_lidar_clearance`는 명령 방향 회랑 안 ray만 고르므로 이미 closing-rate 선택적이다.
+실제 원인은 **거버너가 방향을 고르지 않고 정책이 고른다**는 것 — 정책이 벽을 향해 계속 명령하면 정지 상태가
+지속된다. 이는 위 VO 논증의 직접 귀결이다. 명명된 현상: freezing robot problem (Trautman & Krause 2010).
+
+### 부수 발견
+
+- **제동 여유 3.3배**: T/W 3.26, 45° 틸트 이론 한계 9.81 m/s²인데 실측 유효 감속 2.9609 m/s².
+  병목은 추력이 아니라 속도명령→자세 루프. 캡을 낮추지 않고 안전을 얻는 경로가 있다.
+- **riskcap이 상수 2.0 캡을 이긴다는 증거가 없다.** fixed 2.0은 seed42에서 78.53/16.06/5.42,
+  riskcap은 seed44에서 79.55/17.62/2.83 — 시드가 달라 비교 불가. 개입률 97% vs 28.74%로 완전히 다른데
+  결과 차이는 노이즈 수준. riskcap 핵심 기구의 값어치가 미검증이다.
+- **현 ref5in 계보는 거버너를 끄고 학습해 켜고 평가한다** (`train_navrl_v2_search.sh:115`이 off 강제,
+  `eval_navrl_v2_density_speed_map.sh:45`가 riskcap). 우리 seed45 데이터는 필터와 함께 학습하면
+  +3.74 pp를 더 준다고 말하는데(off 70.03 → source+riskcap 78.20 → trained+riskcap 81.94) 지금 그걸 버리고 있다.
+- `near_stop_rate ≤ 5%` 사전등록 게이트는 riskcap에서 0.0%였다 — 하한 때문에 **실패할 수 없는 게이트**로
+  판별력이 없었다. 향후 게이트 설계 시 주의.
+- 수직(z) 명령 무규제(`navrl_task.py:4577`이 command_xy만 전달), 무반사 LiDAR ray를 free로 취급.
+
+### 다음
+
+계획 수립은 사용자가 fable로 진행한다. 조사 결과는 문서에 동결했고 **본 항목 시점에서 코드·설정 변경 없음.**
+
+## 2026-09-02 — stopcap 스크린: 사전등록 → 구현 → 실행 (진행 중)
+
+조사 문서의 진단(하한이 충돌 원인)을 검증하는 사전등록 스크린을 구축하고 실행에 들어갔다.
+
+### 사전등록 (결과 이전 동결)
+
+`docs/prereg_2026-09-02_speed_governor_stopcap_screen.md`. frozen ep25000
+(SHA `f7022139…ad40`), **미사용 seed 49**, 205 bars, deterministic, 2,049 ep/cell, RTX 3070.
+governor 파라미터는 seed42/44 스크린과 바이트 동일(brake 2.9608856678 실측값 포함) — **튜닝 없음**.
+
+5 arms: off(Q3 필터 의존성) / fixed2p0(Q1 동일-seed 비교 최초) / riskcap(기준) /
+**stopcap(신규, Q2 채택 심사)** / ttc(참조 전용, 게이트 없음).
+
+판정 규칙 4개 동결: M1 기계 무결성(stopcap `negative_stopping_margin_executed_rate ≤ 1%`,
+위반 시 IMPLEMENTATION_VOID), Q1(riskcap−fixed2p0 capture CI 부호), Q2(crash ≤ −3pp & CI<0,
+timeout ≤ 5%, capture ≥ −2pp 동시 충족 시 GO), Q3(off−riskcap crash ≥ +5pp 시 FILTER_DEPENDENT —
+사실 기록이지 실패 아님). `near_stop_rate` 게이트는 의도적으로 제외 — seed44에서 하한 때문에
+실패 불가능했던 무판별력 게이트임이 확인됐기 때문.
+
+### 구현
+
+- `speed_governor.py`: `stopcap` mode 추가 — `cap = √((a·t_r)² + 2a·usable) − a·t_r`
+  (DWA admissibility = a_accel=0·정지 장애물 RSS). 하한 없음(λ→0 허용), 방향 불변 원칙 유지,
+  `hard_margin_m`이 `usable`을 통해 부활. fail-closed: stopcap에서 brake ≤ 0이면 ValueError.
+- `tests/test_navrl_speed_governor.py`: 3개 추가(폐형식 일치·단조성·usable=0에서 cap=0,
+  임의 입력 256개에서 `stopping_margin_executed ≥ 0` 구성적 보장, env 계약 fail-closed).
+  **13/13 PASS.**
+- `eval_navrl_v2_density_sweep.sh:331` 모드 화이트리스트에 stopcap 추가
+  (train_source_receipts 동결 스냅샷은 불변).
+- 신규 런처 `eval_navrl_v2_ep25000_stopcap_screen.sh`(SHA 게이트·덮어쓰기 거부·preflight,
+  5셀 preflight PASS 확인) + 요약기 `tools/summarize_navrl_v2_stopcap_screen.py`
+  (기존 receipt 검증 11종 승계, 단수 `verdict` 키 없음 — `verdict_m1/q1/q2/q3` 분리).
+
+### 실행
+
+GPU 확인: braking_route_v3 PPO(PID 12683) 종료, 3070 여유 확인 후 스크린 시작.
+결과는 `results/navrl_v2_ep25000_stopcap_seed49_screen/`. 판정은 완료 후 별도 항목으로.
+
+### 명시적 범위 밖 (사전등록 §4)
+
+천장 ablation, 지각한계 항(t_react 실측 선행), stopcap 동반 재학습(Q2 GO 후), 방향 개입.
+
+## 2026-09-02 — stopcap 스크린 완료: 구현 무결성 실패, 채택 금지
+
+5개 GPU 셀은 모두 끝났고 새 실행 없이 raw JSON/receipt/log/checkpoint SHA를 요약기로
+검증했다. 최초 finalize는 요약기가 canonical evaluator의 receipt schema 2를 과거 schema 1로
+오인해 멈췄다. 사전등록에는 schema 1 제한이 없고 raw receipt는 전부 schema 2이므로 요약기만
+수정했다. 결과 원본은 건드리지 않았다.
+
+| arm | n | capture | crash | timeout | intervention | unsafe-after |
+|---|---:|---:|---:|---:|---:|---:|
+| off | 2049 | 73.16% | 25.18% | 1.66% | 0.00% | 11.06% |
+| fixed2p0 | 2049 | 81.31% | 14.06% | 4.64% | 95.67% | 8.34% |
+| riskcap | 2050 | 81.71% | 15.95% | 2.34% | 25.66% | 8.74% |
+| stopcap | 2051 | 69.19% | 21.31% | 9.51% | 36.85% | **2.62%** |
+| ttc | 2051 | 74.70% | 4.24% | 21.06% | 55.94% | 0.00% |
+
+사전등록 판정:
+
+- M1 `IMPLEMENTATION_VOID`: stopcap unsafe-after 2.62% > 1%.
+- Q1 `MECHANISM_UNSUPPORTED`: riskcap−fixed2p0 capture +0.40pp, CI95
+  [−1.98,+2.78]pp. release 기구의 이득은 입증되지 않았다.
+- Q2 `NOT_JUDGED_M1_VOID`: 무결성 실패에 더해 stopcap−riskcap crash +5.36pp,
+  timeout 9.51%, capture −12.52pp로 세 게이트 모두 실패했다. **stopcap 채택 및 동반 재학습 금지.**
+- Q3 `FILTER_DEPENDENT`: off−riskcap crash +9.23pp. 이 ep25000 계보를 배포한다면 필터를
+  제거할 수 없다.
+- TTC는 crash 4.24%로 가장 낮지만 timeout 21.06%라 liveness 비용이 크며 사전등록상 참조 전용이다.
+
+M1 해석 주의: `negative_stopping_margin_executed_rate`는 실제 기체 속도가 아니라 필터가 낸
+command를 float32로 다시 대입해 `< 0`만 센 값이고, 음수의 크기는 export하지 않았다. 단위테스트는
+수치오차 `−1e-5`까지 허용하므로 2.62%가 round-off일 가능성을 배제할 수 없다. 그러나 사전등록이
+크기 tolerance 없이 `≤1%`를 고정했으므로 결과를 본 뒤 게이트를 바꾸지 않고 M1 VOID를 유지한다.
+설령 M1을 무시해도 Q2의 crash/liveness/capture 세 게이트가 모두 실패하므로 채택 결론은 동일하다.
+
+중요한 해석: 한 스텝의 scalar clearance에서 계산한 폐형식 command cap만으로는 이 스크린에서
+안전성과 liveness를 함께 얻지 못했다. 더 이상 stopcap 식이나 파라미터를 사후 튜닝하지 않는다.
+다음 후보는 (1) fixed2p0의 독립 seed 복제 또는 (2) 방향 변경이 가능한 swept-volume/CBF·predictive
+filter이며, 둘 다 새 사전등록 전에는 GPU를 열지 않는다.
+
+결과: `results/navrl_v2_ep25000_stopcap_seed49_screen/summary.{json,md}`.

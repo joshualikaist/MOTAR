@@ -328,9 +328,9 @@ export NAVRL_EVAL_REFLECTION_MODE
 # simulator starts; the task and result validator both record the normalized contract.
 NAVRL_SPEED_GOVERNOR="${NAVRL_SPEED_GOVERNOR:-off}"
 case "${NAVRL_SPEED_GOVERNOR}" in
-    off|fixed|clearance|ttc|riskcap) ;;
+    off|fixed|clearance|ttc|riskcap|stopcap) ;;
     *)
-        echo "[eval_v2] NAVRL_SPEED_GOVERNOR must be off, fixed, clearance, ttc or riskcap; got: ${NAVRL_SPEED_GOVERNOR}" >&2
+        echo "[eval_v2] NAVRL_SPEED_GOVERNOR must be off, fixed, clearance, ttc, riskcap or stopcap; got: ${NAVRL_SPEED_GOVERNOR}" >&2
         exit 2
         ;;
 esac

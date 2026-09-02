@@ -77,6 +77,56 @@ class SpeedGovernorTests(unittest.TestCase):
         )
         self.assertTrue(torch.all(diag["executed_speed_mps"] > 0.0))
 
+    def test_stopcap_allows_full_stop_and_matches_closed_form(self):
+        config = SpeedGovernorConfig(
+            mode="stopcap",
+            hard_margin_m=0.45,
+            brake_mps2=2.9608856678,
+            reaction_s=0.1,
+            free_speed_cap_mps=3.53553390593,
+        )
+        command = torch.tensor([[3.5, 0.0]] * 4)
+        clearance = torch.tensor([0.45, 1.0, 1.5, 12.0])
+        governed, diag = apply_speed_governor(command, clearance, config)
+        # usable=0 -> cap=0: unlike riskcap the mode may force a stop at contact range.
+        self.assertAlmostEqual(float(governed[0].norm()), 0.0, places=6)
+        # Closed form: cap = sqrt((a*t)^2 + 2*a*usable) - a*t
+        a, t = 2.9608856678, 0.1
+        for i, c in enumerate([0.45, 1.0, 1.5, 12.0]):
+            usable = max(c - 0.45, 0.0)
+            expected = min(math.sqrt((a * t) ** 2 + 2 * a * usable) - a * t, 3.53553390593)
+            self.assertAlmostEqual(float(diag["speed_cap_mps"][i]), expected, places=5)
+        # Monotone non-decreasing in clearance, never above the free cap.
+        caps = diag["speed_cap_mps"]
+        self.assertTrue(torch.all(caps[1:] >= caps[:-1]))
+        self.assertTrue(torch.all(caps <= 3.53553390593 + 1e-6))
+
+    def test_stopcap_executed_stopping_margin_is_nonnegative_by_construction(self):
+        config = SpeedGovernorConfig(
+            mode="stopcap", hard_margin_m=0.45, brake_mps2=2.9608856678, reaction_s=0.1
+        )
+        torch.manual_seed(0)
+        command = torch.randn(256, 2) * 3.0
+        clearance = torch.rand(256) * 12.0
+        _, diag = apply_speed_governor(command, clearance, config)
+        self.assertTrue(
+            torch.all(diag["stopping_margin_executed_m"] >= -1e-5),
+            msg=f"min margin {float(diag['stopping_margin_executed_m'].min())}",
+        )
+
+    def test_stopcap_environ_contract_requires_positive_brake(self):
+        with self.assertRaises(ValueError):
+            SpeedGovernorConfig.from_environ(
+                {
+                    "NAVRL_SPEED_GOVERNOR": "stopcap",
+                    "NAVRL_SPEED_GOVERNOR_BRAKE_MPS2": "0.0",
+                }
+            )
+        config = SpeedGovernorConfig.from_environ(
+            {"NAVRL_SPEED_GOVERNOR": "stopcap"}
+        )
+        self.assertEqual(config.mode, "stopcap")
+
     def test_directional_clearance_uses_command_frame(self):
         bearings = torch.tensor([math.pi / 2.0, 0.0, -math.pi / 2.0])
         scan = torch.full((2, 1, 3), 12.0)

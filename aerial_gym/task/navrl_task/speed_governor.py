@@ -11,7 +11,7 @@ import math
 import torch
 
 
-VALID_SPEED_GOVERNOR_MODES = ("off", "fixed", "clearance", "ttc", "riskcap")
+VALID_SPEED_GOVERNOR_MODES = ("off", "fixed", "clearance", "ttc", "riskcap", "stopcap")
 
 
 def _finite_float(environ, name, default, *, minimum=None, strict_minimum=False):
@@ -102,6 +102,11 @@ class SpeedGovernorConfig:
                 raise ValueError(
                     "NAVRL_SPEED_GOVERNOR_FREE_MPS must be >= NAVRL_SPEED_GOVERNOR_FIXED_MPS "
                     "for riskcap"
+                )
+        if result.mode == "stopcap":
+            if result.brake_mps2 <= 0.0:
+                raise ValueError(
+                    "NAVRL_SPEED_GOVERNOR_BRAKE_MPS2 must be strictly positive for stopcap"
                 )
         return result
 
@@ -207,6 +212,19 @@ def apply_speed_governor(command_xy, clearance_m, config):
         cap = float(config.fixed_cap_mps) + release * (
             float(config.free_speed_cap_mps) - float(config.fixed_cap_mps)
         )
+    elif config.mode == "stopcap":
+        # Stopping-distance admissible cap (DWA admissibility; RSS longitudinal rule with
+        # a_accel=0 and a static obstacle): the largest v with
+        #   usable >= v*reaction + v^2/(2*brake),
+        # solved for v. Unlike riskcap there is no floor -- the cap reaches zero exactly at
+        # usable=0, so stopping_margin_executed >= 0 holds by construction (up to inter-step
+        # clearance change). hard_margin_m is live again in this mode via `usable`.
+        brake = float(config.brake_mps2)
+        reaction_reach = brake * float(config.reaction_s)
+        cap = (
+            torch.sqrt(reaction_reach * reaction_reach + 2.0 * brake * usable)
+            - reaction_reach
+        ).clamp(min=0.0, max=float(config.free_speed_cap_mps))
     else:  # Config construction is fail-closed, but keep direct callers safe.
         raise ValueError(f"unsupported speed governor mode: {config.mode!r}")
 
