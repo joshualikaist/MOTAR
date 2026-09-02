@@ -4,7 +4,7 @@
 [`RESEARCH_PLAN.md`](RESEARCH_PLAN.md), 날짜별 기록은 [`WORKLOG.md`](WORKLOG.md),
 명령어는 [`OPERATIONS.md`](OPERATIONS.md), 라이브 지표는 [`docs/status/`](docs/status/)를 본다.
 
-> 기준일: 2026-08-31
+> 기준일: 2026-09-02
 
 현재 판정의 기계 판독 원본은
 [`docs/research_authority_2026-08-26.json`](docs/research_authority_2026-08-26.json)이다.
@@ -12,7 +12,87 @@
 non-overlap 판정 필드를
 직접 대조하며 어떤 학습·평가도 실행하지 않는다.
 
-## 2026-08-26 현재 실행 authority
+## 2026-09-01 현재 실행 authority
+
+- **Track A — perception/sim-to-real:** 아래 2026-08-26 절의 판정 그대로다. P2 `STRICT FAIL`,
+  D1 `FAIL`, P3 `BLOCKED`. 실제 hardware나 real log가 없으면 GPU 작업 권한이 없다.
+- **Track B — routed physical target:** recovery-v2 계보는 닫혔다. 기록된
+  `FAIL_ROUTE_MECHANISM` / no-anchor `INCONCLUSIVE` 수치는 수정하지 않는다.
+- **Corrected non-overlap — current fresh lineage:** seed 829 route/physical gate r2는
+  `PASS_32_CELL_INTEGRITY / FAIL_ROUTE_MECHANISM / BLOCKED_PHYSICAL_TRAINING`이다. 70-bar plan
+  `17.7831%`(gate ≥99%), fallback `30.0156%`(gate ≤1%), 0.6 m/s goals/env `0.21875`(gate ≥0.5)다.
+  이 FAIL 판정과 수치는 유지한다. 500-epoch smoke와 70→205 장기학습은 모두 미실행(새 PPO 0 epoch).
+- **Braking-aware route v3:** `global_astar_braking_v3` 구현은 CPU 계약까지 완료·커밋됐다
+  (`6b13441`). 사전등록
+  [`docs/preregistration_braking_aware_route_v3_2026-09-01.md`](docs/preregistration_braking_aware_route_v3_2026-09-01.md)
+  (SHA-256 `cceecb9ad4a538e7bc2bc9171436e823ef18652e9c971e0d6fa8174279df6056`)는 결과를 보기 전에
+  고정됐다. **2026-09-01 재측정 결과: canonical 1.5 m/s braking receipt는 NO-GO다.**
+  커밋 `fb9fa50`에서 0.6/0.9/1.2 m/s는 통과했으나 1.5 m/s warmup이 mean 1.442577 m/s
+  (절대 오차 0.057423 > 게이트 0.05)로 실패했고, 이 수치는 2026-08-26 측정과 동일한 결정론적
+  controller 한계다. 이 판정과 수치는 유지한다. threshold/controller/0.05 게이트는 바꾸지 않았다.
+  **현재 다음 software 작업은 별도 사전등록된 lower-contract v3다.**
+  [`docs/preregistration_braking_aware_route_v3_lower1p25_2026-09-01.md`](docs/preregistration_braking_aware_route_v3_lower1p25_2026-09-01.md)
+  (SHA-256 `cd1347121c24ecd10273189360bed9ca76ffa80673aa89addf3ff0eaebc16252`).
+  속도 grid는 0.6/0.9/1.2/1.25이며 `NAVRL_TARGET_BRAKING_CONTRACT_VARIANT=baseline_1p25`로만
+  무장한다. 기본값은 여전히 `canonical_1p5`다.
+  08-26 lower receipt는 옛 core 바이트에 묶여 재사용하지 않는다. PID나 0.05 완화는 이 계보에서
+  하지 않는다. **2026-09-01 현재 커밋 `dd8b4a4`에서 새 `baseline_1p25` raw receipt가
+  검증됐다** (`results/navrl_physical_target_braking_lower1p25_seed827_2026-09-01/receipt.json`,
+  SHA-256 `6d71b0be34ffb166d23aff9f6897cf41b5bb82a4a488d24403d735cf97852485`).
+  속도 0.6/0.9/1.2/1.25, decel p05 0.505257, stop-time p95 0.89 s, 정지거리 p95
+  0.32814/0.49835/0.67084/0.69944 m. training source bundle SHA
+  `5de7fdbfa56811b71284d454195239d8490e8a5db0b54a22d3e8b9c58263964c`.
+  **2026-09-01 lower 8-cell pilot는 `VOID_EXECUTION`이다** (reason:
+  `matched-arm identity drift: initial_target_pose_sha256`). 레이아웃·로봇 자세 해시는
+  off/v3가 일치했으나 표적 초기 자세가 갈라졌다. v3 `_sample_general_target` /
+  `_sample_waypoints`가 support를 추가로 inset하고 spawn AABB 필터를 썼기 때문이다.
+  공식 판정은 NOT_INTERPRETED이며 그 VOID를 FAIL로 바꾸지 않는다.
+  **현재 software 작업은 별도 사전등록된 matched-spawn 수정이다.**
+  [`docs/preregistration_braking_aware_route_v3_lower1p25_matched_spawn_2026-09-01.md`](docs/preregistration_braking_aware_route_v3_lower1p25_matched_spawn_2026-09-01.md)
+  (SHA-256 `17e7f35e350087bf2733aca70dfca7210efe667ad1845dd053f7334ddf1645b4`).
+  v3 spawn/waypoint는 off와 같은 physical wall+boundary 상자·bar-clearance를 쓰고,
+  envelope는 A*/rollout/watchdog에만 남긴다. `initial_target_pose_sha256` 매칭은 유지한다.
+  CPU forensic 123개가 통과했고, 별도 execution addendum
+  [`docs/preregistration_braking_aware_route_v3_lower1p25_matched_spawn_gpu_authority_2026-09-01.md`](docs/preregistration_braking_aware_route_v3_lower1p25_matched_spawn_gpu_authority_2026-09-01.md)
+  (SHA-256 `70b8a08f0c95040a86c43e1be5ac11d0b688b9a6874f3cfc4548f914882f085f`)가 새
+  `baseline_1p25` receipt 1회와 seed-829 8-cell pilot 1회만 허용했다. spawn 바이트가
+  바뀌었으므로 `dd8b4a4` receipt는 사용하지 않았다.
+  **새 pilot은 `PASS_8_CELL_INTEGRITY / FAIL_BLOCKS_CONFIRMATORY`로 종료됐다.** 모든 속도에서
+  off/v3 layout·robot pose·target pose 해시가 일치해 옛 VOID 원인은 해결됐다. 그러나 routed
+  speed ratio는 0.7872/0.7681/0.5984/0.6297로 모두 0.80 게이트 미달, soft exits 6,825
+  (gate 0), fallback 8.914%(gate ≤1%), 0.6 m/s goals/env 0.21875(gate ≥0.5)다. plan success
+  99.468%와 terminal certificate fraction 1.0은 통과했다. 원자료와 판정은
+  [`docs/braking_aware_route_v3_lower1p25_matched_spawn_result_2026-09-01.md`](docs/braking_aware_route_v3_lower1p25_matched_spawn_result_2026-09-01.md)에
+  고정했다. GPU authority는 소비·폐쇄됐고 confirmatory와 PPO는 열리지 않는다. 현재 stage는
+  `MECHANISM_GATE_FAIL_CLOSED`다.
+- **Corrected non-overlap route-off learning baseline (2026-09-01 user-priority split):** routed
+  method의 FAIL을 덮지 않는 별도 70-bar/500-epoch fresh smoke를 실행했다. 근거는 동일-layout
+  70-bar route-off 0.6/0.9/1.2/1.25 m/s 셀이 모두 physical PASS였다는 독립 계측이다. 계약은
+  [`docs/preregistration_corrected_nonoverlap_physical_off_smoke_2026-09-01.md`](docs/preregistration_corrected_nonoverlap_physical_off_smoke_2026-09-01.md),
+  launcher는 `train_navrl_corrected_nonoverlap_physical_smoke.sh`다. 공식 판정은
+  `PASS_LEARNING_VIABILITY`: 초기→후기 100-epoch capture `11.01→60.39%`(+49.38pp), reward
+  `-131.00→+93.08`, KL max `0.01119`, rollback/skipped 0이다. 이 PASS로 별도 사전등록된 fresh
+  route-off 70→205 curriculum 1회만 열렸다. 그 1회는 2026-09-02 사용자 요청으로
+  **운영자 중지**됐다 (`OPERATOR_STOPPED_INCOMPLETE`). 재개 금지, 두 번째 curriculum 금지,
+  routed PPO 금지. `global_astar_*`, 1.5 m/s와 hardware claim은 계속 차단한다.
+  - run `ppo_260901_1431_navrl_corrected-nonoverlap-physical-off-curriculum-s911`
+  - 중지 epoch 21973/30000, 막대 145 (160+ 미도달), 마지막 공식 hold capture 0.647 / gate 0.70
+  - 평가용 체크포인트는 `nn/last_gen_ppo_ep_21750_rew_83.1572.pth`뿐이며 `gen_ppo.pth`는 쓰지 않는다
+  - 학습 로그 capture를 held-out로 부르지 않는다
+  held-out 평가 사전등록은
+  [`docs/preregistration_corrected_nonoverlap_physical_off_heldout_eval_2026-09-02.md`](docs/preregistration_corrected_nonoverlap_physical_off_heldout_eval_2026-09-02.md)
+  이다. 셀은 학습한 70/85/100/115/130/145뿐이고, 205는 넣지 않았다. 체크포인트는
+  `last_gen_ppo_ep_21750`만, seed 313, `gen_ppo.pth` 금지. 기본 evaluator 밀도
+  `70 150 210 280`과 `navrl_band`/`U[0.3,1.5]`는 이 체크포인트에 쓰면 VOID다.
+  평가는 완료되어 `COMPLETE_VALID_WITH_METADATA_ERRATUM`으로 봉인됐다. capture는
+  70/85/100/115/130/145 bars에서 각각
+  **83.70/80.94/77.75/73.45/69.17/65.54%**, timeout은 전 셀 0.4% 이하다.
+  70→145의 −18.16 pp는 거의 전부 bar contact 증가(+18.25 pp)다. 보조 contract JSON의
+  speed max `1.5`는 serializer 하드코딩 오류이고, 실제 condition/log/validator/속도 strata는
+  모두 `1.25`를 증명한다. 원본은 수정하지 않았고 향후 serializer만 고쳤다. 현재 GPU 권한은 없다.
+  결과: [`summary.md`](results/navrl_corrected_nonoverlap_physical_off_heldout_seed313/summary.md).
+
+## 2026-08-26 기록된 실행 authority (판정 보존)
 
 - **Track A — perception/sim-to-real:** P2 `STRICT FAIL`, D1 `FAIL`, P3 `BLOCKED`; detection
   Stage 1은 `RANGE_INCONCLUSIVE_AT_THIS_BUDGET`, Stage 2는 미승인이다. 유일한 다음 authority는

@@ -12,7 +12,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import heapq
+import importlib.util
 import math
+from pathlib import Path
+import sys
 import time
 from typing import Dict, List, Optional, Sequence, Tuple
 
@@ -20,15 +23,34 @@ import numpy as np
 import torch
 
 
+def _load_target_route_geometry():
+    name = "_navrl_target_route_geometry_standalone"
+    existing = sys.modules.get(name)
+    if existing is not None:
+        return existing
+    path = Path(__file__).with_name("target_route_geometry.py")
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+_GEO = _load_target_route_geometry()
+
+
 TARGET_ROUTE_MODE_OFF = "off"
 TARGET_ROUTE_MODE_GLOBAL_ASTAR = "global_astar_v1"
 # Keep the legacy route-arm tuple immutable; the recovery lineage is accepted explicitly by
 # NavRLTask and never aliases the v1 mode.
 TARGET_ROUTE_MODE_RECOVERY = "global_astar_recovery_v2"
+TARGET_ROUTE_MODE_BRAKING_V3 = "global_astar_braking_v3"
 TARGET_ROUTE_MODES = (TARGET_ROUTE_MODE_OFF, TARGET_ROUTE_MODE_GLOBAL_ASTAR)
 TARGET_ROUTE_MODEL = "physx_ref5in_6dof_global_astar_aabb_v1"
 TARGET_ROUTE_RECOVERY_MODEL = "physx_ref5in_6dof_global_astar_aabb_v2_two_envelope_recovery"
 TARGET_ROUTE_RECOVERY_SCHEMA = "navrl_target_route_two_envelope_recovery_v1"
+TARGET_ROUTE_BRAKING_V3_MODEL = "physx_ref5in_6dof_global_astar_aabb_v3_braking"
+TARGET_ROUTE_BRAKING_V3_SCHEMA = "navrl_target_route_braking_aware_v3"
 TARGET_ROUTE_HARD_EPSILON_M = 1e-4
 # Derived reachable-tube reserve for the prospective CONNECT RL-step chord: the fixed 0.1 s
 # command interval and the 45-degree horizontal acceleration bound give
@@ -40,6 +62,10 @@ RECOVERY_BRAKE = 1
 RECOVERY_CONNECT = 2
 RECOVERY_ROUTE = 3
 RECOVERY_NO_CONNECTOR = 4
+
+BRAKING_V3_ROUTE = 0
+BRAKING_V3_PREBRAKE = 1
+BRAKING_V3_STOP_TURN_GO = 2
 
 _NEIGHBORS = (
     (-1, 0, 1.0),
@@ -766,12 +792,15 @@ class BatchedTargetRouteManager:
         "recovery_connect_timeout": 23,
     }
 
-    def __init__(self, num_envs: int, device, config: RoutePlannerConfig, *, recovery_enabled=False):
+    def __init__(self, num_envs: int, device, config: RoutePlannerConfig, *, recovery_enabled=False, braking_v3_enabled=False):
         config.validate()
+        if bool(recovery_enabled) and bool(braking_v3_enabled):
+            raise ValueError("recovery-v2 and braking-v3 cannot share a manager")
         self.num_envs = int(num_envs)
         self.device = device
         self.config = config
         self.recovery_enabled = bool(recovery_enabled)
+        self.braking_v3_enabled = bool(braking_v3_enabled)
         self.planner = DeterministicAStarRoutePlanner(config)
         self.waypoints = torch.zeros(
             (self.num_envs, config.max_waypoints, 2), dtype=torch.float32, device=device
@@ -836,6 +865,18 @@ class BatchedTargetRouteManager:
         self.total_planning_wall_s = 0.0
         self.max_batch_wall_s = 0.0
         self.max_batch_size = 0
+        self.braking_v3_state = torch.zeros(self.num_envs, dtype=torch.long, device=device)
+        self.v3_reset_plan_attempts = torch.zeros((), dtype=torch.long, device=device)
+        self.v3_goal_completion_plan_attempts = torch.zeros((), dtype=torch.long, device=device)
+        self.v3_runtime_replan_attempts = torch.zeros((), dtype=torch.long, device=device)
+        self.v3_runtime_replan_unsafe_start_count = torch.zeros((), dtype=torch.long, device=device)
+        self.v3_soft_envelope_exit_count = torch.zeros((), dtype=torch.long, device=device)
+        self.v3_accepted_terminal_stop_certificate_count = torch.zeros((), dtype=torch.long, device=device)
+        self.v3_accepted_command_count = torch.zeros((), dtype=torch.long, device=device)
+        self.v3_prebrake_intervals = torch.zeros((), dtype=torch.long, device=device)
+        self.v3_certificate_failure_count = torch.zeros((), dtype=torch.long, device=device)
+        self.v3_stop_turn_go_intervals = torch.zeros((), dtype=torch.long, device=device)
+        self.v3_corner_prebrake_intervals = torch.zeros((), dtype=torch.long, device=device)
 
     def reset_idx(self, env_ids) -> None:
         if len(env_ids) == 0:
@@ -855,6 +896,7 @@ class BatchedTargetRouteManager:
         self.recovery_brake_age_steps[env_ids] = 0
         self.recovery_connect_age_steps[env_ids] = 0
         self.recovery_connect_timeout_steps[env_ids] = 0
+        self.braking_v3_state[env_ids] = BRAKING_V3_ROUTE
 
     def invalidate(self, mask, reason: str, current_step: int) -> None:
         if reason not in self.STATUS_CODES:
@@ -1089,6 +1131,7 @@ class BatchedTargetRouteManager:
         min_goal_distance_m: float = 0.0,
         excluded_goal_xy=None,
         goal_exclusion_radius_m: float = 0.0,
+        plan_cause: Optional[str] = None,
     ) -> Dict[str, int]:
         if len(env_ids) == 0:
             return {}
@@ -1128,7 +1171,49 @@ class BatchedTargetRouteManager:
                 .detach().to("cpu", dtype=torch.float64).numpy()
             )
         batch_counts: Dict[str, int] = {}
+        if plan_cause not in (None, "reset", "goal_completion", "runtime_replan"):
+            raise ValueError("plan_cause must be reset, goal_completion, runtime_replan, or None")
         for local, env_id in enumerate(ids):
+            if self.braking_v3_enabled:
+                # Fail closed on NaN/malformed rows without invoking A*.  v1 still uses
+                # segment_is_safe, which raises on non-finite endpoints.
+                try:
+                    admissible_lo, admissible_hi, inflated_half = _GEO.numpy_soft_envelope(
+                        arena_lo[local], arena_hi[local], half[local], support[local],
+                        _GEO.SoftEnvelopeSpec(
+                            wall_margin_m=0.0,
+                            boundary_reserve_m=self.config.boundary_margin_m,
+                            tracking_margin_m=self.config.tracking_margin_m,
+                        ),
+                    )
+                    start_safe = _GEO.numpy_segments_soft_safe(
+                        starts[local], starts[local], admissible_lo, admissible_hi,
+                        bars[local], inflated_half,
+                    )
+                except ValueError:
+                    start_safe = False
+                if not start_safe:
+                    self.plan_attempts += 1
+                    self.replan_attempts += int(is_replan)
+                    self.invalid_count += 1
+                    self.valid[env_id] = False
+                    self.length[env_id] = 0
+                    self.handoff_clearance[env_id] = 0.0
+                    self.status_code[env_id] = self.STATUS_CODES["unsafe_start"]
+                    self.next_replan_step[env_id] = (
+                        int(current_step) + self.config.replan_cooldown_steps
+                    )
+                    self.goal[env_id] = goal_xy[env_id]
+                    self.planned_support[env_id] = support_xy[env_id]
+                    batch_counts["unsafe_start"] = batch_counts.get("unsafe_start", 0) + 1
+                    if plan_cause == "reset":
+                        self.v3_reset_plan_attempts += 1
+                    elif plan_cause == "goal_completion":
+                        self.v3_goal_completion_plan_attempts += 1
+                    elif plan_cause == "runtime_replan":
+                        self.v3_runtime_replan_attempts += 1
+                        self.v3_runtime_replan_unsafe_start_count += 1
+                    continue
             if connected_goal_selector is None:
                 result = self.planner.plan(
                     starts[local], goals[local], bars[local], half[local],
@@ -1159,6 +1244,13 @@ class BatchedTargetRouteManager:
                 )
             self.plan_attempts += 1
             self.replan_attempts += int(is_replan)
+            if self.braking_v3_enabled:
+                if plan_cause == "reset":
+                    self.v3_reset_plan_attempts += 1
+                elif plan_cause == "goal_completion":
+                    self.v3_goal_completion_plan_attempts += 1
+                elif plan_cause == "runtime_replan":
+                    self.v3_runtime_replan_attempts += 1
             self.connected_goal_replans += int(is_replan and selectors is not None)
             self.expanded_nodes += result.expanded_nodes
             self.raw_waypoints += result.raw_grid_nodes
@@ -1220,6 +1312,137 @@ class BatchedTargetRouteManager:
         self.max_batch_wall_s = max(self.max_batch_wall_s, elapsed)
         self.max_batch_size = max(self.max_batch_size, batch_size)
         return batch_counts
+
+    def braking_v3_follow_reference(
+        self,
+        position_xy,
+        velocity_xy,
+        cruise_speed,
+        reach_m: float,
+        admissible_lo,
+        admissible_hi,
+        bars_xy,
+        inflated_half,
+        max_turn_rate,
+        stop_speed_mps: float,
+        brake_speed_knots,
+        brake_distance_knots,
+        dt: float,
+        count_intervals=True,
+    ):
+        """GPU tangent/cross-track follower with certified fillets and stop-turn-go."""
+        if position_xy.shape != self.goal.shape or cruise_speed.shape != (self.num_envs,):
+            raise ValueError("position must be [N,2] and speed [N]")
+        rows = torch.arange(self.num_envs, device=self.device)
+        speed_now = velocity_xy.norm(dim=1)
+        stopped = speed_now <= float(stop_speed_mps)
+        stop_turn_go = torch.zeros(self.num_envs, dtype=torch.bool, device=self.device)
+        corner_prebrake = torch.zeros_like(stop_turn_go)
+        used_fillet = torch.zeros_like(stop_turn_go)
+        for _ in range(4):
+            safe_cursor = torch.minimum(self.cursor, (self.length - 1).clamp(min=0))
+            waypoint = self.waypoints[rows, safe_cursor]
+            next_cursor = torch.minimum(safe_cursor + 1, (self.length - 1).clamp(min=0))
+            next_waypoint = self.waypoints[rows, next_cursor]
+            has_next = self.valid & (self.cursor + 1 < self.length)
+            segment = waypoint - self.segment_start
+            offset = position_xy - waypoint
+            cross_track = torch.abs(offset[:, 0] * segment[:, 1] - offset[:, 1] * segment[:, 0])
+            cross_track = cross_track / segment.norm(dim=1).clamp(min=1e-6)
+            passed = ((offset * segment).sum(dim=1) >= 0.0) & (cross_track <= float(reach_m))
+            connector_certified = (
+                (waypoint - position_xy).norm(dim=1)
+                <= self.handoff_clearance[rows, safe_cursor]
+            )
+            reached = self.valid & (
+                ((waypoint - position_xy).norm(dim=1) <= float(reach_m)) | passed
+            ) & connector_certified
+            fillet_safe = has_next & _GEO.torch_segments_soft_safe(
+                position_xy.unsqueeze(1),
+                next_waypoint.unsqueeze(1),
+                admissible_lo,
+                admissible_hi,
+                bars_xy,
+                inflated_half,
+            )[:, 0]
+            next_tangent = next_waypoint - waypoint
+            current_heading = torch.atan2(velocity_xy[:, 1], velocity_xy[:, 0])
+            next_heading = torch.atan2(next_tangent[:, 1], next_tangent[:, 0])
+            heading_error = torch.atan2(
+                torch.sin(next_heading - current_heading),
+                torch.cos(next_heading - current_heading),
+            ).abs()
+            turn_budget = max_turn_rate * float(dt)
+            need_stop_turn = (
+                has_next & reached & ~fillet_safe & (heading_error > turn_budget) & ~stopped
+            )
+            skip_corner = has_next & reached & fillet_safe
+            can_advance = reached & (self.cursor + 1 < self.length) & (
+                skip_corner | ~need_stop_turn | stopped
+            )
+            self.segment_start[can_advance] = waypoint[can_advance]
+            self.cursor += can_advance.long()
+            stop_turn_go = need_stop_turn & ~can_advance
+            used_fillet = skip_corner & can_advance
+        safe_cursor = torch.minimum(self.cursor, (self.length - 1).clamp(min=0))
+        waypoint = self.waypoints[rows, safe_cursor]
+        remaining = (waypoint - position_xy).norm(dim=1)
+        stop_distance, covered = _GEO.ceiling_stop_distance(
+            speed_now, brake_speed_knots, brake_distance_knots
+        )
+        next_cursor = torch.minimum(safe_cursor + 1, (self.length - 1).clamp(min=0))
+        next_waypoint = self.waypoints[rows, next_cursor]
+        has_next = self.valid & (self.cursor + 1 < self.length)
+        next_tangent = next_waypoint - waypoint
+        current_heading = torch.atan2(velocity_xy[:, 1], velocity_xy[:, 0])
+        next_heading = torch.atan2(next_tangent[:, 1], next_tangent[:, 0])
+        heading_error = torch.atan2(
+            torch.sin(next_heading - current_heading),
+            torch.cos(next_heading - current_heading),
+        ).abs()
+        upcoming_turn = has_next & (heading_error > (max_turn_rate * float(dt)))
+        corner_prebrake = upcoming_turn & covered & (remaining <= stop_distance)
+        delta = waypoint - position_xy
+        complete = self.valid & (self.cursor + 1 >= self.length) & (
+            delta.norm(dim=1) <= float(reach_m)
+        )
+        new_completion = complete & ~self.completion_reported
+        self.goal_completions += new_completion.sum()
+        self.completion_reported |= complete
+        active = self.valid & ~complete
+        tangent = waypoint - self.segment_start
+        tangent_norm = tangent.norm(dim=1, keepdim=True).clamp(min=1e-6)
+        path_tangent = tangent / tangent_norm
+        # Cross-track: point onto the current segment, then along the certified tangent.
+        along = ((position_xy - self.segment_start) * path_tangent).sum(dim=1, keepdim=True)
+        along = along.clamp(min=0.0)
+        projected = self.segment_start + path_tangent * along
+        to_path = projected - position_xy
+        desired_dir = path_tangent + to_path
+        desired_dir = desired_dir / desired_dir.norm(dim=1, keepdim=True).clamp(min=1e-6)
+        toward_waypoint = delta / delta.norm(dim=1, keepdim=True).clamp(min=1e-6)
+        use_tangent = (tangent.norm(dim=1) > 1e-6) & active
+        heading = torch.where(use_tangent.unsqueeze(1), desired_dir, toward_waypoint)
+        speed_limit = torch.where(
+            active & ~stop_turn_go & ~corner_prebrake,
+            cruise_speed.clamp(min=0.0),
+            torch.zeros_like(cruise_speed),
+        )
+        velocity = heading * speed_limit.unsqueeze(1)
+        if count_intervals:
+            self.fallback_intervals += (~self.valid & (cruise_speed > 1e-6)).sum()
+            self.v3_stop_turn_go_intervals += (self.valid & stop_turn_go).sum()
+            self.v3_corner_prebrake_intervals += (self.valid & corner_prebrake).sum()
+        self.braking_v3_state = torch.where(
+            stop_turn_go,
+            torch.full_like(self.braking_v3_state, BRAKING_V3_STOP_TURN_GO),
+            torch.where(
+                corner_prebrake,
+                torch.full_like(self.braking_v3_state, BRAKING_V3_PREBRAKE),
+                torch.full_like(self.braking_v3_state, BRAKING_V3_ROUTE),
+            ),
+        )
+        return velocity, speed_limit, active, complete, stop_turn_go, corner_prebrake, used_fillet
 
     def velocity_reference(self, position_xy, speed, reach_m: float):
         if position_xy.shape != self.goal.shape or speed.shape != (self.num_envs,):
@@ -1313,6 +1536,14 @@ class BatchedTargetRouteManager:
             "currently_valid": int(self.valid.sum().item()),
             "status_counts": status_counts,
         }
+        if self.braking_v3_enabled:
+            payload.update({
+                "mode": TARGET_ROUTE_MODE_BRAKING_V3,
+                "model": TARGET_ROUTE_BRAKING_V3_MODEL,
+                "schema": TARGET_ROUTE_BRAKING_V3_SCHEMA,
+                "v3_diagnostics": self.v3_gate_diagnostics(),
+            })
+            return payload
         if not self.recovery_enabled:
             return payload
         payload.update({
@@ -1345,3 +1576,25 @@ class BatchedTargetRouteManager:
             "recovery_route_resumes": int(self.recovery_route_resumes.item()),
         })
         return payload
+
+    def v3_gate_diagnostics(self) -> Dict[str, object]:
+        """Cause-separated telemetry consumed by the braking-v3 gate verifier."""
+        return {
+            "runtime_replan_unsafe_start_count": int(self.v3_runtime_replan_unsafe_start_count.item()),
+            "soft_envelope_exit_count": int(self.v3_soft_envelope_exit_count.item()),
+            "accepted_terminal_stop_certificate_count": int(
+                self.v3_accepted_terminal_stop_certificate_count.item()
+            ),
+            "accepted_command_count": int(self.v3_accepted_command_count.item()),
+            "plan_attempt_count": int(self.plan_attempts),
+            "plan_success_count": int(self.plan_successes),
+            "fallback_interval_count": int(self.fallback_intervals.item()),
+            "goal_completion_count": int(self.goal_completions.item()),
+            "reset_plan_attempt_count": int(self.v3_reset_plan_attempts.item()),
+            "goal_completion_plan_attempt_count": int(self.v3_goal_completion_plan_attempts.item()),
+            "runtime_replan_attempt_count": int(self.v3_runtime_replan_attempts.item()),
+            "prebrake_interval_count": int(self.v3_prebrake_intervals.item()),
+            "certificate_failure_count": int(self.v3_certificate_failure_count.item()),
+            "stop_turn_go_interval_count": int(self.v3_stop_turn_go_intervals.item()),
+            "corner_prebrake_interval_count": int(self.v3_corner_prebrake_intervals.item()),
+        }

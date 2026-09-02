@@ -153,7 +153,12 @@ export PYTHONNOUSERSITE=1
 # =physical from an interactive shell.
 _TARGET_DYNAMICS_REQUESTED="${NAVRL_TARGET_DYNAMICS:-legacy}"
 _TARGET_ROUTE_REQUESTED="${NAVRL_TARGET_ROUTE_MODE:-off}"
-if [[ "${NAVRL_V2_PHYSICAL_FRESH_CHILD:-0}" == "1" ]]; then
+# Preserve the validated handoff in a shell-local value before clearing the environment marker.
+# The old code tested NAVRL_V2_PHYSICAL_FRESH_CHILD again *after* unsetting it below, so every
+# physical-fresh invocation silently fell through to the historical navrl_band placement.  That
+# made the wrapper print footprint_clearance while the actual task received navrl_band.
+_PHYSICAL_FRESH_CHILD="${NAVRL_V2_PHYSICAL_FRESH_CHILD:-0}"
+if [[ "${_PHYSICAL_FRESH_CHILD}" == "1" ]]; then
     if [[ "${_TARGET_DYNAMICS_REQUESTED}" != "physical" ]]; then
         echo "[v2-search] physical child marker requires NAVRL_TARGET_DYNAMICS=physical" >&2
         exit 2
@@ -259,7 +264,7 @@ unset NAVRL_NETWORK_OVERRIDE NAVRL_V2_FORCE ALLOW_CONCURRENT
 export NAVRL_ARENA_XY=40
 export NAVRL_ARENA_Z=3
 export NAVRL_BAR_POOL=bars_h3
-if [[ "${NAVRL_V2_PHYSICAL_FRESH_CHILD:-0}" == "1" ]]; then
+if [[ "${_PHYSICAL_FRESH_CHILD}" == "1" ]]; then
     export NAVRL_PLACEMENT_MODE=footprint_clearance
     export NAVRL_PLACEMENT_SURFACE_CLEARANCE_M=0.45
     unset NAVRL_PLACEMENT_TOUCH_M NAVRL_PLACEMENT_GAP_M
@@ -393,7 +398,7 @@ export NAVRL_DEPTH_NOISE_STD=0.02
 # full-width bar-band change, so keep only a short scaffold. It ends at epoch 300, well before density
 # evidence starts at epoch 1000, avoiding the old 3000-epoch overlap with the density curriculum.
 export NAVRL_TARGET_SPEED_MIN=0.3
-export NAVRL_TARGET_SPEED_FINAL=1.5
+export NAVRL_TARGET_SPEED_FINAL="${NAVRL_TARGET_SPEED_FINAL:-1.5}"
 export NAVRL_TARGET_SPEED_RAMP_EPOCHS="${NAVRL_TARGET_SPEED_RAMP_EPOCHS:-300}"
 if [[ "${NAVRL_TARGET_ROUTE_MODE}" == "global_astar_v1" ]]; then
     export NAVRL_TARGET_PATTERN=waypoint
@@ -402,7 +407,7 @@ else
 fi
 unset NAVRL_TARGET_SPEED
 if [[ "${NAVRL_TARGET_CONTRACT_PREFLIGHT_ONLY:-0}" == "1" ]]; then
-    echo "[v2-search] TARGET CONTRACT PREFLIGHT PASS | dynamics=${NAVRL_TARGET_DYNAMICS} route=${NAVRL_TARGET_ROUTE_MODE} pattern=${NAVRL_TARGET_PATTERN}"
+    echo "[v2-search] TARGET CONTRACT PREFLIGHT PASS | dynamics=${NAVRL_TARGET_DYNAMICS} route=${NAVRL_TARGET_ROUTE_MODE} pattern=${NAVRL_TARGET_PATTERN} placement=${NAVRL_PLACEMENT_MODE} surface_clearance=${NAVRL_PLACEMENT_SURFACE_CLEARANCE_M:-unset} density=${NAVRL_DENSITY_START}->${NAVRL_DENSITY_FINAL} fixed_bars=${NAVRL_NUM_BARS:-curriculum} speed_final=${NAVRL_TARGET_SPEED_FINAL} ramp=${NAVRL_TARGET_SPEED_RAMP_EPOCHS}"
     exit 0
 fi
 export NAVRL_ACTION_POLICY=squashed_gaussian

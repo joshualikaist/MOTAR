@@ -4,8 +4,12 @@
 
 substantive한 요청(학습·평가·분석·감사·구현)을 받으면:
 
-1. **스킬 먼저 탐색·호출한다.** 연구 루프(train → eval → record)는 `/navrl` 스킬로 시작한다
-   (`.claude/skills/navrl/`). 대시보드 갱신은 저장소 `research-status` 스킬.
+1. **스킬 먼저 탐색·호출한다.** 연구 루프는 `/navrl` 스킬로 시작한다
+   (`.claude/skills/navrl/`). 스킬은 **먼저 `VERIFICATION.md`에서 현재 stage를 읽고**,
+   학습을 자동으로 시작하지 않는다. routed v3는 **MECHANISM_GATE_FAIL_CLOSED**다.
+   route-off 70→205 curriculum(seed 911)은 이미 RUNNING이므로 두 번째 run을 시작하지 않는다.
+   대시보드 갱신은 저장소
+   `research-status` 스킬.
 2. **무거운 조사는 서브에이전트(Agent 도구)에 위임한다** — 파일 다수 읽기, `runs/**/epoch_metrics.csv`
    파싱, `nn/*.pth` 로드, 긴 학습 로그 스캔. 메인 루프는 짧은 구조화 보고만 회수한다.
    독립 조사는 **한 메시지에 여러 Agent**로 병렬 실행. 서브에이전트 `*.output` 트랜스크립트는
@@ -15,6 +19,16 @@ substantive한 요청(학습·평가·분석·감사·구현)을 받으면:
 
 ## 프로젝트 현재 상태 (재도출 금지 — 여기 요약)
 
+- **현재 실행 단계(2026-09-01)**: corrected non-overlap route r2는
+  `FAIL_ROUTE_MECHANISM`이다. route-off 500-epoch smoke는 `PASS_LEARNING_VIABILITY`이고
+  seed 911 70→205 curriculum은 **RUNNING**이다. 두 번째 curriculum/routed PPO는 금지.
+  canonical 1.5 v3 receipt는 NO-GO다.
+  matched-spawn lower-v3 재실행은 pose/layout/robot 해시가 일치해
+  `PASS_8_CELL_INTEGRITY`였지만 공식 판정은 **`FAIL_BLOCKS_CONFIRMATORY`**다. routed speed
+  ratio 0.7872/0.7681/0.5984/0.6297, soft exits 6,825, fallback 8.914%, 0.6 goals/env
+  0.21875다. 제한 GPU authority는 소비됐고 confirmatory/PPO는 닫혀 있다. 새 방법
+  사전등록 없이 rerun·retune하지 않는다. 0.05 warmup 게이트와 PID/게인은 바꾸지 않는다.
+  현재 계보 밀도는 **70/115/160/205**이고 **300 bars는 disconnected stress**다.
 - **주제**: 센서 전용 UAV 요격. actor 관측에 GT 표적(semantic id/mask, bearing/range, `target_position`,
   GT visibility) **절대 금지** — detector supervision·reward·종료판정·critic·평가 metric에만 사용.
 - **현재 방향(2026-07-22 피벗)**: NavRL++식 **학습형 인지(RGB-D 카메라 + LiDAR detector/tracker) +

@@ -119,6 +119,8 @@ assert(html.includes('route-off measured 70→145 · 205 not reached'));
 assert(html.includes('preregistration_navrl_v2_corrected_density_geometry_2026-08-27.md'));
 assert(html.includes('corrected_nonoverlap_route_gate_r2_result_2026-08-31.md'));
 assert(html.includes('preregistration_corrected_nonoverlap_route_gate_r2_2026-08-31.md'));
+assert(html.includes('navrl_corrected_nonoverlap_physical_off_heldout_seed313/summary.md'));
+assert(html.includes('preregistration_corrected_nonoverlap_physical_off_heldout_eval_2026-09-02.md'));
 assert(html.includes('SYNTHETIC_ONLY'));
 assert(html.includes('0.21875'));
 assert(html.includes('PASS_LEARNING_VIABILITY'));

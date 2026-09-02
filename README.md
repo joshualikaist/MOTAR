@@ -78,7 +78,7 @@ attitude/rate torque → motor allocation → 100 Hz rigid-body physics` 순서�
 | Corrected non-overlap route gate r2 | **32 / 32 integrity PASS; route mechanism FAIL; routed PPO blocked** | 70-bar plan **17.78%**, fallback **30.02%**, 0.6 goals/env **0.21875**; routed speed gate passed at no density |
 | Corrected route-off fresh smoke | **500 epochs; `PASS_LEARNING_VIABILITY`** | seed 907, 70 bars fixed, target `U[0.3,1.25]`; held-out 성능 주장이 아님 |
 | Corrected route-off curriculum | **epoch 21,973에서 운영자 중지; 145 bars 도달** | fresh seed 911; 70→85→100→115→130→145, 160/205 미도달 |
-| Corrected route-off held-out | **83.70% capture @70 → 65.54% @145** | seed 313, 6 trained-density cells; one incomplete route-off policy, no 205/routed claim |
+| Corrected route-off held-out | **83.70% capture @70 → 65.54% @145** | seed 313, 6 trained-density cells; [summary](results/navrl_corrected_nonoverlap_physical_off_heldout_seed313/summary.md); no 205/routed claim |
 | Detector colour shortcut (distractor envelope) | **both detectors `COLOR_SHORTCUT_CONFIRMED`**; v7 FTLR **90.27%** at N=5 | seed 479, 8 cells, 2,049 ep/cell; cross-detector comparison forbidden (prereg §3-c) |
 | Speed-governor stopcap screen | **Q1 `MECHANISM_UNSUPPORTED`, Q3 `FILTER_DEPENDENT`, stopcap NO-GO** | seed 49, 5 arms, 2,049 ep/cell; riskcap does not beat a constant 2.0 m/s cap |
 | Hardware/software gate | software pipeline PASS · `SYNTHETIC_ONLY` | 실기 성능 아님 |

@@ -14072,3 +14072,467 @@ ep25000 stopcap screen처럼 명시적으로 켠 별도 실험이다.
 
 검증: SVG 3개 XML 파싱, HTML anchor/asset 감사, Chrome headless 렌더, `test_status_site.js`,
 `test_status_arena_route.js`, `test_status_arena_motion.js`, `test_status_webgl_headless.js` PASS.
+## 2026-09-01 — braking-aware route v3 MECHANISM_GATE 구현 (GPU 미실행)
+
+corrected non-overlap r2 `FAIL_ROUTE_MECHANISM` 이후, 사전등록된 fresh-only 모드
+`global_astar_braking_v3`를 구현했다. 사전등록
+`docs/preregistration_braking_aware_route_v3_2026-09-01.md`의 SHA-256
+`cceecb9ad4a538e7bc2bc9171436e823ef18652e9c971e0d6fa8174279df6056`는 결과를 보기 전에
+고정됐고, 이 작업에서 바이트를 수정하지 않았다.
+
+구현 범위: spawn/A*/local/watchdog가 공유하는 exact closed-AABB soft envelope, full-horizon
+수락(longest-safe-prefix 실행 금지), canonical 1.5 m/s monotone p95 ceiling lookup,
+terminal zero-command 정지 증명, tangent/cross-track + stop-turn-go, unsafe_start에서 A* 반복
+금지, reset/goal-completion/runtime-replan 분리 계측. `global_astar_v1`과
+`global_astar_recovery_v2`의 동작·diagnostics shape는 유지했다. reward/obs/termination/PPO/
+물리 동역학은 변경하지 않았다. `CRASH_TUNING_LOG.md`는 archival-in-place로 새 기록을 넣지
+않았다.
+
+navrl skill은 stage router(`ENVIRONMENT_CONTRACT` → `MECHANISM_GATE` → `PPO_SMOKE` →
+`PPO_CURRICULUM` → `HELD_OUT_EVAL` → `SIM_TO_REAL`)로 개정했고, 과거 25/50/75/110/130/150과
+`NAVRL_DENSITY_THRESHOLD=0.6`는 historical recipe로 내렸다. 현재 계보는 70/115/160/205,
+300 bars는 disconnected stress다.
+
+GPU/PPO/simulator 평가는 실행하지 않았다. 포커스 CPU 테스트는
+`test_navrl_braking_route_v3*` 24, planner 13, target_motion 25, two-envelope 23,
+environment contract 13, recovery evaluator 8, corrected-gate 4, braking-contract 8로
+전부 PASS였고 `git diff --check`는 깨끗하다. 커밋/푸시는 사용자 diff 승인 전 금지.
+
+다음: CPU 통과를 확인한 뒤, 사용자가 지시하면 seed 829 / 70 bars / 8-cell pilot만 실행한다.
+pilot 실패 시 confirmatory(seed 839, 32 cell)는 금지다.
+
+## 2026-09-01 — v3 셀 어댑터 완성, GPU pilot 직전 준비 (GPU 미실행)
+
+사용자가 diff를 승인해 braking-v3 구현을 `6b13441`로 커밋했고, 이어 pilot 진행을 지시했다.
+게이트가 요구하는 tracked 실행 파일 `tools/run_navrl_braking_route_v3_cell.py`를 추가했다.
+어댑터는 `NAVRL_V3_*` 셀 계약을 fail-closed로 파싱하고, corrected-r2 평가기의
+`frozen_environment`/neutral-pursuer 인터벌 헬퍼를 바이트 그대로 재사용해 셀 하나를 돌린 뒤,
+v3 verifier의 `validate_cell`을 자기 payload에 먼저 적용하고 나서야 JSON을 원자적으로 쓴다.
+identity의 cell-runner/braking-receipt/사전등록 SHA 자기검증, `MOTAR_V3_*` passthrough로
+training source manifest 전달(게이트가 `NAVRL_*`를 제거하므로), off arm의 manager 부재 확인을
+포함한다. v1/v2/기존 verifier는 수정하지 않았다.
+
+CPU 검증: 새 `test_navrl_braking_route_v3_cell_runner` 9/9, `test_navrl_braking_route_v3*`
+합계 33/33, planner 13/13, target_motion 25/25, braking-contract 8/8 PASS.
+
+GPU 직전 상태에서 남은 실제 선행물은 **canonical 1.5 m/s braking receipt**다. receipt는 현재
+커밋의 core 바이트에 바인딩되므로 재측정이 필수인데, 2026-08-26 기록상 1.5 m/s warmup 수렴이
+1.4426 m/s로 0.05 m/s 게이트를 못 넘겨 NO-GO였고 controller는 변경 금지다. 재측정이 다시
+NO-GO면 pilot은 열리지 않으며, threshold 완화 없이 중단·보고한다. 실행 시퀀스(probe →
+training source bundle → pilot)는 `OPERATIONS.md`에 고정했다. GPU/PPO는 이 엔트리 시점까지
+실행하지 않았다.
+
+## 2026-09-01 — canonical 1.5 braking probe 재측정 NO-GO 재현, pilot 차단
+
+사용자 지시로 커밋 `fb9fa50`에서 canonical_1p5 braking probe를 RTX 3070에서 실행했다.
+0.6/0.9/1.2 m/s 세 셀은 warmup/raw 게이트를 통과했으나 1.5 m/s 셀이 5 s warmup 수렴 게이트에서
+실패했다: final speed `min=1.441824 / mean=1.442577 / max=1.443260 m/s`, 절대 오차
+`min=0.056740 / mean=0.057423 / max=0.058176 m/s` (게이트 0.05 m/s). 이 수치는 2026-08-26
+진단 측정과 소수 6자리까지 동일하므로 controller의 결정론적 정상상태 추적 한계이지 노이즈가
+아니다. launcher가 fail-closed로 partial stage를 삭제해 receipt는 발급되지 않았다
+(`results/`에 산출물 없음, 트리 clean 유지). 사전등록 규칙대로 threshold·controller·속도 grid는
+변경하지 않았다.
+
+같은 날 training source bundle은 저장소 밖
+`/home/fair/workspaces/aerial_gym_ws/navrl_v3_receipts/training_source_2026-09-01/`에 생성했다
+(`manifest_sha256=0fb6dbb4551cd1a2d8ab6bd341447de3a1f5ae5e69e57c95947d71ed51cc25fd`,
+git_commit `fb9fa50`, 328 files, verify PASS). pilot 단계 3의 나머지 입력은 준비돼 있다.
+
+결정 지점: v3 사전등록은 canonical_1p5 receipt를 요구하고 controller retune을 금지하므로,
+**1.5 m/s warmup 게이트가 서 있는 한 v3 pilot은 열리지 않는다.** 다음 선택지는 사용자 결정
+사항이다 — (a) 이 한계를 근거로 v3 계보를 lower-contract(예: 1.25 상한) 방향으로 새로
+사전등록, (b) warmup 수렴 게이트 자체를 재검토하는 새 사전등록(측정 후 완화가 아니라 독립
+근거 필요), (c) 중단. 본 세션은 어느 것도 자동 선택하지 않는다.
+
+## 2026-09-01 — lower-contract v3 사전등록 고정, canonical 1.5/PID/0.05는 유지
+
+canonical 1.5 warmup NO-GO 이후 사용자는 규약을 지키는 방향으로 진행하되, 규약을 깨는 편이
+나은지만 판단하라고 했다. 판단: **지금은 깨지 않는 편이 맞다.** 0.05를 0.06으로 올리면
+1.5 receipt는 숫자상 통과하지만 lookup이 실제 1.443 m/s 정지 거리를 1.5 칸으로 위장한다.
+PID는 정상상태 오차를 없앨 수 있으나 stage 1–2가 이미 게인/damping으로 1.5를 살리지 못했고,
+표적 동역학을 바꾸면 기존 receipt·r2·v3 정지 증명이 다른 물리가 된다. 둘 다 “게이트를 통과시키기
+위한 사후 변경”이 된다.
+
+따라서 별도 사전등록
+`docs/preregistration_braking_aware_route_v3_lower1p25_2026-09-01.md`(SHA-256
+`cd1347121c24ecd10273189360bed9ca76ffa80673aa89addf3ff0eaebc16252`)를 결과 전에 고정했다.
+속도 grid는 0.6/0.9/1.2/1.25이고 기본값은 여전히 `canonical_1p5`다. task는 명시적
+`baseline_1p25` variant만 추가로 받고, 게이트/셀 어댑터는 동일 구현 바이트에 그 receipt만
+묶는다. record id는 lossless decimal이라 1.25가 1.2로 alias되지 않는다. 0.05 게이트와
+controller/PID는 변경하지 않았다. 08-26 lower receipt는 재사용하지 않는다.
+
+다음 GPU는 현재 커밋에서 새로 뜰 `baseline_1p25` raw braking receipt다. 이 엔트리 시점까지
+lower receipt와 lower pilot는 실행하지 않았다.
+
+## 2026-09-01 — lower-1.25 braking receipt 검증, 8-cell pilot 미실행
+
+커밋 `dd8b4a4`에서 `NAVRL_TARGET_BRAKING_CONTRACT_VARIANT=baseline_1p25`로 새 raw probe를
+RTX 3070에서 실행했다. standalone verifier PASS.
+`results/navrl_physical_target_braking_lower1p25_seed827_2026-09-01/receipt.json`
+SHA-256 `6d71b0be34ffb166d23aff9f6897cf41b5bb82a4a488d24403d735cf97852485`.
+속도 0.6/0.9/1.2/1.25, decel p05 0.5052572863 m/s², stop-time p95 0.89 s, certified lateral
+tube p95 0.00041199 m, 정지거리 p95 0.32814/0.49835/0.67084/0.69944 m. 0.05 warmup 게이트와
+P-only 게인 2.5는 그대로다. 이 숫자는 08-26 lower receipt와 같은 컨트롤러 천장과 일치하지만
+바이트 바인딩이 현재 커밋이므로 옛 receipt를 재사용하지 않는다.
+
+training source bundle은 저장소 밖
+`/home/fair/workspaces/aerial_gym_ws/navrl_v3_receipts/training_source_lower1p25_2026-09-01/`
+(`manifest_sha256=5de7fdbfa56811b71284d454195239d8490e8a5db0b54a22d3e8b9c58263964c`,
+git_commit `dd8b4a4`, 328 files, git_dirty false).
+
+8-cell lower pilot는 아직 실행하지 않았다. PPO는 여전히 0 epoch다.
+
+## 2026-09-01 — lower v3 8-cell pilot VOID (matched-arm target pose)
+
+seed 829, 70 bars, 0.6/0.9/1.2/1.25, arms `off`/`global_astar_braking_v3`를 RTX 3070에서
+실행했다. 8개 셀 JSON은 모두 쓰였으나 parent verifier가
+`matched-arm identity drift: initial_target_pose_sha256`으로 `VOID_EXECUTION` /
+`NOT_INTERPRETED`다. 원자료
+`/home/fair/workspaces/aerial_gym_ws/navrl_v3_runs/pilot_lower1p25_seed829_2026-09-01/summary.json`.
+
+레이아웃 SHA와 로봇 자세 SHA는 8셀·두 arm이 모두 같다. 표적 초기 자세만 arm 사이에서
+갈라지고, 같은 arm 안에서는 속도 4개가 동일하다. 원인: v3 `_sample_waypoints`가
+wall+boundary에 target support를 더 inset해서 off와 다른 균일 상자에서 샘플한다. 게이트
+threshold·controller·사전등록 바이트는 바꾸지 않았다. confirmatory는 열리지 않는다.
+
+VOID라 공식 메커니즘 판정은 없다. 셀 파일을 진단으로만 보면(권한 아님) routed 70-bar는
+runtime `unsafe_start` 0, plan success 38/38–54/54, 0.6 goals/env 7/32=0.21875,
+fallback 277/9600≈2.89%, soft-envelope exit 569, speed ratio 0.80 미만
+(0.7955/0.7475/0.6551/0.6535). 이 숫자는 VOID를 FAIL로 바꾸지 않는다.
+
+## 2026-09-01 — matched-spawn 사전등록·CPU 계약, GPU 미실행
+
+VOID 이후 선택지는 (1) off와 같은 상자로 샘플 (2) pose 매칭을 사후에 끄기 (3) 중단이다.
+평가: (2)는 VOID를 본 뒤 무결성 검사를 빼는 것이라 기각. (1)이 맞다. envelope는
+A*/rollout/watchdog에 남기고 spawn RNG 상자만 off와 같게 한다.
+
+사전등록
+`docs/preregistration_braking_aware_route_v3_lower1p25_matched_spawn_2026-09-01.md`
+SHA-256 `17e7f35e350087bf2733aca70dfca7210efe667ad1845dd053f7334ddf1645b4`를 구현 전에
+고정했다. 옛 lower-1.25 사전등록 바이트는 그대로다. `_sample_general_target`과
+`_sample_waypoints`의 v3-only inset/AABB 필터를 제거했다. pose 해시 검사는 유지한다.
+
+계산 예측: identity는 통과하고 메커니즘은 실패한다. VOID 셀의 비공식 숫자는 더 보수적인
+envelope-inset spawn에서도 speed ratio·soft-exit·fallback·0.6 goals/env가 이미 게이트를
+밑돈다. spawn을 넓히면 in-flight 지표가 나아지지 않고 reset `unsafe_start`만 늘 수 있다.
+이 예측은 공식 판정이 아니다. spawn 바이트가 바뀌므로 `dd8b4a4` receipt는 다음 GPU를
+무장하지 못한다. PPO는 0 epoch, confirmatory는 닫혀 있다.
+
+## 2026-09-01 — matched-spawn CPU forensic 통과와 제한 GPU authority
+
+사용자가 CPU forensic부터 새 receipt·8-cell pilot까지 끊지 않고 진행하도록 명시적으로
+지시했다. 기존 matched-spawn 구현을 먼저 감사했다. spawn 상자만 `off`와 같고 soft envelope는
+A*/rollout/watchdog에 남아 있으며 pose 해시 검사는 유지된다.
+
+기존 120개 계약을 정확한 unittest discovery 방식으로 재현했고 모두 PASS했다. 이어 세 가지
+forensic 계약을 추가했다: (1) seeds 1/59/367/827/829/839/65521에서 off/v3 general-target 및
+waypoint RNG identity, (2) obstacle-rich 512-row 이상적 controller 모델에서 accepted first step의
+다음 주기 terminal-stop certificate 보존, (3) randomized 256-row에서 certificate와 physical
+substep watchdog의 exact closed-AABB 판정 일치. 총계는 **123 tests PASS**
+(v3 40 + planner 13 + motion 25 + recovery 24 + lower 4 + spawn 17)다.
+
+첫 VOID 원자료의 routed 셀은 accepted command와 accepted terminal certificate가 각 셀에서
+완전히 같았다(9030/9030, 8438/8438, 7273/7273, 7112/7112). certificate failure와 다음
+soft-envelope exit는 570/569, 1162/1159, 2327/2305, 2488/2473으로 거의 일대일이다. CPU의
+재귀 인증과 watchdog 기하는 일치하므로 현재 가장 강한 가설은 sampler/좌표/endpoint 버그가 아니라
+**PhysX 추종 오차가 다음 제어 주기의 stopping certificate를 소실시키는 것**이다. 공식 첫 pilot은
+여전히 `VOID_EXECUTION / NOT_INTERPRETED`이고 이 진단 숫자로 FAIL을 소급하지 않는다.
+
+옛 `dd8b4a4` receipt 폴더는 삭제하지 않고 저장소 밖
+`/home/fair/workspaces/aerial_gym_ws/navrl_v3_receipts/archive_braking_lower1p25_dd8b4a4_2026-09-01/`
+로 보존했다(receipt SHA-256 `6d71b0be34ffb166d23aff9f6897cf41b5bb82a4a488d24403d735cf97852485`).
+worktree에서 빠졌던 frozen evidence 두 개는 primary 사본의 계약 SHA
+`a85e9576...` / `bc5d05a3...`를 확인해 복구했고 `check_research_authority.py --json`이 PASS했다.
+
+방법·grid·threshold를 바꾸지 않는 execution-only addendum
+`docs/preregistration_braking_aware_route_v3_lower1p25_matched_spawn_gpu_authority_2026-09-01.md`
+(SHA-256 `70b8a08f0c95040a86c43e1be5ac11d0b688b9a6874f3cfc4548f914882f085f`)를 고정했다.
+허용 범위는 현재 clean commit의 fresh `baseline_1p25` receipt 1회와 seed-829/70 bars/8-cell
+pilot 1회뿐이다. FAIL이면 confirmatory와 PPO를 닫고, PASS일 때만 frozen seed-839
+confirmatory가 열린다. 어느 경우에도 이 addendum가 PPO나 장기학습 권한을 만들지 않는다.
+
+새 commit `2769f5d`에서 fresh `baseline_1p25` braking receipt를 실행해 standalone verification
+PASS했다. 경로는
+`results/navrl_physical_target_braking_lower1p25_matched_spawn_seed827_2026-09-01/receipt.json`,
+SHA-256 `18425bfc9cb618834b37435b8d83a07dc1af69e56aa02459f00a94c544e075cc`다.
+receipt의 `git_head=2769f5d692ff124802a8e11b83393c31585bae7b`, `source_clean=true`다.
+decel p05 0.5052572863 m/s², stop-time p95 0.89 s, 정지거리 p95는
+0.328143/0.498352/0.670841/0.699436 m로 이전 결정론적 lower receipt와 일치한다.
+
+pilot 직전 verifier가 무결성-clean `FAIL_BLOCKS_CONFIRMATORY`까지 예외로 던져 stderr에
+`VOID_EXECUTION`이라고 표시하는 판정 표시 버그를 발견했다. threshold나 verdict 계산은 맞고
+프로세스 종료 의미만 틀렸다. `verify_summary`가 integrity-valid FAIL을 정상 검증하도록 고치고,
+`PASS_8_CELL_INTEGRITY + FAIL_BLOCKS_CONFIRMATORY` fixture가 VOID가 되지 않는 회귀 테스트를
+추가했다. 이 수정은 simulator·controller·grid·threshold·receipt runtime source를 바꾸지 않는다.
+
+## 2026-09-01 — matched-spawn lower-v3 8-cell 공식 FAIL, GPU authority 폐쇄
+
+verifier 표시 수정 후 commit `b054f07`에서 runtime source bundle을 다시 고정했다:
+`/home/fair/workspaces/aerial_gym_ws/navrl_v3_receipts/training_source_lower1p25_matched_spawn_b054f07_2026-09-01/`,
+manifest SHA-256 `a34618e91a12d6a94f4a48f9b145cf72531c2ce54aa6f40eeec71db002c39840`,
+runtime 328 files, `git_dirty=false`. 새 receipt
+`18425bfc9cb618834b37435b8d83a07dc1af69e56aa02459f00a94c544e075cc`를 사용해
+seed 829 / 70 bars / 32 envs / 300 measured steps / 20 warmup / 4 speeds × 2 arms를 실행했다.
+
+원자료:
+`/home/fair/workspaces/aerial_gym_ws/navrl_v3_runs/pilot_lower1p25_matched_spawn_seed829_2026-09-01/summary.json`,
+SHA-256 `8e4b71bc9095f64065140f2838904bab8b7be868c7d97025953fb451041a49fc`.
+공식 verdict는 **`PASS_8_CELL_INTEGRITY / FAIL_BLOCKS_CONFIRMATORY`**다. 각 속도의 off/v3
+layout·robot pose·target pose SHA가 모두 한 종류로 일치해 이전 VOID 원인은 해소됐다.
+
+| speed | off ratio | v3 ratio | v3 tracking RMSE | v3 soft exit | v3 cert fail | fallback | goals |
+|---:|---:|---:|---:|---:|---:|---:|---:|
+| 0.60 | 0.9475 | 0.7872 | 0.1400 | 573 | 573 | 0 | 7 |
+| 0.90 | 0.9458 | 0.7681 | 0.1867 | 1,387 | 1,395 | 634 | 10 |
+| 1.20 | 0.9352 | 0.5984 | 0.2495 | 2,583 | 2,597 | 1,547 | 14 |
+| 1.25 | 0.9458 | 0.6297 | 0.2652 | 2,282 | 2,296 | 1,242 | 15 |
+
+모든 routed 셀은 contact/motor/tilt/state/tracking/local-feasibility를 통과하고 speed ratio ≥0.80만
+실패했다. mechanism pooled 값은 unsafe start 0(PASS), soft exits 6,825(FAIL, gate 0), terminal
+certificate fraction 1.0(PASS), plan success 99.468%(PASS), fallback 8.914%(FAIL, gate ≤1%),
+0.6 m/s goals/env 0.21875(FAIL, gate ≥0.5)다. matched spawn은 identity를 고쳤지만 in-flight
+mechanism을 고치지 않았고, 계산-first FAIL 예측이 확인됐다.
+
+one-shot GPU authority는 소비·폐쇄했다. seed-839 confirmatory, PPO smoke, 장기학습,
+gain/margin/threshold 사후 탐색은 실행하지 않는다. 새 시도는 physical tracking uncertainty를
+명시적으로 포함하는 controller의 **새 방법**이어야 하며 별도 사전등록 전에는 구현·GPU를 열지
+않는다. 공식 요약은
+`docs/braking_aware_route_v3_lower1p25_matched_spawn_result_2026-09-01.md`에 보존했다.
+
+## 2026-09-01 — 막대 비중첩 fresh PPO 우선순위 분리 및 500-epoch route-off smoke 준비
+
+사용자가 막대 겹침 수정의 fresh PPO를 우선 진행하도록 명시했다. routed-v3 FAIL을 무시해 같은
+실패 메커니즘으로 장기학습하지 않고, 이미 동일-layout 70-bar에서 physical PASS한 route-off
+0.6/0.9/1.2/1.25 m/s envelope만 사용하는 **고정 70-bar learning-viability baseline**으로 분리했다.
+500 epoch PASS도 routed target이나 205-bar 성능을 뜻하지 않으며, 장기 70→205는 별도 사전등록한다.
+
+실행 전 런처 chain을 재감사해 두 개의 은닉 결함을 발견·수정했다.
+
+1. `train_navrl_physical_fresh.sh`가 `footprint_clearance`를 넘겨도 하위
+   `train_navrl_v2_search.sh`가 child marker를 배치 선택 전에 unset해 실제로는 옛
+   `navrl_band`를 다시 설정했다. marker를 shell-local에 보존해 실제 task까지 비중첩 계약이
+   유지되도록 했다.
+2. 하위 런처가 `NAVRL_TARGET_SPEED_FINAL=1.5`를 무조건 덮어써 1.25라고 출력한 child 실험도
+   실제로는 1.5가 될 수 있었다. canonical default 1.5는 유지하되 명시적 closed child override를
+   보존하도록 바꿨다.
+
+preflight는 이제 최종 `placement=footprint_clearance`, `surface_clearance=0.45`,
+`density=70->70`, `fixed_bars=70`, `speed_final=1.25`, `ramp=1`을 한 줄에서 증명한다. 새 launcher
+`train_navrl_corrected_nonoverlap_physical_smoke.sh`는 checkpoint/CLI/dirty runtime을 거부하고,
+exact import root와 clean source receipt를 강제한다. 사전등록은
+`docs/preregistration_corrected_nonoverlap_physical_off_smoke_2026-09-01.md`
+(SHA-256 `23181001d29e9d34295f63f153791e6ee4492a00431b209edc7454db885974d1`)다.
+
+검증: launcher/target environment 14/14, 신규 smoke contract 3/3, non-overlap placement 4/4,
+v2 launcher 5/5, physical-target 관련 30/30 PASS. `test_navrl_ref5in_run_contract.py` 101개 중
+100개 PASS, 1개는 이 worktree에 historical P1c checkpoint 폴더가 없어 실패했으며 변경 코드와
+무관하다. bash syntax/preflight와 `git diff --check`도 PASS했다. GPU 학습은 clean commit 뒤
+source receipt를 만든 다음 1회 시작한다.
+
+### 공식 smoke 실행 시작
+
+clean commit `1ce6a6f`에서 공식 1회를 시작했다. run은
+`ppo_260901_1220_navrl_corrected-nonoverlap-physical-off-smoke-s907`, trainer PID는 launch 확인
+시점 `1445290`, session log는
+`aerial_gym/rl_training/rl_games/train_session_logs/corrected_nonoverlap_physical_off_smoke_260901_122019.log`다.
+source receipt는 runtime 329 files, `git_dirty=false`, commit
+`1ce6a6faf395826498885b5aa550f357303468d9`, manifest SHA-256
+`f7708cf210584af27b9c84101e163c489ac13f38b3c6a85c5a686cb436a11a22`다. runner import-origin
+guard는 이 worktree의 `aerial_gym/__init__.py`를 enforced PASS했다.
+
+실제 runtime 시작 로그도 `placement=footprint_clearance`, `surface_clearance=0.45`,
+`curriculum=False`, `initial_bars=70`, `final=70`, physical mixed target,
+`speed_final=1.25`, fresh weights, 128 env, max 500 epoch를 확인했다. epoch 12까지 finite하게
+진행됐고 GPU 사용량은 약 6.16 GiB였다. 초기 crash 100%는 fresh PPO의 예상 cold start이며
+사전등록상 epoch 500의 early-vs-late window로만 판정한다.
+
+### 공식 smoke 종료·판정 PASS
+
+run은 max epoch 500에서 exit 0으로 정상 종료했고 terminal checkpoint는
+`last_gen_ppo_ep_500_rew_91.16469.pth`다. 전용 fail-closed analyzer
+`tools/analyze_navrl_corrected_nonoverlap_physical_smoke.py`가 source original/snapshot 329개,
+checkpoint/TensorBoard finite, robot/environment 계약과 outcome accounting을 재검증했다. 결과는
+`results/navrl_corrected_nonoverlap_physical_off_smoke_seed907/summary.json`, SHA-256
+`85758ba6b6bef7b0097afe6e14c6dbcf6f127d1d80595a70da2fcbf699ec1a89`다.
+
+| window | capture | crash | timeout | mean reward |
+|---|---:|---:|---:|---:|
+| epoch 2–101 | 11.01% | 73.94% | 15.05% | −131.00 |
+| epoch 401–500 | 60.39% | 39.22% | 0.39% | +93.08 |
+
+capture 개선은 +49.38pp, reward 개선은 +224.08이다. PPO KL max 0.01119,
+behavior-KL max 0.01568, rollback/skipped minibatch 0, 모든 60개 TB scalar finite, checkpoint tensor
+finite, density 70 고정이다. 사전등록 gate 전부 PASS해 verdict는
+**`PASS_LEARNING_VIABILITY`**다. 이는 route-off curriculum 사전등록만 허용하고 routed-v3/1.5 m/s/
+hardware 주장은 허용하지 않는다.
+
+결과를 본 뒤 별도 장기 사전등록
+`docs/preregistration_corrected_nonoverlap_physical_off_curriculum_2026-09-01.md`
+(SHA-256 `d10a19fe570aa2a73e88cc8e1a301618738fee55ee592f24675ba84117ae5ec8`)를 고정했다. 다음 run은
+smoke checkpoint를 쓰지 않는 fresh seed 911, 30,000 epochs, route-off 1.25 m/s, density
+70→205/step15/dwell1000/evidence16384 한 번이다.
+
+### seed 911 curriculum 시작 확인 (Codex 중단 이후)
+
+사용량 제한으로 Codex가 launcher 시작 직후 끊겼다. 재확인 결과 이미 정상 기동됐다. 두 번째
+run은 시작하지 않았다.
+
+- run `ppo_260901_1259_navrl_corrected-nonoverlap-physical-off-curriculum-s911`
+- bash PID 1496735, trainer PID 1496818, GPU ~6160 MiB
+- session `train_session_logs/corrected_nonoverlap_physical_off_curriculum_260901_125953.log`
+- source receipt `train_source_receipts/corrected_nonoverlap_curriculum_s911_260901_125953_1496735`,
+  manifest SHA-256 `ade7098ccb16cb0e3847c5b77f9d68cf651255d9cb57c60c498e67f641f1e6c8`
+- 계약: seed 911, fresh weights, 128 env, 30,000 epoch, route-off, physical mixed,
+  `U[0.3,1.25]`, `footprint_clearance`/0.45 m, density 70→205/step15,
+  schedule `70:0.82,85:0.77,100:0.72,115:0.70`, dwell 1000, evidence 16384, LR 1.5e-5
+- import-origin은 이 worktree `aerial_gym/__init__.py` enforced
+- 13:13 확인 시점 epoch 208/30000, 단일 epoch capture 54–65%, pooled n≈2049 capture 59.3%
+
+종료 전에는 공식 판정을 하지 않는다. 끝나면 분석만 하고 routed PPO는 열지 않는다.
+
+### seed 911 curriculum 세션 단절 후 fresh 재시작
+
+`1259` 런은 epoch 1374/30000, 70 bars에서 로그가 대시보드 중간에 끊겼다. same-density
+guard/NaN/OOM 표식은 없다. 마지막 주기 체크포인트는 `last_gen_ppo_ep_1250`. 사용자는
+재실행을 요청했고, 계약이 fresh-only라 그 체크포인트는 쓰지 않았다.
+
+재시작: `setsid nohup`으로
+`ppo_260901_1431_navrl_corrected-nonoverlap-physical-off-curriculum-s911`,
+trainer PID 12683, session
+`train_session_logs/corrected_nonoverlap_physical_off_curriculum_260901_143136.log`,
+receipt SHA-256 `42ee349201ae5220d13fdee3dd9e756502cabb70ba7ece0faab9836dcd2b03a3`.
+첫 epoch는 fresh weights, seed 911, 70 bars를 다시 확인했다.
+
+### seed 911 curriculum 감시 재개 (Cursor, 17:51)
+
+세션 단절 후 프로세스는 살아 있었다. 두 번째 curriculum은 시작하지 않았다.
+
+- trainer PID 12683, bash SID 12602, TTY 없음(세션 죽어도 유지), GPU 6162 MiB / 61% / 56°C
+- 확인 시점 epoch 3278/30000, bars 70 고정, 최신 주기 체크포인트 `last_gen_ppo_ep_3250`
+- 초기 100 epoch capture ~11% / reward ~−129 → 최근 100 epoch capture 76.5% / reward +133
+- 승급 창(최근 455 epoch, 약 16k episode 규모) capture 75.6% — 70-bar gate 0.82 미달, 밀도는 아직 70
+- same-density guard 미발화(현재 50-epoch 평균 대비 peak drop ~0.02, 한도 0.25)
+- 거리 커리큘럼만 k_max 7→28 m로 승급됨. NaN/OOM/rollback 표식 없음
+- 기존 TensorBoard :6007은 `src/aerial_gym_simulator/.../runs`를 보고 있어 이 런이 안 보인다. 이 런 전용 TB는 :6008
+
+종료 전 공식 판정 금지. 끝나면 분석만 하고 routed PPO는 열지 않는다.
+
+### seed 911 감시 계속 — TensorBoard 경로 수정과 완료 분석기
+
+사용자가 기존 :6007 화면으로 진행을 요청했다. 학습 PID 12683은 그대로 두고 TensorBoard :6007 logdir만
+worktree `.../rl_games/runs`로 바꿨다. :6008도 같은 경로를 가리킨다.
+
+완료 즉시 판정용 `tools/analyze_navrl_corrected_nonoverlap_physical_curriculum.py`를 추가했다.
+`--live`는 판정 없이 스냅샷만 내고, 공식 analyze는 종료 표식이 있을 때만 연다. routed PPO 권한은
+어느 경로에서도 false다. 17:55 live 스냅샷: epoch 3359/30000, bars 70, 최근 100 epoch capture 77.4%,
+reward +135, 밀도 승급 0회.
+
+### seed 911 밀도 70→85 승급 (20:53)
+
+공식 로그: `bars 70 -> 85 after 16385 eps, capture=0.829 (threshold=0.820) dwell=6327 epochs`.
+trainer PID 12683 유지, 두 번째 run 없음. 확인 시점 epoch 6331/30000, bars 85, 최근 20 epoch
+capture 84.1% / reward +154. 다음 게이트는 85:0.77, dwell 1,000, evidence 16,384. 가드·NaN·OOM 없음.
+routed PPO는 열지 않는다.
+
+### seed 911 밀도 85→100 승급 (22:16)
+
+공식 로그: `bars 85 -> 100 after 16386 eps, capture=0.792 (threshold=0.770) dwell=1248 epochs`.
+trainer PID 12683 유지. 확인 시점 epoch 7687/30000, bars 100(이 밀도 112 epoch). 다음 게이트는
+100:0.72. 가드 없음. routed PPO는 열지 않는다.
+
+### seed 911 밀도 100→115 승급 (23:38)
+
+공식 로그: `bars 100 -> 115 after 16385 eps, capture=0.746 (threshold=0.720) dwell=1232 epochs`.
+trainer PID 12683 유지. 확인 시점 epoch 8977/30000, bars 115(이 밀도 171 epoch). 다음 게이트는
+115:0.70. 가드 없음. routed PPO는 열지 않는다.
+
+### seed 911 밀도 115→130 승급 (00:59)
+
+공식 로그: 115-bar hold `capture=0.696` then `0.700`, then `bars 115 -> 130 after 16384 eps, capture=0.701 (threshold=0.700) dwell=1224 epochs`.
+trainer PID 12683 유지. 확인 시점 epoch 10211/30000, bars 130(이 밀도 181 epoch). 다음 게이트는
+130:0.70. 가드 없음. routed PPO는 열지 않는다.
+
+### seed 911 밀도 130→145 승급 (08:09)
+
+공식 로그: 130-bar holds 후 `bars 130 -> 145 after 16384 eps, capture=0.715 (threshold=0.700) dwell=6196 epochs`.
+trainer PID 12683 유지. 확인 시점 epoch 16416/30000, bars 145(이 밀도 190 epoch). 130 말기 last100 capture 71.9% → 145 진입 first100 65.2% (−6.7pp). 다음 게이트는 145:0.70. 가드 없음. routed PPO는 열지 않는다.
+
+### seed 911 curriculum 운영자 중지 (14:48)
+
+사용자가 145-bar stall에서 중단을 요청했다. trainer PID 12683 / bash SID 12602를 종료했다.
+가드·OOM·max_epochs가 아니다. fresh-only라 이 런은 재개하지 않는다. 두 번째 curriculum과
+routed PPO는 열지 않는다. GPU one-shot 권한은 이미 소모된 상태다.
+
+- run `ppo_260901_1431_navrl_corrected-nonoverlap-physical-off-curriculum-s911`
+- 중지 시점 epoch 21973/30000, bars 145 (~5739 epoch at 145), last100 capture 64.3%
+- 최신 주기 체크포인트 `last_gen_ppo_ep_21750_rew_83.1572.pth`
+  SHA-256 `541b36bdcabacf8bb14c6fbb0ad07054dd9735ad24777a3222655ba8ca9c8132`
+- 마지막 공식 145 hold capture=0.647 / gate 0.70
+- 승급 경로: 70→85→100→115→130→145. 160 이상은 도달하지 않음
+- GPU 학습 프로세스 없음 (잔여 ~736 MiB, rustdesk만)
+
+다음 단계는 이 런을 205 성공으로 읽거나 재개하는 것이 아니다. held-out 평가 사전등록
+(체크포인트 `last_gen_ppo_ep_21750`, 학습 밀도 70/85/100/115/130/145, seed≠911,
+`gen_ppo.pth` 금지) 후에만 평가 GPU를 연다.
+
+### seed 911 last_gen_21750 held-out 평가 사전등록 (2026-09-02)
+
+결과 보기 전에 계약을 고정했다.
+[`docs/preregistration_corrected_nonoverlap_physical_off_heldout_eval_2026-09-02.md`](docs/preregistration_corrected_nonoverlap_physical_off_heldout_eval_2026-09-02.md)
+SHA-256 `072060a82421ea67c6b1abfbb541d67ca89b7a26dd091a849f893edc520708c5`.
+셀 70/85/100/115/130/145, seed 313, n=2049, route-off, `U[0.3,1.25]`,
+`footprint_clearance` 0.45 m. 205는 학습하지 않은 OOD라 넣지 않았다. `gen_ppo.pth` 금지.
+이 숫자는 145-terminal 정책의 held-out capture/crash일 뿐이며, 다음 학습을 열지는
+결과가 나온 뒤에 새 사전등록으로만 정한다.
+
+### seed 911 last_gen_21750 held-out 평가 시작 (2026-09-02)
+
+GPU는 rustdesk만 점유 중이었고 메인 트리 체크아웃은 하지 않았다. braking_route_v3 worktree에서
+`eval_navrl_corrected_nonoverlap_physical_off_heldout.sh`를 한 번 띄웠다. 결과 루트는
+`results/navrl_corrected_nonoverlap_physical_off_heldout_seed313`이다. 205 없음. 재실행 금지.
+첫 시도는 evaluator가 `navrl_ref5in_v2_quad`를 거부해서 즉시 종료됐다. 두 번째는
+`cfg_target_motion_model`이 역사적 analytic 문자열과 달라 거부됐다. v2 로봇 계보,
+physical motion model, `NAVRL_PHYSICAL_GEOMETRY_VERSION=v2` / box 0.283을 계약 분기에
+넣은 뒤 다시 한 번만 띄운다. 세 번째 시도는 provenance OK로 70-bar 셀에 진입했다.
+- PID 3618494 (eval wrapper/sweep), python 3618744
+- log `train_session_logs/corrected_nonoverlap_physical_off_heldout_260902_180023.log`
+- seed 313, densities 70 85 100 115 130 145, `U[0.3,1.25]`, `footprint_clearance`, robot `navrl_ref5in_v2_quad`
+- 학습 seed 911 vs 평가 seed 313 mismatch 경고는 의도된 것이다 (density evidence reset)
+
+### seed 313 held-out 완료·봉인 (2026-09-02 18:20 KST)
+
+6셀은 모두 끝났고 GPU 프로세스는 없다. 체크포인트 SHA, 셀별 result/receipt/log SHA,
+서로 다른 nonce, source manifest 330개 파일, evaluator hash, outcome 분모와 CSV를 재검증했다.
+판정은 `COMPLETE_VALID_WITH_METADATA_ERRATUM`; raw artifact는 수정하지 않았다.
+
+| bars | n | capture (Wilson 95%) | crash | timeout | bar contact |
+|---:|---:|---:|---:|---:|---:|
+| 70 | 2049 | 83.70% [82.04, 85.24] | 15.91% | 0.39% | 15.67% |
+| 85 | 2051 | 80.94% [79.18, 82.58] | 18.82% | 0.24% | 18.43% |
+| 100 | 2049 | 77.75% [75.89, 79.49] | 21.86% | 0.39% | 21.67% |
+| 115 | 2049 | 73.45% [71.50, 75.32] | 26.35% | 0.20% | 26.06% |
+| 130 | 2050 | 69.17% [67.14, 71.13] | 30.44% | 0.39% | 30.24% |
+| 145 | 2049 | 65.54% [63.46, 67.57] | 34.16% | 0.29% | 34.16% |
+
+70→145 capture는 −18.16 pp, 평균 −3.63 pp/15 bars다. crash는 +18.25 pp이고 timeout은
+전 셀 0.4% 이하여서 병목은 탐색시간이 아니라 막대 접촉이다. lateral action의 양의 방향
+비율도 모든 셀에서 98.58–99.20%, mean |y| 0.921–0.938로 남아 있어 고밀도 충돌과 함께
+다음 offline 원인분석의 1순위다. 이 결과만으로 205 mastery, routed, hardware/sim-to-real을
+주장하지 않는다.
+
+메타데이터 정정: raw `v2_evaluation_contract.target_speed_max_mps`만 과거 상수 1.5를
+기록했다. 실제 `condition.target_speed_max_mps`, 시작 로그, 결과 저장 전 validator와 speed
+strata 상단은 모두 1.25다. outcome 비영향 직렬화 결함으로 판정하고 raw는 보존했으며,
+향후 evaluator는 `NAVRL_TARGET_SPEED_FINAL`을 기록하도록 수정·회귀 테스트했다.
+
+- 결과: `results/navrl_corrected_nonoverlap_physical_off_heldout_seed313/summary.{json,md}`
+- summary SHA-256: `fd52ad6c4d4a9ba564510fd556cfd561b48ab9771a22799ecdc9956f84249559`
+- 다음: offline 병목 분석과 새 사전등록 전에는 GPU 없음. 1431 재개/두 번째 curriculum/205
+  mastery 평가/routed PPO 모두 금지.
+
+검증: corrected-nonoverlap/authority 관련 24 tests PASS, authority freeze PASS, clean-clone식
+source 검증(ignored source snapshot을 잠시 제외하고 tracked bytes + archived evaluator 사용) PASS.
+전체 suite는 917 tests 중 913 PASS / 2 skipped / 4 historical-artifact failures였다. 실패 4개는
+이 변경의 assertion이 아니라 이 worktree에 없는 과거 P1c checkpoint·P2 log·P1c source manifest
+3건과 frozen heading-rest braking receipt provenance 1건이다. held-out 결과/런처/요약 테스트에는
+실패가 없다.

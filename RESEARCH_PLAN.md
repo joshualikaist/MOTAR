@@ -6,13 +6,15 @@
 현재의 하드웨어·학습 파라미터·low/high-level 자료구조는 중복 표기를 피하기 위해
 [`docs/MOTAR_SYSTEM_SPEC_2026-08-24.md`](docs/MOTAR_SYSTEM_SPEC_2026-08-24.md)에 고정한다.
 
-> **2026-08-31 authority pointer:** Track A/Track B/corrected non-overlap의 실행 결과와 허용된 다음 단계는
+> **2026-09-01 authority pointer:** Track A/Track B/corrected non-overlap의 실행 결과와 허용된 다음 단계는
 > [`VERIFICATION.md`](VERIFICATION.md)가 규정한다. Track A의 유일한 다음 계약은
 > [`docs/SIM2REAL_3DAY_EXECUTION_PLAN.md`](docs/SIM2REAL_3DAY_EXECUTION_PLAN.md)의
 > hardware/real-log 계측이며, Track B는 recovery-v2 FAIL과 no-anchor `INCONCLUSIVE` 뒤 종료됐다.
-> corrected non-overlap route gate r2도 `FAIL_ROUTE_MECHANISM`이므로 fresh PPO smoke와 장기학습은
-> 아직 권한이 없다.
-> 이 charter의 후보 실험 설명은 그 자체로 실행 권한을 만들지 않는다.
+> corrected non-overlap routed 계보는 `FAIL_ROUTE_MECHANISM`이고 routed PPO/장기학습 권한이 없다.
+> 다만 2026-09-01 사용자 우선순위에 따라 route-off physical PASS envelope만 사용하는 별도
+> 70-bar/500-epoch learning-viability baseline 1회를 사전등록했다. 이는 overlap 수정의 fresh 학습
+> 가능성을 먼저 분리하는 진단이며 routed method 성공으로 합치지 않는다. 이 charter의 후보 실험
+> 설명은 그 자체로 추가 실행 권한을 만들지 않는다.
 
 ### 2026-08-25 역사적 후보 계보 — physical target global route
 
@@ -33,6 +35,42 @@ PPO 학습 권한은 없었다. 이후 실행 결과와 현행 차단은 `VERIFI
 0 epoch 상태로 차단한다. 다음 software 후보는 target route/controller가 braking-aware safe-state를
 보존하도록 설계한 뒤, 결과를 보기 전 새 gate를 사전등록하는 것이다. 수치·판정·claim boundary는
 `docs/corrected_nonoverlap_route_gate_r2_result_2026-08-31.md`와 `VERIFICATION.md`를 따른다.
+
+### 2026-09-01 braking-aware route v3 method addendum
+
+방법 후보를 `global_astar_braking_v3`로 고정한다. v1(`global_astar_v1`)과 recovery-v2는 alias하거나
+변이하지 않는다. 개입은 공유 exact closed-AABB soft envelope, full-horizon 수락(longest-safe-prefix
+실행 금지), canonical 1.5 m/s monotone p95 ceiling lookup의 terminal zero-command 정지 증명,
+tangent/cross-track 추종과 stop-turn-go, 그리고 reset/goal-completion/runtime-replan을 분리한
+계측으로 한정한다. reward·observation·termination·PPO·물리 동역학 파라미터는 바꾸지 않는다.
+70/115/160/205가 현재 계보이고 300 bars는 disconnected stress다. 이 절은 GPU나 PPO 권한을
+만들지 않는다. 사전등록은
+[`docs/preregistration_braking_aware_route_v3_2026-09-01.md`](docs/preregistration_braking_aware_route_v3_2026-09-01.md)다.
+
+### 2026-09-01 lower-contract v3 method addendum
+
+canonical 1.5 m/s warmup 게이트가 동일 숫자로 두 번 NO-GO이므로, 같은 P-only 컨트롤러와 같은
+0.05/5 s 계약을 유지한 채 인증 가능 상한만 1.25 m/s로 내리는 별도 방법을 추가한다. 개입 바이트
+(`global_astar_braking_v3`)는 그대로이고, 선택되는 것은
+`NAVRL_TARGET_BRAKING_CONTRACT_VARIANT=baseline_1p25`와 그 variant의 raw braking receipt뿐이다.
+0.05 완화나 PID/게인 변경은 이 방법의 일부가 아니다. 이 절은 GPU나 PPO 권한을 만들지 않는다.
+사전등록은
+[`docs/preregistration_braking_aware_route_v3_lower1p25_2026-09-01.md`](docs/preregistration_braking_aware_route_v3_lower1p25_2026-09-01.md)다.
+
+### 2026-09-01 matched-spawn amendment
+
+lower-1.25 8-cell은 표적 초기 자세 matched-arm drift로 VOID됐다. 다음 방법 후보는 v3가
+spawn/waypoint를 `off`와 같은 상자에서 뽑고, shared envelope는 plan/watchdog에만 쓰는
+것이다. pose 해시 매칭을 VOID 이후에 끄는 것은 방법이 아니다. 이 절은 GPU나 PPO 권한을
+만들지 않는다. 사전등록은
+[`docs/preregistration_braking_aware_route_v3_lower1p25_matched_spawn_2026-09-01.md`](docs/preregistration_braking_aware_route_v3_lower1p25_matched_spawn_2026-09-01.md)다.
+
+CPU forensic 뒤 고정된 execution addendum는 방법을 바꾸지 않고 새 braking receipt 1회와
+seed-829 8-cell pilot 1회만 허용한다. 이 예외는 confirmatory·PPO·threshold/gain retune 권한을
+만들지 않는다. 문서는
+[`docs/preregistration_braking_aware_route_v3_lower1p25_matched_spawn_gpu_authority_2026-09-01.md`](docs/preregistration_braking_aware_route_v3_lower1p25_matched_spawn_gpu_authority_2026-09-01.md)다.
+이 one-shot 실행은 `PASS_8_CELL_INTEGRITY / FAIL_BLOCKS_CONFIRMATORY`로 종료돼 소비됐다.
+따라서 이 v3 방법은 닫혔고 새 controller 방법은 별도 사전등록이 필요하다.
 
 ## 1. 연구 질문과 기여
 
