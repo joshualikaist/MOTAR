@@ -14623,3 +14623,33 @@ paired open-loop → latency/SWaP → shadow parity → active A/B → 경량화
 static site contract PASS, offline stub CLI PASS, `git diff --check` PASS. Chrome headless로 README가
 가리키는 CURRENT/후보 SVG와 전체 status page를 렌더해 겹침·잘림이 없음을 확인했다. SAM, Isaac,
 PPO, 실제 센서는 실행하지 않았다.
+
+## 2026-09-03 — perception 재설계 계획: 형상+시간 재정의, 단 구조-수정 단계를 먼저
+
+사용자의 40개 절 제안(색 detector 개선 → UAV 형상 인식 + 시간 연관으로 문제 재정의,
+CNN=공간/GRU·Transformer=시간 역할 분리)을 받아
+`docs/plans/perception_shape_temporal_redesign_2026-09-03.md`를 작성했다. **계획 문서만이며
+코드·판정 변경 없음.**
+
+핵심 판단 세 가지:
+
+1. **S1 단계 추가** — CNN+FPN 직행 전에 connected-component 후보 + KF gating만으로 기존
+   detector를 재평가한다. FTLR 90.27 %에는 인식 실패(색 특징)와 자료구조 실패(단일 중심점
+   붕괴)가 합쳐져 있어(SAM 계획 §1과 동일 구분), 구조만 먼저 고쳐야 귀속이 선다.
+   RQ0 판정 경계(<30 % 구조 지배 / >60 % 인식 지배)를 사전등록 대상으로 명시.
+2. **"해상도 먼저"를 두 게이트로 재정의** — (a) 렌더 비용 곡선 실측(8 GB에서 closed-loop
+   성립 경계), (b) **협시야 대안**: 같은 160×90 픽셀 예산의 HFOV 20° 카메라가 453 px/rad로
+   640×360 전면 인상(337 px/rad)보다 각해상도가 높다(@20 m 6.8 px vs 5.1 px). 광각 SEARCH →
+   협시야 TRACK 상태기계와 맞물림.
+3. **SAM 트랙과 연관 계층 공유** — 후보 packet 계약(bbox/score/uv/depth, K후보,
+   AMBIGUOUS/REJECT)을 SAM adapter 인터페이스로 통일해 연관 스택을 한 벌만 만든다.
+
+채택: GRU(T=8) 먼저·Transformer(T=16)는 가림-재획득 근거로 비교군(에피소드당 visible↔hidden
+7.7회 실재), LSTM 제외, full-image Transformer 금지(candidate token 80개만), episode-level
+split + unseen-mesh 홀드아웃, frozen perception → PPO(기존 −2 pp 비열등 게이트 재사용).
+연기: 30 Hz 멀티레이트(sim 편익 없음), 관측 토큰 확장(898-D 계약 파괴 = 새 계보, S6에서만).
+
+사다리: S0 비용게이트 → S1 구조수정 → S2 데이터셋(최대 비용 항목: UAV mesh 다양화;
+frozen 디렉터리 밖에서, D9 선례) → S3 소형 CNN+FPN(SAM=오프라인 상한 baseline) → S4 시간
+연관(KF/GRU/Transformer, T 스윕) → S5 hard-distractor 벤치마크(5조건 = 논문 메인 테이블) →
+S6 closed-loop. 각 단계 별도 사전등록.
