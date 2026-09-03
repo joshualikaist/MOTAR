@@ -513,6 +513,21 @@ export NAVRL_CORRIDOR_TOKENS=0
 export NAVRL_GEOFENCE_ACTOR="${NAVRL_GEOFENCE_ACTOR:-0}"
 export NAVRL_GEOFENCE_NOISE_STD_M="${NAVRL_GEOFENCE_NOISE_STD_M:-0}"
 export NAVRL_GEOFENCE_DROPOUT="${NAVRL_GEOFENCE_DROPOUT:-0}"
+export NAVRL_SEARCH_STATE="${NAVRL_SEARCH_STATE:-off}"
+export NAVRL_SEARCH_STATE_FORCE_INVALID="${NAVRL_SEARCH_STATE_FORCE_INVALID:-0}"
+case "${NAVRL_SEARCH_STATE}" in
+    off) ;;
+    geofence|coverage|belief)
+        if [[ "${NAVRL_GEOFENCE_ACTOR}" != "1" ]]; then
+            echo "[eval_v2] NAVRL_SEARCH_STATE=${NAVRL_SEARCH_STATE} requires NAVRL_GEOFENCE_ACTOR=1" >&2
+            exit 2
+        fi
+        ;;
+    *)
+        echo "[eval_v2] NAVRL_SEARCH_STATE must be off|geofence|coverage|belief" >&2
+        exit 2
+        ;;
+esac
 export NAVRL_CORRIDOR_HORIZON_M=6.0
 export NAVRL_CORRIDOR_MIN_WIDTH_M=0.55
 export NAVRL_MAX_VELOCITY=2.5
@@ -1290,6 +1305,16 @@ if condition.get("fov_curriculum_saturated") is not True:
     raise SystemExit("[eval_v2] bulk JSON did not use the final FOV distribution")
 if condition.get("target_pattern") != os.environ["NAVRL_TARGET_PATTERN"]:
     raise SystemExit("[eval_v2] bulk JSON target pattern is not the requested condition")
+if condition.get("search_state") != os.environ.get("NAVRL_SEARCH_STATE", "off"):
+    raise SystemExit("[eval_v2] bulk JSON search-state arm is not the requested condition")
+if bool(condition.get("search_state_masked")) != (
+    os.environ.get("NAVRL_SEARCH_STATE_FORCE_INVALID", "0") == "1"
+):
+    raise SystemExit("[eval_v2] bulk JSON search-state mask is not the requested condition")
+if bool(condition.get("search_state_telemetry")) != (
+    os.environ.get("NAVRL_S1_SEARCH_TELEMETRY", "0") == "1"
+):
+    raise SystemExit("[eval_v2] bulk JSON search-state telemetry flag is not the requested condition")
 if condition.get("cv_initial_heading") != os.environ["NAVRL_EVAL_CV_INITIAL_HEADING"]:
     raise SystemExit("[eval_v2] bulk JSON CV initial heading is not the requested condition")
 heading_mode = os.environ["NAVRL_EVAL_CV_INITIAL_HEADING"]
@@ -1542,6 +1567,9 @@ payload["v2_evaluation_contract"] = {
     "geofence_noise_std_m": float(os.environ.get("NAVRL_GEOFENCE_NOISE_STD_M", 0.0)),
     "geofence_dropout": float(os.environ.get("NAVRL_GEOFENCE_DROPOUT", 0.0)),
     "geofence_force_invalid": os.environ.get("NAVRL_GEOFENCE_FORCE_INVALID", "0") == "1",
+    "search_state": os.environ.get("NAVRL_SEARCH_STATE", "off"),
+    "search_state_force_invalid": os.environ.get("NAVRL_SEARCH_STATE_FORCE_INVALID", "0") == "1",
+    "search_state_telemetry": os.environ.get("NAVRL_S1_SEARCH_TELEMETRY", "0") == "1",
     "lidar_beams": [4, 72],
     "lidar_range_m": 12.0,
     "obstacle_tokens": 8,
@@ -1622,6 +1650,9 @@ receipt = {
     "geofence_noise_std_m": float(os.environ.get("NAVRL_GEOFENCE_NOISE_STD_M", 0.0)),
     "geofence_dropout": float(os.environ.get("NAVRL_GEOFENCE_DROPOUT", 0.0)),
     "geofence_force_invalid": os.environ.get("NAVRL_GEOFENCE_FORCE_INVALID", "0") == "1",
+    "search_state": os.environ.get("NAVRL_SEARCH_STATE", "off"),
+    "search_state_force_invalid": os.environ.get("NAVRL_SEARCH_STATE_FORCE_INVALID", "0") == "1",
+    "search_state_telemetry": os.environ.get("NAVRL_S1_SEARCH_TELEMETRY", "0") == "1",
     "speed_governor_mode": os.environ["NAVRL_SPEED_GOVERNOR"],
     "speed_governor_target_exclusion": "camera_lidar_association",
     **({"joint_speed_telemetry": True} if joint_speed_requested else {}),

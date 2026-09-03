@@ -18,6 +18,14 @@ import torch
 import torch.nn as nn
 
 from aerial_gym.task.navrl_task.navrl_corridor import CORRIDOR_DIM, extract_corridor_tokens
+from aerial_gym.task.navrl_task.navrl_search_state import (
+    SEARCH_BELIEF_DIM,
+    SEARCH_COVERAGE_DIM,
+    SEARCH_MODE_DIM,
+    SEARCH_STATES,
+    SearchGrid,
+    search_feature_dim,
+)
 
 
 ROBOT_HISTORY = 5
@@ -165,6 +173,19 @@ GEOFENCE_DROPOUT = float(os.environ.get("NAVRL_GEOFENCE_DROPOUT", "").strip() or
 # the declared missing-value sentinel and clearing validity. Training launchers never set it.
 GEOFENCE_FORCE_INVALID = os.environ.get(
     "NAVRL_GEOFENCE_FORCE_INVALID", "0"
+).strip().lower() in ("1", "true", "yes", "on")
+# Explicit blind-search state. ``off`` leaves the historical actor bytes and token count intact;
+# geofence reuses the existing 8-D token; coverage/belief append one new search token.
+SEARCH_STATE = os.environ.get("NAVRL_SEARCH_STATE", "off").strip().lower() or "off"
+if SEARCH_STATE not in SEARCH_STATES:
+    raise ValueError("NAVRL_SEARCH_STATE must be off|geofence|coverage|belief")
+if SEARCH_STATE != "off" and not GEOFENCE_ACTOR:
+    raise ValueError(
+        "NAVRL_SEARCH_STATE=%s requires NAVRL_GEOFENCE_ACTOR=1" % SEARCH_STATE
+    )
+SEARCH_DIM = search_feature_dim(SEARCH_STATE)
+SEARCH_STATE_FORCE_INVALID = os.environ.get(
+    "NAVRL_SEARCH_STATE_FORCE_INVALID", "0"
 ).strip().lower() in ("1", "true", "yes", "on")
 if not math.isfinite(GEOFENCE_NOISE_STD_M) or GEOFENCE_NOISE_STD_M < 0.0:
     raise ValueError("NAVRL_GEOFENCE_NOISE_STD_M must be finite and non-negative")
@@ -438,6 +459,7 @@ STRUCTURED_OBS_DIM = (
     + STATIC_DIM
     + CORRIDOR_OBS_DIM
     + GEOFENCE_DIM
+    + SEARCH_DIM
 )
 
 
@@ -1001,6 +1023,23 @@ class NavRLPerceptionModule:
         self.last_target_like = torch.zeros(
             self.num_envs, VBEAMS, HBEAMS, dtype=torch.bool, device=device
         )
+        self.search = (
+            SearchGrid(
+                self.num_envs,
+                arena_bounds=None,
+                cell_m=2.0,
+                device=device,
+                search_state=SEARCH_STATE,
+                step_dt=self.step_dt,
+                camera_hfov_rad=self.hfov,
+                camera_range_m=self.max_camera_range,
+                depth_far_m=self.camera_obstacle_max_range,
+                detection_probability=0.9,
+                target_speed_prior_mps=1.25,
+            )
+            if SEARCH_DIM > 0
+            else None
+        )
 
         self._u = torch.arange(self.width, device=device, dtype=torch.float32).view(1, 1, -1)
         self._v = torch.arange(self.height, device=device, dtype=torch.float32).view(1, -1, 1)
@@ -1039,6 +1078,8 @@ class NavRLPerceptionModule:
         self.last_visible[env_ids] = False
         self.last_confidence[env_ids] = 0.0
         self.last_target_like[env_ids] = False
+        if self.search is not None:
+            self.search.reset(env_ids)
         self._latency_step[env_ids] = 0
         self._latency_meas_vehicle[env_ids] = 0.0
         self._latency_surface_range[env_ids] = 0.0
@@ -1969,6 +2010,17 @@ class NavRLPerceptionModule:
         target_now = self._target_features(
             drone_pos_w, drone_vel_w, vehicle_quat, confidence, lidar_confidence
         )
+        if self.search is not None:
+            if self.search.cell_centres is None:
+                self.search.set_arena_bounds(env_bounds_min, env_bounds_max)
+            self.search.update(
+                drone_pos_w,
+                vehicle_quat,
+                depth,
+                self.tracker.state,
+                self.tracker.cov,
+                self.tracker.active,
+            )
         robot_now = torch.cat(
             [
                 _quat_rotate_inverse_xyzw(vehicle_quat, drone_vel_w) / max_velocity,
@@ -2012,10 +2064,18 @@ class NavRLPerceptionModule:
                 noise_std_m=GEOFENCE_NOISE_STD_M,
                 dropout=GEOFENCE_DROPOUT,
             )
-            if GEOFENCE_FORCE_INVALID:
+            if GEOFENCE_FORCE_INVALID or SEARCH_STATE_FORCE_INVALID:
                 geofence[:, :GEOFENCE_RAYS] = 1.0
                 geofence[:, GEOFENCE_RAYS:] = 0.0
             obs_parts.append(geofence)
+        if self.search is not None:
+            obs_parts.append(
+                self.search.features(
+                    drone_pos_w,
+                    vehicle_quat,
+                    force_invalid=SEARCH_STATE_FORCE_INVALID,
+                )
+            )
         obs = torch.cat(obs_parts, dim=1)
         if obs.shape[1] != STRUCTURED_OBS_DIM:
             raise RuntimeError(
@@ -2041,5 +2101,13 @@ class NavRLPerceptionModule:
             "target_pixels": pixel_count,
             "track_age": self.tracker.age,
             "track_covariance": self.tracker.cov,
+            "search_state_masked": torch.full(
+                (self.num_envs,),
+                SEARCH_STATE_FORCE_INVALID,
+                dtype=torch.bool,
+                device=self.device,
+            ),
         }
+        if self.search is not None:
+            diagnostics.update(self.search.diagnostics())
         return obs, diagnostics

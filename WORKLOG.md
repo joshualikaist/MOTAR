@@ -14536,3 +14536,41 @@ source 검증(ignored source snapshot을 잠시 제외하고 tracked bytes + arc
 이 변경의 assertion이 아니라 이 worktree에 없는 과거 P1c checkpoint·P2 log·P1c source manifest
 3건과 frozen heading-rest braking receipt provenance 1건이다. held-out 결과/런처/요약 테스트에는
 실패가 없다.
+
+## 2026-09-03 — S1 explicit blind-search state 구현 (GPU 미실행)
+
+사용자가 Claude의 구현 계획을 승인해
+`docs/preregistration_s1_blind_search_state_2026-09-03.md`로 저장하고 S1 actor-state 축을
+구현했다. 문서 SHA-256은
+`4a78ec94cf6813c5bfe6261bb9145c05371f79f9b9b32f4b849fec80d2ad3294`이다. GPU authority는
+열지 않았고 PPO/simulator 학습·평가는 실행하지 않았다.
+
+- 신규 `navrl_search_state.py`: 40×40 m / 2 m actor-safe coverage·belief grid, 12 body
+  sector, `never_acquired → tracked → stale` mode, blind time, camera-depth occlusion,
+  p_det=0.9 negative update, 1.25 m/s×0.1 s isotropic diffusion, KF active override와
+  active→inactive 재주입. 공개 `update`에는 target/semantic/GT 인자가 없다.
+- schema: canonical 72-beam/8-obstacle 기준 off/geofence/coverage/belief가 각각
+  898/906/934/959-D, Transformer 17/18/19/19 token이다. non-off인데 geofence가 꺼졌거나
+  arm 값이 잘못되면 import에서 fail-closed한다. search token projector는 128→64이다.
+- masked ablation: geofence range=1/valid=0, mode·coverage=0, belief sector mass=1/12,
+  radial moment=0, entropy=1. checkpoint `env_state`, generic evaluator condition/receipt,
+  bulk JSON에 arm/mask provenance를 추가했다.
+- 평가 telemetry: blind-phase 속도·actor-safe LiDAR clearance, first-acquisition p10/p50/p90,
+  first-visible coverage/entropy를 추가했다. 기존 actor/critic·reward·termination에는 넣지 않았다.
+- fresh launcher는 arm 인자 하나만 받고 seed 919 / 3000 epochs / fixed 70 bars /
+  U[0.3,1.25] / governor off / save 250을 고정하며 checkpoint와 dirty runtime을 거부한다.
+  held-out wrapper는 각 arm의 raw ep3000 terminal checkpoint만 받아 seed 331, 70/145 bars,
+  2049 episodes를 고정하고 checkpoint arm/geofence/mask provenance를 먼저 검사한다.
+  summarizer는 primary·guard·masked mechanism 판정과 summary JSON/Markdown/SHA를 만든다.
+
+구현 전에 계획서의 내부 모순을 보정했다. 표와 schema test는 belief 25-D를 요구했지만
+본문은 `12 sector mass + entropy` 13-D만 정의했다. 남은 12-D를 동일 belief의 sector별
+정규화 거리 1차 모멘트로 명시했고 문서 끝에 GPU 실행 전 amendment를 남겼다. GT나 새 센서
+입력은 추가되지 않았다.
+
+CPU 검증: 신규 S1 tests 18/18 PASS. 기존 perception/obs-dump/training-semantics/LiDAR
+bearing/latency/TTC/detect-resolution/checkpoint-preflight 포커스 210/210 PASS. 전체 suite는
+1025 tests 중 1021 PASS / 2 skipped / 2 historical-artifact failures였다. 두 실패는 저장소에
+없는 seed-911 ep21750 checkpoint와 frozen source snapshot의 과거
+`env_object_config.py` digest drift이며 S1 assertion 실패가 아니다. `py_compile`, `bash -n`,
+`git diff --check`도 PASS. 사용자 승인 후 `research/navrl-env`에서 커밋 준비했다.

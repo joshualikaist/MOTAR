@@ -1,7 +1,8 @@
 """NavRL++-Target structured temporal Transformer policy.
 
 Base token layout (17): [CLS] + static geometry + 5 obstacle-history + 5 robot-history +
-5 target-track-history. Opt-in corridor and mapped-geofence observations each append one token.
+5 target-track-history. Opt-in corridor, mapped-geofence, and explicit search observations append
+one token each (coverage and belief share the single search token).
 Raw RGB-D, raw point clouds, simulator semantics, and GT target state are not part of the input.
 """
 
@@ -21,6 +22,7 @@ from aerial_gym.task.navrl_task.navrl_perception import (
     OBSTACLE_HISTORY,
     ROBOT_DIM,
     ROBOT_HISTORY,
+    SEARCH_DIM,
     STATIC_DIM,
     STRUCTURED_OBS_DIM,
     VBEAMS,
@@ -36,7 +38,12 @@ EMBED_DIM = 64
 # (NAVRL_CORRIDOR_TOKENS > 0), ONE additional token carries all corridor slots, appended LAST so
 # position-embedding rows 0..16 keep their trained meaning across a corridor warm-start. Geofence
 # is a new fresh-policy-only token and is appended after corridor when both are enabled.
-NUM_TOKENS = 17 + (1 if CORRIDOR_TOKENS > 0 else 0) + (1 if GEOFENCE_ACTOR else 0)
+NUM_TOKENS = (
+    17
+    + (1 if CORRIDOR_TOKENS > 0 else 0)
+    + (1 if GEOFENCE_ACTOR else 0)
+    + (1 if SEARCH_DIM > 0 else 0)
+)
 
 
 def _static_encoder_flat_dim(vbeams, hbeams, channels=16):
@@ -105,6 +112,10 @@ class NavRLTransformerBuilder(NetworkBuilder):
             if GEOFENCE_ACTOR:
                 self.geofence_project = nn.Sequential(
                     nn.Linear(GEOFENCE_DIM, 64), nn.ELU(), nn.Linear(64, EMBED_DIM)
+                )
+            if SEARCH_DIM > 0:
+                self.search_project = nn.Sequential(
+                    nn.Linear(SEARCH_DIM, 128), nn.ELU(), nn.Linear(128, EMBED_DIM)
                 )
             self.cls_token = nn.Parameter(torch.zeros(1, 1, EMBED_DIM))
             self.position_embedding = nn.Parameter(torch.zeros(1, NUM_TOKENS, EMBED_DIM))
@@ -175,6 +186,10 @@ class NavRLTransformerBuilder(NetworkBuilder):
                 geofence = obs[:, offset : offset + GEOFENCE_DIM]
                 token_list.append(self.geofence_project(geofence).unsqueeze(1))
                 offset += GEOFENCE_DIM
+            if SEARCH_DIM > 0:
+                search = obs[:, offset : offset + SEARCH_DIM]
+                token_list.append(self.search_project(search).unsqueeze(1))
+                offset += SEARCH_DIM
             if offset != STRUCTURED_OBS_DIM:
                 raise RuntimeError(
                     "Transformer observation parse drift: %d != %d"

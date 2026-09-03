@@ -1210,6 +1210,16 @@ class NavRLTask(BaseTask):
         self._fa_eval_outcome_first_hist = torch.zeros(
             3, self._fa_hist_bins, dtype=torch.long, device=self.device
         )
+        # S1 explicit-search evaluation telemetry. These are read-only aggregates: actor-safe
+        # speed/clearance while the target track is hidden plus the search grid's latched state at
+        # first acquisition. They are never read by observation, reward, control or termination.
+        self._s1_blind_samples = torch.zeros((), dtype=torch.long, device=self.device)
+        self._s1_blind_speed_sum = torch.zeros((), dtype=torch.float64, device=self.device)
+        self._s1_blind_clearance_sum = torch.zeros((), dtype=torch.float64, device=self.device)
+        self._s1_first_coverage_sum = torch.zeros(3, dtype=torch.float64, device=self.device)
+        self._s1_first_coverage_n = torch.zeros(3, dtype=torch.long, device=self.device)
+        self._s1_first_entropy_sum = torch.zeros(3, dtype=torch.float64, device=self.device)
+        self._s1_first_entropy_n = torch.zeros(3, dtype=torch.long, device=self.device)
         # outcome order: capture, crash, timeout. Reflection state: zero, at least one wall hit.
         self._tm_eval_outcome_fin = torch.zeros(3, dtype=torch.long, device=self.device)
         self._tm_eval_outcome_wall_sum = torch.zeros(3, dtype=torch.long, device=self.device)
@@ -1471,6 +1481,9 @@ class NavRLTask(BaseTask):
                     OBSTACLE_SELECTOR,
                     OBSTACLE_SUPPRESS_DEG,
                     OBSTACLE_SUPPRESS_ACTIVE,
+                    SEARCH_DIM,
+                    SEARCH_STATE,
+                    SEARCH_STATE_FORCE_INVALID,
                     VBEAMS,
                 )
 
@@ -1502,6 +1515,15 @@ class NavRLTask(BaseTask):
                         "on" if GEOFENCE_ACTOR else "off",
                         GEOFENCE_NOISE_STD_M,
                         GEOFENCE_DROPOUT,
+                    )
+                )
+                logger.warning(
+                    "NavRL explicit search state | arm=%s dim=%d masked=%s "
+                    "source=VIO/GPS+depth+tracker fresh-policy-required"
+                    % (
+                        SEARCH_STATE,
+                        SEARCH_DIM,
+                        "yes" if SEARCH_STATE_FORCE_INVALID else "no",
                     )
                 )
 
@@ -1561,6 +1583,9 @@ class NavRLTask(BaseTask):
             self._bulk_eval_mode,
             os.environ.get("NAVRL_EVAL_FULL_DISTRIBUTION", "0"),
         )
+        self._s1_search_telemetry_enabled = self._bulk_eval_mode and os.environ.get(
+            "NAVRL_S1_SEARCH_TELEMETRY", "0"
+        ).strip().lower() in ("1", "true", "yes", "on")
         # --- appearance-distractor lock telemetry (EVALUATION ONLY).
         # docs/prereg_2026-09-01_distractor_envelope.md section 4.  Classifies the 3D position the
         # RGB-D detector REPORTED against the ground-truth target and distractor centres, so the
@@ -2886,6 +2911,10 @@ class NavRLTask(BaseTask):
             "cfg_geofence_actor": bool(representation["geofence_actor"]),
             "cfg_geofence_noise_std_m": float(representation["geofence_noise_std_m"]),
             "cfg_geofence_dropout": float(representation["geofence_dropout"]),
+            "cfg_search_state": str(representation["search_state"]),
+            "cfg_search_state_force_invalid": bool(
+                representation["search_state_force_invalid"]
+            ),
             "cfg_fov_curriculum_epochs": int(
                 getattr(self.vis_cfg, "fov_curriculum_epochs", 0)
             ),
@@ -3254,6 +3283,8 @@ class NavRLTask(BaseTask):
                 OBSTACLE_SUPPRESS_ACTIVE,
                 OBSTACLE_TTC_IDLE_S,
                 OBSTACLE_TTC_MIN_SPEED,
+                SEARCH_STATE,
+                SEARCH_STATE_FORCE_INVALID,
                 VBEAMS,
             )
 
@@ -3279,6 +3310,8 @@ class NavRLTask(BaseTask):
                 "geofence_actor": bool(GEOFENCE_ACTOR),
                 "geofence_noise_std_m": float(GEOFENCE_NOISE_STD_M),
                 "geofence_dropout": float(GEOFENCE_DROPOUT),
+                "search_state": str(SEARCH_STATE),
+                "search_state_force_invalid": bool(SEARCH_STATE_FORCE_INVALID),
             }
         except Exception:
             return {
@@ -3300,6 +3333,8 @@ class NavRLTask(BaseTask):
                 "geofence_actor": False,
                 "geofence_noise_std_m": 0.0,
                 "geofence_dropout": 0.0,
+                "search_state": "off",
+                "search_state_force_invalid": False,
             }
 
     @classmethod
@@ -4064,6 +4099,16 @@ class NavRLTask(BaseTask):
                     "cfg_geofence_dropout",
                     float(representation["geofence_dropout"]),
                     "NAVRL_GEOFENCE_DROPOUT",
+                ),
+                (
+                    "cfg_search_state",
+                    str(representation["search_state"]),
+                    "NAVRL_SEARCH_STATE",
+                ),
+                (
+                    "cfg_search_state_force_invalid",
+                    bool(representation["search_state_force_invalid"]),
+                    "NAVRL_SEARCH_STATE_FORCE_INVALID",
                 ),
                 (
                     "cfg_fov_curriculum_epochs",
@@ -5109,6 +5154,15 @@ class NavRLTask(BaseTask):
             if self._obs_dump_enabled:
                 self._collect_obs_dump_frame(valid_y_now, visible, _obs_dump_front_blocked)
             if self._bulk_eval_mode:
+                if self._s1_search_telemetry_enabled and bool(hidden.any()):
+                    self._s1_blind_samples += hidden.sum().to(torch.long)
+                    blind_speed = self.obs_dict["robot_linvel"][:, :2].norm(dim=1)
+                    self._s1_blind_speed_sum += blind_speed[hidden].sum(dtype=torch.float64)
+                    if self.perception is not None:
+                        clearance = self.perception.last_scan_nearest.amin(dim=1)
+                        self._s1_blind_clearance_sum += clearance[hidden].sum(
+                            dtype=torch.float64
+                        )
                 # This labels exactly the observation consumed to select the current action.
                 # `valid_y_now` excludes non-finite policy rows from both numerator and denominator.
                 self._tm_ep_observation_steps += valid_y_now.to(torch.long)
@@ -5997,6 +6051,18 @@ class NavRLTask(BaseTask):
         self.obs_dict["navrl_track_confidence"] = diagnostics["confidence"]
         self.obs_dict["navrl_track_age"] = diagnostics["track_age"]
         self.obs_dict["navrl_track_covariance"] = diagnostics["track_covariance"]
+        for key in (
+            "search_mode",
+            "blind_steps",
+            "blind_steps_before_first_visible",
+            "coverage_fraction",
+            "belief_entropy",
+            "coverage_fraction_at_first_visible",
+            "belief_entropy_at_first_visible",
+            "search_state_masked",
+        ):
+            if key in diagnostics:
+                self.obs_dict["navrl_" + key] = diagnostics[key]
 
         # Asymmetric critic: oracle quantities are appended only to the physically separate
         # states buffer. rl_games' player drops this entire tensor at deployment.
@@ -7539,6 +7605,27 @@ class NavRLTask(BaseTask):
         # is meant to catch, so there is no second copy.
         self._record_first_acquisition(idx, outcome, observation_steps)
 
+        search = self.perception.search if self.perception is not None else None
+        if self._s1_search_telemetry_enabled and search is not None:
+            for values, sums, counts in (
+                (
+                    search.coverage_fraction_at_first_visible[idx],
+                    self._s1_first_coverage_sum,
+                    self._s1_first_coverage_n,
+                ),
+                (
+                    search.belief_entropy_at_first_visible[idx],
+                    self._s1_first_entropy_sum,
+                    self._s1_first_entropy_n,
+                ),
+            ):
+                finite = torch.isfinite(values)
+                if bool(finite.any()):
+                    sums.index_add_(0, outcome[finite], values[finite].to(sums.dtype))
+                    counts.index_add_(
+                        0, outcome[finite], torch.ones_like(outcome[finite], dtype=torch.long)
+                    )
+
         self._tm_eval_outcome_fin += torch.bincount(outcome, minlength=3).to(
             self._tm_eval_outcome_fin.dtype
         )
@@ -7924,6 +8011,7 @@ class NavRLTask(BaseTask):
         n_cause_den = max(1, n_crash_causes)
 
         fixed_speed = float(getattr(self.tm, "speed_fixed", -1.0))
+        representation = self._obstacle_representation_or_zero()
         speed_min = max(0.0, float(getattr(self.tm, "speed_min", 0.0)))
         # Record the distribution actually sampled in this process. In particular, a checkpoint
         # restored before its speed ramp finishes must not be mislabeled with speed_final.
@@ -8059,14 +8147,21 @@ class NavRLTask(BaseTask):
             cam_acquired = episodes - cam_never
 
             median = None
+            p10 = None
+            p90 = None
             if acquired > 0:
                 hist = self._fa_eval_outcome_first_hist[index]
                 cumulative = torch.cumsum(hist, dim=0)
-                # Lower median: smallest step whose cumulative count reaches half the cohort.
-                target = (acquired + 1) // 2
-                pos = int(torch.searchsorted(cumulative, torch.tensor(
-                    target, device=cumulative.device, dtype=cumulative.dtype)).item())
-                median = int(min(pos, self._fa_hist_bins - 1))
+                def quantile_step(fraction):
+                    # Lower empirical quantile: first step whose cumulative count reaches ceil(q*n).
+                    target = max(1, int(math.ceil(fraction * acquired)))
+                    pos = int(torch.searchsorted(cumulative, torch.tensor(
+                        target, device=cumulative.device, dtype=cumulative.dtype)).item())
+                    return int(min(pos, self._fa_hist_bins - 1))
+
+                p10 = quantile_step(0.10)
+                median = quantile_step(0.50)
+                p90 = quantile_step(0.90)
 
             return {
                 "episodes": episodes,
@@ -8078,6 +8173,8 @@ class NavRLTask(BaseTask):
                     if acquired else None
                 ),
                 "first_visible_step_median": median,
+                "first_visible_step_p10": p10,
+                "first_visible_step_p90": p90,
                 "visible_hidden_transitions": int(
                     self._fa_eval_outcome_transitions[index].item()
                 ),
@@ -8284,6 +8381,11 @@ class NavRLTask(BaseTask):
                 "speed_governor_brake_mps2": self.speed_governor_cfg.brake_mps2,
                 "speed_governor_reaction_s": self.speed_governor_cfg.reaction_s,
                 "speed_governor_target_exclusion": "camera_lidar_association",
+                "search_state": str(representation["search_state"]),
+                "search_state_masked": bool(
+                    representation["search_state_force_invalid"]
+                ),
+                "search_state_telemetry": bool(self._s1_search_telemetry_enabled),
                 **physics,
             },
             "outcome": {
@@ -8297,6 +8399,36 @@ class NavRLTask(BaseTask):
                 "closest_nocrash_mean_m": float(mean_nc),
                 "closest_nocrash_best_m": None if math.isnan(best) else float(best),
                 "closest_nocrash_count": int(self._nc_agg),
+            },
+            "search_state": {
+                "arm": str(representation["search_state"]),
+                "masked": bool(representation["search_state_force_invalid"]),
+                "blind_phase_samples": int(self._s1_blind_samples.item()),
+                "blind_phase_mean_speed_mps": (
+                    float(self._s1_blind_speed_sum.item() / self._s1_blind_samples.item())
+                    if int(self._s1_blind_samples.item()) > 0 else None
+                ),
+                "blind_phase_bar_clearance_mean_m": (
+                    float(self._s1_blind_clearance_sum.item() / self._s1_blind_samples.item())
+                    if int(self._s1_blind_samples.item()) > 0 else None
+                ),
+                "first_visible": {
+                    label: {
+                        "coverage_fraction_mean": (
+                            float(self._s1_first_coverage_sum[index].item() / n_cov)
+                            if (n_cov := int(self._s1_first_coverage_n[index].item())) > 0
+                            else None
+                        ),
+                        "coverage_samples": n_cov,
+                        "belief_entropy_mean": (
+                            float(self._s1_first_entropy_sum[index].item() / n_entropy)
+                            if (n_entropy := int(self._s1_first_entropy_n[index].item())) > 0
+                            else None
+                        ),
+                        "belief_entropy_samples": n_entropy,
+                    }
+                    for index, label in enumerate(("capture", "crash", "timeout"))
+                },
             },
             "target_motion": {
                 "cv_initial_heading": self._eval_cv_initial_heading,

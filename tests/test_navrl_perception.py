@@ -23,6 +23,13 @@ _CORRIDOR_SPEC = importlib.util.spec_from_file_location(
 _CORRIDOR = importlib.util.module_from_spec(_CORRIDOR_SPEC)
 sys.modules[_CORRIDOR_NAME] = _CORRIDOR
 _CORRIDOR_SPEC.loader.exec_module(_CORRIDOR)
+_SEARCH_NAME = "aerial_gym.task.navrl_task.navrl_search_state"
+_SEARCH_SPEC = importlib.util.spec_from_file_location(
+    _SEARCH_NAME, _TASK_DIR / "navrl_search_state.py"
+)
+_SEARCH = importlib.util.module_from_spec(_SEARCH_SPEC)
+sys.modules[_SEARCH_NAME] = _SEARCH
+_SEARCH_SPEC.loader.exec_module(_SEARCH)
 
 _MODULE_PATH = Path(__file__).parents[1] / "aerial_gym/task/navrl_task/navrl_perception.py"
 _SPEC = importlib.util.spec_from_file_location("navrl_perception_standalone", _MODULE_PATH)

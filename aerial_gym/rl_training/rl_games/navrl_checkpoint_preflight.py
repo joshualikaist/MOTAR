@@ -31,6 +31,8 @@ _CONTRACT_ENV = {
     "cfg_geofence_actor": "NAVRL_GEOFENCE_ACTOR",
     "cfg_geofence_noise_std_m": "NAVRL_GEOFENCE_NOISE_STD_M",
     "cfg_geofence_dropout": "NAVRL_GEOFENCE_DROPOUT",
+    "cfg_search_state": "NAVRL_SEARCH_STATE",
+    "cfg_search_state_force_invalid": "NAVRL_SEARCH_STATE_FORCE_INVALID",
     # Arena / task version (v2 search arena). These do NOT change the observation width, so a
     # mismatch loads without error and silently measures a different task -- exactly why they
     # belong in the preflight contract rather than only in a runtime warning.
@@ -45,7 +47,12 @@ _CONTRACT_ENV = {
     "cfg_bar_x_min": "NAVRL_BAR_X_MIN",
     "cfg_bar_x_max": "NAVRL_BAR_X_MAX",
 }
-_STRING_CONTRACT_FIELDS = {"cfg_obstacle_selector", "cfg_bar_pool", "cfg_placement_mode"}
+_STRING_CONTRACT_FIELDS = {
+    "cfg_obstacle_selector",
+    "cfg_bar_pool",
+    "cfg_placement_mode",
+    "cfg_search_state",
+}
 # Checkpoints saved before a contract field existed are interpreted at the field's historical
 # behavior. corridor_tokens=0: every pre-corridor checkpoint used the plain 898-D schema.
 _LEGACY_CONTRACT_DEFAULTS = {
@@ -70,6 +77,8 @@ _LEGACY_CONTRACT_DEFAULTS = {
     "cfg_geofence_actor": 0,
     "cfg_geofence_noise_std_m": 0.0,
     "cfg_geofence_dropout": 0.0,
+    "cfg_search_state": "off",
+    "cfg_search_state_force_invalid": 0,
 }
 
 

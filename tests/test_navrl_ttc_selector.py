@@ -43,6 +43,14 @@ def _install_package_stubs():
         corridor = importlib.util.module_from_spec(spec)
         sys.modules[key] = corridor
         spec.loader.exec_module(corridor)
+    search_key = "aerial_gym.task.navrl_task.navrl_search_state"
+    if search_key not in sys.modules:
+        spec = importlib.util.spec_from_file_location(
+            search_key, _ROOT / "aerial_gym/task/navrl_task/navrl_search_state.py"
+        )
+        search = importlib.util.module_from_spec(spec)
+        sys.modules[search_key] = search
+        spec.loader.exec_module(search)
 
 
 _install_package_stubs()
