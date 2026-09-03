@@ -22,6 +22,7 @@ MOTAR는 카메라, LiDAR, ego-state만으로 움직이는 표적을 추적하�
 > software-only 검증입니다.
 
 [Research site](docs/status/) · [System specification](docs/MOTAR_SYSTEM_SPEC_2026-08-24.md) ·
+[Blind-search & autonomous-evader plan](docs/plans/target_search_and_adversarial_evader.md) ·
 [Verification](VERIFICATION.md) · [Operations](OPERATIONS.md) · [Worklog](WORKLOG.md)
 
 교수님 발표를 다시 만들 때는 [PPT master brief](docs/CLAUDE_PPT_MASTER_BRIEF_2026-08-26.md)를
