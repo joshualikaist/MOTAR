@@ -14604,3 +14604,22 @@ CPU 검증: `tests.test_navrl_instance_adapter` 9/9 PASS. `test_status_site.js` 
 aerialgym에서 `test_navrl_perception` 31 (1 skip) / `test_navrl_detect_resolution` 34 PASS.
 Isaac/SAM/PPO는 실행하지 않았다. VERIFICATION 기준일을 2026-09-03으로 올리고 다음
 software 작업만 이 계약으로 적었으며 기존 FAIL 판정은 바꾸지 않았다.
+
+## 2026-09-03 — SAM 후보 구조도 정정과 전체 검증 계획
+
+README와 연구 사이트를 실제 구현 경계에 맞춰 다시 감사했다. 기존 탐지 실패 그림은 측정 결과와
+일치해 유지하고, system overview에는 `CURRENT SOFTWARE PATH`와 `1 detector → 1 KF track`을
+명시했다. 후보 그림은 capture-time sensor packet, 비동기 discovery/propagation, 구현된 CPU
+instance boundary, 미구현 3-D association/track bank, fail-closed decision, 독립 safety path로
+다시 그렸다. 초록색 한 블록 외에는 미구현이며 성능 측정이 아니라는 표시를 그림 내부에도 넣었다.
+
+전체 계획은 `docs/SAM3_PERCEPTION_VERIFICATION_PLAN_2026-09-03.md`에 저장했다. 코드 감사에서
+실제 SAM worker/transport, timestamp/pose, 3-D lifting, track bank와 safety 구현이 없고,
+`predicted_uv` 정렬 점수와 ambiguity margin 점수가 일치하지 않으며 depth validity 계약이
+불완전함을 확인했다. 따라서 순서는 instance boundary 보완 → 해상도/가시성 → worker/transport →
+paired open-loop → latency/SWaP → shadow parity → active A/B → 경량화 → 실기다.
+
+검증: instance adapter 9/9 PASS, perception 31 PASS/1 skip, detect-resolution 34/34 PASS,
+static site contract PASS, offline stub CLI PASS, `git diff --check` PASS. Chrome headless로 README가
+가리키는 CURRENT/후보 SVG와 전체 status page를 렌더해 겹침·잘림이 없음을 확인했다. SAM, Isaac,
+PPO, 실제 센서는 실행하지 않았다.

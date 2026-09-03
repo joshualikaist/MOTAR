@@ -118,8 +118,24 @@ const candidatePerception = fs.readFileSync(
 );
 assert(candidatePerception.includes('not in the control loop'), 'candidate diagram must stay labelled as not in the control loop');
 assert(candidatePerception.includes('CANDIDATE'), 'candidate diagram must stay labelled CANDIDATE');
+assert(candidatePerception.includes('IMPLEMENTED · CPU ONLY'), 'candidate diagram must distinguish implemented work');
+assert(candidatePerception.includes('PLANNED'), 'candidate diagram must distinguish planned work');
+assert(candidatePerception.includes('현재는 CC stub; SAM worker 없음'), 'candidate diagram must not imply that a SAM worker exists');
+assert(candidatePerception.includes('pose(t_capture)'), 'candidate diagram must preserve capture-time pose semantics');
+assert(candidatePerception.includes('multi-hypothesis'), 'candidate diagram must show the planned track-bank boundary');
+assert(candidatePerception.includes('semantic output perturbation'), 'candidate diagram must show the safety-independence gate');
+const currentOverview = fs.readFileSync(
+  path.join(repo, 'docs/assets/motar-system-overview.svg'),
+  'utf8',
+);
+assert(currentOverview.includes('CURRENT SOFTWARE PATH'), 'overview must be labelled as the current software path');
+assert(currentOverview.includes('1 detector → 1 KF track'), 'overview must expose the current single-track contract');
 assert(html.includes('설계 후보'), 'site must say the SAM diagram is a candidate, not adopted');
 assert(readme.includes('설계 후보'), 'README must say the SAM diagram is a candidate, not adopted');
+for (const page of [html, readme]) {
+  assert(page.includes('SAM3_PERCEPTION_VERIFICATION_PLAN_2026-09-03.md'), 'SAM verification plan must be linked');
+  assert(page.includes('offline CPU'), 'implemented candidate scope must stay explicit');
+}
 
 // Presentation claims remain explicitly bounded by the current evidence and hardware status.
 assert(html.includes('Non-overlap route-off PPO · held-out complete to 145 bars'));

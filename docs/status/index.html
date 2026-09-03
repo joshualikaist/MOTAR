@@ -35,7 +35,7 @@
       </div>
       <div class="status-line">
         <span class="status-dot" aria-hidden="true"></span>
-        <strong>Non-overlap route-off PPO · held-out complete to 145 bars</strong><span>fresh smoke PASS · seed-911 stopped at epoch 21,973 after reaching 145 bars · seed-313 capture 83.70% @70 → 65.54% @145 · routed mechanism still FAIL · 2026-09-02</span>
+        <strong>Non-overlap route-off PPO · held-out complete to 145 bars</strong><span>fresh smoke PASS · seed-911 stopped at epoch 21,973 after reaching 145 bars · seed-313 capture 83.70% @70 → 65.54% @145 · routed mechanism still FAIL · SAM candidate is offline-only · 2026-09-03</span>
       </div>
     </section>
 
@@ -44,7 +44,7 @@
         <p>01 · OVERVIEW</p>
         <h2 id="overview-title">센서 입력에서 비행까지</h2>
       </div>
-      <img src="../assets/motar-system-overview.svg" alt="MOTAR의 센서, 구조화 이력, Transformer 정책, 비행 제어 흐름">
+      <img src="../assets/motar-system-overview.svg" alt="CURRENT SOFTWARE PATH: 160×90 단일 detector와 단일 KF target track에서 구조화 이력, Transformer 정책, 비행 제어로 이어지는 흐름">
     </section>
 
     <section class="section arena-section" id="arena">
@@ -141,9 +141,13 @@
           0.826→0.896→0.892로, 단조 증가는 아닙니다. 개선이 아니라 결함의 정량화입니다.</p>
       </div>
       <img src="../assets/motar-perception-detection.svg" alt="RGB-D 프레임에서 색 분류기, 단일 중심점 붕괴, LiDAR 연관으로 이어지는 탐지 파이프라인과 동색 디코이가 걸러지지 않는 지점">
-      <p>아래는 <strong>설계 후보</strong>입니다. 미채택이며 성능 주장이 아닙니다. SAM은 제어루프에
-        없고, 현재 160×90 색 분류기 경로는 그대로입니다.</p>
-      <img src="../assets/motar-perception-candidate.svg" alt="CANDIDATE 탐지 파이프라인: 저주기 SAM 재탐색, 고주기 경량 추적, K개 instance 유지, 불명확하면 선택하지 않음. 제어루프에 없음">
+      <p>아래는 <strong>설계 후보</strong>입니다. 초록색 instance boundary만 offline CPU로 구현됐고
+        실제 SAM worker, timestamped 3-D association, track bank, actor·safety 연결은 계획 단계입니다.
+        미채택이며 성능 주장이 아니고 현재 160×90 색 분류기 경로도 그대로입니다.</p>
+      <img src="../assets/motar-perception-candidate.svg" alt="CANDIDATE 구조: timestamped RGB-D와 pose, 비동기 SAM discovery와 경량 propagation, 구현된 K-instance 경계, 계획된 3-D association과 다중가설 track, fail-closed decision, detector-independent safety path">
+      <p><strong>검증 순서:</strong> 구조 계약 → 센서 해상도 → SAM worker/transport → 동일 프레임 인지 →
+        latency·SWaP → shadow mode → active closed-loop → 경량화 → 실제 센서·비행.
+        <a href="../SAM3_PERCEPTION_VERIFICATION_PLAN_2026-09-03.md">전체 검증 계획과 중지 조건 보기</a></p>
     </section>
 
     <section class="visual wrap" id="safety-filter" aria-labelledby="filter-title">
@@ -248,6 +252,7 @@
         <a href="../preregistration_corrected_nonoverlap_route_gate_r2_2026-08-31.md">Corrected route gate preregistration</a>
         <a href="../../results/navrl_corrected_nonoverlap_physical_off_heldout_seed313/summary.md">Route-off seed-313 held-out</a>
         <a href="../preregistration_corrected_nonoverlap_physical_off_heldout_eval_2026-09-02.md">Route-off held-out preregistration</a>
+        <a href="../SAM3_PERCEPTION_VERIFICATION_PLAN_2026-09-03.md">SAM 3 perception verification plan</a>
       </div>
     </section>
   </main>

@@ -6,9 +6,9 @@ MOTAR는 카메라, LiDAR, ego-state만으로 움직이는 표적을 추적하�
 연구합니다. 최고 성공률 하나보다 **어느 조건에서 왜 capture·crash·timeout이 발생하는지**를 재현
 가능한 실험 계약으로 설명하는 데 초점을 둡니다.
 
-![MOTAR perception-to-control system](docs/assets/motar-system-overview.svg)
+![MOTAR current perception-to-control system](docs/assets/motar-system-overview.svg)
 
-> **Status · 2026-09-02** — The corrected non-overlap **route-off** lineage completed a fresh
+> **Status · 2026-09-03** — The corrected non-overlap **route-off** lineage completed a fresh
 > 500-epoch learning-viability smoke, then a fresh seed-911 density curriculum. The curriculum was
 > stopped at epoch 21,973 after reaching 145 bars (not 205). A sealed seed-313 held-out sweep measured
 > capture **83.70% at 70 bars → 65.54% at 145 bars**; timeout stayed below 0.4% and the loss was mostly
@@ -19,10 +19,12 @@ MOTAR는 카메라, LiDAR, ego-state만으로 움직이는 표적을 추적하�
 > [real-hardware/offline 72-hour contract](docs/SIM2REAL_3DAY_EXECUTION_PLAN.md). 실제 기체는 아직
 > 미조립이며 실제 센서 로그와
 > 비행 데이터는 없습니다. 현재 결과는 sim-to-real 성능 주장이 아니라 재현 가능한 시뮬레이션 및
-> software-only 검증입니다.
+> software-only 검증입니다. 별도의 SAM instance 후보는 현재 **offline CPU adapter까지만 구현**됐으며
+> SAM worker, 제어루프 연결 및 성능 측정은 아직 없습니다.
 
 [Research site](docs/status/) · [System specification](docs/MOTAR_SYSTEM_SPEC_2026-08-24.md) ·
 [Blind-search & autonomous-evader plan](docs/plans/target_search_and_adversarial_evader.md) ·
+[SAM perception verification plan](docs/SAM3_PERCEPTION_VERIFICATION_PLAN_2026-09-03.md) ·
 [Verification](VERIFICATION.md) · [Operations](OPERATIONS.md) · [Worklog](WORKLOG.md)
 
 교수님 발표를 다시 만들 때는 [PPT master brief](docs/CLAUDE_PPT_MASTER_BRIEF_2026-08-26.md)를
@@ -44,7 +46,7 @@ MOTAR는 카메라, LiDAR, ego-state만으로 움직이는 표적을 추적하�
 
 | Stage | Contract |
 |---|---|
-| Perception | RGB-D target track + `4×72` LiDAR at 12 m + ego velocity/yaw/height |
+| Perception · current | 160×90 RGB-D single detector → single KF target track + `4×72` LiDAR at 12 m |
 | Representation | 898-D structured history → 17 tokens, 5 temporal samples |
 | Policy | 4-layer, 4-head Transformer actor with asymmetric critic during training |
 | Action | bounded body `vx/vy`, altitude hold, yaw-rate |
@@ -117,8 +119,14 @@ detector 간 FTLR/outcome 비교는 금지입니다(서로 다른 궤적 → 서
 ![MOTAR candidate instance-preserving detection pipeline](docs/assets/motar-perception-candidate.svg)
 
 위 그림은 **설계 후보**이며 제어루프에 들어가 있지 않고 측정 결과도 아닙니다. SAM 3를
-`AppearanceTargetSegmenter` 자리에 갈아 끼우지 않습니다. 다음 software 작업은 합집합 붕괴를
-막는 오프라인 instance adapter CPU 계약뿐입니다.
+`AppearanceTargetSegmenter` 자리에 갈아 끼우지 않습니다. 초록색 `INSTANCE BOUNDARY`만 현재
+구현된 오프라인 CPU 계약입니다. 실제 SAM worker와 transport, timestamp가 붙은 3-D 변환,
+다중가설 association/tracker, actor 연결, detector와 독립된 safety path는 아직 계획 단계입니다.
+
+검증은 `구조 계약 → 센서 해상도 → SAM worker/전송 → 동일 프레임 인지 → latency/SWaP → shadow
+mode → active closed-loop → 경량화 → 실기` 순서로 진행합니다. 해상도와 SAM 실행 주기는 미리
+결론내리지 않고 측정 후 동결합니다. 전체 gate, 데이터 분할, 지표와 중지 조건은
+[SAM 3 perception verification plan](docs/SAM3_PERCEPTION_VERIFICATION_PLAN_2026-09-03.md)에 있습니다.
 
 ## Safety filter — the speed governor
 

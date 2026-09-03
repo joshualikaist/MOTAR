@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1440" height="620" viewBox="0 0 1440 620" role="img" aria-labelledby="title desc">
-  <title id="title">MOTAR system overview</title>
-  <desc id="desc">Camera, LiDAR and ego-state are encoded as structured history tokens, processed by a Transformer policy, and converted to bounded flight commands for moving-target interception.</desc>
+  <title id="title">Current MOTAR system overview</title>
+  <desc id="desc">Current software path. Camera, LiDAR and ego-state are encoded as structured history tokens, processed by a Transformer policy, and converted to bounded flight commands for moving-target interception. The camera path still uses one detector output and one Kalman target track.</desc>
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#f7faf8"/><stop offset="1" stop-color="#edf5f2"/>
@@ -12,19 +12,21 @@
       <path d="M 0 0 L 10 5 L 0 10 z" fill="#63736d"/>
     </marker>
     <style>
-      .label{font:700 25px Arial,sans-serif;fill:#17231f}.small{font:500 17px Arial,sans-serif;fill:#5d6b66}.tiny{font:600 14px Arial,sans-serif;fill:#71807a;letter-spacing:.06em}.box{fill:#fff;stroke:#cad8d2;stroke-width:2}.line{fill:none;stroke:#63736d;stroke-width:3;marker-end:url(#arrow)}.token{fill:#dceee8;stroke:#a8cfc2;stroke-width:1.5}.white{fill:#fff}.muted{fill:#d6e9e3}
+      .label{font:700 25px Arial,sans-serif;fill:#17231f}.small{font:500 17px Arial,sans-serif;fill:#5d6b66}.tiny{font:600 14px Arial,sans-serif;fill:#71807a;letter-spacing:.06em}.badge{font:700 13px Arial,sans-serif;fill:#075f56;letter-spacing:.07em}.box{fill:#fff;stroke:#cad8d2;stroke-width:2}.line{fill:none;stroke:#63736d;stroke-width:3;marker-end:url(#arrow)}.token{fill:#dceee8;stroke:#a8cfc2;stroke-width:1.5}.white{fill:#fff}.muted{fill:#d6e9e3}
     </style>
   </defs>
   <rect width="1440" height="620" rx="32" fill="url(#bg)"/>
   <text x="68" y="72" class="tiny">MOTAR · SENSOR-ONLY MOVING-TARGET INTERCEPTION</text>
   <text x="68" y="114" class="label" font-size="32">From perception to physically bounded flight</text>
+  <rect x="1110" y="47" width="262" height="38" rx="19" fill="#dceee8" stroke="#9ccabd" stroke-width="1.5"/>
+  <text x="1140" y="71" class="badge">CURRENT SOFTWARE PATH</text>
 
   <g transform="translate(68 164)">
     <rect class="box" width="245" height="328" rx="22"/>
     <text x="28" y="44" class="tiny">SENSING</text>
     <g transform="translate(28 70)">
       <circle cx="26" cy="26" r="25" fill="#dceee8"/><path d="M12 26h28M26 12v28" stroke="#087f6d" stroke-width="3"/>
-      <text x="68" y="23" class="label">RGB-D</text><text x="68" y="46" class="small">target track</text>
+      <text x="68" y="23" class="label">RGB-D</text><text x="68" y="46" class="small">1 detector → 1 KF track</text>
     </g>
     <g transform="translate(28 150)">
       <circle cx="26" cy="26" r="25" fill="#dceee8"/><circle cx="26" cy="26" r="14" fill="none" stroke="#087f6d" stroke-width="3"/><path d="M26 5v10M47 26H37M26 47V37M5 26h10" stroke="#087f6d" stroke-width="3"/>
