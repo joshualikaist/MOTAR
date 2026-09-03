@@ -1631,6 +1631,19 @@ class NavRLTask(BaseTask):
             #   (all four summed over the DETECTOR-VISIBLE frames only)
             self._dl_sums = torch.zeros(4, dtype=torch.float64, device=self.device)
 
+        # S1 shadow-mode counterfactual accumulators (prereg_2026-09-03_s1_structure_fix_shadow).
+        # Enabled by NAVRL_S1_SHADOW=1 in bulk-eval mode only; unlike the distractor-lock block it
+        # is NOT gated on num_distractors>0, because the N=0 cell's shadow ghost rate is a
+        # preregistered sanity prediction.
+        self._s1_shadow_enabled = (
+            self._bulk_eval_mode
+            and os.environ.get("NAVRL_S1_SHADOW", "0").strip() == "1"
+        )
+        if self._s1_shadow_enabled:
+            #   0 frames_total  1 visible  2 target_lock  3 distractor_lock  4 ghost  5 ambiguous
+            #   6 init_frames   7 init_target_lock  8 init_distractor_lock  9 init_ghost_lock
+            self._s1_counts = torch.zeros(10, dtype=torch.long, device=self.device)
+
         try:
             self._bulk_eval_target = max(
                 1, int(os.environ.get("PLAY_GAMES_NUM", "1000"))
@@ -6043,6 +6056,8 @@ class NavRLTask(BaseTask):
         # observation has already been written above, so it cannot participate in building it.
         if self._distractor_metric_enabled:
             self._record_distractor_lock_frame(diagnostics)
+        if self._s1_shadow_enabled:
+            self._record_s1_shadow_frame(diagnostics)
 
         # Raw sensor and tracker diagnostics are available to evaluators, never concatenated into
         # actor observations. Semantic renderer buffers intentionally remain private.
@@ -6195,6 +6210,97 @@ class NavRLTask(BaseTask):
             "camera_confidence_mean": mean(sums[1]),
             "measurement_to_target_mean_m": mean(sums[2]),
             "measurement_to_nearest_distractor_mean_m": mean(sums[3]),
+        }
+
+    def _record_s1_shadow_frame(self, diagnostics):
+        """S1 shadow counterfactual, classified with the SAME rule as the live lock recorder.
+
+        Identical GT tensors and radius as _record_distractor_lock_frame; only the measurement
+        differs (the shadow candidate pipeline's pick instead of the live single centroid).
+        Additionally splits locks by INIT frames -- the phase where the shadow tracker had no
+        active track and seeded from pixel count alone (prereg section 4, prediction 2).
+        """
+        visible = diagnostics["s1_shadow_visible"]
+        measurement = diagnostics["s1_shadow_measurement_world"]
+        initialized = diagnostics["s1_shadow_initialized"]
+
+        target_distance = (measurement - self.target_position).norm(dim=1)
+        if self._num_distractors > 0:
+            distractors = self.obs_dict["obstacle_position"][
+                :, self._solid_obstacle_offset : self._bar_offset, 0:3
+            ]
+            distractor_distance = (
+                (measurement.unsqueeze(1) - distractors).norm(dim=2).min(dim=1).values
+            )
+        else:
+            distractor_distance = torch.full_like(target_distance, float("inf"))
+        near_target = target_distance <= DISTRACTOR_LOCK_RADIUS_M
+        near_distractor = distractor_distance <= DISTRACTOR_LOCK_RADIUS_M
+
+        target_lock = visible & near_target
+        distractor_lock = visible & near_distractor & ~near_target
+        ghost_lock = visible & ~near_target & ~near_distractor
+        ambiguous = visible & near_target & near_distractor
+        init = visible & initialized
+
+        self._s1_counts += torch.stack(
+            [
+                torch.full_like(self._s1_counts[0], int(self.num_envs)),
+                visible.sum(),
+                target_lock.sum(),
+                distractor_lock.sum(),
+                ghost_lock.sum(),
+                ambiguous.sum(),
+                init.sum(),
+                (target_lock & init).sum(),
+                (distractor_lock & init).sum(),
+                (ghost_lock & init).sum(),
+            ]
+        )
+
+    def _s1_shadow_payload(self):
+        from aerial_gym.task.navrl_task.shadow_association import (
+            SHADOW_GATE_CHI2_3DOF_99,
+            SHADOW_TOP_K,
+        )
+
+        counts = [int(v) for v in self._s1_counts.tolist()]
+        (frames_total, visible_frames, target_lock, distractor_lock, ghost_lock,
+         ambiguous, init_frames, init_target, init_distractor, init_ghost) = counts
+
+        def rate(k):
+            return (k / visible_frames) if visible_frames > 0 else None
+
+        track_visible = visible_frames - init_frames
+        track_false = (distractor_lock - init_distractor) + (ghost_lock - init_ghost)
+        return {
+            "schema_version": 1,
+            "prereg": "docs/prereg_2026-09-03_s1_structure_fix_shadow.md",
+            "classification_radius_m": DISTRACTOR_LOCK_RADIUS_M,
+            "distractor_count": int(self._num_distractors),
+            "gate_chi2_3dof": SHADOW_GATE_CHI2_3DOF_99,
+            "top_k": SHADOW_TOP_K,
+            "init_rule": "argmax_pixel_count",
+            "frames_total": frames_total,
+            "visible_frames": visible_frames,
+            "target_lock": target_lock,
+            "distractor_lock": distractor_lock,
+            "ghost_lock": ghost_lock,
+            "ambiguous_target_and_distractor": ambiguous,
+            "target_lock_rate": rate(target_lock),
+            "distractor_lock_rate": rate(distractor_lock),
+            "ghost_lock_rate": rate(ghost_lock),
+            "false_target_lock_rate": rate(distractor_lock + ghost_lock),
+            "init_frames": init_frames,
+            "init_target_lock": init_target,
+            "init_distractor_lock": init_distractor,
+            "init_ghost_lock": init_ghost,
+            "init_false_lock_rate": (
+                ((init_distractor + init_ghost) / init_frames) if init_frames > 0 else None
+            ),
+            "tracking_false_lock_rate": (
+                (track_false / track_visible) if track_visible > 0 else None
+            ),
         }
 
     def _goal_x_max(self):
@@ -8672,6 +8778,9 @@ class NavRLTask(BaseTask):
         payload["condition"]["distractor_count"] = int(self._num_distractors)
         if self._distractor_metric_enabled:
             payload["distractor_lock"] = self._distractor_lock_payload()
+        if self._s1_shadow_enabled:
+            payload["condition"]["s1_shadow"] = True
+            payload["s1_shadow"] = self._s1_shadow_payload()
         compact = json.dumps(payload, sort_keys=True, separators=(",", ":"))
         print("NAVRL_BULK_EVAL_RESULT " + compact, flush=True)
 

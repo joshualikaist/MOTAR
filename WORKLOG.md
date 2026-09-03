@@ -14653,3 +14653,120 @@ split + unseen-mesh 홀드아웃, frozen perception → PPO(기존 −2 pp 비�
 frozen 디렉터리 밖에서, D9 선례) → S3 소형 CNN+FPN(SAM=오프라인 상한 baseline) → S4 시간
 연관(KF/GRU/Transformer, T 스윕) → S5 hard-distractor 벤치마크(5조건 = 논문 메인 테이블) →
 S6 closed-loop. 각 단계 별도 사전등록.
+
+## 2026-09-03 — S0-a 렌더 비용 곡선: 640×360 전면 인상 불성립, 협시야 경로 채택
+
+`tools/benchmark_navrl_camera_cost.py` + `tools/run_navrl_camera_cost_sweep.sh` (신규, 엔지니어링
+측정 — 사전등록 불요). 205 bars, vision on/off × {160×90, 320×180, 640×360} × {32, 64, 128} envs,
+셀당 별도 프로세스, warmup 50 제외 250 step 계시. RTX 3070.
+원자료 `results/navrl_camera_cost/cells.jsonl` (12 cells).
+
+| vision | res | envs | ms/step | smi VRAM |
+|---|---|---:|---:|---:|
+| off | 160×90 | 128 | 88.2 | 5,487 MiB |
+| on | 160×90 (현재) | 128 | 109.2 | 5,677 MiB |
+| on | **320×180** | 128 | **117.3** | **6,294 MiB** |
+| on | 640×360 | 128 | **OOM FAIL** | — |
+| on | 640×360 | 64 | 100.8 | 6,931 MiB |
+
+관찰: torch peak은 수백 MiB뿐이고 **VRAM의 주인은 Isaac Gym 자체 버퍼**(torch 밖) — smi 차이가
+진짜 지표다. OOM 셀 teardown에서 Warp error 700 스팸(1,026줄)은 실패 셀 정리 과정이며 성공 셀
+데이터와 무관.
+
+### 판정 (계획 §3 결정 규칙 적용)
+
+- **640×360 × 128 envs 불성립** → 전면 인상 경로 폐기.
+- 320×180 × 128 envs는 성립(+7.4 % step, +617 MiB)하나 각해상도 2.5 px@20 m로 **탐지 문턱
+  (2–2.5 px)은 넘지만 형상 신뢰(8–10 px)에는 미달**.
+- **협시야 이중 스트림을 기본 경로로 채택**: 광각 320×180@87°(탐지) + 협시야 @20°(형상/식별,
+  160×90이면 6.8 px, 320×180이면 13.6 px@20 m). 두 번째 소형 스트림 비용은 vision-on 증분
+  (128 envs에서 +21 ms/+190 MiB)과 동급으로 추정 — S3 설계 시 실측.
+
+### 사용자 결정 2건 (질의 완료)
+
+- **S1 shadow-mode 승인** (판정 경계 30/60 % 포함) → `docs/prereg_2026-09-03_s1_structure_fix_shadow.md`
+  초안 작성 완료, 구현 착수.
+- **S2 표적 visual은 우리 quad mesh 재사용** — 현재 표적 visual이 반지름 0.05 m 구체(RGB에 드론
+  형상 없음)라는 확인에 따른 결정. 디코이 UAV도 동일 mesh + 다른 색으로 시작.
+
+## 2026-09-03 — S1 shadow-mode 구축: M1 PASS, 4셀 측정 시작
+
+사용자 승인(shadow-mode 설계 + 판정 경계 30/60 %, S2 표적 mesh는 quad 재사용)에 따라 S1을
+구현하고 측정에 들어갔다. 사전등록 `docs/prereg_2026-09-03_s1_structure_fix_shadow.md`.
+
+### 구현
+
+- `shadow_association.py` (신규): GPU 4-연결 CC(반복 max-전파, fixpoint 조기종료) +
+  희소 후보 통계(top-K=5, count/u/v/depth) + `ShadowAssociator`(별도
+  `BatchedConstantVelocityTracker` 인스턴스, 대각근사 Mahalanobis χ²(3)=11.345 게이트,
+  init=argmax count). 단위테스트 6개(분리 blob·L자·대각 분리·순위·top-K 절단·입력 불변) PASS.
+- `navrl_perception.py`: `NAVRL_S1_SHADOW=1` 시 4개 훅 — init(fail-closed:
+  detect_decoupled·latency≠0 거부), raw mask 스냅(라이브 in-place gating 이전 clone),
+  tracker.step 직후 shadow step(동일 pose lift), diagnostics 4키. 라이브 경로 무변경.
+- `navrl_task.py`: `_record_s1_shadow_frame`(라이브 lock recorder와 동일 GT·반경, N=0이면
+  distractor 거리 +inf) + `_s1_shadow_payload`(init/tracking 분해 포함) + export.
+- `tests/test_navrl_distractors.py`의 `_solid_obstacle_offset` 사용처 meta-test가 신규 reader를
+  잡았다 — 테스트가 요구하는 "명시적 결정"으로 합법 reader 2개(distractor-only 슬라이스 콤마
+  패턴 동일)로 갱신. 953개 중 951 PASS.
+- pre-existing 실패 2건 확인(클린 HEAD 재현): corrected-nonoverlap heldout 계약 테스트 —
+  braking_route_v3 스레드의 미수확 체크포인트/env_object_config 핀 드리프트. 그 스레드 병합
+  과제 소관, 본 작업에서 불수정.
+
+### 실행 기반: envelope closed-env 재사용에서 드러난 것 2건
+
+- `tools/run_navrl_s1_shadow.py`: envelope의 `evaluation_env()`를 임포트 재사용, 오버라이드
+  4필드(seed 481, result dir, `NAVRL_S1_SHADOW`, shared source bundle). **seed479 공유 번들의
+  `repository_root=/home/joshuali/MOTAR`(1650 Ti 절대경로)** 때문에 이 기계에서 manifest 검증이
+  구조적으로 불가 → S1 전용 신선한 번들을 스윕이 생성하게 함(사전등록 §2에 명시).
+- M1 첫 판정 FAIL은 **비교기 결함**이었다: npz 파일 해시에 덤프 자기참조 필드
+  (`run_obs_dump_path`, `run_pid`)가 포함돼 구조적 불일치. 배열 단위 비교로 **obs 9,728×898
+  전 프레임 비트 동일** 확인 후 canonical digest(자기참조 2필드 제외)로 정정(사전등록 §5에
+  측정 전 정정으로 기록). 재판정 **M1 PASS** (off/on digest 동일).
+
+### 스모크 미리보기 (50 ep, 게이트 아님 — 본 측정은 2,049 ep×4셀 진행 중)
+
+online FTLR 93.55 % / shadow 95.04 %, shadow init-false 92.99 %·tracking-false 95.15 %.
+기제 관찰: **init=argmax count가 픽셀 큰 디코이(147–181 px vs 표적 2–5 px)를 사실상 항상
+선택하고, 게이트는 그 잘못된 track을 충실히 유지한다.** 정적 디코이는 항상 보이므로 track이
+만료되지 않는다. 사전등록 예측 2("초기화 오선택은 남는다")의 극단형이며, 규칙은 등록대로
+유지한다. 본 측정 결과는 별도 항목으로.
+
+## 2026-09-03 — S1 판정: RECOGNITION_DOMINANT (shadow FTLR@n5 = 92.05 %)
+
+사전등록 `docs/prereg_2026-09-03_s1_structure_fix_shadow.md`의 본 측정 완료 (seed 481, 3070,
+2,049 ep/cell, 70 bars, v7). `results/navrl_s1_shadow_seed481/summary.{md,json}`.
+
+| cell | online FTLR | shadow FTLR | shadow init-false | shadow tracking-false | shadow visible |
+|---|---:|---:|---:|---:|---:|
+| v7_n0 | (기록 없음, 설계상) | 10.58 % | 30.26 % | 9.93 % | 56,130 |
+| v7_n1 | 60.63 % | 58.16 % | 65.45 % | 57.89 % | 61,820 |
+| v7_n3 | 83.68 % | 84.64 % | 85.48 % | 84.61 % | 79,038 |
+| v7_n5 | 90.71 % | 92.05 % | 92.29 % | 92.04 % | 73,258 |
+
+**verdict_rq0 = RECOGNITION_DOMINANT** (등록 경계: <30 % STRUCTURE / >60 % RECOGNITION).
+shadow 92.05 % ≥ online 90.71 % — connected-component 다중 후보 + χ² 게이팅이라는 자료구조
+수정은 FTLR을 **1픽셀도 줄이지 못했다**(오히려 +1.3 pp). RQ0의 답: 90 %대 오추적의 주인은
+단일-중심점 붕괴가 아니라 **색-단독 특징의 인식 실패**다.
+
+### 사전등록 예측 대조
+
+1. "정적 디코이라 추적 프레임 오류는 크게 감소" — **기각.** tracking-false 92.04 % ≈
+   init-false 92.29 %. 기제: init=argmax count가 픽셀 큰 디코이를 선택하면 게이트는 그 track을
+   충실히 유지하고, 정적 디코이는 항상 보이므로 track이 만료되지 않는다. 게이팅은 잘못된
+   초기 선택을 **고착**시킨다(스모크에서 관찰한 기제가 본 측정에서 확인됨).
+2. "초기화 오선택은 남는다" — 확인 (n5 init-false 92.29 %).
+3. "N=0 shadow ghost ≈ online ghost" — **비교 불능(설계 확인만).** envelope 라이브 recorder는
+   N=0에서 distractor_lock 블록 자체를 기록하지 않아 동일-프레임 online 비교치가 없다.
+   shadow 단독 수치(FTLR 10.58 %, tracking 9.93 %)는 낮은 수준으로 무해 방향과 부합하나
+   sanity 판정으로 채택하지 않는다.
+
+부수 관찰(게이트 아님): shadow visible_frames(73,258) < online visible(131,378) at n5 —
+분모 정의가 다르다(shadow는 자체 연관 성공 프레임). 셀 간 비교는 shadow 열 안에서만 유효.
+
+### 함의
+
+- S3(형상 detector)가 주 서사로 확정 — "구조를 고쳐도 색으로는 안 된다"의 정량 근거 확보.
+- S4의 시간 모델도 **초기 선택이 틀리면 시간 누적이 오류를 고착시킨다**는 본 측정의 기제를
+  직접 겨냥해야 함(색-단독에서는 게이팅·smoothing이 무력).
+- 다음 행동은 사용자 diff 검토 후 커밋 → S2(데이터셋: quad-mesh 표적 visual 교체 등) 착수 여부
+  사용자 확인.

@@ -1103,15 +1103,21 @@ class SolidObstacleOffsetArithmetic(unittest.TestCase):
         # site that wanted distractors and silently got bars too would classify the detector's
         # reported measurement against a bar centre and produce a plausible FTLR that means
         # nothing.
+        # 2026-09-03: the S1 shadow recorder (_record_s1_shadow_frame,
+        # prereg_2026-09-03_s1_structure_fix_shadow) is a second legal reader.  It classifies the
+        # SHADOW pipeline's counterfactual measurement with the identical distractor-only slice
+        # and radius, so the online and shadow FTLR are comparable by construction.  It is
+        # evaluation-only (NAVRL_S1_SHADOW=1 in bulk-eval mode) and never touches observations.
         distractor_only = "self._solid_obstacle_offset : self._bar_offset,"
-        self.assertEqual(TASK_SOURCE.count(distractor_only), 1)
-        self.assertIn(
-            distractor_only,
-            _method_source(TASK_SOURCE, "NavRLTask", "_record_distractor_lock_frame"),
-        )
+        self.assertEqual(TASK_SOURCE.count(distractor_only), 2)
+        for method in ("_record_distractor_lock_frame", "_record_s1_shadow_frame"):
+            self.assertIn(
+                distractor_only,
+                _method_source(TASK_SOURCE, "NavRLTask", method),
+            )
         self.assertEqual(
             TASK_SOURCE.count("self._solid_obstacle_offset :"),
-            5,
+            6,
             "a new reader of the solid-obstacle offset appeared; decide explicitly whether it "
             "wants the widened [distractors + active bars] slice or the distractor-only one, and "
             "pin it here",

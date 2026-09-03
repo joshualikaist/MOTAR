@@ -1006,6 +1006,36 @@ class NavRLPerceptionModule:
         self.tracker = BatchedConstantVelocityTracker(
             num_envs, device, step_dt, float(camera_cfg.tracker_memory_s)
         )
+        # S1 shadow-mode counterfactual (docs/prereg_2026-09-03_s1_structure_fix_shadow.md).
+        # Read-only beside the live path: its own tracker instance, its own diagnostics keys.
+        self._s1_shadow = None
+        self._s1_shadow_frame = None
+        if os.environ.get("NAVRL_S1_SHADOW", "0").strip() == "1":
+            from aerial_gym.task.navrl_task.shadow_association import ShadowAssociator
+
+            if self.detect_decoupled:
+                raise RuntimeError(
+                    "NAVRL_S1_SHADOW requires detect resolution == camera resolution: the "
+                    "shadow candidates are cut from the camera-resolution mask and a decoupled "
+                    "detect stream would make the two paths measure different frames"
+                )
+            if float(getattr(camera_cfg, "detection_latency_s", 0.0)) != 0.0:
+                raise RuntimeError(
+                    "NAVRL_S1_SHADOW requires zero detection latency: the shadow path "
+                    "classifies the current frame and a delayed live path would break "
+                    "same-frame comparability"
+                )
+            self._s1_shadow = ShadowAssociator(
+                BatchedConstantVelocityTracker(
+                    num_envs, device, step_dt, float(camera_cfg.tracker_memory_s)
+                ),
+                camera_offset=self.camera_offset,
+                target_radius=self.target_radius,
+                min_pixels=self.min_pixels,
+                fx=self.fx, fy=self.fy, cx=self.cx, cy=self.cy,
+                detect_fx=self.detect_fx,
+                dt=step_dt,
+            )
         self.robot_history = torch.zeros(
             self.num_envs, ROBOT_HISTORY, ROBOT_DIM, device=device
         )
@@ -1072,6 +1102,8 @@ class NavRLPerceptionModule:
 
     def reset_idx(self, env_ids):
         self.tracker.reset_idx(env_ids)
+        if self._s1_shadow is not None:
+            self._s1_shadow.reset_idx(env_ids)
         self.robot_history[env_ids] = 0.0
         self.target_history[env_ids] = 0.0
         self.obstacle_history[env_ids] = 0.0
@@ -1466,6 +1498,11 @@ class NavRLPerceptionModule:
         with torch.no_grad():
             score = self.segmenter(rgb, depth, self.max_camera_range)
         mask = (score >= self.pixel_threshold) & (depth < self.max_camera_range)
+        if self._s1_shadow is not None:
+            # Stash BEFORE the live path's in-place `mask &= visible` gating below, so the
+            # shadow candidates see the raw threshold mask of this exact frame. clone() keeps
+            # the shadow strictly read-only with respect to the live tensor.
+            self._s1_shadow_frame = (mask.clone(), depth)
         count = mask.sum(dim=(1, 2))
         visible = count >= self.min_pixels
         if (
@@ -1951,6 +1988,19 @@ class NavRLPerceptionModule:
             [sigma_r.square(), sigma_lat.square(), sigma_lat.square()], dim=1
         )
         self.tracker.step(meas_world, visible, measurement_var)
+        if self._s1_shadow is not None:
+            # Same-frame counterfactual: same raw mask, same pose lift as the live measurement
+            # (latency is asserted zero at construction, so meas_pos_w/meas_quat are the current
+            # pose). Results go ONLY into diagnostics; the live tracker was stepped above.
+            s1_mask, s1_depth = self._s1_shadow_frame
+            self._s1_shadow_frame = None
+            k = self._s1_shadow.top_k
+            s1_quat = meas_quat.repeat_interleave(k, dim=0)
+            s1_pos = meas_pos_w.repeat_interleave(k, dim=0)
+            s1_meas_world, s1_visible, s1_initialized, s1_num_candidates = self._s1_shadow.step(
+                s1_mask, s1_depth,
+                lambda vehicle_xyz: s1_pos + _quat_rotate_xyzw(s1_quat, vehicle_xyz),
+            )
         # P1 latency compensation: `visible` here is the DELAYED camera flag (the ring buffer in
         # _apply_detection_latency already ran inside _detect_rgbd). The historical
         # `~camera_visible` gate inside _associate_lidar_target then blocks the fresh-LiDAR
@@ -2101,6 +2151,16 @@ class NavRLPerceptionModule:
             "target_pixels": pixel_count,
             "track_age": self.tracker.age,
             "track_covariance": self.tracker.cov,
+            **(
+                {
+                    "s1_shadow_measurement_world": s1_meas_world,
+                    "s1_shadow_visible": s1_visible,
+                    "s1_shadow_initialized": s1_initialized,
+                    "s1_shadow_num_candidates": s1_num_candidates,
+                }
+                if self._s1_shadow is not None
+                else {}
+            ),
             "search_state_masked": torch.full(
                 (self.num_envs,),
                 SEARCH_STATE_FORCE_INVALID,
