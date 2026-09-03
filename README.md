@@ -114,6 +114,12 @@ confidence는 N=1/3/5에서 `0.826 → 0.896 → 0.892`였습니다. N=1보다 �
 detector 간 FTLR/outcome 비교는 금지입니다(서로 다른 궤적 → 서로 다른 프레임 분포, prereg §3-c L6).
 원자료: [`summary`](results/navrl_detector_distractor_envelope_seed479/summary.md).
 
+![MOTAR candidate instance-preserving detection pipeline](docs/assets/motar-perception-candidate.svg)
+
+위 그림은 **설계 후보**이며 제어루프에 들어가 있지 않고 측정 결과도 아닙니다. SAM 3를
+`AppearanceTargetSegmenter` 자리에 갈아 끼우지 않습니다. 다음 software 작업은 합집합 붕괴를
+막는 오프라인 instance adapter CPU 계약뿐입니다.
+
 ## Safety filter — the speed governor
 
 ![MOTAR speed governor structure and blind spots](docs/assets/motar-safety-filter.svg)

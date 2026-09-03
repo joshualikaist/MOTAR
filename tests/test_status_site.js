@@ -97,6 +97,7 @@ assert.strictEqual(episode.age, age + 0.1, 'speed-zero viewer episodes must stil
 for (const asset of [
   'motar-system-overview.svg', 'motar-control-stack.svg',
   'motar-perception-detection.svg', 'motar-safety-filter.svg',
+  'motar-perception-candidate.svg',
 ]) {
   const assetPath = path.join(repo, 'docs/assets', asset);
   const svg = fs.readFileSync(assetPath, 'utf8');
@@ -105,6 +106,20 @@ for (const asset of [
   assert(readme.includes(`docs/assets/${asset}`));
   assert(html.includes(`../assets/${asset}`));
 }
+const currentPerception = fs.readFileSync(
+  path.join(repo, 'docs/assets/motar-perception-detection.svg'),
+  'utf8',
+);
+assert(currentPerception.includes('단일 중심점'), 'CURRENT perception diagram must keep the union-centroid failure');
+assert(!currentPerception.includes('not in the control loop'), 'CURRENT diagram must not be relabelled as a candidate');
+const candidatePerception = fs.readFileSync(
+  path.join(repo, 'docs/assets/motar-perception-candidate.svg'),
+  'utf8',
+);
+assert(candidatePerception.includes('not in the control loop'), 'candidate diagram must stay labelled as not in the control loop');
+assert(candidatePerception.includes('CANDIDATE'), 'candidate diagram must stay labelled CANDIDATE');
+assert(html.includes('설계 후보'), 'site must say the SAM diagram is a candidate, not adopted');
+assert(readme.includes('설계 후보'), 'README must say the SAM diagram is a candidate, not adopted');
 
 // Presentation claims remain explicitly bounded by the current evidence and hardware status.
 assert(html.includes('Non-overlap route-off PPO · held-out complete to 145 bars'));

@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 560" width="960" height="560" role="img" aria-labelledby="cTitle cDesc">
+  <title id="cTitle">MOTAR candidate perception pipeline - not in the control loop</title>
+  <desc id="cDesc">CANDIDATE diagram, not in the control loop, not a measured result. Low-rate SAM rediscovery and a high-rate lightweight tracker feed K instance masks. Association may return TARGET, AMBIGUOUS, or REJECT. Raw LiDAR occupancy stays a separate safety layer.</desc>
+  <style>
+    .t   { font: 600 15px system-ui, sans-serif; fill: #0f172a; }
+    .h   { font: 700 13px system-ui, sans-serif; fill: #0f172a; }
+    .b   { font: 12px system-ui, sans-serif; fill: #334155; }
+    .m   { font: 11px ui-monospace, monospace; fill: #475569; }
+    .ok  { font: 700 12px system-ui, sans-serif; fill: #047857; }
+    .okb { font: 12px system-ui, sans-serif; fill: #047857; }
+    .warn { font: 700 12px system-ui, sans-serif; fill: #b45309; }
+    .cap { font: 11px system-ui, sans-serif; fill: #64748b; }
+    .badge { font: 700 11px system-ui, sans-serif; fill: #9a3412; letter-spacing: .04em; }
+    .box { fill: #ffffff; stroke: #cbd5e1; stroke-width: 1.5; rx: 8; }
+    .boxin  { fill: #f0f9ff; stroke: #0284c7; stroke-width: 1.5; rx: 8; }
+    .boxout { fill: #f0fdf4; stroke: #16a34a; stroke-width: 1.5; rx: 8; }
+    .boxcand { fill: #fff7ed; stroke: #ea580c; stroke-width: 2; rx: 8; }
+    .boxamb { fill: #fffbeb; stroke: #d97706; stroke-width: 2; rx: 8; }
+    .boxsafe { fill: #f8fafc; stroke: #64748b; stroke-width: 1.5; rx: 8; }
+    .ar  { stroke: #475569; stroke-width: 2; fill: none; marker-end: url(#cArrow); }
+    .ars { stroke: #64748b; stroke-width: 2; fill: none; marker-end: url(#cArrow); stroke-dasharray: 5 4; }
+  </style>
+  <defs>
+    <marker id="cArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#475569"/>
+    </marker>
+  </defs>
+
+  <rect width="960" height="560" fill="#fffbeb"/>
+  <rect x="16" y="12" width="928" height="44" class="boxcand"/>
+  <text x="32" y="40" class="badge">CANDIDATE · not in the control loop · not a measured result</text>
+
+  <text x="24" y="82" class="t">후보 탐지 파이프라인 — 현재 AppearanceTargetSegmenter를 교체하지 않음</text>
+  <text x="24" y="102" class="cap">설계 후보. 미채택. SAM 가중치 / Hz / FTLR / capture 주장이 아니다. 160x90 경로와 898-D 관측은 그대로 둔다.</text>
+
+  <rect x="24" y="118" width="200" height="88" class="boxin"/>
+  <text x="36" y="140" class="h">고해상도 RGB</text>
+  <text x="36" y="160" class="m">&gt;= 640 x 360</text>
+  <text x="36" y="178" class="cap">160x90는 본선이 아님</text>
+
+  <path d="M224,162 L266,162" class="ar"/>
+
+  <rect x="268" y="118" width="220" height="88" class="boxcand"/>
+  <text x="280" y="140" class="h">SAM 3 / 3.1 재탐색</text>
+  <text x="280" y="160" class="m">1-2 Hz · 별도 프로세스</text>
+  <text x="280" y="178" class="cap">개념 일치 인스턴스 K개</text>
+
+  <rect x="24" y="222" width="200" height="88" class="boxin"/>
+  <text x="36" y="244" class="h">경량 검출/추적</text>
+  <text x="36" y="264" class="m">10-30 Hz</text>
+  <text x="36" y="282" class="cap">매 프레임 ID 유지</text>
+
+  <path d="M224,266 L266,266" class="ar"/>
+
+  <rect x="268" y="222" width="220" height="88" class="box"/>
+  <text x="280" y="244" class="h">짧은 구간 추적</text>
+  <text x="280" y="264" class="m">mask propagation</text>
+  <text x="280" y="282" class="cap">SAM을 매 프레임 돌리지 않음</text>
+
+  <path d="M488,162 L530,204" class="ar"/>
+  <path d="M488,266 L530,224" class="ar"/>
+
+  <rect x="532" y="150" width="196" height="136" class="boxout"/>
+  <text x="544" y="172" class="h">K개 instance 유지</text>
+  <text x="544" y="192" class="okb">합집합 금지</text>
+  <text x="544" y="212" class="m">mask / score / depth</text>
+  <text x="544" y="230" class="m">median per candidate</text>
+  <text x="544" y="248" class="m">uv / optional embedding</text>
+  <text x="544" y="268" class="cap">connected components</text>
+
+  <path d="M728,218 L770,218" class="ar"/>
+
+  <rect x="772" y="118" width="164" height="200" class="boxamb"/>
+  <text x="784" y="140" class="h">판정</text>
+  <text x="784" y="166" class="ok">TARGET</text>
+  <text x="784" y="184" class="cap">1등 마진 충분</text>
+  <text x="784" y="214" class="warn">AMBIGUOUS</text>
+  <text x="784" y="232" class="cap">불명확하면 선택하지 않음</text>
+  <text x="784" y="262" class="b">REJECT</text>
+  <text x="784" y="280" class="cap">유효 후보 없음</text>
+  <text x="784" y="302" class="m">lock 강제 금지</text>
+
+  <rect x="24" y="334" width="912" height="88" class="boxsafe"/>
+  <text x="40" y="358" class="h">안전층 — 원시 LiDAR / Depth occupancy</text>
+  <text x="40" y="378" class="b">충돌회피와 비상제동은 SAM mask로 장애물을 지우지 않는다. 표적 인식은 임무 입력, occupancy는 별도 계약.</text>
+  <text x="40" y="398" class="cap">stale detection이 바를 지우면 접촉이 늘 수 있음. 현재 governor association과 분리해야 한다.</text>
+  <path d="M200,422 L200,334" class="ars"/>
+
+  <rect x="24" y="438" width="448" height="104" class="box"/>
+  <text x="40" y="462" class="h">이 그림이 말하는 것</text>
+  <text x="40" y="484" class="b">모델 교체가 아니라 단일 중심점 계약을 버린다.</text>
+  <text x="40" y="504" class="b">색 지름길에는 맞지만 해상도와 association이 먼저다.</text>
+  <text x="40" y="524" class="cap">오프라인 CPU 어댑터만 현재 범위. Isaac / PPO / SAM 미설치.</text>
+
+  <rect x="488" y="438" width="448" height="104" class="boxout"/>
+  <text x="504" y="462" class="h">현재 그림과 섞지 말 것</text>
+  <text x="504" y="484" class="b">위 4단계는 검증된 160x90 색 분류기 경로가 아니다.</text>
+  <text x="504" y="504" class="b">FTLR 90.27%는 현행 파이프라인 측정값이다.</text>
+  <text x="504" y="524" class="cap">motar-perception-detection.svg 가 CURRENT.</text>
+</svg>

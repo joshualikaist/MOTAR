@@ -14574,3 +14574,33 @@ bearing/latency/TTC/detect-resolution/checkpoint-preflight 포커스 210/210 PAS
 없는 seed-911 ep21750 checkpoint와 frozen source snapshot의 과거
 `env_object_config.py` digest drift이며 S1 assertion 실패가 아니다. `py_compile`, `bash -n`,
 `git diff --check`도 PASS. 사용자 승인 후 `research/navrl-env`에서 커밋 준비했다.
+
+## 2026-09-03 — 오프라인 instance adapter CPU 계약 (SAM 미설치, GPU 미실행)
+
+사이트 표적 탐지 구조도를 보면서 SAM 3 후보를 검토한 뒤, 검증된 CURRENT 그림 4장은
+그대로 두고 제어루프에 SAM을 넣지 않기로 했다. 기존 SVG 4장은 XML 파싱이 정상이라
+교체하지 않았다.
+
+- 신규 `docs/assets/motar-perception-candidate.svg`: `CANDIDATE · not in the control loop ·
+  not a measured result`. 저주기 SAM 재탐색 / 고주기 경량 추적 / K개 instance /
+  AMBIGUOUS(불명확하면 선택하지 않음) / 원시 LiDAR 안전층. README Perception 절과
+  `docs/status/index.html` `#perception` 아래 현재 그림 다음에 붙였다. 문구는 설계 후보·
+  미채택·성능 주장 아님.
+- `tests/test_status_site.js`가 5번째 asset을 등록하고, CURRENT 그림은 `단일 중심점`을
+  유지하며 후보 그림만 `not in the control loop`를 갖게 가드한다.
+- 사전등록
+  `docs/preregistration_sam_instance_adapter_offline_2026-09-03.md` (SHA-256
+  `5348a3dae3ada2098a90a36fc6d2bc992ecf56d5b8099a5147bda21c190eff6d`). SAM FTLR/Hz/PPO를
+  묻지 않는다. 게이트는 CPU 세 개: stub가 blob 2개 유지, union centroid는 ghost, 점수 차가
+  작으면 AMBIGUOUS이고 lock id 없음.
+- 신규 `navrl_instance_adapter.py`: 색 임계+CC stub, 합집합 금지 가드, SAM 백엔드는 별도
+  프로세스 스펙만 두고 in-process 로드는 fail-closed. `NAVRL_INSTANCE_ADAPTER` 기본 0.
+  `navrl_perception.py`는 import하지 않는다. 오프라인 툴
+  `tools/run_navrl_instance_adapter_offline.py`.
+- 2-blob fixture에서 stub `n=2`, union range `6.0`(4 m와 8 m의 평균, 양쪽 bbox 밖),
+  기본 마진에서 `AMBIGUOUS`.
+
+CPU 검증: `tests.test_navrl_instance_adapter` 9/9 PASS. `test_status_site.js` PASS.
+aerialgym에서 `test_navrl_perception` 31 (1 skip) / `test_navrl_detect_resolution` 34 PASS.
+Isaac/SAM/PPO는 실행하지 않았다. VERIFICATION 기준일을 2026-09-03으로 올리고 다음
+software 작업만 이 계약으로 적었으며 기존 FAIL 판정은 바꾸지 않았다.

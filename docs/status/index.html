@@ -141,6 +141,9 @@
           0.826→0.896→0.892로, 단조 증가는 아닙니다. 개선이 아니라 결함의 정량화입니다.</p>
       </div>
       <img src="../assets/motar-perception-detection.svg" alt="RGB-D 프레임에서 색 분류기, 단일 중심점 붕괴, LiDAR 연관으로 이어지는 탐지 파이프라인과 동색 디코이가 걸러지지 않는 지점">
+      <p>아래는 <strong>설계 후보</strong>입니다. 미채택이며 성능 주장이 아닙니다. SAM은 제어루프에
+        없고, 현재 160×90 색 분류기 경로는 그대로입니다.</p>
+      <img src="../assets/motar-perception-candidate.svg" alt="CANDIDATE 탐지 파이프라인: 저주기 SAM 재탐색, 고주기 경량 추적, K개 instance 유지, 불명확하면 선택하지 않음. 제어루프에 없음">
     </section>
 
     <section class="visual wrap" id="safety-filter" aria-labelledby="filter-title">

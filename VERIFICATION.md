@@ -4,13 +4,21 @@
 [`RESEARCH_PLAN.md`](RESEARCH_PLAN.md), 날짜별 기록은 [`WORKLOG.md`](WORKLOG.md),
 명령어는 [`OPERATIONS.md`](OPERATIONS.md), 라이브 지표는 [`docs/status/`](docs/status/)를 본다.
 
-> 기준일: 2026-09-02
+> 기준일: 2026-09-03
 
 현재 판정의 기계 판독 원본은
 [`docs/research_authority_2026-08-26.json`](docs/research_authority_2026-08-26.json)이다.
 `python tools/check_research_authority.py --json`은 frozen summary의 SHA와 Track A/B 및 corrected
 non-overlap 판정 필드를
 직접 대조하며 어떤 학습·평가도 실행하지 않는다.
+
+## 2026-09-03 software-only next work (GPU 권한 없음)
+
+- **다음 software 작업**은 오프라인 instance adapter CPU 계약이다. 사전등록
+  [`docs/preregistration_sam_instance_adapter_offline_2026-09-03.md`](docs/preregistration_sam_instance_adapter_offline_2026-09-03.md).
+  SAM 3는 설치하지 않았고 Isaac 제어루프에 연결하지 않는다. PPO/GPU 평가 권한은 없다.
+- Track A/B, corrected non-overlap, braking-v3, route-off held-out의 **기록된 FAIL/INCONCLUSIVE/BLOCKED 판정은 수정하지 않는다.**
+- S1 blind-search state와 이 축을 한 실험에서 섞지 않는다.
 
 ## 2026-09-01 현재 실행 authority
 
