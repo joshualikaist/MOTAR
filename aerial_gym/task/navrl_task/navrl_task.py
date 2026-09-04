@@ -4,6 +4,7 @@ import importlib.util
 import json
 import math
 import os
+import time
 from pathlib import Path
 import sys
 import xml.etree.ElementTree as ET
@@ -1740,6 +1741,17 @@ class NavRLTask(BaseTask):
             self._cg_counts = torch.zeros(12, dtype=torch.long, device=self.device)
             #   0 cmd_vs_actual_deg  1 bars_in_corridor  2 lateral_m  3 arc_clearance_m
             self._cg_sums = torch.zeros(4, dtype=torch.float64, device=self.device)
+            # A2 descriptive metrics (prereg_2026-09-05_a1_forensics_replication section 3).
+            # Not gates -- they answer "did it get safer by getting timid?", "what did the detour
+            # cost?", "does the filter fit a control cycle?", and they give prediction 6 the
+            # non-contact baseline it needed.
+            self._cg_clearance_hist = torch.zeros(25, dtype=torch.long, device=self.device)  # 0-12 m, 0.5 m bins
+            self._cg_path_len = torch.zeros(self.num_envs, device=self.device)
+            self._cg_path_valid = torch.ones(self.num_envs, dtype=torch.bool, device=self.device)
+            self._cg_prev_pos = None
+            #   0 path_len_sum 1 path_len_n 2 cmd_vs_actual_sum 3 cmd_vs_actual_n
+            #   4 compute_us_sum 5 compute_us_n 6 compute_us_max
+            self._cg_aux = torch.zeros(7, dtype=torch.float64, device=self.device)
         self._speed_governor_diag = self._empty_speed_governor_diag()
         self._speed_governor_outcome_steps = {
             "capture": [], "crash": [], "timeout": []
@@ -4461,6 +4473,8 @@ class NavRLTask(BaseTask):
             # A fresh episode has no usable pose history; the recorder drops contacts until the
             # buffer is deep enough rather than replaying another episode's poses.
             self._cg_hist_age[env_ids] = 0
+            if len(env_ids) > 0:
+                self._bank_contact_geometry_path(env_ids)
         if len(env_ids) == 0:
             return
         if self._obs_dump_enabled:
@@ -4933,6 +4947,13 @@ class NavRLTask(BaseTask):
 
         if self.speed_governor_cfg.mode == "off" and not self._speed_governor_diag_enabled:
             return command_xy
+        if self._contact_geom_enabled:
+            # Wall-clock cost of one governor call, so the filter can be compared against the
+            # published budgets (HOCBF-QP 90.6 us mean / 384.5 us max).
+            # No cuda.synchronize here: syncing would fold a full device barrier into the
+            # measurement and dwarf the governor itself. This is the host-side cost of issuing
+            # the batched governor for all envs, which is what a control loop actually pays.
+            _cg_t0 = time.perf_counter()
         depth = self.obs_dict.get("depth_range_pixels")
         if not isinstance(depth, torch.Tensor) or depth.ndim < 4:
             raise RuntimeError("NavRL speed governor requires the LiDAR depth_range_pixels tensor")
@@ -4978,11 +4999,18 @@ class NavRLTask(BaseTask):
             # The exact vector the corridor was drawn around, before any scaling.
             self._governor_command_xy[:] = command_xy.detach()
             self._push_contact_geometry_history(command_xy.detach())
+            self._record_contact_geometry_step(command_xy.detach(), clearance.detach())
         governed, telemetry = apply_speed_governor(
             command_xy, clearance, self.speed_governor_cfg
         )
         for key, value in telemetry.items():
             self._speed_governor_last[key][:] = value.detach()
+
+        if self._contact_geom_enabled:
+            _cg_us = (time.perf_counter() - _cg_t0) * 1e6
+            self._cg_aux[4] += _cg_us
+            self._cg_aux[5] += 1.0
+            self._cg_aux[6] = max(float(self._cg_aux[6]), _cg_us)
 
         if self._speed_governor_diag_enabled:
             diag = self._speed_governor_diag
@@ -6311,6 +6339,55 @@ class NavRLTask(BaseTask):
         self._cg_hist_cursor = (i + 1) % self._cg_hist_pos.shape[0]
         self._cg_hist_age += 1
 
+    def _record_contact_geometry_step(self, command_xy, clearance):
+        """A2 descriptive metrics, accumulated every governed step. Evaluation-only."""
+        # Corridor clearance distribution over the whole trajectory, not just at contact.
+        rng = float(self.task_config.lidar_max_range)
+        bins = (clearance.clamp(0.0, rng) / 0.5).long().clamp(0, self._cg_clearance_hist.numel() - 1)
+        self._cg_clearance_hist += torch.bincount(bins, minlength=self._cg_clearance_hist.numel())
+
+        # Path length: integrate |dp| between governed steps, and bank it on reset.
+        pos = self.obs_dict["robot_position"].detach()
+        if self._cg_prev_pos is None:
+            self._cg_prev_pos = pos.clone()
+        else:
+            # Envs reset since the last governed step have had their prev_pos invalidated by
+            # _bank_contact_geometry_path; skipping them keeps the respawn teleport out of the
+            # integral. Everything else accumulates normally.
+            step = (pos - self._cg_prev_pos).norm(dim=1)
+            self._cg_path_len += torch.where(
+                self._cg_path_valid, step, torch.zeros_like(step)
+            )
+            self._cg_prev_pos = pos.clone()
+            self._cg_path_valid[:] = True
+
+        # Commanded-vs-actual angle over ALL frames -- prediction 6 needs this baseline.
+        quat = self.obs_dict["robot_vehicle_orientation"].detach()
+        vel_v = quat_rotate_inverse(quat, self.obs_dict["robot_linvel"].detach())[:, 0:2]
+        moving = (command_xy.norm(dim=1) > 1e-6) & (vel_v.norm(dim=1) > 1e-6)
+        if bool(moving.any()):
+            cos = torch.nn.functional.cosine_similarity(
+                command_xy[moving], vel_v[moving], dim=1
+            ).clamp(-1.0, 1.0)
+            self._cg_aux[2] += torch.rad2deg(torch.acos(cos)).sum(dtype=torch.float64)
+            self._cg_aux[3] += int(moving.sum())
+
+    def _bank_contact_geometry_path(self, env_ids):
+        """Episode ended: bank its path length and restart the integrator for those envs.
+
+        Only episodes that actually ran are banked. The very first reset touches all envs with a
+        zero-length integral, and counting those would drag the mean toward zero.
+        """
+        done = self._cg_path_len[env_ids]
+        ran = done > 1e-6
+        if bool(ran.any()):
+            self._cg_aux[0] += done[ran].sum(dtype=torch.float64)
+            self._cg_aux[1] += int(ran.sum())
+        self._cg_path_len[env_ids] = 0.0
+        if self._cg_prev_pos is not None:
+            # The respawn teleport must not enter the next episode's integral.
+            self._cg_path_valid[env_ids] = False
+
     def _record_contact_geometry(self, hit_mask, pos, vel_w):
         """Decompose each bar contact against the corridor AS IT WAS ~1 s before impact.
 
@@ -6467,6 +6544,36 @@ class NavRLTask(BaseTask):
             "mean_bars_in_corridor": mean(s[1]),
             "mean_lateral_offset_m": mean(s[2]),
             "mean_arc_clearance_m": mean(s[3]),
+            **self._contact_geometry_aux_payload(),
+        }
+
+    def _contact_geometry_aux_payload(self):
+        """A2 descriptive metrics. Not gates -- see prereg section 3."""
+        a = [float(v) for v in self._cg_aux.tolist()]
+        hist = [int(v) for v in self._cg_clearance_hist.tolist()]
+        total = sum(hist)
+        return {
+            "corridor_clearance_hist_bin_m": 0.5,
+            "corridor_clearance_hist": hist,
+            "corridor_clearance_frames": total,
+            "corridor_clearance_below_3m_rate": (
+                (sum(hist[:6]) / total) if total else None
+            ),
+            "path_length_mean_m": (a[0] / a[1]) if a[1] else None,
+            "path_length_episodes": int(a[1]),
+            "cmd_vs_actual_deg_all_frames": (a[2] / a[3]) if a[3] else None,
+            "cmd_vs_actual_frames": int(a[3]),
+            "governor_compute_us_mean_batched": (a[4] / a[5]) if a[5] else None,
+            "governor_compute_us_max_batched": a[6] if a[5] else None,
+            "governor_compute_us_mean_per_env": (
+                (a[4] / a[5] / self.num_envs) if a[5] else None
+            ),
+            "governor_compute_batch_envs": int(self.num_envs),
+            "governor_compute_note": (
+                "host-side issue cost of the batched call; no cuda.synchronize, "
+                "so device execution may overlap. per_env divides by the batch."
+            ),
+            "governor_calls": int(a[5]),
         }
 
     def _s1_shadow_payload(self):

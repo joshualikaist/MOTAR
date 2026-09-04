@@ -15,13 +15,14 @@ is active.
 
 import importlib.util
 import json
+import os
 from pathlib import Path
 import sys
 
 REPO = Path(__file__).resolve().parents[1]
 ENVELOPE = REPO / "tools" / "run_navrl_distractor_envelope.py"
-SEED = 491
-RESULT_ROOT = REPO / "results" / "navrl_contact_geometry_seed491"
+SEED = int(os.environ.get("NAVRL_CG_SEED", "491"))
+RESULT_ROOT = REPO / "results" / f"navrl_contact_geometry_seed{SEED}"
 ENVELOPE_CELL = "v7_n0"          # zero distractors: this is about bars, not decoys
 ARMS = {
     "off": {"NAVRL_SPEED_GOVERNOR": "off"},
@@ -113,12 +114,30 @@ def run_summarize(mod):
             f"| {r['arm']} | {f(a['in_corridor_rate'])} | {c['hypothesis_c_reclassified_into_corridor']:+,} | "
             f"{c['mean_cmd_vs_actual_deg']:.1f}° | {f(c['hypothesis_d_rate'])} | "
             f"{c['mean_bars_in_corridor']:.2f} |")
+    # A1 replication gate, frozen in docs/prereg_2026-09-05_a1_forensics_replication.md
+    GATE = {"off": (0.725, 0.819), "riskcap": (0.728, 0.834)}
+    verdict = None
+    if SEED != 491:
+        passed = []
+        lines += ["", "## A1 재현 판정 (seed 491 CI 게이트, 결과 이전 동결)", "",
+                  "| arm | lateral+no_return | 허용 구간 | |", "|---|---:|---|---|"]
+        for r in rows:
+            cm = r["contact_geometry"]["commanded_direction"]
+            v = cm["lateral_rate"] + cm["no_return_rate"]
+            lo, hi = GATE[r["arm"]]
+            ok = lo <= v <= hi
+            passed.append(ok)
+            lines.append(f"| {r['arm']} | {v:.1%} | [{lo:.1%}, {hi:.1%}] | {'통과' if ok else '벗어남'} |")
+        verdict = ("REPLICATED" if all(passed) else
+                   "PARTIAL" if any(passed) else "FAILED")
+        lines += ["", f"**verdict_replication: {verdict}**", ""]
     lines.append("")
     RESULT_ROOT.mkdir(parents=True, exist_ok=True)
     (RESULT_ROOT / "summary.json").write_text(
         json.dumps({"schema_version": 1, "seed": SEED,
                     "prereg": "docs/prereg_2026-09-04_contact_corridor_forensics.md",
-                    "policy_checkpoint_sha256": mod.CHECKPOINT_SHA, "arms": rows},
+                    "policy_checkpoint_sha256": mod.CHECKPOINT_SHA,
+                    "verdict_replication": verdict, "arms": rows},
                    indent=2, sort_keys=True) + "\n")
     (RESULT_ROOT / "summary.md").write_text("\n".join(lines))
     print("\n".join(lines))
