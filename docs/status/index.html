@@ -36,7 +36,7 @@
       </div>
       <div class="status-line">
         <span class="status-dot" aria-hidden="true"></span>
-        <strong>Non-overlap route-off PPO · held-out complete to 145 bars</strong><span>fresh smoke PASS · seed-911 stopped at epoch 21,973 after reaching 145 bars · seed-313 capture 83.70% @70 → 65.54% @145 · routed mechanism still FAIL · SAM candidate is offline-only · 2026-09-03</span>
+        <strong>충돌의 77~78%는 안전필터가 보지 않는 곳에서 난다</strong><span>접촉 포렌식 2,049 ep×2 arm · 측면 57~58% + 무반환 20% · 종방향 실패는 5건 중 1건 · stopcap은 정지여유 +0.395 m로도 crash를 15.95→21.31%로 올렸다 · 인지: 구속 조건은 측정 품질이 아니라 물체 동일성 · sim-to-real 보류 · 2026-09-05</span>
       </div>
     </section>
 
@@ -136,6 +136,27 @@
         <article><span>03</span><div><h3>기울기와 고도 우선권</h3><p>요구 힘의 수평 성분을 45° 이내로 제한합니다. upright 상태에서는 <code>T=fz/b3z</code> 보상으로 기울어진 동안에도 수직 힘을 우선 보존합니다.</p></div></article>
         <article><span>04</span><div><h3>토크에서 실제 운동으로</h3><p>attitude/rate error가 body torque가 되고 allocation matrix가 네 모터 명령으로 바꿉니다. 모터는 0.04 s 1차 지연을 거쳐 100 Hz rigid-body physics에 적용됩니다.</p></div></article>
       </div>
+    </section>
+
+    <section class="section wrap" id="lineage-status">
+      <div class="section-head">
+        <p>03b · LINEAGE STATUS</p>
+        <h2>항법 계보는 145 bars에서 멈춰 있습니다</h2>
+        <p>아래는 이번 주 안전필터·인지 결과와 <strong>별개 축</strong>인 항법 학습 계보의 현재
+          상태입니다. 상단 배너에서 여기로 옮겼습니다 — 여전히 유효한 판정이지만 이번 주의
+          결과가 아닙니다.</p>
+      </div>
+      <ul class="claim-list">
+        <li><strong>Non-overlap route-off PPO · held-out complete to 145 bars</strong> —
+          205 bars에 도달하지 못했습니다.</li>
+        <li>fresh smoke <code>PASS_LEARNING_VIABILITY</code> 후 <strong>seed-911 stopped at epoch 21,973</strong>
+          (운영자 중지, 145 bars 도달).</li>
+        <li>봉인된 held-out: <strong>seed-313 capture 83.70% @70 → 65.54% @145</strong>,
+          timeout 0.4% 미만, 손실은 대부분 bar contact.</li>
+        <li><strong>routed mechanism still FAIL</strong> — routed PPO는 여전히 차단 상태입니다.</li>
+        <li>SAM 후보는 <strong>offline CPU 어댑터</strong>까지만 구현됐고 제어루프 연결·성능 측정은
+          없습니다.</li>
+      </ul>
     </section>
 
     <section class="visual wrap" id="perception" aria-labelledby="perception-title">

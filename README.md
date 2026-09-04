@@ -8,19 +8,22 @@ MOTAR는 카메라, LiDAR, ego-state만으로 움직이는 표적을 추적하�
 
 ![MOTAR current perception-to-control system](docs/assets/motar-system-overview.svg)
 
-> **Status · 2026-09-03** — The corrected non-overlap **route-off** lineage completed a fresh
-> 500-epoch learning-viability smoke, then a fresh seed-911 density curriculum. The curriculum was
-> stopped at epoch 21,973 after reaching 145 bars (not 205). A sealed seed-313 held-out sweep measured
-> capture **83.70% at 70 bars → 65.54% at 145 bars**; timeout stayed below 0.4% and the loss was mostly
-> bar contact. This is one incomplete route-off policy, not 205-bar mastery. The separate routed gate
-> still fails its mechanism contract, so routed PPO remains blocked.
-> Track A remains P2 `STRICT FAIL`, D1 `FAIL`, P3 `BLOCKED`, and detection Stage 1
-> `RANGE_INCONCLUSIVE_AT_THIS_BUDGET`; its only next authority is the
-> [real-hardware/offline 72-hour contract](docs/SIM2REAL_3DAY_EXECUTION_PLAN.md). 실제 기체는 아직
-> 미조립이며 실제 센서 로그와
-> 비행 데이터는 없습니다. 현재 결과는 sim-to-real 성능 주장이 아니라 재현 가능한 시뮬레이션 및
-> software-only 검증입니다. 별도의 SAM instance 후보는 현재 **offline CPU adapter까지만 구현**됐으며
-> SAM worker, 제어루프 연결 및 성능 측정은 아직 없습니다.
+> **Status · 2026-09-05** — 이번 주의 결과는 전부 **부정 결과**이고, 그것이 요점입니다.
+> 세 갈래 사전등록 측정이 인지의 구속 조건은 측정 품질이 아니라 **물체 동일성**임을 확정했고
+> (자료구조 수정 +1.3 pp · 거리 분산 −0.34 pp · 동색 디코이 FTLR 90.27%),
+> 접촉 기하 포렌식은 **막대 충돌의 77~78%가 속도 거버너가 감시하는 회랑 밖**에서 남을 보였습니다
+> (측면 57~58% + 무반환 20%, 종방향 실패는 5건 중 1건). 정지거리 법칙은 접촉 시 여유를
+> **+0.395 m 양수**로 만들고도 crash를 15.95 → 21.31%로 **올렸습니다**.
+> 공개 공대공 detector 가중치의 교차 데이터셋 zero-shot은 AP **0.045**(in-domain 0.80)로,
+> 학습을 건너뛸 수 없음이 확인됐습니다.
+> **다음은 진단 논문 계획**([`diagnostic_paper_plan_2026-09-05.md`](docs/plans/diagnostic_paper_plan_2026-09-05.md))이며
+> 재학습 없이 3주 규모입니다.
+> **sim-to-real은 뒤로 미뤘습니다** — 실제 기체는 미조립이고 센서 로그도 비행 데이터도 없습니다.
+> 현재 결과는 전부 재현 가능한 시뮬레이션 및 software-only 검증이며 sim-to-real 성능 주장이 아닙니다.
+> Track A는 P2 `STRICT FAIL`, D1 `FAIL`, P3 `BLOCKED` 상태 그대로입니다.
+> 항법 계보는 별개 축이며 145 bars에서 멈춰 있습니다 — route-off held-out
+> **capture 83.70% @70 → 65.54% @145**(seed 313), routed mechanism은 여전히 FAIL입니다.
+> SAM 후보는 **offline CPU 어댑터**까지만 구현됐고 제어루프 연결·성능 측정은 없습니다.
 
 [Research site](docs/status/) · [System specification](docs/MOTAR_SYSTEM_SPEC_2026-08-24.md) ·
 [Blind-search & autonomous-evader plan](docs/plans/target_search_and_adversarial_evader.md) ·
