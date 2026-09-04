@@ -777,6 +777,22 @@ class NavRLPerceptionModule:
         self.dropout_prob = float(getattr(cfg, "detection_dropout_prob", 0.0))
         self.detection_latency_s = float(getattr(cfg, "detection_latency_s", 0.0))
         self.range_error_m = float(getattr(cfg, "range_error_m", 0.0))
+        # Depth noise model order (prereg_2026-09-04_depth_noise_model_order). Default "linear"
+        # reproduces the pre-2026-09-04 sigma_r bit for bit; "stereo" swaps ONLY the linear range
+        # term for Intel's quadratic stereo formula. sigma_lat is untouched in both modes -- it is
+        # bearing error times range, so linear in r is structurally correct there.
+        self.depth_noise_model = (
+            str(getattr(cfg, "depth_noise_model", "linear") or "linear").strip().lower()
+        )
+        if self.depth_noise_model not in ("linear", "stereo"):
+            raise ValueError(
+                "depth_noise_model must be linear|stereo, got %r" % self.depth_noise_model
+            )
+        # Precompute D^2 * subpixel / (fx_sensor * baseline) as a single coefficient on r^2.
+        self.depth_stereo_coeff = float(getattr(cfg, "depth_stereo_subpixel", 0.08)) / (
+            float(getattr(cfg, "depth_stereo_fx_px", 447.0))
+            * float(getattr(cfg, "depth_stereo_baseline_m", 0.095))
+        )
         # Latency compensation (P0/P1, WORKLOG 2026-08-05). Both default off; both are no-ops
         # when detection_latency_s is 0, so a clean run is byte-identical with them set.
         self.latency_compensate = bool(getattr(cfg, "latency_compensate", False))
@@ -1981,7 +1997,14 @@ class NavRLPerceptionModule:
             pixel_count = self._last_detect_count.float().clamp(min=1.0)
         else:
             pixel_count = pixels.sum(dim=(1, 2)).float().clamp(min=1.0)
-        sigma_r = 0.04 + 0.012 * surface_range + 0.15 / pixel_count.sqrt()
+        if self.depth_noise_model == "stereo":
+            # Intel: RMS = D^2 * subpixel / (fx_sensor * baseline). Only the range term changes;
+            # the 0.04 floor and the 0.15/sqrt(px) centroid shot-noise term are properties of the
+            # detection, not of the stereo depth, so they carry over unchanged.
+            range_term = self.depth_stereo_coeff * surface_range.square()
+        else:
+            range_term = 0.012 * surface_range
+        sigma_r = 0.04 + range_term + 0.15 / pixel_count.sqrt()
         # metres per pixel of the image the centroid was actually measured on.
         sigma_lat = 0.03 + surface_range / max(self.detect_fx, 1.0)
         measurement_var = torch.stack(

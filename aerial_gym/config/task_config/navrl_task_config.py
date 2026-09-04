@@ -264,6 +264,29 @@ class task_config:
         detection_dropout_prob = _env_float("NAVRL_DETECTION_DROPOUT", 0.3)
         detection_latency_s = _env_float("NAVRL_DETECTION_LATENCY_S", 0.0)
         range_error_m = _env_float("NAVRL_RANGE_ERROR_M", 0.0)
+        # Depth measurement-noise MODEL ORDER (prereg_2026-09-04_depth_noise_model_order).
+        # The live sigma_r grows LINEARLY with range (0.04 + 0.012*r + shot noise). Real stereo
+        # depth error grows QUADRATICALLY -- Intel's published formula is
+        #     RMS = D^2 * subpixel_RMS / (focal_px * baseline).
+        # Both modes keep the 0.04 floor and the 0.15/sqrt(px) centroid shot-noise term, so the
+        # ONLY difference is the range term: 0.012*r vs c*r^2. With Intel's recommended realistic
+        # subpixel 0.08, fx 447 px (848x480, 87 deg HFOV) and the D455's 95 mm baseline they cross
+        # at r = 0.012/c = 6.37 m (3.35 m for the D435's 50 mm). Below the crossover the linear
+        # model is pessimistic, above it optimistic: sigma_r at 20 m is 0.386 m linear vs 0.900 m
+        # stereo-D455 and 1.578 m stereo-D435. Since detector_max_range is 20 m, essentially the
+        # whole useful band is modelled optimistically.
+        #   "linear" -- current behaviour, the DEFAULT, so every existing result and checkpoint
+        #               is bit-identical unless this is set explicitly.
+        #   "stereo" -- replace ONLY the linear range term with the quadratic physics.
+        # fx here is the SENSOR's stereo-matching focal length, deliberately NOT detect_fx: on
+        # real hardware depth is computed inside the camera at its own resolution, independent of
+        # whatever resolution we downsample to for detection. Using detect_fx (84.3 at 160x90)
+        # would inflate the 20 m error 5x and would be modelling our downsampling as if it
+        # degraded the sensor's depth, which it does not.
+        depth_noise_model = os.environ.get("NAVRL_DEPTH_NOISE_MODEL", "linear").strip().lower()
+        depth_stereo_baseline_m = _env_float("NAVRL_DEPTH_STEREO_BASELINE_M", 0.095)  # D455
+        depth_stereo_subpixel = _env_float("NAVRL_DEPTH_STEREO_SUBPIXEL", 0.08)  # Intel guidance
+        depth_stereo_fx_px = _env_float("NAVRL_DEPTH_STEREO_FX_PX", 447.0)  # 848x480 @ 87 deg
         # Latency COMPENSATION (fix), deliberately separate knobs from the latency PERTURBATION
         # above: an eval arm sets the perturbation to model a slow pipeline and toggles these to
         # measure how much of the loss the perception-side fix recovers (WORKLOG 2026-08-05 R3).
