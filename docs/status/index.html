@@ -45,6 +45,14 @@
         <p>01 · OVERVIEW</p>
         <h2 id="overview-title">센서 입력에서 비행까지</h2>
       </div>
+      <img src="../assets/motar-arena-geometry.svg" alt="40x40x3 m 아레나 평면도와 측면도: 축척대로 그린 막대, goal band 22.5-28 m, LiDAR 12 m 원과 카메라 87도 20 m 부채꼴, 막대 2.0 m와 LiDAR 수직 FOV +20/-10도">
+      <p>아레나 대비 센서가 얼마나 좁은지가 이 그림의 요점입니다. 측면도는 막대가 2.0&nbsp;m로 높고
+        순항 고도가 1.0&nbsp;m이므로 <strong>막대가 항상 어떤 빔에는 걸린다</strong>는 것을 보입니다 —
+        접촉 포렌식의 <code>VERTICAL_OUT = 0.0%</code>가 그 결과입니다.</p>
+      <img src="../assets/motar-platform-hardware.svg" alt="ref5in 쿼드로터 질량 추력 예산, 센서 사양, 운동 포락선, 제어 사슬">
+      <p><code>navrl_ref5in_quad_v2</code> 1.20&nbsp;kg · 대각 220&nbsp;mm · 모터당 9.6&nbsp;N →
+        <strong>TWR 3.26</strong>. 2.5&nbsp;m/s에서 정지거리 1.81&nbsp;m, 선회반경 3.12&nbsp;m.
+        <strong>hardware-informed simulation candidate이며 실기는 미조립입니다.</strong></p>
       <img src="../assets/motar-system-overview.svg" alt="CURRENT SOFTWARE PATH: 160×90 단일 detector와 단일 KF target track에서 구조화 이력, Transformer 정책, 비행 제어로 이어지는 흐름">
     </section>
 
@@ -165,7 +173,8 @@
       <h3>대체된 방향 — 시뮬 내 형상 detector 학습</h3>
       <img src="../assets/motar-perception-candidate.svg" alt="CANDIDATE 구조: timestamped RGB-D와 pose, 비동기 SAM discovery와 경량 propagation, 구현된 K-instance 경계, 계획된 3-D association과 다중가설 track, fail-closed decision, detector-independent safety path">
       <p>위 구조는 <strong>설계 후보였고 측정으로 대체됐습니다.</strong> 제어루프에 들어간 적이
-        없고 성능 주장도 아닙니다. 대체 사유 둘: <strong>(1)</strong> 표적에 형상 정보가 없습니다 &mdash;
+        없고 성능 주장도 아닙니다. 초록색 instance boundary만 <strong>offline CPU 어댑터</strong>로
+        구현돼 있고, SAM worker·전송·제어루프 연결·성능 측정은 존재하지 않습니다. 대체 사유 둘: <strong>(1)</strong> 표적에 형상 정보가 없습니다 &mdash;
         detector가 보는 표적은 반지름 0.15 m 해석적 <em>구</em>에 상수색을 칠한 것이고, 디코이 3종 중
         하나는 <em>같은 반지름의 구</em>입니다. 배경은 40&times;24 depth를 업샘플한 회색 명암이며
         텍스처도 조명도 없고, 저장소에 쿼드로터 메쉬가 존재하지 않습니다.
@@ -321,8 +330,6 @@
         <a href="../../VERIFICATION.md">Verification</a>
         <a href="../../OPERATIONS.md">Operations</a>
         <a href="../../WORKLOG.md">Worklog</a>
-        <a href="../PAPER_WRITING_BRIEF_2026-08-24.md">Paper brief</a>
-        <a href="../CLAUDE_PPT_MASTER_BRIEF_2026-08-26.md">Professor presentation brief</a>
         <a href="../SIM2REAL_3DAY_EXECUTION_PLAN.md">Hardware 3-day plan</a>
         <a href="../physical_target_recovery_v2_lower1p25_result_2026-08-26.md">Recovery-v2 lower-1.25 result</a>
         <a href="../physical_target_recovery_v2_no_connector_forensics_result_2026-08-26.md">No-anchor forensics</a>
@@ -332,7 +339,7 @@
         <a href="../preregistration_corrected_nonoverlap_route_gate_r2_2026-08-31.md">Corrected route gate preregistration</a>
         <a href="../../results/navrl_corrected_nonoverlap_physical_off_heldout_seed313/summary.md">Route-off seed-313 held-out</a>
         <a href="../preregistration_corrected_nonoverlap_physical_off_heldout_eval_2026-09-02.md">Route-off held-out preregistration</a>
-        <a href="../SAM3_PERCEPTION_VERIFICATION_PLAN_2026-09-03.md">SAM 3 perception verification plan</a>
+        <a href="../SAM3_PERCEPTION_VERIFICATION_PLAN_2026-09-03.md">SAM 3 perception verification plan (⛔ SUPERSEDED)</a>
       </div>
     </section>
   </main>

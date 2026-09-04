@@ -39,8 +39,17 @@ substantive한 요청(학습·평가·분석·감사·구현)을 받으면:
   원인이 되므로 섞지 말 것.
 - **canonical 현재 상태**: `WORKLOG.md`(맨 아래) + `VERIFICATION.md`(ref5in gate·다음 실험) +
   `docs/status/` 라이브 대시보드. `RESEARCH_PLAN.md`는 charter(가설·방법). 실무는 `OPERATIONS.md`,
-  과거 crash 진단 기록은 `CRASH_TUNING_LOG.md`(2026-08-05 이후 미갱신, archival-in-place —
-  소스 4곳이 경로를 참조하므로 이동·삭제 금지). 역사 문서는 `docs/archive/`.
+  과거 crash 진단 기록은 `CRASH_TUNING_LOG.md`(내용은 2026-08-05에 동결, archival-in-place —
+  **소스 3곳**이 경로를 참조하므로 이동·삭제 금지: `navrl_task_config.py:720`,
+  `navrl_lidar_config.py:17`, `navrl_task.py:5937`). 역사 문서는 `docs/archive/`.
+- **경로가 계약인 문서 2건 — 이동·삭제·바이트 변경 금지**:
+  ① `docs/reference_platform_proposal_2026-08.md` — `navrl_ref5in_quad_config.py`의 docstring이
+  가리키고 그 파일이 **provenance-frozen**이라, 바이트가 하나만 바뀌어도
+  `eval_navrl_v2_density_sweep.sh:240-242`가 `robot config source drift`로 `exit 2`한다
+  (`NAVRL_V2_FORCE`로 우회 불가). 커밋 `921fb1d`가 이걸 '정리'했다가 8개 브랜치를 깼다.
+  잠금: `tests/test_navrl_ref5in_provenance_freeze.py:39,86`.
+  ② `docs/prereg_2026-08-13_detector_coupling.md` — 원본은 archive에 있고 이 경로는 **스텁**이다.
+  소스 5곳이 이 경로를 인용하므로 스텁을 지우면 인용이 다시 깨진다(2026-09-05 복구).
 - **현재 상태(2026-08-03)**: recovery curriculum continuation
   `ppo_260802_0020_navrl_v2-recover-curriculum-continue-s1`은 사용자 결정으로 ep24010에서 안전 중단했다.
   canonical artifact는 ep24000 checkpoint(SHA-256 `82f7978b42d…`)이며 학습 프로세스는 없다.

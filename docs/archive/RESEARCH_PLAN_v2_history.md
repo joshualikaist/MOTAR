@@ -1,6 +1,6 @@
 # RESEARCH_PLAN §8.1–8.22 — v2/TTC/riskcap 역사 기록
 
-> 2026-08-20 문서 통합 시 RESEARCH_PLAN에서 분리 보관. 현재 검증 authority는 [VERIFICATION.md](../VERIFICATION.md).
+> 2026-08-20 문서 통합 시 RESEARCH_PLAN에서 분리 보관. 현재 검증 authority는 [VERIFICATION.md](../../VERIFICATION.md).
 
 ## 8. v2 205-bar 종료 후 실패·한계 감사 사전계획 (2026-08-02)
 

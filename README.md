@@ -24,12 +24,9 @@ MOTAR는 카메라, LiDAR, ego-state만으로 움직이는 표적을 추적하�
 
 [Research site](docs/status/) · [System specification](docs/MOTAR_SYSTEM_SPEC_2026-08-24.md) ·
 [Blind-search & autonomous-evader plan](docs/plans/target_search_and_adversarial_evader.md) ·
-[SAM perception verification plan](docs/SAM3_PERCEPTION_VERIFICATION_PLAN_2026-09-03.md) ·
+[SAM perception verification plan ⛔ SUPERSEDED](docs/SAM3_PERCEPTION_VERIFICATION_PLAN_2026-09-03.md) ·
 [Verification](VERIFICATION.md) · [Operations](OPERATIONS.md) · [Worklog](WORKLOG.md)
 
-교수님 발표를 다시 만들 때는 [PPT master brief](docs/CLAUDE_PPT_MASTER_BRIEF_2026-08-26.md)를
-최상위 계약으로 사용한다. 이 문서는 hardware 예상치, high/low-level 구조, reward/PPO/curriculum,
-최종 Track A/B 판정과 발표 claim boundary를 한곳에 묶는다.
 
 ## Research question
 
@@ -41,6 +38,27 @@ MOTAR는 카메라, LiDAR, ego-state만으로 움직이는 표적을 추적하�
 - 빠른 추적은 표적 접근을 돕지만 제동거리와 충돌 위험을 키웁니다.
 - 장애물 수가 증가하면 제한된 obstacle representation이 장면을 충분히 보존하지 못할 수 있습니다.
 - 표적 미취득, 충돌, 시간 초과는 서로 다른 원인이므로 하나의 평균 reward로 합치면 진단이 흐려집니다.
+
+## Arena and platform
+
+![MOTAR arena geometry](docs/assets/motar-arena-geometry.svg)
+
+40 × 40 × 3 m 아레나에 0.7096 × 0.5756 × 2.0 m 막대를 배치합니다. 계보 밀도는 **70 / 115 / 160 / 205**이고
+(70 bars = 4.38 / 100 m², 205 bars = 12.81 / 100 m²) 300은 disconnected stress입니다. 목표는 스폰에서
+**22.5–28 m** 띠에 놓이고, 표적은 0.3–1.5 m/s로 움직입니다. 그림의 LiDAR 원(12 m)과 카메라 부채꼴(87°,
+20 m)은 축척대로 그린 것입니다 — **아레나 대비 센서가 얼마나 좁은지**가 이 그림의 요점입니다.
+
+측면도가 하나를 확정합니다: 막대가 2.0 m로 높고 순항 고도가 1.0 m이므로 **막대는 항상 어떤 LiDAR 빔에는
+걸립니다.** 접촉 포렌식에서 `VERTICAL_OUT`이 정확히 **0.0%**로 나온 이유입니다.
+
+![MOTAR platform and sensing](docs/assets/motar-platform-hardware.svg)
+
+`navrl_ref5in_quad_v2`는 **1.20 kg, 모터 대각 220 mm, 127 mm 프로펠러, 모터당 9.6 N**입니다. 총 추력
+38.4 N에 중량 11.77 N이므로 **TWR 3.26**이고 호버가 추력의 30.6%입니다. 여기서 운동 포락선이 유도됩니다 —
+45° 틸트에서 수평가속 9.81 m/s², 2.5 m/s에서 **정지거리 1.81 m·선회반경 3.12 m**.
+
+이 값들은 **hardware-informed simulation candidate**이며 실기는 미조립입니다. BOM·관성·추력·열·전원
+실측값이 아닙니다.
 
 ## Method
 
