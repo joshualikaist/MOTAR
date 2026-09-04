@@ -24,10 +24,21 @@ ENVELOPE = REPO / "tools" / "run_navrl_distractor_envelope.py"
 SEED = int(os.environ.get("NAVRL_CG_SEED", "491"))
 RESULT_ROOT = REPO / "results" / f"navrl_contact_geometry_seed{SEED}"
 ENVELOPE_CELL = "v7_n0"          # zero distractors: this is about bars, not decoys
-ARMS = {
+_ALL_ARMS = {
     "off": {"NAVRL_SPEED_GOVERNOR": "off"},
+    "fixed2p0": {"NAVRL_SPEED_GOVERNOR": "fixed"},
     "riskcap": {"NAVRL_SPEED_GOVERNOR": "riskcap"},
+    "stopcap": {"NAVRL_SPEED_GOVERNOR": "stopcap"},
+    # A4 geometry baselines: same stopping law as stopcap, different measurement geometry.
+    "omni": {"NAVRL_SPEED_GOVERNOR": "omni"},
+    "dwa_arc": {"NAVRL_SPEED_GOVERNOR": "dwa_arc"},
 }
+# The forensics runs (seed 491/497/503) used two arms; A4 opens all six.
+ARMS = (
+    _ALL_ARMS
+    if os.environ.get("NAVRL_CG_ALL_ARMS", "0").strip() == "1"
+    else {k: _ALL_ARMS[k] for k in ("off", "riskcap")}
+)
 
 
 def _load_envelope():
