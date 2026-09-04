@@ -15023,3 +15023,83 @@ GLAD 가중치는 **LICENSE 파일 없음**이므로 측정에만 쓰고 재배�
 
 교훈: 다른 실험의 수치를 인용할 때 **그 실험이 그 수치를 판정에 썼는지** 먼저 확인한다.
 보조 보고용 원값을 판정 지표와 같은 표에 놓으면 독자는 동등한 증거로 읽는다.
+
+## 2026-09-04 — 안전필터 선행연구: riskcap은 재발견이다 (두 겹으로)
+
+`docs/prereg_2026-09-04_contact_corridor_forensics.md` §5c에 요약. 증거등급을 붙여 조사했다
+(A: 원문에 수치 명시 · B: 그림/인접문에서 추론 · C: arXiv only · D: 벤더/코드/특허).
+
+### 우리 것은 재발견이다
+
+**(1) 산업 매니퓰레이터 안전** — Zanchettin & Rocco, IROS 2013 (A, 원문 확인):
+
+> "Let δ ∈ [0, 1] be a scalar quantity adopted to kinematically scale the trajectory in time...
+> the robot has to maintain the programmed path, while the traversing speed can be reduced"
+
+스칼라 하나로 크기만 조정하고 경로 보존 — 우리 구조와 동일. 용어는 **trajectory scaling /
+path-consistent safety**이며 ISO 10218 / ISO/TS 15066의 **Speed and Separation Monitoring**
+계열이다. **이 인용을 빠뜨리면 매니퓰레이터 안전 리뷰어에게 걸린다.**
+
+**(2) ROS 2 Nav2** — `nav2_collision_monitor`의 approach 동작(D, 소스 확인):
+`safe_vel = velocity * (TTC / time_before_collision)`, 소스 주석이
+*"Apply the same ratio to all components to **preserve curvature**"*. 맵 없음 · raw scan ·
+크기만 조정 · 곡률 보존 — 사실상 동일하고 **이미 출하돼 있다**. 다만 **출판된 평가가 없다.**
+
+### 초안 주장 하나 기각
+
+1차 조사는 "0이 아닌 하한을 일부러 두는 사례가 없다"고 했다. **틀렸다.** Regulated Pure Pursuit
+(Macenski et al., *Autonomous Robots* 47, 2023, A)는 `regulated_linear_scaling_min_speed =
+0.25 m/s`를 기본값으로 둔다. 같은 논문이 **선형 램프를 지수·이차보다 의도적으로 선택**한
+근거도 준다("exponential and quadratic ... far too significantly penalized proximity").
+
+### 그래도 남는 니치 (2차 조사 결론)
+
+쿼드로터에서 ① 맵 없이 raw depth/LiDAR clearance의 닫힌 형식 함수로 `v_max`를 정하고
+② **명령 방향을 보존**하며 ③ 동일 명목속도에서 with/without ablation을 낸 결과는 **없다**.
+가까운 넷이 각각 하나씩 빠진다: Zhao RA-L'24(맵 기반, 수치 그림뿐) · Ryll ICRA'19(cost이지
+cap 아님) · Falanga RA-L'19(공식은 맞으나 분석 전용) · DWA'97(지상, 방향 동시탐색).
+
+### 반드시 인용·비교해야 할 것
+
+- **Zhao, Wu, Chen, Gao, "Learning Speed Adaptation for Flight in Clutter," IEEE RA-L 2024**
+  (arXiv:2403.04586) — 최근접 이웃. RL 외부루프가 스칼라 `v†`를 EGO-Planner에 부과하므로
+  실질적 magnitude-only. 차이는 **맵 기반**.
+- **Zhang et al., arXiv:2602.08653 (2026, ZJU FAST Lab)** — 같은 플랫폼·같은 밀집 환경이고
+  **NavRL을 벤치마크로 쓴다**(NavRL 3/5/7/9 m/s에서 43.12/5.00/3.12/0 %). 우리가 진 ablation을
+  그들은 이겼다(92.50 % vs 단순 baseline 87.08 %). 동시에 **우리 노출시간 기제를 말로 적어놓은
+  유일한 문헌**이며 이름까지 붙였다: **"constraint-induced reachability phenomenon"**.
+  단 그들의 실패 양태는 **stagnation이고 collision이 아니다** — 노출 기제를 **충돌률**에
+  귀속시킨 문헌은 없다. 우리 stopcap 결과가 바로 그 귀속이다.
+- Hsu/Hu/Fisac, *Annual Review* 2024 — **Perfect Safety Filter** 조건 2가 우리의 "상한 아래
+  요청은 손대지 않음"과 동일. 같은 문헌이 정지 안전집합의 무용함을 명시해 우리 floor를
+  정당화한다("some hard-to-please customers may return the robot on the basis that it doesn't
+  do anything").
+- Fox/Burgard/Thrun 1997 §2가 방향·속도 분리를 **"무한한 힘을 낼 수 있을 때만 정당하다"**고
+  공격한다. 답변("방향은 clutter를 이미 본 학습 정책이 정한다")을 논문에 명시해야 한다.
+
+### 부수 발견
+
+- 항공 정본 두 법칙(Falanga RA-L'19, Loquercio *Sci. Robot.* 2021 §S5)은 **제동이 아니라 회피
+  법칙**이다: `v = s/(τ + t_maneuver)`. 우리 stopcap은 지상 계열 제동 법칙을 비킬 수 있는
+  비행체에 적용한 것 → **stopcap 부진의 경쟁 가설 B**(사전등록 §5b-2에 기록).
+- 우리 stopcap은 **교과서 DWA보다 엄격**하다 — DWA 원논문에 reaction/latency 항이 아예 없다
+  (단어 전수 확인).
+- EGO-Swarm Table II: 밀도 0 -> 0.42 obs/m²에서 평균 속도 1.55 -> 1.61 m/s로 **평평** —
+  주요 플래너에 clearance 감속이 없다는 직접 증거.
+- Loquercio가 우리 기제를 열린 문제로 지목: *"strong variations of the instantaneous flying
+  speed as a function of the obstacle density ... resulting in intractable sampling."*
+- 안전필터가 단순 baseline을 못 이긴 **정직한 ablation을 문헌에서 찾지 못했다**(검색어 5종).
+  우리 Q1 null(riskcap-fixed2p0 +0.40 pp, CI [-1.98,+2.78])은 그래서 출판 가치가 있으나,
+  **부정 결과를 요점으로 삼을 때만**이다.
+
+### 명명 규칙 (동결)
+
+**"direction-preserving speed governor"** 또는 **"magnitude-only (path-consistent) safety
+filter with a liveness floor"**. 개입 방식은 saturation-type, 감시는 value-based.
+**CBF·shield·"provably safe"로 부르지 않는다** — forward invariance도 recursive feasibility도
+없다.
+
+### 다음
+
+접촉 기하 포렌식 사전등록 완료(범주 5개·우선순위·예측 5개 동결, 경쟁 가설 A/B 명시).
+GPU 2 arm x 2,049 ep 대기.
