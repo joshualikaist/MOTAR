@@ -30,6 +30,9 @@ import torch
 # Frozen with the A3 preregistration. Sphere-boundary augmentation is what converts "no return"
 # from free space into a bound, so its radius is the sensing horizon itself.
 FLIP_EPS = 1e-6
+# Frozen by prereg_2026-09-05_a3_star_convex_shadow section 2: equal to the LiDAR horizontal
+# beam spacing. Narrower would look between beams; wider degenerates toward omnidirectional.
+SC_CONE_HALF_ANGLE_RAD = math.radians(5.0)
 
 
 def flip_points(points, radius):

@@ -1752,6 +1752,14 @@ class NavRLTask(BaseTask):
             #   0 path_len_sum 1 path_len_n 2 cmd_vs_actual_sum 3 cmd_vs_actual_n
             #   4 compute_us_sum 5 compute_us_n 6 compute_us_max
             self._cg_aux = torch.zeros(7, dtype=torch.float64, device=self.device)
+            # A3 star-convex shadow (prereg_2026-09-05_a3_star_convex_shadow). Counterfactual only:
+            # would an omnidirectional, unknown-bounding region have SEEN the bar the corridor
+            # missed? Nothing here reaches the actor.
+            self._cg_sc_enabled = os.environ.get("NAVRL_STAR_CONVEX_SHADOW", "0").strip() == "1"
+            #   0 eligible(lateral|no_return)  1 reclassified  2 lateral_elig  3 lateral_recl
+            #   4 noret_elig  5 noret_recl  6 sc_clearance_sum  7 corridor_clearance_sum
+            self._cg_sc = torch.zeros(8, dtype=torch.float64, device=self.device)
+            self._cg_sc_geom = None
         self._speed_governor_diag = self._empty_speed_governor_diag()
         self._speed_governor_outcome_steps = {
             "capture": [], "crash": [], "timeout": []
@@ -4987,14 +4995,39 @@ class NavRLTask(BaseTask):
                     "sensor-associated target mask does not match the current LiDAR scan"
                 )
             target_return = candidate
-        clearance = directional_lidar_clearance(
-            scan_m,
-            self._speed_governor_bearings,
-            command_xy,
-            max_range_m=float(self.task_config.lidar_max_range),
-            path_half_width_m=self.speed_governor_cfg.path_half_width_m,
-            target_return_mask=target_return,
-        )
+        mode = self.speed_governor_cfg.mode
+        if mode == "omni":
+            # A4 baseline: identical stopping law, corridor removed entirely.
+            from aerial_gym.task.navrl_task.speed_governor import omnidirectional_clearance
+
+            clearance = omnidirectional_clearance(
+                scan_m,
+                max_range_m=float(self.task_config.lidar_max_range),
+                target_return_mask=target_return,
+            )
+        elif mode == "dwa_arc":
+            # A4 baseline: identical stopping law, measured along the arc rather than a line.
+            from aerial_gym.task.navrl_task.speed_governor import arc_clearance
+
+            yaw_rate = self.obs_dict["robot_body_angvel"][:, 2].detach()
+            clearance = arc_clearance(
+                scan_m,
+                self._speed_governor_bearings,
+                command_xy,
+                yaw_rate,
+                max_range_m=float(self.task_config.lidar_max_range),
+                path_half_width_m=self.speed_governor_cfg.path_half_width_m,
+                target_return_mask=target_return,
+            )
+        else:
+            clearance = directional_lidar_clearance(
+                scan_m,
+                self._speed_governor_bearings,
+                command_xy,
+                max_range_m=float(self.task_config.lidar_max_range),
+                path_half_width_m=self.speed_governor_cfg.path_half_width_m,
+                target_return_mask=target_return,
+            )
         if self._contact_geom_enabled:
             # The exact vector the corridor was drawn around, before any scaling.
             self._governor_command_xy[:] = command_xy.detach()
@@ -6495,6 +6528,9 @@ class NavRLTask(BaseTask):
         bars_in_corridor = in_corr_all.sum(dim=1)
         arc_clear = torch.where(in_corr_all, bar_dist, torch.full_like(bar_dist, rng)).amin(dim=1)
 
+        if self._cg_sc_enabled:
+            self._record_star_convex_shadow(idx, hit_bearing, hit_d, lat_cat_c, nor_c, rng)
+
         target_involved = (self.target_position[idx] - pos[idx]).norm(dim=1) <= DISTRACTOR_LOCK_RADIUS_M
 
         self._cg_counts[2:] += torch.stack([
@@ -6508,6 +6544,83 @@ class NavRLTask(BaseTask):
             lat_c.sum(dtype=torch.float64),
             arc_clear.sum(dtype=torch.float64),
         ])
+
+    def _record_star_convex_shadow(self, idx, hit_bearing, hit_d, lateral, no_return, rng):
+        """Would a star-convex region have bounded the bar the corridor missed?
+
+        Preregistered: docs/prereg_2026-09-05_a3_star_convex_shadow.md. Shadow only -- the live
+        governor and the policy are untouched; this counts a counterfactual on the same frames.
+        Eligible contacts are exactly those the corridor classified LATERAL or NO_RETURN, i.e. the
+        77-78% the forensics found structurally unmonitorable.
+        """
+        from aerial_gym.task.navrl_task.star_convex import (
+            SC_CONE_HALF_ANGLE_RAD,
+            direction_clearance,
+            scan_to_points,
+        )
+
+        eligible = lateral | no_return
+        if not bool(eligible.any()):
+            return
+        # DELIBERATE: the vertically-collapsed scan, the same one the live governor consumes
+        # (directional_lidar_clearance takes amin over the vertical beams). Feeding the full
+        # [B,V,H] cloud here would change two things at once and the comparison would no longer
+        # isolate what A3 asks. With this input the ONLY differences from the corridor are that
+        # every bearing participates and that an unreturned ray bounds instead of opens.
+        scan = getattr(self.perception, "last_scan_nearest", None)
+        if scan is None:
+            return
+        scan = scan.unsqueeze(1)  # [B,H] -> [B,1,H], horizontal plane
+        if self._cg_sc_geom is None:
+            # Single elevation row at 0: the input is already vertically collapsed.
+            self._cg_sc_geom = (
+                self._speed_governor_bearings,
+                torch.zeros(1, device=self.device),
+            )
+        bearings, elevations = self._cg_sc_geom
+        if bearings is None:
+            return
+
+        pts, _ = scan_to_points(scan[idx], bearings, elevations, rng)
+        # The bar's own bearing, as a unit direction in the sensor plane.
+        d = torch.stack([torch.cos(hit_bearing), torch.sin(hit_bearing)], dim=1)
+        sc_bound = direction_clearance(pts, d, rng, SC_CONE_HALF_ANGLE_RAD)
+        seen = eligible & (hit_d <= sc_bound)
+
+        self._cg_sc += torch.stack([
+            eligible.sum().double(), seen.sum().double(),
+            lateral.sum().double(), (lateral & seen).sum().double(),
+            no_return.sum().double(), (no_return & seen).sum().double(),
+            sc_bound[eligible].sum(dtype=torch.float64),
+            hit_d[eligible].sum(dtype=torch.float64),
+        ])
+
+    def _star_convex_shadow_payload(self):
+        from aerial_gym.task.navrl_task.star_convex import SC_CONE_HALF_ANGLE_RAD
+
+        v = [float(x) for x in self._cg_sc.tolist()]
+        elig, recl, lat_e, lat_r, nr_e, nr_r, sc_sum, hit_sum = v
+        rate = lambda a, b: (a / b) if b > 0 else None
+        r = rate(recl, elig)
+        verdict = None
+        if r is not None:
+            verdict = ("PRESCRIPTION_SUPPORTED" if r >= 0.50
+                       else "INSUFFICIENT" if r < 0.20 else "PARTIAL")
+        return {
+            "schema_version": 1,
+            "prereg": "docs/prereg_2026-09-05_a3_star_convex_shadow.md",
+            "cone_half_angle_deg": math.degrees(SC_CONE_HALF_ANGLE_RAD),
+            "eligible_contacts": int(elig),
+            "reclassified_seen": int(recl),
+            "reclassification_rate": r,
+            "lateral_eligible": int(lat_e), "lateral_reclassified": int(lat_r),
+            "lateral_rate": rate(lat_r, lat_e),
+            "no_return_eligible": int(nr_e), "no_return_reclassified": int(nr_r),
+            "no_return_rate": rate(nr_r, nr_e),
+            "mean_star_convex_bound_m": rate(sc_sum, elig),
+            "mean_hit_distance_m": rate(hit_sum, elig),
+            "verdict_a3": verdict,
+        }
 
     def _contact_geometry_payload(self):
         c = [int(v) for v in self._cg_counts.tolist()]
@@ -9102,6 +9215,9 @@ class NavRLTask(BaseTask):
         if self._contact_geom_enabled:
             payload["condition"]["contact_geometry"] = True
             payload["contact_geometry"] = self._contact_geometry_payload()
+            if self._cg_sc_enabled:
+                payload["condition"]["star_convex_shadow"] = True
+                payload["star_convex_shadow"] = self._star_convex_shadow_payload()
         compact = json.dumps(payload, sort_keys=True, separators=(",", ":"))
         print("NAVRL_BULK_EVAL_RESULT " + compact, flush=True)
 

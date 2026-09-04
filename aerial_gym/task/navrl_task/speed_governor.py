@@ -11,7 +11,13 @@ import math
 import torch
 
 
-VALID_SPEED_GOVERNOR_MODES = ("off", "fixed", "clearance", "ttc", "riskcap", "stopcap")
+VALID_SPEED_GOVERNOR_MODES = (
+    "off", "fixed", "clearance", "ttc", "riskcap", "stopcap",
+    # A4 baselines (prereg pending). Both answer "is the corridor the problem?" by changing
+    # only the GEOMETRY of the measurement, keeping the stopping-distance law identical.
+    "omni",     # same law, but clearance is the nearest return in ANY bearing
+    "dwa_arc",  # same law, but clearance is measured along the arc the vehicle is on
+)
 
 
 def _finite_float(environ, name, default, *, minimum=None, strict_minimum=False):
@@ -180,6 +186,100 @@ def directional_lidar_clearance(
     )
 
 
+def _horizontal_nearest(lidar_m, valid, max_range_m, vertical_fov_deg=(20.0, -10.0)):
+    """Per-bearing nearest range projected onto the horizontal plane.
+
+    Shared with directional_lidar_clearance so that the A4 arms differ from the corridor in
+    geometry ONLY. Forgetting this projection makes an arm look 6% further-sighted than the
+    corridor at the +20 degree row, which would confound the comparison it exists to make.
+    """
+    vertical_angles = torch.linspace(
+        math.radians(float(vertical_fov_deg[0])),
+        math.radians(float(vertical_fov_deg[1])),
+        lidar_m.shape[1],
+        device=lidar_m.device,
+        dtype=lidar_m.dtype,
+    )
+    safe = torch.where(valid, lidar_m, torch.full_like(lidar_m, float(max_range_m)))
+    horiz = safe * torch.cos(vertical_angles).view(1, -1, 1)
+    horiz = torch.where(valid, horiz, torch.full_like(horiz, float(max_range_m)))
+    return horiz.amin(dim=1)
+
+
+def omnidirectional_clearance(lidar_m, *, max_range_m, target_return_mask=None):
+    """Nearest sensor surface in ANY bearing -- the corridor removed, nothing else changed.
+
+    This is the crude answer the contact forensics invites: 57-58% of contacts were lateral to a
+    0.45 m half-width corridor, so what happens if the corridor is simply dropped? It is the
+    baseline a more careful geometric test has to beat, and the S1/Q1 history says that is not a
+    formality -- riskcap did not beat a constant cap.
+    """
+    finite = torch.isfinite(lidar_m)
+    valid = finite & (lidar_m >= 0.0) & (lidar_m < float(max_range_m) * 0.995)
+    if target_return_mask is not None:
+        valid &= ~target_return_mask.bool()
+    if lidar_m.ndim != 3:
+        raise ValueError("lidar_m must be [batch, vertical_beams, horizontal_beams]")
+    return _horizontal_nearest(lidar_m, valid, max_range_m).amin(dim=1)
+
+
+def arc_clearance(
+    lidar_m,
+    bearings_rad,
+    command_xy,
+    yaw_rate,
+    *,
+    max_range_m,
+    path_half_width_m,
+    target_return_mask=None,
+):
+    """Distance to the nearest obstacle along the CIRCULAR ARC the vehicle is turning onto.
+
+    Fox, Burgard & Thrun (IEEE RAM 1997) Eq. 14 measures dist(v, omega) on the arc, not down a
+    straight corridor, and their section 2 argues the straight-line decomposition is only
+    justifiable "if infinite forces can be asserted on the robot". This arm quantifies that
+    objection on our own data: same stopping law, same scan, arc instead of a line.
+
+    For speed v and yaw rate w the instantaneous arc has radius R = v / w. A ray at bearing
+    `delta` off the command intersects that arc where the chord subtends the same angle, giving
+    an along-arc distance of R * 2 * delta for the ray that touches it. We keep the corridor's
+    half-width as the tube radius about the arc so that only the geometry changes.
+    """
+    if lidar_m.ndim != 3:
+        raise ValueError("lidar_m must be [batch, vertical_beams, horizontal_beams]")
+    max_range = float(max_range_m)
+    finite = torch.isfinite(lidar_m)
+    valid = finite & (lidar_m >= 0.0) & (lidar_m < max_range * 0.995)
+    if target_return_mask is not None:
+        valid &= ~target_return_mask.bool()
+    nearest = _horizontal_nearest(lidar_m, valid, max_range)
+    ray_valid = valid.any(dim=1)
+
+    speed = command_xy.norm(dim=1)
+    command_bearing = torch.atan2(command_xy[:, 1], command_xy[:, 0])
+    delta = torch.atan2(
+        torch.sin(bearings_rad.view(1, -1) - command_bearing.view(-1, 1)),
+        torch.cos(bearings_rad.view(1, -1) - command_bearing.view(-1, 1)),
+    )
+    # Signed turn radius; a near-zero yaw rate degenerates to the straight corridor by construction.
+    w = yaw_rate.view(-1, 1)
+    straight = w.abs() < 1e-3
+    radius = torch.where(straight, torch.full_like(w, 1e6), speed.view(-1, 1) / w)
+
+    # Perpendicular offset of the ray endpoint from the arc, and the along-arc travel to reach it.
+    px = nearest * torch.cos(delta)
+    py = nearest * torch.sin(delta)
+    perp = (torch.sqrt(px.square() + (py - radius).square()) - radius.abs()).abs()
+    along = torch.where(
+        straight, px, (radius.abs() * (2.0 * delta.abs())).clamp(max=max_range)
+    )
+    on_arc = ray_valid & (along > 0.0) & (perp <= float(path_half_width_m))
+    clearance = torch.where(on_arc, along, torch.full_like(along, max_range)).amin(dim=1)
+    return torch.where(
+        speed > 1e-6, clearance.clamp(0.0, max_range), torch.full_like(clearance, max_range)
+    )
+
+
 def apply_speed_governor(command_xy, clearance_m, config):
     """Scale horizontal velocity and return tensors required for causal diagnostics."""
 
@@ -212,7 +312,7 @@ def apply_speed_governor(command_xy, clearance_m, config):
         cap = float(config.fixed_cap_mps) + release * (
             float(config.free_speed_cap_mps) - float(config.fixed_cap_mps)
         )
-    elif config.mode == "stopcap":
+    elif config.mode in ("stopcap", "omni", "dwa_arc"):
         # Stopping-distance admissible cap (DWA admissibility; RSS longitudinal rule with
         # a_accel=0 and a static obstacle): the largest v with
         #   usable >= v*reaction + v^2/(2*brake),

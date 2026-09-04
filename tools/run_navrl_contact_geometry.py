@@ -49,6 +49,8 @@ def _arm_env(mod, arm, out_dir):
     env["NAVRL_V2_SHARED_SOURCE_BUNDLE"] = str(RESULT_ROOT / "source_bundle")
     env["NAVRL_CONTACT_GEOMETRY"] = "1"
     env["NAVRL_SPEED_GOVERNOR_DIAG"] = "1"   # the corridor is computed even when mode is off
+    if os.environ.get("NAVRL_STAR_CONVEX_SHADOW", "0").strip() == "1":
+        env["NAVRL_STAR_CONVEX_SHADOW"] = "1"
     env.update(ARMS[arm])
     return env
 

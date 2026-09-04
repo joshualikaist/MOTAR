@@ -22,7 +22,7 @@ class SpeedGovernorTests(unittest.TestCase):
         command = torch.tensor([[2.5, 2.5], [0.0, 0.0]])
         clearance = torch.tensor([0.5, 0.2])
         governed, diag = apply_speed_governor(
-            command, clearance, SpeedGovernorConfig(mode="off")
+            command, clearance, _GOVERNOR.SpeedGovernorConfig(mode="off")
         )
         self.assertTrue(torch.equal(governed, command))
         self.assertTrue(torch.equal(diag["scale"], torch.ones(2)))
@@ -32,13 +32,13 @@ class SpeedGovernorTests(unittest.TestCase):
         governed, _ = apply_speed_governor(
             command,
             torch.tensor([12.0]),
-            SpeedGovernorConfig(mode="fixed", fixed_cap_mps=2.0),
+            _GOVERNOR.SpeedGovernorConfig(mode="fixed", fixed_cap_mps=2.0),
         )
         self.assertTrue(torch.allclose(governed, torch.tensor([[1.2, 1.6]])))
         self.assertAlmostEqual(float(governed.norm()), 2.0, places=6)
 
     def test_clearance_mode_slows_only_inside_slow_zone(self):
-        config = SpeedGovernorConfig(
+        config = _GOVERNOR.SpeedGovernorConfig(
             mode="clearance", hard_margin_m=0.5, slow_distance_m=3.0,
             free_speed_cap_mps=2.5,
         )
@@ -52,14 +52,14 @@ class SpeedGovernorTests(unittest.TestCase):
         self.assertLess(float(diag["stopping_margin_requested_m"][1]), 0.0)
 
     def test_ttc_mode_enforces_requested_time_headway(self):
-        config = SpeedGovernorConfig(mode="ttc", hard_margin_m=0.5, ttc_s=1.0)
+        config = _GOVERNOR.SpeedGovernorConfig(mode="ttc", hard_margin_m=0.5, ttc_s=1.0)
         command = torch.tensor([[3.0, 0.0]])
         governed, diag = apply_speed_governor(command, torch.tensor([1.5]), config)
         self.assertAlmostEqual(float(governed.norm()), 1.0, places=6)
         self.assertAlmostEqual(float(diag["scale"]), 1.0 / 3.0, places=6)
 
     def test_riskcap_never_forces_a_stop_and_releases_in_open_space(self):
-        config = SpeedGovernorConfig(
+        config = _GOVERNOR.SpeedGovernorConfig(
             mode="riskcap",
             fixed_cap_mps=2.0,
             free_speed_cap_mps=3.5,
@@ -78,7 +78,7 @@ class SpeedGovernorTests(unittest.TestCase):
         self.assertTrue(torch.all(diag["executed_speed_mps"] > 0.0))
 
     def test_stopcap_allows_full_stop_and_matches_closed_form(self):
-        config = SpeedGovernorConfig(
+        config = _GOVERNOR.SpeedGovernorConfig(
             mode="stopcap",
             hard_margin_m=0.45,
             brake_mps2=2.9608856678,
@@ -102,7 +102,7 @@ class SpeedGovernorTests(unittest.TestCase):
         self.assertTrue(torch.all(caps <= 3.53553390593 + 1e-6))
 
     def test_stopcap_executed_stopping_margin_is_nonnegative_by_construction(self):
-        config = SpeedGovernorConfig(
+        config = _GOVERNOR.SpeedGovernorConfig(
             mode="stopcap", hard_margin_m=0.45, brake_mps2=2.9608856678, reaction_s=0.1
         )
         torch.manual_seed(0)
@@ -133,7 +133,7 @@ class SpeedGovernorTests(unittest.TestCase):
         scan[0, 0, 1] = 2.0  # forward obstacle
         scan[1, 0, 0] = 3.0  # left obstacle
         command = torch.tensor([[1.0, 0.0], [0.0, 1.0]])
-        clearance = directional_lidar_clearance(
+        clearance = _GOVERNOR.directional_lidar_clearance(
             scan,
             bearings,
             command,
@@ -147,7 +147,7 @@ class SpeedGovernorTests(unittest.TestCase):
         bearings = torch.tensor([0.0])
         scan = torch.tensor([[[1.0]]])
         target = torch.ones_like(scan, dtype=torch.bool)
-        clearance = directional_lidar_clearance(
+        clearance = _GOVERNOR.directional_lidar_clearance(
             scan,
             bearings,
             torch.tensor([[1.0, 0.0]]),
@@ -161,7 +161,7 @@ class SpeedGovernorTests(unittest.TestCase):
     def test_vertical_slant_range_is_projected(self):
         bearings = torch.tensor([0.0])
         scan = torch.tensor([[[12.0], [2.0]]])
-        clearance = directional_lidar_clearance(
+        clearance = _GOVERNOR.directional_lidar_clearance(
             scan,
             bearings,
             torch.tensor([[1.0, 0.0]]),
@@ -174,7 +174,7 @@ class SpeedGovernorTests(unittest.TestCase):
     def test_default_vertical_angles_follow_warp_tensor_row_order(self):
         bearings = torch.tensor([0.0])
         scan = torch.tensor([[[2.0], [12.0], [12.0], [12.0]]])
-        clearance = directional_lidar_clearance(
+        clearance = _GOVERNOR.directional_lidar_clearance(
             scan,
             bearings,
             torch.tensor([[1.0, 0.0]]),
@@ -208,3 +208,93 @@ class SpeedGovernorTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class A4BaselineGeometries(unittest.TestCase):
+    """omni and dwa_arc change ONLY the geometry of the clearance measurement.
+
+    Both reuse the stopcap stopping law, so any difference in outcome is attributable to where
+    the filter looks -- which is the question the contact forensics raised (57-58% of contacts
+    were lateral to the 0.45 m corridor).
+    """
+
+    RNG = 12.0
+    H = 72
+
+    def _bearings(self):
+        return torch.linspace(math.pi, -math.pi + 2 * math.pi / self.H, self.H)
+
+    def _scan(self, fill=None):
+        return torch.full((1, 4, self.H), self.RNG if fill is None else float(fill))
+
+    def test_omni_sees_a_purely_lateral_obstacle_that_the_corridor_misses(self):
+        bearings = self._bearings()
+        scan = self._scan()
+        lateral_bin = int(torch.argmin((bearings - (math.pi / 2)).abs()))
+        scan[0, :, lateral_bin] = 1.5
+        cmd = torch.tensor([[2.5, 0.0]])
+
+        corridor = _GOVERNOR.directional_lidar_clearance(
+            scan, bearings, cmd, max_range_m=self.RNG, path_half_width_m=0.45
+        )
+        omni = _GOVERNOR.omnidirectional_clearance(scan, max_range_m=self.RNG)
+        # The corridor never sees it; omni does. The expected value is the HORIZONTAL projection
+        # of the 1.5 m slant range at the +20 deg row -- the same projection the corridor applies,
+        # which is the point: only where we look changed, not how range is reduced.
+        self.assertAlmostEqual(float(corridor), self.RNG, places=2)
+        self.assertAlmostEqual(float(omni), 1.5 * math.cos(math.radians(20.0)), places=3)
+
+    def test_arc_degenerates_to_the_straight_corridor_at_zero_yaw_rate(self):
+        bearings = self._bearings()
+        scan = self._scan()
+        fwd = int(torch.argmin(bearings.abs()))
+        scan[0, :, fwd] = 4.0
+        cmd = torch.tensor([[2.5, 0.0]])
+
+        straight = _GOVERNOR.directional_lidar_clearance(
+            scan, bearings, cmd, max_range_m=self.RNG, path_half_width_m=0.45
+        )
+        arc = _GOVERNOR.arc_clearance(
+            scan, bearings, cmd, torch.zeros(1),
+            max_range_m=self.RNG, path_half_width_m=0.45,
+        )
+        self.assertAlmostEqual(float(arc), float(straight), places=3)
+
+    def test_arc_and_line_disagree_while_turning(self):
+        """The DWA objection, made measurable: turning changes what is in the way."""
+        bearings = self._bearings()
+        scan = self._scan()
+        # An obstacle off to one side: not in the straight tube, but on a curving path.
+        off = int(torch.argmin((bearings - math.radians(35.0)).abs()))
+        scan[0, :, off] = 3.0
+        cmd = torch.tensor([[2.5, 0.0]])
+
+        straight = float(
+            _GOVERNOR.directional_lidar_clearance(
+                scan, bearings, cmd, max_range_m=self.RNG, path_half_width_m=0.45
+            )
+        )
+        turning = float(
+            _GOVERNOR.arc_clearance(
+                scan, bearings, cmd, torch.tensor([1.2]),
+                max_range_m=self.RNG, path_half_width_m=0.45,
+            )
+        )
+        self.assertAlmostEqual(straight, self.RNG, places=2)
+        self.assertLess(turning, self.RNG, "a turn must bring the off-axis obstacle into play")
+
+    def test_both_modes_use_the_stopcap_law(self):
+        cmd = torch.tensor([[3.0, 0.0]])
+        clear = torch.tensor([2.0])
+        caps = {}
+        for mode in ("stopcap", "omni", "dwa_arc"):
+            cfg = _GOVERNOR.SpeedGovernorConfig(mode=mode)
+            _, tel = apply_speed_governor(cmd, clear, cfg)
+            caps[mode] = float(tel["speed_cap_mps"])
+        self.assertAlmostEqual(caps["omni"], caps["stopcap"], places=6)
+        self.assertAlmostEqual(caps["dwa_arc"], caps["stopcap"], places=6)
+
+    def test_modes_are_accepted_by_the_config(self):
+        for mode in ("omni", "dwa_arc"):
+            cfg = SpeedGovernorConfig.from_environ({"NAVRL_SPEED_GOVERNOR": mode})
+            self.assertEqual(cfg.mode, mode)
