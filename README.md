@@ -112,21 +112,94 @@ confidence는 N=1/3/5에서 `0.826 → 0.896 → 0.892`였습니다. N=1보다 �
 따라 단조 증가하지는 않습니다. `count`가 후보별 값이 아니라 양성 픽셀의 합이라는 구조적 문제는
 남습니다. 평균 픽셀 수 147–181인데 표적 자체는 2–5 px입니다.
 
-**이 결과는 개선이 아니라 결함의 정량화이며**, 후보 기반 detector(C/D 단계)의 설계 근거입니다.
+**이 결과는 개선이 아니라 결함의 정량화입니다.**
 detector 간 FTLR/outcome 비교는 금지입니다(서로 다른 궤적 → 서로 다른 프레임 분포, prereg §3-c L6).
 원자료: [`summary`](results/navrl_detector_distractor_envelope_seed479/summary.md).
 
+### 세 실험이 같은 결론으로 수렴했습니다
+
+원인이 무엇인지를 세 갈래로 각각 사전등록하고 측정했습니다.
+
+| 무엇을 바꿨나 | 사전등록 지표의 효과 | 판정 |
+|---|---:|---|
+| **자료구조** — connected components 다중 후보 + χ²(3) 게이팅 | 없음 (shadow FTLR **+1.3 pp**) | `RECOGNITION_DOMINANT` |
+| **거리 측정 분산** — 물리적으로 옳은 2차 모델(20 m에서 2.3배) | 없음 (capture **−0.34 pp**, CI [−3.19, +2.51]) | `VARIANCE_INSENSITIVE` |
+| **어느 물체를 lock 하는가** — 동색 디코이 5개 | FTLR **90.27%** (N=0 대비 N=5) | `COLOR_SHORTCUT_CONFIRMED` |
+
+세 번째 행의 판정 지표는 **FTLR**이다. 같은 셀의 capture는 68.13% → 12.64%로 떨어지지만
+그 원값은 **판정에 쓰지 않는다** — distractor가 다섯 코드 경로에서 자유 공간으로 남아 있어
+distractor 충돌이 미귀속 contact로 기록되고 정적 goal이 distractor 안에 놓일 수 있다
+([envelope summary](results/navrl_detector_distractor_envelope_seed479/summary.md) §L5).
+방향은 명확하지만 크기는 교란돼 있다.
+
+**구속 조건은 측정 품질이 아니라 물체 동일성(identity)입니다.** 더 정밀하게 재도, 후보를 더 잘
+관리해도 달라지지 않습니다. 사전등록:
+[S1 구조 수정](docs/prereg_2026-09-03_s1_structure_fix_shadow.md) ·
+[깊이 잡음 차수](docs/prereg_2026-09-04_depth_noise_model_order.md) ·
+[디코이 envelope](docs/prereg_2026-09-01_distractor_envelope.md).
+
+### 대체된 방향 — 시뮬 내 형상 detector 학습
+
 ![MOTAR candidate instance-preserving detection pipeline](docs/assets/motar-perception-candidate.svg)
 
-위 그림은 **설계 후보**이며 제어루프에 들어가 있지 않고 측정 결과도 아닙니다. SAM 3를
-`AppearanceTargetSegmenter` 자리에 갈아 끼우지 않습니다. 초록색 `INSTANCE BOUNDARY`만 현재
-구현된 오프라인 CPU 계약입니다. 실제 SAM worker와 transport, timestamp가 붙은 3-D 변환,
-다중가설 association/tracker, actor 연결, detector와 독립된 safety path는 아직 계획 단계입니다.
+위 그림은 **설계 후보였고, 측정으로 대체됐습니다.** 제어루프에 들어간 적이 없고 성능 주장도
+아닙니다. 초록색 `INSTANCE BOUNDARY`만 오프라인 CPU 계약으로 구현돼 있습니다.
 
-검증은 `구조 계약 → 센서 해상도 → SAM worker/전송 → 동일 프레임 인지 → latency/SWaP → shadow
-mode → active closed-loop → 경량화 → 실기` 순서로 진행합니다. 해상도와 SAM 실행 주기는 미리
-결론내리지 않고 측정 후 동결합니다. 전체 gate, 데이터 분할, 지표와 중지 조건은
-[SAM 3 perception verification plan](docs/SAM3_PERCEPTION_VERIFICATION_PLAN_2026-09-03.md)에 있습니다.
+대체 사유는 두 가지입니다.
+
+1. **표적에 형상 정보가 없습니다.** detector가 보는 표적은 반지름 0.15 m의 **해석적 구**에 상수색
+   `[0.88, 0.08, 0.045]`를 칠한 것이고, 디코이 3종 중 하나는 **같은 반지름의 구**입니다
+   (`env_object_config.py:938`). 배경은 40×24 depth를 업샘플한 회색 명암이며 텍스처도 조명도
+   없습니다. 저장소 전체에 쿼드로터 메쉬가 존재하지 않습니다.
+2. **시뮬 이미지로 학습한 detector는 전이되지 않습니다.** 일반 시뮬로 학습한 tiny-YOLOv4는
+   실제 저조도에서 mAP **37.2%**인 반면 실사진 기반은 96.4%입니다(Ning et al., *Unmanned Systems*
+   2024). 우리 렌더러는 그 "일반 시뮬"보다 열악합니다.
+
+따라서 인지는 **실제 공대공 데이터로 학습**하고, 시뮬은 그 detector의 **측정된 오차 모델**을
+주입해 정책을 학습시키는 구조로 갑니다. 아래 [External data](#external-data--what-we-have-what-we-cannot-get)
+참조.
+
+## External data — what we have, what we cannot get
+
+인지를 실제 공대공 데이터로 학습하기로 한 이상, **무엇을 합법적으로 쓸 수 있는가**가 설계 제약이
+됩니다. 라이선스가 불명확한 데이터로 학습한 결과는 게재 단계에서 무효가 될 수 있으므로, 조사
+결과를 여기에 남깁니다. 모든 링크는 2026-09-04에 직접 확인했습니다.
+
+기기 제약: 여유 저장 공간 **약 15 GB**(RAM이 아니라 SSD). 이것이 규모 선택을 지배합니다.
+
+### 확보했거나 확보 가능 (라이선스 안전)
+
+| 자산 | 라이선스 | 규모 | 시점 | 상태 |
+|---|---|---:|---|---|
+| [NPS-Drones](https://engineering.purdue.edu/~bouman/UAV_Dataset/) | **BSD-3-Clause** | 2.04 GB (영상) | 공대공 | 확보 중. 70,250 프레임 · 1920×1080 · 표적 10×8–65×21 px |
+| [Det-Fly](https://github.com/Jake-WU/Det-Fly) | **MIT** | 9.34 GB | 공대공 | 미확보 — 여유 공간 부족. 13,271장 · 3840×2160 · 배경 4종 |
+| [MIDGARD](https://mrs.fel.cvut.cz/midgard) | 명시 없음 (인용 요청만) | 3.53 GB | 공대공 | 미확보. **거리 GT 포함** — 오차 모델에 유용. 서면 허락 권장 |
+| [DUT Anti-UAV](https://github.com/wangdongdut/DUT-Anti-UAV) | **Apache-2.0** | 1.32 GB | 지상→공중 | 미확보. 시점 불일치, OOD 세트로만 가치 |
+| [AOT](https://registry.opendata.aws/airborne-object-tracking/) | **CDLA-Permissive-1.0** | **13.4 TB** | 공대공 | 전량 불가. 부분 prefix로 2–3 시퀀스(~3 GB)만 가능. 흑백 + 유인기 표적 |
+
+MIDGARD의 `nasmrs.felk.cvut.cz` 링크는 **TLS 인증서가 깨져 있습니다**(altname에 `k`가 없음).
+`nasmrs.fel.cvut.cz`를 쓰면 정상입니다.
+
+### 구하고 싶지만 지금은 불가능
+
+| 자산 | 막힌 이유 |
+|---|---|
+| **ARD100** (YOLOMG) | Baidu 전용 배포, 규모 미공개(추정 20–40 GB). 코드가 **GPL-3.0**이라 파생 코드에 전염. 평균 표적 면적 0.01%로 우리 영역에 가장 가까운 데이터인데 접근이 막힘 |
+| **ARD-MAV** (GLAD) | zip **14.6 GB** — 압축 해제 전에 이미 여유 초과. 저장 공간이 늘면 1순위 |
+| **Drone-vs-Bird / WOSDETC** | 공개 링크 **없음**. `wosdetc@googlegroups.com`에 요청해 **데이터 사용 동의서 서명** 필요, 처리 기간 미공지. 게다가 지상→공중이라 시점 불일치 |
+| **FL-Drones** | **라이선스 모순.** EPFL은 공개 Drive 링크를 두는데 TransVisDrone 저자는 "저자 허락 필요"라고 명시. 라이선스 문구가 없으므로 기본 저작권이 적용됨 → **서면 허락 없이 논문에 넣으면 안 됨** |
+
+### 사전학습 가중치 — 학습을 건너뛸 수 있는가
+
+| 레포 | 가중치 | 라이선스 | 비고 |
+|---|---|---|---|
+| [GLAD](https://github.com/WindyLab/Global-Local-MAV-Detection) | ✅ `yolov5s_GLAD.pt` (14.4 MB) | ⚠️ **LICENSE 파일 없음** (README 배지만) | ARD-MAV 학습 = 우리 영역과 일치. TensorRT 엔진은 하드웨어 종속이라 사용 불가, `.pt`만 유효 |
+| [TransVisDrone](https://github.com/tusharsangam/TransVisDrone) | ✅ NPS/FL/AOT 3종 | **MIT** | 라이선스가 가장 깨끗. 단 **시간 모델**이라 연속 5프레임 필요 |
+| [YOLOMG](https://github.com/Irisky123/YOLOMG) | ❌ 없음 | GPL-3.0 | 직접 학습해야 하는데 ARD100 접근이 막힘 |
+| [C2FDrone](https://github.com/Sairam13001/C2FDrone) | ❌ 없음 | 없음 | 재현 불가 |
+
+`ultralytics/yolov5`는 **AGPL-3.0**입니다. 평가만 하면 무관하지만, 그 소스 위에 만든 코드를
+공개하면 우리 코드도 AGPL이 됩니다. detector 아키텍처 선택 시의 제약입니다.
 
 ## Safety filter — the speed governor
 

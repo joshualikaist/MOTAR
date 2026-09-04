@@ -1,6 +1,21 @@
 # SAM 3 instance-preserving perception: architecture and verification plan
 
-작성: 2026-09-03. 이 문서는 **실행 전 계획안**이다. 현재 채택된 detector, 898-D actor,
+> ## ⛔ 상태: SUPERSEDED (2026-09-04)
+>
+> SAM 3를 in-sim detector 자리에 놓는 이 경로는 **실행하지 않는다**. 이유는 SAM의 성능이 아니라
+> **입력에 형상 정보가 없다는 것**이다: detector가 보는 표적은 반지름 0.15 m 해석적 구에 상수색을
+> 칠한 것이고, 디코이 3종 중 하나는 같은 반지름의 구이며, 배경은 40×24 depth를 업샘플한 회색
+> 명암(텍스처·조명 없음)이다. 어떤 segmentation 모델도 존재하지 않는 형상을 분할할 수 없다.
+>
+> 세 갈래 측정이 "구속 조건은 측정 품질이 아니라 물체 동일성"으로 수렴했고(자료구조 +1.3 pp,
+> 거리 분산 −0.34 pp, 오표적 lock −55.5 pp), 그 동일성 인식기는 **실제 공대공 데이터**로 학습한다.
+> 전체 사유는 `docs/plans/perception_shape_temporal_redesign_2026-09-03.md` 상단 고지와
+> `README.md`의 *External data* 절에 있다.
+>
+> **살아남은 것**: 후보 보존(instance-preserving) 구조 계약과 association packet 경계는 실데이터
+> detector에도 그대로 필요하다. 폐기된 것은 **SAM을 그 자리에 놓는 것**이다.
+
+작성: 2026-09-03. 이 문서는 **실행 전 계획안**이었다. 현재 채택된 detector, 898-D actor,
 checkpoint, PPO 결과 또는 연구 판정을 변경하지 않는다. 각 GPU/Isaac/실기 단계는 해당 단계의
 입력·모델·threshold·seed·판정 규칙을 별도 사전등록한 뒤에만 실행한다.
 

@@ -14878,3 +14878,148 @@ detector는 실제 저조도에서 mAP 37.2 %; 우리 렌더러는 그보다 열
 
 분산 항은 끝났다. 다음에 검증할 성분은 **누락검출의 시간상관 dropout과 오검출률**이며,
 분산과 달리 이들은 우리가 이미 큰 효과를 관측한 축이다. 별도 사전등록으로 다룬다.
+
+## 2026-09-04 — Phase 2 착수: 실데이터 확보, 라이선스 감사, 계획 문서 무효화
+
+### 계획 문서 무효화 기록 (CLAUDE.md "기각된 가설도 반드시 기록")
+
+`docs/plans/perception_shape_temporal_redesign_2026-09-03.md`와
+`docs/SAM3_PERCEPTION_VERIFICATION_PLAN_2026-09-03.md` 상단에 SUPERSEDED 고지를 넣었다.
+
+**확증된 것**: 문제 재정의("빨간 픽셀 찾기"가 아니라 물체 동일성). 세 갈래 측정이 수렴 —
+자료구조 +1.3 pp, 거리 분산 -0.34 pp, 오표적 lock -55.5 pp.
+
+**폐기된 것**: 그 인식기를 **우리 시뮬 이미지로 학습**한다는 실행 경로(S2~S6). 사유 둘:
+① 표적에 형상 정보가 물리적으로 없다 — 반지름 0.15 m 해석적 구에 상수색, 디코이 3종 중 하나는
+같은 반지름 구, 배경은 40x24 depth 업샘플(텍스처·조명 없음), 저장소에 쿼드로터 메쉬 부재
+(우리 기체 visual도 `sphere radius="0.05"`). **S2의 "quad-mesh 재사용"은 애초에 실행 불가능한
+선택지였다.** ② 일반 시뮬 학습 detector는 실제 저조도에서 mAP 37.2 %(실사진 기반 96.4 %,
+Ning et al. *Unmanned Systems* 2024)이고 우리 렌더러는 그보다 열악하다.
+
+살아남은 것: KF/신경망 역할 분리, episode-level split, hard negative 설계. 폐기된 것은
+**데이터를 어디서 얻는가**이지 **무엇을 배워야 하는가**가 아니다.
+
+### 라이선스 감사 — 이것이 설계 제약이다
+
+라이선스가 불명확한 데이터로 학습하면 게재 단계에서 무효가 될 수 있으므로 전수 확인했다
+(2026-09-04, 링크 직접 probe). 전문은 `README.md` *External data* 절과
+`docs/status/index.html` `05 · EXTERNAL DATA`.
+
+- 안전: NPS-Drones **BSD-3**, Det-Fly **MIT**, DUT Anti-UAV **Apache-2.0**, AOT **CDLA-Permissive**
+- 차단: Drone-vs-Bird(공개 링크 없음 + DUA 서명), **FL-Drones(라이선스 모순 — EPFL은 공개
+  링크를 두는데 후속 논문 저자는 "저자 허락 필요"라고 명시; 문구 부재 = 기본 저작권)**
+- 규모 초과: ARD-MAV 14.6 GB zip, ARD100 Baidu 전용, AOT 13.4 TB
+- **전염 위험**: ARD100 코드 GPL-3.0, `ultralytics/yolov5` **AGPL-3.0** — 그 위에 만든 코드를
+  공개하면 우리 코드도 AGPL. 아키텍처 선택 시의 실제 제약이다.
+
+### 확보 현황
+
+- **GLAD 사전학습 가중치 확보**: `yolov5s_GLAD.pt`, 로드 검증 완료 — YOLOv5s, **7,022,326
+  파라미터**, 단일 클래스 `Drone`, stride [8,16,32], ARD-MAV 학습. TensorRT `.engine`은 하드웨어
+  종속이라 사용 불가. 레포에 **LICENSE 파일이 실제로 없다**(README 배지만) — 측정에는 쓰되
+  재배포·인용은 위험.
+- **NPS-Drones**: BSD-3 원문 확인, 2.04 GB 다운로드 중. 어노테이션(v2) 먼저 받아 분석 완료 —
+  50클립 / 박스 72,131 / 고유 프레임 52,566 / 트랙 246. 등가 한 변 `sqrt(area)` 중앙값 **18.1 px**,
+  p5 9.5 px, **13.6 %가 12x12 px 미만**. 우리 협시야 320x180 구성의 20 m 표적(11.3 px)과 같은 영역.
+
+### 환경 격리 — aerialgym conda 환경은 건드리지 않았다
+
+yolov5는 pandas/ultralytics를 요구하는데, 영수증에 `python_environment_manifest`가 기록되고
+gate-0가 검사하므로 canonical 환경에 패키지를 넣으면 계보가 흔들린다. `--system-site-packages`
+venv(`datasets/detenv`)로 torch만 공유하고 의존성은 venv에만 설치했다. conda 환경에 `pandas`가
+없음을 사후 확인했다. 함정 하나: `yolov5/models/common.py`가 import 시점에
+`os.system("pip install -U ultralytics")`를 실행해 무한 대기한다 — 명시적 선설치로 회피.
+
+### 저장 공간
+
+여유가 14 GB뿐이어서 정리했다: CUDA 설치 deb 2개(5.2 GB, `/usr/local/cuda-11.7` 설치 완료 확인 후)
++ Chrome 캐시(1.7 GB) + conda `airsim` 환경(5.5 GB) + `workspaces/airsim`(0.76 GB) 제거 →
+**여유 26 GB**. pip 캐시(7.3 GB)는 사용자 요청으로 보존. 학습 체크포인트는 `.pth` 963개 8.0 GB이고
+커밋된 결과가 참조하는 것은 고유 16개뿐이지만, 이미 gitignore된 체크포인트 소실로 테스트 2개가
+깨진 전례가 있으므로 **삭제하지 않았다**.
+
+### 다음
+
+`tools/eval_air2air_detector_zeroshot.py`로 GLAD 가중치를 NPS에 **교차 데이터셋 zero-shot**
+평가한다(ARD-MAV 학습 -> NPS 테스트). 판정 질문: 공개 가중치로 충분한가, 아니면 학습이 필요한가.
+크기 구간(<8 / 8-12 / 12-20 / 20-32 / 32+ px)과 IoU 0.3은 결과를 보기 전에 코드에 고정했다 —
+8 px는 Johnson recognition 문턱, 12 px는 우리 20 m 표적 크기다.
+
+## 2026-09-04 — GLAD 가중치 교차 데이터셋 zero-shot: 학습을 건너뛸 수 없다
+
+`results/air2air_zeroshot/glad_on_nps_*.json`. ARD-MAV 학습 GLAD YOLOv5s를 **NPS-Drones**에
+zero-shot 평가(교차 데이터셋). 시뮬레이터·체크포인트 무관, 실제 이미지만 읽는다.
+
+### 결과 (1,840 프레임 / GT 2,650 박스, IoU 0.3)
+
+| imgsz | P | R | F1 | AP |
+|---:|---:|---:|---:|---:|
+| 640 (GLAD 학습 크기) | 0.373 | 0.067 | 0.113 | 0.030 |
+| 1280 | 0.134 | 0.152 | 0.143 | **0.045** |
+
+크기 구간별 recall (등가 한 변):
+
+| <8 px | 8–12 px | 12–20 px | 20–32 px | 32+ px |
+|---:|---:|---:|---:|---:|
+| 0.316 | **0.419** | 0.186 | 0.046 | 0.023 |
+
+**recall이 크기에 대해 뒤집혀 있다** — 작은 표적이 잘 되고 큰 표적이 안 된다. 하네스 버그를
+의심해 셋을 확인했다: ① 프레임 시크 정확도(순차 읽기와 픽셀 차 0.000) ② 최대 GT 박스
+프레임의 예측 직접 비교 ③ 예측 박스 크기 분포. 결론은 **버그가 아니라 실제 스케일 도메인
+시프트**다:
+
+- 예측 박스 등가 한 변: 중앙값 **8.2 px**, p95 17.6 px, 최대 23.9 px, **32 px 초과 0개/187**
+- 즉 이 가중치는 큰 박스를 **낼 수 없다**. ARD-MAV 평균 물체가 0.02 %(≈9×9 px)이므로 박스
+  회귀가 작은 스케일에 고정돼 있다. GT 141×111 px에 예측 10×7 px가 나온다.
+
+### 정확한 해석 — "공개 가중치가 나쁘다"가 아니다
+
+GLAD 논문의 **자체 ablation에서 외형 단독 recall이 0.17**이다. 우리가 교차 데이터셋에서 측정한
+외형 단독 recall은 **0.152**로 사실상 같은 수준이다. 공개된 `.pt`는 **외형 분기 하나**이고,
+레포가 명시한다: *"the full codes with Kalman Filter, Adaptive Search Region, and other codes
+will be published in the future."* 즉 AP 0.80을 만드는 **움직임 융합과 지역 크롭 재탐지는
+공개되지 않았다.**
+
+→ **학습을 건너뛸 수 없다.** 이유는 가중치 품질이 아니라 **신호를 나르는 부분이 배포되지 않았기**
+때문이다. 그리고 그 부분(ego-motion 보상 + 움직임 융합)은 우리가 depth와 자기운동을 정확히
+갖고 있으므로 직접 만드는 편이 오히려 유리하다(호모그래피 근사가 시차에서 깨지는 문제를 우회).
+
+### 공정성 확인
+
+GLAD 원 파이프라인의 입력은 **640**이다(`detector1_trt.py: INPUT_W=INPUT_H=640`). 처음 1280으로
+돌린 것은 불공정했으므로 두 크기를 모두 보고한다. 640이 오히려 더 나쁘다(AP 0.030). 또한
+`detector2`(크롭 재탐지)와 `MOD2`(움직임)는 실행하지 않았다 — TensorRT 엔진이 하드웨어 종속이고
+`.pt`로 제공되는 것은 전역 외형 detector뿐이다.
+
+### 한계
+
+단일 데이터셋(NPS) · IoU 0.3 고정 · 외형 분기 단독 · 크기 구간과 IoU는 결과 이전에 코드에
+고정했다(`tools/eval_air2air_detector_zeroshot.py`). 라이선스: NPS는 BSD-3(원문 확인),
+GLAD 가중치는 **LICENSE 파일 없음**이므로 측정에만 쓰고 재배포하지 않는다.
+
+## 2026-09-04 — 정정: -55.5 pp는 판정 지표가 아니라 교란된 보조 수치다
+
+커밋 전 문서 검토에서 발견해 정정한다. 위 항목들(2026-09-04 Phase 1 판정, Phase 2 착수)과
+`fcc71a0` 커밋 메시지가 distractor envelope의 효과를 **"capture -55.5 pp (68.1 % -> 12.6 %)"** 로
+적었고, 이를 S1(shadow FTLR +1.3 pp)·Phase 1(capture -0.34 pp)과 **같은 표에 나란히** 놓았다.
+셋을 동등한 증거처럼 제시한 것은 **과장이다.**
+
+원 출처가 명시한다
+(`results/navrl_detector_distractor_envelope_seed479/summary.md`):
+
+> "capture/crash/timeout은 원값이며 **판정에 쓰지 않는다**."
+
+그리고 §L5가 이유를 적는다: distractor가 다섯 코드 경로에서 자유 공간으로 남아 있어
+**distractor 충돌이 미귀속 contact로 기록**되고 정적 goal이 distractor 안에 놓일 수 있다.
+즉 68.13 % -> 12.64 %는 **방향은 명확하지만 크기가 교란된 값**이다.
+
+- envelope의 사전등록 판정 지표는 **FTLR**이고, v7 N=5에서 **90.27 %**다. 이 값은 깨끗하다.
+- 세 실험 수렴 서사(구속 조건 = 물체 동일성)는 **바뀌지 않는다.** 근거가 capture 원값에서
+  FTLR로 바뀔 뿐이며 오히려 더 단단해진다.
+
+수정 범위: `README.md` 인지 절과 `docs/status/index.html` `04 · PERCEPTION` 표를 FTLR 기준으로
+고치고 교란 사유를 본문에 명시했다. **이미 커밋된 `fcc71a0`의 메시지와 그 이전 WORKLOG 항목은
+고치지 않는다**(이력 재작성 금지) — 이 항목이 그에 대한 정정 기록이다.
+
+교훈: 다른 실험의 수치를 인용할 때 **그 실험이 그 수치를 판정에 썼는지** 먼저 확인한다.
+보조 보고용 원값을 판정 지표와 같은 표에 놓으면 독자는 동등한 증거로 읽는다.
