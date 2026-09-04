@@ -1708,6 +1708,38 @@ class NavRLTask(BaseTask):
                 "stopping_margin_executed_m",
             )
         }
+        # Contact-corridor forensics (docs/prereg_2026-09-04_contact_corridor_forensics.md).
+        # The governor draws its corridor around the COMMANDED direction; the vehicle moves along
+        # its CURRENT velocity, which lags. Both are stashed here so the contact recorder can
+        # classify the struck bar against each. Evaluation-only; nothing reaches the actor.
+        self._contact_geom_enabled = (
+            self._bulk_eval_mode
+            and os.environ.get("NAVRL_CONTACT_GEOMETRY", "0").strip() == "1"
+        )
+        self._governor_command_xy = torch.zeros((self.num_envs, 2), device=self.device)
+        # Contact geometry must be evaluated at the moment the governor could still have ACTED,
+        # not at the instant of contact. By then the vehicle is already alongside the bar (~0.5 m
+        # centre-to-centre) and every bar classifies as abeam/behind -- that measures the aftermath.
+        # Bars are static, so replaying the DRONE's past pose against current bar positions
+        # reconstructs the past geometry exactly. Lookbacks frozen by the prereg.
+        self._CG_LOOKBACK_STEPS = (10, 5)   # 1.0 s primary, 0.5 s secondary at 10 Hz policy rate
+        if self._contact_geom_enabled:
+            depth = max(self._CG_LOOKBACK_STEPS) + 1
+            self._cg_hist_pos = torch.zeros((depth, self.num_envs, 3), device=self.device)
+            self._cg_hist_quat = torch.zeros((depth, self.num_envs, 4), device=self.device)
+            self._cg_hist_quat[:, :, 3] = 1.0
+            self._cg_hist_cmd = torch.zeros((depth, self.num_envs, 2), device=self.device)
+            self._cg_hist_vel = torch.zeros((depth, self.num_envs, 3), device=self.device)
+            self._cg_hist_age = torch.zeros((self.num_envs,), dtype=torch.long, device=self.device)
+            self._cg_hist_cursor = 0
+        if self._contact_geom_enabled:
+            #   0 contacts  1 usable(history deep enough)
+            #   2 vertical_out 3 behind 4 lateral 5 no_return 6 in_corridor      (commanded)
+            #   7 behind_act   8 lateral_act 9 in_corridor_act                   (actual vel)
+            #  10 bars_ge2    11 target_involved
+            self._cg_counts = torch.zeros(12, dtype=torch.long, device=self.device)
+            #   0 cmd_vs_actual_deg  1 bars_in_corridor  2 lateral_m  3 arc_clearance_m
+            self._cg_sums = torch.zeros(4, dtype=torch.float64, device=self.device)
         self._speed_governor_diag = self._empty_speed_governor_diag()
         self._speed_governor_outcome_steps = {
             "capture": [], "crash": [], "timeout": []
@@ -4425,6 +4457,10 @@ class NavRLTask(BaseTask):
         return self.get_return_tuple()
 
     def reset_idx(self, env_ids):
+        if self._contact_geom_enabled:
+            # A fresh episode has no usable pose history; the recorder drops contacts until the
+            # buffer is deep enough rather than replaying another episode's poses.
+            self._cg_hist_age[env_ids] = 0
         if len(env_ids) == 0:
             return
         if self._obs_dump_enabled:
@@ -4938,6 +4974,10 @@ class NavRLTask(BaseTask):
             path_half_width_m=self.speed_governor_cfg.path_half_width_m,
             target_return_mask=target_return,
         )
+        if self._contact_geom_enabled:
+            # The exact vector the corridor was drawn around, before any scaling.
+            self._governor_command_xy[:] = command_xy.detach()
+            self._push_contact_geometry_history(command_xy.detach())
         governed, telemetry = apply_speed_governor(
             command_xy, clearance, self.speed_governor_cfg
         )
@@ -5763,6 +5803,8 @@ class NavRLTask(BaseTask):
                         gdiag[destination] += values.sum(dtype=torch.float64)
                 if self._bar_probe and self.perception is not None:
                     self._record_bar_contact_probe(d_contact, pos)
+                if self._contact_geom_enabled and self.perception is not None:
+                    self._record_contact_geometry(d_contact, pos, vel_w)
             if bool(d_below.any()):
                 # below-death forensics: WHEN it dies (early sharp-turn transient vs late drift) and
                 # HOW TILTED it is at death (tilt-induced thrust sag vs level sink). b3_z from the
@@ -6257,6 +6299,175 @@ class NavRLTask(BaseTask):
                 (ghost_lock & init).sum(),
             ]
         )
+
+    def _push_contact_geometry_history(self, command_xy):
+        """Ring-buffer the drone's own pose/command/velocity. Bars are static, so replaying a past
+        pose against the CURRENT bar positions reconstructs the past geometry exactly."""
+        i = self._cg_hist_cursor
+        self._cg_hist_pos[i] = self.obs_dict["robot_position"].detach()
+        self._cg_hist_quat[i] = self.obs_dict["robot_vehicle_orientation"].detach()
+        self._cg_hist_cmd[i] = command_xy
+        self._cg_hist_vel[i] = self.obs_dict["robot_linvel"].detach()
+        self._cg_hist_cursor = (i + 1) % self._cg_hist_pos.shape[0]
+        self._cg_hist_age += 1
+
+    def _record_contact_geometry(self, hit_mask, pos, vel_w):
+        """Decompose each bar contact against the corridor AS IT WAS ~1 s before impact.
+
+        Preregistered: docs/prereg_2026-09-04_contact_corridor_forensics.md. Categories, their
+        priority and the lookback are frozen there BEFORE measurement. Ground-truth bar positions
+        are used, evaluation-only, on the same basis as _record_bar_contact_probe: nothing computed
+        here reaches the actor, the critic, the reward, or any termination.
+
+        Measuring at the contact INSTANT measures the aftermath -- by then the vehicle is alongside
+        the bar (~0.5 m centre-to-centre) and every bar reads as abeam. The primary lookback is the
+        moment the governor could still have acted.
+        """
+        lookback = self._CG_LOOKBACK_STEPS[0]
+        depth = self._cg_hist_pos.shape[0]
+        idx = hit_mask.nonzero(as_tuple=False).squeeze(1)
+        if idx.numel() == 0:
+            return
+        k = idx.numel()
+        self._cg_counts[0] += k
+
+        # Only contacts whose episode is already `lookback` steps old have a valid past pose.
+        usable = self._cg_hist_age[idx] > lookback
+        idx = idx[usable]
+        if idx.numel() == 0:
+            return
+        k = idx.numel()
+        self._cg_counts[1] += k
+
+        past = (self._cg_hist_cursor - 1 - lookback) % depth
+        p_pos = self._cg_hist_pos[past][idx]
+        p_quat = self._cg_hist_quat[past][idx]
+        p_cmd = self._cg_hist_cmd[past][idx]
+        p_vel = self._cg_hist_vel[past][idx]
+
+        half_w = float(self.speed_governor_cfg.path_half_width_m)
+        rng = float(self.task_config.lidar_max_range)
+
+        bars_w = self.obs_dict["obstacle_position"][idx][
+            :, self._bar_offset : self._bar_offset + self.n_bars_active, 0:3
+        ]
+        rel_w = bars_w - p_pos.unsqueeze(1)
+        b = rel_w.shape[1]
+        rel_v = quat_rotate_inverse(
+            p_quat.unsqueeze(1).expand(k, b, 4).reshape(k * b, 4), rel_w.reshape(k * b, 3)
+        ).reshape(k, b, 3)
+        bar_dist = rel_v[:, :, 0:2].norm(dim=2)
+        bar_bearing = torch.atan2(rel_v[:, :, 1], rel_v[:, :, 0])
+
+        # The struck bar is the one nearest AT CONTACT; find it with the contact-time pose, then
+        # read its geometry from the past frame. Identity, not proximity, is what carries over.
+        rel_now = self.obs_dict["obstacle_position"][idx][
+            :, self._bar_offset : self._bar_offset + self.n_bars_active, 0:2
+        ] - pos[idx, 0:2].unsqueeze(1)
+        hit_i = rel_now.norm(dim=2).argmin(dim=1)
+        rows = torch.arange(k, device=self.device)
+        hit_d = bar_dist[rows, hit_i]
+        hit_bearing = bar_bearing[rows, hit_i]
+        hit_dz = rel_v[rows, hit_i, 2]
+
+        def corridor_terms(ref_xy):
+            ref = torch.atan2(ref_xy[:, 1], ref_xy[:, 0])
+            d = torch.atan2(torch.sin(hit_bearing - ref), torch.cos(hit_bearing - ref))
+            return hit_d * torch.cos(d), (hit_d * torch.sin(d)).abs()
+
+        p_vel_v = quat_rotate_inverse(p_quat, p_vel)[:, 0:2]
+        fwd_c, lat_c = corridor_terms(p_cmd)
+        fwd_a, lat_a = corridor_terms(p_vel_v)
+
+        moving = (p_cmd.norm(dim=1) > 1e-6) & (p_vel_v.norm(dim=1) > 1e-6)
+        cos = torch.nn.functional.cosine_similarity(p_cmd, p_vel_v, dim=1).clamp(-1.0, 1.0)
+        cmd_vs_actual = torch.where(moving, torch.rad2deg(torch.acos(cos)), torch.zeros_like(cos))
+
+        # No-return: the live governor treats an unreturned ray as free space.
+        scan = getattr(self.perception, "last_scan_nearest", None)
+        bearings = self._speed_governor_bearings
+        if scan is not None and bearings is not None:
+            dbin = torch.atan2(
+                torch.sin(bearings.view(1, -1) - hit_bearing.view(-1, 1)),
+                torch.cos(bearings.view(1, -1) - hit_bearing.view(-1, 1)),
+            ).abs()
+            ray_returned = scan[idx][rows, dbin.argmin(dim=1)] < rng * 0.995
+        else:
+            ray_returned = torch.ones(k, dtype=torch.bool, device=self.device)
+
+        top = torch.atan2(hit_dz + 1.0, hit_d.clamp(min=1e-3))
+        bot = torch.atan2(hit_dz - 1.0, hit_d.clamp(min=1e-3))
+        vertical_out = (bot > math.radians(20.0)) | (top < math.radians(-10.0))
+
+        def classify(fwd, lat):
+            behind = ~vertical_out & (fwd <= 0.0)
+            lateral = ~vertical_out & ~behind & (lat > half_w)
+            no_ret = ~vertical_out & ~behind & ~lateral & ~ray_returned
+            return behind, lateral, no_ret, ~vertical_out & ~behind & ~lateral & ~no_ret
+
+        beh_c, lat_cat_c, nor_c, in_c = classify(fwd_c, lat_c)
+        beh_a, lat_cat_a, _, in_a = classify(fwd_a, lat_a)
+
+        # Hypothesis D: a per-obstacle margin cannot certify a SET (Fraichard & Asama, Property 4).
+        cmd_bearing = torch.atan2(p_cmd[:, 1], p_cmd[:, 0]).view(-1, 1)
+        dall = torch.atan2(
+            torch.sin(bar_bearing - cmd_bearing), torch.cos(bar_bearing - cmd_bearing)
+        )
+        f_all, l_all = bar_dist * torch.cos(dall), (bar_dist * torch.sin(dall)).abs()
+        in_corr_all = (f_all > 0.0) & (l_all <= half_w) & (bar_dist < rng)
+        bars_in_corridor = in_corr_all.sum(dim=1)
+        arc_clear = torch.where(in_corr_all, bar_dist, torch.full_like(bar_dist, rng)).amin(dim=1)
+
+        target_involved = (self.target_position[idx] - pos[idx]).norm(dim=1) <= DISTRACTOR_LOCK_RADIUS_M
+
+        self._cg_counts[2:] += torch.stack([
+            vertical_out.sum(), beh_c.sum(), lat_cat_c.sum(), nor_c.sum(), in_c.sum(),
+            beh_a.sum(), lat_cat_a.sum(), in_a.sum(),
+            (bars_in_corridor >= 2).sum(), target_involved.sum(),
+        ])
+        self._cg_sums += torch.stack([
+            cmd_vs_actual.sum(dtype=torch.float64),
+            bars_in_corridor.sum(dtype=torch.float64),
+            lat_c.sum(dtype=torch.float64),
+            arc_clear.sum(dtype=torch.float64),
+        ])
+
+    def _contact_geometry_payload(self):
+        c = [int(v) for v in self._cg_counts.tolist()]
+        s = [float(v) for v in self._cg_sums.tolist()]
+        (total, n, vout, beh_c, lat_c, nor_c, in_c, beh_a, lat_a, in_a, bars2, tgt) = c
+        rate = lambda x: (x / n) if n > 0 else None
+        mean = lambda x: (x / n) if n > 0 else None
+        return {
+            "schema_version": 1,
+            "prereg": "docs/prereg_2026-09-04_contact_corridor_forensics.md",
+            "path_half_width_m": float(self.speed_governor_cfg.path_half_width_m),
+            "lookback_steps": self._CG_LOOKBACK_STEPS[0],
+            "lookback_seconds": self._CG_LOOKBACK_STEPS[0] * float(self.step_dt),
+            "contacts_total": total,
+            "contacts_with_history": n,
+            "contacts_dropped_early_episode": total - n,
+            "contacts": n,
+            "commanded_direction": {
+                "vertical_out": vout, "behind": beh_c, "lateral": lat_c,
+                "no_return": nor_c, "in_corridor": in_c,
+                "vertical_out_rate": rate(vout), "behind_rate": rate(beh_c),
+                "lateral_rate": rate(lat_c), "no_return_rate": rate(nor_c),
+                "in_corridor_rate": rate(in_c),
+            },
+            "actual_velocity_direction": {
+                "behind": beh_a, "lateral": lat_a, "in_corridor": in_a,
+                "in_corridor_rate": rate(in_a),
+            },
+            "hypothesis_c_reclassified_into_corridor": in_a - in_c,
+            "hypothesis_d_bars_in_corridor_ge2": bars2,
+            "hypothesis_d_rate": rate(bars2),
+            "target_involved": tgt,
+            "mean_cmd_vs_actual_deg": mean(s[0]),
+            "mean_bars_in_corridor": mean(s[1]),
+            "mean_lateral_offset_m": mean(s[2]),
+            "mean_arc_clearance_m": mean(s[3]),
+        }
 
     def _s1_shadow_payload(self):
         from aerial_gym.task.navrl_task.shadow_association import (
@@ -8781,6 +8992,9 @@ class NavRLTask(BaseTask):
         if self._s1_shadow_enabled:
             payload["condition"]["s1_shadow"] = True
             payload["s1_shadow"] = self._s1_shadow_payload()
+        if self._contact_geom_enabled:
+            payload["condition"]["contact_geometry"] = True
+            payload["contact_geometry"] = self._contact_geometry_payload()
         compact = json.dumps(payload, sort_keys=True, separators=(",", ":"))
         print("NAVRL_BULK_EVAL_RESULT " + compact, flush=True)
 
