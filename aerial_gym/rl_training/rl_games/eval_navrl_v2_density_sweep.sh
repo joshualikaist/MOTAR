@@ -333,9 +333,13 @@ export NAVRL_EVAL_REFLECTION_MODE
 # simulator starts; the task and result validator both record the normalized contract.
 NAVRL_SPEED_GOVERNOR="${NAVRL_SPEED_GOVERNOR:-off}"
 case "${NAVRL_SPEED_GOVERNOR}" in
-    off|fixed|clearance|ttc|riskcap|stopcap) ;;
+    # omni and dwa_arc are the A4 geometry baselines: same stopping law as stopcap, different
+    # measurement geometry (prereg_2026-09-05_a4_geometry_baselines.md). This list is a second,
+    # independent whitelist from VALID_SPEED_GOVERNOR_MODES in speed_governor.py -- adding a mode
+    # requires editing both, which is how the first A4 attempt failed after four arms.
+    off|fixed|clearance|ttc|riskcap|stopcap|omni|dwa_arc) ;;
     *)
-        echo "[eval_v2] NAVRL_SPEED_GOVERNOR must be off, fixed, clearance, ttc, riskcap or stopcap; got: ${NAVRL_SPEED_GOVERNOR}" >&2
+        echo "[eval_v2] NAVRL_SPEED_GOVERNOR must be off, fixed, clearance, ttc, riskcap, stopcap, omni or dwa_arc; got: ${NAVRL_SPEED_GOVERNOR}" >&2
         exit 2
         ;;
 esac

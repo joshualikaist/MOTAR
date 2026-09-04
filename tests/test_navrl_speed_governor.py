@@ -298,3 +298,27 @@ class A4BaselineGeometries(unittest.TestCase):
         for mode in ("omni", "dwa_arc"):
             cfg = SpeedGovernorConfig.from_environ({"NAVRL_SPEED_GOVERNOR": mode})
             self.assertEqual(cfg.mode, mode)
+
+
+class WhitelistsAgree(unittest.TestCase):
+    """The evaluator shell keeps its own mode whitelist, independent of the Python one.
+
+    The first A4 attempt died after four arms because `omni` was added to
+    VALID_SPEED_GOVERNOR_MODES but not to eval_navrl_v2_density_sweep.sh. This pins them
+    together so the next mode cannot repeat it.
+    """
+
+    def test_shell_whitelist_matches_the_python_one(self):
+        sweep = (
+            Path(__file__).resolve().parents[1]
+            / "aerial_gym" / "rl_training" / "rl_games" / "eval_navrl_v2_density_sweep.sh"
+        ).read_text()
+        line = next(
+            l for l in sweep.splitlines() if l.strip().startswith("off|") and l.strip().endswith(") ;;")
+        )
+        shell_modes = set(line.strip().rstrip(") ;;").split("|"))
+        self.assertEqual(
+            shell_modes,
+            set(_GOVERNOR.VALID_SPEED_GOVERNOR_MODES),
+            "the evaluator shell and speed_governor.py must accept the same modes",
+        )
