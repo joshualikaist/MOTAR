@@ -49,6 +49,27 @@ class SpeedGovernorConfig:
     ttc_s: float = 1.0
     brake_mps2: float = 2.0
     reaction_s: float = 0.1
+    # Plan I3 (docs/plans/lateral_contact_density_plan_2026-09-05.md section 4, series L). Each is
+    # a single additive change on top of ANY base law, so one arm changes one thing.
+    #   L2  width_per_mps:   corridor half-width grows with requested speed (Nav2 VelocityPolygon)
+    #   L3  lateral_*:       a second, softer cap from the nearest return BESIDE the vehicle
+    #                        (RSS lateral rule); floor > 0 so it cannot deadlock like omni
+    #   L5  yaw_cap_*:       yaw-rate magnitude is scaled down when something is close beside
+    # All are off at their defaults (0.0), which reproduces every result before this change.
+    width_per_mps: float = 0.0
+    lateral_margin_m: float = 0.0
+    lateral_span_m: float = 2.0
+    lateral_floor_mps: float = 1.0
+    yaw_cap_radps: float = 0.0
+    yaw_cap_margin_m: float = 1.0
+
+    @property
+    def lateral_channel_enabled(self):
+        return self.lateral_margin_m > 0.0
+
+    @property
+    def yaw_cap_enabled(self):
+        return self.yaw_cap_radps > 0.0
 
     @classmethod
     def from_environ(cls, environ):
@@ -94,6 +115,26 @@ class SpeedGovernorConfig:
             reaction_s=_finite_float(
                 environ, "NAVRL_SPEED_GOVERNOR_REACTION_S", 0.1, minimum=0.0,
             ),
+            width_per_mps=_finite_float(
+                environ, "NAVRL_SPEED_GOVERNOR_WIDTH_PER_MPS", 0.0, minimum=0.0,
+            ),
+            lateral_margin_m=_finite_float(
+                environ, "NAVRL_SPEED_GOVERNOR_LATERAL_MARGIN_M", 0.0, minimum=0.0,
+            ),
+            lateral_span_m=_finite_float(
+                environ, "NAVRL_SPEED_GOVERNOR_LATERAL_SPAN_M", 2.0, minimum=0.0,
+                strict_minimum=True,
+            ),
+            lateral_floor_mps=_finite_float(
+                environ, "NAVRL_SPEED_GOVERNOR_LATERAL_FLOOR_MPS", 1.0, minimum=0.0,
+            ),
+            yaw_cap_radps=_finite_float(
+                environ, "NAVRL_SPEED_GOVERNOR_YAW_CAP_RADPS", 0.0, minimum=0.0,
+            ),
+            yaw_cap_margin_m=_finite_float(
+                environ, "NAVRL_SPEED_GOVERNOR_YAW_CAP_MARGIN_M", 1.0, minimum=0.0,
+                strict_minimum=True,
+            ),
         )
         if result.slow_distance_m <= result.hard_margin_m:
             raise ValueError(
@@ -110,6 +151,10 @@ class SpeedGovernorConfig:
                     "NAVRL_SPEED_GOVERNOR_FREE_MPS must be >= NAVRL_SPEED_GOVERNOR_FIXED_MPS "
                     "for riskcap"
                 )
+        if result.lateral_channel_enabled and result.lateral_floor_mps > result.free_speed_cap_mps:
+            raise ValueError(
+                "NAVRL_SPEED_GOVERNOR_LATERAL_FLOOR_MPS must not exceed NAVRL_SPEED_GOVERNOR_FREE_MPS"
+            )
         if result.mode == "stopcap":
             if result.brake_mps2 <= 0.0:
                 raise ValueError(
@@ -175,7 +220,7 @@ def directional_lidar_clearance(
     in_path = (
         ray_valid
         & (forward > 0.0)
-        & (lateral <= float(path_half_width_m))
+        & (lateral <= _half_width_column(path_half_width_m, lateral))
     )
     clearance = torch.where(
         in_path, forward, torch.full_like(forward, max_range)
@@ -185,6 +230,72 @@ def directional_lidar_clearance(
         clearance.clamp(min=0.0, max=max_range),
         torch.full_like(clearance, max_range),
     )
+
+
+def _half_width_column(path_half_width_m, like):
+    """A scalar half-width, or a per-env [N] tensor broadcast against a [N, H] ray matrix."""
+    if isinstance(path_half_width_m, torch.Tensor):
+        return path_half_width_m.to(like.dtype).view(-1, 1)
+    return float(path_half_width_m)
+
+
+def speed_dependent_half_width(config, requested_speed):
+    """L2: w = w0 + k * |v_requested|. k = 0 returns the scalar w0 (bit-identical to before)."""
+    k = float(config.width_per_mps)
+    if k <= 0.0:
+        return float(config.path_half_width_m)
+    return float(config.path_half_width_m) + k * requested_speed
+
+
+LATERAL_SECTOR_DEG = (15.0, 165.0)   # same sector the contact records call "beside"
+
+
+def lateral_clearance(
+    lidar_m, bearings_rad, command_xy, *, max_range_m, target_return_mask=None,
+    sector_deg=LATERAL_SECTOR_DEG,
+):
+    """L3: nearest sensor surface BESIDE the commanded direction (either side), horizontally
+    projected like the corridor. Rays inside +-15 deg of the command are the corridor's job; rays
+    beyond 165 deg are behind. No-return rays stay no-return, exactly as in the corridor."""
+    if lidar_m.ndim != 3:
+        raise ValueError("lidar_m must be [batch, vertical_beams, horizontal_beams]")
+    max_range = float(max_range_m)
+    finite = torch.isfinite(lidar_m)
+    valid = finite & (lidar_m >= 0.0) & (lidar_m < max_range * 0.995)
+    if target_return_mask is not None:
+        valid &= ~target_return_mask.bool()
+    nearest = _horizontal_nearest(lidar_m, valid, max_range)
+    ray_valid = valid.any(dim=1)
+    command_bearing = torch.atan2(command_xy[:, 1], command_xy[:, 0])
+    delta = torch.atan2(
+        torch.sin(bearings_rad.view(1, -1) - command_bearing.view(-1, 1)),
+        torch.cos(bearings_rad.view(1, -1) - command_bearing.view(-1, 1)),
+    ).abs()
+    lo, hi = math.radians(float(sector_deg[0])), math.radians(float(sector_deg[1]))
+    beside = ray_valid & (delta >= lo) & (delta <= hi)
+    return torch.where(beside, nearest, torch.full_like(nearest, max_range)).amin(dim=1)
+
+
+def lateral_cap(lateral_clearance_m, config):
+    """L3 cap: floor at lateral_floor_mps, released linearly to free_speed_cap over
+    [lateral_margin_m, lateral_margin_m + lateral_span_m]. The floor is what keeps this from
+    reproducing omni's deadlock: something is always beside the vehicle in clutter."""
+    release = (
+        (lateral_clearance_m - float(config.lateral_margin_m)) / float(config.lateral_span_m)
+    ).clamp(0.0, 1.0)
+    return float(config.lateral_floor_mps) + release * (
+        float(config.free_speed_cap_mps) - float(config.lateral_floor_mps)
+    )
+
+
+def yaw_scale(lateral_clearance_m, yaw_rate_max, config):
+    """L5: multiplicative scale in (0, 1] on the commanded yaw-rate magnitude. Full authority when
+    the nearest beside-return is farther than yaw_cap_margin_m; capped at yaw_cap_radps inside.
+    Never changes the sign, so it is magnitude-only in yaw exactly as the governor is in xy."""
+    cap = float(config.yaw_cap_radps) / max(1e-6, float(yaw_rate_max))
+    close = lateral_clearance_m < float(config.yaw_cap_margin_m)
+    return torch.where(close, torch.full_like(lateral_clearance_m, min(1.0, cap)),
+                       torch.ones_like(lateral_clearance_m))
 
 
 def _horizontal_nearest(lidar_m, valid, max_range_m, vertical_fov_deg=(20.0, -10.0)):
@@ -278,20 +389,26 @@ def arc_clearance(
     along = torch.where(
         straight, px, (radius.abs() * (2.0 * delta.abs())).clamp(max=max_range)
     )
-    on_arc = ray_valid & (along > 0.0) & (perp <= float(path_half_width_m))
+    on_arc = ray_valid & (along > 0.0) & (perp <= _half_width_column(path_half_width_m, perp))
     clearance = torch.where(on_arc, along, torch.full_like(along, max_range)).amin(dim=1)
     return torch.where(
         speed > 1e-6, clearance.clamp(0.0, max_range), torch.full_like(clearance, max_range)
     )
 
 
-def apply_speed_governor(command_xy, clearance_m, config):
-    """Scale horizontal velocity and return tensors required for causal diagnostics."""
+def apply_speed_governor(command_xy, clearance_m, config, lateral_clearance_m=None):
+    """Scale horizontal velocity and return tensors required for causal diagnostics.
+
+    ``lateral_clearance_m`` (L3) is optional; when the lateral channel is enabled the final cap
+    is the minimum of the base law's cap and the lateral cap. Direction is never changed.
+    """
 
     if command_xy.ndim != 2 or command_xy.shape[1] != 2:
         raise ValueError("command_xy must be [batch, 2]")
     if clearance_m.ndim != 1 or clearance_m.shape[0] != command_xy.shape[0]:
         raise ValueError("clearance_m must be [batch]")
+    if config.lateral_channel_enabled and lateral_clearance_m is None:
+        raise ValueError("lateral channel is enabled but no lateral clearance was supplied")
     requested = command_xy.norm(dim=1)
     usable = (clearance_m - float(config.hard_margin_m)).clamp(min=0.0)
 
@@ -333,6 +450,11 @@ def apply_speed_governor(command_xy, clearance_m, config):
     else:  # Config construction is fail-closed, but keep direct callers safe.
         raise ValueError(f"unsupported speed governor mode: {config.mode!r}")
 
+    if config.lateral_channel_enabled:
+        lat_cap = lateral_cap(lateral_clearance_m, config)
+        cap = torch.minimum(cap, lat_cap)
+    else:
+        lat_cap = torch.full_like(cap, float("inf"))
     executed_speed = torch.minimum(requested, cap)
     scale = torch.where(
         requested > 1e-6,
@@ -362,4 +484,9 @@ def apply_speed_governor(command_xy, clearance_m, config):
         "ttc_requested_s": ttc_requested,
         "stopping_margin_requested_m": stopping_margin(requested),
         "stopping_margin_executed_m": stopping_margin(executed_speed),
+        "lateral_cap_mps": lat_cap,
+        "lateral_clearance_m": (
+            lateral_clearance_m if lateral_clearance_m is not None
+            else torch.full_like(cap, float("inf"))
+        ),
     }

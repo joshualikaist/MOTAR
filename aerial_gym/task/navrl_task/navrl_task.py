@@ -1707,8 +1707,12 @@ class NavRLTask(BaseTask):
                 "ttc_requested_s",
                 "stopping_margin_requested_m",
                 "stopping_margin_executed_m",
+                "lateral_cap_mps",
+                "lateral_clearance_m",
             )
         }
+        # L5 yaw-rate cap scale (1.0 = untouched); written by the governor, read at yaw command.
+        self._governor_yaw_scale = torch.ones(self.num_envs, device=self.device)
         # Contact-corridor forensics (docs/prereg_2026-09-04_contact_corridor_forensics.md).
         # The governor draws its corridor around the COMMANDED direction; the vehicle moves along
         # its CURRENT velocity, which lags. Both are stashed here so the contact recorder can
@@ -3180,6 +3184,12 @@ class NavRLTask(BaseTask):
             "cfg_speed_governor_ttc_s": self.speed_governor_cfg.ttc_s,
             "cfg_speed_governor_brake_mps2": self.speed_governor_cfg.brake_mps2,
             "cfg_speed_governor_reaction_s": self.speed_governor_cfg.reaction_s,
+            "cfg_speed_governor_width_per_mps": self.speed_governor_cfg.width_per_mps,
+            "cfg_speed_governor_lateral_margin_m": self.speed_governor_cfg.lateral_margin_m,
+            "cfg_speed_governor_lateral_span_m": self.speed_governor_cfg.lateral_span_m,
+            "cfg_speed_governor_lateral_floor_mps": self.speed_governor_cfg.lateral_floor_mps,
+            "cfg_speed_governor_yaw_cap_radps": self.speed_governor_cfg.yaw_cap_radps,
+            "cfg_speed_governor_yaw_cap_margin_m": self.speed_governor_cfg.yaw_cap_margin_m,
             "cfg_speed_governor_target_exclusion": "camera_lidar_association",
             "cfg_training_seed": int(self.task_config.seed),
             "cfg_training_num_envs": int(self.num_envs),
@@ -4793,7 +4803,8 @@ class NavRLTask(BaseTask):
         # yaw_rate_max matches the NavRL-scoped controller clamp; canonical v2 launchers pin 3.0
         # rad/s while the task fallback remains 2.5 for legacy/import compatibility.
         self._yaw_cmd[:] = torch.clamp(actions[:, 3], -1.0, 1.0)
-        self.command[:, 3] = self._yaw_cmd * self.task_config.yaw_rate_max
+        # L5 (plan I3): magnitude-only yaw cap beside close obstacles; scale is 1.0 unless enabled.
+        self.command[:, 3] = self._yaw_cmd * self.task_config.yaw_rate_max * self._governor_yaw_scale
         return self.command
 
     def step(self, actions):
@@ -5024,6 +5035,10 @@ class NavRLTask(BaseTask):
                 )
             target_return = candidate
         mode = self.speed_governor_cfg.mode
+        from aerial_gym.task.navrl_task import speed_governor as SG
+
+        # L2: per-env corridor half-width; the scalar w0 unless width_per_mps > 0.
+        half_width = SG.speed_dependent_half_width(self.speed_governor_cfg, command_xy.norm(dim=1))
         if mode == "omni":
             # A4 baseline: identical stopping law, corridor removed entirely.
             from aerial_gym.task.navrl_task.speed_governor import omnidirectional_clearance
@@ -5044,7 +5059,7 @@ class NavRLTask(BaseTask):
                 command_xy,
                 yaw_rate,
                 max_range_m=float(self.task_config.lidar_max_range),
-                path_half_width_m=self.speed_governor_cfg.path_half_width_m,
+                path_half_width_m=half_width,
                 target_return_mask=target_return,
             )
         else:
@@ -5053,8 +5068,23 @@ class NavRLTask(BaseTask):
                 self._speed_governor_bearings,
                 command_xy,
                 max_range_m=float(self.task_config.lidar_max_range),
-                path_half_width_m=self.speed_governor_cfg.path_half_width_m,
+                path_half_width_m=half_width,
                 target_return_mask=target_return,
+            )
+        # L3 / L5 share one lateral clearance; computed only when either is enabled so every
+        # earlier arm stays byte-identical in work and in numbers.
+        lateral = None
+        if self.speed_governor_cfg.lateral_channel_enabled or self.speed_governor_cfg.yaw_cap_enabled:
+            lateral = SG.lateral_clearance(
+                scan_m,
+                self._speed_governor_bearings,
+                command_xy,
+                max_range_m=float(self.task_config.lidar_max_range),
+                target_return_mask=target_return,
+            )
+        if self.speed_governor_cfg.yaw_cap_enabled:
+            self._governor_yaw_scale[:] = SG.yaw_scale(
+                lateral, float(self.task_config.yaw_rate_max), self.speed_governor_cfg
             )
         if self._contact_geom_enabled:
             # The exact vector the corridor was drawn around, before any scaling.
@@ -5062,7 +5092,7 @@ class NavRLTask(BaseTask):
             self._push_contact_geometry_history(command_xy.detach())
             self._record_contact_geometry_step(command_xy.detach(), clearance.detach())
         governed, telemetry = apply_speed_governor(
-            command_xy, clearance, self.speed_governor_cfg
+            command_xy, clearance, self.speed_governor_cfg, lateral_clearance_m=lateral
         )
         for key, value in telemetry.items():
             self._speed_governor_last[key][:] = value.detach()
@@ -9100,6 +9130,12 @@ class NavRLTask(BaseTask):
                 "speed_governor_ttc_s": self.speed_governor_cfg.ttc_s,
                 "speed_governor_brake_mps2": self.speed_governor_cfg.brake_mps2,
                 "speed_governor_reaction_s": self.speed_governor_cfg.reaction_s,
+                "speed_governor_width_per_mps": self.speed_governor_cfg.width_per_mps,
+                "speed_governor_lateral_margin_m": self.speed_governor_cfg.lateral_margin_m,
+                "speed_governor_lateral_span_m": self.speed_governor_cfg.lateral_span_m,
+                "speed_governor_lateral_floor_mps": self.speed_governor_cfg.lateral_floor_mps,
+                "speed_governor_yaw_cap_radps": self.speed_governor_cfg.yaw_cap_radps,
+                "speed_governor_yaw_cap_margin_m": self.speed_governor_cfg.yaw_cap_margin_m,
                 "speed_governor_target_exclusion": "camera_lidar_association",
                 "search_state": str(representation["search_state"]),
                 "search_state_masked": bool(

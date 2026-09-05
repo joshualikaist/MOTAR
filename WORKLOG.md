@@ -15708,3 +15708,25 @@ NPS 타일링이 CPU·디스크를 점유하던 한 번만 어긋났다(22.35/67
   사거리 안·240° 안이었는가"가 정확히 복원된다. 선택기가 빔 인덱스만 돌려주므로 이 방식이 유일하게 정확하다.
 - 테스트 9개(`tests/test_navrl_contact_records.py`), GPU 스모크 32 ep: 접촉 4행 = 집계 4, 범주 일치, 프레임 128행.
 - 주의: 평가 환경(`canonical_env`)이 ambient `NAVRL_*`를 지우므로 `NAVRL_CG_FRAME_SAMPLE_EVERY`는 런처가 명시해야 한다.
+
+## 2026-09-05 — 계획 I3 구현: 거버너 추가 knob 3종 (L2 속도의존 폭 · L3 측면 채널 · L5 요레이트 캡)
+
+새 mode가 아니라 **파라미터**다. 어떤 기본 법칙(riskcap/stopcap/dwa_arc/…) 위에도 하나씩 얹을 수 있어 "arm 하나 = 변화
+하나"가 지켜지고, 화이트리스트 3곳을 건드릴 필요가 없다. 기본값 0에서 전부 꺼져 **이전 모든 arm과 비트 동일**.
+
+| knob | env | 동작 |
+|---|---|---|
+| L2 | `NAVRL_SPEED_GOVERNOR_WIDTH_PER_MPS` k | 회랑 반폭 w = w0 + k·|v_req| (Nav2 VelocityPolygon). 직선·원호 모두 per-env 텐서 폭 지원 |
+| L3 | `..._LATERAL_MARGIN_M` m(>0이면 켬), `..._LATERAL_SPAN_M` s, `..._LATERAL_FLOOR_MPS` v_floor | 명령 방향 기준 15~165° 양측 최근접 표면 d_lat → cap_lat = v_floor + (v_free − v_floor)·clamp((d_lat−m)/s); 최종 cap = min(전방 cap, cap_lat). 바닥이 있어 omni 교착 불가 (RSS 횡규칙) |
+| L5 | `..._YAW_CAP_RADPS` c(>0이면 켬), `..._YAW_CAP_MARGIN_M` | d_lat < margin이면 요레이트 크기를 c로 캡(부호 불변). 요 명령 생성부에 scale 곱 |
+
+- `speed_governor.py`: 필드 6개·검증(floor ≤ free)·`speed_dependent_half_width`·`lateral_clearance`·`lateral_cap`·`yaw_scale`;
+  `apply_speed_governor(…, lateral_clearance_m=None)`, 텔레메트리에 `lateral_cap_mps`·`lateral_clearance_m` 추가.
+- `navrl_task.py`: 거버너 진입부에서 per-env 폭 계산, L3/L5 중 하나라도 켜졌을 때만 측면 clearance 계산(아니면 연산도 동일),
+  `_governor_yaw_scale`을 요 명령에 곱. 체크포인트 env_state·결과 JSON `condition`에 6개 값 기록.
+- 평가 셸 `GOVERNOR_VALUES` spec에 6개 추가·export(파이썬과 셸 일치를 테스트가 검사).
+- 테스트 8개(`tests/test_navrl_governor_lateral_knobs.py`): 기본값 비트동일, 방향 보존, 바닥, 부호 불변, 셸 파싱 15값.
+- GPU 스모크(32 ep, seed 509): 기본 riskcap이 I3 전 스모크와 **완전 동일**(capture 20·crash 13·접촉 4·개입률 0.060018).
+  knob 3종 모두 오류 없이 실행·condition 기록. 32 ep 수치는 해석하지 않는다.
+- 주의: k=0.2 s는 요구속도 3.5 m/s에서 반폭 1.15 m라 정지법칙이 상시 발동(개입 53 %). L1 반폭 스윕으로 척도를 먼저 잡고
+  L2의 k 격자를 정하는 계획 순서가 맞다.
