@@ -4166,16 +4166,6 @@ class NavRLTask(BaseTask):
                     "NAVRL_GEOFENCE_DROPOUT",
                 ),
                 (
-                    "cfg_search_state",
-                    str(representation["search_state"]),
-                    "NAVRL_SEARCH_STATE",
-                ),
-                (
-                    "cfg_search_state_force_invalid",
-                    bool(representation["search_state_force_invalid"]),
-                    "NAVRL_SEARCH_STATE_FORCE_INVALID",
-                ),
-                (
                     "cfg_fov_curriculum_epochs",
                     float(getattr(self.vis_cfg, "fov_curriculum_epochs", 0)),
                     "NAVRL_FOV_CURRICULUM_EPOCHS",
@@ -4303,6 +4293,32 @@ class NavRLTask(BaseTask):
                         "NavRL CONFIG MISMATCH | %s: checkpoint trained with %.3f, running with %.3f. "
                         "This changes policy inputs -- results are NOT comparable unless intentional."
                         % (name, float(saved), current)
+                    )
+            # The search-state contract is a MODE and a FLAG, not a magnitude. Both used to sit in
+            # the float loop above, where `float("off")` raises and kills the restore -- so every
+            # checkpoint trained after cfg_search_state was introduced was unloadable, while older
+            # ones sailed past on the `saved is None` branch. Compare them by value instead.
+            for key, current, name in (
+                (
+                    "cfg_search_state",
+                    str(representation["search_state"]),
+                    "NAVRL_SEARCH_STATE",
+                ),
+                (
+                    "cfg_search_state_force_invalid",
+                    bool(representation["search_state_force_invalid"]),
+                    "NAVRL_SEARCH_STATE_FORCE_INVALID",
+                ),
+            ):
+                saved = state.get(key)
+                if saved is None:
+                    continue  # checkpoint predates this guard
+                if str(saved).strip() != str(current).strip():
+                    density_evidence_changed = True
+                    logger.warning(
+                        "NavRL CONFIG MISMATCH | %s: checkpoint trained with %s, running with %s. "
+                        "This changes policy inputs -- results are NOT comparable unless intentional."
+                        % (name, saved, current)
                     )
             for key, current, name in (
                 (
