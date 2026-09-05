@@ -5005,8 +5005,8 @@ class NavRLTask(BaseTask):
                 max_range_m=float(self.task_config.lidar_max_range),
                 target_return_mask=target_return,
             )
-        elif mode == "dwa_arc":
-            # A4 baseline: identical stopping law, measured along the arc rather than a line.
+        elif mode in ("dwa_arc", "riskcap_arc"):
+            # A7: both laws measure clearance with the same sensor-only arc geometry.
             from aerial_gym.task.navrl_task.speed_governor import arc_clearance
 
             yaw_rate = self.obs_dict["robot_body_angvel"][:, 2].detach()

@@ -1,6 +1,9 @@
 import math
 import importlib.util
 from pathlib import Path
+import os
+import subprocess
+import sys
 import unittest
 
 import torch
@@ -206,10 +209,6 @@ class SpeedGovernorTests(unittest.TestCase):
             )
 
 
-if __name__ == "__main__":
-    unittest.main()
-
-
 class A4BaselineGeometries(unittest.TestCase):
     """omni and dwa_arc change ONLY the geometry of the clearance measurement.
 
@@ -322,3 +321,101 @@ class WhitelistsAgree(unittest.TestCase):
             set(_GOVERNOR.VALID_SPEED_GOVERNOR_MODES),
             "the evaluator shell and speed_governor.py must accept the same modes",
         )
+
+    def test_shell_applies_riskcap_validation_to_both_geometries(self):
+        sweep = (
+            Path(__file__).resolve().parents[1]
+            / "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh"
+        ).read_text()
+        validation = next(
+            line for line in sweep.splitlines()
+            if line.startswith('if os.environ.get("NAVRL_SPEED_GOVERNOR",')
+        )
+        self.assertIn('in ("riskcap", "riskcap_arc")', validation)
+        # Execute only the shell's numeric-validation Python, never its simulator path.
+        script = sweep.split('GOVERNOR_VALUES="$(${PYTHON} - <<\'PY\'\n', 1)[1].split('\nPY\n', 1)[0]
+        for mode in ("riskcap", "riskcap_arc"):
+            for bad in (
+                {"NAVRL_SPEED_GOVERNOR_RELEASE_M": "3"},
+                {"NAVRL_SPEED_GOVERNOR_FREE_MPS": "1.9"},
+            ):
+                with self.subTest(mode=mode, invalid=bad):
+                    env = {k: v for k, v in os.environ.items() if not k.startswith("NAVRL_")}
+                    env.update({"NAVRL_SPEED_GOVERNOR": mode, **bad})
+                    result = subprocess.run(
+                        [sys.executable, "-c", script], env=env,
+                        capture_output=True, text=True,
+                    )
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertIn("[eval_v2] riskcap", result.stderr)
+
+
+class A7RiskcapArc(unittest.TestCase):
+    def test_m1_caps_and_commands_equal_at_every_clearance(self):
+        generator = torch.Generator().manual_seed(509)
+        command = torch.randn(256, 2, generator=generator) * 3.0
+        clearance = torch.cat((torch.linspace(0.0, 12.0, 252), torch.tensor([0.45, 3.0, 4.0, 5.0])))
+        line, line_diag = apply_speed_governor(command, clearance, SpeedGovernorConfig(mode="riskcap"))
+        arc, arc_diag = apply_speed_governor(command, clearance, SpeedGovernorConfig(mode="riskcap_arc"))
+        self.assertTrue(torch.allclose(line, arc, atol=1e-6, rtol=0.0))
+        self.assertTrue(torch.allclose(
+            line_diag["speed_cap_mps"], arc_diag["speed_cap_mps"], atol=1e-6, rtol=0.0,
+        ))
+
+    def test_modes_share_environment_validation(self):
+        for mode in ("riskcap", "riskcap_arc"):
+            self.assertEqual(SpeedGovernorConfig.from_environ({"NAVRL_SPEED_GOVERNOR": mode}).mode, mode)
+            for invalid in (
+                {"NAVRL_SPEED_GOVERNOR_RELEASE_M": "3"},
+                {"NAVRL_SPEED_GOVERNOR_RELEASE_M": "2.9"},
+                {"NAVRL_SPEED_GOVERNOR_FREE_MPS": "1.9"},
+            ):
+                with self.subTest(mode=mode, invalid=invalid), self.assertRaises(ValueError):
+                    SpeedGovernorConfig.from_environ({"NAVRL_SPEED_GOVERNOR": mode, **invalid})
+
+    def test_m2_zero_yaw_clearance_and_cap_match_at_corridor_boundary(self):
+        # Horizontal returns on either side of the 0.45 m boundary. A huge-radius
+        # approximation loses this distinction in float32 through cancellation.
+        for lateral in (0.44, 0.45, 0.46, -0.44, -0.45, -0.46):
+            with self.subTest(lateral=lateral):
+                bearings = torch.tensor([math.asin(lateral / 4.0)])
+                scan = torch.tensor([[[4.0 / math.cos(math.radians(20.0))]]])
+                command = torch.tensor([[3.5, 0.0]])
+                kwargs = {"max_range_m": 12.0, "path_half_width_m": 0.45}
+                line = directional_lidar_clearance(scan, bearings, command, **kwargs)
+                arc = _GOVERNOR.arc_clearance(scan, bearings, command, torch.zeros(1), **kwargs)
+                self.assertTrue(torch.equal(line, arc), msg=f"line={line}, arc={arc}")
+                _, line_diag = apply_speed_governor(command, line, SpeedGovernorConfig(mode="riskcap"))
+                _, arc_diag = apply_speed_governor(command, arc, SpeedGovernorConfig(mode="riskcap_arc"))
+                self.assertTrue(torch.allclose(
+                    line_diag["speed_cap_mps"], arc_diag["speed_cap_mps"], atol=1e-6, rtol=0.0,
+                ))
+
+    def test_m2_zero_yaw_matches_for_batched_scans_masks_and_directions(self):
+        generator = torch.Generator().manual_seed(491)
+        scan = torch.rand(128, 4, 72, generator=generator) * 12.0
+        scan[0] = 12.0
+        scan[1, 0, 0] = float("nan")
+        scan[1, 0, 1] = float("inf")
+        command = torch.randn(128, 2, generator=generator) * 2.0
+        command[2] = 0.0
+        bearings = torch.linspace(math.pi, -math.pi + 2 * math.pi / 72, 72)
+        kwargs = {
+            "max_range_m": 12.0, "path_half_width_m": 0.45,
+            "target_return_mask": torch.rand(128, 4, 72, generator=generator) < 0.2,
+        }
+        line = directional_lidar_clearance(scan, bearings, command, **kwargs)
+        arc = _GOVERNOR.arc_clearance(scan, bearings, command, torch.zeros(128), **kwargs)
+        self.assertTrue(torch.equal(line, arc), msg=f"max delta={float((line - arc).abs().max())}")
+
+    def test_task_routes_both_arc_modes_to_the_same_clearance_function(self):
+        source = (
+            Path(__file__).resolve().parents[1] / "aerial_gym/task/navrl_task/navrl_task.py"
+        ).read_text()
+        branch = source.split('elif mode in ("dwa_arc", "riskcap_arc"):', 1)[1].split('\n        else:', 1)[0]
+        self.assertIn("clearance = arc_clearance(", branch)
+        self.assertIn('self.obs_dict["robot_body_angvel"][:, 2].detach()', branch)
+
+
+if __name__ == "__main__":
+    unittest.main()

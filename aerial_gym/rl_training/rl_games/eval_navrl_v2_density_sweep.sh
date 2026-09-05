@@ -337,9 +337,9 @@ case "${NAVRL_SPEED_GOVERNOR}" in
     # measurement geometry (prereg_2026-09-05_a4_geometry_baselines.md). This list is a second,
     # independent whitelist from VALID_SPEED_GOVERNOR_MODES in speed_governor.py -- adding a mode
     # requires editing both, which is how the first A4 attempt failed after four arms.
-    off|fixed|clearance|ttc|riskcap|stopcap|omni|dwa_arc) ;;
+    off|fixed|clearance|ttc|riskcap|stopcap|omni|dwa_arc|riskcap_arc) ;;
     *)
-        echo "[eval_v2] NAVRL_SPEED_GOVERNOR must be off, fixed, clearance, ttc, riskcap, stopcap, omni or dwa_arc; got: ${NAVRL_SPEED_GOVERNOR}" >&2
+        echo "[eval_v2] NAVRL_SPEED_GOVERNOR must be off, fixed, clearance, ttc, riskcap, stopcap, omni, dwa_arc or riskcap_arc; got: ${NAVRL_SPEED_GOVERNOR}" >&2
         exit 2
         ;;
 esac
@@ -371,7 +371,7 @@ for name, default, positive in spec:
     values.append(value)
 if values[4] <= values[3]:
     raise SystemExit("[eval_v2] governor slow distance must exceed hard margin")
-if os.environ.get("NAVRL_SPEED_GOVERNOR", "off").strip().lower() == "riskcap":
+if os.environ.get("NAVRL_SPEED_GOVERNOR", "off").strip().lower() in ("riskcap", "riskcap_arc"):
     if values[5] <= values[4]:
         raise SystemExit("[eval_v2] riskcap release distance must exceed slow distance")
     if values[1] < values[0]:

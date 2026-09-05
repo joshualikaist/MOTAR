@@ -15544,3 +15544,37 @@ seed 509에서 **−3.11 pp CI[−5.41,−0.80]**(상수 캡이 더 안전). **r
 
 ① `dwa_arc` 귀속 분리(튜브 반폭 고정, 원호만 토글) ② star-convex를 실제로 켠 A/B
 ③ 필터와 함께 재적응 학습 ④ 밀도 축 확장. 전부 새 사전등록 필요.
+
+## 2026-09-05 — A7 사전등록·구현 완료, 평가 착수 (법칙 × 기하 2×2)
+
+**계기.** A6 초안의 "dwa_arc가 riskcap보다 안전, 같은 법칙·기하만 교체"는 틀린 문장이었다.
+`speed_governor.py:315`와 A4 사전등록 §1 모두 `dwa_arc`가 **stopcap 정지법칙**을 쓴다고 명시한다.
+같은 법칙끼리(stopcap→dwa_arc) crash 차이는 −1.23 pp CI[−3.19, +0.74]로 비유의이고, 원호가 한
+일은 정지법칙의 비용 제거(timeout −8.6 pp, 개입률 19.3→4.0 %, <3 m 체류 21.85→6.25 %)다.
+riskcap 대비 −7.70 pp의 대부분은 법칙(stopcap − riskcap −6.47 pp) 몫이다.
+두 번째 위험: stopcap − riskcap 부호가 09-02 스크린(+5.36 pp, 205 bars·ep25000·brake 2.96)과
+A4(−6.47 pp, 70 bars·ep1900·brake 2.0)에서 뒤집힌다. 교란은 체크포인트·밀도·brake·기체·목표거리.
+
+**계획 (Fable)**: `docs/prereg_2026-09-05_a7_arc_attribution.md`. 원안(개입률 4.0 %에 맞춘 약화
+직선 riskcap)은 법칙 교란을 남기고 튜닝 자유도를 늘려 폐기. 대신 2×2의 빈 칸 `riskcap_arc`
+(riskcap 법칙 + arc_clearance), seed 491 재현, 205 bars·ep25000·seed 49·brake 2.0 4 arm.
+
+**구현·감사 (Codex)**: `riskcap_arc` mode(파이썬·셸 화이트리스트·셸 riskcap 검증 세 곳),
+`run_navrl_contact_geometry.py`의 `NAVRL_CG_ARMS`/`NAVRL_CG_RESULT_ROOT`/소스 동결 검사,
+P3 런처 `eval_navrl_v2_ep25000_arc_attribution.sh`, 요약기 `build_a7_arc_attribution_table.py`,
+테스트 27개. 감사(`docs/a7_preexecution_audit_2026-09-05.md`)가 **`arc_clearance` yaw=0 결함**을
+찾았다: 반경 1e6 대용의 float32 상쇄로 횡거리 0.46 m 광선이 ±0.45 m 튜브 안으로 들어온다
+(직선 12 m vs 원호 3.97 m, 배치 최대 0.107 m). A4 `dwa_arc`는 이 결함 상태로 돌았다.
+
+**결정 (개정 1, 결과 이전)**:
+1. 결함 수정(`perp = where(straight, |py|, perp)`). 수정 함수는 A4 dwa_arc와 다르므로 P1을 같은 커밋
+   4 arm으로(합계 12 arm, 약 4.5~5.5 h). M5(riskcap 재현)는 보고용으로 남기고 P3 brake 대조만 막는다.
+2. 라벨 중복은 `ARC_HURTS_UNDER_RISKCAP` > `INTERACTION`(유일하게 공존 가능한 쌍).
+3. M5 |Δ| ≤ 0.5 pp는 `PASS_INEXACT`로 교차 루트 비교 허용·표기, > 0.5 pp는 `FAIL`.
+4. P3 라벨 `FLIP_IS_DENSITY`/`DENSITY_LIMITED`는 이름과 달리 조건 전이 검사로 해석(기체·목표거리·시드도 다름).
+
+테스트: 전체 1,110개, failures 2 / errors 1 — 전부 A7 무관 기존 실패(heldout·latency). A7 신규 테스트 51개 통과. P3 런처 CPU preflight PASS.
+초안·A5 표·RESEARCH_PLAN·VERIFICATION은 "같은 법칙" 문장을 정정하고 A7 미결로 표시했다.
+
+**실행**: 코드 커밋 후 P1(509) → P2(491) → P3(205/49) 순차, 런처가 arm마다 HEAD·작업트리 동결을 검사.
+결과는 `results/navrl_arc_attribution_{seed509,seed491,205bars_seed49}/`, 판정은 요약기가 낸다.

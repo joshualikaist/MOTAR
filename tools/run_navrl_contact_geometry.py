@@ -17,12 +17,15 @@ import importlib.util
 import json
 import os
 from pathlib import Path
+import subprocess
 import sys
 
 REPO = Path(__file__).resolve().parents[1]
 ENVELOPE = REPO / "tools" / "run_navrl_distractor_envelope.py"
 SEED = int(os.environ.get("NAVRL_CG_SEED", "491"))
-RESULT_ROOT = REPO / "results" / f"navrl_contact_geometry_seed{SEED}"
+RESULT_ROOT = REPO / os.environ.get(
+    "NAVRL_CG_RESULT_ROOT", f"results/navrl_contact_geometry_seed{SEED}"
+)
 ENVELOPE_CELL = "v7_n0"          # zero distractors: this is about bars, not decoys
 _ALL_ARMS = {
     "off": {"NAVRL_SPEED_GOVERNOR": "off"},
@@ -32,13 +35,43 @@ _ALL_ARMS = {
     # A4 geometry baselines: same stopping law as stopcap, different measurement geometry.
     "omni": {"NAVRL_SPEED_GOVERNOR": "omni"},
     "dwa_arc": {"NAVRL_SPEED_GOVERNOR": "dwa_arc"},
+    "riskcap_arc": {"NAVRL_SPEED_GOVERNOR": "riskcap_arc"},
 }
-# The forensics runs (seed 491/497/503) used two arms; A4 opens all six.
-ARMS = (
-    _ALL_ARMS
-    if os.environ.get("NAVRL_CG_ALL_ARMS", "0").strip() == "1"
-    else {k: _ALL_ARMS[k] for k in ("off", "riskcap")}
-)
+# Preserve both historical defaults: two forensics arms, or the original six A4 arms.
+# A7 selects its registered subset explicitly and in the requested order.
+_LEGACY_ALL_ARMS = ("off", "fixed2p0", "riskcap", "stopcap", "omni", "dwa_arc")
+
+
+def _select_arms(environ):
+    explicit = environ.get("NAVRL_CG_ARMS")
+    if explicit is None:
+        names = (_LEGACY_ALL_ARMS if environ.get("NAVRL_CG_ALL_ARMS", "0").strip() == "1"
+                 else ("off", "riskcap"))
+    else:
+        names = tuple(name.strip() for name in explicit.split(","))
+        if any(name not in _ALL_ARMS for name in names) or len(set(names)) != len(names):
+            raise SystemExit(
+                "[contact-geom] NAVRL_CG_ARMS must be a nonempty comma-separated list of "
+                f"distinct arms from {', '.join(_ALL_ARMS)}; got {explicit!r}"
+            )
+    return {name: _ALL_ARMS[name] for name in names}
+
+
+ARMS = _select_arms(os.environ)
+A7 = "riskcap_arc" in ARMS
+
+# A7 §1; explicit values prevent default changes from moving the registered treatment.
+_GOVERNOR_ENV = {
+    "NAVRL_SPEED_GOVERNOR_FIXED_MPS": "2.0",
+    "NAVRL_SPEED_GOVERNOR_FREE_MPS": "3.53553390593",
+    "NAVRL_SPEED_GOVERNOR_HALF_WIDTH_M": "0.45",
+    "NAVRL_SPEED_GOVERNOR_MARGIN_M": "0.45",
+    "NAVRL_SPEED_GOVERNOR_SLOW_M": "3.0",
+    "NAVRL_SPEED_GOVERNOR_RELEASE_M": "5.0",
+    "NAVRL_SPEED_GOVERNOR_TTC_S": "1.0",
+    "NAVRL_SPEED_GOVERNOR_BRAKE_MPS2": "2.0",
+    "NAVRL_SPEED_GOVERNOR_REACTION_S": "0.1",
+}
 
 
 def _load_envelope():
@@ -53,6 +86,20 @@ def _require(cond, msg):
         raise SystemExit(f"[contact-geom] FAIL: {msg}")
 
 
+def _require_frozen_source(expected_commit=None):
+    status = subprocess.check_output(
+        ["git", "-C", str(REPO), "status", "--porcelain=v1", "--untracked-files=all",
+         "--", "aerial_gym", "tools", "resources/robots"], text=True,
+    ).strip()
+    _require(not status, "A7 runtime/launcher sources must be committed before evaluation: " + status)
+    commit = subprocess.check_output(
+        ["git", "-C", str(REPO), "rev-parse", "HEAD"], text=True,
+    ).strip()
+    _require(expected_commit is None or commit == expected_commit,
+             "A7 git HEAD changed during evaluation; this root is VOID")
+    return commit
+
+
 def _arm_env(mod, arm, out_dir):
     env = mod.evaluation_env(ENVELOPE_CELL, preflight=False)
     env["NAVRL_SEED"] = str(SEED)
@@ -60,18 +107,28 @@ def _arm_env(mod, arm, out_dir):
     env["NAVRL_V2_SHARED_SOURCE_BUNDLE"] = str(RESULT_ROOT / "source_bundle")
     env["NAVRL_CONTACT_GEOMETRY"] = "1"
     env["NAVRL_SPEED_GOVERNOR_DIAG"] = "1"   # the corridor is computed even when mode is off
-    if os.environ.get("NAVRL_STAR_CONVEX_SHADOW", "0").strip() == "1":
+    if A7:
+        env.update(_GOVERNOR_ENV)
+        env["NAVRL_STAR_CONVEX_SHADOW"] = "0"
+    elif os.environ.get("NAVRL_STAR_CONVEX_SHADOW", "0").strip() == "1":
         env["NAVRL_STAR_CONVEX_SHADOW"] = "1"
     env.update(ARMS[arm])
     return env
 
 
 def run_evaluate(mod, only=None, episodes=None):
+    _require(only is None or only in ARMS, f"arm {only!r} is not selected in NAVRL_CG_ARMS")
+    if A7:
+        _require(not RESULT_ROOT.exists(),
+                 f"A7 refuses an existing result root (no partial resume): {RESULT_ROOT}")
+    commit = _require_frozen_source() if A7 else None
     gate0 = mod.verify_prerequisites()
     _require(mod.gate0_static_passed(gate0),
              "envelope gate-0 failed: " + mod.gate0_failure_report(gate0))
     n = int(episodes or mod.EPISODES)
     for arm in (ARMS if only is None else [only]):
+        if A7:
+            _require_frozen_source(commit)
         out_dir = RESULT_ROOT / arm
         if out_dir.exists():
             print(f"[contact-geom] arm {arm}: exists, skipping")
@@ -81,6 +138,8 @@ def run_evaluate(mod, only=None, episodes=None):
         code = mod.tee_run(["bash", str(mod.EVALUATOR), str(mod.CHECKPOINT), str(n)],
                            env, out_dir.parent / f"{arm}.eval.log.partial")
         _require(code == 0, f"{arm}: evaluator exited {code}")
+        if A7:
+            _require_frozen_source(commit)
         _require(out_dir.is_dir(), f"{arm}: no result directory")
         (out_dir.parent / f"{arm}.eval.log.partial").replace(out_dir / "eval.log")
 
@@ -106,7 +165,7 @@ def _load_arm(arm, checkpoint_sha):
 
 def run_summarize(mod):
     rows = [_load_arm(a, mod.CHECKPOINT_SHA) for a in ARMS]
-    lines = ["# Contact-corridor forensics (seed 491, 0 distractors, 70 bars)", "",
+    lines = [f"# Contact-corridor forensics (seed {SEED}, 0 distractors, 70 bars)", "",
              "| arm | crash | contacts | vertical_out | behind | lateral | no_return | **in_corridor** |",
              "|---|---:|---:|---:|---:|---:|---:|---:|"]
     for r in rows:
@@ -135,14 +194,16 @@ def run_summarize(mod):
         lines += ["", "## A1 재현 판정 (seed 491 CI 게이트, 결과 이전 동결)", "",
                   "| arm | lateral+no_return | 허용 구간 | |", "|---|---:|---|---|"]
         for r in rows:
+            if r["arm"] not in GATE:
+                continue
             cm = r["contact_geometry"]["commanded_direction"]
             v = cm["lateral_rate"] + cm["no_return_rate"]
             lo, hi = GATE[r["arm"]]
             ok = lo <= v <= hi
             passed.append(ok)
             lines.append(f"| {r['arm']} | {v:.1%} | [{lo:.1%}, {hi:.1%}] | {'통과' if ok else '벗어남'} |")
-        verdict = ("REPLICATED" if all(passed) else
-                   "PARTIAL" if any(passed) else "FAILED")
+        verdict = (("REPLICATED" if all(passed) else
+                    "PARTIAL" if any(passed) else "FAILED") if passed else None)
         lines += ["", f"**verdict_replication: {verdict}**", ""]
     lines.append("")
     RESULT_ROOT.mkdir(parents=True, exist_ok=True)

@@ -4,7 +4,28 @@
 [`RESEARCH_PLAN.md`](RESEARCH_PLAN.md), 날짜별 기록은 [`WORKLOG.md`](WORKLOG.md),
 명령어는 [`OPERATIONS.md`](OPERATIONS.md), 라이브 지표는 [`docs/status/`](docs/status/)를 본다.
 
-> 기준일: 2026-09-03
+> 기준일: 2026-09-05
+
+## 2026-09-05 A7 실행 준비 — M2 결함으로 GPU 착수 보류
+
+사용자가 전달한 [A7 사전등록](docs/prereg_2026-09-05_a7_arc_attribution.md)의
+법칙×기하 분리 평가를 준비한다. 현재 단계는 구현·CPU 검증이며, 새 평가 결과는 없다.
+기존 Track A/B 및 corrected non-overlap의 기록된 판정은 유지한다.
+
+- `riskcap_arc`는 riskcap 법칙과 기존 `arc_clearance`를 조합한다. 같은 clearance에서
+  cap 동등성(M1)은 통과했지만 **M2는 현재 실패**한다. 기존 원호 함수가 yaw=0에서도
+  직선과 다른 경계 판정을 하며, CPU 반례에서 clearance 12 m 대 3.9734618664 m다.
+- 최소 수정안은 직선 극한의 횡거리를 `abs(py)`로 직접 계산하는 것이다. 메모리에만 적용한
+  수정안은 거버너 테스트 25개를 통과했으며, 실제 원호 함수는 아직 수정하지 않았다.
+- 공통 원호 함수를 수정하면 기존 A4 `dwa_arc`와 구현이 달라진다. **P1을 같은 커밋의
+  4 arm으로 바꾸는 안(합계 12 arm)**과 판정 중복/M5 허용오차 처리에 대한 사용자 결정 대기다.
+  결정·테스트·커밋이 완료되기 전에는 실행하지 않는다.
+- P3 대조에는 밀도·체크포인트 외 기체와 초기 목표 거리도 다르고, 옛 205-bar riskcap JSON은
+  `runtime_git_dirty=true`다. M5 재현만으로 밀도 단독 인과나 옛 소스 무결성을 증명하지 않는다.
+
+반례·실제 에피소드 분모·조건 차이는
+[실행 전 감사](docs/a7_preexecution_audit_2026-09-05.md)에 기록했다.
+모든 코드·런처·요약기·테스트를 먼저 완성하고 커밋한 다음, 평가 기간 소스를 동결한다.
 
 현재 판정의 기계 판독 원본은
 [`docs/research_authority_2026-08-26.json`](docs/research_authority_2026-08-26.json)이다.

@@ -17,6 +17,7 @@ VALID_SPEED_GOVERNOR_MODES = (
     # only the GEOMETRY of the measurement, keeping the stopping-distance law identical.
     "omni",     # same law, but clearance is the nearest return in ANY bearing
     "dwa_arc",  # same law, but clearance is measured along the arc the vehicle is on
+    "riskcap_arc",  # A7: riskcap law with the same arc clearance as dwa_arc
 )
 
 
@@ -98,7 +99,7 @@ class SpeedGovernorConfig:
             raise ValueError(
                 "NAVRL_SPEED_GOVERNOR_SLOW_M must exceed NAVRL_SPEED_GOVERNOR_MARGIN_M"
             )
-        if result.mode == "riskcap":
+        if result.mode in ("riskcap", "riskcap_arc"):
             if result.release_distance_m <= result.slow_distance_m:
                 raise ValueError(
                     "NAVRL_SPEED_GOVERNOR_RELEASE_M must exceed NAVRL_SPEED_GOVERNOR_SLOW_M "
@@ -270,6 +271,10 @@ def arc_clearance(
     px = nearest * torch.cos(delta)
     py = nearest * torch.sin(delta)
     perp = (torch.sqrt(px.square() + (py - radius).square()) - radius.abs()).abs()
+    # A7 M2: at the straight limit the huge-radius surrogate loses the +-0.45 m boundary to
+    # float32 cancellation (12 m vs 3.97 m on a ray at lateral 0.46 m). Use the exact lateral
+    # offset there so yaw rate 0 reproduces directional_lidar_clearance bit for bit.
+    perp = torch.where(straight, py.abs(), perp)
     along = torch.where(
         straight, px, (radius.abs() * (2.0 * delta.abs())).clamp(max=max_range)
     )
@@ -301,7 +306,7 @@ def apply_speed_governor(command_xy, clearance_m, config):
         cap = (usable / float(config.ttc_s)).clamp(
             min=0.0, max=float(config.free_speed_cap_mps)
         )
-    elif config.mode == "riskcap":
+    elif config.mode in ("riskcap", "riskcap_arc"):
         # Minimum-intervention filter: preserve the fixed-2.0 positive control in clutter, but
         # release it smoothly in genuinely open command directions. Unlike clearance/TTC this
         # never creates a forced zero-speed deadlock; a policy request below the cap is untouched.
