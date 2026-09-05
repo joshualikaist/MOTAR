@@ -127,7 +127,7 @@
   <text x="400" y="500" class="badb">9.51 %</text>
   <text x="510" y="500" class="b">36.85 %</text>
   <text x="620" y="500" class="b">0.302 m/s</text>
-  <text x="790" y="500" class="bad">정지여유 양수인데 악화</text>
+  <text x="790" y="500" class="bad">양수인데 악화 (brake 2.96)</text>
 
   <!-- Two verdicts -->
   <rect x="24" y="522" width="450" height="156" class="boxbad"/>
@@ -136,8 +136,8 @@
   <text x="40" y="590" class="b">2.024 → <tspan class="bad">0.302 m/s</tspan>로 낮췄고 정지여유도</text>
   <text x="40" y="610" class="b">−0.026 → <tspan class="bad">+0.395 m(양수)</tspan>가 됐다.</text>
   <text x="40" y="632" class="b">그런데 crash는 15.95 → <tspan class="bad">21.31 %</tspan>로 올랐다.</text>
-  <text x="40" y="656" class="cap">접촉 순간 필터 자신은 "정지 가능"이라 말한다 →</text>
-  <text x="40" y="672" class="cap">부딪히는 장애물이 회랑 안에 없다. 위 4개 맹점을 보라.</text>
+  <text x="40" y="656" class="cap">A7: brake 2.0이면 16.25 %(riskcap +0.3 pp, 비유의) · 70 bars에선 −6.5/−5.5 pp</text>
+  <text x="40" y="672" class="cap">법칙의 이득은 조건 의존 · 원호 기하는 안전 대신 timeout·개입 비용만 회수</text>
 
   <rect x="486" y="522" width="450" height="156" class="boxbad"/>
   <text x="502" y="546" class="h">확정 ② riskcap의 해제 기구는 실증되지 않았다</text>

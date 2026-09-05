@@ -15612,3 +15612,13 @@ M5 세 루트 모두 **정확 일치**(riskcap 18.77/18.35/15.95 %). 09-02 스�
 - A8 사전등록 `docs/prereg_2026-09-05_a8_filter_readaptation.md`: ep1900에서 {off, riskcap, dwa_arc} 동반 1,000 epoch
   (T0 대조군 포함), seed 521 평가 10 cell. Q1 비용 회수·Q2 법칙 이득 유지·Q3 필터 의존. 예측 P-2 `LAW_GAIN_PERSISTS`가
   틀리면 §1-2가 "추론 시점 한정"이 된다. 약 10 h GPU, 구현 §6. 미실행.
+
+## 2026-09-05 — A8 구현·착수 + 상태 사이트 A7 반영
+
+- 사이트: `docs/status/index.html` hero 문장·§06 안전필터 단락·"주장할 수 없는 것"에 A7 판정 반영, `docs/assets/motar-safety-filter.svg`의
+  "정지여유 양수인데 악화" 주석을 brake 2.96·205 bars 조건으로 한정하고 A7 한 줄 추가.
+- A8 구현: `train_navrl_v2_ref5in_a8_readapt.sh`(D1 계약 복제, `A8_MODE` off|riskcap|dwa_arc, ep1900 SHA 게이트, MAX_EPOCHS 2900,
+  A7 거버너 파라미터 export; preflight PASS), `tools/run_navrl_a8_readaptation.py`(10 cell, seed 521, run tag로 ep2900 체크포인트 유일 해석,
+  소스 동결·기존 루트 거부), `tools/build_a8_readaptation_table.py`(§2 규칙, 학습 arm trailing-100 crash 중단조건 검사),
+  `tests/test_navrl_a8_readaptation.py` 8개. 전체 1,118 tests, 신규 실패 0(기존 3 유지).
+- 착수: T0 → T1 → T2 학습(각 1,000 epoch) → 평가 10 cell → 요약기, 한 드라이버·한 커밋.

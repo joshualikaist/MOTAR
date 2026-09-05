@@ -36,7 +36,7 @@
       </div>
       <div class="status-line">
         <span class="status-dot" aria-hidden="true"></span>
-        <strong>충돌의 77~78%는 안전필터가 보지 않는 곳에서 난다</strong><span>접촉 포렌식 2,049 ep×2 arm · 측면 57~58% + 무반환 20% · 종방향 실패는 5건 중 1건 · stopcap은 정지여유 +0.395 m로도 crash를 15.95→21.31%로 올렸다 · 인지: 구속 조건은 측정 품질이 아니라 물체 동일성 · sim-to-real 보류 · 2026-09-05</span>
+        <strong>안전은 상한 법칙이 사고, 원호 기하는 그 비용을 되돌린다</strong><span>A7 법칙×기하 2×2 · 정지법칙 crash −6.5/−5.5 pp(두 시드) · 원호의 crash 기여는 CI 12/12가 0 포함, 대신 timeout −9~−11 pp·개입률 −15~−25 pp · 205 bars에선 법칙 이득 소멸(+0.3 pp) · 충돌의 77~78%는 회랑 밖 · sim-to-real 보류 · 2026-09-05</span>
       </div>
     </section>
 
@@ -266,9 +266,15 @@
         <h2 id="filter-title">속도 제한은 무엇을 보고, 무엇을 못 보는가</h2>
         <p>거버너는 명령 방향 주위 반폭 0.45 m 직선 회랑 안의 LiDAR ray만 보고
           <strong>수평 명령의 크기만</strong> 조정합니다. 방향은 정책이 정합니다.
-          하한을 없앤 <code>stopcap</code>은 접촉 시 정지여유를 양수(+0.395 m)로 만들었는데도
-          crash가 올랐습니다 &mdash; 즉 <strong>부딪히는 장애물이 회랑 안에 없습니다</strong>.
-          맹점은 측방, 수직(z 무규제), 미지 공간(무반사=자유), 직선 가정 넷입니다.</p>
+          충돌의 77~78%는 그 회랑 밖에서 납니다 &mdash; 맹점은 측방, 수직(z 무규제), 미지 공간(무반사=자유), 직선 가정 넷입니다.</p>
+        <p>A7(2026-09-05)에서 상한 법칙과 감시 기하를 2×2로 분리했습니다. <strong>안전은 법칙이 삽니다</strong>:
+          정지거리 법칙(<code>stopcap</code>)은 같은 직선 회랑에서 crash를 −6.47 / −5.51 pp(seed 509 / 491, 95% CI 0 제외)
+          낮추지만 timeout이 2배, 3 m 미만 체류가 3배입니다. <strong>원호 기하(<code>dwa_arc</code>)는 안전을 더 주지 않고 그 비용을 되돌립니다</strong>:
+          원호의 crash 기여는 두 법칙·두 시드·205 bars까지 12개 CI 전부 0을 포함하고, 정지법칙 아래 timeout −9~−11 pp, 개입률 −15~−25 pp,
+          capture +11 pp를 회수합니다. 아래 그림의 "정지여유 양수인데 악화"(15.95→21.31%)는 205 bars·ep25000·brake 2.96 조건입니다.
+          brake 2.0으로 맞추면 −5.05 pp 내려가지만 그래도 riskcap을 이기지 못해(+0.30 pp [−1.95, +2.55]) <strong>법칙의 이득은 조건 의존적</strong>입니다.
+          모든 수치는 추론 시점 필터이며, 필터와 함께 재적응하는 A8이 다음 단계입니다.
+          표: <a href="../a7_arc_attribution_table.md"><code>docs/a7_arc_attribution_table.md</code></a>.</p>
       </div>
       <img src="../assets/motar-safety-filter.svg" alt="LiDAR에서 방향 회랑 선택, cap 법칙, 크기 스케일로 이어지는 speed governor 구조와 네 가지 맹점 및 측정 판정">
     </section>
@@ -302,7 +308,9 @@
             <strong>routed PPO는 여전히 차단</strong>돼 있습니다. 또한 표적 식별을 주장할 수 없습니다:
             두 detector 모두 <code>COLOR_SHORTCUT_CONFIRMED</code>이고 N=5 v7 false target lock은
             90.27%입니다. 마지막으로 <code>riskcap</code> 해제 기구와 off 대비 +9.23 pp 판정은
-            frozen ep25000 stopcap screen의 결과일 뿐 일반 평가 계약이 아닙니다.</p>
+            frozen ep25000 stopcap screen의 결과일 뿐 일반 평가 계약이 아닙니다. A7의 "안전은 법칙이 산다"는
+            70 bars·ref5in ep1900 두 시드의 추론 시점 결과이고, 205 bars·ep25000에서는 성립하지 않으며,
+            필터와 함께 학습한 정책에서는 아직 측정되지 않았습니다.</p>
         </div>
       </div>
     </section>
