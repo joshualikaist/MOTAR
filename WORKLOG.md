@@ -15730,3 +15730,13 @@ NPS 타일링이 CPU·디스크를 점유하던 한 번만 어긋났다(22.35/67
   knob 3종 모두 오류 없이 실행·condition 기록. 32 ep 수치는 해석하지 않는다.
 - 주의: k=0.2 s는 요구속도 3.5 m/s에서 반폭 1.15 m라 정지법칙이 상시 발동(개입 53 %). L1 반폭 스윕으로 척도를 먼저 잡고
   L2의 k 격자를 정하는 계획 순서가 맞다.
+
+## 2026-09-05 — 격자 러너 `tools/run_navrl_filter_grid.py` + cell 명세 3종 (D1·L1·D3)
+
+cell 명세 JSON(정책·밀도·거버너 env)을 받아 한 루트·한 소스 번들·한 커밋에서 순차 평가한다. 정책은 S/T0/T1/T2/ep25000/절대경로,
+env는 **거버너 knob만** 허용(다른 계약은 못 바꿈 — 테스트로 고정). I1/I2 사이드카 항상 켬, `frame_sample_every`를 명시 전달.
+명세: `docs/specs/grid_d1_density_filter_T0.json`(20 cell), `grid_l1_halfwidth_T0.json`(20 cell), `grid_d3_lineage_ep25000.json`(4 cell).
+스모크(16 ep): 205 bars override·knob 2종 기록·사이드카 확인.
+
+**신호**: T0(70 bars 학습)가 205 bars에서 16/16 crash. 계획 §5.1 게이트 D1(a)에 걸릴 가능성이 커서 D1 전체(2 h) 대신
+`off` 5 밀도 게이트(30 min)를 먼저 잰다. 걸리면 205 bars 수치는 인용 불가이고 R1(밀도 커리큘럼 재학습)이 다음 학습 작업이 된다.
