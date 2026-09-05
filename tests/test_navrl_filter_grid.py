@@ -1,6 +1,7 @@
 """The grid runner must refuse anything but governor knobs, keep names unique, and resolve policies."""
 import importlib.util, json, os, tempfile, unittest
 from pathlib import Path
+import unittest.mock
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -31,13 +32,46 @@ class SpecValidation(unittest.TestCase):
         with self.assertRaisesRegex(SystemExit, "bars out of range"):
             G.validate_spec(s)
 
+    def test_contract_must_be_known_and_defaults_to_ref5in(self):
+        s = self.good(); s["contract"] = "bogus"
+        with self.assertRaisesRegex(SystemExit, "spec.contract"):
+            G.validate_spec(s)
+        G.validate_spec(self.good())          # absent -> ref5in
+
+    def test_v2_contract_is_closed_and_pins_the_ep25000_goal_band(self):
+        import os
+        with unittest.mock.patch.dict(os.environ, {"NAVRL_SPEED_GOVERNOR": "leaked", "NAVRL_V2_GOAL_DIST_MIN": "99"}):
+            env = G._v2_env()
+        self.assertNotIn("NAVRL_SPEED_GOVERNOR", env)
+        self.assertEqual(env["NAVRL_V2_GOAL_DIST_MIN"], "6")
+        self.assertEqual(env["NAVRL_V2_GOAL_DIST_MAX"], "28")
+        self.assertEqual(env["NAVRL_V2_ALLOW_DETECTOR_THRESHOLD_MISMATCH"], "0")
+        self.assertNotIn("NAVRL_DETECTOR_CHECKPOINT", env)
+
+    def test_v2_cell_env_keeps_the_contract_and_takes_the_knob(self):
+        spec = {"seed": 523, "contract": "v2"}
+        cell = {"name": "x", "policy": "ep25000", "bars": 130, "env": {"NAVRL_SPEED_GOVERNOR": "stopcap"}}
+        env = G.cell_env(None, spec, cell, Path("/tmp/r"), Path("/tmp/r/x"))
+        self.assertEqual(env["NAVRL_V2_GOAL_DIST_MIN"], "6")
+        self.assertEqual(env["NAVRL_V2_DENSITIES"], "130")
+        self.assertEqual(env["NAVRL_SPEED_GOVERNOR"], "stopcap")
+        self.assertEqual(env["NAVRL_CONTACT_GEOMETRY"], "1")
+
     def test_shipped_specs_validate(self):
-        for name in ("grid_d1_density_filter_T0.json", "grid_l1_halfwidth_T0.json", "grid_d3_lineage_ep25000.json"):
+        for name in ("grid_d1_density_filter_T0.json", "grid_l1_halfwidth_T0.json",
+                     "grid_d3_lineage_ep25000.json", "grid_d1p_density_filter_ep25000.json"):
             spec = G.validate_spec(json.loads((ROOT / "docs/specs" / name).read_text()))
+            self.assertIn(spec.get("contract", "ref5in"), G.CONTRACTS, name)
             self.assertGreaterEqual(len(spec["cells"]), 4, name)
         d1 = json.loads((ROOT / "docs/specs/grid_d1_density_filter_T0.json").read_text())
         self.assertEqual(len(d1["cells"]), 20)
         self.assertEqual(sorted({c["bars"] for c in d1["cells"]}), [70, 100, 130, 160, 205])
+        d1p = json.loads((ROOT / "docs/specs/grid_d1p_density_filter_ep25000.json").read_text())
+        self.assertEqual(d1p["contract"], "v2")
+        self.assertEqual(len(d1p["cells"]), 20)
+        self.assertEqual({c["policy"] for c in d1p["cells"]}, {"ep25000"})
+        d3 = json.loads((ROOT / "docs/specs/grid_d3_lineage_ep25000.json").read_text())
+        self.assertEqual(d3["contract"], "v2")
 
 
 class CellEnv(unittest.TestCase):

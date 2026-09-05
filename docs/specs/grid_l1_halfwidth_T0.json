@@ -184,5 +184,6 @@
     "NAVRL_SPEED_GOVERNOR_HALF_WIDTH_M": "1.2"
    }
   }
- ]
+ ],
+ "contract": "ref5in"
 }

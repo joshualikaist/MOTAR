@@ -4,8 +4,17 @@ Prereg-agnostic runner: a JSON spec lists cells, each with a policy, a density a
 environment. One root, one shared source bundle, one commit, frozen source for the whole run,
 no partial resume. Per-contact records (plan I1/I2) are always on.
 
+Two evaluation contracts exist and they are NOT interchangeable. "ref5in" is the frozen D1/A8
+lineage: goals 22.5-28 m and the v7 learned detector, built by the distractor envelope. "v2" is
+the ep25000 lineage: goals 6-28 m and the built-in appearance segmenter, mirroring
+eval_navrl_v2_ep25000_arc_attribution.sh. The AIRFRAME is not a contract choice -- the evaluator
+reads it from the checkpoint (eval_navrl_v2_density_sweep.sh:236) and refuses a mismatch -- but
+the goal band and the detector are set by the caller, so they have to be pinned per lineage.
+One contract per grid, so every cell in a root stays comparable.
+
 Spec format (JSON):
 {
+  "contract": "ref5in",
   "seed": 523,
   "episodes": 2049,
   "frame_sample_every": 100,
@@ -26,6 +35,7 @@ Usage: python tools/run_navrl_filter_grid.py <spec.json> <result_root> [resolve|
 import hashlib
 import importlib.util
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -51,6 +61,21 @@ GOVERNOR_ENV = {
 }
 ALLOWED_ENV_PREFIXES = ("NAVRL_SPEED_GOVERNOR",)   # a cell may only vary the governor
 NAME_RE = r"^[A-Za-z0-9_.+-]{1,80}$"
+CONTRACTS = ("ref5in", "v2")
+# The ep25000 lineage, byte-identical to eval_navrl_v2_ep25000_arc_attribution.sh lines 50-66.
+V2_CONTRACT = {
+    "GPU4GB": "0",
+    "NUM_ENVS": "128",
+    "AERIAL_GYM_SIM_NAME": "base_sim",
+    "NAVRL_V2_FORCE": "0",
+    "NAVRL_V2_ALLOW_DETECTOR_THRESHOLD_MISMATCH": "0",
+    "NAVRL_V2_ACTION_MODE": "deterministic",
+    "NAVRL_EVAL_REFLECTION_MODE": "original",
+    "NAVRL_V2_GOAL_DIST_MIN": "6",
+    "NAVRL_V2_GOAL_DIST_MAX": "28",
+    "NAVRL_V2_TARGET_PATTERN": "mixed",
+    "NAVRL_DISTRACTOR_COUNT": "0",
+}
 
 
 def _require(cond, msg):
@@ -75,6 +100,8 @@ def _sha256(path):
 
 def validate_spec(spec):
     import re
+    _require(spec.get("contract", "ref5in") in CONTRACTS,
+             f"spec.contract must be one of {CONTRACTS}; got {spec.get('contract')!r}")
     _require(isinstance(spec.get("cells"), list) and spec["cells"], "spec.cells must be a non-empty list")
     seen = set()
     for cell in spec["cells"]:
@@ -117,8 +144,27 @@ def _frozen(expected=None):
     return commit
 
 
+def _v2_env():
+    """A CLOSED environment for the ep25000 lineage: no ambient NAVRL_* survives, exactly as the
+    A7 P3 launcher's `unset $(compgen -v NAVRL_)` does."""
+    env = {k: v for k, v in os.environ.items()
+           if not k.startswith("NAVRL_")
+           and k not in {"AERIAL_RUN_TAG", "AERIAL_GYM_SIM_NAME", "GPU4GB", "NUM_ENVS",
+                         "FILE", "TASK", "PYTHON", "CKPT", "HEADLESS", "PLAY_GAMES_NUM",
+                         "PYTHONPATH", "PYTHONHOME"}}
+    env.update(V2_CONTRACT)
+    env.update({
+        "PYTHON": sys.executable, "PYTHONNOUSERSITE": "1", "PYTHONPATH": str(REPO),
+        "NAVRL_REQUIRE_SOURCE_ROOT": str(REPO),
+    })
+    return env
+
+
 def cell_env(envelope, spec, cell, root, out_dir):
-    env = envelope.evaluation_env(ENVELOPE_CELL, preflight=False)
+    if spec.get("contract", "ref5in") == "v2":
+        env = _v2_env()
+    else:
+        env = envelope.evaluation_env(ENVELOPE_CELL, preflight=False)
     env["NAVRL_SEED"] = str(spec["seed"])
     env["NAVRL_V2_DENSITIES"] = str(cell["bars"])
     env["NAVRL_V2_RESULT_DIR"] = str(out_dir)
@@ -148,7 +194,8 @@ def run(spec_path, root, mode):
     n = int(spec.get("episodes", envelope.EPISODES))
     root.mkdir(parents=True)
     (root / "cells.json").write_text(json.dumps({
-        "schema_version": 1, "spec_path": str(Path(spec_path).resolve()),
+        "schema_version": 2, "contract": spec.get("contract", "ref5in"),
+        "spec_path": str(Path(spec_path).resolve()),
         "spec_sha256": _sha256(spec_path), "spec": spec, "evaluation_commit": commit,
         "checkpoints": policies, "episodes": n, "governor_defaults": GOVERNOR_ENV,
     }, indent=2, sort_keys=True) + "\n")
@@ -157,8 +204,9 @@ def run(spec_path, root, mode):
         out_dir = root / cell["name"]
         _require(not out_dir.exists(), f"{cell['name']}: exists")
         env = cell_env(envelope, spec, cell, root, out_dir)
-        print(f"[grid] EVALUATE {cell['name']} | policy {cell['policy']} ({policies[cell['policy']]['sha256'][:12]}) "
-              f"| bars {cell['bars']} | {env['NAVRL_SPEED_GOVERNOR']} | seed {spec['seed']} | {n} ep", flush=True)
+        print(f"[grid] EVALUATE {cell['name']} | {spec.get('contract', 'ref5in')} | policy {cell['policy']} "
+              f"({policies[cell['policy']]['sha256'][:12]}) | bars {cell['bars']} | "
+              f"{env['NAVRL_SPEED_GOVERNOR']} | seed {spec['seed']} | {n} ep", flush=True)
         code = envelope.tee_run(["bash", str(envelope.EVALUATOR), policies[cell["policy"]]["path"], str(n)],
                                 env, root / f"{cell['name']}.eval.log.partial")
         _require(code == 0, f"{cell['name']}: evaluator exited {code}")

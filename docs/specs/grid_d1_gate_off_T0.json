@@ -44,5 +44,6 @@
     "NAVRL_SPEED_GOVERNOR": "off"
    }
   }
- ]
+ ],
+ "contract": "ref5in"
 }
