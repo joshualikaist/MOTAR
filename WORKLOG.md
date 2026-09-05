@@ -15690,3 +15690,21 @@ NPS 타일링이 CPU·디스크를 점유하던 한 번만 어긋났다(22.35/67
 검사한다. 수정 전 2건 실패·수정 후 통과 확인.
 
 잃은 것은 cell 4개 약 25분. 학습 3 arm은 무손실.
+
+## 2026-09-05 — 계획 I1/I2 구현: 접촉별 기록과 프레임 표본 (측면/밀도 계획의 게이트)
+
+`docs/plans/lateral_contact_density_plan_2026-09-05.md` §4 I. 지금까지 접촉 포렌식은 범주 **합계**와 평균 4개만
+남겨서 §2의 어떤 가설(속도-미끄러짐·틈 폭·기억·요레이트)도 가를 수 없었다.
+
+- `aerial_gym/task/navrl_task/contact_records.py`(신규, Isaac-free 순수 함수): 범주 우선순위 인덱스, 좌/우 부채꼴(15~165°)
+  최근접 **표면** 거리(막대별 외접반경 차감), 기억 창 지표(`seen_frac_window`, `seen_then_lost`), JSONL 기록기.
+- `navrl_task.py`: 링버퍼 깊이 11→26(정책 이력 창 2.5 s), 요레이트·거버너(requested/executed/cap) 슬롯 추가, 거버너
+  적용 직후 텔레메트리 push. `_record_contact_geometry` 끝에 **접촉당 1행**(35열: 범주 명령/실속 기준, 방위, 전방/측면
+  거리, 표면 거리, 1.0/0.5 s 전 속도·요레이트, cap binding, 좌/우 틈, 회랑 내 막대 수, 무반환, 2.5 s 창 관측 여부).
+  `_record_contact_geometry_step`에 N스텝마다 전 env 프레임 표본(I2, `NAVRL_CG_FRAME_SAMPLE_EVERY`, 기본 100).
+  사이드카 `<cell>.contact_records.jsonl`·`<cell>.frame_samples.jsonl`을 결과 JSON 옆에 쓰고 경로·행 수·SHA를 payload에 기록.
+  기존 집계·판정 로직은 그대로(회귀 없음).
+- H3 기억 지표는 토큰 ID가 아니라 **기하로** 계산한다: 막대는 정적이므로 과거 포즈 × 막대 위치로 "[t−2.5, t−1.0 s]에
+  사거리 안·240° 안이었는가"가 정확히 복원된다. 선택기가 빔 인덱스만 돌려주므로 이 방식이 유일하게 정확하다.
+- 테스트 9개(`tests/test_navrl_contact_records.py`), GPU 스모크 32 ep: 접촉 4행 = 집계 4, 범주 일치, 프레임 128행.
+- 주의: 평가 환경(`canonical_env`)이 ambient `NAVRL_*`를 지우므로 `NAVRL_CG_FRAME_SAMPLE_EVERY`는 런처가 명시해야 한다.

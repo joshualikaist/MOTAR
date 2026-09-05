@@ -1724,15 +1724,27 @@ class NavRLTask(BaseTask):
         # Bars are static, so replaying the DRONE's past pose against current bar positions
         # reconstructs the past geometry exactly. Lookbacks frozen by the prereg.
         self._CG_LOOKBACK_STEPS = (10, 5)   # 1.0 s primary, 0.5 s secondary at 10 Hz policy rate
+        # Plan I1 (docs/plans/lateral_contact_density_plan_2026-09-05.md): the memory hypothesis
+        # needs the policy's whole 2.5 s history window, so the ring buffer now reaches back
+        # 25 steps. Depth grows; the frozen lookbacks and every existing aggregate are unchanged.
+        self._CG_MEMORY_STEPS = 25
         if self._contact_geom_enabled:
-            depth = max(self._CG_LOOKBACK_STEPS) + 1
+            depth = max(max(self._CG_LOOKBACK_STEPS), self._CG_MEMORY_STEPS) + 1
             self._cg_hist_pos = torch.zeros((depth, self.num_envs, 3), device=self.device)
             self._cg_hist_quat = torch.zeros((depth, self.num_envs, 4), device=self.device)
             self._cg_hist_quat[:, :, 3] = 1.0
             self._cg_hist_cmd = torch.zeros((depth, self.num_envs, 2), device=self.device)
             self._cg_hist_vel = torch.zeros((depth, self.num_envs, 3), device=self.device)
+            self._cg_hist_yaw = torch.zeros((depth, self.num_envs), device=self.device)
+            #   0 requested 1 executed 2 cap  (m/s) -- written after the governor runs
+            self._cg_hist_gov = torch.zeros((depth, self.num_envs, 3), device=self.device)
             self._cg_hist_age = torch.zeros((self.num_envs,), dtype=torch.long, device=self.device)
             self._cg_hist_cursor = 0
+            # I1/I2 row stores (lists of column dicts on CPU); flushed to JSONL at export.
+            self._cg_contact_rows = []
+            self._cg_frame_rows = []
+            self._cg_frame_every = max(1, int(os.environ.get("NAVRL_CG_FRAME_SAMPLE_EVERY", "100")))
+            self._cg_step_counter = 0
         if self._contact_geom_enabled:
             #   0 contacts  1 usable(history deep enough)
             #   2 vertical_out 3 behind 4 lateral 5 no_return 6 in_corridor      (commanded)
@@ -5056,6 +5068,7 @@ class NavRLTask(BaseTask):
             self._speed_governor_last[key][:] = value.detach()
 
         if self._contact_geom_enabled:
+            self._push_contact_geometry_governor(telemetry)
             _cg_us = (time.perf_counter() - _cg_t0) * 1e6
             self._cg_aux[4] += _cg_us
             self._cg_aux[5] += 1.0
@@ -6385,8 +6398,16 @@ class NavRLTask(BaseTask):
         self._cg_hist_quat[i] = self.obs_dict["robot_vehicle_orientation"].detach()
         self._cg_hist_cmd[i] = command_xy
         self._cg_hist_vel[i] = self.obs_dict["robot_linvel"].detach()
+        self._cg_hist_yaw[i] = self.obs_dict["robot_body_angvel"][:, 2].detach()
         self._cg_hist_cursor = (i + 1) % self._cg_hist_pos.shape[0]
         self._cg_hist_age += 1
+
+    def _push_contact_geometry_governor(self, telemetry):
+        """Fill the governor columns of the slot _push_contact_geometry_history just wrote."""
+        i = (self._cg_hist_cursor - 1) % self._cg_hist_pos.shape[0]
+        self._cg_hist_gov[i, :, 0] = telemetry["requested_speed_mps"].detach()
+        self._cg_hist_gov[i, :, 1] = telemetry["executed_speed_mps"].detach()
+        self._cg_hist_gov[i, :, 2] = telemetry["speed_cap_mps"].detach()
 
     def _record_contact_geometry_step(self, command_xy, clearance):
         """A2 descriptive metrics, accumulated every governed step. Evaluation-only."""
@@ -6420,6 +6441,55 @@ class NavRLTask(BaseTask):
             ).clamp(-1.0, 1.0)
             self._cg_aux[2] += torch.rad2deg(torch.acos(cos)).sum(dtype=torch.float64)
             self._cg_aux[3] += int(moving.sum())
+
+        # I2: a sparse sample of NON-contact frames with the same geometry columns, so a
+        # per-contact distribution has a baseline to be a risk ratio against.
+        self._cg_step_counter += 1
+        if self._cg_step_counter % self._cg_frame_every == 0:
+            self._record_contact_frame_sample(command_xy, clearance, quat, vel_v)
+
+    def _record_contact_frame_sample(self, command_xy, clearance, quat, vel_v):
+        from aerial_gym.task.navrl_task import contact_records as CR
+
+        n = self.num_envs
+        rng = float(self.task_config.lidar_max_range)
+        pos = self.obs_dict["robot_position"].detach()
+        bars_w = self.obs_dict["obstacle_position"][
+            :, self._bar_offset : self._bar_offset + self.n_bars_active, 0:3
+        ]
+        half = self.obs_dict["asset_collision_half_extents"][
+            :, self._bar_offset : self._bar_offset + self.n_bars_active, 0:2
+        ]
+        rel_w = bars_w - pos.unsqueeze(1)
+        b = rel_w.shape[1]
+        rel_v = quat_rotate_inverse(
+            quat.unsqueeze(1).expand(n, b, 4).reshape(n * b, 4), rel_w.reshape(n * b, 3)
+        ).reshape(n, b, 3)
+        bar_dist = rel_v[:, :, 0:2].norm(dim=2)
+        bar_bearing = torch.atan2(rel_v[:, :, 1], rel_v[:, :, 0])
+        left, right, nearest = CR.side_gaps(bar_dist, bar_bearing, half.norm(dim=2), rng)
+        cmd_bearing = torch.atan2(command_xy[:, 1], command_xy[:, 0]).view(-1, 1)
+        dall = torch.atan2(torch.sin(bar_bearing - cmd_bearing), torch.cos(bar_bearing - cmd_bearing))
+        in_corr = (bar_dist * torch.cos(dall) > 0.0) & ((bar_dist * torch.sin(dall)).abs() <= float(
+            self.speed_governor_cfg.path_half_width_m)) & (bar_dist < rng)
+        moving = (command_xy.norm(dim=1) > 1e-6) & (vel_v.norm(dim=1) > 1e-6)
+        cos = torch.nn.functional.cosine_similarity(command_xy, vel_v, dim=1).clamp(-1.0, 1.0)
+        gov = self._speed_governor_last
+        self._cg_frame_rows.append(CR.tensor_columns_to_rows({
+            "env": torch.arange(n, device=self.device),
+            "age_steps": self._cg_hist_age.clone(),
+            "speed_act": vel_v.norm(dim=1),
+            "speed_cmd": command_xy.norm(dim=1),
+            "cmd_vs_actual_deg": torch.where(moving, torch.rad2deg(torch.acos(cos)), torch.zeros_like(cos)),
+            "yaw_rate": self.obs_dict["robot_body_angvel"][:, 2].detach(),
+            "corridor_clearance": clearance,
+            "gap_left": left, "gap_right": right, "nearest_surface": nearest,
+            "bars_in_corridor": in_corr.sum(dim=1),
+            # previous governed step's telemetry (this step's has not run yet)
+            "prev_requested": gov["requested_speed_mps"].clone(),
+            "prev_executed": gov["executed_speed_mps"].clone(),
+            "prev_cap": gov["speed_cap_mps"].clone(),
+        }))
 
     def _bank_contact_geometry_path(self, env_ids):
         """Episode ended: bank its path length and restart the integrator for those envs.
@@ -6561,6 +6631,69 @@ class NavRLTask(BaseTask):
             arc_clear.sum(dtype=torch.float64),
         ])
 
+        # ---- I1: one row per contact (plan section 4, series I) ----
+        from aerial_gym.task.navrl_task import contact_records as CR
+
+        half = self.obs_dict["asset_collision_half_extents"][idx][
+            :, self._bar_offset : self._bar_offset + self.n_bars_active, 0:2
+        ]
+        circ = half.norm(dim=2)
+        gap_left, gap_right, nearest_surface = CR.side_gaps(bar_dist, bar_bearing, circ, rng)
+        hit_circ = circ[rows, hit_i]
+
+        # 0.5 s secondary lookback: speed and yaw a half second before contact.
+        lb2 = self._CG_LOOKBACK_STEPS[1]
+        past2 = (self._cg_hist_cursor - 1 - lb2) % depth
+        vel2_v = quat_rotate_inverse(self._cg_hist_quat[past2][idx], self._cg_hist_vel[past2][idx])[:, 0:2]
+        gov1 = self._cg_hist_gov[past][idx]
+        yaw1 = self._cg_hist_yaw[past][idx]
+        yaw2 = self._cg_hist_yaw[past2][idx]
+
+        # H3 memory window: was the struck bar observable (in LiDAR range AND inside the
+        # selector FOV) at each step of [t-2.5 s, t-1.0 s]? Static bars + past poses give this
+        # exactly. Rows whose episode is younger than the window get null memory fields.
+        from aerial_gym.task.navrl_task.navrl_perception import OBSTACLE_FOV_DEG
+
+        fov_half = math.radians(0.5 * float(OBSTACLE_FOV_DEG))   # launchers pin 240 deg
+        mem_ok = self._cg_hist_age[idx] > self._CG_MEMORY_STEPS
+        hit_w = bars_w[rows, hit_i]                                   # world xyz of the struck bar
+        seen = []
+        for lb in range(lookback, self._CG_MEMORY_STEPS + 1):
+            pk = (self._cg_hist_cursor - 1 - lb) % depth
+            rel = quat_rotate_inverse(self._cg_hist_quat[pk][idx], hit_w - self._cg_hist_pos[pk][idx])
+            d = rel[:, 0:2].norm(dim=1)
+            brg = torch.atan2(rel[:, 1], rel[:, 0])
+            seen.append((d < rng) & (brg.abs() <= fov_half))
+        seen = torch.stack(seen, dim=1)                                # [k, W], column 0 == t-1.0 s
+        in_fov_t1 = seen[:, 0]
+        seen_frac, seen_then_lost = CR.memory_window(seen[:, 1:], in_fov_t1)
+        nan = torch.full((k,), float("nan"), device=self.device)
+
+        self._cg_contact_rows.append(CR.tensor_columns_to_rows({
+            "env": idx,
+            "age_steps": self._cg_hist_age[idx].clone(),
+            "category_cmd": CR.category_index(vertical_out, beh_c, lat_cat_c, nor_c),
+            "category_act": CR.category_index(vertical_out, beh_a, lat_cat_a, torch.zeros_like(nor_c)),
+            "hit_bearing_deg": torch.rad2deg(hit_bearing),
+            "hit_forward_cmd": fwd_c, "hit_lateral_cmd": lat_c,
+            "hit_forward_act": fwd_a, "hit_lateral_act": lat_a,
+            "hit_dist": hit_d, "hit_surface": (hit_d - hit_circ).clamp(min=0.0), "hit_dz": hit_dz,
+            "speed_act_t1": p_vel_v.norm(dim=1), "speed_cmd_t1": p_cmd.norm(dim=1),
+            "speed_act_t05": vel2_v.norm(dim=1),
+            "cmd_vs_actual_deg": cmd_vs_actual,
+            "yaw_rate_t1": yaw1, "yaw_rate_t05": yaw2,
+            "gov_requested_t1": gov1[:, 0], "gov_executed_t1": gov1[:, 1], "gov_cap_t1": gov1[:, 2],
+            "cap_binding_t1": gov1[:, 1] < gov1[:, 0] - 1e-3,
+            "gap_left": gap_left, "gap_right": gap_right, "nearest_surface": nearest_surface,
+            "bars_in_corridor": bars_in_corridor, "arc_clearance": arc_clear,
+            "ray_returned": ray_returned,
+            "in_fov_t1": in_fov_t1,
+            "seen_frac_window": torch.where(mem_ok, seen_frac, nan),
+            "seen_then_lost": seen_then_lost & mem_ok,
+            "memory_window_valid": mem_ok,
+            "target_involved": target_involved,
+        }))
+
     def _record_star_convex_shadow(self, idx, hit_bearing, hit_d, lateral, no_return, rng):
         """Would a star-convex region have bounded the bar the corridor missed?
 
@@ -6674,7 +6807,41 @@ class NavRLTask(BaseTask):
             "mean_lateral_offset_m": mean(s[2]),
             "mean_arc_clearance_m": mean(s[3]),
             **self._contact_geometry_aux_payload(),
+            **self._contact_records_payload(),
         }
+
+    def _contact_records_payload(self):
+        """I1/I2 sidecar files next to the result JSON, referenced by path, row count and SHA."""
+        from aerial_gym.task.navrl_task import contact_records as CR
+
+        contacts = [row for batch in self._cg_contact_rows for row in batch]
+        frames = [row for batch in self._cg_frame_rows for row in batch]
+        out = {
+            "contact_records_schema": CR.SCHEMA_VERSION,
+            "contact_records_categories": list(CR.CATEGORIES),
+            "contact_records_rows": len(contacts),
+            "frame_samples_rows": len(frames),
+            "frame_sample_every_steps": int(self._cg_frame_every),
+            "memory_window_steps": int(self._CG_MEMORY_STEPS),
+            "side_sector_deg": list(CR.SIDE_SECTOR_DEG),
+        }
+        if not self._bulk_eval_output:
+            out["contact_records_path"] = None
+            return out
+        base = Path(self._bulk_eval_output)
+        stem = base.with_suffix("")
+        extra = {"mode": str(self.speed_governor_cfg.mode), "bars": int(self.n_bars_active)}
+        for key, rows, suffix in (("contact_records", contacts, ".contact_records.jsonl"),
+                                  ("frame_samples", frames, ".frame_samples.jsonl")):
+            path = stem.with_name(stem.name + suffix)
+            try:
+                n, sha = CR.rows_to_jsonl(path, rows, extra=extra)
+                out[key + "_path"] = str(path)
+                out[key + "_sha256"] = sha
+            except OSError as exc:
+                logger.warning("NavRL %s export failed: %s" % (key, exc))
+                out[key + "_path"] = None
+        return out
 
     def _contact_geometry_aux_payload(self):
         """A2 descriptive metrics. Not gates -- see prereg section 3."""
