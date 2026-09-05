@@ -15578,3 +15578,37 @@ P3 런처 `eval_navrl_v2_ep25000_arc_attribution.sh`, 요약기 `build_a7_arc_at
 
 **실행**: 코드 커밋 후 P1(509) → P2(491) → P3(205/49) 순차, 런처가 arm마다 HEAD·작업트리 동결을 검사.
 결과는 `results/navrl_arc_attribution_{seed509,seed491,205bars_seed49}/`, 판정은 요약기가 낸다.
+
+## 2026-09-05 — A7 판정: `LAW_CARRIES_SAFETY` ×2 시드 `REPLICATED`, 205 bars `DENSITY_LIMITED`
+
+12 arm 전부 커밋 742022e에서 13:53→15:05(72분, arm당 70 bars 12분·205 bars 5분). 게이트 M3·M4·M6 PASS,
+M5 세 루트 모두 **정확 일치**(riskcap 18.77/18.35/15.95 %). 09-02 스크린의 `runtime_git_dirty=true`는
+값이 같으므로 결과 무영향으로 사후 확인. 표: `docs/a7_arc_attribution_table.md`,
+`results/navrl_arc_attribution_summary.json`.
+
+| crash Δ (pp, 95 % CI) | seed 509 | seed 491 | 205 bars seed 49 |
+|---|---|---|---|
+| 법칙, 직선 (stopcap − riskcap) | −6.47 [−8.68, −4.26] | −5.51 [−7.73, −3.30] | +0.30 [−1.95, +2.55] |
+| 법칙, 원호 (dwa_arc − riskcap_arc) | −8.68 [−10.83, −6.52] | −7.71 [−9.92, −5.50] | −0.14 [−2.43, +2.15] |
+| 기하, 정지법칙 (dwa_arc − stopcap) | −1.85 [−3.80, +0.09] | −1.12 [−3.13, +0.89] | +0.44 [−1.83, +2.71] |
+| 기하, riskcap (riskcap_arc − riskcap) | +0.35 [−2.05, +2.75] | +1.07 [−1.32, +3.47] | +0.88 [−1.39, +3.14] |
+
+- **P1/P2 `LAW_CARRIES_SAFETY`, `REPLICATED`.** 안전은 정지법칙이 산다. 원호의 crash 기여는 두 법칙·두 시드
+  모두 CI가 0을 포함. `ARC_REMOVES_COST` 양 시드 성립: 정지법칙 아래 원호가 timeout −9.4/−10.2 pp,
+  개입률 −15.2/−16.3 pp, capture +11.3/+11.3 pp. riskcap 아래에선 원호가 아무것도 바꾸지 않는다
+  (개입률 오히려 +0.5 pp — 예측 P1-1의 "3~5 %" 세부는 기각).
+- **P3 `INCONCLUSIVE` → `DENSITY_LIMITED`.** 205 bars·ep25000·brake 2.0에서 정지법칙의 crash 이득이
+  사라진다(+0.30 pp). 원호는 여전히 비용을 걷어낸다(timeout 14.0→2.7 %, 개입률 45→20 %, capture +10.9 pp).
+  brake 대조 `FLIP_IS_DENSITY`: brake 2.96→2.0으로 stopcap crash −5.05 [−7.44, −2.67] 내려가므로 brake 축도
+  실재하지만, 그래도 riskcap을 못 이긴다. 감사 §3대로 "밀도 단독"이 아니라 조건 전이(체크포인트·기체·목표거리 포함).
+- 예측 대조: P1-1 라벨 ✔(개입률 세부 ✘), P1-2 ✔, P2 ✔, P3 ✔.
+- 초안 헤드라인은 §4 표대로: "정지법칙이 안전을 사고 활력을 잃는다. 원호는 그 활력 비용을 되돌리되 안전을
+  더 주지 않는다. 그 안전 이득 자체가 70 bars·ep1900 조건에 한정된다." A4 `GEOMETRY_MATTERS`는 결합 효과 판정으로 보존.
+- 남은 일: 초안 §1·§5·§7 반영(A5 표는 A7 표를 인용), 205 bars에서 법칙 이득이 사라지는 기제(체류 46.9 % vs 21.9 %) 분석.
+
+### A7 반영·A8 계획 (같은 날)
+- 초안 §1(네 가지 주장)·§5(2×2 표·세 조건 crash Δ)·§7·§8 재작성. §7 정정: ref5in ep1900은 거버너 **off**로 학습
+  (`train_navrl_v2_ref5in_d1_adapt.sh` L63)이라 70 bars 2×2는 riskcap 편향이 없다. "riskcap과 함께 적응"은 ep25000에만 해당.
+- A8 사전등록 `docs/prereg_2026-09-05_a8_filter_readaptation.md`: ep1900에서 {off, riskcap, dwa_arc} 동반 1,000 epoch
+  (T0 대조군 포함), seed 521 평가 10 cell. Q1 비용 회수·Q2 법칙 이득 유지·Q3 필터 의존. 예측 P-2 `LAW_GAIN_PERSISTS`가
+  틀리면 §1-2가 "추론 시점 한정"이 된다. 약 10 h GPU, 구현 §6. 미실행.
