@@ -6712,6 +6712,24 @@ class NavRLTask(BaseTask):
         seen_frac, seen_then_lost = CR.memory_window(seen[:, 1:], in_fov_t1)
         nan = torch.full((k,), float("nan"), device=self.device)
 
+        # I4 (verification follow-up, plan 2026-09-06): the gap columns above are at t-1.0 s. The
+        # objection that a wide gap a second earlier says nothing about the contact instant is fair,
+        # so the same side gaps are recorded at t-0.5 s and AT contact (current pose), with a
+        # two-sided pinch flag: a bar surface inside the inflation radius on both sides at contact.
+        def side_gaps_at(pose_pos, pose_quat):
+            rel = quat_rotate_inverse(
+                pose_quat.unsqueeze(1).expand(k, b, 4).reshape(k * b, 4),
+                (bars_w - pose_pos.unsqueeze(1)).reshape(k * b, 3),
+            ).reshape(k, b, 3)
+            dist = rel[:, :, 0:2].norm(dim=2)
+            return CR.side_gaps(dist, torch.atan2(rel[:, :, 1], rel[:, :, 0]), circ, rng)
+
+        left_t0, right_t0, nearest_t0 = side_gaps_at(
+            pos[idx], self.obs_dict["robot_vehicle_orientation"][idx]
+        )
+        left_t05, right_t05, _ = side_gaps_at(self._cg_hist_pos[past2][idx], self._cg_hist_quat[past2][idx])
+        pinch_t0 = (left_t0 < CR.PINCH_M) & (right_t0 < CR.PINCH_M)
+
         self._cg_contact_rows.append(CR.tensor_columns_to_rows({
             "env": idx,
             "age_steps": self._cg_hist_age[idx].clone(),
@@ -6728,6 +6746,9 @@ class NavRLTask(BaseTask):
             "gov_requested_t1": gov1[:, 0], "gov_executed_t1": gov1[:, 1], "gov_cap_t1": gov1[:, 2],
             "cap_binding_t1": gov1[:, 1] < gov1[:, 0] - 1e-3,
             "gap_left": gap_left, "gap_right": gap_right, "nearest_surface": nearest_surface,
+            "gap_min_t05": torch.minimum(left_t05, right_t05),
+            "gap_left_t0": left_t0, "gap_right_t0": right_t0, "nearest_surface_t0": nearest_t0,
+            "pinch_t0": pinch_t0,
             "bars_in_corridor": bars_in_corridor, "arc_clearance": arc_clear,
             "ray_returned": ray_returned,
             "in_fov_t1": in_fov_t1,

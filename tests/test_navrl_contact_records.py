@@ -104,6 +104,12 @@ class TaskWiring(unittest.TestCase):
         self.assertIn('.contact_records.jsonl', self.src)
         self.assertIn('.frame_samples.jsonl', self.src)
 
+    def test_contact_instant_columns_are_recorded(self):
+        for column in ("gap_min_t05", "gap_left_t0", "gap_right_t0", "nearest_surface_t0", "pinch_t0"):
+            self.assertIn(f'"{column}"', self.src, column)
+        self.assertIn("pinch_t0 = (left_t0 < CR.PINCH_M) & (right_t0 < CR.PINCH_M)", self.src)
+        self.assertEqual(CR.PINCH_M, 0.65)
+
     def test_memory_window_covers_the_policy_history(self):
         # 5 slots x 0.5 s = 2.5 s at 10 Hz -> 25 steps
         self.assertIn("self._CG_MEMORY_STEPS = 25", self.src)

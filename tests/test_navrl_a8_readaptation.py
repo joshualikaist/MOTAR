@@ -41,7 +41,8 @@ class LauncherContract(unittest.TestCase):
             self.assertIn(f"export {key}={value}", text)
         self.assertIn("export NAVRL_LEARNING_RATE=1.5e-5", text)
         self.assertIn("export NAVRL_NUM_BARS=70", text)
-        self.assertIn("export SEED=197", text)
+        self.assertIn('export SEED="${A8_SEED:-197}"', text)
+        self.assertIn('-s${SEED}"', text)
         self.assertNotIn("[ref5in-d1]", text)
 
     def test_bad_mode_refused_before_anything(self):
