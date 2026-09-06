@@ -141,9 +141,16 @@ class L8OpenWidth(unittest.TestCase):
         w = SG.speed_dependent_half_width(cfg, torch.zeros(4), open_m=open_m)
         self.assertAlmostEqual(float(w[0]), 0.45, places=6)
         self.assertAlmostEqual(float(w[1]), 0.95, places=6)
-        self.assertAlmostEqual(float(w[2]), 0.20, places=6)
+        self.assertAlmostEqual(float(w[2]), 0.45, places=6)   # never narrower than w0
         self.assertAlmostEqual(float(w[3]), 2.00, places=6)   # clamped by width_max_m
-        self.assertTrue((w >= 0.1).all())
+        self.assertTrue((w >= 0.45).all())
+
+    def test_all_width_knobs_are_recorded_in_both_condition_dicts(self):
+        source = (ROOT / "aerial_gym/task/navrl_task/navrl_task.py").read_text()
+        for key in ("width_per_open_m", "width_open_ref_m", "width_max_m", "width_per_mps",
+                    "lateral_margin_m", "yaw_cap_radps"):
+            self.assertIn(f'"cfg_speed_governor_{key}"', source, key)
+            self.assertIn(f'"speed_governor_{key}"', source, key)
 
     def test_missing_clutter_read_is_refused(self):
         cfg = self.cfg(NAVRL_SPEED_GOVERNOR_WIDTH_PER_OPEN_M="0.5")

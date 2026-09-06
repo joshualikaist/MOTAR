@@ -279,7 +279,10 @@ def speed_dependent_half_width(config, requested_speed, open_m=None):
         if open_m is None:
             raise ValueError("open-space width is enabled but no clutter measurement was supplied")
         width = width + k_o * (open_m - float(config.width_open_ref_m))
-    floor = float(config.path_half_width_m) if k_o <= 0.0 else 0.1
+    # The sensed-clutter term only WIDENS. Verification of the first L8 run showed that letting it
+    # narrow below w0 (old floor 0.1 m) shrank the tube on 44-45% of frames at 205 bars -- exactly
+    # where the width sweep says a wider tube is optimal -- so the term now floors at w0.
+    floor = float(config.path_half_width_m)
     return width.clamp(floor, float(config.width_max_m)) if hasattr(width, "clamp") else width
 
 
