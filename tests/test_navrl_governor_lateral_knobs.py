@@ -8,6 +8,7 @@ floor so it cannot deadlock; (4) the shell and the Python side agree on the six 
 import importlib.util
 import math
 import os
+import re
 from pathlib import Path
 import subprocess
 import sys
@@ -21,7 +22,8 @@ _SPEC = importlib.util.spec_from_file_location(
 SG = importlib.util.module_from_spec(_SPEC)
 _SPEC.loader.exec_module(SG)
 SHEET = ROOT / "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh"
-KNOBS = ("NAVRL_SPEED_GOVERNOR_WIDTH_PER_MPS", "NAVRL_SPEED_GOVERNOR_LATERAL_MARGIN_M",
+KNOBS = ("NAVRL_SPEED_GOVERNOR_WIDTH_PER_MPS", "NAVRL_SPEED_GOVERNOR_WIDTH_PER_OPEN_M",
+         "NAVRL_SPEED_GOVERNOR_WIDTH_OPEN_REF_M", "NAVRL_SPEED_GOVERNOR_WIDTH_MAX_M", "NAVRL_SPEED_GOVERNOR_LATERAL_MARGIN_M",
          "NAVRL_SPEED_GOVERNOR_LATERAL_SPAN_M", "NAVRL_SPEED_GOVERNOR_LATERAL_FLOOR_MPS",
          "NAVRL_SPEED_GOVERNOR_YAW_CAP_RADPS", "NAVRL_SPEED_GOVERNOR_YAW_CAP_MARGIN_M")
 
@@ -114,6 +116,53 @@ class L5Yaw(unittest.TestCase):
         self.assertTrue((s > 0).all())
 
 
+class L8OpenWidth(unittest.TestCase):
+    """Width from the vehicle's own clutter read. Density is not observable; nearest sensed
+    surface is, and L1 showed it separates the densities whose optimum widths differ."""
+
+    def cfg(self, **extra):
+        env = {"NAVRL_SPEED_GOVERNOR": "dwa_arc"}
+        env.update(extra)
+        return SG.SpeedGovernorConfig.from_environ(env)
+
+    def test_off_by_default_and_identical_to_the_fixed_width(self):
+        cfg = self.cfg()
+        self.assertFalse(cfg.open_width_enabled)
+        self.assertEqual(SG.speed_dependent_half_width(cfg, torch.tensor([2.5])), 0.45)
+        # supplying a clutter read changes nothing while the gain is zero
+        self.assertEqual(SG.speed_dependent_half_width(cfg, torch.tensor([2.5]), open_m=torch.tensor([9.0])), 0.45)
+
+    def test_width_grows_with_open_space_and_is_clamped(self):
+        cfg = self.cfg(NAVRL_SPEED_GOVERNOR_WIDTH_PER_OPEN_M="0.5",
+                       NAVRL_SPEED_GOVERNOR_WIDTH_OPEN_REF_M="1.2",
+                       NAVRL_SPEED_GOVERNOR_WIDTH_MAX_M="2.0")
+        # at the reference clutter the width is w0; more open -> wider; tighter -> narrower
+        open_m = torch.tensor([1.2, 2.2, 0.7, 12.0])
+        w = SG.speed_dependent_half_width(cfg, torch.zeros(4), open_m=open_m)
+        self.assertAlmostEqual(float(w[0]), 0.45, places=6)
+        self.assertAlmostEqual(float(w[1]), 0.95, places=6)
+        self.assertAlmostEqual(float(w[2]), 0.20, places=6)
+        self.assertAlmostEqual(float(w[3]), 2.00, places=6)   # clamped by width_max_m
+        self.assertTrue((w >= 0.1).all())
+
+    def test_missing_clutter_read_is_refused(self):
+        cfg = self.cfg(NAVRL_SPEED_GOVERNOR_WIDTH_PER_OPEN_M="0.5")
+        with self.assertRaises(ValueError):
+            SG.speed_dependent_half_width(cfg, torch.zeros(2))
+
+    def test_combines_with_the_speed_term(self):
+        cfg = self.cfg(NAVRL_SPEED_GOVERNOR_WIDTH_PER_OPEN_M="0.5",
+                       NAVRL_SPEED_GOVERNOR_WIDTH_PER_MPS="0.1")
+        w = SG.speed_dependent_half_width(cfg, torch.tensor([2.0]), open_m=torch.tensor([2.2]))
+        self.assertAlmostEqual(float(w), 0.45 + 0.2 + 0.5, places=6)
+
+    def test_task_reads_clutter_from_the_omni_clearance(self):
+        source = (ROOT / "aerial_gym/task/navrl_task/navrl_task.py").read_text()
+        block = source.split("open_m = None", 1)[1].split("half_width = SG.speed_dependent_half_width", 1)[0]
+        self.assertIn("omnidirectional_clearance(", block)
+        self.assertIn("target_return_mask=target_return", block)
+
+
 class ShellAgrees(unittest.TestCase):
     def test_shell_parses_and_exports_all_six(self):
         text = SHEET.read_text()
@@ -125,8 +174,14 @@ class ShellAgrees(unittest.TestCase):
         out = subprocess.run([sys.executable, "-c", script], env=env, capture_output=True, text=True)
         self.assertEqual(out.returncode, 0, out.stderr)
         values = out.stdout.split()
-        self.assertEqual(len(values), 15)
-        self.assertEqual(float(values[10]), 0.6)
+        # Resolve positions from the shell's own spec rather than hard-coding indices: inserting a
+        # knob used to break this test instead of the thing it guards.
+        names = re.findall(r'\("(NAVRL_SPEED_GOVERNOR_[A-Z0-9_]+)"', script)
+        self.assertEqual(len(values), len(names))
+        for knob in KNOBS:
+            self.assertIn(knob, names, knob)
+        self.assertEqual(float(values[names.index("NAVRL_SPEED_GOVERNOR_LATERAL_MARGIN_M")]), 0.6)
+        self.assertEqual(float(values[names.index("NAVRL_SPEED_GOVERNOR_WIDTH_PER_OPEN_M")]), 0.0)
 
 
 if __name__ == "__main__":

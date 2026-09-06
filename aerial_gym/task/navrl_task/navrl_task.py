@@ -5038,7 +5038,17 @@ class NavRLTask(BaseTask):
         from aerial_gym.task.navrl_task import speed_governor as SG
 
         # L2: per-env corridor half-width; the scalar w0 unless width_per_mps > 0.
-        half_width = SG.speed_dependent_half_width(self.speed_governor_cfg, command_xy.norm(dim=1))
+        # L8 needs the vehicle's own clutter read BEFORE the corridor is drawn: nearest sensed
+        # surface in any bearing, which is exactly the omni clearance.
+        open_m = None
+        if self.speed_governor_cfg.open_width_enabled:
+            open_m = SG.omnidirectional_clearance(
+                scan_m, max_range_m=float(self.task_config.lidar_max_range),
+                target_return_mask=target_return,
+            )
+        half_width = SG.speed_dependent_half_width(
+            self.speed_governor_cfg, command_xy.norm(dim=1), open_m=open_m
+        )
         if mode == "omni":
             # A4 baseline: identical stopping law, corridor removed entirely.
             from aerial_gym.task.navrl_task.speed_governor import omnidirectional_clearance
