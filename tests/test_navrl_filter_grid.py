@@ -1,5 +1,5 @@
 """The grid runner must refuse anything but governor knobs, keep names unique, and resolve policies."""
-import importlib.util, json, os, tempfile, unittest
+import importlib.util, json, os, subprocess, tempfile, unittest
 from pathlib import Path
 import unittest.mock
 from unittest.mock import patch
@@ -89,6 +89,61 @@ class CellEnv(unittest.TestCase):
         self.assertEqual(env["NAVRL_CG_FRAME_SAMPLE_EVERY"], "50")
         self.assertEqual(env["NAVRL_CONTACT_GEOMETRY"], "1")
         self.assertEqual(env["NAVRL_STAR_CONVEX_SHADOW"], "0")
+
+
+class SourceFreeze(unittest.TestCase):
+    """The freeze must track the EVALUATED source, not the repository as a whole.
+
+    An earlier version compared HEAD and VOIDed a 20-cell grid because a paper draft was
+    committed while cells were running -- a commit that cannot reach the simulator.
+    """
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.repo = Path(self.tmp.name)
+        for path in ("aerial_gym", "tools", "resources/robots", "docs"):
+            (self.repo / path).mkdir(parents=True)
+            (self.repo / path / "f.txt").write_text("v1\n")
+        self.git("init", "-q")
+        self.commit("initial")
+
+    def git(self, *args):
+        return subprocess.run(["git", "-C", str(self.repo), *args], check=True,
+                              text=True, stdout=subprocess.PIPE).stdout
+
+    def commit(self, message):
+        self.git("add", "-A")
+        self.git("-c", "user.name=t", "-c", "user.email=t@example.invalid", "commit", "-qm", message)
+
+    def test_unrelated_commit_does_not_move_the_fingerprint(self):
+        with patch.object(G, "REPO", self.repo):
+            before = G._source_fingerprint()
+            (self.repo / "docs/f.txt").write_text("a draft revision\n")
+            self.commit("docs only")
+            after = G._source_fingerprint()
+            self.assertEqual(before, after)
+            G._frozen(before)          # must not raise
+
+    def test_evaluated_source_commit_moves_it(self):
+        with patch.object(G, "REPO", self.repo):
+            before = G._source_fingerprint()
+            (self.repo / "aerial_gym/f.txt").write_text("v2\n")
+            self.commit("runtime change")
+            self.assertNotEqual(G._source_fingerprint(), before)
+            with self.assertRaisesRegex(SystemExit, "evaluated source changed"):
+                G._frozen(before)
+
+    def test_dirty_evaluated_source_is_refused(self):
+        with patch.object(G, "REPO", self.repo):
+            (self.repo / "tools/f.txt").write_text("uncommitted\n")
+            with self.assertRaisesRegex(SystemExit, "must be committed"):
+                G._frozen()
+
+    def test_dirty_docs_is_allowed(self):
+        with patch.object(G, "REPO", self.repo):
+            (self.repo / "docs/f.txt").write_text("uncommitted draft\n")
+            G._frozen()                # must not raise
 
 
 if __name__ == "__main__":

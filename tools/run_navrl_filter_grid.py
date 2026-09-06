@@ -134,14 +134,31 @@ def resolve_policy(policy, envelope, a8):
     return {"path": str(path), "sha256": _sha256(path)}
 
 
+# What must not move during a run is the EVALUATED SOURCE, not the repository as a whole. An
+# earlier version compared HEAD, which VOIDed a grid because a paper draft was committed in
+# another directory while cells were running -- a commit that cannot reach the simulator. These
+# are the only paths whose bytes the evaluator reads.
+FROZEN_PATHS = ("aerial_gym", "tools", "resources/robots")
+
+
+def _source_fingerprint():
+    """Tree hashes of the evaluated paths. Changes iff their committed content changes."""
+    trees = []
+    for path in FROZEN_PATHS:
+        trees.append(subprocess.check_output(
+            ["git", "-C", str(REPO), "rev-parse", f"HEAD:{path}"], text=True).strip())
+    return ":".join(trees)
+
+
 def _frozen(expected=None):
     status = subprocess.check_output(
         ["git", "-C", str(REPO), "status", "--porcelain=v1", "--untracked-files=all",
-         "--", "aerial_gym", "tools", "resources/robots"], text=True).strip()
+         "--", *FROZEN_PATHS], text=True).strip()
     _require(not status, "runtime/launcher sources must be committed: " + status)
-    commit = subprocess.check_output(["git", "-C", str(REPO), "rev-parse", "HEAD"], text=True).strip()
-    _require(expected is None or commit == expected, "git HEAD changed during evaluation; root is VOID")
-    return commit
+    fingerprint = _source_fingerprint()
+    _require(expected is None or fingerprint == expected,
+             "evaluated source changed during evaluation; root is VOID")
+    return fingerprint
 
 
 def _v2_env():
@@ -188,7 +205,8 @@ def run(spec_path, root, mode):
         print(json.dumps(policies, indent=2))
         return 0
     _require(not root.exists(), f"refusing an existing result root (no partial resume): {root}")
-    commit = _frozen()
+    fingerprint = _frozen()
+    commit = subprocess.check_output(["git", "-C", str(REPO), "rev-parse", "HEAD"], text=True).strip()
     gate0 = envelope.verify_prerequisites()
     _require(envelope.gate0_static_passed(gate0), "envelope gate-0 failed: " + envelope.gate0_failure_report(gate0))
     n = int(spec.get("episodes", envelope.EPISODES))
@@ -197,10 +215,11 @@ def run(spec_path, root, mode):
         "schema_version": 2, "contract": spec.get("contract", "ref5in"),
         "spec_path": str(Path(spec_path).resolve()),
         "spec_sha256": _sha256(spec_path), "spec": spec, "evaluation_commit": commit,
+        "evaluated_source_fingerprint": fingerprint, "frozen_paths": list(FROZEN_PATHS),
         "checkpoints": policies, "episodes": n, "governor_defaults": GOVERNOR_ENV,
     }, indent=2, sort_keys=True) + "\n")
     for cell in spec["cells"]:
-        _frozen(commit)
+        _frozen(fingerprint)
         out_dir = root / cell["name"]
         _require(not out_dir.exists(), f"{cell['name']}: exists")
         env = cell_env(envelope, spec, cell, root, out_dir)
@@ -210,7 +229,7 @@ def run(spec_path, root, mode):
         code = envelope.tee_run(["bash", str(envelope.EVALUATOR), policies[cell["policy"]]["path"], str(n)],
                                 env, root / f"{cell['name']}.eval.log.partial")
         _require(code == 0, f"{cell['name']}: evaluator exited {code}")
-        _frozen(commit)
+        _frozen(fingerprint)
         _require((out_dir / f"{cell['bars']}bars.json").is_file(), f"{cell['name']}: no result JSON")
         (root / f"{cell['name']}.eval.log.partial").replace(out_dir / "eval.log")
     print(f"[grid] COMPLETE: {root}")
