@@ -1,29 +1,29 @@
 {
-  "generated_at": "2026-08-26T09:13:12.764493+00:00",
+  "generated_at": "2026-09-06T15:57:31.827017+00:00",
   "repo": "joshualikaist/MOTAR",
-  "n_runs": 86,
+  "n_runs": 89,
   "active_run": null,
   "latest_run": {
-    "run": "ppo_260823_1347_navrl_v2-ref5in-detrange-clip28-s457",
-    "finalized_at": "2026-08-23T06:45:11.069979+00:00",
+    "run": "ppo_260905_1702_navrl_v2-ref5in-a8-readapt-dwa_arc-s197",
+    "finalized_at": "2026-09-05T08:51:15.136205+00:00",
     "exit_reason": "max_epochs",
     "epochs_logged": 1000,
     "first_epoch": 1901,
     "last_epoch": 2900,
     "is_navrl": true,
-    "last_mean_reward": 232.306,
-    "last_mean_episode_length": 120.678,
-    "last_captured_rate": 0.794118,
-    "last_crash_rate": 0.205882,
-    "last_timeout_rate": 0.0,
-    "last_closest_approach_m": 0.427339,
-    "last_closest_min_m": 0.292018,
-    "last_curriculum_max_m": 25.5907,
+    "last_mean_reward": 223.078,
+    "last_mean_episode_length": 199.878,
+    "last_captured_rate": 0.866667,
+    "last_crash_rate": 0.0666667,
+    "last_timeout_rate": 0.0666667,
+    "last_closest_approach_m": 2.02665,
+    "last_closest_min_m": 0.277108,
+    "last_curriculum_max_m": 23.8989,
     "last_n_bars_active": 70,
     "peak_captured_rate": 1.0,
-    "peak_captured_epoch": 2261,
-    "peak_mean_reward": 250.546,
-    "peak_epoch": 2807,
+    "peak_captured_epoch": 1902,
+    "peak_mean_reward": 241.341,
+    "peak_epoch": 1906,
     "reward_collapse": false
   },
   "runs": [
@@ -2006,6 +2006,75 @@
       "peak_mean_reward": 250.546,
       "peak_epoch": 2807,
       "reward_collapse": false
+    },
+    {
+      "run": "ppo_260905_1525_navrl_v2-ref5in-a8-readapt-off-s197",
+      "finalized_at": "2026-09-05T07:14:20.262211+00:00",
+      "exit_reason": "max_epochs",
+      "epochs_logged": 1000,
+      "first_epoch": 1901,
+      "last_epoch": 2900,
+      "is_navrl": true,
+      "last_mean_reward": 219.236,
+      "last_mean_episode_length": 170.357,
+      "last_captured_rate": 0.884615,
+      "last_crash_rate": 0.0769231,
+      "last_timeout_rate": 0.0384615,
+      "last_closest_approach_m": 0.609358,
+      "last_closest_min_m": 0.192507,
+      "last_curriculum_max_m": 24.5007,
+      "last_n_bars_active": 70,
+      "peak_captured_rate": 1.0,
+      "peak_captured_epoch": 2139,
+      "peak_mean_reward": 229.768,
+      "peak_epoch": 2809,
+      "reward_collapse": false
+    },
+    {
+      "run": "ppo_260905_1614_navrl_v2-ref5in-a8-readapt-riskcap-s197",
+      "finalized_at": "2026-09-05T08:02:21.372183+00:00",
+      "exit_reason": "max_epochs",
+      "epochs_logged": 1000,
+      "first_epoch": 1901,
+      "last_epoch": 2900,
+      "is_navrl": true,
+      "last_mean_reward": 211.867,
+      "last_mean_episode_length": 197.98,
+      "last_captured_rate": 0.684211,
+      "last_crash_rate": 0.263158,
+      "last_timeout_rate": 0.0526316,
+      "last_closest_approach_m": 1.67385,
+      "last_closest_min_m": 0.360409,
+      "last_curriculum_max_m": 27.8675,
+      "last_n_bars_active": 70,
+      "peak_captured_rate": 1.0,
+      "peak_captured_epoch": 1914,
+      "peak_mean_reward": 231.16,
+      "peak_epoch": 2860,
+      "reward_collapse": false
+    },
+    {
+      "run": "ppo_260905_1702_navrl_v2-ref5in-a8-readapt-dwa_arc-s197",
+      "finalized_at": "2026-09-05T08:51:15.136205+00:00",
+      "exit_reason": "max_epochs",
+      "epochs_logged": 1000,
+      "first_epoch": 1901,
+      "last_epoch": 2900,
+      "is_navrl": true,
+      "last_mean_reward": 223.078,
+      "last_mean_episode_length": 199.878,
+      "last_captured_rate": 0.866667,
+      "last_crash_rate": 0.0666667,
+      "last_timeout_rate": 0.0666667,
+      "last_closest_approach_m": 2.02665,
+      "last_closest_min_m": 0.277108,
+      "last_curriculum_max_m": 23.8989,
+      "last_n_bars_active": 70,
+      "peak_captured_rate": 1.0,
+      "peak_captured_epoch": 1902,
+      "peak_mean_reward": 241.341,
+      "peak_epoch": 1906,
+      "reward_collapse": false
     }
   ],
   "density_curves": {
@@ -2199,7 +2268,7 @@
           "capture": 0.144
         }
       ],
-      "mtime": "2026-08-25T13:38:33.937086+00:00",
+      "mtime": "2026-08-22T13:14:07.342235+00:00",
       "task_version": "v1",
       "arena_xy_m": 24.0,
       "placement_area_m2": 478.0,
@@ -2917,86 +2986,94 @@
   },
   "other_curves": {},
   "research_update": {
-    "subtitle": "2026-08-23 · detection-range Stage 1 complete",
-    "headline": "Longer range helped, but the preregistered gate did not open.",
-    "summary": "Under 1920×1200 / 50-pixel detection, 20 m and 28 m arms each adapted for 1,000 epochs and evaluated 2,049 episodes. Pooled never-acquired fell 8.443%→3.172% (-5.271 pp), short of the frozen −15 pp gate. Capture improved descriptively, but was excluded from the Stage 1 verdict.",
-    "experiment_id": "2026-08-23-ref5in-detection-range-stage1",
+    "subtitle": "2026-09-07 · speed-governor geometry · seed replication complete",
+    "headline": "Watching an arc instead of a straight corridor lowers crashes at every density.",
+    "summary": "The filter only ever scales the commanded speed; it never steers. Three evaluation seeds (523, 527, 531) x five bar densities were re-run with the corridor replaced by the arc the vehicle will actually fly. The arc tube had the lowest crash rate in 15 of 15 seed-density cells, pooling to -1.49 pp [-1.90, -1.08] against the risk cap with no seed heterogeneity (I2 0%). Widening that tube to 1.2 m helps twice over, while widening the straight corridor destroys the mission.",
+    "experiment_id": "2026-09-07-ep25000-governor-geometry-seed-replication",
     "active_experiment": {
       "is_live": false,
       "ab_experiment": true,
       "ab_gate_complete": true,
-      "ab_gate_pass": false,
-      "run": "ref5in · detection-range Stage 1",
-      "epoch": 2900,
-      "max_epochs": 2900,
-      "bars": 70,
-      "heldout_capture": 0.8867740361151781,
-      "heldout_crash": 0.11273792093704246,
-      "heldout_timeout": 0.0004880429477794046,
-      "heldout_episodes": 2049,
-      "stage2_authorised": false
+      "ab_gate_pass": true,
+      "run": "ep25000 · governor geometry · R-B seed replication",
+      "bars": 205,
+      "seeds": [
+        523,
+        527,
+        531
+      ],
+      "cells": 86,
+      "pooled_arc_vs_riskcap_pp": -1.490332194101043,
+      "pooled_arc_vs_stopcap_pp": -1.2506248111190632
     },
     "milestones": [
       {
-        "label": "QUALITY",
-        "value": "PASS · 17/17",
-        "detail": "source, checkpoint, receipt, import origin and arm identity",
+        "label": "GEOMETRY",
+        "value": "-1.49 pp",
+        "detail": "arc vs risk cap, pooled over 15 cells; CI excludes 0",
         "state": "pass"
       },
       {
-        "label": "PRIMARY",
-        "value": "-5.271 pp",
-        "detail": "never-acquired; required ≤ −15 pp",
-        "state": "warn"
-      },
-      {
-        "label": "CAPTURE",
-        "value": "+6.442 pp",
-        "detail": "descriptive only; excluded from the Stage 1 verdict",
+        "label": "REPLICATION",
+        "value": "15/15",
+        "detail": "seed-density cells where the arc had the lowest crash rate",
         "state": "pass"
       },
       {
-        "label": "SIM-TO-REAL",
-        "value": "NOT CLAIMED",
-        "detail": "far range remained analytic and exact in both arms",
+        "label": "WIDTH",
+        "value": "-5.60 pp",
+        "detail": "arc 0.45 m to 1.2 m at 205 bars; capture +4.44 pp, so safety and mission move together",
+        "state": "pass"
+      },
+      {
+        "label": "LAW",
+        "value": "-0.23 pp",
+        "detail": "stopping law vs risk cap, pooled; the interval includes 0 once the policy was trained with a filter in the loop",
         "state": "warn"
       }
     ],
     "comparison": [
       {
-        "label": "clip20 · control",
-        "bars": 70,
-        "capture": 0.8223523670082967,
+        "label": "arc tube · 0.45 m",
+        "bars": 205,
+        "capture": null,
         "unique": null,
-        "verdict": "never-acq 8.443% · crash 15.666% · timeout 2.099%"
+        "verdict": "lowest crash in 15/15 cells · pooled -1.49 pp vs risk cap"
       },
       {
-        "label": "clip28 · treatment",
-        "bars": 70,
-        "capture": 0.8867740361151781,
+        "label": "arc tube · 1.2 m",
+        "bars": 205,
+        "capture": null,
         "unique": null,
-        "verdict": "never-acq 3.172% · crash 11.274% · timeout 0.049%"
+        "verdict": "crash -5.60 pp · capture +4.44 pp against the 0.45 m arc"
+      },
+      {
+        "label": "straight corridor · 1.2 m",
+        "bars": 205,
+        "capture": 0.10133446019672496,
+        "unique": null,
+        "verdict": "mission collapses: most episodes time out instead of reaching the goal"
       }
     ],
     "gates": [
       {
-        "label": "primary",
-        "value": "CLOSED · −5.271 pp > −15 pp"
+        "label": "P1 pooled geometry",
+        "value": "PASS · -1.49 pp [-1.90, -1.08]"
       },
       {
-        "label": "Stage 2",
-        "value": "BLOCKED · stage2_authorised=false"
+        "label": "P2 per-seed sign",
+        "value": "PASS · 5/5 densities in both new seeds"
       },
       {
-        "label": "training integrity",
-        "value": "PASS · normal exit, rollback 0 both arms"
+        "label": "P3 width effect",
+        "value": "5 of 6 · one seed short of the −2 pp threshold at 70 bars"
       },
       {
-        "label": "hardware claim",
-        "value": "NO-GO · real sensor profile not measured"
+        "label": "P5 law equivalence",
+        "value": "REJECTED · -1.19 pp at 70 bars, vanishing above 100 bars"
       }
     ],
-    "decision": "Do not run the 10k Stage 2 or relax its threshold. For the next 72 hours, freeze the exact BOM/calibration/time contract, measure real bearing/range/latency/dropout by independent trial, then validate a far-bearing/near-range tracker before fresh PPO."
+    "decision": "Train without the filter, then deploy the arc tube widened to about 1.2 m. The geometry result replicates across evaluation seeds and is not a property of one run. Training-seed replication is the remaining check before the co-adaptation claim is written as general."
   },
   "density_speed_map": {
     "task_version": "v2",
@@ -3348,9 +3425,9 @@
     "bar_x_min_ratio": 0.0,
     "bar_x_max_ratio": 1.0,
     "bar_height_m": 3,
-    "placement_mode": "footprint_clearance",
-    "placement_surface_clearance_m": 0.45,
-    "overlap_fallback": false,
+    "placement_mode": "navrl_band",
+    "placement_touch_m": 0.4,
+    "placement_gap_m": 1.6,
     "bars_min": 70,
     "bars_slider_min": 10,
     "bars_max": 300,
@@ -3713,7 +3790,7 @@
   },
   "sim2real_72h": {
     "as_of": "2026-08-26",
-    "status": "TRACK A STAGE 1 RANGE INCONCLUSIVE · TRACK B RECOVERY-V2 ROUTE MECHANISM FAILED · NO FURTHER TRACK B AUTHORITY · HARDWARE NEXT",
+    "status": "TRACK A STAGE 1 RANGE INCONCLUSIVE · TRACK B EVIDENCE UNAVAILABLE/MALFORMED · NO TRACK B AUTHORITY · HARDWARE NEXT",
     "plan_path": "docs/SIM2REAL_3DAY_EXECUTION_PLAN.md",
     "evidence": {
       "verdict": "RANGE_INCONCLUSIVE_AT_THIS_BUDGET",
@@ -3757,57 +3834,10 @@
         },
         "physical_target_gate": {
           "source": "results/navrl_physical_target_recovery_v2_gate_lower1p25_seed827/summary.json",
-          "receipt": "results/navrl_physical_target_recovery_v2_gate_lower1p25_seed827/receipt.json",
-          "result_doc": "docs/physical_target_recovery_v2_lower1p25_result_2026-08-26.md",
-          "preregistration": "docs/preregistration_physical_target_recovery_v2_lower1p25_gate_2026-08-26.md",
-          "tool": "tools/verify_navrl_physical_target_recovery_v2_gate.py",
-          "status": "VERIFIED_FAIL",
-          "contract_variant": "baseline_1p25",
-          "canonical_1p5_contract": "SEPARATE_UNCHANGED_NOT_PASSED",
-          "integrity": "PASS_32_CELL_INTEGRITY",
-          "route_mechanism": "FAIL_ROUTE_MECHANISM",
-          "cells": {
-            "passed": 7,
-            "total": 32,
-            "route_off_passed": 7,
-            "route_off_total": 16,
-            "recovery_passed": 0,
-            "recovery_total": 16,
-            "passing_lineage": "route_off_only"
-          },
-          "plan_success_70bar_4speed": {
-            "numerator": 190,
-            "denominator": 203,
-            "fraction": 0.9359605911330049,
-            "pct": 93.6,
-            "gate_pct": 99.0
-          },
-          "fallback_70bar_4speed": {
-            "numerator": 18381,
-            "denominator": 38400,
-            "fraction": 0.478671875,
-            "pct": 47.87,
-            "gate_pct": 1.0
-          },
-          "goals_per_env_70bar_0_6mps": {
-            "numerator": 7,
-            "denominator": 32,
-            "value": 0.21875,
-            "gate": 0.5
-          },
-          "no_connector_occupancy": {
-            "numerator": 96854,
-            "denominator": 153600,
-            "fraction": 0.6305598958333334,
-            "pct": 63.06
-          },
-          "hard_breach_no_connector_entries": {
-            "numerator": 0,
-            "denominator": 534
-          },
+          "status": "RESULT_UNAVAILABLE_OR_MALFORMED",
+          "authority": "NO_FURTHER_TRACK_B_GPU_PPO_RETUNE_RERUN",
           "physical_ppo": "BLOCKED",
-          "hardware_claim": false,
-          "authority": "NO_FURTHER_TRACK_B_GPU_PPO_RETUNE_RERUN"
+          "hardware_claim": false
         },
         "fresh_ppo": {
           "verdict": "BLOCKED",
@@ -3933,87 +3963,17 @@
       },
       "recovery_v2_lower1p25_gate": {
         "source": "results/navrl_physical_target_recovery_v2_gate_lower1p25_seed827/summary.json",
-        "receipt": "results/navrl_physical_target_recovery_v2_gate_lower1p25_seed827/receipt.json",
-        "result_doc": "docs/physical_target_recovery_v2_lower1p25_result_2026-08-26.md",
-        "preregistration": "docs/preregistration_physical_target_recovery_v2_lower1p25_gate_2026-08-26.md",
-        "tool": "tools/verify_navrl_physical_target_recovery_v2_gate.py",
-        "status": "VERIFIED_FAIL",
-        "contract_variant": "baseline_1p25",
-        "canonical_1p5_contract": "SEPARATE_UNCHANGED_NOT_PASSED",
-        "integrity": "PASS_32_CELL_INTEGRITY",
-        "route_mechanism": "FAIL_ROUTE_MECHANISM",
-        "cells": {
-          "passed": 7,
-          "total": 32,
-          "route_off_passed": 7,
-          "route_off_total": 16,
-          "recovery_passed": 0,
-          "recovery_total": 16,
-          "passing_lineage": "route_off_only"
-        },
-        "plan_success_70bar_4speed": {
-          "numerator": 190,
-          "denominator": 203,
-          "fraction": 0.9359605911330049,
-          "pct": 93.6,
-          "gate_pct": 99.0
-        },
-        "fallback_70bar_4speed": {
-          "numerator": 18381,
-          "denominator": 38400,
-          "fraction": 0.478671875,
-          "pct": 47.87,
-          "gate_pct": 1.0
-        },
-        "goals_per_env_70bar_0_6mps": {
-          "numerator": 7,
-          "denominator": 32,
-          "value": 0.21875,
-          "gate": 0.5
-        },
-        "no_connector_occupancy": {
-          "numerator": 96854,
-          "denominator": 153600,
-          "fraction": 0.6305598958333334,
-          "pct": 63.06
-        },
-        "hard_breach_no_connector_entries": {
-          "numerator": 0,
-          "denominator": 534
-        },
+        "status": "RESULT_UNAVAILABLE_OR_MALFORMED",
+        "authority": "NO_FURTHER_TRACK_B_GPU_PPO_RETUNE_RERUN",
         "physical_ppo": "BLOCKED",
-        "hardware_claim": false,
-        "authority": "NO_FURTHER_TRACK_B_GPU_PPO_RETUNE_RERUN"
+        "hardware_claim": false
       },
       "recovery_v2_no_connector_forensics": {
         "source": "results/navrl_physical_target_recovery_v2_no_connector_forensics_seed827/summary.json",
-        "receipt": "results/navrl_physical_target_recovery_v2_no_connector_forensics_seed827/receipt.json",
-        "result_doc": "docs/physical_target_recovery_v2_no_connector_forensics_result_2026-08-26.md",
-        "preregistration": "docs/preregistration_physical_target_recovery_v2_no_connector_forensics_2026-08-26.md",
-        "tool": "tools/diagnose_navrl_physical_target_recovery_v2_no_connector.py",
-        "status": "DESCRIPTIVE_ONLY",
-        "decision_rule": {
-          "label": "INCONCLUSIVE",
-          "primary_n": 1,
-          "anchor_present": 0,
-          "hard_free_soft_unsafe": 1,
-          "identity_void": false,
-          "passes_32_cell_mechanism": false,
-          "authorizes_retune_or_ppo": false
-        },
-        "no_connector_classes": {
-          "total": 106,
-          "connect_failed_resume_likely": 23,
-          "brake_timeout": 32,
-          "connect_failed_certificate_likely": 49,
-          "connect_timeout": 1,
-          "brake_no_anchor_likely": 1
-        },
-        "claim_scope": "DESCRIPTIVE_ONLY_NO_GATE_TUNING_RERUN_PPO_OR_HARDWARE_AUTHORITY",
+        "status": "RESULT_UNAVAILABLE_OR_MALFORMED",
+        "authority": "NO_FURTHER_TRACK_B_GPU_PPO_RETUNE_RERUN",
         "physical_ppo": "BLOCKED",
-        "hardware_claim": false,
-        "canonical_1p5_claim": false,
-        "authority": "NO_FURTHER_TRACK_B_GPU_PPO_RETUNE_RERUN"
+        "hardware_claim": false
       },
       "track_b_authority": "CLOSED_NO_FURTHER_GPU_PPO_RETUNE_RERUN"
     },

@@ -295,6 +295,39 @@ shell에 남은 `NAVRL_*`, `GPU4GB`, governor, detector, pose/appearance 변수�
 `2049`는 requested completed episodes의 최솟값입니다. 128개 vector environment가 동시에 진행되므로
 실제 완료 수는 더 클 수 있고, 비율의 분모는 JSON의 `actual_episodes`입니다.
 
+### 6.1 필터 격자와 결합 분석 (거버너 기하 트랙)
+
+여러 조건을 한 번에 돌릴 때는 evaluator를 직접 부르지 말고 **격자 러너**를 씁니다. 셀마다 조건을 검증하고,
+`aerial_gym`·`tools`·`resources/robots`가 커밋된 상태인지 **매 셀 직전에** 다시 확인합니다.
+
+```bash
+cd ~/workspaces/aerial_gym_ws/src/aerial_gym_simulator
+python tools/run_navrl_filter_grid.py docs/specs/<spec>.json results/<root>
+```
+
+**실행 중에는 저 세 경로를 절대 건드리지 마세요.** 파일을 하나 추가하거나 문서 커밋으로 HEAD를 옮기기만 해도
+남은 셀이 VOID 처리됩니다(실제로 세 번 겪었습니다). 편집이 필요하면 `docs/`, `tests/`, scratchpad에서만 하고
+격자가 끝난 뒤 옮깁니다. 무거운 CPU/디스크 작업도 같이 피합니다 — 동시 부하가 같은 셀의 결과를 바꾼 적이 있습니다.
+
+진행 상황과 결과 보기:
+
+```bash
+python tools/summarize_navrl_grid.py results/<root>              # 한 줄씩 표, 진행 중에도 됨
+python tools/summarize_navrl_grid.py results/<root> --mechanism  # 접촉별 열 추가
+```
+
+여러 시드·밀도를 하나의 추정으로 묶고 사전등록 예측을 판정할 때:
+
+```bash
+python tools/pool_navrl_seed_replication.py \
+    results/navrl_grid_d1p_ep25000_seed523 results/navrl_grid_l1_ep25000_seed523 \
+    results/navrl_grid_r1_seedrep_ep25000_s527 results/navrl_grid_r1_seedrep_ep25000_s531 \
+    --mechanism --json results/<root>/pooled.json
+```
+
+역분산 결합·Cochran Q·DerSimonian–Laird를 함께 출력하고, 같은 조건이 두 루트에 있으면 버리지 않고 일치 여부를
+보고합니다. 통계는 `tools/navrl_stats.py` 한 곳에 정의돼 있고 **비율이 아니라 기록된 개수**에서 계산합니다.
+
 ## 7. checkpoint와 결과를 다른 컴퓨터로 옮기기
 
 Git에는 `runs/`와 `.pth`가 들어가지 않습니다. 최소 이 묶음을 옮기세요.

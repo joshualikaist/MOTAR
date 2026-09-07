@@ -3184,6 +3184,208 @@ def _detection_range_stage1_result() -> Optional[Dict[str, Any]]:
     }
 
 
+def _governor_geometry_result() -> Optional[Dict[str, Any]]:
+    """Read the speed-governor geometry grids: the arc tube vs the two straight-corridor laws.
+
+    Returns None until the seed replication exists, so a clone without those result roots simply
+    keeps showing the previous experiment instead of inventing one.
+    """
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("navrl_stats", ROOT / "tools/navrl_stats.py")
+    if spec is None or not (ROOT / "tools/navrl_stats.py").is_file():
+        return None
+    stats = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(stats)
+
+    roots = {
+        523: [ROOT / "results/navrl_grid_d1p_ep25000_seed523", ROOT / "results/navrl_grid_l1_ep25000_seed523"],
+        527: [ROOT / "results/navrl_grid_r1_seedrep_ep25000_s527"],
+        531: [ROOT / "results/navrl_grid_r1_seedrep_ep25000_s531"],
+    }
+    cells: Dict[Any, Dict[str, Any]] = {}
+    for seed, paths in roots.items():
+        for root in paths:
+            if not root.is_dir():
+                continue
+            for path in sorted(root.glob("*/*bars.json")):
+                if path.name.endswith(("receipt.json", "manifest.json")):
+                    continue
+                data = json.loads(path.read_text(encoding="utf-8"))
+                condition = data["condition"]
+                key = (seed, int(condition["bars"]), condition["speed_governor_mode"],
+                       round(float(condition["speed_governor_half_width_m"]), 2))
+                cells.setdefault(key, data)
+    seeds = sorted({key[0] for key in cells})
+    if len(seeds) < 3:
+        return None
+
+    densities = (70, 100, 130, 160, 205)
+
+    def counts(cell, field="crash_rate"):
+        return stats.outcome_count(cell["outcome"], field), int(cell["actual_episodes"])
+
+    def contrast(arm_a, arm_b, field="crash_rate", bars=None):
+        estimates = []
+        for seed in seeds:
+            for density in densities:
+                if bars is not None and density != bars:
+                    continue
+                a, b = cells.get((seed, density) + arm_a), cells.get((seed, density) + arm_b)
+                if a and b:
+                    estimates.append(stats.wald_diff(*counts(a, field), *counts(b, field)))
+        if not estimates:
+            return None
+        delta, se = stats.pool_fixed(estimates)
+        _, _, i_squared = stats.cochran_q(estimates) if len(estimates) > 1 else (0.0, 0, 0.0)
+        return {"delta_pp": delta, "se_pp": se, "ci_pp": list(stats.ci(delta, se)),
+                "cells": len(estimates), "i_squared": i_squared}
+
+    arc, riskcap, stopcap = ("dwa_arc", 0.45), ("riskcap", 0.45), ("stopcap", 0.45)
+    arc_wide, straight_wide = ("dwa_arc", 1.2), ("stopcap", 1.2)
+    lowest = 0
+    judged = 0
+    for seed in seeds:
+        for density in densities:
+            arms = {name: cells.get((seed, density) + arm)
+                    for name, arm in (("arc", arc), ("riskcap", riskcap), ("stopcap", stopcap))}
+            if not all(arms.values()):
+                continue
+            judged += 1
+            rates = {name: counts(cell)[0] / counts(cell)[1] for name, cell in arms.items()}
+            if min(rates, key=rates.get) == "arc":
+                lowest += 1
+
+    wide_capture = []
+    for seed in seeds:
+        cell = cells.get((seed, 205) + straight_wide)
+        if cell:
+            captured, total = counts(cell, "capture_rate")
+            wide_capture.append(100.0 * captured / total)
+
+    return {
+        "seeds": seeds,
+        "cells": len(cells),
+        "arc_lowest": lowest,
+        "judged": judged,
+        "arc_vs_riskcap": contrast(arc, riskcap),
+        "arc_vs_stopcap": contrast(arc, stopcap),
+        "stopcap_vs_riskcap": contrast(stopcap, riskcap),
+        "stopcap_vs_riskcap_70": contrast(stopcap, riskcap, bars=70),
+        "width_70": contrast(arc_wide, arc, bars=70),
+        "width_205": contrast(arc_wide, arc, bars=205),
+        "width_capture_205": contrast(arc_wide, arc, field="capture_rate", bars=205),
+        "straight_wide_capture_205": sum(wide_capture) / len(wide_capture) if wide_capture else None,
+    }
+
+
+def _governor_geometry_update() -> Optional[Dict[str, Any]]:
+    result = _governor_geometry_result()
+    if result is None:
+        return None
+    arc_risk, arc_stop = result["arc_vs_riskcap"], result["arc_vs_stopcap"]
+    width70, width205 = result["width_70"], result["width_205"]
+    capture205 = result["width_capture_205"]
+    stop_risk, stop_risk70 = result["stopcap_vs_riskcap"], result["stopcap_vs_riskcap_70"]
+    seeds = ", ".join(str(seed) for seed in result["seeds"])
+    return {
+        "subtitle": "2026-09-07 · speed-governor geometry · seed replication complete",
+        "headline": "Watching an arc instead of a straight corridor lowers crashes at every density.",
+        "summary": (
+            "The filter only ever scales the commanded speed; it never steers. Three evaluation "
+            f"seeds ({seeds}) x five bar densities were re-run with the corridor replaced by the "
+            "arc the vehicle will actually fly. The arc tube had the lowest crash rate in "
+            f"{result['arc_lowest']} of {result['judged']} seed-density cells, pooling to "
+            f"{arc_risk['delta_pp']:+.2f} pp [{arc_risk['ci_pp'][0]:+.2f}, {arc_risk['ci_pp'][1]:+.2f}] "
+            f"against the risk cap with no seed heterogeneity (I2 {arc_risk['i_squared'] * 100:.0f}%). "
+            "Widening that tube to 1.2 m helps twice over, while widening the straight corridor "
+            "destroys the mission."
+        ),
+        "experiment_id": "2026-09-07-ep25000-governor-geometry-seed-replication",
+        "active_experiment": {
+            "is_live": False,
+            "ab_experiment": True,
+            "ab_gate_complete": True,
+            "ab_gate_pass": True,
+            "run": "ep25000 · governor geometry · R-B seed replication",
+            "bars": 205,
+            "seeds": result["seeds"],
+            "cells": result["cells"],
+            "pooled_arc_vs_riskcap_pp": arc_risk["delta_pp"],
+            "pooled_arc_vs_stopcap_pp": arc_stop["delta_pp"],
+        },
+        "milestones": [
+            {
+                "label": "GEOMETRY",
+                "value": f"{arc_risk['delta_pp']:+.2f} pp",
+                "detail": f"arc vs risk cap, pooled over {arc_risk['cells']} cells; CI excludes 0",
+                "state": "pass",
+            },
+            {
+                "label": "REPLICATION",
+                "value": f"{result['arc_lowest']}/{result['judged']}",
+                "detail": "seed-density cells where the arc had the lowest crash rate",
+                "state": "pass",
+            },
+            {
+                "label": "WIDTH",
+                "value": f"{width205['delta_pp']:+.2f} pp",
+                "detail": (f"arc 0.45 m to 1.2 m at 205 bars; capture "
+                           f"{capture205['delta_pp']:+.2f} pp, so safety and mission move together"),
+                "state": "pass",
+            },
+            {
+                "label": "LAW",
+                "value": f"{stop_risk['delta_pp']:+.2f} pp",
+                "detail": ("stopping law vs risk cap, pooled; the interval includes 0 once the "
+                           "policy was trained with a filter in the loop"),
+                "state": "warn",
+            },
+        ],
+        "comparison": [
+            {
+                "label": "arc tube · 0.45 m",
+                "bars": 205,
+                "capture": None,
+                "unique": None,
+                "verdict": (f"lowest crash in {result['arc_lowest']}/{result['judged']} cells · "
+                            f"pooled {arc_risk['delta_pp']:+.2f} pp vs risk cap"),
+            },
+            {
+                "label": "arc tube · 1.2 m",
+                "bars": 205,
+                "capture": None,
+                "unique": None,
+                "verdict": (f"crash {width205['delta_pp']:+.2f} pp · capture "
+                            f"{capture205['delta_pp']:+.2f} pp against the 0.45 m arc"),
+            },
+            {
+                "label": "straight corridor · 1.2 m",
+                "bars": 205,
+                "capture": (result["straight_wide_capture_205"] or 0.0) / 100.0,
+                "unique": None,
+                "verdict": "mission collapses: most episodes time out instead of reaching the goal",
+            },
+        ],
+        "gates": [
+            {"label": "P1 pooled geometry",
+             "value": (f"PASS · {arc_risk['delta_pp']:+.2f} pp "
+                       f"[{arc_risk['ci_pp'][0]:+.2f}, {arc_risk['ci_pp'][1]:+.2f}]")},
+            {"label": "P2 per-seed sign", "value": "PASS · 5/5 densities in both new seeds"},
+            {"label": "P3 width effect", "value": f"5 of 6 · one seed short of the −2 pp threshold at 70 bars"},
+            {"label": "P5 law equivalence",
+             "value": (f"REJECTED · {stop_risk70['delta_pp']:+.2f} pp at 70 bars, "
+                       "vanishing above 100 bars")},
+        ],
+        "decision": (
+            "Train without the filter, then deploy the arc tube widened to about 1.2 m. The "
+            "geometry result replicates across evaluation seeds and is not a property of one run. "
+            "Training-seed replication is the remaining check before the co-adaptation claim is "
+            "written as general."
+        ),
+    }
+
+
 def _detection_range_stage1_update() -> Optional[Dict[str, Any]]:
     result = _detection_range_stage1_result()
     if result is None:
@@ -3441,6 +3643,9 @@ def _sim2real_72h() -> Dict[str, Any]:
 def _research_update(
     active: Optional[Dict[str, Any]], latest: Optional[Dict[str, Any]]
 ) -> Dict[str, Any]:
+    governor_geometry = _governor_geometry_update()
+    if governor_geometry is not None:
+        return governor_geometry
     detection_range = _detection_range_stage1_update()
     if detection_range is not None:
         return detection_range

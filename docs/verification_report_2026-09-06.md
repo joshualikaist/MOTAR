@@ -1,5 +1,10 @@
 # 자체 검증 보고 — 2026-09-05/06 거버너 실험 (83 cell)
 
+> **후속(2026-09-07).** 이 보고의 정정은 모두 반영됐고, 그 뒤 R-B 시드 반복이 원호 우위의 근거를
+> 평가 시드 3개 결합 **−1.49 pp [−1.90, −1.08]**(I² 0 %)로 갱신했다. 아래 본문의 −1.15 pp는 시드 1개
+> 시점의 기록이다. 현재 판정은 [`docs/plans/confirmation_phase_plan_2026-09-06.md`](plans/confirmation_phase_plan_2026-09-06.md)와
+> WORKLOG 2026-09-07을 본다.
+
 검증자: 실험을 수행한 세션 자신(Fable 5.1). 자료: `results/verification_export_2026-09-06/`
 (`governor_cells.csv` + 접촉별 JSONL). 재현: `python results/verification_export_2026-09-06/verify.py`.
 원칙: 비율이 아니라 **개수**에서 다시 계산하고, 범주 라벨이 아니라 **거리**로 기제를 다시 본다.
