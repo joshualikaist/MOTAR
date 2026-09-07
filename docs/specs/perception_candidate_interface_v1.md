@@ -1,6 +1,6 @@
 # Perception candidate interface v1
 
-상태: **P4 INTERFACE PREP — producer/encoder 미구현**
+상태: **P4 IMPLEMENTED — final detector 실행 대기**
 
 기계 판독 정본: `docs/specs/motar_perception_candidates_v1.schema.json`
 
@@ -23,6 +23,11 @@ JSON Schema가 표현하지 못하는 다음 semantic 조건은 producer validat
 3. box 네 경계가 image bounds 내부
 4. appearance의 모든 값이 finite이고 L2 norm이 허용 오차 내 1
 5. 한 sequence 안에서 frame index와 capture timestamp가 각각 단조 증가
+
+appearance encoder v1은 box를 1.25배 확장해 8×8로 축소하고 4×4 RGB cell mean 48차원과
+16-bin grayscale histogram을 결합한 parameter-free 64차원 descriptor다. 최종 벡터는 L2 normalize한다.
+`weights_sha256`에는 학습 weight가 없는 대신 `configs/perception_appearance_encoder_v1.json`의 SHA-256을
+기록한다. 이 descriptor는 재현 가능한 P4/KF baseline이며 learned re-identification 성능 주장은 하지 않는다.
 
 Det-Fly의 파일명 숫자는 순서를 시사하지만 배포 metadata에는 FPS와 capture timestamp가 없다. 따라서 P3
 raw prediction을 v1 연속영상 레코드로 위조 변환하지 않는다. 실제 timestamp가 보존된 NPS 원본 또는 별도

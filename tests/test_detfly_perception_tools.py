@@ -23,6 +23,8 @@ EVALUATE = load_tool("eval_detfly_zeroshot")
 PREPARE = load_tool("prepare_detfly_dataset")
 JOINT = load_tool("build_nps_detfly_joint_dataset")
 TRAIN = load_tool("run_joint_detector_training")
+CANDIDATES = load_tool("perception_candidates")
+KF = load_tool("perception_kf")
 
 
 class DetFlyDownloadTest(unittest.TestCase):
@@ -180,6 +182,64 @@ class JointDetectorTrainingContractTest(unittest.TestCase):
         for digest in TRAIN.EXPECTED.values():
             if len(digest) == 64:
                 int(digest, 16)
+
+
+class CandidateProducerTest(unittest.TestCase):
+    def candidate(self, u=50.0, confidence=0.9, rank=0):
+        vector = [0.0] * 64
+        vector[0] = 1.0
+        return {
+            "rank": rank, "u_px": u, "v_px": 50.0, "width_px": 10.0,
+            "height_px": 10.0, "confidence": confidence, "appearance_64d": vector,
+        }
+
+    def record(self, candidates):
+        return {
+            "schema_version": "motar.perception-candidates.v1", "frame_id": "f1",
+            "source_sequence_id": "clip", "frame_index": 0, "capture_timestamp_ns": 0,
+            "inference_completed_timestamp_ns": 1, "image": {"width_px": 100,
+            "height_px": 100, "coordinate_frame": "pixel_top_left_u_right_v_down"},
+            "detector": {}, "appearance_encoder": {}, "candidates": candidates,
+        }
+
+    def test_semantic_validator_accepts_unit_embedding(self):
+        self.assertTrue(CANDIDATES.validate_candidate_record(self.record([self.candidate()])))
+
+    def test_semantic_validator_rejects_bad_rank(self):
+        with self.assertRaisesRegex(ValueError, "ranks"):
+            CANDIDATES.validate_candidate_record(self.record([self.candidate(rank=1)]))
+
+
+class KalmanAssociationTest(unittest.TestCase):
+    CONFIG = {
+        "appearance_cost_weight": 0.5, "appearance_ema_alpha": 0.2,
+        "confidence_cost_weight": 0.2, "gating_chi2_4d_p99": 13.276704,
+        "max_missed_seconds": 0.5, "max_tracks": 5, "measurement_center_fraction": 0.15,
+        "measurement_log_size_std": 0.25, "min_confirm_hits": 2,
+        "min_measurement_confidence": 0.05, "process_accel_std_log_size_per_s2": 1.0,
+        "process_accel_std_px_per_s2": 80.0, "track_init_confidence": 0.25,
+    }
+
+    @staticmethod
+    def candidate(u, confidence=0.9, rank=0):
+        appearance = [0.0] * 64
+        appearance[0] = 1.0
+        return {"rank": rank, "u_px": u, "v_px": 50.0, "width_px": 10.0,
+                "height_px": 10.0, "confidence": confidence, "appearance_64d": appearance}
+
+    def test_exact_assignment_maximizes_valid_pair_count(self):
+        import numpy as np
+        pairs = KF.exact_valid_assignment(np.asarray([[1.0, 2.0], [1.1, np.inf]]))
+        self.assertEqual(pairs, [(0, 1), (1, 0)])
+
+    def test_track_confirms_then_coasts_through_short_miss(self):
+        tracker = KF.MultiCandidateKalmanTracker(self.CONFIG)
+        selected, _ = tracker.step([self.candidate(40)], 0, 100, 100)
+        self.assertIsNone(selected)
+        selected, _ = tracker.step([self.candidate(41)], 100_000_000, 100, 100)
+        self.assertEqual(selected["track_id"], 1)
+        selected, _ = tracker.step([], 200_000_000, 100, 100)
+        self.assertEqual(selected["track_id"], 1)
 
 
 if __name__ == "__main__":
