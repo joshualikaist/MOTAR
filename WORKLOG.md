@@ -16327,3 +16327,28 @@ Codex 세션이 사용 한도로 응답만 끊겼고 **다운로드 프로세스
 P3는 13,271장 전수로 두 arm을 돌린 뒤에만 판정한다.
 
 다음: 다운로드 완료(ETA 약 90분) → 인덱서 fail-closed 검증 → arm A·B 전수 실행 → 판정.
+
+
+## 2026-09-07 — Det-Fly P3 전수 완료: size-dominant zero-shot failure
+
+공식 OneDrive 배포를 모두 받았다. XML 13,271개 + JPEG 13,271개,
+18,849,340,854 bytes이며 manifest 26,542개의 누락·크기 불일치·`.part`는 모두 0이다.
+전 파일 SHA-256, XML–JPEG pairing, JPEG SOF 크기, class·bbox·flag를 검사한 content
+manifest SHA-256은 `d8d6875b…`이다. 13,271장에 GT 13,270 box, negative frame 1장이
+있다. 전체 평가에서 box를 버리지 않았고, full-width 1개는 `implausible_size`로만 표시했다.
+
+frozen checkpoint `ccd65dc3…`와 사전 고정 threshold로 두 arm을 전수 실행했다.
+
+| arm | images / tiles | IoU 0.3 P / R / F1 / AP | IoU 0.5 P / R / F1 / AP | runtime |
+|---|---:|---:|---:|---:|
+| native 4K | 13,271 / 424,672 | .0097 / .1668 / .0183 / **.0035** | .0051 / .0873 / .0096 / **.0010** | 1,961.1 s |
+| scale-matched ÷4 | 13,271 / 26,542 | .2416 / .3503 / .2860 / **.2382** | .1612 / .2337 / .1908 / **.1126** | 536.6 s |
+
+IoU 0.3 AP 차이 0.2347로 native AP 자체보다 크므로 사전 판정은
+**SIZE-DOMINANT ZERO-SHOT FAILURE**다. ÷4로 회복되어도 recall 0.3503, FP 14,587이므로
+scale matching을 완성 detector로 해석하지 않는다. 다음 경로는 NPS+Det-Fly 합동 학습,
+multi-scale/anchor 재설계, Det-Fly test split 봉인이다. 배경 4종 mapping은 배포
+metadata에 없어 작성하지 않았고 source group 010/020을 대체 slice로 보고했다.
+
+raw/report SHA-256은 native `a98e952d…` / `ca45d1f8…`, scale-matched
+`4b0277a6…` / `421aeed8…`이며 각 receipt와 독립 재계산이 일치했다.

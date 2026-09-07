@@ -218,9 +218,14 @@
         YOLOv5s를 40 에포크 학습했습니다. mAP50은 13 에포크에서 <strong>0.579</strong>로 최고였고 그 뒤 평탄합니다 &mdash;
         12~40 에포크 평균 <code>0.549 ± 0.015</code>이므로 <strong>실제 수준은 0.55 대역</strong>이고 0.579는 그 흔들림의
         꼭대기입니다. 같은 구간에서 훈련 손실은 25.1 % 줄었는데 검증 손실은 0.7 %만 줄어(과적합 시작) 에포크를
-        더 주는 것으로는 오르지 않습니다. <strong>아직 일반화를 주장할 수 없습니다</strong>: 학습과 평가가 같은
-        데이터셋·같은 촬영 조건이고, 표적 픽셀 크기별 분해도 정책이 필요로 하는 오차 모델(방위각·거리 오차, 지연,
-        놓침 확률)도 미측정입니다. 다음은 Det-Fly(MIT, 배경 4종) zero-shot 교차 검증입니다.</p>
+        더 주는 것으로는 오르지 않습니다.</p>
+      <p><strong>Det-Fly zero-shot P3(2026-09-07).</strong> frozen NPS checkpoint로 13,271장을
+        전수 평가했습니다. native 4K의 IoU 0.3 P/R/AP는
+        <code>0.0097 / 0.1668 / 0.0035</code>, NPS 학습 크기에 맞춘 ÷4 arm은
+        <code>0.2416 / 0.3503 / 0.2382</code>입니다. 사전 규칙상
+        <strong>SIZE-DOMINANT ZERO-SHOT FAILURE</strong>이며, NPS-only detector의 즉시 4K 배치는
+        기각합니다. 배경 4종 mapping은 배포 metadata에 없어 source group 010/020으로
+        대체했습니다. <a href="../plans/perception_p3_detfly_execution_2026-09-07.md">실행 계약·지표·receipt</a></p>
     </section>
 
     <section class="visual wrap" id="external-data" aria-labelledby="data-title">
@@ -233,14 +238,14 @@
           이것이 규모 선택을 지배합니다.</p>
       </div>
 
-      <h3>확보했거나 확보 가능 &mdash; 라이선스 안전</h3>
+      <h3>확보했거나 확보 가능</h3>
       <div class="scrollx"><table>
         <thead><tr><th>자산</th><th>라이선스</th><th>규모</th><th>시점</th><th>상태</th></tr></thead>
         <tbody>
           <tr><td>NPS-Drones</td><td><strong>BSD-3-Clause</strong></td><td>2.04 GB</td><td>공대공</td>
-              <td>확보 중 · 70,250 프레임 · 표적 10&times;8&ndash;65&times;21 px</td></tr>
-          <tr><td>Det-Fly</td><td><strong>MIT</strong></td><td>9.34 GB</td><td>공대공</td>
-              <td>미확보 &mdash; 여유 공간 부족 · 13,271장 3840&times;2160</td></tr>
+              <td><strong>확보·P2 완료</strong> · 70,250 프레임 · 표적 10&times;8&ndash;65&times;21 px</td></tr>
+          <tr><td>Det-Fly</td><td>repo <strong>MIT</strong>; dataset 범위 미명시</td><td>18.849 GB (풀림)</td><td>공대공</td>
+              <td><strong>확보·전수 검증·P3 완료</strong> · 13,271장 3840&times;2160</td></tr>
           <tr><td>MIDGARD</td><td>명시 없음 (인용 요청만)</td><td>3.53 GB</td><td>공대공</td>
               <td>미확보 · <strong>거리 GT 포함</strong>이라 오차 모델에 유용</td></tr>
           <tr><td>DUT Anti-UAV</td><td><strong>Apache-2.0</strong></td><td>1.32 GB</td><td>지상&rarr;공중</td>

@@ -8,7 +8,7 @@ MOTAR는 카메라, LiDAR, ego-state만으로 움직이는 표적을 추적하�
 
 ![MOTAR current perception-to-control system](docs/assets/motar-system-overview.svg)
 
-> **Status · 2026-09-05** — 이번 주의 결과는 전부 **부정 결과**이고, 그것이 요점입니다.
+> **Status · 2026-09-07** — 이번 주의 결과는 전부 **부정 결과**이고, 그것이 요점입니다.
 > 세 갈래 사전등록 측정이 인지의 구속 조건은 측정 품질이 아니라 **물체 동일성**임을 확정했고
 > (자료구조 수정 +1.3 pp · 거리 분산 −0.34 pp · 동색 디코이 FTLR 90.27%),
 > 접촉 기하 포렌식은 **막대 충돌의 77~78%가 속도 거버너가 감시하는 회랑 밖**에서 남을 보였습니다
@@ -16,6 +16,9 @@ MOTAR는 카메라, LiDAR, ego-state만으로 움직이는 표적을 추적하�
 > **+0.395 m 양수**로 만들고도 crash를 15.95 → 21.31%로 **올렸습니다**.
 > 공개 공대공 detector 가중치의 교차 데이터셋 zero-shot은 AP **0.045**(in-domain 0.80)로,
 > 학습을 건너뛸 수 없음이 확인됐습니다.
+> NPS-only detector의 Det-Fly 13,271장 전수 P3도 native 4K AP30 **0.0035**였습니다.
+> 표적 크기를 ÷4로 맞추면 AP30이 **0.2382**로 회복되어, 사전 규칙상
+> **SIZE-DOMINANT ZERO-SHOT FAILURE**로 판정했습니다.
 > **다음은 진단 논문 계획**([`diagnostic_paper_plan_2026-09-05.md`](docs/plans/diagnostic_paper_plan_2026-09-05.md))이며
 > 재학습 없이 3주 규모입니다.
 > **sim-to-real은 뒤로 미뤘습니다** — 실제 기체는 미조립이고 센서 로그도 비행 데이터도 없습니다.
@@ -104,6 +107,7 @@ attitude/rate torque → motor allocation → 100 Hz rigid-body physics` 순서�
 | Corrected route-off curriculum | **epoch 21,973에서 운영자 중지; 145 bars 도달** | fresh seed 911; 70→85→100→115→130→145, 160/205 미도달 |
 | Corrected route-off held-out | **83.70% capture @70 → 65.54% @145** | seed 313, 6 trained-density cells; [summary](results/navrl_corrected_nonoverlap_physical_off_heldout_seed313/summary.md); no 205/routed claim |
 | Detector colour shortcut (distractor envelope) | **both detectors `COLOR_SHORTCUT_CONFIRMED`**; v7 FTLR **90.27%** at N=5 | seed 479, 8 cells, 2,049 ep/cell; cross-detector comparison forbidden (prereg §3-c) |
+| NPS→Det-Fly perception P3 | **`SIZE-DOMINANT ZERO-SHOT FAILURE`**; native AP30 **0.0035**, ÷4 AP30 **0.2382** | 13,271 images, 13,270 GT, frozen checkpoint; IoU 0.3 |
 | Speed-governor stopcap screen | **Q1 `MECHANISM_UNSUPPORTED`, Q3 `FILTER_DEPENDENT`, stopcap NO-GO** | seed 49, 5 arms, 2,049 ep/cell; riskcap does not beat a constant 2.0 m/s cap |
 | Hardware/software gate | software pipeline PASS · `SYNTHETIC_ONLY` | 실기 성능 아님 |
 
@@ -204,12 +208,12 @@ distractor 충돌이 미귀속 contact로 기록되고 정적 goal이 distractor
 
 기기 제약: 여유 저장 공간 **약 15 GB**(RAM이 아니라 SSD). 이것이 규모 선택을 지배합니다.
 
-### 확보했거나 확보 가능 (라이선스 안전)
+### 확보했거나 확보 가능
 
 | 자산 | 라이선스 | 규모 | 시점 | 상태 |
 |---|---|---:|---|---|
-| [NPS-Drones](https://engineering.purdue.edu/~bouman/UAV_Dataset/) | **BSD-3-Clause** | 2.04 GB (영상) | 공대공 | 확보 중. 70,250 프레임 · 1920×1080 · 표적 10×8–65×21 px |
-| [Det-Fly](https://github.com/Jake-WU/Det-Fly) | **MIT** | 9.34 GB | 공대공 | 미확보 — 여유 공간 부족. 13,271장 · 3840×2160 · 배경 4종 |
+| [NPS-Drones](https://engineering.purdue.edu/~bouman/UAV_Dataset/) | **BSD-3-Clause** | 2.04 GB (영상) | 공대공 | **확보·P2 완료**. 70,250 프레임 · 1920×1080 · 표적 10×8–65×21 px |
+| [Det-Fly](https://github.com/Jake-WU/Det-Fly) | repo **MIT**; dataset 범위 미명시 | 18.849 GB (풀림) | 공대공 | **확보·전수 검증·P3 완료**. 13,271장 · 3840×2160; 배경 4종 mapping은 metadata에 없음 |
 | [MIDGARD](https://mrs.fel.cvut.cz/midgard) | 명시 없음 (인용 요청만) | 3.53 GB | 공대공 | 미확보. **거리 GT 포함** — 오차 모델에 유용. 서면 허락 권장 |
 | [DUT Anti-UAV](https://github.com/wangdongdut/DUT-Anti-UAV) | **Apache-2.0** | 1.32 GB | 지상→공중 | 미확보. 시점 불일치, OOD 세트로만 가치 |
 | [AOT](https://registry.opendata.aws/airborne-object-tracking/) | **CDLA-Permissive-1.0** | **13.4 TB** | 공대공 | 전량 불가. 부분 prefix로 2–3 시퀀스(~3 GB)만 가능. 흑백 + 유인기 표적 |
@@ -255,9 +259,18 @@ NPS-Drones를 640 px 타일로 잘라(train 19,659 / val 4,096, 박스 3,867) YO
 검증 손실은 0.7 %만 줄어(0.05170 → 0.05135) 과적합이 시작됐음을 보입니다. 에포크를 더 주는 것으로는
 올라가지 않습니다.
 
-**아직 주장할 수 없는 것**: 이 숫자는 **한 데이터셋 안**의 값입니다. 학습과 평가가 같은 촬영 조건이므로
-일반화를 말할 수 없고, 표적 픽셀 크기별 분해도, 정책이 실제로 필요로 하는 오차 모델(방위각·거리 오차,
-지연, 놓침 확률)도 아직 측정하지 않았습니다. 다음 단계는 **Det-Fly(MIT, 배경 4종) zero-shot 교차 검증**입니다.
+### Det-Fly zero-shot P3 (2026-09-07)
+
+frozen NPS checkpoint로 Det-Fly 13,271장을 전수 평가했습니다. native 4K sliding-window의
+IoU 0.3 P/R/AP는 `0.0097 / 0.1668 / 0.0035`, NPS 학습 크기에 맞춘 ÷4 arm은
+`0.2416 / 0.3503 / 0.2382`입니다. 이 차이는 사전 판정선을 넘어
+**SIZE-DOMINANT ZERO-SHOT FAILURE**입니다. 즉 domain shift도 남아 있지만, 가장 큰
+즉시 실패 요인은 NPS 학습 표적보다 Det-Fly 표적이 중앙값 기준 4.3배 큰 것입니다.
+
+배경 4종 label mapping은 공식 배포 metadata에 없어 source group `010/020`으로 대체했습니다.
+다음은 NPS+Det-Fly 합동 학습·multi-scale/anchor 재설계이며 Det-Fly test split은 봉인해야
+합니다. 상세 계약과 receipt hash는
+[`perception_p3_detfly_execution_2026-09-07.md`](docs/plans/perception_p3_detfly_execution_2026-09-07.md)에 있습니다.
 
 ## Safety filter — the speed governor
 

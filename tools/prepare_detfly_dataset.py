@@ -136,16 +136,24 @@ def parse_annotation(xml_path, source):
         truncated = int(obj.findtext("truncated", default="0"))
         if difficult not in (0, 1) or truncated not in (0, 1):
             raise ValueError("difficult/truncated must be binary")
+        # A box spanning half the frame cannot be a UAV at these ranges: the largest plausible
+        # annotation in this distribution is 333 px tall and the 95th percentile diagonal is
+        # 298 px. Exactly one box in 13,270 trips this (010/0106343: 3840x17, the full frame
+        # width). It is FLAGGED, not dropped -- removing inconvenient ground truth before seeing
+        # results is how a miss rate gets quietly improved. One box can move recall by 0.008 pp.
+        implausible = (xmax - xmin) >= width * 0.5 or (ymax - ymin) >= height * 0.5
         objects.append({
             "class_id": 0,
             "class_name": "uav",
             "xyxy": [xmin, ymin, xmax, ymax],
             "difficult": bool(difficult),
             "truncated": bool(truncated),
+            "implausible_size": implausible,
             "equivalent_side_px": math.sqrt((xmax - xmin) * (ymax - ymin)),
         })
-    if not objects:
-        raise ValueError("annotation contains no objects")
+    # Frames with no UAV are legitimate evidence for a detector: they measure false positives.
+    # Exactly one frame in 13,271 has none (020/0201689). Refusing it would discard the only
+    # negative frame the distribution offers.
 
     return {
         "image": str(image_path.relative_to(source)),

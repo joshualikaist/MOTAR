@@ -2,7 +2,9 @@ import base64
 import importlib.util
 import json
 from pathlib import Path
+import tempfile
 import unittest
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -18,6 +20,7 @@ def load_tool(name):
 
 DOWNLOAD = load_tool("download_detfly_dataset")
 EVALUATE = load_tool("eval_detfly_zeroshot")
+PREPARE = load_tool("prepare_detfly_dataset")
 
 
 class DetFlyDownloadTest(unittest.TestCase):
@@ -72,6 +75,48 @@ class DetFlyEvaluationTest(unittest.TestCase):
         embedding = candidates["items"]["properties"]["appearance_64d"]
         self.assertEqual(embedding["minItems"], 64)
         self.assertEqual(embedding["maxItems"], 64)
+
+
+class DetFlyPreparationTest(unittest.TestCase):
+    @staticmethod
+    def write_pair(root, stem, objects):
+        annotation_dir = root / "Annotations" / "010"
+        image_dir = root / "JPEGImages" / "010"
+        annotation_dir.mkdir(parents=True)
+        image_dir.mkdir(parents=True)
+        image_path = image_dir / (stem + ".jpg")
+        image_path.write_bytes(b"jpeg-placeholder")
+        object_xml = "".join(objects)
+        xml_path = annotation_dir / (stem + ".xml")
+        xml_path.write_text(
+            "<annotation><size><width>100</width><height>50</height><depth>3</depth></size>"
+            + object_xml + "</annotation>"
+        )
+        return xml_path
+
+    def test_negative_frame_is_preserved(self):
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory)
+            xml_path = self.write_pair(source, "negative", [])
+            with mock.patch.object(PREPARE, "jpeg_size", return_value=(100, 50)), \
+                    mock.patch.object(PREPARE, "sha256_file", return_value="hash"):
+                row = PREPARE.parse_annotation(xml_path, source)
+            self.assertEqual(row["objects"], [])
+
+    def test_implausible_box_is_flagged_not_dropped(self):
+        obj = (
+            "<object><name>UAV</name><difficult>0</difficult><truncated>0</truncated>"
+            "<bndbox><xmin>0</xmin><ymin>1</ymin><xmax>100</xmax><ymax>3</ymax></bndbox>"
+            "</object>"
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory)
+            xml_path = self.write_pair(source, "wide", [obj])
+            with mock.patch.object(PREPARE, "jpeg_size", return_value=(100, 50)), \
+                    mock.patch.object(PREPARE, "sha256_file", return_value="hash"):
+                row = PREPARE.parse_annotation(xml_path, source)
+            self.assertEqual(len(row["objects"]), 1)
+            self.assertTrue(row["objects"][0]["implausible_size"])
 
 
 if __name__ == "__main__":

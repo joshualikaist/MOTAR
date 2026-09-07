@@ -29,7 +29,7 @@ NPS detector
 |---|---|---|---|
 | P1 | 문서와 사이트 상태 정리 | 색 detector=`CURRENT BASELINE — KNOWN FAILURE`; SAM=`ARCHIVED` | 메인 architecture가 이 문서의 경로를 표시 |
 | P2 | NPS baseline 동결 | 현재 YOLO checkpoint와 NPS split 보존 | checkpoint hash, split manifest, P/R/mAP50/mAP50-95 기록 |
-| P3 | Det-Fly zero-shot | NPS checkpoint 무변경; 재튜닝 전 평가 | 전체·배경·target pixel-size bin별 P/R/AP와 raw predictions |
+| P3 | Det-Fly zero-shot **COMPLETE** | NPS checkpoint 무변경; 재튜닝 전 평가 | 13,271장 두 arm 전수; native AP30 0.0035, scale-matched AP30 0.2382; raw predictions+receipt |
 | P4 | multi-candidate 출력 | Top-K=5; 후보별 `[u,v,w,h,c,e64]` | frame/capture timestamp와 후보 순서를 보존하는 schema |
 | P5 | CNN+KF | P4 detector 동결 | gating·track-state 정의, FTLR/ID switch/reacquisition/latency |
 | P6 | CNN+GRU | history 8; hidden 128 | P5와 같은 held-out clips에서 비교 |
@@ -41,6 +41,11 @@ NPS detector
 P3의 zero-shot 결과가 낮다는 이유만으로 임의 threshold에서 실패를 선언하지 않는다. 전체와 크기별
 성능, 오류 유형을 먼저 보고한다. NPS-only 모델이 Det-Fly에서 실용적인 후보 생성을 하지 못하면 두
 dataset을 합쳐 재학습하되, Det-Fly test split은 모델 선택과 threshold 조정에서 봉인한다.
+
+P3 결과, native 4K와 ÷4 scale-matched의 IoU 0.3 AP는 각각 `0.0035`, `0.2382`였다.
+사전 등록 규칙으로 **SIZE-DOMINANT ZERO-SHOT FAILURE**로 판정했다. 배경 4종 mapping은
+배포 metadata에 없어 임의 생성하지 않았고 source group 010/020으로 대체했다. 상세
+계약·지표·hash는 `perception_p3_detfly_execution_2026-09-07.md`가 정본이다.
 
 CNN, GRU, Transformer를 직렬로 쌓지 않는다. 동일한 frozen CNN detector 위에서 `KF`, `GRU`,
 `Temporal Transformer`를 서로 대체하는 association arm으로 비교한다. 모델 선택은 validation clip에서
@@ -94,4 +99,3 @@ training-seed R-C 반복을 끝낸다. P10이 완료된 뒤에만
 한 사람이 하루 5시간 집중 작업을 수행하면 약 **12–23 근무일**이다. 데이터 다운로드, 라이선스 회신,
 새 라벨 정정, 실패한 모델 재탐색 시간은 포함하지 않는다. 각 단계의 실제 시간을 receipt에 기록해 다음
 단계 추정을 갱신한다.
-

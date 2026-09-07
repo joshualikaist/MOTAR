@@ -2,7 +2,7 @@
 
 작성: 2026-09-07
 
-상태: **RUNNING — 결과 열람 전 평가 조건 동결**
+상태: **COMPLETE — 13,271장 두 arm 전수 평가 및 receipt 검증 완료**
 
 상위 정본: `docs/plans/perception_final_implementation_plan_2026-09-07.md`
 
@@ -101,6 +101,29 @@ source group별 P/R/F1/AP, GT pixel-size별 P/R/F1/AP를 쓴다. size slice에�
 detection을 ignore하고, 어느 GT에도 매칭되지 않은 detection은 각 slice의 FP로 센다. AP는 confidence
 floor와 image top-300 이후 후보에서 계산하므로 그 아래 점수가 존재하면 lower bound다.
 
+## 결과 (2026-09-07)
+
+모든 수치는 frozen NPS checkpoint와 사전 등록한 threshold에서 13,271장 전체를
+평가한 결과다. GT는 13,270 box이며 1장은 배경 negative frame이다.
+
+| arm | tiles | IoU | P | R | F1 | AP |
+|---|---:|---:|---:|---:|---:|---:|
+| A. native 4K | 424,672 | 0.3 | 0.0097 | 0.1668 | 0.0183 | **0.0035** |
+| A. native 4K | 424,672 | 0.5 | 0.0051 | 0.0873 | 0.0096 | **0.0010** |
+| B. scale-matched ÷4 | 26,542 | 0.3 | 0.2416 | 0.3503 | 0.2860 | **0.2382** |
+| B. scale-matched ÷4 | 26,542 | 0.5 | 0.1612 | 0.2337 | 0.1908 | **0.1126** |
+
+IoU 0.3 AP 차이는 `0.2382 - 0.0035 = 0.2347`로 arm A AP 자체보다 크다. 따라서
+사전 등록 판정은 **SIZE-DOMINANT ZERO-SHOT FAILURE**다. NPS-only detector를 4K Det-Fly에
+그대로 배치하는 경로는 기각한다. ÷4에서 AP가 크게 회복되지만 IoU 0.3 recall은
+0.3503에 머물고 operating point의 FP도 14,587개이므로, scale matching은 완성 detector가
+아니다. 다음 detector는 NPS+Det-Fly 합동 학습과 multi-scale/anchor 재설계를 하되, Det-Fly
+test split은 모델·threshold 선택에서 봉인해야 한다.
+
+공식 배포 metadata에 sky·urban·field·mountain mapping이 없어 배경별 수치는 만들지
+않았다. 대신 source group `010`/`020`, GT pixel-size, difficult/truncated 분해는
+report에 모두 남겼다.
+
 ## 산출물과 완료 조건
 
 | 산출물 | 경로 |
@@ -109,7 +132,8 @@ floor와 image top-300 이후 후보에서 계산하므로 그 아래 점수가 
 | 검증 index와 receipt | `datasets/detfly_index/{index.jsonl,receipt.json}` |
 | 전체 raw predictions | `detector_runs/results/nps_to_detfly_zeroshot/predictions.jsonl.gz` |
 | 지표·runtime report | `detector_runs/results/nps_to_detfly_zeroshot/{report.json,receipt.json}` |
+| scale-matched raw/report | `detector_runs/p3_detfly_scale_matched/{predictions.jsonl.gz,report.json,receipt.json}` |
 
-P3 완료는 13,271개 전부의 size/hash 검증, frozen checkpoint hash 검사, 424,672개 native-scale tile 추론,
-raw prediction SHA-256, 전체·source-group·size·difficulty 지표가 모두 존재할 때만 선언한다. 부분 smoke나
-한 장의 육안 결과는 P3 결과로 사용하지 않는다.
+P3 완료 조건은 모두 충족했다. native raw/report SHA-256은 각각
+`a98e952d…` / `ca45d1f8…`, scale-matched는 `4b0277a6…` / `421aeed8…`이며
+각 receipt와 독립 재계산값이 일치한다.
