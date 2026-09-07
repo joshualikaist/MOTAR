@@ -263,6 +263,14 @@ class KalmanAssociationTest(unittest.TestCase):
         selected, _ = tracker.step([], 200_000_000, 100, 100)
         self.assertEqual(selected["track_id"], 1)
 
+    def test_expired_track_cannot_be_revived_by_large_covariance(self):
+        tracker = KF.MultiCandidateKalmanTracker(self.CONFIG)
+        tracker.step([self.candidate(40)], 0, 100, 100)
+        tracker.step([self.candidate(41)], 100_000_000, 100, 100)
+        selected, tracks = tracker.step([self.candidate(42)], 700_000_000, 100, 100)
+        self.assertIsNone(selected)
+        self.assertEqual([track["track_id"] for track in tracks], [2])
+
 
 if __name__ == "__main__":
     unittest.main()

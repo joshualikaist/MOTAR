@@ -1,6 +1,5 @@
 """Deterministic constant-velocity multi-candidate Kalman association for MOTAR P5."""
 
-import itertools
 import math
 
 import numpy as np
@@ -203,6 +202,10 @@ class MultiCandidateKalmanTracker:
             raise ValueError("tracker timestamps must increase")
         for track in self.tracks:
             track.predict(timestamp_ns)
+        # Expiry is evaluated before association. Otherwise a candidate after an arbitrarily long
+        # gap could revive a stale track because its propagated covariance also became enormous.
+        self.tracks = [track for track in self.tracks
+                       if track.missed_seconds <= self.config["max_missed_seconds"]]
         measurements = [candidate for candidate in candidates
                         if candidate["confidence"] >= self.config["min_measurement_confidence"]]
         cost = np.full((len(self.tracks), len(measurements)), math.inf, dtype=np.float64)
@@ -214,8 +217,6 @@ class MultiCandidateKalmanTracker:
         for track_index, candidate_index in pairs:
             self.tracks[track_index].update(measurements[candidate_index])
             assigned_candidates.add(candidate_index)
-        self.tracks = [track for track in self.tracks
-                       if track.missed_seconds <= self.config["max_missed_seconds"]]
         for candidate_index, candidate in enumerate(measurements):
             if candidate_index in assigned_candidates:
                 continue
