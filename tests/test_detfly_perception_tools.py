@@ -80,6 +80,28 @@ class DetFlyEvaluationTest(unittest.TestCase):
         self.assertEqual(embedding["minItems"], 64)
         self.assertEqual(embedding["maxItems"], 64)
 
+    def test_audited_selection_must_match_index_rows(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            row = {"image": "JPEGImages/020/a.jpg", "width": 10, "objects": []}
+            (root / "index.jsonl").write_text(json.dumps(row) + "\n")
+            selected = dict(row, split="test")
+            manifest = root / "test.jsonl"
+            manifest.write_text(json.dumps(selected) + "\n")
+            digest = EVALUATE.sha256_file(manifest)
+            rows, observed = EVALUATE.load_selection(root, manifest, digest, None)
+            self.assertEqual(rows, [selected])
+            self.assertEqual(observed, digest)
+
+    def test_audited_selection_rejects_changed_index_field(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "index.jsonl").write_text(json.dumps({"image": "a.jpg", "width": 10}) + "\n")
+            manifest = root / "test.jsonl"
+            manifest.write_text(json.dumps({"image": "a.jpg", "width": 11}) + "\n")
+            with self.assertRaisesRegex(ValueError, "selection/index mismatch"):
+                EVALUATE.load_selection(root, manifest, EVALUATE.sha256_file(manifest), None)
+
 
 class DetFlyPreparationTest(unittest.TestCase):
     @staticmethod

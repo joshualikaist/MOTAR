@@ -43,6 +43,13 @@ def parse_args():
     parser.add_argument("--weights", type=Path, default=DEFAULT_WEIGHTS)
     parser.add_argument("--yolov5", type=Path, default=DEFAULT_YOLOV5)
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
+    parser.add_argument("--selection-manifest", type=Path, default=None,
+                        help="Optional audited subset JSONL, e.g. the sealed joint-detector test.")
+    parser.add_argument("--expected-selection-manifest-sha256", default=None,
+                        help="Required with --selection-manifest; prevents selection substitution.")
+    parser.add_argument("--expected-weights-sha256", default=EXPECTED_WEIGHTS_SHA256)
+    parser.add_argument("--evaluation-kind", choices=("zero_shot", "joint_heldout"),
+                        default="zero_shot")
     parser.add_argument("--device", default="cuda:0")
     parser.add_argument("--tile", type=int, default=640)
     parser.add_argument("--overlap", type=int, default=128)
@@ -204,15 +211,39 @@ def ranked_report(scores, labels, gt_count, operating_confidence, already_sorted
     }
 
 
-def load_index(index_dir, max_images):
+def load_jsonl(path, max_images=None):
     rows = []
-    with (index_dir / "index.jsonl").open() as stream:
+    with Path(path).open() as stream:
         for line in stream:
             if line.strip():
                 rows.append(json.loads(line))
                 if max_images is not None and len(rows) >= max_images:
                     break
     return rows
+
+
+def load_selection(index_dir, selection_manifest, expected_sha256, max_images):
+    index_path = index_dir / "index.jsonl"
+    if selection_manifest is None:
+        return load_jsonl(index_path, max_images), None
+    selection_manifest = selection_manifest.resolve()
+    if not expected_sha256:
+        raise ValueError("--expected-selection-manifest-sha256 is required with a selection")
+    observed_sha = sha256_file(selection_manifest)
+    if observed_sha != expected_sha256:
+        raise ValueError("selection manifest hash mismatch: %s" % observed_sha)
+    full_index = {row["image"]: row for row in load_jsonl(index_path)}
+    selected = load_jsonl(selection_manifest, max_images)
+    for row in selected:
+        indexed = full_index.get(row.get("image"))
+        if indexed is None:
+            raise ValueError("selection image is absent from the prepared index")
+        for key, value in indexed.items():
+            if row.get(key) != value:
+                raise ValueError("selection/index mismatch for %s field %s" % (row["image"], key))
+    if len({row["image"] for row in selected}) != len(selected):
+        raise ValueError("selection manifest contains duplicate images")
+    return selected, observed_sha
 
 
 def main():
@@ -228,12 +259,17 @@ def main():
     if not (index_dir / "index.jsonl").is_file() or not (index_dir / "receipt.json").is_file():
         raise SystemExit("[zeroshot] Det-Fly index is incomplete")
     weight_sha = sha256_file(weights)
-    if weight_sha != EXPECTED_WEIGHTS_SHA256:
-        raise SystemExit("[zeroshot] frozen NPS checkpoint hash mismatch: %s" % weight_sha)
+    if weight_sha != args.expected_weights_sha256:
+        raise SystemExit("[zeroshot] frozen checkpoint hash mismatch: %s" % weight_sha)
 
     index_receipt = json.loads((index_dir / "receipt.json").read_text())
     source = Path(index_receipt["source_dataset"])
-    rows = load_index(index_dir, args.max_images)
+    try:
+        rows, selection_sha = load_selection(
+            index_dir, args.selection_manifest, args.expected_selection_manifest_sha256,
+            args.max_images)
+    except ValueError as error:
+        raise SystemExit("[zeroshot] %s" % error)
     if not rows:
         raise SystemExit("[zeroshot] index contains no rows")
 
@@ -427,21 +463,27 @@ def main():
 
     report = {
         "schema_version": 1,
-        "experiment": "nps_to_detfly_zero_shot",
+        "experiment": ("nps_to_detfly_zero_shot" if args.evaluation_kind == "zero_shot"
+                       else "nps_detfly_joint_to_detfly_heldout"),
         "completed_utc": datetime.now(timezone.utc).isoformat(),
-        "cross_dataset": True,
-        "complete_dataset": args.max_images is None,
+        "cross_dataset": args.evaluation_kind == "zero_shot",
+        "complete_dataset": args.max_images is None and args.selection_manifest is None,
+        "complete_selection": args.max_images is None,
         "images": len(rows),
         "tiles": tile_count,
         "raw_predictions": raw_prediction_count,
         "weights": str(weights),
         "weights_sha256": weight_sha,
-        "trained_on": "NPS-Drones 640px native-scale tiles",
+        "trained_on": ("NPS-Drones 640px native-scale tiles"
+                       if args.evaluation_kind == "zero_shot"
+                       else "NPS-Drones + Det-Fly 010 train/validation tiles"),
         "evaluated_on": "Det-Fly",
         "arm": "native_scale" if args.downscale == 1.0 else f"scale_matched_{args.downscale:g}x",
         "downscale": args.downscale,
         "index_sha256": sha256_file(index_dir / "index.jsonl"),
         "index_receipt_sha256": sha256_file(index_dir / "receipt.json"),
+        "selection_manifest": str(args.selection_manifest.resolve()) if args.selection_manifest else None,
+        "selection_manifest_sha256": selection_sha,
         "yolov5_revision": git_revision(yolov5),
         "device": str(device),
         "device_name": torch.cuda.get_device_name(device) if device.type == "cuda" else None,
@@ -487,6 +529,8 @@ def main():
         "weights_sha256": weight_sha,
         "index_sha256": report["index_sha256"],
         "complete_dataset": report["complete_dataset"],
+        "complete_selection": report["complete_selection"],
+        "selection_manifest_sha256": selection_sha,
     }
     (output / "receipt.json").write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n")
     primary = metrics["0.3"]["overall"]
