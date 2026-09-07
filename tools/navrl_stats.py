@@ -123,3 +123,90 @@ def sign_test_p(successes, trials):
 def format_ci(delta, se, digits=2, z=Z95):
     lo, hi = ci(delta, se, z)
     return f"{delta:+.{digits}f} [{lo:+.{digits}f}, {hi:+.{digits}f}]"
+
+
+# --- Student t, for when the replication unit is the seed rather than the cell -----------------
+#
+# Pooling 15 seed x density cells answers "how big is the effect in these cells". It does not
+# answer "does it hold for a new evaluation seed", because cells inside one seed share a policy,
+# a scene sampler and an RNG stream. The 2026-09-07 external audit made that objection concrete.
+# The honest second number treats each seed as ONE observation: mean +/- t(k-1). It is far weaker
+# by construction -- three points -- and reporting both is the point, not choosing one.
+
+
+def _betacf(a, b, x, iterations=300, eps=3e-16):
+    """Continued fraction for the incomplete beta function (Lentz's method)."""
+    tiny = 1e-300
+    qab, qap, qam = a + b, a + 1.0, a - 1.0
+    c, d = 1.0, 1.0 - qab * x / qap
+    d = tiny if abs(d) < tiny else d
+    d = 1.0 / d
+    h = d
+    for m in range(1, iterations + 1):
+        m2 = 2 * m
+        for num in (m * (b - m) * x / ((qam + m2) * (a + m2)),
+                    -(a + m) * (qab + m) * x / ((a + m2) * (qap + m2))):
+            d = 1.0 + num * d
+            d = tiny if abs(d) < tiny else d
+            c = 1.0 + num / c
+            c = tiny if abs(c) < tiny else c
+            d = 1.0 / d
+            h *= d * c
+        if abs(d * c - 1.0) < eps:
+            break
+    return h
+
+
+def betainc_regularised(a, b, x):
+    """I_x(a, b), the regularised incomplete beta function."""
+    if x <= 0.0:
+        return 0.0
+    if x >= 1.0:
+        return 1.0
+    front = math.exp(math.lgamma(a + b) - math.lgamma(a) - math.lgamma(b)
+                     + a * math.log(x) + b * math.log1p(-x))
+    if x < (a + 1.0) / (a + b + 2.0):
+        return front * _betacf(a, b, x) / a
+    return 1.0 - front * _betacf(b, a, 1.0 - x) / b
+
+
+def student_t_sf(value, df):
+    """P(T > value) for Student's t with `df` degrees of freedom."""
+    if df <= 0:
+        raise ValueError("df must be positive")
+    tail = 0.5 * betainc_regularised(df / 2.0, 0.5, df / (df + value * value))
+    return tail if value > 0 else 1.0 - tail
+
+
+def student_t_ppf(prob, df, lo=-1e3, hi=1e3, eps=1e-12):
+    """Inverse CDF by bisection; the CDF is monotone so this is exact to `eps`."""
+    if not 0.0 < prob < 1.0:
+        raise ValueError("prob must be in (0, 1)")
+    for _ in range(200):
+        mid = 0.5 * (lo + hi)
+        if (1.0 - student_t_sf(mid, df)) < prob:
+            lo = mid
+        else:
+            hi = mid
+        if hi - lo < eps:
+            break
+    return 0.5 * (lo + hi)
+
+
+def seed_level_t(values, confidence=0.95):
+    """(mean, se, lo, hi, p, df) treating each element as one independent replicate.
+
+    `values` are per-seed effect estimates in percentage points. With three seeds df is 2 and the
+    interval is wide; that width is the honest cost of asking a seed-generalisation question.
+    """
+    values = list(values)
+    k = len(values)
+    if k < 2:
+        raise ValueError("need at least two replicates")
+    mean = sum(values) / k
+    var = sum((v - mean) ** 2 for v in values) / (k - 1)
+    se = math.sqrt(var / k)
+    df = k - 1
+    crit = student_t_ppf(0.5 + confidence / 2.0, df)
+    p = 2.0 * student_t_sf(abs(mean / se), df) if se > 0 else (0.0 if mean else 1.0)
+    return mean, se, mean - crit * se, mean + crit * se, p, df

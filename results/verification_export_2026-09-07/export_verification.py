@@ -51,15 +51,30 @@ def rows():
             continue
         cells_json = root / "cells.json"
         spec_env = {}
+        entry = {"root": rel, "tag": tag, "commit": None, "contract": None,
+                 "source_fingerprint": None, "cells_json_sha256": None,
+                 "provenance": "cells.json"}
         if cells_json.is_file():
             spec = json.loads(cells_json.read_text())
             # cells.json is the authoritative record of what each cell was ASKED to run.
             for cell in spec.get("spec", {}).get("cells", []):
                 spec_env[cell["name"]] = cell["env"]
-            manifest.append({"root": rel, "commit": spec.get("evaluation_commit"),
-                             "contract": spec.get("contract"),
-                             "source_fingerprint": spec.get("evaluated_source_fingerprint"),
-                             "cells_json_sha256": sha(cells_json)})
+            entry.update({"commit": spec.get("evaluation_commit"), "contract": spec.get("contract"),
+                          "source_fingerprint": spec.get("evaluated_source_fingerprint"),
+                          "cells_json_sha256": sha(cells_json)})
+        else:
+            # The A7 roots predate the grid runner and were produced by a shell launcher, so they
+            # have no cells.json. Skipping them silently left three of thirteen roots unrecorded
+            # (found by the 2026-09-07 external audit); record what the result JSON itself attests.
+            first = next(iter(sorted(root.glob("*/*bars.json"))), None)
+            if first is not None:
+                data = json.loads(first.read_text())
+                entry.update({"commit": data.get("runtime_git_commit"),
+                              "contract": (data.get("v2_evaluation_contract") or {}).get("contract"),
+                              "source_fingerprint": data.get("runtime_source_manifest_sha256"),
+                              "provenance": "result JSON (no cells.json: shell launcher)"})
+        entry["cells"] = len(list(root.glob("*/*bars.json")))
+        manifest.append(entry)
         for path in sorted(root.glob("*/*bars.json")):
             if path.name.endswith(("receipt.json", "manifest.json")):
                 continue

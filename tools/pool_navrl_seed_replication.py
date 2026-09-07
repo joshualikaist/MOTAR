@@ -115,13 +115,22 @@ def records(cell):
 
 
 def report_pool(name, rows, seeds):
+    per_seed = []
     for seed in seeds:
         subset = [v for (s, _), v in sorted(rows.items()) if s == seed]
         if len(subset) >= 2:
             delta, se = stats.pool_fixed(subset)
             q, df, i2 = stats.cochran_q(subset)
+            per_seed.append(delta)
             print(f"  {name:<16} seed {seed} n={len(subset):>2}  {stats.format_ci(delta, se):<24}"
                   f"  Q={q:5.1f} ({df})  I2={100 * i2:3.0f}%")
+    # The seed-level answer to "would a NEW evaluation seed show this?". Cells inside one seed
+    # share a policy, a scene sampler and an RNG stream, so the cell-level interval below is a
+    # within-cell precision statement, not a seed-generalisation one. Both are printed on purpose.
+    if len(per_seed) >= 2:
+        mean, se, lo, hi, p, df = stats.seed_level_t(per_seed)
+        print(f"  {name:<16} SEED-LEVEL k={len(per_seed)}  {mean:+.2f} [{lo:+.2f}, {hi:+.2f}]"
+              f"      t({df}) p={p:.4f}   <- replication unit = seed")
     allrows = list(rows.values())
     if len(allrows) >= 2:
         delta, se = stats.pool_fixed(allrows)
@@ -269,9 +278,36 @@ def main():
         if len(rows) >= 2:
             delta, se = stats.pool_fixed(list(rows.values()))
             q, df, i2 = stats.cochran_q(list(rows.values()))
-            pooled[name] = {"delta_pp": delta, "se_pp": se, "ci_pp": list(stats.ci(delta, se)),
-                            "cells": len(rows), "cochran_q": q, "df": df, "i_squared": i2,
-                            "p_two_sided": stats.two_sided_p(delta, se)}
+            entry = {"delta_pp": delta, "se_pp": se, "ci_pp": list(stats.ci(delta, se)),
+                     "cells": len(rows), "cochran_q": q, "df": df, "i_squared": i2,
+                     "p_two_sided": stats.two_sided_p(delta, se)}
+            per_seed = []
+            for seed in seeds:
+                subset = [v for (s_, _), v in sorted(rows.items()) if s_ == seed]
+                if len(subset) >= 2:
+                    per_seed.append(stats.pool_fixed(subset)[0])
+            if len(per_seed) >= 2:
+                mean, se_s, lo_s, hi_s, p_s, df_s = stats.seed_level_t(per_seed)
+                entry["seed_level"] = {"mean_pp": mean, "se_pp": se_s, "ci_pp": [lo_s, hi_s],
+                                       "p_two_sided": p_s, "df": df_s, "seeds": len(per_seed),
+                                       "per_seed_pp": per_seed}
+            pooled[name] = entry
+
+    # Per density, both units side by side. A density whose seed-level interval covers zero is a
+    # within-cell observation, not a seed-generalisable one; the 2026-09-07 audit's objection to
+    # the 70-bar stopcap finding lands exactly here.
+    print("\n== per density: cell-level pool (3 cells) vs seed-level t (k=3) ==")
+    print(f"{'contrast':<16}{'bars':>5}{'cell-level':>26}{'seed-level t(2)':>28}{'p_seed':>9}")
+    for name, rows in contrasts.items():
+        for density in densities:
+            per_seed = [v[0] for (s_, b_), v in sorted(rows.items()) if b_ == density]
+            subset = [v for (s_, b_), v in sorted(rows.items()) if b_ == density]
+            if len(per_seed) < 2:
+                continue
+            delta, se = stats.pool_fixed(subset)
+            mean, se_s, lo_s, hi_s, p_s, _ = stats.seed_level_t(per_seed)
+            print(f"{name:<16}{density:>5}{stats.format_ci(delta, se):>26}"
+                  f"{f'{mean:+.2f} [{lo_s:+.2f}, {hi_s:+.2f}]':>28}{p_s:>9.3f}")
 
     judge(cells, contrasts, seeds, densities, args.baseline_seed)
     if args.mechanism:

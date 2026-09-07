@@ -36,7 +36,7 @@
       </div>
       <div class="status-line">
         <span class="status-dot" aria-hidden="true"></span>
-        <strong>원호 튜브의 우위는 평가 시드를 넘어 재현된다</strong><span>ep25000 · 평가 시드 3 × 밀도 5 · 원호가 15/15에서 crash 최저 · riskcap 대비 결합 −1.49 pp [−1.90, −1.08], 시드 간 이질성 I² 0% · 원호를 1.2 m로 넓히면 205 bars에서 crash −5.60 pp와 capture +4.44 pp 동시 · 같은 폭의 직선 회랑은 capture 약 10%로 임무 붕괴 · 어느 법칙이 옳은지는 학습 조건이 정함(D4) · 충돌의 77~78%는 회랑 밖 · sim-to-real 보류 · 2026-09-07</span>
+        <strong>원호 튜브의 우위는 평가 시드를 넘어 재현된다</strong><span>ep25000 · 평가 시드 3 × 밀도 5 · 원호가 15/15에서 crash 최저 · riskcap 대비 셀 단위 −1.49 pp [−1.90, −1.08], <strong>시드를 반복 단위로 삼아도 −1.49 [−2.42, −0.57] p=0.020</strong> · 원호를 1.2 m로 넓히면 205 bars에서 crash −5.60 pp와 capture +4.44 pp 동시 · 같은 폭의 직선 회랑은 capture 약 10%로 임무 붕괴 · 어느 법칙이 옳은지는 학습 조건이 정함(D4) · 충돌의 77~78%는 회랑 밖 · sim-to-real 보류 · 2026-09-07</span>
       </div>
     </section>
 
@@ -285,8 +285,13 @@
         <p><strong>계보를 넘어 살아남는 것은 원호 기하입니다.</strong> riskcap과 함께 학습된 정책(ep25000)을
           <strong>평가 시드 3개 × 밀도 5개</strong>에서 다시 재면 원호가 <strong>15/15 전부에서 crash 최저</strong>이고,
           결합 추정이 riskcap 대비 <strong>−1.49 pp [−1.90, −1.08]</strong>, 정지법칙 대비 −1.25 pp [−1.65, −0.85]입니다.
-          시드 간 이질성은 0 %입니다(I²). 반면 정지법칙과 riskcap의 차이는 70 bars에서만 −1.19 pp [−2.01, −0.37]로 남고
-          100 bars 이상에서는 사라집니다.</p>
+          한 시드 안의 다섯 밀도는 같은 정책·장면 샘플러·난수열을 공유하므로 이 구간은 <em>이 셀들에 대한 정밀도</em>입니다.
+          그래서 <strong>시드를 하나의 관측으로 세는 두 번째 구간</strong>을 함께 봅니다 &mdash; riskcap 대비
+          <strong>−1.49 [−2.42, −0.57] p=0.020</strong>, 정지법칙 대비 −1.26 [−1.96, −0.55] p=0.017로 세 배 넓어져도
+          여전히 0을 제외합니다. 그것이 시드 일반화의 근거입니다. 반면 정지법칙과 riskcap의 차이는 70 bars에서만
+          셀 단위 −1.19 pp가 남는데 시드 단위로는 −1.20 [−3.06, +0.66] p=0.108로 0을 포함해
+          <strong>탐색적 관찰</strong>로만 둡니다. 다른 밀도에 대해서는 "추가 이득이 검출되지 않았다"고만 말할 수 있고,
+          동등성을 주장하려면 사전 정의된 margin과 TOST가 필요합니다.</p>
         <p><strong>튜브를 넓히는 것은 기하에 따라 정반대입니다.</strong> 원호를 0.45 → 1.2 m로 넓히면 205 bars에서
           crash −5.60 pp와 capture +4.44 pp를 <em>동시에</em> 얻습니다. 같은 폭으로 직선 회랑을 넓히면 임무가 죽습니다 &mdash;
           205 bars capture 약 10 %, 나머지는 시간초과입니다. 폭은 정면 과잉개입과 측면 감시를 한 손잡이로 묶는데,
@@ -328,7 +333,9 @@
             <strong>routed PPO는 여전히 차단</strong>돼 있습니다. 또한 표적 식별을 주장할 수 없습니다:
             두 detector 모두 <code>COLOR_SHORTCUT_CONFIRMED</code>이고 N=5 v7 false target lock은
             90.27%입니다. 마지막으로 <code>riskcap</code> 해제 기구와 off 대비 +9.23 pp 판정은
-            frozen ep25000 stopcap screen의 결과일 뿐 일반 평가 계약이 아닙니다. A7의 "안전은 법칙이 산다"는
+            frozen ep25000 stopcap screen의 결과일 뿐 일반 평가 계약이 아닙니다. 이 필터를 <strong>DWA planner나 충돌 안전 보장으로 부를 수 없습니다</strong> &mdash; 구현된 것은
+            arc-clearance 속도 필터이고, 원호가 쓸고 지나가는 원판 안의 장애물을 모두 검출하지 못하는 반례가
+            현재 소스에서 재현됩니다. A7의 "안전은 법칙이 산다"는
             70 bars·ref5in ep1900 두 시드의 추론 시점 결과이고, riskcap과 함께 학습된 ep25000에서는
             성립하지 않습니다. 필터를 학습 루프에 넣은 재적응(A8·D4)까지 측정했으나 <strong>학습 시드가 1개</strong>라,
             "동반학습이 법칙 이득을 지운다"는 그 특정 1,000 epoch가 아니라 동반학습 때문이라고 아직 단정할 수 없습니다.

@@ -126,6 +126,45 @@ class StatisticsTest(unittest.TestCase):
         self.assertAlmostEqual(stats.sign_test_p(0, 5), 0.0625, places=12)
 
 
+class SeedLevelUnitTest(unittest.TestCase):
+    """The 2026-09-07 audit's objection: cells inside a seed are not independent replicates."""
+
+    def test_student_t_matches_a_known_quantile(self):
+        self.assertAlmostEqual(stats.student_t_ppf(0.975, 2), 4.302653, places=5)
+        self.assertAlmostEqual(stats.student_t_ppf(0.975, 10), 2.228139, places=5)
+        self.assertAlmostEqual(stats.student_t_sf(0.0, 5), 0.5, places=12)
+
+    def test_seed_level_reproduces_the_audited_main_effect(self):
+        # Per-seed pooled arc - riskcap, from the three R-B seeds (523, 527, 531).
+        mean, se, lo, hi, p, df = stats.seed_level_t([-1.1482, -1.8886, -1.4459])
+        self.assertAlmostEqual(mean, -1.4942, places=3)
+        self.assertAlmostEqual(se, 0.2151, places=3)
+        self.assertAlmostEqual(lo, -2.4197, places=3)
+        self.assertAlmostEqual(hi, -0.5687, places=3)
+        self.assertAlmostEqual(p, 0.0201, places=3)
+        self.assertEqual(df, 2)
+        self.assertLess(hi, 0.0, "the main effect must still exclude zero at the seed level")
+
+    def test_seed_level_is_wider_than_the_cell_level_interval(self):
+        """Three observations buy less precision than fifteen; the report must show that cost."""
+        per_seed = [-1.1482, -1.8886, -1.4459]
+        _, _, lo, hi, _, _ = stats.seed_level_t(per_seed)
+        cell_delta, cell_se = stats.pool_fixed([(-1.15, 0.36), (-1.89, 0.36), (-1.45, 0.36)])
+        cell_lo, cell_hi = stats.ci(cell_delta, cell_se)
+        self.assertGreater(hi - lo, cell_hi - cell_lo)
+
+    def test_the_local_seventy_bar_finding_does_not_survive(self):
+        # stopcap - riskcap at 70 bars, per seed. Significant pooled over cells, not over seeds.
+        mean, _, lo, hi, p, _ = stats.seed_level_t([-0.34, -1.66, -1.61])
+        self.assertLess(mean, 0.0)
+        self.assertGreater(hi, 0.0, "this interval must cover zero; the claim is exploratory")
+        self.assertGreater(p, 0.05)
+
+    def test_two_replicates_is_the_minimum(self):
+        with self.assertRaises(ValueError):
+            stats.seed_level_t([-1.5])
+
+
 class LoaderTest(unittest.TestCase):
     def test_repeated_condition_is_reported_not_dropped(self):
         with tempfile.TemporaryDirectory() as first, tempfile.TemporaryDirectory() as second:
