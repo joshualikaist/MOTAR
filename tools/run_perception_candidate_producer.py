@@ -165,7 +165,8 @@ def main():
                 merged[:, [1, 3]] = merged[:, [1, 3]].clamp(0.0, float(height))
                 kept = nms(merged[:, :4], merged[:, 4], args.nms_iou)[:args.top_k]
                 selected = merged[kept].numpy().tolist()
-                selected.sort(key=lambda item: (-item[4], item[0], item[1], item[2], item[3]))
+                # Python's sort is stable, so exact confidence ties retain torchvision NMS order.
+                selected.sort(key=lambda item: -item[4])
             candidates = []
             for rank, detection in enumerate(selected):
                 x1, y1, x2, y2, confidence = (float(value) for value in detection)
