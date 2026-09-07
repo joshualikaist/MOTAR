@@ -25,6 +25,7 @@ JOINT = load_tool("build_nps_detfly_joint_dataset")
 TRAIN = load_tool("run_joint_detector_training")
 CANDIDATES = load_tool("perception_candidates")
 KF = load_tool("perception_kf")
+FREEZE = load_tool("freeze_joint_detector")
 
 
 class DetFlyDownloadTest(unittest.TestCase):
@@ -204,6 +205,10 @@ class JointDetectorTrainingContractTest(unittest.TestCase):
         for digest in TRAIN.EXPECTED.values():
             if len(digest) == 64:
                 int(digest, 16)
+
+    def test_yolov5_validation_fitness_weights_both_map_metrics(self):
+        row = {"     metrics/mAP_0.5": "0.5", "metrics/mAP_0.5:0.95": "0.25"}
+        self.assertAlmostEqual(FREEZE.validation_fitness(row), 0.275)
 
 
 class CandidateProducerTest(unittest.TestCase):
