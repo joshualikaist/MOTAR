@@ -6,12 +6,17 @@ answers "where is it now" without hand-written one-off scripts.
 """
 
 import argparse
+import importlib.util
 import json
-import math
 import statistics
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
+
+_spec = importlib.util.spec_from_file_location("navrl_stats", Path(__file__).with_name("navrl_stats.py"))
+stats = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(stats)
+
 CATEGORIES = ("vertical_out", "behind", "lateral", "no_return", "in_corridor")
 
 
@@ -27,11 +32,16 @@ def load(root):
 
 
 def wald(a, b, field="crash_rate"):
-    pa, na = a["outcome"][field], a["actual_episodes"]
-    pb, nb = b["outcome"][field], b["actual_episodes"]
-    delta = 100.0 * (pa - pb)
-    se = 100.0 * math.sqrt(pa * (1 - pa) / na + pb * (1 - pb) / nb)
-    return delta, delta - 1.96 * se, delta + 1.96 * se
+    """Contrast in percentage points with its 95% interval, from the recorded COUNTS.
+
+    Shares tools/navrl_stats.py with the pooled seed-replication analysis, so a cell read here and
+    the same cell read in a final table cannot disagree.
+    """
+    delta, se = stats.wald_diff(
+        stats.outcome_count(a["outcome"], field), a["actual_episodes"],
+        stats.outcome_count(b["outcome"], field), b["actual_episodes"])
+    lo, hi = stats.ci(delta, se)
+    return delta, lo, hi
 
 
 def records(cell):

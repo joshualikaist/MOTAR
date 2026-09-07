@@ -14,6 +14,7 @@ import csv
 import hashlib
 import json
 import math
+import subprocess
 from pathlib import Path
 
 
@@ -30,6 +31,26 @@ def sha256(path: Path) -> str:
         for chunk in iter(lambda: stream.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def git_blob_sha256(repository: Path, commit: str, path: str):
+    """SHA-256 of a file's bytes as of `commit`, or None when git cannot produce them.
+
+    Result roots carry an immutable copy of every runtime file, but a snapshot deleted to reclaim
+    disk leaves the result unverifiable against a worktree that has since moved on. The recorded
+    commit still holds those exact bytes: for the 09-02 held-out sweep this recovers 10 of the 11
+    files that had drifted, and the eleventh is the archived evaluator. Verification stays
+    cryptographic -- the recovered bytes must hash to the value the manifest recorded.
+    """
+    if not commit:
+        return None
+    try:
+        blob = subprocess.run(
+            ["git", "-C", str(repository), "cat-file", "blob", f"{commit}:{path}"],
+            stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, check=True).stdout
+    except (subprocess.CalledProcessError, FileNotFoundError, OSError):
+        return None
+    return hashlib.sha256(blob).hexdigest()
 
 
 def require(ok: bool, message: str) -> None:
@@ -51,6 +72,52 @@ def _close(left: float, right: float, tolerance: float = 1e-12) -> bool:
     return math.isfinite(float(left)) and abs(float(left) - float(right)) <= tolerance
 
 
+def verify_runtime_sources(root: Path, manifest: dict) -> tuple:
+    """(source_hashes, verification counts) for every runtime file the manifest recorded.
+
+    Evaluation was launched from a dirty worktree. Prefer the immutable local snapshot, then the
+    byte-identical tracked file, then the recorded commit, then the explicitly archived evaluator
+    (the only runtime file corrected after this sweep). Every branch is a SHA-256 equality: the
+    question is only where the attested bytes are found, never whether they are checked.
+
+    Separate from summarize() on purpose. Cell logs can be reclaimed for disk space while the
+    source attestation stays intact, and that attestation is the part later work depends on.
+    """
+    source_hashes = {}
+    verification = {"snapshot": 0, "current": 0, "git_history": 0, "archived_evaluator": 0}
+    repository = Path(__file__).resolve().parents[1]
+    commit = manifest.get("git_commit", "")
+    # Files the worktree had already modified when the sweep launched: those alone may legitimately
+    # need a source other than the recorded commit.
+    dirty_at_launch = {line[3:] for line in manifest.get("git_status", []) if len(line) > 3}
+    for entry in manifest["runtime_files"]:
+        snapshot = root / entry["snapshot"]
+        current = repository / entry["path"]
+        archived = root / "evaluator_executed.sh"
+        if snapshot.is_file() and sha256(snapshot) == entry["sha256"]:
+            verification["snapshot"] += 1
+        elif current.is_file() and sha256(current) == entry["sha256"]:
+            verification["current"] += 1
+        elif git_blob_sha256(repository, commit, entry["path"]) == entry["sha256"]:
+            verification["git_history"] += 1
+        elif (
+            entry["path"] == "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh"
+            and archived.is_file()
+            and sha256(archived) == entry["sha256"]
+        ):
+            require(entry["path"] in dirty_at_launch,
+                    f"archived evaluator used for a file that was clean at launch: {entry['path']}")
+            verification["archived_evaluator"] += 1
+        else:
+            raise RuntimeError(
+                f"runtime source unavailable or drifted: {entry['path']} "
+                f"(no snapshot, current worktree differs, and commit {commit[:12]} does not hold it)")
+        source_hashes[entry["path"]] = entry["sha256"]
+    require(sum(verification.values()) == len(manifest["runtime_files"]),
+            "runtime source accounting drift")
+    return source_hashes, verification
+
+
 def summarize(root: Path) -> dict:
     root = root.resolve()
     require(root.is_dir(), f"result root missing: {root}")
@@ -61,29 +128,7 @@ def summarize(root: Path) -> dict:
     require(int(manifest.get("runtime_file_count", -1)) == len(manifest.get("runtime_files", [])),
             "source manifest file accounting drift")
 
-    # Evaluation was launched from a dirty worktree.  Prefer the immutable local snapshot, but
-    # allow a clean clone to use byte-identical tracked files plus the explicitly archived
-    # evaluator (the only runtime file corrected after this sweep).
-    source_hashes = {}
-    source_verification = {"snapshot": 0, "current": 0, "archived_evaluator": 0}
-    repository = Path(__file__).resolve().parents[1]
-    for entry in manifest["runtime_files"]:
-        snapshot = root / entry["snapshot"]
-        current = repository / entry["path"]
-        archived = root / "evaluator_executed.sh"
-        if snapshot.is_file() and sha256(snapshot) == entry["sha256"]:
-            source_verification["snapshot"] += 1
-        elif current.is_file() and sha256(current) == entry["sha256"]:
-            source_verification["current"] += 1
-        elif (
-            entry["path"] == "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh"
-            and archived.is_file()
-            and sha256(archived) == entry["sha256"]
-        ):
-            source_verification["archived_evaluator"] += 1
-        else:
-            raise RuntimeError(f"runtime source unavailable or drifted: {entry['path']}")
-        source_hashes[entry["path"]] = entry["sha256"]
+    source_hashes, source_verification = verify_runtime_sources(root, manifest)
 
     csv_path = root / "results.csv"
     require(csv_path.is_file(), "results.csv missing")
@@ -284,9 +329,19 @@ def markdown(summary: dict) -> str:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("result_root", type=Path)
+    parser.add_argument("--sources-only", action="store_true",
+                        help="verify the runtime source attestation and stop; works on a root whose "
+                             "cell logs were reclaimed for disk space")
     parser.add_argument("--json", type=Path)
     parser.add_argument("--markdown", type=Path)
     args = parser.parse_args()
+    if args.sources_only:
+        root = args.result_root.resolve()
+        manifest = json.loads((root / "source_manifest.json").read_text(encoding="utf-8"))
+        _, verification = verify_runtime_sources(root, manifest)
+        print(json.dumps({"root": str(root), "runtime_files": len(manifest["runtime_files"]),
+                          "verified_by": verification}, indent=2, sort_keys=True))
+        return
     summary = summarize(args.result_root)
     if args.json:
         args.json.write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8")

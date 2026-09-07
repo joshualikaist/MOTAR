@@ -1,4 +1,5 @@
 import os
+import re
 import subprocess
 import unittest
 from pathlib import Path
@@ -8,11 +9,31 @@ ROOT = Path(__file__).resolve().parents[1]
 LAUNCHER = (
     ROOT / "aerial_gym/rl_training/rl_games/eval_navrl_corrected_nonoverlap_physical_off_heldout.sh"
 )
+
+
+def _pinned_checkpoint():
+    """The checkpoint the launcher pins, read out of the launcher itself.
+
+    The preflight refuses to run without it, so a worktree where the 09-01 run directory was
+    reclaimed for disk space cannot exercise the preflight at all. That is a missing artifact,
+    not a broken contract: the tests that read the launcher text still run, and the one that
+    executes it skips with the path it wanted."""
+    match = re.search(r'^CKPT="\$\{SCRIPT_DIR\}/(.+)"$', LAUNCHER.read_text(encoding="utf-8"), re.M)
+    if match is None:
+        return None
+    return LAUNCHER.parent / match.group(1)
+
+
+CHECKPOINT = _pinned_checkpoint()
 EVALUATOR = ROOT / "aerial_gym/rl_training/rl_games/eval_navrl_v2_density_sweep.sh"
 PREREG = ROOT / "docs/preregistration_corrected_nonoverlap_physical_off_heldout_eval_2026-09-02.md"
 
 
 class CorrectedNonoverlapHeldoutContractTest(unittest.TestCase):
+    @unittest.skipUnless(
+        CHECKPOINT is not None and CHECKPOINT.is_file(),
+        f"pinned checkpoint absent: {CHECKPOINT}",
+    )
     def test_preflight_pins_seed313_trained_densities_and_last_gen(self):
         env = dict(os.environ)
         env["CORRECTED_NONOVERLAP_HELDOUT_PREFLIGHT_ONLY"] = "1"
@@ -48,6 +69,9 @@ class CorrectedNonoverlapHeldoutContractTest(unittest.TestCase):
             check=False,
         )
         self.assertNotEqual(result.returncode, 0, result.stdout)
+        # Assert the REASON, not just the exit code: the launcher also exits 2 when the pinned
+        # checkpoint is missing, which would let this test pass with the argument guard deleted.
+        self.assertIn("no CLI arguments are accepted", result.stdout)
 
     def test_wrapper_and_evaluator_close_the_wrong_default_contract(self):
         wrapper = LAUNCHER.read_text(encoding="utf-8")

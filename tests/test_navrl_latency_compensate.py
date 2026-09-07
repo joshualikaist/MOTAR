@@ -10,6 +10,7 @@ Run: PYTHONNOUSERSITE=1 python tests/test_navrl_latency_compensate.py
 
 import importlib.util
 import math
+import re
 from pathlib import Path
 import sys
 import types
@@ -111,6 +112,20 @@ class LatencyCompensationMath(unittest.TestCase):
         self.assertLess(abs(r["pred_pos_err"] - r["raw_pos_err"]), 0.02)
 
 
+def _method_body(source, name):
+    """The whole text of a method: from its `def` to the next definition at the same indent.
+
+    A fixed-size character window silently stops covering the code it was written for as the
+    method grows. `observe` passed 12 kB in 2026-09, which pushed the LiDAR-backup gate to
+    offset 4,220 and out of the old 4 kB window, failing this check while the gate was intact."""
+    match = re.search(rf"^([ \t]*)def {re.escape(name)}\b", source, re.M)
+    if match is None:
+        raise AssertionError(f"method not found: {name}")
+    start = match.start()
+    following = re.search(rf"^{match.group(1)}(?:def |@)", source[start + 1:], re.M)
+    return source[start:start + 1 + following.start()] if following else source[start:]
+
+
 class LatencyCompensationPlumbing(unittest.TestCase):
     """Guard the cfg wiring by source inspection (the module needs no simulator to check this)."""
 
@@ -118,9 +133,8 @@ class LatencyCompensationPlumbing(unittest.TestCase):
 
     def test_p0_is_output_side_only(self):
         # P0 must live in _target_features (policy-facing output), not inside the tracker.
-        start = self.SOURCE.index("def _target_features")
-        end = self.SOURCE.index("def _update_histories")
-        body = self.SOURCE[start:end]
+        # Anchored on the method itself, so reordering methods cannot silently empty the slice.
+        body = _method_body(self.SOURCE, "_target_features")
         self.assertIn("latency_compensate", body)
         self.assertIn("state[:, 3:] * self.detection_latency_s", body)
         tracker_src = self.SOURCE[
@@ -130,8 +144,7 @@ class LatencyCompensationPlumbing(unittest.TestCase):
         self.assertNotIn("latency_compensate", tracker_src)
 
     def test_p1_gate_reads_backup_flag(self):
-        start = self.SOURCE.index("def observe")
-        body = self.SOURCE[start : start + 4000]
+        body = _method_body(self.SOURCE, "observe")
         self.assertIn("latency_lidar_backup", body)
         self.assertIn("lidar_camera_gate", body)
 
