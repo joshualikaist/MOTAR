@@ -16352,3 +16352,27 @@ metadata에 없어 작성하지 않았고 source group 010/020을 대체 slice�
 
 raw/report SHA-256은 native `a98e952d…` / `ca45d1f8…`, scale-matched
 `4b0277a6…` / `421aeed8…`이며 각 receipt와 독립 재계산이 일치했다.
+
+
+## 2026-09-07 — Det-Fly 누수 방지 split + NPS 통합 dataset v1 완료
+
+Det-Fly는 video ID 없이 `010`/`020` 그룹과 숫자 ID만 배포하므로 frame 무작위 split을
+금지했다. 코드가 P3 prediction/report를 전혀 읽지 않고 source structure만으로 결정하도록
+규칙을 고정했다: 더 큰 group은 test, 나머지는 최대 ID gap에서 나누고 큰 쪽은
+train이다. 결과는 train=`010` ≤4333 4,200장, val=`010` ≥4752 2,158장,
+test=`020` 전체 6,913장이다. 경계 ID 차이는 419이고 test group은 development와 다르다.
+
+검사: 원 JPEG exact SHA duplicate 0, exact 64×36 thumbnail cross-split 0. dHash Hamming ≤2가
+2,963개지만 저정보량 하늘 충돌라 누수 근거로 쓰지 않았다. 구조적 source-group
+분리와 exact SHA만 gate다. sealed test 6,913장 SHA는 `3ae8bfc0…`이고 학습 YAML은
+`test:` key가 없다. P3 결과 후에 split을 만든 순서상 한계도 receipt에 명시했다.
+
+NPS 기존 640 tile은 복사하지 않고 file list로 참조했다. Det-Fly development에서는
+P3와 같은 native 640/overlap 128 crop으로 positive 전부 + GT와 교차 0인 negative 1장/frame을
+만들었다. train 29,824 samples/20,573 boxes, val 9,307/6,921, 합계 39,131/27,494다.
+비정상 full-width annotation 1장은 원 index에는 남기고 학습/val tile에서 frame을 제외했다.
+
+`verify_nps_detfly_joint_dataset.py`가 39,131 sample의 SHA·size·label·source unit·seal을 전수
+재검사해 PASS. train/val source unit 교차 0, exact image 교차 0, sealed test 유입 0.
+YOLOv5 `check_dataset`도 train/val 경로를 정상 해석했고 `test=None`. 생성물 917 MB,
+남은 디스크 약 14 GB. joint manifest SHA `b6d8282e…`, dataset receipt SHA `ef9babda…`.

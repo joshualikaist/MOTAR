@@ -108,6 +108,7 @@ attitude/rate torque → motor allocation → 100 Hz rigid-body physics` 순서�
 | Corrected route-off held-out | **83.70% capture @70 → 65.54% @145** | seed 313, 6 trained-density cells; [summary](results/navrl_corrected_nonoverlap_physical_off_heldout_seed313/summary.md); no 205/routed claim |
 | Detector colour shortcut (distractor envelope) | **both detectors `COLOR_SHORTCUT_CONFIRMED`**; v7 FTLR **90.27%** at N=5 | seed 479, 8 cells, 2,049 ep/cell; cross-detector comparison forbidden (prereg §3-c) |
 | NPS→Det-Fly perception P3 | **`SIZE-DOMINANT ZERO-SHOT FAILURE`**; native AP30 **0.0035**, ÷4 AP30 **0.2382** | 13,271 images, 13,270 GT, frozen checkpoint; IoU 0.3 |
+| NPS+Det-Fly joint dataset v1 | **split·dataset·seal verification PASS** | train 29,824 / val 9,307 samples; Det-Fly `020` 6,913 images sealed test |
 | Speed-governor stopcap screen | **Q1 `MECHANISM_UNSUPPORTED`, Q3 `FILTER_DEPENDENT`, stopcap NO-GO** | seed 49, 5 arms, 2,049 ep/cell; riskcap does not beat a constant 2.0 m/s cap |
 | Hardware/software gate | software pipeline PASS · `SYNTHETIC_ONLY` | 실기 성능 아님 |
 
@@ -268,9 +269,21 @@ IoU 0.3 P/R/AP는 `0.0097 / 0.1668 / 0.0035`, NPS 학습 크기에 맞춘 ÷4 ar
 즉시 실패 요인은 NPS 학습 표적보다 Det-Fly 표적이 중앙값 기준 4.3배 큰 것입니다.
 
 배경 4종 label mapping은 공식 배포 metadata에 없어 source group `010/020`으로 대체했습니다.
-다음은 NPS+Det-Fly 합동 학습·multi-scale/anchor 재설계이며 Det-Fly test split은 봉인해야
-합니다. 상세 계약과 receipt hash는
+
+### Joint detector dataset v1 (2026-09-07)
+
+누수 방지 split과 통합 학습 dataset을 완료했습니다. 임의 frame split 대신 Det-Fly
+`020` 전체 6,913장을 sealed test로 분리했고, `010`은 최대 자연 ID 단절
+`4333→4752`에서 train 4,200 / val 2,158장으로 나뉘었습니다. NPS clip split은
+그대로 유지했습니다.
+
+통합 YAML은 train **29,824**, val **9,307** samples을 참조하며 `test:` key가 없습니다.
+39,131 sample 전체 SHA·크기·label·source-unit을 재검증했고 split 교차와 sealed-test 유입은
+모두 0입니다. 다음은 학습 계약을 먼저 동결한 뒤 NPS+Det-Fly 합동 학습·multi-scale/anchor
+재설계를 실행하는 것입니다. 상세 계약과 receipt hash는
 [`perception_p3_detfly_execution_2026-09-07.md`](docs/plans/perception_p3_detfly_execution_2026-09-07.md)에 있습니다.
+split/dataset 정본은
+[`perception_joint_dataset_v1_2026-09-07.md`](docs/plans/perception_joint_dataset_v1_2026-09-07.md)입니다.
 
 ## Safety filter — the speed governor
 

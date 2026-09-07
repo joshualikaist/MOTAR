@@ -226,6 +226,13 @@
         <strong>SIZE-DOMINANT ZERO-SHOT FAILURE</strong>이며, NPS-only detector의 즉시 4K 배치는
         기각합니다. 배경 4종 mapping은 배포 metadata에 없어 source group 010/020으로
         대체했습니다. <a href="../plans/perception_p3_detfly_execution_2026-09-07.md">실행 계약·지표·receipt</a></p>
+      <p><strong>Joint detector dataset v1.</strong> Det-Fly <code>020</code> 전체 6,913장을
+        source-group 단위 sealed test로 분리했고, <code>010</code>은 최대 자연 ID 단절
+        <code>4333→4752</code>에서 train 4,200 / val 2,158장으로 나뉘었습니다. NPS clip split을
+        유지한 통합 YAML은 train <strong>29,824</strong>, val <strong>9,307</strong> samples이고
+        <code>test:</code> key가 없습니다. 39,131 sample 전수 검증에서 source-unit·exact-image
+        split 교차와 test 유입은 모두 0입니다.
+        <a href="../plans/perception_joint_dataset_v1_2026-09-07.md">split·dataset 정본</a></p>
     </section>
 
     <section class="visual wrap" id="external-data" aria-labelledby="data-title">

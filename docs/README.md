@@ -88,6 +88,7 @@ SUPERSEDED 배너가 있는 것은 그 배너가 곧 provenance다.
 |---|---:|---|---|
 | [`plans/perception_final_implementation_plan_2026-09-07.md`](plans/perception_final_implementation_plan_2026-09-07.md) | — | 2026-09-07 | **IMPLEMENTATION AUTHORITY** |
 | [`plans/perception_p3_detfly_execution_2026-09-07.md`](plans/perception_p3_detfly_execution_2026-09-07.md) | — | 2026-09-07 | **P3 COMPLETE** |
+| [`plans/perception_joint_dataset_v1_2026-09-07.md`](plans/perception_joint_dataset_v1_2026-09-07.md) | — | 2026-09-07 | **SPLIT + DATASET COMPLETE** |
 | [`SAM3_PERCEPTION_VERIFICATION_PLAN_2026-09-03.md`](SAM3_PERCEPTION_VERIFICATION_PLAN_2026-09-03.md) | 266 | 2026-09-04 | 🔒 |
 | [`SIM2REAL_3DAY_EXECUTION_PLAN.md`](SIM2REAL_3DAY_EXECUTION_PLAN.md) | 343 | 2026-08-26 | 🔒 |
 | [`plans/perception_shape_temporal_redesign_2026-09-03.md`](plans/perception_shape_temporal_redesign_2026-09-03.md) | 207 | 2026-09-04 | 🔒 |

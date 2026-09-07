@@ -47,6 +47,12 @@ P3 결과, native 4K와 ÷4 scale-matched의 IoU 0.3 AP는 각각 `0.0035`, `0.2
 배포 metadata에 없어 임의 생성하지 않았고 source group 010/020으로 대체했다. 상세
 계약·지표·hash는 `perception_p3_detfly_execution_2026-09-07.md`가 정본이다.
 
+P3 후속 split과 통합 dataset도 완료했다. Det-Fly `020` 6,913장을 source-group
+단위 sealed test로 분리했고, `010`은 가장 큰 자연 ID 단절 `4333→4752`에서
+train 4,200 / val 2,158장으로 나뉘었다. NPS 기존 clip split과 Det-Fly native 640 crop을
+결합한 train/val은 29,824 / 9,307 samples이며 test는 학습 YAML에 없다. 상세 규칙과
+receipt는 `perception_joint_dataset_v1_2026-09-07.md`가 정본이다.
+
 CNN, GRU, Transformer를 직렬로 쌓지 않는다. 동일한 frozen CNN detector 위에서 `KF`, `GRU`,
 `Temporal Transformer`를 서로 대체하는 association arm으로 비교한다. 모델 선택은 validation clip에서
 하고, 최종 수치는 episode 또는 source-video 단위로 분리한 test set에서 한 번 보고한다.

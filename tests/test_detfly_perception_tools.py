@@ -21,6 +21,7 @@ def load_tool(name):
 DOWNLOAD = load_tool("download_detfly_dataset")
 EVALUATE = load_tool("eval_detfly_zeroshot")
 PREPARE = load_tool("prepare_detfly_dataset")
+JOINT = load_tool("build_nps_detfly_joint_dataset")
 
 
 class DetFlyDownloadTest(unittest.TestCase):
@@ -117,6 +118,52 @@ class DetFlyPreparationTest(unittest.TestCase):
                 row = PREPARE.parse_annotation(xml_path, source)
             self.assertEqual(len(row["objects"]), 1)
             self.assertTrue(row["objects"][0]["implausible_size"])
+
+
+class JointDetectorDatasetTest(unittest.TestCase):
+    @staticmethod
+    def row(group, frame_id, digest=None, objects=None):
+        return {
+            "image": "JPEGImages/%s/%s%04d.jpg" % (group, group, frame_id),
+            "image_sha256": digest or (group + "-%d" % frame_id),
+            "source_group": group,
+            "width": 1280,
+            "height": 640,
+            "objects": list(objects or []),
+        }
+
+    def test_structural_split_holds_larger_source_group_out_whole(self):
+        rows = [self.row("010", value) for value in (1, 2, 100, 101)]
+        rows += [self.row("020", value) for value in (1, 2, 3, 4, 5)]
+        assignments, policy = JOINT.choose_structural_split(rows)
+        self.assertEqual(policy["test_group"], "020")
+        self.assertEqual(policy["development_gap"]["left_id"], 2)
+        self.assertEqual(policy["development_gap"]["right_id"], 100)
+        self.assertEqual({assignments[row["image"]] for row in rows if row["source_group"] == "020"},
+                         {"test"})
+        self.assertEqual(assignments[rows[0]["image"]], "train")
+        self.assertEqual(assignments[rows[2]["image"]], "val")
+
+    def test_split_audit_rejects_exact_duplicate_across_splits(self):
+        rows = [self.row("010", 1, "same"), self.row("010", 100, "val"),
+                self.row("020", 1, "same"), self.row("020", 2, "test-2"),
+                self.row("020", 3, "test-3")]
+        assignments, policy = JOINT.choose_structural_split(rows)
+        with self.assertRaisesRegex(ValueError, "exact JPEG duplicates cross splits"):
+            JOINT.split_audit(rows, assignments, policy)
+
+    def test_negative_tile_never_contains_even_a_partial_target(self):
+        obj = {
+            "xyxy": [100.0, 200.0, 180.0, 280.0],
+            "implausible_size": False,
+        }
+        row = self.row("010", 1, objects=[obj])
+        selected, exclusion = JOINT.choose_tiles(row)
+        self.assertIsNone(exclusion)
+        self.assertTrue(any(kind == "positive" for _x, _y, _boxes, kind in selected))
+        negatives = [(x, y) for x, y, _boxes, kind in selected if kind == "negative"]
+        self.assertEqual(len(negatives), 1)
+        self.assertIsNone(JOINT.intersection(obj["xyxy"], *negatives[0]))
 
 
 if __name__ == "__main__":
