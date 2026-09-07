@@ -1,92 +1,92 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="620" viewBox="0 0 1440 620" role="img" aria-labelledby="title desc">
-  <title id="title">Current MOTAR system overview</title>
-  <desc id="desc">Current software path. Camera, LiDAR and ego-state are encoded as structured history tokens, processed by a Transformer policy, and converted to bounded flight commands for moving-target interception. The camera path still uses one detector output and one Kalman target track.</desc>
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#f7faf8"/><stop offset="1" stop-color="#edf5f2"/>
-    </linearGradient>
-    <linearGradient id="policy" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#087f6d"/><stop offset="1" stop-color="#075f56"/>
-    </linearGradient>
-    <marker id="arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-      <path d="M 0 0 L 10 5 L 0 10 z" fill="#63736d"/>
-    </marker>
-    <style>
-      .label{font:700 25px Arial,sans-serif;fill:#17231f}.small{font:500 17px Arial,sans-serif;fill:#5d6b66}.tiny{font:600 14px Arial,sans-serif;fill:#71807a;letter-spacing:.06em}.badge{font:700 13px Arial,sans-serif;fill:#075f56;letter-spacing:.07em}.box{fill:#fff;stroke:#cad8d2;stroke-width:2}.line{fill:none;stroke:#63736d;stroke-width:3;marker-end:url(#arrow)}.token{fill:#dceee8;stroke:#a8cfc2;stroke-width:1.5}.white{fill:#fff}.muted{fill:#d6e9e3}
-    </style>
-  </defs>
-  <rect width="1440" height="620" rx="32" fill="url(#bg)"/>
-  <text x="68" y="72" class="tiny">MOTAR · SENSOR-ONLY MOVING-TARGET INTERCEPTION</text>
-  <text x="68" y="114" class="label" font-size="32">From perception to physically bounded flight</text>
-  <rect x="1110" y="47" width="262" height="38" rx="19" fill="#dceee8" stroke="#9ccabd" stroke-width="1.5"/>
-  <text x="1140" y="71" class="badge">CURRENT SOFTWARE PATH</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="650" viewBox="0 0 1440 650" role="img" aria-labelledby="title desc">
+<title id="title">From perception to physically bounded flight</title><desc id="desc">카메라·LiDAR·기체 상태 → 구조화된 관측 → 학습 정책 → 고정 비행 제어</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#8395A1"/></marker></defs>
+<g font-family="Arial, 'Noto Sans CJK KR', sans-serif">
+<rect width="1440" height="650" rx="24" fill="#F4F7FA"/>
+<path d="M24 1H1416" stroke="#DCE5EA"/>
 
-  <g transform="translate(68 164)">
-    <rect class="box" width="245" height="328" rx="22"/>
-    <text x="28" y="44" class="tiny">SENSING</text>
-    <g transform="translate(28 70)">
-      <circle cx="26" cy="26" r="25" fill="#dceee8"/><path d="M12 26h28M26 12v28" stroke="#087f6d" stroke-width="3"/>
-      <text x="68" y="23" class="label">RGB-D</text><text x="68" y="46" class="small">1 detector → 1 KF track</text>
-    </g>
-    <g transform="translate(28 150)">
-      <circle cx="26" cy="26" r="25" fill="#dceee8"/><circle cx="26" cy="26" r="14" fill="none" stroke="#087f6d" stroke-width="3"/><path d="M26 5v10M47 26H37M26 47V37M5 26h10" stroke="#087f6d" stroke-width="3"/>
-      <text x="68" y="23" class="label">LiDAR</text><text x="68" y="46" class="small">4 × 72 rays · 12 m</text>
-    </g>
-    <g transform="translate(28 230)">
-      <circle cx="26" cy="26" r="25" fill="#dceee8"/><path d="M13 34l13-21 13 21z" fill="none" stroke="#087f6d" stroke-width="3"/>
-      <text x="68" y="23" class="label">Ego-state</text><text x="68" y="46" class="small">velocity · yaw · height</text>
-    </g>
-  </g>
-
-  <path class="line" d="M329 328H402"/>
-
-  <g transform="translate(416 164)">
-    <rect class="box" width="300" height="328" rx="22"/>
-    <text x="28" y="44" class="tiny">STRUCTURED HISTORY</text>
-    <text x="28" y="83" class="label">898-D observation</text>
-    <text x="28" y="110" class="small">17 tokens · 5 time steps</text>
-    <g transform="translate(28 144)">
-      <rect class="token" width="244" height="34" rx="8"/><text x="14" y="23" class="small">static scan · 288</text>
-      <rect class="token" y="45" width="244" height="34" rx="8"/><text x="14" y="68" class="small">obstacles · 480</text>
-      <rect class="token" y="90" width="244" height="34" rx="8"/><text x="14" y="113" class="small">robot history · 50</text>
-      <rect class="token" y="135" width="244" height="34" rx="8"/><text x="14" y="158" class="small">target history · 80</text>
-    </g>
-  </g>
-
-  <path class="line" d="M732 328H805"/>
-
-  <g transform="translate(819 164)">
-    <rect width="260" height="328" rx="22" fill="url(#policy)"/>
-    <text x="28" y="44" class="tiny muted">LEARNED POLICY</text>
-    <text x="28" y="87" class="label white">Transformer</text>
-    <text x="28" y="116" class="small muted">4 layers · 4 heads</text>
-    <g transform="translate(28 153)">
-      <rect x="0" y="0" width="40" height="40" rx="8" fill="#fff" opacity=".92"/>
-      <rect x="51" y="0" width="40" height="40" rx="8" fill="#fff" opacity=".72"/>
-      <rect x="102" y="0" width="40" height="40" rx="8" fill="#fff" opacity=".72"/>
-      <rect x="153" y="0" width="40" height="40" rx="8" fill="#fff" opacity=".72"/>
-      <path d="M20 62h173" stroke="#9bd1c5" stroke-width="2" stroke-dasharray="5 5"/>
-      <text x="0" y="100" class="small white">PPO actor + critic</text>
-      <text x="0" y="130" class="small muted">bounded 4-D action</text>
-    </g>
-  </g>
-
-  <path class="line" d="M1095 328H1168"/>
-
-  <g transform="translate(1182 164)">
-    <rect class="box" width="190" height="328" rx="22"/>
-    <text x="24" y="44" class="tiny">FLIGHT</text>
-    <text x="24" y="85" class="label">Controller</text>
-    <text x="24" y="113" class="small">velocity + yaw</text>
-    <g transform="translate(35 151)" stroke="#087f6d" stroke-width="5" fill="none" stroke-linecap="round">
-      <path d="M60 45L20 15M60 45l40-30M60 45L20 75M60 45l40 30"/>
-      <circle cx="60" cy="45" r="17" fill="#dceee8"/>
-      <circle cx="15" cy="11" r="12"/><circle cx="105" cy="11" r="12"/><circle cx="15" cy="79" r="12"/><circle cx="105" cy="79" r="12"/>
-    </g>
-    <text x="24" y="280" class="small">100 Hz physics</text>
-    <text x="24" y="306" class="small">moving target</text>
-  </g>
-
-  <path d="M949 506v55H565v-55" fill="none" stroke="#9aa8a3" stroke-width="2.5" stroke-dasharray="8 6" marker-end="url(#arrow)"/>
-  <text x="655" y="590" class="small">training only · ground-truth reward + asymmetric critic</text>
-</svg>
+<text x="40" y="38" font-size="13" font-weight="700" fill="#007F73" text-anchor="start">MOTAR   /   01 / SYSTEM</text>
+<text x="1400" y="38" font-size="12" font-weight="700" fill="#536B7A" text-anchor="end">CURRENT SOFTWARE PATH</text>
+<text x="40" y="86" font-size="32" font-weight="700" fill="#142D3B" text-anchor="start">From perception to physically bounded flight</text>
+<text x="40" y="119" font-size="16" font-weight="400" fill="#536B7A" text-anchor="start">카메라·LiDAR·기체 상태 → 구조화된 관측 → 학습 정책 → 고정 비행 제어</text>
+<path d="M340 343L382 343" stroke="#8395A1" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+<path d="M694 343L736 343" stroke="#8395A1" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+<path d="M1048 343L1090 343" stroke="#8395A1" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+<rect x="40" y="158" width="300" height="346" rx="16" fill="white" stroke="#DCE5EA"/>
+<rect x="60" y="182" width="4" height="20" rx="2" fill="#007F73" stroke="#007F73"/>
+<text x="76" y="198" font-size="12" font-weight="700" fill="#007F73" text-anchor="start">01  SENSING</text>
+<text x="62" y="235" font-size="22" font-weight="700" fill="#142D3B" text-anchor="start">Sensor-only inputs</text>
+<circle cx="78" cy="276" r="17" fill="#E3F2EF" stroke="none" stroke-width="2"/>
+<circle cx="78" cy="276" r="6" fill="none" stroke="#007F73" stroke-width="2"/>
+<text x="108" y="277" font-size="22" font-weight="700" fill="#142D3B" text-anchor="start">RGB-D</text>
+<text x="62" y="309" font-size="16" font-weight="400" fill="#536B7A" text-anchor="start">1 detector → 1 KF track</text>
+<circle cx="78" cy="362" r="17" fill="#E3F2EF" stroke="none" stroke-width="2"/>
+<circle cx="78" cy="362" r="6" fill="none" stroke="#007F73" stroke-width="2"/>
+<text x="108" y="363" font-size="22" font-weight="700" fill="#142D3B" text-anchor="start">LiDAR</text>
+<text x="62" y="395" font-size="16" font-weight="400" fill="#536B7A" text-anchor="start">4 × 72 rays · 12 m</text>
+<circle cx="78" cy="448" r="17" fill="#E3F2EF" stroke="none" stroke-width="2"/>
+<circle cx="78" cy="448" r="6" fill="none" stroke="#007F73" stroke-width="2"/>
+<text x="108" y="449" font-size="22" font-weight="700" fill="#142D3B" text-anchor="start">Ego-state</text>
+<text x="62" y="481" font-size="16" font-weight="400" fill="#536B7A" text-anchor="start">velocity · yaw · height</text>
+<rect x="394" y="158" width="300" height="346" rx="16" fill="white" stroke="#DCE5EA"/>
+<rect x="414" y="182" width="4" height="20" rx="2" fill="#007F73" stroke="#007F73"/>
+<text x="430" y="198" font-size="12" font-weight="700" fill="#007F73" text-anchor="start">02  STRUCTURED HISTORY</text>
+<text x="416" y="235" font-size="22" font-weight="700" fill="#142D3B" text-anchor="start">898-D observation</text>
+<text x="416" y="270" font-size="16" font-weight="400" fill="#536B7A" text-anchor="start">17 tokens · 5 time steps</text>
+<rect x="416" y="296" width="256" height="36" rx="7" fill="#EEF4F7" stroke="none"/>
+<text x="429" y="320" font-size="16" font-weight="400" fill="#536B7A" text-anchor="start">Static scan</text>
+<text x="658" y="320" font-size="17" font-weight="700" fill="#142D3B" text-anchor="end">288</text>
+<rect x="416" y="342" width="256" height="36" rx="7" fill="#EEF4F7" stroke="none"/>
+<text x="429" y="366" font-size="16" font-weight="400" fill="#536B7A" text-anchor="start">Obstacles</text>
+<text x="658" y="366" font-size="17" font-weight="700" fill="#142D3B" text-anchor="end">480</text>
+<rect x="416" y="388" width="256" height="36" rx="7" fill="#EEF4F7" stroke="none"/>
+<text x="429" y="412" font-size="16" font-weight="400" fill="#536B7A" text-anchor="start">Robot history</text>
+<text x="658" y="412" font-size="17" font-weight="700" fill="#142D3B" text-anchor="end">50</text>
+<rect x="416" y="434" width="256" height="36" rx="7" fill="#EEF4F7" stroke="none"/>
+<text x="429" y="458" font-size="16" font-weight="400" fill="#536B7A" text-anchor="start">Target history</text>
+<text x="658" y="458" font-size="17" font-weight="700" fill="#142D3B" text-anchor="end">80</text>
+<rect x="748" y="158" width="300" height="346" rx="16" fill="#086E66" stroke="#086E66"/>
+<text x="772" y="198" font-size="12" font-weight="700" fill="#B8E8DE" text-anchor="start">03  LEARNED POLICY</text>
+<text x="772" y="235" font-size="28" font-weight="700" fill="white" text-anchor="start">Transformer</text>
+<text x="772" y="270" font-size="18" font-weight="400" fill="#D8EEE9" text-anchor="start">4 layers · 4 heads</text>
+<rect x="774" y="307" width="48" height="48" rx="9" fill="#D5ECE6" stroke="none"/>
+<path d="M786 319L810 319" stroke="#82BDB0" stroke-width="2" fill="none"/>
+<path d="M786 330L810 330" stroke="#82BDB0" stroke-width="2" fill="none"/>
+<path d="M786 341L810 341" stroke="#82BDB0" stroke-width="2" fill="none"/>
+<rect x="838" y="307" width="48" height="48" rx="9" fill="#D5ECE6" stroke="none"/>
+<path d="M850 319L874 319" stroke="#82BDB0" stroke-width="2" fill="none"/>
+<path d="M850 330L874 330" stroke="#82BDB0" stroke-width="2" fill="none"/>
+<path d="M850 341L874 341" stroke="#82BDB0" stroke-width="2" fill="none"/>
+<rect x="902" y="307" width="48" height="48" rx="9" fill="#D5ECE6" stroke="none"/>
+<path d="M914 319L938 319" stroke="#82BDB0" stroke-width="2" fill="none"/>
+<path d="M914 330L938 330" stroke="#82BDB0" stroke-width="2" fill="none"/>
+<path d="M914 341L938 341" stroke="#82BDB0" stroke-width="2" fill="none"/>
+<rect x="966" y="307" width="48" height="48" rx="9" fill="#D5ECE6" stroke="none"/>
+<path d="M978 319L1002 319" stroke="#82BDB0" stroke-width="2" fill="none"/>
+<path d="M978 330L1002 330" stroke="#82BDB0" stroke-width="2" fill="none"/>
+<path d="M978 341L1002 341" stroke="#82BDB0" stroke-width="2" fill="none"/>
+<text x="772" y="407" font-size="20" font-weight="700" fill="white" text-anchor="start">PPO actor + critic</text>
+<text x="772" y="439" font-size="16" font-weight="400" fill="#D8EEE9" text-anchor="start">Bounded 4-D actor output</text>
+<text x="772" y="475" font-size="16" font-weight="400" fill="#D8EEE9" text-anchor="start">z channel → altitude PI</text>
+<rect x="1102" y="158" width="298" height="346" rx="16" fill="white" stroke="#DCE5EA"/>
+<rect x="1122" y="182" width="4" height="20" rx="2" fill="#007F73" stroke="#007F73"/>
+<text x="1138" y="198" font-size="12" font-weight="700" fill="#007F73" text-anchor="start">04  FLIGHT</text>
+<text x="1124" y="235" font-size="22" font-weight="700" fill="#142D3B" text-anchor="start">Fixed controller</text>
+<text x="1124" y="270" font-size="16" font-weight="400" fill="#536B7A" text-anchor="start">velocity + yaw · altitude hold</text>
+<path d="M1250 366L1202 334" stroke="#007F73" stroke-width="2" fill="none"/>
+<circle cx="1202" cy="334" r="14" fill="white" stroke="#007F73" stroke-width="2"/>
+<path d="M1250 366L1298 334" stroke="#007F73" stroke-width="2" fill="none"/>
+<circle cx="1298" cy="334" r="14" fill="white" stroke="#007F73" stroke-width="2"/>
+<path d="M1250 366L1202 398" stroke="#007F73" stroke-width="2" fill="none"/>
+<circle cx="1202" cy="398" r="14" fill="white" stroke="#007F73" stroke-width="2"/>
+<path d="M1250 366L1298 398" stroke="#007F73" stroke-width="2" fill="none"/>
+<circle cx="1298" cy="398" r="14" fill="white" stroke="#007F73" stroke-width="2"/>
+<circle cx="1250" cy="366" r="20" fill="#E3F2EF" stroke="#007F73" stroke-width="2"/>
+<text x="1124" y="448" font-size="22" font-weight="700" fill="#142D3B" text-anchor="start">100 Hz physics</text>
+<text x="1124" y="480" font-size="16" font-weight="400" fill="#536B7A" text-anchor="start">10 Hz policy · moving target</text>
+<rect x="394" y="530" width="1006" height="45" rx="10" fill="#E8F1EF" stroke="none"/>
+<text x="414" y="559" font-size="12" font-weight="700" fill="#007F73" text-anchor="start">TRAINING ONLY</text>
+<text x="553" y="559" font-size="16" font-weight="400" fill="#536B7A" text-anchor="start">Ground-truth reward + asymmetric critic · actor에는 직접 제공하지 않음</text>
+<path d="M40 599L1400 599" stroke="#DCE5EA" stroke-width="2" fill="none"/>
+<text x="40" y="627" font-size="14" font-weight="400" fill="#536B7A" text-anchor="start">학습 대상: navigation policy와 critic weight  /  센서·명령 범위·제어기·물리 파라미터는 고정된 실험 계약</text>
+</g></svg>

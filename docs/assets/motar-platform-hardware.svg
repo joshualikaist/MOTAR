@@ -1,105 +1,102 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 600" width="960" height="600" font-family="ui-sans-serif,system-ui,'Helvetica Neue',Arial,sans-serif">
-  <title>MOTAR platform: ref5in quadrotor mass and thrust budget, sensor suite, and the derived motion envelope</title>
-  <rect width="960" height="600" fill="#fbfdfc"/>
-  <text x="28" y="34" font-size="17" font-weight="700" fill="#1a202c">PLATFORM &amp; SENSING · navrl_ref5in_quad_v2</text>
-  <text x="28" y="54" font-size="12" fill="#4a5568">
-    <tspan font-weight="700" fill="#9c4221">hardware-informed simulation candidate.</tspan>
-    실기는 미조립이며 BOM·관성·추력·열·전원 실측값이 아니다.
-  </text>
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1040" viewBox="0 0 1440 1040" role="img" aria-labelledby="title desc">
+<title id="title">Platform &amp; sensing</title><desc id="desc">navrl_ref5in_quad_v2 · hardware-informed simulation candidate</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#8395A1"/></marker></defs>
+<g font-family="Arial, 'Noto Sans CJK KR', sans-serif">
+<rect width="1440" height="1040" rx="24" fill="#F4F7FA"/>
+<path d="M24 1H1416" stroke="#DCE5EA"/>
 
-  <!-- airframe, top-down, to scale: 1 px = 0.001 m -->
-  <g transform="translate(60,110)">
-    <text x="110" y="-12" font-size="12" font-weight="600" text-anchor="middle" fill="#2d3748">기체 · 평면 (축척 1 px = 1 mm)</text>
-    <!-- collision proxy 0.283 x 0.283 -->
-    <rect x="-31.5" y="-31.5" width="283" height="283" fill="none" stroke="#c53030" stroke-width="1.5" stroke-dasharray="6 4"/>
-    <text x="110" y="268" font-size="10" text-anchor="middle" fill="#c53030">collision proxy 0.283 × 0.283 × 0.12 m</text>
-    <!-- arms: 220 mm motor-to-motor diagonal -->
-    <line x1="32" y1="32" x2="188" y2="188" stroke="#4a5568" stroke-width="6" stroke-linecap="round"/>
-    <line x1="188" y1="32" x2="32" y2="188" stroke="#4a5568" stroke-width="6" stroke-linecap="round"/>
-    <!-- 127 mm props => radius 63.5 px -->
-    <g fill="#3182ce" fill-opacity="0.12" stroke="#3182ce" stroke-width="1">
-      <circle cx="32" cy="32" r="63.5"/><circle cx="188" cy="32" r="63.5"/>
-      <circle cx="32" cy="188" r="63.5"/><circle cx="188" cy="188" r="63.5"/>
-    </g>
-    <circle cx="110" cy="110" r="16" fill="#2d3748"/>
-    <text x="110" y="114" font-size="9" fill="#fff" text-anchor="middle">FCU</text>
-    <line x1="32" y1="32" x2="188" y2="188" stroke="#2b6cb0" stroke-width="1" stroke-dasharray="3 3"/>
-    <text x="118" y="88" font-size="10" fill="#2b6cb0" transform="rotate(45 118 88)">220 mm 대각</text>
-    <text x="110" y="-30" font-size="10" text-anchor="middle" fill="#4a5568">127 mm 프로펠러 × 4</text>
-  </g>
-
-  <!-- mass / thrust budget -->
-  <g transform="translate(400,110)">
-    <text x="0" y="-12" font-size="12" font-weight="600" fill="#2d3748">질량·추력 예산</text>
-    <rect x="0" y="0" width="250" height="120" fill="#fff" stroke="#cbd5e0"/>
-    <text x="12" y="24" font-size="11" fill="#2d3748">질량</text><text x="238" y="24" font-size="11" text-anchor="end" font-weight="600" fill="#2d3748">1.20 kg</text>
-    <text x="12" y="46" font-size="11" fill="#2d3748">모터당 최대추력</text><text x="238" y="46" font-size="11" text-anchor="end" font-weight="600" fill="#2d3748">9.6 N</text>
-    <text x="12" y="68" font-size="11" fill="#2d3748">총 추력</text><text x="238" y="68" font-size="11" text-anchor="end" font-weight="600" fill="#2d3748">38.4 N</text>
-    <text x="12" y="90" font-size="11" fill="#2d3748">중량</text><text x="238" y="90" font-size="11" text-anchor="end" fill="#4a5568">11.77 N</text>
-    <line x1="12" y1="100" x2="238" y2="100" stroke="#cbd5e0"/>
-    <text x="12" y="115" font-size="12" font-weight="700" fill="#2b6cb0">추력 대 중량비</text>
-    <text x="238" y="115" font-size="13" text-anchor="end" font-weight="700" fill="#2b6cb0">3.26</text>
-    <!-- thrust bar -->
-    <rect x="0" y="140" width="250" height="16" fill="#e2e8f0"/>
-    <rect x="0" y="140" width="76.6" height="16" fill="#2b6cb0"/>
-    <text x="82" y="153" font-size="9" fill="#4a5568">호버가 총 추력의 30.6 % — 여유 69.4 %</text>
-  </g>
-
-  <!-- sensors -->
-  <g transform="translate(690,110)">
-    <text x="0" y="-12" font-size="12" font-weight="600" fill="#2d3748">센서</text>
-    <rect x="0" y="0" width="240" height="176" fill="#fff" stroke="#cbd5e0"/>
-    <text x="12" y="22" font-size="11" font-weight="700" fill="#2b6cb0">LiDAR</text>
-    <text x="12" y="40" font-size="10.5" fill="#4a5568">72 × 4 빔 · 360° × (+20°/−10°)</text>
-    <text x="12" y="56" font-size="10.5" fill="#4a5568">사거리 12 m · 수평 간격 5°</text>
-    <text x="12" y="72" font-size="10.5" fill="#c53030">12 m에서 빔 사이 1.05 m</text>
-    <line x1="12" y1="84" x2="228" y2="84" stroke="#e2e8f0"/>
-    <text x="12" y="102" font-size="11" font-weight="700" fill="#dd6b20">RGB-D 카메라</text>
-    <text x="12" y="120" font-size="10.5" fill="#4a5568">160 × 90 · 87° × 58° (D455급)</text>
-    <text x="12" y="136" font-size="10.5" fill="#4a5568">detector 사거리 20 m</text>
-    <text x="12" y="152" font-size="10.5" fill="#c53030">0.25 m 표적 @20 m = 1.05 px</text>
-    <text x="12" y="168" font-size="9.5" fill="#718096">배경 depth는 40 × 24 @10 m</text>
-  </g>
-
-  <!-- motion envelope -->
-  <g transform="translate(400,300)">
-    <text x="0" y="0" font-size="12" font-weight="600" fill="#2d3748">운동 포락선 — 위 값에서 유도됨</text>
-    <rect x="0" y="12" width="530" height="106" fill="#fff" stroke="#cbd5e0"/>
-    <g font-size="10.5" fill="#4a5568">
-      <text x="14" y="34">수평 속도 상한</text><text x="180" y="34" font-weight="600" fill="#2d3748">2.5 m/s (축별)</text>
-      <text x="14" y="54">틸트 상한</text><text x="180" y="54" font-weight="600" fill="#2d3748">45°</text>
-      <text x="14" y="74">yaw rate 상한</text><text x="180" y="74" font-weight="600" fill="#2d3748">2.5 rad/s</text>
-      <text x="14" y="94">고도</text><text x="180" y="94" font-weight="600" fill="#2d3748">1.0 m · altitude PI 고정</text>
-      <text x="290" y="34">45° 틸트 시 수평가속</text><text x="470" y="34" font-weight="600" fill="#2d3748">9.81 m/s²</text>
-      <text x="290" y="54">정지거리 @2.5 m/s</text><text x="470" y="54" font-weight="600" fill="#2d3748">1.81 m</text>
-      <text x="290" y="74">선회반경 @2.5 m/s</text><text x="470" y="74" font-weight="600" fill="#2d3748">3.12 m</text>
-      <text x="290" y="94">제동 가정 / 반응</text><text x="470" y="94" font-weight="600" fill="#2d3748">2.0 m/s² / 0.1 s</text>
-    </g>
-  </g>
-
-  <!-- control chain -->
-  <g transform="translate(60,440)">
-    <text x="0" y="0" font-size="12" font-weight="600" fill="#2d3748">제어 사슬 — 학습하는 것은 첫 칸뿐</text>
-    <g font-size="10">
-      <rect x="0" y="14" width="118" height="40" rx="4" fill="#ebf8ff" stroke="#2b6cb0" stroke-width="1.5"/>
-      <text x="59" y="32" text-anchor="middle" font-weight="700" fill="#2b6cb0">policy (PPO)</text>
-      <text x="59" y="46" text-anchor="middle" fill="#2b6cb0">vx, vy, yaw-rate</text>
-      <rect x="140" y="14" width="104" height="40" rx="4" fill="#f7fafc" stroke="#a0aec0"/>
-      <text x="192" y="32" text-anchor="middle" font-weight="600" fill="#4a5568">altitude PI</text>
-      <text x="192" y="46" text-anchor="middle" fill="#718096">a_z 덮어씀</text>
-      <rect x="266" y="14" width="112" height="40" rx="4" fill="#f7fafc" stroke="#a0aec0"/>
-      <text x="322" y="32" text-anchor="middle" font-weight="600" fill="#4a5568">Lee 속도 제어</text>
-      <text x="322" y="46" text-anchor="middle" fill="#718096">Kv = 2.5</text>
-      <rect x="400" y="14" width="112" height="40" rx="4" fill="#f7fafc" stroke="#a0aec0"/>
-      <text x="456" y="32" text-anchor="middle" font-weight="600" fill="#4a5568">모터 배분</text>
-      <text x="456" y="46" text-anchor="middle" fill="#718096">1차 지연 0.04 s</text>
-      <rect x="534" y="14" width="112" height="40" rx="4" fill="#f7fafc" stroke="#a0aec0"/>
-      <text x="590" y="32" text-anchor="middle" font-weight="600" fill="#4a5568">강체 물리</text>
-      <text x="590" y="46" text-anchor="middle" fill="#718096">100 Hz</text>
-      <g stroke="#a0aec0" stroke-width="1.5" fill="none">
-        <path d="M118,34 L138,34"/><path d="M244,34 L264,34"/><path d="M378,34 L398,34"/><path d="M512,34 L532,34"/>
-      </g>
-      <text x="0" y="76" font-size="10" fill="#718096">정책은 10 Hz, 물리는 100 Hz. 파란 칸만 학습되고 나머지는 고정된 실험 계약이다.</text>
-    </g>
-  </g>
-</svg>
+<text x="40" y="38" font-size="13" font-weight="700" fill="#007F73" text-anchor="start">MOTAR   /   03 / PLATFORM</text>
+<text x="1400" y="38" font-size="12" font-weight="700" fill="#536B7A" text-anchor="end">SIMULATION CANDIDATE · UNASSEMBLED</text>
+<text x="40" y="86" font-size="32" font-weight="700" fill="#142D3B" text-anchor="start">Platform &amp; sensing</text>
+<text x="40" y="119" font-size="16" font-weight="400" fill="#536B7A" text-anchor="start">navrl_ref5in_quad_v2 · hardware-informed simulation candidate</text>
+<rect x="40" y="155" width="440" height="489" rx="16" fill="white" stroke="#DCE5EA"/>
+<text x="64" y="191" font-size="12" font-weight="700" fill="#007F73" text-anchor="start">01  AIRFRAME / TOP VIEW</text>
+<rect x="90.19999999999999" y="232.2" width="339.6" height="339.6" rx="0" fill="none" stroke="#B66318"/>
+<circle cx="166.66190488337574" cy="308.66190488337577" r="76.2" fill="#EAF1FC" stroke="#3067C8" stroke-width="2"/>
+<path d="M260 402L166.66190488337574 308.66190488337577" stroke="#142D3B" stroke-width="2" fill="none"/>
+<circle cx="166.66190488337574" cy="308.66190488337577" r="6" fill="#142D3B" stroke="none" stroke-width="2"/>
+<circle cx="353.33809511662423" cy="308.66190488337577" r="76.2" fill="#EAF1FC" stroke="#3067C8" stroke-width="2"/>
+<path d="M260 402L353.33809511662423 308.66190488337577" stroke="#142D3B" stroke-width="2" fill="none"/>
+<circle cx="353.33809511662423" cy="308.66190488337577" r="6" fill="#142D3B" stroke="none" stroke-width="2"/>
+<circle cx="166.66190488337574" cy="495.33809511662423" r="76.2" fill="#EAF1FC" stroke="#3067C8" stroke-width="2"/>
+<path d="M260 402L166.66190488337574 495.33809511662423" stroke="#142D3B" stroke-width="2" fill="none"/>
+<circle cx="166.66190488337574" cy="495.33809511662423" r="6" fill="#142D3B" stroke="none" stroke-width="2"/>
+<circle cx="353.33809511662423" cy="495.33809511662423" r="76.2" fill="#EAF1FC" stroke="#3067C8" stroke-width="2"/>
+<path d="M260 402L353.33809511662423 495.33809511662423" stroke="#142D3B" stroke-width="2" fill="none"/>
+<circle cx="353.33809511662423" cy="495.33809511662423" r="6" fill="#142D3B" stroke="none" stroke-width="2"/>
+<circle cx="260" cy="402" r="24" fill="#142D3B" stroke="none" stroke-width="2"/>
+<text x="260" y="407" font-size="13" font-weight="700" fill="white" text-anchor="middle">FCU</text>
+<text x="260" y="611" font-size="16" font-weight="700" fill="#142D3B" text-anchor="middle">127 mm propellers × 4 · 220 mm diagonal</text>
+<rect x="504" y="155" width="418" height="305" rx="16" fill="white" stroke="#DCE5EA"/>
+<rect x="524" y="179" width="4" height="20" rx="2" fill="#007F73" stroke="#007F73"/>
+<text x="540" y="195" font-size="12" font-weight="700" fill="#007F73" text-anchor="start">02  MASS &amp; THRUST</text>
+<text x="526" y="232" font-size="22" font-weight="700" fill="#142D3B" text-anchor="start">Thrust-to-weight 3.26</text>
+<text x="528" y="278" font-size="17" font-weight="400" fill="#536B7A" text-anchor="start">질량</text>
+<text x="898" y="278" font-size="19" font-weight="700" fill="#142D3B" text-anchor="end">1.20 kg</text>
+<text x="528" y="314" font-size="17" font-weight="400" fill="#536B7A" text-anchor="start">모터당 최대추력</text>
+<text x="898" y="314" font-size="19" font-weight="700" fill="#142D3B" text-anchor="end">9.6 N</text>
+<text x="528" y="350" font-size="17" font-weight="400" fill="#536B7A" text-anchor="start">총 추력</text>
+<text x="898" y="350" font-size="19" font-weight="700" fill="#142D3B" text-anchor="end">38.4 N</text>
+<text x="528" y="386" font-size="17" font-weight="400" fill="#536B7A" text-anchor="start">중량</text>
+<text x="898" y="386" font-size="19" font-weight="700" fill="#142D3B" text-anchor="end">11.77 N</text>
+<rect x="528" y="411" width="370" height="13" rx="5" fill="#E3ECEF" stroke="none"/>
+<rect x="528" y="411" width="113.22" height="13" rx="5" fill="#007F73" stroke="none"/>
+<text x="528" y="448" font-size="16" font-weight="400" fill="#007F73" text-anchor="start">Hover 30.6%  /  Reserve 69.4%</text>
+<rect x="946" y="155" width="454" height="489" rx="16" fill="white" stroke="#DCE5EA"/>
+<rect x="966" y="179" width="4" height="20" rx="2" fill="#007F73" stroke="#007F73"/>
+<text x="982" y="195" font-size="12" font-weight="700" fill="#007F73" text-anchor="start">03  SENSOR SUITE</text>
+<text x="968" y="232" font-size="22" font-weight="700" fill="#142D3B" text-anchor="start">LiDAR + RGB-D</text>
+<text x="970" y="280" font-size="17" font-weight="700" fill="#3067C8" text-anchor="start">LiDAR</text>
+<text x="970" y="314" font-size="17" font-weight="400" fill="#536B7A" text-anchor="start">72 × 4 beams · 360° × (+20°/−10°)</text>
+<text x="970" y="348" font-size="17" font-weight="400" fill="#536B7A" text-anchor="start">12 m range · 5° horizontal spacing</text>
+<text x="970" y="382" font-size="17" font-weight="400" fill="#3067C8" text-anchor="start">12 m에서 빔 간격 1.05 m</text>
+<text x="970" y="416" font-size="17" font-weight="400" fill="#536B7A" text-anchor="start"></text>
+<text x="970" y="450" font-size="17" font-weight="700" fill="#B66318" text-anchor="start">RGB-D camera</text>
+<text x="970" y="484" font-size="17" font-weight="400" fill="#536B7A" text-anchor="start">160 × 90 · 87° × 58° (D455급)</text>
+<text x="970" y="518" font-size="17" font-weight="400" fill="#536B7A" text-anchor="start">Detector range 20 m</text>
+<text x="970" y="552" font-size="17" font-weight="400" fill="#B66318" text-anchor="start">0.25 m 표적 @20 m → 1.05 px</text>
+<text x="970" y="586" font-size="17" font-weight="400" fill="#536B7A" text-anchor="start">Background depth 40 × 24 @10 m</text>
+<rect x="504" y="480" width="418" height="164" rx="16" fill="#E8F1EF" stroke="none"/>
+<text x="528" y="516" font-size="12" font-weight="700" fill="#007F73" text-anchor="start">COLLISION PROXY</text>
+<text x="528" y="553" font-size="23" font-weight="700" fill="#142D3B" text-anchor="start">0.283 × 0.283 × 0.12 m</text>
+<text x="528" y="588" font-size="16" font-weight="400" fill="#536B7A" text-anchor="start">기체 그림: 1.2 SVG units/mm</text>
+<text x="528" y="617" font-size="16" font-weight="400" fill="#536B7A" text-anchor="start">외곽선은 충돌 프록시의 평면 투영</text>
+<rect x="40" y="664" width="1360" height="179" rx="16" fill="white" stroke="#DCE5EA"/>
+<text x="64" y="699" font-size="12" font-weight="700" fill="#007F73" text-anchor="start">04  MOTION ENVELOPE</text>
+<text x="64" y="737" font-size="15" font-weight="400" fill="#536B7A" text-anchor="start">수평 속도 / 축별</text>
+<text x="64" y="779" font-size="29" font-weight="700" fill="#142D3B" text-anchor="start">2.5 m/s</text>
+<text x="64" y="813" font-size="15" font-weight="400" fill="#536B7A" text-anchor="start">틸트 상한 45°</text>
+<path d="M385 718L385 821" stroke="#DCE5EA" stroke-width="2" fill="none"/>
+<text x="401" y="737" font-size="15" font-weight="400" fill="#536B7A" text-anchor="start">고도 / PI 고정</text>
+<text x="401" y="779" font-size="29" font-weight="700" fill="#142D3B" text-anchor="start">1.0 m</text>
+<text x="401" y="813" font-size="15" font-weight="400" fill="#536B7A" text-anchor="start">Yaw: config 2.5 rad/s</text>
+<path d="M722 718L722 821" stroke="#DCE5EA" stroke-width="2" fill="none"/>
+<text x="738" y="737" font-size="15" font-weight="400" fill="#536B7A" text-anchor="start">수평가속 / 45°</text>
+<text x="738" y="779" font-size="29" font-weight="700" fill="#142D3B" text-anchor="start">9.81 m/s²</text>
+<text x="738" y="813" font-size="15" font-weight="400" fill="#536B7A" text-anchor="start">정지거리 @2.5 m/s: 1.81 m</text>
+<path d="M1059 718L1059 821" stroke="#DCE5EA" stroke-width="2" fill="none"/>
+<text x="1075" y="737" font-size="15" font-weight="400" fill="#536B7A" text-anchor="start">선회반경 @2.5 m/s</text>
+<text x="1075" y="779" font-size="29" font-weight="700" fill="#142D3B" text-anchor="start">3.12 m</text>
+<text x="1075" y="813" font-size="15" font-weight="400" fill="#536B7A" text-anchor="start">제동 2.0 m/s² · 반응 0.1 s</text>
+<rect x="40" y="866" width="248" height="88" rx="16" fill="#E8F1EF" stroke="#DCE5EA"/>
+<text x="58" y="900" font-size="19" font-weight="700" fill="#007F73" text-anchor="start">Policy / PPO</text>
+<text x="58" y="930" font-size="16" font-weight="400" fill="#536B7A" text-anchor="start">vx · vy · yaw-rate</text>
+<path d="M293 910L311 910" stroke="#8395A1" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+<rect x="318" y="866" width="248" height="88" rx="16" fill="white" stroke="#DCE5EA"/>
+<text x="336" y="900" font-size="19" font-weight="700" fill="#142D3B" text-anchor="start">Altitude PI</text>
+<text x="336" y="930" font-size="16" font-weight="400" fill="#536B7A" text-anchor="start">policy z 덮어씀</text>
+<path d="M571 910L589 910" stroke="#8395A1" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+<rect x="596" y="866" width="248" height="88" rx="16" fill="white" stroke="#DCE5EA"/>
+<text x="614" y="900" font-size="19" font-weight="700" fill="#142D3B" text-anchor="start">Lee controller</text>
+<text x="614" y="930" font-size="16" font-weight="400" fill="#536B7A" text-anchor="start">Kv = 2.5</text>
+<path d="M849 910L867 910" stroke="#8395A1" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+<rect x="874" y="866" width="248" height="88" rx="16" fill="white" stroke="#DCE5EA"/>
+<text x="892" y="900" font-size="19" font-weight="700" fill="#142D3B" text-anchor="start">Motor allocation</text>
+<text x="892" y="930" font-size="16" font-weight="400" fill="#536B7A" text-anchor="start">lag = 0.04 s</text>
+<path d="M1127 910L1145 910" stroke="#8395A1" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+<rect x="1152" y="866" width="248" height="88" rx="16" fill="white" stroke="#DCE5EA"/>
+<text x="1170" y="900" font-size="19" font-weight="700" fill="#142D3B" text-anchor="start">Rigid-body physics</text>
+<text x="1170" y="930" font-size="16" font-weight="400" fill="#536B7A" text-anchor="start">100 Hz</text>
+<path d="M40 989L1400 989" stroke="#DCE5EA" stroke-width="2" fill="none"/>
+<text x="40" y="1017" font-size="14" font-weight="400" fill="#536B7A" text-anchor="start">실기 미조립 · BOM/관성/추력/열/전원 실측값 아님  /  Yaw 상한: 기본 설정 2.5, canonical corrected-v2 실행은 3.0 rad/s</text>
+</g></svg>

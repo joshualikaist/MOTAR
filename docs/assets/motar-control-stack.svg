@@ -1,29 +1,92 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="790" viewBox="0 0 1440 790" role="img" aria-labelledby="title desc">
-  <title id="title">Detailed MOTAR control stack</title>
-  <desc id="desc">A detailed flow from the learned four-dimensional policy action through command scaling, altitude PI, Lee velocity and attitude control, wrench allocation, motor lag and rigid-body state feedback.</desc>
-  <defs>
-    <marker id="arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#687670"/></marker>
-    <style>.title{font:700 29px Arial,sans-serif;fill:#17231f}.head{font:700 20px Arial,sans-serif;fill:#17231f}.body{font:500 14px Arial,sans-serif;fill:#586861}.eq{font:600 14px Consolas,monospace;fill:#075f56}.tag{font:700 12px Arial,sans-serif;fill:#087f6d;letter-spacing:.09em}.box{fill:#fff;stroke:#cad8d2;stroke-width:2}.learn{fill:#dceee8;stroke:#9ccabd;stroke-width:2}.fixed{fill:#f2f5f3;stroke:#cbd5d1;stroke-width:2}.line{fill:none;stroke:#687670;stroke-width:3;marker-end:url(#arrow)}.feedback{fill:none;stroke:#8a9893;stroke-width:2.5;stroke-dasharray:8 6;marker-end:url(#arrow)}</style>
-  </defs>
-  <rect width="1440" height="790" rx="30" fill="#f7faf8"/>
-  <text x="58" y="58" class="tag">CORRECTED-V2 · LEARNED NAVIGATION / FIXED FLIGHT CONTROL</text>
-  <text x="58" y="99" class="title">Policy action → force and torque → motor dynamics</text>
-  <g transform="translate(58 142)"><rect class="learn" width="240" height="190" rx="17"/><text x="20" y="34" class="tag">1 · LEARNED POLICY</text><text x="20" y="70" class="head">Transformer actor</text><text x="20" y="101" class="body">squashed Gaussian action</text><text x="20" y="128" class="eq">a = [aₓ, aᵧ, a_z, aψ]</text><text x="20" y="155" class="eq">aᵢ ∈ [−1, 1]</text><text x="20" y="178" class="body">a_z is observed, not executed</text></g>
-  <path class="line" d="M310 237H354"/>
-  <g transform="translate(366 142)"><rect class="box" width="270" height="190" rx="17"/><text x="20" y="34" class="tag">2 · COMMAND MAPPING</text><text x="20" y="70" class="head">Body-frame setpoints</text><text x="20" y="103" class="eq">v*ₓᵧ = 2.5 · [aₓ, aᵧ]</text><text x="20" y="130" class="eq">ω*ψ = 3.0 · aψ</text><text x="20" y="157" class="body">per-axis clamp · m/s, rad/s</text><text x="20" y="180" class="body">baseline governor: OFF</text></g>
-  <path class="line" d="M648 237H692"/>
-  <g transform="translate(704 142)"><rect class="box" width="300" height="190" rx="17"/><text x="20" y="34" class="tag">3 · ALTITUDE SUPERVISOR</text><text x="20" y="70" class="head">Policy-independent PI hold</text><text x="20" y="102" class="eq">e_z = 1.0 m − z</text><text x="20" y="129" class="eq">I_z ← clip(I_z + e_zΔt, ±2.5)</text><text x="20" y="156" class="eq">v*z = clip(4e_z + I_z, ±2.5)</text><text x="20" y="180" class="body">overwrites the policy z channel</text></g>
-  <path class="line" d="M1016 237H1060"/>
-  <g transform="translate(1072 142)"><rect class="box" width="310" height="190" rx="17"/><text x="20" y="34" class="tag">4 · VELOCITY LOOP</text><text x="20" y="70" class="head">Lee velocity controller</text><text x="20" y="102" class="eq">e_v = R_yaw v* − v_world</text><text x="20" y="129" class="eq">a* = K_v e_v,  K_v = [2.5,2.5,2.5]</text><text x="20" y="156" class="eq">f* = m(a* − g)</text><text x="20" y="180" class="body">position term is zero in velocity mode</text></g>
-  <path class="line" d="M1227 344V392"/>
-  <g transform="translate(1002 404)"><rect class="box" width="380" height="216" rx="17"/><text x="20" y="34" class="tag">5 · FORCE → ATTITUDE</text><text x="20" y="70" class="head">Tilt-limited desired orientation</text><text x="20" y="101" class="eq">‖f*xy‖ ≤ f*z tan(45°)</text><text x="20" y="128" class="eq">b*₃ = f* / ‖f*‖  →  R*</text><text x="20" y="155" class="eq">T = f*z / b₃z  if b₃z &gt; 0.5</text><text x="20" y="182" class="body">otherwise standard projection T = f*·b₃</text><text x="20" y="204" class="body">altitude-priority tilt compensation</text></g>
-  <path class="line" d="M990 512H946"/>
-  <g transform="translate(606 404)"><rect class="box" width="328" height="216" rx="17"/><text x="20" y="34" class="tag">6 · ATTITUDE / RATE LOOP</text><text x="20" y="70" class="head">Body torque command</text><text x="20" y="101" class="eq">τ* = −K_R e_R − K_ω e_ω + ω×Jω</text><text x="20" y="128" class="eq">K_R = [1.0, 1.0, 0.5]</text><text x="20" y="155" class="eq">K_ω = [0.15, 0.15, 0.15]</text><text x="20" y="182" class="body">desired yaw rate comes from ω*ψ</text><text x="20" y="204" class="body">gains fixed; randomization disabled</text></g>
-  <path class="line" d="M594 512H550"/>
-  <g transform="translate(306 404)"><rect class="fixed" width="232" height="216" rx="17"/><text x="20" y="34" class="tag">7 · ALLOCATION</text><text x="20" y="70" class="head">Wrench → 4 motors</text><text x="20" y="101" class="eq">w* = [0, 0, T, τx, τy, τz]</text><text x="20" y="128" class="body">220 mm motor diagonal</text><text x="20" y="155" class="body">9.6 N max per motor</text><text x="20" y="182" class="body">allocation matrix is fixed</text><text x="20" y="204" class="body">ref5in candidate values</text></g>
-  <path class="line" d="M294 512H250"/>
-  <g transform="translate(58 404)"><rect class="fixed" width="180" height="216" rx="17"/><text x="18" y="34" class="tag">8 · PLANT</text><text x="18" y="70" class="head">Rigid body</text><text x="18" y="101" class="eq">τ_motor = 0.04 s</text><text x="18" y="128" class="body">100 Hz physics</text><text x="18" y="155" class="body">10 physics steps</text><text x="18" y="178" class="body">per policy action</text><text x="18" y="204" class="body">mass · inertia · contact</text></g>
-  <path class="feedback" d="M148 632V704H1227V634"/>
-  <text x="565" y="738" class="body">state feedback: position · world velocity · attitude · body angular velocity</text>
-  <text x="58" y="770" class="body">Green = learned policy output. White/gray = fixed task, controller and vehicle contracts.</text>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1010" viewBox="0 0 1440 1010" role="img" aria-labelledby="title desc">
+<title id="title">Policy action → force &amp; torque → motor dynamics</title><desc id="desc">학습하는 항법 정책과 고정된 비행 제어기 · corrected-v2 canonical 실행 계약</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#8395A1"/></marker></defs>
+<g font-family="Arial, 'Noto Sans CJK KR', sans-serif">
+<rect width="1440" height="1010" rx="24" fill="#F4F7FA"/>
+<path d="M24 1H1416" stroke="#DCE5EA"/>
+
+<text x="40" y="38" font-size="13" font-weight="700" fill="#007F73" text-anchor="start">MOTAR   /   04 / CONTROL</text>
+<text x="1400" y="38" font-size="12" font-weight="700" fill="#536B7A" text-anchor="end">10 Hz POLICY / 100 Hz PHYSICS</text>
+<text x="40" y="86" font-size="32" font-weight="700" fill="#142D3B" text-anchor="start">Policy action → force &amp; torque → motor dynamics</text>
+<text x="40" y="119" font-size="16" font-weight="400" fill="#536B7A" text-anchor="start">학습하는 항법 정책과 고정된 비행 제어기 · corrected-v2 canonical 실행 계약</text>
+<rect x="40" y="162" width="316" height="310" rx="16" fill="#E8F1EF" stroke="#DCE5EA"/>
+<rect x="60" y="186" width="4" height="20" rx="2" fill="#007F73" stroke="#007F73"/>
+<text x="76" y="202" font-size="12" font-weight="700" fill="#007F73" text-anchor="start">01  LEARNED POLICY</text>
+<text x="62" y="239" font-size="22" font-weight="700" fill="#142D3B" text-anchor="start">Transformer actor</text>
+<text x="62" y="274" font-size="16" font-weight="400" fill="#536B7A" text-anchor="start">Squashed Gaussian action</text>
+<text x="62" y="303" font-size="16" font-weight="400" fill="#536B7A" text-anchor="start">a = [aₓ, aᵧ, a_z, aψ]</text>
+<text x="62" y="332" font-size="16" font-weight="400" fill="#536B7A" text-anchor="start">aᵢ ∈ [−1, 1]</text>
+<text x="62" y="361" font-size="16" font-weight="400" fill="#536B7A" text-anchor="start">a_z is observed, not executed</text>
+<path d="M361 317L378 317" stroke="#8395A1" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+<rect x="388" y="162" width="316" height="310" rx="16" fill="white" stroke="#DCE5EA"/>
+<rect x="408" y="186" width="4" height="20" rx="2" fill="#007F73" stroke="#007F73"/>
+<text x="424" y="202" font-size="12" font-weight="700" fill="#007F73" text-anchor="start">02  COMMAND MAPPING</text>
+<text x="410" y="239" font-size="22" font-weight="700" fill="#142D3B" text-anchor="start">Body-frame setpoints</text>
+<text x="410" y="274" font-size="16" font-weight="400" fill="#536B7A" text-anchor="start">v*xy = 2.5 · [aₓ, aᵧ]</text>
+<text x="410" y="303" font-size="16" font-weight="400" fill="#536B7A" text-anchor="start">ω*ψ = 3.0 · aψ</text>
+<text x="410" y="332" font-size="16" font-weight="400" fill="#536B7A" text-anchor="start">Per-axis clamp · m/s, rad/s</text>
+<text x="410" y="361" font-size="16" font-weight="400" fill="#536B7A" text-anchor="start">Baseline governor: OFF</text>
+<path d="M709 317L726 317" stroke="#8395A1" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+<rect x="736" y="162" width="316" height="310" rx="16" fill="white" stroke="#DCE5EA"/>
+<rect x="756" y="186" width="4" height="20" rx="2" fill="#007F73" stroke="#007F73"/>
+<text x="772" y="202" font-size="12" font-weight="700" fill="#007F73" text-anchor="start">03  ALTITUDE SUPERVISOR</text>
+<text x="758" y="239" font-size="22" font-weight="700" fill="#142D3B" text-anchor="start">Independent PI hold</text>
+<text x="758" y="274" font-size="16" font-weight="400" fill="#536B7A" text-anchor="start">e_z = 1.0 m − z</text>
+<text x="758" y="303" font-size="16" font-weight="400" fill="#536B7A" text-anchor="start">I_z ← clip(I_z + e_zΔt, ±2.5)</text>
+<text x="758" y="332" font-size="16" font-weight="400" fill="#536B7A" text-anchor="start">v*z = clip(4e_z + I_z, ±2.5)</text>
+<text x="758" y="361" font-size="16" font-weight="400" fill="#536B7A" text-anchor="start">Overwrites the policy z channel</text>
+<path d="M1057 317L1074 317" stroke="#8395A1" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+<rect x="1084" y="162" width="316" height="310" rx="16" fill="white" stroke="#DCE5EA"/>
+<rect x="1104" y="186" width="4" height="20" rx="2" fill="#007F73" stroke="#007F73"/>
+<text x="1120" y="202" font-size="12" font-weight="700" fill="#007F73" text-anchor="start">04  VELOCITY LOOP</text>
+<text x="1106" y="239" font-size="22" font-weight="700" fill="#142D3B" text-anchor="start">Lee velocity control</text>
+<text x="1106" y="274" font-size="16" font-weight="400" fill="#536B7A" text-anchor="start">e_v = R_yaw v* − v_world</text>
+<text x="1106" y="303" font-size="16" font-weight="400" fill="#536B7A" text-anchor="start">a* = K_v e_v</text>
+<text x="1106" y="332" font-size="16" font-weight="400" fill="#536B7A" text-anchor="start">K_v = [2.5, 2.5, 2.5]</text>
+<text x="1106" y="361" font-size="16" font-weight="400" fill="#536B7A" text-anchor="start">f* = m(a* − g)</text>
+<text x="1106" y="390" font-size="16" font-weight="400" fill="#536B7A" text-anchor="start">Position term = 0 in velocity mode</text>
+<rect x="1084" y="540" width="316" height="310" rx="16" fill="white" stroke="#DCE5EA"/>
+<rect x="1104" y="564" width="4" height="20" rx="2" fill="#007F73" stroke="#007F73"/>
+<text x="1120" y="580" font-size="12" font-weight="700" fill="#007F73" text-anchor="start">05  FORCE → ATTITUDE</text>
+<text x="1106" y="617" font-size="22" font-weight="700" fill="#142D3B" text-anchor="start">Tilt-limited orientation</text>
+<text x="1106" y="652" font-size="16" font-weight="400" fill="#536B7A" text-anchor="start">‖f*xy‖ ≤ f*z tan(45°)</text>
+<text x="1106" y="681" font-size="16" font-weight="400" fill="#536B7A" text-anchor="start">b*₃ = f* / ‖f*‖ → R*</text>
+<text x="1106" y="710" font-size="16" font-weight="400" fill="#536B7A" text-anchor="start">T = f*z / b₃z if b₃z &gt; 0.5</text>
+<text x="1106" y="739" font-size="16" font-weight="400" fill="#536B7A" text-anchor="start">Otherwise: T = f* · b₃</text>
+<text x="1106" y="768" font-size="16" font-weight="400" fill="#536B7A" text-anchor="start">Altitude-priority compensation</text>
+<path d="M1079 695L1061 695" stroke="#8395A1" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+<rect x="736" y="540" width="316" height="310" rx="16" fill="white" stroke="#DCE5EA"/>
+<rect x="756" y="564" width="4" height="20" rx="2" fill="#007F73" stroke="#007F73"/>
+<text x="772" y="580" font-size="12" font-weight="700" fill="#007F73" text-anchor="start">06  ATTITUDE / RATE</text>
+<text x="758" y="617" font-size="22" font-weight="700" fill="#142D3B" text-anchor="start">Body torque command</text>
+<text x="758" y="652" font-size="16" font-weight="400" fill="#536B7A" text-anchor="start">τ* = −K_R e_R − K_ω e_ω</text>
+<text x="758" y="681" font-size="16" font-weight="400" fill="#536B7A" text-anchor="start">       + ω × Jω</text>
+<text x="758" y="710" font-size="16" font-weight="400" fill="#536B7A" text-anchor="start">K_R = [1.0, 1.0, 0.5]</text>
+<text x="758" y="739" font-size="16" font-weight="400" fill="#536B7A" text-anchor="start">K_ω = [0.15, 0.15, 0.15]</text>
+<text x="758" y="768" font-size="16" font-weight="400" fill="#536B7A" text-anchor="start">Desired yaw rate from ω*ψ</text>
+<text x="758" y="797" font-size="16" font-weight="400" fill="#536B7A" text-anchor="start">Fixed gains; randomization off</text>
+<path d="M731 695L713 695" stroke="#8395A1" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+<rect x="388" y="540" width="316" height="310" rx="16" fill="white" stroke="#DCE5EA"/>
+<rect x="408" y="564" width="4" height="20" rx="2" fill="#007F73" stroke="#007F73"/>
+<text x="424" y="580" font-size="12" font-weight="700" fill="#007F73" text-anchor="start">07  ALLOCATION</text>
+<text x="410" y="617" font-size="22" font-weight="700" fill="#142D3B" text-anchor="start">Wrench → 4 motors</text>
+<text x="410" y="652" font-size="16" font-weight="400" fill="#536B7A" text-anchor="start">w* = [0, 0, T, τx, τy, τz]</text>
+<text x="410" y="681" font-size="16" font-weight="400" fill="#536B7A" text-anchor="start">220 mm motor diagonal</text>
+<text x="410" y="710" font-size="16" font-weight="400" fill="#536B7A" text-anchor="start">9.6 N max per motor</text>
+<text x="410" y="739" font-size="16" font-weight="400" fill="#536B7A" text-anchor="start">Fixed allocation matrix</text>
+<text x="410" y="768" font-size="16" font-weight="400" fill="#536B7A" text-anchor="start">ref5in candidate values</text>
+<path d="M383 695L365 695" stroke="#8395A1" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+<rect x="40" y="540" width="316" height="310" rx="16" fill="white" stroke="#DCE5EA"/>
+<rect x="60" y="564" width="4" height="20" rx="2" fill="#007F73" stroke="#007F73"/>
+<text x="76" y="580" font-size="12" font-weight="700" fill="#007F73" text-anchor="start">08  PLANT</text>
+<text x="62" y="617" font-size="22" font-weight="700" fill="#142D3B" text-anchor="start">Rigid-body dynamics</text>
+<text x="62" y="652" font-size="16" font-weight="400" fill="#536B7A" text-anchor="start">τ_motor = 0.04 s</text>
+<text x="62" y="681" font-size="16" font-weight="400" fill="#536B7A" text-anchor="start">100 Hz physics</text>
+<text x="62" y="710" font-size="16" font-weight="400" fill="#536B7A" text-anchor="start">10 physics steps / policy action</text>
+<text x="62" y="739" font-size="16" font-weight="400" fill="#536B7A" text-anchor="start">Mass · inertia · contact</text>
+<path d="M1242 480L1242 529" stroke="#8395A1" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+<path d="M198 862V903H1242V862" stroke="#8395A1" stroke-width="2" stroke-dasharray="6 6" fill="none" marker-end="url(#arrow)"/>
+<text x="720" y="933" font-size="16" font-weight="400" fill="#536B7A" text-anchor="middle">STATE FEEDBACK · position / world velocity / attitude / body angular velocity</text>
+<path d="M40 959L1400 959" stroke="#DCE5EA" stroke-width="2" fill="none"/>
+<text x="40" y="987" font-size="14" font-weight="400" fill="#536B7A" text-anchor="start">초록색: 학습 정책 출력  /  흰색: 고정된 task·controller·vehicle 계약  /  actor의 z 출력은 1 m altitude PI가 덮어씀</text>
+</g></svg>
