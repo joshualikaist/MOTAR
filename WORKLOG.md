@@ -16154,3 +16154,35 @@ run: `detector_runs/runs/nps_det/s_tiles640_b8_e40/`(저장소 밖, 워크스페
 ③ `nohup ... &`만으로는 세션 정리 때 학습이 함께 죽는다(02:14, 오류·OOM 없이 로그가 끊김). **`setsid`로
    분리해야 산다.** 14 에포크까지 저장돼 있어 손실은 없었다.
 디스크: 타일 19,659장을 `cache: disk`로 캐싱하면 약 23 GB라 여유가 없어 캐시를 껐다. pip 캐시 8 GB를 비웠다.
+
+
+## 2026-09-07 — 디스크 정리: 미참조 중간 체크포인트 7.17 GB 회수, 규칙 8-A 제정
+
+Det-Fly 교차 검증(원본 9.34 GB)을 받을 자리를 만들기 위해 정리했다. 지우기 전에 무엇이 실제로
+인용되는지부터 셌다.
+
+**조사 결과**: `runs/` 8.4 GB 중 체크포인트가 8.06 GB인데 **결과 JSON이 인용하는 것은 0.12 GB뿐**이었다.
+학습 중 주기적으로 저장된 중간본이 나머지 전부다. 로그·설정(csv, tfevents)은 합쳐서 0.34 GB라
+회수 대상이 아니다. 예: `recover-curriculum-s1`은 체크포인트 224개 1,862 MB를 갖고 있는데 인용되는
+것은 8 MB 하나다.
+
+**삭제**: 932개 중 **870개, 7.17 GB**. 여유 26 GB → 33 GB. 보존은 62개 0.50 GB.
+목록은 `tools/audit_checkpoint_references.py --list-deletable`로 뽑았고 세션 scratchpad에
+`deleted_2026-09-07.txt`로 남겼다. 삭제 후 재검사에서 **인용 유실은 하나도 늘지 않았다**(11건 그대로).
+
+**정리 중 발견한 기존 사고**: 결과가 인용하는 체크포인트 **4개가 이미 없었다**. 특히
+`last_gen_ppo_ep_21750_rew_83.1572.pth`는 seed 911 route-off held-out 평가 6건과 VERIFICATION.md가
+인용하는 파일이고, 이것이 없어서 `test_navrl_corrected_nonoverlap_heldout_contract.py`가 건너뛴다.
+나머지 7건은 WORKLOG 산문에만 등장한다. 언제 지워졌는지는 기록이 없다.
+
+**규칙 8-A 제정**(`OPERATIONS.md` §8). 산문 규칙("삭제 금지: 최신 terminal checkpoint")이 이미
+있었는데도 위 사고가 났다. 그래서 판단을 사람 기억에서 도구로 옮겼다.
+`tools/audit_checkpoint_references.py`가 보존 대상을 증거에서 직접 계산한다 —
+① 결과 JSON이 인용, ② 추적 파일이 이름으로 고정, ③ 각 run의 최종 `last_gen_*`(없으면 `gen_ppo.pth`).
+**모르는 이름은 보존한다**: 삭제 후보가 되는 것은 도구가 주기적 저장본으로 인식하는
+`last_gen_ppo_ep_<N>_rew_<X>.pth`뿐이고, `_rlnorm` 변형처럼 패턴에 없는 것은 `unknown`으로 보고만 한다.
+`--verify`는 인용된 것이 하나라도 없으면 exit 1이라 정리 직후 사고를 즉시 잡는다.
+`tests/test_checkpoint_reference_audit.py` 7개가 세 보존 이유와 fail-safe를 고정한다.
+
+**하지 않은 것**: `datasets/nps_yolo` 3.2 GB(원본 영상에서 뽑은 중간 프레임)는 남겼다. 타일을 다시
+만들 때 필요하므로 Det-Fly 작업이 끝난 뒤에 판단한다.

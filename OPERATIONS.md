@@ -360,12 +360,46 @@ rsync -avh --progress \
 
 ## 8. 디스크 정리
 
+### 규칙 8-A — checkpoint는 손으로 지우지 않는다 (2026-09-07 제정)
+
+**`runs/**/*.pth`를 사람이 골라서 지우는 것을 금지한다.** 반드시 이 도구가 만든 목록으로만 지운다.
+
+```bash
+python tools/audit_checkpoint_references.py                  # 보존/삭제 가능/이미 유실 보고
+python tools/audit_checkpoint_references.py --verify         # 인용된 것이 하나라도 없으면 exit 1
+python tools/audit_checkpoint_references.py --list-deletable > /tmp/del.txt
+#  ↑ 목록을 사람이 확인한 다음에만 지운다. 도구는 절대 지우지 않는다.
+```
+
+도구가 계산하는 **보존 대상**은 셋이다. 하나라도 걸리면 남긴다.
+
+1. `results/` 아래 결과 JSON이 `checkpoint`로 인용하는 것 — 그 수치를 다시 뽑을 수 있어야 한다.
+2. 추적되는 런처·명세·문서가 이름으로 고정한 것 — 그 실험이 그 파일에 묶여 있다.
+3. 각 run의 **최종** `last_gen_*`(없으면 `gen_ppo.pth`) — 최종 가중치가 없는 run은 평가 자체가 불가능하다.
+
+**모르는 이름은 남긴다.** 도구가 주기적 저장본으로 인식하는 `last_gen_ppo_ep_<N>_rew_<X>.pth`만
+삭제 후보가 된다. `_rlnorm` 변형이나 손으로 이름을 바꾼 것처럼 패턴에 없는 파일은 `unknown`으로
+보고하고 보존한다. "이게 뭔지 모르겠다"가 "지워도 된다"가 되어선 안 된다.
+
+**지운 뒤에는 반드시 `--verify`를 돌린다.** exit 1이면 인용된 체크포인트를 지운 것이므로 즉시
+WORKLOG에 무엇을 잃었는지 적는다.
+
+**이 규칙이 생긴 이유**: 산문 규칙("삭제 금지: 최신 terminal checkpoint")이 이미 §8에 있었는데도
+결과가 인용하는 체크포인트 4개가 지워졌다. 그중 `last_gen_ppo_ep_21750`은 seed 911 route-off
+held-out 평가 6건이 인용하는 파일이고, 그것이 없어서
+`tests/test_navrl_corrected_nonoverlap_heldout_contract.py`가 지금 건너뛴다. 판단을 사람 기억에
+맡기면 또 진다. 현재 유실 목록은 도구가 매번 출력한다(2026-09-07 기준 11건, 그중 결과 인용 4건).
+
+### 그 밖의 정리
+
 삭제 전에 `run_summary.json`, terminal checkpoint SHA, results summary가 WORKLOG에 기록됐는지
 확인합니다. smoke run을 정리할 때도 canonical 결과의 근거 파일은 남깁니다.
 
 - 보존: 논문 표에 쓰인 terminal checkpoint, `aerial_run`, `summaries`, source/eval receipt.
-- archive 가능: 실패한 짧은 smoke의 TensorBoard event와 중간 checkpoint.
+- archive 가능: 실패한 짧은 smoke의 TensorBoard event.
 - 삭제 금지: 사용 중인 run, 최신 terminal checkpoint, 결과가 아직 문서화되지 않은 evaluation.
+- **로그는 지우지 않는다.** `runs/` 8.4 GB 중 체크포인트가 8.06 GB이고 로그·설정은 0.34 GB뿐이다.
+  회수는 체크포인트에서 나오므로 csv와 tfevents를 건드릴 이유가 없다.
 
 TensorBoard 화면만 단순하게 만들고 싶으면 old `summaries/`를 저장소 밖 archive로 이동한 뒤
 WORKLOG에 원래 run과 이동 위치를 남깁니다. 기록 없이 여러 run을 합치거나 event file을 편집하지
