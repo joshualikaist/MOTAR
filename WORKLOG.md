@@ -16207,3 +16207,29 @@ Det-Fly 교차 검증(원본 9.34 GB)을 받을 자리를 만들기 위해 정�
 arc−riskcap −1.49 [−1.90, −1.08] Q 10.3 I² 0 %, 원호 최저 15/15, 70 bars stopcap−riskcap −1.19 [−2.01, −0.37]
 세 시드 부호 일치, 폭 확장 70/205 bars −2.18/−5.60, 교차 트리 306/1699/44 비트 동일. 도구 출력과 일치.
 README에 Astra에게 묻는 질문 5개와 미리 밝히는 한계 5개를 적었다.
+
+
+## 2026-09-07 — 브랜치 정책 제정: 작업 브랜치는 `main` 하나
+
+**원인은 git이 아니라 문서였다.** 두 브랜치는 갈라진 적이 없다 —
+`origin/research/navrl-env`는 `origin/main`의 순수 조상이었고 fast-forward 한 번으로 지금은 **같은 커밋**
+(`e06b68b`)이다. 문제는 원격 **기본 브랜치**가 `research/navrl-env`인데 모든 작업이 `main`에서 이뤄졌고,
+`CLAUDE.md`가 작업 브랜치를 `research/navrl-env`라고 **틀리게** 적어둔 것이었다. 그래서 사이트 갱신과
+README 도식을 푸시하고도 배포 여부를 확신할 수 없었다. 현재 사이트는 정상이며 새 배너
+("원호 튜브의 우위는 평가 시드를 넘어 재현된다 … −1.49 pp")가 서빙되는 것을 확인했다.
+
+**규칙 0 제정**(`OPERATIONS.md` §0): 작업·커밋·푸시는 `main` 하나에서. 장기 작업 브랜치 금지.
+**GitHub 기본 브랜치 = `main`, Pages 서빙 = `main`의 `/docs`** — 이 둘이 어긋나면 푸시해도 사이트가
+안 바뀐다. 세션 시작 시 `git status -sb` 첫 줄이 `## main...origin/main`인지 확인한다. 예외는
+`.codex_worktrees/`의 단기 브랜치뿐이고, 워크트리에 물린 브랜치는 삭제하지 않는다.
+
+`CLAUDE.md`의 낡은 문장을 고쳤고, `tests/test_branch_policy.py` 4개가 두 문서의 브랜치 이름 일치와
+Pages 서빙 기술을 강제한다. 판정은 단어 매칭이 아니라 **구조**다: 폐기된 이름은 "이 규칙이 생긴 이유"
+블록 안에서만 등장할 수 있고, 규칙 본문이나 `CLAUDE.md`에 나오면 실패한다.
+
+**미완**: `git push origin --delete research/navrl-env`는 GitHub가 거부했다
+(`refusing to delete the current branch`). 기본 브랜치를 `main`으로 바꾸는 것은 웹 설정이라
+사용자 실행이 필요하다. 순서: ① Settings → General → Default branch → `main`,
+② Settings → Pages → Branch `main` / 폴더 `/docs`, ③ 그 뒤 원격 브랜치 삭제.
+
+원격 브랜치는 19개이고 대부분 `codex/*`다. 그중 4개는 워크트리에 물려 있어 삭제 대상이 아니다.

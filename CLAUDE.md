@@ -136,6 +136,7 @@ substantive한 요청(학습·평가·분석·감사·구현)을 받으면:
 멈춘 과거 기록이며 새 항목을 추가하지 않는다).
 
 ## 커밋 규칙
-- **커밋/푸시 전 사용자가 diff 검토·승인.** 자율 커밋 지양. 브랜치 `research/navrl-env`, 원격 joshualikaist/MOTAR.
+- **커밋/푸시 전 사용자가 diff 검토·승인.** 자율 커밋 지양. **작업 브랜치는 `main` 하나**, 원격
+  joshualikaist/MOTAR. 장기 작업 브랜치를 만들지 않는다 — 규칙과 사유는 `OPERATIONS.md` §0.
 - `runs/`(4GB+)·`nn/`·tfevents·로그는 gitignore. 결과는 `results/<sweep>.csv`로 소량만 추적.
 - 여러 클로드/커서 세션이 동시에 작업할 수 있음 — 미커밋 변경이 남의 WIP일 수 있으니 함부로 커밋하지 말 것.

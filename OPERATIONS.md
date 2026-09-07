@@ -134,6 +134,26 @@ lower pilot 8/8 PASS일 때만 seed 839, bars 70/115/160/205였으나 열리지 
 0.05 warmup 게이트나 PID를 바꾸지 않습니다. confirmatory PASS가 여는 것은 별도 사전등록할
 500-epoch PPO smoke뿐이며, 장기학습 authority는 만들지 않습니다.
 
+## 0. 브랜치 규칙 (2026-09-07 제정) — 작업 브랜치는 `main` 하나다
+
+**모든 작업·커밋·푸시는 `main`에서 한다.** 장기 작업 브랜치를 만들지 않는다. 원격은
+`git@github.com:joshualikaist/MOTAR.git` 하나뿐이다.
+
+- **GitHub 기본 브랜치 = `main`**, **Pages 서빙 = `main` 브랜치의 `/docs` 폴더**. 이 둘이 어긋나면
+  푸시해도 사이트가 안 바뀐다.
+- 세션 시작 시 `git status -sb` 첫 줄이 `## main...origin/main`인지 확인한다. 아니면 그 자리에서 멈추고
+  왜 다른 브랜치인지 확인한다.
+- 예외는 **codex 워크트리**뿐이다(`.codex_worktrees/`). 이건 병렬 에이전트가 쓰는 단기 작업 공간이고,
+  끝나면 `main`으로 병합한 뒤 브랜치를 지운다. 워크트리에 물려 있는 브랜치는 삭제하지 않는다
+  (`git worktree list`로 확인).
+- 문서에 브랜치 이름을 적을 때는 `CLAUDE.md`와 이 파일이 **같은 이름**을 말해야 한다.
+  `tests/test_branch_policy.py`가 그 일치를 강제한다.
+
+**이 규칙이 생긴 이유**: 원격 기본 브랜치가 `research/navrl-env`인데 실제 작업은 `main`에서 이뤄졌고,
+`CLAUDE.md`는 `research/navrl-env`라고 적고 있었다. 그래서 2026-09-07에 사이트 갱신과 README 도식을
+푸시했는데도 배포되지 않았다. 두 브랜치는 갈라진 적이 없었고(`research/navrl-env`가 `main`의 순수 조상,
+32 커밋 뒤짐) fast-forward 한 번으로 해소됐지만, 원인은 **어느 브랜치가 정본인지 문서가 틀리게 적어둔 것**이었다.
+
 ## 1. 처음 설치할 때
 
 필수 조건은 Linux, NVIDIA GPU, Miniconda, Isaac Gym Preview 4입니다. Isaac Gym은 NVIDIA 계정으로
