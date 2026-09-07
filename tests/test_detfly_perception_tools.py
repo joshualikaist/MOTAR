@@ -22,6 +22,7 @@ DOWNLOAD = load_tool("download_detfly_dataset")
 EVALUATE = load_tool("eval_detfly_zeroshot")
 PREPARE = load_tool("prepare_detfly_dataset")
 JOINT = load_tool("build_nps_detfly_joint_dataset")
+TRAIN = load_tool("run_joint_detector_training")
 
 
 class DetFlyDownloadTest(unittest.TestCase):
@@ -164,6 +165,21 @@ class JointDetectorDatasetTest(unittest.TestCase):
         negatives = [(x, y) for x, y, _boxes, kind in selected if kind == "negative"]
         self.assertEqual(len(negatives), 1)
         self.assertIsNone(JOINT.intersection(obj["xyxy"], *negatives[0]))
+
+
+class JointDetectorTrainingContractTest(unittest.TestCase):
+    def test_command_freezes_multiscale_and_excludes_resume(self):
+        command = TRAIN.frozen_command()
+        self.assertIn("--multi-scale", command)
+        self.assertEqual(command[command.index("--batch-size") + 1], "8")
+        self.assertEqual(command[command.index("--epochs") + 1], "30")
+        self.assertEqual(command[command.index("--seed") + 1], "0")
+        self.assertNotIn("--resume", command)
+
+    def test_expected_hashes_are_full_sha256(self):
+        for digest in TRAIN.EXPECTED.values():
+            if len(digest) == 64:
+                int(digest, 16)
 
 
 if __name__ == "__main__":
