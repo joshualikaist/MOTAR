@@ -96,6 +96,7 @@ assert.strictEqual(episode.age, age + 0.1, 'speed-zero viewer episodes must stil
 // GitHub README and the site must render the same canonical architecture assets directly.
 for (const asset of [
   'motar-system-overview.svg', 'motar-control-stack.svg',
+  'motar-perception-final.svg',
   'motar-perception-detection.svg', 'motar-safety-filter.svg',
   'motar-perception-candidate.svg',
 ]) {
@@ -110,20 +111,31 @@ const currentPerception = fs.readFileSync(
   path.join(repo, 'docs/assets/motar-perception-detection.svg'),
   'utf8',
 );
-assert(currentPerception.includes('단일 중심점'), 'CURRENT perception diagram must keep the union-centroid failure');
-assert(!currentPerception.includes('not in the control loop'), 'CURRENT diagram must not be relabelled as a candidate');
+assert(currentPerception.includes('단일 중심점'), 'baseline perception diagram must keep the union-centroid failure');
+assert(currentPerception.includes('CURRENT BASELINE — KNOWN FAILURE'), 'baseline diagram must expose its failed status');
 const candidatePerception = fs.readFileSync(
   path.join(repo, 'docs/assets/motar-perception-candidate.svg'),
   'utf8',
 );
 assert(candidatePerception.includes('not in the control loop'), 'candidate diagram must stay labelled as not in the control loop');
 assert(candidatePerception.includes('CANDIDATE'), 'candidate diagram must stay labelled CANDIDATE');
-assert(candidatePerception.includes('IMPLEMENTED · CPU ONLY'), 'candidate diagram must distinguish implemented work');
+assert(candidatePerception.includes('ARCHIVED — SAM / in-sim shape detector'), 'candidate diagram must expose its archived status');
+assert(candidatePerception.includes('IMPLEMENTED / CPU'), 'candidate diagram must distinguish implemented work');
 assert(candidatePerception.includes('PLANNED'), 'candidate diagram must distinguish planned work');
-assert(candidatePerception.includes('현재는 CC stub; SAM worker 없음'), 'candidate diagram must not imply that a SAM worker exists');
+assert(candidatePerception.includes('현재 CC stub · SAM worker 없음'), 'candidate diagram must not imply that a SAM worker exists');
 assert(candidatePerception.includes('pose(t_capture)'), 'candidate diagram must preserve capture-time pose semantics');
-assert(candidatePerception.includes('multi-hypothesis'), 'candidate diagram must show the planned track-bank boundary');
-assert(candidatePerception.includes('semantic output perturbation'), 'candidate diagram must show the safety-independence gate');
+assert(candidatePerception.includes('다중가설'), 'candidate diagram must show the planned track-bank boundary');
+assert(candidatePerception.includes('Semantic 변화 → safety output 동일 gate'), 'candidate diagram must show the safety-independence gate');
+const finalPerception = fs.readFileSync(
+  path.join(repo, 'docs/assets/motar-perception-final.svg'),
+  'utf8',
+);
+for (const contract of [
+  'FINAL PERCEPTION PATH', 'NPS-Drones', 'Det-Fly', 'K = 5', 'CNN + KF',
+  'GRU · T=8', 'Transformer · T=16', 'Inject measured errors', 'PPO retraining',
+]) assert(finalPerception.includes(contract), `final perception diagram missing: ${contract}`);
+assert(html.includes('perception_final_implementation_plan_2026-09-07.md'));
+assert(readme.includes('perception_final_implementation_plan_2026-09-07.md'));
 const currentOverview = fs.readFileSync(
   path.join(repo, 'docs/assets/motar-system-overview.svg'),
   'utf8',

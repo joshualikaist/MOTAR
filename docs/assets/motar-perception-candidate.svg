@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1210" viewBox="0 0 1440 1210" role="img" aria-labelledby="title desc">
-<title id="title">Instance-preserving perception</title><desc id="desc">대체된 SAM 설계 후보 · 제어루프 연결 및 성능 측정 없음 · 현재 경로는 160 × 90 / single KF</desc>
+<title id="title">Archived SAM in-simulator shape detector design</title><desc id="desc">ARCHIVED. This design is not in the control loop. 대체된 SAM-in-sim 형상 detector 후보이며 제어루프 연결 및 성능 측정 없음. Offline CPU instance adapter만 보존한다.</desc>
 <defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#8395A1"/></marker></defs>
 <g font-family="Arial, 'Noto Sans CJK KR', sans-serif">
 <rect width="1440" height="1210" rx="24" fill="#F4F7FA"/>
@@ -7,8 +7,8 @@
 
 <text x="40" y="38" font-size="13" font-weight="700" fill="#007F73" text-anchor="start">MOTAR   /   05 / PERCEPTION ARCHIVE</text>
 <text x="1400" y="38" font-size="12" font-weight="700" fill="#536B7A" text-anchor="end">SUPERSEDED DESIGN / OFFLINE CPU ADAPTER ONLY</text>
-<text x="40" y="86" font-size="32" font-weight="700" fill="#142D3B" text-anchor="start">Instance-preserving perception</text>
-<text x="40" y="119" font-size="16" font-weight="400" fill="#536B7A" text-anchor="start">대체된 SAM 설계 후보 · 제어루프 연결 및 성능 측정 없음 · 현재 경로는 160 × 90 / single KF</text>
+<text x="40" y="86" font-size="32" font-weight="700" fill="#142D3B" text-anchor="start">ARCHIVED — SAM / in-sim shape detector</text>
+<text x="40" y="119" font-size="16" font-weight="400" fill="#536B7A" text-anchor="start">폐기된 실행 경로 · 제어루프 연결 및 성능 측정 없음 · offline CPU instance adapter만 보존</text>
 <rect x="40" y="149" width="1360" height="64" rx="10" fill="#FFF1E3" stroke="#EDD5BC"/>
 <text x="64" y="176" font-size="12" font-weight="700" fill="#007F73" text-anchor="start">IMPLEMENTED: INSTANCE BOUNDARY ONLY</text>
 <text x="64" y="200" font-size="16" font-weight="400" fill="#B66318" text-anchor="start">초록색 블록만 오프라인 CPU 구현. 주황색은 미구현 계획이며, 아래 안전 경로 역시 향후 계약입니다.</text>

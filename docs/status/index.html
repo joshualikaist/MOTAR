@@ -154,15 +154,26 @@
         <li>봉인된 held-out: <strong>seed-313 capture 83.70% @70 → 65.54% @145</strong>,
           timeout 0.4% 미만, 손실은 대부분 bar contact.</li>
         <li><strong>routed mechanism still FAIL</strong> — routed PPO는 여전히 차단 상태입니다.</li>
-        <li>SAM 후보는 <strong>offline CPU 어댑터</strong>까지만 구현됐고 제어루프 연결·성능 측정은
-          없습니다.</li>
+        <li>SAM-in-sim 형상 detector 경로는 <strong>ARCHIVED</strong>이며 offline CPU 어댑터만
+          기록으로 보존합니다.</li>
       </ul>
     </section>
 
     <section class="visual wrap" id="perception" aria-labelledby="perception-title">
       <div class="section-head">
         <p>04 · PERCEPTION</p>
-        <h2 id="perception-title">표적을 어떻게 찾는가 — 그리고 언제 틀리는가</h2>
+        <h2 id="perception-title">실사 UAV detector에서 정책 재적응까지</h2>
+        <p>최종 경로는 NPS-Drones detector를 Det-Fly에 zero-shot 평가하고, Top-K 후보를 유지한 뒤
+          CNN only / KF / GRU / Temporal Transformer association을 같은 held-out clip에서 비교합니다.
+          실사에서 측정한 miss·bearing·ID switch·reacquisition·latency·range uncertainty를 simulation에
+          주입한 뒤 PPO를 새 계보로 재학습합니다. 장거리 12–28 m는 camera 중심이고 LiDAR는 12 m 이내
+          range 보정과 독립 obstacle sensing에 제한합니다.</p>
+      </div>
+      <img src="../assets/motar-perception-final.svg" alt="실제 NPS와 Det-Fly 공대공 영상에서 Top-K UAV 후보를 검출하고 KF, GRU, Temporal Transformer를 비교한 뒤 측정 오차를 simulator에 주입해 PPO를 재학습하는 최종 perception 계획">
+      <p><a href="../plans/perception_final_implementation_plan_2026-09-07.md">구현 순서·인터페이스·완료 조건의 정본</a></p>
+
+      <h3>Current baseline — known failure</h3>
+      <div class="section-head">
         <p>탐지기는 YOLO가 아닙니다. 1&times;1 conv 색 분류기가 픽셀을 고르고, 양성 픽셀
           <strong>전부가 하나의 중심점으로 붕괴</strong>합니다. connected components가 없어
           후보는 언제나 1개이므로, 같은 색 물체가 하나만 더 있어도 구분하지 못합니다.
@@ -191,9 +202,9 @@
       <p><strong>구속 조건은 측정 품질이 아니라 물체 동일성입니다.</strong> 더 정밀하게 재도,
         후보를 더 잘 관리해도 달라지지 않습니다. 무엇을 표적으로 볼 것인가만이 문제입니다.</p>
 
-      <h3>대체된 방향 — 시뮬 내 형상 detector 학습</h3>
-      <img src="../assets/motar-perception-candidate.svg" alt="CANDIDATE 구조: timestamped RGB-D와 pose, 비동기 SAM discovery와 경량 propagation, 구현된 K-instance 경계, 계획된 3-D association과 다중가설 track, fail-closed decision, detector-independent safety path">
-      <p>위 구조는 <strong>설계 후보였고 측정으로 대체됐습니다.</strong> 제어루프에 들어간 적이
+      <h3>Archived — SAM / in-sim shape detector</h3>
+      <img src="../assets/motar-perception-candidate.svg" alt="ARCHIVED SAM-in-sim 설계: timestamped RGB-D와 pose, 비동기 SAM discovery, K-instance 경계, 3-D association과 다중가설 track 계획">
+      <p>위 구조는 <strong>폐기된 설계 후보이며 기록 목적으로만 보존합니다.</strong> 제어루프에 들어간 적이
         없고 성능 주장도 아닙니다. 초록색 instance boundary만 <strong>offline CPU 어댑터</strong>로
         구현돼 있고, SAM worker·전송·제어루프 연결·성능 측정은 존재하지 않습니다. 대체 사유 둘: <strong>(1)</strong> 표적에 형상 정보가 없습니다 &mdash;
         detector가 보는 표적은 반지름 0.15 m 해석적 <em>구</em>에 상수색을 칠한 것이고, 디코이 3종 중

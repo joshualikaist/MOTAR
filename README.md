@@ -23,7 +23,7 @@ MOTAR는 카메라, LiDAR, ego-state만으로 움직이는 표적을 추적하�
 > Track A는 P2 `STRICT FAIL`, D1 `FAIL`, P3 `BLOCKED` 상태 그대로입니다.
 > 항법 계보는 별개 축이며 145 bars에서 멈춰 있습니다 — route-off held-out
 > **capture 83.70% @70 → 65.54% @145**(seed 313), routed mechanism은 여전히 FAIL입니다.
-> SAM 후보는 **offline CPU 어댑터**까지만 구현됐고 제어루프 연결·성능 측정은 없습니다.
+> SAM-in-sim 형상 detector 경로는 **ARCHIVED**이며, offline CPU 어댑터만 기록으로 보존합니다.
 
 [Research site](docs/status/) · [System specification](docs/MOTAR_SYSTEM_SPEC_2026-08-24.md) ·
 [Blind-search & autonomous-evader plan](docs/plans/target_search_and_adversarial_evader.md) ·
@@ -112,7 +112,23 @@ attitude/rate torque → motor allocation → 100 Hz rigid-body physics` 순서�
 routed mechanism은 실패해 routed PPO가 차단돼 있습니다. 실제 BOM/CAD/관성/추력/열/전원/비행
 식별값은 아닙니다.
 
-## Perception — how the target is detected
+## Perception — final implementation path
+
+![MOTAR final perception implementation path](docs/assets/motar-perception-final.svg)
+
+최종 인지는 **실제 공대공 영상에서 UAV appearance를 학습**하고, 한 프레임의 Top-K 후보를 시간축에서
+연관하는 구조입니다. NPS-Drones detector를 Det-Fly에 zero-shot 평가하고 target pixel-size별 recall을
+먼저 측정합니다. 같은 frozen detector 위에서 CNN only, KF, GRU, Temporal Transformer를 대체 arm으로
+비교한 뒤, 실사에서 측정한 miss·false positive·bearing·ID switch·reacquisition·latency·range uncertainty
+분포를 simulator에 주입해 PPO를 새 계보로 재학습합니다.
+
+12–28 m 표적 인지는 camera 중심이며 LiDAR target ranging은 쓰지 않습니다. 12 m 이내에서만
+camera+LiDAR/stereo로 range를 보정하고, raw obstacle LiDAR와 arc-clearance filter는 semantic target
+추정과 독립적으로 유지합니다. 구현 순서·인터페이스·완료 조건은
+[`perception_final_implementation_plan_2026-09-07.md`](docs/plans/perception_final_implementation_plan_2026-09-07.md)가
+정본입니다.
+
+### Historical baseline — current software, known failure
 
 ![MOTAR camera target detection pipeline](docs/assets/motar-perception-detection.svg)
 
@@ -159,11 +175,11 @@ distractor 충돌이 미귀속 contact로 기록되고 정적 goal이 distractor
 [깊이 잡음 차수](docs/prereg_2026-09-04_depth_noise_model_order.md) ·
 [디코이 envelope](docs/prereg_2026-09-01_distractor_envelope.md).
 
-### 대체된 방향 — 시뮬 내 형상 detector 학습
+### Archive — SAM / in-sim shape detector
 
-![MOTAR candidate instance-preserving detection pipeline](docs/assets/motar-perception-candidate.svg)
+![Archived MOTAR SAM in-simulator perception design](docs/assets/motar-perception-candidate.svg)
 
-위 그림은 **설계 후보였고, 측정으로 대체됐습니다.** 제어루프에 들어간 적이 없고 성능 주장도
+위 그림은 **폐기된 설계 후보이며 기록 목적으로만 보존합니다.** 제어루프에 들어간 적이 없고 성능 주장도
 아닙니다. 초록색 `INSTANCE BOUNDARY`만 오프라인 CPU 계약으로 구현돼 있습니다.
 
 대체 사유는 두 가지입니다.

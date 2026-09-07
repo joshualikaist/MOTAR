@@ -116,6 +116,14 @@ done
 
 ## 3. 트랙 B — 실사 인지: 남은 일과 순서
 
+> **2026-09-07 최종 구현 결정:** 이 절의 초기 비용·임계값은 계획 당시 추정 기록으로만 남긴다.
+> 구현 authority는
+> [`perception_final_implementation_plan_2026-09-07.md`](perception_final_implementation_plan_2026-09-07.md)다.
+> 색 detector와 SAM-in-sim 경로는 baseline/archive로 동결하고, 실행 순서는
+> NPS → Det-Fly zero-shot → Top-K 후보 → KF/GRU/Temporal Transformer 비교 → 실사 오차 측정 →
+> simulation 주입 → PPO 재적응이다. 현재 근거로 검증되지 않은 Det-Fly mAP50 ≥0.33 gate와
+> 1–3주 허가 대기 추정은 의사결정 기준이나 확정 일정으로 사용하지 않는다.
+
 ### B0. 지금 상태를 정직하게
 
 NPS-Drones 검출기는 **한 데이터셋 안의 숫자**다(mAP50 0.549 ± 0.015, 최고 0.579는 2 sd 지점). 시뮬에는

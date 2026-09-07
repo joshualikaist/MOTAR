@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1536" height="900" viewBox="0 0 1536 900" role="img" aria-labelledby="title desc">
+  <title id="title">MOTAR final perception implementation path</title>
+  <desc id="desc">실제 공대공 데이터로 UAV 후보를 검출하고 KF, GRU, Temporal Transformer를 비교한 뒤 실사에서 측정한 오차를 simulator에 주입해 PPO를 재학습하는 최종 계획. 장거리는 카메라, 12미터 이내는 카메라와 LiDAR 또는 stereo를 결합한다.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#60736f"/></marker>
+    <style>
+      .title{font:700 31px Arial,'Noto Sans CJK KR',sans-serif;fill:#112a35}.sub{font:400 15px Arial,'Noto Sans CJK KR',sans-serif;fill:#526965}.tag{font:700 12px Arial,'Noto Sans CJK KR',sans-serif;letter-spacing:1.2px;fill:#176b61}.h{font:700 20px Arial,'Noto Sans CJK KR',sans-serif;fill:#112a35}.b{font:400 14px Arial,'Noto Sans CJK KR',sans-serif;fill:#425b58}.mono{font:400 13px ui-monospace,monospace;fill:#315b55}.small{font:400 12px Arial,'Noto Sans CJK KR',sans-serif;fill:#60736f}.tagLight{font:700 12px Arial,'Noto Sans CJK KR',sans-serif;letter-spacing:1.2px;fill:#c9e9df}.hLight{font:700 20px Arial,'Noto Sans CJK KR',sans-serif;fill:#fff}.bLight{font:400 14px Arial,'Noto Sans CJK KR',sans-serif;fill:#e7f4f0}.smallLight{font:400 12px Arial,'Noto Sans CJK KR',sans-serif;fill:#c9ded8}.arrow{stroke:#60736f;stroke-width:2.5;fill:none;marker-end:url(#arrow)}
+    </style>
+  </defs>
+  <rect width="1536" height="900" rx="34" fill="#f4f8f6"/>
+  <text x="54" y="52" class="tag">MOTAR · FINAL PERCEPTION PATH · IMPLEMENTATION PLAN</text>
+  <text x="54" y="99" class="title">Real UAV appearance → temporal association → measured-error adaptation</text>
+  <text x="54" y="129" class="sub">색 단서가 아닌 UAV 후보를 유지하고, 실사에서 측정한 인지 오류만 simulation으로 전달한다.</text>
+
+  <rect x="54" y="174" width="258" height="250" rx="20" fill="#fff" stroke="#cbdad5" stroke-width="2"/>
+  <text x="78" y="207" class="tag">01 · REAL DATA</text><text x="78" y="246" class="h">Air-to-air imagery</text>
+  <rect x="78" y="271" width="210" height="48" rx="12" fill="#e4f2ed"/><text x="98" y="301" class="b">NPS-Drones · trained</text>
+  <rect x="78" y="331" width="210" height="48" rx="12" fill="#fff3e5"/><text x="98" y="361" class="b">Det-Fly · zero-shot next</text>
+  <text x="78" y="400" class="small">pixel-size별 recall · source split</text>
+  <path d="M312 299H350" class="arrow"/>
+
+  <rect x="358" y="174" width="270" height="250" rx="20" fill="#fff" stroke="#9dc8bb" stroke-width="2"/>
+  <text x="382" y="207" class="tag">02 · FROZEN DETECTOR</text><text x="382" y="246" class="h">Top-K UAV candidates</text>
+  <text x="382" y="282" class="mono">K = 5</text><text x="382" y="311" class="mono">Cᵢ = [u,v,w,h,c,e₆₄]</text>
+  <g fill="#2f7f70"><rect x="382" y="339" width="38" height="38" rx="9"/><rect x="430" y="339" width="38" height="38" rx="9" opacity=".82"/><rect x="478" y="339" width="38" height="38" rx="9" opacity=".64"/><rect x="526" y="339" width="38" height="38" rx="9" opacity=".46"/><rect x="574" y="339" width="30" height="38" rx="9" opacity=".3"/></g>
+  <text x="382" y="401" class="small">frame_id · capture timestamp 보존</text>
+  <path d="M628 299H666" class="arrow"/>
+
+  <rect x="674" y="174" width="348" height="250" rx="20" fill="#dcece7" stroke="#70a99a" stroke-width="2"/>
+  <text x="698" y="207" class="tag">03 · CONTROLLED COMPARISON</text><text x="698" y="246" class="h">Temporal association</text>
+  <rect x="698" y="270" width="140" height="42" rx="10" fill="#fff"/><text x="716" y="297" class="b">CNN only</text>
+  <rect x="852" y="270" width="140" height="42" rx="10" fill="#fff"/><text x="870" y="297" class="b">CNN + KF</text>
+  <rect x="698" y="326" width="140" height="42" rx="10" fill="#fff"/><text x="716" y="353" class="b">GRU · T=8</text>
+  <rect x="852" y="326" width="140" height="42" rx="10" fill="#fff"/><text x="866" y="353" class="b">Transformer · T=16</text>
+  <text x="698" y="401" class="small">같은 detector · 같은 held-out clips · 대체 arm</text>
+  <path d="M1022 299H1060" class="arrow"/>
+
+  <rect x="1068" y="174" width="414" height="250" rx="20" fill="#234f49" stroke="#234f49" stroke-width="2"/>
+  <text x="1092" y="207" class="tagLight">04 · TARGET STATE</text><text x="1092" y="246" class="hLight">Uncertain track estimate</text>
+  <text x="1092" y="286" class="bLight">bearing · range_hat</text><text x="1092" y="316" class="bLight">bearing_rate · range_rate</text><text x="1092" y="346" class="bLight">confidence · covariance · age</text>
+  <text x="1092" y="391" class="smallLight">정책에는 점 하나가 아니라 상태와 불확실성을 전달</text>
+
+  <rect x="54" y="470" width="454" height="154" rx="20" fill="#fff" stroke="#cbdad5" stroke-width="2"/>
+  <text x="78" y="503" class="tag">SENSOR ROLES</text><text x="78" y="540" class="h">12–28 m · camera first</text>
+  <text x="78" y="570" class="b">detection · bearing · motion · approximate range ± uncertainty</text>
+  <text x="78" y="601" class="small">LiDAR target ranging 사용 안 함</text>
+  <rect x="528" y="470" width="454" height="154" rx="20" fill="#fff" stroke="#cbdad5" stroke-width="2"/>
+  <text x="552" y="503" class="tag">SENSOR ROLES</text><text x="552" y="540" class="h">&lt;12 m · range refinement</text>
+  <text x="552" y="570" class="b">camera + LiDAR / stereo fusion</text><text x="552" y="601" class="small">raw obstacle LiDAR는 semantic target 경로와 독립</text>
+
+  <path d="M1275 424V469H1094V508" class="arrow"/>
+  <rect x="1014" y="470" width="468" height="154" rx="20" fill="#fff7ea" stroke="#d9aa65" stroke-width="2"/>
+  <text x="1038" y="503" class="tag">05 · MEASURE ON REAL VIDEO</text><text x="1038" y="540" class="h">Error model</text>
+  <text x="1038" y="570" class="b">miss · false positive · bearing · ID switch · reacquisition</text>
+  <text x="1038" y="601" class="b">latency · range error / uncertainty</text>
+  <path d="M1248 624V669" class="arrow"/>
+
+  <rect x="740" y="678" width="372" height="146" rx="20" fill="#fff" stroke="#9dc8bb" stroke-width="2"/>
+  <text x="764" y="711" class="tag">06 · SIMULATION</text><text x="764" y="748" class="h">Inject measured errors</text>
+  <text x="764" y="778" class="b">오류의 크기와 시간 상관을 재현</text><text x="764" y="806" class="small">실사 detector를 synthetic RGB에 직접 실행하지 않음</text>
+  <path d="M740 751H700" class="arrow"/>
+  <rect x="292" y="678" width="400" height="146" rx="20" fill="#2f6c61" stroke="#2f6c61" stroke-width="2"/>
+  <text x="316" y="711" class="tagLight">07 · NEW POLICY LINEAGE</text><text x="316" y="748" class="hLight">PPO retraining + held-out flight</text>
+  <text x="316" y="778" class="bLight">Capture · Crash · Timeout · 95% CI</text><text x="316" y="806" class="smallLight">마지막에만 arc-clearance filter와 통합</text>
+
+  <text x="54" y="864" class="small">Historical colour detector and SAM-in-sim design remain documented as baseline/archive; neither is the final perception path.</text>
+</svg>

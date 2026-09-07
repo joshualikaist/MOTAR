@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 644" width="960" height="644" role="img" aria-labelledby="pTitle pDesc">
-  <title id="pTitle">MOTAR camera target detection pipeline and its colour shortcut</title>
-  <desc id="pDesc">RGB-D frames pass a 1x1 pixel classifier, every positive pixel is collapsed into one centroid without connected components, and the centroid is associated with a LiDAR return. A same-coloured decoy enters at the classifier and is never separated, producing a 90.27 percent false target lock rate at five distractors.</desc>
+  <title id="pTitle">Current baseline, known failure: MOTAR colour detector</title>
+  <desc id="pDesc">Historical baseline only. RGB-D frames pass a 1x1 pixel classifier, every positive pixel is collapsed into one centroid without connected components, and the centroid is associated with a LiDAR return. A same-coloured decoy enters at the classifier and is never separated, producing a 90.27 percent false target lock rate at five distractors.</desc>
   <style>
     .t   { font: 600 15px system-ui, sans-serif; fill: #0f172a; }
     .h   { font: 700 13px system-ui, sans-serif; fill: #0f172a; }
@@ -27,8 +27,8 @@
   </defs>
 
   <rect width="960" height="620" fill="#f8fafc"/>
-  <text x="24" y="34" class="t">표적 탐지 파이프라인 — 그리고 색 지름길이 들어오는 지점</text>
-  <text x="24" y="54" class="cap">aerial_gym/task/navrl_task/navrl_perception.py · AppearanceTargetSegmenter + _detect_rgbd</text>
+  <text x="24" y="34" class="t">CURRENT BASELINE — KNOWN FAILURE</text>
+  <text x="24" y="54" class="cap">historical experiment path · AppearanceTargetSegmenter + single centroid · final perception에 사용하지 않음</text>
 
   <!-- Stage 1 -->
   <rect x="24" y="76" width="180" height="96" class="boxin"/>
