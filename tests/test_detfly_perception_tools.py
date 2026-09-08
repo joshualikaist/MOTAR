@@ -406,6 +406,15 @@ class TemporalAssociationTest(unittest.TestCase):
         self.assertEqual(float(values[0, 11]), 1.0)
 
     def test_selection_utility_and_tie_order_are_frozen(self):
+        import numpy as np
+        current = self.candidate(u=80.0)
+        previous = [self.candidate(u=40.0), self.candidate(rank=1, u=80.0)]
+        values = MOTION.candidate_motion_features(
+            np.zeros((50, 50, 2), dtype=np.float32),
+            np.asarray([[1., 0., 0.], [0., 1., 0.]]),
+            1.0, True, [current], previous, 100, 100, 0.5, MOTION.DEFAULT_CONFIG)
+        self.assertAlmostEqual(float(values[0, 0]), 0.0)
+
         def metric(hits, false_locks):
             return {
                 "frames_with_ground_truth": 10,

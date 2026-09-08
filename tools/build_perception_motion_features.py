@@ -198,7 +198,7 @@ def candidate_motion_features(flow, affine, inlier_ratio, gmc_valid, current_can
         observed_flow = local_flow(flow, candidate, scale)
         residual_flow = observed_flow - gmc_flow
         previous = closest_previous_candidate(
-            mapped, candidate, previous_candidates, scaled_width, scaled_height, config)
+            mapped / scale, candidate, previous_candidates, width, height, config)
         box_motion = np.zeros(4, dtype=np.float64)
         if previous is not None:
             box_motion = np.asarray([

@@ -2,7 +2,16 @@
 
 작성: 2026-09-08
 
-상태: **PREREGISTERED — RESULTS NOT YET OBSERVED**
+상태: **P7b COMPLETE; P7c COORDINATE BUG CORRECTION — RERUN REQUIRED**
+
+## 2026-09-08 구현 정정
+
+첫 P7c run의 utility 0.681184668989547은 무효다. 직전 후보 선택에서 GMC로 변환한
+축소 좌표를 원본 후보 좌표와 비교하는 단위 오류가 발견됐다. mapped point를 원본
+좌표로 복원하도록 수정하며 기존 cache/run/selection은 감사용으로 보존한다.
+수정 cache와 run은 `v2` 경로에 새로 생성한다. architecture, seed, optimizer,
+checkpoint 선택과 utility 규칙은 그대로이며 P7b는 재학습하지 않는다.
+이 정정은 validation 결과를 관찰한 뒤 수행되므로 독립적인 새 사전등록 결과로 주장하지 않는다.
 
 ## 목적과 격리
 
