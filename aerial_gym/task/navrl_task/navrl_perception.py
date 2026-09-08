@@ -925,12 +925,45 @@ class NavRLPerceptionModule:
         self.lidar_silent_correct = bool(getattr(cfg, "lidar_silent_correct", False))
         self.rgb_noise_std = float(getattr(cfg, "rgb_noise_std", 0.015))
         self.depth_noise_std = float(getattr(cfg, "depth_noise_std", 0.02))
+        self.empirical_error = None
+        empirical_model_path = str(getattr(cfg, "empirical_error_model", "") or "").strip()
+        if empirical_model_path:
+            incompatible = []
+            if bool(getattr(cfg, "enable_perturbations", False)):
+                incompatible.append("NAVRL_PERCEPTION_PERTURB")
+            if self._detector_noise_active:
+                incompatible.append("NAVRL_DETNOISE_*")
+            if self.detection_latency_s != 0.0:
+                incompatible.append("NAVRL_DETECTION_LATENCY_S")
+            if self.range_error_m != 0.0:
+                incompatible.append("NAVRL_RANGE_ERROR_M")
+            if str(getattr(cfg, "detector_checkpoint", "") or "").strip():
+                incompatible.append("NAVRL_DETECTOR_CHECKPOINT")
+            if self._pose_premise_active:
+                incompatible.append("NAVRL_POSE_{CLOCK,NOISE}_*")
+            if incompatible:
+                raise RuntimeError(
+                    "P9 empirical error is mutually exclusive with: " + ", ".join(incompatible)
+                )
+            from aerial_gym.task.navrl_task.navrl_empirical_error import EmpiricalPerceptionError
+
+            self.empirical_error = EmpiricalPerceptionError(
+                empirical_model_path,
+                getattr(cfg, "empirical_error_model_sha256", ""),
+                self.num_envs,
+                self.device,
+                self.step_dt,
+                getattr(cfg, "empirical_error_seed", 1701),
+            )
         self.history_stride = max(1, int(round(float(cfg.history_interval_s) / self.step_dt)))
         self.step_count = 0
         self._latency_steps = max(0, int(round(self.detection_latency_s / self.step_dt)))
         # +3 keeps one slot of pose history on EACH side of the capture slot, so a clock-offset
         # read of up to one step in either direction never wraps onto overwritten data.
-        self._latency_slots = self._latency_steps + 3
+        empirical_latency_steps = (
+            self.empirical_error.max_latency_steps if self.empirical_error is not None else 0
+        )
+        self._latency_slots = max(self._latency_steps, empirical_latency_steps) + 3
         self._latency_step = torch.zeros(self.num_envs, dtype=torch.long, device=device)
         self._latency_meas_vehicle = torch.zeros(
             self.num_envs, self._latency_slots, 3, dtype=torch.float32, device=device
@@ -1128,6 +1161,8 @@ class NavRLPerceptionModule:
         self.last_target_like[env_ids] = False
         if self.search is not None:
             self.search.reset(env_ids)
+        if self.empirical_error is not None:
+            self.empirical_error.reset_idx(env_ids)
         self._latency_step[env_ids] = 0
         self._latency_meas_vehicle[env_ids] = 0.0
         self._latency_surface_range[env_ids] = 0.0
@@ -1149,10 +1184,16 @@ class NavRLPerceptionModule:
         mask,
         drone_pos_w=None,
         vehicle_quat=None,
+        latency_steps=None,
     ):
         self._latency_delayed_pose = None
-        if self._latency_steps <= 0:
+        if latency_steps is None and self._latency_steps <= 0:
             return measurement_vehicle, surface_range, bearing, visible, confidence, mask
+
+        if latency_steps is None:
+            latency_steps = self._latency_steps
+        elif self._latency_steps != 0:
+            raise RuntimeError("P9 variable latency cannot be combined with fixed latency")
 
         write_idx = self._latency_step % self._latency_slots
         self._latency_meas_vehicle[self._env_ids, write_idx] = measurement_vehicle
@@ -1165,8 +1206,8 @@ class NavRLPerceptionModule:
             self._latency_drone_pos[self._env_ids, write_idx] = drone_pos_w
             self._latency_drone_quat[self._env_ids, write_idx] = vehicle_quat
         self._latency_step += 1
-        ready = self._latency_step > self._latency_steps
-        read_idx = (self._latency_step - self._latency_steps - 1) % self._latency_slots
+        ready = self._latency_step > latency_steps
+        read_idx = (self._latency_step - latency_steps - 1) % self._latency_slots
         delayed_visible = self._latency_visible[self._env_ids, read_idx] & ready
         delayed_mask = self._latency_mask[self._env_ids, read_idx] & delayed_visible.view(
             -1, 1, 1
@@ -1175,7 +1216,7 @@ class NavRLPerceptionModule:
         # Published from the SAME read index as the measurement, so the pose and the detection
         # can never come from different steps. observe() consumes it only when P3 is enabled.
         if drone_pos_w is not None and vehicle_quat is not None:
-            if self._pose_premise_active:
+            if self._pose_premise_active and isinstance(latency_steps, int):
                 self._latency_delayed_pose = self._perturbed_capture_pose()
             else:
                 self._latency_delayed_pose = (
@@ -1556,23 +1597,69 @@ class NavRLPerceptionModule:
             visible &= torch.rand(self.num_envs, device=self.device) >= self.dropout_prob
         if self._detector_noise_active:
             visible = self._detector_noise_visibility(visible)
-        mask &= visible.view(-1, 1, 1)
         denom = count.clamp(min=1).float()
-        if detect_frame is not None:
-            # Same gating as the camera-resolution path, where `mask &= visible` above zeroes
-            # every sum for an env that is not visible.
-            gate = visible.float()
-            self._last_detect_count = torch.where(
-                visible, count, torch.zeros_like(count)
+        empirical_latency_steps = None
+        if self.empirical_error is not None:
+            clean_visible = visible.clone()
+            if detect_frame is not None:
+                bbox = detect_frame["bbox"]
+                bbox_width = (bbox[:, 2] - bbox[:, 0] + 1.0).clamp(min=0.0)
+                bbox_height = (bbox[:, 3] - bbox[:, 1] + 1.0).clamp(min=0.0)
+                clean_u = detect_frame["u_sum"] / denom
+                clean_v = detect_frame["v_sum"] / denom
+                clean_surface_range = detect_frame["depth_sum"] / denom
+            else:
+                raw_mf = mask.float()
+                clean_u = (raw_mf * self._u).sum(dim=(1, 2)) / denom
+                clean_v = (raw_mf * self._v).sum(dim=(1, 2)) / denom
+                clean_surface_range = (depth * raw_mf).sum(dim=(1, 2)) / denom
+                occupied_cols = mask.any(dim=1)
+                occupied_rows = mask.any(dim=2)
+                any_pixel = count > 0
+                u_min = occupied_cols.float().argmax(dim=1)
+                u_max = self.width - 1 - occupied_cols.float().flip(1).argmax(dim=1)
+                v_min = occupied_rows.float().argmax(dim=1)
+                v_max = self.height - 1 - occupied_rows.float().flip(1).argmax(dim=1)
+                bbox_width = torch.where(any_pixel, u_max - u_min + 1.0, 0.0)
+                bbox_height = torch.where(any_pixel, v_max - v_min + 1.0, 0.0)
+            size_px = (bbox_width * bbox_height).clamp(min=0.0).sqrt()
+            empirical_state, empirical_offset, empirical_latency_steps = (
+                self.empirical_error.sample(size_px, clean_visible)
             )
-            u = gate * detect_frame["u_sum"] / denom
-            v = gate * detect_frame["v_sum"] / denom
-            surface_range = gate * detect_frame["depth_sum"] / denom
+            # FALSE_LOCK remains a policy-facing measurement, but it is not the target mask and
+            # therefore must not carve the real target out of the obstacle depth map.
+            visible = clean_visible & (empirical_state != 2)
+            map_visible = clean_visible & (empirical_state == 0)
+            mask &= map_visible.view(-1, 1, 1)
+            gate = visible.float()
+            u = (clean_u + empirical_offset[:, 0] * self.detect_width).clamp(
+                0.0, float(self.detect_width - 1)
+            ) * gate
+            v = (clean_v + empirical_offset[:, 1] * self.detect_height).clamp(
+                0.0, float(self.detect_height - 1)
+            ) * gate
+            surface_range = clean_surface_range * gate
+            if detect_frame is not None:
+                self._last_detect_count = torch.where(
+                    visible, count, torch.zeros_like(count)
+                )
         else:
-            mf = mask.float()
-            u = (mf * self._u).sum(dim=(1, 2)) / denom
-            v = (mf * self._v).sum(dim=(1, 2)) / denom
-            surface_range = (depth * mf).sum(dim=(1, 2)) / denom
+            mask &= visible.view(-1, 1, 1)
+            if detect_frame is not None:
+                # Same gating as the camera-resolution path, where `mask &= visible` above zeroes
+                # every sum for an env that is not visible.
+                gate = visible.float()
+                self._last_detect_count = torch.where(
+                    visible, count, torch.zeros_like(count)
+                )
+                u = gate * detect_frame["u_sum"] / denom
+                v = gate * detect_frame["v_sum"] / denom
+                surface_range = gate * detect_frame["depth_sum"] / denom
+            else:
+                mf = mask.float()
+                u = (mf * self._u).sum(dim=(1, 2)) / denom
+                v = (mf * self._v).sum(dim=(1, 2)) / denom
+                surface_range = (depth * mf).sum(dim=(1, 2)) / denom
         if training and self.range_error_m != 0.0:
             surface_range = (surface_range + self.range_error_m).clamp(
                 0.0, self.max_camera_range
@@ -1595,6 +1682,8 @@ class NavRLPerceptionModule:
         if detect_frame is not None:
             # Mean segmenter score over the mask, which is that one score wherever the mask is.
             confidence = gate * detect_score
+        elif self.empirical_error is not None:
+            confidence = gate * (score * raw_mf).sum(dim=(1, 2)) / denom
         else:
             confidence = (score * mf).sum(dim=(1, 2)) / denom
         confidence *= (count.float() / max(1.0, float(self.min_pixels * 4))).clamp(max=1.0)
@@ -1623,6 +1712,7 @@ class NavRLPerceptionModule:
             mask,
             drone_pos_w=drone_pos_w,
             vehicle_quat=vehicle_quat,
+            latency_steps=empirical_latency_steps,
         )
 
     def _latency_corrected_map_inputs(

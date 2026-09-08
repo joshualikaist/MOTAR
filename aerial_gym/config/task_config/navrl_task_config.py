@@ -367,6 +367,14 @@ class task_config:
         # Dedicated stream. Verification 3 lost a whole campaign to pose noise drawing from the
         # global torch RNG, which changed obstacle placement and target motion between arms.
         detector_noise_seed = _env_int("NAVRL_DETNOISE_SEED", 9409)
+        # P9: validation-calibrated pixel/temporal injector. The path alone is insufficient:
+        # callers must pin the exact compiled model bytes so a moved/rebuilt JSON cannot silently
+        # change a PPO lineage. Empty keeps every pre-P9 run bit-identical.
+        empirical_error_model = os.environ.get("NAVRL_P9_ERROR_MODEL", "").strip()
+        empirical_error_model_sha256 = os.environ.get(
+            "NAVRL_P9_EXPECTED_SHA256", ""
+        ).strip().lower()
+        empirical_error_seed = _env_int("NAVRL_P9_SEED", 1701)
         # Profiling mode: additionally run a SECOND detector on the same frame and export the
         # paired outputs, so v7's error against analytic can be measured on identical inputs.
         detector_profile_checkpoint = os.environ.get("NAVRL_DETPROFILE_CHECKPOINT", "")

@@ -3033,6 +3033,16 @@ class NavRLTask(BaseTask):
             "cfg_depth_noise_std": float(
                 getattr(self.perception_cfg, "depth_noise_std", 0.0)
             ),
+            "cfg_p9_empirical_error_enabled": bool(
+                getattr(getattr(self, "perception", None), "empirical_error", None) is not None
+            ),
+            "cfg_p9_empirical_error_sha256": (
+                self.perception.empirical_error.sha256
+                if getattr(getattr(self, "perception", None), "empirical_error", None) is not None else ""
+            ),
+            "cfg_p9_empirical_error_seed": int(
+                getattr(self.perception_cfg, "empirical_error_seed", 1701)
+            ),
             "cfg_appearance_hue_deg": float(
                 getattr(self.vis_cfg, "appearance_hue_deg", 0.0)
             ),
@@ -4070,6 +4080,11 @@ class NavRLTask(BaseTask):
                     "NAVRL_PERCEPTION_PERTURB",
                 ),
                 (
+                    "cfg_p9_empirical_error_enabled",
+                    bool(getattr(getattr(self, "perception", None), "empirical_error", None) is not None),
+                    "NAVRL_P9_ERROR_MODEL",
+                ),
+                (
                     "cfg_tilt_comp",
                     os.environ.get("NAVRL_TILT_COMP", "1").strip().lower()
                     not in ("0", "false", "no", "off"),
@@ -4244,6 +4259,24 @@ class NavRLTask(BaseTask):
                     "cfg_depth_noise_std",
                     float(getattr(self.perception_cfg, "depth_noise_std", 0.0)),
                     "NAVRL_DEPTH_NOISE_STD",
+                ),
+                (
+                    "cfg_p9_empirical_error_enabled",
+                    bool(getattr(getattr(self, "perception", None), "empirical_error", None) is not None),
+                    "NAVRL_P9_ERROR_MODEL",
+                ),
+                (
+                    "cfg_p9_empirical_error_sha256",
+                    (
+                        self.perception.empirical_error.sha256
+                        if getattr(getattr(self, "perception", None), "empirical_error", None) is not None else ""
+                    ),
+                    "NAVRL_P9_EXPECTED_SHA256",
+                ),
+                (
+                    "cfg_p9_empirical_error_seed",
+                    float(getattr(self.perception_cfg, "empirical_error_seed", 1701)),
+                    "NAVRL_P9_SEED",
                 ),
                 (
                     "cfg_appearance_hue_deg",
@@ -9174,6 +9207,16 @@ class NavRLTask(BaseTask):
                 "speed_governor_yaw_cap_radps": self.speed_governor_cfg.yaw_cap_radps,
                 "speed_governor_yaw_cap_margin_m": self.speed_governor_cfg.yaw_cap_margin_m,
                 "speed_governor_target_exclusion": "camera_lidar_association",
+                "p9_empirical_error_enabled": bool(
+                    getattr(getattr(self, "perception", None), "empirical_error", None) is not None
+                ),
+                "p9_empirical_error_sha256": (
+                    self.perception.empirical_error.sha256
+                    if getattr(getattr(self, "perception", None), "empirical_error", None) is not None else ""
+                ),
+                "p9_empirical_error_seed": int(
+                    getattr(self.perception_cfg, "empirical_error_seed", 1701)
+                ),
                 "search_state": str(representation["search_state"]),
                 "search_state_masked": bool(
                     representation["search_state_force_invalid"]

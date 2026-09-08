@@ -299,8 +299,9 @@ class DetectReduction(unittest.TestCase):
         frame = self._run(stub)
         for key, value in frame.items():
             if isinstance(value, torch.Tensor):
+                self.assertEqual(value.shape[0], self.N, key)
                 self.assertLessEqual(
-                    value.numel(), self.N * 3, "%s is image-sized (%s)" % (key, value.shape)
+                    value.numel(), self.N * 4, "%s is image-sized (%s)" % (key, value.shape)
                 )
 
 

@@ -16654,3 +16654,44 @@ model/frame/burst 세 산출물을 별도 경로에서 다시 생성해 SHA가 �
 표본·전이 보존, 확률합, paired error correspondence, frozen 전체 지표를 검사했다.
 PPO·test는 미실행. [원자료와 receipt](results/perception_p8_2026-09-09/README.md).
 clean-tree 전체 스위트 1,237 tests OK (skipped 4); P8 신규 6개 포함.
+
+
+## 2026-09-09 — P9 오차 주입기 완료: 적합도 gate 통과, 시뮬레이터 연결
+
+코덱스 세션이 사용 한도로 끊긴 지점에서 이어받았다. P9 오프라인 모델은 이미 gate를 통과한 상태였고,
+남아 있던 시뮬레이터 연결부와 provenance를 검증해 커밋했다. 코덱스가 마지막에 본 테스트 오류는
+**코드 결함이 아니라 호출 방식 문제**였다(이 저장소의 `tests`는 패키지가 아니라 모듈 경로 호출이 실패).
+올바른 방식으로 전체를 돌리면 **1,243 tests OK (skipped 4)**.
+
+**적합도(64 replicas, seed 1701)**
+
+| bin | 실제 프레임 | 생성 프레임 | 상태점유 TV | latency KS | 판정 |
+|---|---:|---:|---:|---:|---|
+| 1 | 271 | 17,344 | 0.0415 | 0.00796 | 통과 |
+| 2 | 849 | 54,336 | 0.0051 | 0.00396 | 통과 |
+| 3 | 188 | 12,032 | 0.0222 | 0.00695 | 통과 |
+
+문턱은 occupancy TV 0.05 / transition max 0.06 / offset KS 0.1 / latency KS 0.05이고 전부 여유 있게
+통과했다. 재현성도 확인됐다 — 같은 seed는 동일 SHA, 다른 seed는 다른 SHA.
+
+**세 번 만에 통과한 과정을 기록으로 남긴다.** v1은 전이를 "현재 프레임 크기"에 귀속한 구현 오류와
+크기 필터 후 비연속 프레임을 이웃으로 취급한 집계 오류로 실패했다. v2는 코드 오류가 아니라 271개
+표본의 raw 전이 MLE가 관측 점유율과 일관된 정상분포를 만들지 못하는 **유한표본 문제**로 bin-1 TV
+0.05495에서 근소하게 실패했다(raw 정상분포 HIT 0.697 대 관측 0.635). v3은 임계값을 건드리지 않고
+관측 전이에서 KL 변화가 최소가 되도록 주변분포를 관측 점유율에 맞추는 stationary balancing을
+**사전 기록한 뒤** 적용했다. 필요한 최대 행 조정은 0.0253으로 이미 고정된 전이 허용오차 0.06 안이다.
+**실패한 v1·v2 산출물을 삭제하지 않고** `results/perception_p9_v{1,2}_failed_2026-09-09/`로 보존했다.
+
+**시뮬레이터 연결**: `navrl_empirical_error.py` 신설, `NAVRL_P9_ERROR_MODEL`로 켠다. 기존 노이즈
+훅(`NAVRL_PERCEPTION_PERTURB`, `NAVRL_DETNOISE_*`, `NAVRL_DETECTION_LATENCY_S`, `NAVRL_RANGE_ERROR_M`,
+`NAVRL_DETECTOR_CHECKPOINT`, `NAVRL_POSE_*`)와 **상호배타**로 막아 입력 계약이 섞이지 않게 했다.
+결과 JSON에 `cfg_p9_empirical_error_{enabled,sha256,seed}`를 기록한다.
+
+**모델이 만들지 않는 것**(P8에 없으므로): metric range 오차, confidence 오차, false-lock range.
+모두 clean 해석값을 유지한다. 미지원 크기 구간은 사전 고정한 nearest-supported 규칙으로만 처리한다.
+
+**주의(코덱스 인계 사항)**: 관측 간격이 50~103 ms이므로 측정 전이확률을 시뮬레이션 매 프레임에
+그대로 적용하면 안 된다. 주입기는 `p_stay(dt) = p_stay(ref_dt)^(dt/ref_dt)` 경쟁위험 변환으로 처리한다.
+
+다음은 P10이다. 계획서상 단순 평가가 아니라 **동일 관측 차원을 유지한 채 P9 오차에 PPO를 재적응**시킨 뒤
+별도 seed에서 비교하는 4-arm(기존/재적응 × clean/P9) 설계다.

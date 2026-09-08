@@ -733,6 +733,7 @@ class NavRLTargetDetector:
                 "u_sum": self.detect_u_sum,
                 "v_sum": self.detect_v_sum,
                 "depth_sum": self.detect_depth_sum,
+                "bbox": self.detect_bbox,
                 "rgb": self.target_color.clamp(0.0, 1.0),
                 "depth_probe": self.detect_depth_sum / count.clamp(min=1).float(),
             }
