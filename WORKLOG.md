@@ -16406,3 +16406,30 @@ GPU를 공유한 contended offline 측정이라 배포 지연시간으로 쓰지
 JSON, Python compile, `git diff --check`가 통과했다. 정적 사이트 JS는 새 perception 계약을 통과한 뒤
 기존 `status.json`의 Track-B `RESULT_UNAVAILABLE_OR_MALFORMED`와 오래된 기대값 충돌에서 중단되며,
 이번 perception 변경과 무관한 선행 문제로 보존한다.
+
+
+## 2026-09-08 — P6/P7 temporal association 완료, Transformer validation 선택
+
+결과를 보기 전에 commit `5b3ee5e`에서 P6/P7 계약과 코드를 고정했다. 두 arm은 같은 P4 Top-K=5
+후보만 읽으며 NPS train clip에서 학습하고 validation clip에서 checkpoint와 arm을 선택한다. target
+identity가 없으므로 현재 frame에서 어떤 UAV annotation과든 IoU≥0.3인 후보를 supervision으로 삼고,
+이를 ReID 또는 ID-switch 평가로 부르지 않는다.
+
+NPS train 13,510 frames/35 clips의 연속 manifest와 candidate 67,550개를 만들었다. candidate 전수
+schema·semantic·manifest·hash 검증이 PASS했고 payload SHA-256은 `bd28f4e2…b19061`이다. 후보 생성은
+RTX 3070에서 31.43 frames/s였고 mean latency는 27.92 ms/frame이다.
+
+GRU T=8은 validation loss가 첫 epoch 뒤 악화해 epoch 0이 선택됐으며 utility `0.63153`이었다.
+Transformer T=16은 epoch 5가 선택됐고 utility `0.67247`이었다. 네 arm의 validation 결과는 다음과 같다.
+
+| arm | frame hit | proxy false lock / selected | utility |
+|---|---:|---:|---:|
+| CNN-only | 0.81490 | 0.15492 | 0.66551 |
+| KF v1 | 0.62631 | 0.36652 | 0.26394 |
+| GRU T=8 | 0.78659 | 0.16466 | 0.63153 |
+| Transformer T=16 | 0.80880 | 0.14424 | **0.67247** |
+
+고정 rule에 따라 Transformer를 선택했다. CNN-only 대비 hit는 14 frame 줄고 proxy false lock은 30 frame
+줄어 utility가 `+0.00697` 높다. validation 2,296 frames/7 clips만의 선택이고 test는 입력으로 사용하지
+않았다. 독립 evaluator가 frozen checkpoint를 다시 읽어 같은 metrics를 재현했고, 압축 해제 prediction
+content SHA-256도 training output과 동일한 `b6ca57c0…bba60`이었다.

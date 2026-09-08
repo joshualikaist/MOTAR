@@ -36,7 +36,7 @@
       </div>
       <div class="status-line">
         <span class="status-dot" aria-hidden="true"></span>
-        <strong>합동 detector는 회복, KF v1은 기각</strong><span>sealed Det-Fly native AP30 <strong>0.7389</strong> · NPS-only zero-shot 0.0035 · P4 Top-K schema PASS · NPS test frame hit CNN 0.6145 vs KF 0.4655 · proxy false lock CNN 0.2450 vs KF 0.4843 · test 재튜닝 없음 · 실제 ID-switch·bearing degree는 metadata 부족으로 보류 · 2026-09-08</span>
+        <strong>Transformer T=16을 validation에서 선택</strong><span>동일 P4 candidate · utility CNN 0.6655 · KF 0.2639 · GRU 0.6315 · Transformer <strong>0.6725</strong> · CNN 대비 hit 14 frame 감소, proxy false lock 30 frame 감소 · validation 2,296 frames/7 clips · test 미실행 · 실제 ID-switch 주장은 보류 · 2026-09-08</span>
       </div>
     </section>
 
@@ -247,6 +247,13 @@
         KF를 재튜닝하지 않았습니다. 원 track ID와 intrinsic이 없어 실제 ID switch/FTLR와 degree
         bearing error는 측정하지 않습니다. producer latency는 동시 GPU 부하가 있던 offline 측정입니다.
         <a href="../../results/perception_joint_detector_p4_p5_2026-09-08/README.md">결과·hash</a></p>
+      <p><strong>P6/P7 COMPLETE · Transformer selected on validation.</strong> 동일 P4 후보로 NPS
+        train 13,510 frames/35 clips에서 GRU T=8과 Transformer T=16을 학습했습니다. validation
+        utility <code>(hit − proxy false lock) / frames</code>는 CNN-only 0.6655, KF 0.2639,
+        GRU 0.6315, Transformer <strong>0.6725</strong>여서 Transformer를 선택했습니다. CNN보다 hit는
+        14 frame 적고 proxy false lock은 30 frame 적습니다. validation 7 clips의 작은 차이이며 NPS test는
+        아직 실행하지 않았습니다. 실제 ReID·FTLR·ID-switch 개선 주장도 아닙니다.
+        <a href="../../results/perception_temporal_p6_p7_2026-09-08/README.md">P6/P7 결과·hash</a></p>
     </section>
 
     <section class="visual wrap" id="external-data" aria-labelledby="data-title">

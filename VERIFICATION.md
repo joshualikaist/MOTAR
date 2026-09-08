@@ -15,14 +15,21 @@
   `[u,v,w,h,confidence,appearance_64D]` candidate schema·semantic·manifest·payload hash가 PASS했다.
 - **P5 KF v1 REJECTED.** NPS test frame hit는 CNN-only `0.6145`, KF `0.4655`; proxy false lock은
   `0.2450`, `0.4843`이다. 이 test를 보고 KF를 재튜닝하지 않는다.
-- **다음 실행은 P6.** 같은 frozen detector와 NPS split에서 GRU T=8을 구현·validation 선택한 뒤
-  test는 한 번만 평가한다. P7 Transformer는 P6과 같은 detector·split·metric을 사용한다.
+- **P6/P7 COMPLETE — Transformer selected on validation.** 같은 frozen candidate에서 GRU T=8과
+  Transformer T=16을 학습했다. validation utility는 CNN-only `0.6655`, KF `0.2639`, GRU `0.6315`,
+  Transformer `0.6725`여서 Transformer를 선택했다. 차이는 작고 7 validation clips뿐이므로 test
+  우월성 주장이 아니다.
+- **다음 실행은 선택 Transformer의 NPS test 1회 또는 P8 준비다.** test를 실행하면 checkpoint,
+  candidate, threshold, metric을 변경하지 않는다. 사용자가 어렵다고 한 실제 metadata 없이 가능한
+  miss/FP/reacquisition/latency부터 P8 계약을 만들 수 있지만 ID-switch·degree bearing·range는 보류한다.
 - 원 track identity, designated target ID, camera intrinsic이 없으므로 실제 ID switch/FTLR와 degree
   bearing error는 현재 주장하지 않는다. P8 range/error model은 별도 실제 metadata 확보 전까지 제한된다.
 
 정본: [`joint detector 계약`](docs/plans/perception_joint_detector_training_2026-09-08.md),
 [`P4/P5 계약`](docs/plans/perception_p4_p5_execution_2026-09-08.md),
-[`결과·hash`](results/perception_joint_detector_p4_p5_2026-09-08/README.md).
+[`P4/P5 결과·hash`](results/perception_joint_detector_p4_p5_2026-09-08/README.md),
+[`P6/P7 계약`](docs/plans/perception_p6_p7_execution_2026-09-08.md),
+[`P6/P7 결과·hash`](results/perception_temporal_p6_p7_2026-09-08/README.md).
 
 ## 2026-09-07 현재 실행 authority — 거버너 기하 트랙
 

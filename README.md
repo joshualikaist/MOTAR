@@ -15,6 +15,8 @@ MOTAR는 카메라, LiDAR, ego-state만으로 움직이는 표적을 추적하�
 > Top-K=5 후보 schema는 NPS val/test에서 검증됐고, P5 KF v1은 test frame hit
 > **0.4655** 대 CNN-only **0.6145**, proxy false lock **0.4843** 대 **0.2450**으로
 > 더 나빠 **REJECTED**했습니다. 이 test를 보고 재튜닝하지 않았습니다.
+> 후속 P6/P7 validation 비교에서는 Transformer T=16이 utility **0.6725**로 CNN-only
+> **0.6655**를 근소하게 넘어 선택됐습니다. 아직 test를 실행하지 않아 우월성 주장은 보류합니다.
 > 기존 안전 연구의 이번 주 결과는 전부 **부정 결과**이고, 그것이 요점입니다.
 > 세 갈래 사전등록 측정이 인지의 구속 조건은 측정 품질이 아니라 **물체 동일성**임을 확정했고
 > (자료구조 수정 +1.3 pp · 거리 분산 −0.34 pp · 동색 디코이 FTLR 90.27%),
@@ -118,6 +120,7 @@ attitude/rate torque → motor allocation → 100 Hz rigid-body physics` 순서�
 | NPS+Det-Fly joint dataset v1 | **split·dataset·seal verification PASS** | train 29,824 / val 9,307 samples; Det-Fly `020` 6,913 images sealed test |
 | NPS+Det-Fly joint detector | validation mAP50 **0.6917**; sealed native Det-Fly AP30 **0.7389** | epoch 26 selected without test access; 6,913 test images; conf 0.25 P/R **0.2729/0.8640** |
 | P4 Top-K + P5 KF v1 | P4 **PASS**; KF **`REJECTED`** | NPS test 1,725 frames/8 clips; hit CNN **0.6145** vs KF **0.4655**; proxy false lock **0.2450** vs **0.4843** |
+| P6 GRU + P7 Transformer | Transformer T=16 **selected on validation** | 2,296 frames/7 clips; utility CNN **0.6655**, GRU **0.6315**, Transformer **0.6725**; test not run |
 | Speed-governor stopcap screen | **Q1 `MECHANISM_UNSUPPORTED`, Q3 `FILTER_DEPENDENT`, stopcap NO-GO** | seed 49, 5 arms, 2,049 ep/cell; riskcap does not beat a constant 2.0 m/s cap |
 | Hardware/software gate | software pipeline PASS · `SYNTHETIC_ONLY` | 실기 성능 아님 |
 
@@ -313,6 +316,19 @@ P5의 고정 KF v1은 NPS test에서 CNN-only보다 나빴습니다. IoU≥0.3 f
 않습니다. producer latency `61.43 ms/frame`은 동시 GPU 평가가 있던 workstation 측정이라 실기
 latency 주장이 아닙니다. 결과와 hash 정본은
 [`summary`](results/perception_joint_detector_p4_p5_2026-09-08/README.md)에 있습니다.
+
+### P6/P7 temporal association 선택 (2026-09-08)
+
+동일한 P4 후보만 사용해 NPS train 13,510 frames/35 clips에서 GRU T=8과 Temporal Transformer
+T=16을 학습하고, validation 2,296 frames/7 clips에서 비교했습니다. 고정 utility
+`(hit − proxy false lock) / frames`는 CNN-only `0.6655`, KF `0.2639`, GRU `0.6315`,
+Transformer `0.6725`였습니다. 따라서 **Transformer T=16을 validation-selected arm으로 동결**했습니다.
+
+Transformer는 CNN-only보다 hit가 14 frame 적었지만 proxy false lock이 30 frame 적었습니다.
+차이는 utility `+0.00697`로 작고 validation clip도 7개뿐이므로 아직 우월성 결론이 아닙니다. NPS test는
+P6/P7 학습·선택의 입력이 아니며 별도 단계에서 한 번만 평가합니다. 실제 target ID가 없으므로 이 결과를
+ReID·FTLR·ID-switch 개선으로 부르지 않습니다. 상세 결과와 hash는
+[`P6/P7 summary`](results/perception_temporal_p6_p7_2026-09-08/README.md)에 있습니다.
 
 ## Safety filter — the speed governor
 

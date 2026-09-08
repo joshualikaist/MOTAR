@@ -33,8 +33,8 @@ NPS detector
 | P3-F | 합동 detector **COMPLETE** | Det-Fly `020` test 봉인 후 validation 선택 | native AP30 0.7389; checkpoint SHA 동결; threshold test tuning 없음 |
 | P4 | multi-candidate 출력 **COMPLETE** | Top-K=5; 후보별 `[u,v,w,h,c,e64]` | NPS val/test timestamp·schema·semantic·hash verification PASS |
 | P5 | CNN+KF **COMPLETE — REJECTED** | P4 detector 동결 | test hit 0.4655 vs CNN 0.6145; proxy false lock 0.4843 vs 0.2450 |
-| P6 | CNN+GRU | history 8; hidden 128 | P5와 같은 held-out clips에서 비교 |
-| P7 | CNN+Temporal Transformer | history 16; d=128; 4 heads; 2 layers | P5/P6와 같은 detector, split, metric으로 비교 |
+| P6 | CNN+GRU **COMPLETE — NOT SELECTED** | history 8; hidden 128 | validation utility 0.6315 |
+| P7 | CNN+Temporal Transformer **COMPLETE — SELECTED** | history 16; d=128; 4 heads; 2 layers | validation utility 0.6725 vs CNN-only 0.6655; test 미실행 |
 | P8 | 실사 오차 모델 | 선택된 detector/association 동결 | 조건부 miss/FP/bearing/ID-switch/reacquisition/latency 분포; 가능한 경우 range 오차·공분산 |
 | P9 | simulator 오류 주입 | renderer로 UAV detector를 재학습하지 않음 | 실사 분포와 주입 분포의 적합도 및 seed 고정 재현성 |
 | P10 | PPO 재적응·평가 | perception arm 외 reward·arena·target motion·filter 계약 고정 | held-out capture/crash/timeout과 95% CI, training/evaluation seed 분리 |
@@ -61,6 +61,12 @@ ID switch/FTLR와 degree bearing error는 원 track identity와 intrinsic 부재
 hash는 `perception_joint_detector_training_2026-09-08.md`,
 `perception_p4_p5_execution_2026-09-08.md` 및
 `../../results/perception_joint_detector_p4_p5_2026-09-08/README.md`가 정본이다.
+
+P6/P7도 2026-09-08에 validation-only로 완료했다. 같은 frozen P4 후보에서 GRU T=8과 Transformer
+T=16을 학습했고, 사전 고정 utility로 Transformer를 선택했다(`0.6725`; CNN-only `0.6655`). 이는
+validation 7 clips의 model selection이며 test 성능 주장이 아니다. 정본은
+`perception_p6_p7_execution_2026-09-08.md`와
+`../../results/perception_temporal_p6_p7_2026-09-08/README.md`다.
 
 CNN, GRU, Transformer를 직렬로 쌓지 않는다. 동일한 frozen CNN detector 위에서 `KF`, `GRU`,
 `Temporal Transformer`를 서로 대체하는 association arm으로 비교한다. 모델 선택은 validation clip에서

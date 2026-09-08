@@ -2,7 +2,7 @@
 
 작성: 2026-09-08
 
-상태: **PRE-REGISTERED — TEMPORAL RESULTS UNSEEN**
+상태: **COMPLETE — P6 GRU NOT SELECTED; P7 TRANSFORMER SELECTED ON VALIDATION**
 
 ## 범위와 데이터 격리
 
@@ -60,3 +60,30 @@ utility 최대 arm을 선택한다. exact tie 순서는 `CNN-only → KF → GRU
 
 P6/P7 완료 조건은 코드·단위 테스트, train candidate receipt, 두 모델 checkpoint/report/receipt,
 validation-only selection receipt가 모두 존재하고 hash 검증되는 것이다. test 평가는 별도 승인 단계다.
+
+## 실행 결과
+
+P4 train 후보는 NPS train 13,510 frames/35 clips에서 67,550개가 생성됐고 schema·semantic·manifest·hash
+전수 검증을 통과했다. train candidate SHA-256은
+`bd28f4e296d622984c416eb05b2b343f3f38501ccaddf80047b3b7eaddb19061`이다.
+
+GRU는 validation cross-entropy가 첫 epoch 뒤 악화해 zero-based epoch 0이 선택됐다. Transformer는
+epoch 5가 선택됐다. 두 checkpoint 모두 clean source commit `5b3ee5e`에서 만들어졌고 test는 입력으로
+사용되지 않았다.
+
+| arm | frame hit | proxy false lock / selected | no-lock | utility |
+|---|---:|---:|---:|---:|
+| CNN-only | **0.81490** | 0.15492 | 82 | 0.66551 |
+| CNN + KF v1 | 0.62631 | 0.36652 | 26 | 0.26394 |
+| CNN + GRU T=8 | 0.78659 | 0.16466 | 134 | 0.63153 |
+| CNN + Transformer T=16 | 0.80880 | **0.14424** | 126 | **0.67247** |
+
+고정 rule로 **CNN + Temporal Transformer T=16**을 선택했다. CNN-only보다 hit는 14 frame 낮지만
+proxy false lock이 30 frame 적어 utility가 `+0.00697` 높다. validation 2,296 frames/7 clips에서의
+선택 결과일 뿐 test 우월성이나 실제 ID-switch 개선 주장이 아니다.
+
+GRU/Transformer checkpoint SHA-256은 각각
+`e377413635f1b8fa2640f2e846152ce565b23827dd03f76236f5b22ed9b6a86c`,
+`9c3b91b977d8b6325d2064cf09b88bf3e75fe10b3656439896272f48bac83f1d`이다. frozen Transformer를
+독립 evaluator로 다시 읽은 validation prediction은 압축 해제 내용 SHA-256이 원 training output과
+동일한 `b6ca57c0f3e63946c31eb4be45ee88620543fcd3c0bddf386bd73f21ba8bba60`이었다.

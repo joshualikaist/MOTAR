@@ -91,6 +91,7 @@ SUPERSEDED 배너가 있는 것은 그 배너가 곧 provenance다.
 | [`plans/perception_joint_dataset_v1_2026-09-07.md`](plans/perception_joint_dataset_v1_2026-09-07.md) | — | 2026-09-07 | **SPLIT + DATASET COMPLETE** |
 | [`plans/perception_joint_detector_training_2026-09-08.md`](plans/perception_joint_detector_training_2026-09-08.md) | — | 2026-09-08 | **JOINT DETECTOR COMPLETE** |
 | [`plans/perception_p4_p5_execution_2026-09-08.md`](plans/perception_p4_p5_execution_2026-09-08.md) | — | 2026-09-08 | **P4 PASS · P5 KF REJECTED** |
+| [`plans/perception_p6_p7_execution_2026-09-08.md`](plans/perception_p6_p7_execution_2026-09-08.md) | — | 2026-09-08 | **P6 COMPLETE · P7 TRANSFORMER SELECTED ON VAL** |
 | [`SAM3_PERCEPTION_VERIFICATION_PLAN_2026-09-03.md`](SAM3_PERCEPTION_VERIFICATION_PLAN_2026-09-03.md) | 266 | 2026-09-04 | 🔒 |
 | [`SIM2REAL_3DAY_EXECUTION_PLAN.md`](SIM2REAL_3DAY_EXECUTION_PLAN.md) | 343 | 2026-08-26 | 🔒 |
 | [`plans/perception_shape_temporal_redesign_2026-09-03.md`](plans/perception_shape_temporal_redesign_2026-09-03.md) | 207 | 2026-09-04 | 🔒 |

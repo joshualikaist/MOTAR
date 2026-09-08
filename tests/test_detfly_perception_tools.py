@@ -30,6 +30,7 @@ FREEZE = load_tool("freeze_joint_detector")
 sys.path.insert(0, str(ROOT / "tools"))
 TEMPORAL = load_tool("perception_temporal")
 SELECT_ASSOCIATION = load_tool("select_perception_association")
+EVAL_TEMPORAL = load_tool("eval_perception_temporal")
 sys.path.pop(0)
 
 
