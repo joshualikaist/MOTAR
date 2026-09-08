@@ -155,6 +155,7 @@ class TemporalCandidateDataset(Dataset):
         self.frame_features = []
         self.frame_candidate_masks = []
         self.targets = []
+        self.valid_targets = []
         self.windows = []
         history_by_sequence = {}
         for index, aligned in enumerate(self.records):
@@ -172,6 +173,12 @@ class TemporalCandidateDataset(Dataset):
             self.frame_candidate_masks.append(mask)
             self.targets.append(supervision_target(
                 record["candidates"], source["ground_truth_xyxy"], self.evaluation_iou))
+            valid_targets = np.zeros(TOP_K, dtype=np.float32)
+            for candidate in record['candidates']:
+                valid_targets[int(candidate['rank'])] = float(any(
+                    box_iou(candidate_box(candidate), gt) >= self.evaluation_iou
+                    for gt in source['ground_truth_xyxy']))
+            self.valid_targets.append(valid_targets)
             sequence = source["source_sequence_id"]
             history = history_by_sequence.setdefault(sequence, [])
             history.append(index)
@@ -213,6 +220,7 @@ class TemporalCandidateDataset(Dataset):
             "motion_features": torch.from_numpy(motion_features),
             "length": torch.tensor(length, dtype=torch.long),
             "target": torch.tensor(self.targets[index], dtype=torch.long),
+            "valid_targets": torch.from_numpy(self.valid_targets[index]),
             "record_index": torch.tensor(index, dtype=torch.long),
         }
 

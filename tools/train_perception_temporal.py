@@ -75,11 +75,24 @@ def to_device(batch, device):
 
 
 def model_logits(model, batch):
-    return model(
+    logits = model(
         batch["features"], batch["candidate_mask"], batch["frame_mask"],
         batch["delta_seconds"], batch["length"],
         age_seconds=batch["age_seconds"], motion_features=batch["motion_features"],
     )
+    if model.config.get('loss') == 'candidate_validity_bce':
+        logits = torch.cat([logits[:, :5], torch.zeros_like(logits[:, 5:6])], dim=1)
+    return logits
+
+
+def selector_loss(model, logits, batch):
+    if model.config.get('loss') != 'candidate_validity_bce':
+        return F.cross_entropy(logits, batch['target'])
+    mask = batch['candidate_mask'][
+        torch.arange(logits.shape[0], device=logits.device), batch['length'] - 1]
+    losses = F.binary_cross_entropy_with_logits(
+        logits[:, :5], batch['valid_targets'], reduction='none')
+    return (losses * mask).sum() / mask.sum().clamp_min(1)
 
 
 def train_epoch(model, loader, optimizer, device, gradient_clip_norm):
@@ -89,7 +102,7 @@ def train_epoch(model, loader, optimizer, device, gradient_clip_norm):
         batch = to_device(cpu_batch, device)
         optimizer.zero_grad(set_to_none=True)
         logits = model_logits(model, batch)
-        loss = F.cross_entropy(logits, batch["target"])
+        loss = selector_loss(model, logits, batch)
         if not torch.isfinite(loss):
             raise RuntimeError("non-finite temporal training loss")
         loss.backward()
@@ -118,19 +131,28 @@ def infer_dataset(model, loader, device, collect_predictions):
             elapsed_ms = (time.perf_counter_ns() - began) / 1e6
             rows = int(batch["target"].shape[0])
             latency_per_frame_ms.append(elapsed_ms / rows)
-            loss = F.cross_entropy(logits, batch["target"])
+            loss = selector_loss(model, logits, batch)
             predicted = logits.argmax(dim=1)
             total_loss += float(loss.detach().cpu()) * rows
             total_rows += rows
             correct += int((predicted == batch["target"]).sum().detach().cpu())
             if collect_predictions:
                 distribution = F.softmax(logits, dim=1).detach().cpu().numpy()
+                if model.config.get('loss') == 'candidate_validity_bce':
+                    validity = logits[:, :5].sigmoid()
+                    distribution = torch.cat([
+                        validity, 1.0 - validity.max(dim=1, keepdim=True).values
+                    ], dim=1).detach().cpu().numpy()
                 positions = batch["record_index"].detach().cpu().numpy()
                 for position, prediction, distribution_row in zip(
                         positions, predicted.detach().cpu().numpy(), distribution):
                     predictions.append((int(position), int(prediction)))
                     probabilities.append((int(position), distribution_row.tolist()))
     result = {
+        "loss_kind": model.config.get('loss', 'single_best_candidate_cross_entropy'),
+        "probability_semantics": (
+            'independent candidate validity; no-lock = 1 - max validity; not a categorical distribution'
+            if model.config.get('loss') == 'candidate_validity_bce' else 'categorical softmax'),
         "cross_entropy": total_loss / total_rows,
         "classification_accuracy": correct / total_rows,
         "rows": total_rows,
