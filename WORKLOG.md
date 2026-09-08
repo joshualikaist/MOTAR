@@ -16567,3 +16567,36 @@ streaming RGB 실행 환경은 `detector_runs/venv`다. `tests/test_runtime_fing
 임포트 실패로 통째로 사라져 스위트가 1,221 → 1,203으로 줄었는데, 이 숫자 감소가 아니었으면 통과로
 보였을 것이다. AST로 마지막 최상위 임포트를 찾아 다시 넣고 `sys`를 추가해 해결했다.
 전체 **1,229 tests OK (skipped 4)**.
+
+
+## 2026-09-09 — perception 우선 계획 재작성: 앞서 제안한 "다중 스케일 학습"은 이미 완료된 중복이었다
+
+계획 `docs/plans/perception_next_plan_2026-09-09.md`.
+
+**정정**: 09-09 초안에서 2순위로 제안한 "검출기 다중 스케일 학습·앵커 재계산"은 **중복 실험이다.**
+`runs/nps_detfly_joint/yolov5s_ms_b8_e30_s0/opt.yaml`이 `multi_scale: true`이고 NPS 단독
+checkpoint에서 warm-start해 joint 데이터로 30 epoch 학습돼 있다(P3-F, seed 0). 효과도 측정돼 있다.
+
+| Det-Fly IoU 0.5 | NPS 단독 (P3 zero-shot, 13,271장) | joint+multi-scale (P3-F, 6,913장) |
+|---|---:|---:|
+| native AP | 0.0010 | **0.7166** |
+| native 재현율 | 0.087 | **0.839** |
+| scale-matched AP | 0.1126 | 0.4137 |
+
+**두 수치를 같은 실험의 전후로 읽으면 안 된다.** P3는 Det-Fly 미노출 모델의 zero-shot 전수 평가,
+P3-F는 Det-Fly `010`을 학습에 쓴 모델의 **validation** 성적이다. 0.7166은 일반화 성능이 아니다.
+스트리밍 파이프라인이 이미 이 joint detector(`aab12f39…`)를 쓰므로 P3의 처방은 적용된 상태다.
+용어도 "진짜 도메인 격차" → **"크기 보정 후 잔여 도메인 격차"**로 교정했다(배경·압축·시점·광학은 남는다).
+
+**남은 것과 순서**: S1 광류 겹침(반나절) → S2 P8 오차 모델(1~2일) → S3 P9 주입기(2~3일) →
+S4 봉인 test 개봉(마지막 1회). P5를 빼면 **test는 한 번도 열리지 않았고**
+joint 데이터셋의 `training_yaml_contains_test`가 false다. 이 봉인은 파이프라인 확정 후에만 연다.
+
+**S1의 "비트 동일" 표현 규칙**: 프로토타입은 flow 배열만 확인했다. 최종 문장으로 쓰려면 validation
+2,296프레임에서 ① rank/candidate 불일치 0 ② **motion feature 5×12 배열 전 프레임 비트 일치**
+③ selected/hit/no-lock/false-lock/center error/loss/reacq 전부 일치가 모두 성립해야 한다.
+그전에는 "출력 보존 예상"으로만 쓴다. benchmark는 `detector_runs/venv`, **GPU 유휴**, 3회 반복,
+mean/P50/P95 전부 보고. **Track A R-C와 동시 GPU 실행 금지** — latency 측정이 오염된다.
+
+**S2는 크기 구간별 조건부 분포로 잰다.** P3에서 크기가 지배 변수임이 확인됐으므로 평균 하나로는
+시뮬에 잘못된 분포를 주입하게 된다. degree bearing·metric range·실제 ID-switch는 여전히 만들지 않는다.
