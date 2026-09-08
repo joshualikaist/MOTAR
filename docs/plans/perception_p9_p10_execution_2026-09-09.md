@@ -12,6 +12,17 @@ that cell has at least ten observations; otherwise it uses the already-registere
 supported source-bin/source-state row. This does not break the sequence at a size change and does
 not alter any gate, threshold, bin or P8 input. The failed v1 artifact remains archived.
 
+Amendment P9-v3, registered after v2 failed and before its rerun: destination conditioning reduced
+bin-1 occupancy TV to `0.05495` but did not pass `0.05`. The remaining discrepancy is a
+finite-sample inconsistency between each raw transition MLE and the separately observed state
+occupancy. P9-v3 applies iterative proportional fitting to the empirical transition-flow matrix,
+constraining both flow marginals to the measured occupancy and then row-normalizing. This is the
+minimum-KL stationary reconciliation, not a threshold change. The largest resulting probability
+adjustment is recorded and must still pass the unchanged raw-transition error gate `<=0.06`.
+The balanced source-bin row supersedes destination conditioning at runtime because the deployed
+simulator can remain in one mapped size bin for long periods. Failed v1/v2 artifacts remain
+archived; no sealed test data have been opened.
+
 P9 consumes only the frozen P8 validation artifacts in
 `results/perception_p8_2026-09-09/`. P10 changes only the perception-error arm and PPO
 checkpoint; reward, arena, target motion, observation schema, tracker, LiDAR association,
@@ -25,8 +36,8 @@ speed governor and exact-600 outcome contract stay fixed.
   supported bin for that same source state (bin-3 `NO_LOCK` maps to bin 2). Every fallback is
   serialized; there is no pooled/global silent fallback.
 - Sample the three states `HIT`, `FALSE_LOCK`, `NO_LOCK`. Initial state is drawn from the
-  mapped bin's empirical occupancy. Later states use the source-bin/source-state/destination-bin
-  transition when its cell has at least ten observations, else the registered row fallback
+  mapped bin's empirical occupancy. Later states use the occupancy-balanced source-bin/source-state
+  row. Its raw empirical row and the balancing adjustment are both serialized and validated
   row. Convert its observed-interval self probability to the 0.1 s simulator cadence with
   `p_stay(dt) = p_stay(ref_dt) ** (dt/ref_dt)`; divide exit mass among the empirical off-diagonal
   probabilities. `ref_dt` is that row's median raw transition interval.
