@@ -38,7 +38,7 @@ checkpoint에서 warm-start해 joint 데이터로 30 epoch 학습돼 있다(P3-F
 | P5 KF / P6 GRU | 완료(미채택) | — |
 | P7 / P7b / P7c v2 | 완료(P7c v2 선택) | — |
 | P7e crop verifier | 미채택 | — |
-| streaming | 구현 완료, **RGB parity PASS**(09-09) | **latency** |
+| streaming | 구현 완료, RGB parity PASS, **S1 overlap COMPLETE** | P8 오차 모델 |
 | P7d learned ReID | 경계 문서만 | track-ID 데이터 없음 → 보류 |
 | **P8 오차 모델** | 초안만 | **측정 본체** |
 | P9 주입 | 미착수 | P8 뒤 |
@@ -51,7 +51,12 @@ checkpoint에서 warm-start해 joint 데이터로 30 epoch 학습돼 있다(P3-F
 
 ## 2. 실행 순서
 
-### S1 — 광류 겹침 (반나절, GPU 유휴 필요)
+### S1 — 광류 겹침 — COMPLETE (2026-09-09)
+
+[전체 결과·hash](../../results/perception_streaming_overlap_s1_2026-09-09/README.md). validation
+2,296프레임의 candidate/rank/motion bytes/하위 지표가 직렬·겹침 각 3회 모두 정확히 일치했다.
+decode 포함 mean은 67.91 → 44.49 ms, 3회 평균은 14.72 → 22.48 FPS다.
+따라서 이 validation 입력과 기록된 runtime에 한해 출력 비트 동일을 확정한다.
 
 `estimate_backward_flow_and_gmc`를 둘로 쪼갠다.
 
@@ -74,7 +79,7 @@ checkpoint에서 warm-start해 joint 데이터로 30 epoch 학습돼 있다(P3-F
 동일 입력으로 **3회 반복**하고 mean/P50/P95를 전부 보고한다. Track A 학습이나 다른 GPU 작업과
 겹치면 측정이 오염되므로 **동시 실행 금지**.
 
-**완료 조건**: 전후 latency mean/P50/P95 + 위 세 일치 + FPS. 현재 실측 기준선은
+**완료 조건(PASS)**: 전후 latency mean/P50/P95 + 위 세 일치 + FPS. 사전 기준선은
 detector 26.37 / motion 33.40 / selector 2.35 / decode 5.15 ms, decode 포함 67.28 ms, 14.86 FPS다.
 
 **실패 시 처리**: motion feature가 한 프레임이라도 어긋나면 겹침을 되돌리고 원인을 적는다.

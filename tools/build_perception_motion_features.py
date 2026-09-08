@@ -102,6 +102,12 @@ def candidate_mask(shape, candidates, scale, expansion):
 
 def estimate_backward_flow_and_gmc(previous_gray, current_gray, current_candidates,
                                    scale, config):
+    flow = compute_flow(previous_gray, current_gray, config)
+    return estimate_gmc(flow, current_candidates, scale, config)
+
+
+def compute_flow(previous_gray, current_gray, config=DEFAULT_CONFIG):
+    """Candidate-independent backward flow; safe to run alongside detection."""
     if previous_gray.shape != current_gray.shape:
         raise ValueError("motion frame geometry changed within sequence")
     flow_cfg = config["farneback"]
@@ -110,14 +116,19 @@ def estimate_backward_flow_and_gmc(previous_gray, current_gray, current_candidat
         flow_cfg["pyr_scale"], flow_cfg["levels"], flow_cfg["winsize"],
         flow_cfg["iterations"], flow_cfg["poly_n"], flow_cfg["poly_sigma"],
         flow_cfg["flags"])
-    height, width = current_gray.shape
+    return flow
+
+
+def estimate_gmc(flow, current_candidates, scale, config=DEFAULT_CONFIG):
+    """Candidate-dependent GMC, run on the caller thread after detection."""
+    height, width = flow.shape[:2]
     step = int(config["gmc_grid_step_px_at_flow_scale"])
     ys = np.arange(step // 2, height, step, dtype=np.int32)
     xs = np.arange(step // 2, width, step, dtype=np.int32)
     grid_x, grid_y = np.meshgrid(xs, ys)
     source = np.stack([grid_x.ravel(), grid_y.ravel()], axis=1).astype(np.float32)
     excluded = candidate_mask(
-        current_gray.shape, current_candidates, scale,
+        (height, width), current_candidates, scale,
         float(config["gmc_candidate_mask_scale"]))
     keep = ~excluded[source[:, 1].astype(int), source[:, 0].astype(int)]
     source = source[keep]

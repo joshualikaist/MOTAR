@@ -16617,6 +16617,22 @@ scratchpad에 백업했다. 구조를 재편해 안전필터와 인지를 각각
 **사이트**: 배너를 streaming parity 해소와 크기 판정으로 교체했다. P3 절에 크기별 재현율 근거와 잔여
 도메인 격차를 넣고, joint detector 절에 전후 오독 경고를 달았다. streaming 절을 신설해 환경 불일치
 사건과 광류 병목(Farnebäck 97.7 %, GMC RANSAC 0.17 ms), 겹침 프로토타입 실측(112.3 → 74.7 ms)을 적었다.
+
+## 2026-09-09 — S1 CPU flow/GPU detector overlap 완료
+
+후보 비의존 Farnebäck flow를 단일 CPU worker로 분리해 GPU detector와 겹치고, 후보 의존 GMC는
+detector 완료 뒤 수행하도록 streaming pipeline을 변경했다. `--serial-flow` 기준선과 각 프레임
+timing 저장, runtime fingerprint, candidate/rank/motion byte/전체 metric fail-closed gate를 추가했다.
+
+`detector_runs/venv`, RTX 3070, validation 2,296프레임에서 직렬·겹침을 교차 순서로 각 3회 실행했다.
+여섯 실행 모두 candidate mismatch 0, rank mismatch 0, 5×12 float32 motion byte mismatch 0이며
+motion SHA `33c1af29…4e4f9d`와 모든 하위 지표가 동일했다. NPS test는 사용하지 않았다.
+
+3회 pooled decode 포함 latency는 직렬 mean/P50/P95 67.91/67.89/70.64 ms,
+겹침 44.49/45.37/47.48 ms다. 실행별 평균 FPS의 평균은 14.72 → 22.48로 52.65 % 증가했다.
+학습 compute job은 없었고 GPU snapshot과 원본 artifact hash를 receipt에 보존했다.
+clean-tree 전체 Python 1,231 tests OK (4 skipped).
+[결과](results/perception_streaming_overlap_s1_2026-09-09/README.md). 다음은 P8 오차 모델이다.
 마크업·상대 링크 검사 통과. 스냅샷 재생성.
 
 전체 스위트 1,231 tests OK (skipped 4).

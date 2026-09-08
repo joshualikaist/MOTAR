@@ -4,16 +4,16 @@
 [`RESEARCH_PLAN.md`](RESEARCH_PLAN.md), 날짜별 기록은 [`WORKLOG.md`](WORKLOG.md),
 명령어는 [`OPERATIONS.md`](OPERATIONS.md), 라이브 지표는 [`docs/status/`](docs/status/)를 본다.
 
-> 기준일: 2026-09-08
+> 기준일: 2026-09-09
 
 ## 2026-09-08 현재 실행 authority — 실사 perception 트랙
 
-**P7e NOT SELECTED / streaming IMPLEMENTED.** crop verifier utility 0.52352이므로
-P7c v2를 유지한다. cached replay 2,296프레임의 logits/rank는 정확히 일치한다.
-RGB 재검출의 historical rank parity는 5프레임 차이로 FAIL이며, 완전 재현이나
-실기 배포 gate 통과로 해석하지 않는다. 다음은 runtime 수치 재현성 원인 고정과
-P8-lite/P9 계약 준비이며 PPO·카메라 연결은 아직 하지 않았다.
-[결과·한계](results/perception_p7e_streaming_2026-09-08/README.md).
+**P7e NOT SELECTED / streaming S1 COMPLETE.** crop verifier utility 0.52352이므로
+P7c v2를 유지한다. 올바른 runtime에서 RGB parity를 해소했고, CPU flow와 GPU detector를 겹쳤다.
+validation 2,296프레임을 직렬·겹침 각 3회 실행해 candidate/rank/motion bytes/하위 지표의
+불일치가 0임을 확인했다. decode 포함 3회 평균은 14.72 → 22.48 FPS다.
+다음 실행은 P8 오차 모델이며 test, PPO, 실제 카메라는 아직 열지 않는다.
+[S1 결과·hash](results/perception_streaming_overlap_s1_2026-09-09/README.md).
 
 후속 **P7b/P7c COMPLETE**: 현재 선택은 corrected P7c v2 (utility 0.68554)다.
 P7c v1은 좌표 혼용 오류로 무효이며 아래 기존 P6/P7 선택은 역사 기록이다.

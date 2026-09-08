@@ -1,5 +1,6 @@
 """Frame-at-a-time perception; no annotation is accepted by the online selector."""
 from collections import deque
+from concurrent.futures import ThreadPoolExecutor
 import sys
 import time
 from pathlib import Path
@@ -9,7 +10,7 @@ import numpy as np
 import torch
 
 from build_perception_motion_features import (
-    DEFAULT_CONFIG, estimate_backward_flow_and_gmc, candidate_motion_features)
+    DEFAULT_CONFIG, compute_flow, estimate_gmc, candidate_motion_features)
 from perception_candidates import appearance_descriptor, sha256_file
 from perception_temporal import candidate_feature, build_temporal_model
 from perception_crop_verifier import CropVerifier, crop_tensor
@@ -123,13 +124,26 @@ class StreamingSelector:
 
 
 class PerceptionPipeline:
-    def __init__(self, detector, selector, verifier=None):
+    def __init__(self, detector, selector, verifier=None, overlap_flow=True):
         self.detector, self.selector, self.verifier = detector, selector, verifier
+        self._worker = ThreadPoolExecutor(max_workers=1, thread_name_prefix='perception-flow') if overlap_flow else None
+        self._closed = False
+
+    def close(self):
+        if self._worker is not None:
+            self._worker.shutdown(wait=True)
+        self._closed = True
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        self.close()
 
     def process(self, frame, sequence, timestamp_ns, gray_frame=None):
         began = time.perf_counter()
-        candidates = self.detector(frame)
-        after_detector = time.perf_counter()
+        if self._closed:
+            raise RuntimeError('pipeline is closed')
         s = self.selector
         if sequence != s.sequence:
             s.reset(); s.sequence = sequence
@@ -144,10 +158,25 @@ class PerceptionPipeline:
         scale = min(1.,640./width)
         if scale < 1:
             gray = cv2.resize(gray,(round(width*scale),round(height*scale)),interpolation=cv2.INTER_AREA)
+        after_gray = time.perf_counter()
+        future = None
+        if self._worker is not None and s.previous_gray is not None:
+            future = self._worker.submit(compute_flow, s.previous_gray, gray, DEFAULT_CONFIG)
+        try:
+            candidates = self.detector(frame)
+        except BaseException:
+            if future is not None:
+                # Drain work before the caller can retry/reset the stream.
+                try:
+                    future.result()
+                except Exception:
+                    pass
+            raise
+        after_detector = time.perf_counter()
         motion = np.zeros((5,12),np.float32)
         if s.previous_gray is not None:
-            flow, affine, ratio, valid = estimate_backward_flow_and_gmc(
-                s.previous_gray,gray,candidates,scale,DEFAULT_CONFIG)
+            flow = future.result() if future is not None else compute_flow(s.previous_gray, gray, DEFAULT_CONFIG)
+            flow, affine, ratio, valid = estimate_gmc(flow,candidates,scale,DEFAULT_CONFIG)
             motion = candidate_motion_features(flow,affine,ratio,valid,candidates,
                        s.previous_candidates,width,height,scale,DEFAULT_CONFIG)
         after_motion = time.perf_counter()
@@ -160,7 +189,9 @@ class PerceptionPipeline:
             result['predicted_rank'] = int(scores.argmax()) if scores.max() >= 0 else None
         end = time.perf_counter()
         result['candidates'] = candidates
-        result['latency_ms'] = {'detector':(after_detector-began)*1000,
+        result['motion_features'] = motion
+        result['latency_ms'] = {'gray':(after_gray-began)*1000,
+                                'detector':(after_detector-after_gray)*1000,
                                 'motion':(after_motion-after_detector)*1000,
                                 'selector':(end-after_motion)*1000,'total':(end-began)*1000}
         return result

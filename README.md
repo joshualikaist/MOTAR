@@ -40,6 +40,9 @@ Two tracks run in parallel and are at different stages.
 - **Streaming reproducibility was an environment mismatch, not non-determinism.** A candidate cache
   built under torch 2.10 / cuDNN 9.10.2 could not be reproduced under torch 2.4 / cuDNN 9.1.
   Re-running in the original environment reproduces the frozen output exactly.
+- **CPU optical flow now overlaps GPU detection with identical validation output.** Across three
+  complete runs per arm, candidate, rank and motion bytes all matched; decode-inclusive throughput
+  increased from **14.72 to 22.48 FPS**. [Results and hashes](results/perception_streaming_overlap_s1_2026-09-09/README.md).
 
 **What this project does not claim.** Real-flight performance, sim-to-real transfer, target
 identification, 30 FPS, or an assembled airframe. Every number here is simulation or software-only

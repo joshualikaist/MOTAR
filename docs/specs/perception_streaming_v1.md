@@ -8,6 +8,10 @@
 - `PerceptionPipeline(detector, selector).process(frame_bgr, sequence, timestamp_ns)` —
   RGB 배열부터 후보·motion·최종 rank 및 단계별 시간 반환. rank=None이면 NO_LOCK.
 
+기본 pipeline은 이전/현재 grayscale의 CPU Farnebäck flow를 worker에서 계산하는 동안 GPU detector를
+실행한다. detector 뒤에는 후보 의존 GMC와 motion feature를 계산한다. context manager 또는
+`close()`로 worker를 종료한다. 검증기의 `--serial-flow`는 동일 연산을 직렬로 실행하는 기준선 옵션이다.
+
 호출은 단일 스트림에서 시간순으로 직렬화해야 한다. source sequence 변경 또는 explicit
 `selector.reset()`으로 이력을 초기화한다. 동일 sequence의 비단조 timestamp와 해상도 변경은
 오류다. frame은 uint8 BGR이며 현재 frozen detector는 두 변이 모두 640 px 이상이어야 한다.
@@ -68,3 +72,8 @@ parity 실패를 재현하려면 `datasets/detenv`로 돌리면 된다. gate는 
 이는 여전히 **카메라 배포 승인이 아니다.** offline/online parity는 저장된 JPEG 경로에 한해 PASS이며,
 실제 카메라 전송·ROS·PPO는 연결돼 있지 않다.
 상세 측정은 [결과](../../results/perception_p7e_streaming_2026-09-08/README.md)를 본다.
+
+2026-09-09 S1에서는 validation 2,296프레임 전체를 직렬·겹침 각 3회 실행했다.
+candidate/rank/motion bytes/하위 지표가 모두 정확히 일치했고 decode 포함 mean은
+67.91 → 44.49 ms, 평균 처리율은 14.72 → 22.48 FPS였다.
+[S1 결과와 실행 artifact hash](../../results/perception_streaming_overlap_s1_2026-09-09/README.md).
