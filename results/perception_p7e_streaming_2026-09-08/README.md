@@ -69,7 +69,8 @@ VRAM 추가 사용이나 Transformer 확대만으로 해결되는 병목은 아�
 전체 metrics, 두 RGB 실행의 latency와 runtime 설정을 보존했다. 대용량 checkpoint와
 전체 validation ranks는 저장소 밖 원본 경로에 있으며 summary에는 ranks만 생략했다.
 Python 1,221 tests PASS (4 skipped). 사이트는 이번에 수정하지 않았다.
-기존 미추적 `results/independent_verification_2026-09-06/`도 수정하지 않았다.
+당시 미추적이던 `results/independent_verification_2026-09-06/`은 이 작업에서는 수정하지 않았고,
+인용 근거 보존을 위해 2026-09-09 별도 커밋에서 추적 전환됐다.
 
 다음 순서: 수치 재현성 설정 고정 → motion/GMC latency 개선 → P8-lite/P9 입력 계약.
 P7d track identity, 실기 camera calibration/range GT, 실제 flight/ROS/PPO 연결은 미완료다.

@@ -55,7 +55,7 @@ camera intrinsics/거리 GT/track identity 없이 degree bearing·metric range·
 ## 작업 경계
 
 - NPS test 열람, 재학습, threshold tuning, 원본 cache 덮어쓰기는 이 재현성 조사에 필요 없다.
-- `results/independent_verification_2026-09-06/`은 기존 사용자 미추적 자료다. 건드리지 않는다.
+- `results/independent_verification_2026-09-06/`은 인용 근거 보존을 위해 2026-09-09 추적 전환됐다.
 - ~~RGB 실행은 `datasets/detenv/bin/python`~~ → **`detector_runs/venv/bin/python`**(2026-09-09 정정: cache를 만든 환경이며, 다른 환경에서는 재현되지 않는다).
 - verifier CLI는 strict rank parity FAIL일 때 JSON 저장 후 exit 1을 반환한다. 예상된 실패도 기록한다.
 - 30 FPS, 실기 탑재, identity tracking, ROS/PPO 연결 완료를 현재 결과로 주장하지 않는다.
