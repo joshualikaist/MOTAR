@@ -36,7 +36,7 @@
       </div>
       <div class="status-line">
         <span class="status-dot" aria-hidden="true"></span>
-        <strong>원호 튜브의 우위는 평가 시드를 넘어 재현된다</strong><span>ep25000 · 평가 시드 3 × 밀도 5 · 원호가 15/15에서 crash 최저 · riskcap 대비 셀 단위 −1.49 pp [−1.90, −1.08], <strong>시드를 반복 단위로 삼아도 −1.49 [−2.42, −0.57] p=0.020</strong> · 원호를 1.2 m로 넓히면 205 bars에서 crash −5.60 pp와 capture +4.44 pp 동시 · 같은 폭의 직선 회랑은 capture 약 10%로 임무 붕괴 · 어느 법칙이 옳은지는 학습 조건이 정함(D4) · 충돌의 77~78%는 회랑 밖 · sim-to-real 보류 · 2026-09-07</span>
+        <strong>합동 detector는 회복, KF v1은 기각</strong><span>sealed Det-Fly native AP30 <strong>0.7389</strong> · NPS-only zero-shot 0.0035 · P4 Top-K schema PASS · NPS test frame hit CNN 0.6145 vs KF 0.4655 · proxy false lock CNN 0.2450 vs KF 0.4843 · test 재튜닝 없음 · 실제 ID-switch·bearing degree는 metadata 부족으로 보류 · 2026-09-08</span>
       </div>
     </section>
 
@@ -233,6 +233,20 @@
         <code>test:</code> key가 없습니다. 39,131 sample 전수 검증에서 source-unit·exact-image
         split 교차와 test 유입은 모두 0입니다.
         <a href="../plans/perception_joint_dataset_v1_2026-09-07.md">split·dataset 정본</a></p>
+      <p><strong>Joint detector final(2026-09-08).</strong> 사전 동결한 batch 8, 30 epochs,
+        320&ndash;960 multi-scale 계약을 완료했습니다. validation으로 선택한 epoch 26의
+        P/R/mAP50/mAP50-95는 <code>0.7763 / 0.6590 / 0.6917 / 0.3234</code>이고 test를 열기 전에
+        checkpoint hash를 동결했습니다. sealed Det-Fly <code>020</code> native 4K의 IoU 0.3
+        P/R/AP는 <code>0.2729 / 0.8640 / 0.7389</code>입니다. zero-shot 크기 실패는 회복했지만
+        confidence 0.25에서 FP 15,911개라 운영 threshold는 validation에서 별도로 보정해야 합니다.
+        <a href="../plans/perception_joint_detector_training_2026-09-08.md">학습·최종 평가 계약</a></p>
+      <p><strong>P4 PASS · P5 KF v1 REJECTED.</strong> P4 Top-K=5 후보는 NPS val/test에서
+        timestamp·schema·semantic·hash 검증을 통과했습니다. NPS test 1,725 frames/8 clips에서
+        IoU&ge;0.3 frame hit는 CNN-only <strong>0.6145</strong>, KF <strong>0.4655</strong>였고,
+        proxy false lock은 <strong>0.2450</strong> 대 <strong>0.4843</strong>이었습니다. test를 보고
+        KF를 재튜닝하지 않았습니다. 원 track ID와 intrinsic이 없어 실제 ID switch/FTLR와 degree
+        bearing error는 측정하지 않습니다. producer latency는 동시 GPU 부하가 있던 offline 측정입니다.
+        <a href="../../results/perception_joint_detector_p4_p5_2026-09-08/README.md">결과·hash</a></p>
     </section>
 
     <section class="visual wrap" id="external-data" aria-labelledby="data-title">

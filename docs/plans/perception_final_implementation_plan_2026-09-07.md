@@ -30,8 +30,9 @@ NPS detector
 | P1 | 문서와 사이트 상태 정리 | 색 detector=`CURRENT BASELINE — KNOWN FAILURE`; SAM=`ARCHIVED` | 메인 architecture가 이 문서의 경로를 표시 |
 | P2 | NPS baseline 동결 | 현재 YOLO checkpoint와 NPS split 보존 | checkpoint hash, split manifest, P/R/mAP50/mAP50-95 기록 |
 | P3 | Det-Fly zero-shot **COMPLETE** | NPS checkpoint 무변경; 재튜닝 전 평가 | 13,271장 두 arm 전수; native AP30 0.0035, scale-matched AP30 0.2382; raw predictions+receipt |
-| P4 | multi-candidate 출력 | Top-K=5; 후보별 `[u,v,w,h,c,e64]` | frame/capture timestamp와 후보 순서를 보존하는 schema |
-| P5 | CNN+KF | P4 detector 동결 | gating·track-state 정의, FTLR/ID switch/reacquisition/latency |
+| P3-F | 합동 detector **COMPLETE** | Det-Fly `020` test 봉인 후 validation 선택 | native AP30 0.7389; checkpoint SHA 동결; threshold test tuning 없음 |
+| P4 | multi-candidate 출력 **COMPLETE** | Top-K=5; 후보별 `[u,v,w,h,c,e64]` | NPS val/test timestamp·schema·semantic·hash verification PASS |
+| P5 | CNN+KF **COMPLETE — REJECTED** | P4 detector 동결 | test hit 0.4655 vs CNN 0.6145; proxy false lock 0.4843 vs 0.2450 |
 | P6 | CNN+GRU | history 8; hidden 128 | P5와 같은 held-out clips에서 비교 |
 | P7 | CNN+Temporal Transformer | history 16; d=128; 4 heads; 2 layers | P5/P6와 같은 detector, split, metric으로 비교 |
 | P8 | 실사 오차 모델 | 선택된 detector/association 동결 | 조건부 miss/FP/bearing/ID-switch/reacquisition/latency 분포; 가능한 경우 range 오차·공분산 |
@@ -52,6 +53,14 @@ P3 후속 split과 통합 dataset도 완료했다. Det-Fly `020` 6,913장을 sou
 train 4,200 / val 2,158장으로 나뉘었다. NPS 기존 clip split과 Det-Fly native 640 crop을
 결합한 train/val은 29,824 / 9,307 samples이며 test는 학습 YAML에 없다. 상세 규칙과
 receipt는 `perception_joint_dataset_v1_2026-09-07.md`가 정본이다.
+
+P3 후속 합동 학습, P4, P5는 2026-09-08에 완료했다. validation-selected 합동 detector는 sealed
+Det-Fly native 4K에서 AP30 `0.7389`를 기록했다. P4 Top-K=5 후보 계약은 NPS val/test에서 검증됐다.
+P5 KF v1은 NPS test의 frame hit와 proxy false lock 모두 CNN-only보다 나빠 **REJECTED**했다. 실제
+ID switch/FTLR와 degree bearing error는 원 track identity와 intrinsic 부재로 보류한다. 상세 계약과
+hash는 `perception_joint_detector_training_2026-09-08.md`,
+`perception_p4_p5_execution_2026-09-08.md` 및
+`../../results/perception_joint_detector_p4_p5_2026-09-08/README.md`가 정본이다.
 
 CNN, GRU, Transformer를 직렬로 쌓지 않는다. 동일한 frozen CNN detector 위에서 `KF`, `GRU`,
 `Temporal Transformer`를 서로 대체하는 association arm으로 비교한다. 모델 선택은 validation clip에서

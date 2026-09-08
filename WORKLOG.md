@@ -16376,3 +16376,33 @@ P3와 같은 native 640/overlap 128 crop으로 positive 전부 + GT와 교차 0�
 재검사해 PASS. train/val source unit 교차 0, exact image 교차 0, sealed test 유입 0.
 YOLOv5 `check_dataset`도 train/val 경로를 정상 해석했고 `test=None`. 생성물 917 MB,
 남은 디스크 약 14 GB. joint manifest SHA `b6d8282e…`, dataset receipt SHA `ef9babda…`.
+
+
+## 2026-09-08 — 합동 detector·P4 완료, P5 KF v1 기각
+
+NPS+Det-Fly 합동 detector를 사전 동결한 batch 8, 30 epochs, 320–960 multi-scale 계약으로
+학습했다. RTX 3070은 batch 8에서 compute 약 96%, 약 188 W로 이미 포화에 가까워 VRAM 점유만
+늘리는 batch 16 변경은 하지 않았다. validation fitness가 가장 높은 zero-based epoch 26의
+P/R/mAP50/mAP50-95는 `0.77634 / 0.65901 / 0.69167 / 0.32339`다. test 접근 전에
+checkpoint SHA-256 `aab12f39…00ac`를 동결했다.
+
+그 뒤 sealed Det-Fly `020` 6,913장을 두 arm에서 한 번 평가했다. native 4K IoU 0.3 P/R/AP는
+`0.27291 / 0.86400 / 0.73887`, TP/FP/FN은 `5,972 / 15,911 / 940`이다. scale-matched ÷4
+진단 arm은 `0.59319 / 0.58478 / 0.59719`다. NPS-only native AP30 `0.00354`의 크기 실패는
+회복됐지만 confidence 0.25 precision이 낮다. test에 맞춰 threshold를 변경하지 않았다.
+
+P4는 NPS validation 2,296 frames/7 clips, test 1,725 frames/8 clips에서 Top-K=5 후보를 생성했다.
+각 후보는 `[u,v,w,h,confidence,appearance_64D]`이며 원 clip timestamp를 보존한다. schema, semantic,
+manifest, compressed payload hash 검증은 두 split에서 모두 PASS했다. appearance는 parameter-free
+RGB-grid/histogram descriptor이며 learned ReID 주장이 아니다.
+
+P5 고정 KF v1은 validation에서 CNN-only보다 낮았고, test에서도 frame hit
+`0.61449 → 0.46551`, proxy false lock `0.24501 → 0.48426`, center error
+`1.9127 → 3.9748 px`로 악화했다. **KF v1은 REJECTED**다. 원 track ID와 intrinsic이 없어 실제
+ID switch/FTLR와 degree bearing error는 unavailable이다. producer mean `61.43 ms`는 Det-Fly 평가와
+GPU를 공유한 contended offline 측정이라 배포 지연시간으로 쓰지 않는다.
+
+전체 Python suite는 올바른 aerialgym 환경에서 **1,213 tests OK, 4 skipped**다. SVG XML과 실렌더,
+JSON, Python compile, `git diff --check`가 통과했다. 정적 사이트 JS는 새 perception 계약을 통과한 뒤
+기존 `status.json`의 Track-B `RESULT_UNAVAILABLE_OR_MALFORMED`와 오래된 기대값 충돌에서 중단되며,
+이번 perception 변경과 무관한 선행 문제로 보존한다.

@@ -8,7 +8,14 @@ MOTAR는 카메라, LiDAR, ego-state만으로 움직이는 표적을 추적하�
 
 ![MOTAR current perception-to-control system](docs/assets/motar-system-overview.svg)
 
-> **Status · 2026-09-07** — 이번 주의 결과는 전부 **부정 결과**이고, 그것이 요점입니다.
+> **Status · 2026-09-08** — 실사 인지 P3 후속·P4·P5를 실행했습니다.
+> NPS+Det-Fly 합동 detector는 봉인한 Det-Fly `020` native 4K에서 AP30 **0.7389**로,
+> NPS-only zero-shot AP30 **0.0035**의 크기 실패를 회복했습니다. 다만 confidence 0.25에서
+> precision은 **0.2729**로 낮아 threshold는 validation에서 별도 보정해야 합니다.
+> Top-K=5 후보 schema는 NPS val/test에서 검증됐고, P5 KF v1은 test frame hit
+> **0.4655** 대 CNN-only **0.6145**, proxy false lock **0.4843** 대 **0.2450**으로
+> 더 나빠 **REJECTED**했습니다. 이 test를 보고 재튜닝하지 않았습니다.
+> 기존 안전 연구의 이번 주 결과는 전부 **부정 결과**이고, 그것이 요점입니다.
 > 세 갈래 사전등록 측정이 인지의 구속 조건은 측정 품질이 아니라 **물체 동일성**임을 확정했고
 > (자료구조 수정 +1.3 pp · 거리 분산 −0.34 pp · 동색 디코이 FTLR 90.27%),
 > 접촉 기하 포렌식은 **막대 충돌의 77~78%가 속도 거버너가 감시하는 회랑 밖**에서 남을 보였습니다
@@ -109,6 +116,8 @@ attitude/rate torque → motor allocation → 100 Hz rigid-body physics` 순서�
 | Detector colour shortcut (distractor envelope) | **both detectors `COLOR_SHORTCUT_CONFIRMED`**; v7 FTLR **90.27%** at N=5 | seed 479, 8 cells, 2,049 ep/cell; cross-detector comparison forbidden (prereg §3-c) |
 | NPS→Det-Fly perception P3 | **`SIZE-DOMINANT ZERO-SHOT FAILURE`**; native AP30 **0.0035**, ÷4 AP30 **0.2382** | 13,271 images, 13,270 GT, frozen checkpoint; IoU 0.3 |
 | NPS+Det-Fly joint dataset v1 | **split·dataset·seal verification PASS** | train 29,824 / val 9,307 samples; Det-Fly `020` 6,913 images sealed test |
+| NPS+Det-Fly joint detector | validation mAP50 **0.6917**; sealed native Det-Fly AP30 **0.7389** | epoch 26 selected without test access; 6,913 test images; conf 0.25 P/R **0.2729/0.8640** |
+| P4 Top-K + P5 KF v1 | P4 **PASS**; KF **`REJECTED`** | NPS test 1,725 frames/8 clips; hit CNN **0.6145** vs KF **0.4655**; proxy false lock **0.2450** vs **0.4843** |
 | Speed-governor stopcap screen | **Q1 `MECHANISM_UNSUPPORTED`, Q3 `FILTER_DEPENDENT`, stopcap NO-GO** | seed 49, 5 arms, 2,049 ep/cell; riskcap does not beat a constant 2.0 m/s cap |
 | Hardware/software gate | software pipeline PASS · `SYNTHETIC_ONLY` | 실기 성능 아님 |
 
@@ -279,11 +288,31 @@ IoU 0.3 P/R/AP는 `0.0097 / 0.1668 / 0.0035`, NPS 학습 크기에 맞춘 ÷4 ar
 
 통합 YAML은 train **29,824**, val **9,307** samples을 참조하며 `test:` key가 없습니다.
 39,131 sample 전체 SHA·크기·label·source-unit을 재검증했고 split 교차와 sealed-test 유입은
-모두 0입니다. 다음은 학습 계약을 먼저 동결한 뒤 NPS+Det-Fly 합동 학습·multi-scale/anchor
-재설계를 실행하는 것입니다. 상세 계약과 receipt hash는
+모두 0입니다. 상세 계약과 receipt hash는
 [`perception_p3_detfly_execution_2026-09-07.md`](docs/plans/perception_p3_detfly_execution_2026-09-07.md)에 있습니다.
 split/dataset 정본은
 [`perception_joint_dataset_v1_2026-09-07.md`](docs/plans/perception_joint_dataset_v1_2026-09-07.md)입니다.
+
+### Joint detector + P4/P5 실행 결과 (2026-09-08)
+
+사전 동결한 batch 8, 30 epochs, 320–960 multi-scale 계약으로 합동 학습했습니다. validation fitness로
+고른 epoch 26 checkpoint는 P/R/mAP50/mAP50-95 `0.7763 / 0.6590 / 0.6917 / 0.3234`이고,
+test를 열기 전에 SHA-256 `aab12f39…00ac`로 동결했습니다. 이후 Det-Fly `020` 6,913장을 한 번
+평가한 native 4K IoU 0.3 P/R/AP는 `0.2729 / 0.8640 / 0.7389`입니다. NPS-only AP30
+`0.0035`에서 크게 회복했지만 operating threshold 0.25의 FP는 15,911개이므로 threshold를 test에
+맞추지는 않습니다. ÷4 진단 arm AP30은 `0.5972`였습니다.
+
+P4는 NPS 원 clip timestamp를 보존하며 Top-K=5 `[u,v,w,h,confidence,appearance_64D]`를 생성했고
+val 2,296 frames/7 clips와 test 1,725 frames/8 clips에서 schema·semantic·hash 검증을 통과했습니다.
+appearance 64D는 learned ReID가 아니라 parameter-free RGB-grid/histogram baseline입니다.
+
+P5의 고정 KF v1은 NPS test에서 CNN-only보다 나빴습니다. IoU≥0.3 frame hit는
+`0.6145 → 0.4655`, 선택 frame 중 proxy false lock은 `0.2450 → 0.4843`, matched center error는
+`1.91 → 3.97 px`였습니다. 따라서 **KF v1은 REJECTED**이며 test 기반 재튜닝은 하지 않았습니다.
+원 track ID와 camera intrinsic이 없으므로 실제 ID switch/FTLR와 degree bearing error는 보고하지
+않습니다. producer latency `61.43 ms/frame`은 동시 GPU 평가가 있던 workstation 측정이라 실기
+latency 주장이 아닙니다. 결과와 hash 정본은
+[`summary`](results/perception_joint_detector_p4_p5_2026-09-08/README.md)에 있습니다.
 
 ## Safety filter — the speed governor
 

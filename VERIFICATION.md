@@ -4,7 +4,25 @@
 [`RESEARCH_PLAN.md`](RESEARCH_PLAN.md), 날짜별 기록은 [`WORKLOG.md`](WORKLOG.md),
 명령어는 [`OPERATIONS.md`](OPERATIONS.md), 라이브 지표는 [`docs/status/`](docs/status/)를 본다.
 
-> 기준일: 2026-09-07
+> 기준일: 2026-09-08
+
+## 2026-09-08 현재 실행 authority — 실사 perception 트랙
+
+- **P3 후속 합동 detector COMPLETE.** validation-selected epoch 26 checkpoint를 test 열람 전에
+  SHA-256 `aab12f39…00ac`로 동결했다. sealed Det-Fly `020` native 4K AP30은 `0.7389`다.
+  confidence 0.25 precision은 `0.2729`이므로 test에서 threshold를 사후 조정하지 않는다.
+- **P4 COMPLETE.** NPS validation/test에서 Top-K=5
+  `[u,v,w,h,confidence,appearance_64D]` candidate schema·semantic·manifest·payload hash가 PASS했다.
+- **P5 KF v1 REJECTED.** NPS test frame hit는 CNN-only `0.6145`, KF `0.4655`; proxy false lock은
+  `0.2450`, `0.4843`이다. 이 test를 보고 KF를 재튜닝하지 않는다.
+- **다음 실행은 P6.** 같은 frozen detector와 NPS split에서 GRU T=8을 구현·validation 선택한 뒤
+  test는 한 번만 평가한다. P7 Transformer는 P6과 같은 detector·split·metric을 사용한다.
+- 원 track identity, designated target ID, camera intrinsic이 없으므로 실제 ID switch/FTLR와 degree
+  bearing error는 현재 주장하지 않는다. P8 range/error model은 별도 실제 metadata 확보 전까지 제한된다.
+
+정본: [`joint detector 계약`](docs/plans/perception_joint_detector_training_2026-09-08.md),
+[`P4/P5 계약`](docs/plans/perception_p4_p5_execution_2026-09-08.md),
+[`결과·hash`](results/perception_joint_detector_p4_p5_2026-09-08/README.md).
 
 ## 2026-09-07 현재 실행 authority — 거버너 기하 트랙
 

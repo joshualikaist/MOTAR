@@ -1,6 +1,6 @@
 # Perception candidate interface v1
 
-상태: **P4 IMPLEMENTED — final detector 실행 대기**
+상태: **P4 COMPLETE — NPS validation/test schema·semantic·hash verification PASS**
 
 기계 판독 정본: `docs/specs/motar_perception_candidates_v1.schema.json`
 

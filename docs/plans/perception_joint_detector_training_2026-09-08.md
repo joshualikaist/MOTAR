@@ -1,7 +1,7 @@
 # NPS + Det-Fly detector 학습·최종 평가 계약
 
 작성: 2026-09-08  
-상태: **PRE-REGISTERED — RESULTS UNSEEN**
+상태: **COMPLETE — validation-selected checkpoint frozen before sealed test**
 
 ## 목적과 격리
 
@@ -44,3 +44,21 @@ scale-matched arm은 크기 민감도 진단일 뿐 모델 선택에 사용하�
 P4 후보 생성과 P5 KF 평가는 위 `best.pt`를 detector로 동결한 뒤 NPS test source clips에서 수행한다.
 NPS는 단일 표적 영상이므로 miss/FP/center error/track loss/reacquisition/latency는 측정하지만 실제
 multi-target ID-switch는 `NOT_IDENTIFIABLE_SINGLE_TARGET`로 명시한다.
+
+## 실행 결과
+
+- 30/30 epochs를 계약대로 완료했다. AutoAnchor BPR은 1.000이어서 anchor 변경이 필요 없었다.
+- validation fitness로 선택된 epoch는 zero-based 26이다. P/R/mAP50/mAP50-95는
+  `0.77634 / 0.65901 / 0.69167 / 0.32339`이다.
+- test 접근 전에 동결한 `best.pt` SHA-256은
+  `aab12f39bdc79f201657002f12d2096fab916600b546481964f8fcacdb3300ac`이다.
+- sealed Det-Fly `020` native 4K의 IoU 0.3 P/R/AP는
+  `0.27291 / 0.86400 / 0.73887`이다. confidence 0.25에서 TP/FP/FN은
+  `5,972 / 15,911 / 940`이다.
+- scale-matched ÷4 diagnostic의 IoU 0.3 P/R/AP는
+  `0.59319 / 0.58478 / 0.59719`이다.
+
+NPS-only native AP30 `0.00354`에 비해 joint detector가 표적 크기·domain gap을 크게 회복했다.
+그러나 native operating-point precision `0.27291`은 낮다. test 결과를 본 뒤 threshold를 바꾸지 않았으며,
+운영 threshold 보정은 별도 validation 계약이 필요하다. 원자료 경로와 hash는
+`results/perception_joint_detector_p4_p5_2026-09-08/`에 기록한다.
