@@ -31,6 +31,8 @@ sys.path.insert(0, str(ROOT / "tools"))
 TEMPORAL = load_tool("perception_temporal")
 SELECT_ASSOCIATION = load_tool("select_perception_association")
 EVAL_TEMPORAL = load_tool("eval_perception_temporal")
+MOTION = load_tool("build_perception_motion_features")
+SELECT_P7BC = load_tool("select_perception_p7bc")
 sys.path.pop(0)
 
 
@@ -329,6 +331,7 @@ class TemporalAssociationTest(unittest.TestCase):
         self.assertEqual(dataset.windows, [(0,), (0, 1), (2,)])
         self.assertEqual(int(dataset[1]["length"]), 2)
         self.assertEqual(int(dataset[2]["length"]), 1)
+        self.assertEqual(dataset[1]["age_seconds"].tolist(), [0.10000000149011612, 0.0])
 
     def test_gru_and_transformer_mask_absent_candidates(self):
         import torch
@@ -355,6 +358,53 @@ class TemporalAssociationTest(unittest.TestCase):
         self.assertEqual(tuple(transformer_logits.shape), (2, 6))
         self.assertLess(float(transformer_logits[:, 1:5].max()), -1e8)
 
+    def test_candidate_preserving_transformers_mask_absent_candidates(self):
+        import torch
+        common = {
+            "candidate_embedding_dim": 16, "dropout": 0.0, "hidden_dim": 16,
+            "history_length": 3, "num_heads": 4, "num_layers": 1,
+            "feedforward_dim": 32,
+        }
+        features = torch.zeros(2, 3, 5, 69)
+        candidate_mask = torch.zeros(2, 3, 5, dtype=torch.bool)
+        frame_mask = torch.tensor([[True, True, True], [True, False, False]])
+        candidate_mask[0, 0, :2] = True
+        candidate_mask[0, 2, 0] = True
+        candidate_mask[1, 0, 0] = True
+        delta = torch.zeros(2, 3)
+        age = torch.tensor([[0.2, 0.1, 0.0], [0.0, 0.0, 0.0]])
+        lengths = torch.tensor([3, 1])
+        p7b = TEMPORAL.build_temporal_model(dict(common, architecture="candidate_transformer"))
+        logits = p7b(features, candidate_mask, frame_mask, delta, lengths, age_seconds=age)
+        self.assertEqual(tuple(logits.shape), (2, 6))
+        self.assertLess(float(logits[:, 1:5].max()), -1e8)
+        p7c = TEMPORAL.build_temporal_model(dict(
+            common, architecture="candidate_motion_transformer", motion_feature_dimension=12))
+        motion = torch.zeros(2, 3, 5, 12)
+        logits = p7c(
+            features, candidate_mask, frame_mask, delta, lengths,
+            age_seconds=age, motion_features=motion)
+        self.assertEqual(tuple(logits.shape), (2, 6))
+        with self.assertRaisesRegex(ValueError, "requires motion"):
+            p7c(features, candidate_mask, frame_mask, delta, lengths, age_seconds=age)
+
+    def test_motion_feature_separates_local_flow_from_gmc(self):
+        import numpy as np
+        current = self.candidate(u=52.0)
+        previous = self.candidate(u=50.0)
+        flow = np.zeros((100, 100, 2), dtype=np.float32)
+        flow[:, :, 0] = -2.0
+        affine = np.asarray([[1.0, 0.0, -1.0], [0.0, 1.0, 0.0]])
+        values = MOTION.candidate_motion_features(
+            flow, affine, 0.75, True, [current], [previous], 100, 100, 1.0,
+            MOTION.DEFAULT_CONFIG)
+        self.assertEqual(values.shape, (5, 12))
+        self.assertAlmostEqual(float(values[0, 4]), -0.02)
+        self.assertAlmostEqual(float(values[0, 6]), -0.01)
+        self.assertAlmostEqual(float(values[0, 8]), -0.01)
+        self.assertAlmostEqual(float(values[0, 10]), 0.75)
+        self.assertEqual(float(values[0, 11]), 1.0)
+
     def test_selection_utility_and_tie_order_are_frozen(self):
         def metric(hits, false_locks):
             return {
@@ -367,6 +417,14 @@ class TemporalAssociationTest(unittest.TestCase):
         self.assertEqual(SELECT_ASSOCIATION.select_arm(arms), "cnn_only_top1")
         arms["cnn_plus_gru_t8"] = metric(9, 0)
         self.assertEqual(SELECT_ASSOCIATION.select_arm(arms), "cnn_plus_gru_t8")
+
+        extension_arms = {name: metric(8, 1) for name in SELECT_P7BC.TIE_ORDER}
+        self.assertEqual(
+            SELECT_P7BC.select_arm(extension_arms), "current_transformer_t16")
+        extension_arms["candidate_motion_transformer_t16"] = metric(9, 0)
+        self.assertEqual(
+            SELECT_P7BC.select_arm(extension_arms),
+            "candidate_motion_transformer_t16")
 
 
 if __name__ == "__main__":

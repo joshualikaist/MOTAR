@@ -23,7 +23,8 @@ from torch.utils.data import DataLoader
 from eval_perception_kf import ArmMetrics, selected_result
 from perception_candidates import canonical_line, sha256_file
 from perception_temporal import (
-    NO_LOCK_CLASS, TemporalCandidateDataset, build_temporal_model, candidate_box,
+    MOTION_FEATURE_DIMENSION, NO_LOCK_CLASS, TemporalCandidateDataset,
+    build_temporal_model, candidate_box, load_aligned_motion_records,
     load_aligned_records, parameter_count, selection_utility,
 )
 
@@ -41,6 +42,10 @@ def parse_args():
     parser.add_argument("--val-manifest-receipt", type=Path, required=True)
     parser.add_argument("--val-candidates", type=Path, required=True)
     parser.add_argument("--val-candidate-receipt", type=Path, required=True)
+    parser.add_argument("--train-motion", type=Path)
+    parser.add_argument("--train-motion-receipt", type=Path)
+    parser.add_argument("--val-motion", type=Path)
+    parser.add_argument("--val-motion-receipt", type=Path)
     parser.add_argument("--config", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--device", default="cuda:0")
@@ -73,6 +78,7 @@ def model_logits(model, batch):
     return model(
         batch["features"], batch["candidate_mask"], batch["frame_mask"],
         batch["delta_seconds"], batch["length"],
+        age_seconds=batch["age_seconds"], motion_features=batch["motion_features"],
     )
 
 
@@ -168,8 +174,10 @@ def main():
     if output.exists():
         raise SystemExit("[temporal] refusing existing output")
     config = json.loads(args.config.read_text())
-    if config["architecture"] not in ("gru", "transformer"):
-        raise SystemExit("[temporal] config architecture must be gru or transformer")
+    architectures = (
+        "gru", "transformer", "candidate_transformer", "candidate_motion_transformer")
+    if config["architecture"] not in architectures:
+        raise SystemExit("[temporal] unsupported config architecture")
     device = torch.device(args.device)
     if device.type == "cuda" and not torch.cuda.is_available():
         raise SystemExit("[temporal] CUDA requested but unavailable")
@@ -188,10 +196,30 @@ def main():
             != val_candidate_meta["appearance_encoder_config_sha256"]):
         raise SystemExit("[temporal] train/validation appearance encoders differ")
 
+    motion_arguments = (
+        args.train_motion, args.train_motion_receipt,
+        args.val_motion, args.val_motion_receipt,
+    )
+    requires_motion = config["architecture"] == "candidate_motion_transformer"
+    if ((requires_motion and not all(value is not None for value in motion_arguments))
+            or (not requires_motion and any(value is not None for value in motion_arguments))):
+        raise SystemExit(
+            "[temporal] candidate_motion_transformer requires all four motion inputs; "
+            "other architectures forbid them")
+    train_motion, val_motion = None, None
+    train_motion_meta, val_motion_meta = None, None
+    if requires_motion:
+        train_motion, train_motion_meta = load_aligned_motion_records(
+            args.train_motion, args.train_motion_receipt, train_aligned,
+            train_manifest_meta["manifest_sha256"], train_candidate_meta["output_sha256"])
+        val_motion, val_motion_meta = load_aligned_motion_records(
+            args.val_motion, args.val_motion_receipt, val_aligned,
+            val_manifest_meta["manifest_sha256"], val_candidate_meta["output_sha256"])
+
     train_data = TemporalCandidateDataset(
-        train_aligned, config["history_length"], config["evaluation_iou"])
+        train_aligned, config["history_length"], config["evaluation_iou"], train_motion)
     val_data = TemporalCandidateDataset(
-        val_aligned, config["history_length"], config["evaluation_iou"])
+        val_aligned, config["history_length"], config["evaluation_iou"], val_motion)
     seed_everything(int(config["seed"]))
     generator = torch.Generator()
     generator.manual_seed(int(config["seed"]))
@@ -246,8 +274,11 @@ def main():
 
     checkpoint_path = output / "best.pt"
     torch.save({
-        "schema_version": 1,
-        "experiment": "motar.p6-p7.temporal-candidate-selector.v1",
+        "schema_version": 2 if config["architecture"].startswith("candidate_") else 1,
+        "experiment": (
+            "motar.p7b-p7c.candidate-preserving-selector.v1"
+            if config["architecture"].startswith("candidate_")
+            else "motar.p6-p7.temporal-candidate-selector.v1"),
         "architecture": config["architecture"],
         "config": config,
         "feature_contract": {
@@ -255,6 +286,9 @@ def main():
             "fields": "normalized [u,v,w,h], confidence, appearance_64d",
             "no_lock_class": NO_LOCK_CLASS,
             "causal_clip_bounded": True,
+            "candidate_preserving": config["architecture"].startswith("candidate_"),
+            "age_seconds": config["architecture"].startswith("candidate_"),
+            "motion_dimension": MOTION_FEATURE_DIMENSION if requires_motion else 0,
         },
         "model_state_dict": best_state,
         "best_epoch_zero_based": best_epoch,
@@ -282,8 +316,11 @@ def main():
             }))
 
     report = {
-        "schema_version": 1,
-        "experiment": "motar.p6-p7.temporal-candidate-selector.v1",
+        "schema_version": 2 if config["architecture"].startswith("candidate_") else 1,
+        "experiment": (
+            "motar.p7b-p7c.candidate-preserving-selector.v1"
+            if config["architecture"].startswith("candidate_")
+            else "motar.p6-p7.temporal-candidate-selector.v1"),
         "completed_utc": datetime.now(timezone.utc).isoformat(),
         "architecture": config["architecture"],
         "config": config,
@@ -308,6 +345,12 @@ def main():
         "detector_weights_sha256": train_candidate_meta["weights_sha256"],
         "appearance_encoder_config_sha256": train_candidate_meta[
             "appearance_encoder_config_sha256"],
+        "motion_provenance": ({
+            "train_motion_sha256": train_motion_meta["output_sha256"],
+            "validation_motion_sha256": val_motion_meta["output_sha256"],
+            "feature_dimension": train_motion_meta["feature_dimension"],
+            "feature_fields": train_motion_meta["feature_fields"],
+        } if requires_motion else None),
         "parameter_count": parameter_count(model),
         "training_elapsed_seconds": time.monotonic() - began_training,
         "limitations": {
@@ -333,6 +376,10 @@ def main():
         "validation_manifest_sha256": val_manifest_meta["manifest_sha256"],
         "validation_candidates_sha256": val_candidate_meta["output_sha256"],
         "detector_weights_sha256": train_candidate_meta["weights_sha256"],
+        "train_motion_sha256": (
+            train_motion_meta["output_sha256"] if requires_motion else None),
+        "validation_motion_sha256": (
+            val_motion_meta["output_sha256"] if requires_motion else None),
     }
     receipt_path = output / "receipt.json"
     receipt_path.write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n")

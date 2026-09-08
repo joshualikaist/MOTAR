@@ -16,6 +16,7 @@ from perception_candidates import read_jsonl, sha256_file, validate_candidate_re
 
 TOP_K = 5
 FEATURE_DIMENSION = 69
+MOTION_FEATURE_DIMENSION = 12
 NO_LOCK_CLASS = TOP_K
 
 
@@ -104,15 +105,53 @@ def load_aligned_records(manifest, manifest_receipt, candidates, candidate_recei
     return aligned, manifest_meta, candidate_meta
 
 
+def load_aligned_motion_records(motion_path, motion_receipt, aligned_records,
+                                manifest_sha256, candidates_sha256):
+    """Load one audited P7c motion row per already-aligned candidate frame."""
+    motion_path, motion_receipt = Path(motion_path), Path(motion_receipt)
+    receipt = json.loads(motion_receipt.read_text())
+    if sha256_file(motion_path) != receipt["output_sha256"]:
+        raise ValueError("temporal motion receipt hash mismatch")
+    if receipt["manifest_sha256"] != manifest_sha256:
+        raise ValueError("temporal motion came from a different manifest")
+    if receipt["candidates_sha256"] != candidates_sha256:
+        raise ValueError("temporal motion came from different candidates")
+    if int(receipt["feature_dimension"]) != MOTION_FEATURE_DIMENSION:
+        raise ValueError("temporal motion feature dimension mismatch")
+    rows = []
+    missing = object()
+    for pair in itertools.zip_longest(
+            aligned_records, read_jsonl(motion_path), fillvalue=missing):
+        aligned, row = pair
+        if aligned is missing or row is missing:
+            raise ValueError("temporal motion/candidate record counts differ")
+        source = aligned["source"]
+        identity = ("frame_id", "source_sequence_id", "frame_index", "capture_timestamp_ns")
+        if any(source[key] != row.get(key) for key in identity):
+            raise ValueError("temporal motion/candidate identity mismatch")
+        values = np.asarray(row.get("candidate_motion", []), dtype=np.float32)
+        if values.shape != (TOP_K, MOTION_FEATURE_DIMENSION):
+            raise ValueError("temporal motion row shape mismatch")
+        if not np.isfinite(values).all():
+            raise ValueError("temporal motion contains non-finite values")
+        rows.append(values)
+    if len(rows) != int(receipt["records"]):
+        raise ValueError("temporal motion receipt record count mismatch")
+    return rows, receipt
+
+
 class TemporalCandidateDataset(Dataset):
     """Causal, clip-bounded windows ending at each current P4 frame."""
 
-    def __init__(self, aligned_records, history_length, evaluation_iou):
+    def __init__(self, aligned_records, history_length, evaluation_iou, motion_records=None):
         self.records = list(aligned_records)
         self.history_length = int(history_length)
         self.evaluation_iou = float(evaluation_iou)
+        self.motion_records = motion_records
         if self.history_length <= 0:
             raise ValueError("history length must be positive")
+        if motion_records is not None and len(motion_records) != len(self.records):
+            raise ValueError("motion record count differs from candidate records")
         self.frame_features = []
         self.frame_candidate_masks = []
         self.targets = []
@@ -149,20 +188,29 @@ class TemporalCandidateDataset(Dataset):
         candidate_mask = np.zeros((self.history_length, TOP_K), dtype=np.bool_)
         frame_mask = np.zeros(self.history_length, dtype=np.bool_)
         delta_seconds = np.zeros(self.history_length, dtype=np.float32)
+        age_seconds = np.zeros(self.history_length, dtype=np.float32)
+        motion_features = np.zeros(
+            (self.history_length, TOP_K, MOTION_FEATURE_DIMENSION), dtype=np.float32)
         previous_timestamp = None
+        current_timestamp = int(self.records[indices[-1]]["source"]["capture_timestamp_ns"])
         for position, frame_index in enumerate(indices):
             features[position] = self.frame_features[frame_index]
             candidate_mask[position] = self.frame_candidate_masks[frame_index]
             frame_mask[position] = True
             timestamp = int(self.records[frame_index]["source"]["capture_timestamp_ns"])
+            age_seconds[position] = min(max((current_timestamp - timestamp) / 1e9, 0.0), 10.0)
             if previous_timestamp is not None:
                 delta_seconds[position] = min(max((timestamp - previous_timestamp) / 1e9, 0.0), 1.0)
             previous_timestamp = timestamp
+            if self.motion_records is not None:
+                motion_features[position] = self.motion_records[frame_index]
         return {
             "features": torch.from_numpy(features),
             "candidate_mask": torch.from_numpy(candidate_mask),
             "frame_mask": torch.from_numpy(frame_mask),
             "delta_seconds": torch.from_numpy(delta_seconds),
+            "age_seconds": torch.from_numpy(age_seconds),
+            "motion_features": torch.from_numpy(motion_features),
             "length": torch.tensor(length, dtype=torch.long),
             "target": torch.tensor(self.targets[index], dtype=torch.long),
             "record_index": torch.tensor(index, dtype=torch.long),
@@ -248,8 +296,9 @@ class GRUCandidateSelector(TemporalSelectorBase):
             dropout=float(config["dropout"]) if int(config["num_layers"]) > 1 else 0.0,
         )
 
-    def forward(self, features, candidate_mask, frame_mask, delta_seconds, lengths):
-        del frame_mask
+    def forward(self, features, candidate_mask, frame_mask, delta_seconds, lengths,
+                age_seconds=None, motion_features=None):
+        del frame_mask, age_seconds, motion_features
         embeddings, frame_input = self.encode_frames(features, candidate_mask, delta_seconds)
         packed = pack_padded_sequence(
             frame_input, lengths.detach().cpu(), batch_first=True, enforce_sorted=False)
@@ -275,7 +324,9 @@ class TransformerCandidateSelector(TemporalSelectorBase):
         self.temporal_position = nn.Embedding(int(config["history_length"]), hidden)
         self.output_norm = nn.LayerNorm(hidden)
 
-    def forward(self, features, candidate_mask, frame_mask, delta_seconds, lengths):
+    def forward(self, features, candidate_mask, frame_mask, delta_seconds, lengths,
+                age_seconds=None, motion_features=None):
+        del age_seconds, motion_features
         embeddings, frame_input = self.encode_frames(features, candidate_mask, delta_seconds)
         positions = torch.arange(frame_input.shape[1], device=frame_input.device)
         encoded = self.temporal(
@@ -286,12 +337,123 @@ class TransformerCandidateSelector(TemporalSelectorBase):
         return self.score_current(context, embeddings, candidate_mask, lengths)
 
 
+class CandidatePreservingTransformerSelector(nn.Module):
+    """Keep every T x K candidate and query history separately for each current candidate."""
+
+    def __init__(self, config):
+        super().__init__()
+        self.config = dict(config)
+        hidden = int(config["hidden_dim"])
+        embedding = int(config["candidate_embedding_dim"])
+        if hidden != embedding:
+            raise ValueError("candidate transformer requires embedding dim == hidden dim")
+        self.uses_motion = config["architecture"] == "candidate_motion_transformer"
+        if self.uses_motion and int(config.get("motion_feature_dimension", -1)) != MOTION_FEATURE_DIMENSION:
+            raise ValueError("candidate motion feature dimension is not the frozen contract")
+        input_dimension = FEATURE_DIMENSION + 1
+        if self.uses_motion:
+            input_dimension += MOTION_FEATURE_DIMENSION
+        self.token_encoder = nn.Sequential(
+            nn.Linear(input_dimension, hidden),
+            nn.ReLU(),
+            nn.LayerNorm(hidden),
+        )
+        self.temporal_position = nn.Embedding(int(config["history_length"]), hidden)
+        self.rank_position = nn.Embedding(TOP_K, hidden)
+        self.cold_start_token = nn.Parameter(torch.zeros(hidden))
+        encoder_layer = nn.TransformerEncoderLayer(
+            d_model=hidden,
+            nhead=int(config["num_heads"]),
+            dim_feedforward=int(config["feedforward_dim"]),
+            dropout=float(config["dropout"]),
+            activation="gelu",
+            batch_first=True,
+            norm_first=True,
+        )
+        self.history_encoder = nn.TransformerEncoder(
+            encoder_layer, num_layers=int(config["num_layers"]))
+        self.current_to_history = nn.MultiheadAttention(
+            hidden, int(config["num_heads"]), dropout=float(config["dropout"]),
+            batch_first=True)
+        self.output_norm = nn.LayerNorm(hidden)
+        self.candidate_scorer = nn.Sequential(
+            nn.Linear(4 * hidden, hidden),
+            nn.ReLU(),
+            nn.Dropout(float(config["dropout"])),
+            nn.Linear(hidden, 1),
+        )
+        self.no_lock_scorer = nn.Sequential(
+            nn.Linear(2 * hidden, hidden),
+            nn.ReLU(),
+            nn.Dropout(float(config["dropout"])),
+            nn.Linear(hidden, 1),
+        )
+
+    def forward(self, features, candidate_mask, frame_mask, delta_seconds, lengths,
+                age_seconds=None, motion_features=None):
+        del frame_mask, delta_seconds
+        if age_seconds is None:
+            age_seconds = torch.zeros(
+                features.shape[:2], dtype=features.dtype, device=features.device)
+        token_fields = [features, age_seconds.unsqueeze(-1).unsqueeze(-1).expand(
+            -1, -1, TOP_K, -1)]
+        if self.uses_motion:
+            if motion_features is None:
+                raise ValueError("candidate motion transformer requires motion features")
+            token_fields.append(motion_features)
+        tokens = self.token_encoder(torch.cat(token_fields, dim=-1))
+        temporal_positions = torch.arange(features.shape[1], device=features.device)
+        ranks = torch.arange(TOP_K, device=features.device)
+        tokens = (tokens
+                  + self.temporal_position(temporal_positions)[None, :, None, :]
+                  + self.rank_position(ranks)[None, None, :, :])
+
+        batch_indices = torch.arange(features.shape[0], device=features.device)
+        current_positions = lengths - 1
+        current_tokens = tokens[batch_indices, current_positions]
+        current_mask = candidate_mask[batch_indices, current_positions]
+
+        time_positions = torch.arange(features.shape[1], device=features.device)
+        historical_frames = time_positions.unsqueeze(0) < current_positions.unsqueeze(1)
+        historical_mask = candidate_mask & historical_frames.unsqueeze(-1)
+        history = tokens.reshape(tokens.shape[0], -1, tokens.shape[-1])
+        history_mask = historical_mask.reshape(historical_mask.shape[0], -1)
+        cold = self.cold_start_token.view(1, 1, -1).expand(tokens.shape[0], -1, -1)
+        history = torch.cat([cold, history], dim=1)
+        history_mask = torch.cat([
+            torch.ones(tokens.shape[0], 1, dtype=torch.bool, device=tokens.device),
+            history_mask,
+        ], dim=1)
+        encoded_history = self.history_encoder(
+            history, src_key_padding_mask=~history_mask)
+        attended, _ = self.current_to_history(
+            current_tokens, encoded_history, encoded_history,
+            key_padding_mask=~history_mask, need_weights=False)
+        attended = self.output_norm(current_tokens + attended)
+        comparison = torch.cat([
+            current_tokens,
+            attended,
+            torch.abs(current_tokens - attended),
+            current_tokens * attended,
+        ], dim=-1)
+        candidate_logits = self.candidate_scorer(comparison).squeeze(-1)
+        candidate_logits = candidate_logits.masked_fill(~current_mask, -1e9)
+        valid = current_mask.to(current_tokens.dtype).unsqueeze(-1)
+        current_summary = (current_tokens * valid).sum(dim=1) / valid.sum(dim=1).clamp_min(1.0)
+        history_summary = encoded_history[:, 0]
+        no_lock = self.no_lock_scorer(
+            torch.cat([current_summary, history_summary], dim=-1))
+        return torch.cat([candidate_logits, no_lock], dim=1)
+
+
 def build_temporal_model(config):
     architecture = config["architecture"]
     if architecture == "gru":
         return GRUCandidateSelector(config)
     if architecture == "transformer":
         return TransformerCandidateSelector(config)
+    if architecture in ("candidate_transformer", "candidate_motion_transformer"):
+        return CandidatePreservingTransformerSelector(config)
     raise ValueError("unsupported temporal architecture: %s" % architecture)
 
 

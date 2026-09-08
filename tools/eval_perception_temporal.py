@@ -12,7 +12,7 @@ from torch.utils.data import DataLoader
 from perception_candidates import canonical_line, sha256_file
 from perception_temporal import (
     NO_LOCK_CLASS, TemporalCandidateDataset, build_temporal_model, candidate_box,
-    load_aligned_records, parameter_count,
+    load_aligned_motion_records, load_aligned_records, parameter_count,
 )
 from train_perception_temporal import association_metrics, infer_dataset
 
@@ -25,6 +25,8 @@ def parse_args():
     parser.add_argument("--candidate-receipt", type=Path, required=True)
     parser.add_argument("--checkpoint", type=Path, required=True)
     parser.add_argument("--checkpoint-receipt", type=Path, required=True)
+    parser.add_argument("--motion", type=Path)
+    parser.add_argument("--motion-receipt", type=Path)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--device", default="cuda:0")
     return parser.parse_args()
@@ -50,15 +52,25 @@ def main():
     if device.type == "cuda" and not torch.cuda.is_available():
         raise SystemExit("[temporal-eval] CUDA requested but unavailable")
     payload = torch.load(args.checkpoint, map_location="cpu", weights_only=False)
-    if payload.get("schema_version") != 1:
+    if payload.get("schema_version") not in (1, 2):
         raise SystemExit("[temporal-eval] unsupported checkpoint schema")
     config = payload["config"]
     if payload["architecture"] != checkpoint_receipt["architecture"]:
         raise SystemExit("[temporal-eval] checkpoint architecture receipt mismatch")
     if payload["detector_weights_sha256"] != candidate_meta["weights_sha256"]:
         raise SystemExit("[temporal-eval] checkpoint payload detector hash mismatch")
+    requires_motion = config["architecture"] == "candidate_motion_transformer"
+    has_all_motion = args.motion is not None and args.motion_receipt is not None
+    has_any_motion = args.motion is not None or args.motion_receipt is not None
+    if (requires_motion and not has_all_motion) or (not requires_motion and has_any_motion):
+        raise SystemExit("[temporal-eval] motion inputs do not match checkpoint architecture")
+    motion, motion_meta = None, None
+    if requires_motion:
+        motion, motion_meta = load_aligned_motion_records(
+            args.motion, args.motion_receipt, aligned,
+            manifest_meta["manifest_sha256"], candidate_meta["output_sha256"])
     dataset = TemporalCandidateDataset(
-        aligned, config["history_length"], config["evaluation_iou"])
+        aligned, config["history_length"], config["evaluation_iou"], motion)
     loader = DataLoader(
         dataset, batch_size=int(config["batch_size"]), shuffle=False, num_workers=0)
     model = build_temporal_model(config)
@@ -102,6 +114,7 @@ def main():
         "detector_weights_sha256": candidate_meta["weights_sha256"],
         "manifest_sha256": manifest_meta["manifest_sha256"],
         "candidates_sha256": candidate_meta["output_sha256"],
+        "motion_sha256": motion_meta["output_sha256"] if requires_motion else None,
         "frames": len(dataset),
         "sequences": len(manifest_meta["sequences"]),
         "label_counts": dataset.label_counts(),
@@ -130,6 +143,7 @@ def main():
         "manifest_sha256": manifest_meta["manifest_sha256"],
         "candidates_sha256": candidate_meta["output_sha256"],
         "detector_weights_sha256": candidate_meta["weights_sha256"],
+        "motion_sha256": motion_meta["output_sha256"] if requires_motion else None,
     }
     (output / "receipt.json").write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n")
     print("[temporal-eval] PASS: %s %s utility %.6f -> %s" % (
