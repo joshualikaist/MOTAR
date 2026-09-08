@@ -22,7 +22,7 @@ Two tracks run in parallel and are at different stages.
 | Track | Goal | State |
 |---|---|---|
 | **A — safety-filter diagnosis** | measure when and why a direction-preserving speed filter fails | core experiments complete; one training-seed replication left |
-| **B — real-imagery perception** | learn a detector on real air-to-air video, measure its error, inject that into the simulator | detector and temporal association complete; error model next |
+| **B — real-imagery perception** | learn a detector on real air-to-air video, measure its error, inject that into the simulator | detector, association and conditional error measurement complete; injection next |
 
 **Recent findings.**
 
@@ -43,6 +43,9 @@ Two tracks run in parallel and are at different stages.
 - **CPU optical flow now overlaps GPU detection with identical validation output.** Across three
   complete runs per arm, candidate, rank and motion bytes all matched; decode-inclusive throughput
   increased from **14.72 to 22.48 FPS**. [Results and hashes](results/perception_streaming_overlap_s1_2026-09-09/README.md).
+- **Conditional error calibration is measured.** Size-conditioned offsets, state transitions and
+  timing use 1,310 single-GT validation frames. Another 986 frames contain multiple GT boxes;
+  unsupported size/cadence regions remain explicit. [P8 artifacts and limits](results/perception_p8_2026-09-09/README.md).
 
 **What this project does not claim.** Real-flight performance, sim-to-real transfer, target
 identification, 30 FPS, or an assembled airframe. Every number here is simulation or software-only

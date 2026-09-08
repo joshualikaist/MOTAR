@@ -40,7 +40,7 @@ checkpoint에서 warm-start해 joint 데이터로 30 epoch 학습돼 있다(P3-F
 | P7e crop verifier | 미채택 | — |
 | streaming | 구현 완료, RGB parity PASS, **S1 overlap COMPLETE** | P8 오차 모델 |
 | P7d learned ReID | 경계 문서만 | track-ID 데이터 없음 → 보류 |
-| **P8 오차 모델** | 초안만 | **측정 본체** |
+| **P8 오차 모델** | **측정 완료**, 단일-GT 지원 범위 제한 | P9 적합도·주입 |
 | P9 주입 | 미착수 | P8 뒤 |
 | P10 PPO | 미착수 | 별도 승인 |
 
@@ -85,7 +85,14 @@ detector 26.37 / motion 33.40 / selector 2.35 / decode 5.15 ms, decode 포함 67
 **실패 시 처리**: motion feature가 한 프레임이라도 어긋나면 겹침을 되돌리고 원인을 적는다.
 속도를 이유로 tolerance를 열지 않는다.
 
-### S2 — P8 오차 모델 측정 (1~2일, GPU 소량)
+### S2 — P8 오차 모델 측정 — COMPLETE (2026-09-09)
+
+[산출물·한계](../../results/perception_p8_2026-09-09/README.md): 2,296프레임 전체 baseline 재현,
+단일-GT 1,310프레임의 크기별 분포·3-state/2-state 전이·중도절단 burst·S1 지연 측정 완료.
+다중-GT 986프레임은 크기 조건부 집계에서 제외했다. <8 px는 0개, >=64 px는 2개이므로
+미지원이며, 전이확률은 50–103 ms 관측 간격 기준이다. P9 적용 전에 이 경계를 처리해야 한다.
+아래 초안의 “NPS는 영상당 UAV 1기”는 실제 복수 GT annotation과 맞지 않는다.
+ID-switch 보류 이유는 안정적인 target identity가 없기 때문이다.
 
 S1로 latency가 안정된 뒤에 한다. 순서가 중요하다 — latency 분포가 오차 모델의 한 성분이기 때문이다.
 

@@ -16636,3 +16636,21 @@ clean-tree 전체 Python 1,231 tests OK (4 skipped).
 마크업·상대 링크 검사 통과. 스냅샷 재생성.
 
 전체 스위트 1,231 tests OK (skipped 4).
+
+## 2026-09-09 — P8 조건부 오차 모델 측정
+
+계약 `31ee02f`에서 결과 관찰 전 sqrt(GT area) 크기 경계 8/16/32/64 px,
+IoU .3, single-GT eligibility, .5 s gap, censoring과 sparse support 규칙을 고정했다.
+코드 `48852a7`로 frozen P7c validation과 S1 overlap 3회 timing을 hash 확인 후 집계했다.
+
+전체 2,296프레임의 기존 any-GT 지표는 정확히 재현됐다. 단일-GT는 1,310프레임이며
+986프레임에는 2~5개의 GT가 있다. 조건부 구간별 개수는 0/271/849/188/2다.
+<8 px와 >=64 px는 지원 부족이며 32~64 px NO_LOCK 전이행도 outgoing 5개로 부족하다.
+27개 eligible segment, 1,283개 전이의 실제 관측 간격은 약 50~103 ms다.
+조건부 completed reacquisition은 65회, mean .221 s/max .801 s이며, 전체 baseline의
+102회/.470 s/19.933 s와 모집단·중도절단이 다르므로 직접 성능 개선으로 해석하지 않는다.
+
+model/frame/burst 세 산출물을 별도 경로에서 다시 생성해 SHA가 모두 일치했다.
+표본·전이 보존, 확률합, paired error correspondence, frozen 전체 지표를 검사했다.
+PPO·test는 미실행. [원자료와 receipt](results/perception_p8_2026-09-09/README.md).
+clean-tree 전체 스위트 1,237 tests OK (skipped 4); P8 신규 6개 포함.

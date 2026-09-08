@@ -38,7 +38,7 @@ NPS detector
 | P7b/P7c | 후보 보존 + motion/GMC **COMPLETE** | corrected P7c v2 선택; 이전 P7 선택 갱신 | validation utility 0.68554; [결과](../../results/perception_p7bc_2026-09-08/README.md); test 미실행 |
 | P7e/streaming | crop verifier **NOT SELECTED**; streaming+overlap **COMPLETE** | P7c 유지; test 미실행 | RGB parity PASS; 14.72→22.48 FPS; [S1 결과](../../results/perception_streaming_overlap_s1_2026-09-09/README.md) |
 | P7d | learned appearance/ReID 준비 | track-ID 데이터 필요 | [착수 경계](perception_p7d_identity_boundary_2026-09-08.md) |
-| P8 | 실사 오차 모델 | 선택된 detector/association 동결 | 조건부 miss/FP/bearing/ID-switch/reacquisition/latency 분포; 가능한 경우 range 오차·공분산 |
+| P8 | **조건부 pixel/시간 오차 측정 COMPLETE** | 선택된 detector/association 동결 | 단일-GT 1,310프레임; sparse bins 명시; [결과](../../results/perception_p8_2026-09-09/README.md); degree/range/identity는 자료 대기 |
 | P9 | simulator 오류 주입 | renderer로 UAV detector를 재학습하지 않음 | 실사 분포와 주입 분포의 적합도 및 seed 고정 재현성 |
 | P10 | PPO 재적응·평가 | perception arm 외 reward·arena·target motion·filter 계약 고정 | held-out capture/crash/timeout과 95% CI, training/evaluation seed 분리 |
 

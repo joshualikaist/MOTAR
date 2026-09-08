@@ -12,7 +12,10 @@
 P7c v2를 유지한다. 올바른 runtime에서 RGB parity를 해소했고, CPU flow와 GPU detector를 겹쳤다.
 validation 2,296프레임을 직렬·겹침 각 3회 실행해 candidate/rank/motion bytes/하위 지표의
 불일치가 0임을 확인했다. decode 포함 3회 평균은 14.72 → 22.48 FPS다.
-다음 실행은 P8 오차 모델이며 test, PPO, 실제 카메라는 아직 열지 않는다.
+**P8 측정도 완료**했다. 단일-GT 1,310프레임에서 크기별 오차·시간 전이·지연을 산출했고,
+다중-GT 986개는 조건부 모델에서 제외했다. <8 px 및 >=64 px 구간은 지원 부족이다.
+다음 실행은 P9 주입기와 적합도 검증이며 test, PPO, 실제 카메라는 이번 단계에서 열지 않는다.
+[P8 결과·지원 범위](results/perception_p8_2026-09-09/README.md).
 [S1 결과·hash](results/perception_streaming_overlap_s1_2026-09-09/README.md).
 
 후속 **P7b/P7c COMPLETE**: 현재 선택은 corrected P7c v2 (utility 0.68554)다.
