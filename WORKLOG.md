@@ -16485,3 +16485,51 @@ P7c를 유지하며 NPS test는 사용하지 않았다. Python 1,221 tests OK (4
 받았다. 인덱서 fail-closed 검증 통과(13,271장 / 13,270 박스 / 어려움 990 / 잘림 2,811).
 검증 중 걸린 2건은 데이터 성질이었다 — 객체 없는 프레임 1장은 **음성 프레임으로 보존**(오검출 측정용),
 전체 폭 3840×17 박스 1건은 **제외하지 않고 표시만** 했다(결과 전에 불리한 GT를 빼지 않는다).
+
+
+## 2026-09-09 — streaming 재현성 원인 확정(환경 불일치), 병목은 GMC 아닌 광류, P8-lite 계약 초안
+
+보고서 `docs/plans/perception_streaming_findings_2026-09-09.md`. 재학습·threshold 변경·test 열람·
+원본 cache 덮어쓰기 없음.
+
+**① 재현성 — 원인은 실행환경 불일치다.** 같은 프레임을 같은 스크립트·같은 가중치로 두 환경에서 돌렸다.
+
+| 환경 | Python/torch/CUDA/cuDNN | 60프레임 완전일치 | confidence 최대 상대차 |
+|---|---|---:|---:|
+| `detector_runs/venv` | 3.10 / 2.10.0+cu128 / 12.8 / 9.10.2 | **60/60** | **0.000e+00** |
+| `datasets/detenv` | 3.8 / 2.4.1+cu121 / 12.1 / 9.1.0 | 0/60 | **0.45** |
+
+cache는 `venv`로 만들어졌는데 RGB 재실행이 `detenv`로 돌았다. cuDNN 9.1 대 9.10.2로 컨볼루션 커널이
+달라 TF32·deterministic 플래그로는 메울 수 없었던 것이다. 첫 프레임 차이가 6e-4로 작아 보인 것은 우연이고
+60프레임 전체에서는 45 %까지 벌어진다. **"5프레임 선택 불일치"는 증상이지 원인이 아니다.**
+
+`venv`로 전체 2,296프레임 RGB 감사를 새 경로 `stream_rgb_venv_v1.json`에 재실행한 결과
+**rank_mismatches 0, rank_parity_pass True, candidate_frame_mismatches 0**이고 selected 2122 /
+no_lock 174 / false_lock 274 / center error 1.941796 / loss 106이 cached replay와 전부 일치한다.
+새 baseline 채택은 불필요하다 — 기존 frozen output이 그대로 재현된다. RGB 실행 환경을 `venv`로 고정 권고.
+
+**부수 발견**: candidate receipt에 Python·torch·CUDA·cuDNN 버전이 없다(device_name·fp16만 있음).
+이번 혼선의 근본이며 receipt 스키마 보강을 제안한다. 조사 중 NPS 단독 `best.pt`(`ccd65dc3…`)로 잘못
+실행했으나 SHA 게이트가 즉시 거부했다 — cache가 쓴 detector는 `aab12f39…`(joint)다.
+
+**② 병목은 GMC가 아니라 광류다.** validation 119프레임 분해(1280×960 → flow 640×480):
+Farnebäck **36.58 ms(97.7 %)**, features 0.48, mask/grid 0.22, **RANSAC 0.17 ms(0.4 %)**.
+OpenCV 스레드는 지렛대가 아니다(1개 36.9 → 24개 36.0 ms, 출력은 스레드 수 무관 비트 동일).
+
+**출력 보존 개선안(실측)**: flow는 `previous_gray`·`gray`만 필요하고 candidates는 그 뒤 마스크부터
+쓰이므로, CPU 광류를 GPU 검출기와 겹칠 수 있다. 프로토타입에서 순차 112.3 ms → 겹침 74.7 ms
+(37.6 ms 절감, 33 %)이고 **flow 출력 비트 동일**이다. 현재 pipeline에 적용하면 frame 62.13 → 약 35.8 ms,
+decode 포함 67.28 → 약 40.9 ms로 **14.86 → 약 24 FPS** 추정. 구현은 사용자 승인 대상이며 적용 시
+전후 latency와 ranks·hit·false-lock·no-lock·reacquisition을 함께 보고한다. flow 해상도·빈도·FP16·
+다른 알고리즘은 입력 분포를 바꾸므로 별도 계약으로 분리한다.
+
+**③ P8-lite/P9 입력 계약 초안.** PPO 연결 없음. 측정된 것만 쓴다 — center error mean 1.942 /
+median 1.034 px, hit rate 0.8049, no-lock 7.58 %, false-lock 12.91 %, loss 106회, reacquisition
+mean 0.470 s / max 19.933 s, latency p50 67.18 / p95 70.32 ms. **degree bearing·metric range·실제
+ID-switch는 만들지 않는다**(intrinsics·거리 GT 없음, NPS는 영상당 UAV 1기라 identity 전환 측정 불가).
+error model은 시간 상관을 갖는 4성분(분위수 직접 샘플링 center offset, 2-state Markov miss burst,
+false-lock burst, latency)으로 두고, 입력 schema는 선택 후보 1개 + `lock_state`/`age_frames`/`latency_ms`다.
+NO_LOCK은 0으로 채우지 않고 명시적 무효 플래그로, STALE 문턱은 사전등록, reset은 sequence 경계에서.
+**세 처리 모두 PPO 연결 전 별도 승인 대상.**
+
+전체 스위트 1,221 tests OK (skipped 4).
