@@ -22,7 +22,7 @@ FRAME_RE = re.compile(r"^(Clip_\d+)_(\d{6})$")
 def parse_args():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dataset", type=Path, default=DEFAULT_DATASET)
-    parser.add_argument("--split", choices=("val", "test"), required=True)
+    parser.add_argument("--split", choices=("train", "val", "test"), required=True)
     parser.add_argument("--output", type=Path, required=True)
     return parser.parse_args()
 

@@ -2,6 +2,7 @@ import base64
 import importlib.util
 import json
 from pathlib import Path
+import sys
 import tempfile
 import unittest
 from unittest import mock
@@ -26,6 +27,10 @@ TRAIN = load_tool("run_joint_detector_training")
 CANDIDATES = load_tool("perception_candidates")
 KF = load_tool("perception_kf")
 FREEZE = load_tool("freeze_joint_detector")
+sys.path.insert(0, str(ROOT / "tools"))
+TEMPORAL = load_tool("perception_temporal")
+SELECT_ASSOCIATION = load_tool("select_perception_association")
+sys.path.pop(0)
 
 
 class DetFlyDownloadTest(unittest.TestCase):
@@ -275,6 +280,92 @@ class KalmanAssociationTest(unittest.TestCase):
         selected, tracks = tracker.step([self.candidate(42)], 700_000_000, 100, 100)
         self.assertIsNone(selected)
         self.assertEqual([track["track_id"] for track in tracks], [2])
+
+
+class TemporalAssociationTest(unittest.TestCase):
+    @staticmethod
+    def candidate(rank=0, u=50.0, confidence=0.9):
+        appearance = [0.0] * 64
+        appearance[rank] = 1.0
+        return {
+            "rank": rank, "u_px": u, "v_px": 50.0, "width_px": 10.0,
+            "height_px": 10.0, "confidence": confidence, "appearance_64d": appearance,
+        }
+
+    @classmethod
+    def aligned(cls, sequence, frame, candidates):
+        return {
+            "source": {
+                "frame_id": "%s-%d" % (sequence, frame),
+                "source_sequence_id": sequence,
+                "frame_index": frame,
+                "capture_timestamp_ns": frame * 100_000_000,
+                "width_px": 100,
+                "height_px": 100,
+                "ground_truth_xyxy": [[45.0, 45.0, 55.0, 55.0]],
+            },
+            "candidate_record": {"candidates": candidates},
+        }
+
+    def test_feature_and_supervision_use_current_candidate(self):
+        candidate = self.candidate()
+        feature = TEMPORAL.candidate_feature(candidate, 100, 100)
+        self.assertEqual(feature.shape, (69,))
+        self.assertAlmostEqual(float(feature[0]), 0.0)
+        self.assertEqual(
+            TEMPORAL.supervision_target([candidate], [[45, 45, 55, 55]], 0.3), 0)
+        self.assertEqual(
+            TEMPORAL.supervision_target([self.candidate(u=5)], [[45, 45, 55, 55]], 0.3),
+            TEMPORAL.NO_LOCK_CLASS)
+
+    def test_windows_are_causal_and_never_cross_clip_boundary(self):
+        rows = [
+            self.aligned("a", 0, [self.candidate()]),
+            self.aligned("a", 1, [self.candidate()]),
+            self.aligned("b", 0, [self.candidate()]),
+        ]
+        dataset = TEMPORAL.TemporalCandidateDataset(rows, history_length=2, evaluation_iou=0.3)
+        self.assertEqual(dataset.windows, [(0,), (0, 1), (2,)])
+        self.assertEqual(int(dataset[1]["length"]), 2)
+        self.assertEqual(int(dataset[2]["length"]), 1)
+
+    def test_gru_and_transformer_mask_absent_candidates(self):
+        import torch
+        common = {
+            "candidate_embedding_dim": 16, "dropout": 0.0, "hidden_dim": 16,
+            "history_length": 3, "num_layers": 1,
+        }
+        features = torch.zeros(2, 3, 5, 69)
+        candidate_mask = torch.zeros(2, 3, 5, dtype=torch.bool)
+        frame_mask = torch.tensor([[True, True, True], [True, False, False]])
+        candidate_mask[0, 2, 0] = True
+        candidate_mask[1, 0, 0] = True
+        delta = torch.zeros(2, 3)
+        lengths = torch.tensor([3, 1])
+        gru = TEMPORAL.build_temporal_model(dict(common, architecture="gru"))
+        gru_logits = gru(features, candidate_mask, frame_mask, delta, lengths)
+        self.assertEqual(tuple(gru_logits.shape), (2, 6))
+        self.assertLess(float(gru_logits[:, 1:5].max()), -1e8)
+        transformer_config = dict(
+            common, architecture="transformer", num_heads=4, feedforward_dim=32,
+            num_layers=2)
+        transformer = TEMPORAL.build_temporal_model(transformer_config)
+        transformer_logits = transformer(features, candidate_mask, frame_mask, delta, lengths)
+        self.assertEqual(tuple(transformer_logits.shape), (2, 6))
+        self.assertLess(float(transformer_logits[:, 1:5].max()), -1e8)
+
+    def test_selection_utility_and_tie_order_are_frozen(self):
+        def metric(hits, false_locks):
+            return {
+                "frames_with_ground_truth": 10,
+                "hit_frames_iou_ge_threshold": hits,
+                "proxy_false_lock_frames": false_locks,
+            }
+        self.assertAlmostEqual(TEMPORAL.selection_utility(metric(8, 1)), 0.7)
+        arms = {name: metric(8, 1) for name in SELECT_ASSOCIATION.TIE_ORDER}
+        self.assertEqual(SELECT_ASSOCIATION.select_arm(arms), "cnn_only_top1")
+        arms["cnn_plus_gru_t8"] = metric(9, 0)
+        self.assertEqual(SELECT_ASSOCIATION.select_arm(arms), "cnn_plus_gru_t8")
 
 
 if __name__ == "__main__":
