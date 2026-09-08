@@ -2,6 +2,16 @@
 
 Status: **REGISTERED BEFORE P9 GOODNESS-OF-FIT, TEST OPENING, TRAINING, OR PPO EVALUATION**.
 
+Amendment P9-v2, registered after v1 failed and before its rerun: v1 passed every transition,
+offset, latency and seed gate but bin-1 occupancy TV was `0.06048 > 0.05`. Inspection found that
+the implementation discarded the observed destination size bin. In bin 1 the within-bin Markov
+stationary distribution is approximately `(0.627,0.240,0.133)`, close to observed
+`(0.635,0.229,0.137)`, while the destination-pooled row implies `(0.697,0.199,0.104)`.
+P9-v2 therefore conditions a transition on **source bin, source state, and destination bin** when
+that cell has at least ten observations; otherwise it uses the already-registered nearest
+supported source-bin/source-state row. This does not break the sequence at a size change and does
+not alter any gate, threshold, bin or P8 input. The failed v1 artifact remains archived.
+
 P9 consumes only the frozen P8 validation artifacts in
 `results/perception_p8_2026-09-09/`. P10 changes only the perception-error arm and PPO
 checkpoint; reward, arena, target motion, observation schema, tracker, LiDAR association,
@@ -15,7 +25,8 @@ speed governor and exact-600 outcome contract stay fixed.
   supported bin for that same source state (bin-3 `NO_LOCK` maps to bin 2). Every fallback is
   serialized; there is no pooled/global silent fallback.
 - Sample the three states `HIT`, `FALSE_LOCK`, `NO_LOCK`. Initial state is drawn from the
-  mapped bin's empirical occupancy. Later states use the source-bin/source-state transition
+  mapped bin's empirical occupancy. Later states use the source-bin/source-state/destination-bin
+  transition when its cell has at least ten observations, else the registered row fallback
   row. Convert its observed-interval self probability to the 0.1 s simulator cadence with
   `p_stay(dt) = p_stay(ref_dt) ** (dt/ref_dt)`; divide exit mass among the empirical off-diagonal
   probabilities. `ref_dt` is that row's median raw transition interval.
@@ -81,4 +92,3 @@ normal-approximation 95% CI. Secondary: crash and timeout differences, plus clea
 (`adapted-clean minus source-clean`). Report counts/rates, actual episodes, one training seed and
 two evaluation seeds. This is descriptive with one training seed; it is not a seed-general PPO
 claim and has no post-hoc pass margin.
-
