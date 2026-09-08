@@ -18,7 +18,11 @@ import math
 import os
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
+import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # sibling tool modules
+from runtime_fingerprint import runtime_fingerprint  # noqa: E402
 
 
 WORKSPACE = Path(__file__).resolve().parents[3]
@@ -241,6 +245,9 @@ def main():
         json.dumps(content_manifest, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
     receipt = {
         "schema_version": 1,
+        # What produced these numbers. Omitting it in 2026-09 made a cache that a
+        # different torch/cuDNN could not reproduce look like non-determinism.
+        "runtime": runtime_fingerprint(),
         "generated_utc": datetime.now(timezone.utc).isoformat(),
         "source_dataset": str(source),
         "source_repository": "https://github.com/Jake-WU/Det-Fly",

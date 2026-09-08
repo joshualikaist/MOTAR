@@ -6,6 +6,7 @@ import math
 import subprocess
 import time
 from datetime import datetime, timezone
+import sys
 from pathlib import Path
 
 import cv2
@@ -15,6 +16,8 @@ from perception_candidates import canonical_line, open_jsonl, sha256_file
 from perception_temporal import (
     MOTION_FEATURE_DIMENSION, TOP_K, load_aligned_records,
 )
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # sibling tool modules
+from runtime_fingerprint import runtime_fingerprint  # noqa: E402
 
 
 SCHEMA = "motar.perception-motion.v1"
@@ -278,6 +281,9 @@ def main():
                 print("[motion] %d/%d frames" % (index + 1, len(aligned)), flush=True)
     receipt = {
         "schema_version": 1,
+        # What produced these numbers. Omitting it in 2026-09 made a cache that a
+        # different torch/cuDNN could not reproduce look like non-determinism.
+        "runtime": runtime_fingerprint(),
         "feature_schema": SCHEMA,
         "feature_dimension": MOTION_FEATURE_DIMENSION,
         "feature_fields": list(FEATURE_FIELDS),

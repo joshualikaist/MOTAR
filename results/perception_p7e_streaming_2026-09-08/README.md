@@ -73,3 +73,22 @@ Python 1,221 tests PASS (4 skipped). 사이트는 이번에 수정하지 않았�
 
 다음 순서: 수치 재현성 설정 고정 → motion/GMC latency 개선 → P8-lite/P9 입력 계약.
 P7d track identity, 실기 camera calibration/range GT, 실제 flight/ROS/PPO 연결은 미완료다.
+
+
+---
+
+## 후속 (2026-09-09) — RGB parity 해소
+
+이 디렉터리의 `summary.json`은 `status: IMPLEMENTED_WITH_HISTORICAL_RGB_PARITY_FAILURE`로 동결돼
+있고 그대로 보존한다. 그 실패의 **원인은 모델이 아니라 실행 환경이었다.**
+
+frozen candidate cache는 `detector_runs/venv`(Python 3.10 / torch 2.10.0+cu128 / CUDA 12.8 /
+cuDNN 9.10.2)에서 생성됐는데, 당시 RGB 재실행은 `datasets/detenv`(3.8 / 2.4.1+cu121 / 12.1 / 9.1.0)로
+돌았다. 두 스택은 서로 다른 컨볼루션 커널을 골라 같은 60프레임에서 confidence가 최대 45 % 어긋난다.
+
+올바른 환경으로 전체 2,296프레임을 다시 돌린 결과가
+`detector_runs/results/nps_detfly_joint_final/stream_rgb_venv_v1.json`이며
+`rank_mismatches 0` / `rank_parity_pass true` / `candidate_frame_mismatches 0`이고, selected 2122 /
+no_lock 174 / false_lock 274 / center error 1.941796 / loss 106이 cached replay와 전부 일치한다.
+
+조사 전문: [`docs/plans/perception_streaming_findings_2026-09-09.md`](../../docs/plans/perception_streaming_findings_2026-09-09.md).

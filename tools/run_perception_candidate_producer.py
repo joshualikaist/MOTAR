@@ -17,6 +17,8 @@ from perception_candidates import (
     SCHEMA_VERSION, appearance_descriptor, canonical_line, read_jsonl, sha256_file,
     validate_candidate_record,
 )
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # sibling tool modules
+from runtime_fingerprint import runtime_fingerprint  # noqa: E402
 
 
 WORKSPACE = Path(__file__).resolve().parents[3]
@@ -222,6 +224,9 @@ def main():
 
     receipt = {
         "schema_version": 1,
+        # What produced these numbers. Omitting it in 2026-09 made a cache that a
+        # different torch/cuDNN could not reproduce look like non-determinism.
+        "runtime": runtime_fingerprint(),
         "completed_utc": datetime.now(timezone.utc).isoformat(),
         "candidate_schema": SCHEMA_VERSION,
         "candidate_schema_sha256": sha256_file(SCHEMA),

@@ -22,13 +22,18 @@ grayscale로 직접 decode했으므로 byte parity 평가에는 optional `gray_f
 `verify_perception_streaming.py --mode replay`는 frozen candidate+motion을 streaming
 buffer에 공급하고 전체 offline window와 logits 및 선택 rank를 비교한다.
 `--mode rgb`는 validation 이미지 전체를 다시 검출하고 motion을 계산한다.
-RGB 실행 환경은 `/home/fair/workspaces/aerial_gym_ws/datasets/detenv/bin/python`이다.
-일반 aerialgym 환경은 detector의 pandas 의존성이 없어 RGB 실행에 사용하지 않는다.
+**RGB 실행 환경은 `/home/fair/workspaces/aerial_gym_ws/detector_runs/venv/bin/python`이다.**
+frozen candidate cache가 이 환경(Python 3.10 / torch 2.10.0+cu128 / CUDA 12.8 / cuDNN 9.10.2)에서
+생성됐고, **다른 환경에서 돌리면 재현되지 않는다.** 2026-09-08에 `datasets/detenv`
+(3.8 / 2.4.1+cu121 / 12.1 / 9.1.0)로 돌려 rank parity가 FAIL했는데, 원인은 비결정성이 아니라
+cuDNN 9.1과 9.10.2가 서로 다른 컨볼루션 커널을 고르는 것이었다. 같은 60프레임에서 `venv`는 전부
+비트 일치하고 `detenv`는 confidence가 최대 45 % 어긋난다. TF32·benchmark·deterministic 플래그로는
+메울 수 없다. aerialgym 환경은 pandas가 없어 쓰지 않으며, `venv`에는 pandas가 있다.
 
 실행 예 (저장소 루트):
 
 ```bash
-/home/fair/workspaces/aerial_gym_ws/datasets/detenv/bin/python tools/verify_perception_streaming.py \
+/home/fair/workspaces/aerial_gym_ws/detector_runs/venv/bin/python tools/verify_perception_streaming.py \
   --data-root /home/fair/workspaces/aerial_gym_ws/detector_runs/results/nps_detfly_joint_final \
   --run /home/fair/workspaces/aerial_gym_ws/detector_runs/runs/perception_temporal/candidate_motion_transformer_v2 \
   --mode rgb \
@@ -49,9 +54,17 @@ P7e crop verifier는 별도 실험 branch로 보존했다. 64D learned feature�
 
 P7e utility 0.52352는 P7c v2 0.68554보다 낮아 채택하지 않았다.
 현재 파이프라인의 기본 선택기는 P7c v2다. 캐시 replay는 validation 2,296프레임의
-logits와 rank가 모두 일치했다. RGB 재검출 실행은 과거 캐시 대비 rank 5개가 달라
-엄격한 rank parity gate가 FAIL이며 CLI는 report를 보존한 뒤 exit 1을 반환한다.
-기존 P4 생성기를 현재 환경에서 재실행한 첫 프레임도 과거 cache와 달랐으며, 그 값은
-새 detector와 일치했다. 실행환경/수치 재현성 원인은 아직 확정하지 않았다.
-이는 카메라 배포 승인이나 완전한 offline/online parity PASS가 아니다.
+logits와 rank가 모두 일치했다.
+
+**RGB parity는 2026-09-09에 해소됐다.** 위 실행 환경(`detector_runs/venv`)으로 전체 2,296프레임을
+다시 돌린 `stream_rgb_venv_v1.json`이 `rank_mismatches 0`, `rank_parity_pass true`,
+`candidate_frame_mismatches 0`이며 selected 2122 / no_lock 174 / false_lock 274 /
+center error 1.941796 / loss 106이 cached replay와 전부 일치한다. 이전의 "rank 5개 불일치"는
+**환경 불일치의 증상**이었고 모델·threshold는 무관했다. 원인 조사는
+[`docs/plans/perception_streaming_findings_2026-09-09.md`](../plans/perception_streaming_findings_2026-09-09.md).
+
+parity 실패를 재현하려면 `datasets/detenv`로 돌리면 된다. gate는 그때 report를 보존한 뒤 exit 1을 반환한다.
+
+이는 여전히 **카메라 배포 승인이 아니다.** offline/online parity는 저장된 JPEG 경로에 한해 PASS이며,
+실제 카메라 전송·ROS·PPO는 연결돼 있지 않다.
 상세 측정은 [결과](../../results/perception_p7e_streaming_2026-09-08/README.md)를 본다.

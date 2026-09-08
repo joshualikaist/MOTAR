@@ -1,5 +1,12 @@
 # Claude handoff — streaming 재현성 및 다음 단계
 
+> **해소됨 (2026-09-09).** §1 재현성 조사는 끝났다. 원인은 비결정성이 아니라 **실행 환경 불일치**다 —
+> frozen cache는 `detector_runs/venv`(torch 2.10 / cuDNN 9.10.2)에서 생성됐는데 RGB 재실행이
+> `datasets/detenv`(torch 2.4 / cuDNN 9.1)로 돌았다. 올바른 환경으로 전체 2,296프레임을 다시 돌리면
+> `rank_mismatches 0`으로 frozen output이 그대로 재현된다. 아래 §작업 경계의 "RGB 실행은
+> `datasets/detenv/bin/python`"은 **이 사고의 원인이므로 따르지 않는다.**
+> 결과: [`perception_streaming_findings_2026-09-09.md`](perception_streaming_findings_2026-09-09.md).
+
 ## 현재 상태
 
 저장소: `/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator`.
@@ -49,6 +56,6 @@ camera intrinsics/거리 GT/track identity 없이 degree bearing·metric range·
 
 - NPS test 열람, 재학습, threshold tuning, 원본 cache 덮어쓰기는 이 재현성 조사에 필요 없다.
 - `results/independent_verification_2026-09-06/`은 기존 사용자 미추적 자료다. 건드리지 않는다.
-- RGB 실행은 `datasets/detenv/bin/python`; aerialgym 단독 환경에는 pandas가 없다.
+- ~~RGB 실행은 `datasets/detenv/bin/python`~~ → **`detector_runs/venv/bin/python`**(2026-09-09 정정: cache를 만든 환경이며, 다른 환경에서는 재현되지 않는다).
 - verifier CLI는 strict rank parity FAIL일 때 JSON 저장 후 exit 1을 반환한다. 예상된 실패도 기록한다.
 - 30 FPS, 실기 탑재, identity tracking, ROS/PPO 연결 완료를 현재 결과로 주장하지 않는다.

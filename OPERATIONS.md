@@ -154,6 +154,26 @@ lower pilot 8/8 PASS일 때만 seed 839, bars 70/115/160/205였으나 열리지 
 푸시했는데도 배포되지 않았다. 두 브랜치는 갈라진 적이 없었고(`research/navrl-env`가 `main`의 순수 조상,
 32 커밋 뒤짐) fast-forward 한 번으로 해소됐지만, 원인은 **어느 브랜치가 정본인지 문서가 틀리게 적어둔 것**이었다.
 
+## 0.1 규칙 — GPU 수치를 담는 receipt는 실행 스택을 기록한다 (2026-09-09 제정)
+
+`runs/`나 `results/`에 **GPU에서 나온 숫자**를 쓰는 도구는 receipt에
+`tools/runtime_fingerprint.py`의 `runtime_fingerprint()`를 넣는다. Python·torch·CUDA·cuDNN·OpenCV·
+numpy 버전과 TF32/benchmark/deterministic 플래그, device 이름과 compute capability가 들어간다.
+
+**이 규칙이 생긴 이유**: 2026-09-08에 frozen candidate cache를 재현하지 못하는 사고가 있었다.
+cache는 `detector_runs/venv`(torch 2.10 / cuDNN 9.10.2)에서 만들어졌는데 재실행이
+`datasets/detenv`(torch 2.4 / cuDNN 9.1)로 돌았고, 두 스택이 서로 다른 컨볼루션 커널을 골라 같은
+60프레임에서 confidence가 최대 45 % 어긋났다. receipt에 device 이름과 fp16만 있고 인터프리터·가속
+스택이 없어서, 이 차이가 **비결정성으로 오인돼** TF32·benchmark·deterministic 플래그를 하루 종안
+뒤졌다. 그 플래그로는 애초에 메울 수 없는 차이였다.
+
+재현이 실패하면 `runtime_fingerprint.differences(옛_receipt['runtime'], 새_receipt['runtime'])`가
+어느 축이 달라졌는지 바로 알려준다. `tests/test_runtime_fingerprint.py`가 이 규칙과, 스트리밍 명세가
+cache를 만든 환경 하나만 지시하는지를 강제한다.
+
+**perception streaming RGB 실행 환경은 `detector_runs/venv`다.** 다른 환경에서는 frozen output이
+재현되지 않는다.
+
 ## 1. 처음 설치할 때
 
 필수 조건은 Linux, NVIDIA GPU, Miniconda, Isaac Gym Preview 4입니다. Isaac Gym은 NVIDIA 계정으로

@@ -16533,3 +16533,37 @@ NO_LOCK은 0으로 채우지 않고 명시적 무효 플래그로, STALE 문턱�
 **세 처리 모두 PPO 연결 전 별도 승인 대상.**
 
 전체 스위트 1,221 tests OK (skipped 4).
+
+
+## 2026-09-09 — receipt 스키마 보강과 환경 오지시 교정
+
+**스키마**: `tools/runtime_fingerprint.py` 신설. Python·torch·CUDA·cuDNN·OpenCV·numpy 버전과
+TF32/benchmark/deterministic 플래그, device 이름·compute capability를 실행 프로세스에서 직접 읽는다.
+GPU 수치를 담는 receipt 4곳에 심었다 — `run_perception_candidate_producer`,
+`build_perception_motion_features`, `eval_detfly_zeroshot`, `prepare_detfly_dataset`.
+`differences(old, new)`가 재현 실패 시 어느 축이 달라졌는지 바로 짚는다. 두 환경에 실제로 걸어보니
+torch·cuda·cudnn·numpy·python·platform·executable 7개 축의 차이를 정확히 출력한다.
+
+1프레임 실행으로 receipt에 `runtime`이 실제로 기록되는 것을 확인했다
+(python 3.10.19 / torch 2.10.0+cu128 / cuda 12.8 / cudnn 91002 / cudnn_allow_tf32 True).
+
+**교정 — 명세가 사고의 원인을 지시하고 있었다.** `docs/specs/perception_streaming_v1.md`가
+"RGB 실행 환경은 `datasets/detenv/bin/python`"이라고 적고 실행 예시까지 그 인터프리터로 주고 있었다.
+이것이 09-08 parity 실패의 직접 원인이다. `detector_runs/venv`로 고치고, 왜 다른 환경에서는 재현되지
+않는지(cuDNN 9.1 대 9.10.2, 같은 60프레임에서 최대 45 % 차이)를 함께 적었다. "검증 상태" 절의
+"rank 5개가 달라 gate FAIL, 원인 미확정"도 해소 사실로 대체했다.
+
+인수인계 문서 상단에 해소 표시를 달고 작업 경계의 detenv 지시를 취소선으로 정정했다.
+`results/perception_p7e_streaming_2026-09-08/`의 frozen `summary.json`은 **덮어쓰지 않고** README에
+후속 문단을 붙였다 — 그 status는 당시 기록으로 유효하고, 원인이 모델이 아니라 환경이었다는 사실을
+가리키게 했다.
+
+**규칙 0.1 제정**(`OPERATIONS.md`): GPU 수치를 담는 receipt는 실행 스택을 기록한다. perception
+streaming RGB 실행 환경은 `detector_runs/venv`다. `tests/test_runtime_fingerprint.py` 8개가 이 규칙과
+명세의 환경 단일성을 강제한다 — 특히 명세가 `detenv`로 실행하라고 다시 적으면 실패한다.
+
+**작업 중 낸 결함 1건**: 임포트를 AST 없이 정규식으로 끼워 넣다가 다중 행 임포트 중간을 갈랐고,
+`build_perception_motion_features.py`에는 `sys` 임포트가 없어 `NameError`가 났다. 테스트 모듈 2개가
+임포트 실패로 통째로 사라져 스위트가 1,221 → 1,203으로 줄었는데, 이 숫자 감소가 아니었으면 통과로
+보였을 것이다. AST로 마지막 최상위 임포트를 찾아 다시 넣고 `sys`를 추가해 해결했다.
+전체 **1,229 tests OK (skipped 4)**.

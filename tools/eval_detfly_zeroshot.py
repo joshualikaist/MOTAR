@@ -25,6 +25,9 @@ from pathlib import Path
 
 import numpy as np
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # sibling tool modules
+from runtime_fingerprint import runtime_fingerprint  # noqa: E402
+
 
 WORKSPACE = Path(__file__).resolve().parents[3]
 DEFAULT_INDEX = WORKSPACE / "datasets" / "detfly_index"
@@ -524,6 +527,9 @@ def main():
     report_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
     receipt = {
         "schema_version": 1,
+        # What produced these numbers. Omitting it in 2026-09 made a cache that a
+        # different torch/cuDNN could not reproduce look like non-determinism.
+        "runtime": runtime_fingerprint(),
         "report_sha256": sha256_file(report_path),
         "raw_predictions_sha256": sha256_file(raw_path),
         "weights_sha256": weight_sha,
