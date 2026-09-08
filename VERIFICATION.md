@@ -8,6 +8,12 @@
 
 ## 2026-09-08 현재 실행 authority — 실사 perception 트랙
 
+후속 **P7b/P7c COMPLETE**: 현재 선택은 corrected P7c v2 (utility 0.68554)다.
+P7c v1은 좌표 혼용 오류로 무효이며 아래 기존 P6/P7 선택은 역사 기록이다.
+재로드 검증 PASS; test 미실행. 실제 identity 평가용 데이터는 아직 없다.
+[결과·hash](results/perception_p7bc_2026-09-08/README.md),
+[P7d 데이터 경계](docs/plans/perception_p7d_identity_boundary_2026-09-08.md).
+
 - **P3 후속 합동 detector COMPLETE.** validation-selected epoch 26 checkpoint를 test 열람 전에
   SHA-256 `aab12f39…00ac`로 동결했다. sealed Det-Fly `020` native 4K AP30은 `0.7389`다.
   confidence 0.25 precision은 `0.2729`이므로 test에서 threshold를 사후 조정하지 않는다.

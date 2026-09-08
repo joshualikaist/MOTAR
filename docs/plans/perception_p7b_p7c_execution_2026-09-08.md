@@ -2,7 +2,12 @@
 
 작성: 2026-09-08
 
-상태: **P7b COMPLETE; P7c COORDINATE BUG CORRECTION — RERUN REQUIRED**
+상태: **COMPLETE — CORRECTED P7c v2 SELECTED ON VALIDATION**
+
+최종 utility: 기존 P7 0.67247, P7b 0.67944, corrected P7c v2 0.68554.
+P7c v2는 false lock이 감소했지만 no-lock과 재획득 시간이 증가했다.
+체크포인트 재로드 prediction bytes는 원 결과와 일치했다. 상세 결과는
+[결과 정본](../../results/perception_p7bc_2026-09-08/README.md)을 참조한다.
 
 ## 2026-09-08 구현 정정
 

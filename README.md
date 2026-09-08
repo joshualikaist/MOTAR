@@ -1,5 +1,10 @@
 # MOTAR
 
+> **P7b/P7c update · 2026-09-08:** 후보 보존과 optical-flow/GMC를 구현·평가했습니다.
+> 좌표 오류를 정정한 **P7c v2**가 validation utility **0.68554**로 선택됐습니다
+> (기존 P7 0.67247, P7b 0.67944). false lock은 줄었지만 no-lock·재획득 시간은 증가했습니다.
+> NPS test는 이번 단계에서 미실행입니다. [결과·정정 이력·hash](results/perception_p7bc_2026-09-08/README.md).
+
 **Moving-target interception in dense obstacle fields with a sensor-only UAV policy.**
 
 MOTAR는 카메라, LiDAR, ego-state만으로 움직이는 표적을 추적하면서 장애물을 회피하는 드론 정책을
@@ -121,6 +126,7 @@ attitude/rate torque → motor allocation → 100 Hz rigid-body physics` 순서�
 | NPS+Det-Fly joint detector | validation mAP50 **0.6917**; sealed native Det-Fly AP30 **0.7389** | epoch 26 selected without test access; 6,913 test images; conf 0.25 P/R **0.2729/0.8640** |
 | P4 Top-K + P5 KF v1 | P4 **PASS**; KF **`REJECTED`** | NPS test 1,725 frames/8 clips; hit CNN **0.6145** vs KF **0.4655**; proxy false lock **0.2450** vs **0.4843** |
 | P6 GRU + P7 Transformer | Transformer T=16 **selected on validation** | 2,296 frames/7 clips; utility CNN **0.6655**, GRU **0.6315**, Transformer **0.6725**; test not run |
+| P7b/P7c extension | corrected **P7c v2 selected** | utility P7b **0.67944**, P7c **0.68554**; test not run; [results](results/perception_p7bc_2026-09-08/README.md) |
 | Speed-governor stopcap screen | **Q1 `MECHANISM_UNSUPPORTED`, Q3 `FILTER_DEPENDENT`, stopcap NO-GO** | seed 49, 5 arms, 2,049 ep/cell; riskcap does not beat a constant 2.0 m/s cap |
 | Hardware/software gate | software pipeline PASS · `SYNTHETIC_ONLY` | 실기 성능 아님 |
 

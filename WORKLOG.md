@@ -16433,3 +16433,14 @@ Transformer T=16은 epoch 5가 선택됐고 utility `0.67247`이었다. 네 arm�
 줄어 utility가 `+0.00697` 높다. validation 2,296 frames/7 clips만의 선택이고 test는 입력으로 사용하지
 않았다. 독립 evaluator가 frozen checkpoint를 다시 읽어 같은 metrics를 재현했고, 압축 해제 prediction
 content SHA-256도 training output과 동일한 `b6ca57c0…bba60`이었다.
+
+## 2026-09-08 — P7b/P7c 완료 및 좌표 오류 정정
+
+후보를 보존하는 P7b와 optical-flow/GMC를 추가한 P7c를 구현했다. 첫 P7c는
+축소 좌표와 원본 좌표를 혼용한 후보 매칭 버그로 무효 처리하고 원 결과를 보존했다.
+정정 commit `3ce7d8d`에서 cache와 P7c를 v2로 다시 실행했다.
+utility는 기존 P7 0.67247, P7b 0.67944, corrected P7c 0.68554이며 P7c를 선택했다.
+기존 P7 대비 hit −9, false lock −39지만 no-lock과 평균 재획득 시간은 증가했다.
+독립 재로드 prediction bytes 일치. test 미실행, P7d는 track-ID 데이터 대기.
+전체 Python 1,219 tests OK (4 skipped). 사이트 테스트는 기존 status 데이터 기대값
+충돌로 실패했다. [상세 결과·hash](results/perception_p7bc_2026-09-08/README.md).

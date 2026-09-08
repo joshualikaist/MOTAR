@@ -31,7 +31,7 @@
   <rect x="698" y="270" width="140" height="42" rx="10" fill="#fff"/><text x="716" y="297" class="b">CNN only</text>
   <rect x="852" y="270" width="140" height="42" rx="10" fill="#fff3e5"/><text x="862" y="297" class="small">CNN + KF · REJECT</text>
   <rect x="698" y="326" width="140" height="42" rx="10" fill="#fff3e5"/><text x="710" y="353" class="small">GRU · T=8 · REJECT</text>
-  <rect x="852" y="326" width="140" height="42" rx="10" fill="#c9e9df"/><text x="862" y="346" class="small">Transformer · T=16</text><text x="862" y="362" class="tag">SELECTED</text>
+  <rect x="852" y="326" width="140" height="42" rx="10" fill="#c9e9df"/><text x="862" y="346" class="small">P7c v2 · T=16</text><text x="862" y="362" class="tag">MOTION · SELECTED</text>
   <text x="698" y="401" class="small">같은 detector · 같은 held-out clips · 대체 arm</text>
   <path d="M1022 299H1060" class="arrow"/>
 

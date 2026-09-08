@@ -35,6 +35,8 @@ NPS detector
 | P5 | CNN+KF **COMPLETE — REJECTED** | P4 detector 동결 | test hit 0.4655 vs CNN 0.6145; proxy false lock 0.4843 vs 0.2450 |
 | P6 | CNN+GRU **COMPLETE — NOT SELECTED** | history 8; hidden 128 | validation utility 0.6315 |
 | P7 | CNN+Temporal Transformer **COMPLETE — SELECTED** | history 16; d=128; 4 heads; 2 layers | validation utility 0.6725 vs CNN-only 0.6655; test 미실행 |
+| P7b/P7c | 후보 보존 + motion/GMC **COMPLETE** | corrected P7c v2 선택; 이전 P7 선택 갱신 | validation utility 0.68554; [결과](../../results/perception_p7bc_2026-09-08/README.md); test 미실행 |
+| P7d | learned appearance/ReID 준비 | track-ID 데이터 필요 | [착수 경계](perception_p7d_identity_boundary_2026-09-08.md) |
 | P8 | 실사 오차 모델 | 선택된 detector/association 동결 | 조건부 miss/FP/bearing/ID-switch/reacquisition/latency 분포; 가능한 경우 range 오차·공분산 |
 | P9 | simulator 오류 주입 | renderer로 UAV detector를 재학습하지 않음 | 실사 분포와 주입 분포의 적합도 및 seed 고정 재현성 |
 | P10 | PPO 재적응·평가 | perception arm 외 reward·arena·target motion·filter 계약 고정 | held-out capture/crash/timeout과 95% CI, training/evaluation seed 분리 |
