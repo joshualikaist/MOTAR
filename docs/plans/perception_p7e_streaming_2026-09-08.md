@@ -1,6 +1,10 @@
 # P7e crop verifier 및 streaming 실행 계약
 
-상태: IMPLEMENTATION — 결과 관찰 전 고정
+상태: P7e COMPLETE — NOT SELECTED; streaming IMPLEMENTED, cached replay PASS,
+historical RGB rank parity FAIL (5/2,296). 아래 실험 규칙은 결과 관찰 전 고정했다.
+
+결과: [평가·한계](../../results/perception_p7e_streaming_2026-09-08/README.md),
+[streaming API](../specs/perception_streaming_v1.md).
 
 P7e는 frozen detector의 현재 Top-5 crop을 UAV-validity로 분류하는 별도 비교군이다.
 ReID가 아니며 기존 P7c checkpoint의 histogram 입력은 유지한다. 학습된 embedding을

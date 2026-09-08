@@ -16444,3 +16444,16 @@ utility는 기존 P7 0.67247, P7b 0.67944, corrected P7c 0.68554이며 P7c를 �
 독립 재로드 prediction bytes 일치. test 미실행, P7d는 track-ID 데이터 대기.
 전체 Python 1,219 tests OK (4 skipped). 사이트 테스트는 기존 status 데이터 기대값
 충돌로 실패했다. [상세 결과·hash](results/perception_p7bc_2026-09-08/README.md).
+
+## 2026-09-08 — P7e 미채택 및 streaming 구현
+
+사전등록 `f71079c` 후 crop-validity CNN을 train clip 3-fold로 평가하고 최종 8 epochs
+학습했다. validation utility 0.52352로 P7c v2 0.68554보다 낮아 미채택했다.
+`1d8cade`에서 프레임 단위 detector → motion/GMC → T16 API와 검증기를 구현했다.
+GT는 온라인 API에 전달하지 않는다. 전체 cached replay는 logits/rank 정확 일치했다.
+전체 RGB 두 번 실행은 historical cache와 rank 5/2,296 차이로 strict parity FAIL이다.
+기존 producer도 현재 환경의 첫 프레임에서 historical cache와 다르지만 새 pipeline과는
+동일했다. 환경·수치 재현성 원인은 아직 미확정이다. 실패 결과를 보존했다.
+두 번째 RGB decode 포함 mean 69.38 ms, 14.41 FPS; 실기/ROS/PPO 비용은 제외했다.
+P7c를 유지하며 NPS test는 사용하지 않았다. Python 1,221 tests OK (4 skipped).
+[결과·hash·한계](results/perception_p7e_streaming_2026-09-08/README.md).

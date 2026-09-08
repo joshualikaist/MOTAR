@@ -36,6 +36,7 @@ NPS detector
 | P6 | CNN+GRU **COMPLETE — NOT SELECTED** | history 8; hidden 128 | validation utility 0.6315 |
 | P7 | CNN+Temporal Transformer **COMPLETE — SELECTED** | history 16; d=128; 4 heads; 2 layers | validation utility 0.6725 vs CNN-only 0.6655; test 미실행 |
 | P7b/P7c | 후보 보존 + motion/GMC **COMPLETE** | corrected P7c v2 선택; 이전 P7 선택 갱신 | validation utility 0.68554; [결과](../../results/perception_p7bc_2026-09-08/README.md); test 미실행 |
+| P7e/streaming | crop verifier **NOT SELECTED**; streaming **IMPLEMENTED** | P7c 유지; test 미실행 | cached replay PASS; RGB historical rank parity FAIL 5/2,296; [결과](../../results/perception_p7e_streaming_2026-09-08/README.md) |
 | P7d | learned appearance/ReID 준비 | track-ID 데이터 필요 | [착수 경계](perception_p7d_identity_boundary_2026-09-08.md) |
 | P8 | 실사 오차 모델 | 선택된 detector/association 동결 | 조건부 miss/FP/bearing/ID-switch/reacquisition/latency 분포; 가능한 경우 range 오차·공분산 |
 | P9 | simulator 오류 주입 | renderer로 UAV detector를 재학습하지 않음 | 실사 분포와 주입 분포의 적합도 및 seed 고정 재현성 |

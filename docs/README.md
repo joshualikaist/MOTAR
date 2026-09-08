@@ -7,6 +7,10 @@
 
 ## 먼저 읽을 것
 
+실사 인지 최신 구현: [streaming API](specs/perception_streaming_v1.md),
+[P7e/streaming 계약](plans/perception_p7e_streaming_2026-09-08.md),
+[결과와 미통과 gate](../results/perception_p7e_streaming_2026-09-08/README.md).
+
 | 무엇을 알고 싶은가 | 어디를 보는가 |
 |---|---|
 | 지금 상태와 다음 실험 | [`VERIFICATION.md`](../VERIFICATION.md) |

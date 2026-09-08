@@ -8,6 +8,13 @@
 
 ## 2026-09-08 현재 실행 authority — 실사 perception 트랙
 
+**P7e NOT SELECTED / streaming IMPLEMENTED.** crop verifier utility 0.52352이므로
+P7c v2를 유지한다. cached replay 2,296프레임의 logits/rank는 정확히 일치한다.
+RGB 재검출의 historical rank parity는 5프레임 차이로 FAIL이며, 완전 재현이나
+실기 배포 gate 통과로 해석하지 않는다. 다음은 runtime 수치 재현성 원인 고정과
+P8-lite/P9 계약 준비이며 PPO·카메라 연결은 아직 하지 않았다.
+[결과·한계](results/perception_p7e_streaming_2026-09-08/README.md).
+
 후속 **P7b/P7c COMPLETE**: 현재 선택은 corrected P7c v2 (utility 0.68554)다.
 P7c v1은 좌표 혼용 오류로 무효이며 아래 기존 P6/P7 선택은 역사 기록이다.
 재로드 검증 PASS; test 미실행. 실제 identity 평가용 데이터는 아직 없다.

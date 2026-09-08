@@ -1,5 +1,12 @@
 # MOTAR
 
+> **Streaming update · 2026-09-08:** 프레임 입력 → detector → motion/GMC → P7c T16
+> 직렬 파이프라인을 구현했습니다. 캐시 replay 2,296프레임은 정확히 일치했지만,
+> RGB 재검출은 과거 캐시와 rank 5개가 달라 strict parity는 FAIL입니다.
+> P7e crop verifier는 utility 0.52352로 미채택, P7c를 유지합니다.
+> [결과·측정 범위](results/perception_p7e_streaming_2026-09-08/README.md) ·
+> [API·실행법](docs/specs/perception_streaming_v1.md).
+
 > **P7b/P7c update · 2026-09-08:** 후보 보존과 optical-flow/GMC를 구현·평가했습니다.
 > 좌표 오류를 정정한 **P7c v2**가 validation utility **0.68554**로 선택됐습니다
 > (기존 P7 0.67247, P7b 0.67944). false lock은 줄었지만 no-lock·재획득 시간은 증가했습니다.

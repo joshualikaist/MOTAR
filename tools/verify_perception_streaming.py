@@ -46,6 +46,7 @@ def main():
     reference=list(read_jsonl(a.run/'validation_predictions.jsonl.gz'))
     predicted, latencies, rank_mismatches, max_logit_error = [], [], 0, 0.
     candidate_mismatches=0
+    first_candidate_mismatch=None
     for i,row in enumerate(aligned):
         s, candidates=row['source'],row['candidate_record']['candidates']
         began=time.perf_counter()
@@ -67,7 +68,11 @@ def main():
             out['latency_ms']['decode']=decode_ms
             out['latency_ms']['with_decode']=out['latency_ms']['total']+decode_ms
             latencies.append(out['latency_ms'])
-            if out['candidates'] != candidates: candidate_mismatches+=1
+            if out['candidates'] != candidates:
+                candidate_mismatches+=1
+                if first_candidate_mismatch is None:
+                    first_candidate_mismatch={'frame_id':s['frame_id'],
+                        'cached':candidates,'online':out['candidates']}
             # Metrics must use the candidates actually produced, never cached box coordinates.
             row['candidate_record']={'candidates':out['candidates']}
         rank=out['predicted_rank']
@@ -81,6 +86,16 @@ def main():
         timing[name]={'mean':float(np.mean(values)),'p50':float(np.percentile(values,50)),
                       'p95':float(np.percentile(values,95))}
     report={'mode':a.mode,'frames':len(aligned),'metrics':metrics,'rank_mismatches':rank_mismatches,
+            'rank_parity_pass':rank_mismatches==0,
+            'first_candidate_mismatch':first_candidate_mismatch,
+            'runtime':{'python':__import__('sys').version,'torch':torch.__version__,
+                       'opencv':cv2.__version__,'cuda':torch.version.cuda,
+                       'cudnn':torch.backends.cudnn.version(),
+                       'cudnn_allow_tf32':torch.backends.cudnn.allow_tf32,
+                       'cudnn_benchmark':torch.backends.cudnn.benchmark,
+                       'matmul_allow_tf32':torch.backends.cuda.matmul.allow_tf32},
+            'source_sha256':{name:sha256_file(Path(__file__).with_name(name)) for name in
+                             ['perception_streaming.py','verify_perception_streaming.py']},
             'max_replay_logit_error':max_logit_error if a.mode=='replay' else None,
             'candidate_frame_mismatches':candidate_mismatches if a.mode=='rgb' else None,
             'latency_ms':timing,'checkpoint_sha256':receipt['checkpoint_sha256'],
