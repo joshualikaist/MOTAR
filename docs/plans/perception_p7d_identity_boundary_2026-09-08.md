@@ -2,6 +2,9 @@
 
 상태: DATA REQUIRED — 학습 미실행
 
+2026-09-08 실제 다운로드 시도 결과 공식 Google Drive/Baidu 링크가 모두 실패했다.
+[접근 확인·재개 조건](perception_p7d_access_check_2026-09-08.md)을 참조한다.
+
 P7b/P7c의 출력은 현재 frame의 UAV 후보 선택이다. 동일 표적 association을 학습하려면
 원본 영상과 `(sequence_id, frame_index, timestamp, track_id, xyxy, visibility)`가 필요하다.
 데이터셋 이름이나 파일명만으로 track identity를 추정하지 않는다.
