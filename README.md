@@ -1,91 +1,88 @@
 # MOTAR
 
-> **Streaming update · 2026-09-08:** 프레임 입력 → detector → motion/GMC → P7c T16
-> 직렬 파이프라인을 구현했습니다. 캐시 replay 2,296프레임은 정확히 일치했지만,
-> RGB 재검출은 과거 캐시와 rank 5개가 달라 strict parity는 FAIL입니다.
-> P7e crop verifier는 utility 0.52352로 미채택, P7c를 유지합니다.
-> [결과·측정 범위](results/perception_p7e_streaming_2026-09-08/README.md) ·
-> [API·실행법](docs/specs/perception_streaming_v1.md).
-
-> **P7b/P7c update · 2026-09-08:** 후보 보존과 optical-flow/GMC를 구현·평가했습니다.
-> 좌표 오류를 정정한 **P7c v2**가 validation utility **0.68554**로 선택됐습니다
-> (기존 P7 0.67247, P7b 0.67944). false lock은 줄었지만 no-lock·재획득 시간은 증가했습니다.
-> NPS test는 이번 단계에서 미실행입니다. [결과·정정 이력·hash](results/perception_p7bc_2026-09-08/README.md).
-
 **Moving-target interception in dense obstacle fields with a sensor-only UAV policy.**
 
-MOTAR는 카메라, LiDAR, ego-state만으로 움직이는 표적을 추적하면서 장애물을 회피하는 드론 정책을
-연구합니다. 최고 성공률 하나보다 **어느 조건에서 왜 capture·crash·timeout이 발생하는지**를 재현
-가능한 실험 계약으로 설명하는 데 초점을 둡니다.
+MOTAR studies a drone policy that pursues a moving target while avoiding obstacles, using only a
+camera, LiDAR and ego-state. The point is not a single headline success rate. It is to explain,
+under a reproducible experiment contract, **which conditions produce capture, crash or timeout, and
+why** — including the results that came out negative.
 
 ![MOTAR current perception-to-control system](docs/assets/motar-system-overview.svg)
 
-> **Status · 2026-09-08** — 실사 인지 P3 후속·P4·P5를 실행했습니다.
-> NPS+Det-Fly 합동 detector는 봉인한 Det-Fly `020` native 4K에서 AP30 **0.7389**로,
-> NPS-only zero-shot AP30 **0.0035**의 크기 실패를 회복했습니다. 다만 confidence 0.25에서
-> precision은 **0.2729**로 낮아 threshold는 validation에서 별도 보정해야 합니다.
-> Top-K=5 후보 schema는 NPS val/test에서 검증됐고, P5 KF v1은 test frame hit
-> **0.4655** 대 CNN-only **0.6145**, proxy false lock **0.4843** 대 **0.2450**으로
-> 더 나빠 **REJECTED**했습니다. 이 test를 보고 재튜닝하지 않았습니다.
-> 후속 P6/P7 validation 비교에서는 Transformer T=16이 utility **0.6725**로 CNN-only
-> **0.6655**를 근소하게 넘어 선택됐습니다. 아직 test를 실행하지 않아 우월성 주장은 보류합니다.
-> 기존 안전 연구의 이번 주 결과는 전부 **부정 결과**이고, 그것이 요점입니다.
-> 세 갈래 사전등록 측정이 인지의 구속 조건은 측정 품질이 아니라 **물체 동일성**임을 확정했고
-> (자료구조 수정 +1.3 pp · 거리 분산 −0.34 pp · 동색 디코이 FTLR 90.27%),
-> 접촉 기하 포렌식은 **막대 충돌의 77~78%가 속도 거버너가 감시하는 회랑 밖**에서 남을 보였습니다
-> (측면 57~58% + 무반환 20%, 종방향 실패는 5건 중 1건). 정지거리 법칙은 접촉 시 여유를
-> **+0.395 m 양수**로 만들고도 crash를 15.95 → 21.31%로 **올렸습니다**.
-> 공개 공대공 detector 가중치의 교차 데이터셋 zero-shot은 AP **0.045**(in-domain 0.80)로,
-> 학습을 건너뛸 수 없음이 확인됐습니다.
-> NPS-only detector의 Det-Fly 13,271장 전수 P3도 native 4K AP30 **0.0035**였습니다.
-> 표적 크기를 ÷4로 맞추면 AP30이 **0.2382**로 회복되어, 사전 규칙상
-> **SIZE-DOMINANT ZERO-SHOT FAILURE**로 판정했습니다.
-> **다음은 진단 논문 계획**([`diagnostic_paper_plan_2026-09-05.md`](docs/plans/diagnostic_paper_plan_2026-09-05.md))이며
-> 재학습 없이 3주 규모입니다.
-> **sim-to-real은 뒤로 미뤘습니다** — 실제 기체는 미조립이고 센서 로그도 비행 데이터도 없습니다.
-> 현재 결과는 전부 재현 가능한 시뮬레이션 및 software-only 검증이며 sim-to-real 성능 주장이 아닙니다.
-> Track A는 P2 `STRICT FAIL`, D1 `FAIL`, P3 `BLOCKED` 상태 그대로입니다.
-> 항법 계보는 별개 축이며 145 bars에서 멈춰 있습니다 — route-off held-out
-> **capture 83.70% @70 → 65.54% @145**(seed 313), routed mechanism은 여전히 FAIL입니다.
-> SAM-in-sim 형상 detector 경로는 **ARCHIVED**이며, offline CPU 어댑터만 기록으로 보존합니다.
-
 [Research site](docs/status/) · [System specification](docs/MOTAR_SYSTEM_SPEC_2026-08-24.md) ·
-[Blind-search & autonomous-evader plan](docs/plans/target_search_and_adversarial_evader.md) ·
-[SAM perception verification plan ⛔ SUPERSEDED](docs/SAM3_PERCEPTION_VERIFICATION_PLAN_2026-09-03.md) ·
-[Verification](VERIFICATION.md) · [Operations](OPERATIONS.md) · [Worklog](WORKLOG.md)
+[Verification](VERIFICATION.md) · [Operations](OPERATIONS.md) · [Worklog](WORKLOG.md) ·
+[Perception plan](docs/plans/perception_final_implementation_plan_2026-09-07.md)
 
+---
+
+## Status · 2026-09-09
+
+Two tracks run in parallel and are at different stages.
+
+| Track | Goal | State |
+|---|---|---|
+| **A — safety-filter diagnosis** | measure when and why a direction-preserving speed filter fails | core experiments complete; one training-seed replication left |
+| **B — real-imagery perception** | learn a detector on real air-to-air video, measure its error, inject that into the simulator | detector and temporal association complete; error model next |
+
+**Recent findings.**
+
+- **The arc tube beats the straight corridor, and it replicates.** Watching the arc the vehicle
+  will actually fly, rather than a straight corridor, gives the lowest crash rate in all 15
+  seed × density cells. Pooled against the risk cap: `−1.49 pp [−1.90, −1.08]` at cell level and
+  `−1.49 [−2.42, −0.57]`, p = 0.020, with the seed as the replication unit.
+- **Widening that tube helps twice; widening a straight corridor kills the mission.** At 205 bars
+  the arc at 1.2 m gives `−5.60 pp` crash and `+4.44 pp` capture together, while the straight
+  corridor at the same width captures about 10% of episodes and times out on the rest.
+- **A detector trained on one dataset failed on another because of target SIZE, not domain.**
+  Zero-shot from NPS-Drones to Det-Fly gave AP@0.5 of `0.0010` at native 4K; matching the target
+  scale raised it to `0.1126`, a gap 111× the native value. Joint multi-scale training then took
+  native AP to `0.7166`.
+- **Streaming reproducibility was an environment mismatch, not non-determinism.** A candidate cache
+  built under torch 2.10 / cuDNN 9.10.2 could not be reproduced under torch 2.4 / cuDNN 9.1.
+  Re-running in the original environment reproduces the frozen output exactly.
+
+**What this project does not claim.** Real-flight performance, sim-to-real transfer, target
+identification, 30 FPS, or an assembled airframe. Every number here is simulation or software-only
+verification. The vehicle is not built, and there are no real sensor logs.
+
+---
 
 ## Research question
 
-> 제한된 센서 표현과 실제적인 비행 명령 범위만으로, 밀집 장애물 속 이동 표적을 얼마나 안정적으로
-> 요격할 수 있으며 밀도가 증가할 때 실패 원인은 어떻게 달라지는가?
+> With a limited sensor representation and a realistic flight-command envelope, how reliably can a
+> moving target be intercepted in a dense obstacle field, and how do the failure modes change as
+> density rises?
 
-문제는 세 가지가 결합되어 있습니다.
+Three problems are entangled:
 
-- 빠른 추적은 표적 접근을 돕지만 제동거리와 충돌 위험을 키웁니다.
-- 장애물 수가 증가하면 제한된 obstacle representation이 장면을 충분히 보존하지 못할 수 있습니다.
-- 표적 미취득, 충돌, 시간 초과는 서로 다른 원인이므로 하나의 평균 reward로 합치면 진단이 흐려집니다.
+- Faster pursuit closes on the target but lengthens braking distance and raises collision risk.
+- As obstacle count rises, a bounded obstacle representation may stop preserving the scene.
+- Never-acquired, collision and timeout have different causes, so averaging them into one reward
+  hides the diagnosis.
 
 ## Arena and platform
 
 ![MOTAR arena geometry](docs/assets/motar-arena-geometry.svg)
 
-40 × 40 × 3 m 아레나에 0.7096 × 0.5756 × 2.0 m 막대를 배치합니다. 계보 밀도는 **70 / 115 / 160 / 205**이고
-(70 bars = 4.38 / 100 m², 205 bars = 12.81 / 100 m²) 300은 disconnected stress입니다. 목표는 스폰에서
-**22.5–28 m** 띠에 놓이고, 표적은 0.3–1.5 m/s로 움직입니다. 그림의 LiDAR 원(12 m)과 카메라 부채꼴(87°,
-20 m)은 축척대로 그린 것입니다 — **아레나 대비 센서가 얼마나 좁은지**가 이 그림의 요점입니다.
+A 40 × 40 × 3 m arena holds 0.7096 × 0.5756 × 2.0 m bars. The lineage densities are
+**70 / 115 / 160 / 205** (70 bars = 4.38 per 100 m², 205 bars = 12.81 per 100 m²); 300 is a
+disconnected stress case. Goals sit in a **22.5–28 m** band from spawn and the target moves at
+0.3–1.5 m/s. The LiDAR circle (12 m) and the camera wedge (87°, 20 m) in the figure are drawn to
+scale, and that is the figure's point: **how little of the arena the sensors see.**
 
-측면도가 하나를 확정합니다: 막대가 2.0 m로 높고 순항 고도가 1.0 m이므로 **막대는 항상 어떤 LiDAR 빔에는
-걸립니다.** 접촉 포렌식에서 `VERTICAL_OUT`이 정확히 **0.0%**로 나온 이유입니다.
+The side view settles one thing. Bars are 2.0 m tall and cruise altitude is 1.0 m, so **a bar
+always intersects some LiDAR beam.** That is why contact forensics report `VERTICAL_OUT` at
+exactly **0.0%**.
 
 ![MOTAR platform and sensing](docs/assets/motar-platform-hardware.svg)
 
-`navrl_ref5in_quad_v2`는 **1.20 kg, 모터 대각 220 mm, 127 mm 프로펠러, 모터당 9.6 N**입니다. 총 추력
-38.4 N에 중량 11.77 N이므로 **TWR 3.26**이고 호버가 추력의 30.6%입니다. 여기서 운동 포락선이 유도됩니다 —
-45° 틸트에서 수평가속 9.81 m/s², 2.5 m/s에서 **정지거리 1.81 m·선회반경 3.12 m**.
+`navrl_ref5in_quad_v2` is **1.20 kg, 220 mm motor diagonal, 127 mm propellers, 9.6 N per motor**.
+Total thrust 38.4 N against 11.77 N of weight gives **TWR 3.26**, with hover at 30.6% of thrust.
+The motion envelope follows: 9.81 m/s² horizontal acceleration at 45° tilt, and at 2.5 m/s a
+**1.81 m stopping distance and 3.12 m turning radius**.
 
-이 값들은 **hardware-informed simulation candidate**이며 실기는 미조립입니다. BOM·관성·추력·열·전원
-실측값이 아닙니다.
+These are a **hardware-informed simulation candidate**, not measurements. The airframe is not
+assembled and there is no measured BOM, inertia, thrust, thermal or power data.
 
 ## Method
 
@@ -93,271 +90,42 @@ MOTAR는 카메라, LiDAR, ego-state만으로 움직이는 표적을 추적하�
 |---|---|
 | Perception · current | 160×90 RGB-D single detector → single KF target track + `4×72` LiDAR at 12 m |
 | Representation | 898-D structured history → 17 tokens, 5 temporal samples |
-| Policy | 4-layer, 4-head Transformer actor with asymmetric critic during training |
-| Action | bounded body `vx/vy`, altitude hold, yaw-rate |
+| Policy | 4-layer, 4-head Transformer actor with an asymmetric critic during training |
+| Action | bounded body `vx/vy`, altitude hold, yaw rate |
 | Control | altitude PI + Lee velocity controller + 4-motor allocation |
-| Simulation | 100 Hz physics, 10 Hz policy action, exact 600-action episode |
+| Simulation | 100 Hz physics, 10 Hz policy action, exactly 600 actions per episode |
 
 ![MOTAR learned navigation and fixed flight-control stack](docs/assets/motar-control-stack.svg)
 
-PPO는 navigation policy와 critic network weight를 학습합니다. 센서 geometry, observation field order,
-action bound, controller gain, motor/URDF dynamics, reward coefficient는 고정된 실험 계약입니다.
-Ground-truth target/vehicle state는 reward, central critic, termination 및 평가 계측에만 사용하며 actor에는
-직접 제공하지 않습니다.
+PPO trains the navigation policy and critic weights. Sensor geometry, observation field order,
+action bounds, controller gains, motor/URDF dynamics and reward coefficients are a **fixed
+experiment contract**. Ground-truth target and vehicle state are used only for reward, the central
+critic, termination and evaluation instrumentation — never as an actor input.
 
-제어 경로는 `actor → body-frame command → altitude PI → Lee velocity loop → tilt-limited force →
-attitude/rate torque → motor allocation → 100 Hz rigid-body physics` 순서입니다. Actor의 z 출력은
-실행하지 않고 1 m altitude PI가 덮어씁니다. Speed governor의 canonical train/eval 기본값은 모두
-`off`입니다. 아래 필터 수치는 frozen ep25000 정책을 별도 stopcap screen에서 `off`, `fixed`,
-`riskcap`, `stopcap`, `ttc`로 비교한 결과이며 일반 평가 계약이 아닙니다.
+The control path is `actor → body-frame command → altitude PI → Lee velocity loop → tilt-limited
+force → attitude/rate torque → motor allocation → 100 Hz rigid-body physics`. The actor's z output
+is not executed; a 1 m altitude PI overrides it. The speed governor's canonical train and eval
+default is `off` on both sides.
 
-## Current evidence
-
-| Evidence | Result | Scope |
-|---|---:|---|
-| Corrected-v2 semantics | exact 600 actions, finite PPO/KL, timeout bootstrap verified | engineering smoke; held-out superiority 아님 |
-| Detector navigation A/B | learned-v2 vs analytic: **−0.0145 pp**, 95% CI `[−1.752, +1.723]` | preregistered −2 pp non-inferiority margin 통과 |
-| Historical static endpoint oracle | **333 / 333** selected 205-bar contact episodes had a spawn→final-target path | centre-disk oracle; global/random-pair/300-bar connectivity 및 동역학은 미포함 |
-| Camera-range diagnostic | never-acquired **8.443 → 3.172%**; capture **82.235 → 88.677%** | primary −15 pp gate 미달, 따라서 inconclusive |
-| Routed physical-target gate (attempt 2) | **32 / 32 integrity PASS; route mechanism FAIL; physical PPO BLOCKED** | 70-bar 4-speed pool: plan **14.55%** (gate 99%), fallback **35.93%** (gate 1%); 70 bars × 0.6 m/s: **0.25 goals/env** (gate 0.5) |
-| Routed recovery forensics | **8 / 8 receipt verified; `RECOVERY_DOMINANT` (evaluation-only)** | 358 local invalidations → 35,666 local fallback intervals (`99.6257×`); unique origins `200`; hard-free/soft-unsafe `97.0%` (Wilson lower `93.61%`) |
-| Recovery-v2 lower-1.25 32-cell | **32 / 32 integrity PASS; route mechanism FAIL; not a 1.5 result** | 7/32 pass (off only); 70-bar plan **93.60%**, fallback **47.87%**, 0.6 goals/env **0.21875**; `NO_CONNECTOR` occupancy **63.06%** |
-| Recovery-v2 no-anchor follow-up | **`INCONCLUSIVE`; Track B closed** | primary `n=1`; observer identity disagreement `0`; no further GPU/PPO/retune/rerun authority |
-| Corrected non-overlap route gate r2 | **32 / 32 integrity PASS; route mechanism FAIL; routed PPO blocked** | 70-bar plan **17.78%**, fallback **30.02%**, 0.6 goals/env **0.21875**; routed speed gate passed at no density |
-| Corrected route-off fresh smoke | **500 epochs; `PASS_LEARNING_VIABILITY`** | seed 907, 70 bars fixed, target `U[0.3,1.25]`; held-out 성능 주장이 아님 |
-| Corrected route-off curriculum | **epoch 21,973에서 운영자 중지; 145 bars 도달** | fresh seed 911; 70→85→100→115→130→145, 160/205 미도달 |
-| Corrected route-off held-out | **83.70% capture @70 → 65.54% @145** | seed 313, 6 trained-density cells; [summary](results/navrl_corrected_nonoverlap_physical_off_heldout_seed313/summary.md); no 205/routed claim |
-| Detector colour shortcut (distractor envelope) | **both detectors `COLOR_SHORTCUT_CONFIRMED`**; v7 FTLR **90.27%** at N=5 | seed 479, 8 cells, 2,049 ep/cell; cross-detector comparison forbidden (prereg §3-c) |
-| NPS→Det-Fly perception P3 | **`SIZE-DOMINANT ZERO-SHOT FAILURE`**; native AP30 **0.0035**, ÷4 AP30 **0.2382** | 13,271 images, 13,270 GT, frozen checkpoint; IoU 0.3 |
-| NPS+Det-Fly joint dataset v1 | **split·dataset·seal verification PASS** | train 29,824 / val 9,307 samples; Det-Fly `020` 6,913 images sealed test |
-| NPS+Det-Fly joint detector | validation mAP50 **0.6917**; sealed native Det-Fly AP30 **0.7389** | epoch 26 selected without test access; 6,913 test images; conf 0.25 P/R **0.2729/0.8640** |
-| P4 Top-K + P5 KF v1 | P4 **PASS**; KF **`REJECTED`** | NPS test 1,725 frames/8 clips; hit CNN **0.6145** vs KF **0.4655**; proxy false lock **0.2450** vs **0.4843** |
-| P6 GRU + P7 Transformer | Transformer T=16 **selected on validation** | 2,296 frames/7 clips; utility CNN **0.6655**, GRU **0.6315**, Transformer **0.6725**; test not run |
-| P7b/P7c extension | corrected **P7c v2 selected** | utility P7b **0.67944**, P7c **0.68554**; test not run; [results](results/perception_p7bc_2026-09-08/README.md) |
-| Speed-governor stopcap screen | **Q1 `MECHANISM_UNSUPPORTED`, Q3 `FILTER_DEPENDENT`, stopcap NO-GO** | seed 49, 5 arms, 2,049 ep/cell; riskcap does not beat a constant 2.0 m/s cap |
-| Hardware/software gate | software pipeline PASS · `SYNTHETIC_ONLY` | 실기 성능 아님 |
-
-새 physical lineage의 `navrl_ref5in_v2_quad`는 1.20 kg, 220 mm motor diagonal, 0.283 m collision proxy를 가정한
-**hardware-informed simulation candidate**입니다. route-off PPO는 145 bars까지 학습·평가됐지만
-routed mechanism은 실패해 routed PPO가 차단돼 있습니다. 실제 BOM/CAD/관성/추력/열/전원/비행
-식별값은 아닙니다.
-
-## Perception — final implementation path
-
-![MOTAR final perception implementation path](docs/assets/motar-perception-final.svg)
-
-최종 인지는 **실제 공대공 영상에서 UAV appearance를 학습**하고, 한 프레임의 Top-K 후보를 시간축에서
-연관하는 구조입니다. NPS-Drones detector를 Det-Fly에 zero-shot 평가하고 target pixel-size별 recall을
-먼저 측정합니다. 같은 frozen detector 위에서 CNN only, KF, GRU, Temporal Transformer를 대체 arm으로
-비교한 뒤, 실사에서 측정한 miss·false positive·bearing·ID switch·reacquisition·latency·range uncertainty
-분포를 simulator에 주입해 PPO를 새 계보로 재학습합니다.
-
-12–28 m 표적 인지는 camera 중심이며 LiDAR target ranging은 쓰지 않습니다. 12 m 이내에서만
-camera+LiDAR/stereo로 range를 보정하고, raw obstacle LiDAR와 arc-clearance filter는 semantic target
-추정과 독립적으로 유지합니다. 구현 순서·인터페이스·완료 조건은
-[`perception_final_implementation_plan_2026-09-07.md`](docs/plans/perception_final_implementation_plan_2026-09-07.md)가
-정본입니다.
-
-### Historical baseline — current software, known failure
-
-![MOTAR camera target detection pipeline](docs/assets/motar-perception-detection.svg)
-
-탐지기는 YOLO가 아닙니다. `AppearanceTargetSegmenter`는 **1×1 conv 하나**로 RGB-D 픽셀을 분류하고
-(`R·3 − G·2 − B·2 − 0.9`), `_detect_rgbd`가 **양성 픽셀 전부를 하나의 중심점으로 붕괴**시킵니다.
-connected components가 없으므로 후보는 언제나 1개이고, 그 중심점을 LiDAR return과 연관시켜
-(`bearing ±15°`, `range ±0.55 m`) 표적 토큰을 만듭니다.
-
-이 설계에는 측정된 결함이 있습니다. **동색 물체가 하나 더 있으면 구분하지 못합니다.**
-
-| detector | N=1 | N=3 | N=5 | verdict |
-|---|---:|---:|---:|---|
-| default (5-param colour rule) | 52.7% | 79.7% | 88.5% | `COLOR_SHORTCUT_CONFIRMED` |
-| **v7 (11,329-param learned CNN)** | 60.7% | 83.1% | **90.3%** | `COLOR_SHORTCUT_CONFIRMED` |
-
-frame precision `0.99766`인 v7이 디코이 앞에서는 가시 프레임의 **90.27%**에서 틀린 물체를 잡습니다.
-confidence는 N=1/3/5에서 `0.826 → 0.896 → 0.892`였습니다. N=1보다 높은 수준을 유지하지만 N에
-따라 단조 증가하지는 않습니다. `count`가 후보별 값이 아니라 양성 픽셀의 합이라는 구조적 문제는
-남습니다. 평균 픽셀 수 147–181인데 표적 자체는 2–5 px입니다.
-
-**이 결과는 개선이 아니라 결함의 정량화입니다.**
-detector 간 FTLR/outcome 비교는 금지입니다(서로 다른 궤적 → 서로 다른 프레임 분포, prereg §3-c L6).
-원자료: [`summary`](results/navrl_detector_distractor_envelope_seed479/summary.md).
-
-### 세 실험이 같은 결론으로 수렴했습니다
-
-원인이 무엇인지를 세 갈래로 각각 사전등록하고 측정했습니다.
-
-| 무엇을 바꿨나 | 사전등록 지표의 효과 | 판정 |
-|---|---:|---|
-| **자료구조** — connected components 다중 후보 + χ²(3) 게이팅 | 없음 (shadow FTLR **+1.3 pp**) | `RECOGNITION_DOMINANT` |
-| **거리 측정 분산** — 물리적으로 옳은 2차 모델(20 m에서 2.3배) | 없음 (capture **−0.34 pp**, CI [−3.19, +2.51]) | `VARIANCE_INSENSITIVE` |
-| **어느 물체를 lock 하는가** — 동색 디코이 5개 | FTLR **90.27%** (N=0 대비 N=5) | `COLOR_SHORTCUT_CONFIRMED` |
-
-세 번째 행의 판정 지표는 **FTLR**이다. 같은 셀의 capture는 68.13% → 12.64%로 떨어지지만
-그 원값은 **판정에 쓰지 않는다** — distractor가 다섯 코드 경로에서 자유 공간으로 남아 있어
-distractor 충돌이 미귀속 contact로 기록되고 정적 goal이 distractor 안에 놓일 수 있다
-([envelope summary](results/navrl_detector_distractor_envelope_seed479/summary.md) §L5).
-방향은 명확하지만 크기는 교란돼 있다.
-
-**구속 조건은 측정 품질이 아니라 물체 동일성(identity)입니다.** 더 정밀하게 재도, 후보를 더 잘
-관리해도 달라지지 않습니다. 사전등록:
-[S1 구조 수정](docs/prereg_2026-09-03_s1_structure_fix_shadow.md) ·
-[깊이 잡음 차수](docs/prereg_2026-09-04_depth_noise_model_order.md) ·
-[디코이 envelope](docs/prereg_2026-09-01_distractor_envelope.md).
-
-### Archive — SAM / in-sim shape detector
-
-![Archived MOTAR SAM in-simulator perception design](docs/assets/motar-perception-candidate.svg)
-
-위 그림은 **폐기된 설계 후보이며 기록 목적으로만 보존합니다.** 제어루프에 들어간 적이 없고 성능 주장도
-아닙니다. 초록색 `INSTANCE BOUNDARY`만 오프라인 CPU 계약으로 구현돼 있습니다.
-
-대체 사유는 두 가지입니다.
-
-1. **표적에 형상 정보가 없습니다.** detector가 보는 표적은 반지름 0.15 m의 **해석적 구**에 상수색
-   `[0.88, 0.08, 0.045]`를 칠한 것이고, 디코이 3종 중 하나는 **같은 반지름의 구**입니다
-   (`env_object_config.py:938`). 배경은 40×24 depth를 업샘플한 회색 명암이며 텍스처도 조명도
-   없습니다. 저장소 전체에 쿼드로터 메쉬가 존재하지 않습니다.
-2. **시뮬 이미지로 학습한 detector는 전이되지 않습니다.** 일반 시뮬로 학습한 tiny-YOLOv4는
-   실제 저조도에서 mAP **37.2%**인 반면 실사진 기반은 96.4%입니다(Ning et al., *Unmanned Systems*
-   2024). 우리 렌더러는 그 "일반 시뮬"보다 열악합니다.
-
-따라서 인지는 **실제 공대공 데이터로 학습**하고, 시뮬은 그 detector의 **측정된 오차 모델**을
-주입해 정책을 학습시키는 구조로 갑니다. 아래 [External data](#external-data--what-we-have-what-we-cannot-get)
-참조.
-
-## External data — what we have, what we cannot get
-
-인지를 실제 공대공 데이터로 학습하기로 한 이상, **무엇을 합법적으로 쓸 수 있는가**가 설계 제약이
-됩니다. 라이선스가 불명확한 데이터로 학습한 결과는 게재 단계에서 무효가 될 수 있으므로, 조사
-결과를 여기에 남깁니다. 모든 링크는 2026-09-04에 직접 확인했습니다.
-
-기기 제약: 여유 저장 공간 **약 15 GB**(RAM이 아니라 SSD). 이것이 규모 선택을 지배합니다.
-
-### 확보했거나 확보 가능
-
-| 자산 | 라이선스 | 규모 | 시점 | 상태 |
-|---|---|---:|---|---|
-| [NPS-Drones](https://engineering.purdue.edu/~bouman/UAV_Dataset/) | **BSD-3-Clause** | 2.04 GB (영상) | 공대공 | **확보·P2 완료**. 70,250 프레임 · 1920×1080 · 표적 10×8–65×21 px |
-| [Det-Fly](https://github.com/Jake-WU/Det-Fly) | repo **MIT**; dataset 범위 미명시 | 18.849 GB (풀림) | 공대공 | **확보·전수 검증·P3 완료**. 13,271장 · 3840×2160; 배경 4종 mapping은 metadata에 없음 |
-| [MIDGARD](https://mrs.fel.cvut.cz/midgard) | 명시 없음 (인용 요청만) | 3.53 GB | 공대공 | 미확보. **거리 GT 포함** — 오차 모델에 유용. 서면 허락 권장 |
-| [DUT Anti-UAV](https://github.com/wangdongdut/DUT-Anti-UAV) | **Apache-2.0** | 1.32 GB | 지상→공중 | 미확보. 시점 불일치, OOD 세트로만 가치 |
-| [AOT](https://registry.opendata.aws/airborne-object-tracking/) | **CDLA-Permissive-1.0** | **13.4 TB** | 공대공 | 전량 불가. 부분 prefix로 2–3 시퀀스(~3 GB)만 가능. 흑백 + 유인기 표적 |
-
-MIDGARD의 `nasmrs.felk.cvut.cz` 링크는 **TLS 인증서가 깨져 있습니다**(altname에 `k`가 없음).
-`nasmrs.fel.cvut.cz`를 쓰면 정상입니다.
-
-### 구하고 싶지만 지금은 불가능
-
-| 자산 | 막힌 이유 |
-|---|---|
-| **ARD100** (YOLOMG) | Baidu 전용 배포, 규모 미공개(추정 20–40 GB). 코드가 **GPL-3.0**이라 파생 코드에 전염. 평균 표적 면적 0.01%로 우리 영역에 가장 가까운 데이터인데 접근이 막힘 |
-| **ARD-MAV** (GLAD) | zip **14.6 GB** — 압축 해제 전에 이미 여유 초과. 저장 공간이 늘면 1순위 |
-| **Drone-vs-Bird / WOSDETC** | 공개 링크 **없음**. `wosdetc@googlegroups.com`에 요청해 **데이터 사용 동의서 서명** 필요, 처리 기간 미공지. 게다가 지상→공중이라 시점 불일치 |
-| **FL-Drones** | **라이선스 모순.** EPFL은 공개 Drive 링크를 두는데 TransVisDrone 저자는 "저자 허락 필요"라고 명시. 라이선스 문구가 없으므로 기본 저작권이 적용됨 → **서면 허락 없이 논문에 넣으면 안 됨** |
-
-### 사전학습 가중치 — 학습을 건너뛸 수 있는가
-
-| 레포 | 가중치 | 라이선스 | 비고 |
-|---|---|---|---|
-| [GLAD](https://github.com/WindyLab/Global-Local-MAV-Detection) | ✅ `yolov5s_GLAD.pt` (14.4 MB) | ⚠️ **LICENSE 파일 없음** (README 배지만) | ARD-MAV 학습 = 우리 영역과 일치. TensorRT 엔진은 하드웨어 종속이라 사용 불가, `.pt`만 유효 |
-| [TransVisDrone](https://github.com/tusharsangam/TransVisDrone) | ✅ NPS/FL/AOT 3종 | **MIT** | 라이선스가 가장 깨끗. 단 **시간 모델**이라 연속 5프레임 필요 |
-| [YOLOMG](https://github.com/Irisky123/YOLOMG) | ❌ 없음 | GPL-3.0 | 직접 학습해야 하는데 ARD100 접근이 막힘 |
-| [C2FDrone](https://github.com/Sairam13001/C2FDrone) | ❌ 없음 | 없음 | 재현 불가 |
-
-`ultralytics/yolov5`는 **AGPL-3.0**입니다. 평가만 하면 무관하지만, 그 소스 위에 만든 코드를
-공개하면 우리 코드도 AGPL이 됩니다. detector 아키텍처 선택 시의 제약입니다.
-
-### 실사 detector 1차 학습 결과 (2026-09-07)
-
-NPS-Drones를 640 px 타일로 잘라(train 19,659 / val 4,096, 박스 3,867) YOLOv5s를 40 에포크 학습했습니다.
-1~9 에포크는 GTX 1650 Ti(에포크당 44분), 10~40은 RTX 3070(에포크당 2분 30초)에서 이어 돌렸습니다.
-
-| 에포크 | P | R | mAP50 | mAP50-95 |
-|---|---:|---:|---:|---:|
-| 9 | 0.690 | 0.501 | 0.534 | 0.202 |
-| **13 (최적)** | 0.685 | 0.573 | **0.579** | 0.227 |
-| 40 | 0.696 | 0.546 | 0.550 | 0.204 |
-
-**곡선은 13 에포크에서 평탄해집니다.** 12~40 에포크의 mAP50 평균은 `0.549 ± 0.015`이고 최고값 0.579는
-그 분포의 2.0 표준편차 지점입니다. 즉 **이 모델의 실제 수준은 0.55 대역**이고, 0.579는 검증셋으로 고르고
-같은 검증셋으로 보고해서 생기는 낙관 편향을 포함합니다. 같은 구간에서 훈련 손실은 25.1 % 줄었으나
-검증 손실은 0.7 %만 줄어(0.05170 → 0.05135) 과적합이 시작됐음을 보입니다. 에포크를 더 주는 것으로는
-올라가지 않습니다.
-
-### Det-Fly zero-shot P3 (2026-09-07)
-
-frozen NPS checkpoint로 Det-Fly 13,271장을 전수 평가했습니다. native 4K sliding-window의
-IoU 0.3 P/R/AP는 `0.0097 / 0.1668 / 0.0035`, NPS 학습 크기에 맞춘 ÷4 arm은
-`0.2416 / 0.3503 / 0.2382`입니다. 이 차이는 사전 판정선을 넘어
-**SIZE-DOMINANT ZERO-SHOT FAILURE**입니다. 즉 domain shift도 남아 있지만, 가장 큰
-즉시 실패 요인은 NPS 학습 표적보다 Det-Fly 표적이 중앙값 기준 4.3배 큰 것입니다.
-
-배경 4종 label mapping은 공식 배포 metadata에 없어 source group `010/020`으로 대체했습니다.
-
-### Joint detector dataset v1 (2026-09-07)
-
-누수 방지 split과 통합 학습 dataset을 완료했습니다. 임의 frame split 대신 Det-Fly
-`020` 전체 6,913장을 sealed test로 분리했고, `010`은 최대 자연 ID 단절
-`4333→4752`에서 train 4,200 / val 2,158장으로 나뉘었습니다. NPS clip split은
-그대로 유지했습니다.
-
-통합 YAML은 train **29,824**, val **9,307** samples을 참조하며 `test:` key가 없습니다.
-39,131 sample 전체 SHA·크기·label·source-unit을 재검증했고 split 교차와 sealed-test 유입은
-모두 0입니다. 상세 계약과 receipt hash는
-[`perception_p3_detfly_execution_2026-09-07.md`](docs/plans/perception_p3_detfly_execution_2026-09-07.md)에 있습니다.
-split/dataset 정본은
-[`perception_joint_dataset_v1_2026-09-07.md`](docs/plans/perception_joint_dataset_v1_2026-09-07.md)입니다.
-
-### Joint detector + P4/P5 실행 결과 (2026-09-08)
-
-사전 동결한 batch 8, 30 epochs, 320–960 multi-scale 계약으로 합동 학습했습니다. validation fitness로
-고른 epoch 26 checkpoint는 P/R/mAP50/mAP50-95 `0.7763 / 0.6590 / 0.6917 / 0.3234`이고,
-test를 열기 전에 SHA-256 `aab12f39…00ac`로 동결했습니다. 이후 Det-Fly `020` 6,913장을 한 번
-평가한 native 4K IoU 0.3 P/R/AP는 `0.2729 / 0.8640 / 0.7389`입니다. NPS-only AP30
-`0.0035`에서 크게 회복했지만 operating threshold 0.25의 FP는 15,911개이므로 threshold를 test에
-맞추지는 않습니다. ÷4 진단 arm AP30은 `0.5972`였습니다.
-
-P4는 NPS 원 clip timestamp를 보존하며 Top-K=5 `[u,v,w,h,confidence,appearance_64D]`를 생성했고
-val 2,296 frames/7 clips와 test 1,725 frames/8 clips에서 schema·semantic·hash 검증을 통과했습니다.
-appearance 64D는 learned ReID가 아니라 parameter-free RGB-grid/histogram baseline입니다.
-
-P5의 고정 KF v1은 NPS test에서 CNN-only보다 나빴습니다. IoU≥0.3 frame hit는
-`0.6145 → 0.4655`, 선택 frame 중 proxy false lock은 `0.2450 → 0.4843`, matched center error는
-`1.91 → 3.97 px`였습니다. 따라서 **KF v1은 REJECTED**이며 test 기반 재튜닝은 하지 않았습니다.
-원 track ID와 camera intrinsic이 없으므로 실제 ID switch/FTLR와 degree bearing error는 보고하지
-않습니다. producer latency `61.43 ms/frame`은 동시 GPU 평가가 있던 workstation 측정이라 실기
-latency 주장이 아닙니다. 결과와 hash 정본은
-[`summary`](results/perception_joint_detector_p4_p5_2026-09-08/README.md)에 있습니다.
-
-### P6/P7 temporal association 선택 (2026-09-08)
-
-동일한 P4 후보만 사용해 NPS train 13,510 frames/35 clips에서 GRU T=8과 Temporal Transformer
-T=16을 학습하고, validation 2,296 frames/7 clips에서 비교했습니다. 고정 utility
-`(hit − proxy false lock) / frames`는 CNN-only `0.6655`, KF `0.2639`, GRU `0.6315`,
-Transformer `0.6725`였습니다. 따라서 **Transformer T=16을 validation-selected arm으로 동결**했습니다.
-
-Transformer는 CNN-only보다 hit가 14 frame 적었지만 proxy false lock이 30 frame 적었습니다.
-차이는 utility `+0.00697`로 작고 validation clip도 7개뿐이므로 아직 우월성 결론이 아닙니다. NPS test는
-P6/P7 학습·선택의 입력이 아니며 별도 단계에서 한 번만 평가합니다. 실제 target ID가 없으므로 이 결과를
-ReID·FTLR·ID-switch 개선으로 부르지 않습니다. 상세 결과와 hash는
-[`P6/P7 summary`](results/perception_temporal_p6_p7_2026-09-08/README.md)에 있습니다.
+---
 
 ## Safety filter — the speed governor
 
+> **Naming.** This is an **arc-clearance speed filter**. It is not a DWA planner and it is not a
+> collision-safety guarantee. The current implementation has a reproducible counterexample: an
+> obstacle inside the disk the arc sweeps can go undetected. The numbers below measure **this
+> implementation**.
+
 ![MOTAR speed governor structure and blind spots](docs/assets/motar-safety-filter.svg)
 
-> **명명 주의.** 이 필터는 **arc-clearance 속도 필터**입니다. DWA planner도, 충돌 안전을 보장하는
-> 안전필터도 아닙니다. 현재 구현은 원호를 따라 쓸고 지나가는 원판 안의 장애물을 모두 검출하지 못하는
-> 반례를 갖습니다(2026-09-07 외부 감사에서 CPU 반례로 확인). 아래 수치는 **이 구현**의 측정입니다.
+The governor selects LiDAR returns inside a **straight corridor of half-width 0.45 m around the
+commanded direction**, takes the minimum forward distance as `clearance`, and applies one cap law
+to **the magnitude of the horizontal command only**. It never changes direction; the policy chooses
+direction.
 
-거버너는 LiDAR ray 중 **명령 방향 주위 반폭 0.45 m 직선 회랑** 안의 것만 골라 최소 전방거리를
-`clearance`로 삼고, cap 법칙 하나를 적용해 **수평 명령의 크기만** 조정합니다. 방향은 절대
-바꾸지 않습니다 — 방향은 정책이 고릅니다.
+Measured on the frozen ep25000 policy (seed 49, 205 bars, 2,049–2,051 episodes per cell):
 
-측정 결과(frozen ep25000, seed 49, 205 bars, 2,049~2,051 ep/cell):
-
-| mode | capture | crash | timeout | intervention | contact executed |
+| mode | capture | crash | timeout | intervention | contact speed |
 |---|---:|---:|---:|---:|---:|
 | off | 73.16% | 25.18% | 1.66% | 0% | 3.044 m/s |
 | **fixed 2.0** | 81.31% | **14.06%** | 4.64% | 95.67% | 1.972 m/s |
@@ -365,94 +133,280 @@ ReID·FTLR·ID-switch 개선으로 부르지 않습니다. 상세 결과와 hash
 | stopcap | 69.19% | 21.31% | 9.51% | 36.85% | 0.302 m/s |
 | ttc | 74.70% | **4.24%** | 21.06% | 55.94% | 0.255 m/s |
 
-두 가지가 확정됐습니다.
+**Collisions are not longitudinal braking failures.** `stopcap` removes the speed floor, cuts speed
+just before contact from `2.024 → 0.302 m/s` and makes the stopping margin at contact **positive**
+(`−0.026 → +0.395 m`) — and crash still **rose** from `15.95 → 21.31%`. At the moment of contact the
+filter's own safety model says "I can stop". The obstacle being hit is therefore **not inside the
+corridor**. The corridor has four blind spots: lateral (outside the half-width), vertical (z is
+unregulated), unknown space (a ray with no return is treated as free), and the straight-line
+assumption itself.
 
-**① 충돌은 종방향 정지 실패가 아닙니다.** `stopcap`은 속도 하한을 없애 접촉 직전 속도를
-`2.024 → 0.302 m/s`로 낮추고 접촉 시 정지여유를 `−0.026 → +0.395 m`(양수)로 만들었는데도
-crash가 `15.95 → 21.31%`로 **올랐습니다**. 접촉 순간 필터 자신의 안전 모델이 "정지 가능"이라고
-말한다는 뜻이고, 따라서 부딪히는 장애물이 **회랑 안에 없습니다**. 회랑의 맹점은 넷입니다 —
-측방(반폭 밖), 수직(z 명령 무규제), 미지 공간(무반사 ray를 자유로 간주), 직선 가정.
+### Replacing the corridor with an arc (replicated across three evaluation seeds)
 
-**② `riskcap`의 해제 기구는 실증되지 않았습니다.** 동일 seed 최초 비교에서
-`riskcap − fixed 2.0` capture는 `+0.40 pp, 95% CI [−1.98, +2.78]`로 0을 포함하고,
-crash는 오히려 `fixed 2.0`이 **1.89 pp 낮습니다**. 개입률이 `95.67%` 대 `25.66%`로 완전히 다른데
-결과는 동률 이하입니다.
+Blind spot four — the straight-line assumption — is the one that pays. The vehicle turns at a yaw
+rate, so the space it will actually pass through is an **arc tube**, not a straight corridor.
+Replacing the watched region with that arc (`dwa_arc`) and changing nothing else:
 
-이 **ep25000 stopcap screen 안에서만**, `off`는 `riskcap`보다 crash가 `+9.23 pp` 높아
-`FILTER_DEPENDENT`로 판정됐습니다. 다른 평가나 모든 정책에 일반화할 수 있는 수치가 아닙니다.
-사전등록 [`prereg`](docs/prereg_2026-09-02_speed_governor_stopcap_screen.md),
-문헌 대조 [`survey`](docs/safety_filter_survey_2026-09-02.md),
-원자료 [`summary`](results/navrl_v2_ep25000_stopcap_seed49_screen/summary.md).
-
-### 회랑을 원호로 바꾸면 (2026-09-07, 평가 시드 3개에서 재현)
-
-맹점 ④ **직선 가정**을 고친 것이 지금까지 가장 크게 남는 결과입니다. 기체는 요레이트를 갖고 선회하므로
-실제로 지나갈 곳은 직선 회랑이 아니라 **원호 튜브**입니다. 감시 영역을 그 원호로 바꾸고
-(`dwa_arc`) 나머지는 그대로 두면:
-
-| 대비 (crash, pp) | 셀 단위 결합 (n = 15) | **시드 단위** (k = 3, t) |
+| contrast (crash, pp) | cell-level pool (n = 15) | **seed-level** (k = 3, t) |
 |---|---|---|
-| 원호 − riskcap | −1.49 [−1.90, −1.08] | **−1.49 [−2.42, −0.57]**, p = 0.020 |
-| 원호 − 정지법칙 | −1.25 [−1.65, −0.85] | **−1.26 [−1.96, −0.55]**, p = 0.017 |
-| 정지법칙 − riskcap | −0.23 [−0.65, +0.20] | −0.22 [−1.82, +1.38], p = 0.608 |
+| arc − risk cap | −1.49 [−1.90, −1.08] | **−1.49 [−2.42, −0.57]**, p = 0.020 |
+| arc − stopping law | −1.25 [−1.65, −0.85] | **−1.26 [−1.96, −0.55]**, p = 0.017 |
+| stopping law − risk cap | −0.23 [−0.65, +0.20] | −0.22 [−1.82, +1.38], p = 0.608 |
 
-원호는 15개 (시드, 밀도) 조합 **전부**에서 crash가 최저였습니다. 한 시드 안의 다섯 밀도는 같은 정책·장면
-샘플러·난수열을 공유하므로 셀 단위 구간은 **이 셀들에 대한 정밀도**입니다. 그래서 시드를 하나의 관측으로
-세는 두 번째 구간을 함께 싣습니다. 세 배 넓어지지만 **여전히 0을 제외**하고, 그것이 시드 일반화의 근거입니다.
-반면 밀도별로 쪼개면 시드 단위 구간이 대부분 0을 포함하므로 개별 밀도 수치는 기술통계로만 씁니다.
+The arc had the lowest crash rate in **all 15** seed × density cells. Because the five densities
+inside one seed share a policy, a scene sampler and an RNG stream, the cell-level interval is a
+precision statement about those cells; the seed-level interval is the one that speaks to a new
+seed. It is three times wider and **still excludes zero**, which is what makes the generalisation
+arguable. Split by density, the seed-level intervals mostly cover zero, so individual densities are
+reported descriptively and only the density-pooled effect carries a claim.
 
-동일 조건을 서로 다른 소스 트리에서 재실행해 **기록된 outcome 개수와 집계 텔레메트리가 일치**함을
-확인했습니다(crash 306 / captured 1699 / timeout 44 of 2049). 궤적·난수 상태·텐서 해시를 비교한 것이
-아니므로 bit-identical 재실행이라고는 쓰지 않습니다.
+**Width moves in opposite directions depending on geometry.** Widening the arc from 0.45 to 1.2 m
+buys `−5.60 pp` crash and `+4.44 pp` capture *together* at 205 bars. Widening the straight corridor
+to the same 1.2 m collapses capture to about 10% with the rest timing out. One knob ties frontal
+over-intervention to lateral coverage in a straight corridor; the arc does not look far ahead while
+turning, so the knob comes untied.
 
-**폭은 기하에 따라 정반대로 움직입니다.** 원호 튜브를 0.45 → 1.2 m로 넓히면 205 bars에서
-crash `−5.60 pp`와 capture `+4.44 pp`를 **동시에** 얻습니다. 같은 폭으로 직선 회랑을 넓히면
-capture가 약 10 %로 무너지고 나머지는 시간초과입니다. 폭 하나가 정면 과잉개입과 측면 감시를
-묶어버리는데, 원호는 선회 중 정면 먼 곳을 보지 않으므로 그 묶음이 풀립니다.
+**Which cap law is right depends on what the policy was trained with.** A policy trained without a
+governor is helped by the stopping-distance law (`−6.5 / −5.5 / −3.9 pp` crash against the risk
+cap). Put the risk cap in the training loop for 1,000 more epochs and that advantage is no longer
+detectable (`+0.48 pp [−1.82, +2.78]`). A small residual difference appears at 70 bars but does not
+survive a seed-level analysis (`−1.20 [−3.06, +0.66]`), so it is kept as an exploratory
+observation, not a prescription.
 
-**어느 상한 법칙이 옳은지는 정책이 무엇과 함께 학습됐는지가 정합니다.** 거버너 없이 학습한 정책에서는
-정지거리 법칙이 riskcap보다 crash를 `−6.5 / −5.5 / −3.9 pp` 낮추지만, riskcap을 학습 루프에 넣어
-1,000 epoch 더 학습하면 그 이득이 검출되지 않습니다(`+0.48 pp [−1.82, +2.78]`). 70 bars에서 작은 잔여
-차이가 보이지만 시드 단위로는 `−1.20 [−3.06, +0.66]`로 0을 포함해 **탐색적 관찰**로만 둡니다. 학습 루프의 필터 하나만
-바꾼 대조입니다. 다만 **학습 시드가 1개**이므로 "동반학습 때문"과 "그 특정 1,000 epoch 때문"은
-아직 분리되지 않았습니다.
+**Current recommendation: train without the filter, deploy the arc tube widened to about 1.2 m.**
+The training-seed replication that would let the co-adaptation claim be stated generally is the one
+experiment still outstanding.
 
-현재 처방은 **필터 없이 학습하고, 배치할 때 넓힌 원호 튜브를 쓴다**입니다.
-판정과 사전등록 예측은 [`confirmation plan`](docs/plans/confirmation_phase_plan_2026-09-06.md),
-결합 계산은 `python tools/pool_navrl_seed_replication.py results/navrl_grid_d1p_ep25000_seed523 results/navrl_grid_l1_ep25000_seed523 results/navrl_grid_r1_seedrep_ep25000_s527 results/navrl_grid_r1_seedrep_ep25000_s531`로 재현합니다.
+Preregistration and verdicts: [confirmation plan](docs/plans/confirmation_phase_plan_2026-09-06.md).
+Reproduce the pooled numbers with:
+
+```bash
+python tools/pool_navrl_seed_replication.py \
+  results/navrl_grid_d1p_ep25000_seed523 results/navrl_grid_l1_ep25000_seed523 \
+  results/navrl_grid_r1_seedrep_ep25000_s527 results/navrl_grid_r1_seedrep_ep25000_s531
+```
+
+---
+
+## Perception — the real-imagery path
+
+![MOTAR final perception implementation path](docs/assets/motar-perception-final.svg)
+
+The final design learns UAV appearance from **real air-to-air video** and associates per-frame
+Top-K candidates over time. Target perception at 12–28 m is camera-driven; LiDAR target ranging is
+not used. Inside 12 m, camera and LiDAR/stereo correct the range. Raw obstacle LiDAR and the
+arc-clearance filter stay independent of the semantic target estimate. The implementation order and
+completion conditions are frozen in
+[`perception_final_implementation_plan_2026-09-07.md`](docs/plans/perception_final_implementation_plan_2026-09-07.md).
+
+### Why the in-simulator detector was abandoned
+
+![Archived MOTAR SAM in-simulator perception design](docs/assets/motar-perception-candidate.svg)
+
+The figure above is an **archived design candidate**, kept for the record. It never entered the
+control loop and is not a performance claim. Two reasons replaced it.
+
+1. **The simulated target has no shape information.** What the detector sees is an analytic sphere
+   of radius 0.15 m painted a constant colour, and one of the three decoy types is a sphere of the
+   same radius. The background is upsampled 40×24 depth shading with no texture and no lighting.
+   There is no quadrotor mesh anywhere in this repository.
+2. **Detectors trained on simulated imagery do not transfer.** A tiny-YOLOv4 trained in a general
+   simulator reaches mAP 37.2% in real low light against 96.4% for a real-image baseline
+   (Ning et al., *Unmanned Systems* 2024). Our renderer is worse than that "general simulator".
+
+### The current in-sim detector is a known failure, quantified
+
+![MOTAR camera target detection pipeline](docs/assets/motar-perception-detection.svg)
+
+The in-sim detector is not YOLO. `AppearanceTargetSegmenter` classifies RGB-D pixels with **a single
+1×1 convolution** (`R·3 − G·2 − B·2 − 0.9`), and `_detect_rgbd` **collapses every positive pixel
+into one centroid**. With no connected components there is always exactly one candidate, associated
+to a LiDAR return (`bearing ±15°`, `range ±0.55 m`).
+
+The measured defect: **it cannot separate a second object of the same colour.**
+
+| detector | N=1 | N=3 | N=5 | verdict |
+|---|---:|---:|---:|---|
+| default (5-parameter colour rule) | 52.7% | 79.7% | 88.5% | `COLOR_SHORTCUT_CONFIRMED` |
+| **v7 (11,329-parameter learned CNN)** | 60.7% | 83.1% | **90.3%** | `COLOR_SHORTCUT_CONFIRMED` |
+
+v7, whose frame precision is `0.99766`, locks the wrong object in **90.27%** of visible frames when
+five same-coloured decoys are present. **This table quantifies a defect; it is not an improvement.**
+Comparing false-target-lock rates *between* detectors is forbidden — different trajectories give
+different frame distributions (prereg §3-c L6).
+
+Three preregistered experiments converged on the same conclusion:
+
+| what changed | effect on the preregistered metric | verdict |
+|---|---:|---|
+| **data structure** — connected components, multi-candidate, χ²(3) gating | none (shadow FTLR **+1.3 pp**) | `RECOGNITION_DOMINANT` |
+| **range variance** — physically correct quadratic model (2.3× at 20 m) | none (capture **−0.34 pp**, CI [−3.19, +2.51]) | `VARIANCE_INSENSITIVE` |
+| **which object is locked** — five same-coloured decoys | FTLR **90.27%** | `COLOR_SHORTCUT_CONFIRMED` |
+
+**The binding constraint is object identity, not measurement quality.** Measuring more precisely, or
+managing candidates better, does not move it.
+
+### Real-imagery detector: zero-shot failure, then a fix
+
+**Step 1 — train on NPS-Drones.** 640 px tiles (19,659 train / 4,096 val), YOLOv5s, 40 epochs.
+mAP50 peaks at epoch 13 and then flattens: the mean over epochs 12–40 is `0.549 ± 0.015` and the
+0.579 peak sits two standard deviations up that band, so **the model's real level is about 0.55**
+and 0.579 carries the optimism of selecting and reporting on the same validation set. Training loss
+fell 25.1% over that span while validation loss fell 0.7%. More epochs do not help.
+
+**Step 2 — zero-shot to Det-Fly (P3), all 13,271 images, two arms frozen before results.**
+
+| IoU 0.5 | native 4K | scale-matched ÷4 |
+|---|---:|---:|
+| AP | **0.0010** | **0.1126** |
+| recall | 0.087 | 0.234 |
+
+The gap is **111× the native value**, so the preregistered rule reads the dominant cause as
+**size**. The evidence is the size breakdown: at native scale the detector finds 4 of 4,961 targets
+in the 64–128 px band and **0 of 2,151** above it, and 54% of Det-Fly boxes are above 64 px.
+Det-Fly targets have a median diagonal of 109 px against 25 px in the NPS training tiles — three
+quarters of them are larger than 95% of what the model was trained on. A domain component remains:
+0.1126 is 19% of the same model's 0.579 on NPS.
+
+**Step 3 — joint multi-scale training (P3-F).** Warm-started from the NPS checkpoint, 30 epochs on a
+joint NPS + Det-Fly dataset with multi-scale enabled, seed 0, checkpoint selected on validation and
+frozen by SHA-256 before the test was opened. On Det-Fly it reaches **native AP@0.5 0.7166, recall
+0.839**.
+
+> **Do not read 0.0010 → 0.7166 as before-and-after of one experiment.** P3 is a zero-shot sweep by
+> a model that never saw Det-Fly; P3-F is validation for a model trained on Det-Fly's `010` group.
+> 0.7166 is evidence that fixing the scale problem works, not a generalisation figure. The gap that
+> remains after scale correction is a **residual domain gap** — background, compression, viewpoint
+> and optics are all still in there.
+
+Precision at the 0.25 operating threshold is `0.2729`, so the threshold still needs calibrating on
+validation, not on the test set.
+
+### Temporal association
+
+On the same frozen detector and the same Top-K = 5 candidates, four alternatives were compared on
+NPS validation (2,296 frames, 7 clips) using a fixed utility `(hit − proxy false lock) / frames`:
+
+| arm | utility | outcome |
+|---|---:|---|
+| CNN only | 0.6655 | baseline |
+| Kalman filter v1 | 0.2639 | **REJECTED** (test hit 0.4655 vs 0.6145; false lock 0.4843 vs 0.2450) |
+| GRU, T = 8 | 0.6315 | not selected |
+| Temporal Transformer, T = 16 | 0.6725 | selected |
+| **P7c v2** (candidate preservation + motion/GMC) | **0.68554** | **selected** |
+
+The margins are small and the validation set has seven clips, so this is a selection, not a
+superiority claim. **The NPS test set has been opened once, for the KF rejection, and not since.**
+The joint dataset's test split is sealed and absent from the training YAML.
+
+The `appearance_64D` field is a parameter-free RGB grid/histogram baseline, not learned ReID. With
+no ground-truth track IDs and no camera intrinsics, this project does not report real ID switches,
+degree-valued bearing error, or metric range.
+
+### Streaming pipeline
+
+Frame → detector → motion/GMC → temporal selector runs serially at **14.9 FPS including decode**
+(detector 26.4 ms, motion 33.4 ms, selector 2.4 ms, decode 5.2 ms).
+
+A reproducibility failure here is worth recording because the cause was not what it looked like.
+Re-detecting from RGB disagreed with the frozen candidate cache on 5 of 2,296 frames, which read
+like non-determinism and was chased through TF32, cuDNN benchmark and deterministic flags. It was
+none of those: **the cache was produced under torch 2.10 / cuDNN 9.10.2 and the re-run used torch
+2.4 / cuDNN 9.1**, and the two stacks select different convolution kernels — bit-identical over 60
+frames in the first environment, up to 45% apart in confidence in the second. Re-running the full
+2,296-frame audit in the original environment gives `rank_mismatches 0` and metrics identical to the
+cached replay.
+
+Receipts now record the interpreter and accelerator stack (`tools/runtime_fingerprint.py`), and
+`OPERATIONS.md` rule 0.1 makes that mandatory for any receipt carrying GPU numbers.
+
+Profiling the motion stage shows **Farnebäck optical flow is 97.7%** of it (36.58 ms) while GMC
+RANSAC is 0.17 ms. Since the flow depends only on the two grayscale frames and candidates enter
+afterwards, it can overlap the GPU detector; a measured prototype gives 112.3 ms serial against
+74.7 ms overlapped with the flow array bit-identical. Applying that is the next perception step,
+and the phrase "bit-identical" will only be used for the pipeline once all 2,296 frames agree on
+ranks, on the motion feature arrays and on every downstream metric.
+
+---
+
+## External data — what can and cannot be used
+
+Training perception on real data makes **licensing a design constraint**: a result trained on
+unclear terms can be invalidated at publication. All links were checked on 2026-09-04. Storage
+headroom, not compute, governs the choices.
+
+| Asset | Licence | Size | Viewpoint | State |
+|---|---|---:|---|---|
+| [NPS-Drones](https://engineering.purdue.edu/~bouman/UAV_Dataset/) | **BSD-3-Clause** | 2.04 GB | air-to-air | **in use**; 70,250 frames, targets 10×8–65×21 px |
+| [Det-Fly](https://github.com/Jake-WU/Det-Fly) | **MIT** | 18.85 GB unpacked | air-to-air | **in use**; 13,271 images at 3840×2160 |
+| [MIDGARD](https://mrs.fel.cvut.cz/midgard) | no statement | 3.53 GB | air-to-air | not obtained; **has range GT**, useful for the error model; written permission advisable |
+| [DUT Anti-UAV](https://github.com/wangdongdut/DUT-Anti-UAV) | Apache-2.0 | 1.32 GB | ground-to-air | not obtained; viewpoint mismatch, OOD set only |
+| [AOT](https://registry.opendata.aws/airborne-object-tracking/) | CDLA-Permissive-1.0 | 13.4 TB | air-to-air | full download impossible; 2–3 sequences feasible |
+
+Blocked: **ARD100** (Baidu-only distribution, GPL-3.0 code that infects derivatives), **ARD-MAV**
+(14.6 GB zip exceeds headroom), **Drone-vs-Bird/WOSDETC** (no public link, signed agreement
+required), **FL-Drones** (contradictory licensing — no licence text means default copyright, so it
+cannot go in a paper without written permission).
+
+Pretrained weights do not let us skip training: a public air-to-air detector (GLAD, trained on
+ARD-MAV) evaluated zero-shot on NPS-Drones reaches AP **0.045** against 0.80 in-domain.
+
+`ultralytics/yolov5` is **AGPL-3.0**. Evaluating with it is unencumbered; publishing code built on
+top of it would make our code AGPL as well. That constrains detector architecture choices.
+
+---
+
+## Evidence table
+
+| Evidence | Result | Scope |
+|---|---:|---|
+| Arc geometry, three evaluation seeds | **arc lowest crash in 15/15 cells**; pooled −1.49 pp, seed-level −1.49 [−2.42, −0.57] | ep25000 lineage, 5 densities, 2,049 ep/cell |
+| Arc tube widening | 205 bars crash −5.60 pp **and** capture +4.44 pp | 3 seeds; straight corridor collapses to ~10% capture |
+| Co-adaptation (D4) | stopping-law advantage not detectable after training with the filter (+0.48 pp) | **one training seed**; replication outstanding |
+| Contact forensics | **77–78% of bar collisions are outside the watched corridor** | lateral 57–58% + no-return 20%; longitudinal failure 1 in 5 |
+| Detector colour shortcut | both detectors `COLOR_SHORTCUT_CONFIRMED`; v7 FTLR **90.27%** at N=5 | seed 479, 8 cells, 2,049 ep/cell |
+| NPS→Det-Fly zero-shot (P3) | `SIZE-DOMINANT ZERO-SHOT FAILURE`; native AP@0.5 **0.0010**, ÷4 **0.1126** | 13,271 images, frozen checkpoint |
+| Joint multi-scale detector (P3-F) | validation mAP50 **0.6917**; Det-Fly native AP@0.5 **0.7166** | checkpoint frozen before the test was opened |
+| Top-K candidates (P4) | **PASS** | schema, semantics and hashes verified on val and test |
+| Temporal association (P5–P7c) | KF **REJECTED**; P7c v2 selected at utility **0.68554** | validation only; NPS test not opened since P5 |
+| Streaming pipeline | implemented; RGB parity **PASS** after environment fix | 14.9 FPS with decode; not a camera deployment |
+| Detector navigation A/B | learned-v2 vs analytic **−0.0145 pp**, CI `[−1.752, +1.723]` | passes the preregistered −2 pp non-inferiority margin |
+| Camera-range diagnostic | never-acquired **8.443 → 3.172%** | short of the −15 pp gate, therefore inconclusive |
+| Route-off held-out | capture **83.70% @70 → 65.54% @145** | seed 313; no 205-bar or routed claim |
+| Routed physical gate | **32/32 integrity PASS; route mechanism FAIL; PPO blocked** | plan 14.55% vs 99% gate; fallback 35.93% vs 1% |
+| Hardware/software gate | software pipeline PASS · `SYNTHETIC_ONLY` | not a real-flight result |
+
+Historical v1, archived v2, corrected-v2, legacy-robot and ref5in-robot results **must not be merged
+into one performance curve**. Results from before 2026-08-27 overlapped nearby bars into compound
+obstacles and are kept as historical evidence only.
+
+---
 
 ## Canonical experiment contract
 
 | Item | Value |
 |---|---|
-| Arena | `40 × 40 × 3 m`; fresh physical lineage는 footprint-aware non-overlap placement (`0.45 m` surface clearance) |
-| Density curriculum | route-off run: planned 70 → 205 bars, +15; stopped at 145; asset/evaluation ceiling 300 bars |
-| Target | measured route-off lineage: mixed constant-velocity/waypoint, `0.3–1.25 m/s`; routed gate: waypoint-only, `0.3–1.5 m/s`; 두 계보를 합치지 않음 |
-| Actor observation | 898-D; static 288 + obstacle 480 + robot 50 + target 80 |
+| Arena | `40 × 40 × 3 m`; footprint-aware non-overlap placement with `0.45 m` surface clearance |
+| Density curriculum | route-off run: planned 70 → 205 bars in steps of 15, stopped at 145; asset ceiling 300 |
+| Target | route-off lineage: mixed constant-velocity/waypoint, `0.3–1.25 m/s`; routed gate: waypoint-only, `0.3–1.5 m/s`. The two lineages are never merged |
+| Actor observation | 898-D: static 288 + obstacle 480 + robot 50 + target 80 |
 | Horizontal command | per-axis `±2.5 m/s`; yaw `±3.0 rad/s`; tilt limit `45°` |
 | PPO | 128 envs, horizon 32, minibatch 2048, 4 mini-epochs, LR `3e-5` |
 | Reward | range-rate +1, ego-progress +1, static safety +1.5, visibility +0.02/visible step, time −0.05/step, smoothness −0.1, height −8, yaw alignment −0.3, yaw-rate² −0.02, capture +30, collision overwrite −20 |
 
-Exact coefficients and their source locations are frozen in
-[the system specification](docs/MOTAR_SYSTEM_SPEC_2026-08-24.md). Historical v1, archived v2, corrected-v2,
-legacy robot and ref5in robot results must not be merged into one performance curve.
+Exact coefficients and their source locations are frozen in the
+[system specification](docs/MOTAR_SYSTEM_SPEC_2026-08-24.md).
 
-2026-08-27 이전 `navrl_band` 결과는 가까운 막대를 compound obstacle로 중첩시켰다. 그 결과는
-historical evidence로만 보존한다. 중첩이 없는 route-off physical lineage는 fresh PPO로 학습됐고
-145 bars에서 중지됐다. 기존 체크포인트의 warm-start 또는 historical 성능곡선 연결은 허용하지
-않는다. routed lineage는 2026-08-31 route/physical gate가 실패했으므로 여전히 학습할 수 없다.
+**Working rules that came out of accidents**, in [OPERATIONS.md](OPERATIONS.md):
 
-### Corrected non-overlap gate result
-
-The corrected gate is not the historical Track B result. It ran seed 829 on the new
-`footprint_clearance` geometry at 70/115/160/205 bars and 0.6/0.9/1.2/1.5 m/s. All 32 records and
-source receipts completed, but every routed density lacked an authorized passing speed. The
-dominant end gauge was `unsafe_start`; contact, motor saturation and tilt did not explain the
-failure. No PPO policy was loaded—the pursuer action was neutral—so this is an environment-side
-target route/controller result. See the
-[result report](docs/corrected_nonoverlap_route_gate_r2_result_2026-08-31.md),
-[preregistration](docs/preregistration_corrected_nonoverlap_route_gate_r2_2026-08-31.md) and
-[raw summary](results/navrl_corrected_nonoverlap_route_gate_r2_seed829/summary.json).
+- **§0 one working branch** — all work is on `main`; the GitHub default and the Pages source must
+  both be `main /docs`, or a push changes nothing on the site.
+- **§0.1 receipts record the execution stack** — Python, torch, CUDA, cuDNN, OpenCV, numpy and the
+  flags that change kernel selection. Omitting this cost a day of chasing phantom non-determinism.
+- **§8-A checkpoints are never deleted by hand** — `tools/audit_checkpoint_references.py` derives
+  what must be kept from the evidence that cites it, and keeps anything it does not recognise.
+- **Frozen paths are untouchable while an evaluation runs** — editing `aerial_gym`, `tools` or
+  `resources/robots` mid-run voids the remaining cells.
 
 ## Reproduce
 
@@ -468,7 +422,7 @@ conda activate aerialgym
 export PYTHONNOUSERSITE=1
 ```
 
-Run the CPU contracts before using GPU time:
+Run the CPU contracts before spending GPU time:
 
 ```bash
 python tests/test_navrl_v5a_semantics_smoke.py
@@ -478,7 +432,7 @@ cd aerial_gym/rl_training/rl_games
 REF5IN_PREFLIGHT_ONLY=1 ./train_navrl_v2_ref5in_smoke_c.sh
 ```
 
-Held-out evaluation must use an explicit last checkpoint and record the action mode:
+Held-out evaluation must name an explicit last checkpoint and record the action mode:
 
 ```bash
 cd aerial_gym/rl_training/rl_games
@@ -488,9 +442,17 @@ NAVRL_V2_DENSITIES="130 160 190 205 220" \
 ./eval_navrl_v2_density_sweep.sh "$CKPT" 2049
 ```
 
-Checkpoints are intentionally excluded from Git. Preserve the checkpoint, SHA-256, `aerial_run/`, summaries,
-evaluation receipt and source manifest together. Complete installation, transfer and troubleshooting instructions
-are in [OPERATIONS.md](OPERATIONS.md).
+Multi-condition sweeps go through the grid runner, which re-checks that the frozen paths are
+committed before every cell:
+
+```bash
+python tools/run_navrl_filter_grid.py docs/specs/<spec>.json results/<root>
+python tools/summarize_navrl_grid.py results/<root>
+```
+
+Checkpoints are excluded from Git. Preserve the checkpoint, its SHA-256, `aerial_run/`, the
+summaries, the evaluation receipt and the source manifest together. Full installation, transfer and
+troubleshooting instructions are in [OPERATIONS.md](OPERATIONS.md).
 
 ## Repository map
 
@@ -501,49 +463,31 @@ are in [OPERATIONS.md](OPERATIONS.md).
 | `aerial_gym/rl_training/rl_games/` | Transformer, PPO config, fixed train/eval launchers |
 | `resources/robots/quad/` | URDF and collision/inertia geometry |
 | `tests/` | semantics, provenance, dynamics and launcher regression tests |
-| `tools/` | dataset, receipt, geometry and platform verification tools |
+| `tools/` | dataset, receipt, geometry, statistics and verification tools |
 | `results/` | condition-specific raw evidence and summaries |
-| `docs/` | system spec, execution plans, review and presentation material |
+| `docs/` | system spec, execution plans, preregistrations and the research site |
 
-## Routed physical gate result
+## Status of the routed target lineage
 
-An isolated candidate target-motion lineage now exists under model id
-`physx_ref5in_6dof_global_astar_aabb_v1`. It supplies exact-AABB, fail-closed global waypoints to
-the physical target controller; it is not a planner for the pursuer and no route information is
-an actor observation. Attempt 2 passed 32/32 execution-integrity checks, but the simulator route
-mechanism failed: across the four 70-bar speed cells, pooled plan success was 14.55% and fallback
-was 35.93%; the 70 bars × 0.6 m/s cell completed only 0.25 goals/env (gates 99%, 1%, and 0.5).
-Repeated `unsafe_start` recovery trapped the
-route manager in a fail-closed zero-command fallback deadlock. Motor saturation, tilt, and contact
-gates passed, so they are not the supported explanation for this failure. Physical PPO remains
-blocked and no PPO policy was loaded for this mechanism gate. See the
-[frozen preregistration](docs/preregistration_physical_target_global_route_2026-08-25.md) and
-[CPU benchmark](results/navrl_target_route_cpu_benchmark_seed825/summary.md), and
-[GPU gate summary](results/navrl_physical_target_routed_gate_seed827_attempt2/summary.md).
+An isolated target-motion lineage exists under `physx_ref5in_6dof_global_astar_aabb_v1`. It supplies
+exact-AABB, fail-closed global waypoints to the physical target controller. It is not a planner for
+the pursuer, and no route information reaches the actor's observation.
 
-The follow-up [route-recovery forensics result](docs/physical_target_route_recovery_result_2026-08-25.md)
-separates initial planning from recovery: pooled replans were `unsafe_start=3774`, `ok=101`,
-`no_path=82`, `unsafe_goal=79`, while initial plans were `ok=349`, `unsafe_start=17`,
-`no_connected_goal=6`. The first unsafe replan per unique local origin gives hard-free /
-soft-unsafe `97.0%` (Wilson lower `93.61%`) and exact hard-safe connector `96.5%` (lower
-`92.95%`). This supports a recovery state-machine deadlock hypothesis, not a justification to
-lower the frozen `0.45 m` margin or to start PPO. The diagnostic is evaluation-only and leaves
-target commands, planner decisions, reward, observations, termination, PPO, and attempt2
-artifacts unchanged.
+Attempt 2 passed 32/32 execution-integrity checks and **failed the route mechanism**: across the
+four 70-bar speed cells, pooled plan success was 14.55% and fallback 35.93%, and the 70 bars ×
+0.6 m/s cell completed 0.25 goals per environment (gates 99%, 1% and 0.5). Repeated `unsafe_start`
+recovery trapped the route manager in a fail-closed zero-command deadlock. Motor saturation, tilt
+and contact gates all passed, so they are not the explanation. A corrected non-overlap re-run
+(seed 829) failed the same way, with plan 17.78% and fallback 30.02%.
 
-The follow-up [recovery-v2 lower-1.25 gate](docs/physical_target_recovery_v2_lower1p25_result_2026-08-26.md)
-is a separate speed-ceiling contract, not a 1.5 success. It also passed 32/32 integrity and
-failed the route mechanism: 70-bar plan success rose to 93.60%, but fallback is 47.87% because
-recovery-arm occupancy is 63% latched `NO_CONNECTOR` (0 hard-breach entries). Packed diagnosis
-does not authorize retuning `0.45 m`, gain 2.5, env count, or another 32-cell run. The frozen
-[no-anchor geometry probe](docs/physical_target_recovery_v2_no_connector_forensics_result_2026-08-26.md)
-completed with only one primary event and is `INCONCLUSIVE`; it does not supersede the 32-cell
-FAIL or create further Track B GPU/training authority.
+Forensics separate initial planning from recovery: pooled replans were `unsafe_start=3774`,
+`ok=101`, `no_path=82`, `unsafe_goal=79`, while initial plans were `ok=349`, `unsafe_start=17`,
+`no_connected_goal=6`. The first unsafe replan per unique origin gives hard-free/soft-unsafe
+**97.0%** (Wilson lower 93.61%). This supports a recovery state-machine deadlock, and it does
+**not** authorise lowering the frozen `0.45 m` margin or starting PPO.
 
-Fresh PPO and sim-to-real claims remain blocked until the actual platform provides measured AUW/CG, sensor
-extrinsics, timestamp synchronization and real-log bearing/range/latency/dropout profiles. The next 72-hour
-measurement contract is [SIM2REAL_3DAY_EXECUTION_PLAN.md](docs/SIM2REAL_3DAY_EXECUTION_PLAN.md). If neither
-hardware nor real logs are available, there is no authorized GPU work on either track.
+**Physical PPO stays blocked** until a real platform supplies measured AUW/CG, sensor extrinsics,
+timestamp synchronisation, and real-log bearing/range/latency/dropout profiles.
 
 ## Credits
 

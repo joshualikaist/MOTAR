@@ -36,7 +36,7 @@
       </div>
       <div class="status-line">
         <span class="status-dot" aria-hidden="true"></span>
-        <strong>후보 보존 + motion/GMC P7c v2 선택</strong><span>validation utility 기존 P7 0.67247 · P7b 0.67944 · corrected P7c <strong>0.68554</strong> · false lock 감소, no-lock·재획득 시간 증가 · 2,296 frames/7 clips · test 미실행 · <a href="../../results/perception_p7bc_2026-09-08/README.md">결과·좌표 정정 이력</a> · 2026-09-08</span>
+        <strong>streaming parity 해소 · Det-Fly 실패의 원인은 크기</strong><span>RGB 재현 실패는 비결정성이 아니라 <strong>실행 환경 불일치</strong>였고, 원래 환경으로 2,296프레임 전수 재실행하니 <code>rank_mismatches 0</code> · Det-Fly zero-shot native AP 0.0010 → 합동 다중스케일 <strong>0.7166</strong>, 지배 원인은 도메인이 아니라 <strong>크기</strong> · 선택기는 P7c v2(utility 0.68554) 유지, NPS test 미개봉 · 다음은 광류 겹침(14.9 → 약 24 FPS 예상) · <a href="../plans/perception_next_plan_2026-09-09.md">실행 계획</a> · 2026-09-09</span>
       </div>
     </section>
 
@@ -224,7 +224,13 @@
         <code>0.0097 / 0.1668 / 0.0035</code>, NPS 학습 크기에 맞춘 ÷4 arm은
         <code>0.2416 / 0.3503 / 0.2382</code>입니다. 사전 규칙상
         <strong>SIZE-DOMINANT ZERO-SHOT FAILURE</strong>이며, NPS-only detector의 즉시 4K 배치는
-        기각합니다. 배경 4종 mapping은 배포 metadata에 없어 source group 010/020으로
+        기각합니다. <strong>판정 근거는 크기별 재현율입니다</strong> &mdash; native arm은 64 px를 넘는 순간
+        무너집니다(64&ndash;128 px 4,961개 중 <strong>4개</strong>, 128 px 이상 2,151개 중 <strong>0개</strong>).
+        그런데 Det-Fly 박스의 <strong>54 %가 64 px를 넘습니다.</strong> ÷4로 축소해 학습 분포에 넣으면 같은
+        구간 재현율이 0.246으로 돌아옵니다. Det-Fly 표적 대각 중앙값이 109 px로 NPS 학습 타일의 25 px보다
+        4.3배 크고, 표적의 4분의 3이 학습 분포 상위 5 % 밖에 있습니다. 다만 크기를 맞춘 arm의 AP도 NPS
+        자체 검증의 <strong>19 %</strong>에 그치므로 <strong>크기 보정 후 잔여 도메인 격차</strong>는 남습니다.
+        배경 4종 mapping은 배포 metadata에 없어 source group 010/020으로
         대체했습니다. <a href="../plans/perception_p3_detfly_execution_2026-09-07.md">실행 계약·지표·receipt</a></p>
       <p><strong>Joint detector dataset v1.</strong> Det-Fly <code>020</code> 전체 6,913장을
         source-group 단위 sealed test로 분리했고, <code>010</code>은 최대 자연 ID 단절
@@ -239,6 +245,9 @@
         checkpoint hash를 동결했습니다. sealed Det-Fly <code>020</code> native 4K의 IoU 0.3
         P/R/AP는 <code>0.2729 / 0.8640 / 0.7389</code>입니다. zero-shot 크기 실패는 회복했지만
         confidence 0.25에서 FP 15,911개라 운영 threshold는 validation에서 별도로 보정해야 합니다.
+        <strong>zero-shot 0.0035와 이 0.7389를 한 실험의 전후로 읽으면 안 됩니다</strong> &mdash; 앞은
+        Det-Fly를 한 장도 보지 않은 모델의 전수 평가이고, 뒤는 Det-Fly <code>010</code>을 학습에 쓴
+        모델의 성적입니다. 크기 문제를 고치면 된다는 증거이지 일반화 성능이 아닙니다.
         <a href="../plans/perception_joint_detector_training_2026-09-08.md">학습·최종 평가 계약</a></p>
       <p><strong>P4 PASS · P5 KF v1 REJECTED.</strong> P4 Top-K=5 후보는 NPS val/test에서
         timestamp·schema·semantic·hash 검증을 통과했습니다. NPS test 1,725 frames/8 clips에서
@@ -254,6 +263,22 @@
         14 frame 적고 proxy false lock은 30 frame 적습니다. validation 7 clips의 작은 차이이며 NPS test는
         아직 실행하지 않았습니다. 실제 ReID·FTLR·ID-switch 개선 주장도 아닙니다.
         <a href="../../results/perception_temporal_p6_p7_2026-09-08/README.md">P6/P7 결과·hash</a></p>
+      <p><strong>Streaming 파이프라인(2026-09-09).</strong> 프레임 &rarr; detector &rarr; motion/GMC &rarr;
+        시간 선택기를 직렬로 묶어 decode 포함 <strong>14.9 FPS</strong>로 돕니다(detector 26.4 ms,
+        motion 33.4 ms, selector 2.4 ms, decode 5.2 ms). 여기서 나온 재현성 실패는 원인이 겉보기와
+        달랐기에 기록할 값어치가 있습니다. RGB 재검출이 frozen cache와 2,296프레임 중 5개에서 어긋나
+        비결정성처럼 보였고 TF32&middot;benchmark&middot;deterministic 플래그를 뒤졌지만, 실제 원인은
+        <strong>실행 환경 불일치</strong>였습니다 &mdash; cache는 torch 2.10 / cuDNN 9.10.2에서 만들어졌고
+        재실행은 torch 2.4 / cuDNN 9.1이었습니다. 두 스택은 서로 다른 컨볼루션 커널을 골라, 같은
+        60프레임에서 한쪽은 비트 일치하고 다른 쪽은 confidence가 최대 45 % 어긋납니다. 원래 환경으로
+        전수 재실행하니 <code>rank_mismatches 0</code>으로 frozen output이 그대로 재현됐습니다.
+        이후 모든 receipt는 인터프리터와 가속 스택을 기록합니다.</p>
+      <p><strong>병목은 GMC가 아니라 광류입니다.</strong> motion 단계를 분해하면 Farneb&auml;ck 광류가
+        <strong>97.7 %</strong>(36.58 ms)이고 GMC RANSAC은 0.17 ms입니다. 광류는 회색조 두 장에만
+        의존하고 후보는 그 뒤에 들어오므로 GPU 검출기와 겹칠 수 있습니다. 프로토타입 실측은 순차
+        112.3 ms 대 겹침 74.7 ms이며 flow 배열은 비트 동일이었습니다. 적용이 다음 단계이고,
+        &ldquo;비트 동일&rdquo;이라는 표현은 2,296프레임 전체가 rank&middot;motion feature&middot;하위 지표
+        모두에서 일치할 때만 쓸 것입니다.</p>
     </section>
 
     <section class="visual wrap" id="external-data" aria-labelledby="data-title">
