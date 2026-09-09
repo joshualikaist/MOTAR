@@ -16850,12 +16850,25 @@ cam0 분할 압축본 43개(4,471,880,421 B)를 p7zip 16.02로 `datasets/eth_ds5
 (4,520,030,301 B, CRC OK, SHA-256 `d3e6727e…`)에 풀었다. h264 1920×1080, 30000/1001 fps,
 컨테이너 패킷 20970 = 전체 디코딩 20970 = nb_frames. **그러나 공개 `cam0_frame_ts.txt`는 20969행**이다.
 
-원인 조사(upstream `drone-tracking-toolkits/codes/postprocess/signal/video_ts.m`): MATLAB `VideoReader`의
-`readFrame` 루프에서 `CurrentTime`(다음 프레임 시각)을 기록했고, mp4 비디오 트랙에 1프레임(1001/30000 s)
-edit list가 있어 백엔드에 따라 첫 프레임이 빠진다. 또 공개 시각은 frame id에 정확히 선형(잔차 3e-8 s)인데
-기울기 1.0000310876×주기가 **cam1의 Time_scale**과 일치하고 cam0(1.000004517)과는 다르다. sync 계수 파일은
-2022-02-07에 갱신됐고 시각 파일(2021-03-08)은 재생성되지 않았다. 결론: frame_id↔컨테이너 index 대응이
-1–3프레임(≤100 ms) 불확실, pose 겹침 구간 안에서 scale 차이는 ≤4.7 ms. **fail-closed**로 남긴다.
+**원인 규명(같은 날 추가 조사)**. 두 blocker 모두 기전을 특정했다.
+
+(1) *행 수 차이*: mp4 비디오 트랙 edit list가 `media_time=1001`(정확히 1프레임), 오디오·메타 트랙은 0이다.
+edit list를 따르는 판독기는 20969프레임만 제시하고, upstream이 쓴 MATLAB `VideoReader.readFrame` 루프가
+그렇게 동작했다. 반면 ffmpeg/OpenCV는 그 프레임을 버리지 않는다 — 기본과 `-ignore_editlist 1` 모두 20970
+디코딩, cv2 첫 3프레임은 ffmpeg 기본 출력과 바이트 동일. 남는 후보는 세 가지(`frame_id`, `frame_id-1`,
+`frame_id+1`)이고 **시각만으로는 분리 불가**(모두 정수 프레임 재라벨링이라 적합이 불변).
+
+(2) *scale 불일치*: 공개 시각은 frame id에 정확히 선형(잔차 33 ns), `t(j)=0.033367703956·j+10.551275280`.
+이를 `scale·(j+origin)·period+shift`로 놓고 6개 카메라 행을 모두 시험하면, 기울기는 **cam1의 scale**과
+5.9e-10까지 일치(다른 카메라는 2.1e-6 이상 차이)하고, 절편은 **cam0의 shift**에서만 정수에 가까운
+origin(1.9486, 정수 2에서 0.051프레임)을 준다. origin=2일 때 함의되는 shift는 10.48454 s로 현재
+10.48625553 s와 1.7 ms 차이다. 갱신 전 표가 반올림 `1.000 / 10.48`로 표시됐던 것과도 맞는다(origin 1이나
+3이면 10.518/10.451이라 10.48로 반올림되지 않는다). 즉 **시각 파일이 계수 개정보다 앞선 것**이지 손상이
+아니다. cam0 현재 계수로 재계산하면 origin=2에서 겹침 구간 −3.0…+1.7 ms(±0.1프레임 미만), origin 0/1/3에서는
+1–2프레임. scale 차이 단독 기여는 겹침 전체에서 4.7 ms 이하다.
+
+1프레임 시각 오차는 영상에서 중앙값 2.2 px, p95 7.6 px, 최대 20.3 px 변위를 만든다. 재투영 게이트가 4 px
+RMS이므로 **검토된 박스가 생기면 정렬을 판별할 수 있다.** 그때까지 **fail-closed**로 남긴다.
 
 36개 pilot 프레임을 `--allow-count-mismatch`로 추출(정렬 미해결 플래그 기록)하고, 사람 검토 패널(GT 거리·
 방위·고도·속도, ±3프레임 motion cue, 확대 crop, contact sheet)과 빈 `review_template.csv`를 만들었다.
@@ -16866,5 +16879,8 @@ Sony5100 보정 후보: 해상도·fps는 일치하나 모델/렌즈 태그 없�
 박스가 하나도 없는 지금 임계(RMS<4 px, 중심 2 m, ≥6 박스, 정렬 −3…+3프레임)와 함께 고정했다.
 TrackingStatus는 Leica 토탈스테이션 상태(0 정상, 1 경고), 자세는 ArduPilot EKF body→NED(위치는 ENU).
 
-디스크 4.0 GB뿐이라 conda tarball 캐시·pip 캐시만 비웠다(데이터·결과·run 삭제 없음). 테스트 1283개 통과.
+디스크 4.0 GB뿐이라 conda tarball 캐시·pip 캐시만 비웠다(데이터·결과·run 삭제 없음). 이후 감사에서 이전
+세션이 이미 같은 영상을 `datasets/eth_ds5_extracted_cam0/`에 풀어놨음을 발견했다 — 이번 추출본
+`datasets/eth_ds5_cam0_extracted/`와 바이트 동일(SHA-256 `d3e6727e…`)이라 4.3 GB가 중복이다. 삭제하지 않고
+보고만 한다. 테스트 1289개 통과(ETH 모듈은 45개로 증가).
 E3(오차 모델)는 시작하지 않았다. 다음: 사람 검토 → 재투영 검사 → 통과 시에만 dense segment 등록.

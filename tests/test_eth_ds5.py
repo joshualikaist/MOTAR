@@ -234,6 +234,58 @@ class TimestampTest(unittest.TestCase):
         self.assertAlmostEqual(fit["intercept_minus_cam0_shift_frames"], 2., places=3)
         self.assertLess(fit["max_abs_residual_s"], 1e-9)
 
+    def test_provenance_detects_split_scale_and_shift_rows(self):
+        """The real file's slope is cam1's scale while its origin only fits cam0's shift."""
+        sync = {0: (1.000004517, 10.48625553), 1: (1.000031087, 7.72945441), 2: (0.997549813, 9.80204540)}
+        slope, intercept = 0.033367703956, 10.551275280
+        r = VERIFY.stamp_provenance(slope, intercept, sync, self.PERIOD)
+        self.assertEqual(r["scale_matches_camera"], 1)
+        self.assertEqual(r["origin_matches_camera"], 0)
+        self.assertFalse(r["single_row_explains_file"])
+        cam0 = r["cameras"]["0"]
+        self.assertEqual(cam0["nearest_integer_origin"], 2)
+        self.assertLess(cam0["origin_distance_to_integer"], 0.06)
+        self.assertLess(abs(cam0["shift_revision_needed_s"]), 0.002)
+
+    def test_provenance_accepts_a_self_consistent_table(self):
+        sync = {0: (1.000004517, 10.48625553), 1: (1.000031087, 7.72945441)}
+        slope = 1.000004517 * self.PERIOD
+        intercept = 10.48625553 + 2 * slope
+        r = VERIFY.stamp_provenance(slope, intercept, sync, self.PERIOD)
+        self.assertTrue(r["single_row_explains_file"])
+        self.assertEqual(r["scale_matches_camera"], 0)
+        self.assertEqual(r["cameras"]["0"]["nearest_integer_origin"], 2)
+
+    def test_alignment_candidates_stay_unresolved(self):
+        edits = [{"handler": "soun", "edits": [{"media_time": 0, "media_time_frames": 0.}]},
+                 {"handler": "vide", "edits": [{"media_time": 1001, "media_time_frames": 1.0}]}]
+        r = VERIFY.index_alignment_candidates(edits, 20970, 20969)
+        self.assertEqual(r["missing_rows"], 1)
+        self.assertFalse(r["resolved"])
+        supported = [c for c in r["candidates"] if c["supported_by_edit_list"]]
+        self.assertEqual([c["container_index_of_frame_id"] for c in supported], ["frame_id"])
+        self.assertEqual(len(r["candidates"]), 3)
+
+    def test_alignment_candidate_unsupported_without_a_video_edit(self):
+        r = VERIFY.index_alignment_candidates([{"handler": "vide", "edits": []}], 20970, 20969)
+        self.assertIsNone(r["video_edit_list_frames"])
+        self.assertFalse(any(c["supported_by_edit_list"] for c in r["candidates"]))
+
+    def test_video_edit_frames_ignores_other_tracks(self):
+        tracks = [{"handler": "soun", "edits": [{"media_time": 0, "media_time_frames": 0.}]},
+                  {"handler": "vide", "edits": [{"media_time": 1001, "media_time_frames": 1.0}]}]
+        self.assertEqual(VERIFY.video_edit_frames(tracks), 1.0)
+        self.assertIsNone(VERIFY.video_edit_frames([{"handler": "soun", "edits": [{"media_time": 5, "media_time_frames": 5.}]}]))
+
+    def test_edit_lists_parsed_per_track_from_the_real_file(self):
+        video = Path("/home/fair/workspaces/aerial_gym_ws/datasets/eth_ds5_cam0_extracted/cam0.mp4")
+        if not video.is_file():
+            self.skipTest("extracted cam0.mp4 unavailable")
+        tracks = VERIFY.edit_list_offsets(video)
+        self.assertEqual([t["handler"] for t in tracks], ["vide", "soun", "meta"])
+        self.assertEqual(VERIFY.video_edit_frames(tracks), 1.0)
+        self.assertEqual([t["edits"][0]["media_time"] for t in tracks if t["handler"] != "vide"], [0, 0])
+
     def test_calibration_candidate_never_validated_by_metadata(self):
         r = VERIFY.calibration_candidate_check({"width": 1920, "height": 1080, "avg_frame_rate": "30000/1001"},
                                                {"encoder": "AVC Coding", "com.apple.quicktime.model": "X"},

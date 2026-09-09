@@ -67,11 +67,16 @@ PYTHONNOUSERSITE=1 /home/fair/miniconda3/envs/aerialgym/bin/python -m unittest d
 Receipts: [results/eth_ds5_intake_2026-09-10/README.md](../../results/eth_ds5_intake_2026-09-10/README.md).
 
 - Extraction: cam0.mp4 4,520,030,301 B, 7-Zip CRC OK, decoded fully (20970 frames, 1920x1080, 30000/1001).
-- **Open blocker A — frame/time alignment**: the published timestamp file has 20969 rows for 20970
-  container frames; it was produced by MATLAB VideoReader `CurrentTime` (next-frame time) on a file
-  whose video track has a one-frame edit list, and its slope equals cam1's revised `Time_scale`, not
-  cam0's. Row-to-frame mapping is uncertain by 1–3 frames; the scale discrepancy is ≤ 4.7 ms inside
-  the pose overlap. Pilot images were rendered under an explicit `UNRESOLVED_count_mismatch` flag.
+- **Open blocker A — frame/time alignment (root cause found, mapping still open)**: the video track's
+  edit list starts one frame into the media (audio and metadata start at zero), which is exactly the
+  missing row; ffmpeg and OpenCV keep that frame (20970 decoded with and without `-ignore_editlist`),
+  MATLAB's `readFrame` loop did not. Three whole-frame mappings survive (`frame_id`, `frame_id - 1`,
+  `frame_id + 1`) and timestamps cannot separate them. The published stamps also carry cam1's
+  `Time_scale` with cam0's `Time_shift`, because they were committed 2021-03-08 and the coefficient
+  table was revised 2022-02-07 without regenerating them; at the favoured frame origin of 2 the
+  revision is worth −3.0 to +1.7 ms, and the integer origin itself is worth at most ~2 frames. One
+  frame of error displaces drone0 by 2.2 px median / 7.6 px p95, which the 4 px reprojection gate can
+  separate. Pilot images were rendered under an explicit `UNRESOLVED_count_mismatch` flag.
 - **Open blocker B — identity**: 36 review panels, GT geometry and motion cues are ready; no box exists.
 - **Open blocker C — calibration**: resolution/FPS match only. `tools/check_eth_ds5_reprojection.py`
   (rotation-only Kabsch fit + PnP centre vs surveyed cam0 position, shifts −3…+3 frames) decides after
