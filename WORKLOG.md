@@ -16843,3 +16843,28 @@ Anti-UAV 계열·ARD-MAV·Det-Fly·NPS는 거리 GT 없음 확인. Svanström은
 
 **비용 0으로 얻은 것**: 크기 기반 추정에서 `σ_Z/Z = σ_w/w`, `σ_Z = Z²·σ_w/(f·W)`. 거리 오차는
 거리의 제곱으로 자라고, 이미 가진 σ_w가 곧 1차 range 오차 모델이다.
+
+## 2026-09-10 ETH ds5 cam0 E1–E2: 압축 해제·영상 무결성·검토 자료 준비 (gate 미통과)
+
+cam0 분할 압축본 43개(4,471,880,421 B)를 p7zip 16.02로 `datasets/eth_ds5_cam0_extracted/cam0.mp4`
+(4,520,030,301 B, CRC OK, SHA-256 `d3e6727e…`)에 풀었다. h264 1920×1080, 30000/1001 fps,
+컨테이너 패킷 20970 = 전체 디코딩 20970 = nb_frames. **그러나 공개 `cam0_frame_ts.txt`는 20969행**이다.
+
+원인 조사(upstream `drone-tracking-toolkits/codes/postprocess/signal/video_ts.m`): MATLAB `VideoReader`의
+`readFrame` 루프에서 `CurrentTime`(다음 프레임 시각)을 기록했고, mp4 비디오 트랙에 1프레임(1001/30000 s)
+edit list가 있어 백엔드에 따라 첫 프레임이 빠진다. 또 공개 시각은 frame id에 정확히 선형(잔차 3e-8 s)인데
+기울기 1.0000310876×주기가 **cam1의 Time_scale**과 일치하고 cam0(1.000004517)과는 다르다. sync 계수 파일은
+2022-02-07에 갱신됐고 시각 파일(2021-03-08)은 재생성되지 않았다. 결론: frame_id↔컨테이너 index 대응이
+1–3프레임(≤100 ms) 불확실, pose 겹침 구간 안에서 scale 차이는 ≤4.7 ms. **fail-closed**로 남긴다.
+
+36개 pilot 프레임을 `--allow-count-mismatch`로 추출(정렬 미해결 플래그 기록)하고, 사람 검토 패널(GT 거리·
+방위·고도·속도, ±3프레임 motion cue, 확대 crop, contact sheet)과 빈 `review_template.csv`를 만들었다.
+motion cue는 identity가 아니며 박스도 아니다. drone0 GT: ~30 s까지 cam0에서 5.8 m 지상, 이후 5–108 m.
+
+Sony5100 보정 후보: 해상도·fps는 일치하나 모델/렌즈 태그 없음, ds5 전용 보정 없음 → **미검증**.
+검토된 박스로 회전 전용 Kabsch 적합 + PnP 중심 vs 측량 위치를 검사하는 `check_eth_ds5_reprojection.py`를
+박스가 하나도 없는 지금 임계(RMS<4 px, 중심 2 m, ≥6 박스, 정렬 −3…+3프레임)와 함께 고정했다.
+TrackingStatus는 Leica 토탈스테이션 상태(0 정상, 1 경고), 자세는 ArduPilot EKF body→NED(위치는 ENU).
+
+디스크 4.0 GB뿐이라 conda tarball 캐시·pip 캐시만 비웠다(데이터·결과·run 삭제 없음). 테스트 1283개 통과.
+E3(오차 모델)는 시작하지 않았다. 다음: 사람 검토 → 재투영 검사 → 통과 시에만 dense segment 등록.

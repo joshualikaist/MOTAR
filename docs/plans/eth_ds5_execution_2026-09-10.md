@@ -1,0 +1,105 @@
+# ETH ds5: E1–E2 intake and conditional E3–E5 plan
+
+User authorized implementation after the high-level plan. Scope now: CPU-only intake,
+cam0 acquisition and annotation preparation. No detector fitting, P8/P9 changes, PPO,
+external messages or application forms. Existing NPS test/P10 receipts remain unchanged.
+
+## Frozen input and known limitations
+
+Upstream: https://github.com/CenekAlbl/drone-tracking-datasets
+commit `2c857c97be71834d0791ae8ee4984ffb62b7680a`, CC BY-NC-SA 4.0 (retain both licenses).
+Pose applies to Pixhawk drone0, not the other DJI drones. Root Sony5100 calibration
+is a candidate for cam0, not automatically a validated ds5 calibration. Match resolution,
+crop, lens and reprojection; resolution equality alone does not prove compatibility.
+
+Published project-time frame timestamps must NOT receive the sync affine transform again.
+Pose support ends near 187.6 s; video timestamps extend near 710.2 s. Use their intersection,
+then quality filters, not the whole video. Record status counts without assuming 0/1 means
+valid/invalid. Verify the upstream processing code and attitude/frame conventions first.
+Do not interpolate across long gaps or extrapolate outside pose support.
+
+## Execution and gates
+
+| Stage | Output | Gate |
+|---|---|---|
+| E1 | Pinned files, hashes, schema/time-support audit | Source integrity passes; unresolved scientific checks remain explicit |
+| E2 | cam0 archives; deterministic pilot annotation queue; reviewed drone0 boxes | Identity, visibility, annotation quality and camera compatibility verified |
+| E3 | Separate detector-box error and pose/viewpoint-associated size variation | Preregister estimator, quality filters, time splits and exclusions before fitting |
+| E4 | Range model including bias and temporal dependence | Held-out continuous segments; uncertainty includes annotation/GT limits |
+| E5 | New versioned P9 range arm and frozen-policy evaluation | Injection validation and separate experiment preregistration; no automatic PPO training |
+
+The initial queue samples every 150 frames WITHIN temporal overlap for feasibility only.
+It is not a train/test split or a representative error estimate. Every row initially has
+null box, unverified identity and measurement_eligible=false. No detector output becomes GT.
+Dense continuous segments for E3 are selected and registered later, before error inspection.
+
+Separate camera-to-target slant range from optical-axis depth. Analyze viewing direction
+relative to body orientation, not absolute RPY alone. Do not double-count detector error when
+combining an end-to-end ETH range model with NPS measurements. One flight/multiple views are
+not independent flight replications. Fixed-camera ETH does not validate airborne-camera transfer.
+
+## Commands
+
+Metadata and pending annotation queue (standard-library Python; no GPU):
+
+```bash
+PYTHONNOUSERSITE=1 /home/fair/miniconda3/envs/aerialgym/bin/python tools/prepare_eth_ds5.py \
+  --output /home/fair/workspaces/aerial_gym_ws/datasets/eth_ds5 \
+  --report results/eth_ds5_intake_2026-09-10/receipt.json
+```
+
+Add `--video` to acquire cam0's 43 split-archive files (~4.47 GB). The tool reserves an
+additional archive-sized extraction budget plus 2 GiB headroom and never deletes user files.
+Downloads resume only with matching HTTP Content-Range; corrupt files are preserved and refused.
+All completed files are verified against Git blob SHA-1 and recorded with SHA-256.
+An interrupted intake can rerun; no report claims complete until all requested files verify.
+
+Extract with a split-ZIP-capable tool into a NEW external directory, validate archive members
+before extraction, then verify video dimensions/FPS/frame count against timestamps. Extraction
+and frame decoding do not imply calibration or GT acceptance. Do not clone the whole dataset.
+
+```bash
+PYTHONNOUSERSITE=1 /home/fair/miniconda3/envs/aerialgym/bin/python -m unittest discover -s tests -p 'test_eth_ds5.py'
+```
+
+## E2 status (2026-09-10, after extraction)
+
+Receipts: [results/eth_ds5_intake_2026-09-10/README.md](../../results/eth_ds5_intake_2026-09-10/README.md).
+
+- Extraction: cam0.mp4 4,520,030,301 B, 7-Zip CRC OK, decoded fully (20970 frames, 1920x1080, 30000/1001).
+- **Open blocker A — frame/time alignment**: the published timestamp file has 20969 rows for 20970
+  container frames; it was produced by MATLAB VideoReader `CurrentTime` (next-frame time) on a file
+  whose video track has a one-frame edit list, and its slope equals cam1's revised `Time_scale`, not
+  cam0's. Row-to-frame mapping is uncertain by 1–3 frames; the scale discrepancy is ≤ 4.7 ms inside
+  the pose overlap. Pilot images were rendered under an explicit `UNRESOLVED_count_mismatch` flag.
+- **Open blocker B — identity**: 36 review panels, GT geometry and motion cues are ready; no box exists.
+- **Open blocker C — calibration**: resolution/FPS match only. `tools/check_eth_ds5_reprojection.py`
+  (rotation-only Kabsch fit + PnP centre vs surveyed cam0 position, shifts −3…+3 frames) decides after
+  review; thresholds were fixed before any box: pixel RMS < 4 px, centre < 2 m, ≥ 6 boxes.
+- TrackingStatus = Leica TPS status (0 fine, 1 warning), attitude = ArduPilot EKF body→NED; still
+  uninterpreted in any measurement. E3 not started.
+
+Additional commands:
+
+```bash
+PY="env PYTHONNOUSERSITE=1 /home/fair/miniconda3/envs/aerialgym/bin/python"; FF=/home/fair/miniconda3/envs/aerialgym/bin
+DS=/home/fair/workspaces/aerial_gym_ws/datasets/eth_ds5; V=/home/fair/workspaces/aerial_gym_ws/datasets/eth_ds5_cam0_extracted
+R=results/eth_ds5_intake_2026-09-10
+$PY tools/extract_eth_ds5.py --dataset $DS --receipt $R/video_receipt.json --output $V --sevenzip <7za>
+$PY tools/verify_eth_ds5_video.py --video $V/cam0.mp4 --extraction-receipt $V/extraction_receipt.json --dataset $DS \
+  --calibration $DS/calibration/sony5100/sony5100.json --output $R/video_verification --ffprobe $FF/ffprobe --ffmpeg $FF/ffmpeg
+$PY tools/prepare_eth_ds5_frames.py --video $V/cam0.mp4 --queue $R/annotation_queue.json --intake-receipt $R/video_receipt.json \
+  --calibration $DS/calibration/sony5100/sony5100.json --output $V/pilot_frames --ffprobe $FF/ffprobe --allow-count-mismatch
+$PY tools/prepare_eth_ds5_review.py --pilot-dir $V/pilot_frames --video $V/cam0.mp4 --dataset $DS --output $V/review_material
+$PY tools/check_eth_ds5_reprojection.py --review-csv <filled review_template.csv> --dataset $DS \
+  --calibration $DS/calibration/sony5100/sony5100.json --output $R/reprojection_check   # after human review
+```
+
+## Schedule / fallback
+
+E1: 0.5–1 day; E2–E4: provisional 3–6 days, revised after annotation feasibility.
+E5 GPU budget is not fixed yet. If calibration/identity/synchronization cannot be validated,
+stop quantitative pose-error claims. Author contact requires separate approval. In parallel,
+the already-planned P8-support versus simulator-size audit can proceed under its own contract.
+Missing range errors do NOT mathematically establish that previous P10 loss is a lower bound;
+that monotonicity has to be tested, not assumed.

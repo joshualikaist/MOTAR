@@ -7,6 +7,8 @@
 
 ## 먼저 읽을 것
 
+ETH 자세·거리 측정 준비: [E1–E5 실행 계획](plans/eth_ds5_execution_2026-09-10.md).
+
 실사 인지 최신 구현: [streaming API](specs/perception_streaming_v1.md),
 [P7e/streaming 계약](plans/perception_p7e_streaming_2026-09-08.md),
 [결과와 미통과 gate](../results/perception_p7e_streaming_2026-09-08/README.md).

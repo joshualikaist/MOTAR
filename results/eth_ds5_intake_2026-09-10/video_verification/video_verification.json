@@ -1,0 +1,142 @@
+{
+  "blockers": [
+    "published timestamp rows (20969) != container frames (20970); frame_id<->container index alignment unresolved by one frame",
+    "published stamp slope matches cam1 Time_scale, not cam0; provenance of the published stamps unresolved"
+  ],
+  "calibration_candidate": {
+    "calibration_validated": false,
+    "camera_model_tags": {
+      "encoder": "AVC Coding"
+    },
+    "fps": 29.97002997002997,
+    "fps_matches": true,
+    "lens_zoom_crop_verified": false,
+    "note": "Equality of resolution/FPS is necessary, not sufficient. Lens, zoom, crop mode and the calibration session are unknown; reprojection of reviewed drone0 boxes is required.",
+    "resolution": [
+      1920,
+      1080
+    ],
+    "resolution_matches": true
+  },
+  "extraction_receipt_sha256": "746879e2ce93085a9ef8dd4116259dacd639a0c00473bbe22708185a202acef5",
+  "format_tags": {
+    "compatible_brands": "XAVCmp42iso2",
+    "creation_time": "2021-01-19T13:59:29.000000Z",
+    "encoder": "AVC Coding",
+    "handler_name": "Video Media Handler",
+    "language": "und",
+    "major_brand": "XAVC",
+    "minor_version": "16785407",
+    "vendor_id": "[0][0][0][0]"
+  },
+  "frame_count_matches_published": false,
+  "frame_counts": {
+    "container_packets": 20970,
+    "declared_nb_frames": 20970,
+    "decoded_frames": 20970,
+    "published_timestamp_rows": 20969
+  },
+  "published_timestamp_fit": {
+    "camera_scales": {
+      "0": 1.000004517,
+      "1": 1.000031087,
+      "2": 0.997549813,
+      "3": 1.000049205,
+      "4": 1.000033223,
+      "5": 1.000016386
+    },
+    "closest_camera_scale": 1,
+    "intercept_minus_cam0_shift_frames": 1.9485832865344408,
+    "intercept_s": 10.551275280238315,
+    "max_abs_residual_s": 3.333703091357165e-08,
+    "slope_over_nominal_period": 1.0000310875866347,
+    "slope_s_per_frame": 0.03336770395580738
+  },
+  "runtime": {
+    "executable": "/home/fair/miniconda3/envs/aerialgym/bin/python",
+    "ffprobe": "ffprobe version 7.1 Copyright (c) 2007-2024 the FFmpeg developers",
+    "python": "3.8.20"
+  },
+  "source_commit": "2c857c97be71834d0791ae8ee4984ffb62b7680a",
+  "status": "VIDEO_DECODES_TIMESTAMP_MAPPING_UNRESOLVED",
+  "stream": {
+    "avg_frame_rate": "30000/1001",
+    "bit_rate": "49896799",
+    "codec_name": "h264",
+    "duration": "699.699000",
+    "height": 1080,
+    "nb_frames": "20970",
+    "pix_fmt": "yuv420p",
+    "profile": "High",
+    "r_frame_rate": "30000/1001",
+    "time_base": "1/30000",
+    "width": 1920
+  },
+  "sync_cam0": {
+    "scale": 1.000004517,
+    "shift_s": 10.48625553
+  },
+  "timestamp_consistency": {
+    "alignments": {
+      "packet_offset_0": {
+        "raw_camera_time": {
+          "drift_last_minus_first_s": 0.02174957870190397,
+          "max_abs_jitter_after_offset_s": 0.02174957870190397,
+          "offset_first_row_frames": 317.2220664594036,
+          "offset_first_row_s": 10.5846429508621,
+          "within_half_frame": false
+        },
+        "synchronised_affine": {
+          "drift_last_minus_first_s": 0.018589339751864387,
+          "max_abs_jitter_after_offset_s": 0.018589339751864387,
+          "offset_first_row_frames": 2.9486739519111302,
+          "offset_first_row_s": 0.0983874208621014,
+          "within_half_frame": false
+        }
+      },
+      "packet_offset_1": {
+        "raw_camera_time": {
+          "drift_last_minus_first_s": 0.021750578701903223,
+          "max_abs_jitter_after_offset_s": 0.021750578701903223,
+          "offset_first_row_frames": 316.2220564693936,
+          "offset_first_row_s": 10.5512759508621,
+          "within_half_frame": false
+        },
+        "synchronised_affine": {
+          "drift_last_minus_first_s": 0.01859033975641644,
+          "max_abs_jitter_after_offset_s": 0.01859033975641644,
+          "offset_first_row_frames": 1.9486594448560166,
+          "offset_first_row_s": 0.06502027014336242,
+          "within_half_frame": false
+        }
+      }
+    },
+    "mp4_edit_lists": [
+      {
+        "media_time": 1001,
+        "media_time_frames_at_30000": 1.0,
+        "segment_duration": 62972910
+      },
+      {
+        "media_time": 0,
+        "media_time_frames_at_30000": 0.0,
+        "segment_duration": 62972370
+      },
+      {
+        "media_time": 0,
+        "media_time_frames_at_30000": 0.0,
+        "segment_duration": 62972910
+      }
+    ],
+    "packet_count": 20970,
+    "published_step_s": {
+      "expected_cam0_scaled_period_s": 0.0333668173839,
+      "max": 0.033367737291086996,
+      "median": 0.03336773729000697,
+      "min": 0.03336763728589176
+    },
+    "row_count_published": 20969
+  },
+  "tool_sha256": "db6e221faa92e189c193719eb7b71f9139403b851ff847c64f988c94f748e33e",
+  "video_sha256": "d3e6727e414b5b6a9c758a1a1f1c81effeb747372a90c9ef50acc5a5688c1ec4"
+}
