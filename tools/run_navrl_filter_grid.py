@@ -59,7 +59,12 @@ GOVERNOR_ENV = {
     "NAVRL_SPEED_GOVERNOR_BRAKE_MPS2": "2.0",
     "NAVRL_SPEED_GOVERNOR_REACTION_S": "0.1",
 }
-ALLOWED_ENV_PREFIXES = ("NAVRL_SPEED_GOVERNOR",)   # a cell may only vary the governor
+# A cell may vary the governor, and from P10 the perception-error arm. Both are experiment axes
+# that a spec is allowed to move; everything else about the condition stays fixed, which is what
+# stops a sweep from silently comparing two different tasks. P10 needs NAVRL_P9_* because its
+# design is 4 arms over {source, adapted} x {clean, empirical error}
+# (docs/plans/perception_p9_p10_execution_2026-09-09.md).
+ALLOWED_ENV_PREFIXES = ("NAVRL_SPEED_GOVERNOR", "NAVRL_P9_")
 NAME_RE = r"^[A-Za-z0-9_.+-]{1,80}$"
 CONTRACTS = ("ref5in", "v2")
 # The ep25000 lineage, byte-identical to eval_navrl_v2_ep25000_arc_attribution.sh lines 50-66.
@@ -114,7 +119,8 @@ def validate_spec(spec):
         env = cell.get("env", {})
         _require(isinstance(env, dict) and "NAVRL_SPEED_GOVERNOR" in env, f"{name}: env.NAVRL_SPEED_GOVERNOR required")
         for key, value in env.items():
-            _require(key.startswith(ALLOWED_ENV_PREFIXES), f"{name}: {key} is not a governor knob; only the governor may vary")
+            _require(key.startswith(ALLOWED_ENV_PREFIXES),
+                     f"{name}: {key} is neither a governor knob nor a P9 error-arm knob; only the governor may vary")
             _require(isinstance(value, str), f"{name}: env values must be strings")
     _require(isinstance(spec.get("seed"), int), "spec.seed must be an int")
     return spec
