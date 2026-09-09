@@ -84,5 +84,6 @@ ep25000 정책의 capture가 이 평가에서 4.6 pp 떨어졌고, 1,000 epoch �
 - **시드 일반적 PPO 주장 아님.** 학습 시드는 811 하나다. 평가 시드 2개는 평가 분산만 다룬다.
 - 사후 pass margin 없음. 위 문턱은 계약서에 등록된 것이고 결과를 본 뒤 바꾸지 않았다.
 - 실기 성능 아님. P9는 NPS validation의 단일-GT 1,310프레임에서 보정한 pixel/시간 오차 모델이다.
-  metric range·confidence 오차는 보정하지 않았다. P7c 최종 NPS test 평가는 아직 실행하지 않았다.
+  metric range·confidence 오차는 보정하지 않았다. P7c 최종 NPS test 평가는 이 결과 확정 뒤 S4에서
+  한 번 실행됐고(utility 0.4701, `results/perception_s4_2026-09-09/`), 그 결과로 P8/P9를 재보정하지 않았다.
   NPS test는 앞서 P5에서, Det-Fly test는 P3-F에서 사용된 이력이 있으므로 완전 미열람 test로 부르지 않는다.
