@@ -15,6 +15,7 @@ from perception_temporal import (
     load_aligned_motion_records, load_aligned_records, parameter_count,
 )
 from train_perception_temporal import association_metrics, infer_dataset
+from runtime_fingerprint import runtime_fingerprint
 
 
 def parse_args():
@@ -104,6 +105,8 @@ def main():
             }))
     report = {
         "schema_version": 1,
+        "runtime": runtime_fingerprint(),
+        "test_used": manifest_meta["split"] == "test",
         "experiment": "motar.p6-p7.frozen-temporal-evaluation.v1",
         "completed_utc": datetime.now(timezone.utc).isoformat(),
         "split": manifest_meta["split"],
@@ -137,6 +140,8 @@ def main():
     report_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
     receipt = {
         "schema_version": 1,
+        "runtime": report["runtime"],
+        "test_used": report["test_used"],
         "report_sha256": sha256_file(report_path),
         "predictions_sha256": sha256_file(raw_path),
         "checkpoint_sha256": checkpoint_sha,

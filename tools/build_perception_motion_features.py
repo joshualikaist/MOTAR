@@ -63,6 +63,8 @@ def parse_args():
     parser.add_argument("--candidates", type=Path, required=True)
     parser.add_argument("--candidate-receipt", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--frozen-test-contract", type=Path,
+                        help="Explicit final-test execution contract after architecture freeze")
     return parser.parse_args()
 
 
@@ -247,7 +249,10 @@ def main():
         raise SystemExit("[motion] refusing existing output/receipt")
     aligned, manifest_meta, candidate_meta = load_aligned_records(
         args.manifest, args.manifest_receipt, args.candidates, args.candidate_receipt)
-    if manifest_meta["split"] not in ("train", "val"):
+    test_open = manifest_meta["split"] == "test" and args.frozen_test_contract is not None
+    if args.frozen_test_contract is not None and not args.frozen_test_contract.is_file():
+        raise SystemExit("[motion] final-test contract missing")
+    if manifest_meta["split"] not in ("train", "val") and not test_open:
         raise SystemExit("[motion] only train/validation are allowed before architecture freeze")
     dataset_root = Path(manifest_meta["dataset"])
     config = json.loads(json.dumps(DEFAULT_CONFIG))
@@ -314,7 +319,10 @@ def main():
         "config": config,
         "output_sha256": sha256_file(output),
         "elapsed_seconds": time.monotonic() - began,
-        "test_status": "NOT_READ_OR_PROCESSED",
+        "test_status": "FINAL_FROZEN_EVALUATION" if test_open else "NOT_READ_OR_PROCESSED",
+        "test_used": test_open,
+        "frozen_test_contract_sha256": (
+            sha256_file(args.frozen_test_contract) if test_open else None),
     }
     receipt_path.write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n")
     print("[motion] PASS: %d frames, GMC %.4f -> %s" % (
