@@ -260,8 +260,8 @@
         train 13,510 frames/35 clips에서 GRU T=8과 Transformer T=16을 학습했습니다. validation
         utility <code>(hit − proxy false lock) / frames</code>는 CNN-only 0.6655, KF 0.2639,
         GRU 0.6315, Transformer <strong>0.6725</strong>여서 Transformer를 선택했습니다. CNN보다 hit는
-        14 frame 적고 proxy false lock은 30 frame 적습니다. validation 7 clips의 작은 차이이며 NPS test는
-        아직 실행하지 않았습니다. 실제 ReID·FTLR·ID-switch 개선 주장도 아닙니다.
+        14 frame 적고 proxy false lock은 30 frame 적습니다. validation 7 clips의 작은 차이입니다(NPS test는
+        파이프라인 확정 뒤 S4에서 한 번만 열었습니다 &mdash; 아래). 실제 ReID·FTLR·ID-switch 개선 주장도 아닙니다.
         <a href="../../results/perception_temporal_p6_p7_2026-09-08/README.md">P6/P7 결과·hash</a></p>
       <p><strong>Streaming 파이프라인(2026-09-09).</strong> 프레임 &rarr; detector &rarr; motion/GMC &rarr;
         시간 선택기를 직렬로 묶어 decode 포함 <strong>14.9 FPS</strong>로 돕니다(detector 26.4 ms,
@@ -276,9 +276,40 @@
       <p><strong>병목은 GMC가 아니라 광류입니다.</strong> motion 단계를 분해하면 Farneb&auml;ck 광류가
         <strong>97.7 %</strong>(36.58 ms)이고 GMC RANSAC은 0.17 ms입니다. 광류는 회색조 두 장에만
         의존하고 후보는 그 뒤에 들어오므로 GPU 검출기와 겹칠 수 있습니다. 프로토타입 실측은 순차
-        112.3 ms 대 겹침 74.7 ms이며 flow 배열은 비트 동일이었습니다. 적용이 다음 단계이고,
-        &ldquo;비트 동일&rdquo;이라는 표현은 2,296프레임 전체가 rank&middot;motion feature&middot;하위 지표
-        모두에서 일치할 때만 쓸 것입니다.</p>
+        112.3 ms 대 겹침 74.7 ms이며 flow 배열은 비트 동일이었습니다.</p>
+      <p><strong>S1 겹침 적용 완료(2026-09-09).</strong> validation 2,296프레임 전체에서 직렬·겹침 각 3회 모두
+        candidate&middot;rank&middot;motion feature 바이트와 하위 지표가 정확히 일치했습니다. decode 포함 mean
+        67.91 &rarr; 44.49 ms, 3회 평균 <strong>14.72 &rarr; 22.48 FPS</strong>입니다. 그래서 이 입력과 기록된
+        runtime에 한해 &ldquo;출력 비트 동일&rdquo;을 씁니다.
+        <a href="../../results/perception_streaming_overlap_s1_2026-09-09/README.md">결과&middot;hash</a></p>
+      <p><strong>P8 오차 모델 &rarr; P9 주입기 &rarr; P10 재적응(2026-09-09).</strong> 시뮬레이터가 받는 것은
+        가우시안이 아니라 측정 분포입니다. P8은 단일-GT 1,310프레임에서 크기별 중심 오프셋, hit/false-lock/no-lock
+        3-state 전이, 중도절단 miss burst, latency를 쟀습니다(다중-GT 986프레임은 크기 조건부 집계에서 제외,
+        &lt;8 px와 &ge;64 px는 미지원으로 명시). P9는 그 분포를 주입하는 모듈이며 사전등록한 적합도 gate
+        (occupancy TV &le; 0.05, transition max &le; 0.06, offset KS &le; 0.1, latency KS &le; 0.05)를
+        <strong>세 번째 버전에서 통과</strong>했습니다 &mdash; v1은 구현 결함 둘, v2는 유한표본 정상분포 문제였고
+        둘 다 삭제하지 않고 <code>results/perception_p9_v{1,2}_failed_2026-09-09/</code>에 보존했습니다.
+        50&ndash;103 ms 간격의 전이확률은 <code>p_stay(dt) = p_stay(ref_dt)^(dt/ref_dt)</code>로 시뮬 스텝에 맞춥니다.</p>
+      <div class="scrollx"><table>
+        <thead><tr><th>P10 추정량 (평가 시드 541+547 결합, 셀당 ~2,050 에피소드)</th><th>capture</th><th>95 % CI</th></tr></thead>
+        <tbody>
+          <tr><td>측정 오차가 동결 ep25000에 물리는 비용</td><td><strong>&minus;4.57 pp</strong></td><td>[&minus;6.32, &minus;2.82]</td></tr>
+          <tr><td>측정 오차가 재적응 정책에 물리는 비용</td><td>&minus;1.90 pp</td><td>[&minus;3.65, &minus;0.16]</td></tr>
+          <tr><td><strong>주 추정량</strong> 재적응 &minus; 동결, 둘 다 오차 하</td><td>+1.41 pp</td><td>[&minus;0.38, +3.21]</td></tr>
+          <tr><td>clean 유지도 재적응 &minus; 동결, 둘 다 clean</td><td>&minus;1.25 pp</td><td>[&minus;2.95, +0.44]</td></tr>
+        </tbody>
+      </table></div>
+      <p>0을 제외한 것은 두 &ldquo;비용&rdquo;뿐입니다. 주 추정량도, 두 비용의 차이도 0을 포함합니다.
+        학습 시드가 811 하나이므로 기술통계이며 시드 일반적 PPO 주장이 아닙니다. 평가 중 P9 모델 SHA를
+        수치 config-drift 루프에 넣어 P9 학습 체크포인트가 로드 즉시 죽는 결함을 찾아 고쳤고, 회귀 테스트를
+        allow-list로 뒤집은 뒤 8셀을 전부 재실행했습니다.
+        <a href="../../results/perception_p10_2026-09-09/README.md">P10 8 cell&middot;판정</a></p>
+      <p><strong>S4 봉인 test 1회 개봉(2026-09-09).</strong> 동결한 P7c v2 선택기를 NPS test 1,725프레임/8영상에서
+        한 번 평가했습니다. hit <strong>59.19 %</strong>, 선택 중 false lock 17.06 %, no-lock 28.64 %, utility
+        <strong>0.4701</strong>로 validation 0.6855보다 0.2154 낮습니다. 다른 영상이라 대응 효과 추정이 아니라
+        <strong>일반화 경고</strong>이고, 본 뒤 재조정하지 않았습니다. 이 test는 P5 KF 기각 때 한 번 열렸으므로
+        완전히 미관측인 holdout은 아닙니다.
+        <a href="../../results/perception_s4_2026-09-09/README.md">S4 report&middot;receipt</a></p>
     </section>
 
     <section class="visual wrap" id="external-data" aria-labelledby="data-title">
@@ -348,9 +379,14 @@
           낮추지만 timeout이 2배, 3 m 미만 체류가 3배입니다. 그 계보에서 원호 기하(<code>dwa_arc</code>)는 안전을 더 주지 않고
           비용만 되돌립니다 &mdash; 원호의 crash 기여는 12개 CI 전부 0을 포함하고, 정지법칙 아래 timeout −9~−11 pp,
           개입률 −15~−25 pp, capture +11 pp를 회수합니다.</p>
-        <p><strong>어느 법칙이 옳은지는 정책이 무엇과 함께 학습됐는지가 정합니다.</strong> 같은 기체에서 riskcap을 학습 루프에 넣어
-          1,000 epoch 더 학습하면 정지법칙의 이득이 사라집니다(+0.48 pp [−1.82, +2.78], D4). 학습 루프의 필터 하나만 바꾼 대조라
-          기체·목표 거리·밀도·제동 가정이 모두 배제됩니다.</p>
+        <p><strong>"어느 법칙이 옳은지는 정책이 무엇과 함께 학습됐는지가 정한다"는 설명은 시드 반복에서 살아남지 못해 철회했습니다(2026-09-09).</strong>
+          학습 시드 197 하나(D4)에서는 riskcap을 학습 루프에 넣어 1,000 epoch 더 학습하면 정지법칙의 이득이 사라지는 듯했습니다
+          (+0.48 pp [−1.82, +2.78]). 사전등록한 재현(R-C, 학습 시드 233·239)의 예측은 riskcap과 함께 학습한 정책에서
+          stopcap−riskcap이 ±2 pp 안(CI 0 포함)이라는 것이었는데, 실측은 두 시드 모두 <strong>−8.59 / −7.17 pp로 CI가 0을 제외</strong>했고
+          거버너 없이 학습한 정책(−2.93 / −8.69 pp)과 다르지 않았습니다. 상호작용은 seed 233에서 반대 방향으로 유의(−5.65 [−9.01, −2.30]),
+          seed 239에서 불유의(+1.51 [−2.00, +5.03])입니다. 실행 전에 적어둔 0/2 규칙대로 C3를 철회하고
+          "이 계보에서 정지법칙의 capture 손해는 학습 시 거버너 선택과 무관하게 나타난다"로 대체합니다.
+          <a href="../../results/navrl_grid_r2_d4_trainseed_rep/README.md">R-C 8 cell·판정</a></p>
         <p><strong>계보를 넘어 살아남는 것은 원호 기하입니다.</strong> riskcap과 함께 학습된 정책(ep25000)을
           <strong>평가 시드 3개 × 밀도 5개</strong>에서 다시 재면 원호가 <strong>15/15 전부에서 crash 최저</strong>이고,
           결합 추정이 riskcap 대비 <strong>−1.49 pp [−1.90, −1.08]</strong>, 정지법칙 대비 −1.25 pp [−1.65, −0.85]입니다.
@@ -366,7 +402,7 @@
           205 bars capture 약 10 %, 나머지는 시간초과입니다. 폭은 정면 과잉개입과 측면 감시를 한 손잡이로 묶는데,
           원호는 선회 중 정면 먼 곳을 보지 않으므로 그 묶음을 푼다는 뜻입니다.
           아래 그림의 "정지여유 양수인데 악화"(15.95→21.31%)는 205 bars·ep25000·brake 2.96 조건입니다.
-          처방: <strong>필터 없이 학습하고, 배치할 때 넓힌 원호 튜브를 쓴다.</strong>
+          처방: <strong>배치할 때 넓힌 원호 튜브를 쓴다.</strong> 학습 시 필터 선택은 R-C 철회 이후 어느 방향으로도 처방하지 않습니다.
           표: <a href="../a7_arc_attribution_table.md"><code>docs/a7_arc_attribution_table.md</code></a>,
           판정 <a href="../plans/confirmation_phase_plan_2026-09-06.md"><code>docs/plans/confirmation_phase_plan_2026-09-06.md</code></a>.</p>
       </div>
@@ -406,10 +442,13 @@
             arc-clearance 속도 필터이고, 원호가 쓸고 지나가는 원판 안의 장애물을 모두 검출하지 못하는 반례가
             현재 소스에서 재현됩니다. A7의 "안전은 법칙이 산다"는
             70 bars·ref5in ep1900 두 시드의 추론 시점 결과이고, riskcap과 함께 학습된 ep25000에서는
-            성립하지 않습니다. 필터를 학습 루프에 넣은 재적응(A8·D4)까지 측정했으나 <strong>학습 시드가 1개</strong>라,
-            "동반학습이 법칙 이득을 지운다"는 그 특정 1,000 epoch가 아니라 동반학습 때문이라고 아직 단정할 수 없습니다.
+            성립하지 않습니다. 필터를 학습 루프에 넣은 재적응(A8·D4)에서 본 "동반학습이 법칙 이득을 지운다"는
+            학습 시드 2개를 더한 R-C에서 <strong>0/2로 재현 실패해 철회</strong>했습니다 &mdash; riskcap과 함께 학습한 정책도
+            정지법칙 아래 capture가 −7~−9 pp 떨어집니다. "riskcap 학습이 악화시킨다"는 반대 주장도 시드 간 방향이 갈려 하지 않습니다.
             원호 기하의 우위는 <strong>평가</strong> 시드 3개에서 재현됐지만 정책은 여전히 한 계보이며,
-            모든 수치는 시뮬레이션 전용입니다.</p>
+            모든 수치는 시뮬레이션 전용입니다. 인지 쪽에서는 P10 재적응의 주 추정량(+1.41 pp [−0.38, +3.21])이 0을 포함하고
+            학습 시드가 811 하나이므로 <strong>"재적응이 실사 오차에 강건하게 만든다"를 주장하지 않습니다</strong>; 봉인 test의
+            utility 0.4701은 validation 0.6855보다 낮고 다른 영상이라 대응 비교가 아닌 일반화 경고입니다.</p>
         </div>
       </div>
     </section>

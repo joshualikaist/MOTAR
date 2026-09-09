@@ -21,8 +21,8 @@ Two tracks run in parallel and are at different stages.
 
 | Track | Goal | State |
 |---|---|---|
-| **A — safety-filter diagnosis** | measure when and why a direction-preserving speed filter fails | core experiments complete; one training-seed replication left |
-| **B — real-imagery perception** | learn a detector on real air-to-air video, measure its error, inject that into the simulator | detector, association and conditional error measurement complete; injection next |
+| **A — safety-filter diagnosis** | measure when and why a direction-preserving speed filter fails | **complete**; the training-seed replication withdrew one claim (see below) |
+| **B — real-imagery perception** | learn a detector on real air-to-air video, measure its error, inject that into the simulator | **pipeline complete through PPO readaptation**; sealed test opened once; real-flight work not started |
 
 **Recent findings.**
 
@@ -46,6 +46,21 @@ Two tracks run in parallel and are at different stages.
 - **Conditional error calibration is measured.** Size-conditioned offsets, state transitions and
   timing use 1,310 single-GT validation frames. Another 986 frames contain multiple GT boxes;
   unsupported size/cadence regions remain explicit. [P8 artifacts and limits](results/perception_p8_2026-09-09/README.md).
+- **The measured perception error was injected into the simulator and costs the frozen policy
+  4.6 pp of capture.** The P9 injector passed its preregistered goodness-of-fit gate on the third
+  attempt (two failed versions are preserved, not deleted). Under it the frozen ep25000 policy
+  drops `−4.57 pp [−6.32, −2.82]` capture. One thousand epochs of readaptation (P10) moves the
+  primary estimand by `+1.41 pp [−0.38, +3.21]` — directionally recovering, not significant, one
+  training seed. [P9](results/perception_p9_2026-09-09/) · [P10](results/perception_p10_2026-09-09/README.md).
+- **The sealed NPS test was opened once.** The frozen P7c v2 selector scores utility **0.4701** on
+  1,725 test frames against 0.6855 on validation. These are different videos, so this is a
+  generalization warning, not a paired estimate; nothing was retuned afterwards.
+  [S4 report](results/perception_s4_2026-09-09/README.md).
+- **The co-adaptation claim did not survive seed replication and is withdrawn.** Two new training
+  seeds were run for the D4 2×2. The prediction was that a policy trained *with* the risk cap shows
+  no stopping-law penalty; instead both seeds show a penalty as large as the governor-free policy
+  (pooled `−7.87 pp [−9.66, −6.08]` vs `−5.46 [−7.10, −3.83]`). Per the preregistered 0/2 rule the
+  claim is withdrawn. [R-C results](results/navrl_grid_r2_d4_trainseed_rep/README.md).
 
 **What this project does not claim.** Real-flight performance, sim-to-real transfer, target
 identification, 30 FPS, or an assembled airframe. Every number here is simulation or software-only
@@ -172,16 +187,18 @@ to the same 1.2 m collapses capture to about 10% with the rest timing out. One k
 over-intervention to lateral coverage in a straight corridor; the arc does not look far ahead while
 turning, so the knob comes untied.
 
-**Which cap law is right depends on what the policy was trained with.** A policy trained without a
-governor is helped by the stopping-distance law (`−6.5 / −5.5 / −3.9 pp` crash against the risk
-cap). Put the risk cap in the training loop for 1,000 more epochs and that advantage is no longer
-detectable (`+0.48 pp [−1.82, +2.78]`). A small residual difference appears at 70 bars but does not
-survive a seed-level analysis (`−1.20 [−3.06, +0.66]`), so it is kept as an exploratory
-observation, not a prescription.
+**The "co-adaptation" explanation was tested and withdrawn.** On one training seed (D4, seed 197)
+a policy trained without a governor was helped by the stopping-distance law while a policy trained
+with the risk cap showed no detectable advantage (`+0.48 pp [−1.82, +2.78]`), which read as "which
+law is right depends on what the policy was trained with." The preregistered replication on two new
+training seeds (R-C, seeds 233 and 239) contradicts that: the risk-cap-trained policy shows a
+stopping-law *penalty* on capture as large as the governor-free one (per seed `−8.59` and `−7.17 pp`,
+both CIs excluding zero; interaction `−5.65 [−9.01, −2.30]` and `+1.51 [−2.00, +5.03]`). Under the 0/2
+rule written before the runs, the claim is withdrawn and replaced with: *in this lineage the
+stopping law's capture penalty appears regardless of the training-time governor.*
 
-**Current recommendation: train without the filter, deploy the arc tube widened to about 1.2 m.**
-The training-seed replication that would let the co-adaptation claim be stated generally is the one
-experiment still outstanding.
+**Current recommendation: deploy the arc tube widened to about 1.2 m.** The training-time filter
+choice is no longer a recommendation in either direction.
 
 Preregistration and verdicts: [confirmation plan](docs/plans/confirmation_phase_plan_2026-09-06.md).
 Reproduce the pooled numbers with:
@@ -302,8 +319,12 @@ NPS validation (2,296 frames, 7 clips) using a fixed utility `(hit − proxy fal
 | **P7c v2** (candidate preservation + motion/GMC) | **0.68554** | **selected** |
 
 The margins are small and the validation set has seven clips, so this is a selection, not a
-superiority claim. **The NPS test set has been opened once, for the KF rejection, and not since.**
-The joint dataset's test split is sealed and absent from the training YAML.
+superiority claim. **The NPS test set was opened for the KF rejection and once more, at the end
+(S4), for the frozen P7c v2 selector**: utility **0.4701** on 1,725 test frames (hit 59.19%, false
+lock among selected 17.06%, no-lock 28.64%) against 0.6855 on validation. Different videos, so a
+generalization warning rather than a paired effect; nothing was retuned after seeing it.
+[S4 report](results/perception_s4_2026-09-09/README.md). The joint dataset's test split remains
+sealed and absent from the training YAML.
 
 The `appearance_64D` field is a parameter-free RGB grid/histogram baseline, not learned ReID. With
 no ground-truth track IDs and no camera intrinsics, this project does not report real ID switches,
@@ -328,10 +349,40 @@ Receipts now record the interpreter and accelerator stack (`tools/runtime_finger
 
 Profiling the motion stage shows **Farnebäck optical flow is 97.7%** of it (36.58 ms) while GMC
 RANSAC is 0.17 ms. Since the flow depends only on the two grayscale frames and candidates enter
-afterwards, it can overlap the GPU detector; a measured prototype gives 112.3 ms serial against
-74.7 ms overlapped with the flow array bit-identical. Applying that is the next perception step,
-and the phrase "bit-identical" will only be used for the pipeline once all 2,296 frames agree on
-ranks, on the motion feature arrays and on every downstream metric.
+afterwards, it can overlap the GPU detector. That overlap is now applied (S1): across three complete
+runs per arm on all 2,296 validation frames, candidate, rank and motion-feature bytes and every
+downstream metric matched, and decode-inclusive throughput rose from **14.72 to 22.48 FPS**
+(mean 67.91 → 44.49 ms). [S1 results and hashes](results/perception_streaming_overlap_s1_2026-09-09/README.md).
+
+### Error model, injection and readaptation (P8–P10)
+
+The measured perception error is what the simulator gets, not a Gaussian. P8 measures
+size-conditioned centre offsets, a 3-state hit/false-lock/no-lock Markov chain, censored miss
+bursts and latency on 1,310 single-GT validation frames (986 multi-GT frames are excluded from the
+size-conditional tallies; <8 px and ≥64 px bins are unsupported and stay explicit). P9 fits an
+injector to that and gates it on a preregistered goodness-of-fit test — occupancy TV ≤ 0.05,
+transition max ≤ 0.06, offset KS ≤ 0.1, latency KS ≤ 0.05 — which passed on the third version;
+v1 had two real implementation defects and v2 failed on finite-sample stationarity, and both are
+kept under `results/perception_p9_v{1,2}_failed_2026-09-09/` rather than deleted. Transition
+probabilities measured at 50–103 ms are converted to the simulator step with
+`p_stay(dt) = p_stay(ref_dt)^(dt/ref_dt)`. The injector is mutually exclusive with every older noise
+hook so contracts cannot mix.
+
+P10 then asks whether 1,000 epochs of PPO readaptation under that error helps, with a 2 policies ×
+2 perception arms × 2 evaluation seeds design (one training seed, 811, that does not appear among
+the evaluation seeds):
+
+| estimand (pooled over eval seeds 541 + 547) | capture | 95% CI |
+|---|---:|---|
+| cost of the measured error on the frozen ep25000 policy | **−4.57 pp** | [−6.32, −2.82] |
+| cost of the measured error on the readapted policy | −1.90 pp | [−3.65, −0.16] |
+| primary: readapted − frozen, both under the error | +1.41 pp | [−0.38, +3.21] |
+| clean retention: readapted − frozen, both clean | −1.25 pp | [−2.95, +0.44] |
+
+The only intervals excluding zero are the two costs. The primary estimand does not, and neither
+does the change in cost between the two policies. With one training seed this is descriptive; it is
+not a seed-general claim about PPO readaptation.
+[P10 report](results/perception_p10_2026-09-09/README.md).
 
 ---
 
@@ -368,14 +419,16 @@ top of it would make our code AGPL as well. That constrains detector architectur
 |---|---:|---|
 | Arc geometry, three evaluation seeds | **arc lowest crash in 15/15 cells**; pooled −1.49 pp, seed-level −1.49 [−2.42, −0.57] | ep25000 lineage, 5 densities, 2,049 ep/cell |
 | Arc tube widening | 205 bars crash −5.60 pp **and** capture +4.44 pp | 3 seeds; straight corridor collapses to ~10% capture |
-| Co-adaptation (D4) | stopping-law advantage not detectable after training with the filter (+0.48 pp) | **one training seed**; replication outstanding |
+| Co-adaptation (D4 → R-C) | **withdrawn**: risk-cap-trained policy shows a stopping-law capture penalty as large as the governor-free one (pooled −7.87 vs −5.46 pp) | 3 training seeds total; preregistered 0/2 rule; 70 bars, ref5in lineage |
 | Contact forensics | **77–78% of bar collisions are outside the watched corridor** | lateral 57–58% + no-return 20%; longitudinal failure 1 in 5 |
 | Detector colour shortcut | both detectors `COLOR_SHORTCUT_CONFIRMED`; v7 FTLR **90.27%** at N=5 | seed 479, 8 cells, 2,049 ep/cell |
 | NPS→Det-Fly zero-shot (P3) | `SIZE-DOMINANT ZERO-SHOT FAILURE`; native AP@0.5 **0.0010**, ÷4 **0.1126** | 13,271 images, frozen checkpoint |
 | Joint multi-scale detector (P3-F) | validation mAP50 **0.6917**; Det-Fly native AP@0.5 **0.7166** | checkpoint frozen before the test was opened |
 | Top-K candidates (P4) | **PASS** | schema, semantics and hashes verified on val and test |
-| Temporal association (P5–P7c) | KF **REJECTED**; P7c v2 selected at utility **0.68554** | validation only; NPS test not opened since P5 |
-| Streaming pipeline | implemented; RGB parity **PASS** after environment fix | 14.9 FPS with decode; not a camera deployment |
+| Temporal association (P5–P7c) | KF **REJECTED**; P7c v2 selected at utility **0.68554** on validation; **0.4701** on the sealed NPS test (S4, opened once) | test is 8 different videos; generalization warning, no retuning |
+| Streaming pipeline | RGB parity **PASS** after environment fix; flow/detector overlap (S1) **14.72 → 22.48 FPS** with all 2,296 frames' ranks, motion bytes and metrics identical | not a camera deployment |
+| Error model + injector (P8, P9) | size-conditioned offsets, 3-state Markov, censored bursts, latency; injector passed the preregistered fit gate on v3 | 1,310 single-GT validation frames; <8 px and ≥64 px unsupported |
+| Readaptation under measured error (P10) | error costs frozen policy **−4.57 pp** capture; readapted − frozen +1.41 pp `[−0.38, +3.21]` | 1 training seed, 2 eval seeds, ~2,050 ep/cell; descriptive |
 | Detector navigation A/B | learned-v2 vs analytic **−0.0145 pp**, CI `[−1.752, +1.723]` | passes the preregistered −2 pp non-inferiority margin |
 | Camera-range diagnostic | never-acquired **8.443 → 3.172%** | short of the −15 pp gate, therefore inconclusive |
 | Route-off held-out | capture **83.70% @70 → 65.54% @145** | seed 313; no 205-bar or routed claim |
