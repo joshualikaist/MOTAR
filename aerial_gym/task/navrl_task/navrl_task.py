@@ -4260,19 +4260,9 @@ class NavRLTask(BaseTask):
                     float(getattr(self.perception_cfg, "depth_noise_std", 0.0)),
                     "NAVRL_DEPTH_NOISE_STD",
                 ),
-                (
-                    "cfg_p9_empirical_error_enabled",
-                    bool(getattr(getattr(self, "perception", None), "empirical_error", None) is not None),
-                    "NAVRL_P9_ERROR_MODEL",
-                ),
-                (
-                    "cfg_p9_empirical_error_sha256",
-                    (
-                        self.perception.empirical_error.sha256
-                        if getattr(getattr(self, "perception", None), "empirical_error", None) is not None else ""
-                    ),
-                    "NAVRL_P9_EXPECTED_SHA256",
-                ),
+                # The enabled flag lives in the boolean contract above and the model SHA is an
+                # identity, not a magnitude; neither belongs in a loop that computes
+                # abs(float(saved) - current). Only the seed is numeric.
                 (
                     "cfg_p9_empirical_error_seed",
                     float(getattr(self.perception_cfg, "empirical_error_seed", 1701)),
