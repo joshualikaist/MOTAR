@@ -142,14 +142,15 @@ def main():
             if digests(image)[1] != row["image_sha256"]:
                 raise ValueError("pilot image hash mismatch: " + row["image"])
             frame = cv2.imread(str(image))
-            index = row["opencv_index"]
+            index = row.get("container_index", row["opencv_index"])
             prev = read_frame(video, max(0, index - args.neighbor_frames))
             nxt = read_frame(video, min(pilot["frame_count"] - 1, index + args.neighbor_frames))
             candidates, moving_px = motion_candidates(prev, frame, nxt)
             gt = interpolate_pose(pose, row["project_timestamp_s"])
             geometry = bearing_from_camera(camera, gt["xyz_m"]) if gt else None
-            lines = ["frame %d  opencv_index %d  t=%.3f s  (alignment %s)" % (
-                row["frame_id"], index, row["project_timestamp_s"], pilot["frame_index_alignment"])]
+            lines = ["frame %d  container_index %d (= frame_id %+d)  t=%.3f s  (alignment %s)" % (
+                row["frame_id"], index, index - row["frame_id"], row["project_timestamp_s"],
+                pilot["frame_index_alignment"])]
             if gt:
                 lines.append("drone0 GT: range %.1f m  az %.1f deg(E ccw)  elev %.1f deg  speed %.2f m/s  status %s" % (
                     geometry["slant_range_m"], geometry["azimuth_deg_from_east_ccw"], geometry["elevation_deg"],
@@ -165,7 +166,8 @@ def main():
             thumb = cv2.resize(frame, (320, 180), interpolation=cv2.INTER_AREA)
             cv2.putText(thumb, str(row["frame_id"]), (4, 16), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 1)
             thumbs.append(thumb)
-            rows.append({"frame_id": row["frame_id"], "opencv_index": index, "project_timestamp_s": row["project_timestamp_s"],
+            rows.append({"frame_id": row["frame_id"], "container_index": index, "opencv_index": index,
+                         "project_timestamp_s": row["project_timestamp_s"],
                          "index_alignment_unresolved": row.get("index_alignment_unresolved", True),
                          "drone0_gt": gt, "drone0_geometry_from_cam0": geometry,
                          "motion_candidates_hint_only": candidates, "moving_pixels": moving_px,
@@ -194,6 +196,8 @@ def main():
     receipt = {"status": "REVIEW_MATERIAL_READY_IDENTITY_UNVERIFIED", "source_commit": COMMIT,
                "camera_xyz_m": camera, "pilot_receipt_sha256": digests(args.pilot_dir / "receipt.json")[1],
                "video_sha256": pilot["video_sha256"], "frame_index_alignment": pilot["frame_index_alignment"],
+               "container_index_offset": pilot.get("container_index_offset"),
+               "container_index_rule": pilot.get("container_index_rule"),
                "neighbor_frames": args.neighbor_frames, "frames": rows,
                "contact_sheet_sha256": digests(sheet_path)[1], "review_template_sha256": digests(template)[1],
                "tool_sha256": digests(Path(__file__))[1],

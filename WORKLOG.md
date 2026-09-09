@@ -16870,6 +16870,17 @@ origin(1.9486, 정수 2에서 0.051프레임)을 준다. origin=2일 때 함의�
 1프레임 시각 오차는 영상에서 중앙값 2.2 px, p95 7.6 px, 최대 20.3 px 변위를 만든다. 재투영 게이트가 4 px
 RMS이므로 **검토된 박스가 생기면 정렬을 판별할 수 있다.** 그때까지 **fail-closed**로 남긴다.
 
+**틀린 부분 수정**: 첫 pilot은 edit list를 모르던 때 `container_index = frame_id - 1`을 하드코딩해 뽑았다.
+이를 `--index-offset` 인자로 빼고, 컨테이너 증거가 지지하는 offset 0으로 36프레임을 다시 렌더링했다
+(`pilot_frames_offset0/`, `review_material_offset0/`, 검토 대상은 이쪽). 첫 세트는 출처 보존용으로 남긴다.
+재투영 검사에서 `d = offset - shift`로 참 정렬을 역산하도록 `--container-index-offset`을 추가했다 —
+offset 0에서 shift 0이 이기면 edit list 후보가, +1이 이기면 마지막 프레임 누락 후보가 맞는 것이다.
+새 패널의 frame 901 crop에서 **암 6개** 기체가 선명하다. drone1(DJI Phantom)·drone2(DJI Mavic)는 쿼드로터라
+6암 기체일 수 없으므로 로터 수가 가장 강한 식별 단서다. 검토 지침에 반영했다.
+
+**디스크**: 이전 세션 중복 추출본을 전체 SHA-256이 보존본과 일치함을 확인한 뒤 삭제하고, 사용자 지시로
+Downloads의 Antigravity 설치본도 지웠다. 2.2 GB → 8.0 GB 확보. 데이터셋·영수증·run은 하나도 지우지 않았다.
+
 36개 pilot 프레임을 `--allow-count-mismatch`로 추출(정렬 미해결 플래그 기록)하고, 사람 검토 패널(GT 거리·
 방위·고도·속도, ±3프레임 motion cue, 확대 crop, contact sheet)과 빈 `review_template.csv`를 만들었다.
 motion cue는 identity가 아니며 박스도 아니다. drone0 GT: ~30 s까지 cam0에서 5.8 m 지상, 이후 5–108 m.
@@ -16882,5 +16893,5 @@ TrackingStatus는 Leica 토탈스테이션 상태(0 정상, 1 경고), 자세는
 디스크 4.0 GB뿐이라 conda tarball 캐시·pip 캐시만 비웠다(데이터·결과·run 삭제 없음). 이후 감사에서 이전
 세션이 이미 같은 영상을 `datasets/eth_ds5_extracted_cam0/`에 풀어놨음을 발견했다 — 이번 추출본
 `datasets/eth_ds5_cam0_extracted/`와 바이트 동일(SHA-256 `d3e6727e…`)이라 4.3 GB가 중복이다. 삭제하지 않고
-보고만 한다. 테스트 1289개 통과(ETH 모듈은 45개로 증가).
+보고만 한다. 테스트 1291개 통과(ETH 모듈은 47개로 증가).
 E3(오차 모델)는 시작하지 않았다. 다음: 사람 검토 → 재투영 검사 → 통과 시에만 dense segment 등록.

@@ -8,9 +8,8 @@ Sony5100 calibration candidate remain unverified; E3 (error modelling) has not s
 | `receipt.json`, `video_receipt.json` | E1 pinned files, Git blob SHA-1 + SHA-256, 43 split-archive parts (4,471,880,421 B) | verified |
 | `extraction_receipt.json` | cam0.mp4 4,520,030,301 B, SHA-256 `d3e6727e…c1ec4`, 7-Zip CRC OK | extracted outside Git: `datasets/eth_ds5_cam0_extracted/` |
 | `video_verification/video_verification.json` | h264 1920x1080 30000/1001, 20970 packets = 20970 decoded = nb_frames | **20969 published timestamp rows: off by one** |
-| `review/pilot_frames_receipt.json` | 36 clean PNGs (stride 150 inside pose overlap), hash-pinned | rendered with `--allow-count-mismatch` |
-| `review/review_material_receipt.json` | per-frame GT range/bearing/elevation/speed, motion-cue hints, panels, contact sheet | identity unverified |
-| `review/review_template.csv` | empty reviewer table | pending human review |
+| `review_offset0/` | **the set to review**: 36 clean PNGs and panels at `container_index = frame_id + 0`, GT geometry, motion cues, contact sheet, empty reviewer table | identity unverified |
+| `review/` | the first set, rendered at `container_index = frame_id - 1` before the edit list was analysed | superseded, kept for provenance |
 
 ## Root causes of the two timestamp blockers (2026-09-10, investigated)
 
@@ -33,9 +32,15 @@ timestamps cannot separate them because each is a whole-frame relabelling:
 | reader dropped the last frame | `frame_id - 1` | documented MATLAB `readFrame`/`NumFrames` discrepancy, no container evidence |
 | `CurrentTime` is the next frame's time | `frame_id + 1` | MathWorks semantics with the fitted origin; predicts one row too few, kept only as a bound |
 
-The pilot images were rendered with `frame_id - 1`. One frame of timing error displaces drone0 in the
-image by a median of 2.2 px, a 95th percentile of 7.6 px and at most 20.3 px, so the mapping is
-immaterial for deciding visibility and material for measurement.
+The first pilot was rendered with `frame_id - 1`, which was hard-coded before the edit list was known.
+The mapping is now an explicit `--index-offset` argument, and the set to review (`review_offset0/`) uses
+offset 0, the candidate the container supports. One frame of timing error displaces drone0 in the image
+by a median of 2.2 px, a 95th percentile of 7.6 px and at most 20.3 px, so the mapping is immaterial for
+deciding visibility and material for measurement.
+
+The reprojection check recovers the true offset: images rendered at `container_index = frame_id + offset`
+fit at `shift = offset - d`, so `d = offset - shift`. With offset 0 a winning shift of 0 confirms the
+edit-list candidate and +1 would mean the reader dropped the last frame instead.
 
 ### Why the stamps carry a scale that is not cam0's
 
@@ -90,13 +95,18 @@ Extraction used p7zip 16.02 from Ubuntu `p7zip-full_16.02+dfsg-7build1_amd64.deb
 without installation. ffprobe/ffmpeg 7.1 and OpenCV 4.13 come from the `aerialgym` conda environment.
 
 A previous session had already extracted the same video to `datasets/eth_ds5_extracted_cam0/`; this
-session extracted it again to `datasets/eth_ds5_cam0_extracted/`. Both files are byte-identical
-(SHA-256 `d3e6727e…c1ec4`, confirmed by each directory's own receipt), so one of the two directories is
-a redundant 4.3 GB copy. Nothing was deleted. To free room for the extraction only the conda package
-tarball cache and the pip cache were purged; no dataset, result or run file was removed.
+session extracted it again to `datasets/eth_ds5_cam0_extracted/`. Both files hashed to the same
+SHA-256 `d3e6727e…c1ec4` over their full length, so the duplicate directory was removed on the user's
+instruction and the verified copy kept. Unrelated installers were removed from the user's Downloads at
+the same time. Earlier, to make room for the extraction, only the conda package tarball cache and the
+pip cache were purged. No dataset, receipt or run file was removed at any point.
 
 ## Next (E2 completion, not E3)
 
-Human review of the 36 panels → filled `review_template.csv` → `check_eth_ds5_reprojection.py`.
-Only if that reports `CALIBRATION_CANDIDATE_CONSISTENT` for some alignment shift may dense segments
-be registered for E3, and the chosen shift must then be preregistered, not tuned.
+Human review of the 36 panels in `review_offset0/` → filled `review_template.csv` →
+`check_eth_ds5_reprojection.py --container-index-offset 0`. Only if that reports
+`CALIBRATION_CANDIDATE_CONSISTENT` for some alignment shift may dense segments be registered for E3,
+and the chosen shift must then be preregistered, not tuned.
+
+Identity note for the reviewer: drone1 and drone2 are DJI quadrotors, so a six-armed airframe cannot be
+either. Frame 901's crop resolves six arms at a GT range of 17.9 m.

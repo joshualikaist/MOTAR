@@ -178,17 +178,65 @@ class VideoTest(unittest.TestCase):
             queue.write_text(json.dumps({"source_commit": ETH.COMMIT, "frames": [
                 {"frame_id": 2, "opencv_index": 1, "box_xyxy": None,
                  "measurement_eligible": False, "identity_verified": False}]}))
-            args = ["prepare", "--video", str(video), "--queue", str(queue), "--intake-receipt", str(receipt),
-                    "--calibration", str(calibration), "--output", str(root / "output"), "--ffprobe", "mock"]
             stream = {"streams": [{"codec_type": "video", "nb_frames": "4", "width": 64, "height": 48,
                                    "avg_frame_rate": "30/1"}]}
-            with mock.patch.object(sys, "argv", args), mock.patch.object(FRAMES.subprocess, "check_output", return_value=json.dumps(stream)), contextlib.redirect_stdout(io.StringIO()):
-                FRAMES.main()
-            result = json.loads((root / "output/receipt.json").read_text())
+
+            def run(output, *extra):
+                args = ["prepare", "--video", str(video), "--queue", str(queue), "--intake-receipt", str(receipt),
+                        "--calibration", str(calibration), "--output", str(root / output), "--ffprobe", "mock"] + list(extra)
+                with mock.patch.object(sys, "argv", args), mock.patch.object(
+                        FRAMES.subprocess, "check_output", return_value=json.dumps(stream)), contextlib.redirect_stdout(io.StringIO()):
+                    FRAMES.main()
+                return json.loads((root / output / "receipt.json").read_text())
+
+            result = run("output")
             self.assertFalse(result["calibration_validated"])
             self.assertIsNone(result["frames"][0]["box_xyxy"])
+            self.assertEqual(result["container_index_offset"], -1)
+            self.assertEqual(result["frames"][0]["container_index"], 1)
             image = cv2.imread(str(root / "output/frame_000002.png"))
             self.assertAlmostEqual(float(image.mean()), 50., delta=3.)
+
+            # The offset is a hypothesis, not a constant: offset 0 must render the NEXT container frame.
+            shifted = run("output_offset0", "--index-offset", "0")
+            self.assertEqual(shifted["container_index_offset"], 0)
+            self.assertEqual(shifted["container_index_rule"], "container_index = frame_id + 0")
+            self.assertEqual(shifted["frames"][0]["container_index"], 2)
+            self.assertEqual(shifted["frames"][0]["queue_declared_opencv_index"], 1)
+            image = cv2.imread(str(root / "output_offset0/frame_000002.png"))
+            self.assertAlmostEqual(float(image.mean()), 100., delta=3.)
+
+    def test_index_offset_outside_the_video_is_refused(self):
+        try:
+            import cv2
+            import numpy as np
+        except ImportError:
+            self.skipTest("OpenCV/numpy unavailable")
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            video = root / "synthetic.avi"
+            writer = cv2.VideoWriter(str(video), cv2.VideoWriter_fourcc(*"MJPG"), 30., (64, 48))
+            for i in range(4):
+                writer.write(np.full((48, 64, 3), i * 50, np.uint8))
+            writer.release()
+            calibration = root / "calibration.json"
+            calibration.write_text(json.dumps({"resolution": [64, 48], "fps": 30.}))
+            receipt = root / "intake.json"
+            receipt.write_text(json.dumps({"source_commit": ETH.COMMIT, "video_timestamp_rows": 4,
+                "files": [{"path": "calibration/sony5100/sony5100.json", "sha256": ETH.digests(calibration)[1]}]}))
+            queue = root / "queue.json"
+            queue.write_text(json.dumps({"source_commit": ETH.COMMIT, "frames": [
+                {"frame_id": 4, "opencv_index": 3, "box_xyxy": None,
+                 "measurement_eligible": False, "identity_verified": False}]}))
+            stream = {"streams": [{"codec_type": "video", "nb_frames": "4", "width": 64, "height": 48,
+                                   "avg_frame_rate": "30/1"}]}
+            args = ["prepare", "--video", str(video), "--queue", str(queue), "--intake-receipt", str(receipt),
+                    "--calibration", str(calibration), "--output", str(root / "out"), "--ffprobe", "mock",
+                    "--index-offset", "0"]
+            with mock.patch.object(sys, "argv", args), mock.patch.object(
+                    FRAMES.subprocess, "check_output", return_value=json.dumps(stream)), contextlib.redirect_stdout(io.StringIO()):
+                with self.assertRaises(ValueError):
+                    FRAMES.main()
 
 
 class ExtractionTest(unittest.TestCase):
@@ -377,6 +425,12 @@ class ReprojectionTest(unittest.TestCase):
         self.assertEqual(bad["status"], "INCONSISTENT")
         few = REPROJ.evaluate(self._reviewed(self.pixels)[:3], self._pose(), self.camera, self.K, self.dist, 1 / 30., 0)
         self.assertEqual(few["status"], "INSUFFICIENT_REVIEWED_BOXES")
+
+    def test_true_offset_recovered_from_the_winning_shift(self):
+        self.assertEqual(REPROJ.true_index_offset(0, 0), 0)     # edit-list candidate
+        self.assertEqual(REPROJ.true_index_offset(0, 1), -1)    # reader dropped the last frame
+        self.assertEqual(REPROJ.true_index_offset(-1, 0), -1)   # the first pilot's own rendering
+        self.assertEqual(REPROJ.true_index_offset(-1, -1), 0)
 
     def test_review_csv_requires_visible_and_valid_box(self):
         with tempfile.TemporaryDirectory() as d:

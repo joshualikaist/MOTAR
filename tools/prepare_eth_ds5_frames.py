@@ -40,6 +40,10 @@ def main():
     parser.add_argument("--allow-count-mismatch", action="store_true",
                         help="render review images even if container frames != timestamp rows; the receipt then"
                              " marks every frame's index alignment unresolved (review only, never measurement)")
+    parser.add_argument("--index-offset", type=int, default=-1,
+                        help="container_index = frame_id + OFFSET. The published stamps do not fix this integer;"
+                             " 0 is the value supported by the video track's edit list, -1 reproduces the first"
+                             " pilot. Whichever is used is recorded, and the reprojection check searches shifts.")
     args = parser.parse_args()
     if args.output.exists():
         raise ValueError("refusing existing output; preserve previous pilot")
@@ -66,9 +70,9 @@ def main():
         for row in queue["frames"]:
             if row["box_xyxy"] is not None or row["measurement_eligible"] or row["identity_verified"]:
                 raise ValueError("expected an unannotated pilot queue")
-            index = row["opencv_index"]
-            if index != row["frame_id"] - 1 or not 0 <= index < result["frame_count"]:
-                raise ValueError("invalid frame index")
+            index = row["frame_id"] + args.index_offset
+            if not 0 <= index < result["frame_count"]:
+                raise ValueError("container index %d out of range for frame_id %d" % (index, row["frame_id"]))
             if not video.set(cv2.CAP_PROP_POS_FRAMES, index):
                 raise ValueError("frame seek failed")
             ok, frame = video.read()
@@ -78,11 +82,16 @@ def main():
             if not cv2.imwrite(str(path), frame):
                 raise ValueError("image write failed")
             rendered.append(dict(row, image=path.name, image_sha256=digests(path)[1],
+                                 container_index=index, opencv_index=index,
+                                 queue_declared_opencv_index=row["opencv_index"],
                                  index_alignment_unresolved=unresolved))
     finally:
         video.release()
     status = "PILOT_IMAGES_READY_ANNOTATION_PENDING" + ("_ALIGNMENT_UNRESOLVED" if unresolved else "")
     result.update({"status": status, "source_commit": COMMIT,
+                   "container_index_offset": args.index_offset,
+                   "container_index_rule": "container_index = frame_id + %d" % args.index_offset,
+                   "reprojection_shift_of_true_offset_d": "shift = %d - d" % args.index_offset,
                    "video_sha256": digests(args.video)[1], "video_stream": info["streams"][0],
                    "queue_sha256": digests(args.queue)[1], "intake_receipt_sha256": digests(args.intake_receipt)[1],
                    "tool_sha256": digests(Path(__file__))[1], "frames": rendered,

@@ -41,3 +41,6 @@ looking at the crop yourself. Keep the file next to the panels and do not overwr
 boxes, the Sony5100 calibration candidate, the surveyed cam0 position and the GT trajectory are
 mutually consistent (needs >= 6 confident boxes spread across the frame). A failure there means the
 calibration candidate, the sync, or the identity is wrong, and E3 does not start.
+
+> Superseded by `../review_offset0/`. This set was rendered at `container_index = frame_id - 1`
+> before the container edit list was analysed; it is kept for provenance only.
