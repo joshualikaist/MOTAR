@@ -15,7 +15,7 @@ why** — including the results that came out negative.
 
 ---
 
-## Status · 2026-09-09
+## Status · 2026-09-10
 
 Two tracks run in parallel and are at different stages.
 
@@ -23,6 +23,7 @@ Two tracks run in parallel and are at different stages.
 |---|---|---|
 | **A — safety-filter diagnosis** | measure when and why a direction-preserving speed filter fails | **complete**; the training-seed replication withdrew one claim (see below) |
 | **B — real-imagery perception** | learn a detector on real air-to-air video, measure its error, inject that into the simulator | **pipeline complete through PPO readaptation**; sealed test opened once; real-flight work not started |
+| **C — measured range error on real footage** | measure how well a target's apparent size recovers its metric range, using a public dataset with survey-grade position ground truth | **E3-S complete**; absolute-geometry uses of that dataset are fail-closed, and the attitude arm (E3-P) is gated |
 
 **Recent findings.**
 
@@ -56,6 +57,24 @@ Two tracks run in parallel and are at different stages.
   1,725 test frames against 0.6855 on validation. These are different videos, so this is a
   generalization warning, not a paired estimate; nothing was retuned afterwards.
   [S4 report](results/perception_s4_2026-09-09/README.md).
+- **On real footage with survey-grade ground truth, apparent size recovers range to 6.2%.** ETH
+  `drone-tracking-datasets` ds5 gives total-station position GT for a drone filmed from the ground. The
+  target was tracked over 3,495 frames at **0.196 px** measurement noise, and the analysis was
+  [preregistered and committed before it ran](results/eth_ds5_e3s_2026-09-10/PREREGISTRATION.md).
+  Leave-one-block-out over 15 s blocks, every evaluated frame out of sample: **median absolute relative
+  range error 6.2%**, block-to-block spread 9.3 pp, 3,107 frames from 31 to 108 m.
+  [E3-S results and limits](results/eth_ds5_e3s_2026-09-10/README.md).
+- **The same dataset cannot be used for absolute geometry, and that is recorded as a failure, not
+  worked around.** Its published camera calibration is verified correct against its own 122 chessboard
+  images (held-out 1.245 px versus 1.262 px recomputed), yet reprojecting the tracked drone leaves
+  **5.6 px** against 0.196 px of noise. Radial distortion, focal length, principal point, camera
+  position, a time drift, a per-8 s rotation refit and the prism lever arm were each fitted on one split
+  and scored on another; none wins on every split. An unexplained **−120 ms** offset is needed by every
+  variant. [Investigation](results/eth_ds5_intake_2026-09-10/distortion_investigation_2026-09-10/README.md).
+- **A distortion claim made on 16 points was withdrawn when 678 points contradicted it.** An earlier
+  provisional reading said the published `k1` was wrong by a factor of nine. Held-out testing showed
+  that fit does not generalise — trained on the first half of the flight it makes the second half worse
+  — so the claim is retracted rather than kept as a plausible story.
 - **The co-adaptation claim did not survive seed replication and is withdrawn.** Two new training
   seeds were run for the D4 2×2. The prediction was that a policy trained *with* the risk cap shows
   no stopping-law penalty; instead both seeds show a penalty as large as the governor-free policy
@@ -63,8 +82,10 @@ Two tracks run in parallel and are at different stages.
   claim is withdrawn. [R-C results](results/navrl_grid_r2_d4_trainseed_rep/README.md).
 
 **What this project does not claim.** Real-flight performance, sim-to-real transfer, target
-identification, 30 FPS, or an assembled airframe. Every number here is simulation or software-only
-verification. The vehicle is not built, and there are no real sensor logs.
+identification, 30 FPS, or an assembled airframe. The vehicle is not built and has produced no sensor
+logs of its own. Track C measures published third-party footage with survey-grade ground truth, which is
+real imagery but not our flight: it says nothing about how this policy would behave on this airframe.
+Everything else here is simulation or software-only verification.
 
 ---
 
@@ -399,6 +420,7 @@ headroom, not compute, governs the choices.
 | [MIDGARD](https://mrs.fel.cvut.cz/midgard) | no statement | 3.53 GB | air-to-air | not obtained; **has range GT**, useful for the error model; written permission advisable |
 | [DUT Anti-UAV](https://github.com/wangdongdut/DUT-Anti-UAV) | Apache-2.0 | 1.32 GB | ground-to-air | not obtained; viewpoint mismatch, OOD set only |
 | [AOT](https://registry.opendata.aws/airborne-object-tracking/) | CDLA-Permissive-1.0 | 13.4 TB | air-to-air | full download impossible; 2–3 sequences feasible |
+| [ETH ds5](https://github.com/CenekAlbl/drone-tracking-datasets) | **CC BY-NC-SA-4.0** | 4.47 GB (cam0) | ground-to-air | **in use for Track C**; total-station position GT, pinned at commit `2c857c9`; non-commercial and share-alike terms bind anything derived from it |
 
 Blocked: **ARD100** (Baidu-only distribution, GPL-3.0 code that infects derivatives), **ARD-MAV**
 (14.6 GB zip exceeds headroom), **Drone-vs-Bird/WOSDETC** (no public link, signed agreement
@@ -434,6 +456,9 @@ top of it would make our code AGPL as well. That constrains detector architectur
 | Route-off held-out | capture **83.70% @70 → 65.54% @145** | seed 313; no 205-bar or routed claim |
 | Routed physical gate | **32/32 integrity PASS; route mechanism FAIL; PPO blocked** | plan 14.55% vs 99% gate; fallback 35.93% vs 1% |
 | Hardware/software gate | software pipeline PASS · `SYNTHETIC_ONLY` | not a real-flight result |
+| Size→range on real footage (E3-S) | `SIZE_RANGE_USABLE`; held-out median relative range error **6.2%**, spread 9.3 pp | 3,107 frames, 31–108 m, one flight, one camera; range and time confounded, so per-bin bias is not a range effect |
+| ETH ds5 camera model | published calibration correct for **its own** images (1.245 px), but **5.6 px** against the tracked drone; no hypothesis survives held-out testing | absolute-geometry uses fail-closed; −120 ms offset unexplained |
+| Attitude gate (E3-P) | `E3P_GATE_BLOCKED` on attitude reliability alone; convention identified from data at 17.7° with a 16.3° margin | aspect and range separable (r = 0.21); no third variant of the failing check was run |
 
 Historical v1, archived v2, corrected-v2, legacy-robot and ref5in-robot results **must not be merged
 into one performance curve**. Results from before 2026-08-27 overlapped nearby bars into compound

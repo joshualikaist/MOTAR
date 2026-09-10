@@ -7,7 +7,12 @@
 
 ## 먼저 읽을 것
 
-ETH 자세·거리 측정 준비: [E1–E5 실행 계획](plans/eth_ds5_execution_2026-09-10.md).
+ETH ds5 실촬영 거리 측정: [E1–E5 수집·검증 계획](plans/eth_ds5_execution_2026-09-10.md),
+[E3 분리 계획(E3-S/E3-P)](plans/eth_ds5_e3_2026-09-10.md),
+[E3-S 사전등록](../results/eth_ds5_e3s_2026-09-10/PREREGISTRATION.md) ·
+[E3-S 결과](../results/eth_ds5_e3s_2026-09-10/README.md) ·
+[E3-P 게이트(BLOCKED)](../results/eth_ds5_e3p_gate_2026-09-10/README.md) ·
+[왜곡 조사와 철회](../results/eth_ds5_intake_2026-09-10/distortion_investigation_2026-09-10/README.md).
 
 실사 인지 최신 구현: [streaming API](specs/perception_streaming_v1.md),
 [P7e/streaming 계약](plans/perception_p7e_streaming_2026-09-08.md),
