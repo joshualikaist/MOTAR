@@ -5,6 +5,11 @@ right, because a handful of points lets any extra parameter absorb the error. Th
 reviewed centres through neighbouring frames by local intensity centroiding, which gives hundreds of
 measurements whose noise can be measured directly from trajectory smoothness.
 
+The search window follows the target's apparent size: a fixed window silently clips a close target's
+blob, which would bias every size measurement derived from it. The window each frame is set from the
+previous accepted extent, and a measurement whose blob reaches the window edge is rejected rather than
+recorded truncated.
+
 It measures positions; it decides nothing. Every centre is an image measurement seeded by a human- or
 review-supplied centre, and ground truth is never consulted.
 """
@@ -73,7 +78,8 @@ def main():
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--first", type=int, required=True)
     parser.add_argument("--last", type=int, required=True)
-    parser.add_argument("--half-window", type=int, default=14)
+    parser.add_argument("--half-window", type=int, default=14, help="minimum, and the window used at a seed")
+    parser.add_argument("--max-half-window", type=int, default=40)
     parser.add_argument("--min-contrast", type=float, default=25.0)
     parser.add_argument("--max-pixels", type=int, default=1500)
     parser.add_argument("--max-step-px", type=float, default=14.0)
@@ -94,6 +100,7 @@ def main():
         raise ValueError("cannot open video")
     capture.set(cv2.CAP_PROP_POS_FRAMES, args.first)
     track, previous, before = {}, None, None
+    half = args.half_window
     try:
         for frame_id in range(args.first, args.last + 1):
             ok, frame = capture.read()
@@ -111,14 +118,22 @@ def main():
                 before, previous = previous, None
                 continue
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY).astype(np.float32)
-            found = centroid(gray, predicted, args.half_window, args.min_contrast, args.max_pixels)
+            found = centroid(gray, predicted, half, args.min_contrast, args.max_pixels)
             if found is None:
+                before, previous, half = previous, None, args.half_window
+                continue
+            if max(found["extent_x"], found["extent_y"]) >= 2 * half - 1:
+                # the blob reaches the window edge, so its extent is truncated: widen and drop this frame
+                half = min(args.max_half_window, max(half + 8, half * 2))
                 before, previous = previous, None
                 continue
+            found["half_window"] = half
             if previous is not None and np.hypot(found["x"] - previous[1], found["y"] - previous[2]) > args.max_step_px:
                 before, previous = previous, None
                 continue
             track[frame_id] = found
+            half = int(min(args.max_half_window,
+                           max(args.half_window, round(0.9 * max(found["extent_x"], found["extent_y"])) + 10)))
             before, previous = previous, (frame_id, found["x"], found["y"])
     finally:
         capture.release()
@@ -131,7 +146,8 @@ def main():
         "video_sha256": digests(args.video)[1], "seeds_sha256": digests(args.seeds)[1],
         "frames_tracked": len(track), "frame_range": [frames[0], frames[-1]],
         "seed_frames": sorted(seeds), "measurement_noise": noise,
-        "parameters": {"half_window": args.half_window, "min_contrast": args.min_contrast,
+        "parameters": {"half_window": args.half_window, "max_half_window": args.max_half_window,
+                       "adaptive_window": True, "min_contrast": args.min_contrast,
                        "max_pixels": args.max_pixels, "max_step_px": args.max_step_px,
                        "skip_below_row": args.skip_below_row},
         "tool_sha256": digests(Path(__file__))[1],
