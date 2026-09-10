@@ -22,7 +22,7 @@ why** — including the results that came out negative.
 
 ---
 
-## Status · 2026-09-10
+## Status · 2026-09-11
 
 Three research tracks are at different stages and have distinct evidence boundaries.
 
@@ -65,6 +65,16 @@ Three research tracks are at different stages and have distinct evidence boundar
   generalization warning, not a paired estimate; nothing was retuned afterwards. P5 had previously
   used this test, so it is not a never-observed holdout.
   [S4 report](results/perception_s4_2026-09-09/README.md).
+- **The readaptation claim did not replicate across training seeds, and did not die either.** P10 rested
+  on one training seed. Two more were run under a decision rule
+  [fixed before training started](docs/preregistration_p10_seed_replication_2026-09-10.md): the primary
+  estimand came out +1.41, +0.78 and −0.01 pp, so one of two new seeds is positive and the seed-level
+  mean is +0.73 pp with a 95 % interval of [−1.04, +2.50]. Neither the replication nor the withdrawal
+  condition is met, so the verdict is `INCONCLUSIVE` and the net benefit of readaptation is **not
+  established**. What all three seeds agree on: the measured error costs the frozen policy **4.57 pp**
+  identically, readaptation leaves a residual cost of 1.90, 2.71 and 3.84 pp that never reaches zero, and
+  it costs 0.7–1.3 pp of clean capture. All eight frozen-policy cells reproduced P10's counts exactly.
+  [Replication](results/perception_p10_seed_replication_2026-09-10/README.md).
 - **On real footage with survey-grade ground truth, apparent size recovers range to 6.2%.** ETH
   `drone-tracking-datasets` ds5 gives total-station position GT for a drone filmed from the ground. The
   target was tracked over 3,495 frames with a **0.196 px trajectory-smoothness residual** (not a
@@ -491,6 +501,7 @@ top of it would make our code AGPL as well. That constrains detector architectur
 | Streaming pipeline | RGB parity **PASS** after environment fix; flow/detector overlap (S1) **14.72 → 22.48 FPS** with all 2,296 frames' ranks, motion bytes and metrics identical | not a camera deployment |
 | Error model + injector (P8, P9) | size-conditioned offsets, 3-state Markov, censored bursts, latency; injector passed the preregistered fit gate on v3 | 1,310 single-GT validation frames; <8 px and ≥64 px unsupported |
 | Readaptation under measured error (P10) | error costs frozen policy **−4.57 pp** capture; readapted − frozen +1.41 pp `[−0.38, +3.21]` | 1 training seed, 2 eval seeds, ~2,050 ep/cell; descriptive |
+| P10 seed replication | `INCONCLUSIVE`: primary +1.41 / +0.78 / −0.01 pp over three training seeds, seed-level mean +0.73 `[−1.04, +2.50]`; residual cost after readaptation 1.90 / 2.71 / 3.84 pp, every interval clear of zero | 3 training seeds; sign rule 1 of 2; all 8 frozen-policy cells reproduced exactly |
 | Detector navigation A/B | learned-v2 vs analytic **−0.0145 pp**, CI `[−1.752, +1.723]` | passes the preregistered −2 pp non-inferiority margin |
 | Camera-range diagnostic | never-acquired **8.443 → 3.172%** | short of the −15 pp gate, therefore inconclusive |
 | Route-off held-out | capture **83.70% @70 → 65.54% @145** | seed 313; no 205-bar or routed claim |
