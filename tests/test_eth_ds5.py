@@ -28,6 +28,7 @@ import track_eth_ds5_drone as TRACK
 import audit_eth_ds5_camera_model as AUDIT
 import measure_eth_ds5_size_range as E3S
 import check_eth_ds5_attitude_gate as GATE
+import check_eth_ds5_attitude_reliability as RELY
 
 
 class Response(io.BytesIO):
@@ -568,6 +569,78 @@ class AttitudeGateTest(unittest.TestCase):
         self.assertEqual(GATE.C2B_MIN_RESIDUAL_IMPROVEMENT, 0.20)
         self.assertEqual(GATE.C3_MAX_ASPECT_RANGE_CORRELATION, 0.7)
         self.assertEqual(GATE.C4_MAX_TIMING_FRACTION, 0.05)
+
+
+class AttitudeReliabilityTest(unittest.TestCase):
+    def setUp(self):
+        try:
+            import numpy as np
+        except ImportError:
+            self.skipTest("numpy unavailable")
+        self.np = np
+
+    def _flight(self, n=900, seed=5):
+        """A synthetic flight whose horizontal acceleration really is produced by its tilt."""
+        np = self.np
+        rng = np.random.default_rng(seed)
+        times = np.arange(n) * 0.111
+        heading = np.cumsum(rng.normal(0, 0.05, n))
+        tilt = 6.0 + 4.0 * np.sin(np.linspace(0, 9, n))
+        roll = tilt * np.cos(heading)
+        pitch = tilt * np.sin(heading)
+        rpy = np.column_stack([roll, pitch, np.degrees(heading)])
+        axes = RELY.candidate_axes(rpy, **RELY.CONVENTION)
+        horizontal = axes[:, :2] / np.linalg.norm(axes[:, :2], axis=1, keepdims=True)
+        true_tilt = np.degrees(np.arccos(np.clip(np.cos(np.radians(roll)) * np.cos(np.radians(pitch)), -1, 1)))
+        accel = np.zeros((n, 3))
+        accel[:, :2] = 0.9 * (RELY.GRAVITY * np.tan(np.radians(true_tilt)))[:, None] * horizontal
+        velocity = np.cumsum(accel, axis=0) * 0.111
+        positions = np.cumsum(velocity, axis=0) * 0.111
+        return times, positions, rpy
+
+    def test_a_real_attitude_stream_passes_at_a_long_window(self):
+        times, positions, rpy = self._flight()
+        result = RELY.evaluate_window(times, positions, rpy, half=7, permutations=40, seed=1)
+        self.assertNotEqual(result.get("status"), "INSUFFICIENT_SAMPLES")
+        for direction in result["directions"].values():
+            self.assertTrue(direction["beats_null"], direction)
+            self.assertGreater(direction["held_out_correlation"], direction["null_percentile_99"])
+
+    def test_a_shuffled_attitude_stream_does_not_beat_its_own_null(self):
+        np = self.np
+        times, positions, rpy = self._flight()
+        scrambled = rpy[np.random.default_rng(7).permutation(len(rpy))]
+        result = RELY.evaluate_window(times, positions, scrambled, half=7, permutations=40, seed=1)
+        if result.get("status") == "INSUFFICIENT_SAMPLES":
+            self.skipTest("scrambled flight left too few usable samples")
+        self.assertFalse(all(d["pass"] for d in result["directions"].values()))
+
+    def test_fit_and_score_never_scores_on_the_fitted_rows(self):
+        np = self.np
+        rng = np.random.default_rng(0)
+        regressors = rng.normal(size=(200, 2))
+        target = regressors @ np.array([0.9, -0.03]) + rng.normal(0, 0.01, 200)
+        out = RELY.fit_and_score(regressors[:100], target[:100], regressors[100:], target[100:])
+        self.assertAlmostEqual(out["thrust_gain"], 0.9, places=2)
+        self.assertAlmostEqual(out["drag_coefficient"], -0.03, places=2)
+        self.assertGreater(out["held_out_correlation"], 0.99)
+
+    def test_constant_prediction_scores_zero_instead_of_nan(self):
+        np = self.np
+        regressors = np.zeros((40, 2))
+        target = np.arange(40, dtype=float)
+        self.assertEqual(RELY.fit_and_score(regressors, target, regressors, target)["held_out_correlation"], 0.0)
+
+    def test_the_window_sweep_and_thresholds_match_the_preregistration(self):
+        text = (Path(__file__).resolve().parents[1]
+                / "results/eth_ds5_e3p_reliability_2026-09-10/PREREGISTRATION.md").read_text()
+        self.assertIn("{2, 3, 4, 5, 7, 9}", text)
+        self.assertIn("200", text)
+        self.assertIn("0.35", text)
+        self.assertEqual(RELY.HALF_WINDOWS, (2, 3, 4, 5, 7, 9))
+        self.assertEqual(RELY.PERMUTATIONS, 200)
+        self.assertEqual(RELY.MIN_HELD_OUT_CORRELATION, 0.35)
+        self.assertEqual(RELY.THRUST_GAIN_RANGE, (0.5, 1.5))
 
 
 class ExtractionTest(unittest.TestCase):
