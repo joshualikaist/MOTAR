@@ -26,6 +26,7 @@ import fetch_eth_ds5_calibration_images as FETCH
 import calibrate_eth_ds5_cam0 as CALIB
 import track_eth_ds5_drone as TRACK
 import audit_eth_ds5_camera_model as AUDIT
+import measure_eth_ds5_size_range as E3S
 
 
 class Response(io.BytesIO):
@@ -389,6 +390,107 @@ class CameraModelAuditTest(unittest.TestCase):
         names = [n for n, _ in AUDIT.HYPOTHESES]
         self.assertEqual(len(names), len(set(names)))
         self.assertIn("published", names)
+
+
+class SizeRangeTest(unittest.TestCase):
+    FOCAL = 1545.7
+
+    def _points(self, ranges, size_m=0.24, block_offset=0.0, scale=1.0):
+        return [{"frame_id": i, "t": block_offset + i * 0.1, "range_m": r,
+                 "sqrt_pixels": scale * self.FOCAL * size_m / r, "extent_y": 1.0, "extent_x": 1.0,
+                 "x": 900.0, "y": 500.0, "tracking_status": [0.0, 0.0], "bracket_gap_s": 0.1}
+                for i, r in enumerate(ranges)]
+
+    def test_fit_recovers_the_generating_size(self):
+        points = self._points([40., 60., 80., 100.])
+        self.assertAlmostEqual(E3S.fit_size(points, self.FOCAL, "sqrt_pixels"), 0.24, places=9)
+
+    def test_perfect_size_gives_zero_error_and_a_scale_error_is_proportional(self):
+        points = self._points([40., 60., 80.])
+        self.assertTrue(all(abs(e) < 1e-12 for e in E3S.relative_errors(points, 0.24, self.FOCAL, "sqrt_pixels")))
+        errors = E3S.relative_errors(points, 0.24 * 1.1, self.FOCAL, "sqrt_pixels")
+        for e in errors:
+            self.assertAlmostEqual(e, 0.1, places=9)   # range error is scale-free, as the estimator is
+
+    def test_blocks_are_fifteen_seconds_and_frames_are_not_the_sample(self):
+        self.assertEqual(E3S.block_index(0.0), 0)
+        self.assertEqual(E3S.block_index(14.999), 0)
+        self.assertEqual(E3S.block_index(15.0), 1)
+        grouped = E3S.group_blocks(self._points([50.] * 3, block_offset=14.8))
+        self.assertEqual(sorted(grouped), [0, 1])
+
+    def test_leave_one_block_out_never_fits_on_the_evaluated_block(self):
+        blocks = {0: self._points([60.] * 25, block_offset=0.0),
+                  1: self._points([70.] * 25, block_offset=20.0),
+                  2: self._points([80.] * 25, block_offset=40.0, scale=1.25)}
+        result = E3S.leave_one_block_out(blocks, self.FOCAL, "sqrt_pixels")
+        self.assertEqual(sorted(result), [0, 1, 2])
+        # Evaluating block 0 fits on blocks 1 and 2, whose pooled median size sits midway between the two
+        # scales: 0.27 against the block's own 0.24, so +12.5 percent. The odd block is never in its own fit.
+        self.assertAlmostEqual(result[0]["median_signed_rel"], 0.125, places=6)
+        self.assertAlmostEqual(result[1]["median_signed_rel"], 0.125, places=6)
+        # Block 2 is judged by a fit that saw only the other scale: 0.24 / 0.30 - 1.
+        self.assertAlmostEqual(result[2]["median_signed_rel"], -0.2, places=6)
+        self.assertEqual(result[2]["frames"], 25)
+        self.assertNotAlmostEqual(result[2]["fitted_size_m"], result[2]["points"][0]["sqrt_pixels"]
+                                  * result[2]["points"][0]["range_m"] / self.FOCAL, places=3)
+
+    def test_bins_refuse_to_report_without_enough_blocks(self):
+        per_block = {0: {"points": self._points([55.] * 25), "errors": [0.05] * 25,
+                         "frames": 25, "median_abs_rel": 0.05}}
+        bins = E3S.bin_summary(per_block)
+        self.assertEqual(bins["50-70 m"]["status"], "INSUFFICIENT")
+        self.assertNotIn("median_abs_rel", bins["50-70 m"])
+
+    def test_bins_report_once_three_blocks_contribute(self):
+        per_block = {i: {"points": self._points([55.] * 25), "errors": [0.05 + 0.01 * i] * 25,
+                         "frames": 25, "median_abs_rel": 0.05} for i in range(3)}
+        bins = E3S.bin_summary(per_block)
+        entry = bins["50-70 m"]
+        self.assertEqual(entry["status"], "REPORTED")
+        self.assertEqual(entry["blocks"], 3)
+        self.assertAlmostEqual(entry["median_abs_rel"], 0.06, places=6)
+        self.assertAlmostEqual(entry["median_abs_error_m"], 0.06 * 55, places=4)
+
+    def test_gates_are_the_preregistered_ones(self):
+        good = {i: {"frames": 100, "median_abs_rel": 0.10} for i in range(6)}
+        bins = {"a": {"status": "REPORTED"}, "b": {"status": "REPORTED"}, "c": {"status": "REPORTED"}}
+        self.assertEqual(E3S.verdict(good, bins)["status"], "SIZE_RANGE_USABLE")
+        few = {i: {"frames": 100, "median_abs_rel": 0.10} for i in range(5)}
+        self.assertIn("G1_coverage", E3S.verdict(few, bins)["failed_gates"])
+        large = {i: {"frames": 100, "median_abs_rel": 0.40} for i in range(6)}
+        self.assertIn("G2_central", E3S.verdict(large, bins)["failed_gates"])
+        unstable = {i: {"frames": 100, "median_abs_rel": 0.02 + 0.08 * i} for i in range(6)}
+        self.assertIn("G3_stability", E3S.verdict(unstable, bins)["failed_gates"])
+        self.assertIn("G4_range_coverage", E3S.verdict(good, {"a": {"status": "REPORTED"}})["failed_gates"])
+
+    def test_thresholds_match_the_preregistration_text(self):
+        text = (Path(__file__).resolve().parents[1] / "results/eth_ds5_e3s_2026-09-10/PREREGISTRATION.md").read_text()
+        self.assertIn("0.25", text)
+        self.assertIn("0.20", text)
+        self.assertIn("at least 6 evaluation blocks", text)
+        self.assertIn("at least 500 evaluated frames", text)
+        self.assertEqual((E3S.G2_MEDIAN_ABS_REL, E3S.G3_BLOCK_SPREAD), (0.25, 0.20))
+        self.assertEqual((E3S.MIN_EVAL_BLOCKS, E3S.MIN_EVAL_FRAMES), (6, 500))
+        self.assertEqual(E3S.RANGE_BINS, ((30., 50.), (50., 70.), (70., 90.), (90., 110.)))
+
+    def test_border_frames_are_excluded(self):
+        track = {"track": {"1": {"x": 10.0, "y": 500.0, "pixels": 100, "extent_x": 5, "extent_y": 5},
+                           "2": {"x": 900.0, "y": 500.0, "pixels": 100, "extent_x": 5, "extent_y": 5}}}
+        pose = [[t, 0., 0., 60., 0., 0., 0., .01, .01, .01, 0.] for t in (0.0, 0.2)]
+        rows = E3S.load_points(track, pose, {1: 0.05, 2: 0.10}, [0., 0., 0.], 0.0, 1 / 30.)
+        self.assertEqual([r["frame_id"] for r in rows], [2])
+
+    def test_zero_distortion_leaves_size_untouched(self):
+        try:
+            import numpy as np
+        except ImportError:
+            self.skipTest("numpy unavailable")
+        K = [[1500., 0., 960.], [0., 1500., 540.], [0., 0., 1.]]
+        m = E3S.radial_magnification([[960., 540.], [1400., 800.]], K, [0.] * 5)
+        self.assertTrue(np.allclose(m, 1.0))
+        barrel = E3S.radial_magnification([[1400., 800.]], K, [-0.1, 0., 0., 0., 0.])
+        self.assertLess(barrel[0], 1.0)
 
 
 class ExtractionTest(unittest.TestCase):
