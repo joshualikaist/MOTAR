@@ -63,7 +63,22 @@ root를 강제한다. 판정은
 ```bash
 cd /home/fair/workspaces/aerial_gym_ws/.codex_worktrees/braking_route_v3
 /home/fair/miniconda3/envs/aerialgym/bin/python tools/check_research_authority.py --json
-# No training/evaluation command is currently authorized.
+# 2026-09-10부터 아래 P10 시드 재현만 허가됩니다. 그 외 학습/평가는 여전히 미허가입니다.
+```
+
+## 허가된 실행 — P10 시드 재현 (2026-09-10)
+
+계약: [`preregistration_p10_seed_replication_2026-09-10.md`](docs/preregistration_p10_seed_replication_2026-09-10.md).
+학습 시드 857, 863 각각 1,000 epoch(약 1시간), 이어서 캠페인당 4셀 × 평가 시드 2개(약 40분).
+평가 시드는 541·547로 P10과 동일하게 유지하고 source 셀도 캠페인 안에서 다시 돌립니다.
+
+```bash
+cd /home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/aerial_gym/rl_training/rl_games
+P10_SEED=857 nohup bash train_navrl_v2_p10_empirical_readapt.sh   > train_session_logs/p10_seed857_nohup.out 2>&1 &
+```
+
+TensorBoard는 `aerial_gym/rl_training/rl_games/runs`를 logdir으로 포트 **6009**에 띄웁니다.
+학습·평가가 도는 동안 `aerial_gym/`, `tools/`, `resources/robots`는 동결 경로입니다.
 ```
 
 fresh seed 911 curriculum은 이미 소비됐다. 밀도 70→205/step 15/dwell 1,000, route off,
