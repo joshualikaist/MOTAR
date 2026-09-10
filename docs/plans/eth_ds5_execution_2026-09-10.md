@@ -80,7 +80,14 @@ Receipts: [results/eth_ds5_intake_2026-09-10/README.md](../../results/eth_ds5_in
 - **Open blocker B — identity**: 36 pilot panels plus 17 fast-motion panels, GT geometry and motion cues
   are ready; no box exists. drone1 and drone2 are DJI quadrotors, so the six-armed airframe visible in
   frame 901 can only be drone0; that cue is in the review instructions.
-- **Open blocker C — calibration: provisionally REFUTED as published.** A provisional AI review of the 17
+- **Open blocker C — resolved in diagnosis, not in fix.** The published calibration is verified correct
+  for its own 122 chessboard images (held-out 1.245 px versus 1.262 px recomputed), so the file is not
+  stale. Against drone0, with tracking noise of 0.198 px over 3495 tracked frames, it leaves 5.6 px, and
+  no camera-model hypothesis survives held-out testing (best 3.04 px, winner differs by split, a radial
+  fit on the first half worsens the second). The inconsistency is more likely in the published timestamps
+  or the fused pose; settling it needs the ds5 calibration session or the authors. **Apparent size versus
+  range is stable to about 7 % over 18-108 m, so a size-only arm of E3 is feasible under separate
+  preregistration while absolute-geometry uses stay blocked.** Earlier provisional reading: A provisional AI review of the 17
   alignment frames fits best at −3.53 frames (−117.6 ms), which is not an integer and so not a frame
   relabelling, and even there the RMS is 6.9 px against the 4 px gate. Freeing the radial coefficient
   alone (−0.100 versus the published −0.0112) brings it to 2.34 px with the focal length unchanged. A

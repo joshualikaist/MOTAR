@@ -134,12 +134,34 @@ design question and changes the blocker.
   −0.0112, brings RMS to 2.34 px while the focal length stays unchanged. The Sony5100 file does not
   describe ds5 cam0's lens as published.
 
+## Distortion investigation (2026-09-10): the calibration is not the fault
+
+Full write-up in [distortion_investigation_2026-09-10/](distortion_investigation_2026-09-10/README.md).
+This supersedes the provisional review's reading that the distortion coefficients are wrong.
+
+- **The published calibration is correct for its own images.** The dataset's 122 a5100 chessboard images
+  were fetched and hash-verified; recomputing the intrinsics from half of them and scoring on the other
+  half gives 1.262 px, against 1.245 px for the published file. It is not stale or mis-assigned.
+- **The residual against drone0 is 28 times the measurement noise.** The 41 reviewed centres were
+  propagated to 3495 tracked positions; tracking noise is 0.198 px, measured from trajectory smoothness
+  with no ground truth. The published calibration leaves 5.6 px RMS on 678 of them.
+- **No camera-model hypothesis survives held-out testing.** Radial distortion, focal length, principal
+  point, camera position, time drift, an 8 s rotation refit and the prism lever arm were each fitted on
+  one split and scored on another, with the rotation refitted on the held-out split. The winner differs
+  by split and the best held-out result is 3.04 px, still 15 times the noise. A radial model fitted on
+  the first half makes the second half worse.
+- **An unexplained −3.6 frame (−120 ms) offset is needed by every variant.**
+- **What still works**: apparent size against range is stable to about 7 % over 18 to 108 m, because a
+  5 px position error does not corrupt a size measurement. A size-versus-range arm of E3 is feasible
+  under separate preregistration; absolute-geometry uses stay blocked.
+
 ## Findings that still block measurement
 
 1. **Frame/time alignment**: three candidate mappings, unresolved without reviewed boxes (above).
 2. **Identity**: three drones flew and upstream publishes no 2D labels for ds5. GT is drone0 (Pixhawk)
    only. GT places drone0 5.8 m from cam0 on the ground until about 30 s, then 5–108 m away.
-3. **Calibration candidate**: provisionally REFUTED as published, see above; resolution 1920x1080 and 29.97 fps match `calibration/sony5100/sony5100.json`;
+3. **Calibration candidate**: not usable for absolute geometry, but the file itself is verified correct
+   for its own images, see the distortion investigation; resolution 1920x1080 and 29.97 fps match `calibration/sony5100/sony5100.json`;
    the file carries no camera-model, lens or zoom tag (XAVC brand only) and ds5 publishes no per-camera
    calibration. Compatibility is testable only by reprojecting reviewed drone0 boxes
    (`tools/check_eth_ds5_reprojection.py`; thresholds fixed before any box existed: pixel RMS < 4 px,

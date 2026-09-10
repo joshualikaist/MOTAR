@@ -22,6 +22,10 @@ import verify_eth_ds5_video as VERIFY
 import prepare_eth_ds5_review as REVIEW
 import check_eth_ds5_reprojection as REPROJ
 import select_eth_ds5_alignment_frames as SELECT
+import fetch_eth_ds5_calibration_images as FETCH
+import calibrate_eth_ds5_cam0 as CALIB
+import track_eth_ds5_drone as TRACK
+import audit_eth_ds5_camera_model as AUDIT
 
 
 class Response(io.BytesIO):
@@ -281,6 +285,110 @@ class AlignmentSelectionTest(unittest.TestCase):
         self.assertAlmostEqual(centre[0], 960., places=6)
         self.assertIsNone(SELECT.predicted_pixel(R, [0., 0., 0.], [50., 40., 0.], K, [0.] * 5, [1920, 1080], 0))
         self.assertIsNone(SELECT.predicted_pixel(R, [0., 0., 0.], [50., 0., 0.], K, [0.] * 5, [1920, 1080], 1000))
+
+
+class CalibrationImageTest(unittest.TestCase):
+    TREE = {"tree": [{"type": "blob", "path": "calibration/sony5100/calibration_images/00000.jpg"},
+                     {"type": "blob", "path": "calibration/sony5100/calibration_images/00010.jpg"},
+                     {"type": "blob", "path": "calibration/sony5100/sony5100.json"},
+                     {"type": "blob", "path": "calibration/sonyG/calibration_images/00000.jpg"},
+                     {"type": "tree", "path": "calibration/sony5100/calibration_images"}]}
+
+    def test_only_that_cameras_images(self):
+        paths = FETCH.image_paths(self.TREE, "sony5100")
+        self.assertEqual(paths, ["calibration/sony5100/calibration_images/00000.jpg",
+                                 "calibration/sony5100/calibration_images/00010.jpg"])
+        self.assertEqual(FETCH.image_paths(self.TREE, "sonyG"),
+                         ["calibration/sonyG/calibration_images/00000.jpg"])
+        self.assertEqual(FETCH.image_paths(self.TREE, "gopro3"), [])
+
+    def test_held_out_error_recovers_a_known_board(self):
+        try:
+            import cv2
+            import numpy as np
+        except ImportError:
+            self.skipTest("OpenCV/numpy unavailable")
+        K = [[1500., 0., 960.], [0., 1500., 540.], [0., 0., 1.]]
+        dist = [-0.05, 0.01, 0., 0., 0.]
+        grid = np.zeros((42, 3), np.float32)
+        grid[:, :2] = np.mgrid[0:7, 0:6].T.reshape(-1, 2)
+        samples = []
+        for i in range(3):
+            rvec = np.array([0.1 * i, -0.2 + 0.1 * i, 0.05])
+            tvec = np.array([-3.0 + i, -2.5, 12.0 + i])
+            corners, _ = cv2.projectPoints(grid, rvec, tvec, np.asarray(K), np.asarray(dist))
+            samples.append((grid, corners.reshape(-1, 2)))
+        exact = CALIB.held_out_error(K, dist, samples)
+        self.assertLess(exact["rms_px"], 1e-3)
+        self.assertEqual(exact["boards"], 3)
+        wrong = CALIB.held_out_error([[1400., 0., 960.], [0., 1400., 540.], [0., 0., 1.]], dist, samples)
+        self.assertGreater(wrong["rms_px"], exact["rms_px"] * 10)
+
+
+class TrackingTest(unittest.TestCase):
+    def test_centroid_finds_a_dark_blob_and_refuses_flat_sky(self):
+        try:
+            import numpy as np
+        except ImportError:
+            self.skipTest("numpy unavailable")
+        sky = np.full((120, 160), 200, np.float32)
+        self.assertIsNone(TRACK.centroid(sky, (80, 60), 14, 25.0, 1500))
+        sky[58:62, 78:86] = 60
+        found = TRACK.centroid(sky, (80, 60), 14, 25.0, 1500)
+        self.assertAlmostEqual(found["x"], 81.5, delta=0.6)
+        self.assertAlmostEqual(found["y"], 59.5, delta=0.6)
+        self.assertEqual(found["extent_x"], 8)
+        self.assertEqual(found["extent_y"], 4)
+        self.assertIsNone(TRACK.centroid(sky, (80, 60), 14, 25.0, 4))
+
+    def test_smoothness_noise_measures_only_the_wobble(self):
+        try:
+            import numpy as np
+        except ImportError:
+            self.skipTest("numpy unavailable")
+        rng = np.random.default_rng(0)
+        track = {}
+        for i in range(60):
+            track[i] = {"x": 100 + 3.0 * i + 0.01 * i * i + rng.normal(0, 0.5),
+                        "y": 50 + 0.5 * i + rng.normal(0, 0.5)}
+        noise = TRACK.smoothness_noise(track)
+        self.assertAlmostEqual(noise["rms_px"], 0.5 * 2 ** 0.5, delta=0.3)
+        self.assertIsNone(TRACK.smoothness_noise({0: {"x": 1., "y": 1.}}))
+
+
+class CameraModelAuditTest(unittest.TestCase):
+    K = [[1500., 0., 960.], [0., 1500., 540.], [0., 0., 1.]]
+    D = [-0.01, 0.02, 0.0, 0.0, -0.1]
+
+    def test_parameters_apply_in_a_fixed_order(self):
+        try:
+            import numpy as np
+        except ImportError:
+            self.skipTest("numpy unavailable")
+        K, d = AUDIT.apply_parameters(self.K, self.D, [-3.6, -0.2, 0.5, -0.7, 12.0, -8.0, 0.99],
+                                      ("k", "pp", "f"))
+        self.assertAlmostEqual(d[0], -0.2)
+        self.assertAlmostEqual(d[1], 0.5)
+        self.assertAlmostEqual(d[4], -0.7)
+        self.assertAlmostEqual(K[0][2], 972.0)
+        self.assertAlmostEqual(K[1][2], 532.0)
+        self.assertAlmostEqual(K[0][0], 1485.0)
+
+    def test_published_hypothesis_changes_nothing(self):
+        K, d = AUDIT.apply_parameters(self.K, self.D, [-3.6], ())
+        self.assertEqual(K.tolist(), self.K)
+        self.assertEqual(list(d), self.D)
+
+    def test_initial_vector_matches_the_free_set(self):
+        self.assertEqual(AUDIT.initial((), self.D, -3.6), [-3.6])
+        self.assertEqual(len(AUDIT.initial(("k",), self.D, -3.6)), 4)
+        self.assertEqual(len(AUDIT.initial(("k", "pp", "f"), self.D, -3.6)), 7)
+        self.assertEqual(AUDIT.initial(("f",), self.D, -3.6)[1], 1.0)
+
+    def test_every_hypothesis_is_named_once(self):
+        names = [n for n, _ in AUDIT.HYPOTHESES]
+        self.assertEqual(len(names), len(set(names)))
+        self.assertIn("published", names)
 
 
 class ExtractionTest(unittest.TestCase):
