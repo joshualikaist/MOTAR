@@ -13,13 +13,13 @@
 | `review_material_offset0/review_000901.jpg` | 17.9 m | **암 6개**가 보입니다. DJI Phantom·Mavic은 쿼드로터라 배제됩니다 |
 | `review_material_offset0/review_001051.jpg` | 30.7 m | 같은 6암 기체가 계속 보입니다 |
 | `review_material_offset0/review_005251.jpg` | 61.4 m | 비행 후반에도 같은 기체입니다 |
-| `alignment_review/review_004937.jpg` | 62 m | 회전익 형상이 분해됩니다 |
-| `alignment_review/review_001605.jpg` | 67 m | 하늘 배경, 모션 블러가 있는 전형적 프레임 |
-| `alignment_review/review_003909.jpg` | 99 m | 최원거리에 가깝습니다. 후보 5번이 표적입니다 |
-| `review_material_offset0/review_001651.jpg` | 87 m | **제외한 프레임**입니다. 나무와 겹칩니다 |
-| `alignment_review/review_001778.jpg` | 71 m | **제외한 프레임**입니다. 나무 꼭대기와 겹칩니다 |
+| `alignment_review/review_004937.jpg` | 61.5 m | 회전익 형상이 분해됩니다 |
+| `alignment_review/review_001605.jpg` | 82.3 m | 하늘 배경, 모션 블러가 있는 전형적 프레임 |
+| `alignment_review/review_003909.jpg` | 97.0 m | 최원거리에 가깝습니다. 후보 5번이 표적입니다 |
+| `review_material_offset0/review_001651.jpg` | 87.2 m | **제외한 프레임**입니다. 나무와 겹칩니다 |
+| `alignment_review/review_001778.jpg` | 87.5 m | **제외한 프레임**입니다. 나무 꼭대기와 겹칩니다 |
 | `review_material_offset0/review_000001.jpg` | 5.8 m | 표적이 화면 밖입니다. "안 보임"이 정답입니다 |
-| `review_material_offset0/review_003451.jpg` | — | 후보가 나무입니다. 드론이 아닙니다 |
+| `review_material_offset0/review_003451.jpg` | 54.9 m | 후보가 나무입니다. 드론이 아닙니다 |
 
 경로 앞에 `/home/fair/workspaces/aerial_gym_ws/datasets/eth_ds5_cam0_extracted/`를 붙이세요.
 패널 아래쪽에 확대 crop이 붙어 있으니 그걸 보시면 됩니다.
