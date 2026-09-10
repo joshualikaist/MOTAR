@@ -170,7 +170,8 @@
           주입한 뒤 PPO를 새 계보로 재학습합니다. 장거리 12–28 m는 camera 중심이고 LiDAR는 12 m 이내
           range 보정과 독립 obstacle sensing에 제한합니다.</p>
       </div>
-      <img src="../assets/motar-perception-final.svg" alt="구현 완료된 실영상 인지, 스트리밍 22.48 FPS, 최종 test와 P10 평가 결과 및 한계">
+      <img src="../assets/paper/perception-block-diagram.svg" alt="검출과 광류의 병렬 계산에서 특징 결합, 시간 이력, Transformer 선택기, 후보 rank 또는 NO_LOCK으로 이어지는 블록 다이어그램">
+      <p>실선은 구현된 데이터 흐름입니다. 출력은 프레임 안의 후보 선택이며 물리적인 track ID나 거리 추정이 아닙니다. <a href="../assets/motar-perception-final.svg">평가 결과 요약</a> · <a href="../assets/paper/">논문형 그림 다운로드</a>.</p>
       <p>22.48 FPS는 개발 환경의 decode-inclusive 측정입니다. validation과 test는 서로 다른 영상이며, P10 주 효과의 CI는 0을 포함합니다. 센서 융합과 실제 비행은 별도 미검증 범위입니다.</p>
       <p><a href="../plans/perception_final_implementation_plan_2026-09-07.md">구현 순서·인터페이스·완료 조건의 정본</a></p>
 
@@ -445,7 +446,8 @@
           표: <a href="../a7_arc_attribution_table.md"><code>docs/a7_arc_attribution_table.md</code></a>,
           판정 <a href="../plans/confirmation_phase_plan_2026-09-06.md"><code>docs/plans/confirmation_phase_plan_2026-09-06.md</code></a>.</p>
       </div>
-      <img src="../assets/motar-safety-filter.svg" alt="LiDAR에서 방향 회랑 선택, cap 법칙, 크기 스케일로 이어지는 speed governor 구조와 네 가지 맹점 및 측정 판정">
+      <img src="../assets/paper/safety-filter-block-diagram.svg" alt="LiDAR clearance에서 속도 cap을 계산하고 정책 명령의 수평 크기만 조정하는 직선 회랑 기준선 블록 다이어그램">
+      <p>정책 명령의 방향은 회랑 선택에, 원래 명령은 크기 조정에 전달됩니다. 이 그림은 직선 회랑 기준선이며 후속 arc variant와 구분합니다. <a href="../assets/motar-safety-filter.svg">기존 상세 그림과 측정 판정</a> · <a href="../assets/paper/">SVG·PNG 다운로드</a>.</p>
     </section>
 
     <section class="section evidence" id="evidence">

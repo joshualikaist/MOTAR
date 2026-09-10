@@ -13,6 +13,9 @@ why** — including the results that came out negative.
 [16:9 SVG + 4K PNG 전체 다운로드](docs/assets/presentation/motar-presentation-2026-09-10.zip).
 각 그림은 구현·측정 완료, 설계 후보, 미검증 범위를 구분합니다. 실기 통합 성능을 뜻하지 않습니다.
 
+**논문형 블록 다이어그램:** [인지 과정·safety filter](docs/assets/paper/) ·
+[SVG + 4K PNG 다운로드](docs/assets/paper/motar-paper-block-diagrams.zip).
+
 [Research site](docs/status/) · [System specification](docs/MOTAR_SYSTEM_SPEC_2026-08-24.md) ·
 [Verification](VERIFICATION.md) · [Operations](OPERATIONS.md) · [Worklog](WORKLOG.md) ·
 [Perception plan](docs/plans/perception_final_implementation_plan_2026-09-07.md)
@@ -167,7 +170,12 @@ default is `off` on both sides.
 > obstacle inside the disk the arc sweeps can go undetected. The numbers below measure **this
 > implementation**.
 
-![MOTAR speed governor structure and blind spots](docs/assets/motar-safety-filter.svg)
+![Direction-preserving speed governor block diagram](docs/assets/paper/safety-filter-block-diagram.svg)
+
+**Figure — safety filter.** LiDAR clearance determines the cap, while the policy command
+supplies both the corridor direction and the velocity to be scaled. This depicts the documented
+straight-corridor baseline, not the later arc variant.
+[Existing detailed diagram and historical findings](docs/assets/motar-safety-filter.svg).
 
 The governor selects LiDAR returns inside a **straight corridor of half-width 0.45 m around the
 commanded direction**, takes the minimum forward distance as `clearance`, and applies one cap law
@@ -243,7 +251,12 @@ python tools/pool_navrl_seed_replication.py \
 
 ## Perception — the real-imagery path
 
-![MOTAR implemented perception stages and bounded evaluation results](docs/assets/motar-perception-final.svg)
+![Streaming perception process block diagram](docs/assets/paper/perception-block-diagram.svg)
+
+**Figure — perception process.** Detection and optical flow join at feature assembly, followed by
+the sequence-local history buffer and temporal selector. Output is a frame-local candidate rank
+or `NO_LOCK`, not a physical track ID or a validated range estimate.
+[Separate evaluation summary](docs/assets/motar-perception-final.svg).
 
 **그림 읽기.** 실영상 검출·시간 모델·스트리밍 및 P8–P10 평가가 완료된 범위입니다.
 22.48 FPS는 개발 환경의 decode-inclusive 측정이며 탑재 장치나 실기 성능이 아닙니다.

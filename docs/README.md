@@ -7,6 +7,9 @@
 
 ## 먼저 읽을 것
 
+논문형 블록 다이어그램: [인지 과정·safety filter](assets/paper/) ·
+[SVG + 4K PNG ZIP](assets/paper/motar-paper-block-diagrams.zip).
+
 발표용 그림(2026-09-10): [9개 파트 미리보기](assets/presentation/) ·
 [16:9 SVG + 4K PNG ZIP](assets/presentation/motar-presentation-2026-09-10.zip).
 각 파트의 완료 범위와 한계를 그림 안에 함께 표기합니다.

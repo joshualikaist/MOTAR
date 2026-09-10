@@ -64,6 +64,24 @@ class PresentationFiguresTest(unittest.TestCase):
         for term in ['[−0.38, +3.21]', '0 포함', '학습 시드 1개', '실제 비행은 별도 미검증']:
             self.assertIn(term, perception)
 
+    def test_paper_diagrams_and_export(self):
+        paper = ROOT / 'docs/assets/paper'
+        manifest = json.loads((paper / 'manifest.json').read_text())
+        for filename, expected in manifest.items():
+            self.assertEqual(hashlib.sha256((paper / filename).read_bytes()).hexdigest(), expected)
+        for stem in ['perception-block-diagram', 'safety-filter-block-diagram']:
+            svg = ET.parse(paper / (stem + '.svg')).getroot()
+            self.assertEqual(svg.attrib['viewBox'], '0 0 1600 900')
+            self.assertGreaterEqual(len(svg.findall('.//s:path[@marker-end]', NS)), 6)
+            data = (paper / (stem + '.png')).read_bytes()
+            self.assertEqual(struct.unpack('>II', data[16:24]), (3840, 2160))
+            for page in [ROOT / 'README.md', ROOT / 'docs/status/index.html']:
+                self.assertIn('paper/' + stem + '.svg', page.read_text())
+        with zipfile.ZipFile(paper / 'motar-paper-block-diagrams.zip') as archive:
+            self.assertIsNone(archive.testzip())
+            for filename in archive.namelist():
+                self.assertEqual(archive.read(filename), (paper / filename).read_bytes())
+
 
 if __name__ == '__main__':
     unittest.main()

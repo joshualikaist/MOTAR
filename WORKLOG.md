@@ -17046,3 +17046,15 @@ SVG 재생성 바이트 동일 확인. arena route/motion 및 headless WebGL 테
 `git diff --check` 통과. 기존 `test_status_site.js`는 새 그림/링크 계약을 통과한 뒤 241행의
 과거 recovery gate에서 중단한다: snapshot은 `RESULT_UNAVAILABLE_OR_MALFORMED`인데 테스트는
 `PASS_32_CELL_INTEGRITY`를 요구한다. 이 선행 불일치를 숨기기 위해 snapshot을 바꾸지 않았다.
+
+### 후속 — 결과 카드 대신 논문형 블록 다이어그램
+
+사용자가 요청한 것은 결과 요약이 아니라 모듈·입출력·화살표 중심 구조도였으므로 인지 과정과
+safety filter를 새로 도식화했다. 기존 streaming 명세와 safety 상세 그림만 재구성했으며
+알고리즘·실험은 변경하지 않았다. 인지는 검출/광류 병렬 경로, 특징 결합, 시간 이력과 선택 출력을
+표시한다. safety는 LiDAR 처리와 정책 명령의 분기·결합을 표시하며 **직선 회랑 기준선**으로
+한정했다. arc variant나 실기 통합으로 읽지 않도록 캡션에 명시했다.
+
+`docs/assets/paper/`에 SVG·4K PNG 각 2장, 설명, SHA manifest와 ZIP을 배포한다.
+README와 사이트의 두 파트는 새 블록도를 표시하고 이전 요약/상세도는 링크로 보존한다.
+Chrome 실렌더·텍스트 캔버스 이탈 검사, 이미지/ZIP/SHA/문서 연결 검사를 수행했다.
