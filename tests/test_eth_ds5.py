@@ -27,6 +27,7 @@ import calibrate_eth_ds5_cam0 as CALIB
 import track_eth_ds5_drone as TRACK
 import audit_eth_ds5_camera_model as AUDIT
 import measure_eth_ds5_size_range as E3S
+import check_eth_ds5_attitude_gate as GATE
 
 
 class Response(io.BytesIO):
@@ -491,6 +492,82 @@ class SizeRangeTest(unittest.TestCase):
         self.assertTrue(np.allclose(m, 1.0))
         barrel = E3S.radial_magnification([[1400., 800.]], K, [-0.1, 0., 0., 0., 0.])
         self.assertLess(barrel[0], 1.0)
+
+
+class AttitudeGateTest(unittest.TestCase):
+    def setUp(self):
+        try:
+            import numpy as np
+            from scipy.spatial.transform import Rotation
+        except ImportError:
+            self.skipTest("numpy/scipy unavailable")
+        self.np, self.Rotation = np, Rotation
+
+    def test_local_acceleration_is_exact_on_a_quadratic(self):
+        np = self.np
+        times = np.linspace(0, 4, 41)
+        positions = np.stack([0.5 * 3.0 * times ** 2, 2.0 * times, np.full_like(times, 7.0)], axis=1)
+        accel = GATE.local_acceleration(times, positions, half=4)
+        inner = ~np.isnan(accel[:, 0])
+        self.assertTrue(np.allclose(accel[inner, 0], 3.0, atol=1e-8))
+        self.assertTrue(np.allclose(accel[inner, 1:], 0.0, atol=1e-8))
+
+    def test_direction_error_is_zero_when_aligned_and_flat_when_opposed(self):
+        np = self.np
+        axes = np.array([[1.0, 0.0, 0.5], [1.0, 0.0, 0.5]])
+        accel = np.array([[2.0, 0.0, 0.0], [-2.0, 0.0, 0.0]])
+        errors, good = GATE.direction_error_deg(axes, accel)
+        self.assertTrue(good.all())
+        self.assertAlmostEqual(errors[0], 0.0, places=6)
+        self.assertAlmostEqual(errors[1], 180.0, places=6)
+
+    def test_the_generating_convention_wins_by_a_margin(self):
+        """Accelerations built from one reading of the angles must single that reading out."""
+        np, Rotation = self.np, self.Rotation
+        rng = np.random.default_rng(3)
+        rpy = np.column_stack([rng.uniform(-12, 12, 400), rng.uniform(-12, 12, 400), rng.uniform(-180, 180, 400)])
+        truth = GATE.candidate_axes(rpy, "xyz", False, True, -1)
+        tilt = np.degrees(np.arccos(np.clip(np.cos(np.radians(rpy[:, 0])) * np.cos(np.radians(rpy[:, 1])), -1, 1)))
+        horizontal = truth[:, :2] / np.maximum(np.linalg.norm(truth[:, :2], axis=1, keepdims=True), 1e-9)
+        accel = np.zeros((400, 3))
+        accel[:, :2] = (GATE.GRAVITY * np.tan(np.radians(tilt)))[:, None] * horizontal
+        scores, usable = GATE.score_conventions(rpy, accel, tilt)
+        ranked = sorted(scores, key=lambda n: scores[n]["median_direction_error_deg"])
+        self.assertEqual(scores[ranked[0]]["order"], "xyz")
+        self.assertEqual(scores[ranked[0]]["body_sign"], -1)
+        self.assertLess(scores[ranked[0]]["median_direction_error_deg"], 1e-6)
+        margin = scores[ranked[1]]["median_direction_error_deg"] - scores[ranked[0]]["median_direction_error_deg"]
+        self.assertGreater(margin, GATE.C1_MIN_MARGIN_DEG)
+
+    def test_thrust_and_drag_fit_recovers_known_coefficients(self):
+        np = self.np
+        rng = np.random.default_rng(11)
+        n = 300
+        tilt = rng.uniform(2, 14, n)
+        heading = rng.uniform(-np.pi, np.pi, n)
+        axes = np.column_stack([np.cos(heading), np.sin(heading), np.full(n, 0.9)])
+        velocity = np.column_stack([rng.uniform(-6, 6, n), rng.uniform(-6, 6, n), np.zeros(n)])
+        speed = np.linalg.norm(velocity, axis=1)[:, None]
+        thrust = (GATE.GRAVITY * np.tan(np.radians(tilt)))[:, None] * axes[:, :2]
+        accel = np.zeros((n, 3))
+        accel[:, :2] = 0.9 * thrust - 0.03 * speed * velocity[:, :2]
+        fit = GATE.thrust_and_drag_fit(axes, tilt, velocity, accel, np.ones(n, bool))
+        self.assertAlmostEqual(fit["thrust_gain"], 0.9, places=6)
+        self.assertAlmostEqual(fit["drag_coefficient"], -0.03, places=6)
+        self.assertGreater(fit["correlation"], 0.99)
+
+    def test_occupancy_counts_frames_and_distinct_blocks(self):
+        records = [{"range_m": 75.0, "aspect_deg": 50.0, "block": b} for b in (1, 1, 2)]
+        table = GATE.occupancy(records)
+        self.assertEqual(table["70-90 m / 45-60 deg"], {"frames": 3, "blocks": 2})
+        self.assertEqual(table["30-50 m / 0-45 deg"], {"frames": 0, "blocks": 0})
+
+    def test_gate_thresholds_are_declared_constants(self):
+        self.assertEqual(GATE.C1_MAX_MEDIAN_DEG, 30.0)
+        self.assertEqual(GATE.C1_MIN_MARGIN_DEG, 10.0)
+        self.assertEqual(GATE.C2B_MIN_RESIDUAL_IMPROVEMENT, 0.20)
+        self.assertEqual(GATE.C3_MAX_ASPECT_RANGE_CORRELATION, 0.7)
+        self.assertEqual(GATE.C4_MAX_TIMING_FRACTION, 0.05)
 
 
 class ExtractionTest(unittest.TestCase):
