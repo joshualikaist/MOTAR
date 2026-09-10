@@ -36,7 +36,7 @@
       </div>
       <div class="status-line">
         <span class="status-dot" aria-hidden="true"></span>
-        <strong>ETH ds5로 크기 기반 거리 추정을 측정 · 절대 기하는 막힘</strong><span>실촬영 영상에서 표적을 3,495프레임 추적(측정 잡음 <strong>0.196 px</strong>)하고 <strong>사전등록을 먼저 커밋한 뒤</strong> E3-S를 실행해 블록 단위 홀드아웃 거리오차 중앙값 <strong>6.2 %</strong>(31–108 m)를 얻었습니다. 반면 공개 보정으로 재투영하면 5.6 px가 남고 어떤 카메라 모델 가설도 홀드아웃을 통과하지 못해 <strong>절대 기하 용도는 fail-closed</strong> · 앞서 낸 "왜곡계수가 틀렸다"는 잠정 결론은 일반화 실패로 <strong>철회</strong> · E3-P는 자세 신뢰성 하나로 <code>BLOCKED</code> · <a href="../plans/eth_ds5_e3_2026-09-10.md">E3 계획</a> · 2026-09-10</span>
+        <strong>ETH ds5로 크기 기반 거리 추정을 측정 · 절대 기하는 막힘</strong><span><strong>사전등록을 먼저 커밋한 뒤</strong> E3-S를 실행했습니다. 3,107프레임·9개 블록에서 블록별 절대 상대 거리 오차 중앙값의 중앙값은 <strong>6.2 %</strong>(31–108 m)입니다. 한 비행의 크기 기반 거리 추정 성능이며 자세 오차가 아닙니다. 0.196 px는 궤적 매끄러움 잔차이지 전체 측정 정확도가 아닙니다. 5.6 px 재투영 잔차의 원인은 미확정으로 <strong>절대 기하 용도는 fail-closed</strong> · "왜곡계수가 틀렸다"는 잠정 결론은 <strong>철회</strong> · E3-P는 자세 신뢰성 기준 미달로 <code>BLOCKED</code> · <a href="../plans/eth_ds5_e3_2026-09-10.md">E3 계획</a> · 2026-09-10</span>
       </div>
     </section>
 
@@ -53,7 +53,8 @@
       <p><code>navrl_ref5in_quad_v2</code> 1.20&nbsp;kg · 대각 220&nbsp;mm · 모터당 9.6&nbsp;N →
         <strong>TWR 3.26</strong>. 2.5&nbsp;m/s에서 정지거리 1.81&nbsp;m, 선회반경 3.12&nbsp;m.
         <strong>hardware-informed simulation candidate이며 실기는 미조립입니다.</strong></p>
-      <img src="../assets/motar-system-overview.svg" alt="CURRENT SOFTWARE PATH: 160×90 단일 detector와 단일 KF target track에서 구조화 이력, Transformer 정책, 비행 제어로 이어지는 흐름">
+      <img src="../assets/motar-system-overview.svg" alt="Track A 시뮬레이션 진단, Track B 실영상 인지, Track C 거리 측정의 완료 범위와 한계">
+      <p><a href="../assets/presentation/">발표용 그림 9개 미리보기</a> · <a href="../assets/presentation/motar-presentation-2026-09-10.zip" download>16:9 SVG + 4K PNG 전체 다운로드</a>. 그림과 설명은 2026-09-10 기준이며 실기 통합 검증을 뜻하지 않습니다.</p>
     </section>
 
     <section class="section arena-section" id="arena">
@@ -169,7 +170,8 @@
           주입한 뒤 PPO를 새 계보로 재학습합니다. 장거리 12–28 m는 camera 중심이고 LiDAR는 12 m 이내
           range 보정과 독립 obstacle sensing에 제한합니다.</p>
       </div>
-      <img src="../assets/motar-perception-final.svg" alt="실제 NPS와 Det-Fly 공대공 영상에서 Top-K UAV 후보를 검출하고 KF, GRU, Temporal Transformer를 비교한 뒤 측정 오차를 simulator에 주입해 PPO를 재학습하는 최종 perception 계획">
+      <img src="../assets/motar-perception-final.svg" alt="구현 완료된 실영상 인지, 스트리밍 22.48 FPS, 최종 test와 P10 평가 결과 및 한계">
+      <p>22.48 FPS는 개발 환경의 decode-inclusive 측정입니다. validation과 test는 서로 다른 영상이며, P10 주 효과의 CI는 0을 포함합니다. 센서 융합과 실제 비행은 별도 미검증 범위입니다.</p>
       <p><a href="../plans/perception_final_implementation_plan_2026-09-07.md">구현 순서·인터페이스·완료 조건의 정본</a></p>
 
       <h3>Current baseline — known failure</h3>
@@ -299,8 +301,9 @@
           <tr><td>clean 유지도 재적응 &minus; 동결, 둘 다 clean</td><td>&minus;1.25 pp</td><td>[&minus;2.95, +0.44]</td></tr>
         </tbody>
       </table></div>
-      <p>0을 제외한 것은 두 &ldquo;비용&rdquo;뿐입니다. 주 추정량도, 두 비용의 차이도 0을 포함합니다.
-        학습 시드가 811 하나이므로 기술통계이며 시드 일반적 PPO 주장이 아닙니다. 평가 중 P9 모델 SHA를
+      <p>주 추정량의 CI는 0을 포함하며 clean 성능 보존이나 비열등성도 입증하지 못했습니다.
+        비용 변화의 상호작용은 별도 추정량으로, 사후 계산 +2.67 pp [+0.20, +5.14]는 탐색적·다중비교 미보정입니다.
+        개별 비용 CI의 겹침은 상호작용 검정이 아닙니다. 학습 시드가 811 하나이므로 시드 일반적 PPO 주장이 아닙니다. 평가 중 P9 모델 SHA를
         수치 config-drift 루프에 넣어 P9 학습 체크포인트가 로드 즉시 죽는 결함을 찾아 고쳤고, 회귀 테스트를
         allow-list로 뒤집은 뒤 8셀을 전부 재실행했습니다.
         <a href="../../results/perception_p10_2026-09-09/README.md">P10 8 cell&middot;판정</a></p>
@@ -364,23 +367,27 @@
         </tbody>
       </table></div>
       <h3>ETH ds5 &mdash; 실촬영으로 거리 오차를 재려는 시도 (2026-09-10)</h3>
+      <figure class="diagram">
+        <img src="../assets/motar-eth-e3-evidence.svg" alt="E3-S 블록 수준 절대 상대 거리 오차 6.2%, E3-P 자세 신뢰성 gate 미달로 BLOCKED">
+        <figcaption>6.2%는 블록별 절대 상대 거리 오차 중앙값의 중앙값입니다. 9.3 pp는 블록 간 p90−p10 산포이지 신뢰구간이 아닙니다. 크기 척도는 어두운 픽셀 수의 제곱근이며 GT bbox가 아닙니다. 같은 비행을 블록으로 나눈 평가이며 독립 신규 비행 검증이 아닙니다.</figcaption>
+      </figure>
       <p>시뮬레이터가 만들지 못하는 것은 <strong>실제 표적의 겉보기 크기 변동</strong>입니다. ETH
-        <code>drone-tracking-datasets</code> ds5는 총국 기반 위치 GT를 주는 유일한 후보라 cam0 영상
+        <code>drone-tracking-datasets</code> ds5는 토털스테이션 기반 위치 GT를 제공하여 cam0 영상
         4.5 GB를 받아 검증했습니다. 결론부터 적으면 <strong>크기&rarr;거리는 쟀고, 절대 기하는 막혔습니다.</strong></p>
       <div class="scrollx"><table>
         <thead><tr><th>단계</th><th>결과</th><th>상태</th></tr></thead>
         <tbody>
           <tr><td>E1&ndash;E2 수집·검증</td>
-              <td>분할 압축 43개 해시 검증 후 해제 · 표적은 <strong>6암 기체</strong>라 DJI 쿼드로터 둘과 구분됨 · 41프레임 검수 후 3,495프레임 추적, 측정 잡음 <strong>0.196 px</strong></td>
+              <td>분할 압축 43개 해시 검증 후 해제 · 표적은 <strong>6암 기체</strong>라 DJI 쿼드로터 둘과 구분됨 · 41프레임 검수 후 3,495프레임 추적, 궤적 매끄러움 잔차 <strong>0.196 px</strong> (전체 측정 정확도의 상한은 아님)</td>
               <td><strong>완료</strong></td></tr>
           <tr><td>타임스탬프 정합</td>
               <td>공개 시각 20,969행 대 컨테이너 20,970프레임 &mdash; 원인은 mp4 <code>edit list</code>가 정확히 1프레임을 건너뛰기 때문. 다만 최적 정렬이 <strong>&minus;3.5프레임(&minus;118 ms)</strong>의 비정수라 프레임 재라벨링으로 설명되지 않음</td>
               <td><code>미해결</code></td></tr>
           <tr><td>카메라 보정</td>
-              <td>공개 파일은 <strong>자기 체커보드 122장에 대해서는 정확</strong>(홀드아웃 1.245 px 대 재계산 1.262 px). 그런데 드론 대비 잔차가 <strong>5.6 px</strong>로 잡음의 28배이고, 방사왜곡·초점·주점·카메라 위치·시간 드리프트·레버암 <strong>어느 가설도 홀드아웃을 통과하지 못함</strong></td>
+              <td>공개 파일은 <strong>자기 체커보드 122장에 대해서는 검증됨</strong>(홀드아웃 1.245 px 대 재계산 1.262 px). 드론 재투영 잔차는 <strong>5.6 px</strong>이고, 방사왜곡·초점·주점·카메라 위치·시간 드리프트·레버암 <strong>어느 가설도 모든 홀드아웃 분할에서 개선되지 않음</strong></td>
               <td><code>절대 기하 불가</code></td></tr>
           <tr><td><strong>E3-S</strong> 크기&rarr;거리</td>
-              <td>표적 위치 GT와 초점거리만 사용해 위 두 blocker를 우회. 15초 블록 leave-one-block-out으로 전 프레임 표본외 평가. <strong>거리오차 중앙값 6.2 %</strong>, 블록간 산포 9.3 %p, 3,107프레임 31&ndash;108 m</td>
+              <td>크기 측정·위치 GT·초점거리를 사용하고 미해결 타이밍은 민감도로 보고. 15초 블록 leave-one-block-out. <strong>블록별 절대 상대 거리 오차 중앙값의 중앙값 6.2 %</strong>, 블록간 산포 9.3 %p, 3,107프레임 31&ndash;108 m</td>
               <td><strong>SIZE_RANGE_USABLE</strong></td></tr>
           <tr><td><strong>E3-P</strong> 자세 분리</td>
               <td>자세 규약은 데이터로 확인(내재 <code>xyz</code>, body&rarr;NED, 2위와 16.3&deg; 차) · aspect와 거리는 분리 가능(상관 0.21) · 타이밍 영향 2.9 % · 그러나 <strong>자세 신뢰성 기준 미달</strong></td>

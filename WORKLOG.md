@@ -17020,3 +17020,29 @@ GT 위치에서 얻은 수평 가속 방향과 비교했다. 승자는 **내재 
 그건 E3-P 자체 사전등록에 들어가야지 이 게이트를 또 덧대는 방식이면 안 된다.
 
 새 도구 `check_eth_ds5_attitude_gate.py`와 단위 테스트 추가. 상태 사이트도 갱신했다.
+
+## 2026-09-10 — README 그림 리뉴얼과 PPT용 배포 묶음
+
+사용자 요청에 따라 기존 결과를 발표용으로 재구성했다. **실험·학습·정책·제어 코드 변경 없음.**
+기존 README 그림 8개의 상태 설명을 갱신하고 E3 그림 1개를 추가했다. 전체 구조도는 Track A/B/C의
+검증 범위를 구분하며, 인지 그림은 구현 계획 대신 S1/S4/P8–P10의 완료된 측정과 한계를 표시한다.
+나머지 6개 상세 패널은 기존 내용을 보존하고 현재 상태와 해석 범위를 붙였다.
+
+발표용은 9개 파트를 16:9 SVG와 3840×2160 PNG로 내보냈다. `docs/assets/presentation/`에 미리보기,
+사용 안내, 원본·근거 SHA-256 manifest, 전체 ZIP을 두고 README·문서 색인·사이트에 연결했다.
+`tools/render_presentation_figures.py --raster`로 재생성한다(Chrome + websocket-client 필요;
+이번 실행은 `detector_runs/venv/bin/python`). 옛 `render_readme_figures.py` 진입점은 새 빌더로 넘겨
+과거 생성 코드가 수동 교정된 패널을 덮어쓰지 않게 했다.
+
+설명도 근거 보고서와 맞췄다. E3-S 6.2%는 블록별 절대 상대 거리 오차 중앙값의 중앙값이며,
+9.3 pp는 블록 간 p90−p10 산포다. GT bbox가 아닌 dark-pixel 크기 척도, 동일 비행 재사용,
+시간·거리 교락, E3-P의 남은 자세 신뢰성 blocker를 명시했다. 0.196 px를 전체 측정 잡음으로
+부르던 표현은 궤적 매끄러움 잔차로 제한했다. P10 주 추정량과 탐색적 상호작용을 혼동하던
+README·사이트 문구는 이미 교정된 P10 보고서에 맞췄다. 원본 결과 receipt는 변경하지 않았다.
+
+검증: PNG 실렌더 확인, Chrome에서 9장 전체 텍스트의 캔버스 이탈 검사, SVG XML/중복 ID,
+4K 크기·SHA·ZIP 무결성·갤러리 링크·한계 문구 검사 7개, branch policy 4개 통과.
+SVG 재생성 바이트 동일 확인. arena route/motion 및 headless WebGL 테스트 통과.
+`git diff --check` 통과. 기존 `test_status_site.js`는 새 그림/링크 계약을 통과한 뒤 241행의
+과거 recovery gate에서 중단한다: snapshot은 `RESULT_UNAVAILABLE_OR_MALFORMED`인데 테스트는
+`PASS_32_CELL_INTEGRITY`를 요구한다. 이 선행 불일치를 숨기기 위해 snapshot을 바꾸지 않았다.

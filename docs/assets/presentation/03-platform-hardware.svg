@@ -1,7 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1190" viewBox="0 0 1440 1190" role="img" aria-labelledby="context-title context-desc"><title id="context-title">CANDIDATE / 실기 미조립 · 2026-09-10</title><desc id="context-desc">기체와 센서는 설계 후보입니다. BOM·전원·열·관성 실측이 없습니다. 영상 평가 결과를 실기 성능으로 읽지 않습니다.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc"><title id="title">플랫폼과 센서</title><desc id="desc">기존 구조도와 최신 해석 범위를 함께 읽는 발표용 요약</desc><rect width="1600" height="900" fill="#f4f7fa"/><g font-family="Arial, Noto Sans CJK KR, sans-serif">
+<text x="52" y="48" font-size="17" fill="#007f73" font-weight="700" text-anchor="start">MOTAR / RESEARCH EVIDENCE</text>
+<text x="1548" y="48" font-size="16" fill="#526775" font-weight="700" text-anchor="end">2026-09-10 · CANDIDATE</text>
+<text x="52" y="108" font-size="39" fill="#142d3b" font-weight="700" text-anchor="start">플랫폼과 센서</text>
+<text x="52" y="153" font-size="22" fill="#526775" font-weight="400" text-anchor="start">기존 구조도와 최신 해석 범위를 함께 읽는 발표용 요약</text>
+<svg x="52" y="185" xmlns="http://www.w3.org/2000/svg" width="960" height="600" viewBox="0 0 1440 1190" role="img" aria-labelledby="context-title context-desc"><title id="context-title">CANDIDATE / 실기 미조립 · 2026-09-10</title><desc id="context-desc">기체와 센서는 설계 후보입니다. BOM·전원·열·관성 실측이 없습니다. 영상 평가 결과를 실기 성능으로 읽지 않습니다.</desc>
 <!-- ORIGINAL_PANEL_START -->
-<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1040" viewBox="0 0 1440 1040" role="img" aria-labelledby="title desc">
-<title id="title">Platform &amp; sensing</title><desc id="desc">navrl_ref5in_quad_v2 · hardware-informed simulation candidate</desc>
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1040" viewBox="0 0 1440 1040" role="img" aria-labelledby="panel-title panel-desc">
+<title id="panel-title">Platform &amp; sensing</title><desc id="panel-desc">navrl_ref5in_quad_v2 · hardware-informed simulation candidate</desc>
 <defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#8395A1"/></marker></defs>
 <g font-family="Arial, 'Noto Sans CJK KR', sans-serif">
 <rect width="1440" height="1040" rx="24" fill="#F4F7FA"/>
@@ -104,3 +109,14 @@
 </g></svg>
 <!-- ORIGINAL_PANEL_END -->
 <rect y="1040" width="1440" height="150" fill="#e4f1ee"/><g font-family="Arial, Noto Sans CJK KR, sans-serif"><text x="40" y="1079" font-size="20" fill="#007f73" font-weight="700">CANDIDATE / 실기 미조립 · 2026-09-10</text><text x="40" y="1118" font-size="18" fill="#526775">기체와 센서는 설계 후보입니다.</text><text x="40" y="1147" font-size="18" fill="#526775">BOM·전원·열·관성 실측이 없습니다.</text></g></svg>
+
+<rect x="1040" y="202" width="508" height="557" rx="20" fill="white" stroke="#dce5ea"/>
+<text x="1067" y="250" font-size="27" fill="#007f73" font-weight="700" text-anchor="start">발표에서 강조할 범위</text>
+<text x="1067" y="318" font-size="24" fill="#526775" font-weight="400" text-anchor="start">기체와 센서는 설계 후보입니다.</text>
+<text x="1067" y="387" font-size="24" fill="#526775" font-weight="400" text-anchor="start">BOM·전원·열·관성 실측이 없습니다.</text>
+<text x="1067" y="456" font-size="24" fill="#526775" font-weight="400" text-anchor="start">영상 평가 결과를 실기 성능으로 읽지</text>
+<text x="1067" y="495" font-size="24" fill="#526775" font-weight="400" text-anchor="start">않습니다.</text>
+<path d="M52 804H1548" stroke="#cbd8df"/>
+<text x="52" y="839" font-size="20" fill="#a55316" font-weight="400" text-anchor="start">원본 구조 및 실험 수치는 유지 · 추가된 설명은 검증 범위와 현재 상태를 구분합니다.</text>
+<text x="52" y="875" font-size="16" fill="#526775" font-weight="400" text-anchor="start">근거: README.md 해당 파트 및 연결된 결과 보고서 / 원본: motar-platform-hardware.svg</text>
+</g></svg>

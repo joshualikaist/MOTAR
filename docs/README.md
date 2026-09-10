@@ -7,6 +7,10 @@
 
 ## 먼저 읽을 것
 
+발표용 그림(2026-09-10): [9개 파트 미리보기](assets/presentation/) ·
+[16:9 SVG + 4K PNG ZIP](assets/presentation/motar-presentation-2026-09-10.zip).
+각 파트의 완료 범위와 한계를 그림 안에 함께 표기합니다.
+
 ETH ds5 실촬영 거리 측정: [E1–E5 수집·검증 계획](plans/eth_ds5_execution_2026-09-10.md),
 [E3 분리 계획(E3-S/E3-P)](plans/eth_ds5_e3_2026-09-10.md),
 [E3-S 사전등록](../results/eth_ds5_e3s_2026-09-10/PREREGISTRATION.md) ·

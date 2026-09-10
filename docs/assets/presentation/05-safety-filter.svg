@@ -1,4 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="960" height="850" viewBox="0 0 960 850" role="img" aria-labelledby="context-title context-desc"><title id="context-title">SIMULATION / 주장 범위 · 2026-09-10</title><desc id="context-desc">필터 구조와 실패를 설명하는 기존 그림입니다. 학습 시드 반복 뒤 공동적응 주장은 철회됐습니다. 구조 설명만으로 안전성을 보장하지 않습니다.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc"><title id="title">안전필터 진단</title><desc id="desc">기존 구조도와 최신 해석 범위를 함께 읽는 발표용 요약</desc><rect width="1600" height="900" fill="#f4f7fa"/><g font-family="Arial, Noto Sans CJK KR, sans-serif">
+<text x="52" y="48" font-size="17" fill="#007f73" font-weight="700" text-anchor="start">MOTAR / RESEARCH EVIDENCE</text>
+<text x="1548" y="48" font-size="16" fill="#526775" font-weight="700" text-anchor="end">2026-09-10 · SIMULATION</text>
+<text x="52" y="108" font-size="39" fill="#142d3b" font-weight="700" text-anchor="start">안전필터 진단</text>
+<text x="52" y="153" font-size="22" fill="#526775" font-weight="400" text-anchor="start">기존 구조도와 최신 해석 범위를 함께 읽는 발표용 요약</text>
+<svg x="52" y="185" xmlns="http://www.w3.org/2000/svg" width="960" height="600" viewBox="0 0 960 850" role="img" aria-labelledby="context-title context-desc"><title id="context-title">SIMULATION / 주장 범위 · 2026-09-10</title><desc id="context-desc">필터 구조와 실패를 설명하는 기존 그림입니다. 학습 시드 반복 뒤 공동적응 주장은 철회됐습니다. 구조 설명만으로 안전성을 보장하지 않습니다.</desc>
 <!-- ORIGINAL_PANEL_START -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 700" width="960" height="700" role="img" aria-labelledby="sTitle sDesc">
   <title id="sTitle">MOTAR speed governor: structure, blind spots, and the measured verdicts</title>
@@ -152,3 +157,16 @@
 </svg>
 <!-- ORIGINAL_PANEL_END -->
 <rect y="700" width="960" height="150" fill="#e4f1ee"/><g font-family="Arial, Noto Sans CJK KR, sans-serif"><text x="40" y="739" font-size="20" fill="#007f73" font-weight="700">SIMULATION / 주장 범위 · 2026-09-10</text><text x="40" y="778" font-size="18" fill="#526775">필터 구조와 실패를 설명하는 기존 그림입니다.</text><text x="40" y="807" font-size="18" fill="#526775">학습 시드 반복 뒤 공동적응 주장은 철회됐습니다.</text></g></svg>
+
+<rect x="1040" y="202" width="508" height="557" rx="20" fill="white" stroke="#dce5ea"/>
+<text x="1067" y="250" font-size="27" fill="#007f73" font-weight="700" text-anchor="start">발표에서 강조할 범위</text>
+<text x="1067" y="318" font-size="24" fill="#526775" font-weight="400" text-anchor="start">필터 구조와 실패를 설명하는 기존</text>
+<text x="1067" y="357" font-size="24" fill="#526775" font-weight="400" text-anchor="start">그림입니다.</text>
+<text x="1067" y="426" font-size="24" fill="#526775" font-weight="400" text-anchor="start">학습 시드 반복 뒤 공동적응 주장은</text>
+<text x="1067" y="465" font-size="24" fill="#526775" font-weight="400" text-anchor="start">철회됐습니다.</text>
+<text x="1067" y="534" font-size="24" fill="#526775" font-weight="400" text-anchor="start">구조 설명만으로 안전성을 보장하지</text>
+<text x="1067" y="573" font-size="24" fill="#526775" font-weight="400" text-anchor="start">않습니다.</text>
+<path d="M52 804H1548" stroke="#cbd8df"/>
+<text x="52" y="839" font-size="20" fill="#a55316" font-weight="400" text-anchor="start">원본 구조 및 실험 수치는 유지 · 추가된 설명은 검증 범위와 현재 상태를 구분합니다.</text>
+<text x="52" y="875" font-size="16" fill="#526775" font-weight="400" text-anchor="start">근거: README.md 해당 파트 및 연결된 결과 보고서 / 원본: motar-safety-filter.svg</text>
+</g></svg>

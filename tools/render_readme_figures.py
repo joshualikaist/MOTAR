@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
-"""Rebuild the five README diagrams using only Python's standard library.
+"""Compatibility entry point for the current documentation figure build.
 
-Run from any directory: python3 tools/render_readme_figures.py
-Geometry is expressed in SVG viewBox units; displayed pixel scale varies with README width.
+Run: python3 tools/render_readme_figures.py --raster
+Historical drawing functions below are retained as source history, not called: some
+panels were subsequently corrected by hand. The current builder preserves those
+panels and adds evidence captions instead of overwriting the corrections.
 """
 from pathlib import Path
 from html import escape
@@ -209,4 +211,5 @@ def candidate():
     f.save()
 
 if __name__ == '__main__':
-    for build in (overview,arena,platform,control,candidate):build()
+    import runpy
+    runpy.run_path(str(Path(__file__).with_name('render_presentation_figures.py')), run_name='__main__')

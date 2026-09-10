@@ -1,7 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1100" viewBox="0 0 1440 1100" role="img" aria-labelledby="context-title context-desc"><title id="context-title">SIMULATION / 기존 실험 기하 · 2026-09-10</title><desc id="context-desc">그림의 축척과 수치는 시뮬 계약입니다. 센서 범위는 실제 기체의 실측값이 아닙니다. 공개 ETH 영상의 촬영 조건과 구분합니다.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc"><title id="title">환경과 센서 범위</title><desc id="desc">기존 구조도와 최신 해석 범위를 함께 읽는 발표용 요약</desc><rect width="1600" height="900" fill="#f4f7fa"/><g font-family="Arial, Noto Sans CJK KR, sans-serif">
+<text x="52" y="48" font-size="17" fill="#007f73" font-weight="700" text-anchor="start">MOTAR / RESEARCH EVIDENCE</text>
+<text x="1548" y="48" font-size="16" fill="#526775" font-weight="700" text-anchor="end">2026-09-10 · SIMULATION</text>
+<text x="52" y="108" font-size="39" fill="#142d3b" font-weight="700" text-anchor="start">환경과 센서 범위</text>
+<text x="52" y="153" font-size="22" fill="#526775" font-weight="400" text-anchor="start">기존 구조도와 최신 해석 범위를 함께 읽는 발표용 요약</text>
+<svg x="52" y="185" xmlns="http://www.w3.org/2000/svg" width="960" height="600" viewBox="0 0 1440 1100" role="img" aria-labelledby="context-title context-desc"><title id="context-title">SIMULATION / 기존 실험 기하 · 2026-09-10</title><desc id="context-desc">그림의 축척과 수치는 시뮬 계약입니다. 센서 범위는 실제 기체의 실측값이 아닙니다. 공개 ETH 영상의 촬영 조건과 구분합니다.</desc>
 <!-- ORIGINAL_PANEL_START -->
-<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="950" viewBox="0 0 1440 950" role="img" aria-labelledby="title desc">
-<title id="title">Arena geometry &amp; sensor coverage</title><desc id="desc">40 × 40 × 3 m 아레나 · 막대 위치는 예시 · 센서 범위와 장애물 크기는 축척 적용</desc>
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="950" viewBox="0 0 1440 950" role="img" aria-labelledby="panel-title panel-desc">
+<title id="panel-title">Arena geometry &amp; sensor coverage</title><desc id="panel-desc">40 × 40 × 3 m 아레나 · 막대 위치는 예시 · 센서 범위와 장애물 크기는 축척 적용</desc>
 <defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#8395A1"/></marker></defs>
 <g font-family="Arial, 'Noto Sans CJK KR', sans-serif">
 <rect width="1440" height="950" rx="24" fill="#F4F7FA"/>
@@ -103,3 +108,15 @@
 </g></svg>
 <!-- ORIGINAL_PANEL_END -->
 <rect y="950" width="1440" height="150" fill="#e4f1ee"/><g font-family="Arial, Noto Sans CJK KR, sans-serif"><text x="40" y="989" font-size="20" fill="#007f73" font-weight="700">SIMULATION / 기존 실험 기하 · 2026-09-10</text><text x="40" y="1028" font-size="18" fill="#526775">그림의 축척과 수치는 시뮬 계약입니다.</text><text x="40" y="1057" font-size="18" fill="#526775">센서 범위는 실제 기체의 실측값이 아닙니다.</text></g></svg>
+
+<rect x="1040" y="202" width="508" height="557" rx="20" fill="white" stroke="#dce5ea"/>
+<text x="1067" y="250" font-size="27" fill="#007f73" font-weight="700" text-anchor="start">발표에서 강조할 범위</text>
+<text x="1067" y="318" font-size="24" fill="#526775" font-weight="400" text-anchor="start">그림의 축척과 수치는 시뮬 계약입니다.</text>
+<text x="1067" y="387" font-size="24" fill="#526775" font-weight="400" text-anchor="start">센서 범위는 실제 기체의 실측값이</text>
+<text x="1067" y="426" font-size="24" fill="#526775" font-weight="400" text-anchor="start">아닙니다.</text>
+<text x="1067" y="495" font-size="24" fill="#526775" font-weight="400" text-anchor="start">공개 ETH 영상의 촬영 조건과</text>
+<text x="1067" y="534" font-size="24" fill="#526775" font-weight="400" text-anchor="start">구분합니다.</text>
+<path d="M52 804H1548" stroke="#cbd8df"/>
+<text x="52" y="839" font-size="20" fill="#a55316" font-weight="400" text-anchor="start">원본 구조 및 실험 수치는 유지 · 추가된 설명은 검증 범위와 현재 상태를 구분합니다.</text>
+<text x="52" y="875" font-size="16" fill="#526775" font-weight="400" text-anchor="start">근거: README.md 해당 파트 및 연결된 결과 보고서 / 원본: motar-arena-geometry.svg</text>
+</g></svg>

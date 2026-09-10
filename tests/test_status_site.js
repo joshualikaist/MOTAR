@@ -97,6 +97,7 @@ assert.strictEqual(episode.age, age + 0.1, 'speed-zero viewer episodes must stil
 for (const asset of [
   'motar-system-overview.svg', 'motar-control-stack.svg',
   'motar-perception-final.svg',
+  'motar-eth-e3-evidence.svg',
   'motar-perception-detection.svg', 'motar-safety-filter.svg',
   'motar-perception-candidate.svg',
 ]) {
@@ -140,8 +141,12 @@ const currentOverview = fs.readFileSync(
   path.join(repo, 'docs/assets/motar-system-overview.svg'),
   'utf8',
 );
-assert(currentOverview.includes('CURRENT SOFTWARE PATH'), 'overview must be labelled as the current software path');
-assert(currentOverview.includes('1 detector → 1 KF track'), 'overview must expose the current single-track contract');
+assert(currentOverview.includes('EVIDENCE MAP'), 'overview must distinguish the three evidence tracks');
+assert(currentOverview.includes('TRACK C / PUBLIC REAL FOOTAGE'), 'overview must include the measured range study');
+assert(currentOverview.includes('알려진 실패 기준선'), 'legacy single-KF path must not look like the new main path');
+for (const page of [readme, html]) {
+  assert(page.includes('presentation/motar-presentation-2026-09-10.zip'), 'presentation download must be linked');
+}
 assert(html.includes('설계 후보'), 'site must say the SAM diagram is a candidate, not adopted');
 assert(readme.includes('설계 후보'), 'README must say the SAM diagram is a candidate, not adopted');
 for (const page of [html, readme]) {

@@ -7,7 +7,11 @@ camera, LiDAR and ego-state. The point is not a single headline success rate. It
 under a reproducible experiment contract, **which conditions produce capture, crash or timeout, and
 why** — including the results that came out negative.
 
-![MOTAR current perception-to-control system](docs/assets/motar-system-overview.svg)
+![MOTAR research evidence map: simulation diagnosis, real-imagery perception, and measured range error](docs/assets/motar-system-overview.svg)
+
+**발표용 그림:** [9개 파트 미리보기](docs/assets/presentation/) ·
+[16:9 SVG + 4K PNG 전체 다운로드](docs/assets/presentation/motar-presentation-2026-09-10.zip).
+각 그림은 구현·측정 완료, 설계 후보, 미검증 범위를 구분합니다. 실기 통합 성능을 뜻하지 않습니다.
 
 [Research site](docs/status/) · [System specification](docs/MOTAR_SYSTEM_SPEC_2026-08-24.md) ·
 [Verification](VERIFICATION.md) · [Operations](OPERATIONS.md) · [Worklog](WORKLOG.md) ·
@@ -17,12 +21,12 @@ why** — including the results that came out negative.
 
 ## Status · 2026-09-10
 
-Two tracks run in parallel and are at different stages.
+Three research tracks are at different stages and have distinct evidence boundaries.
 
 | Track | Goal | State |
 |---|---|---|
 | **A — safety-filter diagnosis** | measure when and why a direction-preserving speed filter fails | **complete**; the training-seed replication withdrew one claim (see below) |
-| **B — real-imagery perception** | learn a detector on real air-to-air video, measure its error, inject that into the simulator | **pipeline complete through PPO readaptation**; sealed test opened once; real-flight work not started |
+| **B — real-imagery perception** | learn a detector on real air-to-air video, measure its error, inject that into the simulator | **pipeline complete through PPO readaptation**; final selector test complete; real-flight work not started |
 | **C — measured range error on real footage** | measure how well a target's apparent size recovers its metric range, using a public dataset with survey-grade position ground truth | **E3-S complete**; absolute-geometry uses of that dataset are fail-closed, and the attitude arm (E3-P) is gated |
 
 **Recent findings.**
@@ -53,21 +57,26 @@ Two tracks run in parallel and are at different stages.
   drops `−4.57 pp [−6.32, −2.82]` capture. One thousand epochs of readaptation (P10) moves the
   primary estimand by `+1.41 pp [−0.38, +3.21]` — directionally recovering, not significant, one
   training seed. [P9](results/perception_p9_2026-09-09/) · [P10](results/perception_p10_2026-09-09/README.md).
-- **The sealed NPS test was opened once.** The frozen P7c v2 selector scores utility **0.4701** on
+- **The frozen selector received one final NPS test evaluation.** The P7c v2 selector scores utility **0.4701** on
   1,725 test frames against 0.6855 on validation. These are different videos, so this is a
-  generalization warning, not a paired estimate; nothing was retuned afterwards.
+  generalization warning, not a paired estimate; nothing was retuned afterwards. P5 had previously
+  used this test, so it is not a never-observed holdout.
   [S4 report](results/perception_s4_2026-09-09/README.md).
 - **On real footage with survey-grade ground truth, apparent size recovers range to 6.2%.** ETH
   `drone-tracking-datasets` ds5 gives total-station position GT for a drone filmed from the ground. The
-  target was tracked over 3,495 frames at **0.196 px** measurement noise, and the analysis was
+  target was tracked over 3,495 frames with a **0.196 px trajectory-smoothness residual** (not a
+  total measurement-accuracy bound), and the analysis was
   [preregistered and committed before it ran](results/eth_ds5_e3s_2026-09-10/PREREGISTRATION.md).
-  Leave-one-block-out over 15 s blocks, every evaluated frame out of sample: **median absolute relative
-  range error 6.2%**, block-to-block spread 9.3 pp, 3,107 frames from 31 to 108 m.
+  Leave-one-block-out over 15 s blocks excludes the evaluated block from each fit: **median across
+  blocks of block-median absolute relative range error 6.2%**. The 9.3 pp spread is p90−p10 of
+  block medians, not a confidence interval. This covers 3,107 frames from 31 to 108 m in one
+  previously explored flight, not an independent new-flight test. Size is the square root of
+  dark-pixel count, not a ground-truth bounding box.
   [E3-S results and limits](results/eth_ds5_e3s_2026-09-10/README.md).
 - **The same dataset cannot be used for absolute geometry, and that is recorded as a failure, not
   worked around.** Its published camera calibration is verified correct against its own 122 chessboard
   images (held-out 1.245 px versus 1.262 px recomputed), yet reprojecting the tracked drone leaves
-  **5.6 px** against 0.196 px of noise. Radial distortion, focal length, principal point, camera
+  **5.6 px**, substantially above the 0.196 px smoothness residual. Radial distortion, focal length, principal point, camera
   position, a time drift, a per-8 s rotation refit and the prism lever arm were each fitted on one split
   and scored on another; none wins on every split. An unexplained **−120 ms** offset is needed by every
   variant. [Investigation](results/eth_ds5_intake_2026-09-10/distortion_investigation_2026-09-10/README.md).
@@ -234,11 +243,16 @@ python tools/pool_navrl_seed_replication.py \
 
 ## Perception — the real-imagery path
 
-![MOTAR final perception implementation path](docs/assets/motar-perception-final.svg)
+![MOTAR implemented perception stages and bounded evaluation results](docs/assets/motar-perception-final.svg)
 
-The final design learns UAV appearance from **real air-to-air video** and associates per-frame
-Top-K candidates over time. Target perception at 12–28 m is camera-driven; LiDAR target ranging is
-not used. Inside 12 m, camera and LiDAR/stereo correct the range. Raw obstacle LiDAR and the
+**그림 읽기.** 실영상 검출·시간 모델·스트리밍 및 P8–P10 평가가 완료된 범위입니다.
+22.48 FPS는 개발 환경의 decode-inclusive 측정이며 탑재 장치나 실기 성능이 아닙니다.
+최종 test utility 0.4701과 validation 0.6855는 서로 다른 영상의 결과입니다.
+
+The implemented image pipeline learns UAV appearance from **real air-to-air video** and associates
+per-frame Top-K candidates over time. The **sensor-integration design, not a demonstrated flight
+capability**, assigns 12–28 m target perception to the camera and proposes camera plus LiDAR/stereo
+range correction inside 12 m. Raw obstacle LiDAR and the
 arc-clearance filter stay independent of the semantic target estimate. The implementation order and
 completion conditions are frozen in
 [`perception_final_implementation_plan_2026-09-07.md`](docs/plans/perception_final_implementation_plan_2026-09-07.md).
@@ -247,8 +261,11 @@ completion conditions are frozen in
 
 ![Archived MOTAR SAM in-simulator perception design](docs/assets/motar-perception-candidate.svg)
 
+Historical scope: [archived SAM verification plan](docs/SAM3_PERCEPTION_VERIFICATION_PLAN_2026-09-03.md).
+
 The figure above is an **archived design candidate**, kept for the record. It never entered the
-control loop and is not a performance claim. Two reasons replaced it.
+control loop and is not a performance claim. Only the **offline CPU adapter** exists; there is no
+SAM worker or control-loop integration. Two reasons replaced it.
 
 1. **The simulated target has no shape information.** What the detector sees is an analytic sphere
    of radius 0.15 m painted a constant colour, and one of the three decoy types is a sphere of the
@@ -400,14 +417,24 @@ the evaluation seeds):
 | primary: readapted − frozen, both under the error | +1.41 pp | [−0.38, +3.21] |
 | clean retention: readapted − frozen, both clean | −1.25 pp | [−2.95, +0.44] |
 
-The only intervals excluding zero are the two costs. The primary estimand does not, and neither
-does the change in cost between the two policies. With one training seed this is descriptive; it is
-not a seed-general claim about PPO readaptation.
+The primary interval includes zero; clean retention also does not establish preservation or
+non-inferiority. The report separately records the exploratory, uncorrected interaction
+(change in error cost), +2.67 pp [+0.20, +5.14], which is not the primary estimand.
+Overlapping individual cost intervals are not an interaction test. With one training seed,
+these results do not establish a seed-general PPO readaptation effect.
 [P10 report](results/perception_p10_2026-09-09/README.md).
 
 ---
 
 ## External data — what can and cannot be used
+
+![E3-S measured size-based range error and E3-P blocked attitude gate](docs/assets/motar-eth-e3-evidence.svg)
+
+**그림 읽기.** E3-S의 6.2%는 크기 기반 거리 추정 성능이며 자세 오차가 아닙니다.
+거리와 시간이 교락돼 있고 위치 GT 경고 상태가 포함됩니다. E3-P는 최신 gate에서
+자세 신뢰성 기준 미달로 `E3P_GATE_BLOCKED`입니다. 자세 효과의 원인 분해는 하지 않았습니다.
+[E3-S 결과](results/eth_ds5_e3s_2026-09-10/README.md) ·
+[최신 E3-P gate](docs/plans/eth_ds5_e3_2026-09-10.md).
 
 Training perception on real data makes **licensing a design constraint**: a result trained on
 unclear terms can be invalidated at publication. All links were checked on 2026-09-04. Storage
