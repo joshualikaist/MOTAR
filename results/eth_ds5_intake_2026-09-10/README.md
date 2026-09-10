@@ -8,7 +8,8 @@ Sony5100 calibration candidate remain unverified; E3 (error modelling) has not s
 | `receipt.json`, `video_receipt.json` | E1 pinned files, Git blob SHA-1 + SHA-256, 43 split-archive parts (4,471,880,421 B) | verified |
 | `extraction_receipt.json` | cam0.mp4 4,520,030,301 B, SHA-256 `d3e6727e…c1ec4`, 7-Zip CRC OK | extracted outside Git: `datasets/eth_ds5_cam0_extracted/` |
 | `video_verification/video_verification.json` | h264 1920x1080 30000/1001, 20970 packets = 20970 decoded = nb_frames | **20969 published timestamp rows: off by one** |
-| `review_offset0/` | **the set to review**: 36 clean PNGs and panels at `container_index = frame_id + 0`, GT geometry, motion cues, contact sheet, empty reviewer table | identity unverified |
+| `review_offset0/` | 36 pilot panels at `container_index = frame_id + 0`, GT geometry, motion cues, contact sheet, empty reviewer table | identity unverified; too slow to resolve the alignment |
+| `review_alignment/` + `alignment_queue.json` | **17 fast-motion frames** (4.1-6.9 px of image motion per frame) selected to resolve the alignment | identity unverified |
 | `review/` | the first set, rendered at `container_index = frame_id - 1` before the edit list was analysed | superseded, kept for provenance |
 
 ## Root causes of the two timestamp blockers (2026-09-10, investigated)
@@ -73,6 +74,48 @@ The scale difference alone contributes at most 4.7 ms across the whole pose over
 revision is harmless once the integer origin is fixed; the residual uncertainty is the integer, worth
 at most about two frames. The reprojection check searches whole-frame shifts of −3…+3, which covers
 every combination above, and its 4 px RMS gate is below the 7.6 px that one frame of error produces.
+
+## Code back-derivation, 2026-09-10
+
+Every derivation in the tools was re-checked against an independent computation before going further.
+Reconstructing the published timestamp file from the fitted scale, origin and shift reproduces it to
+4.4e-7 s, which is exactly the 9-digit rounding of the published coefficient. Projection, ray recovery
+and the Kabsch rotation fit round-trip to 1e-12 or better against a hand-written pinhole-plus-Brown model.
+Interpolation, bearing and speed match a direct bracket computation exactly. The mapping
+`d = offset - shift` was confirmed end to end for six combinations of rendering offset and true offset.
+
+That pass also found six real defects, all now fixed and covered by tests:
+
+1. **Edit-list frames were computed from an assumed 30000/1001 rate**, correct here only by coincidence.
+   The parser now reads each track's own `mdhd` timescale and `stts` sample duration.
+2. **The reprojection check could not resolve the alignment at all.** With the pilot frames, three
+   neighbouring shifts pass the 4 px gate even with perfect boxes, because the target moves only about
+   1.5 px per frame there. The tool now reports `..._ALIGNMENT_RESOLVED` only when exactly one shift
+   passes, and publishes the measured discriminating power alongside.
+3. **Shifts were scored on different frame subsets**, since a shift near the edge of pose support
+   silently dropped frames. All shifts are now scored on the common set.
+4. **Ground-truth points behind the fitted camera were accepted**; such a point still projects to a
+   plausible in-image pixel. They are now refused.
+5. **Points past the radial model's fold-back radius were accepted.** For this calibration the radial
+   polynomial stops increasing at a normalized radius of 1.023 while the image corner is at 0.713, so a
+   target 70 degrees off axis folds back into the picture and `undistortPoints` inverts it onto the wrong
+   branch. The limit is now derived from the coefficients and such points are refused.
+6. **Interpolated attitude could leave the [-180, 180] range** after wrapping.
+
+## Resolving the alignment needs fast frames
+
+Image motion per frame of timing error, over the pose overlap: median 1.61 px, 90th percentile 4.41 px,
+maximum 20.23 px. The stride-150 pilot sits at 1.40 px median, so it cannot separate neighbouring shifts
+however carefully it is annotated. `tools/select_eth_ds5_alignment_frames.py` picks frames on motion
+instead, subject to a minimum range of 25 m and a predicted-in-view test; the 17 it selected span 4.07 to
+6.94 px per frame at 62 to 99 m. In simulation that set resolves the alignment uniquely with box-centre
+noise up to 3 px, and fails closed at 4 px. Combining it with the pilot is better for the calibration
+question and worse for the alignment question, so the check is meant to be run on both.
+
+The in-view test needs an approximate camera pointing, which is an explicit argument recorded as an
+unverified assumption (azimuth 25.8, elevation 17.3 degrees, roll zero, fitted to the six-armed airframe
+in frames 901 and 1651 with a 0.11 degree residual). It only chooses which frames a human is shown. Eight
+of the twenty frames selected before this test existed had drone0 outside the picture entirely.
 
 ## Findings that still block measurement
 

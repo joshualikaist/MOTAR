@@ -40,7 +40,7 @@ def interpolate_pose(pose, t, max_gap_s=0.5):
     w = (t - times[left]) / gap
     a, b = pose[left], pose[right]
     xyz = [a[i] + w * (b[i] - a[i]) for i in (1, 2, 3)]
-    rpy = [a[i] + w * wrap_deg(b[i] - a[i]) for i in (4, 5, 6)]
+    rpy = [wrap_deg(a[i] + w * wrap_deg(b[i] - a[i])) for i in (4, 5, 6)]
     velocity = [(b[i] - a[i]) / gap for i in (1, 2, 3)]
     return {"xyz_m": xyz, "rpy_deg_uninterpreted": rpy, "std_xyz_m": [max(a[i], b[i]) for i in (7, 8, 9)],
             "speed_mps": math.sqrt(sum(v * v for v in velocity)), "bracket_gap_s": gap,

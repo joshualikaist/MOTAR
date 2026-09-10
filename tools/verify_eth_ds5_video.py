@@ -91,12 +91,16 @@ def timestamp_consistency(pts, published, scale, shift, period, alignments=(0, 1
     return result
 
 
-def edit_list_offsets(video, timescale=30000):
+def edit_list_offsets(video):
     """Every track's `elst` entries, tagged with the track's handler type (raw container parse).
 
     ffprobe does not expose edit lists, yet they decide how many frames a reader presents: a video track
     whose edit starts at a nonzero media time hides that much of the media from readers that honour it,
     while readers that ignore it (ffmpeg, OpenCV) return every coded frame.
+
+    Media time is converted to frames with the track's own `mdhd` timescale and `stts` sample duration,
+    never with an assumed frame rate: an edit expressed in the wrong unit would silently mis-state how
+    many frames a reader hides.
     """
     import struct
 
@@ -144,17 +148,33 @@ def edit_list_offsets(video, timescale=30000):
         index = trak.find(b"hdlr")
         if index > 0:
             handler = trak[index + 12:index + 16].decode("latin-1")
+        index = trak.find(b"mdhd")
+        if index < 0:
+            raise ValueError("track without mdhd")
+        body = trak[index + 4:]
+        timescale = struct.unpack(">I", body[12:16] if body[0] == 0 else body[20:24])[0]
+        index = trak.find(b"stts")
+        if index < 0:
+            raise ValueError("track without stts")
+        count = struct.unpack(">I", trak[index + 8:index + 12])[0]
+        table = struct.unpack(">%dI" % (2 * count), trak[index + 12:index + 12 + 8 * count])
+        samples = sum(table[0::2])
+        durations = sorted(set(table[1::2]))
+        sample_duration = durations[0] if len(durations) == 1 else None
         index = trak.find(b"elst")
         while index > 0:
             body = trak[index + 4:]
-            version, count = body[0], struct.unpack(">I", body[4:8])[0]
+            version, elst_count = body[0], struct.unpack(">I", body[4:8])[0]
             width, fmt = (20, ">qqhh") if version else (12, ">Iihh")
-            for i in range(count):
+            for i in range(elst_count):
                 entry = struct.unpack(fmt, body[8 + i * width:8 + (i + 1) * width])
+                frames = entry[1] / sample_duration if sample_duration else None
                 entries.append({"segment_duration": entry[0], "media_time": entry[1],
-                                "media_time_frames": entry[1] / (timescale * 1001 / 30000)})
+                                "media_time_frames": frames})
             index = trak.find(b"elst", index + 4)
-        tracks.append({"handler": handler, "edits": entries})
+        tracks.append({"handler": handler, "timescale": timescale, "samples": samples,
+                       "sample_duration": sample_duration,
+                       "variable_sample_duration": sample_duration is None, "edits": entries})
     return tracks
 
 

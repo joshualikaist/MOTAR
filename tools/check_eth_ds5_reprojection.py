@@ -40,13 +40,59 @@ def load_review(path):
         for r in csv.DictReader(handle):
             if r.get("drone0_visible", "").strip().lower() not in ("yes", "y", "1", "true"):
                 continue
-            box = [float(r["box_x%d" % 1]), float(r["box_y1"]), float(r["box_x2"]), float(r["box_y2"])]
+            box = [float(r["box_x1"]), float(r["box_y1"]), float(r["box_x2"]), float(r["box_y2"])]
             if box[2] <= box[0] or box[3] <= box[1]:
                 raise ValueError("degenerate box for frame " + r["frame_id"])
             rows.append({"frame_id": int(r["frame_id"]), "opencv_index": int(r["opencv_index"]),
                          "project_timestamp_s": float(r["project_timestamp_s"]), "box_xyxy": box,
                          "centre": [(box[0] + box[2]) / 2, (box[1] + box[3]) / 2]})
     return rows
+
+
+def valid_distortion_radius(dist):
+    """Largest normalized image radius where the Brown-Conrady radial model is still injective.
+
+    r_d(r) = r(1 + k1 r^2 + k2 r^4 + k3 r^6) stops increasing once its derivative changes sign; beyond
+    that radius the model folds back and a point far outside the field of view projects to a plausible
+    in-image pixel, while undistortPoints inverts it onto the wrong branch. Points past this radius must
+    never be scored: a wrong identity or alignment could otherwise be rewarded by the fold.
+    """
+    import numpy as np
+    k1, k2, p1, p2, k3 = (list(dist) + [0.0] * 5)[:5]
+    # derivative in u = r^2: 1 + 3 k1 u + 5 k2 u^2 + 7 k3 u^3
+    roots = np.roots([7 * k3, 5 * k2, 3 * k1, 1.0]) if k3 else (
+        np.roots([5 * k2, 3 * k1, 1.0]) if k2 else np.roots([3 * k1, 1.0]) if k1 else [])
+    positive = [r.real for r in np.atleast_1d(roots) if abs(getattr(r, "imag", 0.0)) < 1e-9 and r.real > 0]
+    return math.sqrt(min(positive)) if positive else float("inf")
+
+
+def alignment_discrimination(pose, camera, times, period, focal):
+    """Image displacement, in pixels, that one frame of timing error produces.
+
+    Computed from the angle between the ground-truth bearing at t and at t+period, scaled by the focal
+    length, so it needs no camera orientation. It is the discriminating power of the alignment search:
+    when it is not clearly larger than box-centre annotation noise, neighbouring shifts fit almost
+    equally well and the alignment cannot be resolved however good the best fit looks.
+    """
+    displacement = []
+    for t in times:
+        a, b = interpolate_pose(pose, t), interpolate_pose(pose, t + period)
+        if a is None or b is None:
+            continue
+        rays = []
+        for sample in (a, b):
+            v = [sample["xyz_m"][i] - camera[i] for i in range(3)]
+            norm = math.sqrt(sum(c * c for c in v))
+            rays.append([c / norm for c in v])
+        cosine = max(-1.0, min(1.0, sum(x * y for x, y in zip(*rays))))
+        displacement.append(focal * math.acos(cosine))
+    if not displacement:
+        return {"frames": 0}
+    displacement.sort()
+    return {"frames": len(displacement), "median_px": displacement[len(displacement) // 2],
+            "min_px": displacement[0], "max_px": displacement[-1],
+            "note": "pixels of image motion per frame of timing error; the alignment search can only"
+                    " separate neighbouring shifts when this exceeds box-centre annotation noise"}
 
 
 def camera_rays(pixels, K, dist):
@@ -91,7 +137,7 @@ def pnp_centre(world_points, pixels, K, dist):
     return (-R.T @ tvec.reshape(3)).tolist()
 
 
-def evaluate(reviewed, pose, camera_xyz, K, dist, period, alignment_shift_frames):
+def evaluate(reviewed, pose, camera_xyz, K, dist, period, alignment_shift_frames, image_size=None):
     import numpy as np
     world, pixels, used = [], [], []
     for r in reviewed:
@@ -107,12 +153,38 @@ def evaluate(reviewed, pose, camera_xyz, K, dist, period, alignment_shift_frames
     rays_w = np.asarray(world) - np.asarray(camera_xyz)
     rays_w = rays_w / np.linalg.norm(rays_w, axis=1, keepdims=True)
     R, angular = fit_rotation(rays_c, rays_w)
-    residual = reproject(R, camera_xyz, world, K, dist) - np.asarray(pixels)
+    # A point behind the fitted camera still projects to a finite, plausible-looking pixel, so it must be
+    # rejected explicitly: no reviewer can have boxed a target that the camera could not see.
+    depth = (np.asarray(world) - np.asarray(camera_xyz)) @ np.asarray(R, np.float64).T
+    behind = int((depth[:, 2] <= 0).sum())
+    if behind:
+        return {"status": "POINTS_BEHIND_FITTED_CAMERA", "boxes_used": len(world), "frame_ids": used,
+                "points_behind_camera": behind, "angular_residual_deg_max": float(angular.max()),
+                "note": "the reviewed boxes cannot all come from one pinhole view at the surveyed position;"
+                        " identity, alignment or the surveyed position is wrong"}
+    radius = np.linalg.norm(depth[:, :2] / depth[:, 2:3], axis=1)
+    limit = valid_distortion_radius(dist)
+    if float(radius.max()) >= limit:
+        return {"status": "POINTS_OUTSIDE_VALID_DISTORTION_RADIUS", "boxes_used": len(world), "frame_ids": used,
+                "max_normalized_radius": float(radius.max()), "valid_radius_limit": limit,
+                "angular_residual_deg_max": float(angular.max()),
+                "note": "at least one ground-truth point falls where the radial model folds back, so its"
+                        " projection is not trustworthy and the fit must not be scored"}
+    projected = reproject(R, camera_xyz, world, K, dist)
+    if image_size is not None:
+        width, height = image_size
+        outside = int(((projected[:, 0] < 0) | (projected[:, 0] > width) |
+                       (projected[:, 1] < 0) | (projected[:, 1] > height)).sum())
+    else:
+        outside = None
+    residual = projected - np.asarray(pixels)
     rms = float(math.sqrt(np.mean(np.sum(residual ** 2, axis=1))))
     centre = pnp_centre(world, pixels, K, dist)
     centre_distance = float(np.linalg.norm(np.asarray(centre) - np.asarray(camera_xyz)))
     passed = rms < PIXEL_RMS_PASS and centre_distance < CENTRE_DISTANCE_PASS
     return {"status": "CONSISTENT" if passed else "INCONSISTENT", "boxes_used": len(world), "frame_ids": used,
+            "points_behind_camera": 0, "reprojections_outside_image": outside,
+            "max_normalized_radius": float(radius.max()), "valid_radius_limit": limit,
             "rotation_world_to_camera": np.asarray(R).tolist(), "angular_residual_deg_max": float(angular.max()),
             "pixel_rms": rms, "pixel_residual_max": float(np.abs(residual).max()),
             "pnp_camera_centre_m": centre, "pnp_centre_distance_to_surveyed_m": centre_distance,
@@ -138,20 +210,51 @@ def main():
     camera = next(list(map(float, l.split()[1:])) for l in camera_lines if l.startswith("cam0\t"))
     reviewed = load_review(args.review_csv)
     period = 1.0 / args.fps
-    results = {"alignment_shift_%+d" % s: evaluate(reviewed, pose, camera, calibration["K-matrix"], calibration["distCoeff"], period, s)
+    # Every shift must be scored on the identical frame set, otherwise a shift that silently drops a
+    # frame at the edge of pose support would be compared against a different measurement.
+    common = [r for r in reviewed
+              if all(interpolate_pose(pose, r["project_timestamp_s"] + s * period) is not None
+                     for s in ALIGNMENT_SHIFTS)]
+    dropped = [r["frame_id"] for r in reviewed if r not in common]
+    focal = (calibration["K-matrix"][0][0] + calibration["K-matrix"][1][1]) / 2
+    discrimination = alignment_discrimination(pose, camera, [r["project_timestamp_s"] for r in common],
+                                              period, focal)
+    results = {"alignment_shift_%+d" % s: evaluate(common, pose, camera, calibration["K-matrix"],
+                                                   calibration["distCoeff"], period, s,
+                                                   calibration.get("resolution"))
                for s in ALIGNMENT_SHIFTS}
-    consistent = [k for k, v in results.items() if v["status"] == "CONSISTENT"]
-    if args.container_index_offset is not None:
-        for key, value in results.items():
-            value["implied_container_index_offset_d"] = true_index_offset(
-                args.container_index_offset, int(key.rsplit("_", 1)[1]))
-    receipt = {"status": "CALIBRATION_CANDIDATE_CONSISTENT" if consistent else "CALIBRATION_CANDIDATE_NOT_VALIDATED",
-               "consistent_alignments": consistent, "source_commit": COMMIT, "reviewed_boxes": len(reviewed),
+    for key, value in results.items():
+        shift = int(key.rsplit("_", 1)[1])
+        value["shift_frames"] = shift
+        if args.container_index_offset is not None:
+            value["implied_container_index_offset_d"] = true_index_offset(args.container_index_offset, shift)
+    consistent = sorted(k for k, v in results.items() if v["status"] == "CONSISTENT")
+    scored = {k: v["pixel_rms"] for k, v in results.items() if "pixel_rms" in v}
+    ranked = sorted(scored, key=scored.get)
+    best = ranked[0] if ranked else None
+    margin = scored[ranked[1]] - scored[ranked[0]] if len(ranked) > 1 else None
+    if not consistent:
+        status = "CALIBRATION_CANDIDATE_NOT_VALIDATED"
+    elif len(consistent) == 1:
+        status = "CALIBRATION_CONSISTENT_ALIGNMENT_RESOLVED"
+    else:
+        status = "CALIBRATION_CONSISTENT_ALIGNMENT_AMBIGUOUS"
+    receipt = {"status": status, "consistent_alignments": consistent, "source_commit": COMMIT,
+               "reviewed_boxes": len(reviewed), "boxes_scored": len(common),
+               "frames_dropped_for_common_pose_support": dropped,
+               "best_alignment": best, "best_pixel_rms": scored.get(best),
+               "runner_up_pixel_rms": scored[ranked[1]] if len(ranked) > 1 else None,
+               "best_margin_px": margin,
+               "implied_container_index_offset_d": results[best].get("implied_container_index_offset_d") if best else None,
+               "alignment_discrimination": discrimination,
                "review_csv_sha256": digests(args.review_csv)[1], "calibration_sha256": digests(args.calibration)[1],
                "results": results, "container_index_offset": args.container_index_offset,
                "tool_sha256": digests(Path(__file__))[1],
-               "note": "Consistency of reviewed boxes with K/dist, surveyed position and GT is necessary for using the"
-                       " calibration; it does not certify lens distortion beyond the box locations tested."}
+               "note": "Consistency of reviewed boxes with K/dist, the surveyed position and GT is necessary for"
+                       " using the calibration; it does not certify lens distortion beyond the boxes tested."
+                       " More than one consistent shift means the alignment is NOT resolved: the frames used do"
+                       " not move enough between frames to separate them, so add fast segments before treating"
+                       " any single mapping as established."}
     write_json(args.output / "reprojection_check.json", receipt)
     print(json.dumps(receipt, indent=2))
 

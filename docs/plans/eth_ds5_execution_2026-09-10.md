@@ -77,10 +77,15 @@ Receipts: [results/eth_ds5_intake_2026-09-10/README.md](../../results/eth_ds5_in
   revision is worth −3.0 to +1.7 ms, and the integer origin itself is worth at most ~2 frames. One
   frame of error displaces drone0 by 2.2 px median / 7.6 px p95, which the 4 px reprojection gate can
   separate. Pilot images were rendered under an explicit `UNRESOLVED_count_mismatch` flag.
-- **Open blocker B — identity**: 36 review panels, GT geometry and motion cues are ready; no box exists.
+- **Open blocker B — identity**: 36 pilot panels plus 17 fast-motion panels, GT geometry and motion cues
+  are ready; no box exists. drone1 and drone2 are DJI quadrotors, so the six-armed airframe visible in
+  frame 901 can only be drone0; that cue is in the review instructions.
 - **Open blocker C — calibration**: resolution/FPS match only. `tools/check_eth_ds5_reprojection.py`
   (rotation-only Kabsch fit + PnP centre vs surveyed cam0 position, shifts −3…+3 frames) decides after
-  review; thresholds were fixed before any box: pixel RMS < 4 px, centre < 2 m, ≥ 6 boxes.
+  review; thresholds were fixed before any box: pixel RMS < 4 px, centre < 2 m, ≥ 6 boxes. The check now
+  refuses points behind the camera or past the radial model's fold-back radius, scores every shift on the
+  same frames, and separates "calibration consistent" from "alignment resolved" — only one shift passing
+  counts as resolved. The pilot frames alone cannot resolve it; the 17-frame alignment set can.
 - TrackingStatus = Leica TPS status (0 fine, 1 warning), attitude = ArduPilot EKF body→NED; still
   uninterpreted in any measurement. E3 not started.
 

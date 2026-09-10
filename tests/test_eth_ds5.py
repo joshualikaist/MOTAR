@@ -1,6 +1,7 @@
 """Offline contracts for ETH intake: no network, GPU or dataset required."""
 import hashlib
 import importlib.util
+import math
 import io
 from pathlib import Path
 import tempfile
@@ -20,6 +21,7 @@ from extract_eth_ds5 import video_member
 import verify_eth_ds5_video as VERIFY
 import prepare_eth_ds5_review as REVIEW
 import check_eth_ds5_reprojection as REPROJ
+import select_eth_ds5_alignment_frames as SELECT
 
 
 class Response(io.BytesIO):
@@ -239,6 +241,48 @@ class VideoTest(unittest.TestCase):
                     FRAMES.main()
 
 
+class AlignmentSelectionTest(unittest.TestCase):
+    def setUp(self):
+        self.values = {100: 6.0, 110: 5.5, 400: 4.5, 405: 4.4, 900: 1.0}
+        self.ranges = {f: 60.0 for f in self.values}
+        self.ranges[110] = 10.0
+
+    def test_prefers_motion_keeps_separation_and_respects_range(self):
+        chosen = SELECT.select(self.values, self.ranges, 4.0, 25.0, 30, 10)
+        self.assertEqual(chosen, [100, 400])          # 110 too close AND too near, 405 too close, 900 too slow
+        self.assertEqual(SELECT.select(self.values, self.ranges, 4.0, 25.0, 1, 10), [100, 400, 405])
+
+    def test_out_of_view_frames_are_excluded(self):
+        in_frame = {100: None, 400: [10., 10.], 405: [20., 20.], 110: [1., 1.], 900: [1., 1.]}
+        self.assertEqual(SELECT.select(self.values, self.ranges, 4.0, 25.0, 30, 10, in_frame), [400])
+
+    def test_invalid_arguments(self):
+        with self.assertRaises(ValueError): SELECT.select(self.values, self.ranges, 4.0, 25.0, 0, 10)
+        with self.assertRaises(ValueError): SELECT.select(self.values, self.ranges, 4.0, 25.0, 30, 0)
+
+    def test_level_camera_axis_and_degeneracy(self):
+        try:
+            import numpy as np
+        except ImportError:
+            self.skipTest("numpy unavailable")
+        R = SELECT.level_camera(30., 20.)
+        axis = R.T @ np.array([0., 0., 1.])
+        self.assertAlmostEqual(math.degrees(math.atan2(axis[1], axis[0])), 30., places=6)
+        self.assertAlmostEqual(math.degrees(math.asin(axis[2])), 20., places=6)
+        self.assertAlmostEqual(float(np.linalg.det(R)), 1.0, places=9)
+        self.assertAlmostEqual(float(R[0][2]), 0.0, places=9)   # roll-free: image x axis stays horizontal
+        with self.assertRaises(ValueError): SELECT.level_camera(0., 90.)
+
+    def test_predicted_pixel_rejects_behind_and_out_of_frame(self):
+        K = [[1500., 0., 960.], [0., 1500., 540.], [0., 0., 1.]]
+        R = SELECT.level_camera(0., 0.)
+        self.assertIsNone(SELECT.predicted_pixel(R, [0., 0., 0.], [-50., 0., 0.], K, [0.] * 5, [1920, 1080], 0))
+        centre = SELECT.predicted_pixel(R, [0., 0., 0.], [50., 0., 0.], K, [0.] * 5, [1920, 1080], 0)
+        self.assertAlmostEqual(centre[0], 960., places=6)
+        self.assertIsNone(SELECT.predicted_pixel(R, [0., 0., 0.], [50., 40., 0.], K, [0.] * 5, [1920, 1080], 0))
+        self.assertIsNone(SELECT.predicted_pixel(R, [0., 0., 0.], [50., 0., 0.], K, [0.] * 5, [1920, 1080], 1000))
+
+
 class ExtractionTest(unittest.TestCase):
     def test_single_video(self):
         self.assertEqual(video_member("header\n----------\nPath = cam0.mp4\nSize = 123\n")["Size"], "123")
@@ -319,6 +363,12 @@ class TimestampTest(unittest.TestCase):
         self.assertIsNone(r["video_edit_list_frames"])
         self.assertFalse(any(c["supported_by_edit_list"] for c in r["candidates"]))
 
+    def test_edit_frames_use_the_track_timescale_not_an_assumed_rate(self):
+        """A 25 fps track at a 12800 timescale: 512 media units is one frame, not 512/1001."""
+        tracks = [{"handler": "vide", "timescale": 12800, "sample_duration": 512,
+                   "edits": [{"media_time": 512, "media_time_frames": 512 / 512}]}]
+        self.assertEqual(VERIFY.video_edit_frames(tracks), 1.0)
+
     def test_video_edit_frames_ignores_other_tracks(self):
         tracks = [{"handler": "soun", "edits": [{"media_time": 0, "media_time_frames": 0.}]},
                   {"handler": "vide", "edits": [{"media_time": 1001, "media_time_frames": 1.0}]}]
@@ -351,7 +401,18 @@ class ReviewTest(unittest.TestCase):
         gt = REVIEW.interpolate_pose(self.pose, 0.5, max_gap_s=1.5)
         self.assertAlmostEqual(gt["xyz_m"][1], 1.)
         self.assertAlmostEqual(gt["speed_mps"], (1 + 4) ** .5)
-        self.assertAlmostEqual(gt["rpy_deg_uninterpreted"][2], 180.)
+        # 170 -> 190 wraps through the branch cut; the result is the same angle, normalised into range
+        yaw = gt["rpy_deg_uninterpreted"][2]
+        self.assertAlmostEqual(REVIEW.wrap_deg(yaw - 180.), 0.)
+        self.assertTrue(-180. <= yaw <= 180.)
+
+    def test_interpolated_angles_stay_in_range(self):
+        wrapping = [[0., 0, 0, 0, 350., -170., 359.9, 0, 0, 0, 0],
+                    [0.1, 0, 0, 0, -350., 170., 0.1, 0, 0, 0, 0]]
+        rpy = REVIEW.interpolate_pose(wrapping, 0.05, max_gap_s=1)["rpy_deg_uninterpreted"]
+        for angle in rpy:
+            self.assertTrue(-180. <= angle <= 180., angle)
+        self.assertAlmostEqual(REVIEW.wrap_deg(rpy[2] - 0.), 0.)
 
     def test_no_extrapolation_or_long_gap(self):
         self.assertIsNone(REVIEW.interpolate_pose(self.pose, -0.1, max_gap_s=1.5))
@@ -381,6 +442,26 @@ class ReviewTest(unittest.TestCase):
         self.assertTrue(x1 <= 40 and y1 <= 30 and x2 >= 44 and y2 >= 34)
         panel = REVIEW.render_panel(cur, boxes, ["a", "b"])
         self.assertGreater(panel.shape[0], cur.shape[0])
+
+
+class DistortionTest(unittest.TestCase):
+    def test_fold_back_radius_of_the_real_calibration(self):
+        limit = REPROJ.valid_distortion_radius([-0.011232359677, 0.045931232417, 0.000263868094,
+                                                -0.001253638454, -0.151703077572])
+        self.assertTrue(1.0 < limit < 1.1)          # image corner is at 0.713, comfortably inside
+        r = limit * 0.999
+        self.assertGreater(self._radial(r, -0.011232359677, 0.045931232417, -0.151703077572),
+                           self._radial(r * 0.99, -0.011232359677, 0.045931232417, -0.151703077572))
+        beyond = limit * 1.3
+        self.assertLess(self._radial(beyond, -0.011232359677, 0.045931232417, -0.151703077572),
+                        self._radial(limit, -0.011232359677, 0.045931232417, -0.151703077572))
+
+    @staticmethod
+    def _radial(r, k1, k2, k3):
+        return r * (1 + k1 * r ** 2 + k2 * r ** 4 + k3 * r ** 6)
+
+    def test_no_distortion_never_folds(self):
+        self.assertEqual(REPROJ.valid_distortion_radius([0., 0., 0., 0., 0.]), float("inf"))
 
 
 class ReprojectionTest(unittest.TestCase):
@@ -425,6 +506,41 @@ class ReprojectionTest(unittest.TestCase):
         self.assertEqual(bad["status"], "INCONSISTENT")
         few = REPROJ.evaluate(self._reviewed(self.pixels)[:3], self._pose(), self.camera, self.K, self.dist, 1 / 30., 0)
         self.assertEqual(few["status"], "INSUFFICIENT_REVIEWED_BOXES")
+
+    def test_points_behind_the_camera_are_refused(self):
+        world = list(self.world) + [self.camera - self.R.T @ self.np.array([0., 0., 50.])]
+        pixels = list(self.pixels) + [[960., 540.]]
+        reviewed = [{"frame_id": i + 1, "opencv_index": i, "project_timestamp_s": 1. + 0.1 * i, "centre": list(p)}
+                    for i, p in enumerate(pixels)]
+        pose = [[1. + 0.1 * i] + list(w) + [0., 0., 0., .01, .01, .01, 1.] for i, w in enumerate(world)]
+        r = REPROJ.evaluate(reviewed, pose, self.camera, self.K, self.dist, 1 / 30., 0)
+        self.assertEqual(r["status"], "POINTS_BEHIND_FITTED_CAMERA")
+        self.assertGreaterEqual(r["points_behind_camera"], 1)
+
+    def test_points_past_the_fold_back_radius_are_refused(self):
+        """A target far outside the field of view still projects into the image once the model folds."""
+        limit = REPROJ.valid_distortion_radius(self.dist)
+        far = self.camera + self.R.T @ self.np.array([limit * 2.5 * 40., 0., 40.])
+        world = list(self.world) + [far]
+        reviewed = [{"frame_id": i + 1, "opencv_index": i, "project_timestamp_s": 1. + 0.1 * i,
+                     "centre": list(p)} for i, p in enumerate(list(self.pixels) + [[500., 500.]])]
+        pose = [[1. + 0.1 * i] + list(w) + [0., 0., 0., .01, .01, .01, 1.] for i, w in enumerate(world)]
+        r = REPROJ.evaluate(reviewed, pose, self.camera, self.K, self.dist, 1 / 30., 0)
+        self.assertEqual(r["status"], "POINTS_OUTSIDE_VALID_DISTORTION_RADIUS")
+        self.assertGreater(r["max_normalized_radius"], r["valid_radius_limit"])
+
+    def test_discrimination_reports_pixels_per_frame(self):
+        pose = [[t, 0., 100., 0., 0., 0., 0., .01, .01, .01, 1.] for t in (0.,)]
+        pose = [[0.0, 0., 100., 0., 0., 0., 0., .01, .01, .01, 1.],
+                [0.1, 1., 100., 0., 0., 0., 0., .01, .01, .01, 1.]]
+        d = REPROJ.alignment_discrimination(pose, [0., 0., 0.], [0.02], 1 / 30., 1500.)
+        self.assertEqual(d["frames"], 1)
+        self.assertAlmostEqual(d["median_px"], 1500. * math.atan(1 / 3. / 100.), delta=0.05)
+
+    def test_discrimination_empty_outside_support(self):
+        pose = [[0.0, 0., 100., 0., 0., 0., 0., .01, .01, .01, 1.],
+                [0.1, 1., 100., 0., 0., 0., 0., .01, .01, .01, 1.]]
+        self.assertEqual(REPROJ.alignment_discrimination(pose, [0., 0., 0.], [5.0], 1 / 30., 1500.)["frames"], 0)
 
     def test_true_offset_recovered_from_the_winning_shift(self):
         self.assertEqual(REPROJ.true_index_offset(0, 0), 0)     # edit-list candidate
