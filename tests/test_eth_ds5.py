@@ -542,6 +542,26 @@ class ReprojectionTest(unittest.TestCase):
                 [0.1, 1., 100., 0., 0., 0., 0., .01, .01, .01, 1.]]
         self.assertEqual(REPROJ.alignment_discrimination(pose, [0., 0., 0.], [5.0], 1 / 30., 1500.)["frames"], 0)
 
+    def test_refine_finds_a_non_integer_optimum_and_flags_it(self):
+        curve = lambda x: (x + 3.35) ** 2 + 1.0
+        r = REPROJ.refine_shift(curve, -3)
+        self.assertAlmostEqual(r["shift_frames"], -3.35, places=2)
+        self.assertFalse(r["is_integer_relabelling"])
+        self.assertGreater(r["distance_to_nearest_integer_frames"], 0.2)
+
+    def test_refine_accepts_an_integer_optimum(self):
+        r = REPROJ.refine_shift(lambda x: (x + 2.0) ** 2, -2)
+        self.assertAlmostEqual(r["shift_frames"], -2.0, places=3)
+        self.assertTrue(r["is_integer_relabelling"])
+
+    def test_refine_skips_shifts_without_a_score(self):
+        r = REPROJ.refine_shift(lambda x: None if x < -1.5 else (x + 1.0) ** 2, -1)
+        self.assertGreaterEqual(r["shift_frames"], -1.5)
+
+    def test_search_range_covers_more_than_the_frame_ambiguity(self):
+        self.assertLessEqual(min(REPROJ.ALIGNMENT_SHIFTS), -8)
+        self.assertGreaterEqual(max(REPROJ.ALIGNMENT_SHIFTS), 8)
+
     def test_true_offset_recovered_from_the_winning_shift(self):
         self.assertEqual(REPROJ.true_index_offset(0, 0), 0)     # edit-list candidate
         self.assertEqual(REPROJ.true_index_offset(0, 1), -1)    # reader dropped the last frame

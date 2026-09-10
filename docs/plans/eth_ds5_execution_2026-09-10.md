@@ -80,7 +80,12 @@ Receipts: [results/eth_ds5_intake_2026-09-10/README.md](../../results/eth_ds5_in
 - **Open blocker B — identity**: 36 pilot panels plus 17 fast-motion panels, GT geometry and motion cues
   are ready; no box exists. drone1 and drone2 are DJI quadrotors, so the six-armed airframe visible in
   frame 901 can only be drone0; that cue is in the review instructions.
-- **Open blocker C — calibration**: resolution/FPS match only. `tools/check_eth_ds5_reprojection.py`
+- **Open blocker C — calibration: provisionally REFUTED as published.** A provisional AI review of the 17
+  alignment frames fits best at −3.53 frames (−117.6 ms), which is not an integer and so not a frame
+  relabelling, and even there the RMS is 6.9 px against the 4 px gate. Freeing the radial coefficient
+  alone (−0.100 versus the published −0.0112) brings it to 2.34 px with the focal length unchanged. A
+  usable ds5 cam0 calibration has to come from the dataset or the authors; refitting from these boxes and
+  then declaring the calibration valid would be circular. Original text: resolution/FPS match only. `tools/check_eth_ds5_reprojection.py`
   (rotation-only Kabsch fit + PnP centre vs surveyed cam0 position, shifts −3…+3 frames) decides after
   review; thresholds were fixed before any box: pixel RMS < 4 px, centre < 2 m, ≥ 6 boxes. The check now
   refuses points behind the camera or past the radial model's fold-back radius, scores every shift on the

@@ -117,12 +117,29 @@ unverified assumption (azimuth 25.8, elevation 17.3 degrees, roll zero, fitted t
 in frames 901 and 1651 with a 0.11 degree residual). It only chooses which frames a human is shown. Eight
 of the twenty frames selected before this test existed had drone0 outside the picture entirely.
 
+## Provisional review result (2026-09-10)
+
+A provisional review of the 17 alignment frames by Claude, not by the independent human reviewer the plan
+requires, is in [provisional_review_2026-09-10/](provisional_review_2026-09-10/README.md). It answers the
+design question and changes the blocker.
+
+- **The alignment set discriminates.** The pixel RMS curve has a single minimum and rises 2 to 3 px per
+  frame of shift. The stride-150 pilot could not have done this.
+- **The mismatch is not a frame relabelling.** The refined optimum sits at −3.53 frames, −117.6 ms, which
+  is 0.47 frames from any integer. None of the three index candidates explains it. The old ±3 search
+  would have missed it; the search now spans ±8, refines the continuous optimum, and refuses to report an
+  index offset when the optimum is not an integer.
+- **The published calibration fails.** Best RMS 6.9 px against the 4 px gate, with residuals correlating
+  0.78 with radial distance. Freeing the radial coefficient alone, to −0.100 versus the published
+  −0.0112, brings RMS to 2.34 px while the focal length stays unchanged. The Sony5100 file does not
+  describe ds5 cam0's lens as published.
+
 ## Findings that still block measurement
 
 1. **Frame/time alignment**: three candidate mappings, unresolved without reviewed boxes (above).
 2. **Identity**: three drones flew and upstream publishes no 2D labels for ds5. GT is drone0 (Pixhawk)
    only. GT places drone0 5.8 m from cam0 on the ground until about 30 s, then 5–108 m away.
-3. **Calibration candidate**: resolution 1920x1080 and 29.97 fps match `calibration/sony5100/sony5100.json`;
+3. **Calibration candidate**: provisionally REFUTED as published, see above; resolution 1920x1080 and 29.97 fps match `calibration/sony5100/sony5100.json`;
    the file carries no camera-model, lens or zoom tag (XAVC brand only) and ds5 publishes no per-camera
    calibration. Compatibility is testable only by reprojecting reviewed drone0 boxes
    (`tools/check_eth_ds5_reprojection.py`; thresholds fixed before any box existed: pixel RMS < 4 px,
