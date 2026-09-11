@@ -8,6 +8,7 @@ from aerial_gym.config.asset_config.env_object_config import (
     navrl_distractor_sphere_params,
     navrl_physical_target_params,
     navrl_physical_target_v2_params,
+    navrl_physical_target_v3_params,
 )
 
 
@@ -114,6 +115,12 @@ class NavRLBarsEnvCfg:
         _physical_geometry_v2 = os.environ.get(
             "NAVRL_PHYSICAL_GEOMETRY_VERSION", "v1"
         ).strip().lower() == "v2"
+        # Target appearance. v3 keeps v2's inertial and collision byte for byte and changes only
+        # the visual, so this selects what a camera sees and nothing else. Default v2: an existing
+        # run must not change silhouette because a new asset appeared in the tree.
+        _target_appearance_v3 = os.environ.get(
+            "NAVRL_TARGET_APPEARANCE", "v2"
+        ).strip().lower() == "v3"
         # Appearance distractors (NAVRL_DISTRACTOR_COUNT, default 0). Each shape class already
         # reports num_assets == 0 when the knob is unset, and AssetLoader skips a zero-count asset
         # type before it reads the folder or draws from the RNG, so leaving the knob unset changes
@@ -140,7 +147,8 @@ class NavRLBarsEnvCfg:
             "distractor_pole": navrl_distractor_pole_params,
             # keep_in_env puts this at obstacle index 0; NavRLTask offsets every bar slice past it.
             "physical_target": (
-                navrl_physical_target_v2_params
+                (navrl_physical_target_v3_params if _target_appearance_v3
+                 else navrl_physical_target_v2_params)
                 if _physical_geometry_v2
                 else navrl_physical_target_params
             ),
