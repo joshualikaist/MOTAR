@@ -39,14 +39,26 @@ def source_bytes():
     return {str(p.relative_to(ROOT)): p.read_bytes() for p in paths}
 
 
-def framing_distance(asset, camera, fill=0.45):
-    """Place the camera so the asset's bounding sphere fills a declared fraction of the frame."""
+FRAME_FILL = 0.85
+
+
+def framing_distance(asset, camera, rotation, fill=FRAME_FILL):
+    """Fit the asset's projected extent to the frame, per view.
+
+    Framing by bounding sphere wastes the frame for anything anisotropic: a 1.6 m pole 0.12 m
+    across then occupies a strip a few pixels wide, and the coverage guard fires on the framing
+    rather than on anything about the asset. Projecting onto the camera axes and fitting the
+    larger of the two extents is correct for any aspect ratio and needs no per-asset tuning.
+    """
     import numpy as np
     vertices = asset.mesh.vertices.astype(np.float64)
     centre = (vertices.min(axis=0) + vertices.max(axis=0)) / 2.0
     radius = float(np.linalg.norm(vertices - centre, axis=1).max())
-    half_height = camera.height / (2.0 * camera.focal_px)
-    return centre, radius, radius / (fill * min(half_height, camera.width / (2.0 * camera.focal_px)))
+    camera_frame = (vertices - centre) @ rotation          # rows of rotation^T are the camera axes
+    half = np.abs(camera_frame).max(axis=0)
+    tangent = np.array([camera.width, camera.height]) / (2.0 * camera.focal_px)
+    distance = float(np.max(half[:2] / (fill * tangent)) + half[2])
+    return centre, radius, distance
 
 
 def evaluate(asset, camera, device, views=VIEWS):
@@ -58,17 +70,23 @@ def evaluate(asset, camera, device, views=VIEWS):
     from renderer_validation.shading import shade
     from renderer_validation.scene import Appearance
 
-    centre, radius, distance = framing_distance(asset, camera)
-    positions, orientations = [], []
+    positions, orientations, distances = [], [], []
+    centre = radius = None
     for index in range(views):
         azimuth = 2.0 * np.pi * index / views
         elevation = np.radians(15.0 if index % 2 == 0 else -20.0)
-        offset = np.array([np.sin(azimuth) * np.cos(elevation), -np.sin(elevation),
-                           np.cos(azimuth) * np.cos(elevation)]) * distance
-        positions.append(centre - offset)
         # Camera +Z forward: yaw about world Y then pitch about world X brings the asset into view.
-        orientations.append(quaternion_product(quaternion([0, 1, 0], azimuth),
-                                               quaternion([1, 0, 0], elevation)))
+        quaternion_xyzw = quaternion_product(quaternion([0, 1, 0], azimuth),
+                                             quaternion([1, 0, 0], elevation))
+        x, y, z, w = quaternion_xyzw
+        rotation = np.array([
+            [1 - 2 * (y * y + z * z), 2 * (x * y - z * w), 2 * (x * z + y * w)],
+            [2 * (x * y + z * w), 1 - 2 * (x * x + z * z), 2 * (y * z - x * w)],
+            [2 * (x * z - y * w), 2 * (y * z + x * w), 1 - 2 * (x * x + y * y)]])
+        centre, radius, distance = framing_distance(asset, camera, rotation)
+        distances.append(distance)
+        positions.append(centre - rotation[:, 2] * distance)
+        orientations.append(quaternion_xyzw)
     positions = np.asarray(positions, dtype=np.float32)
     orientations = np.asarray(orientations, dtype=np.float64)
     orientations = (orientations / np.linalg.norm(orientations, axis=1, keepdims=True)).astype(np.float32)
@@ -116,7 +134,8 @@ def evaluate(asset, camera, device, views=VIEWS):
     }
     from renderer_validation.validation import tensor_hash
     return {"asset": asset.as_dict(), "framing": {"bounding_radius_m": radius,
-                                                  "camera_distance_m": distance,
+                                                  "camera_distance_m": distances,
+                                                  "frame_fill": FRAME_FILL,
                                                   "centre_m": centre.tolist()},
             "per_view": per_view, "link_pixels_total": link_totals,
             "material_pixels_total": material_totals, "checks": checks,
