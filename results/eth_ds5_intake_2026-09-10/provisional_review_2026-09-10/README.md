@@ -1,3 +1,6 @@
+> **2026-09-11 정정 안내.** 이 문서의 "six-armed airframe" 서술은 철회됐다. drone0은 쿼드로터다.
+> 수치는 고치지 않았다. `../CORRECTION_2026-09-11_rotor_count.md`를 보라.
+
 # Provisional review of the 17 alignment frames, and what it decided
 
 **Reviewer: Claude, an AI, not the independent human reviewer the plan requires.** This does not close

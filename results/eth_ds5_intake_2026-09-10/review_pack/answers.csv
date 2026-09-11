@@ -1,6 +1,6 @@
-no,image,frame_id,gt_range_m,question,your_answer_yes_no_unsure,arms_you_counted,notes
-1,01_frame000901_18m.jpg,901,17.9,6암 기체가 보이는가,,,
-2,02_frame001051_31m.jpg,1051,30.7,같은 6암 기체인가,,,
+no,image,frame_id,gt_range_m,question,your_answer_yes_no_unsure,what_you_saw,notes
+1,01_frame000901_18m.jpg,901,17.9,회전익 항공기인가 (팔 4개 + 착륙 다리),,,
+2,02_frame001051_31m.jpg,1051,30.7,901과 같은 기체인가,,,
 3,03_frame004937_62m.jpg,4937,61.5,회전익 형상이 보이는가,,,
 4,04_frame005251_61m.jpg,5251,61.4,"비행 후반, 같은 기체인가",,,
 5,05_frame001605_82m.jpg,1605,82.3,흐릿하지만 항공기인가,,,

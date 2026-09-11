@@ -13,7 +13,9 @@ timing error costs more than the annotation noise and exactly one alignment surv
 centres are accurate to about 3 px.
 
 Selection used ground-truth geometry only, plus an approximate camera pointing (azimuth 25.8, elevation
-17.3 degrees, roll assumed zero) fitted to the unmistakable six-armed airframe in frames 901 and 1651.
+17.3 degrees, roll assumed zero) fitted to the airframe in frames 901 and 1651. (That airframe was
+described as six-armed when the fit was made; it is a quadrotor. The fit used its image coordinates, not
+its arm count, so the pointing is unaffected.)
 That pointing decides only which frames you are shown. It is recorded as unverified, and the reprojection
 check re-fits the orientation from your boxes alone, so a wrong pointing wastes your time but cannot make
 a wrong result pass.
@@ -23,10 +25,14 @@ a wrong result pass.
 - drone0 is 62 to 99 m away, so the airframe is roughly 8 to 15 px across. Zoom in.
 - It is moving fast, so it will be motion-blurred and may be elongated. Box the whole blur, and put the
   centre where the airframe centre is, not where the blur is brightest.
-- Rotor count is the identity cue where the crop resolves it: drone1 and drone2 are DJI quadrotors, so a
-  six-armed airframe is drone0. At these ranges the arms may not resolve. Then rely on continuity with
-  neighbouring frames and on the ground-truth range and bearing printed in the header, and say in `notes`
-  what you relied on. `unsure` remains a valid answer.
+- **Correction, 2026-09-11: do not count rotors.** All three aircraft are quadrotors, so the count
+  separates nothing; the earlier instruction is withdrawn (`../CORRECTION_2026-09-11_rotor_count.md`).
+  Where the crop resolves the airframe, the cue is style: drone0 is a custom Pixhawk build with exposed
+  landing legs and an antenna mast, while the Phantom and Mavic are moulded consumer airframes. At these
+  ranges it will usually not resolve. Then rely on continuity with neighbouring frames and on the
+  ground-truth range and bearing printed in the header, and say in `notes` what you relied on. That much
+  confirms an aircraft of the right apparent size at the predicted place, not that it is drone0 rather
+  than one of the other two. `unsure` remains a valid answer.
 - Yellow `m#` boxes are temporal-difference motion cues. At these ranges they often latch onto fence
   posts and branches because the camera itself shakes. Do not copy them without looking.
 

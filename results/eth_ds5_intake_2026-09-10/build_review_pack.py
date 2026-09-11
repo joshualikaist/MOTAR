@@ -1,5 +1,16 @@
 """Build the 10-frame human-review pack: full frame beside a large crop, nothing else.
 
+Corrected 2026-09-11: the first two questions asked about a six-armed airframe. All three
+aircraft in this dataset are quadrotors, so that question could not separate them and the
+answer column that asked for an arm count is gone. See CORRECTION_2026-09-11_rotor_count.md.
+
+WARNING (2026-09-11): the centres file used for the shipped pack is NOT in this repository and could
+not be recovered. track_seeds.json covers only six of the ten frames and stores bare [x, y] lists,
+which this loader does not accept. Re-running this script therefore does NOT reproduce the shipped
+images: four crops would fall back to the whole-frame view and lose the recorded centre marks the
+reviewer already commented on. The 2026-09-11 correction rebuilt the archive around the existing
+images rather than re-rendering them.
+
 The earlier panels carried motion cues and small thumbnails, which made the one question a reviewer has
 to answer harder to see, not easier. Each image here shows the frame on the left with the inspected
 region marked, and that region enlarged on the right with the recorded centre crossed. The reviewer
@@ -19,8 +30,8 @@ CJK_FONTS = ("/usr/share/fonts/opentype/noto/NotoSansCJK-Medium.ttc",
              "/usr/share/fonts/truetype/nanum/NanumGothic.ttf")
 
 FRAMES = [
-    (901, 17.9, "6암 기체가 보이는가", "positive"),
-    (1051, 30.7, "같은 6암 기체인가", "positive"),
+    (901, 17.9, "회전익 항공기인가 (팔 4개 + 착륙 다리)", "positive"),
+    (1051, 30.7, "901과 같은 기체인가", "positive"),
     (4937, 61.5, "회전익 형상이 보이는가", "positive"),
     (5251, 61.4, "비행 후반, 같은 기체인가", "positive"),
     (1605, 82.3, "흐릿하지만 항공기인가", "positive"),
@@ -116,7 +127,7 @@ def main():
     with sheet.open("w", newline="") as handle:
         writer = csv.writer(handle)
         writer.writerow(["no", "image", "frame_id", "gt_range_m", "question",
-                         "your_answer_yes_no_unsure", "arms_you_counted", "notes"])
+                         "your_answer_yes_no_unsure", "what_you_saw", "notes"])
         for order, (frame_id, distance, question, _) in enumerate(FRAMES, 1):
             writer.writerow([order, made[order - 1].name, frame_id, distance, question, "", "", ""])
     archive = args.output.parent / "eth_ds5_human_review_pack.zip"

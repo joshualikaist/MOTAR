@@ -78,8 +78,10 @@ Receipts: [results/eth_ds5_intake_2026-09-10/README.md](../../results/eth_ds5_in
   frame of error displaces drone0 by 2.2 px median / 7.6 px p95, which the 4 px reprojection gate can
   separate. Pilot images were rendered under an explicit `UNRESOLVED_count_mismatch` flag.
 - **Open blocker B — identity**: 36 pilot panels plus 17 fast-motion panels, GT geometry and motion cues
-  are ready; no box exists. drone1 and drone2 are DJI quadrotors, so the six-armed airframe visible in
-  frame 901 can only be drone0; that cue is in the review instructions.
+  are ready; no box exists. **The six-arm cue recorded here on 2026-09-10 is WITHDRAWN**: all three
+  aircraft are quadrotors, frame 901 resolves four arms plus two landing legs, and rotor count separates
+  nothing (`results/eth_ds5_intake_2026-09-10/CORRECTION_2026-09-11_rotor_count.md`). The review
+  instructions now cite airframe style at close range and the 0.6 degree bearing agreement instead.
 - **Open blocker C — resolved in diagnosis, not in fix.** The published calibration is verified correct
   for its own 122 chessboard images (held-out 1.245 px versus 1.262 px recomputed), so the file is not
   stale. Against drone0, with tracking noise of 0.198 px over 3495 tracked frames, it leaves 5.6 px, and

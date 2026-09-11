@@ -113,8 +113,9 @@ noise up to 3 px, and fails closed at 4 px. Combining it with the pilot is bette
 question and worse for the alignment question, so the check is meant to be run on both.
 
 The in-view test needs an approximate camera pointing, which is an explicit argument recorded as an
-unverified assumption (azimuth 25.8, elevation 17.3 degrees, roll zero, fitted to the six-armed airframe
-in frames 901 and 1651 with a 0.11 degree residual). It only chooses which frames a human is shown. Eight
+unverified assumption (azimuth 25.8, elevation 17.3 degrees, roll zero, fitted to the airframe in frames
+901 and 1651 with a 0.11 degree residual; that airframe is a quadrotor, not the six-armed one the note
+originally described, and the fit used its image coordinates rather than its arm count). It only chooses which frames a human is shown. Eight
 of the twenty frames selected before this test existed had drone0 outside the picture entirely.
 
 ## Provisional review result (2026-09-10)
@@ -190,5 +191,9 @@ Human review of the 36 panels in `review_offset0/` → filled `review_template.c
 `CALIBRATION_CANDIDATE_CONSISTENT` for some alignment shift may dense segments be registered for E3,
 and the chosen shift must then be preregistered, not tuned.
 
-Identity note for the reviewer: drone1 and drone2 are DJI quadrotors, so a six-armed airframe cannot be
-either. Frame 901's crop resolves six arms at a GT range of 17.9 m.
+Identity note for the reviewer, corrected 2026-09-11: **all three aircraft are quadrotors, so rotor count
+separates nothing.** Frame 901's crop at 17.9 m resolves four thick arms carrying rotors plus two thin
+landing legs and an antenna mast; the legs were previously miscounted as arms and the "six-armed" cue is
+withdrawn (`CORRECTION_2026-09-11_rotor_count.md`). What survives is the bearing trace, which follows
+drone0's ground truth to within 0.6 degrees over a wide arc, and the custom-build airframe style against
+the two moulded DJI consumer airframes.

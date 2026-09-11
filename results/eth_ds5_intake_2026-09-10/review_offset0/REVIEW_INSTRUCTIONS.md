@@ -32,10 +32,15 @@ at the 95th percentile, which does not change whether you can see it.
 `drones.txt`: drone0 Pixhawk, drone1 DJI Phantom, drone2 DJI Mavic. A visible aircraft is NOT
 automatically drone0.
 
-**Rotor count is the strongest cue available.** The DJI Phantom and the DJI Mavic are both quadrotors,
-so an aircraft with six arms cannot be drone1 or drone2. Several crops in this set (frame 901 for
-example) resolve six arms clearly. Where the crop resolves the airframe, record what you counted in
-`notes`; where it is a dark blob, do not guess from motion alone. Mark `drone0_visible=yes` only when you can argue identity, for example continuity
+**Correction, 2026-09-11: rotor count is NOT a cue and the earlier instruction to use it is withdrawn.**
+All three aircraft are quadrotors. Frame 901 at 14x resolves four thick arms carrying rotors, two thin
+landing legs and an antenna mast; the legs were previously miscounted as arms. See
+`../CORRECTION_2026-09-11_rotor_count.md`.
+
+**Airframe style is the cue where the crop resolves it.** drone0 is a custom Pixhawk build with exposed
+landing legs and an antenna mast. The Phantom and the Mavic are moulded consumer airframes and the Mavic
+folds its arms and has no exposed legs. Record what you actually saw in `notes`; where it is a dark blob,
+do not guess from motion alone. Mark `drone0_visible=yes` only when you can argue identity, for example continuity
 with take-off near cam0 (GT: 5.8 m from cam0 on the ground until about 30 s, climbing from about 30.6 s),
 apparent size consistent with the GT range across frames, or other drones being visible elsewhere at the
 same time. Write the argument in `notes`. `unsure` is a valid answer.
