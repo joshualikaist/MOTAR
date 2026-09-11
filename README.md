@@ -7,14 +7,18 @@ camera, LiDAR and ego-state. The point is not a single headline success rate. It
 under a reproducible experiment contract, **which conditions produce capture, crash or timeout, and
 why** — including the results that came out negative.
 
-![MOTAR research evidence map: simulation diagnosis, real-imagery perception, and measured range error](docs/assets/motar-system-overview.svg)
+![MOTAR research workflow: sources, analysis, and recorded outputs](docs/assets/paper/system-overview-block-diagram.svg)
 
-**발표용 그림:** [9개 파트 미리보기](docs/assets/presentation/) ·
-[16:9 SVG + 4K PNG 전체 다운로드](docs/assets/presentation/motar-presentation-2026-09-10.zip).
-각 그림은 구현·측정 완료, 설계 후보, 미검증 범위를 구분합니다. 실기 통합 성능을 뜻하지 않습니다.
+**논문형 블록 다이어그램 · 2026-09-11:** [README 그림 9개 전체 미리보기](docs/assets/paper/) ·
+[SVG + 4K PNG + 벡터 PDF 다운로드](docs/assets/paper/motar-paper-block-diagrams.zip).
+본문 그림 9개 모두 모듈·입출력·연결 관계 중심으로 다시 그렸습니다. 수치와 긴 설명은 캡션과 본문에 둡니다.
 
-**논문형 블록 다이어그램:** [인지 과정·safety filter](docs/assets/paper/) ·
-[SVG + 4K PNG 다운로드](docs/assets/paper/motar-paper-block-diagrams.zip).
+**Fig. 1 — research workflow.** Each row maps a study source to analysis and recorded output;
+the three rows are not a deployed closed-loop system.
+[Previous evidence-summary figure](docs/assets/motar-system-overview.svg).
+
+Previous 2026-09-10 summary cards remain archived:
+[gallery](docs/assets/presentation/) · [ZIP](docs/assets/presentation/motar-presentation-2026-09-10.zip).
 
 [Research site](docs/status/) · [System specification](docs/MOTAR_SYSTEM_SPEC_2026-08-24.md) ·
 [Verification](VERIFICATION.md) · [Operations](OPERATIONS.md) · [Worklog](WORKLOG.md) ·
@@ -126,19 +130,26 @@ Three problems are entangled:
 
 ## Arena and platform
 
-![MOTAR arena geometry](docs/assets/motar-arena-geometry.svg)
+![Simulation environment and observation-source block diagram](docs/assets/paper/arena-block-diagram.svg)
+
+**Fig. 2 — environment.** Scene configuration branches into static and dynamic components,
+which supply simulated sensing; only ego-state fields enter the direct state branch.
+This is a component diagram, not a map. [Preserved scale drawing](docs/assets/motar-arena-geometry.svg).
 
 A 40 × 40 × 3 m arena holds 0.7096 × 0.5756 × 2.0 m bars. The lineage densities are
 **70 / 115 / 160 / 205** (70 bars = 4.38 per 100 m², 205 bars = 12.81 per 100 m²); 300 is a
 disconnected stress case. Goals sit in a **22.5–28 m** band from spawn and the target moves at
-0.3–1.5 m/s. The LiDAR circle (12 m) and the camera wedge (87°, 20 m) in the figure are drawn to
-scale, and that is the figure's point: **how little of the arena the sensors see.**
+0.3–1.5 m/s. The separate scale drawing shows the LiDAR circle (12 m) and camera wedge (87°, 20 m):
+**how little of the arena the sensors see.**
 
-The side view settles one thing. Bars are 2.0 m tall and cruise altitude is 1.0 m, so **a bar
+The preserved side view illustrates the vertical geometry. Bars are 2.0 m tall and cruise altitude is 1.0 m, so **a bar
 always intersects some LiDAR beam.** That is why contact forensics report `VERTICAL_OUT` at
 exactly **0.0%**.
 
-![MOTAR platform and sensing](docs/assets/motar-platform-hardware.svg)
+![Vehicle, sensing, and actuation subsystem composition](docs/assets/paper/platform-block-diagram.svg)
+
+**Fig. 3 — platform.** A subsystem decomposition of the simulation candidate, not a hardware
+wiring diagram. [Preserved dimensional and parameter drawing](docs/assets/motar-platform-hardware.svg).
 
 `navrl_ref5in_quad_v2` is **1.20 kg, 220 mm motor diagonal, 127 mm propellers, 9.6 N per motor**.
 Total thrust 38.4 N against 11.77 N of weight gives **TWR 3.26**, with hover at 30.6% of thrust.
@@ -159,7 +170,11 @@ assembled and there is no measured BOM, inertia, thrust, thermal or power data.
 | Control | altitude PI + Lee velocity controller + 4-motor allocation |
 | Simulation | 100 Hz physics, 10 Hz policy action, exactly 600 actions per episode |
 
-![MOTAR learned navigation and fixed flight-control stack](docs/assets/motar-control-stack.svg)
+![Learned policy and fixed control-chain block diagram](docs/assets/paper/control-block-diagram.svg)
+
+**Fig. 4 — control.** Read the top row left to right, then the bottom row right to left.
+Only the policy block is learned; the remaining blocks describe the fixed controller and plant.
+[Preserved equation-level diagram](docs/assets/motar-control-stack.svg).
 
 PPO trains the navigation policy and critic weights. Sensor geometry, observation field order,
 action bounds, controller gains, motor/URDF dynamics and reward coefficients are a **fixed
@@ -182,12 +197,12 @@ default is `off` on both sides.
 
 ![Direction-preserving speed governor block diagram](docs/assets/paper/safety-filter-block-diagram.svg)
 
-**Figure — safety filter.** LiDAR clearance determines the cap, while the policy command
-supplies both the corridor direction and the velocity to be scaled. This depicts the documented
-straight-corridor baseline, not the later arc variant.
+**Fig. 5 — safety filter.** The geometry arm and cap law are separate comparison axes.
+Straight-corridor and arc-clearance geometry are alternatives, not consecutive filters.
+The nominal command branches to geometry context and magnitude scaling; direction is unchanged.
 [Existing detailed diagram and historical findings](docs/assets/motar-safety-filter.svg).
 
-The governor selects LiDAR returns inside a **straight corridor of half-width 0.45 m around the
+The **historical straight-corridor baseline** selects LiDAR returns inside a **corridor of half-width 0.45 m around the
 commanded direction**, takes the minimum forward distance as `clearance`, and applies one cap law
 to **the magnitude of the horizontal command only**. It never changes direction; the policy chooses
 direction.
@@ -263,12 +278,12 @@ python tools/pool_navrl_seed_replication.py \
 
 ![Streaming perception process block diagram](docs/assets/paper/perception-block-diagram.svg)
 
-**Figure — perception process.** Detection and optical flow join at feature assembly, followed by
+**Fig. 6 — perception process.** Detection and optical flow join at feature assembly, followed by
 the sequence-local history buffer and temporal selector. Output is a frame-local candidate rank
 or `NO_LOCK`, not a physical track ID or a validated range estimate.
 [Separate evaluation summary](docs/assets/motar-perception-final.svg).
 
-**그림 읽기.** 실영상 검출·시간 모델·스트리밍 및 P8–P10 평가가 완료된 범위입니다.
+**평가 결과는 별도입니다.** 위 그림은 추론 모듈의 흐름이며 실영상 검출·시간 모델·스트리밍 및 P8–P10 수치는 아래 본문에서 설명합니다.
 22.48 FPS는 개발 환경의 decode-inclusive 측정이며 탑재 장치나 실기 성능이 아닙니다.
 최종 test utility 0.4701과 validation 0.6855는 서로 다른 영상의 결과입니다.
 
@@ -282,7 +297,11 @@ completion conditions are frozen in
 
 ### Why the in-simulator detector was abandoned
 
-![Archived MOTAR SAM in-simulator perception design](docs/assets/motar-perception-candidate.svg)
+![Archived SAM proposal with implemented and unimplemented boundaries](docs/assets/paper/sam-archive-block-diagram.svg)
+
+**Fig. 7 — archived candidate.** Dashed blocks and arrows denote unimplemented proposals;
+solid paths identify the offline CPU adapter and CC stub only.
+[Preserved full design candidate / 설계 후보](docs/assets/motar-perception-candidate.svg).
 
 Historical scope: [archived SAM verification plan](docs/SAM3_PERCEPTION_VERIFICATION_PLAN_2026-09-03.md).
 
@@ -300,7 +319,11 @@ SAM worker or control-loop integration. Two reasons replaced it.
 
 ### The current in-sim detector is a known failure, quantified
 
-![MOTAR camera target detection pipeline](docs/assets/motar-perception-detection.svg)
+![Color-detector baseline: multiple objects collapse to one centroid](docs/assets/paper/color-baseline-block-diagram.svg)
+
+**Fig. 8 — known-failure baseline.** The same-color branch illustrates where multiple objects
+share a response and collapse into one candidate; it is not the selected real-imagery pipeline.
+[Preserved failure measurements](docs/assets/motar-perception-detection.svg).
 
 The in-sim detector is not YOLO. `AppearanceTargetSegmenter` classifies RGB-D pixels with **a single
 1×1 convolution** (`R·3 − G·2 − B·2 − 0.9`), and `_detect_rgbd` **collapses every positive pixel
@@ -451,7 +474,11 @@ these results do not establish a seed-general PPO readaptation effect.
 
 ## External data — what can and cannot be used
 
-![E3-S measured size-based range error and E3-P blocked attitude gate](docs/assets/motar-eth-e3-evidence.svg)
+![Separate E3-S range-evaluation and E3-P reliability-gate workflows](docs/assets/paper/e3-analysis-block-diagram.svg)
+
+**Fig. 9 — E3 analysis.** Size-based range evaluation and the attitude reliability gate are separate
+workflows. The blocked branch does not output an attitude-error decomposition.
+[Previous numeric summary](docs/assets/motar-eth-e3-evidence.svg).
 
 **그림 읽기.** E3-S의 6.2%는 크기 기반 거리 추정 성능이며 자세 오차가 아닙니다.
 거리와 시간이 교락돼 있고 위치 GT 경고 상태가 포함됩니다. E3-P는 최신 gate에서

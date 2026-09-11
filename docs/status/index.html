@@ -45,16 +45,18 @@
         <p>01 · OVERVIEW</p>
         <h2 id="overview-title">센서 입력에서 비행까지</h2>
       </div>
-      <img src="../assets/motar-arena-geometry.svg" alt="40x40x3 m 아레나 평면도와 측면도: 축척대로 그린 막대, goal band 22.5-28 m, LiDAR 12 m 원과 카메라 87도 20 m 부채꼴, 막대 2.0 m와 LiDAR 수직 FOV +20/-10도">
-      <p>아레나 대비 센서가 얼마나 좁은지가 이 그림의 요점입니다. 측면도는 막대가 2.0&nbsp;m로 높고
+      <img src="../assets/paper/arena-block-diagram.svg" alt="환경 계약에서 정적·동적 장면으로 분기하여 센서 출력과 ego state를 구성하는 블록도">
+      <p>이 그림은 공간 축척도가 아니라 환경과 관측의 구성도입니다. <a href="../assets/motar-arena-geometry.svg">보관된 축척도</a>의 측면도는 막대가 2.0&nbsp;m로 높고
         순항 고도가 1.0&nbsp;m이므로 <strong>막대가 항상 어떤 빔에는 걸린다</strong>는 것을 보입니다 —
         접촉 포렌식의 <code>VERTICAL_OUT = 0.0%</code>가 그 결과입니다.</p>
-      <img src="../assets/motar-platform-hardware.svg" alt="ref5in 쿼드로터 질량 추력 예산, 센서 사양, 운동 포락선, 제어 사슬">
+      <img src="../assets/paper/platform-block-diagram.svg" alt="시뮬레이션 후보를 vehicle, sensor, actuation model로 분해한 구성도">
+      <p>하위 시스템의 구성 관계이며 실제 부품 배선도가 아닙니다. <a href="../assets/motar-platform-hardware.svg">기존 치수·매개변수 그림</a>.</p>
       <p><code>navrl_ref5in_quad_v2</code> 1.20&nbsp;kg · 대각 220&nbsp;mm · 모터당 9.6&nbsp;N →
         <strong>TWR 3.26</strong>. 2.5&nbsp;m/s에서 정지거리 1.81&nbsp;m, 선회반경 3.12&nbsp;m.
         <strong>hardware-informed simulation candidate이며 실기는 미조립입니다.</strong></p>
-      <img src="../assets/motar-system-overview.svg" alt="Track A 시뮬레이션 진단, Track B 실영상 인지, Track C 거리 측정의 완료 범위와 한계">
-      <p><a href="../assets/presentation/">발표용 그림 9개 미리보기</a> · <a href="../assets/presentation/motar-presentation-2026-09-10.zip" download>16:9 SVG + 4K PNG 전체 다운로드</a>. 그림과 설명은 2026-09-10 기준이며 실기 통합 검증을 뜻하지 않습니다.</p>
+      <img src="../assets/paper/system-overview-block-diagram.svg" alt="세 연구 축의 자료 입력, 분석, 기록 산출물을 분리한 연구 흐름도">
+      <p><a href="../assets/paper/">README 블록 다이어그램 9개</a> · <a href="../assets/paper/motar-paper-block-diagrams.zip" download>SVG + 4K PNG + 벡터 PDF 다운로드</a>. 실제 비행의 end-to-end 연결을 뜻하지 않습니다. <a href="../assets/motar-system-overview.svg">이전 연구 요약 그림</a>.</p>
+      <p>이전 2026-09-10 결과 카드: <a href="../assets/presentation/">보관 갤러리</a> · <a href="../assets/presentation/motar-presentation-2026-09-10.zip" download>보관 ZIP</a>.</p>
     </section>
 
     <section class="section arena-section" id="arena">
@@ -128,8 +130,8 @@
         <article><span>Fly</span><h3>Bounded control</h3><p>출력은 유한한 body velocity와 yaw-rate 명령이며 altitude PI와 Lee controller를 거쳐 동역학에 적용됩니다.</p></article>
       </div>
       <figure class="diagram">
-        <img src="../assets/motar-control-stack.svg" alt="정책 action에서 명령 매핑, altitude PI, Lee controller와 motor dynamics로 이어지는 제어 구조">
-        <figcaption>Navigation은 learned policy, 비행 제어와 motor/URDF dynamics는 고정된 실험 계약입니다. 화살표는 실제 코드의 실행 순서입니다.</figcaption>
+        <img src="../assets/paper/control-block-diagram.svg" alt="학습 정책에서 고정 제어기와 시뮬레이터까지 이어지는 8단계 블록도">
+        <figcaption>윗줄은 왼쪽에서 오른쪽, 아랫줄은 오른쪽에서 왼쪽으로 읽습니다. 정책 외의 블록은 고정된 제어·시뮬레이션 계약입니다. <a href="../assets/motar-control-stack.svg">기존 수식 포함 상세도</a>.</figcaption>
       </figure>
       <div class="control-details">
         <article><span>01</span><div><h3>Actor가 정하는 것</h3><p><code>aₓ, aᵧ, aψ</code>가 수평 속도와 yaw-rate를 정합니다. actor가 출력한 <code>a_z</code>는 실행되지 않고 altitude PI가 수직 명령을 덮어씁니다.</p></div></article>
@@ -184,7 +186,8 @@
           <strong>90.27%</strong>에서 틀린 물체를 잡습니다. confidence는 N=1/3/5에서
           0.826→0.896→0.892로, 단조 증가는 아닙니다. 개선이 아니라 결함의 정량화입니다.</p>
       </div>
-      <img src="../assets/motar-perception-detection.svg" alt="RGB-D 프레임에서 색 분류기, 단일 중심점 붕괴, LiDAR 연관으로 이어지는 탐지 파이프라인과 동색 디코이가 걸러지지 않는 지점">
+      <img src="../assets/paper/color-baseline-block-diagram.svg" alt="동색 물체가 동일한 픽셀 분류와 mask를 거쳐 단일 중심점으로 합쳐지는 실패 경로">
+      <p>현재 실영상 검출기가 아닌 기존 색 검출기의 실패 경로입니다. <a href="../assets/motar-perception-detection.svg">기존 상세 그림과 측정값</a>.</p>
 
       <h3>원인을 세 갈래로 나눠 각각 사전등록하고 측정했습니다</h3>
       <div class="scrollx"><table>
@@ -206,7 +209,8 @@
         후보를 더 잘 관리해도 달라지지 않습니다. 무엇을 표적으로 볼 것인가만이 문제입니다.</p>
 
       <h3>Archived — SAM / in-sim shape detector</h3>
-      <img src="../assets/motar-perception-candidate.svg" alt="ARCHIVED SAM-in-sim 설계: timestamped RGB-D와 pose, 비동기 SAM discovery, K-instance 경계, 3-D association과 다중가설 track 계획">
+      <img src="../assets/paper/sam-archive-block-diagram.svg" alt="보관된 SAM 설계 후보: 점선은 미구현 제안이며 실선은 offline CPU adapter와 CC stub만 표시">
+      <p>점선 블록과 연결은 미구현입니다. <a href="../assets/motar-perception-candidate.svg">기존 전체 설계 후보 그림</a>.</p>
       <p>위 구조는 <strong>폐기된 설계 후보이며 기록 목적으로만 보존합니다.</strong> 제어루프에 들어간 적이
         없고 성능 주장도 아닙니다. 초록색 instance boundary만 <strong>offline CPU 어댑터</strong>로
         구현돼 있고, SAM worker·전송·제어루프 연결·성능 측정은 존재하지 않습니다. 대체 사유 둘: <strong>(1)</strong> 표적에 형상 정보가 없습니다 &mdash;
@@ -369,8 +373,8 @@
       </table></div>
       <h3>ETH ds5 &mdash; 실촬영으로 거리 오차를 재려는 시도 (2026-09-10)</h3>
       <figure class="diagram">
-        <img src="../assets/motar-eth-e3-evidence.svg" alt="E3-S 블록 수준 절대 상대 거리 오차 6.2%, E3-P 자세 신뢰성 gate 미달로 BLOCKED">
-        <figcaption>6.2%는 블록별 절대 상대 거리 오차 중앙값의 중앙값입니다. 9.3 pp는 블록 간 p90−p10 산포이지 신뢰구간이 아닙니다. 크기 척도는 어두운 픽셀 수의 제곱근이며 GT bbox가 아닙니다. 같은 비행을 블록으로 나눈 평가이며 독립 신규 비행 검증이 아닙니다.</figcaption>
+        <img src="../assets/paper/e3-analysis-block-diagram.svg" alt="E3-S 거리 평가와 E3-P 자세 신뢰성 gate를 분리한 분석 절차도">
+        <figcaption>두 행은 별도 분석입니다. E3-P의 blocked 경로는 자세 오차 분해를 출력하지 않습니다. <a href="../assets/motar-eth-e3-evidence.svg">기존 수치 요약</a>의 6.2%는 블록별 절대 상대 거리 오차 중앙값의 중앙값이고 9.3 pp는 블록 간 p90−p10 산포입니다. 크기 척도는 GT bbox가 아닙니다.</figcaption>
       </figure>
       <p>시뮬레이터가 만들지 못하는 것은 <strong>실제 표적의 겉보기 크기 변동</strong>입니다. ETH
         <code>drone-tracking-datasets</code> ds5는 토털스테이션 기반 위치 GT를 제공하여 cam0 영상
@@ -446,8 +450,8 @@
           표: <a href="../a7_arc_attribution_table.md"><code>docs/a7_arc_attribution_table.md</code></a>,
           판정 <a href="../plans/confirmation_phase_plan_2026-09-06.md"><code>docs/plans/confirmation_phase_plan_2026-09-06.md</code></a>.</p>
       </div>
-      <img src="../assets/paper/safety-filter-block-diagram.svg" alt="LiDAR clearance에서 속도 cap을 계산하고 정책 명령의 수평 크기만 조정하는 직선 회랑 기준선 블록 다이어그램">
-      <p>정책 명령의 방향은 회랑 선택에, 원래 명령은 크기 조정에 전달됩니다. 이 그림은 직선 회랑 기준선이며 후속 arc variant와 구분합니다. <a href="../assets/motar-safety-filter.svg">기존 상세 그림과 측정 판정</a> · <a href="../assets/paper/">SVG·PNG 다운로드</a>.</p>
+      <img src="../assets/paper/safety-filter-block-diagram.svg" alt="geometry arm과 cap law를 구분하고 정책 명령의 분기·합류를 표시한 속도 필터 블록도">
+      <p>직선 회랑과 arc-clearance는 비교군 선택이며 연속 필터가 아닙니다. geometry와 cap law는 별도 축이고 출력은 수평 명령의 크기만 조정합니다. DWA planner나 충돌 안전 보장으로 읽지 않습니다. <a href="../assets/motar-safety-filter.svg">기존 직선 기준선 상세도</a> · <a href="../assets/paper/">SVG·PNG·PDF 다운로드</a>.</p>
     </section>
 
     <section class="section evidence" id="evidence">

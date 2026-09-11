@@ -17085,3 +17085,20 @@ epoch 재적응이 잔여 비용을 시드별 2.67 / 1.86 / 0.73 pp만큼 줄이
 치르며, 직접 대비의 시드 단위 구간이 [−1.04, +2.50]이라 순이득은 3시드에서 입증되지 않았다"이다.
 
 학습 각 1시간, 평가 캠페인당 40분, 총 3시간 반. TensorBoard는 포트 6009에서 실제 학습 로그를 본다.
+
+## 2026-09-11 — README 전체 그림의 논문형 블록도 갱신
+
+README 본문 그림 9개를 모두 직접 렌더링 검수하고, 모듈·연결 관계 중심의 블록도로 교체했다.
+긴 설명과 결과 수치는 캡션으로 분리했다. 기존 상세도와 요약 카드는 참고/아카이브 링크로 보존했다.
+README와 연구 사이트에 동일한 SVG를 연결하고, 각 그림의 4K PNG와 한 페이지 벡터 PDF,
+설명 README·해시 manifest·전체 ZIP을 배포 대상으로 생성했다.
+
+기존 연구 내용의 표현만 변경했다. safety 비교군은 대체 조건임을, SAM은 보관된 제안임을,
+E3-P는 gate 뒤 BLOCKED임을 명시했다. 알고리즘·실험 결과·status.json은 변경하지 않았다.
+기존 미추적 ETH 검수 자료 세 항목은 수정하거나 스테이징하지 않았다.
+
+검증: 그림 테스트 11개, branch-policy 테스트 4개, arena route/motion 및 headless WebGL 검사 통과.
+9개 PDF 모두 한 페이지·텍스트 선택 가능·래스터 이미지 없음 확인. SVG 텍스트 블록 경계,
+PNG 해상도, 링크, ZIP/manifest 해시, git diff --check 통과.
+기존 test_status_site.js의 status snapshot 기대값 불일치(RESULT_UNAVAILABLE_OR_MALFORMED와
+PASS_32_CELL_INTEGRITY 관련)는 그대로 남아 있으며 이번 그림 변경으로 해결됐다고 주장하지 않는다.

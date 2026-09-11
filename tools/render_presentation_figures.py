@@ -241,7 +241,7 @@ def rasterize(entries):
                 # setDocumentContent avoids navigation/load races and fixes the viewport,
                 # unlike CLI screenshots whose window includes browser UI dimensions.
                 frame = call('Page.getFrameTree')['frameTree']['frame']['id']
-                html = '<!doctype html><meta charset="utf-8"><style>html,body{margin:0;width:1600px;height:900px;overflow:hidden}</style>' + svg.read_text(encoding='utf-8')
+                html = '<!doctype html><meta charset="utf-8"><title>' + escape(svg.stem) + '</title><style>html,body{margin:0;width:1600px;height:900px;overflow:hidden}</style>' + svg.read_text(encoding='utf-8')
                 call('Page.setDocumentContent', {'frameId': frame, 'html': html})
                 check = call('Runtime.evaluate', {'expression': '''document.fonts.ready.then(() => {
                     const bad = [...document.querySelectorAll('text')].filter(t => {
@@ -252,13 +252,35 @@ def rasterize(entries):
                 })''', 'awaitPromise': True, 'returnByValue': True})
                 if check.get('exceptionDetails') or check['result'].get('value'):
                     raise RuntimeError('Text outside slide ' + item['svg'] + ': ' + str(check))
+                block_check = call('Runtime.evaluate', {'expression': '''(() => {
+                    const bad = [];
+                    document.querySelectorAll('[data-block]').forEach(g => {
+                      const r = g.querySelector('rect').getBoundingClientRect();
+                      g.querySelectorAll('text').forEach(t => {
+                        const b = t.getBoundingClientRect();
+                        if (b.left < r.left + 6 || b.right > r.right - 6 || b.top < r.top || b.bottom > r.bottom)
+                          bad.push(t.textContent);
+                      });
+                    });
+                    return bad;
+                })()''', 'returnByValue': True})
+                if block_check.get('exceptionDetails') or block_check['result'].get('value'):
+                    raise RuntimeError('Text outside block ' + item['svg'] + ': ' + str(block_check))
                 shot = call('Page.captureScreenshot', {'format': 'png', 'captureBeyondViewport': True,
                                                        'clip': {'x': 0, 'y': 0, 'width': 1600, 'height': 900, 'scale': 1}})
                 (OUT / item['png']).write_bytes(base64.b64decode(shot['data']))
+                if 'pdf' in item:
+                    pdf = call('Page.printToPDF', {'printBackground': True, 'paperWidth': 1600/96,
+                                                  'paperHeight': 900/96, 'marginTop': 0, 'marginBottom': 0,
+                                                  'marginLeft': 0, 'marginRight': 0, 'scale': 1})
+                    (OUT / item['pdf']).write_bytes(base64.b64decode(pdf['data']))
         finally:
             if sock:
+                try:
+                    sock.send(json.dumps({'id': sequence+1, 'method': 'Browser.close'}))
+                except (OSError, websocket.WebSocketException):
+                    pass
                 sock.close()
-            process.terminate()
             try:
                 process.wait(timeout=10)
             except subprocess.TimeoutExpired:

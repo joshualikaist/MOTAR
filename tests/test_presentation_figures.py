@@ -2,7 +2,9 @@
 import hashlib
 import json
 import re
+import shutil
 import struct
+import subprocess
 import unittest
 import xml.etree.ElementTree as ET
 import zipfile
@@ -67,20 +69,67 @@ class PresentationFiguresTest(unittest.TestCase):
     def test_paper_diagrams_and_export(self):
         paper = ROOT / 'docs/assets/paper'
         manifest = json.loads((paper / 'manifest.json').read_text())
+        self.assertEqual(len(manifest), 28)  # 9 × SVG/PNG/PDF + captions
         for filename, expected in manifest.items():
             self.assertEqual(hashlib.sha256((paper / filename).read_bytes()).hexdigest(), expected)
-        for stem in ['perception-block-diagram', 'safety-filter-block-diagram']:
+        sources = re.findall(r'!\[[^\]]*\]\(([^)]+)\)', (ROOT / 'README.md').read_text())
+        self.assertEqual(len(sources), 9)
+        self.assertTrue(all(source.startswith('docs/assets/paper/') for source in sources))
+        for source in sources:
+            stem = Path(source).stem
             svg = ET.parse(paper / (stem + '.svg')).getroot()
             self.assertEqual(svg.attrib['viewBox'], '0 0 1600 900')
-            self.assertGreaterEqual(len(svg.findall('.//s:path[@marker-end]', NS)), 6)
+            self.assertGreaterEqual(len(svg.findall('.//s:path[@marker-end]', NS)), 4)
+            self.assertGreaterEqual(len(svg.findall('.//s:g[@data-block]', NS)), 5)
+            ids = [node.attrib['id'] for node in svg.iter() if 'id' in node.attrib]
+            self.assertEqual(len(ids), len(set(ids)))
+            self.assertFalse(svg.findall('.//s:image', NS))
             data = (paper / (stem + '.png')).read_bytes()
             self.assertEqual(struct.unpack('>II', data[16:24]), (3840, 2160))
+            self.assertTrue((paper / (stem + '.pdf')).read_bytes().startswith(b'%PDF-'))
             for page in [ROOT / 'README.md', ROOT / 'docs/status/index.html']:
                 self.assertIn('paper/' + stem + '.svg', page.read_text())
         with zipfile.ZipFile(paper / 'motar-paper-block-diagrams.zip') as archive:
+            self.assertEqual(len(archive.namelist()), 29)
             self.assertIsNone(archive.testzip())
             for filename in archive.namelist():
                 self.assertEqual(archive.read(filename), (paper / filename).read_bytes())
+
+    def test_paper_gallery_matches_all_readme_images(self):
+        paper = ROOT / 'docs/assets/paper'
+        gallery = (paper / 'index.html').read_text()
+        sources = re.findall(r'<img src="([^"]+)"', gallery)
+        readme_sources = re.findall(r'!\[[^\]]*\]\(([^)]+)\)', (ROOT / 'README.md').read_text())
+        self.assertEqual(sources, [Path(p).name for p in readme_sources])
+        for link in re.findall(r'(?:href|src)="([^"]+)"', gallery):
+            self.assertTrue((paper / link).exists(), link)
+
+    def test_paper_scope_and_archived_paths(self):
+        paper = ROOT / 'docs/assets/paper'
+        sam = (paper / 'sam-archive-block-diagram.svg').read_text()
+        self.assertIn('ARCHIVED', sam)
+        self.assertIn('stroke-dasharray=', sam)
+        self.assertIn('Offline CPU boundary', sam)
+        safety = (paper / 'safety-filter-block-diagram.svg').read_text()
+        self.assertIn('geometry arms are alternatives', safety)
+        self.assertIn('not a DWA planner', safety)
+        e3 = (paper / 'e3-analysis-block-diagram.svg').read_text()
+        self.assertIn('BLOCKED', e3)
+        self.assertIn('No attitude-error decomposition', e3)
+
+    @unittest.skipUnless(shutil.which('pdfinfo') and shutil.which('pdftotext') and shutil.which('pdfimages'),
+                         'Poppler tools required for vector-PDF validation')
+    def test_paper_pdfs_are_single_page_selectable_vectors(self):
+        paper = ROOT / 'docs/assets/paper'
+        pdfs = sorted(paper.glob('*.pdf'))
+        self.assertEqual(len(pdfs), 9)
+        for pdf in pdfs:
+            info = subprocess.check_output(['pdfinfo', str(pdf)], text=True)
+            self.assertRegex(info, r'Pages:\s+1\b')
+            text = subprocess.check_output(['pdftotext', str(pdf), '-'], text=True)
+            self.assertGreater(len(text.strip()), 100)
+            images = subprocess.check_output(['pdfimages', '-list', str(pdf)], text=True)
+            self.assertFalse(re.search(r'^\s*\d+\s+\d+\s+', images, re.M), 'PDF should not be a raster screenshot')
 
 
 if __name__ == '__main__':
