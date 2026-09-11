@@ -2,6 +2,7 @@
 import ast
 from dataclasses import replace
 import hashlib
+import contextlib
 import json
 from pathlib import Path
 import subprocess
@@ -244,6 +245,24 @@ class GeometryAndShadingTest(unittest.TestCase):
         self.assertFalse(geometry_equal(self.g, replace(self.g, depth_m=self.g.depth_m + 1)))
 
 
+@contextlib.contextmanager
+def standalone_process():
+    """Hide aerial_gym from sys.modules so runner.main sees the precondition it guards.
+
+    The producer refuses to run inside a process that has imported aerial_gym, which is the whole
+    point of an isolated renderer. Running the full suite loads aerial_gym from other modules, so a
+    test that calls main() directly has to restore that precondition instead of weakening the guard.
+    """
+    hidden = {name: module for name, module in sys.modules.items()
+              if name == "aerial_gym" or name.startswith("aerial_gym.")}
+    for name in hidden:
+        del sys.modules[name]
+    try:
+        yield
+    finally:
+        sys.modules.update(hidden)
+
+
 class IsolationAndDriverTest(unittest.TestCase):
     def test_source_hash_and_dependency_boundary(self):
         self.assertEqual(hashlib.sha256(checked_kernel_source()).hexdigest(), KERNEL_SHA256)
@@ -363,7 +382,7 @@ class IsolationAndDriverTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             out = Path(directory) / "fresh"
             with patch("builtins.print"), patch("renderer_validation.gbuffer.WarpGBufferRenderer", return_value=renderer), patch(
-                    "runtime_fingerprint.runtime_fingerprint", return_value={"python": "MOCK"}):
+                    "runtime_fingerprint.runtime_fingerprint", return_value={"python": "MOCK"}), standalone_process():
                 runner.main(["--output", str(out), "--device", "cpu", "--width", "3", "--height", "1"])
             receipt = json.loads((out / "receipt.json").read_text())
             self.assertEqual(receipt["status"], "RENDERED_UNASSESSED")
@@ -377,11 +396,24 @@ class IsolationAndDriverTest(unittest.TestCase):
     def test_mocked_failure_never_writes_success_receipt(self):
         with tempfile.TemporaryDirectory() as directory:
             out = Path(directory) / "fresh"
-            with patch("renderer_validation.gbuffer.WarpGBufferRenderer", side_effect=RuntimeError("MOCK")):
+            with patch("renderer_validation.gbuffer.WarpGBufferRenderer", side_effect=RuntimeError("MOCK")), standalone_process():
                 with self.assertRaises(RuntimeError):
                     runner.main(["--output", str(out), "--device", "cpu"])
             self.assertFalse((out / "receipt.json").exists())
             self.assertEqual(json.loads((out / "failure.json").read_text())["status"], "FAILED_INCOMPLETE")
+
+    def test_guard_refuses_to_run_inside_an_aerial_gym_process(self):
+        """The precondition the other tests restore must actually be enforced."""
+        with tempfile.TemporaryDirectory() as directory:
+            out = Path(directory) / "fresh"
+            sentinel = types.ModuleType("aerial_gym")
+            sys.modules["aerial_gym"] = sentinel
+            try:
+                with self.assertRaisesRegex(RuntimeError, "standalone producer"):
+                    runner.main(["--output", str(out), "--device", "cpu", "--width", "3", "--height", "1"])
+            finally:
+                sys.modules.pop("aerial_gym", None)
+            self.assertFalse(out.exists(), "a refused run must not create its output directory")
 
     def test_source_drift_rejects_completed_mock_frames(self):
         scene, camera, r, n, f = buffers()
@@ -395,7 +427,7 @@ class IsolationAndDriverTest(unittest.TestCase):
             out = Path(directory) / "fresh"
             with patch("renderer_validation.gbuffer.WarpGBufferRenderer", return_value=renderer), patch(
                     "runtime_fingerprint.runtime_fingerprint", return_value={}), patch.object(
-                    runner, "source_record", side_effect=[before, after]):
+                    runner, "source_record", side_effect=[before, after]), standalone_process():
                 with self.assertRaisesRegex(RuntimeError, "Source changed"):
                     runner.main(["--output", str(out), "--device", "cpu", "--width", "3", "--height", "1"])
             self.assertTrue((out / "frame_0001.npz").exists())
