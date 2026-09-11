@@ -26,7 +26,7 @@ Previous 2026-09-10 summary cards remain archived:
 
 ---
 
-## Status · 2026-09-11
+## Status · 2026-09-12
 
 Three research tracks are at different stages and have distinct evidence boundaries.
 
@@ -35,8 +35,40 @@ Three research tracks are at different stages and have distinct evidence boundar
 | **A — safety-filter diagnosis** | measure when and why a direction-preserving speed filter fails | **complete**; the training-seed replication withdrew one claim (see below) |
 | **B — real-imagery perception** | learn a detector on real air-to-air video, measure its error, inject that into the simulator | **pipeline complete through PPO readaptation**; final selector test complete; real-flight work not started |
 | **C — measured range error on real footage** | measure how well a target's apparent size recovers its metric range, using a public dataset with survey-grade position ground truth | **E3-S complete**; absolute-geometry uses of that dataset are fail-closed, and the attitude arm (E3-P) is gated |
+| **D — simulator appearance** | make the simulated target a drone rather than a coloured block, so that what a detector learns is testable | **renderer and assets in place, opt-in**; the shortcut re-measurement it exists to enable is not run |
 
 **Recent findings.**
+
+- **The simulated target was a red box, and every distractor was the same red.** Colour alone
+  could therefore find it, which makes any claim about learned shape untestable. The target is
+  now a quadrotor silhouette built from dimensions that already existed in the repository:
+  motor positions and cylinders from the interceptor URDF, the propeller radius from the task
+  constant, the body from that URDF's own inertia approximation. Inertial and collision are
+  carried over byte for byte, the simulator reads collision only, and tests call both of its
+  extractors to say so rather than describing it. It is opt-in; the default is unchanged.
+- **Making the target drone-shaped costs 41% of its projected area, and that confounds the next
+  experiment.** Measured across 21 viewing directions, not derived: width moves 0.16% while
+  projected area falls to a median 0.587 of the box, because a quadrotor has gaps between its
+  arms. Apparent size against range is a detector cue this project has measured on real footage,
+  so a before-and-after comparison of tracking needs an area-matched box arm to separate shape
+  from size. That condition is preregistered before the experiment, not after it.
+- **A renderer criterion failed twice and is kept as a failure.** Comparing appearance models on
+  a two-box fixture rejected "shading is not depth alone" at R² 0.586, and again at 0.582 after
+  the fixture changed. Neither threshold was moved. What failed was the criterion: the fixture
+  shows four surfaces from every direction and the model paints one colour per surface, so a
+  regression over 36,242 pixels is a four-point regression. At the surface unit the failing
+  scene reads 0.997. A background scene with 60 to 67 visible triangles now exists for the
+  redesign, and it passes its own counterfactual checks.
+- **The shading upgrade costs 0.66 ms and 184 MiB at the resolution training actually uses.**
+  The earlier figures were measured at 480×270; the task defaults to 160×90, nine times fewer
+  pixels. Memory is not the constraint it appeared to be.
+- **A full-repository audit found and fixed defects of one recurring shape.** A value validated
+  carefully in one module, caught by a broad handler in another, replaced with something
+  plausible: a training fail-stop that could skip for days with no output, an observation width
+  that fell back to a number outside the documented lineage, and a gate-arming flag that failed
+  open on any spelling it did not know. Separately, the shared statistics module reported a
+  degenerate contrast as infinitely significant, because a standard error of exactly zero
+  collapses the interval to a point; that flag gates PASS/FAIL in three result tables.
 
 - **The arc tube beats the straight corridor, and it replicates.** Watching the arc the vehicle
   will actually fly, rather than a straight corridor, gives the lowest crash rate in all 15
@@ -45,6 +77,11 @@ Three research tracks are at different stages and have distinct evidence boundar
 - **Widening that tube helps twice; widening a straight corridor kills the mission.** At 205 bars
   the arc at 1.2 m gives `−5.60 pp` crash and `+4.44 pp` capture together, while the straight
   corridor at the same width captures about 10% of episodes and times out on the rest.
+- **The identity cue for the real-footage target was withdrawn.** The dataset work had claimed
+  that counting six rotor arms identified the target, since the other two aircraft are consumer
+  quadrotors. Reviewing the frame showed four arms and landing gear: all three are quadrotors and
+  the count separates nothing. Identity now rests on apparent size tracking ground-truth range to
+  6.2% held out, which needs no camera orientation, and on airframe style at close range.
 - **A detector trained on one dataset failed on another because of target SIZE, not domain.**
   Zero-shot from NPS-Drones to Det-Fly gave AP@0.5 of `0.0010` at native 4K; matching the target
   scale raised it to `0.1126`, a gap 111× the native value. Joint multi-scale training then took
@@ -537,6 +574,11 @@ top of it would make our code AGPL as well. That constrains detector architectur
 | Size→range on real footage (E3-S) | `SIZE_RANGE_USABLE`; held-out median relative range error **6.2%**, spread 9.3 pp | 3,107 frames, 31–108 m, one flight, one camera; range and time confounded, so per-bin bias is not a range effect |
 | ETH ds5 camera model | published calibration correct for **its own** images (1.245 px), but **5.6 px** against the tracked drone; no hypothesis survives held-out testing | absolute-geometry uses fail-closed; −120 ms offset unexplained |
 | Attitude gate (E3-P) | `E3P_GATE_BLOCKED` on attitude reliability alone; convention identified from data at 17.7° with a 16.3° margin | aspect and range separable (r = 0.21); no third variant of the failing check was run |
+| Appearance models (R4, R4b) | criterion C **FAIL, kept**: R² 0.586 then 0.582, no threshold moved | the fixture shows four surfaces, so a 36,242-pixel regression is a four-point one; 0.997 at the surface unit |
+| Background scene v1 | `TECHNICAL_PASS`; two independent processes byte-identical | 60–67 visible triangles against the old fixture's 8; counterfactual checks, not statistics |
+| Shading cost (R5) | **+0.66 ms** per iteration and **183.9 MiB** at 128 scenes, 160×90 | the resolution training uses; the 480×270 figure was nine times more pixels |
+| URDF asset loading | library and independent parser agree, **0 discrepancies** on five assets | link order, world transforms, geometry parameters, material colours; tessellation is not compared |
+| Target silhouette (V1) | projected area **0.587×** the box across 21 directions; width −0.16% | opt-in; inertial and collision carried over byte for byte, both simulator extractors return the same values |
 
 Historical v1, archived v2, corrected-v2, legacy-robot and ref5in-robot results **must not be merged
 into one performance curve**. Results from before 2026-08-27 overlapped nearby bars into compound
@@ -624,6 +666,8 @@ troubleshooting instructions are in [OPERATIONS.md](OPERATIONS.md).
 | `aerial_gym/config/` | task, environment, controller and robot contracts |
 | `aerial_gym/rl_training/rl_games/` | Transformer, PPO config, fixed train/eval launchers |
 | `resources/robots/quad/` | URDF and collision/inertia geometry |
+| `resources/models/environment_assets/objects/` | target and distractor assets, versioned side by side |
+| `tools/renderer_validation/` | independent renderer prototype; imports no simulator, by contract and by test |
 | `tests/` | semantics, provenance, dynamics and launcher regression tests |
 | `tools/` | dataset, receipt, geometry, statistics and verification tools |
 | `results/` | condition-specific raw evidence and summaries |

@@ -16,6 +16,7 @@
       <a href="#arena">3D Arena</a>
       <a href="#perception">Perception</a>
       <a href="#external-data">Data</a>
+      <a href="#appearance">Appearance</a>
       <a href="#safety-filter">Filter</a>
       <a href="#evidence">Evidence</a>
       <a href="#platform">Platform</a>
@@ -36,7 +37,7 @@
       </div>
       <div class="status-line">
         <span class="status-dot" aria-hidden="true"></span>
-        <strong>ETH ds5로 크기 기반 거리 추정을 측정 · 절대 기하는 막힘</strong><span><strong>사전등록을 먼저 커밋한 뒤</strong> E3-S를 실행했습니다. 3,107프레임·9개 블록에서 블록별 절대 상대 거리 오차 중앙값의 중앙값은 <strong>6.2 %</strong>(31–108 m)입니다. 한 비행의 크기 기반 거리 추정 성능이며 자세 오차가 아닙니다. 0.196 px는 궤적 매끄러움 잔차이지 전체 측정 정확도가 아닙니다. 5.6 px 재투영 잔차의 원인은 미확정으로 <strong>절대 기하 용도는 fail-closed</strong> · "왜곡계수가 틀렸다"는 잠정 결론은 <strong>철회</strong> · E3-P는 자세 신뢰성 기준 미달로 <code>BLOCKED</code> · <a href="../plans/eth_ds5_e3_2026-09-10.md">E3 계획</a> · 2026-09-10</span>
+        <strong>시뮬 표적을 "빨간 상자"에서 쿼드로터 실루엣으로 · 렌더러 계약은 측정으로 검증</strong><span>표적이 밋밋한 빨간 상자였고 방해물 셋도 같은 빨강이라 <strong>색만으로 표적을 찾을 수 있었습니다</strong>. 독립 렌더러 프로토타입(시뮬레이터를 import하지 않음)으로 외형 모델을 비교했고, <strong>R4·R4b는 기준 C에서 FAIL로 보존</strong>합니다 &mdash; 실패한 것은 음영 모델이 아니라 보이는 면이 4개뿐인 픽스처에 픽셀 단위 회귀를 쓴 <strong>기준 설계</strong>였습니다. 배경 장면 검증은 <code>TECHNICAL_PASS</code>, 음영 교체 비용은 학습 해상도에서 반복당 <strong>0.66 ms</strong>입니다. 표적 자산 v3는 <strong>옵트인</strong>이며 충돌·관성은 바이트 단위로 동일합니다. <a href="../plans/appearance_overhaul_2026-09-11.md">개편 계획</a> · 2026-09-12</span>
       </div>
     </section>
 
@@ -409,6 +410,68 @@
         비행 한 번, 31&ndash;108 m 범위입니다.</p>
       <p><code>ultralytics/yolov5</code>는 <strong>AGPL-3.0</strong>입니다. 평가만 하면 무관하지만
         그 소스 위에 만든 코드를 공개하면 우리 코드도 AGPL이 됩니다. 아키텍처 선택 시의 제약입니다.</p>
+    </section>
+
+    <section class="visual wrap" id="appearance" aria-labelledby="appearance-title">
+      <div class="section-head">
+        <div class="tag">Appearance</div>
+        <h2 id="appearance-title">표적이 드론처럼 보이지 않으면, 무엇을 학습한 것인가</h2>
+        <p>시뮬레이터의 표적은 <strong>0.283 m 빨간 상자</strong>였고 방해물 구·상자·기둥도 같은 빨강이었습니다.
+          요격기는 9링크 기체입니다. 이 상태에서 검출기가 배운 것이 형상인지 색인지 구분할 수 없습니다.
+          그래서 렌더러부터 자산까지 다시 만들고, 각 단계를 <strong>측정으로</strong> 확인했습니다.</p>
+      </div>
+
+      <h3>독립 렌더러 프로토타입 &mdash; 시뮬레이터와 코드를 공유하지 않는다</h3>
+      <p>검증 대상과 검증 도구가 같은 코드를 쓰면 확인이 되지 않습니다. 프로토타입은 <code>aerial_gym</code>을
+        import하지 않으며(테스트로 고정), 재사용하는 것은 기존 Warp 광선 커널뿐입니다. 그 커널조차
+        SHA-256과 AST로 대조한 뒤 패키지를 거치지 않고 파일에서 직접 읽습니다. 광선 2패스의 hit 마스크가
+        어긋나면 이미지를 내놓지 않고 거부합니다.</p>
+
+      <div class="scrollx"><table>
+        <thead><tr><th>단계</th><th>결과</th><th>상태</th></tr></thead>
+        <tbody>
+          <tr><td>R3 렌더러 계약</td>
+              <td>두 독립 프로세스의 배열 SHA가 전부 일치. 조명을 바꾸면 RGB가 바뀌고(MAE 0.202), instance ID를 옮겨도 RGB는 바이트 단위로 불변</td>
+              <td><strong>PASS</strong></td></tr>
+          <tr><td><strong>R4 · R4b</strong> 외형 모델 비교</td>
+              <td>기준 A/B/D/E 통과, <strong>기준 C는 두 번 다 실패</strong>(R² 0.586 → 0.582). 임계를 낮추지 않았고 장면을 골라내지도 않았습니다</td>
+              <td><code>FAIL 보존</code></td></tr>
+          <tr><td>C가 실패한 진짜 이유</td>
+              <td>상자 두 개짜리 장면은 <strong>어느 시선에서도 보이는 면이 4개</strong>입니다. 외형 모델은 면마다 색 하나를 칠하므로 독립 표본은 4개이고, 픽셀 36,242개는 정밀도의 착시입니다. 실패 장면을 면 4개로 회귀하면 R² = <strong>0.997</strong></td>
+              <td><strong>기준 설계 결함</strong></td></tr>
+          <tr><td>배경 장면 v1</td>
+              <td>바닥·벽·12각 기둥·2링크 경첩 패널. 뷰당 보이는 삼각형 8 &rarr; <strong>60&ndash;67개</strong>, 법선 4 &rarr; 10종. 반사실 검사 전부 통과: 알베도를 바꾸면 해당 픽셀 전부 변하고 나머지는 bit-exact 불변</td>
+              <td><strong>TECHNICAL_PASS</strong></td></tr>
+          <tr><td>R5 음영 비용</td>
+              <td>학습 해상도(160&times;90, 128장면)에서 음영 교체는 반복당 <strong>0.66 ms</strong>, torch 최대 할당 <strong>183.9 MiB</strong>. 480&times;270의 1,601 MiB가 아닙니다 &mdash; <strong>메모리는 병목이 아닙니다</strong></td>
+              <td><strong>측정 완료</strong></td></tr>
+          <tr><td>URDF 자산 로딩</td>
+              <td><code>urdfpy</code>+<code>trimesh</code>가 기본 경로이고 직접 쓴 파서는 <strong>교차검증용</strong>으로 남겼습니다. 다섯 자산에서 링크 순서·월드 변환·기하 파라미터·재질 색 <strong>불일치 0</strong></td>
+              <td><strong>TECHNICAL_PASS</strong></td></tr>
+          <tr><td><strong>V1</strong> 표적 실루엣</td>
+              <td>몸체 상자 + 팔 4 + 모터 4 + 프로펠러 원반 4. <strong>새로 정한 치수가 하나도 없습니다</strong> &mdash; 전부 기존 URDF와 코드 상수에서 읽습니다</td>
+              <td><strong>옵트인</strong></td></tr>
+        </tbody>
+      </table></div>
+
+      <h3>물리는 건드리지 않았습니다 &mdash; 설명이 아니라 호출로 확인</h3>
+      <p>시뮬레이터가 URDF에서 기하를 읽는 곳은 두 군데뿐이고 <strong>둘 다 <code>collision</code>만</strong>
+        읽습니다. 테스트가 그 함수를 실제로 호출해 v2와 v3의 결과가 같은지 봅니다. 관성·충돌 블록은 토큰
+        단위로 동일하고, visual이 충돌 상자를 벗어나지 않는지도 검사합니다. 기본값은 v2 그대로이고
+        <code>NAVRL_TARGET_APPEARANCE=v3</code>로만 켜집니다.</p>
+
+      <h3>겉보기 크기는 바뀝니다 &mdash; 그리고 그것이 다음 실험의 교란입니다</h3>
+      <p>21개 시선에서 렌더해 픽셀을 셌습니다. 폭은 0.283 &rarr; 0.2826 m로 <strong>0.16%</strong>만 줄지만
+        <strong>투영 면적은 41% 줍니다</strong>(면적비 중앙값 0.587, 선형비 0.766). 쿼드로터는 팔 사이가 비고
+        상자는 꽉 차 있기 때문이며, 표적을 드론 모양으로 만들면 피할 수 없습니다.</p>
+      <p><strong>그래서 개편 전후의 오추적률을 그냥 비교하면 안 됩니다.</strong> 겉보기 크기-거리 관계는
+        ETH ds5에서 실제로 측정한 양이고 검출기가 쓸 법한 단서입니다. 형상 효과만 분리하려면
+        <strong>면적을 맞춘 상자 대조군</strong>이 한 팔로 필요합니다. 이 조건은 실험 착수 전에 사전등록합니다.</p>
+
+      <h3>색은 아직 화면에 닿지 않습니다</h3>
+      <p>현재 검출기는 표적 픽셀을 설정된 색으로 <strong>평면 채움</strong>합니다. 따라서 URDF의 재질 색은
+        지금 이미지에 전혀 반영되지 않습니다. v3에 부품별 중립 회색을 선언해 두었고, 평면 채움을 음영으로
+        바꾸는 다음 단계에서 비로소 쓰입니다. <strong>이번 단계는 색 지름길 감소를 주장하지 않습니다.</strong></p>
     </section>
 
     <section class="visual wrap" id="safety-filter" aria-labelledby="filter-title">
