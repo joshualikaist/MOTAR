@@ -443,7 +443,8 @@ from renderer_validation.appearance_models import (depth_gradient_rgb, uniform_a
                                                    scene_mean_color, render_arms)
 from renderer_validation.r4_metrics import (determination, equal_count_bins, evaluate_r4,
                                             luminance, scene_statistics, MIN_COVERAGE)
-from renderer_validation.scene import sample_camera_poses, quaternion, quaternion_product
+from renderer_validation.scene import (sample_camera_poses, quaternion, quaternion_product,
+                                       mixed_material_box_fixture)
 
 
 def wide_buffers(count=1, width=64):
@@ -556,3 +557,26 @@ class CameraPoseSampleTest(unittest.TestCase):
         self.assertGreater(float(np.abs(positions).max()), 0.0)
         with self.assertRaises(ValueError):
             sample_camera_poses(409, 8, angle_jitter_deg=45.0)
+
+
+class MixedMaterialFixtureTest(unittest.TestCase):
+    def setUp(self):
+        self.base, self.mixed = box_fixture(), mixed_material_box_fixture()
+
+    def test_only_the_material_map_differs_from_the_audited_fixture(self):
+        for name in ("vertices", "triangles", "face_instance"):
+            np.testing.assert_array_equal(getattr(self.base, name), getattr(self.mixed, name))
+        self.assertFalse(np.array_equal(self.base.face_material, self.mixed.face_material))
+        self.assertEqual(self.mixed.material_count, self.base.material_count)
+
+    def test_the_audited_fixture_confounds_material_with_instance_and_the_new_one_does_not(self):
+        pairs = lambda scene: {(int(m), int(i)) for m, i in zip(scene.face_material, scene.face_instance)}
+        self.assertEqual(len({m for m, _ in pairs(self.base) if (m, 1) in pairs(self.base)}), 2)
+        self.assertEqual(len({m for m, _ in pairs(self.mixed) if (m, 1) in pairs(self.mixed)}), 4)
+        for instance in (0, 1):
+            present = {int(m) for m, i in zip(self.mixed.face_material, self.mixed.face_instance) if i == instance}
+            self.assertEqual(present, {0, 1, 2, 3})
+
+    def test_both_triangles_of_a_quad_share_one_material(self):
+        materials = self.mixed.face_material
+        self.assertTrue(all(materials[i] == materials[i + 1] for i in range(0, len(materials), 2)))

@@ -152,6 +152,18 @@ def box_fixture():
                      np.repeat(np.arange(2, dtype=np.int32), 12))
 
 
+def mixed_material_box_fixture():
+    """box_fixture geometry with materials spread over both boxes, so material cannot mean depth.
+
+    R4 showed that assigning material by box confounds it with range: the two boxes occupy nearly
+    disjoint range intervals. Only the face-to-material map changes here; box_fixture itself must
+    stay untouched so R3's array hashes remain valid.
+    """
+    base = box_fixture()
+    return MeshScene(base.vertices, base.triangles,
+                     (np.arange(len(base.triangles), dtype=np.int32) // 2) % 4, base.face_instance)
+
+
 def quaternion(axis, radians):
     axis = np.asarray(axis, dtype=np.float64)
     axis = axis / np.linalg.norm(axis)

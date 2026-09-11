@@ -16,6 +16,7 @@ def main():
         raise FileExistsError("Comparison output must not exist")
     runs = [json.loads(path.read_text()) for path in args.run]
     exact_fields = ("schema", "git_commit", "seed", "device", "camera", "generic_kernel_sha256",
+                    "fixture_name", "stage",
                     "per_scene", "summary", "checks", "fixture",
                     "within_bin_ratio_lambertian_over_depth", "thresholds", "array_sha256", "run_verdict")
     comparisons = {field: runs[0].get(field) == runs[1].get(field) for field in exact_fields}

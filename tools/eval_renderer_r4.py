@@ -30,18 +30,22 @@ def main():
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--device", choices=("cuda:0",), default="cuda:0")
     parser.add_argument("--seed", type=int, choices=(409,), default=409)
+    parser.add_argument("--fixture", choices=("box", "mixed_material_box"), default="box",
+                        help="mixed_material_box is R4b: same geometry, materials on both boxes")
     args = parser.parse_args()
     if args.output.exists():
         raise FileExistsError("R4 output must not exist")
     if not tracked_tree_clean():
         raise RuntimeError("R4 requires a committed, tracked-clean source tree")
     args.output.mkdir(parents=True, exist_ok=False)
-    from renderer_validation.scene import Camera, box_fixture, sample_appearance, sample_camera_poses
+    from renderer_validation.scene import (Camera, box_fixture, mixed_material_box_fixture,
+                                           sample_appearance, sample_camera_poses)
     from renderer_validation.gbuffer import WarpGBufferRenderer, KERNEL_SHA256
     from renderer_validation.r4_metrics import evaluate_r4
     from runtime_fingerprint import runtime_fingerprint
     isolation_guard("before rendering")
-    scene, camera = box_fixture(), Camera(width=480, height=270)
+    fixtures = {"box": box_fixture, "mixed_material_box": mixed_material_box_fixture}
+    scene, camera = fixtures[args.fixture](), Camera(width=480, height=270)
     appearance = sample_appearance(args.seed, SCENES, scene.material_count)
     positions, orientations = sample_camera_poses(args.seed, SCENES)
     renderer = WarpGBufferRenderer(scene, camera, SCENES, args.device)
@@ -50,6 +54,8 @@ def main():
     isolation_guard("after rendering")
     result.update({
         "schema": "independent_renderer_r4_run_v1",
+        "fixture_name": args.fixture,
+        "stage": "R4" if args.fixture == "box" else "R4b",
         "git_commit": subprocess.check_output(["git", "-C", str(ROOT), "rev-parse", "HEAD"], text=True).strip(),
         "tracked_tree_clean": True,
         "seed": args.seed,
