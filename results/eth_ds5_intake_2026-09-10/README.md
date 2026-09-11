@@ -194,6 +194,9 @@ and the chosen shift must then be preregistered, not tuned.
 Identity note for the reviewer, corrected 2026-09-11: **all three aircraft are quadrotors, so rotor count
 separates nothing.** Frame 901's crop at 17.9 m resolves four thick arms carrying rotors plus two thin
 landing legs and an antenna mast; the legs were previously miscounted as arms and the "six-armed" cue is
-withdrawn (`CORRECTION_2026-09-11_rotor_count.md`). What survives is the bearing trace, which follows
-drone0's ground truth to within 0.6 degrees over a wide arc, and the custom-build airframe style against
-the two moulded DJI consumer airframes.
+withdrawn (`CORRECTION_2026-09-11_rotor_count.md`). What survives, strongest first: apparent size follows
+drone0's ground-truth range, with a held-out median relative error of 6.2% over 3,107 frames and 9 blocks
+from 30.7 to 108.4 m (E3-S, and it needs no camera orientation); and the custom-build airframe style at
+close range against the two moulded DJI consumer airframes. The 0.6 degree angular residual cited earlier
+is the residual of a camera pose fitted to the same 15 reviewed boxes, and that fit fails the calibration
+gate at 7.10 px RMS, so it is corroboration at most.
