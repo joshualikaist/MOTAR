@@ -437,3 +437,122 @@ class IsolationAndDriverTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+from renderer_validation.appearance_models import (depth_gradient_rgb, uniform_appearance_from,
+                                                   scene_mean_color, render_arms)
+from renderer_validation.r4_metrics import (determination, equal_count_bins, evaluate_r4,
+                                            luminance, scene_statistics, MIN_COVERAGE)
+from renderer_validation.scene import sample_camera_poses, quaternion, quaternion_product
+
+
+def wide_buffers(count=1, width=64):
+    """A [count,1,width] fixture with every pixel valid, alternating face indices."""
+    scene, camera = box_fixture(), Camera(width=width, height=1)
+    faces = torch.arange(width, dtype=torch.int32).remainder(len(scene.triangles))
+    ranges = torch.linspace(1.0, 8.0, width)
+    normals = torch.zeros(width, 3)
+    normals[:, 2] = -1.0
+    tile = lambda t: t.expand(count, 1, *t.shape[1:]).contiguous() if t.ndim > 1 else t.repeat(count, 1, 1)
+    return scene, camera, (ranges.view(1, 1, width).repeat(count, 1, 1).contiguous(),
+                           normals.view(1, 1, width, 3).repeat(count, 1, 1, 1).contiguous(),
+                           faces.view(1, 1, width).repeat(count, 1, 1).contiguous())
+
+
+class AppearanceModelTest(unittest.TestCase):
+    def setUp(self):
+        self.scene, self.camera, raw = wide_buffers()
+        self.gbuffer = finalize_gbuffer(*raw, self.scene, self.camera)
+        self.appearance = sample_appearance(409, 1, self.scene.material_count)
+
+    def test_depth_arm_ignores_normals_faces_and_the_material_table(self):
+        """Whatever varies per surface must not reach a model declared to see depth alone."""
+        first = depth_gradient_rgb(self.gbuffer, self.appearance, self.camera)
+        flipped = replace(self.gbuffer, normal_world=-self.gbuffer.normal_world,
+                          face_id=self.gbuffer.face_id.flip(-1),
+                          instance_id=self.gbuffer.instance_id.flip(-1))
+        self.assertTrue(torch.equal(first, depth_gradient_rgb(flipped, self.appearance, self.camera)))
+
+    def test_depth_arm_is_monotone_in_range_and_regresses_to_one(self):
+        rgb = depth_gradient_rgb(self.gbuffer, self.appearance, self.camera)
+        y = luminance(rgb)[self.gbuffer.valid]
+        self.assertTrue(torch.all(y[1:] <= y[:-1] + 1e-9))
+        self.assertGreaterEqual(determination(y, self.gbuffer.range_m[self.gbuffer.valid].double()), 0.999999)
+
+    def test_depth_arm_rejects_a_batch_and_background_mismatch(self):
+        two = sample_appearance(409, 2, self.scene.material_count)
+        with self.assertRaises(ValueError):
+            depth_gradient_rgb(self.gbuffer, two, self.camera)
+        with self.assertRaises(ValueError):
+            depth_gradient_rgb(self.gbuffer, self.appearance, self.camera, background=(0.0, 0.0, 1.5))
+
+    def test_uniform_appearance_makes_the_flat_arm_exactly_flat(self):
+        uniform = uniform_appearance_from(self.appearance)
+        self.assertEqual(len(set(map(tuple, uniform.base_color[0].tolist()))), 1)
+        y = luminance(shade(self.gbuffer, self.scene, uniform, "flat"))[self.gbuffer.valid]
+        self.assertLessEqual(float(y.var(unbiased=False)), 1e-12)
+        np.testing.assert_allclose(scene_mean_color(self.appearance),
+                                   self.appearance.base_color.mean(axis=1), rtol=0, atol=0)
+
+    def test_every_arm_shares_one_gbuffer_and_returns_three_channels(self):
+        arms = render_arms(self.gbuffer, self.scene, self.appearance, self.camera)
+        self.assertEqual(set(arms), {"flat", "depth_gradient", "lambertian", "lambertian_uniform_color"})
+        for rgb in arms.values():
+            self.assertEqual(rgb.shape, self.gbuffer.valid.shape + (3,))
+            self.assertTrue(((rgb >= 0) & (rgb <= 1)).all())
+
+
+class R4MetricTest(unittest.TestCase):
+    def test_determination_is_one_for_a_line_and_zero_without_spread(self):
+        x = torch.linspace(0.0, 1.0, 50).double()
+        self.assertAlmostEqual(determination(3.0 - 2.0 * x, x), 1.0, places=10)
+        self.assertEqual(determination(torch.full((50,), 0.4).double(), x), 0.0)
+        self.assertTrue(np.isnan(determination(torch.full((50,), 0.4).double(), torch.zeros(50).double())))
+
+    def test_bins_are_equal_count_disjoint_and_cover_every_pixel(self):
+        values = torch.tensor([5.0, 1.0, 3.0, 2.0, 4.0, 6.0]).double()
+        bins = equal_count_bins(values, 3)
+        self.assertEqual([chunk.numel() for chunk in bins], [2, 2, 2])
+        self.assertEqual(sorted(torch.cat(bins).tolist()), list(range(6)))
+        self.assertTrue(all(float(values[chunk].max()) <= float(values[bins[i + 1]].min())
+                            for i, chunk in enumerate(bins[:-1])))
+
+    def test_bins_too_small_to_have_a_spread_are_dropped_and_then_refused(self):
+        self.assertEqual(equal_count_bins(torch.arange(3).double(), 20), [])
+        scene, camera, raw = wide_buffers(width=3)
+        gbuffer = finalize_gbuffer(*raw, scene, camera)
+        with self.assertRaisesRegex(ValueError, "within-bin spread"):
+            scene_statistics(torch.zeros(1, 1, 3, 3), gbuffer,
+                             torch.zeros(1, 1, 3, dtype=torch.long), 0)
+
+    def test_evaluate_refuses_a_degenerate_view_instead_of_reporting_statistics(self):
+        scene, camera, raw = wide_buffers()
+        ranges, normals, faces = raw
+        blanked = faces.clone()
+        blanked[..., 1:] = -1
+        empty = torch.where(blanked >= 0, ranges, torch.tensor(1000.0))
+        gbuffer = finalize_gbuffer(empty, torch.where((blanked >= 0)[..., None], normals, 0.0),
+                                   blanked, scene, camera)
+        self.assertLess(float(gbuffer.valid.double().mean()), MIN_COVERAGE)
+        with self.assertRaisesRegex(RuntimeError, "Degenerate fixture view"):
+            evaluate_r4(scene, gbuffer, sample_appearance(409, 1, scene.material_count), camera)
+
+
+class CameraPoseSampleTest(unittest.TestCase):
+    def test_quaternions_are_unit_and_the_product_composes(self):
+        a, b = quaternion([0, 1, 0], 0.3), quaternion([1, 0, 0], -0.2)
+        self.assertAlmostEqual(float(np.linalg.norm(quaternion_product(a, b))), 1.0, places=12)
+        np.testing.assert_allclose(quaternion_product(a, [0, 0, 0, 1]), a, atol=1e-12)
+
+    def test_pose_prefix_is_stable_when_the_scene_count_grows(self):
+        few, many = sample_camera_poses(409, 3), sample_camera_poses(409, 8)
+        for small, large in zip(few, many):
+            np.testing.assert_array_equal(small, large[:len(small)])
+
+    def test_poses_are_validated_unit_quaternions_within_the_declared_jitter(self):
+        positions, orientations = sample_camera_poses(409, 8)
+        validated_poses(positions, orientations, 8)
+        self.assertLessEqual(float(np.abs(positions).max()), 0.1)
+        self.assertGreater(float(np.abs(positions).max()), 0.0)
+        with self.assertRaises(ValueError):
+            sample_camera_poses(409, 8, angle_jitter_deg=45.0)

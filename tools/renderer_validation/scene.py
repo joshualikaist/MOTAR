@@ -150,3 +150,39 @@ def box_fixture():
     return MeshScene(np.concatenate([a, b]), np.concatenate([faces, faces + 8]),
                      np.repeat(np.arange(4, dtype=np.int32), 6),
                      np.repeat(np.arange(2, dtype=np.int32), 12))
+
+
+def quaternion(axis, radians):
+    axis = np.asarray(axis, dtype=np.float64)
+    axis = axis / np.linalg.norm(axis)
+    half = radians / 2.0
+    return np.concatenate([axis * math.sin(half), [math.cos(half)]])
+
+
+def quaternion_product(a, b):
+    ax, ay, az, aw = a
+    bx, by, bz, bw = b
+    return np.array([aw * bx + ax * bw + ay * bz - az * by,
+                     aw * by - ax * bz + ay * bw + az * bx,
+                     aw * bz + ax * by - ay * bx + az * bw,
+                     aw * bw - ax * bx - ay * by - az * bz])
+
+
+def sample_camera_poses(seed, num_scenes, position_jitter_m=0.1, angle_jitter_deg=3.0):
+    """Small deterministic pose variation so range and normal distributions differ per scene.
+
+    Prefix stable when the scene count changes, as in sample_appearance; no global RNG.
+    """
+    if type(seed) is not int or seed < 0 or type(num_scenes) is not int or num_scenes < 1:
+        raise ValueError("Nonnegative integer seed and positive scene count required")
+    if not 0.0 <= position_jitter_m <= 1.0 or not 0.0 <= angle_jitter_deg <= 15.0:
+        raise ValueError("Pose jitter outside the range this fixture was checked for")
+    positions, orientations = [], []
+    for i in range(num_scenes):
+        rng = np.random.default_rng(np.random.SeedSequence([seed, 0xC0FFEE, i]))
+        positions.append(rng.uniform(-position_jitter_m, position_jitter_m, 3))
+        yaw, pitch = np.radians(rng.uniform(-angle_jitter_deg, angle_jitter_deg, 2))
+        orientations.append(quaternion_product(quaternion([0, 1, 0], yaw), quaternion([1, 0, 0], pitch)))
+    q = np.asarray(orientations, dtype=np.float64)
+    return (np.asarray(positions, dtype=np.float32),
+            (q / np.linalg.norm(q, axis=1, keepdims=True)).astype(np.float32))
