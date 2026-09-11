@@ -463,7 +463,9 @@ def compare_backends(path, position_tolerance_m=1e-9, colour_tolerance=0.0):
     declared segment counts here, so triangle counts and vertex positions are not compared. What
     must agree is everything the URDF actually states: which links exist and in what order, where
     each visual is placed, which geometry it is and with what parameters, and what colour it has.
-    Placement is compared through each link's visual centroid, which moves if kinematics differ.
+    Placement is compared through each link's world transform directly. An earlier version used
+    the mean of each link's vertices, which is not a kinematic quantity, and the comment below
+    records why that was wrong.
     """
     library, builtin = load_urdf_asset_urdfpy(path), load_urdf_asset_builtin(path)
     issues = []
@@ -536,14 +538,27 @@ def winding_inconsistent_edges(mesh):
 def orientation_report(mesh):
     """The checks that hold for any closed orientable surface, convex or not.
 
-    A closed, consistently wound, outward-facing surface has no open edge, no inconsistent edge
-    and a positive signed volume. Reported rather than asserted, because a shipped mesh asset can
-    fail these and that is a fact about the asset, not about this loader.
+    Signed volume is taken PER SHELL, not over the whole mesh. A total is not sufficient once the
+    mesh has more than one connected component, which every multi-link asset does: inverting one
+    link keeps open_edges and winding_inconsistent_edges at zero, because a reversed shell is
+    still consistently wound with itself, and merely subtracts its volume from the sum. Inverting
+    the interceptor's motor_0 leaves a total of +6.88e-4 while that link sits at -1.56e-5, and an
+    earlier version of this function called that outward-facing. The convex test it was meant to
+    generalise caught it; this one has to as well.
+
+    Reported rather than asserted, because a shipped mesh asset can fail these and that is a fact
+    about the asset, not about this loader.
     """
+    shells = sorted(set(mesh.face_instance.tolist()))
+    volumes = {int(shell): signed_volume(mesh, shell) for shell in shells}
+    inverted = sorted(shell for shell, volume in volumes.items() if volume <= 0.0)
     return {"triangles": int(len(mesh.triangles)),
             "open_edges": len(open_edges(mesh)),
             "winding_inconsistent_edges": winding_inconsistent_edges(mesh),
             "signed_volume_m3": signed_volume(mesh),
+            "shells": len(shells),
+            "shell_signed_volume_m3": volumes,
+            "inverted_shells": inverted,
             "closed_and_consistently_wound_outward":
                 bool(not open_edges(mesh) and not winding_inconsistent_edges(mesh)
-                     and signed_volume(mesh) > 0.0)}
+                     and not inverted)}

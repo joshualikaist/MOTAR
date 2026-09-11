@@ -14,7 +14,8 @@ import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
-from renderer_validation.urdf_asset import load_urdf_asset, orientation_report, compare_backends
+from renderer_validation.urdf_asset import (load_urdf_asset, orientation_report,
+                                            compare_backends, rotation_from_rpy)
 import generate_shared_airframe as generator
 
 OBJECTS = ROOT / "resources/models/environment_assets/objects"
@@ -70,11 +71,34 @@ class PhysicsIsUntouchedTest(unittest.TestCase):
         self.assertEqual([link.get("name") for link in links], ["base_link"])
 
     def test_no_visual_geometry_escapes_the_collision_box(self):
-        """A silhouette larger than the collision proxy would be visible where nothing can be hit."""
+        """A silhouette larger than the collision proxy would be visible where nothing can be hit.
+
+        Measured from the DECLARED shapes, not from tessellated vertices. A tessellated cylinder
+        is inscribed, so its vertices under-measure the shape whenever the true extreme falls
+        between sampled azimuths: the shortfall reaches 1.22 mm at 16 segments while the real
+        margin here is 0.218 mm, so a vertex-based test can pass on geometry that escapes.
+        """
         half = np.array(HALF_EXTENTS(str(V3)))
-        vertices = load_urdf_asset(V3).mesh.vertices.astype(np.float64)
-        self.assertTrue(np.all(np.abs(vertices) <= half + 1e-6),
-                        f"visual extent {np.abs(vertices).max(axis=0)} exceeds half extents {half}")
+        worst = np.zeros(3)
+        for visual in ElementTree.parse(str(V3)).getroot().findall("link/visual"):
+            shape = list(visual.find("geometry"))[0]
+            origin = visual.find("origin")
+            centre = np.array([float(v) for v in origin.get("xyz").split()])
+            roll, pitch, yaw = (float(v) for v in origin.get("rpy").split())
+            if shape.tag == "box":
+                extent = np.array([float(v) for v in shape.get("size").split()]) / 2.0
+            elif shape.tag == "sphere":
+                extent = np.full(3, float(shape.get("radius")))
+            else:
+                radius, length = float(shape.get("radius")), float(shape.get("length"))
+                # Analytic support of a cylinder: the exact half-extent along each world axis.
+                axis = rotation_from_rpy(roll, pitch, yaw) @ np.array([0.0, 0.0, 1.0])
+                extent = np.abs(axis) * length / 2.0 + np.sqrt(np.maximum(1.0 - axis ** 2, 0.0)) * radius
+            worst = np.maximum(worst, np.abs(centre) + extent)
+        self.assertTrue(np.all(worst <= half),
+                        f"declared visual extent {worst} exceeds collision half extents {half}")
+        # The margin is under a millimetre, which is why the measurement method matters here.
+        self.assertLess(float((half - worst).min()), 0.01)
 
 
 class SilhouetteTest(unittest.TestCase):

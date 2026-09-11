@@ -189,7 +189,12 @@ class task_config:
         # detection latency. See navrl_detector.py / navrl_perception.py for the full list.
         detect_width = _env_int("NAVRL_DETECT_WIDTH", camera_width)
         detect_height = _env_int("NAVRL_DETECT_HEIGHT", camera_height)
-        camera_target_radius = 0.15 # [m], matches the 0.30 m target-drone footprint
+        # [m] sphere proxy the detector ray-tests. No target asset has a 0.30 m footprint,
+        # which this line used to claim: navrl_target_drone is 0.28 m and _v2/_v3 are 0.283 m,
+        # so the matching half-width is 0.1415 m. 0.15 m is deliberately the larger of the two
+        # and is shared with navrl_distractor_sphere.urdf, which sets its radius to this value
+        # so that apparent size cannot separate that distractor from the target.
+        camera_target_radius = 0.15
         camera_min_target_pixels = 1
         camera_translation = [0.10, 0.0, 0.03]  # vehicle frame, forward/left/up [m]
         # -- appearance domain shift (검증 2, WORKLOG 2026-08-12). The renderer paints a flat

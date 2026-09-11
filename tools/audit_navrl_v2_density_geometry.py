@@ -61,7 +61,9 @@ def load_asset_manager_class():
 # Measured constants (every one sourced from the repo; see RESULTS["provenance"]).
 # --------------------------------------------------------------------------------------------
 ARENA_XY = 40.0                 # NAVRL_ARENA_XY, train_navrl_physical_fresh.sh:137
-SURFACE_CLEARANCE = 0.45        # NAVRL_PLACEMENT_SURFACE_CLEARANCE_M, navrl_bars_env.py:91
+SURFACE_CLEARANCE = 0.45        # NAVRL_PLACEMENT_SURFACE_CLEARANCE_M, navrl_bars_env
+                                # obstacle_surface_clearance. Cite the symbol, not a line:
+                                # the line numbers here had already drifted by 5 to 700 lines.
 PLACEMENT_MODE = "footprint_clearance"
 MAX_BARS = 300                  # NAVRL_MAX_BARS, train_navrl_physical_fresh.sh:144
 BAR_POOL = "bars_h3"
@@ -70,7 +72,7 @@ BAR_Z_RATIO = 0.5
 
 ROBOT_BOX_XY = 0.28             # resources/robots/quad/quad_navrl_ref5in.urdf collision box
 ROBOT_TIP_AABB = 0.2825634      # documented prop-tip span in the same URDF header
-TRACKING_RESERVE = 0.45         # navrl_task_config.py:587 physical_tracking_margin
+TRACKING_RESERVE = 0.45         # navrl_task_config physical_tracking_margin (symbol, not line)
 
 # Legacy (pre-2026-08-27) spawn rule: flat distance to the nearest bar CENTRE, blind to that
 # bar's footprint.  Kept only so `--spawn-clearance center` reproduces the frozen receipt
@@ -80,7 +82,8 @@ SPAWN_BAR_CENTER_CLEARANCE = 0.65
 # clear EACH bar's own surface (centre distance minus that bar's circumradius) by the same
 # inflation the connectivity graph below uses.
 SPAWN_SURFACE_MARGIN_M = 0.5 * ROBOT_TIP_AABB * math.sqrt(2.0) + TRACKING_RESERVE
-SPAWN_WALL_MARGIN = 1.0             # navrl_task.py:1808
+SPAWN_WALL_MARGIN = 1.0             # navrl_task _randomize_general_drone_spawn,
+                                    # local spawn_wall_margin (symbol, not line)
 GOAL_WALL_MARGIN = 1.25             # max(1.0, wall_margin 0.5 + boundary_margin 0.75)
 TARGET_BOX_XYZ = (0.28, 0.28, 0.12)
 GOAL_DIST_BANDS = {"canonical_6_28": (6.0, 28.0), "hard_22p5_28": (22.5, 28.0)}
@@ -446,7 +449,7 @@ def main():
         "provenance": {
             "arena_xy_m": [ARENA_XY, "train_navrl_physical_fresh.sh:137 NAVRL_ARENA_XY=40"],
             "placement_mode": [PLACEMENT_MODE, "train_navrl_physical_fresh.sh:142"],
-            "surface_clearance_m": [SURFACE_CLEARANCE, "navrl_bars_env.py:91 obstacle_surface_clearance"],
+            "surface_clearance_m": [SURFACE_CLEARANCE, "navrl_bars_env obstacle_surface_clearance"],
             "placement_touch_dist_m": [0.4, "asset_manager.py:21 (unused by footprint_clearance)"],
             "placement_gap_dist_m": [1.6, "asset_manager.py:22 (unused by footprint_clearance)"],
             "min_xy_spacing_m": [1.5, "navrl_bars_env.py min_obstacle_xy_spacing"],
@@ -457,7 +460,7 @@ def main():
             "robot_collision_box_xy_m": [ROBOT_BOX_XY, "quad_navrl_ref5in.urdf base_link collision box"],
             "robot_prop_tip_aabb_m": [ROBOT_TIP_AABB, "quad_navrl_ref5in.urdf header / navrl_ref5in_quad_config.py:11"],
             "robot_inflation_radius_m": [robot_radius, "half of prop-tip AABB * sqrt(2) (yaw invariant)"],
-            "tracking_reserve_m": [TRACKING_RESERVE, "navrl_task_config.py:587 physical_tracking_margin"],
+            "tracking_reserve_m": [TRACKING_RESERVE, "navrl_task_config physical_tracking_margin"],
             "spawn_clearance_mode": [
                 args.spawn_clearance,
                 "footprint = navrl_task.py _randomize_general_drone_spawn per-bar surface test; "
@@ -472,7 +475,7 @@ def main():
                 SPAWN_BAR_CENTER_CLEARANCE,
                 "legacy flat centre rule, applied only with --spawn-clearance center",
             ],
-            "spawn_wall_margin_m": [SPAWN_WALL_MARGIN, "navrl_task.py:1808"],
+            "spawn_wall_margin_m": [SPAWN_WALL_MARGIN, "navrl_task _randomize_general_drone_spawn spawn_wall_margin"],
             "goal_wall_margin_m": [GOAL_WALL_MARGIN, "navrl_task.py:2070-2086 max(1.0, 0.5+0.75)"],
         },
         "verdict": verdict,
