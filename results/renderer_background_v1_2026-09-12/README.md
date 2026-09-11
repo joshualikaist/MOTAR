@@ -44,8 +44,11 @@ v2는 필수 필드·형식·유한값·중복 JSON 키를 검사하고 per_view
 이는 저장된 근거의 무결성·일치 검사이며 실험의 진정성이나 원래 통계 계산의 재실행을 보증하지 않는다.
 
 실행 source commit은 두 receipt 모두 2a497f87601cddab687649db504097001b4d8b03이다.
-run1/run.json, run2/run.json과 각각의 arrays.npz를 저장소에 함께 추적한다. 두 NPZ는 각 1,573,320 bytes다.
-source_snapshot 사본은 기존 ignore 규칙대로 로컬에만 둔다. receipt의 모든 source 파일은 위 Git
+저장소가 추적하는 것은 **run1/run.json, run2/run.json, comparison/summary.json, 이 README**다.
+**`arrays.npz`는 추적하지 않는다** — `.gitignore:3`의 `*.npz` 규칙이다(각 1,573,320 bytes).
+이전 판은 추적한다고 적었으나 사실이 아니었고 2026-09-12에 정정했다. 대신 receipt가
+`arrays_npz_sha256`을 담고 있어 로컬 사본의 무결성은 검증할 수 있으며, 재생성 명령은 위에 있다.
+`source_snapshot`도 `.gitignore:30`의 `results/**/source_snapshot` 규칙으로 추적하지 않는다. receipt의 모든 source 파일은 위 Git
 commit에 존재하며 파일별 SHA로 검증하므로 full clone에서 해당 Git object로 재구성할 수 있다.
 shallow clone으로 그 commit이 없다면 검증은 실패한다. historical receipt는 수정하지 않았다.
 
