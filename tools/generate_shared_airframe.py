@@ -104,6 +104,33 @@ def visual_elements(motors, arm, hub, prop_radius):
     return elements
 
 
+def render_part_links(elements, indent="  "):
+    """A massless link per visual after the first, each fixed to base_link.
+
+    Not a style choice. aerial_gym/assets/warp_asset.py indexes its per-LINK name list with a
+    per-MESH counter, so it assumes one mesh per link; thirteen visuals in one link made it raise
+    IndexError before a single frame rendered. The interceptor URDF already has this shape, so it
+    is known to load. collapse_fixed_joints is set on this asset class, and the added links carry
+    zero mass and no collision, so contact and dynamics stay entirely with base_link.
+    """
+    lines = []
+    for name, geometry, origin, material in elements[1:]:
+        lines.append(f'{indent}<link name="{name}">')
+        lines.append(render_visual_xml([(name, geometry, (0.0,) * 6, material)], indent + "  "))
+        lines.append(f"{indent}  <inertial>")
+        lines.append(f'{indent}    <mass value="0.0"/>')
+        lines.append(f'{indent}    <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>')
+        lines.append(f"{indent}  </inertial>")
+        lines.append(f"{indent}</link>")
+        lines.append(f'{indent}<joint name="base_link_to_{name}" type="fixed">')
+        lines.append(f'{indent}  <parent link="base_link"/>')
+        lines.append(f'{indent}  <child link="{name}"/>')
+        lines.append(f'{indent}  <origin xyz="{origin[0]!r} {origin[1]!r} {origin[2]!r}" '
+                     f'rpy="{origin[3]!r} {origin[4]!r} {origin[5]!r}"/>')
+        lines.append(f"{indent}</joint>")
+    return "\n".join(lines)
+
+
 def render_visual_xml(elements, indent="    "):
     lines = []
     for name, (kind, attributes), origin, material in elements:
@@ -169,9 +196,10 @@ def build_target_urdf(source, robot_name):
             f'<robot name="{robot_name}">',
             '  <link name="base_link">',
             element_text(inertial, level=2),
-            render_visual_xml(elements),
+            render_visual_xml([elements[0]]),
             element_text(collision, level=2),
-            "  </link>"]
+            "  </link>",
+            render_part_links(elements)]
     for name, colour in MATERIALS:
         body.append(f'  <material name="{name}">')
         body.append('    <color rgba="%s %s %s %s"/>' % colour)
