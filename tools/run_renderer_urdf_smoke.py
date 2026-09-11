@@ -160,7 +160,8 @@ def main():
                 for flags in ([], ["--cached"]))
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     from renderer_validation.scene import Camera
-    from renderer_validation.urdf_asset import load_urdf_asset, outward_normal_violations, open_edges
+    from renderer_validation.urdf_asset import (load_urdf_asset, convex_outward_violations,
+                                                orientation_report)
     from runtime_fingerprint import runtime_fingerprint
 
     camera = Camera(width=args.width, height=args.height)
@@ -168,8 +169,10 @@ def main():
     for name, relative in ASSETS.items():
         asset = load_urdf_asset(ROOT / relative)
         record = evaluate(asset, camera, args.device)
-        record["checks"]["surface_is_closed"] = open_edges(asset.mesh) == []
-        record["checks"]["normals_point_outward"] = outward_normal_violations(asset.mesh) == 0
+        report = orientation_report(asset.mesh)
+        record["orientation"] = report
+        record["orientation"]["convex_centroid_violations"] = convex_outward_violations(asset.mesh)
+        record["checks"]["closed_and_wound_outward"] = report["closed_and_consistently_wound_outward"]
         record["status"] = "TECHNICAL_PASS" if all(record["checks"].values()) else "TECHNICAL_FAIL"
         results[name] = record
         print(record["status"], name, "| triangles", record["asset"]["triangles"],

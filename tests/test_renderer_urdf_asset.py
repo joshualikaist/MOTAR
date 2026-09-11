@@ -11,7 +11,9 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 from renderer_validation.urdf_asset import (UrdfError, load_urdf_asset, box_mesh, sphere_mesh,
                                             cylinder_mesh, rotation_from_rpy, origin_transform,
-                                            outward_normal_violations, open_edges, signed_volume,
+                                            convex_outward_violations, open_edges, signed_volume,
+                                            compare_backends, BACKENDS, DEFAULT_BACKEND,
+                                            orientation_report, winding_inconsistent_edges,
                                             SPHERE_SEGMENTS, SPHERE_RINGS, CYLINDER_SEGMENTS,
                                             DEFAULT_MATERIAL_NAME)
 from renderer_validation.scene import MeshScene
@@ -63,8 +65,9 @@ class TessellationTest(unittest.TestCase):
                                       ("sphere", sphere_mesh(0.05)),
                                       ("cylinder", cylinder_mesh(0.01, 0.11))):
             mesh = single(points, faces)
-            self.assertEqual(outward_normal_violations(mesh), 0, name)
-            self.assertEqual(open_edges(mesh), [], name)
+            self.assertEqual(convex_outward_violations(mesh), 0, name)
+            self.assertTrue(orientation_report(mesh)["closed_and_consistently_wound_outward"], name)
+            self.assertEqual(winding_inconsistent_edges(mesh), 0, name)
 
     def test_box_tessellation_is_exact_before_float32_storage(self):
         """Separate the two layers: the tessellation is exact, the stored vertices are float32.
@@ -125,9 +128,12 @@ class RealAssetTest(unittest.TestCase):
 
     def test_every_shipped_asset_is_closed_and_wound_outward(self):
         for path in [INTERCEPTOR, TARGET] + DISTRACTORS:
-            asset = load_urdf_asset(path)
-            self.assertEqual(outward_normal_violations(asset.mesh), 0, path.name)
-            self.assertEqual(open_edges(asset.mesh), [], path.name)
+            for backend in BACKENDS:
+                asset = load_urdf_asset(path, backend)
+                self.assertEqual(asset.backend, backend)
+                self.assertEqual(convex_outward_violations(asset.mesh), 0, path.name)
+                self.assertTrue(orientation_report(asset.mesh)["closed_and_consistently_wound_outward"],
+                                f"{path.name} via {backend}")
 
     def test_target_is_the_declared_red_box(self):
         asset = load_urdf_asset(TARGET)
@@ -137,18 +143,21 @@ class RealAssetTest(unittest.TestCase):
                         float(np.finfo(np.float32).eps))
 
     def test_joint_origins_place_the_motors_where_the_urdf_says(self):
-        """The four motor links sit at +-0.0777817 in x and y, per the URDF's own arithmetic."""
-        asset = load_urdf_asset(INTERCEPTOR)
-        centres = {}
-        for instance, name in enumerate(asset.link_names):
-            selected = asset.mesh.face_instance == instance
-            vertices = asset.mesh.vertices[np.unique(asset.mesh.triangles[selected])]
-            centres[name] = vertices.mean(axis=0)
-        for index in range(4):
-            centre = centres[f"motor_{index}"]
-            self.assertAlmostEqual(abs(float(centre[0])), 0.0777817, places=6)
-            self.assertAlmostEqual(abs(float(centre[1])), 0.0777817, places=6)
-        np.testing.assert_allclose(centres["base_link"], [0, 0, 0], atol=1e-9)
+        """The four motors sit at +-0.0777817 in x and y, per the URDF's own arithmetic.
+
+        Read from the link transforms, not from a mean of vertices. A mean of vertices is not a
+        kinematic quantity: two tessellations of one sphere average to slightly different points,
+        so it would make the test depend on how finely a backend subdivides.
+        """
+        for backend in BACKENDS:
+            asset = load_urdf_asset(INTERCEPTOR, backend)
+            places = {name: asset.link_transforms[i][:3, 3]
+                      for i, name in enumerate(asset.link_names)}
+            for index in range(4):
+                np.testing.assert_allclose(np.abs(places[f"motor_{index}"][:2]),
+                                           [0.0777817, 0.0777817], atol=1e-12)
+                self.assertAlmostEqual(float(places[f"motor_{index}"][2]), 0.0, places=12)
+            np.testing.assert_allclose(places["base_link"], [0, 0, 0], atol=1e-15)
 
     def test_loading_is_deterministic(self):
         first, second = load_urdf_asset(INTERCEPTOR), load_urdf_asset(INTERCEPTOR)
@@ -157,94 +166,147 @@ class RealAssetTest(unittest.TestCase):
         self.assertEqual(first.as_dict(), second.as_dict())
         self.assertEqual(first.source_sha256, second.source_sha256)
 
-    def test_receipt_records_the_tessellation_and_the_colour_choice(self):
+    def test_receipt_records_the_backend_the_library_versions_and_the_colour_choice(self):
         record = load_urdf_asset(INTERCEPTOR).as_dict()
-        self.assertEqual(record["tessellation"]["sphere_segments"], SPHERE_SEGMENTS)
+        self.assertEqual(record["backend"], "urdfpy")
+        self.assertIn("urdfpy", record["library_versions"])
+        self.assertIn("trimesh", record["library_versions"])
         self.assertIn("unconverted", record["colour_note"])
-        self.assertEqual(record["triangles"], 736)
+        self.assertEqual(len(record["link_transforms"]), 9)
+        self.assertEqual(load_urdf_asset(INTERCEPTOR, "builtin").as_dict()["triangles"], 736)
+
+    def test_the_library_subdivides_curves_more_finely_than_the_declared_counts(self):
+        """Recorded because it changes ray-cast cost, and because the receipt must explain it."""
+        library = load_urdf_asset(INTERCEPTOR, "urdfpy")
+        builtin = load_urdf_asset(INTERCEPTOR, "builtin")
+        self.assertGreater(len(library.mesh.triangles), len(builtin.mesh.triangles))
+        for asset in (library, builtin):
+            self.assertTrue(orientation_report(asset.mesh)["closed_and_consistently_wound_outward"])
+
+    def test_the_two_backends_agree_on_every_asset_on_the_appearance_path(self):
+        """Agreement is about what the URDF states, not about how finely it is subdivided."""
+        for path in [INTERCEPTOR, TARGET] + DISTRACTORS:
+            self.assertEqual(compare_backends(path), [], path.name)
 
 
 class RefusalTest(unittest.TestCase):
-    """Everything the contract says is out of scope must raise, not silently produce geometry."""
+    """Both backends must honour one contract.
+
+    Each of these was a real difference. urdfpy accepted a revolute joint that declares limits and
+    evaluated it at the zero configuration, so an articulated robot loaded as a pose nobody chose.
+    It substituted the default colour for a material reference that was never declared. And a
+    zero-size box reached the renderer and failed there as a degenerate triangle, naming the
+    triangle rather than the shape. The library backend now refuses all three.
+    """
 
     def setUp(self):
         import tempfile
         self.directory = tempfile.mkdtemp()
 
-    def test_mesh_geometry_is_refused_with_a_pointer_to_the_contract(self):
-        path = write(self.directory, """
-            <robot name="m"><link name="a"><visual><geometry>
-            <mesh filename="x.stl"/></geometry></visual></link></robot>""")
-        with self.assertRaisesRegex(UrdfError, "contract"):
-            load_urdf_asset(path)
+    def refused_by_both(self, body, name, pattern):
+        path = write(self.directory, body, name)
+        for backend in BACKENDS:
+            with self.assertRaises(UrdfError, msg=backend) as caught:
+                load_urdf_asset(path, backend)
+            self.assertRegex(str(caught.exception), pattern, backend)
 
-    def test_non_fixed_joints_are_refused(self):
-        path = write(self.directory, """
+    def test_articulated_joints_are_refused_rather_than_posed_at_zero(self):
+        self.refused_by_both("""
             <robot name="m">
               <link name="a"><visual><geometry><box size="1 1 1"/></geometry></visual></link>
               <link name="b"><visual><geometry><box size="1 1 1"/></geometry></visual></link>
-              <joint name="j" type="revolute"><parent link="a"/><child link="b"/></joint>
-            </robot>""")
-        with self.assertRaisesRegex(UrdfError, "fixed joints only"):
-            load_urdf_asset(path)
+              <joint name="j" type="revolute"><parent link="a"/><child link="b"/>
+                <axis xyz="0 0 1"/><limit lower="-1" upper="1" effort="1" velocity="1"/>
+                <origin xyz="0 0 2"/></joint>
+            </robot>""", "revolute_with_limits.urdf", "fixed joints only")
 
-    def test_two_roots_and_unknown_links_are_refused(self):
-        path = write(self.directory, """
+    def test_undeclared_material_reference_is_refused_rather_than_defaulted(self):
+        self.refused_by_both("""
+            <robot name="m"><link name="a"><visual><geometry><box size="1 1 1"/></geometry>
+            <material name="Nowhere"/></visual></link></robot>""",
+            "undeclared_material.urdf", "undeclared material")
+
+    def test_non_positive_dimensions_are_refused_naming_the_shape(self):
+        for index, geometry in enumerate(('<box size="1 0 1"/>', '<sphere radius="0"/>',
+                                          '<cylinder radius="1" length="-1"/>')):
+            self.refused_by_both(f"""
+                <robot name="m"><link name="a"><visual><geometry>
+                {geometry}</geometry></visual></link></robot>""",
+                f"degenerate_{index}.urdf", "(non-positive|must be positive)")
+
+    def test_broken_link_graphs_are_refused(self):
+        self.refused_by_both("""
             <robot name="m">
               <link name="a"><visual><geometry><box size="1 1 1"/></geometry></visual></link>
               <link name="b"><visual><geometry><box size="1 1 1"/></geometry></visual></link>
-            </robot>""")
-        with self.assertRaisesRegex(UrdfError, "one root link"):
-            load_urdf_asset(path)
-        path = write(self.directory, """
+            </robot>""", "two_roots.urdf", "(one root link|not all connected)")
+        self.refused_by_both("""
             <robot name="m">
               <link name="a"><visual><geometry><box size="1 1 1"/></geometry></visual></link>
               <joint name="j" type="fixed"><parent link="a"/><child link="ghost"/></joint>
-            </robot>""", "ghost.urdf")
-        with self.assertRaisesRegex(UrdfError, "unknown link"):
-            load_urdf_asset(path)
+            </robot>""", "ghost_child.urdf", "(unknown link|ghost)")
 
-    def test_degenerate_dimensions_are_refused(self):
-        for geometry in ('<box size="1 0 1"/>', '<sphere radius="0"/>', '<cylinder radius="1" length="-1"/>'):
-            path = write(self.directory, f"""
-                <robot name="m"><link name="a"><visual><geometry>
-                {geometry}</geometry></visual></link></robot>""", "d.urdf")
-            with self.assertRaises(UrdfError):
-                load_urdf_asset(path)
-
-    def test_undeclared_material_reference_is_refused(self):
-        path = write(self.directory, """
-            <robot name="m"><link name="a"><visual><geometry><box size="1 1 1"/></geometry>
-            <material name="Nowhere"/></visual></link></robot>""", "mat.urdf")
-        with self.assertRaisesRegex(UrdfError, "undeclared material"):
-            load_urdf_asset(path)
+    def test_malformed_xml_and_wrong_root_are_refused(self):
+        self.refused_by_both("<robot name='m'><link", "malformed.urdf", "(well-formed|could not load)")
+        self.refused_by_both("<sdf/>", "not_a_robot.urdf", "(expected <robot>|could not load)")
 
     def test_a_visual_without_a_material_uses_the_declared_default_and_is_counted(self):
         path = write(self.directory, """
             <robot name="m"><link name="a"><visual><geometry>
             <box size="1 1 1"/></geometry></visual></link></robot>""", "nomat.urdf")
-        asset = load_urdf_asset(path)
-        self.assertEqual(list(asset.material_names), [DEFAULT_MATERIAL_NAME])
-        self.assertEqual(asset.default_material_visuals, 1)
+        for backend in BACKENDS:
+            asset = load_urdf_asset(path, backend)
+            self.assertEqual(list(asset.material_names), [DEFAULT_MATERIAL_NAME], backend)
+            self.assertEqual(asset.default_material_visuals, 1, backend)
 
     def test_a_robot_with_no_visual_geometry_is_refused(self):
-        path = write(self.directory, """
+        self.refused_by_both("""
             <robot name="m"><link name="a"><collision><geometry>
-            <box size="1 1 1"/></geometry></collision></link></robot>""", "novis.urdf")
-        with self.assertRaisesRegex(UrdfError, "no visual geometry"):
-            load_urdf_asset(path)
+            <box size="1 1 1"/></geometry></collision></link></robot>""",
+            "no_visual.urdf", "no visual geometry")
 
-    def test_malformed_xml_and_wrong_root_are_refused(self):
-        path = write(self.directory, "<robot name='m'><link", "bad.urdf")
-        with self.assertRaisesRegex(UrdfError, "well-formed"):
-            load_urdf_asset(path)
-        path = write(self.directory, "<sdf/>", "sdf.urdf")
-        with self.assertRaisesRegex(UrdfError, "expected <robot>"):
-            load_urdf_asset(path)
+    def test_an_unknown_backend_name_is_refused(self):
+        with self.assertRaisesRegex(UrdfError, "backend must be one of"):
+            load_urdf_asset(TARGET, "guess")
+
+
+class MeshSupportTest(unittest.TestCase):
+    """Mesh files are the reason to use a library at all; the builtin parser cannot read them."""
+
+    MESH_ROBOT = ROOT / "resources/robots/BlueROV/rov.urdf"   # the only mesh URDF with fixed joints only
+
+    ARTICULATED_MESH_ROBOT = ROOT / "resources/robots/morphy/morphy.urdf"
+
+    def test_the_library_backend_loads_a_mesh_robot_the_builtin_one_refuses(self):
+        if not self.MESH_ROBOT.exists():
+            self.skipTest("no mesh-bearing URDF is shipped in this checkout")
+        asset = load_urdf_asset(self.MESH_ROBOT, "urdfpy")
+        self.assertGreater(len(asset.mesh.triangles), 1000)
+        self.assertTrue(any(kind == "mesh" for _, kind, _, _ in asset.shapes))
+        report = orientation_report(asset.mesh)
+        # Two separate facts, and conflating them is what made this test wrong at first.
+        # The hull is concave, so the convex centroid test reports tens of thousands of
+        # "violations" that mean nothing here. And the shipped STL is genuinely not watertight.
+        # Neither is a loader defect; the loader's job is to report them.
+        self.assertGreater(convex_outward_violations(asset.mesh), 0)
+        self.assertGreater(report["signed_volume_m3"], 0.0)
+        self.assertGreater(report["open_edges"], 0)
+        self.assertFalse(report["closed_and_consistently_wound_outward"])
+        with self.assertRaisesRegex(UrdfError, "out of scope"):
+            load_urdf_asset(self.MESH_ROBOT, "builtin")
+
+    def test_an_articulated_mesh_robot_is_still_refused_by_both(self):
+        """Mesh support does not relax the joint rule; morphy has revolute joints."""
+        if not self.ARTICULATED_MESH_ROBOT.exists():
+            self.skipTest("morphy is not shipped in this checkout")
+        for backend in BACKENDS:
+            with self.assertRaisesRegex(UrdfError, "fixed joints only"):
+                load_urdf_asset(self.ARTICULATED_MESH_ROBOT, backend)
 
 
 class IsolationTest(unittest.TestCase):
-    def test_loader_imports_no_simulator_and_no_urdf_library(self):
+    def test_loader_imports_no_simulator_task_detector_or_policy(self):
+        """Isolation means no aerial_gym. A general-purpose URDF parser is not part of it."""
         import ast
         source = (ROOT / "tools/renderer_validation/urdf_asset.py").read_text()
         imported = set()
@@ -253,7 +315,13 @@ class IsolationTest(unittest.TestCase):
                 imported.update(alias.name.split(".")[0] for alias in node.names)
             elif isinstance(node, ast.ImportFrom) and node.level == 0 and node.module:
                 imported.add(node.module.split(".")[0])
-        self.assertEqual(imported - {"dataclasses", "hashlib", "math", "pathlib", "xml", "numpy"}, set())
+        self.assertNotIn("aerial_gym", imported)
+        self.assertEqual(imported, {"dataclasses", "hashlib", "math", "pathlib", "xml", "numpy",
+                                    "trimesh", "urdfpy"})
+
+    def test_importing_the_loader_does_not_import_the_simulator(self):
+        self.assertFalse([name for name in sys.modules
+                          if name == "aerial_gym" or name.startswith("aerial_gym.")])
 
 
 if __name__ == "__main__":

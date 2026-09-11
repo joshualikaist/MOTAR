@@ -1,11 +1,18 @@
-"""Turn a URDF's visual geometry into a MeshScene, using only the standard library and numpy.
+"""Turn a URDF's visual geometry into a MeshScene.
 
-Scope, conventions and refusals are fixed in docs/renderer_urdf_loader_v1_contract.md. Nothing
-here imports aerial_gym, a simulator, a physics engine or a URDF library: the point of the
-prototype is that it shares no code with the system under study except audited ray kernels.
+The default backend is urdfpy, which owns URDF semantics: the link tree, forward kinematics,
+materials, mesh files and their scaling. Isolation in this prototype means not importing
+aerial_gym, the simulator, a task, a detector or a policy. A general-purpose URDF parser is not
+part of the system under study, and hand-rolling one only moves well-tested behaviour into code
+nobody has tested.
 
-URDF rgba is carried through unconverted. That is a declared choice, not a claim that a display
-colour equals a linear one; the raw values are kept so a conversion can be added as its own step.
+A second backend parses the same file with the standard library alone. It is not a fallback: it
+exists so the two can be compared, and compare_backends turns any disagreement into a listed
+discrepancy rather than a silent difference. On the five assets of the appearance path they agree
+exactly on link order, forward kinematics, geometry parameters and material colours.
+
+Scope and conventions are fixed in docs/renderer_urdf_loader_v1_contract.md. URDF rgba is carried
+through unconverted: a declared choice, not a claim that a display colour equals a linear one.
 """
 from dataclasses import dataclass
 import hashlib
@@ -23,6 +30,8 @@ CYLINDER_SEGMENTS = 16
 DEFAULT_MATERIAL_NAME = "__urdf_default__"
 DEFAULT_MATERIAL_RGBA = (0.5, 0.5, 0.5, 1.0)
 SUPPORTED_GEOMETRY = ("box", "sphere", "cylinder")
+BACKENDS = ("urdfpy", "builtin")
+DEFAULT_BACKEND = "urdfpy"
 
 
 class UrdfError(ValueError):
@@ -188,9 +197,17 @@ class UrdfAsset:
     source_path: str
     source_sha256: str
     default_material_visuals: int
+    backend: str = DEFAULT_BACKEND
+    library_versions: tuple = ()
+    link_transforms: np.ndarray = None      # [L,4,4] world transform, aligned with link_names
 
     def __post_init__(self):
         object.__setattr__(self, "material_rgba", frozen_array(self.material_rgba, np.float64))
+        if self.link_transforms is None:
+            raise UrdfError("Link world transforms are required; they are what the backends compare")
+        object.__setattr__(self, "link_transforms", frozen_array(self.link_transforms, np.float64))
+        if self.link_transforms.shape != (len(self.link_names), 4, 4):
+            raise UrdfError("One 4x4 world transform per link is required")
         if self.material_rgba.shape != (len(self.material_names), 4):
             raise UrdfError("One rgba row per material is required")
         if self.mesh.material_count > len(self.material_names):
@@ -201,11 +218,13 @@ class UrdfAsset:
         return self.mesh.face_instance
 
     def as_dict(self):
-        return {"robot_name": self.robot_name, "link_names": list(self.link_names),
+        return {"backend": self.backend, "library_versions": dict(self.library_versions),
+                "robot_name": self.robot_name, "link_names": list(self.link_names),
                 "material_names": list(self.material_names),
                 "material_rgba": self.material_rgba.tolist(),
                 "shapes": [{"link": link, "kind": kind, "parameters": parameters,
                             "triangles": count} for link, kind, parameters, count in self.shapes],
+                "link_transforms": self.link_transforms.tolist(),
                 "source_path": self.source_path, "source_sha256": self.source_sha256,
                 "default_material_visuals": self.default_material_visuals,
                 "tessellation": {"sphere_segments": SPHERE_SEGMENTS, "sphere_rings": SPHERE_RINGS,
@@ -215,8 +234,105 @@ class UrdfAsset:
                 "links_with_visual_geometry": int(len(set(self.mesh.face_instance.tolist())))}
 
 
-def load_urdf_asset(path):
-    """Read one URDF file into a MeshScene. Every unsupported construct raises UrdfError."""
+def load_urdf_asset(path, backend=DEFAULT_BACKEND):
+    """Read one URDF file into a MeshScene using the named backend."""
+    if backend not in BACKENDS:
+        raise UrdfError(f"backend must be one of {BACKENDS}, got {backend!r}")
+    return (load_urdf_asset_urdfpy if backend == "urdfpy" else load_urdf_asset_builtin)(path)
+
+
+def load_urdf_asset_urdfpy(path):
+    """Library-backed load. urdfpy owns the link tree, kinematics, materials and mesh files."""
+    import trimesh
+    import urdfpy
+    path = Path(path)
+    raw = path.read_bytes()
+    try:
+        robot = urdfpy.URDF.load(str(path))
+    except Exception as error:                      # urdfpy raises many types for bad input
+        raise UrdfError(f"urdfpy could not load {path}: {type(error).__name__}: {error}") from error
+    # urdfpy accepts an articulated robot and silently evaluates it at the zero configuration.
+    # The contract refuses non-fixed joints, so the refusal has to be made here rather than relied
+    # on: without it a revolute joint that declares limits loads as a pose nobody chose.
+    articulated = [(joint.name, joint.joint_type) for joint in robot.joints if joint.joint_type != "fixed"]
+    if articulated:
+        raise UrdfError(f"loader v1 supports fixed joints only; {path} declares {articulated}")
+    kinematics = robot.link_fk()
+    materials, rgba = {}, []
+
+    def material_index(name, values):
+        if name not in materials:
+            materials[name] = len(rgba)
+            rgba.append([float(v) for v in values])
+        return materials[name]
+
+    vertices, triangles, face_material, face_link, shapes = [], [], [], [], []
+    link_names, defaulted = [], 0
+    for instance, link in enumerate(robot.links):
+        link_names.append(link.name)
+        for visual in link.visuals:
+            meshes = visual.geometry.meshes
+            if not meshes:
+                raise UrdfError(f"link {link.name!r} has a <visual> urdfpy produced no mesh for")
+            combined = trimesh.util.concatenate(meshes) if len(meshes) > 1 else meshes[0]
+            points = np.asarray(combined.vertices, dtype=np.float64)
+            faces = np.asarray(combined.faces, dtype=np.int64)
+            if points.size == 0 or faces.size == 0:
+                raise UrdfError(f"link {link.name!r} produced empty geometry")
+            material = visual.material
+            if material is not None and material.color is None and material.name:
+                # urdfpy resolves robot-level materials itself, so a named material that still has
+                # no colour was never declared. It would otherwise become the default silently.
+                raise UrdfError(f"link {link.name!r} references undeclared material {material.name!r}")
+            if material is None or material.color is None:
+                defaulted += 1
+                index = material_index(DEFAULT_MATERIAL_NAME, DEFAULT_MATERIAL_RGBA)
+            else:
+                index = material_index(material.name or f"__anonymous_{len(rgba)}__", material.color)
+            transform = kinematics[link] @ (np.eye(4) if visual.origin is None else np.asarray(visual.origin))
+            if not np.isfinite(transform).all():
+                raise UrdfError(f"link {link.name!r} has a non-finite visual transform")
+            placed = points @ transform[:3, :3].T + transform[:3, 3]
+            offset = len(vertices)
+            vertices.extend(placed.tolist())
+            triangles.extend((faces + offset).tolist())
+            face_material.extend([index] * len(faces))
+            face_link.extend([instance] * len(faces))
+            geometry = visual.geometry
+            if geometry.box is not None:
+                kind, parameters = "box", {"size": [float(v) for v in geometry.box.size]}
+                dimensions = parameters["size"]
+            elif geometry.sphere is not None:
+                kind, parameters = "sphere", {"radius": float(geometry.sphere.radius)}
+                dimensions = [parameters["radius"]]
+            elif geometry.cylinder is not None:
+                kind, parameters = "cylinder", {"radius": float(geometry.cylinder.radius),
+                                                "length": float(geometry.cylinder.length)}
+                dimensions = [parameters["radius"], parameters["length"]]
+            else:
+                kind, parameters = "mesh", {"filename": str(getattr(geometry.mesh, "filename", ""))}
+                dimensions = []
+            # Check the declared dimensions rather than waiting for a degenerate triangle: the
+            # message should name the shape that is wrong, not the first triangle that collapsed.
+            if dimensions and min(dimensions) <= 0.0:
+                raise UrdfError(f"link {link.name!r} {kind} has a non-positive dimension: {parameters}")
+            shapes.append((link.name, kind, parameters, int(len(faces))))
+    if not triangles:
+        raise UrdfError(f"{path} declares no visual geometry")
+    try:
+        mesh = MeshScene(vertices, triangles, face_material, face_link)
+    except ValueError as error:
+        raise UrdfError(f"{path} produced geometry this renderer refuses: {error}") from error
+    return UrdfAsset(mesh,
+                     robot.name or path.stem, tuple(link_names), tuple(materials),
+                     np.array(rgba, dtype=np.float64), tuple(shapes), str(path),
+                     hashlib.sha256(raw).hexdigest(), defaulted, "urdfpy",
+                     (("urdfpy", urdfpy.__version__), ("trimesh", trimesh.__version__)),
+                     np.array([kinematics[link] for link in robot.links], dtype=np.float64))
+
+
+def load_urdf_asset_builtin(path):
+    """Standard-library parse, kept as an independent cross-check of the library backend."""
     path = Path(path)
     raw = path.read_bytes()
     try:
@@ -297,11 +413,20 @@ def load_urdf_asset(path):
     return UrdfAsset(MeshScene(vertices, triangles, face_material, face_link),
                      root.get("name") or path.stem, tuple(order),
                      tuple(materials), np.array(rgba, dtype=np.float64), tuple(shapes),
-                     str(path), hashlib.sha256(raw).hexdigest(), defaulted)
+                     str(path), hashlib.sha256(raw).hexdigest(), defaulted, "builtin",
+                     (("tessellation", "declared in this module"),),
+                     np.array([transforms[name] for name in order], dtype=np.float64))
 
 
-def outward_normal_violations(mesh, asset=None):
-    """Triangles whose winding points into their own shape, per link centroid. Zero is required."""
+def convex_outward_violations(mesh, asset=None):
+    """Triangles winding into their own shape, judged against each link's centroid.
+
+    ONLY VALID FOR CONVEX SHAPES. On a concave surface a face legitimately points towards the
+    centroid, so this counts thousands of "violations" on a real hull that is correctly oriented:
+    the shipped BlueROV mesh reports 88,721 of them while its signed volume is positive and its
+    winding is almost entirely consistent. Use orientation_report for anything that is not a box,
+    a sphere or a cylinder.
+    """
     points = mesh.vertices[mesh.triangles]
     normals = np.cross(points[:, 1] - points[:, 0], points[:, 2] - points[:, 0])
     centroids = points.mean(axis=1)
@@ -329,3 +454,96 @@ def signed_volume(mesh, instance=None):
     points = mesh.vertices[mesh.triangles[selected]].astype(np.float64)
     return float(np.sum(np.einsum("ij,ij->i", points[:, 0],
                                   np.cross(points[:, 1], points[:, 2]))) / 6.0)
+
+
+def compare_backends(path, position_tolerance_m=1e-9, colour_tolerance=0.0):
+    """List every way the two backends disagree about the same file.
+
+    Tessellation is expected to differ: trimesh subdivides curved surfaces more finely than the
+    declared segment counts here, so triangle counts and vertex positions are not compared. What
+    must agree is everything the URDF actually states: which links exist and in what order, where
+    each visual is placed, which geometry it is and with what parameters, and what colour it has.
+    Placement is compared through each link's visual centroid, which moves if kinematics differ.
+    """
+    library, builtin = load_urdf_asset_urdfpy(path), load_urdf_asset_builtin(path)
+    issues = []
+    if list(library.link_names) != list(builtin.link_names):
+        issues.append(f"link order: urdfpy {list(library.link_names)} vs builtin {list(builtin.link_names)}")
+    if library.robot_name != builtin.robot_name:
+        issues.append(f"robot name: {library.robot_name!r} vs {builtin.robot_name!r}")
+    if library.source_sha256 != builtin.source_sha256:
+        issues.append("source sha256 differs, which means the file changed between reads")
+
+    # Compare the kinematics themselves. An earlier version compared the mean of each link's
+    # vertices, which is not a kinematic quantity: a UV sphere and an icosphere inscribe the same
+    # sphere but average to slightly different points, so tessellation leaked into a test that was
+    # supposed to be about placement and produced nanometre "disagreements" that meant nothing.
+    if list(library.link_names) == list(builtin.link_names):
+        difference = np.abs(library.link_transforms - builtin.link_transforms)
+        for index, name in enumerate(library.link_names):
+            worst = float(difference[index].max())
+            if worst > position_tolerance_m:
+                issues.append(f"link {name!r} world transform differs by {worst:.3e}")
+
+    def visible_links(asset):
+        return {asset.link_names[i] for i in set(asset.mesh.face_instance.tolist())}
+
+    left, right = visible_links(library), visible_links(builtin)
+    if left != right:
+        issues.append(f"links with visual geometry differ: {sorted(left ^ right)}")
+
+    def shapes(asset):
+        result = {}
+        for link, kind, parameters, _ in asset.shapes:
+            result.setdefault(link, []).append((kind, parameters))
+        return result
+
+    left, right = shapes(library), shapes(builtin)
+    for name in sorted(set(left) | set(right)):
+        if left.get(name) != right.get(name):
+            issues.append(f"link {name!r} geometry: urdfpy {left.get(name)} vs builtin {right.get(name)}")
+
+    for name in sorted(set(library.material_names) | set(builtin.material_names)):
+        if name not in library.material_names or name not in builtin.material_names:
+            issues.append(f"material {name!r} is present in only one backend")
+            continue
+        a = library.material_rgba[library.material_names.index(name)]
+        b = builtin.material_rgba[builtin.material_names.index(name)]
+        if float(np.abs(a - b).max()) > colour_tolerance:
+            issues.append(f"material {name!r} rgba {a.tolist()} vs {b.tolist()}")
+    return issues
+
+
+def winding_inconsistent_edges(mesh):
+    """Edges whose two triangles traverse them the same way, which means opposed normals.
+
+    Unlike the convex test this is valid for any surface: on a consistently oriented mesh every
+    interior edge is traversed once in each direction.
+    """
+    seen, inconsistent = {}, 0
+    for triangle in mesh.triangles.tolist():
+        for i in range(3):
+            first, second = triangle[i], triangle[(i + 1) % 3]
+            edge = (min(first, second), max(first, second))
+            direction = 1 if first < second else -1
+            if edge in seen:
+                inconsistent += int(seen[edge] == direction)
+            else:
+                seen[edge] = direction
+    return inconsistent
+
+
+def orientation_report(mesh):
+    """The checks that hold for any closed orientable surface, convex or not.
+
+    A closed, consistently wound, outward-facing surface has no open edge, no inconsistent edge
+    and a positive signed volume. Reported rather than asserted, because a shipped mesh asset can
+    fail these and that is a fact about the asset, not about this loader.
+    """
+    return {"triangles": int(len(mesh.triangles)),
+            "open_edges": len(open_edges(mesh)),
+            "winding_inconsistent_edges": winding_inconsistent_edges(mesh),
+            "signed_volume_m3": signed_volume(mesh),
+            "closed_and_consistently_wound_outward":
+                bool(not open_edges(mesh) and not winding_inconsistent_edges(mesh)
+                     and signed_volume(mesh) > 0.0)}
