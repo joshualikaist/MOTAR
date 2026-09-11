@@ -20,6 +20,7 @@ from renderer_validation.scene import Camera, MeshScene, Appearance, box_fixture
 from renderer_validation.gbuffer import (finalize_gbuffer, validated_poses, checked_kernel_source,
                                          KERNEL_SHA256, WarpGBufferRenderer, load_camera_kernels)
 from renderer_validation.shading import shade
+from renderer_validation.validation import evaluate, geometry_equal, tensor_hash
 import run_renderer_validation as runner
 
 
@@ -221,6 +222,26 @@ class GeometryAndShadingTest(unittest.TestCase):
         for kw in ({"mode": "debug"}, {"background": (1, 0, 0, 1)}, {"background": (2, 0, 0)}):
             with self.assertRaises(ValueError):
                 shade(self.g, self.scene, self.a, **kw)
+
+    def test_r3_rule_passes_known_contract_tensor(self):
+        # 4 pixels, two faces/instances and normals lit differently by the two fixed arms.
+        camera = Camera(width=4, height=1)
+        r = torch.full((1, 1, 4), 2.0)
+        n = torch.tensor([[[[0., 0., -1.], [0., 0., -1.],
+                            [1., 0., -1.], [1., 0., -1.]]]])
+        f = torch.tensor([[[0, 1, 6, 7]]], dtype=torch.int32)
+        g = finalize_gbuffer(r, n, f, self.scene, camera)
+        # Formal minimum is 50 selected pixels, so a tiny fixture must fail only that check.
+        result = evaluate(self.scene, g, g)
+        self.assertEqual(result["run_verdict"], "FAIL")
+        self.assertFalse(result["checks"]["selected_material_has_50_pixels"])
+        self.assertTrue(result["checks"]["flat_variance_at_most_1e_12"])
+        self.assertTrue(result["checks"]["rerender_geometry_exact"])
+        self.assertEqual(tensor_hash(g.depth_m), result["array_sha256"]["depth"])
+
+    def test_geometry_comparison_is_field_complete(self):
+        self.assertTrue(geometry_equal(self.g, self.g))
+        self.assertFalse(geometry_equal(self.g, replace(self.g, depth_m=self.g.depth_m + 1)))
 
 
 class IsolationAndDriverTest(unittest.TestCase):
