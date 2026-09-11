@@ -48,7 +48,23 @@ def ci(delta, se, z=Z95):
     return delta - z * se, delta + z * se
 
 
+def degenerate_se(se):
+    """A Wald standard error of zero means the interval is undefined, not infinitely precise.
+
+    p(1-p) is exactly zero at p in {0, 1}, so two arms that both sit at a boundary — no crashes in
+    either, or every episode captured — give se == 0.0 exactly. The interval then collapses to a
+    point, two_sided_p returns 0.0 and excludes_zero used to return True: a contrast with no
+    statistical content reported as infinitely significant, and that flag gates PASS/FAIL in the
+    A5/A7/A8 tables and in seed-replication pooling.
+    """
+    return not (se > 0.0)
+
+
 def excludes_zero(delta, se, z=Z95):
+    if degenerate_se(se):
+        # A zero-width interval excludes everything it does not contain, which would make every
+        # degenerate contrast "significant". Refuse to claim exclusion instead.
+        return False
     lo, hi = ci(delta, se, z)
     return lo > 0.0 or hi < 0.0
 
@@ -59,11 +75,30 @@ def two_sided_p(delta, se):
     return math.erfc(abs(delta) / (se * math.sqrt(2.0)))
 
 
+def _reject_degenerate(estimates, where):
+    """Inverse-variance weighting divides by the standard error; zero is not a small number.
+
+    These three pooling functions used to raise ZeroDivisionError from inside a comprehension,
+    which names neither the cell nor the reason. Near-zero is the quieter half of the same
+    problem: a cell at 1 crash in 2048 carries 77 times the weight of an ordinary cell and can
+    move a pooled effect from -0.98 pp to -0.03 pp on its own. That is a property of the
+    estimator, so it is reported rather than refused; only the exactly-degenerate case refuses.
+    """
+    bad = [index for index, (_, se) in enumerate(estimates) if degenerate_se(se)]
+    if bad:
+        raise ValueError(
+            f"{where}: cell(s) {bad} have a zero or non-finite standard error, which happens when "
+            "both arms sit at 0% or 100%. Inverse-variance pooling is undefined there; drop the "
+            "cell or report it separately rather than weighting it infinitely."
+        )
+
+
 def pool_fixed(estimates):
     """Inverse-variance fixed-effect pool of (delta, se) pairs -> (delta, se)."""
     estimates = list(estimates)
     if not estimates:
         raise ValueError("nothing to pool")
+    _reject_degenerate(estimates, "pool_fixed")
     weights = [1.0 / se ** 2 for _, se in estimates]
     total = sum(weights)
     delta = sum(w * d for w, (d, _) in zip(weights, estimates)) / total
@@ -73,6 +108,7 @@ def pool_fixed(estimates):
 def cochran_q(estimates):
     """(Q, df, I^2) heterogeneity of (delta, se) pairs. I^2 is clamped at 0."""
     estimates = list(estimates)
+    _reject_degenerate(estimates, "cochran_q")
     centre, _ = pool_fixed(estimates)
     q = sum((d - centre) ** 2 / se ** 2 for d, se in estimates)
     df = len(estimates) - 1

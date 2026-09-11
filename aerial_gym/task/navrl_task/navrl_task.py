@@ -2440,12 +2440,26 @@ class NavRLTask(BaseTask):
         expected_sha = os.environ.get(
             "NAVRL_TRAINING_SOURCE_MANIFEST_SHA256", ""
         ).strip().lower()
-        required = os.environ.get(
-            "NAVRL_REQUIRE_TRAINING_SOURCE_RECEIPT", "0"
-        ).strip().lower() in ("1", "true", "yes", "on")
-        require_clean = os.environ.get(
-            "NAVRL_REQUIRE_CLEAN_TRAINING_SOURCE", "0"
-        ).strip().lower() in ("1", "true", "yes", "on")
+        def _require_flag(name):
+            """Parse a gate-ARMING flag. An unknown spelling must not quietly mean "off".
+
+            These two turn the source-attestation gate on. Membership testing against a tuple of
+            accepted words meant a launcher writing =Y, =enabled or =TRUE1 silently disarmed the
+            gate and the run proceeded with no attestation at all. A flag whose job is to demand
+            evidence is the last place to guess.
+            """
+            raw = os.environ.get(name, "0").strip().lower()
+            if raw in ("1", "true", "yes", "on"):
+                return True
+            if raw in ("", "0", "false", "no", "off"):
+                return False
+            raise ValueError(
+                f"{name}={raw!r} is not a recognised boolean; use 1/0, true/false, yes/no or "
+                "on/off. Refusing to treat an unknown value as 'not required'."
+            )
+
+        required = _require_flag("NAVRL_REQUIRE_TRAINING_SOURCE_RECEIPT")
+        require_clean = _require_flag("NAVRL_REQUIRE_CLEAN_TRAINING_SOURCE")
         if not manifest_text:
             if required:
                 raise RuntimeError("NavRL training source receipt is required but unset")

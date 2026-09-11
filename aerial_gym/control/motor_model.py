@@ -10,13 +10,16 @@ class MotorModel:
         self.cfg = config
         self.device = device
         self.num_motors_per_robot = motors_per_robot
-        try:
-            self.integration_scheme = config.integration_scheme
-            if self.integration_scheme not in ["euler", "rk4"]:
-                # set the default scheme to rk4 if unspecified
-                self.integration_scheme = "rk4"
-        except:
-            self.integration_scheme = "rk4"
+        # An unset scheme defaults to rk4, which is the documented behaviour. A scheme that is
+        # SET to something unrecognised is a typo, and silently substituting rk4 there meant an
+        # A/B of the integrator ran rk4 on both arms and concluded it made no difference. The
+        # bare except this replaces also caught KeyboardInterrupt and SystemExit.
+        self.integration_scheme = getattr(config, "integration_scheme", None) or "rk4"
+        if self.integration_scheme not in ("euler", "rk4"):
+            raise ValueError(
+                f"integration_scheme={self.integration_scheme!r} is not recognised; "
+                "expected 'euler' or 'rk4'"
+            )
         self.max_thrust = torch.tensor(self.cfg.max_thrust, device=self.device, dtype=torch.float32).expand(
             self.num_envs, self.num_motors_per_robot
         )

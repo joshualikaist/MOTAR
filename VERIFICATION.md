@@ -373,7 +373,7 @@ fx 84.3 px/rad, 표적이 28 m에 0.90 px(0.62 px²)이고, 마스크가 서브�
 신뢰 검출 거리는 12–15 m다.
 
 **교란 (한계로 기록, 판정 소급 변경 아님)**: `detector_max_range` 변경은 순수 clip 변경이 아니다.
-actor 표적 토큰이 함께 재정규화된다(`navrl_perception.py:1574,1578`). 28 m arm은 20 m로 학습된
+actor 표적 토큰이 함께 재정규화된다(`navrl_perception.py`, `_encode_target_tokens`의 `max_camera_range` 정규화 — 심볼로 인용한다. 이전 판의 `:1574,1578`은 드리프트해 무관한 주석을 가리켰다). 28 m arm은 20 m로 학습된
 정책에 0.714배 스케일 위치를 먹였으므로 timeout −37.65 pp 중 일부는 관측 인코딩 변화다.
 **§8.29의 공식 판정은 변경하지 않는다.**
 

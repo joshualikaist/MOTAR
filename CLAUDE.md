@@ -7,7 +7,11 @@ substantive한 요청(학습·평가·분석·감사·구현)을 받으면:
 1. **스킬 먼저 탐색·호출한다.** 연구 루프는 `/navrl` 스킬로 시작한다
    (`.claude/skills/navrl/`). 스킬은 **먼저 `VERIFICATION.md`에서 현재 stage를 읽고**,
    학습을 자동으로 시작하지 않는다. routed v3는 **MECHANISM_GATE_FAIL_CLOSED**다.
-   route-off 70→205 curriculum(seed 911)은 이미 RUNNING이므로 두 번째 run을 시작하지 않는다.
+   route-off 70→205 curriculum(seed 911)은 **RUNNING이 아니다** — 2026-09-11 정정. ep21973에서
+   operator가 중단했고 `docs/research_authority_2026-08-26.json`이
+   `route_off_curriculum.status = OPERATOR_STOPPED_INCOMPLETE`, `resume_forbidden = true`로 잠근다.
+   두 번째 run을 시작하지 않는 이유는 **RUNNING이어서가 아니라 GPU authority가 소진돼서**다.
+   `tools/check_research_authority.py`가 이 상태를 기계로 검사하니 상태는 그쪽을 믿을 것.
    대시보드 갱신은 저장소
    `research-status` 스킬.
 2. **무거운 조사는 서브에이전트(Agent 도구)에 위임한다** — 파일 다수 읽기, `runs/**/epoch_metrics.csv`
@@ -19,9 +23,12 @@ substantive한 요청(학습·평가·분석·감사·구현)을 받으면:
 
 ## 프로젝트 현재 상태 (재도출 금지 — 여기 요약)
 
-- **현재 실행 단계(2026-09-01)**: corrected non-overlap route r2는
+- **현재 실행 단계(2026-09-11 갱신)**: corrected non-overlap route r2는
   `FAIL_ROUTE_MECHANISM`이다. route-off 500-epoch smoke는 `PASS_LEARNING_VIABILITY`이고
-  seed 911 70→205 curriculum은 **RUNNING**이다. 두 번째 curriculum/routed PPO는 금지.
+  seed 911 70→205 curriculum은 **OPERATOR_STOPPED_INCOMPLETE**(ep21973, `resume_forbidden`)다.
+  seed-313 held-out sweep은 완료됐다. **학습·평가 프로세스는 없다.**
+  두 번째 curriculum/routed PPO는 여전히 금지이며, 사유는 RUNNING이 아니라 authority 소진이다.
+  (2026-09-01판은 RUNNING이라고 적어 두었는데 아래 85번 줄과도, 권위 JSON과도 모순이었다.)
   canonical 1.5 v3 receipt는 NO-GO다.
   matched-spawn lower-v3 재실행은 pose/layout/robot 해시가 일치해
   `PASS_8_CELL_INTEGRITY`였지만 공식 판정은 **`FAIL_BLOCKS_CONFIRMATORY`**다. routed speed
@@ -40,8 +47,9 @@ substantive한 요청(학습·평가·분석·감사·구현)을 받으면:
 - **canonical 현재 상태**: `WORKLOG.md`(맨 아래) + `VERIFICATION.md`(ref5in gate·다음 실험) +
   `docs/status/` 라이브 대시보드. `RESEARCH_PLAN.md`는 charter(가설·방법). 실무는 `OPERATIONS.md`,
   과거 crash 진단 기록은 `CRASH_TUNING_LOG.md`(내용은 2026-08-05에 동결, archival-in-place —
-  **소스 3곳**이 경로를 참조하므로 이동·삭제 금지: `navrl_task_config.py:720`,
-  `navrl_lidar_config.py:17`, `navrl_task.py:5937`). 역사 문서는 `docs/archive/`.
+  **소스 3곳**이 경로를 참조하므로 이동·삭제 금지 — 줄번호는 드리프트하므로 파일만 적는다:
+  `navrl_task_config.py`, `navrl_lidar_config.py`, `navrl_task.py`. 확인은
+  `grep -rn CRASH_TUNING_LOG aerial_gym/`). 역사 문서는 `docs/archive/`.
 - **경로가 계약인 문서 2건 — 이동·삭제·바이트 변경 금지**:
   ① `docs/reference_platform_proposal_2026-08.md` — `navrl_ref5in_quad_config.py`의 docstring이
   가리키고 그 파일이 **provenance-frozen**이라, 바이트가 하나만 바뀌어도

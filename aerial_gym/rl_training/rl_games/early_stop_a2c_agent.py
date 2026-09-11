@@ -1601,8 +1601,18 @@ class EarlyStopA2CAgent(A2CAgent):
                                     pending_exit_reason = (
                                         "early_stop_density_capture_collapse"
                                     )
-                    except Exception:
-                        pass
+                    except Exception as dashboard_error:
+                        # This block holds the density-capture-collapse FAIL-STOP. Swallowing an
+                        # exception here meant a collapse could go unreported for days with no
+                        # output at all, and the guard's own config validator raises on every bad
+                        # value precisely so this cannot happen. Keep training alive, because a
+                        # dashboard fault is not a reason to lose a run, but say so every time.
+                        print(
+                            "[aerial RL] WARNING: dashboard/fail-stop block raised "
+                            f"{type(dashboard_error).__name__}: {dashboard_error}. The "
+                            "density-capture-collapse FAIL-STOP did NOT run this epoch.",
+                            flush=True,
+                        )
 
                     self._flush_aerial_tensorboard(
                         mean_reward=dash_mr,

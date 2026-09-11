@@ -71,10 +71,19 @@ def _perception_obs_dim():
     """
     try:
         from aerial_gym.task.navrl_task.navrl_perception import STRUCTURED_OBS_DIM
-
-        return int(STRUCTURED_OBS_DIM)
-    except Exception:
+    except ImportError:
+        # torch or the perception module is genuinely absent: a non-perception run, which is what
+        # the fallback exists for.
         return 574
+    except Exception as error:
+        # navrl_perception raises ValueError at import for every malformed knob. Returning 574
+        # here turned each of those into a width outside the documented 156/305/1265/898 lineage,
+        # a resume then died on a state_dict shape mismatch, and the real message was never seen.
+        raise ValueError(
+            "navrl_perception could not report STRUCTURED_OBS_DIM, so the observation width is "
+            f"unknown; refusing to guess 574. Underlying {type(error).__name__}: {error}"
+        ) from error
+    return int(STRUCTURED_OBS_DIM)
 
 
 class task_config:
