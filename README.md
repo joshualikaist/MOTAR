@@ -624,6 +624,35 @@ conda activate aerialgym
 export PYTHONNOUSERSITE=1
 ```
 
+### Quick start — verified on 2026-09-12, not guessed
+
+These four ran in this order in the working environment (Python 3.8.20, numpy 1.23.0,
+torch 2.4.1+cu121). The first three need **no GPU and no Isaac Gym**, so they are the cheapest way
+to confirm a checkout is sound before installing the heavy pieces.
+
+```bash
+export PYTHONNOUSERSITE=1
+
+# 1. environment check
+python -c "import sys, numpy, torch; print(sys.version.split()[0], numpy.__version__, torch.__version__)"
+
+# 2. the renderer tool answers
+python -B tools/run_renderer_validation.py --help
+
+# 3. renderer tests, CPU only — 146 tests, no PYTHONPATH needed
+CUDA_VISIBLE_DEVICES="" python -B -m unittest discover -s tests -p 'test_renderer*.py'
+
+# 4. the whole suite — 1,484 tests, needs the repository root importable
+PYTHONPATH="$PWD" python -B -m unittest discover -s tests -p 'test_*.py'
+```
+
+Steps 3 and 4 are the smoke test. Anything beyond them needs Isaac Gym Preview 4 and a GPU; the
+training and evaluation launchers live under `aerial_gym/rl_training/rl_games/` and their contracts
+are in [`OPERATIONS.md`](OPERATIONS.md).
+
+`requirements.txt` covers what pip can install. Isaac Gym and pytorch3d cannot be installed from
+it and are handled by the bootstrap script.
+
 Run the CPU contracts before spending GPU time:
 
 ```bash
@@ -693,6 +722,39 @@ Forensics separate initial planning from recovery: pooled replans were `unsafe_s
 
 **Physical PPO stays blocked** until a real platform supplies measured AUW/CG, sensor extrinsics,
 timestamp synchronisation, and real-log bearing/range/latency/dropout profiles.
+
+## Citation
+
+Cite the software; no paper describing MOTAR has been published yet. Machine-readable metadata is
+in [`CITATION.cff`](CITATION.cff), which GitHub renders as a "Cite this repository" button and
+which `cffconvert` turns into BibTeX or APA.
+
+```bibtex
+@software{motar,
+  title  = {{MOTAR}: measured perception error and safety-filter diagnosis for UAV interception in simulation},
+  author = {joshualikaist},
+  year   = {2026},
+  url    = {https://github.com/joshualikaist/MOTAR},
+  note   = {Software. No associated publication yet.}
+}
+```
+
+The author field carries the GitHub handle recorded in the repository. A legal name and an ORCID
+are not recorded anywhere here, so they are left out rather than guessed; add them to
+`CITATION.cff` if you want them in the citation.
+
+## License and third-party materials
+
+This repository is a fork of Aerial Gym Simulator and keeps its
+[BSD-3-Clause](LICENSE) licence.
+
+**The root licence does not cover everything in the tree.**
+[`THIRD_PARTY_LICENSES.md`](THIRD_PARTY_LICENSES.md) lists every third-party component, separates
+code licences from dataset licences, and marks each as verified, needing confirmation, or not
+redistributed. One item is an open release question: the review images under
+`results/eth_ds5_intake_2026-09-10/` are derived from a **CC BY-NC-SA 4.0** dataset whose
+ShareAlike and NonCommercial terms BSD-3-Clause does not satisfy. A notice sits next to those
+files, and the decision is recorded as unresolved rather than assumed.
 
 ## Credits
 
