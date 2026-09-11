@@ -12,6 +12,7 @@
 R1 문서화 완료 · [R2 독립 shading prototype / 인수인계](renderer_r2_prototype_2026-09-11.md).
 R2 코드는 구현했으며 실제 Warp/GPU 실행·실험 판정은 미실행입니다. 기존 perception·policy 경로와 분리합니다.
 [R3 renderer-only validation 사전등록](preregistration_renderer_r3_2026-09-11.md)은 seed 173의 두 독립 실행을 고정합니다.
+[R3 결과: PASS](../results/renderer_r3_seed173_comparison_2026-09-11/README.md). 학습·perception·policy 평가는 포함하지 않습니다.
 
 논문형 블록 다이어그램(2026-09-11): [README 그림 9개 전체](assets/paper/) ·
 [SVG + 4K PNG + 벡터 PDF ZIP](assets/paper/motar-paper-block-diagrams.zip).

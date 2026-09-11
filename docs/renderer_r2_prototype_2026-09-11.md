@@ -6,9 +6,14 @@
 |---|---|
 | 독립 prototype 구현 | `IMPLEMENTED_RUNTIME_UNVERIFIED` |
 | CPU 계약/모의 backend 단위 테스트 | 39개 통과 |
-| 실제 Warp kernel 실행·GPU smoke | `NOT_RUN` |
-| R3–R5 실험 판정·background 실험·throughput | `NOT_RUN` |
+| 실제 Warp kernel 실행·GPU smoke | `TECHNICAL_SMOKE_PASS` |
+| R3 renderer validation | [`PASS`](../results/renderer_r3_seed173_comparison_2026-09-11/README.md) |
+| R4 background / R5 throughput | `NOT_RUN` |
 | 학습·detector·association·policy | 범위 밖, 실행 경로 없음 |
+
+> 후속 상태(2026-09-11): 실제 Warp/GPU 기술 smoke 2회와 사전등록된 R3 검증을 실행했다.
+> smoke의 모든 배열 hash가 두 프로세스에서 일치했고, 정식 R3도 최종 PASS했다.
+> 절 6의 명령과 `미실행` 표현은 R2 구현 직후의 인수인계 기록이다.
 
 사용자는 이번에 구현만 요청했고 실행·판정은 별도로 맡기기로 했다. 따라서 이 문서는 GPU 동작,
 렌더링 품질, 재현성 실험, 성능 개선을 검증했다고 주장하지 않는다.

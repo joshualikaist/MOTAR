@@ -17140,3 +17140,20 @@ receipt만 생성한다. output 덮어쓰기·소스 drift·ray pass 불일치�
 검증 결과: CPU/모의 backend 단위 테스트 39개 통과(CUDA 비노출), 신규 Python 6개 AST 파싱,
 R2 문서 링크 6개와 git diff --check 통과. R1 근거 파일 23개의 SHA도 그대로 일치한다.
 이번 테스트의 NPZ/receipt 쓰기는 임시 디렉터리의 모의 데이터에 한정했고 실제 렌더링 산출물은 없다.
+
+## 2026-09-11 — R2 실제 GPU smoke 및 R3 renderer validation PASS
+
+R2 implementation을 커밋(`24470e2`)한 뒤 RTX 3070에서 Warp 1.0.0 camera kernel을 실제 실행했다.
+seed 0 기술 smoke 두 프로세스는 160×120 frame 2개씩을 만들었고 모든 배열 hash가 exact 일치했다.
+유효 geometry는 4,098 pixels, visible instance 2개였다. 다만 사전등록 전·dirty source 실행이므로
+정식 판정에서는 제외하고 `TECHNICAL_SMOKE_PASS`로만 기록했다.
+
+R3 기준과 실행 코드를 결과 전에 별도 커밋(`83c62c3`)하고 seed 173을 두 독립 GPU 프로세스에서
+실행했다. 두 run 모두 12개 고정 check를 통과했고 metric·11개 배열 SHA·runtime 축이 exact 일치해
+최종 `PASS`다. uniform flat luminance variance 0, Lambertian variance 0.018891,
+light-direction RGB MAE 0.201582, material 0의 2,196 pixels만 변경되고 외부 최대 변화는 0이었다.
+geometry buffer와 instance-ID leakage 검사도 exact 조건을 통과했다.
+
+이는 일반 상자 fixture의 renderer 계약 판정이다. 모델·label·loss·데이터셋이 없는 비학습 실험이므로
+학습은 실행하지 않았다. detector/association/task/policy도 import·수정·실행하지 않았으며,
+shortcut 감소나 task 성능 개선을 주장하지 않는다. R4 background와 R5 throughput은 미실행이다.
