@@ -70,7 +70,11 @@ def evaluate(scene, first, second):
         "shaded_luminance_variance": float(shaded_y.var(unbiased=False)),
         "light_change_rgb_mae": float(light_mae),
         "selected_material_pixels": int(selected.sum()),
-        "material_changed_fraction_selected": float((delta[selected] > 0).float().mean()) if selected.any() else 0.0,
+        # Integer count, never mean(): see true_fraction in background_validation. This value is
+        # compared to exactly 1.0 below, and on CUDA an all-true mean falls one ulp short for
+        # about 13% of pixel counts. R3's 2,196 is not one of them, so this changes no result.
+        "material_changed_fraction_selected": (int((delta[selected] > 0).sum()) / int(selected.sum())
+                                               if selected.any() else 0.0),
         "material_max_change_outside_selected": float(delta[other].max()) if other.any() else 0.0,
         "depth_min_m": float(first.depth_m[valid].min()),
         "depth_max_m": float(first.depth_m[valid].max()),
