@@ -60,5 +60,7 @@ WORKLOG에 모두 실었다.
 `review_offset0/REVIEW_INSTRUCTIONS.md`, `review_alignment/REVIEW_INSTRUCTIONS.md`,
 `docs/status/index.html`, `docs/plans/eth_ds5_e3_2026-09-10.md`,
 `docs/plans/eth_ds5_execution_2026-09-10.md`, `WORKLOG.md`, 그리고 검수 zip을 다시 만들었다.
-`provisional_review_2026-09-10/README.md`와 `alignment_queue.json`은 날짜가 박힌 기록이므로
-숫자를 고치지 않고 이 문서를 가리키는 안내만 붙였다.
+날짜가 박힌 기록 둘은 다르게 다뤘다. `provisional_review_2026-09-10/README.md`에는 숫자를 고치지 않고
+이 문서를 가리키는 안내만 붙였다. **`alignment_queue.json`은 전혀 건드리지 않았다** — 기계가 읽는
+receipt이므로 안내 문구를 넣지 않았고, 그 안의 "six-armed airframe" 서술은 이 문서로만 철회된다.
+(2026-09-11 2차 검증 정정: 앞선 판에는 두 파일 모두에 안내를 붙였다고 적혀 있었으나 사실이 아니었다.)

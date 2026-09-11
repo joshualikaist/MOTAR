@@ -10,8 +10,8 @@
 
 | 패널 파일 | GT 거리 | 무엇을 확인하나 |
 |---|---:|---|
-| `review_material_offset0/review_000901.jpg` | 17.9 m | **암 6개**가 보입니다. DJI Phantom·Mavic은 쿼드로터라 배제됩니다 |
-| `review_material_offset0/review_001051.jpg` | 30.7 m | 같은 6암 기체가 계속 보입니다 |
+| `review_material_offset0/review_000901.jpg` | 17.9 m | 굵은 팔 4개 + 가는 착륙 다리 2개 + 안테나 마스트. **자작기 양식** |
+| `review_material_offset0/review_001051.jpg` | 30.7 m | 901과 같은 기체가 계속 보입니다 |
 | `review_material_offset0/review_005251.jpg` | 61.4 m | 비행 후반에도 같은 기체입니다 |
 | `alignment_review/review_004937.jpg` | 61.5 m | 회전익 형상이 분해됩니다 |
 | `alignment_review/review_001605.jpg` | 82.3 m | 하늘 배경, 모션 블러가 있는 전형적 프레임 |

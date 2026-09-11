@@ -13,8 +13,11 @@ import argparse
 import json
 from pathlib import Path
 import statistics
+import subprocess
 import sys
 import time
+
+ROOT = Path(__file__).resolve().parents[1]
 
 REPEATS = 3
 WARMUP_ITERATIONS = 3
@@ -31,6 +34,11 @@ def parser():
     p.add_argument("--batches", type=int, nargs="+", default=list(BATCHES))
     p.add_argument("--resolutions", type=str, nargs="+", default=["%dx%d" % r for r in RESOLUTIONS])
     return p
+
+
+def tracked_tree_clean():
+    return subprocess.run(["git", "-C", str(ROOT), "diff", "--quiet"]).returncode == 0 and subprocess.run(
+        ["git", "-C", str(ROOT), "diff", "--cached", "--quiet"]).returncode == 0
 
 
 def parse_resolution(text):
@@ -66,6 +74,10 @@ def main(argv=None):
     args = parser().parse_args(argv)
     if args.output.exists():
         raise FileExistsError("Output already exists; choose a new result directory")
+    # The first R5 campaign recorded no commit and ran before this file was committed. A timing
+    # number nobody can tie to a source tree is not a result; refuse rather than repeat that.
+    if not tracked_tree_clean():
+        raise RuntimeError("R5 requires a committed, tracked-clean source tree")
     if any(name == "aerial_gym" or name.startswith("aerial_gym.") for name in sys.modules):
         raise RuntimeError("Run this standalone benchmark outside any aerial_gym process")
     resolutions = [parse_resolution(text) for text in args.resolutions]
@@ -132,6 +144,9 @@ def main(argv=None):
     receipt = {"status": "BENCHMARK_COMPLETE", "stage": "R5",
                "scope": "standalone renderer on a fixed box fixture; not a simulator, policy or training rate",
                "device": args.device, "seed": args.seed,
+               "git_commit": subprocess.check_output(
+                   ["git", "-C", str(ROOT), "rev-parse", "HEAD"], text=True).strip(),
+               "tracked_tree_clean": True,
                "protocol": {"repeats": REPEATS, "warmup_iterations": WARMUP_ITERATIONS,
                             "measured_iterations_per_repeat": MEASURED_ITERATIONS,
                             "arm_order": "alternated across repeats",

@@ -17209,9 +17209,9 @@ material 재배정으로는 고쳐지지 않으므로 **세 번째 픽스처는 
 **영상 좌표**로 적합한 것이라 그대로다. E3-S 6.2%, 추적 잡음 0.196 px, 재투영 5.6 px도 그대로다.
 
 정정 문서 `results/eth_ds5_intake_2026-09-10/CORRECTION_2026-09-11_rotor_count.md`.
-검수 지침 4종·README·상태 사이트·E3 계획·실행 계획을 고치고 검수 zip을 다시 만들었다. 날짜가 박힌
-기록(`alignment_queue.json`, `provisional_review_2026-09-10/README.md`)은 숫자를 고치지 않고
-안내만 붙였다. 발표 자료에는 이 주장이 없어 hash 고정 매니페스트는 건드리지 않았다.
+검수 지침 4종·README·상태 사이트·E3 계획·실행 계획을 고치고 검수 zip을 다시 만들었다.
+`provisional_review_2026-09-10/README.md`에는 숫자를 고치지 않고 안내만 붙였고,
+`alignment_queue.json`은 기계가 읽는 receipt이라 전혀 건드리지 않았다. 발표 자료에는 이 주장이 없어 hash 고정 매니페스트는 건드리지 않았다.
 
 ## 2026-09-11 — 2차 검증: 식별 근거 서술을 다시 고치고, R5 방법 단서를 보완
 
