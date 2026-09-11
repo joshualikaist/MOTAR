@@ -17290,3 +17290,32 @@ depth arm은 법선·face를 난수로 뒤섞어도 바이트 단위로 같은 �
 (f61123c → 8ae00e5 → R4 실행, f99b663 → 6ae50be → R4b 실행, 둘 다 ancestor 확인),
 검수 zip 14개 항목과 이미지 해시, 상태 사이트 태그 균형. 그리고 두 독립 run이 **바이트 단위로
 동일**하다는 것은 내가 주장한 것보다 강한 결과다.
+
+## 2026-09-11 — R3–R5 전체 재실행과 메모리 계측 교정
+
+사용자의 전체 재실행 요청에 따라 독립 일반 상자 렌더러만 GPU로 검증했다. detector/tracker/PPO의
+실제 실행이나 기존 태스크의 변경은 없다. 결과는
+`results/renderer_reverification_2026-09-11_1951/README.md`와 `summary.json`에 있다.
+
+- R3/R4/R4b 각각 2회 GPU 실행: 역사적 지표·배열 SHA exact 재현, 단계별 새 두 run.json 바이트 동일.
+  R3 PASS, R4/R4b C FAIL 그대로다. 원인이나 기준 무효가 확정됐다는 서술은 철회했다.
+- R4/R4b 각각 추가 GPU 렌더 후 NumPy 독립 재계산: 4 arm × 8장면의 scalar 지표 차이 최대
+  4.54e-16 미만. 기준을 변경하지 않았다.
+- R5 기존 9+2셀과 128 단독 셀 재실행. 합산 비율은 128장면에서 1.187986이다.
+  64→128 연속 실행의 Torch peak 1,830.528 MiB와 128 단독의 1,601.134 MiB 차이는 이전
+  64장면 G-buffer의 229.394531 MiB와 exact 일치했다. 숫자의 반복 재현만으로 올바른 계측이 되지 않는다.
+- 새 보완 경로는 셀별 프로세스에서 전체 `shade(renderer.render())`를 직접 측정했다(11셀 전부).
+  128장면은 flat 31.210 / Lambertian 37.380 ms, 비율 1.197689. 어느 것도 일반적 상한이 아니다.
+  GPU/process VRAM 표본, utilization, Warp/driver/runtime, 원시 시간과 mean/P50/P95를 보존했다.
+  작은 셀은 이상치 영향이 크며 주기적인 nvidia-smi 계측과 desktop 부하를 제거하지 않았다.
+- 기존 실행은 tracked-clean 7c62dbf. 새 보완 도구/규약은 미커밋임을 명시하고 실제 전체 소스
+  SHA와 HEAD 추적/일치 여부를 기록했다. 실행 전후 및 셀 간 source manifest가 같다.
+  기존 renderer/판정 구현과 역사적 JSON은 수정하지 않았다. 기존 R5 runner도 재현용으로 보존했다.
+- CPU renderer 테스트 67개 통과. 전체 unittest는 1,415개 실행 / 1,411 PASS / 4 skip이다.
+  최초 전체 실행은 내가 CUDA_VISIBLE_DEVICES를 비워 CUDA import 계약에서 1 failure/1 error를 냈다.
+  기존 코드 변경 없이 GPU-visible 환경에서 해소했다. 신규 계측 테스트 10개를 별도로 추가했다.
+- R3 README의 잘못된 전체 commit SHA, R2의 오래된 상태표, R4의 원인 단정과 밝기 통제 주장,
+  결과 문서/계획서의 R5 상한 주장을 교정했다. 위 직전 작업 기록의 "메시 축 상한" 해석도 철회한다.
+
+추가 background/articulated scene 연구와 학습은 이번 재검증에 포함하지 않는다.
+커밋·푸시는 하지 않았다. 원자료는 새 root에 보존했으며 삭제/덮어쓰기는 없다.
