@@ -320,8 +320,20 @@ class IsolationTest(unittest.TestCase):
                                     "trimesh", "urdfpy"})
 
     def test_importing_the_loader_does_not_import_the_simulator(self):
-        self.assertFalse([name for name in sys.modules
-                          if name == "aerial_gym" or name.startswith("aerial_gym.")])
+        """Check a fresh interpreter, not this one.
+
+        Asserting on sys.modules here only says whether some other test in the same run imported
+        the simulator, which is not a property of this loader at all. A subprocess answers the
+        question that was meant.
+        """
+        import subprocess
+        script = ("import sys; sys.path.insert(0, %r);"
+                  "from renderer_validation.urdf_asset import load_urdf_asset;"
+                  "print([n for n in sys.modules if n == 'aerial_gym' or n.startswith('aerial_gym.')])"
+                  % str(ROOT / "tools"))
+        result = subprocess.run([sys.executable, "-c", script], capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.strip(), "[]")
 
 
 if __name__ == "__main__":
