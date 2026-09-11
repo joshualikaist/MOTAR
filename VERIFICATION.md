@@ -4,9 +4,38 @@
 [`RESEARCH_PLAN.md`](RESEARCH_PLAN.md), 날짜별 기록은 [`WORKLOG.md`](WORKLOG.md),
 명령어는 [`OPERATIONS.md`](OPERATIONS.md), 라이브 지표는 [`docs/status/`](docs/status/)를 본다.
 
-> 기준일: 2026-09-09
+> 현재 상태 기준일: 2026-09-12. 아래 날짜별 실행 계약은 역사 기록이며 새 실행 권한이 아니다.
 
-## 2026-09-08 현재 실행 authority — 실사 perception 트랙
+## 현재 주장과 근거 — 실행 완료와 가설 판정을 분리
+
+| 연구 항목 | 실행 상태 | 현재 판정·해석 | 근거 |
+|---|---|---|---|
+| A: 기존 필터 진단·R-C 반복 | COMPLETE | C3 동반학습 설명 WITHDRAWN; 형식적 안전 보장 아님 | [R-C](results/navrl_grid_r2_d4_trainseed_rep/README.md) |
+| B: P3–P10·S1·S4 | COMPLETE | 측정한 데이터와 동결 계보에 한정; 실제 identity·실기 성능 미확립 | [P4/P5](results/perception_joint_detector_p4_p5_2026-09-08/README.md), [S4](results/perception_s4_2026-09-09/README.md) |
+| B: P10 학습 시드 반복 | COMPLETE | INCONCLUSIVE; 재적응 순이득 미확립 | [반복 결과](results/perception_p10_seed_replication_2026-09-10/README.md) |
+| C: E3-S | COMPLETE | SIZE_RANGE_USABLE; 단일 비행의 크기 기반 거리 추정만 측정 | [E3-S](results/eth_ds5_e3s_2026-09-10/README.md) |
+| C: E3-P 신뢰성 검사 | COMPLETE | ATTITUDE_NOT_RELIABLE; E3-P 원인 분해는 BLOCKED | [최신 검사](results/eth_ds5_e3p_reliability_2026-09-10/README.md) |
+| D: R4/R4b | COMPLETE | FAIL 유지; 기준 자체의 무효나 실패 원인을 입증하지 않음 | [재검증](results/renderer_reverification_2026-09-11_1951/README.md) |
+| D: 독립 renderer·URDF·배경 검증 | COMPLETE | TECHNICAL_PASS; 인지 shortcut 감소는 미측정 | [배경](results/renderer_background_v1_clean_2026-09-11/README.md), [URDF](results/renderer_urdf_smoke_2026-09-11/README.md) |
+
+E3-S의 6.2%는 9개 15초 블록의 **블록별 절대 상대 거리 오차 중앙값의 중앙값**이다.
+3,107프레임·약 31–108 m·한 비행이며 GT box가 아닌 dark-pixel-count 크기 측정이다.
+0.196 px는 궤적 매끄러움 잔차로, 측정 정확도의 상한이 아니다. 자세 효과는 분해하지 않았다.
+
+### Test 열람 이력
+
+| 데이터·분할 | 열람 상태 | 허용되는 설명 |
+|---|---|---|
+| Det-Fly 020 joint detector test | P3 후속 평가에서 OPENED | checkpoint 동결 후 평가; 학습에서 제외됨과 미열람은 다른 상태 |
+| NPS test 8 clips | P4/P5에서 OPENED, S4에서 동결 selector 최종 평가 | never-observed holdout 아님; test 재튜닝 금지 |
+| NPS validation | 모델 선택·P8 보정에 사용 | 독립 test로 인용 금지 |
+| ETH ds5 E3-S 블록 | 탐색에 사용했던 같은 비행의 held-out blocks | 독립 새 비행 test 아님; 블록 경계 embargo 없음 |
+
+이 표가 모든 외부 분할의 미열람 상태를 보증하지 않는다. 추가 분할은 개별 receipt로 확인한다.
+과거 08월의 Track A/B는 다른 명명 체계다. 문자 대신 결과 경로와 계보로 연결한다.
+현재 승인 범위는 저장소 교정·독립 renderer 재현이며, 새 policy 학습·제어 실험을 열지 않는다.
+
+## 역사 기록: 2026-09-08 실행 authority — 실사 perception 트랙
 
 **P7e NOT SELECTED / streaming S1 COMPLETE.** crop verifier utility 0.52352이므로
 P7c v2를 유지한다. 올바른 runtime에서 RGB parity를 해소했고, CPU flow와 GPU detector를 겹쳤다.
@@ -14,13 +43,13 @@ validation 2,296프레임을 직렬·겹침 각 3회 실행해 candidate/rank/mo
 불일치가 0임을 확인했다. decode 포함 3회 평균은 14.72 → 22.48 FPS다.
 **P8 측정도 완료**했다. 단일-GT 1,310프레임에서 크기별 오차·시간 전이·지연을 산출했고,
 다중-GT 986개는 조건부 모델에서 제외했다. <8 px 및 >=64 px 구간은 지원 부족이다.
-다음 실행은 P9 주입기와 적합도 검증이며 test, PPO, 실제 카메라는 이번 단계에서 열지 않는다.
+당시 다음 단계였던 P9·P10·S4는 이후 완료됐다. 현재 판정은 위 표와 해당 결과를 따른다.
 [P8 결과·지원 범위](results/perception_p8_2026-09-09/README.md).
 [S1 결과·hash](results/perception_streaming_overlap_s1_2026-09-09/README.md).
 
 후속 **P7b/P7c COMPLETE**: 현재 선택은 corrected P7c v2 (utility 0.68554)다.
 P7c v1은 좌표 혼용 오류로 무효이며 아래 기존 P6/P7 선택은 역사 기록이다.
-재로드 검증 PASS; test 미실행. 실제 identity 평가용 데이터는 아직 없다.
+재로드 검증 PASS; 당시 미실행이던 최종 selector test는 S4에서 완료됐다. 실제 identity 평가는 미확립이다.
 [결과·hash](results/perception_p7bc_2026-09-08/README.md),
 [P7d 데이터 경계](docs/plans/perception_p7d_identity_boundary_2026-09-08.md).
 
@@ -35,9 +64,7 @@ P7c v1은 좌표 혼용 오류로 무효이며 아래 기존 P6/P7 선택은 역
   Transformer T=16을 학습했다. validation utility는 CNN-only `0.6655`, KF `0.2639`, GRU `0.6315`,
   Transformer `0.6725`여서 Transformer를 선택했다. 차이는 작고 7 validation clips뿐이므로 test
   우월성 주장이 아니다.
-- **다음 실행은 선택 Transformer의 NPS test 1회 또는 P8 준비다.** test를 실행하면 checkpoint,
-  candidate, threshold, metric을 변경하지 않는다. 사용자가 어렵다고 한 실제 metadata 없이 가능한
-  miss/FP/reacquisition/latency부터 P8 계약을 만들 수 있지만 ID-switch·degree bearing·range는 보류한다.
+- **당시 다음 단계였던 P8·S4는 완료됐다.** 동결 test 결과를 재튜닝에 쓰지 않는다.
 - 원 track identity, designated target ID, camera intrinsic이 없으므로 실제 ID switch/FTLR와 degree
   bearing error는 현재 주장하지 않는다. P8 range/error model은 별도 실제 metadata 확보 전까지 제한된다.
 
@@ -47,7 +74,7 @@ P7c v1은 좌표 혼용 오류로 무효이며 아래 기존 P6/P7 선택은 역
 [`P6/P7 계약`](docs/plans/perception_p6_p7_execution_2026-09-08.md),
 [`P6/P7 결과·hash`](results/perception_temporal_p6_p7_2026-09-08/README.md).
 
-## 2026-09-07 현재 실행 authority — 거버너 기하 트랙
+## 역사 기록: 2026-09-07 실행 authority — 거버너 기하 트랙
 
 **A7의 M2 결함은 수정·커밋됐고, 그 뒤 A7·A8·D1′·D4·L1·L1b·R-A·R-B가 모두 실행됐다.**
 아래 2026-09-05 절은 착수 전 기록으로 보존한다. 날짜별 수치는 [`WORKLOG.md`](WORKLOG.md),
@@ -66,10 +93,8 @@ P7c v1은 좌표 혼용 오류로 무효이며 아래 기존 P6/P7 선택은 역
   −0.23 [−0.65, +0.20]이며 다른 밀도는 "추가 이득이 검출되지 않았다"로만 쓴다(동등성 미주장).
 - **확정 — 폭은 기하에 따라 부호가 반대다.** 원호 0.45 → 1.2 m는 205 bars에서 crash −5.60 pp와
   capture +4.44 pp를 동시에 준다. 같은 폭의 직선 회랑은 capture가 세 시드에서 9.7 / 10.6 / 10.1 %로 무너진다.
-- **미해결 — 동반학습 주장의 학습 시드가 1개다.** D4/A8은 학습 루프의 필터만 바꾼 대조지만 seed 197
-  하나뿐이라, "동반학습이 법칙 이득을 지운다"와 "그 특정 1,000 epoch가 그랬다"를 분리하지 못한다.
-  **다음 실행은 R-C**: `A8_MODE=off|riskcap A8_SEED=233|239`로 4회 학습(약 3.3 h) 후 8 cell 평가.
-  2/2 재현이면 C3를 "동반학습"으로, 0/2면 철회한다.
+- **후속 완료 — R-C에서 C3 철회.** D4의 단일 학습 시드 관찰은 추가 시드 233·239에서
+  사전등록 예측을 0/2로 재현하지 못했다. [R-C 결과](results/navrl_grid_r2_d4_trainseed_rep/README.md).
 - **소스 무결성**: 결합에 쓴 셀은 두 동결 트리에서 나왔으나(`b51c3d2f` / `3aa30cd8`), seed 523의
   205 bars 원호 셀을 새 트리에서 재실행해 **기록된 outcome 개수와 집계 텔레메트리가 일치**함을 확인했다
   (306/1699/44 of 2049). 궤적·난수 상태·텐서 해시를 비교한 것이 아니므로 "bit-identical"이라 쓰지 않으며,

@@ -9,9 +9,14 @@ E3-P remains **BLOCKED**. Nothing here says how much of the error is attitude.
 ## What was measured
 
 3220 tracked measurements of drone0 in cam0, 3107 of them included, spanning 30.7 to 108.4 m over
-9 blocks of 15 s. Image-measurement noise 0.196 px. The estimator is `Z = f · W / s` with
+9 blocks of 15 s. The trajectory-smoothness residual is 0.196 px, not a bound on measurement
+accuracy. The estimator is `Z = f · W / s` with
 `s = sqrt(dark pixel count)`, `f = 1545.7 px`, and `W` fitted by median on every block except the one
 being evaluated, so every evaluated frame is out of sample.
+
+This is block-held-out fitting within a previously explored flight, not an independent-flight test.
+There is no temporal embargo at block boundaries; neighbouring boundary frames may belong to fitting
+and evaluation blocks. Frame count is not the number of independent experimental repetitions.
 
 ## Gates
 

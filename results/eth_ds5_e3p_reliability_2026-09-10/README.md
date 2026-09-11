@@ -29,7 +29,8 @@ Held-out correlation between the attitude-predicted and the measured horizontal 
 **Authenticity passed at every window, in both directions, by a wide margin.** Even the worst cell,
 h = 2 late→early, scores 0.163 against a null 99th percentile of 0.043. Permuting the attitude rows
 against the frames destroys the signal completely; the true assignment does not. The published attitude
-is genuinely tied to this aircraft's motion, and is not mislabelled, misaligned or borrowed.
+contains frame-associated signal under this diagnostic. This does not exclude all misalignment,
+misidentification or measurement error, and does not certify attitude accuracy.
 
 **The thrust gain is remarkably stable**: 0.697 to 0.753 across all twelve cells, and the drag
 coefficient is negative in all twelve. A gain near 0.73 rather than 1.0 means the tilt implies more
@@ -40,7 +41,8 @@ horizontal acceleration than is measured, consistently.
 Only the correlation floor of 0.35 fails, and only at the two shortest windows. Correlation rises
 monotonically with window length, from 0.24 at h = 2 to 0.89 at h = 9. That is the signature of noise in
 the **target** variable being averaged down: differentiating position twice over 0.5 s is noisy, and the
-noise sits in the acceleration estimate, not in the attitude.
+noise may affect the acceleration estimate. This pattern alone does not localise all error to
+acceleration or exclude attitude error.
 
 So the natural reading is that the short windows measure the differentiator, not the attitude. **The
 verdict still stands.** The window sweep was preregistered as all-or-nothing precisely so that a window
@@ -54,8 +56,9 @@ and then declaring a pass is the failure mode the sweep was designed to prevent.
 Having now seen these numbers, no honest preregistration of a different correlation floor for this test
 on this dataset is possible. The design choice is spent. What remains available is **independent
 evidence**: a measurement that does not reuse the acceleration test at all, for instance whether the
-airframe's projected orientation in the image tracks the published attitude at close range, where the six
-arms are resolved. That can still be preregistered cleanly because it has not been looked at.
+airframe's projected orientation in the image tracks the published attitude at close range.
+The earlier six-arm identification cue is WITHDRAWN: all three aircraft are quadrotors.
+This describes a possible independent evidence source, not approval for another test on these data.
 
 ## What this would have certified, and what it never could
 

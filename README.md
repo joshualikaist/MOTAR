@@ -28,7 +28,7 @@ Previous 2026-09-10 summary cards remain archived:
 
 ## Status · 2026-09-12
 
-Three research tracks are at different stages and have distinct evidence boundaries.
+Four research tracks are at different stages and have distinct evidence boundaries.
 
 | Track | Goal | State |
 |---|---|---|
@@ -54,14 +54,12 @@ Three research tracks are at different stages and have distinct evidence boundar
   from size. That condition is preregistered before the experiment, not after it.
 - **A renderer criterion failed twice and is kept as a failure.** Comparing appearance models on
   a two-box fixture rejected "shading is not depth alone" at R² 0.586, and again at 0.582 after
-  the fixture changed. Neither threshold was moved. What failed was the criterion: the fixture
-  shows four surfaces from every direction and the model paints one colour per surface, so a
-  regression over 36,242 pixels is a four-point regression. At the surface unit the failing
-  scene reads 0.997. A background scene with 60 to 67 visible triangles now exists for the
-  redesign, and it passes its own counterfactual checks.
-- **The shading upgrade costs 0.66 ms and 184 MiB at the resolution training actually uses.**
+  the fixture changed. Neither threshold was moved. The limited fixture does not prove criterion
+  invalidity or identify the cause of failure. Pixels and faces are not independent scene repeats.
+  A separate background scene passes engineering checks, not a replacement statistical test.
+- **The measured shading-time increment is 0.66 ms; Torch peak allocated is 183.9 MiB.**
   The earlier figures were measured at 480×270; the task defaults to 160×90, nine times fewer
-  pixels. Memory is not the constraint it appeared to be.
+  pixels. This is not incremental shading memory or total process VRAM; full-application cost is unmeasured.
 - **A full-repository audit found and fixed defects of one recurring shape.** A value validated
   carefully in one module, caught by a broad handler in another, replaced with something
   plausible: a training fail-stop that could skip for days with no output, an observation width
@@ -82,7 +80,7 @@ Three research tracks are at different stages and have distinct evidence boundar
   quadrotors. Reviewing the frame showed four arms and landing gear: all three are quadrotors and
   the count separates nothing. Identity now rests on apparent size tracking ground-truth range to
   6.2% held out, which needs no camera orientation, and on airframe style at close range.
-- **A detector trained on one dataset failed on another because of target SIZE, not domain.**
+- **Target scale was a major contributor to the measured cross-dataset failure.**
   Zero-shot from NPS-Drones to Det-Fly gave AP@0.5 of `0.0010` at native 4K; matching the target
   scale raised it to `0.1126`, a gap 111× the native value. Joint multi-scale training then took
   native AP to `0.7166`.
@@ -444,8 +442,8 @@ superiority claim. **The NPS test set was opened for the KF rejection and once m
 (S4), for the frozen P7c v2 selector**: utility **0.4701** on 1,725 test frames (hit 59.19%, false
 lock among selected 17.06%, no-lock 28.64%) against 0.6855 on validation. Different videos, so a
 generalization warning rather than a paired effect; nothing was retuned after seeing it.
-[S4 report](results/perception_s4_2026-09-09/README.md). The joint dataset's test split remains
-sealed and absent from the training YAML.
+[S4 report](results/perception_s4_2026-09-09/README.md). Det-Fly `020` was also opened for the frozen joint-detector evaluation.
+Exclusion from training does not mean never evaluated; see [test access history](VERIFICATION.md).
 
 The `appearance_64D` field is a parameter-free RGB grid/histogram baseline, not learned ReID. With
 no ground-truth track IDs and no camera intrinsics, this project does not report real ID switches,
@@ -561,7 +559,7 @@ top of it would make our code AGPL as well. That constrains detector architectur
 | NPS→Det-Fly zero-shot (P3) | `SIZE-DOMINANT ZERO-SHOT FAILURE`; native AP@0.5 **0.0010**, ÷4 **0.1126** | 13,271 images, frozen checkpoint |
 | Joint multi-scale detector (P3-F) | validation mAP50 **0.6917**; Det-Fly native AP@0.5 **0.7166** | checkpoint frozen before the test was opened |
 | Top-K candidates (P4) | **PASS** | schema, semantics and hashes verified on val and test |
-| Temporal association (P5–P7c) | KF **REJECTED**; P7c v2 selected at utility **0.68554** on validation; **0.4701** on the sealed NPS test (S4, opened once) | test is 8 different videos; generalization warning, no retuning |
+| Temporal association (P5–P7c) | KF **REJECTED**; P7c v2 selected at utility **0.68554** on validation; **0.4701** on NPS test in S4 (previously used in P4/P5) | test is 8 different videos; generalization warning, no retuning |
 | Streaming pipeline | RGB parity **PASS** after environment fix; flow/detector overlap (S1) **14.72 → 22.48 FPS** with all 2,296 frames' ranks, motion bytes and metrics identical | not a camera deployment |
 | Error model + injector (P8, P9) | size-conditioned offsets, 3-state Markov, censored bursts, latency; injector passed the preregistered fit gate on v3 | 1,310 single-GT validation frames; <8 px and ≥64 px unsupported |
 | Readaptation under measured error (P10) | error costs frozen policy **−4.57 pp** capture; readapted − frozen +1.41 pp `[−0.38, +3.21]` | 1 training seed, 2 eval seeds, ~2,050 ep/cell; descriptive |
@@ -573,10 +571,10 @@ top of it would make our code AGPL as well. That constrains detector architectur
 | Hardware/software gate | software pipeline PASS · `SYNTHETIC_ONLY` | not a real-flight result |
 | Size→range on real footage (E3-S) | `SIZE_RANGE_USABLE`; held-out median relative range error **6.2%**, spread 9.3 pp | 3,107 frames, 31–108 m, one flight, one camera; range and time confounded, so per-bin bias is not a range effect |
 | ETH ds5 camera model | published calibration correct for **its own** images (1.245 px), but **5.6 px** against the tracked drone; no hypothesis survives held-out testing | absolute-geometry uses fail-closed; −120 ms offset unexplained |
-| Attitude gate (E3-P) | `E3P_GATE_BLOCKED` on attitude reliability alone; convention identified from data at 17.7° with a 16.3° margin | aspect and range separable (r = 0.21); no third variant of the failing check was run |
-| Appearance models (R4, R4b) | criterion C **FAIL, kept**: R² 0.586 then 0.582, no threshold moved | the fixture shows four surfaces, so a 36,242-pixel regression is a four-point one; 0.997 at the surface unit |
+| Attitude gate (E3-P) | `E3P_GATE_BLOCKED` on attitude reliability alone; convention identified from data at 17.7° with a 16.3° margin | third reliability check executed: ATTITUDE_NOT_RELIABLE; decomposition remains BLOCKED |
+| Appearance models (R4, R4b) | criterion C **FAIL, kept**: R² 0.586 then 0.582, no threshold moved | limited fixture; neither criterion invalidity nor independent face-level replication established |
 | Background scene v1 | `TECHNICAL_PASS`; two independent processes byte-identical | 60–67 visible triangles against the old fixture's 8; counterfactual checks, not statistics |
-| Shading cost (R5) | **+0.66 ms** per iteration and **183.9 MiB** at 128 scenes, 160×90 | the resolution training uses; the 480×270 figure was nine times more pixels |
+| Shading cost (R5) | **+0.66 ms** per iteration; **183.9 MiB Torch peak allocated** at 128 scenes, 160×90 | the resolution training uses; the 480×270 figure was nine times more pixels |
 | URDF asset loading | library and independent parser agree, **0 discrepancies** on five assets | link order, world transforms, geometry parameters, material colours; tessellation is not compared |
 | Target silhouette (V1) | projected area **0.587×** the box across 21 directions; width −0.16% | opt-in; inertial and collision carried over byte for byte, both simulator extractors return the same values |
 
@@ -654,7 +652,8 @@ python tools/run_navrl_filter_grid.py docs/specs/<spec>.json results/<root>
 python tools/summarize_navrl_grid.py results/<root>
 ```
 
-Checkpoints are excluded from Git. Preserve the checkpoint, its SHA-256, `aerial_run/`, the
+NavRL research-run checkpoints are normally excluded from Git; upstream example weights and small
+project detector artifacts are exceptions. Preserve the checkpoint, its SHA-256, `aerial_run/`, the
 summaries, the evaluation receipt and the source manifest together. Full installation, transfer and
 troubleshooting instructions are in [OPERATIONS.md](OPERATIONS.md).
 

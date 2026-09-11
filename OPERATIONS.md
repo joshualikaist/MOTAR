@@ -2,9 +2,17 @@
 
 이 문서는 “어떤 명령을 복사해야 하는가”와 “결과를 어떻게 잃지 않는가”만 다룹니다. 연구 가설과
 검증 gate와 다음 실험은 [`VERIFICATION.md`](VERIFICATION.md), charter는 [`RESEARCH_PLAN.md`](RESEARCH_PLAN.md),
-최신 요약은 [`README.md`](README.md), 날짜별 기록은 [`WORKLOG.md`](WORKLOG.md)를 보세요.
+프로젝트 입구는 [`README.md`](README.md), 날짜별 기록은 [`WORKLOG.md`](WORKLOG.md)를 보세요.
 
-> 기준일: 2026-09-01
+## 현재 운영 상태 — 2026-09-12
+
+P9·P10·S4·R-C·P10 시드 반복은 완료됐다. P10 반복은 INCONCLUSIVE, C3는 WITHDRAWN,
+E3-P는 ATTITUDE_NOT_RELIABLE 검사 후 BLOCKED다. 현재 근거는 [VERIFICATION](VERIFICATION.md).
+아래 날짜별 launcher는 **소비된 실행 계약의 보존 기록**이며 재실행 지시가 아니다.
+현재 작업은 문서·재현성·공개 배포 정리와 정책에서 분리된 renderer smoke만 포함한다.
+새 학습·통합 제어 실험은 이 문서 개편으로 승인되지 않는다.
+
+> 아래 절의 역사적 기준일: 2026-09-01
 >
 > Track A는 exact BOM·calibration·210개 sensor
 > trial·real-log replay를
@@ -31,8 +39,7 @@ cd /home/fair/workspaces/aerial_gym_ws/.codex_worktrees/braking_route_v3
 ```
 
 기계 판독 계약은 [`docs/research_authority_2026-08-26.json`](docs/research_authority_2026-08-26.json)이다.
-matched-spawn receipt/pilot 권한은 소비됐고, 현재 software 예외는 아래 route-off curriculum
-1회뿐이다.
+matched-spawn receipt/pilot과 route-off curriculum 권한은 모두 소비됐다.
 
 ## Corrected non-overlap route-off learning smoke (1회)
 
@@ -63,10 +70,13 @@ root를 강제한다. 판정은
 ```bash
 cd /home/fair/workspaces/aerial_gym_ws/.codex_worktrees/braking_route_v3
 /home/fair/miniconda3/envs/aerialgym/bin/python tools/check_research_authority.py --json
-# 2026-09-10부터 아래 P10 시드 재현만 허가됩니다. 그 외 학습/평가는 여전히 미허가입니다.
+# 과거 실행의 provenance 확인용이다. P10 시드 반복도 이미 완료됐다.
 ```
 
-## 허가된 실행 — P10 시드 재현 (2026-09-10)
+## 완료된 실행 기록 — P10 시드 재현 (2026-09-10)
+
+두 새 학습 시드와 평가가 완료됐으며 판정은 INCONCLUSIVE다.
+[결과](results/perception_p10_seed_replication_2026-09-10/README.md). 아래 명령은 당시 기록이다.
 
 계약: [`preregistration_p10_seed_replication_2026-09-10.md`](docs/preregistration_p10_seed_replication_2026-09-10.md).
 학습 시드 857, 863 각각 1,000 epoch(약 1시간), 이어서 캠페인당 4셀 × 평가 시드 2개(약 40분).
@@ -79,7 +89,6 @@ P10_SEED=857 nohup bash train_navrl_v2_p10_empirical_readapt.sh   > train_sessio
 
 TensorBoard는 `aerial_gym/rl_training/rl_games/runs`를 logdir으로 포트 **6009**에 띄웁니다.
 학습·평가가 도는 동안 `aerial_gym/`, `tools/`, `resources/robots`는 동결 경로입니다.
-```
 
 fresh seed 911 curriculum은 이미 소비됐다. 밀도 70→205/step 15/dwell 1,000, route off,
 `U[0.3,1.25] m/s`, 비중첩 surface 0.45 m. 학습 계약은
