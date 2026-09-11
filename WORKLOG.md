@@ -17102,3 +17102,41 @@ E3-P는 gate 뒤 BLOCKED임을 명시했다. 알고리즘·실험 결과·status
 PNG 해상도, 링크, ZIP/manifest 해시, git diff --check 통과.
 기존 test_status_site.js의 status snapshot 기대값 불일치(RESULT_UNAVAILABLE_OR_MALFORMED와
 PASS_32_CELL_INTEGRITY 관련)는 그대로 남아 있으며 이번 그림 변경으로 해결됐다고 주장하지 않는다.
+
+## 2026-09-11 — R1 독립 renderer 정적 감사 산출물
+
+사용자의 "R1 구현"을 앞서 정의한 현재 rendering path 조사 단계의 산출물 작성으로 한정했다.
+`docs/renderer_r1_audit_2026-09-11.md`에 요청 항목 10개, class/function·buffer 흐름,
+material 전달 경계, package import 경계, 독립 scene의 재사용 후보를 기록하고 docs 색인에 연결했다.
+기준은 `17e4a82f185787c080ef8fea52f3c4cc4870a580`; 코드·자산 23개 SHA를 별도 목록에 남겼다.
+
+중요한 확인: normal camera는 depth를 출력하지 않으며 face index는 material/instance ID가 아니다.
+Warp GPU 경로에는 명시적인 material table 전달이 없고, package 일반 import는 task 등록을 동반한다.
+native RGB와 normal debug visualization, task-owned pseudo-RGB를 서로 다른 경로로 구분했다.
+
+R1 상태는 `STATIC_AUDIT_COMPLETE`, runtime smoke는 `NOT_RUN`, R2–R5는 `NOT_STARTED`다.
+기존 소스·자산·실험 결과·appearance overhaul 계획은 변경하지 않았고 simulator/GPU/task/policy는
+실행하지 않았다. 이 문서는 shading 구현이나 성능 검증 완료를 의미하지 않는다.
+
+검증: SHA 23개가 현재 파일 및 기준 커밋 양쪽에서 일치, 보고서 링크 24개 확인,
+범용 kernel AST signature/import 정적 검사, 상태값·색인 연결·git diff --check 통과.
+렌더링·perception·policy 테스트는 실행하지 않았다.
+
+## 2026-09-11 — R2 독립 shading prototype 구현, 실제 실행은 인수인계
+
+사용자가 R2 구현만 요청하고 실행·판정을 별도로 맡기기로 했다. `tools/renderer_validation/`에
+일반 triangle scene·camera·sequence-fixed material/light 계약, SHA-pinned 범용 Warp kernel 로더,
+두-pass G-buffer, flat/Lambertian shading을 추가했다. 초기 fixture는 일반 상자 두 개이고
+기존 UAV asset, renderer/task/perception/policy 코드는 변경하거나 실행하지 않았다.
+
+`tools/run_renderer_validation.py`는 NPZ의 RGB 3채널과 별도 debug buffer, source/runtime/입력/hash
+receipt만 생성한다. output 덮어쓰기·소스 drift·ray pass 불일치를 거부하고 학습/실험 판정은 하지 않는다.
+정상 실행 상태도 `RENDERED_UNASSESSED`이며 실패는 `FAILED_INCOMPLETE`로 남긴다.
+
+`docs/renderer_r2_prototype_2026-09-11.md`에 API·출력·미검증 항목과 Sol 인수인계를 기록했다.
+상태는 `IMPLEMENTED_RUNTIME_UNVERIFIED`다. CPU 단위 테스트는 fake Warp/직접 구성한 tensor로만
+수행했으며 실제 Warp ray casting, GPU smoke, R3–R5 실험·benchmark·학습은 실행하지 않았다.
+
+검증 결과: CPU/모의 backend 단위 테스트 39개 통과(CUDA 비노출), 신규 Python 6개 AST 파싱,
+R2 문서 링크 6개와 git diff --check 통과. R1 근거 파일 23개의 SHA도 그대로 일치한다.
+이번 테스트의 NPZ/receipt 쓰기는 임시 디렉터리의 모의 데이터에 한정했고 실제 렌더링 산출물은 없다.

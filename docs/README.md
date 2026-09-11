@@ -7,6 +7,11 @@
 
 ## 먼저 읽을 것
 
+독립 일반 물체 렌더러: [R1 정적 경로 감사](renderer_r1_audit_2026-09-11.md) ·
+[근거 소스 SHA-256](renderer_r1_audit_2026-09-11.sha256).
+R1 문서화 완료 · [R2 독립 shading prototype / 인수인계](renderer_r2_prototype_2026-09-11.md).
+R2 코드는 구현했으며 실제 Warp/GPU 실행·실험 판정은 미실행입니다. 기존 perception·policy 경로와 분리합니다.
+
 논문형 블록 다이어그램(2026-09-11): [README 그림 9개 전체](assets/paper/) ·
 [SVG + 4K PNG + 벡터 PDF ZIP](assets/paper/motar-paper-block-diagrams.zip).
 
