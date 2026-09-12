@@ -37,7 +37,7 @@
       </div>
       <div class="status-line">
         <span class="status-dot" aria-hidden="true"></span>
-        <strong>자산 외형과 검출기 입력을 구분합니다 · 기존 측정의 근거 범위 교정</strong><span>독립 프로토타입의 면적비는 <strong>0.587</strong>이지만, 기존 simulator probe의 저장된 픽셀 수 비는 3,840쌍 전부 <strong>1.000</strong>입니다. 픽셀 수 일치는 영상·전체 궤적 동일성의 증명이 아닙니다. v3는 옵트인이고 기존 one-link 계약과 불일치합니다. <strong>R4·R4b는 기준 C에서 FAIL로 보존</strong>하며, <strong>기준 자체가 무효라는 증거는 아닙니다</strong>. 배경 검증은 <code>TECHNICAL_PASS</code>, shortcut 감소는 미측정입니다. <a href="../../results/target_appearance_in_sim_2026-09-12/AUDIT.md">원자료 감사</a> · 2026-09-12</span>
+        <strong>자산 외형과 검출기 입력을 구분합니다 · 기존 측정의 근거 범위 교정</strong><span>독립 프로토타입의 면적비는 <strong>0.587</strong>이지만, 기존 simulator probe의 저장된 픽셀 수 비는 3,840쌍 전부 <strong>1.000</strong>입니다. 픽셀 수 일치는 영상·전체 궤적 동일성의 증명이 아닙니다. v3는 옵트인이며 one-link 테스트 충돌은 5cea0e4에서 해소됐습니다. <strong>R4·R4b는 기준 C에서 FAIL로 보존</strong>하며, <strong>기준 자체가 무효라는 증거는 아닙니다</strong>. 배경 검증은 <code>TECHNICAL_PASS</code>, shortcut 감소는 미측정입니다. <a href="../../results/target_appearance_in_sim_2026-09-12/AUDIT.md">원자료 감사</a> · 2026-09-12</span>
       </div>
     </section>
 
@@ -450,15 +450,17 @@
               <td><strong>TECHNICAL_PASS</strong></td></tr>
           <tr><td><strong>V1</strong> 표적 실루엣</td>
               <td>독립 프로토타입 면적비 0.587; 기존 simulator probe의 저장된 픽셀 수 비 3,840쌍 모두 1.000. 현재 detector foreground는 해당 visual 실루엣이 아님</td>
-              <td><strong>PARTIAL_EVIDENCE</strong><br>자산/테스트 CONTRACT_MISMATCH</td></tr>
+              <td><strong>PARTIAL_EVIDENCE</strong><br>테스트만 TEST_CONTRACT_RECONCILED</td></tr>
         </tbody>
       </table></div>
 
       <h3>물리 기하 추출기와 visual 로더는 다른 경로입니다</h3>
       <p>검사한 물리 기하 추출기 두 곳은 <code>collision</code>을 읽지만,
         <code>warp_asset.py</code>는 visual mesh도 읽습니다. 두 추출기의 결과와 base_link 관성·충돌
-        보존이 전체 시뮬레이션 동일성을 증명하지는 않습니다. v3는 13 links로 변경됐고 기존 one-link
-        계약/테스트와 불일치합니다. 기본값은 v2이며 통합 검증 완료로 표시하지 않습니다.</p>
+        보존이 전체 시뮬레이션 동일성을 증명하지는 않습니다. v3는 13 links로 변경됐으며 과거
+        CONTRACT_MISMATCH는 5cea0e4의 테스트 수정으로 해소됐습니다. ef59832에서 1,533개 실행,
+        실패·오류 0, skip 4를 재확인했습니다. 기본값은 v2이며 통합 검증 완료로 표시하지 않습니다.
+        <a href="../repository_followup_2026-09-12.md">후속 검사와 한계</a></p>
 
       <h3>0.587과 1.000 &mdash; 서로 다른 입력 경로의 결과입니다</h3>
       <p><strong>독립 프로토타입에서만</strong> 21개 시선의 면적비 중앙값 0.587(약 41% 감소)을

@@ -4,6 +4,11 @@
 새 simulator 실행, 학습, 제어 변경 없이 기존 JSON과 소스만 검사했다.
 판정은 **PARTIAL_EVIDENCE**이며 새로운 성능 PASS가 아니다.
 
+> 후속 확인: `5cea0e4`가 one-link 테스트를 수정했고 `ef59832`에서 전체 회귀 1,533개 실행,
+> 실패·오류 0, skip 4를 재확인했다. 현재 테스트 상태는 **TEST_CONTRACT_RECONCILED**다.
+> 아래 실패 수는 최초 감사 당시 기록이다. 저장된 probe의 근거 누락은 여전히 남아 있다.
+> [후속 검사](../../docs/repository_followup_2026-09-12.md).
+
 ## 1. 독립 재계산
 
 `raw.json` SHA-256:
@@ -68,7 +73,7 @@ python3 -B -m unittest discover -s tests -p 'test_appearance_report_evidence.py'
 검사는 원자료 SHA, 길이·유한값·양수 픽셀 수, 거리/픽셀 수의 항목별 일치, 비율,
 거리 구간별 n·중앙값을 재계산한다. 이 명령은 파일을 쓰지 않으며 GPU와 simulator를 import하지 않는다.
 
-## 5. 현재 범위의 후속 상태
+## 5. 최초 감사 시점의 후속 상태 — 현재 테스트 상태는 상단 참조
 
 - README·사이트·VERIFICATION·계획의 0.587과 1.000 결과 계보를 분리했다.
 - 독립 일반 renderer의 raw-array 공개 재현성과 비교 도구 검증은 별도 결과 폴더에서 다룬다.

@@ -2,8 +2,9 @@
 
 > 후속 갱신: 아래 NumPy-only 검사 이후 독립 renderer의 전체 CPU 신규 설치와 실제 일반 장면
 > smoke도 별도로 완료했다. [설치 결과](../results/renderer_cpu_install_2026-09-12/README.md).
-> 아래 미완료 목록은 이 문서의 첫 점검 시점 기록이며 V1 계약 실패·GPU/전체 simulator 검증은
-> 여전히 별개다. 설치 성공으로 전체 연구 gate를 PASS로 바꾸지 않는다.
+> 아래 미완료 목록은 첫 점검 시점 기록이다. V1 테스트 충돌도 이후 별도 수정 `5cea0e4`와
+> [후속 검사](repository_followup_2026-09-12.md)로 해소됐다. GPU/전체 simulator 실행 검증은
+> 별개이며, 설치·테스트 성공으로 전체 연구 gate를 PASS로 바꾸지 않는다.
 
 ## 완료 범위
 
@@ -50,7 +51,7 @@ node tests/test_status_site.js
 비교 CLI의 `PASS`는 저장된 기술 근거의 무결성·일치이다. R4/R4b의 통계적 FAIL을 뒤집지 않으며,
 새 GPU 렌더링, shortcut 감소, detector/정책 성능을 입증하지 않는다.
 
-## 별도로 남아 있는 것
+## 첫 점검 당시 미완료 목록 — 현재 상태는 상단 후속 기록 참조
 
 - **V1 CONTRACT_MISMATCH:** 13-link 자산과 one-link 계약/테스트 불일치. 기존 전체 환경에서
   최종 스위트는 1,524 tests / 1 failure / 4 skipped. 이 문서는 전체 PASS를 주장하지 않는다.

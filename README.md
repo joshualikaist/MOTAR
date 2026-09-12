@@ -35,7 +35,7 @@ Four research tracks are at different stages and have distinct evidence boundari
 | **A — safety-filter diagnosis** | measure when and why a direction-preserving speed filter fails | **complete**; the training-seed replication withdrew one claim (see below) |
 | **B — real-imagery perception** | learn a detector on real air-to-air video, measure its error, inject that into the simulator | **pipeline complete through PPO readaptation**; final selector test complete; real-flight work not started |
 | **C — measured range error on real footage** | measure how well a target's apparent size recovers its metric range, using a public dataset with survey-grade position ground truth | **E3-S complete**; absolute-geometry uses of that dataset are fail-closed, and the attitude arm (E3-P) is gated |
-| **D — simulator appearance** | audit synthetic geometry, appearance and shortcut claims | **independent renderer verified; stored mask counts unchanged in the simulator probe**; shortcut reduction unmeasured, V1 asset/test contract mismatch unresolved |
+| **D — simulator appearance** | audit synthetic geometry, appearance and shortcut claims | **independent renderer verified; stored mask counts unchanged in the simulator probe**; V1 test contract reconciled, shortcut reduction unmeasured |
 
 **Recent findings.**
 
@@ -47,8 +47,9 @@ Four research tracks are at different stages and have distinct evidence boundari
   ratio is 0.587. In contrast, all **3,840 stored pixel-count pairs** in the simulator probe agree,
   with area ratios **1.000** and identical stored scalar ranges. Counts do not prove identical
   masks, RGB images or full trajectories; those arrays and runtime provenance were not saved.
-  The latest asset also violates the still-recorded one-link test contract. These findings are
-  a documentation correction, not a detector or policy improvement.
+  The obsolete one-link assertion was replaced in `5cea0e4`; the existing suite at `ef59832`
+  ran 1,533 tests with no failures or errors (4 skipped). This resolves the test conflict,
+  not the probe's missing evidence or detector integration.
   [Independent evidence audit](results/target_appearance_in_sim_2026-09-12/AUDIT.md).
 - **A renderer criterion failed twice and is kept as a failure.** Comparing appearance models on
   a two-box fixture rejected "shading is not depth alone" at R² 0.586, and again at 0.582 after
@@ -574,7 +575,7 @@ top of it would make our code AGPL as well. That constrains detector architectur
 | Background scene v1 | `TECHNICAL_PASS`; two independent processes byte-identical | 60–67 visible triangles against the old fixture's 8; counterfactual checks, not statistics |
 | Shading cost (R5) | **+0.66 ms** per iteration; **183.9 MiB Torch peak allocated** at 128 scenes, 160×90 | the resolution training uses; the 480×270 figure was nine times more pixels |
 | URDF asset loading | library and independent parser agree, **0 discrepancies** on five assets | link order, world transforms, geometry parameters, material colours; tessellation is not compared |
-| Target silhouette (V1) | independent prototype: **0.587×** area; simulator probe: **1.000×** across all 3,840 stored count pairs | opt-in; counts are not image/trajectory equivalence; current 13-link asset conflicts with the one-link contract/test |
+| Target silhouette (V1) | independent prototype: **0.587×** area; simulator probe: **1.000×** across all 3,840 stored count pairs | opt-in; counts are not image/trajectory equivalence; test contract reconciled in 5cea0e4, detector integration not established |
 
 Historical v1, archived v2, corrected-v2, legacy-robot and ref5in-robot results **must not be merged
 into one performance curve**. Results from before 2026-08-27 overlapped nearby bars into compound
@@ -640,7 +641,9 @@ This is not a detector, policy or simulator deployment quickstart.
 The bootstrap and commands below belong to the historical full environment, not the independent
 CPU profile. The V1 asset became thirteen links because the Warp asset loader assumes one mesh per
 link, and the one-link test that conflicted with it has been replaced by one asserting what
-it was written for: mass and collision stay on `base_link`. The suite is green at 1,533 tests. See [current verification](VERIFICATION.md) and [the audit](results/target_appearance_in_sim_2026-09-12/AUDIT.md).
+it was written for: mass and collision stay on `base_link`. At `ef59832`, 1,533 tests ran with
+zero failures/errors and 4 skips. See [the dated follow-up](docs/repository_followup_2026-09-12.md)
+and [current verification](VERIFICATION.md). This is not a new simulator experiment.
 Root `requirements.txt` is a legacy list, not a complete reproducible install; Isaac Gym and
 pytorch3d are external prerequisites. Historical execution contracts are in [OPERATIONS.md](OPERATIONS.md).
 

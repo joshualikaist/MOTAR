@@ -19,7 +19,8 @@ R2 구현 이후 독립 Warp/GPU 검증을 실행했습니다. 기존 perception
 [V1 probe 감사: 픽셀 수 일치, 자산 계약 불일치](../results/target_appearance_in_sim_2026-09-12/AUDIT.md).
 [새 checkout·NumPy-only 환경의 CPU 근거 재현](public_evidence_reproduction_2026-09-12.md).
 [독립 renderer 전체 CPU 신규 설치](renderer_cpu_quickstart_2026-09-12.md) ·
-[설치 검증 기준](renderer_cpu_install_plan_2026-09-12.md).
+[설치 검증 기준](renderer_cpu_install_plan_2026-09-12.md) ·
+[커밋 후 회귀·현재 상태 정정](repository_followup_2026-09-12.md).
 
 논문형 블록 다이어그램(2026-09-11): [README 그림 9개 전체](assets/paper/) ·
 [SVG + 4K PNG + 벡터 PDF ZIP](assets/paper/motar-paper-block-diagrams.zip).

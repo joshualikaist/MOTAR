@@ -17650,3 +17650,58 @@ Node 사이트 계약 검사도 PASS, 검사 후 clone은 clean이다. 실제로
 외부 인용/라이선스/전체 history 감사는 완료하지 않았다. 앞선 CPU Torch 신규 설치는 의존성
 해석/build 단계에서 실패했으며 이번 NumPy-only 성공으로 덮지 않는다. 새 simulator 실험·
 통합 코드 변경·사용자 데이터 삭제·push는 수행하지 않았다.
+
+## 2026-09-12 — 독립 일반 renderer CPU 신규 설치 완료, 버전 동일성 가설 기각
+
+이전 항목의 NumPy-only 근거 점검과 별도로 실제 renderer 신규 설치를 수행했다. 이 작업 파일은
+다른 세션이 검토 후 `ef59832`로 커밋했다. 근거는 `results/renderer_cpu_install_2026-09-12/`다.
+
+| 시도 | 실제 결과 |
+|---|---|
+| 새 진단 venv + PyPI urdfpy 0.0.22 | pip check 성공, renderer 기존 146 tests 중 errors 8 |
+| 같은 버전 VCS 설치, 강제 교체 없음 | exit 0이지만 pip report의 install 목록 0; 실제 교체 아님 |
+| 진단 venv에 정확한 source 강제 교체 | 기존 146 tests PASS; 신규 설치 성공으로 분류하지 않음 |
+| 두 번째 새 venv + 별도 CPU profile | 첫 다운로드 read timeout, 설치 전 중단; 동일 profile 재시도로 성공 |
+| 두 번째 환경 계약 | 기존 146 + 패키징 6 = 152 tests PASS, skip 0; pip check PASS |
+| 두 CPU 프로세스의 일반 상자 smoke | 각 2프레임, 160×120, scene 1, seed 0; 프레임당 8개 배열 SHA 일치 |
+
+정상 urdfpy upstream source는 `5466842899b33bd549e8f9e2a9a987bd5e37373b`다. 같은 버전 문자열의
+공개 wheel과 cylinder 구현이 다르다. 로컬 urdfpy checkout도 이 commit이고 clean임을 확인했다.
+`requirements-renderer-cpu.txt`는 Linux x86-64/CPython 3.8/CPU profile이며, 설치 후 실제 Git
+출처·비-editable·venv 내부 설치 경로를 확인한다. root simulator 환경을 덮어쓰지 않았다.
+OS/build 의존성까지 잠근 hermetic 환경은 아니다.
+
+공개 CPU smoke의 source는 별도 clean checkout `cdc8113`이다. 설치 profile은 당시 후보의 SHA로
+식별했으며 보관 commit `ef59832`를 실행 commit으로 소급하지 않는다. 4개 NPZ만 ignore 예외로
+추가했고 file/decoded array/source SHA를 근거 테스트 3개로 검증한다. receipt의
+RENDERED_UNASSESSED/NOT_EVALUATED/NOT_SUPPORTED는 유지한다. GPU·전체 simulator 신규 설치나
+성능 향상을 주장하지 않는다. 실패한 설치와 당시 전체 회귀 실패 1개도 summary에 보존했다.
+
+## 2026-09-12 — ef59832 후속 검사: 테스트 충돌 해소와 미측정 범위 분리
+
+사용자가 보고한 `5cea0e4`(V1 테스트 수정), `ef59832`(설치 패키징 보관)를 확인했다. 검사 시작
+HEAD는 ef59832, 트리는 clean, 로컬 origin/main(eaa7f73) 대비 15 ahead였다. V1 테스트·자산·
+실행 코드 자체는 이번 후속 작업에서 수정하지 않았다.
+
+깨끗한 ef59832에서 전체 회귀 **1,533개 실행 / 1,529 통과 / 4 skip / 실패·오류 0**, 37.416초.
+별도 CPU profile에서 renderer **152개 통과**, 저장 근거 **3개 통과**, Node 사이트 PASS다.
+`results/renderer_cpu_install_2026-09-12/followup.json`에 출처와 실행 구성을 기록한다.
+
+README 일부만 성공으로 바뀌고 VERIFICATION·사이트·계약·CPU 설치 문서에는 현재 실패라고
+남아 있던 모순을 고쳤다. 현재 상태는 TEST_CONTRACT_RECONCILED이며 당시 CONTRACT_MISMATCH는
+실제 이력으로 유지한다. 설치 당시 `summary.json` SHA
+`e5669ea4d1c2069eb34f983195435d3ce720e505c7e687ab75d9f04d8a07ebf9`는 그대로다.
+문서 검사 기존 10개 중 상태 검사 1개를 갱신하고, 이력 보존·미측정 비용 검사 2개를 추가했다.
+문서 검사 12개·발표 자료 11개·Node 사이트는 통과했다. 변경 후 전체 회귀는 아래 후속 확인에 기록한다.
+
+기존 URDF smoke의 3.09/9.14 ms는 다른 장면의 기하 패스이며 새 경로의 추가 비용 측정이 아니다.
+“몇 ms가 추가된다”는 확정 추정을 채택하지 않는다. 보고된 5 mm 변조 검사는 별도로 재실행하지
+않았다. 3,840쌍 probe의 PARTIAL_EVIDENCE, R4/R4b FAIL, shortcut 감소 미측정도 유지한다.
+요격 시스템의 표적 검출 개선용 커널은 격리 prototype을 포함해 구현하지 않았다. 새 detector·
+정책·제어 실행, 사용자 데이터 삭제, 원격 push는 수행하지 않았다. 다음은 독립 CPU 공개 입구와
+남은 배포 체크리스트 정리다. 상세 `docs/repository_followup_2026-09-12.md`.
+
+최종 후속 확인: 문서 검사 2개 추가 후 전체 **1,535개 실행 / 1,531 통과 / 4 skip /
+실패·오류 0**, 37.898초, exit 0. 이는 ef59832 위 문서·근거 테스트 변경이 있는 작업 트리의
+회귀이며 clean 실행으로 표시하지 않는다. `git diff --check` PASS, 기존 실행 코드·자산·
+CPU profile·historical 설치 summary는 변경 없음. 이번 후속 변경은 미커밋·미푸시 상태로 남긴다.

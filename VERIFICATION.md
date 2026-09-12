@@ -18,7 +18,10 @@
 | D: R4/R4b | COMPLETE | FAIL 유지; 기준 자체의 무효나 실패 원인을 입증하지 않음 | [재검증](results/renderer_reverification_2026-09-11_1951/README.md) |
 | D: 독립 renderer·URDF·배경 검증 | COMPLETE | TECHNICAL_PASS; 인지 shortcut 감소는 미측정 | [배경](results/renderer_background_v1_clean_2026-09-11/README.md), [URDF](results/renderer_urdf_smoke_2026-09-11/README.md) |
 | D: V1 기존 simulator probe 감사 | PARTIAL_EVIDENCE | 3,840개 저장된 거리·픽셀 수 쌍 일치; 영상·전체 궤적·실행 출처의 완전성 미입증 | [감사](results/target_appearance_in_sim_2026-09-12/AUDIT.md) |
-| D: V1 자산 계약 | CONTRACT_MISMATCH | 23e6818의 13-link 자산과 one-link 계약/회귀 테스트 불일치; 통합 완료로 표시하지 않음 | [기존 계약](docs/v1_shared_airframe_contract.md) |
+| D: V1 테스트 계약 | TEST_CONTRACT_RECONCILED | 5cea0e4에서 one-link 단정을 질량·충돌 보존 검사로 교체; ef59832에서 1,533개 실행, 실패·오류 0, skip 4. 검출기 통합 완료는 아님 | [후속 확인](docs/repository_followup_2026-09-12.md), [계약 이력](docs/v1_shared_airframe_contract.md) |
+
+과거 CONTRACT_MISMATCH와 설치 당시 실패 receipt는 보존한다. 현재 테스트 충돌 해소는
+별도 후속 검사이며, `PARTIAL_EVIDENCE`나 R4/R4b의 FAIL을 PASS로 바꾸지 않는다.
 
 독립 프로토타입 면적비 0.587과 기존 simulator probe의 픽셀 수 비 1.000은 서로 다른
 입력 경로의 측정이다. 전자를 현재 detector 입력 변화나 shortcut 감소의 근거로 사용하지 않는다.

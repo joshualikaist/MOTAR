@@ -87,5 +87,6 @@ PYTHONNOUSERSITE=1 CUDA_VISIBLE_DEVICES='' "$renderer_env/bin/python" -B \
 ## 한계
 
 이 절차는 CPU 설치와 작은 정적 일반 장면의 실행성만 검증한다. GPU 성능, 전체 환경 step FPS,
-shortcut 감소, detector/정책 성능은 측정하지 않는다. R4/R4b FAIL과 V1 자산/테스트의
-CONTRACT_MISMATCH는 별개이며, 이 설치로 해소됐다고 표시하지 않는다.
+shortcut 감소, detector/정책 성능은 측정하지 않는다. R4/R4b FAIL은 유지한다.
+V1의 과거 CONTRACT_MISMATCH는 설치가 아니라 별도 테스트 수정 `5cea0e4`로 해소됐다
+([후속 검사](repository_followup_2026-09-12.md)). 이를 검출기 통합 완료로 읽지 않는다.

@@ -1,7 +1,8 @@
 # 독립 일반 renderer CPU 신규 설치 — 기술 검증 완료
 
 판정: **CPU_INSTALL_TECHNICAL_PASS**. 설치 재현과 작은 정적 일반 장면에 한정한다.
-전체 저장소 회귀의 V1 계약 실패는 그대로이며 R4/R4b FAIL도 변경하지 않는다.
+설치 당시 전체 회귀의 실패는 `summary.json`에 보존했다. V1 테스트 충돌은 이후 별도 수정으로
+해소됐다([후속 확인](../../docs/repository_followup_2026-09-12.md)). R4/R4b FAIL은 유지한다.
 [계획/고정 완료 기준](../../docs/renderer_cpu_install_plan_2026-09-12.md) ·
 [신규 설치 명령](../../docs/renderer_cpu_quickstart_2026-09-12.md) · [요약 JSON](summary.json).
 
@@ -37,7 +38,7 @@ profile의 Git 보관 commit과 renderer 실행 source commit을 혼동하지 �
 - `smoke1/`, `smoke2/`에 request/receipt 및 NPZ 4개를 함께 추적한다. 사용자 실사 데이터가 아니다.
 - 프레임당 8개 배열의 SHA가 두 실행에서 일치하고 파일 SHA·dtype·shape·decoded SHA를 확인했다.
 - receipt는 `RENDERED_UNASSESSED`, 실험 판정은 `NOT_EVALUATED`, 학습은 `NOT_SUPPORTED`다.
-  `TECHNICAL_PASS`는 이 설치 점검의 판정이며 renderer 실험 결과를 변경한 것이 아니다.
+  `CPU_INSTALL_TECHNICAL_PASS`는 이 설치 점검의 판정이며 renderer 실험 결과를 변경한 것이 아니다.
 
 Warp 초기화에서 CUDA 장치 미발견 메시지가 있었지만 실행 장치는 CPU이고 정상 종료했다.
 CPU JIT cache가 사용될 수 있으며, 신규 환경 성공을 cache-cold latency 측정으로 읽지 않는다.
@@ -61,9 +62,13 @@ python -B -m unittest discover -s tests -p 'test_cpu_install_evidence.py' -v
 3개 테스트가 profile SHA/설치 출처, 네 NPZ의 파일·배열 hash, 두 실행의 배열 일치 및 historical
 Git source SHA를 검증한다. shallow clone에 실행 source object가 없으면 실패하는 것이 맞다.
 
-## 남은 것
+## 설치 당시 전체 회귀 — 보존 기록
 
-최종 전체 기존 환경 회귀는 **1,533 tests, 실패 1, errors 0, skip 4**였다. 실패는 기존
+설치 검증 당시 전체 기존 환경 회귀는 **1,533 tests, 실패 1, errors 0, skip 4**였다. 실패는 기존
 `test_it_is_still_one_base_link`이며 자산/검출기/정책/제어 코드나 그 테스트를 수정하지 않았다.
-따라서 전체 PASS, V1 통합 완료, shortcut 감소, GPU 처리량, 실제 배치를 주장하지 않는다.
+이 기록으로 전체 PASS, V1 통합 완료, shortcut 감소, GPU 처리량, 실제 배치를 주장하지 않는다.
 현재 raw 결과·사전등록·기존 학습 환경을 덮어쓰지 않았고 push는 수행하지 않았다.
+
+후속: `5cea0e4`에서 테스트가 수정됐으며 `ef59832`의 새 회귀는 실패·오류 없이 끝났다.
+별도 [followup.json](followup.json)이 검사 출처와 수를 기록한다. 당시 `summary.json`을
+덮어쓰지 않았으며 CPU smoke의 실행 source도 계속 `cdc8113`이다.

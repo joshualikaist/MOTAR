@@ -1,4 +1,6 @@
 """Guard current prose against resurrection of withdrawn claims; no experiment runs."""
+import hashlib
+import json
 from pathlib import Path
 import unittest
 
@@ -69,10 +71,37 @@ class RepositoryClaimsTest(unittest.TestCase):
         self.assertNotIn("Making the target drone-shaped costs 41%", read("README.md"))
         self.assertNotIn("색만으로 표적을 찾을 수 있었습니다", read("docs/status/index.html"))
 
-    def test_current_v1_contract_failure_is_not_hidden(self):
+    def test_current_v1_resolution_does_not_erase_failure_history(self):
         for name in ("VERIFICATION.md", "docs/v1_shared_airframe_contract.md",
                      "docs/status/index.html"):
-            self.assertIn("CONTRACT_MISMATCH", read(name))
+            page = read(name)
+            self.assertIn("TEST_CONTRACT_RECONCILED", page)
+            self.assertIn("5cea0e4", page)
+            self.assertIn("CONTRACT_MISMATCH", page)
+            self.assertIn("repository_followup_2026-09-12.md", page)
+        for stale in ("contract mismatch unresolved", "still-recorded one-link test contract",
+                      "current 13-link asset conflicts"):
+            self.assertNotIn(stale, read("README.md"))
+
+    def test_followup_preserves_the_failed_install_time_summary(self):
+        folder = ROOT / "results/renderer_cpu_install_2026-09-12"
+        followup = json.loads((folder / "followup.json").read_text())
+        payload = (folder / "summary.json").read_bytes()
+        self.assertEqual(hashlib.sha256(payload).hexdigest(),
+                         followup["historical_summary_sha256"])
+        historical = json.loads(payload)["full_repository_regression"]
+        self.assertEqual(historical["failures"], 1)
+        current = followup["full_repository_regression"]
+        self.assertEqual((current["failures"], current["errors"], current["skipped"]), (0, 0, 4))
+        self.assertEqual(current["tests_run"], current["passed"] + current["skipped"])
+        self.assertFalse(followup["source_dirty_at_test_start"])
+        self.assertEqual(followup["source_commit"], "ef598328c5a2edb54080e13124a9208d7ed9c9c7")
+
+    def test_new_path_cost_is_not_inferred_from_archived_renderer_timings(self):
+        page = read("docs/repository_followup_2026-09-12.md")
+        self.assertIn("INTEGRATED_RENDER_COST_UNMEASURED", page)
+        self.assertIn("PARTIAL_EVIDENCE", page)
+        self.assertIn("기존 원자료를 변경하거나 새 성능 추정치를 만들어 넣지 않았다", page)
 
 
 if __name__ == "__main__":
