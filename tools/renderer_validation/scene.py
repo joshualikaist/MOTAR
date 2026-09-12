@@ -198,3 +198,29 @@ def sample_camera_poses(seed, num_scenes, position_jitter_m=0.1, angle_jitter_de
     q = np.asarray(orientations, dtype=np.float64)
     return (np.asarray(positions, dtype=np.float32),
             (q / np.linalg.norm(q, axis=1, keepdims=True)).astype(np.float32))
+
+
+def asymmetric_box_fixture(size=(0.6, 0.25, 0.12), offset=(0.12, -0.05, 0.03)):
+    """One box whose extents all differ and whose centre is off the origin.
+
+    Asymmetry is the point: a cube centred on the origin looks the same under many rotations, so
+    it cannot show that a rotation reached the intersection at all.
+    """
+    corners = np.array([[-1, -1, -1], [1, -1, -1], [1, 1, -1], [-1, 1, -1],
+                        [-1, -1, 1], [1, -1, 1], [1, 1, 1], [-1, 1, 1]], dtype=np.float64)
+    faces = np.array([[0, 3, 2], [0, 2, 1], [4, 5, 6], [4, 6, 7], [0, 1, 5], [0, 5, 4],
+                      [2, 3, 7], [2, 7, 6], [0, 4, 7], [0, 7, 3], [1, 2, 6], [1, 6, 5]],
+                     dtype=np.int32)
+    points = corners * (np.asarray(size, dtype=np.float64) / 2.0) + np.asarray(offset, dtype=np.float64)
+    return MeshScene(points, faces, np.zeros(len(faces), np.int32), np.zeros(len(faces), np.int32))
+
+
+def l_shape_fixture(arm=0.5, thickness=0.14, depth=0.12):
+    """Two boxes joined at a corner: chiral, so a rotation cannot be mistaken for the identity."""
+    first = asymmetric_box_fixture((arm, thickness, depth), (arm / 2.0, 0.0, 0.0))
+    second = asymmetric_box_fixture((thickness, arm, depth), (0.0, arm / 2.0, 0.0))
+    vertices = np.concatenate([first.vertices, second.vertices])
+    triangles = np.concatenate([first.triangles, second.triangles + len(first.vertices)])
+    parts = np.concatenate([np.zeros(len(first.triangles), np.int32),
+                            np.ones(len(second.triangles), np.int32)])
+    return MeshScene(vertices, triangles, parts, parts)
