@@ -1,18 +1,22 @@
 # docs/ 색인
 
-`docs/` 아래 마크다운 82개의 지도. **이 색인은 삭제를 돕기 위한 것이 아니라 삭제를 막기 위한 것이다.**
+`docs/` 문서 지도. 아래 상세 목록의 파일 수·줄 수는 당시 조사 기록이며 현재 전체 수가 아니다.
+**이 색인은 삭제를 돕기 위한 것이 아니라 삭제를 막기 위한 것이다.**
 
 🔒 = **소스 코드·테스트가 이 경로를 문자열로 인용한다.** 이동·이름변경·삭제하면 docstring, 실행 계약,
-게이트 검증기가 깨진다. 82개 중 **41개**가 여기 해당한다.
+게이트 검증기가 깨진다. 당시 조사에서는 82개 중 **41개**가 여기 해당했다.
 
 ## 먼저 읽을 것
 
 독립 일반 물체 렌더러: [R1 정적 경로 감사](renderer_r1_audit_2026-09-11.md) ·
 [근거 소스 SHA-256](renderer_r1_audit_2026-09-11.sha256).
 R1 문서화 완료 · [R2 독립 shading prototype / 인수인계](renderer_r2_prototype_2026-09-11.md).
-R2 코드는 구현했으며 실제 Warp/GPU 실행·실험 판정은 미실행입니다. 기존 perception·policy 경로와 분리합니다.
+R2 구현 이후 독립 Warp/GPU 검증을 실행했습니다. 기존 perception·policy 경로와 분리합니다.
 [R3 renderer-only validation 사전등록](preregistration_renderer_r3_2026-09-11.md)은 seed 173의 두 독립 실행을 고정합니다.
 [R3 결과: PASS](../results/renderer_r3_seed173_comparison_2026-09-11/README.md). 학습·perception·policy 평가는 포함하지 않습니다.
+[R4/R4b FAIL 보존과 재검증](../results/renderer_reverification_2026-09-11_1951/README.md) ·
+[독립 배경 기술 검증·원배열 비교](../results/renderer_background_v1_2026-09-12/README.md) ·
+[V1 probe 감사: 픽셀 수 일치, 자산 계약 불일치](../results/target_appearance_in_sim_2026-09-12/AUDIT.md).
 
 논문형 블록 다이어그램(2026-09-11): [README 그림 9개 전체](assets/paper/) ·
 [SVG + 4K PNG + 벡터 PDF ZIP](assets/paper/motar-paper-block-diagrams.zip).

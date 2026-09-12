@@ -17588,3 +17588,38 @@ CFF YAML 구조 검증 OK(cffconvert는 환경에 없음). 전체 테스트가 �
 
 미실행: 항목 4(README 전면 재구성), 항목 8(외부 인용 audit), 항목 10(문서 역할 고정),
 항목 12의 나머지, 항목 13(push). push는 하지 않았다.
+
+## 2026-09-12 — 23e6818 보고 감사: 수치 재현, 전체 동일성 단정 철회
+
+새 simulator/학습/제어 실행 없이 `results/target_appearance_in_sim_2026-09-12/raw.json`을
+독립 재계산했다. SHA-256 `0589df29f51cace0ac7c756c29531f6f53021aaf739bf6793eac4d95046700a6`.
+각 arm 3,840개 모두 유한·양수이며 저장된 거리/픽셀 수가 항목별로 같다. 픽셀 수 비의
+최솟값/Q1/중앙값/Q3/최댓값 전부 1.000. [4,5)/[5,6)/[6,7) m 구간 n은 1196/1804/840,
+두 arm 픽셀 수 중앙값은 18/6/6이다. 원자료는 변경하지 않았다.
+
+원자료에 pose/mask/RGB/env-frame ID/runtime/source commit이 없어 "전체 궤적·영상이 같다"를
+철회하고 PARTIAL_EVIDENCE로 제한했다. 보관 commit과 실행 commit도 구분한다. 같은 색 cue는
+foreground segmentation과 지정된 한 물체의 identity를 구분해야 한다. 독립 prototype의
+면적비 0.587을 현재 detector 입력 변화로 읽던 README·사이트·계획·VERIFICATION을 교정했다.
+두 collision 추출기와 visual mesh를 읽는 Warp loader도 구분했다. 상세 `AUDIT.md` 및
+Python 표준 라이브러리 재계산 테스트 6개를 추가했다.
+
+**기존 통합 회귀 실패를 발견:** 23e6818에서 1,516 tests / 1 failure / 4 skipped.
+`test_shared_airframe_v1.PhysicsIsUntouchedTest.test_it_is_still_one_base_link`가 새 13-link
+자산과 충돌한다. 계약에 CONTRACT_MISMATCH를 기록하고 실패를 유지했다. URDF, 생성기,
+검출기·제어 코드나 기존 통합 테스트 기준을 바꾸지 않았다. 보관된 로드 실패 로그가 없으므로
+로드 성공/실패를 이번 감사가 새로 재현했다고 주장하지 않는다.
+
+사이트 테스트는 오래된 PASS 기대 대신 근거 누락 상태의 source·BLOCKED·authority·hardware_claim
+전체 필드를 검사하도록 고쳤다. 허위 PASS/하드웨어 주장/권한 승격/필드 누락 5종은 거부한다.
+`status.json`과 historical 판정은 변경하지 않았다. docs 색인의 R2 미실행 문구도 정정했다.
+
+검증: 재계산 6개, 문서 주장 10개, 발표 산출물 11개, 독립 renderer 146개 통과.
+snapshot tests 19개 실행(1 skip), 나머지 통과. Node와 최종 전체 스위트 결과는 아래 후속 기록.
+시작 시 live origin/main은 eaa7f73, local 23e6818은 **10 commits ahead**였다(보고의 11 정정).
+새 통합/정책 실험 권한을 열지 않았고 push는 하지 않는다.
+
+후속 확인: 최종 전체 스위트 **1,524 tests / 1 failure / 4 skipped**(38.387초).
+새로 추가한 8개 테스트는 모두 통과했고 실패는 같은 one-link 계약 1개뿐이다.
+Node 사이트 테스트 PASS. 기존 링크 검사도 디렉터리 자체의 Git 추적을 요구하는 결함이 있어
+gallery의 실제 `index.html` 존재·추적을 검사하도록 고쳤다. 문서/발표 원본 hash는 유지된다.

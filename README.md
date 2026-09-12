@@ -35,23 +35,21 @@ Four research tracks are at different stages and have distinct evidence boundari
 | **A — safety-filter diagnosis** | measure when and why a direction-preserving speed filter fails | **complete**; the training-seed replication withdrew one claim (see below) |
 | **B — real-imagery perception** | learn a detector on real air-to-air video, measure its error, inject that into the simulator | **pipeline complete through PPO readaptation**; final selector test complete; real-flight work not started |
 | **C — measured range error on real footage** | measure how well a target's apparent size recovers its metric range, using a public dataset with survey-grade position ground truth | **E3-S complete**; absolute-geometry uses of that dataset are fail-closed, and the attitude arm (E3-P) is gated |
-| **D — simulator appearance** | make the simulated target a drone rather than a coloured block, so that what a detector learns is testable | **renderer and assets in place, opt-in**; the shortcut re-measurement it exists to enable is not run |
+| **D — simulator appearance** | audit synthetic geometry, appearance and shortcut claims | **independent renderer verified; stored mask counts unchanged in the simulator probe**; shortcut reduction unmeasured, V1 asset/test contract mismatch unresolved |
 
 **Recent findings.**
 
-- **The simulated target was a red box, and every distractor was the same red.** Colour alone
-  could therefore find it, which makes any claim about learned shape untestable. The target is
-  now a quadrotor silhouette built from dimensions that already existed in the repository:
-  motor positions and cylinders from the interceptor URDF, the propeller radius from the task
-  constant, the body from that URDF's own inertia approximation. Inertial and collision are
-  carried over byte for byte, the simulator reads collision only, and tests call both of its
-  extractors to say so rather than describing it. It is opt-in; the default is unchanged.
-- **Making the target drone-shaped costs 41% of its projected area, and that confounds the next
-  experiment.** Measured across 21 viewing directions, not derived: width moves 0.16% while
-  projected area falls to a median 0.587 of the box, because a quadrotor has gaps between its
-  arms. Apparent size against range is a detector cue this project has measured on real footage,
-  so a before-and-after comparison of tracking needs an area-matched box arm to separate shape
-  from size. That condition is preregistered before the experiment, not after it.
+- **Asset appearance and detector input are different evidence paths.** The v3 visual asset is
+  opt-in; the default remains v2. The active foreground mask uses an analytic proxy, not that
+  visual silhouette. Shared red colouring can support foreground segmentation; it cannot alone
+  distinguish the designated object from equally red distractors. Shortcut reduction is unmeasured.
+- **The 41% area reduction belongs to the independent prototype only.** Its 21-view median area
+  ratio is 0.587. In contrast, all **3,840 stored pixel-count pairs** in the simulator probe agree,
+  with area ratios **1.000** and identical stored scalar ranges. Counts do not prove identical
+  masks, RGB images or full trajectories; those arrays and runtime provenance were not saved.
+  The latest asset also violates the still-recorded one-link test contract. These findings are
+  a documentation correction, not a detector or policy improvement.
+  [Independent evidence audit](results/target_appearance_in_sim_2026-09-12/AUDIT.md).
 - **A renderer criterion failed twice and is kept as a failure.** Comparing appearance models on
   a two-box fixture rejected "shading is not depth alone" at R² 0.586, and again at 0.582 after
   the fixture changed. Neither threshold was moved. The limited fixture does not prove criterion
@@ -576,7 +574,7 @@ top of it would make our code AGPL as well. That constrains detector architectur
 | Background scene v1 | `TECHNICAL_PASS`; two independent processes byte-identical | 60–67 visible triangles against the old fixture's 8; counterfactual checks, not statistics |
 | Shading cost (R5) | **+0.66 ms** per iteration; **183.9 MiB Torch peak allocated** at 128 scenes, 160×90 | the resolution training uses; the 480×270 figure was nine times more pixels |
 | URDF asset loading | library and independent parser agree, **0 discrepancies** on five assets | link order, world transforms, geometry parameters, material colours; tessellation is not compared |
-| Target silhouette (V1) | projected area **0.587×** the box across 21 directions; width −0.16% | opt-in; inertial and collision carried over byte for byte, both simulator extractors return the same values |
+| Target silhouette (V1) | independent prototype: **0.587×** area; simulator probe: **1.000×** across all 3,840 stored count pairs | opt-in; counts are not image/trajectory equivalence; current 13-link asset conflicts with the one-link contract/test |
 
 Historical v1, archived v2, corrected-v2, legacy-robot and ref5in-robot results **must not be merged
 into one performance curve**. Results from before 2026-08-27 overlapped nearby bars into compound

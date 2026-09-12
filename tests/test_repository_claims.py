@@ -59,6 +59,21 @@ class RepositoryClaimsTest(unittest.TestCase):
         self.assertIn("183.9 MiB Torch peak allocated", page)
         self.assertIn("전체 프로세스 VRAM은 아닙니다", page)
 
+    def test_prototype_area_is_not_active_detector_area(self):
+        for name in ("README.md", "docs/status/index.html"):
+            page = read(name)
+            self.assertIn("0.587", page)
+            self.assertIn("1.000", page)
+            self.assertIn("3,840", page)
+            self.assertIn("target_appearance_in_sim_2026-09-12/AUDIT.md", page)
+        self.assertNotIn("Making the target drone-shaped costs 41%", read("README.md"))
+        self.assertNotIn("색만으로 표적을 찾을 수 있었습니다", read("docs/status/index.html"))
+
+    def test_current_v1_contract_failure_is_not_hidden(self):
+        for name in ("VERIFICATION.md", "docs/v1_shared_airframe_contract.md",
+                     "docs/status/index.html"):
+            self.assertIn("CONTRACT_MISMATCH", read(name))
+
 
 if __name__ == "__main__":
     unittest.main()

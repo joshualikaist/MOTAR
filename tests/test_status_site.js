@@ -238,39 +238,75 @@ assert(recoveryExperiment.results_paths.includes('results/navrl_physical_target_
 
 assert.strictEqual(status.sim2real_72h.as_of, '2026-08-26');
 const currentGate = status.sim2real_72h.simulation_verification.recovery_v2_lower1p25_gate;
-assert.strictEqual(currentGate.integrity, 'PASS_32_CELL_INTEGRITY');
-assert.strictEqual(currentGate.route_mechanism, 'FAIL_ROUTE_MECHANISM');
-assert.deepStrictEqual(currentGate.cells, {
-  passed: 7,
-  total: 32,
-  route_off_passed: 7,
-  route_off_total: 16,
-  recovery_passed: 0,
-  recovery_total: 16,
-  passing_lineage: 'route_off_only',
-});
-assert.strictEqual(currentGate.plan_success_70bar_4speed.numerator, 190);
-assert.strictEqual(currentGate.plan_success_70bar_4speed.denominator, 203);
-assert.strictEqual(currentGate.fallback_70bar_4speed.numerator, 18381);
-assert.strictEqual(currentGate.fallback_70bar_4speed.denominator, 38400);
-assert.strictEqual(currentGate.goals_per_env_70bar_0_6mps.value, 0.21875);
-assert.strictEqual(currentGate.no_connector_occupancy.numerator, 96854);
-assert.strictEqual(currentGate.no_connector_occupancy.denominator, 153600);
-assert.strictEqual(currentGate.hard_breach_no_connector_entries.numerator, 0);
-assert.strictEqual(currentGate.hard_breach_no_connector_entries.denominator, 534);
-assert.strictEqual(currentGate.hardware_claim, false);
-assert.strictEqual(currentGate.canonical_1p5_contract, 'SEPARATE_UNCHANGED_NOT_PASSED');
+// Missing/invalid source evidence is a valid fail-closed public state, never a PASS.
+// The Python snapshot tests exercise the canonical reader and malformed-receipt rejection.
+function assertUnavailableEvidence(block, source) {
+  assert.deepStrictEqual(block, {
+    source,
+    status: 'RESULT_UNAVAILABLE_OR_MALFORMED',
+    authority: 'NO_FURTHER_TRACK_B_GPU_PPO_RETUNE_RERUN',
+    physical_ppo: 'BLOCKED',
+    hardware_claim: false,
+  });
+}
+const unavailableSource = 'results/example/summary.json';
+const unavailableFixture = {
+  source: unavailableSource,
+  status: 'RESULT_UNAVAILABLE_OR_MALFORMED',
+  authority: 'NO_FURTHER_TRACK_B_GPU_PPO_RETUNE_RERUN',
+  physical_ppo: 'BLOCKED',
+  hardware_claim: false,
+};
+assertUnavailableEvidence(unavailableFixture, unavailableSource);
+for (const patch of [{integrity: 'PASS_32_CELL_INTEGRITY'}, {hardware_claim: true},
+                     {physical_ppo: 'ENABLED'}, {status: 'PASS'}, {authority: undefined}]) {
+  assert.throws(() => assertUnavailableEvidence({...unavailableFixture, ...patch}, unavailableSource));
+}
+if (currentGate.status === 'RESULT_UNAVAILABLE_OR_MALFORMED') {
+  assertUnavailableEvidence(currentGate,
+    'results/navrl_physical_target_recovery_v2_gate_lower1p25_seed827/summary.json');
+} else {
+  assert.strictEqual(currentGate.status, 'VERIFIED_FAIL');
+  assert.strictEqual(currentGate.integrity, 'PASS_32_CELL_INTEGRITY');
+  assert.strictEqual(currentGate.route_mechanism, 'FAIL_ROUTE_MECHANISM');
+  assert.deepStrictEqual(currentGate.cells, {
+    passed: 7,
+    total: 32,
+    route_off_passed: 7,
+    route_off_total: 16,
+    recovery_passed: 0,
+    recovery_total: 16,
+    passing_lineage: 'route_off_only',
+  });
+  assert.strictEqual(currentGate.plan_success_70bar_4speed.numerator, 190);
+  assert.strictEqual(currentGate.plan_success_70bar_4speed.denominator, 203);
+  assert.strictEqual(currentGate.fallback_70bar_4speed.numerator, 18381);
+  assert.strictEqual(currentGate.fallback_70bar_4speed.denominator, 38400);
+  assert.strictEqual(currentGate.goals_per_env_70bar_0_6mps.value, 0.21875);
+  assert.strictEqual(currentGate.no_connector_occupancy.numerator, 96854);
+  assert.strictEqual(currentGate.no_connector_occupancy.denominator, 153600);
+  assert.strictEqual(currentGate.hard_breach_no_connector_entries.numerator, 0);
+  assert.strictEqual(currentGate.hard_breach_no_connector_entries.denominator, 534);
+  assert.strictEqual(currentGate.hardware_claim, false);
+  assert.strictEqual(currentGate.canonical_1p5_contract, 'SEPARATE_UNCHANGED_NOT_PASSED');
+}
 assert.deepStrictEqual(
   status.sim2real_72h.simulation_verification.preflight_steps.physical_target_gate,
   currentGate,
 );
 const currentForensics = status.sim2real_72h.simulation_verification.recovery_v2_no_connector_forensics;
-assert.strictEqual(currentForensics.decision_rule.label, 'INCONCLUSIVE');
-assert.strictEqual(currentForensics.decision_rule.primary_n, 1);
-assert.strictEqual(currentForensics.decision_rule.anchor_present, 0);
-assert.strictEqual(currentForensics.decision_rule.hard_free_soft_unsafe, 1);
-assert.strictEqual(currentForensics.decision_rule.identity_void, false);
-assert.strictEqual(currentForensics.no_connector_classes.total, 106);
+if (currentForensics.status === 'RESULT_UNAVAILABLE_OR_MALFORMED') {
+  assertUnavailableEvidence(currentForensics,
+    'results/navrl_physical_target_recovery_v2_no_connector_forensics_seed827/summary.json');
+} else {
+  assert.strictEqual(currentForensics.status, 'DESCRIPTIVE_ONLY');
+  assert.strictEqual(currentForensics.decision_rule.label, 'INCONCLUSIVE');
+  assert.strictEqual(currentForensics.decision_rule.primary_n, 1);
+  assert.strictEqual(currentForensics.decision_rule.anchor_present, 0);
+  assert.strictEqual(currentForensics.decision_rule.hard_free_soft_unsafe, 1);
+  assert.strictEqual(currentForensics.decision_rule.identity_void, false);
+  assert.strictEqual(currentForensics.no_connector_classes.total, 106);
+}
 assert.strictEqual(
   status.sim2real_72h.simulation_verification.track_b_authority,
   'CLOSED_NO_FURTHER_GPU_PPO_RETUNE_RERUN',
@@ -283,7 +319,13 @@ assert.strictEqual(
   status.sim2real_72h.simulation_verification.historical_post_wall_brake_speed_envelope.route_mode,
   'off_historical_lineage',
 );
-assert(status.sim2real_72h.status.includes('NO FURTHER TRACK B AUTHORITY'));
+if (currentGate.status === 'RESULT_UNAVAILABLE_OR_MALFORMED'
+    || currentForensics.status === 'RESULT_UNAVAILABLE_OR_MALFORMED') {
+  assert(status.sim2real_72h.status.includes('TRACK B EVIDENCE UNAVAILABLE/MALFORMED'));
+  assert(status.sim2real_72h.status.includes('NO TRACK B AUTHORITY'));
+} else {
+  assert(status.sim2real_72h.status.includes('NO FURTHER TRACK B AUTHORITY'));
+}
 assert(status.sim2real_72h.status.includes('HARDWARE NEXT'));
 
 // The concise platform card must remain tied to the generated source-of-truth values.
@@ -307,8 +349,14 @@ while ((match = refPattern.exec(html)) !== null) refs.push(match[1]);
 for (const refPath of refs) {
   if (refPath.startsWith('#') || /^https?:/.test(refPath)) continue;
   const clean = refPath.split('#')[0].split('?')[0];
-  const target = path.resolve(site, clean);
+  let target = path.resolve(site, clean);
   assert(fs.existsSync(target), `broken local reference: ${refPath}`);
+  if (fs.statSync(target).isDirectory()) {
+    // Git tracks files, not directories. A public gallery link requires a tracked index.
+    target = path.join(target, 'index.html');
+    assert(fs.existsSync(target) && fs.statSync(target).isFile(),
+      `local directory reference has no index.html: ${refPath}`);
+  }
   const relative = path.relative(repo, target);
   assert(
     !relative.startsWith('..') &&

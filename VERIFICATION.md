@@ -17,6 +17,11 @@
 | C: E3-P 신뢰성 검사 | COMPLETE | ATTITUDE_NOT_RELIABLE; E3-P 원인 분해는 BLOCKED | [최신 검사](results/eth_ds5_e3p_reliability_2026-09-10/README.md) |
 | D: R4/R4b | COMPLETE | FAIL 유지; 기준 자체의 무효나 실패 원인을 입증하지 않음 | [재검증](results/renderer_reverification_2026-09-11_1951/README.md) |
 | D: 독립 renderer·URDF·배경 검증 | COMPLETE | TECHNICAL_PASS; 인지 shortcut 감소는 미측정 | [배경](results/renderer_background_v1_clean_2026-09-11/README.md), [URDF](results/renderer_urdf_smoke_2026-09-11/README.md) |
+| D: V1 기존 simulator probe 감사 | PARTIAL_EVIDENCE | 3,840개 저장된 거리·픽셀 수 쌍 일치; 영상·전체 궤적·실행 출처의 완전성 미입증 | [감사](results/target_appearance_in_sim_2026-09-12/AUDIT.md) |
+| D: V1 자산 계약 | CONTRACT_MISMATCH | 23e6818의 13-link 자산과 one-link 계약/회귀 테스트 불일치; 통합 완료로 표시하지 않음 | [기존 계약](docs/v1_shared_airframe_contract.md) |
+
+독립 프로토타입 면적비 0.587과 기존 simulator probe의 픽셀 수 비 1.000은 서로 다른
+입력 경로의 측정이다. 전자를 현재 detector 입력 변화나 shortcut 감소의 근거로 사용하지 않는다.
 
 E3-S의 6.2%는 9개 15초 블록의 **블록별 절대 상대 거리 오차 중앙값의 중앙값**이다.
 3,107프레임·약 31–108 m·한 비행이며 GT box가 아닌 dark-pixel-count 크기 측정이다.
