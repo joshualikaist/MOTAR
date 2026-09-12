@@ -74,3 +74,10 @@ python -B tools/compare_renderer_background_validation.py \
 비교 명령은 NumPy가 있는 환경에서 실행하며 기본적으로 파일을 쓰지 않는다. 결과를 새로 보존하려면
 --output에 아직 존재하지 않는 경로를 명시한다. renderer 재실행도 위 new_run이 이미 있으면
 새 경로를 사용해야 한다. 이 문서는 추가 실험 권한을 열지 않으며 기존 R4 기준을 바꾸지 않는다.
+
+## 독립 checkout 확인
+
+`ce7d191`의 새 full local clone과 NumPy-only Python 3.8.20 venv에서 비교 테스트 24개 및 실제
+run1/run2 CLI 검증이 PASS했다. ignored 파일을 복사하지 않았고 검사 후 checkout은 clean이다.
+이는 저장된 원배열의 CPU 검증이며 GPU 재렌더링/전체 설치 검증이 아니다.
+[환경·재현 명령·미완료 항목](../../docs/public_evidence_reproduction_2026-09-12.md).

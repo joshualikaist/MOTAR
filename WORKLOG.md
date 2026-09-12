@@ -17637,3 +17637,16 @@ decoded 14개 배열과 historical Git source 14개도 비교기가 검증한다
 24개를 실행했고 통과했다. Torch/Isaac Gym은 이 환경에서 검색되지 않는다.
 이는 원배열/receipt의 CPU 검증이며 새 GPU 렌더링이나 전체 설치 quickstart 성공을 뜻하지 않는다.
 전체 Git clone에서의 검증은 이 원배열 포함 커밋 이후 별도로 수행해 기록한다. push는 하지 않는다.
+
+## 2026-09-12 — 독립 checkout의 CPU 근거 재현 완료
+
+`ce7d191`을 `/tmp/motar-evidence-clone-C38xRP/repo`에 full local clone했다(`--no-hardlinks`).
+ignored 원배열이나 source_snapshot은 복사하지 않았다. 앞서 만든 NumPy-only venv로 appearance
+기술통계 6개·배경 비교 테스트 24개, 실제 비교 CLI(PASS/evidence_verified true×2)를 확인했다.
+Node 사이트 계약 검사도 PASS, 검사 후 clone은 clean이다. 실제로 push하지 않았으므로 원격
+배포 검증은 아니다. `docs/public_evidence_reproduction_2026-09-12.md`에 명령과 범위를 남긴다.
+
+전체 환경 테스트의 남은 실패 1개는 그대로이며, 전체 renderer 신규 설치·README 전면 재편·
+외부 인용/라이선스/전체 history 감사는 완료하지 않았다. 앞선 CPU Torch 신규 설치는 의존성
+해석/build 단계에서 실패했으며 이번 NumPy-only 성공으로 덮지 않는다. 새 simulator 실험·
+통합 코드 변경·사용자 데이터 삭제·push는 수행하지 않았다.
