@@ -17705,3 +17705,59 @@ README 일부만 성공으로 바뀌고 VERIFICATION·사이트·계약·CPU 설
 실패·오류 0**, 37.898초, exit 0. 이는 ef59832 위 문서·근거 테스트 변경이 있는 작업 트리의
 회귀이며 clean 실행으로 표시하지 않는다. `git diff --check` PASS, 기존 실행 코드·자산·
 CPU profile·historical 설치 summary는 변경 없음. 이번 후속 변경은 미커밋·미푸시 상태로 남긴다.
+
+## 2026-09-13 — D7 기존 커밋 푸시와 공개 연구 개요 사이트 재구성
+
+사용자의 새 첨부 요청에 따라 연구 실행 대신 공개 설명 계층을 정리했다.
+`git fetch origin` 후 원격 `77d885b55d642ffe6ae10aa4d89b9cdc962d7717`,
+HEAD `52b5dd878b28a15e0391efdee7cc5b2e01bdca65`, clean tree, 원격 ahead 0 / local ahead 4와
+ancestor 관계를 확인했다. `git push origin main`으로 cfeb0ac / 06c7643 / 1edf171 /
+52b5dd8 기존 네 커밋을 정상 푸시했다. force push 및 D7 재실험은 하지 않았다.
+
+`docs/status/index.html`을 Overview → Contributions → Environment → System → Perception →
+Parameters → Algorithms → Evidence → External Data 구조로 줄였다. 기존 WebGL 실행 코드·
+컨트롤 ID·script 순서는 그대로이고 긴 설명은 details에 넣었다. 이전 HTML 전문을
+`docs/status/archive-2026-09-13.html`에 원본 바이트 그대로 보존했다(SHA-256
+`a96982824b82293172b73ac226ade7396b8773c62366c21e32a5f4694accf2bb`). 상세 이동과 소스는
+`docs/status/overview-sources-2026-09-13.md`가 연결한다. Archive의 공유 JS는 live이므로
+독립 실행 환경 snapshot이라고 부르지 않는다.
+
+새 그림 7종은 `docs/assets/paper/overview-2026-09-13/`에만 생성했다. SVG 7 + 3840×2160
+PNG 7 + 벡터 PDF 7, 해시 manifest, ZIP이다. 기존 paper manifest·ZIP·historical figure 및
+result 파일은 덮어쓰지 않았다. `tools/render_research_overview.py`는 문서 생성 도구만
+재사용하며 simulator를 임포트하지 않는다. 그림은 기존 모듈의 상위 설명이며 새로운
+표적 인지·제어·요격 개선 설계가 아니다. 실사 selector 출력은 candidate rank/no-selection이고
+metric target state나 live policy 통합이 아니라는 점을 본문·점선으로 구분했다.
+
+공개 manifest의 뒤처진 D6–D8 명칭을 schema 2의 실제 D1–D9 기록으로 이관했다.
+D6 INCONCLUSIVE, D7 GO는 shadow 비용/출력 비간섭에만 해당, D8 NOT_STARTED,
+D9 NOT_RUN이다. 기존 generic-box benchmark 계획과 D6 target-mesh 결과를 합치지 않았다.
+기존 assistance scope BLOCKED_BY_POLICY와 실제 연구 상태를 별개로 설명했다.
+E3-S 6.2%는 단일 비행 dark-pixel 크기 proxy의 블록별 절대 상대오차 중앙값들의 중앙값이며,
+일반 센서 정확도/자세 분리가 아니다. E3-P·P10·C3 철회·R4/R4b 실패의 한계를 유지한다.
+
+설정 확인 중 default와 historical run의 차이를 명시했다: LiDAR 기본 36×4/4 m와
+canonical 72×4/12 m, 축별 속도 기본 2.0와 historical 2.5 m/s, 환경 기본 256과 D7 주요 셀
+128은 다른 것이다. 현재 실행값으로 묶지 않았다. Actor·실사 selector Transformer도 별개다.
+
+검증: 전체 unittest 첫 실행 **1,582 실행 / 1,578 통과 / 4 기존 skip / 실패·오류 0**,
+42.352초. 신규 개요 계약 8개, 기존 Node 사이트/arena motion/route/manifest, headless WebGL,
+공개 경로·Draft-7 schema·CFF 1.2.0, SVG XML/텍스트 overflow·figure hash/ZIP, diff-check 통과.
+역사적 수치/그림 assertion은 그 내용이 보존된 archive로 이동했고, 현재 페이지의 DOM·
+링크·claim boundary는 신규 테스트로 계속 검사한다. CPU CI에 새 개요 테스트를 추가했다.
+전체 suite의 고의 실패주입 traceback과 기존 dependency warning은 테스트 오류와 구분했다.
+
+실렌더 첫 검수에서 inherited CSS가 모바일 nav를 GitHub만 남기고 숨김을 발견했다.
+overview 전용 CSS로 교정하고 desktop 1360×1000 / tablet 800×1000 / mobile 390×844에서
+각각 nav 8개·manifest 9행·WebGL canvas·이미지 decode·문서 가로 overflow 없음을 확인했다.
+manifest 요청 차단 시 성공으로 보이지 않는 fallback도 확인했다. 7개 그림 PNG와 화면
+표본을 직접 봤다. `results/public_site_overview_2026-09-13/browser/`에 스크린샷 12개와
+실제 HTML/CSS/JS/SVG/tool SHA가 있는 dirty-tree receipt를 보존했다. 자세한 재현 명령과
+검증 한계는 같은 결과 디렉터리 README에 있다. Archive 생성 때 끝에 붙었던 빈 줄 하나는
+최종 원본 SHA 비교로 발견해 제거했고 원본 바이트 해시로 테스트를 고정했다.
+
+이번 변경으로 연구 결과·센서 기하·detector·정책·제어·viewer motion을 바꾸지 않았다.
+D8 구현/적응/새 학습과 표적 인지 개선 실험은 진행하거나 설계하지 않았다. 기존 기하·
+관측 계약의 미결 상태, 별도 계보·사전등록이 필요하다는 경계만 문서에 남겼다.
+사이트 변경은 사용자 요청대로 검토·커밋까지 진행하며, 이번 명시적 원격 푸시 범위는
+위 D7 네 커밋이다. 새 사이트의 hosted CI/공개 배포 완료는 주장하지 않는다.

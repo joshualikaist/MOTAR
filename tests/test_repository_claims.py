@@ -57,12 +57,12 @@ class RepositoryClaimsTest(unittest.TestCase):
         self.assertIn("never-observed holdout 아님", page)
 
     def test_memory_measure_has_scope(self):
-        page = read("docs/status/index.html")
+        page = read("docs/status/archive-2026-09-13.html")
         self.assertIn("183.9 MiB Torch peak allocated", page)
         self.assertIn("전체 프로세스 VRAM은 아닙니다", page)
 
     def test_prototype_area_is_not_active_detector_area(self):
-        for name in ("docs/results_overview_2026-09-12.md", "docs/status/index.html"):
+        for name in ("docs/results_overview_2026-09-12.md", "docs/status/archive-2026-09-13.html"):
             page = read(name)
             self.assertIn("0.587", page)
             self.assertIn("1.000", page)
@@ -73,7 +73,7 @@ class RepositoryClaimsTest(unittest.TestCase):
 
     def test_current_v1_resolution_does_not_erase_failure_history(self):
         for name in ("VERIFICATION.md", "docs/v1_shared_airframe_contract.md",
-                     "docs/status/index.html"):
+                     "docs/status/archive-2026-09-13.html"):
             page = read(name)
             self.assertIn("TEST_CONTRACT_RECONCILED", page)
             self.assertIn("5cea0e4", page)

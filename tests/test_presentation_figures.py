@@ -87,7 +87,7 @@ class PresentationFiguresTest(unittest.TestCase):
             data = (paper / (stem + '.png')).read_bytes()
             self.assertEqual(struct.unpack('>II', data[16:24]), (3840, 2160))
             self.assertTrue((paper / (stem + '.pdf')).read_bytes().startswith(b'%PDF-'))
-            for page in [ROOT / 'docs/results_overview_2026-09-12.md', ROOT / 'docs/status/index.html']:
+            for page in [ROOT / 'docs/results_overview_2026-09-12.md', ROOT / 'docs/status/archive-2026-09-13.html']:
                 self.assertIn('paper/' + stem + '.svg', page.read_text())
         with zipfile.ZipFile(paper / 'motar-paper-block-diagrams.zip') as archive:
             self.assertEqual(len(archive.namelist()), 29)

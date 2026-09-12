@@ -22,7 +22,7 @@ class PublicDocsTest(unittest.TestCase):
 
     def test_negative_outcomes_cannot_be_promoted(self):
         manifest = json.loads((ROOT / "docs/status_manifest.json").read_text())
-        for key in ("D4", "D5", "D7", "D8"):
+        for key in ("D4", "D5", "D6", "D7", "D8", "D9"):
             candidate = copy.deepcopy(manifest)
             candidate["track_d"][key]["status"] = "COMPLETE"
             self.assertTrue(docs.manifest_errors(candidate), key)

@@ -1,31 +1,102 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "type": "object", "additionalProperties": false,
-  "required": ["schema_version", "scope", "real_flight_validated", "track_d", "limits"],
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "scope",
+    "real_flight_validated",
+    "track_d",
+    "limits"
+  ],
   "properties": {
-    "schema_version": {"const": 1}, "scope": {"type": "string", "minLength": 1},
-    "real_flight_validated": {"const": false},
-    "track_d": {
-      "type": "object", "required": ["D1", "D2", "D3", "D4", "D5", "D6", "D7", "D8"],
-      "additionalProperties": false,
-      "patternProperties": {"^D[1-8]$": {"$ref": "#/definitions/entry"}}
+    "schema_version": {
+      "const": 2
     },
-    "limits": {"type": "object", "additionalProperties": false,
-      "required": ["integrated_simulator_cost", "e3p", "c3", "ppo_replication"],
+    "scope": {
+      "type": "string",
+      "minLength": 1
+    },
+    "real_flight_validated": {
+      "const": false
+    },
+    "track_d": {
+      "type": "object",
+      "required": [
+        "D1",
+        "D2",
+        "D3",
+        "D4",
+        "D5",
+        "D6",
+        "D7",
+        "D8",
+        "D9"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^D[1-9]$": {
+          "$ref": "#/definitions/entry"
+        }
+      }
+    },
+    "limits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "integrated_simulator_cost",
+        "e3p",
+        "c3",
+        "ppo_replication"
+      ],
       "properties": {
-        "integrated_simulator_cost": {"const": "INTEGRATED_RENDER_COST_UNMEASURED"},
-        "e3p": {"const": "ATTITUDE_NOT_RELIABLE"}, "c3": {"const": "WITHDRAWN"},
-        "ppo_replication": {"const": "INCONCLUSIVE"}
+        "integrated_simulator_cost": {
+          "const": "SHADOW_COST_ONLY"
+        },
+        "e3p": {
+          "const": "ATTITUDE_NOT_RELIABLE"
+        },
+        "c3": {
+          "const": "WITHDRAWN"
+        },
+        "ppo_replication": {
+          "const": "INCONCLUSIVE"
+        }
       }
     }
   },
   "definitions": {
-    "entry": {"type": "object", "additionalProperties": false,
-      "required": ["label", "status", "evidence"],
+    "entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "label",
+        "status",
+        "evidence"
+      ],
       "properties": {
-        "label": {"type": "string", "minLength": 1},
-        "status": {"enum": ["COMPLETE", "TECHNICAL_PASS", "FAIL", "PARTIAL_EVIDENCE", "PENDING", "BLOCKED_BY_POLICY", "NOT_RUN"]},
-        "evidence": {"type": "string", "minLength": 1}
+        "label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "enum": [
+            "COMPLETE",
+            "TECHNICAL_PASS",
+            "FAIL",
+            "PARTIAL_EVIDENCE",
+            "PENDING",
+            "BLOCKED_BY_POLICY",
+            "NOT_RUN",
+            "GO",
+            "INCONCLUSIVE",
+            "NOT_STARTED"
+          ]
+        },
+        "evidence": {
+          "type": "string",
+          "minLength": 1
+        }
       }
     }
   }

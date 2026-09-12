@@ -10,17 +10,18 @@ ROOT = Path(__file__).resolve().parents[1]
 PUBLIC = ("README.md", "THIRD_PARTY_LICENSES.md", "docs/results_overview_2026-09-12.md",
           "docs/renderer_cpu_quickstart_2026-09-12.md", "docs/renderer_public_tools.md",
           "docs/PUBLIC_RELEASE_CHECKLIST.md", "docs/public_release_audit_2026-09-12.md",
-          "docs/plans/moving_target_rendezvous_master_plan_2026-09-12.md")
+          "docs/plans/moving_target_rendezvous_master_plan_2026-09-12.md",
+          "docs/status/overview-sources-2026-09-13.md")
 STATUS_VALUES = {"COMPLETE", "TECHNICAL_PASS", "FAIL", "PARTIAL_EVIDENCE", "PENDING",
-                 "BLOCKED_BY_POLICY", "NOT_RUN"}
+                 "BLOCKED_BY_POLICY", "NOT_RUN", "GO", "INCONCLUSIVE", "NOT_STARTED"}
 
 
 def manifest_errors(data, root=ROOT):
     errors = []
-    if data.get("schema_version") != 1 or data.get("real_flight_validated") is not False:
+    if data.get("schema_version") != 2 or data.get("real_flight_validated") is not False:
         errors.append("manifest version/real-flight scope invalid")
     entries = data.get("track_d", {})
-    if set(entries) != {"D" + str(i) for i in range(1, 9)}:
+    if set(entries) != {"D" + str(i) for i in range(1, 10)}:
         errors.append("Track D entries missing or extra")
     for key, row in entries.items():
         if not isinstance(row, dict) or set(row) != {"label", "status", "evidence"}:
@@ -32,11 +33,11 @@ def manifest_errors(data, root=ROOT):
         if root.resolve() not in path.parents or not path.is_file():
             errors.append(key + ": missing/escaping evidence")
     # These are protected negative outcomes, not test-count or performance pins.
-    for key, status in {"D4": "FAIL", "D5": "PARTIAL_EVIDENCE", "D7": "BLOCKED_BY_POLICY", "D8": "NOT_RUN"}.items():
+    for key, status in {"D4": "FAIL", "D5": "PARTIAL_EVIDENCE", "D6": "INCONCLUSIVE", "D7": "GO", "D8": "NOT_STARTED", "D9": "NOT_RUN"}.items():
         if entries.get(key, {}).get("status") != status:
             errors.append(key + ": protected evidence boundary changed")
     expected = {"e3p": "ATTITUDE_NOT_RELIABLE", "c3": "WITHDRAWN", "ppo_replication": "INCONCLUSIVE",
-                "integrated_simulator_cost": "INTEGRATED_RENDER_COST_UNMEASURED"}
+                "integrated_simulator_cost": "SHADOW_COST_ONLY"}
     if data.get("limits") != expected:
         errors.append("negative/withdrawn evidence limits changed")
     return errors

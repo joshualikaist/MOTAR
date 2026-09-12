@@ -7,7 +7,9 @@ const path = require('path');
 
 const repo = path.resolve(__dirname, '..');
 const site = path.join(repo, 'docs/status');
-const html = fs.readFileSync(path.join(site, 'index.html'), 'utf8');
+// Historical evidence/figure assertions remain enforced on the preserved detail page.
+// Current overview and live viewer contracts are tested separately.
+const html = fs.readFileSync(path.join(site, 'archive-2026-09-13.html'), 'utf8');
 const css = fs.readFileSync(path.join(site, 'style.css'), 'utf8');
 // The landing page links the evidence overview; full historical figure contracts stay there.
 const landing = fs.readFileSync(path.join(repo, 'README.md'), 'utf8');
