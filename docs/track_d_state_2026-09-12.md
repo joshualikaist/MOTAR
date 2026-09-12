@@ -9,8 +9,8 @@
 | D3 | 배경 장면 엔지니어링 | `TECHNICAL_PASS` | `results/renderer_background_v1_clean_2026-09-11/`, `..._2026-09-12/` |
 | D4 | R4/R4b 통계 기준 | `FAIL` (보존) | `docs/renderer_r3_r5_results_2026-09-11.md` |
 | D5 | 시뮬레이터 visual probe | `PARTIAL_EVIDENCE` | `results/target_appearance_in_sim_2026-09-12/` |
-| D6 | 동적 메시 타당성 | `INCONCLUSIVE` (정확성 통과, 비용 1.53배) | `results/dynamic_mesh_raycast_feasibility_2026-09-12/` |
-| D7 | 통합 렌더 비용 | `INTEGRATED_RENDER_COST_UNMEASURED` | — |
+| D6 | 동적 메시 타당성 | `INCONCLUSIVE` (정확성 통과, 커널 질의 비용 1.53배) | `results/dynamic_mesh_raycast_feasibility_2026-09-12/` |
+| D7 | 통합 렌더 비용 | **`GO`** (전체 step +0.41 ms / +1.0 %, 출력 불변) | `results/dynamic_mesh_integrated_cost_2026-09-12/` |
 | D8 | 검출기 통합 | `NOT_STARTED` | — |
 | D9 | 색 지름길 재측정 | `NOT_RUN` | — |
 
@@ -29,7 +29,17 @@ URDF visual 변경  →  Isaac 자산 외형 변경
 구조는 의도적으로 보인다. `정적 장애물 메시` + `동적 표적 해석적 프리미티브`로 분리해 매 스텝
 BVH 재적합을 피한다.
 
-## D7 — 통합 비용은 아직 측정되지 않았다
+## D7 — 측정 완료 (2026-09-12)
+
+주요 셀 128 env × 160×90에서 전체 env step이 42.34 → 42.75 ms(**+0.41 ms, +1.0 %**), throughput
+손실 3.8 %, torch 예약 +0.0 MiB, NVML device used **+32 MiB**. 네 셀 모두 detector `target_mask`·
+`target_depth`와 궤적 해시가 **shadow OFF/ON에서 동일**하며, 같은 실행에서 shadow 질의는 667픽셀을
+맞혔다(불변성이 공허하지 않다는 증거). 사전등록 네 축을 전부 만족해 판정 **`GO`**.
+
+D6의 1.53배와 모순되지 않는다. 분모가 다르다: D6은 프록시 커널 질의(0.460 ms), D7은 스텝 전체
+(42.34 ms)다. 추가분 자체는 0.245 ms 대 0.411 ms로 같은 자릿수다. **D6 판정은 그대로 `INCONCLUSIVE`다.**
+
+### 이전 판의 문구 (보존)
 
 **기존 숫자에서 보간하지 않는다.** 3.09 ms, 9.14 ms, R5의 음영 비용은 서로 다른 fixture와 단계의
 측정이다. D6이 잰 것은 **독립 프로토타입에서의** 질의 비용(결정 셀 1.53배, +0.245 ms)이며,
