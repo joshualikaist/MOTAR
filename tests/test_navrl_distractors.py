@@ -896,6 +896,13 @@ class DistractorPlacement(unittest.TestCase):
 ROUTE_PLANNER_PATH = REPO / "aerial_gym/task/navrl_task/target_route_planner.py"
 _ROUTES = _load("navrl_target_route_planner_distractors", ROUTE_PLANNER_PATH)
 
+# The warp stub is needed only while the subjects above are executed: their @wp.kernel decorators
+# and annotations evaluate at import. Leaving it in sys.modules made every LATER test module in a
+# full-suite run import a fake warp whose Mesh returns None, which is how the dynamic-mesh gates
+# came to error on a None mesh. Put the name back now that the loading is done.
+if sys.modules.get("warp") is _warp:
+    del sys.modules["warp"]
+
 # The live _spawn_required_surface_margin_m() value, identical to the constant
 # tests/test_navrl_spawn_footprint_clearance.py derives from the ref5in URDF + tracking margin.
 SPAWN_MARGIN_M = 0.649802

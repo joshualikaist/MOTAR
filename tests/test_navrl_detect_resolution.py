@@ -99,6 +99,13 @@ _load(
 sys.modules["aerial_gym.task.navrl_task"].__path__ = [str(REPO / "aerial_gym/task/navrl_task")]
 sys.modules["aerial_gym.task.navrl_task.navrl_detector"] = _DET
 _PERC = _load("navrl_perception_detectres", "aerial_gym/task/navrl_task/navrl_perception.py")
+
+# The warp stub is needed only while the subjects above are executed: their @wp.kernel decorators
+# and annotations evaluate at import. Leaving it in sys.modules made every LATER test module in a
+# full-suite run import a fake warp whose Mesh returns None, which is how the dynamic-mesh gates
+# came to error on a None mesh. Put the name back now that the loading is done.
+if sys.modules.get("warp") is _warp:
+    del sys.modules["warp"]
 PERC_SOURCE = (REPO / "aerial_gym/task/navrl_task/navrl_perception.py").read_text(
     encoding="utf-8"
 )
