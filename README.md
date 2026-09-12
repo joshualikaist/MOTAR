@@ -622,34 +622,27 @@ conda activate aerialgym
 export PYTHONNOUSERSITE=1
 ```
 
-### Quick start — verified on 2026-09-12, not guessed
+### Quick start — standalone generic renderer, CPU only
 
-These four ran in this order in the working environment (Python 3.8.20, numpy 1.23.0,
-torch 2.4.1+cu121). The first three need **no GPU and no Isaac Gym**, so they are the cheapest way
-to confirm a checkout is sound before installing the heavy pieces.
+Use the [new-environment instructions](docs/renderer_cpu_quickstart_2026-09-12.md) and
+[separate CPU profile](requirements-renderer-cpu.txt): Linux x86-64, Python 3.8, Git and a **new
+venv**. Do not install the root package or overwrite the historical simulator environment.
+The profile pins an upstream urdfpy source revision: the identically numbered PyPI 0.0.22 wheel
+fails eight of the existing renderer tests, even though `pip check` succeeds.
 
-```bash
-export PYTHONNOUSERSITE=1
+The instructions check actual package origins, run the original 146 renderer tests plus six
+packaging tests, and render a small generic box scene on CPU. `--help` alone proves none of these.
+[Measured installation outcomes and limits](results/renderer_cpu_install_2026-09-12/README.md).
+This is not a detector, policy or simulator deployment quickstart.
 
-# 1. environment check
-python -c "import sys, numpy, torch; print(sys.version.split()[0], numpy.__version__, torch.__version__)"
+### Historical simulator environment — separate from the CPU quick start
 
-# 2. the renderer tool answers
-python -B tools/run_renderer_validation.py --help
-
-# 3. renderer tests, CPU only — 146 tests, no PYTHONPATH needed
-CUDA_VISIBLE_DEVICES="" python -B -m unittest discover -s tests -p 'test_renderer*.py'
-
-# 4. the whole suite — 1,484 tests, needs the repository root importable
-PYTHONPATH="$PWD" python -B -m unittest discover -s tests -p 'test_*.py'
-```
-
-Steps 3 and 4 are the smoke test. Anything beyond them needs Isaac Gym Preview 4 and a GPU; the
-training and evaluation launchers live under `aerial_gym/rl_training/rl_games/` and their contracts
-are in [`OPERATIONS.md`](OPERATIONS.md).
-
-`requirements.txt` covers what pip can install. Isaac Gym and pytorch3d cannot be installed from
-it and are handled by the bootstrap script.
+The bootstrap and commands below belong to the historical full environment, not the independent
+CPU profile. The V1 asset became thirteen links because the Warp asset loader assumes one mesh per
+link, and the one-link test that conflicted with it has been replaced by one asserting what
+it was written for: mass and collision stay on `base_link`. The suite is green at 1,533 tests. See [current verification](VERIFICATION.md) and [the audit](results/target_appearance_in_sim_2026-09-12/AUDIT.md).
+Root `requirements.txt` is a legacy list, not a complete reproducible install; Isaac Gym and
+pytorch3d are external prerequisites. Historical execution contracts are in [OPERATIONS.md](OPERATIONS.md).
 
 Run the CPU contracts before spending GPU time:
 

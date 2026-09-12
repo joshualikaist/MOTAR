@@ -5,6 +5,11 @@ runs/
 # These two reviewed archives are explicit exceptions, not permission to track frame dumps.
 !results/renderer_background_v1_2026-09-12/run1/arrays.npz
 !results/renderer_background_v1_2026-09-12/run2/arrays.npz
+# Four tiny generic-box frames accompany the standalone CPU installation receipts.
+!results/renderer_cpu_install_2026-09-12/smoke1/frame_0000.npz
+!results/renderer_cpu_install_2026-09-12/smoke1/frame_0001.npz
+!results/renderer_cpu_install_2026-09-12/smoke2/frame_0000.npz
+!results/renderer_cpu_install_2026-09-12/smoke2/frame_0001.npz
 *.pt
 *.tfevents*
 *.egg-info/

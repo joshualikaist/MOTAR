@@ -1,5 +1,10 @@
 # 공개 근거의 CPU 재현 점검 — 2026-09-12
 
+> 후속 갱신: 아래 NumPy-only 검사 이후 독립 renderer의 전체 CPU 신규 설치와 실제 일반 장면
+> smoke도 별도로 완료했다. [설치 결과](../results/renderer_cpu_install_2026-09-12/README.md).
+> 아래 미완료 목록은 이 문서의 첫 점검 시점 기록이며 V1 계약 실패·GPU/전체 simulator 검증은
+> 여전히 별개다. 설치 성공으로 전체 연구 gate를 PASS로 바꾸지 않는다.
+
 ## 완료 범위
 
 검증 checkout은 `ce7d191`이다. 원 저장소를 `git clone --local --no-hardlinks`로 새 디렉터리에

@@ -10,8 +10,10 @@
 warp-lang==1.0.0        # installed 1.0.0
 urdfpy==0.0.22          # installed 0.0.22. Was written `urdfpy=0.0.22`, a single `=`, which
                         # made pip fail to parse this whole file. In this environment urdfpy is
-                        # a source checkout at ../urdfpy rather than a PyPI install; the pinned
-                        # version matches either way.
+                        # a source checkout at ../urdfpy rather than a PyPI install. The version
+                        # string does NOT establish equivalent behavior: the public wheel fails
+                        # cylinder tests. For standalone CPU reproduction use the separately
+                        # source-pinned requirements-renderer-cpu.txt, not this legacy list.
 networkx==2.2           # installed 2.2. Was declared ==3.1, which nothing here runs on and
                         # which urdfpy's own setup.py pins away from: it requires networkx==2.2.
                         # Installing 3.1 gives a resolver conflict or a broken URDF loader.
