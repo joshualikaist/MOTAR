@@ -66,9 +66,28 @@ class PhysicsIsUntouchedTest(unittest.TestCase):
         for tag in ("inertial", "collision"):
             self.assertEqual(tokens(V3, tag), tokens(V2, tag), tag)
 
-    def test_it_is_still_one_base_link(self):
-        links = ElementTree.parse(str(V3)).getroot().findall("link")
-        self.assertEqual([link.get("name") for link in links], ["base_link"])
+    def test_physics_lives_only_on_base_link(self):
+        """The asset is thirteen links now; what must not spread is mass and collision.
+
+        It was one link until warp_asset.py refused it: that loader indexes a per-link name list
+        with a per-mesh counter, so it assumes one mesh per link and raised IndexError on thirteen
+        visuals in one link. The interceptor URDF already uses one visual per link, so the asset
+        follows it. The invariant this test was written for is unchanged and is asserted directly
+        rather than through a link count.
+        """
+        root = ElementTree.parse(str(V3)).getroot()
+        links = root.findall("link")
+        self.assertEqual(links[0].get("name"), "base_link")
+        with_collision = [l.get("name") for l in links if l.find("collision") is not None]
+        self.assertEqual(with_collision, ["base_link"])
+        for link in links[1:]:
+            mass = link.find("inertial/mass")
+            self.assertIsNotNone(mass, link.get("name"))
+            self.assertEqual(float(mass.get("value")), 0.0, link.get("name"))
+        joints = root.findall("joint")
+        self.assertEqual(len(joints), len(links) - 1)
+        self.assertTrue(all(j.get("type") == "fixed" for j in joints))
+        self.assertTrue(all(j.find("parent").get("link") == "base_link" for j in joints))
 
     def test_no_visual_geometry_escapes_the_collision_box(self):
         """A silhouette larger than the collision proxy would be visible where nothing can be hit.
@@ -79,22 +98,37 @@ class PhysicsIsUntouchedTest(unittest.TestCase):
         margin here is 0.218 mm, so a vertex-based test can pass on geometry that escapes.
         """
         half = np.array(HALF_EXTENTS(str(V3)))
+        root = ElementTree.parse(str(V3)).getroot()
+        # Each part's placement moved from its <visual> origin to its fixed joint when the asset
+        # became multi-link. Reading only the visual origin would put every part at the centre and
+        # pass this test having measured nothing, so compose the joint origin with it.
+        joint_of = {}
+        for joint in root.findall("joint"):
+            origin = joint.find("origin")
+            joint_of[joint.find("child").get("link")] = (
+                np.array([float(v) for v in origin.get("xyz").split()]),
+                [float(v) for v in origin.get("rpy").split()])
         worst = np.zeros(3)
-        for visual in ElementTree.parse(str(V3)).getroot().findall("link/visual"):
-            shape = list(visual.find("geometry"))[0]
-            origin = visual.find("origin")
-            centre = np.array([float(v) for v in origin.get("xyz").split()])
-            roll, pitch, yaw = (float(v) for v in origin.get("rpy").split())
-            if shape.tag == "box":
-                extent = np.array([float(v) for v in shape.get("size").split()]) / 2.0
-            elif shape.tag == "sphere":
-                extent = np.full(3, float(shape.get("radius")))
-            else:
-                radius, length = float(shape.get("radius")), float(shape.get("length"))
-                # Analytic support of a cylinder: the exact half-extent along each world axis.
-                axis = rotation_from_rpy(roll, pitch, yaw) @ np.array([0.0, 0.0, 1.0])
-                extent = np.abs(axis) * length / 2.0 + np.sqrt(np.maximum(1.0 - axis ** 2, 0.0)) * radius
-            worst = np.maximum(worst, np.abs(centre) + extent)
+        for link in root.findall("link"):
+            for visual in link.findall("visual"):
+                shape = list(visual.find("geometry"))[0]
+                origin = visual.find("origin")
+                centre = np.array([float(v) for v in origin.get("xyz").split()])
+                roll, pitch, yaw = (float(v) for v in origin.get("rpy").split())
+                offset, joint_rpy = joint_of.get(link.get("name"), (np.zeros(3), [0.0, 0.0, 0.0]))
+                centre = offset + rotation_from_rpy(*joint_rpy) @ centre
+                roll, pitch, yaw = (a + b for a, b in zip((roll, pitch, yaw), joint_rpy))
+                if shape.tag == "box":
+                    extent = np.array([float(v) for v in shape.get("size").split()]) / 2.0
+                elif shape.tag == "sphere":
+                    extent = np.full(3, float(shape.get("radius")))
+                else:
+                    radius, length = float(shape.get("radius")), float(shape.get("length"))
+                    # Analytic support of a cylinder: exact half-extent along each world axis.
+                    axis = rotation_from_rpy(roll, pitch, yaw) @ np.array([0.0, 0.0, 1.0])
+                    extent = (np.abs(axis) * length / 2.0
+                              + np.sqrt(np.maximum(1.0 - axis ** 2, 0.0)) * radius)
+                worst = np.maximum(worst, np.abs(centre) + extent)
         self.assertTrue(np.all(worst <= half),
                         f"declared visual extent {worst} exceeds collision half extents {half}")
         # The margin is under a millimetre, which is why the measurement method matters here.
