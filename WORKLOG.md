@@ -17623,3 +17623,17 @@ snapshot tests 19개 실행(1 skip), 나머지 통과. Node와 최종 전체 스
 새로 추가한 8개 테스트는 모두 통과했고 실패는 같은 one-link 계약 1개뿐이다.
 Node 사이트 테스트 PASS. 기존 링크 검사도 디렉터리 자체의 Git 추적을 요구하는 결함이 있어
 gallery의 실제 `index.html` 존재·추적을 검사하도록 고쳤다. 문서/발표 원본 hash는 유지된다.
+
+## 2026-09-12 — 독립 배경 검증 원배열의 공개 재현성 복구
+
+기존 비교 테스트는 Git에서 제외된 `arrays.npz` 두 개를 필요로 했다. 합성 일반 배경만 담은
+`results/renderer_background_v1_2026-09-12/run{1,2}/arrays.npz`를 각각 1,573,320 bytes로 확인해
+이 두 경로만 `.gitignore` 예외 처리했다. 두 파일 SHA-256은
+`bd4c7d4664b78d76683b1a89760ebdfeecf8427fe064a96ae8a08c3074736492`이며 receipt와 일치한다.
+decoded 14개 배열과 historical Git source 14개도 비교기가 검증한다. 직전 기록의 "13개 source"는
+14개로 정정한다. 다른 NPZ·실사 데이터·체크포인트 ignore는 그대로이며 historical JSON은 보존했다.
+
+`--system-site-packages` 없는 새 Python 3.8.20 venv에 NumPy 1.23.0만 설치해 비교 테스트
+24개를 실행했고 통과했다. Torch/Isaac Gym은 이 환경에서 검색되지 않는다.
+이는 원배열/receipt의 CPU 검증이며 새 GPU 렌더링이나 전체 설치 quickstart 성공을 뜻하지 않는다.
+전체 Git clone에서의 검증은 이 원배열 포함 커밋 이후 별도로 수행해 기록한다. push는 하지 않는다.

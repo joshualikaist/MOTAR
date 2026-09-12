@@ -1,6 +1,10 @@
 *.pyc
 runs/
 *.npz
+# Small, synthetic-only background evidence required by the offline comparison tests.
+# These two reviewed archives are explicit exceptions, not permission to track frame dumps.
+!results/renderer_background_v1_2026-09-12/run1/arrays.npz
+!results/renderer_background_v1_2026-09-12/run2/arrays.npz
 *.pt
 *.tfevents*
 *.egg-info/
