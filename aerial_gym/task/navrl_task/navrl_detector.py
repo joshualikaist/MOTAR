@@ -432,6 +432,8 @@ class NavRLTargetDetector:
             self._target_orientations, dtype=wp.quat
         )
         self._mask_wp = wp.from_torch(self.target_mask, dtype=wp.int32)
+        # Shadow instrumentation for the D7 cost measurement; None unless explicitly enabled.
+        self._dynamic_mesh_shadow = None
         self._depth_wp = wp.from_torch(self.target_depth, dtype=wp.float32)
         self._obstacle_depth_wp = wp.from_torch(self.obstacle_depth, dtype=wp.float32)
 
@@ -829,6 +831,15 @@ class NavRLTargetDetector:
             ],
             device=str(self.device),
         )
+        # D7 shadow instrumentation. Runs the dynamic-mesh query the integration would run,
+        # writes only into its own buffers, and is read by nothing in this class. Off unless
+        # NAVRL_DYNAMIC_MESH_SHADOW is set, and when off the module is never even imported, so
+        # the default path is byte-identical to what it was before this hook existed.
+        if self._dynamic_mesh_shadow is not None:
+            self._dynamic_mesh_shadow.run(
+                self._origins_wp, self._orientations_wp, self._ray_vectors_wp,
+                self._targets_wp, self._target_orientations_wp)
+
         wp.launch(
             kernel=_render_obstacle_depth_kernel,
             dim=(self.num_envs, self.obstacle_height, self.obstacle_width),
@@ -937,6 +948,21 @@ class NavRLTargetDetector:
             self._blur_valid[:] = True
         rgb = rgb.clamp(0.0, 1.0)
         return rgb.contiguous(), depth.contiguous()
+
+    def attach_dynamic_mesh_shadow(self, mesh_scene):
+        """Attach the D7 shadow query. Instrumentation only; nothing here reads its output.
+
+        Refuses unless NAVRL_DYNAMIC_MESH_SHADOW is set, so the measurement path cannot be turned
+        on by importing something. Returns the shadow object for the benchmark to read timings
+        and hit counts from; the detector itself only launches it.
+        """
+        from aerial_gym.task.navrl_task.navrl_dynamic_mesh_shadow import (
+            DynamicMeshShadow, shadow_enabled, FLAG)
+        if not shadow_enabled():
+            raise RuntimeError(f"{FLAG} is not enabled; refusing to attach shadow instrumentation")
+        self._dynamic_mesh_shadow = DynamicMeshShadow(
+            mesh_scene, self.num_envs, self.height, self.width, self.device, self.max_range)
+        return self._dynamic_mesh_shadow
 
     def detect(
         self, drone_pos_w, vehicle_quat, target_pos_w, target_quat=None, update_tracker=True
