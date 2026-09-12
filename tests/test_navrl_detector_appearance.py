@@ -53,6 +53,13 @@ _PATH = Path(__file__).parents[1] / "aerial_gym/task/navrl_task/navrl_detector.p
 _SPEC = importlib.util.spec_from_file_location("navrl_detector_standalone", _PATH)
 _DET = importlib.util.module_from_spec(_SPEC)
 _SPEC.loader.exec_module(_DET)
+
+# The stub above was needed only while navrl_detector was being executed: its @wp.kernel
+# decorators and annotations evaluate at import. Leaving it in sys.modules made every LATER test
+# module in a full-suite run import a fake warp whose Mesh returns None, which is how the
+# dynamic-mesh raycast gates came to error with AttributeError on a None mesh. Put the name back.
+if sys.modules.get("warp") is _warp:
+    del sys.modules["warp"]
 SOURCE = _PATH.read_text(encoding="utf-8")
 
 

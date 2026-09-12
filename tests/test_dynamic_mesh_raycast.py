@@ -5,6 +5,7 @@ results/dynamic_mesh_raycast_feasibility_2026-09-12/PREREGISTRATION.md and are n
 GPU is required, so each test skips rather than passing vacuously when CUDA is absent.
 """
 import hashlib
+import importlib
 from pathlib import Path
 import sys
 import unittest
@@ -13,6 +14,7 @@ import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
+
 from renderer_validation.scene import MeshScene, asymmetric_box_fixture, l_shape_fixture
 from renderer_validation import reference_raycast as reference
 
@@ -20,6 +22,9 @@ DEPTH_TOL = 1e-5
 NORMAL_TOL = 1e-4
 UNIT_TOL = 1e-5
 ROTATION_CHANGE_MIN = 0.05
+
+
+_ABSENT = object()
 
 
 def cuda_available():
@@ -63,10 +68,29 @@ class DynamicMeshRaycastTest(unittest.TestCase):
     def setUpClass(cls):
         if not cuda_available():
             raise unittest.SkipTest("dynamic-mesh raycast needs CUDA")
+        # Two CPU-only test modules install a fake `warp` in sys.modules so that @wp.kernel
+        # decorators evaluate at import, using setdefault, i.e. only when the name is free. These
+        # gates need the real package, and a stub's Mesh returns None, which errors rather than
+        # passing quietly. Swap the real one in for this class and put the previous state back
+        # afterwards, so nothing here changes what those modules see.
+        cls._saved_warp = sys.modules.get("warp", _ABSENT)
+        if not isinstance(getattr(cls._saved_warp, "Mesh", None), type):
+            sys.modules.pop("warp", None)
+            importlib.import_module("warp")
+        cls._warp = sys.modules["warp"]
+        if not isinstance(getattr(cls._warp, "Mesh", None), type):
+            raise AssertionError("could not obtain the real warp package; refusing to run on a stub")
         from renderer_validation.dynamic_mesh import DynamicMeshRaycaster
         cls.Raycaster = DynamicMeshRaycaster
         cls.origins, cls.directions = camera_rays()
         cls.identity = np.array([0.0, 0.0, 0.0, 1.0])
+
+    @classmethod
+    def tearDownClass(cls):
+        if cls._saved_warp is _ABSENT:
+            sys.modules.pop("warp", None)
+        else:
+            sys.modules["warp"] = cls._saved_warp
 
     def caster(self, dynamic=None):
         return self.Raycaster(empty_scene(), dynamic or asymmetric_box_fixture(), far_range_m=50.0)
