@@ -72,9 +72,9 @@ class PresentationFiguresTest(unittest.TestCase):
         self.assertEqual(len(manifest), 28)  # 9 × SVG/PNG/PDF + captions
         for filename, expected in manifest.items():
             self.assertEqual(hashlib.sha256((paper / filename).read_bytes()).hexdigest(), expected)
-        sources = re.findall(r'!\[[^\]]*\]\(([^)]+)\)', (ROOT / 'README.md').read_text())
+        sources = re.findall(r'!\[[^\]]*\]\(([^)]+)\)', (ROOT / 'docs/results_overview_2026-09-12.md').read_text())
         self.assertEqual(len(sources), 9)
-        self.assertTrue(all(source.startswith('docs/assets/paper/') for source in sources))
+        self.assertTrue(all(source.startswith('assets/paper/') for source in sources))
         for source in sources:
             stem = Path(source).stem
             svg = ET.parse(paper / (stem + '.svg')).getroot()
@@ -87,7 +87,7 @@ class PresentationFiguresTest(unittest.TestCase):
             data = (paper / (stem + '.png')).read_bytes()
             self.assertEqual(struct.unpack('>II', data[16:24]), (3840, 2160))
             self.assertTrue((paper / (stem + '.pdf')).read_bytes().startswith(b'%PDF-'))
-            for page in [ROOT / 'README.md', ROOT / 'docs/status/index.html']:
+            for page in [ROOT / 'docs/results_overview_2026-09-12.md', ROOT / 'docs/status/index.html']:
                 self.assertIn('paper/' + stem + '.svg', page.read_text())
         with zipfile.ZipFile(paper / 'motar-paper-block-diagrams.zip') as archive:
             self.assertEqual(len(archive.namelist()), 29)
@@ -99,7 +99,7 @@ class PresentationFiguresTest(unittest.TestCase):
         paper = ROOT / 'docs/assets/paper'
         gallery = (paper / 'index.html').read_text()
         sources = re.findall(r'<img src="([^"]+)"', gallery)
-        readme_sources = re.findall(r'!\[[^\]]*\]\(([^)]+)\)', (ROOT / 'README.md').read_text())
+        readme_sources = re.findall(r'!\[[^\]]*\]\(([^)]+)\)', (ROOT / 'docs/results_overview_2026-09-12.md').read_text())
         self.assertEqual(sources, [Path(p).name for p in readme_sources])
         for link in re.findall(r'(?:href|src)="([^"]+)"', gallery):
             self.assertTrue((paper / link).exists(), link)

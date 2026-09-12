@@ -62,7 +62,7 @@ class RepositoryClaimsTest(unittest.TestCase):
         self.assertIn("전체 프로세스 VRAM은 아닙니다", page)
 
     def test_prototype_area_is_not_active_detector_area(self):
-        for name in ("README.md", "docs/status/index.html"):
+        for name in ("docs/results_overview_2026-09-12.md", "docs/status/index.html"):
             page = read(name)
             self.assertIn("0.587", page)
             self.assertIn("1.000", page)

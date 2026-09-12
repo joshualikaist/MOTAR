@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="MOTAR — sensor-only UAV moving-target interception research overview.">
+  <meta name="description" content="MOTAR — simulation-only perception, safety-filter analysis and moving-target rendezvous research records.">
   <meta name="theme-color" content="#f7faf8">
-  <title>MOTAR · Moving-target interception</title>
+  <title>MOTAR · Moving-target rendezvous research</title>
   <link rel="stylesheet" href="style.css?v=20260827r6">
 </head>
 <body>
@@ -27,10 +27,14 @@
 
   <main id="top">
     <section class="hero wrap">
-      <div class="eyebrow">UAV · REINFORCEMENT LEARNING · SIM-TO-REAL</div>
-      <h1>Perceive. Decide.<br><span>Intercept.</span></h1>
+      <div class="eyebrow">SIMULATION-ONLY · EVIDENCE · REPRODUCIBILITY</div>
+      <h1>Observe. Measure.<br><span>Reproduce.</span></h1>
       <p class="hero-copy">카메라와 LiDAR만으로 밀집 장애물 속 움직이는 표적을 추적하는 드론 정책.
-        성공률 경쟁보다 <strong>언제, 왜 실패하는지</strong>를 재현 가능한 수치로 설명합니다.</p>
+        성공률 경쟁보다 <strong>언제, 왜 실패하는지</strong>를 재현 가능한 수치로 설명합니다.
+        과거 interception/capture 실험은 원래 의미로 보존하며, rendezvous라는 공개 표현이
+        과거 결과를 다른 기능의 증거로 바꾸지는 않습니다.</p>
+      <div id="public-status-manifest" aria-live="polite">상태 목록을 불러오는 중입니다.</div>
+      <script src="status_manifest.js" defer></script>
       <div class="actions">
         <a class="button primary" href="#method">시스템 보기</a>
         <a class="button" href="../MOTAR_SYSTEM_SPEC_2026-08-24.md">전체 사양서</a>

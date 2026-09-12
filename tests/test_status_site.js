@@ -9,7 +9,10 @@ const repo = path.resolve(__dirname, '..');
 const site = path.join(repo, 'docs/status');
 const html = fs.readFileSync(path.join(site, 'index.html'), 'utf8');
 const css = fs.readFileSync(path.join(site, 'style.css'), 'utf8');
-const readme = fs.readFileSync(path.join(repo, 'README.md'), 'utf8');
+// The landing page links the evidence overview; full historical figure contracts stay there.
+const landing = fs.readFileSync(path.join(repo, 'README.md'), 'utf8');
+assert(landing.includes('docs/results_overview_2026-09-12.md'));
+const readme = fs.readFileSync(path.join(repo, 'docs/results_overview_2026-09-12.md'), 'utf8');
 const platform = JSON.parse(fs.readFileSync(path.join(site, 'data/platform.json'), 'utf8'));
 const status = JSON.parse(fs.readFileSync(path.join(site, 'status.json'), 'utf8'));
 const experiments = JSON.parse(fs.readFileSync(path.join(site, 'data/experiments.json'), 'utf8')).experiments;
@@ -105,7 +108,7 @@ for (const asset of [
   const svg = fs.readFileSync(assetPath, 'utf8');
   assert(svg.includes('<title'));
   assert(svg.includes('<desc'));
-  assert(readme.includes(`docs/assets/${asset}`));
+  assert(readme.includes(`assets/${asset}`));
   assert(html.includes(`../assets/${asset}`));
 }
 const currentPerception = fs.readFileSync(

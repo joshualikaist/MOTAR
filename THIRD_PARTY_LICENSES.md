@@ -1,92 +1,74 @@
 # Third-party materials
 
-What this repository contains that it did not write, where each piece came from, and whether it
-is redistributed here. Code licences and dataset licences are listed separately, because they are
-different instruments and conflating them is how a redistribution problem gets missed.
+This is a source/redistribution inventory, **not legal advice or blanket release clearance**.
+`VERIFIED` means the stated licence text/source was directly checked, not that every use or every
+historical file has received a legal audit. Conditions can differ between code, data, weights and images.
 
-Status labels are deliberately narrow:
+## Code and attribution
 
-| Label | Meaning |
-|---|---|
-| `VERIFIED` | The licence was read from the upstream source or from a file in this repository, and the use here matches it. |
-| `NEEDS_CONFIRMATION` | The licence is known but whether this use is permitted has not been confirmed. **Treat as a release blocker.** |
-| `NOT_REDISTRIBUTED` | Nothing from this component is in the repository; it is downloaded or installed separately. |
+| Component | Licence/source checked | Repository boundary | Status |
+|---|---|---|---|
+| Aerial Gym Simulator | Root [BSD-3-Clause notice](LICENSE), copyright Autonomous Robots Lab, NTNU | Fork contains upstream code/assets; original notice retained | VERIFIED notice; asset-by-asset provenance not certified |
+| NavRL | [Upstream MIT licence](https://github.com/Zhefan-Xu/NavRL/blob/main/LICENSE), copyright 2025 Zhefan Xu; checked 2026-09-12 | Acknowledged related software; this pass did not establish a line-by-line copying inventory | VERIFIED licence text |
+| rl_games | [Upstream MIT](https://github.com/Denys88/rl_games/blob/master/LICENSE) | Installed dependency; no new vendoring in this pass | NOT_REDISTRIBUTED by this change |
+| Isaac Gym Preview 4 | NVIDIA distribution terms | External proprietary prerequisite; not installed by CPU CI | NOT_REDISTRIBUTED |
+| NVIDIA Warp | Apache-2.0 package | Installed dependency, no new source vendoring | NOT_REDISTRIBUTED |
+| urdfpy | [MIT source](https://github.com/mmatl/urdfpy/blob/5466842899b33bd549e8f9e2a9a987bd5e37373b/LICENSE) | CPU profile pins a source revision, not merely version 0.0.22 | NOT_REDISTRIBUTED |
+| trimesh | MIT package | Installed dependency | NOT_REDISTRIBUTED |
+| YOLOv5 | [Upstream AGPL-3.0](https://github.com/ultralytics/yolov5/blob/master/LICENSE) | Historical external detector dependency; no source added in this release pass | Separate licence boundary |
 
-**This file is not legal advice.** It records what was checked and what was not.
+The former assertion “no vendored path named yolov5 means the AGPL boundary is not crossed” was
+not a sufficient legal or provenance test and is withdrawn. Obligations depend on actual use,
+modification and distribution, not the filename or whether measured results were produced.
+This release pass does not certify the historical application's AGPL status.
 
----
+The original BSD notice is unchanged. [NOTICE.md](NOTICE.md) attributes the fork and explains
+why no new legal owner/name was invented. A separate named fork copyright line is a maintainer
+ownership decision; it is not substituted for the upstream notice.
 
-## Code
+## Data and derived materials
 
-| Component | Source | Licence | How it is used | Redistributed here | Path | Status |
-|---|---|---|---|---|---|---|
-| Aerial Gym Simulator | `github.com/ntnu-arl/aerial_gym_simulator` | BSD-3-Clause | This repository is a fork. Simulator, controllers, sensors and examples derive from it. | Yes, extensively | `aerial_gym/`, `resources/`, root `LICENSE` | `VERIFIED` |
-| rl_games | `github.com/Denys88/rl_games` | MIT | PPO implementation and runner, imported as a dependency | No, installed | — | `NOT_REDISTRIBUTED` |
-| NavRL | `github.com/Zhefan-Xu/NavRL` | see upstream | Ideas adapted: observation structure and navigation formulation. No source copied. | No | — | `NEEDS_CONFIRMATION` — upstream licence not recorded here |
-| NVIDIA Isaac Gym (Preview 4) | NVIDIA developer download | NVIDIA licence, manual download | Physics and rendering backend | No, manual install | — | `NOT_REDISTRIBUTED` |
-| NVIDIA Warp | `warp-lang` on PyPI | Apache-2.0 | Ray-cast camera and LiDAR kernels | No, installed | — | `NOT_REDISTRIBUTED` |
-| urdfpy | `github.com/mmatl/urdfpy` | MIT | URDF parsing for the renderer asset loader | No, installed (a local source checkout in this environment) | — | `NOT_REDISTRIBUTED` |
-| trimesh | `github.com/mikedh/trimesh` | MIT | Mesh geometry behind urdfpy and the asset loader | No, installed | — | `NOT_REDISTRIBUTED` |
-| YOLOv5 (`ultralytics/yolov5`) | `github.com/ultralytics/yolov5` | **AGPL-3.0** | Detector training and evaluation for the real-imagery track | **No source vendored** — verified: zero tracked files match `yolov5` | — | `VERIFIED` |
+| Material | Direct source and conditions | Redistributed here? | Status |
+|---|---|---|---|
+| NPS-Drones | [Official Purdue distribution page](https://engineering.purdue.edu/~bouman/UAV_Dataset/) explicitly links a **data** [BSD-3-Clause licence](https://engineering.purdue.edu/~bouman/UAV_Dataset/pubs/LICENSE.txt), copyright 2022 Charles A. Bouman | Raw dataset not under tracked `datasets/`; derived artefacts still need their own inventory | VERIFIED data licence, checked 2026-09-12 |
+| Det-Fly repository | [MIT repository licence](https://github.com/Jake-WU/Det-Fly/blob/main/LICENSE) | External source | VERIFIED repository licence only |
+| Det-Fly images/annotations | [Official README](https://github.com/Jake-WU/Det-Fly/blob/main/README.md) links separately hosted downloads and requests scholarly citation; inspected text does not explicitly extend MIT to those downloads | Raw data not added here | **BLOCKED_BY_LICENSE** for image redistribution; obtain explicit image/annotation terms |
+| ETH ds5 review images | [Pinned dataset licence](https://github.com/CenekAlbl/drone-tracking-datasets/blob/2c857c97be71834d0791ae8ee4984ffb62b7680a/dataset5/LICENSE): **CC BY-NC-SA 4.0** | **13 tracked JPEGs**: 10 selected frames + 3 contact sheets, and a review ZIP | Licence VERIFIED; current packaging corrected below |
+| Project weights | Seven historical `artifacts/*.pth` | Yes | Project-produced; no new weights added; training-data/third-party obligations are not inferred away |
+| Upstream example weights | Eleven inherited `.pth` files | Yes | Classified as inherited examples; individual weight provenance/licence coverage not fully audited |
+| Project diagrams and generic synthetic arrays | Project-generated graphics | Yes | Root terms, except third-party embedded material if any; generic new exports contain no real imagery |
+| Historical URDF/mesh assets | Inherited and project-generated files | Yes | Mixed provenance; no blanket asset-level VERIFIED claim |
 
-**On AGPL.** Running YOLOv5 to produce measurements does not place this repository under AGPL.
-Publishing code built *on top of* that source would. Nothing from it is vendored here, and that
-is a constraint on future architecture choices rather than a current problem.
+“Nothing is tracked under datasets/” is a path check, **not** proof that no dataset-derived content
+appears elsewhere. The history inventory explicitly includes images, archives and weights.
 
-**On the root `LICENSE`.** It is the upstream BSD-3-Clause notice, copyright *Autonomous Robots
-Lab, NTNU*. Contributions made in this fork carry no separate copyright line.
-`NEEDS_CONFIRMATION`: decide whether to add one before public release.
+## ETH review ZIP: current packaging fixed, history remains historical
 
----
+The former inventory said 34 tracked JPEGs. `git ls-files` establishes **13**, not 34.
+The ZIP originally had 14 members. It now has 16: its original members plus
+`THIRD_PARTY_NOTICE.md` and `LICENSE_DATASET.txt`.
+All original member bytes are unchanged; [packaging receipt](results/eth_ds5_intake_2026-09-10/archive_notice_receipt.json)
+records before/after archive hashes and every member hash.
 
-## Datasets and derived artefacts
+The adjacent [notice](results/eth_ds5_intake_2026-09-10/THIRD_PARTY_NOTICE.md) identifies creators,
+source/revision, alterations, licence, disclaimer and NonCommercial/ShareAlike scope.
+The [full licence text](results/eth_ds5_intake_2026-09-10/LICENSE_DATASET.txt) differs from the
+upstream byte stream only by a trailing blank line; it is not claimed to have the upstream SHA.
+The root BSD licence **does not cover these image adaptations**.
+The CC [licence conditions](https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode.en)
+allow sharing subject to their conditions; this is not unrestricted/commercial clearance.
 
-| Component | Source | Licence | How it is used | Redistributed here | Path | Status |
-|---|---|---|---|---|---|---|
-| ETH `drone-tracking-datasets` ds5 | ETH Zurich | **CC BY-NC-SA 4.0** | cam0 video and survey-grade position ground truth, for the size-to-range measurement | **Yes — derived frames**, see below | `results/eth_ds5_intake_2026-09-10/` | **`NEEDS_CONFIRMATION`** |
-| NPS-Drones | Naval Postgraduate School | see upstream terms | Detector training set | No — raw data under untracked `datasets/` | — | `NEEDS_CONFIRMATION` — terms not recorded here |
-| Det-Fly | Det-Fly authors | see upstream terms | Zero-shot and joint-training evaluation | No — raw data untracked | — | `NEEDS_CONFIRMATION` — terms not recorded here |
-| Model weights (`artifacts/*.pth`) | Produced by this project | follows this repository | Detector checkpoints v1–v7, ~100 KB total | Yes | `artifacts/` | `VERIFIED` |
-| Example weights (`aerial_gym/examples/**/*.pth`, `aerial_gym/utils/vae/weights/`) | Aerial Gym upstream | BSD-3-Clause with the fork | Upstream example policies and a VAE, ~50 MB, 11 files | Yes, inherited from upstream | as listed | `VERIFIED` |
+Earlier commits still contain ZIPs without bundled notices. No history rewrite was performed.
+The packaging fix does not retroactively repair downloads of an earlier revision, certify third-party
+rights outside the licence, or extend BSD to extracted annotations.
 
-### The ETH-derived frames are the open item
+## Remaining release review
 
-`results/eth_ds5_intake_2026-09-10/` contains **34 tracked JPEG images** and a 1.3 MB review
-archive (`eth_ds5_human_review_pack.zip`, 14 entries) built from ds5 cam0 video frames. These are
-derivative works of a **CC BY-NC-SA 4.0** dataset, and that licence carries two conditions the
-repository's own BSD-3-Clause notice does not satisfy:
+- Det-Fly hosted-image/annotation terms: BLOCKED_BY_LICENSE.
+- Historical archives, inherited weights and miscellaneous third-party assets: BLOCKED_BY_EVIDENCE
+  for blanket redistribution clearance.
+- Personal absolute paths and incomplete binary secret scanning remain in the
+  [history audit](docs/public_release_audit_2026-09-12.md).
+- No bespoke author permission, commercial permission or ownership confirmation was obtained.
 
-- **ShareAlike** — a derivative must be offered under the same licence, not under BSD-3-Clause.
-- **NonCommercial** — the dataset restricts commercial use; BSD-3-Clause does not.
-
-So the root `LICENSE` must not be read as covering these files. Before public release, one of:
-
-1. keep them and label them explicitly as CC BY-NC-SA 4.0 with attribution to ETH Zurich, stating
-   that the repository licence does not apply to that directory; or
-2. remove the derived frames from tracking and keep only the receipts, which already carry the
-   measurements and hashes; or
-3. confirm with the dataset authors that this use is permitted.
-
-`results/eth_ds5_intake_2026-09-10/THIRD_PARTY_NOTICE.md` carries this notice next to the files,
-so the attribution travels with them regardless of which option is chosen.
-
----
-
-## Assets and figures
-
-| Component | Source | Licence | Redistributed | Path | Status |
-|---|---|---|---|---|---|
-| Diagrams and presentation figures | Produced by this project | follows this repository | Yes | `docs/assets/` | `VERIFIED` |
-| URDF and mesh assets | Aerial Gym upstream plus assets generated here | BSD-3-Clause / this repository | Yes | `resources/` | `VERIFIED` |
-
----
-
-## What was checked, and how
-
-- Secrets and credentials: a pattern scan over tracked text found **none**.
-- Vendored YOLOv5: **zero** tracked paths match, so the AGPL boundary is not crossed here.
-- Raw datasets: **zero** tracked files under `datasets/`; that directory is gitignored.
-- Weights: 18 tracked `.pth`, split 11 upstream examples (~50 MB) and 7 project artifacts (~100 KB).
-
-**Not checked:** git history for material removed from the working tree, and the upstream terms of
-NPS-Drones, Det-Fly and NavRL, none of which are recorded in this repository.
+See [PUBLIC_RELEASE_CHECKLIST](docs/PUBLIC_RELEASE_CHECKLIST.md) for narrower checks that did pass.
