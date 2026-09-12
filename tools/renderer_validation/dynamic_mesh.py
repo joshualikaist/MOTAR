@@ -167,6 +167,51 @@ class DynamicMeshRaycaster:
                            dtype=wp.int32, device=self.device)
         return wp.Mesh(points=points, indices=indices), points, indices
 
+    def upload_rays(self, origins, directions):
+        """Put the ray set on the device once and keep it.
+
+        cast() uploads its rays every call, which is right for a correctness test and wrong for a
+        timing one: at 128 frames and 160x90 that is 22 MiB of host-to-device traffic per call,
+        and a first benchmark measured mostly that. Hoist the rays, then time only the query.
+        """
+        origins, directions = self._validated_rays(origins, directions)
+        return (wp.array(origins, dtype=wp.vec3, device=self.device),
+                wp.array(directions, dtype=wp.vec3, device=self.device),
+                origins.shape[0], origins.shape[1])
+
+    def _validated_rays(self, origins, directions):
+        origins = np.ascontiguousarray(origins, dtype=np.float32)
+        directions = np.ascontiguousarray(directions, dtype=np.float32)
+        if origins.ndim != 3 or origins.shape != directions.shape or origins.shape[-1] != 3:
+            raise ValueError("origins and directions must both be [frames, pixels, 3]")
+        lengths = np.linalg.norm(directions, axis=-1)
+        if not np.isfinite(lengths).all() or (np.abs(lengths - 1.0) > 1e-4).any():
+            raise ValueError("ray directions must be unit length")
+        return origins, directions
+
+    def cast_uploaded(self, rays, positions, rotations, out, use_static=True,
+                      dynamic_mode=2, proxy_radius=0.25):
+        """Launch against already-uploaded rays and already-allocated outputs. Nothing else."""
+        ray_origin, ray_direction, frames, pixels = rays
+        wp.launch(
+            dynamic_and_static_raycast, dim=(frames, pixels),
+            inputs=[self.static_mesh.id, self.dynamic_mesh.id, ray_origin, ray_direction,
+                    positions, rotations, self.far, *out,
+                    int(bool(use_static)), int(dynamic_mode), float(proxy_radius)],
+            device=self.device)
+
+    def allocate_outputs(self, frames, pixels):
+        return (wp.zeros((frames, pixels), dtype=wp.float32, device=self.device),
+                wp.zeros((frames, pixels), dtype=wp.vec3, device=self.device),
+                wp.zeros((frames, pixels), dtype=wp.int32, device=self.device),
+                wp.zeros((frames, pixels), dtype=wp.int32, device=self.device))
+
+    def upload_poses(self, positions, rotations, frames):
+        positions = np.ascontiguousarray(positions, dtype=np.float32).reshape(frames, 3)
+        rotations = unit_quaternion(rotations).reshape(frames, 4)
+        return (wp.array(positions, dtype=wp.vec3, device=self.device),
+                wp.array(rotations, dtype=wp.quat, device=self.device))
+
     def cast(self, origins, directions, positions, rotations, use_static=True,
              dynamic_mode=2, proxy_radius=0.25):
         """origins/directions are [frames, pixels, 3]; positions/rotations are per frame.
