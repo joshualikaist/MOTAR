@@ -37,7 +37,8 @@ def dynamic_and_static_raycast(
     out_face: wp.array(dtype=wp.int32, ndim=2),
     out_source: wp.array(dtype=wp.int32, ndim=2),
     use_static: int,
-    use_dynamic: int,
+    dynamic_mode: int,
+    proxy_radius: float,
 ):
     """One pixel: nearer of the static hit and the object-local dynamic hit.
 
@@ -67,7 +68,27 @@ def dynamic_and_static_raycast(
                 best_face = face
                 best_source = 1
 
-    if use_dynamic == 1:
+    if dynamic_mode == 1:
+        # Analytic sphere, the treatment the production detector uses for the moving target. Run
+        # in the SAME kernel so the comparison isolates mesh query against analytic test rather
+        # than GPU against CPU: an earlier version did this part in numpy and made the proxy look
+        # slower than the mesh, which measured the host round trip and nothing else.
+        oc = origin - object_position[frame]
+        b = wp.dot(oc, direction)
+        c = wp.dot(oc, oc) - proxy_radius * proxy_radius
+        disc = b * b - c
+        if disc >= 0.0:
+            root = wp.sqrt(disc)
+            t = -b - root
+            if t < 0.0:
+                t = -b + root
+            if t >= 0.0 and t < best:
+                best = t
+                best_normal = wp.normalize(origin + direction * t - object_position[frame])
+                best_face = 0
+                best_source = 2
+
+    if dynamic_mode == 2:
         # world -> object: subtract the translation, then rotate by the inverse rotation. The
         # rotation is a unit quaternion, so the direction keeps unit length and the ray parameter
         # t is the same number in both frames; no rescaling is needed.
@@ -146,8 +167,14 @@ class DynamicMeshRaycaster:
                            dtype=wp.int32, device=self.device)
         return wp.Mesh(points=points, indices=indices), points, indices
 
-    def cast(self, origins, directions, positions, rotations, use_static=True, use_dynamic=True):
-        """origins/directions are [frames, pixels, 3]; positions/rotations are per frame."""
+    def cast(self, origins, directions, positions, rotations, use_static=True,
+             dynamic_mode=2, proxy_radius=0.25):
+        """origins/directions are [frames, pixels, 3]; positions/rotations are per frame.
+
+        dynamic_mode: 0 none, 1 analytic sphere proxy, 2 object-local mesh.
+        """
+        if dynamic_mode not in (0, 1, 2):
+            raise ValueError("dynamic_mode must be 0 (none), 1 (analytic proxy) or 2 (mesh)")
         origins = np.ascontiguousarray(origins, dtype=np.float32)
         directions = np.ascontiguousarray(directions, dtype=np.float32)
         if origins.ndim != 3 or origins.shape != directions.shape or origins.shape[-1] != 3:
@@ -171,7 +198,7 @@ class DynamicMeshRaycaster:
                     wp.array(positions, dtype=wp.vec3, device=self.device),
                     wp.array(rotations, dtype=wp.quat, device=self.device),
                     self.far, out_range, out_normal, out_face, out_source,
-                    int(bool(use_static)), int(bool(use_dynamic))],
+                    int(bool(use_static)), int(dynamic_mode), float(proxy_radius)],
             device=self.device)
         wp.synchronize_device(self.device)
         return RaycastResult(out_range.numpy(), out_normal.numpy(),

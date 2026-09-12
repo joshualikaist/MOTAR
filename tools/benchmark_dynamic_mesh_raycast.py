@@ -82,18 +82,14 @@ def main():
                     "pixels_per_frame": pixels, "status": "OK", "arms": {}}
             try:
                 for arm in ARMS:
-                    use_dynamic = arm != "STATIC_ONLY"
-                    # The proxy arm stands in for what the production detector does today: an
-                    # analytic primitive instead of a mesh. Here that is the same kernel with the
-                    # dynamic mesh disabled, plus a cheap CPU-side sphere test, so the comparison
-                    # isolates the mesh query rather than a whole different code path.
-                    def once(use_dynamic=use_dynamic, arm=arm):
+                    # All three treatments run inside the one kernel, so the comparison
+                    # isolates analytic test against mesh query rather than GPU against host.
+                    mode = {"STATIC_ONLY": 0, "STATIC_PLUS_ANALYTIC_PROXY": 1,
+                            "STATIC_PLUS_DYNAMIC_LOCAL_MESH": 2}[arm]
+
+                    def once(mode=mode):
                         caster.cast(origins, directions, positions, rotations,
-                                    use_static=True, use_dynamic=use_dynamic)
-                        if arm == "STATIC_PLUS_ANALYTIC_PROXY":
-                            oc = origins - positions[:, None, :]
-                            b = np.einsum("ijk,ijk->ij", oc, directions)
-                            _ = b * b - (np.einsum("ijk,ijk->ij", oc, oc) - 0.25 * 0.25)
+                                    use_static=True, dynamic_mode=mode)
                     for _ in range(WARMUP):
                         once()
                     samples = []
