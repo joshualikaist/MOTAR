@@ -87,6 +87,7 @@ def view_metrics(gbuffer, index, camera, rotation, has_triangles,
     forward = rotation[:, 2]
     instance = gbuffer.instance_id[index]
     return {
+        "view": int(index),
         "silhouette_pixels": area,
         "silhouette_fraction": area / float(camera.width * camera.height),
         "bbox_u_min": int(columns.min()), "bbox_u_max": int(columns.max()),
@@ -107,12 +108,39 @@ def view_metrics(gbuffer, index, camera, rotation, has_triangles,
 
 
 def arm_metrics(arm, gbuffer, camera, grid):
-    """view_metrics for every view of a grid, in grid order."""
+    """view_metrics for every view of a grid, in grid order. Raises on any degenerate view."""
     rotations = grid.rotations()
     if gbuffer.valid.shape[0] != len(grid):
         raise ValueError("One rendered view per grid entry is required")
     return [view_metrics(gbuffer, index, camera, rotations[index], arm.triangles > 0)
             for index in range(len(grid))]
+
+
+def measured_arm_metrics(arm, gbuffer, camera, grid):
+    """Metrics for the views that can be measured, plus the refusals, kept rather than swallowed.
+
+    G6 refuses a view that is too small to measure. The preregistration's words are that such a view
+    "is never reported as a measurement" - not that the experiment ends. A specimen that is thin from
+    some direction genuinely disappears at distance, and that is a fact about the specimen and the
+    resolution, so it is recorded as a refusal and every gate is then evaluated on the views that
+    were measured. The threshold itself is untouched.
+    """
+    rotations = grid.rotations()
+    if gbuffer.valid.shape[0] != len(grid):
+        raise ValueError("One rendered view per grid entry is required")
+    measured, refused = [], []
+    for index in range(len(grid)):
+        try:
+            measured.append(view_metrics(gbuffer, index, camera, rotations[index],
+                                         arm.triangles > 0))
+        except RuntimeError as error:
+            azimuth, elevation, distance = grid.views[index]
+            refused.append({"view": index, "azimuth_deg": azimuth, "elevation_deg": elevation,
+                            "distance_m": distance, "reason": str(error),
+                            "silhouette_pixels": int(gbuffer.valid[index].sum().item())})
+    if not measured:
+        raise RuntimeError("Every view of this grid was refused; there is nothing to measure")
+    return measured, refused
 
 
 def _column(rows, name):
@@ -169,7 +197,8 @@ def gate_sphere_closed_form(arm, metrics, camera, grid):
         raise TypeError("G2 applies to the analytic sphere arm")
     rotations = grid.rotations()
     per_view = []
-    for index, row in enumerate(metrics):
+    for row in metrics:
+        index = row["view"]
         distance = grid.views[index][2]
         expected_radius = sphere_projected_radius_px(camera, distance, arm.radius_m)
         centre, _ = project_points(camera, [[0.0, 0.0, 0.0]], grid.positions[index], rotations[index])
@@ -208,7 +237,8 @@ def gate_box_closed_form(arm, metrics, camera, grid):
         raise ValueError("A box arm must have eight distinct corners")
     rotations = grid.rotations()
     per_view = []
-    for index, row in enumerate(metrics):
+    for row in metrics:
+        index = row["view"]
         uv, _ = project_points(camera, corners, grid.positions[index], rotations[index])
         expected = {"u_min": float(uv[:, 0].min()), "u_max": float(uv[:, 0].max()),
                     "v_min": float(uv[:, 1].min()), "v_max": float(uv[:, 1].max())}
@@ -227,22 +257,28 @@ def gate_box_closed_form(arm, metrics, camera, grid):
 def gate_inverse_distance(arm, metrics, grid):
     """G4: equivalent diameter times distance is constant along each line of sight."""
     groups = {}
-    for index, row in enumerate(metrics):
-        azimuth, elevation, distance = grid.views[index]
+    for row in metrics:
+        azimuth, elevation, distance = grid.views[row["view"]]
         groups.setdefault((azimuth, elevation), []).append(
             (distance, row["equivalent_diameter_px"] * distance))
-    per_line = []
+    per_line, unusable = [], []
     for (azimuth, elevation), rows in sorted(groups.items()):
         if len(rows) < 2:
-            raise ValueError("G4 needs at least two distances on a line of sight")
+            # One surviving distance carries no scaling information. Recorded, never silently
+            # dropped and never padded with a refused view's numbers.
+            unusable.append({"azimuth_deg": azimuth, "elevation_deg": elevation,
+                             "measured_distances_m": [distance for distance, _ in sorted(rows)]})
+            continue
         products = [product for _, product in sorted(rows)]
         spread = max(products) / min(products) - 1.0
         per_line.append({"azimuth_deg": azimuth, "elevation_deg": elevation,
                          "distances_m": [distance for distance, _ in sorted(rows)],
                          "diameter_times_distance_px_m": products, "relative_spread": spread})
+    if not per_line:
+        raise RuntimeError("No line of sight kept two distances; G4 cannot be evaluated")
     worst = max(_column(per_line, "relative_spread"))
     return {"gate": "G4_inverse_distance_scaling", "arm": arm.name, "per_line_of_sight": per_line,
-            "worst_relative_spread": worst,
+            "lines_without_two_distances": unusable, "worst_relative_spread": worst,
             "thresholds": {"relative_spread_max": INVERSE_DISTANCE_TOLERANCE},
             "passed": bool(worst <= INVERSE_DISTANCE_TOLERANCE)}
 
@@ -250,7 +286,8 @@ def gate_inverse_distance(arm, metrics, grid):
 def gate_depth_bracket(arm, metrics, grid):
     """G5: no surface is nearer or farther than the specimen's circumscribed sphere allows."""
     per_view = []
-    for index, row in enumerate(metrics):
+    for row in metrics:
+        index = row["view"]
         distance = grid.views[index][2]
         radius = arm.circumscribed_radius_m
         lower = distance - radius - DEPTH_BRACKET_SLACK_M
@@ -266,17 +303,26 @@ def gate_depth_bracket(arm, metrics, grid):
 
 
 def gate_resolution_consistency(arm, low_metrics, high_metrics, low_camera, high_camera):
-    """G7: silhouette size scales with focal length, so the measure is not a resolution artefact."""
-    if len(low_metrics) != len(high_metrics):
-        raise ValueError("G7 compares the same views at two resolutions")
+    """G7: silhouette size scales with focal length, so the measure is not a resolution artefact.
+
+    A view measured at one resolution and refused at the other carries no comparison, so it is
+    listed rather than matched up by position against a different view.
+    """
+    low_by_view = {row["view"]: row for row in low_metrics}
+    high_by_view = {row["view"]: row for row in high_metrics}
+    shared = sorted(set(low_by_view) & set(high_by_view))
+    if not shared:
+        raise RuntimeError("No view was measured at both resolutions; G7 cannot be evaluated")
     per_view = []
-    for index, (low, high) in enumerate(zip(low_metrics, high_metrics)):
-        ratio_low = low["equivalent_diameter_px"] / low_camera.focal_px
-        ratio_high = high["equivalent_diameter_px"] / high_camera.focal_px
+    for index in shared:
+        ratio_low = low_by_view[index]["equivalent_diameter_px"] / low_camera.focal_px
+        ratio_high = high_by_view[index]["equivalent_diameter_px"] / high_camera.focal_px
         per_view.append({"view": index, "low": ratio_low, "high": ratio_high,
                          "relative_difference": abs(ratio_high / ratio_low - 1.0)})
     worst = max(_column(per_view, "relative_difference"))
     return {"gate": "G7_resolution_consistency", "arm": arm.name, "per_view": per_view,
+            "views_measured_at_one_resolution_only":
+                sorted(set(low_by_view) ^ set(high_by_view)),
             "worst_relative_difference": worst,
             "thresholds": {"relative_difference_max": RESOLUTION_CONSISTENCY_TOLERANCE},
             "passed": bool(worst <= RESOLUTION_CONSISTENCY_TOLERANCE)}
