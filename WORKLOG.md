@@ -18252,3 +18252,52 @@ evidence 절의 기존 source-note 줄에 링크 한 줄만 추가했다(`6bc6f8
 12,000개 원시 샘플, 모든 receipt·git blob·사전등록 조상 관계, 첫 RC 계보의 바이트 보존을 다시
 확인한다. manifest 해시 훼손과 페이지의 부정 판정 약화는 mutation으로 실패함을 확인했다.
 D8b와의 인과는 모든 산출물에서 `NOT_TESTED`로 유지한다.
+
+## 2026-09-14 (2) — 렌더러 v1 동결, 과제 수준 진단(TD-T1/TD-T2) 계측
+
+렌더러 특성화 트랙을 **v1에서 동결**했다. 기계가독 기록은 `docs/renderer_track_status_v1.json`,
+사람용 문서는 `docs/renderer_track_v1_freeze_2026-09-14.md`다. 종합 상태는
+`RENDERER_CONTRACT_V1_COMPLETE`지만 **blanket PASS가 아니다**: area control은 두 대조군이 모두
+held-out에서 실패해 `NOT_ADOPTED`, normal은 asset이 face normal만 제공하므로 `N0_ONLY`이며,
+RC-R1/R2/R3의 부정 판정은 그대로 유효하다. 각 행에 근거 경로와 경계를 붙였다. 실패한 게이트를
+계속 고치는 R2c/R3c는 하지 않으며, v2는 별개 질문이 생길 때만 새 사전등록으로 연다.
+
+사이트는 요청대로 Appearance/Rendering 절에 **표 1개 + 그림 1개**만 넣고 상세는 renderer-contract-v1
+페이지로 링크했다. 표는 번호를 붙이지 않았다 — 기존 Table 1–3 참조가 공개 문서에 있어서 재번호는
+그 참조를 깨뜨린다. 그림 추가로 overview 테스트의 figure/이미지 고정값 2개를 함께 옮겼다.
+
+**로드맵 경계 변경을 명시적으로 기록했다.** 마스터 플랜은 P2(search/reacquisition)와 T0/T1(terminal
+forensics·strict-contact instrumentation)을 `BLOCKED_BY_POLICY`로 두고 "evaluation-only labels do not
+remove that intended operational role"라고 적고 있었다. 소유자가 2026-09-14에 이 경계를 바꿨으므로,
+**기존 문장을 수정하지 않고 그대로 둔 채** 변경 절을 앞에 추가했다. 허용된 것은 기존 체크포인트
+실행의 계측뿐이고, 정책·보상·검출기·필터·컨트롤러·종료 변경과 재학습·탐색 휴리스틱·터미널 컨트롤러는
+여전히 막혀 있다. 이름 충돌을 피해 새 작업은 `TD-T1`/`TD-T2`로 쓴다.
+
+사전등록 2건을 구현 전에 작성했다(`docs/preregistration_task_diagnostics_t1_2026-09-14.md`,
+`..._t2_...`). T1은 8개 분석 라벨과 손실 구간 경계 10스텝(1.0 s), 에피소드별 기록 필드, Q1–Q6,
+밀도축 70/115/160/205를 고정한다. T2는 **`success_radius = 0.5 m`를 건드리지 않고** 평가 전용 지표
+(minimum_center/surface_distance, closest approach 상대속도, time_inside_1m/0p5m)를 옆에 추가하고,
+10개 실패 분류를 **우선순위 순서까지** 고정하며 `UNKNOWN`을 허용한다. 모든 임계값(창 20스텝,
+근접 1.0 m, 빠른 반경속도 1.5 m/s, 느린 접근 0.3 m/s, governor 50 %, 명령오차 0.5 m/s)이 사전등록에 있다.
+
+구현: `navrl_episode_forensics.py`(라벨 상태기계·분류기는 순수 함수), `navrl_trajectory_digest.py`,
+그리고 navrl_task.py의 **가드된 읽기 전용 훅 4개**(관측 진단 캐시, capture 스윕 거리, per-step 기록,
+에피소드 종료). 기본 off이고 체크포인트 평가 밖에서는 거부한다. 라벨은 관측·보상·종료에 들어가지
+않으며 이를 소스 수준 테스트가 강제한다.
+
+**행동 불변성은 주장하지 않고 측정했다**(`results/task_diagnostics_invariance_2026-09-14/`).
+같은 감사된 평가 환경에서 3회 실행(off/off/on, 70 bars, seed 593, 128 에피소드, deterministic)의
+궤적 digest가 모두 `b9cc980d…`로 동일하다. off/off 비교로 하네스 자체의 재현성을 먼저 세우고,
+그 위에서 off/on 불변성을 주장한다. digest는 세 arm 모두에서 켜져 상쇄된다. 판정
+`TRAJECTORY_INVARIANT`.
+
+도중 두 가지 실제 함정을 만났고 기록해 둔다. (1) 러너의 `quiet_rl_io` stdout 필터는 허용 목록에 없는
+출력을 삼키므로 digest는 파일로 읽어야 한다. (2) 평가기는 자기 디렉터리에서 실행되므로 상대 출력
+경로는 결과 디렉터리가 아니라 런처 옆에 쓰인다 — 런처가 경로를 절대화한다. 또 예전 실험의 공유
+소스 번들을 재사용하면 평가기가 **정당하게** 거부한다(그 사이 트리가 움직였으므로).
+
+`on` arm의 forensics 산출은 밀도 1개·seed 1개의 smoke 표본이며 그렇게 라벨링했다. **TD-T1 결과가
+아니다.** 사전등록된 T1/T2는 밀도축 전체와 기존 held-out 프로토콜이 필요하고 아직 실행하지 않았다.
+
+검증: 전체 회귀 **1,784개 실행 / 실패 0 / 오류 0 / 기존 skip 4**(직전 1,751). 정책·보상·검출기·
+연관·필터·컨트롤러·종료와 기존 결과는 변경하지 않았다. D8b와의 인과는 계속 `NOT_TESTED`다.
