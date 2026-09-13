@@ -18117,3 +18117,24 @@ A3 사전 할당 비용은 별도 기록한다. 2 fixtures×4 arms×3 processes,
 
 신규 회귀 12개 통과: RSS 조기 return/예외/반복 실행, A0/A2 dtype·shape·byte 보존, A1 전체 host
 복사 부재, A3 CPU 거부, 계약 drift 거부, 역사 R5 source SHA 불변. 아직 새 GPU 수치는 없다.
+
+## 2026-09-14 — R5b 24셀 완료: 출력 보존, host strategy 비용 우세
+
+`results/renderer_characterization_r5b_2026-09-14/`, source `dd0fd4f`. 2 fixtures × 4 arms ×
+3 독립 프로세스, 각 staged/headline 100회. 7개 버퍼의 arm 간·repeat 간·첫/마지막 SHA 전부 일치,
+receipt와 historical Git blob 검증 통과. 판정 `TRANSFER_CHARACTERIZED`.
+
+640×480×32, 3 repeat 평균 (ms; staged 성분과 별도 headline 전체 시간):
+
+| Arm | Geometry | Shading | Host strategy | Headline total |
+| --- | ---: | ---: | ---: | ---: |
+| A0 개별 owned copy | 16.879 | 7.043 | 178.620 | 205.215 |
+| A1 device/scalar | 15.559 | 6.922 | 2.042 | 24.348 |
+| A2 dtype grouped | 15.422 | 6.917 | 109.554 | 131.582 |
+| A3 pinned + completion wait | 15.293 | 6.912 | 17.362 | 39.592 |
+
+A0 staged host 비율은 88.02/88.08/88.46%, 사전등록된 >50% 조건을 모두 충족한다.
+이는 allocation/CPU copy를 포함한 host strategy 병목이지 순수 PCIe 대역폭 측정은 아니다.
+A3는 full-buffer 출력을 보존하지만 소비 후 버퍼가 재사용되며 compute/DMA overlap은 없다.
+A1은 scalar만 host에 보내므로 full-export 속도와 동등한 작업이라고 비교하지 않는다.
+R5 역사 warning과 기존 negative 판정은 보존. 다음은 고정된 R1b 해상도 수렴 측정이다.
