@@ -3,8 +3,11 @@
 import ast
 import hashlib
 import importlib.util
+import json
 import os
 from pathlib import Path
+import statistics
+import subprocess
 import sys
 import types
 import unittest
@@ -20,6 +23,8 @@ TASK = ROOT / "aerial_gym/task/navrl_task/navrl_task.py"
 PREREG = ROOT / "docs/preregistration_dynamic_mesh_detector_d8_2026-09-13.md"
 RUNNER = ROOT / "tools/probe_dynamic_mesh_treatment.py"
 V3 = ROOT / "resources/models/environment_assets/objects/navrl_target_drone_v3.urdf"
+RESULT = ROOT / "results/dynamic_mesh_detector_d8a_attempt2_2026-09-13/receipt.json"
+RESULT_SHA = "92ce1c6a9d5f419de7b873af327c006b92246be9d9ba0da8c656dc9fe659e7ee"
 V3_SHA = "c843e0bd9004ab596d5b948dc7566c9f3d3e28b7a3d98d3e8f4de581465dcad0"
 _ABSENT = object()
 
@@ -322,6 +327,80 @@ class RunnerDecisionContract(unittest.TestCase):
             '"ninja_sha256"',
         ):
             self.assertIn(phrase, source)
+
+
+class EvidenceContract(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.raw = RESULT.read_bytes()
+        cls.receipt = json.loads(cls.raw)
+
+    def test_completed_receipt_is_the_pinned_technical_go(self):
+        self.assertEqual(hashlib.sha256(self.raw).hexdigest(), RESULT_SHA)
+        self.assertEqual(self.receipt["schema"], "dynamic_mesh_detector_d8a_v1")
+        self.assertEqual(self.receipt["decision"]["verdict"], "TECHNICAL_GO")
+        self.assertTrue(self.receipt["decision"]["integrity_pass"])
+        self.assertTrue(all(self.receipt["decision"]["checks"].values()))
+        self.assertFalse(self.receipt["protocol"]["policy_loaded"])
+        self.assertTrue(self.receipt["protocol"]["fixed_actions"])
+
+    def test_receipt_sources_match_the_recorded_clean_commit_not_the_later_tree(self):
+        commit = self.receipt["provenance"]["head"]
+        self.assertEqual(commit, "c50a26d86f820611da879a84e3a252c787bd3dd9")
+        for path, expected in self.receipt["source_sha256"].items():
+            content = subprocess.check_output(["git", "show", f"{commit}:{path}"], cwd=ROOT)
+            self.assertEqual(hashlib.sha256(content).hexdigest(), expected, path)
+
+    def test_cost_contrasts_recompute_from_raw_runs(self):
+        runs = self.receipt["step_runs"]
+        aggregate = {
+            mode: {
+                "milliseconds": statistics.median(row["timing"]["median_ms"] for row in rows),
+                "steps_per_second": statistics.median(
+                    row["timing"]["steps_per_second"] for row in rows
+                ),
+                "reserved": max(row["torch_peak_reserved_mib"] for row in rows),
+            }
+            for mode, rows in runs.items()
+        }
+        base = aggregate["analytic_flat"]
+        for mode in ("mesh_flat", "mesh_shaded"):
+            actual = self.receipt["decision"]["contrasts"][mode]
+            delta = aggregate[mode]["milliseconds"] - base["milliseconds"]
+            throughput = 100.0 * (
+                base["steps_per_second"] - aggregate[mode]["steps_per_second"]
+            ) / base["steps_per_second"]
+            self.assertAlmostEqual(actual["absolute_median_increase_ms"], delta, places=12)
+            self.assertAlmostEqual(
+                actual["relative_median_increase_percent"],
+                100.0 * delta / base["milliseconds"],
+                places=12,
+            )
+            self.assertAlmostEqual(actual["throughput_loss_percent"], throughput, places=12)
+            self.assertAlmostEqual(
+                actual["torch_reserved_increase_mib"],
+                aggregate[mode]["reserved"] - base["reserved"],
+                places=12,
+            )
+
+    def test_pose_counts_and_debug_validity_recompute(self):
+        pose = self.receipt["pose_runs"][0]
+        visible = [row for row in pose["poses"] if not row["occlusion"]]
+        self.assertEqual(len(visible), 21)
+        self.assertEqual(len(pose["poses"]) - len(visible), 1)
+        self.assertTrue(any(row["analytic_pixels"] != row["mesh_pixels"] for row in visible))
+        self.assertEqual(
+            statistics.median(row["area_ratio"] for row in visible),
+            0.5555555555555556,
+        )
+        for diagnostics in pose["treatment_diagnostics"].values():
+            self.assertEqual(diagnostics["visible_hits"], 152)
+            self.assertEqual(diagnostics["scene_occluded_hits"], 12)
+            for key in (
+                "occluded_survivors", "invalid_depth", "invalid_face",
+                "invalid_material", "invalid_normal",
+            ):
+                self.assertEqual(diagnostics[key], 0, key)
 
 
 if __name__ == "__main__":

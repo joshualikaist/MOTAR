@@ -11,7 +11,7 @@
 | D5 | 시뮬레이터 visual probe | `PARTIAL_EVIDENCE` | `results/target_appearance_in_sim_2026-09-12/` |
 | D6 | 동적 메시 타당성 | `INCONCLUSIVE` (정확성 통과, 커널 질의 비용 1.53배) | `results/dynamic_mesh_raycast_feasibility_2026-09-12/` |
 | D7 | 통합 렌더 비용 | **`GO`** (전체 step +0.41 ms / +1.0 %, 출력 불변) | `results/dynamic_mesh_integrated_cost_2026-09-12/` |
-| D8 | 검출기 통합 | `IMPLEMENTED / GPU NOT_EXECUTED` | `docs/preregistration_dynamic_mesh_detector_d8_2026-09-13.md` |
+| D8 | 검출기 통합 | D8-A **`TECHNICAL_GO`** / D8-B `NOT_EXECUTED` | `results/dynamic_mesh_detector_d8a_attempt2_2026-09-13/` |
 | D9 | 색 지름길 재측정 | `NOT_RUN` | — |
 
 ## D5가 확정한 구조적 경계
@@ -101,3 +101,16 @@ detect-resolution decoupling, D7 shadow와의 동시 부착은 fail closed한다
 기존 D7/perception 회귀는 통과했으나, 이 문단은 GPU 커널 컴파일·무결성·비용 판정이나 detector
 정확성/shortcut 감소를 주장하지 않는다. GPU 실행은 구현 커밋을 사전등록의 후손으로 고정한 뒤
 clean tree에서만 열린다.
+
+## D8-A — GPU 기술 gate 결과 (2026-09-13)
+
+attempt 1은 `ninja` PATH 누락으로 task import 전에 끝난 0-cell `VOID_EXECUTION`이며 보존했다.
+같은 conda prefix의 ninja path/version/SHA를 강제로 기록하도록 launcher를 고친 뒤 별도 attempt 2를
+실행했다. 21 visible + 1 occluded pose의 2회 hash, 세 arm의 fixed-action 500-step 3회 hash,
+debug-buffer 유효성, 정적 장면 occlusion이 모두 통과했다.
+
+128 env×160×90에서 analytic 43.656 ms 대비 mesh-flat은 +0.256 ms(+0.585%), mesh-shaded는
++0.517 ms(+1.184%)였다. torch reserved 증가는 각각 +44/+66 MiB, NVML은 +44/+64 MiB다.
+사전등록 비용·무결성 조건을 모두 만족해 D8-A는 **`TECHNICAL_GO`**다. 21 pose의 mesh/analytic
+면적비 중앙값 0.556은 observation treatment가 실제로 기하를 바꿨다는 확인일 뿐 성능 향상값이 아니다.
+D8-B frozen-policy sensitivity와 D9 shortcut audit, 학습은 이 판정에 포함되지 않는다.

@@ -17887,3 +17887,30 @@ executable path/version/SHA를 provenance에 기록해야 하며, 재실행은 �
 executable `ninja` 존재·실행 가능성을 확인하고, child `PATH` 첫 항목과 `NAVRL_NINJA`를 같은
 절대 경로로 설정한다. path·version·binary SHA는 parent provenance와 각 child report에 기록하며,
 반복 간 runtime뿐 아니라 launcher fingerprint도 동일해야 무결성 검사를 통과한다.
+
+## 2026-09-13 — D8-A attempt 2 완료: `TECHNICAL_GO`
+
+launcher 수정 commit `c50a26d`의 clean tree에서 사전등록 본 실험을 새
+`results/dynamic_mesh_detector_d8a_attempt2_2026-09-13/`에 실행했다. pose 2회와 128 env,
+160×90, warm-up 50, measured 500의 세 arm×3회가 모두 완주했다. receipt SHA-256은
+`92ce1c6a9d5f419de7b873af327c006b92246be9d9ba0da8c656dc9fe659e7ee`다.
+
+사전등록 무결성 check 전부가 true다. 두 pose run hash, mesh-flat/shaded mask와 depth,
+arm별 세 process output hash, fixed-action robot/target trajectory, runtime/launcher fingerprint가
+각각 일치했다. 4–5/5–6/6–7 m band에서 mesh pixel이 존재하며 analytic proxy와 다른 silhouette를
+냈다. 21 visible pose의 mesh/analytic 면적비 중앙값은 0.556(범위 0.429–0.889)이다. raw mesh
+hit 164개 중 정적 bar가 12개를 가렸고 published survivor는 0개다. visible 152 hit의 invalid
+depth/face/material/normal은 전부 0개다. flat 내부 red variance는 0이고 shaded는 0보다 크다.
+
+세 반복의 step-median 중앙값은 analytic 43.656 ms, mesh-flat 43.911 ms, mesh-shaded 44.173 ms다.
+증가는 flat +0.256 ms/+0.585%, shaded +0.517 ms/+1.184%; throughput 손실 0.734%/1.436%,
+torch reserved +44/+66 MiB, NVML +44/+64 MiB다. 모두 사전등록 GO 경계 안이므로 판정은
+**`TECHNICAL_GO`**다. 이는 mesh observation을 기술적으로 연결할 수 있고 정해진 비용 예산 안이라는
+결론뿐이다. detector 정확도·association·shortcut 감소·policy robustness·adaptation·실기 성능은
+측정하지 않았다. 다음 단계 D8-B는 별도 addendum 뒤 frozen-policy sensitivity로만 열며, 학습은
+계속 금지한다.
+
+receipt 수치의 별도 재계산과 historical execution commit의 8개 source hash 대조를 새 evidence
+test 4개로 고정했다. 전체 회귀는 **1,602개 실행 / 1,598 통과 / 기존 skip 4 / 실패·오류 0**,
+42.877초, exit 0이었다. 고의 fault-injection traceback과 dependency warning은 suite 판정과
+구분했으며 `git diff --check`도 통과했다.

@@ -21,7 +21,7 @@
 | D: V1 테스트 계약 | TEST_CONTRACT_RECONCILED | 5cea0e4에서 one-link 단정을 질량·충돌 보존 검사로 교체; ef59832에서 1,533개 실행, 실패·오류 0, skip 4. 검출기 통합 완료는 아님 | [후속 확인](docs/repository_followup_2026-09-12.md), [계약 이력](docs/v1_shared_airframe_contract.md) |
 | D: D6 동적 메시 독립 질의 | COMPLETE | INCONCLUSIVE; 정확성 통과, 독립 커널 비용 1.53배 | [D6](results/dynamic_mesh_raycast_feasibility_2026-09-12/README.md) |
 | D: D7 통합 shadow 비용 | COMPLETE | GO는 +0.41 ms/+1.0% 비용과 출력 비간섭에만 적용 | [D7](results/dynamic_mesh_integrated_cost_2026-09-12/README.md) |
-| D: D8 mesh-derived observation | IMPLEMENTED / GPU NOT_EXECUTED | 기본 경로 비간섭 CPU 계약 통과; D8-A GPU 판정 전이며 결과 주장은 없음 | [D8 사전등록](docs/preregistration_dynamic_mesh_detector_d8_2026-09-13.md) |
+| D: D8 mesh-derived observation | D8-A COMPLETE / D8-B NOT_EXECUTED | `TECHNICAL_GO`: 무결성 통과, shaded +0.52 ms/+1.18%; 정확도·shortcut·policy는 미측정 | [D8-A](results/dynamic_mesh_detector_d8a_attempt2_2026-09-13/README.md) |
 
 과거 CONTRACT_MISMATCH와 설치 당시 실패 receipt는 보존한다. 현재 테스트 충돌 해소는
 별도 후속 검사이며, `PARTIAL_EVIDENCE`나 R4/R4b의 FAIL을 PASS로 바꾸지 않는다.
