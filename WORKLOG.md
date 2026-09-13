@@ -18181,3 +18181,24 @@ held-out 렌더 전에 저장했고 끝까지 동일하다. 24개 held-out view 
 C1은 C0보다 오차가 작지만 median≤5%, P90≤10%를 충족하지 못하므로 `AREA_CONTROL_FAILED`.
 1280×960은 R1b의 측정 지원 조건을 충족한다. 기존 RC-R2 실패를 바꾸거나 이 대조군을
 area-matched라고 채택하지 않는다. 다음 normal 연구는 사전등록대로 기술적 분포 측정만 한다.
+
+## 2026-09-14 — R3b 72 view 완료: normal/광도 분포 기록, smoothing arm 미지원
+
+`results/renderer_characterization_r3b_2026-09-14/`, source `a19d9fe`. 3 specimens×24 views,
+640×480. shading 전후 geometry hash 불일치 0. `NORMAL_FIELD_CHARACTERIZED`는 완료 상태이며
+효과 gate의 PASS가 아니다. N1/N2는 source/loader에 authored normal contract가 없어 UNSUPPORTED.
+
+| Specimen | Entropy median (bits) | Occupied bins min–max | Luminance variance median | Pearson r |
+| --- | ---: | ---: | ---: | ---: |
+| Analytic sphere | 3.99149 | 16–16 | 0.0109250 | −0.80985 |
+| Box | 0.89306 | 1–3 | 0.0071478 | +0.57161 |
+| Quadrotor mesh | 1.25934 | 1–14 | 0.0053678 | +0.59242 |
+
+Sphere 광도 variance의 전체 범위는 약 1.64e-9뿐이다. 등록된 계산은 r을 반환하지만 이 사실상
+일정한 구에서의 상관계수를 물리적 효과로 해석하지 않는다. mesh의 entropy 중앙값은 box보다
+높아도 광도 variance 중앙값은 낮다. triangle 수→음영 다양성이라는 보편 법칙을 도출하지 않는다.
+R4/R4M grid 재실행 0, 기존 SHADING_GATE_FAILED 유지, D8b 원인 기여 NOT_TESTED.
+
+문서 경계 검사에서 기존 characterization exporter의 설명이 face ID까지 'never shading inputs'라고
+적은 것을 찾았다. 실제 shader는 face ID로 material table을 조회하며 instance ID는 읽지 않는다.
+기존 source/receipt는 보존하고 새 v1 계약 및 테스트에서 정확히 구분한다.
