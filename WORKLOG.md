@@ -17836,3 +17836,33 @@ fallback을 금지한다.
 평가는 D8-A `TECHNICAL_GO` 뒤 별도 addendum, adaptation은 다시 별도 multi-seed training
 사전등록이 필요하다. D9 기준을 D8 결과 뒤에서 바꾸지 않는다. D6 INCONCLUSIVE와 D7의
 cost/non-interference-only GO는 유지했다. 아직 D8 코드·GPU 결과·학습은 없다.
+
+## 2026-09-13 — D8-A mesh-derived observation 구현, GPU 실행 전 고정
+
+사전등록 커밋 `e538052`의 후속으로 D8-A 구현을 작성했다. 기존 `NavRLTargetDetector`의 analytic
+kernel을 기본으로 유지하고, 명시적으로 attach된 경우에만 별도 target-local v3 visual mesh 질의가
+같은 private `target_mask`/`target_depth`를 덮어쓴다. static scene과 target mesh를 따로 질의해
+self-occlusion을 피하고, 표적 자세의 역회전으로 광선을 local frame에 옮기므로 움직일 때 BVH를
+재구축하지 않는다. `mesh_flat`과 `mesh_shaded`의 기하는 동일하며 shaded arm만 v3 material의
+상대 휘도와 고정된 ambient/Lambertian 세기를 기존 nominal red paint에 곱한다. 이는 새 hue/class를
+도입하는 효과와 geometry/shading 효과를 섞지 않기 위한 처리다.
+
+normal·face·material·raw-hit·occlusion buffer는 treatment 내부 진단 전용이며 task observation에
+등록하지 않았다. unset/off는 treatment 모듈을 import하지도, mesh나 buffer를 할당하지도 않는다.
+알 수 없는 mode, detect-resolution decoupling, D7 shadow와 동시 부착, 중복 부착은 모두 fail
+closed한다. 실험 launcher는 v3 URDF SHA를 다시 확인하고, dirty tree를 거부하고, 사전등록 commit이
+구현 HEAD의 엄격한 ancestor인지 검사한다. 21 visible pose(4–7 m)와 bar-occluded pose를 두 번,
+128 env fixed-action step을 arm별 세 번 독립 process에서 실행하며 결과/failure receipt를 새
+directory에만 쓴다. policy는 load하지 않는다.
+
+구현 중 첫 CPU 테스트 시도는 Warp stub을 torch보다 먼저 설치해 torch introspection을 깨뜨렸고,
+Python 3.8에 없는 `ast.unparse`도 사용해 5 error를 냈다. 구현 결함으로 숨기지 않고, torch 선행
+import와 `ast.get_source_segment`로 테스트 harness를 교정했다. 최종 D8 계약 14개, 기존 D7 shadow
+9개, perception 31개(skip 1), appearance 12개, detector noise 17개가 통과했다. D8 판정기의 합성
+fixture에서 GO/중간 INCONCLUSIVE/정확성 NO_GO/비용 NO_GO가 사전등록 경계대로 나뉘는 것도
+검사했다. 아직 GPU 커널 컴파일·실험 receipt·판정·D8-B·학습은 없다.
+
+전체 회귀는 올바른 `aerialgym` interpreter와 `PYTHONNOUSERSITE=1`에서 **1,598개 실행 / 1,594개
+통과 / 기존 skip 4 / 실패·오류 0**, 42.753초, exit 0이었다. 출력의 dependency warning과
+obs-dump traceback은 고의 fault-injection 테스트가 기대한 경로이며 suite 판정과 구분했다.
+`git diff --check`와 연구 authority 검사 `PASS_RESEARCH_AUTHORITY_FREEZE`도 통과했다.

@@ -11,7 +11,7 @@
 | D5 | 시뮬레이터 visual probe | `PARTIAL_EVIDENCE` | `results/target_appearance_in_sim_2026-09-12/` |
 | D6 | 동적 메시 타당성 | `INCONCLUSIVE` (정확성 통과, 커널 질의 비용 1.53배) | `results/dynamic_mesh_raycast_feasibility_2026-09-12/` |
 | D7 | 통합 렌더 비용 | **`GO`** (전체 step +0.41 ms / +1.0 %, 출력 불변) | `results/dynamic_mesh_integrated_cost_2026-09-12/` |
-| D8 | 검출기 통합 | `PREREGISTERED / NOT_EXECUTED` | `docs/preregistration_dynamic_mesh_detector_d8_2026-09-13.md` |
+| D8 | 검출기 통합 | `IMPLEMENTED / GPU NOT_EXECUTED` | `docs/preregistration_dynamic_mesh_detector_d8_2026-09-13.md` |
 | D9 | 색 지름길 재측정 | `NOT_RUN` | — |
 
 ## D5가 확정한 구조적 경계
@@ -86,3 +86,18 @@ C. visual / sensor / collision 기하를 명시적으로 분리
 analytic sensor proxy, v3 visual treatment를 명시적으로 분리한다. D8-A의 질문·arms·기술 gate는
 [`D8 사전등록`](preregistration_dynamic_mesh_detector_d8_2026-09-13.md)에 결과 전 고정했다.
 이는 D8-B 동결 정책 평가나 adaptation 학습을 자동 승인하지 않는다.
+
+## D8-A — 구현 완료, GPU 판정 전 (2026-09-13)
+
+별도 target-local Warp mesh를 한 번 구축하고 카메라 광선을 표적 좌표계로 변환하는 opt-in
+경로를 구현했다. 표적 mesh와 정적 환경 mesh는 서로 다른 질의이므로 표적 self-occlusion이나
+움직이는 표적 때문에 정적 BVH를 다시 만드는 경로가 없다. `mesh_flat`과 `mesh_shaded`는 동일한
+mask/depth를 쓰며, 후자는 v3 URDF material의 상대 휘도와 고정 Lambertian 항으로 기존 nominal
+red의 세기만 조절한다. face/material/normal/occlusion buffer는 진단 전용이고 actor observation에
+들어가지 않는다.
+
+unset/off는 기존 analytic 경로이고 모듈 import·mesh·buffer 할당이 없다. 알 수 없는 flag,
+detect-resolution decoupling, D7 shadow와의 동시 부착은 fail closed한다. 구현·판정기 CPU 계약과
+기존 D7/perception 회귀는 통과했으나, 이 문단은 GPU 커널 컴파일·무결성·비용 판정이나 detector
+정확성/shortcut 감소를 주장하지 않는다. GPU 실행은 구현 커밋을 사전등록의 후손으로 고정한 뒤
+clean tree에서만 열린다.

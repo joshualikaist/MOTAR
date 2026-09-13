@@ -7,9 +7,11 @@ semantic/depth image for detection.  Target pixels are checked against the same 
 so closer bars remove them.  Bearing, elevation and range are then computed from the rendered
 pixels -- never from the ground-truth relative target vector.
 
-The target is an analytic sphere only inside the renderer.  This is equivalent to a simulator
-using the true pose to rasterize a target mesh: the pose is not exposed to the policy.  A later
-RGB detector can replace the semantic mask while retaining the same 8-D detector interface.
+The target is an analytic sphere or oriented box by default.  This is equivalent to a simulator
+using the true pose to rasterize geometry: the pose is not exposed to the policy.  The opt-in D8
+treatment can overwrite that private mask/depth with a target-local visual mesh before RGB-D is
+published, while retaining the same perception interface and keeping debug geometry out of the
+actor observation.
 """
 
 import math
@@ -434,6 +436,10 @@ class NavRLTargetDetector:
         self._mask_wp = wp.from_torch(self.target_mask, dtype=wp.int32)
         # Shadow instrumentation for the D7 cost measurement; None unless explicitly enabled.
         self._dynamic_mesh_shadow = None
+        # D8 observation treatment. The module is imported only by the explicit attach method;
+        # default construction allocates nothing and preserves the historical analytic path.
+        self._dynamic_mesh_treatment = None
+        self.target_render_mode = "analytic_flat"
         self._depth_wp = wp.from_torch(self.target_depth, dtype=wp.float32)
         self._obstacle_depth_wp = wp.from_torch(self.obstacle_depth, dtype=wp.float32)
 
@@ -831,6 +837,17 @@ class NavRLTargetDetector:
             ],
             device=str(self.device),
         )
+        # D8 runs after the historical analytic kernel and writes into the SAME private
+        # mask/depth tensors. It is never attached by default. Keeping the baseline launch makes
+        # this a narrow, reversible treatment and preserves the unset/off execution path.
+        if self._dynamic_mesh_treatment is not None:
+            self._dynamic_mesh_treatment.run(
+                self._origins_wp,
+                self._orientations_wp,
+                self._ray_vectors_wp,
+                self._targets_wp,
+                self._target_orientations_wp,
+            )
         # D7 shadow instrumentation. Runs the dynamic-mesh query the integration would run,
         # writes only into its own buffers, and is read by nothing in this class. Off unless
         # NAVRL_DYNAMIC_MESH_SHADOW is set, and when off the module is never even imported, so
@@ -927,9 +944,10 @@ class NavRLTargetDetector:
         # Renderer-only class mask paints the visible target mesh appearance. The mask itself is
         # never returned to the perception module or actor.
         visible_target_pixels = self.target_mask > 0
-        rgb = torch.where(
-            visible_target_pixels.unsqueeze(1), self.target_color.view(-1, 3, 1, 1), rgb
-        )
+        target_paint = self.target_color.view(-1, 3, 1, 1)
+        if self._dynamic_mesh_treatment is not None:
+            target_paint = self._dynamic_mesh_treatment.target_rgb(self.target_color)
+        rgb = torch.where(visible_target_pixels.unsqueeze(1), target_paint, rgb)
         depth = torch.where(visible_target_pixels, self.target_depth, depth)
         # Global illumination multiplies AFTER the target paint so it hits target and background
         # alike -- that is what a lighting change does, and what the fixed red rule in the
@@ -960,9 +978,51 @@ class NavRLTargetDetector:
             DynamicMeshShadow, shadow_enabled, FLAG)
         if not shadow_enabled():
             raise RuntimeError(f"{FLAG} is not enabled; refusing to attach shadow instrumentation")
+        if self._dynamic_mesh_treatment is not None:
+            raise RuntimeError("D7 shadow and D8 treatment cannot be attached together")
         self._dynamic_mesh_shadow = DynamicMeshShadow(
             mesh_scene, self.num_envs, self.height, self.width, self.device, self.max_range)
         return self._dynamic_mesh_shadow
+
+    def attach_dynamic_mesh_treatment(self, mesh_scene, material_rgba):
+        """Attach the preregistered D8 mesh observation; default/off refuses attachment.
+
+        The experimental launcher owns URDF loading and passes the audited mesh/material arrays.
+        Keeping loading outside the detector avoids a runtime dependency on documentation tools.
+        Detect-resolution decoupling is refused because its high-resolution reduction still uses
+        the analytic kernel; silently mixing the two geometries would invalidate the treatment.
+        """
+        from aerial_gym.task.navrl_task.navrl_dynamic_mesh_treatment import (
+            DynamicMeshTargetTreatment,
+            FLAG,
+            OFF,
+            treatment_mode,
+        )
+
+        mode = treatment_mode()
+        if mode == OFF:
+            raise RuntimeError(f"{FLAG} is off; refusing to attach a D8 observation treatment")
+        if self.detect_decoupled:
+            raise RuntimeError(
+                "D8 dynamic-mesh treatment does not implement detect-resolution decoupling; "
+                "set NAVRL_DETECT_WIDTH/HEIGHT equal to the camera resolution"
+            )
+        if self._dynamic_mesh_shadow is not None:
+            raise RuntimeError("D8 treatment and D7 shadow cannot be attached together")
+        if self._dynamic_mesh_treatment is not None:
+            raise RuntimeError("a D8 dynamic-mesh treatment is already attached")
+        self._dynamic_mesh_treatment = DynamicMeshTargetTreatment(
+            mesh_scene=mesh_scene,
+            material_rgba=material_rgba,
+            mode=mode,
+            static_mesh_ids=self.mesh_ids,
+            target_mask=self.target_mask,
+            target_depth=self.target_depth,
+            device=self.device,
+            far_plane=self.max_range,
+        )
+        self.target_render_mode = mode
+        return self._dynamic_mesh_treatment
 
     def detect(
         self, drone_pos_w, vehicle_quat, target_pos_w, target_quat=None, update_tracker=True
