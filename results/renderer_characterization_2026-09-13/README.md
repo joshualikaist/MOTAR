@@ -64,7 +64,10 @@ plus the thresholds read from code at run time), `README.md`, `config.json`, `su
 
 Figures are in
 [`docs/assets/paper/renderer-characterization-2026-09-13/`](../../docs/assets/paper/renderer-characterization-2026-09-13/),
-as SVG source with PNG and vector PDF exports.
+as SVG source with PNG and vector PDF exports: one per experiment plus the evidence map.
+
+RC-R6 is the export path itself. Its evidence is the `determinism/` directory, which holds both
+exports and their comparison, and the exporter validation checks in `tests/test_rc_export.py`.
 
 ## Reproducing
 

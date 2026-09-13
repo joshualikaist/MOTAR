@@ -256,6 +256,61 @@ def figure_r5(plt):
 
 
 def figure_r6(plt):
+    """RC-R6: what the exported arrays keep and what they let change.
+
+    Every cell is read from a committed result: the determinism gate compared all seven arrays
+    across two processes, and RC-R4/RC-R4M recorded whether the six geometry hashes survived a
+    lighting or material change while the image did not.
+    """
+    determinism = load("determinism")
+    lighting = load("R4_lighting")
+    material = load("R4M_material")
+    arrays = ("rgb", "range_m", "depth_m", "normal_world", "face_id", "instance_id", "valid")
+    geometry = arrays[1:]
+    rows = [
+        ("same arguments,\ntwo processes",
+         {name: "identical" for name in arrays},
+         "RC determinism: %s" % determinism["verdict"]),
+        ("lighting changed\n(36 cells)",
+         dict({name: "identical" for name in geometry}, rgb="differs"),
+         "RC-R4: geometry invariant %s, luminance spread %.3f"
+         % (lighting["gates"]["L1_geometry_and_silhouette_invariant"]["passed"],
+            lighting["gates"]["L2_lighting_changes_luminance"]["spread"])),
+        ("material changed\n(5 sets)",
+         dict({name: "identical" for name in geometry}, rgb="differs"),
+         "RC-R4M: geometry invariant %s, luminance spread %.3f"
+         % (material["gates"]["M1_geometry_and_silhouette_invariant"]["passed"],
+            material["gates"]["M2_material_changes_luminance"]["spread"])),
+    ]
+    figure, axis = plt.subplots(figsize=(9.6, 3.2))
+    axis.set_xlim(-0.5, len(arrays) - 0.5)
+    axis.set_ylim(-0.6, len(rows) - 0.4)
+    axis.set_xticks(range(len(arrays)))
+    axis.set_xticklabels(arrays, fontsize=8)
+    axis.set_yticks(range(len(rows)))
+    axis.set_yticklabels([label for label, _, _ in rows], fontsize=8)
+    axis.grid(False)
+    axis.invert_yaxis()
+    for spine in axis.spines.values():
+        spine.set_visible(False)
+    axis.tick_params(length=0)
+    for index, (_, states, note) in enumerate(rows):
+        for column, name in enumerate(arrays):
+            identical = states[name] == "identical"
+            axis.add_patch(plt.Rectangle((column - 0.44, index - 0.3), 0.88, 0.6,
+                                         facecolor="white",
+                                         edgecolor=TEAL if identical else AMBER, linewidth=1.2))
+            axis.text(column, index + 0.02, "identical" if identical else "differs",
+                      ha="center", va="center", fontsize=7,
+                      color=TEAL if identical else AMBER, fontweight="bold")
+        axis.text(-0.46, index + 0.42, note, fontsize=6.5)
+    figure.suptitle("RC-R6  what an export keeps fixed and what it lets change      "
+                    "seven arrays, three comparisons, all read from committed results",
+                    x=0.01, ha="left", fontsize=9.5)
+    return save(figure, "rc-r6-export-invariance")
+
+
+def figure_map(plt):
     """What each experiment established, and what remains untested."""
     rows = [
         ("RC-R1 geometry", "R1_geometry"),
@@ -312,11 +367,11 @@ def figure_r6(plt):
     axis.text(0.014, -1.05, "causality from any row above to this box: NOT_TESTED. Shading, mesh "
               "geometry, projected area and the detector are not established as causes.",
               fontsize=7.5)
-    return save(figure, "rc-r6-evidence-map")
+    return save(figure, "rc-evidence-map")
 
 
 FIGURES = {"r1": figure_r1, "r2": figure_r2, "r3": figure_r3, "r4": figure_r4, "r5": figure_r5,
-           "r6": figure_r6}
+           "r6": figure_r6, "map": figure_map}
 
 
 def main(argv=None):
