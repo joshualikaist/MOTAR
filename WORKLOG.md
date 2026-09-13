@@ -18088,3 +18088,19 @@ SVG+PNG+벡터 PDF, 흰 배경·3색·그라디언트 없음, 새 파일명). �
 검증: 최종 전체 회귀 **1,702개 실행 / 실패 0 / 오류 0 / 기존 skip 4**, 53.412초. 각 결과의
 `source_manifest.json`에 기록된 파일별 sha256은 커밋된 파일과 **전부 일치**(불일치 0)한다.
 RC 커밋 6개는 로컬에 있고 push하지 않았다.
+
+## 2026-09-14 — RC 첫 계보 10커밋 보존·푸시, 후속 실험 사전등록
+
+실제 HEAD `32ee105`, origin `879e57c`, clean main에서 RC의 10개 커밋을 확인했다.
+전체 baseline **1,702 실행 / 실패 0 / 오류 0 / skip 4**, 57.44초. 8개 source manifest의 파일별
+SHA가 현재 커밋된 소스와 모두 일치하고 receipt/summary 판정도 일치한다. 당시 dirty source에서
+실행됐다는 기록은 보존했다. 원본 생성 SVG의 공백과 determinism README의 끝 빈 줄로 기존
+`git diff --check origin/main..HEAD`에는 경고 1,314건이 있다. 역사 파일을 정리해 감추지 않았다.
+사용자 지시대로 force/squash/rewrite 없이 **`879e57c..32ee105`를 origin/main에 푸시**했다.
+위 이전 항목의 '6개 로컬'은 작성 시점 기록이며 현재는 10개가 공개됐다.
+
+새 사전등록 `docs/preregistration_renderer_followup_2026-09-14.md`는 R5b→R1b→R2b→R3b의
+지원 arm, 데이터 분리, 자원 중단, threshold와 문서 산출물을 새 측정 전에 고정한다.
+Camera 기존 상한 때문에 reference는 2048×1536. MeshScene에 authored vertex/smooth normals가
+없으므로 N1/N2는 UNSUPPORTED로 미리 정했다. 과거 기준·source·receipt는 수정하지 않는다.
+단계별 코드와 결과는 별도 커밋하며, 정책/검출기와 인과 연결은 `NOT_TESTED`로 유지한다.

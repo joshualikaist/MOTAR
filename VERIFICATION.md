@@ -4,7 +4,12 @@
 [`RESEARCH_PLAN.md`](RESEARCH_PLAN.md), 날짜별 기록은 [`WORKLOG.md`](WORKLOG.md),
 명령어는 [`OPERATIONS.md`](OPERATIONS.md), 라이브 지표는 [`docs/status/`](docs/status/)를 본다.
 
-> 현재 상태 기준일: 2026-09-13. 아래 날짜별 실행 계약은 역사 기록이며 새 실행 권한이 아니다.
+> 현재 상태 기준일: 2026-09-14. 아래 날짜별 실행 계약은 역사 기록이며 새 실행 권한이 아니다.
+
+독립 renderer RC 첫 계보는 `32ee105`까지 공개됐다. RC-R1 `GEOMETRY_DEFECT`, RC-R2
+`AREA_MATCH_FAILED`, RC-R3 `SHADING_GATE_FAILED`를 보존한다. 현재 새 작업은 정책·검출기와
+분리된 [RC 후속 사전등록](docs/preregistration_renderer_followup_2026-09-14.md)의
+R5b→R1b→R2b→R3b 및 renderer 계약·그림 정리다. D8b 인과 기여는 `NOT_TESTED`이며 D8c는 열지 않는다.
 
 ## 현재 주장과 근거 — 실행 완료와 가설 판정을 분리
 
