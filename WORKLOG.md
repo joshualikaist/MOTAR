@@ -17882,3 +17882,8 @@ NO-GO 근거가 아니다. runner가 만든 `failure.json`을 삭제하거나 �
 `results/dynamic_mesh_detector_d8a_2026-09-13/`에 보존했다. OPERATIONS의 기존 사고 기록과 같은
 실패 유형이다. 후속 수정은 child `PATH`에 선택 interpreter의 bin을 명시적으로 prepend하고
 executable path/version/SHA를 provenance에 기록해야 하며, 재실행은 새 directory에서만 한다.
+
+후속 launcher 수정은 이 요구를 코드로 강제한다. parent와 child가 모두 selected Python 옆의
+executable `ninja` 존재·실행 가능성을 확인하고, child `PATH` 첫 항목과 `NAVRL_NINJA`를 같은
+절대 경로로 설정한다. path·version·binary SHA는 parent provenance와 각 child report에 기록하며,
+반복 간 runtime뿐 아니라 launcher fingerprint도 동일해야 무결성 검사를 통과한다.

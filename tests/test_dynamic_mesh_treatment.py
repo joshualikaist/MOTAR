@@ -238,6 +238,7 @@ def fake_pose_run(module, geometry_effect=True, shaded_variance=1.0e-3):
         "poses": poses,
         "treatment_diagnostics": {"mesh_flat": dict(valid), "mesh_shaded": dict(valid)},
         "runtime": {"python": "fixed"},
+        "launcher": {"python": "fixed", "ninja": "fixed"},
     }
 
 
@@ -253,6 +254,7 @@ def fake_step_run(mode, median_ms=10.0, reserved_mib=500.0):
             "target_position": "fixed-target-trajectory",
         },
         "runtime": {"python": "fixed"},
+        "launcher": {"python": "fixed", "ninja": "fixed"},
         "timing": {"median_ms": median_ms, "steps_per_second": 1000.0 / median_ms},
         "torch_peak_reserved_mib": reserved_mib,
         "device_memory_after_mib": 800.0,
@@ -315,6 +317,9 @@ class RunnerDecisionContract(unittest.TestCase):
             '"fixed_actions": True',
             '"policy_loaded": False',
             '"TECHNICAL_NO_GO_UNFINISHED"',
+            'child_env["PATH"]',
+            'child_env["NAVRL_NINJA"]',
+            '"ninja_sha256"',
         ):
             self.assertIn(phrase, source)
 

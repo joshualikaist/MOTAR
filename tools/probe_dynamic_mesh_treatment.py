@@ -78,6 +78,21 @@ def file_sha(path):
     return sha256_bytes(Path(path).read_bytes())
 
 
+def launcher_contract():
+    """Pin the build helper beside the selected interpreter, not whatever PATH happens to expose."""
+    python = Path(sys.executable).resolve()
+    ninja = python.with_name("ninja")
+    if not ninja.is_file() or not os.access(str(ninja), os.X_OK):
+        raise RuntimeError(f"selected interpreter has no executable ninja beside it: {ninja}")
+    version = subprocess.check_output([str(ninja), "--version"], text=True).strip()
+    return {
+        "python": str(python),
+        "ninja": str(ninja.resolve()),
+        "ninja_version": version,
+        "ninja_sha256": file_sha(ninja),
+    }
+
+
 def tensor_sha(tensor):
     return sha256_bytes(tensor.detach().contiguous().cpu().numpy().tobytes())
 
@@ -233,6 +248,7 @@ def child_step(mode, envs, width, height, warmup, measured):
         "device_memory_after_mib": after_nvml,
         "process_rss_mib": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024,
         "runtime": runtime_fingerprint(),
+        "launcher": launcher_contract(),
         "git_commit": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(),
     }
     print("D8REPORT" + json.dumps(report, sort_keys=True))
@@ -368,6 +384,7 @@ def child_pose(width, height):
             name: outputs[name]["diagnostics"] for name in ("mesh_flat", "mesh_shaded")
         },
         "runtime": runtime_fingerprint(),
+        "launcher": launcher_contract(),
         "git_commit": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(),
     }
     print("D8REPORT" + json.dumps(report, sort_keys=True))
@@ -379,7 +396,11 @@ def run_child(kind, mode=None, envs=128, width=160, height=90, warmup=WARMUP, me
     if kind == "step":
         command += ["--mode", mode, "--envs", str(envs), "--warmup", str(warmup),
                     "--measured", str(measured)]
-    result = subprocess.run(command, cwd=ROOT, capture_output=True, text=True)
+    contract = launcher_contract()
+    child_env = os.environ.copy()
+    child_env["PATH"] = str(Path(contract["python"]).parent) + os.pathsep + child_env.get("PATH", "")
+    child_env["NAVRL_NINJA"] = contract["ninja"]
+    result = subprocess.run(command, cwd=ROOT, env=child_env, capture_output=True, text=True)
     lines = [line for line in result.stdout.splitlines() if line.startswith("D8REPORT")]
     if result.returncode != 0 or not lines:
         raise RuntimeError(
@@ -405,12 +426,17 @@ def preflight():
     ).returncode == 0
     if not prereg_commit or not ancestor or prereg_commit == head:
         raise RuntimeError("D8 preregistration must be a committed ancestor before implementation")
-    return {"head": head, "preregistration_commit": prereg_commit, "tree_clean": True}
+    return {"head": head, "preregistration_commit": prereg_commit, "tree_clean": True,
+            "launcher": launcher_contract()}
 
 
 def same_runtime(reports):
     first = reports[0]["runtime"]
-    return all(report["runtime"] == first for report in reports[1:])
+    launcher = reports[0]["launcher"]
+    return all(
+        report["runtime"] == first and report["launcher"] == launcher
+        for report in reports[1:]
+    )
 
 
 def evaluate(pose_runs, step_runs):
