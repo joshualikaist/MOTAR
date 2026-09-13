@@ -17866,3 +17866,19 @@ fixture에서 GO/중간 INCONCLUSIVE/정확성 NO_GO/비용 NO_GO가 사전등�
 통과 / 기존 skip 4 / 실패·오류 0**, 42.753초, exit 0이었다. 출력의 dependency warning과
 obs-dump traceback은 고의 fault-injection 테스트가 기대한 경로이며 suite 판정과 구분했다.
 `git diff --check`와 연구 authority 검사 `PASS_RESEARCH_AUTHORITY_FREEZE`도 통과했다.
+
+## 2026-09-13 — D8-A attempt 1 환경 실행 실패 보존
+
+clean implementation commit `8fdeed9`에서 공식 D8-A runner를 열었으나 첫 pose child가 task 생성
+전에 종료됐다. `PYTHONNOUSERSITE=1`이나 D8 Warp kernel 자체가 원인이 아니라, absolute conda
+Python을 호출하면서 해당 prefix의 `bin`이 inherited `PATH`에 없어
+`torch.utils.cpp_extension`이 `ninja` executable을 찾지 못한 것이 직접 원인이다. 설치된 executable은
+`/home/fair/miniconda3/envs/aerialgym/bin/ninja`, version
+`1.13.0.git.kitware.jobserver-pipe-1`, SHA-256
+`696f9628a79d9ce50314cf9556d7cd1a1d1ec52b8fd52828f6f9db1719565b67`이다.
+
+0 pose/0 step/0 cost cell이므로 이 attempt는 `VOID_EXECUTION`이며 D8-A의 기하·무결성·비용
+NO-GO 근거가 아니다. runner가 만든 `failure.json`을 삭제하거나 덮어쓰지 않고
+`results/dynamic_mesh_detector_d8a_2026-09-13/`에 보존했다. OPERATIONS의 기존 사고 기록과 같은
+실패 유형이다. 후속 수정은 child `PATH`에 선택 interpreter의 bin을 명시적으로 prepend하고
+executable path/version/SHA를 provenance에 기록해야 하며, 재실행은 새 directory에서만 한다.
