@@ -18138,3 +18138,13 @@ A0 staged host 비율은 88.02/88.08/88.46%, 사전등록된 >50% 조건을 모�
 A3는 full-buffer 출력을 보존하지만 소비 후 버퍼가 재사용되며 compute/DMA overlap은 없다.
 A1은 scalar만 host에 보내므로 full-export 속도와 동등한 작업이라고 비교하지 않는다.
 R5 역사 warning과 기존 negative 판정은 보존. 다음은 고정된 R1b 해상도 수렴 측정이다.
+
+## 2026-09-14 — R1b/R2b/R3b 계산 도구 구현 (실측 전)
+
+새 `tools/measure_renderer_contract.py`: 288개 단일-view 해상도 비교, calibration 6개만으로
+anisotropic box fitting 후 fit.json SHA 고정·held-out 24개 채점, authored normal이 없는
+N1/N2 미지원 표시와 N0 normal entropy/광도 분포 측정. 기존 renderer/exporter 소스는 그대로다.
+source manifest는 실제 새 실행 파일을 포함하며 R5b의 과거 manifest는 수정하지 않는다.
+새 단위 테스트 18개: inclusive extent, clipping/최소픽셀 거부, 해상도 정규화, centroid 0 안전성,
+고정 gate, fit/validation 분리, 폐형식 면적·synthetic scale 회복, 비유한 값 거부, normal 출처 계약.
+R1b→R2b→R3b는 별도 프로세스·결과·커밋으로 진행하며, 결과에 따라 threshold를 바꾸지 않는다.

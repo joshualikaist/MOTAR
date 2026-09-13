@@ -29,7 +29,7 @@ def manifest():
     commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
     files = sorted((ROOT / "tools/renderer_validation").glob("*.py"))
     files += [ROOT / p for p in (
-        "tools/benchmark_renderer_transfer.py", "tools/run_renderer_followup.py",
+        "tools/benchmark_renderer_transfer.py", "tools/measure_renderer_contract.py",
         "tools/runtime_fingerprint.py", "aerial_gym/sensors/warp/warp_kernels/warp_camera_kernels.py",
         "resources/models/environment_assets/objects/navrl_target_drone_v3.urdf") if (ROOT / p).exists()]
     files += [PREREG]
