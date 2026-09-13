@@ -32,7 +32,7 @@ def main():
     threading.Thread(target=server.serve_forever,daemon=True).start()
     checks = []
     try:
-        with tempfile.TemporaryDirectory(prefix='motar-overview-chrome-') as tmp:
+        with tempfile.TemporaryDirectory(prefix='motar-overview-chrome-', ignore_cleanup_errors=True) as tmp:
             chrome = subprocess.Popen([shutil.which('google-chrome') or 'chromium',
                 '--headless=new','--no-sandbox','--disable-dev-shm-usage',
                 '--use-gl=angle','--use-angle=swiftshader','--enable-webgl',
@@ -73,10 +73,14 @@ def main():
 
                 call('Page.enable')
                 for label,width,height in [('desktop',1360,1000),('tablet',800,1000),('mobile',390,844)]:
-                    call('Emulation.setDeviceMetricsOverride',dict(width=width,height=height,deviceScaleFactor=1,mobile=label=='mobile'))
+                    call('Emulation.clearDeviceMetricsOverride')
+                    call('Emulation.setDeviceMetricsOverride',dict(
+                        width=width, height=height, screenWidth=width, screenHeight=height,
+                        positionX=0, positionY=0, deviceScaleFactor=1,
+                        mobile=label=='mobile', dontSetVisibleSize=False))
                     call('Page.navigate',dict(url='http://127.0.0.1:%s/docs/status/index.html'%server.server_port))
                     for _ in range(100):
-                        ready = js("document.readyState==='complete' && !!document.querySelector('#public-status-manifest dd') && !!document.querySelector('#stage canvas')")
+                        ready = js("document.readyState==='complete' && ![...document.querySelectorAll('[data-status-id]')].some(x=>x.textContent.includes('Loading')) && !!document.querySelector('#stage canvas')")
                         if ready:
                             break
                         time.sleep(.1)
@@ -84,13 +88,16 @@ def main():
                         raise RuntimeError('Page/manifest/WebGL readiness timeout')
                     js("document.querySelector('#btn-play').click(); document.documentElement.style.scrollBehavior='auto'")
                     image_ok = js("Promise.all([...document.images].map(i=>{i.loading='eager'; return i.decode().then(()=>true,()=>false)})).then(v=>v.every(Boolean))")
-                    result = js("({width:innerWidth,scrollWidth:document.documentElement.scrollWidth,statusRows:document.querySelectorAll('#public-status-manifest dd').length,visibleNavLinks:[...document.querySelectorAll('header nav a')].filter(a=>a.getClientRects().length).length,canvas:!!document.querySelector('#stage canvas'),route:document.querySelector('#hud-route-state').textContent})")
+                    result = js("({width:innerWidth,scrollWidth:document.documentElement.scrollWidth,statusRows:document.querySelectorAll('[data-status-id]').length,visibleNavLinks:[...document.querySelectorAll('header nav a')].filter(a=>a.getClientRects().length).length,canvas:!!document.querySelector('#stage canvas'),route:document.querySelector('#hud-route-state').textContent})")
                     result.update(viewport=label,images_decoded=image_ok)
-                    if not image_ok or result['scrollWidth'] > width or result['statusRows'] != 9 or result['visibleNavLinks'] != 8:
+                    if not image_ok or result['scrollWidth'] > width or result['statusRows'] != 4 or result['visibleNavLinks'] != 6:
                         raise RuntimeError('Layout/content check failed: '+str(result))
                     # Hide scripted movement before capturing; no underlying viewer source edits.
                     for section in ('top','arena','perception','evidence'):
-                        js("document.getElementById(%s).scrollIntoView({block:'start',behavior:'instant'})"%json.dumps(section))
+                        if section == 'top':
+                            js("scrollTo({top:0,left:0,behavior:'instant'})")
+                        else:
+                            js("document.getElementById(%s).scrollIntoView({block:'start',behavior:'instant'})"%json.dumps(section))
                         shot = call('Page.captureScreenshot',dict(format='png',captureBeyondViewport=False))
                         (args.output/(label+'-'+section+'.png')).write_bytes(base64.b64decode(shot['data']))
                     checks.append(result)
@@ -109,6 +116,10 @@ def main():
                 call('Browser.close')
             finally:
                 if sock:
+                    try:
+                        sock.send(json.dumps({'id':seq+1,'method':'Browser.close'}))
+                    except (OSError, websocket.WebSocketException):
+                        pass
                     sock.close()
                 try:
                     chrome.wait(timeout=10)

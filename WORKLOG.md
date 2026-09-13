@@ -17761,3 +17761,54 @@ D8 구현/적응/새 학습과 표적 인지 개선 실험은 진행하거나 �
 관측 계약의 미결 상태, 별도 계보·사전등록이 필요하다는 경계만 문서에 남겼다.
 사이트 변경은 사용자 요청대로 검토·커밋까지 진행하며, 이번 명시적 원격 푸시 범위는
 위 D7 네 커밋이다. 새 사이트의 hosted CI/공개 배포 완료는 주장하지 않는다.
+
+## 2026-09-13 — 공개 사이트를 논문형 단일 컬럼 페이지로 재설계
+
+사용자가 대시보드/제품 랜딩처럼 보인다고 지적한 `be89675` 사이트를 그 커밋 위에서 다시
+구성했다. 시작 확인에서 보고와 달리 `origin/main`도 이미 `be89675`를 가리켰다. 다른 세션이
+먼저 원격에 반영한 상태로 판단했으며, history rewrite나 force push는 하지 않았다. 이번
+논문형 변경은 별도 후속 커밋으로 만들고 사용자 검토 전 push하지 않는다.
+
+`docs/status/index.html`은 제목·저자/저장소·140-word Abstract 뒤에 1 Introduction,
+2 Research Environment, 3 System Architecture, 4 Experimental Setup, 5 Algorithms,
+6 Evidence and Current Results, 7 Discussion, 8 Next Research Steps, availability 순으로
+읽히는 단일 컬럼 문서가 됐다. 본문 폭은 960 px, 그림 최대 폭은 1120 px다. 기존 WebGL
+arena는 Figure 2로 유지하고 여섯 정적 SVG와 합쳐 번호·caption이 있는 Figure 1–7로
+제시한다. 관찰/Transformer 그림은 dated download package의 supplementary asset으로 남긴다.
+
+CSS는 Georgia/Times 계열 serif 본문, 흰 배경, charcoal/gray와 muted blue 한 가지 accent,
+얇은 표/구분선으로 다시 작성했다. dashboard card 20개, gradient, shadow, 큰 pill/metric
+box와 교대 section background는 제거했다. 6개 navbar 항목은 얇은 흰 navigation으로
+유지한다. renderer 도구로 Figure 1/5/6의 논문형 block diagram과 전체 파생 PDF를 다시
+내보냈으며 같은 날짜 package의 manifest와 ZIP도 현재 21개 산출물 해시로 갱신했다.
+SVG가 정본이고 PNG는 3840×2160, PDF 일곱 개는 `pdfimages -list`에서 raster row가 없다.
+
+근거 경계는 유지했다. D6는 INCONCLUSIVE, D7 GO는 shadow cost/output non-interference만,
+D8은 NOT_STARTED, D9는 NOT_RUN이다. 실사 selector의 no-selection/rank를 persistent identity나
+metric state로 읽지 않으며, P10 net adaptation·appearance shortcut 감소·real flight/sim-to-real을
+성립한 결과로 쓰지 않았다. 데이터셋은 역할 표 하나로 줄이고 라이선스 세부는 기존
+`THIRD_PARTY_LICENSES.md`로 연결했다. 기존 상세 HTML archive SHA와 historical result/문서는
+건드리지 않았다. 실험·학습·simulator/detector/policy/controller 코드는 실행하거나 바꾸지 않았다.
+
+브라우저 검수 첫 시도에서 inherited responsive CSS가 tablet nav를 하나만 보이게 해 실패했다.
+이를 override한 뒤 mobile evidence table의 760 px 최소 폭이 390 px viewport를 774 px로
+확장하는 두 번째 실패를 찾았다. 640 px 이하에서 evidence row를 label/value 세로 형식으로
+바꾸고 preview의 device metrics와 scroll-to-top을 고정했다. Chrome profile 삭제 race도
+명시적 Browser.close와 cleanup tolerance로 교정했다. 최종 1360×1000, 800×1000,
+390×844에서 nav 6, manifest status 4, canvas, 모든 그림 decode, route contract,
+document overflow를 검사해 PASS했다. manifest 요청 차단 시 UNAVAILABLE로 fail closed한다.
+스크린샷 12개와 실제 source SHA receipt는
+`results/public_site_paper_2026-09-13/browser/`에 있다.
+
+동일 파서로 `be89675`와 비교한 text/interface volume은 HTML 24,974→27,062 bytes,
+visible 6,291→14,380 characters / 1,235→1,929 words, paragraph 44→30,
+dashboard cards 20→0, numbered figures 7→7이다. 문서 자체가 짧아졌다고 주장하지 않는다.
+요청된 Abstract/방법/한계/caption/table을 추가하면서 UI fragmentation과 status-card 반복을
+줄인 결과다.
+
+검증: 전체 unittest **1,584개 실행 / 1,580 통과 / 기존 skip 4 / 실패·오류 0**,
+43.503초, exit 0. 논문 페이지 계약 10개, status manifest/static site Node, arena
+fixed-clock/route/headless WebGL, 공개 local links와 Draft-7 schema, CFF 1.2.0,
+figure hash/ZIP/XML, PDF vector 검사와 `git diff --check`가 모두 통과했다. 전체 suite의
+dependency/resource warning과 고의 fault-injection traceback은 exit 0인 테스트 출력으로
+구분했다. 새 사이트의 원격 배포 완료는 주장하지 않으며 이 후속 커밋은 push하지 않는다.

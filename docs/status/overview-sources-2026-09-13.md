@@ -1,5 +1,30 @@
 # Visual research overview: source and migration map
 
+## Paper-page revision on `be89675`
+
+The second presentation pass replaces the dashboard-like overview introduced by
+`be89675` with a single-column research-paper page. It changes presentation and
+information architecture only: no simulator, detector, policy, controller, viewer
+motion, result receipt or historical evidence file is changed. The page now follows
+title/authorship/abstract, numbered sections, numbered figures with captions,
+experimental tables, bounded evidence, discussion and next-steps end matter.
+
+The public page contains seven numbered figures: six static diagrams plus the existing
+interactive WebGL arena as Figure 2. The dated figure package still contains seven
+static diagrams because the observation/Transformer diagram remains a supplementary
+download; it is not silently discarded. Static diagrams were re-exported in a shared
+paper palette and without dashboard cards, gradients or shadows. D6 remains
+`INCONCLUSIVE`; D7 `GO` remains limited to shadow cost and output non-interference;
+D8 remains `NOT_STARTED`; D9 remains `NOT_RUN`.
+
+The first-pass site remains recoverable from Git history. The pre-redesign detailed
+page is still preserved byte-for-byte as
+[archive-2026-09-13.html](archive-2026-09-13.html), with the SHA-256 pinned by tests.
+The redesign does not turn that live-resource archive into a standalone executable
+snapshot.
+
+## First presentation pass
+
 This is a presentation-only reorganization based on source `52b5dd8`. No experiment,
 detector, policy, controller, geometry or viewer motion implementation changed.
 The new overview is `index.html`; the complete previous HTML is preserved in

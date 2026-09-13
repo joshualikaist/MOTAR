@@ -3,64 +3,68 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="MOTAR: simulation-only perception, safety-filter diagnosis, appearance engineering and reproducible research.">
-<meta name="theme-color" content="#f7faf8">
-<title>MOTAR · Visual research overview</title>
+<meta name="description" content="MOTAR — a simulation-only research paper page on measured perception uncertainty, dense-obstacle navigation, safety-filter diagnosis, and renderer evidence.">
+<meta name="theme-color" content="#ffffff">
+<title>MOTAR · Moving-Target Rendezvous in Dense Obstacle Environments</title>
 <link rel="stylesheet" href="style.css?v=20260827r6">
-<link rel="stylesheet" href="overview.css?v=20260913r1">
+<link rel="stylesheet" href="overview.css?v=20260913r2">
 </head>
 <body>
-<a class="skip-link" href="#overview">본문 바로가기</a>
-<header class="site-header">
-<a class="brand" href="#top">MOTAR</a>
-<nav aria-label="페이지 탐색">
-<a href="#overview">Overview</a><a href="#contributions">Contributions</a><a href="#arena">Environment</a>
-<a href="#system">System</a><a href="#perception">Perception</a><a href="#algorithms">Algorithms</a>
-<a href="#evidence">Evidence</a><a href="https://github.com/joshualikaist/MOTAR">GitHub ↗</a>
-</nav></header>
-<main id="top">
-<section class="hero wrap">
-<div class="eyebrow">SIMULATION ONLY · CAMERA + LiDAR · REPRODUCIBLE EVIDENCE</div>
-<h1>Observe. Measure.<br><span>Reproduce.</span></h1>
-<p class="hero-copy">밀집 장애물과 움직이는 물체가 있는 환경에서, 인지 오차와 안전필터의 한계를 연구합니다.
-실험 결과뿐 아니라 실패·철회·재현 조건까지 함께 공개합니다.</p>
-<div class="actions"><a class="button primary" href="#overview">연구 구조 보기</a><a class="button" href="#evidence">검증 범위 보기</a></div>
-<p class="scope-note">실제 비행 성능 주장은 없습니다. 과거 <strong>interception/capture</strong> 실험은 원래 이름과 의미로 보존합니다.
-공개 표현인 rendezvous가 그 결과를 다른 기능의 증거로 바꾸지는 않습니다.</p>
+<a class="skip-link" href="#abstract">본문 바로가기</a>
+<header class="paper-nav">
+<a class="paper-mark" href="#top">MOTAR</a>
+<nav aria-label="논문 섹션">
+<a href="#introduction">Introduction</a>
+<a href="#system">System</a>
+<a href="#method">Method</a>
+<a href="#experiments">Experiments</a>
+<a href="#evidence">Evidence</a>
+<a href="https://github.com/joshualikaist/MOTAR">GitHub ↗</a>
+</nav>
+</header>
+
+<main id="top" class="paper">
+<header class="paper-title">
+<p class="paper-kicker">Research software · simulation study</p>
+<h1>MOTAR</h1>
+<p class="paper-subtitle">Moving-Target Rendezvous in Dense Obstacle Environments<br>with Measured Perception Uncertainty</p>
+<p class="paper-deck">Simulation-only UAV research on perception, tracking,<br class="desktop-only"> obstacle-aware navigation, and close approach.</p>
+<p class="paper-meta"><span>joshualikaist</span><span>Updated 13 September 2026</span><span>Software record; no published MOTAR paper</span></p>
+<p class="paper-links"><a href="https://github.com/joshualikaist/MOTAR">Code</a><a href="../results_overview_2026-09-12.md">Documentation</a><a href="../../CITATION.cff">Citation</a></p>
+</header>
+
+<section class="paper-section abstract" id="abstract">
+<h2>Abstract</h2>
+<p lang="en">MOTAR is a simulation-only research repository for studying perception-aware motion toward moving objects in dense obstacle fields. It combines a documented UAV dynamics and control stack with camera and LiDAR observation models, structured temporal policy inputs, and diagnostic safety-filter variants. A separate real-image lineage measures detector and temporal-association errors and supports empirical error injection into simulation; it has not been validated as a live, end-to-end flight perception stack. The appearance track separates asset geometry, independent shading experiments, dynamic-mesh feasibility, and a read-only shadow-cost probe. Across these tracks, preregistrations, source and environment receipts, negative outcomes, and withdrawn claims are preserved alongside positive evidence. The current repository therefore provides bounded evidence about simulation behavior, measured perception uncertainty, filter geometry, and renderer engineering. It does not establish real-flight performance, sim-to-real transfer, reliable persistent instance identity, appearance-shortcut reduction, or deployment readiness.</p>
 </section>
 
-<section class="section wrap" id="overview">
-<div class="section-head"><p>01 · RESEARCH QUESTION</p><h2>Moving-target rendezvous<br>in dense obstacle environments</h2></div>
-<p class="section-copy">카메라·LiDAR 관측에서 시작해, 인지와 시간 이력이 장애물 환경의 행동에 어떤 한계를 만드는지 묻습니다.
-아래는 연구 질문의 흐름이며, 실사 인지 모델부터 비행까지 통합 검증됐다는 뜻은 아닙니다.</p>
-<figure class="research-figure"><a href="../assets/paper/overview-2026-09-13/research-overview-block-diagram.svg" aria-label="시뮬레이션 장면에서 센서, 인지, 항법 연구, 역사적 결과와 근거 기록으로 이어지는 연구 질문 블록도 — 원본 확대"><img src="../assets/paper/overview-2026-09-13/research-overview-block-diagram.svg" alt="시뮬레이션 장면에서 센서, 인지, 항법 연구, 역사적 결과와 근거 기록으로 이어지는 연구 질문 블록도" loading="lazy" width="1600" height="900"></a><figcaption>그림은 연구 범위를 설명합니다. 결과 수치와 실행 계약은 별도 근거 문서에 있습니다. <span class="figure-downloads"><a href="../assets/paper/overview-2026-09-13/research-overview-block-diagram.svg">SVG</a> · <a href="../assets/paper/overview-2026-09-13/research-overview-block-diagram.png">PNG</a> · <a href="../assets/paper/overview-2026-09-13/research-overview-block-diagram.pdf">PDF</a></span></figcaption></figure>
+<figure class="paper-figure wide"><a href="../assets/paper/overview-2026-09-13/research-overview-block-diagram.svg" aria-label="Figure 1 원본 SVG 열기"><img src="../assets/paper/overview-2026-09-13/research-overview-block-diagram.svg" alt="MOTAR system overview." loading="eager" width="1600" height="900"></a><figcaption><strong>Figure 1. MOTAR system overview.</strong> The central column describes the documented simulation research path. Real-image error measurement and appearance/renderer experiments remain separate evidence lineages. A dashed connection denotes measured-error injection, not live RGB-to-policy integration. <span class="figure-files"><a href="../assets/paper/overview-2026-09-13/research-overview-block-diagram.svg">SVG</a> · <a href="../assets/paper/overview-2026-09-13/research-overview-block-diagram.png">PNG</a> · <a href="../assets/paper/overview-2026-09-13/research-overview-block-diagram.pdf">PDF</a></span></figcaption></figure>
+
+<section class="paper-section" id="introduction">
+<h2><span>1</span> Introduction</h2>
+<h3>1.1 Problem</h3>
+<p>MOTAR studies how a simulated UAV can use sensor-derived observations to detect and temporally associate a moving object, navigate through dense obstacles, and reach a close-approach condition. Historical experiment names such as <em>interception</em> and <em>capture</em> retain their original labels and meanings; the public term <em>rendezvous</em> does not reinterpret those results.</p>
+<h3>1.2 Why the problem is difficult</h3>
+<ul class="compact-list">
+<li><strong>Limited visibility.</strong> The object may occupy very few image pixels and may be obscured by clutter.</li>
+<li><strong>Perception uncertainty.</strong> Detection, association, range proxy, reacquisition, and latency errors are temporally dependent.</li>
+<li><strong>Navigation–collision tension.</strong> Commands that reduce target separation may increase obstacle-contact risk.</li>
+</ul>
+<h3>1.3 Contributions</h3>
+<ol class="contribution-list">
+<li>Measurement of detector and temporal-association errors on real UAV imagery, with a separate empirical simulation-injection lineage.</li>
+<li>Diagnosis of safety-filter geometry and failure modes in dense-obstacle simulation, without treating the result as a safety certificate.</li>
+<li>Validation of asset, appearance, and dynamic-mesh shadow paths while preserving the boundary between debug rendering and production observations.</li>
+<li>Preregistration- and receipt-based experiment records that retain negative, inconclusive, and withdrawn findings.</li>
+</ol>
 </section>
 
-<section class="section wrap" id="contributions">
-<div class="section-head"><p>02 · CONTRIBUTIONS</p><h2>네 가지 연구 축, 서로 다른 증거</h2></div>
-<div class="overview-grid">
-<article class="overview-card"><span>C1 · PERCEPTION</span><h3>측정된 인지 불확실성</h3><p>실사 영상의 검출·association 오차를 기록하고, 시뮬레이션 오차 주입 계보와 구분해 연결합니다.</p><a href="#perception">인지 흐름 →</a></article>
-<article class="overview-card"><span>C2 · SAFETY</span><h3>안전필터 실패 진단</h3><p>기존 필터의 기하와 속도 제한 비교를 분석합니다. 진단 결과를 충돌 방지 보증으로 확대하지 않습니다.</p><a href="#safety-filter">비교 구조 →</a></article>
-<article class="overview-card"><span>C3 · APPEARANCE</span><h3>외형과 렌더링의 경계</h3><p>자산 외형, 센서 프록시, 독립 음영 실험, shadow 비용을 분리합니다. 인지 개선은 아직 입증하지 않았습니다.</p><a href="#appearance">렌더링 흐름 →</a></article>
-<article class="overview-card"><span>C4 · REPRODUCIBILITY</span><h3>검증 가능한 기록</h3><p>사전등록 → 실행 → receipt → 검증 → 제한된 주장. negative·withdrawn 결과도 삭제하지 않습니다.</p><a href="#reproducibility">증거 흐름 →</a></article>
-</div><p class="small-note">C1–C4는 이 페이지의 기여 카드 번호이며, 역사적 실험 ID가 아닙니다.</p>
-</section>
-
-    <section class="section arena-section" id="arena">
-      <div class="wrap">
-        <div class="section-head">
-          <p>03 · 3D ARENA</p>
-          <h2>환경 밀도와 센서 시야를 직접 확인하세요.</h2>
-        </div>
-        <p class="section-copy">설명용 브라우저 장면입니다. 학습 정책이나 PhysX의 실행·재생이 아닙니다.</p><div class="parameter-strip"><span>40 × 40 × 3 m</span><span>70–205 bars · 연구 계보</span><span>Camera + 360° LiDAR</span><span>1.20 kg · ref5in 후보</span><span>100 Hz · 물리 설정</span></div><details class="technical"><summary>Technical details · 환경 계보와 브라우저 시계</summary><p class="arena-intro">새 physical fresh lineage의 40×40×3 m arena와
-          <code>footprint_clearance</code> 배치를 재현합니다. 실제 collision footprint의 외접원을
-          사용해 막대 중첩을 금지하고 표면 여유 0.45 m를 유지하며 merge fallback도 쓰지 않습니다.
-          과거 정량 결과의 <code>navrl_band</code>는 중첩을 허용한 historical 환경입니다.
-          표적은 10 Hz 고정 simulation clock에서 움직이고 화면만 보간합니다.
-          기본 <strong>routed-preview</strong>는 동결된 historical <code>global_astar_v1</code>
-          exact-AABB route를 bounded/lagged browser motion으로 설명합니다. recovery-v2 state machine을
-          재현하거나 성공으로 표시하지 않습니다. 코너 전환은 planning-time clearance certificate로 검사하고 실패 재계획은 직전 목표
-          1.0 m 이내를 제외합니다. pursuer와 target motion은 설명용이며, 이 화면은 PPO 실행 영상·PhysX 재생·성능 측정값이 아닙니다.</p></details>
+<section class="paper-section" id="environment">
+<h2><span>2</span> Research Environment</h2>
+<h3>2.1 Simulation environment</h3>
+<p>The interactive scene below is a browser explanation of the research arena. It is not a recorded PPO rollout, PhysX replay, or performance measurement.</p>
+<figure class="paper-figure interactive wide" id="arena">
+<p class="figure-label">Figure 2</p>
         <div class="viewer-shell">
           <div id="stage" role="img" aria-label="막대 장애물, 이동 표적, 추적 드론과 LiDAR 광선을 보여주는 3D arena">
             <p class="viewer-error">Loading 3D arena…</p>
@@ -87,7 +91,7 @@
               <option value="routed-preview" selected>Routed preview · NOT PhysX/PPO</option>
             </select>
           </label>
-          <details class="technical motion-note"><summary>Routed preview details</summary><p class="motion-mode-note" id="motion-mode-note"><strong>Routed preview:</strong> 0.25 m
+          <details class="viewer-note"><summary>Routed-preview details</summary><p class="motion-mode-note" id="motion-mode-note"><strong>Routed preview:</strong> 0.25 m
             deterministic global route, exact bar AABB, 0.45 m tracking reserve, target 3-D box
             half-diagonal support(0.2069 m), boundary 1.25 m + support, certified corner handoff,
             실패 후 직전 goal 1.0 m exclusion을 적용합니다. 대안 경로가 없으면 zero command입니다.
@@ -103,105 +107,150 @@
             <label><input type="checkbox" id="cb-trails" checked> Trails</label>
           </div>
         </div>
-      </div>
-    </section>
 
+<figcaption><strong>Figure 2. Interactive simulation environment.</strong> The view illustrates a 40 × 40 × 3 m research arena, configurable bar density, camera field of view, LiDAR rays, and a moving-object display. The browser advances a fixed 10 Hz explanatory clock and interpolates the display; each experiment’s actual geometry, motion family, and timing remain defined by its receipt. <span class="figure-files"><a href="archive-2026-09-13.html#arena">Detailed lineage notes</a></span></figcaption>
+</figure>
 
-
-<section class="section wrap" id="system">
-<span id="method" class="anchor-alias"></span>
-<div class="section-head"><p>04 · SYSTEM</p><h2>학습 모듈과 고정 모듈을 분리합니다.</h2></div>
-<p class="section-copy">기존 시뮬레이터 제어 스택의 설명입니다. 색 기반 baseline과 실사 detector/selector는 서로 다른 인지 계보이며,
-실사 파이프라인을 이 그림의 입력 자리에 이미 연결한 것으로 읽으면 안 됩니다.</p>
-<div class="legend" aria-label="그림 색상 범례"><span class="learned">Learned</span><span class="fixed">Fixed / control</span><span class="sensor">Sensor / measurement</span><span>점선: 미구현 연결</span></div>
-<figure class="research-figure"><a href="../assets/paper/overview-2026-09-13/system-control-block-diagram.svg" aria-label="기존 시뮬레이션 센서, 구조화 관측, Transformer PPO, 안전필터, 제어기, 물리의 상위 모듈도 — 원본 확대"><img src="../assets/paper/overview-2026-09-13/system-control-block-diagram.svg" alt="기존 시뮬레이션 센서, 구조화 관측, Transformer PPO, 안전필터, 제어기, 물리의 상위 모듈도" loading="lazy" width="1600" height="900"></a><figcaption>필터 활성화는 실험 계보에 따라 다릅니다. 새 제어기나 정책을 구현한 그림이 아닙니다. <span class="figure-downloads"><a href="../assets/paper/overview-2026-09-13/system-control-block-diagram.svg">SVG</a> · <a href="../assets/paper/overview-2026-09-13/system-control-block-diagram.png">PNG</a> · <a href="../assets/paper/overview-2026-09-13/system-control-block-diagram.pdf">PDF</a></span></figcaption></figure>
-<figure class="research-figure"><a href="../assets/paper/overview-2026-09-13/observation-transformer-block-diagram.svg" aria-label="기존 센서 특징과 이력, 토큰 인코더, 정책 Transformer, actor 출력, 기록의 관계 — 원본 확대"><img src="../assets/paper/overview-2026-09-13/observation-transformer-block-diagram.svg" alt="기존 센서 특징과 이력, 토큰 인코더, 정책 Transformer, actor 출력, 기록의 관계" loading="lazy" width="1600" height="900"></a><figcaption>정책 Transformer와 실사 association Transformer는 별개의 모델입니다. Actor 입력에 privileged GT를 넣지 않습니다. <span class="figure-downloads"><a href="../assets/paper/overview-2026-09-13/observation-transformer-block-diagram.svg">SVG</a> · <a href="../assets/paper/overview-2026-09-13/observation-transformer-block-diagram.png">PNG</a> · <a href="../assets/paper/overview-2026-09-13/observation-transformer-block-diagram.pdf">PDF</a></span></figcaption></figure>
-</section>
-
-<section class="section wrap" id="perception">
-<div class="section-head"><p>05 · PERCEPTION &amp; TRACKING</p><h2>영상의 후보 선택과 물리적 상태 추정을 구분합니다.</h2></div>
-<p class="section-copy">실사 스트리밍 도구는 검출과 광류를 병렬 계산한 뒤 시간 이력으로 후보를 선택합니다.
-출력은 해당 프레임의 candidate rank 또는 no-selection입니다. 이를 지속적인 물체 ID나 검증된 bearing·range·velocity 상태로 바꾸어 표현하지 않습니다.</p>
-<figure class="research-figure"><a href="../assets/paper/overview-2026-09-13/perception-tracking-block-diagram.svg" aria-label="검출과 광류의 병렬 입력, 후보 특징 이력과 시간 association; 정책 연결은 점선으로 표시 — 원본 확대"><img src="../assets/paper/overview-2026-09-13/perception-tracking-block-diagram.svg" alt="검출과 광류의 병렬 입력, 후보 특징 이력과 시간 association; 정책 연결은 점선으로 표시" loading="lazy" width="1600" height="900"></a><figcaption>별도 P8–P10 계보는 real data → measured error model → simulation injection입니다. 이는 live RGB-to-policy 연결 검증이 아닙니다. <span class="figure-downloads"><a href="../assets/paper/overview-2026-09-13/perception-tracking-block-diagram.svg">SVG</a> · <a href="../assets/paper/overview-2026-09-13/perception-tracking-block-diagram.png">PNG</a> · <a href="../assets/paper/overview-2026-09-13/perception-tracking-block-diagram.pdf">PDF</a></span></figcaption></figure>
-<a class="evidence-link" href="../results_overview_2026-09-12.md">View perception evidence →</a> · <a href="../specs/perception_streaming_v1.md">Streaming interface →</a>
-</section>
-
-<section class="section wrap" id="parameters">
-<span id="platform" class="anchor-alias"></span>
-<div class="section-head"><p>06 · PARAMETERS</p><h2>기본값과 실험 설정은 같지 않습니다.</h2></div>
-<p class="section-copy">소스 확인 기준: <code>52b5dd8</code>. 아래는 실행 중인 시스템의 측정값이 아니라 설정·계보 요약입니다.
-환경변수 override가 있는 실행의 최종 값은 해당 receipt를 따릅니다.</p>
-<div class="overview-grid">
-<article class="overview-card"><h3>Environment</h3><p>40 × 40 × 3 m · 70 / 115 / 160 / 205 bars는 명시된 연구 계보.
-300 bars는 별도 stress 조건입니다.</p><a href="../MOTAR_SYSTEM_SPEC_2026-08-24.md">환경·계보 계약</a></article>
-<article class="overview-card"><h3>Sensors</h3><p>Camera 기본값 160 × 90, HFOV 87°. LiDAR 기본값 36 × 4 / 4 m; canonical 실험은 72 × 4 / 12 m.
-360° scan과 전방 240° proposal 선택은 다릅니다.</p><a href="overview-sources-2026-09-13.md#parameters">설정 출처</a></article>
-<article class="overview-card"><h3>Vehicle / physics</h3><p>ref5in 후보 1.20 kg · 모터 지연 0.04 s · 물리 dt 0.01 s.
-속도 축별 기본값 2.0 m/s와 historical 설정 2.5 m/s를 구분합니다. 기존 제한 기울기는 45°입니다.</p><a href="../MOTAR_SYSTEM_SPEC_2026-08-24.md">기체 계약</a></article>
-<article class="overview-card"><h3>Learning / memory</h3><p>PPO · canonical 898-D / 17-token policy Transformer.
-병렬 환경 기본값 256; D7 주요 셀은 128입니다. 정책 이력 5시점과 실사 selector T=16은 별개입니다.</p><a href="../MOTAR_SYSTEM_SPEC_2026-08-24.md">관측 계약</a></article>
-<article class="overview-card"><h3>Moving object</h3><p>Legacy virtual / bounded / physical / routed 계보를 혼합하지 않습니다.
-브라우저의 0.3–1.5 m/s 표시는 설명용이며, 실험 속도는 각 receipt에서 확인합니다.</p><a href="archive-2026-09-13.html#arena">계보 상세</a></article>
-</div><a class="evidence-link" href="../MOTAR_SYSTEM_SPEC_2026-08-24.md">Full configuration → System Specification</a>
-</section>
-
-<section class="section wrap" id="algorithms">
-<div class="section-head"><p>07 · ALGORITHMS</p><h2>구현된 모듈을 역할별로 읽습니다.</h2></div>
-<div class="overview-grid">
-<article class="overview-card"><h3>Perception</h3><p>Detector · optical flow · temporal association: 프레임 후보의 선택 기록.</p></article>
-<article class="overview-card"><h3>Navigation</h3><p>Transformer PPO: 기존 시뮬레이션의 시간 관측 정책.</p></article>
-<article class="overview-card"><h3>Safety diagnosis</h3><p>LiDAR clearance · cap-law · arc geometry: 별개 비교 축의 역사적 분석.</p></article>
-<article class="overview-card"><h3>Rendering</h3><p>Warp ray query · analytic proxy · mesh / shading: 실행 경로별로 분리된 증거.</p></article>
+<h3>2.2 Platform and sensors</h3>
+<div class="platform-schematic" role="img" aria-label="Simulated UAV connected to RGB-D camera, LiDAR, ego state, and velocity-yaw actuation">
+<strong>Simulated UAV</strong><span>RGB-D camera</span><span>LiDAR</span><span>Ego state</span><span>velocity / yaw actuation</span>
 </div>
-<div id="safety-filter">
-<figure class="research-figure"><a href="../assets/paper/overview-2026-09-13/safety-filter-block-diagram.svg" aria-label="기존 정책 명령과 센서 문맥에서 기하 비교와 cap-law 비교를 나누어 실패 기록을 분석하는 블록도 — 원본 확대"><img src="../assets/paper/overview-2026-09-13/safety-filter-block-diagram.svg" alt="기존 정책 명령과 센서 문맥에서 기하 비교와 cap-law 비교를 나누어 실패 기록을 분석하는 블록도" loading="lazy" width="1600" height="900"></a><figcaption>대안 기하를 연속 필터처럼 연결하지 않습니다. 기존 실패 분석은 안전 인증이 아닙니다. <span class="figure-downloads"><a href="../assets/paper/overview-2026-09-13/safety-filter-block-diagram.svg">SVG</a> · <a href="../assets/paper/overview-2026-09-13/safety-filter-block-diagram.png">PNG</a> · <a href="../assets/paper/overview-2026-09-13/safety-filter-block-diagram.pdf">PDF</a></span></figcaption></figure>
-</div>
-<div id="appearance">
-<figure class="research-figure"><a href="../assets/paper/overview-2026-09-13/appearance-rendering-block-diagram.svg" aria-label="기존 프록시 인지와 독립 geometry, appearance, shadow 실험의 분리; 미시작 perception integration 점선 블록 — 원본 확대"><img src="../assets/paper/overview-2026-09-13/appearance-rendering-block-diagram.svg" alt="기존 프록시 인지와 독립 geometry, appearance, shadow 실험의 분리; 미시작 perception integration 점선 블록" loading="lazy" width="1600" height="900"></a><figcaption>D7은 shadow 비용과 출력 비간섭 근거입니다. Shadow 버퍼는 기존 검출기 입력이 아니며 shortcut 감소는 미측정입니다. <span class="figure-downloads"><a href="../assets/paper/overview-2026-09-13/appearance-rendering-block-diagram.svg">SVG</a> · <a href="../assets/paper/overview-2026-09-13/appearance-rendering-block-diagram.png">PNG</a> · <a href="../assets/paper/overview-2026-09-13/appearance-rendering-block-diagram.pdf">PDF</a></span></figcaption></figure>
-</div>
+<table class="paper-table compact-table">
+<caption>Platform and sensing interfaces used in the documented simulation lineages.</caption>
+<thead><tr><th>Component</th><th>Role</th><th>Boundary</th></tr></thead>
+<tbody>
+<tr><td>RGB-D camera</td><td>Forward image/depth observation</td><td>Default render and detector resolutions are lineage-dependent</td></tr>
+<tr><td>LiDAR</td><td>360° obstacle range input</td><td>Full scan differs from the 240° proposal-selection sector</td></tr>
+<tr><td>Ego state</td><td>Velocity, yaw rate, and height features</td><td>Simulation state; not real-flight telemetry evidence</td></tr>
+<tr><td>Actuation</td><td>Bounded velocity/yaw command to fixed controller</td><td>Configured simulation dynamics</td></tr>
+</tbody></table>
 </section>
 
-<section class="section wrap" id="evidence">
-<span id="panel-runs" class="anchor-alias"></span>
-<div class="section-head"><p>08 · EVIDENCE / CURRENT STATUS</p><h2>무엇을 검증했고, 무엇은 아직 아닌가.</h2></div>
-<p class="section-copy">단계 상태는 <a href="../status_manifest.json">공유 manifest</a>에서 읽습니다.
-D6의 독립 질의 비용과 D7의 전체 step 비용은 서로 다른 질문입니다.</p>
-<div id="public-status-manifest" aria-live="polite">상태 목록을 불러오는 중입니다.</div>
-<noscript><p>JavaScript 없이도 <a href="../status_manifest.json">상태 원문</a>과 <a href="../../VERIFICATION.md">검증 기록</a>을 볼 수 있습니다.</p></noscript>
-<div class="overview-grid claim-boundaries">
-<article class="overview-card"><h3>Perception / P10</h3><p>파이프라인과 측정 기록은 있습니다. 일반화 문제는 남아 있고, P10 재적응의 순효과는 확립되지 않았습니다.</p><a href="../../results/perception_p10_seed_replication_2026-09-10/README.md">Replication evidence</a></article>
-<article class="overview-card"><h3>Size-based range / E3</h3><p>E3-S의 6.2%는 한 비행에서 leave-one-block-out으로 계산한 블록별 절대 상대오차 중앙값들의 중앙값입니다.
-입력은 GT box가 아닌 dark-pixel 크기 proxy이며 일반 거리 센서 정확도가 아닙니다. E3-P 자세 분리·절대 기하는 제한됩니다.</p><a href="../../results/eth_ds5_e3s_2026-09-10/README.md">E3-S</a> · <a href="../../results/eth_ds5_e3p_reliability_2026-09-10/README.md">E3-P</a></article>
-<article class="overview-card"><h3>Appearance / shadow</h3><p>D7의 판정은 비용·출력 비간섭에만 적용됩니다. 인지 개선, association 개선, shortcut 감소의 근거가 아닙니다.
-R4/R4b 실패를 기준 자체의 결함으로 해석하지 않습니다.</p><a href="../../results/dynamic_mesh_integrated_cost_2026-09-12/README.md">D7 evidence</a></article>
-<article class="overview-card"><h3>Negative / withdrawn</h3><p>철회된 C3 실험 주장은 되살리지 않습니다. 통계적 불확실성, 자세 신뢰성 실패, 미완료 실행은 성공과 구분해 보존합니다.</p><a href="../../VERIFICATION.md">All evidence</a></article>
-</div>
-<div id="reproducibility">
-<figure class="research-figure"><a href="../assets/paper/overview-2026-09-13/evidence-reproducibility-block-diagram.svg" aria-label="사전등록, 실행, receipt, 독립 확인, 제한된 주장, 공개 보존의 블록도 — 원본 확대"><img src="../assets/paper/overview-2026-09-13/evidence-reproducibility-block-diagram.svg" alt="사전등록, 실행, receipt, 독립 확인, 제한된 주장, 공개 보존의 블록도" loading="lazy" width="1600" height="900"></a><figcaption>테스트 통과는 연구 가설의 성공과 다릅니다. 상세 기록과 철회 이력은 삭제하지 않았습니다. <span class="figure-downloads"><a href="../assets/paper/overview-2026-09-13/evidence-reproducibility-block-diagram.svg">SVG</a> · <a href="../assets/paper/overview-2026-09-13/evidence-reproducibility-block-diagram.png">PNG</a> · <a href="../assets/paper/overview-2026-09-13/evidence-reproducibility-block-diagram.pdf">PDF</a></span></figcaption></figure>
-</div>
-<a class="evidence-link" href="../../VERIFICATION.md">View all evidence → VERIFICATION.md</a>
+<section class="paper-section" id="system">
+<h2><span>3</span> System Architecture</h2>
+<h3 id="method">3.1 High-level control pipeline</h3>
+<p>As shown in Fig. 3, existing simulation sensing is converted into a structured observation before the temporal policy produces a bounded command. A configured safety-filter arm may constrain that command before the fixed low-level controller and rigid-body simulation. Filter activation and observation content are experiment-lineage specific.</p>
+<figure class="paper-figure "><a href="../assets/paper/overview-2026-09-13/system-control-block-diagram.svg" aria-label="Figure 3 원본 SVG 열기"><img src="../assets/paper/overview-2026-09-13/system-control-block-diagram.svg" alt="High-level control architecture." loading="lazy" width="1600" height="900"></a><figcaption><strong>Figure 3. High-level control architecture.</strong> Sensor-derived structured observations feed the historical Transformer-PPO policy and fixed control stack. The real-image temporal selector is a separate pipeline and is not silently substituted for the simulator detector. <span class="figure-files"><a href="../assets/paper/overview-2026-09-13/system-control-block-diagram.svg">SVG</a> · <a href="../assets/paper/overview-2026-09-13/system-control-block-diagram.png">PNG</a> · <a href="../assets/paper/overview-2026-09-13/system-control-block-diagram.pdf">PDF</a></span></figcaption></figure>
+<h3 id="perception">3.2 Low-level perception and tracking</h3>
+<p>The real-image streaming pipeline runs a frozen detector and optical flow, assembles candidate and motion features, and returns a frame-local candidate rank or no-selection result. It does not by itself establish persistent physical identity or a metric target state. Consequently, the policy-observation connection in Fig. 4 remains dashed.</p>
+<figure class="paper-figure "><a href="../assets/paper/overview-2026-09-13/perception-tracking-block-diagram.svg" aria-label="Figure 4 원본 SVG 열기"><img src="../assets/paper/overview-2026-09-13/perception-tracking-block-diagram.svg" alt="Perception and temporal-association pipeline." loading="lazy" width="1600" height="900"></a><figcaption><strong>Figure 4. Perception and temporal-association pipeline.</strong> Detector candidates and optical-flow features are assembled into temporal history before selection. The separate P8–P10 branch measures real-image errors and injects an empirical model in simulation; this is not live camera integration. <span class="figure-files"><a href="../assets/paper/overview-2026-09-13/perception-tracking-block-diagram.svg">SVG</a> · <a href="../assets/paper/overview-2026-09-13/perception-tracking-block-diagram.png">PNG</a> · <a href="../assets/paper/overview-2026-09-13/perception-tracking-block-diagram.pdf">PDF</a></span></figcaption></figure>
+<h3 id="safety-filter">3.3 Safety filter</h3>
+<p>Figure 5 separates the nominal policy command from LiDAR-derived geometry. Risk/cap-law and arc-clearance geometry are comparison axes, not a stack of sequential planners. The output preserves the requested horizontal direction while constraining magnitude under the selected experiment configuration.</p>
+<figure class="paper-figure "><a href="../assets/paper/overview-2026-09-13/safety-filter-block-diagram.svg" aria-label="Figure 5 원본 SVG 열기"><img src="../assets/paper/overview-2026-09-13/safety-filter-block-diagram.svg" alt="Safety-filter architecture." loading="lazy" width="1600" height="900"></a><figcaption><strong>Figure 5. Safety-filter architecture.</strong> The configured geometry and speed-cap calculation produces a filtered command for the fixed controller. “Filtered” is not equivalent to guaranteed safe, and the diagram specifies no new controller. <span class="figure-files"><a href="../assets/paper/overview-2026-09-13/safety-filter-block-diagram.svg">SVG</a> · <a href="../assets/paper/overview-2026-09-13/safety-filter-block-diagram.png">PNG</a> · <a href="../assets/paper/overview-2026-09-13/safety-filter-block-diagram.pdf">PDF</a></span></figcaption></figure>
+<h3 id="appearance">3.4 Appearance and rendering</h3>
+<p>The production detector still consumes the established analytic-proxy observation. Independent appearance tools can derive depth, normals, face IDs, material variation, and lighting variation from geometry. D7 adds a read-only shadow query beside production; it does not route the shadow buffer into the detector.</p>
+<figure class="paper-figure "><a href="../assets/paper/overview-2026-09-13/appearance-rendering-block-diagram.svg" aria-label="Figure 6 원본 SVG 열기"><img src="../assets/paper/overview-2026-09-13/appearance-rendering-block-diagram.svg" alt="Appearance and rendering architecture." loading="lazy" width="1600" height="900"></a><figcaption><strong>Figure 6. Appearance and rendering architecture.</strong> The solid paths distinguish production sensing from independent appearance experiments. D6 dynamic-mesh feasibility remains INCONCLUSIVE; D7 is GO only for shadow cost and output non-interference. Mesh-derived perception integration is D8 and has not started. <span class="figure-files"><a href="../assets/paper/overview-2026-09-13/appearance-rendering-block-diagram.svg">SVG</a> · <a href="../assets/paper/overview-2026-09-13/appearance-rendering-block-diagram.png">PNG</a> · <a href="../assets/paper/overview-2026-09-13/appearance-rendering-block-diagram.pdf">PDF</a></span></figcaption></figure>
 </section>
 
-<section class="section wrap" id="external-data">
-<div class="section-head"><p>09 · EXTERNAL DATA</p><h2>데이터가 답할 수 있는 질문도 다릅니다.</h2></div>
-<div class="overview-grid">
-<article class="overview-card"><h3>NPS-Drones</h3><p>목적: 실사 detector / temporal 평가.<br>시점: 공대공 영상.<br>GT: 영상 주석, metric range 없음.<br>라이선스: 공식 데이터 BSD-3 표기.</p></article>
-<article class="overview-card"><h3>Det-Fly</h3><p>목적: 외부 도메인 검출 평가.<br>시점: 공대공 영상.<br>GT: bounding box, metric range 없음.<br>라이선스: 저장소 MIT; 별도 이미지 재배포 조건 미확정.</p></article>
-<article class="overview-card"><h3>ETH ds5</h3><p>목적: size–range / 자세 신뢰성 검토.<br>시점: 지상 카메라.<br>GT: 공개 position / pose; 정합성 제한.<br>라이선스: CC BY-NC-SA 4.0, 별도 귀속.</p></article>
-</div><a href="../../THIRD_PARTY_LICENSES.md">License / access / attribution details →</a>
+<section class="paper-section" id="experiments">
+<h2><span>4</span> Experimental Setup</h2>
+<h3>4.1 Main parameters</h3>
+<p>Table 1 reports the principal documented configuration rather than one universal runtime state. Defaults, canonical historical settings, and individual benchmark cells are labeled separately; the receipt for a run remains authoritative.</p>
+<table class="paper-table">
+<caption><strong>Table 1.</strong> Principal parameters and their applicable lineages at source <code>be89675</code>.</caption>
+<thead><tr><th>Category</th><th>Parameter</th><th>Value</th><th>Applicability</th></tr></thead>
+<tbody>
+<tr><td>Environment</td><td>Arena</td><td>40 × 40 × 3 m</td><td>Fresh research lineage; source default XY is 24 m</td></tr>
+<tr><td>Environment</td><td>Obstacle densities</td><td>70 / 115 / 160 / 205</td><td>Named canonical density knots; 300 is separate stress</td></tr>
+<tr><td>Camera</td><td>Resolution / HFOV</td><td>160 × 90 / 87°</td><td>Source defaults; overrides recorded per run</td></tr>
+<tr><td>LiDAR</td><td>Rays / range</td><td>4 × 72 / 12 m</td><td>Canonical perception contract; source defaults are 4 × 36 / 4 m</td></tr>
+<tr><td>Vehicle</td><td>Mass / motor lag</td><td>1.20 kg / 0.04 s</td><td>ref5in simulation candidate; not measured hardware</td></tr>
+<tr><td>Vehicle</td><td>Command speed / tilt</td><td>2.5 m/s / 45°</td><td>Historical contract; current source default speed is 2.0 m/s</td></tr>
+<tr><td>Policy</td><td>Observation</td><td>898-D / 17 tokens</td><td>Canonical historical policy contract</td></tr>
+<tr><td>Learning</td><td>Architecture</td><td>Transformer / PPO</td><td>Historical policy; distinct from association Transformer</td></tr>
+<tr><td>Runtime</td><td>Parallel environments</td><td>256 default / 128 D7</td><td>Source default versus D7 primary benchmark cell</td></tr>
+</tbody></table>
+<p class="source-note">Parameter provenance: <a href="overview-sources-2026-09-13.md#parameters">source map</a> · <a href="../MOTAR_SYSTEM_SPEC_2026-08-24.md">system specification</a>.</p>
+
+<h3>4.2 External datasets</h3>
+<table class="paper-table compact-table">
+<caption><strong>Table 2.</strong> External data roles. Licensing and redistribution terms are tracked separately.</caption>
+<thead><tr><th>Dataset</th><th>Role</th><th>Key boundary</th></tr></thead>
+<tbody>
+<tr><td>NPS-Drones</td><td>Detector and temporal evaluation</td><td>No metric range ground truth</td></tr>
+<tr><td>Det-Fly</td><td>Cross-domain detector evaluation</td><td>Separate hosted-image redistribution terms not established</td></tr>
+<tr><td>ETH ds5</td><td>Size–range and pose-reliability analysis</td><td>Timestamp/pose limitations constrain causal interpretation</td></tr>
+</tbody></table>
+<p class="source-note"><a href="../../THIRD_PARTY_LICENSES.md">Licenses, attribution, and access details</a>.</p>
 </section>
-<section class="section wrap" id="next">
-<div class="section-head"><p>DETAILS &amp; NEXT BOUNDARY</p><h2>개요에서 원자료로.</h2></div>
-<p>이번 개편은 새 연구 결과나 D8 실행을 만들지 않았습니다. D8 전에는 기하 계약과 관측 계약의 변경 범위,
-별도 계보 및 사전등록 상태가 명확해야 합니다. D7의 판정만으로 통합 채택을 뜻하지 않습니다.</p>
-<div class="resource-links"><a href="archive-2026-09-13.html">이전 상세 페이지</a><a href="overview-sources-2026-09-13.md">상세 내용 이동·출처 지도</a>
-<a href="../results_overview_2026-09-12.md">Results overview</a><a href="../../WORKLOG.md">Worklog</a>
-<a href="../research_authority_2026-08-26.json">Frozen execution authority</a>
-<a href="../assets/paper/overview-2026-09-13/research-overview-figures.zip">새 그림 7종 다운로드</a><a href="../assets/paper/">이전 그림 갤러리</a></div>
+
+<section class="paper-section" id="algorithms">
+<h2><span>5</span> Algorithms</h2>
+<p>Figures 3–6 organize the implemented methods by role; they are not one validated end-to-end real-image flight pipeline.</p>
+<h3>5.1 Perception</h3>
+<p>The real-image lineage combines a frozen detector, Top-K candidates, optical flow, global-motion features, and temporal association. A Kalman filter, GRU, and Transformer were evaluated as alternatives over the same detector lineage; frame-local association remains distinct from reliable persistent identity.</p>
+<h3>5.2 Reinforcement learning</h3>
+<p>The historical simulation policy uses PPO with a Transformer over structured sensor and history tokens. Its actor observation excludes privileged target ground truth; centralized critic and evaluation supervision have separate roles.</p>
+<h3>5.3 Safety</h3>
+<p>LiDAR-derived clearance and stopping-risk estimates can limit commanded speed while retaining direction. Straight-corridor and arc-clearance formulations are experimental comparison arms, and neither is a collision-avoidance certificate.</p>
+<h3>5.4 Rendering</h3>
+<p>Warp ray queries support analytic target proxies, static-scene geometry, and independent mesh/appearance studies. Normal, material, and lighting tools are separated from the production observation path; D7 only measures an attached shadow query.</p>
+</section>
+
+<section class="paper-section" id="evidence">
+<h2><span>6</span> Evidence and Current Results</h2>
+<p>Table 3 gives the shortest defensible summary. Formal appearance-track statuses are loaded from the shared manifest; if that file is unavailable, no successful state is inferred.</p>
+<table class="paper-table evidence-table">
+<caption><strong>Table 3.</strong> Current evidence boundaries.</caption>
+<thead><tr><th>Study</th><th>Question</th><th>Status</th><th>Main finding</th></tr></thead>
+<tbody>
+<tr><td>Perception</td><td>Real-image error</td><td>Recorded; generalization open</td><td>Dataset- and lineage-specific detector/association error model exists; P10 net adaptation benefit is not established.</td></tr>
+<tr><td>Safety</td><td>Filter geometry</td><td>Diagnosis recorded</td><td>Configured comparisons expose geometry-dependent failure modes; no real-flight safety claim.</td></tr>
+<tr><td>Range E3-S</td><td>Size → range proxy</td><td>Bounded result</td><td>6.2% is a single-flight block-held-out size-proxy metric, not general range-sensor accuracy.</td></tr>
+<tr><td>Appearance D6</td><td>Dynamic-mesh query</td><td data-status-id="D6">Loading…</td><td>Correctness passed while the preregistered standalone cost question remained unresolved.</td></tr>
+<tr><td>Appearance D7</td><td>Shadow integration</td><td data-status-id="D7">Loading…</td><td>Runtime/effect non-interference gate passed; no perception-improvement evidence.</td></tr>
+<tr><td>Appearance D8</td><td>Mesh-derived observation</td><td data-status-id="D8">Loading…</td><td>Geometry/observation contract and treatment lineage remain prerequisites.</td></tr>
+<tr><td>Appearance D9</td><td>Shortcut remeasurement</td><td data-status-id="D9">Loading…</td><td>Appearance and motion shortcut reduction has not been measured.</td></tr>
+</tbody></table>
+<div id="public-status-manifest" class="manifest-note" aria-live="polite">Track D manifest를 확인하는 중입니다.</div>
+<noscript><p class="manifest-note">JavaScript 없이도 <a href="../status_manifest.json">상태 manifest</a>와 <a href="../../VERIFICATION.md">검증 기록</a>을 확인할 수 있습니다.</p></noscript>
+<figure class="paper-figure "><a href="../assets/paper/overview-2026-09-13/evidence-reproducibility-block-diagram.svg" aria-label="Figure 7 원본 SVG 열기"><img src="../assets/paper/overview-2026-09-13/evidence-reproducibility-block-diagram.svg" alt="Evidence and experiment flow." loading="lazy" width="1600" height="900"></a><figcaption><strong>Figure 7. Evidence and experiment flow.</strong> Questions and decision criteria are fixed before execution; receipts and independent checks precede bounded claims. Negative, inconclusive, and withdrawn results remain in the public record. <span class="figure-files"><a href="../assets/paper/overview-2026-09-13/evidence-reproducibility-block-diagram.svg">SVG</a> · <a href="../assets/paper/overview-2026-09-13/evidence-reproducibility-block-diagram.png">PNG</a> · <a href="../assets/paper/overview-2026-09-13/evidence-reproducibility-block-diagram.pdf">PDF</a></span></figcaption></figure>
+<p class="source-note"><a href="../../VERIFICATION.md">Detailed evidence and confidence intervals → VERIFICATION.md</a> · <a href="../results_overview_2026-09-12.md">Results overview</a>.</p>
+</section>
+
+<section class="paper-section" id="discussion">
+<h2><span>7</span> Discussion and Current Limitations</h2>
+<h3>7.1 What is established</h3>
+<ul class="compact-list">
+<li>Documented simulation, perception-error measurement, and safety-filter diagnosis pipelines exist in separate, reproducible lineages.</li>
+<li>D7 establishes acceptable shadow-query cost and output non-interference under its preregistered cells.</li>
+<li>Negative outcomes, including D6 and R4/R4b, and the withdrawn C3 interpretation remain preserved.</li>
+</ul>
+<h3>7.2 What is not established</h3>
+<ul class="compact-list">
+<li>Real-flight performance, sim-to-real transfer, deployment readiness, or a real-time hardware stack.</li>
+<li>Reliable persistent instance identity, causal relative-pose effects in E3-P, or general range-sensor accuracy.</li>
+<li>Appearance-shortcut reduction, D8 mesh-derived perception integration, or D9 remeasurement.</li>
+</ul>
+<h3>7.3 Current bottleneck</h3>
+<p>The next scientific boundary is not renderer throughput alone. D8 first requires an explicit geometry and observation contract, a preregistered analytic-proxy versus mesh-derived treatment, and a separate interpretation for frozen-policy sensitivity. Any later adaptation would require its own training lineage. This page neither selects that contract nor opens the experiment.</p>
+</section>
+
+<section class="paper-section" id="next">
+<h2><span>8</span> Next Research Steps</h2>
+<div class="paper-roadmap" aria-label="D8에서 D9까지의 연구 순서">
+<span><b>D8</b> Mesh-derived observation treatment</span><i>↓</i>
+<span>Frozen sensitivity evaluation</span><i>↓</i>
+<span>Perception adaptation <em>only if justified</em></span><i>↓</i>
+<span><b>D9</b> Shortcut remeasurement</span>
+</div>
+<p>A separate dashed future branch retains longer-term search/reacquisition, terminal close approach, and strict contact evaluation. Those topics are not opened by D7 and are not designed or implemented by this site revision.</p>
+<p class="future-line">Search / reacquisition &nbsp;→&nbsp; terminal close approach &nbsp;→&nbsp; strict contact evaluation</p>
+</section>
+
+<section class="paper-section end-matter" id="availability">
+<h2>Code, Citation, and Availability</h2>
+<dl>
+<div><dt>Code</dt><dd><a href="https://github.com/joshualikaist/MOTAR">github.com/joshualikaist/MOTAR</a></dd></div>
+<div><dt>Citation</dt><dd><a href="../../CITATION.cff">CITATION.cff</a> describes software citation metadata; no MOTAR paper is claimed.</dd></div>
+<div><dt>License</dt><dd>Repository code is BSD-3-Clause. External datasets, inherited components, and figures may have separate terms; see <a href="../../THIRD_PARTY_LICENSES.md">third-party notices</a>.</dd></div>
+<div><dt>Evidence</dt><dd><a href="../../VERIFICATION.md">Verification</a> · <a href="../../WORKLOG.md">Worklog</a> · <a href="overview-sources-2026-09-13.md">source and migration map</a> · <a href="archive-2026-09-13.html">preserved detailed page</a></dd></div>
+</dl>
 </section>
 </main>
-<footer><div class="wrap"><strong>MOTAR</strong><span>Simulation research · no real-flight validation</span><a href="../../THIRD_PARTY_LICENSES.md">Code / data / figures: separate terms</a></div></footer>
-<script src="status_manifest.js?v=20260913r1" defer></script>
+
+<footer class="paper-footer"><p>MOTAR · simulation research · no real-flight validation claim</p></footer>
+<script src="status_manifest.js?v=20260913r2" defer></script>
 <script src="vendor/three.min.js?v=20260827r6"></script>
 <script src="vendor/OrbitControls.js?v=20260827r6"></script>
 <script src="arena_route.js?v=20260827r6"></script>
