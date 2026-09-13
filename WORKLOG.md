@@ -18148,3 +18148,19 @@ source manifest는 실제 새 실행 파일을 포함하며 R5b의 과거 manife
 새 단위 테스트 18개: inclusive extent, clipping/최소픽셀 거부, 해상도 정규화, centroid 0 안전성,
 고정 gate, fit/validation 분리, 폐형식 면적·synthetic scale 회복, 비유한 값 거부, normal 출처 계약.
 R1b→R2b→R3b는 별도 프로세스·결과·커밋으로 진행하며, 결과에 따라 threshold를 바꾸지 않는다.
+
+## 2026-09-14 — R1b 완료: 1280×960이 등록된 측정 해상도 조건 충족
+
+`results/renderer_characterization_r1b_2026-09-14/`, source `901d4d8`. 3 specimens×24 views×
+4 resolutions = 288행, 거부 0. 2048×1536 sampled reference 대비 모든 72개 specimen-view의
+최악 상대 오차(%):
+
+| Resolution | Width | Height | Area | Centroid / equivalent diameter | Depth |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 320×240 | 5.391 | 2.476 | 7.021 | 1.267 | 0.195 |
+| 640×480 | 2.609 | 1.000 | 3.119 | 0.707 | 0.074 |
+| 1280×960 | 1.217 | 0.483 | 1.143 | 0.299 | 0.056 |
+
+판정 `MEASUREMENT_RESOLUTION_QUALIFIED`, 최소 추천 1280×960. 이는 이 거리 2 m의 고정 view
+grid에서 측정한 finite-resolution discrepancy이며 보편적 오차 상한이나 정확한 기하 GT가 아니다.
+RC-R1의 GEOMETRY_DEFECT는 유지한다. 다음 R2b는 원래 고정한 1280×960에서 한 번 fitting한다.
