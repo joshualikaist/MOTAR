@@ -18104,3 +18104,16 @@ SHA가 현재 커밋된 소스와 모두 일치하고 receipt/summary 판정도 
 Camera 기존 상한 때문에 reference는 2048×1536. MeshScene에 authored vertex/smooth normals가
 없으므로 N1/N2는 UNSUPPORTED로 미리 정했다. 과거 기준·source·receipt는 수정하지 않는다.
 단계별 코드와 결과는 별도 커밋하며, 정책/검출기와 인과 연결은 `NOT_TESTED`로 유지한다.
+
+## 2026-09-14 — R5b 전송 하네스 구현 (실측 전)
+
+새 `transfer_strategies.py`는 RSS reader의 context manager로 조기 return/예외에서도 파일을 닫는다.
+기존 R5 소스·receipt는 변경하지 않는다. A0 개별 복사, A1 device-resident+scalar, A2 dtype별 pack,
+A3 pinned nonblocking+완료 대기의 네 arm을 같은 렌더 출력에 적용한다. A1 전체 export 검증 비용과
+A3 사전 할당 비용은 별도 기록한다. 2 fixtures×4 arms×3 processes, 20 warmup, staged/headline 각
+100 sample. 전체 버퍼 해시와 반복 간 해시가 일치해야 비교하며 CUDA/G-buffer 코드는 바꾸지 않았다.
+기존 R5 copy_once는 `cell.arrays` 안에서 shading도 실행하므로 그 175 ms를 순수 D2H라고 부르지
+않는다. 새 stage 경계는 geometry/shading/transfer strategy/total로 분리한다.
+
+신규 회귀 12개 통과: RSS 조기 return/예외/반복 실행, A0/A2 dtype·shape·byte 보존, A1 전체 host
+복사 부재, A3 CPU 거부, 계약 drift 거부, 역사 R5 source SHA 불변. 아직 새 GPU 수치는 없다.
