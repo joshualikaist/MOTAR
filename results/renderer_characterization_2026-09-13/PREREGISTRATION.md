@@ -183,3 +183,35 @@ No existing hash-pinned figure, ZIP or archived HTML is overwritten.
 Discipline carried from the repository's standing rules: no threshold changes after results; failed
 results preserved; no test deleted or skipped to turn the suite green; no force push; no rewriting
 of existing commits.
+
+---
+
+## Amendment 1 — 2026-09-13, before any RC experiment was run
+
+**What changes.** G6's minimum visible-triangle count goes from **3 to 2**. Nothing else changes:
+the 300-pixel silhouette minimum, every RC-R1 tolerance, the RC-R2 tolerance and split, and the
+RC-R3 variance thresholds S2/S3 are all untouched.
+
+**Why.** The count was written as a proxy for "enough visible structure to measure", with a
+tessellated specimen in mind. A box is not tessellated: one of its faces is exactly two triangles.
+Measured on the primary grid, the A1 box shows 2 visible triangles at azimuth 0/90/180/270 with
+elevation 0 — which are precisely the four RC-R2 fit views — and 4 or 6 triangles everywhere else.
+At 3, G6 would refuse the views the RC-R2 scale is fitted on, and the A1/A2 arms could not be
+measured on the same view set as A3 at all. Those four views are not degenerate: their silhouettes
+hold 697–1521 pixels, far above the 300-pixel minimum, and a fully visible planar face is a
+complete measurement of that face.
+
+**Direction of the change, stated so it can be checked.** Lowering the count *admits* views rather
+than excluding them, and the views it admits are the least structured ones in the grid. Every
+admitted view must still pass G1, G3, G4, G5 and G7. It cannot convert a failing gate into a passing
+one, and it cannot affect RC-R3's S2/S3 at all.
+
+**What this amendment explicitly does not do.** It does not touch S3. The four axis-aligned box
+views show a single planar face, whose lambertian luminance is spatially constant by construction,
+so S3 (silhouette luminance variance ≥ 1e-4) is expected to **fail** on them. That failure is a
+measurement of the renderer's behaviour and will be reported as a failure, per view, with its
+geometric reason. The threshold stays at 1e-4.
+
+**Status.** Written and committed before any RC experiment was executed. No RC result existed at the
+time of this amendment; what existed was the implementation-time observation of visible-triangle
+counts recorded above.
