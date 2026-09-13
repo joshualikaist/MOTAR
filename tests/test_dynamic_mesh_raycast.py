@@ -87,9 +87,14 @@ class DynamicMeshRaycastTest(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        if cls._saved_warp is _ABSENT:
-            sys.modules.pop("warp", None)
-        else:
+        # Never remove the real package. Warp's submodules stay in sys.modules once imported, so a
+        # later `import warp` anywhere in the process would re-execute warp/__init__.py against a
+        # fresh, half-built module object and die on `warp.config`. Restoring a stub would be just
+        # as bad: the next real import would silently get the stub instead. Modules that need a stub
+        # install their own over whatever is here and put it back themselves, so leaving the real
+        # package in place is what keeps every later importer honest.
+        if cls._saved_warp is not _ABSENT and isinstance(
+                getattr(cls._saved_warp, "Mesh", None), type):
             sys.modules["warp"] = cls._saved_warp
 
     def caster(self, dynamic=None):

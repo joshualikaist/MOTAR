@@ -280,6 +280,11 @@ class IsolationAndDriverTest(unittest.TestCase):
         wp.array = lambda **kw: object
         wp.kernel = lambda f: f
         name = "_renderer_validation_camera_" + KERNEL_SHA256[:16]
+        # load_camera_kernels memoizes by module name. Any earlier test in the process that rendered
+        # for real leaves the real-Warp version cached there, and this test would then inspect that
+        # instead of the fake-Warp load it is about. Clear the cache first so the load really happens
+        # here; the finally below leaves it clear for whoever runs next.
+        sys.modules.pop(name, None)
         before = set(sys.modules)
         try:
             with patch.dict(sys.modules, {"warp": wp}):
