@@ -1407,6 +1407,7 @@ class NavRLTask(BaseTask):
                 self._detector_checkpoint_sha256 = _sha256_file(detector_path)
         self.detector = None
         self.perception = None
+        self._d8_treatment_asset_sha256 = ""
         self.prev_action = torch.zeros((self.num_envs, 4), device=self.device)
         self._visible_now = torch.zeros(self.num_envs, dtype=torch.bool, device=self.device)
         # 8.28 secondary channel. The preregistered PRIMARY stays the fused flag; this
@@ -1430,6 +1431,24 @@ class NavRLTask(BaseTask):
                 vis_cfg=self.vis_cfg,
                 step_dt=self.step_dt,
             )
+            # D8 observation treatment is opt-in and evaluation-only. Keep the default/off path
+            # free of the treatment module and its URDF dependencies. Unknown non-off values are
+            # deliberately handed to treatment_mode(), which fails closed.
+            d8_raw = os.environ.get("NAVRL_DYNAMIC_MESH_TREATMENT", "off").strip().lower()
+            if d8_raw not in ("", "0", "false", "no", "off"):
+                from aerial_gym.task.navrl_task.navrl_dynamic_mesh_treatment import (
+                    V3_ASSET_SHA256,
+                    load_pinned_v3_asset,
+                    treatment_mode,
+                )
+
+                treatment_mode()  # Validate before loading any asset.
+                repository_root = Path(__file__).resolve().parents[3]
+                d8_asset = load_pinned_v3_asset(repository_root)
+                self.detector.attach_dynamic_mesh_treatment(
+                    d8_asset.mesh, d8_asset.material_rgba
+                )
+                self._d8_treatment_asset_sha256 = V3_ASSET_SHA256
             if self.perception_mode:
                 from aerial_gym.task.navrl_task.navrl_perception import (
                     NavRLPerceptionModule,
@@ -9226,6 +9245,20 @@ class NavRLTask(BaseTask):
                     representation["search_state_force_invalid"]
                 ),
                 "search_state_telemetry": bool(self._s1_search_telemetry_enabled),
+                "target_render_mode": (
+                    self.detector.target_render_mode if self.detector is not None else "none"
+                ),
+                "d8_dynamic_mesh_treatment": bool(
+                    self.detector is not None
+                    and self.detector._dynamic_mesh_treatment is not None
+                ),
+                "d8_dynamic_mesh_asset_sha256": self._d8_treatment_asset_sha256,
+                "d8_dynamic_mesh_contract": (
+                    self.detector._dynamic_mesh_treatment.contract()
+                    if self.detector is not None
+                    and self.detector._dynamic_mesh_treatment is not None
+                    else None
+                ),
                 **physics,
             },
             "outcome": {

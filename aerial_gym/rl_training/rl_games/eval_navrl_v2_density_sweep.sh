@@ -1000,6 +1000,7 @@ if (( CREATE_SOURCE_BUNDLE )); then
 from datetime import datetime, timezone
 import hashlib
 import json
+import os
 from pathlib import Path
 import platform
 import shutil
@@ -1028,7 +1029,20 @@ def git_paths(*args):
     return [Path(item.decode("utf-8")) for item in raw.split(b"\0") if item]
 
 extensions = {".py", ".pyx", ".sh", ".yaml", ".yml", ".toml", ".json", ".csv", ".urdf"}
-runtime_roots = ("aerial_gym", "resources/robots")
+runtime_roots = ["aerial_gym", "resources/robots"]
+extra_runtime_roots = tuple(
+    item.strip() for item in os.environ.get("NAVRL_EVAL_EXTRA_RUNTIME_ROOTS", "").split(",")
+    if item.strip()
+)
+allowed_extra_roots = {
+    "resources/models/environment_assets/objects",
+    "tools/renderer_validation",
+}
+unexpected_extra_roots = sorted(set(extra_runtime_roots) - allowed_extra_roots)
+if unexpected_extra_roots:
+    raise SystemExit(f"[eval_v2] unsupported extra runtime roots: {unexpected_extra_roots}")
+runtime_roots.extend(extra_runtime_roots)
+runtime_roots = tuple(runtime_roots)
 paths = set(git_paths("ls-files", "-z", "--", *runtime_roots))
 paths.update(
     git_paths("ls-files", "--others", "--exclude-standard", "-z", "--", *runtime_roots)

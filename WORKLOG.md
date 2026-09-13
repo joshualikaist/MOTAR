@@ -17934,3 +17934,33 @@ D8-A receipt/commit, checkpoint, 9-cell complete accounting, shared clean source
 effective treatment/v3 asset attestation, debug observation 비유출과 no-blanket-force가 무결성 gate다.
 어느 하나라도 실패하면 policy verdict 없이 `INVALID_D8B_EXECUTION`이다. 이 addendum은 평가만
 허용하며 adaptation/PPO/새 detector/제어 변경은 계속 금지한다.
+
+## 2026-09-13 — D8-B runtime attachment와 9-cell launcher 구현
+
+사전등록 commit `0aba981` 뒤 D8-B 코드 경로를 구현했다. `NavRLTask`는
+`NAVRL_DYNAMIC_MESH_TREATMENT`가 unset/off이면 D8 module이나 URDF loader를 import하지 않는다.
+명시적 mesh mode에서만 pinned v3 asset을 dual-backend 감사에 사용한 loader로 읽고 SHA를 확인한
+뒤 detector treatment를 attach한다. bulk result의 condition은 effective `target_render_mode`, attach
+여부, v3 SHA, triangles/material/light/ambient/directional/material-gain contract를 기록한다. debug
+buffer는 여전히 actor observation에 넣지 않는다.
+
+Generic evaluator의 기본 source roots는 바꾸지 않았다. D8-B가 명시적으로 요청할 때만 allowlist된
+`resources/models/environment_assets/objects`와 `tools/renderer_validation`을 source snapshot에 더하며,
+그 밖의 ambient root는 거부한다. 따라서 기존 historical evaluator의 root contract는 그대로이고,
+D8-B에서는 실제 실행한 URDF/parser bytes가 shared manifest에 포함된다.
+
+새 `tools/run_dynamic_mesh_policy_sensitivity_d8b.py`는 기존 D9의 audited default-detector/N=0
+canonical environment를 재사용한다. per-arm diff는 result path와 D8 flag뿐, per-seed diff는 result
+path와 seed뿐인지 CPU test로 확인한다. matching Python/ninja를 바인딩하고 D8-A/checkpoint/v3/prereg
+ancestor/runtime clean을 preflight하며, generic evaluator로 9개 evaluation cell만 실행한다. 각 cell의
+result/receipt/checkpoint/source snapshot SHA, episode outcome accounting과 effective treatment를 검증한
+뒤에만 seed-level t interval과 frozen verdict를 만든다. training entry point는 없고 blanket force도
+금지했다.
+
+첫 D8-B CPU test는 사전등록 문장의 정확한 어순보다 강한 문자열 `paired Student-t`를 요구해 1
+failure였다. 문서는 이미 Student-t와 paired seed differences를 각각 명시했으므로 구현/명세를 바꾸지
+않고 test를 실제 문구 `Student-t interval`로 교정했다. 최종 D8-B 계약 8개와 D8-A 계약/evidence
+18개가 통과했다. 아직 D8-B GPU preflight/cell/result는 없다.
+
+전체 회귀는 **1,610개 실행 / 1,606 통과 / 기존 skip 4 / 실패·오류 0**, 42.116초, exit 0이다.
+고의 fault-injection traceback과 dependency warning은 suite 판정과 구분했다.

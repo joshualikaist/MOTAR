@@ -12,6 +12,7 @@ and adds deterministic within-object intensity variation to the RGB paint path.
 """
 
 import os
+from pathlib import Path
 
 import numpy as np
 import torch
@@ -26,6 +27,10 @@ MODES = (OFF, MESH_FLAT, MESH_SHADED)
 DEFAULT_LIGHT_DIRECTION = (-0.45, -0.30, 0.84)
 DEFAULT_AMBIENT = 0.45
 DEFAULT_DIRECTIONAL = 0.55
+V3_ASSET_RELATIVE = Path(
+    "resources/models/environment_assets/objects/navrl_target_drone_v3.urdf"
+)
+V3_ASSET_SHA256 = "c843e0bd9004ab596d5b948dc7566c9f3d3e28b7a3d98d3e8f4de581465dcad0"
 
 
 def treatment_mode():
@@ -54,6 +59,26 @@ def material_gains(material_rgba):
     # The darkest declared material retains 55% of the nominal response; the lightest retains
     # 100%.  This isolates shading from a wholesale hue/class change.
     return np.ascontiguousarray(0.55 + 0.45 * (luma - luma.min()) / span, dtype=np.float32)
+
+
+def load_pinned_v3_asset(repository_root):
+    """Load the audited URDF only for an explicitly enabled D8 treatment.
+
+    The parser is the renderer-validation loader already checked with two backends. D8-B's source
+    bundle includes that loader and the object asset as additional runtime roots. Default/off
+    never calls this function and therefore carries no urdfpy/trimesh dependency at runtime.
+    """
+    root = Path(repository_root).resolve()
+    path = (root / V3_ASSET_RELATIVE).resolve()
+    if root not in path.parents or not path.is_file():
+        raise RuntimeError(f"pinned D8 v3 asset is missing or escapes the repository: {path}")
+    from tools.renderer_validation.urdf_asset import load_urdf_asset
+    asset = load_urdf_asset(path)
+    if asset.source_sha256 != V3_ASSET_SHA256:
+        raise RuntimeError(
+            f"D8 v3 asset drift: {asset.source_sha256} != {V3_ASSET_SHA256}"
+        )
+    return asset
 
 
 @wp.kernel
@@ -280,6 +305,18 @@ class DynamicMeshTargetTreatment:
         if self.mode == MESH_FLAT:
             return flat
         return flat * self.target_shade.unsqueeze(1)
+
+    def contract(self):
+        """JSON-safe treatment identity without synchronising diagnostic tensors."""
+        return {
+            "mode": self.mode,
+            "triangles": self.triangles,
+            "materials": self.materials,
+            "light_direction": list(self.light_direction),
+            "ambient": self.ambient,
+            "directional": self.directional,
+            "material_gains": list(self.material_gain_values),
+        }
 
     def diagnostics(self):
         """Synchronising post-run summary for receipts; never call on the hot path."""
