@@ -39,9 +39,9 @@
       "evidence": "results/dynamic_mesh_integrated_cost_2026-09-12/README.md"
     },
     "D8": {
-      "label": "Perception integration",
-      "status": "NOT_STARTED",
-      "evidence": "docs/track_d_state_2026-09-12.md"
+      "label": "D8-A observation technical gate (D8b sensitivity recorded separately)",
+      "status": "TECHNICAL_GO",
+      "evidence": "results/dynamic_mesh_detector_d8a_attempt2_2026-09-13/README.md"
     },
     "D9": {
       "label": "Shortcut remeasurement",
@@ -50,7 +50,7 @@
     }
   },
   "limits": {
-    "integrated_simulator_cost": "SHADOW_COST_ONLY",
+    "integrated_simulator_cost": "D8A_TECHNICAL_ONLY",
     "e3p": "ATTITUDE_NOT_RELIABLE",
     "c3": "WITHDRAWN",
     "ppo_replication": "INCONCLUSIVE"

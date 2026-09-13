@@ -51,7 +51,7 @@
       ],
       "properties": {
         "integrated_simulator_cost": {
-          "const": "SHADOW_COST_ONLY"
+          "const": "D8A_TECHNICAL_ONLY"
         },
         "e3p": {
           "const": "ATTITUDE_NOT_RELIABLE"
@@ -83,6 +83,7 @@
           "enum": [
             "COMPLETE",
             "TECHNICAL_PASS",
+            "TECHNICAL_GO",
             "FAIL",
             "PARTIAL_EVIDENCE",
             "PENDING",

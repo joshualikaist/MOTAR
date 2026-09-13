@@ -107,10 +107,18 @@ class ResearchOverviewTest(unittest.TestCase):
                        'D8', 'has not started', 'no real-flight validation'):
             self.assertIn(phrase.lower(), self.text.lower())
         data = json.loads((ROOT/'docs/status_manifest.json').read_text())
-        for key, status in [('D6','INCONCLUSIVE'),('D7','GO'),('D8','NOT_STARTED'),('D9','NOT_RUN')]:
+        for key, status in [('D6','INCONCLUSIVE'),('D7','GO'),('D8','TECHNICAL_GO'),('D9','NOT_RUN')]:
             self.assertEqual(data['track_d'][key]['status'], status)
             self.assertIn(f'data-status-id="{key}"', self.text)
         self.assertNotIn('색만으로 표적을 찾을 수 있었습니다', self.text)
+
+    def test_d8b_result_is_not_promoted_to_perception_improvement(self):
+        result = json.loads((ROOT/'results/dynamic_mesh_policy_sensitivity_d8b_2026-09-13/summary.json').read_text())
+        self.assertEqual(result['verdict'], 'MATERIAL_LOSS')
+        for phrase in ('MATERIAL_LOSS', 'D8c has not started', 'Historical pre-D8 diagram',
+                       'not a detector-improvement verdict'):
+            self.assertIn(phrase, self.text)
+        self.assertIn('dynamic_mesh_policy_sensitivity_d8b_2026-09-13/README.md', self.text)
 
     def test_parameters_distinguish_defaults_and_lineages(self):
         for value in ('4 × 36 / 4 m','4 × 72 / 12 m','2.0 m/s','2.5 m/s',

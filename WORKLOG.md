@@ -18016,3 +18016,20 @@ failure 1/error 1/skip 5였으며, 기존 GPU 초기화 의존 import가 실패�
 
 원본 로그의 logger 끝 공백과 CSV의 CRLF는 변경하지 않았다. 이 파일 형식에만 좁게
 `.gitattributes`를 적용해 바이트/해시를 보존하며, 코드·JSON·문서의 whitespace 검사는 유지한다.
+
+## 2026-09-13 — D8b 종료 이후 공개 상태 정합성 교정
+
+D8b 결과 commit `295223d` 뒤에도 공개 manifest와 사이트가 `D8 NOT_STARTED`라고 적어 모순이었다.
+D8 manifest는 D8-A 기술 판정 `TECHNICAL_GO`와 그 근거만 나타내고, 표에 D8b `MATERIAL_LOSS`를
+별도 행으로 기록하도록 고쳤다. D8c는 미실행, D9는 `NOT_RUN`이다. 기존 D6/D7 및 실패 판정은 유지.
+manifest schema와 보호 검사도 이 새 근거에 맞췄다. `COMPLETE`로의 근거 없는 승격은 계속 거부한다.
+해시가 고정된 그림·ZIP·archive HTML을 수정하지 않고 Figure 1/6 캡션에 pre-D8 역사 그림임을
+명시했다. 이전 site revision의 설명은 이력으로 보존하고 상단에 현재 상태 정정을 붙였다.
+뷰어·renderer·perception·정책 코드와 원시 결과는 변경하지 않았다. 새 실험이나 adaptation 승인 없음.
+
+검증: 공개 문서/schema PASS, 사이트·문서 테스트 17개 PASS. 처음 연구 환경에서 schema 검사는
+`jsonschema` 누락으로 실패했다. 연구 환경을 변경하지 않고 기존 별도 공개 검증 환경
+`/tmp/motar-release-validation-6rTnrm/venv/bin/python`으로 재검사해 통과했다.
+최종 전체 회귀는 **1,624개 실행 / 실패 0 / 오류 0 / skip 4**, 48.954초다.
+원격 재조회 결과 origin/main은 여전히 `23d48b5`이며 외부 커밋 유입은 없다. 요청의 최종 push 조건에
+포함된 D8c 구현·검증은 수행하지 않았으므로 이번 두 커밋은 로컬에 남기고 push하지 않는다.

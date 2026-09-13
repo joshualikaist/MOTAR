@@ -1,5 +1,16 @@
 # Visual research overview: source and migration map
 
+## D8b archival closure follow-up
+
+After the presentation revisions described below, D8-A recorded `TECHNICAL_GO` and
+D8b was finalized as `MATERIAL_LOSS`; [result and provenance](../../results/dynamic_mesh_policy_sensitivity_d8b_2026-09-13/AUDIT.md).
+The live manifest now describes D8-A as a technical result only (`D8A_TECHNICAL_ONLY`);
+Table 3 separately reports D8b. D8c is not started and D9 remains `NOT_RUN`.
+Figures 1 and 6 are labeled historical pre-D8 diagrams rather than silently rewriting
+their pinned SVG/PNG/PDF/ZIP bytes. The sections below retain the state at each earlier
+presentation revision; their old `NOT_STARTED` wording is not the current D8 status.
+This change records existing evidence only and does not implement perception adaptation.
+
 ## Paper-page revision on `be89675`
 
 The second presentation pass replaces the dashboard-like overview introduced by

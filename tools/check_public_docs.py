@@ -12,7 +12,7 @@ PUBLIC = ("README.md", "THIRD_PARTY_LICENSES.md", "docs/results_overview_2026-09
           "docs/PUBLIC_RELEASE_CHECKLIST.md", "docs/public_release_audit_2026-09-12.md",
           "docs/plans/moving_target_rendezvous_master_plan_2026-09-12.md",
           "docs/status/overview-sources-2026-09-13.md")
-STATUS_VALUES = {"COMPLETE", "TECHNICAL_PASS", "FAIL", "PARTIAL_EVIDENCE", "PENDING",
+STATUS_VALUES = {"COMPLETE", "TECHNICAL_PASS", "TECHNICAL_GO", "FAIL", "PARTIAL_EVIDENCE", "PENDING",
                  "BLOCKED_BY_POLICY", "NOT_RUN", "GO", "INCONCLUSIVE", "NOT_STARTED"}
 
 
@@ -33,11 +33,11 @@ def manifest_errors(data, root=ROOT):
         if root.resolve() not in path.parents or not path.is_file():
             errors.append(key + ": missing/escaping evidence")
     # These are protected negative outcomes, not test-count or performance pins.
-    for key, status in {"D4": "FAIL", "D5": "PARTIAL_EVIDENCE", "D6": "INCONCLUSIVE", "D7": "GO", "D8": "NOT_STARTED", "D9": "NOT_RUN"}.items():
+    for key, status in {"D4": "FAIL", "D5": "PARTIAL_EVIDENCE", "D6": "INCONCLUSIVE", "D7": "GO", "D8": "TECHNICAL_GO", "D9": "NOT_RUN"}.items():
         if entries.get(key, {}).get("status") != status:
             errors.append(key + ": protected evidence boundary changed")
     expected = {"e3p": "ATTITUDE_NOT_RELIABLE", "c3": "WITHDRAWN", "ppo_replication": "INCONCLUSIVE",
-                "integrated_simulator_cost": "SHADOW_COST_ONLY"}
+                "integrated_simulator_cost": "D8A_TECHNICAL_ONLY"}
     if data.get("limits") != expected:
         errors.append("negative/withdrawn evidence limits changed")
     return errors

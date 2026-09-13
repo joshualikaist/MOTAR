@@ -38,7 +38,7 @@
 <p lang="en">MOTAR is a simulation-only research repository for studying perception-aware motion toward moving objects in dense obstacle fields. It combines a documented UAV dynamics and control stack with camera and LiDAR observation models, structured temporal policy inputs, and diagnostic safety-filter variants. A separate real-image lineage measures detector and temporal-association errors and supports empirical error injection into simulation; it has not been validated as a live, end-to-end flight perception stack. The appearance track separates asset geometry, independent shading experiments, dynamic-mesh feasibility, and a read-only shadow-cost probe. Across these tracks, preregistrations, source and environment receipts, negative outcomes, and withdrawn claims are preserved alongside positive evidence. The current repository therefore provides bounded evidence about simulation behavior, measured perception uncertainty, filter geometry, and renderer engineering. It does not establish real-flight performance, sim-to-real transfer, reliable persistent instance identity, appearance-shortcut reduction, or deployment readiness.</p>
 </section>
 
-<figure class="paper-figure wide"><a href="../assets/paper/overview-2026-09-13/research-overview-block-diagram.svg" aria-label="Figure 1 원본 SVG 열기"><img src="../assets/paper/overview-2026-09-13/research-overview-block-diagram.svg" alt="MOTAR system overview." loading="eager" width="1600" height="900"></a><figcaption><strong>Figure 1. MOTAR system overview.</strong> The central column describes the documented simulation research path. Real-image error measurement and appearance/renderer experiments remain separate evidence lineages. A dashed connection denotes measured-error injection, not live RGB-to-policy integration. <span class="figure-files"><a href="../assets/paper/overview-2026-09-13/research-overview-block-diagram.svg">SVG</a> · <a href="../assets/paper/overview-2026-09-13/research-overview-block-diagram.png">PNG</a> · <a href="../assets/paper/overview-2026-09-13/research-overview-block-diagram.pdf">PDF</a></span></figcaption></figure>
+<figure class="paper-figure wide"><a href="../assets/paper/overview-2026-09-13/research-overview-block-diagram.svg" aria-label="Figure 1 원본 SVG 열기"><img src="../assets/paper/overview-2026-09-13/research-overview-block-diagram.svg" alt="MOTAR system overview." loading="eager" width="1600" height="900"></a><figcaption><strong>Figure 1. MOTAR system overview.</strong> Historical pre-D8 diagram, retained with its original hashes. The central column describes the documented simulation research path. Real-image error measurement and appearance/renderer experiments remain separate evidence lineages. A dashed connection denotes measured-error injection, not live RGB-to-policy integration. Later D8-A and D8b records are distinguished in Table 3. <span class="figure-files"><a href="../assets/paper/overview-2026-09-13/research-overview-block-diagram.svg">SVG</a> · <a href="../assets/paper/overview-2026-09-13/research-overview-block-diagram.png">PNG</a> · <a href="../assets/paper/overview-2026-09-13/research-overview-block-diagram.pdf">PDF</a></span></figcaption></figure>
 
 <section class="paper-section" id="introduction">
 <h2><span>1</span> Introduction</h2>
@@ -139,7 +139,7 @@
 <figure class="paper-figure "><a href="../assets/paper/overview-2026-09-13/safety-filter-block-diagram.svg" aria-label="Figure 5 원본 SVG 열기"><img src="../assets/paper/overview-2026-09-13/safety-filter-block-diagram.svg" alt="Safety-filter architecture." loading="lazy" width="1600" height="900"></a><figcaption><strong>Figure 5. Safety-filter architecture.</strong> The configured geometry and speed-cap calculation produces a filtered command for the fixed controller. “Filtered” is not equivalent to guaranteed safe, and the diagram specifies no new controller. <span class="figure-files"><a href="../assets/paper/overview-2026-09-13/safety-filter-block-diagram.svg">SVG</a> · <a href="../assets/paper/overview-2026-09-13/safety-filter-block-diagram.png">PNG</a> · <a href="../assets/paper/overview-2026-09-13/safety-filter-block-diagram.pdf">PDF</a></span></figcaption></figure>
 <h3 id="appearance">3.4 Appearance and rendering</h3>
 <p>The production detector still consumes the established analytic-proxy observation. Independent appearance tools can derive depth, normals, face IDs, material variation, and lighting variation from geometry. D7 adds a read-only shadow query beside production; it does not route the shadow buffer into the detector.</p>
-<figure class="paper-figure "><a href="../assets/paper/overview-2026-09-13/appearance-rendering-block-diagram.svg" aria-label="Figure 6 원본 SVG 열기"><img src="../assets/paper/overview-2026-09-13/appearance-rendering-block-diagram.svg" alt="Appearance and rendering architecture." loading="lazy" width="1600" height="900"></a><figcaption><strong>Figure 6. Appearance and rendering architecture.</strong> The solid paths distinguish production sensing from independent appearance experiments. D6 dynamic-mesh feasibility remains INCONCLUSIVE; D7 is GO only for shadow cost and output non-interference. Mesh-derived perception integration is D8 and has not started. <span class="figure-files"><a href="../assets/paper/overview-2026-09-13/appearance-rendering-block-diagram.svg">SVG</a> · <a href="../assets/paper/overview-2026-09-13/appearance-rendering-block-diagram.png">PNG</a> · <a href="../assets/paper/overview-2026-09-13/appearance-rendering-block-diagram.pdf">PDF</a></span></figcaption></figure>
+<figure class="paper-figure "><a href="../assets/paper/overview-2026-09-13/appearance-rendering-block-diagram.svg" aria-label="Figure 6 원본 SVG 열기"><img src="../assets/paper/overview-2026-09-13/appearance-rendering-block-diagram.svg" alt="Appearance and rendering architecture." loading="lazy" width="1600" height="900"></a><figcaption><strong>Figure 6. Appearance and rendering architecture.</strong> Historical pre-D8 diagram: its unchanged-observation annotation describes the earlier shadow path, not the later D8 treatment. D6 remains INCONCLUSIVE and D7 GO remains limited to shadow cost/non-interference. D8-A subsequently recorded TECHNICAL_GO; D8b recorded MATERIAL_LOSS. D8c has not started. <span class="figure-files"><a href="../assets/paper/overview-2026-09-13/appearance-rendering-block-diagram.svg">SVG</a> · <a href="../assets/paper/overview-2026-09-13/appearance-rendering-block-diagram.png">PNG</a> · <a href="../assets/paper/overview-2026-09-13/appearance-rendering-block-diagram.pdf">PDF</a></span></figcaption></figure>
 </section>
 
 <section class="paper-section" id="experiments">
@@ -199,7 +199,8 @@
 <tr><td>Range E3-S</td><td>Size → range proxy</td><td>Bounded result</td><td>6.2% is a single-flight block-held-out size-proxy metric, not general range-sensor accuracy.</td></tr>
 <tr><td>Appearance D6</td><td>Dynamic-mesh query</td><td data-status-id="D6">Loading…</td><td>Correctness passed while the preregistered standalone cost question remained unresolved.</td></tr>
 <tr><td>Appearance D7</td><td>Shadow integration</td><td data-status-id="D7">Loading…</td><td>Runtime/effect non-interference gate passed; no perception-improvement evidence.</td></tr>
-<tr><td>Appearance D8</td><td>Mesh-derived observation</td><td data-status-id="D8">Loading…</td><td>Geometry/observation contract and treatment lineage remain prerequisites.</td></tr>
+<tr><td>Appearance D8-A</td><td>Observation technical gate</td><td data-status-id="D8">Loading…</td><td>Technical cost and integrity result; not a detector-improvement verdict.</td></tr>
+<tr><td>Appearance D8b</td><td>Frozen-policy sensitivity</td><td>MATERIAL_LOSS</td><td>Registered contrast −48.967 pp; 95% seed-t CI [−50.113, −47.821] pp, margin −3.0 pp. <a href="../../results/dynamic_mesh_policy_sensitivity_d8b_2026-09-13/README.md">Result</a> · <a href="../../results/dynamic_mesh_policy_sensitivity_d8b_2026-09-13/AUDIT.md">Integrity and limitations</a>.</td></tr>
 <tr><td>Appearance D9</td><td>Shortcut remeasurement</td><td data-status-id="D9">Loading…</td><td>Appearance and motion shortcut reduction has not been measured.</td></tr>
 </tbody></table>
 <div id="public-status-manifest" class="manifest-note" aria-live="polite">Track D manifest를 확인하는 중입니다.</div>
@@ -220,19 +221,19 @@
 <ul class="compact-list">
 <li>Real-flight performance, sim-to-real transfer, deployment readiness, or a real-time hardware stack.</li>
 <li>Reliable persistent instance identity, causal relative-pose effects in E3-P, or general range-sensor accuracy.</li>
-<li>Appearance-shortcut reduction, D8 mesh-derived perception integration, or D9 remeasurement.</li>
+<li>Appearance-shortcut reduction, adapted perception performance, or D9 remeasurement.</li>
 </ul>
 <h3>7.3 Current bottleneck</h3>
-<p>The next scientific boundary is not renderer throughput alone. D8 first requires an explicit geometry and observation contract, a preregistered analytic-proxy versus mesh-derived treatment, and a separate interpretation for frozen-policy sensitivity. Any later adaptation would require its own training lineage. This page neither selects that contract nor opens the experiment.</p>
+<p>D8-A technical integration and D8b frozen-policy sensitivity are completed, separate records. D8b does not isolate a causal module, and no perception-adaptation result is inferred from it. D8c has not started; no bottleneck or need for detector/association retraining has been established by a new audit. This archival update opens no new experiment.</p>
 </section>
 
 <section class="paper-section" id="next">
 <h2><span>8</span> Next Research Steps</h2>
 <div class="paper-roadmap" aria-label="D8에서 D9까지의 연구 순서">
-<span><b>D8</b> Mesh-derived observation treatment</span><i>↓</i>
-<span>Frozen sensitivity evaluation</span><i>↓</i>
-<span>Perception adaptation <em>only if justified</em></span><i>↓</i>
-<span><b>D9</b> Shortcut remeasurement</span>
+<span><b>D8-A</b> Recorded TECHNICAL_GO</span><i>↓</i>
+<span><b>D8b</b> Recorded MATERIAL_LOSS</span><i>↓</i>
+<span><b>D8c</b> Not started · separate proposed lineage</span><i>↓</i>
+<span><b>D9</b> Shortcut remeasurement · not run</span>
 </div>
 <p>A separate dashed future branch retains longer-term search/reacquisition, terminal close approach, and strict contact evaluation. Those topics are not opened by D7 and are not designed or implemented by this site revision.</p>
 <p class="future-line">Search / reacquisition &nbsp;→&nbsp; terminal close approach &nbsp;→&nbsp; strict contact evaluation</p>
