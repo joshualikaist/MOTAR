@@ -17812,3 +17812,27 @@ fixed-clock/route/headless WebGL, 공개 local links와 Draft-7 schema, CFF 1.2.
 figure hash/ZIP/XML, PDF vector 검사와 `git diff --check`가 모두 통과했다. 전체 suite의
 dependency/resource warning과 고의 fault-injection traceback은 exit 0인 테스트 출력으로
 구분했다. 새 사이트의 원격 배포 완료는 주장하지 않으며 이 후속 커밋은 push하지 않는다.
+
+## 2026-09-13 — D8 결과 전 기하 계약과 기술 gate 사전등록
+
+사용자의 장시간 D8 구현 요청을 시작하기 전에 `VERIFICATION.md` 실행 authority와 Track D 상태를
+대조했다. 시작 HEAD/origin은 모두 `23d48b5`, working tree는 clean이었다. 연구 authority 검사는
+`PASS_RESEARCH_AUTHORITY_FREEZE`; 기존 route/PPO GPU 권한은 닫혀 있으며 새 학습은 허용하지 않는다.
+
+`docs/preregistration_dynamic_mesh_detector_d8_2026-09-13.md`에 D8-A 질문·세 arm·지표·판정·중지
+조건을 treatment 코드와 결과 전에 고정했다. 기하는 선택지 C로 결정했다: collision은 v2/v3
+`0.283×0.283×0.12 m`, historical sensor baseline은 analytic OBB half-extents
+`(0.14,0.14,0.06 m)`, D8 treatment는 SHA-256
+`c843e0bd9004ab596d5b948dc7566c9f3d3e28b7a3d98d3e8f4de581465dcad0`인 v3 URDF visual mesh다.
+서로를 정답 하나로 합치지 않는다.
+
+arm은 `analytic_flat`, geometry-only `mesh_flat`, 같은 mesh에 deterministic material/normal/light만
+추가한 `mesh_shaded`다. D8-A 주요 셀은 128 env×160×90, warm-up 50/측정 500, seed 20260913이며
+D7의 비용 GO/NO-GO 경계를 결과 전에 재사용한다. 정확성·결정성·occlusion·debug-buffer 비유출을
+통과하지 못하면 빠르더라도 GO가 아니다. detect-resolution decoupling은 구현 전 silent analytic
+fallback을 금지한다.
+
+현재 authority는 D8-A 코드와 고정-action GPU 무결성/비용 측정까지만 연다. D8-B frozen-policy
+평가는 D8-A `TECHNICAL_GO` 뒤 별도 addendum, adaptation은 다시 별도 multi-seed training
+사전등록이 필요하다. D9 기준을 D8 결과 뒤에서 바꾸지 않는다. D6 INCONCLUSIVE와 D7의
+cost/non-interference-only GO는 유지했다. 아직 D8 코드·GPU 결과·학습은 없다.

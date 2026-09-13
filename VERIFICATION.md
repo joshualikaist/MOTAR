@@ -4,7 +4,7 @@
 [`RESEARCH_PLAN.md`](RESEARCH_PLAN.md), 날짜별 기록은 [`WORKLOG.md`](WORKLOG.md),
 명령어는 [`OPERATIONS.md`](OPERATIONS.md), 라이브 지표는 [`docs/status/`](docs/status/)를 본다.
 
-> 현재 상태 기준일: 2026-09-12. 아래 날짜별 실행 계약은 역사 기록이며 새 실행 권한이 아니다.
+> 현재 상태 기준일: 2026-09-13. 아래 날짜별 실행 계약은 역사 기록이며 새 실행 권한이 아니다.
 
 ## 현재 주장과 근거 — 실행 완료와 가설 판정을 분리
 
@@ -19,6 +19,9 @@
 | D: 독립 renderer·URDF·배경 검증 | COMPLETE | TECHNICAL_PASS; 인지 shortcut 감소는 미측정 | [배경](results/renderer_background_v1_clean_2026-09-11/README.md), [URDF](results/renderer_urdf_smoke_2026-09-11/README.md) |
 | D: V1 기존 simulator probe 감사 | PARTIAL_EVIDENCE | 3,840개 저장된 거리·픽셀 수 쌍 일치; 영상·전체 궤적·실행 출처의 완전성 미입증 | [감사](results/target_appearance_in_sim_2026-09-12/AUDIT.md) |
 | D: V1 테스트 계약 | TEST_CONTRACT_RECONCILED | 5cea0e4에서 one-link 단정을 질량·충돌 보존 검사로 교체; ef59832에서 1,533개 실행, 실패·오류 0, skip 4. 검출기 통합 완료는 아님 | [후속 확인](docs/repository_followup_2026-09-12.md), [계약 이력](docs/v1_shared_airframe_contract.md) |
+| D: D6 동적 메시 독립 질의 | COMPLETE | INCONCLUSIVE; 정확성 통과, 독립 커널 비용 1.53배 | [D6](results/dynamic_mesh_raycast_feasibility_2026-09-12/README.md) |
+| D: D7 통합 shadow 비용 | COMPLETE | GO는 +0.41 ms/+1.0% 비용과 출력 비간섭에만 적용 | [D7](results/dynamic_mesh_integrated_cost_2026-09-12/README.md) |
+| D: D8 mesh-derived observation | PREREGISTERED / NOT_EXECUTED | 기하 계약 C 채택; D8-A 기술 구현·검증만 열림 | [D8 사전등록](docs/preregistration_dynamic_mesh_detector_d8_2026-09-13.md) |
 
 과거 CONTRACT_MISMATCH와 설치 당시 실패 receipt는 보존한다. 현재 테스트 충돌 해소는
 별도 후속 검사이며, `PARTIAL_EVIDENCE`나 R4/R4b의 FAIL을 PASS로 바꾸지 않는다.
@@ -41,7 +44,9 @@ E3-S의 6.2%는 9개 15초 블록의 **블록별 절대 상대 거리 오차 중
 
 이 표가 모든 외부 분할의 미열람 상태를 보증하지 않는다. 추가 분할은 개별 receipt로 확인한다.
 과거 08월의 Track A/B는 다른 명명 체계다. 문자 대신 결과 경로와 계보로 연결한다.
-현재 승인 범위는 저장소 교정·독립 renderer 재현이며, 새 policy 학습·제어 실험을 열지 않는다.
+현재 승인 범위는 저장소 교정·독립 renderer 재현과 D8-A mesh-derived observation의 기술 구현,
+고정 action 기반 GPU 무결성/비용 측정까지다. D8-B 동결 정책 평가는 D8-A `TECHNICAL_GO`와 별도
+addendum 전에는 열리지 않으며, 새 policy 학습·제어 실험은 계속 열지 않는다.
 
 ## 역사 기록: 2026-09-08 실행 authority — 실사 perception 트랙
 

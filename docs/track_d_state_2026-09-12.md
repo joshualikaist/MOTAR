@@ -11,7 +11,7 @@
 | D5 | 시뮬레이터 visual probe | `PARTIAL_EVIDENCE` | `results/target_appearance_in_sim_2026-09-12/` |
 | D6 | 동적 메시 타당성 | `INCONCLUSIVE` (정확성 통과, 커널 질의 비용 1.53배) | `results/dynamic_mesh_raycast_feasibility_2026-09-12/` |
 | D7 | 통합 렌더 비용 | **`GO`** (전체 step +0.41 ms / +1.0 %, 출력 불변) | `results/dynamic_mesh_integrated_cost_2026-09-12/` |
-| D8 | 검출기 통합 | `NOT_STARTED` | — |
+| D8 | 검출기 통합 | `PREREGISTERED / NOT_EXECUTED` | `docs/preregistration_dynamic_mesh_detector_d8_2026-09-13.md` |
 | D9 | 색 지름길 재측정 | `NOT_RUN` | — |
 
 ## D5가 확정한 구조적 경계
@@ -81,3 +81,8 @@ C. visual / sensor / collision 기하를 명시적으로 분리
 2. `GEOMETRY_CONTRACT_DECISION_PENDING` 해소
 3. D6이 `INCONCLUSIVE`이므로, 통합을 정당화하려면 비용 근거를 D7에서 다시 세울 것
 4. 관측이 바뀌는 변경이므로 사전등록과, adaptation을 주장한다면 별도 training 계보
+
+2026-09-13 결정: 기하를 하나로 합치지 않고 위 선택지 C를 채택했다. collision, historical
+analytic sensor proxy, v3 visual treatment를 명시적으로 분리한다. D8-A의 질문·arms·기술 gate는
+[`D8 사전등록`](preregistration_dynamic_mesh_detector_d8_2026-09-13.md)에 결과 전 고정했다.
+이는 D8-B 동결 정책 평가나 adaptation 학습을 자동 승인하지 않는다.
