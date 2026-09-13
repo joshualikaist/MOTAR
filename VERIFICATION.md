@@ -21,7 +21,8 @@
 | D: V1 테스트 계약 | TEST_CONTRACT_RECONCILED | 5cea0e4에서 one-link 단정을 질량·충돌 보존 검사로 교체; ef59832에서 1,533개 실행, 실패·오류 0, skip 4. 검출기 통합 완료는 아님 | [후속 확인](docs/repository_followup_2026-09-12.md), [계약 이력](docs/v1_shared_airframe_contract.md) |
 | D: D6 동적 메시 독립 질의 | COMPLETE | INCONCLUSIVE; 정확성 통과, 독립 커널 비용 1.53배 | [D6](results/dynamic_mesh_raycast_feasibility_2026-09-12/README.md) |
 | D: D7 통합 shadow 비용 | COMPLETE | GO는 +0.41 ms/+1.0% 비용과 출력 비간섭에만 적용 | [D7](results/dynamic_mesh_integrated_cost_2026-09-12/README.md) |
-| D: D8 mesh-derived observation | D8-A COMPLETE / D8-B NOT_EXECUTED | `TECHNICAL_GO`: 무결성 통과, shaded +0.52 ms/+1.18%; 정확도·shortcut·policy는 미측정 | [D8-A](results/dynamic_mesh_detector_d8a_attempt2_2026-09-13/README.md) |
+| D: D8 mesh-derived observation | D8-A COMPLETE | `TECHNICAL_GO`: shaded +0.52 ms/+1.18%; 비용·기술 무결성에 한정 | [D8-A](results/dynamic_mesh_detector_d8a_attempt2_2026-09-13/README.md) |
+| D: D8b frozen-policy sensitivity | COMPLETE | `MATERIAL_LOSS`: primary −48.967 pp, 95% seed-t CI [−50.113, −47.821], margin −3.0 pp | [D8b](results/dynamic_mesh_policy_sensitivity_d8b_2026-09-13/README.md), [8개 gate 감사·한계](results/dynamic_mesh_policy_sensitivity_d8b_2026-09-13/AUDIT.md) |
 
 과거 CONTRACT_MISMATCH와 설치 당시 실패 receipt는 보존한다. 현재 테스트 충돌 해소는
 별도 후속 검사이며, `PARTIAL_EVIDENCE`나 R4/R4b의 FAIL을 PASS로 바꾸지 않는다.
@@ -44,9 +45,13 @@ E3-S의 6.2%는 9개 15초 블록의 **블록별 절대 상대 거리 오차 중
 
 이 표가 모든 외부 분할의 미열람 상태를 보증하지 않는다. 추가 분할은 개별 receipt로 확인한다.
 과거 08월의 Track A/B는 다른 명명 체계다. 문자 대신 결과 경로와 계보로 연결한다.
-현재 승인 범위는 D8-A `TECHNICAL_GO` 뒤 별도 addendum에 고정한 D8-B 동결 정책 민감도 9셀
-평가까지다. 이 평가는 기존 policy/checkpoint를 바꾸지 않으며 학습·적응·제어 변경을 열지 않는다.
-새 policy 학습은 D8-B 결과와 무관하게 별도 multi-seed 사전등록 전까지 계속 닫혀 있다.
+D8-B의 사전등록 9셀은 완료됐고 기존 raw cell만으로 finalize·verify·독립 재계산을 마쳤다.
+추가 GPU 평가는 0회이며 이 캠페인의 실행 권한은 소비됐다. 이 결과는 `MATERIAL_LOSS`로 고정하고
+후속 adaptation 결과로 다시 쓰지 않는다. 3개 평가 시드의 동일 체크포인트 계보이며 학습 시드
+일반화·원인 분해·shortcut 감소를 입증하지 않는다.
+D8c perception-path audit는 미실행이며 사전등록도 없다. 이번 후속 작업은 기존 근거의 보존·검증
+까지만 수행했다. 검출·표적 연결·정책 입력을 연결한 요격 성능 개선은 이번 지원 범위에서 제외하며,
+정책과 분리된 일반 renderer 검증과도 별도 계보로 구분한다. 학습·적응·제어 변경은 수행하지 않았다.
 
 ## 역사 기록: 2026-09-08 실행 authority — 실사 perception 트랙
 

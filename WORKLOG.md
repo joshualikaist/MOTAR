@@ -17964,3 +17964,55 @@ failure였다. 문서는 이미 Student-t와 paired seed differences를 각각 �
 
 전체 회귀는 **1,610개 실행 / 1,606 통과 / 기존 skip 4 / 실패·오류 0**, 42.116초, exit 0이다.
 고의 fault-injection traceback과 dependency warning은 suite 판정과 구분했다.
+
+## 2026-09-13 — D8b 9셀 무결성 감사와 동결 판정 종료 (GPU 재실행 없음)
+
+시작 Git: HEAD `1e0eed8b963ed3ccdae93cc2e9ea67d9f9ddbaab`, origin/main
+`23d48b5eb8579ee742d177da1b3481794a117917`, 로컬 7커밋 앞섬. 추적 변경은 없고 D8b 결과만
+미추적이었다. 평가 GPU 프로세스는 없었다. 기존 9셀은 재실행하지 않았다.
+
+요청 전달문의 "6개 gate" 대신 실제 사전등록 §4의 **8개**를 사용했다. 원문은 actual≥2,049이고,
+실제로는 9/9 셀 모두 정확히 2,049다. 3/3 seed·3/3 arm, 중복 없는 9 nonce, outcome 합계·rate,
+결과/로그/환경/manifest SHA, 같은 checkpoint SHA, 모든 held-fixed contract를 대조했다.
+370개 source snapshot 전부 manifest 및 runtime Git blob과 바이트 일치한다. 원문·threshold 수정 없음.
+
+| 평가 시드 | analytic capture | mesh-flat capture | mesh-shaded capture |
+|---:|---:|---:|---:|
+| 593 | 71.01% | 64.81% | 22.40% |
+| 599 | 70.96% | 63.15% | 22.16% |
+| 601 | 71.94% | 64.42% | 22.45% |
+
+기존 runner의 finalize 뒤 verify PASS. primary mesh-shaded−analytic의 3개 시드 차이 평균
+**−48.96697576053359 pp**, df=2 95% t CI **[−50.11285929556478, −47.821092225502404] pp**.
+−3.0 pp margin에 대한 동결 판정은 **`MATERIAL_LOSS`**. 별도 stdlib-only `audit.py`는 runner를
+import하지 않고 count와 df=2 t-quantile 닫힌식으로 재계산한다. 평균은 일치, CI endpoint의
+최대 차이 약 4.31e-11 pp는 원래 runner의 t 상수와 닫힌식 수치 차이다.
+
+한계: actor debug 비유출은 pinned source 검토와 runtime dimension 기록이지 새 동적 정보흐름
+증명은 아니다. Python/ninja 환경은 당시 source/로그/package inventory로 확인했지만, finalize가
+새로 읽는 ninja binary SHA를 당시 9셀 fingerprint라고 부르지 않는다. 전체 TF32/cuDNN runtime
+flags도 없다. 비활성 noise 기본값과 실제 활성 noise를 구분했다. 학습 시드 일반화·원인 분해·
+shortcut 감소·D8c 성공을 주장하지 않는다. 상세는 결과 폴더 `AUDIT.md`.
+
+패키지: 원시 JSON/receipt/CSV, 작은 원본 로그 9개, 환경 목록, shared source manifest를 보존한다.
+중복 checkpoint/source snapshot 및 절대 manifest symlink는 로컬 유지·Git 제외한다. 삭제 0건.
+검증기 기본 모드는 Git blob을 읽어 새 clone에서 snapshot/체크포인트 없이 기록을 검증하며,
+`--local`은 로컬 checkpoint/source bytes까지 검사한다. 이것을 weight 재배포나 학습 재현 보장으로
+오인하지 않는다. 최종 README 생성기의 trailing space 1개만 정리했고 숫자/원시 결과는 그대로다.
+
+신규 archive corruption/portable-package 테스트 **13개 통과**. 추가 셀·중복·누락·count/rate 불일치,
+NaN, 비정수 outcome, 조건 변경, 중복 JSON key, summary shape 변조를 거부한다.
+전체 회귀 및 커밋 전 최종 검사는 아래 후속 기록으로 남긴다.
+
+이번 구현은 보존·검증 도구뿐이다. UAV 요격 경로의 검출·표적 연결·정책 입력을 진단해 성능 개선으로
+잇는 D8c는 지원 범위 밖으로 알렸으며, 사전등록·학습·새 GPU 측정을 시작하지 않았다. 정책에서
+분리된 일반 renderer 검증은 별도 가능한 작업이지 이 요청의 D8c를 완료한 것으로 대체하지 않는다.
+
+커밋 전 전체 회귀: **1,623개 실행 / 실패 0 / 오류 0 / 기존 skip 4** (`aerialgym`,
+`PYTHONNOUSERSITE=1`, `CUDA_VISIBLE_DEVICES=0`). 처음 GPU를 숨겨 실행한 검사는 1,611개/
+failure 1/error 1/skip 5였으며, 기존 GPU 초기화 의존 import가 실패해 일부 테스트가 로드되지
+않았다. 이 실패를 숨기거나 테스트를 삭제하지 않고 기존 환경에서 전체 개수를 회복해 확인했다.
+회귀 종료 뒤 평가/학습 GPU 프로세스는 없다. D8b 원래 verify도 통과했고 추가 실험은 0회다.
+
+원본 로그의 logger 끝 공백과 CSV의 CRLF는 변경하지 않았다. 이 파일 형식에만 좁게
+`.gitattributes`를 적용해 바이트/해시를 보존하며, 코드·JSON·문서의 whitespace 검사는 유지한다.

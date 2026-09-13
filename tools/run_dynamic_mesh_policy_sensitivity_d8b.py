@@ -402,7 +402,7 @@ def summary_markdown(payload):
         "",
         f"## Verdict: **`{payload['verdict']}`**",
         "",
-        "The verdict uses only the preregistered mesh-shaded minus analytic capture contrast. ",
+        "The verdict uses only the preregistered mesh-shaded minus analytic capture contrast.",
         f"Mean: **{primary['mean']:+.3f} pp**, seed-level 95% t CI "
         f"[{primary['ci95'][0]:+.3f}, {primary['ci95'][1]:+.3f}] pp; margin {MARGIN_PP:+.1f} pp.",
         "",

@@ -11,7 +11,9 @@
 | D5 | 시뮬레이터 visual probe | `PARTIAL_EVIDENCE` | `results/target_appearance_in_sim_2026-09-12/` |
 | D6 | 동적 메시 타당성 | `INCONCLUSIVE` (정확성 통과, 커널 질의 비용 1.53배) | `results/dynamic_mesh_raycast_feasibility_2026-09-12/` |
 | D7 | 통합 렌더 비용 | **`GO`** (전체 step +0.41 ms / +1.0 %, 출력 불변) | `results/dynamic_mesh_integrated_cost_2026-09-12/` |
-| D8 | 검출기 통합 | D8-A **`TECHNICAL_GO`** / D8-B `NOT_EXECUTED` | `results/dynamic_mesh_detector_d8a_attempt2_2026-09-13/` |
+| D8 | mesh-derived observation 기술 검증 | D8-A **`TECHNICAL_GO`** | `results/dynamic_mesh_detector_d8a_attempt2_2026-09-13/` |
+| D8b | 동결 정책 민감도 | **`MATERIAL_LOSS`**, COMPLETE | `results/dynamic_mesh_policy_sensitivity_d8b_2026-09-13/` |
+| D8c | perception-path audit 제안 | `NOT_STARTED`; 사전등록·구현·측정 없음 | D8b와 별도 계보이며 이번 근거 보존 작업에 포함하지 않음 |
 | D9 | 색 지름길 재측정 | `NOT_RUN` | — |
 
 ## D5가 확정한 구조적 경계
@@ -119,3 +121,13 @@ D8-B의 3 arm×3 seed×2,049 episode, primary capture contrast, seed-level paire
 −3.0 pp margin과 무결성 gate는
 [`D8-B addendum`](preregistration_dynamic_mesh_policy_sensitivity_d8b_2026-09-13.md)에 결과 전에
 고정했다. 이 addendum은 evaluation-only이며 adaptation/PPO를 열지 않는다.
+
+## D8b — 기존 9셀의 보존·종료 (2026-09-13)
+
+3 seeds × 3 arms × 실제 2,049 episodes, 총 18,441회를 새 GPU 실행 없이 검증·확정했다.
+원문 §4는 8개 gate다. gate별 대조 및 출처 한계는
+[감사 기록](../results/dynamic_mesh_policy_sensitivity_d8b_2026-09-13/AUDIT.md)에 둔다.
+사전등록 primary는 −48.967 pp, seed-level 95% t CI [−50.113, −47.821] pp로,
+−3.0 pp margin에 대해 **`MATERIAL_LOSS`**다. 원래 runner의 verify와 별도 count 기반 계산도 통과했다.
+D8-A의 `TECHNICAL_GO`를 덮어쓰지 않으며, 이 정책 반응으로 특정 모듈의 실패 원인을 주장하지 않는다.
+후속 D8c·detector/association adaptation·P8/P9 교체·D9는 실행하지 않았다.
