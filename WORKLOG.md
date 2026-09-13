@@ -18202,3 +18202,53 @@ R4/R4M grid 재실행 0, 기존 SHADING_GATE_FAILED 유지, D8b 원인 기여 NO
 문서 경계 검사에서 기존 characterization exporter의 설명이 face ID까지 'never shading inputs'라고
 적은 것을 찾았다. 실제 shader는 face ID로 material table을 조회하며 instance ID는 읽지 않는다.
 기존 source/receipt는 보존하고 새 v1 계약 및 테스트에서 정확히 구분한다.
+
+## 2026-09-14 — RC 후속 4종(R5b/R1b/R2b/R3b)과 Renderer Contract v1
+
+첫 RC 계보 10개 커밋을 `32ee105`로 push해 별도 역사로 고정한 뒤, **실패한 RC 판정을 재해석하지
+않고 실패 이유가 드러난 부분만 새 계보에서 다루는** 후속 연구를 진행했다. 사전등록을 구현보다 먼저
+커밋(`3e6d074`)했고, RC-R1 `GEOMETRY_DEFECT`·RC-R2 `AREA_MATCH_FAILED`·RC-R3
+`SHADING_GATE_FAILED`와 R5의 알려진 ResourceWarning은 **원본 그대로 보존**한다.
+
+- **R5b `TRANSFER_CHARACTERIZED`** (`dd0fd4f`→`ad414f6`). 같은 mesh·appearance·view로 전송 전략
+  4종(A0 개별 전체 복사 / A1 device 상주+스칼라 / A2 dtype 묶음 / A3 pinned 비동기+완료 대기)을
+  2 fixture × 3 프로세스 반복으로 측정. 640×480×32에서 A0 205.2 ms(host 178.6 ms), A1 24.3,
+  A2 131.6, A3 39.6 ms이고 A0의 host 단계는 staged total의 88.02/88.08/88.46 %다. **7개 출력 해시가
+  arm·반복 전부에서 동일**하므로 비용 비교이지 출력 변화가 아니다. 기존 R5의 host_copy에는 shading과
+  NumPy 복사가 섞여 있어 새 전송 단계 수치와 동일시하지 않는다. A1은 전체 export가 아니므로 그
+  처리량을 dataset export 속도로 광고하지 않는다.
+- **R1b `MEASUREMENT_RESOLUTION_QUALIFIED`** (`901d4d8`→`be631bf`). 3 specimen × 24 view ×
+  4 해상도 = 288행 전부 측정(거부 0). 카메라 계약의 축당 2048 픽셀 한계 때문에 기준은 2048×1536
+  **샘플링**이며 GT가 아니다. 등록 허용치(폭·높이·면적 2 %, centroid·depth 1 %)를 모든 뷰에서
+  만족하는 최소 해상도는 **1280×960**(최악 1.217/0.483/1.143/0.299/0.056 %)이다. 이는 유한 해상도
+  불일치의 측정치이지 절대 정확도 증명이 아니며, RC-R1 판정을 수정하지 않는다.
+- **R2b `AREA_CONTROL_FAILED`** (`be631bf`→`a19d9fe`). 6개 보정 뷰에서 3축 스케일을 log-면적
+  최소제곱으로 적합하고 `fit.json`과 SHA를 **렌더 전에 동결**한 뒤 disjoint 24개 held-out 뷰를
+  측정했다. C1은 held-out median 8.132 %, P90 11.051 %, worst 11.544 %로 등록 게이트 5/10/20 %의
+  median·P90을 넘겼다. 역사적 등방 C0(23.525/32.211/34.301 %)보다 낫지만 **채택하지 않는다.**
+  재적합·임계값 변경·초기값 교체는 없었다.
+- **R3b `NORMAL_FIELD_CHARACTERIZED`** (`a19d9fe`→`62865ac`). MeshScene과 로더 계약에 authored
+  vertex normal이나 smoothing group이 없어 **N1·N2는 UNSUPPORTED**로 기록했다(0 효과 arm으로
+  위장하지 않음). 640×480 24뷰에서 sphere/box/mesh의 median entropy 3.99149/0.89306/1.25934,
+  median 휘도 분산 0.0109250/0.0071478/0.0053678이다. mesh는 entropy가 더 높은데 분산은 더 낮다 —
+  **entropy만으로도, 삼각형 수만으로도 음영 법칙이 서지 않는다.** 구의 분산은 24뷰에서 1.64e-9만
+  변하므로 그 Pearson r(−0.810)은 물리적 추세가 아니라 수치 잔차이며, 그렇게 기록했다.
+
+**Renderer Contract v1**(`9b8ab6d`)을 `docs/renderer_contract_v1_2026-09-14.md`,
+`docs/renderer_measurement_contract_v1.md`, 기계가독 `docs/renderer_buffer_contract_v1.json`으로
+발행했다. 버퍼 7종의 의미·miss 값·좌표 규약, 지원되는 normal, 측정 해상도와 양자화 하한, compute와
+host 전송의 분리를 기록한다. **blanket PASS가 아니다**: 채택된 area control이 없고 N1/N2는
+UNSUPPORTED이며 과거 부정 판정은 유효하다. 과거 문구 오류도 정정했다 — `instance_id`는 shading에
+들어가지 않지만 **`face_id`는 material 테이블을 인덱싱한다**. 원본 소스 문자열은 재현을 위해 보존하고
+새 테스트로 두 경계를 각각 증명한다.
+
+논문형 그림 5종(`docs/assets/paper/renderer-contract-v1-2026-09-14/`, SVG+PNG+벡터 PDF, 흰 배경·3색)
+과 그림 중심 페이지 `docs/status/renderer-contract-v1.html`를 새로 만들고, manifest가 결과 요약
+해시·생성기·산출물 해시를 고정한다. 기존 해시 고정 그림·ZIP·archive는 수정하지 않았다. 메인 페이지
+evidence 절의 기존 source-note 줄에 링크 한 줄만 추가했다(`6bc6f8f`).
+
+검증: 전체 회귀 **1,751개 실행 / 실패 0 / 오류 0 / 기존 skip 4**, 57.7초(직전 baseline 1,702개).
+독립 재계산 테스트가 R1b 288행, R2b fit/held-out 통계, R3b entropy·상관계수, R5b 타이밍 요약과
+12,000개 원시 샘플, 모든 receipt·git blob·사전등록 조상 관계, 첫 RC 계보의 바이트 보존을 다시
+확인한다. manifest 해시 훼손과 페이지의 부정 판정 약화는 mutation으로 실패함을 확인했다.
+D8b와의 인과는 모든 산출물에서 `NOT_TESTED`로 유지한다.
