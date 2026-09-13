@@ -17914,3 +17914,23 @@ receipt 수치의 별도 재계산과 historical execution commit의 8개 source
 test 4개로 고정했다. 전체 회귀는 **1,602개 실행 / 1,598 통과 / 기존 skip 4 / 실패·오류 0**,
 42.877초, exit 0이었다. 고의 fault-injection traceback과 dependency warning은 suite 판정과
 구분했으며 `git diff --check`도 통과했다.
+
+## 2026-09-13 — D8-B frozen-policy sensitivity addendum 사전등록
+
+D8-A 결과 commit `81f680e` 뒤, D8-B runtime auto-attach나 평가 cell을 만들기 전에
+`docs/preregistration_dynamic_mesh_policy_sensitivity_d8b_2026-09-13.md`를 고정했다. frozen ref5in
+D1 ep1900 checkpoint SHA `197ea269…278e`와 built-in segmenter threshold 0.55를 세 arm 모두
+사용한다. arm은 analytic-flat/mesh-flat/mesh-shaded, fresh evaluation seed는 593/599/601,
+각 2,049 episode로 총 9셀이다. 70 bars, goal 22.5–28 m, camera/detect 160×90, deterministic
+action, governor off, distractor/error/appearance perturbation 0을 고정한다.
+
+1차 추정량은 seed별 `mesh_shaded − analytic_flat` capture rate 차이의 3-seed 평균이며, seed를
+단위로 한 paired Student-t 95% CI(df 2)를 쓴다. −3.0 pp를 practical non-inferiority margin으로
+결과 전에 고정했다. CI upper가 −3 pp보다 작으면 `MATERIAL_LOSS`, CI lower가 −3 pp보다 크면
+`NO_MATERIAL_LOSS_WITHIN_MARGIN`, 나머지는 `INCONCLUSIVE_POLICY_SENSITIVITY`다. mesh-flat contrast와
+crash/timeout/acquisition/visibility/action telemetry는 보조이며 판정을 바꾸지 않는다.
+
+D8-A receipt/commit, checkpoint, 9-cell complete accounting, shared clean source, held-fixed condition,
+effective treatment/v3 asset attestation, debug observation 비유출과 no-blanket-force가 무결성 gate다.
+어느 하나라도 실패하면 policy verdict 없이 `INVALID_D8B_EXECUTION`이다. 이 addendum은 평가만
+허용하며 adaptation/PPO/새 detector/제어 변경은 계속 금지한다.

@@ -114,3 +114,8 @@ debug-buffer 유효성, 정적 장면 occlusion이 모두 통과했다.
 사전등록 비용·무결성 조건을 모두 만족해 D8-A는 **`TECHNICAL_GO`**다. 21 pose의 mesh/analytic
 면적비 중앙값 0.556은 observation treatment가 실제로 기하를 바꿨다는 확인일 뿐 성능 향상값이 아니다.
 D8-B frozen-policy sensitivity와 D9 shortcut audit, 학습은 이 판정에 포함되지 않는다.
+
+D8-B의 3 arm×3 seed×2,049 episode, primary capture contrast, seed-level paired t interval,
+−3.0 pp margin과 무결성 gate는
+[`D8-B addendum`](preregistration_dynamic_mesh_policy_sensitivity_d8b_2026-09-13.md)에 결과 전에
+고정했다. 이 addendum은 evaluation-only이며 adaptation/PPO를 열지 않는다.

@@ -44,9 +44,9 @@ E3-S의 6.2%는 9개 15초 블록의 **블록별 절대 상대 거리 오차 중
 
 이 표가 모든 외부 분할의 미열람 상태를 보증하지 않는다. 추가 분할은 개별 receipt로 확인한다.
 과거 08월의 Track A/B는 다른 명명 체계다. 문자 대신 결과 경로와 계보로 연결한다.
-현재 승인 범위는 저장소 교정·독립 renderer 재현과 D8-A mesh-derived observation의 기술 구현,
-고정 action 기반 GPU 무결성/비용 측정까지다. D8-B 동결 정책 평가는 D8-A `TECHNICAL_GO`와 별도
-addendum 전에는 열리지 않으며, 새 policy 학습·제어 실험은 계속 열지 않는다.
+현재 승인 범위는 D8-A `TECHNICAL_GO` 뒤 별도 addendum에 고정한 D8-B 동결 정책 민감도 9셀
+평가까지다. 이 평가는 기존 policy/checkpoint를 바꾸지 않으며 학습·적응·제어 변경을 열지 않는다.
+새 policy 학습은 D8-B 결과와 무관하게 별도 multi-seed 사전등록 전까지 계속 닫혀 있다.
 
 ## 역사 기록: 2026-09-08 실행 authority — 실사 perception 트랙
 
