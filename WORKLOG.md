@@ -18164,3 +18164,20 @@ R1b→R2b→R3b는 별도 프로세스·결과·커밋으로 진행하며, 결�
 판정 `MEASUREMENT_RESOLUTION_QUALIFIED`, 최소 추천 1280×960. 이는 이 거리 2 m의 고정 view
 grid에서 측정한 finite-resolution discrepancy이며 보편적 오차 상한이나 정확한 기하 GT가 아니다.
 RC-R1의 GEOMETRY_DEFECT는 유지한다. 다음 R2b는 원래 고정한 1280×960에서 한 번 fitting한다.
+
+## 2026-09-14 — R2b 완료: anisotropic 대조군도 등록 gate 실패
+
+`results/renderer_characterization_r2b_2026-09-14/`, source `be631bf`. 6 calibration view로 7회
+함수 평가 뒤 scale `[0.7844494024, 0.8725480318, 0.6582063554]`를 동결했다. fit.json SHA를
+held-out 렌더 전에 저장했고 끝까지 동일하다. 24개 held-out view 재적합은 없었다.
+
+| Phase / control | Median ARE % | P90 % | Worst % |
+| --- | ---: | ---: | ---: |
+| Fit / historical C0 | 22.772 | 25.268 | 25.978 |
+| Fit / C1 anisotropic | 7.317 | 11.429 | 11.774 |
+| Held-out / historical C0 | 23.525 | 32.211 | 34.301 |
+| Held-out / C1 anisotropic | 8.132 | 11.051 | 11.544 |
+
+C1은 C0보다 오차가 작지만 median≤5%, P90≤10%를 충족하지 못하므로 `AREA_CONTROL_FAILED`.
+1280×960은 R1b의 측정 지원 조건을 충족한다. 기존 RC-R2 실패를 바꾸거나 이 대조군을
+area-matched라고 채택하지 않는다. 다음 normal 연구는 사전등록대로 기술적 분포 측정만 한다.
