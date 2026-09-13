@@ -57,9 +57,9 @@ class ResearchOverviewTest(unittest.TestCase):
                         'evidence','discussion','next','availability'):
             self.assertIn(section, self.page.ids)
         self.assertEqual(len(self.page.nav_links), 6)
-        self.assertEqual(len(re.findall(r'<figure\b', self.text)), 7)
-        self.assertEqual(len(self.page.images), 6)  # Figure 2 is the interactive canvas.
-        self.assertEqual(len(re.findall(r'<figcaption>', self.text)), 7)
+        self.assertEqual(len(re.findall(r'<figure\b', self.text)), 8)
+        self.assertEqual(len(self.page.images), 7)  # Figure 2 is the interactive canvas.
+        self.assertEqual(len(re.findall(r'<figcaption>', self.text)), 8)
         for number in range(1, 8):
             self.assertIn(f'Figure {number}.', self.text)
         for image in self.page.images:

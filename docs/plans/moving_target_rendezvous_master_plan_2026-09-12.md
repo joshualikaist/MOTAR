@@ -100,7 +100,29 @@ This cycle does not review operational hook implementations to propose performan
 **Contribution/dependency:** evidence bookkeeping; original author-reviewed result records needed to fill
 unknown cells. Unknown is not equivalent to “absent”, “failed” or “complete”.
 
-## Blocked stages P1/P2/N0/T0/T1/T2/H0
+## Boundary change, 14 September 2026 — diagnostics authorized, architecture still blocked
+
+The repository owner changed this boundary on 2026-09-14. The text of the blocked-stage section
+below is **kept unedited** as the record of what the boundary said before, because a policy that can
+be silently rewritten is not a policy.
+
+**Now authorized, and only this:** evaluation-only instrumentation of runs produced by *existing*
+checkpoints — per-episode search/acquisition/reacquisition records (TD-T1) and terminal
+close-approach forensic records with additional evaluation-only distance metrics and a documented
+failure taxonomy (TD-T2). The purpose is to measure which failure modes actually dominate before any
+architecture is proposed.
+
+**Still blocked, unchanged:** any policy, reward, detector, association, safety-filter, controller or
+termination change; any retraining or new training lineage; search heuristics; terminal controller
+replacement; and any operational capability claim. The historical capture criterion
+(`success_radius = 0.5 m`) is not modified — new distance metrics are additional and
+evaluation-only. A diagnostic result does not authorize the architecture it might motivate; that
+needs its own preregistration.
+
+**Naming:** the new work is written `TD-T1` and `TD-T2` (task diagnostics). The stage codes T0/T1/T2
+in the ledger above are a different, older naming and are not the same items.
+
+## Blocked stages P1/P2/N0/T0/T1/T2/H0 — text as it stood before 2026-09-14
 
 For **each** of these rows, the requested input is integrated vehicle/target state or trajectories;
 the requested output would diagnose or improve target acquisition, physical approach or contact.
@@ -115,6 +137,45 @@ new approval, a renamed objective or a simulation-only wrapper does not by itsel
 **Stop condition:** any requested connection to target acquisition or final physical contact improvement.
 **Human/GPU estimate:** N/A for blocked work; 0 training/GPU budget allocated to it.
 **Scientific contribution:** none newly claimed; historical source records remain accessible.
+
+## Current status, 14 September 2026
+
+```text
+Perception P1-P10        COMPLETE / bounded claims
+Safety diagnosis         COMPLETE
+Renderer Contract v1     COMPLETE  (frozen; not a blanket renderer pass)
+
+Search diagnostics       NEXT      (TD-T1, evaluation-only instrumentation)
+Terminal diagnostics     NEXT      (TD-T2, evaluation-only instrumentation)
+
+Search architecture      NOT STARTED
+Terminal controller      NOT STARTED
+New training lineage     NOT JUSTIFIED YET
+```
+
+The renderer track is closed at [Contract v1](../renderer_track_v1_freeze_2026-09-14.md) and is a
+side methodological branch, not the main line.
+
+## Evidence map
+
+```text
+Perception
+    v
+Measured perception error
+    v
+Navigation policy
+    v
+Safety filter
+    v
+Search / reacquisition diagnostics      <- TD-T1, instrumentation only
+    v
+Terminal approach diagnostics           <- TD-T2, instrumentation only
+
+side branch:  Renderer Contract v1  (frozen, causality_vs_d8b = NOT_TESTED)
+```
+
+D8b frozen-policy sensitivity stays `MATERIAL_LOSS` at −48.967 pp, and no renderer or diagnostic
+result in this repository establishes its cause.
 
 ## Execution order and completion rule
 
