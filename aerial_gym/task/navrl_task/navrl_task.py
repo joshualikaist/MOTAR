@@ -74,6 +74,8 @@ from aerial_gym.task.navrl_task.speed_governor import (
     directional_lidar_clearance,
 )
 from aerial_gym.task.navrl_task.joint_speed_telemetry import JointSpeedTelemetry
+from aerial_gym.task.navrl_task.navrl_episode_forensics import EpisodeForensics
+from aerial_gym.task.navrl_task.navrl_trajectory_digest import TrajectoryDigest
 from aerial_gym.sim.sim_builder import SimBuilder
 from aerial_gym.utils.math import quat_rotate, quat_rotate_inverse, quat_to_rotation_matrix
 from aerial_gym.utils.logging import CustomLogger
@@ -1686,6 +1688,29 @@ class NavRLTask(BaseTask):
                 "NAVRL_JOINT_SPEED_TELEMETRY is evaluation-only and requires "
                 "NAVRL_BULK_EVAL, NAVRL_BULK_EVAL_JSON and NAVRL_EVAL_CHECKPOINT"
             )
+        # Evaluation-only episode forensics (TD-T1 acquisition, TD-T2 terminal approach) and the
+        # trajectory digest that proves they change nothing. Both default to off and, like the
+        # joint-speed telemetry above, the forensics are refused outside a checkpointed evaluation.
+        self._episode_forensics_enabled = os.environ.get(
+            "NAVRL_EPISODE_FORENSICS", "0"
+        ).strip().lower() in ("1", "true", "yes", "on")
+        self._episode_forensics_output = os.environ.get(
+            "NAVRL_EPISODE_FORENSICS_JSON", ""
+        ).strip()
+        if self._episode_forensics_enabled and (
+            not self._bulk_eval_mode
+            or not os.environ.get("NAVRL_EVAL_CHECKPOINT", "").strip()
+        ):
+            raise RuntimeError(
+                "NAVRL_EPISODE_FORENSICS is evaluation-only and requires NAVRL_BULK_EVAL "
+                "and NAVRL_EVAL_CHECKPOINT"
+            )
+        self._trajectory_digest_enabled = os.environ.get(
+            "NAVRL_TRAJECTORY_DIGEST", "0"
+        ).strip().lower() in ("1", "true", "yes", "on")
+        self._trajectory_digest_output = os.environ.get(
+            "NAVRL_TRAJECTORY_DIGEST_JSON", ""
+        ).strip()
         self._progress_log_interval = (
             self._bulk_eval_target if self._bulk_eval_mode else 2048
         )
@@ -1812,6 +1837,28 @@ class NavRLTask(BaseTask):
                 hard_margin_m=self.speed_governor_cfg.hard_margin_m,
             )
             if self._joint_speed_telemetry_enabled
+            else None
+        )
+        # Evaluation-only forensics. It reads detached tensors, draws no randomness, writes into no
+        # task buffer, and its labels never reach an observation, a reward or a termination.
+        self._episode_forensics = (
+            EpisodeForensics(
+                self.num_envs,
+                self.device,
+                step_dt=self.step_dt,
+                success_radius_m=float(self.task_config.success_radius),
+                target_radius_m=float(getattr(self.vis_cfg, "camera_target_radius", 0.15)),
+                checkpoint_sha256=os.environ.get("NAVRL_EVAL_CHECKPOINT", "").strip() or None,
+            )
+            if self._episode_forensics_enabled
+            else None
+        )
+        self._trajectory_digest = (
+            TrajectoryDigest(
+                self.num_envs,
+                label=os.environ.get("NAVRL_TRAJECTORY_DIGEST_LABEL", "").strip(),
+            )
+            if self._trajectory_digest_enabled
             else None
         )
         # --- crash-cause diagnosis (NAVRL_CRASH_DIAG=1): split the aggregate "crash" number into
@@ -4775,6 +4822,8 @@ class NavRLTask(BaseTask):
             self._action_diag_prev_valid[env_ids] = False
         if self._joint_speed_telemetry is not None:
             self._joint_speed_telemetry.reset_idx(env_ids)
+        if self._episode_forensics is not None:
+            self._episode_forensics.reset_idx(env_ids)
         self._tm_ep_wall_reflections[env_ids] = 0
         self._tm_ep_bar_reflections[env_ids] = 0
         self._tm_ep_visible_steps[env_ids] = 0
@@ -4957,6 +5006,37 @@ class NavRLTask(BaseTask):
         if self._joint_speed_telemetry is not None:
             self._joint_speed_telemetry.finish(
                 finished, successes, crashes, timeouts, self._crash_cause_code
+            )
+        if self._episode_forensics is not None:
+            scan = getattr(self.perception, "last_scan_nearest", None)
+            clearance = (
+                scan.amin(dim=1)
+                if scan is not None
+                else torch.zeros(self.num_envs, device=self.device)
+            )
+            # `valid` is the same finite-action mask the existing observation-step telemetry uses,
+            # so both chronologies count the same steps.
+            self._episode_forensics.record_step(
+                valid=torch.isfinite(actions[:, 1]),
+                robot_position=self.obs_dict["robot_position"],
+                robot_velocity=self.obs_dict["robot_linvel"],
+                robot_orientation_xyzw=self.obs_dict["robot_vehicle_orientation"],
+                target_position=self.target_position,
+                target_velocity=self.target_vel_w,
+                requested_speed_mps=self._speed_governor_last["requested_speed_mps"],
+                executed_speed_mps=self._speed_governor_last["executed_speed_mps"],
+                governor_scale=self._speed_governor_last["scale"],
+                action_xy=torch.clamp(actions[:, 0:2], -1.0, 1.0),
+                clearance_m=clearance,
+            )
+            self._episode_forensics.finish(
+                finished, successes, crashes, timeouts, self._crash_cause_code
+            )
+        if self._trajectory_digest is not None:
+            self._trajectory_digest.record(
+                position=self.obs_dict["robot_position"],
+                orientation=self.obs_dict["robot_orientation"],
+                command=command,
             )
         self._record_general_result(successes, crashes, timeouts, finished)
         self._log_progress(successes, crashes, timeouts, finished)
@@ -5927,6 +6007,8 @@ class NavRLTask(BaseTask):
         crashed_out = crashed_out & ~captured
         self.captured_now = captured
         self.crashed_now = crashed_out
+        if self._episode_forensics is not None:
+            self._episode_forensics.observe_capture(seg_dist, captured)
         # Assign exactly one cause to every crash before the task logs or resets the environment.
         # Priority matches the global crash diagnostics and is exported per evaluation stratum.
         d_contact = (crashed | target_contact | target_invalid) & crashed_out
@@ -6282,6 +6364,9 @@ class NavRLTask(BaseTask):
         self._camera_visible_now[:] = diagnostics.get(
             "camera_visible", diagnostics["visible"]
         )
+        if self._episode_forensics is not None:
+            # Read-only: the same evaluator-facing dict the distractor and S1 recorders consume.
+            self._episode_forensics.observe_perception(diagnostics)
 
         # Evaluation-only, and only when the scene actually contains distractors.  Placed AFTER the
         # observation has already been written above, so it cannot participate in building it.
@@ -8837,6 +8922,30 @@ class NavRLTask(BaseTask):
                 % (hist_totals, acquired)
             )
 
+    def _export_episode_forensics(self):
+        """Write the evaluation-only forensic rows and the trajectory digest, if either is on.
+
+        Separate files and a separate schema from the bulk-eval payload: these are diagnostics, and
+        folding them into the established result document would change what that document means.
+        """
+        if self._episode_forensics is not None and self._episode_forensics_output:
+            try:
+                path = self._episode_forensics.export(self._episode_forensics_output)
+                logger.warning("NavRL episode forensics saved -> %s" % path)
+            except (OSError, FileExistsError) as exc:
+                logger.warning("NavRL episode forensics export failed: %s" % exc)
+        if self._trajectory_digest is not None:
+            record = self._trajectory_digest.as_dict()
+            print("NAVRL_TRAJECTORY_DIGEST " + json.dumps(record, sort_keys=True), flush=True)
+            if self._trajectory_digest_output:
+                try:
+                    out = Path(self._trajectory_digest_output)
+                    out.parent.mkdir(parents=True, exist_ok=True)
+                    out.write_text(json.dumps(record, indent=2, sort_keys=True) + "\n",
+                                   encoding="utf-8")
+                except OSError as exc:
+                    logger.warning("NavRL trajectory digest export failed: %s" % exc)
+
     def _export_bulk_eval_result(self, total, reach_rate, mean_nc, best):
         """Persist the exact outcome window consumed by a vectorized rl_games player."""
         if not self._bulk_eval_mode or self._bulk_eval_exported:
@@ -9556,6 +9665,7 @@ class NavRLTask(BaseTask):
                 payload["star_convex_shadow"] = self._star_convex_shadow_payload()
         compact = json.dumps(payload, sort_keys=True, separators=(",", ":"))
         print("NAVRL_BULK_EVAL_RESULT " + compact, flush=True)
+        self._export_episode_forensics()
 
         if not self._bulk_eval_output:
             logger.warning(
