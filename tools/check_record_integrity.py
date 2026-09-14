@@ -199,18 +199,31 @@ def write_exclusive(path, report):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--input", type=Path, required=True)
-    parser.add_argument("--contract", type=Path, required=True)
+    parser.add_argument("--contract", type=Path, help="Required for the unchanged v1 historical audit")
+    parser.add_argument("--envelope-v2", action="store_true", help="Use the distinct generic v2 schema; never upgrades v1 input")
+    parser.add_argument("--expected-records", type=int, help="External expected count for v2, not inferred from rows")
+    parser.add_argument("--verify-files", action="store_true", help="V2 only: explicitly rehash referenced files; default is structural validation")
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--repository", type=Path, default=Path(__file__).resolve().parents[1])
     parser.add_argument("--git-ref", help="Compare input bytes with an existing committed Git blob; no fetch")
     args = parser.parse_args(argv)
+    if args.envelope_v2:
+        if args.contract is not None:
+            parser.error("--contract and --envelope-v2 are mutually exclusive")
+        from record_envelope_v2 import SCHEMA, audit_v2_bytes
+        args.contract = SCHEMA
+    elif args.contract is None or args.verify_files or args.expected_records is not None:
+        parser.error("v1 requires --contract; --verify-files/--expected-records require --envelope-v2")
     if args.output.exists() or args.output.resolve() in (args.input.resolve(), args.contract.resolve()):
         raise FileExistsError("Output must be a new file distinct from inputs")
     start = time.perf_counter()
     contract_bytes = args.contract.read_bytes()
     with args.input.open("rb") as stream:
         data = stream.read(MAX_BYTES+1)
-    report = audit_bytes(data, strict_loads(contract_bytes))
+    if args.envelope_v2:
+        report = audit_v2_bytes(data, args.expected_records, args.repository, args.verify_files)
+    else:
+        report = audit_bytes(data, strict_loads(contract_bytes))
     report["contract_sha256"] = hashlib.sha256(contract_bytes).hexdigest()
     report["input"] = str(args.input)
     if args.git_ref:

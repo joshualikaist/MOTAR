@@ -1,0 +1,20 @@
+{
+  "record": "record_envelope_v2_status",
+  "as_of": "2026-09-14",
+  "contract": "Record Envelope v2",
+  "schema": "docs/record_envelope_v2.json",
+  "producer": "tools/record_envelope_v2.py",
+  "producer_unit_validation": "PASS",
+  "live_generation_validation": "NOT_RUN",
+  "live_validation_meaning": "No runtime artifact has been produced through this producer. Unit tests over synthetic files are not evidence that a live producer emits a valid envelope.",
+  "historical_artifact": {
+    "path": "results/task_diagnostics_invariance_2026-09-14/on_episode_forensics.json",
+    "sha256": "1475b0c226e9dd546938687e575dcfe22d45af0c7603f6d6b5fde2e92278870a",
+    "byte_integrity": "MATCH",
+    "metadata_contract": "INVALID_FOR_DECLARED_CONTRACT",
+    "repaired": false,
+    "backfilled": false
+  },
+  "scope": "Generic provenance and reproducibility only; no policy, evaluation, training or controller work",
+  "causality_vs_d8b": "NOT_TESTED"
+}
