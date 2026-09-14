@@ -1,0 +1,115 @@
+Warp 1.0.0 initialized:
+   CUDA devices not available
+   Devices:
+     "cpu"      : "x86_64"
+   Kernel cache:
+     /home/fair/.cache/warp/1.0.0
+Module _renderer_validation_camera_e3f2080c715cd641 load on device 'cpu' took 5.14 ms
+test_camera_relative_light_is_unit_length_and_on_the_camera_side (test_rc_appearance.AppearanceTest) ... ok
+test_colour_accepts_grey_one_triple_or_one_triple_per_material (test_rc_appearance.AppearanceTest) ... ok
+test_light_direction_may_be_shared_or_per_view (test_rc_appearance.AppearanceTest) ... ok
+test_recolour_and_relight_change_exactly_one_field (test_rc_appearance.AppearanceTest) ... ok
+test_match_verdict_flips_exactly_at_the_tolerance (test_rc_appearance.AreaMatchTest) ... ok
+test_ratios_are_taken_against_the_named_reference (test_rc_appearance.AreaMatchTest) ... ok
+test_scale_is_the_square_root_of_the_area_ratio (test_rc_appearance.AreaMatchTest) ... ok
+test_cell_refuses_a_bad_camera_or_grid (test_rc_appearance.CellTest) ... Warp CUDA error 100: no CUDA-capable device is detected (in function init_cuda_driver, /buildAgent/work/a9ae500d09a78409/warp/native/cuda_util.cpp:218)
+Warp CUDA error 3: initialization error (in function cuda_device_get_count, /buildAgent/work/a9ae500d09a78409/warp/native/warp.cu:1589)
+ok
+test_flat_shading_of_one_colour_has_exactly_zero_variance (test_rc_appearance.CellTest) ... ok
+test_geometry_is_byte_identical_across_shading_modes (test_rc_appearance.CellTest) ... ok
+test_instance_renumbering_changes_labels_and_nothing_else (test_rc_appearance.CellTest) ... ok
+test_lambertian_shading_is_constant_when_one_orientation_is_visible (test_rc_appearance.CellTest)
+A head-on box face: 'more triangles' is not the same as 'more orientations'. ... ok
+test_lambertian_shading_varies_where_two_orientations_are_visible (test_rc_appearance.CellTest) ... ok
+test_lighting_and_material_leave_geometry_and_silhouette_untouched (test_rc_appearance.CellTest) ... ok
+test_the_analytic_arm_is_renumbered_the_same_way (test_rc_appearance.CellTest) ... ok
+test_depth_grouping_is_reported_only_when_depth_is_given (test_rc_appearance.ImageStatisticsTest) ... ok
+test_erosion_keeps_only_fully_surrounded_pixels (test_rc_appearance.ImageStatisticsTest) ... ok
+test_flat_image_has_no_spread_and_no_gradient (test_rc_appearance.ImageStatisticsTest) ... ok
+test_histogram_entropy_of_a_uniform_spread_is_full (test_rc_appearance.ImageStatisticsTest) ... ok
+test_luminance_uses_bt709_weights (test_rc_appearance.ImageStatisticsTest) ... ok
+test_masked_statistics_ignore_everything_outside_the_mask (test_rc_appearance.ImageStatisticsTest) ... ok
+test_quantile_spread_groups_by_rank_not_by_value (test_rc_appearance.ImageStatisticsTest) ... ok
+test_sobel_magnitude_of_a_known_ramp (test_rc_appearance.ImageStatisticsTest) ... ok
+test_the_matrix_and_repeat_counts_match_the_preregistration (test_rc_benchmark.ConfigurationTest) ... ok
+test_the_six_preregistered_configurations_are_present_and_distinct (test_rc_benchmark.ConfigurationTest) ... ok
+test_distribution_refuses_empty_or_non_finite_samples (test_rc_benchmark.DistributionTest) ... ok
+test_distribution_reports_count_median_mean_and_p95 (test_rc_benchmark.DistributionTest) ... ok
+test_projected_bytes_counts_every_exported_array (test_rc_benchmark.DistributionTest) ... ok
+test_timed_returns_one_sample_per_repeat (test_rc_benchmark.DistributionTest) ... ok
+test_grid_has_the_requested_number_of_distinct_views (test_rc_benchmark.GridTest) ... ok
+test_grid_refuses_counts_outside_the_supported_range (test_rc_benchmark.GridTest) ... ok
+test_nvml_absence_carries_its_reason (test_rc_benchmark.MemoryReportTest) ... /home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/tools/benchmark_renderer_characterization.py:62: ResourceWarning: unclosed file <_io.TextIOWrapper name='/proc/self/status' mode='r' encoding='UTF-8'>
+  return float(line.split()[1]) / 1024.0
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+ok
+test_unavailable_fields_say_so_and_are_never_zero (test_rc_benchmark.MemoryReportTest) ... ok
+test_buffers_equal_notices_a_single_changed_value (test_rc_benchmark.StagedPathTest) ... ok
+test_staged_analytic_render_matches_the_analytic_arm (test_rc_benchmark.StagedPathTest) ... ok
+test_staged_mesh_render_reproduces_the_production_buffers_exactly (test_rc_benchmark.StagedPathTest) ... ok
+test_a_geometry_only_configuration_reports_no_shading (test_rc_benchmark.StopRuleTest) ... ok
+test_a_measured_cell_reports_both_totals_and_every_stage (test_rc_benchmark.StopRuleTest) ... ok
+test_an_oversized_cell_is_skipped_before_any_render (test_rc_benchmark.StopRuleTest) ... ok
+test_1_same_arguments_in_two_processes_give_identical_arrays (test_rc_export.ArmExportTest) ... ok
+test_2_lighting_changes_rgb_and_leaves_geometry_identical (test_rc_export.ArmExportTest) ... ok
+test_3_material_changes_rgb_and_leaves_geometry_identical (test_rc_export.ArmExportTest) ... ok
+test_4_renumbering_preserves_rgb_and_changes_only_labels (test_rc_export.ArmExportTest) ... ok
+test_5_receipt_hashes_match_the_bytes_and_the_decoded_arrays (test_rc_export.ArmExportTest) ... ok
+test_arrays_have_one_entry_per_view (test_rc_export.ArmExportTest) ... ok
+test_metadata_describes_the_arm_the_views_and_the_appearance (test_rc_export.ArmExportTest) ... ok
+test_a_failed_export_leaves_a_failure_record_and_no_receipt (test_rc_export.ExporterRefusalTest) ... ok
+test_arm_options_are_refused_without_an_arm (test_rc_export.ExporterRefusalTest) ... ok
+test_existing_output_is_refused_before_anything_is_written (test_rc_export.ExporterRefusalTest) ... ok
+test_generic_options_that_cannot_apply_to_an_arm_are_refused (test_rc_export.ExporterRefusalTest) ... ok
+test_out_of_range_appearance_is_refused (test_rc_export.ExporterRefusalTest) ... ok
+test_scale_belongs_to_the_area_matched_box_alone (test_rc_export.ExporterRefusalTest) ... ok
+test_generic_geometry_choices_still_exclude_every_specimen (test_rc_export.GenericPathUnchangedTest) ... ok
+test_generic_receipt_records_no_arm_options (test_rc_export.GenericPathUnchangedTest) ... ok
+test_analytic_packing_refuses_malformed_buffers (test_rc_geometry.AnalyticTest) ... ok
+test_camera_directions_match_the_kernel_expression (test_rc_geometry.AnalyticTest) ... ok
+test_closed_form_refuses_a_camera_inside_the_sphere (test_rc_geometry.AnalyticTest) ... ok
+test_ray_construction_and_projection_are_exact_inverses (test_rc_geometry.AnalyticTest) ... ok
+test_sphere_misses_when_the_ray_points_away (test_rc_geometry.AnalyticTest) ... ok
+test_sphere_silhouette_matches_the_closed_form_at_several_distances (test_rc_geometry.AnalyticTest) ... ok
+test_only_the_area_matched_box_takes_a_scale_and_it_is_required (test_rc_geometry.ArmTest) ... ok
+test_the_four_specimens_have_their_preregistered_shapes (test_rc_geometry.ArmTest) ... /home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/networkx/classes/graph.py:23: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working
+  from collections import Mapping
+/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/networkx/classes/reportviews.py:95: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working
+  from collections import Mapping, Set, Iterable
+/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/networkx/readwrite/graphml.py:346: DeprecationWarning: `np.int` is a deprecated alias for the builtin `int`. To silence this warning, use `int` by itself. Doing this will not modify any behavior and is safe. When replacing `np.int`, you may wish to use e.g. `np.int64` or `np.int32` to specify the precision. If you wish to review your current use, check the release note link for additional information.
+Deprecated in NumPy 1.20; for more details and guidance: https://numpy.org/devdocs/release/1.20.0-notes.html#deprecations
+  (np.int, "int"), (np.int8, "int"),
+/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/networkx/drawing/nx_pydot.py:27: DeprecationWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html
+  from pkg_resources import parse_version
+/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/pkg_resources/__init__.py:3154: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('mpl_toolkits')`.
+Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+  declare_namespace(pkg)
+/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/pkg_resources/__init__.py:3154: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('google')`.
+Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+  declare_namespace(pkg)
+/home/fair/workspaces/aerial_gym_ws/src/urdfpy/urdfpy/urdf.py:898: DeprecationWarning: `np.float` is a deprecated alias for the builtin `float`. To silence this warning, use `float` by itself. Doing this will not modify any behavior and is safe. If you specifically wanted the numpy scalar type, use `np.float64` here.
+Deprecated in NumPy 1.20; for more details and guidance: https://numpy.org/devdocs/release/1.20.0-notes.html#deprecations
+  value = np.asanyarray(value).astype(np.float)
+ok
+test_g1_agrees_with_an_independent_intersector_on_a_real_render (test_rc_geometry.GateBoundaryTest)
+The only test here that actually runs Warp: the box, one view, small frame. ... ok
+test_g3_compares_the_measured_box_with_its_projected_corners (test_rc_geometry.GateBoundaryTest) ... ok
+test_g4_flips_at_its_tolerance (test_rc_geometry.GateBoundaryTest) ... ok
+test_g4_records_a_line_of_sight_that_kept_one_distance (test_rc_geometry.GateBoundaryTest) ... ok
+test_g5_flips_when_a_surface_leaves_the_circumscribed_sphere (test_rc_geometry.GateBoundaryTest) ... ok
+test_g7_flips_at_its_tolerance_and_lists_unpaired_views (test_rc_geometry.GateBoundaryTest) ... ok
+test_thresholds_record_every_applied_value (test_rc_geometry.GateBoundaryTest) ... ok
+test_degenerate_views_are_refused_in_both_preregistered_ways (test_rc_geometry.MetricsTest) ... ok
+test_metrics_of_a_known_rectangle (test_rc_geometry.MetricsTest) ... ok
+test_normal_histogram_separates_one_orientation_from_many (test_rc_geometry.MetricsTest) ... ok
+test_refusals_are_recorded_rather_than_fatal (test_rc_geometry.MetricsTest) ... ok
+test_elevation_raises_the_camera_and_distance_scales_the_position (test_rc_geometry.ViewGridTest) ... ok
+test_every_view_looks_at_the_origin_with_world_up_minus_y (test_rc_geometry.ViewGridTest) ... ok
+test_preregistered_split_is_four_and_twenty_and_disjoint (test_rc_geometry.ViewGridTest) ... ok
+test_quaternion_round_trip_and_refusals (test_rc_geometry.ViewGridTest) ... ok
+test_a_real_warp_import_still_works_after_the_rest_of_the_suite (test_rc_geometry.WarpAvailabilityTest) ... ok
+
+----------------------------------------------------------------------
+Ran 78 tests in 6.134s
+
+OK

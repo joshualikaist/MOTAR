@@ -1,0 +1,10 @@
+[record benchmark] synthetic rows: 3
+test_fixture_is_deterministic_and_valid (test_record_benchmark.RecordBenchmarkTests) ... ok
+test_percentile_uses_linear_interpolation (test_record_benchmark.RecordBenchmarkTests) ... ok
+test_small_run_records_all_boundaries_and_samples (test_record_benchmark.RecordBenchmarkTests) ... ok
+test_test_allowlist_excludes_task_policy_control_suites (test_record_benchmark.RecordBenchmarkTests) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.014s
+
+OK

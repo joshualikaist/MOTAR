@@ -1,0 +1,23 @@
+test_all_nine_figures_preserved_off_landing_page (test_public_docs_consistency.PublicDocsTest) ... ok
+test_ci_no_simulator_install_and_no_unearned_badge (test_public_docs_consistency.PublicDocsTest) ... ok
+test_declared_public_surfaces (test_public_docs_consistency.PublicDocsTest) ... ok
+test_missing_evidence_and_links_fail (test_public_docs_consistency.PublicDocsTest) ... ok
+test_negative_outcomes_cannot_be_promoted (test_public_docs_consistency.PublicDocsTest) ... ok
+test_volatile_results_not_landing_content (test_public_docs_consistency.PublicDocsTest) ... ok
+test_current_eth_members_match_receipt_and_notices (test_public_tools.ArchiveNoticeTest) ... ok
+test_preserves_original_members_and_rejects_repeat (test_public_tools.ArchiveNoticeTest) ... ok
+test_cpu_pass_without_isaac (test_public_tools.DoctorTest) ... ok
+test_missing_import_wrong_source_and_user_site_fail (test_public_tools.DoctorTest) ... ok
+test_simulator_inventory_never_certifies_execution (test_public_tools.DoctorTest) ... ok
+test_bad_timing_rejected (test_public_tools.GenericPipelineTest) ... ok
+test_geometry_and_output_budget (test_public_tools.GenericPipelineTest) ... ok
+test_incomplete_export_is_rejected (test_public_tools.GenericPipelineTest) ... ok
+test_material_and_light_sampling_are_decoupled (test_public_tools.GenericPipelineTest) ... ok
+test_timing_distribution_not_sum_of_stage_estimates (test_public_tools.GenericPipelineTest) ... ok
+test_current_and_removed_blobs (test_public_tools.HistoryTest) ... ok
+test_redacted_detection (test_public_tools.HistoryTest) ... ok
+
+----------------------------------------------------------------------
+Ran 18 tests in 0.062s
+
+OK

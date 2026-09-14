@@ -1,0 +1,13 @@
+test_a_missing_field_on_one_side_is_a_difference (test_runtime_fingerprint.FingerprintContentTest) ... ok
+test_differences_names_the_incident_fields (test_runtime_fingerprint.FingerprintContentTest) ... ok
+test_it_is_json_serialisable (test_runtime_fingerprint.FingerprintContentTest) ... ok
+test_records_the_fields_that_decide_kernel_selection (test_runtime_fingerprint.FingerprintContentTest) ... ok
+test_every_gpu_receipt_tool_records_runtime (test_runtime_fingerprint.ReceiptsCarryTheFingerprintTest) ... ok
+test_those_tools_still_parse (test_runtime_fingerprint.ReceiptsCarryTheFingerprintTest) ... ok
+test_spec_names_the_cache_producing_environment (test_runtime_fingerprint.StreamingEnvironmentIsSingleTest) ... ok
+test_the_retired_environment_is_never_given_as_the_command_to_run (test_runtime_fingerprint.StreamingEnvironmentIsSingleTest) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.644s
+
+OK

@@ -1,0 +1,17 @@
+test_c3_summary_is_withdrawn (test_repository_claims.RepositoryClaimsTest) ... ok
+test_completed_runs_are_not_current_authority (test_repository_claims.RepositoryClaimsTest) ... ok
+test_current_r4_prose_does_not_blame_criterion (test_repository_claims.RepositoryClaimsTest) ... ok
+test_current_v1_resolution_does_not_erase_failure_history (test_repository_claims.RepositoryClaimsTest) ... ok
+test_current_verification_has_completed_and_blocked_outcomes (test_repository_claims.RepositoryClaimsTest) ... ok
+test_e3p_latest_test_is_not_reported_unrun (test_repository_claims.RepositoryClaimsTest) ... ok
+test_followup_preserves_the_failed_install_time_summary (test_repository_claims.RepositoryClaimsTest) ... ok
+test_memory_measure_has_scope (test_repository_claims.RepositoryClaimsTest) ... ok
+test_new_path_cost_is_not_inferred_from_archived_renderer_timings (test_repository_claims.RepositoryClaimsTest) ... ok
+test_prototype_area_is_not_active_detector_area (test_repository_claims.RepositoryClaimsTest) ... ok
+test_smoothness_is_not_accuracy (test_repository_claims.RepositoryClaimsTest) ... ok
+test_test_access_ledger_is_experiment_specific (test_repository_claims.RepositoryClaimsTest) ... ok
+
+----------------------------------------------------------------------
+Ran 12 tests in 0.001s
+
+OK

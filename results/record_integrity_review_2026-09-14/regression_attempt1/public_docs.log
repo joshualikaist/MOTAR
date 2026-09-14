@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "tools/check_public_docs.py", line 121, in <module>
+    raise SystemExit(main())
+  File "tools/check_public_docs.py", line 112, in main
+    import jsonschema
+ModuleNotFoundError: No module named 'jsonschema'

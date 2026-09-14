@@ -1,0 +1,236 @@
+test_all_instances_share_four_materials (test_renderer_background.BackgroundSceneTest) ... ok
+test_bad_joint_angles_rejected (test_renderer_background.BackgroundSceneTest) ... ok
+test_column_side_normals_are_outward (test_renderer_background.BackgroundSceneTest) ... ok
+test_contains_all_parts_and_objects (test_renderer_background.BackgroundSceneTest) ... ok
+test_cycle_closes_after_four_applications (test_renderer_background.BackgroundSceneTest) ... ok
+test_cycle_has_no_fixed_material_and_preserves_geometry (test_renderer_background.BackgroundSceneTest) ... ok
+test_floor_and_wall_winding (test_renderer_background.BackgroundSceneTest) ... ok
+test_generation_is_deterministic (test_renderer_background.BackgroundSceneTest) ... ok
+test_hinge_changes_only_leaf_vertices (test_renderer_background.BackgroundSceneTest) ... ok
+test_metadata_is_read_only (test_renderer_background.BackgroundSceneTest) ... ok
+test_surface_triangles_share_a_material (test_renderer_background.BackgroundSceneTest) ... ok
+test_albedo_edit_preserves_lighting_bits (test_renderer_background.BackgroundValidationTest) ... ok
+test_all_changed_uses_integer_counts (test_renderer_background.BackgroundValidationTest) ... ok
+test_full_source_snapshot_includes_contract_and_new_modules (test_renderer_background.BackgroundValidationTest) ... ok
+test_geometry_drift_fails (test_renderer_background.BackgroundValidationTest) ... ok
+test_identical_material_colors_fail_cycle_rgb_check (test_renderer_background.BackgroundValidationTest) ... ok
+test_isolation_guard (test_renderer_background.BackgroundValidationTest) ... ok
+test_legacy_c_is_not_redefined (test_renderer_background.BackgroundValidationTest) ... ok
+test_missing_object_never_passes (test_renderer_background.BackgroundValidationTest) ... ok
+test_no_light_response_fails (test_renderer_background.BackgroundValidationTest) ... ok
+test_no_pixels_never_vacuously_passes (test_renderer_background.BackgroundValidationTest) ... ok
+test_original_inputs_unchanged (test_renderer_background.BackgroundValidationTest) ... ok
+test_synthetic_contract_passes_without_warp (test_renderer_background.BackgroundValidationTest) ... ok
+test_integer_fraction_is_exactly_one_at_the_sizes_that_broke (test_renderer_background.ExactFractionHazardTest) ... ok
+test_r3_does_not_compare_a_float_mean_to_one (test_renderer_background.ExactFractionHazardTest)
+R3 gates on an equality with 1.0, so it must count rather than average. ... ok
+test_all_required_top_level_fields_are_mandatory (test_renderer_background_comparison.BackgroundComparisonTest) ... ok
+test_all_runtime_fields_compared (test_renderer_background_comparison.BackgroundComparisonTest) ... ok
+test_bad_schema_count_nan_and_hash_rejected (test_renderer_background_comparison.BackgroundComparisonTest) ... ok
+test_cli_read_only_pass (test_renderer_background_comparison.BackgroundComparisonTest) ... ok
+test_cli_same_path_rejected (test_renderer_background_comparison.BackgroundComparisonTest) ... ok
+test_cli_valid_mismatch_exit_one (test_renderer_background_comparison.BackgroundComparisonTest) ... ok
+test_dirty_source_cannot_pass (test_renderer_background_comparison.BackgroundComparisonTest) ... ok
+test_empty_geometry_rejected (test_renderer_background_comparison.BackgroundComparisonTest) ... ok
+test_failed_checks_cannot_be_hidden_by_pass_label (test_renderer_background_comparison.BackgroundComparisonTest) ... ok
+test_malformed_duplicate_and_null_json_rejected (test_renderer_background_comparison.BackgroundComparisonTest) ... ok
+test_malformed_nested_statistics_rejected (test_renderer_background_comparison.BackgroundComparisonTest) ... ok
+test_missing_nested_field_rejected_even_on_both_sides (test_renderer_background_comparison.BackgroundComparisonTest) ... ok
+test_missing_nested_statistics_rejected (test_renderer_background_comparison.BackgroundComparisonTest) ... ok
+test_missing_per_view_metric_rejected (test_renderer_background_comparison.BackgroundComparisonTest) ... ok
+test_missing_raw_arrays_rejected (test_renderer_background_comparison.BackgroundComparisonTest) ... ok
+test_non_boolean_check_rejected (test_renderer_background_comparison.BackgroundComparisonTest) ... ok
+test_null_per_view_metric_rejected (test_renderer_background_comparison.BackgroundComparisonTest) ... ok
+test_per_view_mismatch_fails (test_renderer_background_comparison.BackgroundComparisonTest) ... ok
+test_raw_arrays_and_historical_git_sources_verify (test_renderer_background_comparison.BackgroundComparisonTest) ... ok
+test_real_receipts_pass (test_renderer_background_comparison.BackgroundComparisonTest) ... ok
+test_status_only_cannot_pass (test_renderer_background_comparison.BackgroundComparisonTest) ... ok
+test_tampered_decoded_array_hash_rejected (test_renderer_background_comparison.BackgroundComparisonTest) ... ok
+test_tampered_raw_hash_rejected (test_renderer_background_comparison.BackgroundComparisonTest) ... ok
+test_tampered_source_hash_rejected (test_renderer_background_comparison.BackgroundComparisonTest) ... ok
+test_all_seven_buffers_obey_machine_readable_dtypes_and_layout (test_renderer_contract_v1.ExportBufferContract) ... ok
+test_labels_match_hits_without_certifying_an_experiment (test_renderer_contract_v1.ExportBufferContract) ... ok
+test_miss_sentinels_and_background_are_explicit (test_renderer_contract_v1.ExportBufferContract) ... ok
+test_optical_depth_is_not_ray_range (test_renderer_contract_v1.ExportBufferContract) ... ok
+test_receipt_pins_decoded_array_bytes_and_camera_metadata (test_renderer_contract_v1.ExportBufferContract) ... ok
+test_valid_normals_are_world_space_unit_vectors (test_renderer_contract_v1.ExportBufferContract) ... ok
+test_every_figure_ships_as_svg_png_and_vector_pdf (test_renderer_contract_v1.FigureManifestTest) ... ok
+test_manifest_hashes_match_the_assets_on_disk (test_renderer_contract_v1.FigureManifestTest) ... ok
+test_manifest_pins_the_result_summaries_and_the_generator (test_renderer_contract_v1.FigureManifestTest) ... ok
+test_the_page_links_resolve_and_state_the_untested_boundary (test_renderer_contract_v1.FigureManifestTest) ... ok
+test_the_page_quotes_the_verdicts_its_results_actually_carry (test_renderer_contract_v1.FigureManifestTest) ... ok
+test_face_id_really_does_address_material_not_an_identity_cue (test_renderer_contract_v1.ShaderBoundaryContract) ... ok
+test_instance_identity_never_changes_shading (test_renderer_contract_v1.ShaderBoundaryContract) ... ok
+test_cpu_torch_wheel_has_platform_and_content_pin (test_renderer_cpu_packaging.RendererCpuPackagingTest) ... ok
+test_legacy_numpy_and_networkx_contract_is_explicit (test_renderer_cpu_packaging.RendererCpuPackagingTest) ... ok
+test_profile_does_not_claim_cross_platform_or_hermetic_installation (test_renderer_cpu_packaging.RendererCpuPackagingTest) ... ok
+test_profile_is_not_a_simulator_or_local_checkout_install (test_renderer_cpu_packaging.RendererCpuPackagingTest) ... ok
+test_runtime_dependencies_have_exact_versions_or_immutable_sources (test_renderer_cpu_packaging.RendererCpuPackagingTest) ... ok
+test_urdfpy_is_not_the_broken_same_version_pypi_artifact (test_renderer_cpu_packaging.RendererCpuPackagingTest) ... ok
+test_all_receipts_match_files_committed_sources_and_preregistration_ancestor (test_renderer_followup_evidence.FollowupEvidence) ... ok
+test_first_rc_lineage_bytes_are_untouched (test_renderer_followup_evidence.FollowupEvidence) ... ok
+test_r1b_all_288_rows_and_errors_recomputed_from_pixel_quantities (test_renderer_followup_evidence.FollowupEvidence) ... ok
+test_r2b_separate_frozen_fit_and_validation_failure (test_renderer_followup_evidence.FollowupEvidence) ... ok
+test_r3b_entropy_and_correlations_recomputed_no_synthetic_smoothing (test_renderer_followup_evidence.FollowupEvidence) ... ok
+test_r5b_24_cells_hashes_and_all_12000_raw_timing_samples (test_renderer_followup_evidence.FollowupEvidence) ... ok
+test_area_acceptance_boundaries (test_renderer_measurement_followup.MeasurementContracts) ... ok
+test_area_statistics_are_per_view_not_ratio_of_means (test_renderer_measurement_followup.MeasurementContracts) ... ok
+test_bad_metric_prevents_recommendation (test_renderer_measurement_followup.MeasurementContracts) ... ok
+test_border_refused (test_renderer_measurement_followup.MeasurementContracts) ... ok
+test_boundary_contrast_excludes_constant_background (test_renderer_measurement_followup.MeasurementContracts) ... ok
+test_camera_reference_within_frozen_contract (test_renderer_measurement_followup.MeasurementContracts) ... ok
+test_constant_scatter_has_no_fabricated_correlation (test_renderer_measurement_followup.MeasurementContracts) ... ok
+test_disjoint_fit_validation_and_old_primary (test_renderer_measurement_followup.MeasurementContracts) ... ok
+test_fit_recovers_synthetic_anisotropic_control_without_validation (test_renderer_measurement_followup.MeasurementContracts) ... ok
+test_fit_requires_exact_calibration_shape (test_renderer_measurement_followup.MeasurementContracts) ... ok
+test_inclusive_bbox_and_centroid (test_renderer_measurement_followup.MeasurementContracts) ... ok
+test_mesh_contract_does_not_invent_normal_sources (test_renderer_measurement_followup.MeasurementContracts) ... ok
+test_nonfinite_area_is_not_silently_a_failed_numeric_gate (test_renderer_measurement_followup.MeasurementContracts) ... ok
+test_projected_axis_box_has_closed_form_area (test_renderer_measurement_followup.MeasurementContracts) ... ok
+test_refused_comparison_has_no_zero_error (test_renderer_measurement_followup.MeasurementContracts) ... ok
+test_resolution_normalization (test_renderer_measurement_followup.MeasurementContracts) ... ok
+test_small_mask_refused (test_renderer_measurement_followup.MeasurementContracts) ... ok
+test_zero_reference_centroid_safe (test_renderer_measurement_followup.MeasurementContracts) ... ok
+test_constant_luminance_has_zero_r_squared_and_spread (test_renderer_measurements.MeasurementTest) ... ok
+test_debug_background_is_excluded (test_renderer_measurements.MeasurementTest) ... ok
+test_insufficient_valid_pixels_refused (test_renderer_measurements.MeasurementTest) ... ok
+test_linear_luminance_has_unit_r_squared (test_renderer_measurements.MeasurementTest) ... ok
+test_population_std_and_twenty_equal_count_bins (test_renderer_measurements.MeasurementTest) ... ok
+test_protocol_is_in_source_manifest (test_renderer_measurements.MeasurementTest) ... ok
+test_repeats_are_fixed (test_renderer_measurements.MeasurementTest) ... ok
+test_simulator_import_is_rejected_without_importing_it (test_renderer_measurements.MeasurementTest) ... ok
+test_timing_rejects_empty_nonpositive_or_nonfinite (test_renderer_measurements.MeasurementTest) ... ok
+test_timing_summary_retains_count_mean_and_linear_percentile (test_renderer_measurements.MeasurementTest) ... ok
+test_a0_owns_copy (test_renderer_transfer_followup.TransferContracts) ... ok
+test_a3_refuses_cpu_source (test_renderer_transfer_followup.TransferContracts) ... ok
+test_grouped_cpu_result_survives_source_mutation (test_renderer_transfer_followup.TransferContracts) ... ok
+test_grouped_transfer_preserves_every_dtype_shape_and_hash (test_renderer_transfer_followup.TransferContracts) ... ok
+test_historical_reader_bytes_still_match_recorded_manifest (test_renderer_transfer_followup.TransferContracts) ... ok
+test_resident_arm_returns_only_scalars_without_full_cpu_transfer (test_renderer_transfer_followup.TransferContracts) ... ok
+test_rss_closes_on_early_return (test_renderer_transfer_followup.TransferContracts) ... ok
+test_rss_closes_on_parse_error (test_renderer_transfer_followup.TransferContracts) ... ok
+test_rss_closes_when_unavailable (test_renderer_transfer_followup.TransferContracts) ... ok
+test_rss_repeated_calls_without_resourcewarning (test_renderer_transfer_followup.TransferContracts) ... ok
+test_shape_drift_is_rejected (test_renderer_transfer_followup.TransferContracts) ... ok
+test_unknown_arm_rejected (test_renderer_transfer_followup.TransferContracts) ... ok
+test_importing_the_loader_does_not_import_the_simulator (test_renderer_urdf_asset.IsolationTest)
+Check a fresh interpreter, not this one. ... ok
+test_loader_imports_no_simulator_task_detector_or_policy (test_renderer_urdf_asset.IsolationTest)
+Isolation means no aerial_gym. A general-purpose URDF parser is not part of it. ... ok
+test_an_articulated_mesh_robot_is_still_refused_by_both (test_renderer_urdf_asset.MeshSupportTest)
+Mesh support does not relax the joint rule; morphy has revolute joints. ... /home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/networkx/classes/graph.py:23: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working
+  from collections import Mapping
+/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/networkx/classes/reportviews.py:95: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working
+  from collections import Mapping, Set, Iterable
+/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/networkx/readwrite/graphml.py:346: DeprecationWarning: `np.int` is a deprecated alias for the builtin `int`. To silence this warning, use `int` by itself. Doing this will not modify any behavior and is safe. When replacing `np.int`, you may wish to use e.g. `np.int64` or `np.int32` to specify the precision. If you wish to review your current use, check the release note link for additional information.
+Deprecated in NumPy 1.20; for more details and guidance: https://numpy.org/devdocs/release/1.20.0-notes.html#deprecations
+  (np.int, "int"), (np.int8, "int"),
+/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/networkx/drawing/nx_pydot.py:27: DeprecationWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html
+  from pkg_resources import parse_version
+/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/pkg_resources/__init__.py:3154: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('mpl_toolkits')`.
+Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+  declare_namespace(pkg)
+/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/pkg_resources/__init__.py:3154: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('google')`.
+Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+  declare_namespace(pkg)
+/home/fair/workspaces/aerial_gym_ws/src/urdfpy/urdfpy/urdf.py:898: DeprecationWarning: `np.float` is a deprecated alias for the builtin `float`. To silence this warning, use `float` by itself. Doing this will not modify any behavior and is safe. If you specifically wanted the numpy scalar type, use `np.float64` here.
+Deprecated in NumPy 1.20; for more details and guidance: https://numpy.org/devdocs/release/1.20.0-notes.html#deprecations
+  value = np.asanyarray(value).astype(np.float)
+ok
+test_the_library_backend_loads_a_mesh_robot_the_builtin_one_refuses (test_renderer_urdf_asset.MeshSupportTest) ... ok
+test_every_shipped_asset_is_closed_and_wound_outward (test_renderer_urdf_asset.RealAssetTest) ... ok
+test_interceptor_has_nine_links_and_three_materials (test_renderer_urdf_asset.RealAssetTest) ... ok
+test_joint_origins_place_the_motors_where_the_urdf_says (test_renderer_urdf_asset.RealAssetTest)
+The four motors sit at +-0.0777817 in x and y, per the URDF's own arithmetic. ... ok
+test_loading_is_deterministic (test_renderer_urdf_asset.RealAssetTest) ... ok
+test_receipt_records_the_backend_the_library_versions_and_the_colour_choice (test_renderer_urdf_asset.RealAssetTest) ... ok
+test_target_is_the_declared_red_box (test_renderer_urdf_asset.RealAssetTest) ... ok
+test_the_library_subdivides_curves_more_finely_than_the_declared_counts (test_renderer_urdf_asset.RealAssetTest)
+Recorded because it changes ray-cast cost, and because the receipt must explain it. ... ok
+test_the_two_backends_agree_on_every_asset_on_the_appearance_path (test_renderer_urdf_asset.RealAssetTest)
+Agreement is about what the URDF states, not about how finely it is subdivided. ... ok
+test_a_robot_with_no_visual_geometry_is_refused (test_renderer_urdf_asset.RefusalTest) ... ok
+test_a_visual_without_a_material_uses_the_declared_default_and_is_counted (test_renderer_urdf_asset.RefusalTest) ... ok
+test_an_unknown_backend_name_is_refused (test_renderer_urdf_asset.RefusalTest) ... ok
+test_articulated_joints_are_refused_rather_than_posed_at_zero (test_renderer_urdf_asset.RefusalTest) ... ok
+test_broken_link_graphs_are_refused (test_renderer_urdf_asset.RefusalTest) ... ok
+test_malformed_xml_and_wrong_root_are_refused (test_renderer_urdf_asset.RefusalTest) ... ok
+test_non_positive_dimensions_are_refused_naming_the_shape (test_renderer_urdf_asset.RefusalTest) ... /home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/trimesh/creation.py:889: RuntimeWarning: invalid value encountered in divide
+  unit = vectors / scalar.reshape((-1, 1))
+ok
+test_undeclared_material_reference_is_refused_rather_than_defaulted (test_renderer_urdf_asset.RefusalTest) ... ok
+test_missing_origin_is_the_identity (test_renderer_urdf_asset.RotationConventionTest) ... ok
+test_non_finite_and_malformed_origins_are_refused (test_renderer_urdf_asset.RotationConventionTest) ... ok
+test_rotation_is_orthonormal_and_right_handed (test_renderer_urdf_asset.RotationConventionTest) ... ok
+test_rpy_is_fixed_axis_z_then_y_then_x (test_renderer_urdf_asset.RotationConventionTest) ... ok
+test_box_tessellation_is_exact_before_float32_storage (test_renderer_urdf_asset.TessellationTest)
+Separate the two layers: the tessellation is exact, the stored vertices are float32. ... ok
+test_cylinder_axis_is_z_and_centred (test_renderer_urdf_asset.TessellationTest) ... ok
+test_cylinder_triangle_count_follows_the_declared_segments (test_renderer_urdf_asset.TessellationTest) ... ok
+test_every_primitive_is_closed_and_wound_outward (test_renderer_urdf_asset.TessellationTest) ... ok
+test_no_degenerate_triangle_at_the_sphere_poles (test_renderer_urdf_asset.TessellationTest) ... ok
+test_sphere_and_cylinder_volume_converge_from_below (test_renderer_urdf_asset.TessellationTest) ... ok
+test_depth_arm_ignores_normals_faces_and_the_material_table (test_renderer_validation.AppearanceModelTest)
+Whatever varies per surface must not reach a model declared to see depth alone. ... ok
+test_depth_arm_is_monotone_in_range_and_regresses_to_one (test_renderer_validation.AppearanceModelTest) ... ok
+test_depth_arm_rejects_a_batch_and_background_mismatch (test_renderer_validation.AppearanceModelTest) ... ok
+test_every_arm_shares_one_gbuffer_and_returns_three_channels (test_renderer_validation.AppearanceModelTest) ... ok
+test_uniform_appearance_makes_the_flat_arm_exactly_flat (test_renderer_validation.AppearanceModelTest) ... ok
+test_pose_prefix_is_stable_when_the_scene_count_grows (test_renderer_validation.CameraPoseSampleTest) ... ok
+test_poses_are_validated_unit_quaternions_within_the_declared_jitter (test_renderer_validation.CameraPoseSampleTest) ... ok
+test_quaternions_are_unit_and_the_product_composes (test_renderer_validation.CameraPoseSampleTest) ... ok
+test_bad_shading_parameters_rejected (test_renderer_validation.GeometryAndShadingTest) ... ok
+test_depth_is_optical_projection_not_range (test_renderer_validation.GeometryAndShadingTest) ... ok
+test_dtype_and_shape_rejected (test_renderer_validation.GeometryAndShadingTest) ... ok
+test_face_renumbering_with_tables_preserves_rgb (test_renderer_validation.GeometryAndShadingTest) ... ok
+test_face_zero_is_valid_and_miss_separate (test_renderer_validation.GeometryAndShadingTest) ... ok
+test_flat_rgb_contract (test_renderer_validation.GeometryAndShadingTest) ... ok
+test_geometry_comparison_is_field_complete (test_renderer_validation.GeometryAndShadingTest) ... ok
+test_instance_id_renumbering_does_not_change_rgb (test_renderer_validation.GeometryAndShadingTest) ... ok
+test_invalid_index_rejected_before_lookup (test_renderer_validation.GeometryAndShadingTest) ... ok
+test_lambertian_known_tensor_values (test_renderer_validation.GeometryAndShadingTest) ... ok
+test_light_change_changes_only_rgb (test_renderer_validation.GeometryAndShadingTest) ... ok
+test_material_change_locality (test_renderer_validation.GeometryAndShadingTest) ... ok
+test_nonfinite_and_zero_hit_normals_rejected (test_renderer_validation.GeometryAndShadingTest) ... ok
+test_owned_outputs_not_overwritten_by_next_raw_frame (test_renderer_validation.GeometryAndShadingTest) ... ok
+test_r3_rule_passes_known_contract_tensor (test_renderer_validation.GeometryAndShadingTest) ... ok
+test_repeated_shading_exact_and_input_preserved (test_renderer_validation.GeometryAndShadingTest) ... ok
+test_two_pass_mismatch_rejected (test_renderer_validation.GeometryAndShadingTest) ... ok
+test_cli_help_is_lightweight_and_no_execution (test_renderer_validation.IsolationAndDriverTest) ... ok
+test_existing_output_is_never_overwritten (test_renderer_validation.IsolationAndDriverTest) ... ok
+test_guard_refuses_to_run_inside_an_aerial_gym_process (test_renderer_validation.IsolationAndDriverTest)
+The precondition the other tests restore must actually be enforced. ... ok
+test_import_isolation_in_fresh_process (test_renderer_validation.IsolationAndDriverTest) ... ok
+test_mocked_cli_receipt_is_unassessed_and_records_sources (test_renderer_validation.IsolationAndDriverTest) ... ok
+test_mocked_failure_never_writes_success_receipt (test_renderer_validation.IsolationAndDriverTest) ... ok
+test_no_production_imports_or_training_code (test_renderer_validation.IsolationAndDriverTest) ... ok
+test_output_budget_rejects_large_dump (test_renderer_validation.IsolationAndDriverTest) ... ok
+test_source_drift_rejects_completed_mock_frames (test_renderer_validation.IsolationAndDriverTest) ... ok
+test_source_hash_and_dependency_boundary (test_renderer_validation.IsolationAndDriverTest) ... ok
+test_source_loader_with_fake_warp_never_imports_package (test_renderer_validation.IsolationAndDriverTest) ... ok
+test_tensor_export_is_separate_arrays_and_no_overwrite (test_renderer_validation.IsolationAndDriverTest) ... ok
+test_warp_driver_dispatch_with_fake_kernel_outputs (test_renderer_validation.IsolationAndDriverTest) ... ok
+test_both_triangles_of_a_quad_share_one_material (test_renderer_validation.MixedMaterialFixtureTest) ... ok
+test_only_the_material_map_differs_from_the_audited_fixture (test_renderer_validation.MixedMaterialFixtureTest) ... ok
+test_the_audited_fixture_confounds_material_with_instance_and_the_new_one_does_not (test_renderer_validation.MixedMaterialFixtureTest) ... ok
+test_bins_are_equal_count_disjoint_and_cover_every_pixel (test_renderer_validation.R4MetricTest) ... ok
+test_bins_too_small_to_have_a_spread_are_dropped_and_then_refused (test_renderer_validation.R4MetricTest) ... ok
+test_determination_is_one_for_a_line_and_zero_without_spread (test_renderer_validation.R4MetricTest) ... ok
+test_evaluate_refuses_a_degenerate_view_instead_of_reporting_statistics (test_renderer_validation.R4MetricTest) ... ok
+test_appearance_does_not_modify_global_rng (test_renderer_validation.SceneContractTest) ... ok
+test_appearance_seed_and_batch_prefix (test_renderer_validation.SceneContractTest) ... ok
+test_appearance_validation (test_renderer_validation.SceneContractTest) ... ok
+test_camera_projection_even_and_odd (test_renderer_validation.SceneContractTest) ... ok
+test_camera_rejects_bad_contract (test_renderer_validation.SceneContractTest) ... ok
+test_fixture_is_two_generic_boxes (test_renderer_validation.SceneContractTest) ... ok
+test_pose_contract (test_renderer_validation.SceneContractTest) ... ok
+test_reject_degenerate_triangles (test_renderer_validation.SceneContractTest) ... ok
+test_reject_float_face_indices (test_renderer_validation.SceneContractTest) ... ok
+test_reject_negative_or_missing_face_metadata (test_renderer_validation.SceneContractTest) ... ok
+test_reject_out_of_bounds_indices (test_renderer_validation.SceneContractTest) ... ok
+test_scene_owns_immutable_copies (test_renderer_validation.SceneContractTest) ... ok
+
+----------------------------------------------------------------------
+Ran 201 tests in 4.780s
+
+OK

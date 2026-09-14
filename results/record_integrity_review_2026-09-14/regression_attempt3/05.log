@@ -1,0 +1,8 @@
+test_environment_records_verified_profile_and_noneditable_source (test_cpu_install_evidence.CpuInstallEvidenceTest) ... ok
+test_frames_have_correct_file_and_decoded_array_hashes (test_cpu_install_evidence.CpuInstallEvidenceTest) ... ok
+test_two_runs_match_without_creating_an_experiment_verdict (test_cpu_install_evidence.CpuInstallEvidenceTest) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.054s
+
+OK

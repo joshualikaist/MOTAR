@@ -1,0 +1,30 @@
+{"status": "VALID_FOR_DECLARED_CONTRACT", "record_count": 2, "issue_counts": {}, "elapsed_seconds": 0.000124954036436975}
+{"status": "INVALID_FOR_DECLARED_CONTRACT", "record_count": 2, "issue_counts": {"BELOW_MINIMUM": 1}, "elapsed_seconds": 9.134795982390642e-05}
+test_bad_contract_rejected_before_audit (test_record_integrity.RecordIntegrityTests) ... ok
+test_bool_is_not_an_integer_identity (test_record_integrity.RecordIntegrityTests) ... ok
+test_bounded_issue_samples_keep_total_counts (test_record_integrity.RecordIntegrityTests) ... ok
+test_cli_is_stdlib_only (test_record_integrity.RecordIntegrityTests) ... ok
+test_cli_preserves_inputs_and_refuses_output_overwrite (test_record_integrity.RecordIntegrityTests) ... ok
+test_context_mismatch (test_record_integrity.RecordIntegrityTests) ... ok
+test_count_mismatch_is_not_silent_truncation (test_record_integrity.RecordIntegrityTests) ... ok
+test_duplicate_identity_is_retained_and_reported (test_record_integrity.RecordIntegrityTests) ... ok
+test_input_size_guard (test_record_integrity.RecordIntegrityTests) ... ok
+test_invalid_cli_still_writes_audit_not_repaired_data (test_record_integrity.RecordIntegrityTests) ... ok
+test_invalid_context (test_record_integrity.RecordIntegrityTests) ... ok
+test_malformed_encoding_and_json (test_record_integrity.RecordIntegrityTests) ... ok
+test_missing_key_has_distinct_coverage (test_record_integrity.RecordIntegrityTests) ... ok
+test_negative_id_rejected (test_record_integrity.RecordIntegrityTests) ... ok
+test_no_record_array (test_record_integrity.RecordIntegrityTests) ... ok
+test_nonobject_row_counts_as_missing_not_dropped (test_record_integrity.RecordIntegrityTests) ... ok
+test_null_optional_is_not_zero (test_record_integrity.RecordIntegrityTests) ... ok
+test_number_is_not_a_boolean (test_record_integrity.RecordIntegrityTests) ... ok
+test_overflow_to_infinity_in_uncontracted_nested_field (test_record_integrity.RecordIntegrityTests) ... ok
+test_path_is_not_a_sha256_and_is_not_echoed (test_record_integrity.RecordIntegrityTests) ... ok
+test_required_null_fails_even_when_context_matches (test_record_integrity.RecordIntegrityTests) ... ok
+test_strict_json_duplicate_keys_and_tokens (test_record_integrity.RecordIntegrityTests) ... ok
+test_valid_and_nonmutating (test_record_integrity.RecordIntegrityTests) ... ok
+
+----------------------------------------------------------------------
+Ran 23 tests in 0.037s
+
+OK
