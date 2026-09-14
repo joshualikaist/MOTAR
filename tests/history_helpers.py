@@ -28,12 +28,29 @@ def has_commit(root, commit):
     return git_output(["cat-file", "-t", commit], root) == "commit"
 
 
+def commit_count(root):
+    value = git_output(["rev-list", "--count", "HEAD"], root)
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return 0
+
+
 def require_research_history(root, *commits):
-    """Raise SkipTest when this checkout cannot see the history the check is about."""
+    """Raise SkipTest when this checkout cannot see the history the check is about.
+
+    A release snapshot is a fresh repository with a single commit and no ancestors, so the general
+    test is the commit count rather than a list of magic SHAs. Named commits are still checked when
+    a caller passes them, which catches a shallow clone that has *some* history but not this one.
+    """
     if not inside_git_work_tree(root):
         raise unittest.SkipTest(
             "not inside a Git work tree: this check verifies research history, which a release "
             "snapshot does not carry")
+    if commit_count(root) < 2:
+        raise unittest.SkipTest(
+            "this checkout has a single commit and no ancestors: it is a content snapshot, and the "
+            "research history this check verifies against is not present")
     missing = [commit for commit in commits if not has_commit(root, commit)]
     if missing:
         raise unittest.SkipTest(
