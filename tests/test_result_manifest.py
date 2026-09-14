@@ -144,6 +144,28 @@ class CommittedManifestTest(unittest.TestCase):
         self.assertEqual(sum(counts["lifecycle"].values()), len(rows))
         self.assertEqual(len({r["result_id"] for r in rows}), len(rows))
 
+    def test_untracked_result_directories_are_surfaced(self):
+        """A result that exists on one machine and in no commit is a provenance gap, not a result.
+
+        A snapshot export drops it silently, so the manifest has to name it; otherwise the research
+        tree and any release built from it disagree about how many results exist, with no record of
+        why.
+        """
+        manifest = self.manifest
+        untracked = manifest["issues"]["untracked_results"]
+        self.assertEqual(manifest["counts"]["untracked_in_git"], len(untracked))
+        by_id = {row["result_id"]: row for row in manifest["results"]}
+        for result_id in untracked:
+            self.assertIs(by_id[result_id]["tracked_in_git"], False)
+
+    def test_a_snapshot_without_git_does_not_reclassify_legacy_results(self):
+        """Without a .git directory the builder must say "unknown", not "modern"."""
+        entry = builder.describe.__doc__ or ""
+        self.assertIn("tracked", entry.lower() + builder.tracked_prefixes.__doc__.lower())
+        rows = [row for row in self.manifest["results"]
+                if row["legacy_exception"] is None]
+        self.assertEqual(rows, [], "a git-backed build must classify every result")
+
     def test_no_duplicate_and_no_dangling_preregistration_is_recorded(self):
         self.assertEqual(self.manifest["issues"]["duplicate_result_id"], [])
         self.assertEqual(self.manifest["issues"]["dangling_preregistration"], {})

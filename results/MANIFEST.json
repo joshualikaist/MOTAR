@@ -1,5 +1,6 @@
 {
-  "built_at_utc": "2026-09-14T06:50:40Z",
+  "built_at_utc": "2026-09-14T07:12:31Z",
+  "classification_inherited_from": null,
   "convention_since": "2026-09-13",
   "counts": {
     "child_results": 9,
@@ -12,10 +13,12 @@
     },
     "modern": 24,
     "results": 201,
+    "untracked_in_git": 3,
     "with_preregistration": 17,
     "with_receipt": 31,
     "with_summary": 111
   },
+  "git_available": true,
   "issues": {
     "dangling_preregistration": {},
     "duplicate_result_id": [],
@@ -143,9 +146,15 @@
         "tools/renderer_validation/followup_records.py"
       ]
     },
-    "source_manifest_missing_files": {}
+    "source_manifest_missing_files": {},
+    "unclassified_results": [],
+    "untracked_results": [
+      "navrl_physical_target_braking_lower1p25_headingrest_seed827",
+      "navrl_physical_target_recovery_v2_gate_lower1p25_seed827",
+      "navrl_physical_target_recovery_v2_no_connector_forensics_seed827"
+    ]
   },
-  "repository_commit": "79209d88abe81e125c32ea6998cd2c7d832983dd",
+  "repository_commit": "55862c197d1d0ac36e168bd9116293108ebb1e24",
   "repository_dirty": true,
   "results": [
     {
@@ -179,7 +188,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -212,7 +222,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -245,7 +256,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -278,7 +290,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -311,7 +324,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -344,7 +358,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -377,7 +392,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -410,7 +426,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -443,7 +460,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": "D8-A attempt 1 \u2014 `VOID_EXECUTION`"
+      "title": "D8-A attempt 1 \u2014 `VOID_EXECUTION`",
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -478,7 +496,8 @@
       "status_source": "summary.json",
       "summary_path": "results/dynamic_mesh_detector_d8a_attempt2_2026-09-13/summary.json",
       "summary_sha256": "6f0ac493eb6b5c842a1c8a337becd2dd375daf0c8aa0f2a9d943217b019e0a37",
-      "title": "D8-A \u2014 mesh-derived observation technical gate (attempt 2)"
+      "title": "D8-A \u2014 mesh-derived observation technical gate (attempt 2)",
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -513,7 +532,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": "D7 \u2014 \ud1b5\ud569 \uacbd\ub85c\uc5d0\uc11c\uc758 dynamic-mesh \ube44\uc6a9 (2026-09-12)"
+      "title": "D7 \u2014 \ud1b5\ud569 \uacbd\ub85c\uc5d0\uc11c\uc758 dynamic-mesh \ube44\uc6a9 (2026-09-12)",
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -548,7 +568,8 @@
       "status_source": "summary.json",
       "summary_path": "results/dynamic_mesh_policy_sensitivity_d8b_2026-09-13/summary.json",
       "summary_sha256": "afea81a6b57cf749a18dc9ffaf33e3f0100d78c27174a8d88ae10dfd60f53606",
-      "title": "D8-B \u2014 frozen-policy sensitivity to mesh-derived observation"
+      "title": "D8-B \u2014 frozen-policy sensitivity to mesh-derived observation",
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -583,7 +604,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": "D6 \u2014 \uc6c0\uc9c1\uc774\ub294 \uac15\uccb4 \uba54\uc2dc\uc758 \uad11\uc120 \uad50\ucc28 \ud0c0\ub2f9\uc131 (2026-09-12)"
+      "title": "D6 \u2014 \uc6c0\uc9c1\uc774\ub294 \uac15\uccb4 \uba54\uc2dc\uc758 \uad11\uc120 \uad50\ucc28 \ud0c0\ub2f9\uc131 (2026-09-12)",
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -622,7 +644,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": "E3-P gate: three of four conditions clear, attitude reliability does not"
+      "title": "E3-P gate: three of four conditions clear, attitude reliability does not",
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -663,7 +686,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": "E3-P attitude reliability: authentic everywhere, but the criterion fails and stands"
+      "title": "E3-P attitude reliability: authentic everywhere, but the criterion fails and stands",
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -704,7 +728,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": "E3-S: size-based range estimation on ETH ds5 cam0"
+      "title": "E3-S: size-based range estimation on ETH ds5 cam0",
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -743,7 +768,8 @@
       "status_source": "receipt.json",
       "summary_path": null,
       "summary_sha256": null,
-      "title": "ETH ds5 cam0 intake, E1\u2013E2 (2026-09-10)"
+      "title": "ETH ds5 cam0 intake, E1\u2013E2 (2026-09-10)",
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -776,7 +802,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -809,7 +836,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": "NavRL speed-filter independent verification (2026-09-07)"
+      "title": "NavRL speed-filter independent verification (2026-09-07)",
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -842,7 +870,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -875,7 +904,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -908,7 +938,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -941,7 +972,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -974,7 +1006,8 @@
       "status_source": null,
       "summary_path": "results/navrl_braking_route_v3_lower1p25_matched_spawn_seed829/summary.json",
       "summary_sha256": "8e4b71bc9095f64065140f2838904bab8b7be868c7d97025953fb451041a49fc",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -1007,7 +1040,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -1040,7 +1074,8 @@
       "status_source": null,
       "summary_path": "results/navrl_contact_geometry_seed491/summary.json",
       "summary_sha256": "95a8060d36770e8fd3ba92aef10955ba69e34ba59a662b7eb1703f50c479acbd",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -1073,7 +1108,8 @@
       "status_source": null,
       "summary_path": "results/navrl_contact_geometry_seed497/summary.json",
       "summary_sha256": "ee0a2f7eafc9e1d93a1c830326e1a23eaedb9c13ef3e69286be81d7a7f4aa33b",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -1106,7 +1142,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -1139,7 +1176,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -1178,7 +1216,8 @@
       "status_source": "summary.json",
       "summary_path": "results/navrl_corrected_nonoverlap_physical_off_heldout_seed313/summary.json",
       "summary_sha256": "fd52ad6c4d4a9ba564510fd556cfd561b48ab9771a22799ecdc9956f84249559",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -1211,7 +1250,8 @@
       "status_source": "summary.json",
       "summary_path": "results/navrl_corrected_nonoverlap_physical_off_smoke_seed907/summary.json",
       "summary_sha256": "85758ba6b6bef7b0097afe6e14c6dbcf6f127d1d80595a70da2fcbf699ec1a89",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -1252,7 +1292,8 @@
       "status_source": null,
       "summary_path": "results/navrl_corrected_nonoverlap_route_gate_r2_seed829/summary.json",
       "summary_sha256": "4a464521015c110805d46392b0355297c7328ac5b006be368f6b9a23dcf389d7",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -1293,7 +1334,8 @@
       "status_source": null,
       "summary_path": "results/navrl_corrected_nonoverlap_route_gate_seed829/summary.json",
       "summary_sha256": "5efc36ab73b37f6a6f5fe958d76d5761973d51e2f4a24e1ba62de38b25e26da0",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -1326,7 +1368,8 @@
       "status_source": null,
       "summary_path": "results/navrl_depth_noise_order_seed487/summary.json",
       "summary_sha256": "d7a35dbf37750fbe3c70590ff63a5fcc1b2b8b0ad953f061754855b583f23e3a",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -1359,7 +1402,8 @@
       "status_source": "summary.json",
       "summary_path": "results/navrl_detector_coupling_binbias_seed431/summary.json",
       "summary_sha256": "0d306a4303a319f8fbb2d0536af8254623072f192195857d222289813ac05edb",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -1392,7 +1436,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -1425,7 +1470,8 @@
       "status_source": null,
       "summary_path": "results/navrl_detector_distractor_envelope_seed479/summary.json",
       "summary_sha256": "768952b69ea2fc7b1e4ec670a34bd68eebdd2545ae0e39ebe5ffe0b76d59232b",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -1458,7 +1504,8 @@
       "status_source": null,
       "summary_path": "results/navrl_detector_domain_shift/summary.json",
       "summary_sha256": "e4c8c3c6be14cb3a43ab48f542842de66d2fa554e5f129543f50cc3935e7972e",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -1491,7 +1538,8 @@
       "status_source": null,
       "summary_path": "results/navrl_detector_domain_shift_v7/summary.json",
       "summary_sha256": "a9e850f39f642ad764a89a24d7dec01603653b7af9cb7eebf5bf1e125b7491d6",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -1524,7 +1572,8 @@
       "status_source": null,
       "summary_path": "results/navrl_detector_offline_gate_v2/summary.json",
       "summary_sha256": "2c26e6f05a338f2a8fbdc173655970c88b0224c734ed1a0647e37ae751b291f8",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -1557,7 +1606,8 @@
       "status_source": null,
       "summary_path": "results/navrl_detector_offline_gate_v3_domainrand/summary.json",
       "summary_sha256": "70ba3bc9d37494d196cb62dadfde81561da87be4b240f9acf39dc0d6c3b6cbc8",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -1590,7 +1640,8 @@
       "status_source": null,
       "summary_path": "results/navrl_detector_offline_gate_v4_domainrand/summary.json",
       "summary_sha256": "0a3415b61c9fd267ec0fb8d6703a3128d9500bbc64ff88f6351360b333743aca",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -1623,7 +1674,8 @@
       "status_source": null,
       "summary_path": "results/navrl_detector_offline_gate_v5_domainrand/summary.json",
       "summary_sha256": "ed5c6500a04492b20e75af54a008b7878f732556c8a66bf2a756a161bd27f109",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -1656,7 +1708,8 @@
       "status_source": null,
       "summary_path": "results/navrl_detector_offline_gate_v6_confirmatory/summary.json",
       "summary_sha256": "b8a29c528b0cf91cd98493360139e0deaee1d92eba60fb493969319b6c1f4ae7",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -1689,7 +1742,8 @@
       "status_source": null,
       "summary_path": "results/navrl_detector_offline_gate_v7_confirmatory/summary.json",
       "summary_sha256": "f13e532c75e9238951c80da27b62ef2677c785767ce60824576bcccea54f1bd8",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -1722,7 +1776,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -1755,7 +1810,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -1788,7 +1844,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -1821,7 +1878,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -1854,7 +1912,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -1887,7 +1946,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -1920,7 +1980,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -1953,7 +2014,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -1986,7 +2048,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -2019,7 +2082,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -2052,7 +2116,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -2085,7 +2150,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -2118,7 +2184,8 @@
       "status_source": "summary.json",
       "summary_path": "results/navrl_grid_r2_d4_trainseed_rep/summary.json",
       "summary_sha256": "b56f6f243da01de3ebd968d5c371cbeff8b8d236b6e712c264679ab1fbe480cf",
-      "title": "R-C \u2014 D4 \ud559\uc2b5 \uc2dc\ub4dc \ubc18\ubcf5: C3(\"\ub3d9\ubc18\ud559\uc2b5\") \uc0ac\uc804\ub4f1\ub85d \ud310\uc815 (2026-09-09)"
+      "title": "R-C \u2014 D4 \ud559\uc2b5 \uc2dc\ub4dc \ubc18\ubcf5: C3(\"\ub3d9\ubc18\ud559\uc2b5\") \uc0ac\uc804\ub4f1\ub85d \ud310\uc815 (2026-09-09)",
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -2151,7 +2218,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -2190,7 +2258,8 @@
       "status_source": null,
       "summary_path": "results/navrl_physical_target_braking_lower1p25_headingrest_seed827/summary.json",
       "summary_sha256": "722937789bab3f5bbd6fdfea2152443a526ea9269a2f23bcfc528e9b9bd8c406",
-      "title": null
+      "title": null,
+      "tracked_in_git": false
     },
     {
       "causality_vs_d8b": null,
@@ -2223,7 +2292,8 @@
       "status_source": null,
       "summary_path": "results/navrl_physical_target_invalid_forensics_post_wall_brake_seed509/summary.json",
       "summary_sha256": "5e918481888bd8e790c18bbe8da4ffb3fa34170642ebc8f5c66e7fe16c59ba62",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -2256,7 +2326,8 @@
       "status_source": null,
       "summary_path": "results/navrl_physical_target_invalid_forensics_post_wall_support_seed509/summary.json",
       "summary_sha256": "f4b85e13779bcd1a087c3150a55e281511a5344e930f5f72fa720cc52bd5555e",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -2289,7 +2360,8 @@
       "status_source": null,
       "summary_path": "results/navrl_physical_target_invalid_forensics_seed509/summary.json",
       "summary_sha256": "c5e7a85c8f2b833131f388cda09a9cd0be8831cb90c0364c69cbfafd4ab831b1",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -2330,7 +2402,8 @@
       "status_source": null,
       "summary_path": "results/navrl_physical_target_recovery_v2_gate_lower1p25_seed827/summary.json",
       "summary_sha256": "a85e95764061b7b20cacaa622efc44e2d7e31e054e398f57cfdf48ec98e6c04f",
-      "title": null
+      "title": null,
+      "tracked_in_git": false
     },
     {
       "causality_vs_d8b": null,
@@ -2365,7 +2438,8 @@
       "status_source": null,
       "summary_path": "results/navrl_physical_target_recovery_v2_no_connector_forensics_seed827/summary.json",
       "summary_sha256": "bc5d05a3f36da9213989c84ae28eda9ad65b0ba60b55dc2bbe4b5d262a12b8ee",
-      "title": null
+      "title": null,
+      "tracked_in_git": false
     },
     {
       "causality_vs_d8b": null,
@@ -2398,7 +2472,8 @@
       "status_source": null,
       "summary_path": "results/navrl_physical_target_route_recovery_forensics_seed827/summary.json",
       "summary_sha256": "8cb6824ac09a843d82dc58e5247ca21577712f0de669b333f9020681026fd4b4",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -2439,7 +2514,8 @@
       "status_source": null,
       "summary_path": "results/navrl_physical_target_routed_gate_seed827/summary.json",
       "summary_sha256": "e3800a1afcb4d4634bac779c26eee329d40cead1a61ca7bbc8d8fe9b6da873c7",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -2480,7 +2556,8 @@
       "status_source": null,
       "summary_path": "results/navrl_physical_target_routed_gate_seed827_attempt2/summary.json",
       "summary_sha256": "e5e4560464dc3a2080d904c2f8d2247e0c65e671dd63ea08d1b507ec65fc7197",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -2513,7 +2590,8 @@
       "status_source": null,
       "summary_path": "results/navrl_physical_target_speed_envelope_post_wall_brake_seed509/summary.json",
       "summary_sha256": "2713716e965bc2be451b97eac41ad8cbb83bc047e86da535f622795d9aa9b7ca",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -2546,7 +2624,8 @@
       "status_source": null,
       "summary_path": "results/navrl_physical_target_speed_envelope_post_wall_support_seed509/summary.json",
       "summary_sha256": "4c4eb8cefa5e610c771fa7671efb03cc0deabd052cf45fd1d5c62ee8cd183978",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -2579,7 +2658,8 @@
       "status_source": null,
       "summary_path": "results/navrl_physical_target_speed_envelope_seed509/summary.json",
       "summary_sha256": "5f539fc1e688d1879de909b2358dd2e897f6aa48488c804356ea9df67f99cb90",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -2612,7 +2692,8 @@
       "status_source": null,
       "summary_path": "results/navrl_physical_target_verification/summary.json",
       "summary_sha256": "bb6d3af7487225a472815bae22dc8738e8f98d7f7f3372f67035d6be9b4a6359",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -2645,7 +2726,8 @@
       "status_source": null,
       "summary_path": "results/navrl_ref5in_active_search_geofence_seed367/summary.json",
       "summary_sha256": "e70c0b890974da083d51a955d7540cb967ab9964a929f78be2842e2fcc8eff82",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -2678,7 +2760,8 @@
       "status_source": null,
       "summary_path": "results/navrl_ref5in_camera_range_control_seed367/summary.json",
       "summary_sha256": "d9774e8b080cba1fe8c3bd244c086b28f558baa89cfd25df52a933d223de2e51",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -2711,7 +2794,8 @@
       "status_source": null,
       "summary_path": "results/navrl_ref5in_cv_first_acquisition_seed359/summary.json",
       "summary_sha256": "4cae677919970322349d5c537df930f480367764a760a2abb6268085c0b97591",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -2744,7 +2828,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -2777,7 +2862,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -2810,7 +2896,8 @@
       "status_source": null,
       "summary_path": "results/navrl_ref5in_cv_heading_near_open_seed347/summary.json",
       "summary_sha256": "df4552a4c8ded9e84df3b3daaf5343163d97e6ccc4c2c4d6f32952680cf0306d",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -2843,7 +2930,8 @@
       "status_source": null,
       "summary_path": "results/navrl_ref5in_cv_heading_seed337/summary.json",
       "summary_sha256": "f575cb5e466144f150b71df33a8faeb0322c23400eaa23bf54b84bc296fdf094",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -2876,7 +2964,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -2909,7 +2998,8 @@
       "status_source": null,
       "summary_path": "results/navrl_ref5in_cv_heading_telemetry_seed353/summary.json",
       "summary_sha256": "4d5c261bb857312f9d162afa2480320e95e1ba4fce41006defa4d3860bb6018d",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -2942,7 +3032,8 @@
       "status_source": "summary.json",
       "summary_path": "results/navrl_ref5in_d1_eval_seed331/summary.json",
       "summary_sha256": "1d6e427acbd7d7bb129e6d71374e27d90b53a6af2a0f4495b8480d932d5f2e51",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -2975,7 +3066,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -3008,7 +3100,8 @@
       "status_source": "summary.json",
       "summary_path": "results/navrl_ref5in_detection_range_stage1_s457/summary.json",
       "summary_sha256": "228e7d212bdf5564f1d877600d543140029ce4f2330775c45823c3f041ce0b75",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -3041,7 +3134,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -3074,7 +3168,8 @@
       "status_source": null,
       "summary_path": "results/navrl_ref5in_oob_exit_forensics_seed367/summary.json",
       "summary_sha256": "9efafd7de723a163e5d00ec35f3491e6a2b7446449f5dd5f988e170dbe50cecc",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -3107,7 +3202,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -3140,7 +3236,8 @@
       "status_source": null,
       "summary_path": "results/navrl_ref5in_outcome_diagnostic_seed317/summary.json",
       "summary_sha256": "ed83608a8be080535b9e8897ba5f6bf0ee61a107d5b1de34e703c188a0ce8c22",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -3173,7 +3270,8 @@
       "status_source": null,
       "summary_path": "results/navrl_ref5in_outcome_diagnostic_v2_seed317/summary.json",
       "summary_sha256": "c17d39e05362eb075c9f6425021a718dd4c071d85a39bb95b31d1a40208c6319",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -3206,7 +3304,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -3239,7 +3338,8 @@
       "status_source": "summary.json",
       "summary_path": "results/navrl_ref5in_reflection_audit_seed373/summary.json",
       "summary_sha256": "8d3f987a288d337a1f47cb93ad169ae2090d3a4f0885bd4fe5c3821db6ebf660",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -3272,7 +3372,8 @@
       "status_source": "summary.json",
       "summary_path": "results/navrl_ref5in_sensor_fidelity_seed421/summary.json",
       "summary_sha256": "b1f7c5c6625b532d196303e03929291e9a58e6db7bd3c48c842ee8e09adc9c6e",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -3308,7 +3409,8 @@
       "status_source": "summary.json",
       "summary_path": "results/navrl_ref5in_smoke_seed197/summary.json",
       "summary_sha256": "4a088487529e102ccb6fb862c12fa2dad9a40236e1679ab3fbf2d1e8ee57f3a0",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -3341,7 +3443,8 @@
       "status_source": null,
       "summary_path": "results/navrl_ref5in_symmetric_corridor_mode_probe_seed431/summary.json",
       "summary_sha256": "2b857a762822909828a41c304803a565a13410503150362dad2e2f862dc1075f",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -3374,7 +3477,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -3407,7 +3511,8 @@
       "status_source": "summary.json",
       "summary_path": "results/navrl_ref_platform_verification_20260827_v2/summary.json",
       "summary_sha256": "f97973278336cad856149e36849689b861edbf2aa7f587bfbb9ba005058cd74c",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -3440,7 +3545,8 @@
       "status_source": null,
       "summary_path": "results/navrl_s1_shadow_seed481/summary.json",
       "summary_sha256": "501eb582e414d3c0e5da6f1495c852a7d8432b5f7b9d582ebe67a29087fbb152",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -3473,7 +3579,8 @@
       "status_source": null,
       "summary_path": "results/navrl_sim2real_software_preflight_2026-08-24/summary.json",
       "summary_sha256": "2efae046a00934d7f9a29253c3a34c0273aff45478cc78e5701fbff44051a130",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -3506,7 +3613,8 @@
       "status_source": null,
       "summary_path": "results/navrl_target_route_cpu_benchmark_seed825/summary.json",
       "summary_sha256": "691353a83aadbca7e90e92500cc79083e1f2bbd236777e86f094cee6d133aad4",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -3539,7 +3647,8 @@
       "status_source": null,
       "summary_path": "results/navrl_v2_appearance_navigation_ab_seed151_157/summary.json",
       "summary_sha256": "4fa537fd0f9d6cfb0e38c920f98a027661160d77bc386bb083c1a7f90f0a0bdc",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -3572,7 +3681,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -3605,7 +3715,8 @@
       "status_source": "summary.json",
       "summary_path": "results/navrl_v2_bar_ceiling_topology_assumed0p60_summary/summary.json",
       "summary_sha256": "4f0e96fa0e37da26e8c16c7eba915f5243477fa49d88cc3b58db1a44526d1edb",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -3638,7 +3749,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -3671,7 +3783,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -3704,7 +3817,8 @@
       "status_source": null,
       "summary_path": "results/navrl_v2_density_speed_map/summary.json",
       "summary_sha256": "0c5f418d77b1f5fb3a14f2160e40b42d192c21861f892e17ee5f91d3a8a95f5a",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -3737,7 +3851,8 @@
       "status_source": null,
       "summary_path": "results/navrl_v2_detector_navigation_ab_replication_seed97_101_schema2/summary.json",
       "summary_sha256": "987203fdd69a61989b259ecf82c92eb88c63b0d530c4a69204b7264db6ed7fb4",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -3770,7 +3885,8 @@
       "status_source": null,
       "summary_path": "results/navrl_v2_detector_navigation_ab_seed83_89_schema2/summary.json",
       "summary_sha256": "c57bafddaba2ac8fc7ebd41237c0e1bbabf97d010d32ceebc3bc0cc68282c4a6",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -3803,7 +3919,8 @@
       "status_source": null,
       "summary_path": "results/navrl_v2_detector_robustness/summary.json",
       "summary_sha256": "249d0a427e9ed5d39cb2fdb3eeb97f43c90bdf5c3b61ddc18496f8212ca89f2d",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -3836,7 +3953,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -3869,7 +3987,8 @@
       "status_source": null,
       "summary_path": "results/navrl_v2_detector_threshold_diagnostic_seed191_193/summary.json",
       "summary_sha256": "703f36155711fda0dfd3be983687dfa3ac5b4b6a7878e0931715a454414c6d22",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -3902,7 +4021,8 @@
       "status_source": null,
       "summary_path": "results/navrl_v2_ep19100_vs_ep24000_forgetting/summary.json",
       "summary_sha256": "b0033d5fcb3773d1565c5dc2b6c432037a426a844cb9be488577be75254350a6",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -3935,7 +4055,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -3968,7 +4089,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -4001,7 +4123,8 @@
       "status_source": null,
       "summary_path": "results/navrl_v2_ep24000_causal_1to3/summary.json",
       "summary_sha256": "940c2bbc034d0fe1f03a48b1aabe5a5330ce760e5c4bfdc04baa3756266332a9",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -4034,7 +4157,8 @@
       "status_source": null,
       "summary_path": "results/navrl_v2_ep24000_fixed_speed/summary.json",
       "summary_sha256": "2120753c5139606daa4b5afe193d668439a4c1c9b8e97727f64e1f14e1ae337b",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -4067,7 +4191,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -4100,7 +4225,8 @@
       "status_source": null,
       "summary_path": "results/navrl_v2_ep24000_riskcap_seed44_screen/summary.json",
       "summary_sha256": "540a0f72f27aa3f3e2d80c86b3be16496c84e6c9df90b060205e9c4aa75044a7",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -4133,7 +4259,8 @@
       "status_source": null,
       "summary_path": "results/navrl_v2_ep24000_speed_governor_screen/summary.json",
       "summary_sha256": "312160aa04697eafc2fbacddb07eb8f8dcbbc10a4ecbb6b558c9760e9599f7aa",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -4166,7 +4293,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -4199,7 +4327,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -4232,7 +4361,8 @@
       "status_source": null,
       "summary_path": "results/navrl_v2_ep25000_stopcap_seed49_screen/summary.json",
       "summary_sha256": "dccc8917c3bbab601c3de4b1c1c15c930750980091e62c482e65cd1e045587d3",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -4265,7 +4395,8 @@
       "status_source": null,
       "summary_path": "results/navrl_v2_governor_adaptation_abc_seed53_schema2/summary.json",
       "summary_sha256": "59bc7b474335a9bd703a812dd747eddc35eaf623d1619f344755768a18ed4cd6",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -4304,7 +4435,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -4337,7 +4469,8 @@
       "status_source": null,
       "summary_path": "results/navrl_v2_latency_budget/summary.json",
       "summary_sha256": "986aefe0e2c7e732254c05a1e6b1be62296503539785a026c47d516419e69a18",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -4370,7 +4503,8 @@
       "status_source": null,
       "summary_path": "results/navrl_v2_latency_compensate/summary.json",
       "summary_sha256": "668b6225c20a87bdaeeb04e9bcb3e74d1bf40ba72de0a6d5cc62d53f72cc391a",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -4403,7 +4537,8 @@
       "status_source": null,
       "summary_path": "results/navrl_v2_latency_ego_motion/summary.json",
       "summary_sha256": "87a561304cc3c67124e1671f0415e0ac93461a592d8745f20e85410244971ec1",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -4436,7 +4571,8 @@
       "status_source": null,
       "summary_path": "results/navrl_v2_latency_obstacle_fix/summary.json",
       "summary_sha256": "28558355d1ee8871d74921b49beefcbecedec6f65fe39506dc88a18744f2d322",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -4469,7 +4605,8 @@
       "status_source": null,
       "summary_path": "results/navrl_v2_lidar_assoc_gate/summary.json",
       "summary_sha256": "cd2650f0c73d5edb725b09546f57a99d4f337bf2a3cb0b001fcb896fb64a7672",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -4502,7 +4639,8 @@
       "status_source": null,
       "summary_path": "results/navrl_v2_lidar_fallback/summary.json",
       "summary_sha256": "d9e44a00b7887b6ed72de8d22de8548e75f13ea1945fb509af702b3b04a7d100",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -4535,7 +4673,8 @@
       "status_source": null,
       "summary_path": "results/navrl_v2_lidar_fallback_seed51/summary.json",
       "summary_sha256": "b4b83b3caf40f705d81d1b4884ddcd9c59e669b8ba5d83868c70ba8a9f9d2655",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -4568,7 +4707,8 @@
       "status_source": null,
       "summary_path": "results/navrl_v2_lidar_range_only/summary.json",
       "summary_sha256": "279f68763d52a0af897a971fb636b72fcbd9d14b04ae4222a3f0e0358e76b930",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -4601,7 +4741,8 @@
       "status_source": null,
       "summary_path": "results/navrl_v2_lidar_silent_correct/summary.json",
       "summary_sha256": "c34d21d45f9a942f84f2b8719ec258e0906df20c777a41d6da3b9a232051dc7a",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -4634,7 +4775,8 @@
       "status_source": null,
       "summary_path": "results/navrl_v2_pose_noise_rng_audit_seed181/summary.json",
       "summary_sha256": "60a0eab94c9bfd597546bf3ca7f34e05072b17cf6a80a69d54dea1cdea540371",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -4667,7 +4809,8 @@
       "status_source": null,
       "summary_path": "results/navrl_v2_pose_premise_seed163/summary.json",
       "summary_sha256": "d35ffd7ec7c27931a36d81a1043fffded8ff3a45494a6bfd18e3ed0dcad7d776",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -4700,7 +4843,8 @@
       "status_source": null,
       "summary_path": "results/navrl_v2_riskcap_postadapt/summary.json",
       "summary_sha256": "e3527ab117c572614b0adeaa5e0766a76ec500bf287ceacdceccc7039fc36b58",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -4733,7 +4877,8 @@
       "status_source": null,
       "summary_path": "results/navrl_v2_speed_density_interaction_seed59_61_schema2/summary.json",
       "summary_sha256": "c264a0cde46d4429fb0414bb4ac6de09832024a77af40508ffe944dcba9c58f9",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -4766,7 +4911,8 @@
       "status_source": null,
       "summary_path": "results/navrl_v2_target_mask_backfill/summary.json",
       "summary_sha256": "f5d3ca5e0dceab57ee38eefd6cda6558f69fe4c8306706eb3c3bf2f1081610d4",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -4799,7 +4945,8 @@
       "status_source": null,
       "summary_path": "results/navrl_v2_target_mask_backfill_seed51/summary.json",
       "summary_sha256": "bdcd44730d1a014fc9c7ea94569a58f1fe4e24018c5f20a025010f3e1c52cba4",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -4832,7 +4979,8 @@
       "status_source": "summary.json",
       "summary_path": "results/navrl_v2_v5a_semantics_smoke_seed197/summary.json",
       "summary_sha256": "e3098634d5bdeb065fa9d74649884b84ae1a662e00a2bfb8515a9fde5a4ecca8",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -4865,7 +5013,8 @@
       "status_source": null,
       "summary_path": "results/perception_joint_detector_p4_p5_2026-09-08/summary.json",
       "summary_sha256": "49ffa2e0a30b534c263ee37db6dc02ee3efa7ee217ef5675885fccb08239d3d3",
-      "title": "Joint detector + P4/P5 \uacb0\uacfc"
+      "title": "Joint detector + P4/P5 \uacb0\uacfc",
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -4898,7 +5047,8 @@
       "status_source": null,
       "summary_path": "results/perception_p10_2026-09-09/summary.json",
       "summary_sha256": "1589a516c60de4bd72ee8a8095118529f5df39fa1bab1c16c740e5d4446455c1",
-      "title": "P10 \u2014 P9 \uc624\ucc28 \ud558 PPO \uc7ac\uc801\uc751\uacfc held-out \ud3c9\uac00 (2026-09-09)"
+      "title": "P10 \u2014 P9 \uc624\ucc28 \ud558 PPO \uc7ac\uc801\uc751\uacfc held-out \ud3c9\uac00 (2026-09-09)",
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -4933,7 +5083,8 @@
       "status_source": "summary.json",
       "summary_path": "results/perception_p10_seed_replication_2026-09-10/summary.json",
       "summary_sha256": "60c6d20b52e599d859645711fe0e64da24b38e367cced27ea21729d3b4c9d6ed",
-      "title": "P10 seed replication \u2014 `INCONCLUSIVE`"
+      "title": "P10 seed replication \u2014 `INCONCLUSIVE`",
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -4966,7 +5117,8 @@
       "status_source": null,
       "summary_path": "results/perception_p7bc_2026-09-08/summary.json",
       "summary_sha256": "e19fd09afaea46f51df686a2bb1935424969d0887b4bb35eb51edfa45895ef45",
-      "title": "P7b/P7c validation \uacb0\uacfc"
+      "title": "P7b/P7c validation \uacb0\uacfc",
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -4999,7 +5151,8 @@
       "status_source": "summary.json",
       "summary_path": "results/perception_p7e_streaming_2026-09-08/summary.json",
       "summary_sha256": "3faf977653d0a87ed761d1bc9f55cba64c260baf32fb79d7d986a24eb9b07a4e",
-      "title": "P7e \ubc0f streaming perception \uacb0\uacfc"
+      "title": "P7e \ubc0f streaming perception \uacb0\uacfc",
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -5032,7 +5185,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": "P8 conditional error model"
+      "title": "P8 conditional error model",
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -5065,7 +5219,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -5098,7 +5253,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -5131,7 +5287,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -5164,7 +5321,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": "range \uc624\ucc28 \ub300\ub9ac \uce21\uc815 \u2014 \ud310\uc815 `RANGE_ERROR_LARGE` (2026-09-09)"
+      "title": "range \uc624\ucc28 \ub300\ub9ac \uce21\uc815 \u2014 \ud310\uc815 `RANGE_ERROR_LARGE` (2026-09-09)",
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -5197,7 +5355,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": "S4 frozen P7c-v2 NPS test evaluation"
+      "title": "S4 frozen P7c-v2 NPS test evaluation",
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -5230,7 +5389,8 @@
       "status_source": "summary.json",
       "summary_path": "results/perception_streaming_overlap_s1_2026-09-09/summary.json",
       "summary_sha256": "3dd5d66c769977c016509b6eef6e6dda036fc474669e3438a7cd202668a84665",
-      "title": "S1 optical-flow overlap"
+      "title": "S1 optical-flow overlap",
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -5263,7 +5423,8 @@
       "status_source": null,
       "summary_path": "results/perception_temporal_p6_p7_2026-09-08/summary.json",
       "summary_sha256": "5c54ea16d641c97377d88d058c07739ee7e2da3873bd6190696f1e170f8065a2",
-      "title": "P6/P7 temporal association \uacb0\uacfc"
+      "title": "P6/P7 temporal association \uacb0\uacfc",
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -5296,7 +5457,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -5329,7 +5491,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": "Public research overview \u2014 presentation verification"
+      "title": "Public research overview \u2014 presentation verification",
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -5362,7 +5525,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": "Public research-paper page validation \u2014 2026-09-13"
+      "title": "Public research-paper page validation \u2014 2026-09-13",
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -5395,7 +5559,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": "NOT_TESTED",
@@ -5428,7 +5593,8 @@
       "status_source": "summary.json",
       "summary_path": "results/record_envelope_v2_live_2026-09-14/summary.json",
       "summary_sha256": "880cbced6e83f7a702287985f587d00fccb129c9709183189e0d8329e2a40579",
-      "title": "Record Envelope v2 \u2014 live-generation feasibility, 14 September 2026"
+      "title": "Record Envelope v2 \u2014 live-generation feasibility, 14 September 2026",
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -5465,7 +5631,8 @@
       "status_source": "summary.json",
       "summary_path": "results/record_integrity_review_2026-09-14/summary.json",
       "summary_sha256": "0aa84f0ee5dc51b6492e2556c4a029eb115933ca8d423e632461c4b460ccbd5e",
-      "title": "Record-envelope review \u2014 14 September 2026"
+      "title": "Record-envelope review \u2014 14 September 2026",
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -5498,7 +5665,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -5533,7 +5701,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": "R4 background v1 \uae30\uc220 \uad6c\ud604 \ubc0f \uac80\uc99d"
+      "title": "R4 background v1 \uae30\uc220 \uad6c\ud604 \ubc0f \uac80\uc99d",
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -5566,7 +5735,8 @@
       "status_source": "summary.json",
       "summary_path": "results/renderer_background_v1_2026-09-12/comparison/summary.json",
       "summary_sha256": "7a5a85541b0600cfeaf71c8a4f39120cc99f86b8ae9f676299241fb4680be766",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -5599,7 +5769,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": "R4 background v1 \u2014 \uae30\uc220 \uac80\uc99d TECHNICAL_PASS (2026-09-11)"
+      "title": "R4 background v1 \u2014 \uae30\uc220 \uac80\uc99d TECHNICAL_PASS (2026-09-11)",
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -5644,7 +5815,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": "Renderer characterization track (RC) \u2014 2026-09-13"
+      "title": "Renderer characterization track (RC) \u2014 2026-09-13",
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": "NOT_TESTED",
@@ -5686,7 +5858,8 @@
       "status_source": "summary.json",
       "summary_path": "results/renderer_characterization_2026-09-13/R1_geometry/summary.json",
       "summary_sha256": "b14b0e8e8f120f44025fa123d12704bb984403f968d6b1040e0dab0cc4c820b6",
-      "title": "RC-R1 \u2014 geometry representation across four specimens"
+      "title": "RC-R1 \u2014 geometry representation across four specimens",
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": "NOT_TESTED",
@@ -5728,7 +5901,8 @@
       "status_source": "summary.json",
       "summary_path": "results/renderer_characterization_2026-09-13/R1_quantization_diagnostic/summary.json",
       "summary_sha256": "7d5953061aa8c4340eddda60388baaf388f8bc6e4ecc53a264c3987c206a6e4e",
-      "title": "RC-R1 diagnostic \u2014 is the unmet-gate disagreement quantization?"
+      "title": "RC-R1 diagnostic \u2014 is the unmet-gate disagreement quantization?",
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": "NOT_TESTED",
@@ -5770,7 +5944,8 @@
       "status_source": "summary.json",
       "summary_path": "results/renderer_characterization_2026-09-13/R2_apparent_area/summary.json",
       "summary_sha256": "05ffbb7fb40cc0c59bc4e3be72a0ee10c55fd6115dc6d6eb6af8fa39ab7efc95",
-      "title": "RC-R2 \u2014 apparent area across four specimens"
+      "title": "RC-R2 \u2014 apparent area across four specimens",
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": "NOT_TESTED",
@@ -5812,7 +5987,8 @@
       "status_source": "summary.json",
       "summary_path": "results/renderer_characterization_2026-09-13/R3_shading/summary.json",
       "summary_sha256": "3930d9ee38a06e15d5ef76434284062e8259494074f441bb27c67e0ec77a1a66",
-      "title": "RC-R3 \u2014 shading, with geometry held fixed"
+      "title": "RC-R3 \u2014 shading, with geometry held fixed",
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": "NOT_TESTED",
@@ -5854,7 +6030,8 @@
       "status_source": "summary.json",
       "summary_path": "results/renderer_characterization_2026-09-13/R4M_material/summary.json",
       "summary_sha256": "1b45e76abe258d22903765b730980736646668f7c5534a14c51d15b5d2f6db80",
-      "title": "RC-R4M \u2014 material sensitivity"
+      "title": "RC-R4M \u2014 material sensitivity",
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": "NOT_TESTED",
@@ -5896,7 +6073,8 @@
       "status_source": "summary.json",
       "summary_path": "results/renderer_characterization_2026-09-13/R4_lighting/summary.json",
       "summary_sha256": "42cc3362c5b02ed025ea2527a4d2efe97fbae3136504784d8a3ad0d8429c4f98",
-      "title": "RC-R4 \u2014 lighting sensitivity"
+      "title": "RC-R4 \u2014 lighting sensitivity",
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": "NOT_TESTED",
@@ -5938,7 +6116,8 @@
       "status_source": "summary.json",
       "summary_path": "results/renderer_characterization_2026-09-13/R5_performance/summary.json",
       "summary_sha256": "d5ae9c4a4d22a73bb32da16d7ee45e0ef230ca43713ba4370816dbe78bc37fdb",
-      "title": "RC-R5 \u2014 render-path cost (descriptive)"
+      "title": "RC-R5 \u2014 render-path cost (descriptive)",
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": "NOT_TESTED",
@@ -5980,7 +6159,8 @@
       "status_source": "summary.json",
       "summary_path": "results/renderer_characterization_2026-09-13/determinism/summary.json",
       "summary_sha256": "ca47fb60918d047c55041f8be86a6c71ea4528f9ddcec7ada42ec10df707ed67",
-      "title": "RC determinism gate"
+      "title": "RC determinism gate",
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": "NOT_TESTED",
@@ -6023,7 +6203,8 @@
       "status_source": "summary.json",
       "summary_path": "results/renderer_characterization_r1b_2026-09-14/summary.json",
       "summary_sha256": "dee7e74712524163312bd85b725d3f3a3bca48474b08484ab26873f7b6317d0c",
-      "title": "RC-R1b \u2014 resolution convergence"
+      "title": "RC-R1b \u2014 resolution convergence",
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": "NOT_TESTED",
@@ -6066,7 +6247,8 @@
       "status_source": "summary.json",
       "summary_path": "results/renderer_characterization_r2b_2026-09-14/summary.json",
       "summary_sha256": "f602f8d860acc29ba0b399f97e050411c3a23434d4ed2ae88214bb5913436316",
-      "title": "RC-R2b \u2014 anisotropic area-control family"
+      "title": "RC-R2b \u2014 anisotropic area-control family",
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": "NOT_TESTED",
@@ -6109,7 +6291,8 @@
       "status_source": "summary.json",
       "summary_path": "results/renderer_characterization_r3b_2026-09-14/summary.json",
       "summary_sha256": "ad9efb4ac8d53ea9c07dd588ac147b88748920001c55956388ec30c535f87142",
-      "title": "RC-R3b \u2014 visible normal field"
+      "title": "RC-R3b \u2014 visible normal field",
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": "NOT_TESTED",
@@ -6154,7 +6337,8 @@
       "status_source": "summary.json",
       "summary_path": "results/renderer_characterization_r5b_2026-09-14/summary.json",
       "summary_sha256": "2097e047a607f7ef23181e585828c47ebd0d18224ea2070d1be10b4fcf72c4cb",
-      "title": "RC-R5b \u2014 transfer characterization"
+      "title": "RC-R5b \u2014 transfer characterization",
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -6187,7 +6371,8 @@
       "status_source": "summary.json",
       "summary_path": "results/renderer_cpu_install_2026-09-12/summary.json",
       "summary_sha256": "e5669ea4d1c2069eb34f983195435d3ce720e505c7e687ab75d9f04d8a07ebf9",
-      "title": "\ub3c5\ub9bd \uc77c\ubc18 renderer CPU \uc2e0\uaddc \uc124\uce58 \u2014 \uae30\uc220 \uac80\uc99d \uc644\ub8cc"
+      "title": "\ub3c5\ub9bd \uc77c\ubc18 renderer CPU \uc2e0\uaddc \uc124\uce58 \u2014 \uae30\uc220 \uac80\uc99d \uc644\ub8cc",
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -6220,7 +6405,8 @@
       "status_source": "receipt.json",
       "summary_path": null,
       "summary_sha256": null,
-      "title": "R2 \uc2e4\uc81c Warp/GPU \uae30\uc220 smoke \u2014 \ube44\uc815\uc2dd"
+      "title": "R2 \uc2e4\uc81c Warp/GPU \uae30\uc220 smoke \u2014 \ube44\uc815\uc2dd",
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -6253,7 +6439,8 @@
       "status_source": "receipt.json",
       "summary_path": null,
       "summary_sha256": null,
-      "title": "R2 \uc2e4\uc81c Warp/GPU \uae30\uc220 smoke \ubc18\ubcf5 \u2014 \ube44\uc815\uc2dd"
+      "title": "R2 \uc2e4\uc81c Warp/GPU \uae30\uc220 smoke \ubc18\ubcf5 \u2014 \ube44\uc815\uc2dd",
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -6286,7 +6473,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -6321,7 +6509,8 @@
       "status_source": "summary.json",
       "summary_path": "results/renderer_r3_seed173_comparison_2026-09-11/summary.json",
       "summary_sha256": "430ca7b9df18e4afc1b0ad6c330d5348ff44b437ab89f5f38c0f6e618c29c11b",
-      "title": "R3 \ub3c5\ub9bd renderer validation \u2014 PASS"
+      "title": "R3 \ub3c5\ub9bd renderer validation \u2014 PASS",
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -6354,7 +6543,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -6387,7 +6577,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -6420,7 +6611,8 @@
       "status_source": "summary.json",
       "summary_path": "results/renderer_r4_seed409_comparison_2026-09-11/summary.json",
       "summary_sha256": "1bf13fa1e54639d8f954e265c34d581f866743960ab977bbaea2940aacffa510",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -6453,7 +6645,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -6486,7 +6679,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -6519,7 +6713,8 @@
       "status_source": "summary.json",
       "summary_path": "results/renderer_r4b_seed409_comparison_2026-09-11/summary.json",
       "summary_sha256": "6815ca91707fc060bbfd879b307d19ae8f924c7e0ac42dca0fd29198192dcea3",
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -6552,7 +6747,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -6585,7 +6781,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -6618,7 +6815,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -6651,7 +6849,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -6684,7 +6883,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -6717,7 +6917,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -6750,7 +6951,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -6787,7 +6989,8 @@
       "status_source": "summary.json",
       "summary_path": "results/renderer_reverification_2026-09-11_1951/summary.json",
       "summary_sha256": "7f4c6c0992316c419dcbed0b3e28b0eaf5282028cef20443db1a83e03289b757",
-      "title": "R3\u2013R5 \uc804\uccb4 \uc7ac\uac80\uc99d \u2014 2026-09-11"
+      "title": "R3\u2013R5 \uc804\uccb4 \uc7ac\uac80\uc99d \u2014 2026-09-11",
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -6820,7 +7023,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": "URDF \uc790\uc0b0 \ub85c\ub529 v1 \u2014 TECHNICAL_PASS, \uadf8\ub9ac\uace0 V1\uc774 \uba3c\uc800 \uc815\ud574\uc57c \ud560 \uac83 (2026-09-11)"
+      "title": "URDF \uc790\uc0b0 \ub85c\ub529 v1 \u2014 TECHNICAL_PASS, \uadf8\ub9ac\uace0 V1\uc774 \uba3c\uc800 \uc815\ud574\uc57c \ud560 \uac83 (2026-09-11)",
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -6853,7 +7057,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": "\uc2e4\uc81c \uc2dc\ubbac\ub808\uc774\ud130\uc5d0\uc11c \ud45c\uc801 \uc678\ud615\uc744 \uc7ac\ubcf4\ub2c8 \u2014 V1\uc740 \uac80\ucd9c\uae30\uc5d0 \ub3c4\ub2ec\ud558\uc9c0 \uc54a\ub294\ub2e4 (2026-09-12)"
+      "title": "\uc2e4\uc81c \uc2dc\ubbac\ub808\uc774\ud130\uc5d0\uc11c \ud45c\uc801 \uc678\ud615\uc744 \uc7ac\ubcf4\ub2c8 \u2014 V1\uc740 \uac80\ucd9c\uae30\uc5d0 \ub3c4\ub2ec\ud558\uc9c0 \uc54a\ub294\ub2e4 (2026-09-12)",
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": "NOT_TESTED",
@@ -6886,7 +7091,8 @@
       "status_source": "summary.json",
       "summary_path": "results/task_diagnostics_invariance_2026-09-14/summary.json",
       "summary_sha256": "43188612b8c837acc7d763e2bb6dd012471dbb62ffc52872729a391fbe3121e1",
-      "title": "Behaviour invariance of the TD instrumentation \u2014 14 September 2026"
+      "title": "Behaviour invariance of the TD instrumentation \u2014 14 September 2026",
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -6919,7 +7125,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": "V1 \u2014 \ud45c\uc801\uc744 \ube68\uac04 \uc0c1\uc790\uc5d0\uc11c \ucffc\ub4dc\ub85c\ud130 \uc2e4\ub8e8\uc5e3\uc73c\ub85c (2026-09-11)"
+      "title": "V1 \u2014 \ud45c\uc801\uc744 \ube68\uac04 \uc0c1\uc790\uc5d0\uc11c \ucffc\ub4dc\ub85c\ud130 \uc2e4\ub8e8\uc5e3\uc73c\ub85c (2026-09-11)",
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -6952,7 +7159,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": "\uac80\uc99d \uc694\uccad \u2014 NavRL \uc18d\ub3c4 \uc548\uc804\ud544\ud130, 2026-09-05/06 \uce21\uc815 \uc804\uccb4"
+      "title": "\uac80\uc99d \uc694\uccad \u2014 NavRL \uc18d\ub3c4 \uc548\uc804\ud544\ud130, 2026-09-05/06 \uce21\uc815 \uc804\uccb4",
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -6985,7 +7193,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": "\uac80\uc99d \uc694\uccad \u2014 NavRL \uc18d\ub3c4 \uc548\uc804\ud544\ud130, 2026-09-05 ~ 09-07 \uce21\uc815 \uc804\uccb4 (136 cell)"
+      "title": "\uac80\uc99d \uc694\uccad \u2014 NavRL \uc18d\ub3c4 \uc548\uc804\ud544\ud130, 2026-09-05 ~ 09-07 \uce21\uc815 \uc804\uccb4 (136 cell)",
+      "tracked_in_git": true
     },
     {
       "causality_vs_d8b": null,
@@ -7024,7 +7233,8 @@
       "status_source": null,
       "summary_path": null,
       "summary_sha256": null,
-      "title": null
+      "title": null,
+      "tracked_in_git": true
     }
   ],
   "schema": "result_manifest_v1",

@@ -163,6 +163,34 @@ def first_commit_date(relative):
     return (date.splitlines() or [""])[-1] or None
 
 
+def git_available():
+    return bool(git("rev-parse", "--git-dir"))
+
+
+def tracked_prefixes():
+    """Every tracked path under results/, so an untracked result directory is visible as one.
+
+    An untracked result directory is a provenance gap: it exists on this machine and in no commit.
+    A snapshot export drops it silently, so the manifest should say which entries are committed.
+    """
+    listing = git("ls-files", "results")
+    return {line.split("/")[1] for line in listing.splitlines() if "/" in line}
+
+
+def inherited_classification(path):
+    """Reuse created_at/legacy/tracked from a manifest built where Git was available.
+
+    A release snapshot has no Git directory, so it cannot date its own results. Importing the dates
+    from the research manifest keeps the classification truthful and records where it came from,
+    which is better than silently calling every legacy directory modern.
+    """
+    document = json.loads(Path(path).read_text())
+    return {entry["result_id"]: entry for entry in document.get("results", [])}, {
+        "source": str(path), "sha256": sha256_file(path),
+        "built_at_utc": document.get("built_at_utc"),
+        "repository_commit": document.get("repository_commit")}
+
+
 def child_results(directory):
     """Immediate subdirectories that are themselves results, for track directories.
 
@@ -174,7 +202,7 @@ def child_results(directory):
                   if child.is_dir() and (child / "summary.json").is_file())
 
 
-def describe(directory, parent=None):
+def describe(directory, parent=None, tracked=None, inherited=None):
     relative = directory.relative_to(ROOT).as_posix()
     summary = small_json(directory / "summary.json")
     receipt = small_json(directory / "receipt.json")
@@ -216,6 +244,19 @@ def describe(directory, parent=None):
                                           if not (ROOT / name).is_file()
                                           and not (directory / name).is_file()]
     entry["source_manifest_state"] = source_manifest_state(directory)
+    top_level = entry["result_id"].split("/")[0]
+    entry["tracked_in_git"] = (None if tracked is None else top_level in tracked)
+    if inherited is not None:
+        previous = inherited.get(entry["result_id"])
+        if previous is not None:
+            entry["created_at"] = previous.get("created_at")
+            entry["legacy_exception"] = previous.get("legacy_exception")
+            if entry["tracked_in_git"] is None:
+                entry["tracked_in_git"] = previous.get("tracked_in_git")
+            entry["classification_inherited"] = True
+        else:
+            entry["classification_inherited"] = False
+            entry["legacy_exception"] = None
     contract = external_contract()
     entry["external_data"] = ({"dataset": contract["dataset"],
                                "current_release_availability": contract["current_release_availability"],
@@ -234,7 +275,9 @@ def validate(entries, loose_files):
         if entry["result_id"] in seen:
             duplicates.append(entry["result_id"])
         seen.add(entry["result_id"])
-    modern = [e for e in entries if not e["legacy_exception"] and not e["container"]]
+    # An entry whose legacy status is unknown cannot be held to the modern convention.
+    modern = [e for e in entries
+              if e["legacy_exception"] is False and not e["container"]]
     issues = {
         "duplicate_result_id": duplicates,
         "modern_missing_summary": [e["result_id"] for e in modern if not e["summary_path"]],
@@ -250,6 +293,8 @@ def validate(entries, loose_files):
                                           for e in entries
                                           if e["source_manifest_state"]
                                           and e["source_manifest_state"]["missing"]},
+        "untracked_results": [e["result_id"] for e in entries if e.get("tracked_in_git") is False],
+        "unclassified_results": [e["result_id"] for e in entries if e["legacy_exception"] is None],
         "orphan_candidates": [e["result_id"] for e in entries
                               if not e["container"]
                               and not any((e["summary_path"], e["receipt_path"], e["readme_path"]))],
@@ -262,15 +307,23 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, default=RESULTS / "MANIFEST.json")
     parser.add_argument("--print-issues", action="store_true")
+    parser.add_argument("--inherit-classification", type=Path,
+                        help="Manifest built where Git was available, for a snapshot with no .git")
     arguments = parser.parse_args(argv)
+    have_git = git_available()
+    tracked = tracked_prefixes() if have_git else None
+    inherited, inheritance = (None, None)
+    if arguments.inherit_classification:
+        inherited, inheritance = inherited_classification(arguments.inherit_classification)
     directories = sorted(p for p in RESULTS.iterdir() if p.is_dir())
     loose = sorted(p.name for p in RESULTS.iterdir() if p.is_file() and p.name != "MANIFEST.json")
     entries = []
     for directory in directories:
-        entry = describe(directory)
+        entry = describe(directory, tracked=tracked, inherited=inherited)
         entries.append(entry)
         if entry["container"]:
-            entries.extend(describe(child, parent=directory.name)
+            entries.extend(describe(child, parent=directory.name, tracked=tracked,
+                                    inherited=inherited)
                            for child in child_results(directory))
     issues = validate(entries, loose)
     lifecycles = {}
@@ -282,10 +335,15 @@ def main(argv=None):
         "repository_commit": git("rev-parse", "HEAD"),
         "repository_dirty": bool(git("status", "--porcelain")),
         "convention_since": CONVENTION_SINCE,
-        "counts": {"results": len(entries), "legacy_exception": sum(e["legacy_exception"] for e in entries),
+        "git_available": have_git,
+        "classification_inherited_from": inheritance,
+        "counts": {"results": len(entries),
+                   "legacy_exception": sum(e["legacy_exception"] is True for e in entries),
+                   "untracked_in_git": sum(e.get("tracked_in_git") is False for e in entries),
                    "containers": sum(e["container"] for e in entries),
                    "child_results": sum(e["parent"] is not None for e in entries),
-                   "modern": sum(not e["legacy_exception"] and not e["container"] for e in entries),
+                   "modern": sum(e["legacy_exception"] is False and not e["container"]
+                                 for e in entries),
                    "with_summary": sum(bool(e["summary_path"]) for e in entries),
                    "with_receipt": sum(bool(e["receipt_path"]) for e in entries),
                    "with_preregistration": sum(bool(e["preregistration_path"]) for e in entries),
