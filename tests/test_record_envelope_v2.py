@@ -286,16 +286,54 @@ class StatusBoundaryTests(unittest.TestCase):
     def status(self):
         return json.loads(self.STATUS.read_text())
 
-    def test_live_generation_validation_stays_not_run(self):
+    LIVE_VALUES = ("NOT_RUN", "NOT_APPLICABLE", "FAIL", "PASS")
+
+    def test_live_generation_validation_is_one_of_the_declared_values(self):
         status = self.status()
         self.assertEqual(status["producer_unit_validation"], "PASS")
-        self.assertEqual(status["live_generation_validation"], "NOT_RUN")
+        self.assertIn(status["live_generation_validation"], self.LIVE_VALUES)
+
+    def test_live_pass_requires_a_live_artifact_receipt(self):
+        """PASS is the one value that cannot be asserted from a document alone.
+
+        The failure this guards against is a later edit that promotes the status because the suite
+        is green, or because a feasibility check was run and read as a success. PASS therefore has
+        to point at a receipt that a real producer wrote, and that receipt has to exist.
+        """
+        status = self.status()
+        if status["live_generation_validation"] != "PASS":
+            self.assertIn("live_validation_evidence", status)
+            return
+        receipt = status.get("live_validation_receipt")
+        self.assertIsNotNone(receipt, "PASS without a live receipt path")
+        self.assertTrue((ROOT/receipt).is_file(), receipt)
+
+    def test_a_not_applicable_status_records_why(self):
+        status = self.status()
+        if status["live_generation_validation"] != "NOT_APPLICABLE":
+            return
+        self.assertIn("schema_design_limitation", status)
+        evidence = ROOT/status["live_validation_evidence"]
+        self.assertTrue(evidence.is_file(), str(evidence))
+        text = evidence.read_text()
+        self.assertIn("LIVE_GENERIC_VALIDATION_NOT_APPLICABLE", text)
+        for field in ("density_bars", "checkpoint_path", "config_path"):
+            self.assertIn(field, text)
 
     def test_no_document_claims_the_metadata_is_fixed(self):
+        """The token may appear only inside a denial, never as an assertion.
+
+        Matching one exact sentence would break the moment the wording changed and would quietly
+        stop guarding anything; this checks the claim instead of the phrasing.
+        """
         for path in (self.STATUS, self.DOC):
             text = path.read_text()
-            self.assertNotIn("METADATA_FIXED", text.replace(
-                "Passing unit tests is not `METADATA_FIXED`.", ""))
+            position = text.find("METADATA_FIXED")
+            while position != -1:
+                window = text[max(0, position - 90):position]
+                self.assertRegex(window, r"\bnot\b|\bNothing\b",
+                                 "%s asserts METADATA_FIXED" % path.name)
+                position = text.find("METADATA_FIXED", position + 1)
 
     def test_the_historical_verdict_is_recorded_as_still_invalid(self):
         historical = self.status()["historical_artifact"]
@@ -309,7 +347,9 @@ class StatusBoundaryTests(unittest.TestCase):
 
     def test_the_document_states_the_boundary_and_links_the_audit(self):
         text = self.DOC.read_text()
-        self.assertIn("live_generation_validation = NOT_RUN", text)
+        # The document must state the status the machine-readable record actually carries.
+        self.assertIn("live_generation_validation = %s" % self.status()["live_generation_validation"],
+                      text)
         self.assertIn("record_integrity_review_2026-09-14", text)
         self.assertIn("INVALID_FOR_DECLARED_CONTRACT", text)
 

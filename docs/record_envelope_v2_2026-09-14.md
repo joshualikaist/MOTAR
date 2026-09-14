@@ -74,14 +74,23 @@ instead of a success receipt.
 
 ```text
 Record Envelope v2
-producer_unit_validation  = PASS
-live_generation_validation = NOT_RUN
+producer_unit_validation   = PASS
+live_generation_validation = NOT_APPLICABLE
 ```
 
-The producer passes its unit tests against synthetic files in temporary directories. **No runtime
-artifact has been generated through it**, so nothing here is evidence that a live producer emits a
-valid envelope. `live_generation_validation` changes only when an independently authorized runtime
-artifact is produced and checked. Passing unit tests is not `METADATA_FIXED`.
+The producer passes its unit tests against synthetic files in temporary directories. Live
+generation was then **attempted** on the generic renderer dataset exporter and found **not
+applicable**: five of the fifteen required fields — `density_bars`, `checkpoint_path`,
+`checkpoint_sha256`, `config_path`, `config_sha256` — have no honest source in a task-independent
+producer, and the producer refused each of them (`INVALID_DENSITY_BARS`, `MISSING_CHECKPOINT_PATH`,
+`MISSING_CONFIG_PATH`) instead of filling a default. Evidence:
+[live-generation feasibility](../results/record_envelope_v2_live_2026-09-14/README.md).
+
+**This is a schema-design limitation, recorded rather than worked around.** Envelope v2 inherited
+its task shape from the v1 audit of a simulator artifact. Making the task section optional would be
+a v2.1, which is a deliberate design decision and is not taken as a side effect of a validation
+run. Nothing here is `METADATA_FIXED`, and `live_generation_validation` becomes `PASS` only when a
+producer that can supply every required field truthfully is validated end to end.
 
 ## Using the checker
 
