@@ -33,7 +33,7 @@ ownership decision; it is not substituted for the upstream notice.
 | NPS-Drones | [Official Purdue distribution page](https://engineering.purdue.edu/~bouman/UAV_Dataset/) explicitly links a **data** [BSD-3-Clause licence](https://engineering.purdue.edu/~bouman/UAV_Dataset/pubs/LICENSE.txt), copyright 2022 Charles A. Bouman | Raw dataset not under tracked `datasets/`; derived artefacts still need their own inventory | VERIFIED data licence, checked 2026-09-12 |
 | Det-Fly repository | [MIT repository licence](https://github.com/Jake-WU/Det-Fly/blob/main/LICENSE) | External source | VERIFIED repository licence only |
 | Det-Fly images/annotations | [Official README](https://github.com/Jake-WU/Det-Fly/blob/main/README.md) links separately hosted downloads and requests scholarly citation; inspected text does not explicitly extend MIT to those downloads | Raw data not added here | **BLOCKED_BY_LICENSE** for image redistribution; obtain explicit image/annotation terms |
-| ETH ds5 review images | [Pinned dataset licence](https://github.com/CenekAlbl/drone-tracking-datasets/blob/2c857c97be71834d0791ae8ee4984ffb62b7680a/dataset5/LICENSE): **CC BY-NC-SA 4.0** | **13 tracked JPEGs**: 10 selected frames + 3 contact sheets, and a review ZIP | Licence VERIFIED; current packaging corrected below |
+| ETH ds5 source and derived images | [Pinned dataset licence](https://github.com/CenekAlbl/drone-tracking-datasets/blob/2c857c97be71834d0791ae8ee4984ffb62b7680a/dataset5/LICENSE): **CC BY-NC-SA 4.0** | **NOT_REDISTRIBUTED in current tree**; user obtains separately; review JPEGs/ZIP excluded | Licence checked 2026-09-14; numerical/aggregate evidence retained, not blanket relicensed |
 | Project weights | Seven historical `artifacts/*.pth` | Yes | Project-produced; no new weights added; training-data/third-party obligations are not inferred away |
 | Upstream example weights | Eleven inherited `.pth` files | Yes | Classified as inherited examples; individual weight provenance/licence coverage not fully audited |
 | Project diagrams and generic synthetic arrays | Project-generated graphics | Yes | Root terms, except third-party embedded material if any; generic new exports contain no real imagery |
@@ -42,12 +42,18 @@ ownership decision; it is not substituted for the upstream notice.
 “Nothing is tracked under datasets/” is a path check, **not** proof that no dataset-derived content
 appears elsewhere. The history inventory explicitly includes images, archives and weights.
 
-## ETH review ZIP: current packaging fixed, history remains historical
+## ETH ds5: external acquisition, historical packaging evidence retained
 
-The former inventory said 34 tracked JPEGs. `git ls-files` establishes **13**, not 34.
-The ZIP originally had 14 members. It now has 16: its original members plus
+The former inventory said 34 tracked JPEGs. The pre-removal tree had **13**, not 34.
+All 13 and the review ZIP are excluded from the current public tree under the owner's
+non-redistribution policy. See [external acquisition](docs/external_data/ETH_DS5.md),
+[exact inventory](docs/eth_ds5_public_release_inventory_2026-09-14.md) and
+[current release status](docs/public_release_status_2026-09-14.md).
+This does not assert that CC BY-NC-SA prohibits all sharing; MOTAR elects not to bundle images.
+
+Historically the ZIP originally had 14 members, then 16: its original members plus
 `THIRD_PARTY_NOTICE.md` and `LICENSE_DATASET.txt`.
-All original member bytes are unchanged; [packaging receipt](results/eth_ds5_intake_2026-09-10/archive_notice_receipt.json)
+All original member bytes were unchanged by that packaging pass; the preserved [packaging receipt](results/eth_ds5_intake_2026-09-10/archive_notice_receipt.json)
 records before/after archive hashes and every member hash.
 
 The adjacent [notice](results/eth_ds5_intake_2026-09-10/THIRD_PARTY_NOTICE.md) identifies creators,
@@ -58,7 +64,7 @@ The root BSD licence **does not cover these image adaptations**.
 The CC [licence conditions](https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode.en)
 allow sharing subject to their conditions; this is not unrestricted/commercial clearance.
 
-Earlier commits still contain ZIPs without bundled notices. No history rewrite was performed.
+Earlier commits still contain JPEGs and ZIPs, including ZIPs without bundled notices. No history rewrite was performed.
 The packaging fix does not retroactively repair downloads of an earlier revision, certify third-party
 rights outside the licence, or extend BSD to extracted annotations.
 

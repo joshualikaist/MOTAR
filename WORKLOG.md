@@ -18423,3 +18423,15 @@ paper page REVIEWED, release audit COMPLETE_WITH_BLOCKERS. 제출 준비는 저�
 
 검증: 전체 회귀 **1,869개 실행 / 실패 0 / 오류 0 / 기존 skip 4**, 63.9초(직전 1,852). 역사적 128행
 artifact는 `1475b0c2…78870a` 그대로이고 판정 두 가지도 그대로다. 정책 실행·평가·학습은 없었다.
+
+## 2026-09-14 — ETH ds5 current-tree 비배포 계약과 제거 전 인벤토리
+
+사용자의 명시적 제거·커밋·normal push 승인에 따라 release engineering만 수행한다.
+시작 시 fetch 후 HEAD=origin/main=`f7496004a1027ecf21b666d6da2d040adb16dec3`, clean.
+제거 전 JPEG 13개와 ZIP 1개(합계 3,321,884 bytes)의 경로·SHA·마지막 커밋·참조·ZIP 멤버를
+`docs/eth_ds5_public_release_inventory_2026-09-14.json`에 고정했다. ETH 비이미지 파일 46개를
+핀하며 수치·receipt·CSV·과거 소스는 바이트 보존한다. 유일한 editorial 예외는 handoff의
+깨질 이미지 링크 두 개와 availability 설명이다. 외부 데이터 계약·로컬 파일 검사·좁은 ignore를
+추가했다. 기존 검수팩의 완전한 중심 좌표가 이미 유실됐다는 재현 제한은 유지한다.
+아직 최종 회귀/제거 후 감사가 끝난 상태는 아니며, 후속 항목에서 실제 결과를 기록한다.
+과거 Git blob은 삭제하지 않으며 과학적 재계산·GPU 평가·학습은 실행하지 않는다.

@@ -124,8 +124,11 @@ separately.
 Original project code is offered under the repository's [BSD-3-Clause notice](LICENSE), subject
 to retained upstream notices. This does **not** apply to every data file or dependency.
 [Third-party inventory](THIRD_PARTY_LICENSES.md) identifies separate terms and unresolved items.
-In particular, the ETH-derived review images are **CC BY-NC-SA 4.0**, not BSD-licensed:
-[attribution and scope](results/eth_ds5_intake_2026-09-10/THIRD_PARTY_NOTICE.md).
+ETH ds5 source and derived review images/ZIPs are **not redistributed in the current tree**.
+Obtain ETH ds5 separately from its original distributor under **CC BY-NC-SA 4.0**, not BSD:
+[external acquisition and reproduction](docs/external_data/ETH_DS5.md).
+Analysis code, numerical evidence and historical provenance remain available. Older Git history
+still contains review assets; see [release status](docs/public_release_status_2026-09-14.md).
 
 ## Acknowledgements
 

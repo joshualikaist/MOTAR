@@ -74,6 +74,12 @@ aerial_gym/examples/*_frames_100.gif
 # legacy scraper scratch output; never published
 docs/status/status.legacy.json
 
+# External ETH ds5 local review data only; keep numerical results elsewhere tracked.
+/artifacts/private/eth_ds5/
+/results/eth_ds5_intake_2026-09-10/**/*.jpg
+/results/eth_ds5_intake_2026-09-10/**/*.jpeg
+/results/eth_ds5_intake_2026-09-10/eth_ds5_human_review_pack.zip
+
 # git worktrees for concurrent Codex sessions; never part of the tree.  Result receipts
 # inside them are bound to their absolute paths, so they must survive on disk but must
 # not be committed (an accidental `git add -A` made one a gitlink on 2026-08-26).

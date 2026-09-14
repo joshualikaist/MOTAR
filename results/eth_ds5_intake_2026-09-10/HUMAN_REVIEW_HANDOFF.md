@@ -59,5 +59,6 @@ drone1·drone2가 아니라는 것까지는 말해주지 못합니다.
 10장 중 하나라도 식별이 틀렸다면 E3-S를 다시 돌려야 합니다. 전부 맞으면 방법 절에
 "53프레임 중 10프레임을 사람이 확인했고 불일치 0건"이라고 쓸 수 있고, 그것으로 충분합니다.
 
-빠른 확인용 대비표: [contact sheet](review_offset0/contact_sheet.jpg) ·
-[정렬용 contact sheet](review_alignment/contact_sheet.jpg)
+현재 배포 상태(2026-09-14): 검수 JPEG/ZIP은 재배포하지 않습니다. 당시 파일명·해시는
+historical provenance로 유지합니다. [외부 데이터 취득 및 로컬 검수 안내](../../docs/external_data/ETH_DS5.md).
+과거 대비표 경로는 `review_offset0/contact_sheet.jpg`, `review_alignment/contact_sheet.jpg`였습니다.

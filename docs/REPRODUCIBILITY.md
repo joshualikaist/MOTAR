@@ -86,13 +86,20 @@ data.
 
 | Data | Availability |
 | --- | --- |
-| ETH drone-tracking ds5 (video, extracted frames) | Not redistributed; CC BY-NC-SA 4.0 upstream, see [notice](../results/eth_ds5_intake_2026-09-10/THIRD_PARTY_NOTICE.md) |
+| ETH drone-tracking ds5 (video, extracted frames, review JPEG/ZIP) | Not redistributed in current tree; obtain separately under CC BY-NC-SA 4.0: [external acquisition and commands](external_data/ETH_DS5.md) |
 | Det-Fly, NPS-Drones, detenv | Not redistributed; upstream terms `NEEDS_CONFIRMATION` |
 | Isaac Gym Preview 4 | Not redistributable; obtain from NVIDIA |
 | Training checkpoints (`*.pth`) | Large binaries; only those already tracked are present |
 
 See [`THIRD_PARTY_LICENSES.md`](../THIRD_PARTY_LICENSES.md) for the full inventory and the items
 still marked `NEEDS_CONFIRMATION`.
+
+ETH consumers already accept `--dataset /path/to/eth-source` and `--video /path/to/cam0.mp4`.
+Run `tools/check_eth_ds5_local_data.py` with those flags before local preparation. Keep newly
+generated review material under ignored `artifacts/private/eth_ds5/`; the linked external-data
+contract gives source-checked extraction and analysis commands. No dataset download or analysis
+is performed by the release checks. The original ten-image review pack cannot be regenerated
+exactly because its complete centre-coordinate input was already unavailable.
 
 ## Known hardware requirements
 
