@@ -171,9 +171,9 @@ full environment flags/versions are in each receipt. Historical source commits:
 From the repository root, current evidence can be verified without rerendering:
 
 ```bash
-PYTHONNOUSERSITE=1 /home/fair/miniconda3/envs/aerialgym/bin/python \
+PYTHONNOUSERSITE=1 python \
   tools/measure_renderer_contract.py verify --output results/renderer_characterization_r1b_2026-09-14
-PYTHONNOUSERSITE=1 /home/fair/miniconda3/envs/aerialgym/bin/python -m unittest discover \
+PYTHONNOUSERSITE=1 python -m unittest discover \
   -s tests -p 'test_renderer_followup_evidence.py' -v
 ```
 

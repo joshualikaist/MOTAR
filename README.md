@@ -24,10 +24,34 @@ system or a change to historical success criteria.
 
 ## Scope and Limitations
 
-This repository makes **no real-flight validation claim** and provides no deployment instructions.
-Independent renderer tests do not certify simulator integration, target identity or physical safety.
-Historical negative and withdrawn findings remain visible in [Verification](VERIFICATION.md).
-Data and code have different licensing boundaries.
+This is **simulation-only** research on moving-target rendezvous: tracking and approach in a
+simulated dense-obstacle arena. It makes **no real-flight validation claim** and provides no
+deployment instructions. Independent renderer tests do not certify simulator integration, target
+identity or physical safety. Data and code have different licensing boundaries.
+
+The bounded claims travel with the results and are not softened anywhere in this repository:
+
+| Result | Status |
+| --- | --- |
+| P2 held-out, D1 adaptation | **FAIL**; P3 full budget **BLOCKED** |
+| P10 readaptation | **INCONCLUSIVE** — a net adaptation benefit is **not established** |
+| S4 held-out generalization | **warning stands** |
+| E3-P attitude reliability | **ATTITUDE_NOT_RELIABLE**; decomposition BLOCKED |
+| E3-S size-to-range proxy | usable, on **one** flight only |
+| D8b frozen-policy sensitivity | **MATERIAL_LOSS** |
+| Renderer Contract v1 versus D8b | **causality NOT_TESTED** |
+
+Numbers belong with their receipts, not on a landing page. The one-page map of what each track
+established, with its figures and its limits, is the
+[research evidence index](docs/RESEARCH_EVIDENCE_INDEX.md). Historical, negative and withdrawn
+findings remain visible in [Verification](VERIFICATION.md).
+
+## External datasets
+
+No raw dataset is distributed with this repository. ETH ds5 derived images are **excluded** from the
+public release under CC BY-NC-SA 4.0; Det-Fly, NPS-Drones and detenv are referenced by tooling only.
+Results that depend on them are reproducible from their recorded form, not from raw data. See
+[reproducibility](docs/REPRODUCIBILITY.md) and [third-party notices](THIRD_PARTY_LICENSES.md).
 
 ## System Overview
 
@@ -103,6 +127,10 @@ Use the exact environment, source revision, data split and hashes named by each 
 stored-result verification from a fresh rendering run. Missing evidence stays missing.
 
 ## Documentation
+
+Start with [reproducibility](docs/REPRODUCIBILITY.md) for what runs without a GPU, and the
+[research evidence index](docs/RESEARCH_EVIDENCE_INDEX.md) for what the results do and do not say.
+
 
 - [Documentation index](docs/README.md)
 - [Results by track](docs/results_overview_2026-09-12.md)
