@@ -18447,3 +18447,23 @@ historical risk OPEN, 예상하지 않은 ETH evidence 변경 0개다. 46개 비
 전환했다. 별도 synthetic ZIP 바이트 보존 테스트도 유지한다. 새 regression 13개 PASS;
 public docs/schema PASS. Manifest는 정확한 path+SHA에만 external exception을 적용하며,
 임의 missing/hash mismatch는 여전히 보고한다. 전체 회귀와 최종 push는 다음 단계다.
+
+### ETH release 최종 회귀와 배포 판정
+
+코드 완료 `d6bccb4`에서 canonical aerialgym Python 3.8 / CUDA_VISIBLE_DEVICES=0으로 전체
+unittest 회귀 **1,882 run / 1,878 pass / 4 기존 skip / fail 0 / error 0**, **66.638 s**.
+pytest는 해당 환경에 설치되어 있지 않아 설치·환경 변경 없이 저장소의 기존 unittest runner를
+사용했다. pytest를 실행했다고 보고하지 않는다. 사이트 JS 검사 5종(실제 headless WebGL 포함),
+public docs/schema, CFF 검사 PASS. 최종 문서 수정 뒤 docs/schema와 외부 데이터 13개 regression을
+다시 확인했다. 로그와 파일 SHA receipt는 `docs/release_validation_2026-09-14/`에 보존한다.
+394개 tracked 문서의 제거 대상 활성 링크 0개. 과거 단순 path/hash는 의도적으로 남긴다.
+
+현재 트리의 ETH image/ZIP blocker는 **RESOLVED**, 14개 historical blob reachable이므로
+**HISTORICAL_REDISTRIBUTION_RISK=OPEN**. NavRL copying·fork ownership·Det-Fly data terms·NPS
+파생물의 네 확인 사항은 검색만으로 닫지 않았다. 과거 18 weights 모두 자체 학습이라는 감사
+서술도 새 release status에서 7 project / 11 inherited로 정정했다. 과학 결과는 재계산·삭제하지
+않았다. root LICENSE와 역사적 receipt/summary는 보존됐다. 새 release status와 체크리스트는
+현재 availability만 표현하며 이전 audit은 당시 기록으로 유지한다.
+
+다음 선택은 필요할 경우 **별도 clean public-release repository**를 명시적으로 승인받아 만드는
+것이다. 이번에는 history rewrite/force push/새 repo 생성 없이 normal fast-forward push만 한다.

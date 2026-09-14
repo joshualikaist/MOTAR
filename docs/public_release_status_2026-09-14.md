@@ -1,8 +1,8 @@
 # Public release status — 2026-09-14
 
 Release-layer follow-up to [the earlier audit](public_release_audit_2026-09-14.md), not a new
-scientific result or legal clearance. Final machine audit and test receipts are linked below
-when completed. No policy, detector, controller, threshold or scientific result is changed.
+scientific result or legal clearance. Final machine audit and test receipts are linked below.
+No policy, detector, controller, threshold or scientific result is changed.
 
 | Axis | Status / boundary |
 | --- | --- |
@@ -56,8 +56,34 @@ Neither B nor C is executed here. A normal push preserves historical reachabilit
 
 ## Verification
 
-[Post-removal audit at commit 79209d8](eth_ds5_current_tree_audit_2026-09-14.json) found
-zero unexpected evidence changes and all 14 historical blobs reachable. Full regression is
-pending. Historical receipts and
+[Post-removal audit at commit 79209d8](eth_ds5_current_tree_audit_2026-09-14.json) and
+[code-complete audit at d6bccb4](release_validation_2026-09-14/current_tree_audit.json) found
+zero unexpected evidence changes and all 14 historical blobs reachable. Historical receipts and
 summaries are not rewritten to reflect availability; [external_data_manifest.json](external_data_manifest.json)
 is the release-layer source of truth. Missing unrelated required evidence must remain an error.
+
+Full canonical `unittest discover`: **1,882 run, 1,878 passed, 4 existing skips, 0 failures/errors**,
+66.638 s. This is not a pytest result: pytest is absent from the canonical historical environment;
+no package was installed into it. Public docs/Draft-7 schema, CFF citation validation and all five
+JavaScript site checks (including headless WebGL) passed. New external-data regressions: 13 passed.
+No tests were newly skipped. The direct-ZIP test changed to the explicit non-redistribution contract;
+synthetic ZIP member-preservation checks remain enabled.
+
+[Validation receipt and commands](release_validation_2026-09-14/README.md),
+[full unit log](release_validation_2026-09-14/full_unittest.txt),
+[removed-link audit](release_validation_2026-09-14/removed_link_audit.json).
+The link scan covered 394 tracked Markdown/HTML/SVG/notebook documents and found zero live links
+to removed assets; it does not claim all unrelated historical links are valid.
+
+| Tracked category | Before f749600 | After d6bccb4 |
+| --- | ---: | ---: |
+| JPEG | 13 / 1,962,706 bytes | 0 / 0 bytes |
+| ZIP | 4 | 3 |
+| All archives (ZIP plus existing gzip) | 5 / 9,351,020 bytes | 4 / 7,991,842 bytes |
+| Checkpoints | 18 / 51,891,688 bytes | unchanged |
+| PNG | 64 / 13,186,634 bytes | unchanged |
+| NPZ | 10 / 3,321,708 bytes | unchanged |
+| Total tracked files / bytes | 5,146 / 514,769,555 | 5,141 / 511,546,261 |
+
+Totals are exact for the named measured commits, before adding these final validation logs/docs.
+The asset-only reduction is 3,321,884 bytes. This is current-tree content, **not Git history size**.

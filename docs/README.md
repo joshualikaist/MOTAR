@@ -29,6 +29,9 @@ R2 구현 이후 독립 Warp/GPU 검증을 실행했습니다. 기존 perception
 [16:9 SVG + 4K PNG ZIP](assets/presentation/motar-presentation-2026-09-10.zip).
 각 파트의 완료 범위와 한계를 그림 안에 함께 표기합니다.
 
+ETH ds5 원본·파생 이미지는 current tree에 배포하지 않습니다:
+[외부 데이터 취득·재현 안내](external_data/ETH_DS5.md), [공개 배포 상태](public_release_status_2026-09-14.md).
+
 ETH ds5 실촬영 거리 측정: [E1–E5 수집·검증 계획](plans/eth_ds5_execution_2026-09-10.md),
 [E3 분리 계획(E3-S/E3-P)](plans/eth_ds5_e3_2026-09-10.md),
 [E3-S 사전등록](../results/eth_ds5_e3s_2026-09-10/PREREGISTRATION.md) ·
