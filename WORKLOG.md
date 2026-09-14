@@ -18342,3 +18342,39 @@ OMP/MKL threads 2. task/policy suites는 선택하지 않았다.
 `results/record_integrity_review_2026-09-14/README.md`, `summary.json`, `receipt.json`.
 기존 renderer 및 task code/result는 그대로다. 알려진 결함은 metadata 완전성 문제로 남기며,
 이를 근거로 성능 병목이나 다음 시스템 개선을 선택하지 않았다.
+
+## 2026-09-14 (3) — Record Envelope v2: 미래 producer의 provenance 계약
+
+record-integrity 감사 결과에 대한 대응을 **기록 수정이 아니라 producer 수정**으로 했다. 128행 smoke
+artifact `on_episode_forensics.json`은 그대로 두고 두 판정을 모두 유지한다: byte integrity `MATCH`
+(`1475b0c2…78870a`), metadata contract `INVALID_FOR_DECLARED_CONTRACT`. 주변 receipt나 런처에서
+seed/density/hash를 **추론해 채우지 않는다** — 추론한 값은 기록된 값이 아니다.
+
+**Record Envelope v2**(`docs/record_envelope_v2.json`, `tools/record_envelope_v2.py`):
+
+- identity와 location을 분리한다. `checkpoint_path`는 사람이 파일을 찾는 정보이고
+  `checkpoint_sha256`은 바이트에서 계산한 정체성이다. config도 같은 방식으로 분리. digest 필드에
+  경로·파일명·심볼릭 이름이 오면 오류이고, 63/65자 해시도 오류다.
+- `seed`, `density_bars`, `checkpoint_sha256`, `source_git_commit`은 **null 불가**. 얻을 수 없으면
+  artifact가 생기기 전에 fail closed.
+- `source_dirty`는 `git status`로 관측한다. clean이라고 가정하지 않는다.
+- `run_id`는 UUIDv4이며 결과 의미를 담지 않는다.
+- 행이 context 식별자를 반복하면 반드시 일치해야 하고 아니면 `CONTEXT_RECORD_MISMATCH`로 거부한다.
+  v2는 context를 단일 소스로 쓰지만, 행 식별자를 읽는 기존 v1 소비자가 있어 **마이그레이션이 아니라
+  별도 형식**으로 두었다.
+- preflight가 생성 전을, postflight가 발행 전을 막는다. `publish()`는 postflight 통과 시에만 receipt를
+  쓰고, 실패하면 원시 artifact를 남긴 채 failure 기록만 남긴다.
+
+`tools/check_record_integrity.py`는 v1 historical audit과 v2 producer validation을 **둘 다** 지원하며
+두 모드를 CLI에서 상호 배타로 강제한다. 역사적 artifact가 새 schema 덕분에 갑자기 PASS가 되는 일은
+없고, 그 사실을 회귀 테스트가 고정한다.
+
+상태 용어는 좁게 유지한다: `producer_unit_validation = PASS`,
+`live_generation_validation = NOT_RUN`(`docs/record_envelope_v2_status.json`). 이 producer로 만든
+런타임 artifact는 아직 없으므로 합성 파일 단위 테스트 통과는 `METADATA_FIXED`가 아니다. 상태 승격,
+역사적 artifact를 repaired로 표시, 판정 완화 — 세 가지 모두 mutation으로 테스트가 실패함을 확인했다.
+
+사이트에는 evidence source-note 줄에 한 문장만 추가하고 상세는 감사 문서로 링크했다.
+
+검증: 전체 저장소 회귀 **1,852개 실행 / 실패 0 / 오류 0 / 기존 skip 4**, 65.2초(v2 테스트 41개 포함).
+정책 실행·12셀 평가·과제 결과 분석·학습·컨트롤러/보상 변경은 하지 않았다.
