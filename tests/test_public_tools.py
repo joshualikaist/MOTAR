@@ -97,17 +97,19 @@ class ArchiveNoticeTest(unittest.TestCase):
             with self.assertRaises(FileExistsError):
                 notices.attach(archive, result["after_sha256"], [notice], root / "receipt.json")
 
-    def test_current_eth_members_match_receipt_and_notices(self):
+    def test_external_eth_inventory_matches_historical_receipt_and_notices(self):
         folder = ROOT / "results/eth_ds5_intake_2026-09-10"
         r = json.loads((folder / "archive_notice_receipt.json").read_text())
         archive = folder / r["archive"]
-        self.assertEqual(hashlib.sha256(archive.read_bytes()).hexdigest(), r["after_sha256"])
-        with zipfile.ZipFile(archive) as z:
-            self.assertEqual(len(z.namelist()), len(r["original_members_sha256"]) + len(r["added_members_sha256"]))
-            for name, expected in {**r["original_members_sha256"], **r["added_members_sha256"]}.items():
-                self.assertEqual(hashlib.sha256(z.read(name)).hexdigest(), expected)
-            for name in r["added_members_sha256"]:
-                self.assertEqual(z.read(name), (folder / name).read_bytes())
+        self.assertFalse(archive.exists(), "ETH review ZIP must not be bundled")
+        inventory = json.loads((ROOT / "docs/eth_ds5_public_release_inventory_2026-09-14.json").read_text())
+        entry = next(a for a in inventory["assets"] if a["path"] == archive.relative_to(ROOT).as_posix())
+        self.assertEqual(entry["sha256"], r["after_sha256"])
+        expected = {**r["original_members_sha256"], **r["added_members_sha256"]}
+        self.assertEqual({m["path"]: m["sha256"] for m in entry["members"]}, expected)
+        self.assertEqual(len(entry["members"]), len(expected))
+        for name, digest in r["added_members_sha256"].items():
+            self.assertEqual(hashlib.sha256((folder / name).read_bytes()).hexdigest(), digest)
 
 
 class GenericPipelineTest(unittest.TestCase):

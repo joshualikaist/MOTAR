@@ -108,6 +108,8 @@ def audit(inventory):
             copies.extend(path + "!" + m["path"] for m in members if m["sha256"] in banned)
     unresolved = any(a["tracked_in_index"] or a["in_HEAD"] for a in assets) or bool(copies)
     return {"schema": "external_data_release_audit_v1", "commit": git("rev-parse", "HEAD").decode().strip(),
+            "working_tree_dirty": bool(git("status", "--porcelain").strip()),
+            "tool_sha256": sha(Path(__file__).read_bytes()),
             "CURRENT_TREE_BLOCKER": "OPEN" if unresolved else "RESOLVED",
             "HISTORICAL_REDISTRIBUTION_RISK": "OPEN" if any(a["historical_blob_reachable"] for a in assets) else "NOT_FOUND",
             "assets": assets, "unexpected_evidence_changes": changed, "editorial_notes_changed": notes,
@@ -126,7 +128,7 @@ def main():
         json.dump(result, handle, indent=2, sort_keys=True)
         handle.write("\n")
     print(args.output)
-    return int(bool(result.get("unexpected_evidence_changes")))
+    return int(bool(result.get("unexpected_evidence_changes")) or result.get("CURRENT_TREE_BLOCKER") == "OPEN")
 
 
 if __name__ == "__main__":

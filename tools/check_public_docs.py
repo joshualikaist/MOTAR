@@ -11,7 +11,9 @@ PUBLIC = ("README.md", "THIRD_PARTY_LICENSES.md", "docs/results_overview_2026-09
           "docs/renderer_cpu_quickstart_2026-09-12.md", "docs/renderer_public_tools.md",
           "docs/PUBLIC_RELEASE_CHECKLIST.md", "docs/public_release_audit_2026-09-12.md",
           "docs/plans/moving_target_rendezvous_master_plan_2026-09-12.md",
-          "docs/status/overview-sources-2026-09-13.md")
+          "docs/status/overview-sources-2026-09-13.md", "docs/REPRODUCIBILITY.md",
+          "docs/external_data/ETH_DS5.md", "docs/eth_ds5_public_release_inventory_2026-09-14.md",
+          "docs/public_release_status_2026-09-14.md")
 STATUS_VALUES = {"COMPLETE", "TECHNICAL_PASS", "TECHNICAL_GO", "FAIL", "PARTIAL_EVIDENCE", "PENDING",
                  "BLOCKED_BY_POLICY", "NOT_RUN", "GO", "INCONCLUSIVE", "NOT_STARTED"}
 

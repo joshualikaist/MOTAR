@@ -28,12 +28,12 @@
       "evidence": "docs/status/index.html"
     },
     "release_audit": {
-      "status": "COMPLETE_WITH_BLOCKERS",
-      "qualification": "Two blockers remain, both CC BY-NC-SA 4.0 ETH ds5 derived material: 13 tracked JPEGs and one review ZIP. Four items stay NEEDS_CONFIRMATION. Nothing was deleted or relicensed.",
-      "evidence": "docs/public_release_audit_2026-09-14.md"
+      "status": "CURRENT_TREE_BLOCKERS_RESOLVED_HISTORY_OPEN",
+      "qualification": "13 ETH ds5 JPEGs and one review ZIP removed from current tree. Historical blobs remain reachable; four confirmations remain open. Numerical evidence and historical receipts preserved; no relicensing or history rewrite.",
+      "evidence": "docs/public_release_status_2026-09-14.md"
     }
   },
-  "submission_readiness": "Repository and research-engineering artefacts are organized and indexed. This is not a claim that the research results are sufficient for any particular submission, and the release blockers above are unresolved.",
+  "submission_readiness": "Repository evidence is organized; current-tree ETH image blockers are resolved. Historical redistribution risk and licence confirmations remain open. This is not blanket release clearance or a claim of scientific submission sufficiency.",
   "scope": "Repository engineering status only; no research claim is made or changed here",
   "causality_vs_d8b": "NOT_TESTED"
 }

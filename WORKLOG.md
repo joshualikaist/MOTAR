@@ -18435,3 +18435,15 @@ artifact는 `1475b0c2…78870a` 그대로이고 판정 두 가지도 그대로�
 추가했다. 기존 검수팩의 완전한 중심 좌표가 이미 유실됐다는 재현 제한은 유지한다.
 아직 최종 회귀/제거 후 감사가 끝난 상태는 아니며, 후속 항목에서 실제 결과를 기록한다.
 과거 Git blob은 삭제하지 않으며 과학적 재계산·GPU 평가·학습은 실행하지 않는다.
+
+### ETH current-tree 제거와 외부 참조 계약 검증
+
+`ec15d53`으로 제거 전 계약·inventory를 기록한 뒤 `79209d8`에서 정확한 14개 자산만 제거했다.
+총 3,321,884 bytes이며 역사적 커밋에서 복구 가능하다. 제거 후 audit은 current-tree RESOLVED,
+historical risk OPEN, 예상하지 않은 ETH evidence 변경 0개다. 46개 비이미지 핀 중 45개는
+바이트 동일하고 handoff 하나만 가용성/링크를 교정했다. 남은 ZIP 3개 71멤버에 제거 이미지의
+동일 바이트 사본이 없으며 E3 도표 2개는 실제로 열어 사진이 아닌 도식임을 확인했다.
+기존 ZIP 직접 열기 테스트는 skip하지 않고 보존된 원 멤버 SHA/notice와 비배포 계약 검증으로
+전환했다. 별도 synthetic ZIP 바이트 보존 테스트도 유지한다. 새 regression 13개 PASS;
+public docs/schema PASS. Manifest는 정확한 path+SHA에만 external exception을 적용하며,
+임의 missing/hash mismatch는 여전히 보고한다. 전체 회귀와 최종 push는 다음 단계다.

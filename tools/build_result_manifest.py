@@ -38,6 +38,24 @@ PREREGISTRATION_PATTERN = re.compile(r"(docs/preregistration[\w./-]*\.md|PREREGI
 MAX_TEXT_BYTES = 4 * 1024 * 1024
 
 
+def external_contract():
+    path = ROOT / "docs/external_data_manifest.json"
+    return json.loads(path.read_text())
+
+
+def reference_availability(relative, expected):
+    """An explicit removed path AND its historical hash are required for the exception."""
+    path = (ROOT / relative).resolve()
+    if ROOT.resolve() not in path.parents:
+        return "MISSING_REQUIRED_REPOSITORY_ARTIFACT"
+    if path.is_file():
+        return "PRESENT_HASH_MATCH" if sha256_file(path) == expected else "HASH_MISMATCH"
+    for item in external_contract()["excluded_assets"]:
+        if item["path"] == relative and item["sha256"] == expected:
+            return "EXTERNAL_DATA_NOT_REDISTRIBUTED"
+    return "MISSING_REQUIRED_REPOSITORY_ARTIFACT"
+
+
 def sha256_file(path):
     digest = hashlib.sha256()
     with Path(path).open("rb") as stream:
@@ -124,17 +142,20 @@ def source_manifest_state(directory):
     if not isinstance(hashes, dict):
         return {"commit": document.get("commit"), "files_checked": 0, "matching": 0,
                 "drifted": [], "missing": []}
-    matching, drifted, missing = 0, [], []
+    matching, drifted, missing, external = 0, [], [], []
     for relative, expected in sorted(hashes.items()):
-        path = ROOT / relative
-        if not path.is_file():
+        state = reference_availability(relative, expected)
+        if state == "EXTERNAL_DATA_NOT_REDISTRIBUTED":
+            external.append({"path": relative, "sha256": expected,
+                             "reference_kind": "HISTORICAL_INPUT_REFERENCE"})
+        elif state == "MISSING_REQUIRED_REPOSITORY_ARTIFACT":
             missing.append(relative)
-        elif sha256_file(path) == expected:
+        elif state == "PRESENT_HASH_MATCH":
             matching += 1
         else:
             drifted.append(relative)
     return {"commit": document.get("commit"), "files_checked": len(hashes), "matching": matching,
-            "drifted": drifted, "missing": missing}
+            "drifted": drifted, "missing": missing, "external_data_not_redistributed": external}
 
 
 def first_commit_date(relative):
@@ -195,6 +216,13 @@ def describe(directory, parent=None):
                                           if not (ROOT / name).is_file()
                                           and not (directory / name).is_file()]
     entry["source_manifest_state"] = source_manifest_state(directory)
+    contract = external_contract()
+    entry["external_data"] = ({"dataset": contract["dataset"],
+                               "current_release_availability": contract["current_release_availability"],
+                               "reference_kind": "HISTORICAL_INPUT_REFERENCE",
+                               "contract_path": "docs/external_data_manifest.json",
+                               "contract_sha256": sha256_file(ROOT / "docs/external_data_manifest.json")}
+                              if directory.name in contract["required_for"] else None)
     entry["files"] = sum(1 for _ in directory.rglob("*") if _.is_file())
     entry["child_result_ids"] = [child.name for child in children]
     return entry

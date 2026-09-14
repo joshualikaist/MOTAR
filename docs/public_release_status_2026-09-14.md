@@ -6,7 +6,7 @@ when completed. No policy, detector, controller, threshold or scientific result 
 
 | Axis | Status / boundary |
 | --- | --- |
-| CURRENT_TREE_DATASET_REDISTRIBUTION | Removal prepared: exact 13 ETH JPEGs and one ZIP in the [inventory](eth_ds5_public_release_inventory_2026-09-14.md) |
+| CURRENT_TREE_DATASET_REDISTRIBUTION | RESOLVED: exact 13 ETH JPEGs and one ZIP removed; [inventory](eth_ds5_public_release_inventory_2026-09-14.md) |
 | HISTORICAL_GIT_DATASET_REACHABILITY | OPEN: removal does not rewrite history |
 | LICENSE_STATUS | ETH ds5 CC BY-NC-SA 4.0; not covered by root BSD. No blanket clearance |
 | REPRODUCIBILITY_STATUS | EXTERNAL_DATA_REQUIRED; numerical evidence retained; exact old review pack remains unreproducible due to missing complete centres |
@@ -27,6 +27,18 @@ when completed. No policy, detector, controller, threshold or scientific result 
   are not cleared by a filename search. Exact-content ZIP inspection is documented separately;
   full dataset-derived provenance remains **NEEDS_CONFIRMATION**.
 
+Bounded inventory: `git ls-files '*nps*' '*NPS*'` finds four numerical
+`results/air2air_zeroshot/glad_on_nps*.json` files and five preparation/verification scripts;
+no NPS-named image/archive. This does not exclude NPS-derived content under other names.
+`rg 'Zhefan|zhefan|github.com/Zhefan-Xu|copied from|adapted from' aerial_gym tools NOTICE.md`
+finds no explicit upstream NavRL copying header; the one unrelated “copied from” comment is
+not attribution. Absence of a header is not proof of no copying. No code ownership is inferred.
+
+Three remaining ZIPs contain 29, 22 and 20 members respectively (diagram exports and associated
+manifests). No removed ETH JPEG byte stream is duplicated among them. The two public E3 PNG
+figures were visually inspected: they contain diagrams/text/aggregate values, not dataset frames.
+SVG source search found no `<image` / `data:image` embeds in `docs/assets`.
+
 Corrections to the earlier audit: its claim that all 18 weights were project-trained was too
 broad. The existing third-party inventory distinguishes seven project weights from eleven
 inherited examples. Project generation alone does not clear training-data or third-party rights.
@@ -44,6 +56,8 @@ Neither B nor C is executed here. A normal push preserves historical reachabilit
 
 ## Verification
 
-Pending final current-HEAD inventory and full repository regression. Historical receipts and
+[Post-removal audit at commit 79209d8](eth_ds5_current_tree_audit_2026-09-14.json) found
+zero unexpected evidence changes and all 14 historical blobs reachable. Full regression is
+pending. Historical receipts and
 summaries are not rewritten to reflect availability; [external_data_manifest.json](external_data_manifest.json)
 is the release-layer source of truth. Missing unrelated required evidence must remain an error.
