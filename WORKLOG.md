@@ -18378,3 +18378,48 @@ seed/density/hash를 **추론해 채우지 않는다** — 추론한 값은 기�
 
 검증: 전체 저장소 회귀 **1,852개 실행 / 실패 0 / 오류 0 / 기존 skip 4**, 65.2초(v2 테스트 41개 포함).
 정책 실행·12셀 평가·과제 결과 분석·학습·컨트롤러/보상 변경은 하지 않았다.
+
+## 2026-09-14 (4) — Envelope v2 live 시도, result manifest, evidence index, 공개 정리
+
+**Phase 1 — Envelope v2 live-generation은 `NOT_APPLICABLE`이다.** generic renderer dataset exporter로
+실제 시도했고, 15개 필수 필드 중 5개(`density_bars`, `checkpoint_path/sha256`, `config_path/sha256`)가
+task-independent producer에 **정직한 출처가 없다**. producer는 세 번 모두 서로 다른 코드로 거부했다
+(`INVALID_DENSITY_BARS`, `MISSING_CHECKPOINT_PATH`, `MISSING_CONFIG_PATH`). `density_bars = 0`을 넣거나
+URDF를 checkpoint로 가리키거나 exporter 소스를 "config"로 해싱했다면 초록색 결과와 **거짓 기록**이
+나왔을 것이다. 이것을 schema-design limitation으로 기록하고 **v2를 고치지 않았다** — task 섹션을
+optional로 만드는 v2.1은 검증 부수효과가 아니라 별도 결정이다. 상태 테스트는 이제 네 가지 선언값을
+허용하되 `PASS`는 실제 live receipt 파일을 가리켜야만 성립한다. 근거는
+`results/record_envelope_v2_live_2026-09-14/`.
+
+**Phase 2 — Experiment Manifest v1**(`tools/build_result_manifest.py` → `results/MANIFEST.json`).
+201개 결과를 identity·provenance·status 문자열·링크·해시로만 색인한다. capture rate, 개선폭, 실패
+원인 같은 **연구 수치는 추출하지 않는다** — 해석하는 manifest는 결과가 서술되는 두 번째 미검토
+장소가 되고 둘은 어긋난다. 176개는 현재 규약 이전이라 `legacy_exception`으로 두고 누락 파일을
+결함이 아니라 이력으로 기록한다. track 디렉터리는 container로 인식해 하위 실험을 색인한다.
+source-manifest drift는 missing file과 분리해 보고한다(결과는 실행 당시 소스를 고정하므로 이후 커밋의
+변경은 손상이 아니라 이력이다). 실제 drift 1건이 그 경우였다.
+
+**Phase 3/6 — evidence index와 reproduction entry point.** `docs/RESEARCH_EVIDENCE_INDEX.md`는 7개 축
+각각에 question/method/최대로 말할 수 있는 것/status/경로/한계를 적는다. bounded claim을 그대로
+운반한다: P2·D1 FAIL과 P3 BLOCKED, P10 INCONCLUSIVE(적응 이득 미확립), S4 일반화 경고, E3-P
+ATTITUDE_NOT_RELIABLE, D8b `MATERIAL_LOSS` −48.967 pp, renderer `causality_vs_d8b = NOT_TESTED`.
+`docs/REPRODUCIBILITY.md`는 GPU 없이 되는 것/필요한 것/재배포 불가 데이터를 먼저 말한다.
+
+**Phase 4 — paper page editorial pass.** 8절의 D8→D9 로드맵 스트립(실험 연대기)을 **덜어내고**
+Reproducibility 절로 교체해 재현 진입점·evidence index·manifest로 보낸다. 연대기는 VERIFICATION·
+WORKLOG·날짜별 결과 페이지에 그대로 있다. 고정된 주장 문자열은 모두 살아 있다.
+
+**Phase 5 — release audit**(`docs/public_release_audit_2026-09-14.md`). 추적 바이너리 인벤토리:
+checkpoint 18개(49.5 MiB), PNG 64개, 아카이브 4개, npz 10개, JPEG 13개. **blocker 2건**은 모두
+CC BY-NC-SA 4.0 ETH ds5 파생물(JPEG 13개 + review ZIP)이며 **삭제·재라이선스하지 않고 보고만** 했다 —
+삭제는 커밋된 결과가 참조하는 증거를 파괴하고, 재라이선스는 이 저장소의 권한이 아니다.
+`NEEDS_CONFIRMATION` 4건(NavRL 복사 인벤토리, fork 기여자 저작권, Det-Fly 데이터셋 약관, NPS-Drones
+파생물)은 추론으로 닫지 않았다.
+
+**Phase 7 — 종료 상태**(`docs/repository_status_2026-09-14.json`): Envelope v2 COMPLETE(live
+NOT_APPLICABLE), Manifest v1 COMPLETE, Evidence Index COMPLETE, Renderer Contract v1 FROZEN,
+paper page REVIEWED, release audit COMPLETE_WITH_BLOCKERS. 제출 준비는 저장소 정리에 대한 것이지
+연구 결과가 충분하다는 주장이 아니다.
+
+검증: 전체 회귀 **1,869개 실행 / 실패 0 / 오류 0 / 기존 skip 4**, 63.9초(직전 1,852). 역사적 128행
+artifact는 `1475b0c2…78870a` 그대로이고 판정 두 가지도 그대로다. 정책 실행·평가·학습은 없었다.
