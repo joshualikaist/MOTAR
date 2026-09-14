@@ -95,6 +95,23 @@ def relativize_symlinks(root):
     return converted, removed
 
 
+def drop_dangling_symlinks(root):
+    """Remove links whose target does not exist at this commit.
+
+    These are already broken in the research repository - their target directory was removed long
+    ago - so nothing is lost by leaving them out of a release, and a published tree should not ship
+    pointers to nothing. The research repository keeps them exactly as they are.
+    """
+    dropped = []
+    for path in sorted(root.rglob("*")):
+        if path.is_symlink() and not path.exists():
+            target = os.readlink(path)
+            path.unlink()
+            dropped.append({"path": str(path.relative_to(root)), "target": target,
+                            "reason": "dangling in the source commit as well"})
+    return dropped
+
+
 def apply_exclusions(root):
     dropped = []
     for pattern, reason in EXCLUDE_GLOBS:
@@ -191,6 +208,7 @@ def main(argv=None):
     export_snapshot(commit, destination)
     converted, removed_links = relativize_symlinks(destination)
     dropped = apply_exclusions(destination)
+    dangling = drop_dangling_symlinks(destination)
     denied, denylist_record = denylist_hashes()
     matches, files_scanned, archives_opened = scan_for_denylisted(destination, denied)
     report = {
@@ -205,6 +223,7 @@ def main(argv=None):
         "symlinks_relativized": len(converted),
         "symlinks_removed_pointing_outside": removed_links,
         "excluded_paths": dropped,
+        "dangling_symlinks_dropped": dangling,
         "denylist": {"source": str(DENYLIST.relative_to(ROOT)),
                      "assets": len(denied),
                      "sha256": sha256_file(DENYLIST),
