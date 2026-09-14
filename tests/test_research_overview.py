@@ -54,7 +54,7 @@ class ResearchOverviewTest(unittest.TestCase):
         self.assertEqual(len(self.page.ids), len(set(self.page.ids)))
         for section in ('abstract','introduction','environment','arena','system','method',
                         'perception','safety-filter','appearance','experiments','algorithms',
-                        'evidence','discussion','next','availability'):
+                        'evidence','discussion','reproducibility','availability'):
             self.assertIn(section, self.page.ids)
         self.assertEqual(len(self.page.nav_links), 6)
         self.assertEqual(len(re.findall(r'<figure\b', self.text)), 8)
