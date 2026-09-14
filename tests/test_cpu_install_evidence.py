@@ -5,6 +5,8 @@ from pathlib import Path, PurePosixPath
 import subprocess
 import unittest
 
+from history_helpers import require_research_history
+
 ROOT = Path(__file__).resolve().parents[1]
 RESULT = ROOT / "results/renderer_cpu_install_2026-09-12"
 ARRAYS = {"rgb_flat", "rgb_lambertian", "depth_m", "range_m", "normal_world",
@@ -52,6 +54,8 @@ class CpuInstallEvidenceTest(unittest.TestCase):
                                          expected["sha256"])
 
     def test_two_runs_match_without_creating_an_experiment_verdict(self):
+
+        require_research_history(ROOT)
         runs = [json.loads((RESULT / name / "receipt.json").read_text())
                 for name in ("smoke1", "smoke2")]
         for run in runs:

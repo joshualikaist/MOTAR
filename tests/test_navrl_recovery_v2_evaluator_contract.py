@@ -6,6 +6,8 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+
+from history_helpers import require_research_history
 from unittest import mock
 
 
@@ -155,6 +157,8 @@ class RecoveryV2EvaluatorContractTest(unittest.TestCase):
                     GATE.validate_braking_probe_values(values)
 
     def test_v1_evaluator_bytes_remain_unchanged(self):
+
+        require_research_history(ROOT)
         expected = GATE.git("show", "afb48c4:%s" % GATE.BASE_PATH.relative_to(ROOT))
         self.assertEqual(GATE.BASE_PATH.read_text(encoding="utf-8").rstrip(), expected.rstrip())
 

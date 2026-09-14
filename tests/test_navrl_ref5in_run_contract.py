@@ -11,6 +11,8 @@ import tempfile
 import types
 import unittest
 
+from history_helpers import require_local_evidence
+
 
 ROOT = Path(__file__).resolve().parents[1]
 RL = ROOT / "aerial_gym/rl_training/rl_games"
@@ -160,6 +162,8 @@ class Ref5inSmokeLauncherContract(unittest.TestCase):
             self.assertIn(literal, source)
 
     def test_d1_is_a_closed_q3_continuation_not_p3(self):
+
+        require_local_evidence(ROOT / "aerial_gym/rl_training/rl_games/runs")
         completed = subprocess.run(
             [str(D1_LAUNCHER)],
             cwd=RL,

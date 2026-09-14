@@ -5,6 +5,8 @@ import os
 from pathlib import Path
 import tempfile
 import unittest
+
+from history_helpers import require_local_evidence
 from unittest import mock
 
 
@@ -90,10 +92,13 @@ class TestP2Decision(unittest.TestCase):
 
 class TestP2Provenance(unittest.TestCase):
     def test_frozen_p1c_snapshot_retains_exact_runtime_digest(self):
+        require_local_evidence(ROOT / "aerial_gym/rl_training/rl_games/train_source_receipts")
         training, _ = P2.manifest_map(P2.P1_MANIFEST, 1, require_original=False)
         self.assertEqual(P2.map_digest(training), P2.P1_RUNTIME_MAP_SHA)
 
     def test_historical_verify_does_not_require_current_runtime(self):
+
+        require_local_evidence(ROOT / "aerial_gym/rl_training/rl_games/train_source_receipts")
         with mock.patch.object(
             P2, "current_runtime_map", side_effect=AssertionError("must not be called")
         ):

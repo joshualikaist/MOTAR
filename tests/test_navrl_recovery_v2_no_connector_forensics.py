@@ -6,6 +6,8 @@ import math
 import sys
 import tempfile
 import unittest
+
+from history_helpers import require_local_evidence
 from pathlib import Path
 from unittest import mock
 
@@ -269,6 +271,8 @@ class NoConnectorForensicsContractTest(unittest.TestCase):
         self.assertEqual(recorder.last_replan_status[1], "unsafe_start")
 
     def test_child_env_is_recovery_v2_lower_1p25_without_packed_telemetry_or_1p5(self):
+
+        require_local_evidence(ROOT / "results/navrl_physical_target_braking_lower1p25_headingrest_seed827/receipt.json")
         frozen = MOD.FROZEN_CHILD_ENV
         self.assertEqual(frozen["NAVRL_TARGET_BRAKING_CONTRACT_VARIANT"], "baseline_1p25")
         self.assertEqual(frozen["NAVRL_NUM_BARS"], "70")

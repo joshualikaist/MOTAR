@@ -121,6 +121,8 @@ class BackgroundComparisonTest(unittest.TestCase):
             compare.verify_evidence(self.paths[0], self.a)
 
     def test_tampered_source_hash_rejected(self):
+
+        require_research_history(ROOT)
         self.a["source"]["files"]["tools/run_renderer_background_validation.py"]["sha256"] = "0" * 64
         with self.assertRaisesRegex(ValueError, "Source SHA mismatch"):
             compare.verify_evidence(self.paths[0], self.a)

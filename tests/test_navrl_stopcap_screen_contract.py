@@ -3,6 +3,8 @@ from __future__ import annotations
 import importlib.util
 import json
 import unittest
+
+from history_helpers import require_research_history
 from pathlib import Path
 
 
@@ -17,6 +19,7 @@ RESULT = ROOT / "results/navrl_v2_ep25000_stopcap_seed49_screen"
 
 class StopcapScreenContractTest(unittest.TestCase):
     def test_canonical_schema2_receipts_validate(self):
+        require_research_history(ROOT)
         rows = [MODULE.load_cell(RESULT, tag) for tag in MODULE.TAGS]
         self.assertEqual([row["tag"] for row in rows], list(MODULE.TAGS))
         self.assertEqual([row["mode"] for row in rows], [

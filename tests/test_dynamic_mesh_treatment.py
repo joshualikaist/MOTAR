@@ -12,6 +12,8 @@ import sys
 import types
 import unittest
 
+from history_helpers import require_research_history
+
 import numpy as np
 import torch  # Load before the Warp stub; torch inspection expects real module attributes.
 
@@ -345,6 +347,8 @@ class EvidenceContract(unittest.TestCase):
         self.assertTrue(self.receipt["protocol"]["fixed_actions"])
 
     def test_receipt_sources_match_the_recorded_clean_commit_not_the_later_tree(self):
+
+        require_research_history(ROOT)
         commit = self.receipt["provenance"]["head"]
         self.assertEqual(commit, "c50a26d86f820611da879a84e3a252c787bd3dd9")
         for path, expected in self.receipt["source_sha256"].items():

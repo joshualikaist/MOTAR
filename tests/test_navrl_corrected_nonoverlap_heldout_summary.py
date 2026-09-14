@@ -3,6 +3,8 @@ from __future__ import annotations
 import importlib.util
 import subprocess
 import unittest
+
+from history_helpers import require_research_history
 from pathlib import Path
 
 
@@ -26,6 +28,8 @@ class HeldoutSummaryTest(unittest.TestCase):
         self.assertGreater(hi, 1715 / 2049)
 
     def test_runtime_sources_are_still_attested(self):
+
+        require_research_history(ROOT)
         """Source attestation must survive disk reclamation, because later work cites this sweep.
 
         The snapshot directory and the cell logs were reclaimed, and eleven runtime files have

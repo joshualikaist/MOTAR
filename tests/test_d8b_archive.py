@@ -6,6 +6,8 @@ from pathlib import Path
 import shutil
 import tempfile
 import unittest
+
+from history_helpers import require_research_history
 from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -80,6 +82,8 @@ class ArchiveContracts(unittest.TestCase):
             self.audit.read(path)
 
     def test_portable_archive_without_local_snapshots_or_absolute_aliases(self):
+
+        require_research_history(ROOT)
         with tempfile.TemporaryDirectory(prefix="d8b-archive-test-") as tmp:
             package = Path(tmp)
             # Only the retained evidence: no checkpoint, source snapshot or absolute symlink.
@@ -98,6 +102,8 @@ class ArchiveContracts(unittest.TestCase):
                 self.assertFalse(report["local_snapshots_checked"])
 
     def test_summary_primary_shape_tampering_rejected(self):
+
+        require_research_history(ROOT)
         original = self.audit.read
         def changed(path):
             result = original(path)

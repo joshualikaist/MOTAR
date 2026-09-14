@@ -6,12 +6,15 @@ from pathlib import Path
 import shutil
 import tempfile
 import unittest
+
+from history_helpers import require_local_evidence
 from unittest import mock
 
 import torch
 from torch.utils.tensorboard import SummaryWriter
 
 
+_REPO_ROOT = Path(__file__).resolve().parents[1]
 _MODULE_PATH = Path(__file__).resolve().parents[1] / "tools/update_status_snapshot.py"
 _SPEC = importlib.util.spec_from_file_location("update_status_snapshot", _MODULE_PATH)
 _STATUS = importlib.util.module_from_spec(_SPEC)
@@ -458,6 +461,10 @@ class StatusSnapshotTest(unittest.TestCase):
         )
 
     def test_recovery_v2_gate_rejects_malformed_and_receipt_unbound_temp_summary(self):
+
+        require_local_evidence(
+            _REPO_ROOT / "results/navrl_physical_target_recovery_v2_gate_lower1p25_seed827/summary.json",
+            _REPO_ROOT / "results/navrl_physical_target_recovery_v2_no_connector_forensics_seed827/summary.json")
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             malformed = root / "malformed.json"
@@ -481,6 +488,10 @@ class StatusSnapshotTest(unittest.TestCase):
             self.assertEqual(block["status"], "RESULT_UNAVAILABLE_OR_MALFORMED")
 
     def test_recovery_v2_gate_rejects_duplicate_identity_and_impossible_fallback(self):
+
+        require_local_evidence(
+            _REPO_ROOT / "results/navrl_physical_target_recovery_v2_gate_lower1p25_seed827/summary.json",
+            _REPO_ROOT / "results/navrl_physical_target_recovery_v2_no_connector_forensics_seed827/summary.json")
         payload = json.loads(
             _STATUS.RECOVERY_V2_LOWER1P25_GATE_PATH.read_text(encoding="utf-8")
         )
@@ -513,6 +524,10 @@ class StatusSnapshotTest(unittest.TestCase):
         self.assertEqual(block["status"], "RESULT_UNAVAILABLE_OR_MALFORMED")
 
     def test_recovery_v2_no_anchor_rejects_impossible_counts(self):
+
+        require_local_evidence(
+            _REPO_ROOT / "results/navrl_physical_target_recovery_v2_gate_lower1p25_seed827/summary.json",
+            _REPO_ROOT / "results/navrl_physical_target_recovery_v2_no_connector_forensics_seed827/summary.json")
         payload = json.loads(
             _STATUS.RECOVERY_V2_NO_CONNECTOR_FORENSICS_PATH.read_text(encoding="utf-8")
         )

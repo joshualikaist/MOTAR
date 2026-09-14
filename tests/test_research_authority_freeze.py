@@ -4,6 +4,8 @@ from pathlib import Path
 import tempfile
 import unittest
 
+from history_helpers import require_local_evidence
+
 
 ROOT = Path(__file__).resolve().parents[1]
 SPEC = importlib.util.spec_from_file_location(
@@ -15,6 +17,7 @@ SPEC.loader.exec_module(MODULE)
 
 class TestResearchAuthorityFreeze(unittest.TestCase):
     def test_frozen_authority_matches_result_summaries(self):
+        require_local_evidence(ROOT / "results/navrl_physical_target_recovery_v2_gate_lower1p25_seed827/summary.json")
         receipt = MODULE.verify_authority()
         self.assertFalse(receipt["track_a"]["stage2_authorised"])
         self.assertFalse(receipt["track_b"]["long_training_authorized"])
@@ -44,11 +47,15 @@ class TestResearchAuthorityFreeze(unittest.TestCase):
         )
 
     def test_track_b_prohibits_training_and_retuning(self):
+
+        require_local_evidence(ROOT / "results/navrl_physical_target_recovery_v2_gate_lower1p25_seed827/summary.json")
         receipt = MODULE.verify_authority()
         prohibited = set(receipt["track_b"]["prohibited"])
         self.assertTrue({"ppo_training", "gain_or_margin_retune", "cell_or_grid_rerun"} <= prohibited)
 
     def test_route_off_smoke_is_narrow_and_does_not_reverse_routed_fail(self):
+
+        require_local_evidence(ROOT / "results/navrl_physical_target_recovery_v2_gate_lower1p25_seed827/summary.json")
         receipt = MODULE.verify_authority()
         corrected = receipt["corrected_environment_v2_2026_08_27"]
         self.assertFalse(corrected["route_physical_gate_r2"]["authorizes_ppo"])

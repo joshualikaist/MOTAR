@@ -5,6 +5,8 @@ import subprocess
 import tempfile
 import unittest
 
+from history_helpers import require_research_history
+
 
 ROOT = Path(__file__).resolve().parents[1]
 TOOLS = ROOT / "tools"
@@ -115,6 +117,8 @@ class PhysicalTargetBrakingContractTest(unittest.TestCase):
             verifier.validate_cell(cells[0])
 
     def test_summary_and_receipt_are_immutable_and_relative(self):
+
+        require_research_history(ROOT)
         with tempfile.TemporaryDirectory() as temporary:
             output = Path(temporary) / "braking"
             output.mkdir()
@@ -212,6 +216,8 @@ class PhysicalTargetBrakingContractTest(unittest.TestCase):
         self.assertEqual(lateral_peak, 0.05)
 
     def test_core_files_are_not_modified_by_this_lineage(self):
+
+        require_research_history(ROOT)
         changed = subprocess.run(
             ["git", "diff", "--name-only", "393d1a2^", "c82035f", "--", *probe.CORE_PATHS],
             cwd=str(ROOT), text=True, stdout=subprocess.PIPE, check=True,
