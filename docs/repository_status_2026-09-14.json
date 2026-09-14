@@ -1,0 +1,39 @@
+{
+  "record": "repository_engineering_status",
+  "as_of": "2026-09-14",
+  "tracks": {
+    "record_envelope_v2": {
+      "status": "COMPLETE",
+      "qualification": "The contract, producer, preflight/postflight gates, checker integration and tests are complete. Live generation validation is NOT_APPLICABLE: the contract is task-shaped and no generic producer can fill density_bars or the checkpoint fields honestly.",
+      "evidence": "docs/record_envelope_v2_2026-09-14.md"
+    },
+    "experiment_manifest_v1": {
+      "status": "COMPLETE",
+      "qualification": "201 result entries indexed by identity, provenance, status string and hashes. It interprets no research quantity. 176 directories predate the current convention and are recorded as legacy exceptions rather than defects.",
+      "evidence": "results/MANIFEST.json"
+    },
+    "evidence_index": {
+      "status": "COMPLETE",
+      "qualification": "Seven axes, each with its strongest supported claim and its limitation. Negative, inconclusive and blocked results are listed, not hidden.",
+      "evidence": "docs/RESEARCH_EVIDENCE_INDEX.md"
+    },
+    "renderer_contract_v1": {
+      "status": "FROZEN",
+      "qualification": "Not a blanket renderer pass: area control NOT_ADOPTED, normals N0_ONLY, and the RC-R1/R2/R3 negative verdicts stand.",
+      "evidence": "docs/renderer_track_v1_freeze_2026-09-14.md"
+    },
+    "public_paper_page": {
+      "status": "REVIEWED",
+      "qualification": "Editorial pass removed the experiment-chronology roadmap block and added a Reproducibility section. The page keeps eight figures and three tables; further reduction was not attempted because each remaining figure is referenced by a pinned caption test.",
+      "evidence": "docs/status/index.html"
+    },
+    "release_audit": {
+      "status": "COMPLETE_WITH_BLOCKERS",
+      "qualification": "Two blockers remain, both CC BY-NC-SA 4.0 ETH ds5 derived material: 13 tracked JPEGs and one review ZIP. Four items stay NEEDS_CONFIRMATION. Nothing was deleted or relicensed.",
+      "evidence": "docs/public_release_audit_2026-09-14.md"
+    }
+  },
+  "submission_readiness": "Repository and research-engineering artefacts are organized and indexed. This is not a claim that the research results are sufficient for any particular submission, and the release blockers above are unresolved.",
+  "scope": "Repository engineering status only; no research claim is made or changed here",
+  "causality_vs_d8b": "NOT_TESTED"
+}
