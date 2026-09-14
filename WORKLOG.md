@@ -18467,3 +18467,42 @@ public docs/schema, CFF 검사 PASS. 최종 문서 수정 뒤 docs/schema와 외
 
 다음 선택은 필요할 경우 **별도 clean public-release repository**를 명시적으로 승인받아 만드는
 것이다. 이번에는 history rewrite/force push/새 repo 생성 없이 normal fast-forward push만 한다.
+
+## 2026-09-14 (5) — clean public-release candidate (로컬 완성, 공개 없음)
+
+기존 MOTAR history는 **전혀 변경하지 않았다**(rewrite·filter·force 없음). 대신 현재 commit의 내용만
+담은 별도 스냅샷을 로컬에 만들었다: `../MOTAR-public-release-candidate/`.
+
+**빌더**(`tools/build_public_release_candidate.py`)는 `git archive`로 내보내 `.git`을 상속하지 않고,
+저장소 내부 절대 symlink 272개를 상대 경로로 바꾸고, 문서화된 제외 규칙을 적용한 뒤 **스스로를
+반증하려 시도한다**: 모든 정규 파일과 **모든 아카이브 멤버**를 denylist 해시와 대조한다. ZIP 안에 숨은
+이미지도 재배포이기 때문이다. denylist는 79209d8에서 제거된 ETH ds5 파생물 14개의 내용 해시
+(`docs/public_release_denylist.json`)다.
+
+**결과: `ETH_DENYLIST_MATCHES = 0`** (파일 5,310개·아카이브 멤버 71개 대조). 해시/파일명이 receipt
+안에 **문자열로** 남아 있는 것은 provenance라서 유지한다 — 이건 바이트가 아니다.
+
+정책은 `docs/public_release_file_policy.md`에 적었다. 제외는 (1) ETH 파생물 14개, (2) `.git`,
+(3) 캐시, (4) **source commit에서 이미 깨져 있던** symlink 3개뿐이다.
+
+빌드가 드러낸 **기존 저장소의 세 가지 비자립성**:
+1. 일부 증거 테스트가 연구 history의 특정 commit을 검증한다 — 스냅샷에는 그 commit이 없다.
+2. 일부는 `.gitignore`가 "immutable local receipts with raw traces"로 **의도적으로 제외**한 번들
+   (`..._recovery_v2_gate_lower1p25_seed827` 57 MB 등)을 직접 읽는다. `check_research_authority.py`가
+   그 안의 `summary.json`을 frozen evidence로 요구하므로 **어떤 clone에서도 실패**한다.
+3. 일부는 추적되지 않은 학습 체크포인트/receipt를 요구한다.
+셋 다 내 빌드가 만든 문제가 아니라 측정해서 드러난 기존 속성이다. 해당 검사들은 이제 stack trace 대신
+**사유를 명시하고 skip**한다(`tests/history_helpers.py`). 연구 저장소에서는 가드가 무력해 그대로 실행된다.
+스냅샷 판별은 SHA 목록이 아니라 "commit 1개·조상 없음"이라는 일반 규칙을 쓴다.
+
+manifest 빌더도 고쳤다: 추적되지 않은 결과 디렉터리 3개를 `untracked_results`로 드러내고, git이 없는
+스냅샷에서는 legacy 분류를 "모른다"고 하거나 연구 manifest에서 **상속**하며 그 manifest 해시를 기록한다.
+릴리스 색인은 `results/RELEASE_MANIFEST.json`(198개)로 연구 `MANIFEST.json`(201개)과 **덮어쓰지 않고**
+분리했다.
+
+검증(후보 안에서): 전체 스위트 **1,884개 / 실패 0 / skip 29**(가드된 history·local evidence),
+공개 문서 PASS, CITATION.cff 파싱 OK, 절대 경로는 공개 재현 경로 13개 파일에서 **0건**, 시크릿 0건.
+별도 임시 디렉터리로 **clean clone**해서 다시 돌린 결과도 동일하게 통과했고 진입 문서의 깨진 링크는 0이다.
+
+후보 저장소는 로컬에서만 `git init` + 첫 commit까지 했다(`Initial public release snapshot from MOTAR
+research commit …`). **remote 생성·push·기존 MOTAR visibility 변경은 하지 않았다.**
