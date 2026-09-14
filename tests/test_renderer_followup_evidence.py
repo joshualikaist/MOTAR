@@ -6,6 +6,8 @@ from pathlib import Path
 import subprocess
 import unittest
 
+from history_helpers import require_research_history
+
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -21,6 +23,7 @@ def load(stage):
 
 class FollowupEvidence(unittest.TestCase):
     def test_all_receipts_match_files_committed_sources_and_preregistration_ancestor(self):
+        require_research_history(ROOT)
         for stage in ("r5b", "r1b", "r2b", "r3b"):
             result = folder(stage)
             receipt = json.loads((result / "receipt.json").read_text())
@@ -130,6 +133,7 @@ class FollowupEvidence(unittest.TestCase):
 
     def test_first_rc_lineage_bytes_are_untouched(self):
         old = "32ee105309bd96b3b88f411da7b1f29d83341496"
+        require_research_history(ROOT, old)
         paths = ["results/renderer_characterization_2026-09-13",
                  "docs/assets/paper/renderer-characterization-2026-09-13"]
         listed = subprocess.check_output(["git", "ls-tree", "-r", "--name-only", old, "--", *paths],

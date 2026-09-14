@@ -7,6 +7,8 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+
+from history_helpers import require_research_history
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -104,6 +106,7 @@ class BackgroundComparisonTest(unittest.TestCase):
         self.assertEqual(compare.compare_receipts(self.a, self.a)["verdict"], "FAIL")
 
     def test_raw_arrays_and_historical_git_sources_verify(self):
+        require_research_history(ROOT)
         for path, record in zip(self.paths, (self.a, self.b)):
             self.assertTrue(compare.verify_evidence(path, record))
 
@@ -136,6 +139,7 @@ class BackgroundComparisonTest(unittest.TestCase):
                     compare.load_receipt(path)
 
     def test_cli_read_only_pass(self):
+        require_research_history(ROOT)
         with contextlib.redirect_stdout(io.StringIO()):
             self.assertEqual(compare.main(["--run", str(self.paths[0]), "--run", str(self.paths[1])]), 0)
 

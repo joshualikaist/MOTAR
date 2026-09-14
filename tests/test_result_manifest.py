@@ -17,7 +17,10 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 import build_result_manifest as builder
 
-MANIFEST = ROOT / "results/MANIFEST.json"
+# A release snapshot ships RELEASE_MANIFEST.json describing itself, and may also carry the research
+# index for provenance. Validate the one that describes the tree these tests are running in.
+RELEASE_MANIFEST = ROOT / "results/RELEASE_MANIFEST.json"
+MANIFEST = RELEASE_MANIFEST if RELEASE_MANIFEST.is_file() else ROOT / "results/MANIFEST.json"
 FORBIDDEN_QUANTITIES = ("capture_rate", "crash_rate", "reach_rate", "mean_nc", "improvement",
                         "failure_cause", "pp", "p_value", "confidence_interval")
 
@@ -152,6 +155,8 @@ class CommittedManifestTest(unittest.TestCase):
         why.
         """
         manifest = self.manifest
+        if not manifest.get("git_available", True):
+            self.skipTest("a snapshot without Git cannot determine tracking")
         untracked = manifest["issues"]["untracked_results"]
         self.assertEqual(manifest["counts"]["untracked_in_git"], len(untracked))
         by_id = {row["result_id"]: row for row in manifest["results"]}
