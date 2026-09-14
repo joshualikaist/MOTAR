@@ -18301,3 +18301,44 @@ remove that intended operational role"라고 적고 있었다. 소유자가 2026
 
 검증: 전체 회귀 **1,784개 실행 / 실패 0 / 오류 0 / 기존 skip 4**(직전 1,751). 정책·보상·검출기·
 연관·필터·컨트롤러·종료와 기존 결과는 변경하지 않았다. D8b와의 인과는 계속 `NOT_TESTED`다.
+
+## 2026-09-14 (3) — 정책 비실행 범위의 기록 무결성·CPU 계측 검사
+
+사용자는 12셀 평가 대신 **정책 실행과 분리된 로그 스키마·해시·중복·누락 검사, 합성 데이터 계측,
+공개/renderer/metadata 회귀 검사** 범위에 동의했다. 이번에는 TD full sweep, acquisition/terminal
+성능 분석·분류, 모델/컨트롤러/계측 hook 수정이 없다. 위 TD 계측 상태나 원래 trajectory verdict를
+이 검사로 다시 쓰지 않는다. 시작 HEAD/origin `7451577`, clean. 커밋·푸시는 하지 않았다.
+
+새 stdlib 도구 `tools/check_record_integrity.py`는 generic JSON record envelope만 검사한다.
+SHA와 strict JSON(중복 key·NaN/Infinity·비유한 숫자), 필수 key·null/type·SHA 형식, 복합 ID 중복,
+context 일치, row count를 검사하며 값이나 operational metric은 출력하지 않는다. 오류 행은 보존,
+output 덮어쓰기 거부. 감사 계약 `docs/record_envelope_audit_2026-09-14.json`은 기존 파일을 열람한
+뒤 작성한 소프트웨어 검사 계약이지 prospective experiment preregistration이 아니다.
+
+**발견:** `results/task_diagnostics_invariance_2026-09-14/on_episode_forensics.json` 128행의
+`seed`·`density_bars`가 전부 null이고 `checkpoint_sha256`은 해시가 아닌 파일 경로다. context도
+같다. 선언한 metadata 계약에는 `INVALID_FOR_DECLARED_CONTRACT` (null 258건, SHA 형식 129건,
+context 포함). 파일 SHA `1475b0c226e9…78870a`는 원래 Git blob과 일치하고, 중복 ID 0·비유한 값 0·
+필수 key 자체 누락 0이다. 원본·checkpoint를 수정/열람하거나 주변 receipt로 값을 추정하지 않았다.
+이 판정은 파일 byte 손상이나 기존 invariance smoke의 VOID 판정이 아니다. 원본 조회 검사 7.35 ms.
+
+새 `benchmark_record_integrity.py`는 generic 5필드 합성 row 128/10,000/100,000개에만 실행했다.
+총 21.999초; 직렬화+hash+parse+validation 평균 0.593/45.402/468.670 ms, P95
+0.602/45.914/472.571 ms. 3 timing batches×5 samples, 총 225 raw sample의 요약 독립 재계산 일치.
+실기/시뮬레이터 계측 overhead나 12셀 소요시간으로 환산하지 않는다. 디스크 fsync·GPU도 미측정.
+
+검증 harness의 실패 2건도 보존했다. 첫 시도는 aerialgym에 jsonschema가 없어 문서 검사 실패;
+기존 별도 docs 환경(jsonschema 3.2.0, cffconvert 2.0.0, PyYAML 6.0.2, pip check PASS)을 사용해
+해소했다. **패키지 설치/환경 변경 0**. 두 번째는 내가 cffconvert를 `python -m`으로 호출했는데
+그 패키지에는 __main__이 없었다. 설치된 CLI entrypoint 호출로 수정했다. 첫/둘째 run의 logs,
+summary, runner source snapshot은 새 결과 디렉터리에 그대로 남겼다.
+
+최종 **선택된 회귀 358개 PASS / 실패·오류·skip 0**, 문서/CFF/Node 검사도 PASS, 14.311초.
+이 중 신규 generic 테스트 27개. 기존 test 수정/삭제/skip/약화 0. 이는 public/독립 renderer/
+metadata allowlist이고, **기존 1,784개 전체 스위트는 NOT_RUN**이다. CUDA_VISIBLE_DEVICES 빈 값,
+OMP/MKL threads 2. task/policy suites는 선택하지 않았다.
+
+결과·명령·범위·재현 소스 hash 및 시간 기록:
+`results/record_integrity_review_2026-09-14/README.md`, `summary.json`, `receipt.json`.
+기존 renderer 및 task code/result는 그대로다. 알려진 결함은 metadata 완전성 문제로 남기며,
+이를 근거로 성능 병목이나 다음 시스템 개선을 선택하지 않았다.
