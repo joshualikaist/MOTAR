@@ -18506,3 +18506,15 @@ manifest 빌더도 고쳤다: 추적되지 않은 결과 디렉터리 3개를 `u
 
 후보 저장소는 로컬에서만 `git init` + 첫 commit까지 했다(`Initial public release snapshot from MOTAR
 research commit …`). **remote 생성·push·기존 MOTAR visibility 변경은 하지 않았다.**
+
+## 2026-09-15 — Pages 랜딩의 저장소 루트 링크 404
+
+공개 사이트 `https://joshualikaist.github.io/MOTAR/status/`는 `/docs`만 배포한다.
+`docs/status/index.html`의 `../../CITATION.cff` 등은 Pages 루트를 벗어나
+`https://joshualikaist.github.io/CITATION.cff`로 해석되어 404였다. Code 링크
+`github.com/joshualikaist/MOTAR`도 비공개 저장소라 로그아웃 방문자는 404였다.
+
+랜딩 페이지의 저장소 루트·results 링크를 공개 스냅샷
+`https://github.com/joshualikaist/MOTAR-public/blob/main/…`으로 바꿨다.
+해시 고정된 `archive-2026-09-13.html`은 수정하지 않았다. 과학 결과·시뮬레이터 코드는
+변경하지 않았다.
