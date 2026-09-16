@@ -18529,3 +18529,53 @@ with Measured Perception Uncertainty`로 바뀌어 앞글자와 맞지 않았다
 
 사이트 부제·title, README 첫 줄, `CITATION.cff` title을 원문 약자로 되돌렸다.
 본문의 interception/rendezvous 구분 설명은 그대로 둔다. archive 페이지는 해시 고정이라 수정하지 않았다.
+
+## 2026-09-16 — matched baseline, 외부 문헌 관계, 상태 registry, target behavior ladder
+
+현재 main `195ad05`의 README·VERIFICATION·evidence index·plans·results·status site를 다시
+대조했다. 사이트에는 D8b primary contrast 외에 같은 계약 안의 정량 baseline 비교가 거의
+없었고, P8/P9/D8-A/D8b 완료 뒤에도 그림에 generic dashed future 표현이 남아 있었다.
+
+원 result 문서를 다시 읽어 Section 6에 8개 matched row를 추가했다: arc−riskcap
+−1.4903 pp [−1.8981, −1.0826], 205-bar arc width crash −5.60/capture +4.44 pp,
+riskcap adaptation capture +3.75 pp [1.30, 6.19], latency correction +40.21 pp,
+learned detector NI −0.015 pp [−1.752, 1.723], P7 utility +0.00697, P10 +0.73 pp
+[−1.04, 2.50] INCONCLUSIVE, D8b −48.967 pp [−50.113, −47.821] MATERIAL_LOSS.
+새 근거 검사 9개가 사이트 문자열과 각 원 result를 함께 고정한다.
+
+외부 시스템은 17개를 1차 검토하고 NavRL/NavRL++, YOPO/YOPOv2-Tracker, OPEN, AgilePE,
+FlowPilot, role-based MADDPG, PILOT, Temporal Barrier 10개를 사이트에 남겼다. 같은 benchmark와
+metric인 Class A는 0개다. 공개 코드가 있어 향후 port 후보인 NavRL/YOPO/OPEN만 B, 나머지는
+현재 C이며 외부 논문 percentage를 MOTAR 수치에서 빼지 않았다.
+
+`docs/research_status_registry.json`은 lifecycle과 evidence verdict를 분리한다.
+COMPLETED/PLANNED/BLOCKED/NOT_TESTED/ARCHIVED_WITHDRAWN 5종을 badge·선 스타일로 표시하며
+P10 INCONCLUSIVE, D8b MATERIAL_LOSS, D8c NOT_STARTED, D9 NOT_RUN을 보호한다. P6–P9와
+D8-A/D8b 그림은 완료 lifecycle로 재생성했고 live RGB→policy는 dotted NOT_TESTED,
+SAM candidate는 ARCHIVED, degree bearing/metric range/persistent ID switch는 BLOCKED다.
+
+Target motion은 새로 추정하지 않고 기존 구현을 감사했다. legacy는 CV/waypoint와 순간 wall
+reflection/push-out, bounded는 4 m/s²·150 deg/s·1 s lookahead의 obstacle-aware receding horizon,
+physical은 100 Hz PhysX/motor actor와 optional GT-obstacle global route다. 브라우저 기본은
+routed-preview이며 target은 pursuer에 반응하지 않는다. TM-E0 static, TM-E1 CV, TM-E2
+obstacle-aware scripted를 opt-in `NAVRL_TARGET_BEHAVIOR_LEVEL`로 노출했고 historical default는
+그대로다. TM-E2는 target-side obstacle GT만 사용하며 pursuer observation은 바꾸지 않는다.
+TM-E3/TM-E4는 선택 시 fail closed한다. 새 PPO나 E0/E1/E2 policy grid는 실행하지 않았고
+기존 physical `FAIL_ROUTE_MECHANISM`도 유지했다.
+
+제목은 `MOTAR: Moving Object Tracking And Reinforcement Learning for UAV Pursuit in Random
+Obstacle Fields`로 README/site/CFF/Figure 1 caption에 통일했다. 최종 research 전체 unittest
+**1,906개 / 실패·오류 0 / 기존 skip 4**, 59.154초. target-motion 29,
+source-bound comparison 9, overview 16,
+public-doc 7, Node site/manifest/arena와 CFF/schema가 PASS했다. 브라우저 검수에서 800 px
+literature-table overflow를 발견해 내부 scroll로 수정했고 desktop/tablet/mobile 모두
+document overflow 0, component status 19행 로드, 이미지·WebGL·fail-closed PASS다.
+공개 스냅샷의 Node route 검사는 연구 ancestor `a373202`가 없어 처음 실패했다. 연구 저장소에서는
+hash 검사를 유지하고, `RELEASE_PROVENANCE.md`가 있는 공개 스냅샷에서만 그 ancestor hash 한 항목을
+명시적으로 skip하며 현재 route geometry/determinism 검사는 계속 실행하도록 고쳤다.
+공개 스냅샷 full unittest도 후속 public commit이 1개를 넘으면서 기존 `commit_count < 2`
+판별이 무력화되어 1 failure/12 errors를 냈다. snapshot은 영구히 1-commit일 필요가 없으므로
+`RELEASE_PROVENANCE.md`의 세 문구를 durable marker로 검증하게 고쳤다. 파일명만 만든 가짜 marker는
+인정하지 않고, research checkout에서는 모든 ancestor 검사가 그대로 실행된다.
+수정 후 공개 스냅샷 전체 suite는 **1,906개 / 실패·오류 0 / skip 29**, 52.662초로 통과했다.
+29 skip은 snapshot에 의도적으로 없는 research ancestor/local evidence를 사유와 함께 표시한다.
