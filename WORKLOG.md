@@ -18518,3 +18518,14 @@ research commit …`). **remote 생성·push·기존 MOTAR visibility 변경은 
 `https://github.com/joshualikaist/MOTAR-public/blob/main/…`으로 바꿨다.
 해시 고정된 `archive-2026-09-13.html`은 수정하지 않았다. 과학 결과·시뮬레이터 코드는
 변경하지 않았다.
+
+## 2026-09-16 — MOTAR 약자 복원
+
+원래 이름은 `9f67ca3`(2026-07-09)의
+`Moving Object Tracking and Reinforcement-Learning-Based Approach for UAV Navigation in Random Obstacle Fields`
+이다. `22f952e`(2026-07-22) README 축약에서 약자가 한 줄로 줄었고,
+`23d48b5`(2026-09-13) 논문형 사이트 부제가 `Moving-Target Rendezvous in Dense Obstacle Environments
+with Measured Perception Uncertainty`로 바뀌어 앞글자와 맞지 않았다.
+
+사이트 부제·title, README 첫 줄, `CITATION.cff` title을 원문 약자로 되돌렸다.
+본문의 interception/rendezvous 구분 설명은 그대로 둔다. archive 페이지는 해시 고정이라 수정하지 않았다.
