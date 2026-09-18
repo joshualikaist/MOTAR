@@ -140,13 +140,32 @@ class ThresholdProvenance(unittest.TestCase):
                     pattern.search(line),
                     f"{path.name}:{line_no} describes a materiality threshold as preregistered")
 
-    def test_a_preregistered_threshold_claim_would_need_a_commit(self):
-        """The provenance claim is checkable: no commit ever introduced the threshold."""
+    # The preregistration and its GO attestation. Anything reachable from here
+    # predates measurement; anything after it cannot be a preregistered rule.
+    PREREG_COMMIT = "096eee5"
+
+    def test_no_pre_measurement_commit_ever_introduced_the_threshold(self):
+        """The provenance claim is mechanically checkable.
+
+        The threshold may legitimately appear in LATER commits -- this result
+        package documents it at length in order to withdraw it. What must stay
+        empty is the history up to and including the preregistration, because a
+        rule that appears only afterwards cannot have been preregistered.
+        """
         out = subprocess.run(
-            ["git", "log", "--all", "--oneline", "-S", "material_threshold"],
+            ["git", "log", self.PREREG_COMMIT, "--oneline", "-S", "material_threshold"],
             cwd=ROOT, capture_output=True, text=True, timeout=120)
-        self.assertEqual("", out.stdout.strip(),
-                         "a commit now introduces material_threshold; re-audit the provenance")
+        self.assertEqual(
+            "", out.stdout.strip(),
+            "a pre-measurement commit introduces material_threshold; re-audit the provenance")
+
+    def test_the_threshold_is_only_ever_mentioned_in_order_to_withdraw_it(self):
+        for path in (DOC, DEVIATIONS):
+            text = path.read_text(encoding="utf-8")
+            if "material_threshold" not in text and "5 pp" not in text:
+                continue
+            self.assertRegex(text, r"(?i)not[_ ]preregistered",
+                             f"{path.name} mentions the threshold without withdrawing it")
 
     def test_verdict_is_the_narrow_scoped_phrase(self):
         v = load(SUMMARY)["retraining_verdict"]
