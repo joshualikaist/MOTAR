@@ -271,7 +271,7 @@ Each row is a within-repository matched-baseline contrast, bound to the result f
 | P10 policy readaptation | Frozen source under measured error | Readapted policy under measured error | +0.73 pp; 95% CI [-1.04, +2.5] pp; residual cost after readaptation -1.90 / -2.71 / -3.84 pp per seed; clean retention -1.02 pp mean | **INCONCLUSIVE** | [`perception_p10_seed_replication_2026-09-10`](../results/perception_p10_seed_replication_2026-09-10/README.md) |
 | D8b mesh observation treatment | Analytic observation | Mesh-shaded observation | -48.967 pp; 95% CI [-50.113, -47.821] pp | **MATERIAL_LOSS** | [`dynamic_mesh_policy_sensitivity_d8b_2026-09-13`](../results/dynamic_mesh_policy_sensitivity_d8b_2026-09-13/README.md) |
 | Image-size-to-range proxy (ETH ds5) | n/a (measurement, not a contrast) | Held-out apparent-size range estimate | 6.2 %; 3,107 frames, 9 blocks, 30.7-108.4 m | **SIZE_RANGE_USABLE** | [`eth_ds5_e3s_2026-09-10`](../results/eth_ds5_e3s_2026-09-10/README.md) |
-| Target-motion generalization (H / E0 / E1 / E2) | PENDING | PENDING | — | **RESULT_PENDING** | — |
+| Target-motion generalization of a frozen policy (H / E0 / E1 / E2) | Arm H, the historical target lineage the checkpoint was trained on | E0 static / E1 constant-velocity / E2 obstacle-aware target motion | +1.3312 pp; 95% CI [+1.1504, +1.4973] pp; arm means E0 84.31% < E1 85.07% < H 87.89% < E2 89.22%; E0 vs H -3.58 pp; E1 vs H -2.82 pp; E2 vs E0 +4.91 pp; 48 cells, 98,319 raw episodes, 3 seeds, all contrasts 3/3 seed sign-consistent | **NO_RETRAINING_JUSTIFIED_FOR_E2_TARGET_MOTION_SHIFT** | [`results`](../docs/results/target_motion_generalization_2026-09-19.md) |
 
 * **Safety-filter geometry** — No formal collision-safety guarantee and no general DWA superiority claim.
 * **Arc geometry width** — Arc only; the same widening degrades straight stopcap capture.
@@ -283,7 +283,7 @@ Each row is a within-repository matched-baseline contrast, bound to the result f
 * **P10 policy readaptation** — Net adaptation benefit is not established. R1 gave 1 of 2 positive seeds.
 * **D8b mesh observation treatment** — Same frozen policy. Causality of any renderer defect is NOT_TESTED.
 * **Image-size-to-range proxy (ETH ds5)** — One flight, apparent-size proxy, not ground-truth boxes. Range and time are confounded.
-* **Target-motion generalization (H / E0 / E1 / E2)** — Frozen-policy evaluation is executing. No cell result may enter this registry or the public site until all 48 cells are complete, integrity PASSes, and the raw manifest is frozen.
+* **Target-motion generalization of a frozen policy (H / E0 / E1 / E2)** — Three evaluation seeds; exact permutation inference cannot reach conventional significance (minimum attainable two-sided p = 0.25), so effect sizes and seed sign-consistency carry the reading, not a significance claim. The preregistered distance primary min_relative_distance_m is NOT_RECORDED. The 5 pp materiality rule used in the preliminary report was NOT preregistered and is withdrawn. One checkpoint, one arena, four densities; simulation only.
 
 ## Layer C — matched external comparison
 

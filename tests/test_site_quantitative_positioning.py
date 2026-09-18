@@ -96,12 +96,35 @@ class RunningEvaluationBoundary(unittest.TestCase):
         for arm in ("H_historical", "E0_static", "E1_cv", "E2_obstacle_aware"):
             self.assertNotIn(arm, site, f"site references evaluation arm {arm}")
 
-    def test_target_motion_row_is_declared_pending(self):
+    def test_target_motion_row_is_either_pending_or_fully_sourced(self):
+        """The evaluation may be pending or finished, but never half-reported.
+
+        While it runs, the row carries no value. Once finished, it must carry a
+        verdict AND a source. The state this forbids is a value on the site with
+        no result document behind it.
+        """
         registry = json.loads(REGISTRY.read_text(encoding="utf-8"))
         row = next(e for e in registry["internal_motar"]
                    if e["id"] == "target_motion_generalization")
-        self.assertEqual("RESULT_PENDING", row["verdict"])
-        self.assertIn("RESULT PENDING", INDEX.read_text(encoding="utf-8"))
+        if row["verdict"] == "RESULT_PENDING":
+            self.assertIsNone(row.get("value_pp"))
+            self.assertIsNone(row.get("source_path"))
+            self.assertIn("RESULT PENDING", INDEX.read_text(encoding="utf-8"))
+            return
+        self.assertIsNotNone(row.get("value_pp"), "finalized row carries no value")
+        self.assertTrue(row.get("source_path"), "finalized row cites no source")
+        self.assertTrue(row.get("ci95_pp"), "finalized row carries no interval")
+
+    def test_a_finalized_row_never_claims_significance_at_three_seeds(self):
+        registry = json.loads(REGISTRY.read_text(encoding="utf-8"))
+        row = next(e for e in registry["internal_motar"]
+                   if e["id"] == "target_motion_generalization")
+        if row["verdict"] == "RESULT_PENDING":
+            return
+        blob = json.dumps(row).lower()
+        self.assertNotIn("statistically significant", blob)
+        self.assertIn("permutation", blob,
+                      "the n=3 inference limitation must travel with the row")
 
 
 if __name__ == "__main__":

@@ -142,15 +142,18 @@
     },
     {
       "id": "target_motion_generalization",
-      "axis": "Target-motion generalization (H / E0 / E1 / E2)",
-      "baseline": "PENDING",
-      "treatment": "PENDING",
-      "metric": "PENDING",
-      "value_pp": null,
-      "verdict": "RESULT_PENDING",
-      "source_path": null,
-      "source_value_token": null,
-      "limitation": "Frozen-policy evaluation is executing. No cell result may enter this registry or the public site until all 48 cells are complete, integrity PASSes, and the raw manifest is frozen."
+      "axis": "Target-motion generalization of a frozen policy (H / E0 / E1 / E2)",
+      "baseline": "Arm H, the historical target lineage the checkpoint was trained on",
+      "treatment": "E0 static / E1 constant-velocity / E2 obstacle-aware target motion",
+      "metric": "close-approach rate (capture_rate), seed-paired difference vs H",
+      "value_pp": 1.3312,
+      "ci95_pp": [1.1504, 1.4973],
+      "extra": "arm means E0 84.31% < E1 85.07% < H 87.89% < E2 89.22%; E0 vs H -3.58 pp; E1 vs H -2.82 pp; E2 vs E0 +4.91 pp; 48 cells, 98,319 raw episodes, 3 seeds, all contrasts 3/3 seed sign-consistent",
+      "verdict": "NO_RETRAINING_JUSTIFIED_FOR_E2_TARGET_MOTION_SHIFT",
+      "source_path": "docs/results/target_motion_generalization_2026-09-19.md",
+      "source_value_token": "+1.33 pp",
+      "integration_status": "PENDING_MERGE: the cited result lands on this branch only when the research branch is merged.",
+      "limitation": "Three evaluation seeds; exact permutation inference cannot reach conventional significance (minimum attainable two-sided p = 0.25), so effect sizes and seed sign-consistency carry the reading, not a significance claim. The preregistered distance primary min_relative_distance_m is NOT_RECORDED. The 5 pp materiality rule used in the preliminary report was NOT preregistered and is withdrawn. One checkpoint, one arena, four densities; simulation only."
     }
   ],
   "external_reported": [],
