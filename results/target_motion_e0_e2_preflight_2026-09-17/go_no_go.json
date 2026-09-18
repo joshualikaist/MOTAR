@@ -17,7 +17,7 @@
   "checkpoint_present_and_sha_verified": true,
   "e2_target_mechanism_valid": true,
   "e2_unaffected_by_d1": true,
-  "git_tree_clean": false,
+  "git_tree_clean": true,
   "no_type_b_defect_affects_any_arm": true
  },
  "defect_arm_impact": {
@@ -47,10 +47,8 @@
  "episodes_total": 98304,
  "execution_note": "GO is a statement about the preflight, not an authorisation. No GPU work runs until the operator approves it; the research-authority gate is separate and also applies.",
  "execution_status": "AUTHORIZATION_REQUIRED",
- "failed_criteria": [
-  "git_tree_clean"
- ],
- "git_commit": "baa74f38e59c97429344c61e6e5b4c52b1d6ec4b",
+ "failed_criteria": [],
+ "git_commit": "a44c8d32622b97a0f7a49ecb0d4255cdae8653c8",
  "interpretation_contract": {
   "E0_E1_E2": "frozen-policy generalization arms, all OUTSIDE training distribution",
   "E0_E1_E2_mutual": "matched bounded-dynamics contrast, interpretable among themselves, but all outside the historical training distribution",
@@ -59,5 +57,5 @@
   "matching_kind": "distributional, not paired-layout (see the RNG audit)"
  },
  "kind": "e0_e2_gpu_evaluation_go_no_go",
- "verdict": "GPU_EVALUATION_NO_GO"
+ "verdict": "GPU_EVALUATION_GO"
 }
