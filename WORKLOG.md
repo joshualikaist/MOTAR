@@ -19218,3 +19218,102 @@ table에 넣지 않는다.
 GPU_EVALUATION = READY_FOR_USER_AUTHORIZATION (자동 실행 안 함)
 RETRAINING     = BLOCKED_PENDING_EVALUATION
 ```
+
+---
+
+## 2026-09-18 — External quantitative positioning (CPU/docs only, GPU 격리)
+
+GPU에서 H/E0/E1/E2 frozen-policy evaluation이 도는 동안, **완전히 분리된 worktree**
+(`paper/quantitative-positioning-20260918`, base `origin/main` = `096eee5`)에서 문헌 정량
+positioning만 수행. GPU worktree 변경 0, CUDA workload 0, result-dir write 0.
+
+### 해결한 gap
+
+기존 사이트는 within-MOTAR 수치 비교(Table 3)와 published-system **정성** 관계(Table 4)는
+보여줬지만 **external reported numerical positioning**이 사실상 없었다. 이번에 3-layer 구조로
+채웠다: Layer A(외부 보고값) / Layer B(MOTAR 자체 측정) / Layer C(matched comparison, **비어 있음**).
+
+### External ledger — 13 works, 45 rows
+
+`docs/literature_quantitative_ledger_2026-09-18.json`. **34 rows에 값, 11 rows는
+`NOT_EXTRACTED`.** source: primary_paper 42, official_code 3, third_party_benchmark 0.
+12 works가 사이트 10행을 채우고(NavRL/NavRL++, YOPO/YOPOv2-Tracker가 각각 한 행),
+Fast-Tracker 2.0은 screened-not-retained로 분리 기록.
+
+검증 과정에서 **기존에 후보로 적어둔 숫자 여러 개가 정정됐다**:
+
+| 주장 | 검증 결과 |
+|---|---|
+| OPEN "100% capture rate" | simulation only, Random/Passage(OOD)만 1.000, **Wall은 0.987**. 3 pursuers vs 1 evader, capture radius 0.3, 300 episodes. **입력이 privileged relative state + LOS mask — 카메라 없음.** real-world capture rate는 미발표 |
+| FlowPilot "8 m/s" | **commanded**이지 achieved 아님. 달성된 sim peak는 6.14 m/s |
+| FlowPilot "5.5 m/s real clutter" | real·achieved 맞지만 forest **sparse 구간** peak. indoor cluttered는 3.8 / 3.1 m/s |
+| FlowPilot "<18 ms" | Table II "Total inference latency" 16.294 ms(max 17.055). **MPC 2.384 ms는 별도 행** — abstract의 "full perception-to-action" 표현이 더 넓다 |
+| YOPO RK3566 INT8 ~20 ms | **official_code(README master)로 확인**. 단 paper 본문은 paywall + arXiv 없음 → paper-internal 값 전부 `NOT_EXTRACTED` |
+| MAD 9.66 m/s | **abstract에만 존재**, 본문 미대응. 본문 최대는 corridor 6.37 m/s |
+
+`NOT_EXTRACTED`가 많은 건 실패가 아니라 기록이다. Elastic Tracker Fig. 8(c)
+(out-of-FOV / too-near / occlusion 분해)와 YOPOv2-Tracker Fig. 10B success rate는
+**bar chart·plot이라 텍스트에 수치가 없어** 추정하지 않고 그대로 남겼다.
+
+### 가장 쓸모 있는 positioning 사실
+
+**Elastic Tracker 결론이 "tracking escaping target"을 future work로 명시**한다. 즉 obstacle-aware
+자율 evader는 고전 tracking 계열의 **평가 밖 영역**이다. 이 계열의 target은 전부 cooperative
+(marker 부착 / position broadcast / GT future trajectory oracle). MOTAR의 TM-E2는
+pursuer-independent obstacle-aware라서, matched comparison은 arena만이 아니라 **target 자체를
+고정**해야 한다.
+
+### MOTAR 내부 수치 — 전부 source-bound
+
+`docs/quantitative_positioning_registry.json`에 11개 항목. 10개 수치를 **인용한 result 파일에서
+실제로 grep 되는지 검증**했고, 그 검증을 테스트로 고정했다. P9 perception error가 frozen policy에
+주는 비용 **−4.57 pp**(3개 training-seed campaign 전부 동일, CI가 0 제외)를
+`preregistration_p10_seed_replication`에서 찾아 Layer B에 추가.
+
+`target_motion_generalization` 행은 **`RESULT_PENDING`** — GPU 48셀이 끝나고 integrity PASS +
+raw manifest freeze 전에는 값이 들어갈 수 없게 테스트로 막았다.
+
+### 새 파일
+
+- `docs/literature_quantitative_ledger_2026-09-18.json` (기계 판독), `..._positioning_2026-09-18.md` (생성물)
+- `docs/quantitative_positioning_registry.json`, `docs/paper_claim_evidence_matrix_2026-09-18.md`
+- `docs/external_matched_baseline_readiness_2026-09-18.md`, `docs/paper_evidence_outline_2026-09-18.md`
+- `tools/build_literature_positioning_doc.py` (`--check`), `tools/build_quantitative_positioning_figure.py` (`--check`)
+- `docs/assets/paper/quantitative-positioning-2026-09-18.svg` (Figure 9)
+- `tests/test_quantitative_positioning.py`, `test_external_numeric_sources.py`, `test_site_quantitative_positioning.py`
+
+MD 본문과 SVG는 **손으로 쓰지 않고 JSON에서 생성**한다. 사이트는 6.2 Quantitative positioning
+신설, 기존 6.2→6.3 / 6.3→6.4, Table 4 신설로 4→5 / 5→6 재번호.
+
+### 도구 버그 2건 (기각된 가정 포함)
+
+- `build_quantitative_positioning_figure.py`: 첫 판 matrix가 viewBox를 넘었다(마지막 열 x=1592,
+  row rule 1632, MOTAR rect 1668 > 1600). **"XML로 파싱되면 맞다"는 가정 기각** — overflow SVG도
+  정상 파싱되고 오른쪽만 조용히 잘린다. bounds guard 추가 후 실제 범위 x 60..1536 / y 56..852.
+- `tests/test_quantitative_positioning.py`: 금지어 검사 초안이 "not이 한 줄에 있으면 통과"라
+  `"outperforms X, but not in real flight"`를 놓쳤다. 부정어가 **용어 앞 120자 이내·마침표 없이**
+  올 때만 면제하도록 수정. 세 테스트 모두 심어놓은 위반으로 **negative test** 확인.
+
+### 검증
+
+`tests.test_quantitative_positioning` 9 / `test_external_numeric_sources` 7 /
+`test_site_quantitative_positioning` 10 전부 PASS. docs·site 관련 33개 모듈 458 tests 재실행 →
+남은 FAIL 2건은 **내 변경과 무관**(참조 파일 교집합 0): `test_result_manifest`는 git 미추적
+`results/*` 디렉터리가 새 worktree에 없어서, `test_navrl_corrected_nonoverlap_route_gate`는
+tools import 문제. error 32건은 base python에 torch/trimesh 없음.
+
+`test_research_overview`의 figure 수(9→10), image(7→8), figcaption(9→10)과
+heading split 참조는 **내 변경이라 같이 갱신**했다.
+
+### 환경 관찰 (조치 안 함)
+
+디스크 `/` **100% (47M free)**. 원인은 `/tmp`의 과거 세션 임시 디렉터리 ~4.7G와 conda
+`pkgs/` 6.9G(전부 extracted, tarball 0 → 삭제 위험). **평가 산출물은 셀당 0.1 MB, 남은 27셀에
+약 2 MB만 필요**하므로 진행 중인 GPU run은 위험하지 않다고 판단. 남의 임시 디렉터리는
+임의로 지우지 않았다. 사용자 판단 필요.
+
+```text
+GPU_EVALUATION = RUNNING (별도 worktree, 이 작업과 무관)
+CLASS_A_EXTERNAL = 0 (변동 없음)
+RETRAINING = BLOCKED_PENDING_EVALUATION
+```
