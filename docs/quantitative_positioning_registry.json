@@ -152,7 +152,6 @@
       "verdict": "NO_RETRAINING_JUSTIFIED_FOR_E2_TARGET_MOTION_SHIFT",
       "source_path": "docs/results/target_motion_generalization_2026-09-19.md",
       "source_value_token": "+1.33 pp",
-      "integration_status": "PENDING_MERGE: the cited result lands on this branch only when the research branch is merged.",
       "limitation": "Three evaluation seeds; exact permutation inference cannot reach conventional significance (minimum attainable two-sided p = 0.25), so effect sizes and seed sign-consistency carry the reading, not a significance claim. The preregistered distance primary min_relative_distance_m is NOT_RECORDED. The 5 pp materiality rule used in the preliminary report was NOT preregistered and is withdrawn. One checkpoint, one arena, four densities; simulation only."
     }
   ],

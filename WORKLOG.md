@@ -19317,3 +19317,196 @@ GPU_EVALUATION = RUNNING (별도 worktree, 이 작업과 무관)
 CLASS_A_EXTERNAL = 0 (변동 없음)
 RETRAINING = BLOCKED_PENDING_EVALUATION
 ```
+
+---
+
+## 2026-09-19 — H/E0/E1/E2 frozen-policy 평가 완주 (초기 판정, 아래 정정 항목 참조)
+
+사용자 승인 하에 48셀 매트릭스 실행 완료. frozen `ep25000+riskcap`
+(SHA `f702213936…`, 실행 직전 재검증 일치). 4 arms × 4 densities(70/115/160/205) × 3 seeds
+(4101–4103) × 2048 episodes = **98,319 episodes**, wall 11,347 s. 학습은 하지 않았다.
+
+### 8단계 게이트
+
+`stage1 integrity PASS`(48/48, nonce 전부 고유) · `stage2 target validity PASS` ·
+`stage3 contract equivalence PASS` · stage4/5/6 recorded · stage7 computed ·
+**stage8 = `NO_RETRAIN_NEEDED`**. 분석 전에 `RAW_MANIFEST.json`으로 raw 동결.
+
+### arm별 결과 (seed 평균)
+
+| arm | capture | crash | timeout | closest_nocrash |
+|---|---:|---:|---:|---:|
+| E0 static | 84.31% | 8.58% | 7.04% | 1.85 m |
+| E1 cv | 85.07% | 10.49% | 4.41% | 1.24 m |
+| **H historical (in-dist ref)** | **87.89%** | **9.50%** | **2.61%** | **0.90 m** |
+| E2 obstacle-aware | 89.22% | 9.61% | 1.17% | 0.61 m |
+
+### H 대비 (seed-paired BCa95, 20000 resamples)
+
+| arm | Δcapture | BCa95 | 0 제외 |
+|---|---:|---|---|
+| E0 | **−3.58 pp** | [−4.04, −3.29] | 예 |
+| E1 | **−2.82 pp** | [−3.53, −2.44] | 예 |
+| E2 | **+1.33 pp** | [+1.15, +1.50] | 예 |
+
+**세 arm 모두 CI가 0을 제외**한다. 당시 분석 도구는 5 pp 문턱으로 `materially_degraded = false`,
+verdict `NO_RETRAIN_NEEDED`를 냈다. **그 5 pp는 사전등록된 것이 아니었다 — 같은 날 아래 항목에서
+정정한다.** 어느 쪽이든 "차이가 없다"가 아니라
+**"차이는 실재하지만 작다"**가 정확한 표현이다.
+
+### E0/E1/E2 상호 대비 (분석 도구가 빠뜨려 별도 계산, `contrasts_within_E_arms.json`)
+
+capture: E1−E0 **+0.76 pp** [+0.51,+0.90] · E2−E0 **+4.91 pp** [+4.34,+5.36] ·
+E2−E1 **+4.16 pp** [+3.53,+4.70]. 전부 0 제외.
+
+### 핵심 발견 — 가설 기각: "정지 표적이 가장 쉽다"는 **틀렸다**
+
+네 지표가 전부 같은 순서다: **E0 < E1 < H < E2**. 즉 **표적이 느릴수록 frozen policy가 나쁘다.**
+정지 표적(E0)이 최악이고, 장애물 회피까지 하는 E2가 최고다.
+
+메커니즘은 관측 쪽에 있다. step-weighted target visible fraction:
+
+| arm | overall | capture | crash | timeout |
+|---|---:|---:|---:|---:|
+| E0 | 0.2236 | 0.3444 | 0.0199 | **0.0015** |
+| E1 | 0.2536 | 0.3355 | 0.0788 | 0.0058 |
+| H | 0.2932 | 0.3557 | 0.0853 | 0.0075 |
+| E2 | 0.3285 | 0.3638 | 0.1319 | 0.0355 |
+
+visibility가 capture 순서와 단조 일치한다. 결정적으로 **E0의 timeout episode에서 표적 가시율이
+0.0015** — 사실상 전혀 보이지 않는다. 정지 표적은 한 번 놓치면 스스로 시야로 돌아오지 않으므로
+재획득이 일어나지 않고 timeout(7.04%, H의 2.7배)으로 끝난다. E0의 closest_nocrash 1.85 m는
+success_radius 0.5 m에 한참 못 미친다 — 접근 자체를 못 한다.
+
+밀도 상호작용도 있다(F1): 70 bars에서 arm 간 격차가 가장 크고(E2 93.9% vs E0 87.3%)
+205 bars에서 거의 수렴한다(H 82.0 / E2 82.8 / E0 80.1 / E1 79.0). 고밀도에서는 장애물 난이도가
+표적 운동 효과를 덮는다.
+
+### D1 격리 경험적 확증
+
+48셀 전부에서 E0/E1/E2의 wall/bar reflection이 **정확히 0.0**, H만 비영(bar_reflection_any_rate
+0.00195). AST로 주장했던 "D1은 H에만 존재"가 런타임 데이터로 확인됐다.
+
+### 도구 버그 2건 (둘 다 내 쪽, 평가 데이터는 정상)
+
+- `verify_canary.py`: `(x or -1)`이 E0의 정당한 `target_speed_max_mps=0.0`(falsy)을 FAIL시켜
+  캐너리 게이트가 거짓 실패했다. None-safe 비교로 수정 후 4셀 전부 PASS.
+- `analyze_arms.py` stage5: strata 집계가 `successes`만 읽는데 task export가
+  `distance`/`speed`는 `successes`, `initial_target_bearing`은 **`captured`**로 내보낸다.
+  그 결과 bearing capture_rate가 4개 arm 전부 **0.0으로 조용히 계산**됐다(전체가 ~85%인데).
+  두 키를 모두 받고 **둘 다 없으면 raise**하도록 고친 뒤 재실행. 수정 후 bearing은
+  0.838–0.900으로 정상이고 좌/우 비대칭은 없다.
+  **"XML/JSON이 파싱되면 값도 맞다"는 가정 기각** — 스키마 불일치는 조용히 0을 만든다.
+
+### 보고해야 할 편차 3건
+
+1. `HEAD == origin/main` 게이트 미충족. HEAD `ae286e5`(평가 런처 추가 커밋 1개)가 origin/main
+   `096eee5`보다 앞선다. fast-forward push를 시도했으나 **환경 permission classifier가 차단**했고
+   우회하지 않았다. 셀 receipt마다 정확한 commit SHA가 기록돼 무결성은 보존된다. **사용자 push 필요.**
+2. n=3에서 sign-flip permutation은 2³=8 배열뿐이라 최소 양측 p가 **0.25**(Holm 후 0.752).
+   어떤 대비도 p<0.05에 도달할 수 없다. 추론은 BCa95 CI가 담당하며, permutation p를
+   "유의차 없음"으로 읽으면 안 된다.
+3. 사전등록 primary인 `min_relative_distance_m`은 bulk export에 없고
+   `closest_nocrash_mean_m`(무충돌 조건부)만 있다. 조건부 형태로 보고한다.
+
+### 산출물
+
+`results/target_motion_e0_e2_evaluation_2026-09-18/`: 48 cell 디렉터리(result+receipt+log),
+`RAW_MANIFEST.json`, `analysis_report.json`, `contrasts_within_E_arms.json`,
+`figures/F1..F4.png`.
+
+```text
+RETRAINING = NOT_AUTHORISED (NO_RETRAIN_NEEDED)
+PPO_TRAINING_STARTED = false
+```
+
+---
+
+## 2026-09-19 — 정정: 5 pp 문턱은 사전등록이 아니었다 + canonical result package
+
+위 항목의 판정 근거를 감사한 결과 **두 가지를 철회**한다. GPU는 재실행하지 않았고 PPO training도
+시작하지 않았다. raw artifact는 immutable이며 **144/144 파일이 `RAW_MANIFEST.json`과 일치**한다.
+
+### 철회 1 — "사전등록 5 pp materiality threshold"는 존재하지 않는다
+
+| 검색 | 결과 |
+|---|---|
+| `git log --all -S"material_threshold"` | **0 commits** |
+| `git log --all -S"NO_RETRAIN_NEEDED"` | **0 commits** |
+| prereg §6 Decision rule (`096eee5`, sha256 `7d8744c4…`) | validity gate / confounding / CI 비교 / deployment 확장 금지 **4개뿐. 효과크기 문턱 없음, retraining 어휘 없음** |
+| Amendment 1 §A1.3 | arms·densities·seeds·cells·episodes/cell·CI method·seed aggregation·multiple comparison 고정. **materiality 문턱 없음** |
+
+5 pp는 이번 분석 세션에서 내가 쓴 untracked 도구(`analyze_arms.py`, `material_threshold = 0.05`)가
+도입한 것이다. **사전등록을 소급 수정하지 않았고**, 5 pp는 `POST_HOC DECISION CONTEXT`로만 남긴다.
+
+**판정을 좁힌다**: `NO_RETRAIN_NEEDED` → **`NO_RETRAINING_JUSTIFIED_FOR_E2_TARGET_MOTION_SHIFT`**.
+근거는 문턱이 아니라 측정된 부호다 — E2는 H 대비 **+1.33 pp**(BCa95 [+1.15,+1.50], 3/3 seed 양수)로
+저하되지 않았다. E0 −3.58 pp / E1 −2.82 pp는 **실재하는 감소**이며, 이를 material/immaterial로
+분류할 사전등록 기준이 없으므로 pass/fail이 아니라 측정값으로 보고한다.
+
+### 철회 2 — `closest_nocrash_mean_m`을 primary로 쓰지 않는다
+
+Amendment 1 §A1.2가 primary로 올린 `min_relative_distance_m`은 **기록되지 않았다**.
+`navrl_task.py:9745-9746`이 `ep_min_goal_dist`를 **non-crash episode에 대해서만** 누적하고
+전체 episode 누적기는 어디에도 없다. per-episode record도 export되지 않는다.
+→ `min_relative_distance_m = NOT_RECORDED`, `closest_nocrash_mean_m`은
+`POST_HOC_CONDITIONAL_DIAGNOSTIC`로 재분류(결과 조건부 선택이므로 대체재가 아니다).
+
+### 98,319 − 98,304 = +15의 원인 규명
+
+**vectorised tail overshoot.** `navrl_task.py:9750-9751`의 정지 조건이
+`if total >= self._progress_log_interval`이고 이 검사는 **vectorised step마다 한 번**, 그 step에서
+끝난 모든 env를 합산한 뒤 평가된다. 128 env에서 2047에 있던 카운터는 두 env가 같은 step에
+종료하면 2049가 된다. 분포는 0:35셀 / +1:11셀 / +2:2셀. 이론상 최대 overshoot은 `num_envs-1 = 127`.
+
+기각한 원인: canary 오염(canary 4셀 중 3셀이 excess 0), 중복 terminal record(48/48에서
+outcome triple == actual), resume 중복(셀 단위 skip이므로 +2048이지 +1이 아님).
+
+**A1.3의 근거가 실현되지 않았다**: "2048로 고정하면 tail 비대칭이 구조적으로 사라진다"고 적었지만
+구현은 target을 **cap하지 않고 `>=`로 비교만** 하므로 비대칭이 남는다. 이건 진짜 protocol deviation이다.
+
+**영향은 유계**: 15개가 전부 capture였다/전부 실패였다고 가정한 최악 envelope가
+arm별 **최대 0.018 pp**로, 가장 작은 효과(0.76 pp)보다 두 자릿수 작다. 순서·부호·결론 불변.
+
+exact-2048 view는 **구성 불가**(`NOT_CONSTRUCTIBLE`) — bulk export에 per-episode record가
+전혀 없다(episode_id/env_id/배열 없음). 재실행 없이는 만들 수 없으므로 **합성하지 않았다.**
+
+### canonical 재계산 — 예비 보고와 숫자는 동일
+
+| arm | capture | crash | timeout |
+|---|---:|---:|---:|
+| E0 static | 84.31% | 8.58% | 7.04% |
+| E1 CV | 85.07% | 10.49% | 4.41% |
+| H (in-dist ref) | 87.89% | 9.50% | 2.61% |
+| E2 obstacle-aware | 89.22% | 9.61% | 1.17% |
+
+12개 capture 대비 전부 3/3 seed 부호 일치. n=3에서 permutation 최소 p가 0.25이므로
+**"statistically significant"라고 쓰지 않는다** — effect size와 seed 일관성만 말한다.
+
+visibility는 pooled step-weighted(`visible_steps/observation_steps`)로 재계산했다:
+E0 0.2202 / E1 0.2502 / H 0.2889 / E2 0.3215. 예비 보고는 cell 평균이라 0.003–0.010 높았다
+(순서는 동일). **E0의 timeout episode 가시율 0.0016**이 메커니즘의 핵심이다.
+
+### 도구 버그 1건 추가 (stage5 strata)
+
+task export가 `distance`/`speed` strata는 `successes`, `initial_target_bearing`은 `captured`로
+내보내는데 전자만 읽어 **bearing capture_rate가 4개 arm 전부 0.0으로 조용히 계산**됐다.
+두 키를 모두 받고 **둘 다 없으면 raise**하도록 수정 → 0.838–0.900, 좌우 비대칭 없음.
+
+### 산출물
+
+`results/target_motion_e0_e2_2026-09-18/`: `RAW_MANIFEST.json`, `episode_count_audit.json`,
+`primary_2048_manifest.json`, `canonical_summary.json`, `seed_effects.csv`,
+`statistical_sensitivity.json`, `figures/F1..F4.png`.
+`docs/audits/target_motion_protocol_deviations_2026-09-19.md`,
+`docs/results/target_motion_generalization_2026-09-19.{md,json}`,
+`tools/build_target_motion_result_doc.py`(`--check`), `tools/build_target_motion_figures.py`,
+`tests/test_target_motion_result_package.py`(22 tests PASS).
+
+```text
+VERDICT = NO_RETRAINING_JUSTIFIED_FOR_E2_TARGET_MOTION_SHIFT
+5PP_THRESHOLD = NOT_PREREGISTERED (post-hoc decision context)
+min_relative_distance_m = NOT_RECORDED
+PPO_TRAINING_STARTED = false
+GPU_RERUN = none
+```
