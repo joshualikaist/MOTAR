@@ -76,9 +76,9 @@ SECONDARY_ARCHITECTURAL_REFERENCE   = NavRL
 4. **Its target is already obstacle-aware.** The released configuration drives the target as a
    second quadrotor that avoids obstacles using a global map — structurally the same idea as TM-E2,
    which makes replaying MOTAR's target trajectory a substitution rather than a redesign.
-5. **It answers a question MOTAR cannot currently answer about itself:** whether a learned policy
-   earns its keep against a competent classical tracker under one contract. C1–C7 contain no such
-   comparison.
+5. **It addresses a question MOTAR cannot currently answer about itself:** whether the frozen
+   learned policy and a classical visibility-aware planner exhibit different success, collision and
+   failure profiles under partially matched scenarios. C1–C7 contain no such comparison.
 
 **Why not NavRL as primary.** It is the closest *implementation*, but it does not track a target.
 Making it pursue requires feeding a moving goal to a policy trained on static goals — which is either

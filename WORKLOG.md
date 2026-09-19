@@ -19599,3 +19599,91 @@ NEW_GPU_EVALUATION = NO      PPO_TRAINING = NO
 REWARD/CONTROLLER/TARGET 수정 = NO
 CLASS_A_EXTERNAL = 0 (변동 없음)
 ```
+
+---
+
+## 2026-09-20 — a4badde push + Elastic Tracker B0: `UPSTREAM_REPRODUCTION_FAIL` (환경)
+
+승인된 두 건만 수행. MOTAR GPU 실행 0, PPO training 0, `aerial_gym/`·`resources/`·`configs/` 변경 0.
+frozen target-motion 결과 불변.
+
+### 1. push
+
+`58d5835..a4badde` 일반 fast-forward. force/reset/rebase 없음. 이후 HEAD == origin/main,
+tree clean, `check_public_docs.py` PASS.
+
+### 2. B0 = UPSTREAM_REPRODUCTION_FAIL
+
+```text
+repository 0a302a2a9cc8b733e74941fdd4af3fb449447bea (main, 2023-06-16)
+license    GNU GPL v3
+clone      2026-09-19T15:28:27Z, /home/fair/workspaces/external_baselines/ (MOTAR 트리 밖)
+```
+
+**빌드 불가 — 원인은 환경이지 baseline 결함이 아니다.** ROS 1 미설치(`/opt/ros` 없음),
+`sudo -n` 비밀번호 요구로 설치 불가, 디스크 97%(3.5G)에 `ros-noetic-desktop-full` ~3.0G.
+우회 시도하지 않았다. 알고리즘이 아예 실행되지 않았으므로 PARTIAL이 아니라 FAIL이다.
+**성능 수치는 한 줄도 기록하지 않았다.**
+
+게이트에 따라 **B1은 착수하지 않았다**(B1은 B0 PASS/PARTIAL 이후에만 허용).
+
+### 3. 라이선스가 통합 모드를 결정했다
+
+**Elastic Tracker GPL-3.0 vs MOTAR BSD-3-Clause.** vendoring하면 결합저작물에 GPL-3 의무가
+붙는다. 따라서 `EXTERNAL_DEPENDENCY_ONLY`가 선호가 아니라 **요구사항**이다.
+MOTAR/MOTAR-public 어디에도 반입하지 않았다.
+
+### 4. 가장 중요한 발견 — public simulation은 visual tracking이 아니다
+
+`simulation1.launch`가 `target_ekf_sim_node`의 `~yolo` 입력을 **`/target/odom`(표적의 GT
+odometry)** 로 remap한다. 노드는 이를 `nav_msgs::Odometry`로 받아 표적의 **참 위치·자세를 그대로**
+EKF에 넣는다.
+
+| | `target_ekf_node`(실제) | `target_ekf_sim_node`(공개 시뮬) |
+|---|---|---|
+| 입력 | `object_detection_msgs::BoundingBoxes` | `nav_msgs::Odometry` |
+| 거리 추정 | bbox 높이에서 `depth = 0.7/height*fy_` | 추정 없음 — GT |
+| 루프 내 perception | 있음 | **없음** |
+
+게다가 **`check_fov_` 기본값이 `false`**(`target_ekf_sim_node.cpp:20`)이고 `simulation1.launch`는
+`check_fov`를 설정하지 않는다(`pitch_thr`만 설정). 즉 문서화된 흐름에서 planner는 FOV 검사도
+occlusion 검사도 없이 표적 참값을 연속으로 받는다. `check_fov`를 켜도 GT 위치에 대한 기하학적
+frustum 검사(640×480, fx 346.74, depth gate 0.1–5.0 m)일 뿐 perception 모델이 아니다.
+
+→ **공개 시뮬레이션은 privileged oracle target state를 준다. visual target tracking이라고 부르면 안 된다.**
+planner 목적함수의 "visibility guarantee"는 가시성을 *유지하도록 계획*하는 것이지 가시성을
+*감지*하는 것이 아니다.
+
+**향후 비교에 대한 함의**: MOTAR는 측정된 perception error가 섞인 sensor-only 증거를 쓰고
+Elastic은 표적 참값을 쓰면 어느 방향으로도 공정하지 않다. 기존 4개(action space, vehicle model,
+target sensing, simulator) 외에 **일급 unmatched 차원으로 선언**하거나 표적 스트림을 열화시켜야
+하며, 후자는 그 자체로 baseline 수정이므로 선언 대상이다. 이건 B1이 분류할 사안이고 B1은 미승인이다.
+
+### 5. 예상 패치 (빌드로 확인한 것 아님 — 소스 판독)
+
+- P-1 CUDA arch: `local_sensing/CMakeLists.txt`가 `ENABLE_CUDA true` + `sm_61`(Pascal), 이 머신은
+  **sm_86**. README도 "remember to change the CUDA option"이라고 명시.
+- P-2 `vikit_ros`, `svo_msgs` 미vendored (나머지 비표준 의존성은 전부 vendored).
+
+**패치는 작성·적용하지 않았다.** upstream은 pinned commit과 byte-identical.
+
+### 6. 분류 유지
+
+```text
+Elastic Tracker = PARTIALLY_MATCHABLE  (상향도 하향도 아님)
+```
+replay 가능성을 입증하지 않았으므로 올리지 않고, baseline 자체의 치명적 비호환을 발견한 것도
+아니므로 `BLOCKED`으로 내리지도 않는다. 실패한 것은 이 머신의 ROS 1 빌드 능력이다.
+
+### 7. 문구 정정 (숫자 불변)
+
+"static arm was hardest" → "the static arm produced the lowest capture rate and the highest timeout
+rate under the frozen policy". "earns its keep" → "exhibit different success, collision and failure
+profiles under partially matched scenarios". 결과 수치는 하나도 바꾸지 않았다.
+금지어 가드에 B0 문서도 추가.
+
+```text
+B0 = UPSTREAM_REPRODUCTION_FAIL (environmental)
+B1..B5 = NOT AUTHORISED / NOT STARTED
+NEW_GPU_EVALUATION = NO   PPO_TRAINING = NO
+```

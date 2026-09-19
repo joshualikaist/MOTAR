@@ -18,8 +18,9 @@ any result exists, so that they cannot be quietly dropped once numbers are avail
 Under one fixed arena, one fixed target trajectory family and one fixed success definition, how does
 a learned sensor-only pursuit policy compare with a competent classical visibility-aware tracker?
 
-This is the question C1–C7 cannot answer: MOTAR currently has no evidence that the learned policy
-earns its keep against a non-learned tracker.
+This is the question C1–C7 cannot answer: MOTAR currently has no evidence about how the frozen
+learned policy and a classical visibility-aware planner differ in success, collision and failure
+profiles under a partially matched contract.
 
 ## 3. Matched quantities — fixed before execution
 

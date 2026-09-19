@@ -12,7 +12,8 @@ axis-by-axis external pairing is in
 Published UAV work isolates navigation, tracking, pursuit, perception or safety and reports a number
 inside one of them. MOTAR measures the **chain that connects them** on a single frozen policy, and
 keeps the links that failed. The strongest single new result is that target behaviour did not form a
-monotonic difficulty ladder: the static arm was the hardest for the frozen policy, not the easiest.
+monotonic difficulty ladder: the static arm produced the lowest capture rate and the highest
+timeout rate under the frozen policy.
 
 ## Structure
 

@@ -8,7 +8,7 @@
   "matchable_count": 0,
   "primary_external_baseline_candidate": "Elastic Tracker",
   "secondary_architectural_reference": "NavRL",
-  "primary_rationale": "Highest task compatibility (single UAV tracking a moving target through clutter with an occlusion term already in its objective), no training required because it is a classical planner, released arena already close to MOTAR's, and an obstacle-aware target in its released configuration. It also answers whether the learned policy earns its keep against a competent classical tracker, which no existing MOTAR result addresses.",
+  "primary_rationale": "Highest task compatibility (single UAV tracking a moving target through clutter with an occlusion term already in its objective), no training required because it is a classical planner, released arena already close to MOTAR's, and an obstacle-aware target in its released configuration. It also addresses whether the frozen learned policy and a classical visibility-aware planner exhibit different success, collision and failure profiles under partially matched scenarios, which no existing MOTAR result covers.",
   "meaningful_comparison_axes": {
     "Elastic Tracker": {
       "meaningful": [
@@ -107,7 +107,8 @@
       "termination_portable": true,
       "training_required": false,
       "blocking_reason": "cooperative broadcast target must be replaced by a replayed trajectory; action space and vehicle model differ",
-      "role": "closest tracking + occlusion-aware planning"
+      "role": "closest tracking + occlusion-aware planning",
+      "b0": "UPSTREAM_REPRODUCTION_FAIL (environmental)"
     },
     "YOPO": {
       "class": "ARCHITECTURAL_ONLY",
@@ -141,5 +142,17 @@
       "blocking_reason": "repository is a placeholder; code unreleased, so no port is possible",
       "role": "closest task semantics of any surveyed work"
     }
+  },
+  "b0_upstream_reproduction": {
+    "verdict": "UPSTREAM_REPRODUCTION_FAIL",
+    "cause": "ROS 1 is not installed and cannot be installed without root; disk at 97%",
+    "cause_class": "ENVIRONMENTAL_NOT_BASELINE_DEFECT",
+    "commit": "0a302a2a9cc8b733e74941fdd4af3fb449447bea",
+    "license": "GPL-3.0",
+    "integration_mode": "EXTERNAL_DEPENDENCY_ONLY",
+    "integration_mode_reason": "Elastic Tracker is GPL-3.0 and MOTAR is BSD-3-Clause; vendoring would impose GPL-3 on the combined work",
+    "public_simulation_target_input": "ground-truth target odometry (/target/odom) fed directly to the EKF; check_fov defaults to false and simulation1.launch does not enable it",
+    "public_simulation_is_visual_tracking": false,
+    "record": "docs/external_baselines/elastic_tracker_b0_upstream_reproduction_2026-09-20.md"
   }
 }

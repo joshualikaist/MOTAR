@@ -33,6 +33,7 @@ PAPER_DOCS = tuple(
         "external_baseline_selection_2026-09-19.md",
         "preregistration_external_matched_baseline_draft_2026-09-19.md",
         "results/target_motion_visibility_reacquisition_audit_2026-09-19.md",
+        "external_baselines/elastic_tracker_b0_upstream_reproduction_2026-09-20.md",
     )
 )
 INDEX = ROOT / "docs/status/index.html"
