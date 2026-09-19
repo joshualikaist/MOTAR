@@ -1,0 +1,145 @@
+{
+  "schema_version": 1,
+  "generated": "2026-09-19",
+  "ranking_criterion": "highest benchmark-contract compatibility at minimum algorithmic rewriting; NOT published performance",
+  "executed": false,
+  "gpu_workload_started": false,
+  "class_a_count": 0,
+  "matchable_count": 0,
+  "primary_external_baseline_candidate": "Elastic Tracker",
+  "secondary_architectural_reference": "NavRL",
+  "primary_rationale": "Highest task compatibility (single UAV tracking a moving target through clutter with an occlusion term already in its objective), no training required because it is a classical planner, released arena already close to MOTAR's, and an obstacle-aware target in its released configuration. It also answers whether the learned policy earns its keep against a competent classical tracker, which no existing MOTAR result addresses.",
+  "meaningful_comparison_axes": {
+    "Elastic Tracker": {
+      "meaningful": [
+        "target reacquisition",
+        "tracking success under occlusion",
+        "close-approach behaviour",
+        "visibility handling"
+      ],
+      "not_meaningful": [
+        "RL-policy robustness",
+        "learning efficiency",
+        "perception-error propagation"
+      ]
+    },
+    "NavRL": {
+      "meaningful": [
+        "obstacle navigation",
+        "collision rate",
+        "safety-filter behaviour"
+      ],
+      "not_meaningful": [
+        "target tracking",
+        "reacquisition",
+        "target-motion generalization"
+      ]
+    },
+    "Fast-Tracker": {
+      "meaningful": [
+        "classical prediction and reacquisition under clutter"
+      ],
+      "not_meaningful": [
+        "visibility-aware planning"
+      ]
+    }
+  },
+  "candidates": {
+    "NavRL": {
+      "class": "PARTIALLY_MATCHABLE",
+      "code": true,
+      "license": "NEEDS_CONFIRMATION",
+      "checkpoint": "NOT_VERIFIED",
+      "single_uav": true,
+      "moving_target": false,
+      "random_obstacles": true,
+      "sensor_compat": "close (RGB-D + state)",
+      "action_compat": "close (velocity command)",
+      "target_trajectory_portable": "goal stream only",
+      "termination_portable": true,
+      "training_required": true,
+      "blocking_reason": "does not track a target; a moving goal needs retraining or runs out of distribution",
+      "role": "closest PPO obstacle-navigation structure"
+    },
+    "OPEN": {
+      "class": "ARCHITECTURAL_ONLY",
+      "code": true,
+      "license": "MIT",
+      "checkpoint": "NOT_VERIFIED",
+      "single_uav": false,
+      "moving_target": true,
+      "random_obstacles": true,
+      "sensor_compat": "none (privileged relative state + LOS bit, no camera)",
+      "action_compat": "CTBR",
+      "target_trajectory_portable": true,
+      "termination_portable": true,
+      "training_required": true,
+      "blocking_reason": "multi-agent coordination and privileged state are both load-bearing; removing them removes the method",
+      "role": "closest pursuit semantics"
+    },
+    "Fast-Tracker": {
+      "class": "PARTIALLY_MATCHABLE",
+      "code": true,
+      "license": "NEEDS_CONFIRMATION",
+      "checkpoint": "n/a (classical)",
+      "single_uav": true,
+      "moving_target": true,
+      "random_obstacles": true,
+      "sensor_compat": "depth + marker-based target",
+      "action_compat": "trajectory, not velocity",
+      "target_trajectory_portable": true,
+      "termination_portable": true,
+      "training_required": false,
+      "blocking_reason": "simulation benchmark feeds the planner a ground-truth future trajectory; marker-based target detection",
+      "role": "closest single-UAV target tracking"
+    },
+    "Elastic Tracker": {
+      "class": "PARTIALLY_MATCHABLE",
+      "code": true,
+      "license": "NEEDS_CONFIRMATION",
+      "checkpoint": "n/a (classical)",
+      "single_uav": true,
+      "moving_target": true,
+      "random_obstacles": true,
+      "sensor_compat": "depth + separate target camera",
+      "action_compat": "trajectory, not velocity",
+      "target_trajectory_portable": true,
+      "termination_portable": true,
+      "training_required": false,
+      "blocking_reason": "cooperative broadcast target must be replaced by a replayed trajectory; action space and vehicle model differ",
+      "role": "closest tracking + occlusion-aware planning"
+    },
+    "YOPO": {
+      "class": "ARCHITECTURAL_ONLY",
+      "code": true,
+      "license": "NEEDS_CONFIRMATION",
+      "checkpoint": "pretrained weights stated",
+      "single_uav": true,
+      "moving_target": false,
+      "random_obstacles": true,
+      "sensor_compat": "depth only",
+      "action_compat": "motion-primitive selection",
+      "target_trajectory_portable": false,
+      "termination_portable": false,
+      "training_required": true,
+      "blocking_reason": "different simulator stack, primitive-library action space, and no target tracking",
+      "role": "closest learned obstacle-aware trajectory generation"
+    },
+    "YOPOv2-Tracker": {
+      "class": "BLOCKED",
+      "code": false,
+      "license": null,
+      "checkpoint": null,
+      "single_uav": true,
+      "moving_target": true,
+      "random_obstacles": true,
+      "sensor_compat": "depth 160x96",
+      "action_compat": "primitive selection",
+      "target_trajectory_portable": null,
+      "termination_portable": null,
+      "training_required": true,
+      "blocking_reason": "repository is a placeholder; code unreleased, so no port is possible",
+      "role": "closest task semantics of any surveyed work"
+    }
+  }
+}

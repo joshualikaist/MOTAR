@@ -19510,3 +19510,92 @@ min_relative_distance_m = NOT_RECORDED
 PPO_TRAINING_STARTED = false
 GPU_RERUN = none
 ```
+
+---
+
+## 2026-09-19 (2) — paper evidence spine + external baseline 선정 (CPU/docs only)
+
+frozen target-motion 결과는 **건드리지 않았다**. GPU 실행 0, PPO training 0,
+`aerial_gym/`·`resources/`·`configs/` 변경 0. raw 144/144 파일 불변 재확인.
+
+### 새 발견 — 기존 frozen 데이터만으로 메커니즘이 더 선명해졌다
+
+`first_acquisition` 블록이 export에 이미 있었다(시뮬레이션 재실행 없음). arm × outcome으로
+집계한 결과:
+
+| arm | class | never_acquired | first_visible_step | vis→hid/ep |
+|---|---|---:|---:|---:|
+| E0 | timeout | **95.42%** | 565.5 | 0.110 |
+| E1 | timeout | 83.01% | 548.4 | 0.415 |
+| H | timeout | 84.11% | 551.7 | 0.371 |
+| E2 | timeout | 84.38% | 454.9 | 0.316 |
+| E0 | crash | **78.05%** | 80.2 | 0.374 |
+| E1 / H / E2 | crash | 60.69 / 61.74 / 54.38% | 77.5 / 63.1 / 62.2 | 1.049 / 1.078 / 1.302 |
+
+**E0 timeout episode의 95.42%에서 표적을 단 한 번도 획득하지 못했다.** 이건 기존 visibility
+fraction이 시사하던 "놓치고 못 되찾는다"와 다른 진술이다 — 실패가 **first contact** 단계에 있다.
+capture에서는 네 arm 모두 never_acquired ≤ 0.07%이고 대신 **획득 속도**로 갈린다
+(E2 58.0 < H 60.9 < E0 66.1 < E1 70.2 step). fused와 camera 획득이 모든 행에서 정확히 일치 —
+camera가 binding source다.
+
+**여전히 association이다.** mediation/counterfactual 실험은 하지 않았고 승인되지도 않았다.
+
+### 재획득 지표 감사 (§5)
+
+```text
+visible→hidden transitions      = RECORDED_DIRECTLY (navrl_task.py:5525, 한 방향만 셈)
+hidden→visible / reacquisition  = DERIVABLE (종료 시 가시상태 미기록 → episode당 ±1 bound)
+loss duration / max / track age = NOT_RECORDED
+visibility before capture/timeout = RECORDED_DIRECTLY
+```
+aggregate가 지탱하지 못하는 건 복원하지 않았다.
+
+### External baseline 선정
+
+6 후보 전부 감사. **MATCHABLE = 0** — 전부 최소 한 축이 불일치라 미래 비교는 구조적으로
+`PARTIALLY_MATCHED`다.
+
+```text
+PRIMARY   = Elastic Tracker   (PARTIALLY_MATCHABLE)
+SECONDARY = NavRL             (architectural reference)
+OPEN      = ARCHITECTURAL_ONLY — privileged state + multi-agent 둘 다 load-bearing
+YOPOv2-Tracker = BLOCKED — repo가 placeholder
+```
+
+Elastic Tracker를 고른 이유는 성능이 아니라 **계약 적합성 + 재작성 최소**: 학습이 필요 없는
+classical planner(GPU 0), 공개 arena 42×40×5가 MOTAR 40×40×3에 가깝고, released target이
+global map을 쓰는 obstacle-aware 드론이라 TM-E2 궤적 replay가 재설계가 아닌 치환이다.
+그리고 **MOTAR가 스스로 답하지 못하는 질문**(학습 정책이 유능한 고전 추적기 대비 값을 하는가)을
+답한다. NavRL은 구현은 제일 가깝지만 표적을 추적하지 않아 moving goal 재학습이 필요하다.
+
+### 문서
+
+`docs/paper_evidence_spine_2026-09-19.md`(C1–C7, 각 항목에 "증명하지 못하는 것" 포함),
+`paper_claim_evidence_matrix_2026-09-19.md`(10 axis, parity 전부 NO DIRECT MATCH),
+`paper_outline_2026-09-19.md`(Q1/Q2/Q3 + contribution 5개, 전부 수치 포함),
+`paper_figure_plan_2026-09-19.md`(6개, Fig2·Fig3만 미생성 — **새 실험 불필요, 플롯 작업**),
+`external_baseline_selection_2026-09-19.{md,json}`,
+`preregistration_external_matched_baseline_draft_2026-09-19.md`(**DRAFT, 미실행**),
+`docs/results/target_motion_visibility_reacquisition_audit_2026-09-19.{md,json}`(생성기 `--check`).
+
+### 테스트 가드 확장
+
+금지어 가드가 신규 paper 문서 7개를 **스캔하지 않고 있었다**. 목록에 추가하자 내가 쓴
+`external_baseline_selection`의 "worse than having no baseline"을 잡아내 표현을 고쳤다.
+가드를 푸는 대신 문서를 고쳤다.
+
+### 다음 결정
+
+```text
+B. External matched baseline = 다음 실험으로 최고 가치
+```
+내부 증거(C1–C7)는 이미 source-bound로 충분하고, Elastic Tracker는 **GPU 학습 없이** 공정하게
+port 가능하다. 단 어떤 후보도 MATCHABLE이 아니므로 결과는 Class A가 아니라 `PARTIALLY_MATCHED`다.
+n=3은 ordering 주장(12개 대비 전부 3/3 부호 일치)을 막지 못하므로 D는 아니고,
+mechanism은 이번 감사로 증거가 늘어 C의 긴급도가 내려갔다. **실행하지 않았다.**
+
+```text
+NEW_GPU_EVALUATION = NO      PPO_TRAINING = NO
+REWARD/CONTROLLER/TARGET 수정 = NO
+CLASS_A_EXTERNAL = 0 (변동 없음)
+```

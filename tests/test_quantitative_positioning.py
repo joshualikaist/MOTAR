@@ -21,6 +21,20 @@ REGISTRY = ROOT / "docs/quantitative_positioning_registry.json"
 LEDGER_JSON = ROOT / "docs/literature_quantitative_ledger_2026-09-18.json"
 LEDGER_MD = ROOT / "docs/literature_quantitative_positioning_2026-09-18.md"
 MATRIX_MD = ROOT / "docs/paper_claim_evidence_matrix_2026-09-18.md"
+# Every paper-facing document must sit under the same wording guard. A new
+# document that escapes this list is a document the guard silently stops
+# protecting, which is how the withdrawn "preregistered 5 pp" wording spread.
+PAPER_DOCS = tuple(
+    ROOT / f"docs/{name}" for name in (
+        "paper_claim_evidence_matrix_2026-09-19.md",
+        "paper_evidence_spine_2026-09-19.md",
+        "paper_outline_2026-09-19.md",
+        "paper_figure_plan_2026-09-19.md",
+        "external_baseline_selection_2026-09-19.md",
+        "preregistration_external_matched_baseline_draft_2026-09-19.md",
+        "results/target_motion_visibility_reacquisition_audit_2026-09-19.md",
+    )
+)
 INDEX = ROOT / "docs/status/index.html"
 
 # Wording that would assert a cross-benchmark performance ranking.
@@ -137,7 +151,8 @@ class ExternalLedgerDiscipline(unittest.TestCase):
 class NoCrossBenchmarkClaims(unittest.TestCase):
     def documents(self):
         for path in (LEDGER_MD, MATRIX_MD, INDEX,
-                     ROOT / "docs/relation_to_published_systems_2026-09-16.md"):
+                     ROOT / "docs/relation_to_published_systems_2026-09-16.md",
+                     *PAPER_DOCS):
             if path.exists():
                 yield path
 

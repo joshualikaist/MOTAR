@@ -1,0 +1,214 @@
+{
+  "schema_version": 1,
+  "generated": "2026-09-19",
+  "source": "results/target_motion_e0_e2_evaluation_2026-09-18 (frozen)",
+  "simulation_run": false,
+  "inventory": [
+    {
+      "metric": "visible -> invisible transitions",
+      "status": "RECORDED_DIRECTLY",
+      "field": "target_motion.first_acquisition.<class>.visible_hidden_transitions",
+      "note": "navrl_task.py:5525 counts `prev_visible & ~visible & valid_y_now`, i.e. strictly the visible->hidden direction, and only between two VALID observations."
+    },
+    {
+      "metric": "invisible -> visible transitions",
+      "status": "DERIVABLE_FROM_FROZEN_DATA",
+      "field": "derived from visible_hidden_transitions plus the terminal visibility state",
+      "note": "An episode starts hidden, so hidden->visible count equals visible->hidden count, plus one if the episode ended visible. The terminal visibility flag is NOT exported, so the derived count is bounded to +/-1 per episode and is not reported as a point value."
+    },
+    {
+      "metric": "reacquisition count",
+      "status": "DERIVABLE_FROM_FROZEN_DATA",
+      "field": "hidden->visible transitions after the first acquisition",
+      "note": "Equals the derived hidden->visible count minus the first acquisition, inheriting the same +/-1 per-episode bound."
+    },
+    {
+      "metric": "loss duration",
+      "status": "NOT_RECORDED",
+      "field": "-",
+      "note": "No per-loss duration accumulator exists anywhere in the task."
+    },
+    {
+      "metric": "maximum loss duration",
+      "status": "NOT_RECORDED",
+      "field": "-",
+      "note": "Same: no duration state is kept per loss."
+    },
+    {
+      "metric": "track age",
+      "status": "NOT_RECORDED",
+      "field": "-",
+      "note": "search_state carries belief coverage, not a track-age counter."
+    },
+    {
+      "metric": "lost-track duration",
+      "status": "NOT_RECORDED",
+      "field": "-",
+      "note": "Not accumulated."
+    },
+    {
+      "metric": "visibility before capture",
+      "status": "RECORDED_DIRECTLY",
+      "field": "target_motion.outcome_telemetry.capture.visible_fraction_step_weighted",
+      "note": ""
+    },
+    {
+      "metric": "visibility before timeout",
+      "status": "RECORDED_DIRECTLY",
+      "field": "target_motion.outcome_telemetry.timeout.visible_fraction_step_weighted",
+      "note": ""
+    },
+    {
+      "metric": "visibility by target-motion arm",
+      "status": "RECORDED_DIRECTLY",
+      "field": "canonical_summary.observation_side_visibility.per_arm",
+      "note": ""
+    },
+    {
+      "metric": "first acquisition latency",
+      "status": "RECORDED_DIRECTLY",
+      "field": "first_acquisition.<class>.first_visible_step_{mean,median,p10,p90}",
+      "note": "Not on the original wish-list, but present and directly relevant."
+    },
+    {
+      "metric": "never-acquired rate",
+      "status": "RECORDED_DIRECTLY",
+      "field": "first_acquisition.<class>.never_acquired_rate",
+      "note": "Not on the original wish-list; it turns out to carry the clearest signal."
+    }
+  ],
+  "per_arm_outcome": {
+    "E0_static|capture": {
+      "episodes": 20724,
+      "never_acquired": 11,
+      "never_acquired_rate": 0.0005307855626326964,
+      "camera_never_acquired": 11,
+      "camera_never_acquired_rate": 0.0005307855626326964,
+      "acquired": 20713,
+      "first_visible_step_mean": 66.10013035291846,
+      "visible_hidden_transitions": 37859,
+      "visible_hidden_transitions_per_episode": 1.8268191468828412
+    },
+    "E0_static|crash": {
+      "episodes": 2109,
+      "never_acquired": 1646,
+      "never_acquired_rate": 0.7804646752015173,
+      "camera_never_acquired": 1646,
+      "camera_never_acquired_rate": 0.7804646752015173,
+      "acquired": 463,
+      "first_visible_step_mean": 80.1792656587473,
+      "visible_hidden_transitions": 789,
+      "visible_hidden_transitions_per_episode": 0.3741109530583215
+    },
+    "E0_static|timeout": {
+      "episodes": 1747,
+      "never_acquired": 1667,
+      "never_acquired_rate": 0.9542072123640527,
+      "camera_never_acquired": 1667,
+      "camera_never_acquired_rate": 0.9542072123640527,
+      "acquired": 80,
+      "first_visible_step_mean": 565.55,
+      "visible_hidden_transitions": 193,
+      "visible_hidden_transitions_per_episode": 0.11047510017172295
+    },
+    "E1_cv|capture": {
+      "episodes": 20908,
+      "never_acquired": 10,
+      "never_acquired_rate": 0.0004782858236081883,
+      "camera_never_acquired": 10,
+      "camera_never_acquired_rate": 0.0004782858236081883,
+      "acquired": 20898,
+      "first_visible_step_mean": 70.24112355249306,
+      "visible_hidden_transitions": 42705,
+      "visible_hidden_transitions_per_episode": 2.042519609718768
+    },
+    "E1_cv|crash": {
+      "episodes": 2587,
+      "never_acquired": 1570,
+      "never_acquired_rate": 0.6068805566293003,
+      "camera_never_acquired": 1570,
+      "camera_never_acquired_rate": 0.6068805566293003,
+      "acquired": 1017,
+      "first_visible_step_mean": 77.52015732546705,
+      "visible_hidden_transitions": 2715,
+      "visible_hidden_transitions_per_episode": 1.0494781600309238
+    },
+    "E1_cv|timeout": {
+      "episodes": 1083,
+      "never_acquired": 899,
+      "never_acquired_rate": 0.830101569713758,
+      "camera_never_acquired": 899,
+      "camera_never_acquired_rate": 0.830101569713758,
+      "acquired": 184,
+      "first_visible_step_mean": 548.3641304347826,
+      "visible_hidden_transitions": 449,
+      "visible_hidden_transitions_per_episode": 0.41458910433979684
+    },
+    "H_historical|capture": {
+      "episodes": 21604,
+      "never_acquired": 15,
+      "never_acquired_rate": 0.000694315867431957,
+      "camera_never_acquired": 15,
+      "camera_never_acquired_rate": 0.000694315867431957,
+      "acquired": 21589,
+      "first_visible_step_mean": 60.88545092408171,
+      "visible_hidden_transitions": 44019,
+      "visible_hidden_transitions_per_episode": 2.037539344565821
+    },
+    "H_historical|crash": {
+      "episodes": 2334,
+      "never_acquired": 1441,
+      "never_acquired_rate": 0.617395029991431,
+      "camera_never_acquired": 1441,
+      "camera_never_acquired_rate": 0.617395029991431,
+      "acquired": 893,
+      "first_visible_step_mean": 63.07502799552071,
+      "visible_hidden_transitions": 2516,
+      "visible_hidden_transitions_per_episode": 1.0779777206512424
+    },
+    "H_historical|timeout": {
+      "episodes": 642,
+      "never_acquired": 540,
+      "never_acquired_rate": 0.8411214953271028,
+      "camera_never_acquired": 540,
+      "camera_never_acquired_rate": 0.8411214953271028,
+      "acquired": 102,
+      "first_visible_step_mean": 551.6666666666666,
+      "visible_hidden_transitions": 238,
+      "visible_hidden_transitions_per_episode": 0.3707165109034268
+    },
+    "E2_obstacle_aware|capture": {
+      "episodes": 21932,
+      "never_acquired": 16,
+      "never_acquired_rate": 0.0007295276308590188,
+      "camera_never_acquired": 16,
+      "camera_never_acquired_rate": 0.0007295276308590188,
+      "acquired": 21916,
+      "first_visible_step_mean": 57.97485855083044,
+      "visible_hidden_transitions": 44314,
+      "visible_hidden_transitions_per_episode": 2.02051796461791
+    },
+    "E2_obstacle_aware|crash": {
+      "episodes": 2361,
+      "never_acquired": 1284,
+      "never_acquired_rate": 0.5438373570520966,
+      "camera_never_acquired": 1284,
+      "camera_never_acquired_rate": 0.5438373570520966,
+      "acquired": 1077,
+      "first_visible_step_mean": 62.159702878365835,
+      "visible_hidden_transitions": 3075,
+      "visible_hidden_transitions_per_episode": 1.3024142312579416
+    },
+    "E2_obstacle_aware|timeout": {
+      "episodes": 288,
+      "never_acquired": 243,
+      "never_acquired_rate": 0.84375,
+      "camera_never_acquired": 243,
+      "camera_never_acquired_rate": 0.84375,
+      "acquired": 45,
+      "first_visible_step_mean": 454.93333333333334,
+      "visible_hidden_transitions": 91,
+      "visible_hidden_transitions_per_episode": 0.3159722222222222
+    }
+  }
+}
