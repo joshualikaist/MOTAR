@@ -150,9 +150,11 @@
     "commit": "0a302a2a9cc8b733e74941fdd4af3fb449447bea",
     "license": "GPL-3.0",
     "integration_mode": "EXTERNAL_DEPENDENCY_ONLY",
-    "integration_mode_reason": "Elastic Tracker is GPL-3.0 and MOTAR is BSD-3-Clause; vendoring would impose GPL-3 on the combined work",
+    "integration_mode_reason": "Elastic Tracker is GPL-3.0 while MOTAR is BSD-3-Clause. MOTAR therefore treats Elastic Tracker as a pinned external dependency and does not vendor it, avoiding redistribution/licensing ambiguity. This is not a claim that co-location would relicense independent MOTAR files.",
     "public_simulation_target_input": "ground-truth target odometry (/target/odom) fed directly to the EKF; check_fov defaults to false and simulation1.launch does not enable it",
     "public_simulation_is_visual_tracking": false,
-    "record": "docs/external_baselines/elastic_tracker_b0_upstream_reproduction_2026-09-20.md"
+    "record": "docs/external_baselines/elastic_tracker_b0_upstream_reproduction_2026-09-20.md",
+    "public_sim_target_input_token": "PRIVILEGED_GROUND_TRUTH_ODOMETRY",
+    "equivalent_visual_perception_benchmark": false
   }
 }

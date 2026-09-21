@@ -32,10 +32,12 @@ No fork was used. Nothing was vendored into MOTAR or MOTAR-public.
 
 ## 2. Licence review — this decides the integration mode
 
-**Elastic Tracker is GPL-3.0. MOTAR is BSD 3-Clause.**
+> Elastic Tracker is GPL-3.0 while MOTAR is BSD-3-Clause. MOTAR therefore treats Elastic Tracker as
+> a pinned external dependency and does not vendor it, avoiding redistribution/licensing ambiguity.
 
-Vendoring GPL-3 sources into a BSD-3 repository would impose GPL-3 obligations on the combined
-work. The licence review therefore does **not** support any mode other than:
+This is a redistribution-hygiene decision, not a claim about what co-location would legally do. In
+particular it does **not** assert that placing the two side by side would relicense independent
+MOTAR files. The licence review supports exactly one mode:
 
 ```text
 EXTERNAL_DEPENDENCY_ONLY
@@ -125,8 +127,15 @@ with no FOV test, no occlusion test and no detection dropout.
 When `check_fov` *is* enabled it is still a geometric frustum test on the ground-truth position
 (camera 640×480, fx 346.74, fy 349.13, plus a depth gate of 0.1–5.0 m) — not a perception model.
 
-**Stated plainly, as the task requires:** the public Elastic Tracker simulation feeds privileged
-oracle target state to the planner. It must not be described as visual target tracking. The
+**Stated plainly, as the task requires:**
+
+```text
+PUBLIC_SIM_TARGET_INPUT = PRIVILEGED_GROUND_TRUTH_ODOMETRY
+```
+
+The public Elastic Tracker simulation feeds privileged oracle target state to the planner, so it is
+**not an equivalent visual-perception benchmark to MOTAR**. This interpretation stands unless
+contrary upstream evidence is found. It must not be described as visual target tracking. The
 "visibility guarantee" in its objective is about *planning to keep the target visible*, not about
 *sensing* whether it is.
 
@@ -157,16 +166,97 @@ but it does not evade. The paper's own conclusion names escaping targets as futu
 * No B1 contract-diff matrix was produced — the gate forbids it while B0 is FAIL.
 * No MOTAR GPU evaluation and no PPO training was started.
 
-## 8. What would unblock B0
+## 8. Environment recovery — 2026-09-21
 
-1. Install ROS Noetic (`ros-noetic-desktop-full` or a narrower set covering `roscpp`, `pcl_ros`,
-   `cv_bridge`, `nodelet`, `rviz`, `image_transport`, `dynamic_reconfigure`, `tf`).
-2. Free disk first — the filesystem is at 97 %.
-3. Obtain `vikit_ros` and `svo_msgs`.
-4. Set the CUDA arch to `sm_86`, or set `ENABLE_CUDA false` if `local_sensing` is not needed for the
-   tracking demo.
+### 8.1 Disk headroom resolved
 
-Steps 1–2 require the user; the rest follow from a working ROS environment.
+| | |
+|---|---|
+| Before | 3.1 GB free (98 %) |
+| After | **6.6 GB free (95 %)** |
+
+Reclaimed 3.5 GB from two sources only, both verifiable as safe:
+
+* **1.16 GB — this session's own artifacts**: a clone of MOTAR-public (already pushed; the remote
+  holds everything) and a public release-candidate snapshot (regenerable by
+  `tools/build_public_release_candidate.py`).
+* **2.33 GB — conda packages referenced by no environment**, as determined by `conda clean
+  --packages` itself, not by inspection.
+
+**Nothing belonging to MOTAR or to the user was touched**: `datasets/` (34 GB), `results/` (3.1 GB,
+which holds the frozen raw evaluation), `aerial_gym/` (3.2 GB), `detector_runs/`,
+`tensorboard_archive/`, the prior release candidate, the Cursor editor state (1.6 GB and growing)
+and other sessions' `/tmp` directories were all left alone.
+
+The `aerialgym` environment was verified intact after the conda operation: torch 2.4.1+cu121 with
+CUDA available, numpy 1.24.4, matplotlib 3.7.5, and 32 MOTAR tests green.
+
+6.6 GB free against a ~3 GB install leaves roughly 3.6 GB headroom, rather than the few hundred
+megabytes that would have remained before.
+
+### 8.2 Dependency audit against the pinned upstream
+
+Resolved from source; the earlier note that `vikit_ros`/`svo_msgs` are "missing dependencies" needs
+qualifying.
+
+| finding | evidence |
+|---|---|
+| `local_sensing` **is** on the documented demo path | `simulation1.launch` → `mapping.launch` → `uav_simulator.launch`, which starts `local_sensing_node`'s `pcl_render_node` (`sensing_horizon 5.0`, matching the EKF's 0.1–5.0 m depth gate) |
+| `vikit_ros` / `svo_msgs` are **probably not build requirements** | They appear only in `local_sensing/package.xml` as build/run depends. **Neither CMake branch `find_package`s them** — the CUDA branch requires `roscpp roslib cmake_modules cv_bridge image_transport pcl_ros sensor_msgs geometry_msgs nav_msgs dynamic_reconfigure`, the non-CUDA branch a subset. They look like stale declarations. `ANTICIPATED_NOT_CONFIRMED` — a real build decides this. |
+| `cmake_utils` is **not** a dependency | Referenced only by `src/uav_simulator/uav_utils/CMakeLists.txt`, which has **no `package.xml`**, so catkin never builds it. The reference is inert. |
+| **Armadillo is genuinely required** | `pose_utils` and `odom_visualization` need it, and `odom_visualization` is started by both `simulation1.launch` and `fake_target.launch`. |
+| Qt is required | `decomp_ros_utils` builds an rviz plugin. |
+
+### 8.3 Commands for the user to run
+
+`sudo -n true` reports that a password is required. **I did not attempt to bypass it, and these were
+not executed.** They are listed exactly as they should be run.
+
+```bash
+# 1. ROS Noetic (Ubuntu 20.04's matching distro)
+sudo sh -c 'echo "deb http://packages.ros.org/ros/ubuntu focal main" > /etc/apt/sources.list.d/ros-latest.list'
+curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc | sudo apt-key add -
+sudo apt update
+sudo apt install -y ros-noetic-desktop \
+    ros-noetic-pcl-ros ros-noetic-pcl-conversions \
+    ros-noetic-cv-bridge ros-noetic-image-transport \
+    ros-noetic-dynamic-reconfigure ros-noetic-nodelet ros-noetic-tf \
+    libarmadillo-dev
+```
+
+`ros-noetic-desktop` is chosen over `desktop-full`: it carries rviz and the generic robot libraries
+without Gazebo and the full perception stack, which this demo does not use, and saves roughly a
+gigabyte.
+
+### 8.4 Build sequence once ROS exists — documented build first
+
+```bash
+source /opt/ros/noetic/setup.bash
+cd /home/fair/workspaces/external_baselines/elastic-tracker-upstream
+catkin_make                       # upstream's documented command, UNMODIFIED
+```
+
+**The CUDA configuration is not touched until this build has actually been run.** The `sm_61` →
+`sm_86` question stays `ANTICIPATED_NOT_CONFIRMED` until a compiler genuinely fails on the
+architecture. If it does fail, and the fix matches the README's own instruction to "change the CUDA
+option", it is recorded as an **environment/build reproduction patch — not an algorithm
+modification**, because it changes which GPU the renderer targets and nothing about the planner.
+
+Then the documented launch sequence, in four terminals:
+
+```bash
+source devel/setup.bash           # README says setup.zsh; this shell is bash
+roslaunch mapping rviz_sim.launch
+roslaunch planning fake_target.launch
+roslaunch planning simulation1.launch
+./sh_utils/pub_triger.sh
+```
+
+### 8.5 Status
+
+B0 remains **`UPSTREAM_REPRODUCTION_FAIL`**. Disk is no longer a blocker; the remaining blocker is
+solely that ROS 1 cannot be installed without the user's password. Nothing else in this document
+changes.
 
 ## 9. Classification after B0
 

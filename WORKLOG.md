@@ -19687,3 +19687,81 @@ B0 = UPSTREAM_REPRODUCTION_FAIL (environmental)
 B1..B5 = NOT AUTHORISED / NOT STARTED
 NEW_GPU_EVALUATION = NO   PPO_TRAINING = NO
 ```
+
+---
+
+## 2026-09-21 — 7fb547d push + B0 환경 복구 (여전히 FAIL, 블로커는 sudo 하나)
+
+승인 범위만 수행. MOTAR GPU 실행 0, PPO training 0, 과학적 결과 수정 0,
+`aerial_gym/`·`resources/`·`configs/` 변경 0.
+
+### 1. push
+
+`a4badde..7fb547d` fast-forward. force/reset/rewrite 없음. HEAD == origin/main, tree clean.
+
+### 2. 디스크 3.1G → 6.6G
+
+두 군데만 건드렸고 둘 다 안전성이 검증된다:
+- **1.16 GB 이번 세션 내 산출물** — MOTAR-public 클론(이미 push됨, remote에 전부 있음)과
+  public release candidate 스냅샷(`build_public_release_candidate.py`로 재생성 가능).
+- **2.33 GB conda 미참조 패키지** — 내 판단이 아니라 `conda clean --packages`가 "어떤 env도
+  참조하지 않는다"고 판정한 것.
+
+**손대지 않은 것**: `datasets/`(34G), `results/`(3.1G, frozen raw 포함), `aerial_gym/`(3.2G),
+`detector_runs/`, `tensorboard_archive/`, 이전 release candidate, Cursor state.vscdb(1.6G, 계속 증가),
+타 세션 `/tmp` 디렉터리.
+
+conda 조작 후 `aerialgym` env 무결성 확인: torch 2.4.1+cu121 CUDA available, numpy 1.24.4,
+matplotlib 3.7.5, MOTAR 테스트 32건 green.
+
+6.6G − 약 3G 설치 = **약 3.6G 여유**. 이전의 수백 MB 여유와 다르다.
+
+### 3. 의존성 감사 — 이전 기록을 정정한다
+
+- `local_sensing`은 **데모 경로에 있다**: `simulation1.launch` → `mapping.launch` →
+  `uav_simulator.launch`가 `local_sensing_node`의 `pcl_render_node`를 띄운다
+  (`sensing_horizon 5.0`, EKF의 0.1–5.0 m depth gate와 일치). 이전에 "데모 경로 밖"이라고
+  추정했던 것을 **철회**한다.
+- 그러나 `vikit_ros`/`svo_msgs`는 **빌드 요구사항이 아닐 가능성이 높다**: `package.xml`에만
+  있고 **CMakeLists 두 분기 어느 쪽도 `find_package` 하지 않는다**. stale 선언으로 보인다.
+  → `ANTICIPATED_NOT_CONFIRMED`. 실제 빌드가 판정한다.
+- `cmake_utils`는 의존성이 **아니다**: `uav_simulator/uav_utils`만 참조하는데 그 디렉터리에
+  `package.xml`이 없어 catkin이 빌드하지 않는다. 참조가 무효다.
+- **Armadillo는 진짜 필요**: `pose_utils`/`odom_visualization`이 쓰고 `odom_visualization`은
+  `simulation1.launch`와 `fake_target.launch` 양쪽에서 기동된다.
+- Qt 필요: `decomp_ros_utils`의 rviz 플러그인.
+
+### 4. B0 = UPSTREAM_REPRODUCTION_FAIL 유지
+
+디스크는 더 이상 블로커가 아니다. **남은 블로커는 `sudo` 비밀번호 하나**다.
+`sudo -n true`가 비밀번호를 요구하며 우회하지 않았다. 설치 명령은 문서에 그대로 적어두고
+실행하지 않았다(`ros-noetic-desktop` + pcl-ros/cv-bridge/image-transport/dynamic-reconfigure/
+nodelet/tf + `libarmadillo-dev`; `desktop-full`은 Gazebo·perception 전체를 끌어와 불필요).
+
+CUDA `sm_61`→`sm_86`은 **문서화된 `catkin_make`를 먼저 돌리기 전에는 건드리지 않는다**.
+컴파일러가 실제로 아키텍처에서 실패할 때까지 `ANTICIPATED_NOT_CONFIRMED`이고, 실패하고
+README 지침과 일치하면 **environment/build reproduction patch**로 기록한다(planner 알고리즘
+변경이 아니다 — 렌더러가 어느 GPU를 타깃하는지만 바뀐다).
+
+### 5. 라이선스 문구 정정
+
+이전 표현("결합저작물에 GPL-3 의무가 붙는다")은 필요 이상으로 강한 법적 주장이었다. 교체:
+
+> Elastic Tracker is GPL-3.0 while MOTAR is BSD-3-Clause. MOTAR therefore treats Elastic Tracker as
+> a pinned external dependency and does not vendor it, avoiding redistribution/licensing ambiguity.
+
+단순 병치가 독립적인 MOTAR 파일을 재라이선스한다고 주장하지 않는다.
+
+### 6. 토큰 고정
+
+```text
+PUBLIC_SIM_TARGET_INPUT = PRIVILEGED_GROUND_TRUTH_ODOMETRY
+```
+공개 시뮬레이션은 MOTAR와 동등한 visual-perception 벤치마크가 **아니다**. 반대되는 upstream
+증거가 나오기 전까지 이 해석을 바꾸지 않는다.
+
+```text
+B0 = UPSTREAM_REPRODUCTION_FAIL (블로커: sudo 하나)
+B1 = NOT_STARTED   B2 = NOT_STARTED   B3-B5 = NOT_AUTHORISED
+upstream 수정 0, adapter 0, core planner 수정 0
+```
