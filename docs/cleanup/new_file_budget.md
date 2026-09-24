@@ -52,14 +52,14 @@ their hashes.
 `DESIGN_SYSTEM.md`, `docs/README.md`, `docs/EVIDENCE.md`, `docs/REPRODUCIBILITY.md`,
 `docs/OPERATIONS.md` and `docs/HISTORY.md`. `AGENTS.md` and `CLAUDE.md` are agent instructions.
 
-## Set B — replication instrumentation and preregistration (5 files)
+## Set B — bias-corrected replication instrumentation and preregistration (5 files)
 
 B is kept separate from A so that it can be reviewed and committed separately. The replication must
 run from a clean tree on the commit that contains B.
 
 | Path | Why it is tracked | Source or generated | Can it be regenerated? | Needed in Git? |
 | --- | --- | --- | --- | --- |
-| `docs/prereg_2026-09-24_target_motion_replication_6seed.md` | The preregistration; it must be committed before any cell runs | Source | No | Yes |
+| `docs/prereg_2026-09-24_target_motion_replication_7seed.md` | The preregistration; it must be committed before any cell runs | Source | No | Yes |
 | `aerial_gym/task/navrl_task/navrl_episode_ledger.py` | Per-episode ledger and exact per-environment quota; off by default | Source | No | Yes |
 | `tools/target_motion_replication.py` | Cell list, guarded launcher and analysis, fixed before data | Source | No | Yes |
 | `tests/test_navrl_episode_ledger.py` | Quota exactness, unbiasedness, no RNG use, no input mutation, wiring | Source | No | Yes |

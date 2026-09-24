@@ -1,6 +1,6 @@
 # D8c perception-path audit, read-only part (2026-09-24)
 
-**Status:** read-only audit of recorded D8b data and frozen source. **No GPU run, no training, no new
+**Status:** `D8C_READ_ONLY_AUDIT = COMPLETED`; read-only audit of recorded D8b data and frozen source. **No GPU run, no training, no new
 measurement.** The diagnostic run in the appendix is a **draft**. It is not a preregistration and is
 not authorised.
 
@@ -123,10 +123,20 @@ so visibility is not an independent input here.
 | B | Perception and actor input stay valid, yet the policy still collapses under the intended final distribution | Contradicted at the detector stage by the recorded collapse | `NEW_OBSERVATION_CONTRACT_RETRAINING_STUDY_JUSTIFIED` (new preregistration and lineage) |
 | C | Mesh-shaded is not the intended final distribution | NOT_STATED; this is the user's decision | `NO_RETRAINING_REQUIRED_FOR_CURRENT_CLAIM` · `D8B_REMAINS_SENSITIVITY_EVIDENCE` |
 
-**Retraining: `NOT_YET_JUSTIFIED`.** The record points to Case A at the detector stage, but it does
-not establish target-state validity or the causal pathway. If the user states that mesh shading is not
-the intended deployment observation, Case C applies without any further run. No materiality threshold
-is introduced here. The only threshold in force is D8b's preregistered −3.0 pp margin.
+**Project decision (user, 2026-09-24).** For the current paper and the current policy contract:
+
+| Item | Status |
+| --- | --- |
+| `D8C_READ_ONLY_AUDIT` | `COMPLETED` (this document) |
+| `MESH_SHADED_FINAL_POLICY_OBSERVATION` | `NO` |
+| `PPO_RETRAINING_FOR_D8B` | `NOT_REQUIRED_FOR_CURRENT_CLAIM` |
+| `causality_vs_d8b` | `NOT_TESTED` (unchanged) |
+
+Case C applies: D8b remains observation-contract sensitivity evidence, and no PPO retraining is
+justified or required for the current paper claim. D8b is not a causal perception result. The decision
+does not rule out mesh-shaded observation as a future research contract. If that is ever chosen, the
+draft diagnostic below must become its own preregistration before any retraining. No other threshold
+is introduced here; the only one in force is D8b's preregistered −3.0 pp margin.
 
 ## Appendix — draft diagnostic run D8c-DX
 

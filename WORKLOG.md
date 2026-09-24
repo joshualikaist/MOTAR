@@ -19862,3 +19862,31 @@ mask·depth 동일, RGB만 다름. shading-only 대비 −41.79 pp [−43.59, �
 **Elastic B0:** ROS Noetic 미설치, `sudo` 필요 — 변동 없음. 디스크 93 %(8.2 GB 여유).
 
 다음: A 커밋·push(사용자 지시 2026-09-24), B는 7 seed로 수정 후 별도 검토. `NEW_GPU_EVALUATION = NO`, `PPO_TRAINING = NO`.
+
+## 2026-09-24 — TM 7-seed 독립 bias-corrected 재현 사전등록 + D8c 결정 기록 (측정 없음, PPO 0)
+
+원 결과(09-18, 3 seed)는 닫힌 기록. **INDEPENDENT BIAS-CORRECTED REPLICATION**:
+`docs/prereg_2026-09-24_target_motion_replication_7seed.md`. 원 사전등록과 별개이며, 원 3 seed는 확증 검정에 넣지 않는다.
+
+- 조건 동일(계측만 추가): policy F(`f7022139…`), 원 launcher byte-unchanged, 4 arm × 70/115/160/205, 128 env.
+- seed 규칙(데이터 전 고정): 4101–4103 다음의 미사용 정수 7개 → **4104–4110**. 40,709 파일 seed 문맥 검색
+  PRIOR_USE = 0(대조군 4101은 68 파일에서 검출). **112 cell × 정확히 2,048 = 229,376 episode**.
+- estimand: env당 첫 16 episode(bias-corrected quota). 09-18은 pooled legacy stopping window → byte-for-byte 반복이 아님.
+  legacy window는 진단 전용.
+- 계측: `navrl_episode_ledger.py`(기본 off), `navrl_task.py` +16줄 hook, `runner.py` cap 1줄. episode마다 cell·seed·
+  episode_id·outcome·capture/crash/timeout·`min_relative_distance_m`(crash 포함).
+- 통계(수정): contrast마다 seed-paired effect 7개·평균·BCa95·exact sign-flip p·Holm p·부호 일치 수를 보고. **성공 판정 =
+  원 방향 유지 + Holm-adjusted exact p < 0.05**. 부호 일치는 기술만 하고 합격 기준이 아니다(7/7 규칙 없음 — 이전
+  초안의 "한 seed라도 반대면 확정 불가" 문장은 삭제). 7 seed = Holm 3개에서 p < 0.05가 가능한 해상도(하한 0.046875), 기각
+  보장 아님. optional stopping 없음.
+- canary(옛 cell H/70/4101, 비간섭 확인 전용·증거 아님): ledger off/on, trajectory digest + actor observation dump(stride
+  20). 게이트 11개(return code, legacy 재현, result.json nonce 외 동일, digest 동일, RNG 추가 소비 없음, actor 관측 동일,
+  물리·제어·보상·target 불변(소스는 baseline `839cc8e` 대비 ledger와 hook만), quota 2,048, env당 16, episode ID 유일·완전,
+  모든 episode 최소거리). 하나라도 실패하면 CANARY_FAIL, 보존 후 정지.
+- 런타임 ≈ 13 h(11.5–14.8) + canary ≈ 12 min.
+
+**D8c 결정(사용자, 2026-09-24):** `D8C_READ_ONLY_AUDIT = COMPLETED`, `MESH_SHADED_FINAL_POLICY_OBSERVATION = NO`(현 논문·현
+policy 계약 기준; 향후 연구 계약 가능성은 열어 둠), `PPO_RETRAINING_FOR_D8B = NOT_REQUIRED_FOR_CURRENT_CLAIM`. D8b는
+observation-contract 민감도 증거로 유지, `causality_vs_d8b = NOT_TESTED` 유지. 기록: `docs/d8c_perception_path_audit_2026-09-24.md` §6.
+
+다음: B 커밋·push → canary(승인됨) → 결과 보고 후 정지; 112-cell 본 측정은 별도 승인 필요. `PPO_TRAINING = NO`.

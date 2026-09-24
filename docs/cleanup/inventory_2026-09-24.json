@@ -2380,7 +2380,7 @@
     "git_last_commit": "2026-09-17 19d9be3"
    },
    {
-    "path": "docs/prereg_2026-09-24_target_motion_replication_6seed.md",
+    "path": "docs/prereg_2026-09-24_target_motion_replication_7seed.md",
     "role": "EVIDENCE",
     "referenced_by_code": false,
     "referenced_by_test": false,
@@ -2389,7 +2389,7 @@
     "unique_evidence": true,
     "recommended_action": "KEEP",
     "action_taken": "NEW_PASS2",
-    "reason": "Draft preregistration of the independent six-seed target-motion replication (not run)",
+    "reason": "Preregistration of the independent bias-corrected seven-seed target-motion replication",
     "title": null,
     "git_last_commit": null
    },

@@ -123,8 +123,8 @@ contributions 1–6 is complete. No GPU evaluation or PPO training is authorised
 | Paper | Spine, outline and claim/evidence matrix of 2026-09-19; figures 1–6 generated from records |
 | External matched baseline | Elastic Tracker selected. Upstream reproduction gate B0 FAILed on the environment; the remaining blocker is `sudo` to install ROS. B1–B5 are not authorised |
 | Task diagnostics | TD-T1 / TD-T2 recorders exist; their density sweep has not run |
-| Perception | D8c is the perception-path audit of the D8b loss: its read-only part is written up in [`docs/d8c_perception_path_audit_2026-09-24.md`](docs/d8c_perception_path_audit_2026-09-24.md); its diagnostic run is drafted, not preregistered or authorised. D9 (shortcut remeasurement) is PLANNED |
-| Target behaviour | An independent six-seed replication of H / E0 / E1 / E2 is drafted as a preregistration and has not run. TM-E3 / TM-E4 are PLANNED |
+| Perception | D8c read-only audit COMPLETED ([`docs/d8c_perception_path_audit_2026-09-24.md`](docs/d8c_perception_path_audit_2026-09-24.md)). Mesh-shaded rendering is not the final policy observation for the current contract, so D8b stays sensitivity evidence (causality NOT_TESTED) and no retraining is required for the current claim. D9 (shortcut remeasurement) is PLANNED |
+| Target behaviour | An independent bias-corrected seven-seed replication of H / E0 / E1 / E2 is preregistered ([`docs/prereg_2026-09-24_target_motion_replication_7seed.md`](docs/prereg_2026-09-24_target_motion_replication_7seed.md)); its main run needs separate approval. TM-E3 / TM-E4 are PLANNED |
 
 Any new experiment requires, in this order: a question that one of the tables above leaves open, a
 preregistration, and explicit approval from the user. Rules for agents are in [`AGENTS.md`](AGENTS.md).

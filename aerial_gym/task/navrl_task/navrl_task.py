@@ -76,6 +76,7 @@ from aerial_gym.task.navrl_task.speed_governor import (
 )
 from aerial_gym.task.navrl_task.joint_speed_telemetry import JointSpeedTelemetry
 from aerial_gym.task.navrl_task.navrl_episode_forensics import EpisodeForensics
+from aerial_gym.task.navrl_task.navrl_episode_ledger import build_episode_ledger
 from aerial_gym.task.navrl_task.navrl_trajectory_digest import TrajectoryDigest
 from aerial_gym.sim.sim_builder import SimBuilder
 from aerial_gym.utils.math import quat_rotate, quat_rotate_inverse, quat_to_rotation_matrix
@@ -1867,6 +1868,11 @@ class NavRLTask(BaseTask):
             )
             if self._trajectory_digest_enabled
             else None
+        )
+        # Evaluation-only per-episode ledger with an exact per-environment quota (the independent
+        # target-motion replication). Off by default; it refuses any incomplete configuration.
+        self._episode_ledger = build_episode_ledger(
+            self.num_envs, self._bulk_eval_mode, self._bulk_eval_output, self._bulk_eval_target
         )
         # --- crash-cause diagnosis (NAVRL_CRASH_DIAG=1): split the aggregate "crash" number into
         # its termination source (bar contact / height bound / out-of-arena side) so a stuck run
@@ -5059,6 +5065,16 @@ class NavRLTask(BaseTask):
             )
         self._record_general_result(successes, crashes, timeouts, finished)
         self._log_progress(successes, crashes, timeouts, finished)
+        if self._episode_ledger is not None:
+            # Reads the resolved outcomes and the running minimum distance before any reset.
+            self._episode_ledger.record(
+                finished, successes, crashes, timeouts, self.ep_min_goal_dist
+            )
+            if self._episode_ledger.complete:
+                # Every environment has its quota and the aggregate window was exported above, so
+                # the evaluation ends here; the player's own cap is set far above this point.
+                self._episode_ledger.finalize(legacy_result_written=self._bulk_eval_exported)
+                raise SystemExit(0)
         self._update_curriculum(successes, finished)
         self._record_epoch_dashboard(successes, crashes, timeouts, finished)
 

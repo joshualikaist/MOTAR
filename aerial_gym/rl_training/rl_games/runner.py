@@ -895,7 +895,9 @@ def update_config(config, args):
                 )
             player_cfg["deterministic"] = eval_action_mode == "deterministic"
         try:
-            _gn = int(os.environ.get("PLAY_GAMES_NUM", "64"))
+            # NAVRL_PLAYER_GAMES_CAP lets the task's episode ledger, not the pooled count, end a
+            # quota evaluation. Unset, the player stops at PLAY_GAMES_NUM as before.
+            _gn = int(os.environ.get("NAVRL_PLAYER_GAMES_CAP") or os.environ.get("PLAY_GAMES_NUM", "64"))
         except ValueError:
             _gn = 64
         player_cfg["games_num"] = max(1, _gn)
