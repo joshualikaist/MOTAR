@@ -25,7 +25,7 @@ class RepositoryClaimsTest(unittest.TestCase):
         self.assertIn("소비된 실행 계약", page)
 
     def test_current_r4_prose_does_not_blame_criterion(self):
-        for name in ("README.md", "docs/status/index.html"):
+        for name in ("README.md", "docs/status/index.html", "docs/status/evidence.html"):
             page = read(name)
             for withdrawn in ("What failed was the criterion:", "C가 실패한 진짜 이유",
                               "<strong>기준 설계 결함</strong>"):
@@ -69,7 +69,8 @@ class RepositoryClaimsTest(unittest.TestCase):
             self.assertIn("3,840", page)
             self.assertIn("target_appearance_in_sim_2026-09-12/AUDIT.md", page)
         self.assertNotIn("Making the target drone-shaped costs 41%", read("README.md"))
-        self.assertNotIn("색만으로 표적을 찾을 수 있었습니다", read("docs/status/index.html"))
+        for page in ("docs/status/index.html", "docs/status/evidence.html"):
+            self.assertNotIn("색만으로 표적을 찾을 수 있었습니다", read(page))
 
     def test_current_v1_resolution_does_not_erase_failure_history(self):
         for name in ("VERIFICATION.md", "docs/v1_shared_airframe_contract.md",

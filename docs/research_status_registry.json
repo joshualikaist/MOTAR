@@ -97,7 +97,7 @@
       "evidence": "results/dynamic_mesh_policy_sensitivity_d8b_2026-09-13/README.md"
     },
     "D8C": {
-      "label": "Perception adaptation after mesh observation",
+      "label": "Perception-path audit of the D8b loss (diagnostic run)",
       "lifecycle_status": "PLANNED",
       "evidence_status": "NOT_STARTED",
       "evidence": "docs/track_d_state_2026-09-12.md"

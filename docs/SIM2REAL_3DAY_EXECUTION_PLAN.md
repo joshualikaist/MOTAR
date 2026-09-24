@@ -84,7 +84,7 @@ software-only preflight를 반복하거나 Track B를 다시 여는 것으로 �
 
 실기 미조립과 frame 미보유를 확인한 뒤, 현재 220 mm/5-inch simulation 형상을 가장 적게 바꾸는
 **우선 설계 기준**으로 iFlight AOS 5 V5.1(공식 228 mm, 165±5 g)을 선정했다. 이는 구매 확정이
-아니며 [`navrl_frame_selection_2026-08-23.md`](navrl_frame_selection_2026-08-23.md)의 payload CAD,
+아니며 [`navrl_frame_selection_2026-08-23.md`](archive/platform/navrl_frame_selection_2026-08-23.md)의 payload CAD,
 질량·CG, prop/sensor clearance, thrust-curve gate를 모두 통과해야 exact BOM으로 승격한다. gate 전에는
 URDF 질량/충돌 형상이나 frozen checkpoint contract를 바꾸지 않는다.
 

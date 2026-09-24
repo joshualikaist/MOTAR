@@ -1,6 +1,6 @@
 # Paper outline — 2026-09-19
 
-Supersedes [`paper_evidence_outline_2026-09-18.md`](paper_evidence_outline_2026-09-18.md), which
+Supersedes [`paper_evidence_outline_2026-09-18.md`](archive/plans/paper_evidence_outline_2026-09-18.md), which
 predates the completed target-motion result and the acquisition audit.
 
 Evidence per section is in [the evidence spine](paper_evidence_spine_2026-09-19.md); the
@@ -10,10 +10,10 @@ axis-by-axis external pairing is in
 ## Thesis
 
 Published UAV work isolates navigation, tracking, pursuit, perception or safety and reports a number
-inside one of them. MOTAR measures the **chain that connects them** on a single frozen policy, and
+inside one of them. MOTAR measures the **chain that connects them** on frozen UAV policies, and
 keeps the links that failed. The strongest single new result is that target behaviour did not form a
 monotonic difficulty ladder: the static arm produced the lowest capture rate and the highest
-timeout rate under the frozen policy.
+timeout rate under frozen policy F.
 
 ## Structure
 
@@ -30,13 +30,15 @@ two of them share a contract.
 **Q2 — What does MOTAR measure jointly that is usually separated?**
 Measured perception error → its cost to a policy → whether retraining recovers it → the safety
 geometry that executes the policy's output → the target-motion distribution the policy is evaluated
-against → the observation contract that renders all of it. One frozen checkpoint, one arena family,
-one set of receipts.
+against → the observation contract that renders all of it. Two frozen checkpoints — policy F
+(ep25000 + riskcap) for the perception-cost, safety and target-motion links, and policy R (ref5in D1
+ep1900) for the observation contract — one arena family, one set of receipts.
 
 **Q3 — What numerical evidence supports the distinction?**
-Measured range error **6.2 %** (3,107 frames) → frozen-policy cost **−4.57 pp** (interval excludes
-zero, 3/3 campaigns) → readaptation **+0.73 pp**, CI [−1.04, +2.50], `INCONCLUSIVE` → safety
-geometry **−1.4903 pp** crash, CI [−1.8981, −1.0826], 15/15 cells → target-motion shift **−3.58 pp**
+Measured range error **6.2 %** (median of 9 block medians, one flight) → policy-F cost **−4.57 pp**
+(episode-level interval excludes zero; two evaluation seeds) → readaptation **+0.73 pp**, CI [−1.04, +2.50], `INCONCLUSIVE` → safety
+geometry **−1.4903 pp** crash, cell-pooled CI [−1.8981, −1.0826], seed-level CI [−2.42, −0.57] →
+target-motion shift **−3.58 pp**
 (static) to **+1.33 pp** (obstacle-aware) against the historical reference → observation treatment
 **−48.967 pp**, `MATERIAL_LOSS`, causality `NOT_TESTED`.
 
@@ -62,7 +64,7 @@ training contract is **not reproducible from HEAD defaults**.
 
 Core claim, bounded:
 
-> Target behavior did not form a monotonic difficulty ladder under the frozen policy. The
+> Target behavior did not form a monotonic difficulty ladder under frozen policy F. The
 > static-target arm produced the lowest close-approach success, while the bounded obstacle-aware arm
 > produced the highest. Visibility records were consistent with a reacquisition mechanism, and the
 > target-behavior gap attenuated as obstacle density increased.
@@ -87,21 +89,27 @@ P2/D1 FAIL and P3 BLOCKED; Class A = 0.
 
 Each carries a measured number or a precisely bounded capability. No "novel framework" claim.
 
-1. **We quantify target-motion distribution shift under one frozen policy across four motion
+1. **We quantify target-motion distribution shift under one frozen policy (F) across four motion
    contracts**, observing **−3.58 pp** for static targets and **+1.33 pp** for bounded
    obstacle-aware targets relative to the historical reference (BCa95 [−4.04, −3.29] and
-   [+1.15, +1.50], 3/3 seed sign-consistency), showing that target behaviour is not a monotonic
+   [+1.15, +1.50]; all six arm-level capture contrasts sign-consistent across the three evaluation
+   seeds), showing that target behaviour is not a monotonic
    difficulty ladder for this policy.
 2. **We measure a perception error distribution on real imagery and propagate it into policy
-   outcome**, costing the frozen policy **−4.57 pp** of close-approach success with an interval
-   excluding zero in all three training-seed campaigns, and we report that readaptation does **not**
+   outcome**, costing frozen policy F **−4.57 pp** of close-approach success with an episode-level
+   interval excluding zero (the three campaigns re-ran the same frozen arms deterministically and are
+   not replications), and we report that readaptation does **not**
    establish a net benefit (**+0.73 pp**, CI [−1.04, +2.50]).
 3. **We separate safety-filter geometry from speed-governor effects** under matched configured arms,
-   measuring **−1.4903 pp** crash (CI [−1.8981, −1.0826], lower in 15/15 cells) and showing the
+   measuring **−1.4903 pp** crash (cell-pooled CI [−1.8981, −1.0826]; seed-level CI [−2.42, −0.57]
+   over three evaluation seeds; lower in 15/15 seed × density cells) and showing the
    opposite sign for the same widening on a sibling geometry.
-4. **We show that the observation-rendering contract can dominate every other effect measured**: the
-   same frozen policy loses **−48.967 pp** of capture under a mesh-shaded observation
-   (CI [−50.113, −47.821]), with renderer causality explicitly `NOT_TESTED`.
-5. **We release the negative record with the positive one** — 204 indexed results with receipts,
+4. **We show that the observation-rendering contract can produce the largest loss in the programme**:
+   a different frozen policy, R, loses **−48.967 pp** of capture under a mesh-shaded observation
+   (CI [−50.113, −47.821], three paired evaluation seeds), with renderer causality explicitly
+   `NOT_TESTED`. Because policy R is not policy F, this magnitude is not directly comparable with
+   contributions 1–3.
+5. **We release the negative record with the positive one** — 207 result directories indexed in
+   `results/MANIFEST.json` (build of 2026-09-24) with provenance links and hashes,
    including a withdrawn decision threshold, a preregistered primary recorded as `NOT_RECORDED`, and
    a preregistered gate that FAILED — so that the evidence chain can be audited rather than trusted.

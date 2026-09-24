@@ -1,0 +1,156 @@
+/* MOTAR project page. Implements DESIGN_SYSTEM.md; loaded after style.css, which is kept for the
+   frozen browser preview (and the hash-pinned archive page). No web fonts, no gradients, no shadows. */
+:root {
+  --bg: #fbfaf7;
+  --surface: #ffffff;
+  --ink: #1f1f1f;
+  --ink-2: #4a4a4f;
+  --muted: #6e6e73;
+  --rule: #dedad2;
+  --rule-strong: #cfcbc3;
+  --blue: #2f6599;
+  --link: #245180;
+  --blue-wash: #e8eef6;
+  --accent: #c2562b;
+  --serif: Georgia, "Times New Roman", "Noto Serif", serif;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple SD Gothic Neo", sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  --prose: 720px;
+  --wide: 1040px;
+  color-scheme: light;
+}
+
+/* Reset the generic rules style.css applies to every page. */
+body.project { margin: 0; overflow-x: hidden; color: var(--ink); background: var(--bg); font: 17px/1.6 var(--sans); -webkit-font-smoothing: antialiased; }
+body.project a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+body.project a:hover { color: var(--ink); }
+body.project h1, body.project h2, body.project h3 { max-width: none; letter-spacing: normal; color: var(--ink); }
+body.project h2 { margin: 6px 0 16px; font: 400 28px/1.25 var(--serif); }
+body.project h3 { margin: 28px 0 8px; font: 600 19px/1.35 var(--serif); }
+body.project code { font: .88em/1.4 var(--mono); }
+body.project figcaption { margin: 0; font-size: 15px; }
+body.project :focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+.skip-link { position: fixed; left: 12px; top: -100px; z-index: 100; padding: 10px 14px; border: 1px solid var(--rule-strong); background: var(--surface); color: var(--ink); }
+.skip-link:focus { top: 12px; }
+
+/* Navigation */
+.site-nav { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 12px max(20px, calc((100vw - var(--wide)) / 2)); border-bottom: 1px solid var(--rule); background: var(--bg); font-family: var(--sans); }
+.site-mark { color: var(--ink) !important; font: 600 15px/1 var(--sans); letter-spacing: .14em; text-decoration: none; }
+.site-nav nav { display: flex; flex-wrap: wrap; gap: 6px 22px; }
+.site-nav nav a { color: var(--ink-2); font-size: 14.5px; text-decoration: none; }
+.site-nav nav a:hover { color: var(--link); text-decoration: underline; }
+
+/* Page frame */
+.page { width: min(calc(100% - 40px), var(--wide)); margin: 0 auto; padding-bottom: 40px; }
+.prose { max-width: var(--prose); }
+.block { padding-top: 72px; }
+.block > .num { margin: 0; color: var(--muted); font: 600 13px/1 var(--sans); letter-spacing: .12em; }
+.block p { max-width: var(--prose); }
+
+/* Hero */
+.hero { padding: 44px 0 0; text-align: left; }
+.kicker { margin: 0 0 14px; color: var(--muted); font: 600 13px/1.4 var(--sans); letter-spacing: .12em; text-transform: uppercase; }
+.hero h1 { margin: 0; font: 400 clamp(44px, 6vw, 56px)/1.05 var(--serif); }
+.expansion { margin: 6px 0 2px; font: 400 21px/1.35 var(--serif); color: var(--ink); }
+.subtitle { margin: 0 0 18px; color: var(--ink-2); font: italic 17px/1.45 var(--serif); }
+.thesis { max-width: 760px; margin: 0 0 14px; font-size: 19px; line-height: 1.55; }
+.meta, .hero-links { display: flex; flex-wrap: wrap; gap: 6px 20px; margin: 0; color: var(--muted); font-size: 14px; }
+.hero-links { margin-top: 8px; }
+.hero-links a { font-weight: 600; }
+
+/* Figures */
+.fig { margin: 32px 0 0; }
+.fig .frame { display: block; border: 1px solid var(--rule); background: var(--surface); }
+.fig img { display: block; width: 100%; height: auto; }
+.fig figcaption { max-width: var(--prose); padding-top: 12px; color: var(--ink-2); }
+.fig figcaption strong { color: var(--ink); }
+.fig .limit-line { display: block; margin-top: 4px; color: var(--muted); font-size: 14px; }
+.fig .files { color: var(--muted); font-size: 14px; white-space: nowrap; }
+
+/* Result call-outs: numbers with a hairline top rule, not cards */
+.callouts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; margin: 22px 0 0; padding: 0; list-style: none; }
+.callouts li { padding-top: 12px; border-top: 2px solid var(--rule-strong); }
+.callouts .label { display: block; color: var(--ink-2); font-size: 14px; font-weight: 600; }
+.callouts .value { display: block; margin: 2px 0 2px; font: 600 30px/1.15 var(--sans); color: var(--ink); }
+.callouts .note { display: block; color: var(--muted); font-size: 14px; line-height: 1.45; }
+.boundary { margin: 16px 0 0; color: var(--ink-2); font-size: 15px; }
+
+/* Key message */
+.key-message { max-width: var(--prose); margin: 18px 0 0; padding: 14px 18px; border-left: 3px solid var(--blue); background: var(--surface); font-size: 18px; }
+
+/* Findings table */
+.table-scroll { overflow-x: auto; margin-top: 18px; }
+.findings { width: 100%; border-collapse: collapse; font-size: 15px; font-variant-numeric: tabular-nums; }
+.findings th, .findings td { padding: 10px 12px 10px 0; border-bottom: 1px solid var(--rule); text-align: left; vertical-align: top; }
+.findings th { color: var(--ink-2); font-size: 13px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
+.findings td:first-child { font-weight: 600; white-space: nowrap; }
+.findings .num-cell { white-space: nowrap; font-weight: 600; }
+.tag { display: inline-block; padding: 1px 6px; border: 1px solid var(--ink-2); border-radius: 2px; color: var(--ink); font: 600 12.5px/1.5 var(--sans); letter-spacing: .03em; white-space: nowrap; }
+.tag.loss { border-color: var(--accent); }
+.after-table { margin-top: 12px; color: var(--ink-2); font-size: 15px; }
+
+/* Limitation box */
+.limit { max-width: var(--prose); margin: 18px 0 0; padding: 12px 16px; border-left: 3px solid var(--ink-2); background: var(--surface); font-size: 15px; color: var(--ink-2); }
+.limit strong { color: var(--ink); }
+.limit ul { margin: 6px 0 0; padding-left: 20px; }
+
+/* Link rows */
+.link-row { display: flex; flex-wrap: wrap; gap: 8px 22px; margin: 16px 0 0; padding: 0; list-style: none; font-size: 15px; }
+
+/* Interactive demonstration: the frozen browser preview, restyled flat */
+.demo { margin-top: 72px; padding-top: 40px; border-top: 1px solid var(--rule); }
+.demo > .num { margin: 0; color: var(--muted); font: 600 13px/1 var(--sans); letter-spacing: .12em; text-transform: uppercase; }
+.demo > p { max-width: var(--prose); }
+.demo figure { margin: 24px 0 0; }
+.interactive input[type="range"], .interactive input[type="checkbox"] { accent-color: var(--blue); }
+.demo .figure-label { margin: 0 0 8px; color: var(--muted); font: 600 13px var(--sans); letter-spacing: .08em; text-transform: uppercase; }
+.interactive .viewer-shell { border: 1px solid var(--rule); border-radius: 0; box-shadow: none; }
+.interactive .viewer-controls { padding: 12px 0 0; }
+.interactive .viewer-hud { border: 1px solid #d8dde0; border-radius: 0; box-shadow: none; background: rgba(255,255,255,.94); }
+.interactive .viewer-buttons button { border-radius: 2px; background: var(--surface); color: var(--ink); border: 1px solid #aeb6bc; }
+.interactive .viewer-buttons button:hover { border-color: var(--blue); }
+.interactive .viewer-controls .motion-mode-control select { border-radius: 2px; }
+.viewer-note { grid-column: 1 / -1; color: var(--muted); font-size: 13px; }
+.viewer-note summary { cursor: pointer; }
+.viewer-note .motion-mode-note { margin: 10px 0 0; max-width: none; font-size: 13px; }
+.interactive figcaption { padding-top: 12px; color: var(--ink-2); }
+
+/* Footer */
+body.project footer.site-footer { margin-top: 56px; padding: 22px max(20px, calc((100vw - var(--wide)) / 2)) 36px; border-top: 1px solid var(--rule); background: var(--bg); color: var(--muted); font-size: 14px; }
+.site-footer p { margin: 4px 0; }
+
+@media (max-width: 1100px) {
+  .site-nav nav { gap: 6px 16px; }
+}
+
+/* style.css hides all but the last nav link under 900 px; the project page keeps every link. */
+@media (max-width: 900px) {
+  body.project .site-nav nav a { display: inline-block; }
+}
+
+/* Figures keep a readable scale below 1000 px and scroll inside their frame;
+   the page body itself never scrolls sideways. */
+@media (max-width: 1000px) {
+  .fig .frame { overflow-x: auto; }
+  .fig .frame img { min-width: 860px; }
+  .fig figcaption::before { content: "Scroll the figure sideways, or open the SVG to enlarge."; display: block; margin-bottom: 6px; color: var(--muted); font-size: 13px; }
+}
+
+@media (max-width: 760px) {
+  body.project { font-size: 16px; }
+  .site-nav { flex-direction: column; align-items: flex-start; gap: 8px; padding-block: 10px; }
+  .site-nav nav { gap: 4px 16px; }
+  .hero { padding-top: 36px; }
+  .thesis { font-size: 17px; }
+  .block { padding-top: 48px; }
+  body.project h2 { font-size: 24px; }
+  .callouts { grid-template-columns: 1fr; gap: 16px; }
+  .callouts .value { font-size: 28px; }
+  .findings td:first-child { white-space: normal; }
+  .interactive .viewer-controls { grid-template-columns: 1fr; }
+  .motion-mode-control, .viewer-note, .viewer-buttons, .viewer-toggles { grid-column: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}

@@ -1,0 +1,642 @@
+{
+ "captions": {
+  "arch-motar-code-map": {
+   "desc": "Closed simulation loop - obstacle environment, sensors (camera, LiDAR), perception and temporal state, policy observation (898-D actor, 906-D critic, 17 tokens), frozen Transformer PPO policy, LiDAR speed-cap safety filter, Lee velocity controller, quadrotor dynamics - with scenario inputs (target-motion generator, rendering contract, measured error injection, task contract) and the evidence layer (launchers, receipts, registries, generated docs and figures, guard tests). File names are under aerial_gym/ unless prefixed.",
+   "title": "MOTAR code map: closed loop, scenario inputs and evidence layer"
+  },
+  "fig1-motar-overview": {
+   "desc": "Schematic of the simulated closed loop: environment with a random bar field and a moving target, camera and LiDAR perception with measured detector error, temporal state, frozen Transformer-PPO policy, arc-clearance speed cap and velocity controller, evaluation over target-motion arms H/E0/E1/E2 and densities 70-205 bars. Five separate experiments, not a causal chain: measured error changes the capture of frozen policy F by −4.57 pp; readaptation +0.73 pp, INCONCLUSIVE; safety geometry −1.49 pp crash; target motion E0 −3.58 · E2 +1.33 pp versus H; observation contract −48.97 pp, MATERIAL_LOSS, causality NOT TESTED, measured on a different frozen checkpoint, policy R. Simulation only.",
+   "title": "MOTAR overview: simulated closed loop and measured evidence chain"
+  },
+  "fig2-perception-policy": {
+   "desc": "(a) ETH ds5 E3-S: median absolute relative range error 6.2% over 9 blocks and 3107 frames, below the 25% gate. (b) P8 hit / false-lock / no-lock shares by target size. (c) P9 injector transition probabilities against measured ones, max error 0.026. (d) Measured error changes frozen policy F capture by −4.57 pp; readaptation +0.73 pp, 95% CI [−1.04, +2.50], INCONCLUSIVE; a residual cost remains for every seed.",
+   "title": "Perception to policy: measured error, error model, injection and frozen-policy effect"
+  },
+  "fig3-safety": {
+   "desc": "(a) Schematic of where each filter measures clearance before capping speed. (b) Crash-rate difference arc-clearance minus riskcap for 15 seed-density cells: pooled −1.4903 pp, 95% CI [−1.8981, −1.0826], seed-level 95% CI [−2.42, −0.57] over 3 evaluation seeds; 15/15 cells below zero, and the cells are not independent replicates. Frozen policy F. Configured contrast in simulation; no collision-safety guarantee.",
+   "title": "Safety-filter geometry: straight corridor versus implemented arc-clearance filter"
+  },
+  "fig4-target-motion": {
+   "desc": "(a) Schematic of arms H (training law), E0 static, E1 constant velocity, E2 obstacle-aware. (b) Capture by arm: E0 84.31% < E1 85.07% < H 87.89% < E2 89.22%. (c) Differences vs H: E0 −3.58 pp, E1 −2.82 pp, E2 +1.33 pp. (d) Timeouts: 7.1% of E0 episodes, 95.42% of them never acquired the target; consistent with a first-acquisition / visibility mechanism, association only and not a causal explanation.",
+   "title": "Target motion: close-approach rate of frozen policy F under four target-motion arms"
+  },
+  "fig5-observation-contract": {
+   "desc": "(a) Only the observation contract changes; detector, frozen policy R, task and seeds are fixed. (b) Capture by treatment, 3 seeds x 2049 episodes: mesh shaded minus analytic −48.967 pp, 95% CI [−50.113, −47.821], verdict MATERIAL_LOSS. CAUSALITY NOT TESTED: no renderer property was isolated as the cause. Checkpoint: policy R, frozen ref5in D1 ep1900 at 70 bars, not the ep25000 policy F used by the other figures. Unit of inference: paired evaluation seed.",
+   "title": "Observation contract: frozen policy R under three target-rendering treatments"
+  },
+  "fig6-positioning": {
+   "desc": "Coverage matrix of axes studied by NavRL, Elastic Tracker, Fast-Tracker, OPEN, YOPO and MOTAR: target tracking, random clutter, perception uncertainty, temporal estimation, safety analysis, observation contract, and whether any real-hardware result is reported (MOTAR: none, simulation-only). A mark is not a performance score. Class A matched external comparisons = 0.",
+   "title": "Relation to published systems: studied axes, not performance"
+  }
+ },
+ "files": {
+  "arch-motar-code-map.pdf": "223b1651f16d001c0ec921d3076cd986aed2b7dfda8bc3ab049afe1c492ccfe8",
+  "arch-motar-code-map.png": "6ef3e62201d4f0460e54ee744c93b525a35d715d880f73372e37d0684ad05ed6",
+  "arch-motar-code-map.svg": "39dc09596955156e54ed58da93a2fab2890d4ac866abfffce2a98da16fbc7402",
+  "fig1-motar-overview.pdf": "1f52cc2852c58010291958ad90b6f147bd042581db01e33d44e6cf5de0b8310c",
+  "fig1-motar-overview.png": "38e043e25d5e42b894cfeec75b575b8e214fe17ae04ab2a09ea5f5f6f6dec73d",
+  "fig1-motar-overview.svg": "bd85cb2c9edc096e568a8b42c11e520c90a8c6ed5bf5ade6b3e69e8f290403ed",
+  "fig2-perception-policy.pdf": "5913e1c1142466701a7460a01783009a3789fdbca897633396a0f242e9277fad",
+  "fig2-perception-policy.png": "98f0353316c9ac2ec774302837ce9a841f9a4eb4b2b9d14326f171bfaa9d4f7f",
+  "fig2-perception-policy.svg": "1fc4049f51b8f5723c92fcb9c114fc43f810841fb43937d678dd7e5fdee5827a",
+  "fig3-safety.pdf": "baec5dfe61ff8c89a60dfc27a77e77451e27f2eb3f916b8d3db42b3a6c78ddd9",
+  "fig3-safety.png": "3f88afa14b49af787404340a3e581568e031adb39aea3e1c74ab0cdfeecf44bb",
+  "fig3-safety.svg": "bb7a905f7513a0570ae27c216b9d06c4cfa6265975f6a55a329379ec9ba07daa",
+  "fig4-target-motion.pdf": "12c8216ad4f5acbae7ea37053f45318cb3d5fbe8bbf46d2f687a776f9193497a",
+  "fig4-target-motion.png": "08a52d0b9dbc9a361877d68bfa89972d75e50fe12bff70a1bd57f40031f8b9b8",
+  "fig4-target-motion.svg": "018e1b3539049dffa6f4a05faf806fc325b120c454f915da7f09628334f27c76",
+  "fig5-observation-contract.pdf": "f1ddc5ac9d3f97d1d80be5477f1463f63ab7a0b1df0c9ff5edcbf5a6f5ee29d4",
+  "fig5-observation-contract.png": "5733985459a62cff404b3f2075611b8363991da8dedaaeb23a3e9ea772ea5826",
+  "fig5-observation-contract.svg": "77ac7a5bc7c8dce976f66a4f079233fe5ef1d9aa1b39896dafc5bdecd8c3df56",
+  "fig6-positioning.pdf": "028b01cef7470f713987d763e3ee60e9243aa3420ee9216dfe52f1685b2949b8",
+  "fig6-positioning.png": "7fc31aa8bc5d5bdd5636e0a71a960712e3571c06900ec57b6184a5e21e5404e8",
+  "fig6-positioning.svg": "ceebb63b5ccc655cf98e78b686dcda9fbdb040423f6be26ab5d2a7bacfde36cf"
+ },
+ "font": "Liberation Sans",
+ "generator": "tools/build_paper_figures.py",
+ "matplotlib": "3.7.5",
+ "schema_version": 1,
+ "sources": {
+  "docs/literature_quantitative_ledger_2026-09-18.json": "e97372f21c8bd3ab6a05a67c5b60e626bf9910cf402615bc6cfe405b0d61e29d",
+  "docs/quantitative_positioning_registry.json": "5c5a057bc2b0615c864640a67b0a67bf616a0563249471f92aa07ae03cf1e0bd",
+  "docs/relation_to_published_systems_2026-09-16.md": "afbeefbd03f65619a98bc29217c2c2a89c4cb8ce49906ddb454aa5ad59f11c8f",
+  "docs/results/target_motion_visibility_reacquisition_audit_2026-09-19.json": "a45eefd9d55def1be7cb536b766e7fd0b7047b7a22ecee82e0c5e1b4faddb795",
+  "docs/status_manifest.json": "13c2a1a784b8818d6532c8a4d97e868474d115f7ff287aba0a82dae0e3251205",
+  "results/dynamic_mesh_policy_sensitivity_d8b_2026-09-13/summary.json": "afea81a6b57cf749a18dc9ffaf33e3f0100d78c27174a8d88ae10dfd60f53606",
+  "results/eth_ds5_e3s_2026-09-10/run/e3s_result.json": "c21bd8b7ee7735764626ea4200c54d0626c0de43ba6cd4b5aac728cf2ae4ebc9",
+  "results/independent_verification_2026-09-07/recomputed.json": "f7c684b07969372d0495ed941734458a6c1416e4ac5ba96c2a535dd20b577f93",
+  "results/perception_p10_seed_replication_2026-09-10/summary.json": "60c6d20b52e599d859645711fe0e64da24b38e367cced27ea21729d3b4c9d6ed",
+  "results/perception_p8_2026-09-09/error_model.json": "ba7269febe6e241eb130af548d886df7d32ce575f85c1259e240fdf6f2fe2126",
+  "results/perception_p9_2026-09-09/goodness_of_fit.json": "d626640ce96596b895ca4be3f94ff18331a9ec123ca1aaac7c50cdb7adeef408",
+  "results/target_motion_e0_e2_2026-09-18/canonical_summary.json": "977f320cf9abcca6a3508a86796f3c928df2e4e8827ade853a595738812a2c91",
+  "tools/build_quantitative_positioning_figure.py": "bcb86e1544eab54d496e815824c5cb6ef6ec480154a5bf37d918cc0bc404ec57"
+ },
+ "values": {
+  "class_a_count": 0,
+  "d8b": {
+   "cells": [
+    {
+     "arm": "analytic_flat",
+     "capture_pct": 71.01024890190337,
+     "seed": 593
+    },
+    {
+     "arm": "mesh_flat",
+     "capture_pct": 64.81210346510493,
+     "seed": 593
+    },
+    {
+     "arm": "mesh_shaded",
+     "capture_pct": 22.401171303074673,
+     "seed": 593
+    },
+    {
+     "arm": "analytic_flat",
+     "capture_pct": 70.96144460712543,
+     "seed": 599
+    },
+    {
+     "arm": "mesh_flat",
+     "capture_pct": 63.15275744265495,
+     "seed": 599
+    },
+    {
+     "arm": "mesh_shaded",
+     "capture_pct": 22.15714982918497,
+     "seed": 599
+    },
+    {
+     "arm": "analytic_flat",
+     "capture_pct": 71.93753050268424,
+     "seed": 601
+    },
+    {
+     "arm": "mesh_flat",
+     "capture_pct": 64.42166910688141,
+     "seed": 601
+    },
+    {
+     "arm": "mesh_shaded",
+     "capture_pct": 22.44997559785261,
+     "seed": 601
+    }
+   ],
+   "checkpoint_sha256": "197ea26999d6bb9cf23c4e5a55acbe945f89985e2384687d60ab1dbae66a278e",
+   "episodes_per_cell": 2049,
+   "margin_pp": -3.0,
+   "primary_ci": [
+    -50.11285929556478,
+    -47.821092225502404
+   ],
+   "primary_pp": -48.96697576053359,
+   "verdict": "MATERIAL_LOSS"
+  },
+  "e3s": {
+   "blocks": 9,
+   "frames": 3107,
+   "gate_pct": 25.0,
+   "median_of_block_medians_pct": 6.186509849137348,
+   "per_block": [
+    {
+     "block": 3,
+     "frames": 401,
+     "median_abs_rel_pct": 5.89701041772445,
+     "range_mid_m": 52.7762642788201
+    },
+    {
+     "block": 4,
+     "frames": 102,
+     "median_abs_rel_pct": 6.029455052731938,
+     "range_mid_m": 80.3508635956454
+    },
+    {
+     "block": 5,
+     "frames": 450,
+     "median_abs_rel_pct": 5.555815240575421,
+     "range_mid_m": 81.85235103866952
+    },
+    {
+     "block": 6,
+     "frames": 449,
+     "median_abs_rel_pct": 6.186509849137348,
+     "range_mid_m": 97.04160705899724
+    },
+    {
+     "block": 7,
+     "frames": 248,
+     "median_abs_rel_pct": 7.20572995097817,
+     "range_mid_m": 90.12784301507781
+    },
+    {
+     "block": 9,
+     "frames": 429,
+     "median_abs_rel_pct": 5.377720317457454,
+     "range_mid_m": 96.20677082039145
+    },
+    {
+     "block": 10,
+     "frames": 449,
+     "median_abs_rel_pct": 7.029666148038367,
+     "range_mid_m": 102.1349989779574
+    },
+    {
+     "block": 11,
+     "frames": 434,
+     "median_abs_rel_pct": 14.599899115717252,
+     "range_mid_m": 77.26366152091
+    },
+    {
+     "block": 12,
+     "frames": 145,
+     "median_abs_rel_pct": 15.507369056715229,
+     "range_mid_m": 58.81983138271045
+    }
+   ],
+   "status": "SIZE_RANGE_USABLE"
+  },
+  "p10": {
+   "frozen_cost_ci": [
+    -6.3188972850234295,
+    -2.8231496597741144
+   ],
+   "frozen_cost_eval_seeds": [
+    541,
+    547
+   ],
+   "frozen_cost_identical": true,
+   "frozen_cost_pp": -4.571023472398772,
+   "readapt_ci": [
+    -1.0377749574498445,
+    2.497823877633491
+   ],
+   "readapt_mean_pp": 0.7300244600918234,
+   "readapt_seed_pp": [
+    1.414979263234939,
+    0.7806782141985824,
+    -0.005584097158051193
+   ],
+   "residual_all_exclude_zero": true,
+   "residual_seed_pp": [
+    -1.9029031471090474,
+    -2.7079775555013397,
+    -3.835786585569856
+   ],
+   "seeds": [
+    "811",
+    "857",
+    "863"
+   ],
+   "status": "INCONCLUSIVE"
+  },
+  "p8": [
+   {
+    "frames": 271,
+    "label": "8–16 px",
+    "p": {
+     "FALSE_LOCK": 22.878228782287824,
+     "HIT": 63.46863468634686,
+     "NO_LOCK": 13.653136531365314
+    }
+   },
+   {
+    "frames": 849,
+    "label": "16–32 px",
+    "p": {
+     "FALSE_LOCK": 12.956419316843345,
+     "HIT": 76.32508833922262,
+     "NO_LOCK": 10.71849234393404
+    }
+   },
+   {
+    "frames": 188,
+    "label": "32–64 px",
+    "p": {
+     "FALSE_LOCK": 19.680851063829788,
+     "HIT": 77.12765957446808,
+     "NO_LOCK": 3.1914893617021276
+    }
+   }
+  ],
+  "p9_fit": {
+   "max_abs_error": 0.0255791505791505,
+   "passed": true,
+   "points": [
+    [
+     0.9636363636363636,
+     0.9581664441477525
+    ],
+    [
+     0.030303030303030304,
+     0.03337783711615487
+    ],
+    [
+     0.006060606060606061,
+     0.008455718736092568
+    ],
+    [
+     0.06557377049180328,
+     0.0558858501783591
+    ],
+    [
+     0.7704918032786885,
+     0.7633769322235434
+    ],
+    [
+     0.16393442622950818,
+     0.1807372175980975
+    ],
+    [
+     0.11764705882352941,
+     0.09309162175404213
+    ],
+    [
+     0.23529411764705882,
+     0.24742773150416464
+    ],
+    [
+     0.6470588235294118,
+     0.6594806467417932
+    ],
+    [
+     0.9110764430577223,
+     0.9116938062675259
+    ],
+    [
+     0.059282371294851796,
+     0.05837064003542087
+    ],
+    [
+     0.029641185647425898,
+     0.02993555369705318
+    ],
+    [
+     0.3611111111111111,
+     0.3439587973273942
+    ],
+    [
+     0.5648148148148148,
+     0.5769766146993318
+    ],
+    [
+     0.07407407407407407,
+     0.07906458797327394
+    ],
+    [
+     0.2159090909090909,
+     0.20952709699689334
+    ],
+    [
+     0.10227272727272728,
+     0.09509837763203313
+    ],
+    [
+     0.6818181818181818,
+     0.6953745253710735
+    ],
+    [
+     0.9370629370629371,
+     0.9438362163345742
+    ],
+    [
+     0.055944055944055944,
+     0.04981388219837968
+    ],
+    [
+     0.006993006993006993,
+     0.006349901467046201
+    ],
+    [
+     0.21621621621621623,
+     0.19305019305019305
+    ],
+    [
+     0.7567567567567568,
+     0.7823359073359073
+    ],
+    [
+     0.02702702702702703,
+     0.024613899613899613
+    ]
+   ],
+   "replicas": 64,
+   "threshold": 0.06
+  },
+  "real_hardware_reported": {
+   "Elastic Tracker": true,
+   "Fast-Tracker": true,
+   "MOTAR": false,
+   "NavRL": true,
+   "OPEN": true,
+   "YOPO": true
+  },
+  "registry": {
+   "d8b_mesh_observation": {
+    "ci95_pp": [
+     -50.113,
+     -47.821
+    ],
+    "source_path": "results/dynamic_mesh_policy_sensitivity_d8b_2026-09-13/README.md",
+    "value_percent": null,
+    "value_pp": -48.967,
+    "verdict": "MATERIAL_LOSS"
+   },
+   "e3s_size_range": {
+    "ci95_pp": null,
+    "source_path": "results/eth_ds5_e3s_2026-09-10/README.md",
+    "value_percent": 6.2,
+    "value_pp": null,
+    "verdict": "SIZE_RANGE_USABLE"
+   },
+   "p10_policy_readaptation": {
+    "ci95_pp": [
+     -1.04,
+     2.5
+    ],
+    "source_path": "results/perception_p10_seed_replication_2026-09-10/README.md",
+    "value_percent": null,
+    "value_pp": 0.73,
+    "verdict": "INCONCLUSIVE"
+   },
+   "perception_error_cost_frozen": {
+    "ci95_pp": [
+     -6.32,
+     -2.82
+    ],
+    "source_path": "results/perception_p10_seed_replication_2026-09-10/README.md",
+    "value_percent": null,
+    "value_pp": -4.57,
+    "verdict": "Confirmed; the episode-level 95% CI excludes zero. The three campaigns re-ran the same frozen arms deterministically and are not replications"
+   },
+   "safety_filter_geometry": {
+    "ci95_pp": [
+     -1.8981,
+     -1.0826
+    ],
+    "source_path": "results/independent_verification_2026-09-07/README.md",
+    "value_percent": null,
+    "value_pp": -1.4903,
+    "verdict": "Confirmed configured contrast"
+   },
+   "target_motion_generalization": {
+    "ci95_pp": [
+     1.1504,
+     1.4973
+    ],
+    "source_path": "docs/results/target_motion_generalization_2026-09-19.md",
+    "value_percent": null,
+    "value_pp": 1.3312,
+    "verdict": "NO_RETRAINING_JUSTIFIED_FOR_E2_TARGET_MOTION_SHIFT"
+   }
+  },
+  "safety": {
+   "cells": [
+    {
+     "delta_pp": -1.2173219536002096,
+     "density": 70,
+     "seed": 523
+    },
+    {
+     "delta_pp": -1.7569546120058566,
+     "density": 100,
+     "seed": 523
+    },
+    {
+     "delta_pp": -0.43923865300146414,
+     "density": 130,
+     "seed": 523
+    },
+    {
+     "delta_pp": -0.8784773060029283,
+     "density": 160,
+     "seed": 523
+    },
+    {
+     "delta_pp": -1.4153245485602732,
+     "density": 205,
+     "seed": 523
+    },
+    {
+     "delta_pp": -2.582107478802726,
+     "density": 70,
+     "seed": 527
+    },
+    {
+     "delta_pp": -0.8784773060029283,
+     "density": 100,
+     "seed": 527
+    },
+    {
+     "delta_pp": -1.171303074670571,
+     "density": 130,
+     "seed": 527
+    },
+    {
+     "delta_pp": -2.4842576390624815,
+     "density": 160,
+     "seed": 527
+    },
+    {
+     "delta_pp": -2.9823881271479724,
+     "density": 205,
+     "seed": 527
+    },
+    {
+     "delta_pp": -1.856848670975729,
+     "density": 70,
+     "seed": 531
+    },
+    {
+     "delta_pp": -1.0736944851146901,
+     "density": 100,
+     "seed": 531
+    },
+    {
+     "delta_pp": -0.9721611111771777,
+     "density": 130,
+     "seed": 531
+    },
+    {
+     "delta_pp": -1.9071766120296638,
+     "density": 160,
+     "seed": 531
+    },
+    {
+     "delta_pp": -1.6177552405099465,
+     "density": 205,
+     "seed": 531
+    }
+   ],
+   "ci": [
+    -1.8980523333649877,
+    -1.0826120548370979
+   ],
+   "k": 15,
+   "negative_cells": 15,
+   "pooled_pp": -1.4903321941010428,
+   "seed_ci": [
+    -2.41972984673041,
+    -0.5687110829845881
+   ],
+   "seed_df": 2,
+   "seeds": [
+    523,
+    527,
+    531
+   ]
+  },
+  "target_motion": {
+   "E2_minus_E0_pp": 4.910832193280009,
+   "arm_mean_capture_pct": {
+    "E0": 84.31253503042643,
+    "E1": 85.06768497971571,
+    "E2": 89.22336722370643,
+    "H": 87.89216569747796
+   },
+   "contrasts_vs_H": {
+    "E0": {
+     "bca95_pp": [
+      -4.04052734375,
+      -3.2943170523396272
+     ],
+     "mean_pp": -3.579630667051544,
+     "seed_pp": [
+      -3.1845864996142503,
+      -4.04052734375,
+      -3.5137781577903815
+     ],
+     "seed_sign_consistent": true
+    },
+    "E1": {
+     "bca95_pp": [
+      -3.5264320057040055,
+      -2.4431233647430344
+     ],
+     "mean_pp": -2.8244807177622566,
+     "seed_pp": [
+      -2.3823599466463397,
+      -3.5264320057040055,
+      -2.5646502009364247
+     ],
+     "seed_sign_consistent": true
+    },
+    "E2": {
+     "bca95_pp": [
+      1.1503969545394677,
+      1.4972806539267136
+     ],
+     "mean_pp": 1.3312015262284649,
+     "seed_pp": [
+      1.1503969545394677,
+      1.6486343376342139,
+      1.1945732865117131
+     ],
+     "seed_sign_consistent": true
+    }
+   },
+   "episodes": 98319,
+   "mechanism_claim_status": "ASSOCIATION_ONLY",
+   "per_seed_capture_pct": {
+    "E0": [
+     84.64699219703209,
+     84.0087890625,
+     84.28182383174719
+    ],
+    "E1": [
+     85.44921875,
+     84.52288440054599,
+     85.23095178860115
+    ],
+    "E2": [
+     88.9819756511858,
+     89.69795074388422,
+     88.99017527604929
+    ],
+    "H": [
+     87.83157869664635,
+     88.04931640625,
+     87.79560198953757
+    ]
+   },
+   "seeds": [
+    "4101",
+    "4102",
+    "4103"
+   ],
+   "timeouts": {
+    "E0": {
+     "episodes_total": 24580,
+     "never_acquired": 1667,
+     "never_acquired_pct_of_all": 6.781936533767291,
+     "never_acquired_pct_of_timeouts": 95.42072123640527,
+     "timeout_pct_of_all": 7.10740439381611,
+     "timeouts": 1747
+    },
+    "E1": {
+     "episodes_total": 24578,
+     "never_acquired": 899,
+     "never_acquired_pct_of_all": 3.6577426967206446,
+     "never_acquired_pct_of_timeouts": 83.0101569713758,
+     "timeout_pct_of_all": 4.406379689152901,
+     "timeouts": 1083
+    },
+    "E2": {
+     "episodes_total": 24581,
+     "never_acquired": 243,
+     "never_acquired_pct_of_all": 0.9885684064928196,
+     "never_acquired_pct_of_timeouts": 84.375,
+     "timeout_pct_of_all": 1.171636629917416,
+     "timeouts": 288
+    },
+    "H": {
+     "episodes_total": 24580,
+     "never_acquired": 540,
+     "never_acquired_pct_of_all": 2.196908055329536,
+     "never_acquired_pct_of_timeouts": 84.11214953271028,
+     "timeout_pct_of_all": 2.611879576891782,
+     "timeouts": 642
+    }
+   },
+   "verdict": "NO_RETRAINING_JUSTIFIED_FOR_E2_TARGET_MOTION_SHIFT"
+  }
+ }
+}

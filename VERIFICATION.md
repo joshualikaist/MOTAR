@@ -1,5 +1,7 @@
 # VERIFICATION — ref5in 검증 단계 (실행 authority)
 
+> **Status note (2026-09-24).** This is the verification ledger (Korean): every gate, its authority and its history. Its current section was last updated on 2026-09-16. That predates three later records: the target-motion result of 2026-09-19 (TM-E2 has since been policy-compared, see `docs/results/target_motion_generalization_2026-09-19.md`), the quantitative positioning (Class A matched comparisons = 0) and the Elastic Tracker B0 record. The reader-facing summary of established results is [`docs/EVIDENCE.md`](docs/EVIDENCE.md).
+
 검증 gate·판정·다음 실험은 **이 문서**가 규정한다. 연구 charter(가설·방법)는
 [`RESEARCH_PLAN.md`](RESEARCH_PLAN.md), 날짜별 기록은 [`WORKLOG.md`](WORKLOG.md),
 명령어는 [`OPERATIONS.md`](OPERATIONS.md), 라이브 지표는 [`docs/status/`](docs/status/)를 본다.

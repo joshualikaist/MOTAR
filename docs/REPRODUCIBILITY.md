@@ -24,8 +24,8 @@ is authoritative for that result, not this table.
   [`requirements-public-validation.txt`](../requirements-public-validation.txt).
 * **Full simulator profile**: [`requirements.txt`](../requirements.txt) plus Isaac Gym Preview 4,
   which is not redistributable and must be obtained from NVIDIA.
-* **Environment check**: `python tools/motar_doctor.py` reports what is present and what is missing
-  rather than guessing.
+* **Environment check**: `python tools/motar_doctor.py --profile renderer-cpu` (or `--profile simulator`)
+  reports what is present and what is missing rather than guessing. It never installs anything.
 
 ## Renderer-only validation (no GPU)
 
@@ -45,18 +45,21 @@ python tools/render_renderer_contract_figures.py
 ## Main tests
 
 ```bash
-python -m unittest discover -s tests            # whole repository
+python -B tools/run_tests.py                    # whole repository, profile PUBLIC_CPU (no GPU)
 python tools/check_public_docs.py               # declared public surfaces
 ```
 
-GPU-dependent tests skip themselves when no CUDA device is present; the suite reports the skips
-rather than silently passing.
+Tests that need a CUDA device are listed by id in `tools/run_tests.py` (`GPU_REQUIRED`). PUBLIC_CPU
+excludes them and reports each exclusion with its reason. Run them with `--profile GPU_REQUIRED` on a
+machine with a GPU; without one, that profile reports `SKIPPED_NO_CUDA` and runs nothing.
 
 ## Result manifest
 
 ```bash
-python tools/build_result_manifest.py --print-issues
+python tools/build_result_manifest.py --output /tmp/motar-manifest.json --print-issues
 ```
+
+Without `--output` the builder rewrites the tracked `results/MANIFEST.json`; use `--output` to inspect.
 
 [`results/MANIFEST.json`](../results/MANIFEST.json) indexes every result directory with its status
 string, receipt, summary, preregistration, source manifest and their hashes. It records identity and
@@ -64,11 +67,19 @@ provenance only — it never extracts or interprets a research quantity. Directo
 the current convention are marked `legacy_exception` and their missing files are recorded as
 history, not as defects.
 
-## Evidence index
+## Evidence
 
-[`docs/RESEARCH_EVIDENCE_INDEX.md`](RESEARCH_EVIDENCE_INDEX.md) is the one-page map: seven axes,
-each with its question, its strongest supported claim, its status and its known limitation.
-Negative, inconclusive and blocked results are listed there, not hidden.
+[`docs/EVIDENCE.md`](EVIDENCE.md) is the one-page map of what is established, what is not, and the
+record behind every number. Negative, inconclusive and blocked results are listed there, not hidden.
+The earlier seven-axis index, [`RESEARCH_EVIDENCE_INDEX.md`](RESEARCH_EVIDENCE_INDEX.md), is kept as a
+dated snapshot.
+
+## Figures
+
+The paper figures in `docs/assets/paper/final/` are rebuilt from committed records by
+`python tools/build_paper_figures.py`; `--check` confirms they are current. Byte-exact regeneration
+needs matplotlib 3.7.5 and the Liberation fonts; otherwise the check compares the source-bound values
+only.
 
 ## Artifact provenance for new work
 
@@ -87,7 +98,8 @@ data.
 | Data | Availability |
 | --- | --- |
 | ETH drone-tracking ds5 (video, extracted frames, review JPEG/ZIP) | Not redistributed in current tree; obtain separately under CC BY-NC-SA 4.0: [external acquisition and commands](external_data/ETH_DS5.md) |
-| Det-Fly, NPS-Drones, detenv | Not redistributed; upstream terms `NEEDS_CONFIRMATION` |
+| Det-Fly | Repository licence MIT (verified); hosted images/annotations `BLOCKED_BY_LICENSE` for redistribution |
+| NPS-Drones | Data licence BSD-3-Clause (verified 2026-09-12); raw data not in the repository; derived artefacts need their own inventory |
 | Isaac Gym Preview 4 | Not redistributable; obtain from NVIDIA |
 | Training checkpoints (`*.pth`) | Large binaries; only those already tracked are present |
 

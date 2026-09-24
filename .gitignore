@@ -84,3 +84,8 @@ docs/status/status.legacy.json
 # inside them are bound to their absolute paths, so they must survive on disk but must
 # not be committed (an accidental `git add -A` made one a gitlink on 2026-08-26).
 .codex_worktrees/
+
+# PNG and PDF renders of the paper figures are rebuilt byte-exactly from the tracked SVG sources'
+# generator (`python tools/build_paper_figures.py`); manifest.json records their hashes.
+docs/assets/paper/final/*.png
+docs/assets/paper/final/*.pdf

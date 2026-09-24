@@ -1,5 +1,7 @@
 # How the target moves — target motion algorithms in MOTAR
 
+> **Update (2026-09-24).** The frozen-policy H/E0/E1/E2 comparison ran on 2026-09-18/19: [result](results/target_motion_generalization_2026-09-19.md). Rows below marking the policy comparison NOT TESTED describe the state on 2026-09-17. The algorithm descriptions are unchanged and remain test-bound.
+
 Canonical answer to "what algorithm does the target use?". Every technical claim
 below is bound to a source file and function named in §12. This document records
 existing behaviour; it introduces no new result and changes no verdict.

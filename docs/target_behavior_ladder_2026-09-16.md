@@ -1,5 +1,7 @@
 # Target behavior ladder and current-motion audit — 2026-09-16
 
+> **Update (2026-09-24).** The frozen-policy H/E0/E1/E2 comparison ran on 2026-09-18/19: [result](results/target_motion_generalization_2026-09-19.md). Statements below that TM-E2 is not policy-compared describe the state on 2026-09-16. TM-E3 and TM-E4 remain PLANNED.
+
 > **Algorithm-level explanation:** this document defines the ladder and its status.
 > For *how each target actually moves* — per-lineage algorithms, the browser preview
 > versus TM-E2 distinction, pseudocode, equations and an FAQ — see

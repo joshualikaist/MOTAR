@@ -1,6 +1,6 @@
 # Paper evidence outline — 2026-09-18
 
-This supersedes [`paper_draft_2026-09-05.md`](paper_draft_2026-09-05.md) as the structural plan for
+This supersedes [`paper_draft_2026-09-05.md`](../../paper_draft_2026-09-05.md) as the structural plan for
 a manuscript. That draft predates the target-motion ladder, the renderer contract freeze, the
 record-envelope work and the quantitative positioning layer, and it must not be used as a final
 manuscript.
@@ -15,7 +15,7 @@ Deliberately stated without superiority language. None of these asserts preceden
 
 | # | Contribution | Supporting number | Figure / table | Result path | External relation |
 |---|---|---|---|---|---|
-| **C1** | An end-to-end evidence chain from measured perception error to policy outcome, retaining negative links | The chain in [the claim matrix](paper_claim_evidence_matrix_2026-09-18.md) | Fig. `quantitative-positioning` | `results/MANIFEST.json` (201 entries) | No screened work publishes an equivalent chain |
+| **C1** | An end-to-end evidence chain from measured perception error to policy outcome, retaining negative links | The chain in [the claim matrix](../../paper_claim_evidence_matrix_2026-09-18.md) | Fig. `quantitative-positioning` | `results/MANIFEST.json` (201 entries) | No screened work publishes an equivalent chain |
 | **C2** | Quantified perception-to-policy sensitivity driven by a *measured* error distribution | −4.57 pp capture cost, CI excludes zero, 3/3 campaigns | Table 3 row "Measured perception-error cost" | `results/perception_p10_seed_replication_2026-09-10/` | NavRL++ reports a >5 % drop from its own perturbation model |
 | **C3** | Obstacle-density and target-motion generalization of a frozen policy | Density sweeps recorded per cell; H/E0/E1/E2 `RESULT_PENDING` | Table 3; target-motion row | `docs/target_behavior_ladder_2026-09-16.md` | NavRL sweeps dynamic-obstacle count; no work sweeps a target-motion ladder |
 | **C4** | Safety-filter geometry diagnosis with matched configured arms | −1.4903 pp crash, CI [−1.8981, −1.0826], 15/15 cells | Table 3 rows "Safety-filter geometry", "Arc geometry width" | `results/independent_verification_2026-09-07/` | Temporal Barrier gives a certificate-style comparator in an obstacle-free domain |
@@ -37,7 +37,7 @@ Banned in every section: `state of the art`, `best`, `outperforms all prior work
 
 ### 2 Related Work
 * **Claim.** MOTAR's combination of axes differs in *scope* from the screened systems.
-* **MOTAR evidence.** [Relation to published systems](relation_to_published_systems_2026-09-16.md):
+* **MOTAR evidence.** [Relation to published systems](../../relation_to_published_systems_2026-09-16.md):
   18 screened, 10 retained, Class A = 0.
 * **External citation.** All twelve retained works, with the ledger's per-work conditions.
 * **Figure/table.** Site Table 5 (published-system relation); the new quantitative positioning table.

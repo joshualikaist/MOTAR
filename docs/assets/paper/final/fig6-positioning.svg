@@ -1,0 +1,415 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg role="img" aria-labelledby="fig6-positioning-title fig6-positioning-desc" xmlns:xlink="http://www.w3.org/1999/xlink" width="504pt" height="309.6pt" viewBox="0 0 504 309.6" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <title id="fig6-positioning-title">Relation to published systems: studied axes, not performance</title>
+ <desc id="fig6-positioning-desc">Coverage matrix of axes studied by NavRL, Elastic Tracker, Fast-Tracker, OPEN, YOPO and MOTAR: target tracking, random clutter, perception uncertainty, temporal estimation, safety analysis, observation contract, and whether any real-hardware result is reported (MOTAR: none, simulation-only). A mark is not a performance score. Class A matched external comparisons = 0.</desc>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 309.6 
+L 504 309.6 
+L 504 0 
+L 0 0 
+z
+" style="fill: #ffffff"/>
+  </g>
+  <g id="axes_1">
+   <g id="patch_2">
+    <path d="M 5.04 247.464 
+L 497.952 247.464 
+L 497.952 219.24 
+L 5.04 219.24 
+z
+" clip-path="url(#p43dad1b691)" style="fill: #e8eef6"/>
+   </g>
+   <g id="line2d_1">
+    <path d="M 446.292 246.96 
+L 446.292 36.288 
+" clip-path="url(#p43dad1b691)" style="fill: none; stroke: #ebe8e2; stroke-width: 0.7; stroke-linecap: round"/>
+   </g>
+   <g id="line2d_2">
+    <path d="M 7.56 61.488 
+L 496.44 61.488 
+" clip-path="url(#p43dad1b691)" style="fill: none; stroke: #cfcbc3; stroke-width: 0.7; stroke-linecap: round"/>
+   </g>
+   <g id="line2d_3">
+    <path d="M 7.56 92.736 
+L 496.44 92.736 
+" clip-path="url(#p43dad1b691)" style="fill: none; stroke: #ebe8e2; stroke-width: 0.6; stroke-linecap: round"/>
+   </g>
+   <g id="line2d_4">
+    <path d="M 7.56 123.984 
+L 496.44 123.984 
+" clip-path="url(#p43dad1b691)" style="fill: none; stroke: #ebe8e2; stroke-width: 0.6; stroke-linecap: round"/>
+   </g>
+   <g id="line2d_5">
+    <path d="M 7.56 155.232 
+L 496.44 155.232 
+" clip-path="url(#p43dad1b691)" style="fill: none; stroke: #ebe8e2; stroke-width: 0.6; stroke-linecap: round"/>
+   </g>
+   <g id="line2d_6">
+    <path d="M 7.56 186.48 
+L 496.44 186.48 
+" clip-path="url(#p43dad1b691)" style="fill: none; stroke: #ebe8e2; stroke-width: 0.6; stroke-linecap: round"/>
+   </g>
+   <g id="line2d_7">
+    <path d="M 7.56 217.728 
+L 496.44 217.728 
+" clip-path="url(#p43dad1b691)" style="fill: none; stroke: #ebe8e2; stroke-width: 0.6; stroke-linecap: round"/>
+   </g>
+   <g id="line2d_8">
+    <path d="M 7.56 248.976 
+L 496.44 248.976 
+" clip-path="url(#p43dad1b691)" style="fill: none; stroke: #cfcbc3; stroke-width: 0.7; stroke-linecap: round"/>
+   </g>
+   <g id="text_1">
+    <text style="fill: #1f1f1f; font: 700 9px 'Liberation Sans', Arial, Helvetica, sans-serif; text-anchor: start" x="7.56" y="13.919344" transform="rotate(-0 7.56 13.919344)">Studied axes by system</text>
+   </g>
+   <g id="text_2">
+    <text style="fill: #6e6e73; font: 7.5px 'Liberation Sans', Arial, Helvetica, sans-serif; text-anchor: start" x="7.56" y="27.139453" transform="rotate(-0 7.56 27.139453)">● studied or reported on this axis  ·  ○ not reported  ·  a mark is not a performance score</text>
+   </g>
+   <g id="text_3">
+    <text style="fill: #4a4a4f; font: 8px 'Liberation Sans', Arial, Helvetica, sans-serif" transform="translate(163.269625 46.75075)">Target</text>
+    <text style="fill: #4a4a4f; font: 8px 'Liberation Sans', Arial, Helvetica, sans-serif" transform="translate(160.379 54.788)">tracking</text>
+   </g>
+   <g id="text_4">
+    <text style="fill: #4a4a4f; font: 8px 'Liberation Sans', Arial, Helvetica, sans-serif" transform="translate(208.153875 46.75075)">Random</text>
+    <text style="fill: #4a4a4f; font: 8px 'Liberation Sans', Arial, Helvetica, sans-serif" transform="translate(212.380125 54.788)">clutter</text>
+   </g>
+   <g id="text_5">
+    <text style="fill: #4a4a4f; font: 8px 'Liberation Sans', Arial, Helvetica, sans-serif" transform="translate(253.038125 46.75075)">Perception</text>
+    <text style="fill: #4a4a4f; font: 8px 'Liberation Sans', Arial, Helvetica, sans-serif" transform="translate(252.595 54.788)">uncertainty</text>
+   </g>
+   <g id="text_6">
+    <text style="fill: #4a4a4f; font: 8px 'Liberation Sans', Arial, Helvetica, sans-serif" transform="translate(304.599875 46.75075)">Temporal</text>
+    <text style="fill: #4a4a4f; font: 8px 'Liberation Sans', Arial, Helvetica, sans-serif" transform="translate(302.818625 54.788)">estimation</text>
+   </g>
+   <g id="text_7">
+    <text style="fill: #4a4a4f; font: 8px 'Liberation Sans', Arial, Helvetica, sans-serif" transform="translate(358.596625 46.75075)">Safety</text>
+    <text style="fill: #4a4a4f; font: 8px 'Liberation Sans', Arial, Helvetica, sans-serif" transform="translate(355.485375 54.788)">analysis</text>
+   </g>
+   <g id="text_8">
+    <text style="fill: #4a4a4f; font: 8px 'Liberation Sans', Arial, Helvetica, sans-serif" transform="translate(397.259 46.75075)">Observation</text>
+    <text style="fill: #4a4a4f; font: 8px 'Liberation Sans', Arial, Helvetica, sans-serif" transform="translate(404.5965 54.788)">contract</text>
+   </g>
+   <g id="text_9">
+    <text style="fill: #4a4a4f; font: 8px 'Liberation Sans', Arial, Helvetica, sans-serif" transform="translate(465.53375 46.75075)">Real</text>
+    <text style="fill: #4a4a4f; font: 8px 'Liberation Sans', Arial, Helvetica, sans-serif" transform="translate(457.085625 54.788)">hardware</text>
+   </g>
+   <g id="text_10">
+    <text style="fill: #4a4a4f; font: 8px 'Liberation Sans', Arial, Helvetica, sans-serif" transform="translate(9.072 46.75075)">System</text>
+    <text style="fill: #4a4a4f; font: 8px 'Liberation Sans', Arial, Helvetica, sans-serif" transform="translate(9.072 54.788)">method family</text>
+   </g>
+   <g id="text_11">
+    <text style="fill: #1f1f1f; font: 8.5px 'Liberation Sans', Arial, Helvetica, sans-serif; text-anchor: start" x="9.072" y="73.010047" transform="rotate(-0 9.072 73.010047)">NavRL</text>
+   </g>
+   <g id="text_12">
+    <text style="fill: #6e6e73; font: 7.5px 'Liberation Sans', Arial, Helvetica, sans-serif; text-anchor: start" x="9.072" y="85.855453" transform="rotate(-0 9.072 85.855453)">PPO + velocity-obstacle shield</text>
+   </g>
+   <g id="text_13">
+    <text style="fill: #1f1f1f; font: 8.5px 'Liberation Sans', Arial, Helvetica, sans-serif; text-anchor: start" x="9.072" y="104.258047" transform="rotate(-0 9.072 104.258047)">Elastic Tracker</text>
+   </g>
+   <g id="text_14">
+    <text style="fill: #6e6e73; font: 7.5px 'Liberation Sans', Arial, Helvetica, sans-serif; text-anchor: start" x="9.072" y="117.103453" transform="rotate(-0 9.072 117.103453)">EKF + visibility-aware optimization</text>
+   </g>
+   <g id="text_15">
+    <text style="fill: #1f1f1f; font: 8.5px 'Liberation Sans', Arial, Helvetica, sans-serif; text-anchor: start" x="9.072" y="135.506047" transform="rotate(-0 9.072 135.506047)">Fast-Tracker</text>
+   </g>
+   <g id="text_16">
+    <text style="fill: #6e6e73; font: 7.5px 'Liberation Sans', Arial, Helvetica, sans-serif; text-anchor: start" x="9.072" y="148.351453" transform="rotate(-0 9.072 148.351453)">EKF + kinodynamic search</text>
+   </g>
+   <g id="text_17">
+    <text style="fill: #1f1f1f; font: 8.5px 'Liberation Sans', Arial, Helvetica, sans-serif; text-anchor: start" x="9.072" y="166.754047" transform="rotate(-0 9.072 166.754047)">OPEN</text>
+   </g>
+   <g id="text_18">
+    <text style="fill: #6e6e73; font: 7.5px 'Liberation Sans', Arial, Helvetica, sans-serif; text-anchor: start" x="9.072" y="179.599453" transform="rotate(-0 9.072 179.599453)">MAPPO + LSTM evader prediction</text>
+   </g>
+   <g id="text_19">
+    <text style="fill: #1f1f1f; font: 8.5px 'Liberation Sans', Arial, Helvetica, sans-serif; text-anchor: start" x="9.072" y="198.002047" transform="rotate(-0 9.072 198.002047)">YOPO</text>
+   </g>
+   <g id="text_20">
+    <text style="fill: #6e6e73; font: 7.5px 'Liberation Sans', Arial, Helvetica, sans-serif; text-anchor: start" x="9.072" y="210.847453" transform="rotate(-0 9.072 210.847453)">guidance-learned motion primitives</text>
+   </g>
+   <g id="text_21">
+    <text style="fill: #1f1f1f; font: 700 8.5px 'Liberation Sans', Arial, Helvetica, sans-serif; text-anchor: start" x="9.072" y="229.250047" transform="rotate(-0 9.072 229.250047)">MOTAR</text>
+   </g>
+   <g id="text_22">
+    <text style="fill: #6e6e73; font: 7.5px 'Liberation Sans', Arial, Helvetica, sans-serif; text-anchor: start" x="9.072" y="242.095453" transform="rotate(-0 9.072 242.095453)">frozen Transformer-PPO + arc-clearance filter</text>
+   </g>
+   <g id="text_23">
+    <g id="patch_3">
+     <path d="M 6.522 272.623797 
+L 184.116219 272.623797 
+L 184.116219 259.600203 
+L 6.522 259.600203 
+z
+" style="fill: #ffffff; stroke: #4a4a4f; stroke-width: 0.9; stroke-linejoin: miter"/>
+    </g>
+    <text style="fill: #1f1f1f; font: 700 8.5px 'Liberation Sans', Arial, Helvetica, sans-serif; text-anchor: start" x="9.072" y="268.310047" transform="rotate(-0 9.072 268.310047)">Class A matched external comparisons = 0</text>
+   </g>
+   <g id="text_24">
+    <text style="fill: #6e6e73; font: 7.5px 'Liberation Sans', Arial, Helvetica, sans-serif; text-anchor: start" x="7.56" y="287.707453" transform="rotate(-0 7.56 287.707453)">No external number is subtracted from, or ranked against, a MOTAR result.</text>
+   </g>
+   <g id="text_25">
+    <text style="fill: #6e6e73; font: 7.5px 'Liberation Sans', Arial, Helvetica, sans-serif; text-anchor: start" x="7.56" y="299.299453" transform="rotate(-0 7.56 299.299453)">Real hardware = any flight or onboard-compute entry in the positioning ledger; MOTAR is simulation-only.</text>
+   </g>
+   <g id="PathCollection_1">
+    <defs>
+     <path id="me4d3a158a0" d="M 0 2.828427 
+C 0.750108 2.828427 1.469594 2.530406 2 2 
+C 2.530406 1.469594 2.828427 0.750108 2.828427 0 
+C 2.828427 -0.750108 2.530406 -1.469594 2 -2 
+C 1.469594 -2.530406 0.750108 -2.828427 0 -2.828427 
+C -0.750108 -2.828427 -1.469594 -2.530406 -2 -2 
+C -2.530406 -1.469594 -2.828427 -0.750108 -2.828427 0 
+C -2.828427 0.750108 -2.530406 1.469594 -2 2 
+C -1.469594 2.530406 -0.750108 2.828427 0 2.828427 
+z
+" style="stroke: #b4b0a8"/>
+    </defs>
+    <g clip-path="url(#p43dad1b691)">
+     <use xlink:href="#me4d3a158a0" x="174.384" y="77.112" style="fill: #ffffff; stroke: #b4b0a8"/>
+    </g>
+   </g>
+   <g id="PathCollection_2">
+    <defs>
+     <path id="mad367866b0" d="M 0 3.316625 
+C 0.879579 3.316625 1.723251 2.967164 2.345208 2.345208 
+C 2.967164 1.723251 3.316625 0.879579 3.316625 0 
+C 3.316625 -0.879579 2.967164 -1.723251 2.345208 -2.345208 
+C 1.723251 -2.967164 0.879579 -3.316625 0 -3.316625 
+C -0.879579 -3.316625 -1.723251 -2.967164 -2.345208 -2.345208 
+C -2.967164 -1.723251 -3.316625 -0.879579 -3.316625 0 
+C -3.316625 0.879579 -2.967164 1.723251 -2.345208 2.345208 
+C -1.723251 2.967164 -0.879579 3.316625 0 3.316625 
+z
+" style="stroke: #ffffff"/>
+    </defs>
+    <g clip-path="url(#p43dad1b691)">
+     <use xlink:href="#mad367866b0" x="223.272" y="77.112" style="fill: #2f6599; stroke: #ffffff"/>
+    </g>
+   </g>
+   <g id="PathCollection_3">
+    <g clip-path="url(#p43dad1b691)">
+     <use xlink:href="#me4d3a158a0" x="272.16" y="77.112" style="fill: #ffffff; stroke: #b4b0a8"/>
+    </g>
+   </g>
+   <g id="PathCollection_4">
+    <g clip-path="url(#p43dad1b691)">
+     <use xlink:href="#mad367866b0" x="321.048" y="77.112" style="fill: #2f6599; stroke: #ffffff"/>
+    </g>
+   </g>
+   <g id="PathCollection_5">
+    <g clip-path="url(#p43dad1b691)">
+     <use xlink:href="#mad367866b0" x="369.936" y="77.112" style="fill: #2f6599; stroke: #ffffff"/>
+    </g>
+   </g>
+   <g id="PathCollection_6">
+    <g clip-path="url(#p43dad1b691)">
+     <use xlink:href="#me4d3a158a0" x="418.824" y="77.112" style="fill: #ffffff; stroke: #b4b0a8"/>
+    </g>
+   </g>
+   <g id="PathCollection_7">
+    <defs>
+     <path id="m24c7ea26bd" d="M 0 3.316625 
+C 0.879579 3.316625 1.723251 2.967164 2.345208 2.345208 
+C 2.967164 1.723251 3.316625 0.879579 3.316625 0 
+C 3.316625 -0.879579 2.967164 -1.723251 2.345208 -2.345208 
+C 1.723251 -2.967164 0.879579 -3.316625 0 -3.316625 
+C -0.879579 -3.316625 -1.723251 -2.967164 -2.345208 -2.345208 
+C -2.967164 -1.723251 -3.316625 -0.879579 -3.316625 0 
+C -3.316625 0.879579 -2.967164 1.723251 -2.345208 2.345208 
+C -1.723251 2.967164 -0.879579 3.316625 0 3.316625 
+z
+" style="stroke: #ffffff"/>
+    </defs>
+    <g clip-path="url(#p43dad1b691)">
+     <use xlink:href="#m24c7ea26bd" x="473.76" y="77.112" style="fill: #4a4a4f; stroke: #ffffff"/>
+    </g>
+   </g>
+   <g id="PathCollection_8">
+    <g clip-path="url(#p43dad1b691)">
+     <use xlink:href="#mad367866b0" x="174.384" y="108.36" style="fill: #2f6599; stroke: #ffffff"/>
+    </g>
+   </g>
+   <g id="PathCollection_9">
+    <g clip-path="url(#p43dad1b691)">
+     <use xlink:href="#mad367866b0" x="223.272" y="108.36" style="fill: #2f6599; stroke: #ffffff"/>
+    </g>
+   </g>
+   <g id="PathCollection_10">
+    <g clip-path="url(#p43dad1b691)">
+     <use xlink:href="#me4d3a158a0" x="272.16" y="108.36" style="fill: #ffffff; stroke: #b4b0a8"/>
+    </g>
+   </g>
+   <g id="PathCollection_11">
+    <g clip-path="url(#p43dad1b691)">
+     <use xlink:href="#mad367866b0" x="321.048" y="108.36" style="fill: #2f6599; stroke: #ffffff"/>
+    </g>
+   </g>
+   <g id="PathCollection_12">
+    <g clip-path="url(#p43dad1b691)">
+     <use xlink:href="#me4d3a158a0" x="369.936" y="108.36" style="fill: #ffffff; stroke: #b4b0a8"/>
+    </g>
+   </g>
+   <g id="PathCollection_13">
+    <g clip-path="url(#p43dad1b691)">
+     <use xlink:href="#me4d3a158a0" x="418.824" y="108.36" style="fill: #ffffff; stroke: #b4b0a8"/>
+    </g>
+   </g>
+   <g id="PathCollection_14">
+    <g clip-path="url(#p43dad1b691)">
+     <use xlink:href="#m24c7ea26bd" x="473.76" y="108.36" style="fill: #4a4a4f; stroke: #ffffff"/>
+    </g>
+   </g>
+   <g id="PathCollection_15">
+    <g clip-path="url(#p43dad1b691)">
+     <use xlink:href="#mad367866b0" x="174.384" y="139.608" style="fill: #2f6599; stroke: #ffffff"/>
+    </g>
+   </g>
+   <g id="PathCollection_16">
+    <g clip-path="url(#p43dad1b691)">
+     <use xlink:href="#mad367866b0" x="223.272" y="139.608" style="fill: #2f6599; stroke: #ffffff"/>
+    </g>
+   </g>
+   <g id="PathCollection_17">
+    <g clip-path="url(#p43dad1b691)">
+     <use xlink:href="#me4d3a158a0" x="272.16" y="139.608" style="fill: #ffffff; stroke: #b4b0a8"/>
+    </g>
+   </g>
+   <g id="PathCollection_18">
+    <g clip-path="url(#p43dad1b691)">
+     <use xlink:href="#mad367866b0" x="321.048" y="139.608" style="fill: #2f6599; stroke: #ffffff"/>
+    </g>
+   </g>
+   <g id="PathCollection_19">
+    <g clip-path="url(#p43dad1b691)">
+     <use xlink:href="#me4d3a158a0" x="369.936" y="139.608" style="fill: #ffffff; stroke: #b4b0a8"/>
+    </g>
+   </g>
+   <g id="PathCollection_20">
+    <g clip-path="url(#p43dad1b691)">
+     <use xlink:href="#me4d3a158a0" x="418.824" y="139.608" style="fill: #ffffff; stroke: #b4b0a8"/>
+    </g>
+   </g>
+   <g id="PathCollection_21">
+    <g clip-path="url(#p43dad1b691)">
+     <use xlink:href="#m24c7ea26bd" x="473.76" y="139.608" style="fill: #4a4a4f; stroke: #ffffff"/>
+    </g>
+   </g>
+   <g id="PathCollection_22">
+    <g clip-path="url(#p43dad1b691)">
+     <use xlink:href="#mad367866b0" x="174.384" y="170.856" style="fill: #2f6599; stroke: #ffffff"/>
+    </g>
+   </g>
+   <g id="PathCollection_23">
+    <g clip-path="url(#p43dad1b691)">
+     <use xlink:href="#mad367866b0" x="223.272" y="170.856" style="fill: #2f6599; stroke: #ffffff"/>
+    </g>
+   </g>
+   <g id="PathCollection_24">
+    <g clip-path="url(#p43dad1b691)">
+     <use xlink:href="#me4d3a158a0" x="272.16" y="170.856" style="fill: #ffffff; stroke: #b4b0a8"/>
+    </g>
+   </g>
+   <g id="PathCollection_25">
+    <g clip-path="url(#p43dad1b691)">
+     <use xlink:href="#mad367866b0" x="321.048" y="170.856" style="fill: #2f6599; stroke: #ffffff"/>
+    </g>
+   </g>
+   <g id="PathCollection_26">
+    <g clip-path="url(#p43dad1b691)">
+     <use xlink:href="#me4d3a158a0" x="369.936" y="170.856" style="fill: #ffffff; stroke: #b4b0a8"/>
+    </g>
+   </g>
+   <g id="PathCollection_27">
+    <g clip-path="url(#p43dad1b691)">
+     <use xlink:href="#me4d3a158a0" x="418.824" y="170.856" style="fill: #ffffff; stroke: #b4b0a8"/>
+    </g>
+   </g>
+   <g id="PathCollection_28">
+    <g clip-path="url(#p43dad1b691)">
+     <use xlink:href="#m24c7ea26bd" x="473.76" y="170.856" style="fill: #4a4a4f; stroke: #ffffff"/>
+    </g>
+   </g>
+   <g id="PathCollection_29">
+    <g clip-path="url(#p43dad1b691)">
+     <use xlink:href="#me4d3a158a0" x="174.384" y="202.104" style="fill: #ffffff; stroke: #b4b0a8"/>
+    </g>
+   </g>
+   <g id="PathCollection_30">
+    <g clip-path="url(#p43dad1b691)">
+     <use xlink:href="#mad367866b0" x="223.272" y="202.104" style="fill: #2f6599; stroke: #ffffff"/>
+    </g>
+   </g>
+   <g id="PathCollection_31">
+    <g clip-path="url(#p43dad1b691)">
+     <use xlink:href="#me4d3a158a0" x="272.16" y="202.104" style="fill: #ffffff; stroke: #b4b0a8"/>
+    </g>
+   </g>
+   <g id="PathCollection_32">
+    <g clip-path="url(#p43dad1b691)">
+     <use xlink:href="#me4d3a158a0" x="321.048" y="202.104" style="fill: #ffffff; stroke: #b4b0a8"/>
+    </g>
+   </g>
+   <g id="PathCollection_33">
+    <g clip-path="url(#p43dad1b691)">
+     <use xlink:href="#me4d3a158a0" x="369.936" y="202.104" style="fill: #ffffff; stroke: #b4b0a8"/>
+    </g>
+   </g>
+   <g id="PathCollection_34">
+    <g clip-path="url(#p43dad1b691)">
+     <use xlink:href="#me4d3a158a0" x="418.824" y="202.104" style="fill: #ffffff; stroke: #b4b0a8"/>
+    </g>
+   </g>
+   <g id="PathCollection_35">
+    <g clip-path="url(#p43dad1b691)">
+     <use xlink:href="#m24c7ea26bd" x="473.76" y="202.104" style="fill: #4a4a4f; stroke: #ffffff"/>
+    </g>
+   </g>
+   <g id="PathCollection_36">
+    <g clip-path="url(#p43dad1b691)">
+     <use xlink:href="#mad367866b0" x="174.384" y="233.352" style="fill: #2f6599; stroke: #ffffff"/>
+    </g>
+   </g>
+   <g id="PathCollection_37">
+    <g clip-path="url(#p43dad1b691)">
+     <use xlink:href="#mad367866b0" x="223.272" y="233.352" style="fill: #2f6599; stroke: #ffffff"/>
+    </g>
+   </g>
+   <g id="PathCollection_38">
+    <g clip-path="url(#p43dad1b691)">
+     <use xlink:href="#mad367866b0" x="272.16" y="233.352" style="fill: #2f6599; stroke: #ffffff"/>
+    </g>
+   </g>
+   <g id="PathCollection_39">
+    <g clip-path="url(#p43dad1b691)">
+     <use xlink:href="#mad367866b0" x="321.048" y="233.352" style="fill: #2f6599; stroke: #ffffff"/>
+    </g>
+   </g>
+   <g id="PathCollection_40">
+    <g clip-path="url(#p43dad1b691)">
+     <use xlink:href="#mad367866b0" x="369.936" y="233.352" style="fill: #2f6599; stroke: #ffffff"/>
+    </g>
+   </g>
+   <g id="PathCollection_41">
+    <g clip-path="url(#p43dad1b691)">
+     <use xlink:href="#mad367866b0" x="418.824" y="233.352" style="fill: #2f6599; stroke: #ffffff"/>
+    </g>
+   </g>
+   <g id="PathCollection_42">
+    <g clip-path="url(#p43dad1b691)">
+     <use xlink:href="#me4d3a158a0" x="473.76" y="233.352" style="fill: #ffffff; stroke: #b4b0a8"/>
+    </g>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="p43dad1b691">
+   <rect x="0" y="0" width="504" height="309.6"/>
+  </clipPath>
+ </defs>
+</svg>

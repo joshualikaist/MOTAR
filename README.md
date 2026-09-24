@@ -1,178 +1,130 @@
 # MOTAR
 
-MOTAR: Moving Object Tracking And Rendezvous.
-Reinforcement Learning for UAV Tracking and Close Approach in Random Obstacle Fields.
+**MOTAR: Moving Object Tracking And Rendezvous**<br>
+*Reinforcement Learning for UAV Tracking and Close Approach in Random Obstacle Fields*
 
-![Research sources, analysis and recorded outputs](docs/assets/paper/system-overview-block-diagram.svg)
+A simulation study of how measured perception uncertainty, safety geometry, target motion and the
+observation contract change the behaviour of frozen UAV policies.
 
-## Overview
+![MOTAR overview: the simulated closed loop (environment, perception, temporal state, frozen policy, safety filter and control) above the measured evidence chain](docs/assets/paper/final/fig1-motar-overview.svg)
 
-MOTAR is a research repository for measured perception error, dense-obstacle navigation and
-safety-filter diagnosis. The public quick start runs an **independent static graphics renderer**:
-it does not load a detector, flight policy or simulator task.
+**Main finding:** target motion was not a monotonic difficulty ladder. Against the target motion the
+policy was trained on, a static target scored **−3.58 pp** capture and an obstacle-aware target
+**+1.33 pp**.
+*Simulation only; no real-flight or state-of-the-art claim.*
 
-The historical project studied UAV **interception**, with metrics named `capture` and `crash`.
-Those experiments, meanings, paths and checkpoints are preserved, not renamed as evidence of a
-different capability. “Rendezvous” describes the public research framing, not a validated contact
-system or a change to historical success criteria.
+## Why MOTAR?
 
-**How does the target move?** There is no single target algorithm: the research simulator and
-the site's browser preview use different planners, and the obstacle-aware research target does
-not use the browser's A* global route. See
-[target motion algorithms](docs/target_motion_algorithm_2026-09-17.md) for the per-lineage
-answer, a 30-second explanation, pseudocode and an FAQ.
+Published UAV work usually isolates one piece of the problem — navigation, tracking, pursuit,
+perception or safety — and reports a number inside it. MOTAR follows one simulated task end to end:
+it measures perception error on real footage, injects it into a frozen policy, varies the safety
+filter's geometry, the target's motion and the way the target is rendered, and records what each
+change costs. Each headline comparison changes one factor; its preregistration, record and recorded
+deviations are linked from [`docs/EVIDENCE.md`](docs/EVIDENCE.md). Negative, inconclusive and
+withdrawn results are kept beside the positive ones.
 
-## Research Questions
+## Key Results
 
-- How can measured perception uncertainty be documented without overstating generalization?
-- Which assumptions limit existing safety-filter results?
-- How can geometry, material and lighting be tested independently in synthetic images?
-- What evidence is needed before claiming that an experiment is reproducible?
+| Question | Result | Status and limit |
+| --- | --- | --- |
+| Target motion vs the training target | static **−3.58 pp** · obstacle-aware **+1.33 pp** capture | Not a monotonic ladder. Policy F, 3 evaluation seeds; 95.42 % of static-target timeouts never acquired the target (association only) |
+| Measured perception error → policy | **−4.57 pp** capture, 95 % CI [−6.32, −2.82] | Policy F; episode-level interval from two evaluation seeds at one density; one injector |
+| Readaptation under that error | **+0.73 pp**, 95 % CI [−1.04, +2.50] | **INCONCLUSIVE**: no net benefit established; 3 training seeds |
+| Safety-filter geometry | **−1.4903 pp** crash; seed-level 95 % CI [−2.42, −0.57] | Policy F, 3 evaluation seeds; lower in 15/15 seed × density cells, which are not independent replicates. Configured contrast; not a safety guarantee |
+| Observation contract | **−48.967 pp** capture | **MATERIAL_LOSS**; causality **NOT_TESTED**; policy R (a different checkpoint), 3 evaluation seeds |
+| Perception range error on real footage | **6.2 %** median of 9 block medians | One flight (9 blocks of 15 s; 3,107 frames, not independent samples); apparent-size proxy |
 
-## Scope and Limitations
+pp = percentage points. Two frozen checkpoints carry these results: policy F (ep25000 + riskcap) and,
+for the observation contract only, policy R (ref5in D1 ep1900). No external result is compared
+numerically: Class A matched comparisons = 0.
 
-This is **simulation-only** research on moving-target rendezvous: tracking and approach in a
-simulated dense-obstacle arena. It makes **no real-flight validation claim** and provides no
-deployment instructions. Independent renderer tests do not certify simulator integration, target
-identity or physical safety. Data and code have different licensing boundaries.
+## System
 
-The bounded claims travel with the results and are not softened anywhere in this repository:
+![MOTAR code map: scenario inputs, the closed loop from obstacle environment to vehicle dynamics, and the evidence layer](docs/assets/paper/final/arch-motar-code-map.svg)
 
-| Result | Status |
-| --- | --- |
-| P2 held-out, D1 adaptation | **FAIL**; P3 full budget **BLOCKED** |
-| P10 readaptation | **INCONCLUSIVE** — a net adaptation benefit is **not established** |
-| S4 held-out generalization | **warning stands** |
-| E3-P attitude reliability | **ATTITUDE_NOT_RELIABLE**; decomposition BLOCKED |
-| E3-S size-to-range proxy | usable, on **one** flight only |
-| D8b frozen-policy sensitivity | **MATERIAL_LOSS** |
-| Renderer Contract v1 versus D8b | **causality NOT_TESTED** |
-
-Numbers belong with their receipts, not on a landing page. The one-page map of what each track
-established, with its figures and its limits, is the
-[research evidence index](docs/RESEARCH_EVIDENCE_INDEX.md). Historical, negative and withdrawn
-findings remain visible in [Verification](VERIFICATION.md).
-
-## External datasets
-
-No raw dataset is distributed with this repository. ETH ds5 derived images are **excluded** from the
-public release under CC BY-NC-SA 4.0; Det-Fly, NPS-Drones and detenv are referenced by tooling only.
-Results that depend on them are reproducible from their recorded form, not from raw data. See
-[reproducibility](docs/REPRODUCIBILITY.md) and [third-party notices](THIRD_PARTY_LICENSES.md).
-
-## System Overview
-
-The figure maps research inputs to analyses and recorded outputs; it is not a deployed closed loop.
-[All nine diagrams and captions](docs/assets/paper/) and their
-[SVG/PNG/PDF package](docs/assets/paper/motar-paper-block-diagrams.zip) remain available.
-Detailed results and figures live in the [results overview](docs/results_overview_2026-09-12.md).
-
-## Key Components
-
-- Independent static renderer: procedural geometry, G-buffers and material/lighting variations.
-- Evidence utilities: source hashes, runtime fingerprints and immutable result records.
-- Historical research code and measurements: retained with experiment-specific contracts.
-- Target-behavior axis: static, CV and obstacle-aware scripted implementations; reactive/self-play
-  stages remain planned and are not reported as results.
-- Public validation: environment inventory, documentation checks and CPU-only CI.
+A forward camera and a LiDAR feed perception, which keeps a short track history. A Transformer PPO
+policy, frozen for every evaluation, turns 17 observation tokens into a velocity command. A LiDAR
+speed filter caps that command before a Lee velocity controller flies the quadrotor. Ground-truth
+target state never enters the policy's observation. The scenario inputs (target motion, rendering
+contract, measured-error injection) are the factors the experiments vary. Details and source paths:
+[`ARCHITECTURE.md`](ARCHITECTURE.md).
 
 ## Repository Structure
 
-| Path | Purpose |
-|---|---|
-| `tools/renderer_validation/` | Independent static graphics components |
-| `tools/` | Export, benchmark, evidence and maintenance utilities |
-| `tests/` | Unit, packaging, evidence and documentation checks |
-| `docs/` | Installation, contracts, public checklist and research records |
-| `results/` | Historical measurements and provenance, not generic training data |
-| `aerial_gym/`, `resources/` | Historical simulator code and assets |
+| Path | Contents |
+| --- | --- |
+| `aerial_gym/` | Simulator and the MOTAR task: environment, sensors, perception, policy, safety filter, control |
+| `tools/` | Public tools (environment doctor, renderer, figure and document builders) and experiment scripts |
+| `tests/` | Contract, evidence and documentation guards |
+| `results/` | One immutable folder per experiment: receipts, raw counts, summaries, VOID runs |
+| `docs/` | Evidence, reproducibility, operations, history, preregistrations; the site in `docs/status/` |
 
-## Requirements
-
-The supported independent CPU profile is **Linux x86-64, Python 3.8, Git**, with a new virtual
-environment. It does not need Isaac Gym or a GPU. Python 3.8 is a legacy compatibility constraint,
-not a recommendation for unrelated new applications. See the
-[CPU profile limitations](docs/renderer_cpu_quickstart_2026-09-12.md).
-
-The historical simulator environment is separate and has proprietary/external prerequisites.
-The CPU profile does not certify its installation.
-
-## Installation
-
-Clone the full history; stored evidence checks refer to historical Git objects.
-
-```bash
-git clone https://github.com/joshualikaist/MOTAR.git
-cd MOTAR
-```
-
-Follow [isolated CPU installation](docs/renderer_cpu_quickstart_2026-09-12.md).
-Do not install the root requirements into that environment or replace a historical research environment.
+The historical research code in `aerial_gym/` and the experiment launchers are provenance, not
+recommended entry points. Start from the quick start below.
 
 ## Quick Start
 
-After activating the isolated CPU environment, run from the repository root:
+The supported public path is CPU-only: Linux x86-64, Python 3.8, Git, and a new virtual environment.
+It needs no GPU and no Isaac Gym, and runs no policy.
 
 ```bash
-PYTHONNOUSERSITE=1 CUDA_VISIBLE_DEVICES='' python -B tools/motar_doctor.py --profile renderer-cpu
-PYTHONNOUSERSITE=1 CUDA_VISIBLE_DEVICES='' python -B tools/run_renderer_validation.py \
-  --device cpu --seed 0 --num-scenes 1 --width 160 --height 120 --frames 2 --output /tmp/motar-smoke-new
+git clone https://github.com/joshualikaist/MOTAR-public.git MOTAR && cd MOTAR
+# create and activate the isolated CPU environment: docs/renderer_cpu_quickstart_2026-09-12.md
+export PYTHONNOUSERSITE=1 CUDA_VISIBLE_DEVICES=''
+python -B tools/motar_doctor.py --profile renderer-cpu
+python -B tools/run_renderer_validation.py --device cpu --seed 0 --num-scenes 1 \
+  --width 160 --height 120 --frames 2 --output /tmp/motar-smoke-new
+python -B -m unittest discover -s tests -p 'test_public*.py'
 ```
 
-The output directory must not already exist. The smoke produces generic box images and debug
-buffers, **not an experiment verdict**. See [export and benchmark tooling](docs/renderer_public_tools.md).
+The smoke test renders generic boxes and debug buffers. It is not an experiment verdict. The
+recorded results are verified from their receipts rather than re-run, as described in
+[`docs/REPRODUCIBILITY.md`](docs/REPRODUCIBILITY.md). The historical simulator environment is
+separate: it needs a GPU and Isaac Gym Preview 4, which NVIDIA distributes and which cannot be
+redistributed here.
 
-## Training and Evaluation
+## Research Evidence
 
-There is **no training step in the public quick start**. Historical commands and their authority
-are preserved in [Operations](OPERATIONS.md); a recorded command is not a new execution approval.
-This release work does not modify rewards, observation schemas or checkpoints.
-
-## Reproducing Experiments
-
-Use the exact environment, source revision, data split and hashes named by each result.
-[CPU evidence reproduction](docs/public_evidence_reproduction_2026-09-12.md) and
-[renderer installation evidence](results/renderer_cpu_install_2026-09-12/README.md) distinguish
-stored-result verification from a fresh rendering run. Missing evidence stays missing.
+Every result, its interval, its record and its limit are on one page:
+[**`docs/EVIDENCE.md`**](docs/EVIDENCE.md). The public site has a project page and a full evidence
+page ([`docs/status/`](docs/status/index.html)). Figures by track as of 2026-09-12 are in the
+[results overview](docs/results_overview_2026-09-12.md).
 
 ## Documentation
 
-Start with [reproducibility](docs/REPRODUCIBILITY.md) for what runs without a GPU, and the
-[research evidence index](docs/RESEARCH_EVIDENCE_INDEX.md) for what the results do and do not say.
+- [`PROJECT.md`](PROJECT.md): purpose, questions, scope and phase.
+- [`ARCHITECTURE.md`](ARCHITECTURE.md): how the system connects and which directories may change.
+- [`docs/EVIDENCE.md`](docs/EVIDENCE.md): what is established, and what is not.
+- [`docs/REPRODUCIBILITY.md`](docs/REPRODUCIBILITY.md): environments, data availability, verification.
+- [`docs/OPERATIONS.md`](docs/OPERATIONS.md): everyday commands and run rules.
+- [`docs/HISTORY.md`](docs/HISTORY.md): milestones and the negative record.
+- [`AGENTS.md`](AGENTS.md) and [`DESIGN_SYSTEM.md`](DESIGN_SYSTEM.md): rules for contributors, the site
+  and the figures.
 
+## Limitations
 
-- [Documentation index](docs/README.md)
-- [Results by track](docs/results_overview_2026-09-12.md)
-- [Matched-baseline and published-system relation](docs/relation_to_published_systems_2026-09-16.md)
-- [Target behavior ladder and current-motion audit](docs/target_behavior_ladder_2026-09-16.md)
-- [Current verification and limitations](VERIFICATION.md)
-- [Worklog](WORKLOG.md)
-- [Public release checklist](docs/PUBLIC_RELEASE_CHECKLIST.md)
-- [Public release audit](docs/public_release_audit_2026-09-12.md)
-- [Master roadmap and blocked boundaries](docs/plans/moving_target_rendezvous_master_plan_2026-09-12.md)
-- [Machine-readable status](docs/status_manifest.json) · [Research site](docs/status/)
+> MOTAR is **simulation-only** research on moving-target rendezvous (tracking and close approach in
+> a simulated obstacle field). It makes **no real-flight validation claim**, no sim-to-real claim and
+> no state-of-the-art claim, and it provides no deployment instructions. The historical experiments
+> were framed as interception; their metric names (`capture`, `crash`) keep their original meaning,
+> and "rendezvous" does not reinterpret them. Each effect holds only inside its recorded contract:
+> checkpoint, arena, densities and seeds. Readaptation is INCONCLUSIVE, the D8b cause is NOT_TESTED,
+> and persistent target identity and metric range are BLOCKED by missing ground truth.
 
 ## Citation
 
-Use [CITATION.cff](CITATION.cff) for the software citation. No published MOTAR paper or author
-identifier is invented. Cite the upstream software and datasets used by the relevant experiment
+Cite the software with [`CITATION.cff`](CITATION.cff). No MOTAR paper has been published, and no
+author identifier is invented. Cite the upstream software and datasets used by an experiment
 separately.
 
-## License and Third-Party Materials
+## License
 
-Original project code is offered under the repository's [BSD-3-Clause notice](LICENSE), subject
-to retained upstream notices. This does **not** apply to every data file or dependency.
-[Third-party inventory](THIRD_PARTY_LICENSES.md) identifies separate terms and unresolved items.
-ETH ds5 source and derived review images/ZIPs are **not redistributed in the current tree**.
-Obtain ETH ds5 separately from its original distributor under **CC BY-NC-SA 4.0**, not BSD:
-[external acquisition and reproduction](docs/external_data/ETH_DS5.md).
-Analysis code, numerical evidence and historical provenance remain available. The original
-research repository's historical Git history contains earlier review assets. The public
-MOTAR-public history does not include those objects; see
-[release status](docs/public_release_status_2026-09-14.md).
-
-## Acknowledgements
+Original code is offered under the repository's [BSD-3-Clause notice](LICENSE), subject to the
+retained upstream notices. This does not cover every data file or dependency; see the
+[third-party inventory](THIRD_PARTY_LICENSES.md). ETH ds5 images are not redistributed and must be
+obtained separately under CC BY-NC-SA 4.0
+([external data](docs/external_data/ETH_DS5.md)).
 
 MOTAR derives from [Aerial Gym Simulator](https://github.com/ntnu-arl/aerial_gym_simulator) and
-acknowledges NavRL, rl_games, NVIDIA Warp, urdfpy, trimesh, and the cited dataset authors.
-Acknowledgement does not imply endorsement. See the third-party inventory for use and redistribution details.
+acknowledges NavRL, rl_games, NVIDIA Warp, urdfpy, trimesh and the cited dataset authors.
+Acknowledgement does not imply endorsement.

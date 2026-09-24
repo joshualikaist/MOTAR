@@ -15,7 +15,9 @@ ROOT = Path(__file__).resolve().parents[1]
 CANONICAL = ROOT / "docs/target_motion_algorithm_2026-09-17.md"
 ANSWERS = ROOT / "docs/presentation_target_algorithm_answers_2026-09-17.md"
 LADDER = ROOT / "docs/target_behavior_ladder_2026-09-16.md"
-SITE = ROOT / "docs/status/index.html"
+# The detailed target-motion explanation (section 2.2) lives on the full-evidence page since 2026-09-24;
+# the project page's own target-motion section is checked in test_project_page.py.
+SITE = ROOT / "docs/status/evidence.html"
 
 TARGET_MOTION = ROOT / "aerial_gym/task/navrl_task/target_motion.py"
 ROUTE_PLANNER = ROOT / "aerial_gym/task/navrl_task/target_route_planner.py"

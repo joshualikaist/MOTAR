@@ -1,0 +1,462 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg role="img" aria-labelledby="arch-motar-code-map-title arch-motar-code-map-desc" xmlns:xlink="http://www.w3.org/1999/xlink" width="720pt" height="381.6pt" viewBox="0 0 720 381.6" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <title id="arch-motar-code-map-title">MOTAR code map: closed loop, scenario inputs and evidence layer</title>
+ <desc id="arch-motar-code-map-desc">Closed simulation loop - obstacle environment, sensors (camera, LiDAR), perception and temporal state, policy observation (898-D actor, 906-D critic, 17 tokens), frozen Transformer PPO policy, LiDAR speed-cap safety filter, Lee velocity controller, quadrotor dynamics - with scenario inputs (target-motion generator, rendering contract, measured error injection, task contract) and the evidence layer (launchers, receipts, registries, generated docs and figures, guard tests). File names are under aerial_gym/ unless prefixed.</desc>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 381.6 
+L 720 381.6 
+L 720 0 
+L 0 0 
+z
+" style="fill: #ffffff"/>
+  </g>
+  <g id="axes_1">
+   <g id="patch_2">
+    <path d="M 14.4 93.6 
+L 175.68 93.6 
+L 175.68 24.48 
+L 14.4 24.48 
+z
+" clip-path="url(#pe1911d0436)" style="fill: #f7f6f2; stroke: #cfcbc3; stroke-width: 0.8; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_3">
+    <path d="M 190.8 93.6 
+L 352.08 93.6 
+L 352.08 24.48 
+L 190.8 24.48 
+z
+" clip-path="url(#pe1911d0436)" style="fill: #f7f6f2; stroke: #cfcbc3; stroke-width: 0.8; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_4">
+    <path d="M 367.2 93.6 
+L 528.48 93.6 
+L 528.48 24.48 
+L 367.2 24.48 
+z
+" clip-path="url(#pe1911d0436)" style="fill: #f7f6f2; stroke: #cfcbc3; stroke-width: 0.8; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_5">
+    <path d="M 543.6 93.6 
+L 704.88 93.6 
+L 704.88 24.48 
+L 543.6 24.48 
+z
+" clip-path="url(#pe1911d0436)" style="fill: #f7f6f2; stroke: #cfcbc3; stroke-width: 0.8; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_6">
+    <path d="M 14.4 194.4 
+L 175.68 194.4 
+L 175.68 125.28 
+L 14.4 125.28 
+z
+" clip-path="url(#pe1911d0436)" style="fill: #ffffff; stroke: #cfcbc3; stroke-width: 0.8; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_7">
+    <path d="M 190.8 194.4 
+L 352.08 194.4 
+L 352.08 125.28 
+L 190.8 125.28 
+z
+" clip-path="url(#pe1911d0436)" style="fill: #ffffff; stroke: #cfcbc3; stroke-width: 0.8; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_8">
+    <path d="M 367.2 194.4 
+L 528.48 194.4 
+L 528.48 125.28 
+L 367.2 125.28 
+z
+" clip-path="url(#pe1911d0436)" style="fill: #ffffff; stroke: #cfcbc3; stroke-width: 0.8; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_9">
+    <path d="M 543.6 194.4 
+L 704.88 194.4 
+L 704.88 125.28 
+L 543.6 125.28 
+z
+" clip-path="url(#pe1911d0436)" style="fill: #ffffff; stroke: #cfcbc3; stroke-width: 0.8; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_10">
+    <path d="M 543.6 291.6 
+L 704.88 291.6 
+L 704.88 222.48 
+L 543.6 222.48 
+z
+" clip-path="url(#pe1911d0436)" style="fill: #ffffff; stroke: #4a4a4f; stroke-width: 0.8; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_11">
+    <path d="M 367.2 291.6 
+L 528.48 291.6 
+L 528.48 222.48 
+L 367.2 222.48 
+z
+" clip-path="url(#pe1911d0436)" style="fill: #ffffff; stroke: #cfcbc3; stroke-width: 0.8; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_12">
+    <path d="M 190.8 291.6 
+L 352.08 291.6 
+L 352.08 222.48 
+L 190.8 222.48 
+z
+" clip-path="url(#pe1911d0436)" style="fill: #ffffff; stroke: #cfcbc3; stroke-width: 0.8; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_13">
+    <path d="M 14.4 291.6 
+L 175.68 291.6 
+L 175.68 222.48 
+L 14.4 222.48 
+z
+" clip-path="url(#pe1911d0436)" style="fill: #ffffff; stroke: #cfcbc3; stroke-width: 0.8; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_14">
+    <path d="M 14.4 370.08 
+L 704.88 370.08 
+L 704.88 315.36 
+L 14.4 315.36 
+z
+" clip-path="url(#pe1911d0436)" style="fill: #e8eef6; stroke: #cfcbc3; stroke-width: 0.8; stroke-linejoin: miter"/>
+   </g>
+   <g id="text_1">
+    <text style="fill: #6e6e73; font: 700 8.6px 'Liberation Sans', Arial, Helvetica, sans-serif; text-anchor: start" x="14.4" y="15.183906" transform="rotate(-0 14.4 15.183906)">INPUTS THAT DEFINE A SCENARIO</text>
+   </g>
+   <g id="text_2">
+    <text style="fill: #1f1f1f; font: 700 9.8px 'Liberation Sans', Arial, Helvetica, sans-serif; text-anchor: start" x="21.6" y="39.232781" transform="rotate(-0 21.6 39.232781)">Target-motion generator</text>
+   </g>
+   <g id="text_3">
+    <text style="fill: #4a4a4f; font: 8.3px 'Liberation Sans', Arial, Helvetica, sans-serif; text-anchor: start" x="21.6" y="53.266328" transform="rotate(-0 21.6 53.266328)">H legacy · E0 static · E1 CV · E2 local</text>
+   </g>
+   <g id="text_4">
+    <text style="fill: #6e6e73; font: 7.5px 'Liberation Mono', Menlo, Consolas, monospace; text-anchor: start" x="21.6" y="68.179453" transform="rotate(-0 21.6 68.179453)">target_motion.py</text>
+   </g>
+   <g id="text_5">
+    <text style="fill: #6e6e73; font: 7.5px 'Liberation Mono', Menlo, Consolas, monospace; text-anchor: start" x="21.6" y="80.059453" transform="rotate(-0 21.6 80.059453)">physical_target.py (route, gated)</text>
+   </g>
+   <g id="text_6">
+    <text style="fill: #1f1f1f; font: 700 9.8px 'Liberation Sans', Arial, Helvetica, sans-serif; text-anchor: start" x="198" y="39.232781" transform="rotate(-0 198 39.232781)">Rendering contract</text>
+   </g>
+   <g id="text_7">
+    <text style="fill: #4a4a4f; font: 8.3px 'Liberation Sans', Arial, Helvetica, sans-serif; text-anchor: start" x="198" y="53.266328" transform="rotate(-0 198 53.266328)">analytic proxy or mesh treatment (D8)</text>
+   </g>
+   <g id="text_8">
+    <text style="fill: #6e6e73; font: 7.5px 'Liberation Mono', Menlo, Consolas, monospace; text-anchor: start" x="198" y="68.179453" transform="rotate(-0 198 68.179453)">navrl_dynamic_mesh_treatment.py</text>
+   </g>
+   <g id="text_9">
+    <text style="fill: #6e6e73; font: 7.5px 'Liberation Mono', Menlo, Consolas, monospace; text-anchor: start" x="198" y="80.059453" transform="rotate(-0 198 80.059453)">tools/renderer_validation/</text>
+   </g>
+   <g id="text_10">
+    <text style="fill: #1f1f1f; font: 700 9.8px 'Liberation Sans', Arial, Helvetica, sans-serif; text-anchor: start" x="374.4" y="39.254219" transform="rotate(-0 374.4 39.254219)">Measured error injection</text>
+   </g>
+   <g id="text_11">
+    <text style="fill: #4a4a4f; font: 8.3px 'Liberation Sans', Arial, Helvetica, sans-serif; text-anchor: start" x="374.4" y="53.266328" transform="rotate(-0 374.4 53.266328)">P8 model driven through P9 (opt-in)</text>
+   </g>
+   <g id="text_12">
+    <text style="fill: #6e6e73; font: 7.5px 'Liberation Mono', Menlo, Consolas, monospace; text-anchor: start" x="374.4" y="68.179453" transform="rotate(-0 374.4 68.179453)">navrl_empirical_error.py</text>
+   </g>
+   <g id="text_13">
+    <text style="fill: #1f1f1f; font: 700 9.8px 'Liberation Sans', Arial, Helvetica, sans-serif; text-anchor: start" x="550.8" y="39.254219" transform="rotate(-0 550.8 39.254219)">Task and checkpoint contract</text>
+   </g>
+   <g id="text_14">
+    <text style="fill: #4a4a4f; font: 8.3px 'Liberation Sans', Arial, Helvetica, sans-serif; text-anchor: start" x="550.8" y="53.266328" transform="rotate(-0 550.8 53.266328)">success 0.5 m · 60 s · frozen weights</text>
+   </g>
+   <g id="text_15">
+    <text style="fill: #6e6e73; font: 7.5px 'Liberation Mono', Menlo, Consolas, monospace; text-anchor: start" x="550.8" y="68.179453" transform="rotate(-0 550.8 68.179453)">navrl_task_config.py</text>
+   </g>
+   <g id="text_16">
+    <text style="fill: #6e6e73; font: 7.5px 'Liberation Mono', Menlo, Consolas, monospace; text-anchor: start" x="550.8" y="80.059453" transform="rotate(-0 550.8 80.059453)">research_task_contract.json</text>
+   </g>
+   <g id="text_17">
+    <text style="fill: #1f1f1f; font: 700 9.8px 'Liberation Sans', Arial, Helvetica, sans-serif; text-anchor: start" x="21.6" y="140.054219" transform="rotate(-0 21.6 140.054219)">Obstacle environment</text>
+   </g>
+   <g id="text_18">
+    <text style="fill: #4a4a4f; font: 8.3px 'Liberation Sans', Arial, Helvetica, sans-serif; text-anchor: start" x="21.6" y="154.066328" transform="rotate(-0 21.6 154.066328)">40 × 40 × 3 m arena, 70–205 bars</text>
+   </g>
+   <g id="text_19">
+    <text style="fill: #6e6e73; font: 7.5px 'Liberation Mono', Menlo, Consolas, monospace; text-anchor: start" x="21.6" y="168.979453" transform="rotate(-0 21.6 168.979453)">navrl_bars_env.py</text>
+   </g>
+   <g id="text_20">
+    <text style="fill: #6e6e73; font: 7.5px 'Liberation Mono', Menlo, Consolas, monospace; text-anchor: start" x="21.6" y="180.859453" transform="rotate(-0 21.6 180.859453)">navrl_curriculum.py</text>
+   </g>
+   <g id="text_21">
+    <text style="fill: #1f1f1f; font: 700 9.8px 'Liberation Sans', Arial, Helvetica, sans-serif; text-anchor: start" x="198" y="140.054219" transform="rotate(-0 198 140.054219)">Sensors</text>
+   </g>
+   <g id="text_22">
+    <text style="fill: #4a4a4f; font: 8.3px 'Liberation Sans', Arial, Helvetica, sans-serif; text-anchor: start" x="198" y="154.066328" transform="rotate(-0 198 154.066328)">forward camera · LiDAR 72 × 4 @ 12 m</text>
+   </g>
+   <g id="text_23">
+    <text style="fill: #6e6e73; font: 7.5px 'Liberation Mono', Menlo, Consolas, monospace; text-anchor: start" x="198" y="168.979453" transform="rotate(-0 198 168.979453)">navrl_detector.py</text>
+   </g>
+   <g id="text_24">
+    <text style="fill: #6e6e73; font: 7.5px 'Liberation Mono', Menlo, Consolas, monospace; text-anchor: start" x="198" y="180.859453" transform="rotate(-0 198 180.859453)">navrl_lidar_config.py</text>
+   </g>
+   <g id="text_25">
+    <text style="fill: #1f1f1f; font: 700 9.8px 'Liberation Sans', Arial, Helvetica, sans-serif; text-anchor: start" x="374.4" y="140.054219" transform="rotate(-0 374.4 140.054219)">Perception + temporal state</text>
+   </g>
+   <g id="text_26">
+    <text style="fill: #4a4a4f; font: 8.3px 'Liberation Sans', Arial, Helvetica, sans-serif; text-anchor: start" x="374.4" y="154.066328" transform="rotate(-0 374.4 154.066328)">detection, tracking, 2 s history</text>
+   </g>
+   <g id="text_27">
+    <text style="fill: #6e6e73; font: 7.5px 'Liberation Mono', Menlo, Consolas, monospace; text-anchor: start" x="374.4" y="168.979453" transform="rotate(-0 374.4 168.979453)">navrl_perception.py</text>
+   </g>
+   <g id="text_28">
+    <text style="fill: #1f1f1f; font: 700 9.8px 'Liberation Sans', Arial, Helvetica, sans-serif; text-anchor: start" x="550.8" y="140.054219" transform="rotate(-0 550.8 140.054219)">Policy observation</text>
+   </g>
+   <g id="text_29">
+    <text style="fill: #4a4a4f; font: 8.3px 'Liberation Sans', Arial, Helvetica, sans-serif; text-anchor: start" x="550.8" y="154.066328" transform="rotate(-0 550.8 154.066328)">898-D actor · 906-D critic · 17 tokens</text>
+   </g>
+   <g id="text_30">
+    <text style="fill: #6e6e73; font: 7.5px 'Liberation Mono', Menlo, Consolas, monospace; text-anchor: start" x="550.8" y="168.979453" transform="rotate(-0 550.8 168.979453)">navrl_task.py</text>
+   </g>
+   <g id="text_31">
+    <text style="fill: #6e6e73; font: 7.5px 'Liberation Mono', Menlo, Consolas, monospace; text-anchor: start" x="550.8" y="180.859453" transform="rotate(-0 550.8 180.859453)">navrl_perception.py</text>
+   </g>
+   <g id="text_32">
+    <text style="fill: #1f1f1f; font: 700 9.8px 'Liberation Sans', Arial, Helvetica, sans-serif; text-anchor: start" x="550.8" y="237.254219" transform="rotate(-0 550.8 237.254219)">Frozen PPO policy</text>
+   </g>
+   <g id="text_33">
+    <text style="fill: #4a4a4f; font: 8.3px 'Liberation Sans', Arial, Helvetica, sans-serif; text-anchor: start" x="550.8" y="251.266328" transform="rotate(-0 550.8 251.266328)">Transformer actor-critic (rl_games)</text>
+   </g>
+   <g id="text_34">
+    <text style="fill: #6e6e73; font: 7.5px 'Liberation Mono', Menlo, Consolas, monospace; text-anchor: start" x="550.8" y="266.179453" transform="rotate(-0 550.8 266.179453)">navrl_transformer_network.py</text>
+   </g>
+   <g id="text_35">
+    <text style="fill: #6e6e73; font: 7.5px 'Liberation Mono', Menlo, Consolas, monospace; text-anchor: start" x="550.8" y="278.059453" transform="rotate(-0 550.8 278.059453)">runner.py</text>
+   </g>
+   <g id="text_36">
+    <text style="fill: #1f1f1f; font: 700 9.8px 'Liberation Sans', Arial, Helvetica, sans-serif; text-anchor: start" x="374.4" y="237.254219" transform="rotate(-0 374.4 237.254219)">Safety filter</text>
+   </g>
+   <g id="text_37">
+    <text style="fill: #4a4a4f; font: 8.3px 'Liberation Sans', Arial, Helvetica, sans-serif; text-anchor: start" x="374.4" y="251.266328" transform="rotate(-0 374.4 251.266328)">speed cap from LiDAR clearance</text>
+   </g>
+   <g id="text_38">
+    <text style="fill: #6e6e73; font: 7.5px 'Liberation Mono', Menlo, Consolas, monospace; text-anchor: start" x="374.4" y="266.179453" transform="rotate(-0 374.4 266.179453)">speed_governor.py</text>
+   </g>
+   <g id="text_39">
+    <text style="fill: #1f1f1f; font: 700 9.8px 'Liberation Sans', Arial, Helvetica, sans-serif; text-anchor: start" x="198" y="237.254219" transform="rotate(-0 198 237.254219)">Low-level control</text>
+   </g>
+   <g id="text_40">
+    <text style="fill: #4a4a4f; font: 8.3px 'Liberation Sans', Arial, Helvetica, sans-serif; text-anchor: start" x="198" y="251.266328" transform="rotate(-0 198 251.266328)">Lee velocity controller</text>
+   </g>
+   <g id="text_41">
+    <text style="fill: #6e6e73; font: 7.5px 'Liberation Mono', Menlo, Consolas, monospace; text-anchor: start" x="198" y="266.179453" transform="rotate(-0 198 266.179453)">velocity_control.py</text>
+   </g>
+   <g id="text_42">
+    <text style="fill: #6e6e73; font: 7.5px 'Liberation Mono', Menlo, Consolas, monospace; text-anchor: start" x="198" y="278.059453" transform="rotate(-0 198 278.059453)">lee_controller_config_navrl.py</text>
+   </g>
+   <g id="text_43">
+    <text style="fill: #1f1f1f; font: 700 9.8px 'Liberation Sans', Arial, Helvetica, sans-serif; text-anchor: start" x="21.6" y="237.254219" transform="rotate(-0 21.6 237.254219)">Vehicle dynamics</text>
+   </g>
+   <g id="text_44">
+    <text style="fill: #4a4a4f; font: 8.3px 'Liberation Sans', Arial, Helvetica, sans-serif; text-anchor: start" x="21.6" y="251.266328" transform="rotate(-0 21.6 251.266328)">quadrotor, Isaac Gym PhysX</text>
+   </g>
+   <g id="text_45">
+    <text style="fill: #6e6e73; font: 7.5px 'Liberation Mono', Menlo, Consolas, monospace; text-anchor: start" x="21.6" y="266.179453" transform="rotate(-0 21.6 266.179453)">navrl_*_quad_config.py</text>
+   </g>
+   <g id="patch_15">
+    <path d="M 177.12 159.84 
+Q 183.24 159.84 188.241966 159.84 
+" clip-path="url(#pe1911d0436)" style="fill: none; stroke: #4a4a4f; stroke-linecap: round"/>
+    <path d="M 185.041966 158.24 
+L 188.241966 159.84 
+L 185.041966 161.44 
+z
+" clip-path="url(#pe1911d0436)" style="fill: #4a4a4f; stroke: #4a4a4f; stroke-linecap: round"/>
+   </g>
+   <g id="patch_16">
+    <path d="M 189.36 257.04 
+Q 183.24 257.04 178.238034 257.04 
+" clip-path="url(#pe1911d0436)" style="fill: none; stroke: #4a4a4f; stroke-linecap: round"/>
+    <path d="M 181.438034 258.64 
+L 178.238034 257.04 
+L 181.438034 255.44 
+z
+" clip-path="url(#pe1911d0436)" style="fill: #4a4a4f; stroke: #4a4a4f; stroke-linecap: round"/>
+   </g>
+   <g id="patch_17">
+    <path d="M 353.52 159.84 
+Q 359.64 159.84 364.641966 159.84 
+" clip-path="url(#pe1911d0436)" style="fill: none; stroke: #4a4a4f; stroke-linecap: round"/>
+    <path d="M 361.441966 158.24 
+L 364.641966 159.84 
+L 361.441966 161.44 
+z
+" clip-path="url(#pe1911d0436)" style="fill: #4a4a4f; stroke: #4a4a4f; stroke-linecap: round"/>
+   </g>
+   <g id="patch_18">
+    <path d="M 365.76 257.04 
+Q 359.64 257.04 354.638034 257.04 
+" clip-path="url(#pe1911d0436)" style="fill: none; stroke: #4a4a4f; stroke-linecap: round"/>
+    <path d="M 357.838034 258.64 
+L 354.638034 257.04 
+L 357.838034 255.44 
+z
+" clip-path="url(#pe1911d0436)" style="fill: #4a4a4f; stroke: #4a4a4f; stroke-linecap: round"/>
+   </g>
+   <g id="patch_19">
+    <path d="M 529.92 159.84 
+Q 536.04 159.84 541.041966 159.84 
+" clip-path="url(#pe1911d0436)" style="fill: none; stroke: #4a4a4f; stroke-linecap: round"/>
+    <path d="M 537.841966 158.24 
+L 541.041966 159.84 
+L 537.841966 161.44 
+z
+" clip-path="url(#pe1911d0436)" style="fill: #4a4a4f; stroke: #4a4a4f; stroke-linecap: round"/>
+   </g>
+   <g id="patch_20">
+    <path d="M 542.16 257.04 
+Q 536.04 257.04 531.038034 257.04 
+" clip-path="url(#pe1911d0436)" style="fill: none; stroke: #4a4a4f; stroke-linecap: round"/>
+    <path d="M 534.238034 258.64 
+L 531.038034 257.04 
+L 534.238034 255.44 
+z
+" clip-path="url(#pe1911d0436)" style="fill: #4a4a4f; stroke: #4a4a4f; stroke-linecap: round"/>
+   </g>
+   <g id="patch_21">
+    <path d="M 624.24 195.84 
+Q 624.24 208.44 624.24 219.921966 
+" clip-path="url(#pe1911d0436)" style="fill: none; stroke: #4a4a4f; stroke-linecap: round"/>
+    <path d="M 625.84 216.721966 
+L 624.24 219.921966 
+L 622.64 216.721966 
+z
+" clip-path="url(#pe1911d0436)" style="fill: #4a4a4f; stroke: #4a4a4f; stroke-linecap: round"/>
+   </g>
+   <g id="patch_22">
+    <path d="M 95.04 221.04 
+Q 95.04 208.44 95.04 196.958034 
+" clip-path="url(#pe1911d0436)" style="fill: none; stroke: #4a4a4f; stroke-linecap: round"/>
+    <path d="M 93.44 200.158034 
+L 95.04 196.958034 
+L 96.64 200.158034 
+z
+" clip-path="url(#pe1911d0436)" style="fill: #4a4a4f; stroke: #4a4a4f; stroke-linecap: round"/>
+   </g>
+   <g id="text_46">
+    <text style="fill: #6e6e73; font: 700 8.6px 'Liberation Sans', Arial, Helvetica, sans-serif; text-anchor: middle" x="360" y="210.663906" transform="rotate(-0 360 210.663906)">CLOSED LOOP · simulation · 0.1 s RL step</text>
+   </g>
+   <g id="patch_23">
+    <path d="M 95.04 95.04 
+Q 95.04 109.44 95.04 122.833769 
+" clip-path="url(#pe1911d0436)" style="fill: none; stroke: #6e6e73; stroke-width: 0.9; stroke-linecap: round"/>
+    <path d="M 96.44 120.033769 
+L 95.04 122.833769 
+L 93.64 120.033769 
+z
+" clip-path="url(#pe1911d0436)" style="fill: #6e6e73; stroke: #6e6e73; stroke-width: 0.9; stroke-linecap: round"/>
+   </g>
+   <g id="patch_24">
+    <path d="M 271.44 95.04 
+Q 271.44 109.44 271.44 122.833769 
+" clip-path="url(#pe1911d0436)" style="fill: none; stroke: #6e6e73; stroke-width: 0.9; stroke-linecap: round"/>
+    <path d="M 272.84 120.033769 
+L 271.44 122.833769 
+L 270.04 120.033769 
+z
+" clip-path="url(#pe1911d0436)" style="fill: #6e6e73; stroke: #6e6e73; stroke-width: 0.9; stroke-linecap: round"/>
+   </g>
+   <g id="patch_25">
+    <path d="M 447.84 95.04 
+Q 447.84 109.44 447.84 122.833769 
+" clip-path="url(#pe1911d0436)" style="fill: none; stroke: #6e6e73; stroke-width: 0.9; stroke-linecap: round"/>
+    <path d="M 449.24 120.033769 
+L 447.84 122.833769 
+L 446.44 120.033769 
+z
+" clip-path="url(#pe1911d0436)" style="fill: #6e6e73; stroke: #6e6e73; stroke-width: 0.9; stroke-linecap: round"/>
+   </g>
+   <g id="patch_26">
+    <path d="M 624.24 95.04 
+Q 624.24 109.44 624.24 122.833769 
+" clip-path="url(#pe1911d0436)" style="fill: none; stroke: #6e6e73; stroke-width: 0.9; stroke-linecap: round"/>
+    <path d="M 625.64 120.033769 
+L 624.24 122.833769 
+L 622.84 120.033769 
+z
+" clip-path="url(#pe1911d0436)" style="fill: #6e6e73; stroke: #6e6e73; stroke-width: 0.9; stroke-linecap: round"/>
+   </g>
+   <g id="text_47">
+    <text style="fill: #4a4a4f; font: 700 8.6px 'Liberation Sans', Arial, Helvetica, sans-serif; text-anchor: start" x="21.6" y="331.983906" transform="rotate(-0 21.6 331.983906)">EVIDENCE LAYER</text>
+   </g>
+   <g id="text_48">
+    <text style="fill: #1f1f1f; font: 8.6px 'Liberation Sans', Arial, Helvetica, sans-serif; text-anchor: start" x="21.6" y="347.823906" transform="rotate(-0 21.6 347.823906)">fail-closed launchers</text>
+   </g>
+   <g id="text_49">
+    <text style="fill: #6e6e73; font: 7.5px 'Liberation Mono', Menlo, Consolas, monospace; text-anchor: start" x="21.6" y="361.219453" transform="rotate(-0 21.6 361.219453)">eval_navrl_*.sh</text>
+   </g>
+   <g id="patch_27">
+    <path d="M 133.92 345.6 
+Q 144 345.6 153.073769 345.6 
+" clip-path="url(#pe1911d0436)" style="fill: none; stroke: #4a4a4f; stroke-width: 0.9; stroke-linecap: round"/>
+    <path d="M 150.273769 344.2 
+L 153.073769 345.6 
+L 150.273769 347 
+z
+" clip-path="url(#pe1911d0436)" style="fill: #4a4a4f; stroke: #4a4a4f; stroke-width: 0.9; stroke-linecap: round"/>
+   </g>
+   <g id="text_50">
+    <text style="fill: #1f1f1f; font: 8.6px 'Liberation Sans', Arial, Helvetica, sans-serif; text-anchor: start" x="159.12" y="347.823906" transform="rotate(-0 159.12 347.823906)">receipts + raw counts</text>
+   </g>
+   <g id="text_51">
+    <text style="fill: #6e6e73; font: 7.5px 'Liberation Mono', Menlo, Consolas, monospace; text-anchor: start" x="159.12" y="361.219453" transform="rotate(-0 159.12 361.219453)">results/&lt;run&gt;/</text>
+   </g>
+   <g id="patch_28">
+    <path d="M 271.44 345.6 
+Q 281.52 345.6 290.593769 345.6 
+" clip-path="url(#pe1911d0436)" style="fill: none; stroke: #4a4a4f; stroke-width: 0.9; stroke-linecap: round"/>
+    <path d="M 287.793769 344.2 
+L 290.593769 345.6 
+L 287.793769 347 
+z
+" clip-path="url(#pe1911d0436)" style="fill: #4a4a4f; stroke: #4a4a4f; stroke-width: 0.9; stroke-linecap: round"/>
+   </g>
+   <g id="text_52">
+    <text style="fill: #1f1f1f; font: 8.6px 'Liberation Sans', Arial, Helvetica, sans-serif; text-anchor: start" x="296.64" y="347.823906" transform="rotate(-0 296.64 347.823906)">canonical registries</text>
+   </g>
+   <g id="text_53">
+    <text style="fill: #6e6e73; font: 7.5px 'Liberation Mono', Menlo, Consolas, monospace; text-anchor: start" x="296.64" y="361.219453" transform="rotate(-0 296.64 361.219453)">docs/*registry.json</text>
+   </g>
+   <g id="patch_29">
+    <path d="M 408.96 345.6 
+Q 419.04 345.6 428.113769 345.6 
+" clip-path="url(#pe1911d0436)" style="fill: none; stroke: #4a4a4f; stroke-width: 0.9; stroke-linecap: round"/>
+    <path d="M 425.313769 344.2 
+L 428.113769 345.6 
+L 425.313769 347 
+z
+" clip-path="url(#pe1911d0436)" style="fill: #4a4a4f; stroke: #4a4a4f; stroke-width: 0.9; stroke-linecap: round"/>
+   </g>
+   <g id="text_54">
+    <text style="fill: #1f1f1f; font: 8.6px 'Liberation Sans', Arial, Helvetica, sans-serif; text-anchor: start" x="434.16" y="347.823906" transform="rotate(-0 434.16 347.823906)">docs · site · figures</text>
+   </g>
+   <g id="text_55">
+    <text style="fill: #6e6e73; font: 7.5px 'Liberation Mono', Menlo, Consolas, monospace; text-anchor: start" x="434.16" y="361.219453" transform="rotate(-0 434.16 361.219453)">tools/build_paper_figures.py</text>
+   </g>
+   <g id="patch_30">
+    <path d="M 546.48 345.6 
+Q 556.56 345.6 565.633769 345.6 
+" clip-path="url(#pe1911d0436)" style="fill: none; stroke: #4a4a4f; stroke-width: 0.9; stroke-linecap: round"/>
+    <path d="M 562.833769 344.2 
+L 565.633769 345.6 
+L 562.833769 347 
+z
+" clip-path="url(#pe1911d0436)" style="fill: #4a4a4f; stroke: #4a4a4f; stroke-width: 0.9; stroke-linecap: round"/>
+   </g>
+   <g id="text_56">
+    <text style="fill: #1f1f1f; font: 8.6px 'Liberation Sans', Arial, Helvetica, sans-serif; text-anchor: start" x="571.68" y="347.823906" transform="rotate(-0 571.68 347.823906)">guard tests</text>
+   </g>
+   <g id="text_57">
+    <text style="fill: #6e6e73; font: 7.5px 'Liberation Mono', Menlo, Consolas, monospace; text-anchor: start" x="571.68" y="361.219453" transform="rotate(-0 571.68 361.219453)">tests/</text>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="pe1911d0436">
+   <rect x="0" y="0" width="720" height="381.6"/>
+  </clipPath>
+ </defs>
+</svg>

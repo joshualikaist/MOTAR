@@ -1,5 +1,7 @@
 # RESEARCH PLAN — 카메라·LiDAR + 시뮬레이터 ego-state UAV 요격: 밀도 × 표적속도
 
+> **Original research charter (July–August 2026, Korean).** Current intent and scope are in [`PROJECT.md`](PROJECT.md). This file is kept unchanged because receipts cite its §8.8 as a preregistered plan. Its interception framing and hypotheses H1–H5 are historical.
+
 이 문서가 연구 charter다(가설·설계·계획). **현재 상태와 최신 수치는 여기 적지 않는다** —
 진행 기록은 `WORKLOG.md`(맨 아래가 최신), 검증 gate는 `VERIFICATION.md`, 라이브 지표는 `docs/status/`를 본다.
 실무(머신 셋업·GPU·이관)는 `OPERATIONS.md`, 과거 진단 도구와 측정된 음성 결과는 `CRASH_TUNING_LOG.md`(archival, 2026-08-05 정지).

@@ -1,5 +1,7 @@
 # MOTAR 운영 가이드
 
+> **Historical handbook (Korean).** Current operations are in [`docs/OPERATIONS.md`](docs/OPERATIONS.md). The launch commands below record what ran under past, single-use authority; they are not approvals to run again, and several use a machine-specific worktree path. §0 (branch rule) and §0.1 (runtime fingerprints in receipts) remain in force.
+
 이 문서는 “어떤 명령을 복사해야 하는가”와 “결과를 어떻게 잃지 않는가”만 다룹니다. 연구 가설과
 검증 gate와 다음 실험은 [`VERIFICATION.md`](VERIFICATION.md), charter는 [`RESEARCH_PLAN.md`](RESEARCH_PLAN.md),
 프로젝트 입구는 [`README.md`](README.md), 날짜별 기록은 [`WORKLOG.md`](WORKLOG.md)를 보세요.

@@ -110,22 +110,85 @@ def local_link_errors(text, path, root=ROOT):
     return errors
 
 
+# The README is a short landing page (user decision, 2026-09-24): ten fixed sections, headline
+# numbers only in the opening block and "Key Results", and every one of those numbers must match
+# a canonical machine-readable record (landing_number_errors). Test counts and seed identifiers
+# are never landing content.
+LANDING_HEADINGS = ("Why MOTAR?", "Key Results", "System", "Repository Structure", "Quick Start",
+                    "Research Evidence", "Documentation", "Limitations", "Citation", "License")
+NUMBER_SECTIONS = ("", "Key Results")
+
+
+def landing_sections(text):
+    """(heading, body) pairs; the block before the first `## ` heading has heading ''."""
+    prose = re.sub(r"```.*?```", "", text, flags=re.S)
+    parts = re.split(r"^## (.+)$", prose, flags=re.M)
+    sections = [("", parts[0])]
+    sections += [(parts[i].strip(), parts[i + 1]) for i in range(1, len(parts) - 1, 2)]
+    return sections
+
+
 def landing_errors(text):
     errors = []
-    for heading in ("Overview", "Research Questions", "Scope and Limitations", "System Overview",
-                    "Key Components", "Repository Structure", "Requirements", "Installation",
-                    "Quick Start", "Training and Evaluation", "Reproducing Experiments",
-                    "Documentation", "Citation", "License and Third-Party Materials", "Acknowledgements"):
+    for heading in LANDING_HEADINGS:
         if "## " + heading not in text:
             errors.append("missing heading: " + heading)
     prose = re.sub(r"```.*?```", "", text, flags=re.S)
-    if re.search(r"\b\d[\d,]*\s+(?:tests|executed|passed)\b|\d+(?:\.\d+)?\s*%|\bseed[- ]?\d", prose, re.I):
-        errors.append("volatile numerical result/test count on landing page")
+    if re.search(r"\b\d[\d,]*\s+(?:tests|executed|passed)\b|\bseed[- ]?\d", prose, re.I):
+        errors.append("volatile test count or seed identifier on landing page")
+    for heading, body in landing_sections(text):
+        if heading not in NUMBER_SECTIONS and re.search(r"\d+(?:\.\d+)?\s*(?:%|pp\b)", body):
+            errors.append("result number outside the opening block and Key Results: " + heading)
     for scope in ("simulation-only", "no real-flight validation claim", "historical", "interception"):
         if scope not in text.lower():
             errors.append("missing scope: " + scope)
     if "moving-target rendezvous" not in text.lower():
         errors.append("public terminology missing")
+    return errors
+
+
+def headline_values(root=ROOT):
+    """Every value a landing page may show, read from the canonical records."""
+    values = set()
+    registry = json.loads((root / "docs/quantitative_positioning_registry.json").read_text())
+    for row in registry["internal_motar"]:
+        for key in ("value_pp", "value_percent", "secondary_value_pp", "value_utility"):
+            if isinstance(row.get(key), (int, float)):
+                values.add(float(row[key]))
+        for key in ("ci95_pp", "seed_level_ci95_pp"):
+            for bound in row.get(key) or []:
+                values.add(float(bound))
+    motion = json.loads((root / "docs/results/target_motion_generalization_2026-09-19.json").read_text())
+    for row in motion["contrasts_vs_H"] + motion["contrasts_within_E"]:
+        values.add(100 * row["mean_diff"])
+        values.update(100 * bound for bound in row["bca95"])
+    for arm in motion["arm_means"].values():
+        values.update(100 * rate for rate in arm.values())
+    audit = json.loads((root / "docs/results/target_motion_visibility_reacquisition_audit_2026-09-19.json").read_text())
+    for row in audit["per_arm_outcome"].values():
+        values.add(100 * row["never_acquired_rate"])
+    # The P10 record carries the per-seed readaptation values behind the registry rows.
+    p10 = root / "results/perception_p10_seed_replication_2026-09-10/summary.json"
+    if p10.is_file():
+        for seed in json.loads(p10.read_text())["per_training_seed"].values():
+            for key in ("p9_cost_on_source", "p9_cost_on_adapted", "primary_capture"):
+                values.add(seed[key]["delta_pp"])
+                values.update(seed[key]["ci95"])
+    return values
+
+
+def landing_number_errors(text, values):
+    """Each decimal shown in a number-bearing section must round from a canonical value."""
+    errors = []
+    for heading, body in landing_sections(text):
+        if heading not in NUMBER_SECTIONS:
+            continue
+        for token in re.findall(r"[−+-]?\d+\.\d+", body):
+            shown = float(token.replace("−", "-"))
+            digits = len(token.split(".")[1])
+            if not any(abs(abs(shown) - abs(v)) <= 0.5 * 10 ** -digits + 1e-9 and
+                       (shown == 0 or (shown > 0) == (v > 0) or token[0] not in "−+-") for v in values):
+                errors.append("landing number not bound to a canonical record: " + token)
     return errors
 
 
@@ -139,6 +202,7 @@ def check(root=ROOT):
             errors += [name + ": " + e for e in local_link_errors(path.read_text(), path, root)]
     readme = (root / "README.md").read_text()
     errors += landing_errors(readme)
+    errors += landing_number_errors(readme, headline_values(root))
     citation = (root / "CITATION.cff").read_text().lower()
     if "moving-target rendezvous" not in citation or "simulation-only" not in citation:
         errors.append("CFF public terminology/scope mismatch")
@@ -155,6 +219,7 @@ def check(root=ROOT):
         "in random obstacle fields"
     )
     site = (root / "docs/status/index.html").read_text().lower()
+    evidence_page = (root / "docs/status/evidence.html").read_text().lower()
     for name, text in (("README.md", readme.lower()), ("CITATION.cff", citation),
                        ("docs/status/index.html", site)):
         if subtitle not in text:
@@ -167,7 +232,8 @@ def check(root=ROOT):
     for value in ("ATTITUDE_NOT_RELIABLE", "WITHDRAWN", "INCONCLUSIVE", "FAIL 유지", "PARTIAL_EVIDENCE"):
         if value not in verification:
             errors.append("Verification disagrees with status manifest: " + value)
-    if "status_manifest.js" not in site:
+    # Lifecycle and Track D cells are loaded from the shared status on the full-evidence page.
+    if "status_manifest.js" not in evidence_page:
         errors.append("site does not load shared status")
     return errors
 

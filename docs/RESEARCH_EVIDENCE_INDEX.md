@@ -1,5 +1,7 @@
 # Research evidence index
 
+> **Superseded (2026-09-24).** The reader-facing result page is now [`EVIDENCE.md`](EVIDENCE.md). This index is kept unchanged below as the 2026-09-14 snapshot that `docs/repository_status_2026-09-14.json` cites. Its §7 and §8 predate the target-motion result of 2026-09-19, which has since been measured ([result](results/target_motion_generalization_2026-09-19.md)).
+
 One page, seven axes, bounded claims. This is not a development log: it names the question, how it
 was answered, the strongest thing the evidence supports, and what that evidence cannot carry.
 Commit-by-commit history is in [WORKLOG](../WORKLOG.md); execution authority is
@@ -137,7 +139,8 @@ repository-wide result manifest.
 
 **Best established evidence.** The CPU renderer path installs and its validation runs without a
 GPU. Every modern result directory carries a receipt and a source manifest whose file hashes are
-verifiable. The result manifest indexes **201** result entries with their links and hashes.
+verifiable. The result manifest indexed **201** result entries with their links and hashes at its 2026-09-14 build
+(the current index is `results/MANIFEST.json` itself).
 
 **Status.** Record Envelope v2: `producer_unit_validation = PASS`,
 `live_generation_validation = NOT_APPLICABLE` — the contract is task-shaped and does not fit a

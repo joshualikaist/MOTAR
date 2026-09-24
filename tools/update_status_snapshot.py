@@ -1582,18 +1582,6 @@ def _summarize_run(csv_path: Path, *, is_active: bool) -> Dict[str, Any]:
     return summary
 
 
-def _latest_barprobe() -> Dict[str, Optional[float]]:
-    live_link = RL_ROOT / "train_session_logs/current_training.log"
-    if not live_link.exists():
-        return {"unique": None, "duplicate": None}
-    pattern = re.compile(r"unique=([0-9.]+) duplicate=([0-9.]+)")
-    matches = pattern.findall(live_link.read_text(encoding="utf-8", errors="ignore"))
-    if not matches:
-        return {"unique": None, "duplicate": None}
-    unique, duplicate = matches[-1]
-    return {"unique": float(unique), "duplicate": float(duplicate)}
-
-
 def _corrected_density_curve() -> Dict[str, Any]:
     rows = []
     with CORRECTED_CURVE_PATH.open(newline="", encoding="utf-8") as handle:

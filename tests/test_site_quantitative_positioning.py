@@ -13,7 +13,8 @@ import re
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
-INDEX = ROOT / "docs/status/index.html"
+INDEX = ROOT / "docs/status/evidence.html"   # detailed tables moved here 2026-09-24
+PAGES = (INDEX, ROOT / "docs/status/index.html")
 LEDGER = ROOT / "docs/literature_quantitative_ledger_2026-09-18.json"
 REGISTRY = ROOT / "docs/quantitative_positioning_registry.json"
 FIGURE = ROOT / "docs/assets/paper/quantitative-positioning-2026-09-18.svg"
@@ -91,10 +92,11 @@ class TableNumberingStaysConsistent(unittest.TestCase):
 
 class RunningEvaluationBoundary(unittest.TestCase):
     def test_no_partial_gpu_result_reaches_the_site(self):
-        site = INDEX.read_text(encoding="utf-8")
-        self.assertNotIn("target_motion_e0_e2_evaluation", site)
-        for arm in ("H_historical", "E0_static", "E1_cv", "E2_obstacle_aware"):
-            self.assertNotIn(arm, site, f"site references evaluation arm {arm}")
+        for page in PAGES:
+            site = page.read_text(encoding="utf-8")
+            self.assertNotIn("target_motion_e0_e2_evaluation", site)
+            for arm in ("H_historical", "E0_static", "E1_cv", "E2_obstacle_aware"):
+                self.assertNotIn(arm, site, f"{page.name} references evaluation arm {arm}")
 
     def test_target_motion_row_is_either_pending_or_fully_sourced(self):
         """The evaluation may be pending or finished, but never half-reported.

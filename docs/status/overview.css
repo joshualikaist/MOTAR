@@ -47,7 +47,7 @@ code { font: .88em/1.4 ui-monospace, SFMono-Regular, Consolas, monospace; backgr
 .paper { width: min(calc(100% - 40px), 960px); margin-inline: auto; }
 .paper-title { padding: 88px 0 58px; text-align: center; border-bottom: 1px solid var(--paper-rule); }
 .paper-kicker { margin: 0 0 18px; color: var(--paper-muted); font: 600 12px/1.4 Arial, sans-serif; letter-spacing: .12em; text-transform: uppercase; }
-.paper-title h1 { margin: 0; color: var(--paper-ink); font: 500 clamp(48px,7vw,72px)/1.05 Georgia, serif; letter-spacing: -.035em; }
+.paper-title h1 { max-width: none; margin: 0; color: var(--paper-ink); font: 500 clamp(48px,7vw,72px)/1.05 Georgia, serif; letter-spacing: -.035em; }
 .paper-subtitle { max-width: 850px; margin: 16px auto 18px; font-size: clamp(22px,3.2vw,33px); line-height: 1.24; }
 .paper-deck { margin: 0 auto 24px; color: var(--paper-muted); font-size: 18px; line-height: 1.5; }
 .paper-meta, .paper-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 22px; margin: 10px 0; color: var(--paper-muted); font: 13px/1.5 Arial, sans-serif; }
@@ -224,18 +224,6 @@ code { font: .88em/1.4 ui-monospace, SFMono-Regular, Consolas, monospace; backgr
 .compact-table { max-width: 850px; }
 .source-note, .manifest-note { color: var(--paper-muted); font-size: 13px; }
 .manifest-note { max-width: 900px !important; margin-top: 10px !important; padding-left: 12px; border-left: 2px solid #a9b7c0; }
-.paper-roadmap {
-  max-width: 700px;
-  margin: 24px auto;
-  padding: 22px 0;
-  border-top: 1px solid var(--paper-rule);
-  border-bottom: 1px solid var(--paper-rule);
-  text-align: center;
-}
-.paper-roadmap span, .paper-roadmap i { display: block; }
-.paper-roadmap span { padding: 8px; }
-.paper-roadmap i { color: #7d878e; font-style: normal; }
-.future-line { max-width: 760px !important; padding: 14px; border: 1px dashed #8f989e; color: var(--paper-muted); text-align: center; }
 .end-matter { margin-top: 40px; border-top: 1px solid var(--paper-rule); }
 .end-matter dl > div { display: grid; grid-template-columns: 95px 1fr; gap: 20px; padding: 8px 0; }
 .end-matter dt { font-weight: 700; }.end-matter dd { margin: 0; }

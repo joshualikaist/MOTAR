@@ -3,9 +3,9 @@
 # One-shot second-machine setup for MOTAR.
 #
 # 자동화 안 되는 수동 전제 2가지 (스크립트로 불가):
-#   1. Miniconda/Anaconda 설치 (conda 가 PATH 에 있어야 함).            → SETUP §1
+#   1. Miniconda/Anaconda 설치 (conda 가 PATH 에 있어야 함).            → OPERATIONS.md §1
 #   2. Isaac Gym Preview 4 다운로드(NVIDIA 로그인) 후 ~/isaacgym 에 압축해제
-#      (즉 ~/isaacgym/python 이 존재).  경로 다르면 ISAACGYM_PATH= 로 지정. → SETUP §2
+#      (즉 ~/isaacgym/python 이 존재).  경로 다르면 ISAACGYM_PATH= 로 지정. → OPERATIONS.md §1
 #
 # 사용법 (클론한 MOTAR 폴더 안에서):
 #   git clone https://github.com/joshualikaist/MOTAR.git aerial_gym_simulator
@@ -36,8 +36,8 @@ say() { printf '\n\033[1;36m[bootstrap] %s\033[0m\n' "$*"; }
 die() { printf '\n\033[1;31m[bootstrap] ERROR: %s\033[0m\n' "$*" >&2; exit 1; }
 
 # --- 전제 확인 ---
-command -v conda >/dev/null 2>&1 || die "conda 가 PATH 에 없음 — Miniconda 먼저 설치 (SETUP §1)."
-[ -d "$ISAACGYM_PATH/python" ] || die "Isaac Gym 이 $ISAACGYM_PATH/python 에 없음 — Preview 4 다운로드(NVIDIA 로그인)·압축해제 하거나 ISAACGYM_PATH= 지정 (SETUP §2)."
+command -v conda >/dev/null 2>&1 || die "conda 가 PATH 에 없음 — Miniconda 먼저 설치 (OPERATIONS.md §1)."
+[ -d "$ISAACGYM_PATH/python" ] || die "Isaac Gym 이 $ISAACGYM_PATH/python 에 없음 — Preview 4 다운로드(NVIDIA 로그인)·압축해제 하거나 ISAACGYM_PATH= 지정 (OPERATIONS.md §1)."
 
 say "conda env '$ENV_NAME' (python $PY_VER)"
 # shellcheck disable=SC1091

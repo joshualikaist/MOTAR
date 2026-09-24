@@ -62,5 +62,5 @@ contract를 수정하거나 재학습하지 않는다.
 
 이 gate 전까지 정확한 표현은 “AOS 5 V5.1 provisional packaging reference”이며
 “실기 플랫폼 확정”이 아니다. 부품 envelope·FOV·connector·CG·power/thermal 입력 형식은
-[`navrl_ref5in_payload_packaging_contract_2026-08-23.md`](navrl_ref5in_payload_packaging_contract_2026-08-23.md)에
+[`navrl_ref5in_payload_packaging_contract_2026-08-23.md`](../../navrl_ref5in_payload_packaging_contract_2026-08-23.md)에
 고정했다.

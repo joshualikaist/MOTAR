@@ -20,8 +20,9 @@ ever subtracted from a MOTAR value.
 **Method.** P8 error measurement on recorded flight imagery; E3-S image-size-to-range proxy on the
 ETH ds5 flight with held-out blocks.
 
-**Result.** E3-S `SIZE_RANGE_USABLE`: held-out median absolute relative range error **6.2 %** over
-3,107 frames, 9 blocks, 30.7–108.4 m.
+**Result.** E3-S `SIZE_RANGE_USABLE`: held-out median absolute relative range error **6.2 %**, the
+median of 9 block medians (15 s blocks) from one flight, 30.7–108.4 m. The 3,107 frames are not
+independent samples; the unit is the block, and there is one flight.
 
 **Uncertainty.** One flight; an apparent-size proxy, not ground-truth boxes. Range and time are
 confounded in that flight.
@@ -42,12 +43,14 @@ injection. NavRL++ perturbs with its own synthetic failure model instead.
 
 **Question.** What does that measured error cost a policy that never saw it?
 
-**Method.** P9 injects the P8 distribution into simulation; the frozen policy is evaluated under it;
+**Method.** P9 injects the P8 distribution into simulation; frozen policy F is evaluated under it;
 P10 retrains under it across three training seeds.
 
-**Result.** The injected error costs the frozen policy **−4.57 pp** of capture, with an interval
-excluding zero, **identically in all three training-seed campaigns**. Readaptation recovers part of
-it: **+0.73 pp**, 95 % CI **[−1.04, +2.50]** — `INCONCLUSIVE`. The residual cost after readaptation
+**Result.** The injected error costs frozen policy F **−4.57 pp** of capture, with an episode-level
+interval (two evaluation seeds at 205 bars) excluding zero. The value is identical in all three
+campaigns because they re-ran the same deterministic frozen arms: a determinism check, not three
+replications. Readaptation does not establish a recovery: **+0.73 pp**, 95 % CI **[−1.04, +2.50]**
+over three training seeds — `INCONCLUSIVE`. The residual cost after readaptation
 is never zero (−1.90 / −2.71 / −3.84 pp per seed), and readaptation costs clean performance
 (−1.02 pp mean).
 
@@ -98,8 +101,10 @@ identity claim is explicitly not made.
 
 **Method.** Matched configured arms over recorded runs with crash-cause attribution and replication.
 
-**Result.** riskcap vs arc-clearance: crash **−1.4903 pp**, 95 % CI **[−1.8981, −1.0826]**, lower in
-**15/15 cells**. Arc width 0.45 → 1.2 m at 205 bars: crash **−5.60 pp**, capture **+4.44 pp** — and
+**Result.** riskcap vs arc-clearance on policy F: crash **−1.4903 pp**, 95 % CI **[−1.8981, −1.0826]**
+pooled over 15 seed × density cells with episode-binomial errors; the seed-level 95 % CI over the
+three evaluation seeds is **[−2.42, −0.57]**. Crash is lower in **15/15 cells**, which share three
+seeds and one policy and are not independent replicates. Arc width 0.45 → 1.2 m at 205 bars: crash **−5.60 pp**, capture **+4.44 pp** — and
 the same widening degrades straight stopcap capture, so the effect is geometry-specific rather than
 a general width rule.
 
@@ -127,7 +132,10 @@ the checkpoint was actually trained on. Seed-paired BCa95.
 
 **Result.** H **87.89 %**; E0 static **84.31 %** (**−3.58 pp**, [−4.04, −3.29]); E1 CV **85.07 %**
 (**−2.82 pp**, [−3.53, −2.44]); E2 obstacle-aware **89.22 %** (**+1.33 pp**, [+1.15, +1.50]).
-E2−E0 **+4.91 pp**. All twelve contrasts are sign-consistent across all three seeds.
+E2−E0 **+4.91 pp**. All six reported arm-level capture contrasts were sign-consistent across the
+three evaluation seeds; the E2 − H crash contrast was not. The twelve per-density contrasts against
+H are exploratory (Amendment 1 §A1.3): ten are sign-consistent, and E2 − H is sign-mixed at 115 and
+160 bars.
 
 **Target behavior did not form a monotonic difficulty ladder.** The static arm produced the lowest
 close-approach success and the bounded obstacle-aware arm the highest.
@@ -139,7 +147,7 @@ preregistered 98,304 (vectorised tail overshoot, worst-case influence ≤ 0.018 
 `min_relative_distance_m` is `NOT_RECORDED`. The 5 pp materiality rule was **not** preregistered and
 is withdrawn.
 
-**Closest external work.** None. No screened system evaluates one frozen policy across a ladder of
+**Closest external work.** None. No screened system evaluates a frozen policy across a ladder of
 target-motion contracts. Elastic Tracker names escaping targets as future work; every classical
 tracker evaluates a cooperative target.
 
@@ -158,7 +166,8 @@ arena family and this simulator contract.
 
 **Question.** Does changing how the world is *rendered into an observation* move a frozen policy?
 
-**Method.** D8b evaluates the same frozen policy under an analytic versus a mesh-shaded observation.
+**Method.** D8b evaluates one frozen policy, R (ref5in D1 ep1900; not policy F), under an analytic
+versus a mesh-shaded observation, with three paired evaluation seeds at 70 bars.
 
 **Result.** **−48.967 pp** capture, 95 % seed-t CI **[−50.113, −47.821]**, `MATERIAL_LOSS`.
 
@@ -185,7 +194,8 @@ worse under a new observation treatment, and nothing more.
 **Method.** Per-result receipts and source manifests, a repository-wide result manifest, Record
 Envelope v2, preregistrations committed before execution, and tests that bind documents to sources.
 
-**Result.** **204** indexed result entries with links and hashes. The public snapshot builds `CLEAN`
+**Result.** **207** result directories indexed with links and hashes in `results/MANIFEST.json`
+(build of 2026-09-24). The public snapshot builds `CLEAN`
 with 0 denylist matches. Raw evaluation artifacts verified immutable at **144/144** files.
 
 **Retained negatives, unedited.** `P2 held-out` **STRICT FAIL**; `D1 adaptation` **FAIL**; `P3`
@@ -207,7 +217,8 @@ recorded as `NOT_RECORDED` and a decision threshold withdrawn as never preregist
 
 Perception error is **measured** (C1), **propagated** into a policy with a known cost (C2), the
 temporal and safety components are **isolated** (C3, C4), the policy's validity is **tested against a
-distribution shift it was not trained on** (C5), the observation contract itself is shown to matter
-more than any of it (C6), and every step — including the ones that failed — is **recoverable** (C7).
+distribution shift it was not trained on** (C5), the observation contract produces the largest
+measured loss, on a different frozen checkpoint (C6), and every step — including the ones that
+failed — is **traceable** (C7).
 
 The contribution is the chain and its honesty, not the size of any single number.

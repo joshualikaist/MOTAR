@@ -51,7 +51,12 @@ class PublicDocsTest(unittest.TestCase):
         import re
         landing = (ROOT / "README.md").read_text()
         overview = (ROOT / "docs/results_overview_2026-09-12.md").read_text()
-        self.assertEqual(len(re.findall(r"!\[", landing)), 1)
+        # The landing page shows the graphical abstract and the system figure (2026-09-24 layout),
+        # both from the generated, source-bound figure family; the nine track figures stay off it.
+        images = re.findall(r"!\[[^\]]*\]\(([^)]+)\)", landing)
+        self.assertLessEqual(len(images), 2)
+        for image in images:
+            self.assertTrue(image.startswith("docs/assets/paper/final/"), image)
         self.assertEqual(len(re.findall(r"!\[", overview)), 9)
         self.assertTrue((ROOT / "docs/archive/readme_9732d12_2026-09-12.md").is_file())
 

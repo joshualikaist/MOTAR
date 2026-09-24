@@ -14,7 +14,10 @@ assert(components.some(line => line.includes('D8B') && line.includes('COMPLETED 
 assert(components.some(line => line.includes('SAM_IN_SIM') && line.includes('ARCHIVED_WITHDRAWN')));
 assert(components.some(line => line.includes('BEARING_DEG') && line.includes('BLOCKED')));
 assert(components.some(line => line.includes('LIVE_RGB_POLICY') && line.includes('NOT_TESTED')));
-assert(components.some(line => line.includes('TM_E2') && line.includes('POLICY_COMPARISON_NOT_TESTED')));
+// TM-E2 was policy-compared on 2026-09-18/19 (registry commit 58d5835); TM-E3/E4 stay unimplemented.
+assert(components.some(line => line.includes('TM_E2') && line.includes('COMPLETED / E2_NO_DEGRADATION_VS_H')));
+assert(components.some(line => line.includes('TM_E3') && line.includes('PLANNED / NOT_IMPLEMENTED')));
+assert(components.some(line => line.includes('TM_E4') && line.includes('PLANNED / NOT_IMPLEMENTED')));
 assert.throws(() => statusLines({...manifest, real_flight_validated: true}));
 assert.throws(() => registryLines({...registry, schema_version: 2}));
 console.log('Public status manifest: PASS');

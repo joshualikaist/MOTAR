@@ -4,7 +4,8 @@ import unittest
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SITE = (ROOT / "docs/status/index.html").read_text()
+# The matched-baseline table lives on the full-evidence page (moved from index.html 2026-09-24).
+SITE = (ROOT / "docs/status/evidence.html").read_text()
 
 
 class SiteComparisonEvidenceTest(unittest.TestCase):

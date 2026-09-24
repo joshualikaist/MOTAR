@@ -1,8 +1,8 @@
 # Perception 우선 실행 계획 (2026-09-09)
 
 perception 파이프라인 완성을 우선으로 재작성한 계획이다. 정본 단계표는
-[`perception_final_implementation_plan_2026-09-07.md`](perception_final_implementation_plan_2026-09-07.md),
-직전 조사는 [`perception_streaming_findings_2026-09-09.md`](perception_streaming_findings_2026-09-09.md).
+[`perception_final_implementation_plan_2026-09-07.md`](../../plans/perception_final_implementation_plan_2026-09-07.md),
+직전 조사는 [`perception_streaming_findings_2026-09-09.md`](../../plans/perception_streaming_findings_2026-09-09.md).
 
 ---
 
@@ -53,7 +53,7 @@ checkpoint에서 warm-start해 joint 데이터로 30 epoch 학습돼 있다(P3-F
 
 ### S1 — 광류 겹침 — COMPLETE (2026-09-09)
 
-[전체 결과·hash](../../results/perception_streaming_overlap_s1_2026-09-09/README.md). validation
+[전체 결과·hash](../../../results/perception_streaming_overlap_s1_2026-09-09/README.md). validation
 2,296프레임의 candidate/rank/motion bytes/하위 지표가 직렬·겹침 각 3회 모두 정확히 일치했다.
 decode 포함 mean은 67.91 → 44.49 ms, 3회 평균은 14.72 → 22.48 FPS다.
 따라서 이 validation 입력과 기록된 runtime에 한해 출력 비트 동일을 확정한다.
@@ -87,7 +87,7 @@ detector 26.37 / motion 33.40 / selector 2.35 / decode 5.15 ms, decode 포함 67
 
 ### S2 — P8 오차 모델 측정 — COMPLETE (2026-09-09)
 
-[산출물·한계](../../results/perception_p8_2026-09-09/README.md): 2,296프레임 전체 baseline 재현,
+[산출물·한계](../../../results/perception_p8_2026-09-09/README.md): 2,296프레임 전체 baseline 재현,
 단일-GT 1,310프레임의 크기별 분포·3-state/2-state 전이·중도절단 burst·S1 지연 측정 완료.
 다중-GT 986프레임은 크기 조건부 집계에서 제외했다. <8 px는 0개, >=64 px는 2개이므로
 미지원이며, 전이확률은 50–103 ms 관측 간격 기준이다. P9 적용 전에 이 경계를 처리해야 한다.

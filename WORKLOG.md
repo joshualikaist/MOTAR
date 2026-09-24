@@ -19765,3 +19765,100 @@ B0 = UPSTREAM_REPRODUCTION_FAIL (블로커: sudo 하나)
 B1 = NOT_STARTED   B2 = NOT_STARTED   B3-B5 = NOT_AUTHORISED
 upstream 수정 0, adapter 0, core planner 수정 0
 ```
+
+## 2026-09-24 — 저장소·문서·사이트 재구성 (연구 변경 0, GPU/PPO 0, 커밋 전 사용자 검토 대기)
+
+브랜치 `cleanup/repository-docs-site-20260924`(`7c40d5d`에서 생성; `main`은 `7c40d5d` 그대로, origin/main보다
+1커밋 앞선 B0 기록 보존). 연구 숫자·preregistration·`results/`·`aerial_gym/`·`resources/`·frozen browser
+preview(`GT_BROWSER_EPISODE_V1`) 파일은 **바이트 변경 0**(`git status`로 확인).
+
+**정본 문서 체계(질문 하나에 파일 하나):** `README.md`(5분 진입점) · `PROJECT.md` · `ARCHITECTURE.md` ·
+`AGENTS.md`(에이전트 규칙 정본; `CLAUDE.md`는 `@AGENTS.md` import 포인터, 옛 내용은
+`docs/archive/agents/CLAUDE_2026-09-11.md`) · `DESIGN_SYSTEM.md` · `docs/{EVIDENCE,REPRODUCIBILITY,OPERATIONS,HISTORY}.md`.
+`docs/README.md`는 짧은 지도 + 정본 표(옛 보존 색인은 `docs/archive/indexes/docs_index_2026-09-16.md`).
+
+**사이트:** `docs/status/index.html` = 새 논문형 프로젝트 페이지(hero·콜아웃 3개·섹션 9개·Figure 1–6·마지막에
+browser GT demo, "NOT PPO EVIDENCE" 표기). 옛 상세 페이지는 `git mv` → `docs/status/evidence.html`(표·lifecycle·
+옛 그림 전부 유지, 계약 테스트도 이동). 모바일 390/768 px iframe 실측: 가로 넘침 0, 12.5 px 미만 글자 0.
+
+**그림:** `tools/build_paper_figures.py` 하나로 Figure 1–6 + 시스템 맵(SVG/PDF/PNG, `docs/assets/paper/final/`).
+모든 수치를 canonical JSON에서 읽고 `manifest.json`에 값·소스 SHA 기록, `--check` byte-exact PASS.
+정정: D8b는 ep25000이 아니라 **ref5in D1 ep1900(`197ea269…`, 70 bars)** — 그림·문서에 별도 checkpoint로 표기.
+E0 timeout never-acquired 95.42 %는 다른 arm(83–84 %)과 함께 보여야 오해가 없어서 Fig 4d는 "timeout 비율 ×
+first-acquisition 분할"로 그림(E0 never-acquired timeout = 전체의 6.78 % vs E2 0.99 %).
+
+**정리:** 문서 9개 + 스크립트 3개 + stale Cursor skill(`publish_dashboard.sh`가 retired branch로 자동 commit/push)
+을 `git mv`로 archive. 삭제는 untracked 재생성물뿐(`__pycache__` 39개, examples 이미지 8개, 16 MB);
+**tracked 파일 삭제 0**. 죽은 함수 `_latest_barprobe()` 제거. 기록: `docs/cleanup/`,
+`docs/documentation_inventory_2026-09-24.json`, `docs/documentation_cleanup_plan_2026-09-24.md`.
+
+**테스트(의도적 계약 변경 포함, 사유는 cleanup plan):**
+
+| | baseline `7c40d5d` | 이후 |
+|---|---:|---:|
+| Python 전체(CPU-only) | 2027 run, F1 E1 S5 | 2064 run, F1 E1 S5 |
+| 위 F1/E1(= `aerial_gym` import 시 CUDA 필요) GPU 노출 재실행 | 8 OK | 8 OK |
+| Node 테스트 | 7/8 (`test_public_status_manifest.js` stale TM_E2) | 8/8 |
+| `check_public_docs.py --schema`, `cffconvert` | — | PASS, valid |
+| 생성기 `--check` 6종 | — | 전부 PASS |
+| Markdown 로컬 링크(전체) | 깨짐 13(실제 7 + 오탐 6) | 새 깨짐 0, 오탐 6만 |
+
+README 숫자는 이제 금지가 아니라 **source-bound**(`tools/check_public_docs.py`가 registry/target-motion JSON과
+대조). stale 핀 "No E0/E1/E2 policy-performance grid is reported"는 사실과 달라(Table 3에 결과 있음) 참 경계
+문장("TM-E3 and TM-E4 have no implementation or result")으로 교체.
+
+**남긴 drift(연구 기록이라 수정하지 않음, 사용자 결정):** paper outline/spine의 "single frozen checkpoint", registry
+"all contrasts 3/3"(capture 6/6은 참, E2−H crash 불일치), −4.57 pp "3/3 campaigns"(결정론 재실행), registry
+temporal selector↔S4(P7c-v2) 짝, `results/MANIFEST.json` 201(HEAD 재빌드 207), selection JSON의 Elastic 라이선스·
+"disk 97 %". 목록: `docs/documentation_cleanup_plan_2026-09-24.md`.
+
+다음: 사용자 diff 검토 → 커밋/푸시 결정(자율 커밋 없음). `NEW_GPU_EVALUATION = NO`, `PPO_TRAINING = NO`.
+
+## 2026-09-24 — P0 주장 감사 · 2차 정리 · 테스트 프로파일 · D8c read-only 감사 (측정값 변경 0, GPU/PPO 0, 커밋 전 검토 대기)
+
+사용자 지시(허위·과장 가능성 최소화)로 현재 표면 전체를 재감사. 측정값·사전등록·`results/`는 한 바이트도 바꾸지
+않았고, **기록과 어긋난 문장만** 고쳤다. 전 항목은 `tests/test_canonical_docs.py::ClaimConsistencyTest`로 고정.
+
+| 항목 | 발견 | 조치 |
+|---|---|---|
+| manifest 수 | `results/MANIFEST.json` `counts.results` = **201**(2026-09-14 build). 논문 초안의 204는 `a4badde`에서 수기 입력, 근거 manifest 없음. "with receipts"도 과장(receipt 31/201) | 사용자 승인으로 **재빌드 → 207**(2026-09-24T08:56Z, scratch dry run과 동일). 새 6개 = 09-17/18 결과(target-motion evaluation 포함). 기존 항목 변경은 D8b `files` 442→443뿐 — 무시된 `__pycache__/audit.cpython-313.pyc`(09-17 `tests/test_d8b_archive.py`가 Python 3.13으로 생성); tracked 결과 변경 0. 현재 표면 207 + build 날짜, 테스트가 둘 다 manifest에 결박 |
+| "twelve contrasts" | prereg A1.3의 12 = per-density 탐색 대비. **10/12만** 3/3 부호 일치(E2−H @115: −0.11/+2.10/+1.57, @160: +0.49/+1.03/−0.25). arm-level 18개 중 17(E2−H crash 혼합) | "All six reported arm-level capture contrasts were sign-consistent…" + 혼합 대비 명시 |
+| 단일 정책 | policy F(`f7022139…`: P10 frozen cost·safety·TM) vs policy R(`197ea269…`: D8b). outline "same frozen policy loses −48.967", matrix "an order larger than" | F/R 전 표면 명시, 교차 계약 크기 비교 삭제 |
+| 추론 단위 | E3-S 6.2 % = 한 비행 9 block median의 median(3,107 frame은 표본 아님). safety CI는 15 seed×density cell fixed-effect pooled, **seed-level t CI [−2.42, −0.57]**(n=3, `recomputed.json` `seed_t`). P10 −4.57 CI는 episode-level(평가 seed 2개, 3,161/4,099 vs 3,350/4,101). D8b·TM은 seed n=3 | README·EVIDENCE·사이트·registry(`ci95_unit`)·그림 범례에 단위 명시 |
+| 기타 | spine "recovers part of", README "Every comparison is preregistered", registry P10 한계 "three training seeds", docs "GPU tests skip themselves" | 정정 |
+
+**새 발견(원 결과 미수정):** count 기반 정지(합계 ≥ N)는 env별 진행 중 episode(주로 긴 timeout)를 버려
+길이 편향. CPU renewal 모형(측정 아님): capture +1.8 / +0.7 / +0.4 pp(timeout 9 / 2.5 / 1.2 %), per-env quota는
+±0.1 pp. 09-18 결과의 ≤ 0.018 pp 경계는 +15 초과분만 다룸. → 재현 사전등록에서 quota 규칙 + 두 추정치 병기.
+
+**2차 정리:** final PNG/PDF 14개 untracked(`.gitignore`, manifest 해시 + `--check`로 byte-exact 재생성), 정리 문서
+6→3(`docs/cleanup/cleanup_record_2026-09-24.md`, `new_file_budget.md`, `inventory_2026-09-24.json`), archive 사본 2개
+삭제(`git show 7fb547d:…`로 동일), `tools/archive/README.md`를 `docs/archive/README.md`에 통합. tracked 5,365 →
+**5,392(+27)**, 1차는 +44. reader-facing canonical 9개.
+
+**테스트 프로파일:** `tools/run_tests.py` — PUBLIC_CPU(기본), GPU_REQUIRED, FULL_RESEARCH. GPU 필요 test id 2개를
+명시 제외(사유 포함), assertion 변경 0.
+
+| | 결과 |
+|---|---|
+| PUBLIC_CPU (A만, B 파일 제거한 작업 트리) | 2,072 run, **0 F 0 E**, 5 skip, 5 excluded |
+| GPU_REQUIRED | 이번 세션 미실행(GPU 사용 미승인), 1차 세션 GPU 노출 8 OK |
+| Node 20.20.2(scratchpad, SHA-256 검증) | CI JS 7/7, GT validator 2종 HARD INVARIANTS PASS |
+| `check_public_docs` / `--schema`(rl_study env) / 생성기 `--check` 6종 | PASS / PASS / 전부 PASS |
+
+**시각 검수 pack:** `/home/fair/workspaces/aerial_gym_ws/review_pack_2026-09-24/index.html` — 사이트 1440/768/390(정확한
+viewport, overflow 0, 깨진 이미지 0), Fig 1–6 contact sheet, 자동 검사. Fig 1 evidence box 사이 화살표 제거(인과 연쇄
+오독 방지), 모든 범례에 추론 단위. 이후 Fig 1–6을 **인쇄 폭 7 in로 재배치**(이전 최소 5.0–6.0 pt): 최소 7.5 pt(Fig 1
+평가 격자 장식 라벨만 7.0 pt), 8 pt 이상 비율 63–89 %, 수치 변경 0; Fig 1 evidence는 5개 전폭 행, Fig 6은 method를 system
+아래로. `tests/test_paper_figures_final.py`가 504 pt 폭·7 pt 하한 강제.
+
+**D8c read-only:** `docs/d8c_perception_path_audit_2026-09-24.md`. D8b에는 mesh_flat arm도 있음. never-acquired
+18 % → 24 % → 67 %(analytic → mesh_flat → mesh_shaded), 검출기 측 visible fraction 0.18 → 0.12 → 0.025; flat↔shaded는
+mask·depth 동일, RGB만 다름. shading-only 대비 −41.79 pp [−43.59, −39.99](기록에서 유도, 사전등록 아님). 거리·방위
+오차, actor observation 통계, per-episode는 NOT_RECORDED. **재학습: NOT_YET_JUSTIFIED**(Case A 방향이나 인과 경로
+미확정; mesh-shaded가 최종 관측 분포인지 NOT_STATED — 사용자 결정 시 Case C). D8C 라벨을 "perception-path audit"으로
+통일(lifecycle PLANNED/NOT_STARTED 유지).
+
+**Elastic B0:** ROS Noetic 미설치, `sudo` 필요 — 변동 없음. 디스크 93 %(8.2 GB 여유).
+
+다음: A 커밋·push(사용자 지시 2026-09-24), B는 7 seed로 수정 후 별도 검토. `NEW_GPU_EVALUATION = NO`, `PPO_TRAINING = NO`.

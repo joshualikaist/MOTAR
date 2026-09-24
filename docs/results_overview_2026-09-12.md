@@ -1,5 +1,7 @@
 # Results overview — evidence, not an execution plan
 
+> **Snapshot of 2026-09-12 (Tracks A–D, nine figures).** Later results, including target motion and quantitative positioning, are summarised in [`EVIDENCE.md`](EVIDENCE.md); the current figure family is in [`assets/paper/final/`](assets/paper/final/manifest.json).
+
 The [previous README](archive/readme_9732d12_2026-09-12.md) preserves the full numerical narrative
 from source `9732d12`. This summary does not recompute or promote any result. The current authority
 is [VERIFICATION](../VERIFICATION.md); dates and failed runs remain in [WORKLOG](../WORKLOG.md).
