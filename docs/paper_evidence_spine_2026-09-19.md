@@ -123,42 +123,68 @@ explanation is `WITHDRAWN` and route-mechanism gates are `FAIL_ROUTE_MECHANISM`.
 
 ---
 
-## C5. Frozen-policy target-motion generalization is measured
+## C5. Frozen-policy target-motion generalization is measured and replicated
 
 **Question.** Does a policy frozen on one target-motion lineage stay valid when the motion law changes?
 
-**Method.** 4 arms × 4 densities × 3 seeds × 2048 episodes against arm **H**, the historical lineage
-the checkpoint was actually trained on. Seed-paired BCa95.
+**Method (current evidence).** An independent bias-corrected replication, preregistered before it
+ran (`docs/prereg_2026-09-24_target_motion_replication_7seed.md`).
+- Design: 4 arms × 4 densities × **7 fresh seeds** = 112 cells, against arm **H**, the historical
+  lineage the checkpoint was trained on.
+- Estimand: exactly 2,048 primary episodes per cell (the first 16 of each of 128 environments),
+  229,376 in all. This per-environment quota removes the length bias of the pooled stopping window.
+- Inference: seed-paired BCa95, exact sign-flip p over 2⁷ patterns, Holm across E0 − H, E1 − H and
+  E2 − H.
 
-**Result.** H **87.89 %**; E0 static **84.31 %** (**−3.58 pp**, [−4.04, −3.29]); E1 CV **85.07 %**
-(**−2.82 pp**, [−3.53, −2.44]); E2 obstacle-aware **89.22 %** (**+1.33 pp**, [+1.15, +1.50]).
-E2−E0 **+4.91 pp**. All six reported arm-level capture contrasts were sign-consistent across the
-three evaluation seeds; the E2 − H crash contrast was not. The twelve per-density contrasts against
-H are exploratory (Amendment 1 §A1.3): ten are sign-consistent, and E2 − H is sign-mixed at 115 and
-160 bars.
+**Result.**
+- Arm means: H **87.76 %**; E0 static **82.39 %**; E1 CV **84.32 %**; E2 obstacle-aware **89.12 %**.
+- E0 − H **−5.37 pp** [−5.78, −4.85], E1 − H **−3.45 pp** [−3.79, −3.11], E2 − H **+1.35 pp**
+  [+1.07, +1.87].
+- All three preregistered capture contrasts met the directional replication criterion in the
+  independent seven-seed bias-corrected replication. The Holm-adjusted p-values were 0.046875, at the
+  resolution boundary of the seven-seed exact sign-flip design.
+- Effect sizes, uncertainty intervals and seed-level consistency (7/7 in each contrast, descriptive)
+  are reported alongside the hypothesis tests.
 
 **Target behavior did not form a monotonic difficulty ladder.** The static arm produced the lowest
 close-approach success and the bounded obstacle-aware arm the highest.
 
-**Uncertainty.** n = 3 evaluation seeds: the BCa interval excludes zero under the preregistered
-estimator, but exact permutation inference has insufficient resolution for conventional significance
-testing. Effect sizes and seed consistency carry the reading. 98,319 observed episodes against a
-preregistered 98,304 (vectorised tail overshoot, worst-case influence ≤ 0.018 pp).
-`min_relative_distance_m` is `NOT_RECORDED`. The 5 pp materiality rule was **not** preregistered and
-is withdrawn.
+**Estimator.** Within the seven-seed data, the historical pooled stopping window attenuated all
+three capture contrasts toward zero (quota − legacy: E0 − H −1.01, E1 − H −0.33, E2 − H +0.27 pp).
+The estimator change does not by itself explain the full difference between the original n=3
+campaign and the n=7 replication because the seed sets differ.
+
+**Uncertainty and limits.**
+- The aggregate E2 − H contrast replicated, but its positive direction was not uniformly expressed at
+  high obstacle densities: 5/7 seeds at 160 bars and 4/7 at 205 bars (exploratory).
+- `min_relative_distance_m` is recorded for every episode, but it failed its semantic check
+  (end-of-step sampling versus swept-segment capture), so it is not published.
+- Frozen policy F, one arena family, four densities, simulation only.
+
+**Original campaign (historical, not pooled).** Three evaluation seeds, legacy pooled window:
+- E0 − H **−3.58 pp** [−4.04, −3.29], E1 − H **−2.82 pp**, E2 − H **+1.33 pp** [+1.15, +1.50].
+- With n = 3, exact permutation inference had insufficient resolution for conventional significance
+  testing.
+- 98,319 observed episodes against a preregistered 98,304.
+- The 5 pp materiality rule was **not** preregistered and is withdrawn.
+- Its first-acquisition record is consistent with a visibility mechanism (association only).
 
 **Closest external work.** None. No screened system evaluates a frozen policy across a ladder of
 target-motion contracts. Elastic Tracker names escaping targets as future work; every classical
 tracker evaluates a cooperative target.
 
-**What MOTAR adds.** The only measured statement in this set about whether a target-motion
-distribution shift invalidates a frozen policy.
+**What MOTAR adds.** The only measured, independently replicated statement in this set about whether a
+target-motion distribution shift degrades a frozen policy.
 
-**What MOTAR does not prove.** That E2 is universally easier, that obstacle-aware targets improve
-every policy, or that static targets are always harder. The result is bound to this checkpoint, this
-arena family and this simulator contract.
+**What MOTAR does not prove.**
+- That E2 is universally easier, that obstacle-aware targets improve every policy, or that the effect
+  holds at every density.
+- That the E0/E1 losses call for retraining: no deployment-performance threshold was preregistered.
 
-**Source.** `results/target_motion_e0_e2_2026-09-18/`. **Figure.** Fig 4, Fig 5.
+The result is bound to this checkpoint, this arena family and this simulator contract.
+
+**Source.** `results/target_motion_replication_7seed/` (current); `results/target_motion_e0_e2_2026-09-18/`
+(historical). **Figure.** Fig 4.
 
 ---
 
@@ -194,8 +220,8 @@ worse under a new observation treatment, and nothing more.
 **Method.** Per-result receipts and source manifests, a repository-wide result manifest, Record
 Envelope v2, preregistrations committed before execution, and tests that bind documents to sources.
 
-**Result.** **207** result directories indexed with links and hashes in `results/MANIFEST.json`
-(build of 2026-09-24). The public snapshot builds `CLEAN`
+**Result.** **208** result directories indexed with links and hashes in `results/MANIFEST.json`
+(build of 2026-09-26). The public snapshot builds `CLEAN`
 with 0 denylist matches. Raw evaluation artifacts verified immutable at **144/144** files.
 
 **Retained negatives, unedited.** `P2 held-out` **STRICT FAIL**; `D1 adaptation` **FAIL**; `P3`

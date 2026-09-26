@@ -89,6 +89,17 @@ obtain a seed, a density, a real content hash or a git commit refuses before wri
 Its current status is `producer_unit_validation = PASS`,
 `live_generation_validation = NOT_APPLICABLE`.
 
+## Closed target-motion replication
+
+Raw replication evidence is retained outside normal Git history and is not publicly downloadable. The repository includes the raw manifest, integrity report, primary-selection provenance, analysis and archive SHA-256. Measurement commit: b1c0bc612339d2f8dfb86a0ca16de11bdffe09b5; raw freeze: 2f723ed. Archive: target_motion_replication_7seed_raw_2026-09-26.tar.zst (9,855,954 bytes), SHA-256 0536897b418cc75dc2a8cadb0096f15fa83293fa4aabb509add53862b37eeb1b.
+
+[Canonical status](../results/target_motion_replication_7seed/summary.json) is generated from frozen
+analysis with `python tools/build_tm_publication.py --check`. The result index counts Git-tracked
+public files separately from 562 raw-manifest entries (561 external files and the tracked preflight)
+and 563 archive members. CPU validation
+checks the compact records in a fresh clone; raw re-derivation additionally requires the archive.
+No new measurement or training is authorized.
+
 ## Known unavailable data
 
 These are referenced by results but are **not** in the repository and mostly cannot be

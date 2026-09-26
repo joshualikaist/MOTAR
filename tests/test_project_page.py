@@ -18,8 +18,9 @@ import check_public_docs as docs  # noqa: E402
 THESIS = ("MOTAR studies the full evidence chain from measured perception uncertainty to policy "
           "behaviour, safety geometry, target-motion generalization, and observation sensitivity "
           "under frozen UAV policies.")
-KEY_MESSAGE = ("Target motion was not a monotonic difficulty ladder:</strong> the static target produced "
-               "the lowest capture rate, while the obstacle-aware target produced the highest.")
+KEY_MESSAGE = ("<strong>Target-motion effects replicated under a bias-corrected evaluation.</strong> Target motion "
+               "was not a monotonic difficulty ladder: the static target produced the lowest capture rate, while "
+               "the obstacle-aware target produced the highest.")
 SECTIONS = ["question", "findings", "system", "perception-policy", "safety", "target-motion",
             "observation", "related", "reproducibility", "demo"]
 FIGURES = ["fig1-motar-overview", "fig2-perception-policy", "fig3-safety", "fig4-target-motion",
@@ -113,8 +114,8 @@ class ProjectPageTest(unittest.TestCase):
                        "Class A matched external comparisons: 0", "not a leaderboard",
                        "consistent with a first-acquisition / visibility mechanism",
                        "frozen policy R", "is not policy F", "not a DWA planner", "no collision guarantee",
-                       "The mechanism is an association, not a causal test", "not independent replicates",
-                       "Unit of inference: evaluation seed (n = 3)",
+                       "The original campaign is shown beside the replication and not pooled", "not independent replicates",
+                       "Unit of inference: evaluation seed (n = 7)",
                        "Unit of inference: paired evaluation seed (n = 3)", "its 3,107 frames are not independent"):
             self.assertIn(phrase, self.story)
         for forbidden in ("state-of-the-art performance", "outperform", "causes the loss",

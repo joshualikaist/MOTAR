@@ -38,8 +38,8 @@ ep1900) for the observation contract — one arena family, one set of receipts.
 Measured range error **6.2 %** (median of 9 block medians, one flight) → policy-F cost **−4.57 pp**
 (episode-level interval excludes zero; two evaluation seeds) → readaptation **+0.73 pp**, CI [−1.04, +2.50], `INCONCLUSIVE` → safety
 geometry **−1.4903 pp** crash, cell-pooled CI [−1.8981, −1.0826], seed-level CI [−2.42, −0.57] →
-target-motion shift **−3.58 pp**
-(static) to **+1.33 pp** (obstacle-aware) against the historical reference → observation treatment
+target-motion shift **−5.37 pp**
+(static) to **+1.35 pp** (obstacle-aware) against the historical reference, replicated with 7 fresh seeds → observation treatment
 **−48.967 pp**, `MATERIAL_LOSS`, causality `NOT_TESTED`.
 
 ### 2. Related Work
@@ -79,7 +79,9 @@ Three layers kept separate: MOTAR internal evidence, published context under eac
 benchmark, and matched comparison (**empty**).
 
 ### 10. Limitations
-n = 3 seeds; 98,319 observed vs 98,304 preregistered; `min_relative_distance_m` `NOT_RECORDED`;
+Target motion: Holm-adjusted p at the seven-seed resolution boundary (0.046875); E2 − H not uniform at
+high density (5/7 at 160, 4/7 at 205 bars); `min_relative_distance_m` fails its semantic check and is
+not published; the original n = 3 campaign stays historical;
 5 pp threshold never preregistered and withdrawn; no real flight; `causality_vs_d8b = NOT_TESTED`;
 P2/D1 FAIL and P3 BLOCKED; Class A = 0.
 
@@ -90,11 +92,11 @@ P2/D1 FAIL and P3 BLOCKED; Class A = 0.
 Each carries a measured number or a precisely bounded capability. No "novel framework" claim.
 
 1. **We quantify target-motion distribution shift under one frozen policy (F) across four motion
-   contracts**, observing **−3.58 pp** for static targets and **+1.33 pp** for bounded
-   obstacle-aware targets relative to the historical reference (BCa95 [−4.04, −3.29] and
-   [+1.15, +1.50]; all six arm-level capture contrasts sign-consistent across the three evaluation
-   seeds), showing that target behaviour is not a monotonic
-   difficulty ladder for this policy.
+   contracts**, observing **−5.37 pp** for static targets, **−3.45 pp** for constant-velocity targets
+   and **+1.35 pp** for bounded obstacle-aware targets relative to the historical reference (BCa95
+   [−5.78, −4.85], [−3.79, −3.11] and [+1.07, +1.87]). All three preregistered capture contrasts met
+   the directional replication criterion in an independent seven-seed bias-corrected replication,
+   showing that target behaviour is not a monotonic difficulty ladder for this policy.
 2. **We measure a perception error distribution on real imagery and propagate it into policy
    outcome**, costing frozen policy F **−4.57 pp** of close-approach success with an episode-level
    interval excluding zero (the three campaigns re-ran the same frozen arms deterministically and are
@@ -109,7 +111,7 @@ Each carries a measured number or a precisely bounded capability. No "novel fram
    (CI [−50.113, −47.821], three paired evaluation seeds), with renderer causality explicitly
    `NOT_TESTED`. Because policy R is not policy F, this magnitude is not directly comparable with
    contributions 1–3.
-5. **We release the negative record with the positive one** — 207 result directories indexed in
-   `results/MANIFEST.json` (build of 2026-09-24) with provenance links and hashes,
+5. **We release the negative record with the positive one** — 208 result directories indexed in
+   `results/MANIFEST.json` (build of 2026-09-26) with provenance links and hashes,
    including a withdrawn decision threshold, a preregistered primary recorded as `NOT_RECORDED`, and
    a preregistered gate that FAILED — so that the evidence chain can be audited rather than trusted.

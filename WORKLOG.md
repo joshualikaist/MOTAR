@@ -19915,3 +19915,58 @@ commit `2f723ed`, push됨). 분석은 커밋된 `analyze`만. 기록: `results/t
 - 가설 기각 없음; E0/E1 저하는 사전등록된 배치 성능 기준이 없어 재학습 조건이 아니다. seed 4104–4110으로 종료.
 
 다음: 사용자 검토. `PPO_TRAINING_STARTED = false`, 추가 seed 없음.
+
+## 2026-09-26 — 공개 표면을 7-seed 재현으로 갱신, result manifest 207 → 208 (실험 0)
+
+- 현재 target-motion 증거 = n=7 재현(E0−H −5.37, E1−H −3.45, E2−H +1.35 pp; 229,376 주 표본). 원 09-18 n=3 캠페인은
+  "historical"로 나란히 두고 합산하지 않는다. 갱신: README, PROJECT, docs/EVIDENCE, HISTORY, spine·outline·claim matrix,
+  site(index·evidence), registry 행 `target_motion_generalization`(+재생성 positioning doc), Figure 1 행 4·Figure 4 전면
+  (b 재현 arm, c 재현 vs 원 캠페인, d stopping-window bias), `check_public_docs` headline 값, 관련 테스트 pin.
+- `min_relative_distance_m`는 어느 표면에도 싣지 않는다(의미 검사 실패). p-value는 callout으로 쓰지 않는다.
+- `tools/build_result_manifest.py` 공식 실행(스크래치 dry run 선행): 208개, 추가는 `target_motion_replication_7seed` 하나,
+  기존 항목 변경 0. 새 항목 `files` 584는 로컬 디스크 기준(무시된 원시 셀 포함; Git 추적 11). build 2026-09-26, 표면·테스트 바인딩.
+- 불변 확인: 원시 562/562 RAW_MANIFEST 일치, prereg·측정 소스·원 캠페인 diff 0(b1c0bc6 대비), checkpoint sha 일치, 셀 112·seed 4104–4110만.
+
+다음: 사용자 diff 검토 후 커밋·push 여부 결정(`0e1c91c`와 이 변경은 로컬). `PPO_TRAINING_STARTED = false`.
+
+## 2026-09-26 — Final release review: portable n=7 evidence, public page and fast-forward publication
+
+- User explicitly authorized self-review, commit, push and website publication; no further scientific
+  work is authorized. Reviewed `0e1c91c60d0aa28cb4b1c442dffbf57fe0f2c5d1`: result finalization,
+  provenance listing, ignore rules, record builder/test and log only. No raw cell bulk or scientific
+  source edits. `primary_selection_manifest.json` is a 19,699,337-byte episode-ID provenance listing.
+  `2f723edb1a7e28d4f1a85ce98af650a55b4876bb` was already on origin/main.
+- CURRENT target-motion evidence is generated as `REPLICATED`, scope
+  `INDEPENDENT_BIAS_CORRECTED_REPLICATION`, from frozen analysis/integrity/preflight records by
+  `tools/build_tm_publication.py`; 112 valid cells, 229,376 primary episodes, 7 fresh seeds,
+  PPO training false. H/E0/E1/E2 capture = 87.76/82.39/84.32/89.12%; contrasts =
+  −5.37 [−5.78, −4.85], −3.45 [−3.79, −3.11], +1.35 [+1.07, +1.87] pp (BCa95).
+  Exact p 0.015625 and Holm p 0.046875 for each; seven-seed resolution limit stays explicit.
+- README remains 10 major sections, adding the dedicated replication comparison and combining
+  citation/license. Site retains academic project-page styling, three E0/E1/E2 hero effects, exact
+  inference and density limits, original/current comparison, and external-archive provenance.
+  New record links use the public MOTAR repository; the older MOTAR-public snapshot is not relabelled
+  as containing the new replication. Figure 1 adds E1, range measurement and precise safety/observation
+  values without causal arrows between evidence modules. Figure 4 shows seven seeds, paired BCa
+  intervals, preserved n=3 and the same-seed stopping-window diagnostic. All final SVG whitespace is
+  normalized by the generator; the other figures change only serialized whitespace.
+- Portable result index: 208 entries. Counts mean Git-tracked public files, not ignored local files.
+  Replication entry: 12 public files; RAW_MANIFEST has 562 entries (561 external plus tracked preflight);
+  raw archive has 563 members including RAW_MANIFEST. Archive remains outside Git, not uploaded:
+  `target_motion_replication_7seed_raw_2026-09-26.tar.zst`, 9,855,954 bytes,
+  SHA-256 `0536897b418cc75dc2a8cadb0096f15fa83293fa4aabb509add53862b37eeb1b`.
+- Integrity independently checked: 562/562 raw hashes; archive members and SHA match; checkpoint
+  SHA `f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40` matches actual bytes;
+  112 receipts use measurement commit `b1c0bc612339d2f8dfb86a0ca16de11bdffe09b5` and seeds 4104–4110.
+  Preregistration/scientific source/checkpoint and both original n=3 result directories unchanged.
+  No PPO training, extra seeds, D8c experiment or Elastic experiment started. Minimum distance remains
+  WITHHELD_SEMANTIC_MISMATCH; D8b cause NOT_TESTED; P10 INCONCLUSIVE.
+- Final PUBLIC_CPU: 2,112 tests, 0 failures, 0 errors, 5 skipped, 5 GPU-only excluded. Node 20.20.2:
+  seven contract scripts and both GT validators PASS. Eight figure/document/record generators --check
+  PASS; public-doc/schema checks PASS; manifest portability tests 2/2 and manifest tests 17/17 PASS.
+  Browser captures at 390/768/1440: no document overflow, no broken images, alt text and visible keyboard
+  focus present. Screenshots/logs retained in `/tmp/motar-final-20260926/` outside the publication tree.
+  Remote links: 39/43 already respond; four newly committed result paths await the authorized push and
+  will be rechecked before reporting deployment complete. Local paths/anchors validated.
+- Next concrete step: normal fast-forward push of the reviewed result and surface commits, verify all
+  43 remote links and the deployed HTML/figure bytes, then stop. No new scientific hypothesis tested.

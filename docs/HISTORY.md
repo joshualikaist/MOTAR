@@ -59,6 +59,7 @@ Dates are result dates. Where a result was committed later, the commit is the re
 | 09-19 | **Quantitative positioning:** 13 published works, Class A matched comparisons = 0; paper spine | `docs/literature_quantitative_positioning_2026-09-18.md` |
 | 09-20→21 | **Elastic Tracker B0:** upstream reproduction FAIL; the remaining blocker is `sudo` for ROS | `docs/external_baselines/elastic_tracker_b0_upstream_reproduction_2026-09-20.md` |
 | 09-24 | Repository and site reorganised into a canonical documentation surface; P0 claim audit corrected wording (no measured value changed) | `docs/cleanup/cleanup_record_2026-09-24.md` |
+| 09-25→26 | **Target-motion replication:** 7 fresh seeds, bias-corrected quota, 229,376 primary episodes; all three contrasts replicated (E0 −5.37, E1 −3.45, E2 +1.35 pp) | `results/target_motion_replication_7seed/` |
 
 ## Negative, withdrawn and blocked results
 
@@ -109,3 +110,7 @@ Target-motion lineages (legacy → arm H, bounded → arm E2, physical, browser 
 - Superseded plans, handoffs and notes: [`docs/archive/`](archive/README.md).
 - Frozen crash-tuning notes (July): [`CRASH_TUNING_LOG.md`](../CRASH_TUNING_LOG.md), kept in place because source files cite it.
 - The verification ledger with every gate and its authority: [`VERIFICATION.md`](../VERIFICATION.md) (Korean).
+
+The target-motion chronology remains separate: original n=3 (18 September, legacy window);
+bias discovery and canary (instrumentation validation, not scientific evidence); independent n=7
+replication (25–26 September, per-environment quota, CURRENT). The two campaigns are not pooled.

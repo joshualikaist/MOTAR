@@ -35,8 +35,9 @@ SOURCES = {
     "registry": "docs/quantitative_positioning_registry.json",
     "status_manifest": "docs/status_manifest.json",
     "ledger": "docs/literature_quantitative_ledger_2026-09-18.json",
+    "replication": "results/target_motion_replication_7seed/analysis.json",
+    "replication_cells": "results/target_motion_replication_7seed/cells.csv",
     "target_motion": "results/target_motion_e0_e2_2026-09-18/canonical_summary.json",
-    "visibility": "docs/results/target_motion_visibility_reacquisition_audit_2026-09-19.json",
     "e3s": "results/eth_ds5_e3s_2026-09-10/run/e3s_result.json",
     "p8": "results/perception_p8_2026-09-09/error_model.json",
     "p9_fit": "results/perception_p9_2026-09-09/goodness_of_fit.json",
@@ -117,7 +118,7 @@ def collect_values():
     """Every number a figure draws, read from its canonical source."""
     reg = load_json("registry")
     tm = load_json("target_motion")
-    vis = load_json("visibility")
+    replication = load_json("replication")
     e3s = load_json("e3s")
     p8 = load_json("p8")
     fit = load_json("p9_fit")
@@ -127,35 +128,45 @@ def collect_values():
     ledger = load_json("ledger")
     status = load_json("status_manifest")
 
-    seeds = sorted({k.split("|")[1] for k in tm["arm_seed_means"]})
+    # Current evidence: the independent bias-corrected seven-seed replication (primary quota estimand).
+    import csv
+    with open(ROOT / SOURCES["replication_cells"], encoding="utf-8") as handle:
+        cell_rows = list(csv.DictReader(handle))
+    seeds = sorted({int(r["seed"]) for r in cell_rows})
+
+    def seed_rate(arm, seed, metric, estimator):
+        n, prefix = ("primary_episodes", "primary_") if estimator == "quota" else ("legacy_episodes", "legacy_")
+        rows = [r for r in cell_rows if r["arm"] == arm and int(r["seed"]) == seed]
+        assert len(rows) == 4, (arm, seed)
+        return sum(int(r[prefix + metric]) / int(r[n]) for r in rows) / len(rows)
+    quota = replication["estimators"]["quota"]
     target_motion = {
-        "seeds": seeds,
-        "per_seed_capture_pct": {SHORT[a]: [100 * tm["arm_seed_means"][f"{a}|{s}"]["capture_rate"]
-                                            for s in seeds] for a in ARMS},
-        "arm_mean_capture_pct": {SHORT[a]: 100 * tm["arm_means"][a]["capture_rate"] for a in ARMS},
+        "design": replication["design"], "verdict": replication["verdict"], "seeds": seeds,
+        "episodes": sum(int(r["primary_episodes"]) for r in cell_rows),
+        "per_seed_capture_pct": {SHORT[a]: [100 * seed_rate(a, s, "capture", "quota") for s in seeds] for a in ARMS},
+        "arm_mean_capture_pct": {SHORT[a]: 100 * quota["arm_mean_capture"][a] for a in ARMS},
         "contrasts_vs_H": {},
-        "episodes": tm["raw_source"]["raw_episodes"],
-        "verdict": tm["retraining_verdict"]["verdict"],
-        "mechanism_claim_status": tm["mechanism_summary"]["claim_status"],
-        "timeouts": {},
+        "estimator_bias_pp": {SHORT[a]: {m: 100 * sum(seed_rate(a, s, m, "quota") - seed_rate(a, s, m, "legacy")
+                                                     for s in seeds) / len(seeds)
+                                         for m in ("capture", "crash", "timeout")} for a in ARMS},
+        "density_same_sign_E2": {int(k.split("@")[1]): v["seeds_same_sign"]
+                                 for k, v in quota["per_density_exploratory"].items() if k.startswith("E2_")},
     }
+    for row in quota["primary"]:
+        seed_pp = [100 * x for x in row["seed_diffs"].values()]
+        target_motion["contrasts_vs_H"][SHORT[row["arm"]]] = {
+            "mean_pp": 100 * row["mean_diff"], "bca95_pp": [100 * x for x in row["bca95"]], "seed_pp": seed_pp,
+            "exact_p": row["exact_p"], "holm_p": row["holm_adjusted_p"], "seeds_same_sign": row["seeds_same_sign"],
+            "classification": row["classification"]}
+    # Historical evidence, shown beside it and never pooled: the 2026-09-18 legacy-window campaign.
+    original_seeds = sorted({k.split("|")[1] for k in tm["arm_seed_means"]})
+    target_motion_original = {"seeds": original_seeds, "episodes": tm["raw_source"]["raw_episodes"],
+                              "contrasts_vs_H": {}}
     for row in tm["contrasts_vs_H"]:
         if row["metric"] == "capture_rate":
-            seed_pp = [100 * row["seed_diffs"][s] for s in seeds]
-            target_motion["contrasts_vs_H"][SHORT[row["arm"]]] = {
+            target_motion_original["contrasts_vs_H"][SHORT[row["arm"]]] = {
                 "mean_pp": 100 * row["mean_diff"], "bca95_pp": [100 * x for x in row["bca95"]],
-                "seed_pp": seed_pp, "seed_sign_consistent": len({x > 0 for x in seed_pp}) == 1}
-    e2_e0 = next(r for r in tm["contrasts_within_E"] if r["metric"] == "capture_rate"
-                 and r["baseline"] == "E0_static" and r["arm"] == "E2_obstacle_aware")
-    target_motion["E2_minus_E0_pp"] = 100 * e2_e0["mean_diff"]
-    for a in ARMS:
-        total = sum(vis["per_arm_outcome"][f"{a}|{o}"]["episodes"] for o in ("capture", "crash", "timeout"))
-        row = vis["per_arm_outcome"][f"{a}|timeout"]
-        target_motion["timeouts"][SHORT[a]] = {
-            "episodes_total": total, "timeouts": row["episodes"], "never_acquired": row["never_acquired"],
-            "timeout_pct_of_all": 100 * row["episodes"] / total,
-            "never_acquired_pct_of_all": 100 * row["never_acquired"] / total,
-            "never_acquired_pct_of_timeouts": 100 * row["never_acquired_rate"]}
+                "seed_pp": [100 * row["seed_diffs"][s] for s in original_seeds]}
 
     g2 = e3s["primary"]["gates"]["G2_central"]
     e3s_vals = {"median_of_block_medians_pct": 100 * g2["median_of_block_medians"],
@@ -228,7 +239,7 @@ def collect_values():
         registry[key] = {"value_pp": e.get("value_pp"), "value_percent": e.get("value_percent"),
                          "ci95_pp": e.get("ci95_pp"), "verdict": e["verdict"], "source_path": e["source_path"]}
     return {"registry": registry, "class_a_count": reg["matched_external"]["class_a_count"],
-            "target_motion": target_motion, "e3s": e3s_vals, "p8": p8_bins, "p9_fit": fit_vals,
+            "target_motion": target_motion, "target_motion_original": target_motion_original, "e3s": e3s_vals, "p8": p8_bins, "p9_fit": fit_vals,
             "p10": p10_vals, "safety": safety_vals, "d8b": d8b_vals, "real_hardware_reported": real}
 
 
@@ -442,19 +453,19 @@ def figure1(plt, v):
             "pp = percentage points", fontsize=T_NOTE, color=MUTED, ha="left", va="center")
     rows = [
         ("Measured error", fmt_pp(reg["perception_error_cost_frozen"]["value_pp"]) + " pp",
-         "capture of frozen policy F under injected measured error",
+         f"range error {v['e3s']['median_of_block_medians_pct']:.1f}%; injected error cost, policy F",
          f"episode-level 95% CI · {len(v['p10']['frozen_cost_eval_seeds'])} evaluation seeds", None),
         ("Readaptation", fmt_pp(reg["p10_policy_readaptation"]["value_pp"]) + " pp",
          "retrained − frozen, under the same error; 95% CI crosses zero",
          f"{len(v['p10']['seeds'])} training seeds", reg["p10_policy_readaptation"]["verdict"]),
-        ("Safety geometry", fmt_pp(reg["safety_filter_geometry"]["value_pp"]) + " pp",
+        ("Safety geometry", fmt_pp(reg["safety_filter_geometry"]["value_pp"], 4) + " pp",
          "crash, arc-clearance − riskcap, frozen policy F",
          f"{v['safety']['negative_cells']}/{v['safety']['k']} seed × density cells lower · "
          f"{len(v['safety']['seeds'])} evaluation seeds", None),
-        ("Target motion", f"E0 {fmt_pp(tmv['E0']['mean_pp'])} · E2 {fmt_pp(tmv['E2']['mean_pp'])}",
+        ("Target motion", f"E0 {fmt_pp(tmv['E0']['mean_pp'])} · E1 {fmt_pp(tmv['E1']['mean_pp'])}\nE2 {fmt_pp(tmv['E2']['mean_pp'])} pp",
          "pp capture vs training target H, frozen policy F",
-         f"not a monotonic ladder · {len(v['target_motion']['seeds'])} evaluation seeds", None),
-        ("Observation contract", fmt_pp(reg["d8b_mesh_observation"]["value_pp"]) + " pp",
+         f"replicated · {len(v['target_motion']['seeds'])} fresh seeds, bias-corrected", None),
+        ("Observation contract", fmt_pp(reg["d8b_mesh_observation"]["value_pp"], 3) + " pp",
          "capture, mesh-shaded vs analytic target; causality NOT TESTED",
          "policy R (not F) · 3 paired evaluation seeds", reg["d8b_mesh_observation"]["verdict"]),
     ]
@@ -464,7 +475,7 @@ def figure1(plt, v):
         yc = first - (k + 0.5) * row_h
         circled(ax, 3.0, yc, k + 1)
         ax.text(5.3, yc, label, fontsize=8.5, fontweight="bold", color=INK, ha="left", va="center")
-        ax.text(26.0, yc + (1.3 if verdict else 0), value, fontsize=11, fontweight="bold", color=INK, ha="left",
+        ax.text(26.0, yc + (1.3 if verdict else 0), value, fontsize=8 if label == "Target motion" else 11, fontweight="bold", color=INK, ha="left",
                 va="center")
         if verdict:
             tag(ax, 26.4, yc - 1.75, verdict, edge=ACCENT if verdict == "MATERIAL_LOSS" else INK2)
@@ -724,76 +735,89 @@ def figure4(plt, v):
     dot(ax, *e2[-1], 0.55, ACCENT)
 
     arms = ["H", "E0", "E1", "E2"]
+    orig = v["target_motion_original"]
+    n_rep, n_orig = len(tm["seeds"]), len(orig["seeds"])
     ax = fig.add_subplot(gs[0, 1])
     for i, arm in enumerate(arms):
         color = REF if arm == "H" else BLUE
         mean = tm["arm_mean_capture_pct"][arm]
-        ax.plot([i - 0.22, i + 0.22], [mean, mean], color=color, lw=2.2, solid_capstyle="butt")
-        ax.scatter([i - 0.1, i, i + 0.1], tm["per_seed_capture_pct"][arm], s=24, facecolor=WHITE, edgecolor=color,
-                   linewidth=1.2, zorder=4)
-        ax.text(i, mean + 0.6, f"{mean:.1f}", fontsize=8.5, fontweight="bold", color=INK, ha="center", va="bottom")
+        ax.plot([i - 0.24, i + 0.24], [mean, mean], color=color, lw=2.2, solid_capstyle="butt")
+        xs = [i + (k - (n_rep - 1) / 2) * 0.055 for k in range(n_rep)]
+        ax.scatter(xs, tm["per_seed_capture_pct"][arm], s=14, facecolor=WHITE, edgecolor=color, linewidth=1.0,
+                   zorder=4)
+        ax.text(i, max(tm["per_seed_capture_pct"][arm]) + 0.45, f"{mean:.1f}", fontsize=8.5, fontweight="bold",
+                color=INK, ha="center", va="bottom")
     ax.set_xticks(range(4))
     ax.set_xticklabels(["H\ntraining", "E0\nstatic", "E1\nconst. vel.", "E2\nobst.-aware"], fontsize=T_LABEL)
-    ax.set_ylim(82, 91)
+    ax.set_ylim(80, 92)
     ax.set_xlim(-0.6, 3.6)
     ax.set_ylabel("close-approach rate (%)")
     hgrid(ax)
-    fig_title(fig, 0.535, top_y, "b", "Capture by arm")
-    note(ax, f"bar = mean, dots = seeds · {tm['episodes']:,} episodes\n70–205 bars · y-axis starts at 82%", y=-0.3)
+    fig_title(fig, 0.535, top_y, "b", "Capture by arm (replication)")
+    note(ax, f"bar = mean, dots = {n_rep} fresh seeds · bias-corrected quota\n"
+             f"{tm['episodes']:,} primary episodes · y-axis starts at 80%", y=-0.3)
 
     ax = fig.add_subplot(gs[1, 0])
     ax.axvline(0, color=INK2, lw=0.9)
     for r, arm in enumerate(["E2", "E1", "E0"]):
-        c = tm["contrasts_vs_H"][arm]
+        c, o = tm["contrasts_vs_H"][arm], orig["contrasts_vs_H"][arm]
+        y_rep, y_orig = r + 0.14, r - 0.2
         lo, hi = c["bca95_pp"]
-        ax.plot([lo, hi], [r, r], color=BLUE, lw=2.2, solid_capstyle="butt")
-        ax.scatter(c["seed_pp"], [r] * 3, s=22, facecolor=WHITE, edgecolor=BLUE, linewidth=1.1, zorder=4)
-        ax.scatter([c["mean_pp"]], [r], s=50, color=BLUE, edgecolor=WHITE, linewidth=1.2, zorder=5)
-        ax.text(c["mean_pp"], r + 0.3, fmt_pp(c["mean_pp"]) + " pp", fontsize=9, fontweight="bold",
+        ax.plot([lo, hi], [y_rep, y_rep], color=BLUE, lw=2.2, solid_capstyle="butt")
+        ax.scatter(c["seed_pp"], [y_rep] * len(c["seed_pp"]), s=13, facecolor=WHITE, edgecolor=BLUE, linewidth=1.0,
+                   zorder=4)
+        ax.scatter([c["mean_pp"]], [y_rep], s=40, color=BLUE, edgecolor=WHITE, linewidth=1.1, zorder=5)
+        ax.text(c["mean_pp"], y_rep + 0.2, fmt_pp(c["mean_pp"]) + " pp", fontsize=9, fontweight="bold",
                 color=INK, ha="center", va="bottom")
+        lo, hi = o["bca95_pp"]
+        ax.plot([lo, hi], [y_orig, y_orig], color=REF, lw=1.6, solid_capstyle="butt")
+        ax.scatter([o["mean_pp"]], [y_orig], s=30, marker="D", facecolor=WHITE, edgecolor=REF, linewidth=1.1,
+                   zorder=5)
     ax.set_yticks([0, 1, 2])
     ax.set_yticklabels(["E2 − H", "E1 − H", "E0 − H"])
     ax.set_ylim(-0.6, 2.85)
-    ax.set_xlim(-5, 3)
+    ax.set_xlim(-7, 3)
     ax.set_xlabel("capture difference vs H (pp)")
     ax.spines["left"].set_visible(False)
     ax.tick_params(axis="y", length=0)
     vgrid(ax)
+    ax.scatter([], [], s=40, color=BLUE, label=f"replication, n = {n_rep} (quota)")
+    ax.scatter([], [], s=30, marker="D", facecolor=WHITE, edgecolor=REF, label=f"original, n = {n_orig}")
+    ax.legend(loc="lower left", fontsize=T_NOTE, handletextpad=0.3, borderaxespad=0.1)
     fig_title(fig, 0.02, low_y, "c", "Seed-paired difference vs H")
-    note(ax, f"unit: evaluation seed (n = {len(tm['seeds'])}) · bar = BCa 95% CI · dots = seeds\n"
-             "all six arm-level capture contrasts are 3/3 same sign")
+    dens = tm["density_same_sign_E2"]
+    note(ax, f"unit: evaluation seed · bars = BCa 95% CI · dots = {n_rep} seeds\n"
+             f"original legacy-window campaign shown beside it, not pooled\n"
+             f"E2 − H held its sign in {dens[160]}/{n_rep} seeds at 160 bars, {dens[205]}/{n_rep} at 205 (exploratory)")
 
     ax = fig.add_subplot(gs[1, 1])
+    metrics = [("capture", BLUE), ("crash", REF), ("timeout", ACCENT)]
+    width = 0.24
     for i, arm in enumerate(arms):
-        row = tm["timeouts"][arm]
-        never, total = row["never_acquired_pct_of_all"], row["timeout_pct_of_all"]
-        ax.bar(i, never, width=0.46, color=ACCENT if arm == "E0" else INK2, linewidth=0)
-        ax.bar(i, total - never, bottom=never, width=0.46, color=LIGHT, linewidth=0)
-        ax.text(i, total + 0.18, f"{total:.1f}%", fontsize=T_LABEL, color=INK, ha="center", va="bottom")
-    e0 = tm["timeouts"]["E0"]
-    ax.text(-0.22, 9.9, f"{e0['never_acquired_pct_of_timeouts']:.2f}% of E0 timeouts\nnever acquired the target",
-            fontsize=T_LABEL, fontweight="bold", color=INK, ha="left", va="center")
+        for k, (metric, color) in enumerate(metrics):
+            value = tm["estimator_bias_pp"][arm][metric]
+            ax.bar(i + (k - 1) * (width + 0.03), value, width=width, color=color, linewidth=0)
+    ax.axhline(0, color=INK2, lw=0.9)
     ax.set_xticks(range(4))
     ax.set_xticklabels(arms)
-    ax.set_ylim(0, 13.2)
-    ax.set_yticks([0, 2, 4, 6, 8, 10, 12])
-    ax.set_ylabel("timeout episodes (% of all)")
+    ax.set_ylim(-2.0, 2.0)
+    ax.set_ylabel("quota − legacy window (pp)")
     hgrid(ax)
     from matplotlib.patches import Patch
-    ax.legend(handles=[Patch(color=INK2, label="target never acquired"), Patch(color=LIGHT, label="acquired, then lost")],
-              loc="upper right", fontsize=T_NOTE, handlelength=1.0, borderaxespad=0.1)
-    fig_title(fig, 0.535, low_y, "d", "Timeouts and first acquisition")
-    note(ax, "consistent with a first-acquisition / visibility\nmechanism (association only)")
+    ax.legend(handles=[Patch(color=c, label=m) for m, c in metrics], loc="upper left", ncol=3, fontsize=T_NOTE,
+              handlelength=1.0, columnspacing=0.8, borderaxespad=0.1)
+    fig_title(fig, 0.535, low_y, "d", "Stopping-window bias (same 7 seeds)")
+    note(ax, "same seeds: legacy capture contrasts are attenuated\ntoward zero relative to quota (diagnostic only)")
     c = tm["contrasts_vs_H"]
     means = tm["arm_mean_capture_pct"]
-    title = "Target motion: close-approach rate of frozen policy F under four target-motion arms"
+    title = "Target motion: independent bias-corrected replication for frozen policy F"
     desc = (f"(a) Schematic of arms H (training law), E0 static, E1 constant velocity, E2 obstacle-aware. "
-            f"(b) Capture by arm: E0 {means['E0']:.2f}% < E1 {means['E1']:.2f}% < H {means['H']:.2f}% "
-            f"< E2 {means['E2']:.2f}%. (c) Differences vs H: E0 {fmt_pp(c['E0']['mean_pp'])} pp, "
-            f"E1 {fmt_pp(c['E1']['mean_pp'])} pp, E2 {fmt_pp(c['E2']['mean_pp'])} pp. (d) Timeouts: "
-            f"{e0['timeout_pct_of_all']:.1f}% of E0 episodes, {e0['never_acquired_pct_of_timeouts']:.2f}% of them "
-            "never acquired the target; consistent with a first-acquisition / visibility mechanism, association "
-            "only and not a causal explanation.")
+            f"(b) Capture by arm in the seven-seed replication: E0 {means['E0']:.2f}% < E1 {means['E1']:.2f}% < "
+            f"H {means['H']:.2f}% < E2 {means['E2']:.2f}%. (c) Seed-paired differences vs H: "
+            f"E0 {fmt_pp(c['E0']['mean_pp'])} pp, E1 {fmt_pp(c['E1']['mean_pp'])} pp, E2 {fmt_pp(c['E2']['mean_pp'])} pp; "
+            "all three met the preregistered directional replication criterion. The original three-seed "
+            "legacy-window campaign is shown beside it and not pooled. (d) Quota minus legacy window by arm. "
+            "Simulation only.")
     return fig, title, desc
 
 
@@ -1003,6 +1027,7 @@ FIGURES = [
 
 # ---------------------------------------------------------------- output
 def finish_svg(raw: str, stem: str, title: str, desc: str) -> str:
+    raw = "\n".join(line.rstrip() for line in raw.splitlines()) + "\n"
     raw = re.sub(r"<metadata>.*?</metadata>\s*", "", raw, flags=re.S)
     raw = raw.replace("'Liberation Sans'", FONT_STACK).replace("'Liberation Mono'", MONO_STACK)
 

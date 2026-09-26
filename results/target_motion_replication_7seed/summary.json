@@ -1,0 +1,26 @@
+{
+  "analysis_path": "results/target_motion_replication_7seed/analysis.json",
+  "analysis_sha256": "87398121b20575ac91a965cf7c44d5a235d88a6abfd4f88ca978564346298786",
+  "checkpoint_sha256": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+  "commit": "b1c0bc612339d2f8dfb86a0ca16de11bdffe09b5",
+  "evidence_role": "CURRENT",
+  "freeze_commit": "2f723ed",
+  "fresh_seeds": 7,
+  "historical_result": "results/target_motion_e0_e2_2026-09-18/canonical_summary.json",
+  "minimum_distance_public_status": "WITHHELD_SEMANTIC_MISMATCH",
+  "pooled_with_historical": false,
+  "ppo_training_started": false,
+  "primary_episodes": 229376,
+  "scope": "INDEPENDENT_BIAS_CORRECTED_REPLICATION",
+  "seeds": [
+    4104,
+    4105,
+    4106,
+    4107,
+    4108,
+    4109,
+    4110
+  ],
+  "status": "REPLICATED",
+  "valid_cells": 112
+}

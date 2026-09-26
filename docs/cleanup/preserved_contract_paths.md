@@ -8,7 +8,7 @@ unless its row says otherwise. The categories below also appear in [`AGENTS.md`]
 
 | Path | Contract | Enforced by |
 | --- | --- | --- |
-| `results/**` (every result folder, including `VOID_*`, logs, READMEs and summaries) | Receipts bind files by path and SHA-256. `results/MANIFEST.json` indexes 207 result directories with provenance links and file hashes (build of 2026-09-24) | `tools/build_result_manifest.py`, per-result receipts, result tests |
+| `results/**` (every result folder, including `VOID_*`, logs, READMEs and summaries) | Receipts bind files by path and SHA-256. `results/MANIFEST.json` indexes 208 result directories with provenance links and file hashes (build of 2026-09-26) | `tools/build_result_manifest.py`, per-result receipts, result tests |
 | Every preregistration (`docs/prereg_*`, `docs/preregistration_*`, `docs/*_preregistration_*`, `docs/plans/prereg_*`, `results/**/PREREGISTRATION.md`) | Fixed before measurement; cited by receipts | Receipts, `docs/research_authority_2026-08-26.json` |
 | `docs/results/*` | Generated result documents | `tools/build_target_motion_result_doc.py --check`, `tools/build_visibility_reacquisition_audit.py --check` |
 | `docs/*registry*.json`, `docs/status_manifest.json`, `docs/literature_quantitative_ledger_2026-09-18.json` | Machine-readable claims | `tools/check_public_docs.py`, site and figure tests |

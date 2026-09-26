@@ -14,7 +14,7 @@ random field of vertical bars. It sees the world only through its own sensors: a
 LiDAR. Published work usually studies one piece of this problem in isolation (navigation, tracking,
 pursuit, perception or safety) and reports a number inside that piece.
 
-MOTAR measures the **chain that connects the pieces** on frozen policies:
+MOTAR measures the **research evidence sequence (not a causal chain)** on frozen policies:
 
 ```text
 measured perception error → its cost to the policy → whether retraining recovers it
@@ -40,7 +40,7 @@ matched, preregistered comparison in which exactly one factor changes.
 | Q1 | How large is perception error on real UAV imagery, measured rather than assumed? | ETH ds5 range proxy (E3-S); detector and association error models (P6–P8) |
 | Q2 | What does that measured error cost a frozen policy, and does retraining recover it? | P9 injection, P10 readaptation |
 | Q3 | Does the geometry the safety filter uses to measure clearance change collisions? | Arc-clearance vs riskcap, 15 seed × density cells |
-| Q4 | Is target motion a difficulty ladder for a frozen policy? | H / E0 / E1 / E2 evaluation, 98,319 episodes |
+| Q4 | Is target motion a difficulty ladder for a frozen policy? | H / E0 / E1 / E2: an independent bias-corrected replication (7 fresh seeds, 229,376 primary episodes) of the original 3-seed campaign |
 | Q5 | How sensitive is a frozen policy to how the target is rendered? | D8b observation-contract contrast |
 | Q6 | Which of these axes do published systems study, and can any be compared directly? | Positioning ledger; Class A matched comparisons = 0 |
 
@@ -59,10 +59,12 @@ Each contribution is bounded by what its evidence cannot carry. The numbers are 
    arc lowers the crash rate of policy F relative to riskcap in all 15 seed × density cells; the
    seed-level interval (three evaluation seeds) also excludes zero. This is a configured contrast, not
    a safety guarantee.
-5. **Target-motion generalization of frozen policy F is measured.** Target motion was not a monotonic
-   difficulty ladder: the static target produced the lowest capture rate and the obstacle-aware
-   target the highest, over three evaluation seeds. The first-acquisition record is consistent with a
-   visibility mechanism (association only).
+5. **Target-motion generalization of frozen policy F is measured and replicated.** Target motion was
+   not a monotonic difficulty ladder: the static target produced the lowest capture rate and the
+   obstacle-aware target the highest. All three preregistered capture contrasts met the directional
+   replication criterion in an independent seven-seed bias-corrected replication. The obstacle-aware
+   gain was not uniform at high density. In the original campaign the first-acquisition record is
+   consistent with a visibility mechanism (association only).
 6. **The observation contract can dominate.** Rendering the target differently produced the largest
    loss measured anywhere (MATERIAL_LOSS). Its cause is NOT_TESTED, and it used a different frozen
    checkpoint, policy R, from the policy F of contributions 2, 4 and 5.
@@ -115,8 +117,9 @@ Out of scope:
 
 ## Current phase
 
-**Evidence consolidation and paper writing (2026-09-24).** The measurement programme behind
-contributions 1–6 is complete. No GPU evaluation or PPO training is authorised.
+**Evidence consolidation and paper writing (2026-09-26).** The measurement programme behind
+contributions 1–6 is complete, including the target-motion replication. No GPU evaluation or PPO
+training is authorised.
 
 | Track | State |
 | --- | --- |
@@ -124,7 +127,7 @@ contributions 1–6 is complete. No GPU evaluation or PPO training is authorised
 | External matched baseline | Elastic Tracker selected. Upstream reproduction gate B0 FAILed on the environment; the remaining blocker is `sudo` to install ROS. B1–B5 are not authorised |
 | Task diagnostics | TD-T1 / TD-T2 recorders exist; their density sweep has not run |
 | Perception | D8c read-only audit COMPLETED ([`docs/d8c_perception_path_audit_2026-09-24.md`](docs/d8c_perception_path_audit_2026-09-24.md)). Mesh-shaded rendering is not the final policy observation for the current contract, so D8b stays sensitivity evidence (causality NOT_TESTED) and no retraining is required for the current claim. D9 (shortcut remeasurement) is PLANNED |
-| Target behaviour | An independent bias-corrected seven-seed replication of H / E0 / E1 / E2 is preregistered ([`docs/prereg_2026-09-24_target_motion_replication_7seed.md`](docs/prereg_2026-09-24_target_motion_replication_7seed.md)); its main run needs separate approval. TM-E3 / TM-E4 are PLANNED |
+| Target behaviour | The independent bias-corrected seven-seed replication of H / E0 / E1 / E2 is complete and replicated all three contrasts ([`results/target_motion_replication_7seed/README.md`](results/target_motion_replication_7seed/README.md)); it is closed at seeds 4104–4110. TM-E3 / TM-E4 are PLANNED |
 
 Any new experiment requires, in this order: a question that one of the tables above leaves open, a
 preregistration, and explicit approval from the user. Rules for agents are in [`AGENTS.md`](AGENTS.md).

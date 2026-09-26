@@ -111,12 +111,12 @@ def local_link_errors(text, path, root=ROOT):
 
 
 # The README is a short landing page (user decision, 2026-09-24): ten fixed sections, headline
-# numbers only in the opening block and "Key Results", and every one of those numbers must match
-# a canonical machine-readable record (landing_number_errors). Test counts and seed identifiers
-# are never landing content.
-LANDING_HEADINGS = ("Why MOTAR?", "Key Results", "System", "Repository Structure", "Quick Start",
-                    "Research Evidence", "Documentation", "Limitations", "Citation", "License")
-NUMBER_SECTIONS = ("", "Key Results")
+# numbers only in the opening block, Key Results and the replication section. Every decimal
+# must match a canonical machine-readable record (landing_number_errors). The quick start may
+# report the required CPU validation outcome; detailed execution logs stay in WORKLOG.
+LANDING_HEADINGS = ("Why MOTAR?", "Key Results", "System", "Target-motion replication", "Repository Structure", "Quick Start",
+                    "Research Evidence", "Documentation", "Limitations", "Citation and license")
+NUMBER_SECTIONS = ("", "Key Results", "Target-motion replication")
 
 
 def landing_sections(text):
@@ -138,7 +138,7 @@ def landing_errors(text):
         errors.append("volatile test count or seed identifier on landing page")
     for heading, body in landing_sections(text):
         if heading not in NUMBER_SECTIONS and re.search(r"\d+(?:\.\d+)?\s*(?:%|pp\b)", body):
-            errors.append("result number outside the opening block and Key Results: " + heading)
+            errors.append("result number outside declared evidence sections: " + heading)
     for scope in ("simulation-only", "no real-flight validation claim", "historical", "interception"):
         if scope not in text.lower():
             errors.append("missing scope: " + scope)
@@ -164,6 +164,18 @@ def headline_values(root=ROOT):
         values.update(100 * bound for bound in row["bca95"])
     for arm in motion["arm_means"].values():
         values.update(100 * rate for rate in arm.values())
+    # Current target-motion evidence: the independent bias-corrected seven-seed replication.
+    replication = root / "results/target_motion_replication_7seed/analysis.json"
+    if replication.is_file():
+        rep = json.loads(replication.read_text())
+        values.update((rep["minimum_exact_two_sided_p"], rep["holm_floor_three_contrasts"]))
+        for block in rep["estimators"].values():
+            values.update(100 * rate for rate in block["arm_mean_capture"].values())
+            for row in block["contrasts"]:
+                if row["metric"] == "min_relative_distance_m":
+                    continue       # failed its semantic check; never a headline value
+                values.add(100 * row["mean_diff"])
+                values.update(100 * bound for bound in row["bca95"])
     audit = json.loads((root / "docs/results/target_motion_visibility_reacquisition_audit_2026-09-19.json").read_text())
     for row in audit["per_arm_outcome"].values():
         values.add(100 * row["never_acquired_rate"])

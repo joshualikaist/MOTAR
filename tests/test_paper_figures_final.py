@@ -60,8 +60,8 @@ class FigureFamilyTest(unittest.TestCase):
 
     def test_boundaries_are_drawn_into_the_figures(self):
         expectations = {
-            "fig1-motar-overview": ("−4.57 pp", "+0.73 pp", "INCONCLUSIVE", "−1.49 pp", "E0 −3.58",
-                                    "E2 +1.33", "−48.97 pp", "MATERIAL_LOSS", "causality NOT TESTED",
+            "fig1-motar-overview": ("−4.57 pp", "+0.73 pp", "INCONCLUSIVE", "−1.4903 pp", "E0 −5.37",
+                                    "E2 +1.35", "replicated · 7 fresh seeds, bias-corrected", "−48.967 pp", "MATERIAL_LOSS", "causality NOT TESTED",
                                     "schematic", "Simulation only", "not a causal chain", "policy R (not F)",
                                     "episode-level 95% CI · 2 evaluation seeds", "3 training seeds"),
             "fig2-perception-policy": ("6.2%", "−4.57 pp", "+0.73 pp", "INCONCLUSIVE", "GOODNESS-OF-FIT PASS",
@@ -69,9 +69,10 @@ class FigureFamilyTest(unittest.TestCase):
                                        "training seeds (n = 3)", "frozen policy F"),
             "fig3-safety": ("schematic", "−1.4903 pp", "15/15", "neither is a collision guarantee",
                             "seed-level 95% CI [−2.42, −0.57]", "not replicates", "frozen policy F"),
-            "fig4-target-motion": ("schematic", "−3.58 pp", "−2.82 pp", "+1.33 pp", "95.42%",
-                                   "consistent with a first-acquisition / visibility mechanism",
-                                   "unit: evaluation seed (n = 3)", "all six arm-level capture contrasts are 3/3 same sign"),
+            "fig4-target-motion": ("schematic", "−5.37 pp", "−3.45 pp", "+1.35 pp", "7 fresh seeds · bias-corrected quota",
+                                   "229,376 primary episodes", "unit: evaluation seed", "replication, n = 7",
+                                   "original, n = 3", "not pooled", "5/7 seeds at 160 bars, 4/7 at 205 (exploratory)",
+                                   "diagnostic only"),
             "fig5-observation-contract": ("−48.967 pp", "MATERIAL_LOSS", "CAUSALITY NOT TESTED",
                                           "ref5in D1 checkpoint", "unit: paired evaluation seed (n = 3)",
                                           "not policy F", "data flow in the experiment, not a causal mechanism"),

@@ -94,7 +94,7 @@ class ReadmeGuardTest(unittest.TestCase):
 
     def test_numbers_are_bound_to_canonical_records(self):
         self.assertEqual(docs.landing_number_errors(self.text, docs.headline_values()), [])
-        self.assertTrue(docs.landing_number_errors(self.text.replace("−3.58", "−3.85"),
+        self.assertTrue(docs.landing_number_errors(self.text.replace("−5.37", "−5.73"),
                                                    docs.headline_values()))
 
     def test_scope_boundary_and_limits_are_on_the_landing_page(self):
@@ -261,7 +261,7 @@ class ClaimConsistencyTest(unittest.TestCase):
         rows = {r["id"]: r for r in json_record("docs/quantitative_positioning_registry.json")["internal_motar"]}
         units = {"safety_filter_geometry": "15 seed x density cells", "perception_error_cost_frozen": "episode-level",
                  "p10_policy_readaptation": "training seed, n = 3", "d8b_mesh_observation": "paired evaluation seed",
-                 "target_motion_generalization": "evaluation seed, n = 3"}
+                 "target_motion_generalization": "evaluation seed, n = 7"}
         for key, unit in units.items():
             self.assertIn(unit, rows[key]["ci95_unit"], key)
         p10 = json_record("results/perception_p10_seed_replication_2026-09-10/summary.json")

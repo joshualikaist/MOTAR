@@ -30,27 +30,28 @@
 <p class="expansion">Moving Object Tracking And Rendezvous</p>
 <p class="subtitle">Reinforcement Learning for UAV Tracking and Close Approach in Random Obstacle Fields</p>
 <p class="thesis">MOTAR studies the full evidence chain from measured perception uncertainty to policy behaviour, safety geometry, target-motion generalization, and observation sensitivity under frozen UAV policies.</p>
-<p class="meta"><span>joshualikaist</span><span>Updated 24 September 2026</span><span>Software record; no published MOTAR paper</span></p>
-<p class="hero-links"><a href="https://github.com/joshualikaist/MOTAR-public">Code</a><a href="evidence.html">Full evidence</a><a href="https://github.com/joshualikaist/MOTAR-public/blob/main/docs/REPRODUCIBILITY.md">Reproducibility</a><a href="https://github.com/joshualikaist/MOTAR-public/blob/main/CITATION.cff">Citation</a></p>
+<p class="meta"><span>joshualikaist</span><span>Updated 26 September 2026</span><span>Software record; no published MOTAR paper</span></p>
+<p class="hero-links"><a href="https://github.com/joshualikaist/MOTAR-public">Code</a><a href="evidence.html">Full evidence</a><a href="https://github.com/joshualikaist/MOTAR/blob/main/docs/REPRODUCIBILITY.md">Reproducibility</a><a href="https://github.com/joshualikaist/MOTAR-public/blob/main/CITATION.cff">Citation</a></p>
 </header>
 
 <ul class="callouts" aria-label="Three key results">
-<li><span class="label">Target motion · obstacle-aware</span><span class="value">+1.33 pp</span><span class="note">E2 vs the historical training target H; BCa 95% CI [+1.15, +1.50] over three evaluation seeds</span></li>
-<li><span class="label">Target motion · static</span><span class="value">−3.58 pp</span><span class="note">E0 vs H: the lowest capture rate of the four target arms</span></li>
-<li><span class="label">Observation sensitivity</span><span class="value">−48.97 pp</span><span class="note">Mesh-shaded vs analytic target rendering, frozen policy R; <span class="tag loss">MATERIAL_LOSS</span> · causality not tested</span></li>
+<li><span class="label">Static target</span><span class="value">−5.37 pp</span><span class="note">E0 vs historical training target H · policy F</span></li>
+<li><span class="label">Constant velocity</span><span class="value">−3.45 pp</span><span class="note">E1 vs historical training target H · policy F</span></li>
+<li><span class="label">Obstacle-aware target</span><span class="value">+1.35 pp</span><span class="note">E2 vs historical training target H · policy F</span></li>
 </ul>
+<p class="boundary">Independent 7-seed bias-corrected replication · 229,376 primary episodes</p>
 <p class="boundary">Simulation only: no real-flight validation, sim-to-real or state-of-the-art claim. <abbr title="percentage points">pp</abbr> means percentage points; every value links to its record.</p>
 
 <figure class="fig" id="fig1">
 <a class="frame" href="../assets/paper/final/fig1-motar-overview.svg" aria-label="Open Figure 1 as SVG"><img src="../assets/paper/final/fig1-motar-overview.svg" alt="Graphical abstract: the simulated closed loop from environment, perception and temporal state to a frozen policy, safety filter and control, above five measured results bound to their records." width="1000" height="764" loading="eager"></a>
-<figcaption><strong>Figure 1. The simulated loop and its measured evidence chain.</strong> Top: a schematic of the loop; circled numbers mark where each experiment intervenes. Bottom: one measured value per link, each bound to its result record. <span class="limit-line">Simulation only. Links 2–4 use frozen policy F; link 5 uses a different frozen checkpoint, policy R.</span> <span class="files"><a href="../assets/paper/final/fig1-motar-overview.svg">SVG</a></span></figcaption>
+<figcaption><strong>Figure 1. The simulated loop and its measured evidence chain.</strong> Top: a schematic of the loop; circled numbers mark where each experiment intervenes. Bottom: separate evidence modules, not a causal chain. <span class="limit-line">Simulation only. Links 2–4 use frozen policy F; link 5 uses a different frozen checkpoint, policy R.</span> <span class="files"><a href="../assets/paper/final/fig1-motar-overview.svg">SVG</a></span></figcaption>
 </figure>
 
 <section class="block" id="question" aria-labelledby="question-title">
 <p class="num">01</p>
 <h2 id="question-title">Research question</h2>
 <p>A simulated quadrotor has to find, follow and closely approach a moving object in a random field of vertical bars, using only a forward camera and a LiDAR. Published systems usually isolate one part of this problem. MOTAR evaluates frozen policies and changes one factor at a time: the perception error the policy receives, the geometry its safety filter uses, the way the target moves and the way the target is rendered. Each headline comparison has a preregistration and a result record. Two frozen checkpoints are used: <strong>policy F</strong> (ep25000 + riskcap) for perception → policy, safety geometry and target motion, and <strong>policy R</strong> (ref5in D1 ep1900) for the observation contract.</p>
-<p class="key-message"><strong>Target motion was not a monotonic difficulty ladder:</strong> the static target produced the lowest capture rate, while the obstacle-aware target produced the highest.</p>
+<p class="key-message"><strong>Target-motion effects replicated under a bias-corrected evaluation.</strong> Target motion was not a monotonic difficulty ladder: the static target produced the lowest capture rate, while the obstacle-aware target produced the highest.</p>
 </section>
 
 <section class="block" id="findings" aria-labelledby="findings-title">
@@ -64,12 +65,12 @@
 <tr><td>Perception → policy</td><td class="num-cell">−4.57 pp</td><td>Capture lost by policy F under the measured error; episode-level 95% CI [−6.32, −2.82] from two evaluation seeds.</td></tr>
 <tr><td>Readaptation</td><td class="num-cell">+0.73 pp</td><td><span class="tag">INCONCLUSIVE</span> 95% CI [−1.04, +2.50] over three training seeds: no net benefit established.</td></tr>
 <tr><td>Safety geometry</td><td class="num-cell">−1.4903 pp crash</td><td>Arc clearance vs riskcap on policy F. Seed-level 95% CI [−2.42, −0.57] over three evaluation seeds; lower in 15/15 seed × density cells, which are not independent replicates. A configured contrast, not a safety guarantee.</td></tr>
-<tr><td>Target motion</td><td class="num-cell">E0 −3.58 · E2 +1.33 pp</td><td>Vs the training target H (E1 −2.82 pp). Policy F, three evaluation seeds; all six arm-level capture contrasts keep their sign in every seed. The visibility mechanism is association only.</td></tr>
+<tr><td>Target motion</td><td class="num-cell">E0 −5.37 · E2 +1.35 pp</td><td>Vs the training target H (E1 −3.45 pp). Independent bias-corrected replication on policy F: seven fresh seeds, 229,376 primary episodes; all three contrasts replicated. The obstacle-aware gain was not uniform at high obstacle density.</td></tr>
 <tr><td>Observation contract</td><td class="num-cell">−48.967 pp</td><td><span class="tag loss">MATERIAL_LOSS</span> Causality not tested. Frozen policy R, three paired evaluation seeds.</td></tr>
 </tbody>
 </table>
 </div>
-<p class="after-table">Class A matched external comparisons: 0. <a href="https://github.com/joshualikaist/MOTAR-public/blob/main/docs/EVIDENCE.md">Every record, interval and limit</a> · <a href="evidence.html">full evidence page</a></p>
+<p class="after-table">Class A matched external comparisons: 0. <a href="https://github.com/joshualikaist/MOTAR/blob/main/docs/EVIDENCE.md">Every record, interval and limit</a> · <a href="evidence.html">full evidence page</a></p>
 </section>
 
 <section class="block" id="system" aria-labelledby="system-title">
@@ -78,7 +79,7 @@
 <p>A forward camera and a LiDAR feed perception, which keeps a two-second track history. A Transformer PPO policy, trained once and then frozen, maps 17 observation tokens to a velocity command. A LiDAR speed filter caps that command before a velocity controller flies the quadrotor. Ground-truth target state never enters the policy's observation. The experiments vary the scenario inputs shown on top.</p>
 <figure class="fig">
 <a class="frame" href="../assets/paper/final/arch-motar-code-map.svg" aria-label="Open the system map as SVG"><img src="../assets/paper/final/arch-motar-code-map.svg" alt="System map: scenario inputs (target motion, rendering contract, measured-error injection, task contract) above the closed loop from obstacle environment to vehicle dynamics, and the evidence layer below." width="1000" height="530" loading="lazy"></a>
-<figcaption><strong>System map.</strong> Each block names its source files. <span class="limit-line">The browser demonstration at the end of this page is not part of this loop.</span> <span class="files"><a href="../assets/paper/final/arch-motar-code-map.svg">SVG</a> · <a href="https://github.com/joshualikaist/MOTAR-public/blob/main/ARCHITECTURE.md">architecture</a></span></figcaption>
+<figcaption><strong>System map.</strong> Each block names its source files. <span class="limit-line">The browser demonstration at the end of this page is not part of this loop.</span> <span class="files"><a href="../assets/paper/final/arch-motar-code-map.svg">SVG</a> · <a href="https://github.com/joshualikaist/MOTAR/blob/main/ARCHITECTURE.md">architecture</a></span></figcaption>
 </figure>
 </section>
 
@@ -106,10 +107,16 @@
 <section class="block" id="target-motion" aria-labelledby="target-title">
 <p class="num">06</p>
 <h2 id="target-title">Target motion</h2>
-<p>Policy F was trained on one historical target law (H). Evaluated frozen on three other laws, it lost capture against a static target and a constant-velocity target and gained against an obstacle-aware one. Most static-target timeouts never saw the target at all (95.42%). That is consistent with a first-acquisition / visibility mechanism: a target that starts out of view and never moves stays out of view. No target law reacts to the pursuer; obstacle-aware is not adversarial (<a href="https://github.com/joshualikaist/MOTAR-public/blob/main/docs/target_motion_algorithm_2026-09-17.md">how each target moves</a>).</p>
+<p>H is historical training-lineage motion; E0 is a static target; E1 is bounded constant velocity; E2 is bounded obstacle-aware waypoint motion. Frozen policy F was evaluated over seven fresh seeds, four densities and 112 cells. All three preregistered directional contrasts replicated. Capture rates: H 87.76% · E0 82.39% · E1 84.32% · E2 89.12%.</p>
+<p>No target law reacts to the pursuer; obstacle-aware is not adversarial. The original campaign's first-acquisition record is consistent with a first-acquisition / visibility mechanism (association only). <a href="https://github.com/joshualikaist/MOTAR/blob/main/docs/target_motion_algorithm_2026-09-17.md">How each target moves</a> · <a href="https://github.com/joshualikaist/MOTAR/blob/main/results/target_motion_replication_7seed/README.md">Replication record</a>.</p>
+<div class="table-scroll"><table class="findings"><thead><tr><th>Capture contrast (pp), BCa95</th><th>Original n=3 · legacy window</th><th>Replication n=7 · per-environment quota</th></tr></thead><tbody><tr><td>E0 − H</td><td>−3.58 [−4.04, −3.29]</td><td>−5.37 [−5.78, −4.85]</td></tr><tr><td>E1 − H</td><td>−2.82 [−3.53, −2.44]</td><td>−3.45 [−3.79, −3.11]</td></tr><tr><td>E2 − H</td><td>+1.33 [+1.15, +1.50]</td><td>+1.35 [+1.07, +1.87]</td></tr></tbody></table></div>
+<p>Each contrast has exact p = 0.015625 and the same direction in 7/7 seeds. The Holm-adjusted p-values are 0.046875, at the resolution boundary of the seven-seed exact sign-flip design. Effect sizes, confidence intervals, and seed-level consistency must therefore be reported alongside the hypothesis tests.</p>
+<p>The aggregate E2−H contrast replicated, but its positive direction was not uniformly expressed at the two highest obstacle densities: 5/7 seeds at 160 bars and 4/7 at 205 bars. Density-specific analyses remain exploratory.</p>
+<p>Within the seven-seed replication, the historical pooled stopping window attenuated all three capture contrasts toward zero. The estimator change does not by itself explain the full difference between the original n=3 campaign and the n=7 replication because the seed sets differ.</p>
+
 <figure class="fig">
-<a class="frame" href="../assets/paper/final/fig4-target-motion.svg" aria-label="Open Figure 4 as SVG"><img src="../assets/paper/final/fig4-target-motion.svg" alt="Figure 4: target-motion arms, close-approach rate by arm with seeds, seed-paired differences against the training target, and timeouts split by first acquisition." width="1000" height="943" loading="lazy"></a>
-<figcaption><strong>Figure 4. Target motion is not a monotonic difficulty ladder.</strong> (a) Arms, schematic; (b) capture by arm; (c) differences vs H; (d) first acquisition. <span class="limit-line">Unit of inference: evaluation seed (n = 3). Policy F, one arena. The mechanism is an association, not a causal test.</span> <span class="files"><a href="../assets/paper/final/fig4-target-motion.svg">SVG</a></span></figcaption>
+<a class="frame" href="../assets/paper/final/fig4-target-motion.svg" aria-label="Open Figure 4 as SVG"><img src="../assets/paper/final/fig4-target-motion.svg" alt="Figure 4: target-motion arms, close-approach rate by arm over seven fresh seeds, seed-paired differences against the training target beside the original three-seed campaign, and the quota minus legacy-window difference by arm." width="1000" height="943" loading="lazy"></a>
+<figcaption><strong>Figure 4. Target-motion effects replicated under a bias-corrected evaluation.</strong> (a) Arms, schematic; (b) capture by arm; (c) differences vs H, with the original campaign beside them; (d) quota minus legacy window. <span class="limit-line">Unit of inference: evaluation seed (n = 7). Policy F, one arena. The original campaign is shown beside the replication and not pooled.</span> <span class="files"><a href="../assets/paper/final/fig4-target-motion.svg">SVG</a></span></figcaption>
 </figure>
 </section>
 
@@ -126,7 +133,7 @@
 <section class="block" id="related" aria-labelledby="related-title">
 <p class="num">08</p>
 <h2 id="related-title">Relation to published work</h2>
-<p>The matrix records which axes each published system studies. It is not a leaderboard: no external number is subtracted from, or ranked against, a MOTAR result. The first external baseline, Elastic Tracker, is still at its upstream-reproduction gate, which is blocked by the environment.</p>
+<p>The matrix records which axes each published system studies. It is not a leaderboard: no external number is subtracted from, or ranked against, a MOTAR result. Elastic Tracker B0 upstream reproduction: FAIL — ENVIRONMENTAL; B1: NOT_STARTED. No Elastic performance numbers are reported.</p>
 <figure class="fig">
 <a class="frame" href="../assets/paper/final/fig6-positioning.svg" aria-label="Open Figure 6 as SVG"><img src="../assets/paper/final/fig6-positioning.svg" alt="Figure 6: matrix of axes studied by NavRL, Elastic Tracker, Fast-Tracker, OPEN, YOPO and MOTAR, with method families; a mark is not a performance score; Class A matched external comparisons equal zero." width="1000" height="614" loading="lazy"></a>
 <figcaption><strong>Figure 6. Studied axes, not performance.</strong> Class A matched external comparisons: 0. <span class="limit-line">MOTAR reports no real-hardware result; the published systems do.</span> <span class="files"><a href="../assets/paper/final/fig6-positioning.svg">SVG</a> · <a href="evidence.html#evidence">external tables</a></span></figcaption>
@@ -137,21 +144,25 @@
 <section class="block" id="reproducibility" aria-labelledby="repro-title">
 <p class="num">09</p>
 <h2 id="repro-title">Reproducibility and limitations</h2>
-<p>The public path runs on a CPU without Isaac Gym: an isolated renderer profile, the documentation checks, and the tests that bind every published number to its record. The GPU results are verified from their receipts rather than re-run. Every figure on this page is generated from those records by one script.</p>
+<p>The public path runs on a CPU without Isaac Gym: an isolated renderer profile, the documentation checks, and the tests that bind every published number to its record. The GPU results are verified from their receipts rather than re-run. Mesh-shaded rendering is not the final policy observation; D8b retraining is NOT_REQUIRED_FOR_CURRENT_CLAIM. Every figure on this page is generated from those records by one script.</p>
 <div class="limit">
 <strong>Limitations.</strong>
 <ul>
 <li>Simulation only: no real-flight validation, sim-to-real transfer or deployment claim.</li>
 <li>The historical experiments were framed as interception; their metric names (capture, crash) keep their meaning.</li>
-<li>Each effect holds only inside its recorded contract: checkpoint, arena, densities, seeds.</li>
+<li>Each effect holds only inside its recorded contract: checkpoint, arena, densities, seeds. Class A matched external comparisons: 0.</li>
+<li>Target-motion inference uses seven independent evaluation seeds; density-specific E2 effects are exploratory.</li>
+<li>Minimum-distance results are WITHHELD_SEMANTIC_MISMATCH: capture tests swept closest approach within a step; the recorded distance samples step ends.</li>
+<li>Several raw datasets and artifacts remain outside normal Git; no full cross-machine bitwise reproducibility is established.</li>
 <li>Readaptation is INCONCLUSIVE. The D8b cause is NOT_TESTED. Persistent identity and metric range are BLOCKED by missing ground truth.</li>
 </ul>
 </div>
+<p>Measurement source: <code>b1c0bc6</code>; GPU evaluation requires the pinned simulator environment. Raw replication evidence is retained outside normal Git history and is not publicly downloadable. <a href="evidence.html#replication-provenance">Manifest, integrity report and archive SHA</a>.</p>
 <ul class="link-row">
-<li><a href="https://github.com/joshualikaist/MOTAR-public/blob/main/docs/REPRODUCIBILITY.md">Reproducibility</a></li>
-<li><a href="https://github.com/joshualikaist/MOTAR-public/blob/main/docs/EVIDENCE.md">Evidence</a></li>
+<li><a href="https://github.com/joshualikaist/MOTAR/blob/main/docs/REPRODUCIBILITY.md">Reproducibility</a></li>
+<li><a href="https://github.com/joshualikaist/MOTAR/blob/main/docs/EVIDENCE.md">Evidence</a></li>
 <li><a href="evidence.html">Full evidence and provenance</a></li>
-<li><a href="https://github.com/joshualikaist/MOTAR-public/blob/main/docs/HISTORY.md">History</a></li>
+<li><a href="https://github.com/joshualikaist/MOTAR/blob/main/docs/HISTORY.md">History</a></li>
 <li><a href="https://github.com/joshualikaist/MOTAR-public/blob/main/CITATION.cff">Citation</a></li>
 </ul>
 </section>
@@ -237,7 +248,7 @@ NOT PPO · NOT PHYSX · NOT RESEARCH EVIDENCE</strong>
 
 <footer class="site-footer">
 <p>MOTAR · simulation research · no real-flight validation claim</p>
-<p><a href="https://github.com/joshualikaist/MOTAR-public">Code</a> · <a href="https://github.com/joshualikaist/MOTAR-public/blob/main/CITATION.cff">CITATION.cff</a> · <a href="https://github.com/joshualikaist/MOTAR-public/blob/main/THIRD_PARTY_LICENSES.md">Licenses and third-party notices</a> · <a href="archive-2026-09-13.html">Preserved 13 September page</a></p>
+<p><a href="https://github.com/joshualikaist/MOTAR-public">Code</a> · <a href="https://github.com/joshualikaist/MOTAR-public/blob/main/CITATION.cff">CITATION.cff</a> · <a href="https://github.com/joshualikaist/MOTAR/blob/main/THIRD_PARTY_LICENSES.md">Licenses and third-party notices</a> · <a href="archive-2026-09-13.html">Preserved 13 September page</a></p>
 </footer>
 <script src="vendor/three.min.js?v=20260827r6"></script>
 <script src="vendor/OrbitControls.js?v=20260827r6"></script>

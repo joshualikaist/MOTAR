@@ -264,7 +264,26 @@ def describe(directory, parent=None, tracked=None, inherited=None):
                                "contract_path": "docs/external_data_manifest.json",
                                "contract_sha256": sha256_file(ROOT / "docs/external_data_manifest.json")}
                               if directory.name in contract["required_for"] else None)
-    entry["files"] = sum(1 for _ in directory.rglob("*") if _.is_file())
+    public_paths = git("ls-files", "--", relative).splitlines() if git_available() else []
+    if git_available():
+        entry["files"] = len(public_paths)
+        entry["file_count_scope"] = "GIT_TRACKED_PUBLIC_FILES"
+    else:
+        entry["files"] = sum(1 for p in directory.rglob("*") if p.is_file())
+        entry["file_count_scope"] = "SNAPSHOT_FILES_WITHOUT_GIT"
+    record = small_json(directory / "replication_record.json")
+    if record and record.get("archives"):
+        raw_paths = set(small_json(directory / "RAW_MANIFEST.json")["files"])
+        tracked_raw = sorted(name for name in raw_paths if relative + "/" + name in public_paths)
+        entry["external_raw_evidence"] = {
+            "availability": "ARCHIVES_OUTSIDE_GIT_NOT_PUBLICLY_DOWNLOADABLE",
+            "archives": record["archives"],
+            "raw_manifest_sha256": record["raw_manifest_sha256"],
+            "raw_manifest_path": relative + "/RAW_MANIFEST.json",
+            "raw_files": len(raw_paths),
+            "tracked_raw_paths": tracked_raw if git_available() else None,
+            "external_raw_file_count": len(raw_paths) - len(tracked_raw) if git_available() else None,
+        }
     entry["child_result_ids"] = [child.name for child in children]
     return entry
 
