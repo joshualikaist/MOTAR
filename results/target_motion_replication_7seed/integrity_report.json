@@ -1,0 +1,20 @@
+{
+ "VALID": true,
+ "cells_expected": 112,
+ "cells_found": 112,
+ "distinct_contracts_outside_arm_density_seed": 1,
+ "nonprimary_tail_rows": 168243,
+ "primary_rows": 229376,
+ "problems": [],
+ "raw_ledger_rows": 397619,
+ "seeds": [
+  4104,
+  4105,
+  4106,
+  4107,
+  4108,
+  4109,
+  4110
+ ],
+ "unique_nonces": true
+}

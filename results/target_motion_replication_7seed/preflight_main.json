@@ -1,0 +1,17 @@
+{
+ "stage": "main",
+ "authorised_by_user": "2026-09-25 explicit authorisation after CANARY_PASS",
+ "source_commit": "b1c0bc612339d2f8dfb86a0ca16de11bdffe09b5",
+ "origin_main": "b1c0bc612339d2f8dfb86a0ca16de11bdffe09b5",
+ "tracked_changes": "",
+ "checkpoint_sha256": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+ "python": "3.8.20",
+ "python_executable": "/home/fair/miniconda3/envs/aerialgym/bin/python",
+ "torch": "2.4.1+cu121",
+ "torch_cuda": "12.1",
+ "gpu": "NVIDIA GeForce RTX 3070, 570.133.07",
+ "hostname": "fair",
+ "disk_free": "/dev/nvme0n1p2  117G  101G   11G  91% /",
+ "ppo_training_started": false,
+ "start_utc": "2026-09-25T14:48:56.087505+00:00"
+}
