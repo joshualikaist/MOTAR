@@ -1,0 +1,81 @@
+{
+ "cell": "H_historical__70bars__seed4101",
+ "checks": {
+  "10_episode_ids_unique_complete": true,
+  "11_min_distance_every_episode": true,
+  "1_return_codes_zero": true,
+  "2_legacy_cell_reproduced": true,
+  "3_result_identical_except_nonce": true,
+  "4_trajectory_digest_identical": true,
+  "5_no_additional_rng_consumption": true,
+  "6_actor_observation_identical": true,
+  "7_no_physics_control_reward_target_change": true,
+  "8_quota_ledger_2048_valid": true,
+  "9_sixteen_per_environment": true
+ },
+ "detail": {
+  "cpu_rng_test_passed": true,
+  "crash_rows_with_distance": 249,
+  "digest_sha256": [
+   "67c1078bdb59a8271f04ad33659db04f80c9b07c1cd90566c032b4f58bfa5edb",
+   "67c1078bdb59a8271f04ad33659db04f80c9b07c1cd90566c032b4f58bfa5edb"
+  ],
+  "digest_steps": [
+   1922,
+   1922
+  ],
+  "ledger_off_outcome": {
+   "capture_rate": 0.90625,
+   "captured": 1856,
+   "closest_nocrash_best_m": 0.1045733243227005,
+   "closest_nocrash_count": 1910,
+   "closest_nocrash_mean_m": 0.8974124116423242,
+   "crash": 138,
+   "crash_rate": 0.0673828125,
+   "ever_reached_rate": 0.90625,
+   "timeout": 54,
+   "timeout_rate": 0.0263671875
+  },
+  "ledger_quota_counts": {
+   "capture": 1843,
+   "crash": 135,
+   "timeout": 70
+  },
+  "ledger_rows": 3791,
+  "observation_rows_compared": 12416,
+  "original_outcome": {
+   "capture_rate": 0.90625,
+   "captured": 1856,
+   "closest_nocrash_best_m": 0.1045733243227005,
+   "closest_nocrash_count": 1910,
+   "closest_nocrash_mean_m": 0.8974124116423242,
+   "crash": 138,
+   "crash_rate": 0.0673828125,
+   "ever_reached_rate": 0.90625,
+   "timeout": 54,
+   "timeout_rate": 0.0263671875
+  },
+  "simulator_changes_vs_baseline": {
+   "aerial_gym/rl_training/rl_games/runner.py": [
+    3,
+    1
+   ],
+   "aerial_gym/task/navrl_task/navrl_task.py": [
+    16,
+    0
+   ]
+  }
+ },
+ "finished_at": "2026-09-24T09:48:56.080307+00:00",
+ "git_commit": "b1c0bc612339d2f8dfb86a0ca16de11bdffe09b5",
+ "purpose": "instrumentation non-interference only; not evidence about target motion",
+ "return_codes": [
+  0,
+  0
+ ],
+ "timings": {
+  "ledger_off_s": 187.4,
+  "ledger_on_s": 327.9
+ },
+ "verdict": "CANARY_PASS"
+}

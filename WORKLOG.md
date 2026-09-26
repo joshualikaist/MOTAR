@@ -19890,3 +19890,28 @@ policy 계약 기준; 향후 연구 계약 가능성은 열어 둠), `PPO_RETRAI
 observation-contract 민감도 증거로 유지, `causality_vs_d8b = NOT_TESTED` 유지. 기록: `docs/d8c_perception_path_audit_2026-09-24.md` §6.
 
 다음: B 커밋·push → canary(승인됨) → 결과 보고 후 정지; 112-cell 본 측정은 별도 승인 필요. `PPO_TRAINING = NO`.
+
+## 2026-09-26 — TM 7-seed 독립 bias-corrected 재현 완료·기록 확정: 세 확증 대비 모두 재현 (PPO 0)
+
+측정 commit `b1c0bc6`, checkpoint `f7022139…`, RTX 3070, 2026-09-25T14:48Z → 09-26T03:34Z(12 h 45 min). 112/112 셀 유효,
+주 표본 229,376(env당 첫 16), 원시 ledger 397,619행(NONPRIMARY_TAIL 168,243). 분석 전 동결: `RAW_MANIFEST.json`(562 파일,
+commit `2f723ed`, push됨). 분석은 커밋된 `analyze`만. 기록: `results/target_motion_replication_7seed/README.md`.
+
+| 대비(quota, n=7) | seed 효과 (pp) | 평균 | BCa95 | exact p | Holm p | 부호 | 판정 |
+|---|---|---:|---|---:|---:|---|---|
+| E0−H | −5.57 −5.86 −5.31 −4.27 −5.64 −6.21 −4.72 | −5.37 | [−5.78, −4.85] | 0.015625 | 0.046875 | 7/7 | 재현 |
+| E1−H | −3.12 −3.23 −3.63 −3.54 −3.66 −4.22 −2.71 | −3.45 | [−3.79, −3.11] | 0.015625 | 0.046875 | 7/7 | 재현 |
+| E2−H | +1.22 +1.27 +2.42 +1.17 +0.93 +0.79 +1.68 | +1.35 | [+1.07, +1.87] | 0.015625 | 0.046875 | 7/7 | 재현 |
+
+- 판정 `REPLICATED`. Holm p는 7-seed exact 설계의 해상도 경계값. arm capture: H 87.76 / E0 82.39 / E1 84.32 / E2 89.12 %.
+- 같은 7 seed에서 legacy window는 세 대비를 모두 0 쪽으로 축소(quota − legacy: E0−H −1.01, E1−H −0.33, E2−H +0.27 pp);
+  capture 과대 0.23–1.51 pp·timeout 과소 0.37–1.60 pp(E0 최대). 원 n=3(legacy)와의 차이 중 추정량 변경이 큰 몫이나
+  seed 집합 차이와 분리할 수 없다. 합산 확증 p 없음.
+- 밀도 한계(탐색적): E2−H 부호 일치 160 bars 5/7, 205 bars 4/7 — 고밀도에서 균일하지 않음.
+- **`min_relative_distance_m` 의미 검사 실패 → 공개 보류:** 주 표본 capture 197,026 중 306건이 반경 0.5 m 초과(최대
+  0.5294 m, 허용 1e-6). 원인: capture는 step 내 swept-segment 최근접, 지표는 step 끝 점거리(사전등록 정의) → 최근접의 상한.
+- 원시 보관(Git 밖, 업로드 안 함): `archives/target_motion_replication_7seed_raw_2026-09-26.tar.zst` 9,855,954 B,
+  sha256 `0536897b…eeb1b`, 563 멤버, RAW_MANIFEST 562/562 일치, 재빌드 동일. canary 보관 47,062,975 B `3b16e564…fe01`.
+- 가설 기각 없음; E0/E1 저하는 사전등록된 배치 성능 기준이 없어 재학습 조건이 아니다. seed 4104–4110으로 종료.
+
+다음: 사용자 검토. `PPO_TRAINING_STARTED = false`, 추가 seed 없음.

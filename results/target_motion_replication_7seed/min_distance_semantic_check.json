@@ -1,0 +1,16 @@
+{
+ "capture_episodes_checked": 197026,
+ "capture_radius_m": 0.5,
+ "check": "every PRIMARY capture episode has min_relative_distance_m <= capture radius + tolerance",
+ "diagnosis": "Capture uses a swept-segment test: the closest approach along the 0.1 s motion segment must fall inside the radius (navrl_task.py, 'Swept-SEGMENT test'). min_relative_distance_m is ep_min_goal_dist, the point distance sampled only at the end of each step, as the preregistration defines it. A capture in mid-step can leave every end-of-step sample slightly outside the radius. The metric is therefore an end-of-step upper bound on the closest approach, not the closest approach, and it is not published as a validated distance result.",
+ "max_captured_min_distance_m": 0.5294068455696106,
+ "tolerance_m": 1e-06,
+ "verdict": "SEMANTIC_MISMATCH_METRIC_NOT_PUBLISHED",
+ "violations": 306,
+ "violations_by_arm": {
+  "E0_static": 6,
+  "E1_cv": 85,
+  "E2_obstacle_aware": 100,
+  "H_historical": 115
+ }
+}

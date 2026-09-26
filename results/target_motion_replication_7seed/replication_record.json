@@ -1,0 +1,34 @@
+{
+ "study": "INDEPENDENT BIAS-CORRECTED REPLICATION",
+ "preregistration": "docs/prereg_2026-09-24_target_motion_replication_7seed.md",
+ "measurement_commit": "b1c0bc612339d2f8dfb86a0ca16de11bdffe09b5",
+ "freeze_commit": "2f723ed",
+ "checkpoint_sha256": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+ "run_utc": {
+  "start": "2026-09-25T14:48:56Z",
+  "end": "2026-09-26T03:34:08Z"
+ },
+ "raw_manifest_sha256": "a46510cf75573e9a770ee4b01bcefd33cd268f3315587d53066fde3a43d13eb9",
+ "primary_selection_manifest_sha256": "7ea0332e65229a751b000604df6a740b7c0b49da224ae90f133b597d311db31d",
+ "archives": [
+  {
+   "file": "target_motion_replication_7seed_raw_2026-09-26.tar.zst",
+   "location": "outside Git (local); not uploaded",
+   "sha256": "0536897b418cc75dc2a8cadb0096f15fa83293fa4aabb509add53862b37eeb1b",
+   "bytes": 9855954,
+   "members": 563,
+   "contents": "the 562 files listed in RAW_MANIFEST.json plus RAW_MANIFEST.json",
+   "raw_manifest_correspondence": "562/562 SHA-256 match, 0 extra",
+   "deterministic": "rebuild gives the same SHA-256",
+   "build": "tar --sort=name --mtime='2026-09-26 00:00:00Z' --owner=0 --group=0 --numeric-owner --mode=u=r,go=r --format=posix | zstd -12 -T1"
+  },
+  {
+   "file": "target_motion_replication_7seed_canary_2026-09-24.tar.zst",
+   "location": "outside Git (local); not uploaded",
+   "sha256": "3b16e56492a025203fcc4dec608d089f178ec2e52e197714a41292510bf5fe01",
+   "bytes": 47062975,
+   "members": 13,
+   "contents": "the whole canary directory, including the two observation dumps"
+  }
+ ]
+}

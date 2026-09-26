@@ -89,3 +89,10 @@ docs/status/status.legacy.json
 # generator (`python tools/build_paper_figures.py`); manifest.json records their hashes.
 docs/assets/paper/final/*.png
 docs/assets/paper/final/*.pdf
+
+# Seven-seed target-motion replication: raw cell directories (229 MB), the run log and the canary run
+# folders stay out of normal Git. RAW_MANIFEST.json (commit 2f723ed) freezes them, and a deterministic
+# archive recorded in replication_record.json holds them. The compact record next to them is tracked.
+results/target_motion_replication_7seed/*__*bars__seed*/
+results/target_motion_replication_7seed/main_run.log
+results/target_motion_replication_7seed/canary/ledger_*/
