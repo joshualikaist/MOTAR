@@ -33,7 +33,7 @@ the conflict rather than working around it.
 | Perception: measured range error | [E3-S](../results/eth_ds5_e3s_2026-09-10/README.md) | [E3-S](../results/eth_ds5_e3s_2026-09-10/PREREGISTRATION.md) |
 | Perception → policy, readaptation | [P10 replication](../results/perception_p10_seed_replication_2026-09-10/README.md) | [P10](preregistration_p10_seed_replication_2026-09-10.md) |
 | Safety geometry | [independent verification](../results/independent_verification_2026-09-07/README.md) | pre-specified [grid specs](specs/) under the [confirmation-phase plan](plans/confirmation_phase_plan_2026-09-06.md) |
-| Target motion | [H/E0/E1/E2 result](results/target_motion_generalization_2026-09-19.md) · [visibility audit](results/target_motion_visibility_reacquisition_audit_2026-09-19.md) | [TM E0/E1/E2](prereg_2026-09-17_target_motion_complexity_e0_e1_e2.md) |
+| Target motion | [n=7 replication](../results/target_motion_replication_7seed/README.md) (current) · original [H/E0/E1/E2 result](results/target_motion_generalization_2026-09-19.md) and [visibility audit](results/target_motion_visibility_reacquisition_audit_2026-09-19.md) (historical) | [replication](prereg_2026-09-24_target_motion_replication_7seed.md) · [original TM E0/E1/E2](prereg_2026-09-17_target_motion_complexity_e0_e1_e2.md) |
 | Observation contract | [D8b](../results/dynamic_mesh_policy_sensitivity_d8b_2026-09-13/README.md) | [D8b](preregistration_dynamic_mesh_policy_sensitivity_d8b_2026-09-13.md) |
 | Renderer | [Contract v1 freeze](renderer_track_v1_freeze_2026-09-14.md) | [renderer follow-up](preregistration_renderer_followup_2026-09-14.md) |
 | Published work | [relation to published systems](relation_to_published_systems_2026-09-16.md) · [quantitative positioning](literature_quantitative_positioning_2026-09-18.md) | — |
@@ -46,6 +46,7 @@ Machine-readable status:
 - [`results/MANIFEST.json`](../results/MANIFEST.json): every result directory.
 
 Paper working documents:
+- [paper draft](../paper/MOTAR_draft_2026-09-26.md) (Word copy alongside), its [checklist](../paper/PAPER_TODO_2026-09-26.md) and the [overview deck](../presentations/MOTAR_overview_2026-09-26.pptx) ([how to rebuild](../presentations/README.md))
 - [spine](paper_evidence_spine_2026-09-19.md)
 - [outline](paper_outline_2026-09-19.md)
 - [claim/evidence matrix](paper_claim_evidence_matrix_2026-09-19.md)

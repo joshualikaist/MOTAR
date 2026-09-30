@@ -1,0 +1,139 @@
+{
+  "schema_version": 1,
+  "evidence_baseline": "2da5b12c1954ee768fcba59d1fb1fb9c78f7d536",
+  "date": "2026-09-26",
+  "generator": "presentations/build_companion.py",
+  "slide_count": 12,
+  "slides": [
+    {
+      "slide": 1,
+      "title": "표적 운동의 효과를 독립 n=7 실험으로 재현했다",
+      "key": "Frozen policy F  ·  7 fresh seeds  ·  Simulation-only evidence",
+      "sources": [
+        "results/target_motion_replication_7seed/analysis.json",
+        "results/target_motion_replication_7seed/replication_record.json"
+      ]
+    },
+    {
+      "slide": 2,
+      "title": "정책을 고정하면, 어떤 가정의 변화가 성능을 바꾸는가?",
+      "key": "Research question  ·  Contract sensitivity, not a causal ranking",
+      "sources": [
+        "ARCHITECTURE.md",
+        "docs/EVIDENCE.md"
+      ]
+    },
+    {
+      "slide": 3,
+      "title": "센서 관측에서 제어까지의 경계를 명시한다",
+      "key": "Actor observation  ·  Ground-truth target state is excluded",
+      "sources": [
+        "ARCHITECTURE.md",
+        "docs/assets/paper/final/fig1-motar-overview.svg"
+      ]
+    },
+    {
+      "slide": 4,
+      "title": "각 결과의 정책과 추론 단위를 함께 읽는다",
+      "key": "Separate evidence modules  ·  Policy F ≠ policy R",
+      "sources": [
+        "docs/assets/paper/final/manifest.json"
+      ]
+    },
+    {
+      "slide": 5,
+      "title": "거리 오차 측정과 정책 오차 주입은 별도 분기다",
+      "key": "P10 readaptation  ·  INCONCLUSIVE; no net benefit established",
+      "sources": [
+        "results/eth_ds5_e3s_2026-09-10/run/e3s_result.json",
+        "results/perception_p10_seed_replication_2026-09-10/summary.json",
+        "docs/plans/perception_p9_p10_execution_2026-09-09.md"
+      ]
+    },
+    {
+      "slide": 6,
+      "title": "구현된 arc 필터는 riskcap보다 crash를 줄였다",
+      "key": "Configured comparison  ·  Geometry and stopping law both change",
+      "sources": [
+        "results/independent_verification_2026-09-07/recomputed.json",
+        "results/independent_verification_2026-09-07/PAPER_METHOD_EXPERIMENT.md"
+      ]
+    },
+    {
+      "slide": 7,
+      "title": "교정된 할당량에서도 세 방향성 대비가 재현됐다",
+      "key": "E2 positive: 5/7 at 160 bars, 4/7 at 205 bars  ·  Density-specific analyses are exploratory",
+      "sources": [
+        "results/target_motion_replication_7seed/analysis.json",
+        "results/target_motion_replication_7seed/replication_record.json"
+      ]
+    },
+    {
+      "slide": 8,
+      "title": "관측 계약 변화에서 손실을 확인했고, 원인은 미검증이다",
+      "key": "MATERIAL_LOSS  ·  causality_vs_d8b = NOT_TESTED  ·  Policy R, not F",
+      "sources": [
+        "results/dynamic_mesh_policy_sensitivity_d8b_2026-09-13/summary.json",
+        "docs/d8c_perception_path_audit_2026-09-24.md"
+      ]
+    },
+    {
+      "slide": 9,
+      "title": "문헌은 평가 계약을 비교하는 맥락으로 사용한다",
+      "key": "Class A matched external comparisons = 0  ·  No performance ranking",
+      "sources": [
+        "docs/quantitative_positioning_registry.json",
+        "paper/MOTAR_draft_2026-09-26.md"
+      ]
+    },
+    {
+      "slide": 10,
+      "title": "관측된 효과의 범위를 결론 안에 남긴다",
+      "key": "No real flight  ·  No matched external benchmark  ·  No validated min-distance result",
+      "sources": [
+        "results/target_motion_replication_7seed/analysis.json",
+        "results/target_motion_replication_7seed/replication_record.json",
+        "results/perception_p10_seed_replication_2026-09-10/summary.json",
+        "docs/plans/perception_p9_p10_execution_2026-09-09.md",
+        "results/dynamic_mesh_policy_sensitivity_d8b_2026-09-13/summary.json",
+        "docs/d8c_perception_path_audit_2026-09-24.md"
+      ]
+    },
+    {
+      "slide": 11,
+      "title": "원본 결과와 교정 과정을 보존한 논문 패키지를 만들었다",
+      "key": "Current evidence: n = 7  ·  Historical n = 3 remains separate and unpooled",
+      "sources": [
+        "results/target_motion_replication_7seed/analysis.json",
+        "results/target_motion_replication_7seed/replication_record.json",
+        "paper/PAPER_TODO_2026-09-26.md"
+      ]
+    },
+    {
+      "slide": 12,
+      "title": "남은 작업은 문헌·서식·전체 diff 검토다",
+      "key": "Experimental programme closed  ·  No new training, seeds or GPU evaluation",
+      "sources": [
+        "paper/PAPER_TODO_2026-09-26.md",
+        "AGENTS.md"
+      ]
+    }
+  ],
+  "paper_word_count": 5104,
+  "sources": {
+    "paper/MOTAR_draft_2026-09-26.md": "8cfbcdcd3656cc484e0c25b3f09bcbe9cf3071414ee89bc86697f4050f7e4766",
+    "presentations/build_companion.py": "f011934833c115caa443c972b95b0e4fc639df35dc6ac2925698adc814418ab5",
+    "presentations/requirements-authoring.txt": "9bd8f2dece101dc7395a85c3c3f13631c0e10e8e40fa25b100bc99a7aede1c63",
+    "docs/assets/paper/final/manifest.json": "1ccd0e05fff6aef105dce0e94756c533866ace900e2e276e2438baa4db1a8791",
+    "docs/assets/paper/final/fig1-motar-overview.svg": "608054110d1efc9a149012e15c177d510500bffe39a0325cc3bb90c4a4c81a83",
+    "docs/assets/paper/final/fig2-perception-policy.svg": "da4559cd0e48945d16dad4d3392498a3903038db52f3d85db90b59d4af4945af",
+    "docs/assets/paper/final/fig3-safety.svg": "c8cb00235d3c99efa5c23f47f2014ba6eec1a1142456bca39f8bb26f7c121947",
+    "docs/assets/paper/final/fig4-target-motion.svg": "fea7a25ef05628c5d1ae30b9b7122e3d1f760fcff78183dbd59418f62555cbf5",
+    "docs/assets/paper/final/fig5-observation-contract.svg": "b7a28b56bc3b753cf18151194c0e83e3604a96448330e143a63f483c59fc0b8a",
+    "docs/assets/paper/final/fig6-positioning.svg": "eb29737ba4a28bde0a88e2ca0b119ea498577f06c54812a0625deb0b75e7f4fb"
+  },
+  "files": {
+    "presentations/MOTAR_overview_2026-09-26.pptx": "0b8a4e3397bd5035f3b8b646725ad4ea819d3e0050e6de3671a182bb7b1fe65e",
+    "paper/MOTAR_draft_2026-09-26.docx": "373b3b2c8ec7aa87cd323578f7f99f037d45d33a0a9586b70da45d23ab40db60"
+  }
+}

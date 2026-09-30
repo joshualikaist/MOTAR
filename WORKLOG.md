@@ -19970,3 +19970,30 @@ commit `2f723ed`, push됨). 분석은 커밋된 `analyze`만. 기록: `results/t
   will be rechecked before reporting deployment complete. Local paths/anchors validated.
 - Next concrete step: normal fast-forward push of the reviewed result and surface commits, verify all
   43 remote links and the deployed HTML/figure bytes, then stop. No new scientific hypothesis tested.
+
+## 2026-09-27 — 논문 초안·발표 PPT·README/사이트를 n=7 재현 중심 하나의 스토리로 재작성 (실험 0)
+
+기준 `2da5b12`. 사용자가 준 원본 `~/MOTAR_KRoC2027_논문_이민석 (1).docx`(한국어 본문, 옛 "interception·교집합" 서사, 템플릿
+잔재 메타데이터)와 `~/MOTAR_이민석.pptx`(25장, 향후 실험 약속 포함)는 수정하지 않고, 최신 증거로 새로 만들었다. Codex가
+시작한 작업(초안·덱·생성기)을 이어받아 검수·수정·검증까지 마쳤다.
+
+| 산출물 | 경로 | 내용 |
+|---|---|---|
+| 논문 초안(영문) | `paper/MOTAR_draft_2026-09-26.md` (+ Word 사본 `.docx`) | 11개 절, 기여 5개, 그림 6·표 4, 한계 10항목 |
+| 체크리스트 | `paper/PAPER_TODO_2026-09-26.md` | 인용·그림 export·표·외부 baseline 부재·venue·금지 주장 |
+| 발표 | `presentations/MOTAR_overview_2026-09-26.pptx` | 12장, 한국어 핵심 문장 + 영문 도식, 전 슬라이드 한국어 발표자 노트, 네이티브 편집 가능 |
+| 생성기 | `presentations/build_companion.py` (`--check` 바이트 일치) | 수치는 figure manifest(원 증거 SHA 검증)에서만 읽음 |
+
+- 출처로 확인한 문구 정정 2건(수치 불변): ① ETH ds5 6.2 % 거리 proxy는 별도 측정이며 주입되지 않는다 — P9 injector는
+  NPS P8 픽셀/시간 오차를 주입하고 analytic range·confidence를 유지(`results/perception_p9_2026-09-09/p9_error_injector.json`).
+  ② arc − riskcap −1.4903 pp는 기하와 속도 법칙이 함께 바뀐 비교(`speed_governor.py`: dwa_arc = stopping-distance 법칙,
+  riskcap = floor+release 램프). claim matrix의 증거 사슬과 spine C2 질문도 이에 맞춰 분리.
+- 사이트: evidence 페이지 초록 162단어로 축약, n=7 상세 표(평균·BCa95·exact/Holm p·7/7·원 n=3 나란히, 합산 없음) 추가,
+  Table 3 안전 행에 "No formal collision-safety guarantee" 복원. README 147줄·1,498단어, dated 링크 3개.
+- 새 실험·PPO·추가 seed·GPU 평가 없음. 과학 수치 변경 없음.
+
+- 2026-10-01 추가: 색인 보강 — `docs/README.md`(현재 n=7 재현·사전등록 링크, 논문·덱 링크), `ARCHITECTURE.md`
+  디렉터리 표에 `paper/`·`presentations/`, `docs/HISTORY.md` 이정표 1행. 사용자 지시로 로컬 커밋, push는 승인 대기.
+  검토용 ZIP(`/tmp/MOTAR_paper_presentation_2026-09-27.zip`, sha256 `6b96f852…1a53`)은 Git 밖에 둔다.
+
+다음: push 승인 후 사이트의 논문·덱 링크 확인. `PPO_TRAINING_STARTED = false`.

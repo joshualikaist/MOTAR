@@ -363,12 +363,12 @@ def figure1(plt, v):
     tmv = v["target_motion"]["contrasts_vs_H"]
 
     ax.text(1.5, H - 2.0, "SYSTEM", fontsize=T_LABEL, fontweight="bold", color=MUTED, ha="left", va="center")
-    ax.text(11.5, H - 2.0, "schematic of the simulated closed loop · every policy is evaluated with frozen weights",
+    ax.text(11.5, H - 2.0, "schematic of the simulated closed loop · policy weights are fixed during evaluation",
             fontsize=T_NOTE, color=MUTED, ha="left", va="center")
     top, bottom, w = H - 4.3, H - 27.6, 15.0
     xs = [1.5 + i * 16.4 for i in range(6)]
     names = ["Environment", "Perception", "Temporal state", "Frozen policy", "Safety filter", "Evaluation"]
-    subs = ["bar field, target", "camera + LiDAR", "track history", "Transformer-PPO", "arc speed cap",
+    subs = ["bar field, target", "camera + LiDAR", "track history", "Transformer-PPO", "selected speed cap",
             "arms × densities"]
     for i, x in enumerate(xs):
         box(ax, x, bottom, w, top - bottom)
@@ -453,7 +453,7 @@ def figure1(plt, v):
             "pp = percentage points", fontsize=T_NOTE, color=MUTED, ha="left", va="center")
     rows = [
         ("Measured error", fmt_pp(reg["perception_error_cost_frozen"]["value_pp"]) + " pp",
-         f"range error {v['e3s']['median_of_block_medians_pct']:.1f}%; injected error cost, policy F",
+         "P8 pixel/temporal error injection, policy F",
          f"episode-level 95% CI · {len(v['p10']['frozen_cost_eval_seeds'])} evaluation seeds", None),
         ("Readaptation", fmt_pp(reg["p10_policy_readaptation"]["value_pp"]) + " pp",
          "retrained − frozen, under the same error; 95% CI crosses zero",
@@ -484,17 +484,20 @@ def figure1(plt, v):
         ax.plot([1.5, 98.5], [yc - row_h / 2, yc - row_h / 2], color=GRID if k < 4 else RULE, lw=0.6 if k < 4 else 0.7)
     ax.text(1.5, 3.4, "Simulation only · no real-flight, sim-to-real or state-of-the-art claim.", fontsize=T_NOTE,
             color=MUTED, ha="left", va="center")
-    ax.text(1.5, 1.3, "Circled numbers mark where each experiment intervenes in the loop.", fontsize=T_NOTE,
+    ax.text(1.5, 1.3, f"Separate range-proxy measurement: {v['e3s']['median_of_block_medians_pct']:.1f}% error "
+            "(one flight); this scalar is not injected.", fontsize=T_NOTE,
             color=MUTED, ha="left", va="center")
     title = "MOTAR overview: simulated closed loop and measured evidence chain"
     desc = ("Schematic of the simulated closed loop: environment with a random bar field and a moving target, "
             "camera and LiDAR perception with measured detector error, temporal state, frozen Transformer-PPO "
-            "policy, arc-clearance speed cap and velocity controller, evaluation over target-motion arms "
+            "policy, configured speed cap and velocity controller, evaluation over target-motion arms "
             "H/E0/E1/E2 and densities 70-205 bars. Five separate experiments, not a causal chain: measured "
-            "error changes the capture of frozen policy F "
+            "pixel/temporal error changes the capture of frozen policy F "
             f"by {rows[0][1]}; readaptation {rows[1][1]}, INCONCLUSIVE; safety geometry {rows[2][1]} crash; "
             f"target motion {rows[3][1]} pp versus H; observation contract {rows[4][1]}, MATERIAL_LOSS, "
-            "causality NOT TESTED, measured on a different frozen checkpoint, policy R. Simulation only.")
+            "causality NOT TESTED, measured on a different frozen checkpoint, policy R. "
+            "Circled numbers locate interventions. The ETH range proxy is a separate measurement, "
+            "not the injected error. Arc-clearance versus riskcap changes geometry and stopping law. Simulation only.")
     return fig, title, desc
 
 
@@ -608,7 +611,8 @@ def figure2(plt, v):
             f"against measured ones, max error {fit['max_abs_error']:.3f}. (d) Measured error changes frozen policy F "
             f"capture by {fmt_pp(p10['frozen_cost_pp'])} pp; readaptation {fmt_pp(p10['readapt_mean_pp'])} pp, "
             f"95% CI [{fmt_pp(p10['readapt_ci'][0])}, {fmt_pp(p10['readapt_ci'][1])}], {p10['status']}; a residual "
-            "cost remains for every seed.")
+            "cost remains for every seed. Panel (a) is a separate range-proxy measurement; its scalar is "
+            "not injected in P9, which retains analytic surface range and confidence.")
     return fig, title, desc
 
 

@@ -3,8 +3,8 @@
   "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
 <svg role="img" aria-labelledby="fig1-motar-overview-title fig1-motar-overview-desc" xmlns:xlink="http://www.w3.org/1999/xlink" width="504pt" height="385.2pt" viewBox="0 0 504 385.2" xmlns="http://www.w3.org/2000/svg" version="1.1">
  <title id="fig1-motar-overview-title">MOTAR overview: simulated closed loop and measured evidence chain</title>
- <desc id="fig1-motar-overview-desc">Schematic of the simulated closed loop: environment with a random bar field and a moving target, camera and LiDAR perception with measured detector error, temporal state, frozen Transformer-PPO policy, arc-clearance speed cap and velocity controller, evaluation over target-motion arms H/E0/E1/E2 and densities 70-205 bars. Five separate experiments, not a causal chain: measured error changes the capture of frozen policy F by −4.57 pp; readaptation +0.73 pp, INCONCLUSIVE; safety geometry −1.4903 pp crash; target motion E0 −5.37 · E1 −3.45
-E2 +1.35 pp pp versus H; observation contract −48.967 pp, MATERIAL_LOSS, causality NOT TESTED, measured on a different frozen checkpoint, policy R. Simulation only.</desc>
+ <desc id="fig1-motar-overview-desc">Schematic of the simulated closed loop: environment with a random bar field and a moving target, camera and LiDAR perception with measured detector error, temporal state, frozen Transformer-PPO policy, configured speed cap and velocity controller, evaluation over target-motion arms H/E0/E1/E2 and densities 70-205 bars. Five separate experiments, not a causal chain: measured pixel/temporal error changes the capture of frozen policy F by −4.57 pp; readaptation +0.73 pp, INCONCLUSIVE; safety geometry −1.4903 pp crash; target motion E0 −5.37 · E1 −3.45
+E2 +1.35 pp pp versus H; observation contract −48.967 pp, MATERIAL_LOSS, causality NOT TESTED, measured on a different frozen checkpoint, policy R. Circled numbers locate interventions. The ETH range proxy is a separate measurement, not the injected error. Arc-clearance versus riskcap changes geometry and stopping law. Simulation only.</desc>
  <defs>
   <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
  </defs>
@@ -366,7 +366,7 @@ L 496.44 351.792
     <text style="fill: #6e6e73; font: 700 8px 'Liberation Sans', Arial, Helvetica, sans-serif; text-anchor: start" x="7.56" y="12.14875" transform="rotate(-0 7.56 12.14875)">SYSTEM</text>
    </g>
    <g id="text_2">
-    <text style="fill: #6e6e73; font: 7.5px 'Liberation Sans', Arial, Helvetica, sans-serif; text-anchor: start" x="57.96" y="12.019453" transform="rotate(-0 57.96 12.019453)">schematic of the simulated closed loop · every policy is evaluated with frozen weights</text>
+    <text style="fill: #6e6e73; font: 7.5px 'Liberation Sans', Arial, Helvetica, sans-serif; text-anchor: start" x="57.96" y="12.019453" transform="rotate(-0 57.96 12.019453)">schematic of the simulated closed loop · policy weights are fixed during evaluation</text>
    </g>
    <g id="text_3">
     <text style="fill: #1f1f1f; font: 700 8.5px 'Liberation Sans', Arial, Helvetica, sans-serif; text-anchor: middle" x="45.36" y="116.102047" transform="rotate(-0 45.36 116.102047)">Environment</text>
@@ -436,7 +436,7 @@ z
     <text style="fill: #1f1f1f; font: 700 8.5px 'Liberation Sans', Arial, Helvetica, sans-serif; text-anchor: middle" x="375.984" y="116.102047" transform="rotate(-0 375.984 116.102047)">Safety filter</text>
    </g>
    <g id="text_12">
-    <text style="fill: #4a4a4f; font: 8px 'Liberation Sans', Arial, Helvetica, sans-serif; text-anchor: middle" x="375.984" y="130.58875" transform="rotate(-0 375.984 130.58875)">arc speed cap</text>
+    <text style="fill: #4a4a4f; font: 8px 'Liberation Sans', Arial, Helvetica, sans-serif; text-anchor: middle" x="375.984" y="130.58875" transform="rotate(-0 375.984 130.58875)">selected speed cap</text>
    </g>
    <g id="patch_29">
     <path d="M 414.54 66.024
@@ -788,7 +788,7 @@ z
     <text style="fill: #1f1f1f; font: 700 11px 'Liberation Sans', Arial, Helvetica, sans-serif; text-anchor: start" x="131.04" y="195.876531" transform="rotate(-0 131.04 195.876531)">−4.57 pp</text>
    </g>
    <g id="text_24">
-    <text style="fill: #4a4a4f; font: 8px 'Liberation Sans', Arial, Helvetica, sans-serif; text-anchor: start" x="252" y="188.29675" transform="rotate(-0 252 188.29675)">range error 6.2%; injected error cost, policy F</text>
+    <text style="fill: #4a4a4f; font: 8px 'Liberation Sans', Arial, Helvetica, sans-serif; text-anchor: start" x="252" y="188.29675" transform="rotate(-0 252 188.29675)">P8 pixel/temporal error injection, policy F</text>
    </g>
    <g id="text_25">
     <text style="fill: #6e6e73; font: 8px 'Liberation Sans', Arial, Helvetica, sans-serif; text-anchor: start" x="252" y="202.40875" transform="rotate(-0 252 202.40875)">episode-level 95% CI · 2 evaluation seeds</text>
@@ -868,7 +868,7 @@ z
     <text style="fill: #6e6e73; font: 7.5px 'Liberation Sans', Arial, Helvetica, sans-serif; text-anchor: start" x="7.56" y="370.003453" transform="rotate(-0 7.56 370.003453)">Simulation only · no real-flight, sim-to-real or state-of-the-art claim.</text>
    </g>
    <g id="text_45">
-    <text style="fill: #6e6e73; font: 7.5px 'Liberation Sans', Arial, Helvetica, sans-serif; text-anchor: start" x="7.56" y="380.587453" transform="rotate(-0 7.56 380.587453)">Circled numbers mark where each experiment intervenes in the loop.</text>
+    <text style="fill: #6e6e73; font: 7.5px 'Liberation Sans', Arial, Helvetica, sans-serif; text-anchor: start" x="7.56" y="380.587453" transform="rotate(-0 7.56 380.587453)">Separate range-proxy measurement: 6.2% error (one flight); this scalar is not injected.</text>
    </g>
    <g id="patch_70">
     <path d="M 190.008 82.152

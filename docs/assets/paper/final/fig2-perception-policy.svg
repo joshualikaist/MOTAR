@@ -3,7 +3,7 @@
   "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
 <svg role="img" aria-labelledby="fig2-perception-policy-title fig2-perception-policy-desc" xmlns:xlink="http://www.w3.org/1999/xlink" width="504pt" height="475.2pt" viewBox="0 0 504 475.2" xmlns="http://www.w3.org/2000/svg" version="1.1">
  <title id="fig2-perception-policy-title">Perception to policy: measured error, error model, injection and frozen-policy effect</title>
- <desc id="fig2-perception-policy-desc">(a) ETH ds5 E3-S: median absolute relative range error 6.2% over 9 blocks and 3107 frames, below the 25% gate. (b) P8 hit / false-lock / no-lock shares by target size. (c) P9 injector transition probabilities against measured ones, max error 0.026. (d) Measured error changes frozen policy F capture by −4.57 pp; readaptation +0.73 pp, 95% CI [−1.04, +2.50], INCONCLUSIVE; a residual cost remains for every seed.</desc>
+ <desc id="fig2-perception-policy-desc">(a) ETH ds5 E3-S: median absolute relative range error 6.2% over 9 blocks and 3107 frames, below the 25% gate. (b) P8 hit / false-lock / no-lock shares by target size. (c) P9 injector transition probabilities against measured ones, max error 0.026. (d) Measured error changes frozen policy F capture by −4.57 pp; readaptation +0.73 pp, 95% CI [−1.04, +2.50], INCONCLUSIVE; a residual cost remains for every seed. Panel (a) is a separate range-proxy measurement; its scalar is not injected in P9, which retains analytic surface range and confidence.</desc>
  <defs>
   <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
  </defs>

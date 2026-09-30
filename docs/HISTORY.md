@@ -60,6 +60,7 @@ Dates are result dates. Where a result was committed later, the commit is the re
 | 09-20→21 | **Elastic Tracker B0:** upstream reproduction FAIL; the remaining blocker is `sudo` for ROS | `docs/external_baselines/elastic_tracker_b0_upstream_reproduction_2026-09-20.md` |
 | 09-24 | Repository and site reorganised into a canonical documentation surface; P0 claim audit corrected wording (no measured value changed) | `docs/cleanup/cleanup_record_2026-09-24.md` |
 | 09-25→26 | **Target-motion replication:** 7 fresh seeds, bias-corrected quota, 229,376 primary episodes; all three contrasts replicated (E0 −5.37, E1 −3.45, E2 +1.35 pp) | `results/target_motion_replication_7seed/` |
+| 09-26→27 | **Paper draft and overview deck** rewritten around the n=7 replication; two wording corrections from source (the ETH range proxy is not the injected error; arc − riskcap changes geometry and stopping law together), no value changed | `paper/MOTAR_draft_2026-09-26.md` |
 
 ## Negative, withdrawn and blocked results
 

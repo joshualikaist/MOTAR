@@ -5,11 +5,11 @@
    "title": "MOTAR code map: closed loop, scenario inputs and evidence layer"
   },
   "fig1-motar-overview": {
-   "desc": "Schematic of the simulated closed loop: environment with a random bar field and a moving target, camera and LiDAR perception with measured detector error, temporal state, frozen Transformer-PPO policy, arc-clearance speed cap and velocity controller, evaluation over target-motion arms H/E0/E1/E2 and densities 70-205 bars. Five separate experiments, not a causal chain: measured error changes the capture of frozen policy F by −4.57 pp; readaptation +0.73 pp, INCONCLUSIVE; safety geometry −1.4903 pp crash; target motion E0 −5.37 · E1 −3.45\nE2 +1.35 pp pp versus H; observation contract −48.967 pp, MATERIAL_LOSS, causality NOT TESTED, measured on a different frozen checkpoint, policy R. Simulation only.",
+   "desc": "Schematic of the simulated closed loop: environment with a random bar field and a moving target, camera and LiDAR perception with measured detector error, temporal state, frozen Transformer-PPO policy, configured speed cap and velocity controller, evaluation over target-motion arms H/E0/E1/E2 and densities 70-205 bars. Five separate experiments, not a causal chain: measured pixel/temporal error changes the capture of frozen policy F by −4.57 pp; readaptation +0.73 pp, INCONCLUSIVE; safety geometry −1.4903 pp crash; target motion E0 −5.37 · E1 −3.45\nE2 +1.35 pp pp versus H; observation contract −48.967 pp, MATERIAL_LOSS, causality NOT TESTED, measured on a different frozen checkpoint, policy R. Circled numbers locate interventions. The ETH range proxy is a separate measurement, not the injected error. Arc-clearance versus riskcap changes geometry and stopping law. Simulation only.",
    "title": "MOTAR overview: simulated closed loop and measured evidence chain"
   },
   "fig2-perception-policy": {
-   "desc": "(a) ETH ds5 E3-S: median absolute relative range error 6.2% over 9 blocks and 3107 frames, below the 25% gate. (b) P8 hit / false-lock / no-lock shares by target size. (c) P9 injector transition probabilities against measured ones, max error 0.026. (d) Measured error changes frozen policy F capture by −4.57 pp; readaptation +0.73 pp, 95% CI [−1.04, +2.50], INCONCLUSIVE; a residual cost remains for every seed.",
+   "desc": "(a) ETH ds5 E3-S: median absolute relative range error 6.2% over 9 blocks and 3107 frames, below the 25% gate. (b) P8 hit / false-lock / no-lock shares by target size. (c) P9 injector transition probabilities against measured ones, max error 0.026. (d) Measured error changes frozen policy F capture by −4.57 pp; readaptation +0.73 pp, 95% CI [−1.04, +2.50], INCONCLUSIVE; a residual cost remains for every seed. Panel (a) is a separate range-proxy measurement; its scalar is not injected in P9, which retains analytic surface range and confidence.",
    "title": "Perception to policy: measured error, error model, injection and frozen-policy effect"
   },
   "fig3-safety": {
@@ -33,12 +33,12 @@
   "arch-motar-code-map.pdf": "223b1651f16d001c0ec921d3076cd986aed2b7dfda8bc3ab049afe1c492ccfe8",
   "arch-motar-code-map.png": "6ef3e62201d4f0460e54ee744c93b525a35d715d880f73372e37d0684ad05ed6",
   "arch-motar-code-map.svg": "b5f55e1f81180fd790bed9cdadcc7834083e94c2e844d1fbacf34f6ade76a3d5",
-  "fig1-motar-overview.pdf": "548ffe80fcb93868ff8ea538a356c4fa00baaea000da48b36f767ab96ba7a25d",
-  "fig1-motar-overview.png": "63a527d9c1c2a40f73500e7b82553ad308c362fc90a8c82c894c09fcde5028d6",
-  "fig1-motar-overview.svg": "4fb6101e2a29c1a47a43b95b9fcecaa250612178c1ed0c2db3d6df9f016a9194",
+  "fig1-motar-overview.pdf": "5ddc1ae363a7e392e2d3a7245024442854053cec588cc08c57a139d9552c7db9",
+  "fig1-motar-overview.png": "0836cc6d2a6cdf11df6567240d89c0c6b97da7976213eb86f11158e8d9ad8118",
+  "fig1-motar-overview.svg": "608054110d1efc9a149012e15c177d510500bffe39a0325cc3bb90c4a4c81a83",
   "fig2-perception-policy.pdf": "5913e1c1142466701a7460a01783009a3789fdbca897633396a0f242e9277fad",
   "fig2-perception-policy.png": "98f0353316c9ac2ec774302837ce9a841f9a4eb4b2b9d14326f171bfaa9d4f7f",
-  "fig2-perception-policy.svg": "ed8732f467374c24f4fdd533ce05dae4122b0d68ca25c8696a4d70a3f774f882",
+  "fig2-perception-policy.svg": "da4559cd0e48945d16dad4d3392498a3903038db52f3d85db90b59d4af4945af",
   "fig3-safety.pdf": "baec5dfe61ff8c89a60dfc27a77e77451e27f2eb3f916b8d3db42b3a6c78ddd9",
   "fig3-safety.png": "3f88afa14b49af787404340a3e581568e031adb39aea3e1c74ab0cdfeecf44bb",
   "fig3-safety.svg": "c8cb00235d3c99efa5c23f47f2014ba6eec1a1142456bca39f8bb26f7c121947",

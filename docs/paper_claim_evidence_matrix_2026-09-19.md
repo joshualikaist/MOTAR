@@ -40,8 +40,8 @@ that would support one. Its contribution is that the stages are connected by mea
 assumption, and that the chain retains its negative and inconclusive links:
 
 ```text
-measured perception error     6.2 % median absolute relative range error
-  -> injected into simulation P8 distribution, P9 injector
+range-proxy measurement       6.2 % median absolute relative range error (ETH ds5; separate, not injected)
+measured pixel/temporal error P8 distribution (NPS) -> P9 injector; analytic range/confidence retained
   -> policy-F cost            -4.57 pp, episode-level interval excludes zero (2 evaluation seeds)
   -> readaptation             +0.73 pp, CI [-1.04, +2.50], INCONCLUSIVE
   -> safety-filter geometry   -1.4903 pp crash; seed-level CI [-2.42, -0.57], 3 evaluation seeds

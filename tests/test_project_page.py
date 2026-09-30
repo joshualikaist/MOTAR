@@ -15,9 +15,9 @@ SITE = ROOT / "docs/status"
 sys.path.insert(0, str(ROOT / "tools"))
 import check_public_docs as docs  # noqa: E402
 
-THESIS = ("MOTAR studies the full evidence chain from measured perception uncertainty to policy "
-          "behaviour, safety geometry, target-motion generalization, and observation sensitivity "
-          "under frozen UAV policies.")
+THESIS = ("MOTAR studies the evidence chain linking measured perception uncertainty, policy sensitivity, "
+          "safety-filter geometry, target-motion distribution shift, and observation-contract changes "
+          "in UAV close-approach simulation.")
 KEY_MESSAGE = ("<strong>Target-motion effects replicated under a bias-corrected evaluation.</strong> Target motion "
                "was not a monotonic difficulty ladder: the static target produced the lowest capture rate, while "
                "the obstacle-aware target produced the highest.")

@@ -25,13 +25,13 @@
 
 <main id="main" class="page">
 <header class="hero" id="top">
-<p class="kicker">Simulation study · research software</p>
+<p class="kicker">Simulation study · paper draft and research software</p>
 <h1>MOTAR</h1>
 <p class="expansion">Moving Object Tracking And Rendezvous</p>
 <p class="subtitle">Reinforcement Learning for UAV Tracking and Close Approach in Random Obstacle Fields</p>
-<p class="thesis">MOTAR studies the full evidence chain from measured perception uncertainty to policy behaviour, safety geometry, target-motion generalization, and observation sensitivity under frozen UAV policies.</p>
-<p class="meta"><span>joshualikaist</span><span>Updated 26 September 2026</span><span>Software record; no published MOTAR paper</span></p>
-<p class="hero-links"><a href="https://github.com/joshualikaist/MOTAR-public">Code</a><a href="evidence.html">Full evidence</a><a href="https://github.com/joshualikaist/MOTAR/blob/main/docs/REPRODUCIBILITY.md">Reproducibility</a><a href="https://github.com/joshualikaist/MOTAR-public/blob/main/CITATION.cff">Citation</a></p>
+<p class="thesis">MOTAR studies the evidence chain linking measured perception uncertainty, policy sensitivity, safety-filter geometry, target-motion distribution shift, and observation-contract changes in UAV close-approach simulation.</p>
+<p class="meta"><span>joshualikaist</span><span>Updated 26 September 2026</span><span>Research draft; not a published paper</span></p>
+<p class="hero-links"><a href="https://github.com/joshualikaist/MOTAR/blob/main/paper/MOTAR_draft_2026-09-26.md">Paper draft</a><a href="https://github.com/joshualikaist/MOTAR/blob/main/presentations/MOTAR_overview_2026-09-26.pptx">Slides (PPTX)</a><a href="https://github.com/joshualikaist/MOTAR-public">Code</a><a href="evidence.html">Full evidence</a><a href="https://github.com/joshualikaist/MOTAR/blob/main/docs/REPRODUCIBILITY.md">Reproducibility</a><a href="https://github.com/joshualikaist/MOTAR-public/blob/main/CITATION.cff">Citation</a></p>
 </header>
 
 <ul class="callouts" aria-label="Three key results">
@@ -44,13 +44,13 @@
 
 <figure class="fig" id="fig1">
 <a class="frame" href="../assets/paper/final/fig1-motar-overview.svg" aria-label="Open Figure 1 as SVG"><img src="../assets/paper/final/fig1-motar-overview.svg" alt="Graphical abstract: the simulated closed loop from environment, perception and temporal state to a frozen policy, safety filter and control, above five measured results bound to their records." width="1000" height="764" loading="eager"></a>
-<figcaption><strong>Figure 1. The simulated loop and its measured evidence chain.</strong> Top: a schematic of the loop; circled numbers mark where each experiment intervenes. Bottom: separate evidence modules, not a causal chain. <span class="limit-line">Simulation only. Links 2–4 use frozen policy F; link 5 uses a different frozen checkpoint, policy R.</span> <span class="files"><a href="../assets/paper/final/fig1-motar-overview.svg">SVG</a></span></figcaption>
+<figcaption><strong>Figure 1. The simulated loop and its measured evidence chain.</strong> Top: a schematic of the loop; circled numbers mark where each experiment intervenes. Bottom: separate evidence modules, not a causal chain. The range-proxy measurement is separate from pixel/temporal error injection. <span class="limit-line">Simulation only. Links 2–4 use frozen policy F; link 5 uses a different frozen checkpoint, policy R.</span> <span class="files"><a href="../assets/paper/final/fig1-motar-overview.svg">SVG</a></span></figcaption>
 </figure>
 
 <section class="block" id="question" aria-labelledby="question-title">
 <p class="num">01</p>
 <h2 id="question-title">Research question</h2>
-<p>A simulated quadrotor has to find, follow and closely approach a moving object in a random field of vertical bars, using only a forward camera and a LiDAR. Published systems usually isolate one part of this problem. MOTAR evaluates frozen policies and changes one factor at a time: the perception error the policy receives, the geometry its safety filter uses, the way the target moves and the way the target is rendered. Each headline comparison has a preregistration and a result record. Two frozen checkpoints are used: <strong>policy F</strong> (ep25000 + riskcap) for perception → policy, safety geometry and target motion, and <strong>policy R</strong> (ref5in D1 ep1900) for the observation contract.</p>
+<p>A simulated quadrotor has to find, follow and closely approach a moving object in a random field of vertical bars, using only a forward camera and a LiDAR. Published systems usually isolate one part of this problem. MOTAR evaluates frozen policies under specified changes to perception error, configured safety filters, target motion and observation rendering. The headline filter comparison changes geometry and the stopping law together. Each headline comparison has a preregistration and a result record. Two frozen checkpoints are used: <strong>policy F</strong> (ep25000 + riskcap) for perception → policy, safety geometry and target motion, and <strong>policy R</strong> (ref5in D1 ep1900) for the observation contract.</p>
 <p class="key-message"><strong>Target-motion effects replicated under a bias-corrected evaluation.</strong> Target motion was not a monotonic difficulty ladder: the static target produced the lowest capture rate, while the obstacle-aware target produced the highest.</p>
 </section>
 
@@ -62,9 +62,9 @@
 <thead><tr><th scope="col">Axis</th><th scope="col">Result</th><th scope="col">Reading and limit</th></tr></thead>
 <tbody>
 <tr><td>Perception error</td><td class="num-cell">6.2% range error</td><td>Median of 9 block medians (15 s blocks) of the absolute relative range error of an image-size proxy. One real flight; its 3,107 frames are not independent samples.</td></tr>
-<tr><td>Perception → policy</td><td class="num-cell">−4.57 pp</td><td>Capture lost by policy F under the measured error; episode-level 95% CI [−6.32, −2.82] from two evaluation seeds.</td></tr>
+<tr><td>Perception → policy</td><td class="num-cell">−4.57 pp</td><td>Capture lost by policy F under the separate measured pixel/temporal error model; episode-level 95% CI [−6.32, −2.82] from two evaluation seeds.</td></tr>
 <tr><td>Readaptation</td><td class="num-cell">+0.73 pp</td><td><span class="tag">INCONCLUSIVE</span> 95% CI [−1.04, +2.50] over three training seeds: no net benefit established.</td></tr>
-<tr><td>Safety geometry</td><td class="num-cell">−1.4903 pp crash</td><td>Arc clearance vs riskcap on policy F. Seed-level 95% CI [−2.42, −0.57] over three evaluation seeds; lower in 15/15 seed × density cells, which are not independent replicates. A configured contrast, not a safety guarantee.</td></tr>
+<tr><td>Safety geometry</td><td class="num-cell">−1.4903 pp crash</td><td>Arc clearance vs riskcap on policy F. Seed-level 95% CI [−2.42, −0.57] over three evaluation seeds; lower in 15/15 seed × density cells, which are not independent replicates. Geometry and stopping law change together; this is not an isolated geometry effect or a safety guarantee.</td></tr>
 <tr><td>Target motion</td><td class="num-cell">E0 −5.37 · E2 +1.35 pp</td><td>Vs the training target H (E1 −3.45 pp). Independent bias-corrected replication on policy F: seven fresh seeds, 229,376 primary episodes; all three contrasts replicated. The obstacle-aware gain was not uniform at high obstacle density.</td></tr>
 <tr><td>Observation contract</td><td class="num-cell">−48.967 pp</td><td><span class="tag loss">MATERIAL_LOSS</span> Causality not tested. Frozen policy R, three paired evaluation seeds.</td></tr>
 </tbody>
@@ -87,20 +87,20 @@
 <section class="block" id="perception-policy" aria-labelledby="perception-title">
 <p class="num">04</p>
 <h2 id="perception-title">Perception → policy</h2>
-<p>The detector error measured on real footage was replayed in simulation through a calibrated injector. It cost frozen policy F 4.57 pp of capture (an episode-level interval from two evaluation seeds). Retraining under the same error for 1,000 epochs changed capture by +0.73 pp on average. The seed-level interval spans zero, and every seed kept a residual cost.</p>
+<p>The NPS pixel/temporal detector error was replayed in simulation through the P8/P9 injector. The separate ETH range-proxy measurement was not injected; analytic range and confidence were retained. It cost frozen policy F 4.57 pp of capture (an episode-level interval from two evaluation seeds). Retraining under the same error for 1,000 epochs changed capture by +0.73 pp on average. The seed-level interval spans zero, and every seed kept a residual cost.</p>
 <figure class="fig">
 <a class="frame" href="../assets/paper/final/fig2-perception-policy.svg" aria-label="Open Figure 2 as SVG"><img src="../assets/paper/final/fig2-perception-policy.svg" alt="Figure 2: measured range-proxy error on real footage, the empirical error model, injected versus measured transition probabilities, and the effect on frozen policy F with an inconclusive readaptation interval." width="1000" height="943" loading="lazy"></a>
-<figcaption><strong>Figure 2. Measured perception error and its cost to frozen policy F.</strong> (a) Real-footage range proxy, (b) error model, (c) injection fidelity, (d) policy effect. <span class="limit-line">(a) is one flight in 9 blocks. The cost interval is episode-level at one density with one injector; readaptation uses three training seeds and is INCONCLUSIVE, not a recovery.</span> <span class="files"><a href="../assets/paper/final/fig2-perception-policy.svg">SVG</a></span></figcaption>
+<figcaption><strong>Figure 2. Measured perception error and its cost to frozen policy F.</strong> (a) Separate ETH range-proxy measurement, (b) NPS pixel/temporal error model, (c) injection fidelity, (d) policy effect. Panel (a) is not an input to the injector. <span class="limit-line">(a) is one flight in 9 blocks. The cost interval is episode-level at one density with one injector; readaptation uses three training seeds and is INCONCLUSIVE, not a recovery.</span> <span class="files"><a href="../assets/paper/final/fig2-perception-policy.svg">SVG</a></span></figcaption>
 </figure>
 </section>
 
 <section class="block" id="safety" aria-labelledby="safety-title">
 <p class="num">05</p>
 <h2 id="safety-title">Safety geometry</h2>
-<p>Measuring clearance along the turning arc, instead of along a straight corridor, lowered the crash rate of policy F in each of 15 seed × density cells (pooled −1.4903 pp). The cells come from three evaluation seeds, so the seed-level interval, [−2.42, −0.57] pp, is the conservative one.</p>
+<p>The implemented arc-clearance configuration lowered the crash rate of policy F relative to riskcap in each of 15 seed × density cells (pooled −1.4903 pp). This comparison changes both clearance geometry and the stopping law; it does not isolate geometry alone. The cells share three evaluation seeds; the seed-level interval is [−2.42, −0.57] pp.</p>
 <figure class="fig">
 <a class="frame" href="../assets/paper/final/fig3-safety.svg" aria-label="Open Figure 3 as SVG"><img src="../assets/paper/final/fig3-safety.svg" alt="Figure 3: schematic of straight-corridor versus turning-arc clearance, and the crash-rate difference for fifteen seed and density cells, all below zero." width="1000" height="586" loading="lazy"></a>
-<figcaption><strong>Figure 3. Where the safety filter measures clearance.</strong> (a) Schematic, (b) configured contrast on policy F; dots are cells, not independent replicates. <span class="limit-line">The implemented arc-clearance speed filter is not a DWA planner and gives no collision guarantee.</span> <span class="files"><a href="../assets/paper/final/fig3-safety.svg">SVG</a></span></figcaption>
+<figcaption><strong>Figure 3. Where the safety filter measures clearance.</strong> (a) Schematic, (b) configured contrast on policy F; geometry and stopping law change together. Dots are cells, not independent replicates. <span class="limit-line">The implemented arc-clearance speed filter is not a DWA planner and gives no collision guarantee.</span> <span class="files"><a href="../assets/paper/final/fig3-safety.svg">SVG</a></span></figcaption>
 </figure>
 </section>
 
@@ -123,7 +123,7 @@
 <section class="block" id="observation" aria-labelledby="observation-title">
 <p class="num">07</p>
 <h2 id="observation-title">Observation sensitivity</h2>
-<p>Holding the detector, frozen policy R, the task and the seeds fixed, rendering the target as a shaded mesh instead of the analytic proxy cut capture by 48.967 pp (three paired evaluation seeds). Policy R is a different checkpoint from policy F.</p>
+<p>Holding the detector, frozen policy R, the task and the seeds fixed, rendering the target as a shaded mesh instead of the analytic proxy cut capture by 48.967 pp (three paired evaluation seeds). Policy R is a different checkpoint from policy F. This result motivates observation-contract audits before retraining, rather than directly justifying PPO retraining.</p>
 <figure class="fig">
 <a class="frame" href="../assets/paper/final/fig5-observation-contract.svg" aria-label="Open Figure 5 as SVG"><img src="../assets/paper/final/fig5-observation-contract.svg" alt="Figure 5: one variable changes, the observation contract; capture rate for analytic, mesh-flat and mesh-shaded target rendering; material loss, causality not tested." width="1000" height="571" loading="lazy"></a>
 <figcaption><strong>Figure 5. Frozen policy R under three rendering treatments.</strong> <span class="tag loss">CAUSALITY NOT TESTED</span>: no renderer property was isolated as the cause. <span class="limit-line">Policy R (ref5in D1 ep1900, 70 bars) is not policy F of Figures 2–4. Unit of inference: paired evaluation seed (n = 3).</span> <span class="files"><a href="../assets/paper/final/fig5-observation-contract.svg">SVG</a></span></figcaption>

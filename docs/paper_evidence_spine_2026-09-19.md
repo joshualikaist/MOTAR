@@ -41,7 +41,9 @@ injection. NavRL++ perturbs with its own synthetic failure model instead.
 
 ## C2. Measured perception error is propagated into the navigation policy
 
-**Question.** What does that measured error cost a policy that never saw it?
+**Question.** What does a measured pixel/temporal detector error cost a policy that never saw it? The C1
+range-proxy statistic is a separate measurement and is not injected: P9 retains the analytic range and
+confidence.
 
 **Method.** P9 injects the P8 distribution into simulation; frozen policy F is evaluated under it;
 P10 retrains under it across three training seeds.

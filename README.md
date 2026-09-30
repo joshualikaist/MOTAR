@@ -3,28 +3,30 @@
 **MOTAR: Moving Object Tracking And Rendezvous**<br>
 *Reinforcement Learning for UAV Tracking and Close Approach in Random Obstacle Fields*
 
-MOTAR studies how perception uncertainty, safety-filter geometry, target-motion distribution shift and observation changes affect frozen UAV tracking and close-approach policies in random obstacle fields. All policy evaluations are simulation-only.
-
-![MOTAR overview: the simulated closed loop (environment, perception, temporal state, frozen policy, safety filter and control) above the measured evidence chain](docs/assets/paper/final/fig1-motar-overview.svg)
+MOTAR studies the evidence chain linking measured perception uncertainty, policy sensitivity, safety-filter geometry, target-motion distribution shift, and observation-contract changes in UAV close-approach simulation. All policy evaluations are simulation-only.
 
 **Main finding:** target-motion effects replicated under a bias-corrected evaluation. Against the
 target motion the policy was trained on, a static target scored **−5.37 pp** capture, a
 constant-velocity target **−3.45 pp** and an obstacle-aware target **+1.35 pp**: an independent replication with 7 fresh seeds and 229,376 primary episodes.
 *Simulation only; no real-flight or state-of-the-art claim.*
 
+[Paper draft](paper/MOTAR_draft_2026-09-26.md) (Word copy alongside) · [Slides](presentations/MOTAR_overview_2026-09-26.pptx) · [Figures](docs/assets/paper/final/) · [Public CPU checks](docs/REPRODUCIBILITY.md)
+
+![MOTAR overview: the simulated closed loop (environment, perception, temporal state, frozen policy, safety filter and control) above the measured evidence chain](docs/assets/paper/final/fig1-motar-overview.svg)
+
 ## Why MOTAR?
 
-MOTAR measures perception error on real footage, injects it into a frozen policy, and separately varies safety geometry, target motion and rendering. This research evidence sequence is not a causal
+MOTAR measures a range proxy on real footage and, separately, injects measured pixel/temporal detector errors into a frozen policy. Other studies vary configured safety filters, target motion and the observation contract. This research evidence sequence is not a causal
 chain. Preregistrations and deviations are linked from [`docs/EVIDENCE.md`](docs/EVIDENCE.md); negative, inconclusive and withdrawn results remain available.
 
 ## Key Results
 
 | Question | Result | Status and limit |
 | --- | --- | --- |
-| Target motion vs the training target | static **−5.37 pp** · constant velocity **−3.45 pp** · obstacle-aware **+1.35 pp** capture | Independent bias-corrected replication, policy F, 7 fresh seeds; all three contrasts replicated. The obstacle-aware gain was not uniform at high density. The original 3-seed campaign stays as historical evidence |
+| Target motion vs the training target | static **−5.37 pp** · constant velocity **−3.45 pp** · obstacle-aware **+1.35 pp** capture | Independent bias-corrected replication, policy F, 7 fresh seeds; all three contrasts replicated. The obstacle-aware gain was not uniform at high density. The 3-seed original campaign is historical |
 | Measured perception error → policy | **−4.57 pp** capture, 95 % CI [−6.32, −2.82] | Policy F; episode-level interval from two evaluation seeds at one density; one injector |
 | Readaptation under that error | **+0.73 pp**, 95 % CI [−1.04, +2.50] | **INCONCLUSIVE**: no net benefit established; 3 training seeds |
-| Safety-filter geometry | **−1.4903 pp** crash; seed-level 95 % CI [−2.42, −0.57] | Policy F, 3 evaluation seeds; lower in 15/15 seed × density cells, which are not independent replicates. Configured contrast; not a safety guarantee |
+| Safety-filter geometry | **−1.4903 pp** crash; seed-level 95 % CI [−2.42, −0.57] | Policy F, 3 evaluation seeds; lower in 15/15 seed × density cells, which are not independent replicates. Geometry and stopping law change together; not a safety guarantee |
 | Observation contract | **−48.967 pp** capture | **MATERIAL_LOSS**; causality **NOT_TESTED**; policy R (a different checkpoint), 3 evaluation seeds |
 | Perception range error on real footage | **6.2 %** median of 9 block medians | One flight (9 blocks of 15 s; 3,107 frames, not independent samples); apparent-size proxy |
 
@@ -45,7 +47,7 @@ contract, measured-error injection) are the factors the experiments vary. Detail
 ## Target-motion replication
 
 **CURRENT · REPLICATED.** 7 fresh evaluation seeds (4104–4110), 4 arms × 4 densities,
-112 cells × 2,048 primary episodes = 229,376 primary episodes. No PPO training. H is historical training-lineage motion; E0 is static; E1 is bounded constant velocity;
+112 cells × 2,048 = 229,376 primary episodes. No PPO training. H is historical training-lineage motion; E0 is static; E1 is bounded constant velocity;
 E2 is bounded obstacle-aware waypoint motion. Capture rates: H 87.76% · E0 82.39% · E1 84.32% · E2 89.12%.
 
 | Capture contrast (pp), BCa95 | Original n=3: legacy window | Replication n=7: per-environment quota |
@@ -54,19 +56,13 @@ E2 is bounded obstacle-aware waypoint motion. Capture rates: H 87.76% · E0 82.3
 | E1 − H | −2.82 [−3.53, −2.44] | −3.45 [−3.79, −3.11] |
 | E2 − H | +1.33 [+1.15, +1.50] | +1.35 [+1.07, +1.87] |
 
-All three preregistered directional contrasts replicated; each has 7/7 seeds in the same direction,
-exact p = 0.015625 and Holm-adjusted p = 0.046875. The Holm-adjusted p-values are 0.046875, at the resolution boundary of the seven-seed exact sign-flip design. Effect sizes, confidence intervals, and seed-level consistency must therefore be reported alongside the hypothesis tests.
+All three preregistered directional contrasts replicated (7/7 seeds in the same direction). Holm-adjusted p = 0.046875 sits at the resolution boundary of the seven-seed exact sign-flip design, so effect sizes and intervals are reported with the tests.
 
 The aggregate E2−H contrast replicated, but its positive direction was not uniformly expressed at the two highest obstacle densities: 5/7 seeds at 160 bars and 4/7 at 205 bars. Density-specific analyses remain exploratory.
 
-Original campaign (18 September, n=3, legacy pooled stopping window); bias discovery and canary (instrumentation validation, not scientific evidence); independent replication (25–26 September, n=7, corrected per-environment quota). These stages remain separate and are never pooled.
+The original campaign (18 September, n=3, legacy pooled window), the bias audit and canary, and the replication (25–26 September, n=7) are never pooled. Within the same seven seeds the legacy window attenuated all three contrasts toward zero; with different seed sets, the estimator change alone does not explain the gap between campaigns.
 
-Within the seven-seed replication, the historical pooled stopping window attenuated all three capture contrasts toward zero. The estimator change does not by itself explain the full difference between the original n=3 campaign and the n=7 replication because the seed sets differ.
-
-[Figure 4](docs/assets/paper/final/fig4-target-motion.svg) shows every seed and both campaigns.
-[Full record](results/target_motion_replication_7seed/README.md) ·
-[Canonical status](results/target_motion_replication_7seed/summary.json) ·
-[Analysis](results/target_motion_replication_7seed/analysis.json).
+[Figure 4](docs/assets/paper/final/fig4-target-motion.svg) shows every seed and both campaigns. [Full record](results/target_motion_replication_7seed/README.md) · [Canonical status](results/target_motion_replication_7seed/summary.json) · [Analysis](results/target_motion_replication_7seed/analysis.json).
 
 ## Repository Structure
 
@@ -77,12 +73,13 @@ Within the seven-seed replication, the historical pooled stopping window attenua
 | `tests/` | Contract, evidence and documentation guards |
 | `results/` | One immutable folder per experiment: receipts, raw counts, summaries, VOID runs |
 | `docs/` | Evidence, reproducibility, operations, history, preregistrations; the site in `docs/status/` |
+| `paper/`, `presentations/` | Current paper source, Word review copy, editable slides and authoring source |
 
 ## Quick Start
 
 **PUBLIC_CPU validation:** 0 failures / 0 errors; GPU-only tests are excluded.
 
-The supported public path is CPU-only: Linux x86-64, Python 3.8, Git, and a new virtual environment. It needs no GPU and no Isaac Gym, and runs no policy.
+The supported public path is CPU-only: Linux x86-64, Python 3.8, Git, and a new virtual environment. It needs no GPU or Isaac Gym and runs no policy.
 
 ```bash
 git clone https://github.com/joshualikaist/MOTAR-public.git MOTAR && cd MOTAR
