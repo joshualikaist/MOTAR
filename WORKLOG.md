@@ -20008,3 +20008,9 @@ worktree `/home/fair/workspaces/aerial_gym_ws/.codex_worktrees/kroc2027-phase1`,
 
 - commit 1 — `AGENTS.md`에 "Temporary exception: KROC2027 Phase 1" 하위절, `docs/OPERATIONS.md`에 안내 1줄.
   CPU: `test_canonical_docs` 25/25, `test_branch_policy` 4/4, `tools/check_public_docs.py` PASS.
+- commit 2 — 평가 core `motar_eval/`: `contracts`(G1 생성기 상태 상대 1e-4, G2 write-back ulp 공식 k=2:
+  속도 +5.39e-5 m/s, 가속 +1.08e-3 m/s², 위치 5.39e-6 m, 선회 0.20 m/s 이상에서만), `geometry`(3D slab LOS, 수평
+  yaw-only 카메라 frustum, 정확한 선분-사각형 거리), `initial_view`(A 초기조건: 10 m·같은 고도·LOS, 수락은 arm과 무관,
+  yaw 0/180°), `events`(측정·track·GT 기하 분리, 미획득은 None, 열린 loss는 censored), `scene_record`(episode key·
+  hash, replay 없음). Tests `test_kroc2027_core.py`, `test_kroc2027_geometry.py`: CPU 46/46 OK. 실제 float32 limiter로
+  만든 무결함 운동(32–40 m)에서 G1·G2 위반 0이고, v1 절대 허용오차는 같은 운동에서 위반을 보고함(회귀로 고정).
