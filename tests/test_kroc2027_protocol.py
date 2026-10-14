@@ -376,6 +376,17 @@ class CliPureFunctionTest(unittest.TestCase):
         self.assertEqual(len(names), 3 + 4 * 2 + 4 * 2 * 2 + 2)
         b1 = dict(runs)["B1_E0_static_205"]
         self.assertEqual((b1["view"], b1["search"], b1["quota"]), ("hidden", "b1", 4))
+        # Preregistration section 5: canary cells record a violation; main cells stop (default).
+        for name, kw in runs:
+            if kw.get("recorder"):
+                self.assertEqual(kw.get("on_violation"), "record", name)
+        env = cli.base_env(inherited={"PATH": "/usr/bin"})
+        canary_env = cli.cell_env(env, PROTOCOL, **dict(runs)["A3_E2_obstacle_aware_205"])
+        self.assertEqual(canary_env["NAVRL_KROC2027_ON_VIOLATION"], "record")
+        main_env = cli.cell_env(env, PROTOCOL, target_model="E2_obstacle_aware", density=205, seed=4201,
+                                out_dir=Path("/tmp/x"), quota=16, view="hidden", recorder=True,
+                                run_id="KROC27-A-M01", arm="A4")
+        self.assertNotIn("NAVRL_KROC2027_ON_VIOLATION", main_env)
         self.assertEqual(cli.b1_problems({"search": {"enabled": True, "episodes_with_search": 3,
                                                      "invariant_violations": 0}}), [])
         self.assertTrue(cli.b1_problems({"search": {"enabled": True, "episodes_with_search": 3,

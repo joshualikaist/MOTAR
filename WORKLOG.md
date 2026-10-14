@@ -20044,3 +20044,6 @@ worktree `/home/fair/workspaces/aerial_gym_ws/.codex_worktrees/kroc2027-phase1`,
   CPU: `test_kroc2027_*` 104개 OK(1 skip). PUBLIC_CPU 2223개: 실패 2·오류 2 — 이전과 동일한 4건(worktree에 없는
   git-ignore 결과 파일 3건 + replication source-gate 1건), KROC 작업으로 새로 생긴 실패 없음. `check_public_docs` PASS.
   다음: 사용자에게 P1a 완료 보고, canary GPU 승인 요청(GPU·push·merge 미실행). `PPO_TRAINING_STARTED = false`.
+- commit 7 — 사전등록 §5와 코드 일치화(실험 전 수정): canary의 recorder 셀에 `NAVRL_KROC2027_ON_VIOLATION=record`를 설정해
+  이동 모델의 gate 위반이 셀을 중단시키지 않고 기록되게 함(선택 규칙이 모델을 기각할 수 있도록). main/B 셀은 기본값
+  `stop` 유지. prereg·protocol 변경 없음. CPU: `test_kroc2027_*` OK.

@@ -107,8 +107,12 @@ def base_env(root=ROOT, inherited=None):
 
 def cell_env(env, protocol, *, target_model, density, seed, out_dir, quota, view=None,
              recorder=False, run_id="", arm="", ledger=True, digest_path=None, obs_dump_path=None,
-             search=None):
-    """Variables for one launcher invocation (one cell). ``view`` None leaves the task untouched."""
+             search=None, on_violation=None):
+    """Variables for one launcher invocation (one cell). ``view`` None leaves the task untouched.
+
+    ``on_violation`` "record" keeps a cell running after a motion-contract violation (canary only,
+    so the moving-model rule can reject a model); unset, the recorder's default "stop" applies.
+    """
     ev = protocol["evaluation"]
     out = dict(env)
     out.update(ARMS=target_model, DENSITIES=str(int(density)), SEEDS=str(int(seed)),
@@ -126,6 +130,8 @@ def cell_env(env, protocol, *, target_model, density, seed, out_dir, quota, view
                    NAVRL_KROC2027_PROTOCOL_SHA256=kp.sha256_file(PROTOCOL))
     if search is not None:
         out["NAVRL_KROC2027_SEARCH"] = search
+    if on_violation is not None:
+        out["NAVRL_KROC2027_ON_VIOLATION"] = on_violation
     if digest_path is not None:
         out.update(NAVRL_TRAJECTORY_DIGEST="1", NAVRL_TRAJECTORY_DIGEST_LABEL="kroc2027-canary",
                    NAVRL_TRAJECTORY_DIGEST_JSON=str(digest_path))
@@ -386,7 +392,9 @@ def canary_subruns(protocol, out_root, run_id):
                                  quota=q, view="visible", recorder=recorder, run_id=run_id, arm="A1",
                                  digest_path=directory / ("%s__70bars__seed%d" % (static, seed))
                                  / "trajectory_digest.json",
-                                 obs_dump_path=directory / "obs_dump.npz")))
+                                 obs_dump_path=directory / "obs_dump.npz",
+                                 on_violation="record" if recorder else None)))
+    # Preregistration section 5: in the canary a violation is recorded and the cell continues.
     for arm, spec in sorted(exp["arms"].items()):
         models = [static] if spec["target"] == "static" else protocol["target_models"]["moving_candidates"]
         for model in models:
@@ -394,13 +402,13 @@ def canary_subruns(protocol, out_root, run_id):
                 runs.append(("%s_%s_%d" % (arm, model, density),
                              dict(target_model=model, density=density, seed=seed,
                                   out_dir=out_root / "cells" / arm, quota=q, view=spec["view"],
-                                  recorder=True, run_id=run_id, arm=arm)))
+                                  recorder=True, run_id=run_id, arm=arm, on_violation="record")))
     # B1 integrity: supervisor on, hidden static arm, two densities. Invariants only; outcomes unused.
     for density in (115, 205):
         runs.append(("B1_%s_%d" % (static, density),
                      dict(target_model=static, density=density, seed=seed, out_dir=out_root / "b1",
                           quota=q, view="hidden", recorder=True, run_id=run_id, arm="B1",
-                          search="b1")))
+                          search="b1", on_violation="record")))
     return runs
 
 
