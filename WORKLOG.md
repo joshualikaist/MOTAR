@@ -20038,3 +20038,9 @@ worktree `/home/fair/workspaces/aerial_gym_ws/.codex_worktrees/kroc2027-phase1`,
   yaw ≤ 0.6 rad/s). CLI: canary에 B1 무결성 subrun 2개(hidden static, 115/205 bars; 결과는 미사용, `b1_ready`),
   `b-gate`(A 분석 + 남은 GPU 시간 → 5개 기준과 밀도 규칙), `run --stage b_main`(GO·B prereg·승인 전 거부).
   A와 B가 같은 source SHA를 쓰도록 B 실행 코드를 지금 넣음. CPU: `test_kroc2027_*` 101 tests in 2.455s OK(1 skip).
+- commit 6 — 사전등록 `docs/plans/prereg_kroc2027_A_v1.md` 작성·commit(이후 byte 불변, 변경은 날짜 붙은 amendment),
+  `kroc2027_protocol_v1.json` status를 FROZEN으로 바꾼 뒤 SHA-256 `ad706d71…`를 prereg에 기록, pilot `6d463c17…`.
+  prereg §12에 계획 문구에 없던 구현 결정 7개를 명시. 새 테스트가 prereg의 해시 인용과 pilot 표 수치를 JSON과 대조.
+  CPU: `test_kroc2027_*` 104개 OK(1 skip). PUBLIC_CPU 2223개: 실패 2·오류 2 — 이전과 동일한 4건(worktree에 없는
+  git-ignore 결과 파일 3건 + replication source-gate 1건), KROC 작업으로 새로 생긴 실패 없음. `check_public_docs` PASS.
+  다음: 사용자에게 P1a 완료 보고, canary GPU 승인 요청(GPU·push·merge 미실행). `PPO_TRAINING_STARTED = false`.

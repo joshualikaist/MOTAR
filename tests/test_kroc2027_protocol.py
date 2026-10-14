@@ -245,6 +245,44 @@ class ExperimentBCellsAndGateCommandTest(unittest.TestCase):
         self.assertEqual(gate["densities"], [70, 115, 160, 205])
 
 
+class PreregistrationBindingTest(unittest.TestCase):
+    """The preregistration cites the exact protocol and pilot bytes, and its table is the pilot's."""
+
+    PREREG = ROOT / "docs/plans/prereg_kroc2027_A_v1.md"
+
+    def test_cites_current_hashes(self):
+        text = self.PREREG.read_text(encoding="utf-8")
+        self.assertIn(kp.sha256_file(kp.PROTOCOL_PATH), text)
+        self.assertIn(kp.sha256_file(ROOT / "docs/plans/kroc2027_pilot_v1.json"), text)
+        self.assertIn(PROTOCOL["policy"]["checkpoint_sha256"], text)
+        self.assertIn("FROZEN", PROTOCOL["status"])
+
+    def test_pilot_table_matches_the_pilot_json(self):
+        pilot = json.loads((ROOT / "docs/plans/kroc2027_pilot_v1.json").read_text())
+        rows = {}
+        for line in self.PREREG.read_text(encoding="utf-8").splitlines():
+            cells = [c.strip() for c in line.strip().strip("|").split("|")]
+            if cells and cells[0] in pilot["arms"]:
+                rows[cells[0]] = cells
+        self.assertEqual(set(rows), set(pilot["arms"]))
+        for arm, cells in rows.items():
+            entry = pilot["arms"][arm]
+            pct = lambda key: "%.2f" % (100 * entry[key]["mean"])  # noqa: E731
+            self.assertEqual(cells[1], "%s (%.2f)" % (pct("never_acquired"),
+                                                      100 * entry["never_acquired"]["sd_over_seeds"]))
+            self.assertEqual(cells[2], pct("never_acquired_timeout"))
+            self.assertEqual(cells[3], pct("never_acquired_crash"))
+            self.assertEqual(cells[4], pct("na_share_of_failures"))
+            self.assertEqual(cells[5], "%s / %s" % (pct("timeout_legacy"), pct("timeout_quota")))
+
+    def test_states_the_derived_g2_bounds(self):
+        text = self.PREREG.read_text(encoding="utf-8")
+        tol = GateTolerances()
+        self.assertIn("%.2e" % tol.g2_speed_mps(0.1), text)
+        self.assertIn("%.3e" % tol.g2_accel_mps2(0.1), text)
+        self.assertIn("%.2e" % tol.g2_position_m(), text)
+
+
 class PilotProvenanceTest(unittest.TestCase):
     def test_committed_pilot_is_traceable_to_the_manifest(self):
         pilot = json.loads((ROOT / "docs/plans/kroc2027_pilot_v1.json").read_text())

@@ -1,7 +1,7 @@
 {
   "schema": "motar.kroc2027-protocol.v1",
   "protocol_id": "KROC2027_A_B_V1",
-  "status": "DRAFT until docs/plans/prereg_kroc2027_A_v1.md is committed; then frozen (changes need a new file)",
+  "status": "FROZEN with docs/plans/prereg_kroc2027_A_v1.md; any change needs a new, dated protocol file",
   "plan": "KROC2027 plan v2, package P1 approved by the user on 2026-10-14",
   "preregistration": "docs/plans/prereg_kroc2027_A_v1.md",
   "policy": {
