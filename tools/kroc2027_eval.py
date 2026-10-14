@@ -251,6 +251,13 @@ def recorder_problems(summary, records, ledger_rows, root=ROOT, require_motion=T
                    and r.get("outcome") != outcome[(r["env_index"], r["env_episode_index"])])
     if disagree:
         problems.append("%d recorder outcomes disagree with the ledger" % disagree)
+    # The recorder's acquisition chronology must agree, episode by episode, with the task's own
+    # first-acquisition telemetry wherever the task recorded it.
+    for ours, theirs in (("first_obs_fused_valid", "task_first_fused_obs"),
+                         ("first_obs_camera_valid", "task_first_camera_obs")):
+        mismatched = sum(1 for r in records if theirs in r and r.get(ours) != r[theirs])
+        if mismatched:
+            problems.append("%d episodes: %s differs from %s" % (mismatched, ours, theirs))
     gates = summary.get("motion_gate", {})
     if require_motion and gates.get("verdict") != "PASS":
         problems.append("motion gate %s" % gates.get("verdict"))

@@ -373,13 +373,25 @@ class KrocRecorder:
         self._capture_dist_min = torch.minimum(self._capture_dist_min, seg_dist.detach())
 
     def after_perception(self, diagnostics):
-        """After perception.observe: one observation of the acquisition chronology."""
-        visible = diagnostics["visible"].detach()
-        camera = diagnostics.get("camera_visible", visible).detach()
+        """After perception.observe: keep this observation's signals until an action uses them.
+
+        Counting happens in ``before_action``, so an observation is counted exactly when it drives
+        an action -- the convention of the task's own first-acquisition telemetry -- and a repeated
+        observation at reset cannot shift the indices.
+        """
+        visible = diagnostics["visible"].detach().clone()
+        camera = diagnostics.get("camera_visible", visible).detach().clone()
         tracker = getattr(getattr(self.task, "perception", None), "tracker", None)
-        track = tracker.active.detach() if tracker is not None else torch.zeros_like(visible)
+        track = tracker.active.detach().clone() if tracker is not None else torch.zeros_like(visible)
         in_fov, geo_visible, _ = self._geometric_view()
-        self.events.observe(camera, visible, track, in_fov, geo_visible)
+        self._pending_observation = (camera, visible, track, in_fov, geo_visible)
+
+    def before_action(self):
+        """Start of step: the observation that drives this action enters the chronology."""
+        pending = getattr(self, "_pending_observation", None)
+        if pending is None:
+            raise RuntimeError("KROC2027 recorder: an action without a preceding observation")
+        self.events.observe(*pending)
 
     def on_episode_end(self, finished, successes, crashes, timeouts):
         """Before the ledger records and before any reset: one record per finished episode."""
@@ -398,6 +410,11 @@ class KrocRecorder:
         swept = self._swept_min[env_ids].double().cpu().tolist()
         tspeed = self._target_speed_max[env_ids].double().cpu().tolist()
         capdist = self._capture_dist_min[env_ids].double().cpu().tolist()
+        # The task's own first-acquisition telemetry (bulk mode), kept for a per-episode cross-check.
+        task_first = {}
+        for name, attr in (("fused", "_fa_ep_first_fused"), ("camera", "_fa_ep_first_camera")):
+            values = getattr(self.task, attr, None)
+            task_first[name] = values[env_ids].cpu().tolist() if values is not None else None
         for row, env in enumerate(env_ids.cpu().tolist()):
             flags = (bool(capture[row]), bool(crash[row]), bool(timeout[row]))
             outcome = ("capture", "crash", "timeout")[flags.index(True)] if sum(flags) == 1 else "invalid"
@@ -426,6 +443,9 @@ class KrocRecorder:
             record.update(event_records[row])
             first = record.get("first_obs_fused_valid")
             record["first_acquisition_latency_s"] = (first - 1) * self.dt if first is not None else None
+            for name, values in task_first.items():
+                if values is not None:
+                    record["task_first_%s_obs" % name] = values[row] if values[row] >= 0 else None
             initial = self.initial[env]
             if initial is not None:
                 record["initial"] = initial

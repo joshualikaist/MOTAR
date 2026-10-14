@@ -231,6 +231,14 @@ class InitialViewTest(unittest.TestCase):
         dyaw = geometry.wrap_angle(hidden["yaw"][ok] - visible["yaw"][ok])
         self.assertTrue(torch.allclose(dyaw.abs(), torch.full_like(dyaw, math.pi), atol=1e-5))
 
+    def test_los_chunking_changes_nothing(self):
+        outs = [self._sample("visible", los_chunk=chunk) for chunk in (1, 7, 16, 64)]
+        for out in outs[1:]:
+            for key in ("accepted", "rounds_used"):
+                self.assertTrue(torch.equal(out[key], outs[0][key]), key)
+            ok = out["accepted"]
+            self.assertTrue(torch.equal(out["target_xyz"][ok], outs[0]["target_xyz"][ok]))
+
     def test_impossible_rows_fail_closed(self):
         # Surround pursuer 0 with a wall of boxes at 5 m: no clear 10 m ray exists.
         ring = 72

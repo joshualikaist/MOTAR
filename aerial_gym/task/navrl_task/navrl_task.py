@@ -4969,6 +4969,8 @@ class NavRLTask(BaseTask):
         if self.interactive_mode and self._interactive_manual:
             actions = self._interactive_manual_action
         self._record_action_diagnostics(actions)
+        if self._kroc_adapter is not None:
+            self._kroc_adapter.before_action()
         # Phase 3: move the virtual target FIRST — both agents move during this 0.1 s control
         # interval, and the end-of-interval reward is computed against the target's NEW position.
         # (No-op while all per-episode target speeds are 0, i.e. the static Phases 1-2 task.)

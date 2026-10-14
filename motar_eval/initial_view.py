@@ -38,14 +38,15 @@ class InitialViewSpec:
     wall_margin_m: float = 1.0
     candidates_per_round: int = 64
     rounds: int = 32
+    los_chunk: int = 16  # memory only; never changes which candidate is accepted
 
     def __post_init__(self):
         if self.view not in VIEWS:
             raise ValueError("view must be one of %s, got %r" % (VIEWS, self.view))
         if not (self.distance_m > 0.0 and math.isfinite(self.distance_m)):
             raise ValueError("distance_m must be positive and finite")
-        if self.candidates_per_round < 1 or self.rounds < 1:
-            raise ValueError("candidates_per_round and rounds must be positive")
+        if self.candidates_per_round < 1 or self.rounds < 1 or self.los_chunk < 1:
+            raise ValueError("candidates_per_round, rounds and los_chunk must be positive")
 
 
 def view_yaw(bearing, view: str, camera_yaw_offset_rad: float = 0.0):
@@ -109,16 +110,23 @@ def sample_initial_view(
             & (cand_xy[..., 1] <= hi[ids, 1:2])
         )
         accepted &= clearance_ok(cand_xy, ids)
-        # Line of sight with the camera facing the candidate, whatever the arm.
+        # Line of sight with the camera facing the candidate, whatever the arm. Evaluated in
+        # candidate chunks to bound GPU memory; the result and the random draws do not change.
         cand_xyz = torch.cat((cand_xy, base[:, None, 2:3].expand(m, k, 1)), dim=-1)
         facing = yaw_quat_xyzw(theta)
         eye = camera_eye(base[:, None, :].expand(m, k, 3), facing, camera_translation)
-        clear = los_clear(
-            eye,
-            cand_xyz,
-            obstacle_center[ids].unsqueeze(1).expand(m, k, -1, -1),
-            obstacle_half[ids].unsqueeze(1).expand(m, k, -1, -1),
-        )
+        center = obstacle_center[ids].unsqueeze(1)
+        half = obstacle_half[ids].unsqueeze(1)
+        clear = torch.zeros_like(accepted)
+        for start in range(0, k, spec.los_chunk):
+            stop = min(k, start + spec.los_chunk)
+            width = stop - start
+            clear[:, start:stop] = los_clear(
+                eye[:, start:stop],
+                cand_xyz[:, start:stop],
+                center.expand(m, width, -1, -1),
+                half.expand(m, width, -1, -1),
+            )
         accepted &= clear
         has = accepted.any(dim=1)
         rounds_used[ids] = round_index + 1

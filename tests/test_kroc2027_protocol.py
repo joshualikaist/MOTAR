@@ -276,6 +276,12 @@ class CliPureFunctionTest(unittest.TestCase):
         failed = dict(rec_summary, motion_gate={"verdict": "FAIL"})
         self.assertTrue(cli.recorder_problems(failed, records, rows))
         self.assertEqual(cli.recorder_problems(failed, records, rows, require_motion=False), [])
+        agree = [dict(r, first_obs_fused_valid=3, task_first_fused_obs=3) for r in records]
+        self.assertEqual(cli.recorder_problems(rec_summary, agree, rows), [])
+        differ = [dict(r) for r in agree]
+        differ[0]["task_first_fused_obs"] = None
+        self.assertTrue(any("task_first_fused_obs" in p
+                            for p in cli.recorder_problems(rec_summary, differ, rows)))
 
     def test_scale_rule_and_projection(self):
         seconds = {("A1", 70): 100.0, ("A2", 70): 120.0}

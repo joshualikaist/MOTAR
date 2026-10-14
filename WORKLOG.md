@@ -20026,3 +20026,8 @@ worktree `/home/fair/workspaces/aerial_gym_ws/.codex_worktrees/kroc2027-phase1`,
   3건은 worktree에 없는 git-ignore 결과 파일 때문(main checkout에서 같은 테스트 9/9 OK), 1건은 실제 충돌:
   `test_target_motion_replication...test_source_gate_allows_only_the_ledger_and_its_hook`가 replication 기준선 대비
   `aerial_gym/` 변경을 ledger hook만 허용(navrl_task.py (16,0) 고정). 승인 범위 밖 파일이라 수정하지 않고 보고 대상.
+- commit 4 — recorder 관측 계수를 task의 first-acquisition 규약(행동을 낳은 관측만 1-based로 계수)과 맞춤:
+  `after_perception`은 캐시만, 새 hook `before_action`이 계수(guard된 hook 8개). episode마다 task의
+  `_fa_ep_first_fused/_camera`를 함께 기록하고 CLI 셀 검사가 불일치를 문제로 보고(canary에서 episode 단위 교차검증).
+  A sampler의 LOS를 후보 16개 단위로 나눠 GPU 메모리 상한을 둠(결과·난수 소비 불변, chunk 1/7/16/64 동일 테스트).
+  CPU: `test_kroc2027_*` 85개 OK(1 skip).

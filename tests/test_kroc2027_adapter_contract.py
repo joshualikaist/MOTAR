@@ -111,6 +111,7 @@ def drive(task, rec, steps, finished_at, speed=1.0):
     """Move targets along +x at ``speed`` and finish env e at the steps listed in finished_at[e]."""
     n = task.num_envs
     for step in range(1, steps + 1):
+        rec.before_action()
         task.target_vel_w[:, 0] = speed
         task.target_position[:, 0] += speed * task.step_dt
         rec.after_target_advance()
@@ -175,8 +176,8 @@ class OffByDefaultTest(unittest.TestCase):
                 calls.append(node.func.attr)
         self.assertEqual(sorted(calls), sorted(guarded))
         self.assertEqual(sorted(set(calls)), ["after_perception", "after_physics", "after_target_advance",
-                                              "finalize", "observe_capture_distance", "on_episode_end",
-                                              "on_reset"])
+                                              "before_action", "finalize", "observe_capture_distance",
+                                              "on_episode_end", "on_reset"])
 
 
 class RecorderContractTest(unittest.TestCase):
@@ -201,6 +202,7 @@ class RecorderContractTest(unittest.TestCase):
         rec = self._recorder(task)
         snapshot = {k: v.clone() for k, v in task.obs_dict.items()}
         for step in range(1, 4):
+            rec.before_action()
             rec.after_target_advance()
             rec.after_physics(torch.zeros(task.num_envs, 4), torch.zeros(task.num_envs, 4))
             rec.observe_capture_distance(torch.full((task.num_envs,), 2.0))
@@ -264,6 +266,34 @@ class RecorderContractTest(unittest.TestCase):
         self.assertTrue(first["initial"]["initial_geo_visible"])
         self.assertAlmostEqual(first["initial"]["initial_range_xy_m"], 10.0, places=5)
         self.assertEqual(first["swept_min_distance_m"], 3.0)
+
+    def test_observation_counted_when_an_action_uses_it(self):
+        task = make_task(n=2)
+        task._fa_ep_first_fused = torch.tensor([2, -1])
+        task._fa_ep_first_camera = torch.tensor([2, -1])
+        rec = self._recorder(task)
+        # A repeated observation at reset replaces the pending one; it is not counted twice.
+        rec.after_perception({"visible": torch.zeros(2, dtype=torch.bool)})
+        rec.before_action()
+        rec.after_perception({"visible": torch.tensor([True, False])})
+        rec.before_action()
+        rec.on_episode_end(torch.ones(2, dtype=torch.bool), torch.ones(2, dtype=torch.bool),
+                           torch.zeros(2, dtype=torch.bool), torch.zeros(2, dtype=torch.bool))
+        rec.finalize()
+        records = [json.loads(l) for l in rec.episodes_path.read_text().splitlines()]
+        self.assertEqual([r["observations"] for r in records], [2, 2])
+        self.assertEqual([r["first_obs_fused_valid"] for r in records], [2, None])
+        self.assertEqual([r["task_first_fused_obs"] for r in records], [2, None])
+        self.assertEqual([r["task_first_camera_obs"] for r in records], [2, None])
+
+    def test_action_without_observation_fails(self):
+        task = make_task(n=1)
+        with mock.patch.dict(os.environ, recorder_env(self.tmp.name)):
+            rec = adapter.build_kroc_adapter(task)
+        rec.on_reset(torch.arange(1))
+        with self.assertRaises(RuntimeError):
+            rec.before_action()
+        rec.finalize()
 
     def test_stop_mode_raises_and_record_mode_continues(self):
         for mode, raises in (("stop", True), ("record", False)):
