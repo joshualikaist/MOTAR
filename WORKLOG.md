@@ -19997,3 +19997,14 @@ commit `2f723ed`, push됨). 분석은 커밋된 `analyze`만. 기록: `results/t
   검토용 ZIP(`/tmp/MOTAR_paper_presentation_2026-09-27.zip`, sha256 `6b96f852…1a53`)은 Git 밖에 둔다.
 
 다음: push 승인 후 사이트의 논문·덱 링크 확인. `PPO_TRAINING_STARTED = false`.
+
+## 2026-10-14 — KROC2027 P1(v2) 구현 시작: worktree `kroc2027-phase1` (GPU·PPO·push·merge 없음)
+
+사용자 승인(2026-10-14, P1(v2): P1a + B1 코드 기본 OFF, AGENTS.md 한시 예외, 범위 내 local commit)에 따른 작업이다.
+worktree `/home/fair/workspaces/aerial_gym_ws/.codex_worktrees/kroc2027-phase1`, 기준 `e55d57c`. main 작업 트리의
+미커밋 변경(`.gitignore`, `WORKLOG.md`, `presentations/README.md`, `presentations/professor_2026-10-01/`,
+`tests/test_professor_presentation.py`)은 건드리지 않는다. import 경로 확인: worktree 밖에서 `PYTHONPATH` 없이 실행하면
+`aerial_gym`이 main checkout으로 해석되고(editable finder), `PYTHONPATH=<worktree>`이면 worktree로 해석된다.
+
+- commit 1 — `AGENTS.md`에 "Temporary exception: KROC2027 Phase 1" 하위절, `docs/OPERATIONS.md`에 안내 1줄.
+  CPU: `test_canonical_docs` 25/25, `test_branch_policy` 4/4, `tools/check_public_docs.py` PASS.

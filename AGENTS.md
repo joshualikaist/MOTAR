@@ -59,6 +59,25 @@ For operations and commands see [`docs/OPERATIONS.md`](docs/OPERATIONS.md); for 
   someone else, so stage only your own files.
 - Preserve provenance. Do not move, rename or byte-edit a path listed under "Path contracts" below.
 
+### Temporary exception: KROC2027 Phase 1 (ends at merge to `main` or the 2026-10-28 Simulation Freeze, whichever is first)
+
+- Approved by the user on 2026-10-14 (KROC2027 plan v2, package P1).
+- Scope: branch `kroc2027-phase1` in the short-lived worktree `.codex_worktrees/kroc2027-phase1`.
+  New paths: `motar_eval/**`, `aerial_gym/task/navrl_task/kroc_eval_adapter.py`,
+  `tools/kroc2027_eval.py`, `tests/test_kroc2027_*.py`, `docs/plans/prereg_kroc2027_A_v1.md`,
+  `docs/plans/kroc2027_*.json`. Existing paths: `aerial_gym/task/navrl_task/navrl_task.py`,
+  `aerial_gym/task/navrl_task/navrl_perception.py`, `docs/OPERATIONS.md`, `WORKLOG.md` (append only).
+- Inside that scope an agent may edit, run CPU tests and make local commits without showing each
+  diff first. For those local commits only, this exception takes precedence over "Show the diff"
+  above and over the general commit rule in `CLAUDE.md` ("커밋/푸시 전 사용자가 diff 검토·승인한다").
+- Each local commit appends its file list and CPU test result to `WORKLOG.md`. The user reviews the
+  whole branch diff before any merge or push.
+- Still needs explicit approval: push, merge into `main`, every GPU run, any path outside the scope.
+  Path contracts still apply: a preregistration is immutable once committed.
+- Still forbidden: force-push, history rewrite, `reset --hard`, deleting or staging others' files.
+- A GPU run started from a worktree must set `PYTHONPATH` to that worktree and fail closed unless
+  `aerial_gym` resolves inside it.
+
 ## Path contracts — never move, rename or change these bytes
 
 | Path | Why |

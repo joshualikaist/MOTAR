@@ -25,7 +25,8 @@ are **not** approvals to run again.
   `main` and then deleted. The rule and its history are in root [`OPERATIONS.md`](../OPERATIONS.md) §0,
   and `tests/test_branch_policy.py` keeps the documents consistent.
 - Never force-push, `reset --hard`, or rewrite published history. Show the diff before any commit or
-  push.
+  push. The temporary KROC2027 Phase 1 exception in [`AGENTS.md`](../AGENTS.md) allows scoped local
+  commits on branch `kroc2027-phase1` until that branch is merged or the 2026-10-28 Simulation Freeze.
 - Any tool that writes a GPU-derived number to `runs/` or `results/` records the execution stack with
   `tools/runtime_fingerprint.py` (root `OPERATIONS.md` §0.1). Perception streaming reproduces only in
   `detector_runs/venv`.
