@@ -20031,3 +20031,10 @@ worktree `/home/fair/workspaces/aerial_gym_ws/.codex_worktrees/kroc2027-phase1`,
   `_fa_ep_first_fused/_camera`를 함께 기록하고 CLI 셀 검사가 불일치를 문제로 보고(canary에서 episode 단위 교차검증).
   A sampler의 LOS를 후보 16개 단위로 나눠 GPU 메모리 상한을 둠(결과·난수 소비 불변, chunk 1/7/16/64 동일 테스트).
   CPU: `test_kroc2027_*` 85개 OK(1 skip).
+- commit 5 — B1(기본 OFF, 승인 범위 P3-impl을 A 전에 구현): `motar_eval/search_supervisor.py`(1.0 s 무측정이면 초기 탐색
+  최대 10.5 s, track 만료 시 재탐색 최대 4.5 s, episode 누적 15 s, 탐색 중 XY 0·yaw ±0.6 rad/s, LiDAR 여유 ≤ hard margin
+  또는 무효면 정지, 획득한 step부터 policy 복귀, 방향은 (env, episode) 홀짝 — GT 입력 없음), adapter glue와 navrl_task.py
+  guard hook 2개(`NAVRL_KROC2027_SEARCH=b1`일 때만), recorder의 episode별 탐색 기록·불변식(탐색 중 수평 명령 0,
+  yaw ≤ 0.6 rad/s). CLI: canary에 B1 무결성 subrun 2개(hidden static, 115/205 bars; 결과는 미사용, `b1_ready`),
+  `b-gate`(A 분석 + 남은 GPU 시간 → 5개 기준과 밀도 규칙), `run --stage b_main`(GO·B prereg·승인 전 거부).
+  A와 B가 같은 source SHA를 쓰도록 B 실행 코드를 지금 넣음. CPU: `test_kroc2027_*` 101 tests in 2.455s OK(1 skip).

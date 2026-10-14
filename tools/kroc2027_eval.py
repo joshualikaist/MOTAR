@@ -395,11 +395,33 @@ def canary_subruns(protocol, out_root, run_id):
                              dict(target_model=model, density=density, seed=seed,
                                   out_dir=out_root / "cells" / arm, quota=q, view=spec["view"],
                                   recorder=True, run_id=run_id, arm=arm)))
+    # B1 integrity: supervisor on, hidden static arm, two densities. Invariants only; outcomes unused.
+    for density in (115, 205):
+        runs.append(("B1_%s_%d" % (static, density),
+                     dict(target_model=static, density=density, seed=seed, out_dir=out_root / "b1",
+                          quota=q, view="hidden", recorder=True, run_id=run_id, arm="B1",
+                          search="b1")))
     return runs
+
+
+def b1_problems(summary):
+    """B1 integrity from a recorder summary: enabled, searched, never moved or over-turned."""
+    search = summary.get("search", {})
+    problems = []
+    if not search.get("enabled"):
+        problems.append("supervisor not enabled")
+    if search.get("episodes_with_search", 0) == 0:
+        problems.append("no episode ever searched")
+    if search.get("invariant_violations", 1):
+        problems.append("%s episodes moved horizontally or turned faster than the scan rate while searching"
+                        % search.get("invariant_violations"))
+    return problems
 
 
 def cmd_run(args):
     protocol = kp.load_protocol(PROTOCOL)
+    if args.stage == "b_main":
+        return cmd_run_b(args, protocol, base_env())
     exp = protocol["experiment_A"]
     out_root = ROOT / exp["out_root"][args.stage]
     head, problems = preconditions(args.stage, protocol, args.run_id, args.approved_commit, out_root)
@@ -524,6 +546,18 @@ def canary_report(protocol, out_root, runs, codes, timings, head):
             detail["obs_dump_error"] = str(exc)
         checks["recorder_noninterference_actor_observation"] = obs_ok
         detail["observation_rows_compared"] = n_common
+        b1 = {}
+        for name, kw in runs:
+            if not name.startswith("B1_"):
+                continue
+            directory = kw["out_dir"] / kp.cell_label(kw["target_model"], kw["density"], kw["seed"])
+            issues = check_cell(directory, protocol, q, require_motion=False)
+            summary = json.loads((directory / RECORDER_SUMMARY).read_text()) \
+                if (directory / RECORDER_SUMMARY).is_file() else {}
+            issues += b1_problems(summary)
+            b1[name] = issues
+        detail["b1_integrity"] = b1
+        detail["b1_ready"] = bool(b1) and not any(b1.values())
         gate_results, cell_issues = {}, {}
         for name, kw in runs:
             if not name.startswith("A"):
@@ -577,6 +611,10 @@ def canary_report(protocol, out_root, runs, codes, timings, head):
 
 def cmd_analyse(args):
     protocol = kp.load_protocol(PROTOCOL)
+    helpers = protocol["analysis_A"]
+    if kp.sha256_file(ROOT / helpers["helpers"]) != helpers["helpers_sha256"]:
+        print(json.dumps({"status": "REFUSED", "problems": ["%s changed" % helpers["helpers"]]}))
+        return 2
     exp = protocol["experiment_A"]
     out_root = ROOT / exp["out_root"]["main"]
     canary = json.loads((ROOT / exp["out_root"]["canary"] / "canary_report.json").read_text())
@@ -609,10 +647,107 @@ def cmd_analyse(args):
         for metric in ("crash", "timeout", "ever_acquired", "never_acquired",
                        "never_acquired_timeout", "never_acquired_crash", "never_acquired_failure")}
     naf = kp.seed_level(per_cell, arms, densities, seeds, "never_acquired_failure")
-    report["experiment_B_arm"] = kp.select_b_arm(naf, seeds)
+    selected = kp.select_b_arm(naf, seeds)
+    report["experiment_B_arm"] = selected
+    visible_arm = {"A2": "A1", "A4": "A3"}[selected["arm"]]
+    ever = kp.seed_level(per_cell, arms, densities, seeds, "ever_acquired")
+    crash = kp.seed_level(per_cell, arms, densities, seeds, "crash")
+    timeout = kp.seed_level(per_cell, arms, densities, seeds, "timeout")
+    failures = sum(crash[(selected["arm"], s)] + timeout[(selected["arm"], s)] for s in seeds)
+    report["experiment_B_inputs"] = {
+        "selected_arm": selected,
+        "target_model": protocol["target_models"]["static"] if selected["target"] == "static" else moving,
+        "capture_visible_minus_hidden": [capture[(visible_arm, s)] - capture[(selected["arm"], s)]
+                                         for s in seeds],
+        "ever_acquired_visible_minus_hidden": [ever[(visible_arm, s)] - ever[(selected["arm"], s)]
+                                               for s in seeds],
+        "never_acquired_failure_share": (sum(naf[(selected["arm"], s)] for s in seeds) / failures
+                                         if failures else 0.0),
+        "integrity_ok": not problems,
+    }
     (out_root / "analysis.json").write_text(json.dumps(report, indent=1, sort_keys=True) + "\n")
     print(json.dumps({"integrity_problems": len(problems), "B_arm": report["experiment_B_arm"]}, indent=1))
     return 0 if not problems else 1
+
+
+B_PREREG = "docs/plans/prereg_kroc2027_B_v1.md"
+
+
+def cmd_b_gate(args):
+    """Evaluate the Experiment B gate once, from the A analysis and the operator's inputs."""
+    protocol = kp.load_protocol(PROTOCOL)
+    a_out = ROOT / protocol["experiment_A"]["out_root"]["main"]
+    analysis = json.loads((a_out / "analysis.json").read_text())
+    inputs = analysis["experiment_B_inputs"]
+    budget = protocol["gpu_budget_hours"]
+    stressed_4 = budget["B_main_static_four_densities_stressed"]
+    densities = ([70, 115, 160, 205]
+                 if kp.b_density_count(args.remaining_gpu_hours, stressed_4, budget["B_smoke"], 2.0) == 4
+                 else [115, 205])
+    planned = stressed_4 if len(densities) == 4 else budget["B_main_static_two_densities_stressed"]
+    prereg = subprocess.run(["git", "-C", str(ROOT), "ls-files", "--error-unmatch", B_PREREG],
+                            capture_output=True).returncode == 0
+    gate = kp.b_gate(inputs["integrity_ok"], inputs["selected_arm"],
+                     inputs["capture_visible_minus_hidden"], inputs["ever_acquired_visible_minus_hidden"],
+                     inputs["never_acquired_failure_share"], args.remaining_gpu_hours,
+                     planned + budget["B_smoke"], 1.0, prereg, args.b_run_approved)
+    gate.update(target_model=inputs["target_model"], densities=densities,
+                remaining_gpu_hours=args.remaining_gpu_hours,
+                a_analysis_sha256=kp.sha256_file(a_out / "analysis.json"),
+                evaluated_at=datetime.now(timezone.utc).isoformat())
+    out = ROOT / protocol["experiment_B"]["out_root"]["main"]
+    out.mkdir(parents=True, exist_ok=True)
+    (out / "b_gate.json").write_text(json.dumps(gate, indent=1, sort_keys=True) + "\n")
+    print(json.dumps({k: gate[k] for k in ("verdict", "criteria", "target_model", "densities")}, indent=1))
+    return 0 if gate["verdict"] == "GO" else 1
+
+
+def cmd_run_b(args, protocol, env):
+    out_root = ROOT / protocol["experiment_B"]["out_root"]["main"]
+    head = git("rev-parse", "HEAD").strip()
+    gate_path = out_root / "b_gate.json"
+    gate = json.loads(gate_path.read_text()) if gate_path.is_file() else {}
+    problems = []
+    if args.run_id != protocol["experiment_B"]["run_ids"]["main"]:
+        problems.append("run id %r is not the B main run id" % args.run_id)
+    if not args.approved_commit or len(args.approved_commit) < 12 or not head.startswith(args.approved_commit):
+        problems.append("--approved-commit must name HEAD (%s)" % head)
+    if gate.get("verdict") != "GO":
+        problems.append("the B gate is not GO (%s)" % gate_path)
+    if git("status", "--porcelain", "--untracked-files=no").strip():
+        problems.append("tracked files are modified; commit first")
+    problems.extend(static_problems(protocol))
+    if gpu_names() != [protocol["hardware"]["gpu"]]:
+        problems.append("expected exactly one %s" % protocol["hardware"]["gpu"])
+    import_issues, origins = import_problems(env, launcher_path(protocol).parent)
+    problems.extend(import_issues)
+    cells = kp.b_cells(protocol, gate.get("target_model") or "", gate.get("densities", []))
+    if args.dry_run or problems:
+        print(json.dumps({"stage": "b_main", "status": "DRY_RUN" if args.dry_run else "REFUSED",
+                          "problems": problems, "cells": len(cells), "import_origins": origins}, indent=1))
+        return 0 if args.dry_run else 2
+    quota = protocol["evaluation"]["quota_per_env"]
+    launched = []
+    for cell in cells:
+        directory = out_root / cell["cell_dir"]
+        if (directory / RECORDER_SUMMARY).is_file() and (directory / "episode_ledger_summary.json").is_file():
+            continue
+        if (directory / "result.json").exists():
+            print(json.dumps({"status": "STOPPED", "partial_cell": cell["cell_dir"]}))
+            return 1
+        kw = dict(target_model=cell["target_model"], density=cell["density"], seed=cell["seed"],
+                  out_dir=out_root / cell["arm"], quota=quota, view="hidden", recorder=True,
+                  run_id=args.run_id, arm=cell["arm"], search=cell["search"])
+        rc, _ = _timed_launch(protocol, cell_env(env, protocol, **kw), False, launched)
+        issues = [] if rc == 0 else ["launcher exit %d" % rc]
+        issues += check_cell(directory, protocol, quota, require_motion=True)
+        if cell["search"]:
+            issues += b1_problems(json.loads((directory / RECORDER_SUMMARY).read_text())) \
+                if (directory / RECORDER_SUMMARY).is_file() else ["no recorder summary"]
+        if issues:
+            print(json.dumps({"status": "STOPPED", "failed": cell["cell_dir"], "problems": issues}))
+            return 1
+    return 0
 
 
 def main(argv=None):
@@ -628,14 +763,18 @@ def main(argv=None):
     v = sub.add_parser("validate")
     v.add_argument("--raw-dir", help="folder holding the git-ignored replication cells")
     r = sub.add_parser("run")
-    r.add_argument("--stage", choices=("canary", "main"), required=True)
+    r.add_argument("--stage", choices=("canary", "main", "b_main"), required=True)
     r.add_argument("--run-id", required=True)
     r.add_argument("--approved-commit", default="")
     r.add_argument("--dry-run", action="store_true")
     sub.add_parser("analyse")
+    g = sub.add_parser("b-gate")
+    g.add_argument("--remaining-gpu-hours", type=float, required=True)
+    g.add_argument("--b-run-approved", action="store_true",
+                   help="set only after the user has approved the B run")
     args = parser.parse_args(argv)
     return {"pilot": cmd_pilot, "plan": cmd_plan, "validate": cmd_validate, "run": cmd_run,
-            "analyse": cmd_analyse}[args.command](args)
+            "analyse": cmd_analyse, "b-gate": cmd_b_gate}[args.command](args)
 
 
 if __name__ == "__main__":

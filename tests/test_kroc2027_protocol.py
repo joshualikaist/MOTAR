@@ -13,6 +13,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from types import SimpleNamespace
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -212,6 +213,38 @@ class ExperimentBRuleTest(unittest.TestCase):
         self.assertEqual(unapproved["verdict"], "NO_GO")
 
 
+class ExperimentBCellsAndGateCommandTest(unittest.TestCase):
+    def test_b_cells(self):
+        cells = kp.b_cells(PROTOCOL, "E0_static", [115, 205])
+        self.assertEqual(len(cells), 7 * 2 * 2)
+        self.assertEqual({c["seed"] for c in cells}, set(PROTOCOL["experiment_B"]["seeds"]))
+        self.assertEqual({(c["arm"], c["search"]) for c in cells}, {("B0", None), ("B1", "b1")})
+        self.assertTrue(all(c["view"] == "hidden" for c in cells))
+        self.assertEqual(cells[1]["cell_dir"], "B1/E0_static__115bars__seed4301")
+
+    def test_gate_command_writes_a_decision_outside_the_tree(self):
+        from unittest import mock
+        tmp = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, tmp, True)
+        a_out = tmp / PROTOCOL["experiment_A"]["out_root"]["main"]
+        a_out.mkdir(parents=True)
+        positive = [0.05, 0.06, 0.04, 0.07, 0.05, 0.06, 0.05]
+        (a_out / "analysis.json").write_text(json.dumps({"experiment_B_inputs": {
+            "selected_arm": {"arm": "A2", "target": "static"}, "target_model": "E0_static",
+            "capture_visible_minus_hidden": positive, "ever_acquired_visible_minus_hidden": positive,
+            "never_acquired_failure_share": 0.8, "integrity_ok": True}}))
+        args = SimpleNamespace(remaining_gpu_hours=12.0, b_run_approved=True)
+        with mock.patch.object(cli, "ROOT", tmp):
+            rc = cli.cmd_b_gate(args)
+        gate = json.loads((tmp / PROTOCOL["experiment_B"]["out_root"]["main"] / "b_gate.json").read_text())
+        # Not a git repository, so the B preregistration cannot be committed: NO_GO, fail closed.
+        self.assertEqual(rc, 1)
+        self.assertEqual(gate["verdict"], "NO_GO")
+        self.assertFalse(gate["criteria"]["5_B_preregistered_and_approved"])
+        self.assertTrue(gate["criteria"]["4_budget_fits"])
+        self.assertEqual(gate["densities"], [70, 115, 160, 205])
+
+
 class PilotProvenanceTest(unittest.TestCase):
     def test_committed_pilot_is_traceable_to_the_manifest(self):
         pilot = json.loads((ROOT / "docs/plans/kroc2027_pilot_v1.json").read_text())
@@ -302,7 +335,14 @@ class CliPureFunctionTest(unittest.TestCase):
         runs = cli.canary_subruns(PROTOCOL, Path("/tmp/canary"), "KROC27-A-C01")
         names = [n for n, _ in runs]
         self.assertEqual(names[:3], ["off_path", "recorder_off", "recorder_on"])
-        self.assertEqual(len(names), 3 + 4 * 2 + 4 * 2 * 2)
+        self.assertEqual(len(names), 3 + 4 * 2 + 4 * 2 * 2 + 2)
+        b1 = dict(runs)["B1_E0_static_205"]
+        self.assertEqual((b1["view"], b1["search"], b1["quota"]), ("hidden", "b1", 4))
+        self.assertEqual(cli.b1_problems({"search": {"enabled": True, "episodes_with_search": 3,
+                                                     "invariant_violations": 0}}), [])
+        self.assertTrue(cli.b1_problems({"search": {"enabled": True, "episodes_with_search": 3,
+                                                    "invariant_violations": 1}}))
+        self.assertTrue(cli.b1_problems({"search": {"enabled": False}}))
         off = dict(runs)["off_path"]
         self.assertEqual((off["target_model"], off["density"], off["seed"], off["quota"]),
                          ("E0_static", 70, 4104, 16))

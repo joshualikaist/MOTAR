@@ -97,6 +97,25 @@ def a_cells(protocol: Dict, stage: str, moving_model: Optional[str]) -> List[Dic
     return out
 
 
+def b_cells(protocol: Dict, target_model: str, densities: Sequence[int]) -> List[Dict]:
+    """Experiment B cells: B0 (policy alone) and B1 (policy + supervisor) on the hidden view."""
+    out = []
+    for seed in protocol["experiment_B"]["seeds"]:
+        for density in densities:
+            for arm, search in (("B0", None), ("B1", "b1")):
+                out.append({
+                    "experiment": "B",
+                    "arm": arm,
+                    "search": search,
+                    "target_model": target_model,
+                    "view": "hidden",
+                    "density": int(density),
+                    "seed": int(seed),
+                    "cell_dir": "%s/%s" % (arm, cell_label(target_model, density, seed)),
+                })
+    return out
+
+
 # ---------------------------------------------------------------- quota and per-episode join
 def quota_rows(ledger_rows: Iterable[Dict], num_envs: int, quota: int) -> List[Dict]:
     """The first ``quota`` completed episodes of each env, checked to be exactly that."""

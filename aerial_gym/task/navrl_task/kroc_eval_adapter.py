@@ -12,8 +12,13 @@ Two independent switches, both read from the environment once, at task construct
   It reads detached tensors only, draws no randomness, writes into no task buffer, and nothing it
   computes reaches an observation, a reward or a termination (AGENTS.md observation contract).
 
-With neither variable set, ``initial_view_from_env`` and ``build_kroc_adapter`` return ``None``, the
-task's guarded hooks do nothing, and ``motar_eval`` is never imported. The module itself imports
+* ``NAVRL_KROC2027_SEARCH=b1`` wraps the unchanged policy with the B1 yaw-scanning supervisor
+  (``motar_eval.search_supervisor``): it rewrites the normalised action before the command is built,
+  from actor-side signals only (fused measurement, track state, measured LiDAR clearance).
+
+With no variable set, ``initial_view_from_env``, ``build_kroc_adapter`` and
+``build_search_supervisor`` return ``None``, the task's guarded hooks do nothing, and
+``motar_eval`` is never imported. The module itself imports
 only the standard library and torch, so CPU tests load it by file path without Isaac Gym.
 """
 
@@ -33,6 +38,7 @@ import torch
 VIEW_VAR = "NAVRL_KROC2027_INITIAL_VIEW"
 DISTANCE_VAR = "NAVRL_KROC2027_INITIAL_DISTANCE_M"
 RECORDER_VAR = "NAVRL_KROC2027_RECORDER"
+SEARCH_VAR = "NAVRL_KROC2027_SEARCH"
 ON_VIOLATION_VAR = "NAVRL_KROC2027_ON_VIOLATION"
 RECORDER_SCHEMA = "motar.kroc2027-recorder.v1"
 EPISODES_FILE = "kroc2027_episodes.jsonl"
@@ -143,6 +149,55 @@ def build_kroc_adapter(task):
     return KrocRecorder(task)
 
 
+def build_search_supervisor(task, environ=None):
+    """The B1 yaw-scanning supervisor when ``NAVRL_KROC2027_SEARCH=b1``, else ``None``."""
+    environ = os.environ if environ is None else environ
+    mode = environ.get(SEARCH_VAR, "")
+    if _off(mode):
+        return None
+    if mode.strip().lower() != "b1":
+        raise RuntimeError("%s must be b1 or off, got %r" % (SEARCH_VAR, mode))
+    from motar_eval.search_supervisor import SearchSpec, YawScanSupervisor
+
+    supervisor = YawScanSupervisor(
+        task.num_envs, task.device,
+        yaw_rate_max_rad_s=float(task.task_config.yaw_rate_max),
+        hard_margin_m=float(task.speed_governor_cfg.hard_margin_m),
+        spec=SearchSpec(dt_s=float(task.step_dt)),
+    )
+    return TaskSearch(task, supervisor)
+
+
+class TaskSearch:
+    """Feeds the supervisor the actor-side signals the policy itself observes; nothing else."""
+
+    def __init__(self, task, supervisor):
+        self.task = task
+        self.supervisor = supervisor
+
+    def apply(self, actions):
+        """Start of step, after the observation is final: the actions that will be executed."""
+        t = self.task
+        fused = t._visible_now.detach()
+        track = t.perception.tracker.active.detach()
+        scan = getattr(t.perception, "last_scan_nearest", None)
+        if scan is None:
+            clearance = torch.full((t.num_envs,), math.nan, device=t.device)
+        else:
+            clearance = scan.detach().amin(dim=1)
+        return self.supervisor.step(actions, fused, track, clearance)
+
+    def on_reset(self, env_ids):
+        self.supervisor.on_reset(env_ids)
+
+    @property
+    def active(self):
+        return self.supervisor.active
+
+    def episode_records(self, env_ids):
+        return self.supervisor.episode_records(env_ids)
+
+
 def _module_origin(name):
     module = sys.modules.get(name)
     return str(Path(module.__file__).resolve()) if module is not None and getattr(module, "__file__", None) else ""
@@ -210,7 +265,8 @@ class KrocRecorder:
         self._steps = zeros(torch.long)
         self._speed = {key: zeros() for key in (
             "requested_sum", "requested_max", "commanded_sum", "commanded_max",
-            "actual_sum", "actual_max", "displacement_max")}
+            "actual_sum", "actual_max", "displacement_max", "search_xy_max", "search_yaw_max")}
+        self.search_counts = {"episodes": 0, "episodes_with_search": 0, "invariant_violations": 0}
         self._over = {key: zeros(torch.long) for key in ("commanded", "actual", "displacement")}
         self.swept = {"judged_steps": 0, "violations": 0, "wall_violations": 0,
                       "min_clearance_m": math.inf, "first_violation": None}
@@ -364,6 +420,13 @@ class KrocRecorder:
             self._speed[name + "_sum"] += value
             self._speed[name + "_max"] = torch.maximum(self._speed[name + "_max"], value)
         self._speed["displacement_max"] = torch.maximum(self._speed["displacement_max"], disp)
+        search = getattr(t, "_kroc_search", None)
+        if search is not None:
+            active = search.active
+            yaw = command[:, 3].detach().abs()
+            for name, value in (("search_xy_max", commanded), ("search_yaw_max", yaw)):
+                self._speed[name] = torch.where(active, torch.maximum(self._speed[name], value),
+                                                self._speed[name])
         self._over["commanded"] += (commanded > ref).long()
         self._over["actual"] += (actual > ref).long()
         self._over["displacement"] += (disp > ref).long()
@@ -415,6 +478,9 @@ class KrocRecorder:
         for name, attr in (("fused", "_fa_ep_first_fused"), ("camera", "_fa_ep_first_camera")):
             values = getattr(self.task, attr, None)
             task_first[name] = values[env_ids].cpu().tolist() if values is not None else None
+        search = getattr(self.task, "_kroc_search", None)
+        search_records = search.episode_records(env_ids) if search is not None else None
+        search_limit = (search.supervisor.spec.yaw_rate_rad_s + 1e-6) if search is not None else None
         for row, env in enumerate(env_ids.cpu().tolist()):
             flags = (bool(capture[row]), bool(crash[row]), bool(timeout[row]))
             outcome = ("capture", "crash", "timeout")[flags.index(True)] if sum(flags) == 1 else "invalid"
@@ -446,6 +512,15 @@ class KrocRecorder:
             for name, values in task_first.items():
                 if values is not None:
                     record["task_first_%s_obs" % name] = values[row] if values[row] >= 0 else None
+            if search_records is not None:
+                record.update(search_records[row])
+                record["search_commanded_xy_max_mps"] = host["search_xy_max"][row]
+                record["search_yaw_rate_max_rad_s"] = host["search_yaw_max"][row]
+                self.search_counts["episodes"] += 1
+                if record["search_search_steps"] > 0:
+                    self.search_counts["episodes_with_search"] += 1
+                if host["search_xy_max"][row] > 1e-6 or host["search_yaw_max"][row] > search_limit:
+                    self.search_counts["invariant_violations"] += 1
             initial = self.initial[env]
             if initial is not None:
                 record["initial"] = initial
@@ -463,6 +538,18 @@ class KrocRecorder:
             self.records += 1
             self.initial[env] = None
         self._handle.flush()
+
+    def _search_summary(self):
+        search = getattr(self.task, "_kroc_search", None)
+        if search is None:
+            return {"enabled": False}
+        from dataclasses import asdict
+        from motar_eval.search_supervisor import SEARCH_CONTRACT
+
+        return dict(self.search_counts, enabled=True, contract=SEARCH_CONTRACT,
+                    spec=asdict(search.supervisor.spec),
+                    hard_margin_m=search.supervisor.hard_margin_m,
+                    yaw_action=search.supervisor.yaw_action)
 
     def _finalize_at_exit(self):
         """Interpreter-exit fallback (for runs without the ledger). A missing summary is the signal."""
@@ -502,6 +589,7 @@ class KrocRecorder:
             "motion_gate": self.motion.summary(),
             "swept_clearance": swept,
             "initial_view": self.initial_view_counts,
+            "search": self._search_summary(),
             "on_violation": self.on_violation,
             "pursuer_reference_speed_mps": PURSUER_REFERENCE_SPEED_MPS,
             "finished_at": datetime.now(timezone.utc).isoformat(),

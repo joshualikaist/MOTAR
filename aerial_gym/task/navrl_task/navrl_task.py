@@ -80,6 +80,7 @@ from aerial_gym.task.navrl_task.navrl_episode_ledger import build_episode_ledger
 from aerial_gym.task.navrl_task.navrl_trajectory_digest import TrajectoryDigest
 from aerial_gym.task.navrl_task.kroc_eval_adapter import (
     build_kroc_adapter,
+    build_search_supervisor,
     initial_view_from_env,
     sample_initial_view_for_task,
 )
@@ -2097,6 +2098,9 @@ class NavRLTask(BaseTask):
         if self._kroc_initial_view is not None and not self.general_spawn_mode:
             raise RuntimeError("NAVRL_KROC2027_INITIAL_VIEW needs general spawn mode")
         self._kroc_adapter = build_kroc_adapter(self)
+        # KROC2027 B1 (Experiment B only; off unless NAVRL_KROC2027_SEARCH=b1): an external
+        # yaw-scanning supervisor that rewrites the policy's action from actor-side signals.
+        self._kroc_search = build_search_supervisor(self)
 
     def _get_max_bars_available(self):
         for key in ("obstacle_position", "env_asset_state_tensor"):
@@ -4902,6 +4906,8 @@ class NavRLTask(BaseTask):
         self.ep_reached[env_ids] = False
         if self._kroc_adapter is not None:
             self._kroc_adapter.on_reset(env_ids)
+        if self._kroc_search is not None:
+            self._kroc_search.on_reset(env_ids)
 
     def render(self):
         return self.sim_env.render()
@@ -4971,6 +4977,9 @@ class NavRLTask(BaseTask):
         self._record_action_diagnostics(actions)
         if self._kroc_adapter is not None:
             self._kroc_adapter.before_action()
+        if self._kroc_search is not None:
+            # Policy -> supervisor -> governor -> command -> previous-action feedback.
+            actions = self._kroc_search.apply(actions)
         # Phase 3: move the virtual target FIRST — both agents move during this 0.1 s control
         # interval, and the end-of-interval reward is computed against the target's NEW position.
         # (No-op while all per-episode target speeds are 0, i.e. the static Phases 1-2 task.)
