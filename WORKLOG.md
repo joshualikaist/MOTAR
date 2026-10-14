@@ -20047,3 +20047,7 @@ worktree `/home/fair/workspaces/aerial_gym_ws/.codex_worktrees/kroc2027-phase1`,
 - commit 7 — 사전등록 §5와 코드 일치화(실험 전 수정): canary의 recorder 셀에 `NAVRL_KROC2027_ON_VIOLATION=record`를 설정해
   이동 모델의 gate 위반이 셀을 중단시키지 않고 기록되게 함(선택 규칙이 모델을 기각할 수 있도록). main/B 셀은 기본값
   `stop` 유지. prereg·protocol 변경 없음. CPU: `test_kroc2027_*` OK.
+- commit 8 — (2026-10-15, 사용자 명시 승인 "결정 1": 예외 범위 밖 파일) `tests/test_target_motion_replication.py`의
+  source-gate 테스트가 작업 트리 대신 replication 실행 commit(`RAW_MANIFEST.json`의 `source_commit` =
+  `b1c0bc6`)을 기준선과 비교하도록 고정. 보호하는 사실(replication 코드는 ledger와 hook만 다름)은 그대로이고,
+  인용된 `tools/target_motion_replication.py`는 수정하지 않음. CPU: 해당 파일 15/15 OK.

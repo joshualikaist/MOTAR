@@ -202,8 +202,23 @@ class CanaryGateTest(unittest.TestCase):
         self.assertEqual(rep.observation_gate(off, {k: v[4:] for k, v in on.items()}), (False, 0))
 
     def test_source_gate_allows_only_the_ledger_and_its_hook(self):
-        ok, changed = rep.source_gate()
-        self.assertTrue(ok, changed)
+        # The claim is about the code the replication ran on: the commit recorded in the tracked
+        # RAW_MANIFEST.json, not whatever the working tree holds later. Anchoring it there keeps the
+        # provenance claim exact without forbidding later, separately approved simulator changes
+        # (the opt-in KROC2027 hooks, 2026-10-15). `rep.source_gate()` itself is unchanged.
+        manifest = json.loads(
+            (ROOT / "results/target_motion_replication_7seed/RAW_MANIFEST.json").read_text()
+        )
+        out = rep.git("diff", "--numstat", rep.BASELINE_COMMIT, manifest["source_commit"], "--",
+                      "aerial_gym/")
+        changed = {}
+        for line in out.strip().splitlines():
+            added, removed, path = line.split("\t")
+            changed[path] = (int(added), int(removed))
+        ledger = "aerial_gym/task/navrl_task/navrl_episode_ledger.py"
+        self.assertIn(ledger, changed, "the ledger was not part of the replication's code")
+        changed.pop(ledger)
+        self.assertEqual(changed, rep.ALLOWED_SIM_CHANGES)
 
 
 if __name__ == "__main__":
