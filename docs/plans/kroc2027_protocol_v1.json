@@ -1,0 +1,203 @@
+{
+  "schema": "motar.kroc2027-protocol.v1",
+  "protocol_id": "KROC2027_A_B_V1",
+  "status": "DRAFT until docs/plans/prereg_kroc2027_A_v1.md is committed; then frozen (changes need a new file)",
+  "plan": "KROC2027 plan v2, package P1 approved by the user on 2026-10-14",
+  "preregistration": "docs/plans/prereg_kroc2027_A_v1.md",
+  "policy": {
+    "label": "Policy F (ep25000, riskcap governor), evaluated unchanged",
+    "launcher": "aerial_gym/rl_training/rl_games/eval_navrl_target_behavior_arms.sh",
+    "launcher_sha256": "4077e2718c73c3177cdf1f775cc11a6b50cb18d591e352382e175c45fb14f7ec",
+    "player": "aerial_gym/rl_training/rl_games/play_navrl.sh",
+    "player_sha256": "9f300a2093e274171a8ff9ea5407a0a9bff14d9ccb05a2e0b091741bd08103d0",
+    "checkpoint_rel_to_launcher": "runs/ppo_260805_0413_navrl_v2-speedgov-ep24000-205bars-main-riskcap-s1/nn/last_gen_ppo_ep_25000_rew_39.742134.pth",
+    "checkpoint_sha256": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+    "note": "The launcher is run byte-for-byte; every KROC2027 setting reaches the task through NAVRL_KROC2027_* variables it does not touch."
+  },
+  "hardware": {
+    "gpu": "NVIDIA GeForce RTX 3070",
+    "never_pool_with": "results from the GTX 1650 Ti host (GPU4GB=1)"
+  },
+  "evaluation": {
+    "num_envs": 128,
+    "quota_per_env": 16,
+    "episodes_per_cell": 2048,
+    "episode_len_steps": 600,
+    "rl_dt_s": 0.1,
+    "physics_steps_per_action": 10,
+    "player_games_cap": 1000000000,
+    "primary_metric": "capture: swept segment distance below 0.5 m (capture_0p5m), unchanged",
+    "estimand": "per-environment quota: the first 16 completed episodes of each of 128 environments; later episodes are kept as NONPRIMARY_TAIL and never used",
+    "exogenous_streams": "UNPAIRED_STREAM: arms are independent samples from one sampler; seed labels are blocking labels, not episode pairing"
+  },
+  "target_models": {
+    "static": "E0_static",
+    "moving_candidates": ["E2_obstacle_aware", "E1_cv"],
+    "historical_reference": "H_historical (not run in KROC2027; legacy reflection and push-out paths)"
+  },
+  "moving_model_rule": "The first candidate in order whose canary motion gates (G1, G2, swept clearance, wall) all PASS becomes the moving model for A3/A4 and B. E1 and E2 share the bounded executor, so an executor defect fails both. If none passes, A3/A4 are not run and H-A2 is NOT_TESTED; a new motion lineage needs its own approval.",
+  "initial_view": {
+    "variables": {
+      "NAVRL_KROC2027_INITIAL_VIEW": "visible | hidden",
+      "NAVRL_KROC2027_INITIAL_DISTANCE_M": "10"
+    },
+    "distance_m": 10.0,
+    "altitude": "pursuer and target both at task_config.flight_altitude",
+    "wall_margin_m": 1.0,
+    "candidates_per_round": 64,
+    "rounds": 32,
+    "respawn_rounds": 16,
+    "clearance_rule": "the drone-spawn footprint rule (_spawn_footprint_clearance_accepted with _spawn_required_surface_margin_m) against every solid obstacle, for every arm",
+    "los_rule": "centre ray from the camera, with the camera facing the target, clear of every solid obstacle box (3D slab test); identical for both views",
+    "treatment": "visible: camera boresight on the target; hidden: pursuer turned 180 degrees. Hidden means outside the field of view, not occluded.",
+    "acceptance_never_uses": ["detector output", "confidence", "episode outcome"]
+  },
+  "recorder": {
+    "variables": {
+      "NAVRL_KROC2027_RECORDER": "1 to record; unset or 0 for off"
+    },
+    "files_per_cell": ["kroc2027_episodes.jsonl", "kroc2027_summary.json"],
+    "target_proxy_radius_m": 0.15,
+    "camera": {
+      "hfov_deg": 87.0,
+      "vfov_deg": 58.0,
+      "max_range_m": 20.0,
+      "translation_m": [0.10, 0.0, 0.03],
+      "mount": "level, on the yaw-only vehicle frame"
+    },
+    "ground_truth_use": "evaluation sidecar only; never the actor observation"
+  },
+  "motion_gate": {
+    "contract": "KROC2027_MOTION_GATE_V1",
+    "limits": {
+      "speed_max_mps": 1.5,
+      "accel_max_mps2": 4.0,
+      "turn_rate_max_deg_s": 150.0,
+      "heading_valid_speed_mps": 0.10,
+      "dt_s": 0.1
+    },
+    "tolerances": {
+      "g1_relative": 0.0001,
+      "g1_speed_floor_mps": 0.000001,
+      "g1_heading_band_mps": 0.000001,
+      "g2_safety_factor": 2.0,
+      "g2_turn_min_speed_mps": 0.20,
+      "declared_max_abs_coordinate_m": 40.0
+    },
+    "derived_g2": {
+      "ulp_m": 3.814697265625e-06,
+      "speed_mps": 5.394e-05,
+      "accel_mps2": 0.0010789,
+      "position_m": 5.394e-06,
+      "turn_deg_s_at_0p20_mps": 0.309
+    },
+    "collision": "swept segment of the target centre against every solid obstacle footprint: distance at or above target_proxy_radius_m; target centre inside the arena bounds",
+    "cpu_precondition": "tools/audits/audit_e2_target_validity.py exits 0 (run unchanged)",
+    "on_violation": "stop the run; keep the first violation of each gate with its state and episode key"
+  },
+  "experiment_A": {
+    "arms": {
+      "A1": {"target": "static", "view": "visible"},
+      "A2": {"target": "static", "view": "hidden"},
+      "A3": {"target": "moving", "view": "visible"},
+      "A4": {"target": "moving", "view": "hidden"}
+    },
+    "densities": [70, 115, 160, 205],
+    "seeds": [4201, 4202, 4203, 4204, 4205, 4206, 4207],
+    "run_ids": {"canary": "KROC27-A-C01", "main": "KROC27-A-M01"},
+    "out_root": {"canary": "results/kroc2027_A_canary_v1", "main": "results/kroc2027_A_v1"},
+    "canary": {
+      "seed": 4190,
+      "quota_per_env": 4,
+      "checks": [
+        "off_path_reproduces_replication_cell: E0_static, 70 bars, seed 4104, every NAVRL_KROC2027_* variable unset, episode ledger on: result.json identical to results/target_motion_replication_7seed/E0_static__70bars__seed4104/result.json except the run nonce",
+        "recorder_noninterference: A1 treatment, 70 bars, seed 4190, recorder off and on with the trajectory digest on: identical result.json except the nonce, identical trajectory digest",
+        "motion_gates: A3 and A4 with E2_obstacle_aware and with E1_cv at all four densities: G1, G2, swept clearance and wall PASS",
+        "instrumentation: A1 and A2 at all four densities: one recorder record per ledger episode, outcomes agree, import origins inside the hashed tree",
+        "initial_view_acceptance: acceptance rounds and pursuer respawns recorded per density; no fail-closed abort",
+        "b1_integrity (only if B1 code is merged before the canary): supervisor on, hidden arm, 115 and 205 bars: priority chain, suppression and feedback records consistent; outcomes not inspected",
+        "timing: seconds per cell for the scale rule"
+      ],
+      "outcomes_not_used": "canary capture, crash and timeout counts are recorded and never used for any decision"
+    },
+    "scale_rule": "Before the main run, project A hours as the sum over cells of canary seconds per quota episode x 16 for the matching arm and density. If the projection exceeds 30 h - canary hours used - 4.9 h (B at two densities, stressed, plus smoke) - 2.0 h reserve, A runs at 115 and 205 bars only. Decided from timing only."
+  },
+  "analysis_A": {
+    "alpha": 0.05,
+    "family": ["Delta_A", "I_A"],
+    "definitions": {
+      "Delta_A": "0.5 * [(A1 - A2) + (A3 - A4)] capture, per seed",
+      "I_A": "(A3 - A4) - (A1 - A2) capture, per seed"
+    },
+    "aggregation": "per seed, the four density cells weighted equally; inference unit = seed (n = 7)",
+    "primary_test": "two-sided paired t over seeds (df = 6); Holm over the family",
+    "practical_interval": "Bonferroni t interval at 1 - alpha / 2 (97.5 %)",
+    "practical_threshold_pp": 3.0,
+    "sensitivity_thresholds_pp": [1, 3, 5],
+    "predicted_direction": {
+      "Delta_A": "positive",
+      "I_A": "negative",
+      "basis": "already-observed exploratory data (docs/plans/kroc2027_pilot_v1.json); tests stay two-sided"
+    },
+    "sensitivity": "BCa 95 % (20000 resamples, seed 4200) and exact sign-flip p, both from tools/target_motion_replication.py, unmodified",
+    "bca_resamples": 20000,
+    "bca_seed": 4200,
+    "helpers": "tools/target_motion_replication.py",
+    "helpers_sha256": "736c2d919cd99f4ca5386c2b4a95f2f368da29a1d54ae750dcc067bdd5fab7d4",
+    "decisions": ["SUPPORTED", "PRACTICALLY_SUPPORTED", "INCONCLUSIVE", "OPPOSITE_DIRECTION", "INVALID"],
+    "secondary": ["crash", "timeout", "ever_acquired", "never_acquired_timeout", "first-acquisition latency among acquired episodes", "reacquisition latency", "loss duration (censored where open)", "end-step and swept distances", "target and pursuer horizontal speed"],
+    "exploratory": ["I_A on the log-odds scale", "per-density contrasts", "static-only and moving-only contrasts", "conditional latency"],
+    "never_substituted": "a never-acquired latency is null, never 0"
+  },
+  "experiment_B": {
+    "conditional_on": "the gate below, evaluated once after the A analysis",
+    "arm_rule": "the hidden arm (A2 static or A4 moving) with the larger never-acquired failure rate (never acquired and crash or timeout, over all quota episodes, seed-level mean); a difference within 0.5 pp selects static",
+    "conditions": {"B0": "Policy F unchanged on the selected hidden arm", "B1": "Policy F plus the external yaw-scanning supervisor (default off; NAVRL_KROC2027_SEARCH=b1)"},
+    "seeds": [4301, 4302, 4303, 4304, 4305, 4306, 4307],
+    "density_rule": "four densities if remaining GPU hours minus the stressed four-density B estimate minus the 0.25 h smoke leave at least 2.0 h; otherwise 115 and 205 bars",
+    "gate": [
+        "1: A integrity PASS",
+        "2: in the selected arm pair, visible minus hidden capture and ever-acquired differences both have 95 % paired-t intervals above 0",
+        "3: in the selected hidden arm, never-acquired failures exceed 50 % of failures",
+        "4: remaining GPU hours cover the planned B hours plus 1.0 h retry",
+        "5: B preregistration committed and the B run approved"
+    ],
+    "primary": "capture(B1) - capture(B0), two-sided paired t over seeds, alpha 0.05 (single test)",
+    "adoption": "a Pareto improvement: capture up with crash and timeout not up (95 % interval upper bounds at or below 0 pp); a simulation criterion, not a flight-safety guarantee",
+    "supervisor": {
+      "initial_trigger": "1.0 s after reset with no fused measurement and no active track",
+      "track_lost_trigger": "tracker inactive after its own expiry; a single missed frame never triggers",
+      "yaw_rate_rad_s": 0.6,
+      "initial_search_max_s": 10.5,
+      "research_max_s": 4.5,
+      "episode_search_max_s": 15.0,
+      "scan_direction": "balanced left/right from the episode key; never from ground truth",
+      "translation": "XY command 0 while searching; altitude hold unchanged",
+      "suppression": "no scan yaw and XY 0 when LiDAR surface clearance is at or below the hard margin or invalid",
+      "return": "next command after a fused measurement with an active track",
+      "priority": "policy -> supervisor -> existing speed governor -> final command -> feedback",
+      "forbidden_inputs": ["ground-truth target pose", "ground-truth visibility", "ground-truth range", "ground-truth obstacles"],
+      "risk_noted": "0.6 rad/s is one fifth of the policy's 3.0 rad/s limit; turning a target from behind to the field-of-view edge takes about 4.0 s, so B1 can slow acquisition where the policy turns faster"
+    },
+    "run_ids": {"smoke": "KROC27-B-S01", "main": "KROC27-B-M01"},
+    "out_root": {"main": "results/kroc2027_B_v1"}
+  },
+  "gpu_budget_hours": {
+    "total": 30.0,
+    "canary": 2.5,
+    "A_main_if_E2": 15.7,
+    "A_main_if_E1": 17.4,
+    "B_main_static_four_densities_stressed": 9.0,
+    "B_main_static_two_densities_stressed": 4.65,
+    "B_smoke": 0.25,
+    "basis": "existing RTX 3070 cells.csv throughput x 1.25, or the Monte Carlo stress (hidden timeouts doubled, B1 scan +45 steps), whichever is larger"
+  },
+  "stop_rules": [
+    "any hash, schema, receipt or import-origin mismatch",
+    "any motion-gate, swept-clearance or wall violation",
+    "a non-finite value",
+    "an incomplete quota or a recorder record missing for a quota episode",
+    "the approved GPU hours exceeded",
+    "never: replacing a seed or deleting a cell because results look unfavourable"
+  ]
+}

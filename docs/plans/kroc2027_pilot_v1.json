@@ -1,0 +1,136 @@
+{
+ "aggregation": "seed-level mean over 7 seeds; densities equally weighted; fractions",
+ "arms": {
+  "E0_static": {
+   "na_share_of_failures": {
+    "mean": 0.8612346091169768,
+    "sd_over_seeds": 0.007776948195736813
+   },
+   "never_acquired": {
+    "mean": 0.1379292648917514,
+    "sd_over_seeds": 0.0032548722108238413
+   },
+   "never_acquired_crash": {
+    "mean": 0.06762932062361802,
+    "sd_over_seeds": 0.0017951614712259417
+   },
+   "never_acquired_timeout": {
+    "mean": 0.06991641376608225,
+    "sd_over_seeds": 0.0031993742820105153
+   },
+   "pooled_na_share_of_failures": 0.8544351781652767,
+   "timeout_legacy": {
+    "mean": 0.07331635700381785,
+    "sd_over_seeds": 0.0032999323993658535
+   },
+   "timeout_quota": {
+    "mean": 0.08926827566964286,
+    "sd_over_seeds": 0.003565703071467729
+   }
+  },
+  "E1_cv": {
+   "na_share_of_failures": {
+    "mean": 0.6984576924104392,
+    "sd_over_seeds": 0.01651733502602664
+   },
+   "never_acquired": {
+    "mean": 0.10209156057018921,
+    "sd_over_seeds": 0.004432334815687394
+   },
+   "never_acquired_crash": {
+    "mean": 0.06336496257990606,
+    "sd_over_seeds": 0.002881687576804172
+   },
+   "never_acquired_timeout": {
+    "mean": 0.03830813929091761,
+    "sd_over_seeds": 0.0024947788635756264
+   },
+   "pooled_na_share_of_failures": 0.6843093533622814,
+   "timeout_legacy": {
+    "mean": 0.044864327304295716,
+    "sd_over_seeds": 0.0025498178544682806
+   },
+   "timeout_quota": {
+    "mean": 0.0546875,
+    "sd_over_seeds": 0.0025007040304051843
+   }
+  },
+  "E2_obstacle_aware": {
+   "na_share_of_failures": {
+    "mean": 0.5765214971029164,
+    "sd_over_seeds": 0.014019310392449427
+   },
+   "never_acquired": {
+    "mean": 0.06030061913142172,
+    "sd_over_seeds": 0.0022564062378310017
+   },
+   "never_acquired_crash": {
+    "mean": 0.050277099391415656,
+    "sd_over_seeds": 0.0027421722746119068
+   },
+   "never_acquired_timeout": {
+    "mean": 0.009273812443219306,
+    "sd_over_seeds": 0.0010421125865599599
+   },
+   "pooled_na_share_of_failures": 0.5590834697217676,
+   "timeout_legacy": {
+    "mean": 0.011435409531549447,
+    "sd_over_seeds": 0.0009718524321129575
+   },
+   "timeout_quota": {
+    "mean": 0.015154157366071428,
+    "sd_over_seeds": 0.0012357241734372402
+   }
+  },
+  "H_historical": {
+   "na_share_of_failures": {
+    "mean": 0.6806113852449843,
+    "sd_over_seeds": 0.014961941616956083
+   },
+   "never_acquired": {
+    "mean": 0.07835390736728039,
+    "sd_over_seeds": 0.0019010479748496614
+   },
+   "never_acquired_crash": {
+    "mean": 0.05556598483701736,
+    "sd_over_seeds": 0.0024534828699769294
+   },
+   "never_acquired_timeout": {
+    "mean": 0.022282287772127516,
+    "sd_over_seeds": 0.0018156047269036674
+   },
+   "pooled_na_share_of_failures": 0.6632501485442662,
+   "timeout_legacy": {
+    "mean": 0.026083259271992325,
+    "sd_over_seeds": 0.0020985640844884304
+   },
+   "timeout_quota": {
+    "mean": 0.03294154575892857,
+    "sd_over_seeds": 0.002298283458076214
+   }
+  }
+ },
+ "densities": [
+  70,
+  115,
+  160,
+  205
+ ],
+ "estimand": "legacy pooled stopping window (first_acquisition counts equal legacy_episodes)",
+ "role": "EXPLORATORY_ALREADY_OBSERVED_NOT_CONFIRMATORY",
+ "schema": "motar.kroc2027-pilot.v1",
+ "seeds": [
+  4104,
+  4105,
+  4106,
+  4107,
+  4108,
+  4109,
+  4110
+ ],
+ "signal": "fused measurement (camera, or LiDAR associated with a camera-started track)",
+ "source": "results/target_motion_replication_7seed",
+ "source_files": 112,
+ "source_listing_sha256": "91546a3b9a31c1b374834d9a1f84ea5a308f4ea818bbcbfa02662849cc006bf3",
+ "verified_against": "RAW_MANIFEST.json (every result.json SHA-256 matched)"
+}

@@ -20014,3 +20014,15 @@ worktree `/home/fair/workspaces/aerial_gym_ws/.codex_worktrees/kroc2027-phase1`,
   yaw 0/180°), `events`(측정·track·GT 기하 분리, 미획득은 None, 열린 loss는 censored), `scene_record`(episode key·
   hash, replay 없음). Tests `test_kroc2027_core.py`, `test_kroc2027_geometry.py`: CPU 46/46 OK. 실제 float32 limiter로
   만든 무결함 운동(32–40 m)에서 G1·G2 위반 0이고, v1 절대 허용오차는 같은 운동에서 위반을 보고함(회귀로 고정).
+- commit 3 — 통합: `motar_eval/protocol.py`(cells·quota join·seed 수준 paired t·Holm·판정 라벨·B arm 규칙·B gate·
+  pilot, BCa/sign-flip은 `tools/target_motion_replication.py` 무수정 재사용), `docs/plans/kroc2027_protocol_v1.json`
+  (DRAFT; launcher·player·helper SHA-256 고정), `docs/plans/kroc2027_pilot_v1.json`(RAW_MANIFEST로 112개 result.json
+  해시 검증 후 재집계; E0 13.79 / E1 10.21 / E2 6.03 / H 7.84 % never-acquired), `tools/kroc2027_eval.py`
+  (pilot·plan·validate·run·analyse; run은 승인 commit·prereg·GPU·import 원점 확인 전 거부, dry-run은 실행 안 함),
+  `aerial_gym/task/navrl_task/kroc_eval_adapter.py`(A 초기조건 bridge + recorder, 기본 OFF), `navrl_task.py` +40/−1
+  (guard된 hook 7개와 A 분기). `navrl_perception.py`는 수정 불필요(`perception.tracker.active` 직접 읽음).
+  CPU: `test_kroc2027_*` 82개 OK(1 skip: raw cell은 git-ignore라 worktree에 없음), `validate`는 worktree에 checkpoint가
+  없다는 1건 외 PASS(E2 CPU 감사 PASS, import 원점 worktree 안). PUBLIC_CPU 전체: 2165개 중 실패 2·오류 2 —
+  3건은 worktree에 없는 git-ignore 결과 파일 때문(main checkout에서 같은 테스트 9/9 OK), 1건은 실제 충돌:
+  `test_target_motion_replication...test_source_gate_allows_only_the_ledger_and_its_hook`가 replication 기준선 대비
+  `aerial_gym/` 변경을 ledger hook만 허용(navrl_task.py (16,0) 고정). 승인 범위 밖 파일이라 수정하지 않고 보고 대상.

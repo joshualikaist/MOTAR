@@ -78,6 +78,11 @@ from aerial_gym.task.navrl_task.joint_speed_telemetry import JointSpeedTelemetry
 from aerial_gym.task.navrl_task.navrl_episode_forensics import EpisodeForensics
 from aerial_gym.task.navrl_task.navrl_episode_ledger import build_episode_ledger
 from aerial_gym.task.navrl_task.navrl_trajectory_digest import TrajectoryDigest
+from aerial_gym.task.navrl_task.kroc_eval_adapter import (
+    build_kroc_adapter,
+    initial_view_from_env,
+    sample_initial_view_for_task,
+)
 from aerial_gym.sim.sim_builder import SimBuilder
 from aerial_gym.utils.math import quat_rotate, quat_rotate_inverse, quat_to_rotation_matrix
 from aerial_gym.utils.logging import CustomLogger
@@ -2085,6 +2090,13 @@ class NavRLTask(BaseTask):
         self._runtime_target_speed = None
         if self.interactive_mode:
             self._register_interactive_viewer()
+        # KROC2027, evaluation only and off unless NAVRL_KROC2027_* is set. The Experiment A initial
+        # view changes only the reset distribution; the recorder reads detached tensors, draws no
+        # randomness and writes sidecar files next to NAVRL_BULK_EVAL_JSON.
+        self._kroc_initial_view = initial_view_from_env()
+        if self._kroc_initial_view is not None and not self.general_spawn_mode:
+            raise RuntimeError("NAVRL_KROC2027_INITIAL_VIEW needs general spawn mode")
+        self._kroc_adapter = build_kroc_adapter(self)
 
     def _get_max_bars_available(self):
         for key in ("obstacle_position", "env_asset_state_tensor"):
@@ -4686,7 +4698,18 @@ class NavRLTask(BaseTask):
         # side forces a left->right traversal of the bars. k ~ U[k_min, k_max(epoch)] (k_max
         # grows with training via _goal_x_max), y is free across the arena minus a wall margin.
         # Resample any goal within `clearance` of a bar so the 0.5 m capture sphere is flyable.
-        if self.general_spawn_mode:
+        if self.general_spawn_mode and self._kroc_initial_view is not None:
+            # KROC2027 Experiment A initial view: fixed range, clear line of sight, pursuer facing
+            # the target or turned away. It may respawn the drone, so start_pos is read again.
+            goal = sample_initial_view_for_task(
+                self, env_ids, b_min, b_max, self._kroc_initial_view,
+                _spawn_footprint_clearance_accepted,
+            )
+            start_pos = self.obs_dict["robot_position"][env_ids]
+            sampled_dist = torch.norm(goal[:, 0:2] - start_pos[:, 0:2], dim=1)
+            k_min = float(sampled_dist.min().item())
+            k_max = float(sampled_dist.max().item())
+        elif self.general_spawn_mode:
             goal = self._sample_general_target(env_ids, start_pos, b_min, b_max, bars_xy, bar_half_extents)
             sampled_dist = torch.norm(goal[:, 0:2] - start_pos[:, 0:2], dim=1)
             k_min = float(sampled_dist.min().item())
@@ -4877,6 +4900,8 @@ class NavRLTask(BaseTask):
             )
         self.ep_min_goal_dist[env_ids] = float("inf")
         self.ep_reached[env_ids] = False
+        if self._kroc_adapter is not None:
+            self._kroc_adapter.on_reset(env_ids)
 
     def render(self):
         return self.sim_env.render()
@@ -4950,6 +4975,8 @@ class NavRLTask(BaseTask):
         if self._physical_target:
             self._target_controller.begin_control_interval()
         self._advance_target()
+        if self._kroc_adapter is not None:
+            self._kroc_adapter.after_target_advance()
         command = self.transform_action_to_command(actions)
         if self._joint_speed_telemetry is not None:
             # Decision-time actual velocity and LiDAR clearance are sampled before physics moves.
@@ -4981,6 +5008,8 @@ class NavRLTask(BaseTask):
                 # request after a safety-layer intervention makes the transition partially hidden.
                 self.prev_action[:, 0:2] = self._last_governed_action_xy
         self.sim_env.step(actions=command)
+        if self._kroc_adapter is not None:
+            self._kroc_adapter.after_physics(actions, command)
 
         # state-based reward + termination (LiDAR-based safety reward is added after rendering)
         self.compute_state_reward_and_terminations()
@@ -5065,6 +5094,9 @@ class NavRLTask(BaseTask):
             )
         self._record_general_result(successes, crashes, timeouts, finished)
         self._log_progress(successes, crashes, timeouts, finished)
+        if self._kroc_adapter is not None:
+            # Same finished set and outcome flags as the ledger below, so episode indices align.
+            self._kroc_adapter.on_episode_end(finished, successes, crashes, timeouts)
         if self._episode_ledger is not None:
             # Reads the resolved outcomes and the running minimum distance before any reset.
             self._episode_ledger.record(
@@ -5074,6 +5106,8 @@ class NavRLTask(BaseTask):
                 # Every environment has its quota and the aggregate window was exported above, so
                 # the evaluation ends here; the player's own cap is set far above this point.
                 self._episode_ledger.finalize(legacy_result_written=self._bulk_eval_exported)
+                if self._kroc_adapter is not None:
+                    self._kroc_adapter.finalize()
                 raise SystemExit(0)
         self._update_curriculum(successes, finished)
         self._record_epoch_dashboard(successes, crashes, timeouts, finished)
@@ -6044,6 +6078,8 @@ class NavRLTask(BaseTask):
         self.crashed_now = crashed_out
         if self._episode_forensics is not None:
             self._episode_forensics.observe_capture(seg_dist, captured)
+        if self._kroc_adapter is not None:
+            self._kroc_adapter.observe_capture_distance(seg_dist)
         # Assign exactly one cause to every crash before the task logs or resets the environment.
         # Priority matches the global crash diagnostics and is exported per evaluation stratum.
         d_contact = (crashed | target_contact | target_invalid) & crashed_out
@@ -6402,6 +6438,9 @@ class NavRLTask(BaseTask):
         if self._episode_forensics is not None:
             # Read-only: the same evaluator-facing dict the distractor and S1 recorders consume.
             self._episode_forensics.observe_perception(diagnostics)
+        if self._kroc_adapter is not None:
+            # Read-only; the observation was written above and is not touched.
+            self._kroc_adapter.after_perception(diagnostics)
 
         # Evaluation-only, and only when the scene actually contains distractors.  Placed AFTER the
         # observation has already been written above, so it cannot participate in building it.
