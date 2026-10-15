@@ -20211,3 +20211,24 @@ worktree `/home/fair/workspaces/aerial_gym_ws/.codex_worktrees/kroc2027-phase1`,
   확증 분석 SHA-256·source commit·tracked tree 상태를 기록. 값이 없거나(None) 탐색 필드가 일부 episode에만 있으면 실패.
 - 파일: `motar_eval/protocol.py`, `tools/kroc2027_eval.py`, `tests/test_kroc2027_protocol.py`. CPU: `test_kroc2027_*` 121개 OK.
 - 추가: B1 탐색이 시간 한도에 닿은 episode 비율(`search_limit_reached`)을 secondary에 포함(같은 파일들). CPU: 121개 OK.
+
+## 2026-10-16 — KROC2027 B secondary 결과: B1은 첫 획득을 평균 4.19 s 늦춤 (기술 통계, 확증 아님)
+
+- `analyse-b-secondary`(`29ba693`, phase2 worktree에서 실행: recorder import origin 검사가 실행 tree 기준이기 때문.
+  main에서 돌리면 셀마다 origin 불일치 2건이 나옴) → `results/kroc2027_B_v1/analysis_secondary.json`. 무결성 문제 0, tracked
+  tree clean, 확증 `analysis.json` SHA-256 `2754fbfc…` 연결. 이 파일은 git으로 직접 추적(RAW_MANIFEST는 `e2f9fe8` 시점의 raw만
+  묶고 다시 만들지 않음).
+
+| 지표(seed 평균, 밀도 동일가중, quota episode) | B0 | B1 | B1 − B0 (paired t 95 % CI) |
+|---|---|---|---|
+| 획득(ever fused) | 97.26 % | 97.33 % | +0.07 pp [−0.06, +0.20] |
+| 첫 획득 지연(획득 episode) | 2.30 s | 6.50 s | +4.19 s [+4.13, +4.25] |
+
+- 회복 비율(탐색적): capture 이득 0.21 pp / A hidden 결손 2.84 pp = 7.3 %.
+- B1 탐색 사용: quota episode의 97.97 %에서 탐색, episode당 평균 47.4 step(4.7 s), 시간 한도 도달 20.41 %, 억제 2.79
+  step/episode, 재탐색 0, 탐색 중 종료한 crash 1.22 %(episode 대비; B1 crash 3.97 %의 약 3분의 1), 탐색 중 timeout 0.
+- 해석(탐색적, 검정 안 함): Policy F 단독(B0)은 hidden 시작에서도 평균 2.30 s에 획득한다. 즉 정책이 스스로 빠르게 돌아본다.
+  B1은 1.0 s에 끼어들어 수평을 멈추고 0.6 rad/s로 돌기 때문에 획득이 늦어지고, 20 %는 10.5 s 한도까지 찾지 못했다.
+  plan v2의 고정 파라미터는 정책이 스스로 찾지 않는다고 가정했는데, 이 정책에는 맞지 않았다. "탐색 방향이 정책의 회전과
+  반대여서 먼 쪽으로 돈다"는 설명은 가설이며 검정하지 않았다. 사후 파라미터 조정은 새 사전등록 없이 하지 않는다.
+- 다음: 논문에는 B를 `INCONCLUSIVE` + 위 기술 통계(첫 획득 지연 증가)로 보고. B1 재설계는 범위 밖(별도 결정).

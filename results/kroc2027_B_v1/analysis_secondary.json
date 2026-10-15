@@ -1,0 +1,619 @@
+{
+ "confirmatory_analysis_sha256": "2754fbfc113afe27616906f0c5b27e35e07964335a7372d52594364495d38775",
+ "integrity_problems": [],
+ "per_cell": {
+  "B0/115bars/seed4301": {
+   "acquired": 0.9755859375,
+   "latency_s_among_acquired": 1.8609109109108932
+  },
+  "B0/115bars/seed4302": {
+   "acquired": 0.97900390625,
+   "latency_s_among_acquired": 1.8410972568578365
+  },
+  "B0/115bars/seed4303": {
+   "acquired": 0.9873046875,
+   "latency_s_among_acquired": 1.8732937685459727
+  },
+  "B0/115bars/seed4304": {
+   "acquired": 0.9765625,
+   "latency_s_among_acquired": 1.8458999999999801
+  },
+  "B0/115bars/seed4305": {
+   "acquired": 0.982421875,
+   "latency_s_among_acquired": 1.8575049701789121
+  },
+  "B0/115bars/seed4306": {
+   "acquired": 0.97900390625,
+   "latency_s_among_acquired": 1.9060349127181873
+  },
+  "B0/115bars/seed4307": {
+   "acquired": 0.97998046875,
+   "latency_s_among_acquired": 1.9228201295465703
+  },
+  "B0/160bars/seed4301": {
+   "acquired": 0.974609375,
+   "latency_s_among_acquired": 2.566933867735459
+  },
+  "B0/160bars/seed4302": {
+   "acquired": 0.97802734375,
+   "latency_s_among_acquired": 2.4758362456315455
+  },
+  "B0/160bars/seed4303": {
+   "acquired": 0.97607421875,
+   "latency_s_among_acquired": 2.569384692346165
+  },
+  "B0/160bars/seed4304": {
+   "acquired": 0.96826171875,
+   "latency_s_among_acquired": 2.5156833081190033
+  },
+  "B0/160bars/seed4305": {
+   "acquired": 0.96875,
+   "latency_s_among_acquired": 2.381854838709671
+  },
+  "B0/160bars/seed4306": {
+   "acquired": 0.97412109375,
+   "latency_s_among_acquired": 2.574987468671667
+  },
+  "B0/160bars/seed4307": {
+   "acquired": 0.97021484375,
+   "latency_s_among_acquired": 2.3828384499244977
+  },
+  "B0/205bars/seed4301": {
+   "acquired": 0.947265625,
+   "latency_s_among_acquired": 3.3420103092783444
+  },
+  "B0/205bars/seed4302": {
+   "acquired": 0.94873046875,
+   "latency_s_among_acquired": 3.4018528049408157
+  },
+  "B0/205bars/seed4303": {
+   "acquired": 0.93994140625,
+   "latency_s_among_acquired": 3.418285714285714
+  },
+  "B0/205bars/seed4304": {
+   "acquired": 0.95556640625,
+   "latency_s_among_acquired": 3.440674501788447
+  },
+  "B0/205bars/seed4305": {
+   "acquired": 0.95654296875,
+   "latency_s_among_acquired": 3.3106687085247613
+  },
+  "B0/205bars/seed4306": {
+   "acquired": 0.94921875,
+   "latency_s_among_acquired": 3.4806069958847727
+  },
+  "B0/205bars/seed4307": {
+   "acquired": 0.9541015625,
+   "latency_s_among_acquired": 3.467553735926301
+  },
+  "B0/70bars/seed4301": {
+   "acquired": 0.98486328125,
+   "latency_s_among_acquired": 1.4090728805155994
+  },
+  "B0/70bars/seed4302": {
+   "acquired": 0.98876953125,
+   "latency_s_among_acquired": 1.4436543209876382
+  },
+  "B0/70bars/seed4303": {
+   "acquired": 0.98779296875,
+   "latency_s_among_acquired": 1.42530894710824
+  },
+  "B0/70bars/seed4304": {
+   "acquired": 0.9873046875,
+   "latency_s_among_acquired": 1.4457467853610055
+  },
+  "B0/70bars/seed4305": {
+   "acquired": 0.98828125,
+   "latency_s_among_acquired": 1.4637351778655963
+  },
+  "B0/70bars/seed4306": {
+   "acquired": 0.98779296875,
+   "latency_s_among_acquired": 1.4381611468116502
+  },
+  "B0/70bars/seed4307": {
+   "acquired": 0.9853515625,
+   "latency_s_among_acquired": 1.4264618434092962
+  },
+  "B1/115bars/seed4301": {
+   "acquired": 0.97998046875,
+   "latency_s_among_acquired": 5.73492775286499,
+   "researches_per_episode": 0.0,
+   "search_active_at_end_crash": 0.0078125,
+   "search_active_at_end_timeout": 0.0,
+   "search_limit_reached": 0.14990234375,
+   "search_steps_among_searched": 44.37109768378651,
+   "search_steps_per_episode": 43.02783203125,
+   "searched": 0.9697265625,
+   "suppressed_steps_per_episode": 1.55126953125
+  },
+  "B1/115bars/seed4302": {
+   "acquired": 0.982421875,
+   "latency_s_among_acquired": 5.840457256461257,
+   "researches_per_episode": 0.0,
+   "search_active_at_end_crash": 0.00830078125,
+   "search_active_at_end_timeout": 0.0,
+   "search_limit_reached": 0.15673828125,
+   "search_steps_among_searched": 45.083,
+   "search_steps_per_episode": 44.0263671875,
+   "searched": 0.9765625,
+   "suppressed_steps_per_episode": 2.078125
+  },
+  "B1/115bars/seed4303": {
+   "acquired": 0.97802734375,
+   "latency_s_among_acquired": 5.873339990015004,
+   "researches_per_episode": 0.0,
+   "search_active_at_end_crash": 0.009765625,
+   "search_active_at_end_timeout": 0.0,
+   "search_limit_reached": 0.16455078125,
+   "search_steps_among_searched": 45.5285,
+   "search_steps_per_episode": 44.46142578125,
+   "searched": 0.9765625,
+   "suppressed_steps_per_episode": 2.75927734375
+  },
+  "B1/115bars/seed4304": {
+   "acquired": 0.97412109375,
+   "latency_s_among_acquired": 5.880501253132845,
+   "researches_per_episode": 0.0,
+   "search_active_at_end_crash": 0.01123046875,
+   "search_active_at_end_timeout": 0.0,
+   "search_limit_reached": 0.1552734375,
+   "search_steps_among_searched": 45.62713567839196,
+   "search_steps_per_episode": 44.3349609375,
+   "searched": 0.9716796875,
+   "suppressed_steps_per_episode": 1.578125
+  },
+  "B1/115bars/seed4305": {
+   "acquired": 0.98486328125,
+   "latency_s_among_acquired": 5.747198810114057,
+   "researches_per_episode": 0.0,
+   "search_active_at_end_crash": 0.0087890625,
+   "search_active_at_end_timeout": 0.0,
+   "search_limit_reached": 0.16162109375,
+   "search_steps_among_searched": 44.51347305389221,
+   "search_steps_per_episode": 43.55712890625,
+   "searched": 0.978515625,
+   "suppressed_steps_per_episode": 2.16162109375
+  },
+  "B1/115bars/seed4306": {
+   "acquired": 0.98291015625,
+   "latency_s_among_acquired": 5.753303527074042,
+   "researches_per_episode": 0.0,
+   "search_active_at_end_crash": 0.00537109375,
+   "search_active_at_end_timeout": 0.0,
+   "search_limit_reached": 0.1630859375,
+   "search_steps_among_searched": 44.848726909635545,
+   "search_steps_per_episode": 43.86328125,
+   "searched": 0.97802734375,
+   "suppressed_steps_per_episode": 1.97119140625
+  },
+  "B1/115bars/seed4307": {
+   "acquired": 0.97998046875,
+   "latency_s_among_acquired": 5.612207274539143,
+   "researches_per_episode": 0.0,
+   "search_active_at_end_crash": 0.0107421875,
+   "search_active_at_end_timeout": 0.0,
+   "search_limit_reached": 0.14990234375,
+   "search_steps_among_searched": 43.24698795180723,
+   "search_steps_per_episode": 42.064453125,
+   "searched": 0.97265625,
+   "suppressed_steps_per_episode": 1.8310546875
+  },
+  "B1/160bars/seed4301": {
+   "acquired": 0.97412109375,
+   "latency_s_among_acquired": 6.9522807017544,
+   "researches_per_episode": 0.0,
+   "search_active_at_end_crash": 0.0126953125,
+   "search_active_at_end_timeout": 0.0,
+   "search_limit_reached": 0.23486328125,
+   "search_steps_among_searched": 50.92315319781854,
+   "search_steps_per_episode": 50.15234375,
+   "searched": 0.98486328125,
+   "suppressed_steps_per_episode": 3.21240234375
+  },
+  "B1/160bars/seed4302": {
+   "acquired": 0.97265625,
+   "latency_s_among_acquired": 7.020883534136574,
+   "researches_per_episode": 0.0,
+   "search_active_at_end_crash": 0.01123046875,
+   "search_active_at_end_timeout": 0.0,
+   "search_limit_reached": 0.251953125,
+   "search_steps_among_searched": 52.32073595226256,
+   "search_steps_per_episode": 51.37548828125,
+   "searched": 0.98193359375,
+   "suppressed_steps_per_episode": 3.2724609375
+  },
+  "B1/160bars/seed4303": {
+   "acquired": 0.9677734375,
+   "latency_s_among_acquired": 7.1871342078708595,
+   "researches_per_episode": 0.0,
+   "search_active_at_end_crash": 0.01513671875,
+   "search_active_at_end_timeout": 0.0,
+   "search_limit_reached": 0.2587890625,
+   "search_steps_among_searched": 53.37301587301587,
+   "search_steps_per_episode": 52.5390625,
+   "searched": 0.984375,
+   "suppressed_steps_per_episode": 3.1640625
+  },
+  "B1/160bars/seed4304": {
+   "acquired": 0.97216796875,
+   "latency_s_among_acquired": 6.896785534907109,
+   "researches_per_episode": 0.0,
+   "search_active_at_end_crash": 0.015625,
+   "search_active_at_end_timeout": 0.0,
+   "search_limit_reached": 0.23486328125,
+   "search_steps_among_searched": 51.56526054590571,
+   "search_steps_per_episode": 50.734375,
+   "searched": 0.98388671875,
+   "suppressed_steps_per_episode": 3.44287109375
+  },
+  "B1/160bars/seed4305": {
+   "acquired": 0.9716796875,
+   "latency_s_among_acquired": 6.955628140703544,
+   "researches_per_episode": 0.0,
+   "search_active_at_end_crash": 0.015625,
+   "search_active_at_end_timeout": 0.0,
+   "search_limit_reached": 0.24853515625,
+   "search_steps_among_searched": 52.300893743793445,
+   "search_steps_per_episode": 51.4326171875,
+   "searched": 0.9833984375,
+   "suppressed_steps_per_episode": 2.56884765625
+  },
+  "B1/160bars/seed4306": {
+   "acquired": 0.9736328125,
+   "latency_s_among_acquired": 6.990672016048166,
+   "researches_per_episode": 0.0,
+   "search_active_at_end_crash": 0.013671875,
+   "search_active_at_end_timeout": 0.0,
+   "search_limit_reached": 0.23583984375,
+   "search_steps_among_searched": 52.1501246882793,
+   "search_steps_per_episode": 51.05517578125,
+   "searched": 0.97900390625,
+   "suppressed_steps_per_episode": 3.15380859375
+  },
+  "B1/160bars/seed4307": {
+   "acquired": 0.97216796875,
+   "latency_s_among_acquired": 6.813862380713229,
+   "researches_per_episode": 0.0,
+   "search_active_at_end_crash": 0.0126953125,
+   "search_active_at_end_timeout": 0.0,
+   "search_limit_reached": 0.232421875,
+   "search_steps_among_searched": 51.56729810568295,
+   "search_steps_per_episode": 50.509765625,
+   "searched": 0.9794921875,
+   "suppressed_steps_per_episode": 2.8896484375
+  },
+  "B1/205bars/seed4301": {
+   "acquired": 0.955078125,
+   "latency_s_among_acquired": 8.331083844580796,
+   "researches_per_episode": 0.0,
+   "search_active_at_end_crash": 0.0146484375,
+   "search_active_at_end_timeout": 0.0,
+   "search_limit_reached": 0.32666015625,
+   "search_steps_among_searched": 58.851190476190474,
+   "search_steps_per_episode": 57.931640625,
+   "searched": 0.984375,
+   "suppressed_steps_per_episode": 4.5712890625
+  },
+  "B1/205bars/seed4302": {
+   "acquired": 0.955078125,
+   "latency_s_among_acquired": 8.277965235173832,
+   "researches_per_episode": 0.0,
+   "search_active_at_end_crash": 0.0185546875,
+   "search_active_at_end_timeout": 0.0,
+   "search_limit_reached": 0.326171875,
+   "search_steps_among_searched": 58.724393864423554,
+   "search_steps_per_episode": 57.9501953125,
+   "searched": 0.98681640625,
+   "suppressed_steps_per_episode": 4.4423828125
+  },
+  "B1/205bars/seed4303": {
+   "acquired": 0.95361328125,
+   "latency_s_among_acquired": 8.448796722990288,
+   "researches_per_episode": 0.0,
+   "search_active_at_end_crash": 0.0185546875,
+   "search_active_at_end_timeout": 0.0,
+   "search_limit_reached": 0.34228515625,
+   "search_steps_among_searched": 59.67357001972387,
+   "search_steps_per_episode": 59.0908203125,
+   "searched": 0.990234375,
+   "suppressed_steps_per_episode": 4.62646484375
+  },
+  "B1/205bars/seed4304": {
+   "acquired": 0.95458984375,
+   "latency_s_among_acquired": 8.523631713554995,
+   "researches_per_episode": 0.0,
+   "search_active_at_end_crash": 0.0244140625,
+   "search_active_at_end_timeout": 0.0,
+   "search_limit_reached": 0.34228515625,
+   "search_steps_among_searched": 58.77739557739558,
+   "search_steps_per_episode": 58.404296875,
+   "searched": 0.99365234375,
+   "suppressed_steps_per_episode": 5.40771484375
+  },
+  "B1/205bars/seed4305": {
+   "acquired": 0.95751953125,
+   "latency_s_among_acquired": 8.387710351861317,
+   "researches_per_episode": 0.0,
+   "search_active_at_end_crash": 0.017578125,
+   "search_active_at_end_timeout": 0.0,
+   "search_limit_reached": 0.33447265625,
+   "search_steps_among_searched": 59.87437934458789,
+   "search_steps_per_episode": 58.88037109375,
+   "searched": 0.9833984375,
+   "suppressed_steps_per_episode": 4.65380859375
+  },
+  "B1/205bars/seed4306": {
+   "acquired": 0.94580078125,
+   "latency_s_among_acquired": 8.275890552400623,
+   "researches_per_episode": 0.0,
+   "search_active_at_end_crash": 0.02294921875,
+   "search_active_at_end_timeout": 0.0,
+   "search_limit_reached": 0.3232421875,
+   "search_steps_among_searched": 58.422013820335636,
+   "search_steps_per_episode": 57.79443359375,
+   "searched": 0.9892578125,
+   "suppressed_steps_per_episode": 4.81884765625
+  },
+  "B1/205bars/seed4307": {
+   "acquired": 0.95556640625,
+   "latency_s_among_acquired": 8.296934082779773,
+   "researches_per_episode": 0.0,
+   "search_active_at_end_crash": 0.01708984375,
+   "search_active_at_end_timeout": 0.0,
+   "search_limit_reached": 0.33349609375,
+   "search_steps_among_searched": 59.56916212196331,
+   "search_steps_per_episode": 58.66748046875,
+   "searched": 0.98486328125,
+   "suppressed_steps_per_episode": 4.9052734375
+  },
+  "B1/70bars/seed4301": {
+   "acquired": 0.984375,
+   "latency_s_among_acquired": 4.849107142857181,
+   "researches_per_episode": 0.0,
+   "search_active_at_end_crash": 0.00830078125,
+   "search_active_at_end_timeout": 0.0,
+   "search_limit_reached": 0.08642578125,
+   "search_steps_among_searched": 37.041792547834845,
+   "search_steps_per_episode": 35.92041015625,
+   "searched": 0.9697265625,
+   "suppressed_steps_per_episode": 1.33544921875
+  },
+  "B1/70bars/seed4302": {
+   "acquired": 0.98388671875,
+   "latency_s_among_acquired": 4.916327543424346,
+   "researches_per_episode": 0.0,
+   "search_active_at_end_crash": 0.0087890625,
+   "search_active_at_end_timeout": 0.0,
+   "search_limit_reached": 0.087890625,
+   "search_steps_among_searched": 37.106203473945406,
+   "search_steps_per_episode": 36.50830078125,
+   "searched": 0.98388671875,
+   "suppressed_steps_per_episode": 1.1669921875
+  },
+  "B1/70bars/seed4303": {
+   "acquired": 0.98974609375,
+   "latency_s_among_acquired": 4.9335964479526675,
+   "researches_per_episode": 0.0,
+   "search_active_at_end_crash": 0.0048828125,
+   "search_active_at_end_timeout": 0.0,
+   "search_limit_reached": 0.08837890625,
+   "search_steps_among_searched": 38.14658634538153,
+   "search_steps_per_episode": 37.103515625,
+   "searched": 0.97265625,
+   "suppressed_steps_per_episode": 1.546875
+  },
+  "B1/70bars/seed4304": {
+   "acquired": 0.9873046875,
+   "latency_s_among_acquired": 4.881651829871453,
+   "researches_per_episode": 0.0,
+   "search_active_at_end_crash": 0.0068359375,
+   "search_active_at_end_timeout": 0.0,
+   "search_limit_reached": 0.07861328125,
+   "search_steps_among_searched": 37.52321517723415,
+   "search_steps_per_episode": 36.69873046875,
+   "searched": 0.97802734375,
+   "suppressed_steps_per_episode": 1.2763671875
+  },
+  "B1/70bars/seed4305": {
+   "acquired": 0.98681640625,
+   "latency_s_among_acquired": 4.760564077189537,
+   "researches_per_episode": 0.0,
+   "search_active_at_end_crash": 0.00830078125,
+   "search_active_at_end_timeout": 0.0,
+   "search_limit_reached": 0.07763671875,
+   "search_steps_among_searched": 37.00403632694248,
+   "search_steps_per_episode": 35.8115234375,
+   "searched": 0.9677734375,
+   "suppressed_steps_per_episode": 1.037109375
+  },
+  "B1/70bars/seed4306": {
+   "acquired": 0.984375,
+   "latency_s_among_acquired": 4.832341269841305,
+   "researches_per_episode": 0.0,
+   "search_active_at_end_crash": 0.0068359375,
+   "search_active_at_end_timeout": 0.0,
+   "search_limit_reached": 0.08154296875,
+   "search_steps_among_searched": 37.31845536609829,
+   "search_steps_per_episode": 36.33447265625,
+   "searched": 0.9736328125,
+   "suppressed_steps_per_episode": 1.61328125
+  },
+  "B1/70bars/seed4307": {
+   "acquired": 0.9912109375,
+   "latency_s_among_acquired": 4.8999507389162815,
+   "researches_per_episode": 0.0,
+   "search_active_at_end_crash": 0.00390625,
+   "search_active_at_end_timeout": 0.0,
+   "search_limit_reached": 0.0869140625,
+   "search_steps_among_searched": 38.04467871485944,
+   "search_steps_per_episode": 37.00439453125,
+   "searched": 0.97265625,
+   "suppressed_steps_per_episode": 1.06640625
+  }
+ },
+ "preregistration_sha256": "3fe1c03ab7c1b23ece46fa4f10d1ca0fe829d8d929781112f686b05ce383adba",
+ "secondary": {
+  "acquired": {
+   "B0": 0.9725516183035714,
+   "B1": 0.9732666015625,
+   "paired_t_B1_minus_B0": {
+    "ci": [
+     -0.0006022927754349585,
+     0.0020322592932921013
+    ],
+    "confidence": 0.95,
+    "df": 6,
+    "mean": 0.0007149832589285714,
+    "n": 7,
+    "p_two_sided": 0.23242343832212492,
+    "sd": 0.0014243197182082007,
+    "se": 0.0005383422516892136,
+    "t": 1.3281202742030607
+   },
+   "seed_diffs": {
+    "4301": 0.0028076171875,
+    "4302": -0.0001220703125,
+    "4303": -0.00048828125,
+    "4304": 0.0001220703125,
+    "4305": 0.001220703125,
+    "4306": -0.0008544921875,
+    "4307": 0.0023193359375
+   }
+  },
+  "attribution_note": "search active at the end flags an episode; it does not say the search caused it",
+  "latency_s_among_acquired": {
+   "B0": 2.3031740961637337,
+   "B1": 6.495526211918914,
+   "paired_t_B1_minus_B0": {
+    "ci": [
+     4.13089118176392,
+     4.253813049746444
+    ],
+    "confidence": 0.95,
+    "df": 6,
+    "mean": 4.192352115755182,
+    "n": 7,
+    "p_two_sided": 3.1203028235547583e-12,
+    "sd": 0.06645533502440472,
+    "se": 0.02511775568115077,
+    "t": 166.90791044286124
+   },
+   "seed_diffs": {
+    "4301": 4.172117868404269,
+    "4302": 4.2232982351945445,
+    "4303": 4.289148561635681,
+    "4304": 4.233641434049492,
+    "4305": 4.209334421147378,
+    "4306": 4.113104210319465,
+    "4307": 4.105820079535441
+   }
+  },
+  "recovery_fraction": {
+   "a_hidden_deficit": 0.028407505580357144,
+   "capture_gain": 0.0020751953125,
+   "fraction": 0.07305095150399017,
+   "status": "exploratory"
+  },
+  "search_use_B1": {
+   "researches_per_episode": {
+    "mean": 0.0,
+    "seeds": {
+     "4301": 0.0,
+     "4302": 0.0,
+     "4303": 0.0,
+     "4304": 0.0,
+     "4305": 0.0,
+     "4306": 0.0,
+     "4307": 0.0
+    }
+   },
+   "search_active_at_end_crash": {
+    "mean": 0.012154715401785714,
+    "seeds": {
+     "4301": 0.0108642578125,
+     "4302": 0.01171875,
+     "4303": 0.0120849609375,
+     "4304": 0.0145263671875,
+     "4305": 0.0125732421875,
+     "4306": 0.01220703125,
+     "4307": 0.0111083984375
+    }
+   },
+   "search_active_at_end_timeout": {
+    "mean": 0.0,
+    "seeds": {
+     "4301": 0.0,
+     "4302": 0.0,
+     "4303": 0.0,
+     "4304": 0.0,
+     "4305": 0.0,
+     "4306": 0.0,
+     "4307": 0.0
+    }
+   },
+   "search_limit_reached": {
+    "mean": 0.20408412388392858,
+    "seeds": {
+     "4301": 0.199462890625,
+     "4302": 0.2056884765625,
+     "4303": 0.2135009765625,
+     "4304": 0.2027587890625,
+     "4305": 0.20556640625,
+     "4306": 0.200927734375,
+     "4307": 0.20068359375
+    }
+   },
+   "search_steps_among_searched": {
+    "mean": 48.339159877185295,
+    "seeds": {
+     "4301": 47.7968084764076,
+     "4302": 48.30858332265788,
+     "4303": 49.18041805953031,
+     "4304": 48.373251744731846,
+     "4305": 48.423195617304,
+     "4306": 48.18483019608719,
+     "4307": 48.10703172357823
+    }
+   },
+   "search_steps_per_episode": {
+    "mean": 47.4012451171875,
+    "seeds": {
+     "4301": 46.758056640625,
+     "4302": 47.465087890625,
+     "4303": 48.2987060546875,
+     "4304": 47.5430908203125,
+     "4305": 47.42041015625,
+     "4306": 47.2618408203125,
+     "4307": 47.0615234375
+    }
+   },
+   "searched": {
+    "mean": 0.9797014508928571,
+    "seeds": {
+     "4301": 0.9771728515625,
+     "4302": 0.9822998046875,
+     "4303": 0.98095703125,
+     "4304": 0.9818115234375,
+     "4305": 0.978271484375,
+     "4306": 0.97998046875,
+     "4307": 0.9774169921875
+    }
+   },
+   "suppressed_steps_per_episode": {
+    "mean": 2.789393833705357,
+    "seeds": {
+     "4301": 2.6676025390625,
+     "4302": 2.739990234375,
+     "4303": 3.024169921875,
+     "4304": 2.92626953125,
+     "4305": 2.6053466796875,
+     "4306": 2.8892822265625,
+     "4307": 2.673095703125
+    }
+   }
+  },
+  "status": "descriptive (preregistration section 4 secondary); not confirmatory"
+ },
+ "source_commit": "29ba693f1493f457a2a22fcdb5226492b572867a",
+ "tracked_tree_dirty": false
+}
