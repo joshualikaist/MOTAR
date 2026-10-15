@@ -645,7 +645,8 @@ class ExperimentBAnalysisTest(unittest.TestCase):
                    "first_acquisition_latency_s": latency if acquired else None}
         if search_steps is not None:
             episode.update({"search_search_steps": search_steps, "search_suppressed_steps": 1,
-                            "search_research_count": 0, "search_active_at_end": active_at_end})
+                            "search_research_count": 0, "search_active_at_end": active_at_end,
+                            "search_ended_by_limit": int(search_steps >= 9)})
         return episode
 
     def test_secondary_cell(self):
@@ -659,6 +660,7 @@ class ExperimentBAnalysisTest(unittest.TestCase):
         self.assertEqual(b1["search_steps_among_searched"], (3 + 9 + 4) / 3)
         self.assertEqual(b1["search_active_at_end_crash"], 0.25)
         self.assertEqual(b1["search_active_at_end_timeout"], 0.0)
+        self.assertEqual(b1["search_limit_reached"], 0.25)
         with self.assertRaises(ValueError):
             kp.b_secondary_cell([e("capture", True, 1.0, 3), e("capture", True, 1.0)])
         with self.assertRaises(ValueError):

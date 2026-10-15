@@ -20210,3 +20210,4 @@ worktree `/home/fair/workspaces/aerial_gym_ws/.codex_worktrees/kroc2027-phase1`,
   `analysis.json`은 건드리지 않고 `analysis_secondary.json`에 따로 씀. 모든 셀에 `check_cell` 무결성 검사를 다시 적용하고,
   확증 분석 SHA-256·source commit·tracked tree 상태를 기록. 값이 없거나(None) 탐색 필드가 일부 episode에만 있으면 실패.
 - 파일: `motar_eval/protocol.py`, `tools/kroc2027_eval.py`, `tests/test_kroc2027_protocol.py`. CPU: `test_kroc2027_*` 121개 OK.
+- 추가: B1 탐색이 시간 한도에 닿은 episode 비율(`search_limit_reached`)을 secondary에 포함(같은 파일들). CPU: 121개 OK.

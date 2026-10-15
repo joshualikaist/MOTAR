@@ -369,7 +369,7 @@ def analyse_b(capture: Dict, crash: Dict, timeout: Dict, seeds: Sequence[int], i
 
 B_SEARCH_METRICS = ("searched", "search_steps_per_episode", "search_steps_among_searched",
                     "suppressed_steps_per_episode", "researches_per_episode",
-                    "search_active_at_end_crash", "search_active_at_end_timeout")
+                    "search_limit_reached", "search_active_at_end_crash", "search_active_at_end_timeout")
 
 
 def b_secondary_cell(episodes: Sequence[Dict]) -> Dict[str, Optional[float]]:
@@ -397,6 +397,7 @@ def b_secondary_cell(episodes: Sequence[Dict]) -> Dict[str, Optional[float]]:
                 "search_steps_among_searched": mean("search_search_steps", searched),
                 "suppressed_steps_per_episode": mean("search_suppressed_steps", episodes),
                 "researches_per_episode": mean("search_research_count", episodes),
+                "search_limit_reached": sum(1 for e in episodes if e["search_ended_by_limit"] > 0) / n,
                 "search_active_at_end_crash": at_end("crash"),
                 "search_active_at_end_timeout": at_end("timeout")})
     return out
