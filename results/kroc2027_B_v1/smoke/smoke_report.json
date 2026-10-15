@@ -1,0 +1,57 @@
+{
+ "cells": {
+  "B1/E0_static__115bars__seed4300": {
+   "issues": [],
+   "search": {
+    "contract": "KROC2027_B1_YAW_SCAN_V1",
+    "enabled": true,
+    "episodes": 811,
+    "episodes_with_search": 790,
+    "feedback_violations": 0,
+    "hard_margin_m": 0.45,
+    "invariant_violations": 0,
+    "return_violations": 0,
+    "spec": {
+     "dt_s": 0.1,
+     "episode_search_max_s": 15.0,
+     "initial_search_max_s": 10.5,
+     "initial_trigger_s": 1.0,
+     "research_max_s": 4.5,
+     "yaw_rate_rad_s": 0.6
+    },
+    "suppression_violations": 0,
+    "trigger_violations": 0,
+    "yaw_action": 0.19999999999999998
+   },
+   "seconds": 78.2
+  },
+  "B1/E0_static__205bars__seed4300": {
+   "issues": [],
+   "search": {
+    "contract": "KROC2027_B1_YAW_SCAN_V1",
+    "enabled": true,
+    "episodes": 1133,
+    "episodes_with_search": 1122,
+    "feedback_violations": 0,
+    "hard_margin_m": 0.45,
+    "invariant_violations": 0,
+    "return_violations": 0,
+    "spec": {
+     "dt_s": 0.1,
+     "episode_search_max_s": 15.0,
+     "initial_search_max_s": 10.5,
+     "initial_trigger_s": 1.0,
+     "research_max_s": 4.5,
+     "yaw_rate_rad_s": 0.6
+    },
+    "suppression_violations": 0,
+    "trigger_violations": 0,
+    "yaw_action": 0.19999999999999998
+   },
+   "seconds": 149.5
+  }
+ },
+ "git_commit": "2f8e69845f096667d05eb3279af418ff3199b6d4",
+ "run_id": "KROC27-B-S01",
+ "verdict": "SMOKE_PASS"
+}

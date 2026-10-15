@@ -20124,3 +20124,38 @@ worktree `/home/fair/workspaces/aerial_gym_ws/.codex_worktrees/kroc2027-phase1`,
   여부, 후보 전체의 첫 step 안전 여부 개수, 3 m 이내 bar(중심·half extent), 최근 위치 20개. H/E1/E2와 `navrl_task.py`는
   수정하지 않음. CLI `run --stage packets`(KROC27-MT-P01: A3/A4 × E1/E2, 160 bars, seed 4190, env당 4)와 요약.
   CPU: KROC 테스트 119개 OK(실제 함정 상황에서 flag False·안전 후보 0·replay 일치 확인).
+
+## 2026-10-16 — KROC2027 Experiment B(KROC27-B-M01) 완료: H-B `INCONCLUSIVE`, B1 채택 안 함
+
+- 승인·연결: 사용자 승인(2026-10-15, "1234 다 진행")으로 `2f8e698`에서 실행(phase2 worktree, `PYTHONPATH`=worktree,
+  launcher 디렉터리 기준 import origin 검사 통과). B 사전등록 `docs/plans/prereg_kroc2027_B_v1.md`(SHA-256 `3fe1c03a…`,
+  commit `726b14d`), A 분석 `1d79b21f…`. 셀마다 HEAD·tracked tree·gate 연결·RTX 3070 재확인.
+- Smoke KROC27-B-S01(B1만, seed 4300, 115·205 bars, env당 4): `SMOKE_PASS`. 탐색 episode 790 + 1,122, B1 task-path
+  불변식(trigger·feedback·suppression·return) 위반 0. 결과 수치는 사용하지 않음.
+- Gate: `GO`(기준 1–5 모두 true, 선택 arm A2 static, 미획득 실패 비율 59.3 %, 남은 GPU 26.08 h).
+- 본 실행: 56셀 = B0/B1 × 70/115/160/205 bars × seed 4301–4307, env당 16, timeout 600. 2026-10-15 21:21 – 10-16 01:11
+  KST, receipt `duration_s` 합 B0 1.69 h + B1 2.14 h = 3.83 h(예상 4.2 h, 상한 5.0 h). 모든 셀 receipt OK·raw SHA-256
+  재계산 일치·계약 일치·recorder 검사 통과, `integrity_problems` 0.
+
+| 지표(seed 평균, 밀도 동일가중) | B0 Policy F | B1 + supervisor |
+|---|---|---|
+| capture | 95.58 % | 95.79 % |
+| crash | 4.10 % | 3.97 % |
+| timeout | 0.32 % | 0.24 % |
+| never acquired | 2.74 % | 2.67 % |
+| never acquired ∧ 실패 | 2.69 % | 2.64 % |
+
+- 주 검정: B1 − B0 capture = **+0.21 pp**, paired t 95 % CI [−0.09, +0.50], p = 0.134, seed별 +0.85, −0.04, −0.05, +0.16,
+  +0.21, 0.00, +0.32 pp → **`INCONCLUSIVE`**. 민감도: BCa95 [+0.05, +0.53], exact sign-flip p = 0.125. CI 상한 0.50 pp가
+  실용 기준 1 pp보다 작으므로 1 pp 이상의 효과는 이 구간과 맞지 않는다(0.5/1/2/3 pp 모두 미입증).
+- 안전: crash −0.13 pp [−0.41, +0.15], timeout −0.08 pp [−0.14, −0.01]. 비열등 margin 0.5 pp 충족, 더 엄격한 0 pp 기준은
+  crash 상한 +0.15 pp로 미충족. 채택에는 capture `SUPPORTED`가 필요하므로 **B1은 채택하지 않음**.
+- 탐색적 관찰: B1은 기록된 B1 episode의 97.9 %(81,054/82,792, quota 밖 포함)에서 탐색을 썼지만 never acquired는
+  2.74 → 2.67 %로 거의 그대로다. A2의 hidden 시작 결손(2.84 pp)은 이 wrapper로 거의 회복되지 않았다(인과 주장 아님).
+  정지 표적·FOV 밖 시작·시뮬레이션에 한정.
+- 미계산(사전등록 §4 secondary): 첫 획득 지연, 회복 비율, 탐색 사용량 세부, 종료 시 탐색 활성 crash/timeout —
+  `analyse-b`가 아직 쓰지 않으므로 `NOT_RECORDED`. 다음 CPU 작업으로 recorder 파일에서 계산.
+- 기록: `results/kroc2027_B_v1/{analysis.json,b_gate.json,smoke/smoke_report.json,RAW_MANIFEST.json}`. RAW_MANIFEST가
+  raw 409개 파일(56셀 + smoke 2셀)의 SHA-256을 묶음. raw 셀은 git 무시(디스크에만), 압축 사본 `../kroc2027_raw_backup/`.
+  GPU 사용 누계 약 7.75 h / 30 h. 새 PPO·push 없음. `PPO_TRAINING_STARTED = false`.
+- 다음: secondary 지표 계산, 논문에는 H-A(`SUPPORTED`, 3 pp 미입증)와 H-B(`INCONCLUSIVE`, B1 미채택)를 함께 보고.

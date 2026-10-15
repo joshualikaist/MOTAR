@@ -1,0 +1,65 @@
+{
+ "a_analysis_sha256": "1d79b21fa2c561e2688ce6033f0249ce6443ad13963a826aac8b2dcd7b116ab8",
+ "approval": {
+  "approved_by_user_flag": true,
+  "approved_commit": "2f8e69845f096667d05eb3279af418ff3199b6d4",
+  "run_id": "KROC27-B-M01"
+ },
+ "b_preregistration": "docs/plans/prereg_kroc2027_B_v1.md",
+ "b_preregistration_sha256": "3fe1c03ab7c1b23ece46fa4f10d1ca0fe829d8d929781112f686b05ce383adba",
+ "capture_diff_test": {
+  "ci": [
+   0.02559965309027646,
+   0.031215358070437828
+  ],
+  "confidence": 0.95,
+  "df": 6,
+  "mean": 0.028407505580357144,
+  "n": 7,
+  "p_two_sided": 2.858463767432159e-07,
+  "sd": 0.0030360224911965784,
+  "se": 0.001147508640929276,
+  "t": 24.755809731726433
+ },
+ "criteria": {
+  "1_A_integrity_pass": true,
+  "2_visible_minus_hidden_capture_positive": true,
+  "2_visible_minus_hidden_ever_acquired_positive": true,
+  "3_never_acquired_failures_majority": true,
+  "4_budget_fits": true,
+  "5_B_preregistered_and_approved": true
+ },
+ "densities": [
+  70,
+  115,
+  160,
+  205
+ ],
+ "evaluated_at": "2026-10-15T12:21:27.627660+00:00",
+ "ever_acquired_diff_test": {
+  "ci": [
+   0.02641845057224731,
+   0.030326806124181257
+  ],
+  "confidence": 0.95,
+  "df": 6,
+  "mean": 0.028372628348214284,
+  "n": 7,
+  "p_two_sided": 3.3156896844749165e-08,
+  "sd": 0.0021129769817294615,
+  "se": 0.0007986302313800034,
+  "t": 35.52661448739229
+ },
+ "never_acquired_failure_share": 0.5932960893854748,
+ "remaining_gpu_hours": 26.08,
+ "selected_arm": {
+  "arm": "A2",
+  "moving_rate": null,
+  "reason": "no moving arm (H-A2 NOT_TESTED)",
+  "static_rate": 0.027779715401785716,
+  "target": "static"
+ },
+ "source_commit": "2f8e69845f096667d05eb3279af418ff3199b6d4",
+ "target_model": "E0_static",
+ "verdict": "GO"
+}
