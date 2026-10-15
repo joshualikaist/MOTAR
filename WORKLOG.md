@@ -20069,3 +20069,49 @@ worktree `/home/fair/workspaces/aerial_gym_ws/.codex_worktrees/kroc2027-phase1`,
 - 추가: canary 출력 폴더는 `results/**` 불변 규칙 때문에 덮어쓸 수 없어 `--canary-root` 옵션 추가(기본값은 protocol 경로).
   재실행은 `results/kroc2027_A_canary_v1_rerun1/`에 쓰고 본 실행·분석은 같은 폴더를 읽음. Amendment가 말한 "이 파일을
   추가한 commit"이 아니라 경로 옵션만 다른 다음 commit에서 재실행함(코드 동작 차이는 출력 경로뿐). CPU: KROC 테스트 OK.
+
+## 2026-10-15 — KROC2027 canary 재실행 PASS, Experiment A static 본 실행(KROC27-A-M01) 완료: H-A SUPPORTED
+
+- Canary 재실행(`bbf530b`, 0.66 h, `results/kroc2027_A_canary_v1_rerun1/`): `CANARY_PASS`, 무결성 전부 통과, E1·E2는 160 bars
+  swept clearance에서 다시 탈락(결정론적 재현) → 이동 모델 없음, H-A2 `NOT_TESTED`(amendment 1).
+- 본 실행(`bbf530b`, 56셀 = A1/A2 × 70/115/160/205 bars × seed 4201–4207, env당 16, 2.43 h, `results/kroc2027_A_v1/`):
+  모든 셀 receipt OK·ledger COMPLETE·recorder 검사 통과, 분석 integrity 문제 0건.
+
+| 지표(seed 평균, 밀도 동일가중) | A1 visible | A2 hidden |
+|---|---|---|
+| capture | 98.16 % | 95.31 % |
+| crash | 1.84 % | 4.36 % |
+| timeout | 0.00 % | 0.33 % |
+| never acquired | 0.00 % | 2.84 % |
+| never acquired ∧ 실패 | 0.00 % | 2.78 % |
+
+- 확증(amendment 1): A1 − A2 capture = **+2.84 pp**(seed별 2.50–3.39), paired t 95 % CI [2.56, 3.12], t = 24.8, p = 2.9e-7,
+  7/7 seed 같은 방향 → **SUPPORTED**. 실용 기준 3 pp는 CI 하한 미달이라 `PRACTICALLY_SUPPORTED` 아님(1 pp는 통과, 5 pp 미달).
+  민감도: BCa95 [2.67, 3.09], exact sign-flip p = 0.0156(최소값).
+- 해석 한계: hidden = FOV 밖(가림 아님), yaw 조작은 초기 heading도 바꿈, 표적은 정지, 10 m 시작. capture 차이(2.84 pp)와
+  ever-acquired 차이(2.84 pp)가 같고 미획득 episode는 거의 모두 실패 → 손실은 획득 실패로 설명됨(인과 매개 주장은 아님).
+- B gate 입력: 선택 arm A2(static), 미획득 실패 비율 59.3 %(>50 %), capture·ever-acquired 차이 양수. 남은 조건은 B
+  사전등록 commit과 B 실행 승인. GPU 사용 누계 약 3.8 h(30 h 중).
+
+## 2026-10-15 — 정정: Experiment A 결과 표기와 해석 (위 항목은 그대로 두고 정정만 추가, 독립 검토 반영)
+
+- **A2 capture는 95.32 %**(seed 수준 평균·pooled 모두 95.3177 %). 위 항목의 95.31 %는 반올림한 값끼리 뺀 오기.
+  A1은 98.16 %(98.1585 %), 차이 +2.84 pp는 변경 없음.
+- **판정 구분.** H-A는 `SUPPORTED`(사전등록 통계 기준 충족). 실용 기준 3 pp는 **입증되지 않음**(95 % CI 하한 2.56 pp).
+  "3 pp 효과가 있다"고 쓰지 않는다.
+- **획득 여부 × 결과 교차표**(56셀 quota episode 전체, 셀당 2,048, arm당 57,344; 비율은 arm 전체 대비):
+
+| arm | 획득 | capture | crash | timeout |
+|---|---|---|---|---|
+| A1 | 예 | 56,288 (98.16 %) | 1,056 (1.84 %) | 0 |
+| A1 | 아니오 | 0 | 0 | 0 |
+| A2 | 예 | 54,625 (95.26 %) | 1,081 (1.89 %) | 11 (0.02 %) |
+| A2 | 아니오 | 34 (0.06 %) | 1,417 (2.47 %) | 176 (0.31 %) |
+
+- **인과 해석 정정.** 위 항목의 "손실은 획득 실패로 설명됨"은 철회한다. 관찰된 사실은 A2의 추가 실패가 미획득 episode에
+  몰려 있다는 연관뿐이다. 미획득 crash(2.47 %)는 crash가 획득 기회를 먼저 끝낸 경우를 포함할 수 있고(검열), hidden 시작은
+  초기 heading·장애물 시야도 바꾸므로, 획득 실패가 crash를 일으켰다고 말할 수 없다. 획득한 episode의 crash율은 A1 1.84 %,
+  A2 1.89 %로 비슷하다. 미획득인데 capture된 34건은 탐지 없이 경로상 포획된 경우로 기록만 한다.
+- 보존: 원본 raw(`results/kroc2027_A_v1/`), 실패 판정 canary(`results/kroc2027_A_canary_v1/`), 재실행 canary
+  (`results/kroc2027_A_canary_v1_rerun1/`), source `bbf530b`, protocol `ad706d71…`은 수정·이동하지 않음.
+- 재현: 교차표는 `motar_eval.protocol.quota_rows` + `join_episode_records`로 56셀을 다시 읽어 계산(코드 변경 없음).

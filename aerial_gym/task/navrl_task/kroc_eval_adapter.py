@@ -265,8 +265,13 @@ class KrocRecorder:
         self._steps = zeros(torch.long)
         self._speed = {key: zeros() for key in (
             "requested_sum", "requested_max", "commanded_sum", "commanded_max",
-            "actual_sum", "actual_max", "displacement_max", "search_xy_max", "search_yaw_max")}
-        self.search_counts = {"episodes": 0, "episodes_with_search": 0, "invariant_violations": 0}
+            "actual_sum", "actual_max", "displacement_max", "search_xy_max", "search_yaw_max",
+            "search_body_yaw_rate_max")}
+        self._search_checks = {key: zeros(torch.long) for key in (
+            "feedback_xy", "feedback_yaw", "suppressed_yaw", "active_while_acquired")}
+        self.search_counts = {"episodes": 0, "episodes_with_search": 0, "invariant_violations": 0,
+                              "trigger_violations": 0, "feedback_violations": 0,
+                              "suppression_violations": 0, "return_violations": 0}
         self._over = {key: zeros(torch.long) for key in ("commanded", "actual", "displacement")}
         self.swept = {"judged_steps": 0, "violations": 0, "wall_violations": 0,
                       "min_clearance_m": math.inf, "first_violation": None}
@@ -328,6 +333,8 @@ class KrocRecorder:
         for store in self._speed.values():
             store[env_ids] = 0.0
         for store in self._over.values():
+            store[env_ids] = 0
+        for store in self._search_checks.values():
             store[env_ids] = 0
         in_fov, visible, clear = self._geometric_view(env_ids)
         center, half = self._obstacles()
@@ -424,9 +431,27 @@ class KrocRecorder:
         if search is not None:
             active = search.active
             yaw = command[:, 3].detach().abs()
-            for name, value in (("search_xy_max", commanded), ("search_yaw_max", yaw)):
+            body = t.obs_dict["robot_body_angvel"][:, 2].detach().abs() \
+                if "robot_body_angvel" in t.obs_dict else torch.zeros_like(yaw)
+            for name, value in (("search_xy_max", commanded), ("search_yaw_max", yaw),
+                                ("search_body_yaw_rate_max", body)):
                 self._speed[name] = torch.where(active, torch.maximum(self._speed[name], value),
                                                 self._speed[name])
+            # Task-path checks (B1): what the actor will observe as its previous action equals
+            # what was executed; suppression really zeroes the yaw; search never runs on a step
+            # whose observation already had a fused measurement with an active track.
+            prev = getattr(t, "prev_action", None)
+            sup = search.supervisor
+            if prev is not None:
+                self._search_checks["feedback_xy"] += (
+                    active & (prev[:, 0:2].detach().abs().amax(dim=1) > 1e-6)).long()
+                self._search_checks["feedback_yaw"] += (
+                    active & ((prev[:, 3].detach() - sup.yaw_out).abs() > 1e-6)).long()
+            self._search_checks["suppressed_yaw"] += (sup.suppressed & (yaw > 1e-6)).long()
+            pending = getattr(self, "_pending_observation", None)
+            if pending is not None:
+                self._search_checks["active_while_acquired"] += (
+                    active & pending[1].bool() & pending[2].bool()).long()
         self._over["commanded"] += (commanded > ref).long()
         self._over["actual"] += (actual > ref).long()
         self._over["displacement"] += (disp > ref).long()
@@ -480,6 +505,7 @@ class KrocRecorder:
             task_first[name] = values[env_ids].cpu().tolist() if values is not None else None
         search = getattr(self.task, "_kroc_search", None)
         search_records = search.episode_records(env_ids) if search is not None else None
+        checks = {k: v[env_ids].cpu().tolist() for k, v in self._search_checks.items()}
         search_limit = (search.supervisor.spec.yaw_rate_rad_s + 1e-6) if search is not None else None
         for row, env in enumerate(env_ids.cpu().tolist()):
             flags = (bool(capture[row]), bool(crash[row]), bool(timeout[row]))
@@ -516,10 +542,26 @@ class KrocRecorder:
                 record.update(search_records[row])
                 record["search_commanded_xy_max_mps"] = host["search_xy_max"][row]
                 record["search_yaw_rate_max_rad_s"] = host["search_yaw_max"][row]
+                record["search_body_yaw_rate_max_rad_s"] = host["search_body_yaw_rate_max"][row]
+                for key in checks:
+                    record["search_check_" + key] = checks[key][row]
                 self.search_counts["episodes"] += 1
                 if record["search_search_steps"] > 0:
                     self.search_counts["episodes_with_search"] += 1
-                if host["search_xy_max"][row] > 1e-6 or host["search_yaw_max"][row] > search_limit:
+                start = record.get("search_initial_start_step")
+                first = record.get("first_obs_fused_valid")
+                # Initial search exactly 1.0 s after reset, and only with nothing measured before:
+                # observations 1..11 drive actions 0..10, so the first fused one must be >= 12.
+                trigger_bad = start is not None and (start != 10 or (first is not None and first <= 11))
+                feedback_bad = checks["feedback_xy"][row] + checks["feedback_yaw"][row] > 0
+                suppression_bad = checks["suppressed_yaw"][row] > 0
+                return_bad = checks["active_while_acquired"][row] > 0
+                motion_bad = host["search_xy_max"][row] > 1e-6 or host["search_yaw_max"][row] > search_limit
+                self.search_counts["trigger_violations"] += int(trigger_bad)
+                self.search_counts["feedback_violations"] += int(feedback_bad)
+                self.search_counts["suppression_violations"] += int(suppression_bad)
+                self.search_counts["return_violations"] += int(return_bad)
+                if motion_bad or trigger_bad or feedback_bad or suppression_bad or return_bad:
                     self.search_counts["invariant_violations"] += 1
             initial = self.initial[env]
             if initial is not None:

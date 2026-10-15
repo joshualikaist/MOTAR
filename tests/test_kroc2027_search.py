@@ -86,6 +86,7 @@ class InitialSearchTest(unittest.TestCase):
             self.assertAlmostEqual(abs(float(out[0, 3])), 0.2, places=6)
             self.assertAlmostEqual(float(out[0, 2]), 0.7, places=6)  # vertical action untouched
         self.assertEqual(steps, 105)
+        self.assertEqual(int(sup.initial_start_step[0]), 10)
         self.assertEqual(int(sup.stats["ended_by_limit"][0]), 1)
         for _ in range(50):  # never restarts
             tick(sup)
@@ -233,9 +234,12 @@ class RecorderInvariantTest(unittest.TestCase):
         rec.on_reset(torch.arange(2))
         task._kroc_search.on_reset(torch.arange(2))
         rec.after_perception({"visible": torch.zeros(2, dtype=torch.bool)})
+        task.obs_dict["robot_body_angvel"] = torch.zeros(2, 3)
+        task.prev_action = torch.zeros(2, 4)
         for _ in range(20):
             rec.before_action()
             actions = task._kroc_search.apply(torch.full((2, 4), 0.6))
+            task.prev_action = actions.clone()  # the task's feedback: what was executed
             command = torch.zeros(2, 4)
             command[:, 0:2] = actions[:, 0:2] * 2.5   # the task's scaling
             command[:, 3] = actions[:, 3] * 3.0
@@ -255,6 +259,42 @@ class RecorderInvariantTest(unittest.TestCase):
         self.assertEqual(sorted(r["search_scan_sign"] for r in records), [-1, 1])
         self.assertEqual(summary["search"]["invariant_violations"], 0)
         self.assertEqual(summary["search"]["episodes_with_search"], 2)
+        self.assertEqual([r["search_initial_start_step"] for r in records], [10, 10])
+        for key in ("trigger_violations", "feedback_violations", "suppression_violations",
+                    "return_violations"):
+            self.assertEqual(summary["search"][key], 0, key)
+
+    def test_feedback_mismatch_is_flagged(self):
+        contract = _load(ROOT / "tests/test_kroc2027_adapter_contract.py", "_kroc2027_contract_helpers2")
+        task = contract.make_task(n=1)
+        task.task_config.yaw_rate_max = 3.0
+        task.speed_governor_cfg = SimpleNamespace(hard_margin_m=0.45)
+        task._visible_now = torch.zeros(1, dtype=torch.bool)
+        task.perception.last_scan_nearest = torch.full((1, 72), 6.0)
+        task._kroc_search = adapter.build_search_supervisor(task, {"NAVRL_KROC2027_SEARCH": "b1"})
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        with mock.patch.dict(os.environ, contract.recorder_env(tmp.name)):
+            rec = adapter.build_kroc_adapter(task)
+        rec.on_reset(torch.arange(1))
+        task._kroc_search.on_reset(torch.arange(1))
+        rec.after_perception({"visible": torch.zeros(1, dtype=torch.bool)})
+        task.prev_action = torch.zeros(1, 4)
+        for _ in range(15):
+            rec.before_action()
+            actions = task._kroc_search.apply(torch.full((1, 4), 0.6))
+            task.prev_action = torch.full((1, 4), 0.6)  # a feedback path that ignores the supervisor
+            command = torch.zeros(1, 4)
+            command[:, 3] = actions[:, 3] * 3.0
+            rec.after_target_advance()
+            rec.after_physics(actions, command)
+            rec.after_perception({"visible": torch.zeros(1, dtype=torch.bool)})
+        rec.on_episode_end(torch.ones(1, dtype=torch.bool), torch.zeros(1, dtype=torch.bool),
+                           torch.zeros(1, dtype=torch.bool), torch.ones(1, dtype=torch.bool))
+        rec.finalize()
+        summary = json.loads(rec.summary_path.read_text())
+        self.assertEqual(summary["search"]["feedback_violations"], 1)
+        self.assertEqual(summary["search"]["invariant_violations"], 1)
 
 
 if __name__ == "__main__":

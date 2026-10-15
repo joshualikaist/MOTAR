@@ -248,7 +248,7 @@ class ExperimentBCellsAndGateCommandTest(unittest.TestCase):
             "selected_arm": {"arm": "A2", "target": "static"}, "target_model": "E0_static",
             "capture_visible_minus_hidden": positive, "ever_acquired_visible_minus_hidden": positive,
             "never_acquired_failure_share": 0.8, "integrity_ok": True}}))
-        args = SimpleNamespace(remaining_gpu_hours=12.0, b_run_approved=True)
+        args = SimpleNamespace(remaining_gpu_hours=12.0, b_run_approved=True, approved_commit="a" * 40)
         with mock.patch.object(cli, "ROOT", tmp):
             rc = cli.cmd_b_gate(args)
         gate = json.loads((tmp / PROTOCOL["experiment_B"]["out_root"]["main"] / "b_gate.json").read_text())
@@ -482,3 +482,170 @@ class ImportGuardTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def _fake_cell(directory, *, view="hidden", search=None, arm="A2", commit="c" * 40):
+    """A minimal, internally consistent cell folder (ledger, recorder, receipt, raw files)."""
+    import hashlib
+    directory.mkdir(parents=True)
+    rows = _rows(2, 2)
+    (directory / "episodes.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows))
+    records = [{"env_index": r["env_index"], "env_episode_index": r["env_episode_index"],
+                "outcome": r["outcome"]} for r in rows]
+    (directory / "kroc2027_episodes.jsonl").write_text("".join(json.dumps(r) + "\n" for r in records))
+    (directory / "result.json").write_text("{}")
+    sha = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()  # noqa: E731
+    (directory / "episode_ledger_summary.json").write_text(json.dumps(
+        {"status": "COMPLETE", "partition_violations": 0, "rows_file": "episodes.jsonl",
+         "rows_sha256": sha(directory / "episodes.jsonl")}))
+    (directory / "kroc2027_summary.json").write_text(json.dumps(
+        {"import_origins": {"aerial_gym": str(ROOT / "aerial_gym/__init__.py"),
+                            "motar_eval": str(ROOT / "motar_eval/__init__.py")},
+         "motion_gate": {"verdict": "PASS"}, "swept_clearance": {"violations": 0, "wall_violations": 0},
+         "initial_view": {"failed_closed": 0}, "context": {"run_id": "KROC27-A-M01"},
+         "episodes_sha256": sha(directory / "kroc2027_episodes.jsonl")}))
+    env = {"NAVRL_KROC2027_INITIAL_VIEW": view, "NAVRL_KROC2027_ARM": arm,
+           "NAVRL_KROC2027_RUN_ID": "KROC27-A-M01", "NAVRL_EPISODE_QUOTA_PER_ENV": "2",
+           "NAVRL_KROC2027_PROTOCOL_SHA256": kp.sha256_file(kp.PROTOCOL_PATH)}
+    if search:
+        env["NAVRL_KROC2027_SEARCH"] = search
+    (directory / "receipt.json").write_text(json.dumps(
+        {"status": "OK", "checkpoint_sha256": PROTOCOL["policy"]["checkpoint_sha256"],
+         "result_sha256": sha(directory / "result.json"), "git_commit": commit, "arm": "E0_static",
+         "density_bars": 70, "seed": 4201, "env_snapshot_navrl": env}))
+    return {"target_model": "E0_static", "density": 70, "seed": 4201, "view": view, "search": search,
+            "arm": arm}
+
+
+class StrictCellCheckTest(unittest.TestCase):
+    PROTO = dict(PROTOCOL, evaluation=dict(PROTOCOL["evaluation"], num_envs=2))
+
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.tmp, True)
+
+    def test_consistent_cell_passes(self):
+        cell = _fake_cell(self.tmp / "cell")
+        expect = cli.cell_expect(cell, "KROC27-A-M01", "c" * 40, 2)
+        self.assertEqual(cli.check_cell(self.tmp / "cell", self.PROTO, 2, expect=expect), [])
+
+    def test_tampered_raw_files_are_caught(self):
+        for name in ("result.json", "episodes.jsonl", "kroc2027_episodes.jsonl"):
+            directory = self.tmp / name
+            cell = _fake_cell(directory)
+            with open(directory / name, "a") as handle:
+                handle.write(" ")
+            issues = cli.check_cell(directory, self.PROTO, 2,
+                                    expect=cli.cell_expect(cell, "KROC27-A-M01", "c" * 40, 2))
+            self.assertTrue(any("SHA-256" in i for i in issues), (name, issues))
+
+    def test_contract_mismatches_are_caught(self):
+        cell = _fake_cell(self.tmp / "cell")
+        for key, value in (("view", "visible"), ("arm", "A1"), ("search", "b1"), ("seed", 4202)):
+            wrong = dict(cell, **{key: value})
+            issues = cli.check_cell(self.tmp / "cell", self.PROTO, 2,
+                                    expect=cli.cell_expect(wrong, "KROC27-A-M01", "c" * 40, 2))
+            self.assertTrue(issues, key)
+        issues = cli.check_cell(self.tmp / "cell", self.PROTO, 2,
+                                expect=cli.cell_expect(cell, "KROC27-A-M01", "d" * 40, 2))
+        self.assertTrue(any("git_commit" in i for i in issues))
+
+    def test_real_experiment_a_cells_pass_the_strict_check(self):
+        root = ROOT / "results/kroc2027_A_v1"
+        if not (root / "A1").is_dir():
+            self.skipTest("Experiment A raw results are not in this checkout")
+        commits = {json.loads(p.read_text())["git_commit"] for p in root.rglob("receipt.json")}
+        self.assertEqual(len(commits), 1)
+        commit = commits.pop()
+        cells = [c for c in kp.a_cells(PROTOCOL, "main", None)]
+        self.assertEqual(len(cells), 56)
+        for cell in cells:
+            issues = cli.check_cell(root / cell["cell_dir"], PROTOCOL, 16, require_motion=True,
+                                    expect=cli.cell_expect(cell, "KROC27-A-M01", commit, 16))
+            self.assertEqual(issues, [], cell["cell_dir"])
+
+
+class BudgetAndLinksTest(unittest.TestCase):
+    def test_launcher_is_killed_at_the_cap(self):
+        from unittest import mock
+        tmp = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, tmp, True)
+        script = tmp / "slow.sh"
+        script.write_text("sleep 60 & wait\n")
+        start = __import__("time").time()
+        with mock.patch.object(cli, "launcher_path", lambda protocol, root=None: script):
+            rc = cli.run_launcher(PROTOCOL, dict(os.environ), timeout_s=1.0)
+        self.assertEqual(rc, cli.BUDGET_EXIT)
+        self.assertLess(__import__("time").time() - start, 30)
+        budget = cli.GpuBudget(0.0)
+        self.assertTrue(budget.exhausted())
+        self.assertFalse(cli.GpuBudget(None).exhausted())
+
+    def test_b_links(self):
+        head = cli.git("rev-parse", "HEAD").strip()
+        a_out = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, a_out, True)
+        (a_out / "analysis.json").write_text("{}")
+        gate = {"verdict": "GO", "source_commit": head, "approval": {"approved_commit": head[:12]},
+                "a_analysis_sha256": kp.sha256_file(a_out / "analysis.json"),
+                "b_preregistration_sha256": None}
+        problems = cli.b_link_problems(PROTOCOL, gate, head, head[:12], a_out)
+        self.assertTrue(any("preregistration" in p for p in problems))  # not committed yet
+        self.assertFalse(any("analysis" in p for p in problems))
+        (a_out / "analysis.json").write_text("{ }")
+        self.assertTrue(any("analysis" in p for p in cli.b_link_problems(PROTOCOL, gate, head, head[:12], a_out)))
+        self.assertTrue(any("approved" in p for p in cli.b_link_problems(PROTOCOL, gate, head, "", a_out)))
+        moved = dict(gate, source_commit="0" * 40)
+        self.assertTrue(any("evaluated on" in p for p in cli.b_link_problems(PROTOCOL, moved, head, head[:12], a_out)))
+
+    def test_manifest(self):
+        tmp = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, tmp, True)
+        (tmp / "raw").mkdir()
+        (tmp / "raw" / "a.txt").write_text("x")
+        (tmp / "raw" / "receipt.json").write_text(json.dumps({"git_commit": "abc"}))
+        out = tmp / "RAW_MANIFEST.json"
+        cli.cmd_manifest(SimpleNamespace(root=str(tmp / "raw"), out=str(out)))
+        manifest = json.loads(out.read_text())
+        self.assertEqual(manifest["file_count"], 2)
+        self.assertEqual(manifest["files"]["a.txt"], hashlib.sha256(b"x").hexdigest())
+        self.assertEqual(manifest["receipt_git_commits"], ["abc"])
+
+
+class ExperimentBAnalysisTest(unittest.TestCase):
+    SEEDS = PROTOCOL["experiment_B"]["seeds"]
+
+    def _levels(self, gain, crash_change, noise=0.001):
+        cap, crash, timeout = {}, {}, {}
+        for i, s in enumerate(self.SEEDS):
+            w = noise * ((i % 3) - 1)
+            cap[("B0", s)], cap[("B1", s)] = 0.953, 0.953 + gain + w
+            crash[("B0", s)], crash[("B1", s)] = 0.044, 0.044 + crash_change + w / 2
+            timeout[("B0", s)], timeout[("B1", s)] = 0.003, 0.003
+        return cap, crash, timeout
+
+    def test_decisions_and_adoption(self):
+        out = kp.analyse_b(*self._levels(0.02, -0.01), self.SEEDS, True)
+        self.assertEqual(out["primary"]["decision"], "PRACTICALLY_SUPPORTED")
+        self.assertTrue(out["adopt"])
+        small = kp.analyse_b(*self._levels(0.006, 0.0, noise=0.0005), self.SEEDS, True)
+        self.assertEqual(small["primary"]["decision"], "SUPPORTED")
+        unsafe = kp.analyse_b(*self._levels(0.02, 0.012), self.SEEDS, True)
+        self.assertFalse(unsafe["safety_non_inferior_0p5pp"])
+        self.assertFalse(unsafe["adopt"])
+        null = kp.analyse_b(*self._levels(0.0, 0.0, noise=0.002), self.SEEDS, True)
+        self.assertIn(null["primary"]["decision"], ("INCONCLUSIVE", "SUPPORTED", "OPPOSITE_DIRECTION"))
+        self.assertEqual(kp.analyse_b(*self._levels(0.02, 0.0), self.SEEDS, False)["primary"]["decision"],
+                         "INVALID")
+        self.assertIn("not of yaw scanning alone", out["interpretation"])
+
+    def test_smoke_refuses_without_approval(self):
+        import contextlib
+        import io
+        args = SimpleNamespace(stage="b_smoke", run_id="KROC27-B-S01", approved_commit="", dry_run=False,
+                               max_gpu_hours=0.5, canary_root=None)
+        with contextlib.redirect_stdout(io.StringIO()) as out:
+            rc = cli.cmd_run(args)
+        self.assertEqual(rc, 2)
+        problems = json.loads(out.getvalue())["problems"]
+        self.assertTrue(any("approved-commit" in p for p in problems))

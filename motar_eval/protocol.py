@@ -337,6 +337,36 @@ def analyse_a_static(capture: Dict, seeds: Sequence[int], analysis: Dict, integr
     }
 
 
+B_PRACTICAL_PP = 1.0
+B_SAFETY_MARGIN_PP = 0.5
+
+
+def analyse_b(capture: Dict, crash: Dict, timeout: Dict, seeds: Sequence[int], integrity_ok: bool) -> Dict:
+    """Experiment B (preregistration prereg_kroc2027_B_v1.md, section 4), seed-level values per arm."""
+    helpers = replication_helpers()
+    diff = lambda store: [store[("B1", s)] - store[("B0", s)] for s in seeds]  # noqa: E731
+    primary = paired_t(diff(capture))
+    safety = {name: paired_t(diff(store)) for name, store in (("crash", crash), ("timeout", timeout))}
+    decision = decide(primary, primary["p_two_sided"], "positive", 0.05, B_PRACTICAL_PP, primary["ci"],
+                      integrity_ok)
+    non_inferior = all(t["ci"][1] <= B_SAFETY_MARGIN_PP / 100.0 for t in safety.values())
+    strict = all(t["ci"][1] <= 0.0 for t in safety.values())
+    return {
+        "primary": {"contrast": "capture(B1) - capture(B0)", "seed_diffs": dict(zip(map(str, seeds), diff(capture))),
+                    "paired_t": primary, "decision": decision,
+                    "practical_sensitivity": {"%gpp" % pp: bool(primary["ci"][0] > pp / 100.0)
+                                              for pp in (0.5, 1, 2, 3)},
+                    "sensitivity": {"bca95": list(helpers.bca_paired(diff(capture), resamples=20000, seed=4300,
+                                                                     alpha=0.05)),
+                                    "exact_sign_flip_p": helpers.exact_sign_flip_p(diff(capture))}},
+        "safety": {name: {"paired_t": t, "upper_bound_pp": 100 * t["ci"][1]} for name, t in safety.items()},
+        "safety_non_inferior_0p5pp": non_inferior,
+        "safety_upper_bounds_at_or_below_0pp": strict,
+        "adopt": bool(decision in ("SUPPORTED", "PRACTICALLY_SUPPORTED") and non_inferior),
+        "interpretation": "effect of the whole B1 supervisor, not of yaw scanning alone",
+    }
+
+
 # ---------------------------------------------------------------- Experiment B rule and gate
 def select_b_arm(never_acquired_failure: Dict, seeds: Sequence[int], tie_pp: float = 0.5) -> Dict:
     """The hidden arm with the larger never-acquired failure rate; within ``tie_pp`` -> static."""

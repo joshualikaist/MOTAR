@@ -141,8 +141,39 @@ def cell_env(env, protocol, *, target_model, density, seed, out_dir, quota, view
     return out
 
 
-def run_launcher(protocol, env) -> int:
-    return subprocess.run(["bash", str(launcher_path(protocol))], env=env).returncode
+BUDGET_EXIT = 124
+
+
+def run_launcher(protocol, env, timeout_s=None) -> int:
+    """One launcher invocation; killed with its whole process group if it outlives ``timeout_s``."""
+    import signal
+
+    proc = subprocess.Popen(["bash", str(launcher_path(protocol))], env=env, start_new_session=True)
+    try:
+        return proc.wait(timeout=timeout_s)
+    except subprocess.TimeoutExpired:
+        os.killpg(proc.pid, signal.SIGTERM)
+        try:
+            proc.wait(timeout=60)
+        except subprocess.TimeoutExpired:
+            os.killpg(proc.pid, signal.SIGKILL)
+            proc.wait()
+        return BUDGET_EXIT
+
+
+class GpuBudget:
+    """Wall-clock cap for one invocation: refuse new cells and kill a running one at the cap."""
+
+    def __init__(self, max_hours):
+        self.max_s = None if max_hours is None else float(max_hours) * 3600.0
+        self.started = time.time()
+
+    def remaining_s(self):
+        return None if self.max_s is None else self.max_s - (time.time() - self.started)
+
+    def exhausted(self):
+        left = self.remaining_s()
+        return left is not None and left <= 0
 
 
 # ---------------------------------------------------------------- preconditions
@@ -372,7 +403,7 @@ def cmd_validate(args):
     return 0 if report["verdict"] == "PASS" else 1
 
 
-def _timed_launch(protocol, env, dry_run, log):
+def _timed_launch(protocol, env, dry_run, log, budget=None):
     if dry_run:
         log.append({k: env[k] for k in sorted(env) if k.startswith(("NAVRL_KROC2027_", "NAVRL_EPISODE",
                                                                     "ARMS", "DENSITIES", "SEEDS",
@@ -380,7 +411,7 @@ def _timed_launch(protocol, env, dry_run, log):
                                                                     "NAVRL_TRAJECTORY", "NAVRL_OBS_DUMP"))})
         return 0, 0.0
     started = time.time()
-    rc = run_launcher(protocol, env)
+    rc = run_launcher(protocol, env, None if budget is None else budget.remaining_s())
     return rc, time.time() - started
 
 
@@ -439,6 +470,8 @@ def cmd_run(args):
     protocol = kp.load_protocol(PROTOCOL)
     if args.stage == "b_main":
         return cmd_run_b(args, protocol, base_env())
+    if args.stage == "b_smoke":
+        return cmd_run_b_smoke(args, protocol, base_env())
     exp = protocol["experiment_A"]
     canary_dir = canary_root(protocol, args.canary_root)
     out_root = canary_dir if args.stage == "canary" else ROOT / exp["out_root"][args.stage]
@@ -486,6 +519,7 @@ def cmd_run(args):
                           "import_origins": origins}, indent=1))
         return 0
     quota = protocol["evaluation"]["quota_per_env"]
+    budget = GpuBudget(args.max_gpu_hours)
     for cell in cells:
         head_now, again = preconditions("main", protocol, args.run_id, args.approved_commit, out_root,
                                         canary_dir=canary_dir)
@@ -493,24 +527,82 @@ def cmd_run(args):
             print(json.dumps({"status": "STOPPED", "before": cell["cell_dir"], "problems": again}))
             return 2
         directory = out_root / cell["cell_dir"]
+        expect = cell_expect(cell, args.run_id, head, quota)
         if (directory / RECORDER_SUMMARY).is_file() and (directory / "episode_ledger_summary.json").is_file():
+            # A completed cell is skipped only if its raw files and run contract still verify.
+            skip_issues = check_cell(directory, protocol, quota, require_motion=True, expect=expect)
+            if skip_issues:
+                print(json.dumps({"status": "STOPPED", "completed_cell_fails": cell["cell_dir"],
+                                  "problems": skip_issues}))
+                return 1
             continue
-        if (directory / "result.json").exists():
+        if (directory / "result.json").exists() or directory.exists():
             print(json.dumps({"status": "STOPPED", "partial_cell": cell["cell_dir"]}))
             return 1
+        if budget.exhausted():
+            print(json.dumps({"status": "STOPPED_BUDGET", "before": cell["cell_dir"]}))
+            return 3
         kw = dict(target_model=cell["target_model"], density=cell["density"], seed=cell["seed"],
                   out_dir=out_root / cell["arm"], quota=quota, view=cell["view"], recorder=True,
                   run_id=args.run_id, arm=cell["arm"])
-        rc, _ = _timed_launch(protocol, cell_env(env, protocol, **kw), False, launched)
+        rc, _ = _timed_launch(protocol, cell_env(env, protocol, **kw), False, launched, budget)
+        if rc == BUDGET_EXIT:
+            print(json.dumps({"status": "STOPPED_BUDGET", "killed": cell["cell_dir"]}))
+            return 3
         cell_issues = [] if rc == 0 else ["launcher exit %d" % rc]
-        cell_issues += check_cell(directory, protocol, quota, require_motion=True)
+        cell_issues += check_cell(directory, protocol, quota, require_motion=True, expect=expect)
         if cell_issues:
             print(json.dumps({"status": "STOPPED", "failed": cell["cell_dir"], "problems": cell_issues}))
             return 1
     return 0
 
 
-def check_cell(directory, protocol, quota, require_motion=True):
+def raw_hash_problems(directory, receipt, summary, rec_summary):
+    """Recompute every raw file's SHA-256 and compare it with the record that binds it."""
+    problems = []
+    for label, path, recorded in (
+            ("result.json", directory / "result.json", receipt.get("result_sha256")),
+            ("ledger rows", directory / summary.get("rows_file", "episodes.jsonl"), summary.get("rows_sha256")),
+            ("recorder episodes", directory / RECORDER_EPISODES, rec_summary.get("episodes_sha256"))):
+        if not recorded:
+            problems.append("%s has no recorded SHA-256" % label)
+        elif not path.is_file() or kp.sha256_file(path) != recorded:
+            problems.append("%s SHA-256 does not match its record" % label)
+    return problems
+
+
+def cell_expect(cell, run_id, commit, quota):
+    """What a cell's receipt must say it ran: the contract the raw files are checked against."""
+    return {"commit": commit, "target_model": cell["target_model"], "density": cell["density"],
+            "seed": cell["seed"], "view": cell["view"], "search": cell.get("search"),
+            "arm": cell["arm"], "run_id": run_id, "quota": quota,
+            "protocol_sha256": kp.sha256_file(PROTOCOL)}
+
+
+def contract_problems(receipt, rec_summary, expect):
+    problems = []
+    env = receipt.get("env_snapshot_navrl", {})
+    checks = (
+        ("git_commit", receipt.get("git_commit"), expect["commit"]),
+        ("launcher arm", receipt.get("arm"), expect["target_model"]),
+        ("density", receipt.get("density_bars"), expect["density"]),
+        ("seed", receipt.get("seed"), expect["seed"]),
+        ("initial view", env.get("NAVRL_KROC2027_INITIAL_VIEW"), expect["view"]),
+        ("search", env.get("NAVRL_KROC2027_SEARCH"), expect["search"]),
+        ("arm label", env.get("NAVRL_KROC2027_ARM"), expect["arm"]),
+        ("run id", env.get("NAVRL_KROC2027_RUN_ID"), expect["run_id"]),
+        ("quota", env.get("NAVRL_EPISODE_QUOTA_PER_ENV"), str(expect["quota"])),
+        ("protocol", env.get("NAVRL_KROC2027_PROTOCOL_SHA256"), expect["protocol_sha256"]),
+        ("recorder run id", rec_summary.get("context", {}).get("run_id"), expect["run_id"]),
+    )
+    for label, got, want in checks:
+        if got != want:
+            problems.append("%s is %r, expected %r" % (label, got, want))
+    return problems
+
+
+def check_cell(directory, protocol, quota, require_motion=True, expect=None):
+    """Ledger, recorder, receipt, raw SHA-256 and (with ``expect``) the cell's run contract."""
     issues = []
     try:
         summary = json.loads((directory / "episode_ledger_summary.json").read_text())
@@ -524,6 +616,9 @@ def check_cell(directory, protocol, quota, require_motion=True):
             issues.append("receipt status %s" % receipt.get("status"))
         if receipt.get("checkpoint_sha256") != protocol["policy"]["checkpoint_sha256"]:
             issues.append("receipt checkpoint mismatch")
+        issues += raw_hash_problems(directory, receipt, summary, rec_summary)
+        if expect is not None:
+            issues += contract_problems(receipt, rec_summary, expect)
     except (OSError, ValueError, KeyError) as exc:
         issues.append("%s: %s" % (type(exc).__name__, exc))
     return issues
@@ -691,6 +786,7 @@ def cmd_analyse(args):
 
 
 B_PREREG = "docs/plans/prereg_kroc2027_B_v1.md"
+B_SMOKE_SEED, B_SMOKE_QUOTA = 4300, 4
 
 
 def cmd_b_gate(args):
@@ -707,13 +803,25 @@ def cmd_b_gate(args):
     planned = stressed_4 if len(densities) == 4 else budget["B_main_static_two_densities_stressed"]
     prereg = subprocess.run(["git", "-C", str(ROOT), "ls-files", "--error-unmatch", B_PREREG],
                             capture_output=True).returncode == 0
+    try:
+        head = git("rev-parse", "HEAD").strip()
+    except subprocess.CalledProcessError:
+        head = ""
+    approved = bool(args.b_run_approved and args.approved_commit and len(args.approved_commit) >= 12
+                    and head.startswith(args.approved_commit))
     gate = kp.b_gate(inputs["integrity_ok"], inputs["selected_arm"],
                      inputs["capture_visible_minus_hidden"], inputs["ever_acquired_visible_minus_hidden"],
                      inputs["never_acquired_failure_share"], args.remaining_gpu_hours,
-                     planned + budget["B_smoke"], 1.0, prereg, args.b_run_approved)
+                     planned + budget["B_smoke"], 1.0, prereg, approved)
     gate.update(target_model=inputs["target_model"], densities=densities,
                 remaining_gpu_hours=args.remaining_gpu_hours,
                 a_analysis_sha256=kp.sha256_file(a_out / "analysis.json"),
+                source_commit=head,
+                b_preregistration=B_PREREG,
+                b_preregistration_sha256=kp.sha256_file(ROOT / B_PREREG) if (ROOT / B_PREREG).is_file() else None,
+                approval={"run_id": protocol["experiment_B"]["run_ids"]["main"],
+                          "approved_commit": args.approved_commit or None,
+                          "approved_by_user_flag": bool(args.b_run_approved)},
                 evaluated_at=datetime.now(timezone.utc).isoformat())
     out = ROOT / protocol["experiment_B"]["out_root"]["main"]
     out.mkdir(parents=True, exist_ok=True)
@@ -722,23 +830,102 @@ def cmd_b_gate(args):
     return 0 if gate["verdict"] == "GO" else 1
 
 
-def cmd_run_b(args, protocol, env):
-    out_root = ROOT / protocol["experiment_B"]["out_root"]["main"]
-    head = git("rev-parse", "HEAD").strip()
-    gate_path = out_root / "b_gate.json"
-    gate = json.loads(gate_path.read_text()) if gate_path.is_file() else {}
+def b_link_problems(protocol, gate, head, approved_commit, a_out):
+    """The B gate decision must still describe this source, this A analysis and this B prereg."""
     problems = []
-    if args.run_id != protocol["experiment_B"]["run_ids"]["main"]:
-        problems.append("run id %r is not the B main run id" % args.run_id)
+    if gate.get("verdict") != "GO":
+        problems.append("the B gate is not GO")
+    if gate.get("source_commit") != head:
+        problems.append("the B gate was evaluated on %s, not HEAD %s" % (gate.get("source_commit"), head))
+    approval = gate.get("approval") or {}
+    if not approved_commit or not head.startswith(approved_commit) or \
+            not (approval.get("approved_commit") and head.startswith(approval["approved_commit"])):
+        problems.append("the run and the gate must both carry the user-approved commit (HEAD %s)" % head)
+    analysis = a_out / "analysis.json"
+    if not analysis.is_file() or kp.sha256_file(analysis) != gate.get("a_analysis_sha256"):
+        problems.append("the A analysis changed since the gate was evaluated")
+    prereg = ROOT / B_PREREG
+    tracked = subprocess.run(["git", "-C", str(ROOT), "ls-files", "--error-unmatch", B_PREREG],
+                             capture_output=True).returncode == 0
+    if not tracked or not prereg.is_file() or kp.sha256_file(prereg) != gate.get("b_preregistration_sha256"):
+        problems.append("the B preregistration is not the committed file the gate recorded")
+    return problems
+
+
+def cmd_run_b_smoke(args, protocol, env):
+    """KROC27-B-S01: B1 only, seed 4300, 115 and 205 bars, 4 per env; task-path invariants only."""
+    head = git("rev-parse", "HEAD").strip()
+    out_root = ROOT / protocol["experiment_B"]["out_root"]["main"] / "smoke"
+    problems = []
+    if args.run_id != protocol["experiment_B"]["run_ids"]["smoke"]:
+        problems.append("run id %r is not the B smoke run id" % args.run_id)
     if not args.approved_commit or len(args.approved_commit) < 12 or not head.startswith(args.approved_commit):
         problems.append("--approved-commit must name HEAD (%s)" % head)
-    if gate.get("verdict") != "GO":
-        problems.append("the B gate is not GO (%s)" % gate_path)
     if git("status", "--porcelain", "--untracked-files=no").strip():
         problems.append("tracked files are modified; commit first")
+    if subprocess.run(["git", "-C", str(ROOT), "ls-files", "--error-unmatch", B_PREREG],
+                      capture_output=True).returncode:
+        problems.append("the B preregistration is not committed")
     problems.extend(static_problems(protocol))
     if gpu_names() != [protocol["hardware"]["gpu"]]:
         problems.append("expected exactly one %s" % protocol["hardware"]["gpu"])
+    if out_root.exists():
+        problems.append("smoke output already exists: %s" % out_root)
+    import_issues, origins = import_problems(env, launcher_path(protocol).parent)
+    problems.extend(import_issues)
+    cells = [{"arm": "B1", "search": "b1", "target_model": protocol["target_models"]["static"],
+              "view": "hidden", "density": d, "seed": B_SMOKE_SEED,
+              "cell_dir": "B1/" + kp.cell_label(protocol["target_models"]["static"], d, B_SMOKE_SEED)}
+             for d in (115, 205)]
+    if args.dry_run or problems:
+        print(json.dumps({"stage": "b_smoke", "status": "DRY_RUN" if args.dry_run else "REFUSED",
+                          "problems": problems, "cells": len(cells), "import_origins": origins}, indent=1))
+        return 0 if args.dry_run else 2
+    budget = GpuBudget(args.max_gpu_hours)
+    report = {"run_id": args.run_id, "git_commit": head, "cells": {}}
+    for cell in cells:
+        kw = dict(target_model=cell["target_model"], density=cell["density"], seed=cell["seed"],
+                  out_dir=out_root / "B1", quota=B_SMOKE_QUOTA, view="hidden", recorder=True,
+                  run_id=args.run_id, arm="B1", search="b1", on_violation="record")
+        rc, seconds = _timed_launch(protocol, cell_env(env, protocol, **kw), False, [], budget)
+        directory = out_root / cell["cell_dir"]
+        issues = [] if rc == 0 else ["launcher exit %d" % rc]
+        issues += check_cell(directory, protocol, B_SMOKE_QUOTA, require_motion=True,
+                             expect=cell_expect(cell, args.run_id, head, B_SMOKE_QUOTA))
+        summary = json.loads((directory / RECORDER_SUMMARY).read_text()) \
+            if (directory / RECORDER_SUMMARY).is_file() else {}
+        issues += b1_problems(summary)
+        report["cells"][cell["cell_dir"]] = {"issues": issues, "seconds": round(seconds, 1),
+                                             "search": summary.get("search", {})}
+    report["verdict"] = "SMOKE_PASS" if not any(c["issues"] for c in report["cells"].values()) else "SMOKE_FAIL"
+    (out_root / "smoke_report.json").write_text(json.dumps(report, indent=1, sort_keys=True) + "\n")
+    print(json.dumps({"verdict": report["verdict"]}, indent=1))
+    return 0 if report["verdict"] == "SMOKE_PASS" else 1
+
+
+def cmd_run_b(args, protocol, env):
+    out_root = ROOT / protocol["experiment_B"]["out_root"]["main"]
+    a_out = ROOT / protocol["experiment_A"]["out_root"]["main"]
+    head = git("rev-parse", "HEAD").strip()
+    gate_path = out_root / "b_gate.json"
+    gate = json.loads(gate_path.read_text()) if gate_path.is_file() else {}
+    quota = protocol["evaluation"]["quota_per_env"]
+
+    def problems_now():
+        found = []
+        if args.run_id != protocol["experiment_B"]["run_ids"]["main"]:
+            found.append("run id %r is not the B main run id" % args.run_id)
+        if git("rev-parse", "HEAD").strip() != head:
+            found.append("HEAD moved during the run")
+        if git("status", "--porcelain", "--untracked-files=no").strip():
+            found.append("tracked files are modified; commit first")
+        found.extend(b_link_problems(protocol, gate, head, args.approved_commit, a_out))
+        found.extend(static_problems(protocol))
+        if gpu_names() != [protocol["hardware"]["gpu"]]:
+            found.append("expected exactly one %s" % protocol["hardware"]["gpu"])
+        return found
+
+    problems = problems_now()
     import_issues, origins = import_problems(env, launcher_path(protocol).parent)
     problems.extend(import_issues)
     cells = kp.b_cells(protocol, gate.get("target_model") or "", gate.get("densities", []))
@@ -746,21 +933,39 @@ def cmd_run_b(args, protocol, env):
         print(json.dumps({"stage": "b_main", "status": "DRY_RUN" if args.dry_run else "REFUSED",
                           "problems": problems, "cells": len(cells), "import_origins": origins}, indent=1))
         return 0 if args.dry_run else 2
-    quota = protocol["evaluation"]["quota_per_env"]
+    budget = GpuBudget(args.max_gpu_hours)
     launched = []
     for cell in cells:
+        again = problems_now()
+        if again:
+            print(json.dumps({"status": "STOPPED", "before": cell["cell_dir"], "problems": again}))
+            return 2
         directory = out_root / cell["cell_dir"]
+        expect = cell_expect(cell, args.run_id, head, quota)
         if (directory / RECORDER_SUMMARY).is_file() and (directory / "episode_ledger_summary.json").is_file():
+            skip_issues = check_cell(directory, protocol, quota, require_motion=True, expect=expect)
+            if cell["search"]:
+                skip_issues += b1_problems(json.loads((directory / RECORDER_SUMMARY).read_text()))
+            if skip_issues:
+                print(json.dumps({"status": "STOPPED", "completed_cell_fails": cell["cell_dir"],
+                                  "problems": skip_issues}))
+                return 1
             continue
-        if (directory / "result.json").exists():
+        if directory.exists():
             print(json.dumps({"status": "STOPPED", "partial_cell": cell["cell_dir"]}))
             return 1
+        if budget.exhausted():
+            print(json.dumps({"status": "STOPPED_BUDGET", "before": cell["cell_dir"]}))
+            return 3
         kw = dict(target_model=cell["target_model"], density=cell["density"], seed=cell["seed"],
                   out_dir=out_root / cell["arm"], quota=quota, view="hidden", recorder=True,
                   run_id=args.run_id, arm=cell["arm"], search=cell["search"])
-        rc, _ = _timed_launch(protocol, cell_env(env, protocol, **kw), False, launched)
+        rc, _ = _timed_launch(protocol, cell_env(env, protocol, **kw), False, launched, budget)
+        if rc == BUDGET_EXIT:
+            print(json.dumps({"status": "STOPPED_BUDGET", "killed": cell["cell_dir"]}))
+            return 3
         issues = [] if rc == 0 else ["launcher exit %d" % rc]
-        issues += check_cell(directory, protocol, quota, require_motion=True)
+        issues += check_cell(directory, protocol, quota, require_motion=True, expect=expect)
         if cell["search"]:
             issues += b1_problems(json.loads((directory / RECORDER_SUMMARY).read_text())) \
                 if (directory / RECORDER_SUMMARY).is_file() else ["no recorder summary"]
@@ -768,6 +973,61 @@ def cmd_run_b(args, protocol, env):
             print(json.dumps({"status": "STOPPED", "failed": cell["cell_dir"], "problems": issues}))
             return 1
     return 0
+
+
+def cmd_manifest(args):
+    """A tracked manifest for git-ignored raw results: every file's SHA-256, plus provenance."""
+    root = Path(args.root).resolve()
+    files = {}
+    for path in sorted(p for p in root.rglob("*") if p.is_file()):
+        rel = str(path.relative_to(root))
+        if rel == "RAW_MANIFEST.json":
+            continue
+        files[rel] = kp.sha256_file(path)
+    commits = sorted({json.loads(p.read_text()).get("git_commit") for p in root.rglob("receipt.json")} - {None})
+    manifest = {"schema": "motar.raw-manifest.v1", "root": root.name, "files": files,
+                "receipt_git_commits": commits, "file_count": len(files),
+                "protocol_sha256": kp.sha256_file(PROTOCOL)}
+    text = json.dumps(manifest, indent=1, sort_keys=True) + "\n"
+    if args.out:
+        Path(args.out).write_text(text)
+    print(json.dumps({"files": len(files), "receipt_git_commits": commits}, indent=1))
+    return 0
+
+
+def cmd_analyse_b(args):
+    """Experiment B analysis, fixed in prereg_kroc2027_B_v1.md before any B data."""
+    protocol = kp.load_protocol(PROTOCOL)
+    out_root = ROOT / protocol["experiment_B"]["out_root"]["main"]
+    gate = json.loads((out_root / "b_gate.json").read_text())
+    quota = protocol["evaluation"]["quota_per_env"]
+    seeds = protocol["experiment_B"]["seeds"]
+    head_receipts = set()
+    per_cell, problems = {}, []
+    for cell in kp.b_cells(protocol, gate["target_model"], gate["densities"]):
+        directory = out_root / cell["cell_dir"]
+        receipt = json.loads((directory / "receipt.json").read_text())
+        head_receipts.add(receipt.get("git_commit"))
+        expect = cell_expect(cell, protocol["experiment_B"]["run_ids"]["main"], receipt.get("git_commit"), quota)
+        problems += ["%s: %s" % (cell["cell_dir"], p) for p in check_cell(directory, protocol, quota, expect=expect)]
+        summary = json.loads((directory / "episode_ledger_summary.json").read_text())
+        rows = read_jsonl(directory / summary.get("rows_file", "episodes.jsonl"))
+        joined = kp.join_episode_records(kp.quota_rows(rows, protocol["evaluation"]["num_envs"], quota),
+                                         read_jsonl(directory / RECORDER_EPISODES))
+        per_cell[(cell["arm"], cell["density"], cell["seed"])] = kp.cell_metrics(joined)
+    if len(head_receipts) != 1:
+        problems.append("cells ran on several commits: %s" % sorted(head_receipts))
+    level = {m: kp.seed_level(per_cell, ["B0", "B1"], gate["densities"], seeds, m)
+             for m in ("capture", "crash", "timeout", "never_acquired", "never_acquired_failure")}
+    report = {"preregistration_sha256": kp.sha256_file(ROOT / B_PREREG), "gate": gate,
+              "integrity_problems": problems,
+              "confirmatory": kp.analyse_b(level["capture"], level["crash"], level["timeout"], seeds, not problems),
+              "secondary_seed_level": {m: {"%s/%d" % k: v for k, v in vals.items()} for m, vals in level.items()}}
+    (out_root / "analysis.json").write_text(json.dumps(report, indent=1, sort_keys=True) + "\n")
+    print(json.dumps({"integrity_problems": len(problems),
+                      "decision": report["confirmatory"]["primary"]["decision"],
+                      "adopt": report["confirmatory"]["adopt"]}, indent=1))
+    return 0 if not problems else 1
 
 
 def main(argv=None):
@@ -783,20 +1043,28 @@ def main(argv=None):
     v = sub.add_parser("validate")
     v.add_argument("--raw-dir", help="folder holding the git-ignored replication cells")
     r = sub.add_parser("run")
-    r.add_argument("--stage", choices=("canary", "main", "b_main"), required=True)
+    r.add_argument("--stage", choices=("canary", "main", "b_smoke", "b_main"), required=True)
     r.add_argument("--run-id", required=True)
     r.add_argument("--approved-commit", default="")
     r.add_argument("--dry-run", action="store_true")
     r.add_argument("--canary-root", help="canary folder (default: the protocol's); for a re-run")
+    r.add_argument("--max-gpu-hours", type=float, default=None,
+                   help="stop before a new cell, and kill a running one, once this wall time is used")
     an = sub.add_parser("analyse")
     an.add_argument("--canary-root", help="canary folder whose report chose the moving model")
+    sub.add_parser("analyse-b")
     g = sub.add_parser("b-gate")
     g.add_argument("--remaining-gpu-hours", type=float, required=True)
     g.add_argument("--b-run-approved", action="store_true",
                    help="set only after the user has approved the B run")
+    g.add_argument("--approved-commit", default="", help="the commit the user approved for B")
+    m = sub.add_parser("manifest")
+    m.add_argument("--root", required=True, help="raw results folder")
+    m.add_argument("--out", help="where to write RAW_MANIFEST.json (default: print a summary only)")
     args = parser.parse_args(argv)
     return {"pilot": cmd_pilot, "plan": cmd_plan, "validate": cmd_validate, "run": cmd_run,
-            "analyse": cmd_analyse, "b-gate": cmd_b_gate}[args.command](args)
+            "analyse": cmd_analyse, "analyse-b": cmd_analyse_b, "b-gate": cmd_b_gate,
+            "manifest": cmd_manifest}[args.command](args)
 
 
 if __name__ == "__main__":

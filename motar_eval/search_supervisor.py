@@ -77,6 +77,10 @@ class YawScanSupervisor:
         self.stats = {key: zeros() for key in (
             "initial_searches", "research_count", "search_steps", "initial_search_steps",
             "research_steps", "suppressed_steps", "ended_by_acquisition", "ended_by_limit")}
+        # Step index (actions since reset) at which the initial search began; -1 if it never did.
+        self.initial_start_step = torch.full((n,), -1, dtype=long, device=dev)
+        # The yaw action this step executed while searching (0 when suppressed or idle).
+        self.yaw_out = torch.zeros(n, device=dev)
 
     def on_reset(self, env_ids) -> None:
         env_ids = torch.as_tensor(env_ids, dtype=torch.long, device=self.device)
@@ -92,6 +96,8 @@ class YawScanSupervisor:
             tensor[env_ids] = False
         for tensor in self.stats.values():
             tensor[env_ids] = 0
+        self.initial_start_step[env_ids] = -1
+        self.yaw_out[env_ids] = 0.0
 
     def step(self, actions, fused_valid, track_active, lidar_clearance_m):
         """Return the executed normalised actions for this step; record why."""
@@ -125,6 +131,8 @@ class YawScanSupervisor:
         self.mode = torch.where(start_research, torch.full_like(self.mode, MODE_RESEARCH), self.mode)
         self.current = torch.where(start_initial | start_research, torch.zeros_like(self.current),
                                    self.current)
+        self.initial_start_step = torch.where(start_initial, self.steps_since_reset,
+                                              self.initial_start_step)
         self.stats["initial_searches"] += start_initial.long()
         self.stats["research_count"] += start_research.long()
 
@@ -134,6 +142,7 @@ class YawScanSupervisor:
         out[:, 0:2] = torch.where(active.unsqueeze(1), torch.zeros_like(out[:, 0:2]), out[:, 0:2])
         yaw = torch.where(suppressed, torch.zeros_like(self.sign), self.sign * self.yaw_action)
         out[:, 3] = torch.where(active, yaw.to(out.dtype), out[:, 3])
+        self.yaw_out = torch.where(active, yaw, torch.zeros_like(yaw))
 
         self.current += active.long()
         self.total += active.long()
@@ -156,6 +165,8 @@ class YawScanSupervisor:
         for row in range(len(active)):
             record = {"search_" + k: host[k][row] for k in host}
             record["search_active_at_end"] = bool(active[row])
+            start = int(self.initial_start_step[env_ids[row]].item())
+            record["search_initial_start_step"] = start if start >= 0 else None
             record["search_scan_sign"] = int(math.copysign(1, sign[row]))
             out.append(record)
         return out
