@@ -1,0 +1,11 @@
+{
+ "authorised_by_user": "bbf530b0b4079d3bde9ce3d4d75990612b643065",
+ "git_commit": "bbf530b0b4079d3bde9ce3d4d75990612b643065",
+ "import_origins": {
+  "aerial_gym": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/aerial_gym/__init__.py",
+  "motar_eval": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/motar_eval/__init__.py"
+ },
+ "protocol_sha256": "ad706d7121fc213360b179796e45c70227f82b1afedff50fcc0fe60cf6e0c803",
+ "run_id": "KROC27-A-C01",
+ "started_at": "2026-10-15T06:51:08.272294+00:00"
+}

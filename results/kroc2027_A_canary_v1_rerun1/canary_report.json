@@ -1,0 +1,714 @@
+{
+ "checks": {
+  "instrumentation_all_cells": true,
+  "off_path_reproduces_replication_cell": true,
+  "recorder_noninterference_actor_observation": true,
+  "recorder_noninterference_digest": true,
+  "recorder_noninterference_ledger": true,
+  "recorder_noninterference_result": true,
+  "return_codes_zero": true,
+  "static_target_gates_pass": true
+ },
+ "detail": {
+  "b1_integrity": {
+   "B1_E0_static_115": [],
+   "B1_E0_static_205": []
+  },
+  "b1_ready": true,
+  "cell_issues": {},
+  "gates": {
+   "A1_E0_static_115": {
+    "initial_view": {
+     "episodes": 602,
+     "failed_closed": 0,
+     "initially_in_view": 602,
+     "initially_out_of_view": 0,
+     "respawns": {
+      "0": 602
+     },
+     "rounds": {
+      "1": 602
+     }
+    },
+    "motion_gate": "PASS",
+    "swept_clearance": {
+     "first_violation": null,
+     "judged_steps": 23680,
+     "min_clearance_m": 0.7282385230064392,
+     "proxy_radius_m": 0.15,
+     "violations": 0,
+     "wall_violations": 0
+    }
+   },
+   "A1_E0_static_160": {
+    "initial_view": {
+     "episodes": 520,
+     "failed_closed": 0,
+     "initially_in_view": 520,
+     "initially_out_of_view": 0,
+     "respawns": {
+      "0": 520
+     },
+     "rounds": {
+      "1": 520
+     }
+    },
+    "motion_gate": "PASS",
+    "swept_clearance": {
+     "first_violation": null,
+     "judged_steps": 21632,
+     "min_clearance_m": 0.7319479584693909,
+     "proxy_radius_m": 0.15,
+     "violations": 0,
+     "wall_violations": 0
+    }
+   },
+   "A1_E0_static_205": {
+    "initial_view": {
+     "episodes": 532,
+     "failed_closed": 0,
+     "initially_in_view": 532,
+     "initially_out_of_view": 0,
+     "respawns": {
+      "0": 532
+     },
+     "rounds": {
+      "1": 528,
+      "2": 3,
+      "4": 1
+     }
+    },
+    "motion_gate": "PASS",
+    "swept_clearance": {
+     "first_violation": null,
+     "judged_steps": 23168,
+     "min_clearance_m": 0.7294262647628784,
+     "proxy_radius_m": 0.15,
+     "violations": 0,
+     "wall_violations": 0
+    }
+   },
+   "A1_E0_static_70": {
+    "initial_view": {
+     "episodes": 515,
+     "failed_closed": 0,
+     "initially_in_view": 515,
+     "initially_out_of_view": 0,
+     "respawns": {
+      "0": 515
+     },
+     "rounds": {
+      "1": 515
+     }
+    },
+    "motion_gate": "PASS",
+    "swept_clearance": {
+     "first_violation": null,
+     "judged_steps": 20352,
+     "min_clearance_m": 0.7463773488998413,
+     "proxy_radius_m": 0.15,
+     "violations": 0,
+     "wall_violations": 0
+    }
+   },
+   "A2_E0_static_115": {
+    "initial_view": {
+     "episodes": 2190,
+     "failed_closed": 0,
+     "initially_in_view": 0,
+     "initially_out_of_view": 2190,
+     "respawns": {
+      "0": 2190
+     },
+     "rounds": {
+      "1": 2190
+     }
+    },
+    "motion_gate": "PASS",
+    "swept_clearance": {
+     "first_violation": null,
+     "judged_steps": 112384,
+     "min_clearance_m": 0.7288347482681274,
+     "proxy_radius_m": 0.15,
+     "violations": 0,
+     "wall_violations": 0
+    }
+   },
+   "A2_E0_static_160": {
+    "initial_view": {
+     "episodes": 2111,
+     "failed_closed": 0,
+     "initially_in_view": 0,
+     "initially_out_of_view": 2111,
+     "respawns": {
+      "0": 2111
+     },
+     "rounds": {
+      "1": 2108,
+      "2": 3
+     }
+    },
+    "motion_gate": "PASS",
+    "swept_clearance": {
+     "first_violation": null,
+     "judged_steps": 120576,
+     "min_clearance_m": 0.7253543734550476,
+     "proxy_radius_m": 0.15,
+     "violations": 0,
+     "wall_violations": 0
+    }
+   },
+   "A2_E0_static_205": {
+    "initial_view": {
+     "episodes": 1688,
+     "failed_closed": 0,
+     "initially_in_view": 0,
+     "initially_out_of_view": 1688,
+     "respawns": {
+      "0": 1688
+     },
+     "rounds": {
+      "1": 1680,
+      "2": 8
+     }
+    },
+    "motion_gate": "PASS",
+    "swept_clearance": {
+     "first_violation": null,
+     "judged_steps": 116736,
+     "min_clearance_m": 0.7280292510986328,
+     "proxy_radius_m": 0.15,
+     "violations": 0,
+     "wall_violations": 0
+    }
+   },
+   "A2_E0_static_70": {
+    "initial_view": {
+     "episodes": 824,
+     "failed_closed": 0,
+     "initially_in_view": 0,
+     "initially_out_of_view": 824,
+     "respawns": {
+      "0": 824
+     },
+     "rounds": {
+      "1": 824
+     }
+    },
+    "motion_gate": "PASS",
+    "swept_clearance": {
+     "first_violation": null,
+     "judged_steps": 39296,
+     "min_clearance_m": 0.7249748110771179,
+     "proxy_radius_m": 0.15,
+     "violations": 0,
+     "wall_violations": 0
+    }
+   },
+   "A3_E1_cv_115": {
+    "initial_view": {
+     "episodes": 639,
+     "failed_closed": 0,
+     "initially_in_view": 639,
+     "initially_out_of_view": 0,
+     "respawns": {
+      "0": 639
+     },
+     "rounds": {
+      "1": 639
+     }
+    },
+    "motion_gate": "PASS",
+    "swept_clearance": {
+     "first_violation": null,
+     "judged_steps": 29568,
+     "min_clearance_m": 0.2327025979757309,
+     "proxy_radius_m": 0.15,
+     "violations": 0,
+     "wall_violations": 0
+    }
+   },
+   "A3_E1_cv_160": {
+    "initial_view": {
+     "episodes": 667,
+     "failed_closed": 0,
+     "initially_in_view": 667,
+     "initially_out_of_view": 0,
+     "respawns": {
+      "0": 667
+     },
+     "rounds": {
+      "1": 667
+     }
+    },
+    "motion_gate": "PASS",
+    "swept_clearance": {
+     "first_violation": {
+      "clearance_m": 0.13273295760154724,
+      "context": {
+       "cell_id": "E1_cv__160bars__seed4190",
+       "episode_key": "s4190/b160/e108/k000"
+      },
+      "env_id": 108,
+      "outside_arena": false,
+      "target_xy": [
+       28.382247924804688,
+       20.588035583496094
+      ]
+     },
+     "judged_steps": 31360,
+     "min_clearance_m": 0.0,
+     "proxy_radius_m": 0.15,
+     "violations": 66,
+     "wall_violations": 0
+    }
+   },
+   "A3_E1_cv_205": {
+    "initial_view": {
+     "episodes": 1268,
+     "failed_closed": 0,
+     "initially_in_view": 1268,
+     "initially_out_of_view": 0,
+     "respawns": {
+      "0": 1268
+     },
+     "rounds": {
+      "1": 1261,
+      "2": 7
+     }
+    },
+    "motion_gate": "PASS",
+    "swept_clearance": {
+     "first_violation": null,
+     "judged_steps": 62080,
+     "min_clearance_m": 0.26448678970336914,
+     "proxy_radius_m": 0.15,
+     "violations": 0,
+     "wall_violations": 0
+    }
+   },
+   "A3_E1_cv_70": {
+    "initial_view": {
+     "episodes": 631,
+     "failed_closed": 0,
+     "initially_in_view": 631,
+     "initially_out_of_view": 0,
+     "respawns": {
+      "0": 631
+     },
+     "rounds": {
+      "1": 631
+     }
+    },
+    "motion_gate": "PASS",
+    "swept_clearance": {
+     "first_violation": null,
+     "judged_steps": 28800,
+     "min_clearance_m": 0.2932986617088318,
+     "proxy_radius_m": 0.15,
+     "violations": 0,
+     "wall_violations": 0
+    }
+   },
+   "A3_E2_obstacle_aware_115": {
+    "initial_view": {
+     "episodes": 771,
+     "failed_closed": 0,
+     "initially_in_view": 771,
+     "initially_out_of_view": 0,
+     "respawns": {
+      "0": 771
+     },
+     "rounds": {
+      "1": 771
+     }
+    },
+    "motion_gate": "PASS",
+    "swept_clearance": {
+     "first_violation": null,
+     "judged_steps": 35072,
+     "min_clearance_m": 0.22624392807483673,
+     "proxy_radius_m": 0.15,
+     "violations": 0,
+     "wall_violations": 0
+    }
+   },
+   "A3_E2_obstacle_aware_160": {
+    "initial_view": {
+     "episodes": 871,
+     "failed_closed": 0,
+     "initially_in_view": 871,
+     "initially_out_of_view": 0,
+     "respawns": {
+      "0": 871
+     },
+     "rounds": {
+      "1": 871
+     }
+    },
+    "motion_gate": "PASS",
+    "swept_clearance": {
+     "first_violation": {
+      "clearance_m": 0.14123037457466125,
+      "context": {
+       "cell_id": "E2_obstacle_aware__160bars__seed4190",
+       "episode_key": "s4190/b160/e102/k000"
+      },
+      "env_id": 102,
+      "outside_arena": false,
+      "target_xy": [
+       9.146349906921387,
+       28.81972312927246
+      ]
+     },
+     "judged_steps": 41088,
+     "min_clearance_m": 0.0,
+     "proxy_radius_m": 0.15,
+     "violations": 140,
+     "wall_violations": 0
+    }
+   },
+   "A3_E2_obstacle_aware_205": {
+    "initial_view": {
+     "episodes": 888,
+     "failed_closed": 0,
+     "initially_in_view": 888,
+     "initially_out_of_view": 0,
+     "respawns": {
+      "0": 888
+     },
+     "rounds": {
+      "1": 883,
+      "2": 5
+     }
+    },
+    "motion_gate": "PASS",
+    "swept_clearance": {
+     "first_violation": null,
+     "judged_steps": 44928,
+     "min_clearance_m": 0.2407592087984085,
+     "proxy_radius_m": 0.15,
+     "violations": 0,
+     "wall_violations": 0
+    }
+   },
+   "A3_E2_obstacle_aware_70": {
+    "initial_view": {
+     "episodes": 709,
+     "failed_closed": 0,
+     "initially_in_view": 709,
+     "initially_out_of_view": 0,
+     "respawns": {
+      "0": 709
+     },
+     "rounds": {
+      "1": 709
+     }
+    },
+    "motion_gate": "PASS",
+    "swept_clearance": {
+     "first_violation": null,
+     "judged_steps": 30080,
+     "min_clearance_m": 0.22680804133415222,
+     "proxy_radius_m": 0.15,
+     "violations": 0,
+     "wall_violations": 0
+    }
+   },
+   "A4_E1_cv_115": {
+    "initial_view": {
+     "episodes": 1478,
+     "failed_closed": 0,
+     "initially_in_view": 0,
+     "initially_out_of_view": 1478,
+     "respawns": {
+      "0": 1478
+     },
+     "rounds": {
+      "1": 1478
+     }
+    },
+    "motion_gate": "PASS",
+    "swept_clearance": {
+     "first_violation": null,
+     "judged_steps": 89472,
+     "min_clearance_m": 0.25221213698387146,
+     "proxy_radius_m": 0.15,
+     "violations": 0,
+     "wall_violations": 0
+    }
+   },
+   "A4_E1_cv_160": {
+    "initial_view": {
+     "episodes": 1527,
+     "failed_closed": 0,
+     "initially_in_view": 0,
+     "initially_out_of_view": 1527,
+     "respawns": {
+      "0": 1527
+     },
+     "rounds": {
+      "1": 1527
+     }
+    },
+    "motion_gate": "PASS",
+    "swept_clearance": {
+     "first_violation": {
+      "clearance_m": 0.13273295760154724,
+      "context": {
+       "cell_id": "E1_cv__160bars__seed4190",
+       "episode_key": "s4190/b160/e108/k000"
+      },
+      "env_id": 108,
+      "outside_arena": false,
+      "target_xy": [
+       28.382247924804688,
+       20.588035583496094
+      ]
+     },
+     "judged_steps": 106112,
+     "min_clearance_m": 0.0,
+     "proxy_radius_m": 0.15,
+     "violations": 505,
+     "wall_violations": 0
+    }
+   },
+   "A4_E1_cv_205": {
+    "initial_view": {
+     "episodes": 1177,
+     "failed_closed": 0,
+     "initially_in_view": 0,
+     "initially_out_of_view": 1177,
+     "respawns": {
+      "0": 1176,
+      "1": 1
+     },
+     "rounds": {
+      "1": 1172,
+      "2": 5
+     }
+    },
+    "motion_gate": "PASS",
+    "swept_clearance": {
+     "first_violation": null,
+     "judged_steps": 97024,
+     "min_clearance_m": 0.23298954963684082,
+     "proxy_radius_m": 0.15,
+     "violations": 0,
+     "wall_violations": 0
+    }
+   },
+   "A4_E1_cv_70": {
+    "initial_view": {
+     "episodes": 937,
+     "failed_closed": 0,
+     "initially_in_view": 0,
+     "initially_out_of_view": 937,
+     "respawns": {
+      "0": 937
+     },
+     "rounds": {
+      "1": 937
+     }
+    },
+    "motion_gate": "PASS",
+    "swept_clearance": {
+     "first_violation": null,
+     "judged_steps": 51328,
+     "min_clearance_m": 0.28684279322624207,
+     "proxy_radius_m": 0.15,
+     "violations": 0,
+     "wall_violations": 0
+    }
+   },
+   "A4_E2_obstacle_aware_115": {
+    "initial_view": {
+     "episodes": 946,
+     "failed_closed": 0,
+     "initially_in_view": 0,
+     "initially_out_of_view": 946,
+     "respawns": {
+      "0": 946
+     },
+     "rounds": {
+      "1": 946
+     }
+    },
+    "motion_gate": "PASS",
+    "swept_clearance": {
+     "first_violation": null,
+     "judged_steps": 54656,
+     "min_clearance_m": 0.2302580028772354,
+     "proxy_radius_m": 0.15,
+     "violations": 0,
+     "wall_violations": 0
+    }
+   },
+   "A4_E2_obstacle_aware_160": {
+    "initial_view": {
+     "episodes": 1503,
+     "failed_closed": 0,
+     "initially_in_view": 0,
+     "initially_out_of_view": 1503,
+     "respawns": {
+      "0": 1503
+     },
+     "rounds": {
+      "1": 1502,
+      "2": 1
+     }
+    },
+    "motion_gate": "PASS",
+    "swept_clearance": {
+     "first_violation": {
+      "clearance_m": 0.14123037457466125,
+      "context": {
+       "cell_id": "E2_obstacle_aware__160bars__seed4190",
+       "episode_key": "s4190/b160/e102/k000"
+      },
+      "env_id": 102,
+      "outside_arena": false,
+      "target_xy": [
+       9.146349906921387,
+       28.81972312927246
+      ]
+     },
+     "judged_steps": 97920,
+     "min_clearance_m": 0.0,
+     "proxy_radius_m": 0.15,
+     "violations": 761,
+     "wall_violations": 0
+    }
+   },
+   "A4_E2_obstacle_aware_205": {
+    "initial_view": {
+     "episodes": 1222,
+     "failed_closed": 0,
+     "initially_in_view": 0,
+     "initially_out_of_view": 1222,
+     "respawns": {
+      "0": 1222
+     },
+     "rounds": {
+      "1": 1215,
+      "2": 7
+     }
+    },
+    "motion_gate": "PASS",
+    "swept_clearance": {
+     "first_violation": null,
+     "judged_steps": 95488,
+     "min_clearance_m": 0.22783321142196655,
+     "proxy_radius_m": 0.15,
+     "violations": 0,
+     "wall_violations": 0
+    }
+   },
+   "A4_E2_obstacle_aware_70": {
+    "initial_view": {
+     "episodes": 873,
+     "failed_closed": 0,
+     "initially_in_view": 0,
+     "initially_out_of_view": 873,
+     "respawns": {
+      "0": 873
+     },
+     "rounds": {
+      "1": 873
+     }
+    },
+    "motion_gate": "PASS",
+    "swept_clearance": {
+     "first_violation": null,
+     "judged_steps": 46848,
+     "min_clearance_m": 0.2284257709980011,
+     "proxy_radius_m": 0.15,
+     "violations": 0,
+     "wall_violations": 0
+    }
+   }
+  },
+  "moving_model_verdicts": {
+   "E1_cv": "FAIL",
+   "E2_obstacle_aware": "FAIL"
+  },
+  "observation_rows_compared": 1024
+ },
+ "finished_at": "2026-10-15T07:30:30.622971+00:00",
+ "git_commit": "bbf530b0b4079d3bde9ce3d4d75990612b643065",
+ "moving_model": null,
+ "purpose": "integrity, motion-model choice and timing only; outcomes are not used",
+ "return_codes": {
+  "A1_E0_static_115": 0,
+  "A1_E0_static_160": 0,
+  "A1_E0_static_205": 0,
+  "A1_E0_static_70": 0,
+  "A2_E0_static_115": 0,
+  "A2_E0_static_160": 0,
+  "A2_E0_static_205": 0,
+  "A2_E0_static_70": 0,
+  "A3_E1_cv_115": 0,
+  "A3_E1_cv_160": 0,
+  "A3_E1_cv_205": 0,
+  "A3_E1_cv_70": 0,
+  "A3_E2_obstacle_aware_115": 0,
+  "A3_E2_obstacle_aware_160": 0,
+  "A3_E2_obstacle_aware_205": 0,
+  "A3_E2_obstacle_aware_70": 0,
+  "A4_E1_cv_115": 0,
+  "A4_E1_cv_160": 0,
+  "A4_E1_cv_205": 0,
+  "A4_E1_cv_70": 0,
+  "A4_E2_obstacle_aware_115": 0,
+  "A4_E2_obstacle_aware_160": 0,
+  "A4_E2_obstacle_aware_205": 0,
+  "A4_E2_obstacle_aware_70": 0,
+  "B1_E0_static_115": 0,
+  "B1_E0_static_205": 0,
+  "off_path": 0,
+  "recorder_off": 0,
+  "recorder_on": 0
+ },
+ "scale": {
+  "available_for_A_hours": 22.443944444444448,
+  "densities": [
+   70,
+   115,
+   160,
+   205
+  ],
+  "projected_A_hours": 4.5041111111111105
+ },
+ "timings_s": {
+  "A1_E0_static_115": 35.3,
+  "A1_E0_static_160": 36.1,
+  "A1_E0_static_205": 39.6,
+  "A1_E0_static_70": 30.6,
+  "A2_E0_static_115": 119.1,
+  "A2_E0_static_160": 135.0,
+  "A2_E0_static_205": 136.5,
+  "A2_E0_static_70": 46.9,
+  "A3_E1_cv_115": 44.1,
+  "A3_E1_cv_160": 48.9,
+  "A3_E1_cv_205": 88.6,
+  "A3_E1_cv_70": 40.4,
+  "A3_E2_obstacle_aware_115": 50.0,
+  "A3_E2_obstacle_aware_160": 59.3,
+  "A3_E2_obstacle_aware_205": 67.2,
+  "A3_E2_obstacle_aware_70": 41.9,
+  "A4_E1_cv_115": 98.6,
+  "A4_E1_cv_160": 121.5,
+  "A4_E1_cv_205": 115.7,
+  "A4_E1_cv_70": 59.4,
+  "A4_E2_obstacle_aware_115": 66.1,
+  "A4_E2_obstacle_aware_160": 113.7,
+  "A4_E2_obstacle_aware_205": 116.7,
+  "A4_E2_obstacle_aware_70": 54.6,
+  "B1_E0_static_115": 85.4,
+  "B1_E0_static_205": 115.3,
+  "off_path": 334.7,
+  "recorder_off": 29.9,
+  "recorder_on": 30.7
+ },
+ "verdict": "CANARY_PASS"
+}
