@@ -107,7 +107,7 @@ def base_env(root=ROOT, inherited=None):
 
 def cell_env(env, protocol, *, target_model, density, seed, out_dir, quota, view=None,
              recorder=False, run_id="", arm="", ledger=True, digest_path=None, obs_dump_path=None,
-             search=None, on_violation=None):
+             search=None, on_violation=None, packets=False):
     """Variables for one launcher invocation (one cell). ``view`` None leaves the task untouched.
 
     ``on_violation`` "record" keeps a cell running after a motion-contract violation (canary only,
@@ -132,6 +132,8 @@ def cell_env(env, protocol, *, target_model, density, seed, out_dir, quota, view
         out["NAVRL_KROC2027_SEARCH"] = search
     if on_violation is not None:
         out["NAVRL_KROC2027_ON_VIOLATION"] = on_violation
+    if packets:
+        out["NAVRL_KROC2027_PACKETS"] = "1"
     if digest_path is not None:
         out.update(NAVRL_TRAJECTORY_DIGEST="1", NAVRL_TRAJECTORY_DIGEST_LABEL="kroc2027-canary",
                    NAVRL_TRAJECTORY_DIGEST_JSON=str(digest_path))
@@ -472,6 +474,8 @@ def cmd_run(args):
         return cmd_run_b(args, protocol, base_env())
     if args.stage == "b_smoke":
         return cmd_run_b_smoke(args, protocol, base_env())
+    if args.stage == "packets":
+        return cmd_run_packets(args, protocol, base_env())
     exp = protocol["experiment_A"]
     canary_dir = canary_root(protocol, args.canary_root)
     out_root = canary_dir if args.stage == "canary" else ROOT / exp["out_root"][args.stage]
@@ -903,6 +907,76 @@ def cmd_run_b_smoke(args, protocol, env):
     return 0 if report["verdict"] == "SMOKE_PASS" else 1
 
 
+PACKETS_RUN_ID = "KROC27-MT-P01"
+PACKETS_OUT = "results/kroc2027_moving_target_packets_v1"
+
+
+def packet_cells(protocol):
+    """The four reproducible counterexample cells of the canary (160 bars, seed 4190, 4 per env)."""
+    seed = protocol["experiment_A"]["canary"]["seed"]
+    return [{"arm": arm, "search": None, "target_model": model, "view": view, "density": 160, "seed": seed,
+             "cell_dir": "%s/%s" % (arm, kp.cell_label(model, 160, seed))}
+            for arm, view in (("A3", "visible"), ("A4", "hidden"))
+            for model in protocol["target_models"]["moving_candidates"]]
+
+
+def packets_summary(directory):
+    packets = read_jsonl(directory / "kroc2027_violations.jsonl") \
+        if (directory / "kroc2027_violations.jsonl").is_file() else []
+    n = len(packets)
+    share = lambda pred: (sum(1 for p in packets if pred(p)) / n) if n else None  # noqa: E731
+    return {"packets": n,
+            "replay_matches_executed": share(lambda p: p["replay"]["matches_executed"]),
+            "task_flag_false": share(lambda p: p["task_step_feasible_flag"] is False),
+            "no_safe_first_step": share(lambda p: p["candidates_first_step_safe"] == 0),
+            "footprint_reached": share(lambda p: p["swept_clearance_m"] <= 0.0),
+            "waypoint_pattern": share(lambda p: p["pattern"] == 1)}
+
+
+def cmd_run_packets(args, protocol, env):
+    head = git("rev-parse", "HEAD").strip()
+    out_root = ROOT / PACKETS_OUT
+    problems = []
+    if args.run_id != PACKETS_RUN_ID:
+        problems.append("run id %r is not %s" % (args.run_id, PACKETS_RUN_ID))
+    if not args.approved_commit or len(args.approved_commit) < 12 or not head.startswith(args.approved_commit):
+        problems.append("--approved-commit must name HEAD (%s)" % head)
+    if git("status", "--porcelain", "--untracked-files=no").strip():
+        problems.append("tracked files are modified; commit first")
+    problems.extend(static_problems(protocol))
+    if gpu_names() != [protocol["hardware"]["gpu"]]:
+        problems.append("expected exactly one %s" % protocol["hardware"]["gpu"])
+    if out_root.exists() and any(out_root.iterdir()):
+        problems.append("packet output already exists: %s" % out_root)
+    import_issues, origins = import_problems(env, launcher_path(protocol).parent)
+    problems.extend(import_issues)
+    cells = packet_cells(protocol)
+    q = protocol["experiment_A"]["canary"]["quota_per_env"]
+    if args.dry_run or problems:
+        print(json.dumps({"stage": "packets", "status": "DRY_RUN" if args.dry_run else "REFUSED",
+                          "problems": problems, "cells": len(cells), "import_origins": origins}, indent=1))
+        return 0 if args.dry_run else 2
+    budget = GpuBudget(args.max_gpu_hours)
+    report = {"run_id": args.run_id, "git_commit": head, "purpose": "diagnose E1/E2 collision counterexamples",
+              "cells": {}}
+    for cell in cells:
+        kw = dict(target_model=cell["target_model"], density=160, seed=cell["seed"], out_dir=out_root / cell["arm"],
+                  quota=q, view=cell["view"], recorder=True, run_id=args.run_id, arm=cell["arm"],
+                  on_violation="record", packets=True)
+        rc, seconds = _timed_launch(protocol, cell_env(env, protocol, **kw), False, [], budget)
+        directory = out_root / cell["cell_dir"]
+        issues = [] if rc == 0 else ["launcher exit %d" % rc]
+        issues += check_cell(directory, protocol, q, require_motion=False,
+                             expect=cell_expect(cell, args.run_id, head, q))
+        report["cells"][cell["cell_dir"]] = {"issues": issues, "seconds": round(seconds, 1),
+                                             "summary": packets_summary(directory)}
+        if rc == BUDGET_EXIT:
+            break
+    (out_root / "packets_report.json").write_text(json.dumps(report, indent=1, sort_keys=True) + "\n")
+    print(json.dumps({k: v["summary"] for k, v in report["cells"].items()}, indent=1))
+    return 0
+
+
 def cmd_run_b(args, protocol, env):
     out_root = ROOT / protocol["experiment_B"]["out_root"]["main"]
     a_out = ROOT / protocol["experiment_A"]["out_root"]["main"]
@@ -1043,7 +1117,7 @@ def main(argv=None):
     v = sub.add_parser("validate")
     v.add_argument("--raw-dir", help="folder holding the git-ignored replication cells")
     r = sub.add_parser("run")
-    r.add_argument("--stage", choices=("canary", "main", "b_smoke", "b_main"), required=True)
+    r.add_argument("--stage", choices=("canary", "main", "b_smoke", "b_main", "packets"), required=True)
     r.add_argument("--run-id", required=True)
     r.add_argument("--approved-commit", default="")
     r.add_argument("--dry-run", action="store_true")

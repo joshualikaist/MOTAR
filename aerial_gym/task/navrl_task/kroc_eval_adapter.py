@@ -39,6 +39,11 @@ VIEW_VAR = "NAVRL_KROC2027_INITIAL_VIEW"
 DISTANCE_VAR = "NAVRL_KROC2027_INITIAL_DISTANCE_M"
 RECORDER_VAR = "NAVRL_KROC2027_RECORDER"
 SEARCH_VAR = "NAVRL_KROC2027_SEARCH"
+PACKETS_VAR = "NAVRL_KROC2027_PACKETS"
+PACKETS_FILE = "kroc2027_violations.jsonl"
+PACKET_CAP = 200
+PACKET_RING = 20
+PACKET_BAR_RADIUS_M = 3.0
 ON_VIOLATION_VAR = "NAVRL_KROC2027_ON_VIOLATION"
 RECORDER_SCHEMA = "motar.kroc2027-recorder.v1"
 EPISODES_FILE = "kroc2027_episodes.jsonl"
@@ -198,6 +203,21 @@ class TaskSearch:
         return self.supervisor.episode_records(env_ids)
 
 
+def _target_motion_module():
+    """The task's bounded executor, without importing the aerial_gym package in CPU tests."""
+    name = "aerial_gym.task.navrl_task.target_motion"
+    if name in sys.modules:
+        return sys.modules[name]
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("_kroc2027_target_motion",
+                                                  Path(__file__).resolve().parent / "target_motion.py")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
 def _module_origin(name):
     module = sys.modules.get(name)
     return str(Path(module.__file__).resolve()) if module is not None and getattr(module, "__file__", None) else ""
@@ -278,6 +298,13 @@ class KrocRecorder:
         self.initial_view_counts = {"episodes": 0, "rounds": {}, "respawns": {},
                                     "initially_in_view": 0, "initially_out_of_view": 0,
                                     "failed_closed": 0}
+        self.packets_enabled = _truthy(os.environ.get(PACKETS_VAR, "0"))
+        self.packet_count = 0
+        self._snapshot = None
+        if self.packets_enabled:
+            self.packets_path = self.cell_dir / PACKETS_FILE
+            self._packet_handle = open(self.packets_path, "w", encoding="utf-8")
+            self._ring = torch.full((n, PACKET_RING, 2), math.nan, device=device)
         self._finalized = False
         self.import_origins = {
             "aerial_gym": _module_origin("aerial_gym"),
@@ -336,6 +363,8 @@ class KrocRecorder:
             store[env_ids] = 0
         for store in self._search_checks.values():
             store[env_ids] = 0
+        if self.packets_enabled:
+            self._ring[env_ids] = math.nan
         in_fov, visible, clear = self._geometric_view(env_ids)
         center, half = self._obstacles()
         stats = getattr(t, "_kroc_initial_view_stats", None)
@@ -406,9 +435,100 @@ class KrocRecorder:
                     "env_id": env, "clearance_m": float(clearance[env].item()),
                     "outside_arena": bool(outside[env].item()),
                     "target_xy": target_xy[env].tolist(), "context": self._env_context(env)}
+        if self.packets_enabled and (n_hits or n_out) and self.packet_count < PACKET_CAP:
+            bad = torch.nonzero(hits | outside, as_tuple=False).flatten()[: PACKET_CAP - self.packet_count]
+            self._write_packets(bad, target_xy, target_v, clearance)
+        if self.packets_enabled:
+            self._ring = torch.roll(self._ring, shifts=-1, dims=1)
+            self._ring[:, -1] = target_xy
         if (violated or n_hits or n_out) and self.on_violation == "stop":
             self.finalize(reason="motion contract violated")
             raise RuntimeError("KROC2027 target-motion contract violated; see %s" % self.summary_path)
+
+    def _snapshot_target_inputs(self):
+        """Executor inputs for the next target step; the target state does not change in between."""
+        t = self.task
+        grab = lambda name: getattr(t, name).detach().clone() if hasattr(t, name) else None  # noqa: E731
+        self._snapshot = {
+            "pos": t.target_position[:, 0:2].detach().clone(),
+            "vel": t.target_vel_w[:, 0:2].detach().clone(),
+            "speed": grab("_tm_speed"), "pattern": grab("_tm_pattern"),
+            "waypoint": grab("_tm_waypoint"), "cv_vel": grab("_tm_cv_vel"), "avoid": grab("_tm_avoid_sign"),
+        }
+
+    def _write_packets(self, env_ids, new_xy, new_v, clearance):
+        """One violation packet per env: inputs, the executor's own flag and a deterministic replay."""
+        t, s = self.task, self._snapshot
+        if s is None:
+            return
+        tm = _target_motion_module()
+        cfg = t.tm
+        old, v0, speed = s["pos"][env_ids], s["vel"][env_ids], s["speed"][env_ids]
+        desired = s["cv_vel"][env_ids].clone()
+        waypoint_rows = s["pattern"][env_ids] == 1
+        if bool(waypoint_rows.any()):
+            to_wp = s["waypoint"][env_ids][waypoint_rows] - old[waypoint_rows]
+            desired[waypoint_rows] = to_wp / to_wp.norm(dim=1, keepdim=True).clamp(min=1e-6) \
+                * speed[waypoint_rows].unsqueeze(1)
+        bars = t.obs_dict["obstacle_position"][env_ids, t._bar_offset:t._bar_offset + t.n_bars_active, 0:2]
+        half = t.obs_dict["asset_collision_half_extents"][env_ids, t._bar_offset:t._bar_offset + t.n_bars_active, 0:2]
+        m = float(t.cur.wall_margin)
+        lo = t.obs_dict["env_bounds_min"][env_ids, 0:2] + m
+        hi = t.obs_dict["env_bounds_max"][env_ids, 0:2] - m
+        clear = float(t._target_planner_clearance())
+        accel = torch.full_like(speed, float(cfg.max_accel))
+        turn = torch.full_like(speed, math.radians(float(cfg.max_turn_rate_deg)))
+        lookahead = float(cfg.avoidance_lookahead_s)
+        replay_xy, replay_v, _, immediate, cert = tm.bounded_drone_target_step(
+            old, v0, desired, speed, self.dt, bars, lo, hi, clear, s["avoid"][env_ids], accel, turn, lookahead,
+            None, return_certificate=True)
+        # Every candidate's first step, as the executor builds and screens them.
+        angles = torch.tensor([math.radians(a) for a in tm.BOUNDED_TURN_ANGLES_DEG], device=old.device, dtype=old.dtype)
+        base_norm = desired.norm(dim=1, keepdim=True)
+        fallback = torch.zeros_like(desired)
+        fallback[:, 0] = 1.0
+        base = torch.where(base_norm > 1e-6, desired / base_norm.clamp(min=1e-6), fallback)
+        cos, sin = torch.cos(angles).view(1, -1), torch.sin(angles).view(1, -1)
+        dirs = torch.stack((base[:, 0:1] * cos - base[:, 1:2] * sin, base[:, 0:1] * sin + base[:, 1:2] * cos), dim=2)
+        scales = torch.tensor((1.0, 0.5, 0.25), device=old.device, dtype=old.dtype)
+        cands = (dirs.unsqueeze(1) * scales.view(1, -1, 1, 1) * speed.view(-1, 1, 1, 1)).reshape(len(env_ids), -1, 2)
+        cands = torch.cat((cands, torch.zeros(len(env_ids), 1, 2, device=old.device, dtype=old.dtype)), dim=1)
+        k = cands.shape[1]
+        rep = lambda x: x.unsqueeze(1).expand(-1, k, *x.shape[1:]).reshape(-1, *x.shape[1:])  # noqa: E731
+        v1 = tm.limit_planar_velocity(rep(v0), cands.reshape(-1, 2), rep(speed), self.dt, rep(accel), rep(turn))
+        p1 = (rep(old) + v1 * self.dt).reshape(len(env_ids), k, 2)
+        centre = torch.cdist(p1, bars).amin(dim=2) if bars.shape[1] else torch.full(p1.shape[:2], math.inf)
+        inside = ((p1 >= lo.unsqueeze(1)) & (p1 <= hi.unsqueeze(1))).all(dim=2)
+        first_safe = (centre >= clear + 1e-4) & inside
+        flag = getattr(t, "_tm_last_step_feasible", None)
+        host = lambda x: x.detach().double().cpu().tolist()  # noqa: E731
+        for row, env in enumerate(env_ids.tolist()):
+            near = ((bars[row] - old[row]).norm(dim=1) <= PACKET_BAR_RADIUS_M).nonzero(as_tuple=False).flatten()
+            ring = [p for p in host(self._ring[env]) if not math.isnan(p[0])]
+            packet = {
+                "context": self._env_context(env), "monitor_step": self.motion.steps,
+                "pattern": int(s["pattern"][env].item()), "speed_mps": float(speed[row].item()),
+                "old_xy": host(old[row]), "old_v": host(v0[row]), "desired_v": host(desired[row]),
+                "new_xy": host(new_xy[env]), "new_v": host(new_v[env]),
+                "swept_clearance_m": float(clearance[env].item()),
+                "task_step_feasible_flag": bool(flag[env].item()) if flag is not None else None,
+                "replay": {"xy": host(replay_xy[row]), "immediate_feasible": bool(immediate[row].item()),
+                           "selected_index": int(cert["selected_index"][row].item()),
+                           "candidate_count": int(cert["candidate_count"]),
+                           "safe_prefix_steps": int(cert["safe_prefix_steps"][row].item()),
+                           "horizon_steps": int(cert["horizon_steps"]),
+                           "full_horizon_safe": bool(cert["full_horizon_safe"][row].item()),
+                           "matches_executed": bool((replay_xy[row] - new_xy[env]).norm().item() < 1e-4)},
+                "candidates_first_step_safe": int(first_safe[row].sum().item()),
+                "candidates_best_first_step_centre_m": float(centre[row].max().item()),
+                "planner_clearance_m": clear, "wall_margin_m": m,
+                "bounds_lo": host(lo[row]), "bounds_hi": host(hi[row]),
+                "bars_within_3m": {"centre": host(bars[row][near]), "half": host(half[row][near])},
+                "recent_positions": ring,
+            }
+            self._packet_handle.write(json.dumps(packet, sort_keys=True) + "\n")
+        self._packet_handle.flush()
+        self.packet_count += len(env_ids)
 
     def after_physics(self, actions, command):
         """After sim_env.step: requested, commanded and actual horizontal pursuer speed."""
@@ -473,6 +593,8 @@ class KrocRecorder:
         track = tracker.active.detach().clone() if tracker is not None else torch.zeros_like(visible)
         in_fov, geo_visible, _ = self._geometric_view()
         self._pending_observation = (camera, visible, track, in_fov, geo_visible)
+        if self.packets_enabled:
+            self._snapshot_target_inputs()
 
     def before_action(self):
         """Start of step: the observation that drives this action enters the chronology."""
@@ -605,11 +727,13 @@ class KrocRecorder:
         if self._finalized:
             return
         self._finalized = True
-        try:
-            self._handle.flush()
-            self._handle.close()
-        except (OSError, ValueError):
-            pass
+        for handle in (self._handle, getattr(self, "_packet_handle", None)):
+            try:
+                if handle is not None:
+                    handle.flush()
+                    handle.close()
+            except (OSError, ValueError):
+                pass
         digest = hashlib.sha256(self.episodes_path.read_bytes()).hexdigest() if self.episodes_path.is_file() else None
         swept = dict(self.swept)
         if not math.isfinite(swept["min_clearance_m"]):
@@ -632,6 +756,8 @@ class KrocRecorder:
             "swept_clearance": swept,
             "initial_view": self.initial_view_counts,
             "search": self._search_summary(),
+            "violation_packets": ({"file": PACKETS_FILE, "written": self.packet_count, "cap": PACKET_CAP}
+                                  if self.packets_enabled else {"enabled": False}),
             "on_violation": self.on_violation,
             "pursuer_reference_speed_mps": PURSUER_REFERENCE_SPEED_MPS,
             "finished_at": datetime.now(timezone.utc).isoformat(),

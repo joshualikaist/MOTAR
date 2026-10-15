@@ -20115,3 +20115,12 @@ worktree `/home/fair/workspaces/aerial_gym_ws/.codex_worktrees/kroc2027-phase1`,
 - 보존: 원본 raw(`results/kroc2027_A_v1/`), 실패 판정 canary(`results/kroc2027_A_canary_v1/`), 재실행 canary
   (`results/kroc2027_A_canary_v1_rerun1/`), source `bbf530b`, protocol `ad706d71…`은 수정·이동하지 않음.
 - 재현: 교차표는 `motar_eval.protocol.quota_rows` + `join_episode_records`로 56셀을 다시 읽어 계산(코드 변경 없음).
+
+## 2026-10-15 — KROC2027 commit 3: E1/E2 충돌 반례 violation packet (recorder 전용, 기본 OFF)
+
+- `NAVRL_KROC2027_PACKETS=1`일 때만, recorder가 이전 step 끝의 executor 입력(위치·속도·기준 속도·waypoint·회피 부호)을
+  snapshot하고, swept clearance/벽 위반 step마다(셀당 최대 200개) `kroc2027_violations.jsonl`에 기록: 이전·이후 상태,
+  task 자신의 `_tm_last_step_feasible`, 결정론적 replay(`bounded_drone_target_step`, certificate 포함)와 실행 step 일치
+  여부, 후보 전체의 첫 step 안전 여부 개수, 3 m 이내 bar(중심·half extent), 최근 위치 20개. H/E1/E2와 `navrl_task.py`는
+  수정하지 않음. CLI `run --stage packets`(KROC27-MT-P01: A3/A4 × E1/E2, 160 bars, seed 4190, env당 4)와 요약.
+  CPU: KROC 테스트 119개 OK(실제 함정 상황에서 flag False·안전 후보 0·replay 일치 확인).

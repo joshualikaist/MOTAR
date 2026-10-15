@@ -649,3 +649,22 @@ class ExperimentBAnalysisTest(unittest.TestCase):
         self.assertEqual(rc, 2)
         problems = json.loads(out.getvalue())["problems"]
         self.assertTrue(any("approved-commit" in p for p in problems))
+
+
+class PacketStageTest(unittest.TestCase):
+    def test_cells_and_summary(self):
+        cells = cli.packet_cells(PROTOCOL)
+        self.assertEqual(sorted(c["cell_dir"] for c in cells), [
+            "A3/E1_cv__160bars__seed4190", "A3/E2_obstacle_aware__160bars__seed4190",
+            "A4/E1_cv__160bars__seed4190", "A4/E2_obstacle_aware__160bars__seed4190"])
+        tmp = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, tmp, True)
+        rows = [{"replay": {"matches_executed": True}, "task_step_feasible_flag": False,
+                 "candidates_first_step_safe": 0, "swept_clearance_m": 0.0, "pattern": 1},
+                {"replay": {"matches_executed": True}, "task_step_feasible_flag": True,
+                 "candidates_first_step_safe": 3, "swept_clearance_m": 0.1, "pattern": 0}]
+        (tmp / "kroc2027_violations.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows))
+        s = cli.packets_summary(tmp)
+        self.assertEqual((s["packets"], s["task_flag_false"], s["no_safe_first_step"], s["footprint_reached"]),
+                         (2, 0.5, 0.5, 0.5))
+        self.assertEqual(cli.packets_summary(tmp / "none")["packets"], 0)

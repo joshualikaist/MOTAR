@@ -377,3 +377,65 @@ class InitialViewForTaskTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ViolationPacketTest(unittest.TestCase):
+    """A trapped bounded step: no safe first step, the executor's own flag False, replay identical."""
+
+    def test_trap_packet(self):
+        tm = _load(ROOT / "aerial_gym/task/navrl_task/target_motion.py", "_kroc2027_tm_for_packets")
+        task = make_task(n=1, bars=[[20.0, 15.0]])
+        task.tm = SimpleNamespace(max_accel=4.0, max_turn_rate_deg=150.0, avoidance_lookahead_s=1.0)
+        task.cur = SimpleNamespace(wall_margin=1.0)
+        task._target_planner_clearance = lambda: 0.77
+        task._tm_pattern = torch.zeros(1, dtype=torch.long)       # cv (E1): reference = held velocity
+        task._tm_waypoint = torch.zeros(1, 2)
+        task._tm_cv_vel = torch.tensor([[1.5, 0.0]])
+        task._tm_avoid_sign = torch.ones(1)
+        task._tm_speed = torch.full((1,), 1.5)
+        task.target_position[0, 0:2] = torch.tensor([19.45, 15.0])  # 0.25 m from the bar face
+        task.target_vel_w[0, 0:2] = torch.tensor([1.5, 0.0])
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        with mock.patch.dict(os.environ, recorder_env(tmp.name, NAVRL_KROC2027_ON_VIOLATION="record",
+                                                      NAVRL_KROC2027_PACKETS="1")):
+            rec = adapter.build_kroc_adapter(task)
+        rec.on_reset(torch.arange(1))
+        rec.after_perception({"visible": torch.zeros(1, dtype=torch.bool)})
+        rec.before_action()
+        # The task's own bounded step on the same inputs, written back unconditionally (virtual target).
+        bars = task.obs_dict["obstacle_position"][:, 0:1, 0:2]
+        lo = task.obs_dict["env_bounds_min"][:, 0:2] + 1.0
+        hi = task.obs_dict["env_bounds_max"][:, 0:2] - 1.0
+        xy, v, _, feasible = tm.bounded_drone_target_step(
+            task.target_position[:, 0:2].clone(), task.target_vel_w[:, 0:2].clone(), task._tm_cv_vel.clone(),
+            task._tm_speed, 0.1, bars, lo, hi, 0.77, task._tm_avoid_sign, torch.full((1,), 4.0),
+            torch.full((1,), math.radians(150.0)), 1.0, None)
+        self.assertFalse(bool(feasible[0]))
+        task._tm_last_step_feasible = feasible
+        task.target_position[:, 0:2] = xy
+        task.target_vel_w[:, 0:2] = v
+        rec.after_target_advance()
+        rec.finalize()
+        packets = [json.loads(l) for l in rec.packets_path.read_text().splitlines()]
+        self.assertEqual(len(packets), 1)
+        p = packets[0]
+        self.assertLess(p["swept_clearance_m"], 0.15)
+        self.assertIs(p["task_step_feasible_flag"], False)
+        self.assertEqual(p["candidates_first_step_safe"], 0)
+        self.assertTrue(p["replay"]["matches_executed"])
+        self.assertFalse(p["replay"]["immediate_feasible"])
+        self.assertEqual(p["replay"]["candidate_count"], 3 * len(tm.BOUNDED_TURN_ANGLES_DEG) + 1)
+        self.assertEqual(len(p["bars_within_3m"]["centre"]), 1)
+        summary = json.loads(rec.summary_path.read_text())
+        self.assertEqual(summary["violation_packets"]["written"], 1)
+
+    def test_packets_off_by_default(self):
+        task = make_task(n=1)
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        with mock.patch.dict(os.environ, recorder_env(tmp.name)):
+            rec = adapter.build_kroc_adapter(task)
+        self.assertFalse(rec.packets_enabled)
+        rec.finalize()
+        self.assertEqual(json.loads(rec.summary_path.read_text())["violation_packets"], {"enabled": False})
