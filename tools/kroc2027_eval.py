@@ -178,7 +178,14 @@ def static_problems(protocol, root=ROOT):
     return problems
 
 
-def preconditions(stage, protocol, run_id, approved_commit, out_root, root=ROOT, gpus=None):
+def canary_root(protocol, override=None, root=ROOT) -> Path:
+    """The canary output folder: the protocol's, or a fresh one for a re-run (results/** is never
+    overwritten, so a re-run needs its own folder; the main run reads the same one)."""
+    return Path(override).resolve() if override else root / protocol["experiment_A"]["out_root"]["canary"]
+
+
+def preconditions(stage, protocol, run_id, approved_commit, out_root, root=ROOT, gpus=None,
+                  canary_dir=None):
     head = git("rev-parse", "HEAD", root=root).strip()
     problems = []
     expected_id = protocol["experiment_A"]["run_ids"][stage]
@@ -196,7 +203,7 @@ def preconditions(stage, protocol, run_id, approved_commit, out_root, root=ROOT,
     if gpus != [protocol["hardware"]["gpu"]]:
         problems.append("expected exactly one %s, found %s" % (protocol["hardware"]["gpu"], gpus))
     if stage == "main":
-        report_path = root / protocol["experiment_A"]["out_root"]["canary"] / "canary_report.json"
+        report_path = (canary_dir or canary_root(protocol, root=root)) / "canary_report.json"
         report = json.loads(report_path.read_text()) if report_path.is_file() else {}
         if report.get("verdict") != "CANARY_PASS" or report.get("git_commit") != head:
             problems.append("main needs a CANARY_PASS on this commit (%s)" % report_path)
@@ -433,8 +440,10 @@ def cmd_run(args):
     if args.stage == "b_main":
         return cmd_run_b(args, protocol, base_env())
     exp = protocol["experiment_A"]
-    out_root = ROOT / exp["out_root"][args.stage]
-    head, problems = preconditions(args.stage, protocol, args.run_id, args.approved_commit, out_root)
+    canary_dir = canary_root(protocol, args.canary_root)
+    out_root = canary_dir if args.stage == "canary" else ROOT / exp["out_root"][args.stage]
+    head, problems = preconditions(args.stage, protocol, args.run_id, args.approved_commit, out_root,
+                                   canary_dir=canary_dir)
     env = base_env()
     import_issues, origins = import_problems(env, launcher_path(protocol).parent)
     problems.extend(import_issues)
@@ -466,8 +475,8 @@ def cmd_run(args):
         print(json.dumps({k: report[k] for k in ("verdict", "moving_model", "scale")}, indent=1))
         return 0 if report["verdict"] == "CANARY_PASS" else 1
     # main
-    canary = json.loads((ROOT / exp["out_root"]["canary"] / "canary_report.json").read_text()) \
-        if (ROOT / exp["out_root"]["canary"] / "canary_report.json").is_file() else {}
+    canary = json.loads((canary_dir / "canary_report.json").read_text()) \
+        if (canary_dir / "canary_report.json").is_file() else {}
     moving = canary.get("moving_model")
     densities = canary.get("scale", {}).get("densities", exp["densities"])
     cells = [c for c in kp.a_cells(protocol, "main", moving) if c["density"] in densities]
@@ -478,7 +487,8 @@ def cmd_run(args):
         return 0
     quota = protocol["evaluation"]["quota_per_env"]
     for cell in cells:
-        head_now, again = preconditions("main", protocol, args.run_id, args.approved_commit, out_root)
+        head_now, again = preconditions("main", protocol, args.run_id, args.approved_commit, out_root,
+                                        canary_dir=canary_dir)
         if again or head_now != head:
             print(json.dumps({"status": "STOPPED", "before": cell["cell_dir"], "problems": again}))
             return 2
@@ -627,7 +637,7 @@ def cmd_analyse(args):
         return 2
     exp = protocol["experiment_A"]
     out_root = ROOT / exp["out_root"]["main"]
-    canary = json.loads((ROOT / exp["out_root"]["canary"] / "canary_report.json").read_text())
+    canary = json.loads((canary_root(protocol, args.canary_root) / "canary_report.json").read_text())
     moving = canary.get("moving_model")
     densities = canary.get("scale", {}).get("densities", exp["densities"])
     quota = protocol["evaluation"]["quota_per_env"]
@@ -777,7 +787,9 @@ def main(argv=None):
     r.add_argument("--run-id", required=True)
     r.add_argument("--approved-commit", default="")
     r.add_argument("--dry-run", action="store_true")
-    sub.add_parser("analyse")
+    r.add_argument("--canary-root", help="canary folder (default: the protocol's); for a re-run")
+    an = sub.add_parser("analyse")
+    an.add_argument("--canary-root", help="canary folder whose report chose the moving model")
     g = sub.add_parser("b-gate")
     g.add_argument("--remaining-gpu-hours", type=float, required=True)
     g.add_argument("--b-run-approved", action="store_true",

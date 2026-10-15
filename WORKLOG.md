@@ -20066,3 +20066,6 @@ worktree `/home/fair/workspaces/aerial_gym_ws/.codex_worktrees/kroc2027-phase1`,
   같은 데이터에 수정 규칙을 메모리에서 적용하면 `CANARY_PASS`. `motar_eval.protocol.analyse_a_static` 추가(A1−A2 단일
   검정). Amendment `docs/plans/prereg_kroc2027_A_v1_amendment_2026-10-15.md`. CPU: `test_kroc2027_*` 105개 OK.
 - 다음: 이 commit에서 canary 재실행 → A static 본 실행(56셀, 예상 ~4.6 h) → 분석.
+- 추가: canary 출력 폴더는 `results/**` 불변 규칙 때문에 덮어쓸 수 없어 `--canary-root` 옵션 추가(기본값은 protocol 경로).
+  재실행은 `results/kroc2027_A_canary_v1_rerun1/`에 쓰고 본 실행·분석은 같은 폴더를 읽음. Amendment가 말한 "이 파일을
+  추가한 commit"이 아니라 경로 옵션만 다른 다음 commit에서 재실행함(코드 동작 차이는 출력 경로뿐). CPU: KROC 테스트 OK.

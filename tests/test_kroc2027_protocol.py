@@ -416,6 +416,14 @@ class CliPureFunctionTest(unittest.TestCase):
                          ("E0_static", 70, 4104, 16))
         self.assertIsNone(off.get("view"))
 
+    def test_canary_root_override(self):
+        self.assertEqual(cli.canary_root(PROTOCOL), ROOT / "results/kroc2027_A_canary_v1")
+        alt = Path(tempfile.mkdtemp()) / "rerun"
+        self.assertEqual(cli.canary_root(PROTOCOL, str(alt)), alt.resolve())
+        _, problems = cli.preconditions("main", PROTOCOL, "KROC27-A-M01", "x" * 12, Path("/tmp/none"),
+                                        gpus=["NVIDIA GeForce RTX 3070"], canary_dir=alt)
+        self.assertTrue(any(str(alt) in p for p in problems if "CANARY_PASS" in p))
+
     def test_run_refuses_without_approval(self):
         out = Path(tempfile.mkdtemp()) / "never"
         head, problems = cli.preconditions("canary", PROTOCOL, "KROC27-A-C01", "", out,
