@@ -367,6 +367,79 @@ def analyse_b(capture: Dict, crash: Dict, timeout: Dict, seeds: Sequence[int], i
     }
 
 
+B_SEARCH_METRICS = ("searched", "search_steps_per_episode", "search_steps_among_searched",
+                    "suppressed_steps_per_episode", "researches_per_episode",
+                    "search_active_at_end_crash", "search_active_at_end_timeout")
+
+
+def b_secondary_cell(episodes: Sequence[Dict]) -> Dict[str, Optional[float]]:
+    """Section 4 secondary quantities of one B cell over its quota episodes; search ones for B1 only."""
+    n = len(episodes)
+    if n == 0:
+        raise ValueError("a cell needs at least one episode")
+    acquired = [e for e in episodes if e["ever_fused_valid"]]
+    if any(e["first_acquisition_latency_s"] is None for e in acquired):
+        raise ValueError("an acquired episode has no first-acquisition latency")
+    out = {"acquired": len(acquired) / n,
+           "latency_s_among_acquired": (sum(e["first_acquisition_latency_s"] for e in acquired) / len(acquired)
+                                        if acquired else None)}
+    with_search = sum(1 for e in episodes if "search_search_steps" in e)
+    if with_search == 0:
+        return out
+    if with_search != n:
+        raise ValueError("search fields are present in %d of %d episodes" % (with_search, n))
+    searched = [e for e in episodes if e["search_search_steps"] > 0]
+    mean = lambda key, rows: sum(e[key] for e in rows) / len(rows) if rows else None  # noqa: E731
+    at_end = lambda outcome: sum(1 for e in episodes  # noqa: E731
+                                 if e["search_active_at_end"] and e["outcome"] == outcome) / n
+    out.update({"searched": len(searched) / n,
+                "search_steps_per_episode": mean("search_search_steps", episodes),
+                "search_steps_among_searched": mean("search_search_steps", searched),
+                "suppressed_steps_per_episode": mean("search_suppressed_steps", episodes),
+                "researches_per_episode": mean("search_research_count", episodes),
+                "search_active_at_end_crash": at_end("crash"),
+                "search_active_at_end_timeout": at_end("timeout")})
+    return out
+
+
+def analyse_b_secondary(per_cell: Dict, densities: Sequence[int], seeds: Sequence[int],
+                        capture: Dict, a_hidden_deficit: float) -> Dict:
+    """Section 4 secondary outcomes, descriptive only; the confirmatory result is ``analyse_b``'s.
+
+    ``per_cell[(arm, density, seed)]`` holds ``b_secondary_cell`` output, ``capture[(arm, seed)]`` the
+    seed-level capture, and ``a_hidden_deficit`` Experiment A's A1 - A2 capture (a fraction).
+    """
+    def level(arm, metric):
+        values = {}
+        for seed in seeds:
+            cells = [per_cell[(arm, d, seed)].get(metric) for d in densities]
+            if any(v is None for v in cells):
+                raise ValueError("%s %s is missing in a cell of seed %d" % (arm, metric, seed))
+            values[seed] = sum(cells) / len(cells)
+        return values
+
+    def arms(metric):
+        b0, b1 = level("B0", metric), level("B1", metric)
+        diffs = [b1[s] - b0[s] for s in seeds]
+        return {"B0": sum(b0.values()) / len(seeds), "B1": sum(b1.values()) / len(seeds),
+                "seed_diffs": {str(s): d for s, d in zip(seeds, diffs)}, "paired_t_B1_minus_B0": paired_t(diffs)}
+
+    gain = sum(capture[("B1", s)] - capture[("B0", s)] for s in seeds) / len(seeds)
+    search = {}
+    for metric in B_SEARCH_METRICS:
+        values = level("B1", metric)
+        search[metric] = {"mean": sum(values.values()) / len(seeds), "seeds": {str(s): v for s, v in values.items()}}
+    return {
+        "status": "descriptive (preregistration section 4 secondary); not confirmatory",
+        "acquired": arms("acquired"),
+        "latency_s_among_acquired": arms("latency_s_among_acquired"),
+        "recovery_fraction": {"capture_gain": gain, "a_hidden_deficit": a_hidden_deficit,
+                              "fraction": gain / a_hidden_deficit, "status": "exploratory"},
+        "search_use_B1": search,
+        "attribution_note": "search active at the end flags an episode; it does not say the search caused it",
+    }
+
+
 # ---------------------------------------------------------------- Experiment B rule and gate
 def select_b_arm(never_acquired_failure: Dict, seeds: Sequence[int], tie_pp: float = 0.5) -> Dict:
     """The hidden arm with the larger never-acquired failure rate; within ``tie_pp`` -> static."""

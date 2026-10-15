@@ -639,6 +639,51 @@ class ExperimentBAnalysisTest(unittest.TestCase):
                          "INVALID")
         self.assertIn("not of yaw scanning alone", out["interpretation"])
 
+    @staticmethod
+    def _episode(outcome, acquired, latency=None, search_steps=None, active_at_end=False):
+        episode = {"outcome": outcome, "ever_fused_valid": acquired,
+                   "first_acquisition_latency_s": latency if acquired else None}
+        if search_steps is not None:
+            episode.update({"search_search_steps": search_steps, "search_suppressed_steps": 1,
+                            "search_research_count": 0, "search_active_at_end": active_at_end})
+        return episode
+
+    def test_secondary_cell(self):
+        e = self._episode
+        b0 = kp.b_secondary_cell([e("capture", True, 2.0), e("crash", False)])
+        self.assertEqual(b0, {"acquired": 0.5, "latency_s_among_acquired": 2.0})
+        b1 = kp.b_secondary_cell([e("capture", True, 1.0, 3), e("crash", False, None, 9, True),
+                                  e("capture", True, 3.0, 0), e("timeout", False, None, 4, False)])
+        self.assertEqual(b1["latency_s_among_acquired"], 2.0)
+        self.assertEqual(b1["searched"], 0.75)
+        self.assertEqual(b1["search_steps_among_searched"], (3 + 9 + 4) / 3)
+        self.assertEqual(b1["search_active_at_end_crash"], 0.25)
+        self.assertEqual(b1["search_active_at_end_timeout"], 0.0)
+        with self.assertRaises(ValueError):
+            kp.b_secondary_cell([e("capture", True, 1.0, 3), e("capture", True, 1.0)])
+        with self.assertRaises(ValueError):
+            kp.b_secondary_cell([{"outcome": "capture", "ever_fused_valid": True,
+                                  "first_acquisition_latency_s": None}])
+
+    def test_secondary_analysis(self):
+        e = self._episode
+        densities = (70, 160)
+        per_cell, capture = {}, {}
+        for i, s in enumerate(self.SEEDS):
+            for d in densities:
+                per_cell[("B0", d, s)] = kp.b_secondary_cell([e("capture", True, 2.0 + 0.1 * i)])
+                per_cell[("B1", d, s)] = kp.b_secondary_cell([e("capture", True, 1.5 + 0.1 * i, 2)])
+            capture[("B0", s)], capture[("B1", s)] = 0.95, 0.96
+        out = kp.analyse_b_secondary(per_cell, densities, self.SEEDS, capture, 0.02)
+        self.assertAlmostEqual(out["recovery_fraction"]["fraction"], 0.5)
+        self.assertAlmostEqual(out["latency_s_among_acquired"]["paired_t_B1_minus_B0"]["mean"], -0.5)
+        self.assertEqual(out["search_use_B1"]["searched"]["mean"], 1.0)
+        self.assertIn("not confirmatory", out["status"])
+        with self.assertRaises(ValueError):
+            kp.analyse_b_secondary({**per_cell, ("B1", 70, self.SEEDS[0]): {"acquired": 0.0,
+                                                                            "latency_s_among_acquired": None}},
+                                   densities, self.SEEDS, capture, 0.02)
+
     def test_smoke_refuses_without_approval(self):
         import contextlib
         import io

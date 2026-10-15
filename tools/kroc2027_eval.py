@@ -1104,6 +1104,42 @@ def cmd_analyse_b(args):
     return 0 if not problems else 1
 
 
+def cmd_analyse_b_secondary(args):
+    """Experiment B secondary outcomes (prereg section 4) into analysis_secondary.json; analysis.json stays."""
+    protocol = kp.load_protocol(PROTOCOL)
+    out_root = ROOT / protocol["experiment_B"]["out_root"]["main"]
+    gate = json.loads((out_root / "b_gate.json").read_text())
+    confirmatory = out_root / "analysis.json"
+    quota = protocol["evaluation"]["quota_per_env"]
+    seeds = protocol["experiment_B"]["seeds"]
+    per_cell, metrics, problems = {}, {}, []
+    for cell in kp.b_cells(protocol, gate["target_model"], gate["densities"]):
+        directory = out_root / cell["cell_dir"]
+        receipt = json.loads((directory / "receipt.json").read_text())
+        expect = cell_expect(cell, protocol["experiment_B"]["run_ids"]["main"], receipt.get("git_commit"), quota)
+        problems += ["%s: %s" % (cell["cell_dir"], p) for p in check_cell(directory, protocol, quota, expect=expect)]
+        summary = json.loads((directory / "episode_ledger_summary.json").read_text())
+        rows = read_jsonl(directory / summary.get("rows_file", "episodes.jsonl"))
+        joined = kp.join_episode_records(kp.quota_rows(rows, protocol["evaluation"]["num_envs"], quota),
+                                         read_jsonl(directory / RECORDER_EPISODES))
+        key = (cell["arm"], cell["density"], cell["seed"])
+        per_cell[key] = kp.b_secondary_cell(joined)
+        metrics[key] = kp.cell_metrics(joined)
+    capture = kp.seed_level(metrics, ["B0", "B1"], gate["densities"], seeds, "capture")
+    report = {"preregistration_sha256": kp.sha256_file(ROOT / B_PREREG),
+              "confirmatory_analysis_sha256": kp.sha256_file(confirmatory),
+              "source_commit": git("rev-parse", "HEAD").strip(),
+              "tracked_tree_dirty": bool(git("status", "--porcelain", "--untracked-files=no").strip()),
+              "integrity_problems": problems,
+              "secondary": kp.analyse_b_secondary(per_cell, gate["densities"], seeds, capture,
+                                                  gate["capture_diff_test"]["mean"]),
+              "per_cell": {"%s/%dbars/seed%d" % k: v for k, v in sorted(per_cell.items())}}
+    (out_root / "analysis_secondary.json").write_text(json.dumps(report, indent=1, sort_keys=True) + "\n")
+    print(json.dumps({"integrity_problems": len(problems),
+                      "recovery_fraction": report["secondary"]["recovery_fraction"]["fraction"]}, indent=1))
+    return 0 if not problems else 1
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     sub = parser.add_subparsers(dest="command", required=True)
@@ -1127,6 +1163,7 @@ def main(argv=None):
     an = sub.add_parser("analyse")
     an.add_argument("--canary-root", help="canary folder whose report chose the moving model")
     sub.add_parser("analyse-b")
+    sub.add_parser("analyse-b-secondary")
     g = sub.add_parser("b-gate")
     g.add_argument("--remaining-gpu-hours", type=float, required=True)
     g.add_argument("--b-run-approved", action="store_true",
@@ -1137,7 +1174,8 @@ def main(argv=None):
     m.add_argument("--out", help="where to write RAW_MANIFEST.json (default: print a summary only)")
     args = parser.parse_args(argv)
     return {"pilot": cmd_pilot, "plan": cmd_plan, "validate": cmd_validate, "run": cmd_run,
-            "analyse": cmd_analyse, "analyse-b": cmd_analyse_b, "b-gate": cmd_b_gate,
+            "analyse": cmd_analyse, "analyse-b": cmd_analyse_b,
+            "analyse-b-secondary": cmd_analyse_b_secondary, "b-gate": cmd_b_gate,
             "manifest": cmd_manifest}[args.command](args)
 
 

@@ -20202,3 +20202,11 @@ worktree `/home/fair/workspaces/aerial_gym_ws/.codex_worktrees/kroc2027-phase1`,
 - 다음(각각 별도 승인): (1) TF32를 끄고 같은 4셀을 재실행해 원인 확인(약 0.15 GPU h). (2) 거리를 차의 norm으로 직접 계산하는
   E1/E2 변형을 새 이름으로 만들고, amendment 2와 4밀도 canary로 H-A2 복원(계획 §5 E3보다 작음). (3) 과거 4의 배수 밀도
   이동 표적 셀 감사.
+
+## 2026-10-16 — KROC2027 B secondary 분석 명령 추가(`analyse-b-secondary`, CPU)
+
+- 사전등록 B §4 secondary(획득률·획득 episode의 첫 획득 지연, 회복 비율, B1 탐색 사용량, 종료 시 탐색 활성 crash/timeout)를
+  `motar_eval.protocol.b_secondary_cell`·`analyse_b_secondary`와 CLI `analyse-b-secondary`로 계산. 확증 결과
+  `analysis.json`은 건드리지 않고 `analysis_secondary.json`에 따로 씀. 모든 셀에 `check_cell` 무결성 검사를 다시 적용하고,
+  확증 분석 SHA-256·source commit·tracked tree 상태를 기록. 값이 없거나(None) 탐색 필드가 일부 episode에만 있으면 실패.
+- 파일: `motar_eval/protocol.py`, `tools/kroc2027_eval.py`, `tests/test_kroc2027_protocol.py`. CPU: `test_kroc2027_*` 121개 OK.
