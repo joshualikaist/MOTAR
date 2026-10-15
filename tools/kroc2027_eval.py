@@ -267,8 +267,10 @@ def recorder_problems(summary, records, ledger_rows, root=ROOT, require_motion=T
     gates = summary.get("motion_gate", {})
     if require_motion and gates.get("verdict") != "PASS":
         problems.append("motion gate %s" % gates.get("verdict"))
+    # Swept clearance and the arena wall belong to the motion contract (preregistration section 5),
+    # judged with the motion gate; in the canary they choose the moving model, not instrumentation.
     clearance = summary.get("swept_clearance", {})
-    if clearance.get("violations", 1) or clearance.get("wall_violations", 1):
+    if require_motion and (clearance.get("violations", 1) or clearance.get("wall_violations", 1)):
         problems.append("swept clearance or wall violations: %s" % clearance)
     initial = summary.get("initial_view", {})
     if initial.get("failed_closed", 0):
@@ -648,8 +650,8 @@ def cmd_analyse(args):
     if moving is not None:
         report["confirmatory"] = kp.analyse_a(capture, seeds, protocol["analysis_A"], not problems)
     else:
-        report["confirmatory"] = {"H-A2": "NOT_TESTED", "static_only": kp.paired_t(
-            [capture[("A1", s)] - capture[("A2", s)] for s in seeds])}
+        # Amendment 2026-10-15: no moving model passed, so H-A is tested on the static pair alone.
+        report["confirmatory"] = kp.analyse_a_static(capture, seeds, protocol["analysis_A"], not problems)
     report["secondary_seed_level"] = {
         metric: {"%s/%d" % k: v for k, v in kp.seed_level(per_cell, arms, densities, seeds, metric).items()}
         for metric in ("crash", "timeout", "ever_acquired", "never_acquired",

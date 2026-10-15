@@ -20051,3 +20051,18 @@ worktree `/home/fair/workspaces/aerial_gym_ws/.codex_worktrees/kroc2027-phase1`,
   source-gate 테스트가 작업 트리 대신 replication 실행 commit(`RAW_MANIFEST.json`의 `source_commit` =
   `b1c0bc6`)을 기준선과 비교하도록 고정. 보호하는 사실(replication 코드는 ledger와 hook만 다름)은 그대로이고,
   인용된 `tools/target_motion_replication.py`는 수정하지 않음. CPU: 해당 파일 15/15 OK.
+
+## 2026-10-15 — KROC2027 merge, canary KROC27-A-C01, amendment 1 (A static-only)
+
+- `kroc2027-phase1`를 main에 fast-forward merge(`06427e4`, 사용자 승인). 사용자 미커밋 변경은 stash 후 canary 종료 뒤
+  복원(WORKLOG 충돌은 양쪽 항목을 날짜순으로 보존). main PUBLIC_CPU: 사용자 미추적 `test_professor_presentation` 1건 외 통과.
+- Canary KROC27-A-C01(RTX 3070, 0.68 h, 29 subrun 모두 exit 0, `results/kroc2027_A_canary_v1/`): OFF 경로가 replication
+  셀을 byte 재현(`rows_sha256` `0a1bf878…`), recorder on/off 결과·digest·ledger·관측 1,024개 동일, recorder–task 첫 획득
+  불일치 0, 정지 표적 gate PASS, B1 무결성 PASS(탐색 1,790 episode, 불변식 위반 0). 결과 수치(capture 등)는 미사용.
+- 가설 기각 성격의 발견: E2·E1 모두 160 bars에서만 swept clearance 실패(A3·A4 공통, episode의 2–4 %, footprint 도달
+  5–32건/셀, 11–57개 장면). bounded executor fallback이 이미 위험한 step을 실행하는 것으로 보임. 사전등록 규칙상 이동
+  모델 없음 → A3/A4 미실행, H-A2 `NOT_TESTED`.
+- 보고서는 CLI 결함으로 `CANARY_FAIL`(충돌 위반을 계측 실패로도 집계). 수정: 충돌·벽 검사는 motion gate에만 속함.
+  같은 데이터에 수정 규칙을 메모리에서 적용하면 `CANARY_PASS`. `motar_eval.protocol.analyse_a_static` 추가(A1−A2 단일
+  검정). Amendment `docs/plans/prereg_kroc2027_A_v1_amendment_2026-10-15.md`. CPU: `test_kroc2027_*` 105개 OK.
+- 다음: 이 commit에서 canary 재실행 → A static 본 실행(56셀, 예상 ~4.6 h) → 분석.

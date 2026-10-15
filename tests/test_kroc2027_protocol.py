@@ -182,6 +182,21 @@ class StatisticsTest(unittest.TestCase):
         self.assertAlmostEqual(min(holm), min(1.0, 2 * raw[0]))
         self.assertAlmostEqual(big["Delta_A"]["practical_interval_confidence"], 0.975)
 
+    def test_static_only_amendment(self):
+        analysis = PROTOCOL["analysis_A"]
+        out = kp.analyse_a_static(self._capture(0.10, 0.04), SEEDS, analysis, True)
+        self.assertEqual((out["H-A2"], out["Delta_A"], out["I_A"]), ("NOT_TESTED",) * 3)
+        c = out["contrasts"]["static_visible_minus_hidden"]
+        self.assertEqual(c["decision"], "PRACTICALLY_SUPPORTED")
+        self.assertAlmostEqual(c["paired_t"]["confidence"], 0.95)
+        small = kp.analyse_a_static(self._capture(0.012, 0.012, noise=0.001), SEEDS, analysis, True)
+        self.assertEqual(small["contrasts"]["static_visible_minus_hidden"]["decision"], "SUPPORTED")
+        flat = kp.analyse_a_static(self._capture(0.0, 0.0, noise=0.002), SEEDS, analysis, True)
+        self.assertIn(flat["contrasts"]["static_visible_minus_hidden"]["decision"],
+                      ("INCONCLUSIVE", "OPPOSITE_DIRECTION", "SUPPORTED"))
+        self.assertEqual(kp.analyse_a_static(self._capture(0.1, 0.0), SEEDS, analysis, False)
+                         ["contrasts"]["static_visible_minus_hidden"]["decision"], "INVALID")
+
     def test_helpers_are_the_replication_tools_own(self):
         helpers = kp.replication_helpers()
         self.assertEqual(Path(helpers.__file__).resolve(), (ROOT / "tools/target_motion_replication.py").resolve())
@@ -347,6 +362,10 @@ class CliPureFunctionTest(unittest.TestCase):
         failed = dict(rec_summary, motion_gate={"verdict": "FAIL"})
         self.assertTrue(cli.recorder_problems(failed, records, rows))
         self.assertEqual(cli.recorder_problems(failed, records, rows, require_motion=False), [])
+        # Canary 2026-10-15: clearance violations are motion-contract evidence, not instrumentation.
+        swept = dict(rec_summary, swept_clearance={"violations": 66, "wall_violations": 0})
+        self.assertTrue(cli.recorder_problems(swept, records, rows))
+        self.assertEqual(cli.recorder_problems(swept, records, rows, require_motion=False), [])
         agree = [dict(r, first_obs_fused_valid=3, task_first_fused_obs=3) for r in records]
         self.assertEqual(cli.recorder_problems(rec_summary, agree, rows), [])
         differ = [dict(r) for r in agree]

@@ -301,6 +301,42 @@ def analyse_a(capture: Dict, seeds: Sequence[int], analysis: Dict, integrity_ok:
     return out
 
 
+def analyse_a_static(capture: Dict, seeds: Sequence[int], analysis: Dict, integrity_ok: bool) -> Dict:
+    """Static-only Experiment A (amendment 2026-10-15): no moving model passed the canary.
+
+    H-A is tested on A1 - A2 alone: one two-sided paired t over seeds at alpha (no family, so no
+    Holm), predicted positive, practical claim from the 95 % t interval against the preregistered
+    threshold. H-A2 and Delta_A / I_A are NOT_TESTED.
+    """
+    helpers = replication_helpers()
+    alpha = float(analysis["alpha"])
+    diffs = [capture[("A1", s)] - capture[("A2", s)] for s in seeds]
+    test = paired_t(diffs, confidence=1.0 - alpha)
+    bound = test["ci"][0]
+    return {
+        "family": ["static_visible_minus_hidden"],
+        "alpha": alpha,
+        "H-A2": "NOT_TESTED",
+        "Delta_A": "NOT_TESTED",
+        "I_A": "NOT_TESTED",
+        "contrasts": {"static_visible_minus_hidden": {
+            "seed_diffs": dict(zip(map(str, seeds), diffs)),
+            "paired_t": test,
+            "predicted_direction": "positive",
+            "decision": decide(test, test["p_two_sided"], "positive", alpha,
+                               float(analysis["practical_threshold_pp"]), test["ci"], integrity_ok),
+            "practical_sensitivity": {
+                "%gpp" % pp: bool(bound > pp / 100.0) for pp in analysis["sensitivity_thresholds_pp"]},
+            "sensitivity": {
+                "bca95": list(helpers.bca_paired(diffs, resamples=int(analysis["bca_resamples"]),
+                                                 seed=int(analysis["bca_seed"]), alpha=0.05)),
+                "exact_sign_flip_p": helpers.exact_sign_flip_p(diffs),
+                "seeds_in_predicted_direction": sum(1 for d in diffs if d > 0),
+            },
+        }},
+    }
+
+
 # ---------------------------------------------------------------- Experiment B rule and gate
 def select_b_arm(never_acquired_failure: Dict, seeds: Sequence[int], tie_pp: float = 0.5) -> Dict:
     """The hidden arm with the larger never-acquired failure rate; within ``tie_pp`` -> static."""
