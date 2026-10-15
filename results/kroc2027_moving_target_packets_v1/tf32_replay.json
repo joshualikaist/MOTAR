@@ -1,0 +1,95 @@
+{
+ "cdist_max_abs_error_m": {
+  "executor_73_candidates": {
+   "tf32_off/bars115": 0.0078,
+   "tf32_off/bars116": 0.0049,
+   "tf32_off/bars156": 0.0064,
+   "tf32_off/bars160": 0.0038,
+   "tf32_off/bars164": 0.0178,
+   "tf32_off/bars205": 0.01,
+   "tf32_off/bars70": 0.0028,
+   "tf32_off/bars72": 0.0138,
+   "tf32_on/bars115": 0.003,
+   "tf32_on/bars116": 1.9189,
+   "tf32_on/bars156": 2.0075,
+   "tf32_on/bars160": 1.8895,
+   "tf32_on/bars164": 2.094,
+   "tf32_on/bars205": 0.0067,
+   "tf32_on/bars70": 0.0125,
+   "tf32_on/bars72": 1.9852
+  },
+  "spawn_rule_1_point": {
+   "tf32_off/bars115": 0.001,
+   "tf32_off/bars160": 0.0014,
+   "tf32_off/bars205": 0.0004,
+   "tf32_off/bars70": 0.0017,
+   "tf32_on/bars115": 0.0008,
+   "tf32_on/bars160": 0.0005,
+   "tf32_on/bars205": 0.0004,
+   "tf32_on/bars70": 0.0006
+  }
+ },
+ "device": "NVIDIA GeForce RTX 3070",
+ "executor_config": {
+  "bar_slots": 160,
+  "dt_s": 0.1,
+  "filler_bar_xy": -1000.0,
+  "lookahead_s": 1.0,
+  "max_accel": 4.0,
+  "max_turn_rate_deg": 150.0
+ },
+ "packet_files": {
+  "A3/E1_cv__160bars__seed4190/kroc2027_violations.jsonl": "238f6cda1cc9edc0076fd2f5c919d6dca25577d02556ce91c4fa4e6fcaabf8fe",
+  "A3/E2_obstacle_aware__160bars__seed4190/kroc2027_violations.jsonl": "fe302898fda85c07fd354297735b4a2fb25997f649af7199b286b55e21757734",
+  "A4/E1_cv__160bars__seed4190/kroc2027_violations.jsonl": "18194e6867fbe970b42ad0d240bfcf948130e8e96d3cd513459ef1f705c3d211",
+  "A4/E2_obstacle_aware__160bars__seed4190/kroc2027_violations.jsonl": "02c3008b5bd9b6f77751a3054d997ec66d3429db7873b1ceb90b0aa599a3dad3"
+ },
+ "packets": 606,
+ "purpose": "test whether TF32 matmul in torch.cdist explains the KROC27-MT-P01 packets",
+ "replay": {
+  "cpu_fp32": {
+   "agrees_with_task_flag": 2,
+   "immediate_feasible": 0,
+   "matches_executed": 62,
+   "matches_recorder_replay": 359,
+   "packets": 606
+  },
+  "cuda_tf32_off_batch1": {
+   "agrees_with_task_flag": 2,
+   "immediate_feasible": 0,
+   "matches_executed": 62,
+   "matches_recorder_replay": 359,
+   "packets": 606
+  },
+  "cuda_tf32_off_batch2": {
+   "agrees_with_task_flag": 2,
+   "immediate_feasible": 0,
+   "matches_executed": 62,
+   "matches_recorder_replay": 359,
+   "packets": 606
+  },
+  "cuda_tf32_on_batch1": {
+   "agrees_with_task_flag": 2,
+   "immediate_feasible": 0,
+   "matches_executed": 62,
+   "matches_recorder_replay": 359,
+   "packets": 606
+  },
+  "cuda_tf32_on_batch2": {
+   "agrees_with_task_flag": 606,
+   "immediate_feasible": 604,
+   "matches_executed": 598,
+   "matches_recorder_replay": 309,
+   "packets": 606
+  }
+ },
+ "rl_games_runner": {
+  "file": "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/rl_games/torch_runner.py",
+  "sets_float32_matmul_precision_high": true,
+  "sets_matmul_allow_tf32": true,
+  "sha256": "b5229684cb90d5ba55fed49c3311fda2840215489bbd00e4a196423d79c21231"
+ },
+ "target_motion_sha256": "a7179fb9fd6b9e19ae9d44f7eba3c7b5e3f758ff0568c8e16220c6d5c8dc9c5e",
+ "task_flag_true": 604,
+ "torch": "2.4.1+cu121"
+}

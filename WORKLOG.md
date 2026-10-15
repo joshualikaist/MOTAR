@@ -20159,3 +20159,46 @@ worktree `/home/fair/workspaces/aerial_gym_ws/.codex_worktrees/kroc2027-phase1`,
   raw 409개 파일(56셀 + smoke 2셀)의 SHA-256을 묶음. raw 셀은 git 무시(디스크에만), 압축 사본 `../kroc2027_raw_backup/`.
   GPU 사용 누계 약 7.75 h / 30 h. 새 PPO·push 없음. `PPO_TRAINING_STARTED = false`.
 - 다음: secondary 지표 계산, 논문에는 H-A(`SUPPORTED`, 3 pp 미입증)와 H-B(`INCONCLUSIVE`, B1 미채택)를 함께 보고.
+
+## 2026-10-16 — KROC2027 E1/E2 160-bar 충돌 반례의 원인: TF32 matmul로 계산된 `torch.cdist` (H-MT1 기각)
+
+- Packet run KROC27-MT-P01(`2f8e698`, A3/A4 × E1/E2, 160 bars, seed 4190, env당 4, receipt 합 0.10 h,
+  `results/kroc2027_moving_target_packets_v1/`): 위반 step packet 606개(셀별 66/140/200/200, 상한 200이라 A4 두 셀은 잘림).
+- 관찰: 606개 모두 시작 위치가 이미 bar 중심 0.77 m 안이었는데, task 자신의 `_tm_last_step_feasible`은 604/606 True였다.
+  첫 위반 직전 위치 이력은 0.77 m 밖에서 bar 안으로 곧게 들어간다. executor가 그 bar를 보지 못한 모양이다.
+- **가설 H-MT1 기각**(위반 = fallback 실행, flag False 예측): flag False 2/606.
+- **가설 "GPU 전용 cdist 오차(비연속 slice)" 기각**: TF32를 끈 CUDA replay가 CPU와 같다(첫 step 안전 0/606, 불일치 0).
+- 원인: rl_games `Runner.__init__`(`rl_games/torch_runner.py`, SHA-256 `b5229684…`)가 프로세스 전체에 `allow_tf32 = True`,
+  `set_float32_matmul_precision('high')`를 건다. `torch.cdist`는 한쪽이 25점을 넘으면 ‖x‖²+‖y‖²−2x·y를 matmul로 계산한다.
+  RTX 3070·torch 2.4.1+cu121에서는 batch ≥ 2이고 bar 수가 4의 배수일 때 TF32 kernel이 선택되어 거리 오차가 약 2 m에
+  이른다(좌표 0–40 m). 70/115/205는 4의 배수가 아니어서 fp32 kernel(오차 ≤ 1.3 cm)이 쓰인다 → 160 bars에서만 나온
+  반례와 맞는다.
+- 재현(`tools/kroc2027_packet_replay.py` → `tf32_replay.json`):
+
+| packet 606개 replay | 첫 step 안전 | 실행 step과 같음 | task flag와 같음 |
+|---|---|---|---|
+| CPU fp32 | 0 | 62 | 2 |
+| CUDA TF32 off (batch 1·2) | 0 | 62 | 2 |
+| CUDA TF32 on, batch 1 | 0 | 62 | 2 |
+| CUDA TF32 on, batch 2 | 604 | 598 | 606 |
+
+  cdist 최대 오차(73 후보, batch 128, TF32 on): 70 bars 0.0125 m, 115 bars 0.003 m, 160 bars 1.89 m, 205 bars 0.0067 m.
+  72/116/156/164 bars는 1.9–2.1 m. spawn 규칙(1점)은 TF32에서도 ≤ 1 mm. recorder의 in-sim replay가 41–63 %만 일치한
+  것도 같은 이유다(위반 env가 1개면 fp32, 2개 이상이면 TF32). 실행 step과 다른 8/606의 원인은 확인하지 못했다
+  (packet에 3 m 밖 bar 없음).
+- 영향:
+  - **Experiment A/B는 영향 없음.** 정지 표적이라 executor가 돌지 않고, spawn 규칙은 1점 질의다. 실측 표적 최소
+    장애물 clearance가 A1/A2/B0/B1 전 episode에서 ≥ 0.724 m이고, 3 action 이내 crash는 0이다.
+  - E1/E2 bounded executor의 bar 검사(`target_motion.py` `bounded_drone_target_step`)는 GPU 평가에서 bar 수가 4의
+    배수면 믿을 수 없다. 같은 cdist가 `target_motion.py` 721, `navrl_task.py` 2726·4776·4790에도 있다. 과거 이동 표적
+    결과 중 4의 배수 밀도 셀은 감사가 필요하다(이번에는 재해석·수정하지 않음).
+  - 정책 신경망도 TF32로 돌지만 학습도 같은 Runner였으므로 평가 계약 변화는 아니다.
+- 바꾸지 않은 것: H, E1, E2, `navrl_task.py`, `target_motion.py`, 과거 결과. GPU는 replay 텐서 계산에 몇 초만 썼고
+  시뮬레이터는 돌리지 않았다. `docs/plans/kroc2027_moving_target_cause_plan.md` §6에 같은 결과를 덧붙였다.
+- 새 파일: `tools/kroc2027_packet_replay.py`(읽기 전용 진단), `results/kroc2027_moving_target_packets_v1/{packets_report.json,
+  tf32_replay.json,RAW_MANIFEST.json}`(raw 34개 파일 SHA-256; raw 셀은 git 무시). PUBLIC_CPU 2,243개 중 실패 1:
+  사용자의 미추적 `tests/test_professor_presentation.py`가 KROC 병합 전 `navrl_task.py`(b1c0bc6) hash를 고정해서다.
+  추적 중인 테스트는 모두 통과했다.
+- 다음(각각 별도 승인): (1) TF32를 끄고 같은 4셀을 재실행해 원인 확인(약 0.15 GPU h). (2) 거리를 차의 norm으로 직접 계산하는
+  E1/E2 변형을 새 이름으로 만들고, amendment 2와 4밀도 canary로 H-A2 복원(계획 §5 E3보다 작음). (3) 과거 4의 배수 밀도
+  이동 표적 셀 감사.

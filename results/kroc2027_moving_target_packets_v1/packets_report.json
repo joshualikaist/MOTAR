@@ -1,0 +1,55 @@
+{
+ "cells": {
+  "A3/E1_cv__160bars__seed4190": {
+   "issues": [],
+   "seconds": 50.6,
+   "summary": {
+    "footprint_reached": 0.4393939393939394,
+    "no_safe_first_step": 0.6666666666666666,
+    "packets": 66,
+    "replay_matches_executed": 0.4090909090909091,
+    "task_flag_false": 0.0,
+    "waypoint_pattern": 0.0
+   }
+  },
+  "A3/E2_obstacle_aware__160bars__seed4190": {
+   "issues": [],
+   "seconds": 61.6,
+   "summary": {
+    "footprint_reached": 0.3142857142857143,
+    "no_safe_first_step": 0.6642857142857143,
+    "packets": 140,
+    "replay_matches_executed": 0.4142857142857143,
+    "task_flag_false": 0.0,
+    "waypoint_pattern": 1.0
+   }
+  },
+  "A4/E1_cv__160bars__seed4190": {
+   "issues": [],
+   "seconds": 125.5,
+   "summary": {
+    "footprint_reached": 0.38,
+    "no_safe_first_step": 0.425,
+    "packets": 200,
+    "replay_matches_executed": 0.625,
+    "task_flag_false": 0.0,
+    "waypoint_pattern": 0.0
+   }
+  },
+  "A4/E2_obstacle_aware__160bars__seed4190": {
+   "issues": [],
+   "seconds": 120.0,
+   "summary": {
+    "footprint_reached": 0.415,
+    "no_safe_first_step": 0.585,
+    "packets": 200,
+    "replay_matches_executed": 0.495,
+    "task_flag_false": 0.01,
+    "waypoint_pattern": 1.0
+   }
+  }
+ },
+ "git_commit": "2f8e69845f096667d05eb3279af418ff3199b6d4",
+ "purpose": "diagnose E1/E2 collision counterexamples",
+ "run_id": "KROC27-MT-P01"
+}

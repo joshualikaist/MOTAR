@@ -90,3 +90,46 @@ the certified stopping trajectory of the previous step (a terminal-safe invarian
 
 Total about 4–5.5 GPU hours, which fits the remaining budget after B (about 22 h). Freeze is 10/28;
 the critical path is implementation and its CPU audit.
+
+## 6. Result (2026-10-16): H-MT1 rejected; the cause is TF32 matmul inside `torch.cdist`
+
+Packet run KROC27-MT-P01 (`2f8e698`, the four cells of section 4, 0.10 GPU hour) wrote 606 violating
+steps to `results/kroc2027_moving_target_packets_v1/`. Each one started inside the 0.77 m clearance
+of a bar centre, yet the executor's own flag `_tm_last_step_feasible` was True for 604 of them, so
+**H-MT1 is rejected**. Before its first violation the target moved in a straight line from outside the
+clearance into the bar, as if the executor could not see that bar.
+
+rl_games' `Runner.__init__` turns on TF32 matmul for the whole process. When either point set has more
+than 25 rows, `torch.cdist` computes the distance as ‖x‖² + ‖y‖² − 2x·y with a matmul. On the RTX 3070
+(torch 2.4.1+cu121), cuBLAS picks a TF32 kernel for that matmul when the batch is at least 2 and the
+bar count is a multiple of 4. With coordinates of 0–40 m, the distance error then reaches about 2 m.
+Of the study's densities, only 160 is a multiple of 4; 70, 115 and 205 get an fp32 kernel (error
+≤ 1.3 cm). `tools/kroc2027_packet_replay.py` reproduces this (`tf32_replay.json`):
+
+| replay of the 606 packets | safe first step | equals executed step | equals task flag |
+|---|---|---|---|
+| CPU fp32 | 0 | 62 | 2 |
+| CUDA, TF32 off (batch 1 or 2) | 0 | 62 | 2 |
+| CUDA, TF32 on, batch 1 | 0 | 62 | 2 |
+| CUDA, TF32 on, batch 2 | 604 | 598 | 606 |
+
+The same mechanism explains why the recorder's in-sim replay matched only 41–63 % of the steps: that
+replay ran with as many rows as violating environments in the step, so it was exact for a single row
+and TF32 for two or more. A GPU-specific `cdist` error on non-contiguous slices was ruled out
+(CUDA with TF32 off equals the CPU). Eight of the 606 executed steps are still unexplained; the
+packets omit bars beyond 3 m.
+
+Scope: Experiments A and B are not affected. Their target is static, and `_advance_target` returns
+before the executor. The spawn rule queries one point at a time, and its TF32 error is ≤ 1 mm. The
+recorded static-target clearance is ≥ 0.724 m in every A and B episode, and no episode crashed within
+3 actions. The bounded executor's bar screen (`target_motion.py`, `bounded_drone_target_step`) is
+unreliable in GPU evaluation whenever the bar count is a multiple of 4. The same call appears at
+`target_motion.py` 721 and `navrl_task.py` 2726, 4776 and 4790, so past moving-target results at such
+densities need an audit. H, E1, E2 and the past results are not changed.
+
+Revised next step, replacing section 5's E3 as the first option (each item needs approval):
+(1) re-run the four cells with TF32 off to confirm the cause (about 0.15 GPU hour).
+(2) Add an exact-distance variant of E1/E2 under a new name, with the same motion definitions and the
+distance computed as a plain difference norm. Restore H-A2 with it through amendment 2 and a canary at
+all four densities.
+(3) Audit past moving-target cells whose bar count is a multiple of 4.
