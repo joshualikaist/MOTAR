@@ -20303,3 +20303,34 @@ Next review: the complete diff and new plan; local commit requires user diff app
   `aerial_gym/task/navrl_task/kroc_eval_adapter.py`, 새 `tests/test_kroc2027_mt_canary.py`. CPU: KROC 테스트 156개 OK(skip 2), PUBLIC_CPU 2,275개 실패 0·오류 0(skip 10).
 - 다음: GPU canary는 사용자 별도 승인 후에만. 출력은 `results/mt_p1_precision_v1/MT-P2-C01/`(물리적으로는 main checkout의
   같은 경로, worktree 삭제 후에도 raw 보존).
+
+## 2026-10-16 — MT-P2-C01 `CANARY_PASS` (16/16): direct_l2_v1 E1/E2에서 운동·충돌 위반 0; A 사전등록 amendment 2
+
+- 실행: 사용자 승인 1회(`4bba883`, 2026-10-16 14:48–15:10 KST), `run --stage mt_canary`, 상한 2.0 h. Preflight 전부 통과:
+  HEAD/clean, checkpoint `f7022139…`(사본·원본 동일), 계획서·launcher SHA, import origin(worktree 내부), launcher 설정에서 task가
+  `direct_l2_v1`로 해석됨(CPU), 출력 신규, 디스크 3.8 GB·VRAM 여유, stub launcher로 첫 실패 중단·상한 kill·예산 소진 중단 확인,
+  stop 모드에서 full_v2 packet·bundle·summary 보존 확인(G1/G2 단독 트리거와 기하 위반 모두).
+- 결과(`results/mt_p1_precision_v1/MT-P2-C01/`, `run_summary.json` = `tools/kroc2027_mt_summary.py`):
+
+| lineage | arm | 70 | 115 | 160 | 205 | G1/G2 · swept · wall 위반 |
+|---|---|---|---|---|---|---|
+| E1_direct_l2_v1 | A3 visible | PASS | PASS | PASS | PASS | 0 · 0 · 0 |
+| E1_direct_l2_v1 | A4 hidden | PASS | PASS | PASS | PASS | 0 · 0 · 0 |
+| E2_direct_l2_v1 | A3 visible | PASS | PASS | PASS | PASS | 0 · 0 · 0 |
+| E2_direct_l2_v1 | A4 hidden | PASS | PASS | PASS | PASS | 0 · 0 · 0 |
+
+  최소 swept clearance 0.225 m(proxy 0.15 m), 최대 표적 step 속도 1.49998 m/s, G1/G2 최대 초과는 모두 음수(한도 안), packet 0,
+  모든 셀 receipt backend `direct_l2_v1`·model `bounded_planar_drone_v1_rollout_direct_l2_v1`·TF32 `True`/`high` 그대로.
+  GPU 0.349 h(receipt 합 1,256.9 s), VRAM 최대 5,852/8,192 MiB(5 s 표본), 저장 48 MB. 이전 lineage가 실패하던 160 bars도 통과.
+  RAW_MANIFEST 131개 파일(SHA-256 `9b28af16…`), report `e0e4598a…`, 백업 `../kroc2027_raw_backup/mt_p2_c01_2026-10-16.tar.gz`.
+- 판정: 이 canary는 정밀도 lineage의 운동·충돌 계약 통과를 보일 뿐, H-A2나 일반 충돌 안전을 주장하지 않음.
+- Amendment 2(`docs/plans/prereg_kroc2027_A_v1_amendment2_2026-10-16.md` + `kroc2027_A_amendment2_v1.json`): 사용자가
+  canary 이후 남은 단계를 권장안대로 진행하도록 위임(2026-10-16). §5 선택 규칙을 새 lineage에 같은 순서로 적용 → **E2_direct_l2_v1**.
+  KROC27-A-M02 = A3/A4 × 4밀도 × seed 4201–4207 = 56셀, env당 16, full_v2, 위반 시 정지, 상한 7.5 h(투영 4.92 h × 약 1.5).
+  시뮬레이션 소스(`aerial_gym/`, `motar_eval/`)는 canary commit과 동일해야 함(runner 검사). A1/A2는 KROC27-A-M01(`bbf530b`)
+  재사용 — RAW_MANIFEST로 파일마다 재검증(CPU 사전 점검: 56셀 문제 0, A1 98.16 %·A2 95.32 % 재현). 분석은 사전등록 §7 그대로
+  (Delta_A·I_A, Holm). A1−A2는 이미 관측됨을 명시, amendment 1 결과는 그대로 둠.
+- 코드: `run --stage mt_main`(canary 보고서 SHA·판정·lineage 규칙·소스 동일성·상한·첫 실패 중단), `analyse-a-moving`,
+  `check_cell(root=…)`(기본값 불변), 새 `tools/kroc2027_mt_summary.py`, `tests/test_kroc2027_mt_main.py`.
+  CPU: KROC 162개 OK, PUBLIC_CPU 2,281개 실패 0·오류 0(skip 10), 공개 문서 검사 오류 0.
+- GPU 사용 누계 약 8.10 h / 30 h. 다음: KROC27-A-M02 실행 → `analyse-a-moving`.

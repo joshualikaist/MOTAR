@@ -1,0 +1,81 @@
+{
+ "schema": "motar.kroc2027-A-amendment.v2",
+ "amends": [
+  "docs/plans/prereg_kroc2027_A_v1.md",
+  "docs/plans/prereg_kroc2027_A_v1_amendment_2026-10-15.md"
+ ],
+ "written": "2026-10-16, after MT-P2-C01 and before any KROC27-A-M02 cell",
+ "authority": "user approved MT-P1, commit 4bba883 and one MT-P2-C01 run on 2026-10-16, then delegated the remaining steps to the agent (proceed with recommended steps, report at the end)",
+ "run_id": "KROC27-A-M02",
+ "canary": {
+  "run_id": "MT-P2-C01",
+  "report": "results/mt_p1_precision_v1/MT-P2-C01/mt_canary_report.json",
+  "report_sha256": "e0e4598abc4b097e46503ef5ef18922b11bf0e103a4d50179c7b7735f5bed2e5",
+  "raw_manifest_sha256": "9b28af167706e6f39224402056943aa1bc1adbb8fa021efac6ef65cea6ebb4e4",
+  "summary_sha256": "d7bfe3f7f36417b2f19fb8a6fdb1badb7701224d44ad176302f1cc6df36f25e9",
+  "required_verdict": "CANARY_PASS",
+  "source_commit": "4bba8836d3bab86b87351a47b70e674d6e86cfaa",
+  "simulation_paths": [
+   "aerial_gym",
+   "motar_eval"
+  ]
+ },
+ "moving_candidates": [
+  "E2_direct_l2_v1",
+  "E1_direct_l2_v1"
+ ],
+ "arms": {
+  "A3": "visible",
+  "A4": "hidden"
+ },
+ "densities": [
+  70,
+  115,
+  160,
+  205
+ ],
+ "seeds": [
+  4201,
+  4202,
+  4203,
+  4204,
+  4205,
+  4206,
+  4207
+ ],
+ "quota_per_env": 16,
+ "packet_schema": "full_v2",
+ "on_violation": "stop",
+ "output_root": "results/mt_p1_precision_v1/KROC27-A-M02",
+ "max_gpu_hours": 7.5,
+ "gpu_projection": {
+  "rule": "sum of the selected lineage's eight canary cell seconds x 4 (quota 16/4) x 7 seeds",
+  "E2_direct_l2_v1_canary_seconds": 633.0,
+  "projected_hours": 4.92,
+  "cap": "about 1.5 x projection",
+  "gpu_hours_used_before": 8.1,
+  "budget_hours": 30.0
+ },
+ "static_arms": {
+  "run_id": "KROC27-A-M01",
+  "folder": "results/kroc2027_A_v1",
+  "raw_manifest": "results/kroc2027_A_v1/RAW_MANIFEST.json",
+  "raw_manifest_sha256": "7a8042aa0d1a36a6c7fb34d8bf273ef49606e3ee7bf4bde44755ff1628575726",
+  "analysis": "results/kroc2027_A_v1/analysis.json",
+  "analysis_sha256": "1d79b21fa2c561e2688ce6033f0249ce6443ad13963a826aac8b2dcd7b116ab8",
+  "source_commit": "bbf530b0b4079d3bde9ce3d4d75990612b643065"
+ },
+ "analysis": {
+  "confirmatory": "preregistration section 7 as written: Delta_A and I_A, two-sided paired t over seeds, Holm over both, alpha 0.05, Bonferroni 97.5 % practical interval vs 3 pp (1 and 5 reported), BCa and exact sign-flip from the pinned helpers",
+  "code": "motar_eval.protocol.analyse_a via tools/kroc2027_eval.py analyse-a-moving",
+  "blinding": "A1 - A2 (half of Delta_A) was observed before this amendment; I_A and A3 - A4 were not",
+  "amendment_1_result": "kept as recorded; not re-labelled",
+  "output": "results/mt_p1_precision_v1/KROC27-A-M02/analysis.json"
+ },
+ "not_claimed": [
+  "physical UAV target",
+  "collision safety beyond the run's gates",
+  "historical E1/E2 validity",
+  "authorisation for PPO, push, Recovery R0-R3 or new seeds"
+ ]
+}
