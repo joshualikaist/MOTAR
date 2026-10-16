@@ -20282,3 +20282,24 @@ Worktree-only setup restored missing ignored historical evidence/checkpoint byte
 Remaining limits: corrected distance arithmetic is not a general collision-safety guarantee; the existing longest-safe-prefix fallback can still execute an unsafe step from a trapped state. Actual GPU motion validity and H-A2 remain NOT_TESTED. R-P1a/b/c and Recovery Planner remain deferred.
 
 Next review: the complete diff and new plan; local commit requires user diff approval under AGENTS.md. Future GPU canary `MT-P2-C01` requires separate explicit approval and this preregistration committed before execution: E1/E2 direct × A3/A4 × 70/115/160/205 bars, seed 4190, 128 environments × first 4 episodes = 8,192 primary episodes across 16 cells. Predicted 0.75–1.5 RTX 3070 hours; hard cap 2.0 hours; stop first failed/incomplete cell or motion/swept violation and retain full inputs. Seed 4190 is reused diagnostic evidence. Bind the reviewed source commit, source manifest and plan SHA in an external launch receipt; do not edit a committed plan to insert its own hash. No passing-canary or further-experiment authorization is inferred.
+
+## 2026-10-16 — MT-P2-C01 자동 실행 단계(`run --stage mt_canary`)와 runner 정밀도 기록 추가 (Claude, GPU 없음)
+
+- 사용자 검토 요구(2시간 상한 자동 강제, 최초 위반 시 중단, 중단 시 기록 보존, backend 신원 확인)에 맞춰 계획서의
+  "operator"를 기존 `tools/kroc2027_eval.py run` 기계(프로세스 그룹 kill·`GpuBudget`·`check_cell`·import origin 검사)를
+  재사용한 단계로 구현. 계획서 `docs/plans/mt_p1_precision_v1.{md,json}`은 수정하지 않음(셀 행렬·상한·출력 경로는 JSON에서 읽음).
+- 실행 전 거부 조건: run id ≠ `MT-P2-C01`, `--approved-commit` ≠ HEAD, tracked tree 수정, 계획서 미commit,
+  `--max-gpu-hours` ∉ (0, 2.0], launcher/checkpoint SHA 불일치, RTX 3070 1장 아님, import origin이 이 tree 밖, 출력 폴더 존재.
+- 실행 중: 셀마다 시작 전 예산·HEAD·tracked tree 재확인, 실행 중 셀은 상한에서 kill(부분 기록 보존), 셀마다 `check_cell`
+  (ledger·quota·recorder·G1/G2·swept·wall·receipt·raw SHA·계약) + 신원 검사(receipt의 backend=`direct_l2_v1`·packet
+  `full_v2`·`stop`, result의 model=`bounded_planar_drone_v1_rollout_direct_l2_v1`, recorder의 backend·model, runner의
+  `allow_tf32=True`·`float32_matmul_precision='high'` 그대로). 첫 실패 셀에서 중단. `launch_receipt.json`(commit·tree·계획
+  SHA·checkpoint·launcher·GPU·origin·출력 경로)과 `mt_canary_report.json`(셀마다 갱신, 실패 셀은 첫 위반·packet·bundle 목록)을 씀.
+- recorder: `full_v2`일 때만 summary에 셀 종료 시점의 matmul 정밀도(TF32 플래그, precision, torch 버전)를 읽어 기록(설정하지 않음).
+- 상속 환경의 `NAVRL_TARGET_DISTANCE_BACKEND`는 모든 단계에서 제거(기존 KROC 단계에 새 backend가 새어 들어가지 않게).
+- 검증: legacy 기본 경로를 `cb644bb` executor와 CPU에서 비교 — 무작위 40 batch(128 env, 70/115/160/205 bars) 출력 160/160
+  tensor bitwise 동일. 추가된 TF32 쓰기·RNG 호출 없음(diff 검사). direct 경로 추가 메모리는 205 bars에서 lookahead step당 약
+  23 MB 일시 사용(차 tensor 15.3 MB + norm 7.7 MB, 8 GB 중). 파일: `tools/kroc2027_eval.py`,
+  `aerial_gym/task/navrl_task/kroc_eval_adapter.py`, 새 `tests/test_kroc2027_mt_canary.py`. CPU: KROC 테스트 156개 OK(skip 2), PUBLIC_CPU 2,275개 실패 0·오류 0(skip 10).
+- 다음: GPU canary는 사용자 별도 승인 후에만. 출력은 `results/mt_p1_precision_v1/MT-P2-C01/`(물리적으로는 main checkout의
+  같은 경로, worktree 삭제 후에도 raw 보존).

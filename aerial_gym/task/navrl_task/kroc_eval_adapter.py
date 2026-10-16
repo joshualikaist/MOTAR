@@ -991,6 +991,12 @@ class KrocRecorder:
         }
         if self.packets_enabled and self.packet_schema == "full_v2":
             summary["violation_packets"].update(schema="full_v2", bundle_directory=FULL_PACKET_BUNDLES)
+            # The runner's matmul precision as found at the end of the cell; read, never set.
+            summary["matmul_precision"] = {
+                "matmul_allow_tf32": bool(torch.backends.cuda.matmul.allow_tf32),
+                "cudnn_allow_tf32": bool(torch.backends.cudnn.allow_tf32),
+                "float32_matmul_precision": torch.get_float32_matmul_precision(),
+                "torch_version": str(torch.__version__)}
         tmp = self.summary_path.with_suffix(".json.tmp")
         tmp.write_text(json.dumps(summary, indent=1, sort_keys=True) + "\n")
         os.replace(tmp, self.summary_path)

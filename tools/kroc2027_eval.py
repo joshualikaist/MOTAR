@@ -50,6 +50,7 @@ SCRUBBED_KEYS = (
     "NAVRL_OBS_DUMP", "NAVRL_OBS_DUMP_STRIDE", "NAVRL_OBS_DUMP_MAX",
     "NAVRL_EPISODE_LEDGER", "NAVRL_EPISODE_QUOTA_PER_ENV", "NAVRL_PLAYER_GAMES_CAP",
     "ARMS", "DENSITIES", "SEEDS", "GAMES", "NUM_ENVS", "OUT_ROOT", "PYTHONPATH",
+    "NAVRL_TARGET_DISTANCE_BACKEND",
 )
 OBS_DUMP_STRIDE, OBS_DUMP_MAX = 20, 65536
 OFF_PATH_CELL = ("E0_static", 70, 4104)
@@ -476,6 +477,8 @@ def cmd_run(args):
         return cmd_run_b_smoke(args, protocol, base_env())
     if args.stage == "packets":
         return cmd_run_packets(args, protocol, base_env())
+    if args.stage == "mt_canary":
+        return cmd_run_mt_canary(args, protocol, base_env())
     exp = protocol["experiment_A"]
     canary_dir = canary_root(protocol, args.canary_root)
     out_root = canary_dir if args.stage == "canary" else ROOT / exp["out_root"][args.stage]
@@ -977,6 +980,169 @@ def cmd_run_packets(args, protocol, env):
     return 0
 
 
+MT_PLAN = "docs/plans/mt_p1_precision_v1.json"
+MT_PLAN_MD = "docs/plans/mt_p1_precision_v1.md"
+MT_MODEL = "bounded_planar_drone_v1_rollout_direct_l2_v1"
+MT_RUNNER_PRECISION = {"matmul_allow_tf32": True, "float32_matmul_precision": "high"}
+
+
+def mt_canary_cells(plan):
+    """MT-P2-C01: new lineage x arm x density, seed 4190, in the plan's declared order."""
+    run = plan["future_run"]
+    views = {"A3_visible": ("A3", "visible"), "A4_hidden": ("A4", "hidden")}
+    cells = []
+    for lineage in run["lineages"]:
+        alias = plan["new_lineages"][lineage]["launcher_arm_alias"]
+        for arm_key in run["arms"]:
+            arm, view = views[arm_key]
+            for density in run["densities"]:
+                cells.append({"lineage": lineage, "target_model": alias, "arm": arm, "view": view,
+                              "search": None, "density": int(density), "seed": int(run["seed"]),
+                              "cell_dir": "%s/%s/%s" % (lineage, arm, kp.cell_label(alias, density, run["seed"]))})
+    return cells
+
+
+def mt_identity_problems(directory, plan):
+    """The cell ran the new lineage: backend, model, full packets, stop mode and the runner's TF32."""
+    problems = []
+    try:
+        receipt = json.loads((directory / "receipt.json").read_text())
+        env = receipt.get("env_snapshot_navrl", {})
+        for key, want in (("NAVRL_TARGET_DISTANCE_BACKEND", "direct_l2_v1"),
+                          ("NAVRL_KROC2027_PACKET_SCHEMA", plan["future_run"]["packet_schema"]),
+                          ("NAVRL_KROC2027_PACKETS", "1"),
+                          ("NAVRL_KROC2027_ON_VIOLATION", plan["future_run"]["on_violation"])):
+            if env.get(key) != want:
+                problems.append("receipt %s is %r, expected %r" % (key, env.get(key), want))
+        model = json.loads((directory / "result.json").read_text()).get("condition", {}).get("target_motion_model")
+        if model != MT_MODEL:
+            problems.append("result target_motion_model is %r, expected %r" % (model, MT_MODEL))
+        summary = json.loads((directory / RECORDER_SUMMARY).read_text())
+        context = summary.get("context", {})
+        if context.get("cfg_target_distance_backend") != "direct_l2_v1":
+            problems.append("recorder backend is %r" % context.get("cfg_target_distance_backend"))
+        if context.get("target_motion_model_id") != MT_MODEL:
+            problems.append("recorder model is %r" % context.get("target_motion_model_id"))
+        precision = summary.get("matmul_precision", {})
+        for key, want in MT_RUNNER_PRECISION.items():
+            if precision.get(key) != want:
+                problems.append("runner %s is %r, expected the unchanged %r" % (key, precision.get(key), want))
+        if summary.get("violation_packets", {}).get("schema") != "full_v2":
+            problems.append("recorder packets are not full_v2")
+    except (OSError, ValueError, KeyError) as exc:
+        problems.append("%s: %s" % (type(exc).__name__, exc))
+    return problems
+
+
+def mt_cell_evidence(directory):
+    """What a failed cell retained: the first violation, gate verdicts and packet files."""
+    out = {}
+    try:
+        summary = json.loads((directory / RECORDER_SUMMARY).read_text())
+        out = {"reason": summary.get("reason"),
+               "motion_gate": summary.get("motion_gate", {}).get("verdict"),
+               "swept_clearance": {k: summary.get("swept_clearance", {}).get(k)
+                                   for k in ("violations", "wall_violations", "min_clearance_m", "first_violation")},
+               "violation_packets": summary.get("violation_packets")}
+    except (OSError, ValueError) as exc:
+        out["recorder_summary"] = "NOT_RECORDED (%s)" % type(exc).__name__
+    bundles = directory / "kroc2027_motion_inputs"
+    out["bundle_files"] = sorted(p.name for p in bundles.glob("*.json")) if bundles.is_dir() else []
+    return out
+
+
+def cmd_run_mt_canary(args, protocol, env):
+    """MT-P2-C01 (docs/plans/mt_p1_precision_v1.*): 16 cells, stop at the first failure or the cap."""
+    plan = json.loads((ROOT / MT_PLAN).read_text())
+    run = plan["future_run"]
+    head = git("rev-parse", "HEAD").strip()
+    out_root = ROOT / run["output_root"]
+    cap = run["hard_budget_gpu_hours"] if args.max_gpu_hours is None else args.max_gpu_hours
+    problems = []
+    if args.run_id != run["run_id"]:
+        problems.append("run id %r is not %s" % (args.run_id, run["run_id"]))
+    if not args.approved_commit or len(args.approved_commit) < 12 or not head.startswith(args.approved_commit):
+        problems.append("--approved-commit must name HEAD (%s)" % head)
+    if git("status", "--porcelain", "--untracked-files=no").strip():
+        problems.append("tracked files are modified; commit first")
+    for rel in (MT_PLAN, MT_PLAN_MD):
+        if subprocess.run(["git", "-C", str(ROOT), "ls-files", "--error-unmatch", rel], capture_output=True).returncode:
+            problems.append("the plan %s is not committed" % rel)
+    if not 0 < cap <= run["hard_budget_gpu_hours"]:
+        problems.append("--max-gpu-hours %s outside (0, %s]" % (cap, run["hard_budget_gpu_hours"]))
+    problems.extend(static_problems(protocol))
+    if run["checkpoint_sha256"] != protocol["policy"]["checkpoint_sha256"]:
+        problems.append("plan and protocol name different checkpoints")
+    if kp.sha256_file(launcher_path(protocol)) != run["launcher_sha256"]:
+        problems.append("launcher differs from the plan's pinned SHA-256")
+    gpus = gpu_names()
+    if gpus != [protocol["hardware"]["gpu"]]:
+        problems.append("expected exactly one %s, found %s" % (protocol["hardware"]["gpu"], gpus))
+    if out_root.exists():
+        problems.append("canary output already exists: %s" % out_root)
+    import_issues, origins = import_problems(env, launcher_path(protocol).parent)
+    problems.extend(import_issues)
+    cells = mt_canary_cells(plan)
+    q = int(run["quota_per_env"])
+    if args.dry_run or problems:
+        print(json.dumps({"stage": "mt_canary", "status": "DRY_RUN" if args.dry_run else "REFUSED",
+                          "problems": problems, "cells": [c["cell_dir"] for c in cells],
+                          "max_gpu_hours": cap, "output_root": str(out_root), "import_origins": origins}, indent=1))
+        return 0 if args.dry_run else 2
+    out_root.mkdir(parents=True)
+    launch = {"run_id": args.run_id, "source_commit": head, "source_tree": git("rev-parse", "HEAD^{tree}").strip(),
+              "tracked_tree_clean": True, "plan_sha256": kp.sha256_file(ROOT / MT_PLAN),
+              "plan_md_sha256": kp.sha256_file(ROOT / MT_PLAN_MD),
+              "checkpoint_sha256": run["checkpoint_sha256"], "launcher_sha256": run["launcher_sha256"],
+              "gpu": gpus, "import_origins": origins, "python": sys.version, "output_root": str(out_root),
+              "max_gpu_hours": cap, "cells": [c["cell_dir"] for c in cells],
+              "started_at": datetime.now(timezone.utc).isoformat()}
+    (out_root / "launch_receipt.json").write_text(json.dumps(launch, indent=1, sort_keys=True) + "\n")
+    budget = GpuBudget(cap)
+    report = {"run_id": args.run_id, "git_commit": head, "plan_sha256": launch["plan_sha256"],
+              "max_gpu_hours": cap, "cells": {}, "stop_reason": None}
+    report_path = out_root / "mt_canary_report.json"
+    for cell in cells:
+        if budget.exhausted():
+            report["stop_reason"] = "budget exhausted before %s" % cell["cell_dir"]
+            break
+        if git("rev-parse", "HEAD").strip() != head or git("status", "--porcelain", "--untracked-files=no").strip():
+            report["stop_reason"] = "source changed before %s" % cell["cell_dir"]
+            break
+        kw = dict(target_model=cell["target_model"], density=cell["density"], seed=cell["seed"],
+                  out_dir=out_root / cell["lineage"] / cell["arm"], quota=q, view=cell["view"], recorder=True,
+                  run_id=args.run_id, arm=cell["arm"], on_violation=run["on_violation"], packets=True)
+        cell_vars = cell_env(env, protocol, **kw)
+        cell_vars.update(NAVRL_TARGET_DISTANCE_BACKEND="direct_l2_v1",
+                         NAVRL_KROC2027_PACKET_SCHEMA=run["packet_schema"])
+        rc, seconds = _timed_launch(protocol, cell_vars, False, [], budget)
+        directory = out_root / cell["cell_dir"]
+        issues = [] if rc == 0 else ["launcher exit %d" % rc]
+        issues += check_cell(directory, protocol, q, require_motion=True,
+                             expect=cell_expect(cell, args.run_id, head, q))
+        issues += mt_identity_problems(directory, plan)
+        entry = {"lineage": cell["lineage"], "issues": issues, "seconds": round(seconds, 1),
+                 "cumulative_hours": round((time.time() - budget.started) / 3600.0, 4)}
+        if issues:
+            entry["evidence"] = mt_cell_evidence(directory)
+        report["cells"][cell["cell_dir"]] = entry
+        report_path.write_text(json.dumps(report, indent=1, sort_keys=True) + "\n")
+        if rc == BUDGET_EXIT:
+            report["stop_reason"] = "budget cap reached during %s (cell killed, kept as partial)" % cell["cell_dir"]
+            break
+        if issues:
+            report["stop_reason"] = "first failed cell %s" % cell["cell_dir"]
+            break
+    passed = len(report["cells"]) == len(cells) and all(not c["issues"] for c in report["cells"].values())
+    report["verdict"] = "CANARY_PASS" if passed else (
+        "BUDGET_STOP" if report["stop_reason"] and "budget" in report["stop_reason"] else "CANARY_FAIL")
+    report["finished_at"] = datetime.now(timezone.utc).isoformat()
+    report_path.write_text(json.dumps(report, indent=1, sort_keys=True) + "\n")
+    print(json.dumps({"verdict": report["verdict"], "stop_reason": report["stop_reason"],
+                      "cells_run": len(report["cells"])}, indent=1))
+    return 0 if passed else 1
+
+
 def cmd_run_b(args, protocol, env):
     out_root = ROOT / protocol["experiment_B"]["out_root"]["main"]
     a_out = ROOT / protocol["experiment_A"]["out_root"]["main"]
@@ -1153,7 +1319,8 @@ def main(argv=None):
     v = sub.add_parser("validate")
     v.add_argument("--raw-dir", help="folder holding the git-ignored replication cells")
     r = sub.add_parser("run")
-    r.add_argument("--stage", choices=("canary", "main", "b_smoke", "b_main", "packets"), required=True)
+    r.add_argument("--stage", choices=("canary", "main", "b_smoke", "b_main", "packets", "mt_canary"),
+                   required=True)
     r.add_argument("--run-id", required=True)
     r.add_argument("--approved-commit", default="")
     r.add_argument("--dry-run", action="store_true")
