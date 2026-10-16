@@ -1,0 +1,330 @@
+{
+  "command_arguments": [
+    "--device",
+    "cpu",
+    "--suite",
+    "all",
+    "--packets-root",
+    "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/kroc2027_moving_target_packets_v1",
+    "--out",
+    "docs/plans/mt_p1_cpu_validation_v1.json"
+  ],
+  "device": "cpu",
+  "gate_contract_sha256": "904bca643989eb724f5ef546e39a0c0d1f561f85d05f0455fa37a13ba2fa332f",
+  "gate_tolerances": {
+    "declared_max_abs_coordinate_m": 40.0,
+    "g1_heading_band_mps": 1e-06,
+    "g1_relative": 0.0001,
+    "g1_speed_floor_mps": 1e-06,
+    "g2_accel_mps2": 0.001078959321878887,
+    "g2_position_m": 5.3947966093944364e-06,
+    "g2_safety_factor": 2.0,
+    "g2_speed_mps": 5.394796609394436e-05,
+    "g2_turn_deg_s_at_min_speed": 0.3090990770497877,
+    "g2_turn_min_speed_mps": 0.2,
+    "ulp_m": 3.814697265625e-06
+  },
+  "gpu_started": false,
+  "motion_source_sha256": "d8e243f375fd9dc8944a3ae2731900372045f538b051d07834bdcb054939b46f",
+  "packets": {
+    "cpu_turn_sign_hypotheses": {
+      "-1": {
+        "immediate_feasible": 0,
+        "matches_executed_position": 63,
+        "selected_index_histogram": {
+          "0": 30,
+          "1": 64,
+          "10": 10,
+          "11": 29,
+          "12": 47,
+          "13": 24,
+          "14": 15,
+          "15": 3,
+          "16": 52,
+          "17": 6,
+          "18": 10,
+          "19": 5,
+          "2": 41,
+          "20": 14,
+          "27": 3,
+          "28": 1,
+          "3": 25,
+          "30": 1,
+          "4": 20,
+          "5": 36,
+          "50": 1,
+          "6": 29,
+          "63": 5,
+          "65": 1,
+          "7": 26,
+          "72": 45,
+          "8": 14,
+          "9": 49
+        }
+      },
+      "1": {
+        "immediate_feasible": 0,
+        "matches_executed_position": 62,
+        "selected_index_histogram": {
+          "0": 29,
+          "1": 65,
+          "10": 10,
+          "11": 29,
+          "12": 47,
+          "13": 24,
+          "14": 15,
+          "15": 3,
+          "16": 52,
+          "17": 6,
+          "18": 10,
+          "19": 5,
+          "2": 41,
+          "20": 14,
+          "27": 4,
+          "28": 1,
+          "3": 25,
+          "4": 20,
+          "5": 37,
+          "6": 29,
+          "63": 5,
+          "65": 1,
+          "7": 26,
+          "72": 45,
+          "8": 14,
+          "9": 49
+        }
+      }
+    },
+    "historical_gpu_measurement_NOT_RECOMPUTED": {
+      "matches_executed": 598,
+      "packets": 606,
+      "unresolved_count": 8,
+      "unresolved_packet_ids": "NOT_RECORDED: frozen replay stores aggregate tallies only",
+      "unresolved_status": "UNRESOLVED_INPUTS"
+    },
+    "historical_replay_sha256": "b462e25ea1831dfe53eba31ca15bc351289ac8f1309fd06e00d4f5b9e97d870d",
+    "input_sha256": {
+      "A3/E1_cv__160bars__seed4190/kroc2027_violations.jsonl": "238f6cda1cc9edc0076fd2f5c919d6dca25577d02556ce91c4fa4e6fcaabf8fe",
+      "A3/E2_obstacle_aware__160bars__seed4190/kroc2027_violations.jsonl": "fe302898fda85c07fd354297735b4a2fb25997f649af7199b286b55e21757734",
+      "A4/E1_cv__160bars__seed4190/kroc2027_violations.jsonl": "18194e6867fbe970b42ad0d240bfcf948130e8e96d3cd513459ef1f705c3d211",
+      "A4/E2_obstacle_aware__160bars__seed4190/kroc2027_violations.jsonl": "02c3008b5bd9b6f77751a3054d997ec66d3429db7873b1ceb90b0aa599a3dad3"
+    },
+    "interpretation": "unsafe starts cannot certify safe recovery; local-bar/filler and both-sign CPU hypotheses are not exact historical trajectory replay",
+    "missing_inputs": [
+      "full ordered bar tensor and original obstacle indices",
+      "turn_sign and complete waypoint/avoidance state",
+      "original batched environment identities and tensor strides/order",
+      "all original candidate distances/scores and selected index"
+    ],
+    "problems": [],
+    "status": "INCOMPLETE_INPUTS",
+    "totals": {
+      "cpu_direct_oracle_ranking_mismatches": 0,
+      "kinematic_violations": 0,
+      "packets": 606,
+      "recorded_task_flag_true": 604,
+      "unsafe_executed_sweep": 606,
+      "unsafe_start_center_clearance": 606
+    },
+    "validated_reconstruction_assumptions": {
+      "bar_slots": 160,
+      "bounds_hi": [
+        39.5,
+        39.5
+      ],
+      "bounds_lo": [
+        0.5,
+        0.5
+      ],
+      "clearance_m": 0.77,
+      "dt_s": 0.1,
+      "filler_bar_xy": -1000.0,
+      "lookahead_s": 1.0,
+      "max_accel": 4.0,
+      "max_turn_rate_deg": 150.0
+    }
+  },
+  "schema": "motar.mt-p1-cpu-precision.v1",
+  "simulator_started": false,
+  "synthetic": {
+    "actual_experiment_densities": [
+      70,
+      115,
+      160,
+      205
+    ],
+    "rows": [
+      {
+        "bars": 0,
+        "environment_steps": 160,
+        "infeasible_first_steps": 0,
+        "minimum_swept_surface_clearance_m": null,
+        "violations": {
+          "acceleration": 0,
+          "displacement_acceleration": 0,
+          "displacement_speed": 0,
+          "displacement_turn": 0,
+          "nonfinite": 0,
+          "oracle_position": 0,
+          "oracle_ranking": 0,
+          "position": 0,
+          "speed": 0,
+          "swept_clearance": 0,
+          "turn": 0,
+          "wall": 0
+        }
+      },
+      {
+        "bars": 40,
+        "environment_steps": 160,
+        "infeasible_first_steps": 0,
+        "minimum_swept_surface_clearance_m": 0.411621129944923,
+        "violations": {
+          "acceleration": 0,
+          "displacement_acceleration": 0,
+          "displacement_speed": 0,
+          "displacement_turn": 0,
+          "nonfinite": 0,
+          "oracle_position": 0,
+          "oracle_ranking": 0,
+          "position": 0,
+          "speed": 0,
+          "swept_clearance": 0,
+          "turn": 0,
+          "wall": 0
+        }
+      },
+      {
+        "bars": 70,
+        "environment_steps": 160,
+        "infeasible_first_steps": 0,
+        "minimum_swept_surface_clearance_m": 0.411621129944923,
+        "violations": {
+          "acceleration": 0,
+          "displacement_acceleration": 0,
+          "displacement_speed": 0,
+          "displacement_turn": 0,
+          "nonfinite": 0,
+          "oracle_position": 0,
+          "oracle_ranking": 0,
+          "position": 0,
+          "speed": 0,
+          "swept_clearance": 0,
+          "turn": 0,
+          "wall": 0
+        }
+      },
+      {
+        "bars": 80,
+        "environment_steps": 160,
+        "infeasible_first_steps": 0,
+        "minimum_swept_surface_clearance_m": 0.411621129944923,
+        "violations": {
+          "acceleration": 0,
+          "displacement_acceleration": 0,
+          "displacement_speed": 0,
+          "displacement_turn": 0,
+          "nonfinite": 0,
+          "oracle_position": 0,
+          "oracle_ranking": 0,
+          "position": 0,
+          "speed": 0,
+          "swept_clearance": 0,
+          "turn": 0,
+          "wall": 0
+        }
+      },
+      {
+        "bars": 115,
+        "environment_steps": 160,
+        "infeasible_first_steps": 0,
+        "minimum_swept_surface_clearance_m": 0.411621129944923,
+        "violations": {
+          "acceleration": 0,
+          "displacement_acceleration": 0,
+          "displacement_speed": 0,
+          "displacement_turn": 0,
+          "nonfinite": 0,
+          "oracle_position": 0,
+          "oracle_ranking": 0,
+          "position": 0,
+          "speed": 0,
+          "swept_clearance": 0,
+          "turn": 0,
+          "wall": 0
+        }
+      },
+      {
+        "bars": 120,
+        "environment_steps": 160,
+        "infeasible_first_steps": 0,
+        "minimum_swept_surface_clearance_m": 0.411621129944923,
+        "violations": {
+          "acceleration": 0,
+          "displacement_acceleration": 0,
+          "displacement_speed": 0,
+          "displacement_turn": 0,
+          "nonfinite": 0,
+          "oracle_position": 0,
+          "oracle_ranking": 0,
+          "position": 0,
+          "speed": 0,
+          "swept_clearance": 0,
+          "turn": 0,
+          "wall": 0
+        }
+      },
+      {
+        "bars": 160,
+        "environment_steps": 160,
+        "infeasible_first_steps": 0,
+        "minimum_swept_surface_clearance_m": 0.411621129944923,
+        "violations": {
+          "acceleration": 0,
+          "displacement_acceleration": 0,
+          "displacement_speed": 0,
+          "displacement_turn": 0,
+          "nonfinite": 0,
+          "oracle_position": 0,
+          "oracle_ranking": 0,
+          "position": 0,
+          "speed": 0,
+          "swept_clearance": 0,
+          "turn": 0,
+          "wall": 0
+        }
+      },
+      {
+        "bars": 205,
+        "environment_steps": 160,
+        "infeasible_first_steps": 0,
+        "minimum_swept_surface_clearance_m": 0.411621129944923,
+        "violations": {
+          "acceleration": 0,
+          "displacement_acceleration": 0,
+          "displacement_speed": 0,
+          "displacement_turn": 0,
+          "nonfinite": 0,
+          "oracle_position": 0,
+          "oracle_ranking": 0,
+          "position": 0,
+          "speed": 0,
+          "swept_clearance": 0,
+          "turn": 0,
+          "wall": 0
+        }
+      }
+    ],
+    "scope": "two turn-sign safe-start fixtures per density; no simulator or GPU validity claim",
+    "status": "CPU_SYNTHETIC_PASS",
+    "synthetic_stress_densities": [
+      0,
+      40,
+      80,
+      120,
+      160
+    ]
+  },
+  "torch_cpu_rng_unchanged": true,
+  "verification_tool_sha256": "471a93c2a1aebf5f4555059f88a3656bb8ba75ac704667a755b5db995dd4242f"
+}

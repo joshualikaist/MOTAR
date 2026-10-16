@@ -29,7 +29,35 @@ torch_segments_soft_safe = _GEO.torch_segments_soft_safe
 
 TARGET_MOTION_MODEL = "symmetric_local_steer_v2_heading_continuity90"
 BOUNDED_TARGET_MOTION_MODEL = "bounded_planar_drone_v1_rollout"
+DIRECT_L2_TARGET_MOTION_MODEL = "bounded_planar_drone_v1_rollout_direct_l2_v1"
 PHYSICAL_TARGET_MOTION_MODEL = "physx_ref5in_6dof_motor_wrench_v2_same_substep"
+TARGET_DISTANCE_BACKENDS = ("legacy_cdist", "direct_l2_v1")
+
+
+def validate_target_distance_backend(distance_backend):
+    """Fail closed on an unknown distance contract; never change matmul precision globally."""
+    if distance_backend not in TARGET_DISTANCE_BACKENDS:
+        raise ValueError("target distance_backend must be one of %s" % "|".join(TARGET_DISTANCE_BACKENDS))
+    return distance_backend
+
+
+def resolve_target_distance_contract(distance_backend, dynamics, behavior_level):
+    """Name the opt-in lineage and refuse to apply it to historical/static/physical motion."""
+    validate_target_distance_backend(distance_backend)
+    models = {
+        "legacy": TARGET_MOTION_MODEL,
+        "bounded": BOUNDED_TARGET_MOTION_MODEL,
+        "physical": PHYSICAL_TARGET_MOTION_MODEL,
+    }
+    if dynamics not in models:
+        raise ValueError("target dynamics must be legacy|bounded|physical")
+    if distance_backend == "direct_l2_v1":
+        if dynamics != "bounded" or behavior_level not in ("e1_cv", "e2_obstacle_aware"):
+            raise ValueError("direct_l2_v1 requires bounded dynamics and e1_cv|e2_obstacle_aware")
+        motion_model = DIRECT_L2_TARGET_MOTION_MODEL
+    else:
+        motion_model = models[dynamics]
+    return {"distance_backend": distance_backend, "motion_model": motion_model}
 
 
 def support_aware_bounds(bounds_min_xy, bounds_max_xy, base_margin, support_xy):
@@ -284,6 +312,7 @@ def bounded_drone_target_step(
     hard_epsilon_m=0.0,
     return_certificate=False,
     certificate_row_ids=None,
+    distance_backend="legacy_cdist",
 ):
     """Choose and execute one dynamically bounded, collision-screened target step.
 
@@ -297,7 +326,17 @@ def bounded_drone_target_step(
     safe for the complete lookahead, selection falls back to the longest safe prefix and replans
     next RL step; a safe first step therefore remains ``True``.  Do not interpret this value as a
     full-route or full-lookahead feasibility certificate.
+
+    ``legacy_cdist`` preserves the historical centre-distance arithmetic. The opt-in
+    ``direct_l2_v1`` computes differences before taking the norm, avoiding the matmul-based
+    squared-distance cancellation/TF32 path of ``torch.cdist``. It changes only the virtual
+    point-target centre screen, not the physical/rectangle geometry or the fallback rule.
     """
+    validate_target_distance_backend(distance_backend)
+    if distance_backend == "direct_l2_v1" and (
+        bars_half_extents_xy is not None or exact_aabb_clearance
+    ):
+        raise ValueError("direct_l2_v1 supports only virtual target centre-distance screening")
     if old_xy.ndim != 2 or old_xy.shape[1] != 2:
         raise ValueError("old_xy must have shape [N, 2]")
     n = old_xy.shape[0]
@@ -380,7 +419,10 @@ def bounded_drone_target_step(
         step_safe = inside
         if bars_xy.shape[1] > 0 and (float(clearance) > 0.0 or exact_aabb_clearance):
             if bars_half_extents_xy is None:
-                dist = torch.cdist(pos, bars_xy).amin(dim=2)
+                if distance_backend == "legacy_cdist":
+                    dist = torch.cdist(pos, bars_xy).amin(dim=2)
+                else:
+                    dist = (pos.unsqueeze(2) - bars_xy.unsqueeze(1)).norm(dim=3).amin(dim=2)
                 step_safe &= dist >= float(clearance) + 1e-4
             else:
                 delta = (

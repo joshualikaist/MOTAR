@@ -25,6 +25,7 @@ from aerial_gym.task.navrl_task.navrl_curriculum import (
 from aerial_gym.task.navrl_task.train_dashboard import record_navrl_epoch_episodes
 from aerial_gym.task.navrl_task.target_motion import (
     BOUNDED_TARGET_MOTION_MODEL,
+    DIRECT_L2_TARGET_MOTION_MODEL,
     PHYSICAL_TARGET_MOTION_MODEL,
     CV_INITIAL_HEADING_MODES,
     HEADING_VALID_SPEED_MPS,
@@ -33,6 +34,7 @@ from aerial_gym.task.navrl_task.target_motion import (
     HEADING_VALID_SPEED_SOURCE,
     TARGET_MOTION_MODEL,
     resolve_target_behavior_contract,
+    resolve_target_distance_contract,
     resolve_heading_valid_speed_contract,
     bounded_drone_target_step,
     braking_aware_route_step,
@@ -853,6 +855,13 @@ class NavRLTask(BaseTask):
             getattr(self.tm, "pattern", "mixed"),
         )
         self._target_behavior_level = self._target_behavior["level"]
+        self._target_distance_backend = resolve_target_distance_contract(
+            getattr(self.tm, "distance_backend", "legacy_cdist"),
+            self._target_dynamics,
+            self._target_behavior_level,
+        )["distance_backend"]
+        self._target_checkpoint_distance_backend = "NOT_RESTORED"
+        self._target_checkpoint_distance_provenance = "NOT_RESTORED"
         self._physical_target = self._target_dynamics == "physical"
         self._target_route_mode = str(
             getattr(self.tm, "route_mode", TARGET_ROUTE_MODE_OFF)
@@ -1092,6 +1101,8 @@ class NavRLTask(BaseTask):
             if self._target_route_mode == TARGET_ROUTE_MODE_GLOBAL_ASTAR
             else PHYSICAL_TARGET_MOTION_MODEL
             if self._physical_target
+            else DIRECT_L2_TARGET_MOTION_MODEL
+            if self._target_distance_backend == "direct_l2_v1"
             else BOUNDED_TARGET_MOTION_MODEL
             if self._target_dynamics == "bounded"
             else TARGET_MOTION_MODEL
@@ -2098,6 +2109,14 @@ class NavRLTask(BaseTask):
         if self._kroc_initial_view is not None and not self.general_spawn_mode:
             raise RuntimeError("NAVRL_KROC2027_INITIAL_VIEW needs general spawn mode")
         self._kroc_adapter = build_kroc_adapter(self)
+        # Full input capture is evaluation-only and opt-in.  Default and legacy packet runs
+        # retain the original executor call and do not allocate these snapshots.
+        self._mt_precision_capture = (
+            self._kroc_adapter is not None
+            and self._kroc_adapter.packets_enabled
+            and self._kroc_adapter.packet_schema == "full_v2"
+        )
+        self._mt_precision_last_call = None
         # KROC2027 B1 (Experiment B only; off unless NAVRL_KROC2027_SEARCH=b1): an external
         # yaw-scanning supervisor that rewrites the policy's action from actor-side signals.
         self._kroc_search = build_search_supervisor(self)
@@ -3178,6 +3197,9 @@ class NavRLTask(BaseTask):
             ),
             "cfg_target_motion_model": self._target_motion_model,
             "cfg_target_behavior_level": self._target_behavior_level,
+            "cfg_target_distance_backend": self._target_distance_backend,
+            "cfg_target_checkpoint_distance_backend": self._target_checkpoint_distance_backend,
+            "cfg_target_checkpoint_distance_provenance": self._target_checkpoint_distance_provenance,
             # The heading-validity threshold is a target-motion contract term, not a tuning
             # knob: record the value actually in force and whether it was attested or assumed.
             HEADING_VALID_SPEED_KEY: float(self._heading_valid_speed_mps),
@@ -3883,6 +3905,21 @@ class NavRLTask(BaseTask):
                     "This is an explicit evaluation environment axis, not evidence that the "
                     "checkpoint trained under the running target behavior."
                     % (saved_behavior or "historical", self._target_behavior_level)
+                )
+            # Pre-key checkpoints attest no precision backend.  Their historical behavior is
+            # legacy_cdist; loading Policy F never promotes it to a direct-distance training run.
+            saved_backend = str(state.get("cfg_target_distance_backend", "legacy_cdist"))
+            self._target_checkpoint_distance_backend = saved_backend
+            self._target_checkpoint_distance_provenance = (
+                "checkpoint_attested" if "cfg_target_distance_backend" in state
+                else "pre_key_assumed_legacy_cdist"
+            )
+            if saved_backend != self._target_distance_backend:
+                density_evidence_changed = True
+                logger.warning(
+                    "NavRL TARGET DISTANCE BACKEND MISMATCH | checkpoint=%s running=%s. "
+                    "The running backend is an explicit evaluation lineage."
+                    % (saved_backend, self._target_distance_backend)
                 )
             # Same contract, one field over: a checkpoint either attests the heading-validity
             # threshold or is refused.  Absent (every pre-key checkpoint) is assumed, never
@@ -7965,24 +8002,74 @@ class NavRLTask(BaseTask):
                 if self._target_route_enabled
                 else self._tm_speed
             )
-            bounded_xy, bounded_velocity, _, feasible = bounded_drone_target_step(
-                old_xy,
-                self.target_vel_w[:, 0:2],
-                desired_velocity,
-                bounded_speed_limit,
-                dt,
-                bars_all,
-                planner_lo,
-                planner_hi,
-                self._target_planner_clearance(),
-                self._tm_avoid_sign,
-                torch.full_like(self._tm_speed, float(self.tm.max_accel)),
-                torch.full_like(
+            bounded_kwargs = dict(
+                old_xy=old_xy,
+                current_velocity=self.target_vel_w[:, 0:2],
+                desired_velocity=desired_velocity,
+                speed_limit=bounded_speed_limit,
+                dt=dt,
+                bars_xy=bars_all,
+                lo=planner_lo,
+                hi=planner_hi,
+                clearance=self._target_planner_clearance(),
+                turn_sign=self._tm_avoid_sign,
+                max_accel=torch.full_like(self._tm_speed, float(self.tm.max_accel)),
+                max_turn_rate=torch.full_like(
                     self._tm_speed, math.radians(float(self.tm.max_turn_rate_deg))
                 ),
-                float(self.tm.avoidance_lookahead_s),
-                bars_half_extents,
+                lookahead_s=float(self.tm.avoidance_lookahead_s),
+                bars_half_extents_xy=bars_half_extents,
+                exact_aabb_clearance=False,
+                hard_epsilon_m=0.0,
+                return_certificate=self._mt_precision_capture,
+                certificate_row_ids=None,
+                distance_backend=self._target_distance_backend,
             )
+            if self._mt_precision_capture:
+                # Save the full actual batch at the executor boundary, before any writeback.
+                # Original strided views are described separately from detached value copies.
+                self._mt_precision_last_call = {
+                    "schema": "motar.bounded-executor-call.v2",
+                    "kwargs": {
+                        key: value.detach().clone() if isinstance(value, torch.Tensor) else value
+                        for key, value in bounded_kwargs.items()
+                    },
+                    "input_layouts": {
+                        key: {"shape": list(value.shape), "stride": list(value.stride()),
+                              "storage_offset": value.storage_offset(),
+                              "dtype": str(value.dtype), "device": str(value.device)}
+                        for key, value in bounded_kwargs.items() if isinstance(value, torch.Tensor)
+                    },
+                    "metadata": {
+                        "model_id": self._target_motion_model,
+                        "behavior_level": self._target_behavior_level,
+                        "distance_backend": self._target_distance_backend,
+                        "torch_version": str(torch.__version__),
+                        "device": str(old_xy.device),
+                        "task_step": int(self.num_task_steps),
+                        "matmul_allow_tf32": bool(torch.backends.cuda.matmul.allow_tf32),
+                        "cudnn_allow_tf32": bool(torch.backends.cudnn.allow_tf32),
+                        "float32_matmul_precision": torch.get_float32_matmul_precision(),
+                        "env_ids": torch.arange(self.num_envs, device=old_xy.device),
+                        "obstacle_slots": torch.arange(
+                            self._bar_offset, self._bar_offset + self.n_bars_active,
+                            device=old_xy.device,
+                        ),
+                    },
+                }
+            bounded_result = bounded_drone_target_step(**bounded_kwargs)
+            bounded_xy, bounded_velocity, steered, feasible = bounded_result[:4]
+            if self._mt_precision_capture:
+                self._mt_precision_last_call["result"] = {
+                    "new_xy": bounded_xy.detach().clone(),
+                    "new_velocity": bounded_velocity.detach().clone(),
+                    "steered": steered.detach().clone(),
+                    "immediate_feasible": feasible.detach().clone(),
+                    "certificate": {
+                        key: value.detach().clone() if isinstance(value, torch.Tensor) else value
+                        for key, value in bounded_result[4].items()
+                    },
+                }
             local_rollout_feasible = feasible.clone()
             if recovery_enabled and bool(recovery_connect.any()):
                 # CONNECT is screened against the exact hard AABB, never the rounded local

@@ -40,6 +40,9 @@ DISTANCE_VAR = "NAVRL_KROC2027_INITIAL_DISTANCE_M"
 RECORDER_VAR = "NAVRL_KROC2027_RECORDER"
 SEARCH_VAR = "NAVRL_KROC2027_SEARCH"
 PACKETS_VAR = "NAVRL_KROC2027_PACKETS"
+PACKET_SCHEMA_VAR = "NAVRL_KROC2027_PACKET_SCHEMA"
+FULL_PACKET_SCHEMA = "motar.bounded-executor-call.v2"
+FULL_PACKET_BUNDLES = "kroc2027_motion_inputs"
 PACKETS_FILE = "kroc2027_violations.jsonl"
 PACKET_CAP = 200
 PACKET_RING = 20
@@ -59,6 +62,128 @@ def _truthy(value) -> bool:
 
 def _off(value) -> bool:
     return str(value).strip().lower() in ("", "0", "off", "none", "false")
+
+
+def motion_packet_schema(environ=None):
+    """Full capture is opt-in under the existing packet switch; legacy is unchanged."""
+    environ = os.environ if environ is None else environ
+    if not _truthy(environ.get(PACKETS_VAR, "0")):
+        return "legacy_v1"
+    schema = environ.get(PACKET_SCHEMA_VAR, "legacy_v1").strip().lower()
+    if schema not in ("legacy_v1", "full_v2"):
+        raise ValueError("%s must be legacy_v1 or full_v2" % PACKET_SCHEMA_VAR)
+    return schema
+
+
+def _packet_encode(value, layout=None):
+    """Lossless logical tensor values plus the actual call's pre-clone layout."""
+    if isinstance(value, torch.Tensor):
+        info = dict(layout or {})
+        return {"__tensor__": True, "dtype": info.get("dtype", str(value.dtype)),
+                "device": info.get("device", str(value.device)),
+                "shape": list(info.get("shape", value.shape)),
+                "stride": list(info.get("stride", value.stride())),
+                "storage_offset": int(info.get("storage_offset", value.storage_offset())),
+                "values": value.detach().cpu().reshape(-1).tolist()}
+    if isinstance(value, dict):
+        return {key: _packet_encode(item) for key, item in value.items()}
+    if isinstance(value, (tuple, list)):
+        return [_packet_encode(item) for item in value]
+    if value is None or isinstance(value, (str, bool, int, float)):
+        return value
+    raise TypeError("unsupported motion packet value: %s" % type(value).__name__)
+
+
+def decode_motion_packet_value(value):
+    """Decode tensors on CPU, retaining dtype, logical shape, stride and storage offset.
+
+    Recorded CUDA/TF32 metadata describes the original execution; CPU replay is a diagnostic,
+    not an assertion that CUDA numerical choices are reproduced by CPU.
+    """
+    if isinstance(value, dict) and value.get("__tensor__") is True:
+        name = value["dtype"].split(".")[-1]
+        dtype = getattr(torch, name, None)
+        if not isinstance(dtype, torch.dtype):
+            raise ValueError("unsupported packet tensor dtype %r" % value["dtype"])
+        shape, stride = tuple(value["shape"]), tuple(value["stride"])
+        offset = int(value["storage_offset"])
+        if len(shape) != len(stride) or offset < 0 or any(x < 0 for x in shape + stride):
+            raise ValueError("invalid motion packet tensor layout")
+        flat = torch.tensor(value["values"], dtype=dtype)
+        expected = math.prod(shape)
+        if flat.numel() != expected:
+            raise ValueError("motion packet tensor value count differs from its shape")
+        size = offset + 1 + sum((d - 1) * s for d, s in zip(shape, stride)) if expected else offset
+        storage = torch.empty(size, dtype=dtype)
+        tensor = torch.as_strided(storage, shape, stride, offset)
+        if expected:
+            indices = torch.full(shape, offset, dtype=torch.long)
+            for axis, (length, step) in enumerate(zip(shape, stride)):
+                view = [1] * len(shape)
+                view[axis] = length
+                indices += torch.arange(length).reshape(view) * step
+            storage[indices.reshape(-1)] = flat
+        return tensor
+    if isinstance(value, dict):
+        return {key: decode_motion_packet_value(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [decode_motion_packet_value(item) for item in value]
+    return value
+
+
+def encode_motion_call_bundle(capture):
+    """Serialize the actual full-batch call; never regenerate inputs or re-run an executor."""
+    required = {"old_xy", "current_velocity", "desired_velocity", "speed_limit", "dt", "bars_xy",
+                "lo", "hi", "clearance", "turn_sign", "max_accel", "max_turn_rate", "lookahead_s",
+                "bars_half_extents_xy", "exact_aabb_clearance", "hard_epsilon_m", "return_certificate",
+                "certificate_row_ids", "distance_backend"}
+    if not isinstance(capture, dict) or capture.get("schema") != FULL_PACKET_SCHEMA:
+        raise RuntimeError("full_v2 needs an actual bounded executor call capture")
+    kwargs = capture.get("kwargs", {})
+    missing = required - set(kwargs)
+    layouts = capture.get("input_layouts", {})
+    layout_fields = {"shape", "stride", "storage_offset", "dtype", "device"}
+    missing_layouts = {name for name, value in kwargs.items()
+                       if isinstance(value, torch.Tensor)
+                       and (name not in layouts or not layout_fields <= set(layouts[name]))}
+    metadata = capture.get("metadata", {})
+    missing_metadata = {"model_id", "behavior_level", "distance_backend", "torch_version", "device",
+                        "task_step", "matmul_allow_tf32", "cudnn_allow_tf32", "float32_matmul_precision",
+                        "env_ids", "obstacle_slots"} - set(metadata)
+    result = capture.get("result", {})
+    missing_result = {"new_xy", "new_velocity", "steered", "immediate_feasible", "certificate"} - set(result)
+    if missing or missing_layouts or missing_metadata or missing_result or result.get("certificate") is None:
+        raise RuntimeError("incomplete full_v2 capture: kwargs=%s layouts=%s metadata=%s result=%s"
+                           % (sorted(missing), sorted(missing_layouts), sorted(missing_metadata),
+                              sorted(missing_result)))
+    n = kwargs["old_xy"].shape[0]
+    if kwargs["bars_xy"].shape[0] != n or metadata["env_ids"].numel() != n:
+        raise RuntimeError("full_v2 batch or environment mapping is inconsistent")
+    b = kwargs["bars_xy"].shape[1]
+    if tuple(metadata["obstacle_slots"].shape) not in ((b,), (n, b)):
+        raise RuntimeError("full_v2 obstacle slot mapping does not cover the full ordered batch")
+    if metadata["distance_backend"] != kwargs["distance_backend"]:
+        raise RuntimeError("full_v2 metadata and actual distance backend disagree")
+    for name, value in kwargs.items():
+        if isinstance(value, torch.Tensor) and (list(value.shape) != list(layouts[name]["shape"])
+                                                or str(value.dtype) != layouts[name]["dtype"]):
+            raise RuntimeError("full_v2 saved tensor differs from the actual input layout: %s" % name)
+    return {"schema": FULL_PACKET_SCHEMA,
+            "kwargs": {key: _packet_encode(value, layouts.get(key)) for key, value in kwargs.items()},
+            "input_layouts": _packet_encode(layouts), "result": _packet_encode(result),
+            "metadata": _packet_encode(metadata),
+            "replay_scope": "CPU_DIRECT_DIAGNOSTIC_NOT_CUDA_BITWISE_GUARANTEE"}
+
+
+def load_motion_call_bundle(path, expected_sha256):
+    """Read a content-addressed full call and reject changed bytes before CPU decoding."""
+    raw = Path(path).read_bytes()
+    if hashlib.sha256(raw).hexdigest() != expected_sha256:
+        raise ValueError("motion input bundle SHA-256 mismatch")
+    bundle = json.loads(raw)
+    if bundle.get("schema") != FULL_PACKET_SCHEMA:
+        raise ValueError("unsupported motion input bundle schema")
+    return decode_motion_packet_value(bundle)
 
 
 def initial_view_from_env(environ=None):
@@ -299,6 +424,12 @@ class KrocRecorder:
                                     "initially_in_view": 0, "initially_out_of_view": 0,
                                     "failed_closed": 0}
         self.packets_enabled = _truthy(os.environ.get(PACKETS_VAR, "0"))
+        self.packet_schema = motion_packet_schema()
+        if self.packets_enabled and self.packet_schema == "full_v2":
+            self.context["cfg_target_distance_backend"] = str(getattr(
+                task, "_target_distance_backend", "NOT_RECORDED"))
+            self.context["target_motion_model_id"] = str(getattr(
+                task, "_target_motion_model", "NOT_RECORDED"))
         self.packet_count = 0
         self._snapshot = None
         if self.packets_enabled:
@@ -435,9 +566,22 @@ class KrocRecorder:
                     "env_id": env, "clearance_m": float(clearance[env].item()),
                     "outside_arena": bool(outside[env].item()),
                     "target_xy": target_xy[env].tolist(), "context": self._env_context(env)}
-        if self.packets_enabled and (n_hits or n_out) and self.packet_count < PACKET_CAP:
-            bad = torch.nonzero(hits | outside, as_tuple=False).flatten()[: PACKET_CAP - self.packet_count]
-            self._write_packets(bad, target_xy, target_v, clearance)
+        if self.packets_enabled and self.packet_count < PACKET_CAP:
+            if self.packet_schema == "full_v2" and (violated or n_hits or n_out):
+                bad = torch.nonzero(hits | outside, as_tuple=False).flatten()[: PACKET_CAP - self.packet_count]
+                event_type = "swept_geometry"
+                if bad.numel() == 0:
+                    # The motion monitor reports a batch trigger, not every offending row. One
+                    # context row references all original inputs/outputs without inventing blame.
+                    capture = getattr(self.task, "_mt_precision_last_call", None)
+                    encode_motion_call_bundle(capture)  # fail closed before reading the mapping
+                    bad = capture["metadata"]["env_ids"][:1]
+                    event_type = "motion_gate_batch"
+                self._write_packets(bad, target_xy, target_v, clearance,
+                                    event_type=event_type, batch_motion_gate_trigger=bool(violated))
+            elif n_hits or n_out:
+                bad = torch.nonzero(hits | outside, as_tuple=False).flatten()[: PACKET_CAP - self.packet_count]
+                self._write_packets(bad, target_xy, target_v, clearance)
         if self.packets_enabled:
             self._ring = torch.roll(self._ring, shifts=-1, dims=1)
             self._ring[:, -1] = target_xy
@@ -447,6 +591,9 @@ class KrocRecorder:
 
     def _snapshot_target_inputs(self):
         """Executor inputs for the next target step; the target state does not change in between."""
+        if self.packet_schema == "full_v2":
+            # Captured at the actual executor call, rather than reconstructed at observation time.
+            return
         t = self.task
         grab = lambda name: getattr(t, name).detach().clone() if hasattr(t, name) else None  # noqa: E731
         self._snapshot = {
@@ -456,8 +603,13 @@ class KrocRecorder:
             "waypoint": grab("_tm_waypoint"), "cv_vel": grab("_tm_cv_vel"), "avoid": grab("_tm_avoid_sign"),
         }
 
-    def _write_packets(self, env_ids, new_xy, new_v, clearance):
+    def _write_packets(self, env_ids, new_xy, new_v, clearance, *, event_type="swept_geometry",
+                       batch_motion_gate_trigger=False):
         """One violation packet per env: inputs, the executor's own flag and a deterministic replay."""
+        if self.packet_schema == "full_v2":
+            self._write_full_packets(env_ids, new_xy, new_v, clearance, event_type=event_type,
+                                     batch_motion_gate_trigger=batch_motion_gate_trigger)
+            return
         t, s = self.task, self._snapshot
         if s is None:
             return
@@ -525,6 +677,81 @@ class KrocRecorder:
                 "bounds_lo": host(lo[row]), "bounds_hi": host(hi[row]),
                 "bars_within_3m": {"centre": host(bars[row][near]), "half": host(half[row][near])},
                 "recent_positions": ring,
+            }
+            self._packet_handle.write(json.dumps(packet, sort_keys=True) + "\n")
+        self._packet_handle.flush()
+        self.packet_count += len(env_ids)
+
+    def _write_full_packets(self, env_ids, new_xy, new_v, clearance, *, event_type="swept_geometry",
+                            batch_motion_gate_trigger=False):
+        """One shared full-batch bundle per call, with small per-violation row references.
+
+        No executor is called here: certificates and outputs are those of the original call.
+        Historical legacy packets lack these full inputs and cannot be upgraded by inference.
+        """
+        capture = getattr(self.task, "_mt_precision_last_call", None)
+        bundle = encode_motion_call_bundle(capture)
+        env_map = capture["metadata"]["env_ids"].detach().cpu().tolist()
+        if len(set(env_map)) != len(env_map):
+            raise RuntimeError("full_v2 executor environment mapping contains duplicates")
+        rows = {int(env): row for row, env in enumerate(env_map)}
+        task_step = getattr(self.task, "num_task_steps", None)
+        if task_step is not None and capture["metadata"].get("task_step") != int(task_step):
+            raise RuntimeError("full_v2 executor capture belongs to a different task step")
+        requested_envs = env_ids.detach().cpu().tolist()
+        for env in requested_envs:
+            if env not in rows:
+                raise RuntimeError("violating environment was absent from the actual executor call")
+            row = rows[env]
+            # Nonfinite states are themselves a motion-gate counterexample. Preserve matching
+            # NaNs for diagnosis rather than treating the same recorded NaN as a stale call.
+            if not torch.allclose(capture["result"]["new_xy"][row], new_xy[env],
+                                  rtol=0.0, atol=0.0, equal_nan=True) or not torch.allclose(
+                    capture["result"]["new_velocity"][row], new_v[env],
+                    rtol=0.0, atol=0.0, equal_nan=True):
+                raise RuntimeError("full_v2 captured result differs from the executed target state")
+        raw = (json.dumps(bundle, sort_keys=True, separators=(",", ":")) + "\n").encode("utf-8")
+        digest = hashlib.sha256(raw).hexdigest()
+        relative = Path(FULL_PACKET_BUNDLES) / (digest + ".json")
+        path = self.cell_dir / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            with open(path, "xb") as handle:
+                handle.write(raw)
+        except FileExistsError:
+            if path.read_bytes() != raw:
+                raise RuntimeError("existing motion input bundle differs from its content hash")
+        n = len(env_map)
+        certificate = capture["result"]["certificate"]
+
+        def selected(value, row):
+            if isinstance(value, torch.Tensor) and value.ndim > 0 and value.shape[0] == n:
+                return _packet_encode(value[row])
+            if isinstance(value, dict):
+                return {key: selected(item, row) for key, item in value.items()}
+            return _packet_encode(value)
+
+        for env in requested_envs:
+            row = rows[env]
+            packet = {
+                "schema": "motar.kroc2027-violation.full_v2",
+                "event_type": event_type,
+                "batch_motion_gate_trigger": bool(batch_motion_gate_trigger),
+                "row_violation_status": ("NOT_RECORDED" if event_type == "motion_gate_batch"
+                                         else "SELECTED_BY_GEOMETRY_MONITOR"),
+                "context": self._env_context(env), "monitor_step": self.motion.steps,
+                "env_id": env, "executor_row_index": row,
+                "bundle_file": relative.as_posix(), "bundle_sha256": digest,
+                "model_id": capture["metadata"]["model_id"],
+                "distance_backend": capture["metadata"]["distance_backend"],
+                "full_batch_shape": list(capture["kwargs"]["old_xy"].shape),
+                "full_obstacle_shape": list(capture["kwargs"]["bars_xy"].shape),
+                "selected_certificate": selected(certificate, row),
+                "executed_xy": _packet_encode(new_xy[env]),
+                "executed_velocity": _packet_encode(new_v[env]),
+                "swept_clearance_m": float(clearance[env].item()),
+                "capture_complete": True,
+                "replay_status": "NOT_RUN",
             }
             self._packet_handle.write(json.dumps(packet, sort_keys=True) + "\n")
         self._packet_handle.flush()
@@ -762,6 +989,8 @@ class KrocRecorder:
             "pursuer_reference_speed_mps": PURSUER_REFERENCE_SPEED_MPS,
             "finished_at": datetime.now(timezone.utc).isoformat(),
         }
+        if self.packets_enabled and self.packet_schema == "full_v2":
+            summary["violation_packets"].update(schema="full_v2", bundle_directory=FULL_PACKET_BUNDLES)
         tmp = self.summary_path.with_suffix(".json.tmp")
         tmp.write_text(json.dumps(summary, indent=1, sort_keys=True) + "\n")
         os.replace(tmp, self.summary_path)
