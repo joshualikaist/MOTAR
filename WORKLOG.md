@@ -20334,3 +20334,42 @@ Next review: the complete diff and new plan; local commit requires user diff app
   `check_cell(root=…)`(기본값 불변), 새 `tools/kroc2027_mt_summary.py`, `tests/test_kroc2027_mt_main.py`.
   CPU: KROC 162개 OK, PUBLIC_CPU 2,281개 실패 0·오류 0(skip 10), 공개 문서 검사 오류 0.
 - GPU 사용 누계 약 8.10 h / 30 h. 다음: KROC27-A-M02 실행 → `analyse-a-moving`.
+
+## 2026-10-16 — KROC27-A-M02 완료(56/56, 위반 0) + amendment 2 분석: Delta_A `SUPPORTED`, I_A(H-A2) `INCONCLUSIVE`
+
+- 실행: `ea67728`, `run --stage mt_main`, 2026-10-16 15:14–18:04 KST, 상한 7.5 h. lineage **E2_direct_l2_v1**(§5 규칙,
+  MT-P2-C01 보고서 SHA 고정). A3/A4 × 70/115/160/205 × seed 4201–4207, env당 16. 판정 `COMPLETE`, 56셀 모두 통과
+  (`check_cell` + backend·model·full_v2·stop·TF32 신원 검사). 시뮬레이션 소스는 canary commit과 동일(runner 검사).
+- 운동·충돌: G1/G2·swept·wall 위반 0, packet 0, 최소 swept clearance 0.223 m(proxy 0.15 m), 최대 표적 step 속도
+  1.5000036 m/s(G2 float32 허용 +5.39e-5 안; G2 speed 최대 초과 −5.0e-5), TF32 `True`/`high` 그대로(56셀).
+  GPU 2.83 h(receipt 합 10,178 s), VRAM 최대 6,099/8,192 MiB(10 s 표본), 저장 472 MB.
+- 분석(`analyse-a-moving`, 무결성 문제 0; A1/A2는 KROC27-A-M01 `bbf530b` 셀을 RAW_MANIFEST로 파일마다 재검증·`check_cell`):
+
+| seed 평균(밀도 동일가중) | A1 static·visible | A2 static·hidden | A3 moving·visible | A4 moving·hidden |
+|---|---|---|---|---|
+| capture | 98.16 % | 95.32 % | 95.38 % | 92.80 % |
+| crash | 1.84 % | 4.36 % | 4.60 % | 7.12 % |
+| timeout | 0.00 % | 0.33 % | 0.02 % | 0.08 % |
+| never acquired | 0.00 % | 2.84 % | 0.00 % | 2.75 % |
+| never acquired ∧ 실패 | 0.00 % | 2.78 % | 0.00 % | 2.63 % |
+
+| 확증(§7, Holm) | 평균 | 95 % CI | Holm p | 97.5 % 실용 구간 | 판정 |
+|---|---|---|---|---|---|
+| Delta_A | +2.71 pp | [+2.45, +2.97] | 4.5e-7 | [+2.40, +3.02] | **SUPPORTED** (1 pp 통과, 3·5 pp 미입증) |
+| I_A | −0.26 pp | [−0.80, +0.28] | 0.28 | [−0.92, +0.39] | **INCONCLUSIVE** |
+
+  민감도: Delta_A BCa [+2.47, +2.86], sign-flip p 0.0156(최소값, 7/7 seed 같은 방향). I_A BCa [−0.74, +0.07],
+  sign-flip p 0.33, 예측 방향(음수) seed 4/7. Secondary: moving A3−A4 +2.58 pp [+2.13, +3.03], static A1−A2 +2.84 pp(기록 그대로).
+- 해석: 초기 시야 효과(Delta_A)는 정지·이동 표적 모두에서 약 2.6–2.8 pp로 확인. 상호작용 I_A는 검출되지 않았고, 95 % CI가
+  예측 방향 0.80 pp보다 큰 상호작용과 반대 방향 0.28 pp보다 큰 상호작용을 배제함(동등성 주장은 아님). "이동 표적은 스스로
+  시야에 들어오므로 hidden 손실이 작다"는 사전 예측(§1)은 지지되지 않음: never acquired가 A2 2.84 %, A4 2.75 %로 비슷함.
+  이동 표적은 capture를 약 2.8 pp 낮추는데 주로 crash 증가(A1→A3 +2.76 pp) 때문(기술 통계, 인과 아님). A1−A2는 amendment 2
+  이전에 관측되었으므로 Delta_A는 완전 blind가 아님. amendment 1의 정지 결과는 그대로 유지.
+- 기록(`results/mt_p1_precision_v1/KROC27-A-M02/`, 물리적으로 main checkout): `analysis.json` `af7ad5b5…`, `RAW_MANIFEST.json`
+  `bc90b5b0…`(452개 파일; 분석 후 다시 생성, 분석 전 버전은 미커밋 중간본이라 대체), `run_report.json` `5dbb2f47…`,
+  `run_summary.json` `fb335d7b…`, `launch_receipt.json` `1892ccf7…`. 백업 `../kroc2027_raw_backup/kroc27_a_m02_2026-10-16.tar.gz`
+  (67 MB). 이 결과 파일들은 symlink 아래라 이 branch에서 추적하지 않음 — main 병합 때 함께 commit 필요.
+- 변경 없음: main(`cb644bb`)·사용자 WIP 3개·stash, Policy F(SHA `f7022139…`), 기존 결과(A1/A2 manifest 재검증 통과), H/E1/E2
+  계보. PPO·push 없음. GPU 사용 누계 약 10.93 h / 30 h. 디스크 3.4 GB 남음(98 %).
+- 다음(사용자 결정): `codex/mt-p1` → main 병합과 결과 기록 commit(WIP 처리 필요), 외부 백업 위치, 과거 이동 표적 결과 중 bar 수가
+  4의 배수인 셀 감사(CPU, 읽기 전용).
