@@ -20491,3 +20491,12 @@ Next review: the complete diff and new plan; local commit requires user diff app
   `pair_noninterference`; `tools/occlusion_analysis.py` `g0`(parity·장면 집계, 셀 분석에 장면 범주 추가);
   `tests/test_occlusion_pilot_stage.py` 갱신. CPU: occlusion 29/29, KROC 162(skip 2), PUBLIC_CPU 2,348 실패 0·오류 0(skip 10), 공개 문서 오류 0.
 - 결과 위치: `results/occlusion_pilot_v1/`(main checkout, worktree symlink). 다음: commit → preflight → G0 → (PASS면) OCC-P1.
+
+## 2026-10-17 — OCC-G0 첫 시도 중단(runner 결함: obs dump 경로 공유) → 수정 후 재실행
+
+- `6dd79e3`에서 OCC-G0 실행(01:57–02:00 KST). 처음 2쌍(static·moving, 70 bars)은 비간섭 5검사 모두 PASS, 역사적 셀 MATCH,
+  renderer parity PASS(probe-offline 불일치 0/18,442 frame), 장면 visible/partial/full 모두 존재. 3번째 셀(OFF static 115 bars)에서
+  task가 `obs_dump.npz` 덮어쓰기를 거부하고 종료: runner가 dump를 group/arm 폴더에 두어 밀도 간에 경로가 겹쳤다(canary는 셀당
+  폴더 하나라 드러나지 않음). 시뮬레이션·계측 결함 아님. 중단된 시도는 `results/occlusion_pilot_v1/OCC-G0/`에 그대로 보존.
+- 수정: dump를 셀 폴더 안으로; 재실행용 `--run-root`/`--g0-root`/`--rerun-note`(results/** 불변). CPU: occlusion 29, KROC 162 OK.
+- 재실행 폴더: `results/occlusion_pilot_v1/OCC-G0_rerun1/`(같은 run id OCC-G0, 새 commit).

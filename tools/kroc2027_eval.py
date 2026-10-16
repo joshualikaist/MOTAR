@@ -1455,8 +1455,7 @@ def pair_noninterference(off_dir, on_dir, quota, fields):
         if str(ROOT / "tools") not in sys.path:
             sys.path.insert(0, str(ROOT / "tools"))
         import target_motion_replication as tmr  # noqa: E402  (unmodified helper)
-        obs_ok, n_common = tmr.observation_gate(np.load(off_dir.parent / "obs_dump.npz"),
-                                                np.load(on_dir.parent / "obs_dump.npz"))
+        obs_ok, n_common = tmr.observation_gate(np.load(off_dir / "obs_dump.npz"), np.load(on_dir / "obs_dump.npz"))
         checks["actor_observations_bitwise_equal"] = bool(obs_ok)
         detail["observation_rows_compared"] = int(n_common)
         recorder = historical_match(on_dir, off_dir, quota, fields)
@@ -1496,6 +1495,11 @@ def dir_bytes(path):
 
 def policy_f_sha(protocol):
     return kp.sha256_file(launcher_path(protocol).parent / protocol["policy"]["checkpoint_rel_to_launcher"])
+
+
+def occlusion_root(plan, stage, override):
+    """The stage's output root; ``override`` is a fresh folder for a rerun (results/** is never overwritten)."""
+    return Path(override).resolve() if override else ROOT / plan[stage]["output_root"]
 
 
 def occlusion_preconditions(args, protocol, plan, stage, out_root):
@@ -1544,7 +1548,7 @@ def _occlusion_cell_env(env, protocol, plan, cell, out_dir, run_id, telemetry, d
     kw = dict(target_model=cell["target_model"], density=cell["density"], seed=cell["seed"], out_dir=out_dir,
               quota=q, view=cell["view"], recorder=True, run_id=run_id, arm=cell["arm"])
     if digest:
-        kw.update(digest_path=out_dir / label / "trajectory_digest.json", obs_dump_path=out_dir / "obs_dump.npz")
+        kw.update(digest_path=out_dir / label / "trajectory_digest.json", obs_dump_path=out_dir / label / "obs_dump.npz")
     cell_vars = cell_env(env, protocol, **kw)
     cell_vars.update(spec["extra_env"])
     if telemetry:
@@ -1589,7 +1593,7 @@ def cmd_run_occlusion_g0(args, protocol, env):
     """OCC-G0: 8 (group, density) pairs at seed 4201, OFF and ON on this commit, compared three ways."""
     plan = json.loads((ROOT / OCC_PLAN).read_text())
     mt_plan = json.loads((ROOT / MT_PLAN).read_text())
-    out_root = ROOT / plan["g0"]["output_root"]
+    out_root = occlusion_root(plan, "g0", args.run_root)
     head, cap, gpus, problems = occlusion_preconditions(args, protocol, plan, "g0", out_root)
     import_issues, origins = import_problems(env, launcher_path(protocol).parent)
     problems.extend(import_issues)
@@ -1603,7 +1607,8 @@ def cmd_run_occlusion_g0(args, protocol, env):
     out_root.mkdir(parents=True)
     _launch_receipt(out_root, args, head, plan, gpus, origins, cap, [c["cell_dir"] for c in cells], protocol)
     budget = GpuBudget(cap)
-    report = {"run_id": args.run_id, "git_commit": head, "cap_hours": cap, "pairs": {}, "stop_reason": None}
+    report = {"run_id": args.run_id, "git_commit": head, "cap_hours": cap, "pairs": {}, "stop_reason": None,
+              "output_root": str(out_root), "rerun_note": args.rerun_note}
     report_path = out_root / G0_REPORT
     fields = plan["g0_noninterference"]["ledger_fields"]
     for cell in cells:
@@ -1673,9 +1678,9 @@ def cmd_run_occlusion_pilot(args, protocol, env):
     """OCC-P1: 56 cells with telemetry, after a G0 report at this commit; stop at the first failure."""
     plan = json.loads((ROOT / OCC_PLAN).read_text())
     mt_plan = json.loads((ROOT / MT_PLAN).read_text())
-    out_root = ROOT / plan["pilot"]["output_root"]
+    out_root = occlusion_root(plan, "pilot", args.run_root)
     head, cap, gpus, problems = occlusion_preconditions(args, protocol, plan, "pilot", out_root)
-    g0_path = ROOT / plan["g0"]["output_root"] / G0_REPORT
+    g0_path = occlusion_root(plan, "g0", args.g0_root) / G0_REPORT
     g0 = json.loads(g0_path.read_text()) if g0_path.is_file() else {}
     if g0.get("git_commit") != head or g0.get("noninterference") != "PASS" or g0.get("verdict") != "G0_PASS":
         problems.append("needs %s with G0_PASS and noninterference PASS at %s" % (g0_path, head[:12]))
@@ -1692,7 +1697,8 @@ def cmd_run_occlusion_pilot(args, protocol, env):
     _launch_receipt(out_root, args, head, plan, gpus, origins, cap, [c["cell_dir"] for c in cells], protocol)
     budget = GpuBudget(cap)
     report = {"run_id": args.run_id, "git_commit": head, "cap_hours": cap, "g0_report_sha256": kp.sha256_file(g0_path),
-              "cells": {}, "stop_reason": None}
+              "g0_report": str(g0_path), "cells": {}, "stop_reason": None, "output_root": str(out_root),
+              "rerun_note": args.rerun_note}
     report_path = out_root / OCC_REPORT
     fields = plan["g0_noninterference"]["ledger_fields"]
     for cell in cells:
@@ -1915,6 +1921,9 @@ def main(argv=None):
     r.add_argument("--approved-commit", default="")
     r.add_argument("--dry-run", action="store_true")
     r.add_argument("--canary-root", help="canary folder (default: the protocol's); for a re-run")
+    r.add_argument("--run-root", help="occlusion stages: fresh output folder for a rerun (default: the plan's)")
+    r.add_argument("--g0-root", help="occlusion_pilot: folder of the passing G0 run (default: the plan's)")
+    r.add_argument("--rerun-note", default=None, help="occlusion stages: why this is a rerun; kept in the report")
     r.add_argument("--max-gpu-hours", type=float, default=None,
                    help="stop before a new cell, and kill a running one, once this wall time is used")
     an = sub.add_parser("analyse")

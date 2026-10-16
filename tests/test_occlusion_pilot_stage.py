@@ -63,7 +63,7 @@ class PilotCellsTest(unittest.TestCase):
         out_root = ROOT / PLAN["pilot"]["output_root"]
         existed = out_root.exists()
         args = SimpleNamespace(stage="occlusion_pilot", run_id="OCC-P1", approved_commit="", dry_run=False,
-                               max_gpu_hours=None, canary_root=None)
+                               max_gpu_hours=None, canary_root=None, run_root=None, g0_root=None, rerun_note=None)
         with contextlib.redirect_stdout(io.StringIO()) as out:
             rc = cli.cmd_run(args)
         self.assertEqual(rc, 2)
@@ -74,7 +74,7 @@ class PilotCellsTest(unittest.TestCase):
 
     def test_g0_refuses_without_approval(self):
         args = SimpleNamespace(stage="occlusion_g0", run_id="OCC-G0", approved_commit="", dry_run=False,
-                               max_gpu_hours=None, canary_root=None)
+                               max_gpu_hours=None, canary_root=None, run_root=None, g0_root=None, rerun_note=None)
         with contextlib.redirect_stdout(io.StringIO()) as out:
             rc = cli.cmd_run(args)
         self.assertEqual(rc, 2)
@@ -91,7 +91,7 @@ class PilotCellsTest(unittest.TestCase):
                 (d / "result.json").write_text(json.dumps({"condition": {"evaluation_nonce": mode, "bars": 70}, "x": 1}))
                 (d / "trajectory_digest.json").write_text(json.dumps({"sha256": "abc", "steps": 10}))
                 (d / "episode_ledger_summary.json").write_text(json.dumps({"rows_sha256": "r1"}))
-                np.savez(Path(base) / mode / "obs_dump.npz", call_index=np.arange(3), env_id=np.zeros(3, int),
+                np.savez(d / "obs_dump.npz", call_index=np.arange(3), env_id=np.zeros(3, int),
                          obs=np.ones((3, 898), np.float32))
             ok = cli.pair_noninterference(Path(base) / "off/cell", Path(base) / "on/cell", 4, self.FIELDS)
             self.assertEqual(ok["verdict"], "PASS", ok)
