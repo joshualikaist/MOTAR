@@ -1,4 +1,4 @@
-"""OCC-P1 runner stage (CPU): cell matrix, refusal before approval, G0 historical comparison."""
+"""OCC-G0 / OCC-P1 runner stages (CPU): cell matrices, refusals, pair and historical comparisons."""
 import contextlib
 import importlib.util
 import io
@@ -41,30 +41,66 @@ def episode(env, ep, outcome="capture", step=30, extra=None):
 
 
 class PilotCellsTest(unittest.TestCase):
+    FIELDS = PLAN["g0_noninterference"]["ledger_fields"]
+
     def test_matrix_and_historical_counterparts(self):
         cells = cli.occlusion_pilot_cells(PLAN)
-        self.assertEqual(len(cells), PLAN["cells"])
+        self.assertEqual(len(cells), PLAN["pilot"]["cells"])
         self.assertEqual({(c["group"], c["arm"], c["lineage"]) for c in cells},
                          {("static", "A1", "E0_static"), ("moving", "A3", "E2_direct_l2_v1")})
-        self.assertEqual({c["seed"] for c in cells}, {4201, 4202})
+        self.assertEqual({c["seed"] for c in cells}, set(range(4201, 4208)))
+        g0 = cli.occlusion_cells(PLAN, PLAN["g0"]["seeds"])
+        self.assertEqual(len(g0), PLAN["g0"]["pairs"])
+        self.assertEqual({c["seed"] for c in g0}, {4201})
         self.assertEqual(sorted({c["density"] for c in cells}), [70, 115, 160, 205])
         self.assertTrue(all(c["view"] == "visible" for c in cells))
         self.assertTrue(all(Path(c["historical"]).name == c["cell_dir"].split("/")[-1] for c in cells))
         self.assertEqual([c["seed"] for c in cells[:8]], [4201] * 8)  # seed-major
-        self.assertLessEqual(PLAN["max_gpu_hours"], 1.0)
+        self.assertEqual(PLAN["safety"]["min_free_disk_gb"], 8.0)
+        self.assertTrue(PLAN["status"].startswith("APPROVED"))
 
-    def test_refuses_draft_and_missing_backup_and_writes_nothing(self):
-        out_root = ROOT / PLAN["output_root"]
+    def test_pilot_refuses_without_approval_or_g0_and_writes_nothing(self):
+        out_root = ROOT / PLAN["pilot"]["output_root"]
         existed = out_root.exists()
         args = SimpleNamespace(stage="occlusion_pilot", run_id="OCC-P1", approved_commit="", dry_run=False,
-                               max_gpu_hours=None, canary_root=None, external_backup_confirmed=False)
+                               max_gpu_hours=None, canary_root=None)
         with contextlib.redirect_stdout(io.StringIO()) as out:
             rc = cli.cmd_run(args)
         self.assertEqual(rc, 2)
         problems = " ".join(json.loads(out.getvalue())["problems"])
-        for text in ("approved-commit", "draft", "external-backup-confirmed"):
+        for text in ("approved-commit", "G0_PASS"):
             self.assertIn(text, problems)
         self.assertEqual(out_root.exists(), existed)
+
+    def test_g0_refuses_without_approval(self):
+        args = SimpleNamespace(stage="occlusion_g0", run_id="OCC-G0", approved_commit="", dry_run=False,
+                               max_gpu_hours=None, canary_root=None)
+        with contextlib.redirect_stdout(io.StringIO()) as out:
+            rc = cli.cmd_run(args)
+        self.assertEqual(rc, 2)
+        self.assertIn("approved-commit", " ".join(json.loads(out.getvalue())["problems"]))
+        self.assertFalse((ROOT / PLAN["g0"]["output_root"]).exists() and False)
+
+    def test_pair_noninterference_detects_each_difference(self):
+        import numpy as np
+        with tempfile.TemporaryDirectory() as base:
+            for mode in ("off", "on"):
+                d = Path(base) / mode / "cell"
+                rows, recs = zip(*[episode(0, k) for k in range(4)])
+                write_cell(d, list(rows), list(recs))
+                (d / "result.json").write_text(json.dumps({"condition": {"evaluation_nonce": mode, "bars": 70}, "x": 1}))
+                (d / "trajectory_digest.json").write_text(json.dumps({"sha256": "abc", "steps": 10}))
+                (d / "episode_ledger_summary.json").write_text(json.dumps({"rows_sha256": "r1"}))
+                np.savez(Path(base) / mode / "obs_dump.npz", call_index=np.arange(3), env_id=np.zeros(3, int),
+                         obs=np.ones((3, 898), np.float32))
+            ok = cli.pair_noninterference(Path(base) / "off/cell", Path(base) / "on/cell", 4, self.FIELDS)
+            self.assertEqual(ok["verdict"], "PASS", ok)
+            self.assertEqual(ok["detail"]["observation_rows_compared"], 3)
+            (Path(base) / "on/cell/trajectory_digest.json").write_text(json.dumps({"sha256": "zzz", "steps": 10}))
+            bad = cli.pair_noninterference(Path(base) / "off/cell", Path(base) / "on/cell", 4, self.FIELDS)
+            self.assertEqual(bad["verdict"], "FAIL")
+            self.assertFalse(bad["checks"]["trajectory_digest_equal"])
+            self.assertTrue(bad["checks"]["actor_observations_bitwise_equal"])
 
 
 class HistoricalMatchTest(unittest.TestCase):

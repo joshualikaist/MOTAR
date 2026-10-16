@@ -61,7 +61,11 @@ def analyse_cell(directory, rim_count: int = 8):
     records = {(r["env_index"], r["env_episode_index"]): r for r in _jsonl(directory / "kroc2027_episodes.jsonl")}
     intervals = {k: [] for k in INDICATORS}
     exposures, reacq, problems, per_episode = [], [], [], []
-    parity = {"frames": 0, "offline_vs_online_box_disagree": 0, "probe_frames": 0, "offline_vs_probe_disagree": 0}
+    parity = {"frames": 0, "offline_vs_online_box_disagree": 0, "probe_frames": 0, "offline_vs_probe_disagree": 0,
+              "clear_in_view_probe_frames": 0, "rendered_zero_while_clear_in_view": 0,
+              "geometric_full_probe_frames": 0, "rendered_pixels_while_geometric_full": 0}
+    scenes = {"visible": 0, "partial": 0, "full_geometric": 0, "full_rendered": 0,
+              "examples": {"visible": None, "partial": None, "full_geometric": None, "full_rendered": None}}
     episodes = 0
     for key, frames in ot.episode_frames(trace["frames"]).items():
         row = ledger.get(key)
@@ -98,6 +102,21 @@ def analyse_cell(directory, rim_count: int = 8):
         parity["probe_frames"] += int(known.sum())
         parity["offline_vs_probe_disagree"] += int(np.sum(known & ((probe == 1) != los["center_blocked"])))
         pixels = frames["probe_visible_pixels"]
+        has_px = pixels >= 0
+        clear_in_view = in_view & ~los["center_blocked"]
+        parity["clear_in_view_probe_frames"] += int(np.sum(clear_in_view & has_px))
+        parity["rendered_zero_while_clear_in_view"] += int(np.sum(clear_in_view & has_px & (pixels == 0)))
+        full_geo = in_view & los["geometric_full_occlusion"]
+        parity["geometric_full_probe_frames"] += int(np.sum(full_geo & has_px))
+        parity["rendered_pixels_while_geometric_full"] += int(np.sum(full_geo & has_px & (pixels > 0)))
+        partial = in_view & los["center_blocked"] & ~los["geometric_full_occlusion"]
+        for name, mask in (("visible", clear_in_view & (pixels > 0) if has_px.any() else clear_in_view),
+                           ("partial", partial), ("full_geometric", full_geo),
+                           ("full_rendered", in_view & has_px & (pixels == 0))):
+            count = int(mask.sum())
+            scenes[name] += count
+            if count and scenes["examples"][name] is None:
+                scenes["examples"][name] = {"episode": "%d/%d" % key, "frame": int(frames["frame"][np.flatnonzero(mask)[0]])}
         series = {
             "fused_loss": ~fused,
             "center_occlusion_in_view": in_view & los["center_blocked"],
@@ -121,7 +140,7 @@ def analyse_cell(directory, rim_count: int = 8):
                                        for name in INDICATORS}})
     out = {"cell": directory.name, "context": meta["context"], "identity": meta["identity"],
            "render_alignment": meta.get("render_alignment"), "quota_episodes": episodes,
-           "problems": problems, "parity": parity, "indicators": {}}
+           "problems": problems, "parity": parity, "scenes": scenes, "indicators": {}}
     for name in INDICATORS:
         if name == "rendered_full_in_view" and not intervals[name] and not (aligned and parity["probe_frames"]):
             out["indicators"][name] = "NOT_RECORDED"
@@ -137,6 +156,49 @@ def analyse_cell(directory, rim_count: int = 8):
     out["_exposures"] = exposures
     out["_per_episode"] = per_episode
     return out
+
+
+def g0_parity_and_scenes(on_cells, criteria):
+    """Renderer parity and scene-confirmation verdicts over the G0 ON cells (separate from non-interference)."""
+    totals = {}
+    scenes = {"visible": 0, "partial": 0, "full_geometric": 0, "full_rendered": 0, "examples": {}}
+    aligned = True
+    per_cell = {}
+    for cell in on_cells:
+        result = analyse_cell(cell)
+        aligned &= result["render_alignment"] == "ZERO_LATENCY_RENDER_DELIVERY"
+        for k, v in result["parity"].items():
+            totals[k] = totals.get(k, 0) + v
+        for k in ("visible", "partial", "full_geometric", "full_rendered"):
+            scenes[k] += result["scenes"][k]
+            if result["scenes"]["examples"][k] and k not in scenes["examples"]:
+                scenes["examples"][k] = dict(result["scenes"]["examples"][k], cell=str(cell))
+        per_cell[str(cell)] = {"parity": result["parity"], "scenes": {k: result["scenes"][k] for k in scenes if k != "examples"},
+                               "render_alignment": result["render_alignment"], "problems": result["problems"]}
+    rate = lambda n, d: (n / d) if d else None  # noqa: E731
+    metrics = {"probe_agreement": (1 - rate(totals.get("offline_vs_probe_disagree", 0), totals.get("probe_frames", 0))
+                                   if totals.get("probe_frames") else None),
+               "rendered_zero_while_clear_in_view": rate(totals.get("rendered_zero_while_clear_in_view", 0),
+                                                         totals.get("clear_in_view_probe_frames", 0)),
+               "rendered_pixels_while_geometric_full": rate(totals.get("rendered_pixels_while_geometric_full", 0),
+                                                            totals.get("geometric_full_probe_frames", 0)),
+               "offline_vs_online_box_disagree": totals.get("offline_vs_online_box_disagree", 0)}
+    if not totals.get("probe_frames"):
+        parity = {"verdict": "NOT_TESTED", "reason": "no probe frames (mesh probe did not run)"}
+    elif not aligned:
+        parity = {"verdict": "NOT_TESTED", "reason": "render alignment not verified; camera-versus-geometry comparisons are UNKNOWN"}
+    else:
+        ok = (metrics["probe_agreement"] >= criteria["probe_vs_offline_center_ray_agreement_min"]
+              and (metrics["rendered_zero_while_clear_in_view"] or 0) <= criteria["rendered_zero_pixels_while_geometrically_clear_in_view_max"]
+              and (metrics["rendered_pixels_while_geometric_full"] or 0) <= criteria["rendered_pixels_while_geometric_full_occlusion_max"]
+              and metrics["offline_vs_online_box_disagree"] == 0)
+        parity = {"verdict": "PASS" if ok else "FAIL"}
+    parity["metrics"] = metrics
+    parity["totals"] = totals
+    present = scenes["visible"] > 0 and scenes["partial"] > 0 and scenes["full_geometric"] > 0
+    scenes["verdict"] = "PRESENT" if present else "MISSING"
+    scenes["note"] = "full_rendered requires the probe; a full_geometric proxy without probe frames is geometry only"
+    return {"renderer_parity": parity, "scene_confirmation": scenes, "cells": per_cell}
 
 
 def analyse_pilot(root, resamples=1000):
@@ -211,6 +273,10 @@ def main(argv=None):
     c = sub.add_parser("cell")
     c.add_argument("--dir", required=True)
     c.add_argument("--out")
+    g = sub.add_parser("g0")
+    g.add_argument("--root", required=True, help="OCC-G0 folder; ON cells are under on/")
+    g.add_argument("--plan", default=str(ROOT / "docs/plans/occlusion_pilot_v2.json"))
+    g.add_argument("--out")
     p = sub.add_parser("pilot")
     p.add_argument("--root", required=True)
     p.add_argument("--out")
@@ -224,6 +290,10 @@ def main(argv=None):
     if args.command == "cell":
         result = analyse_cell(args.dir)
         _emit({k: v for k, v in result.items() if not k.startswith("_")}, args.out)
+    elif args.command == "g0":
+        plan = json.loads(Path(args.plan).read_text())
+        cells = sorted({p.parent for p in (Path(args.root) / "on").rglob(ot.SUMMARY_FILE)})
+        _emit(g0_parity_and_scenes(cells, plan["g0"]["renderer_parity_checks"]), args.out)
     elif args.command == "pilot":
         _emit(analyse_pilot(args.root), args.out)
     else:

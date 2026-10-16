@@ -20475,3 +20475,19 @@ Next review: the complete diff and new plan; local commit requires user diff app
   (R-P1a full JSON이면 셀당 ~110 MB).
 - 보존: frozen 소스 8개 HEAD와 동일, raw 583개 SHA 일치, Policy F·main `cb644bb`·WIP·stash `23ddb33` 불변. 외부 백업 미완료, 디스크 3.3 GB.
 - 다음: diff 검토·commit 승인 → 외부 백업 → OCC-P1 계획 승인(DRAFT 해제) → G0/renderer parity/Pilot GPU 승인.
+
+## 2026-10-17 — OCC 계획 v2 확정(7 seed, 예산 제약 폐지), OCC-G0 단계 추가 (CPU만)
+
+- 사용자 결정(2026-10-17): GPU 총예산 30 h 제한 폐지, 설계는 계측·통계 신뢰성·재현성 중심. G0 강화, OCC-P1을 seed 4201–4207
+  (56셀, 28,672 episode)로 확대. G0 통과 시 OCC-P1 연속 진행 승인. OCC-P2·Planner는 별도 사전등록.
+- `docs/plans/occlusion_pilot_v2.{json,md}`(APPROVED_2026-10-17; v1 draft는 기록으로 유지):
+  - G0(OCC-G0): seed 4201 × static/moving × 4밀도 = 8쌍. 같은 commit에서 OFF(recorder+trajectory digest+actor obs dump)와
+    ON(+telemetry)을 각각 실행. 비간섭 = result(nonce 제외)·digest sha/steps·ledger rows_sha256·actor 관측 bitwise
+    (`observation_gate`, 복제 도구 그대로)·recorder 기록·역사적 셀(첫 4 episode) 6개 검사 모두 통과. renderer parity와 장면 확인
+    (visible/partial/full)은 별도 판정. 정렬 미확인이면 UNKNOWN/NOT_TESTED.
+  - 안전: wall-clock 상한 G0 2.0 h(예상 0.35–0.6), P1 5.0 h(예상 1.3–1.8); 셀이 2×180 s 넘으면 비율·상태 기록; 여유 디스크
+    8 GB 미만이면 시작 거부·다음 셀 전 중단; Policy F SHA 전후 확인; 셀별 GPU 초·출력 바이트 기록. 외부 백업 미완료는 기록만.
+- 코드: `tools/kroc2027_eval.py` `run --stage occlusion_g0|occlusion_pilot`(v2 기반, P1은 같은 commit의 G0_PASS 필요),
+  `pair_noninterference`; `tools/occlusion_analysis.py` `g0`(parity·장면 집계, 셀 분석에 장면 범주 추가);
+  `tests/test_occlusion_pilot_stage.py` 갱신. CPU: occlusion 29/29, KROC 162(skip 2), PUBLIC_CPU 2,348 실패 0·오류 0(skip 10), 공개 문서 오류 0.
+- 결과 위치: `results/occlusion_pilot_v1/`(main checkout, worktree symlink). 다음: commit → preflight → G0 → (PASS면) OCC-P1.
