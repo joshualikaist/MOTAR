@@ -20452,3 +20452,26 @@ Next review: the complete diff and new plan; local commit requires user diff app
   3개, stash `23ddb33f`, branch HEAD `c038ba5` 모두 작업 전 snapshot과 같음. 외부 백업 미완료(백업이 같은 디스크),
   디스크 3.3 GB 남음(98 %).
 - 다음: 로컬 commit은 사용자 승인 후. GPU 검증(카메라/mesh 일치, ON/OFF 궤적 동일성)은 별도 사전등록과 승인 필요.
+
+## 2026-10-16 — R-P1a-v2: 가림 측정용 compact telemetry·offline 3D LOS·검열 분석·geometry-only sweep (CPU만, 미커밋)
+
+- 승인 범위: R-P1a-v2 코드 구현과 CPU 검증만. GPU·PPO·R-P1b/c·Planner·commit·merge·push·삭제 없음. 기준 `3fcc64f`.
+- 새 계측(기본 OFF, recorder 필요): `NAVRL_KROC2027_OCCLUSION_TRACE=1` → `occlusion_frames.bin`(94 B/frame-env: 두 UAV의
+  위치·속도·자세(전체·yaw-only)와 camera/fused/track/geo/LiDAR/획득 flag, R-P1a probe 값), `occlusion_layouts.npz`(reset마다
+  장애물 box·자세, scene hash로 중복 제거), `occlusion_trace_summary.json`(SHA, 카메라·시간 계약). `NAVRL_KROC2027_RECOVERY_TRACE=compact`
+  는 R-P1a의 frame별 JSON(약 2.2 KB/frame-env)을 빼고 episode 기록만 남김. 센서 촬영 시각은 `NOT_RECORDED`, zero-latency 전달이
+  확인될 때만 카메라와 기하를 frame 단위로 비교.
+- 분석: `motar_eval/occlusion_geometry.py`(numpy 3D LOS: 중심 ray, 8개 rim ray의 기하학적 full proxy, frustum/range),
+  `occlusion_events.py`(획득 이후 구간, 종료 시 outcome으로 검열, Kaplan–Meier와 Aalen–Johansen, cluster bootstrap),
+  `occlusion_sweep.py`(밀도만 바꾸는 scripted 운동 3종), `tools/occlusion_analysis.py`(cell/pilot/sweep). 지표 fused loss·중심 LOS
+  가림·기하 full·시야 밖·렌더 full을 분리.
+- 발견(CPU 기하 성질): 정지 표적을 직선 추적하면 한 번 열린 시선이 다시 가려지지 않음 → pilot의 정지 표적 획득 후 가림은 우회·횡이동에서만 생김.
+- 파일: 수정 `kroc_eval_adapter.py`(+159), `tools/kroc2027_eval.py`(+198, `run --stage occlusion_pilot`, G0 비교); 새
+  `motar_eval/occlusion_{trace,geometry,events,sweep}.py`, `tools/occlusion_analysis.py`, `tests/test_occlusion_{trace,geometry,events,analysis,pilot_stage}.py`,
+  `docs/plans/occlusion_pilot_v1.{json,md}`(DRAFT), 증거 `docs/evidence/r_p1a_v2_cpu_2026-10-16/`(18 KB).
+- CPU: occlusion 27/27, KROC 162(skip 2), recovery 38, PUBLIC_CPU 2,346 실패 0·오류 0·skip 10·제외 5, 공개 문서 오류 0. OFF/ON에서
+  기존 KROC 출력 byte 동일·task tensor·RNG 불변(stand-in), numpy LOS = torch recorder geometry(무작위 400 frame×60 box).
+- 저장 예상(quota 4 셀): frame ≤4.7 MB + layout ~2 MB + R-P1a compact 3–5 MB + 기존 2–3 MB ≈ 11–15 MB, 16셀 0.18–0.24 GB
+  (R-P1a full JSON이면 셀당 ~110 MB).
+- 보존: frozen 소스 8개 HEAD와 동일, raw 583개 SHA 일치, Policy F·main `cb644bb`·WIP·stash `23ddb33` 불변. 외부 백업 미완료, 디스크 3.3 GB.
+- 다음: diff 검토·commit 승인 → 외부 백업 → OCC-P1 계획 승인(DRAFT 해제) → G0/renderer parity/Pilot GPU 승인.

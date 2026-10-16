@@ -1,0 +1,127 @@
+{
+ "schema": "motar.occlusion-pilot-plan.v1",
+ "status": "DRAFT_NOT_APPROVED_NO_GPU_AUTHORIZED",
+ "run_id": "OCC-P1",
+ "purpose": "exploratory feasibility of natural post-acquisition occlusion measurement by obstacle density; no confirmatory density inference",
+ "groups": {
+  "static": {
+   "arm": "A1",
+   "target_model": "E0_static",
+   "lineage": "E0_static",
+   "view": "visible",
+   "extra_env": {},
+   "historical": {
+    "run_id": "KROC27-A-M01",
+    "commit": "bbf530b0b4079d3bde9ce3d4d75990612b643065",
+    "cells": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/kroc2027_A_v1/A1",
+    "raw_manifest": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/kroc2027_A_v1/RAW_MANIFEST.json",
+    "manifest_prefix": "A1/"
+   }
+  },
+  "moving": {
+   "arm": "A3",
+   "target_model": "E2_obstacle_aware",
+   "lineage": "E2_direct_l2_v1",
+   "view": "visible",
+   "extra_env": {
+    "NAVRL_TARGET_DISTANCE_BACKEND": "direct_l2_v1",
+    "NAVRL_KROC2027_PACKETS": "1",
+    "NAVRL_KROC2027_PACKET_SCHEMA": "full_v2",
+    "NAVRL_KROC2027_ON_VIOLATION": "stop"
+   },
+   "historical": {
+    "run_id": "KROC27-A-M02",
+    "commit": "ea677289cecf637ebe8d3d473d29cd0b20cc47d9",
+    "cells": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/mt_p1_precision_v1/KROC27-A-M02/E2_direct_l2_v1/A3",
+    "raw_manifest": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/mt_p1_precision_v1/KROC27-A-M02/RAW_MANIFEST.json",
+    "manifest_prefix": "E2_direct_l2_v1/A3/"
+   }
+  }
+ },
+ "densities": [
+  70,
+  115,
+  160,
+  205
+ ],
+ "seeds": [
+  4201,
+  4202
+ ],
+ "seed_role": "exploratory feasibility only; reruns of existing A1/A3 seeds so G0 can compare the first four episodes per environment",
+ "num_envs": 128,
+ "quota_per_env": 4,
+ "cells": 16,
+ "primary_episodes": 8192,
+ "telemetry_env": {
+  "NAVRL_KROC2027_OCCLUSION_TRACE": "1",
+  "NAVRL_KROC2027_RECOVERY_EVENTS": "1",
+  "NAVRL_KROC2027_RECOVERY_TRACE": "compact"
+ },
+ "output_root": "results/occlusion_pilot_v1/OCC-P1",
+ "expected_gpu_hours": [
+  0.4,
+  0.6
+ ],
+ "max_gpu_hours": 1.0,
+ "expected_output_gb": [
+  0.15,
+  0.25
+ ],
+ "min_free_disk_gb": 2.0,
+ "requires_external_backup_confirmation": true,
+ "g0_noninterference": {
+  "rule": "per cell, the first 4 episodes of every environment equal the historical cell: ledger fields exactly and every recorder field present in both",
+  "ledger_fields": [
+   "episode_id",
+   "outcome",
+   "capture",
+   "crash",
+   "timeout",
+   "completion_step",
+   "completion_rank",
+   "min_relative_distance_m"
+  ],
+  "on_mismatch": "stop the run at that cell, keep everything, report the differing fields; no identity claim",
+  "scope": "telemetry on versus historical telemetry off, different source commits with identical simulation code paths; a mismatch alone does not say which difference caused it"
+ },
+ "renderer_parity": {
+  "separate_pass_condition": true,
+  "needs": "R-P1a mesh probe ran (supported fixed-bar scene, analytic_flat render) and ZERO_LATENCY_RENDER_DELIVERY",
+  "criteria": {
+   "probe_vs_offline_center_ray_agreement_min": 0.995,
+   "rendered_zero_pixels_while_geometrically_clear_in_view_max": 0.01,
+   "rendered_pixels_while_geometric_full_occlusion_max": 0.01
+  },
+  "if_unavailable": "NOT_TESTED; rendered_full_in_view stays NOT_RECORDED"
+ },
+ "indicators": [
+  "fused_loss",
+  "center_occlusion_in_view",
+  "geometric_full_in_view",
+  "out_of_view",
+  "rendered_full_in_view"
+ ],
+ "duration_thresholds_s": [
+  0.5,
+  1.0,
+  2.0,
+  3.0
+ ],
+ "secondary_threshold_s": 5.0,
+ "analysis": "tools/occlusion_analysis.py pilot; Kaplan-Meier with its independent-censoring caveat plus Aalen-Johansen cumulative incidence by end cause; rates per post-acquisition exposure second; episode-cluster bootstrap and per-seed values",
+ "geometry_only": "tools/occlusion_analysis.py sweep over the pilot's recorded layouts, three scripted families (static_pursuit, static_crossing, moving_pursuit at 1.5 m/s), collisions ignored, labelled GEOMETRY_ONLY_KINEMATIC_BASELINE and reported apart from the whole-system pilot. Straight pursuit of a static target cannot re-occlude after a clear sight line, so static post-acquisition occlusion in the pilot can only come from detours or lateral motion",
+ "stop_rules": [
+  "any integrity, contract, identity or trace failure",
+  "first G0 mismatch",
+  "1.0 h cumulative wall time (running cell killed and kept)"
+ ],
+ "not_authorized": [
+  "GPU execution until separately approved",
+  "PPO",
+  "R-P1b scene injection",
+  "R-P1c",
+  "Recovery Planner",
+  "push"
+ ]
+}

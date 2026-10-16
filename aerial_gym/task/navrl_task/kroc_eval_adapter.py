@@ -13,6 +13,10 @@ Two independent switches, both read from the environment once, at task construct
   computes reaches an observation, a reward or a termination (AGENTS.md observation contract).
 * ``NAVRL_KROC2027_RECOVERY_EVENTS=1`` adds independent post-acquisition event sidecars.
   It requires the recorder, is OFF by default, and never supplies online control inputs.
+  ``NAVRL_KROC2027_RECOVERY_TRACE=compact`` keeps its episode records and drops the per-frame JSON.
+* ``NAVRL_KROC2027_OCCLUSION_TRACE=1`` adds compact binary telemetry (``motar_eval.occlusion_trace``):
+  both UAVs' states and the sensor flags per consumed frame, and every reset's obstacle layout. It
+  requires the recorder, is OFF by default and, like the recorder, only reads detached tensors.
 
 * ``NAVRL_KROC2027_SEARCH=b1`` wraps the unchanged policy with the B1 yaw-scanning supervisor
   (``motar_eval.search_supervisor``): it rewrites the normalised action before the command is built,
@@ -35,6 +39,7 @@ import os
 from pathlib import Path
 import sys
 
+import numpy as np
 import torch
 
 VIEW_VAR = "NAVRL_KROC2027_INITIAL_VIEW"
@@ -42,6 +47,8 @@ DISTANCE_VAR = "NAVRL_KROC2027_INITIAL_DISTANCE_M"
 RECORDER_VAR = "NAVRL_KROC2027_RECORDER"
 RECOVERY_VAR = "NAVRL_KROC2027_RECOVERY_EVENTS"
 RECOVERY_FILE = "recovery_events.jsonl"
+RECOVERY_TRACE_VAR = "NAVRL_KROC2027_RECOVERY_TRACE"
+OCCLUSION_VAR = "NAVRL_KROC2027_OCCLUSION_TRACE"
 RECOVERY_SUMMARY_FILE = "recovery_summary.json"
 SEARCH_VAR = "NAVRL_KROC2027_SEARCH"
 PACKETS_VAR = "NAVRL_KROC2027_PACKETS"
@@ -280,11 +287,145 @@ def sample_initial_view_for_task(task, env_ids, b_min, b_max, spec, footprint_ru
 def build_kroc_adapter(task):
     """The recorder when ``NAVRL_KROC2027_RECORDER`` is on, else ``None``."""
     recovery = _recovery_enabled()
+    occlusion = _occlusion_enabled()
+    trace_mode = _recovery_trace_mode()
+    if trace_mode != "full" and not recovery:
+        raise ValueError(RECOVERY_TRACE_VAR + " requires " + RECOVERY_VAR + "=1")
     if not _truthy(os.environ.get(RECORDER_VAR, "0")):
         if recovery:
             raise ValueError(RECOVERY_VAR + " requires " + RECORDER_VAR + "=1")
+        if occlusion:
+            raise ValueError(OCCLUSION_VAR + " requires " + RECORDER_VAR + "=1")
         return None
     return KrocRecorder(task)
+
+
+def _occlusion_enabled():
+    mode = os.environ.get(OCCLUSION_VAR, "0")
+    if not _off(mode) and not _truthy(mode):
+        raise ValueError(OCCLUSION_VAR + " must be off or 1")
+    return _truthy(mode)
+
+
+def _recovery_trace_mode():
+    mode = os.environ.get(RECOVERY_TRACE_VAR, "full").strip().lower() or "full"
+    if mode not in ("full", "compact"):
+        raise ValueError(RECOVERY_TRACE_VAR + " must be full or compact")
+    return mode
+
+
+def _render_alignment(perception):
+    """Same rule as the recovery recorder: only zero-latency delivery aligns camera and geometry."""
+    return ("ZERO_LATENCY_RENDER_DELIVERY" if
+            getattr(perception, "detection_latency_s", None) == 0.0
+            and getattr(perception, "_latency_steps", None) == 0
+            and hasattr(perception, "empirical_error") and perception.empirical_error is None
+            else "NOT_RECORDED")
+
+
+class _OcclusionTrace:
+    """Compact per-frame UAV states and sensor flags plus per-reset layouts; reads only, writes no task state."""
+
+    def __init__(self, parent):
+        from motar_eval import occlusion_trace as ot
+        import subprocess
+
+        self.parent, self.ot = parent, ot
+        task = parent.task
+        n = parent.num_envs
+        self.acquired = [False] * n
+        self.pending = None
+        root = Path(__file__).resolve().parents[3]
+        paths = ["aerial_gym/task/navrl_task/kroc_eval_adapter.py", "motar_eval/occlusion_trace.py",
+                 "aerial_gym/task/navrl_task/navrl_task.py", "aerial_gym/task/navrl_task/navrl_perception.py",
+                 "aerial_gym/config/task_config/navrl_task_config.py"]
+        source = subprocess.run(["git", "rev-parse", "HEAD"], cwd=root, capture_output=True, text=True,
+                                check=True).stdout.strip()
+        dirty = subprocess.run(["git", "status", "--porcelain", "--", *paths], cwd=root,
+                               capture_output=True, text=True, check=True).stdout != ""
+        perception = getattr(task, "perception", None)
+        metadata = {
+            "context": dict(parent.context), "dt_s": parent.dt, "source_commit": source, "source_dirty": dirty,
+            "source_files_sha256": {p: hashlib.sha256((root / p).read_bytes()).hexdigest() for p in paths},
+            "camera": {"hfov_deg": math.degrees(parent.hfov), "vfov_deg": math.degrees(parent.vfov),
+                       "max_range_m": parent.max_range, "translation_m": list(parent.camera_t),
+                       "frame": "yaw-only vehicle frame, x forward, y left, z up"},
+            "target_radius_m": parent.proxy_radius,
+            "render_alignment": _render_alignment(perception),
+            "detection_latency_s": getattr(perception, "detection_latency_s", NOT_RECORDED_TEXT),
+            "sensor_capture_time": NOT_RECORDED_TEXT,
+            "frame_contract": "frame k = state after k completed actions; recorded when its observation is consumed",
+            "geometry": {"obstacle_slots": [int(task._solid_obstacle_offset),
+                                            int(task._bar_offset + task.n_bars_active)],
+                         "box_source": "obstacle_position + asset_collision_half_extents (+ obstacle_orientation)",
+                         "scene_contract": _recovery_scene_contract(task),
+                         "bar_pool": os.environ.get("NAVRL_BAR_POOL", NOT_RECORDED_TEXT)},
+            "identity": {k: str(getattr(task, a, NOT_RECORDED_TEXT)) for k, a in (
+                ("target_dynamics", "_target_dynamics"), ("target_motion_model", "_target_motion_model"),
+                ("distance_backend", "_target_distance_backend"), ("behavior_level", "_target_behavior_level"))},
+            "evaluation_only": True, "gpu_trajectory_noninterference": "NOT_TESTED",
+        }
+        self.writer = ot.TraceWriter(parent.cell_dir, metadata)
+
+    def on_reset(self, env_ids):
+        center, half = self.parent._obstacles()
+        t = self.parent.task
+        lo, hi = t._solid_obstacle_offset, t._bar_offset + t.n_bars_active
+        orient = t.obs_dict.get("obstacle_orientation")
+        ids = env_ids.cpu().tolist()
+        c = center[env_ids].double().cpu().tolist()
+        h = half[env_ids].double().cpu().tolist()
+        q = orient[env_ids, lo:hi, :].detach().cpu().numpy() if orient is not None else [None] * len(ids)
+        for row, env in enumerate(ids):
+            self.acquired[env] = False
+            scene = self.parent._scene.scene_hash(c[row], h[row])
+            self.writer.add_reset(env, self.parent.episode_index[env], scene, c[row], h[row], q[row])
+
+    def stage(self, diagnostics, pending):
+        t = self.parent.task
+        od = t.obs_dict
+        grab = lambda x: x.detach().float().cpu().numpy()  # noqa: E731
+        lidar = diagnostics.get("lidar_visible")
+        camera, fused, track, in_fov, geo_visible = (x.detach().bool().cpu().numpy() for x in pending)
+        self.pending = {
+            "p_pos": grab(od["robot_position"]), "p_vel": grab(od["robot_linvel"]),
+            "p_quat": grab(od["robot_orientation"]), "p_vehicle_quat": grab(od["robot_vehicle_orientation"]),
+            "t_pos": grab(t.target_position), "t_vel": grab(t.target_vel_w),
+            "camera": camera, "fused": fused, "track": track, "in_fov": in_fov, "geo_visible": geo_visible,
+            "lidar": lidar.detach().bool().cpu().numpy() if lidar is not None else None,
+        }
+
+    def consume(self, recovery=None):
+        if self.pending is None:
+            raise ValueError("occlusion trace: an action without a staged observation")
+        n = self.parent.num_envs
+        rec = np.zeros(n, dtype=self.ot.FRAME_DTYPE)
+        rec["env"] = np.arange(n)
+        rec["frame"] = self.parent._steps.detach().cpu().numpy()
+        rec["episode"] = np.array(self.parent.episode_index)
+        for key in ("p_pos", "p_vel", "p_quat", "p_vehicle_quat", "t_pos", "t_vel"):
+            rec[key] = self.pending[key]
+        p = self.pending
+        rec["flags"] = self.ot.pack_flags(p["camera"], p["fused"], p["track"], p["in_fov"], p["geo_visible"],
+                                          p["lidar"], np.array(self.acquired))
+        rec["probe_center_blocked"] = -1
+        rec["probe_visible_pixels"] = -1
+        if recovery is not None:
+            for env, staged in enumerate(recovery.pending):
+                geometry = (staged or {}).get("geometry", {})
+                blocked, pixels = geometry.get("center_los_blocked"), geometry.get("rendered_target_visible_pixels")
+                rec["probe_center_blocked"][env] = -1 if blocked is None else int(bool(blocked))
+                rec["probe_visible_pixels"][env] = -1 if pixels is None else int(pixels)
+        self.writer.write_frames(rec)
+        for env in np.flatnonzero(p["fused"]):
+            self.acquired[int(env)] = True
+        self.pending = None
+
+    def finalize(self, reason):
+        self.writer.close(reason)
+
+
+NOT_RECORDED_TEXT = "NOT_RECORDED"
 
 
 def _recovery_enabled():
@@ -343,6 +484,7 @@ class _RecoveryRecorder:
         import subprocess
 
         self.parent, self.core = parent, core
+        self.trace_mode = _recovery_trace_mode()
         self.monitors = [None] * parent.num_envs
         self.pending = [None] * parent.num_envs
         self.reset_serial = [0] * parent.num_envs
@@ -397,7 +539,9 @@ class _RecoveryRecorder:
                         frame_contract="COMPLETED_PHYSICS_STATE_0_BASED_CONSUMED_BEFORE_ACTION",
                         sensor_capture_time="NOT_RECORDED", safe_abort="NOT_RECORDED",
                         scene_manifest_hash="NOT_RECORDED", pre_loss_actor_prefix_hash="NOT_RECORDED",
-                        evaluation_only=True, gpu_trajectory_noninterference="NOT_TESTED")
+                        evaluation_only=True, gpu_trajectory_noninterference="NOT_TESTED",
+                        observation_records="per_frame" if _recovery_trace_mode() == "full"
+                        else "omitted_compact_episode_records_only")
         self.probe = _build_recovery_probe(parent.task)
         self.path = parent.cell_dir / RECOVERY_FILE
         self.summary_path = parent.cell_dir / RECOVERY_SUMMARY_FILE
@@ -502,6 +646,10 @@ class _RecoveryRecorder:
             result = monitor.observe(self.core.FrameStamp(**inputs["stamp"]),
                                      self.core.SensorFrame(**inputs["sensor"]),
                                      self.core.EvaluationGeometry(**inputs["geometry"]))
+            if self.trace_mode == "compact":
+                self.observations += 1
+                self.pending[env] = None
+                continue
             self._write({"record_type": "observation", "env_index": env,
                          "env_episode_index": self.episode_indices[env], "inputs": inputs,
                          "geometry_provenance": pending["geometry_provenance"],
@@ -706,6 +854,7 @@ class KrocRecorder:
             "kroc_eval_adapter": str(Path(__file__).resolve()),
         }
         self._recovery = _RecoveryRecorder(self) if recovery_enabled else None
+        self._occlusion = _OcclusionTrace(self) if _occlusion_enabled() else None
         atexit.register(self._finalize_at_exit)
 
     # ------------------------------------------------------------ helpers
@@ -743,6 +892,8 @@ class KrocRecorder:
             return
         if self._recovery is not None:
             self._recovery.on_reset(env_ids)
+        if self._occlusion is not None:
+            self._occlusion.on_reset(env_ids)
         target_xy = t.target_position[:, 0:2].detach()
         target_v = t.target_vel_w[:, 0:2].detach()
         self.motion.reset(env_ids, target_xy, target_v)
@@ -1090,12 +1241,16 @@ class KrocRecorder:
             self._snapshot_target_inputs()
         if self._recovery is not None:
             self._recovery.stage(diagnostics)
+        if self._occlusion is not None:
+            self._occlusion.stage(diagnostics, self._pending_observation)
 
     def before_action(self):
         """Start of step: the observation that drives this action enters the chronology."""
         pending = getattr(self, "_pending_observation", None)
         if pending is None:
             raise RuntimeError("KROC2027 recorder: an action without a preceding observation")
+        if self._occlusion is not None:
+            self._occlusion.consume(self._recovery)
         if self._recovery is not None:
             self._recovery.consume()
         self.events.observe(*pending)
@@ -1274,3 +1429,5 @@ class KrocRecorder:
         os.replace(tmp, self.summary_path)
         if self._recovery is not None:
             self._recovery.finalize(reason)
+        if self._occlusion is not None:
+            self._occlusion.finalize(reason)

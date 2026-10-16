@@ -481,6 +481,8 @@ def cmd_run(args):
         return cmd_run_mt_canary(args, protocol, base_env())
     if args.stage == "mt_main":
         return cmd_run_mt_main(args, protocol, base_env())
+    if args.stage == "occlusion_pilot":
+        return cmd_run_occlusion_pilot(args, protocol, base_env())
     exp = protocol["experiment_A"]
     canary_dir = canary_root(protocol, args.canary_root)
     out_root = canary_dir if args.stage == "canary" else ROOT / exp["out_root"][args.stage]
@@ -1364,6 +1366,197 @@ def _quota_metrics(directory, protocol, quota):
     return kp.cell_metrics(joined)
 
 
+OCC_PLAN = "docs/plans/occlusion_pilot_v1.json"
+OCC_PLAN_MD = "docs/plans/occlusion_pilot_v1.md"
+OCC_REPORT = "pilot_report.json"
+
+
+def occlusion_pilot_cells(plan):
+    """OCC-P1: static and moving visible-start cells, seed-major, with their historical counterparts."""
+    cells = []
+    for seed in plan["seeds"]:
+        for density in plan["densities"]:
+            for group in ("static", "moving"):
+                spec = plan["groups"][group]
+                label = kp.cell_label(spec["target_model"], density, seed)
+                cells.append({"group": group, "lineage": spec["lineage"], "arm": spec["arm"],
+                              "target_model": spec["target_model"], "view": spec["view"], "search": None,
+                              "density": int(density), "seed": int(seed),
+                              "cell_dir": "%s/%s/%s" % (group, spec["arm"], label),
+                              "historical": str(Path(spec["historical"]["cells"]) / label)})
+    return cells
+
+
+def historical_match(new_dir, old_dir, quota, fields):
+    """First ``quota`` episodes per env of a rerun against the historical cell; differences are listed."""
+    out = {"ledger_rows_compared": 0, "ledger_mismatches": [], "recorder_records_compared": 0,
+           "recorder_mismatches": [], "keys_only_new": [], "keys_only_old": []}
+    try:
+        def ledger(d):
+            return {(r["env_index"], r["env_episode_index"]): r for r in read_jsonl(Path(d) / "episodes.jsonl")
+                    if r["env_episode_index"] < quota}
+        def records(d):
+            return {(r["env_index"], r["env_episode_index"]): r for r in read_jsonl(Path(d) / RECORDER_EPISODES)
+                    if r["env_episode_index"] < quota}
+        new_l, old_l = ledger(new_dir), ledger(old_dir)
+        if set(new_l) != set(old_l):
+            out["ledger_mismatches"].append("episode keys differ: %d new vs %d old" % (len(new_l), len(old_l)))
+        for key in sorted(set(new_l) & set(old_l)):
+            out["ledger_rows_compared"] += 1
+            diff = [f for f in fields if new_l[key].get(f) != old_l[key].get(f)]
+            if diff and len(out["ledger_mismatches"]) < 10:
+                out["ledger_mismatches"].append({"episode": list(key), "fields": diff})
+        new_r, old_r = records(new_dir), records(old_dir)
+        if set(new_r) != set(old_r):
+            out["recorder_mismatches"].append("record keys differ: %d new vs %d old" % (len(new_r), len(old_r)))
+        keys_new, keys_old = set(), set()
+        for key in sorted(set(new_r) & set(old_r)):
+            out["recorder_records_compared"] += 1
+            a, b = new_r[key], old_r[key]
+            keys_new |= set(a) - set(b)
+            keys_old |= set(b) - set(a)
+            diff = sorted(f for f in set(a) & set(b) if a[f] != b[f])
+            if diff and len(out["recorder_mismatches"]) < 10:
+                out["recorder_mismatches"].append({"episode": list(key), "fields": diff})
+        out["keys_only_new"], out["keys_only_old"] = sorted(keys_new), sorted(keys_old)
+        matched = not out["ledger_mismatches"] and not out["recorder_mismatches"] and out["ledger_rows_compared"] > 0
+        out["verdict"] = "MATCH" if matched else "MISMATCH"
+    except (OSError, ValueError, KeyError) as exc:
+        out["verdict"] = "NOT_COMPARABLE"
+        out["error"] = "%s: %s" % (type(exc).__name__, exc)
+    return out
+
+
+def occlusion_trace_problems(directory):
+    from motar_eval import occlusion_trace as ot
+
+    try:
+        trace = ot.read_trace(directory)
+    except (OSError, ValueError, KeyError) as exc:
+        return ["occlusion trace: %s: %s" % (type(exc).__name__, exc)]
+    problems = []
+    if trace["summary"]["frames"] == 0:
+        problems.append("occlusion trace has no frames")
+    if trace["summary"]["reason"] not in ("complete", "ledger complete", "quota complete"):
+        problems.append("occlusion trace closed for %r" % trace["summary"]["reason"])
+    return problems
+
+
+def free_disk_gb(path):
+    import shutil
+
+    return shutil.disk_usage(path).free / 1e9
+
+
+def cmd_run_occlusion_pilot(args, protocol, env):
+    """OCC-P1 (docs/plans/occlusion_pilot_v1.*): 16 cells, G0 comparison per cell, stop at the first failure."""
+    plan = json.loads((ROOT / OCC_PLAN).read_text())
+    mt_plan = json.loads((ROOT / MT_PLAN).read_text())
+    head = git("rev-parse", "HEAD").strip()
+    out_root = ROOT / plan["output_root"]
+    cap = plan["max_gpu_hours"] if args.max_gpu_hours is None else args.max_gpu_hours
+    problems = []
+    if args.run_id != plan["run_id"]:
+        problems.append("run id %r is not %s" % (args.run_id, plan["run_id"]))
+    if not args.approved_commit or len(args.approved_commit) < 12 or not head.startswith(args.approved_commit):
+        problems.append("--approved-commit must name HEAD (%s)" % head)
+    if git("status", "--porcelain", "--untracked-files=no").strip():
+        problems.append("tracked files are modified; commit first")
+    for rel in (OCC_PLAN, OCC_PLAN_MD):
+        if subprocess.run(["git", "-C", str(ROOT), "ls-files", "--error-unmatch", rel], capture_output=True).returncode:
+            problems.append("the plan %s is not committed" % rel)
+    if plan.get("status", "").startswith("DRAFT"):
+        problems.append("the plan is still a draft")
+    if plan["requires_external_backup_confirmation"] and not args.external_backup_confirmed:
+        problems.append("--external-backup-confirmed is required")
+    if not 0 < cap <= plan["max_gpu_hours"]:
+        problems.append("--max-gpu-hours %s outside (0, %s]" % (cap, plan["max_gpu_hours"]))
+    if free_disk_gb(ROOT) < plan["min_free_disk_gb"]:
+        problems.append("free disk %.1f GB below %.1f GB" % (free_disk_gb(ROOT), plan["min_free_disk_gb"]))
+    problems.extend(static_problems(protocol))
+    gpus = gpu_names()
+    if gpus != [protocol["hardware"]["gpu"]]:
+        problems.append("expected exactly one %s, found %s" % (protocol["hardware"]["gpu"], gpus))
+    if out_root.exists():
+        problems.append("pilot output already exists: %s" % out_root)
+    cells = occlusion_pilot_cells(plan)
+    for group, spec in plan["groups"].items():
+        hist = spec["historical"]
+        manifest_path = Path(hist["raw_manifest"])
+        if not manifest_path.is_file():
+            problems.append("historical manifest missing: %s" % manifest_path)
+            continue
+        manifest = json.loads(manifest_path.read_text())
+        for cell in (c for c in cells if c["group"] == group):
+            problems += ["historical %s" % p for p in manifest_problems(cell["historical"], manifest_path.parent, manifest)]
+    import_issues, origins = import_problems(env, launcher_path(protocol).parent)
+    problems.extend(import_issues)
+    q = int(plan["quota_per_env"])
+    if args.dry_run or problems:
+        print(json.dumps({"stage": "occlusion_pilot", "status": "DRY_RUN" if args.dry_run else "REFUSED",
+                          "problems": problems, "cells": [c["cell_dir"] for c in cells], "max_gpu_hours": cap,
+                          "output_root": str(out_root), "import_origins": origins}, indent=1))
+        return 0 if args.dry_run else 2
+    out_root.mkdir(parents=True)
+    launch = {"run_id": args.run_id, "source_commit": head, "source_tree": git("rev-parse", "HEAD^{tree}").strip(),
+              "plan_sha256": kp.sha256_file(ROOT / OCC_PLAN), "plan_md_sha256": kp.sha256_file(ROOT / OCC_PLAN_MD),
+              "checkpoint_sha256": protocol["policy"]["checkpoint_sha256"], "gpu": gpus, "import_origins": origins,
+              "free_disk_gb_at_start": round(free_disk_gb(ROOT), 2), "max_gpu_hours": cap,
+              "external_backup_confirmed": bool(args.external_backup_confirmed),
+              "cells": [c["cell_dir"] for c in cells], "started_at": datetime.now(timezone.utc).isoformat()}
+    (out_root / "launch_receipt.json").write_text(json.dumps(launch, indent=1, sort_keys=True) + "\n")
+    budget = GpuBudget(cap)
+    report = {"run_id": args.run_id, "git_commit": head, "max_gpu_hours": cap, "cells": {}, "stop_reason": None}
+    report_path = out_root / OCC_REPORT
+    for cell in cells:
+        if budget.exhausted():
+            report["stop_reason"] = "budget exhausted before %s" % cell["cell_dir"]
+            break
+        if git("rev-parse", "HEAD").strip() != head or git("status", "--porcelain", "--untracked-files=no").strip():
+            report["stop_reason"] = "source changed before %s" % cell["cell_dir"]
+            break
+        spec = plan["groups"][cell["group"]]
+        kw = dict(target_model=cell["target_model"], density=cell["density"], seed=cell["seed"],
+                  out_dir=out_root / cell["group"] / cell["arm"], quota=q, view=cell["view"], recorder=True,
+                  run_id=args.run_id, arm=cell["arm"])
+        cell_vars = cell_env(env, protocol, **kw)
+        cell_vars.update(plan["telemetry_env"])
+        cell_vars.update(spec["extra_env"])
+        rc, seconds = _timed_launch(protocol, cell_vars, False, [], budget)
+        directory = out_root / cell["cell_dir"]
+        issues = [] if rc == 0 else ["launcher exit %d" % rc]
+        issues += check_cell(directory, protocol, q, require_motion=True,
+                             expect=cell_expect(cell, args.run_id, head, q))
+        if cell["group"] == "moving":
+            issues += mt_identity_problems(directory, mt_plan)
+        issues += occlusion_trace_problems(directory)
+        g0 = historical_match(directory, cell["historical"], q, plan["g0_noninterference"]["ledger_fields"])
+        entry = {"issues": issues, "g0": g0, "seconds": round(seconds, 1),
+                 "cumulative_hours": round((time.time() - budget.started) / 3600.0, 4)}
+        report["cells"][cell["cell_dir"]] = entry
+        report_path.write_text(json.dumps(report, indent=1, sort_keys=True) + "\n")
+        if rc == BUDGET_EXIT:
+            report["stop_reason"] = "budget cap reached during %s (cell killed, kept as partial)" % cell["cell_dir"]
+            break
+        if issues:
+            report["stop_reason"] = "first failed cell %s" % cell["cell_dir"]
+            break
+        if g0["verdict"] != "MATCH":
+            report["stop_reason"] = "G0 %s at %s" % (g0["verdict"], cell["cell_dir"])
+            break
+    done = len(report["cells"]) == len(cells) and not report["stop_reason"]
+    report["verdict"] = "PILOT_COMPLETE" if done else (
+        "BUDGET_STOP" if report["stop_reason"] and "budget" in report["stop_reason"] else "STOPPED")
+    report["g0_noninterference"] = ("PASS" if done and all(c["g0"]["verdict"] == "MATCH"
+                                                          for c in report["cells"].values()) else "NOT_PASSED")
+    report["renderer_parity"] = "PENDING_ANALYSIS (tools/occlusion_analysis.py pilot; separate PASS condition)"
+    report["finished_at"] = datetime.now(timezone.utc).isoformat()
+    report_path.write_text(json.dumps(report, indent=1, sort_keys=True) + "\n")
+    print(json.dumps({"verdict": report["verdict"], "g0": report["g0_noninterference"],
+                      "stop_reason": report["stop_reason"], "cells_run": len(report["cells"])}, indent=1))
+    return 0 if done else 1
+
+
 def cmd_run_b(args, protocol, env):
     out_root = ROOT / protocol["experiment_B"]["out_root"]["main"]
     a_out = ROOT / protocol["experiment_A"]["out_root"]["main"]
@@ -1540,12 +1733,15 @@ def main(argv=None):
     v = sub.add_parser("validate")
     v.add_argument("--raw-dir", help="folder holding the git-ignored replication cells")
     r = sub.add_parser("run")
-    r.add_argument("--stage", choices=("canary", "main", "b_smoke", "b_main", "packets", "mt_canary", "mt_main"),
+    r.add_argument("--stage", choices=("canary", "main", "b_smoke", "b_main", "packets", "mt_canary", "mt_main",
+                            "occlusion_pilot"),
                    required=True)
     r.add_argument("--run-id", required=True)
     r.add_argument("--approved-commit", default="")
     r.add_argument("--dry-run", action="store_true")
     r.add_argument("--canary-root", help="canary folder (default: the protocol's); for a re-run")
+    r.add_argument("--external-backup-confirmed", action="store_true",
+                   help="occlusion_pilot only: the operator confirms an external backup of existing raw results")
     r.add_argument("--max-gpu-hours", type=float, default=None,
                    help="stop before a new cell, and kill a running one, once this wall time is used")
     an = sub.add_parser("analyse")
