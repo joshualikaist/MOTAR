@@ -20429,3 +20429,26 @@ Next review: the complete diff and new plan; local commit requires user diff app
 - Next action requiring user approval: implement and CPU-verify the stated R-P1a package only. External backup awaits a destination. No new GPU or merge/push approval is requested or inferred.
 
 - Follow-up verification: all 19 new document files passed whitespace checks and every new JSON parsed; nine compact source copies and three local report hashes match the evidence index. Audit classifications sum to 881 across 104 families. The proposed draft was AST-parsed only, not executed. Public document checks report zero errors. Runtime/test files are unchanged. Main/branch HEAD, stash object IDs, user WIP hashes, raw manifests/analysis and committed amendment bytes match the before-review snapshot. No new software-test run or R-P1a PASS is claimed.
+
+## 2026-10-16 — R-P1a(복구 관측, 기본 OFF) 구현 완료 기록과 최종 CPU 검증(중단된 세션 마무리)
+
+- 사용자 승인 범위: R-P1a 구현과 CPU 검증만. GPU·PPO·R-P1b/c·Recovery Planner·commit·merge·push 없음.
+  기준 `c038ba5`(branch `codex/mt-p1`), 모두 미커밋.
+- 구현 파일: `aerial_gym/task/navrl_task/kroc_eval_adapter.py`(수정, `NAVRL_KROC2027_RECOVERY_EVENTS=1`일 때만 동작),
+  새 파일 `aerial_gym/task/navrl_task/recovery_visibility_probe.py`, `motar_eval/recovery_events.py`,
+  `tools/recovery_observability.py`, `tests/test_recovery_{events,observability_contract,visibility_geometry}.py`, 보고서
+  `docs/audits/r_p1a_implementation_2026-10-16.md`, 증거 `docs/evidence/r_p1a_cpu_2026-10-16/`.
+- 최종 CPU(마지막 소스 변경 20:34:31 이후): scoped 38/38 OK. PUBLIC_CPU 2,319개 실행, 실패 0·오류 0·skip 10, GPU 전용
+  5개 제외. 기록된 두 명령을 그대로 다시 실행해 같은 수·같은 scoped 목록을 확인(`*_reverify.log`).
+- 정정·이력: `validation.json`(20:33:59)은 마지막 test 변경 이전 기록이라 test 파일 SHA(`2a933c13…` → `f1c81b2f…`)와
+  수(37/2,318)가 오래됨. 원본은 그대로 두고 `validation_final.json`이 대체. 보고서가 가리키던 `implementation.diff`와
+  WORKLOG 구현 기록은 중단으로 빠져 있어 이번에 추가.
+- 비간섭 점검(코드): OFF면 새 모듈을 import하지 않고 모든 hook이 `self._recovery is None`으로 건너뜀. 평가 도구가
+  `NAVRL_KROC2027_*`를 상속 환경에서 지우므로 기본 OFF. ON에서도 입력은 detach 후 복사하고, task 버퍼에 쓰지 않으며
+  RNG를 쓰지 않음. probe는 자기 Warp 버퍼에만 씀. GT 기하는 별도 sidecar(`recovery_events.jsonl`)로만 감.
+  카메라 측정과 현재 mesh LOS는 따로 기록되며, 결합 후보는 지연 0이 확인될 때만 계산되고 아니면 `alignment_unknown`.
+  CPU fixture에서 OFF/ON의 기존 KROC 출력 byte 동일, RNG·actor·tracker 입력 보존(테스트). GPU 비간섭은 `NOT_TESTED`.
+- 보존: raw 583개(MT-P2-C01 131 + KROC27-A-M02 452) SHA 전부 일치, Policy F `f7022139…` 불변. main `cb644bb`, 사용자 WIP
+  3개, stash `23ddb33f`, branch HEAD `c038ba5` 모두 작업 전 snapshot과 같음. 외부 백업 미완료(백업이 같은 디스크),
+  디스크 3.3 GB 남음(98 %).
+- 다음: 로컬 commit은 사용자 승인 후. GPU 검증(카메라/mesh 일치, ON/OFF 궤적 동일성)은 별도 사전등록과 승인 필요.

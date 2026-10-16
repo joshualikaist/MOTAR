@@ -1,0 +1,42 @@
+test_2_5_10_15_second_arithmetic_is_chronology_only (test_recovery_events.RecoveryEventsTest) ... ok
+test_acquisition_requires_camera_fused_and_active_same_frame (test_recovery_events.RecoveryEventsTest) ... ok
+test_actual_strict_float32_expiry_not_evaluator_elapsed_time (test_recovery_events.RecoveryEventsTest) ... ok
+test_finish_validates_outcome_boundary_and_unobserved_empty_episode (test_recovery_events.RecoveryEventsTest) ... ok
+test_frame_tokens_capture_times_and_delay_are_separate (test_recovery_events.RecoveryEventsTest) ... ok
+test_immutable_copied_records_prefix_suffix_independence_and_no_rng (test_recovery_events.RecoveryEventsTest) ... ok
+test_inconsistent_final_measurement_cannot_prove_expiry (test_recovery_events.RecoveryEventsTest) ... ok
+test_independent_camera_fused_track_geometry_and_reacquisition (test_recovery_events.RecoveryEventsTest) ... ok
+test_known_source_or_and_unknown_source_are_distinct (test_recovery_events.RecoveryEventsTest) ... ok
+test_mesh_block_does_not_prove_loss_or_full_occlusion (test_recovery_events.RecoveryEventsTest) ... ok
+test_never_acquired_hidden_start_and_lidar_do_not_open_recovery (test_recovery_events.RecoveryEventsTest) ... ok
+test_terminal_and_shutdown_reset_censor_without_expiry (test_recovery_events.RecoveryEventsTest) ... ok
+test_unknown_geometry_censors_and_splits_without_inventing_visibility (test_recovery_events.RecoveryEventsTest) ... ok
+test_unknown_or_delayed_measurement_alignment_never_proves_primary_occlusion (test_recovery_events.RecoveryEventsTest) ... ok
+test_validation_does_not_mutate_monitor_on_failure (test_recovery_events.RecoveryEventsTest) ... ok
+test_cli_replay_detects_tampered_trace_and_refuses_overwrite (test_recovery_observability_contract.RecoveryIntegrationTests) ... ok
+test_current_mesh_and_delayed_measurements_are_not_a_primary_occlusion (test_recovery_observability_contract.RecoveryIntegrationTests) ... ok
+test_detached_staging_once_clock_and_final_outcome_join (test_recovery_observability_contract.RecoveryIntegrationTests) ... ok
+test_empty_reset_is_skipped_and_shutdown_is_not_timeout (test_recovery_observability_contract.RecoveryIntegrationTests) ... ok
+test_existing_evidence_refused_before_old_recorder_open (test_recovery_observability_contract.RecoveryIntegrationTests) ... ok
+test_missing_camera_flag_or_inconsistent_fusion_rejected (test_recovery_observability_contract.RecoveryIntegrationTests) ... ok
+test_no_new_runtime_readback_or_frozen_source_edits (test_recovery_observability_contract.RecoveryIntegrationTests) ... ok
+test_off_import_boundary_and_required_recorder (test_recovery_observability_contract.RecoveryIntegrationTests) ... ok
+test_partial_reset_censors_and_clears_eligibility_only_for_reset_env (test_recovery_observability_contract.RecoveryIntegrationTests) ... ok
+test_read_only_task_tensors_rng_and_legacy_sidecar_identity (test_recovery_observability_contract.RecoveryIntegrationTests) ... ok
+test_static_scene_claim_requires_source_checked_fixed_bars (test_recovery_observability_contract.RecoveryIntegrationTests) ... ok
+test_cpu_kernel_matches_independent_mesh_reference_and_preserves_inputs (test_recovery_visibility_geometry.ActualWarpCpuMeshTest) ... ok
+test_invalidate_clears_only_owned_cache (test_recovery_visibility_geometry.ProbeContractsTest) ... ok
+test_missing_or_stale_tokens_are_unknown_without_probe_or_rng (test_recovery_visibility_geometry.ProbeContractsTest) ... ok
+test_off_import_and_factory_initialize_nothing (test_recovery_visibility_geometry.ProbeContractsTest) ... ok
+test_unknown_geometry_does_not_initialize_backend (test_recovery_visibility_geometry.ProbeContractsTest) ... ok
+test_actual_camera_pose_and_yaw_quaternion (test_recovery_visibility_geometry.ReferenceGeometryTest) ... ok
+test_explicit_triangle_mesh_front_behind_and_clear (test_recovery_visibility_geometry.ReferenceGeometryTest) ... ok
+test_fov_range_and_vertical_exit_are_independent (test_recovery_visibility_geometry.ReferenceGeometryTest) ... ok
+test_nonunit_or_nonfinite_geometry_is_rejected (test_recovery_visibility_geometry.ReferenceGeometryTest) ... ok
+test_renderer_fov_scale_is_not_replaced_with_nominal_intrinsics (test_recovery_visibility_geometry.ReferenceGeometryTest) ... ok
+test_triangle_edge_grazing_and_parallel_do_not_use_aabb_as_oracle (test_recovery_visibility_geometry.ReferenceGeometryTest) ... ok
+
+----------------------------------------------------------------------
+Ran 37 tests in 1.797s
+
+OK

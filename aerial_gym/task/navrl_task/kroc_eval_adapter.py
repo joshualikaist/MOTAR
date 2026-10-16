@@ -11,6 +11,8 @@ Two independent switches, both read from the environment once, at task construct
   into ``kroc2027_episodes.jsonl`` and ``kroc2027_summary.json`` next to ``NAVRL_BULK_EVAL_JSON``.
   It reads detached tensors only, draws no randomness, writes into no task buffer, and nothing it
   computes reaches an observation, a reward or a termination (AGENTS.md observation contract).
+* ``NAVRL_KROC2027_RECOVERY_EVENTS=1`` adds independent post-acquisition event sidecars.
+  It requires the recorder, is OFF by default, and never supplies online control inputs.
 
 * ``NAVRL_KROC2027_SEARCH=b1`` wraps the unchanged policy with the B1 yaw-scanning supervisor
   (``motar_eval.search_supervisor``): it rewrites the normalised action before the command is built,
@@ -38,6 +40,9 @@ import torch
 VIEW_VAR = "NAVRL_KROC2027_INITIAL_VIEW"
 DISTANCE_VAR = "NAVRL_KROC2027_INITIAL_DISTANCE_M"
 RECORDER_VAR = "NAVRL_KROC2027_RECORDER"
+RECOVERY_VAR = "NAVRL_KROC2027_RECOVERY_EVENTS"
+RECOVERY_FILE = "recovery_events.jsonl"
+RECOVERY_SUMMARY_FILE = "recovery_summary.json"
 SEARCH_VAR = "NAVRL_KROC2027_SEARCH"
 PACKETS_VAR = "NAVRL_KROC2027_PACKETS"
 PACKET_SCHEMA_VAR = "NAVRL_KROC2027_PACKET_SCHEMA"
@@ -274,9 +279,260 @@ def sample_initial_view_for_task(task, env_ids, b_min, b_max, spec, footprint_ru
 
 def build_kroc_adapter(task):
     """The recorder when ``NAVRL_KROC2027_RECORDER`` is on, else ``None``."""
+    recovery = _recovery_enabled()
     if not _truthy(os.environ.get(RECORDER_VAR, "0")):
+        if recovery:
+            raise ValueError(RECOVERY_VAR + " requires " + RECORDER_VAR + "=1")
         return None
     return KrocRecorder(task)
+
+
+def _recovery_enabled():
+    mode = os.environ.get(RECOVERY_VAR, "0")
+    if not _off(mode) and not _truthy(mode):
+        raise ValueError(RECOVERY_VAR + " must be off or 1")
+    return _truthy(mode)
+
+
+def _recovery_scene_contract(task):
+    """Admit only the existing fixed-bar scene; unknown configurations stay unknown."""
+    cfg = getattr(getattr(task, "sim_env", None), "cfg", None)
+    if (getattr(cfg, "__module__", None) != "aerial_gym.config.env_config.navrl_bars_env"
+            or getattr(cfg, "__name__", None) != "NavRLBarsEnvCfg"
+            or getattr(getattr(cfg, "env", None), "use_warp", None) is not True
+            or getattr(task, "_physical_target", None) is not False):
+        return "UNKNOWN"
+    ec = getattr(cfg, "env_config", None)
+    includes = getattr(ec, "include_asset_type", {})
+    mapping = getattr(ec, "asset_type_to_dict_map", {})
+    if not isinstance(includes, dict) or not isinstance(mapping, dict):
+        return "UNKNOWN"
+    if any(name not in mapping for name, enabled in includes.items() if enabled):
+        return "UNKNOWN"
+    active = {name for name, enabled in includes.items()
+              if enabled and getattr(mapping[name], "num_assets", 0) > 0}
+    bars = mapping.get("bars")
+    if (active != {"bars"}
+            or getattr(bars, "__module__", None) != "aerial_gym.config.asset_config.env_object_config"
+            or getattr(bars, "__name__", None) != "bar_asset_params"
+            or getattr(bars, "fix_base_link", None) is not True):
+        return "UNKNOWN"
+    for name in ("min_state_ratio", "max_state_ratio"):
+        state = getattr(bars, name, ())
+        if len(state) != 13 or any(value != 0 for value in state[7:13]):
+            return "UNKNOWN"
+    return "static_scene_mesh"
+
+
+def _build_recovery_probe(task):
+    # Lazy: OFF never imports the geometry module or Warp. No render is repeated here.
+    if getattr(task, "detector", None) is None:
+        return None
+    from aerial_gym.task.navrl_task.recovery_visibility_probe import build_visibility_probe
+
+    return build_visibility_probe(getattr(task, "detector", None), enabled=True,
+                                  target_dynamics=getattr(task, "_target_dynamics", "NOT_RECORDED"),
+                                  scene_contract=_recovery_scene_contract(task))
+
+
+class _RecoveryRecorder:
+    """Separate evaluation sink; all inputs are copied and no output reaches the task."""
+
+    def __init__(self, parent):
+        from motar_eval import recovery_events as core
+        import subprocess
+
+        self.parent, self.core = parent, core
+        self.monitors = [None] * parent.num_envs
+        self.pending = [None] * parent.num_envs
+        self.reset_serial = [0] * parent.num_envs
+        self.stage_serial = 0
+        self.closed_episodes = self.skipped_empty = self.observations = 0
+        self._closed = False
+        tracker = getattr(getattr(parent.task, "perception", None), "tracker", None)
+        self.memory_s = float(getattr(tracker, "memory_s", math.nan))
+        if self.memory_s != 5.0 or not math.isfinite(parent.dt) or parent.dt <= 0:
+            raise ValueError("recovery telemetry requires the unchanged 5 s tracker and a finite dt")
+        root = Path(__file__).resolve().parents[3]
+        paths = ["aerial_gym/task/navrl_task/kroc_eval_adapter.py",
+                 "aerial_gym/task/navrl_task/recovery_visibility_probe.py",
+                 "motar_eval/recovery_events.py", "tools/recovery_observability.py",
+                 "aerial_gym/task/navrl_task/navrl_task.py",
+                 "aerial_gym/task/navrl_task/navrl_perception.py",
+                 "aerial_gym/task/navrl_task/navrl_detector.py",
+                 "aerial_gym/task/navrl_task/target_motion.py",
+                 "aerial_gym/config/task_config/navrl_task_config.py",
+                 "aerial_gym/config/env_config/navrl_bars_env.py",
+                 "aerial_gym/config/asset_config/env_object_config.py"]
+        source = subprocess.run(["git", "rev-parse", "HEAD"], cwd=root,
+                                capture_output=True, text=True, check=True).stdout.strip()
+        dirty = subprocess.run(["git", "status", "--porcelain", "--", *paths], cwd=root,
+                               capture_output=True, text=True, check=True).stdout != ""
+        behavior = str(getattr(parent.task, "_target_behavior_level", "NOT_RECORDED"))
+        backend = str(getattr(parent.task, "_target_distance_backend", "NOT_RECORDED"))
+        lineage = {"historical": "H_historical", "e0_static": "E0_static",
+                   "e1_cv": "E1_direct_l2_v1" if backend == "direct_l2_v1" else "E1_cv",
+                   "e2_obstacle_aware": "E2_direct_l2_v1" if backend == "direct_l2_v1"
+                   else "E2_obstacle_aware"}.get(behavior, "NOT_RECORDED")
+        dynamics = str(getattr(parent.task, "_target_dynamics", "NOT_RECORDED"))
+        model = str(getattr(parent.task, "_target_motion_model", "NOT_RECORDED"))
+        expected_model = ("bounded_planar_drone_v1_rollout_direct_l2_v1" if backend == "direct_l2_v1"
+                          else "bounded_planar_drone_v1_rollout" if dynamics == "bounded"
+                          else "symmetric_local_steer_v2_heading_continuity90")
+        if (dynamics not in ("bounded", "legacy") or model != expected_model
+                or (backend == "direct_l2_v1" and
+                    (dynamics != "bounded" or behavior not in ("e1_cv", "e2_obstacle_aware")))):
+            lineage = "NOT_RECORDED"
+        self.identity = {"source_commit": source,
+                         "checkpoint_sha256": parent.context["checkpoint_sha256"] or "NOT_RECORDED",
+                         "motion_lineage": lineage, "distance_backend": backend,
+                         "target_dynamics": dynamics, "target_motion_model": model,
+                         "seed": parent.context["seed"], "bars": parent.context["bars"],
+                         "run_id": parent.context["run_id"], "cell_id": parent.context["cell_id"]}
+        metadata = dict(self.identity, dt_s=parent.dt, tracker_memory_s=self.memory_s,
+                        event_contract=core.CONTRACT, source_dirty=dirty,
+                        source_files_sha256={p: hashlib.sha256((root / p).read_bytes()).hexdigest()
+                                             for p in paths},
+                        tracker_expiry_comparator="age > memory_s",
+                        frame_contract="COMPLETED_PHYSICS_STATE_0_BASED_CONSUMED_BEFORE_ACTION",
+                        sensor_capture_time="NOT_RECORDED", safe_abort="NOT_RECORDED",
+                        scene_manifest_hash="NOT_RECORDED", pre_loss_actor_prefix_hash="NOT_RECORDED",
+                        evaluation_only=True, gpu_trajectory_noninterference="NOT_TESTED")
+        self.probe = _build_recovery_probe(parent.task)
+        self.path = parent.cell_dir / RECOVERY_FILE
+        self.summary_path = parent.cell_dir / RECOVERY_SUMMARY_FILE
+        self.handle = self.path.open("x", encoding="utf-8")
+        self._write({"record_type": "header", "schema": "motar.recovery-observability.v1",
+                     "metadata": metadata, "run_identity": self.identity})
+
+    def _write(self, record):
+        self.handle.write(json.dumps(record, sort_keys=True, allow_nan=False) + "\n")
+        self.handle.flush()
+
+    def _close(self, env, kind, outcome=None):
+        monitor = self.monitors[env]
+        if monitor is None:
+            return
+        if monitor.frames == 0:
+            if kind == "episode_end":
+                raise ValueError("recovery episode ended without a consumed observation")
+            self.skipped_empty += 1
+        else:
+            terminal = int(self.parent._steps[env].item()) * self.parent.dt
+            summary = monitor.finish(terminal, outcome, terminal_kind=kind)
+            self._write({"record_type": kind, "env_index": env,
+                         "env_episode_index": self.episode_indices[env],
+                         "terminal_time_s": terminal, "summary": summary})
+            self.closed_episodes += 1
+        self.monitors[env] = self.pending[env] = None
+
+    def on_reset(self, env_ids):
+        if not hasattr(self, "episode_indices"):
+            self.episode_indices = [0] * self.parent.num_envs
+        for env in env_ids.cpu().tolist():
+            self._close(env, "reset")
+            self.reset_serial[env] += 1
+            # A manual reset without a task outcome must still have a unique telemetry key.
+            index = self.parent.episode_index[env]
+            self.episode_indices[env] = index
+            key = self.parent._env_context(env)["episode_key"]
+            if self.reset_serial[env] > index + 1:
+                key += "/reset%d" % self.reset_serial[env]
+            self.monitors[env] = self.core.RecoveryEpisodeEvents(
+                key, dt_s=self.parent.dt, run_identity=self.identity)
+        if self.probe is not None:
+            self.probe.invalidate()
+
+    def stage(self, diagnostics):
+        from dataclasses import asdict
+
+        n = self.parent.num_envs
+        perception = self.parent.task.perception
+        tracker = perception.tracker
+        alignment = ("ZERO_LATENCY_RENDER_DELIVERY" if
+                     getattr(perception, "detection_latency_s", None) == 0.0
+                     and getattr(perception, "_latency_steps", None) == 0
+                     and hasattr(perception, "empirical_error") and perception.empirical_error is None
+                     else "NOT_RECORDED")
+        def values(tensor, name):
+            if not isinstance(tensor, torch.Tensor) or tuple(tensor.shape) != (n,):
+                raise ValueError("recovery " + name + " must be a per-environment tensor")
+            return tensor.detach().cpu().tolist()
+        camera = values(diagnostics.get("camera_visible"), "camera_visible")
+        fused = values(diagnostics.get("visible"), "visible")
+        lidar = (values(diagnostics["lidar_visible"], "lidar_visible")
+                 if "lidar_visible" in diagnostics else [None] * n)
+        active = values(tracker.active, "track_active")
+        age_tensor = diagnostics.get("track_age", getattr(tracker, "age", None))
+        ages = values(age_tensor, "track_age") if age_tensor is not None else [None] * n
+        steps = self.parent._steps.detach().cpu().tolist()
+        self.stage_serial += 1
+        token = "stage%d" % self.stage_serial
+        geometry_rows = self.probe.snapshot(token, render_token=token) if self.probe is not None else [None] * n
+        if len(geometry_rows) != n:
+            raise ValueError("recovery geometry batch differs from the observation batch")
+        for env in range(n):
+            monitor = self.monitors[env]
+            if monitor is None:
+                raise ValueError("recovery observation has no reset episode")
+            frame, time_s = int(steps[env]), int(steps[env]) * self.parent.dt
+            stamp = self.core.FrameStamp(monitor.episode_id, frame, time_s, None,
+                                         "%s/frame%d" % (monitor.episode_id, frame))
+            sensor = self.core.SensorFrame(
+                camera[env], lidar[env], fused[env], active[env], ages[env], self.memory_s,
+                self.core.FINAL_DIAGNOSTICS_CONTRACT if "lidar_visible" in diagnostics else None,
+                track_age_dtype=str(age_tensor.dtype) if age_tensor is not None else "NOT_RECORDED")
+            raw = geometry_rows[env] or {}
+            geometry = self.core.EvaluationGeometry(
+                raw.get("target_center_in_fov"), raw.get("target_center_in_range"),
+                raw.get("center_los_blocked"), raw.get("geometry_contract", "UNKNOWN"),
+                raw.get("rendered_target_visible_pixels"), frame_index=frame, state_time_s=time_s,
+                measurement_alignment=alignment)
+            self.pending[env] = {"stamp": asdict(stamp), "sensor": asdict(sensor),
+                                 "geometry": asdict(geometry), "geometry_provenance": raw}
+
+    def consume(self):
+        for env, pending in enumerate(self.pending):
+            if pending is None:
+                raise ValueError("recovery action has no unconsumed observation")
+            monitor = self.monitors[env]
+            if pending["stamp"]["frame_index"] != int(self.parent._steps[env].item()):
+                raise ValueError("recovery staged observation is stale")
+            inputs = {key: pending[key] for key in ("stamp", "sensor", "geometry")}
+            result = monitor.observe(self.core.FrameStamp(**inputs["stamp"]),
+                                     self.core.SensorFrame(**inputs["sensor"]),
+                                     self.core.EvaluationGeometry(**inputs["geometry"]))
+            self._write({"record_type": "observation", "env_index": env,
+                         "env_episode_index": self.episode_indices[env], "inputs": inputs,
+                         "geometry_provenance": pending["geometry_provenance"],
+                         "episode_context": {"scene_manifest_hash": "NOT_RECORDED",
+                                             "pre_loss_actor_prefix_hash": "NOT_RECORDED"},
+                         "observation": result})
+            self.observations += 1
+            self.pending[env] = None
+
+    def on_episode_end(self, env_ids, capture, crash, timeout):
+        for row, env in enumerate(env_ids.cpu().tolist()):
+            flags = (bool(capture[row]), bool(crash[row]), bool(timeout[row]))
+            if sum(flags) != 1:
+                raise ValueError("recovery telemetry requires one resolved task outcome")
+            self._close(env, "episode_end", ("capture", "crash", "timeout")[flags.index(True)])
+
+    def finalize(self, reason):
+        if self._closed:
+            return
+        for env in range(self.parent.num_envs):
+            self._close(env, "run_shutdown")
+        self.handle.close()
+        summary = {"schema": "motar.recovery-observability-summary.v1", "reason": reason,
+                   "run_identity": self.identity, "observations": self.observations,
+                   "closed_episodes": self.closed_episodes, "skipped_empty_episodes": self.skipped_empty,
+                   "trace_file": RECOVERY_FILE,
+                   "trace_sha256": hashlib.sha256(self.path.read_bytes()).hexdigest(),
+                   "safe_abort": "NOT_RECORDED", "gpu_trajectory_noninterference": "NOT_TESTED"}
+        with self.summary_path.open("x", encoding="utf-8") as handle:
+            handle.write(json.dumps(summary, sort_keys=True, indent=2) + "\n")
+        self._closed = True
 
 
 def build_search_supervisor(task, environ=None):
@@ -364,6 +620,13 @@ class KrocRecorder:
             raise RuntimeError("NAVRL_KROC2027_RECORDER=1 needs NAVRL_BULK_EVAL_JSON for its sidecar files")
         self.cell_dir = Path(output).resolve().parent
         self.cell_dir.mkdir(parents=True, exist_ok=True)
+        recovery_enabled = _recovery_enabled()
+        if recovery_enabled:
+            protected = (EPISODES_FILE, SUMMARY_FILE, RECOVERY_FILE, RECOVERY_SUMMARY_FILE,
+                         Path(output).name)
+            if any((self.cell_dir / name).exists() or (self.cell_dir / name).is_symlink()
+                   for name in protected):
+                raise FileExistsError("recovery telemetry requires a fresh cell output directory")
         self.episodes_path = self.cell_dir / EPISODES_FILE
         self.summary_path = self.cell_dir / SUMMARY_FILE
         self.on_violation = os.environ.get(ON_VIOLATION_VAR, "stop").strip().lower()
@@ -442,6 +705,7 @@ class KrocRecorder:
             "motar_eval": _module_origin("motar_eval"),
             "kroc_eval_adapter": str(Path(__file__).resolve()),
         }
+        self._recovery = _RecoveryRecorder(self) if recovery_enabled else None
         atexit.register(self._finalize_at_exit)
 
     # ------------------------------------------------------------ helpers
@@ -477,6 +741,8 @@ class KrocRecorder:
         env_ids = torch.as_tensor(env_ids, dtype=torch.long, device=self.device)
         if env_ids.numel() == 0:
             return
+        if self._recovery is not None:
+            self._recovery.on_reset(env_ids)
         target_xy = t.target_position[:, 0:2].detach()
         target_v = t.target_vel_w[:, 0:2].detach()
         self.motion.reset(env_ids, target_xy, target_v)
@@ -822,12 +1088,16 @@ class KrocRecorder:
         self._pending_observation = (camera, visible, track, in_fov, geo_visible)
         if self.packets_enabled:
             self._snapshot_target_inputs()
+        if self._recovery is not None:
+            self._recovery.stage(diagnostics)
 
     def before_action(self):
         """Start of step: the observation that drives this action enters the chronology."""
         pending = getattr(self, "_pending_observation", None)
         if pending is None:
             raise RuntimeError("KROC2027 recorder: an action without a preceding observation")
+        if self._recovery is not None:
+            self._recovery.consume()
         self.events.observe(*pending)
 
     def on_episode_end(self, finished, successes, crashes, timeouts):
@@ -839,6 +1109,8 @@ class KrocRecorder:
         capture = successes.detach().to(torch.bool)[env_ids].cpu().tolist()
         crash = (crashes.detach() if crashes.dtype == torch.bool else crashes.detach() > 0)[env_ids].cpu().tolist()
         timeout = timeouts.detach().to(torch.bool)[env_ids].cpu().tolist()
+        if self._recovery is not None:
+            self._recovery.on_episode_end(env_ids, capture, crash, timeout)
         event_records = self.events.finish(env_ids)
         end_dist = self.task.ep_min_goal_dist[env_ids].detach().double().cpu().tolist()
         host = {k: v[env_ids].detach().double().cpu().tolist() for k, v in self._speed.items()}
@@ -1000,3 +1272,5 @@ class KrocRecorder:
         tmp = self.summary_path.with_suffix(".json.tmp")
         tmp.write_text(json.dumps(summary, indent=1, sort_keys=True) + "\n")
         os.replace(tmp, self.summary_path)
+        if self._recovery is not None:
+            self._recovery.finalize(reason)

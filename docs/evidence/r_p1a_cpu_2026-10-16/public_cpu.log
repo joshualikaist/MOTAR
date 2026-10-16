@@ -1,0 +1,122 @@
+........................................................................................................................................................./home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/torch/nn/modules/transformer.py:307: UserWarning: enable_nested_tensor is True, but self.use_nested_tensor is False because encoder_layer.norm_first was True
+  warnings.warn(f"enable_nested_tensor is True, but self.use_nested_tensor is False because {why_not_sparsity_fast_path}")
+..............s.............................................................  [PASS] empty: 1 valid corridor 
+  [PASS] empty: centered ~0 (0.0 deg)
+  [PASS] empty: ang width ~FOV 
+  [PASS] empty: shape 
+  [PASS] empty: invalid slots zero 
+  [PASS] two-bar: central gap exists 
+  [PASS] two-bar: width ~ chord (got 4.00, expect 3.69)
+  [PASS] two-bar: clearances = 4 m 
+  [PASS] two-bar: depth = max range 
+  [PASS] wall: zero corridors 
+  [PASS] wall: tokens all zero 
+  [PASS] sub-horizon surface blocks 
+  [PASS] supra-horizon stays open 
+  [PASS] supra-horizon depth=6.5 
+  [PASS] slit below min width dropped 
+  [PASS] two gaps found 
+  [PASS] forward-first ordering (|15| <= |60|)
+  [PASS] deterministic 
+  [PASS] batch rows independent 
+  [PASS] features in [-1,1] 
+
+navrl corridor extractor: ok
+RETRY file.txt 1 TimeoutError interrupted
+.........................................................................................................................................................................................bash: /home/fair/miniconda3/envs/aerialgym/lib/libtinfo.so.6: no version information available (required by bash)
+........................s.................s...................................................................................................................................s...s......................................................................................................../home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/torch/functional.py:513: UserWarning: torch.meshgrid: in an upcoming release, it will be required to pass the indexing argument. (Triggered internally at ../aten/src/ATen/native/TensorShape.cpp:3609.)
+  return _VF.meshgrid(tensors, **kwargs)  # type: ignore[attr-defined]
+....................................................................................................................................................................................................................................................................................../home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/aerial_gym/task/navrl_task/navrl_perception.py:1020: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+  state = torch.load(checkpoint, map_location=device)
+...............s.......................................................................................ss....................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................../home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/torch/nn/modules/transformer.py:307: UserWarning: enable_nested_tensor is True, but self.use_nested_tensor is False because encoder_layer.norm_first was True
+  warnings.warn(f"enable_nested_tensor is True, but self.use_nested_tensor is False because {why_not_sparsity_fast_path}")
+..............................................................................Warp CUDA error 100: no CUDA-capable device is detected (in function init_cuda_driver, /buildAgent/work/a9ae500d09a78409/warp/native/cuda_util.cpp:218)
+Warp CUDA error 3: initialization error (in function cuda_device_get_count, /buildAgent/work/a9ae500d09a78409/warp/native/warp.cu:1589)
+.........................................................................{
+ "files": 2,
+ "receipt_git_commits": [
+  "abc"
+ ]
+}
+{
+ "verdict": "NO_GO",
+ "criteria": {
+  "1_A_integrity_pass": true,
+  "2_visible_minus_hidden_capture_positive": true,
+  "2_visible_minus_hidden_ever_acquired_positive": true,
+  "3_never_acquired_failures_majority": true,
+  "4_budget_fits": true,
+  "5_B_preregistered_and_approved": false
+ },
+ "target_model": "E0_static",
+ "densities": [
+  70,
+  115,
+  160,
+  205
+ ]
+}
+VERIFIED /tmp/tmptaf73854/summary.json FAIL_BLOCKS_CONFIRMATORY
+[obs_dump] FLUSH FAILED -- wrote /tmp/tmp_3i5t04g/frames.npz.FAILED; /tmp/tmp_3i5t04g/frames.npz does NOT contain this run's data
+Traceback (most recent call last):
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/aerial_gym/task/navrl_task/navrl_task.py", line 5869, in _flush_obs_dump
+    self._write_obs_dump()
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_navrl_obs_dump.py", line 159, in _write_obs_dump
+    raise self.raise_on_write
+RuntimeError: boom
+
+[obs_dump] FLUSH FAILED -- wrote /tmp/tmpy9zkhqti/frames.npz.FAILED; /tmp/tmpy9zkhqti/frames.npz does NOT contain this run's data
+Traceback (most recent call last):
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/aerial_gym/task/navrl_task/navrl_task.py", line 5869, in _flush_obs_dump
+    self._write_obs_dump()
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_navrl_obs_dump.py", line 159, in _write_obs_dump
+    raise self.raise_on_write
+RuntimeError: export guard tripped on density 150
+
+[obs_dump] FLUSH FAILED -- wrote /tmp/tmp6zj99bnr/frames.npz.FAILED; /tmp/tmp6zj99bnr/frames.npz does NOT contain this run's data
+Traceback (most recent call last):
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/aerial_gym/task/navrl_task/navrl_task.py", line 5869, in _flush_obs_dump
+    self._write_obs_dump()
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_navrl_obs_dump.py", line 943, in <lambda>
+    stub._write_obs_dump = lambda: writer(stub)
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/aerial_gym/task/navrl_task/navrl_task.py", line 5939, in _write_obs_dump
+    _validate_obs_dump_export(
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/aerial_gym/task/navrl_task/navrl_task.py", line 651, in _validate_obs_dump_export
+    raise RuntimeError(
+RuntimeError: obs_dump export: obs array width 8 does not match the width derived independently from the perception schema components (9)
+
+[obs_dump] dropped 12 frame row(s) from 4 episode(s) ended by a full reset() with no outcome row (reason=full_reset_orphan); every other finished-without-outcome episode is still fatal
+[obs_dump] path=/tmp/tmpv59liyf4/frames.npz frames=0 episodes=0 stride_eff=2 decimations=1 dropped_reset_orphans=12 bars=70 seed=373 sha256=sha-not-checked-here
+[obs_dump] path=/tmp/tmpve18iuwo/frames.npz frames=12 episodes=0 stride_eff=2 decimations=1 dropped_reset_orphans=0 bars=70 seed=373 sha256=sha-not-checked-here
+[obs_dump] path=/tmp/tmpb_ti1c4j/70bars/frames.npz frames=12 episodes=0 stride_eff=2 decimations=1 dropped_reset_orphans=0 bars=70 seed=373 sha256=sha-not-checked-here
+VERIFIED /tmp/tmpt2fig15_/summary.json PASS_ROUTE_MECHANISM PASS_FULL_1P5_CONTRACT
+Warp 1.0.0 initialized:
+   CUDA devices not available
+   Devices:
+     "cpu"      : "x86_64"
+   Kernel cache:
+     /home/fair/.cache/warp/1.0.0
+Module _renderer_validation_camera_e3f2080c715cd641 load on device 'cpu' took 7.25 ms
+[record benchmark] synthetic rows: 3
+............................................................................................................................................................................................................................................./home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/trimesh/creation.py:889: RuntimeWarning: invalid value encountered in divide
+  unit = vectors / scalar.reshape((-1, 1))
+..................................................................................................................................................................................................s.................................................................s........................................
+----------------------------------------------------------------------
+Ran 2318 tests in 94.340s
+
+OK (skipped=10)
+{"status": "VALID_FOR_DECLARED_CONTRACT", "record_count": 2, "issue_counts": {}, "elapsed_seconds": 0.00016746798064559698}
+{"status": "INVALID_FOR_DECLARED_CONTRACT", "record_count": 2, "issue_counts": {"BELOW_MINIMUM": 1}, "elapsed_seconds": 0.0001132990000769496}
+{
+  "profile": "PUBLIC_CPU",
+  "status": "PASS",
+  "ran": 2318,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 10,
+  "excluded": 5,
+  "excluded_reasons": {
+    "test_navrl_nonoverlap_placement.TestFootprintClearancePlacement": "setUpClass starts a worker that imports aerial_gym (Isaac Gym and Warp need a CUDA device)",
+    "test_navrl_physical_target_lower_contract.LowerContractTest.test_fresh_child_imports_isaacgym_before_packed_torch": "the child process imports isaacgym, which needs a CUDA device"
+  }
+}
