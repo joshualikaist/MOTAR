@@ -216,7 +216,9 @@ def analyse_pilot(root, resamples=1000):
     for group, results in sorted(groups.items()):
         entry = {"seeds": sorted(r["context"]["seed"] for r in results), "indicators": {}}
         for name in INDICATORS:
-            pooled = [i for r in results for i in r["_intervals"][name]]
+            # Episode keys are env/episode within a cell; prefix the seed so seeds do not collapse.
+            pooled = [dict(i, episode="%s/%s" % (r["context"]["seed"], i["episode"]))
+                      for r in results for i in r["_intervals"][name]]
             exposures = [e for r in results for e in r["_exposures"]]
             if all(r["indicators"].get(name) == "NOT_RECORDED" for r in results):
                 entry["indicators"][name] = "NOT_RECORDED"

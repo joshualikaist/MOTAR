@@ -88,6 +88,8 @@ class EndToEndTest(unittest.TestCase):
             self.assertEqual(group["seeds"], [4201, 4202])
             rate = group["indicators"]["center_occlusion_in_view"]
             self.assertEqual(rate["intervals"], 4)
+            self.assertEqual(rate["episodes_with_interval"], 2)  # one per seed; seeds must not collapse
+            self.assertAlmostEqual(rate["share_episodes_with_interval"], 1.0)
             self.assertEqual(set(rate["per_seed_rate_per_exposure_s"]), {"4201", "4202"})
             sweep = tool.run_sweep(cells, synthetic=False, paths=2, seed=0)
             self.assertEqual(sweep["label"], "GEOMETRY_ONLY_KINEMATIC_BASELINE")

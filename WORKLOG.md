@@ -20500,3 +20500,57 @@ Next review: the complete diff and new plan; local commit requires user diff app
   폴더 하나라 드러나지 않음). 시뮬레이션·계측 결함 아님. 중단된 시도는 `results/occlusion_pilot_v1/OCC-G0/`에 그대로 보존.
 - 수정: dump를 셀 폴더 안으로; 재실행용 `--run-root`/`--g0-root`/`--rerun-note`(results/** 불변). CPU: occlusion 29, KROC 162 OK.
 - 재실행 폴더: `results/occlusion_pilot_v1/OCC-G0_rerun1/`(같은 run id OCC-G0, 새 commit).
+
+## 2026-10-17 — OCC-G0 재실행 `G0_PASS`: 계측 비간섭·renderer parity·장면 확인 모두 통과
+
+- `6441c1f`, `results/occlusion_pilot_v1/OCC-G0_rerun1/`, 02:02–02:17 KST, GPU 0.247 h, 출력 125 MB, Policy F 전후 SHA 동일.
+  seed 4201 × static A1 / moving A3(E2_direct_l2_v1) × 70/115/160/205 = 8쌍, 쌍마다 같은 commit에서 OFF(recorder+digest+obs dump)와
+  ON(+telemetry) 실행. 셀 시간 OFF 평균 44 s, ON 65 s(+48 %). 초과(2×180 s) 0건.
+- **비간섭 PASS(8/8)**: result(nonce 제외)·trajectory digest(sha·steps)·ledger rows_sha256·actor 관측 bitwise(쌍당 1,280–1,536 row)·
+  recorder 기록 512/512 모두 동일, 역사적 A1/A3 셀(KROC27-A-M01 `bbf530b`, KROC27-A-M02 `ea67728`)과 첫 4 episode MATCH 8/8.
+  같은 seed에서 궤적·행동·관측·결과가 같으므로 RNG 소비도 없음.
+- **Renderer parity PASS**: probe frame 165,277개에서 Warp mesh probe와 offline 중심 ray 불일치 0(일치 100 %); 기하학적으로
+  clear·시야 안인데 렌더 픽셀 0인 frame 3/111,909(0.003 %); 기하 full proxy인데 픽셀 >0인 frame 5/8,666(0.06 %); 기준 각 1 %.
+  정렬 `ZERO_LATENCY_RENDER_DELIVERY` 확인됨. online box 검사와 offline 불일치 0.
+- **장면 PRESENT**: visible 111,906 · partial 3,063 · full(기하) 8,666 · full(렌더 픽셀 0) 9,275 frame; 예시 episode key 보고서에 기록.
+- 첫 시도(`6dd79e3`, `OCC-G0/`, 2쌍 통과 후 runner 결함으로 중단)는 RAW_MANIFEST와 함께 보존. GPU 중 RustDesk 화면공유
+  프로세스(190 MiB, 연산 없음)가 함께 있었음을 기록. 외부 백업 미완료.
+- 결론: OCC-P1 진행 조건 충족(승인 범위 내). 다음: OCC-P1 56셀.
+
+## 2026-10-17 — OCC-P1 완료(56/56): 자연 가림은 밀도와 함께 늘지만 짧다; 5 s 가림은 관측되지 않음 (탐색적)
+
+- 실행: `6441c1f`, `results/occlusion_pilot_v1/OCC-P1_rerun1/`, 02:20–03:25 KST, GPU 1.09 h, 출력 575 MB(RAW_MANIFEST 704개 파일),
+  VRAM 최대 6,082 MiB, 셀 초과 0, 문제 0, 역사적 셀과 첫 4 episode MATCH 56/56, Policy F 전후 동일, 기존 raw 976개 재해시 불일치 0.
+  첫 시도 `OCC-P1/`은 실행 중 WORKLOG 수정으로 tracked tree가 dirty해져 셀 1개 후 자체 중단(내 실수, 보존). 같은 commit으로 재실행.
+- Renderer parity(전 셀): Warp probe와 offline 중심 ray 불일치 0/1,157,513 frame; 기하 clear인데 렌더 0픽셀 43/782,040; 기하 full인데
+  픽셀 >0 32/60,924. 시간 정렬 확인됨(zero-latency).
+- 결과(획득 이후, quota 3,584 episode/군, seed 평균 아님 pooled; 괄호는 episode-cluster bootstrap 95 %):
+
+| 군 | 밀도 | 관측 h | 중심 가림 있는 episode | 가림 횟수/관측 분 | KM ≥0.5/1/2/3 s | 렌더 full 있는 episode | fused loss/분 |
+|---|---|---|---|---|---|---|---|
+| static | 70 | 3.48 | 5.3 % | 1.05 (0.91–1.21) | .63/.26/.00/.00 | 3.9 % | 9.5 |
+| static | 115 | 3.54 | 10.8 % | 2.04 (1.84–2.25) | .62/.25/.02/.00 | 8.0 % | 15.4 |
+| static | 160 | 3.60 | 14.2 % | 2.80 (2.55–3.03) | .66/.25/.02/.00 | 10.8 % | 21.2 |
+| static | 205 | 3.69 | 19.9 % | 4.02 (3.73–4.31) | .62/.26/.02/.00 | 15.0 % | 25.7 |
+| moving | 70 | 3.91 | 20.7 % | 3.77 (3.52–4.01) | .80/.35/.04/.01 | 19.0 % | 11.2 |
+| moving | 115 | 4.10 | 32.0 % | 6.00 (5.70–6.30) | .78/.37/.05/.01 | 29.9 % | 17.8 |
+| moving | 160 | 4.39 | 42.7 % | 7.93 (7.63–8.24) | .75/.37/.06/.01 | 39.9 % | 23.2 |
+| moving | 205 | 4.63 | 51.7 % | 9.56 (9.24–9.91) | .72/.40/.08/.01 | 47.9 % | 26.8 |
+
+  - 관측 지속시간(중심 가림): 중앙값 static 0.7 s, moving 0.9 s; p95 1.5–2.2 s. 5 s 이상 가림 0건(5 s 위험집합 0) → 5 s는 이 조건에서 관측 불가.
+  - 종료 원인(Aalen–Johansen, 5 s): 복구 95–98 %, 가림 중 crash 2–5 %, 가림 중 capture 0 %. 검열 구간 9–103개/군.
+  - 복구 후 재획득 99.2–100 %; 0.5 s 안에 재획득하지 못할 확률 5–14 %(밀도와 함께 증가).
+  - Seed 간 SD(가림/분) 0.15–0.70로 작음. 7 seed지만 탐색적(확증 아님).
+  - Fused loss는 중심 가림보다 3–9배 잦고 대부분 짧음(KM ≥0.5 s: static 0.06–0.11, moving 0.26–0.29) — 가림이 아님.
+- Geometry-only(같은 실제 layout, seed 4201 static 셀, 경로 2개/layout, 충돌 무시): 정적 표적 직선 추적 0건(5,738 경로) — 기하 성질 확인;
+  측면 횡단 19.9–25.3회/분(밀도 효과 약함, 지속은 밀도와 함께 길어짐, KM ≥2 s 0.18→0.33); 이동 표적 추적 6.6→15.3회/분.
+  → 정적 표적의 실제 가림은 Policy F의 우회 경로에서만 생김(전체 시스템 효과).
+- 해석(탐색적, 인과 아님): 밀도가 높을수록 가림 발생 빈도는 단조 증가(RQ1 방향 지지 예비 증거), 개별 가림 지속시간은 거의 불변 —
+  중앙값·KM이 밀도에 따라 크게 변하지 않음(RQ2 약한 증가 또는 없음). 이동 표적은 static보다 가림이 3–4배 잦고 약간 김(RQ3).
+  자연 가림의 대부분은 1 s 미만, 2 s 이상은 0–8 %, 3 s 이상 ≈1 %. 2 s가 현실적 관측 상한 근처, 5 s는 강제 시나리오 없이는 불가.
+- 분석 결함 수정: pooled 분석에서 episode 키에 seed가 빠져 "가림 있는 episode 비율"이 1/7로 눌림(다른 지표 영향 없음). seed 접두어로
+  수정, 회귀 테스트 추가, 재분석. 결함 판 `analysis_with_share_bug.json`은 scratch에 보관.
+- 기록: `analysis.json` `5e37c152…`, `geometry_sweep.json` `f3d56920…`, `pilot_report.json` `986a34ad…`, RAW_MANIFEST `6e12d9ac…`
+  (+ OCC-P1 첫 시도 `b0f071e8…`, OCC-G0 첫 시도 `2e051977…`). 외부 백업 미완료, 디스크 여유 약 20.7 GB.
+- 다음(별도 승인): OCC-P2 확증 사전등록 — 새 seed, 가설 RQ1(가림/분이 밀도와 함께 증가), RQ2(지속시간), RQ3; 1–2 s 임계 중심.
+  5 s는 자연 조건 한계로 보고하고, 필요하면 고정 장애물·사전 설계 운동의 별도 진단 계보로.
