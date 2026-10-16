@@ -1,0 +1,107 @@
+{
+ "cells": {
+  "E1_direct_l2_v1/A3/E1_cv__115bars__seed4190": {
+   "cumulative_hours": 0.0239,
+   "issues": [],
+   "lineage": "E1_direct_l2_v1",
+   "seconds": 44.4
+  },
+  "E1_direct_l2_v1/A3/E1_cv__160bars__seed4190": {
+   "cumulative_hours": 0.0379,
+   "issues": [],
+   "lineage": "E1_direct_l2_v1",
+   "seconds": 50.4
+  },
+  "E1_direct_l2_v1/A3/E1_cv__205bars__seed4190": {
+   "cumulative_hours": 0.0632,
+   "issues": [],
+   "lineage": "E1_direct_l2_v1",
+   "seconds": 90.8
+  },
+  "E1_direct_l2_v1/A3/E1_cv__70bars__seed4190": {
+   "cumulative_hours": 0.0116,
+   "issues": [],
+   "lineage": "E1_direct_l2_v1",
+   "seconds": 41.7
+  },
+  "E1_direct_l2_v1/A4/E1_cv__115bars__seed4190": {
+   "cumulative_hours": 0.1074,
+   "issues": [],
+   "lineage": "E1_direct_l2_v1",
+   "seconds": 99.4
+  },
+  "E1_direct_l2_v1/A4/E1_cv__160bars__seed4190": {
+   "cumulative_hours": 0.1407,
+   "issues": [],
+   "lineage": "E1_direct_l2_v1",
+   "seconds": 119.7
+  },
+  "E1_direct_l2_v1/A4/E1_cv__205bars__seed4190": {
+   "cumulative_hours": 0.1734,
+   "issues": [],
+   "lineage": "E1_direct_l2_v1",
+   "seconds": 117.7
+  },
+  "E1_direct_l2_v1/A4/E1_cv__70bars__seed4190": {
+   "cumulative_hours": 0.0798,
+   "issues": [],
+   "lineage": "E1_direct_l2_v1",
+   "seconds": 59.9
+  },
+  "E2_direct_l2_v1/A3/E2_obstacle_aware__115bars__seed4190": {
+   "cumulative_hours": 0.1999,
+   "issues": [],
+   "lineage": "E2_direct_l2_v1",
+   "seconds": 51.1
+  },
+  "E2_direct_l2_v1/A3/E2_obstacle_aware__160bars__seed4190": {
+   "cumulative_hours": 0.2178,
+   "issues": [],
+   "lineage": "E2_direct_l2_v1",
+   "seconds": 64.6
+  },
+  "E2_direct_l2_v1/A3/E2_obstacle_aware__205bars__seed4190": {
+   "cumulative_hours": 0.237,
+   "issues": [],
+   "lineage": "E2_direct_l2_v1",
+   "seconds": 68.9
+  },
+  "E2_direct_l2_v1/A3/E2_obstacle_aware__70bars__seed4190": {
+   "cumulative_hours": 0.1857,
+   "issues": [],
+   "lineage": "E2_direct_l2_v1",
+   "seconds": 44.2
+  },
+  "E2_direct_l2_v1/A4/E2_obstacle_aware__115bars__seed4190": {
+   "cumulative_hours": 0.277,
+   "issues": [],
+   "lineage": "E2_direct_l2_v1",
+   "seconds": 71.9
+  },
+  "E2_direct_l2_v1/A4/E2_obstacle_aware__160bars__seed4190": {
+   "cumulative_hours": 0.3096,
+   "issues": [],
+   "lineage": "E2_direct_l2_v1",
+   "seconds": 117.2
+  },
+  "E2_direct_l2_v1/A4/E2_obstacle_aware__205bars__seed4190": {
+   "cumulative_hours": 0.3492,
+   "issues": [],
+   "lineage": "E2_direct_l2_v1",
+   "seconds": 142.7
+  },
+  "E2_direct_l2_v1/A4/E2_obstacle_aware__70bars__seed4190": {
+   "cumulative_hours": 0.257,
+   "issues": [],
+   "lineage": "E2_direct_l2_v1",
+   "seconds": 72.3
+  }
+ },
+ "finished_at": "2026-10-16T06:09:56.310200+00:00",
+ "git_commit": "4bba8836d3bab86b87351a47b70e674d6e86cfaa",
+ "max_gpu_hours": 2.0,
+ "plan_sha256": "d4f4cd4eb13cd0f44b714088e02f51e217da1958bd44ffa6b4c5d4c376dc58ca",
+ "run_id": "MT-P2-C01",
+ "stop_reason": null,
+ "verdict": "CANARY_PASS"
+}

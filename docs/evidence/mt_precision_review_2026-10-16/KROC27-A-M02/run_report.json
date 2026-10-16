@@ -1,0 +1,291 @@
+{
+ "cells": {
+  "E2_direct_l2_v1/A3/E2_obstacle_aware__115bars__seed4201": {
+   "cumulative_hours": 0.0999,
+   "issues": [],
+   "seconds": 120.8
+  },
+  "E2_direct_l2_v1/A3/E2_obstacle_aware__115bars__seed4202": {
+   "cumulative_hours": 0.5006,
+   "issues": [],
+   "seconds": 123.2
+  },
+  "E2_direct_l2_v1/A3/E2_obstacle_aware__115bars__seed4203": {
+   "cumulative_hours": 0.9013,
+   "issues": [],
+   "seconds": 136.7
+  },
+  "E2_direct_l2_v1/A3/E2_obstacle_aware__115bars__seed4204": {
+   "cumulative_hours": 1.2949,
+   "issues": [],
+   "seconds": 118.3
+  },
+  "E2_direct_l2_v1/A3/E2_obstacle_aware__115bars__seed4205": {
+   "cumulative_hours": 1.7103,
+   "issues": [],
+   "seconds": 130.5
+  },
+  "E2_direct_l2_v1/A3/E2_obstacle_aware__115bars__seed4206": {
+   "cumulative_hours": 2.132,
+   "issues": [],
+   "seconds": 129.2
+  },
+  "E2_direct_l2_v1/A3/E2_obstacle_aware__115bars__seed4207": {
+   "cumulative_hours": 2.5325,
+   "issues": [],
+   "seconds": 124.3
+  },
+  "E2_direct_l2_v1/A3/E2_obstacle_aware__160bars__seed4201": {
+   "cumulative_hours": 0.1882,
+   "issues": [],
+   "seconds": 139.6
+  },
+  "E2_direct_l2_v1/A3/E2_obstacle_aware__160bars__seed4202": {
+   "cumulative_hours": 0.601,
+   "issues": [],
+   "seconds": 165.2
+  },
+  "E2_direct_l2_v1/A3/E2_obstacle_aware__160bars__seed4203": {
+   "cumulative_hours": 0.9845,
+   "issues": [],
+   "seconds": 141.3
+  },
+  "E2_direct_l2_v1/A3/E2_obstacle_aware__160bars__seed4204": {
+   "cumulative_hours": 1.4083,
+   "issues": [],
+   "seconds": 189.1
+  },
+  "E2_direct_l2_v1/A3/E2_obstacle_aware__160bars__seed4205": {
+   "cumulative_hours": 1.8086,
+   "issues": [],
+   "seconds": 156.6
+  },
+  "E2_direct_l2_v1/A3/E2_obstacle_aware__160bars__seed4206": {
+   "cumulative_hours": 2.2234,
+   "issues": [],
+   "seconds": 135.8
+  },
+  "E2_direct_l2_v1/A3/E2_obstacle_aware__160bars__seed4207": {
+   "cumulative_hours": 2.6323,
+   "issues": [],
+   "seconds": 189.5
+  },
+  "E2_direct_l2_v1/A3/E2_obstacle_aware__205bars__seed4201": {
+   "cumulative_hours": 0.3039,
+   "issues": [],
+   "seconds": 191.2
+  },
+  "E2_direct_l2_v1/A3/E2_obstacle_aware__205bars__seed4202": {
+   "cumulative_hours": 0.7182,
+   "issues": [],
+   "seconds": 216.7
+  },
+  "E2_direct_l2_v1/A3/E2_obstacle_aware__205bars__seed4203": {
+   "cumulative_hours": 1.1029,
+   "issues": [],
+   "seconds": 212.6
+  },
+  "E2_direct_l2_v1/A3/E2_obstacle_aware__205bars__seed4204": {
+   "cumulative_hours": 1.5262,
+   "issues": [],
+   "seconds": 201.5
+  },
+  "E2_direct_l2_v1/A3/E2_obstacle_aware__205bars__seed4205": {
+   "cumulative_hours": 1.9454,
+   "issues": [],
+   "seconds": 209.9
+  },
+  "E2_direct_l2_v1/A3/E2_obstacle_aware__205bars__seed4206": {
+   "cumulative_hours": 2.3334,
+   "issues": [],
+   "seconds": 175.3
+  },
+  "E2_direct_l2_v1/A3/E2_obstacle_aware__205bars__seed4207": {
+   "cumulative_hours": 2.7473,
+   "issues": [],
+   "seconds": 169.1
+  },
+  "E2_direct_l2_v1/A3/E2_obstacle_aware__70bars__seed4201": {
+   "cumulative_hours": 0.0291,
+   "issues": [],
+   "seconds": 104.5
+  },
+  "E2_direct_l2_v1/A3/E2_obstacle_aware__70bars__seed4202": {
+   "cumulative_hours": 0.4318,
+   "issues": [],
+   "seconds": 105.4
+  },
+  "E2_direct_l2_v1/A3/E2_obstacle_aware__70bars__seed4203": {
+   "cumulative_hours": 0.8248,
+   "issues": [],
+   "seconds": 103.1
+  },
+  "E2_direct_l2_v1/A3/E2_obstacle_aware__70bars__seed4204": {
+   "cumulative_hours": 1.2255,
+   "issues": [],
+   "seconds": 102.9
+  },
+  "E2_direct_l2_v1/A3/E2_obstacle_aware__70bars__seed4205": {
+   "cumulative_hours": 1.6375,
+   "issues": [],
+   "seconds": 102.6
+  },
+  "E2_direct_l2_v1/A3/E2_obstacle_aware__70bars__seed4206": {
+   "cumulative_hours": 2.0619,
+   "issues": [],
+   "seconds": 149.1
+  },
+  "E2_direct_l2_v1/A3/E2_obstacle_aware__70bars__seed4207": {
+   "cumulative_hours": 2.4624,
+   "issues": [],
+   "seconds": 155.1
+  },
+  "E2_direct_l2_v1/A4/E2_obstacle_aware__115bars__seed4201": {
+   "cumulative_hours": 0.1494,
+   "issues": [],
+   "seconds": 178.0
+  },
+  "E2_direct_l2_v1/A4/E2_obstacle_aware__115bars__seed4202": {
+   "cumulative_hours": 0.555,
+   "issues": [],
+   "seconds": 195.8
+  },
+  "E2_direct_l2_v1/A4/E2_obstacle_aware__115bars__seed4203": {
+   "cumulative_hours": 0.9453,
+   "issues": [],
+   "seconds": 158.2
+  },
+  "E2_direct_l2_v1/A4/E2_obstacle_aware__115bars__seed4204": {
+   "cumulative_hours": 1.3557,
+   "issues": [],
+   "seconds": 218.7
+  },
+  "E2_direct_l2_v1/A4/E2_obstacle_aware__115bars__seed4205": {
+   "cumulative_hours": 1.7651,
+   "issues": [],
+   "seconds": 197.2
+  },
+  "E2_direct_l2_v1/A4/E2_obstacle_aware__115bars__seed4206": {
+   "cumulative_hours": 2.1856,
+   "issues": [],
+   "seconds": 192.9
+  },
+  "E2_direct_l2_v1/A4/E2_obstacle_aware__115bars__seed4207": {
+   "cumulative_hours": 2.5797,
+   "issues": [],
+   "seconds": 169.8
+  },
+  "E2_direct_l2_v1/A4/E2_obstacle_aware__160bars__seed4201": {
+   "cumulative_hours": 0.2508,
+   "issues": [],
+   "seconds": 225.2
+  },
+  "E2_direct_l2_v1/A4/E2_obstacle_aware__160bars__seed4202": {
+   "cumulative_hours": 0.658,
+   "issues": [],
+   "seconds": 205.2
+  },
+  "E2_direct_l2_v1/A4/E2_obstacle_aware__160bars__seed4203": {
+   "cumulative_hours": 1.0438,
+   "issues": [],
+   "seconds": 213.1
+  },
+  "E2_direct_l2_v1/A4/E2_obstacle_aware__160bars__seed4204": {
+   "cumulative_hours": 1.4703,
+   "issues": [],
+   "seconds": 223.1
+  },
+  "E2_direct_l2_v1/A4/E2_obstacle_aware__160bars__seed4205": {
+   "cumulative_hours": 1.887,
+   "issues": [],
+   "seconds": 282.3
+  },
+  "E2_direct_l2_v1/A4/E2_obstacle_aware__160bars__seed4206": {
+   "cumulative_hours": 2.2847,
+   "issues": [],
+   "seconds": 220.6
+  },
+  "E2_direct_l2_v1/A4/E2_obstacle_aware__160bars__seed4207": {
+   "cumulative_hours": 2.7003,
+   "issues": [],
+   "seconds": 244.5
+  },
+  "E2_direct_l2_v1/A4/E2_obstacle_aware__205bars__seed4201": {
+   "cumulative_hours": 0.4025,
+   "issues": [],
+   "seconds": 354.7
+  },
+  "E2_direct_l2_v1/A4/E2_obstacle_aware__205bars__seed4202": {
+   "cumulative_hours": 0.7961,
+   "issues": [],
+   "seconds": 280.5
+  },
+  "E2_direct_l2_v1/A4/E2_obstacle_aware__205bars__seed4203": {
+   "cumulative_hours": 1.1969,
+   "issues": [],
+   "seconds": 338.5
+  },
+  "E2_direct_l2_v1/A4/E2_obstacle_aware__205bars__seed4204": {
+   "cumulative_hours": 1.609,
+   "issues": [],
+   "seconds": 297.9
+  },
+  "E2_direct_l2_v1/A4/E2_obstacle_aware__205bars__seed4205": {
+   "cumulative_hours": 2.0204,
+   "issues": [],
+   "seconds": 270.2
+  },
+  "E2_direct_l2_v1/A4/E2_obstacle_aware__205bars__seed4206": {
+   "cumulative_hours": 2.4193,
+   "issues": [],
+   "seconds": 309.3
+  },
+  "E2_direct_l2_v1/A4/E2_obstacle_aware__205bars__seed4207": {
+   "cumulative_hours": 2.8285,
+   "issues": [],
+   "seconds": 292.2
+  },
+  "E2_direct_l2_v1/A4/E2_obstacle_aware__70bars__seed4201": {
+   "cumulative_hours": 0.0664,
+   "issues": [],
+   "seconds": 134.3
+  },
+  "E2_direct_l2_v1/A4/E2_obstacle_aware__70bars__seed4202": {
+   "cumulative_hours": 0.4664,
+   "issues": [],
+   "seconds": 124.6
+  },
+  "E2_direct_l2_v1/A4/E2_obstacle_aware__70bars__seed4203": {
+   "cumulative_hours": 0.8633,
+   "issues": [],
+   "seconds": 138.8
+  },
+  "E2_direct_l2_v1/A4/E2_obstacle_aware__70bars__seed4204": {
+   "cumulative_hours": 1.262,
+   "issues": [],
+   "seconds": 131.4
+  },
+  "E2_direct_l2_v1/A4/E2_obstacle_aware__70bars__seed4205": {
+   "cumulative_hours": 1.674,
+   "issues": [],
+   "seconds": 131.2
+  },
+  "E2_direct_l2_v1/A4/E2_obstacle_aware__70bars__seed4206": {
+   "cumulative_hours": 2.0961,
+   "issues": [],
+   "seconds": 123.1
+  },
+  "E2_direct_l2_v1/A4/E2_obstacle_aware__70bars__seed4207": {
+   "cumulative_hours": 2.498,
+   "issues": [],
+   "seconds": 127.8
+  }
+ },
+ "finished_at": "2026-10-16T09:04:06.844872+00:00",
+ "git_commit": "ea677289cecf637ebe8d3d473d29cd0b20cc47d9",
+ "lineage": "E2_direct_l2_v1",
+ "max_gpu_hours": 7.5,
+ "run_id": "KROC27-A-M02",
+ "stop_reason": null,
+ "verdict": "COMPLETE"
+}

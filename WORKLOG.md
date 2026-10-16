@@ -20373,3 +20373,59 @@ Next review: the complete diff and new plan; local commit requires user diff app
   계보. PPO·push 없음. GPU 사용 누계 약 10.93 h / 30 h. 디스크 3.4 GB 남음(98 %).
 - 다음(사용자 결정): `codex/mt-p1` → main 병합과 결과 기록 commit(WIP 처리 필요), 외부 백업 위치, 과거 이동 표적 결과 중 bar 수가
   4의 배수인 셀 감사(CPU, 읽기 전용).
+
+
+## 2026-10-16 — Preserve MT precision evidence, audit historical TF32 exposure, propose R-P1a (CPU/read-only)
+
+- Scope authorized by the user: preserve all raw/manifests/WIP/stash, prepare compact evidence separately from raw, read-only CPU audit of historical moving-target results, and an R-P1a implementation proposal. No R-P1a runtime implementation, GPU query/evaluation, simulator rollout, PPO, commit, merge, push, stash operation or deletion was performed. `main` remains `cb644bb`; this branch remains `c038ba5`. Git reports four commits ahead of main, not the five in the preceding narrative.
+- New review files only: `docs/evidence/mt_precision_review_2026-10-16/` (13 files, 202,169 bytes), `docs/audits/moving_target_tf32_readonly_2026-10-16.{md,json}`, `docs/audits/mt_precision_governance_addendum_2026-10-16.md`, and `docs/plans/r_p1a_observability_v1.{md,json,draft.diff}`. This WORKLOG change is append-only. No existing source/test, historical result, checkpoint or preregistration was edited.
+
+### Preservation and numerical check
+
+- Actual raw path: `/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/mt_p1_precision_v1/`. The worktree has an untracked symlink to it. Merge alone cannot stage or commit that target or any untracked raw file. Compact evidence is prepared as ordinary small files under `docs/evidence/`; no Git staging or commit was done.
+- Actual archive path: `/home/fair/workspaces/aerial_gym_ws/kroc2027_raw_backup/`. Archives and raw share a filesystem device: these are verified local copies, NOT external backups. External destination is pending the user's choice. Preserve every raw file, archive, manifest, WIP and stash until a separately verified external copy exists; no cleanup was undertaken. Disk remains about 98% used with 3.4 GB available.
+
+| run | raw manifest hash matches | streamed archive regular files | unexpected/missing payload |
+| --- | ---: | ---: | ---: |
+| MT-P2-C01 | 131/131 | 132 (payload + manifest) | 0 |
+| KROC27-A-M02 | 452/452 | 453 (payload + manifest) | 0 |
+
+- Archived manifest bytes match current manifests. Archives were streamed and hashed without extraction. Canary archive SHA `2c2c3dd5005150a38cb4480e3f73af48177842da3ea6f3f860800d2d550d32f4`; main archive SHA `3460335ff70612099a006b9c7c6ff19e5fb6b0dfce372d69e271c32196e44e79`. Compact index SHA `049d4d1f47683068a30554fc39456bd144a95a3ee5c186c7d2a0369d1b036e16` binds all source/copy hashes and local audit reports.
+- Independent CPU re-derivation from the raw ledgers: canary 16 cells/8,192 primary episodes; combined A1–A4 112 cells/229,376 primary episodes; all per-environment quotas valid. The reused static manifest's 393 files also hash-match. Mean estimates, t intervals, Holm, BCa and exact sign flips reproduce the stored analysis.
+
+| contrast | mean pp | 95% CI pp | Holm p | recorded decision |
+| --- | ---: | --- | ---: | --- |
+| Delta_A | +2.70996094 | [2.45272434, 2.96719754] | 4.49359198447e-7 | SUPPORTED; 3 pp practical threshold not established |
+| I_A | -0.26157924 | [-0.80107892, 0.27792044] | 0.280308941982 | INCONCLUSIVE, not equivalence |
+
+- The amendment commit timestamp precedes the first main-cell receipt by approximately 15.36 seconds. This confirms recorded temporal order, not separate user authorization or full blinding. A1/A2 and their contrast were already observed; their reuse must accompany the Delta_A claim. H-B remains INCONCLUSIVE. A/B initial-view/search findings are not evidence of long-occlusion recovery after acquisition.
+- Motion gates passed their declared numerical tolerances, not with substantial physical headroom: maximum acceleration is approximately 4.000001254 m/s² against the tolerance-inclusive 4.00041 bound, and turn rate reaches about 150.000142 degrees/s within tolerance. Preserve all original reports, but qualify the earlier "margin to spare" wording in subsequent analysis.
+- Procedural addendum records `SEPARATE_RUN_APPROVAL_CONFIRMATION_MISSING` for KROC27-A-M02, as identified by the user. The amendment's delegation/authority text is preserved unchanged. Neither an agent-authored receipt nor later acceptance retroactively documents a missing run-specific confirmation. The observations and their approval provenance remain separate axes.
+
+### Historical moving-target audit
+
+- Scope: 881 receipt-linked metadata records across 104 families, 2,006 metadata files hashed, 35 receipt-named motion-source Git blobs inspected. All 881 result/receipt hashes agree. These counts include repeated canaries, diagnostics and VOID families; they are not independent experiments. Forty-nine receipt candidates lacked a sibling result and are explicitly outside this inventory.
+
+| TF32/motion classification | receipt-linked records |
+| --- | ---: |
+| TF32_EXPOSED_VALIDITY_UNVERIFIED | 372 |
+| OBSERVED_INVALID | 12 |
+| NOT_EXPOSED_THIS_DEFECT | 187 (181 static + 6 source-verified physical/AABB) |
+| DIRECT_LINEAGE_VALIDATED | 72 (16 new canary + 56 new main) |
+| INSUFFICIENT_PROVENANCE | 238 |
+
+- Three-seed main campaign: 48 cells, H/E1/E2 exposed/unverified in 36; seven-seed main campaign: 112 cells, H/E1/E2 exposed/unverified in 84. Their total 120 moving cells cannot be promoted to validated bounded/collision-free UAV motion. E0 bypasses the moving executor, but E0−H contrasts inherit H exposure. Actual old runtime TF32/dtype/layout are often NOT_RECORDED; source matmul eligibility is not measured failure.
+- Multiples of four are not an exemption rule: bounded candidate count 73 itself exceeds `cdist`'s 25-point matmul threshold, and H's legacy steering also uses `cdist` at these bar counts. The shape pattern observed on one GPU/library is not a safe-density whitelist. CPU metadata cannot determine every historical CUDA trajectory; no new GPU inference/replay was run.
+- The 12 observed-invalid records repeat four 160-bar counterexample conditions in three campaigns, not 12 independent discoveries. The old 606 packet diagnosis and eight UNRESOLVED_INPUTS are preserved. New direct gate passes do not repair old H/E1/E2 records or prove arbitrary fallback states safe.
+- Preserve historical numeric outcomes as conditional records of the recorded executor. Do not pool old and direct lineages or use them interchangeably for physical motion claims. The exposure class does not replace old verdicts: VOID/withdrawn/failed exclusions remain, and NOT_EXPOSED is not a paper-reuse whitelist. Canonical papers/site/README/results were not silently rewritten.
+
+### R-P1a approval proposal, not implementation
+
+- Whole proposed package: new `motar_eval/recovery_events.py`; default-OFF changes only to `aerial_gym/task/navrl_task/kroc_eval_adapter.py`; new `tools/recovery_observability.py`; new evaluator-only `aerial_gym/task/navrl_task/recovery_visibility_probe.py`; three new CPU test files listed in `docs/plans/r_p1a_observability_v1.md`; WORKLOG append after implementation. No task/perception/detector/tracker/actor/controller changes are proposed.
+- Milestone 1: prior-camera-acquisition gate, independent camera/fused/track/FOV/range/centre-LOS intervals, immutable timestamped packets, physical terminal censoring and original capture/crash/timeout joins. A real active→inactive transition with expiry-age support is distinguished from UNKNOWN deactivation; reset is not expiry. Dropout/rejection causes, missing capture stamps and safe abort remain NOT_RECORDED where no source exists. Estimated engineering/CPU verification 10–15 hours.
+- Milestone 2: an actual-camera/scene-mesh centre-ray evaluator with separate output buffers, plus CPU analytic scene/transform checks; another estimated 8–12 hours. Existing AABB proxy is not renamed actual LOS. A zero visible-target mask does not prove full occlusion. Full/partial silhouette support remains NOT_RECORDED without a target-alone support contract.
+- The `.draft.diff` is an unapplied event-core design only, NOT READY TO APPLY: runtime integration, probe, trace tool and tests are absent. No new R-P1a test has run, and no runtime/test file was created in the repository. Planned tests cover prefix reproducibility, duplicate/reset timestamps, 5.0/5.1-second and float32 expiry boundaries, mixed/unknown geometry, shutdown censoring, RNG/input invariance, OFF identity and no GT/control readback.
+- Frozen Policy F, actor 898-D, tracker 5-second contract and GT-evaluation-only boundary remain fixed. Current A/B seed labels do not prove identical scenes or pre-loss actor/action prefixes; reserve explicit scene/prefix provenance for R-P1b. CPU mock durations do not prove natural 2/5/10/15-second occlusion feasibility. Real mesh parity and full trajectory noninterference need a later separately approved GPU canary. R-P1b/R-P1c, Planner, PPO, further GPU, merge and push remain deferred.
+- Next action requiring user approval: implement and CPU-verify the stated R-P1a package only. External backup awaits a destination. No new GPU or merge/push approval is requested or inferred.
+
+- Follow-up verification: all 19 new document files passed whitespace checks and every new JSON parsed; nine compact source copies and three local report hashes match the evidence index. Audit classifications sum to 881 across 104 families. The proposed draft was AST-parsed only, not executed. Public document checks report zero errors. Runtime/test files are unchanged. Main/branch HEAD, stash object IDs, user WIP hashes, raw manifests/analysis and committed amendment bytes match the before-review snapshot. No new software-test run or R-P1a PASS is claimed.

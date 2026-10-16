@@ -1,0 +1,65 @@
+{
+  "schema": "motar.r-p1a-observability-proposal.v1",
+  "status": "PROPOSED_NOT_AUTHORIZED_NOT_APPLIED",
+  "base_commit": "c038ba50193fb6401a473d8eb9ff4be097883e0e",
+  "new_runtime_and_test_files": [
+    "motar_eval/recovery_events.py",
+    "tests/test_recovery_events.py",
+    "tests/test_recovery_observability_contract.py",
+    "tools/recovery_observability.py",
+    "aerial_gym/task/navrl_task/recovery_visibility_probe.py",
+    "tests/test_recovery_visibility_geometry.py"
+  ],
+  "modified_runtime_files": [
+    "aerial_gym/task/navrl_task/kroc_eval_adapter.py"
+  ],
+  "append_only": [
+    "WORKLOG.md"
+  ],
+  "draft": {
+    "path": "docs/plans/r_p1a_observability_v1.draft.diff",
+    "sha256": "7963966b67fe3eb0adcabf1d9907c8d9741bc2dd3b5ef522881c9bc2e471ba89",
+    "scope": "Event-core design only; integration, geometry helper, tool and tests absent",
+    "ready_to_apply": false,
+    "tests": "NOT_RUN"
+  },
+  "invariants": [
+    "Policy F and checkpoint bytes unchanged",
+    "898-D actor schema/order/normalization unchanged",
+    "tracker memory_s=5.0 and strict age>memory expiry unchanged",
+    "GT only in evaluator with no online supervisor/control readback",
+    "default OFF and no RNG/control/buffer mutation",
+    "no target-motion, reward, governor or termination changes"
+  ],
+  "milestones": [
+    {
+      "name": "event_core_and_guarded_hooks",
+      "estimated_engineering_hours": [
+        10,
+        15
+      ],
+      "geometry_without_probe": "UNKNOWN",
+      "cpu_acceptance": "planned only; prefix/timestamp/expiry/censoring and OFF/ON immutability"
+    },
+    {
+      "name": "actual_mesh_center_los_probe",
+      "estimated_engineering_hours": [
+        8,
+        12
+      ],
+      "cpu_acceptance": "planned analytic reference/camera transform tests",
+      "runtime_parity": "NOT_TESTED_SEPARATE_GPU_APPROVAL_REQUIRED",
+      "full_silhouette_occlusion": "NOT_RECORDED_WITHOUT_TARGET_ONLY_SUPPORT_CONTRACT"
+    }
+  ],
+  "scope_excludes": [
+    "GPU evaluation or simulator rollout",
+    "PPO training",
+    "R-P1b scenario generation",
+    "R-P1c belief/prediction",
+    "Recovery Planner or online GT supervisor",
+    "merge or push"
+  ],
+  "approval_requested": "R-P1a implementation and CPU verification for the listed files; no GPU execution",
+  "current_task_runtime_files_changed": false
+}

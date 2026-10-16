@@ -1,0 +1,417 @@
+{
+  "amendment_commit": {
+    "commit": "ea677289cecf637ebe8d3d473d29cd0b20cc47d9",
+    "committed_at": "2026-10-16T15:14:09+09:00"
+  },
+  "arm_outcome_counts": {
+    "A1": {
+      "capture": 56288,
+      "crash": 1056
+    },
+    "A2": {
+      "capture": 54659,
+      "crash": 2498,
+      "timeout": 187
+    },
+    "A3": {
+      "capture": 54697,
+      "crash": 2638,
+      "timeout": 9
+    },
+    "A4": {
+      "capture": 53218,
+      "crash": 4082,
+      "timeout": 44
+    }
+  },
+  "arm_rates": {
+    "A1": {
+      "capture": 0.9815848214285714,
+      "crash": 0.018415178571428572,
+      "timeout": 0.0
+    },
+    "A2": {
+      "capture": 0.9531773158482143,
+      "crash": 0.04356166294642857,
+      "timeout": 0.003261021205357143
+    },
+    "A3": {
+      "capture": 0.9538399832589286,
+      "crash": 0.04600306919642857,
+      "timeout": 0.00015694754464285715
+    },
+    "A4": {
+      "capture": 0.9280482700892857,
+      "crash": 0.07118443080357142,
+      "timeout": 0.0007672991071428571
+    }
+  },
+  "canary": {
+    "cell_records": [
+      {
+        "arm": "A3",
+        "lineage": "E1_direct_l2_v1",
+        "path": "results/mt_p1_precision_v1/MT-P2-C01/E1_direct_l2_v1/A3/E1_cv__115bars__seed4190",
+        "quota_episodes": 512,
+        "quota_valid": true,
+        "source_commit": "4bba8836d3bab86b87351a47b70e674d6e86cfaa"
+      },
+      {
+        "arm": "A3",
+        "lineage": "E1_direct_l2_v1",
+        "path": "results/mt_p1_precision_v1/MT-P2-C01/E1_direct_l2_v1/A3/E1_cv__160bars__seed4190",
+        "quota_episodes": 512,
+        "quota_valid": true,
+        "source_commit": "4bba8836d3bab86b87351a47b70e674d6e86cfaa"
+      },
+      {
+        "arm": "A3",
+        "lineage": "E1_direct_l2_v1",
+        "path": "results/mt_p1_precision_v1/MT-P2-C01/E1_direct_l2_v1/A3/E1_cv__205bars__seed4190",
+        "quota_episodes": 512,
+        "quota_valid": true,
+        "source_commit": "4bba8836d3bab86b87351a47b70e674d6e86cfaa"
+      },
+      {
+        "arm": "A3",
+        "lineage": "E1_direct_l2_v1",
+        "path": "results/mt_p1_precision_v1/MT-P2-C01/E1_direct_l2_v1/A3/E1_cv__70bars__seed4190",
+        "quota_episodes": 512,
+        "quota_valid": true,
+        "source_commit": "4bba8836d3bab86b87351a47b70e674d6e86cfaa"
+      },
+      {
+        "arm": "A4",
+        "lineage": "E1_direct_l2_v1",
+        "path": "results/mt_p1_precision_v1/MT-P2-C01/E1_direct_l2_v1/A4/E1_cv__115bars__seed4190",
+        "quota_episodes": 512,
+        "quota_valid": true,
+        "source_commit": "4bba8836d3bab86b87351a47b70e674d6e86cfaa"
+      },
+      {
+        "arm": "A4",
+        "lineage": "E1_direct_l2_v1",
+        "path": "results/mt_p1_precision_v1/MT-P2-C01/E1_direct_l2_v1/A4/E1_cv__160bars__seed4190",
+        "quota_episodes": 512,
+        "quota_valid": true,
+        "source_commit": "4bba8836d3bab86b87351a47b70e674d6e86cfaa"
+      },
+      {
+        "arm": "A4",
+        "lineage": "E1_direct_l2_v1",
+        "path": "results/mt_p1_precision_v1/MT-P2-C01/E1_direct_l2_v1/A4/E1_cv__205bars__seed4190",
+        "quota_episodes": 512,
+        "quota_valid": true,
+        "source_commit": "4bba8836d3bab86b87351a47b70e674d6e86cfaa"
+      },
+      {
+        "arm": "A4",
+        "lineage": "E1_direct_l2_v1",
+        "path": "results/mt_p1_precision_v1/MT-P2-C01/E1_direct_l2_v1/A4/E1_cv__70bars__seed4190",
+        "quota_episodes": 512,
+        "quota_valid": true,
+        "source_commit": "4bba8836d3bab86b87351a47b70e674d6e86cfaa"
+      },
+      {
+        "arm": "A3",
+        "lineage": "E2_direct_l2_v1",
+        "path": "results/mt_p1_precision_v1/MT-P2-C01/E2_direct_l2_v1/A3/E2_obstacle_aware__115bars__seed4190",
+        "quota_episodes": 512,
+        "quota_valid": true,
+        "source_commit": "4bba8836d3bab86b87351a47b70e674d6e86cfaa"
+      },
+      {
+        "arm": "A3",
+        "lineage": "E2_direct_l2_v1",
+        "path": "results/mt_p1_precision_v1/MT-P2-C01/E2_direct_l2_v1/A3/E2_obstacle_aware__160bars__seed4190",
+        "quota_episodes": 512,
+        "quota_valid": true,
+        "source_commit": "4bba8836d3bab86b87351a47b70e674d6e86cfaa"
+      },
+      {
+        "arm": "A3",
+        "lineage": "E2_direct_l2_v1",
+        "path": "results/mt_p1_precision_v1/MT-P2-C01/E2_direct_l2_v1/A3/E2_obstacle_aware__205bars__seed4190",
+        "quota_episodes": 512,
+        "quota_valid": true,
+        "source_commit": "4bba8836d3bab86b87351a47b70e674d6e86cfaa"
+      },
+      {
+        "arm": "A3",
+        "lineage": "E2_direct_l2_v1",
+        "path": "results/mt_p1_precision_v1/MT-P2-C01/E2_direct_l2_v1/A3/E2_obstacle_aware__70bars__seed4190",
+        "quota_episodes": 512,
+        "quota_valid": true,
+        "source_commit": "4bba8836d3bab86b87351a47b70e674d6e86cfaa"
+      },
+      {
+        "arm": "A4",
+        "lineage": "E2_direct_l2_v1",
+        "path": "results/mt_p1_precision_v1/MT-P2-C01/E2_direct_l2_v1/A4/E2_obstacle_aware__115bars__seed4190",
+        "quota_episodes": 512,
+        "quota_valid": true,
+        "source_commit": "4bba8836d3bab86b87351a47b70e674d6e86cfaa"
+      },
+      {
+        "arm": "A4",
+        "lineage": "E2_direct_l2_v1",
+        "path": "results/mt_p1_precision_v1/MT-P2-C01/E2_direct_l2_v1/A4/E2_obstacle_aware__160bars__seed4190",
+        "quota_episodes": 512,
+        "quota_valid": true,
+        "source_commit": "4bba8836d3bab86b87351a47b70e674d6e86cfaa"
+      },
+      {
+        "arm": "A4",
+        "lineage": "E2_direct_l2_v1",
+        "path": "results/mt_p1_precision_v1/MT-P2-C01/E2_direct_l2_v1/A4/E2_obstacle_aware__205bars__seed4190",
+        "quota_episodes": 512,
+        "quota_valid": true,
+        "source_commit": "4bba8836d3bab86b87351a47b70e674d6e86cfaa"
+      },
+      {
+        "arm": "A4",
+        "lineage": "E2_direct_l2_v1",
+        "path": "results/mt_p1_precision_v1/MT-P2-C01/E2_direct_l2_v1/A4/E2_obstacle_aware__70bars__seed4190",
+        "quota_episodes": 512,
+        "quota_valid": true,
+        "source_commit": "4bba8836d3bab86b87351a47b70e674d6e86cfaa"
+      }
+    ],
+    "cells": 16,
+    "duration_seconds_sum": 1257,
+    "primary_episodes": 8192,
+    "quota_problems": []
+  },
+  "capture_by_seed": {
+    "A1": [
+      0.9857177734375,
+      0.980712890625,
+      0.979248046875,
+      0.9805908203125,
+      0.9803466796875,
+      0.9810791015625,
+      0.9833984375
+    ],
+    "A2": [
+      0.9517822265625,
+      0.950439453125,
+      0.9542236328125,
+      0.952392578125,
+      0.9549560546875,
+      0.95263671875,
+      0.955810546875
+    ],
+    "A3": [
+      0.9525146484375,
+      0.9561767578125,
+      0.95703125,
+      0.952392578125,
+      0.9544677734375,
+      0.9542236328125,
+      0.9500732421875
+    ],
+    "A4": [
+      0.92724609375,
+      0.9295654296875,
+      0.928955078125,
+      0.9361572265625,
+      0.930419921875,
+      0.92333984375,
+      0.920654296875
+    ]
+  },
+  "cells": 112,
+  "contrasts": {
+    "Delta_A": {
+      "bca95": [
+        0.024701799665178572,
+        0.02862548828125
+      ],
+      "ci95": [
+        0.02452724337544985,
+        0.02967197537455015
+      ],
+      "ci97p5": [
+        0.023978716935247953,
+        0.030220501814752047
+      ],
+      "exact_sign_flip_p": 0.015625,
+      "holm_p": 4.493591984470882e-07,
+      "mean": 0.027099609375,
+      "sd": 0.002781400040711975,
+      "seed_differences": {
+        "4201": 0.02960205078125,
+        "4202": 0.0284423828125,
+        "4203": 0.02655029296875,
+        "4204": 0.022216796875,
+        "4205": 0.02471923828125,
+        "4206": 0.0296630859375,
+        "4207": 0.02850341796875
+      },
+      "t": 25.777962890548913,
+      "two_sided_p": 2.246795992235441e-07
+    },
+    "I_A": {
+      "bca95": [
+        -0.0074462890625,
+        0.0006975446428571429
+      ],
+      "ci95": [
+        -0.008010789177127659,
+        0.002779204355699088
+      ],
+      "ci97p5": [
+        -0.009161208041200254,
+        0.003929623219771684
+      ],
+      "exact_sign_flip_p": 0.328125,
+      "holm_p": 0.2803089419820164,
+      "mean": -0.0026157924107142855,
+      "sd": 0.005833401712029808,
+      "seed_differences": {
+        "4201": -0.0086669921875,
+        "4202": -0.003662109375,
+        "4203": 0.0030517578125,
+        "4204": -0.011962890625,
+        "4205": -0.0013427734375,
+        "4206": 0.00244140625,
+        "4207": 0.0018310546875
+      },
+      "t": -1.1863980129892286,
+      "two_sided_p": 0.2803089419820164
+    },
+    "moving_visible_minus_hidden": {
+      "bca95": [
+        0.021100725446428572,
+        0.028250558035714284
+      ],
+      "ci95": [
+        0.02133042488933229,
+        0.030253001449953423
+      ],
+      "ci97p5": [
+        0.020379108249499105,
+        0.031204318089786607
+      ],
+      "exact_sign_flip_p": 0.015625,
+      "mean": 0.025791713169642856,
+      "sd": 0.004823818774876376,
+      "seed_differences": {
+        "4201": 0.0252685546875,
+        "4202": 0.026611328125,
+        "4203": 0.028076171875,
+        "4204": 0.0162353515625,
+        "4205": 0.0240478515625,
+        "4206": 0.0308837890625,
+        "4207": 0.0294189453125
+      },
+      "t": 14.146148957458141,
+      "two_sided_p": 7.794406785494105e-06
+    },
+    "static_visible_minus_hidden": {
+      "bca95": [
+        0.026681082589285716,
+        0.030936104910714284
+      ],
+      "ci95": [
+        0.02559965309027646,
+        0.031215358070437828
+      ],
+      "ci97p5": [
+        0.025000911958079363,
+        0.03181409920263493
+      ],
+      "exact_sign_flip_p": 0.015625,
+      "mean": 0.028407505580357144,
+      "sd": 0.0030360224911965784,
+      "seed_differences": {
+        "4201": 0.033935546875,
+        "4202": 0.0302734375,
+        "4203": 0.0250244140625,
+        "4204": 0.0281982421875,
+        "4205": 0.025390625,
+        "4206": 0.0284423828125,
+        "4207": 0.027587890625
+      },
+      "t": 24.755809731726433,
+      "two_sided_p": 2.858463767432159e-07
+    }
+  },
+  "earliest_cell_starts": {
+    "A1": "2026-10-15T07:30:55.555284+00:00",
+    "A2": "2026-10-15T07:32:15.955764+00:00",
+    "A3": "2026-10-16T06:14:24.362661+00:00",
+    "A4": "2026-10-16T06:16:08.956068+00:00"
+  },
+  "interpretive_limits": [
+    "A1/A2 and their static contrast were observed before amendment2; Delta_A is not fully blinded independent confirmation.",
+    "I_A nonsignificant is not proof of equivalence.",
+    "A negative gate excess is inside declared numerical tolerance, not physical headroom or safety margin. G1 candidate speed can sit essentially on its limit.",
+    "An amendment or agent-authored launch flag is not proof that the user separately approved the A3/A4 GPU run. Separate procedural authorization evidence is required."
+  ],
+  "latest_cell_finishes": {
+    "A1": "2026-10-15T09:51:46.340889+00:00",
+    "A2": "2026-10-15T09:56:49.775868+00:00",
+    "A3": "2026-10-16T08:59:14.445602+00:00",
+    "A4": "2026-10-16T09:04:06.703544+00:00"
+  },
+  "main_maximum_recorded_gate_excess": {
+    "coordinate_bound": 0.0,
+    "g1_accel": -0.000408745797763288,
+    "g1_speed": -3.09844301471518e-05,
+    "g1_turn": -0.0002593207198313685,
+    "g2_accel": -0.0006492239240287745,
+    "g2_position": -2.703719506855563e-06,
+    "g2_speed": -5.029170968673391e-05,
+    "g2_turn": -0.00043671323863003764,
+    "nonfinite": -0.5
+  },
+  "matches_recorded_analysis": {
+    "Delta_A": {
+      "bca": true,
+      "ci95": true,
+      "holm": true,
+      "mean": true,
+      "p": true,
+      "signflip": true
+    },
+    "I_A": {
+      "bca": true,
+      "ci95": true,
+      "holm": true,
+      "mean": true,
+      "p": true,
+      "signflip": true
+    },
+    "moving_visible_minus_hidden": {
+      "ci95": true,
+      "mean": true,
+      "p": true
+    },
+    "static_visible_minus_hidden": {
+      "ci95": true,
+      "mean": true,
+      "p": true
+    }
+  },
+  "raw_quota_problems": [],
+  "schema": "motar.mt-precision-numerical-audit.v1",
+  "source_commits_by_arm": {
+    "A1": [
+      "bbf530b0b4079d3bde9ce3d4d75990612b643065"
+    ],
+    "A2": [
+      "bbf530b0b4079d3bde9ce3d4d75990612b643065"
+    ],
+    "A3": [
+      "ea677289cecf637ebe8d3d473d29cd0b20cc47d9"
+    ],
+    "A4": [
+      "ea677289cecf637ebe8d3d473d29cd0b20cc47d9"
+    ]
+  },
+  "static_manifest_files_verified": 393,
+  "static_manifest_problems": [],
+  "static_manifest_sha_matches_amendment": true,
+  "total_primary_episodes": 229376
+}

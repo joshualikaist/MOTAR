@@ -1,0 +1,4113 @@
+{
+  "audit_date": "2026-10-16",
+  "audit_source_commit": "c038ba50193fb6401a473d8eb9ff4be097883e0e",
+  "audit_worktree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1",
+  "classification_counts": {
+    "DIRECT_LINEAGE_VALIDATED": 72,
+    "INSUFFICIENT_PROVENANCE": 238,
+    "NOT_EXPOSED_THIS_DEFECT": 187,
+    "OBSERVED_INVALID": 12,
+    "TF32_EXPOSED_VALIDITY_UNVERIFIED": 372
+  },
+  "definitions": {
+    "DIRECT_LINEAGE_VALIDATED": "Direct-distance run has matching receipt/result and recorded motion/swept/wall PASS under its finite evaluated contract; not universal safety.",
+    "INSUFFICIENT_PROVENANCE": "Cannot establish relevant model/backend and source from this metadata scope.",
+    "NOT_EXPOSED_THIS_DEFECT": "Static moving-executor bypass or physical AABB local screen; ancillary spawn/goal/steering calls and unrelated defects are not exonerated.",
+    "OBSERVED_INVALID": "Recorded swept proxy/wall violation in this cell; not a PhysX contact or proof every cell at this density is invalid.",
+    "TF32_EXPOSED_VALIDITY_UNVERIFIED": "Historical cdist moving screen is eligible for matmul; exact runtime TF32/kernel and GPU motion validity unverified. Exposure is not a measured failure."
+  },
+  "direct_runs": [
+    {
+      "cells": 16,
+      "manifest_issues": [],
+      "matmul_precision_records": {
+        "{\"cudnn_allow_tf32\": true, \"float32_matmul_precision\": \"high\", \"matmul_allow_tf32\": true, \"torch_version\": \"2.4.1+cu121\"}": 16
+      },
+      "min_swept_clearance_m": 0.22547250986099243,
+      "run_id": "MT-P2-C01",
+      "scope": "Only recorded scenarios, seeds, gates and tolerances. No robot safety or universal collision-free guarantee; no retroactive validation of old cdist runs.",
+      "selected_manifest_files_checked": 48,
+      "source_commit": "4bba8836d3bab86b87351a47b70e674d6e86cfaa",
+      "target_step_speed_max_mps": 1.4999804496765137,
+      "verdict": "CANARY_PASS",
+      "violations": {
+        "g1_g2_violations": 0,
+        "swept_violations": 0,
+        "wall_violations": 0
+      }
+    },
+    {
+      "cells": 56,
+      "manifest_issues": [],
+      "matmul_precision_records": {
+        "{\"cudnn_allow_tf32\": true, \"float32_matmul_precision\": \"high\", \"matmul_allow_tf32\": true, \"torch_version\": \"2.4.1+cu121\"}": 56
+      },
+      "min_swept_clearance_m": 0.2226601243019104,
+      "run_id": "KROC27-A-M02",
+      "scope": "Only recorded scenarios, seeds, gates and tolerances. No robot safety or universal collision-free guarantee; no retroactive validation of old cdist runs.",
+      "selected_manifest_files_checked": 168,
+      "source_commit": "ea677289cecf637ebe8d3d473d29cd0b20cc47d9",
+      "target_step_speed_max_mps": 1.5000035762786865,
+      "verdict": "COMPLETE",
+      "violations": {
+        "g1_g2_violations": 0,
+        "swept_violations": 0,
+        "wall_violations": 0
+      }
+    }
+  ],
+  "families": [
+    {
+      "classification_counts": {
+        "TF32_EXPOSED_VALIDITY_UNVERIFIED": 4
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "70",
+          "model": "symmetric_local_steer_v2_heading_continuity90",
+          "receipt_records": 4
+        }
+      ],
+      "example_receipt": "results/VOID_20260905_a4_stale_source_bundle_seed509/fixed2p0/70bars.receipt.json",
+      "family": "VOID_20260905_a4_stale_source_bundle_seed509",
+      "metadata_inputs": 8,
+      "metadata_path_sha256_digest": "b624a87c483c0e8254f90dd4c04bf81c553a1b2cc59b56e499ca633bb0c7dc30",
+      "receipt_records": 4,
+      "source_commit_counts": {
+        "8f26017c1e169282f2eeb98c6cb8fd1bdcb970ef": 4
+      }
+    },
+    {
+      "classification_counts": {
+        "TF32_EXPOSED_VALIDITY_UNVERIFIED": 3
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "70",
+          "model": "symmetric_local_steer_v2_heading_continuity90",
+          "receipt_records": 3
+        }
+      ],
+      "example_receipt": "results/VOID_20260905_a8_eval_search_state_restore_bug/S_dwa_arc/70bars.receipt.json",
+      "family": "VOID_20260905_a8_eval_search_state_restore_bug",
+      "metadata_inputs": 6,
+      "metadata_path_sha256_digest": "f6b48d53ffbe130c4321cb1fb472fdccf10ae9c3b0715f4fe82a3a03f758b283",
+      "receipt_records": 3,
+      "source_commit_counts": {
+        "dd7caa7673ce094841560101ccb5e844a3ebc656": 3
+      }
+    },
+    {
+      "classification_counts": {
+        "TF32_EXPOSED_VALIDITY_UNVERIFIED": 1
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "70",
+          "model": "symmetric_local_steer_v2_heading_continuity90",
+          "receipt_records": 1
+        }
+      ],
+      "example_receipt": "results/VOID_20260905_a8_eval_source_touched_midrun/S_off/70bars.receipt.json",
+      "family": "VOID_20260905_a8_eval_source_touched_midrun",
+      "metadata_inputs": 2,
+      "metadata_path_sha256_digest": "27547f18698776eaded49fb734f6d628afc51b4c52c083f7c87d9d130bdb13f4",
+      "receipt_records": 1,
+      "source_commit_counts": {
+        "631e9380edf87c00f653893721405fecc4db9950": 1
+      }
+    },
+    {
+      "classification_counts": {
+        "TF32_EXPOSED_VALIDITY_UNVERIFIED": 1
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "70",
+          "model": "symmetric_local_steer_v2_heading_continuity90",
+          "receipt_records": 1
+        }
+      ],
+      "example_receipt": "results/VOID_20260906_l1_head_moved_by_docs_commit/ep25000_d070_stopcap_w0p45/70bars.receipt.json",
+      "family": "VOID_20260906_l1_head_moved_by_docs_commit",
+      "metadata_inputs": 2,
+      "metadata_path_sha256_digest": "d5b3ca223edada4488f87cc25a489b8baf224c62221837b6e035da116e117eac",
+      "receipt_records": 1,
+      "source_commit_counts": {
+        "199051b9bcf8c57c8428fc6aa1a16465481da09d": 1
+      }
+    },
+    {
+      "classification_counts": {
+        "TF32_EXPOSED_VALIDITY_UNVERIFIED": 9
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "70",
+          "model": "symmetric_local_steer_v2_heading_continuity90",
+          "receipt_records": 9
+        }
+      ],
+      "example_receipt": "results/dynamic_mesh_policy_sensitivity_d8b_2026-09-13/cells/s593_analytic_flat/70bars.receipt.json",
+      "family": "dynamic_mesh_policy_sensitivity_d8b_2026-09-13",
+      "metadata_inputs": 18,
+      "metadata_path_sha256_digest": "7790e2b9dee941356ec83b6a44a0cf110fbf1284f3d6aeb5e1a1451c087b7738",
+      "receipt_records": 9,
+      "source_commit_counts": {
+        "1e0eed8b963ed3ccdae93cc2e9ea67d9f9ddbaab": 9
+      }
+    },
+    {
+      "classification_counts": {
+        "NOT_EXPOSED_THIS_DEFECT": 13,
+        "OBSERVED_INVALID": 4,
+        "TF32_EXPOSED_VALIDITY_UNVERIFIED": 12
+      },
+      "density_model_counts": [
+        {
+          "arm": "E0_static",
+          "classification": "NOT_EXPOSED_THIS_DEFECT",
+          "density": "115",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 3
+        },
+        {
+          "arm": "E1_cv",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "115",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 2
+        },
+        {
+          "arm": "E2_obstacle_aware",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "115",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 2
+        },
+        {
+          "arm": "E0_static",
+          "classification": "NOT_EXPOSED_THIS_DEFECT",
+          "density": "160",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 2
+        },
+        {
+          "arm": "E1_cv",
+          "classification": "OBSERVED_INVALID",
+          "density": "160",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 2
+        },
+        {
+          "arm": "E2_obstacle_aware",
+          "classification": "OBSERVED_INVALID",
+          "density": "160",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 2
+        },
+        {
+          "arm": "E0_static",
+          "classification": "NOT_EXPOSED_THIS_DEFECT",
+          "density": "205",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 3
+        },
+        {
+          "arm": "E1_cv",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "205",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 2
+        },
+        {
+          "arm": "E2_obstacle_aware",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "205",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 2
+        },
+        {
+          "arm": "E0_static",
+          "classification": "NOT_EXPOSED_THIS_DEFECT",
+          "density": "70",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 5
+        },
+        {
+          "arm": "E1_cv",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "70",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 2
+        },
+        {
+          "arm": "E2_obstacle_aware",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "70",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 2
+        }
+      ],
+      "example_receipt": "results/kroc2027_A_canary_v1/b1/E0_static__115bars__seed4190/receipt.json",
+      "family": "kroc2027_A_canary_v1",
+      "metadata_inputs": 85,
+      "metadata_path_sha256_digest": "736b52019677af548cd37607beb5ae823fe4c4fea781d4269a8b211d28d0d003",
+      "receipt_records": 29,
+      "source_commit_counts": {
+        "06427e4f92b5c2c746629a7f7538563df5c58d50": 29
+      }
+    },
+    {
+      "classification_counts": {
+        "NOT_EXPOSED_THIS_DEFECT": 13,
+        "OBSERVED_INVALID": 4,
+        "TF32_EXPOSED_VALIDITY_UNVERIFIED": 12
+      },
+      "density_model_counts": [
+        {
+          "arm": "E0_static",
+          "classification": "NOT_EXPOSED_THIS_DEFECT",
+          "density": "115",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 3
+        },
+        {
+          "arm": "E1_cv",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "115",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 2
+        },
+        {
+          "arm": "E2_obstacle_aware",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "115",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 2
+        },
+        {
+          "arm": "E0_static",
+          "classification": "NOT_EXPOSED_THIS_DEFECT",
+          "density": "160",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 2
+        },
+        {
+          "arm": "E1_cv",
+          "classification": "OBSERVED_INVALID",
+          "density": "160",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 2
+        },
+        {
+          "arm": "E2_obstacle_aware",
+          "classification": "OBSERVED_INVALID",
+          "density": "160",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 2
+        },
+        {
+          "arm": "E0_static",
+          "classification": "NOT_EXPOSED_THIS_DEFECT",
+          "density": "205",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 3
+        },
+        {
+          "arm": "E1_cv",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "205",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 2
+        },
+        {
+          "arm": "E2_obstacle_aware",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "205",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 2
+        },
+        {
+          "arm": "E0_static",
+          "classification": "NOT_EXPOSED_THIS_DEFECT",
+          "density": "70",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 5
+        },
+        {
+          "arm": "E1_cv",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "70",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 2
+        },
+        {
+          "arm": "E2_obstacle_aware",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "70",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 2
+        }
+      ],
+      "example_receipt": "results/kroc2027_A_canary_v1_rerun1/b1/E0_static__115bars__seed4190/receipt.json",
+      "family": "kroc2027_A_canary_v1_rerun1",
+      "metadata_inputs": 85,
+      "metadata_path_sha256_digest": "1331a5dc8c5c459c9752f24cd7a97934fcec57eaa7960f223872bccb79a9cd71",
+      "receipt_records": 29,
+      "source_commit_counts": {
+        "bbf530b0b4079d3bde9ce3d4d75990612b643065": 29
+      }
+    },
+    {
+      "classification_counts": {
+        "NOT_EXPOSED_THIS_DEFECT": 56
+      },
+      "density_model_counts": [
+        {
+          "arm": "E0_static",
+          "classification": "NOT_EXPOSED_THIS_DEFECT",
+          "density": "115",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 14
+        },
+        {
+          "arm": "E0_static",
+          "classification": "NOT_EXPOSED_THIS_DEFECT",
+          "density": "160",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 14
+        },
+        {
+          "arm": "E0_static",
+          "classification": "NOT_EXPOSED_THIS_DEFECT",
+          "density": "205",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 14
+        },
+        {
+          "arm": "E0_static",
+          "classification": "NOT_EXPOSED_THIS_DEFECT",
+          "density": "70",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 14
+        }
+      ],
+      "example_receipt": "results/kroc2027_A_v1/A1/E0_static__115bars__seed4201/receipt.json",
+      "family": "kroc2027_A_v1",
+      "metadata_inputs": 168,
+      "metadata_path_sha256_digest": "5b99df6ab91f896d66fa0e98eae790299ef26834a41b236be4bb60739bbbce33",
+      "receipt_records": 56,
+      "source_commit_counts": {
+        "bbf530b0b4079d3bde9ce3d4d75990612b643065": 56
+      }
+    },
+    {
+      "classification_counts": {
+        "NOT_EXPOSED_THIS_DEFECT": 58
+      },
+      "density_model_counts": [
+        {
+          "arm": "E0_static",
+          "classification": "NOT_EXPOSED_THIS_DEFECT",
+          "density": "115",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 15
+        },
+        {
+          "arm": "E0_static",
+          "classification": "NOT_EXPOSED_THIS_DEFECT",
+          "density": "160",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 14
+        },
+        {
+          "arm": "E0_static",
+          "classification": "NOT_EXPOSED_THIS_DEFECT",
+          "density": "205",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 15
+        },
+        {
+          "arm": "E0_static",
+          "classification": "NOT_EXPOSED_THIS_DEFECT",
+          "density": "70",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 14
+        }
+      ],
+      "example_receipt": "results/kroc2027_B_v1/B0/E0_static__115bars__seed4301/receipt.json",
+      "family": "kroc2027_B_v1",
+      "metadata_inputs": 174,
+      "metadata_path_sha256_digest": "201d6b8b9d4d562a7233b1bb556219d8b11e6d1db30d27e985ccb03460b49bf9",
+      "receipt_records": 58,
+      "source_commit_counts": {
+        "2f8e69845f096667d05eb3279af418ff3199b6d4": 58
+      }
+    },
+    {
+      "classification_counts": {
+        "OBSERVED_INVALID": 4
+      },
+      "density_model_counts": [
+        {
+          "arm": "E1_cv",
+          "classification": "OBSERVED_INVALID",
+          "density": "160",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 2
+        },
+        {
+          "arm": "E2_obstacle_aware",
+          "classification": "OBSERVED_INVALID",
+          "density": "160",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 2
+        }
+      ],
+      "example_receipt": "results/kroc2027_moving_target_packets_v1/A3/E1_cv__160bars__seed4190/receipt.json",
+      "family": "kroc2027_moving_target_packets_v1",
+      "metadata_inputs": 12,
+      "metadata_path_sha256_digest": "690241c70c3c86215a61ca194376d674a12234f74bcc72e4922dc260b9ea6c58",
+      "receipt_records": 4,
+      "source_commit_counts": {
+        "2f8e69845f096667d05eb3279af418ff3199b6d4": 4
+      }
+    },
+    {
+      "classification_counts": {
+        "DIRECT_LINEAGE_VALIDATED": 72
+      },
+      "density_model_counts": [
+        {
+          "arm": "E1_cv",
+          "classification": "DIRECT_LINEAGE_VALIDATED",
+          "density": "115",
+          "model": "bounded_planar_drone_v1_rollout_direct_l2_v1",
+          "receipt_records": 2
+        },
+        {
+          "arm": "E2_obstacle_aware",
+          "classification": "DIRECT_LINEAGE_VALIDATED",
+          "density": "115",
+          "model": "bounded_planar_drone_v1_rollout_direct_l2_v1",
+          "receipt_records": 16
+        },
+        {
+          "arm": "E1_cv",
+          "classification": "DIRECT_LINEAGE_VALIDATED",
+          "density": "160",
+          "model": "bounded_planar_drone_v1_rollout_direct_l2_v1",
+          "receipt_records": 2
+        },
+        {
+          "arm": "E2_obstacle_aware",
+          "classification": "DIRECT_LINEAGE_VALIDATED",
+          "density": "160",
+          "model": "bounded_planar_drone_v1_rollout_direct_l2_v1",
+          "receipt_records": 16
+        },
+        {
+          "arm": "E1_cv",
+          "classification": "DIRECT_LINEAGE_VALIDATED",
+          "density": "205",
+          "model": "bounded_planar_drone_v1_rollout_direct_l2_v1",
+          "receipt_records": 2
+        },
+        {
+          "arm": "E2_obstacle_aware",
+          "classification": "DIRECT_LINEAGE_VALIDATED",
+          "density": "205",
+          "model": "bounded_planar_drone_v1_rollout_direct_l2_v1",
+          "receipt_records": 16
+        },
+        {
+          "arm": "E1_cv",
+          "classification": "DIRECT_LINEAGE_VALIDATED",
+          "density": "70",
+          "model": "bounded_planar_drone_v1_rollout_direct_l2_v1",
+          "receipt_records": 2
+        },
+        {
+          "arm": "E2_obstacle_aware",
+          "classification": "DIRECT_LINEAGE_VALIDATED",
+          "density": "70",
+          "model": "bounded_planar_drone_v1_rollout_direct_l2_v1",
+          "receipt_records": 16
+        }
+      ],
+      "example_receipt": "results/mt_p1_precision_v1/KROC27-A-M02/E2_direct_l2_v1/A3/E2_obstacle_aware__115bars__seed4201/receipt.json",
+      "family": "mt_p1_precision_v1",
+      "metadata_inputs": 216,
+      "metadata_path_sha256_digest": "51936874fb8aa9d9c8a4ebf23151f212d9dc8a6729264a33bb14b24c40a85025",
+      "receipt_records": 72,
+      "source_commit_counts": {
+        "4bba8836d3bab86b87351a47b70e674d6e86cfaa": 16,
+        "ea677289cecf637ebe8d3d473d29cd0b20cc47d9": 56
+      }
+    },
+    {
+      "classification_counts": {
+        "TF32_EXPOSED_VALIDITY_UNVERIFIED": 10
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "70",
+          "model": "symmetric_local_steer_v2_heading_continuity90",
+          "receipt_records": 10
+        }
+      ],
+      "example_receipt": "results/navrl_a8_readaptation_seed521/S_dwa_arc/70bars.receipt.json",
+      "family": "navrl_a8_readaptation_seed521",
+      "metadata_inputs": 20,
+      "metadata_path_sha256_digest": "bc254a67745c55276d6b46b62f59e330812dbbac32efe58c9e6693b64ddf6bd1",
+      "receipt_records": 10,
+      "source_commit_counts": {
+        "71ce1ffcad9cf7a2f3c5b481f5e5dbbdbc298d4c": 10
+      }
+    },
+    {
+      "classification_counts": {
+        "TF32_EXPOSED_VALIDITY_UNVERIFIED": 4
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "205",
+          "model": "symmetric_local_steer_v2_heading_continuity90",
+          "receipt_records": 4
+        }
+      ],
+      "example_receipt": "results/navrl_arc_attribution_205bars_seed49/dwa_arc/205bars.receipt.json",
+      "family": "navrl_arc_attribution_205bars_seed49",
+      "metadata_inputs": 8,
+      "metadata_path_sha256_digest": "40f859286943612a1dcdd434e8bfbf126263ffc6ae24cdb55e1d5f759e5d91bb",
+      "receipt_records": 4,
+      "source_commit_counts": {
+        "742022e818d513095564278d699b9f14173611b0": 4
+      }
+    },
+    {
+      "classification_counts": {
+        "TF32_EXPOSED_VALIDITY_UNVERIFIED": 4
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "70",
+          "model": "symmetric_local_steer_v2_heading_continuity90",
+          "receipt_records": 4
+        }
+      ],
+      "example_receipt": "results/navrl_arc_attribution_seed491/dwa_arc/70bars.receipt.json",
+      "family": "navrl_arc_attribution_seed491",
+      "metadata_inputs": 8,
+      "metadata_path_sha256_digest": "44758ecdadcb9d2fdc95419355b0d8384ef21d7491f096ab5e8e645daeaeb530",
+      "receipt_records": 4,
+      "source_commit_counts": {
+        "742022e818d513095564278d699b9f14173611b0": 4
+      }
+    },
+    {
+      "classification_counts": {
+        "TF32_EXPOSED_VALIDITY_UNVERIFIED": 4
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "70",
+          "model": "symmetric_local_steer_v2_heading_continuity90",
+          "receipt_records": 4
+        }
+      ],
+      "example_receipt": "results/navrl_arc_attribution_seed509/dwa_arc/70bars.receipt.json",
+      "family": "navrl_arc_attribution_seed509",
+      "metadata_inputs": 8,
+      "metadata_path_sha256_digest": "8d04ad9bb5060e9c228cb5f88c1ceb4d51a34b0dffb741908ddafa1e67a08c0f",
+      "receipt_records": 4,
+      "source_commit_counts": {
+        "742022e818d513095564278d699b9f14173611b0": 4
+      }
+    },
+    {
+      "classification_counts": {
+        "TF32_EXPOSED_VALIDITY_UNVERIFIED": 2
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "70",
+          "model": "symmetric_local_steer_v2_heading_continuity90",
+          "receipt_records": 2
+        }
+      ],
+      "example_receipt": "results/navrl_contact_geometry_seed491/off/70bars.receipt.json",
+      "family": "navrl_contact_geometry_seed491",
+      "metadata_inputs": 4,
+      "metadata_path_sha256_digest": "01e463089566d4ddba49b180a1817c0dee51d0de4c840211d498a927d87a56a7",
+      "receipt_records": 2,
+      "source_commit_counts": {
+        "ce9c6b70a52866db3d052c68d93b73f947785b41": 2
+      }
+    },
+    {
+      "classification_counts": {
+        "TF32_EXPOSED_VALIDITY_UNVERIFIED": 2
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "70",
+          "model": "symmetric_local_steer_v2_heading_continuity90",
+          "receipt_records": 2
+        }
+      ],
+      "example_receipt": "results/navrl_contact_geometry_seed497/off/70bars.receipt.json",
+      "family": "navrl_contact_geometry_seed497",
+      "metadata_inputs": 4,
+      "metadata_path_sha256_digest": "40092d265d54ef284b71762fc54223723cdec157819a1b15acb7e369df2066ff",
+      "receipt_records": 2,
+      "source_commit_counts": {
+        "c6d886bcb55f078dbcce00c8fe5276b774386f33": 2
+      }
+    },
+    {
+      "classification_counts": {
+        "TF32_EXPOSED_VALIDITY_UNVERIFIED": 2
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "70",
+          "model": "symmetric_local_steer_v2_heading_continuity90",
+          "receipt_records": 2
+        }
+      ],
+      "example_receipt": "results/navrl_contact_geometry_seed503/off/70bars.receipt.json",
+      "family": "navrl_contact_geometry_seed503",
+      "metadata_inputs": 4,
+      "metadata_path_sha256_digest": "64815ad3bcbc7c092575c4036b3f03e7bb4f2352315fba92f52c23d009ba1d15",
+      "receipt_records": 2,
+      "source_commit_counts": {
+        "d0dbeedfaa12cff2e8b26bb74e819a5519b991de": 2
+      }
+    },
+    {
+      "classification_counts": {
+        "TF32_EXPOSED_VALIDITY_UNVERIFIED": 6
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "70",
+          "model": "symmetric_local_steer_v2_heading_continuity90",
+          "receipt_records": 6
+        }
+      ],
+      "example_receipt": "results/navrl_contact_geometry_seed509/dwa_arc/70bars.receipt.json",
+      "family": "navrl_contact_geometry_seed509",
+      "metadata_inputs": 12,
+      "metadata_path_sha256_digest": "1a7d6d3f0acf4589895a0bf9eadc1506eaae0a0ad472ea480cf700b78d980db5",
+      "receipt_records": 6,
+      "source_commit_counts": {
+        "262b73d50552b029abdbea21878f265fe0d158ef": 6
+      }
+    },
+    {
+      "classification_counts": {
+        "NOT_EXPOSED_THIS_DEFECT": 6
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "NOT_EXPOSED_THIS_DEFECT",
+          "density": "100",
+          "model": "physx_ref5in_6dof_motor_wrench_v2_same_substep",
+          "receipt_records": 1
+        },
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "NOT_EXPOSED_THIS_DEFECT",
+          "density": "115",
+          "model": "physx_ref5in_6dof_motor_wrench_v2_same_substep",
+          "receipt_records": 1
+        },
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "NOT_EXPOSED_THIS_DEFECT",
+          "density": "130",
+          "model": "physx_ref5in_6dof_motor_wrench_v2_same_substep",
+          "receipt_records": 1
+        },
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "NOT_EXPOSED_THIS_DEFECT",
+          "density": "145",
+          "model": "physx_ref5in_6dof_motor_wrench_v2_same_substep",
+          "receipt_records": 1
+        },
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "NOT_EXPOSED_THIS_DEFECT",
+          "density": "70",
+          "model": "physx_ref5in_6dof_motor_wrench_v2_same_substep",
+          "receipt_records": 1
+        },
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "NOT_EXPOSED_THIS_DEFECT",
+          "density": "85",
+          "model": "physx_ref5in_6dof_motor_wrench_v2_same_substep",
+          "receipt_records": 1
+        }
+      ],
+      "example_receipt": "results/navrl_corrected_nonoverlap_physical_off_heldout_seed313/100bars.receipt.json",
+      "family": "navrl_corrected_nonoverlap_physical_off_heldout_seed313",
+      "metadata_inputs": 12,
+      "metadata_path_sha256_digest": "a5d5fbcbea09a4d4ad80397f440b218020338ce9c4c40f6a091716d054890caa",
+      "receipt_records": 6,
+      "source_commit_counts": {
+        "475328a708edea1a1c26a2a20606b69eea2329de": 6
+      }
+    },
+    {
+      "classification_counts": {
+        "TF32_EXPOSED_VALIDITY_UNVERIFIED": 3
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "70",
+          "model": "symmetric_local_steer_v2_heading_continuity90",
+          "receipt_records": 3
+        }
+      ],
+      "example_receipt": "results/navrl_depth_noise_order_seed487/linear/70bars.receipt.json",
+      "family": "navrl_depth_noise_order_seed487",
+      "metadata_inputs": 6,
+      "metadata_path_sha256_digest": "33353097e4b08e0f217fae366453a06312637a450ea71f42aae1d05c59784f25",
+      "receipt_records": 3,
+      "source_commit_counts": {
+        "99f0377db93c74771f03aa10afb39048cae22bc7": 3
+      }
+    },
+    {
+      "classification_counts": {
+        "INSUFFICIENT_PROVENANCE": 3
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "205",
+          "model": "NOT_RECORDED",
+          "receipt_records": 3
+        }
+      ],
+      "example_receipt": "results/navrl_detector_coupling_binbias_seed431/analytic_clean/205bars.receipt.json",
+      "family": "navrl_detector_coupling_binbias_seed431",
+      "metadata_inputs": 6,
+      "metadata_path_sha256_digest": "d43d898828e6c0ecd21f69446a28a6a0266e0158227265b1c78d5bf2d84a3441",
+      "receipt_records": 3,
+      "source_commit_counts": {
+        "b560303a8791c68c4135da94ca8a1ab86f3aa8e9": 3
+      }
+    },
+    {
+      "classification_counts": {
+        "INSUFFICIENT_PROVENANCE": 5
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "205",
+          "model": "NOT_RECORDED",
+          "receipt_records": 5
+        }
+      ],
+      "example_receipt": "results/navrl_detector_coupling_probe_seed409/analytic_clean/205bars.receipt.json",
+      "family": "navrl_detector_coupling_probe_seed409",
+      "metadata_inputs": 10,
+      "metadata_path_sha256_digest": "58c230ae00916d279ef5aaf6184876b30fe159a0b5eb43b62a9d1a37a46f7c66",
+      "receipt_records": 5,
+      "source_commit_counts": {
+        "c63430d97bca900caa3d9f0f6de2c7e8700194f6": 5
+      }
+    },
+    {
+      "classification_counts": {
+        "TF32_EXPOSED_VALIDITY_UNVERIFIED": 8
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "70",
+          "model": "symmetric_local_steer_v2_heading_continuity90",
+          "receipt_records": 8
+        }
+      ],
+      "example_receipt": "results/navrl_detector_distractor_envelope_seed479/cells/default_n0/70bars.receipt.json",
+      "family": "navrl_detector_distractor_envelope_seed479",
+      "metadata_inputs": 16,
+      "metadata_path_sha256_digest": "c3bd2264da093b33290755423037067b2a806a3794daba72d4d977dcf4fc9bd1",
+      "receipt_records": 8,
+      "source_commit_counts": {
+        "a5ec421a34957d8c851793b4edff350a6acd3662": 8
+      }
+    },
+    {
+      "classification_counts": {
+        "INSUFFICIENT_PROVENANCE": 1
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "205",
+          "model": "NOT_RECORDED",
+          "receipt_records": 1
+        }
+      ],
+      "example_receipt": "results/navrl_detector_v7_error_profile_seed401_VOID_governor_off/cell/205bars.receipt.json",
+      "family": "navrl_detector_v7_error_profile_seed401_VOID_governor_off",
+      "metadata_inputs": 2,
+      "metadata_path_sha256_digest": "64c275e83e750720b6a727ecdd09fd2192fb8b0753665df684e922dea3eba701",
+      "receipt_records": 1,
+      "source_commit_counts": {
+        "c63430d97bca900caa3d9f0f6de2c7e8700194f6": 1
+      }
+    },
+    {
+      "classification_counts": {
+        "INSUFFICIENT_PROVENANCE": 1
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "205",
+          "model": "NOT_RECORDED",
+          "receipt_records": 1
+        }
+      ],
+      "example_receipt": "results/navrl_detector_v7_error_profile_seed419/cell/205bars.receipt.json",
+      "family": "navrl_detector_v7_error_profile_seed419",
+      "metadata_inputs": 2,
+      "metadata_path_sha256_digest": "89f26b9826d94ee757f202eb02e8d5f5e20a3fa49b5255864c2596c369ab0320",
+      "receipt_records": 1,
+      "source_commit_counts": {
+        "c63430d97bca900caa3d9f0f6de2c7e8700194f6": 1
+      }
+    },
+    {
+      "classification_counts": {
+        "TF32_EXPOSED_VALIDITY_UNVERIFIED": 5
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "100",
+          "model": "symmetric_local_steer_v2_heading_continuity90",
+          "receipt_records": 1
+        },
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "130",
+          "model": "symmetric_local_steer_v2_heading_continuity90",
+          "receipt_records": 1
+        },
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "160",
+          "model": "symmetric_local_steer_v2_heading_continuity90",
+          "receipt_records": 1
+        },
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "205",
+          "model": "symmetric_local_steer_v2_heading_continuity90",
+          "receipt_records": 1
+        },
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "70",
+          "model": "symmetric_local_steer_v2_heading_continuity90",
+          "receipt_records": 1
+        }
+      ],
+      "example_receipt": "results/navrl_grid_d1_gate_off_T0_seed523/T0_d070_off/70bars.receipt.json",
+      "family": "navrl_grid_d1_gate_off_T0_seed523",
+      "metadata_inputs": 10,
+      "metadata_path_sha256_digest": "4d3b988046e128ef146a7a5cd7f2742baf10972f4760100dae1103526fb821e0",
+      "receipt_records": 5,
+      "source_commit_counts": {
+        "22541cd9e435513091ca12fe81aee472671da6ce": 5
+      }
+    },
+    {
+      "classification_counts": {
+        "TF32_EXPOSED_VALIDITY_UNVERIFIED": 20
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "100",
+          "model": "symmetric_local_steer_v2_heading_continuity90",
+          "receipt_records": 4
+        },
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "130",
+          "model": "symmetric_local_steer_v2_heading_continuity90",
+          "receipt_records": 4
+        },
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "160",
+          "model": "symmetric_local_steer_v2_heading_continuity90",
+          "receipt_records": 4
+        },
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "205",
+          "model": "symmetric_local_steer_v2_heading_continuity90",
+          "receipt_records": 4
+        },
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "70",
+          "model": "symmetric_local_steer_v2_heading_continuity90",
+          "receipt_records": 4
+        }
+      ],
+      "example_receipt": "results/navrl_grid_d1p_ep25000_seed523/ep25000_d070_dwa_arc/70bars.receipt.json",
+      "family": "navrl_grid_d1p_ep25000_seed523",
+      "metadata_inputs": 40,
+      "metadata_path_sha256_digest": "29bc95ca6fb7da926512356b8c5bb9d1e7031943afe67e5d2e3ae7e9179e0c40",
+      "receipt_records": 20,
+      "source_commit_counts": {
+        "40d4ec110b1a692fe76a7382fb813df1ecd0ac3f": 20
+      }
+    },
+    {
+      "classification_counts": {
+        "TF32_EXPOSED_VALIDITY_UNVERIFIED": 4
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "70",
+          "model": "symmetric_local_steer_v2_heading_continuity90",
+          "receipt_records": 4
+        }
+      ],
+      "example_receipt": "results/navrl_grid_d4_coadapt_seed521/T0_d070_riskcap/70bars.receipt.json",
+      "family": "navrl_grid_d4_coadapt_seed521",
+      "metadata_inputs": 8,
+      "metadata_path_sha256_digest": "6984b646d25daa06f451d2b90415b0932a47f91116ae66a5ab5bf3c894bd3d80",
+      "receipt_records": 4,
+      "source_commit_counts": {
+        "b99c103126727dd66beffb448188a6788429d134": 4
+      }
+    },
+    {
+      "classification_counts": {
+        "TF32_EXPOSED_VALIDITY_UNVERIFIED": 20
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "205",
+          "model": "symmetric_local_steer_v2_heading_continuity90",
+          "receipt_records": 10
+        },
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "70",
+          "model": "symmetric_local_steer_v2_heading_continuity90",
+          "receipt_records": 10
+        }
+      ],
+      "example_receipt": "results/navrl_grid_l1_ep25000_seed523/ep25000_d070_dwa_arc_w0p45/70bars.receipt.json",
+      "family": "navrl_grid_l1_ep25000_seed523",
+      "metadata_inputs": 40,
+      "metadata_path_sha256_digest": "440c9645e565cfc9e55934af0e270812c753c6f94a18c02a0be6584980d6ed17",
+      "receipt_records": 20,
+      "source_commit_counts": {
+        "3b6e7b5e1524e81d2b75c15fd55b5ac32b8e2691": 20
+      }
+    },
+    {
+      "classification_counts": {
+        "TF32_EXPOSED_VALIDITY_UNVERIFIED": 12
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "205",
+          "model": "symmetric_local_steer_v2_heading_continuity90",
+          "receipt_records": 6
+        },
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "70",
+          "model": "symmetric_local_steer_v2_heading_continuity90",
+          "receipt_records": 6
+        }
+      ],
+      "example_receipt": "results/navrl_grid_l1b_ep25000_seed523/ep25000_d070_arc_open0p3/70bars.receipt.json",
+      "family": "navrl_grid_l1b_ep25000_seed523",
+      "metadata_inputs": 24,
+      "metadata_path_sha256_digest": "21e72507dca7d130d68e243af69d1297070f7bca1253dc3574d011404c4217b5",
+      "receipt_records": 12,
+      "source_commit_counts": {
+        "f1fc29ba59981e184a359643f56009ccd1eaa05b": 12
+      }
+    },
+    {
+      "classification_counts": {
+        "TF32_EXPOSED_VALIDITY_UNVERIFIED": 4
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "205",
+          "model": "symmetric_local_steer_v2_heading_continuity90",
+          "receipt_records": 4
+        }
+      ],
+      "example_receipt": "results/navrl_grid_p10_empirical_s541/adapted_clean_s541/205bars.receipt.json",
+      "family": "navrl_grid_p10_empirical_s541",
+      "metadata_inputs": 8,
+      "metadata_path_sha256_digest": "eb93da96d77002be351ff929825eed263260c946db09f5f35e4a2913b09cdd23",
+      "receipt_records": 4,
+      "source_commit_counts": {
+        "1a39933b0d7a0812611cac044b359541458550dc": 4
+      }
+    },
+    {
+      "classification_counts": {
+        "TF32_EXPOSED_VALIDITY_UNVERIFIED": 4
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "205",
+          "model": "symmetric_local_steer_v2_heading_continuity90",
+          "receipt_records": 4
+        }
+      ],
+      "example_receipt": "results/navrl_grid_p10_empirical_s547/adapted_clean_s547/205bars.receipt.json",
+      "family": "navrl_grid_p10_empirical_s547",
+      "metadata_inputs": 8,
+      "metadata_path_sha256_digest": "1c253dab5cd37da9f550a3eecf3479d6893f858fbdf7404cf888c8e05029553d",
+      "receipt_records": 4,
+      "source_commit_counts": {
+        "1a39933b0d7a0812611cac044b359541458550dc": 4
+      }
+    },
+    {
+      "classification_counts": {
+        "TF32_EXPOSED_VALIDITY_UNVERIFIED": 2
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "70",
+          "model": "symmetric_local_steer_v2_heading_continuity90",
+          "receipt_records": 2
+        }
+      ],
+      "example_receipt": "results/navrl_grid_r0_drift_probe_T1_seed521/T1_d070_riskcap_rep1/70bars.receipt.json",
+      "family": "navrl_grid_r0_drift_probe_T1_seed521",
+      "metadata_inputs": 4,
+      "metadata_path_sha256_digest": "17178d5c1143d3f5dffeda856a4591436d419dc7fbe7b1e55042db25abbebfb0",
+      "receipt_records": 2,
+      "source_commit_counts": {
+        "4937f7746e7b7afaacdafa75f4648c8b998efd79": 2
+      }
+    },
+    {
+      "classification_counts": {
+        "TF32_EXPOSED_VALIDITY_UNVERIFIED": 25
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "100",
+          "model": "symmetric_local_steer_v2_heading_continuity90",
+          "receipt_records": 5
+        },
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "130",
+          "model": "symmetric_local_steer_v2_heading_continuity90",
+          "receipt_records": 5
+        },
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "160",
+          "model": "symmetric_local_steer_v2_heading_continuity90",
+          "receipt_records": 5
+        },
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "205",
+          "model": "symmetric_local_steer_v2_heading_continuity90",
+          "receipt_records": 5
+        },
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "70",
+          "model": "symmetric_local_steer_v2_heading_continuity90",
+          "receipt_records": 5
+        }
+      ],
+      "example_receipt": "results/navrl_grid_r1_seedrep_ep25000_s527/ep25000_d070_dwa_arc/70bars.receipt.json",
+      "family": "navrl_grid_r1_seedrep_ep25000_s527",
+      "metadata_inputs": 50,
+      "metadata_path_sha256_digest": "e9ecc2878078bb7bbcf2da43a0601d259a4610a997802444f514227bedd42cf4",
+      "receipt_records": 25,
+      "source_commit_counts": {
+        "c1c33d62578c8750d8e1dc7a6d9bef7730e0dafc": 25
+      }
+    },
+    {
+      "classification_counts": {
+        "TF32_EXPOSED_VALIDITY_UNVERIFIED": 25
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "100",
+          "model": "symmetric_local_steer_v2_heading_continuity90",
+          "receipt_records": 5
+        },
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "130",
+          "model": "symmetric_local_steer_v2_heading_continuity90",
+          "receipt_records": 5
+        },
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "160",
+          "model": "symmetric_local_steer_v2_heading_continuity90",
+          "receipt_records": 5
+        },
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "205",
+          "model": "symmetric_local_steer_v2_heading_continuity90",
+          "receipt_records": 5
+        },
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "70",
+          "model": "symmetric_local_steer_v2_heading_continuity90",
+          "receipt_records": 5
+        }
+      ],
+      "example_receipt": "results/navrl_grid_r1_seedrep_ep25000_s531/ep25000_d070_dwa_arc/70bars.receipt.json",
+      "family": "navrl_grid_r1_seedrep_ep25000_s531",
+      "metadata_inputs": 50,
+      "metadata_path_sha256_digest": "0bcdd2e5740245b01c368d36fce3e44a47778da74b104990ce81160bb5c3579f",
+      "receipt_records": 25,
+      "source_commit_counts": {
+        "c0ad44bd7f7ddd8fcf7929c1de50454ab389e6c7": 25
+      }
+    },
+    {
+      "classification_counts": {
+        "TF32_EXPOSED_VALIDITY_UNVERIFIED": 8
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "70",
+          "model": "symmetric_local_steer_v2_heading_continuity90",
+          "receipt_records": 8
+        }
+      ],
+      "example_receipt": "results/navrl_grid_r2_d4_trainseed_rep/T0s233_d070_riskcap/70bars.receipt.json",
+      "family": "navrl_grid_r2_d4_trainseed_rep",
+      "metadata_inputs": 16,
+      "metadata_path_sha256_digest": "de4ed55280f1b8615c1940ecfe4f7d3a077ab2e498e29b56d44fe12f2efbbb87",
+      "receipt_records": 8,
+      "source_commit_counts": {
+        "c9fd3b01accddc4500f507c23f155fff6c2b158b": 8
+      }
+    },
+    {
+      "classification_counts": {
+        "TF32_EXPOSED_VALIDITY_UNVERIFIED": 1
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "205",
+          "model": "symmetric_local_steer_v2_heading_continuity90",
+          "receipt_records": 1
+        }
+      ],
+      "example_receipt": "results/navrl_grid_r3_crosstree_s523/ep25000_d205_dwa_arc/205bars.receipt.json",
+      "family": "navrl_grid_r3_crosstree_s523",
+      "metadata_inputs": 2,
+      "metadata_path_sha256_digest": "5ecf1964fdad8fc3e0bd906dbf14523fce7f9e63b759ba291bca0a39b7f0d22c",
+      "receipt_records": 1,
+      "source_commit_counts": {
+        "c0ad44bd7f7ddd8fcf7929c1de50454ab389e6c7": 1
+      }
+    },
+    {
+      "classification_counts": {
+        "INSUFFICIENT_PROVENANCE": 1
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "NOT_RECORDED",
+          "model": "NOT_RECORDED",
+          "receipt_records": 1
+        }
+      ],
+      "example_receipt": "results/navrl_physical_target_invalid_forensics_post_wall_brake_seed509/summary.receipt.json",
+      "family": "navrl_physical_target_invalid_forensics_post_wall_brake_seed509",
+      "metadata_inputs": 2,
+      "metadata_path_sha256_digest": "f26746418dc71718e962e9b469b400d3b1382115377cd78e3e627fd6e199efe7",
+      "receipt_records": 1,
+      "source_commit_counts": {
+        "NOT_RECORDED": 1
+      }
+    },
+    {
+      "classification_counts": {
+        "INSUFFICIENT_PROVENANCE": 1
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "NOT_RECORDED",
+          "model": "NOT_RECORDED",
+          "receipt_records": 1
+        }
+      ],
+      "example_receipt": "results/navrl_physical_target_invalid_forensics_post_wall_support_seed509/summary.receipt.json",
+      "family": "navrl_physical_target_invalid_forensics_post_wall_support_seed509",
+      "metadata_inputs": 2,
+      "metadata_path_sha256_digest": "fd363b9e02aa80ca5551b36a83d77fa2227c417862fcf4d29804686b08c192d2",
+      "receipt_records": 1,
+      "source_commit_counts": {
+        "NOT_RECORDED": 1
+      }
+    },
+    {
+      "classification_counts": {
+        "INSUFFICIENT_PROVENANCE": 1
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "NOT_RECORDED",
+          "model": "NOT_RECORDED",
+          "receipt_records": 1
+        }
+      ],
+      "example_receipt": "results/navrl_physical_target_invalid_forensics_seed509/summary.receipt.json",
+      "family": "navrl_physical_target_invalid_forensics_seed509",
+      "metadata_inputs": 2,
+      "metadata_path_sha256_digest": "3ab74830d95468aa662c7210950baed09d2ac985e6788d4e308a28c1519a7413",
+      "receipt_records": 1,
+      "source_commit_counts": {
+        "NOT_RECORDED": 1
+      }
+    },
+    {
+      "classification_counts": {
+        "INSUFFICIENT_PROVENANCE": 1
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "NOT_RECORDED",
+          "model": "NOT_RECORDED",
+          "receipt_records": 1
+        }
+      ],
+      "example_receipt": "results/navrl_physical_target_speed_envelope_post_wall_brake_seed509/summary.receipt.json",
+      "family": "navrl_physical_target_speed_envelope_post_wall_brake_seed509",
+      "metadata_inputs": 2,
+      "metadata_path_sha256_digest": "972b02d2c6f008da4298910441aa472dc7d11eee01f233a58b3ff4c69ba25442",
+      "receipt_records": 1,
+      "source_commit_counts": {
+        "NOT_RECORDED": 1
+      }
+    },
+    {
+      "classification_counts": {
+        "INSUFFICIENT_PROVENANCE": 1
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "NOT_RECORDED",
+          "model": "NOT_RECORDED",
+          "receipt_records": 1
+        }
+      ],
+      "example_receipt": "results/navrl_physical_target_speed_envelope_post_wall_support_seed509/summary.receipt.json",
+      "family": "navrl_physical_target_speed_envelope_post_wall_support_seed509",
+      "metadata_inputs": 2,
+      "metadata_path_sha256_digest": "e388e699060d0f95087d2e3b101ef69df54bd18fe5db8c453a6327053bab72f5",
+      "receipt_records": 1,
+      "source_commit_counts": {
+        "NOT_RECORDED": 1
+      }
+    },
+    {
+      "classification_counts": {
+        "INSUFFICIENT_PROVENANCE": 1
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "NOT_RECORDED",
+          "model": "NOT_RECORDED",
+          "receipt_records": 1
+        }
+      ],
+      "example_receipt": "results/navrl_physical_target_speed_envelope_seed509/summary.receipt.json",
+      "family": "navrl_physical_target_speed_envelope_seed509",
+      "metadata_inputs": 2,
+      "metadata_path_sha256_digest": "059a8c69e0088b9a60f45b893102e05014fa6a98ab4e81e24e515a3da19c811a",
+      "receipt_records": 1,
+      "source_commit_counts": {
+        "NOT_RECORDED": 1
+      }
+    },
+    {
+      "classification_counts": {
+        "INSUFFICIENT_PROVENANCE": 3
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "1",
+          "model": "NOT_RECORDED",
+          "receipt_records": 3
+        }
+      ],
+      "example_receipt": "results/navrl_ref5in_active_search_geofence_seed367/cells/control/1bars.receipt.json",
+      "family": "navrl_ref5in_active_search_geofence_seed367",
+      "metadata_inputs": 6,
+      "metadata_path_sha256_digest": "8eac80b778c0784fe914333864aa62d25f2f178f1d43656b49f28225716e6b9c",
+      "receipt_records": 3,
+      "source_commit_counts": {
+        "d99ae0f92e28b1c635b5e5eaeb807cb20b90551b": 3
+      }
+    },
+    {
+      "classification_counts": {
+        "INSUFFICIENT_PROVENANCE": 2
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "1",
+          "model": "NOT_RECORDED",
+          "receipt_records": 2
+        }
+      ],
+      "example_receipt": "results/navrl_ref5in_camera_range_control_seed367/cells/camera_20m/1bars.receipt.json",
+      "family": "navrl_ref5in_camera_range_control_seed367",
+      "metadata_inputs": 4,
+      "metadata_path_sha256_digest": "cd79837d15d62dfeecd6bc7be2e75089ca6e25bf26785dc764046b989d1d4e9d",
+      "receipt_records": 2,
+      "source_commit_counts": {
+        "f4061b3d21b97f65e411665bb8425fd6d48d8d3d": 2
+      }
+    },
+    {
+      "classification_counts": {
+        "INSUFFICIENT_PROVENANCE": 2
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "1",
+          "model": "NOT_RECORDED",
+          "receipt_records": 2
+        }
+      ],
+      "example_receipt": "results/navrl_ref5in_cv_first_acquisition_seed359/cells/away/1bars.receipt.json",
+      "family": "navrl_ref5in_cv_first_acquisition_seed359",
+      "metadata_inputs": 4,
+      "metadata_path_sha256_digest": "49170348f17d08812b0cae174944d5d93628082786f74bf5a821d3ee90ee134b",
+      "receipt_records": 2,
+      "source_commit_counts": {
+        "c01de65e90aa0c091c402674aec9e081e05aa971": 2
+      }
+    },
+    {
+      "classification_counts": {
+        "INSUFFICIENT_PROVENANCE": 2
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "1",
+          "model": "NOT_RECORDED",
+          "receipt_records": 2
+        }
+      ],
+      "example_receipt": "results/navrl_ref5in_cv_first_acquisition_seed359_VOID_dirty_runtime/cells/away/1bars.receipt.json",
+      "family": "navrl_ref5in_cv_first_acquisition_seed359_VOID_dirty_runtime",
+      "metadata_inputs": 4,
+      "metadata_path_sha256_digest": "7aa37a3a21526eeba340205242a4ca755965f0e14bd83b1f6b87557ae4f91829",
+      "receipt_records": 2,
+      "source_commit_counts": {
+        "5e6d26de744efcaa1c176cc81a3b85e1bd3d629d": 2
+      }
+    },
+    {
+      "classification_counts": {
+        "INSUFFICIENT_PROVENANCE": 2
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "1",
+          "model": "NOT_RECORDED",
+          "receipt_records": 2
+        }
+      ],
+      "example_receipt": "results/navrl_ref5in_cv_heading_near_open_seed347/cells/away/1bars.receipt.json",
+      "family": "navrl_ref5in_cv_heading_near_open_seed347",
+      "metadata_inputs": 4,
+      "metadata_path_sha256_digest": "932401223faf497d92457f3b506459294b1a46f03a362ebefb5558e4a56d95b9",
+      "receipt_records": 2,
+      "source_commit_counts": {
+        "0e29134accfb9ae8e0ec271f8108ec3180050aac": 2
+      }
+    },
+    {
+      "classification_counts": {
+        "INSUFFICIENT_PROVENANCE": 4
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "70",
+          "model": "NOT_RECORDED",
+          "receipt_records": 4
+        }
+      ],
+      "example_receipt": "results/navrl_ref5in_cv_heading_seed337/cells/away/70bars.receipt.json",
+      "family": "navrl_ref5in_cv_heading_seed337",
+      "metadata_inputs": 8,
+      "metadata_path_sha256_digest": "2c69a8e77e9d687068f52c25e750048d5245898caac40775a96d85895dbd4701",
+      "receipt_records": 4,
+      "source_commit_counts": {
+        "f55bf281c066e636e499428c711e63597f2b3a0a": 4
+      }
+    },
+    {
+      "classification_counts": {
+        "INSUFFICIENT_PROVENANCE": 2
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "1",
+          "model": "NOT_RECORDED",
+          "receipt_records": 2
+        }
+      ],
+      "example_receipt": "results/navrl_ref5in_cv_heading_telemetry_seed353/cells/away/1bars.receipt.json",
+      "family": "navrl_ref5in_cv_heading_telemetry_seed353",
+      "metadata_inputs": 4,
+      "metadata_path_sha256_digest": "6bbc6fea4744ae9d32c8d346ef8e5aceef65ff1203660b6b2f99f29254debde4",
+      "receipt_records": 2,
+      "source_commit_counts": {
+        "40bb5204e14713113f0abff9d4004106c996281a": 2
+      }
+    },
+    {
+      "classification_counts": {
+        "INSUFFICIENT_PROVENANCE": 1
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "70",
+          "model": "NOT_RECORDED",
+          "receipt_records": 1
+        }
+      ],
+      "example_receipt": "results/navrl_ref5in_d1_eval_seed331/ref5in/70bars.receipt.json",
+      "family": "navrl_ref5in_d1_eval_seed331",
+      "metadata_inputs": 2,
+      "metadata_path_sha256_digest": "2fb58738610bf2b5b252e9e51e1ef5e5f1372f122f2156dec8ab7531989f3cff",
+      "receipt_records": 1,
+      "source_commit_counts": {
+        "ff506a006736aecb5962daffd080bdea433e19b1": 1
+      }
+    },
+    {
+      "classification_counts": {
+        "INSUFFICIENT_PROVENANCE": 2
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "70",
+          "model": "NOT_RECORDED",
+          "receipt_records": 2
+        }
+      ],
+      "example_receipt": "results/navrl_ref5in_detection_range_stage1_s457/cells/clip20/70bars.receipt.json",
+      "family": "navrl_ref5in_detection_range_stage1_s457",
+      "metadata_inputs": 4,
+      "metadata_path_sha256_digest": "1327ed67bfdb6a06bef91d70096a3dd2dd58b41e60e6c7d0f96a8e3fced763e2",
+      "receipt_records": 2,
+      "source_commit_counts": {
+        "06edd070b40d776d833d81b41c62b9bfb063589b": 2
+      }
+    },
+    {
+      "classification_counts": {
+        "INSUFFICIENT_PROVENANCE": 2
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "1",
+          "model": "NOT_RECORDED",
+          "receipt_records": 2
+        }
+      ],
+      "example_receipt": "results/navrl_ref5in_oob_exit_forensics_seed367/cells/camera_20m/1bars.receipt.json",
+      "family": "navrl_ref5in_oob_exit_forensics_seed367",
+      "metadata_inputs": 4,
+      "metadata_path_sha256_digest": "f285270a5c0de871581e0ce023353c8f108f1701ac6c18f8cf1bfc85f8c95e0a",
+      "receipt_records": 2,
+      "source_commit_counts": {
+        "d54c737c1db50bf4c64301c8d2efdd2641b784dc": 2
+      }
+    },
+    {
+      "classification_counts": {
+        "INSUFFICIENT_PROVENANCE": 1
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "70",
+          "model": "NOT_RECORDED",
+          "receipt_records": 1
+        }
+      ],
+      "example_receipt": "results/navrl_ref5in_outcome_diagnostic_seed317/ref5in/70bars.receipt.json",
+      "family": "navrl_ref5in_outcome_diagnostic_seed317",
+      "metadata_inputs": 2,
+      "metadata_path_sha256_digest": "c4f9aad6e3bb480c061ac4bf21323f362af4c74457734ceb40a504afe04ae82e",
+      "receipt_records": 1,
+      "source_commit_counts": {
+        "607e9a43e22d53981205e47b2fb28db74ad01a31": 1
+      }
+    },
+    {
+      "classification_counts": {
+        "INSUFFICIENT_PROVENANCE": 1
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "70",
+          "model": "NOT_RECORDED",
+          "receipt_records": 1
+        }
+      ],
+      "example_receipt": "results/navrl_ref5in_outcome_diagnostic_v2_seed317/ref5in/70bars.receipt.json",
+      "family": "navrl_ref5in_outcome_diagnostic_v2_seed317",
+      "metadata_inputs": 2,
+      "metadata_path_sha256_digest": "6593850adea641265196eb7c278de6a2d79b995008b7b0a0bf38889927769ed7",
+      "receipt_records": 1,
+      "source_commit_counts": {
+        "1f43dfd24cae4f40e57c66b1a39aa68476c4341c": 1
+      }
+    },
+    {
+      "classification_counts": {
+        "INSUFFICIENT_PROVENANCE": 1
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "70",
+          "model": "NOT_RECORDED",
+          "receipt_records": 1
+        }
+      ],
+      "example_receipt": "results/navrl_ref5in_p2_seed313/ref5in/70bars.receipt.json",
+      "family": "navrl_ref5in_p2_seed313",
+      "metadata_inputs": 2,
+      "metadata_path_sha256_digest": "b6ebe820c23cd1441f3b251db0b5ddfd7c05826b562b348aa2a57f68be0f2f16",
+      "receipt_records": 1,
+      "source_commit_counts": {
+        "0a570bffe67bef4e9ab033ba496dc6f34202af0e": 1
+      }
+    },
+    {
+      "classification_counts": {
+        "INSUFFICIENT_PROVENANCE": 1
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "70",
+          "model": "NOT_RECORDED",
+          "receipt_records": 1
+        }
+      ],
+      "example_receipt": "results/navrl_ref5in_reflection_audit_seed373/cells/reflection_audit/70bars.receipt.json",
+      "family": "navrl_ref5in_reflection_audit_seed373",
+      "metadata_inputs": 2,
+      "metadata_path_sha256_digest": "a8c5afaa7bbf7efcf4ab972e1019dd9d4768f30d264ef0e497892611aa605f1d",
+      "receipt_records": 1,
+      "source_commit_counts": {
+        "cff96c2aac8153d52181898c8d7809005f48b600": 1
+      }
+    },
+    {
+      "classification_counts": {
+        "INSUFFICIENT_PROVENANCE": 2
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "70",
+          "model": "NOT_RECORDED",
+          "receipt_records": 2
+        }
+      ],
+      "example_receipt": "results/navrl_ref5in_sensor_fidelity_seed421/cells/baseline/70bars.receipt.json",
+      "family": "navrl_ref5in_sensor_fidelity_seed421",
+      "metadata_inputs": 4,
+      "metadata_path_sha256_digest": "33a63cd99705fbd30e1b2cd99561cd2f0928bfd6095f7baa1346c216fae39b63",
+      "receipt_records": 2,
+      "source_commit_counts": {
+        "c11d367df8e4ef37eec8f1b09203bb9e3f6ba51f": 2
+      }
+    },
+    {
+      "classification_counts": {
+        "INSUFFICIENT_PROVENANCE": 2
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "70",
+          "model": "NOT_RECORDED",
+          "receipt_records": 1
+        },
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "NOT_RECORDED",
+          "model": "NOT_RECORDED",
+          "receipt_records": 1
+        }
+      ],
+      "example_receipt": "results/navrl_ref5in_symmetric_corridor_mode_probe_seed431/cell/70bars.receipt.json",
+      "family": "navrl_ref5in_symmetric_corridor_mode_probe_seed431",
+      "metadata_inputs": 4,
+      "metadata_path_sha256_digest": "f7d12a401ee1d8690a1cb80d203126a990ea07e31197c5d86a10b9c86e86ee63",
+      "receipt_records": 2,
+      "source_commit_counts": {
+        "NOT_RECORDED": 1,
+        "b6a59c1ad0c1e36262e033744aac94f4b1b49a05": 1
+      }
+    },
+    {
+      "classification_counts": {
+        "TF32_EXPOSED_VALIDITY_UNVERIFIED": 6
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "70",
+          "model": "symmetric_local_steer_v2_heading_continuity90",
+          "receipt_records": 6
+        }
+      ],
+      "example_receipt": "results/navrl_s1_shadow_seed481/m1_smoke/off/70bars.receipt.json",
+      "family": "navrl_s1_shadow_seed481",
+      "metadata_inputs": 12,
+      "metadata_path_sha256_digest": "9dff8f952fc2917d4ef6e53ea78d0a19afb891df41fdda38fa6a161e8605a46b",
+      "receipt_records": 6,
+      "source_commit_counts": {
+        "2db518fd02d11a02078bba95c0931f5d0c563a14": 6
+      }
+    },
+    {
+      "classification_counts": {
+        "INSUFFICIENT_PROVENANCE": 1
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "NOT_RECORDED",
+          "model": "NOT_RECORDED",
+          "receipt_records": 1
+        }
+      ],
+      "example_receipt": "results/navrl_sim2real_software_preflight_2026-08-24/summary.receipt.json",
+      "family": "navrl_sim2real_software_preflight_2026-08-24",
+      "metadata_inputs": 2,
+      "metadata_path_sha256_digest": "46e130a5b1bd7b0476772d1393863c0c1fb87a364058ec0e1540545120139e46",
+      "receipt_records": 1,
+      "source_commit_counts": {
+        "NOT_RECORDED": 1
+      }
+    },
+    {
+      "classification_counts": {
+        "INSUFFICIENT_PROVENANCE": 8
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "205",
+          "model": "NOT_RECORDED",
+          "receipt_records": 8
+        }
+      ],
+      "example_receipt": "results/navrl_v2_appearance_navigation_ab_seed151_157/seed151_envelope_analytic/205bars.receipt.json",
+      "family": "navrl_v2_appearance_navigation_ab_seed151_157",
+      "metadata_inputs": 16,
+      "metadata_path_sha256_digest": "e18dc46bea75043aaa3f9d3fc410b49e9b7cf4e9fa6a5fbf7abbd2e058359bae",
+      "receipt_records": 8,
+      "source_commit_counts": {
+        "009d1bed791cad50a335566defaa45791fb4f9f5": 7,
+        "5a28aaf4302780e0065500aa6700debc02885a70": 1
+      }
+    },
+    {
+      "classification_counts": {
+        "INSUFFICIENT_PROVENANCE": 1
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "205",
+          "model": "NOT_RECORDED",
+          "receipt_records": 1
+        }
+      ],
+      "example_receipt": "results/navrl_v2_bar_ceiling/instrumented/205bars.receipt.json",
+      "family": "navrl_v2_bar_ceiling",
+      "metadata_inputs": 2,
+      "metadata_path_sha256_digest": "acda2268e3b261d716c04463c1c8bbfb0a19f97e711c0ed066bb5f34cd29d932",
+      "receipt_records": 1,
+      "source_commit_counts": {
+        "80590adc30c4ba7a6650445bdf4650efcf169ecc": 1
+      }
+    },
+    {
+      "classification_counts": {
+        "INSUFFICIENT_PROVENANCE": 5
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "130",
+          "model": "NOT_RECORDED",
+          "receipt_records": 1
+        },
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "160",
+          "model": "NOT_RECORDED",
+          "receipt_records": 1
+        },
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "190",
+          "model": "NOT_RECORDED",
+          "receipt_records": 1
+        },
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "205",
+          "model": "NOT_RECORDED",
+          "receipt_records": 1
+        },
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "220",
+          "model": "NOT_RECORDED",
+          "receipt_records": 1
+        }
+      ],
+      "example_receipt": "results/navrl_v2_density_curve_riskcap/130bars.receipt.json",
+      "family": "navrl_v2_density_curve_riskcap",
+      "metadata_inputs": 10,
+      "metadata_path_sha256_digest": "aa7391f7938f54ea30640241b830ae0378df8d78c6cd76ea8dca9119afd3d36a",
+      "receipt_records": 5,
+      "source_commit_counts": {
+        "NOT_RECORDED": 5
+      }
+    },
+    {
+      "classification_counts": {
+        "INSUFFICIENT_PROVENANCE": 20
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "130",
+          "model": "NOT_RECORDED",
+          "receipt_records": 4
+        },
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "160",
+          "model": "NOT_RECORDED",
+          "receipt_records": 4
+        },
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "190",
+          "model": "NOT_RECORDED",
+          "receipt_records": 4
+        },
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "205",
+          "model": "NOT_RECORDED",
+          "receipt_records": 4
+        },
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "220",
+          "model": "NOT_RECORDED",
+          "receipt_records": 4
+        }
+      ],
+      "example_receipt": "results/navrl_v2_density_speed_map/speed_0p3/130bars.receipt.json",
+      "family": "navrl_v2_density_speed_map",
+      "metadata_inputs": 40,
+      "metadata_path_sha256_digest": "b3e92fcfa6688e1f9201f55c2823576b2f6191f9abfa7878a365b94c07255285",
+      "receipt_records": 20,
+      "source_commit_counts": {
+        "NOT_RECORDED": 20
+      }
+    },
+    {
+      "classification_counts": {
+        "INSUFFICIENT_PROVENANCE": 4
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "205",
+          "model": "NOT_RECORDED",
+          "receipt_records": 4
+        }
+      ],
+      "example_receipt": "results/navrl_v2_detector_navigation_ab_replication_seed97_101_schema2/seed101/analytic_bootstrap/205bars/205bars.receipt.json",
+      "family": "navrl_v2_detector_navigation_ab_replication_seed97_101_schema2",
+      "metadata_inputs": 8,
+      "metadata_path_sha256_digest": "c53d4c80861da8ccb1986cd5bdfca632afd34ac92322fcb30b15469506a0a7ee",
+      "receipt_records": 4,
+      "source_commit_counts": {
+        "9bb522291ff67bb7363b84fe91126c72cc215cd7": 4
+      }
+    },
+    {
+      "classification_counts": {
+        "INSUFFICIENT_PROVENANCE": 4
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "205",
+          "model": "NOT_RECORDED",
+          "receipt_records": 4
+        }
+      ],
+      "example_receipt": "results/navrl_v2_detector_navigation_ab_seed83_89_schema2/seed83/analytic_bootstrap/205bars/205bars.receipt.json",
+      "family": "navrl_v2_detector_navigation_ab_seed83_89_schema2",
+      "metadata_inputs": 8,
+      "metadata_path_sha256_digest": "da762e5dce61e02b390870e0073bebb8ad529a306842510b85dbc039066a3d43",
+      "receipt_records": 4,
+      "source_commit_counts": {
+        "3dcad1340842e1ee7df5b6823f843b94032c12c5": 4
+      }
+    },
+    {
+      "classification_counts": {
+        "INSUFFICIENT_PROVENANCE": 7
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "205",
+          "model": "NOT_RECORDED",
+          "receipt_records": 7
+        }
+      ],
+      "example_receipt": "results/navrl_v2_detector_robustness/analytic_clean/205bars.receipt.json",
+      "family": "navrl_v2_detector_robustness",
+      "metadata_inputs": 14,
+      "metadata_path_sha256_digest": "4a5fb52fbc1a5f6b33b7a478dd306abc0ff03d3abcde8c9ee410619977efd5c6",
+      "receipt_records": 7,
+      "source_commit_counts": {
+        "NOT_RECORDED": 7
+      }
+    },
+    {
+      "classification_counts": {
+        "INSUFFICIENT_PROVENANCE": 2
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "205",
+          "model": "NOT_RECORDED",
+          "receipt_records": 2
+        }
+      ],
+      "example_receipt": "results/navrl_v2_detector_threshold_diagnostic_seed173_179_VOID_source_drift/seed173_analytic_t055/205bars.receipt.json",
+      "family": "navrl_v2_detector_threshold_diagnostic_seed173_179_VOID_source_drift",
+      "metadata_inputs": 4,
+      "metadata_path_sha256_digest": "0897902d62c938e3364f08d075a446f9dd971721660943ca189a4348db99c16a",
+      "receipt_records": 2,
+      "source_commit_counts": {
+        "47d836b9be567643bd505079bcdfb3b223fe7e43": 2
+      }
+    },
+    {
+      "classification_counts": {
+        "INSUFFICIENT_PROVENANCE": 6
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "205",
+          "model": "NOT_RECORDED",
+          "receipt_records": 6
+        }
+      ],
+      "example_receipt": "results/navrl_v2_detector_threshold_diagnostic_seed191_193/seed191_analytic_t055/205bars.receipt.json",
+      "family": "navrl_v2_detector_threshold_diagnostic_seed191_193",
+      "metadata_inputs": 12,
+      "metadata_path_sha256_digest": "4c9f9e8a68457d88c1d090071ca0239d2cd6e3470b580fa956b12414f56606a1",
+      "receipt_records": 6,
+      "source_commit_counts": {
+        "47d836b9be567643bd505079bcdfb3b223fe7e43": 6
+      }
+    },
+    {
+      "classification_counts": {
+        "INSUFFICIENT_PROVENANCE": 4
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "205",
+          "model": "NOT_RECORDED",
+          "receipt_records": 4
+        }
+      ],
+      "example_receipt": "results/navrl_v2_ep19100_vs_ep24000_forgetting/ep19100_fast1p5/205bars.receipt.json",
+      "family": "navrl_v2_ep19100_vs_ep24000_forgetting",
+      "metadata_inputs": 8,
+      "metadata_path_sha256_digest": "507a91e1d1ae566e92fa91afd4d015f709066bc1e5e21dc41b7b775e5d85b15e",
+      "receipt_records": 4,
+      "source_commit_counts": {
+        "NOT_RECORDED": 4
+      }
+    },
+    {
+      "classification_counts": {
+        "INSUFFICIENT_PROVENANCE": 1
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "205",
+          "model": "NOT_RECORDED",
+          "receipt_records": 1
+        }
+      ],
+      "example_receipt": "results/navrl_v2_ep24000_action_deterministic/205bars.receipt.json",
+      "family": "navrl_v2_ep24000_action_deterministic",
+      "metadata_inputs": 2,
+      "metadata_path_sha256_digest": "75ea31a1146deec3731f2c9004f1c9b0de2df7f25fdc624cd74ea9ed770d7113",
+      "receipt_records": 1,
+      "source_commit_counts": {
+        "NOT_RECORDED": 1
+      }
+    },
+    {
+      "classification_counts": {
+        "INSUFFICIENT_PROVENANCE": 1
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "205",
+          "model": "NOT_RECORDED",
+          "receipt_records": 1
+        }
+      ],
+      "example_receipt": "results/navrl_v2_ep24000_action_stochastic/205bars.receipt.json",
+      "family": "navrl_v2_ep24000_action_stochastic",
+      "metadata_inputs": 2,
+      "metadata_path_sha256_digest": "9a2f855b32fb7cf12e995cfa6c3c5bd5ecb5ea75577c44a9b871e05379bb30a4",
+      "receipt_records": 1,
+      "source_commit_counts": {
+        "NOT_RECORDED": 1
+      }
+    },
+    {
+      "classification_counts": {
+        "INSUFFICIENT_PROVENANCE": 4
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "205",
+          "model": "NOT_RECORDED",
+          "receipt_records": 4
+        }
+      ],
+      "example_receipt": "results/navrl_v2_ep24000_causal_1to3/bearing_original/205bars.receipt.json",
+      "family": "navrl_v2_ep24000_causal_1to3",
+      "metadata_inputs": 8,
+      "metadata_path_sha256_digest": "47816901688066eca9d28e9e234d5acd78cf1b16bfb6fbca94a36ac028073452",
+      "receipt_records": 4,
+      "source_commit_counts": {
+        "NOT_RECORDED": 4
+      }
+    },
+    {
+      "classification_counts": {
+        "INSUFFICIENT_PROVENANCE": 3
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "205",
+          "model": "NOT_RECORDED",
+          "receipt_records": 3
+        }
+      ],
+      "example_receipt": "results/navrl_v2_ep24000_fixed_speed/speed_0p3/205bars.receipt.json",
+      "family": "navrl_v2_ep24000_fixed_speed",
+      "metadata_inputs": 6,
+      "metadata_path_sha256_digest": "f6b929a85eb780e925c353174c6e434c4938cf81c50612c64d0999a4623fdf9c",
+      "receipt_records": 3,
+      "source_commit_counts": {
+        "NOT_RECORDED": 3
+      }
+    },
+    {
+      "classification_counts": {
+        "INSUFFICIENT_PROVENANCE": 5
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "130",
+          "model": "NOT_RECORDED",
+          "receipt_records": 1
+        },
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "160",
+          "model": "NOT_RECORDED",
+          "receipt_records": 1
+        },
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "190",
+          "model": "NOT_RECORDED",
+          "receipt_records": 1
+        },
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "205",
+          "model": "NOT_RECORDED",
+          "receipt_records": 1
+        },
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "220",
+          "model": "NOT_RECORDED",
+          "receipt_records": 1
+        }
+      ],
+      "example_receipt": "results/navrl_v2_ep24000_heldout/130bars.receipt.json",
+      "family": "navrl_v2_ep24000_heldout",
+      "metadata_inputs": 10,
+      "metadata_path_sha256_digest": "46ee1ea840d840658b524510519f7e51065965594fee4fd10ea7b5867f6e88c6",
+      "receipt_records": 5,
+      "source_commit_counts": {
+        "NOT_RECORDED": 5
+      }
+    },
+    {
+      "classification_counts": {
+        "INSUFFICIENT_PROVENANCE": 2
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "205",
+          "model": "NOT_RECORDED",
+          "receipt_records": 2
+        }
+      ],
+      "example_receipt": "results/navrl_v2_ep24000_riskcap_seed44_screen/off/205bars.receipt.json",
+      "family": "navrl_v2_ep24000_riskcap_seed44_screen",
+      "metadata_inputs": 4,
+      "metadata_path_sha256_digest": "8134ef3183e5e304e261edef2342e12219956a457f5b71b76bc21b7dd93c3f10",
+      "receipt_records": 2,
+      "source_commit_counts": {
+        "NOT_RECORDED": 2
+      }
+    },
+    {
+      "classification_counts": {
+        "INSUFFICIENT_PROVENANCE": 5
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "205",
+          "model": "NOT_RECORDED",
+          "receipt_records": 5
+        }
+      ],
+      "example_receipt": "results/navrl_v2_ep24000_speed_governor_screen/clearance/205bars.receipt.json",
+      "family": "navrl_v2_ep24000_speed_governor_screen",
+      "metadata_inputs": 10,
+      "metadata_path_sha256_digest": "d574d1b5e268845fafd037bedb3e7dc35dabad01821c944d9a83dbd2f59bf7dc",
+      "receipt_records": 5,
+      "source_commit_counts": {
+        "NOT_RECORDED": 5
+      }
+    },
+    {
+      "classification_counts": {
+        "INSUFFICIENT_PROVENANCE": 1
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "205",
+          "model": "NOT_RECORDED",
+          "receipt_records": 1
+        }
+      ],
+      "example_receipt": "results/navrl_v2_ep24000_ttc_main_baseline/205bars.receipt.json",
+      "family": "navrl_v2_ep24000_ttc_main_baseline",
+      "metadata_inputs": 2,
+      "metadata_path_sha256_digest": "d265cd19ae4b6e1930b9e6c87626fac510754c6539ff5cde1746a6bf35fb1d21",
+      "receipt_records": 1,
+      "source_commit_counts": {
+        "NOT_RECORDED": 1
+      }
+    },
+    {
+      "classification_counts": {
+        "INSUFFICIENT_PROVENANCE": 1
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "205",
+          "model": "NOT_RECORDED",
+          "receipt_records": 1
+        }
+      ],
+      "example_receipt": "results/navrl_v2_ep24000_ttc_main_ttc/205bars.receipt.json",
+      "family": "navrl_v2_ep24000_ttc_main_ttc",
+      "metadata_inputs": 2,
+      "metadata_path_sha256_digest": "4f2b87d3052a447178335203481931803e5d98cb6c1b476b7889d49e1fd5b120",
+      "receipt_records": 1,
+      "source_commit_counts": {
+        "NOT_RECORDED": 1
+      }
+    },
+    {
+      "classification_counts": {
+        "TF32_EXPOSED_VALIDITY_UNVERIFIED": 5
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "205",
+          "model": "symmetric_local_steer_v2_heading_continuity90",
+          "receipt_records": 5
+        }
+      ],
+      "example_receipt": "results/navrl_v2_ep25000_stopcap_seed49_screen/fixed2p0/205bars.receipt.json",
+      "family": "navrl_v2_ep25000_stopcap_seed49_screen",
+      "metadata_inputs": 10,
+      "metadata_path_sha256_digest": "1fc09e7581d3869d1c3e7aa0a2026e1b455693ceff46c0c9dcec74a92c998f9e",
+      "receipt_records": 5,
+      "source_commit_counts": {
+        "db523d184ec05f0de63311c82ef55a13a4b99dc0": 5
+      }
+    },
+    {
+      "classification_counts": {
+        "INSUFFICIENT_PROVENANCE": 15
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "130",
+          "model": "NOT_RECORDED",
+          "receipt_records": 3
+        },
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "160",
+          "model": "NOT_RECORDED",
+          "receipt_records": 3
+        },
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "190",
+          "model": "NOT_RECORDED",
+          "receipt_records": 3
+        },
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "205",
+          "model": "NOT_RECORDED",
+          "receipt_records": 3
+        },
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "220",
+          "model": "NOT_RECORDED",
+          "receipt_records": 3
+        }
+      ],
+      "example_receipt": "results/navrl_v2_governor_adaptation_abc_seed53_schema2/A_off/130bars/130bars.receipt.json",
+      "family": "navrl_v2_governor_adaptation_abc_seed53_schema2",
+      "metadata_inputs": 30,
+      "metadata_path_sha256_digest": "6109fa8a3388d666916246d897323d4659e7fe0c5cbd30daf5c4887609b24dbb",
+      "receipt_records": 15,
+      "source_commit_counts": {
+        "3dcad1340842e1ee7df5b6823f843b94032c12c5": 15
+      }
+    },
+    {
+      "classification_counts": {
+        "INSUFFICIENT_PROVENANCE": 1
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "205",
+          "model": "NOT_RECORDED",
+          "receipt_records": 1
+        }
+      ],
+      "example_receipt": "results/navrl_v2_joint_speed_allocation_seed379/205bars.receipt.json",
+      "family": "navrl_v2_joint_speed_allocation_seed379",
+      "metadata_inputs": 2,
+      "metadata_path_sha256_digest": "40a0047c57fbf869fd25d8cbeb5a5270980bca109c0f4981f43f5f8b7388b805",
+      "receipt_records": 1,
+      "source_commit_counts": {
+        "9108136357562b447d7c1d052cb04ba70063632a": 1
+      }
+    },
+    {
+      "classification_counts": {
+        "INSUFFICIENT_PROVENANCE": 3
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "205",
+          "model": "NOT_RECORDED",
+          "receipt_records": 3
+        }
+      ],
+      "example_receipt": "results/navrl_v2_latency_budget/latency_0p2s_p3/205bars.receipt.json",
+      "family": "navrl_v2_latency_budget",
+      "metadata_inputs": 6,
+      "metadata_path_sha256_digest": "b2d8a2157feb4af627c85f05fc25f660f3759f5da74515beb042a8e9c3e8ff54",
+      "receipt_records": 3,
+      "source_commit_counts": {
+        "NOT_RECORDED": 3
+      }
+    },
+    {
+      "classification_counts": {
+        "INSUFFICIENT_PROVENANCE": 4
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "205",
+          "model": "NOT_RECORDED",
+          "receipt_records": 4
+        }
+      ],
+      "example_receipt": "results/navrl_v2_latency_compensate/analytic_clean/205bars.receipt.json",
+      "family": "navrl_v2_latency_compensate",
+      "metadata_inputs": 8,
+      "metadata_path_sha256_digest": "9dc96429f4251625519c3cb121115a9bc677e481d3cf711273d53e556dc03075",
+      "receipt_records": 4,
+      "source_commit_counts": {
+        "NOT_RECORDED": 4
+      }
+    },
+    {
+      "classification_counts": {
+        "INSUFFICIENT_PROVENANCE": 4
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "205",
+          "model": "NOT_RECORDED",
+          "receipt_records": 4
+        }
+      ],
+      "example_receipt": "results/navrl_v2_latency_ego_motion/latency_0p1s_p3/205bars.receipt.json",
+      "family": "navrl_v2_latency_ego_motion",
+      "metadata_inputs": 8,
+      "metadata_path_sha256_digest": "1ec13815a4eff67236649e3607b305baac96a181810a251a3e2d679043ae3a16",
+      "receipt_records": 4,
+      "source_commit_counts": {
+        "NOT_RECORDED": 4
+      }
+    },
+    {
+      "classification_counts": {
+        "INSUFFICIENT_PROVENANCE": 4
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "205",
+          "model": "NOT_RECORDED",
+          "receipt_records": 4
+        }
+      ],
+      "example_receipt": "results/navrl_v2_latency_obstacle_fix/latency_0p1s_map_predict/205bars.receipt.json",
+      "family": "navrl_v2_latency_obstacle_fix",
+      "metadata_inputs": 8,
+      "metadata_path_sha256_digest": "32af8815104c32eea6e57d0c75f5aeb2fe03333a5c1a3ff7697e661ef912bef5",
+      "receipt_records": 4,
+      "source_commit_counts": {
+        "NOT_RECORDED": 4
+      }
+    },
+    {
+      "classification_counts": {
+        "INSUFFICIENT_PROVENANCE": 6
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "205",
+          "model": "NOT_RECORDED",
+          "receipt_records": 6
+        }
+      ],
+      "example_receipt": "results/navrl_v2_lidar_assoc_gate/analytic_clean/205bars.receipt.json",
+      "family": "navrl_v2_lidar_assoc_gate",
+      "metadata_inputs": 12,
+      "metadata_path_sha256_digest": "3648d94aeb737b002163e0b6d3e2c70260d745210a7dbc7ec2171cd95fdb71bc",
+      "receipt_records": 6,
+      "source_commit_counts": {
+        "NOT_RECORDED": 6
+      }
+    },
+    {
+      "classification_counts": {
+        "INSUFFICIENT_PROVENANCE": 4
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "205",
+          "model": "NOT_RECORDED",
+          "receipt_records": 4
+        }
+      ],
+      "example_receipt": "results/navrl_v2_lidar_fallback/analytic_clean/205bars.receipt.json",
+      "family": "navrl_v2_lidar_fallback",
+      "metadata_inputs": 8,
+      "metadata_path_sha256_digest": "21c36ecfa56a6d0b28a5ac8cb0ac35b7e81fbd320b0c2c746f822f1eb3a6defc",
+      "receipt_records": 4,
+      "source_commit_counts": {
+        "NOT_RECORDED": 4
+      }
+    },
+    {
+      "classification_counts": {
+        "INSUFFICIENT_PROVENANCE": 4
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "205",
+          "model": "NOT_RECORDED",
+          "receipt_records": 4
+        }
+      ],
+      "example_receipt": "results/navrl_v2_lidar_fallback_seed51/analytic_clean/205bars.receipt.json",
+      "family": "navrl_v2_lidar_fallback_seed51",
+      "metadata_inputs": 8,
+      "metadata_path_sha256_digest": "a6ce4da8ee47cd6d56993138b129666486e90d5563b097b7dfbe2879847ffd48",
+      "receipt_records": 4,
+      "source_commit_counts": {
+        "NOT_RECORDED": 4
+      }
+    },
+    {
+      "classification_counts": {
+        "INSUFFICIENT_PROVENANCE": 5
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "205",
+          "model": "NOT_RECORDED",
+          "receipt_records": 5
+        }
+      ],
+      "example_receipt": "results/navrl_v2_lidar_range_only/analytic_clean/205bars.receipt.json",
+      "family": "navrl_v2_lidar_range_only",
+      "metadata_inputs": 10,
+      "metadata_path_sha256_digest": "3b211b524bf3c9248aa56cbdd8755b12bbaef4a630b7cc2c6115224717b6fd16",
+      "receipt_records": 5,
+      "source_commit_counts": {
+        "NOT_RECORDED": 5
+      }
+    },
+    {
+      "classification_counts": {
+        "INSUFFICIENT_PROVENANCE": 5
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "205",
+          "model": "NOT_RECORDED",
+          "receipt_records": 5
+        }
+      ],
+      "example_receipt": "results/navrl_v2_lidar_silent_correct/analytic_clean/205bars.receipt.json",
+      "family": "navrl_v2_lidar_silent_correct",
+      "metadata_inputs": 10,
+      "metadata_path_sha256_digest": "afeb40a06f43874fbe2c29a603d93a48df26e9b6b0cb615aac177d0049d96b7a",
+      "receipt_records": 5,
+      "source_commit_counts": {
+        "NOT_RECORDED": 5
+      }
+    },
+    {
+      "classification_counts": {
+        "INSUFFICIENT_PROVENANCE": 7
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "205",
+          "model": "NOT_RECORDED",
+          "receipt_records": 7
+        }
+      ],
+      "example_receipt": "results/navrl_v2_pose_noise_rng_audit_seed181/exact/205bars.receipt.json",
+      "family": "navrl_v2_pose_noise_rng_audit_seed181",
+      "metadata_inputs": 14,
+      "metadata_path_sha256_digest": "737d4c8ad2cec73d1e80ba003820addb6ab2da1b255ff85d1ed5a5dcbea0ce01",
+      "receipt_records": 7,
+      "source_commit_counts": {
+        "47d836b9be567643bd505079bcdfb3b223fe7e43": 7
+      }
+    },
+    {
+      "classification_counts": {
+        "INSUFFICIENT_PROVENANCE": 12
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "205",
+          "model": "NOT_RECORDED",
+          "receipt_records": 12
+        }
+      ],
+      "example_receipt": "results/navrl_v2_pose_premise_seed163/clk_m0p02/205bars.receipt.json",
+      "family": "navrl_v2_pose_premise_seed163",
+      "metadata_inputs": 24,
+      "metadata_path_sha256_digest": "efe8e8a78c22147857f53135b1f7157f291bd21a0f2a0120a1e8bae85a4348c8",
+      "receipt_records": 12,
+      "source_commit_counts": {
+        "35ac025d4e7463774022bb3f09872b0755a574d3": 3,
+        "c7d941fe997be65cb06871d8b685a06344111b33": 9
+      }
+    },
+    {
+      "classification_counts": {
+        "INSUFFICIENT_PROVENANCE": 9
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "205",
+          "model": "NOT_RECORDED",
+          "receipt_records": 9
+        }
+      ],
+      "example_receipt": "results/navrl_v2_riskcap_postadapt/fixed_0p3_off/205bars.receipt.json",
+      "family": "navrl_v2_riskcap_postadapt",
+      "metadata_inputs": 18,
+      "metadata_path_sha256_digest": "d5dde703fcbce037903cd3a627d4706b4c1f31228f02edb4dc2f3bea887179ec",
+      "receipt_records": 9,
+      "source_commit_counts": {
+        "NOT_RECORDED": 9
+      }
+    },
+    {
+      "classification_counts": {
+        "INSUFFICIENT_PROVENANCE": 16
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "130",
+          "model": "NOT_RECORDED",
+          "receipt_records": 4
+        },
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "160",
+          "model": "NOT_RECORDED",
+          "receipt_records": 4
+        },
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "190",
+          "model": "NOT_RECORDED",
+          "receipt_records": 4
+        },
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "205",
+          "model": "NOT_RECORDED",
+          "receipt_records": 4
+        }
+      ],
+      "example_receipt": "results/navrl_v2_speed_density_interaction_seed59_61_schema2/seed59/speed_0p3/130bars/130bars.receipt.json",
+      "family": "navrl_v2_speed_density_interaction_seed59_61_schema2",
+      "metadata_inputs": 32,
+      "metadata_path_sha256_digest": "f5921b7e089f876901bd7035c1f8b27e1dbd292921b14091781730e22b5b9348",
+      "receipt_records": 16,
+      "source_commit_counts": {
+        "3dcad1340842e1ee7df5b6823f843b94032c12c5": 16
+      }
+    },
+    {
+      "classification_counts": {
+        "INSUFFICIENT_PROVENANCE": 4
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "205",
+          "model": "NOT_RECORDED",
+          "receipt_records": 4
+        }
+      ],
+      "example_receipt": "results/navrl_v2_target_mask_backfill/analytic_clean/205bars.receipt.json",
+      "family": "navrl_v2_target_mask_backfill",
+      "metadata_inputs": 8,
+      "metadata_path_sha256_digest": "a1fd88b52247e239320d43e0015eeb9a71019852c9488b67fc32141fce4818ab",
+      "receipt_records": 4,
+      "source_commit_counts": {
+        "NOT_RECORDED": 4
+      }
+    },
+    {
+      "classification_counts": {
+        "INSUFFICIENT_PROVENANCE": 4
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "INSUFFICIENT_PROVENANCE",
+          "density": "205",
+          "model": "NOT_RECORDED",
+          "receipt_records": 4
+        }
+      ],
+      "example_receipt": "results/navrl_v2_target_mask_backfill_seed51/analytic_clean/205bars.receipt.json",
+      "family": "navrl_v2_target_mask_backfill_seed51",
+      "metadata_inputs": 8,
+      "metadata_path_sha256_digest": "1272bf56f268e083177eccb08adb89cd9e4955213c2d0ceeb03c88a6fdd2339c",
+      "receipt_records": 4,
+      "source_commit_counts": {
+        "NOT_RECORDED": 4
+      }
+    },
+    {
+      "classification_counts": {
+        "TF32_EXPOSED_VALIDITY_UNVERIFIED": 16
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "205",
+          "model": "symmetric_local_steer_v2_heading_continuity90",
+          "receipt_records": 16
+        }
+      ],
+      "example_receipt": "results/perception_p10_seed_replication_2026-09-10/grid_s857_eval541/adapted_clean_s541/205bars.receipt.json",
+      "family": "perception_p10_seed_replication_2026-09-10",
+      "metadata_inputs": 32,
+      "metadata_path_sha256_digest": "a717600f0efff963660383c3af7be92b925c6bff5ecb9f61d73650fa33f96d5e",
+      "receipt_records": 16,
+      "source_commit_counts": {
+        "a05f6a6e6d34f196f32bb14f459316847dee5c11": 16
+      }
+    },
+    {
+      "classification_counts": {
+        "NOT_EXPOSED_THIS_DEFECT": 1,
+        "TF32_EXPOSED_VALIDITY_UNVERIFIED": 3
+      },
+      "density_model_counts": [
+        {
+          "arm": "E0_static",
+          "classification": "NOT_EXPOSED_THIS_DEFECT",
+          "density": "160",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 1
+        },
+        {
+          "arm": "E1_cv",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "160",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 1
+        },
+        {
+          "arm": "E2_obstacle_aware",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "160",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 1
+        },
+        {
+          "arm": "H_historical",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "160",
+          "model": "symmetric_local_steer_v2_heading_continuity90",
+          "receipt_records": 1
+        }
+      ],
+      "example_receipt": "results/target_motion_e0_e2_canary_2026-09-18/E0_static__160bars__seed4101/receipt.json",
+      "family": "target_motion_e0_e2_canary_2026-09-18",
+      "metadata_inputs": 8,
+      "metadata_path_sha256_digest": "dd5089e6f66a53a464c6b2fd558103d40eb4ae7cd625f6712990a9e0fc759fc7",
+      "receipt_records": 4,
+      "source_commit_counts": {
+        "ae286e59bc56a0020018fce23392c97cf1d1c218": 4
+      }
+    },
+    {
+      "classification_counts": {
+        "NOT_EXPOSED_THIS_DEFECT": 12,
+        "TF32_EXPOSED_VALIDITY_UNVERIFIED": 36
+      },
+      "density_model_counts": [
+        {
+          "arm": "E0_static",
+          "classification": "NOT_EXPOSED_THIS_DEFECT",
+          "density": "115",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 3
+        },
+        {
+          "arm": "E1_cv",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "115",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 3
+        },
+        {
+          "arm": "E2_obstacle_aware",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "115",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 3
+        },
+        {
+          "arm": "H_historical",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "115",
+          "model": "symmetric_local_steer_v2_heading_continuity90",
+          "receipt_records": 3
+        },
+        {
+          "arm": "E0_static",
+          "classification": "NOT_EXPOSED_THIS_DEFECT",
+          "density": "160",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 3
+        },
+        {
+          "arm": "E1_cv",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "160",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 3
+        },
+        {
+          "arm": "E2_obstacle_aware",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "160",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 3
+        },
+        {
+          "arm": "H_historical",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "160",
+          "model": "symmetric_local_steer_v2_heading_continuity90",
+          "receipt_records": 3
+        },
+        {
+          "arm": "E0_static",
+          "classification": "NOT_EXPOSED_THIS_DEFECT",
+          "density": "205",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 3
+        },
+        {
+          "arm": "E1_cv",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "205",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 3
+        },
+        {
+          "arm": "E2_obstacle_aware",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "205",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 3
+        },
+        {
+          "arm": "H_historical",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "205",
+          "model": "symmetric_local_steer_v2_heading_continuity90",
+          "receipt_records": 3
+        },
+        {
+          "arm": "E0_static",
+          "classification": "NOT_EXPOSED_THIS_DEFECT",
+          "density": "70",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 3
+        },
+        {
+          "arm": "E1_cv",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "70",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 3
+        },
+        {
+          "arm": "E2_obstacle_aware",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "70",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 3
+        },
+        {
+          "arm": "H_historical",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "70",
+          "model": "symmetric_local_steer_v2_heading_continuity90",
+          "receipt_records": 3
+        }
+      ],
+      "example_receipt": "results/target_motion_e0_e2_evaluation_2026-09-18/E0_static__115bars__seed4101/receipt.json",
+      "family": "target_motion_e0_e2_evaluation_2026-09-18",
+      "metadata_inputs": 96,
+      "metadata_path_sha256_digest": "88dd11233bc5c6c1a7c2b15984873711f8d59844ebacf6aadb6e6c72729948b0",
+      "receipt_records": 48,
+      "source_commit_counts": {
+        "ae286e59bc56a0020018fce23392c97cf1d1c218": 48
+      }
+    },
+    {
+      "classification_counts": {
+        "NOT_EXPOSED_THIS_DEFECT": 28,
+        "TF32_EXPOSED_VALIDITY_UNVERIFIED": 86
+      },
+      "density_model_counts": [
+        {
+          "arm": "E0_static",
+          "classification": "NOT_EXPOSED_THIS_DEFECT",
+          "density": "115",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 7
+        },
+        {
+          "arm": "E1_cv",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "115",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 7
+        },
+        {
+          "arm": "E2_obstacle_aware",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "115",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 7
+        },
+        {
+          "arm": "H_historical",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "115",
+          "model": "symmetric_local_steer_v2_heading_continuity90",
+          "receipt_records": 7
+        },
+        {
+          "arm": "E0_static",
+          "classification": "NOT_EXPOSED_THIS_DEFECT",
+          "density": "160",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 7
+        },
+        {
+          "arm": "E1_cv",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "160",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 7
+        },
+        {
+          "arm": "E2_obstacle_aware",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "160",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 7
+        },
+        {
+          "arm": "H_historical",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "160",
+          "model": "symmetric_local_steer_v2_heading_continuity90",
+          "receipt_records": 7
+        },
+        {
+          "arm": "E0_static",
+          "classification": "NOT_EXPOSED_THIS_DEFECT",
+          "density": "205",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 7
+        },
+        {
+          "arm": "E1_cv",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "205",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 7
+        },
+        {
+          "arm": "E2_obstacle_aware",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "205",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 7
+        },
+        {
+          "arm": "H_historical",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "205",
+          "model": "symmetric_local_steer_v2_heading_continuity90",
+          "receipt_records": 7
+        },
+        {
+          "arm": "E0_static",
+          "classification": "NOT_EXPOSED_THIS_DEFECT",
+          "density": "70",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 7
+        },
+        {
+          "arm": "E1_cv",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "70",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 7
+        },
+        {
+          "arm": "E2_obstacle_aware",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "70",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 7
+        },
+        {
+          "arm": "H_historical",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "70",
+          "model": "symmetric_local_steer_v2_heading_continuity90",
+          "receipt_records": 9
+        }
+      ],
+      "example_receipt": "results/target_motion_replication_7seed/E0_static__115bars__seed4104/receipt.json",
+      "family": "target_motion_replication_7seed",
+      "metadata_inputs": 228,
+      "metadata_path_sha256_digest": "f37f16c906adbbeb99bf4134c72381b590ede100f3633ad32789daca64119570",
+      "receipt_records": 114,
+      "source_commit_counts": {
+        "b1c0bc612339d2f8dfb86a0ca16de11bdffe09b5": 114
+      }
+    },
+    {
+      "classification_counts": {
+        "TF32_EXPOSED_VALIDITY_UNVERIFIED": 3
+      },
+      "density_model_counts": [
+        {
+          "arm": "NOT_RECORDED",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "70",
+          "model": "symmetric_local_steer_v2_heading_continuity90",
+          "receipt_records": 3
+        }
+      ],
+      "example_receipt": "results/task_diagnostics_invariance_2026-09-14/off_a/70bars.receipt.json",
+      "family": "task_diagnostics_invariance_2026-09-14",
+      "metadata_inputs": 6,
+      "metadata_path_sha256_digest": "172e776802b35b4203a2739cdea2c70a0ee967e73a9d5bf2add42c1673177afb",
+      "receipt_records": 3,
+      "source_commit_counts": {
+        "866d1a847e42c8c2e3c906f9dbd9bd7563f87150": 3
+      }
+    }
+  ],
+  "historical_campaigns": [
+    {
+      "classification_counts": {
+        "NOT_EXPOSED_THIS_DEFECT": 12,
+        "TF32_EXPOSED_VALIDITY_UNVERIFIED": 36
+      },
+      "density_model_counts": [
+        {
+          "arm": "E0_static",
+          "classification": "NOT_EXPOSED_THIS_DEFECT",
+          "density": "115",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 3
+        },
+        {
+          "arm": "E1_cv",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "115",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 3
+        },
+        {
+          "arm": "E2_obstacle_aware",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "115",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 3
+        },
+        {
+          "arm": "H_historical",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "115",
+          "model": "symmetric_local_steer_v2_heading_continuity90",
+          "receipt_records": 3
+        },
+        {
+          "arm": "E0_static",
+          "classification": "NOT_EXPOSED_THIS_DEFECT",
+          "density": "160",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 3
+        },
+        {
+          "arm": "E1_cv",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "160",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 3
+        },
+        {
+          "arm": "E2_obstacle_aware",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "160",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 3
+        },
+        {
+          "arm": "H_historical",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "160",
+          "model": "symmetric_local_steer_v2_heading_continuity90",
+          "receipt_records": 3
+        },
+        {
+          "arm": "E0_static",
+          "classification": "NOT_EXPOSED_THIS_DEFECT",
+          "density": "205",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 3
+        },
+        {
+          "arm": "E1_cv",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "205",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 3
+        },
+        {
+          "arm": "E2_obstacle_aware",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "205",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 3
+        },
+        {
+          "arm": "H_historical",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "205",
+          "model": "symmetric_local_steer_v2_heading_continuity90",
+          "receipt_records": 3
+        },
+        {
+          "arm": "E0_static",
+          "classification": "NOT_EXPOSED_THIS_DEFECT",
+          "density": "70",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 3
+        },
+        {
+          "arm": "E1_cv",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "70",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 3
+        },
+        {
+          "arm": "E2_obstacle_aware",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "70",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 3
+        },
+        {
+          "arm": "H_historical",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "70",
+          "model": "symmetric_local_steer_v2_heading_continuity90",
+          "receipt_records": 3
+        }
+      ],
+      "family": "target_motion_e0_e2_evaluation_2026-09-18",
+      "main_cells": 48
+    },
+    {
+      "classification_counts": {
+        "NOT_EXPOSED_THIS_DEFECT": 28,
+        "TF32_EXPOSED_VALIDITY_UNVERIFIED": 84
+      },
+      "density_model_counts": [
+        {
+          "arm": "E0_static",
+          "classification": "NOT_EXPOSED_THIS_DEFECT",
+          "density": "115",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 7
+        },
+        {
+          "arm": "E1_cv",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "115",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 7
+        },
+        {
+          "arm": "E2_obstacle_aware",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "115",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 7
+        },
+        {
+          "arm": "H_historical",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "115",
+          "model": "symmetric_local_steer_v2_heading_continuity90",
+          "receipt_records": 7
+        },
+        {
+          "arm": "E0_static",
+          "classification": "NOT_EXPOSED_THIS_DEFECT",
+          "density": "160",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 7
+        },
+        {
+          "arm": "E1_cv",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "160",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 7
+        },
+        {
+          "arm": "E2_obstacle_aware",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "160",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 7
+        },
+        {
+          "arm": "H_historical",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "160",
+          "model": "symmetric_local_steer_v2_heading_continuity90",
+          "receipt_records": 7
+        },
+        {
+          "arm": "E0_static",
+          "classification": "NOT_EXPOSED_THIS_DEFECT",
+          "density": "205",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 7
+        },
+        {
+          "arm": "E1_cv",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "205",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 7
+        },
+        {
+          "arm": "E2_obstacle_aware",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "205",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 7
+        },
+        {
+          "arm": "H_historical",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "205",
+          "model": "symmetric_local_steer_v2_heading_continuity90",
+          "receipt_records": 7
+        },
+        {
+          "arm": "E0_static",
+          "classification": "NOT_EXPOSED_THIS_DEFECT",
+          "density": "70",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 7
+        },
+        {
+          "arm": "E1_cv",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "70",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 7
+        },
+        {
+          "arm": "E2_obstacle_aware",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "70",
+          "model": "bounded_planar_drone_v1_rollout",
+          "receipt_records": 7
+        },
+        {
+          "arm": "H_historical",
+          "classification": "TF32_EXPOSED_VALIDITY_UNVERIFIED",
+          "density": "70",
+          "model": "symmetric_local_steer_v2_heading_continuity90",
+          "receipt_records": 7
+        }
+      ],
+      "family": "target_motion_replication_7seed",
+      "main_cells": 112
+    }
+  ],
+  "key_input_sha256": {
+    "results/MANIFEST.json": "bb595589dcf7141eb7295cb876940426b6b88c1526b6fba87210282da49c8783",
+    "results/kroc2027_A_canary_v1/canary_report.json": "d62ae75777e6420fa4ebe9bdacfc349cf6025837ea811011a9f8ff850783ffaa",
+    "results/kroc2027_A_canary_v1_rerun1/canary_report.json": "013cbf6c50010675935954a859506bc8e447c018333a5e2804b0e9f2848f1a33",
+    "results/kroc2027_moving_target_packets_v1/RAW_MANIFEST.json": "2fed2806fccbc1a77a6879393ee6020301f12f8d2d0ef7f191c2b26e9d5c3cfe",
+    "results/kroc2027_moving_target_packets_v1/packets_report.json": "0ad611dfa207d9cbb09cd6894fa8e26f017bd99c9479be2f87e75d36ede42284",
+    "results/kroc2027_moving_target_packets_v1/tf32_replay.json": "b462e25ea1831dfe53eba31ca15bc351289ac8f1309fd06e00d4f5b9e97d870d",
+    "results/mt_p1_precision_v1/KROC27-A-M02/RAW_MANIFEST.json": "bc90b5b086cbae9db4daebbfcc81cf448f21348f1f648a1df3e025c9cba4bdd7",
+    "results/mt_p1_precision_v1/KROC27-A-M02/launch_receipt.json": "1892ccf7463a8e2ea4540b25d13e965727297214fd9edf31456b5df30d588162",
+    "results/mt_p1_precision_v1/KROC27-A-M02/run_summary.json": "fb335d7b3d83a3c5a45403624e01a0b43110d969e55fe8a32c8a501b02ed5ca4",
+    "results/mt_p1_precision_v1/MT-P2-C01/RAW_MANIFEST.json": "9b28af167706e6f39224402056943aa1bc1adbb8fa021efac6ef65cea6ebb4e4",
+    "results/mt_p1_precision_v1/MT-P2-C01/launch_receipt.json": "b383383ee20804c108559f5685b7213d2af0e31ebfdb529ae5a3426d676537c7",
+    "results/mt_p1_precision_v1/MT-P2-C01/run_summary.json": "d7bfe3f7f36417b2f19fb8a6fdb1badb7701224d44ad176302f1cc6df36f25e9",
+    "results/navrl_corrected_nonoverlap_physical_off_heldout_seed313/source_manifest.json": "97c6c486c28cc57fa8ee975378103780abb4caefb9e3237ba27b01d43dde9699",
+    "results/navrl_corrected_nonoverlap_physical_off_heldout_seed313/summary.json": "fd52ad6c4d4a9ba564510fd556cfd561b48ab9771a22799ecdc9956f84249559",
+    "results/navrl_corrected_nonoverlap_physical_off_smoke_seed907/summary.json": "85758ba6b6bef7b0097afe6e14c6dbcf6f127d1d80595a70da2fcbf699ec1a89",
+    "results/navrl_physical_target_braking_lower1p25_headingrest_seed827/summary.json": "722937789bab3f5bbd6fdfea2152443a526ea9269a2f23bcfc528e9b9bd8c406",
+    "results/navrl_physical_target_invalid_forensics_post_wall_brake_seed509/summary.json": "5e918481888bd8e790c18bbe8da4ffb3fa34170642ebc8f5c66e7fe16c59ba62",
+    "results/navrl_physical_target_invalid_forensics_post_wall_support_seed509/summary.json": "f4b85e13779bcd1a087c3150a55e281511a5344e930f5f72fa720cc52bd5555e",
+    "results/navrl_physical_target_invalid_forensics_seed509/summary.json": "c5e7a85c8f2b833131f388cda09a9cd0be8831cb90c0364c69cbfafd4ab831b1",
+    "results/navrl_physical_target_recovery_v2_gate_lower1p25_seed827/summary.json": "a85e95764061b7b20cacaa622efc44e2d7e31e054e398f57cfdf48ec98e6c04f",
+    "results/navrl_physical_target_recovery_v2_no_connector_forensics_seed827/summary.json": "bc5d05a3f36da9213989c84ae28eda9ad65b0ba60b55dc2bbe4b5d262a12b8ee",
+    "results/navrl_physical_target_route_recovery_forensics_seed827/summary.json": "8cb6824ac09a843d82dc58e5247ca21577712f0de669b333f9020681026fd4b4",
+    "results/navrl_physical_target_routed_gate_seed827/summary.json": "e3800a1afcb4d4634bac779c26eee329d40cead1a61ca7bbc8d8fe9b6da873c7",
+    "results/navrl_physical_target_routed_gate_seed827_attempt2/summary.json": "e5e4560464dc3a2080d904c2f8d2247e0c65e671dd63ea08d1b507ec65fc7197",
+    "results/navrl_physical_target_speed_envelope_post_wall_brake_seed509/summary.json": "2713716e965bc2be451b97eac41ad8cbb83bc047e86da535f622795d9aa9b7ca",
+    "results/navrl_physical_target_speed_envelope_post_wall_support_seed509/summary.json": "4c4eb8cefa5e610c771fa7671efb03cc0deabd052cf45fd1d5c62ee8cd183978",
+    "results/navrl_physical_target_speed_envelope_seed509/summary.json": "5f539fc1e688d1879de909b2358dd2e897f6aa48488c804356ea9df67f99cb90",
+    "results/navrl_physical_target_verification/summary.json": "bb6d3af7487225a472815bae22dc8738e8f98d7f7f3372f67035d6be9b4a6359",
+    "results/target_motion_e0_e2_2026-09-18/canonical_summary.json": "977f320cf9abcca6a3508a86796f3c928df2e4e8827ade853a595738812a2c91",
+    "results/target_motion_e0_e2_evaluation_2026-09-18/RAW_MANIFEST.json": "17c5a923864c4b60fc5541038c895eb98a412f917ab989108047fab010de1972",
+    "results/target_motion_e0_e2_evaluation_2026-09-18/analysis_report.json": "d7225dad275e4d506ba4b5ea87409483f2e50a1b07e6a5bada11127476fc0f8e",
+    "results/target_motion_replication_7seed/RAW_MANIFEST.json": "a46510cf75573e9a770ee4b01bcefd33cd268f3315587d53066fde3a43d13eb9",
+    "results/target_motion_replication_7seed/integrity_report.json": "b67f21fe71f7b3b35dfcf1dae08d4b69e8789c488622e8559bda67a5a6b1fe63",
+    "results/target_motion_replication_7seed/preflight_main.json": "81225439d014c9a3722479d4d959766070c38d7810f607c0bd373e87311ed15f",
+    "results/target_motion_replication_7seed/replication_record.json": "2d3f0bc5cf1e5cb44468a49121ef43b7ce9a0be240ed91d91aa8d0cd071ee65a"
+  },
+  "observed_invalid_receipts": [
+    "results/kroc2027_A_canary_v1/cells/A3/E1_cv__160bars__seed4190/receipt.json",
+    "results/kroc2027_A_canary_v1/cells/A3/E2_obstacle_aware__160bars__seed4190/receipt.json",
+    "results/kroc2027_A_canary_v1/cells/A4/E1_cv__160bars__seed4190/receipt.json",
+    "results/kroc2027_A_canary_v1/cells/A4/E2_obstacle_aware__160bars__seed4190/receipt.json",
+    "results/kroc2027_A_canary_v1_rerun1/cells/A3/E1_cv__160bars__seed4190/receipt.json",
+    "results/kroc2027_A_canary_v1_rerun1/cells/A3/E2_obstacle_aware__160bars__seed4190/receipt.json",
+    "results/kroc2027_A_canary_v1_rerun1/cells/A4/E1_cv__160bars__seed4190/receipt.json",
+    "results/kroc2027_A_canary_v1_rerun1/cells/A4/E2_obstacle_aware__160bars__seed4190/receipt.json",
+    "results/kroc2027_moving_target_packets_v1/A3/E1_cv__160bars__seed4190/receipt.json",
+    "results/kroc2027_moving_target_packets_v1/A3/E2_obstacle_aware__160bars__seed4190/receipt.json",
+    "results/kroc2027_moving_target_packets_v1/A4/E1_cv__160bars__seed4190/receipt.json",
+    "results/kroc2027_moving_target_packets_v1/A4/E2_obstacle_aware__160bars__seed4190/receipt.json"
+  ],
+  "operations": {
+    "checkpoint_deserialization": false,
+    "cpu_metadata_and_git_reads_only": true,
+    "gpu_execution": false,
+    "gpu_queries": false,
+    "historical_results_changed": false,
+    "simulator": false
+  },
+  "packet_diagnosis": {
+    "old_fallback_only_hypothesis": "REJECTED",
+    "packets": 606,
+    "scope": "Historical packets omit full bars, original turn sign, batch identities/layouts and full candidate states; CPU reconstruction is not exact historical CUDA replay.",
+    "task_flag_agreement": 606,
+    "task_flag_true": 604,
+    "tf32_on_batch2_matches_executed": 598,
+    "unresolved_count": 8,
+    "unresolved_status": "UNRESOLVED_INPUTS"
+  },
+  "physical_snapshot_checks": {
+    "checked": [
+      {
+        "matches_source_manifest": true,
+        "path": "/home/fair/workspaces/aerial_gym_ws/.codex_worktrees/braking_route_v3/results/navrl_corrected_nonoverlap_physical_off_heldout_seed313/source_snapshot/aerial_gym/task/navrl_task/navrl_task.py",
+        "sha256": "59ed989f33aab4ddcf569f1d9bb7bf512aee416bd67b9c1cec842d5e740f907b"
+      },
+      {
+        "matches_source_manifest": true,
+        "path": "/home/fair/workspaces/aerial_gym_ws/.codex_worktrees/braking_route_v3/results/navrl_corrected_nonoverlap_physical_off_heldout_seed313/source_snapshot/aerial_gym/task/navrl_task/target_motion.py",
+        "sha256": "86652a82ffe5e0d5599555d8a619ccd63186f9fa96e00e579a7e79d758ba6567"
+      }
+    ],
+    "family": "navrl_corrected_nonoverlap_physical_off_heldout_seed313",
+    "scope": "Exact archived source snapshot read; physical branch supplies bar_half_extents to bounded executor. This excludes the centre-distance local-screen cdist defect only.",
+    "snapshot_root": "/home/fair/workspaces/aerial_gym_ws/.codex_worktrees/braking_route_v3/results/navrl_corrected_nonoverlap_physical_off_heldout_seed313/source_snapshot"
+  },
+  "pinned_motion_source_checks": [
+    {
+      "angle_counts": {
+        "BOUNDED_TURN_ANGLES_DEG": 24,
+        "TURN_ANGLES_DEG": 10
+      },
+      "available": true,
+      "bounded_has_cdist": true,
+      "bounded_has_direct_opt_in": false,
+      "commit": "06427e4f92b5c2c746629a7f7538563df5c58d50",
+      "legacy_steer_has_cdist": true,
+      "path": "aerial_gym/task/navrl_task/target_motion.py",
+      "sha256": "a7179fb9fd6b9e19ae9d44f7eba3c7b5e3f758ff0568c8e16220c6d5c8dc9c5e",
+      "source_scope": "Git blob only; a dirty receipt is not upgraded to byte-attested runtime source"
+    },
+    {
+      "angle_counts": {
+        "BOUNDED_TURN_ANGLES_DEG": 24,
+        "TURN_ANGLES_DEG": 10
+      },
+      "available": true,
+      "bounded_has_cdist": true,
+      "bounded_has_direct_opt_in": false,
+      "commit": "199051b9bcf8c57c8428fc6aa1a16465481da09d",
+      "legacy_steer_has_cdist": true,
+      "path": "aerial_gym/task/navrl_task/target_motion.py",
+      "sha256": "86652a82ffe5e0d5599555d8a619ccd63186f9fa96e00e579a7e79d758ba6567",
+      "source_scope": "Git blob only; a dirty receipt is not upgraded to byte-attested runtime source"
+    },
+    {
+      "angle_counts": {
+        "BOUNDED_TURN_ANGLES_DEG": 24,
+        "TURN_ANGLES_DEG": 10
+      },
+      "available": true,
+      "bounded_has_cdist": true,
+      "bounded_has_direct_opt_in": false,
+      "commit": "1a39933b0d7a0812611cac044b359541458550dc",
+      "legacy_steer_has_cdist": true,
+      "path": "aerial_gym/task/navrl_task/target_motion.py",
+      "sha256": "86652a82ffe5e0d5599555d8a619ccd63186f9fa96e00e579a7e79d758ba6567",
+      "source_scope": "Git blob only; a dirty receipt is not upgraded to byte-attested runtime source"
+    },
+    {
+      "angle_counts": {
+        "BOUNDED_TURN_ANGLES_DEG": 24,
+        "TURN_ANGLES_DEG": 10
+      },
+      "available": true,
+      "bounded_has_cdist": true,
+      "bounded_has_direct_opt_in": false,
+      "commit": "1e0eed8b963ed3ccdae93cc2e9ea67d9f9ddbaab",
+      "legacy_steer_has_cdist": true,
+      "path": "aerial_gym/task/navrl_task/target_motion.py",
+      "sha256": "86652a82ffe5e0d5599555d8a619ccd63186f9fa96e00e579a7e79d758ba6567",
+      "source_scope": "Git blob only; a dirty receipt is not upgraded to byte-attested runtime source"
+    },
+    {
+      "angle_counts": {
+        "BOUNDED_TURN_ANGLES_DEG": 24,
+        "TURN_ANGLES_DEG": 10
+      },
+      "available": true,
+      "bounded_has_cdist": true,
+      "bounded_has_direct_opt_in": false,
+      "commit": "22541cd9e435513091ca12fe81aee472671da6ce",
+      "legacy_steer_has_cdist": true,
+      "path": "aerial_gym/task/navrl_task/target_motion.py",
+      "sha256": "86652a82ffe5e0d5599555d8a619ccd63186f9fa96e00e579a7e79d758ba6567",
+      "source_scope": "Git blob only; a dirty receipt is not upgraded to byte-attested runtime source"
+    },
+    {
+      "angle_counts": {
+        "BOUNDED_TURN_ANGLES_DEG": 24,
+        "TURN_ANGLES_DEG": 10
+      },
+      "available": true,
+      "bounded_has_cdist": true,
+      "bounded_has_direct_opt_in": false,
+      "commit": "262b73d50552b029abdbea21878f265fe0d158ef",
+      "legacy_steer_has_cdist": true,
+      "path": "aerial_gym/task/navrl_task/target_motion.py",
+      "sha256": "86652a82ffe5e0d5599555d8a619ccd63186f9fa96e00e579a7e79d758ba6567",
+      "source_scope": "Git blob only; a dirty receipt is not upgraded to byte-attested runtime source"
+    },
+    {
+      "angle_counts": {
+        "BOUNDED_TURN_ANGLES_DEG": 24,
+        "TURN_ANGLES_DEG": 10
+      },
+      "available": true,
+      "bounded_has_cdist": true,
+      "bounded_has_direct_opt_in": false,
+      "commit": "2db518fd02d11a02078bba95c0931f5d0c563a14",
+      "legacy_steer_has_cdist": true,
+      "path": "aerial_gym/task/navrl_task/target_motion.py",
+      "sha256": "86652a82ffe5e0d5599555d8a619ccd63186f9fa96e00e579a7e79d758ba6567",
+      "source_scope": "Git blob only; a dirty receipt is not upgraded to byte-attested runtime source"
+    },
+    {
+      "angle_counts": {
+        "BOUNDED_TURN_ANGLES_DEG": 24,
+        "TURN_ANGLES_DEG": 10
+      },
+      "available": true,
+      "bounded_has_cdist": true,
+      "bounded_has_direct_opt_in": false,
+      "commit": "2f8e69845f096667d05eb3279af418ff3199b6d4",
+      "legacy_steer_has_cdist": true,
+      "path": "aerial_gym/task/navrl_task/target_motion.py",
+      "sha256": "a7179fb9fd6b9e19ae9d44f7eba3c7b5e3f758ff0568c8e16220c6d5c8dc9c5e",
+      "source_scope": "Git blob only; a dirty receipt is not upgraded to byte-attested runtime source"
+    },
+    {
+      "angle_counts": {
+        "BOUNDED_TURN_ANGLES_DEG": 24,
+        "TURN_ANGLES_DEG": 10
+      },
+      "available": true,
+      "bounded_has_cdist": true,
+      "bounded_has_direct_opt_in": false,
+      "commit": "3b6e7b5e1524e81d2b75c15fd55b5ac32b8e2691",
+      "legacy_steer_has_cdist": true,
+      "path": "aerial_gym/task/navrl_task/target_motion.py",
+      "sha256": "86652a82ffe5e0d5599555d8a619ccd63186f9fa96e00e579a7e79d758ba6567",
+      "source_scope": "Git blob only; a dirty receipt is not upgraded to byte-attested runtime source"
+    },
+    {
+      "angle_counts": {
+        "BOUNDED_TURN_ANGLES_DEG": 24,
+        "TURN_ANGLES_DEG": 10
+      },
+      "available": true,
+      "bounded_has_cdist": true,
+      "bounded_has_direct_opt_in": false,
+      "commit": "40d4ec110b1a692fe76a7382fb813df1ecd0ac3f",
+      "legacy_steer_has_cdist": true,
+      "path": "aerial_gym/task/navrl_task/target_motion.py",
+      "sha256": "86652a82ffe5e0d5599555d8a619ccd63186f9fa96e00e579a7e79d758ba6567",
+      "source_scope": "Git blob only; a dirty receipt is not upgraded to byte-attested runtime source"
+    },
+    {
+      "angle_counts": {
+        "BOUNDED_TURN_ANGLES_DEG": 24,
+        "TURN_ANGLES_DEG": 10
+      },
+      "available": true,
+      "bounded_has_cdist": true,
+      "bounded_has_direct_opt_in": false,
+      "commit": "475328a708edea1a1c26a2a20606b69eea2329de",
+      "legacy_steer_has_cdist": true,
+      "path": "aerial_gym/task/navrl_task/target_motion.py",
+      "sha256": "86652a82ffe5e0d5599555d8a619ccd63186f9fa96e00e579a7e79d758ba6567",
+      "source_scope": "Git blob only; a dirty receipt is not upgraded to byte-attested runtime source"
+    },
+    {
+      "angle_counts": {
+        "BOUNDED_TURN_ANGLES_DEG": 24,
+        "TURN_ANGLES_DEG": 10
+      },
+      "available": true,
+      "bounded_has_cdist": true,
+      "bounded_has_direct_opt_in": false,
+      "commit": "4937f7746e7b7afaacdafa75f4648c8b998efd79",
+      "legacy_steer_has_cdist": true,
+      "path": "aerial_gym/task/navrl_task/target_motion.py",
+      "sha256": "86652a82ffe5e0d5599555d8a619ccd63186f9fa96e00e579a7e79d758ba6567",
+      "source_scope": "Git blob only; a dirty receipt is not upgraded to byte-attested runtime source"
+    },
+    {
+      "angle_counts": {
+        "BOUNDED_TURN_ANGLES_DEG": 24,
+        "TURN_ANGLES_DEG": 10
+      },
+      "available": true,
+      "bounded_has_cdist": true,
+      "bounded_has_direct_opt_in": true,
+      "commit": "4bba8836d3bab86b87351a47b70e674d6e86cfaa",
+      "legacy_steer_has_cdist": true,
+      "path": "aerial_gym/task/navrl_task/target_motion.py",
+      "sha256": "d8e243f375fd9dc8944a3ae2731900372045f538b051d07834bdcb054939b46f",
+      "source_scope": "Git blob only; a dirty receipt is not upgraded to byte-attested runtime source"
+    },
+    {
+      "angle_counts": {
+        "BOUNDED_TURN_ANGLES_DEG": 24,
+        "TURN_ANGLES_DEG": 10
+      },
+      "available": true,
+      "bounded_has_cdist": true,
+      "bounded_has_direct_opt_in": false,
+      "commit": "631e9380edf87c00f653893721405fecc4db9950",
+      "legacy_steer_has_cdist": true,
+      "path": "aerial_gym/task/navrl_task/target_motion.py",
+      "sha256": "86652a82ffe5e0d5599555d8a619ccd63186f9fa96e00e579a7e79d758ba6567",
+      "source_scope": "Git blob only; a dirty receipt is not upgraded to byte-attested runtime source"
+    },
+    {
+      "angle_counts": {
+        "BOUNDED_TURN_ANGLES_DEG": 24,
+        "TURN_ANGLES_DEG": 10
+      },
+      "available": true,
+      "bounded_has_cdist": true,
+      "bounded_has_direct_opt_in": false,
+      "commit": "71ce1ffcad9cf7a2f3c5b481f5e5dbbdbc298d4c",
+      "legacy_steer_has_cdist": true,
+      "path": "aerial_gym/task/navrl_task/target_motion.py",
+      "sha256": "86652a82ffe5e0d5599555d8a619ccd63186f9fa96e00e579a7e79d758ba6567",
+      "source_scope": "Git blob only; a dirty receipt is not upgraded to byte-attested runtime source"
+    },
+    {
+      "angle_counts": {
+        "BOUNDED_TURN_ANGLES_DEG": 24,
+        "TURN_ANGLES_DEG": 10
+      },
+      "available": true,
+      "bounded_has_cdist": true,
+      "bounded_has_direct_opt_in": false,
+      "commit": "742022e818d513095564278d699b9f14173611b0",
+      "legacy_steer_has_cdist": true,
+      "path": "aerial_gym/task/navrl_task/target_motion.py",
+      "sha256": "86652a82ffe5e0d5599555d8a619ccd63186f9fa96e00e579a7e79d758ba6567",
+      "source_scope": "Git blob only; a dirty receipt is not upgraded to byte-attested runtime source"
+    },
+    {
+      "angle_counts": {
+        "BOUNDED_TURN_ANGLES_DEG": 24,
+        "TURN_ANGLES_DEG": 10
+      },
+      "available": true,
+      "bounded_has_cdist": true,
+      "bounded_has_direct_opt_in": false,
+      "commit": "866d1a847e42c8c2e3c906f9dbd9bd7563f87150",
+      "legacy_steer_has_cdist": true,
+      "path": "aerial_gym/task/navrl_task/target_motion.py",
+      "sha256": "86652a82ffe5e0d5599555d8a619ccd63186f9fa96e00e579a7e79d758ba6567",
+      "source_scope": "Git blob only; a dirty receipt is not upgraded to byte-attested runtime source"
+    },
+    {
+      "angle_counts": {
+        "BOUNDED_TURN_ANGLES_DEG": 24,
+        "TURN_ANGLES_DEG": 10
+      },
+      "available": true,
+      "bounded_has_cdist": true,
+      "bounded_has_direct_opt_in": false,
+      "commit": "8f26017c1e169282f2eeb98c6cb8fd1bdcb970ef",
+      "legacy_steer_has_cdist": true,
+      "path": "aerial_gym/task/navrl_task/target_motion.py",
+      "sha256": "86652a82ffe5e0d5599555d8a619ccd63186f9fa96e00e579a7e79d758ba6567",
+      "source_scope": "Git blob only; a dirty receipt is not upgraded to byte-attested runtime source"
+    },
+    {
+      "angle_counts": {
+        "BOUNDED_TURN_ANGLES_DEG": 24,
+        "TURN_ANGLES_DEG": 10
+      },
+      "available": true,
+      "bounded_has_cdist": true,
+      "bounded_has_direct_opt_in": false,
+      "commit": "99f0377db93c74771f03aa10afb39048cae22bc7",
+      "legacy_steer_has_cdist": true,
+      "path": "aerial_gym/task/navrl_task/target_motion.py",
+      "sha256": "86652a82ffe5e0d5599555d8a619ccd63186f9fa96e00e579a7e79d758ba6567",
+      "source_scope": "Git blob only; a dirty receipt is not upgraded to byte-attested runtime source"
+    },
+    {
+      "angle_counts": {
+        "BOUNDED_TURN_ANGLES_DEG": 24,
+        "TURN_ANGLES_DEG": 10
+      },
+      "available": true,
+      "bounded_has_cdist": true,
+      "bounded_has_direct_opt_in": false,
+      "commit": "a05f6a6e6d34f196f32bb14f459316847dee5c11",
+      "legacy_steer_has_cdist": true,
+      "path": "aerial_gym/task/navrl_task/target_motion.py",
+      "sha256": "86652a82ffe5e0d5599555d8a619ccd63186f9fa96e00e579a7e79d758ba6567",
+      "source_scope": "Git blob only; a dirty receipt is not upgraded to byte-attested runtime source"
+    },
+    {
+      "angle_counts": {
+        "BOUNDED_TURN_ANGLES_DEG": 24,
+        "TURN_ANGLES_DEG": 10
+      },
+      "available": true,
+      "bounded_has_cdist": true,
+      "bounded_has_direct_opt_in": false,
+      "commit": "a5ec421a34957d8c851793b4edff350a6acd3662",
+      "legacy_steer_has_cdist": true,
+      "path": "aerial_gym/task/navrl_task/target_motion.py",
+      "sha256": "55139987a31fb2819c177c22c7944f2268abab9de9445887ebbaa09a4868d1cd",
+      "source_scope": "Git blob only; a dirty receipt is not upgraded to byte-attested runtime source"
+    },
+    {
+      "angle_counts": {
+        "BOUNDED_TURN_ANGLES_DEG": 24,
+        "TURN_ANGLES_DEG": 10
+      },
+      "available": true,
+      "bounded_has_cdist": true,
+      "bounded_has_direct_opt_in": false,
+      "commit": "ae286e59bc56a0020018fce23392c97cf1d1c218",
+      "legacy_steer_has_cdist": true,
+      "path": "aerial_gym/task/navrl_task/target_motion.py",
+      "sha256": "a7179fb9fd6b9e19ae9d44f7eba3c7b5e3f758ff0568c8e16220c6d5c8dc9c5e",
+      "source_scope": "Git blob only; a dirty receipt is not upgraded to byte-attested runtime source"
+    },
+    {
+      "angle_counts": {
+        "BOUNDED_TURN_ANGLES_DEG": 24,
+        "TURN_ANGLES_DEG": 10
+      },
+      "available": true,
+      "bounded_has_cdist": true,
+      "bounded_has_direct_opt_in": false,
+      "commit": "b1c0bc612339d2f8dfb86a0ca16de11bdffe09b5",
+      "legacy_steer_has_cdist": true,
+      "path": "aerial_gym/task/navrl_task/target_motion.py",
+      "sha256": "a7179fb9fd6b9e19ae9d44f7eba3c7b5e3f758ff0568c8e16220c6d5c8dc9c5e",
+      "source_scope": "Git blob only; a dirty receipt is not upgraded to byte-attested runtime source"
+    },
+    {
+      "angle_counts": {
+        "BOUNDED_TURN_ANGLES_DEG": 24,
+        "TURN_ANGLES_DEG": 10
+      },
+      "available": true,
+      "bounded_has_cdist": true,
+      "bounded_has_direct_opt_in": false,
+      "commit": "b99c103126727dd66beffb448188a6788429d134",
+      "legacy_steer_has_cdist": true,
+      "path": "aerial_gym/task/navrl_task/target_motion.py",
+      "sha256": "86652a82ffe5e0d5599555d8a619ccd63186f9fa96e00e579a7e79d758ba6567",
+      "source_scope": "Git blob only; a dirty receipt is not upgraded to byte-attested runtime source"
+    },
+    {
+      "angle_counts": {
+        "BOUNDED_TURN_ANGLES_DEG": 24,
+        "TURN_ANGLES_DEG": 10
+      },
+      "available": true,
+      "bounded_has_cdist": true,
+      "bounded_has_direct_opt_in": false,
+      "commit": "bbf530b0b4079d3bde9ce3d4d75990612b643065",
+      "legacy_steer_has_cdist": true,
+      "path": "aerial_gym/task/navrl_task/target_motion.py",
+      "sha256": "a7179fb9fd6b9e19ae9d44f7eba3c7b5e3f758ff0568c8e16220c6d5c8dc9c5e",
+      "source_scope": "Git blob only; a dirty receipt is not upgraded to byte-attested runtime source"
+    },
+    {
+      "angle_counts": {
+        "BOUNDED_TURN_ANGLES_DEG": 24,
+        "TURN_ANGLES_DEG": 10
+      },
+      "available": true,
+      "bounded_has_cdist": true,
+      "bounded_has_direct_opt_in": false,
+      "commit": "c0ad44bd7f7ddd8fcf7929c1de50454ab389e6c7",
+      "legacy_steer_has_cdist": true,
+      "path": "aerial_gym/task/navrl_task/target_motion.py",
+      "sha256": "86652a82ffe5e0d5599555d8a619ccd63186f9fa96e00e579a7e79d758ba6567",
+      "source_scope": "Git blob only; a dirty receipt is not upgraded to byte-attested runtime source"
+    },
+    {
+      "angle_counts": {
+        "BOUNDED_TURN_ANGLES_DEG": 24,
+        "TURN_ANGLES_DEG": 10
+      },
+      "available": true,
+      "bounded_has_cdist": true,
+      "bounded_has_direct_opt_in": false,
+      "commit": "c1c33d62578c8750d8e1dc7a6d9bef7730e0dafc",
+      "legacy_steer_has_cdist": true,
+      "path": "aerial_gym/task/navrl_task/target_motion.py",
+      "sha256": "86652a82ffe5e0d5599555d8a619ccd63186f9fa96e00e579a7e79d758ba6567",
+      "source_scope": "Git blob only; a dirty receipt is not upgraded to byte-attested runtime source"
+    },
+    {
+      "angle_counts": {
+        "BOUNDED_TURN_ANGLES_DEG": 24,
+        "TURN_ANGLES_DEG": 10
+      },
+      "available": true,
+      "bounded_has_cdist": true,
+      "bounded_has_direct_opt_in": false,
+      "commit": "c6d886bcb55f078dbcce00c8fe5276b774386f33",
+      "legacy_steer_has_cdist": true,
+      "path": "aerial_gym/task/navrl_task/target_motion.py",
+      "sha256": "86652a82ffe5e0d5599555d8a619ccd63186f9fa96e00e579a7e79d758ba6567",
+      "source_scope": "Git blob only; a dirty receipt is not upgraded to byte-attested runtime source"
+    },
+    {
+      "angle_counts": {
+        "BOUNDED_TURN_ANGLES_DEG": 24,
+        "TURN_ANGLES_DEG": 10
+      },
+      "available": true,
+      "bounded_has_cdist": true,
+      "bounded_has_direct_opt_in": false,
+      "commit": "c9fd3b01accddc4500f507c23f155fff6c2b158b",
+      "legacy_steer_has_cdist": true,
+      "path": "aerial_gym/task/navrl_task/target_motion.py",
+      "sha256": "86652a82ffe5e0d5599555d8a619ccd63186f9fa96e00e579a7e79d758ba6567",
+      "source_scope": "Git blob only; a dirty receipt is not upgraded to byte-attested runtime source"
+    },
+    {
+      "angle_counts": {
+        "BOUNDED_TURN_ANGLES_DEG": 24,
+        "TURN_ANGLES_DEG": 10
+      },
+      "available": true,
+      "bounded_has_cdist": true,
+      "bounded_has_direct_opt_in": false,
+      "commit": "ce9c6b70a52866db3d052c68d93b73f947785b41",
+      "legacy_steer_has_cdist": true,
+      "path": "aerial_gym/task/navrl_task/target_motion.py",
+      "sha256": "86652a82ffe5e0d5599555d8a619ccd63186f9fa96e00e579a7e79d758ba6567",
+      "source_scope": "Git blob only; a dirty receipt is not upgraded to byte-attested runtime source"
+    },
+    {
+      "angle_counts": {
+        "BOUNDED_TURN_ANGLES_DEG": 24,
+        "TURN_ANGLES_DEG": 10
+      },
+      "available": true,
+      "bounded_has_cdist": true,
+      "bounded_has_direct_opt_in": false,
+      "commit": "d0dbeedfaa12cff2e8b26bb74e819a5519b991de",
+      "legacy_steer_has_cdist": true,
+      "path": "aerial_gym/task/navrl_task/target_motion.py",
+      "sha256": "86652a82ffe5e0d5599555d8a619ccd63186f9fa96e00e579a7e79d758ba6567",
+      "source_scope": "Git blob only; a dirty receipt is not upgraded to byte-attested runtime source"
+    },
+    {
+      "angle_counts": {
+        "BOUNDED_TURN_ANGLES_DEG": 24,
+        "TURN_ANGLES_DEG": 10
+      },
+      "available": true,
+      "bounded_has_cdist": true,
+      "bounded_has_direct_opt_in": false,
+      "commit": "db523d184ec05f0de63311c82ef55a13a4b99dc0",
+      "legacy_steer_has_cdist": true,
+      "path": "aerial_gym/task/navrl_task/target_motion.py",
+      "sha256": "55139987a31fb2819c177c22c7944f2268abab9de9445887ebbaa09a4868d1cd",
+      "source_scope": "Git blob only; a dirty receipt is not upgraded to byte-attested runtime source"
+    },
+    {
+      "angle_counts": {
+        "BOUNDED_TURN_ANGLES_DEG": 24,
+        "TURN_ANGLES_DEG": 10
+      },
+      "available": true,
+      "bounded_has_cdist": true,
+      "bounded_has_direct_opt_in": false,
+      "commit": "dd7caa7673ce094841560101ccb5e844a3ebc656",
+      "legacy_steer_has_cdist": true,
+      "path": "aerial_gym/task/navrl_task/target_motion.py",
+      "sha256": "86652a82ffe5e0d5599555d8a619ccd63186f9fa96e00e579a7e79d758ba6567",
+      "source_scope": "Git blob only; a dirty receipt is not upgraded to byte-attested runtime source"
+    },
+    {
+      "angle_counts": {
+        "BOUNDED_TURN_ANGLES_DEG": 24,
+        "TURN_ANGLES_DEG": 10
+      },
+      "available": true,
+      "bounded_has_cdist": true,
+      "bounded_has_direct_opt_in": true,
+      "commit": "ea677289cecf637ebe8d3d473d29cd0b20cc47d9",
+      "legacy_steer_has_cdist": true,
+      "path": "aerial_gym/task/navrl_task/target_motion.py",
+      "sha256": "d8e243f375fd9dc8944a3ae2731900372045f538b051d07834bdcb054939b46f",
+      "source_scope": "Git blob only; a dirty receipt is not upgraded to byte-attested runtime source"
+    },
+    {
+      "angle_counts": {
+        "BOUNDED_TURN_ANGLES_DEG": 24,
+        "TURN_ANGLES_DEG": 10
+      },
+      "available": true,
+      "bounded_has_cdist": true,
+      "bounded_has_direct_opt_in": false,
+      "commit": "f1fc29ba59981e184a359643f56009ccd1eaa05b",
+      "legacy_steer_has_cdist": true,
+      "path": "aerial_gym/task/navrl_task/target_motion.py",
+      "sha256": "86652a82ffe5e0d5599555d8a619ccd63186f9fa96e00e579a7e79d758ba6567",
+      "source_scope": "Git blob only; a dirty receipt is not upgraded to byte-attested runtime source"
+    }
+  ],
+  "reuse_policy": [
+    "Keep historical performance tables, receipts, preregistrations and negative verdicts immutable.",
+    "Performance is conditional on the recorded simulator/source environment; do not reuse old GPU outcomes as proof of <=1.5m/s, bounded acceleration or collision-free target motion.",
+    "Old CPU mechanism PASS and zero reflection counters do not validate GPU point-distance arithmetic.",
+    "Do not pool old cdist and new direct lineages or substitute direct runs for replication of H/E1/E2.",
+    "No blanket invalidation of historical performance is inferred from exposure alone; observed violations and unverified exposure remain separate.",
+    "E0 bypasses the moving screen, but E0-minus-H contrasts inherit the exposed H reference. Receipt/result byte traceability is separate from moving-UAV motion validity and from cross-machine trajectory reproducibility.",
+    "Exposure class is orthogonal to original validity: VOID, withdrawn, failed and otherwise excluded records retain their original exclusion. NOT_EXPOSED_THIS_DEFECT is not a paper-reuse whitelist."
+  ],
+  "runtime_provenance_limits": {
+    "direct_matmul_precision": "Recorded in new run summaries; flags remain True/high. Raw tensor dtype still not separately attested where zero violation packets were written.",
+    "historical_shapes": "num_envs/active bars recorded in conditions; candidate axis source-derived; full strides/ordered tensors absent.",
+    "historical_tensor_dtype": "NOT_RECORDED per call; float32 is source/config inference, not a measured dtype.",
+    "historical_three_and_seven_seed_tf32_flags": "NOT_RECORDED per cell; current runner setting is not retroactive attestation.",
+    "physical_scope": "AABB local distance avoids this centre-screen cdist defect; other target spawn/goal cdist calls remain separate audit questions."
+  },
+  "schema": "motar.moving-target-tf32-readonly-audit.v1",
+  "scope": {
+    "all_result_receipt_hashes_match": true,
+    "families": 104,
+    "hash_algorithm": "SHA256 of sorted unique [repository_relative_path,file_SHA256] pairs encoded compact JSON",
+    "recipe": "Recursively select *receipt.json under source results, excluding source_bundle and receipts over 1500000 bytes; pair with sibling result.json or filename with .receipt.json replaced by .json; require parseable JSON. Hash every selected receipt/result and available sibling KROC summary. No logs, checkpoints, archives or episode rollouts loaded.",
+    "records": 881,
+    "selected_metadata_files": 2006,
+    "selected_metadata_path_sha256_digest": "1d992df1cc5fc9172795454a30954a8812fea6326d3f9131da4fbd5ac2b4d943",
+    "skipped_receipt_candidates": {
+      "no_sibling_result": 49
+    },
+    "unit": "receipt-linked metadata record; includes canaries, repeats, tails and VOID families; not independent episodes or new measurements"
+  },
+  "shape_rule": {
+    "bounded_candidate_axis": 73,
+    "cdist_default_mm_eligibility": "point_count>25 OR bar_count>25; hence 73 candidates are MM-eligible even with <=25 bars, and all study densities 70/115/160/205 are eligible.",
+    "legacy_candidate_axis": 10,
+    "multiples_of_four": "Only a kernel-selection pattern observed in one RTX3070/torch2.4.1 replay scan; never an exclusion rule.",
+    "zero_bars": "No screen distance query; do not infer from large candidate count alone."
+  },
+  "source_root": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator",
+  "supplementary_physical_summary_inventory": [
+    {
+      "classification": "NOT_EXPOSED_THIS_DEFECT",
+      "family": "navrl_corrected_nonoverlap_physical_off_heldout_seed313",
+      "scope": "Supplementary aggregate only; not added to 881 receipt-linked counts. Physical label alone does not attest exact source/backend/TF32 of every nested measurement.",
+      "summary_cell_records": 6,
+      "summary_schema": "motar_corrected_nonoverlap_physical_off_heldout_v1"
+    },
+    {
+      "classification": "INSUFFICIENT_PROVENANCE",
+      "family": "navrl_corrected_nonoverlap_physical_off_smoke_seed907",
+      "scope": "Supplementary aggregate only; not added to 881 receipt-linked counts. Physical label alone does not attest exact source/backend/TF32 of every nested measurement.",
+      "summary_cell_records": 0,
+      "summary_schema": "motar_corrected_nonoverlap_physical_off_smoke_v1"
+    },
+    {
+      "classification": "INSUFFICIENT_PROVENANCE",
+      "family": "navrl_physical_target_braking_lower1p25_headingrest_seed827",
+      "scope": "Supplementary aggregate only; not added to 881 receipt-linked counts. Physical label alone does not attest exact source/backend/TF32 of every nested measurement.",
+      "summary_cell_records": 4,
+      "summary_schema": "navrl_target_recovery_braking_probe_v1"
+    },
+    {
+      "classification": "INSUFFICIENT_PROVENANCE",
+      "family": "navrl_physical_target_invalid_forensics_post_wall_brake_seed509",
+      "scope": "Supplementary aggregate only; not added to 881 receipt-linked counts. Physical label alone does not attest exact source/backend/TF32 of every nested measurement.",
+      "summary_cell_records": 4,
+      "summary_schema": "navrl_physical_target_invalid_event_forensics_v1"
+    },
+    {
+      "classification": "INSUFFICIENT_PROVENANCE",
+      "family": "navrl_physical_target_invalid_forensics_post_wall_support_seed509",
+      "scope": "Supplementary aggregate only; not added to 881 receipt-linked counts. Physical label alone does not attest exact source/backend/TF32 of every nested measurement.",
+      "summary_cell_records": 4,
+      "summary_schema": "navrl_physical_target_invalid_event_forensics_v1"
+    },
+    {
+      "classification": "INSUFFICIENT_PROVENANCE",
+      "family": "navrl_physical_target_invalid_forensics_seed509",
+      "scope": "Supplementary aggregate only; not added to 881 receipt-linked counts. Physical label alone does not attest exact source/backend/TF32 of every nested measurement.",
+      "summary_cell_records": 4,
+      "summary_schema": "navrl_physical_target_invalid_event_forensics_v1"
+    },
+    {
+      "classification": "INSUFFICIENT_PROVENANCE",
+      "family": "navrl_physical_target_recovery_v2_gate_lower1p25_seed827",
+      "scope": "Supplementary aggregate only; not added to 881 receipt-linked counts. Physical label alone does not attest exact source/backend/TF32 of every nested measurement.",
+      "summary_cell_records": 32,
+      "summary_schema": "navrl_physical_target_recovery_v2_gate_v1"
+    },
+    {
+      "classification": "INSUFFICIENT_PROVENANCE",
+      "family": "navrl_physical_target_recovery_v2_no_connector_forensics_seed827",
+      "scope": "Supplementary aggregate only; not added to 881 receipt-linked counts. Physical label alone does not attest exact source/backend/TF32 of every nested measurement.",
+      "summary_cell_records": 4,
+      "summary_schema": "navrl_physical_target_recovery_v2_no_connector_forensics_v1_summary"
+    },
+    {
+      "classification": "INSUFFICIENT_PROVENANCE",
+      "family": "navrl_physical_target_route_recovery_forensics_seed827",
+      "scope": "Supplementary aggregate only; not added to 881 receipt-linked counts. Physical label alone does not attest exact source/backend/TF32 of every nested measurement.",
+      "summary_cell_records": 0,
+      "summary_schema": "navrl_physical_target_route_recovery_forensics_v1_summary"
+    },
+    {
+      "classification": "INSUFFICIENT_PROVENANCE",
+      "family": "navrl_physical_target_routed_gate_seed827",
+      "scope": "Supplementary aggregate only; not added to 881 receipt-linked counts. Physical label alone does not attest exact source/backend/TF32 of every nested measurement.",
+      "summary_cell_records": 0,
+      "summary_schema": "navrl_physical_target_routed_simulator_gate_v2"
+    },
+    {
+      "classification": "INSUFFICIENT_PROVENANCE",
+      "family": "navrl_physical_target_routed_gate_seed827_attempt2",
+      "scope": "Supplementary aggregate only; not added to 881 receipt-linked counts. Physical label alone does not attest exact source/backend/TF32 of every nested measurement.",
+      "summary_cell_records": 32,
+      "summary_schema": "navrl_physical_target_routed_simulator_gate_v2"
+    },
+    {
+      "classification": "INSUFFICIENT_PROVENANCE",
+      "family": "navrl_physical_target_speed_envelope_post_wall_brake_seed509",
+      "scope": "Supplementary aggregate only; not added to 881 receipt-linked counts. Physical label alone does not attest exact source/backend/TF32 of every nested measurement.",
+      "summary_cell_records": 16,
+      "summary_schema": "navrl_physical_target_speed_envelope_v1"
+    },
+    {
+      "classification": "INSUFFICIENT_PROVENANCE",
+      "family": "navrl_physical_target_speed_envelope_post_wall_support_seed509",
+      "scope": "Supplementary aggregate only; not added to 881 receipt-linked counts. Physical label alone does not attest exact source/backend/TF32 of every nested measurement.",
+      "summary_cell_records": 16,
+      "summary_schema": "navrl_physical_target_speed_envelope_v1"
+    },
+    {
+      "classification": "INSUFFICIENT_PROVENANCE",
+      "family": "navrl_physical_target_speed_envelope_seed509",
+      "scope": "Supplementary aggregate only; not added to 881 receipt-linked counts. Physical label alone does not attest exact source/backend/TF32 of every nested measurement.",
+      "summary_cell_records": 16,
+      "summary_schema": "navrl_physical_target_speed_envelope_v1"
+    },
+    {
+      "classification": "INSUFFICIENT_PROVENANCE",
+      "family": "navrl_physical_target_verification",
+      "scope": "Supplementary aggregate only; not added to 881 receipt-linked counts. Physical label alone does not attest exact source/backend/TF32 of every nested measurement.",
+      "summary_cell_records": 4,
+      "summary_schema": "navrl_physical_target_verification_v1"
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+ "cells": [
+  "E1_direct_l2_v1/A3/E1_cv__70bars__seed4190",
+  "E1_direct_l2_v1/A3/E1_cv__115bars__seed4190",
+  "E1_direct_l2_v1/A3/E1_cv__160bars__seed4190",
+  "E1_direct_l2_v1/A3/E1_cv__205bars__seed4190",
+  "E1_direct_l2_v1/A4/E1_cv__70bars__seed4190",
+  "E1_direct_l2_v1/A4/E1_cv__115bars__seed4190",
+  "E1_direct_l2_v1/A4/E1_cv__160bars__seed4190",
+  "E1_direct_l2_v1/A4/E1_cv__205bars__seed4190",
+  "E2_direct_l2_v1/A3/E2_obstacle_aware__70bars__seed4190",
+  "E2_direct_l2_v1/A3/E2_obstacle_aware__115bars__seed4190",
+  "E2_direct_l2_v1/A3/E2_obstacle_aware__160bars__seed4190",
+  "E2_direct_l2_v1/A3/E2_obstacle_aware__205bars__seed4190",
+  "E2_direct_l2_v1/A4/E2_obstacle_aware__70bars__seed4190",
+  "E2_direct_l2_v1/A4/E2_obstacle_aware__115bars__seed4190",
+  "E2_direct_l2_v1/A4/E2_obstacle_aware__160bars__seed4190",
+  "E2_direct_l2_v1/A4/E2_obstacle_aware__205bars__seed4190"
+ ],
+ "checkpoint_sha256": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+ "gpu": [
+  "NVIDIA GeForce RTX 3070"
+ ],
+ "import_origins": {
+  "aerial_gym": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/aerial_gym/__init__.py",
+  "motar_eval": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/motar_eval/__init__.py"
+ },
+ "launcher_sha256": "4077e2718c73c3177cdf1f775cc11a6b50cb18d591e352382e175c45fb14f7ec",
+ "max_gpu_hours": 2.0,
+ "output_root": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/results/mt_p1_precision_v1/MT-P2-C01",
+ "plan_md_sha256": "fcf3d0e0f59ac14af0bad375b6a80f0e94117bde32fdb5b3fc08a9a659d7f4b8",
+ "plan_sha256": "d4f4cd4eb13cd0f44b714088e02f51e217da1958bd44ffa6b4c5d4c376dc58ca",
+ "python": "3.8.20 (default, Oct  3 2024, 15:24:27) \n[GCC 11.2.0]",
+ "run_id": "MT-P2-C01",
+ "source_commit": "4bba8836d3bab86b87351a47b70e674d6e86cfaa",
+ "source_tree": "0a152d3ee80a188429286e46704506b241929a47",
+ "started_at": "2026-10-16T05:48:59.105665+00:00",
+ "tracked_tree_clean": true
+}
