@@ -21016,3 +21016,21 @@ Next review: the complete diff and new plan; local commit requires user diff app
 - One reviewer item was not confirmed: the carve bearing is the body-origin
   `atan2(measurement_vehicle)` at line 1733, not the profiling `atan(−(u−cx)/fx)`.
 - Decision: **S-L1B GO**. S-L1C may start; its preregistration names the inherited limitations.
+
+## 2026-10-18 — S-L1C v1 preregistered: identity-free range-only LiDAR association (before code)
+
+- Base `2389a41`, after the S-L1B GO. Files: `docs/plans/s_l1c_v1.md` and `.json`. No runtime or
+  measurement exists yet.
+- Cumulative `s_l1c_v1` makes these changes:
+  - C1: LiDAR proxy radius 0.20 m in association (A4);
+  - C2: row eligibility within asin(0.20/D) of the predicted elevation;
+  - C3: vertical-extent shape test (adjacent-row horizontal range within 0.10 m), with refusal
+    below 1.152 m;
+  - C4: exact range-only EKF, R = 0.08²uuᵀ + 50²(I − uuᵀ);
+  - C5: evaluator-only `identity_age` and `update_source`; the fused 5 s expiry is unchanged.
+- Gates: C-NEG (0/7 D2-N2 bar negatives; legacy 7/7), C-POS (100% recall on LiDAR-truth-eligible
+  positives), C-COV (orthogonal variance ≥ 0.99), C-PROV, C-RADIUS (≤ 1e−4 m CPU, ≤ 1e−3 m GPU),
+  C-REGRESSION (off/s_l1a/s_l1b against EL0-R1/SL1A-C01/SL1B-C01, and CPU against `a1f97e9`),
+  C-EL0, C-FIREWALL and C-INTEGRITY.
+- The inherited S-L1B limitations are named. Declared residual band: a bar whose front face is
+  beyond about 11.35 m returns one row. Canary SL1C-C01: 3 sensor and 10 closed-loop processes.
