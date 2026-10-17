@@ -97,7 +97,7 @@ def preflight(plan, approved_commit):
         problems.append("approved source HEAD must match the full current commit")
     if legacy.git("status", "--porcelain", "--untracked-files=no").strip():
         problems.append("tracked tree is dirty")
-    for path in (PLAN, PREREG, Path(__file__), ROOT / "tools/occlusion_confirmatory_analysis.py"):
+    for path in (PLAN, PREREG, Path(__file__).resolve(), ROOT / "tools/occlusion_confirmatory_analysis.py"):
         relative = str(path.relative_to(ROOT))
         if subprocess.run(["git", "ls-files", "--error-unmatch", relative], cwd=ROOT,
                           capture_output=True).returncode:
