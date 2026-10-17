@@ -730,6 +730,7 @@ class NavRLPerceptionModule:
         self.sensor_lineage_s_l1a = False
         self.sensor_lineage_s_l1b = False
         self.sensor_lineage_s_l1c = False
+        self.sensor_lineage_s_l1d = False
         if os.environ.get("NAVRL_SENSOR_LINEAGE", "off") != "off":
             from aerial_gym.task.navrl_task.navrl_sensor_lineage import sensor_lineage_level
 
@@ -737,6 +738,7 @@ class NavRLPerceptionModule:
             self.sensor_lineage_s_l1a = level >= 1
             self.sensor_lineage_s_l1b = level >= 2
             self.sensor_lineage_s_l1c = level >= 3
+            self.sensor_lineage_s_l1d = level >= 4
         self.num_envs = int(num_envs)
         self.device = device
         self.cfg = cfg
@@ -1091,6 +1093,8 @@ class NavRLPerceptionModule:
             self._s_l1c_identity_age = torch.full((self.num_envs,), self.tracker.memory_s, device=device)
             self._s_l1c_update_source = torch.zeros(self.num_envs, dtype=torch.long, device=device)
             self.last_s_l1c_association = None
+        if self.sensor_lineage_s_l1d:
+            self.last_s_l1d_validity = None
         # S1 shadow-mode counterfactual (docs/prereg_2026-09-03_s1_structure_fix_shadow.md).
         # Read-only beside the live path: its own tracker instance, its own diagnostics keys.
         self._s1_shadow = None
@@ -2008,6 +2012,23 @@ class NavRLPerceptionModule:
             tokens[:, slot] = feat * valid.unsqueeze(1)
         return static_state.reshape(self.num_envs, -1), tokens
 
+    def _s_l1d_validity(self, depth, detected, drone_pos_w, vehicle_quat):
+        """S-L1D evaluator-facing online validity from delivered depth, the detection flag and the
+        track's own posterior (vehicle frame). Reads no evaluator class, renderer mask or GT pose."""
+        from aerial_gym.task.navrl_task.navrl_sensor_lineage import measurement_validity
+
+        rel = _quat_rotate_inverse_xyzw(vehicle_quat, self.tracker.state[:, :3] - drone_pos_w)
+        eye = torch.eye(3, device=self.device, dtype=rel.dtype).unsqueeze(0).expand(self.num_envs, -1, -1)
+        rot = torch.stack([_quat_rotate_xyzw(vehicle_quat, eye[:, :, i]) for i in range(3)], dim=2)
+        cov = rot.transpose(1, 2).matmul(self.tracker.cov[:, :3, :3]).matmul(rot)
+        validity = measurement_validity(
+            depth, detected, self.tracker.active, rel, cov, self._s_l1b_rays, self.camera_offset.view(3),
+            target_radius=self.target_radius, camera_far_m=self.max_camera_range,
+            min_target_pixels=self.min_pixels, hfov=self.hfov, vfov=self.vfov,
+            fx=self.fx, fy=self.fy, cx=self.cx, cy=self.cy)
+        self.last_s_l1d_validity = validity
+        return validity
+
     def _associate_lidar_target(self, lidar_m, drone_pos_w, vehicle_quat, camera_visible):
         """Associate a raw LiDAR return with the predicted camera-initialized target track."""
         rel = _quat_rotate_inverse_xyzw(
@@ -2255,6 +2276,8 @@ class NavRLPerceptionModule:
                 camera_update, torch.ones_like(self._s_l1c_update_source),
                 torch.where(lidar_visible, torch.full_like(self._s_l1c_update_source, 2),
                             torch.zeros_like(self._s_l1c_update_source)))
+        s_l1d_validity = (self._s_l1d_validity(depth, visible, drone_pos_w, vehicle_quat)
+                          if getattr(self, "sensor_lineage_s_l1d", False) else None)
         fused_visible = visible | lidar_visible
         fused_surface = torch.where(lidar_visible, lidar_surface, surface_range)
         fused_bearing = torch.where(lidar_visible, lidar_bearing, bearing)
@@ -2385,6 +2408,13 @@ class NavRLPerceptionModule:
                 {"s_l1c_identity_age": self._s_l1c_identity_age,
                  "s_l1c_update_source": self._s_l1c_update_source}
                 if getattr(self, "sensor_lineage_s_l1c", False)
+                else {}
+            ),
+            **(
+                {"s_l1d_online_class": s_l1d_validity["code"], "s_l1d_support_px": s_l1d_validity["support_px"],
+                 "s_l1d_occluded_px": s_l1d_validity["occluded_px"],
+                 "s_l1d_centre_occluded": s_l1d_validity["centre_occluded"], "s_l1d_tau_m": s_l1d_validity["tau_m"]}
+                if s_l1d_validity is not None
                 else {}
             ),
             **(

@@ -1,4 +1,4 @@
-"""Opt-in S-L1A/B/C sensor corrections; only delivered sensor evidence enters these helpers.
+"""Opt-in S-L1A/B/C/D sensor corrections; only delivered sensor evidence enters these helpers.
 
 The legacy path does not call any helper. No simulator pose, semantic labels,
 renderer-private target mask, tracker state or evaluator provenance is accepted here.
@@ -12,7 +12,7 @@ import torch
 
 SWITCH = "NAVRL_SENSOR_LINEAGE"
 LINEAGE = "s_l1a_v1"
-LINEAGES = ("s_l1a_v1", "s_l1b_v1", "s_l1c_v1")
+LINEAGES = ("s_l1a_v1", "s_l1b_v1", "s_l1c_v1", "s_l1d_v1")
 
 # S-L1B declared calibration constants, bound by tests to the sensor configs
 # (navrl_lidar_config: vertical_fov_deg_max/min, target_radius).
@@ -22,7 +22,7 @@ LIDAR_TARGET_PROXY_RADIUS_M = 0.20
 
 
 def sensor_lineage_level(environ=None):
-    """0 = legacy (unset/off), 1 = s_l1a_v1, 2 = s_l1b_v1, 3 = s_l1c_v1; unknown values fail closed."""
+    """0 = legacy (unset/off), 1 = s_l1a_v1, 2 = s_l1b_v1, 3 = s_l1c_v1, 4 = s_l1d_v1; unknown values fail closed."""
     value = (os.environ if environ is None else environ).get(SWITCH, "off")
     if value != "off" and value not in LINEAGES:
         raise ValueError(SWITCH + " must be off or one of " + ", ".join(LINEAGES))
@@ -268,3 +268,62 @@ def range_only_covariance(unit_world, *, sigma_range_m=S_L1C_RANGE_SIGMA_M, sigm
     outer = unit_world.unsqueeze(2) * unit_world.unsqueeze(1)
     eye = torch.eye(3, device=unit_world.device, dtype=unit_world.dtype).unsqueeze(0)
     return sigma_range_m ** 2 * outer + sigma_unobserved_m ** 2 * (eye - outer)
+
+
+# S-L1D declared constants (evaluator-facing online validity diagnostic; never an actor input).
+S_L1D_ONLINE_CLASSES = ("NO_TRACK", "DETECTED", "PRED_RANGE_EXIT", "PRED_FOV_EXIT", "PRED_SCALE_LOSS",
+                        "OCCLUSION_FULL_EVIDENCE", "OCCLUSION_CENTRE_EVIDENCE", "OCCLUSION_PARTIAL_EVIDENCE",
+                        "UNEXPLAINED_LOSS")
+S_L1D_TAU_FLOOR_M = 0.05
+
+
+def measurement_validity(camera_depth, detected, active, predicted_centre, predicted_cov, rays, translation, *,
+                         target_radius, camera_far_m, min_target_pixels, hfov, vfov, fx, fy, cx, cy,
+                         tau_floor_m=S_L1D_TAU_FLOOR_M):
+    """S-L1D online validity from delivered depth, the detection flag and the track's own belief.
+
+    ``predicted_centre`` [N,3] and ``predicted_cov`` [N,3,3] are the track's position estimate and
+    covariance in the vehicle (camera-parallel) frame; the camera sits at ``translation``. The
+    predicted support is every pixel-centre ray that meets the target sphere before the far plane
+    (the E-L0 target-alone rule applied to the prediction). Occlusion evidence is delivered depth
+    nearer than the predicted surface by more than tau = floor + 2 sigma_los.
+    """
+    if camera_depth.ndim != 3 or rays.shape != camera_depth.shape[1:] + (3,) or predicted_centre.shape != (camera_depth.shape[0], 3):
+        raise ValueError("depth [N,H,W], rays [H,W,3] and centre [N,3] required")
+    n, h, w = camera_depth.shape
+    rel = predicted_centre - translation.view(1, 3)
+    oc = -rel
+    b = torch.einsum("hwk,nk->nhw", rays, oc)
+    c2 = (oc * oc).sum(dim=1).view(n, 1, 1) - target_radius ** 2
+    disc = b * b - c2
+    root = torch.sqrt(disc.clamp(min=0.0))
+    t = -b - root
+    t = torch.where(t < 0.0, -b + root, t)
+    support_mask = (disc >= 0.0) & (t >= 0.0) & (t < camera_far_m)
+    support = support_mask.sum(dim=(1, 2))
+    distance = rel.norm(dim=1).clamp(min=1e-9)
+    unit = rel / distance.view(-1, 1)
+    sigma_los = torch.einsum("ni,nij,nj->n", unit, predicted_cov, unit).clamp(min=0.0).sqrt()
+    tau = tau_floor_m + 2.0 * sigma_los
+    occluded_mask = support_mask & (camera_depth < t - tau.view(-1, 1, 1))
+    occluded = occluded_mask.sum(dim=(1, 2))
+    x, y, z = rel[:, 0], rel[:, 1], rel[:, 2]
+    in_frustum = (x > 0) & (y.abs() <= x * math.tan(hfov / 2)) & (z.abs() <= x * math.tan(vfov / 2)) & (distance <= camera_far_m)
+    safe_x = torch.where(x > 0, x, torch.ones_like(x))
+    u = torch.round(cx - fx * y / safe_x).clamp(0, w - 1).long()
+    v = torch.round(cy - fy * z / safe_x).clamp(0, h - 1).long()
+    rows = torch.arange(n, device=camera_depth.device)
+    centre_occluded = (x > 0) & occluded_mask[rows, v, u]
+    code = torch.full((n,), S_L1D_ONLINE_CLASSES.index("UNEXPLAINED_LOSS"), dtype=torch.long, device=camera_depth.device)
+    def put(condition, name):
+        return torch.where(condition, torch.full_like(code, S_L1D_ONLINE_CLASSES.index(name)), code)
+    code = put((occluded > 0) & ~centre_occluded, "OCCLUSION_PARTIAL_EVIDENCE")
+    code = put((occluded > 0) & centre_occluded, "OCCLUSION_CENTRE_EVIDENCE")
+    code = put((support > 0) & (occluded == support), "OCCLUSION_FULL_EVIDENCE")
+    code = put(support < min_target_pixels, "PRED_SCALE_LOSS")
+    code = put((support == 0) & ~in_frustum, "PRED_FOV_EXIT")
+    code = put((support == 0) & (distance - target_radius >= camera_far_m), "PRED_RANGE_EXIT")
+    code = put(detected, "DETECTED")
+    code = put(~active, "NO_TRACK")
+    return {"code": code, "support_px": support, "occluded_px": occluded, "centre_occluded": centre_occluded,
+            "tau_m": tau, "in_frustum": in_frustum}

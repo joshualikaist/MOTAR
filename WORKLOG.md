@@ -21179,3 +21179,23 @@ Next review: the complete diff and new plan; local commit requires user diff app
   - Alone passes never produce occlusion evidence, and a wrong prediction changes the support.
   - Ambiguous-pixel count verified.
 - Two fixture geometries were corrected before commit, with the expected classes unchanged.
+
+## 2026-10-18 — S-L1D runtime (opt-in `s_l1d_v1`, diagnostic only) and CPU gates
+
+- Runtime: `navrl_sensor_lineage.py` adds level 4, the online-class constants and
+  `measurement_validity` (ray-sphere support on the S-L1B ray table, τ from the track's
+  line-of-sight covariance, nearest-pixel centre test, preregistered precedence).
+  `navrl_perception.py` adds `_s_l1d_validity`, which uses the track posterior in the vehicle
+  frame and is called only when `sensor_lineage_s_l1d`. It adds diagnostics `s_l1d_*`; the actor
+  and tracker are untouched.
+- CPU: `test_s_l1d_runtime` 6 OK.
+  - The helper equals the oracle in class, support, occluded count and τ on 10 cases × 2
+    covariances.
+  - DETECTED and NO_TRACK take precedence.
+  - The s_l1d observation, tracker state and covariance are bitwise equal to s_l1c, and the
+    diagnostics read OCCLUSION_FULL_EVIDENCE.
+  - Off/s_l1a/s_l1b/s_l1c `observe` is bitwise equal to `4d5911d`.
+  - Firewall OK.
+- Minimal edit to the S-L1C switch test: the literal `s_l1d_v1` became a declared lineage, so it
+  is replaced by `s_l1z_v1`, plus an ordering assertion, matching the S-L1B precedent. All
+  S-L1A/B/C/D suites are OK.

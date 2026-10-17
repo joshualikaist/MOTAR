@@ -69,7 +69,10 @@ class HelperVersusOracleTest(unittest.TestCase):
     def test_switch_levels(self):
         self.assertEqual(sensor.sensor_lineage_level({sensor.SWITCH: "s_l1c_v1"}), 3)
         with self.assertRaises(ValueError):
-            sensor.sensor_lineage_level({sensor.SWITCH: "s_l1d_v1"})
+            sensor.sensor_lineage_level({sensor.SWITCH: "s_l1z_v1"})
+        # s_l1d_v1 was unknown when S-L1C was qualified; it is now the preregistered cumulative
+        # successor (docs/plans/s_l1d_v1.json) and must rank above S-L1C.
+        self.assertGreater(sensor.sensor_lineage_level({sensor.SWITCH: "s_l1d_v1"}), 3)
 
     def test_negatives_rejected_and_positives_accepted_like_oracle(self):
         cases = [(oracle.lidar_scan(*geom)[0], primed_in_front(*geom, beam)) for geom, beam in NEGATIVES]
