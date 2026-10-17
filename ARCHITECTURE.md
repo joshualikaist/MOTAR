@@ -13,10 +13,10 @@ One RL step is 0.1 s: ten physics steps of 0.01 s in Isaac Gym PhysX.
 obstacle environment ── bars 70–205 in a 40 × 40 × 3 m arena; moving target
         │
         ▼
-sensors ─────────────── forward camera (target) · LiDAR 72 × 4 beams @ 12 m (obstacles)
+sensors ─────────────── forward RGB-D camera · LiDAR 72 × 4 beams @ 12 m
         │
         ▼
-perception ──────────── target detection, tracking, 2 s history          [+ optional P9 measured-error injection]
+perception ──────────── camera/LiDAR fusion, target tracking, 2 s history [+ optional P9 measured-error injection]
         │                                                                  [+ optional D8 mesh rendering treatment]
         ▼
 temporal state ──────── 17 tokens: [CLS], static scan, 5 obstacle, 5 robot, 5 target-track steps
@@ -34,11 +34,19 @@ safety filter ───────── LiDAR speed cap (riskcap for policy F)
 low-level control ───── Lee velocity controller → quadrotor dynamics → back to the environment
 ```
 
+**Sensor contract.** Current and subsequent MOTAR research uses **RGB-D Camera + LiDAR**. The camera
+provides target detection, bearing/range and tracking measurements; LiDAR provides obstacle/range
+measurements and target-association assistance. Perception fuses these measurements for the existing
+898-D Policy F actor. These are sensor roles and requirements, not a claim that every current fusion
+operation is qualified. See [`docs/SENSOR_CONTRACT.md`](docs/SENSOR_CONTRACT.md) for the correction
+of older camera-only roadmap assumptions and the S-L1A approval boundary.
+
 **Observation contract.** The actor never receives ground-truth target information: no semantic id or
 mask, bearing, range, `target_position` or ground-truth visibility. Ground truth is used only for
 detector supervision, rewards, termination, the critic and evaluation metrics. Observation widths
 belong to lineages (156 → 305 → 1265 → 898) that must never be mixed; a checkpoint only loads into
 its own width.
+Evaluation geometry and semantic provenance must remain outside online tracking and control.
 
 **Task contract.** A capture (close approach) is a pursuer–target distance below `success_radius =
 0.5 m` and ends the episode. A crash is a bar contact, leaving the arena, or hitting the floor or
@@ -60,7 +68,7 @@ reproducible only through its recorded launcher environment
 | Obstacle environment | Arena, bar placement, density curriculum | `aerial_gym/config/env_config/navrl_bars_env.py`, `aerial_gym/task/navrl_task/navrl_curriculum.py` |
 | Target-motion generator | H legacy steering, E0 static, E1 constant velocity, E2 obstacle-aware local steering | `aerial_gym/task/navrl_task/target_motion.py` |
 | Physical target (gated) | 6-DoF target with optional global route; its routing gates FAILed | `aerial_gym/task/navrl_task/physical_target.py`, `target_route_planner.py` |
-| Camera and detector | Forward camera; target pixels occlusion-tested; built-in or learned detector | `aerial_gym/task/navrl_task/navrl_detector.py` |
+| Camera and detector | Forward RGB-D camera; target pixels occlusion-tested; built-in or learned detector | `aerial_gym/task/navrl_task/navrl_detector.py` |
 | LiDAR | 72 × 4 beams at 12 m for policy F (source defaults are 36 × 4 at 4 m) | `aerial_gym/config/sensor_config/lidar_config/navrl_lidar_config.py` |
 | Perception and temporal state | Fusion, tracking, uncertainty, 2 s history, token assembly | `aerial_gym/task/navrl_task/navrl_perception.py` |
 | Measured-error injection (P9) | Replays the P8 error model in simulation (opt-in) | `aerial_gym/task/navrl_task/navrl_empirical_error.py` |

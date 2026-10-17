@@ -17,6 +17,11 @@ For operations and commands see [`docs/OPERATIONS.md`](docs/OPERATIONS.md); for 
 
 ## Research rules
 
+- **Official sensor contract: RGB-D Camera + LiDAR, for current and subsequent research.**
+  Preserve Frozen Policy F's 898-D actor and sensor fusion. Do not remove, disable or zero LiDAR,
+  or pursue a camera-only conversion without a new explicit user instruction. See the current
+  [`sensor contract`](docs/SENSOR_CONTRACT.md) and its linked correction of historical roadmap text.
+  Evaluation-only GT/semantic provenance must not become online tracking or control inputs.
 - **Never auto-start PPO training or GPU evaluation.** Every GPU run needs the user's explicit approval
   for that run and a preregistration committed before execution. No GPU work is authorised at present.
 - **Never silently change a frozen experiment.** Do not edit rewards, the controller, target-motion
@@ -59,6 +64,9 @@ For operations and commands see [`docs/OPERATIONS.md`](docs/OPERATIONS.md); for 
   root `OPERATIONS.md`, earlier exceptions and skills. Those frozen historical files stay intact.
   **Remote push and main merge still require separate explicit approval.** Local commits are not
   visible through GitHub until an authorized push actually succeeds.
+- Honor explicit branch-specific conditional push authorization within its stated scope, after
+  verifying its history/security prerequisites against the intended HEAD. The sensor-contract
+  correction preserves that authorization; it does not certify that those checks have passed.
 - `main` is the only long-lived branch (root `OPERATIONS.md` §0). Short-lived agent worktrees or review
   branches merge back to `main` only with approval; do not merge or delete a worktree as automatic
   session cleanup.

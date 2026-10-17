@@ -20709,3 +20709,44 @@ Next review: the complete diff and new plan; local commit requires user diff app
 - Preservation: EL0-R1 99/99, EQ1D-R1 33/33, OCC-P2 1,406/1,406 verified; Policy F unchanged; adapter byte-identical to `5ff285a`; main HEAD `cb644bb`, three WIP files and stash `23ddb33` identical to the pre-run record.
 - Push readiness (not pushed): 40 commits not on any remote ref; no secret-like content; no checkpoint or raw binaries tracked (largest tracked evidence 3.7 MB OCC-P2 analysis.json; compact `results/*` JSON records from earlier packages are tracked); the branch's `.gitignore`/`WORKLOG.md`/`presentations/README.md` are committed branch content, not the main-checkout WIP (hashes differ); new evidence files contain local absolute paths. Push of `codex/mt-p1` needs separate approval.
 - Next: user decision on S-L1 sensor fixes (`docs/plans/correction_lineages_plan_v1.md`) and on the push. No S-L1/P-L1/G-L1 production change, Recovery Planner, PPO, H-R confirmation, push or merge was done.
+
+## 2026-10-18 — Correct the official sensor contract to RGB-D Camera + LiDAR; historical evidence preserved
+
+- Authority: the user's explicit official correction. Camera-only / LiDAR-free final goals and a
+  pending single-RGB versus RGB-D choice were unsupported assistant interpretations, not user
+  requirements. They are withdrawn for current and future work. Frozen Policy F's 898-D actor,
+  RGB-D measurements, LiDAR and fusion remain the baseline; no production code changed here.
+- The new dated amendment explicitly supersedes the mistaken roadmap clauses in EQ-0, EQ-1,
+  EQ-1D, correction plan v1 and the old WORKLOG entries (parent lines 20632 and 20686). All original
+  evidence/preregistration bytes and earlier log entries are preserved. Current AGENTS, PROJECT
+  and ARCHITECTURE link the authoritative sensor contract rather than requiring historical rewrites.
+- S-L1 improves fusion correctness/reliability. Per the user, only S-L1A obstacle depth / target-like
+  carve-out production modification is approved. B pinhole/SE(3), C false association/identity/
+  covariance and D silhouette/measurement validity remain planned and require separate approval.
+  This documentation unit implements none of them; it starts no GPU, PPO or Recovery Planner.
+- H-R1/H-R2/H-R3 remain PROVISIONAL — NOT PREREGISTERED under RGB-D + LiDAR. H-R3 shares sensor
+  capabilities/information access, predictor and pre-intervention state/history across arms;
+  observations may diverge after viewpoint interventions. OCC RQs are distinct; existing OCC data
+  are design evidence, not confirmatory algorithm tests. Existing qualification PASS/FAIL scopes
+  and numerical outcomes are unchanged. Evaluation-only geometry/provenance stay outside online
+  tracking/control; legitimate RGB-D depth is retained, not replaced by an oracle.
+- Changed files: `AGENTS.md`, `PROJECT.md`, `ARCHITECTURE.md`, `docs/SENSOR_CONTRACT.md`,
+  `docs/plans/correction_lineages_plan_v2.md`,
+  `docs/plans/sensor_contract_amendment_2026-10-18.md`,
+  `docs/plans/sensor_contract_amendment_2026-10-18.validation.json`, `WORKLOG.md` (append only).
+- Verification: canonical docs 25/25, branch policy 4/4, public-doc checker PASS; changed-document
+  local links, parent-bound historical references and diff whitespace checked before commit.
+  Independent read-only SHA rechecks: 2,054 runtime/test files, 101 historical evidence files,
+  10 raw manifests and 3,479 manifest members; zero mismatch. Both Policy F copies retain
+  `f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40`. Main HEAD `cb644bb`,
+  three user WIP files and stash `23ddb33` remain unchanged. Compact checks and exact bindings
+  are in the validation JSON; no checkpoint was loaded or raw modified.
+- Git: local documentation unit on `codex/mt-p1`, parent
+  `183a333bd01c0124a95ae379dba0a8509aebc999`. Existing conditional research-branch push permission
+  is preserved subject to its previously approved history/security checks; no fresh push clearance
+  is claimed from the old WORKLOG scan. No push or main merge is performed. Existing untracked
+  `results/mt_p1_precision_v1` and `results/occlusion_pilot_v1` raw symlinks remain untracked;
+  merge does not add their contents. No external backup was established by this task.
+- Next: continue only the approved S-L1A technical scope under the fusion contract. Before any
+  later authorized publication, verify the applicable branch/history/security prerequisites against
+  its intended HEAD. This documentation unit leaves no owned process running or incomplete work.

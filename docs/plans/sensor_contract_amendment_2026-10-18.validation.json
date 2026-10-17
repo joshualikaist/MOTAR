@@ -1,0 +1,247 @@
+{
+  "approved_changed_files": [
+    "AGENTS.md",
+    "ARCHITECTURE.md",
+    "PROJECT.md",
+    "WORKLOG.md",
+    "docs/SENSOR_CONTRACT.md",
+    "docs/plans/correction_lineages_plan_v2.md",
+    "docs/plans/sensor_contract_amendment_2026-10-18.md",
+    "docs/plans/sensor_contract_amendment_2026-10-18.validation.json"
+  ],
+  "base_sha": "183a333bd01c0124a95ae379dba0a8509aebc999",
+  "branch": "codex/mt-p1",
+  "captured_at_utc": "2026-10-17T18:18:35.392900+00:00",
+  "document_checks": {
+    "branch_policy": {
+      "command": "CUDA_VISIBLE_DEVICES='' PYTHONNOUSERSITE=1 /home/fair/miniconda3/envs/aerialgym/bin/python -B tests/test_branch_policy.py",
+      "errors": 0,
+      "failures": 0,
+      "tests_run": 4
+    },
+    "canonical_docs": {
+      "command": "CUDA_VISIBLE_DEVICES='' PYTHONNOUSERSITE=1 /home/fair/miniconda3/envs/aerialgym/bin/python -B tests/test_canonical_docs.py",
+      "errors": 0,
+      "failures": 0,
+      "tests_run": 25
+    },
+    "changed_markdown_local_links": {
+      "files_verified": 7,
+      "method": "tools.check_public_docs.local_link_errors on 6 complete current/new Markdown documents and only the appended WORKLOG portion; unchanged historical WORKLOG prose is excluded. Local path existence, not external URLs or heading anchors.",
+      "status": "PASS"
+    },
+    "diff_whitespace": "PASS",
+    "independent_document_review": "Two delegated reviewers; H-R3 subsequent-observation divergence and B/C/D approval wording clarified",
+    "public_docs": {
+      "command": "CUDA_VISIBLE_DEVICES='' PYTHONNOUSERSITE=1 /home/fair/miniconda3/envs/aerialgym/bin/python -B tools/check_public_docs.py",
+      "status": "PASS"
+    }
+  },
+  "historical_evidence": {
+    "files_verified": 101,
+    "packages": {
+      "e_l0_evaluation_2026-10-18": {
+        "files_verified": 31,
+        "index_sha256": "e7917d90f33a9ecc4915a4da1e14c5ec156c750f067ac2da403096f4c0d07c74",
+        "path_sha256_map_digest": "ca14a565e7c8c497f4c776e76b2efef65f655df4789f3437769e79b838577a1e"
+      },
+      "eq0_environment_audit_2026-10-17": {
+        "files_verified": 35,
+        "index_sha256": "1758938ccf87b28331659e3bbc507fdf3e8199a44548cbee85d34fba394ca1b5",
+        "path_sha256_map_digest": "2fbade4765d000f62a4921f7ad567fd4a2670506faddf4945ad0cf506b5da5d1"
+      },
+      "eq1_validation_2026-10-18": {
+        "files_verified": 12,
+        "index_sha256": "cb0ae6f34f2d8cf1d30743533a624bfd693ae5b6a4910c3d26f2fe4868319244",
+        "path_sha256_map_digest": "cf905b899b2bb6a0182e6aa3d49811367a417cba98a2522f325cbd1b8edb0695"
+      },
+      "eq1d_qualification_2026-10-18": {
+        "files_verified": 23,
+        "index_sha256": "2783d1efb7135167d62fbebe52fd7a78fa2fcfdab0681ed9d6759e7a6eb61b5c",
+        "path_sha256_map_digest": "6eca10affd18ea6b6682d615f1161b1ae847d8207316ba5c625fc0b85bf6c10d"
+      }
+    },
+    "status": "UNCHANGED"
+  },
+  "main_preservation": {
+    "head": {
+      "after": "cb644bbe46456b1900020177617a13040a3f1552",
+      "before": "cb644bbe46456b1900020177617a13040a3f1552",
+      "matches": true
+    },
+    "stash_list": {
+      "after": "23ddb33f92cf6c75cf9095e149bb7e2516eb7543 stash@{0} On main: KROC2027 merge 2026-10-15: user WIP (.gitignore, WORKLOG.md, presentations/README.md) - restore after canary\n",
+      "before": "23ddb33f92cf6c75cf9095e149bb7e2516eb7543 stash@{0} On main: KROC2027 merge 2026-10-15: user WIP (.gitignore, WORKLOG.md, presentations/README.md) - restore after canary\n",
+      "matches": true
+    },
+    "tracked_status": {
+      "after": " M .gitignore\n M WORKLOG.md\n M presentations/README.md\n",
+      "before": " M .gitignore\n M WORKLOG.md\n M presentations/README.md\n",
+      "matches": true
+    },
+    "wip_files": {
+      ".gitignore": {
+        "after_sha256": "0fc139965f0e1e218883e22cb1c2e2cc6c8cf86487b1dd7d402a28a369fb5296",
+        "before_sha256": "0fc139965f0e1e218883e22cb1c2e2cc6c8cf86487b1dd7d402a28a369fb5296",
+        "matches": true
+      },
+      "WORKLOG.md": {
+        "after_sha256": "a63118ee730803b6c7e0afcceeec0d0595fdbf347ed56fb3474364b79bf6454c",
+        "before_sha256": "a63118ee730803b6c7e0afcceeec0d0595fdbf347ed56fb3474364b79bf6454c",
+        "matches": true
+      },
+      "presentations/README.md": {
+        "after_sha256": "be8c4b2350a49580c5ea70a45f34c307c34a46f2509ce2eeab8f0f9fdfb69731",
+        "before_sha256": "be8c4b2350a49580c5ea70a45f34c307c34a46f2509ce2eeab8f0f9fdfb69731",
+        "matches": true
+      }
+    }
+  },
+  "policy_f": {
+    "main": {
+      "bytes": 8869844,
+      "matches_before": true,
+      "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/aerial_gym/rl_training/rl_games/runs/ppo_260805_0413_navrl_v2-speedgov-ep24000-205bars-main-riskcap-s1/nn/last_gen_ppo_ep_25000_rew_39.742134.pth",
+      "sha256": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40"
+    },
+    "worktree": {
+      "bytes": 8869844,
+      "matches_before": true,
+      "path": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/aerial_gym/rl_training/rl_games/runs/ppo_260805_0413_navrl_v2-speedgov-ep24000-205bars-main-riskcap-s1/nn/last_gen_ppo_ep_25000_rew_39.742134.pth",
+      "sha256": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40"
+    }
+  },
+  "protected_references_sha256": {
+    "RESEARCH_PLAN.md": "4e35029965e57d7c3fa89da5e7467b473f17b4a2d43b6362527d87399afea2ff",
+    "docs/evidence/eq0_environment_audit_2026-10-17/EQ0_ENVIRONMENT_AUDIT.md": "efb286ec28886f3c7b66422610e875c08962e4fad5590d689b76fa66dcdab597",
+    "docs/evidence/eq0_environment_audit_2026-10-17/EQ1_VALIDATION_PLAN.md": "f192e939abcff1bf8582044fcc5f89ca539999f4023bc3712b81da912fc183f4",
+    "docs/evidence/eq0_environment_audit_2026-10-17/ISSUE_REGISTER.md": "096778cc944e33217a8ba8a4fef2c967f7e861892048dd82572f214f2c2bd3b6",
+    "docs/evidence/eq0_environment_audit_2026-10-17/PROVISIONAL_HYPOTHESES.md": "0dac101ab11c900defcf4de105240862d6b9d60668ac45eb74f6ec5d5d694795",
+    "docs/evidence/eq1_validation_2026-10-18/REPORT.md": "0587ff0473f9825fe1c64c3ea43a5b3588f9013f9319ebfb1203dc13e3129f5f",
+    "docs/evidence/eq1_validation_2026-10-18/SENSOR_CANDIDATES.md": "991f660bd6ad22f3061c429cac79e5a29ed0e57d8ec9d9be0044715f27ba0ed0",
+    "docs/evidence/eq1d_qualification_2026-10-18/LINEAGE_DIFFS.md": "304c24f43d90e33a9d9bb8862857cc19575f943ff9843c6aec02c620e474136e",
+    "docs/evidence/eq1d_qualification_2026-10-18/REPORT.md": "2f7ac23e17d68dcbc0bd3cc74ceea720b741f575fb1f174b54675201a29e1b3f",
+    "docs/plans/correction_lineages_plan_v1.md": "292f7492022f6d4a78a10abc9099ef8ffd115cc613afe5258a5e78b0a43613e0",
+    "docs/preregistration_task_diagnostics_t1_2026-09-14.md": "ba14b8e263a62e49b5ce9f027c5ee414dbf7b1e1767bb09ead4439049750ab57",
+    "docs/status/data/parameters.json": "a39f61a69180b2137b82ec243d68a7e55e0bc717e422d42c272afeb56ff2c4e9"
+  },
+  "publication": {
+    "conditional_push_authorization": "Preserved; subject to previously approved branch scope and history/security prerequisites",
+    "history_security_clearance_for_publication": "NOT_ESTABLISHED_BY_THIS_DOCUMENTATION_TASK",
+    "main_merge_performed": false,
+    "remote_push_performed": false
+  },
+  "raw": {
+    "external_backup_established_by_this_task": false,
+    "manifest_count": 10,
+    "manifests": {
+      "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/e_l0_evaluation_v1/EL0-R1/RAW_MANIFEST.json": {
+        "manifest_sha256_after": "bbc7365e2bf6b638c71e6aaa26518143a7bac22849b99cd3bfa86461ed45f723",
+        "manifest_sha256_before": "bbc7365e2bf6b638c71e6aaa26518143a7bac22849b99cd3bfa86461ed45f723",
+        "member_mismatches": [],
+        "member_schema": "members_list",
+        "members_verified": 99,
+        "schema": "NOT_RECORDED"
+      },
+      "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/eq1d_qualification_v1/EQ1D-R1/RAW_MANIFEST.json": {
+        "manifest_sha256_after": "e28dfc68531b559161bbbc217e541917e696b0960837c3418e71f6115efb4b22",
+        "manifest_sha256_before": "e28dfc68531b559161bbbc217e541917e696b0960837c3418e71f6115efb4b22",
+        "member_mismatches": [],
+        "member_schema": "members_list",
+        "members_verified": 33,
+        "schema": "NOT_RECORDED"
+      },
+      "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/kroc2027_A_v1/RAW_MANIFEST.json": {
+        "manifest_sha256_after": "7a8042aa0d1a36a6c7fb34d8bf273ef49606e3ee7bf4bde44755ff1628575726",
+        "manifest_sha256_before": "7a8042aa0d1a36a6c7fb34d8bf273ef49606e3ee7bf4bde44755ff1628575726",
+        "member_mismatches": [],
+        "member_schema": "files_mapping",
+        "members_verified": 393,
+        "schema": "motar.raw-manifest.v1"
+      },
+      "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/mt_p1_precision_v1/KROC27-A-M02/RAW_MANIFEST.json": {
+        "manifest_sha256_after": "bc90b5b086cbae9db4daebbfcc81cf448f21348f1f648a1df3e025c9cba4bdd7",
+        "manifest_sha256_before": "bc90b5b086cbae9db4daebbfcc81cf448f21348f1f648a1df3e025c9cba4bdd7",
+        "member_mismatches": [],
+        "member_schema": "files_mapping",
+        "members_verified": 452,
+        "schema": "motar.raw-manifest.v1"
+      },
+      "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/mt_p1_precision_v1/MT-P2-C01/RAW_MANIFEST.json": {
+        "manifest_sha256_after": "9b28af167706e6f39224402056943aa1bc1adbb8fa021efac6ef65cea6ebb4e4",
+        "manifest_sha256_before": "9b28af167706e6f39224402056943aa1bc1adbb8fa021efac6ef65cea6ebb4e4",
+        "member_mismatches": [],
+        "member_schema": "files_mapping",
+        "members_verified": 131,
+        "schema": "motar.raw-manifest.v1"
+      },
+      "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_confirmatory_v1/OCC-P2/RAW_MANIFEST.json": {
+        "manifest_sha256_after": "c5cd1dbc160122d444119af255fee450405c7d3373025cad6f866d5c0a0cfc68",
+        "manifest_sha256_before": "c5cd1dbc160122d444119af255fee450405c7d3373025cad6f866d5c0a0cfc68",
+        "member_mismatches": [],
+        "member_schema": "files_mapping",
+        "members_verified": 1406,
+        "schema": "motar.raw-manifest.v1"
+      },
+      "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_pilot_v1/OCC-G0/RAW_MANIFEST.json": {
+        "manifest_sha256_after": "2e051977a68c34c21e1dd8a674b3673c1016d855295ecc73350d323fb007bc88",
+        "manifest_sha256_before": "2e051977a68c34c21e1dd8a674b3673c1016d855295ecc73350d323fb007bc88",
+        "member_mismatches": [],
+        "member_schema": "files_mapping",
+        "members_verified": 53,
+        "schema": "motar.raw-manifest.v1"
+      },
+      "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_pilot_v1/OCC-G0_rerun1/RAW_MANIFEST.json": {
+        "manifest_sha256_after": "cc26a68a9822da9e99762cda984ded59ce161292adbd56cdc1c7313f4a14a599",
+        "manifest_sha256_before": "cc26a68a9822da9e99762cda984ded59ce161292adbd56cdc1c7313f4a14a599",
+        "member_mismatches": [],
+        "member_schema": "files_mapping",
+        "members_verified": 194,
+        "schema": "motar.raw-manifest.v1"
+      },
+      "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_pilot_v1/OCC-P1/RAW_MANIFEST.json": {
+        "manifest_sha256_after": "b0f071e873c26829bc13d12d26daa19e9c6aee5c3ddd38ceaa0498d43c0423c4",
+        "manifest_sha256_before": "b0f071e873c26829bc13d12d26daa19e9c6aee5c3ddd38ceaa0498d43c0423c4",
+        "member_mismatches": [],
+        "member_schema": "files_mapping",
+        "members_verified": 14,
+        "schema": "motar.raw-manifest.v1"
+      },
+      "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_pilot_v1/OCC-P1_rerun1/RAW_MANIFEST.json": {
+        "manifest_sha256_after": "6e12d9ac4350419a2214933a4cf445cff642c4ca85cdcf6da0116bc7eacda120",
+        "manifest_sha256_before": "6e12d9ac4350419a2214933a4cf445cff642c4ca85cdcf6da0116bc7eacda120",
+        "member_mismatches": [],
+        "member_schema": "files_mapping",
+        "members_verified": 704,
+        "schema": "motar.raw-manifest.v1"
+      }
+    },
+    "members_verified": 3479,
+    "mismatch_count": 0,
+    "note": "Preservation check covers the named manifests and members, not every byte on disk. Symlink/merge does not commit raw.",
+    "status": "UNCHANGED",
+    "untracked_raw_symlinks": [
+      "results/mt_p1_precision_v1",
+      "results/occlusion_pilot_v1"
+    ]
+  },
+  "runtime_and_tests": {
+    "digest_encoding": "SHA-256 of UTF-8 json.dumps(path_to_sha256, sort_keys=True, separators=(comma,colon))",
+    "files_verified": 2054,
+    "path_sha256_map_digest": "28d4986921044e32f01e128e8f730a887b84aaa376c2bfe14b3f2bb9dd89674a",
+    "status": "UNCHANGED"
+  },
+  "schema": "motar.sensor-contract-amendment-validation.v1",
+  "scope": "Documentation correction only; not sensor implementation or hardware qualification",
+  "scratch_inventory_bindings": {
+    "after_sha256": "7bf8d58574a1abe9f1a7251055cf683089850a60fe69c91ee37e9f712d83a15d",
+    "before_sha256": "718d735c8f31f4ad2439dd72685f847c8225850e867a1777f2f9cb3ac7d6a9dc",
+    "note": "Local scratch is not the preservation location for original raw; compact protected identities above are committed. Scratch files may be unavailable on another host."
+  },
+  "status": "PASS",
+  "worklog_append_only": {
+    "parent_prefix_bytes": 1551551,
+    "parent_prefix_sha256": "63a8254cd4f1055930fa32c2ca4d6bca49e6f7de308749770158f1b9d864fb01",
+    "status": "PASS"
+  }
+}

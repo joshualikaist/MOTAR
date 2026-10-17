@@ -10,8 +10,8 @@ is in [`docs/EVIDENCE.md`](docs/EVIDENCE.md); how the system works is in
 ## Purpose
 
 A simulated UAV has to find, follow and closely approach a moving object while flying through a
-random field of vertical bars. It sees the world only through its own sensors: a forward camera and a
-LiDAR. Published work usually studies one piece of this problem in isolation (navigation, tracking,
+random field of vertical bars. It sees the world only through its own sensors: a forward RGB-D camera
+and LiDAR. Published work usually studies one piece of this problem in isolation (navigation, tracking,
 pursuit, perception or safety) and reports a number inside that piece.
 
 MOTAR measures the **research evidence sequence (not a causal chain)** on frozen policies:
@@ -25,6 +25,13 @@ measured perception error → its cost to the policy → whether retraining reco
 
 It keeps the links that failed. The aim is a bounded, reproducible account of which factors move
 close-approach performance in simulation and by how much. It is not a new state-of-the-art system.
+
+The official current and future sensor contract is **RGB-D Camera + LiDAR**, with camera/LiDAR
+measurement fusion and the existing 898-D Policy F baseline. Improving this fusion is the sensor
+research objective. Camera-only and LiDAR-free final goals were unsupported assistant assumptions,
+withdrawn in the [`sensor-contract amendment`](docs/plans/sensor_contract_amendment_2026-10-18.md).
+The [`current sensor contract`](docs/SENSOR_CONTRACT.md) fixes the scope and provisional Recovery
+hypotheses; historical evidence and preregistrations retain their original bytes.
 
 ## Research problem
 
