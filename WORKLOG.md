@@ -20888,3 +20888,20 @@ Next review: the complete diff and new plan; local commit requires user diff app
   it adds no new host, user or credential information.
 - Record: `docs/evidence/s_l1a_2026-10-18/PUSH_AUDIT.md` and `push_audit/`. The script is re-run on
   the final HEAD before a normal `codex/mt-p1`-only push. No main merge, no main push, no force.
+
+## 2026-10-18 — S-L1B v1 preregistered: camera–LiDAR pinhole/SE(3) calibration (before code)
+
+- Authority: the user's unattended S-L1B/C/D approval, with each lineage gated. Base `2d65f1d`.
+  Files: `docs/plans/s_l1b_v1.md` and `.json`. No runtime code or measurement exists yet.
+- Scope: `s_l1b_v1` is cumulative over S-L1A. It adds pinhole per-pixel rays, SE(3) camera→LiDAR
+  reprojection (t = (0.10, 0, 0.03), R = I nominal, general R/t supported) and LiDAR-frame
+  (ρ, az, el) binning. Strict per-elevation bins are kept separate from the clamped conservative
+  envelope used by the actor. Every bin is min-fused. The carve-out window moves to the common
+  frame: s_L = body-range anchor − (0.20 − 0.15).
+- Radius/range conventions are explicit; the A4/A7 centre-range biases stay Known FAILs for S-L1C.
+- Gates: B-POINT (1e−4 m and 1e−5 rad per pixel), B-A1A2, B-ENVELOPE (1e−4 m on boundary-robust
+  bins), B-VERTICAL, B-CARVE (S14, A_FOREGROUND, CPU B_TIGHT), B-DEPTH, B-REGRESSION (off =
+  EL0-R1, s_l1a = SL1A-C01; CPU bitwise vs `139184b`), B-EL0, B-FIREWALL and B-INTEGRITY.
+  Canary `SL1B-C01`: 3 sensor processes (43 envs) and 8 closed-loop processes.
+- Next: independent float64 oracle commit, then runtime and tests. Session resumed 04:12 KST; the
+  conservative wrap-up is 08:12 KST.
