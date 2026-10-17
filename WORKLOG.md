@@ -20874,3 +20874,17 @@ Next review: the complete diff and new plan; local commit requires user diff app
 - Evidence: `docs/evidence/s_l1a_2026-10-18/`, containing REPORT, `s_l1a_analysis.json`,
   `run_records/`, `preservation_after.json` and `index.json`. Next: history audit before the
   conditionally authorized `codex/mt-p1` push. S-L1B/C/D remain unstarted and unapproved.
+
+## 2026-10-18 — Pre-push audit of all unpublished `codex/mt-p1` history: PASS
+
+- Range `HEAD --not --remotes` at `1e26d08`: 48 commits, 783 objects (453 blobs), all authored and
+  committed by the account owner. Remote `main` is `2da5b12`; `codex/mt-p1` is absent remotely.
+- Findings: 0 checkpoints, 0 raw cells, 0 secret-pattern hits, 0 sensitive filenames, 0 symlinks
+  or submodules. Main WIP3 blobs and stash `23ddb33` are not in the push. The protected untracked
+  `results/` paths are absent. Raw-like matches are only compact tracked `results/kroc2027_*`
+  JSON and a 175 KB evidence `.csv.gz`. The largest blob is the 3.7 MB OCC-P2 analysis JSON.
+- Local paths: `/home/fair` and `/tmp` scratch paths in 105 provenance or log files. This matches
+  published `origin/main`, which has 1,899 files with the same prefix plus agent scratch paths, so
+  it adds no new host, user or credential information.
+- Record: `docs/evidence/s_l1a_2026-10-18/PUSH_AUDIT.md` and `push_audit/`. The script is re-run on
+  the final HEAD before a normal `codex/mt-p1`-only push. No main merge, no main push, no force.
