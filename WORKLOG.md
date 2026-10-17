@@ -21217,3 +21217,24 @@ Next review: the complete diff and new plan; local commit requires user diff app
     mismatches); 0 occlusion classes in alone passes.
   - Every GPU CENTRE_ONLY/PARTIAL pass was detected, so those online classes are evidenced on CPU
     only.
+
+## 2026-10-18 — S-L1D GPU qualification SL1D-C01: S-L1D_QUALIFIED (8/8 verdict gates PASS)
+
+- Run at fixed source `76f0f4c`: 10/10 processes rc=0, no retry, 432.0 s, peak 4,670 MiB under
+  measured caps of 7,277–7,283 MiB, disk 19.0 GB free. Raw
+  `../aerial_gym_simulator/results/s_l1d_v1/SL1D-C01` (manifest `2b5fd37e…`, 131 members, 0
+  mismatches). Policy F unchanged; SL1A/B/C-C01 still verify.
+- D-ORACLE: the online predicted support equals E-L0 `alone_px` and the float64 oracle (0/0
+  mismatches).
+- D-FIXTURES: 30/30 gated cases (RANGE_EXIT 6, FOV_EXIT 12, FULL 12; 10 unique). No alone-pass
+  occlusion evidence, no zero-support FULL. GPU CENTRE_ONLY/PARTIAL passes were all detected, so
+  those classes are CPU-evidenced only.
+- Closed loop (reported): static FULL → full/centre/partial evidence 128/22/4; FOV_EXIT →
+  PRED_FOV_EXIT 491 and UNEXPLAINED 244 (prediction drift). Identity-confirmed reacquisitions:
+  38 static and 76 moving, with GT error at reacquisition median 0.069/0.079 m. Fused-valid
+  returns: 73/72.
+- D-REGRESSION and D-EL0: off = EL0-R1, s_l1c = SL1C-C01, s_l1d = s_l1c (diagnostic only),
+  P1 = P2; actor 898.
+- Preservation PASS: 2,085 files with 34 allowed paths, 101 evidence files, 10/3,479 raw, Policy F,
+  and main with WIP3 and stash.
+- Evidence: `docs/evidence/s_l1d_2026-10-18/`. Next: independent review, then push.
