@@ -21,12 +21,15 @@ are **not** approvals to run again.
 
 - `main` is the only long-lived branch; it is both the working and the publishing branch. GitHub Pages
   serves `/docs` from `main`, so the public site is `docs/status/`. Short-lived branches (agent
-  worktrees under `.codex_worktrees/`, or a review branch the user asks for) are merged back into
-  `main` and then deleted. The rule and its history are in root [`OPERATIONS.md`](../OPERATIONS.md) §0,
+  worktrees under `.codex_worktrees/`, or a review branch the user asks for) may merge back into
+  `main` only after explicit approval; deletion is not automatic session cleanup. The historical
+  branch rule is in root [`OPERATIONS.md`](../OPERATIONS.md) §0,
   and `tests/test_branch_policy.py` keeps the documents consistent.
-- Never force-push, `reset --hard`, or rewrite published history. Show the diff before any commit or
-  push. The temporary KROC2027 Phase 1 exception in [`AGENTS.md`](../AGENTS.md) allows scoped local
-  commits on branch `kroc2027-phase1` until that branch is merged or the 2026-10-28 Simulation Freeze.
+- Never force-push, `reset --hard`, or rewrite published history. Review the actual diff and stage
+  explicitly named approved files. Completed, verified authorized work must receive a local commit
+  under the user's 2026-10-17 [Git traceability protocol](research_git_traceability_protocol.md).
+  Remote push and main merge require separate explicit approval. This supersedes the older
+  per-local-commit approval language and temporary exceptions; frozen historical files stay intact.
 - Any tool that writes a GPU-derived number to `runs/` or `results/` records the execution stack with
   `tools/runtime_fingerprint.py` (root `OPERATIONS.md` §0.1). Perception streaming reproduces only in
   `detector_runs/venv`.
@@ -115,14 +118,16 @@ historical records; do not regenerate them in place.
 
 These rules exist because breaking them has voided runs before (see `results/VOID_*`):
 
-- While training or evaluation runs, do **not** edit, add or commit anything under `aerial_gym/`,
-  `tools/` or `resources/robots/`. The launchers compare those trees before every cell. Edit only
-  `docs/`, `tests/`, `WORKLOG.md` or a scratch directory.
+- Commit approved source and preregistration before launch. While training or evaluation runs,
+  do **not** modify or commit any tracked file, including `WORKLOG.md`, docs or tests. Keep HEAD
+  and the tracked tree frozen; write only designated run outputs or scratch files. Do not create
+  runtime files under `aerial_gym/`, `tools/` or `resources/robots/`.
 - Do not run heavy CPU or disk work alongside an evaluation; concurrent load has changed results.
 - Evaluate a frozen policy only through its recorded contract; `tools/audits/check_eval_condition_contract.py`
   refuses a mismatched condition. HEAD defaults do **not** reproduce the ep25000 training contract of policy F.
 - TensorBoard for this repository: `tensorboard --logdir aerial_gym/rl_training/rl_games/runs --port 6009`.
-- Record the run in [`WORKLOG.md`](../WORKLOG.md) with its numbers and paths before asking for review.
+- After the run ends and its results are validated, record its numbers and paths in
+  [`WORKLOG.md`](../WORKLOG.md) and make a separate local result commit.
 
 ## 8. Housekeeping
 

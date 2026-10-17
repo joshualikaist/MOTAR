@@ -51,12 +51,23 @@ For operations and commands see [`docs/OPERATIONS.md`](docs/OPERATIONS.md); for 
 ## Git rules
 
 - No force-push, no `reset --hard`, no rebase of published history, no history rewrite.
-- **Show the diff and wait for the user's approval before any commit or push.** Do not commit
-  autonomously.
+- **Show the diff, review it, stage only explicitly named approved files, and make a local commit
+  when approved work is complete and verified.** A second per-commit approval is not required for
+  that authorized scope. Separate independent research units into separate commits.
+- The user's **2026-10-17 [Git Commit & Research Traceability Protocol](docs/research_git_traceability_protocol.md)**
+  applies to all agents and supersedes older per-local-commit approval language in `CLAUDE.md`,
+  root `OPERATIONS.md`, earlier exceptions and skills. Those frozen historical files stay intact.
+  **Remote push and main merge still require separate explicit approval.** Local commits are not
+  visible through GitHub until an authorized push actually succeeds.
 - `main` is the only long-lived branch (root `OPERATIONS.md` §0). Short-lived agent worktrees or review
-  branches merge back to `main` and are deleted.
+  branches merge back to `main` only with approval; do not merge or delete a worktree as automatic
+  session cleanup.
 - Several agent sessions may work in this repository at once. An uncommitted change may belong to
-  someone else, so stage only your own files.
+  someone else, so stage only your own approved files. Never use `git add .` or `git add -A`.
+  Do not reset, stash, or incorporate another person's WIP; if it conflicts, stop and report.
+- Read-only audits may create and locally commit approved new reports, analysis evidence and
+  appended WORKLOG entries. Existing source and raw remain unchanged. Large raw/checkpoints stay
+  outside Git; commit compact records, paths, manifests and SHA-256 bindings instead.
 - Preserve provenance. Do not move, rename or byte-edit a path listed under "Path contracts" below.
 
 ### Temporary exception: KROC2027 Phase 1 (ends at merge to `main` or the 2026-10-28 Simulation Freeze, whichever is first)
@@ -97,15 +108,17 @@ The full list, with the checks that enforce it, is in
 
 ## While a GPU run is active
 
-- Do not create, edit or commit anything under `aerial_gym/`, `tools/` or `resources/robots/`. The
-  launchers compare those trees before every cell. Work only in `docs/`, `tests/`, `WORKLOG.md` or a
-  scratch directory.
+- Commit the approved source and preregistration before launch. During the run, **do not edit or
+  commit any tracked file, including WORKLOG, docs or tests**. Do not create runtime files under
+  `aerial_gym/`, `tools/` or `resources/robots/`; use only the run's designated output or scratch.
+  Keep the tracked tree and source HEAD frozen. After the process has ended and its results are
+  validated, record the results in a separate local commit.
 - Do not start heavy CPU or disk work; concurrent load has changed evaluation results.
 
 ## Recording work
 
 Every piece of work ends with a `WORKLOG.md` entry. Newest entries go at the bottom, and the entry is
-written before asking for diff review, so that code and record land in one commit. Use this form:
+written before the local commit, so that code and record land in one commit. Use this form:
 
 - `## YYYY-MM-DD — <one-line headline>`
 - The measured numbers (a table when there are two or more cells), the decision taken and the next
@@ -113,6 +126,26 @@ written before asking for diff review, so that code and record land in one commi
 - Refuted hypotheses, stated as refuted: "hypothesis X rejected: measured Y".
 
 Never cut the WORKLOG entry to save time; it is what makes the next session cheap.
+
+Every completion report ends with **Git Traceability**: Branch, Base SHA, New Commit SHA, Changed
+Files, Tests, Working Tree, Remote Push YES/NO, Main Merge YES/NO, and Raw/Checkpoint Integrity.
+If a commit cannot be made, explain why and list every remaining uncommitted path; do not clean
+it up by deleting or resetting work. Link GitHub commits/branches only after a successful push.
+
+## Session deadline and handoff
+
+- Record the known session start/deadline and check the time after each research unit. For a
+  five-hour session, reserve approximately the last hour for verification, commits and handoff.
+  If the actual quota deadline is unavailable, say so and use a conservative wrap-up point; do
+  not claim access to a hidden quota timer.
+- Before the wrap-up point, finish the approved unit that fits. Stop starting long work that
+  cannot leave time for validation and a local commit. Never bypass a frozen GPU tree to do so.
+- Before the limit, record completed units/SHAs, unresolved issues, remaining files and tests,
+  any owned process still running (PID, log, output, cap and safe next action), and exactly where
+  the next session resumes. Commit verified authorized work; explicitly label incomplete work.
+- Follow `.claude/skills/session-handoff/SKILL.md` with this precedence: no push without explicit
+  authorization, no deletion/reset of WIP, and no tracked edits during a GPU run. If a process
+  cannot finish before the deadline, report its actual state rather than claiming completion.
 
 ## Commands
 
