@@ -20692,3 +20692,20 @@ Next review: the complete diff and new plan; local commit requires user diff app
 - Files: `motar_eval/e_l0.py` (recorder, pure label functions, contact chain, call-through association capture, runtime attach), `motar_eval/e_l0_kernels.py` (Warp centre-ray query), `tools/e_l0_launcher.py` (V1 label scenes, V2 contact fixtures, V3 P0/P1/P2 closed-loop digests), `tools/e_l0_run.py` (watchdogged orchestrator with an in-run non-interference stop), `tools/e_l0_analysis.py` (independent oracles), `tests/test_e_l0.py`, `docs/plans/correction_lineages_plan_v1.md` (S-L1/P-L1/G-L1 minimal change plans, not approved), this entry.
 - Development smoke (scratch only, not evidence): mechanical fixes were a quaternion broadcast and a module-scope Warp kernel. Static N = 8 P0/P1/P2 had identical digests on all 14 keys over 600 steps. E-L0 frames are byte-identical between adapter-hook and runtime-attach versions. V1 labels/provenance matched the oracles (7 bar-only accepts FALSE, A1 CORRECT, A2 FALSE, A3/A4 NONE). V2 contacts equal the independent recorder and lie in the SAT window. A natural closed-loop false association appeared (1 of 451 accepts in the smoke).
 - CPU verification: E-L0 tests 13/13; PUBLIC_CPU 2,419 run / 0 failures / 0 errors / 10 skipped / 5 excluded; docs checker PASS. Next: official `EL0-R1` with `tools/e_l0_run.py run --approved-commit <this commit>`; tracked tree frozen during the run.
+
+## 2026-10-18 — E-L0 GPU validation EL0-R1 completed; all 14 gates PASS; environment unchanged
+
+- Run `EL0-R1` on approved source `79d65b6fa51b4de1d09ece7cf60b6c1941f02005` (prereg `37e6b19` + amendment 1), 02:24:03–02:32:21 KST, tracked tree frozen. 11/11 processes, no integrity stop. Raw `../aerial_gym_simulator/results/e_l0_evaluation_v1/EL0-R1`, 99 members, manifest `bbc7365e2bf6b638c71e6aaa26518143a7bac22849b99cd3bfa86461ed45f723`. Measured 497.9 s GPU (0.138 GPU-h), peak 5,440 MiB under the launch-time cap 7,011 MiB, 35.05 MB, disk 19.23 → 19.20 GB.
+
+| Gate group | Result |
+|---|---|
+| E0-N1…N6 non-interference (P2/P1/P0, static N8 600, moving N8 600, static N128 320 steps) | PASS, 0 differing steps on observations, actions, trajectories, outcomes/resets, RMS, sensors, tracker; bulk result.json identical (N128); OCC trace identical P1/P2 |
+| E0-L1…L3 labels vs independent oracles (V1, 36 scenes) | PASS: 27/27 silhouette classes and counts; 9 accepts provenance-correct (7 bar-only FALSE, A1 CORRECT, A2 FALSE); camera provenance exact |
+| E0-C1 contact chronology (V2) | PASS: equals the independent substep recorder; SAT window |
+| E0-C2/C3 episodes and centre ray (V3 P2) | PASS: outcomes equal the launcher; collision-free consistency; causes; safe_abort NOT_IMPLEMENTED; 36,189 frames 100 % vs offline LOS |
+| E0-T1/T2 timing, tracker | PASS |
+
+- Validation-run counts (not population rates): captures all collision-free (123 / 93 / 1,011); capture-with-contact 0; crashes 1 / 9 / 27 (contact, plus 1 below height); LiDAR accepts correct/false 450/1, 287/73 (moving), 3,987/17; camera false detections 0. The EQ-1D 7/7 bar-only accepts remain a known fixture failure, not a rate. E-L0 resolves EQ-1D's S08/S12/S14 classification gaps (RANGE_EXIT/PARTIAL/CENTRE_ONLY).
+- Preservation: EL0-R1 99/99, EQ1D-R1 33/33, OCC-P2 1,406/1,406 verified; Policy F unchanged; adapter byte-identical to `5ff285a`; main HEAD `cb644bb`, three WIP files and stash `23ddb33` identical to the pre-run record.
+- Push readiness (not pushed): 40 commits not on any remote ref; no secret-like content; no checkpoint or raw binaries tracked (largest tracked evidence 3.7 MB OCC-P2 analysis.json; compact `results/*` JSON records from earlier packages are tracked); the branch's `.gitignore`/`WORKLOG.md`/`presentations/README.md` are committed branch content, not the main-checkout WIP (hashes differ); new evidence files contain local absolute paths. Push of `codex/mt-p1` needs separate approval.
+- Next: user decision on S-L1 sensor fixes (`docs/plans/correction_lineages_plan_v1.md`) and on the push. No S-L1/P-L1/G-L1 production change, Recovery Planner, PPO, H-R confirmation, push or merge was done.

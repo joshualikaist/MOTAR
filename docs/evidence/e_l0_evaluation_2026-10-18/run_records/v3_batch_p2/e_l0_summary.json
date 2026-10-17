@@ -1,0 +1,204 @@
+{
+ "attachment": "runtime wrap of the KrocRecorder instance (motar_eval.e_l0.attach)",
+ "camera_provenance": [
+  "NONE",
+  "TRUE_TARGET",
+  "FALSE_DETECTION",
+  "MISSED"
+ ],
+ "classes": [
+  "NONE",
+  "RANGE_EXIT",
+  "FOV_EXIT",
+  "SCALE_LOSS",
+  "FULL",
+  "CENTRE_ONLY",
+  "PARTIAL",
+  "VISIBLE"
+ ],
+ "collision_force_threshold_n": 0.05,
+ "context": {
+  "arm": "v3_batch_p2",
+  "bars": 160,
+  "cell_id": "v3_batch_p2",
+  "checkpoint_sha256": "",
+  "initial_distance_m": "10.0",
+  "initial_view": "visible",
+  "protocol_sha256": "",
+  "run_id": "EL0-R1",
+  "seed": 4503,
+  "target_behavior_level": "e0_static"
+ },
+ "counts": {
+  "episodes": 1038,
+  "frames": 40960,
+  "steps": 320
+ },
+ "evaluation_only": true,
+ "files": {
+  "e_l0_episodes.jsonl": {
+   "bytes": 623948,
+   "sha256": "0a3c72db211ab13ca5d53bf90226355f674bd699426cd0a6aef3abce9919a438"
+  },
+  "e_l0_frames.bin": {
+   "bytes": 3358720,
+   "sha256": "ab9c28b14d9034583610c5d7f057666835dd0ede96e2d270a18b68bcf4b2109b"
+  },
+  "e_l0_steps.jsonl": {
+   "bytes": 28362,
+   "sha256": "f96e11eda623715e4c26bf47451fc2a5b881e8560188250699c8f0090dc64137"
+  }
+ },
+ "frame_contract": "frame k = observation k (staged after perception, consumed by action k) plus action k, its command and the contacts during its physics substeps",
+ "frame_dtype": [
+  [
+   "env",
+   "<u2"
+  ],
+  [
+   "episode",
+   "<u4"
+  ],
+  [
+   "frame",
+   "<u2"
+  ],
+  [
+   "cls",
+   "|u1"
+  ],
+  [
+   "centre_in_frustum",
+   "|u1"
+  ],
+  [
+   "centre_blocked",
+   "|u1"
+  ],
+  [
+   "below_min_pixels",
+   "|u1"
+  ],
+  [
+   "alone_px",
+   "<u2"
+  ],
+  [
+   "visible_px",
+   "<u2"
+  ],
+  [
+   "visible_outside_alone_px",
+   "<u2"
+  ],
+  [
+   "perception_px",
+   "<u2"
+  ],
+  [
+   "centre_range_m",
+   "<f4"
+  ],
+  [
+   "camera_visible",
+   "|u1"
+  ],
+  [
+   "lidar_visible",
+   "|u1"
+  ],
+  [
+   "fused_visible",
+   "|u1"
+  ],
+  [
+   "track_active",
+   "|u1"
+  ],
+  [
+   "camera_prov",
+   "|u1"
+  ],
+  [
+   "lidar_prov",
+   "|u1"
+  ],
+  [
+   "assoc_row",
+   "|i1"
+  ],
+  [
+   "assoc_beam",
+   "|i1"
+  ],
+  [
+   "assoc_semantic",
+   "<i2"
+  ],
+  [
+   "assoc_surface_m",
+   "<f4"
+  ],
+  [
+   "assoc_consistent",
+   "|u1"
+  ],
+  [
+   "track_age_s",
+   "<f4"
+  ],
+  [
+   "expired",
+   "|u1"
+  ],
+  [
+   "contact_substeps",
+   "|u1"
+  ],
+  [
+   "first_contact_substep",
+   "|i1"
+  ],
+  [
+   "peak_contact_force_n",
+   "<f4"
+  ],
+  [
+   "action",
+   "<f4",
+   [
+    4
+   ]
+  ],
+  [
+   "command",
+   "<f4",
+   [
+    4
+   ]
+  ]
+ ],
+ "frame_itemsize": 82,
+ "import_origins": {
+  "aerial_gym": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/aerial_gym/__init__.py",
+  "kroc_eval_adapter": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/aerial_gym/task/navrl_task/kroc_eval_adapter.py",
+  "motar_eval": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/motar_eval/__init__.py"
+ },
+ "lidar_provenance": [
+  "NONE",
+  "CORRECT",
+  "FALSE_ASSOCIATION"
+ ],
+ "min_pixels": 2,
+ "reason": "complete",
+ "rest_rule": {
+  "body_radius_m": 0.20199009876724155,
+  "clearance_m": 0.45,
+  "frames": 10,
+  "speed_mps": 0.1
+ },
+ "safe_abort": "NOT_IMPLEMENTED",
+ "schema": "motar.e-l0.v1",
+ "substeps_per_action": 10,
+ "target_semantic_id": 50
+}

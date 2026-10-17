@@ -258,6 +258,26 @@ class OrchestratorTest(unittest.TestCase):
         self.assertEqual({k: v for k, v in e2.items() if k not in drop}, {k: v for k, v in e0.items() if k not in drop})
 
 
+EVIDENCE = ROOT / "docs/evidence/e_l0_evaluation_2026-10-18"
+
+
+@unittest.skipUnless((EVIDENCE / "e_l0_analysis.json").exists(), "E-L0 evidence not present")
+class RecordedEvidenceTest(unittest.TestCase):
+    def test_official_run(self):
+        report = json.loads((EVIDENCE / "run_records/run_report.json").read_text())
+        self.assertEqual(report["status"], "COMPLETED")
+        self.assertEqual([p["id"] for p in report["processes"]], [p["id"] for p in PLAN["run"]["processes"]])
+        self.assertTrue(all(v["identical"] for v in report["noninterference"].values()))
+        summary = json.loads((EVIDENCE / "e_l0_analysis.json").read_text())["summary"]
+        self.assertEqual(set(summary), set(PLAN["gates"]))
+        self.assertTrue(all(v == "PASS" for v in summary.values()), summary)
+        pres = json.loads((EVIDENCE / "preservation_after.json").read_text())
+        for key in ("el0_r1", "eq1d_r1", "occ_p2"):
+            self.assertEqual(pres[key]["mismatches"], 0)
+        self.assertTrue(pres["adapter_identical_to_measurement_source"])
+        self.assertTrue(pres["main_checkout_unchanged"])
+
+
 class PlanTest(unittest.TestCase):
     def test_contract(self):
         self.assertTrue(PLAN["status"].startswith("APPROVED"))

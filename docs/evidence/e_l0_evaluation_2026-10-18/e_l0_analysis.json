@@ -1,0 +1,1222 @@
+{
+ "V1": {
+  "rows": [
+   {
+    "assoc_valid": false,
+    "camera_prov": "TRUE_TARGET",
+    "centre_blocked": false,
+    "e_l0_alone": 56,
+    "e_l0_class": "VISIBLE",
+    "e_l0_lidar_prov": "NONE",
+    "e_l0_visible": 56,
+    "label_ok": true,
+    "oracle_alone": 56,
+    "oracle_camera_prov": "TRUE_TARGET",
+    "oracle_centre_blocked": false,
+    "oracle_class": "VISIBLE",
+    "oracle_lidar_prov": "NONE",
+    "oracle_visible": 56,
+    "present": true,
+    "scene": "S00"
+   },
+   {
+    "assoc_valid": false,
+    "camera_prov": "TRUE_TARGET",
+    "centre_blocked": false,
+    "e_l0_alone": 17,
+    "e_l0_class": "VISIBLE",
+    "e_l0_lidar_prov": "NONE",
+    "e_l0_visible": 17,
+    "label_ok": true,
+    "oracle_alone": 17,
+    "oracle_camera_prov": "TRUE_TARGET",
+    "oracle_centre_blocked": false,
+    "oracle_class": "VISIBLE",
+    "oracle_lidar_prov": "NONE",
+    "oracle_visible": 17,
+    "present": true,
+    "scene": "S01"
+   },
+   {
+    "assoc_valid": false,
+    "camera_prov": "TRUE_TARGET",
+    "centre_blocked": false,
+    "e_l0_alone": 35,
+    "e_l0_class": "VISIBLE",
+    "e_l0_lidar_prov": "NONE",
+    "e_l0_visible": 35,
+    "label_ok": true,
+    "oracle_alone": 35,
+    "oracle_camera_prov": "TRUE_TARGET",
+    "oracle_centre_blocked": false,
+    "oracle_class": "VISIBLE",
+    "oracle_lidar_prov": "NONE",
+    "oracle_visible": 35,
+    "present": true,
+    "scene": "S02"
+   },
+   {
+    "assoc_valid": false,
+    "camera_prov": "TRUE_TARGET",
+    "centre_blocked": false,
+    "e_l0_alone": 56,
+    "e_l0_class": "VISIBLE",
+    "e_l0_lidar_prov": "NONE",
+    "e_l0_visible": 56,
+    "label_ok": true,
+    "oracle_alone": 56,
+    "oracle_camera_prov": "TRUE_TARGET",
+    "oracle_centre_blocked": false,
+    "oracle_class": "VISIBLE",
+    "oracle_lidar_prov": "NONE",
+    "oracle_visible": 56,
+    "present": true,
+    "scene": "S03"
+   },
+   {
+    "assoc_valid": false,
+    "camera_prov": "TRUE_TARGET",
+    "centre_blocked": false,
+    "e_l0_alone": 8,
+    "e_l0_class": "VISIBLE",
+    "e_l0_lidar_prov": "NONE",
+    "e_l0_visible": 8,
+    "label_ok": true,
+    "oracle_alone": 8,
+    "oracle_camera_prov": "TRUE_TARGET",
+    "oracle_centre_blocked": false,
+    "oracle_class": "VISIBLE",
+    "oracle_lidar_prov": "NONE",
+    "oracle_visible": 8,
+    "present": true,
+    "scene": "S04"
+   },
+   {
+    "assoc_valid": false,
+    "camera_prov": "TRUE_TARGET",
+    "centre_blocked": false,
+    "e_l0_alone": 4,
+    "e_l0_class": "VISIBLE",
+    "e_l0_lidar_prov": "NONE",
+    "e_l0_visible": 4,
+    "label_ok": true,
+    "oracle_alone": 4,
+    "oracle_camera_prov": "TRUE_TARGET",
+    "oracle_centre_blocked": false,
+    "oracle_class": "VISIBLE",
+    "oracle_lidar_prov": "NONE",
+    "oracle_visible": 4,
+    "present": true,
+    "scene": "S05"
+   },
+   {
+    "assoc_valid": false,
+    "camera_prov": "TRUE_TARGET",
+    "centre_blocked": false,
+    "e_l0_alone": 2,
+    "e_l0_class": "VISIBLE",
+    "e_l0_lidar_prov": "NONE",
+    "e_l0_visible": 2,
+    "label_ok": true,
+    "oracle_alone": 2,
+    "oracle_camera_prov": "TRUE_TARGET",
+    "oracle_centre_blocked": false,
+    "oracle_class": "VISIBLE",
+    "oracle_lidar_prov": "NONE",
+    "oracle_visible": 2,
+    "present": true,
+    "scene": "S06"
+   },
+   {
+    "assoc_valid": false,
+    "camera_prov": "TRUE_TARGET",
+    "centre_blocked": false,
+    "e_l0_alone": 2,
+    "e_l0_class": "VISIBLE",
+    "e_l0_lidar_prov": "NONE",
+    "e_l0_visible": 2,
+    "label_ok": true,
+    "oracle_alone": 2,
+    "oracle_camera_prov": "TRUE_TARGET",
+    "oracle_centre_blocked": false,
+    "oracle_class": "VISIBLE",
+    "oracle_lidar_prov": "NONE",
+    "oracle_visible": 2,
+    "present": true,
+    "scene": "S07"
+   },
+   {
+    "assoc_valid": false,
+    "camera_prov": "NONE",
+    "centre_blocked": false,
+    "e_l0_alone": 0,
+    "e_l0_class": "RANGE_EXIT",
+    "e_l0_lidar_prov": "NONE",
+    "e_l0_visible": 0,
+    "label_ok": true,
+    "oracle_alone": 0,
+    "oracle_camera_prov": "NONE",
+    "oracle_centre_blocked": false,
+    "oracle_class": "RANGE_EXIT",
+    "oracle_lidar_prov": "NONE",
+    "oracle_visible": 0,
+    "present": true,
+    "scene": "S08"
+   },
+   {
+    "assoc_valid": false,
+    "camera_prov": "NONE",
+    "centre_blocked": false,
+    "e_l0_alone": 0,
+    "e_l0_class": "FOV_EXIT",
+    "e_l0_lidar_prov": "NONE",
+    "e_l0_visible": 0,
+    "label_ok": true,
+    "oracle_alone": 0,
+    "oracle_camera_prov": "NONE",
+    "oracle_centre_blocked": false,
+    "oracle_class": "FOV_EXIT",
+    "oracle_lidar_prov": "NONE",
+    "oracle_visible": 0,
+    "present": true,
+    "scene": "S09"
+   },
+   {
+    "assoc_valid": false,
+    "camera_prov": "NONE",
+    "centre_blocked": false,
+    "e_l0_alone": 0,
+    "e_l0_class": "FOV_EXIT",
+    "e_l0_lidar_prov": "NONE",
+    "e_l0_visible": 0,
+    "label_ok": true,
+    "oracle_alone": 0,
+    "oracle_camera_prov": "NONE",
+    "oracle_centre_blocked": false,
+    "oracle_class": "FOV_EXIT",
+    "oracle_lidar_prov": "NONE",
+    "oracle_visible": 0,
+    "present": true,
+    "scene": "S10"
+   },
+   {
+    "assoc_valid": false,
+    "camera_prov": "NONE",
+    "centre_blocked": true,
+    "e_l0_alone": 8,
+    "e_l0_class": "FULL",
+    "e_l0_lidar_prov": "NONE",
+    "e_l0_visible": 0,
+    "label_ok": true,
+    "oracle_alone": 8,
+    "oracle_camera_prov": "NONE",
+    "oracle_centre_blocked": true,
+    "oracle_class": "FULL",
+    "oracle_lidar_prov": "NONE",
+    "oracle_visible": 0,
+    "present": true,
+    "scene": "S11"
+   },
+   {
+    "assoc_valid": false,
+    "camera_prov": "TRUE_TARGET",
+    "centre_blocked": false,
+    "e_l0_alone": 30,
+    "e_l0_class": "PARTIAL",
+    "e_l0_lidar_prov": "NONE",
+    "e_l0_visible": 21,
+    "label_ok": true,
+    "oracle_alone": 30,
+    "oracle_camera_prov": "TRUE_TARGET",
+    "oracle_centre_blocked": false,
+    "oracle_class": "PARTIAL",
+    "oracle_lidar_prov": "NONE",
+    "oracle_visible": 21,
+    "present": true,
+    "scene": "S12"
+   },
+   {
+    "assoc_valid": false,
+    "camera_prov": "TRUE_TARGET",
+    "centre_blocked": true,
+    "e_l0_alone": 30,
+    "e_l0_class": "CENTRE_ONLY",
+    "e_l0_lidar_prov": "NONE",
+    "e_l0_visible": 4,
+    "label_ok": true,
+    "oracle_alone": 30,
+    "oracle_camera_prov": "TRUE_TARGET",
+    "oracle_centre_blocked": true,
+    "oracle_class": "CENTRE_ONLY",
+    "oracle_lidar_prov": "NONE",
+    "oracle_visible": 4,
+    "present": true,
+    "scene": "S13"
+   },
+   {
+    "assoc_valid": false,
+    "camera_prov": "TRUE_TARGET",
+    "centre_blocked": true,
+    "e_l0_alone": 56,
+    "e_l0_class": "CENTRE_ONLY",
+    "e_l0_lidar_prov": "NONE",
+    "e_l0_visible": 16,
+    "label_ok": true,
+    "oracle_alone": 56,
+    "oracle_camera_prov": "TRUE_TARGET",
+    "oracle_centre_blocked": true,
+    "oracle_class": "CENTRE_ONLY",
+    "oracle_lidar_prov": "NONE",
+    "oracle_visible": 16,
+    "present": true,
+    "scene": "S14"
+   },
+   {
+    "assoc_valid": false,
+    "camera_prov": "TRUE_TARGET",
+    "centre_blocked": false,
+    "e_l0_alone": 22,
+    "e_l0_class": "VISIBLE",
+    "e_l0_lidar_prov": "NONE",
+    "e_l0_visible": 22,
+    "label_ok": true,
+    "oracle_alone": 22,
+    "oracle_camera_prov": "TRUE_TARGET",
+    "oracle_centre_blocked": false,
+    "oracle_class": "VISIBLE",
+    "oracle_lidar_prov": "NONE",
+    "oracle_visible": 22,
+    "present": true,
+    "scene": "S15"
+   },
+   {
+    "assoc_valid": false,
+    "camera_prov": "NONE",
+    "centre_blocked": true,
+    "e_l0_alone": 2,
+    "e_l0_class": "FULL",
+    "e_l0_lidar_prov": "NONE",
+    "e_l0_visible": 0,
+    "label_ok": true,
+    "oracle_alone": 2,
+    "oracle_camera_prov": "NONE",
+    "oracle_centre_blocked": true,
+    "oracle_class": "FULL",
+    "oracle_lidar_prov": "NONE",
+    "oracle_visible": 0,
+    "present": true,
+    "scene": "S16"
+   },
+   {
+    "assoc_valid": false,
+    "camera_prov": "NONE",
+    "centre_blocked": true,
+    "e_l0_alone": 17,
+    "e_l0_class": "FULL",
+    "e_l0_lidar_prov": "NONE",
+    "e_l0_visible": 0,
+    "label_ok": true,
+    "oracle_alone": 17,
+    "oracle_camera_prov": "NONE",
+    "oracle_centre_blocked": true,
+    "oracle_class": "FULL",
+    "oracle_lidar_prov": "NONE",
+    "oracle_visible": 0,
+    "present": true,
+    "scene": "S17"
+   },
+   {
+    "assoc_valid": false,
+    "camera_prov": "TRUE_TARGET",
+    "centre_blocked": false,
+    "e_l0_alone": 22,
+    "e_l0_class": "VISIBLE",
+    "e_l0_lidar_prov": "NONE",
+    "e_l0_visible": 22,
+    "label_ok": true,
+    "oracle_alone": 22,
+    "oracle_camera_prov": "TRUE_TARGET",
+    "oracle_centre_blocked": false,
+    "oracle_class": "VISIBLE",
+    "oracle_lidar_prov": "NONE",
+    "oracle_visible": 22,
+    "present": true,
+    "scene": "S18"
+   },
+   {
+    "assoc_valid": false,
+    "camera_prov": "NONE",
+    "centre_blocked": true,
+    "e_l0_alone": 14,
+    "e_l0_class": "FULL",
+    "e_l0_lidar_prov": "NONE",
+    "e_l0_visible": 0,
+    "label_ok": true,
+    "oracle_alone": 14,
+    "oracle_camera_prov": "NONE",
+    "oracle_centre_blocked": true,
+    "oracle_class": "FULL",
+    "oracle_lidar_prov": "NONE",
+    "oracle_visible": 0,
+    "present": true,
+    "scene": "S19"
+   },
+   {
+    "assoc_valid": false,
+    "camera_prov": "TRUE_TARGET",
+    "centre_blocked": false,
+    "e_l0_alone": 11,
+    "e_l0_class": "VISIBLE",
+    "e_l0_lidar_prov": "NONE",
+    "e_l0_visible": 11,
+    "label_ok": true,
+    "oracle_alone": 11,
+    "oracle_camera_prov": "TRUE_TARGET",
+    "oracle_centre_blocked": false,
+    "oracle_class": "VISIBLE",
+    "oracle_lidar_prov": "NONE",
+    "oracle_visible": 11,
+    "present": true,
+    "scene": "S20"
+   },
+   {
+    "assoc_valid": false,
+    "camera_prov": "TRUE_TARGET",
+    "centre_blocked": false,
+    "e_l0_alone": 30,
+    "e_l0_class": "VISIBLE",
+    "e_l0_lidar_prov": "NONE",
+    "e_l0_visible": 30,
+    "label_ok": true,
+    "oracle_alone": 30,
+    "oracle_camera_prov": "TRUE_TARGET",
+    "oracle_centre_blocked": false,
+    "oracle_class": "VISIBLE",
+    "oracle_lidar_prov": "NONE",
+    "oracle_visible": 30,
+    "present": true,
+    "scene": "S21"
+   },
+   {
+    "assoc_valid": false,
+    "camera_prov": "TRUE_TARGET",
+    "centre_blocked": false,
+    "e_l0_alone": 136,
+    "e_l0_class": "VISIBLE",
+    "e_l0_lidar_prov": "NONE",
+    "e_l0_visible": 136,
+    "label_ok": true,
+    "oracle_alone": 136,
+    "oracle_camera_prov": "TRUE_TARGET",
+    "oracle_centre_blocked": false,
+    "oracle_class": "VISIBLE",
+    "oracle_lidar_prov": "NONE",
+    "oracle_visible": 136,
+    "present": true,
+    "scene": "S22"
+   },
+   {
+    "assoc_valid": false,
+    "camera_prov": "NONE",
+    "e_l0_lidar_prov": "NONE",
+    "oracle_camera_prov": "NONE",
+    "oracle_lidar_prov": "NONE",
+    "present": false,
+    "scene": "N0"
+   },
+   {
+    "assoc_valid": true,
+    "camera_prov": "NONE",
+    "e_l0_lidar_prov": "FALSE_ASSOCIATION",
+    "e_l0_surface_m": 4.722499847412109,
+    "oracle_camera_prov": "NONE",
+    "oracle_first_hit": "BAR",
+    "oracle_lidar_prov": "FALSE_ASSOCIATION",
+    "oracle_range_m": 4.722499996423721,
+    "present": false,
+    "scene": "N1"
+   },
+   {
+    "assoc_valid": true,
+    "camera_prov": "NONE",
+    "e_l0_lidar_prov": "FALSE_ASSOCIATION",
+    "e_l0_surface_m": 2.6428849697113037,
+    "oracle_camera_prov": "NONE",
+    "oracle_first_hit": "BAR",
+    "oracle_lidar_prov": "FALSE_ASSOCIATION",
+    "oracle_range_m": 2.6428855096150365,
+    "present": false,
+    "scene": "N2"
+   },
+   {
+    "assoc_valid": true,
+    "camera_prov": "NONE",
+    "e_l0_lidar_prov": "FALSE_ASSOCIATION",
+    "e_l0_surface_m": 7.781151294708252,
+    "oracle_camera_prov": "NONE",
+    "oracle_first_hit": "BAR",
+    "oracle_lidar_prov": "FALSE_ASSOCIATION",
+    "oracle_range_m": 7.781149998307228,
+    "present": false,
+    "scene": "N3"
+   },
+   {
+    "assoc_valid": false,
+    "camera_prov": "NONE",
+    "e_l0_lidar_prov": "NONE",
+    "oracle_camera_prov": "NONE",
+    "oracle_lidar_prov": "NONE",
+    "present": false,
+    "scene": "N4"
+   },
+   {
+    "assoc_valid": true,
+    "camera_prov": "NONE",
+    "e_l0_lidar_prov": "FALSE_ASSOCIATION",
+    "e_l0_surface_m": 4.777099609375,
+    "oracle_camera_prov": "NONE",
+    "oracle_first_hit": "BAR",
+    "oracle_lidar_prov": "FALSE_ASSOCIATION",
+    "oracle_range_m": 4.777099996805191,
+    "present": false,
+    "scene": "N5"
+   },
+   {
+    "assoc_valid": true,
+    "camera_prov": "NONE",
+    "e_l0_lidar_prov": "FALSE_ASSOCIATION",
+    "e_l0_surface_m": 4.647749900817871,
+    "oracle_camera_prov": "NONE",
+    "oracle_first_hit": "BAR",
+    "oracle_lidar_prov": "FALSE_ASSOCIATION",
+    "oracle_range_m": 4.647749990224838,
+    "present": false,
+    "scene": "N6"
+   },
+   {
+    "assoc_valid": true,
+    "camera_prov": "NONE",
+    "e_l0_lidar_prov": "FALSE_ASSOCIATION",
+    "e_l0_surface_m": 1.6483993530273438,
+    "oracle_camera_prov": "NONE",
+    "oracle_first_hit": "BAR",
+    "oracle_lidar_prov": "FALSE_ASSOCIATION",
+    "oracle_range_m": 1.6484000086784363,
+    "present": false,
+    "scene": "N7"
+   },
+   {
+    "assoc_valid": true,
+    "camera_prov": "NONE",
+    "e_l0_lidar_prov": "FALSE_ASSOCIATION",
+    "e_l0_surface_m": 9.628299713134766,
+    "oracle_camera_prov": "NONE",
+    "oracle_first_hit": "BAR",
+    "oracle_lidar_prov": "FALSE_ASSOCIATION",
+    "oracle_range_m": 9.62830001115799,
+    "present": false,
+    "scene": "N8"
+   },
+   {
+    "assoc_valid": true,
+    "camera_prov": "NONE",
+    "centre_blocked": false,
+    "e_l0_alone": 0,
+    "e_l0_class": "FOV_EXIT",
+    "e_l0_lidar_prov": "CORRECT",
+    "e_l0_surface_m": 4.799997806549072,
+    "e_l0_visible": 0,
+    "label_ok": true,
+    "oracle_alone": 0,
+    "oracle_camera_prov": "NONE",
+    "oracle_centre_blocked": false,
+    "oracle_class": "FOV_EXIT",
+    "oracle_first_hit": "TARGET",
+    "oracle_lidar_prov": "CORRECT",
+    "oracle_range_m": 4.8000000000000025,
+    "oracle_visible": 0,
+    "planned_oracle": "CORRECT",
+    "present": true,
+    "scene": "A1"
+   },
+   {
+    "assoc_valid": true,
+    "camera_prov": "NONE",
+    "centre_blocked": true,
+    "e_l0_alone": 0,
+    "e_l0_class": "FOV_EXIT",
+    "e_l0_lidar_prov": "FALSE_ASSOCIATION",
+    "e_l0_surface_m": 2.643850326538086,
+    "e_l0_visible": 0,
+    "label_ok": true,
+    "oracle_alone": 0,
+    "oracle_camera_prov": "NONE",
+    "oracle_centre_blocked": true,
+    "oracle_class": "FOV_EXIT",
+    "oracle_first_hit": "BAR",
+    "oracle_lidar_prov": "FALSE_ASSOCIATION",
+    "oracle_range_m": 2.6438499987125397,
+    "oracle_visible": 0,
+    "planned_oracle": "FALSE_ASSOCIATION",
+    "present": true,
+    "scene": "A2"
+   },
+   {
+    "assoc_valid": false,
+    "camera_prov": "NONE",
+    "centre_blocked": true,
+    "e_l0_alone": 0,
+    "e_l0_class": "FOV_EXIT",
+    "e_l0_lidar_prov": "NONE",
+    "e_l0_visible": 0,
+    "label_ok": true,
+    "oracle_alone": 0,
+    "oracle_camera_prov": "NONE",
+    "oracle_centre_blocked": true,
+    "oracle_class": "FOV_EXIT",
+    "oracle_lidar_prov": "NONE",
+    "oracle_visible": 0,
+    "planned_oracle": "NONE",
+    "present": true,
+    "scene": "A3"
+   },
+   {
+    "assoc_valid": false,
+    "camera_prov": "TRUE_TARGET",
+    "centre_blocked": false,
+    "e_l0_alone": 56,
+    "e_l0_class": "VISIBLE",
+    "e_l0_lidar_prov": "NONE",
+    "e_l0_visible": 56,
+    "label_ok": true,
+    "oracle_alone": 56,
+    "oracle_camera_prov": "TRUE_TARGET",
+    "oracle_centre_blocked": false,
+    "oracle_class": "VISIBLE",
+    "oracle_lidar_prov": "NONE",
+    "oracle_visible": 56,
+    "planned_oracle": "NONE",
+    "present": true,
+    "scene": "A4"
+   }
+  ]
+ },
+ "V2": {
+  "rows": [
+   {
+    "contact_substeps": 0,
+    "counts_equal": true,
+    "first_equal": true,
+    "fixture": 0,
+    "non_contact_zero": true
+   },
+   {
+    "contact_substeps": 0,
+    "counts_equal": true,
+    "first_equal": true,
+    "fixture": 1,
+    "non_contact_zero": true
+   },
+   {
+    "contact_substeps": 0,
+    "counts_equal": true,
+    "first_equal": true,
+    "fixture": 2,
+    "non_contact_zero": true
+   },
+   {
+    "contact_substeps": 0,
+    "counts_equal": true,
+    "first_equal": true,
+    "fixture": 3,
+    "non_contact_zero": true
+   },
+   {
+    "contact_substeps": 0,
+    "counts_equal": true,
+    "first_equal": true,
+    "fixture": 4,
+    "non_contact_zero": true
+   },
+   {
+    "contact_substeps": 0,
+    "counts_equal": true,
+    "first_equal": true,
+    "fixture": 5,
+    "non_contact_zero": true
+   },
+   {
+    "contact_substeps": 0,
+    "counts_equal": true,
+    "first_equal": true,
+    "fixture": 6,
+    "non_contact_zero": true
+   },
+   {
+    "contact_substeps": 0,
+    "counts_equal": true,
+    "first_equal": true,
+    "fixture": 7,
+    "non_contact_zero": true
+   },
+   {
+    "contact_substeps": 0,
+    "counts_equal": true,
+    "first_equal": true,
+    "fixture": 8,
+    "non_contact_zero": true
+   },
+   {
+    "contact_substeps": 0,
+    "counts_equal": true,
+    "first_equal": true,
+    "fixture": 9,
+    "non_contact_zero": true
+   },
+   {
+    "contact_substeps": 0,
+    "counts_equal": true,
+    "first_equal": true,
+    "fixture": 10,
+    "non_contact_zero": true
+   },
+   {
+    "contact_substeps": 0,
+    "counts_equal": true,
+    "first_equal": true,
+    "fixture": 11,
+    "non_contact_zero": true
+   },
+   {
+    "contact_substeps": 0,
+    "counts_equal": true,
+    "first_equal": true,
+    "fixture": 12,
+    "non_contact_zero": true
+   },
+   {
+    "contact_substeps": 0,
+    "counts_equal": true,
+    "first_equal": true,
+    "fixture": 13,
+    "non_contact_zero": true
+   },
+   {
+    "contact_substeps": 0,
+    "counts_equal": true,
+    "first_equal": true,
+    "fixture": 14,
+    "non_contact_zero": true
+   },
+   {
+    "contact_substeps": 0,
+    "counts_equal": true,
+    "first_equal": true,
+    "fixture": 15,
+    "non_contact_zero": true
+   },
+   {
+    "contact_substeps": 0,
+    "counts_equal": true,
+    "first_equal": true,
+    "fixture": 16,
+    "non_contact_zero": true
+   },
+   {
+    "contact_substeps": 0,
+    "counts_equal": true,
+    "first_equal": true,
+    "fixture": 17,
+    "non_contact_zero": true
+   },
+   {
+    "contact_substeps": 0,
+    "counts_equal": true,
+    "first_equal": true,
+    "fixture": 18,
+    "non_contact_zero": true
+   },
+   {
+    "contact_substeps": 0,
+    "counts_equal": true,
+    "first_equal": true,
+    "fixture": 19,
+    "non_contact_zero": true
+   },
+   {
+    "contact_substeps": 302,
+    "counts_equal": true,
+    "e_l0_first_substep": 290,
+    "first_equal": true,
+    "fixture": 20,
+    "geometric_substep": 289,
+    "in_window": true
+   },
+   {
+    "contact_substeps": 398,
+    "counts_equal": true,
+    "e_l0_first_substep": 192,
+    "first_equal": true,
+    "fixture": 21,
+    "geometric_substep": 191,
+    "in_window": true
+   },
+   {
+    "contact_substeps": 0,
+    "counts_equal": true,
+    "first_equal": true,
+    "fixture": 22,
+    "note": "no contact (as EQ-1D fixture 22)"
+   },
+   {
+    "contact_substeps": 333,
+    "counts_equal": true,
+    "e_l0_first_substep": 194,
+    "first_equal": true,
+    "fixture": 23,
+    "geometric_substep": 193,
+    "in_window": true
+   }
+  ]
+ },
+ "V3": {
+  "v3_batch_p2": {
+   "actions_equal": true,
+   "camera_false_detections": 0,
+   "capture_with_contact": 0,
+   "centre_ray_agreement": 1.0,
+   "centre_ray_frames": 29193,
+   "class_frames": {
+    "CENTRE_ONLY": 449,
+    "FOV_EXIT": 5899,
+    "FULL": 1095,
+    "PARTIAL": 1266,
+    "VISIBLE": 32251
+   },
+   "collision_free_capture": 1011,
+   "collision_free_consistent": true,
+   "counters_aligned": true,
+   "crash_causes": {
+    "above_height": 0,
+    "below_height": 0,
+    "contact": 27,
+    "out_of_bounds": 0,
+    "target_contact": 0
+   },
+   "crash_causes_present": true,
+   "episodes": 1038,
+   "expiries": 0,
+   "expiries_inconsistent": 0,
+   "frames": 40960,
+   "lidar_correct": 3987,
+   "lidar_false": 17,
+   "outcome_counts": {
+    "capture": 1011,
+    "crash": 27,
+    "timeout": 0
+   },
+   "outcomes_equal": true,
+   "safe_abort_not_implemented": true,
+   "track_age_equal": true,
+   "visible_outside_alone_max": 1
+  },
+  "v3_moving_p2": {
+   "actions_equal": true,
+   "camera_false_detections": 0,
+   "capture_with_contact": 0,
+   "centre_ray_agreement": 1.0,
+   "centre_ray_frames": 3568,
+   "class_frames": {
+    "CENTRE_ONLY": 106,
+    "FOV_EXIT": 819,
+    "FULL": 616,
+    "PARTIAL": 176,
+    "VISIBLE": 3083
+   },
+   "collision_free_capture": 93,
+   "collision_free_consistent": true,
+   "counters_aligned": true,
+   "crash_causes": {
+    "above_height": 0,
+    "below_height": 1,
+    "contact": 8,
+    "out_of_bounds": 0,
+    "target_contact": 0
+   },
+   "crash_causes_present": true,
+   "episodes": 102,
+   "expiries": 1,
+   "expiries_inconsistent": 0,
+   "frames": 4800,
+   "lidar_correct": 287,
+   "lidar_false": 73,
+   "outcome_counts": {
+    "capture": 93,
+    "crash": 9,
+    "timeout": 0
+   },
+   "outcomes_equal": true,
+   "safe_abort_not_implemented": true,
+   "track_age_equal": true,
+   "visible_outside_alone_max": 1
+  },
+  "v3_static_p2": {
+   "actions_equal": true,
+   "camera_false_detections": 0,
+   "capture_with_contact": 0,
+   "centre_ray_agreement": 1.0,
+   "centre_ray_frames": 3428,
+   "class_frames": {
+    "CENTRE_ONLY": 62,
+    "FOV_EXIT": 666,
+    "FULL": 108,
+    "PARTIAL": 128,
+    "VISIBLE": 3836
+   },
+   "collision_free_capture": 123,
+   "collision_free_consistent": true,
+   "counters_aligned": true,
+   "crash_causes": {
+    "above_height": 0,
+    "below_height": 0,
+    "contact": 1,
+    "out_of_bounds": 0,
+    "target_contact": 0
+   },
+   "crash_causes_present": true,
+   "episodes": 124,
+   "expiries": 0,
+   "expiries_inconsistent": 0,
+   "frames": 4800,
+   "lidar_correct": 450,
+   "lidar_false": 1,
+   "outcome_counts": {
+    "capture": 123,
+    "crash": 1,
+    "timeout": 0
+   },
+   "outcomes_equal": true,
+   "safe_abort_not_implemented": true,
+   "track_age_equal": true,
+   "visible_outside_alone_max": 1
+  }
+ },
+ "gates": {
+  "E0-C1": {
+   "note": "",
+   "status": "PASS"
+  },
+  "E0-C2": {
+   "note": "",
+   "status": "PASS"
+  },
+  "E0-C3": {
+   "note": "",
+   "status": "PASS"
+  },
+  "E0-L1": {
+   "note": "27 target scenes",
+   "status": "PASS"
+  },
+  "E0-L2": {
+   "note": "9 accepted associations",
+   "status": "PASS"
+  },
+  "E0-L3": {
+   "note": "",
+   "status": "PASS"
+  },
+  "E0-N1": {
+   "note": "",
+   "status": "PASS"
+  },
+  "E0-N2": {
+   "note": "",
+   "status": "PASS"
+  },
+  "E0-N3": {
+   "note": "",
+   "status": "PASS"
+  },
+  "E0-N4": {
+   "note": "",
+   "status": "PASS"
+  },
+  "E0-N5": {
+   "note": "",
+   "status": "PASS"
+  },
+  "E0-N6": {
+   "note": "",
+   "status": "PASS"
+  },
+  "E0-T1": {
+   "note": "",
+   "status": "PASS"
+  },
+  "E0-T2": {
+   "note": "",
+   "status": "PASS"
+  }
+ },
+ "noninterference": {
+  "groups": {
+   "moving_n8": {
+    "P1_vs_P0": {
+     "differing_steps": {
+      "action": 0,
+      "captured": 0,
+      "crashed": 0,
+      "depth": 0,
+      "done": 0,
+      "lidar": 0,
+      "obs": 0,
+      "pursuer": 0,
+      "resets": 0,
+      "reward": 0,
+      "rgb": 0,
+      "semantic": 0,
+      "target": 0,
+      "tracker": 0
+     },
+     "length_equal": true,
+     "steps": 600
+    },
+    "P2_vs_P0": {
+     "differing_steps": {
+      "action": 0,
+      "captured": 0,
+      "crashed": 0,
+      "depth": 0,
+      "done": 0,
+      "lidar": 0,
+      "obs": 0,
+      "pursuer": 0,
+      "resets": 0,
+      "reward": 0,
+      "rgb": 0,
+      "semantic": 0,
+      "target": 0,
+      "tracker": 0
+     },
+     "length_equal": true,
+     "steps": 600
+    },
+    "P2_vs_P1": {
+     "differing_steps": {
+      "action": 0,
+      "captured": 0,
+      "crashed": 0,
+      "depth": 0,
+      "done": 0,
+      "lidar": 0,
+      "obs": 0,
+      "pursuer": 0,
+      "resets": 0,
+      "reward": 0,
+      "rgb": 0,
+      "semantic": 0,
+      "target": 0,
+      "tracker": 0
+     },
+     "length_equal": true,
+     "steps": 600
+    },
+    "arm_state": {
+     "P0": {
+      "e_l0": false,
+      "occlusion_trace": false,
+      "recorder": false
+     },
+     "P1": {
+      "e_l0": false,
+      "occlusion_trace": true,
+      "recorder": true
+     },
+     "P2": {
+      "e_l0": true,
+      "occlusion_trace": true,
+      "recorder": true
+     }
+    }
+   },
+   "static_n128": {
+    "P1_vs_P0": {
+     "differing_steps": {
+      "action": 0,
+      "captured": 0,
+      "crashed": 0,
+      "depth": 0,
+      "done": 0,
+      "lidar": 0,
+      "obs": 0,
+      "pursuer": 0,
+      "resets": 0,
+      "reward": 0,
+      "rgb": 0,
+      "semantic": 0,
+      "target": 0,
+      "tracker": 0
+     },
+     "length_equal": true,
+     "steps": 320
+    },
+    "P2_vs_P0": {
+     "differing_steps": {
+      "action": 0,
+      "captured": 0,
+      "crashed": 0,
+      "depth": 0,
+      "done": 0,
+      "lidar": 0,
+      "obs": 0,
+      "pursuer": 0,
+      "resets": 0,
+      "reward": 0,
+      "rgb": 0,
+      "semantic": 0,
+      "target": 0,
+      "tracker": 0
+     },
+     "length_equal": true,
+     "steps": 320
+    },
+    "P2_vs_P1": {
+     "differing_steps": {
+      "action": 0,
+      "captured": 0,
+      "crashed": 0,
+      "depth": 0,
+      "done": 0,
+      "lidar": 0,
+      "obs": 0,
+      "pursuer": 0,
+      "resets": 0,
+      "reward": 0,
+      "rgb": 0,
+      "semantic": 0,
+      "target": 0,
+      "tracker": 0
+     },
+     "length_equal": true,
+     "steps": 320
+    },
+    "arm_state": {
+     "P0": {
+      "e_l0": false,
+      "occlusion_trace": false,
+      "recorder": false
+     },
+     "P1": {
+      "e_l0": false,
+      "occlusion_trace": true,
+      "recorder": true
+     },
+     "P2": {
+      "e_l0": true,
+      "occlusion_trace": true,
+      "recorder": true
+     }
+    }
+   },
+   "static_n8": {
+    "P1_vs_P0": {
+     "differing_steps": {
+      "action": 0,
+      "captured": 0,
+      "crashed": 0,
+      "depth": 0,
+      "done": 0,
+      "lidar": 0,
+      "obs": 0,
+      "pursuer": 0,
+      "resets": 0,
+      "reward": 0,
+      "rgb": 0,
+      "semantic": 0,
+      "target": 0,
+      "tracker": 0
+     },
+     "length_equal": true,
+     "steps": 600
+    },
+    "P2_vs_P0": {
+     "differing_steps": {
+      "action": 0,
+      "captured": 0,
+      "crashed": 0,
+      "depth": 0,
+      "done": 0,
+      "lidar": 0,
+      "obs": 0,
+      "pursuer": 0,
+      "resets": 0,
+      "reward": 0,
+      "rgb": 0,
+      "semantic": 0,
+      "target": 0,
+      "tracker": 0
+     },
+     "length_equal": true,
+     "steps": 600
+    },
+    "P2_vs_P1": {
+     "differing_steps": {
+      "action": 0,
+      "captured": 0,
+      "crashed": 0,
+      "depth": 0,
+      "done": 0,
+      "lidar": 0,
+      "obs": 0,
+      "pursuer": 0,
+      "resets": 0,
+      "reward": 0,
+      "rgb": 0,
+      "semantic": 0,
+      "target": 0,
+      "tracker": 0
+     },
+     "length_equal": true,
+     "steps": 600
+    },
+    "arm_state": {
+     "P0": {
+      "e_l0": false,
+      "occlusion_trace": false,
+      "recorder": false
+     },
+     "P1": {
+      "e_l0": false,
+      "occlusion_trace": true,
+      "recorder": true
+     },
+     "P2": {
+      "e_l0": true,
+      "occlusion_trace": true,
+      "recorder": true
+     }
+    }
+   }
+  }
+ },
+ "run": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/e_l0_evaluation_v1/EL0-R1",
+ "run_status": "COMPLETED",
+ "schema": "motar.e-l0-analysis.v1",
+ "summary": {
+  "E0-C1": "PASS",
+  "E0-C2": "PASS",
+  "E0-C3": "PASS",
+  "E0-L1": "PASS",
+  "E0-L2": "PASS",
+  "E0-L3": "PASS",
+  "E0-N1": "PASS",
+  "E0-N2": "PASS",
+  "E0-N3": "PASS",
+  "E0-N4": "PASS",
+  "E0-N5": "PASS",
+  "E0-N6": "PASS",
+  "E0-T1": "PASS",
+  "E0-T2": "PASS"
+ }
+}
