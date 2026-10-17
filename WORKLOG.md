@@ -21034,3 +21034,18 @@ Next review: the complete diff and new plan; local commit requires user diff app
   C-EL0, C-FIREWALL and C-INTEGRITY.
 - The inherited S-L1B limitations are named. Declared residual band: a bar whose front face is
   beyond about 11.35 m returns one row. Canary SL1C-C01: 3 sensor and 10 closed-loop processes.
+
+## 2026-10-18 — S-L1C independent float64 oracle verified before runtime code
+
+- Files: `tools/audits/s_l1c_reference.py`, `tests/test_s_l1c_reference.py`, WORKLOG. NumPy only,
+  with no production import; scans come from the committed S-L1A first-hit oracle.
+- CPU 9/9 OK; self-test 5/5.
+  - Negatives: nine tall-bar cases at 2.3–10.3 m and bearings 0/20/90/180° are accepted by
+    legacy and rejected as vertically extended.
+  - Residual band: a bar with its front face at 11.5 m is not rejected, as declared.
+  - Positives: clear targets at 1.5–11.5 m and bearings 0/20/−45° are accepted with exact centres;
+    so are a target in front of a bar and a target between bars.
+  - Refusals: below 1.152 m, with no eligible row, with the camera visible, or with an inactive
+    track.
+  - Covariance: the range-only update keeps orthogonal variance ≥ 0.99 at 0/45/90° and 0/8°;
+    legacy's diagonal update shrinks the tangential variance below 0.03 (EQ-1C T4).
