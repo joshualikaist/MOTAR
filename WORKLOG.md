@@ -20996,3 +20996,23 @@ Next review: the complete diff and new plan; local commit requires user diff app
   raw, Policy F, and main `cb644bb` with WIP3 and stash `23ddb33`.
 - Evidence: `docs/evidence/s_l1b_2026-10-18/`. Next: an independent review, then the GO/NO-GO
   decision for S-L1C.
+
+## 2026-10-18 — S-L1B independent review (Fable 5.1): GO-WITH-NOTES; decision S-L1B GO
+
+- Reviewer: a read-only `claude-fable-5-1` subagent. It found no blocker, re-ran the CPU tests,
+  recomputed from raw and checked the following:
+  - LiDAR row order against delivered beams: 74,298/74,304;
+  - its own carve recomputation: 0 mismatches;
+  - step-log SHA-256 equal to EL0-R1, SL1A-C01 and P1/P2;
+  - a byte-identical analysis re-run.
+- Corrections, recorded in `docs/evidence/s_l1b_2026-10-18/REVIEW_ADDENDUM.md` (REPORT.md is
+  unchanged because it is hashed):
+  - Target retention on official frames: 78/96 supported target returns fall 0.41–24.3 mm
+    (median 1.89 mm) below s_L. The smoke "1–8 mm" figure is withdrawn. The cause is structural
+    (the pixel-sampled anchor is biased high), so this is an inherited limitation.
+  - "Legacy misses bins" is mostly definitional; the decisive A1/A2 evidence is the CPU fixtures.
+  - The three attitude passes are identical inputs, so unique counts are ⅓.
+  - GPU B-VERTICAL and amendment 1 are CPU-evidenced only.
+- One reviewer item was not confirmed: the carve bearing is the body-origin
+  `atan2(measurement_vehicle)` at line 1733, not the profiling `atan(−(u−cx)/fx)`.
+- Decision: **S-L1B GO**. S-L1C may start; its preregistration names the inherited limitations.
