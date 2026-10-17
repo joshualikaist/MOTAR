@@ -1,0 +1,35 @@
+{
+ "files": [
+  {
+   "bytes": 752244,
+   "file": "d2_renders.npz",
+   "sha256": "270490ddd34050597f4d7e85e877182ba400eb92a42c255f675d7cae3fe676aa"
+  },
+  {
+   "bytes": 6525,
+   "file": "d2_meta.json",
+   "sha256": "3a605daf1b80d18a5f18bb10e712c829d67b7e618dfe03579da41aad585a93b1"
+  },
+  {
+   "bytes": 428846,
+   "file": "carve_replays.npz",
+   "sha256": "b6ba0ecdb5e85a7604510f81b4b8e64732cdb936b444f5b3908b1cd5ddf30c72"
+  },
+  {
+   "bytes": 3231,
+   "file": "s_l1a_sensor_meta.json",
+   "sha256": "4d51db0007daa7c561a2fc146b5f5dc6ac8e7b7693f0cb779c26ea64e1f9a444"
+  }
+ ],
+ "nan_fields": [],
+ "peak_allocated_bytes": 71206400,
+ "process": "sensors_legacy",
+ "process_spec": {
+  "batch": "SENSORS",
+  "id": "sensors_legacy",
+  "mode": "legacy",
+  "num_envs": 36,
+  "seed": 4401
+ },
+ "wall_s": 7.1376636028289795
+}

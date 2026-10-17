@@ -1,0 +1,31 @@
+{
+ "actor_obs_dim": 898,
+ "detector_lineage_enabled": false,
+ "files": [
+  {
+   "bytes": 122905,
+   "file": "v3_trajectory.npz",
+   "sha256": "50b1048880f14923b764680a4e5ea5acb4a18b54f1570f245720cdff29d55cff"
+  },
+  {
+   "bytes": 1270,
+   "file": "v3_meta.json",
+   "sha256": "4db9c2ec0682c28cb099cc873dd61805d6f95405564a55e3c8e8677ee008f604"
+  }
+ ],
+ "nan_fields": [],
+ "peak_allocated_bytes": 24931328,
+ "perception_lineage_enabled": false,
+ "process": "static_unset",
+ "process_spec": {
+  "arm": "P2",
+  "batch": "V3",
+  "config": "static",
+  "id": "static_unset",
+  "num_envs": 8,
+  "seed": 4501,
+  "steps": 600,
+  "variant": "unset"
+ },
+ "wall_s": 42.78090763092041
+}

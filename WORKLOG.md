@@ -20841,3 +20841,36 @@ Next review: the complete diff and new plan; local commit requires user diff app
 - Dry preflight with the fix: only problems were the uncommitted fix itself. Policy F SHA, RMS
   digest, in-worktree import origins, disk 19.2 GB, GPU 7,182 MiB free, receipts and historical
   E-L0 bindings pass. PUBLIC_CPU after `d7bdca6`: 2,478 run, 0 failures, 0 errors, 10 skipped.
+
+## 2026-10-18 — S-L1A GPU qualification SL1A-C01: S-L1A_QUALIFIED (6/6 verdict gates PASS)
+
+- Run at fixed source `139184b`. 11/11 processes rc=0, no retry, 421.4 s wall, peak 4,164/4,662 MiB
+  under measured launch caps of 7,008–7,026 MiB, disk 19.2 GB free. Raw stays outside Git at
+  `../aerial_gym_simulator/results/s_l1a_v1/SL1A-C01`: manifest `cee40f01…`, 138 members, 0
+  mismatches. Tracked tree frozen during the run. Policy F `f7022139…` unchanged.
+- Gates: A-DEPTH, A-BOUNDARY, A-CARVE, A-OFF, A-EL0 and A-INTEGRITY PASS; A-RESOURCE is
+  characterisation only. The analysis is byte-reproducible from raw.
+
+  | Measure | Legacy | S-L1A |
+  | --- | --- | --- |
+  | Robust non-target depth max error (3,106,404 px) | 7.30 m | 4.1e−5 m |
+  | Pixels > 1e−4 m / false-clear / no-hit false-positive | 134,280 / 23,394 / 18,978 | 0 / 0 / 0 |
+  | Bar returns carved (693 bar beams) / bar false-clear | 156 / 12 | 0 / 0 |
+  | S14 / A_FOREGROUND foreground bar beams carved (per attitude) | 24/24, 20/20 | 0, 0 |
+  | Target returns kept as obstacle (102) | 6 | 18 (conservative trade-off) |
+  | Render median | 0.292 ms | 0.318 ms (+2.06 MB) |
+
+- OFF non-interference: unset = OFF = historical EL0-R1 P2 is bitwise identical over 14 digest keys
+  for 600/600 steps, static seed 4501 and moving seed 4502. The ON E-L0 P1 and P2 runs are
+  identical. The 898-D actor input is unchanged. ON changes the input distribution: static
+  captures 123→117 and crashes 1→2; moving captures 93→95 and crashes 9→5. These are single-seed,
+  N=8 counts, so no claim is made.
+- Preservation PASS: 2,064 runtime/test files with exactly 13 allowed S-L1A paths, 101 evidence
+  files, 10 raw manifests with 3,479 members, both Policy F copies, and main `cb644bb` with its
+  WIP3 and stash `23ddb33`.
+- Known FAILs unchanged: S-L1B pinhole/SE(3); S-L1C identity/range-only covariance; S-L1D
+  silhouette/validity; camera–LiDAR origin/radius; target renderer residual (max 3.3e−4 m);
+  dynamics.
+- Evidence: `docs/evidence/s_l1a_2026-10-18/`, containing REPORT, `s_l1a_analysis.json`,
+  `run_records/`, `preservation_after.json` and `index.json`. Next: history audit before the
+  conditionally authorized `codex/mt-p1` push. S-L1B/C/D remain unstarted and unapproved.
