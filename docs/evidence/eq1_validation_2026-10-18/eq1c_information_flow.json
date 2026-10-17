@@ -1,0 +1,3312 @@
+{
+ "C1_dynamic": {
+  "actor_digest_sha256": "5c58857b7f6a4e9d111648a24ab1d5bcaa8c5cd28766a84f3ff0934d51c0d00c",
+  "actor_width": 898,
+  "batch_size_env0": {
+   "1": {
+    "bitwise_equal_env0": true,
+    "max_abs_diff": 0.0
+   },
+   "128": {
+    "bitwise_equal_env0": true,
+    "max_abs_diff": 0.0
+   },
+   "2": {
+    "bitwise_equal_env0": true,
+    "max_abs_diff": 0.0
+   },
+   "4": {
+    "bitwise_equal_env0": true,
+    "max_abs_diff": 0.0
+   }
+  },
+  "envs": 4,
+  "fresh_instances_bitwise_equal": true,
+  "permutation_max_abs_diff": 0.0,
+  "permutation_undone_bitwise_equal": true,
+  "positive_control_training_rng_differs": true,
+  "reset_env": 2,
+  "reset_step": 20,
+  "rng_state_changed_bitwise_equal": true,
+  "scope": "module-level held-fixed-input invariance; task-level privileged-state mutation with fixed rendered sensors is EQ-1D (needs Isaac Gym)",
+  "status": "PASS",
+  "steps": 40
+ },
+ "C1_static": {
+  "actor_writes": 1,
+  "actor_written_from_observe_result_only": true,
+  "forbidden_argument_reads": {},
+  "observe_calls": 1,
+  "observe_keywords": [
+   "depth",
+   "drone_pos_w",
+   "drone_vel_w",
+   "env_bounds_max",
+   "env_bounds_min",
+   "flight_altitude",
+   "lidar_m",
+   "max_velocity",
+   "previous_action",
+   "rgb",
+   "training",
+   "vehicle_quat",
+   "yaw_rate"
+  ],
+  "status": "PASS",
+  "target_pose_reaches": "render_raw_rgbd only"
+ },
+ "C2_checkpoint_rms": {
+  "central_value_stats_present": true,
+  "checkpoint": "aerial_gym/rl_training/rl_games/runs/ppo_260805_0413_navrl_v2-speedgov-ep24000-205bars-main-riskcap-s1/nn/last_gen_ppo_ep_25000_rew_39.742134.pth",
+  "checkpoint_identity": {
+   "note": "Policy F, read-only",
+   "status": "PASS"
+  },
+  "eval_forward_leaves_state_unchanged": true,
+  "player_calls_eval": true,
+  "player_calls_train": false,
+  "rl_games_version_file": "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/rl_games/algos_torch/players.py",
+  "rms_count": 409600001.0,
+  "rms_digest_sha256": "642fc9f7f86b068e816e156fea7a34782bbc525966650f73cd85aae8cc18387f",
+  "rms_input_width": 898,
+  "sha256": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+  "sha256_expected": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+  "status": "PASS",
+  "train_forward_changes_state": true
+ },
+ "C4_loss_separation": {
+  "by_group_density": {
+   "all": {
+    "camera_lost_frames": 438089,
+    "camera_valid_but_centre_occluded": 33109,
+    "camera_valid_out_of_fov": 279596,
+    "fov_exit": 304721,
+    "fused_lost_frames": 250975,
+    "geometric_centre_occlusion_in_view": 133305,
+    "in_view_clear_camera_loss": 63,
+    "in_view_clear_camera_loss_beyond_scale_band": 3,
+    "in_view_clear_camera_loss_within_scale_band": 60,
+    "lidar_flag_frames": 187114,
+    "lidar_only_fused_frames": 187114,
+    "post_acquisition_frames": 2261590,
+    "range_beyond_scale_band_frames": 1705
+   },
+   "moving/115": {
+    "camera_lost_frames": 57532,
+    "camera_valid_but_centre_occluded": 5199,
+    "camera_valid_out_of_fov": 34046,
+    "fov_exit": 34557,
+    "fused_lost_frames": 36402,
+    "geometric_centre_occlusion_in_view": 22972,
+    "in_view_clear_camera_loss": 3,
+    "in_view_clear_camera_loss_beyond_scale_band": 0,
+    "in_view_clear_camera_loss_within_scale_band": 3,
+    "lidar_flag_frames": 21130,
+    "lidar_only_fused_frames": 21130,
+    "post_acquisition_frames": 302104,
+    "range_beyond_scale_band_frames": 442
+   },
+   "moving/160": {
+    "camera_lost_frames": 79905,
+    "camera_valid_but_centre_occluded": 6833,
+    "camera_valid_out_of_fov": 34751,
+    "fov_exit": 47752,
+    "fused_lost_frames": 52436,
+    "geometric_centre_occlusion_in_view": 32139,
+    "in_view_clear_camera_loss": 14,
+    "in_view_clear_camera_loss_beyond_scale_band": 3,
+    "in_view_clear_camera_loss_within_scale_band": 11,
+    "lidar_flag_frames": 27469,
+    "lidar_only_fused_frames": 27469,
+    "post_acquisition_frames": 313099,
+    "range_beyond_scale_band_frames": 779
+   },
+   "moving/205": {
+    "camera_lost_frames": 103945,
+    "camera_valid_but_centre_occluded": 8587,
+    "camera_valid_out_of_fov": 35162,
+    "fov_exit": 62488,
+    "fused_lost_frames": 70558,
+    "geometric_centre_occlusion_in_view": 41447,
+    "in_view_clear_camera_loss": 10,
+    "in_view_clear_camera_loss_beyond_scale_band": 0,
+    "in_view_clear_camera_loss_within_scale_band": 10,
+    "lidar_flag_frames": 33387,
+    "lidar_only_fused_frames": 33387,
+    "post_acquisition_frames": 331673,
+    "range_beyond_scale_band_frames": 465
+   },
+   "moving/70": {
+    "camera_lost_frames": 33457,
+    "camera_valid_but_centre_occluded": 3086,
+    "camera_valid_out_of_fov": 30537,
+    "fov_exit": 20528,
+    "fused_lost_frames": 19496,
+    "geometric_centre_occlusion_in_view": 12924,
+    "in_view_clear_camera_loss": 5,
+    "in_view_clear_camera_loss_beyond_scale_band": 0,
+    "in_view_clear_camera_loss_within_scale_band": 5,
+    "lidar_flag_frames": 13961,
+    "lidar_only_fused_frames": 13961,
+    "post_acquisition_frames": 281916,
+    "range_beyond_scale_band_frames": 0
+   },
+   "moving/all": {
+    "camera_lost_frames": 274839,
+    "camera_valid_but_centre_occluded": 23705,
+    "camera_valid_out_of_fov": 134496,
+    "fov_exit": 165325,
+    "fused_lost_frames": 178892,
+    "geometric_centre_occlusion_in_view": 109482,
+    "in_view_clear_camera_loss": 32,
+    "in_view_clear_camera_loss_beyond_scale_band": 3,
+    "in_view_clear_camera_loss_within_scale_band": 29,
+    "lidar_flag_frames": 95947,
+    "lidar_only_fused_frames": 95947,
+    "post_acquisition_frames": 1228792,
+    "range_beyond_scale_band_frames": 1686
+   },
+   "static/115": {
+    "camera_lost_frames": 33689,
+    "camera_valid_but_centre_occluded": 1695,
+    "camera_valid_out_of_fov": 36239,
+    "fov_exit": 29273,
+    "fused_lost_frames": 13817,
+    "geometric_centre_occlusion_in_view": 4412,
+    "in_view_clear_camera_loss": 4,
+    "in_view_clear_camera_loss_beyond_scale_band": 0,
+    "in_view_clear_camera_loss_within_scale_band": 4,
+    "lidar_flag_frames": 19872,
+    "lidar_only_fused_frames": 19872,
+    "post_acquisition_frames": 255340,
+    "range_beyond_scale_band_frames": 0
+   },
+   "static/160": {
+    "camera_lost_frames": 48480,
+    "camera_valid_but_centre_occluded": 2865,
+    "camera_valid_out_of_fov": 38764,
+    "fov_exit": 40987,
+    "fused_lost_frames": 21804,
+    "geometric_centre_occlusion_in_view": 7484,
+    "in_view_clear_camera_loss": 9,
+    "in_view_clear_camera_loss_beyond_scale_band": 0,
+    "in_view_clear_camera_loss_within_scale_band": 9,
+    "lidar_flag_frames": 26676,
+    "lidar_only_fused_frames": 26676,
+    "post_acquisition_frames": 260123,
+    "range_beyond_scale_band_frames": 0
+   },
+   "static/205": {
+    "camera_lost_frames": 60187,
+    "camera_valid_but_centre_occluded": 3852,
+    "camera_valid_out_of_fov": 39645,
+    "fov_exit": 50874,
+    "fused_lost_frames": 28468,
+    "geometric_centre_occlusion_in_view": 9297,
+    "in_view_clear_camera_loss": 16,
+    "in_view_clear_camera_loss_beyond_scale_band": 0,
+    "in_view_clear_camera_loss_within_scale_band": 16,
+    "lidar_flag_frames": 31719,
+    "lidar_only_fused_frames": 31719,
+    "post_acquisition_frames": 265996,
+    "range_beyond_scale_band_frames": 0
+   },
+   "static/70": {
+    "camera_lost_frames": 20894,
+    "camera_valid_but_centre_occluded": 992,
+    "camera_valid_out_of_fov": 30452,
+    "fov_exit": 18262,
+    "fused_lost_frames": 7994,
+    "geometric_centre_occlusion_in_view": 2630,
+    "in_view_clear_camera_loss": 2,
+    "in_view_clear_camera_loss_beyond_scale_band": 0,
+    "in_view_clear_camera_loss_within_scale_band": 2,
+    "lidar_flag_frames": 12900,
+    "lidar_only_fused_frames": 12900,
+    "post_acquisition_frames": 251339,
+    "range_beyond_scale_band_frames": 19
+   },
+   "static/all": {
+    "camera_lost_frames": 163250,
+    "camera_valid_but_centre_occluded": 9404,
+    "camera_valid_out_of_fov": 145100,
+    "fov_exit": 139396,
+    "fused_lost_frames": 72083,
+    "geometric_centre_occlusion_in_view": 23823,
+    "in_view_clear_camera_loss": 31,
+    "in_view_clear_camera_loss_beyond_scale_band": 0,
+    "in_view_clear_camera_loss_within_scale_band": 31,
+    "lidar_flag_frames": 91167,
+    "lidar_only_fused_frames": 91167,
+    "post_acquisition_frames": 1032798,
+    "range_beyond_scale_band_frames": 19
+   }
+  },
+  "camera_valid_out_of_fov_note": "the in-FOV flag tests the target centre only; a camera-valid frame with the centre outside is an edge view with >= 2 silhouette pixels still in the image (spot check E0_static__115bars__seed4301: 2,851 frames, |bearing| 43.6-53.3 deg at 5-95 %), so FOV exit also needs a silhouette label",
+  "identity_loss": {
+   "note": "association provenance (which surface a LiDAR return came from) is not in the trace; LiDAR-only fused frames are range associations",
+   "status": "NOT_RECORDED"
+  },
+  "note": "in-view clear camera loss = fewer than 2 rendered target pixels while the centre ray is clear and in the frustum: partial occlusion of the silhouette or scale loss (EQ-1A A5)",
+  "scale_band_m": 12.75,
+  "sensor_dropout": {
+   "note": "perturbations off in evaluation (training=False), so configured dropout/noise did not run (EQ0-03)",
+   "status": "NOT_ACTIVE"
+  }
+ },
+ "C5_populations": {
+  "cells": 112,
+  "cells_outcome_counts_differ": 96,
+  "cells_quota_differs_from_legacy": 112,
+  "legacy_rule_checked_cells": 112,
+  "legacy_rule_reproduced": true,
+  "max_legacy_minus_quota": 42,
+  "max_quota_minus_legacy": 41,
+  "per_cell": [
+   {
+    "cell": "E2_obstacle_aware__115bars__seed4301",
+    "legacy_counts": {
+     "capture": 496,
+     "crash": 17,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 189,
+    "legacy_cutoff_step_recorded": 189,
+    "legacy_export_at": 512,
+    "legacy_independent": 513,
+    "legacy_minus_quota": 35,
+    "legacy_recorded": 513,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 494,
+     "crash": 18,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 34,
+    "quota_recorded_equal": true,
+    "rows": 751
+   },
+   {
+    "cell": "E2_obstacle_aware__115bars__seed4302",
+    "legacy_counts": {
+     "capture": 498,
+     "crash": 15,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 195,
+    "legacy_cutoff_step_recorded": 195,
+    "legacy_export_at": 512,
+    "legacy_independent": 513,
+    "legacy_minus_quota": 29,
+    "legacy_recorded": 513,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 494,
+     "crash": 17,
+     "timeout": 1
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 28,
+    "quota_recorded_equal": true,
+    "rows": 2076
+   },
+   {
+    "cell": "E2_obstacle_aware__115bars__seed4303",
+    "legacy_counts": {
+     "capture": 504,
+     "crash": 11,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 193,
+    "legacy_cutoff_step_recorded": 193,
+    "legacy_export_at": 512,
+    "legacy_independent": 515,
+    "legacy_minus_quota": 34,
+    "legacy_recorded": 515,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 501,
+     "crash": 11,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 31,
+    "quota_recorded_equal": true,
+    "rows": 790
+   },
+   {
+    "cell": "E2_obstacle_aware__115bars__seed4304",
+    "legacy_counts": {
+     "capture": 503,
+     "crash": 9,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 186,
+    "legacy_cutoff_step_recorded": 186,
+    "legacy_export_at": 512,
+    "legacy_independent": 512,
+    "legacy_minus_quota": 31,
+    "legacy_recorded": 512,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": true,
+    "quota_counts": {
+     "capture": 503,
+     "crash": 9,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 31,
+    "quota_recorded_equal": true,
+    "rows": 846
+   },
+   {
+    "cell": "E2_obstacle_aware__115bars__seed4305",
+    "legacy_counts": {
+     "capture": 501,
+     "crash": 11,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 193,
+    "legacy_cutoff_step_recorded": 193,
+    "legacy_export_at": 512,
+    "legacy_independent": 512,
+    "legacy_minus_quota": 36,
+    "legacy_recorded": 512,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 504,
+     "crash": 8,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 36,
+    "quota_recorded_equal": true,
+    "rows": 710
+   },
+   {
+    "cell": "E2_obstacle_aware__115bars__seed4306",
+    "legacy_counts": {
+     "capture": 502,
+     "crash": 10,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 187,
+    "legacy_cutoff_step_recorded": 187,
+    "legacy_export_at": 512,
+    "legacy_independent": 512,
+    "legacy_minus_quota": 26,
+    "legacy_recorded": 512,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": true,
+    "quota_counts": {
+     "capture": 502,
+     "crash": 10,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 26,
+    "quota_recorded_equal": true,
+    "rows": 850
+   },
+   {
+    "cell": "E2_obstacle_aware__115bars__seed4307",
+    "legacy_counts": {
+     "capture": 501,
+     "crash": 11,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 193,
+    "legacy_cutoff_step_recorded": 193,
+    "legacy_export_at": 512,
+    "legacy_independent": 512,
+    "legacy_minus_quota": 29,
+    "legacy_recorded": 512,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 500,
+     "crash": 12,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 29,
+    "quota_recorded_equal": true,
+    "rows": 1538
+   },
+   {
+    "cell": "E2_obstacle_aware__115bars__seed4308",
+    "legacy_counts": {
+     "capture": 496,
+     "crash": 18,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 193,
+    "legacy_cutoff_step_recorded": 193,
+    "legacy_export_at": 512,
+    "legacy_independent": 514,
+    "legacy_minus_quota": 32,
+    "legacy_recorded": 514,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 494,
+     "crash": 18,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 30,
+    "quota_recorded_equal": true,
+    "rows": 777
+   },
+   {
+    "cell": "E2_obstacle_aware__115bars__seed4309",
+    "legacy_counts": {
+     "capture": 493,
+     "crash": 19,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 189,
+    "legacy_cutoff_step_recorded": 189,
+    "legacy_export_at": 512,
+    "legacy_independent": 512,
+    "legacy_minus_quota": 37,
+    "legacy_recorded": 512,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 497,
+     "crash": 15,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 37,
+    "quota_recorded_equal": true,
+    "rows": 953
+   },
+   {
+    "cell": "E2_obstacle_aware__115bars__seed4310",
+    "legacy_counts": {
+     "capture": 503,
+     "crash": 12,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 197,
+    "legacy_cutoff_step_recorded": 197,
+    "legacy_export_at": 512,
+    "legacy_independent": 515,
+    "legacy_minus_quota": 33,
+    "legacy_recorded": 515,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 501,
+     "crash": 11,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 30,
+    "quota_recorded_equal": true,
+    "rows": 687
+   },
+   {
+    "cell": "E2_obstacle_aware__115bars__seed4311",
+    "legacy_counts": {
+     "capture": 504,
+     "crash": 9,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 188,
+    "legacy_cutoff_step_recorded": 188,
+    "legacy_export_at": 512,
+    "legacy_independent": 513,
+    "legacy_minus_quota": 32,
+    "legacy_recorded": 513,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 503,
+     "crash": 9,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 31,
+    "quota_recorded_equal": true,
+    "rows": 681
+   },
+   {
+    "cell": "E2_obstacle_aware__115bars__seed4312",
+    "legacy_counts": {
+     "capture": 499,
+     "crash": 13,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 192,
+    "legacy_cutoff_step_recorded": 192,
+    "legacy_export_at": 512,
+    "legacy_independent": 512,
+    "legacy_minus_quota": 30,
+    "legacy_recorded": 512,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 497,
+     "crash": 15,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 30,
+    "quota_recorded_equal": true,
+    "rows": 717
+   },
+   {
+    "cell": "E2_obstacle_aware__115bars__seed4313",
+    "legacy_counts": {
+     "capture": 497,
+     "crash": 16,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 185,
+    "legacy_cutoff_step_recorded": 185,
+    "legacy_export_at": 512,
+    "legacy_independent": 513,
+    "legacy_minus_quota": 35,
+    "legacy_recorded": 513,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 497,
+     "crash": 15,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 34,
+    "quota_recorded_equal": true,
+    "rows": 676
+   },
+   {
+    "cell": "E2_obstacle_aware__115bars__seed4314",
+    "legacy_counts": {
+     "capture": 503,
+     "crash": 13,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 194,
+    "legacy_cutoff_step_recorded": 194,
+    "legacy_export_at": 512,
+    "legacy_independent": 516,
+    "legacy_minus_quota": 33,
+    "legacy_recorded": 516,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 500,
+     "crash": 12,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 29,
+    "quota_recorded_equal": true,
+    "rows": 839
+   },
+   {
+    "cell": "E2_obstacle_aware__160bars__seed4301",
+    "legacy_counts": {
+     "capture": 486,
+     "crash": 33,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 202,
+    "legacy_cutoff_step_recorded": 202,
+    "legacy_export_at": 512,
+    "legacy_independent": 519,
+    "legacy_minus_quota": 40,
+    "legacy_recorded": 519,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 480,
+     "crash": 32,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 33,
+    "quota_recorded_equal": true,
+    "rows": 1031
+   },
+   {
+    "cell": "E2_obstacle_aware__160bars__seed4302",
+    "legacy_counts": {
+     "capture": 493,
+     "crash": 20,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 199,
+    "legacy_cutoff_step_recorded": 199,
+    "legacy_export_at": 512,
+    "legacy_independent": 513,
+    "legacy_minus_quota": 31,
+    "legacy_recorded": 513,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 490,
+     "crash": 22,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 30,
+    "quota_recorded_equal": true,
+    "rows": 835
+   },
+   {
+    "cell": "E2_obstacle_aware__160bars__seed4303",
+    "legacy_counts": {
+     "capture": 488,
+     "crash": 26,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 196,
+    "legacy_cutoff_step_recorded": 196,
+    "legacy_export_at": 512,
+    "legacy_independent": 514,
+    "legacy_minus_quota": 32,
+    "legacy_recorded": 514,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 488,
+     "crash": 24,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 30,
+    "quota_recorded_equal": true,
+    "rows": 650
+   },
+   {
+    "cell": "E2_obstacle_aware__160bars__seed4304",
+    "legacy_counts": {
+     "capture": 483,
+     "crash": 30,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 197,
+    "legacy_cutoff_step_recorded": 197,
+    "legacy_export_at": 512,
+    "legacy_independent": 513,
+    "legacy_minus_quota": 37,
+    "legacy_recorded": 513,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 485,
+     "crash": 27,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 36,
+    "quota_recorded_equal": true,
+    "rows": 870
+   },
+   {
+    "cell": "E2_obstacle_aware__160bars__seed4305",
+    "legacy_counts": {
+     "capture": 477,
+     "crash": 38,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 200,
+    "legacy_cutoff_step_recorded": 200,
+    "legacy_export_at": 512,
+    "legacy_independent": 515,
+    "legacy_minus_quota": 36,
+    "legacy_recorded": 515,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 476,
+     "crash": 36,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 33,
+    "quota_recorded_equal": true,
+    "rows": 987
+   },
+   {
+    "cell": "E2_obstacle_aware__160bars__seed4306",
+    "legacy_counts": {
+     "capture": 489,
+     "crash": 23,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 201,
+    "legacy_cutoff_step_recorded": 201,
+    "legacy_export_at": 512,
+    "legacy_independent": 512,
+    "legacy_minus_quota": 38,
+    "legacy_recorded": 512,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 486,
+     "crash": 26,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 38,
+    "quota_recorded_equal": true,
+    "rows": 925
+   },
+   {
+    "cell": "E2_obstacle_aware__160bars__seed4307",
+    "legacy_counts": {
+     "capture": 490,
+     "crash": 23,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 197,
+    "legacy_cutoff_step_recorded": 197,
+    "legacy_export_at": 512,
+    "legacy_independent": 513,
+    "legacy_minus_quota": 32,
+    "legacy_recorded": 513,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 490,
+     "crash": 22,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 31,
+    "quota_recorded_equal": true,
+    "rows": 741
+   },
+   {
+    "cell": "E2_obstacle_aware__160bars__seed4308",
+    "legacy_counts": {
+     "capture": 485,
+     "crash": 30,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 199,
+    "legacy_cutoff_step_recorded": 199,
+    "legacy_export_at": 512,
+    "legacy_independent": 515,
+    "legacy_minus_quota": 34,
+    "legacy_recorded": 515,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 486,
+     "crash": 26,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 31,
+    "quota_recorded_equal": true,
+    "rows": 787
+   },
+   {
+    "cell": "E2_obstacle_aware__160bars__seed4309",
+    "legacy_counts": {
+     "capture": 493,
+     "crash": 22,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 199,
+    "legacy_cutoff_step_recorded": 199,
+    "legacy_export_at": 512,
+    "legacy_independent": 515,
+    "legacy_minus_quota": 34,
+    "legacy_recorded": 515,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 489,
+     "crash": 22,
+     "timeout": 1
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 31,
+    "quota_recorded_equal": true,
+    "rows": 2081
+   },
+   {
+    "cell": "E2_obstacle_aware__160bars__seed4310",
+    "legacy_counts": {
+     "capture": 491,
+     "crash": 23,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 194,
+    "legacy_cutoff_step_recorded": 194,
+    "legacy_export_at": 512,
+    "legacy_independent": 514,
+    "legacy_minus_quota": 32,
+    "legacy_recorded": 514,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 490,
+     "crash": 22,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 30,
+    "quota_recorded_equal": true,
+    "rows": 794
+   },
+   {
+    "cell": "E2_obstacle_aware__160bars__seed4311",
+    "legacy_counts": {
+     "capture": 483,
+     "crash": 31,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 194,
+    "legacy_cutoff_step_recorded": 194,
+    "legacy_export_at": 512,
+    "legacy_independent": 514,
+    "legacy_minus_quota": 30,
+    "legacy_recorded": 514,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 482,
+     "crash": 30,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 28,
+    "quota_recorded_equal": true,
+    "rows": 756
+   },
+   {
+    "cell": "E2_obstacle_aware__160bars__seed4312",
+    "legacy_counts": {
+     "capture": 471,
+     "crash": 42,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 198,
+    "legacy_cutoff_step_recorded": 198,
+    "legacy_export_at": 512,
+    "legacy_independent": 513,
+    "legacy_minus_quota": 31,
+    "legacy_recorded": 513,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 470,
+     "crash": 42,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 30,
+    "quota_recorded_equal": true,
+    "rows": 1264
+   },
+   {
+    "cell": "E2_obstacle_aware__160bars__seed4313",
+    "legacy_counts": {
+     "capture": 479,
+     "crash": 34,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 198,
+    "legacy_cutoff_step_recorded": 198,
+    "legacy_export_at": 512,
+    "legacy_independent": 513,
+    "legacy_minus_quota": 32,
+    "legacy_recorded": 513,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 479,
+     "crash": 33,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 31,
+    "quota_recorded_equal": true,
+    "rows": 816
+   },
+   {
+    "cell": "E2_obstacle_aware__160bars__seed4314",
+    "legacy_counts": {
+     "capture": 485,
+     "crash": 28,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 198,
+    "legacy_cutoff_step_recorded": 198,
+    "legacy_export_at": 512,
+    "legacy_independent": 513,
+    "legacy_minus_quota": 35,
+    "legacy_recorded": 513,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 483,
+     "crash": 29,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 34,
+    "quota_recorded_equal": true,
+    "rows": 1588
+   },
+   {
+    "cell": "E2_obstacle_aware__205bars__seed4301",
+    "legacy_counts": {
+     "capture": 465,
+     "crash": 48,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 210,
+    "legacy_cutoff_step_recorded": 210,
+    "legacy_export_at": 512,
+    "legacy_independent": 513,
+    "legacy_minus_quota": 37,
+    "legacy_recorded": 513,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 464,
+     "crash": 48,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 36,
+    "quota_recorded_equal": true,
+    "rows": 745
+   },
+   {
+    "cell": "E2_obstacle_aware__205bars__seed4302",
+    "legacy_counts": {
+     "capture": 456,
+     "crash": 58,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 200,
+    "legacy_cutoff_step_recorded": 200,
+    "legacy_export_at": 512,
+    "legacy_independent": 514,
+    "legacy_minus_quota": 42,
+    "legacy_recorded": 514,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 456,
+     "crash": 56,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 40,
+    "quota_recorded_equal": true,
+    "rows": 767
+   },
+   {
+    "cell": "E2_obstacle_aware__205bars__seed4303",
+    "legacy_counts": {
+     "capture": 463,
+     "crash": 51,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 217,
+    "legacy_cutoff_step_recorded": 217,
+    "legacy_export_at": 512,
+    "legacy_independent": 514,
+    "legacy_minus_quota": 41,
+    "legacy_recorded": 514,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 460,
+     "crash": 52,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 39,
+    "quota_recorded_equal": true,
+    "rows": 834
+   },
+   {
+    "cell": "E2_obstacle_aware__205bars__seed4304",
+    "legacy_counts": {
+     "capture": 462,
+     "crash": 52,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 208,
+    "legacy_cutoff_step_recorded": 208,
+    "legacy_export_at": 512,
+    "legacy_independent": 514,
+    "legacy_minus_quota": 41,
+    "legacy_recorded": 514,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 464,
+     "crash": 48,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 39,
+    "quota_recorded_equal": true,
+    "rows": 705
+   },
+   {
+    "cell": "E2_obstacle_aware__205bars__seed4305",
+    "legacy_counts": {
+     "capture": 468,
+     "crash": 44,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 208,
+    "legacy_cutoff_step_recorded": 208,
+    "legacy_export_at": 512,
+    "legacy_independent": 512,
+    "legacy_minus_quota": 41,
+    "legacy_recorded": 512,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 472,
+     "crash": 40,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 41,
+    "quota_recorded_equal": true,
+    "rows": 871
+   },
+   {
+    "cell": "E2_obstacle_aware__205bars__seed4306",
+    "legacy_counts": {
+     "capture": 464,
+     "crash": 48,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 206,
+    "legacy_cutoff_step_recorded": 206,
+    "legacy_export_at": 512,
+    "legacy_independent": 512,
+    "legacy_minus_quota": 40,
+    "legacy_recorded": 512,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 463,
+     "crash": 49,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 40,
+    "quota_recorded_equal": true,
+    "rows": 741
+   },
+   {
+    "cell": "E2_obstacle_aware__205bars__seed4307",
+    "legacy_counts": {
+     "capture": 462,
+     "crash": 51,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 207,
+    "legacy_cutoff_step_recorded": 207,
+    "legacy_export_at": 512,
+    "legacy_independent": 513,
+    "legacy_minus_quota": 41,
+    "legacy_recorded": 513,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 463,
+     "crash": 49,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 40,
+    "quota_recorded_equal": true,
+    "rows": 958
+   },
+   {
+    "cell": "E2_obstacle_aware__205bars__seed4308",
+    "legacy_counts": {
+     "capture": 465,
+     "crash": 50,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 209,
+    "legacy_cutoff_step_recorded": 209,
+    "legacy_export_at": 512,
+    "legacy_independent": 515,
+    "legacy_minus_quota": 40,
+    "legacy_recorded": 515,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 469,
+     "crash": 43,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 37,
+    "quota_recorded_equal": true,
+    "rows": 794
+   },
+   {
+    "cell": "E2_obstacle_aware__205bars__seed4309",
+    "legacy_counts": {
+     "capture": 463,
+     "crash": 49,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 209,
+    "legacy_cutoff_step_recorded": 209,
+    "legacy_export_at": 512,
+    "legacy_independent": 512,
+    "legacy_minus_quota": 33,
+    "legacy_recorded": 512,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 459,
+     "crash": 53,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 33,
+    "quota_recorded_equal": true,
+    "rows": 1561
+   },
+   {
+    "cell": "E2_obstacle_aware__205bars__seed4310",
+    "legacy_counts": {
+     "capture": 459,
+     "crash": 53,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 210,
+    "legacy_cutoff_step_recorded": 210,
+    "legacy_export_at": 512,
+    "legacy_independent": 512,
+    "legacy_minus_quota": 37,
+    "legacy_recorded": 512,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 458,
+     "crash": 53,
+     "timeout": 1
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 37,
+    "quota_recorded_equal": true,
+    "rows": 1929
+   },
+   {
+    "cell": "E2_obstacle_aware__205bars__seed4311",
+    "legacy_counts": {
+     "capture": 476,
+     "crash": 39,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 210,
+    "legacy_cutoff_step_recorded": 210,
+    "legacy_export_at": 512,
+    "legacy_independent": 515,
+    "legacy_minus_quota": 32,
+    "legacy_recorded": 515,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 473,
+     "crash": 39,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 29,
+    "quota_recorded_equal": true,
+    "rows": 967
+   },
+   {
+    "cell": "E2_obstacle_aware__205bars__seed4312",
+    "legacy_counts": {
+     "capture": 472,
+     "crash": 42,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 210,
+    "legacy_cutoff_step_recorded": 210,
+    "legacy_export_at": 512,
+    "legacy_independent": 514,
+    "legacy_minus_quota": 39,
+    "legacy_recorded": 514,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 472,
+     "crash": 40,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 37,
+    "quota_recorded_equal": true,
+    "rows": 809
+   },
+   {
+    "cell": "E2_obstacle_aware__205bars__seed4313",
+    "legacy_counts": {
+     "capture": 473,
+     "crash": 40,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 206,
+    "legacy_cutoff_step_recorded": 206,
+    "legacy_export_at": 512,
+    "legacy_independent": 513,
+    "legacy_minus_quota": 34,
+    "legacy_recorded": 513,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 473,
+     "crash": 39,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 33,
+    "quota_recorded_equal": true,
+    "rows": 751
+   },
+   {
+    "cell": "E2_obstacle_aware__205bars__seed4314",
+    "legacy_counts": {
+     "capture": 468,
+     "crash": 44,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 211,
+    "legacy_cutoff_step_recorded": 211,
+    "legacy_export_at": 512,
+    "legacy_independent": 512,
+    "legacy_minus_quota": 39,
+    "legacy_recorded": 512,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 472,
+     "crash": 40,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 39,
+    "quota_recorded_equal": true,
+    "rows": 953
+   },
+   {
+    "cell": "E2_obstacle_aware__70bars__seed4301",
+    "legacy_counts": {
+     "capture": 504,
+     "crash": 8,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 179,
+    "legacy_cutoff_step_recorded": 179,
+    "legacy_export_at": 512,
+    "legacy_independent": 512,
+    "legacy_minus_quota": 28,
+    "legacy_recorded": 512,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 505,
+     "crash": 7,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 28,
+    "quota_recorded_equal": true,
+    "rows": 611
+   },
+   {
+    "cell": "E2_obstacle_aware__70bars__seed4302",
+    "legacy_counts": {
+     "capture": 503,
+     "crash": 9,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 178,
+    "legacy_cutoff_step_recorded": 178,
+    "legacy_export_at": 512,
+    "legacy_independent": 512,
+    "legacy_minus_quota": 23,
+    "legacy_recorded": 512,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 505,
+     "crash": 7,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 23,
+    "quota_recorded_equal": true,
+    "rows": 669
+   },
+   {
+    "cell": "E2_obstacle_aware__70bars__seed4303",
+    "legacy_counts": {
+     "capture": 501,
+     "crash": 12,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 178,
+    "legacy_cutoff_step_recorded": 178,
+    "legacy_export_at": 512,
+    "legacy_independent": 513,
+    "legacy_minus_quota": 25,
+    "legacy_recorded": 513,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 500,
+     "crash": 12,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 24,
+    "quota_recorded_equal": true,
+    "rows": 700
+   },
+   {
+    "cell": "E2_obstacle_aware__70bars__seed4304",
+    "legacy_counts": {
+     "capture": 505,
+     "crash": 8,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 180,
+    "legacy_cutoff_step_recorded": 180,
+    "legacy_export_at": 512,
+    "legacy_independent": 513,
+    "legacy_minus_quota": 20,
+    "legacy_recorded": 513,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 505,
+     "crash": 7,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 19,
+    "quota_recorded_equal": true,
+    "rows": 798
+   },
+   {
+    "cell": "E2_obstacle_aware__70bars__seed4305",
+    "legacy_counts": {
+     "capture": 507,
+     "crash": 5,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 180,
+    "legacy_cutoff_step_recorded": 180,
+    "legacy_export_at": 512,
+    "legacy_independent": 512,
+    "legacy_minus_quota": 22,
+    "legacy_recorded": 512,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": true,
+    "quota_counts": {
+     "capture": 507,
+     "crash": 5,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 22,
+    "quota_recorded_equal": true,
+    "rows": 699
+   },
+   {
+    "cell": "E2_obstacle_aware__70bars__seed4306",
+    "legacy_counts": {
+     "capture": 505,
+     "crash": 7,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 179,
+    "legacy_cutoff_step_recorded": 179,
+    "legacy_export_at": 512,
+    "legacy_independent": 512,
+    "legacy_minus_quota": 24,
+    "legacy_recorded": 512,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 507,
+     "crash": 5,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 24,
+    "quota_recorded_equal": true,
+    "rows": 809
+   },
+   {
+    "cell": "E2_obstacle_aware__70bars__seed4307",
+    "legacy_counts": {
+     "capture": 505,
+     "crash": 9,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 182,
+    "legacy_cutoff_step_recorded": 182,
+    "legacy_export_at": 512,
+    "legacy_independent": 514,
+    "legacy_minus_quota": 29,
+    "legacy_recorded": 514,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 503,
+     "crash": 9,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 27,
+    "quota_recorded_equal": true,
+    "rows": 812
+   },
+   {
+    "cell": "E2_obstacle_aware__70bars__seed4308",
+    "legacy_counts": {
+     "capture": 507,
+     "crash": 5,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 180,
+    "legacy_cutoff_step_recorded": 180,
+    "legacy_export_at": 512,
+    "legacy_independent": 512,
+    "legacy_minus_quota": 27,
+    "legacy_recorded": 512,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": true,
+    "quota_counts": {
+     "capture": 507,
+     "crash": 5,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 27,
+    "quota_recorded_equal": true,
+    "rows": 649
+   },
+   {
+    "cell": "E2_obstacle_aware__70bars__seed4309",
+    "legacy_counts": {
+     "capture": 507,
+     "crash": 6,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 181,
+    "legacy_cutoff_step_recorded": 181,
+    "legacy_export_at": 512,
+    "legacy_independent": 513,
+    "legacy_minus_quota": 27,
+    "legacy_recorded": 513,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 506,
+     "crash": 6,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 26,
+    "quota_recorded_equal": true,
+    "rows": 766
+   },
+   {
+    "cell": "E2_obstacle_aware__70bars__seed4310",
+    "legacy_counts": {
+     "capture": 504,
+     "crash": 9,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 179,
+    "legacy_cutoff_step_recorded": 179,
+    "legacy_export_at": 512,
+    "legacy_independent": 513,
+    "legacy_minus_quota": 27,
+    "legacy_recorded": 513,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 501,
+     "crash": 11,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 26,
+    "quota_recorded_equal": true,
+    "rows": 845
+   },
+   {
+    "cell": "E2_obstacle_aware__70bars__seed4311",
+    "legacy_counts": {
+     "capture": 507,
+     "crash": 6,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 182,
+    "legacy_cutoff_step_recorded": 182,
+    "legacy_export_at": 512,
+    "legacy_independent": 513,
+    "legacy_minus_quota": 23,
+    "legacy_recorded": 513,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 505,
+     "crash": 7,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 22,
+    "quota_recorded_equal": true,
+    "rows": 690
+   },
+   {
+    "cell": "E2_obstacle_aware__70bars__seed4312",
+    "legacy_counts": {
+     "capture": 508,
+     "crash": 7,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 182,
+    "legacy_cutoff_step_recorded": 182,
+    "legacy_export_at": 512,
+    "legacy_independent": 515,
+    "legacy_minus_quota": 29,
+    "legacy_recorded": 515,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 505,
+     "crash": 7,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 26,
+    "quota_recorded_equal": true,
+    "rows": 632
+   },
+   {
+    "cell": "E2_obstacle_aware__70bars__seed4313",
+    "legacy_counts": {
+     "capture": 505,
+     "crash": 8,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 178,
+    "legacy_cutoff_step_recorded": 178,
+    "legacy_export_at": 512,
+    "legacy_independent": 513,
+    "legacy_minus_quota": 25,
+    "legacy_recorded": 513,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 504,
+     "crash": 8,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 24,
+    "quota_recorded_equal": true,
+    "rows": 781
+   },
+   {
+    "cell": "E2_obstacle_aware__70bars__seed4314",
+    "legacy_counts": {
+     "capture": 509,
+     "crash": 8,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 181,
+    "legacy_cutoff_step_recorded": 181,
+    "legacy_export_at": 512,
+    "legacy_independent": 517,
+    "legacy_minus_quota": 30,
+    "legacy_recorded": 517,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 504,
+     "crash": 8,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 25,
+    "quota_recorded_equal": true,
+    "rows": 758
+   },
+   {
+    "cell": "E0_static__115bars__seed4301",
+    "legacy_counts": {
+     "capture": 508,
+     "crash": 4,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 156,
+    "legacy_cutoff_step_recorded": 156,
+    "legacy_export_at": 512,
+    "legacy_independent": 512,
+    "legacy_minus_quota": 2,
+    "legacy_recorded": 512,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 509,
+     "crash": 3,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 2,
+    "quota_recorded_equal": true,
+    "rows": 515
+   },
+   {
+    "cell": "E0_static__115bars__seed4302",
+    "legacy_counts": {
+     "capture": 505,
+     "crash": 8,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 157,
+    "legacy_cutoff_step_recorded": 157,
+    "legacy_export_at": 512,
+    "legacy_independent": 513,
+    "legacy_minus_quota": 3,
+    "legacy_recorded": 513,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 504,
+     "crash": 8,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 2,
+    "quota_recorded_equal": true,
+    "rows": 518
+   },
+   {
+    "cell": "E0_static__115bars__seed4303",
+    "legacy_counts": {
+     "capture": 508,
+     "crash": 4,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 165,
+    "legacy_cutoff_step_recorded": 165,
+    "legacy_export_at": 512,
+    "legacy_independent": 512,
+    "legacy_minus_quota": 2,
+    "legacy_recorded": 512,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": true,
+    "quota_counts": {
+     "capture": 508,
+     "crash": 4,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 2,
+    "quota_recorded_equal": true,
+    "rows": 514
+   },
+   {
+    "cell": "E0_static__115bars__seed4304",
+    "legacy_counts": {
+     "capture": 503,
+     "crash": 9,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 158,
+    "legacy_cutoff_step_recorded": 158,
+    "legacy_export_at": 512,
+    "legacy_independent": 512,
+    "legacy_minus_quota": 5,
+    "legacy_recorded": 512,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 505,
+     "crash": 7,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 5,
+    "quota_recorded_equal": true,
+    "rows": 550
+   },
+   {
+    "cell": "E0_static__115bars__seed4305",
+    "legacy_counts": {
+     "capture": 506,
+     "crash": 6,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 164,
+    "legacy_cutoff_step_recorded": 164,
+    "legacy_export_at": 512,
+    "legacy_independent": 512,
+    "legacy_minus_quota": 4,
+    "legacy_recorded": 512,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 507,
+     "crash": 5,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 4,
+    "quota_recorded_equal": true,
+    "rows": 637
+   },
+   {
+    "cell": "E0_static__115bars__seed4306",
+    "legacy_counts": {
+     "capture": 502,
+     "crash": 10,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 165,
+    "legacy_cutoff_step_recorded": 165,
+    "legacy_export_at": 512,
+    "legacy_independent": 512,
+    "legacy_minus_quota": 2,
+    "legacy_recorded": 512,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 503,
+     "crash": 9,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 2,
+    "quota_recorded_equal": true,
+    "rows": 639
+   },
+   {
+    "cell": "E0_static__115bars__seed4307",
+    "legacy_counts": {
+     "capture": 506,
+     "crash": 6,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 165,
+    "legacy_cutoff_step_recorded": 165,
+    "legacy_export_at": 512,
+    "legacy_independent": 512,
+    "legacy_minus_quota": 5,
+    "legacy_recorded": 512,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 507,
+     "crash": 5,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 5,
+    "quota_recorded_equal": true,
+    "rows": 632
+   },
+   {
+    "cell": "E0_static__115bars__seed4308",
+    "legacy_counts": {
+     "capture": 502,
+     "crash": 10,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 158,
+    "legacy_cutoff_step_recorded": 158,
+    "legacy_export_at": 512,
+    "legacy_independent": 512,
+    "legacy_minus_quota": 3,
+    "legacy_recorded": 512,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 503,
+     "crash": 9,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 3,
+    "quota_recorded_equal": true,
+    "rows": 519
+   },
+   {
+    "cell": "E0_static__115bars__seed4309",
+    "legacy_counts": {
+     "capture": 507,
+     "crash": 5,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 158,
+    "legacy_cutoff_step_recorded": 158,
+    "legacy_export_at": 512,
+    "legacy_independent": 512,
+    "legacy_minus_quota": 3,
+    "legacy_recorded": 512,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": true,
+    "quota_counts": {
+     "capture": 507,
+     "crash": 5,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 3,
+    "quota_recorded_equal": true,
+    "rows": 613
+   },
+   {
+    "cell": "E0_static__115bars__seed4310",
+    "legacy_counts": {
+     "capture": 511,
+     "crash": 2,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 170,
+    "legacy_cutoff_step_recorded": 170,
+    "legacy_export_at": 512,
+    "legacy_independent": 513,
+    "legacy_minus_quota": 1,
+    "legacy_recorded": 513,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 511,
+     "crash": 1,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 0,
+    "quota_recorded_equal": true,
+    "rows": 513
+   },
+   {
+    "cell": "E0_static__115bars__seed4311",
+    "legacy_counts": {
+     "capture": 504,
+     "crash": 8,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 162,
+    "legacy_cutoff_step_recorded": 162,
+    "legacy_export_at": 512,
+    "legacy_independent": 512,
+    "legacy_minus_quota": 5,
+    "legacy_recorded": 512,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 505,
+     "crash": 7,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 5,
+    "quota_recorded_equal": true,
+    "rows": 568
+   },
+   {
+    "cell": "E0_static__115bars__seed4312",
+    "legacy_counts": {
+     "capture": 507,
+     "crash": 5,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 160,
+    "legacy_cutoff_step_recorded": 160,
+    "legacy_export_at": 512,
+    "legacy_independent": 512,
+    "legacy_minus_quota": 3,
+    "legacy_recorded": 512,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": true,
+    "quota_counts": {
+     "capture": 507,
+     "crash": 5,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 3,
+    "quota_recorded_equal": true,
+    "rows": 516
+   },
+   {
+    "cell": "E0_static__115bars__seed4313",
+    "legacy_counts": {
+     "capture": 510,
+     "crash": 2,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 167,
+    "legacy_cutoff_step_recorded": 167,
+    "legacy_export_at": 512,
+    "legacy_independent": 512,
+    "legacy_minus_quota": 1,
+    "legacy_recorded": 512,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": true,
+    "quota_counts": {
+     "capture": 510,
+     "crash": 2,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 1,
+    "quota_recorded_equal": true,
+    "rows": 515
+   },
+   {
+    "cell": "E0_static__115bars__seed4314",
+    "legacy_counts": {
+     "capture": 506,
+     "crash": 7,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 164,
+    "legacy_cutoff_step_recorded": 164,
+    "legacy_export_at": 512,
+    "legacy_independent": 513,
+    "legacy_minus_quota": 4,
+    "legacy_recorded": 513,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 506,
+     "crash": 6,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 3,
+    "quota_recorded_equal": true,
+    "rows": 517
+   },
+   {
+    "cell": "E0_static__160bars__seed4301",
+    "legacy_counts": {
+     "capture": 499,
+     "crash": 13,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 162,
+    "legacy_cutoff_step_recorded": 162,
+    "legacy_export_at": 512,
+    "legacy_independent": 512,
+    "legacy_minus_quota": 6,
+    "legacy_recorded": 512,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 500,
+     "crash": 12,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 6,
+    "quota_recorded_equal": true,
+    "rows": 589
+   },
+   {
+    "cell": "E0_static__160bars__seed4302",
+    "legacy_counts": {
+     "capture": 500,
+     "crash": 13,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 164,
+    "legacy_cutoff_step_recorded": 164,
+    "legacy_export_at": 512,
+    "legacy_independent": 513,
+    "legacy_minus_quota": 5,
+    "legacy_recorded": 513,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 501,
+     "crash": 11,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 4,
+    "quota_recorded_equal": true,
+    "rows": 526
+   },
+   {
+    "cell": "E0_static__160bars__seed4303",
+    "legacy_counts": {
+     "capture": 497,
+     "crash": 17,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 161,
+    "legacy_cutoff_step_recorded": 161,
+    "legacy_export_at": 512,
+    "legacy_independent": 514,
+    "legacy_minus_quota": 8,
+    "legacy_recorded": 514,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 498,
+     "crash": 14,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 6,
+    "quota_recorded_equal": true,
+    "rows": 524
+   },
+   {
+    "cell": "E0_static__160bars__seed4304",
+    "legacy_counts": {
+     "capture": 502,
+     "crash": 10,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 166,
+    "legacy_cutoff_step_recorded": 166,
+    "legacy_export_at": 512,
+    "legacy_independent": 512,
+    "legacy_minus_quota": 6,
+    "legacy_recorded": 512,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 504,
+     "crash": 8,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 6,
+    "quota_recorded_equal": true,
+    "rows": 545
+   },
+   {
+    "cell": "E0_static__160bars__seed4305",
+    "legacy_counts": {
+     "capture": 499,
+     "crash": 13,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 164,
+    "legacy_cutoff_step_recorded": 164,
+    "legacy_export_at": 512,
+    "legacy_independent": 512,
+    "legacy_minus_quota": 6,
+    "legacy_recorded": 512,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 500,
+     "crash": 12,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 6,
+    "quota_recorded_equal": true,
+    "rows": 520
+   },
+   {
+    "cell": "E0_static__160bars__seed4306",
+    "legacy_counts": {
+     "capture": 501,
+     "crash": 12,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 162,
+    "legacy_cutoff_step_recorded": 162,
+    "legacy_export_at": 512,
+    "legacy_independent": 513,
+    "legacy_minus_quota": 5,
+    "legacy_recorded": 513,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 500,
+     "crash": 12,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 4,
+    "quota_recorded_equal": true,
+    "rows": 521
+   },
+   {
+    "cell": "E0_static__160bars__seed4307",
+    "legacy_counts": {
+     "capture": 499,
+     "crash": 13,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 162,
+    "legacy_cutoff_step_recorded": 162,
+    "legacy_export_at": 512,
+    "legacy_independent": 512,
+    "legacy_minus_quota": 4,
+    "legacy_recorded": 512,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": true,
+    "quota_counts": {
+     "capture": 499,
+     "crash": 13,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 4,
+    "quota_recorded_equal": true,
+    "rows": 599
+   },
+   {
+    "cell": "E0_static__160bars__seed4308",
+    "legacy_counts": {
+     "capture": 508,
+     "crash": 5,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 169,
+    "legacy_cutoff_step_recorded": 169,
+    "legacy_export_at": 512,
+    "legacy_independent": 513,
+    "legacy_minus_quota": 2,
+    "legacy_recorded": 513,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 507,
+     "crash": 5,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 1,
+    "quota_recorded_equal": true,
+    "rows": 515
+   },
+   {
+    "cell": "E0_static__160bars__seed4309",
+    "legacy_counts": {
+     "capture": 505,
+     "crash": 9,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 162,
+    "legacy_cutoff_step_recorded": 162,
+    "legacy_export_at": 512,
+    "legacy_independent": 514,
+    "legacy_minus_quota": 7,
+    "legacy_recorded": 514,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 504,
+     "crash": 8,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 5,
+    "quota_recorded_equal": true,
+    "rows": 571
+   },
+   {
+    "cell": "E0_static__160bars__seed4310",
+    "legacy_counts": {
+     "capture": 500,
+     "crash": 14,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 163,
+    "legacy_cutoff_step_recorded": 163,
+    "legacy_export_at": 512,
+    "legacy_independent": 514,
+    "legacy_minus_quota": 5,
+    "legacy_recorded": 514,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 498,
+     "crash": 14,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 3,
+    "quota_recorded_equal": true,
+    "rows": 549
+   },
+   {
+    "cell": "E0_static__160bars__seed4311",
+    "legacy_counts": {
+     "capture": 497,
+     "crash": 15,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 165,
+    "legacy_cutoff_step_recorded": 165,
+    "legacy_export_at": 512,
+    "legacy_independent": 512,
+    "legacy_minus_quota": 5,
+    "legacy_recorded": 512,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 498,
+     "crash": 14,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 5,
+    "quota_recorded_equal": true,
+    "rows": 521
+   },
+   {
+    "cell": "E0_static__160bars__seed4312",
+    "legacy_counts": {
+     "capture": 496,
+     "crash": 19,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 164,
+    "legacy_cutoff_step_recorded": 164,
+    "legacy_export_at": 512,
+    "legacy_independent": 515,
+    "legacy_minus_quota": 10,
+    "legacy_recorded": 515,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 498,
+     "crash": 14,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 7,
+    "quota_recorded_equal": true,
+    "rows": 641
+   },
+   {
+    "cell": "E0_static__160bars__seed4313",
+    "legacy_counts": {
+     "capture": 501,
+     "crash": 13,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 168,
+    "legacy_cutoff_step_recorded": 168,
+    "legacy_export_at": 512,
+    "legacy_independent": 514,
+    "legacy_minus_quota": 7,
+    "legacy_recorded": 514,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 500,
+     "crash": 12,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 5,
+    "quota_recorded_equal": true,
+    "rows": 530
+   },
+   {
+    "cell": "E0_static__160bars__seed4314",
+    "legacy_counts": {
+     "capture": 495,
+     "crash": 19,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 163,
+    "legacy_cutoff_step_recorded": 163,
+    "legacy_export_at": 512,
+    "legacy_independent": 514,
+    "legacy_minus_quota": 10,
+    "legacy_recorded": 514,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 494,
+     "crash": 18,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 8,
+    "quota_recorded_equal": true,
+    "rows": 646
+   },
+   {
+    "cell": "E0_static__205bars__seed4301",
+    "legacy_counts": {
+     "capture": 485,
+     "crash": 36,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 168,
+    "legacy_cutoff_step_recorded": 168,
+    "legacy_export_at": 512,
+    "legacy_independent": 521,
+    "legacy_minus_quota": 16,
+    "legacy_recorded": 521,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 477,
+     "crash": 35,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 7,
+    "quota_recorded_equal": true,
+    "rows": 554
+   },
+   {
+    "cell": "E0_static__205bars__seed4302",
+    "legacy_counts": {
+     "capture": 496,
+     "crash": 19,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 170,
+    "legacy_cutoff_step_recorded": 170,
+    "legacy_export_at": 512,
+    "legacy_independent": 515,
+    "legacy_minus_quota": 10,
+    "legacy_recorded": 515,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 494,
+     "crash": 18,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 7,
+    "quota_recorded_equal": true,
+    "rows": 578
+   },
+   {
+    "cell": "E0_static__205bars__seed4303",
+    "legacy_counts": {
+     "capture": 504,
+     "crash": 9,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 179,
+    "legacy_cutoff_step_recorded": 179,
+    "legacy_export_at": 512,
+    "legacy_independent": 513,
+    "legacy_minus_quota": 5,
+    "legacy_recorded": 513,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 505,
+     "crash": 7,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 4,
+    "quota_recorded_equal": true,
+    "rows": 559
+   },
+   {
+    "cell": "E0_static__205bars__seed4304",
+    "legacy_counts": {
+     "capture": 486,
+     "crash": 27,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 166,
+    "legacy_cutoff_step_recorded": 166,
+    "legacy_export_at": 512,
+    "legacy_independent": 513,
+    "legacy_minus_quota": 13,
+    "legacy_recorded": 513,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 489,
+     "crash": 23,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 12,
+    "quota_recorded_equal": true,
+    "rows": 567
+   },
+   {
+    "cell": "E0_static__205bars__seed4305",
+    "legacy_counts": {
+     "capture": 483,
+     "crash": 29,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 166,
+    "legacy_cutoff_step_recorded": 166,
+    "legacy_export_at": 512,
+    "legacy_independent": 512,
+    "legacy_minus_quota": 12,
+    "legacy_recorded": 512,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 485,
+     "crash": 26,
+     "timeout": 1
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 12,
+    "quota_recorded_equal": true,
+    "rows": 2363
+   },
+   {
+    "cell": "E0_static__205bars__seed4306",
+    "legacy_counts": {
+     "capture": 496,
+     "crash": 16,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 171,
+    "legacy_cutoff_step_recorded": 171,
+    "legacy_export_at": 512,
+    "legacy_independent": 512,
+    "legacy_minus_quota": 5,
+    "legacy_recorded": 512,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": true,
+    "quota_counts": {
+     "capture": 496,
+     "crash": 16,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 5,
+    "quota_recorded_equal": true,
+    "rows": 543
+   },
+   {
+    "cell": "E0_static__205bars__seed4307",
+    "legacy_counts": {
+     "capture": 479,
+     "crash": 35,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 169,
+    "legacy_cutoff_step_recorded": 169,
+    "legacy_export_at": 512,
+    "legacy_independent": 514,
+    "legacy_minus_quota": 11,
+    "legacy_recorded": 514,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 478,
+     "crash": 34,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 9,
+    "quota_recorded_equal": true,
+    "rows": 1344
+   },
+   {
+    "cell": "E0_static__205bars__seed4308",
+    "legacy_counts": {
+     "capture": 492,
+     "crash": 24,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 170,
+    "legacy_cutoff_step_recorded": 170,
+    "legacy_export_at": 512,
+    "legacy_independent": 516,
+    "legacy_minus_quota": 9,
+    "legacy_recorded": 516,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 490,
+     "crash": 22,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 5,
+    "quota_recorded_equal": true,
+    "rows": 566
+   },
+   {
+    "cell": "E0_static__205bars__seed4309",
+    "legacy_counts": {
+     "capture": 492,
+     "crash": 23,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 167,
+    "legacy_cutoff_step_recorded": 167,
+    "legacy_export_at": 512,
+    "legacy_independent": 515,
+    "legacy_minus_quota": 11,
+    "legacy_recorded": 515,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 492,
+     "crash": 20,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 8,
+    "quota_recorded_equal": true,
+    "rows": 530
+   },
+   {
+    "cell": "E0_static__205bars__seed4310",
+    "legacy_counts": {
+     "capture": 489,
+     "crash": 24,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 168,
+    "legacy_cutoff_step_recorded": 168,
+    "legacy_export_at": 512,
+    "legacy_independent": 513,
+    "legacy_minus_quota": 8,
+    "legacy_recorded": 513,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 491,
+     "crash": 21,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 7,
+    "quota_recorded_equal": true,
+    "rows": 531
+   },
+   {
+    "cell": "E0_static__205bars__seed4311",
+    "legacy_counts": {
+     "capture": 493,
+     "crash": 21,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 169,
+    "legacy_cutoff_step_recorded": 169,
+    "legacy_export_at": 512,
+    "legacy_independent": 514,
+    "legacy_minus_quota": 10,
+    "legacy_recorded": 514,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 492,
+     "crash": 19,
+     "timeout": 1
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 8,
+    "quota_recorded_equal": true,
+    "rows": 2322
+   },
+   {
+    "cell": "E0_static__205bars__seed4312",
+    "legacy_counts": {
+     "capture": 492,
+     "crash": 22,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 168,
+    "legacy_cutoff_step_recorded": 168,
+    "legacy_export_at": 512,
+    "legacy_independent": 514,
+    "legacy_minus_quota": 9,
+    "legacy_recorded": 514,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 491,
+     "crash": 21,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 7,
+    "quota_recorded_equal": true,
+    "rows": 552
+   },
+   {
+    "cell": "E0_static__205bars__seed4313",
+    "legacy_counts": {
+     "capture": 493,
+     "crash": 19,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 169,
+    "legacy_cutoff_step_recorded": 169,
+    "legacy_export_at": 512,
+    "legacy_independent": 512,
+    "legacy_minus_quota": 8,
+    "legacy_recorded": 512,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 494,
+     "crash": 18,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 8,
+    "quota_recorded_equal": true,
+    "rows": 678
+   },
+   {
+    "cell": "E0_static__205bars__seed4314",
+    "legacy_counts": {
+     "capture": 483,
+     "crash": 30,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 167,
+    "legacy_cutoff_step_recorded": 167,
+    "legacy_export_at": 512,
+    "legacy_independent": 513,
+    "legacy_minus_quota": 13,
+    "legacy_recorded": 513,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 488,
+     "crash": 24,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 12,
+    "quota_recorded_equal": true,
+    "rows": 589
+   },
+   {
+    "cell": "E0_static__70bars__seed4301",
+    "legacy_counts": {
+     "capture": 511,
+     "crash": 1,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 159,
+    "legacy_cutoff_step_recorded": 159,
+    "legacy_export_at": 512,
+    "legacy_independent": 512,
+    "legacy_minus_quota": 1,
+    "legacy_recorded": 512,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 512,
+     "crash": 0,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 1,
+    "quota_recorded_equal": true,
+    "rows": 513
+   },
+   {
+    "cell": "E0_static__70bars__seed4302",
+    "legacy_counts": {
+     "capture": 511,
+     "crash": 1,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 162,
+    "legacy_cutoff_step_recorded": 162,
+    "legacy_export_at": 512,
+    "legacy_independent": 512,
+    "legacy_minus_quota": 1,
+    "legacy_recorded": 512,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": true,
+    "quota_counts": {
+     "capture": 511,
+     "crash": 1,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 1,
+    "quota_recorded_equal": true,
+    "rows": 516
+   },
+   {
+    "cell": "E0_static__70bars__seed4303",
+    "legacy_counts": {
+     "capture": 512,
+     "crash": 1,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 160,
+    "legacy_cutoff_step_recorded": 160,
+    "legacy_export_at": 512,
+    "legacy_independent": 513,
+    "legacy_minus_quota": 1,
+    "legacy_recorded": 513,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 511,
+     "crash": 1,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 0,
+    "quota_recorded_equal": true,
+    "rows": 513
+   },
+   {
+    "cell": "E0_static__70bars__seed4304",
+    "legacy_counts": {
+     "capture": 513,
+     "crash": 0,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 172,
+    "legacy_cutoff_step_recorded": 172,
+    "legacy_export_at": 512,
+    "legacy_independent": 513,
+    "legacy_minus_quota": 2,
+    "legacy_recorded": 513,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 512,
+     "crash": 0,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 1,
+    "quota_recorded_equal": true,
+    "rows": 517
+   },
+   {
+    "cell": "E0_static__70bars__seed4305",
+    "legacy_counts": {
+     "capture": 510,
+     "crash": 2,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 158,
+    "legacy_cutoff_step_recorded": 158,
+    "legacy_export_at": 512,
+    "legacy_independent": 512,
+    "legacy_minus_quota": 1,
+    "legacy_recorded": 512,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": true,
+    "quota_counts": {
+     "capture": 510,
+     "crash": 2,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 1,
+    "quota_recorded_equal": true,
+    "rows": 513
+   },
+   {
+    "cell": "E0_static__70bars__seed4306",
+    "legacy_counts": {
+     "capture": 508,
+     "crash": 4,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 173,
+    "legacy_cutoff_step_recorded": 173,
+    "legacy_export_at": 512,
+    "legacy_independent": 512,
+    "legacy_minus_quota": 4,
+    "legacy_recorded": 512,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": true,
+    "quota_counts": {
+     "capture": 508,
+     "crash": 4,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 4,
+    "quota_recorded_equal": true,
+    "rows": 908
+   },
+   {
+    "cell": "E0_static__70bars__seed4307",
+    "legacy_counts": {
+     "capture": 511,
+     "crash": 1,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 154,
+    "legacy_cutoff_step_recorded": 154,
+    "legacy_export_at": 512,
+    "legacy_independent": 512,
+    "legacy_minus_quota": 1,
+    "legacy_recorded": 512,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": true,
+    "quota_counts": {
+     "capture": 511,
+     "crash": 1,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 1,
+    "quota_recorded_equal": true,
+    "rows": 513
+   },
+   {
+    "cell": "E0_static__70bars__seed4308",
+    "legacy_counts": {
+     "capture": 510,
+     "crash": 2,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 158,
+    "legacy_cutoff_step_recorded": 158,
+    "legacy_export_at": 512,
+    "legacy_independent": 512,
+    "legacy_minus_quota": 1,
+    "legacy_recorded": 512,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 511,
+     "crash": 1,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 1,
+    "quota_recorded_equal": true,
+    "rows": 602
+   },
+   {
+    "cell": "E0_static__70bars__seed4309",
+    "legacy_counts": {
+     "capture": 511,
+     "crash": 1,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 156,
+    "legacy_cutoff_step_recorded": 156,
+    "legacy_export_at": 512,
+    "legacy_independent": 512,
+    "legacy_minus_quota": 1,
+    "legacy_recorded": 512,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": true,
+    "quota_counts": {
+     "capture": 511,
+     "crash": 1,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 1,
+    "quota_recorded_equal": true,
+    "rows": 540
+   },
+   {
+    "cell": "E0_static__70bars__seed4310",
+    "legacy_counts": {
+     "capture": 509,
+     "crash": 3,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 170,
+    "legacy_cutoff_step_recorded": 170,
+    "legacy_export_at": 512,
+    "legacy_independent": 512,
+    "legacy_minus_quota": 4,
+    "legacy_recorded": 512,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": true,
+    "quota_counts": {
+     "capture": 509,
+     "crash": 3,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 4,
+    "quota_recorded_equal": true,
+    "rows": 635
+   },
+   {
+    "cell": "E0_static__70bars__seed4311",
+    "legacy_counts": {
+     "capture": 507,
+     "crash": 5,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 155,
+    "legacy_cutoff_step_recorded": 155,
+    "legacy_export_at": 512,
+    "legacy_independent": 512,
+    "legacy_minus_quota": 2,
+    "legacy_recorded": 512,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 508,
+     "crash": 4,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 2,
+    "quota_recorded_equal": true,
+    "rows": 613
+   },
+   {
+    "cell": "E0_static__70bars__seed4312",
+    "legacy_counts": {
+     "capture": 511,
+     "crash": 1,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 163,
+    "legacy_cutoff_step_recorded": 163,
+    "legacy_export_at": 512,
+    "legacy_independent": 512,
+    "legacy_minus_quota": 1,
+    "legacy_recorded": 512,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 512,
+     "crash": 0,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 1,
+    "quota_recorded_equal": true,
+    "rows": 513
+   },
+   {
+    "cell": "E0_static__70bars__seed4313",
+    "legacy_counts": {
+     "capture": 508,
+     "crash": 7,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 156,
+    "legacy_cutoff_step_recorded": 156,
+    "legacy_export_at": 512,
+    "legacy_independent": 515,
+    "legacy_minus_quota": 5,
+    "legacy_recorded": 515,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 505,
+     "crash": 7,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 2,
+    "quota_recorded_equal": true,
+    "rows": 518
+   },
+   {
+    "cell": "E0_static__70bars__seed4314",
+    "legacy_counts": {
+     "capture": 513,
+     "crash": 0,
+     "timeout": 0
+    },
+    "legacy_cutoff_step_independent": 172,
+    "legacy_cutoff_step_recorded": 172,
+    "legacy_export_at": 512,
+    "legacy_independent": 513,
+    "legacy_minus_quota": 1,
+    "legacy_recorded": 513,
+    "legacy_recorded_equal": true,
+    "outcome_counts_equal": false,
+    "quota_counts": {
+     "capture": 512,
+     "crash": 0,
+     "timeout": 0
+    },
+    "quota_equals_legacy": false,
+    "quota_expected": 512,
+    "quota_independent": 512,
+    "quota_minus_legacy": 0,
+    "quota_recorded_equal": true,
+    "rows": 513
+   }
+  ],
+  "quota_rule_reproduced": true,
+  "same_population": {
+   "note": "membership differs in 112 of 112 cells; outcome counts in 96",
+   "status": "FAIL"
+  }
+ },
+ "package": "EQ-1C information flow (CPU, validation only)",
+ "receipt_env_source": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_confirmatory_v1/OCC-P2/static/A1/E0_static__115bars__seed4301/receipt.json",
+ "schema": "motar.eq1c-information-flow.v1",
+ "source": {
+  "files_sha256": {
+   "aerial_gym/config/task_config/navrl_task_config.py": "f35e1959cb6f7035937642c479bb073d05d8ce3796db9e7c8e9e036c992b6267",
+   "aerial_gym/task/navrl_task/navrl_episode_ledger.py": "e52100fdf341e6997e67b47137f8ed8ca057f5833fe3ae3f493afba11d43a790",
+   "aerial_gym/task/navrl_task/navrl_perception.py": "0b7f26aa9c12db5e528a3fe75aa28a146a9fbfb695dc8f988e7b172b11c3082f",
+   "aerial_gym/task/navrl_task/navrl_task.py": "c54616567da64cc5fa8d210ba51f4452af623c10a1a5934db58482f5d761cd0d",
+   "motar_eval/occlusion_trace.py": "ec4aa27c994afb233aedcc48901db29d5c40e9ef33373580f99c03cb68a750e1"
+  },
+  "head": "197b79414dddbd3bd3fcecb51f46ddc7677873ce",
+  "identical_to_measurement_source": true,
+  "measurement_source": "5ff285ad053f181c5a1c86dddb2462bb44e6327b"
+ }
+}

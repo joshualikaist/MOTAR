@@ -1,0 +1,972 @@
+{
+ "cases": [
+  {
+   "bars": {
+    "all_visual_equal_collision": {
+     "note": "box size and origin identical",
+     "status": "PASS"
+    },
+    "assets": 40,
+    "rows": [
+     {
+      "asset": "bar_000.urdf",
+      "collision": [
+       "0.7096 0.5756 3.0000"
+      ],
+      "equal": true,
+      "half": [
+       0.3548,
+       0.2878,
+       1.5
+      ],
+      "visual": [
+       "0.7096 0.5756 3.0000"
+      ]
+     },
+     {
+      "asset": "bar_001.urdf",
+      "collision": [
+       "0.7434 0.6789 3.0000"
+      ],
+      "equal": true,
+      "half": [
+       0.3717,
+       0.33945,
+       1.5
+      ],
+      "visual": [
+       "0.7434 0.6789 3.0000"
+      ]
+     },
+     {
+      "asset": "bar_002.urdf",
+      "collision": [
+       "0.4377 0.7902 3.0000"
+      ],
+      "equal": true,
+      "half": [
+       0.21885,
+       0.3951,
+       1.5
+      ],
+      "visual": [
+       "0.4377 0.7902 3.0000"
+      ]
+     },
+     {
+      "asset": "bar_003.urdf",
+      "collision": [
+       "0.7045 0.7144 3.0000"
+      ],
+      "equal": true,
+      "half": [
+       0.35225,
+       0.3572,
+       1.5
+      ],
+      "visual": [
+       "0.7045 0.7144 3.0000"
+      ]
+     },
+     {
+      "asset": "bar_004.urdf",
+      "collision": [
+       "0.4512 0.5802 3.0000"
+      ],
+      "equal": true,
+      "half": [
+       0.2256,
+       0.2901,
+       1.5
+      ],
+      "visual": [
+       "0.4512 0.5802 3.0000"
+      ]
+     },
+     {
+      "asset": "bar_005.urdf",
+      "collision": [
+       "0.5483 0.7707 3.0000"
+      ],
+      "equal": true,
+      "half": [
+       0.27415,
+       0.38535,
+       1.5
+      ],
+      "visual": [
+       "0.5483 0.7707 3.0000"
+      ]
+     },
+     {
+      "asset": "bar_006.urdf",
+      "collision": [
+       "0.6575 0.7291 3.0000"
+      ],
+      "equal": true,
+      "half": [
+       0.32875,
+       0.36455,
+       1.5
+      ],
+      "visual": [
+       "0.6575 0.7291 3.0000"
+      ]
+     },
+     {
+      "asset": "bar_007.urdf",
+      "collision": [
+       "0.5774 0.4909 3.0000"
+      ],
+      "equal": true,
+      "half": [
+       0.2887,
+       0.24545,
+       1.5
+      ],
+      "visual": [
+       "0.5774 0.4909 3.0000"
+      ]
+     },
+     {
+      "asset": "bar_008.urdf",
+      "collision": [
+       "0.6218 0.4255 3.0000"
+      ],
+      "equal": true,
+      "half": [
+       0.3109,
+       0.21275,
+       1.5
+      ],
+      "visual": [
+       "0.6218 0.4255 3.0000"
+      ]
+     },
+     {
+      "asset": "bar_009.urdf",
+      "collision": [
+       "0.7311 0.6527 3.0000"
+      ],
+      "equal": true,
+      "half": [
+       0.36555,
+       0.32635,
+       1.5
+      ],
+      "visual": [
+       "0.7311 0.6527 3.0000"
+      ]
+     },
+     {
+      "asset": "bar_010.urdf",
+      "collision": [
+       "0.7032 0.5418 3.0000"
+      ],
+      "equal": true,
+      "half": [
+       0.3516,
+       0.2709,
+       1.5
+      ],
+      "visual": [
+       "0.7032 0.5418 3.0000"
+      ]
+     },
+     {
+      "asset": "bar_011.urdf",
+      "collision": [
+       "0.7883 0.7572 3.0000"
+      ],
+      "equal": true,
+      "half": [
+       0.39415,
+       0.3786,
+       1.5
+      ],
+      "visual": [
+       "0.7883 0.7572 3.0000"
+      ]
+     },
+     {
+      "asset": "bar_012.urdf",
+      "collision": [
+       "0.7114 0.4779 3.0000"
+      ],
+      "equal": true,
+      "half": [
+       0.3557,
+       0.23895,
+       1.5
+      ],
+      "visual": [
+       "0.7114 0.4779 3.0000"
+      ]
+     },
+     {
+      "asset": "bar_013.urdf",
+      "collision": [
+       "0.5867 0.4175 3.0000"
+      ],
+      "equal": true,
+      "half": [
+       0.29335,
+       0.20875,
+       1.5
+      ],
+      "visual": [
+       "0.5867 0.4175 3.0000"
+      ]
+     },
+     {
+      "asset": "bar_014.urdf",
+      "collision": [
+       "0.4617 0.6732 3.0000"
+      ],
+      "equal": true,
+      "half": [
+       0.23085,
+       0.3366,
+       1.5
+      ],
+      "visual": [
+       "0.4617 0.6732 3.0000"
+      ]
+     },
+     {
+      "asset": "bar_015.urdf",
+      "collision": [
+       "0.6979 0.7870 3.0000"
+      ],
+      "equal": true,
+      "half": [
+       0.34895,
+       0.3935,
+       1.5
+      ],
+      "visual": [
+       "0.6979 0.7870 3.0000"
+      ]
+     },
+     {
+      "asset": "bar_016.urdf",
+      "collision": [
+       "0.5303 0.5482 3.0000"
+      ],
+      "equal": true,
+      "half": [
+       0.26515,
+       0.2741,
+       1.5
+      ],
+      "visual": [
+       "0.5303 0.5482 3.0000"
+      ]
+     },
+     {
+      "asset": "bar_017.urdf",
+      "collision": [
+       "0.5878 0.4758 3.0000"
+      ],
+      "equal": true,
+      "half": [
+       0.2939,
+       0.2379,
+       1.5
+      ],
+      "visual": [
+       "0.5878 0.4758 3.0000"
+      ]
+     },
+     {
+      "asset": "bar_018.urdf",
+      "collision": [
+       "0.4520 0.5903 3.0000"
+      ],
+      "equal": true,
+      "half": [
+       0.226,
+       0.29515,
+       1.5
+      ],
+      "visual": [
+       "0.4520 0.5903 3.0000"
+      ]
+     },
+     {
+      "asset": "bar_019.urdf",
+      "collision": [
+       "0.4908 0.6679 3.0000"
+      ],
+      "equal": true,
+      "half": [
+       0.2454,
+       0.33395,
+       1.5
+      ],
+      "visual": [
+       "0.4908 0.6679 3.0000"
+      ]
+     },
+     {
+      "asset": "bar_020.urdf",
+      "collision": [
+       "0.5749 0.7331 3.0000"
+      ],
+      "equal": true,
+      "half": [
+       0.28745,
+       0.36655,
+       1.5
+      ],
+      "visual": [
+       "0.5749 0.7331 3.0000"
+      ]
+     },
+     {
+      "asset": "bar_021.urdf",
+      "collision": [
+       "0.6801 0.5249 3.0000"
+      ],
+      "equal": true,
+      "half": [
+       0.34005,
+       0.26245,
+       1.5
+      ],
+      "visual": [
+       "0.6801 0.5249 3.0000"
+      ]
+     },
+     {
+      "asset": "bar_022.urdf",
+      "collision": [
+       "0.7329 0.7219 3.0000"
+      ],
+      "equal": true,
+      "half": [
+       0.36645,
+       0.36095,
+       1.5
+      ],
+      "visual": [
+       "0.7329 0.7219 3.0000"
+      ]
+     },
+     {
+      "asset": "bar_023.urdf",
+      "collision": [
+       "0.5550 0.5153 3.0000"
+      ],
+      "equal": true,
+      "half": [
+       0.2775,
+       0.25765,
+       1.5
+      ],
+      "visual": [
+       "0.5550 0.5153 3.0000"
+      ]
+     },
+     {
+      "asset": "bar_024.urdf",
+      "collision": [
+       "0.6730 0.4559 3.0000"
+      ],
+      "equal": true,
+      "half": [
+       0.3365,
+       0.22795,
+       1.5
+      ],
+      "visual": [
+       "0.6730 0.4559 3.0000"
+      ]
+     },
+     {
+      "asset": "bar_025.urdf",
+      "collision": [
+       "0.4800 0.4029 3.0000"
+      ],
+      "equal": true,
+      "half": [
+       0.24,
+       0.20145,
+       1.5
+      ],
+      "visual": [
+       "0.4800 0.4029 3.0000"
+      ]
+     },
+     {
+      "asset": "bar_026.urdf",
+      "collision": [
+       "0.7148 0.6659 3.0000"
+      ],
+      "equal": true,
+      "half": [
+       0.3574,
+       0.33295,
+       1.5
+      ],
+      "visual": [
+       "0.7148 0.6659 3.0000"
+      ]
+     },
+     {
+      "asset": "bar_027.urdf",
+      "collision": [
+       "0.6821 0.7123 3.0000"
+      ],
+      "equal": true,
+      "half": [
+       0.34105,
+       0.35615,
+       1.5
+      ],
+      "visual": [
+       "0.6821 0.7123 3.0000"
+      ]
+     },
+     {
+      "asset": "bar_028.urdf",
+      "collision": [
+       "0.5836 0.6275 3.0000"
+      ],
+      "equal": true,
+      "half": [
+       0.2918,
+       0.31375,
+       1.5
+      ],
+      "visual": [
+       "0.5836 0.6275 3.0000"
+      ]
+     },
+     {
+      "asset": "bar_029.urdf",
+      "collision": [
+       "0.4559 0.4458 3.0000"
+      ],
+      "equal": true,
+      "half": [
+       0.22795,
+       0.2229,
+       1.5
+      ],
+      "visual": [
+       "0.4559 0.4458 3.0000"
+      ]
+     },
+     {
+      "asset": "bar_030.urdf",
+      "collision": [
+       "0.6674 0.5884 3.0000"
+      ],
+      "equal": true,
+      "half": [
+       0.3337,
+       0.2942,
+       1.5
+      ],
+      "visual": [
+       "0.6674 0.5884 3.0000"
+      ]
+     },
+     {
+      "asset": "bar_031.urdf",
+      "collision": [
+       "0.6261 0.7060 3.0000"
+      ],
+      "equal": true,
+      "half": [
+       0.31305,
+       0.353,
+       1.5
+      ],
+      "visual": [
+       "0.6261 0.7060 3.0000"
+      ]
+     },
+     {
+      "asset": "bar_032.urdf",
+      "collision": [
+       "0.6539 0.6214 3.0000"
+      ],
+      "equal": true,
+      "half": [
+       0.32695,
+       0.3107,
+       1.5
+      ],
+      "visual": [
+       "0.6539 0.6214 3.0000"
+      ]
+     },
+     {
+      "asset": "bar_033.urdf",
+      "collision": [
+       "0.6237 0.5216 3.0000"
+      ],
+      "equal": true,
+      "half": [
+       0.31185,
+       0.2608,
+       1.5
+      ],
+      "visual": [
+       "0.6237 0.5216 3.0000"
+      ]
+     },
+     {
+      "asset": "bar_034.urdf",
+      "collision": [
+       "0.4123 0.5747 3.0000"
+      ],
+      "equal": true,
+      "half": [
+       0.20615,
+       0.28735,
+       1.5
+      ],
+      "visual": [
+       "0.4123 0.5747 3.0000"
+      ]
+     },
+     {
+      "asset": "bar_035.urdf",
+      "collision": [
+       "0.4858 0.5634 3.0000"
+      ],
+      "equal": true,
+      "half": [
+       0.2429,
+       0.2817,
+       1.5
+      ],
+      "visual": [
+       "0.4858 0.5634 3.0000"
+      ]
+     },
+     {
+      "asset": "bar_036.urdf",
+      "collision": [
+       "0.7414 0.4936 3.0000"
+      ],
+      "equal": true,
+      "half": [
+       0.3707,
+       0.2468,
+       1.5
+      ],
+      "visual": [
+       "0.7414 0.4936 3.0000"
+      ]
+     },
+     {
+      "asset": "bar_037.urdf",
+      "collision": [
+       "0.4233 0.5126 3.0000"
+      ],
+      "equal": true,
+      "half": [
+       0.21165,
+       0.2563,
+       1.5
+      ],
+      "visual": [
+       "0.4233 0.5126 3.0000"
+      ]
+     },
+     {
+      "asset": "bar_038.urdf",
+      "collision": [
+       "0.5174 0.6648 3.0000"
+      ],
+      "equal": true,
+      "half": [
+       0.2587,
+       0.3324,
+       1.5
+      ],
+      "visual": [
+       "0.5174 0.6648 3.0000"
+      ]
+     },
+     {
+      "asset": "bar_039.urdf",
+      "collision": [
+       "0.6228 0.7136 3.0000"
+      ],
+      "equal": true,
+      "half": [
+       0.3114,
+       0.3568,
+       1.5
+      ],
+      "visual": [
+       "0.6228 0.7136 3.0000"
+      ]
+     }
+    ]
+   },
+   "name": "B3 URDF collision versus visual geometry",
+   "robot": {
+    "circumscribed_sphere_m": 0.20199009876724155,
+    "collision_half_m": [
+     0.14,
+     0.14,
+     0.04
+    ],
+    "inscribed_at_45deg_tilt_m": 0.09899494936611666,
+    "rotor_envelope": {
+     "note": "no propeller geometry in the URDF; the box is a proxy bounding motors only, not a measured rotor envelope",
+     "status": "NOT_TESTED"
+    },
+    "rotors_modelled": false,
+    "urdf": "resources/robots/quad/quad_navrl_collide.urdf",
+    "visual_inside_collision_3d": {
+     "note": "base_link visual sphere r 0.05 m exceeds the 0.08 m-thick box by 0.01 m above and below",
+     "status": "FAIL"
+    },
+    "visual_inside_collision_xy": {
+     "note": "horizontal projection: arms and motors inside; motor cylinders reach the +-0.14 m faces exactly",
+     "status": "PASS"
+    },
+    "visuals": [
+     {
+      "centre": [
+       0.0,
+       0.0,
+       0.0
+      ],
+      "half": [
+       0.05,
+       0.05,
+       0.05
+      ],
+      "link": "base_link",
+      "outside_collision_m": 0.010000000000000002,
+      "outside_collision_xy_m": 0.0,
+      "touches_collision_boundary": false,
+      "type": "sphere"
+     },
+     {
+      "centre": [
+       0.065,
+       -0.065,
+       0.0
+      ],
+      "half": [
+       0.07207106781186545,
+       0.07207106781186551,
+       0.010000000000000016
+      ],
+      "link": "arm_motor_0",
+      "outside_collision_m": 0.0,
+      "outside_collision_xy_m": 0.0,
+      "touches_collision_boundary": false,
+      "type": "cylinder"
+     },
+     {
+      "centre": [
+       0.13,
+       -0.13,
+       0.0
+      ],
+      "half": [
+       0.01,
+       0.01,
+       0.025
+      ],
+      "link": "motor_0",
+      "outside_collision_m": 0.0,
+      "outside_collision_xy_m": 0.0,
+      "touches_collision_boundary": true,
+      "type": "cylinder"
+     },
+     {
+      "centre": [
+       -0.065,
+       -0.065,
+       0.0
+      ],
+      "half": [
+       0.07207106781186548,
+       0.0720710678118655,
+       0.010000000000000016
+      ],
+      "link": "arm_motor_1",
+      "outside_collision_m": 0.0,
+      "outside_collision_xy_m": 0.0,
+      "touches_collision_boundary": false,
+      "type": "cylinder"
+     },
+     {
+      "centre": [
+       -0.13,
+       -0.13,
+       0.0
+      ],
+      "half": [
+       0.01,
+       0.01,
+       0.025
+      ],
+      "link": "motor_1",
+      "outside_collision_m": 0.0,
+      "outside_collision_xy_m": 0.0,
+      "touches_collision_boundary": true,
+      "type": "cylinder"
+     },
+     {
+      "centre": [
+       -0.065,
+       0.065,
+       0.0
+      ],
+      "half": [
+       0.07207106781186545,
+       0.07207106781186551,
+       0.010000000000000016
+      ],
+      "link": "arm_motor_2",
+      "outside_collision_m": 0.0,
+      "outside_collision_xy_m": 0.0,
+      "touches_collision_boundary": false,
+      "type": "cylinder"
+     },
+     {
+      "centre": [
+       -0.13,
+       0.13,
+       0.0
+      ],
+      "half": [
+       0.01,
+       0.01,
+       0.025
+      ],
+      "link": "motor_2",
+      "outside_collision_m": 0.0,
+      "outside_collision_xy_m": 0.0,
+      "touches_collision_boundary": true,
+      "type": "cylinder"
+     },
+     {
+      "centre": [
+       0.065,
+       0.065,
+       0.0
+      ],
+      "half": [
+       0.07207106781186548,
+       0.0720710678118655,
+       0.010000000000000016
+      ],
+      "link": "arm_motor_3",
+      "outside_collision_m": 0.0,
+      "outside_collision_xy_m": 0.0,
+      "touches_collision_boundary": false,
+      "type": "cylinder"
+     },
+     {
+      "centre": [
+       0.13,
+       0.13,
+       0.0
+      ],
+      "half": [
+       0.01,
+       0.01,
+       0.025
+      ],
+      "link": "motor_3",
+      "outside_collision_m": 0.0,
+      "outside_collision_xy_m": 0.0,
+      "touches_collision_boundary": true,
+      "type": "cylinder"
+     }
+    ],
+    "yaw_circumscribed_xy_m": 0.19798989873223333
+   }
+  },
+  {
+   "all_scenes_certified_connected": {
+    "note": "57344 of 57344 quota scenes certified at the body tier",
+    "status": "PASS"
+   },
+   "by_group_density": {
+    "moving/115": {
+     "body": {
+      "CONNECTED": 7168
+     },
+     "captures_by_body": {
+      "CONNECTED": 6987
+     },
+     "episodes": 7168,
+     "reserve": {
+      "CONNECTED": 7168
+     }
+    },
+    "moving/160": {
+     "body": {
+      "CONNECTED": 7168
+     },
+     "captures_by_body": {
+      "CONNECTED": 6774
+     },
+     "episodes": 7168,
+     "reserve": {
+      "CONNECTED": 7167,
+      "UNRESOLVED": 1
+     }
+    },
+    "moving/205": {
+     "body": {
+      "CONNECTED": 7168
+     },
+     "captures_by_body": {
+      "CONNECTED": 6518
+     },
+     "episodes": 7168,
+     "reserve": {
+      "CONNECTED": 7166,
+      "UNRESOLVED": 2
+     }
+    },
+    "moving/70": {
+     "body": {
+      "CONNECTED": 7168
+     },
+     "captures_by_body": {
+      "CONNECTED": 7064
+     },
+     "episodes": 7168,
+     "reserve": {
+      "CONNECTED": 7168
+     }
+    },
+    "static/115": {
+     "body": {
+      "CONNECTED": 7168
+     },
+     "captures_by_body": {
+      "CONNECTED": 7092
+     },
+     "episodes": 7168,
+     "reserve": {
+      "CONNECTED": 7168
+     }
+    },
+    "static/160": {
+     "body": {
+      "CONNECTED": 7168
+     },
+     "captures_by_body": {
+      "CONNECTED": 7001
+     },
+     "episodes": 7168,
+     "reserve": {
+      "CONNECTED": 7168
+     }
+    },
+    "static/205": {
+     "body": {
+      "CONNECTED": 7168
+     },
+     "captures_by_body": {
+      "CONNECTED": 6862
+     },
+     "episodes": 7168,
+     "reserve": {
+      "CONNECTED": 7167,
+      "UNRESOLVED": 1
+     }
+    },
+    "static/70": {
+     "body": {
+      "CONNECTED": 7168
+     },
+     "captures_by_body": {
+      "CONNECTED": 7143
+     },
+     "episodes": 7168,
+     "reserve": {
+      "CONNECTED": 7168
+     }
+    }
+   },
+   "captures_in_certified_disconnected": [],
+   "cells": 112,
+   "dynamic_feasibility": {
+    "note": "holonomic path existence only; thrust/tilt/braking and tracking error are not modelled",
+    "status": "NOT_TESTED"
+   },
+   "episode_table": {
+    "file": "eq1b_scene_episodes.csv.gz",
+    "sha256": "ecc1d6e2fec76649b77b1f43d50bbcdade82447134403274632c1ef5bbee707a"
+   },
+   "grids_m": [
+    0.1,
+    0.05,
+    0.025
+   ],
+   "name": "B4 start-to-capture passability on recorded OCC-P2 layouts (kinematic only)",
+   "not_certified_at_some_tier": [
+    {
+     "body": "CONNECTED",
+     "cell": "E2_obstacle_aware__160bars__seed4311",
+     "env": 63,
+     "episode": 1,
+     "outcome": "capture",
+     "reserve": "UNRESOLVED"
+    },
+    {
+     "body": "CONNECTED",
+     "cell": "E2_obstacle_aware__205bars__seed4304",
+     "env": 126,
+     "episode": 0,
+     "outcome": "capture",
+     "reserve": "UNRESOLVED"
+    },
+    {
+     "body": "CONNECTED",
+     "cell": "E2_obstacle_aware__205bars__seed4306",
+     "env": 124,
+     "episode": 2,
+     "outcome": "crash",
+     "reserve": "UNRESOLVED"
+    },
+    {
+     "body": "CONNECTED",
+     "cell": "E0_static__205bars__seed4304",
+     "env": 126,
+     "episode": 0,
+     "outcome": "capture",
+     "reserve": "UNRESOLVED"
+    }
+   ],
+   "quota_episodes": 57344,
+   "radii_m": {
+    "conservative_body": 0.20199009876724155,
+    "optimistic_body": 0.09899494936611666,
+    "reserve_added": 0.45
+   },
+   "recorded_half_extents_not_in_bar_assets": [],
+   "root": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_confirmatory_v1/OCC-P2"
+  }
+ ],
+ "package": "EQ-1B scene feasibility (CPU, validation only)",
+ "schema": "motar.eq1b-scene.v1",
+ "source": {
+  "files_sha256": {
+   "motar_eval/occlusion_trace.py": "ec4aa27c994afb233aedcc48901db29d5c40e9ef33373580f99c03cb68a750e1",
+   "resources/models/environment_assets/bars_h3": "03e85d7014a6b5ceb910784a4691fec2bc1fa62eef7b96485f10c9960efa11a6",
+   "resources/robots/quad/quad_navrl_collide.urdf": "ad9a3110037cb01f94caa11054e367e557e9089b4edd520d0aa59b78578988be"
+  },
+  "head": "197b79414dddbd3bd3fcecb51f46ddc7677873ce",
+  "identical_to_measurement_source": true,
+  "measurement_source": "5ff285ad053f181c5a1c86dddb2462bb44e6327b"
+ }
+}

@@ -1,0 +1,1305 @@
+{
+ "camera": {
+  "cx": 79.5,
+  "cy": 44.5,
+  "fx": 84.30241002247699,
+  "fy": 81.18214898721406,
+  "height": 90,
+  "hfov_deg": 87.0,
+  "translation_m": [
+   0.1,
+   0.0,
+   0.03
+  ],
+  "vfov_deg": 58.0,
+  "width": 160
+ },
+ "cases": [
+  {
+   "beams_in_fov": 17,
+   "case_20deg": {
+    "beam_deg": 20.0,
+    "bearing_error_deg": 3.410930862961952,
+    "pixel_error": 5.816438734847928,
+    "proposed_pixel_error": 0.18356126515207194,
+    "u_pinhole": 48.81643873484793,
+    "u_production": 43,
+    "u_proposed": 49
+   },
+   "cx": 79.5,
+   "fx": 84.30241002247699,
+   "gate": "pixel error <= 0.5",
+   "name": "A1 camera-column to LiDAR-bearing mapping",
+   "production": {
+    "note": "linear-in-angle map; tangent spacing ignored",
+    "status": "FAIL"
+   },
+   "proposed_correction": {
+    "note": "u = round(cx - fx*tan(theta)); residual is column quantisation",
+    "status": "PASS"
+   },
+   "rows": [
+    {
+     "beam_deg": 40.0,
+     "bearing_error_deg": 1.0839113316446773,
+     "pixel_error": 2.7618817603699455,
+     "proposed_pixel_error": 0.23811823963005452,
+     "u_pinhole": 8.761881760369945,
+     "u_production": 6,
+     "u_proposed": 9
+    },
+    {
+     "beam_deg": 35.0,
+     "bearing_error_deg": 1.988547941002956,
+     "pixel_error": 4.470824861940237,
+     "proposed_pixel_error": 0.47082486194023687,
+     "u_pinhole": 20.470824861940237,
+     "u_production": 16,
+     "u_proposed": 20
+    },
+    {
+     "beam_deg": 30.0,
+     "bearing_error_deg": 2.8819479573682565,
+     "pixel_error": 5.827985942175275,
+     "proposed_pixel_error": 0.17201405782472534,
+     "u_pinhole": 30.827985942175275,
+     "u_production": 25,
+     "u_proposed": 31
+    },
+    {
+     "beam_deg": 25.0,
+     "bearing_error_deg": 3.356786855695206,
+     "pixel_error": 6.189146496412512,
+     "proposed_pixel_error": 0.18914649641251202,
+     "u_pinhole": 40.18914649641251,
+     "u_production": 34,
+     "u_proposed": 40
+    },
+    {
+     "beam_deg": 20.0,
+     "bearing_error_deg": 3.410930862961952,
+     "pixel_error": 5.816438734847928,
+     "proposed_pixel_error": 0.18356126515207194,
+     "u_pinhole": 48.81643873484793,
+     "u_production": 43,
+     "u_proposed": 49
+    },
+    {
+     "beam_deg": 15.0,
+     "bearing_error_deg": 3.0666710663367125,
+     "pixel_error": 4.911244734593318,
+     "proposed_pixel_error": 0.08875526540668233,
+     "u_pinhole": 56.91124473459332,
+     "u_production": 52,
+     "u_proposed": 57
+    },
+    {
+     "beam_deg": 10.0,
+     "bearing_error_deg": 2.3772554803835715,
+     "pixel_error": 3.635217491928316,
+     "proposed_pixel_error": 0.3647825080716842,
+     "u_pinhole": 64.63521749192832,
+     "u_production": 61,
+     "u_proposed": 65
+    },
+    {
+     "beam_deg": 5.0,
+     "bearing_error_deg": 1.429515590460983,
+     "pixel_error": 2.12450199277599,
+     "proposed_pixel_error": 0.12450199277598983,
+     "u_pinhole": 72.12450199277599,
+     "u_production": 70,
+     "u_proposed": 72
+    },
+    {
+     "beam_deg": 0.0,
+     "bearing_error_deg": 0.3398150770677157,
+     "pixel_error": 0.4999943470828896,
+     "proposed_pixel_error": 0.4999943470828896,
+     "u_pinhole": 79.49999434708289,
+     "u_production": 79,
+     "u_proposed": 79
+    },
+    {
+     "beam_deg": -5.0,
+     "bearing_error_deg": 1.4295143098005136,
+     "pixel_error": 2.1245000940473346,
+     "proposed_pixel_error": 0.12450009404733464,
+     "u_pinhole": 86.87549990595267,
+     "u_production": 89,
+     "u_proposed": 87
+    },
+    {
+     "beam_deg": -10.0,
+     "bearing_error_deg": 2.377254626609925,
+     "pixel_error": 3.635216196667656,
+     "proposed_pixel_error": 0.36478380333234384,
+     "u_pinhole": 94.36478380333234,
+     "u_production": 98,
+     "u_proposed": 94
+    },
+    {
+     "beam_deg": -15.0,
+     "bearing_error_deg": 3.06666935878942,
+     "pixel_error": 4.911242041803064,
+     "proposed_pixel_error": 0.08875795819693622,
+     "u_pinhole": 102.08875795819694,
+     "u_production": 107,
+     "u_proposed": 102
+    },
+    {
+     "beam_deg": -20.0,
+     "bearing_error_deg": 3.4109291554146597,
+     "pixel_error": 5.816435889610929,
+     "proposed_pixel_error": 0.18356411038907083,
+     "u_pinhole": 110.18356411038907,
+     "u_production": 116,
+     "u_proposed": 110
+    },
+    {
+     "beam_deg": -25.0,
+     "bearing_error_deg": 3.3567851481479134,
+     "pixel_error": 6.189143437700011,
+     "proposed_pixel_error": 0.18914343770001096,
+     "u_pinhole": 118.81085656229999,
+     "u_production": 125,
+     "u_proposed": 119
+    },
+    {
+     "beam_deg": -30.0,
+     "bearing_error_deg": 2.8819479573682565,
+     "pixel_error": 5.827985942175275,
+     "proposed_pixel_error": 0.17201405782472534,
+     "u_pinhole": 128.17201405782473,
+     "u_production": 134,
+     "u_proposed": 128
+    },
+    {
+     "beam_deg": -35.0,
+     "bearing_error_deg": 1.9885445259083712,
+     "pixel_error": 4.470817373505724,
+     "proposed_pixel_error": 0.4708173735057244,
+     "u_pinhole": 138.52918262649428,
+     "u_production": 143,
+     "u_proposed": 139
+    },
+    {
+     "beam_deg": -40.0,
+     "bearing_error_deg": 1.0839113316446773,
+     "pixel_error": 2.7618817603699313,
+     "proposed_pixel_error": 0.23811823963006873,
+     "u_pinhole": 150.23811823963007,
+     "u_production": 153,
+     "u_proposed": 150
+    }
+   ],
+   "worst": {
+    "beam_deg": 25.0,
+    "bearing_error_deg": 3.356786855695206,
+    "pixel_error": 6.189146496412512,
+    "proposed_pixel_error": 0.18914649641251202,
+    "u_pinhole": 40.18914649641251,
+    "u_production": 34,
+    "u_proposed": 40
+   }
+  },
+  {
+   "gate": "range error <= 0.0001 m",
+   "name": "A2 camera range reused as a body-origin LiDAR range (front-plane fixture)",
+   "on_axis": {
+    "beam_deg": 0.0,
+    "error_m": -0.09982109069825373,
+    "production_range_m": 4.900178909301758,
+    "proposed_error_m": -2.0753121354744053e-07,
+    "proposed_range_m": 4.999999792468798,
+    "true_body_range_m": 5.0000000000000115
+   },
+   "plane_x_m": 5.0,
+   "production": {
+    "note": "camera translation not applied; off-axis also inherits the A1 bearing error",
+    "status": "FAIL"
+   },
+   "proposed_correction": {
+    "note": "p_body = t_cam + t * ray(u, v); intersect the beam with the chord of bracketing hits",
+    "status": "PASS"
+   },
+   "proposed_worst_error_m": 2.0753121354744053e-07,
+   "rows": [
+    {
+     "beam_deg": 40.0,
+     "error_m": -0.026118900739198203,
+     "production_range_m": 6.500917434692383,
+     "proposed_error_m": -3.921737157241978e-08,
+     "proposed_range_m": 6.527036296214209,
+     "true_body_range_m": 6.527036335431581
+    },
+    {
+     "beam_deg": 35.0,
+     "error_m": 0.03074226766313526,
+     "production_range_m": 6.134614944458008,
+     "proposed_error_m": -7.659985534758107e-08,
+     "proposed_range_m": 6.103872600195017,
+     "true_body_range_m": 6.1038726767948726
+    },
+    {
+     "beam_deg": 30.0,
+     "error_m": 0.06136064410023856,
+     "production_range_m": 5.834863185882568,
+     "proposed_error_m": -1.7973708210661243e-07,
+     "proposed_range_m": 5.773502362045248,
+     "true_body_range_m": 5.77350254178233
+    },
+    {
+     "beam_deg": 25.0,
+     "error_m": 0.05132926088276335,
+     "production_range_m": 5.56821870803833,
+     "proposed_error_m": -9.987451132786873e-08,
+     "proposed_range_m": 5.516889347281055,
+     "true_body_range_m": 5.516889447155567
+    },
+    {
+     "beam_deg": 20.0,
+     "error_m": 0.01875522794998652,
+     "production_range_m": 5.339643955230713,
+     "proposed_error_m": -5.426551918930045e-08,
+     "proposed_range_m": 5.320888673015207,
+     "true_body_range_m": 5.320888727280726
+    },
+    {
+     "beam_deg": 15.0,
+     "error_m": -0.022175465881381307,
+     "production_range_m": 5.154205322265625,
+     "proposed_error_m": 8.112822325045954e-08,
+     "proposed_range_m": 5.17638086927523,
+     "true_body_range_m": 5.176380788147006
+    },
+    {
+     "beam_deg": 10.0,
+     "error_m": -0.060443687646019484,
+     "production_range_m": 5.016689300537109,
+     "proposed_error_m": 1.0346905199298817e-07,
+     "proposed_range_m": 5.077133091652181,
+     "true_body_range_m": 5.077132988183129
+    },
+    {
+     "beam_deg": 5.0,
+     "error_m": -0.08799258323096915,
+     "production_range_m": 4.9311065673828125,
+     "proposed_error_m": -2.0308399406587796e-07,
+     "proposed_range_m": 5.019098947529788,
+     "true_body_range_m": 5.019099150613782
+    },
+    {
+     "beam_deg": 0.0,
+     "error_m": -0.09982109069825373,
+     "production_range_m": 4.900178909301758,
+     "proposed_error_m": -2.0753121354744053e-07,
+     "proposed_range_m": 4.999999792468798,
+     "true_body_range_m": 5.0000000000000115
+    },
+    {
+     "beam_deg": -5.0,
+     "error_m": -0.08799259304592866,
+     "production_range_m": 4.9311065673828125,
+     "proposed_error_m": -2.030833057276027e-07,
+     "proposed_range_m": 5.019098957345435,
+     "true_body_range_m": 5.019099160428741
+    },
+    {
+     "beam_deg": -10.0,
+     "error_m": -0.06044370098606322,
+     "production_range_m": 5.016689300537109,
+     "proposed_error_m": 1.0346920564785478e-07,
+     "proposed_range_m": 5.077133104992378,
+     "true_body_range_m": 5.077133001523173
+    },
+    {
+     "beam_deg": -15.0,
+     "error_m": -0.022175507217401247,
+     "production_range_m": 5.154205322265625,
+     "proposed_error_m": 8.112743987709337e-08,
+     "proposed_range_m": 5.176380910610466,
+     "true_body_range_m": 5.176380829483026
+    },
+    {
+     "beam_deg": -20.0,
+     "error_m": 0.01875517023347406,
+     "production_range_m": 5.339643955230713,
+     "proposed_error_m": -5.4265853144386256e-08,
+     "proposed_range_m": 5.320888730731386,
+     "true_body_range_m": 5.320888784997239
+    },
+    {
+     "beam_deg": -25.0,
+     "error_m": 0.05132918421427579,
+     "production_range_m": 5.56821870803833,
+     "proposed_error_m": -9.987443494452464e-08,
+     "proposed_range_m": 5.516889423949619,
+     "true_body_range_m": 5.516889523824054
+    },
+    {
+     "beam_deg": -30.0,
+     "error_m": 0.06136064410023856,
+     "production_range_m": 5.834863185882568,
+     "proposed_error_m": -1.7973708210661243e-07,
+     "proposed_range_m": 5.773502362045248,
+     "true_body_range_m": 5.77350254178233
+    },
+    {
+     "beam_deg": -35.0,
+     "error_m": 0.030742012914227068,
+     "production_range_m": 6.134614944458008,
+     "proposed_error_m": -7.659990064468047e-08,
+     "proposed_range_m": 6.10387285494388,
+     "true_body_range_m": 6.103872931543781
+    },
+    {
+     "beam_deg": -40.0,
+     "error_m": -0.026118900739198203,
+     "production_range_m": 6.500917434692383,
+     "proposed_error_m": -3.921737157241978e-08,
+     "proposed_range_m": 6.527036296214209,
+     "true_body_range_m": 6.527036335431581
+    }
+   ],
+   "worst": {
+    "beam_deg": 0.0,
+    "error_m": -0.09982109069825373,
+    "production_range_m": 4.900178909301758,
+    "proposed_error_m": -2.0753121354744053e-07,
+    "proposed_range_m": 4.999999792468798,
+    "true_body_range_m": 5.0000000000000115
+   }
+  },
+  {
+   "interpretation": "acceptable only as an explicitly conservative 2D envelope",
+   "name": "A3 vertical aggregation (column minimum over all rows)",
+   "production_conservative": {
+    "note": "min over rows never reports a false clear",
+    "status": "PASS"
+   },
+   "production_metric_per_elevation": {
+    "note": "all LiDAR elevations receive the same camera minimum; elevation is not preserved",
+    "status": "FAIL"
+   },
+   "rows_fused_m": [
+    3.0,
+    3.0,
+    3.0,
+    3.0
+   ]
+  },
+  {
+   "association_centre_m": 5.95,
+   "bias_m": -0.04999999999999982,
+   "camera_bias_limit_m": 0.049999999999999996,
+   "camera_centre_range": [
+    {
+     "bias_m": 0.044056803978644865,
+     "centre_estimate_m": 3.044056803978645,
+     "distance_from_camera_m": 3.0,
+     "mask_pixels": 52
+    },
+    {
+     "bias_m": 0.035879071322440836,
+     "centre_estimate_m": 5.035879071322441,
+     "distance_from_camera_m": 5.0,
+     "mask_pixels": 16
+    },
+    {
+     "bias_m": 0.016211185512755577,
+     "centre_estimate_m": 8.016211185512756,
+     "distance_from_camera_m": 8.0,
+     "mask_pixels": 4
+    },
+    {
+     "bias_m": 0.026388741083732015,
+     "centre_estimate_m": 10.026388741083732,
+     "distance_from_camera_m": 10.0,
+     "mask_pixels": 4
+    }
+   ],
+   "lidar_surface_m": 5.8,
+   "name": "A4 camera/LiDAR target-radius and centre-range convention",
+   "note": "camera and LiDAR centre estimates of the same target disagree by up to about 0.10 m",
+   "production": {
+    "note": "LiDAR proxy sphere 0.20 m (navrl_lidar_config.target_radius) vs perception 0.15 m",
+    "status": "FAIL"
+   },
+   "production_camera_estimator": {
+    "note": "mean surface depth + r is biased towards +r/3 as the mask grows",
+    "status": "FAIL"
+   },
+   "proposed_correction": {
+    "note": "add the LiDAR proxy's own radius, or use one radius in both sensors; camera: invert the sphere geometry per pixel or use the minimum depth",
+    "status": "PASS"
+   },
+   "target_centre_m": 6.0
+  },
+  {
+   "disagreements": [
+    "clear 20 m, centre on a pixel corner (scale)",
+    "partial: bar over one side, centre clear",
+    "rim-proxy gap: two bars block all 9 rays, a strip stays visible"
+   ],
+   "gate": "current indicator classes equal the independent silhouette labels; zero pixels never alone imply FULL",
+   "in_view_zero_pixels_without_occlusion": [
+    "clear 20 m, centre on a pixel corner (scale)"
+   ],
+   "name": "A5 full / partial / centre-only / FOV / scale classification",
+   "production_indicators": {
+    "note": "zero pixels conflate scale loss with occlusion; centre-visible partial occlusion reads as clear; the 9-ray proxy can call a visible target full",
+    "status": "FAIL"
+   },
+   "proposed_correction": {
+    "note": "label from target-alone support (render the target without occluders) and visible support; SCALE_LOSS when target-alone support < min_target_pixels",
+    "status": "PASS_BY_CONSTRUCTION"
+   },
+   "rows": [
+    {
+     "agree": true,
+     "alone_area_px": 57.8125,
+     "alone_pixels": 56,
+     "camera_detectable": true,
+     "case": "clear 3 m",
+     "centre_blocked": false,
+     "current_indicators": "VISIBLE",
+     "distance_m": 2.9,
+     "in_fov": true,
+     "offline_centre_blocked": false,
+     "reference": "VISIBLE",
+     "rim_blocked_fraction": 0.0,
+     "rim_full": false,
+     "visible_area_px": 57.8125,
+     "visible_pixels": 56
+    },
+    {
+     "agree": true,
+     "alone_area_px": 5.0,
+     "alone_pixels": 4,
+     "camera_detectable": true,
+     "case": "clear 10 m",
+     "centre_blocked": false,
+     "current_indicators": "VISIBLE",
+     "distance_m": 9.9,
+     "in_fov": true,
+     "offline_centre_blocked": false,
+     "reference": "VISIBLE",
+     "rim_blocked_fraction": 0.0,
+     "rim_full": false,
+     "visible_area_px": 5.0,
+     "visible_pixels": 4
+    },
+    {
+     "agree": false,
+     "alone_area_px": 1.25,
+     "alone_pixels": 0,
+     "camera_detectable": false,
+     "case": "clear 20 m, centre on a pixel corner (scale)",
+     "centre_blocked": false,
+     "current_indicators": "FULL",
+     "distance_m": 19.9,
+     "in_fov": true,
+     "offline_centre_blocked": false,
+     "reference": "SCALE_LOSS",
+     "rim_blocked_fraction": 0.0,
+     "rim_full": false,
+     "visible_area_px": 1.25,
+     "visible_pixels": 0
+    },
+    {
+     "agree": true,
+     "alone_area_px": 11.25,
+     "alone_pixels": 12,
+     "camera_detectable": true,
+     "case": "clear 10 m at 40 deg",
+     "centre_blocked": false,
+     "current_indicators": "VISIBLE",
+     "distance_m": 9.923603736232218,
+     "in_fov": true,
+     "offline_centre_blocked": false,
+     "reference": "VISIBLE",
+     "rim_blocked_fraction": 0.0,
+     "rim_full": false,
+     "visible_area_px": 11.25,
+     "visible_pixels": 12
+    },
+    {
+     "agree": true,
+     "alone_area_px": 0.0,
+     "alone_pixels": 0,
+     "camera_detectable": false,
+     "case": "FOV exit 50 deg",
+     "centre_blocked": false,
+     "current_indicators": "FOV_EXIT",
+     "distance_m": 9.936016544905051,
+     "in_fov": false,
+     "offline_centre_blocked": false,
+     "reference": "FOV_EXIT",
+     "rim_blocked_fraction": 0.0,
+     "rim_full": false,
+     "visible_area_px": 0.0,
+     "visible_pixels": 0
+    },
+    {
+     "agree": true,
+     "alone_area_px": 5.0,
+     "alone_pixels": 4,
+     "camera_detectable": false,
+     "case": "full: wide bar at 5 m, target 10 m",
+     "centre_blocked": true,
+     "current_indicators": "FULL",
+     "distance_m": 9.9,
+     "in_fov": true,
+     "offline_centre_blocked": true,
+     "reference": "FULL",
+     "rim_blocked_fraction": 1.0,
+     "rim_full": true,
+     "visible_area_px": 0.0,
+     "visible_pixels": 0
+    },
+    {
+     "agree": false,
+     "alone_area_px": 31.875,
+     "alone_pixels": 32,
+     "camera_detectable": true,
+     "case": "partial: bar over one side, centre clear",
+     "centre_blocked": false,
+     "current_indicators": "VISIBLE",
+     "distance_m": 3.9,
+     "in_fov": true,
+     "offline_centre_blocked": false,
+     "reference": "PARTIAL",
+     "rim_blocked_fraction": 0.375,
+     "rim_full": false,
+     "visible_area_px": 26.3125,
+     "visible_pixels": 28
+    },
+    {
+     "agree": true,
+     "alone_area_px": 57.8125,
+     "alone_pixels": 56,
+     "camera_detectable": true,
+     "case": "centre-only: thin bar over the centre",
+     "centre_blocked": true,
+     "current_indicators": "CENTRE_ONLY",
+     "distance_m": 2.9,
+     "in_fov": true,
+     "offline_centre_blocked": true,
+     "reference": "CENTRE_ONLY",
+     "rim_blocked_fraction": 0.25,
+     "rim_full": false,
+     "visible_area_px": 45.25,
+     "visible_pixels": 40
+    },
+    {
+     "agree": false,
+     "alone_area_px": 57.8125,
+     "alone_pixels": 56,
+     "camera_detectable": true,
+     "case": "rim-proxy gap: two bars block all 9 rays, a strip stays visible",
+     "centre_blocked": true,
+     "current_indicators": "FULL",
+     "distance_m": 2.9,
+     "in_fov": true,
+     "offline_centre_blocked": true,
+     "reference": "CENTRE_ONLY",
+     "rim_blocked_fraction": 1.0,
+     "rim_full": true,
+     "visible_area_px": 17.5,
+     "visible_pixels": 22
+    },
+    {
+     "agree": true,
+     "alone_area_px": 20.3125,
+     "alone_pixels": 20,
+     "camera_detectable": true,
+     "case": "occluder behind the target",
+     "centre_blocked": false,
+     "current_indicators": "VISIBLE",
+     "distance_m": 4.9,
+     "in_fov": true,
+     "offline_centre_blocked": false,
+     "reference": "VISIBLE",
+     "rim_blocked_fraction": 0.0,
+     "rim_full": false,
+     "visible_area_px": 20.3125,
+     "visible_pixels": 20
+    },
+    {
+     "agree": true,
+     "alone_area_px": 1.25,
+     "alone_pixels": 0,
+     "camera_detectable": false,
+     "case": "full at 20 m (scale and occluder)",
+     "centre_blocked": true,
+     "current_indicators": "FULL",
+     "distance_m": 19.9,
+     "in_fov": true,
+     "offline_centre_blocked": true,
+     "reference": "FULL",
+     "rim_blocked_fraction": 1.0,
+     "rim_full": true,
+     "visible_area_px": 0.0,
+     "visible_pixels": 0
+    }
+   ],
+   "scale_loss": {
+    "first_range_with_certain_scale_loss_m": 23.0,
+    "first_range_with_possible_scale_loss_m": 12.75,
+    "min_target_pixels": 2,
+    "table": [
+     {
+      "max_pixels": 32,
+      "min_pixels": 28,
+      "range_m": 4.0
+     },
+     {
+      "max_pixels": 29,
+      "min_pixels": 24,
+      "range_m": 4.25
+     },
+     {
+      "max_pixels": 26,
+      "min_pixels": 21,
+      "range_m": 4.5
+     },
+     {
+      "max_pixels": 24,
+      "min_pixels": 20,
+      "range_m": 4.75
+     },
+     {
+      "max_pixels": 21,
+      "min_pixels": 18,
+      "range_m": 5.0
+     },
+     {
+      "max_pixels": 21,
+      "min_pixels": 16,
+      "range_m": 5.25
+     },
+     {
+      "max_pixels": 17,
+      "min_pixels": 14,
+      "range_m": 5.5
+     },
+     {
+      "max_pixels": 16,
+      "min_pixels": 13,
+      "range_m": 5.75
+     },
+     {
+      "max_pixels": 16,
+      "min_pixels": 12,
+      "range_m": 6.0
+     },
+     {
+      "max_pixels": 14,
+      "min_pixels": 10,
+      "range_m": 6.25
+     },
+     {
+      "max_pixels": 13,
+      "min_pixels": 9,
+      "range_m": 6.5
+     },
+     {
+      "max_pixels": 12,
+      "min_pixels": 9,
+      "range_m": 6.75
+     },
+     {
+      "max_pixels": 12,
+      "min_pixels": 9,
+      "range_m": 7.0
+     },
+     {
+      "max_pixels": 12,
+      "min_pixels": 8,
+      "range_m": 7.25
+     },
+     {
+      "max_pixels": 11,
+      "min_pixels": 7,
+      "range_m": 7.5
+     },
+     {
+      "max_pixels": 9,
+      "min_pixels": 7,
+      "range_m": 7.75
+     },
+     {
+      "max_pixels": 9,
+      "min_pixels": 7,
+      "range_m": 8.0
+     },
+     {
+      "max_pixels": 9,
+      "min_pixels": 5,
+      "range_m": 8.25
+     },
+     {
+      "max_pixels": 9,
+      "min_pixels": 4,
+      "range_m": 8.5
+     },
+     {
+      "max_pixels": 9,
+      "min_pixels": 4,
+      "range_m": 8.75
+     },
+     {
+      "max_pixels": 7,
+      "min_pixels": 4,
+      "range_m": 9.0
+     },
+     {
+      "max_pixels": 7,
+      "min_pixels": 4,
+      "range_m": 9.25
+     },
+     {
+      "max_pixels": 7,
+      "min_pixels": 4,
+      "range_m": 9.5
+     },
+     {
+      "max_pixels": 7,
+      "min_pixels": 4,
+      "range_m": 9.75
+     },
+     {
+      "max_pixels": 6,
+      "min_pixels": 4,
+      "range_m": 10.0
+     },
+     {
+      "max_pixels": 6,
+      "min_pixels": 4,
+      "range_m": 10.25
+     },
+     {
+      "max_pixels": 6,
+      "min_pixels": 4,
+      "range_m": 10.5
+     },
+     {
+      "max_pixels": 6,
+      "min_pixels": 4,
+      "range_m": 10.75
+     },
+     {
+      "max_pixels": 5,
+      "min_pixels": 3,
+      "range_m": 11.0
+     },
+     {
+      "max_pixels": 5,
+      "min_pixels": 2,
+      "range_m": 11.25
+     },
+     {
+      "max_pixels": 5,
+      "min_pixels": 2,
+      "range_m": 11.5
+     },
+     {
+      "max_pixels": 5,
+      "min_pixels": 2,
+      "range_m": 11.75
+     },
+     {
+      "max_pixels": 5,
+      "min_pixels": 2,
+      "range_m": 12.0
+     },
+     {
+      "max_pixels": 4,
+      "min_pixels": 2,
+      "range_m": 12.25
+     },
+     {
+      "max_pixels": 4,
+      "min_pixels": 2,
+      "range_m": 12.5
+     },
+     {
+      "max_pixels": 4,
+      "min_pixels": 1,
+      "range_m": 12.75
+     },
+     {
+      "max_pixels": 4,
+      "min_pixels": 1,
+      "range_m": 13.0
+     },
+     {
+      "max_pixels": 4,
+      "min_pixels": 1,
+      "range_m": 13.25
+     },
+     {
+      "max_pixels": 4,
+      "min_pixels": 1,
+      "range_m": 13.5
+     },
+     {
+      "max_pixels": 4,
+      "min_pixels": 1,
+      "range_m": 13.75
+     },
+     {
+      "max_pixels": 4,
+      "min_pixels": 1,
+      "range_m": 14.0
+     },
+     {
+      "max_pixels": 4,
+      "min_pixels": 1,
+      "range_m": 14.25
+     },
+     {
+      "max_pixels": 4,
+      "min_pixels": 1,
+      "range_m": 14.5
+     },
+     {
+      "max_pixels": 4,
+      "min_pixels": 1,
+      "range_m": 14.75
+     },
+     {
+      "max_pixels": 4,
+      "min_pixels": 1,
+      "range_m": 15.0
+     },
+     {
+      "max_pixels": 4,
+      "min_pixels": 1,
+      "range_m": 15.25
+     },
+     {
+      "max_pixels": 4,
+      "min_pixels": 1,
+      "range_m": 15.5
+     },
+     {
+      "max_pixels": 4,
+      "min_pixels": 1,
+      "range_m": 15.75
+     },
+     {
+      "max_pixels": 3,
+      "min_pixels": 1,
+      "range_m": 16.0
+     },
+     {
+      "max_pixels": 3,
+      "min_pixels": 1,
+      "range_m": 16.25
+     },
+     {
+      "max_pixels": 3,
+      "min_pixels": 1,
+      "range_m": 16.5
+     },
+     {
+      "max_pixels": 3,
+      "min_pixels": 1,
+      "range_m": 16.75
+     },
+     {
+      "max_pixels": 3,
+      "min_pixels": 1,
+      "range_m": 17.0
+     },
+     {
+      "max_pixels": 3,
+      "min_pixels": 1,
+      "range_m": 17.25
+     },
+     {
+      "max_pixels": 2,
+      "min_pixels": 1,
+      "range_m": 17.5
+     },
+     {
+      "max_pixels": 2,
+      "min_pixels": 1,
+      "range_m": 17.75
+     },
+     {
+      "max_pixels": 2,
+      "min_pixels": 1,
+      "range_m": 18.0
+     },
+     {
+      "max_pixels": 2,
+      "min_pixels": 1,
+      "range_m": 18.25
+     },
+     {
+      "max_pixels": 2,
+      "min_pixels": 1,
+      "range_m": 18.5
+     },
+     {
+      "max_pixels": 2,
+      "min_pixels": 1,
+      "range_m": 18.75
+     },
+     {
+      "max_pixels": 2,
+      "min_pixels": 1,
+      "range_m": 19.0
+     },
+     {
+      "max_pixels": 2,
+      "min_pixels": 1,
+      "range_m": 19.25
+     },
+     {
+      "max_pixels": 2,
+      "min_pixels": 1,
+      "range_m": 19.5
+     },
+     {
+      "max_pixels": 2,
+      "min_pixels": 0,
+      "range_m": 19.75
+     },
+     {
+      "max_pixels": 2,
+      "min_pixels": 0,
+      "range_m": 20.0
+     },
+     {
+      "max_pixels": 2,
+      "min_pixels": 0,
+      "range_m": 20.25
+     },
+     {
+      "max_pixels": 2,
+      "min_pixels": 0,
+      "range_m": 20.5
+     },
+     {
+      "max_pixels": 2,
+      "min_pixels": 0,
+      "range_m": 20.75
+     },
+     {
+      "max_pixels": 2,
+      "min_pixels": 0,
+      "range_m": 21.0
+     },
+     {
+      "max_pixels": 2,
+      "min_pixels": 0,
+      "range_m": 21.25
+     },
+     {
+      "max_pixels": 2,
+      "min_pixels": 0,
+      "range_m": 21.5
+     },
+     {
+      "max_pixels": 2,
+      "min_pixels": 0,
+      "range_m": 21.75
+     },
+     {
+      "max_pixels": 2,
+      "min_pixels": 0,
+      "range_m": 22.0
+     },
+     {
+      "max_pixels": 2,
+      "min_pixels": 0,
+      "range_m": 22.25
+     },
+     {
+      "max_pixels": 2,
+      "min_pixels": 0,
+      "range_m": 22.5
+     },
+     {
+      "max_pixels": 2,
+      "min_pixels": 0,
+      "range_m": 22.75
+     },
+     {
+      "max_pixels": 1,
+      "min_pixels": 0,
+      "range_m": 23.0
+     },
+     {
+      "max_pixels": 1,
+      "min_pixels": 0,
+      "range_m": 23.25
+     },
+     {
+      "max_pixels": 1,
+      "min_pixels": 0,
+      "range_m": 23.5
+     },
+     {
+      "max_pixels": 1,
+      "min_pixels": 0,
+      "range_m": 23.75
+     },
+     {
+      "max_pixels": 1,
+      "min_pixels": 0,
+      "range_m": 24.0
+     },
+     {
+      "max_pixels": 1,
+      "min_pixels": 0,
+      "range_m": 24.25
+     },
+     {
+      "max_pixels": 1,
+      "min_pixels": 0,
+      "range_m": 24.5
+     },
+     {
+      "max_pixels": 1,
+      "min_pixels": 0,
+      "range_m": 24.75
+     },
+     {
+      "max_pixels": 1,
+      "min_pixels": 0,
+      "range_m": 25.0
+     },
+     {
+      "max_pixels": 1,
+      "min_pixels": 0,
+      "range_m": 25.25
+     },
+     {
+      "max_pixels": 1,
+      "min_pixels": 0,
+      "range_m": 25.5
+     },
+     {
+      "max_pixels": 1,
+      "min_pixels": 0,
+      "range_m": 25.75
+     },
+     {
+      "max_pixels": 1,
+      "min_pixels": 0,
+      "range_m": 26.0
+     },
+     {
+      "max_pixels": 1,
+      "min_pixels": 0,
+      "range_m": 26.25
+     },
+     {
+      "max_pixels": 1,
+      "min_pixels": 0,
+      "range_m": 26.5
+     },
+     {
+      "max_pixels": 1,
+      "min_pixels": 0,
+      "range_m": 26.75
+     },
+     {
+      "max_pixels": 1,
+      "min_pixels": 0,
+      "range_m": 27.0
+     },
+     {
+      "max_pixels": 1,
+      "min_pixels": 0,
+      "range_m": 27.25
+     },
+     {
+      "max_pixels": 1,
+      "min_pixels": 0,
+      "range_m": 27.5
+     },
+     {
+      "max_pixels": 1,
+      "min_pixels": 0,
+      "range_m": 27.75
+     },
+     {
+      "max_pixels": 1,
+      "min_pixels": 0,
+      "range_m": 28.0
+     },
+     {
+      "max_pixels": 1,
+      "min_pixels": 0,
+      "range_m": 28.25
+     },
+     {
+      "max_pixels": 1,
+      "min_pixels": 0,
+      "range_m": 28.5
+     },
+     {
+      "max_pixels": 1,
+      "min_pixels": 0,
+      "range_m": 28.75
+     },
+     {
+      "max_pixels": 1,
+      "min_pixels": 0,
+      "range_m": 29.0
+     },
+     {
+      "max_pixels": 1,
+      "min_pixels": 0,
+      "range_m": 29.25
+     },
+     {
+      "max_pixels": 1,
+      "min_pixels": 0,
+      "range_m": 29.5
+     },
+     {
+      "max_pixels": 1,
+      "min_pixels": 0,
+      "range_m": 29.75
+     },
+     {
+      "max_pixels": 1,
+      "min_pixels": 0,
+      "range_m": 30.0
+     }
+    ]
+   }
+  },
+  {
+   "fixtures": {
+    "bar 1.5 m beyond prediction": {
+     "accepted_as_target": false,
+     "age_after": 1.0,
+     "measured_surface_m": 6.349999904632568
+    },
+    "bar at predicted range (no target)": {
+     "accepted_as_target": true,
+     "age_after": 0.0,
+     "measured_surface_m": 4.849999904632568
+    }
+   },
+   "name": "A6 LiDAR association identity (target-absent negative fixture)",
+   "negative_control_rejected": true,
+   "production_identity": {
+    "note": "range/bearing gate only; a compatible bar resets the track age as the target",
+    "status": "FAIL"
+   },
+   "proposed_correction": {
+    "note": "persistent identity needs appearance/re-ID evidence; otherwise label 'range association' and never claim identity",
+    "status": "NOT_TESTED"
+   }
+  },
+  {
+   "gate": "direction <= 0.5 px; centre range <= 0.0001 m",
+   "name": "A7 camera target measurement (production _detect_rgbd on analytic target-alone frames)",
+   "production_direction": {
+    "note": "pinhole intrinsics, camera_offset and vertical sign consistent",
+    "status": "PASS"
+   },
+   "production_range": {
+    "note": "mean surface depth + r over-estimates the centre range (A4)",
+    "status": "FAIL"
+   },
+   "rows": [
+    {
+     "case": "on-axis 5 m",
+     "direction_error_px": 0.003080329294414177,
+     "direction_error_px_if_offset_ignored": 0.5192110845891758,
+     "measured_vehicle_m": [
+      5.058461666107178,
+      0.0,
+      -0.0005391128361225128
+     ],
+     "pixels": 22,
+     "range_error_m": 0.05846387437734357,
+     "true_vehicle_m": [
+      5.0,
+      0.0,
+      0.0
+     ],
+     "visible": true
+    },
+    {
+     "case": "20 deg left, 6 m",
+     "direction_error_px": 0.09901056307263363,
+     "direction_error_px_if_offset_ignored": 0.6356989089681115,
+     "measured_vehicle_m": [
+      5.687707901000977,
+      2.0644805431365967,
+      -0.00441463477909565
+     ],
+     "pixels": 17,
+     "range_error_m": 0.05078521455743079,
+     "true_vehicle_m": [
+      5.638155724715451,
+      2.0521208599540124,
+      0.0
+     ],
+     "visible": true
+    },
+    {
+     "case": "15 deg right, 0.5 m up, 4 m",
+     "direction_error_px": 0.10206430839243469,
+     "direction_error_px_if_offset_ignored": 0.7747463644830768,
+     "measured_vehicle_m": [
+      3.9071877002716064,
+      -1.0509629249572754,
+      0.5023184418678284
+     ],
+     "pixels": 35,
+     "range_error_m": 0.04603713965820022,
+     "true_vehicle_m": [
+      3.8637033051562732,
+      -1.035276180410083,
+      0.5
+     ],
+     "visible": true
+    },
+    {
+     "case": "0.5 m below, 3 m",
+     "direction_error_px": 0.051277860475153675,
+     "direction_error_px_if_offset_ignored": 1.2651056462771082,
+     "measured_vehicle_m": [
+      3.0441038608551025,
+      0.0,
+      -0.5062099695205688
+     ],
+     "pixels": 56,
+     "range_error_m": 0.04450224998516106,
+     "true_vehicle_m": [
+      3.0,
+      0.0,
+      -0.5
+     ],
+     "visible": true
+    }
+   ]
+  }
+ ],
+ "environment": "OCC-P2 receipt",
+ "package": "EQ-1A sensor geometry (CPU, validation only)",
+ "schema": "motar.eq1a-geometry.v1",
+ "source": {
+  "files_sha256": {
+   "aerial_gym/config/sensor_config/lidar_config/navrl_lidar_config.py": "8892f6f04853290e44a0de578734dcd0617c45d71225bc8dd6735aad996f9697",
+   "aerial_gym/task/navrl_task/navrl_detector.py": "ff04a2dc410342079bd58333c53c571266a7f44c9864ef4e3f6910dd7f6312fa",
+   "aerial_gym/task/navrl_task/navrl_perception.py": "0b7f26aa9c12db5e528a3fe75aa28a146a9fbfb695dc8f988e7b172b11c3082f",
+   "motar_eval/occlusion_geometry.py": "1d3854a725858a65ffa881422d60b0d2332f89e88073e34987e035455e591e1c"
+  },
+  "head": "197b79414dddbd3bd3fcecb51f46ddc7677873ce",
+  "identical_to_measurement_source": true,
+  "measurement_source": "5ff285ad053f181c5a1c86dddb2462bb44e6327b"
+ }
+}

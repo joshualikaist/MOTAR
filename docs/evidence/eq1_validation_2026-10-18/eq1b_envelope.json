@@ -1,0 +1,3487 @@
+{
+ "cases": [
+  {
+   "config": {
+    "brake_mps2": 2.9608856678,
+    "fixed_cap_mps": 2.0,
+    "free_speed_cap_mps": 3.53553390593,
+    "hard_margin_m": 0.45,
+    "mode": "riskcap",
+    "reaction_s": 0.1,
+    "release_m": 5.0,
+    "slow_m": 3.0
+   },
+   "counterexample": {
+    "clearance_m": 0.1,
+    "clearance_needed_at_2mps_m": 1.3254735658152048,
+    "executed_mps": 2.0,
+    "requested_mps": 2.0,
+    "stopping_margin_executed_m": -0.8754735658152049
+   },
+   "grid": [
+    {
+     "fidelity_max_abs_m": 0.0,
+     "law": "riskcap",
+     "min_margin_m": -0.2688683914538012,
+     "negative_margin_clearance_m": [
+      0.0,
+      0.7000000000000001
+     ],
+     "requested_mps": 1.0
+    },
+    {
+     "fidelity_max_abs_m": 0.0,
+     "law": "stopcap",
+     "min_margin_m": -2.7755575615628914e-17,
+     "negative_margin_clearance_m": null,
+     "requested_mps": 1.0
+    },
+    {
+     "fidelity_max_abs_m": 0.0,
+     "law": "riskcap",
+     "min_margin_m": -0.8754735658152049,
+     "negative_margin_clearance_m": [
+      0.0,
+      1.3000000000000003
+     ],
+     "requested_mps": 2.0
+    },
+    {
+     "fidelity_max_abs_m": 0.0,
+     "law": "stopcap",
+     "min_margin_m": -2.220446049250313e-16,
+     "negative_margin_clearance_m": null,
+     "requested_mps": 2.0
+    },
+    {
+     "fidelity_max_abs_m": 0.0,
+     "law": "riskcap",
+     "min_margin_m": -0.8754735658152049,
+     "negative_margin_clearance_m": [
+      0.0,
+      1.3000000000000003
+     ],
+     "requested_mps": 2.5
+    },
+    {
+     "fidelity_max_abs_m": 0.0,
+     "law": "stopcap",
+     "min_margin_m": -2.220446049250313e-16,
+     "negative_margin_clearance_m": null,
+     "requested_mps": 2.5
+    },
+    {
+     "fidelity_max_abs_m": 0.0,
+     "law": "riskcap",
+     "min_margin_m": -0.8754735658152049,
+     "negative_margin_clearance_m": [
+      0.0,
+      1.3000000000000003
+     ],
+     "requested_mps": 3.53553390593
+    },
+    {
+     "fidelity_max_abs_m": 0.0,
+     "law": "stopcap",
+     "min_margin_m": -4.440892098500626e-16,
+     "negative_margin_clearance_m": null,
+     "requested_mps": 3.53553390593
+    }
+   ],
+   "implementation_fidelity": {
+    "note": "production margin equals the independent inequality",
+    "status": "PASS"
+   },
+   "independent_safe_speed_at_0.1m_mps": 0.0,
+   "name": "B5 riskcap braking law (production apply_speed_governor, receipt settings)",
+   "riskcap_nonnegative_margin": {
+    "note": "2 m/s floor: negative below 1.3255 m",
+    "status": "FAIL"
+   },
+   "stopcap_nonnegative_margin": {
+    "note": "existing production mode; never trained or evaluated with Policy F",
+    "status": "PASS"
+   },
+   "worst": {
+    "riskcap": [
+     -0.8754735658152049,
+     {
+      "clearance_m": 0.0,
+      "executed_mps": 2.0,
+      "requested_mps": 2.0
+     }
+    ],
+    "stopcap": [
+     -4.440892098500626e-16,
+     {
+      "clearance_m": 2.7,
+      "executed_mps": 3.3661039383291778,
+      "requested_mps": 3.53553390593
+     }
+    ]
+   }
+  },
+  {
+   "body_radius_for_travel_m": 0.20199009876724155,
+   "brake_mps2": {
+    "physical_45deg_bound": 9.806649999999998,
+    "riskcap_declared": 2.9608856678
+   },
+   "by_group_density": {
+    "all": {
+     "crash_final_1s": {
+      "counts": {
+       "frames": 18698,
+       "margin_gov_negative": 8645,
+       "margin_phys_negative": 4563,
+       "moving_frames": 18398,
+       "nearest_below_optimistic_body": 2,
+       "speed_xy_over_2p5": 1421,
+       "speed_xy_over_free_cap": 35,
+       "tilt_over_45": 277
+      },
+      "fractions": {
+       "margin_gov_negative": 0.46988803130775086,
+       "margin_phys_negative": 0.24801608870529404,
+       "nearest_below_optimistic_body": 0.00010696331158412665,
+       "speed_xy_over_2p5": 0.07599743288052198,
+       "speed_xy_over_free_cap": 0.0018718579527222162,
+       "tilt_over_45": 0.014814418654401541
+      },
+      "maxima": {
+       "speed_xy": [
+        4.785303951157134,
+        {
+         "cell": "E0_static__70bars__seed4305",
+         "env": 29,
+         "episode": 3,
+         "frame": 6,
+         "outcome": "crash"
+        }
+       ],
+       "tilt_deg": [
+        110.96794021478803,
+        {
+         "cell": "E2_obstacle_aware__160bars__seed4308",
+         "env": 28,
+         "episode": 2,
+         "frame": 6,
+         "outcome": "crash"
+        }
+       ]
+      },
+      "quantiles": {
+       "free_travel_m": {
+        "q1": 0.01,
+        "q5": 0.02,
+        "q50": 0.85,
+        "q95": 16.28,
+        "q99": 60.0,
+        "q99.9": 60.0
+       },
+       "margin_gov_m": {
+        "q1": -1.0900000000001047,
+        "q5": -0.8500000000001098,
+        "q50": 0.06999999999987061,
+        "q95": 15.499999999999542,
+        "q99": 19.999999999999446,
+        "q99.9": 19.999999999999446
+       },
+       "margin_phys_m": {
+        "q1": -0.43000000000011873,
+        "q5": -0.3600000000001202,
+        "q50": 0.49999999999986144,
+        "q95": 15.92999999999953,
+        "q99": 19.999999999999446,
+        "q99.9": 19.999999999999446
+       },
+       "nearest_surface_m": {
+        "q1": 0.17,
+        "q5": 0.22,
+        "q50": 0.76,
+        "q95": 1.54,
+        "q99": 1.95,
+        "q99.9": 2.7600000000000002
+       },
+       "speed_xy": {
+        "q1": 0.01,
+        "q5": 0.5,
+        "q50": 1.95,
+        "q95": 2.67,
+        "q99": 3.23,
+        "q99.9": 3.81
+       },
+       "speed_z": {
+        "q1": 0.01,
+        "q5": 0.01,
+        "q50": 0.14,
+        "q95": 0.47000000000000003,
+        "q99": 1.33,
+        "q99.9": 2.72
+       },
+       "tilt_deg": {
+        "q1": 0.1,
+        "q5": 1.4000000000000001,
+        "q50": 10.5,
+        "q95": 28.5,
+        "q99": 57.7,
+        "q99.9": 93.7
+       }
+      }
+     },
+     "normal": {
+      "counts": {
+       "frames": 2302287,
+       "margin_gov_negative": 9264,
+       "margin_phys_negative": 1695,
+       "moving_frames": 2228500,
+       "nearest_below_optimistic_body": 0,
+       "speed_xy_over_2p5": 1499516,
+       "speed_xy_over_free_cap": 171,
+       "tilt_over_45": 951
+      },
+      "fractions": {
+       "margin_gov_negative": 0.0041570563159075615,
+       "margin_phys_negative": 0.0007606013013237604,
+       "nearest_below_optimistic_body": 0.0,
+       "speed_xy_over_2p5": 0.6513158437675234,
+       "speed_xy_over_free_cap": 7.427397192443861e-05,
+       "tilt_over_45": 0.0004130675280710007
+      },
+      "maxima": {
+       "speed_xy": [
+        4.472017332511364,
+        {
+         "cell": "E0_static__70bars__seed4306",
+         "env": 36,
+         "episode": 2,
+         "frame": 16,
+         "outcome": "capture"
+        }
+       ],
+       "tilt_deg": [
+        90.95843666809331,
+        {
+         "cell": "E2_obstacle_aware__70bars__seed4303",
+         "env": 79,
+         "episode": 3,
+         "frame": 48,
+         "outcome": "capture"
+        }
+       ]
+      },
+      "quantiles": {
+       "free_travel_m": {
+        "q1": 1.06,
+        "q5": 2.18,
+        "q50": 10.5,
+        "q95": 60.0,
+        "q99": 60.0,
+        "q99.9": 60.0
+       },
+       "margin_gov_m": {
+        "q1": 0.2999999999998657,
+        "q5": 1.03999999999985,
+        "q50": 8.849999999999683,
+        "q95": 19.999999999999446,
+        "q99": 19.999999999999446,
+        "q99.9": 19.999999999999446
+       },
+       "margin_phys_m": {
+        "q1": 0.7699999999998557,
+        "q5": 1.7299999999998352,
+        "q50": 9.799999999999663,
+        "q95": 19.999999999999446,
+        "q99": 19.999999999999446,
+        "q99.9": 19.999999999999446
+       },
+       "nearest_surface_m": {
+        "q1": 0.37,
+        "q5": 0.55,
+        "q50": 1.37,
+        "q95": 3.19,
+        "q99": 4.3500000000000005,
+        "q99.9": 5.76
+       },
+       "speed_xy": {
+        "q1": 0.01,
+        "q5": 0.22,
+        "q50": 3.0100000000000002,
+        "q95": 3.41,
+        "q99": 3.43,
+        "q99.9": 3.46
+       },
+       "speed_z": {
+        "q1": 0.01,
+        "q5": 0.01,
+        "q50": 0.14,
+        "q95": 0.41000000000000003,
+        "q99": 0.54,
+        "q99.9": 0.74
+       },
+       "tilt_deg": {
+        "q1": 0.1,
+        "q5": 0.6000000000000001,
+        "q50": 7.300000000000001,
+        "q95": 27.5,
+        "q99": 32.800000000000004,
+        "q99.9": 40.5
+       }
+      }
+     },
+     "pre_crash_last": {
+      "counts": {
+       "frames": 1898,
+       "margin_gov_negative": 1849,
+       "margin_phys_negative": 1847,
+       "moving_frames": 1898,
+       "nearest_below_optimistic_body": 2,
+       "speed_xy_over_2p5": 68,
+       "speed_xy_over_free_cap": 12,
+       "tilt_over_45": 24
+      },
+      "fractions": {
+       "margin_gov_negative": 0.9741833508956796,
+       "margin_phys_negative": 0.9731296101159115,
+       "nearest_below_optimistic_body": 0.001053740779768177,
+       "speed_xy_over_2p5": 0.03582718651211802,
+       "speed_xy_over_free_cap": 0.006322444678609062,
+       "tilt_over_45": 0.012644889357218124
+      },
+      "maxima": {
+       "speed_xy": [
+        4.785303951157134,
+        {
+         "cell": "E0_static__70bars__seed4305",
+         "env": 29,
+         "episode": 3,
+         "frame": 6,
+         "outcome": "crash"
+        }
+       ],
+       "tilt_deg": [
+        89.88483758199105,
+        {
+         "cell": "E2_obstacle_aware__115bars__seed4313",
+         "env": 95,
+         "episode": 1,
+         "frame": 6,
+         "outcome": "crash"
+        }
+       ]
+      },
+      "quantiles": {
+       "free_travel_m": {
+        "q1": 0.01,
+        "q5": 0.01,
+        "q50": 0.03,
+        "q95": 0.15,
+        "q99": 16.92,
+        "q99.9": 60.0
+       },
+       "margin_gov_m": {
+        "q1": -1.4800000000000963,
+        "q5": -1.1100000000001042,
+        "q50": -0.7900000000001111,
+        "q95": -0.3000000000001215,
+        "q99": 16.729999999999514,
+        "q99.9": 19.999999999999446
+       },
+       "margin_phys_m": {
+        "q1": -0.6000000000001151,
+        "q5": -0.48000000000011767,
+        "q50": -0.35000000000012044,
+        "q95": -0.1400000000001249,
+        "q99": 16.809999999999512,
+        "q99.9": 19.999999999999446
+       },
+       "nearest_surface_m": {
+        "q1": 0.14,
+        "q5": 0.16,
+        "q50": 0.22,
+        "q95": 0.31,
+        "q99": 1.59,
+        "q99.9": 3.0500000000000003
+       },
+       "speed_xy": {
+        "q1": 0.8200000000000001,
+        "q5": 1.29,
+        "q50": 1.97,
+        "q95": 2.4,
+        "q99": 3.18,
+        "q99.9": 4.62
+       },
+       "speed_z": {
+        "q1": 0.01,
+        "q5": 0.02,
+        "q50": 0.16,
+        "q95": 0.6,
+        "q99": 2.52,
+        "q99.9": 3.74
+       },
+       "tilt_deg": {
+        "q1": 0.4,
+        "q5": 1.0,
+        "q50": 6.7,
+        "q95": 27.0,
+        "q99": 51.7,
+        "q99.9": 88.30000000000001
+       }
+      }
+     }
+    },
+    "moving/115": {
+     "crash_final_1s": {
+      "counts": {
+       "frames": 1781,
+       "margin_gov_negative": 832,
+       "margin_phys_negative": 431,
+       "moving_frames": 1766,
+       "nearest_below_optimistic_body": 0,
+       "speed_xy_over_2p5": 182,
+       "speed_xy_over_free_cap": 5,
+       "tilt_over_45": 37
+      },
+      "fractions": {
+       "margin_gov_negative": 0.4711211778029445,
+       "margin_phys_negative": 0.24405436013590034,
+       "nearest_below_optimistic_body": 0.0,
+       "speed_xy_over_2p5": 0.10218978102189781,
+       "speed_xy_over_free_cap": 0.002807411566535654,
+       "tilt_over_45": 0.020774845592363842
+      },
+      "maxima": {
+       "speed_xy": [
+        4.299509579224537,
+        {
+         "cell": "E2_obstacle_aware__115bars__seed4310",
+         "env": 89,
+         "episode": 1,
+         "frame": 5,
+         "outcome": "crash"
+        }
+       ],
+       "tilt_deg": [
+        100.75029929755576,
+        {
+         "cell": "E2_obstacle_aware__115bars__seed4313",
+         "env": 28,
+         "episode": 2,
+         "frame": 6,
+         "outcome": "crash"
+        }
+       ]
+      },
+      "quantiles": {
+       "free_travel_m": {
+        "q1": 0.01,
+        "q5": 0.01,
+        "q50": 0.96,
+        "q95": 60.0,
+        "q99": 60.0,
+        "q99.9": 60.0
+       },
+       "margin_gov_m": {
+        "q1": -1.070000000000105,
+        "q5": -0.8500000000001098,
+        "q50": 0.05999999999987082,
+        "q95": 19.999999999999446,
+        "q99": 19.999999999999446,
+        "q99.9": 19.999999999999446
+       },
+       "margin_phys_m": {
+        "q1": -0.43000000000011873,
+        "q5": -0.3600000000001202,
+        "q50": 0.5499999999998604,
+        "q95": 19.999999999999446,
+        "q99": 19.999999999999446,
+        "q99.9": 19.999999999999446
+       },
+       "nearest_surface_m": {
+        "q1": 0.17,
+        "q5": 0.21,
+        "q50": 0.78,
+        "q95": 1.6400000000000001,
+        "q99": 1.98,
+        "q99.9": 2.5100000000000002
+       },
+       "speed_xy": {
+        "q1": 0.15,
+        "q5": 0.85,
+        "q50": 1.99,
+        "q95": 2.82,
+        "q99": 3.33,
+        "q99.9": 3.77
+       },
+       "speed_z": {
+        "q1": 0.01,
+        "q5": 0.02,
+        "q50": 0.13,
+        "q95": 0.45,
+        "q99": 1.44,
+        "q99.9": 3.02
+       },
+       "tilt_deg": {
+        "q1": 0.30000000000000004,
+        "q5": 1.2000000000000002,
+        "q50": 9.8,
+        "q95": 28.8,
+        "q99": 68.0,
+        "q99.9": 100.5
+       }
+      }
+     },
+     "normal": {
+      "counts": {
+       "frames": 307494,
+       "margin_gov_negative": 1262,
+       "margin_phys_negative": 228,
+       "moving_frames": 298222,
+       "nearest_below_optimistic_body": 0,
+       "speed_xy_over_2p5": 201721,
+       "speed_xy_over_free_cap": 23,
+       "tilt_over_45": 99
+      },
+      "fractions": {
+       "margin_gov_negative": 0.004231746819483472,
+       "margin_phys_negative": 0.0007645311211111186,
+       "nearest_below_optimistic_body": 0.0,
+       "speed_xy_over_2p5": 0.6560160523457368,
+       "speed_xy_over_free_cap": 7.479820744469811e-05,
+       "tilt_over_45": 0.0003219575016097875
+      },
+      "maxima": {
+       "speed_xy": [
+        3.6772131146189695,
+        {
+         "cell": "E2_obstacle_aware__115bars__seed4312",
+         "env": 102,
+         "episode": 1,
+         "frame": 15,
+         "outcome": "capture"
+        }
+       ],
+       "tilt_deg": [
+        68.62194163907357,
+        {
+         "cell": "E2_obstacle_aware__115bars__seed4309",
+         "env": 119,
+         "episode": 1,
+         "frame": 4,
+         "outcome": "capture"
+        }
+       ]
+      },
+      "quantiles": {
+       "free_travel_m": {
+        "q1": 1.1,
+        "q5": 2.2800000000000002,
+        "q50": 11.38,
+        "q95": 60.0,
+        "q99": 60.0,
+        "q99.9": 60.0
+       },
+       "margin_gov_m": {
+        "q1": 0.2999999999998657,
+        "q5": 1.0699999999998493,
+        "q50": 9.749999999999664,
+        "q95": 19.999999999999446,
+        "q99": 19.999999999999446,
+        "q99.9": 19.999999999999446
+       },
+       "margin_phys_m": {
+        "q1": 0.7799999999998555,
+        "q5": 1.7999999999998337,
+        "q50": 10.689999999999642,
+        "q95": 19.999999999999446,
+        "q99": 19.999999999999446,
+        "q99.9": 19.999999999999446
+       },
+       "nearest_surface_m": {
+        "q1": 0.38,
+        "q5": 0.5700000000000001,
+        "q50": 1.46,
+        "q95": 3.0100000000000002,
+        "q99": 3.77,
+        "q99.9": 4.66
+       },
+       "speed_xy": {
+        "q1": 0.01,
+        "q5": 0.24,
+        "q50": 3.02,
+        "q95": 3.41,
+        "q99": 3.43,
+        "q99.9": 3.47
+       },
+       "speed_z": {
+        "q1": 0.01,
+        "q5": 0.01,
+        "q50": 0.14,
+        "q95": 0.4,
+        "q99": 0.53,
+        "q99.9": 0.71
+       },
+       "tilt_deg": {
+        "q1": 0.1,
+        "q5": 0.7000000000000001,
+        "q50": 7.9,
+        "q95": 27.700000000000003,
+        "q99": 33.1,
+        "q99.9": 40.0
+       }
+      }
+     },
+     "pre_crash_last": {
+      "counts": {
+       "frames": 180,
+       "margin_gov_negative": 174,
+       "margin_phys_negative": 173,
+       "moving_frames": 180,
+       "nearest_below_optimistic_body": 0,
+       "speed_xy_over_2p5": 4,
+       "speed_xy_over_free_cap": 0,
+       "tilt_over_45": 4
+      },
+      "fractions": {
+       "margin_gov_negative": 0.9666666666666667,
+       "margin_phys_negative": 0.9611111111111111,
+       "nearest_below_optimistic_body": 0.0,
+       "speed_xy_over_2p5": 0.022222222222222223,
+       "speed_xy_over_free_cap": 0.0,
+       "tilt_over_45": 0.022222222222222223
+      },
+      "maxima": {
+       "speed_xy": [
+        2.815120443808095,
+        {
+         "cell": "E2_obstacle_aware__115bars__seed4310",
+         "env": 89,
+         "episode": 1,
+         "frame": 10,
+         "outcome": "crash"
+        }
+       ],
+       "tilt_deg": [
+        89.88483758199105,
+        {
+         "cell": "E2_obstacle_aware__115bars__seed4313",
+         "env": 95,
+         "episode": 1,
+         "frame": 6,
+         "outcome": "crash"
+        }
+       ]
+      },
+      "quantiles": {
+       "free_travel_m": {
+        "q1": 0.01,
+        "q5": 0.01,
+        "q50": 0.02,
+        "q95": 0.15,
+        "q99": 20.91,
+        "q99.9": 60.0
+       },
+       "margin_gov_m": {
+        "q1": -1.2700000000001008,
+        "q5": -1.0800000000001049,
+        "q50": -0.8100000000001106,
+        "q95": -0.2900000000001217,
+        "q99": 19.999999999999446,
+        "q99.9": 19.999999999999446
+       },
+       "margin_phys_m": {
+        "q1": -0.5200000000001168,
+        "q5": -0.4700000000001179,
+        "q50": -0.35000000000012044,
+        "q95": -0.1400000000001249,
+        "q99": 19.999999999999446,
+        "q99.9": 19.999999999999446
+       },
+       "nearest_surface_m": {
+        "q1": 0.15,
+        "q5": 0.16,
+        "q50": 0.21,
+        "q95": 0.32,
+        "q99": 1.6500000000000001,
+        "q99.9": 2.02
+       },
+       "speed_xy": {
+        "q1": 0.98,
+        "q5": 1.3,
+        "q50": 1.97,
+        "q95": 2.35,
+        "q99": 2.74,
+        "q99.9": 2.82
+       },
+       "speed_z": {
+        "q1": 0.01,
+        "q5": 0.02,
+        "q50": 0.13,
+        "q95": 0.53,
+        "q99": 3.02,
+        "q99.9": 3.06
+       },
+       "tilt_deg": {
+        "q1": 0.4,
+        "q5": 0.7000000000000001,
+        "q50": 7.4,
+        "q95": 25.700000000000003,
+        "q99": 88.30000000000001,
+        "q99.9": 89.9
+       }
+      }
+     }
+    },
+    "moving/160": {
+     "crash_final_1s": {
+      "counts": {
+       "frames": 3870,
+       "margin_gov_negative": 1771,
+       "margin_phys_negative": 936,
+       "moving_frames": 3813,
+       "nearest_below_optimistic_body": 0,
+       "speed_xy_over_2p5": 324,
+       "speed_xy_over_free_cap": 8,
+       "tilt_over_45": 62
+      },
+      "fractions": {
+       "margin_gov_negative": 0.4644636768948335,
+       "margin_phys_negative": 0.24547600314712825,
+       "nearest_below_optimistic_body": 0.0,
+       "speed_xy_over_2p5": 0.08372093023255814,
+       "speed_xy_over_free_cap": 0.0020671834625322996,
+       "tilt_over_45": 0.016020671834625324
+      },
+      "maxima": {
+       "speed_xy": [
+        4.672255685010126,
+        {
+         "cell": "E2_obstacle_aware__160bars__seed4301",
+         "env": 87,
+         "episode": 1,
+         "frame": 6,
+         "outcome": "crash"
+        }
+       ],
+       "tilt_deg": [
+        110.96794021478803,
+        {
+         "cell": "E2_obstacle_aware__160bars__seed4308",
+         "env": 28,
+         "episode": 2,
+         "frame": 6,
+         "outcome": "crash"
+        }
+       ]
+      },
+      "quantiles": {
+       "free_travel_m": {
+        "q1": 0.01,
+        "q5": 0.02,
+        "q50": 0.85,
+        "q95": 16.38,
+        "q99": 60.0,
+        "q99.9": 60.0
+       },
+       "margin_gov_m": {
+        "q1": -1.0900000000001047,
+        "q5": -0.8500000000001098,
+        "q50": 0.08999999999987018,
+        "q95": 14.989999999999554,
+        "q99": 19.999999999999446,
+        "q99.9": 19.999999999999446
+       },
+       "margin_phys_m": {
+        "q1": -0.43000000000011873,
+        "q5": -0.35000000000012044,
+        "q50": 0.519999999999861,
+        "q95": 16.01999999999953,
+        "q99": 19.999999999999446,
+        "q99.9": 19.999999999999446
+       },
+       "nearest_surface_m": {
+        "q1": 0.17,
+        "q5": 0.22,
+        "q50": 0.75,
+        "q95": 1.57,
+        "q99": 1.9000000000000001,
+        "q99.9": 2.44
+       },
+       "speed_xy": {
+        "q1": 0.01,
+        "q5": 0.56,
+        "q50": 1.94,
+        "q95": 2.71,
+        "q99": 3.29,
+        "q99.9": 4.13
+       },
+       "speed_z": {
+        "q1": 0.01,
+        "q5": 0.01,
+        "q50": 0.14,
+        "q95": 0.47000000000000003,
+        "q99": 1.83,
+        "q99.9": 3.27
+       },
+       "tilt_deg": {
+        "q1": 0.1,
+        "q5": 1.4000000000000001,
+        "q50": 10.8,
+        "q95": 28.900000000000002,
+        "q99": 58.900000000000006,
+        "q99.9": 101.60000000000001
+       }
+      }
+     },
+     "normal": {
+      "counts": {
+       "frames": 316517,
+       "margin_gov_negative": 2068,
+       "margin_phys_negative": 348,
+       "moving_frames": 307253,
+       "nearest_below_optimistic_body": 0,
+       "speed_xy_over_2p5": 191941,
+       "speed_xy_over_free_cap": 30,
+       "tilt_over_45": 150
+      },
+      "fractions": {
+       "margin_gov_negative": 0.006730609627896229,
+       "margin_phys_negative": 0.0011326170940560386,
+       "nearest_below_optimistic_body": 0.0,
+       "speed_xy_over_2p5": 0.6064160850759991,
+       "speed_xy_over_free_cap": 9.478163890091211e-05,
+       "tilt_over_45": 0.00047390819450456056
+      },
+      "maxima": {
+       "speed_xy": [
+        3.921989637982047,
+        {
+         "cell": "E2_obstacle_aware__160bars__seed4305",
+         "env": 36,
+         "episode": 2,
+         "frame": 11,
+         "outcome": "capture"
+        }
+       ],
+       "tilt_deg": [
+        87.93792834414724,
+        {
+         "cell": "E2_obstacle_aware__160bars__seed4310",
+         "env": 119,
+         "episode": 0,
+         "frame": 68,
+         "outcome": "capture"
+        }
+       ]
+      },
+      "quantiles": {
+       "free_travel_m": {
+        "q1": 0.9,
+        "q5": 1.86,
+        "q50": 8.56,
+        "q95": 60.0,
+        "q99": 60.0,
+        "q99.9": 60.0
+       },
+       "margin_gov_m": {
+        "q1": 0.12999999999986933,
+        "q5": 0.8299999999998544,
+        "q50": 6.959999999999724,
+        "q95": 19.999999999999446,
+        "q99": 19.999999999999446,
+        "q99.9": 19.999999999999446
+       },
+       "margin_phys_m": {
+        "q1": 0.5999999999998593,
+        "q5": 1.4399999999998414,
+        "q50": 7.889999999999704,
+        "q95": 19.999999999999446,
+        "q99": 19.999999999999446,
+        "q99.9": 19.999999999999446
+       },
+       "nearest_surface_m": {
+        "q1": 0.35000000000000003,
+        "q5": 0.51,
+        "q50": 1.22,
+        "q95": 2.41,
+        "q99": 2.98,
+        "q99.9": 3.64
+       },
+       "speed_xy": {
+        "q1": 0.01,
+        "q5": 0.26,
+        "q50": 2.84,
+        "q95": 3.41,
+        "q99": 3.43,
+        "q99.9": 3.46
+       },
+       "speed_z": {
+        "q1": 0.01,
+        "q5": 0.01,
+        "q50": 0.14,
+        "q95": 0.4,
+        "q99": 0.54,
+        "q99.9": 0.79
+       },
+       "tilt_deg": {
+        "q1": 0.1,
+        "q5": 0.8,
+        "q50": 8.6,
+        "q95": 27.400000000000002,
+        "q99": 33.2,
+        "q99.9": 41.1
+       }
+      }
+     },
+     "pre_crash_last": {
+      "counts": {
+       "frames": 393,
+       "margin_gov_negative": 381,
+       "margin_phys_negative": 381,
+       "moving_frames": 393,
+       "nearest_below_optimistic_body": 0,
+       "speed_xy_over_2p5": 17,
+       "speed_xy_over_free_cap": 4,
+       "tilt_over_45": 7
+      },
+      "fractions": {
+       "margin_gov_negative": 0.9694656488549618,
+       "margin_phys_negative": 0.9694656488549618,
+       "nearest_below_optimistic_body": 0.0,
+       "speed_xy_over_2p5": 0.043256997455470736,
+       "speed_xy_over_free_cap": 0.010178117048346057,
+       "tilt_over_45": 0.017811704834605598
+      },
+      "maxima": {
+       "speed_xy": [
+        4.339187152228235,
+        {
+         "cell": "E2_obstacle_aware__160bars__seed4301",
+         "env": 87,
+         "episode": 1,
+         "frame": 7,
+         "outcome": "crash"
+        }
+       ],
+       "tilt_deg": [
+        78.734673692205,
+        {
+         "cell": "E2_obstacle_aware__160bars__seed4310",
+         "env": 57,
+         "episode": 3,
+         "frame": 7,
+         "outcome": "crash"
+        }
+       ]
+      },
+      "quantiles": {
+       "free_travel_m": {
+        "q1": 0.01,
+        "q5": 0.01,
+        "q50": 0.03,
+        "q95": 0.14,
+        "q99": 10.76,
+        "q99.9": 60.0
+       },
+       "margin_gov_m": {
+        "q1": -1.590000000000094,
+        "q5": -1.1300000000001038,
+        "q50": -0.7800000000001113,
+        "q95": -0.20000000000012363,
+        "q99": 8.499999999999691,
+        "q99.9": 19.999999999999446
+       },
+       "margin_phys_m": {
+        "q1": -0.6400000000001143,
+        "q5": -0.4600000000001181,
+        "q50": -0.34000000000012065,
+        "q95": -0.10000000000012577,
+        "q99": 9.839999999999662,
+        "q99.9": 19.999999999999446
+       },
+       "nearest_surface_m": {
+        "q1": 0.15,
+        "q5": 0.16,
+        "q50": 0.22,
+        "q95": 0.32,
+        "q99": 1.3800000000000001,
+        "q99.9": 2.57
+       },
+       "speed_xy": {
+        "q1": 0.43,
+        "q5": 1.1500000000000001,
+        "q50": 1.97,
+        "q95": 2.48,
+        "q99": 3.7,
+        "q99.9": 4.34
+       },
+       "speed_z": {
+        "q1": 0.01,
+        "q5": 0.02,
+        "q50": 0.17,
+        "q95": 0.68,
+        "q99": 3.24,
+        "q99.9": 4.32
+       },
+       "tilt_deg": {
+        "q1": 0.4,
+        "q5": 1.0,
+        "q50": 7.0,
+        "q95": 29.200000000000003,
+        "q99": 69.10000000000001,
+        "q99.9": 78.80000000000001
+       }
+      }
+     }
+    },
+    "moving/205": {
+     "crash_final_1s": {
+      "counts": {
+       "frames": 6412,
+       "margin_gov_negative": 3013,
+       "margin_phys_negative": 1578,
+       "moving_frames": 6339,
+       "nearest_below_optimistic_body": 2,
+       "speed_xy_over_2p5": 504,
+       "speed_xy_over_free_cap": 4,
+       "tilt_over_45": 47
+      },
+      "fractions": {
+       "margin_gov_negative": 0.47531156333806596,
+       "margin_phys_negative": 0.2489351632749645,
+       "nearest_below_optimistic_body": 0.00031191515907673113,
+       "speed_xy_over_2p5": 0.07860262008733625,
+       "speed_xy_over_free_cap": 0.0006238303181534623,
+       "tilt_over_45": 0.007330006238303182
+      },
+      "maxima": {
+       "speed_xy": [
+        4.6182934019972635,
+        {
+         "cell": "E2_obstacle_aware__205bars__seed4308",
+         "env": 126,
+         "episode": 1,
+         "frame": 6,
+         "outcome": "crash"
+        }
+       ],
+       "tilt_deg": [
+        106.97895469490363,
+        {
+         "cell": "E2_obstacle_aware__205bars__seed4308",
+         "env": 119,
+         "episode": 3,
+         "frame": 5,
+         "outcome": "crash"
+        }
+       ]
+      },
+      "quantiles": {
+       "free_travel_m": {
+        "q1": 0.01,
+        "q5": 0.01,
+        "q50": 0.85,
+        "q95": 12.17,
+        "q99": 60.0,
+        "q99.9": 60.0
+       },
+       "margin_gov_m": {
+        "q1": -1.0400000000001057,
+        "q5": -0.84000000000011,
+        "q50": 0.05999999999987082,
+        "q95": 11.679999999999623,
+        "q99": 19.999999999999446,
+        "q99.9": 19.999999999999446
+       },
+       "margin_phys_m": {
+        "q1": -0.42000000000011894,
+        "q5": -0.35000000000012044,
+        "q50": 0.48999999999986166,
+        "q95": 11.789999999999623,
+        "q99": 19.999999999999446,
+        "q99.9": 19.999999999999446
+       },
+       "nearest_surface_m": {
+        "q1": 0.17,
+        "q5": 0.21,
+        "q50": 0.71,
+        "q95": 1.42,
+        "q99": 1.77,
+        "q99.9": 2.42
+       },
+       "speed_xy": {
+        "q1": 0.07,
+        "q5": 0.71,
+        "q50": 1.95,
+        "q95": 2.68,
+        "q99": 3.16,
+        "q99.9": 3.44
+       },
+       "speed_z": {
+        "q1": 0.01,
+        "q5": 0.02,
+        "q50": 0.14,
+        "q95": 0.41000000000000003,
+        "q99": 0.72,
+        "q99.9": 2.23
+       },
+       "tilt_deg": {
+        "q1": 0.2,
+        "q5": 1.3,
+        "q50": 9.8,
+        "q95": 27.700000000000003,
+        "q99": 38.800000000000004,
+        "q99.9": 82.5
+       }
+      }
+     },
+     "normal": {
+      "counts": {
+       "frames": 332517,
+       "margin_gov_negative": 3020,
+       "margin_phys_negative": 584,
+       "moving_frames": 323274,
+       "nearest_below_optimistic_body": 0,
+       "speed_xy_over_2p5": 181665,
+       "speed_xy_over_free_cap": 22,
+       "tilt_over_45": 151
+      },
+      "fractions": {
+       "margin_gov_negative": 0.009341920476128609,
+       "margin_phys_negative": 0.0018065170722050025,
+       "nearest_below_optimistic_body": 0.0,
+       "speed_xy_over_2p5": 0.5463329694421638,
+       "speed_xy_over_free_cap": 6.616203081346217e-05,
+       "tilt_over_45": 0.00045411212058330853
+      },
+      "maxima": {
+       "speed_xy": [
+        4.1310246500482455,
+        {
+         "cell": "E2_obstacle_aware__205bars__seed4307",
+         "env": 27,
+         "episode": 1,
+         "frame": 5,
+         "outcome": "capture"
+        }
+       ],
+       "tilt_deg": [
+        86.29086236208578,
+        {
+         "cell": "E2_obstacle_aware__205bars__seed4307",
+         "env": 86,
+         "episode": 3,
+         "frame": 33,
+         "outcome": "capture"
+        }
+       ]
+      },
+      "quantiles": {
+       "free_travel_m": {
+        "q1": 0.79,
+        "q5": 1.58,
+        "q50": 6.84,
+        "q95": 60.0,
+        "q99": 60.0,
+        "q99.9": 60.0
+       },
+       "margin_gov_m": {
+        "q1": 0.029999999999871463,
+        "q5": 0.6699999999998578,
+        "q50": 5.349999999999758,
+        "q95": 19.999999999999446,
+        "q99": 19.999999999999446,
+        "q99.9": 19.999999999999446
+       },
+       "margin_phys_m": {
+        "q1": 0.47999999999986187,
+        "q5": 1.1999999999998465,
+        "q50": 6.20999999999974,
+        "q95": 19.999999999999446,
+        "q99": 19.999999999999446,
+        "q99.9": 19.999999999999446
+       },
+       "nearest_surface_m": {
+        "q1": 0.32,
+        "q5": 0.46,
+        "q50": 1.06,
+        "q95": 2.02,
+        "q99": 2.49,
+        "q99.9": 3.0700000000000003
+       },
+       "speed_xy": {
+        "q1": 0.01,
+        "q5": 0.28,
+        "q50": 2.64,
+        "q95": 3.4,
+        "q99": 3.43,
+        "q99.9": 3.47
+       },
+       "speed_z": {
+        "q1": 0.01,
+        "q5": 0.01,
+        "q50": 0.14,
+        "q95": 0.41000000000000003,
+        "q99": 0.55,
+        "q99.9": 0.86
+       },
+       "tilt_deg": {
+        "q1": 0.1,
+        "q5": 1.0,
+        "q50": 9.0,
+        "q95": 27.0,
+        "q99": 33.0,
+        "q99.9": 41.300000000000004
+       }
+      }
+     },
+     "pre_crash_last": {
+      "counts": {
+       "frames": 649,
+       "margin_gov_negative": 640,
+       "margin_phys_negative": 640,
+       "moving_frames": 649,
+       "nearest_below_optimistic_body": 2,
+       "speed_xy_over_2p5": 19,
+       "speed_xy_over_free_cap": 2,
+       "tilt_over_45": 5
+      },
+      "fractions": {
+       "margin_gov_negative": 0.9861325115562404,
+       "margin_phys_negative": 0.9861325115562404,
+       "nearest_below_optimistic_body": 0.0030816640986132513,
+       "speed_xy_over_2p5": 0.029275808936825885,
+       "speed_xy_over_free_cap": 0.0030816640986132513,
+       "tilt_over_45": 0.007704160246533128
+      },
+      "maxima": {
+       "speed_xy": [
+        4.6182934019972635,
+        {
+         "cell": "E2_obstacle_aware__205bars__seed4308",
+         "env": 126,
+         "episode": 1,
+         "frame": 6,
+         "outcome": "crash"
+        }
+       ],
+       "tilt_deg": [
+        85.86123950238687,
+        {
+         "cell": "E2_obstacle_aware__205bars__seed4308",
+         "env": 119,
+         "episode": 3,
+         "frame": 6,
+         "outcome": "crash"
+        }
+       ]
+      },
+      "quantiles": {
+       "free_travel_m": {
+        "q1": 0.01,
+        "q5": 0.01,
+        "q50": 0.02,
+        "q95": 0.13,
+        "q99": 5.8500000000000005,
+        "q99.9": 60.0
+       },
+       "margin_gov_m": {
+        "q1": -1.540000000000095,
+        "q5": -1.0800000000001049,
+        "q50": -0.7900000000001111,
+        "q95": -0.33000000000012086,
+        "q99": 4.77999999999977,
+        "q99.9": 19.999999999999446
+       },
+       "margin_phys_m": {
+        "q1": -0.6000000000001151,
+        "q5": -0.4600000000001181,
+        "q50": -0.34000000000012065,
+        "q95": -0.1500000000001247,
+        "q99": 5.389999999999757,
+        "q99.9": 19.999999999999446
+       },
+       "nearest_surface_m": {
+        "q1": 0.14,
+        "q5": 0.16,
+        "q50": 0.22,
+        "q95": 0.3,
+        "q99": 1.1300000000000001,
+        "q99.9": 2.39
+       },
+       "speed_xy": {
+        "q1": 0.8200000000000001,
+        "q5": 1.26,
+        "q50": 1.96,
+        "q95": 2.34,
+        "q99": 3.16,
+        "q99.9": 4.62
+       },
+       "speed_z": {
+        "q1": 0.01,
+        "q5": 0.02,
+        "q50": 0.15,
+        "q95": 0.5,
+        "q99": 1.31,
+        "q99.9": 3.74
+       },
+       "tilt_deg": {
+        "q1": 0.30000000000000004,
+        "q5": 0.8,
+        "q50": 6.2,
+        "q95": 27.3,
+        "q99": 39.5,
+        "q99.9": 85.9
+       }
+      }
+     }
+    },
+    "moving/70": {
+     "crash_final_1s": {
+      "counts": {
+       "frames": 1021,
+       "margin_gov_negative": 487,
+       "margin_phys_negative": 243,
+       "moving_frames": 1006,
+       "nearest_below_optimistic_body": 0,
+       "speed_xy_over_2p5": 123,
+       "speed_xy_over_free_cap": 3,
+       "tilt_over_45": 24
+      },
+      "fractions": {
+       "margin_gov_negative": 0.4840954274353877,
+       "margin_phys_negative": 0.2415506958250497,
+       "nearest_below_optimistic_body": 0.0,
+       "speed_xy_over_2p5": 0.12047012732615084,
+       "speed_xy_over_free_cap": 0.002938295788442703,
+       "tilt_over_45": 0.023506366307541625
+      },
+      "maxima": {
+       "speed_xy": [
+        3.8599430352899784,
+        {
+         "cell": "E2_obstacle_aware__70bars__seed4307",
+         "env": 49,
+         "episode": 1,
+         "frame": 6,
+         "outcome": "crash"
+        }
+       ],
+       "tilt_deg": [
+        90.75115869191042,
+        {
+         "cell": "E2_obstacle_aware__70bars__seed4307",
+         "env": 49,
+         "episode": 1,
+         "frame": 3,
+         "outcome": "crash"
+        }
+       ]
+      },
+      "quantiles": {
+       "free_travel_m": {
+        "q1": 0.01,
+        "q5": 0.01,
+        "q50": 0.93,
+        "q95": 60.0,
+        "q99": 60.0,
+        "q99.9": 60.0
+       },
+       "margin_gov_m": {
+        "q1": -0.9900000000001068,
+        "q5": -0.8600000000001096,
+        "q50": 0.03999999999987125,
+        "q95": 19.999999999999446,
+        "q99": 19.999999999999446,
+        "q99.9": 19.999999999999446
+       },
+       "margin_phys_m": {
+        "q1": -0.42000000000011894,
+        "q5": -0.37000000000012,
+        "q50": 0.5599999999998602,
+        "q95": 19.999999999999446,
+        "q99": 19.999999999999446,
+        "q99.9": 19.999999999999446
+       },
+       "nearest_surface_m": {
+        "q1": 0.15,
+        "q5": 0.21,
+        "q50": 0.75,
+        "q95": 1.95,
+        "q99": 3.16,
+        "q99.9": 6.04
+       },
+       "speed_xy": {
+        "q1": 0.01,
+        "q5": 0.55,
+        "q50": 2.0,
+        "q95": 2.91,
+        "q99": 3.27,
+        "q99.9": 3.86
+       },
+       "speed_z": {
+        "q1": 0.01,
+        "q5": 0.01,
+        "q50": 0.13,
+        "q95": 0.46,
+        "q99": 1.75,
+        "q99.9": 2.63
+       },
+       "tilt_deg": {
+        "q1": 0.1,
+        "q5": 1.4000000000000001,
+        "q50": 8.700000000000001,
+        "q95": 31.900000000000002,
+        "q99": 67.60000000000001,
+        "q99.9": 87.9
+       }
+      }
+     },
+     "normal": {
+      "counts": {
+       "frames": 288123,
+       "margin_gov_negative": 651,
+       "margin_phys_negative": 112,
+       "moving_frames": 279044,
+       "nearest_below_optimistic_body": 0,
+       "speed_xy_over_2p5": 203500,
+       "speed_xy_over_free_cap": 17,
+       "tilt_over_45": 118
+      },
+      "fractions": {
+       "margin_gov_negative": 0.0023329654104729002,
+       "margin_phys_negative": 0.00040137039319963877,
+       "nearest_below_optimistic_body": 0.0,
+       "speed_xy_over_2p5": 0.706295575153667,
+       "speed_xy_over_free_cap": 5.9002578759765795e-05,
+       "tilt_over_45": 0.0004095473113913155
+      },
+      "maxima": {
+       "speed_xy": [
+        4.141136027525656,
+        {
+         "cell": "E2_obstacle_aware__70bars__seed4303",
+         "env": 79,
+         "episode": 3,
+         "frame": 51,
+         "outcome": "capture"
+        }
+       ],
+       "tilt_deg": [
+        90.95843666809331,
+        {
+         "cell": "E2_obstacle_aware__70bars__seed4303",
+         "env": 79,
+         "episode": 3,
+         "frame": 48,
+         "outcome": "capture"
+        }
+       ]
+      },
+      "quantiles": {
+       "free_travel_m": {
+        "q1": 1.47,
+        "q5": 3.21,
+        "q50": 19.240000000000002,
+        "q95": 60.0,
+        "q99": 60.0,
+        "q99.9": 60.0
+       },
+       "margin_gov_m": {
+        "q1": 0.5499999999998604,
+        "q5": 1.6799999999998363,
+        "q50": 17.529999999999497,
+        "q95": 19.999999999999446,
+        "q99": 19.999999999999446,
+        "q99.9": 19.999999999999446
+       },
+       "margin_phys_m": {
+        "q1": 1.0899999999998489,
+        "q5": 2.589999999999817,
+        "q50": 18.519999999999477,
+        "q95": 19.999999999999446,
+        "q99": 19.999999999999446,
+        "q99.9": 19.999999999999446
+       },
+       "nearest_surface_m": {
+        "q1": 0.43,
+        "q5": 0.68,
+        "q50": 1.94,
+        "q95": 4.13,
+        "q99": 5.22,
+        "q99.9": 6.53
+       },
+       "speed_xy": {
+        "q1": 0.01,
+        "q5": 0.23,
+        "q50": 3.18,
+        "q95": 3.41,
+        "q99": 3.43,
+        "q99.9": 3.46
+       },
+       "speed_z": {
+        "q1": 0.01,
+        "q5": 0.01,
+        "q50": 0.14,
+        "q95": 0.4,
+        "q99": 0.53,
+        "q99.9": 0.7000000000000001
+       },
+       "tilt_deg": {
+        "q1": 0.1,
+        "q5": 0.5,
+        "q50": 6.800000000000001,
+        "q95": 28.0,
+        "q99": 33.0,
+        "q99.9": 40.1
+       }
+      }
+     },
+     "pre_crash_last": {
+      "counts": {
+       "frames": 104,
+       "margin_gov_negative": 99,
+       "margin_phys_negative": 99,
+       "moving_frames": 104,
+       "nearest_below_optimistic_body": 0,
+       "speed_xy_over_2p5": 3,
+       "speed_xy_over_free_cap": 2,
+       "tilt_over_45": 2
+      },
+      "fractions": {
+       "margin_gov_negative": 0.9519230769230769,
+       "margin_phys_negative": 0.9519230769230769,
+       "nearest_below_optimistic_body": 0.0,
+       "speed_xy_over_2p5": 0.028846153846153848,
+       "speed_xy_over_free_cap": 0.019230769230769232,
+       "tilt_over_45": 0.019230769230769232
+      },
+      "maxima": {
+       "speed_xy": [
+        3.8599430352899784,
+        {
+         "cell": "E2_obstacle_aware__70bars__seed4307",
+         "env": 49,
+         "episode": 1,
+         "frame": 6,
+         "outcome": "crash"
+        }
+       ],
+       "tilt_deg": [
+        73.44009798470714,
+        {
+         "cell": "E2_obstacle_aware__70bars__seed4304",
+         "env": 63,
+         "episode": 2,
+         "frame": 6,
+         "outcome": "crash"
+        }
+       ]
+      },
+      "quantiles": {
+       "free_travel_m": {
+        "q1": 0.01,
+        "q5": 0.01,
+        "q50": 0.01,
+        "q95": 0.16,
+        "q99": 30.05,
+        "q99.9": 60.0
+       },
+       "margin_gov_m": {
+        "q1": -1.0900000000001047,
+        "q5": -1.0100000000001064,
+        "q50": -0.8300000000001102,
+        "q95": -0.11000000000012555,
+        "q99": 19.999999999999446,
+        "q99.9": 19.999999999999446
+       },
+       "margin_phys_m": {
+        "q1": -0.49000000000011745,
+        "q5": -0.4400000000001185,
+        "q50": -0.3600000000001202,
+        "q95": -0.06000000000012662,
+        "q99": 19.999999999999446,
+        "q99.9": 19.999999999999446
+       },
+       "nearest_surface_m": {
+        "q1": 0.14,
+        "q5": 0.15,
+        "q50": 0.21,
+        "q95": 0.3,
+        "q99": 2.62,
+        "q99.9": 5.2
+       },
+       "speed_xy": {
+        "q1": 0.81,
+        "q5": 1.23,
+        "q50": 1.99,
+        "q95": 2.31,
+        "q99": 3.81,
+        "q99.9": 3.86
+       },
+       "speed_z": {
+        "q1": 0.01,
+        "q5": 0.02,
+        "q50": 0.15,
+        "q95": 0.68,
+        "q99": 2.43,
+        "q99.9": 2.86
+       },
+       "tilt_deg": {
+        "q1": 0.9,
+        "q5": 1.2000000000000002,
+        "q50": 6.300000000000001,
+        "q95": 29.1,
+        "q99": 67.60000000000001,
+        "q99.9": 73.5
+       }
+      }
+     }
+    },
+    "moving/all": {
+     "crash_final_1s": {
+      "counts": {
+       "frames": 13084,
+       "margin_gov_negative": 6103,
+       "margin_phys_negative": 3188,
+       "moving_frames": 12924,
+       "nearest_below_optimistic_body": 2,
+       "speed_xy_over_2p5": 1133,
+       "speed_xy_over_free_cap": 20,
+       "tilt_over_45": 170
+      },
+      "fractions": {
+       "margin_gov_negative": 0.4722222222222222,
+       "margin_phys_negative": 0.24667285670071185,
+       "nearest_below_optimistic_body": 0.0001528584530724549,
+       "speed_xy_over_2p5": 0.08659431366554571,
+       "speed_xy_over_free_cap": 0.001528584530724549,
+       "tilt_over_45": 0.012992968511158666
+      },
+      "maxima": {
+       "speed_xy": [
+        4.672255685010126,
+        {
+         "cell": "E2_obstacle_aware__160bars__seed4301",
+         "env": 87,
+         "episode": 1,
+         "frame": 6,
+         "outcome": "crash"
+        }
+       ],
+       "tilt_deg": [
+        110.96794021478803,
+        {
+         "cell": "E2_obstacle_aware__160bars__seed4308",
+         "env": 28,
+         "episode": 2,
+         "frame": 6,
+         "outcome": "crash"
+        }
+       ]
+      },
+      "quantiles": {
+       "free_travel_m": {
+        "q1": 0.01,
+        "q5": 0.02,
+        "q50": 0.87,
+        "q95": 18.400000000000002,
+        "q99": 60.0,
+        "q99.9": 60.0
+       },
+       "margin_gov_m": {
+        "q1": -1.0600000000001053,
+        "q5": -0.84000000000011,
+        "q50": 0.06999999999987061,
+        "q95": 17.5899999999995,
+        "q99": 19.999999999999446,
+        "q99.9": 19.999999999999446
+       },
+       "margin_phys_m": {
+        "q1": -0.42000000000011894,
+        "q5": -0.3600000000001202,
+        "q50": 0.519999999999861,
+        "q95": 18.02999999999949,
+        "q99": 19.999999999999446,
+        "q99.9": 19.999999999999446
+       },
+       "nearest_surface_m": {
+        "q1": 0.17,
+        "q5": 0.21,
+        "q50": 0.74,
+        "q95": 1.54,
+        "q99": 1.96,
+        "q99.9": 3.04
+       },
+       "speed_xy": {
+        "q1": 0.05,
+        "q5": 0.66,
+        "q50": 1.96,
+        "q95": 2.72,
+        "q99": 3.25,
+        "q99.9": 3.7
+       },
+       "speed_z": {
+        "q1": 0.01,
+        "q5": 0.01,
+        "q50": 0.13,
+        "q95": 0.43,
+        "q99": 1.28,
+        "q99.9": 2.79
+       },
+       "tilt_deg": {
+        "q1": 0.1,
+        "q5": 1.3,
+        "q50": 10.0,
+        "q95": 28.700000000000003,
+        "q99": 54.2,
+        "q99.9": 93.7
+       }
+      }
+     },
+     "normal": {
+      "counts": {
+       "frames": 1244651,
+       "margin_gov_negative": 7001,
+       "margin_phys_negative": 1272,
+       "moving_frames": 1207793,
+       "nearest_below_optimistic_body": 0,
+       "speed_xy_over_2p5": 778827,
+       "speed_xy_over_free_cap": 92,
+       "tilt_over_45": 518
+      },
+      "fractions": {
+       "margin_gov_negative": 0.0057965230796999155,
+       "margin_phys_negative": 0.001053160599539822,
+       "nearest_below_optimistic_body": 0.0,
+       "speed_xy_over_2p5": 0.6257392634561817,
+       "speed_xy_over_free_cap": 7.391630264226679e-05,
+       "tilt_over_45": 0.00041618092139884995
+      },
+      "maxima": {
+       "speed_xy": [
+        4.141136027525656,
+        {
+         "cell": "E2_obstacle_aware__70bars__seed4303",
+         "env": 79,
+         "episode": 3,
+         "frame": 51,
+         "outcome": "capture"
+        }
+       ],
+       "tilt_deg": [
+        90.95843666809331,
+        {
+         "cell": "E2_obstacle_aware__70bars__seed4303",
+         "env": 79,
+         "episode": 3,
+         "frame": 48,
+         "outcome": "capture"
+        }
+       ]
+      },
+      "quantiles": {
+       "free_travel_m": {
+        "q1": 0.96,
+        "q5": 1.99,
+        "q50": 9.92,
+        "q95": 60.0,
+        "q99": 60.0,
+        "q99.9": 60.0
+       },
+       "margin_gov_m": {
+        "q1": 0.17999999999986827,
+        "q5": 0.9099999999998527,
+        "q50": 8.289999999999695,
+        "q95": 19.999999999999446,
+        "q99": 19.999999999999446,
+        "q99.9": 19.999999999999446
+       },
+       "margin_phys_m": {
+        "q1": 0.659999999999858,
+        "q5": 1.549999999999839,
+        "q50": 9.229999999999675,
+        "q95": 19.999999999999446,
+        "q99": 19.999999999999446,
+        "q99.9": 19.999999999999446
+       },
+       "nearest_surface_m": {
+        "q1": 0.35000000000000003,
+        "q5": 0.52,
+        "q50": 1.33,
+        "q95": 3.14,
+        "q99": 4.29,
+        "q99.9": 5.66
+       },
+       "speed_xy": {
+        "q1": 0.01,
+        "q5": 0.25,
+        "q50": 2.92,
+        "q95": 3.41,
+        "q99": 3.43,
+        "q99.9": 3.47
+       },
+       "speed_z": {
+        "q1": 0.01,
+        "q5": 0.01,
+        "q50": 0.14,
+        "q95": 0.4,
+        "q99": 0.54,
+        "q99.9": 0.75
+       },
+       "tilt_deg": {
+        "q1": 0.1,
+        "q5": 0.7000000000000001,
+        "q50": 8.200000000000001,
+        "q95": 27.5,
+        "q99": 33.1,
+        "q99.9": 40.7
+       }
+      }
+     },
+     "pre_crash_last": {
+      "counts": {
+       "frames": 1326,
+       "margin_gov_negative": 1294,
+       "margin_phys_negative": 1293,
+       "moving_frames": 1326,
+       "nearest_below_optimistic_body": 2,
+       "speed_xy_over_2p5": 43,
+       "speed_xy_over_free_cap": 8,
+       "tilt_over_45": 18
+      },
+      "fractions": {
+       "margin_gov_negative": 0.975867269984917,
+       "margin_phys_negative": 0.9751131221719457,
+       "nearest_below_optimistic_body": 0.0015082956259426848,
+       "speed_xy_over_2p5": 0.032428355957767725,
+       "speed_xy_over_free_cap": 0.006033182503770739,
+       "tilt_over_45": 0.013574660633484163
+      },
+      "maxima": {
+       "speed_xy": [
+        4.6182934019972635,
+        {
+         "cell": "E2_obstacle_aware__205bars__seed4308",
+         "env": 126,
+         "episode": 1,
+         "frame": 6,
+         "outcome": "crash"
+        }
+       ],
+       "tilt_deg": [
+        89.88483758199105,
+        {
+         "cell": "E2_obstacle_aware__115bars__seed4313",
+         "env": 95,
+         "episode": 1,
+         "frame": 6,
+         "outcome": "crash"
+        }
+       ]
+      },
+      "quantiles": {
+       "free_travel_m": {
+        "q1": 0.01,
+        "q5": 0.01,
+        "q50": 0.02,
+        "q95": 0.14,
+        "q99": 11.51,
+        "q99.9": 60.0
+       },
+       "margin_gov_m": {
+        "q1": -1.450000000000097,
+        "q5": -1.0800000000001049,
+        "q50": -0.7900000000001111,
+        "q95": -0.28000000000012193,
+        "q99": 10.569999999999645,
+        "q99.9": 19.999999999999446
+       },
+       "margin_phys_m": {
+        "q1": -0.560000000000116,
+        "q5": -0.4600000000001181,
+        "q50": -0.34000000000012065,
+        "q95": -0.12000000000012534,
+        "q99": 11.079999999999636,
+        "q99.9": 19.999999999999446
+       },
+       "nearest_surface_m": {
+        "q1": 0.14,
+        "q5": 0.16,
+        "q50": 0.22,
+        "q95": 0.31,
+        "q99": 1.59,
+        "q99.9": 2.62
+       },
+       "speed_xy": {
+        "q1": 0.73,
+        "q5": 1.23,
+        "q50": 1.96,
+        "q95": 2.36,
+        "q99": 3.16,
+        "q99.9": 4.34
+       },
+       "speed_z": {
+        "q1": 0.01,
+        "q5": 0.02,
+        "q50": 0.15,
+        "q95": 0.54,
+        "q99": 2.43,
+        "q99.9": 3.74
+       },
+       "tilt_deg": {
+        "q1": 0.4,
+        "q5": 0.9,
+        "q50": 6.5,
+        "q95": 28.3,
+        "q99": 56.900000000000006,
+        "q99.9": 88.30000000000001
+       }
+      }
+     }
+    },
+    "static/115": {
+     "crash_final_1s": {
+      "counts": {
+       "frames": 743,
+       "margin_gov_negative": 325,
+       "margin_phys_negative": 183,
+       "moving_frames": 720,
+       "nearest_below_optimistic_body": 0,
+       "speed_xy_over_2p5": 54,
+       "speed_xy_over_free_cap": 5,
+       "tilt_over_45": 29
+      },
+      "fractions": {
+       "margin_gov_negative": 0.4513888888888889,
+       "margin_phys_negative": 0.25416666666666665,
+       "nearest_below_optimistic_body": 0.0,
+       "speed_xy_over_2p5": 0.07267833109017496,
+       "speed_xy_over_free_cap": 0.006729475100942127,
+       "tilt_over_45": 0.039030955585464336
+      },
+      "maxima": {
+       "speed_xy": [
+        4.240622370828202,
+        {
+         "cell": "E0_static__115bars__seed4314",
+         "env": 70,
+         "episode": 2,
+         "frame": 5,
+         "outcome": "crash"
+        }
+       ],
+       "tilt_deg": [
+        99.72069909328694,
+        {
+         "cell": "E0_static__115bars__seed4302",
+         "env": 119,
+         "episode": 1,
+         "frame": 8,
+         "outcome": "crash"
+        }
+       ]
+      },
+      "quantiles": {
+       "free_travel_m": {
+        "q1": 0.01,
+        "q5": 0.04,
+        "q50": 0.8300000000000001,
+        "q95": 15.69,
+        "q99": 60.0,
+        "q99.9": 60.0
+       },
+       "margin_gov_m": {
+        "q1": -1.3200000000000998,
+        "q5": -0.8600000000001096,
+        "q50": 0.13999999999986912,
+        "q95": 15.479999999999542,
+        "q99": 19.999999999999446,
+        "q99.9": 19.999999999999446
+       },
+       "margin_phys_m": {
+        "q1": -0.5000000000001172,
+        "q5": -0.37000000000012,
+        "q50": 0.519999999999861,
+        "q95": 15.569999999999538,
+        "q99": 19.999999999999446,
+        "q99.9": 19.999999999999446
+       },
+       "nearest_surface_m": {
+        "q1": 0.17,
+        "q5": 0.22,
+        "q50": 0.8300000000000001,
+        "q95": 1.68,
+        "q99": 2.0,
+        "q99.9": 2.2800000000000002
+       },
+       "speed_xy": {
+        "q1": 0.01,
+        "q5": 0.25,
+        "q50": 1.9000000000000001,
+        "q95": 2.65,
+        "q99": 3.27,
+        "q99.9": 4.25
+       },
+       "speed_z": {
+        "q1": 0.01,
+        "q5": 0.02,
+        "q50": 0.19,
+        "q95": 0.61,
+        "q99": 2.12,
+        "q99.9": 3.21
+       },
+       "tilt_deg": {
+        "q1": 0.1,
+        "q5": 1.5,
+        "q50": 12.4,
+        "q95": 35.1,
+        "q99": 77.60000000000001,
+        "q99.9": 99.80000000000001
+       }
+      }
+     },
+     "normal": {
+      "counts": {
+       "frames": 261768,
+       "margin_gov_negative": 316,
+       "margin_phys_negative": 49,
+       "moving_frames": 252505,
+       "nearest_below_optimistic_body": 0,
+       "speed_xy_over_2p5": 185678,
+       "speed_xy_over_free_cap": 14,
+       "tilt_over_45": 86
+      },
+      "fractions": {
+       "margin_gov_negative": 0.001251460367121443,
+       "margin_phys_negative": 0.00019405556325617315,
+       "nearest_below_optimistic_body": 0.0,
+       "speed_xy_over_2p5": 0.70932275908438,
+       "speed_xy_over_free_cap": 5.3482473029552886e-05,
+       "tilt_over_45": 0.0003285351914672534
+      },
+      "maxima": {
+       "speed_xy": [
+        3.7799033055499542,
+        {
+         "cell": "E0_static__115bars__seed4303",
+         "env": 28,
+         "episode": 3,
+         "frame": 10,
+         "outcome": "capture"
+        }
+       ],
+       "tilt_deg": [
+        71.1404857709651,
+        {
+         "cell": "E0_static__115bars__seed4311",
+         "env": 5,
+         "episode": 2,
+         "frame": 3,
+         "outcome": "capture"
+        }
+       ]
+      },
+      "quantiles": {
+       "free_travel_m": {
+        "q1": 1.46,
+        "q5": 2.91,
+        "q50": 12.81,
+        "q95": 60.0,
+        "q99": 60.0,
+        "q99.9": 60.0
+       },
+       "margin_gov_m": {
+        "q1": 0.659999999999858,
+        "q5": 1.50999999999984,
+        "q50": 11.129999999999633,
+        "q95": 19.999999999999446,
+        "q99": 19.999999999999446,
+        "q99.9": 19.999999999999446
+       },
+       "margin_phys_m": {
+        "q1": 1.1499999999998476,
+        "q5": 2.349999999999822,
+        "q50": 12.099999999999614,
+        "q95": 19.999999999999446,
+        "q99": 19.999999999999446,
+        "q99.9": 19.999999999999446
+       },
+       "nearest_surface_m": {
+        "q1": 0.44,
+        "q5": 0.65,
+        "q50": 1.56,
+        "q95": 3.1,
+        "q99": 3.86,
+        "q99.9": 4.95
+       },
+       "speed_xy": {
+        "q1": 0.01,
+        "q5": 0.19,
+        "q50": 3.17,
+        "q95": 3.4,
+        "q99": 3.43,
+        "q99.9": 3.46
+       },
+       "speed_z": {
+        "q1": 0.01,
+        "q5": 0.01,
+        "q50": 0.14,
+        "q95": 0.41000000000000003,
+        "q99": 0.54,
+        "q99.9": 0.6900000000000001
+       },
+       "tilt_deg": {
+        "q1": 0.1,
+        "q5": 0.5,
+        "q50": 5.9,
+        "q95": 27.5,
+        "q99": 32.4,
+        "q99.9": 39.800000000000004
+       }
+      }
+     },
+     "pre_crash_last": {
+      "counts": {
+       "frames": 76,
+       "margin_gov_negative": 72,
+       "margin_phys_negative": 72,
+       "moving_frames": 76,
+       "nearest_below_optimistic_body": 0,
+       "speed_xy_over_2p5": 5,
+       "speed_xy_over_free_cap": 2,
+       "tilt_over_45": 3
+      },
+      "fractions": {
+       "margin_gov_negative": 0.9473684210526315,
+       "margin_phys_negative": 0.9473684210526315,
+       "nearest_below_optimistic_body": 0.0,
+       "speed_xy_over_2p5": 0.06578947368421052,
+       "speed_xy_over_free_cap": 0.02631578947368421,
+       "tilt_over_45": 0.039473684210526314
+      },
+      "maxima": {
+       "speed_xy": [
+        3.9526177659345163,
+        {
+         "cell": "E0_static__115bars__seed4314",
+         "env": 70,
+         "episode": 2,
+         "frame": 6,
+         "outcome": "crash"
+        }
+       ],
+       "tilt_deg": [
+        84.35105672260083,
+        {
+         "cell": "E0_static__115bars__seed4312",
+         "env": 45,
+         "episode": 2,
+         "frame": 7,
+         "outcome": "crash"
+        }
+       ]
+      },
+      "quantiles": {
+       "free_travel_m": {
+        "q1": 0.01,
+        "q5": 0.01,
+        "q50": 0.04,
+        "q95": 1.41,
+        "q99": 60.0,
+        "q99.9": 60.0
+       },
+       "margin_gov_m": {
+        "q1": -2.9800000000000644,
+        "q5": -1.3500000000000991,
+        "q50": -0.8100000000001106,
+        "q95": 1.0099999999998506,
+        "q99": 19.999999999999446,
+        "q99.9": 19.999999999999446
+       },
+       "margin_phys_m": {
+        "q1": -1.1400000000001036,
+        "q5": -0.5500000000001162,
+        "q50": -0.35000000000012044,
+        "q95": 1.1999999999998465,
+        "q99": 19.999999999999446,
+        "q99.9": 19.999999999999446
+       },
+       "nearest_surface_m": {
+        "q1": 0.14,
+        "q5": 0.16,
+        "q50": 0.23,
+        "q95": 1.27,
+        "q99": 1.6500000000000001,
+        "q99.9": 1.6500000000000001
+       },
+       "speed_xy": {
+        "q1": 0.99,
+        "q5": 1.29,
+        "q50": 1.96,
+        "q95": 2.69,
+        "q99": 3.96,
+        "q99.9": 3.96
+       },
+       "speed_z": {
+        "q1": 0.01,
+        "q5": 0.02,
+        "q50": 0.18,
+        "q95": 1.6,
+        "q99": 3.21,
+        "q99.9": 3.21
+       },
+       "tilt_deg": {
+        "q1": 0.4,
+        "q5": 1.2000000000000002,
+        "q50": 7.6000000000000005,
+        "q95": 38.400000000000006,
+        "q99": 84.4,
+        "q99.9": 84.4
+       }
+      }
+     }
+    },
+    "static/160": {
+     "crash_final_1s": {
+      "counts": {
+       "frames": 1627,
+       "margin_gov_negative": 716,
+       "margin_phys_negative": 394,
+       "moving_frames": 1577,
+       "nearest_below_optimistic_body": 0,
+       "speed_xy_over_2p5": 74,
+       "speed_xy_over_free_cap": 5,
+       "tilt_over_45": 32
+      },
+      "fractions": {
+       "margin_gov_negative": 0.4540266328471782,
+       "margin_phys_negative": 0.24984147114774888,
+       "nearest_below_optimistic_body": 0.0,
+       "speed_xy_over_2p5": 0.04548248309772587,
+       "speed_xy_over_free_cap": 0.003073140749846343,
+       "tilt_over_45": 0.019668100799016593
+      },
+      "maxima": {
+       "speed_xy": [
+        4.127623454728438,
+        {
+         "cell": "E0_static__160bars__seed4305",
+         "env": 73,
+         "episode": 1,
+         "frame": 5,
+         "outcome": "crash"
+        }
+       ],
+       "tilt_deg": [
+        98.67512399500623,
+        {
+         "cell": "E0_static__160bars__seed4301",
+         "env": 88,
+         "episode": 2,
+         "frame": 6,
+         "outcome": "crash"
+        }
+       ]
+      },
+      "quantiles": {
+       "free_travel_m": {
+        "q1": 0.01,
+        "q5": 0.03,
+        "q50": 0.75,
+        "q95": 12.14,
+        "q99": 60.0,
+        "q99.9": 60.0
+       },
+       "margin_gov_m": {
+        "q1": -1.170000000000103,
+        "q5": -0.8500000000001098,
+        "q50": 0.10999999999986976,
+        "q95": 11.24999999999963,
+        "q99": 19.999999999999446,
+        "q99.9": 19.999999999999446
+       },
+       "margin_phys_m": {
+        "q1": -0.4600000000001181,
+        "q5": -0.35000000000012044,
+        "q50": 0.4699999999998621,
+        "q95": 11.739999999999622,
+        "q99": 19.999999999999446,
+        "q99.9": 19.999999999999446
+       },
+       "nearest_surface_m": {
+        "q1": 0.17,
+        "q5": 0.22,
+        "q50": 0.81,
+        "q95": 1.49,
+        "q99": 1.8,
+        "q99.9": 2.04
+       },
+       "speed_xy": {
+        "q1": 0.01,
+        "q5": 0.24,
+        "q50": 1.85,
+        "q95": 2.47,
+        "q99": 3.18,
+        "q99.9": 3.7800000000000002
+       },
+       "speed_z": {
+        "q1": 0.01,
+        "q5": 0.01,
+        "q50": 0.16,
+        "q95": 0.51,
+        "q99": 1.28,
+        "q99.9": 2.13
+       },
+       "tilt_deg": {
+        "q1": 0.1,
+        "q5": 1.7000000000000002,
+        "q50": 12.700000000000001,
+        "q95": 29.700000000000003,
+        "q99": 62.7,
+        "q99.9": 84.80000000000001
+       }
+      }
+     },
+     "normal": {
+      "counts": {
+       "frames": 265782,
+       "margin_gov_negative": 647,
+       "margin_phys_negative": 122,
+       "moving_frames": 256472,
+       "nearest_below_optimistic_body": 0,
+       "speed_xy_over_2p5": 178107,
+       "speed_xy_over_free_cap": 21,
+       "tilt_over_45": 115
+      },
+      "fractions": {
+       "margin_gov_negative": 0.0025226925356374185,
+       "margin_phys_negative": 0.00047568545494244987,
+       "nearest_below_optimistic_body": 0.0,
+       "speed_xy_over_2p5": 0.670124387656049,
+       "speed_xy_over_free_cap": 7.901212271711403e-05,
+       "tilt_over_45": 0.000432685433927053
+      },
+      "maxima": {
+       "speed_xy": [
+        3.6921089290762468,
+        {
+         "cell": "E0_static__160bars__seed4305",
+         "env": 34,
+         "episode": 1,
+         "frame": 12,
+         "outcome": "capture"
+        }
+       ],
+       "tilt_deg": [
+        70.29782144692106,
+        {
+         "cell": "E0_static__160bars__seed4309",
+         "env": 19,
+         "episode": 1,
+         "frame": 26,
+         "outcome": "capture"
+        }
+       ]
+      },
+      "quantiles": {
+       "free_travel_m": {
+        "q1": 1.1500000000000001,
+        "q5": 2.31,
+        "q50": 9.620000000000001,
+        "q95": 60.0,
+        "q99": 60.0,
+        "q99.9": 60.0
+       },
+       "margin_gov_m": {
+        "q1": 0.4699999999998621,
+        "q5": 1.1199999999998482,
+        "q50": 7.9099999999997035,
+        "q95": 19.999999999999446,
+        "q99": 19.999999999999446,
+        "q99.9": 19.999999999999446
+       },
+       "margin_phys_m": {
+        "q1": 0.8899999999998531,
+        "q5": 1.8499999999998327,
+        "q50": 8.889999999999683,
+        "q95": 19.999999999999446,
+        "q99": 19.999999999999446,
+        "q99.9": 19.999999999999446
+       },
+       "nearest_surface_m": {
+        "q1": 0.38,
+        "q5": 0.56,
+        "q50": 1.28,
+        "q95": 2.48,
+        "q99": 3.06,
+        "q99.9": 3.79
+       },
+       "speed_xy": {
+        "q1": 0.01,
+        "q5": 0.19,
+        "q50": 3.0500000000000003,
+        "q95": 3.4,
+        "q99": 3.43,
+        "q99.9": 3.47
+       },
+       "speed_z": {
+        "q1": 0.01,
+        "q5": 0.01,
+        "q50": 0.14,
+        "q95": 0.41000000000000003,
+        "q99": 0.54,
+        "q99.9": 0.7000000000000001
+       },
+       "tilt_deg": {
+        "q1": 0.1,
+        "q5": 0.5,
+        "q50": 6.6000000000000005,
+        "q95": 27.1,
+        "q99": 32.6,
+        "q99.9": 40.6
+       }
+      }
+     },
+     "pre_crash_last": {
+      "counts": {
+       "frames": 167,
+       "margin_gov_negative": 163,
+       "margin_phys_negative": 163,
+       "moving_frames": 167,
+       "nearest_below_optimistic_body": 0,
+       "speed_xy_over_2p5": 5,
+       "speed_xy_over_free_cap": 0,
+       "tilt_over_45": 2
+      },
+      "fractions": {
+       "margin_gov_negative": 0.9760479041916168,
+       "margin_phys_negative": 0.9760479041916168,
+       "nearest_below_optimistic_body": 0.0,
+       "speed_xy_over_2p5": 0.029940119760479042,
+       "speed_xy_over_free_cap": 0.0,
+       "tilt_over_45": 0.011976047904191617
+      },
+      "maxima": {
+       "speed_xy": [
+        3.3410506853678346,
+        {
+         "cell": "E0_static__160bars__seed4311",
+         "env": 93,
+         "episode": 3,
+         "frame": 4,
+         "outcome": "crash"
+        }
+       ],
+       "tilt_deg": [
+        83.20817898495527,
+        {
+         "cell": "E0_static__160bars__seed4301",
+         "env": 88,
+         "episode": 2,
+         "frame": 7,
+         "outcome": "crash"
+        }
+       ]
+      },
+      "quantiles": {
+       "free_travel_m": {
+        "q1": 0.01,
+        "q5": 0.01,
+        "q50": 0.03,
+        "q95": 0.15,
+        "q99": 4.43,
+        "q99.9": 12.61
+       },
+       "margin_gov_m": {
+        "q1": -1.870000000000088,
+        "q5": -1.220000000000102,
+        "q50": -0.7900000000001111,
+        "q95": -0.3900000000001196,
+        "q99": 3.719999999999793,
+        "q99.9": 11.24999999999963
+       },
+       "margin_phys_m": {
+        "q1": -0.6800000000001134,
+        "q5": -0.5300000000001166,
+        "q50": -0.34000000000012065,
+        "q95": -0.17000000000012427,
+        "q99": 4.089999999999785,
+        "q99.9": 12.019999999999616
+       },
+       "nearest_surface_m": {
+        "q1": 0.14,
+        "q5": 0.16,
+        "q50": 0.22,
+        "q95": 0.3,
+        "q99": 1.28,
+        "q99.9": 1.52
+       },
+       "speed_xy": {
+        "q1": 1.22,
+        "q5": 1.45,
+        "q50": 1.97,
+        "q95": 2.43,
+        "q99": 3.18,
+        "q99.9": 3.35
+       },
+       "speed_z": {
+        "q1": 0.01,
+        "q5": 0.01,
+        "q50": 0.17,
+        "q95": 0.59,
+        "q99": 2.08,
+        "q99.9": 3.21
+       },
+       "tilt_deg": {
+        "q1": 0.30000000000000004,
+        "q5": 1.5,
+        "q50": 8.1,
+        "q95": 26.5,
+        "q99": 82.7,
+        "q99.9": 83.30000000000001
+       }
+      }
+     }
+    },
+    "static/205": {
+     "crash_final_1s": {
+      "counts": {
+       "frames": 2997,
+       "margin_gov_negative": 1402,
+       "margin_phys_negative": 746,
+       "moving_frames": 2934,
+       "nearest_below_optimistic_body": 0,
+       "speed_xy_over_2p5": 140,
+       "speed_xy_over_free_cap": 3,
+       "tilt_over_45": 36
+      },
+      "fractions": {
+       "margin_gov_negative": 0.4778459441036128,
+       "margin_phys_negative": 0.25426039536468986,
+       "nearest_below_optimistic_body": 0.0,
+       "speed_xy_over_2p5": 0.04671338004671338,
+       "speed_xy_over_free_cap": 0.001001001001001001,
+       "tilt_over_45": 0.012012012012012012
+      },
+      "maxima": {
+       "speed_xy": [
+        4.001647127637804,
+        {
+         "cell": "E0_static__205bars__seed4304",
+         "env": 108,
+         "episode": 3,
+         "frame": 5,
+         "outcome": "crash"
+        }
+       ],
+       "tilt_deg": [
+        96.83168959415255,
+        {
+         "cell": "E0_static__205bars__seed4304",
+         "env": 108,
+         "episode": 3,
+         "frame": 3,
+         "outcome": "crash"
+        }
+       ]
+      },
+      "quantiles": {
+       "free_travel_m": {
+        "q1": 0.01,
+        "q5": 0.03,
+        "q50": 0.81,
+        "q95": 9.63,
+        "q99": 60.0,
+        "q99.9": 60.0
+       },
+       "margin_gov_m": {
+        "q1": -1.1600000000001032,
+        "q5": -0.8600000000001096,
+        "q50": 0.05999999999987082,
+        "q95": 8.909999999999682,
+        "q99": 19.999999999999446,
+        "q99.9": 19.999999999999446
+       },
+       "margin_phys_m": {
+        "q1": -0.4500000000001183,
+        "q5": -0.3600000000001202,
+        "q50": 0.4599999999998623,
+        "q95": 9.279999999999674,
+        "q99": 19.999999999999446,
+        "q99.9": 19.999999999999446
+       },
+       "nearest_surface_m": {
+        "q1": 0.17,
+        "q5": 0.22,
+        "q50": 0.78,
+        "q95": 1.46,
+        "q99": 1.79,
+        "q99.9": 2.6
+       },
+       "speed_xy": {
+        "q1": 0.01,
+        "q5": 0.34,
+        "q50": 1.93,
+        "q95": 2.49,
+        "q99": 2.91,
+        "q99.9": 3.65
+       },
+       "speed_z": {
+        "q1": 0.01,
+        "q5": 0.02,
+        "q50": 0.16,
+        "q95": 0.54,
+        "q99": 1.3,
+        "q99.9": 2.66
+       },
+       "tilt_deg": {
+        "q1": 0.1,
+        "q5": 1.7000000000000002,
+        "q50": 10.8,
+        "q95": 26.8,
+        "q99": 49.5,
+        "q99.9": 87.4
+       }
+      }
+     },
+     "normal": {
+      "counts": {
+       "frames": 271701,
+       "margin_gov_negative": 1121,
+       "margin_phys_negative": 212,
+       "moving_frames": 262449,
+       "nearest_below_optimistic_body": 0,
+       "speed_xy_over_2p5": 166685,
+       "speed_xy_over_free_cap": 27,
+       "tilt_over_45": 141
+      },
+      "fractions": {
+       "margin_gov_negative": 0.004271306044221925,
+       "margin_phys_negative": 0.0008077759869536558,
+       "nearest_below_optimistic_body": 0.0,
+       "speed_xy_over_2p5": 0.6134868844796302,
+       "speed_xy_over_free_cap": 9.937394415184339e-05,
+       "tilt_over_45": 0.0005189528194596266
+      },
+      "maxima": {
+       "speed_xy": [
+        3.865642489941881,
+        {
+         "cell": "E0_static__205bars__seed4302",
+         "env": 12,
+         "episode": 3,
+         "frame": 5,
+         "outcome": "capture"
+        }
+       ],
+       "tilt_deg": [
+        77.61308819018478,
+        {
+         "cell": "E0_static__205bars__seed4302",
+         "env": 12,
+         "episode": 3,
+         "frame": 3,
+         "outcome": "capture"
+        }
+       ]
+      },
+      "quantiles": {
+       "free_travel_m": {
+        "q1": 0.97,
+        "q5": 1.92,
+        "q50": 7.72,
+        "q95": 60.0,
+        "q99": 60.0,
+        "q99.9": 60.0
+       },
+       "margin_gov_m": {
+        "q1": 0.2899999999998659,
+        "q5": 0.9099999999998527,
+        "q50": 6.129999999999741,
+        "q95": 19.999999999999446,
+        "q99": 19.999999999999446,
+        "q99.9": 19.999999999999446
+       },
+       "margin_phys_m": {
+        "q1": 0.7199999999998568,
+        "q5": 1.5199999999998397,
+        "q50": 7.039999999999722,
+        "q95": 19.999999999999446,
+        "q99": 19.999999999999446,
+        "q99.9": 19.999999999999446
+       },
+       "nearest_surface_m": {
+        "q1": 0.34,
+        "q5": 0.49,
+        "q50": 1.12,
+        "q95": 2.09,
+        "q99": 2.56,
+        "q99.9": 3.08
+       },
+       "speed_xy": {
+        "q1": 0.01,
+        "q5": 0.2,
+        "q50": 2.87,
+        "q95": 3.4,
+        "q99": 3.43,
+        "q99.9": 3.47
+       },
+       "speed_z": {
+        "q1": 0.01,
+        "q5": 0.01,
+        "q50": 0.15,
+        "q95": 0.42,
+        "q99": 0.56,
+        "q99.9": 0.8300000000000001
+       },
+       "tilt_deg": {
+        "q1": 0.1,
+        "q5": 0.6000000000000001,
+        "q50": 7.2,
+        "q95": 26.8,
+        "q99": 32.6,
+        "q99.9": 41.1
+       }
+      }
+     },
+     "pre_crash_last": {
+      "counts": {
+       "frames": 304,
+       "margin_gov_negative": 299,
+       "margin_phys_negative": 298,
+       "moving_frames": 304,
+       "nearest_below_optimistic_body": 0,
+       "speed_xy_over_2p5": 13,
+       "speed_xy_over_free_cap": 1,
+       "tilt_over_45": 1
+      },
+      "fractions": {
+       "margin_gov_negative": 0.9835526315789473,
+       "margin_phys_negative": 0.9802631578947368,
+       "nearest_below_optimistic_body": 0.0,
+       "speed_xy_over_2p5": 0.04276315789473684,
+       "speed_xy_over_free_cap": 0.003289473684210526,
+       "tilt_over_45": 0.003289473684210526
+      },
+      "maxima": {
+       "speed_xy": [
+        4.001647127637804,
+        {
+         "cell": "E0_static__205bars__seed4304",
+         "env": 108,
+         "episode": 3,
+         "frame": 5,
+         "outcome": "crash"
+        }
+       ],
+       "tilt_deg": [
+        51.35052617929335,
+        {
+         "cell": "E0_static__205bars__seed4301",
+         "env": 49,
+         "episode": 2,
+         "frame": 8,
+         "outcome": "crash"
+        }
+       ]
+      },
+      "quantiles": {
+       "free_travel_m": {
+        "q1": 0.01,
+        "q5": 0.01,
+        "q50": 0.03,
+        "q95": 0.14,
+        "q99": 3.36,
+        "q99.9": 60.0
+       },
+       "margin_gov_m": {
+        "q1": -1.4600000000000968,
+        "q5": -1.120000000000104,
+        "q50": -0.7900000000001111,
+        "q95": -0.5000000000001172,
+        "q99": 2.259999999999824,
+        "q99.9": 19.999999999999446
+       },
+       "margin_phys_m": {
+        "q1": -0.6000000000001151,
+        "q5": -0.49000000000011745,
+        "q50": -0.35000000000012044,
+        "q95": -0.20000000000012363,
+        "q99": 2.869999999999811,
+        "q99.9": 19.999999999999446
+       },
+       "nearest_surface_m": {
+        "q1": 0.14,
+        "q5": 0.15,
+        "q50": 0.22,
+        "q95": 0.3,
+        "q99": 0.87,
+        "q99.9": 2.05
+       },
+       "speed_xy": {
+        "q1": 1.36,
+        "q5": 1.55,
+        "q50": 1.98,
+        "q95": 2.42,
+        "q99": 2.83,
+        "q99.9": 4.01
+       },
+       "speed_z": {
+        "q1": 0.01,
+        "q5": 0.02,
+        "q50": 0.17,
+        "q95": 0.71,
+        "q99": 1.62,
+        "q99.9": 2.84
+       },
+       "tilt_deg": {
+        "q1": 0.6000000000000001,
+        "q5": 1.2000000000000002,
+        "q50": 6.300000000000001,
+        "q95": 19.6,
+        "q99": 28.1,
+        "q99.9": 51.400000000000006
+       }
+      }
+     }
+    },
+    "static/70": {
+     "crash_final_1s": {
+      "counts": {
+       "frames": 247,
+       "margin_gov_negative": 99,
+       "margin_phys_negative": 52,
+       "moving_frames": 243,
+       "nearest_below_optimistic_body": 0,
+       "speed_xy_over_2p5": 20,
+       "speed_xy_over_free_cap": 2,
+       "tilt_over_45": 10
+      },
+      "fractions": {
+       "margin_gov_negative": 0.4074074074074074,
+       "margin_phys_negative": 0.2139917695473251,
+       "nearest_below_optimistic_body": 0.0,
+       "speed_xy_over_2p5": 0.08097165991902834,
+       "speed_xy_over_free_cap": 0.008097165991902834,
+       "tilt_over_45": 0.04048582995951417
+      },
+      "maxima": {
+       "speed_xy": [
+        4.785303951157134,
+        {
+         "cell": "E0_static__70bars__seed4305",
+         "env": 29,
+         "episode": 3,
+         "frame": 6,
+         "outcome": "crash"
+        }
+       ],
+       "tilt_deg": [
+        92.44432848631693,
+        {
+         "cell": "E0_static__70bars__seed4305",
+         "env": 29,
+         "episode": 3,
+         "frame": 3,
+         "outcome": "crash"
+        }
+       ]
+      },
+      "quantiles": {
+       "free_travel_m": {
+        "q1": 0.01,
+        "q5": 0.05,
+        "q50": 0.86,
+        "q95": 60.0,
+        "q99": 60.0,
+        "q99.9": 60.0
+       },
+       "margin_gov_m": {
+        "q1": -0.8900000000001089,
+        "q5": -0.7700000000001115,
+        "q50": 0.239999999999867,
+        "q95": 19.999999999999446,
+        "q99": 19.999999999999446,
+        "q99.9": 19.999999999999446
+       },
+       "margin_phys_m": {
+        "q1": -0.3900000000001196,
+        "q5": -0.3100000000001213,
+        "q50": 0.6099999999998591,
+        "q95": 19.999999999999446,
+        "q99": 19.999999999999446,
+        "q99.9": 19.999999999999446
+       },
+       "nearest_surface_m": {
+        "q1": 0.18,
+        "q5": 0.23,
+        "q50": 0.86,
+        "q95": 2.15,
+        "q99": 2.61,
+        "q99.9": 3.0500000000000003
+       },
+       "speed_xy": {
+        "q1": 0.01,
+        "q5": 0.39,
+        "q50": 1.84,
+        "q95": 2.72,
+        "q99": 3.43,
+        "q99.9": 4.79
+       },
+       "speed_z": {
+        "q1": 0.01,
+        "q5": 0.02,
+        "q50": 0.2,
+        "q95": 0.61,
+        "q99": 2.04,
+        "q99.9": 2.65
+       },
+       "tilt_deg": {
+        "q1": 0.1,
+        "q5": 2.5,
+        "q50": 14.3,
+        "q95": 36.0,
+        "q99": 73.2,
+        "q99.9": 92.5
+       }
+      }
+     },
+     "normal": {
+      "counts": {
+       "frames": 258385,
+       "margin_gov_negative": 179,
+       "margin_phys_negative": 40,
+       "moving_frames": 249281,
+       "nearest_below_optimistic_body": 0,
+       "speed_xy_over_2p5": 190219,
+       "speed_xy_over_free_cap": 17,
+       "tilt_over_45": 91
+      },
+      "fractions": {
+       "margin_gov_negative": 0.0007180651553868927,
+       "margin_phys_negative": 0.00016046148723729446,
+       "nearest_below_optimistic_body": 0.0,
+       "speed_xy_over_2p5": 0.7361843760280202,
+       "speed_xy_over_free_cap": 6.579329295431236e-05,
+       "tilt_over_45": 0.0003521876269907309
+      },
+      "maxima": {
+       "speed_xy": [
+        4.472017332511364,
+        {
+         "cell": "E0_static__70bars__seed4306",
+         "env": 36,
+         "episode": 2,
+         "frame": 16,
+         "outcome": "capture"
+        }
+       ],
+       "tilt_deg": [
+        79.21277693755492,
+        {
+         "cell": "E0_static__70bars__seed4305",
+         "env": 91,
+         "episode": 3,
+         "frame": 3,
+         "outcome": "capture"
+        }
+       ]
+      },
+      "quantiles": {
+       "free_travel_m": {
+        "q1": 1.8800000000000001,
+        "q5": 3.89,
+        "q50": 23.37,
+        "q95": 60.0,
+        "q99": 60.0,
+        "q99.9": 60.0
+       },
+       "margin_gov_m": {
+        "q1": 0.849999999999854,
+        "q5": 2.299999999999823,
+        "q50": 19.999999999999446,
+        "q95": 19.999999999999446,
+        "q99": 19.999999999999446,
+        "q99.9": 19.999999999999446
+       },
+       "margin_phys_m": {
+        "q1": 1.4799999999998406,
+        "q5": 3.239999999999803,
+        "q50": 19.999999999999446,
+        "q95": 19.999999999999446,
+        "q99": 19.999999999999446,
+        "q99.9": 19.999999999999446
+       },
+       "nearest_surface_m": {
+        "q1": 0.5,
+        "q5": 0.77,
+        "q50": 2.0300000000000002,
+        "q95": 4.19,
+        "q99": 5.29,
+        "q99.9": 6.87
+       },
+       "speed_xy": {
+        "q1": 0.01,
+        "q5": 0.19,
+        "q50": 3.24,
+        "q95": 3.4,
+        "q99": 3.43,
+        "q99.9": 3.45
+       },
+       "speed_z": {
+        "q1": 0.01,
+        "q5": 0.01,
+        "q50": 0.14,
+        "q95": 0.41000000000000003,
+        "q99": 0.53,
+        "q99.9": 0.6900000000000001
+       },
+       "tilt_deg": {
+        "q1": 0.1,
+        "q5": 0.4,
+        "q50": 5.4,
+        "q95": 28.0,
+        "q99": 32.7,
+        "q99.9": 39.400000000000006
+       }
+      }
+     },
+     "pre_crash_last": {
+      "counts": {
+       "frames": 25,
+       "margin_gov_negative": 21,
+       "margin_phys_negative": 21,
+       "moving_frames": 25,
+       "nearest_below_optimistic_body": 0,
+       "speed_xy_over_2p5": 2,
+       "speed_xy_over_free_cap": 1,
+       "tilt_over_45": 0
+      },
+      "fractions": {
+       "margin_gov_negative": 0.84,
+       "margin_phys_negative": 0.84,
+       "nearest_below_optimistic_body": 0.0,
+       "speed_xy_over_2p5": 0.08,
+       "speed_xy_over_free_cap": 0.04,
+       "tilt_over_45": 0.0
+      },
+      "maxima": {
+       "speed_xy": [
+        4.785303951157134,
+        {
+         "cell": "E0_static__70bars__seed4305",
+         "env": 29,
+         "episode": 3,
+         "frame": 6,
+         "outcome": "crash"
+        }
+       ],
+       "tilt_deg": [
+        29.305169045190336,
+        {
+         "cell": "E0_static__70bars__seed4309",
+         "env": 48,
+         "episode": 3,
+         "frame": 61,
+         "outcome": "crash"
+        }
+       ]
+      },
+      "quantiles": {
+       "free_travel_m": {
+        "q1": 0.01,
+        "q5": 0.01,
+        "q50": 0.05,
+        "q95": 60.0,
+        "q99": 60.0,
+        "q99.9": 60.0
+       },
+       "margin_gov_m": {
+        "q1": -0.9600000000001074,
+        "q5": -0.9500000000001076,
+        "q50": -0.7300000000001123,
+        "q95": 19.999999999999446,
+        "q99": 19.999999999999446,
+        "q99.9": 19.999999999999446
+       },
+       "margin_phys_m": {
+        "q1": -0.43000000000011873,
+        "q5": -0.40000000000011937,
+        "q50": -0.3100000000001213,
+        "q95": 19.999999999999446,
+        "q99": 19.999999999999446,
+        "q99.9": 19.999999999999446
+       },
+       "nearest_surface_m": {
+        "q1": 0.16,
+        "q5": 0.17,
+        "q50": 0.23,
+        "q95": 2.61,
+        "q99": 3.0500000000000003,
+        "q99.9": 3.0500000000000003
+       },
+       "speed_xy": {
+        "q1": 1.31,
+        "q5": 1.62,
+        "q50": 1.99,
+        "q95": 2.5100000000000002,
+        "q99": 4.79,
+        "q99.9": 4.79
+       },
+       "speed_z": {
+        "q1": 0.02,
+        "q5": 0.05,
+        "q50": 0.27,
+        "q95": 1.58,
+        "q99": 2.04,
+        "q99.9": 2.04
+       },
+       "tilt_deg": {
+        "q1": 1.8,
+        "q5": 1.9000000000000001,
+        "q50": 7.7,
+        "q95": 27.5,
+        "q99": 29.400000000000002,
+        "q99.9": 29.400000000000002
+       }
+      }
+     }
+    },
+    "static/all": {
+     "crash_final_1s": {
+      "counts": {
+       "frames": 5614,
+       "margin_gov_negative": 2542,
+       "margin_phys_negative": 1375,
+       "moving_frames": 5474,
+       "nearest_below_optimistic_body": 0,
+       "speed_xy_over_2p5": 288,
+       "speed_xy_over_free_cap": 15,
+       "tilt_over_45": 107
+      },
+      "fractions": {
+       "margin_gov_negative": 0.464377055169894,
+       "margin_phys_negative": 0.25118743149433687,
+       "nearest_below_optimistic_body": 0.0,
+       "speed_xy_over_2p5": 0.05130032062700392,
+       "speed_xy_over_free_cap": 0.0026718916993231207,
+       "tilt_over_45": 0.01905949412183826
+      },
+      "maxima": {
+       "speed_xy": [
+        4.785303951157134,
+        {
+         "cell": "E0_static__70bars__seed4305",
+         "env": 29,
+         "episode": 3,
+         "frame": 6,
+         "outcome": "crash"
+        }
+       ],
+       "tilt_deg": [
+        99.72069909328694,
+        {
+         "cell": "E0_static__115bars__seed4302",
+         "env": 119,
+         "episode": 1,
+         "frame": 8,
+         "outcome": "crash"
+        }
+       ]
+      },
+      "quantiles": {
+       "free_travel_m": {
+        "q1": 0.01,
+        "q5": 0.03,
+        "q50": 0.8,
+        "q95": 12.42,
+        "q99": 60.0,
+        "q99.9": 60.0
+       },
+       "margin_gov_m": {
+        "q1": -1.170000000000103,
+        "q5": -0.8600000000001096,
+        "q50": 0.08999999999987018,
+        "q95": 11.639999999999624,
+        "q99": 19.999999999999446,
+        "q99.9": 19.999999999999446
+       },
+       "margin_phys_m": {
+        "q1": -0.4500000000001183,
+        "q5": -0.3600000000001202,
+        "q50": 0.47999999999986187,
+        "q95": 11.979999999999617,
+        "q99": 19.999999999999446,
+        "q99.9": 19.999999999999446
+       },
+       "nearest_surface_m": {
+        "q1": 0.17,
+        "q5": 0.22,
+        "q50": 0.8,
+        "q95": 1.53,
+        "q99": 1.8900000000000001,
+        "q99.9": 2.6
+       },
+       "speed_xy": {
+        "q1": 0.01,
+        "q5": 0.3,
+        "q50": 1.9000000000000001,
+        "q95": 2.52,
+        "q99": 3.0300000000000002,
+        "q99.9": 3.96
+       },
+       "speed_z": {
+        "q1": 0.01,
+        "q5": 0.02,
+        "q50": 0.17,
+        "q95": 0.54,
+        "q99": 1.47,
+        "q99.9": 2.66
+       },
+       "tilt_deg": {
+        "q1": 0.1,
+        "q5": 1.7000000000000002,
+        "q50": 11.600000000000001,
+        "q95": 28.400000000000002,
+        "q99": 61.5,
+        "q99.9": 92.5
+       }
+      }
+     },
+     "normal": {
+      "counts": {
+       "frames": 1057636,
+       "margin_gov_negative": 2263,
+       "margin_phys_negative": 423,
+       "moving_frames": 1020707,
+       "nearest_below_optimistic_body": 0,
+       "speed_xy_over_2p5": 720689,
+       "speed_xy_over_free_cap": 79,
+       "tilt_over_45": 433
+      },
+      "fractions": {
+       "margin_gov_negative": 0.002217090702816773,
+       "margin_phys_negative": 0.0004144186333590345,
+       "nearest_below_optimistic_body": 0.0,
+       "speed_xy_over_2p5": 0.6814149669640595,
+       "speed_xy_over_free_cap": 7.469488557499933e-05,
+       "tilt_over_45": 0.0004094036133414521
+      },
+      "maxima": {
+       "speed_xy": [
+        4.472017332511364,
+        {
+         "cell": "E0_static__70bars__seed4306",
+         "env": 36,
+         "episode": 2,
+         "frame": 16,
+         "outcome": "capture"
+        }
+       ],
+       "tilt_deg": [
+        79.21277693755492,
+        {
+         "cell": "E0_static__70bars__seed4305",
+         "env": 91,
+         "episode": 3,
+         "frame": 3,
+         "outcome": "capture"
+        }
+       ]
+      },
+      "quantiles": {
+       "free_travel_m": {
+        "q1": 1.22,
+        "q5": 2.47,
+        "q50": 11.22,
+        "q95": 60.0,
+        "q99": 60.0,
+        "q99.9": 60.0
+       },
+       "margin_gov_m": {
+        "q1": 0.519999999999861,
+        "q5": 1.2299999999998459,
+        "q50": 9.549999999999669,
+        "q95": 19.999999999999446,
+        "q99": 19.999999999999446,
+        "q99.9": 19.999999999999446
+       },
+       "margin_phys_m": {
+        "q1": 0.9499999999998519,
+        "q5": 1.97999999999983,
+        "q50": 10.519999999999648,
+        "q95": 19.999999999999446,
+        "q99": 19.999999999999446,
+        "q99.9": 19.999999999999446
+       },
+       "nearest_surface_m": {
+        "q1": 0.4,
+        "q5": 0.58,
+        "q50": 1.42,
+        "q95": 3.24,
+        "q99": 4.41,
+        "q99.9": 5.86
+       },
+       "speed_xy": {
+        "q1": 0.01,
+        "q5": 0.19,
+        "q50": 3.1,
+        "q95": 3.4,
+        "q99": 3.43,
+        "q99.9": 3.46
+       },
+       "speed_z": {
+        "q1": 0.01,
+        "q5": 0.01,
+        "q50": 0.14,
+        "q95": 0.41000000000000003,
+        "q99": 0.54,
+        "q99.9": 0.72
+       },
+       "tilt_deg": {
+        "q1": 0.1,
+        "q5": 0.5,
+        "q50": 6.300000000000001,
+        "q95": 27.400000000000002,
+        "q99": 32.6,
+        "q99.9": 40.300000000000004
+       }
+      }
+     },
+     "pre_crash_last": {
+      "counts": {
+       "frames": 572,
+       "margin_gov_negative": 555,
+       "margin_phys_negative": 554,
+       "moving_frames": 572,
+       "nearest_below_optimistic_body": 0,
+       "speed_xy_over_2p5": 25,
+       "speed_xy_over_free_cap": 4,
+       "tilt_over_45": 6
+      },
+      "fractions": {
+       "margin_gov_negative": 0.9702797202797203,
+       "margin_phys_negative": 0.9685314685314685,
+       "nearest_below_optimistic_body": 0.0,
+       "speed_xy_over_2p5": 0.043706293706293704,
+       "speed_xy_over_free_cap": 0.006993006993006993,
+       "tilt_over_45": 0.01048951048951049
+      },
+      "maxima": {
+       "speed_xy": [
+        4.785303951157134,
+        {
+         "cell": "E0_static__70bars__seed4305",
+         "env": 29,
+         "episode": 3,
+         "frame": 6,
+         "outcome": "crash"
+        }
+       ],
+       "tilt_deg": [
+        84.35105672260083,
+        {
+         "cell": "E0_static__115bars__seed4312",
+         "env": 45,
+         "episode": 2,
+         "frame": 7,
+         "outcome": "crash"
+        }
+       ]
+      },
+      "quantiles": {
+       "free_travel_m": {
+        "q1": 0.01,
+        "q5": 0.01,
+        "q50": 0.03,
+        "q95": 0.15,
+        "q99": 23.63,
+        "q99.9": 60.0
+       },
+       "margin_gov_m": {
+        "q1": -1.5200000000000955,
+        "q5": -1.1600000000001032,
+        "q50": -0.8000000000001108,
+        "q95": -0.40000000000011937,
+        "q99": 19.999999999999446,
+        "q99.9": 19.999999999999446
+       },
+       "margin_phys_m": {
+        "q1": -0.6400000000001143,
+        "q5": -0.5000000000001172,
+        "q50": -0.35000000000012044,
+        "q95": -0.17000000000012427,
+        "q99": 19.999999999999446,
+        "q99.9": 19.999999999999446
+       },
+       "nearest_surface_m": {
+        "q1": 0.14,
+        "q5": 0.16,
+        "q50": 0.22,
+        "q95": 0.31,
+        "q99": 1.54,
+        "q99.9": 3.0500000000000003
+       },
+       "speed_xy": {
+        "q1": 1.24,
+        "q5": 1.51,
+        "q50": 1.98,
+        "q95": 2.45,
+        "q99": 3.18,
+        "q99.9": 4.79
+       },
+       "speed_z": {
+        "q1": 0.01,
+        "q5": 0.02,
+        "q50": 0.17,
+        "q95": 0.72,
+        "q99": 2.65,
+        "q99.9": 3.21
+       },
+       "tilt_deg": {
+        "q1": 0.5,
+        "q5": 1.2000000000000002,
+        "q50": 6.9,
+        "q95": 24.3,
+        "q99": 48.7,
+        "q99.9": 84.4
+       }
+      }
+     }
+    }
+   },
+   "cells": 112,
+   "classes": [
+    "normal",
+    "crash_final_1s",
+    "pre_crash_last",
+    "during_contact: NOT_RECORDED",
+    "after_contact: NOT_RECORDED"
+   ],
+   "contact_model_consistency": {
+    "note": "no surviving frame closer to a bar than the optimistic body radius",
+    "status": "PASS"
+   },
+   "histogram_bin_note": "quantiles are bin upper edges (0.01 m, 0.01 m/s, 0.1 deg)",
+   "name": "B2 speed / tilt / recorded stopping margin (OCC-P2 quota episodes)",
+   "reaction_s": 0.1,
+   "root": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_confirmatory_v1/OCC-P2",
+   "tilt_limit_in_normal_flight": {
+    "note": "951 of 2302287 normal frames above 45 deg",
+    "status": "FAIL"
+   }
+  }
+ ],
+ "package": "EQ-1B flight envelope and braking (CPU, validation only)",
+ "schema": "motar.eq1b-envelope.v1",
+ "source": {
+  "files_sha256": {
+   "aerial_gym/task/navrl_task/speed_governor.py": "fe00c84c3b9a4f62518445c134ee9b0b3eb085486e82feddfeb0ea736ebb6847",
+   "motar_eval/occlusion_trace.py": "ec4aa27c994afb233aedcc48901db29d5c40e9ef33373580f99c03cb68a750e1"
+  },
+  "head": "197b79414dddbd3bd3fcecb51f46ddc7677873ce",
+  "identical_to_measurement_source": true,
+  "measurement_source": "5ff285ad053f181c5a1c86dddb2462bb44e6327b"
+ }
+}
