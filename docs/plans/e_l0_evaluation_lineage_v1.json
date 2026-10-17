@@ -1,0 +1,256 @@
+{
+ "schema": "motar.e-l0-plan.v1",
+ "status": "APPROVED_BY_USER_2026-10-18 (MOTAR — EQ-1D 결과 검토 및 E-L0 평가 계보 개발 승인); fixed before any E-L0 GPU process",
+ "purpose": "E-L0 is an evaluation-only lineage: independent records of contact chronology, sensor/observation timing, target identity provenance, association correctness, silhouette visibility classes, tracker age/expiry and episode outcomes, added without changing the actor observation, action, normalisation, perception, tracker, controller, physics or termination of Frozen Policy F.",
+ "switch": {
+  "variable": "NAVRL_KROC2027_E_L0",
+  "values": [
+   "0",
+   "1"
+  ],
+  "default": "0",
+  "requires": "NAVRL_KROC2027_RECORDER=1",
+  "attachment": "kroc_eval_adapter.KrocRecorder builds motar_eval.e_l0.EL0Recorder; the recorder only reads task tensors, chains (never replaces) the env manager's physics-step callback and wraps perception._associate_lidar_target with a call-through that returns the original outputs"
+ },
+ "records": {
+  "contact_chronology_100hz": "per physics substep: robot contact force norm > collision_force_threshold (0.05 N); per action: number of contact substeps, first contact substep, peak force; per episode: first contact time (s) and substep",
+  "timing_10hz": "per action: env-manager step counter at after_physics, after_perception (observation staged) and before_action (observation consumed); the applied action and command",
+  "camera_provenance": "camera_visible, perception target pixel count, renderer target pixels (detector.target_mask): TRUE_TARGET, FALSE_DETECTION (detection with zero renderer target pixels), MISSED (no detection with >= min_pixels renderer target pixels), NONE",
+  "lidar_provenance": "for each accepted LiDAR association: beam nearest the association bearing, row of the minimum return, LiDAR semantic id there (renderer buffer segmentation_pixels: 50 target, 3 bar, -2 none): CORRECT (50) or FALSE_ASSOCIATION (other); NONE when not accepted",
+  "fused_validity": "camera_visible, lidar_visible, fused visible, track active",
+  "silhouette_classes": "pixel-centre target-alone support (analytic sphere r = 0.15 m on the detector's own ray table and pose, far plane 20 m) and visible support (detector.target_mask), centre-ray mesh query camera->target centre; classes RANGE_EXIT, FOV_EXIT, SCALE_LOSS, FULL, CENTRE_ONLY, PARTIAL, VISIBLE, with attributes centre_in_frustum and below_min_pixels",
+  "tracker": "track age (s), active, expiry events (active -> inactive without a reset)",
+  "episode": "task outcome (capture/crash/timeout, kept), capture_with_contact, collision_free_capture (new column), crash causes from independent evidence (contact substeps, altitude band, OOB bounds), timeout_at_rest (last 1 s speed < 0.1 m/s and nearest-bar clearance >= 0.45 m), safe_abort = NOT_IMPLEMENTED (no abort channel exists; no synthetic event is produced), association counts, label counts"
+ },
+ "outputs": {
+  "frames": "e_l0_frames.bin (fixed little-endian records, dtype in the summary)",
+  "steps": "e_l0_steps.jsonl (per action counters)",
+  "episodes": "e_l0_episodes.jsonl",
+  "summary": "e_l0_summary.json (schema, sha256, counts, definitions)"
+ },
+ "run": {
+  "run_id": "EL0-R1",
+  "output_root": "../aerial_gym_simulator/results/e_l0_evaluation_v1",
+  "processes": [
+   {
+    "id": "v3_static_p0",
+    "batch": "V3",
+    "config": "static",
+    "arm": "P0",
+    "num_envs": 8,
+    "steps": 600,
+    "seed": 4501,
+    "cap_s": 1800
+   },
+   {
+    "id": "v3_static_p1",
+    "batch": "V3",
+    "config": "static",
+    "arm": "P1",
+    "num_envs": 8,
+    "steps": 600,
+    "seed": 4501,
+    "cap_s": 1800
+   },
+   {
+    "id": "v3_static_p2",
+    "batch": "V3",
+    "config": "static",
+    "arm": "P2",
+    "num_envs": 8,
+    "steps": 600,
+    "seed": 4501,
+    "cap_s": 1800
+   },
+   {
+    "id": "v3_moving_p0",
+    "batch": "V3",
+    "config": "moving",
+    "arm": "P0",
+    "num_envs": 8,
+    "steps": 600,
+    "seed": 4502,
+    "cap_s": 1800
+   },
+   {
+    "id": "v3_moving_p1",
+    "batch": "V3",
+    "config": "moving",
+    "arm": "P1",
+    "num_envs": 8,
+    "steps": 600,
+    "seed": 4502,
+    "cap_s": 1800
+   },
+   {
+    "id": "v3_moving_p2",
+    "batch": "V3",
+    "config": "moving",
+    "arm": "P2",
+    "num_envs": 8,
+    "steps": 600,
+    "seed": 4502,
+    "cap_s": 1800
+   },
+   {
+    "id": "v3_batch_p0",
+    "batch": "V3",
+    "config": "static",
+    "arm": "P0",
+    "num_envs": 128,
+    "steps": 320,
+    "seed": 4503,
+    "cap_s": 2400
+   },
+   {
+    "id": "v3_batch_p1",
+    "batch": "V3",
+    "config": "static",
+    "arm": "P1",
+    "num_envs": 128,
+    "steps": 320,
+    "seed": 4503,
+    "cap_s": 2400
+   },
+   {
+    "id": "v3_batch_p2",
+    "batch": "V3",
+    "config": "static",
+    "arm": "P2",
+    "num_envs": 128,
+    "steps": 320,
+    "seed": 4503,
+    "cap_s": 2400
+   },
+   {
+    "id": "v1_scenes",
+    "batch": "V1",
+    "num_envs": 36,
+    "cap_s": 1200
+   },
+   {
+    "id": "v2_contact",
+    "batch": "V2",
+    "num_envs": 24,
+    "cap_s": 1200
+   }
+  ],
+  "arms": {
+   "P0": "Policy F evaluation, no recorder",
+   "P1": "recorder + OCC occlusion trace (the validated OCC telemetry), E-L0 off",
+   "P2": "P1 + E-L0 on"
+  },
+  "configs": {
+   "static": "../aerial_gym_simulator/results/occlusion_confirmatory_v1/OCC-P2/static/A1/E0_static__115bars__seed4301/receipt.json with NAVRL_NUM_BARS=160",
+   "moving": "../aerial_gym_simulator/results/occlusion_confirmatory_v1/OCC-P2/moving/A3/E2_obstacle_aware__115bars__seed4301/receipt.json with NAVRL_NUM_BARS=160"
+  },
+  "noninterference_stop": "after the three arms of a configuration the orchestrator compares their per-step digests; any mismatch stops the run before the next process (the user's rule: do not proceed, analyse the cause)",
+  "integrity_stop": [
+   "nonzero exit or exception",
+   "watchdog cap",
+   "CUDA OOM or GPU memory above the launch-time cap",
+   "NaN/Inf in logged states",
+   "missing output",
+   "Policy F / RMS / actor width / import-origin mismatch",
+   "tracked file or HEAD changed",
+   "output path exists",
+   "free disk below 8 GB",
+   "run output above 1.5 GB"
+  ],
+  "gpu_memory_cap": "total - memory used by other processes at launch - 512 MiB reserve",
+  "disk_min_free_gb": 8.0,
+  "output_max_gb": 1.5,
+  "no_retry": true
+ },
+ "V1": {
+  "description": "Label fixtures: the 32 EQ-1D D2 scenes (level attitude) plus four association scenes, rendered with the production detector/LiDAR/perception on placed geometry; E-L0's labelling functions run on exactly those frames and are compared with independent CPU oracles (EQ-1A pixel-centre analytic geometry, analytic LiDAR first hit).",
+  "extra_scenes": [
+   {
+    "id": "A1",
+    "target": [
+     -5.0,
+     0.0,
+     0.0
+    ],
+    "bars": [],
+    "association_beam_deg": 180.0,
+    "prime": "target",
+    "oracle": "CORRECT: the target is the first hit on the beam; the camera cannot see it"
+   },
+   {
+    "id": "A2",
+    "target": [
+     0.0,
+     6.0,
+     0.0
+    ],
+    "bars": [
+     {
+      "x": 0.0,
+      "y": 3.0
+     }
+    ],
+    "association_beam_deg": 90.0,
+    "prime": "bar_front",
+    "oracle": "FALSE_ASSOCIATION: a stale track at the bar's range; the target exists farther along the same beam"
+   },
+   {
+    "id": "A3",
+    "target": [
+     -6.0,
+     0.0,
+     0.0
+    ],
+    "bars": [
+     {
+      "x": -3.0,
+      "y": 0.0
+     }
+    ],
+    "association_beam_deg": 180.0,
+    "prime": "target",
+    "oracle": "NONE: the bar return is about 3 m short of the predicted target surface, outside the gate"
+   },
+   {
+    "id": "A4",
+    "target": [
+     3.0,
+     0.0,
+     0.0
+    ],
+    "bars": [],
+    "association_beam_deg": 0.0,
+    "prime": "target",
+    "oracle": "NONE: the camera sees the target, so LiDAR association is not attempted"
+   }
+  ],
+  "prime_rule": "prime 'target': track at the true target centre; 'bar_front' (and every N-scene): at the bar front surface + 0.15 m along the beam; covariance 0.01 I, age 1.0 s; camera_visible from the frame's detection"
+ },
+ "V2": {
+  "description": "The 24 EQ-1D D1 fixtures at dt 10 ms with both the EQ-1D substep recorder and E-L0's contact chain attached in the same process; E-L0's per-action contact summary compared with the recorder's per-substep force log and with the SAT geometric window (EQ-1D D1-K1 definition)."
+ },
+ "gates": {
+  "E0-N1": "P2 vs P0, P2 vs P1 and P1 vs P0, every config, every step, every env: 898-D actor observation bytes identical.",
+  "E0-N2": "Deterministic action bytes identical.",
+  "E0-N3": "Pursuer root state and target position/velocity bytes identical (trajectory identity).",
+  "E0-N4": "Per-step done flags, capture/crash flags and reset env ids identical (outcome and reset sequence identity).",
+  "E0-N5": "RMS mean/var/count digest identical to the frozen digest at start and end in every arm.",
+  "E0-N6": "Sensor (camera RGB/depth, LiDAR range and semantic) and tracker (state, covariance, age, active) checksums identical per step.",
+  "E0-L1": "V1 silhouette classes: E-L0 class equals the independent pixel-centre oracle class in every target scene (RANGE_EXIT/FOV_EXIT/SCALE_LOSS/FULL/CENTRE_ONLY/PARTIAL/VISIBLE), and E-L0 alone/visible pixel counts equal the oracle counts.",
+  "E0-L2": "V1 LiDAR provenance: for every accepted association E-L0's label equals the analytic first-hit oracle (target sphere r = 0.20 m vs bars) on that beam; in target-absent scenes every accept is FALSE_ASSOCIATION. The EQ-1D 7/7 false accepts stay a known failure of the production association, not a population false-association rate.",
+  "E0-L3": "V1 camera provenance: TRUE_TARGET exactly in the scenes where the detector reports the target, no FALSE_DETECTION, and NONE in all target-absent scenes.",
+  "E0-C1": "V2: E-L0 first-contact substep and contact-substep counts equal the independent recorder's force log, the first contact lies in the D1-K1 SAT window, and non-contact fixtures have zero contact substeps.",
+  "E0-C2": "V3 P2 episodes: E-L0 outcome equals the task outcome for every episode; collision_free_capture implies capture with zero contact substeps in the episode; every crash has at least one evidence-based cause; safe_abort is NOT_IMPLEMENTED for every episode.",
+  "E0-C3": "V3 P2 frames: online E-L0 centre-ray blockage agrees with the offline OCC line-of-sight from the recorded trace layouts on >= 99.5 % of in-frustum frames (the G0 renderer-parity standard).",
+  "E0-T1": "V3 P2: every observation is staged and consumed at the same step counter and E-L0's applied actions equal the launcher's action log bytes.",
+  "E0-T2": "V3 P2: E-L0 tracker age equals the launcher's tracker age within float16 precision and every recorded expiry is an active->inactive transition without a reset."
+ },
+ "development_smoke": "Mechanical smoke runs only in the session scratchpad; never evidence; fixtures/gates unchanged by them.",
+ "out_of_scope": [
+  "S-L1/P-L1/G-L1 production changes",
+  "Recovery Planner",
+  "PPO",
+  "H-R confirmation",
+  "changes to historical OCC results or populations"
+ ]
+}
