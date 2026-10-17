@@ -20905,3 +20905,18 @@ Next review: the complete diff and new plan; local commit requires user diff app
   Canary `SL1B-C01`: 3 sensor processes (43 envs) and 8 closed-loop processes.
 - Next: independent float64 oracle commit, then runtime and tests. Session resumed 04:12 KST; the
   conservative wrap-up is 08:12 KST.
+
+## 2026-10-18 — S-L1B independent float64 oracle verified before runtime code
+
+- Files: `tools/audits/s_l1b_reference.py`, `tests/test_s_l1b_reference.py`, WORKLOG. The oracle
+  is NumPy only and imports no production code; ray first hits reuse the committed S-L1A oracle.
+- It provides SE(3) reprojection (general R/t), the decreasing-azimuth and +20° row-0 bin
+  conventions, strict versus clamped bins, ±1e−5 rad boundary-robust bins, analytic surface points
+  with grazing (> 80°) flags, and the common-frame carve.
+- CPU tests 12/12 OK; self-test 5/5. Hand checks:
+  - wall points stay at x = 5 to 1e−12 under a rotated and translated mount;
+  - a single-pixel point is reprojected exactly;
+  - validity covers far −1e−3, ≤ 0, non-finite and blanked pixels;
+  - B_TIGHT at 2.77 m is retained in the common frame but inside S-L1A's window;
+  - returns are carved at 2.805 m but never at 2.79 m;
+  - the pinhole column at 20° is 48.8164.
