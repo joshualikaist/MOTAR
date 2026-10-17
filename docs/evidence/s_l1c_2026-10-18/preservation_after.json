@@ -1,0 +1,281 @@
+{
+  "allow_runtime_changes": [
+    "aerial_gym/task/navrl_task/navrl_detector.py",
+    "aerial_gym/task/navrl_task/navrl_perception.py",
+    "aerial_gym/task/navrl_task/navrl_sensor_lineage.py",
+    "tests/test_eq1_geometry_reference.py",
+    "tests/test_s_l1a_analysis.py",
+    "tests/test_s_l1a_eq1_provenance.py",
+    "tests/test_s_l1a_reference.py",
+    "tests/test_s_l1a_run.py",
+    "tests/test_s_l1a_runtime.py",
+    "tests/test_s_l1b_reference.py",
+    "tests/test_s_l1b_run.py",
+    "tests/test_s_l1b_runtime.py",
+    "tests/test_s_l1c_reference.py",
+    "tests/test_s_l1c_run.py",
+    "tests/test_s_l1c_runtime.py",
+    "tools/audits/s_l1a_reference.py",
+    "tools/audits/s_l1b_reference.py",
+    "tools/audits/s_l1c_reference.py",
+    "tools/s_l1a_analysis.py",
+    "tools/s_l1a_launcher.py",
+    "tools/s_l1a_run.py",
+    "tools/s_l1b_analysis.py",
+    "tools/s_l1b_launcher.py",
+    "tools/s_l1b_run.py",
+    "tools/s_l1c_analysis.py",
+    "tools/s_l1c_launcher.py",
+    "tools/s_l1c_run.py"
+  ],
+  "allowed_runtime_changes": [
+    {
+      "after": "8f634f225bbb0242aa287bcce5f7f12ebc13bc40a25ef900df84355c286b121b",
+      "before": "ff04a2dc410342079bd58333c53c571266a7f44c9864ef4e3f6910dd7f6312fa",
+      "path": "aerial_gym/task/navrl_task/navrl_detector.py"
+    },
+    {
+      "after": "a6e7ec6957324f287c156e4f6bc32030e6b362bfb0b9a967506ab57099eba0cf",
+      "before": "0b7f26aa9c12db5e528a3fe75aa28a146a9fbfb695dc8f988e7b172b11c3082f",
+      "path": "aerial_gym/task/navrl_task/navrl_perception.py"
+    },
+    {
+      "after": "3e822dc1982fd7c680d0559cbf3996e7dcf7d266dc7382a201d588b69dae81ce",
+      "before": null,
+      "path": "aerial_gym/task/navrl_task/navrl_sensor_lineage.py"
+    },
+    {
+      "after": "6480cad43828d120131c1d204e0cc342bfc11c0690bd89916f343398875383d2",
+      "before": "aeadf2dabd30e3a0493a0ac36ab597e8a7fa19781e10597c53b0fc9c476641bb",
+      "path": "tests/test_eq1_geometry_reference.py"
+    },
+    {
+      "after": "cb884aecdc066ff2037a5b15f4f356b77750e244fb052ae93e72858b19196679",
+      "before": null,
+      "path": "tests/test_s_l1a_analysis.py"
+    },
+    {
+      "after": "fe53aa8fd15dc20b80de21544324f9174cf64dc66542ad05e21071ca7a0eb0a8",
+      "before": null,
+      "path": "tests/test_s_l1a_eq1_provenance.py"
+    },
+    {
+      "after": "417c8f6db3795c97631b74837d4b4082fd9c7bf45bea0d333185ab89d254250e",
+      "before": null,
+      "path": "tests/test_s_l1a_reference.py"
+    },
+    {
+      "after": "01a389b3be17d1f1d777c8066051fa8135d40e9a47944bb814f192eac05cddb5",
+      "before": null,
+      "path": "tests/test_s_l1a_run.py"
+    },
+    {
+      "after": "3cdc39778dc34193504f45e1715cfdabf78a2badd749be6199ef0ce1f93422a8",
+      "before": null,
+      "path": "tests/test_s_l1a_runtime.py"
+    },
+    {
+      "after": "e9585d9f86eb06a3e115f526607b7432d3fa32137faaf1b62d64d4e7422ef2e4",
+      "before": null,
+      "path": "tests/test_s_l1b_reference.py"
+    },
+    {
+      "after": "a98300be48d0f50242a3f82c53a0179b3332b3bdc55e2ebf30ad82339fa0b4bf",
+      "before": null,
+      "path": "tests/test_s_l1b_run.py"
+    },
+    {
+      "after": "2fcf2ebb5547584a26cafd5c726a3ef80629a6effd33246c4614b6c08b623bf7",
+      "before": null,
+      "path": "tests/test_s_l1b_runtime.py"
+    },
+    {
+      "after": "e9f1b9cec7ef30c1367f8d1f070b8917c0cbc8a7a14289e78294f8f22db109d6",
+      "before": null,
+      "path": "tests/test_s_l1c_reference.py"
+    },
+    {
+      "after": "aa7596cc4890dd99de81db31ef5bdd3a1a55d0672a6582f2644833ef04028e9a",
+      "before": null,
+      "path": "tests/test_s_l1c_run.py"
+    },
+    {
+      "after": "afa6b53c0f928d8e1c9a06b229930ca359b17dff242dd052784aca08ad1028a1",
+      "before": null,
+      "path": "tests/test_s_l1c_runtime.py"
+    },
+    {
+      "after": "2780fde95e1b48e0b58368b82c5c6e23eaadc519bacd64f8f529b8eacde5bfab",
+      "before": null,
+      "path": "tools/audits/s_l1a_reference.py"
+    },
+    {
+      "after": "50a5bc55f4a50a3709816434fb1c1fa6f490f55faa759881dc3525f365393dcb",
+      "before": null,
+      "path": "tools/audits/s_l1b_reference.py"
+    },
+    {
+      "after": "1fe993703acbd5f09a68f7eda534be0b27349c64b36d8ad08b706e6c97875131",
+      "before": null,
+      "path": "tools/audits/s_l1c_reference.py"
+    },
+    {
+      "after": "87b452673cc9bf0cca719bbf2378356b18b149efd0eeb3233cf2c1f6957756a5",
+      "before": null,
+      "path": "tools/s_l1a_analysis.py"
+    },
+    {
+      "after": "adda693a0e5f53c7bdc9680423752907ba1422aa8a437fa528b372867d634dbd",
+      "before": null,
+      "path": "tools/s_l1a_launcher.py"
+    },
+    {
+      "after": "7e782b4af552bb49cd8c3c8c4261ed0c794a9eb097afa1d83bc1e8c5510e1f9f",
+      "before": null,
+      "path": "tools/s_l1a_run.py"
+    },
+    {
+      "after": "c81723f2b88371323e4262ead98b1b50810965f239794c5eeb4e7ee34b4ea232",
+      "before": null,
+      "path": "tools/s_l1b_analysis.py"
+    },
+    {
+      "after": "b728603b59b2e7600633e5e6d92953c233a83b43ffe297f987d1c71214b01920",
+      "before": null,
+      "path": "tools/s_l1b_launcher.py"
+    },
+    {
+      "after": "c9a801e8d51c430ab7e81bb084aac4e4d84b2c5051604927c4f98ac51a3a2d49",
+      "before": null,
+      "path": "tools/s_l1b_run.py"
+    },
+    {
+      "after": "70ed886a73a12fc8421c58c07e491fb3d62c3189df168738347e5a0081017641",
+      "before": null,
+      "path": "tools/s_l1c_analysis.py"
+    },
+    {
+      "after": "5f1dd0ee053f6e2c012cafb82437d0d6c2ae39355eb673bb489706a149351cb8",
+      "before": null,
+      "path": "tools/s_l1c_launcher.py"
+    },
+    {
+      "after": "c9e90875f93a59758e85769698fb1cc98d5c06c62abfbd67465bc207a1e5e5bc",
+      "before": null,
+      "path": "tools/s_l1c_run.py"
+    }
+  ],
+  "baseline_path": "/tmp/claude-1000/-home-fair-workspaces-aerial-gym-ws-src/35a63340-4061-4cc2-958f-43729b9e3417/scratchpad/s_l1c_preservation/preservation_before.json",
+  "baseline_sha256": "1a477204762289eb8d2e8dc0ccd4df051dc02e6810f71c46853cb5cb84d13659",
+  "captured_at_utc": "2026-10-17T21:17:51.918666+00:00",
+  "historical_evidence_packages": {
+    "e_l0_evaluation_2026-10-18": {
+      "files_verified": 31,
+      "index_sha256": "e7917d90f33a9ecc4915a4da1e14c5ec156c750f067ac2da403096f4c0d07c74"
+    },
+    "eq0_environment_audit_2026-10-17": {
+      "files_verified": 35,
+      "index_sha256": "1758938ccf87b28331659e3bbc507fdf3e8199a44548cbee85d34fba394ca1b5"
+    },
+    "eq1_validation_2026-10-18": {
+      "files_verified": 12,
+      "index_sha256": "cb0ae6f34f2d8cf1d30743533a624bfd693ae5b6a4910c3d26f2fe4868319244"
+    },
+    "eq1d_qualification_2026-10-18": {
+      "files_verified": 23,
+      "index_sha256": "2783d1efb7135167d62fbebe52fd7a78fa2fcfdab0681ed9d6759e7a6eb61b5c"
+    }
+  },
+  "main": {
+    "head": "cb644bbe46456b1900020177617a13040a3f1552",
+    "stash_list": "23ddb33f92cf6c75cf9095e149bb7e2516eb7543 stash@{0} On main: KROC2027 merge 2026-10-15: user WIP (.gitignore, WORKLOG.md, presentations/README.md) - restore after canary\n",
+    "tracked_status": " M .gitignore\n M WORKLOG.md\n M presentations/README.md\n",
+    "wip_sha256": {
+      ".gitignore": "0fc139965f0e1e218883e22cb1c2e2cc6c8cf86487b1dd7d402a28a369fb5296",
+      "WORKLOG.md": "a63118ee730803b6c7e0afcceeec0d0595fdbf347ed56fb3474364b79bf6454c",
+      "presentations/README.md": "be8c4b2350a49580c5ea70a45f34c307c34a46f2509ce2eeab8f0f9fdfb69731"
+    }
+  },
+  "policy_f": {
+    "main": {
+      "bytes": 8869844,
+      "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/aerial_gym/rl_training/rl_games/runs/ppo_260805_0413_navrl_v2-speedgov-ep24000-205bars-main-riskcap-s1/nn/last_gen_ppo_ep_25000_rew_39.742134.pth",
+      "sha256": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40"
+    },
+    "worktree": {
+      "bytes": 8869844,
+      "path": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/aerial_gym/rl_training/rl_games/runs/ppo_260805_0413_navrl_v2-speedgov-ep24000-205bars-main-riskcap-s1/nn/last_gen_ppo_ep_25000_rew_39.742134.pth",
+      "sha256": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40"
+    }
+  },
+  "problems": [],
+  "raw_manifests": {
+    "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/e_l0_evaluation_v1/EL0-R1/RAW_MANIFEST.json": {
+      "member_schema": "members_list",
+      "members_verified": 99,
+      "mismatches": [],
+      "sha256": "bbc7365e2bf6b638c71e6aaa26518143a7bac22849b99cd3bfa86461ed45f723"
+    },
+    "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/eq1d_qualification_v1/EQ1D-R1/RAW_MANIFEST.json": {
+      "member_schema": "members_list",
+      "members_verified": 33,
+      "mismatches": [],
+      "sha256": "e28dfc68531b559161bbbc217e541917e696b0960837c3418e71f6115efb4b22"
+    },
+    "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/kroc2027_A_v1/RAW_MANIFEST.json": {
+      "member_schema": "files_mapping",
+      "members_verified": 393,
+      "mismatches": [],
+      "sha256": "7a8042aa0d1a36a6c7fb34d8bf273ef49606e3ee7bf4bde44755ff1628575726"
+    },
+    "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/mt_p1_precision_v1/KROC27-A-M02/RAW_MANIFEST.json": {
+      "member_schema": "files_mapping",
+      "members_verified": 452,
+      "mismatches": [],
+      "sha256": "bc90b5b086cbae9db4daebbfcc81cf448f21348f1f648a1df3e025c9cba4bdd7"
+    },
+    "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/mt_p1_precision_v1/MT-P2-C01/RAW_MANIFEST.json": {
+      "member_schema": "files_mapping",
+      "members_verified": 131,
+      "mismatches": [],
+      "sha256": "9b28af167706e6f39224402056943aa1bc1adbb8fa021efac6ef65cea6ebb4e4"
+    },
+    "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_confirmatory_v1/OCC-P2/RAW_MANIFEST.json": {
+      "member_schema": "files_mapping",
+      "members_verified": 1406,
+      "mismatches": [],
+      "sha256": "c5cd1dbc160122d444119af255fee450405c7d3373025cad6f866d5c0a0cfc68"
+    },
+    "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_pilot_v1/OCC-G0/RAW_MANIFEST.json": {
+      "member_schema": "files_mapping",
+      "members_verified": 53,
+      "mismatches": [],
+      "sha256": "2e051977a68c34c21e1dd8a674b3673c1016d855295ecc73350d323fb007bc88"
+    },
+    "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_pilot_v1/OCC-G0_rerun1/RAW_MANIFEST.json": {
+      "member_schema": "files_mapping",
+      "members_verified": 194,
+      "mismatches": [],
+      "sha256": "cc26a68a9822da9e99762cda984ded59ce161292adbd56cdc1c7313f4a14a599"
+    },
+    "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_pilot_v1/OCC-P1/RAW_MANIFEST.json": {
+      "member_schema": "files_mapping",
+      "members_verified": 14,
+      "mismatches": [],
+      "sha256": "b0f071e873c26829bc13d12d26daa19e9c6aee5c3ddd38ceaa0498d43c0423c4"
+    },
+    "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_pilot_v1/OCC-P1_rerun1/RAW_MANIFEST.json": {
+      "member_schema": "files_mapping",
+      "members_verified": 704,
+      "mismatches": [],
+      "sha256": "6e12d9ac4350419a2214933a4cf445cff642c4ca85cdcf6da0116bc7eacda120"
+    }
+  },
+  "raw_members_verified_total": 3479,
+  "runtime_test_files_verified": 2078,
+  "schema": "motar.s-l1a-preservation-after.v1",
+  "stage": "AFTER_S_L1A",
+  "status": "PASS",
+  "worktree_head": "4d5911d3d2fcbf0a285f395e38428dc39ef67868",
+  "worktree_status": "?? docs/plans/s_l1d_design_draft.md\n?? results/mt_p1_precision_v1\n?? results/occlusion_pilot_v1\n"
+}

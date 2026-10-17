@@ -21090,3 +21090,29 @@ Next review: the complete diff and new plan; local commit requires user diff app
   - beam-centred radius 2.5e−5 m;
   - orthogonal variance ratio ≥ 0.9996;
   - closed-loop sources 3,886 camera, 421 LiDAR and 501 none, with all invariants holding.
+
+## 2026-10-18 — S-L1C GPU qualification SL1C-C01: S-L1C_QUALIFIED (9/9 verdict gates PASS)
+
+- Run at fixed source `4d5911d`: 13/13 processes rc=0, no retry, 541.0 s. Peak 4,668 MiB under
+  measured caps of 7,278–7,283 MiB; disk 19.1 GB free. Raw
+  `../aerial_gym_simulator/results/s_l1c_v1/SL1C-C01` (manifest `29448df8…`, 176 members, 0
+  mismatches). Policy F unchanged; SL1A/SL1B-C01 still 138/138.
+
+  | Measure | legacy / S-L1B | S-L1C |
+  | --- | --- | --- |
+  | D2-N2 bar-only negatives accepted (7 × 3 passes) | 21/21 | **0/21** (0 oracle mismatches) |
+  | LiDAR-truth-eligible positives accepted | 114/117 | **117/117** |
+  | Ineligible target-scene trials accepted (99) | 18 (S14 / A_FOREGROUND foreground bars) | **0** |
+  | Minimum orthogonal variance ratio after a range update | 0.0128 | **0.9996** |
+  | Beam-centred centre-range error (33) | — | **2.5e−5 m** |
+
+- C-PROV: closed-loop camera updates reset `identity_age`; LiDAR updates never reset it and
+  increment exactly. Fused `track_age` resets on every LiDAR accept (contract unchanged). Static
+  sources: 3,886 camera, 421 LiDAR, 501 none; moving: 3,551, 362 and 895.
+- C-REGRESSION and C-EL0: off = EL0-R1, s_l1a = SL1A-C01 and s_l1b = SL1B-C01 (bitwise, 14 keys,
+  600 steps, static and moving); s_l1c P1 = P2; actor 898.
+- ON (no claim): captures and crashes static 116/5 and moving 96/4, against s_l1b 120/2 and 89/3.
+- Preservation PASS: 2,078 files with 27 allowed paths, 101 evidence files, 10/3,479 raw, Policy F,
+  and main with WIP3 and stash.
+- Evidence: `docs/evidence/s_l1c_2026-10-18/`. Next: independent review, then the GO/NO-GO for
+  S-L1D.

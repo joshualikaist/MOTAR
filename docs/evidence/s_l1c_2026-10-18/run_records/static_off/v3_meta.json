@@ -1,0 +1,40 @@
+{
+ "arm_state": {
+  "e_l0": true,
+  "occlusion_trace": true,
+  "recorder": true
+ },
+ "env": {
+  "NAVRL_BULK_EVAL": "1",
+  "NAVRL_BULK_EVAL_JSON": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/s_l1c_v1/SL1C-C01/static_off/result.json",
+  "NAVRL_KROC2027_ARM": "static_off",
+  "NAVRL_KROC2027_E_L0": "1",
+  "NAVRL_KROC2027_INITIAL_DISTANCE_M": "10.0",
+  "NAVRL_KROC2027_INITIAL_VIEW": "visible",
+  "NAVRL_KROC2027_OCCLUSION_TRACE": "1",
+  "NAVRL_KROC2027_RECORDER": "1",
+  "NAVRL_KROC2027_RUN_ID": "SL1C-C01",
+  "NAVRL_NUM_BARS": "160",
+  "NAVRL_SEED": "4501",
+  "NAVRL_TARGET_BEHAVIOR_LEVEL": "e0_static"
+ },
+ "loop_wall_s": 37.56152606010437,
+ "model_training_flag": false,
+ "nan_fields": [],
+ "origins": {
+  "aerial_gym": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/aerial_gym/__init__.py",
+  "motar_eval": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/motar_eval/__init__.py"
+ },
+ "process": {
+  "arm": "P2",
+  "batch": "V3",
+  "config": "static",
+  "id": "static_off",
+  "num_envs": 8,
+  "seed": 4501,
+  "steps": 600,
+  "variant": "off"
+ },
+ "rms_digest_end": "642fc9f7f86b068e816e156fea7a34782bbc525966650f73cd85aae8cc18387f",
+ "rms_digest_start": "642fc9f7f86b068e816e156fea7a34782bbc525966650f73cd85aae8cc18387f"
+}
