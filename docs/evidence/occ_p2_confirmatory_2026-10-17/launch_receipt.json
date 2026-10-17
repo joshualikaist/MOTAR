@@ -1,0 +1,69 @@
+{
+  "authorization": "User explicitly approves local preregistration/analysis commit and, after passing preregistered conditions, this exact GPU main run without a further approval. No merge/push/PPO/Planner/deletion.",
+  "cells": 112,
+  "checkpoint_sha256": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+  "free_disk_gb": 20.630843392,
+  "g0_report_sha256": "ae17bfa538777639328b4554b3929b72f7d7c2acccf2422a79dfdb242ba19632",
+  "gpu": [
+    "NVIDIA GeForce RTX 3070"
+  ],
+  "import_origins": {
+    "aerial_gym": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/aerial_gym/__init__.py",
+    "motar_eval": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/motar_eval/__init__.py"
+  },
+  "output_root": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_confirmatory_v1/OCC-P2",
+  "plan_sha256": "077f3daf25621791fcb973ae0581f0f290b75873c5044cb805d3ed8d43cdef67",
+  "prereg_sha256": "b825b75fff1d978f8c3c4d695906efa5197c91c0730c3f5bec309fba875950b7",
+  "preservation": {
+    "files_verified": 1941,
+    "manifests": {
+      "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/kroc2027_A_v1/RAW_MANIFEST.json": {
+        "files_verified": 393,
+        "sha256": "7a8042aa0d1a36a6c7fb34d8bf273ef49606e3ee7bf4bde44755ff1628575726"
+      },
+      "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/mt_p1_precision_v1/KROC27-A-M02/RAW_MANIFEST.json": {
+        "files_verified": 452,
+        "sha256": "bc90b5b086cbae9db4daebbfcc81cf448f21348f1f648a1df3e025c9cba4bdd7"
+      },
+      "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/mt_p1_precision_v1/MT-P2-C01/RAW_MANIFEST.json": {
+        "files_verified": 131,
+        "sha256": "9b28af167706e6f39224402056943aa1bc1adbb8fa021efac6ef65cea6ebb4e4"
+      },
+      "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_pilot_v1/OCC-G0/RAW_MANIFEST.json": {
+        "files_verified": 53,
+        "sha256": "2e051977a68c34c21e1dd8a674b3673c1016d855295ecc73350d323fb007bc88"
+      },
+      "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_pilot_v1/OCC-G0_rerun1/RAW_MANIFEST.json": {
+        "files_verified": 194,
+        "sha256": "cc26a68a9822da9e99762cda984ded59ce161292adbd56cdc1c7313f4a14a599"
+      },
+      "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_pilot_v1/OCC-P1/RAW_MANIFEST.json": {
+        "files_verified": 14,
+        "sha256": "b0f071e873c26829bc13d12d26daa19e9c6aee5c3ddd38ceaa0498d43c0423c4"
+      },
+      "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_pilot_v1/OCC-P1_rerun1/RAW_MANIFEST.json": {
+        "files_verified": 704,
+        "sha256": "6e12d9ac4350419a2214933a4cf445cff642c4ca85cdcf6da0116bc7eacda120"
+      }
+    },
+    "pilot_scene_set_sha256": "61e997fc8edd1f4355146876c3f61d8d1f0d44cd5e8b3ed3b31d6c092f8b3ed1",
+    "pilot_seeds": [
+      4201,
+      4202,
+      4203,
+      4204,
+      4205,
+      4206,
+      4207
+    ],
+    "pilot_unique_scene_hashes": 42120,
+    "problems": []
+  },
+  "primary_episodes": 57344,
+  "problems": [],
+  "source_commit": "5ff285ad053f181c5a1c86dddb2462bb44e6327b",
+  "source_g0_runtime_diff": "NONE",
+  "source_tree": "fe665151892de7e6d0260dcbb71d0a75432ebc1f",
+  "started_at": "2026-10-17T06:19:39.661344+00:00",
+  "status": "PASS"
+}

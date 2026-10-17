@@ -1,0 +1,45 @@
+{
+  "files_verified": 1941,
+  "manifests": {
+    "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/kroc2027_A_v1/RAW_MANIFEST.json": {
+      "files_verified": 393,
+      "sha256": "7a8042aa0d1a36a6c7fb34d8bf273ef49606e3ee7bf4bde44755ff1628575726"
+    },
+    "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/mt_p1_precision_v1/KROC27-A-M02/RAW_MANIFEST.json": {
+      "files_verified": 452,
+      "sha256": "bc90b5b086cbae9db4daebbfcc81cf448f21348f1f648a1df3e025c9cba4bdd7"
+    },
+    "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/mt_p1_precision_v1/MT-P2-C01/RAW_MANIFEST.json": {
+      "files_verified": 131,
+      "sha256": "9b28af167706e6f39224402056943aa1bc1adbb8fa021efac6ef65cea6ebb4e4"
+    },
+    "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_pilot_v1/OCC-G0/RAW_MANIFEST.json": {
+      "files_verified": 53,
+      "sha256": "2e051977a68c34c21e1dd8a674b3673c1016d855295ecc73350d323fb007bc88"
+    },
+    "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_pilot_v1/OCC-G0_rerun1/RAW_MANIFEST.json": {
+      "files_verified": 194,
+      "sha256": "cc26a68a9822da9e99762cda984ded59ce161292adbd56cdc1c7313f4a14a599"
+    },
+    "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_pilot_v1/OCC-P1/RAW_MANIFEST.json": {
+      "files_verified": 14,
+      "sha256": "b0f071e873c26829bc13d12d26daa19e9c6aee5c3ddd38ceaa0498d43c0423c4"
+    },
+    "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_pilot_v1/OCC-P1_rerun1/RAW_MANIFEST.json": {
+      "files_verified": 704,
+      "sha256": "6e12d9ac4350419a2214933a4cf445cff642c4ca85cdcf6da0116bc7eacda120"
+    }
+  },
+  "pilot_scene_set_sha256": "61e997fc8edd1f4355146876c3f61d8d1f0d44cd5e8b3ed3b31d6c092f8b3ed1",
+  "pilot_seeds": [
+    4201,
+    4202,
+    4203,
+    4204,
+    4205,
+    4206,
+    4207
+  ],
+  "pilot_unique_scene_hashes": 42120,
+  "problems": []
+}
