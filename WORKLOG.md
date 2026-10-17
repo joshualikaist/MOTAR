@@ -21238,3 +21238,24 @@ Next review: the complete diff and new plan; local commit requires user diff app
 - Preservation PASS: 2,085 files with 34 allowed paths, 101 evidence files, 10/3,479 raw, Policy F,
   and main with WIP3 and stash.
 - Evidence: `docs/evidence/s_l1d_2026-10-18/`. Next: independent review, then push.
+
+## 2026-10-18 — S-L1D independent review (Fable 5.1): GO-WITH-NOTES; decision S-L1D INCOMPLETE
+
+- Reviewer (read-only `claude-fable-5-1`, neutral wording): no blocker. It confirmed the rule
+  equals E-L0 target-alone plus the preregistered precedence, a sensor-only data flow, GT used
+  only in fixture probes, and an inert trace (s_l1d = s_l1c bitwise). It reproduced the analysis
+  byte for byte and checked manifests 131/131. 18 extra probes matched production to the oracle.
+- Corrections (addendum `docs/evidence/s_l1d_2026-10-18/REVIEW_ADDENDUM.md`):
+  - The committed scale-loss test was vacuous, and the preregistered CPU cases FOV 40/44°, S14-like
+    rim gap and 0.2 m offset were missing. All are now asserted in `tests/test_s_l1d_fixtures.py`
+    (5 OK; production `76f0f4c` unchanged; no gate change). This includes a one-pixel target at
+    13.5 m and the same target occluded (E-L0 FULL, alone 1), both giving PRED_SCALE_LOSS, and an
+    on-axis 20.05 m SCALE_LOSS giving PRED_SCALE_LOSS.
+  - The "predicted centre" is the current-step posterior.
+  - The GPU-informative set is the 4 FULL scenes.
+- Decision: **S-L1D INCOMPLETE**. In SL1D-C01, GPU partial, centre-only and scale states never
+  occurred undetected: all 12 CENTRE_ONLY/PARTIAL passes were detected and there was no SCALE_LOSS
+  fixture. The required GPU comparison for those classes is therefore missing.
+- Resume: amendment 1 with far one/zero-pixel and edge-occluded far-target GPU scenes, then
+  sensor-only canary SL1D-C02, review and push. P-L1, G-L1, PPO and the Recovery Planner stay
+  unstarted.
