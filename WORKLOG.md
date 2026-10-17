@@ -20790,3 +20790,15 @@ Next review: the complete diff and new plan; local commit requires user diff app
   the same interpreter runs `tools/audits/s_l1a_reference.py --self-test`. Diff reviewed/check PASS.
 - No GPU, PPO or runtime correction yet. Next: S-L1A-only detector/perception helper and CPU
   regression against this committed independent oracle, then a separate code commit before canary.
+
+## 2026-10-18 — S-L1A amendment 1 repairs historical comparison seeds before GPU measurement
+
+- During launcher preparation, the preserved E-L0 plan/metadata showed static seed 4501 and moving
+  seed 4502, rather than the shared 4401 assumed in S-L1A v1. Exact historical digest comparison
+  requires matching configurations. No S-L1A GPU process or measurement has occurred.
+- New `docs/plans/s_l1a_v1_amendment1.md` and `.json` override only closed-loop seeds by config;
+  sensor fixtures retain 4401. Original preregistration bytes, gates, N8/600 steps/160 bars,
+  runtime correction rules, watchdogs and verdicts remain unchanged. No performance-based choice.
+- Files: those two amendment files and this appended WORKLOG entry. JSON parse and local links
+  checked; exact historical process seeds verified against the committed E-L0 plan. Next: finish
+  implementation/CPU validation, then commit all source before the GPU canary.

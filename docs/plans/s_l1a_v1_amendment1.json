@@ -1,0 +1,10 @@
+{
+  "schema": "motar.s-l1a-plan-amendment.v1",
+  "amendment": 1,
+  "date_kst": "2026-10-18",
+  "timing": "Before S-L1A GPU launch or measurement; original plan bytes preserved",
+  "reason": "Correct shared seed assumption so legacy OFF comparison exactly matches the recorded E-L0 static and moving configurations",
+  "overrides": {"run": {"closed_loop_seed_by_config": {"static": 4501, "moving": 4502}}},
+  "supersedes": "s_l1a_v1.json run.closed_loop_seed=4401 for closed-loop processes only",
+  "unchanged": "Gates, sensor fixtures, geometry, runtime correction, N8, 600 steps, density160, limits and verdict rules unchanged"
+}
