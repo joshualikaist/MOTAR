@@ -21138,3 +21138,25 @@ Next review: the complete diff and new plan; local commit requires user diff app
   No preregistered fixture lay in the band; about 2–3% of closed-loop steps do. The fix (an
   elevation-aware shape test) needs a new `s_l1c_v2` preregistration.
 - Decision: **S-L1C GO**. S-L1D may start; its preregistration carries this inherited limitation.
+
+## 2026-10-18 — S-L1D v1 preregistered: online measurement validity, diagnostic only (before code)
+
+- Base `ffbbaf3`, after the S-L1C GO. Files: `docs/plans/s_l1d_v1.md` and `.json`. Nothing of
+  S-L1D is implemented or measured yet.
+- Cumulative `s_l1d_v1` adds a sensor-inferable online validity state as evaluator-facing
+  diagnostics. Closed loop must be bitwise equal to s_l1c_v1; the actor and tracker are unchanged.
+  - Classes: NO_TRACK, DETECTED, PRED_RANGE/FOV/SCALE, OCCLUSION_FULL/CENTRE/PARTIAL_EVIDENCE,
+    UNEXPLAINED_LOSS.
+  - Predicted support: E-L0 rule on the track prediction.
+  - Occlusion evidence: depth nearer than the predicted surface by more than
+    τ = 0.05 + 2σ_los (the track's own uncertainty).
+  - Identity layers come from S-L1C.
+- Gates:
+  - D-ORACLE: support equals the oracle and E-L0 `alone_px`, up to boundary-ambiguous pixels.
+  - D-FIXTURES: the preregistered evaluator→online mapping holds 100% with the true centre primed
+    and the camera not detecting. Occluders within τ are reported, not gated.
+  - D-SEPARATION, D-REACQ.
+  - D-REGRESSION: off = EL0-R1, s_l1c = SL1C-C01, and s_l1d = s_l1c bitwise.
+  - D-EL0, D-FIREWALL, D-INTEGRITY.
+- Inherited limitations named (S-L1C recall band, S-L1B carve, identical attitude passes).
+  Canary SL1D-C01: 2 sensor and 8 closed-loop processes.
