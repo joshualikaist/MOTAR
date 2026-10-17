@@ -126,7 +126,7 @@ def preflight(p, approved, run_dir, smoke=False):
     old = read_json(base.resolve(p["references"]["eq1d_plan"]))
     problems, checks = base.preflight(old, approved, run_dir, smoke)
     paths = (PLAN_PATH, AMENDMENT_PATH, PLAN_PATH.with_suffix(".md"), AMENDMENT_PATH.with_suffix(".md"),
-             Path(__file__), LAUNCHER)
+             Path(__file__).resolve(), LAUNCHER)
     checks["s_l1a_committed_inputs"] = {str(path.relative_to(ROOT)): committed(path) for path in paths}
     checks["s_l1a_input_sha256"] = {str(path.relative_to(ROOT)): base.sha256_file(path)
                                       for path in paths if path.is_file()}

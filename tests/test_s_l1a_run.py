@@ -71,6 +71,21 @@ class ContractTest(unittest.TestCase):
                 problems, _ = runner.preflight(PLAN, HEAD, Path(temp) / "new", False)
         self.assertTrue(any("not committed" in problem for problem in problems))
 
+    def test_relative_script_path_is_resolved_for_preflight(self):
+        # Python 3.8 leaves __file__ relative for `python tools/s_l1a_run.py` from the root.
+        with tempfile.TemporaryDirectory() as temp:
+            receipt = Path(temp) / "receipt.json"
+            receipt.write_text(json.dumps({"checkpoint_sha256": PLAN["policy_f_sha256"]}))
+            with mock.patch.object(runner, "__file__", "tools/s_l1a_run.py"), \
+                    mock.patch("os.getcwd", return_value=str(ROOT)), \
+                    mock.patch.object(runner.base, "preflight", return_value=([], {"policy_f_sha256": PLAN["policy_f_sha256"]})), \
+                    mock.patch.object(runner, "committed", return_value=True), \
+                    mock.patch.object(runner.el0, "config_receipt", return_value=receipt), \
+                    mock.patch.object(runner, "historical_bindings", return_value={}), \
+                    mock.patch.object(runner.base, "git", side_effect=fake_git):
+                _, checks = runner.preflight(PLAN, HEAD, Path(temp) / "new", False)
+        self.assertIn("tools/s_l1a_run.py", checks["s_l1a_committed_inputs"])
+
 
 class OutputAndDigestTest(unittest.TestCase):
     def test_all_fourteen_digests_compared_and_missing_key_rejected(self):

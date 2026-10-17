@@ -20831,3 +20831,13 @@ Next review: the complete diff and new plan; local commit requires user diff app
   only after commit; re-run after commit follows in the result entry.
 - Next: preflight and GPU canary `SL1A-C01` at this commit (no tracked edits while it runs), then
   manifest/preservation/analysis in a separate result commit. Wrap-up target 08:12 KST.
+
+## 2026-10-18 — S-L1A runner preflight resolves a relative script path before the GPU canary
+
+- Official `preflight` at `d7bdca6` crashed before any GPU work: Python 3.8 leaves `__file__`
+  relative for `python tools/s_l1a_run.py`, so `relative_to(ROOT)` raised. CPU tests imported the
+  module by absolute path and missed it. Fix: `Path(__file__).resolve()` (one line); new regression
+  `test_relative_script_path_is_resolved_for_preflight` fails before and passes after.
+- Dry preflight with the fix: only problems were the uncommitted fix itself. Policy F SHA, RMS
+  digest, in-worktree import origins, disk 19.2 GB, GPU 7,182 MiB free, receipts and historical
+  E-L0 bindings pass. PUBLIC_CPU after `d7bdca6`: 2,478 run, 0 failures, 0 errors, 10 skipped.
