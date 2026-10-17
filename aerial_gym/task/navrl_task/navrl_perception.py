@@ -728,10 +728,13 @@ class NavRLPerceptionModule:
 
     def __init__(self, num_envs, device, cfg, step_dt, camera_cfg):
         self.sensor_lineage_s_l1a = False
+        self.sensor_lineage_s_l1b = False
         if os.environ.get("NAVRL_SENSOR_LINEAGE", "off") != "off":
-            from aerial_gym.task.navrl_task.navrl_sensor_lineage import sensor_lineage_enabled
+            from aerial_gym.task.navrl_task.navrl_sensor_lineage import sensor_lineage_level
 
-            self.sensor_lineage_s_l1a = sensor_lineage_enabled()
+            level = sensor_lineage_level()
+            self.sensor_lineage_s_l1a = level >= 1
+            self.sensor_lineage_s_l1b = level >= 2
         self.num_envs = int(num_envs)
         self.device = device
         self.cfg = cfg
@@ -777,6 +780,18 @@ class NavRLPerceptionModule:
             camera_cfg.camera_translation, dtype=torch.float32, device=device
         ).view(1, 3)
         self.target_radius = float(camera_cfg.camera_target_radius)
+        if self.sensor_lineage_s_l1b:
+            from aerial_gym.task.navrl_task.navrl_sensor_lineage import camera_unit_rays
+
+            # S-L1B nominal camera->LiDAR extrinsic: t = camera_translation, R = I (yaw-only frames).
+            self._s_l1b_rays = camera_unit_rays(self.width, self.height, self.fx, self.fy,
+                                                self.cx, self.cy, device=device)
+            self._s_l1b_rotation = torch.eye(3, dtype=torch.float32, device=device)
+            from aerial_gym.task.navrl_task.navrl_sensor_lineage import (
+                LIDAR_ELEVATION_MAX_DEG, LIDAR_ELEVATION_MIN_DEG)
+
+            self._s_l1b_lidar_elevations = torch.deg2rad(torch.linspace(
+                LIDAR_ELEVATION_MAX_DEG, LIDAR_ELEVATION_MIN_DEG, VBEAMS, device=device))
         self.min_pixels = int(getattr(cfg, "min_target_pixels", 2))
         self.pixel_threshold = float(getattr(cfg, "pixel_threshold", 0.55))
         self.dropout_prob = float(getattr(cfg, "detection_dropout_prob", 0.0))
@@ -1822,11 +1837,26 @@ class NavRLPerceptionModule:
             # authorize exclusion. Unsupported evidence leaves all returns intact.
             confirmed = (torch.zeros_like(visible) if camera_visible is None
                          else visible & camera_visible)
-            masks = conservative_carve_masks(
-                scan, self._lidar_angles, raw_depth, target_pixels, confirmed, target_bearing,
-                target_radius=self.target_radius, min_target_pixels=self.min_pixels,
-                lidar_far_m=self.lidar_max_range, camera_far_m=self.max_camera_range,
-            )
+            if getattr(self, "sensor_lineage_s_l1b", False):
+                from aerial_gym.task.navrl_task.navrl_sensor_lineage import (
+                    LIDAR_TARGET_PROXY_RADIUS_M, common_frame_carve_masks)
+
+                # S-L1B: the LiDAR window starts at the camera-observed nearest body range minus
+                # the declared LiDAR-proxy/camera radius difference, in the common frame.
+                masks = common_frame_carve_masks(
+                    scan, self._lidar_angles, raw_depth, target_pixels, confirmed, target_bearing,
+                    self._s_l1b_rays, self._s_l1b_rotation, self.camera_offset.view(3),
+                    self._s_l1b_lidar_elevations,
+                    target_radius=self.target_radius, lidar_target_radius=LIDAR_TARGET_PROXY_RADIUS_M,
+                    min_target_pixels=self.min_pixels, lidar_far_m=self.lidar_max_range,
+                    camera_far_m=self.max_camera_range,
+                )
+            else:
+                masks = conservative_carve_masks(
+                    scan, self._lidar_angles, raw_depth, target_pixels, confirmed, target_bearing,
+                    target_radius=self.target_radius, min_target_pixels=self.min_pixels,
+                    lidar_far_m=self.lidar_max_range, camera_far_m=self.max_camera_range,
+                )
             target_like = masks["lidar_carve_mask"]
             target_pixels = masks["camera_blank_mask"]
         else:
@@ -1844,18 +1874,35 @@ class NavRLPerceptionModule:
         scan = torch.where(target_like, torch.full_like(scan, self.lidar_max_range), scan)
 
         # Fuse forward RGB-D geometry into the 360-degree LiDAR distance representation.
-        depth_no_target = torch.where(
-            target_pixels, torch.full_like(raw_depth, self.lidar_max_range), raw_depth
-        )
-        camera_col_min = camera_no_return_to_lidar_range(
-            depth_no_target.amin(dim=1), self.camera_obstacle_max_range, self.lidar_max_range
-        ).clamp(0.0, self.lidar_max_range)
-        inside = self._lidar_angles.abs() <= self.hfov * 0.5
-        camera_u = ((self.hfov * 0.5 - self._lidar_angles) / self.hfov * (self.width - 1)).round()
-        camera_u = camera_u.long().clamp(0, self.width - 1)
-        camera_ranges = camera_col_min[:, camera_u]
-        fused_camera = camera_ranges.unsqueeze(1).expand(-1, VBEAMS, -1)
-        scan[:, :, inside] = torch.minimum(scan[:, :, inside], fused_camera[:, :, inside])
+        if getattr(self, "sensor_lineage_s_l1b", False):
+            from aerial_gym.task.navrl_task.navrl_sensor_lineage import (
+                camera_points_lidar_frame, lidar_envelope_bins)
+
+            # S-L1B: pinhole rays + SE(3) into the LiDAR frame, binned per elevation. The clamped
+            # conservative envelope is fused into every bin; strict bins are diagnostics only.
+            points = camera_points_lidar_frame(
+                raw_depth, self._s_l1b_rays, self._s_l1b_rotation, self.camera_offset.view(3),
+                camera_far_m=self.camera_obstacle_max_range, blank=target_pixels)
+            envelope = lidar_envelope_bins(points, hbeams=HBEAMS, vbeams=VBEAMS,
+                                           lidar_far_m=self.lidar_max_range, clamp=True)
+            self.last_s_l1b_points = points
+            self.last_s_l1b_envelope = envelope
+            self.last_s_l1b_strict = lidar_envelope_bins(points, hbeams=HBEAMS, vbeams=VBEAMS,
+                                                         lidar_far_m=self.lidar_max_range, clamp=False)
+            scan = torch.minimum(scan, envelope)
+        else:
+            depth_no_target = torch.where(
+                target_pixels, torch.full_like(raw_depth, self.lidar_max_range), raw_depth
+            )
+            camera_col_min = camera_no_return_to_lidar_range(
+                depth_no_target.amin(dim=1), self.camera_obstacle_max_range, self.lidar_max_range
+            ).clamp(0.0, self.lidar_max_range)
+            inside = self._lidar_angles.abs() <= self.hfov * 0.5
+            camera_u = ((self.hfov * 0.5 - self._lidar_angles) / self.hfov * (self.width - 1)).round()
+            camera_u = camera_u.long().clamp(0, self.width - 1)
+            camera_ranges = camera_col_min[:, camera_u]
+            fused_camera = camera_ranges.unsqueeze(1).expand(-1, VBEAMS, -1)
+            scan[:, :, inside] = torch.minimum(scan[:, :, inside], fused_camera[:, :, inside])
         static_state = (scan / self.lidar_max_range).clamp(0.0, 1.0)
 
         # Nearest angularly separated obstacle proposals. Bars are static, hence velocity=0;

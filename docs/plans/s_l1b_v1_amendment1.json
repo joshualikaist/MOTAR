@@ -1,0 +1,14 @@
+{
+  "schema": "motar.s-l1b-plan-amendment.v1",
+  "amendment": 1,
+  "date_kst": "2026-10-18",
+  "timing": "During CPU runtime development, before any S-L1B GPU process or measurement; original plan bytes preserved",
+  "finding": "CPU fixture B_TIGHT: with the preregistered azimuth-only angular limit, LiDAR rows at +-10 and +20 deg whose beams cannot meet the target still had bar returns (2.813 m, 2.948 m) inside [s_L, s_L + 0.55) and were carved, a false clear of a real bar. S-L1A's frozen carve has the same azimuth-only test; its GPU fixtures did not exercise it",
+  "overrides": {
+    "corrections": {
+      "B5_carve_common_frame_elevation": "additionally, LiDAR row e is carve-eligible only when its elevation lies within [min, max] of the body-frame elevations of the valid candidate pixels (the camera's own current target support, p = R d r_hat + t); the azimuth limit, window, support and camera blanking are unchanged"
+    }
+  },
+  "unchanged": "Every gate, threshold, fixture, run limit and verdict rule. The change only removes carve eligibility (stricter, more returns retained); no gate is relaxed",
+  "oracle": "tools/audits/s_l1b_reference.common_frame_carve_masks implements the same rule independently (NumPy float64)"
+}

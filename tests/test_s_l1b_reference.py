@@ -98,6 +98,18 @@ class CarveTest(unittest.TestCase):
                 masks = ref.common_frame_carve_masks(scan, angles, depth, candidates, np.array([True]), np.array([0.]))
                 self.assertEqual(bool(masks["lidar_carve_mask"][0, 2, 36]), carved)
 
+    def test_amendment1_rows_outside_camera_target_elevations_are_never_carved(self):
+        scan, angles, depth, candidates = self.inputs(2.77)
+        scan[0, 1, 36] = scan[0, 3, 36] = 2.813  # tall bar seen by the +-10 deg rows
+        scan[0, 0, 36] = 2.948
+        visible, bearing = np.array([True]), np.array([0.])
+        new = ref.common_frame_carve_masks(scan, angles, depth, candidates, visible, bearing)
+        old = ref.ref.carve_masks(scan, angles, depth, candidates, visible, bearing, target_radius=.15, camera_far_m=20.)
+        self.assertFalse(new["lidar_carve_mask"][0, :, 36].any())
+        self.assertTrue(old["lidar_carve_mask"][0, [0, 1, 3], 36].all())  # recorded S-L1A limitation
+        scan[0, 2, 36] = 2.81  # the on-axis target proxy return remains carve-eligible
+        self.assertTrue(ref.common_frame_carve_masks(scan, angles, depth, candidates, visible, bearing)["lidar_carve_mask"][0, 2, 36])
+
     def test_unsupported_evidence_never_carves(self):
         scan, angles, depth, candidates = self.inputs(2.81)
         for visible, cand in ((False, candidates), (True, np.zeros_like(candidates))):

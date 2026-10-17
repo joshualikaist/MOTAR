@@ -155,8 +155,12 @@ def common_frame_carve_masks(lidar_ranges, lidar_angles, camera_depth, camera_ca
                              rotation=np.eye(3), translation=CAMERA_TRANSLATION, hfov_deg=87., vfov_deg=58.,
                              camera_radius=CAMERA_TARGET_RADIUS_M, lidar_radius=LIDAR_PROXY_RADIUS_M,
                              min_target_pixels=2, lidar_far_m=12., camera_far_m=20., max_angle_deg=15.,
-                             upper_agreement_m=.55):
-    """S-L1B carve: S-L1A support/camera rules, LiDAR window from the body-range anchor."""
+                             upper_agreement_m=.55, lidar_elevations_deg=(20., 10., 0., -10.)):
+    """S-L1B carve: S-L1A support/camera rules, LiDAR window from the body-range anchor.
+
+    Amendment 1: a LiDAR row is eligible only inside [min, max] body-frame elevation of the valid
+    candidate pixels.
+    """
     base = ref.carve_masks(lidar_ranges, lidar_angles, camera_depth, camera_candidates, visible, target_bearing,
                            target_radius=camera_radius, min_target_pixels=min_target_pixels, lidar_far_m=lidar_far_m,
                            camera_far_m=camera_far_m, max_angle_deg=max_angle_deg, upper_agreement_m=upper_agreement_m)
@@ -168,6 +172,11 @@ def common_frame_carve_masks(lidar_ranges, lidar_angles, camera_depth, camera_ca
     p = np.einsum("ij,nhwj->nhwi", np.asarray(rotation, dtype=np.float64),
                   np.where(valid, depth, 0.)[..., None] * rays[None]) + np.asarray(translation, dtype=np.float64)
     anchor_l = np.min(np.where(valid, np.linalg.norm(p, axis=-1), np.inf), axis=(1, 2))
+    el = np.arctan2(p[..., 2], np.hypot(p[..., 0], p[..., 1]))
+    el_lo = np.min(np.where(valid, el, np.inf), axis=(1, 2))
+    el_hi = np.max(np.where(valid, el, -np.inf), axis=(1, 2))
+    rows = np.radians(np.asarray(lidar_elevations_deg, dtype=np.float64))
+    row_ok = (rows[None, :] >= el_lo[:, None]) & (rows[None, :] <= el_hi[:, None])
     supported = base["supported"] & np.isfinite(anchor_l)
     s_l = np.where(supported, anchor_l - (lidar_radius - camera_radius), 0.)
     angular = np.where(supported, np.minimum(math.radians(max_angle_deg),
@@ -179,7 +188,8 @@ def common_frame_carve_masks(lidar_ranges, lidar_angles, camera_depth, camera_ca
     valid_return = np.isfinite(scan) & (scan > 0) & (scan < lidar_far_m)
     lidar = (supported[:, None, None] & valid_return & np.isfinite(delta[:, None, :])
              & (np.abs(delta[:, None, :]) < angular[:, None, None])
-             & (scan >= s_l[:, None, None]) & (scan < s_l[:, None, None] + upper_agreement_m))
+             & (scan >= s_l[:, None, None]) & (scan < s_l[:, None, None] + upper_agreement_m)
+             & row_ok[:, :, None])
     return {"lidar_carve_mask": lidar, "camera_blank_mask": base["camera_blank_mask"] & supported[:, None, None],
             "anchor_body_m": np.where(supported, anchor_l, 0.), "lidar_surface_lower_m": s_l,
             "supported": supported, "angular_limit_rad": angular}

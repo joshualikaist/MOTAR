@@ -20920,3 +20920,30 @@ Next review: the complete diff and new plan; local commit requires user diff app
   - B_TIGHT at 2.77 m is retained in the common frame but inside S-L1A's window;
   - returns are carved at 2.805 m but never at 2.79 m;
   - the pinhole column at 20° is 48.8164.
+
+## 2026-10-18 — S-L1B runtime (opt-in `s_l1b_v1`) and CPU gates; amendment 1 before measurement
+
+- Runtime: `navrl_sensor_lineage.py` gains cumulative levels (off 0, `s_l1a_v1` 1, `s_l1b_v1` 2;
+  unknown values fail closed). It adds declared calibration constants bound by tests to
+  `navrl_lidar_config` (rows +20…−10°, proxy radius 0.20 m, yaw-only), pinhole unit rays, SE(3)
+  reprojection, strict and clamped LiDAR bins (`scatter_reduce` amin) and the common-frame carve.
+  `navrl_perception.py` calls them only when `sensor_lineage_s_l1b`; the legacy and S-L1A code
+  runs verbatim in the `else` branches. The S-L1A `conservative_carve_masks` is byte-identical to
+  `139184b` (tested). The detector is unchanged.
+- Amendment 1: CPU fixture B_TIGHT showed the azimuth-only carve erasing a tall bar's ±10°/+20°
+  returns (2.813/2.948 m) that cannot hide the target. A row is now carve-eligible only inside
+  the elevation span of the camera's valid candidate pixels. The change is stricter, no gate
+  moves, and it is recorded in `s_l1b_v1_amendment1.md/.json`. The same limitation in frozen
+  S-L1A is recorded.
+- CPU results: `test_s_l1b_reference` 13 OK; `test_s_l1b_runtime` 15 OK.
+  - B-POINT: ρ ≤ 1e−4 m and az/el ≤ 1e−5 rad on F1–F3 plus the rotated/translated F4.
+  - B-ENVELOPE: robust bins ≤ 1e−4 m.
+  - B-A1A2: legacy on-axis −0.0998 m and a mis-binned 20° bar, against exact S-L1B.
+  - B-VERTICAL: out-of-band points appear only in the clamped edge rows.
+  - B-CARVE: S14, A_FOREGROUND and B_TIGHT masks equal the oracle with no bar carved.
+  - Unset/off and `s_l1a_v1` fusion and `observe` are bitwise equal to `139184b`.
+  - Firewall signature/AST test passes.
+- PUBLIC_CPU (pre-commit): 2,507 run, 1 failure = the working-tree-vs-HEAD byte check that passes
+  after commit. Running some perception test modules together with S-L1A tests in one ad-hoc
+  process fails on a pre-existing non-package stub (`test_navrl_perception`); this does not occur
+  in PUBLIC_CPU ordering. Next: GPU launcher/runner/analysis, then canary SL1B-C01.
