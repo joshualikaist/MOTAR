@@ -1,0 +1,183 @@
+{
+  "schema": "motar.s-l1a-plan.v1",
+  "created_date_kst": "2026-10-18",
+  "authority": "User Sensor Contract correction confirmation and S-L1A implementation/CPU/GPU canary instruction",
+  "base_sha": "289fd80722daac52123bb1e74fa785b6dc0539a2",
+  "switch": {
+    "name": "NAVRL_SENSOR_LINEAGE",
+    "off": "off",
+    "on": "s_l1a_v1",
+    "unset": "off",
+    "unknown": "fail closed"
+  },
+  "policy_f_sha256": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+  "references": {
+    "eq1d_plan": "docs/plans/eq1d_qualification_v1.json",
+    "e_l0_plan": "docs/plans/e_l0_evaluation_lineage_v1.json",
+    "legacy_source": "183a333bd01c0124a95ae379dba0a8509aebc999"
+  },
+  "depth": {
+    "width": 160,
+    "height": 90,
+    "obstacle_far_m": 10.0,
+    "quantity": "normalized pixel-ray first-hit slant range",
+    "rgb_appearance": "unchanged legacy shading",
+    "target_depth": "unchanged existing renderer"
+  },
+  "carve": {
+    "nearer_tolerance_m": 0.0,
+    "upper_agreement_m": 0.55,
+    "max_angle_deg": 15.0,
+    "angle_rule": "asin(target_radius/(anchor+target_radius))",
+    "requires": [
+      "finite positive measured camera-pixel anchor",
+      "at least min_target_pixels fresh camera candidate pixels",
+      "visible",
+      "finite positive return below LiDAR far plane"
+    ],
+    "refuse_on": [
+      "nonzero detection latency",
+      "target mask backfill",
+      "non-off latency_obstacle_fix"
+    ],
+    "anchor": "minimum finite positive delivered depth on current perception candidate pixels; not tracker/LiDAR-inferred surface"
+  },
+  "cpu_oracle": {
+    "precision": "float64",
+    "geometry": "independent normalized pinhole rays; slab AABB intersection; quadratic sphere intersection; no runtime sensor imports",
+    "analytic_self_checks": [
+      "axis slab exact distances",
+      "inside/miss/parallel/negative rays",
+      "oblique slant versus axial range",
+      "two separated depth planes",
+      "thin obstacle missed by coarse rays",
+      "sphere root",
+      "S14 foreground inequality",
+      "ambiguous/no-camera/nonfinite/no-return conservative retention"
+    ]
+  },
+  "extra_scenes": [
+    {
+      "id": "A_EDGE",
+      "target": "absent",
+      "bars": [
+        {
+          "x": 3.0,
+          "edge_left_y": 0.04
+        }
+      ]
+    },
+    {
+      "id": "A_TWO_DEPTH",
+      "target": "absent",
+      "bars": [
+        {
+          "x": 2.0,
+          "edge_left_y": 0.04
+        },
+        {
+          "x": 6.0,
+          "edge_right_y": 0.04
+        }
+      ]
+    },
+    {
+      "id": "A_THIN",
+      "target": "absent",
+      "bars": [
+        {
+          "x": 8.0,
+          "y": 0.0
+        }
+      ]
+    },
+    {
+      "id": "A_FOREGROUND",
+      "target": [
+        3.0,
+        0.0,
+        0.0
+      ],
+      "bars": [
+        {
+          "x": 2.6,
+          "edge_right_y": -0.08
+        },
+        {
+          "x": 2.6,
+          "edge_left_y": -0.01
+        }
+      ]
+    }
+  ],
+  "metrics": {
+    "pixel": [
+      "all-pixel and robust-pixel absolute depth errors max/mean/p50/p95/p99",
+      "false-clear: observed > reference + 0.05 m on obstacle hits",
+      "false-positive: reference=no obstacle but measured < far-0.05 m",
+      "mixed-surface depths outside 0.05 m of the ray's correct surface",
+      "edge and multi-depth scene breakdown",
+      "target-pixel residual reported separately"
+    ],
+    "carve": [
+      "actual LiDAR first-hit semantic/independent labels",
+      "deleted foreground-bar returns",
+      "carve OFF/legacy/ON map false-clear",
+      "target-return obstacle retention",
+      "uncertain return retention",
+      "E-L0 silhouette and camera/association provenance"
+    ],
+    "resources": [
+      "CUDA synchronized render time after 10 warmups, 50 repeats, median and p95",
+      "allocated/reserved CUDA memory",
+      "process peak VRAM",
+      "GPU wall time and disk before/after"
+    ],
+    "distribution": [
+      "depth changed pixels and absolute deltas",
+      "carved beam counts",
+      "observation/action/trajectory divergence on ON",
+      "RMS and actor width"
+    ]
+  },
+  "gates": {
+    "A-DEPTH": "all robust non-target obstacle pixel absolute error <=1e-4 m; report excluded edge count; no additional false-clear or no-hit false-positive at 0.05 m threshold",
+    "A-BOUNDARY": "extra boundary/two-depth fixtures satisfy A-DEPTH, no interpolated fictitious surface on robust pixels",
+    "A-CARVE": "S14 and A_FOREGROUND actual nearer bar first-hits never removed from last_target_like/governor scan; no-camera/invalid evidence never authorizes removal; report target obstacle retention trade-off",
+    "A-OFF": "unset and explicit OFF all recorded digests bitwise equal; matching historical E-L0 P2 logs equal; any discrepancy stops before later processes",
+    "A-EL0": "ON E-L0 OFF/ON recorder toggle has identical closed-loop digests in static and moving cases",
+    "A-INTEGRITY": "checkpoint/RMS/898-D/import origin/source SHA/tree/raw provenance valid; no NaN/Inf",
+    "A-RESOURCE": "resource characterization only within watchdog/OOM/disk caps; no performance superiority claim",
+    "verdict": "S-L1A QUALIFIED only when A-DEPTH,A-BOUNDARY,A-CARVE,A-OFF,A-EL0,A-INTEGRITY pass; otherwise retain FAIL or INCOMPLETE. Target renderer residual and B/C/D remain separate Known FAILs."
+  },
+  "run": {
+    "run_id": "SL1A-C01",
+    "output_root": "../aerial_gym_simulator/results/s_l1a_v1",
+    "disk_min_free_gb": 8.0,
+    "output_max_gb": 2.0,
+    "oom_reserve_mib": 512,
+    "poll_s": 5,
+    "total_wall_cap_s": 7200,
+    "process_wall_cap_s": 900,
+    "sensor_num_envs": 36,
+    "closed_loop_num_envs": 8,
+    "closed_loop_steps": 600,
+    "closed_loop_seed": 4401,
+    "closed_loop_density": 160,
+    "configs": [
+      "static",
+      "moving E2_direct_l2_v1"
+    ],
+    "no_retry": true,
+    "stop": [
+      "nonzero exit/OOM",
+      "watchdog",
+      "disk below 8GB before or during process",
+      "GPU usage exceeds launch cap",
+      "tracked tree or HEAD changes",
+      "missing outputs/nonfinite state",
+      "OFF or E-L0 noninterference failure"
+    ],
+    "qualification_fail": "record without retuning or retry; finish remaining independent fixtures unless integrity/noninterference failed"
+  }
+}

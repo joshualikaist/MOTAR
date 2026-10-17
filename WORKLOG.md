@@ -20750,3 +20750,26 @@ Next review: the complete diff and new plan; local commit requires user diff app
 - Next: continue only the approved S-L1A technical scope under the fusion contract. Before any
   later authorized publication, verify the applicable branch/history/security prerequisites against
   its intended HEAD. This documentation unit leaves no owned process running or incomplete work.
+
+## 2026-10-18 — Preregister S-L1A obstacle-depth/carve-out correction before oracle and implementation
+
+- User authorizes S-L1A implementation, CPU validation and bounded GPU canary, then a result commit;
+  conditional ordinary push of `codex/mt-p1` follows a fresh full-unpublished-history inspection.
+  No B/C/D, plant/governor correction, PPO, Recovery Planner, main push/merge or history rewrite.
+- Audit `183a333..289fd807`: exactly eight documentation paths, +523/−5; no runtime Python, URDF,
+  controller, detector, perception, adapter or E-L0 function changed. The new preflight audit lists
+  every path. Existing superseded camera-only roadmap wording stays historical; no active sensor
+  preregistration requires that goal. New-lineage measurement does not amend old OCC/EQ designs.
+- Files: `docs/plans/s_l1a_v1.md`, `docs/plans/s_l1a_v1.json`,
+  `docs/evidence/s_l1a_2026-10-18/PREFLIGHT_AUDIT.md`, `WORKLOG.md` (append only).
+  Gates fixed before implementation: independent first-hit pixel depth, foreground retention in
+  S14, conservative uncertainty handling, exact OFF/historical digest equality, E-L0 ON-path
+  non-interference; ON behavior is environment robustness, not an algorithm improvement.
+- Preservation baseline: Policy F SHA unchanged; 2,054 runtime/test sources, 101 historical
+  evidence files, 10 raw manifests / 3,479 members verified; main WIP3/stash unchanged. Scratch
+  `/tmp/motar_s_l1a_20261018/preservation_before.json`, SHA
+  `1a477204762289eb8d2e8dc0ccd4df051dc02e6810f71c46853cb5cb84d13659`.
+- Validation: JSON parse, local links, diff and approval scope reviewed before commit. No S-L1A
+  code or GPU measurement exists yet. Next is the independent float64 CPU oracle, committed before
+  production implementation. Start around 03:20 KST; quota timer is unavailable; conservative
+  wrap-up by 07:20 KST with time reserved for verification, commits and handoff.
