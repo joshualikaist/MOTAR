@@ -1,0 +1,6 @@
+{
+  "unique_hashes": 93092,
+  "cross_seed_hashes": 0,
+  "examples": [],
+  "method": "Read stored1mm-rounded scene hashes, retain seed membership; no production sampler/geometry call. Zero overlap does not prove statistical independence."
+}

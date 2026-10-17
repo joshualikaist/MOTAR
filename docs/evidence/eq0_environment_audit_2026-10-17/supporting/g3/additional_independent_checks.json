@@ -1,0 +1,18 @@
+{
+  "active_to_inactive_missed_fused_frames": {
+    "('moving', 51)": 41
+  },
+  "actor898_critic906_log_cells": 112,
+  "kalman_information_counterexample": {
+    "actual_OccP2_track_calibration": "NOT_TESTED",
+    "assumed_lateral_R_m2": 0.0225,
+    "definition": "Independent scalar Gaussian reference: unit prior variance, no independently measured lateral component, only range observation; compare legacy H=I diagonalR tangentialvariance .15^2 with no tangentialmeasurement. This diagnoses model information assumptions, not actual empirical covariance calibration.",
+    "legacy_diagonal_update_lateral_posterior_m2": 0.022004889975550123,
+    "prior_lateral_variance_m2": 1.0,
+    "production_functions_called": false,
+    "range_only_unobserved_lateral_reference_m2": 1.0
+  },
+  "schema": "motar.eq0-g3.additional-independent-checks.v1",
+  "scope": "Rawbinary literal schema+logs only; no productiontracker invoked; no GPU/simulation.",
+  "total_cells": 112
+}

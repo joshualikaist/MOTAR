@@ -1,0 +1,17 @@
+{
+  "audit_base": "7cea3c52d8c8d7ab6dbeef5fae6e929acfe279a2",
+  "conservative_local_wrapup_target": "within90minutesof23:01KST; no new simulation units",
+  "git_status_before": "?? results/mt_p1_precision_v1\n?? results/occlusion_pilot_v1\n",
+  "main_head": "cb644bbe46456b1900020177617a13040a3f1552",
+  "main_wip_sha256": {
+    ".gitignore": "0fc139965f0e1e218883e22cb1c2e2cc6c8cf86487b1dd7d402a28a369fb5296",
+    "WORKLOG.md": "a63118ee730803b6c7e0afcceeec0d0595fdbf347ed56fb3474364b79bf6454c",
+    "presentations/README.md": "be8c4b2350a49580c5ea70a45f34c307c34a46f2509ce2eeab8f0f9fdfb69731"
+  },
+  "measurement_source": "5ff285ad053f181c5a1c86dddb2462bb44e6327b",
+  "raw_manifest_sha256": "c5cd1dbc160122d444119af255fee450405c7d3373025cad6f866d5c0a0cfc68",
+  "service_deadline": "NOT_EXPOSED",
+  "started_at": "2026-10-17T14:03:18.615097+00:00",
+  "stash": "23ddb33f92cf6c75cf9095e149bb7e2516eb7543 stash@{0} On main: KROC2027 merge 2026-10-15: user WIP (.gitignore, WORKLOG.md, presentations/README.md) - restore after canary\n",
+  "tracked_file_count_before": 5553
+}

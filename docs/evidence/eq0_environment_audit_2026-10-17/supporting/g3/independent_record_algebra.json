@@ -1,0 +1,162 @@
+{
+  "condition_invariants": {
+    "action_selection": [
+      "\"configured\""
+    ],
+    "distractor_count": [
+      "0"
+    ],
+    "p9_empirical_error_enabled": [
+      "false"
+    ],
+    "policy_output_dim": [
+      "4"
+    ],
+    "policy_z_output_overwritten_by_altitude_pi": [
+      "true"
+    ],
+    "policy_z_persisted_in_prev_action_observation": [
+      "true"
+    ],
+    "pursuer_max_horizontal_request_norm_mps": [
+      "3.5355339059327378"
+    ],
+    "pursuer_max_speed_mps": [
+      "2.5"
+    ],
+    "runtime_sim_config_class": [
+      "\"BaseSimConfig\""
+    ],
+    "speed_governor_fixed_mps": [
+      "2.0"
+    ],
+    "speed_governor_free_mps": [
+      "3.53553390593"
+    ],
+    "speed_governor_mode": [
+      "\"riskcap\""
+    ],
+    "speed_governor_width_per_mps": [
+      "0.0"
+    ],
+    "speed_governor_width_per_open_m": [
+      "0.0"
+    ],
+    "speed_governor_yaw_cap_radps": [
+      "0.0"
+    ],
+    "target_render_mode": [
+      "\"analytic_flat\""
+    ]
+  },
+  "first_strict_age_gt5_missed_step": 51,
+  "float32_age_after_misses": {
+    "49": 4.899997711181641,
+    "50": 4.999997615814209,
+    "51": 5.099997520446777,
+    "52": 5.199997425079346
+  },
+  "frames_sha_checked_cells": 112,
+  "groups": {
+    "moving": {
+      "camera_invalid": 275110,
+      "camera_valid": 982625,
+      "camera_vs_rendered_pixels_ge2_mismatch": 0,
+      "episodes": 28672,
+      "episodes_camera_miss_ge50_after_acq": 117,
+      "episodes_fused_miss_ge50": 43,
+      "episodes_fused_miss_ge51": 41,
+      "frames": 1257735,
+      "fused_active_mismatch": 0,
+      "fused_union_mismatch": 0,
+      "fused_valid": 1078572,
+      "known_pixel_count": 1257735,
+      "lidar_camera_overlap": 0,
+      "lidar_only": 95947,
+      "max_camera_miss_frames_after_acq": 444,
+      "max_fused_miss_frames": 416,
+      "pixel_lt2_fused_lidar": 95947,
+      "track_active_no_fused": 176630,
+      "track_active_to_inactive_transitions": 41
+    },
+    "static": {
+      "camera_invalid": 165031,
+      "camera_valid": 898219,
+      "camera_vs_rendered_pixels_ge2_mismatch": 0,
+      "episodes": 28672,
+      "episodes_camera_miss_ge50_after_acq": 0,
+      "episodes_fused_miss_ge50": 0,
+      "episodes_fused_miss_ge51": 0,
+      "frames": 1063250,
+      "fused_active_mismatch": 0,
+      "fused_union_mismatch": 0,
+      "fused_valid": 989386,
+      "known_pixel_count": 1063250,
+      "lidar_camera_overlap": 0,
+      "lidar_only": 91167,
+      "max_camera_miss_frames_after_acq": 37,
+      "max_fused_miss_frames": 36,
+      "pixel_lt2_fused_lidar": 91167,
+      "track_active_no_fused": 72083,
+      "track_active_to_inactive_transitions": 0
+    }
+  },
+  "independent_algebra": {
+    "actor_dim_sum": 898,
+    "color_separation_note": "neutral palette R=.92L,G=L,B=1.05L => logit=-1.34L-.9 < threshold for all L>=0",
+    "critic_dim": 906,
+    "minimum_common_rgb_gain_for_threshold": 0.46053167174148585,
+    "neutral_background_max_logit": -0.9,
+    "riskcap_at_clearance_m": {
+      "0": 2.0,
+      "0.1": 2.0,
+      "0.45": 2.0,
+      "1": 2.0,
+      "3": 2.0,
+      "4": 2.767766952965,
+      "5": 3.53553390593
+    },
+    "stopping_margin_at_zero_clearance_floor_m": -0.8754735658152049,
+    "stopping_required_clearance_at_floor_m": 1.3254735658152048,
+    "target_logit": 1.4900000000000002,
+    "target_rgb": [
+      0.88,
+      0.08,
+      0.045
+    ],
+    "target_score": 0.8160782725804958,
+    "threshold_logit": 0.20067069546215124
+  },
+  "pursuer_horizontal_actual_speed_mps": {
+    "max": 4.785304069519043,
+    "p50": 2.9984960556030273,
+    "p99": 3.427730712890625
+  },
+  "pursuer_z_m": {
+    "max": 2.7927746772766113,
+    "median": 0.9794823527336121,
+    "min": 0.101401187479496,
+    "p01": 0.7865526866912842,
+    "p99": 1.1197326564788819
+  },
+  "raw_root": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_confirmatory_v1/OCC-P2",
+  "receipt_knob_presence": {
+    "NAVRL_APP_ALBEDO_JITTER=ABSENT_USE_SOURCE_DEFAULT": 112,
+    "NAVRL_APP_HUE_DEG=ABSENT_USE_SOURCE_DEFAULT": 112,
+    "NAVRL_APP_LIGHT_GAIN=ABSENT_USE_SOURCE_DEFAULT": 112,
+    "NAVRL_APP_MOTION_BLUR=ABSENT_USE_SOURCE_DEFAULT": 112,
+    "NAVRL_APP_TEXTURE_STD=ABSENT_USE_SOURCE_DEFAULT": 112,
+    "NAVRL_CAM_FOV_SCALE_ERR=ABSENT_USE_SOURCE_DEFAULT": 112,
+    "NAVRL_CAM_MOUNT_ROT_DEG=ABSENT_USE_SOURCE_DEFAULT": 112,
+    "NAVRL_CAM_MOUNT_TRANS_M=ABSENT_USE_SOURCE_DEFAULT": 112,
+    "NAVRL_DETECTION_LATENCY_S=ABSENT_USE_SOURCE_DEFAULT": 112,
+    "NAVRL_DETECTOR_CHECKPOINT=ABSENT_USE_SOURCE_DEFAULT": 112,
+    "NAVRL_EVAL_ACTION_MODE=ABSENT_USE_SOURCE_DEFAULT": 112,
+    "NAVRL_LIDAR_RANGE_ONLY_UPDATE=ABSENT_USE_SOURCE_DEFAULT": 112,
+    "NAVRL_LIDAR_SILENT_CORRECT=ABSENT_USE_SOURCE_DEFAULT": 112,
+    "NAVRL_LIDAR_TARGET_ASSOC=ABSENT_USE_SOURCE_DEFAULT": 112,
+    "NAVRL_PERCEPTION_PERTURB=ABSENT_USE_SOURCE_DEFAULT": 112,
+    "NAVRL_TARGET_MASK_BACKFILL=ABSENT_USE_SOURCE_DEFAULT": 112
+  },
+  "source": "independent literal dtype + NumPy flag algebra; complete quota episodes only"
+}

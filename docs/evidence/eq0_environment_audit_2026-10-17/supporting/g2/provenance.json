@@ -1,0 +1,209 @@
+{
+  "all_current_source_equal_measured": true,
+  "cell_count": 112,
+  "current_head": "7cea3c52d8c8d7ab6dbeef5fae6e929acfe279a2",
+  "g0_noninterference": "PASS",
+  "g0_parity": {
+    "metrics": {
+      "offline_vs_online_box_disagree": 0,
+      "probe_agreement": 1.0,
+      "rendered_pixels_while_geometric_full": 0.0005769674590353104,
+      "rendered_zero_while_clear_in_view": 2.6807495375707047e-05
+    },
+    "totals": {
+      "clear_in_view_probe_frames": 111909,
+      "frames": 165277,
+      "geometric_full_probe_frames": 8666,
+      "offline_vs_online_box_disagree": 0,
+      "offline_vs_probe_disagree": 0,
+      "probe_frames": 165277,
+      "rendered_pixels_while_geometric_full": 5,
+      "rendered_zero_while_clear_in_view": 3
+    },
+    "verdict": "PASS"
+  },
+  "g0_sha256": "ae17bfa538777639328b4554b3929b72f7d7c2acccf2422a79dfdb242ba19632",
+  "g0_verdict": "G0_PASS",
+  "independent_hardware_render_test": "NOT_TESTED",
+  "measurement_source": "5ff285ad053f181c5a1c86dddb2462bb44e6327b",
+  "noise_application": "SOURCE_DERIVED_DISABLED: enable_perturbations=False; magnitudes alone do not activate noise/dropout",
+  "raw_rgb_depth_lidar_arrays": "NOT_RECORDED in OCC-P2 trace",
+  "receipt_env": {
+    "NAVRL_CAMERA_HEIGHT": {
+      "ABSENT": 112
+    },
+    "NAVRL_CAMERA_WIDTH": {
+      "ABSENT": 112
+    },
+    "NAVRL_CAM_FOV_SCALE_ERR": {
+      "ABSENT": 112
+    },
+    "NAVRL_CAM_MOUNT_ROT_DEG": {
+      "ABSENT": 112
+    },
+    "NAVRL_CAM_MOUNT_TRANS_M": {
+      "ABSENT": 112
+    },
+    "NAVRL_DEPTH_NOISE_STD": {
+      "0.02": 112
+    },
+    "NAVRL_DETECTION_DROPOUT": {
+      "0.3": 112
+    },
+    "NAVRL_DETECTION_LATENCY_S": {
+      "ABSENT": 112
+    },
+    "NAVRL_DETECTOR_CHECKPOINT": {
+      "ABSENT": 112
+    },
+    "NAVRL_LIDAR_HBEAMS": {
+      "72": 112
+    },
+    "NAVRL_LIDAR_RANGE": {
+      "12": 112
+    },
+    "NAVRL_LIDAR_RANGE_ONLY_UPDATE": {
+      "ABSENT": 112
+    },
+    "NAVRL_LIDAR_TARGET_ASSOC": {
+      "ABSENT": 112
+    },
+    "NAVRL_LIDAR_VBEAMS": {
+      "4": 112
+    },
+    "NAVRL_P9_ERROR_MODEL": {
+      "ABSENT": 112
+    },
+    "NAVRL_PERCEPTION_PERTURB": {
+      "ABSENT": 112
+    },
+    "NAVRL_RGB_NOISE_STD": {
+      "0.015": 112
+    }
+  },
+  "recorded_values": {
+    "camera": {
+      "{\"frame\": \"yaw-only vehicle frame, x forward, y left, z up\", \"hfov_deg\": 87.0, \"max_range_m\": 20.0, \"translation_m\": [0.1, 0.0, 0.03], \"vfov_deg\": 58.00000000000001}": 112
+    },
+    "capture_time": {
+      "NOT_RECORDED": 112
+    },
+    "distractors": {
+      "0": 112
+    },
+    "dt_s": {
+      "0.1": 112
+    },
+    "dynamic_mesh": {
+      "False": 112
+    },
+    "empirical_error": {
+      "False": 112
+    },
+    "render_alignment": {
+      "ZERO_LATENCY_RENDER_DELIVERY": 112
+    },
+    "source_commit": {
+      "5ff285ad053f181c5a1c86dddb2462bb44e6327b": 112
+    },
+    "source_dirty": {
+      "False": 112
+    },
+    "target_render_mode": {
+      "analytic_flat": 112
+    }
+  },
+  "runtime_equal_g0_to_measurement": true,
+  "source_files": [
+    {
+      "current_equals_measurement": true,
+      "current_sha256": "ff04a2dc410342079bd58333c53c571266a7f44c9864ef4e3f6910dd7f6312fa",
+      "measurement_sha256": "ff04a2dc410342079bd58333c53c571266a7f44c9864ef4e3f6910dd7f6312fa",
+      "path": "aerial_gym/task/navrl_task/navrl_detector.py"
+    },
+    {
+      "current_equals_measurement": true,
+      "current_sha256": "0b7f26aa9c12db5e528a3fe75aa28a146a9fbfb695dc8f988e7b172b11c3082f",
+      "measurement_sha256": "0b7f26aa9c12db5e528a3fe75aa28a146a9fbfb695dc8f988e7b172b11c3082f",
+      "path": "aerial_gym/task/navrl_task/navrl_perception.py"
+    },
+    {
+      "current_equals_measurement": true,
+      "current_sha256": "c54616567da64cc5fa8d210ba51f4452af623c10a1a5934db58482f5d761cd0d",
+      "measurement_sha256": "c54616567da64cc5fa8d210ba51f4452af623c10a1a5934db58482f5d761cd0d",
+      "path": "aerial_gym/task/navrl_task/navrl_task.py"
+    },
+    {
+      "current_equals_measurement": true,
+      "current_sha256": "1712a7ef38e1dfc3542888eae4c556138695e96d38ee158811955a81c13819af",
+      "measurement_sha256": "1712a7ef38e1dfc3542888eae4c556138695e96d38ee158811955a81c13819af",
+      "path": "aerial_gym/task/navrl_task/kroc_eval_adapter.py"
+    },
+    {
+      "current_equals_measurement": true,
+      "current_sha256": "f3a15db1b1f199b1203583b06016c273ec4dbd628e23bb6b29afc1f6b9b1ae66",
+      "measurement_sha256": "f3a15db1b1f199b1203583b06016c273ec4dbd628e23bb6b29afc1f6b9b1ae66",
+      "path": "aerial_gym/task/navrl_task/recovery_visibility_probe.py"
+    },
+    {
+      "current_equals_measurement": true,
+      "current_sha256": "f35e1959cb6f7035937642c479bb073d05d8ce3796db9e7c8e9e036c992b6267",
+      "measurement_sha256": "f35e1959cb6f7035937642c479bb073d05d8ce3796db9e7c8e9e036c992b6267",
+      "path": "aerial_gym/config/task_config/navrl_task_config.py"
+    },
+    {
+      "current_equals_measurement": true,
+      "current_sha256": "8892f6f04853290e44a0de578734dcd0617c45d71225bc8dd6735aad996f9697",
+      "measurement_sha256": "8892f6f04853290e44a0de578734dcd0617c45d71225bc8dd6735aad996f9697",
+      "path": "aerial_gym/config/sensor_config/lidar_config/navrl_lidar_config.py"
+    },
+    {
+      "current_equals_measurement": true,
+      "current_sha256": "8e2aef1e67d9fad2886543a322fffe7772940120b2639e14a817bdaaa423f2ed",
+      "measurement_sha256": "8e2aef1e67d9fad2886543a322fffe7772940120b2639e14a817bdaaa423f2ed",
+      "path": "aerial_gym/sensors/warp/warp_lidar.py"
+    },
+    {
+      "current_equals_measurement": true,
+      "current_sha256": "a47906ec19109b54c8a193dccbf1504e7c8cfc91fc86e0c69b0980bd63252e84",
+      "measurement_sha256": "a47906ec19109b54c8a193dccbf1504e7c8cfc91fc86e0c69b0980bd63252e84",
+      "path": "aerial_gym/sensors/warp/warp_sensor.py"
+    },
+    {
+      "current_equals_measurement": true,
+      "current_sha256": "a5970cf9523392d340d22ca4a7d17d5708fc6cac65ac558be031176c503fa9be",
+      "measurement_sha256": "a5970cf9523392d340d22ca4a7d17d5708fc6cac65ac558be031176c503fa9be",
+      "path": "aerial_gym/sensors/warp/warp_kernels/warp_lidar_kernels.py"
+    },
+    {
+      "current_equals_measurement": true,
+      "current_sha256": "1d3854a725858a65ffa881422d60b0d2332f89e88073e34987e035455e591e1c",
+      "measurement_sha256": "1d3854a725858a65ffa881422d60b0d2332f89e88073e34987e035455e591e1c",
+      "path": "motar_eval/occlusion_geometry.py"
+    },
+    {
+      "current_equals_measurement": true,
+      "current_sha256": "3fd2c5f56b85948d2b79b011181fba0746d48423d69aad0780d0b51a46878c4f",
+      "measurement_sha256": "3fd2c5f56b85948d2b79b011181fba0746d48423d69aad0780d0b51a46878c4f",
+      "path": "motar_eval/geometry.py"
+    },
+    {
+      "current_equals_measurement": true,
+      "current_sha256": "95911c4def2bdecd1035f3faef149ad46c8975ed5645970dc198f86031279120",
+      "measurement_sha256": "95911c4def2bdecd1035f3faef149ad46c8975ed5645970dc198f86031279120",
+      "path": "tools/occlusion_analysis.py"
+    },
+    {
+      "current_equals_measurement": true,
+      "current_sha256": "33958182f41def22edf88a376fbef4deac3387ae41270c8e43c12d23267a50dc",
+      "measurement_sha256": "33958182f41def22edf88a376fbef4deac3387ae41270c8e43c12d23267a50dc",
+      "path": "tools/occlusion_confirmatory.py"
+    },
+    {
+      "current_equals_measurement": true,
+      "current_sha256": "596114c13740f66e1c694480b82953b8cea01d366873c82a3e9cbd81b617c5be",
+      "measurement_sha256": "596114c13740f66e1c694480b82953b8cea01d366873c82a3e9cbd81b617c5be",
+      "path": "tools/occlusion_confirmatory_analysis.py"
+    }
+  ]
+}

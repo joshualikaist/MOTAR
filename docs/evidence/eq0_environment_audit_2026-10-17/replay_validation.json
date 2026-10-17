@@ -1,0 +1,15 @@
+{
+  "conclusion": "PASS for reproducibility of read-only audit calculations; named environment gates remain FAIL/LIMITED_VALIDITY/NOT_TESTED as documented.",
+  "math_counterexamples_reproduced": true,
+  "no_simulator_gpu_or_production_math_calls": true,
+  "output_safety": "G1/G2/G4 published readers write only to newly allocated scratch directories; G3 prints or exclusive-creates its own scratch output. No committed evidence or raw overwritten.",
+  "reader_computation_equivalence": {
+    "g1/record_forensics.json": true,
+    "g2/boundary_audit.json": true,
+    "g2/independent_math.json": true,
+    "g2/provenance.json": true,
+    "g3/reproduced_checks.json": true,
+    "g4/run_inventory.json": true
+  },
+  "schema": "motar.eq0.replay-validation.v1"
+}

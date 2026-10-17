@@ -1,0 +1,37 @@
+{
+  "audit_head": "7cea3c52d8c8d7ab6dbeef5fae6e929acfe279a2",
+  "files": {
+    "REPORT.md": {
+      "bytes": 16922,
+      "sha256": "6b4cceba9b396747ce94e4892f3e42eaad7c58789603d70508d2743a93e79bf4"
+    },
+    "additional_independent_checks.json": {
+      "bytes": 967,
+      "sha256": "f35bc3af7250e74a1b23c57b7277fcd0f91f28c180e8c5f6919fcb83e0133084"
+    },
+    "bounded_g0_evidence.json": {
+      "bytes": 6598,
+      "sha256": "508c0ffbe5ef26a43869ae3573807beadac4471a0795ef584d92ea700151fa57"
+    },
+    "findings.json": {
+      "bytes": 24563,
+      "sha256": "e19f3cb364d20a1f76aa87a1bdfd1fb75ccbbc9816c24ecae1487c1d8ccf7c81"
+    },
+    "independent_record_algebra.json": {
+      "bytes": 5010,
+      "sha256": "0242afe28b76154b40192abb716cc34b4272a8f034ca78415a5f2a8b36a08193"
+    },
+    "reproduce_independent_audit.py": {
+      "bytes": 10514,
+      "sha256": "d6a39ff88dd1eeedc2d5c11ac02bdfa11dc778c49e33ed831068b33983fa9f5b"
+    },
+    "reproduced_checks.json": {
+      "bytes": 5339,
+      "sha256": "f7474ed314df44093f71ab94870f46467baeccb5a3709192b1b3041db696d481"
+    }
+  },
+  "publication_note": "Copied scratch computations; method aliases in prose aligned to exact AST symbols before publication.",
+  "schema": "motar.eq0-g3.scratch-artifacts.v1",
+  "source_commit": "5ff285ad053f181c5a1c86dddb2462bb44e6327b",
+  "writes": "onlyownedtmpfiles; no source/raw/checkpoint modification; noGPU/sim"
+}

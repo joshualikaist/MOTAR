@@ -1,0 +1,61 @@
+{
+  "calibrated_camera_lidar_registration_gate": "FAIL",
+  "camera_fixture": {
+    "aligned_front_plane_origin_bias_m": -0.1,
+    "angular_error_deg": 3.5421855675838154,
+    "correct_pinhole_u": 49.0082043744454,
+    "pixel_error": 6.008204374445398,
+    "selected_linear_u": 43
+  },
+  "motor_cases": [
+    {
+      "classical_RK4_gain": 0.18126666666666666,
+      "dt": 0.01,
+      "exact_nominal_tau_gain": 0.22119921692859512,
+      "exact_same_ODE_gain": 0.18126924692201818,
+      "recorded_stages_gain": 0.2214,
+      "tau": 0.04
+    },
+    {
+      "classical_RK4_gain": 0.39322916666666663,
+      "dt": 0.04,
+      "exact_nominal_tau_gain": 0.6321205588285577,
+      "exact_same_ODE_gain": 0.3934693402873666,
+      "recorded_stages_gain": 0.6484375,
+      "tau": 0.04
+    },
+    {
+      "classical_RK4_gain": 0.5090760794113564,
+      "dt": 0.1,
+      "exact_nominal_tau_gain": 0.9179150013761012,
+      "exact_same_ODE_gain": 0.5104583404430469,
+      "recorded_stages_gain": 1.040972511453561,
+      "tau": 0.04
+    },
+    {
+      "classical_RK4_gain": 0.2834362139917696,
+      "dt": 0.01,
+      "exact_nominal_tau_gain": 0.3934693402873666,
+      "exact_same_ODE_gain": 0.28346868942621073,
+      "recorded_stages_gain": 0.39557613168724287,
+      "tau": 0.02
+    },
+    {
+      "classical_RK4_gain": 0.024095205385970955,
+      "dt": 0.001,
+      "exact_nominal_tau_gain": 0.024690087971667385,
+      "exact_same_ODE_gain": 0.024095205457607793,
+      "recorded_stages_gain": 0.024690118874172304,
+      "tau": 0.04
+    }
+  ],
+  "named_RK4_gate": "FAIL",
+  "riskcap_stopping_guarantee_gate": "FAIL",
+  "scope": "Independent algebra and fixture counterexamples only; no EQ-1 rollout.",
+  "stopping_fixture": {
+    "capped_request_mps": 2.0,
+    "clearance_m": 0.1,
+    "required_clearance_m": 1.3254735658152048,
+    "source_telemetry_stopping_margin_m": -0.8754735658152049
+  }
+}

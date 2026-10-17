@@ -1,0 +1,373 @@
+{
+  "EQ1_proposals_only": [
+    {
+      "acceptance": "Actor898Dtensor and selecteddeterministicactions bit-identical when onlyprivileged/evaluatorfieldschange; criticextrasmaychange. RMSmean/var/count hashes unchanged inplay. RejectanyactoraliasedGTinput orupdatedRMS.",
+      "id": "EQ1-G3-A",
+      "kind": "CPU independent information-flow and normalization audit",
+      "matrix": "Fixed cachedRGBD/ranges/ego/trackstate; vary privilegedtargetpose/velocity/GTvisibility/semanticIDs, criticstates andevaluationgeometry independently; N=1/2/128, permutedenvorder, resetboundaries. Instrumentactorinput/RMS beforeafter andselectedactions.",
+      "resources": "CPUonly,<=10minruntime, existingcheckpointread-only if separatelyapproved forCPUloading; noGPU/simulatorneeded forcachedfixtures. Independentreference expectations rather than comparing two productionhelpers."
+    },
+    {
+      "acceptance": "Explicitageclock exactcomparator/dtype agreement; no resurrectionwithoutcamera wheninactive; cameraabsence separatefromfusion; flagsidentity alwayscorrect. Reportassociationfalsepositives andlegacycovarianceoverconfidence asFAIL/LIMITED ratherthantuninghistory. Unobservedaxis covariancecannotshrinksolelyfromechoingpredictedbearing inindependentrange-onlyreference.",
+      "id": "EQ1-G3-B",
+      "kind": "CPU independent tracker and association references",
+      "matrix": "Hand-derivedCV/KFfixture with cameraacquisition then0/49/50/51/60misses; validLiDARonly, unrelatedbaratmatchingrange, range-onlymeasurementwithknownunobservedtangentialaxis; reset/reacquire.",
+      "resources": "CPUonly <=10min, no productionfunction-as-oracle; anybehaviorfixneedsnewlineage/prereg, historicalsourceunchanged."
+    },
+    {
+      "acceptance": "Firstprove detectorconstructagainstindependentlabels; realisticaccuracythresholds require externallyjustifiedtaskrequirements/calibration, currentlyNOT_DEFINED. NoPASSfromcleanredmaskidentityorallrestoredconditionalfraction.",
+      "id": "EQ1-G3-C",
+      "kind": "Independent appearance/identity qualification before recovery claims",
+      "matrix": "Prespecifiedcachedimagefixtures: targetshade/scale/backgroundred+distractors, partial/fullocclusion andnoocclusioncontrols; geometrymatched independentannotatedpixels; comparecamera detection/3Destimate/identity errors, notjustcenterLOS.",
+      "resources": "CPU fixtureevaluation<=15min plus annotation; existingrealimagepolicyconnection remainsNOT_TESTED. NewGPUrendererfixture onlyif separatelypreregistered/approved."
+    },
+    {
+      "acceptance": "Independentgeometry/sensoralignment andsidecar episodejoins PASS; eachconditionactuallyrealizesprespecifiedeligibleexposureorNOT_REALIZED (noresampling). RecordtrueGTseparatelyfromactor, age/cov/history, actualvel/z/yaw, pixelcount, associations, command/governor/collision. No recoveryeffectdecisionfromthisqualification; prereg independentphysicalerror/clearance tolerances beforelaunch.",
+      "id": "EQ1-G3-D",
+      "kind": "Future controlled GPU observability/control canary; PROPOSAL ONLY",
+      "matrix": "At most16fixedscenes x8env; commoninitialacquiredprefix, independentlyverifiedoccluder onset; durations.5/1/2/4.9/5.0/5.1/6s plusFOVexit andcapture/crashcompetitorcontrols; cameradefined vsfuseddefined endpoints separately. Fixedcontroller/meanactor/checkpoint; noPPO.",
+      "resources": "RTX3070 futurecap0.5GPUh,32envorless; expected<=0.25h isplanningonlyNOT_MEASURED; firstintegrity/nonfinite/unsafeeventstops preserveallraw. Requiresseparateexplicitapproval; noEQ1executiondone."
+    }
+  ],
+  "G0_bounded_evidence": {
+    "actor_observation_rows_compared_total": 11520,
+    "artifact": "/tmp/eq0_g3_20261017/bounded_g0_evidence.json",
+    "n_pairs": 8,
+    "status": "PASS"
+  },
+  "OCC_P1_scope": "56OCCP1trace metadata show sameperception/task/configSHA asOCCP2 andzerolatency; detectorSHA notinthattelemetry butlaunchfrozenruntimeproofandgitbytes match. NofreshP1rawframeauditperformed here.",
+  "actual_run_commit": "5ff285ad053f181c5a1c86dddb2462bb44e6327b",
+  "audit_head": "7cea3c52d8c8d7ab6dbeef5fae6e929acfe279a2",
+  "checkpoint": {
+    "bytes": 8869844,
+    "hash_matches_frozen": true,
+    "path": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/aerial_gym/rl_training/rl_games/runs/ppo_260805_0413_navrl_v2-speedgov-ep24000-205bars-main-riskcap-s1/nn/last_gen_ppo_ep_25000_rew_39.742134.pth",
+    "sha256": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+    "torch_loaded": false
+  },
+  "current_external_dependency_sources": {
+    "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/rl_games/algos_torch/models.py": {
+      "scope": "current installed dependency source; OCCP2 per-file dependency hash NOT_RECORDED",
+      "sha256": "da4755621135546b94e254aef65cabbf0dc1a4a506012a712fea9f16006314bf"
+    },
+    "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/rl_games/algos_torch/players.py": {
+      "scope": "current installed dependency source; OCCP2 per-file dependency hash NOT_RECORDED",
+      "sha256": "13cb386cb2da6e13d86bfbccc9a45abcc0c0b27ed94b9c5cefefec8d63483a77"
+    },
+    "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/rl_games/algos_torch/running_mean_std.py": {
+      "scope": "current installed dependency source; OCCP2 per-file dependency hash NOT_RECORDED",
+      "sha256": "3025c1f63ea0144eb38abb4748985b611416813db6cb90d10c90e642d2e95edc"
+    },
+    "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/rl_games/common/player.py": {
+      "scope": "current installed dependency source; OCCP2 per-file dependency hash NOT_RECORDED",
+      "sha256": "34a03270ed45762b6e5657211ef691a03807a862174852d83c18ecc232a55416"
+    }
+  },
+  "date": "2026-10-17",
+  "faithful_new_reproducer": {
+    "exact_prior_fields_match": {
+      "condition_invariants": true,
+      "first_strict_age_gt5_missed_step": true,
+      "float32_age_after_misses": true,
+      "frames_sha_checked_cells": true,
+      "groups": true,
+      "pursuer_horizontal_actual_speed_mps": true,
+      "pursuer_z_m": true,
+      "receipt_knob_presence": true
+    },
+    "new_independent_expiry_clock_result": {
+      "moving:51": 41
+    },
+    "note": "New faithfully reconstructed reproducer; not claimed originalin-memorycommandtext. Enumeratesfrozen112matrixwithoutanalysis.json/productionfunctions.",
+    "output": "/tmp/eq0_g3_20261017/reproduced_checks.json",
+    "script": "/tmp/eq0_g3_20261017/reproduce_independent_audit.py",
+    "script_sha256": "d6a39ff88dd1eeedc2d5c11ac02bdfa11dc778c49e33ed831068b33983fa9f5b",
+    "status": "EXECUTED_CPU_PASS"
+  },
+  "future_H_R_mapping": "H-R1/H-R2/H-R3 definitions NOT_FOUND in available docs/attachments/WORKLOG; no numberedmapping invented. Genericpostacquisitionrecovery applicability only.",
+  "gate_findings": [
+    {
+      "evidence": [
+        "navrl_detector.py:894-967 paints target RGB (.88,.08,.045), neutral background, returns only RGB/depth",
+        "navrl_perception.py:615-637 fixed bootstrap RGB score; :1536-1602 threshold .55/min2pixel and training-only perturbations",
+        "navrl_task_config.py:183-206 and :274-284 defaults camera160x90; clean false perturb switch",
+        "all2320985 quota frames independently match camera_valid == rendered_target_pixels>=2; zero disagreements"
+      ],
+      "finding": "Clean flat-color scene makes target availability effectively an appearance-coded oracle. This is not evidence of a direct forbidden GT-to-actor data edge.",
+      "gate": "G3-PERCEPTION-REALISM",
+      "impact": "OCCP1/P2 remain conditional clean-simulator closed-loop measurements; cannot qualify realistic redetection, identity persistence or real sensors.",
+      "limits": [
+        "No distractors, shading, appearance variation, delay, learned detector or P9 error in OCCP2",
+        "Mask availability equivalence is not a claim of perfect range/bearing/state estimates",
+        "Configured dropout.3/RGBnoise.015/depthnoise.02 are inactive without PERCEPTION_PERTURB=1"
+      ],
+      "severity": "HIGH",
+      "status": "LIMITED_VALIDITY"
+    },
+    {
+      "evidence": [
+        "independent_record_algebra.json groups:0 fused_union_mismatch,0 fused_active_mismatch,0 lidar_camera_overlap",
+        "static91167+moving95947=187114 lidar-only frames; zero camera/lidar overlap expected because source gates ~camera_visible"
+      ],
+      "finding": "Recorded fused flag equals camera OR accepted LiDAR association on every quota frame; accepted fused flags always have an active track.",
+      "gate": "G3-FUSION-ALGEBRA",
+      "limits": [
+        "PASS concerns trace algebra, not correct physical target association."
+      ],
+      "severity": "INFO",
+      "status": "PASS"
+    },
+    {
+      "evidence": [
+        "navrl_perception.py:1925-1973: requires active track, no camera, predicted range<12, measured<.995range, abs(range-predicted)<min(.35+2sigma,1)",
+        "navrl_perception.py:1983-2000: default full diagonal 3D correction; only range is fresh, bearing/vertical are predicted echoes",
+        "navrl_perception.py:1808-1816 target-like carve-out uses \u00b115deg and \u00b1.55m; last_target_like feeds speed governor",
+        "warp_lidar_kernels.py:183-249 analytic sphere target added at current pose; closer bar occludes it; semantic channel not fed to perception"
+      ],
+      "finding": "Association uses prior predicted bearing/range plus nearest raw range, not independently identified target returns; a bar with matching range can satisfy the same gate.",
+      "gate": "G3-LIDAR-ASSOCIATION-IDENTITY",
+      "impact": "LiDAR can prolong memory and alter obstacle carving/governor; fused-ever-acquired/loss differ from camera visibility. Recovery success cannot use fused flags as physical identity proof.",
+      "limits": [
+        "No raw LiDAR or semantic per-association provenance retained to verify187114 associations",
+        "Historical default lidar_range_only_update=False and silent_correct=False; accepted LiDAR resets track age and flags fused visible",
+        "Covariance/statistical calibration NOT_TESTED; source does not justify independently observed 3D information."
+      ],
+      "severity": "HIGH",
+      "status": "NOT_TESTED"
+    },
+    {
+      "evidence": [
+        "navrl_perception.py:670-694 advances float32 age, camera correct resets, comparesstrictly>memory",
+        "navrl_perception.py:697-725 and :1993-2000 LiDAR accepted correction resets age by default",
+        "independentfloat32sum:50misses4.999997615814209,51misses5.099997520446777; expiry51stmiss"
+      ],
+      "finding": "Expiry is strict age>5 seconds since last accepted camera OR LiDAR correction, not5seconds of geometric occlusion or camera absence.",
+      "gate": "G3-TRACKER-EXPIRY-CONTRACT",
+      "limits": [
+        "Exact GPU rounding and expiry ordering independently end-to-end replay NOT_TESTED; algebra is CPU NumPy not production execution.",
+        "Rawtrace lacks age scalar but flags show41movingactive\u2192inactive transitions; static0."
+      ],
+      "severity": "INFO",
+      "status": "PASS"
+    },
+    {
+      "evidence": [
+        "analysis.json groupdurationminriskat5=0 for all8groups",
+        "rawquota moving41episodes>=51consecutivefusedmisses and41deactivations; staticmax36misses/noexpiry",
+        "moving117episodescameraabsence>=50frames, compared41fusedexpiryepisodes; these are all-cause postacquisition absence, not geometry-only",
+        "currenttargetfeaturesmaskedbyactive but5historicaltokens sampled.5s preserve past states for about2s afterdeactivation"
+      ],
+      "finding": "OCCP2 supplies no observed5s primary geometric in-view interval; other loss modes do cause tracker expiry.",
+      "gate": "G3-TRACKER-5S-RECOVERY-EXPOSURE",
+      "impact": "Neither noexpiry nor no5sabsence should be claimed globally; controlled postacquisition geometricocclusion needed for5s stress/recovery mechanism qualification.",
+      "severity": "HIGH",
+      "status": "LIMITED_VALIDITY"
+    },
+    {
+      "evidence": [
+        "4*72 +5*8*12 +5*10 +5*16=898; critic adds8",
+        "navrl_perception.py:455-463 and :2243 widthguard; navrl_transformer_network.py:inputwidthguard/17tokens",
+        "all112 cell logs independently checked: actor898/critic906; additional_independent_checks.json and reproduced_checks.json",
+        "checkpointSHA matchesf702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40"
+      ],
+      "finding": "Resolved actor width898/critic906 and PolicyF hash agree with frozen source and recorded logs.",
+      "gate": "G3-ACTOR-WIDTH-AND-CHECKPOINT",
+      "limits": [
+        "Checkpoint hash read only; never torch.load in EQ0",
+        "No actorobservationdump in OCCP2; tensorcontent/normalizationstate digest NOT_RECORDED."
+      ],
+      "severity": "INFO",
+      "status": "PASS"
+    },
+    {
+      "evidence": [
+        "bounded_g0_evidence.json: actualg0reportSHAcheckedagainstfrozenOCCP2binding",
+        "all8pairs havebitwiseactorobservationequality,trajectorydigest,ledgerrows,recorderrecordsandresult-except-nonce equality",
+        "seed4201,static/moving,densities70/115/160/205,512quotaepisodes/cell;11520 sampledactorobservationrowscompared"
+      ],
+      "finding": "Existing8pairG0telemetryOFF/ON checks PASS; inheritedonlyunderfrozenruntimeidentity, notqualifiedaswhollyuntested despitegenericper-cellmetadata.",
+      "gate": "G3-TELEMETRY-NONINTERFERENCE-G0",
+      "limits": [
+        "NotarbitraryGTmutation proof, RMSstatefreeze audit, sensorrealism, allfutureseeds orwall-clocknoninterference."
+      ],
+      "severity": "INFO",
+      "status": "PASS"
+    },
+    {
+      "evidence": [
+        "navrl_task.py:6450-6481 sends targetpose only to renderer; perception receives RGB/depth/ranges/ego inputs; actor observations assigned before evaluation diagnostics",
+        "navrl_task.py:6520-6539 privilegedGT appended to physically separate states buffer only",
+        "runner.py:70-90 ExtractObsWrapper --play returns observations and dropsstates",
+        "navrl_perception.py:2179-2242 concatenates sensor-derived/static/ego/track history, search/geofence/corridoroff",
+        "OCCP2SEARCHvar absent=>build_search_supervisorNone; ifB1 used, TaskSearch:712 passes fused,trackactive,lidarmin only"
+      ],
+      "finding": "Static source inspection finds no direct targetGT/semantic/GTvisibility input to actual perception actor path. Dynamic end-to-end counterfactual isolation not yet independently tested.",
+      "gate": "G3-ACTOR-GT-FIREWALL",
+      "impact": "No discovered leakage invalidates P1/P2; avoid upgrading structural review to complete dynamic proof.",
+      "limits": [
+        "Simulator targetGT legitimately enters sensor generation, rewards, terminals, reset treatment and critic",
+        "Perfect simulated ego state/pose used; odometry error qualification NOT_TESTED",
+        "No independent intervention keeping sensor frames fixed while altering all privileged/evaluator fields was run",
+        "Evaluation geometry source usesGT but this audit alone does not prove noninterference of every memoryalias/sideeffect."
+      ],
+      "severity": "HIGH",
+      "status": "LIMITED_VALIDITY"
+    },
+    {
+      "evidence": [
+        "YAML64normalize_inputTrue and119-122player.deterministicTrue; OCCP2 preflight removes all inheritedNAVRL knobs; EVAL_ACTION_MODEabsent all112receipts",
+        "runner.py:887-896 onlyexplicitNAVRL_EVAL_ACTION_MODEoverridesdefault; navrl_players.py:_model_action/get_action selectsdeterministic_actions",
+        "squashedmodel navrl_action_models.py:183normalizesobs thenreturnsboundedtanhlatentmean asdeterministic_actions",
+        "installedrl_games players.py:38-42model.eval; :71-79checkpoint restoremodel+RMS; running_mean_std.py:forwardupdatesonlytraining andclipsnormalizedinput\u00b15",
+        "normalizefrontscale targetposition/20,targetvelocity/2,covposition/400,covvelocity/4,age/5; active gates current16Dtargetfeature"
+      ],
+      "finding": "Source/config strongly bind deterministic boundedmean and checkpoint RMS normalization, but raw result configured is not a resolved actionmode receipt.",
+      "gate": "G3-NORMALIZATION-ACTION-MODE",
+      "limits": [
+        "No normalization-state before/after hash recorded in run; installeddependencyfile hashes are current audit not historical receipt",
+        "NonNAVRL external runtimevariables inherited e.gPYTHON/AERIAL_GYM_SIM_NAME/GPU4GB/LOCAL_RANK; actualBaseSim/importorigins echoed but exhaustive runtimefingerprintabsent",
+        "Model eval may still sample internal Gaussian before deterministic selection, consuming RNG; no stochastic action execution implied."
+      ],
+      "severity": "MEDIUM",
+      "status": "LIMITED_VALIDITY"
+    },
+    {
+      "evidence": [
+        "navrl_task.py:4952-5009 clipsXYperaxis\u00b12.5,governorXY,overwritesz=clip(4*(1-z)+integral,\u00b12.5); yaw=clipa4\u00b11*3rad/s",
+        "navrl_task.py:5050-5059 prev_action copiesraw4Drequest and replacesgovernedXYonly; z auxiliary policyoutput remains inhistory",
+        "velocity_control.py:tilt45deg andverticalpriority thrust compensation; base_lee_controller.py:111-125rotatesyawframecommand toworld thenvelocityfeedback",
+        "recordedconditionpolicy_z_output_overwritten_by_altitude_piTrue andpersisted_in_prev_actionTrue acrossall112cells",
+        "rawquotaaltitudemin.1014/max2.7928,p99=1.1197; actualspeedp50=2.9985,p99=3.4277,max4.7853m/s"
+      ],
+      "finding": "This is horizontal body-frame desiredvelocity plus yawrate with independent altitudePI, not unconstrained four-axis physical flight control.",
+      "gate": "G3-CONTROL-SEMANTICS",
+      "impact": "Controlledrecovery must measure actualvelocity, altitude, yaw andvisibility; cannot treat command0 as instantaneousstationary hover.",
+      "limits": [
+        "2.5m/s is per commandedaxis; diagonalrequestnormmax3.5355m/s; measuredactualvelocity mayovershoot",
+        "Policy z is indirect memory/input channel; removing it changes policy contract",
+        "Camerayaw-only frame deliberatelyignoresbodyroll/pitch; virtualstabilization, not rigidbodyfixedcamera realism",
+        "Yaw changes sensorFOVandworlddirection of XYcommands; pure visibilitycausality/instantstop assumptions invalid"
+      ],
+      "severity": "MEDIUM",
+      "status": "PASS"
+    },
+    {
+      "evidence": [
+        "speed_governor.py:465-475 cap=2+clip((clearance-3)/2,0,1)*(3.53553390593-2); output=min(request,cap)",
+        "cap2m/s evenatclearance0/.1/.45/1/3; hardmargin.45/brake2.9608856678/reaction.1 affectstoppingtelemetry notriskcaplaw",
+        "requiredsurfaceclearance at2m/s=.45+.2+4/(2*2.9608856678)=1.3254735658m",
+        "speed_governor.py:505-531 reportsnegative stoppingmargin; riskcapdoesnotrotatecommand andstraightcorridornotturningarc",
+        "sample4301static70 result.speed_governor contactclearance.112712m/executedcommand2m/s,negativeexecutedstoppingmargin-.875474m; thisisLEGACYAGGREGATE diagnosticpopulation,notquotaoutcomeevidence"
+      ],
+      "finding": "Actual riskcap law does not enforce nonnegative stopping margin; this is an independent algebraic counterexample to a safetyguarantee, not a newly introduced implementation defect.",
+      "gate": "G3-RISKCAP-STOPPING-GUARANTEE",
+      "impact": "P1/P2closedlooprates stillvalid underthisfilter; recoveryinterventions cannot assume existingriskcapmakessearch/turn/stop safe.",
+      "limits": [
+        "No collisionfree guarantee promised by canonicaldocs; failure applies to such qualification only",
+        "Currentriskcapimplementation fidelity PASSsource/config; no change authorized",
+        "Target-like carve-out can remove a matchingbar; invalid LiDAR is converted to maxrange by task; sensorfailure safety NOT_TESTED",
+        "Directionalraycorridor checksinstantcommandgeometry, not independentlyvalidateddynamicreachabletube orinterstepcollisionproof"
+      ],
+      "severity": "HIGH",
+      "status": "FAIL"
+    }
+  ],
+  "git_traceability": {
+    "base_actual_run_sha": "5ff285ad053f181c5a1c86dddb2462bb44e6327b",
+    "branch": "codex/mt-p1",
+    "main_merge": false,
+    "new_commit": "NONE auditartifacts/tmp only parentwillrecordapprovedreport",
+    "raw_checkpoint_integrity": "RawframeSHAchecked112cells;checkpointSHAverified; nevermodified",
+    "remote_push": false,
+    "tracked_worktree_status": ""
+  },
+  "independent_record_artifact": {
+    "path": "/tmp/eq0_g3_20261017/independent_record_algebra.json",
+    "sha256": "0242afe28b76154b40192abb716cc34b4272a8f034ca78415a5f2a8b36a08193"
+  },
+  "overall": "LIMITED_VALIDITY",
+  "prohibitions_respected": [
+    "No source/raw edits",
+    "No GPUprobe/simulation/EQ1execution",
+    "No PPO",
+    "No checkpointtorchload",
+    "No commit/merge/push/delete"
+  ],
+  "raw_root": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_confirmatory_v1/OCC-P2",
+  "schema": "motar.eq0-g3.readonly.v1",
+  "scope": "EQ0 read-only existingrecords/source plusindependentCPU algebra, noGPU/simulation/importaerialgym/checkpointload/source/rawmodification",
+  "source_bindings": {
+    "aerial_gym/config/controller_config/lee_controller_config_navrl.py": {
+      "matches_actual_run_commit": true,
+      "sha256": "17b0b86c045d3d901aae6a0fa5546a2aeee2d4721e1b350754020401dba7adf2"
+    },
+    "aerial_gym/config/task_config/navrl_task_config.py": {
+      "matches_actual_run_commit": true,
+      "sha256": "f35e1959cb6f7035937642c479bb073d05d8ce3796db9e7c8e9e036c992b6267"
+    },
+    "aerial_gym/control/controllers/base_lee_controller.py": {
+      "matches_actual_run_commit": true,
+      "sha256": "5722b0111a735ac4273fc7087ab18327ff8abe53e7a8d65df39bfa042d23cb14"
+    },
+    "aerial_gym/control/controllers/velocity_control.py": {
+      "matches_actual_run_commit": true,
+      "sha256": "fd01a61d3f4e2d49087763d2c3559df13fdb4a377f20ef9e057e84a9bdbfcec8"
+    },
+    "aerial_gym/rl_training/rl_games/eval_navrl_target_behavior_arms.sh": {
+      "matches_actual_run_commit": true,
+      "sha256": "4077e2718c73c3177cdf1f775cc11a6b50cb18d591e352382e175c45fb14f7ec"
+    },
+    "aerial_gym/rl_training/rl_games/navrl_action_models.py": {
+      "matches_actual_run_commit": true,
+      "sha256": "234e13f2895c1f04e3d4266b5175ea40eab9082b73d463077206cc595ea48e1f"
+    },
+    "aerial_gym/rl_training/rl_games/navrl_players.py": {
+      "matches_actual_run_commit": true,
+      "sha256": "ee5c7d1310bcba9d70ce05e8e15e294aabaa382aa4e8f98ecbbf3deb25d7c076"
+    },
+    "aerial_gym/rl_training/rl_games/navrl_transformer_network.py": {
+      "matches_actual_run_commit": true,
+      "sha256": "eaa67b3ce0690fa32c871b6d19603d781d0eb9195b16050a930357c78af9422e"
+    },
+    "aerial_gym/rl_training/rl_games/play_navrl.sh": {
+      "matches_actual_run_commit": true,
+      "sha256": "9f300a2093e274171a8ff9ea5407a0a9bff14d9ccb05a2e0b091741bd08103d0"
+    },
+    "aerial_gym/rl_training/rl_games/ppo_navrl_perception_transformer.yaml": {
+      "matches_actual_run_commit": true,
+      "sha256": "5531b9b41933c6cd73525d8b8ebab61fc96e53d04df833d263eb8102f78225c8"
+    },
+    "aerial_gym/rl_training/rl_games/runner.py": {
+      "matches_actual_run_commit": true,
+      "sha256": "54975b442b3aeda63b7e82b8501b67697401c293c29cdc893c7e6477d8a0842a"
+    },
+    "aerial_gym/task/navrl_task/kroc_eval_adapter.py": {
+      "matches_actual_run_commit": true,
+      "sha256": "1712a7ef38e1dfc3542888eae4c556138695e96d38ee158811955a81c13819af"
+    },
+    "aerial_gym/task/navrl_task/navrl_detector.py": {
+      "matches_actual_run_commit": true,
+      "sha256": "ff04a2dc410342079bd58333c53c571266a7f44c9864ef4e3f6910dd7f6312fa"
+    },
+    "aerial_gym/task/navrl_task/navrl_perception.py": {
+      "matches_actual_run_commit": true,
+      "sha256": "0b7f26aa9c12db5e528a3fe75aa28a146a9fbfb695dc8f988e7b172b11c3082f"
+    },
+    "aerial_gym/task/navrl_task/navrl_task.py": {
+      "matches_actual_run_commit": true,
+      "sha256": "c54616567da64cc5fa8d210ba51f4452af623c10a1a5934db58482f5d761cd0d"
+    },
+    "aerial_gym/task/navrl_task/speed_governor.py": {
+      "matches_actual_run_commit": true,
+      "sha256": "fe00c84c3b9a4f62518445c134ee9b0b3eb085486e82feddfeb0ea736ebb6847"
+    },
+    "tools/kroc2027_eval.py": {
+      "matches_actual_run_commit": true,
+      "sha256": "b5979cecff3967f9feed665dbf6a96d698c3df8db2ef8b3d6579087a8460ee5c"
+    },
+    "tools/occlusion_confirmatory.py": {
+      "matches_actual_run_commit": true,
+      "sha256": "33958182f41def22edf88a376fbef4deac3387ae41270c8e43c12d23267a50dc"
+    }
+  }
+}

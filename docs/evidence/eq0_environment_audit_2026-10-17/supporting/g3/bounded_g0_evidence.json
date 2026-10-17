@@ -1,0 +1,218 @@
+{
+  "actor_observation_rows_compared_total": 11520,
+  "densities": [
+    70,
+    115,
+    160,
+    205
+  ],
+  "groups": [
+    "static",
+    "moving"
+  ],
+  "hash_matches_OCCP2_frozen_binding": true,
+  "interpretation": "PASS for telemetryOFF/ON equality on this8pairG0matrix: sampledactorobservations, fulltrajectorydigest, result exceptnonce, ledger/recorder. OCCP2frozenruntimeidentity allowsboundedinheritance; per-cellmetadataNOT_TESTED isgenericflag, notabsenceofG0test. This doesnotbyitselftest arbitraryprivilegedGTmutations, realtimeperformance, RMSstateinvariance, everyfutureseed orindependentsensorrealism.",
+  "n_pairs": 8,
+  "noninterference": "PASS",
+  "pairs": {
+    "moving/A3/E2_obstacle_aware__115bars__seed4201": {
+      "checks": {
+        "actor_observations_bitwise_equal": true,
+        "ledger_rows_sha256_equal": true,
+        "recorder_records_equal": true,
+        "result_equal_except_nonce": true,
+        "trajectory_digest_equal": true
+      },
+      "detail": {
+        "digest_steps": [
+          184,
+          184
+        ],
+        "observation_rows_compared": 1408,
+        "recorder_comparison": {
+          "keys_only_new": [],
+          "ledger_mismatches": [],
+          "ledger_rows_compared": 512,
+          "recorder_mismatches": [],
+          "recorder_records_compared": 512
+        }
+      },
+      "verdict": "PASS"
+    },
+    "moving/A3/E2_obstacle_aware__160bars__seed4201": {
+      "checks": {
+        "actor_observations_bitwise_equal": true,
+        "ledger_rows_sha256_equal": true,
+        "recorder_records_equal": true,
+        "result_equal_except_nonce": true,
+        "trajectory_digest_equal": true
+      },
+      "detail": {
+        "digest_steps": [
+          204,
+          204
+        ],
+        "observation_rows_compared": 1920,
+        "recorder_comparison": {
+          "keys_only_new": [],
+          "ledger_mismatches": [],
+          "ledger_rows_compared": 512,
+          "recorder_mismatches": [],
+          "recorder_records_compared": 512
+        }
+      },
+      "verdict": "PASS"
+    },
+    "moving/A3/E2_obstacle_aware__205bars__seed4201": {
+      "checks": {
+        "actor_observations_bitwise_equal": true,
+        "ledger_rows_sha256_equal": true,
+        "recorder_records_equal": true,
+        "result_equal_except_nonce": true,
+        "trajectory_digest_equal": true
+      },
+      "detail": {
+        "digest_steps": [
+          209,
+          209
+        ],
+        "observation_rows_compared": 1792,
+        "recorder_comparison": {
+          "keys_only_new": [],
+          "ledger_mismatches": [],
+          "ledger_rows_compared": 512,
+          "recorder_mismatches": [],
+          "recorder_records_compared": 512
+        }
+      },
+      "verdict": "PASS"
+    },
+    "moving/A3/E2_obstacle_aware__70bars__seed4201": {
+      "checks": {
+        "actor_observations_bitwise_equal": true,
+        "ledger_rows_sha256_equal": true,
+        "recorder_records_equal": true,
+        "result_equal_except_nonce": true,
+        "trajectory_digest_equal": true
+      },
+      "detail": {
+        "digest_steps": [
+          183,
+          183
+        ],
+        "observation_rows_compared": 1408,
+        "recorder_comparison": {
+          "keys_only_new": [],
+          "ledger_mismatches": [],
+          "ledger_rows_compared": 512,
+          "recorder_mismatches": [],
+          "recorder_records_compared": 512
+        }
+      },
+      "verdict": "PASS"
+    },
+    "static/A1/E0_static__115bars__seed4201": {
+      "checks": {
+        "actor_observations_bitwise_equal": true,
+        "ledger_rows_sha256_equal": true,
+        "recorder_records_equal": true,
+        "result_equal_except_nonce": true,
+        "trajectory_digest_equal": true
+      },
+      "detail": {
+        "digest_steps": [
+          162,
+          162
+        ],
+        "observation_rows_compared": 1280,
+        "recorder_comparison": {
+          "keys_only_new": [],
+          "ledger_mismatches": [],
+          "ledger_rows_compared": 512,
+          "recorder_mismatches": [],
+          "recorder_records_compared": 512
+        }
+      },
+      "verdict": "PASS"
+    },
+    "static/A1/E0_static__160bars__seed4201": {
+      "checks": {
+        "actor_observations_bitwise_equal": true,
+        "ledger_rows_sha256_equal": true,
+        "recorder_records_equal": true,
+        "result_equal_except_nonce": true,
+        "trajectory_digest_equal": true
+      },
+      "detail": {
+        "digest_steps": [
+          164,
+          164
+        ],
+        "observation_rows_compared": 1152,
+        "recorder_comparison": {
+          "keys_only_new": [],
+          "ledger_mismatches": [],
+          "ledger_rows_compared": 512,
+          "recorder_mismatches": [],
+          "recorder_records_compared": 512
+        }
+      },
+      "verdict": "PASS"
+    },
+    "static/A1/E0_static__205bars__seed4201": {
+      "checks": {
+        "actor_observations_bitwise_equal": true,
+        "ledger_rows_sha256_equal": true,
+        "recorder_records_equal": true,
+        "result_equal_except_nonce": true,
+        "trajectory_digest_equal": true
+      },
+      "detail": {
+        "digest_steps": [
+          170,
+          170
+        ],
+        "observation_rows_compared": 1280,
+        "recorder_comparison": {
+          "keys_only_new": [],
+          "ledger_mismatches": [],
+          "ledger_rows_compared": 512,
+          "recorder_mismatches": [],
+          "recorder_records_compared": 512
+        }
+      },
+      "verdict": "PASS"
+    },
+    "static/A1/E0_static__70bars__seed4201": {
+      "checks": {
+        "actor_observations_bitwise_equal": true,
+        "ledger_rows_sha256_equal": true,
+        "recorder_records_equal": true,
+        "result_equal_except_nonce": true,
+        "trajectory_digest_equal": true
+      },
+      "detail": {
+        "digest_steps": [
+          160,
+          160
+        ],
+        "observation_rows_compared": 1280,
+        "recorder_comparison": {
+          "keys_only_new": [],
+          "ledger_mismatches": [],
+          "ledger_rows_compared": 512,
+          "recorder_mismatches": [],
+          "recorder_records_compared": 512
+        }
+      },
+      "verdict": "PASS"
+    }
+  },
+  "quota_episodes_per_cell": 512,
+  "schema": "motar.eq0-g3.bounded-g0-evidence.v1",
+  "seed": 4201,
+  "sha256": "ae17bfa538777639328b4554b3929b72f7d7c2acccf2422a79dfdb242ba19632",
+  "source_commit": "6441c1ff74b6d085d14ed5604d1d60d66a4634fe",
+  "source_path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_pilot_v1/OCC-G0_rerun1/g0_report.json",
+  "verdict": "G0_PASS"
+}
