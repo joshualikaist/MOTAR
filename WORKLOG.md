@@ -21160,3 +21160,22 @@ Next review: the complete diff and new plan; local commit requires user diff app
   - D-EL0, D-FIREWALL, D-INTEGRITY.
 - Inherited limitations named (S-L1C recall band, S-L1B carve, identical attitude passes).
   Canary SL1D-C01: 2 sensor and 8 closed-loop processes.
+
+## 2026-10-18 — S-L1D independent float64 oracle verified before runtime code
+
+- Files: `tools/audits/s_l1d_reference.py`, `tests/test_s_l1d_reference.py`, WORKLOG. NumPy only,
+  with no production import; first hits come from the S-L1A oracle.
+- The oracle provides:
+  - predicted support, evaluator classes on analytic geometry (E-L0 rule, exact centre ray, centre
+    robustness) and delivered-depth composition;
+  - online classes with τ = 0.05 + 2σ_los;
+  - a count of boundary-ambiguous pixels.
+- CPU: 8 OK; self-test 6/6.
+  - Clear, full, centre-only, partial, FOV-exit (50°) and range-exit (24 m) cases each map to their
+    preregistered online class.
+  - The scale-loss band holds: support below the minimum gives PRED_SCALE_LOSS even when occluded.
+  - DETECTED and NO_TRACK take precedence.
+  - τ follows the covariance: 0.052 m detects a 0.2 m occluder gap; 0.45 m does not.
+  - Alone passes never produce occlusion evidence, and a wrong prediction changes the support.
+  - Ambiguous-pixel count verified.
+- Two fixture geometries were corrected before commit, with the expected classes unchanged.
