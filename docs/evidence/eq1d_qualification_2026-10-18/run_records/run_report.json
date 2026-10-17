@@ -1,0 +1,344 @@
+{
+ "schema": "motar.eq1d-run-report.v1",
+ "run_dir": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/eq1d_qualification_v1/EQ1D-R1",
+ "smoke": false,
+ "plan_sha256": "ddb349a16adb67b9b6b3c19e444b6c4a76bb7668189302f903ca8b8bacba81b0",
+ "preflight": {
+  "head": "d5877703038737fc0878b7487369d0ab46dfaab0",
+  "tracked_tree_clean": true,
+  "plan_committed_unchanged": true,
+  "policy_f_sha256": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+  "rms_digest": "642fc9f7f86b068e816e156fea7a34782bbc525966650f73cd85aae8cc18387f",
+  "import_origins": {
+   "aerial_gym@MOTAR-mt-p1": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/aerial_gym/__init__.py",
+   "motar_eval@MOTAR-mt-p1": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/motar_eval/__init__.py",
+   "aerial_gym@rl_games": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/aerial_gym/__init__.py",
+   "motar_eval@rl_games": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/motar_eval/__init__.py"
+  },
+  "run_dir": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/eq1d_qualification_v1/EQ1D-R1",
+  "free_disk_gb": 19.273117696,
+  "gpu": {
+   "name": "NVIDIA GeForce RTX 3070",
+   "total_mib": 8192,
+   "used_mib": 430,
+   "free_mib": 7414,
+   "compute_apps": []
+  },
+  "receipt_sha256": "85c13b08ba75f58dfe005d8747ef7922d31675ccc7347412cace5feeaabc963c"
+ },
+ "gpu_memory_cap_mib": 7250,
+ "gpu_memory_cap_rule": "measured at launch: cap = total - (memory used by other processes) - 512 MiB OOM reserve, recorded in the run report; polled every 5 s",
+ "processes": [
+  {
+   "id": "d1_dt10",
+   "cap_s": 1200,
+   "free_disk_gb_before": 19.273109504,
+   "command": [
+    "/home/fair/miniconda3/envs/aerialgym/bin/python",
+    "-B",
+    "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tools/eq1d_fixture_launcher.py",
+    "d1",
+    "--process",
+    "d1_dt10",
+    "--out",
+    "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/eq1d_qualification_v1/EQ1D-R1/d1_dt10"
+   ],
+   "wall_s": 10.17209243774414,
+   "returncode": 0,
+   "peak_gpu_mib": 4076,
+   "log": "d1_dt10.log",
+   "process_done": {
+    "files": [
+     {
+      "bytes": 949777,
+      "file": "d1_substeps.npz",
+      "sha256": "a8f28149954882f0cd593bfd059996b55b612aba7067b0acf77307c9feb95ea2"
+     },
+     {
+      "bytes": 2701,
+      "file": "d1_meta.json",
+      "sha256": "26c09f84602285f72a77eb92aeb7216d2893a71b35261debfa62f45978c9a741"
+     }
+    ],
+    "max_memory_allocated_bytes": 25814528,
+    "nan_fields": [],
+    "process": "d1_dt10",
+    "wall_s": 6.942593336105347
+   },
+   "output_bytes": 952882
+  },
+  {
+   "id": "d1_dt5",
+   "cap_s": 1200,
+   "free_disk_gb_before": 19.272114176,
+   "command": [
+    "/home/fair/miniconda3/envs/aerialgym/bin/python",
+    "-B",
+    "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tools/eq1d_fixture_launcher.py",
+    "d1",
+    "--process",
+    "d1_dt5",
+    "--out",
+    "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/eq1d_qualification_v1/EQ1D-R1/d1_dt5"
+   ],
+   "wall_s": 10.15010118484497,
+   "returncode": 0,
+   "peak_gpu_mib": 4078,
+   "log": "d1_dt5.log",
+   "process_done": {
+    "files": [
+     {
+      "bytes": 1873107,
+      "file": "d1_substeps.npz",
+      "sha256": "1492ba2661bd8661f06e301602e5f261fb6730f22b01df54ec0614cf6b9fced6"
+     },
+     {
+      "bytes": 2702,
+      "file": "d1_meta.json",
+      "sha256": "cdea20b5ecef53c5836ce9eeaad5a4da2559247d5603ac0fa1f74f728aedfbb6"
+     }
+    ],
+    "max_memory_allocated_bytes": 27771392,
+    "nan_fields": [],
+    "process": "d1_dt5",
+    "wall_s": 8.558894634246826
+   },
+   "output_bytes": 1876213
+  },
+  {
+   "id": "d1_dt2p5",
+   "cap_s": 1200,
+   "free_disk_gb_before": 19.27020544,
+   "command": [
+    "/home/fair/miniconda3/envs/aerialgym/bin/python",
+    "-B",
+    "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tools/eq1d_fixture_launcher.py",
+    "d1",
+    "--process",
+    "d1_dt2p5",
+    "--out",
+    "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/eq1d_qualification_v1/EQ1D-R1/d1_dt2p5"
+   ],
+   "wall_s": 15.283881425857544,
+   "returncode": 0,
+   "peak_gpu_mib": 4726,
+   "log": "d1_dt2p5.log",
+   "process_done": {
+    "files": [
+     {
+      "bytes": 3700924,
+      "file": "d1_substeps.npz",
+      "sha256": "d188914ad6e5ec1ffc7488fcb6f9fe1371b75cf83a892a287462510ee99edc41"
+     },
+     {
+      "bytes": 2706,
+      "file": "d1_meta.json",
+      "sha256": "e1b7d7cd0b0385d7b4d0d2eddaa95d2bdc288f672ca165c61566c9afee8b3667"
+     }
+    ],
+    "max_memory_allocated_bytes": 31688192,
+    "nan_fields": [],
+    "process": "d1_dt2p5",
+    "wall_s": 11.91544246673584
+   },
+   "output_bytes": 3704036
+  },
+  {
+   "id": "d2_scenes",
+   "cap_s": 1200,
+   "free_disk_gb_before": 19.266445312,
+   "command": [
+    "/home/fair/miniconda3/envs/aerialgym/bin/python",
+    "-B",
+    "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tools/eq1d_fixture_launcher.py",
+    "d2",
+    "--process",
+    "d2_scenes",
+    "--out",
+    "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/eq1d_qualification_v1/EQ1D-R1/d2_scenes"
+   ],
+   "wall_s": 10.188313245773315,
+   "returncode": 0,
+   "peak_gpu_mib": 4164,
+   "log": "d2_scenes.log",
+   "process_done": {
+    "files": [
+     {
+      "bytes": 582277,
+      "file": "d2_renders.npz",
+      "sha256": "95cd757821ddeb023bdf797414bc333b0b2f2f5490aef12b836b7471f0c1e0d0"
+     },
+     {
+      "bytes": 5376,
+      "file": "d2_meta.json",
+      "sha256": "8e05ab02a34083757f914e65b1adb4f5934e5aba3e9c82d08bd2b29866406820"
+     }
+    ],
+    "max_memory_allocated_bytes": 60275200,
+    "nan_fields": [],
+    "process": "d2_scenes",
+    "wall_s": 6.459861755371094
+   },
+   "output_bytes": 588058
+  },
+  {
+   "id": "d3_n4",
+   "cap_s": 1800,
+   "free_disk_gb_before": 19.26572032,
+   "command": [
+    "/home/fair/miniconda3/envs/aerialgym/bin/python",
+    "-B",
+    "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tools/eq1d_fixture_launcher.py",
+    "d3",
+    "--process",
+    "d3_n4",
+    "--out",
+    "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/eq1d_qualification_v1/EQ1D-R1/d3_n4"
+   ],
+   "wall_s": 25.974393606185913,
+   "returncode": 0,
+   "peak_gpu_mib": 4662,
+   "log": "d3_n4.log",
+   "process_done": {
+    "files": [
+     {
+      "bytes": 163706,
+      "file": "d3_branches.npz",
+      "sha256": "01e012fc24d161a8f840140d7f193c4a4631f0a0cfbff8ed7ba2d98c08128a36"
+     },
+     {
+      "bytes": 58272,
+      "file": "d3_meta.json",
+      "sha256": "0b566257b9968f15ee54ff641c59f6ffa0b6f906c27ae0f0cc23b9ccb546606c"
+     }
+    ],
+    "max_memory_allocated_bytes": 21929984,
+    "nan_fields": [],
+    "process": "d3_n4",
+    "wall_s": 20.29863214492798
+   },
+   "output_bytes": 222381
+  },
+  {
+   "id": "d3_n1",
+   "cap_s": 1800,
+   "free_disk_gb_before": 19.265396736,
+   "command": [
+    "/home/fair/miniconda3/envs/aerialgym/bin/python",
+    "-B",
+    "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tools/eq1d_fixture_launcher.py",
+    "d3",
+    "--process",
+    "d3_n1",
+    "--out",
+    "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/eq1d_qualification_v1/EQ1D-R1/d3_n1"
+   ],
+   "wall_s": 20.626009225845337,
+   "returncode": 0,
+   "peak_gpu_mib": 4656,
+   "log": "d3_n1.log",
+   "process_done": {
+    "files": [
+     {
+      "bytes": 38501,
+      "file": "d3_branches.npz",
+      "sha256": "49cec6e58e0db3e50c541917af8a146d1b929229026f13478188306e4244f166"
+     },
+     {
+      "bytes": 56170,
+      "file": "d3_meta.json",
+      "sha256": "482f531c2cb14f06a9d5db848182f62a0ae65dd9a34ef57db86046acb2ef6b91"
+     }
+    ],
+    "max_memory_allocated_bytes": 20064768,
+    "nan_fields": [],
+    "process": "d3_n1",
+    "wall_s": 17.690443992614746
+   },
+   "output_bytes": 95074
+  },
+  {
+   "id": "d3_n2",
+   "cap_s": 1800,
+   "free_disk_gb_before": 19.265261568,
+   "command": [
+    "/home/fair/miniconda3/envs/aerialgym/bin/python",
+    "-B",
+    "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tools/eq1d_fixture_launcher.py",
+    "d3",
+    "--process",
+    "d3_n2",
+    "--out",
+    "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/eq1d_qualification_v1/EQ1D-R1/d3_n2"
+   ],
+   "wall_s": 20.65992021560669,
+   "returncode": 0,
+   "peak_gpu_mib": 4658,
+   "log": "d3_n2.log",
+   "process_done": {
+    "files": [
+     {
+      "bytes": 79523,
+      "file": "d3_branches.npz",
+      "sha256": "a2c0bb8dcc742236deac404e5409fb56af6fdee36a370073c80afdb89dffea5c"
+     },
+     {
+      "bytes": 56870,
+      "file": "d3_meta.json",
+      "sha256": "1f795913180f2661a7ee5bcbaae3d624cf93c28095df704cf180e8d810bbc60d"
+     }
+    ],
+    "max_memory_allocated_bytes": 21778432,
+    "nan_fields": [],
+    "process": "d3_n2",
+    "wall_s": 19.120038270950317
+   },
+   "output_bytes": 136796
+  },
+  {
+   "id": "d3_n128",
+   "cap_s": 2400,
+   "free_disk_gb_before": 19.265097728,
+   "command": [
+    "/home/fair/miniconda3/envs/aerialgym/bin/python",
+    "-B",
+    "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tools/eq1d_fixture_launcher.py",
+    "d3",
+    "--process",
+    "d3_n128",
+    "--out",
+    "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/eq1d_qualification_v1/EQ1D-R1/d3_n128"
+   ],
+   "wall_s": 51.855019330978394,
+   "returncode": 0,
+   "peak_gpu_mib": 5446,
+   "log": "d3_n128.log",
+   "process_done": {
+    "files": [
+     {
+      "bytes": 5141467,
+      "file": "d3_branches.npz",
+      "sha256": "5a38242aa9f325c888567d6005756a6daf7e87d4bd47d3db0f2e109117212da6"
+     },
+     {
+      "bytes": 111027,
+      "file": "d3_meta.json",
+      "sha256": "f1202c723d679fcfcca93339951a3257d3b232634465dacf0e2bfdfdc4ba5f35"
+     }
+    ],
+    "max_memory_allocated_bytes": 470535168,
+    "nan_fields": [],
+    "process": "d3_n128",
+    "wall_s": 49.80471611022949
+   },
+   "output_bytes": 5252902
+  }
+ ],
+ "status": "COMPLETED",
+ "started_at": "2026-10-18T01:36:07+0900",
+ "stop_reason": null,
+ "gpu_seconds_total": 164.9097306728363,
+ "output_bytes_total": 12970109,
+ "free_disk_gb_after": 19.259809792,
+ "finished_at": "2026-10-18T01:38:52+0900"
+}

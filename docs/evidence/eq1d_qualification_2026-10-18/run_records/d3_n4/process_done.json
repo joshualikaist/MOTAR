@@ -1,0 +1,18 @@
+{
+ "files": [
+  {
+   "bytes": 163706,
+   "file": "d3_branches.npz",
+   "sha256": "01e012fc24d161a8f840140d7f193c4a4631f0a0cfbff8ed7ba2d98c08128a36"
+  },
+  {
+   "bytes": 58272,
+   "file": "d3_meta.json",
+   "sha256": "0b566257b9968f15ee54ff641c59f6ffa0b6f906c27ae0f0cc23b9ccb546606c"
+  }
+ ],
+ "max_memory_allocated_bytes": 21929984,
+ "nan_fields": [],
+ "process": "d3_n4",
+ "wall_s": 20.29863214492798
+}

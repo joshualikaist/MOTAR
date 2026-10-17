@@ -1,0 +1,18 @@
+{
+ "files": [
+  {
+   "bytes": 949777,
+   "file": "d1_substeps.npz",
+   "sha256": "a8f28149954882f0cd593bfd059996b55b612aba7067b0acf77307c9feb95ea2"
+  },
+  {
+   "bytes": 2701,
+   "file": "d1_meta.json",
+   "sha256": "26c09f84602285f72a77eb92aeb7216d2893a71b35261debfa62f45978c9a741"
+  }
+ ],
+ "max_memory_allocated_bytes": 25814528,
+ "nan_fields": [],
+ "process": "d1_dt10",
+ "wall_s": 6.942593336105347
+}

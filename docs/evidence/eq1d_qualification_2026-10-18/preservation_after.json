@@ -1,0 +1,51 @@
+{
+ "eq1d_r1_manifest": {
+  "members": 33,
+  "mismatches": [],
+  "sha256": "e28dfc68531b559161bbbc217e541917e696b0960837c3418e71f6115efb4b22"
+ },
+ "free_disk_gb": 19.258363904,
+ "main_checkout_after": [
+  "cb644bbe46456b1900020177617a13040a3f1552",
+  " M .gitignore",
+  " M WORKLOG.md",
+  " M presentations/README.md",
+  "0fc139965f0e1e218883e22cb1c2e2cc6c8cf86487b1dd7d402a28a369fb5296  /home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/.gitignore",
+  "a63118ee730803b6c7e0afcceeec0d0595fdbf347ed56fb3474364b79bf6454c  /home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/WORKLOG.md",
+  "be8c4b2350a49580c5ea70a45f34c307c34a46f2509ce2eeab8f0f9fdfb69731  /home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/presentations/README.md",
+  "23ddb33f92cf6c75cf9095e149bb7e2516eb7543 On main: KROC2027 merge 2026-10-15: user WIP (.gitignore, WORKLOG.md, presentations/README.md) - restore after canary"
+ ],
+ "main_checkout_before": [
+  "cb644bbe46456b1900020177617a13040a3f1552",
+  " M .gitignore",
+  " M WORKLOG.md",
+  " M presentations/README.md",
+  "0fc139965f0e1e218883e22cb1c2e2cc6c8cf86487b1dd7d402a28a369fb5296  /home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/.gitignore",
+  "a63118ee730803b6c7e0afcceeec0d0595fdbf347ed56fb3474364b79bf6454c  /home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/WORKLOG.md",
+  "be8c4b2350a49580c5ea70a45f34c307c34a46f2509ce2eeab8f0f9fdfb69731  /home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/presentations/README.md",
+  "23ddb33f92cf6c75cf9095e149bb7e2516eb7543 On main: KROC2027 merge 2026-10-15: user WIP (.gitignore, WORKLOG.md, presentations/README.md) - restore after canary"
+ ],
+ "main_checkout_unchanged": true,
+ "occ_p2_manifest": {
+  "members": 1406,
+  "mismatches": 0,
+  "sha256": "c5cd1dbc160122d444119af255fee450405c7d3373025cad6f866d5c0a0cfc68"
+ },
+ "policy_f": {
+  "main_checkout": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+  "worktree": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40"
+ },
+ "schema": "motar.eq1d-preservation.v1",
+ "smoke_vs_official_raw_identical": {
+  "d1_dt10/d1_substeps.npz": true,
+  "d1_dt2p5/d1_substeps.npz": true,
+  "d1_dt5/d1_substeps.npz": true,
+  "d2_scenes/d2_renders.npz": true,
+  "d3_n1/d3_branches.npz": true,
+  "d3_n128/d3_branches.npz": true,
+  "d3_n2/d3_branches.npz": true,
+  "d3_n4/d3_branches.npz": true
+ },
+ "worktree_head": "d5877703038737fc0878b7487369d0ab46dfaab0",
+ "worktree_tracked_dirty": ""
+}

@@ -208,6 +208,29 @@ class D3AnalysisTest(unittest.TestCase):
             self.assertEqual(res["gates"]["D3-B1"]["status"], "FAIL")
 
 
+EVIDENCE = ROOT / "docs/evidence/eq1d_qualification_2026-10-18"
+
+
+@unittest.skipUnless((EVIDENCE / "eq1d_analysis.json").exists(), "EQ-1D evidence not present")
+class RecordedEvidenceTest(unittest.TestCase):
+    def test_official_run_record(self):
+        report = json.loads((EVIDENCE / "run_records/run_report.json").read_text())
+        self.assertEqual(report["status"], "COMPLETED")
+        self.assertEqual([p["id"] for p in report["processes"]], [p["id"] for p in PLAN["run"]["processes"]])
+        self.assertTrue(all(p["returncode"] == 0 for p in report["processes"]))
+        summary = json.loads((EVIDENCE / "eq1d_analysis.json").read_text())["summary"]
+        self.assertTrue(all(summary[g] == "PASS" for g in PLAN["D3"]["gates"]), summary)
+        for gate in ("D1-T1", "D1-M1", "D1-M2", "D1-H1", "D1-B1", "D2-R2", "D2-S1", "D2-N1", "D2-T1", "D2-Y1"):
+            self.assertEqual(summary[gate], "PASS", gate)
+        for gate in ("D1-C1", "D1-V1", "D1-A1", "D2-R3", "D2-F1", "D2-O1", "D2-N2"):
+            self.assertEqual(summary[gate], "FAIL", gate)  # preserved findings, not regressions to fix here
+        pres = json.loads((EVIDENCE / "preservation_after.json").read_text())
+        self.assertEqual(pres["eq1d_r1_manifest"]["mismatches"], [])
+        self.assertEqual(pres["occ_p2_manifest"]["mismatches"], 0)
+        self.assertTrue(pres["main_checkout_unchanged"])
+        self.assertEqual(pres["policy_f"]["worktree"], PLAN["frozen"]["policy_f_sha256"])
+
+
 class OrchestratorTest(unittest.TestCase):
     def test_env_scrub_and_overrides(self):
         os.environ["NAVRL_EQ1D_LEAK"] = "1"

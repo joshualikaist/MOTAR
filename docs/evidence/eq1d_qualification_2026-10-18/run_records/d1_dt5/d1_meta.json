@@ -1,0 +1,137 @@
+{
+ "actions": 60,
+ "contact_bars": {
+  "20": {
+   "centre": [
+    12.42744998574257,
+    20.0,
+    1.5
+   ],
+   "half": [
+    0.28744998574256897,
+    0.3665499985218048,
+    1.5
+   ],
+   "slot": 0
+  },
+  "21": {
+   "centre": [
+    12.428700014352799,
+    20.0,
+    1.5
+   ],
+   "half": [
+    0.28870001435279846,
+    0.2454500049352646,
+    1.5
+   ],
+   "slot": 0
+  },
+  "22": {
+   "centre": [
+    12.560457079914563,
+    21.705349988937378,
+    1.5
+   ],
+   "half": [
+    0.274150013923645,
+    0.38534998893737793,
+    1.5
+   ],
+   "slot": 0
+  },
+  "23": {
+   "centre": [
+    11.20875000178814,
+    22.09361641674603,
+    1.5
+   ],
+   "half": [
+    0.2775000035762787,
+    0.2576499879360199,
+    1.5
+   ],
+   "slot": 0
+  }
+ },
+ "controller": "LeeVelocityController",
+ "dt_s": 0.005,
+ "fixtures": [
+  "hover",
+  "vx 1.0 step",
+  "vx 2.5 step",
+  "vy 1.0 step",
+  "vy -2.5 step",
+  "vx reversal",
+  "vy reversal",
+  "diagonal 3.5355 held",
+  "yaw rate 1.0",
+  "yaw rate 3.0",
+  "vx 2.5 with yaw 1.0",
+  "climb 1.0",
+  "descend 0.5",
+  "brake from 2.0",
+  "brake from 3.5355 (diagonal)",
+  "brake from 2.5",
+  "sinusoid vx 2.0 at 0.5 Hz",
+  "sinusoid vy 2.0 at 1.0 Hz",
+  "saturation vx 10",
+  "saturation diagonal 10",
+  "contact head-on 1 m/s",
+  "contact head-on 2 m/s",
+  "contact corner 3 m/s at 30 deg",
+  "contact oblique 2 m/s at 60 deg"
+ ],
+ "integration_scheme": "rk4",
+ "loop_wall_s": 4.593807697296143,
+ "max_thrust": 2.0,
+ "mixing": "<torch.jit.ScriptFunction object at 0x7fcc4a02d680>",
+ "motor_thrust_constant": [
+  1.0741969163063914e-05,
+  1.3914786904933862e-05,
+  1.5237962543324102e-05,
+  9.351592780149076e-06,
+  1.3681563359568827e-05,
+  1.3204656170273665e-05,
+  1.5515590348513797e-05,
+  9.571327609592117e-06,
+  1.4087946510699112e-05,
+  9.430978025193326e-06,
+  9.453051461605355e-06,
+  1.2093008081137668e-05,
+  1.0236773960059509e-05,
+  1.1963785254920367e-05,
+  1.0831100553332362e-05,
+  1.6560012227273546e-05,
+  1.7125061276601627e-05,
+  1.1466415344330017e-05,
+  1.773448457242921e-05,
+  1.7270020180149004e-05,
+  1.514528958068695e-05,
+  1.1645172889984678e-05,
+  1.059443638951052e-05,
+  1.7398375348420814e-05
+ ],
+ "motor_time_constants": [
+  0.03999999910593033,
+  0.03999999910593033,
+  0.03999999910593033,
+  0.03999999910593033
+ ],
+ "nan_fields": [],
+ "origins": {
+  "aerial_gym": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/aerial_gym/__init__.py",
+  "motar_eval": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/motar_eval/__init__.py"
+ },
+ "process": {
+  "batch": "D1",
+  "cap_s": 1200,
+  "dt_s": 0.005,
+  "id": "d1_dt5",
+  "num_envs": 24,
+  "substeps_per_action": 20
+ },
+ "substeps_logged": 1200,
+ "substeps_per_action": 20,
+ "use_rps": true
+}
