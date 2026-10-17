@@ -20947,3 +20947,22 @@ Next review: the complete diff and new plan; local commit requires user diff app
   after commit. Running some perception test modules together with S-L1A tests in one ad-hoc
   process fails on a pre-existing non-package stub (`test_navrl_perception`); this does not occur
   in PUBLIC_CPU ordering. Next: GPU launcher/runner/analysis, then canary SL1B-C01.
+
+## 2026-10-18 — S-L1B canary launcher, runner and independent analysis (pre-run)
+
+- Files: `tools/s_l1b_launcher.py`, `tools/s_l1b_run.py`, `tools/s_l1b_analysis.py`,
+  `tests/test_s_l1b_run.py` (9 OK) and WORKLOG. The runner reuses the qualified S-L1A
+  supervision functions read-only. Comparisons: off against EL0-R1 P2, `s_l1a_v1` against
+  SL1A-C01 on_p2, and s_l1b P1 against P2. A process whose lineage flags differ from its spec is
+  an integrity failure.
+- The analysis imports no production code. From the recorded inputs it recomputes the S-L1B
+  carve, validity, reprojection and strict/clamped bins in float64. B-POINT compares against
+  analytic surface points; B-DEPTH reuses the S-L1A oracle.
+- Mechanics smoke (scratch only, not evidence): `sensors_s_l1b` and `static_s_l1b_p2`, rc=0,
+  15.3 s and 51.9 s, peak 4,668 MiB.
+  - The smoke probe exercised every analysis path.
+  - On the beam-centred D2 targets, the centre LiDAR return (D − 0.20) lies 1–8 mm below
+    s_L = anchor_L − 0.05. Under the preregistered zero tolerance it is retained as an obstacle,
+    where S-L1A carved it through its frame mismatch.
+  - This is a reported conservative trade-off. The design is not changed after seeing it.
+- Next: commit, run PUBLIC_CPU, then official preflight and SL1B-C01.
