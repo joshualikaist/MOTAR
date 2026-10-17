@@ -1,0 +1,1012 @@
+{
+  "schema": "motar.s-l1b-analysis.v1",
+  "run": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/s_l1b_v1/SL1B-C01",
+  "source_sha": "a1f97e93af57f97b9778e395ffa8d38f7365e989",
+  "gates": {
+    "B-POINT": "PASS",
+    "B-A1A2": "PASS",
+    "B-ENVELOPE": "PASS",
+    "B-VERTICAL": "PASS",
+    "B-CARVE": "PASS",
+    "B-DEPTH": "PASS",
+    "B-REGRESSION": "PASS",
+    "B-EL0": "PASS",
+    "B-FIREWALL": "PASS",
+    "B-INTEGRITY": "PASS"
+  },
+  "decision": "S-L1B_QUALIFIED",
+  "sensors": {
+    "point": {
+      "n": 137862,
+      "rho_max": 6.922224942140787e-06,
+      "ang_max": 1.6791040258201662e-07,
+      "over": 0,
+      "grazing_excluded": 1770,
+      "invalid_box_pixels": 0
+    },
+    "envelope": {
+      "robust_bins": 148608,
+      "mismatch": 0,
+      "max_err": 1.824066037769967e-06,
+      "nonrobust_bins": 0,
+      "validity_mismatch": 0
+    },
+    "fused": {
+      "robust_bins": 74304,
+      "mismatch": 0,
+      "max_err": 1.1524206886548427e-06
+    },
+    "vertical": {
+      "middle_rows_identical": true,
+      "edge_rows_conservative": true,
+      "two_d_contains_points": true
+    },
+    "carve": {
+      "mask_mismatch": 0,
+      "uncertain": 0,
+      "bar_beams": 843,
+      "target_beams": 102,
+      "bar_carved": {
+        "legacy": 156,
+        "s_l1a": 0,
+        "s_l1b": 0
+      },
+      "bar_false_clear": {
+        "legacy": 12,
+        "s_l1a": 0,
+        "s_l1b": 0
+      },
+      "target_retained": {
+        "legacy": 6,
+        "s_l1a": 18,
+        "s_l1b": 84
+      },
+      "foreground": [
+        {
+          "pass": "level_scene",
+          "scene": "S14",
+          "bar_beams": 24,
+          "legacy": {
+            "bar_carved": 24,
+            "bar_false_clear": 0,
+            "target_retained": 0
+          },
+          "s_l1a": {
+            "bar_carved": 0,
+            "bar_false_clear": 0,
+            "target_retained": 0
+          },
+          "s_l1b": {
+            "bar_carved": 0,
+            "bar_false_clear": 0,
+            "target_retained": 0
+          }
+        },
+        {
+          "pass": "level_scene",
+          "scene": "A_FOREGROUND",
+          "bar_beams": 20,
+          "legacy": {
+            "bar_carved": 20,
+            "bar_false_clear": 4,
+            "target_retained": 0
+          },
+          "s_l1a": {
+            "bar_carved": 0,
+            "bar_false_clear": 0,
+            "target_retained": 0
+          },
+          "s_l1b": {
+            "bar_carved": 0,
+            "bar_false_clear": 0,
+            "target_retained": 0
+          }
+        },
+        {
+          "pass": "roll15_scene",
+          "scene": "S14",
+          "bar_beams": 24,
+          "legacy": {
+            "bar_carved": 24,
+            "bar_false_clear": 0,
+            "target_retained": 0
+          },
+          "s_l1a": {
+            "bar_carved": 0,
+            "bar_false_clear": 0,
+            "target_retained": 0
+          },
+          "s_l1b": {
+            "bar_carved": 0,
+            "bar_false_clear": 0,
+            "target_retained": 0
+          }
+        },
+        {
+          "pass": "roll15_scene",
+          "scene": "A_FOREGROUND",
+          "bar_beams": 20,
+          "legacy": {
+            "bar_carved": 20,
+            "bar_false_clear": 4,
+            "target_retained": 0
+          },
+          "s_l1a": {
+            "bar_carved": 0,
+            "bar_false_clear": 0,
+            "target_retained": 0
+          },
+          "s_l1b": {
+            "bar_carved": 0,
+            "bar_false_clear": 0,
+            "target_retained": 0
+          }
+        },
+        {
+          "pass": "pitch15_scene",
+          "scene": "S14",
+          "bar_beams": 24,
+          "legacy": {
+            "bar_carved": 24,
+            "bar_false_clear": 0,
+            "target_retained": 0
+          },
+          "s_l1a": {
+            "bar_carved": 0,
+            "bar_false_clear": 0,
+            "target_retained": 0
+          },
+          "s_l1b": {
+            "bar_carved": 0,
+            "bar_false_clear": 0,
+            "target_retained": 0
+          }
+        },
+        {
+          "pass": "pitch15_scene",
+          "scene": "A_FOREGROUND",
+          "bar_beams": 20,
+          "legacy": {
+            "bar_carved": 20,
+            "bar_false_clear": 4,
+            "target_retained": 0
+          },
+          "s_l1a": {
+            "bar_carved": 0,
+            "bar_false_clear": 0,
+            "target_retained": 0
+          },
+          "s_l1b": {
+            "bar_carved": 0,
+            "bar_false_clear": 0,
+            "target_retained": 0
+          }
+        }
+      ]
+    },
+    "beam_vs_lidar_truth": {
+      "beams": 807,
+      "within_1e_4": 15,
+      "max_envelope_minus_truth_m": 0.0015446024395990854,
+      "min_envelope_minus_truth_m": -4.127325635576676
+    },
+    "bearing_bins": [
+      {
+        "scene": "B_P05",
+        "pass": "level_scene",
+        "truth_bins": [
+          34,
+          35,
+          36
+        ],
+        "s_l1b_bins": [
+          34,
+          35,
+          36
+        ],
+        "legacy_camera_bins": [
+          35
+        ],
+        "s_l1b_missing": 0,
+        "s_l1b_extra": 0,
+        "legacy_missing": 2,
+        "legacy_extra": 0
+      },
+      {
+        "scene": "B_M05",
+        "pass": "level_scene",
+        "truth_bins": [
+          36,
+          37,
+          38
+        ],
+        "s_l1b_bins": [
+          36,
+          37,
+          38
+        ],
+        "legacy_camera_bins": [
+          36,
+          37
+        ],
+        "s_l1b_missing": 0,
+        "s_l1b_extra": 0,
+        "legacy_missing": 1,
+        "legacy_extra": 0
+      },
+      {
+        "scene": "B_P20",
+        "pass": "level_scene",
+        "truth_bins": [
+          31,
+          32,
+          33
+        ],
+        "s_l1b_bins": [
+          31,
+          32,
+          33
+        ],
+        "legacy_camera_bins": [
+          32,
+          33
+        ],
+        "s_l1b_missing": 0,
+        "s_l1b_extra": 0,
+        "legacy_missing": 1,
+        "legacy_extra": 0
+      },
+      {
+        "scene": "B_M20",
+        "pass": "level_scene",
+        "truth_bins": [
+          39,
+          40,
+          41
+        ],
+        "s_l1b_bins": [
+          39,
+          40,
+          41
+        ],
+        "legacy_camera_bins": [
+          39,
+          40
+        ],
+        "s_l1b_missing": 0,
+        "s_l1b_extra": 0,
+        "legacy_missing": 1,
+        "legacy_extra": 0
+      },
+      {
+        "scene": "B_P40",
+        "pass": "level_scene",
+        "truth_bins": [
+          27,
+          28,
+          29
+        ],
+        "s_l1b_bins": [
+          27,
+          28,
+          29
+        ],
+        "legacy_camera_bins": [
+          28,
+          29
+        ],
+        "s_l1b_missing": 0,
+        "s_l1b_extra": 0,
+        "legacy_missing": 1,
+        "legacy_extra": 0
+      },
+      {
+        "scene": "B_M40",
+        "pass": "level_scene",
+        "truth_bins": [
+          43,
+          44
+        ],
+        "s_l1b_bins": [
+          43,
+          44
+        ],
+        "legacy_camera_bins": [
+          43,
+          44
+        ],
+        "s_l1b_missing": 0,
+        "s_l1b_extra": 0,
+        "legacy_missing": 0,
+        "legacy_extra": 0
+      },
+      {
+        "scene": "B_TWO",
+        "pass": "level_scene",
+        "truth_bins": [
+          30,
+          31,
+          32,
+          33,
+          39,
+          40,
+          41
+        ],
+        "s_l1b_bins": [
+          30,
+          31,
+          32,
+          33,
+          39,
+          40,
+          41
+        ],
+        "legacy_camera_bins": [
+          31,
+          32,
+          33,
+          34,
+          39,
+          40
+        ],
+        "s_l1b_missing": 0,
+        "s_l1b_extra": 0,
+        "legacy_missing": 2,
+        "legacy_extra": 1
+      },
+      {
+        "scene": "B_P05",
+        "pass": "roll15_scene",
+        "truth_bins": [
+          34,
+          35,
+          36
+        ],
+        "s_l1b_bins": [
+          34,
+          35,
+          36
+        ],
+        "legacy_camera_bins": [
+          35
+        ],
+        "s_l1b_missing": 0,
+        "s_l1b_extra": 0,
+        "legacy_missing": 2,
+        "legacy_extra": 0
+      },
+      {
+        "scene": "B_M05",
+        "pass": "roll15_scene",
+        "truth_bins": [
+          36,
+          37,
+          38
+        ],
+        "s_l1b_bins": [
+          36,
+          37,
+          38
+        ],
+        "legacy_camera_bins": [
+          36,
+          37
+        ],
+        "s_l1b_missing": 0,
+        "s_l1b_extra": 0,
+        "legacy_missing": 1,
+        "legacy_extra": 0
+      },
+      {
+        "scene": "B_P20",
+        "pass": "roll15_scene",
+        "truth_bins": [
+          31,
+          32,
+          33
+        ],
+        "s_l1b_bins": [
+          31,
+          32,
+          33
+        ],
+        "legacy_camera_bins": [
+          32,
+          33
+        ],
+        "s_l1b_missing": 0,
+        "s_l1b_extra": 0,
+        "legacy_missing": 1,
+        "legacy_extra": 0
+      },
+      {
+        "scene": "B_M20",
+        "pass": "roll15_scene",
+        "truth_bins": [
+          39,
+          40,
+          41
+        ],
+        "s_l1b_bins": [
+          39,
+          40,
+          41
+        ],
+        "legacy_camera_bins": [
+          39,
+          40
+        ],
+        "s_l1b_missing": 0,
+        "s_l1b_extra": 0,
+        "legacy_missing": 1,
+        "legacy_extra": 0
+      },
+      {
+        "scene": "B_P40",
+        "pass": "roll15_scene",
+        "truth_bins": [
+          27,
+          28,
+          29
+        ],
+        "s_l1b_bins": [
+          27,
+          28,
+          29
+        ],
+        "legacy_camera_bins": [
+          28,
+          29
+        ],
+        "s_l1b_missing": 0,
+        "s_l1b_extra": 0,
+        "legacy_missing": 1,
+        "legacy_extra": 0
+      },
+      {
+        "scene": "B_M40",
+        "pass": "roll15_scene",
+        "truth_bins": [
+          43,
+          44
+        ],
+        "s_l1b_bins": [
+          43,
+          44
+        ],
+        "legacy_camera_bins": [
+          43,
+          44
+        ],
+        "s_l1b_missing": 0,
+        "s_l1b_extra": 0,
+        "legacy_missing": 0,
+        "legacy_extra": 0
+      },
+      {
+        "scene": "B_TWO",
+        "pass": "roll15_scene",
+        "truth_bins": [
+          30,
+          31,
+          32,
+          33,
+          39,
+          40,
+          41
+        ],
+        "s_l1b_bins": [
+          30,
+          31,
+          32,
+          33,
+          39,
+          40,
+          41
+        ],
+        "legacy_camera_bins": [
+          31,
+          32,
+          33,
+          34,
+          39,
+          40
+        ],
+        "s_l1b_missing": 0,
+        "s_l1b_extra": 0,
+        "legacy_missing": 2,
+        "legacy_extra": 1
+      },
+      {
+        "scene": "B_P05",
+        "pass": "pitch15_scene",
+        "truth_bins": [
+          34,
+          35,
+          36
+        ],
+        "s_l1b_bins": [
+          34,
+          35,
+          36
+        ],
+        "legacy_camera_bins": [
+          35
+        ],
+        "s_l1b_missing": 0,
+        "s_l1b_extra": 0,
+        "legacy_missing": 2,
+        "legacy_extra": 0
+      },
+      {
+        "scene": "B_M05",
+        "pass": "pitch15_scene",
+        "truth_bins": [
+          36,
+          37,
+          38
+        ],
+        "s_l1b_bins": [
+          36,
+          37,
+          38
+        ],
+        "legacy_camera_bins": [
+          36,
+          37
+        ],
+        "s_l1b_missing": 0,
+        "s_l1b_extra": 0,
+        "legacy_missing": 1,
+        "legacy_extra": 0
+      },
+      {
+        "scene": "B_P20",
+        "pass": "pitch15_scene",
+        "truth_bins": [
+          31,
+          32,
+          33
+        ],
+        "s_l1b_bins": [
+          31,
+          32,
+          33
+        ],
+        "legacy_camera_bins": [
+          32,
+          33
+        ],
+        "s_l1b_missing": 0,
+        "s_l1b_extra": 0,
+        "legacy_missing": 1,
+        "legacy_extra": 0
+      },
+      {
+        "scene": "B_M20",
+        "pass": "pitch15_scene",
+        "truth_bins": [
+          39,
+          40,
+          41
+        ],
+        "s_l1b_bins": [
+          39,
+          40,
+          41
+        ],
+        "legacy_camera_bins": [
+          39,
+          40
+        ],
+        "s_l1b_missing": 0,
+        "s_l1b_extra": 0,
+        "legacy_missing": 1,
+        "legacy_extra": 0
+      },
+      {
+        "scene": "B_P40",
+        "pass": "pitch15_scene",
+        "truth_bins": [
+          27,
+          28,
+          29
+        ],
+        "s_l1b_bins": [
+          27,
+          28,
+          29
+        ],
+        "legacy_camera_bins": [
+          28,
+          29
+        ],
+        "s_l1b_missing": 0,
+        "s_l1b_extra": 0,
+        "legacy_missing": 1,
+        "legacy_extra": 0
+      },
+      {
+        "scene": "B_M40",
+        "pass": "pitch15_scene",
+        "truth_bins": [
+          43,
+          44
+        ],
+        "s_l1b_bins": [
+          43,
+          44
+        ],
+        "legacy_camera_bins": [
+          43,
+          44
+        ],
+        "s_l1b_missing": 0,
+        "s_l1b_extra": 0,
+        "legacy_missing": 0,
+        "legacy_extra": 0
+      },
+      {
+        "scene": "B_TWO",
+        "pass": "pitch15_scene",
+        "truth_bins": [
+          30,
+          31,
+          32,
+          33,
+          39,
+          40,
+          41
+        ],
+        "s_l1b_bins": [
+          30,
+          31,
+          32,
+          33,
+          39,
+          40,
+          41
+        ],
+        "legacy_camera_bins": [
+          31,
+          32,
+          33,
+          34,
+          39,
+          40
+        ],
+        "s_l1b_missing": 0,
+        "s_l1b_extra": 0,
+        "legacy_missing": 2,
+        "legacy_extra": 1
+      }
+    ],
+    "depth_equal_s_l1a": true,
+    "depth_summary": {
+      "n": 3710988,
+      "max_m": 4.1059337462456824e-05,
+      "mean_m": 3.605948044885658e-08,
+      "p50_m": 0.0,
+      "p95_m": 0.0,
+      "p99_m": 1.149715303068171e-06,
+      "over_1e_4": 0,
+      "over_0p05": 0
+    },
+    "depth_false_clear": 0,
+    "depth_false_positive": 0,
+    "paths": {
+      "legacy_flags": true,
+      "s_l1a_flags": true,
+      "s_l1b_flags": true,
+      "actual_scan_equals_s_l1b_replay": true,
+      "actual_carve_equals_s_l1b_replay": true,
+      "s_l1a_process_scan_equals_s_l1a_replay": true
+    },
+    "fusion_timing": {
+      "s_l1a": {
+        "median_ms": 4.365823984146118,
+        "p95_ms": 4.789720177650452,
+        "repeats": 50
+      },
+      "s_l1b": {
+        "median_ms": 17.199856758117676,
+        "p95_ms": 17.845530128479005,
+        "repeats": 50
+      }
+    }
+  },
+  "regression": {
+    "static": {
+      "off_vs_el0_r1": {
+        "steps_a": 600,
+        "steps_b": 600,
+        "differences": {
+          "obs": 0,
+          "action": 0,
+          "reward": 0,
+          "done": 0,
+          "captured": 0,
+          "crashed": 0,
+          "pursuer": 0,
+          "target": 0,
+          "resets": 0,
+          "rgb": 0,
+          "depth": 0,
+          "lidar": 0,
+          "semantic": 0,
+          "tracker": 0
+        },
+        "identical": true
+      },
+      "s_l1a_vs_sl1a_c01": {
+        "steps_a": 600,
+        "steps_b": 600,
+        "differences": {
+          "obs": 0,
+          "action": 0,
+          "reward": 0,
+          "done": 0,
+          "captured": 0,
+          "crashed": 0,
+          "pursuer": 0,
+          "target": 0,
+          "resets": 0,
+          "rgb": 0,
+          "depth": 0,
+          "lidar": 0,
+          "semantic": 0,
+          "tracker": 0
+        },
+        "identical": true
+      }
+    },
+    "moving": {
+      "off_vs_el0_r1": {
+        "steps_a": 600,
+        "steps_b": 600,
+        "differences": {
+          "obs": 0,
+          "action": 0,
+          "reward": 0,
+          "done": 0,
+          "captured": 0,
+          "crashed": 0,
+          "pursuer": 0,
+          "target": 0,
+          "resets": 0,
+          "rgb": 0,
+          "depth": 0,
+          "lidar": 0,
+          "semantic": 0,
+          "tracker": 0
+        },
+        "identical": true
+      },
+      "s_l1a_vs_sl1a_c01": {
+        "steps_a": 600,
+        "steps_b": 600,
+        "differences": {
+          "obs": 0,
+          "action": 0,
+          "reward": 0,
+          "done": 0,
+          "captured": 0,
+          "crashed": 0,
+          "pursuer": 0,
+          "target": 0,
+          "resets": 0,
+          "rgb": 0,
+          "depth": 0,
+          "lidar": 0,
+          "semantic": 0,
+          "tracker": 0
+        },
+        "identical": true
+      }
+    }
+  },
+  "e_l0": {
+    "static": {
+      "steps_a": 600,
+      "steps_b": 600,
+      "differences": {
+        "obs": 0,
+        "action": 0,
+        "reward": 0,
+        "done": 0,
+        "captured": 0,
+        "crashed": 0,
+        "pursuer": 0,
+        "target": 0,
+        "resets": 0,
+        "rgb": 0,
+        "depth": 0,
+        "lidar": 0,
+        "semantic": 0,
+        "tracker": 0
+      },
+      "identical": true
+    },
+    "moving": {
+      "steps_a": 600,
+      "steps_b": 600,
+      "differences": {
+        "obs": 0,
+        "action": 0,
+        "reward": 0,
+        "done": 0,
+        "captured": 0,
+        "crashed": 0,
+        "pursuer": 0,
+        "target": 0,
+        "resets": 0,
+        "rgb": 0,
+        "depth": 0,
+        "lidar": 0,
+        "semantic": 0,
+        "tracker": 0
+      },
+      "identical": true
+    }
+  },
+  "on_behavior_changes": {
+    "static_s_l1b_vs_s_l1a": {
+      "steps_a": 600,
+      "steps_b": 600,
+      "differences": {
+        "obs": 600,
+        "action": 600,
+        "reward": 600,
+        "done": 185,
+        "captured": 182,
+        "crashed": 4,
+        "pursuer": 600,
+        "target": 566,
+        "resets": 185,
+        "rgb": 600,
+        "depth": 600,
+        "lidar": 600,
+        "semantic": 600,
+        "tracker": 600
+      },
+      "identical": false,
+      "position_delta_max_m": 41.1118049621582,
+      "action_delta_max": 1.969482660293579,
+      "episodes": {
+        "s_l1a": {
+          "captured": 117,
+          "crashed": 2
+        },
+        "s_l1b": {
+          "captured": 120,
+          "crashed": 2
+        }
+      }
+    },
+    "static_s_l1b_vs_off": {
+      "steps_a": 600,
+      "steps_b": 600,
+      "differences": {
+        "obs": 600,
+        "action": 600,
+        "reward": 600,
+        "done": 191,
+        "captured": 189,
+        "crashed": 3,
+        "pursuer": 600,
+        "target": 566,
+        "resets": 191,
+        "rgb": 600,
+        "depth": 600,
+        "lidar": 600,
+        "semantic": 600,
+        "tracker": 600
+      },
+      "identical": false,
+      "position_delta_max_m": 45.14628982543945,
+      "action_delta_max": 1.9763855934143066,
+      "episodes": {
+        "off": {
+          "captured": 123,
+          "crashed": 1
+        },
+        "s_l1b": {
+          "captured": 120,
+          "crashed": 2
+        }
+      }
+    },
+    "moving_s_l1b_vs_s_l1a": {
+      "steps_a": 600,
+      "steps_b": 600,
+      "differences": {
+        "obs": 600,
+        "action": 600,
+        "reward": 600,
+        "done": 159,
+        "captured": 152,
+        "crashed": 8,
+        "pursuer": 600,
+        "target": 585,
+        "resets": 159,
+        "rgb": 600,
+        "depth": 600,
+        "lidar": 600,
+        "semantic": 600,
+        "tracker": 600
+      },
+      "identical": false,
+      "position_delta_max_m": 44.729827880859375,
+      "action_delta_max": 1.9824488162994385,
+      "episodes": {
+        "s_l1a": {
+          "captured": 95,
+          "crashed": 5
+        },
+        "s_l1b": {
+          "captured": 89,
+          "crashed": 3
+        }
+      }
+    },
+    "moving_s_l1b_vs_off": {
+      "steps_a": 600,
+      "steps_b": 600,
+      "differences": {
+        "obs": 600,
+        "action": 600,
+        "reward": 600,
+        "done": 169,
+        "captured": 159,
+        "crashed": 12,
+        "pursuer": 600,
+        "target": 586,
+        "resets": 169,
+        "rgb": 600,
+        "depth": 600,
+        "lidar": 600,
+        "semantic": 600,
+        "tracker": 600
+      },
+      "identical": false,
+      "position_delta_max_m": 39.00214385986328,
+      "action_delta_max": 1.9778025150299072,
+      "episodes": {
+        "off": {
+          "captured": 93,
+          "crashed": 9
+        },
+        "s_l1b": {
+          "captured": 89,
+          "crashed": 3
+        }
+      }
+    }
+  },
+  "actor_obs_dim": {
+    "static_off": 898,
+    "static_s_l1a": 898,
+    "static_s_l1b_p1": 898,
+    "static_s_l1b_p2": 898,
+    "moving_off": 898,
+    "moving_s_l1a": 898,
+    "moving_s_l1b_p1": 898,
+    "moving_s_l1b_p2": 898
+  },
+  "firewall_ast": {
+    "forbidden_parameters": [],
+    "imports": [
+      "math",
+      "os",
+      "torch"
+    ],
+    "import_from": false
+  },
+  "known_limits": [
+    "Constructed fixture counts are not population rates.",
+    "Envelope is a conservative per-bin minimum, not a beam-exact metric (D2-F1 reported, not gated).",
+    "A4/A7 centre-range radius biases unchanged (assigned to S-L1C).",
+    "Identity, range-only covariance (S-L1C) and silhouette validity (S-L1D) not corrected.",
+    "ON changes the input distribution; Frozen F results measure robustness, not improvement."
+  ]
+}

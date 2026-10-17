@@ -20966,3 +20966,33 @@ Next review: the complete diff and new plan; local commit requires user diff app
     where S-L1A carved it through its frame mismatch.
   - This is a reported conservative trade-off. The design is not changed after seeing it.
 - Next: commit, run PUBLIC_CPU, then official preflight and SL1B-C01.
+
+## 2026-10-18 — S-L1B GPU qualification SL1B-C01: S-L1B_QUALIFIED (10/10 verdict gates PASS)
+
+- Run at fixed source `a1f97e9`: 11/11 processes rc=0, no retry, 432.1 s. Peak memory was
+  4,162 MiB (sensors) and 4,668 MiB (closed loop), under measured caps of 7,277–7,279 MiB; disk
+  19.1 GB free. Raw `../aerial_gym_simulator/results/s_l1b_v1/SL1B-C01` (manifest `11aab182…`,
+  138 members, 0 mismatches). Policy F unchanged; SL1A-C01 still 138/138.
+- Calibration:
+  - B-POINT: 137,862 pixels; ρ ≤ 6.9e−6 m and angles ≤ 1.7e−7 rad.
+  - B-ENVELOPE: 148,608 robust bins, 0 mismatches. The fused scan has 0 mismatches.
+  - Bearing scenes: S-L1B bins are exact in 21/21 passes; legacy misses bins in 18/21.
+- Carve:
+
+  | Mode | Bars carved (of 843) | Bar false-clear | Target retained (of 102) |
+  | --- | --- | --- | --- |
+  | legacy | 156 | 12 | 6 |
+  | S-L1A | 0 | 0 | 18 |
+  | S-L1B | 0 | 0 | 84 |
+
+  S-L1B's higher target retention is the conservative zero-tolerance trade-off; it is reported
+  and was not tuned.
+- Depth equals s_l1a bitwise; A-DEPTH holds (max 4.1e−5 m).
+- Regression: off = EL0-R1 P2 and s_l1a = SL1A-C01 on_p2 (bitwise, 14 keys, 600 steps, static and
+  moving); s_l1b E-L0 P1 = P2; actor 898.
+- ON (no claim): captures 120/89 against s_l1a 117/95; crashes 2/3 against 2/5.
+- Fusion cost: 17.2 ms against 4.4 ms for 43 envs; peak allocation 97.4 MB against 84.6 MB.
+- Preservation PASS: 2,071 runtime/test files with 20 allowed paths, 101 evidence files, 10/3,479
+  raw, Policy F, and main `cb644bb` with WIP3 and stash `23ddb33`.
+- Evidence: `docs/evidence/s_l1b_2026-10-18/`. Next: an independent review, then the GO/NO-GO
+  decision for S-L1C.
