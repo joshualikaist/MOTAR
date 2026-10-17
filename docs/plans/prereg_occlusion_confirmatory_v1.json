@@ -1,0 +1,179 @@
+{
+  "analysis": {
+    "RQ2_decision": "INCONCLUSIVE_EQUIVALENCE_NOT_TESTED: no defensible margin; estimation only",
+    "alpha": 0.05,
+    "bootstrap_resamples": 20000,
+    "bootstrap_seed": 20261017,
+    "ci": "nominal two-sided 95% t plus simultaneous Bonferroni 99.1666667% t for six contrasts",
+    "competing_end_causes": [
+      "geometric_restored",
+      "out_of_view",
+      "capture",
+      "crash",
+      "timeout"
+    ],
+    "duration_quantiles": [
+      0.25,
+      0.5,
+      0.75,
+      0.9,
+      0.95
+    ],
+    "duration_thresholds_s": [
+      0.5,
+      1,
+      2,
+      3,
+      5
+    ],
+    "equivalence_margin": null,
+    "multiplicity": "Holm family of all six contrasts; alpha=0.05",
+    "primary_contrasts": [
+      "static_205_minus_70",
+      "moving_205_minus_70"
+    ],
+    "primary_estimand": "seed-equal mean of interval-entry rates per post-first-fused-acquisition observation minute; identical P1 numerator/exposure definitions",
+    "primary_indicator": "center_occlusion_in_view",
+    "secondary_contrasts": [
+      "moving_minus_static_70",
+      "moving_minus_static_115",
+      "moving_minus_static_160",
+      "moving_minus_static_205"
+    ],
+    "sensitivity": "exact all-16384 seed sign flips (sign-symmetry assumption, not randomized assignment); seed-block bootstrap with fixed RNG",
+    "strict_los_onset": "sensitivity only: actual clear-to-blocked transition, excluding left-prevalent/FOV-reentry entries",
+    "terminal_sensitivity": "report outcomes/exposure separately; fixed first 1/2/5s post-acquisition restricted observed exposure, no counterfactual after termination",
+    "test": "one-sided paired Student t on 14 seed-level rate differences, df=13",
+    "unsupported_duration_tail": "NOT_ESTIMABLE_NO_RISK_SET, reported separately from the numerical KM plateau",
+    "zero_seed_variance": "t inference and CI NOT_ESTIMABLE; conservative 1 only for Holm family bookkeeping, contrast INCONCLUSIVE"
+  },
+  "authority": "User explicitly approves local preregistration/analysis commit and, after passing preregistered conditions, this exact GPU main run without a further approval. No merge/push/PPO/Planner/deletion.",
+  "decisions": {
+    "RQ1": "SUPPORTED iff both primary contrasts SUPPORTED; otherwise INCONCLUSIVE (per-lineage decisions retained)",
+    "RQ2": "INCONCLUSIVE_EQUIVALENCE_NOT_TESTED regardless nonsignificance; no equivalence inference",
+    "RQ3": "SUPPORTED iff all four secondary contrasts SUPPORTED; otherwise INCONCLUSIVE (per-density decisions retained)",
+    "per_contrast": "SUPPORTED iff mean>0 and Holm p<0.05, otherwise INCONCLUSIVE; CONTRADICTED if simultaneous CI upper<0"
+  },
+  "design": {
+    "cells": 112,
+    "densities": [
+      70,
+      115,
+      160,
+      205
+    ],
+    "groups": {
+      "moving": {
+        "arm": "A3",
+        "extra_env": {
+          "NAVRL_KROC2027_ON_VIOLATION": "stop",
+          "NAVRL_KROC2027_PACKETS": "1",
+          "NAVRL_KROC2027_PACKET_SCHEMA": "full_v2",
+          "NAVRL_TARGET_DISTANCE_BACKEND": "direct_l2_v1"
+        },
+        "lineage": "E2_direct_l2_v1",
+        "target_model": "E2_obstacle_aware",
+        "view": "visible"
+      },
+      "static": {
+        "arm": "A1",
+        "extra_env": {},
+        "lineage": "E0_static",
+        "target_model": "E0_static",
+        "view": "visible"
+      }
+    },
+    "initial_distance_m": 10.0,
+    "num_envs": 128,
+    "pilot_seeds": [
+      4201,
+      4202,
+      4203,
+      4204,
+      4205,
+      4206,
+      4207
+    ],
+    "primary_episodes": 57344,
+    "quota_per_env": 4,
+    "seed_provenance": "Fresh relative to OCC-P1. 4301-4307 previously used for hidden-start Experiment B, disclosed; no B occlusion outcomes used to formulate or select these hypotheses. User-specified seed list retained.",
+    "seeds": [
+      4301,
+      4302,
+      4303,
+      4304,
+      4305,
+      4306,
+      4307,
+      4308,
+      4309,
+      4310,
+      4311,
+      4312,
+      4313,
+      4314
+    ],
+    "timeout_actions": 600
+  },
+  "frozen": {
+    "g0_commit": "6441c1ff74b6d085d14ed5604d1d60d66a4634fe",
+    "g0_report": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_pilot_v1/OCC-G0_rerun1/g0_report.json",
+    "g0_report_sha256": "ae17bfa538777639328b4554b3929b72f7d7c2acccf2422a79dfdb242ba19632",
+    "pilot_analysis_sha256": "5e37c1521d801c7c5e59cc99a6295a934ba0d6023ec5fbcaad0165579fb5d4d5",
+    "pilot_root": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_pilot_v1/OCC-P1_rerun1",
+    "prior_manifests": [
+      {
+        "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_pilot_v1/OCC-G0/RAW_MANIFEST.json",
+        "sha256": "2e051977a68c34c21e1dd8a674b3673c1016d855295ecc73350d323fb007bc88"
+      },
+      {
+        "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_pilot_v1/OCC-G0_rerun1/RAW_MANIFEST.json",
+        "sha256": "cc26a68a9822da9e99762cda984ded59ce161292adbd56cdc1c7313f4a14a599"
+      },
+      {
+        "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_pilot_v1/OCC-P1/RAW_MANIFEST.json",
+        "sha256": "b0f071e873c26829bc13d12d26daa19e9c6aee5c3ddd38ceaa0498d43c0423c4"
+      },
+      {
+        "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_pilot_v1/OCC-P1_rerun1/RAW_MANIFEST.json",
+        "sha256": "6e12d9ac4350419a2214933a4cf445cff642c4ca85cdcf6da0116bc7eacda120"
+      },
+      {
+        "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/mt_p1_precision_v1/MT-P2-C01/RAW_MANIFEST.json",
+        "sha256": "9b28af167706e6f39224402056943aa1bc1adbb8fa021efac6ef65cea6ebb4e4"
+      },
+      {
+        "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/mt_p1_precision_v1/KROC27-A-M02/RAW_MANIFEST.json",
+        "sha256": "bc90b5b086cbae9db4daebbfcc81cf448f21348f1f648a1df3e025c9cba4bdd7"
+      },
+      {
+        "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/kroc2027_A_v1/RAW_MANIFEST.json",
+        "sha256": "7a8042aa0d1a36a6c7fb34d8bf273ef49606e3ee7bf4bde44755ff1628575726"
+      }
+    ],
+    "runtime_paths": [
+      "aerial_gym",
+      "motar_eval",
+      "resources/robots"
+    ]
+  },
+  "output_root": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_confirmatory_v1/OCC-P2",
+  "run_id": "OCC-P2",
+  "safety": {
+    "cell_cap_seconds": 600,
+    "expected_hours": 2.2,
+    "expected_output_gb": 1.3,
+    "external_backup": "NOT_COMPLETED; existing copies same filesystem; retain all raw and manifests",
+    "min_free_disk_gb": 8.0,
+    "on_failure": "stop first error, keep all partial files, no automatic retries/resampling",
+    "poll_seconds": 2.0,
+    "wall_clock_cap_hours": 6.0
+  },
+  "schema": "motar.occlusion-confirmatory.v1",
+  "status": "APPROVED_CONDITIONAL_2026-10-17",
+  "telemetry_env": {
+    "NAVRL_KROC2027_OCCLUSION_TRACE": "1",
+    "NAVRL_KROC2027_RECOVERY_EVENTS": "1",
+    "NAVRL_KROC2027_RECOVERY_TRACE": "compact"
+  }
+}

@@ -1,0 +1,30 @@
+{
+ "cells": [
+  "static/A1/E0_static__70bars__seed4201",
+  "moving/A3/E2_obstacle_aware__70bars__seed4201",
+  "static/A1/E0_static__115bars__seed4201",
+  "moving/A3/E2_obstacle_aware__115bars__seed4201",
+  "static/A1/E0_static__160bars__seed4201",
+  "moving/A3/E2_obstacle_aware__160bars__seed4201",
+  "static/A1/E0_static__205bars__seed4201",
+  "moving/A3/E2_obstacle_aware__205bars__seed4201"
+ ],
+ "checkpoint_sha256": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+ "external_backup": "NOT_COMPLETED; recorded, not a blocking condition for this run",
+ "free_disk_gb_at_start": 21.39,
+ "gpu": [
+  "NVIDIA GeForce RTX 3070"
+ ],
+ "import_origins": {
+  "aerial_gym": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/aerial_gym/__init__.py",
+  "motar_eval": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/motar_eval/__init__.py"
+ },
+ "plan_md_sha256": "98c99e0bd902589c05bcd3e443ee2113fb185e1b5358e2a363b42567b525bb80",
+ "plan_sha256": "5df9783eae36606b778ff40b65ca04256f6bf048a25a0b623b7e5a8d22424bce",
+ "policy_f_sha256_before": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+ "run_id": "OCC-G0",
+ "source_commit": "6441c1ff74b6d085d14ed5604d1d60d66a4634fe",
+ "source_tree": "a4307a359d5c867e735fe4c7d482d35036389b43",
+ "started_at": "2026-10-16T17:02:38.171006+00:00",
+ "wall_clock_safety_cap_hours": 2.0
+}

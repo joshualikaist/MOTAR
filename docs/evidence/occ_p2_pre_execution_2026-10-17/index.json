@@ -1,0 +1,87 @@
+{
+  "authorization": "User 2026-10-17 explicitly authorized local preregistration/analysis commit and the conditional exact OCC-P2 run.",
+  "files": {
+    "docs/evidence/occ_p2_pre_execution_2026-10-17/OCC-G0_rerun1/RAW_MANIFEST.json": {
+      "bytes": 27032,
+      "sha256": "cc26a68a9822da9e99762cda984ded59ce161292adbd56cdc1c7313f4a14a599"
+    },
+    "docs/evidence/occ_p2_pre_execution_2026-10-17/OCC-G0_rerun1/g0_report.json": {
+      "bytes": 17117,
+      "sha256": "ae17bfa538777639328b4554b3929b72f7d7c2acccf2422a79dfdb242ba19632"
+    },
+    "docs/evidence/occ_p2_pre_execution_2026-10-17/OCC-G0_rerun1/launch_receipt.json": {
+      "bytes": 1360,
+      "sha256": "73a78c1e2accd4c360e41bd4800cfcd4cef2917787725f667ad549f88bd1e8eb"
+    },
+    "docs/evidence/occ_p2_pre_execution_2026-10-17/OCC-P1_rerun1/RAW_MANIFEST.json": {
+      "bytes": 95876,
+      "sha256": "6e12d9ac4350419a2214933a4cf445cff642c4ca85cdcf6da0116bc7eacda120"
+    },
+    "docs/evidence/occ_p2_pre_execution_2026-10-17/OCC-P1_rerun1/analysis.json": {
+      "bytes": 772940,
+      "sha256": "5e37c1521d801c7c5e59cc99a6295a934ba0d6023ec5fbcaad0165579fb5d4d5"
+    },
+    "docs/evidence/occ_p2_pre_execution_2026-10-17/OCC-P1_rerun1/launch_receipt.json": {
+      "bytes": 3652,
+      "sha256": "1ea226aa267f4b65b152ceb88687cd55e9f26cf2b652648ba048ed12584452fd"
+    },
+    "docs/evidence/occ_p2_pre_execution_2026-10-17/OCC-P1_rerun1/pilot_report.json": {
+      "bytes": 23886,
+      "sha256": "986a34ada63adc9de76b1259dcfaf7b7d1d8200348276b230861fac088a9ed38"
+    },
+    "docs/evidence/occ_p2_pre_execution_2026-10-17/focused_cpu.log": {
+      "bytes": 2307,
+      "sha256": "d83a44da35f451ad4b634ce9daa70658f27117e1621c2b8e8c74415b33359959"
+    },
+    "docs/evidence/occ_p2_pre_execution_2026-10-17/preservation.json": {
+      "bytes": 2601,
+      "sha256": "29a95041ec7fe7924a58ad908efe18ae6b54208e0f22e3edd6e2228b2a75181f"
+    },
+    "docs/evidence/occ_p2_pre_execution_2026-10-17/public_cpu.log": {
+      "bytes": 10754,
+      "sha256": "e95becbbbc27ba93de219355793f2c0f85d7a8a5f2c2bf53b827ed277f3ebc44"
+    },
+    "docs/evidence/occ_p2_pre_execution_2026-10-17/reference_cells_cpu.log": {
+      "bytes": 623,
+      "sha256": "ce8b718b0a35cf7832cfbd1eae2e9bfa14cdcfa134d7136b4dc544eef78931e8"
+    },
+    "docs/plans/prereg_occlusion_confirmatory_v1.json": {
+      "bytes": 7101,
+      "sha256": "077f3daf25621791fcb973ae0581f0f290b75873c5044cb805d3ed8d43cdef67"
+    },
+    "docs/plans/prereg_occlusion_confirmatory_v1.md": {
+      "bytes": 12475,
+      "sha256": "b825b75fff1d978f8c3c4d695906efa5197c91c0730c3f5bec309fba875950b7"
+    },
+    "tests/test_occlusion_confirmatory.py": {
+      "bytes": 11897,
+      "sha256": "753e8fec9601191394e910cc3a30b6643c2373762b2446eac173bac33bb17c91"
+    },
+    "tools/occlusion_confirmatory.py": {
+      "bytes": 15716,
+      "sha256": "adefbb41110f9215b0570592ba9846c1268557ea79499b9dc181c1a15df76578"
+    },
+    "tools/occlusion_confirmatory_analysis.py": {
+      "bytes": 17533,
+      "sha256": "596114c13740f66e1c694480b82953b8cea01d366873c82a3e9cbd81b617c5be"
+    }
+  },
+  "launch_pending": true,
+  "raw_preservation": "Raw remains in main checkout, untracked; symlinks do not add data to Git. This compact package copies reports/manifests separately. No raw is deleted. External backup not completed.",
+  "source_base_commit": "a4be7aa158ddebf2acd4deaeb31abfaa28b167ad",
+  "tests": {
+    "actual_pilot_reference_cells": 2,
+    "focused_cpu": {
+      "errors": 0,
+      "failures": 0,
+      "ran": 16
+    },
+    "public_cpu": {
+      "errors": 0,
+      "failures": 0,
+      "gpu_excluded": 5,
+      "ran": 2364,
+      "skipped": 10
+    }
+  }
+}

@@ -1,0 +1,914 @@
+{
+ "cap_hours": 5.0,
+ "cells": {
+  "moving/A3/E2_obstacle_aware__115bars__seed4201": {
+   "cumulative_hours": 0.0646,
+   "free_disk_gb_after": 21.22,
+   "historical": {
+    "keys_only_new": [],
+    "keys_only_old": [],
+    "ledger_mismatches": [],
+    "ledger_rows_compared": 512,
+    "recorder_mismatches": [],
+    "recorder_records_compared": 512,
+    "verdict": "MATCH"
+   },
+   "issues": [],
+   "output_bytes": 9249354,
+   "seconds": 64.7
+  },
+  "moving/A3/E2_obstacle_aware__115bars__seed4202": {
+   "cumulative_hours": 0.2092,
+   "free_disk_gb_after": 21.14,
+   "historical": {
+    "keys_only_new": [],
+    "keys_only_old": [],
+    "ledger_mismatches": [],
+    "ledger_rows_compared": 512,
+    "recorder_mismatches": [],
+    "recorder_records_compared": 512,
+    "verdict": "MATCH"
+   },
+   "issues": [],
+   "output_bytes": 10838045,
+   "seconds": 72.7
+  },
+  "moving/A3/E2_obstacle_aware__115bars__seed4203": {
+   "cumulative_hours": 0.3527,
+   "free_disk_gb_after": 21.06,
+   "historical": {
+    "keys_only_new": [],
+    "keys_only_old": [],
+    "ledger_mismatches": [],
+    "ledger_rows_compared": 512,
+    "recorder_mismatches": [],
+    "recorder_records_compared": 512,
+    "verdict": "MATCH"
+   },
+   "issues": [],
+   "output_bytes": 13598711,
+   "seconds": 88.3
+  },
+  "moving/A3/E2_obstacle_aware__115bars__seed4204": {
+   "cumulative_hours": 0.4986,
+   "free_disk_gb_after": 20.98,
+   "historical": {
+    "keys_only_new": [],
+    "keys_only_old": [],
+    "ledger_mismatches": [],
+    "ledger_rows_compared": 512,
+    "recorder_mismatches": [],
+    "recorder_records_compared": 512,
+    "verdict": "MATCH"
+   },
+   "issues": [],
+   "output_bytes": 10344238,
+   "seconds": 71.6
+  },
+  "moving/A3/E2_obstacle_aware__115bars__seed4205": {
+   "cumulative_hours": 0.6506,
+   "free_disk_gb_after": 20.9,
+   "historical": {
+    "keys_only_new": [],
+    "keys_only_old": [],
+    "ledger_mismatches": [],
+    "ledger_rows_compared": 512,
+    "recorder_mismatches": [],
+    "recorder_records_compared": 512,
+    "verdict": "MATCH"
+   },
+   "issues": [],
+   "output_bytes": 10756707,
+   "seconds": 73.4
+  },
+  "moving/A3/E2_obstacle_aware__115bars__seed4206": {
+   "cumulative_hours": 0.8493,
+   "free_disk_gb_after": 20.79,
+   "historical": {
+    "keys_only_new": [],
+    "keys_only_old": [],
+    "ledger_mismatches": [],
+    "ledger_rows_compared": 512,
+    "recorder_mismatches": [],
+    "recorder_records_compared": 512,
+    "verdict": "MATCH"
+   },
+   "issues": [],
+   "output_bytes": 12314759,
+   "seconds": 80.9
+  },
+  "moving/A3/E2_obstacle_aware__115bars__seed4207": {
+   "cumulative_hours": 0.9994,
+   "free_disk_gb_after": 20.71,
+   "historical": {
+    "keys_only_new": [],
+    "keys_only_old": [],
+    "ledger_mismatches": [],
+    "ledger_rows_compared": 512,
+    "recorder_mismatches": [],
+    "recorder_records_compared": 512,
+    "verdict": "MATCH"
+   },
+   "issues": [],
+   "output_bytes": 11974859,
+   "seconds": 79.4
+  },
+  "moving/A3/E2_obstacle_aware__160bars__seed4201": {
+   "cumulative_hours": 0.102,
+   "free_disk_gb_after": 21.2,
+   "historical": {
+    "keys_only_new": [],
+    "keys_only_old": [],
+    "ledger_mismatches": [],
+    "ledger_rows_compared": 512,
+    "recorder_mismatches": [],
+    "recorder_records_compared": 512,
+    "verdict": "MATCH"
+   },
+   "issues": [],
+   "output_bytes": 12813542,
+   "seconds": 81.9
+  },
+  "moving/A3/E2_obstacle_aware__160bars__seed4202": {
+   "cumulative_hours": 0.245,
+   "free_disk_gb_after": 21.12,
+   "historical": {
+    "keys_only_new": [],
+    "keys_only_old": [],
+    "ledger_mismatches": [],
+    "ledger_rows_compared": 512,
+    "recorder_mismatches": [],
+    "recorder_records_compared": 512,
+    "verdict": "MATCH"
+   },
+   "issues": [],
+   "output_bytes": 11596839,
+   "seconds": 76.0
+  },
+  "moving/A3/E2_obstacle_aware__160bars__seed4203": {
+   "cumulative_hours": 0.3906,
+   "free_disk_gb_after": 21.04,
+   "historical": {
+    "keys_only_new": [],
+    "keys_only_old": [],
+    "ledger_mismatches": [],
+    "ledger_rows_compared": 512,
+    "recorder_mismatches": [],
+    "recorder_records_compared": 512,
+    "verdict": "MATCH"
+   },
+   "issues": [],
+   "output_bytes": 13001145,
+   "seconds": 83.6
+  },
+  "moving/A3/E2_obstacle_aware__160bars__seed4204": {
+   "cumulative_hours": 0.5391,
+   "free_disk_gb_after": 20.96,
+   "historical": {
+    "keys_only_new": [],
+    "keys_only_old": [],
+    "ledger_mismatches": [],
+    "ledger_rows_compared": 512,
+    "recorder_mismatches": [],
+    "recorder_records_compared": 512,
+    "verdict": "MATCH"
+   },
+   "issues": [],
+   "output_bytes": 14407235,
+   "seconds": 92.1
+  },
+  "moving/A3/E2_obstacle_aware__160bars__seed4205": {
+   "cumulative_hours": 0.6998,
+   "free_disk_gb_after": 20.87,
+   "historical": {
+    "keys_only_new": [],
+    "keys_only_old": [],
+    "ledger_mismatches": [],
+    "ledger_rows_compared": 512,
+    "recorder_mismatches": [],
+    "recorder_records_compared": 512,
+    "verdict": "MATCH"
+   },
+   "issues": [],
+   "output_bytes": 20069245,
+   "seconds": 122.4
+  },
+  "moving/A3/E2_obstacle_aware__160bars__seed4206": {
+   "cumulative_hours": 0.8906,
+   "free_disk_gb_after": 20.77,
+   "historical": {
+    "keys_only_new": [],
+    "keys_only_old": [],
+    "ledger_mismatches": [],
+    "ledger_rows_compared": 512,
+    "recorder_mismatches": [],
+    "recorder_records_compared": 512,
+    "verdict": "MATCH"
+   },
+   "issues": [],
+   "output_bytes": 14389968,
+   "seconds": 91.8
+  },
+  "moving/A3/E2_obstacle_aware__160bars__seed4207": {
+   "cumulative_hours": 1.0485,
+   "free_disk_gb_after": 20.68,
+   "historical": {
+    "keys_only_new": [],
+    "keys_only_old": [],
+    "ledger_mismatches": [],
+    "ledger_rows_compared": 512,
+    "recorder_mismatches": [],
+    "recorder_records_compared": 512,
+    "verdict": "MATCH"
+   },
+   "issues": [],
+   "output_bytes": 19972739,
+   "seconds": 121.6
+  },
+  "moving/A3/E2_obstacle_aware__205bars__seed4201": {
+   "cumulative_hours": 0.1424,
+   "free_disk_gb_after": 21.17,
+   "historical": {
+    "keys_only_new": [],
+    "keys_only_old": [],
+    "ledger_mismatches": [],
+    "ledger_rows_compared": 512,
+    "recorder_mismatches": [],
+    "recorder_records_compared": 512,
+    "verdict": "MATCH"
+   },
+   "issues": [],
+   "output_bytes": 13136743,
+   "seconds": 84.3
+  },
+  "moving/A3/E2_obstacle_aware__205bars__seed4202": {
+   "cumulative_hours": 0.2835,
+   "free_disk_gb_after": 21.1,
+   "historical": {
+    "keys_only_new": [],
+    "keys_only_old": [],
+    "ledger_mismatches": [],
+    "ledger_rows_compared": 512,
+    "recorder_mismatches": [],
+    "recorder_records_compared": 512,
+    "verdict": "MATCH"
+   },
+   "issues": [],
+   "output_bytes": 12610137,
+   "seconds": 81.6
+  },
+  "moving/A3/E2_obstacle_aware__205bars__seed4203": {
+   "cumulative_hours": 0.4335,
+   "free_disk_gb_after": 21.02,
+   "historical": {
+    "keys_only_new": [],
+    "keys_only_old": [],
+    "ledger_mismatches": [],
+    "ledger_rows_compared": 512,
+    "recorder_mismatches": [],
+    "recorder_records_compared": 512,
+    "verdict": "MATCH"
+   },
+   "issues": [],
+   "output_bytes": 15402644,
+   "seconds": 96.6
+  },
+  "moving/A3/E2_obstacle_aware__205bars__seed4204": {
+   "cumulative_hours": 0.5846,
+   "free_disk_gb_after": 20.93,
+   "historical": {
+    "keys_only_new": [],
+    "keys_only_old": [],
+    "ledger_mismatches": [],
+    "ledger_rows_compared": 512,
+    "recorder_mismatches": [],
+    "recorder_records_compared": 512,
+    "verdict": "MATCH"
+   },
+   "issues": [],
+   "output_bytes": 15166494,
+   "seconds": 96.3
+  },
+  "moving/A3/E2_obstacle_aware__205bars__seed4205": {
+   "cumulative_hours": 0.7779,
+   "free_disk_gb_after": 20.82,
+   "historical": {
+    "keys_only_new": [],
+    "keys_only_old": [],
+    "ledger_mismatches": [],
+    "ledger_rows_compared": 512,
+    "recorder_mismatches": [],
+    "recorder_records_compared": 512,
+    "verdict": "MATCH"
+   },
+   "issues": [],
+   "output_bytes": 35403836,
+   "seconds": 204.5
+  },
+  "moving/A3/E2_obstacle_aware__205bars__seed4206": {
+   "cumulative_hours": 0.9319,
+   "free_disk_gb_after": 20.74,
+   "historical": {
+    "keys_only_new": [],
+    "keys_only_old": [],
+    "ledger_mismatches": [],
+    "ledger_rows_compared": 512,
+    "recorder_mismatches": [],
+    "recorder_records_compared": 512,
+    "verdict": "MATCH"
+   },
+   "issues": [],
+   "output_bytes": 13201118,
+   "seconds": 86.6
+  },
+  "moving/A3/E2_obstacle_aware__205bars__seed4207": {
+   "cumulative_hours": 1.0943,
+   "free_disk_gb_after": 20.65,
+   "historical": {
+    "keys_only_new": [],
+    "keys_only_old": [],
+    "ledger_mismatches": [],
+    "ledger_rows_compared": 512,
+    "recorder_mismatches": [],
+    "recorder_records_compared": 512,
+    "verdict": "MATCH"
+   },
+   "issues": [],
+   "output_bytes": 17372350,
+   "seconds": 106.8
+  },
+  "moving/A3/E2_obstacle_aware__70bars__seed4201": {
+   "cumulative_hours": 0.0311,
+   "free_disk_gb_after": 21.24,
+   "historical": {
+    "keys_only_new": [],
+    "keys_only_old": [],
+    "ledger_mismatches": [],
+    "ledger_rows_compared": 512,
+    "recorder_mismatches": [],
+    "recorder_records_compared": 512,
+    "verdict": "MATCH"
+   },
+   "issues": [],
+   "output_bytes": 8068050,
+   "seconds": 60.4
+  },
+  "moving/A3/E2_obstacle_aware__70bars__seed4202": {
+   "cumulative_hours": 0.1751,
+   "free_disk_gb_after": 21.16,
+   "historical": {
+    "keys_only_new": [],
+    "keys_only_old": [],
+    "ledger_mismatches": [],
+    "ledger_rows_compared": 512,
+    "recorder_mismatches": [],
+    "recorder_records_compared": 512,
+    "verdict": "MATCH"
+   },
+   "issues": [],
+   "output_bytes": 9371026,
+   "seconds": 67.1
+  },
+  "moving/A3/E2_obstacle_aware__70bars__seed4203": {
+   "cumulative_hours": 0.3144,
+   "free_disk_gb_after": 21.08,
+   "historical": {
+    "keys_only_new": [],
+    "keys_only_old": [],
+    "ledger_mismatches": [],
+    "ledger_rows_compared": 512,
+    "recorder_mismatches": [],
+    "recorder_records_compared": 512,
+    "verdict": "MATCH"
+   },
+   "issues": [],
+   "output_bytes": 8602227,
+   "seconds": 63.5
+  },
+  "moving/A3/E2_obstacle_aware__70bars__seed4204": {
+   "cumulative_hours": 0.4643,
+   "free_disk_gb_after": 21.0,
+   "historical": {
+    "keys_only_new": [],
+    "keys_only_old": [],
+    "ledger_mismatches": [],
+    "ledger_rows_compared": 512,
+    "recorder_mismatches": [],
+    "recorder_records_compared": 512,
+    "verdict": "MATCH"
+   },
+   "issues": [],
+   "output_bytes": 8708995,
+   "seconds": 65.0
+  },
+  "moving/A3/E2_obstacle_aware__70bars__seed4205": {
+   "cumulative_hours": 0.6162,
+   "free_disk_gb_after": 20.92,
+   "historical": {
+    "keys_only_new": [],
+    "keys_only_old": [],
+    "ledger_mismatches": [],
+    "ledger_rows_compared": 512,
+    "recorder_mismatches": [],
+    "recorder_records_compared": 512,
+    "verdict": "MATCH"
+   },
+   "issues": [],
+   "output_bytes": 8748654,
+   "seconds": 65.4
+  },
+  "moving/A3/E2_obstacle_aware__70bars__seed4206": {
+   "cumulative_hours": 0.8103,
+   "free_disk_gb_after": 20.81,
+   "historical": {
+    "keys_only_new": [],
+    "keys_only_old": [],
+    "ledger_mismatches": [],
+    "ledger_rows_compared": 512,
+    "recorder_mismatches": [],
+    "recorder_records_compared": 512,
+    "verdict": "MATCH"
+   },
+   "issues": [],
+   "output_bytes": 9160222,
+   "seconds": 66.6
+  },
+  "moving/A3/E2_obstacle_aware__70bars__seed4207": {
+   "cumulative_hours": 0.9625,
+   "free_disk_gb_after": 20.73,
+   "historical": {
+    "keys_only_new": [],
+    "keys_only_old": [],
+    "ledger_mismatches": [],
+    "ledger_rows_compared": 512,
+    "recorder_mismatches": [],
+    "recorder_records_compared": 512,
+    "verdict": "MATCH"
+   },
+   "issues": [],
+   "output_bytes": 8466892,
+   "seconds": 62.9
+  },
+  "static/A1/E0_static__115bars__seed4201": {
+   "cumulative_hours": 0.0466,
+   "free_disk_gb_after": 21.23,
+   "historical": {
+    "keys_only_new": [],
+    "keys_only_old": [],
+    "ledger_mismatches": [],
+    "ledger_rows_compared": 512,
+    "recorder_mismatches": [],
+    "recorder_records_compared": 512,
+    "verdict": "MATCH"
+   },
+   "issues": [],
+   "output_bytes": 8614673,
+   "seconds": 55.5
+  },
+  "static/A1/E0_static__115bars__seed4202": {
+   "cumulative_hours": 0.189,
+   "free_disk_gb_after": 21.15,
+   "historical": {
+    "keys_only_new": [],
+    "keys_only_old": [],
+    "ledger_mismatches": [],
+    "ledger_rows_compared": 512,
+    "recorder_mismatches": [],
+    "recorder_records_compared": 512,
+    "verdict": "MATCH"
+   },
+   "issues": [],
+   "output_bytes": 7269538,
+   "seconds": 49.7
+  },
+  "static/A1/E0_static__115bars__seed4203": {
+   "cumulative_hours": 0.3281,
+   "free_disk_gb_after": 21.08,
+   "historical": {
+    "keys_only_new": [],
+    "keys_only_old": [],
+    "ledger_mismatches": [],
+    "ledger_rows_compared": 512,
+    "recorder_mismatches": [],
+    "recorder_records_compared": 512,
+    "verdict": "MATCH"
+   },
+   "issues": [],
+   "output_bytes": 7118088,
+   "seconds": 49.2
+  },
+  "static/A1/E0_static__115bars__seed4204": {
+   "cumulative_hours": 0.4786,
+   "free_disk_gb_after": 20.99,
+   "historical": {
+    "keys_only_new": [],
+    "keys_only_old": [],
+    "ledger_mismatches": [],
+    "ledger_rows_compared": 512,
+    "recorder_mismatches": [],
+    "recorder_records_compared": 512,
+    "verdict": "MATCH"
+   },
+   "issues": [],
+   "output_bytes": 7371025,
+   "seconds": 51.4
+  },
+  "static/A1/E0_static__115bars__seed4205": {
+   "cumulative_hours": 0.6302,
+   "free_disk_gb_after": 20.91,
+   "historical": {
+    "keys_only_new": [],
+    "keys_only_old": [],
+    "ledger_mismatches": [],
+    "ledger_rows_compared": 512,
+    "recorder_mismatches": [],
+    "recorder_records_compared": 512,
+    "verdict": "MATCH"
+   },
+   "issues": [],
+   "output_bytes": 7412981,
+   "seconds": 50.6
+  },
+  "static/A1/E0_static__115bars__seed4206": {
+   "cumulative_hours": 0.8268,
+   "free_disk_gb_after": 20.8,
+   "historical": {
+    "keys_only_new": [],
+    "keys_only_old": [],
+    "ledger_mismatches": [],
+    "ledger_rows_compared": 512,
+    "recorder_mismatches": [],
+    "recorder_records_compared": 512,
+    "verdict": "MATCH"
+   },
+   "issues": [],
+   "output_bytes": 9155219,
+   "seconds": 59.3
+  },
+  "static/A1/E0_static__115bars__seed4207": {
+   "cumulative_hours": 0.9773,
+   "free_disk_gb_after": 20.72,
+   "historical": {
+    "keys_only_new": [],
+    "keys_only_old": [],
+    "ledger_mismatches": [],
+    "ledger_rows_compared": 512,
+    "recorder_mismatches": [],
+    "recorder_records_compared": 512,
+    "verdict": "MATCH"
+   },
+   "issues": [],
+   "output_bytes": 7926037,
+   "seconds": 53.3
+  },
+  "static/A1/E0_static__160bars__seed4201": {
+   "cumulative_hours": 0.0792,
+   "free_disk_gb_after": 21.21,
+   "historical": {
+    "keys_only_new": [],
+    "keys_only_old": [],
+    "ledger_mismatches": [],
+    "ledger_rows_compared": 512,
+    "recorder_mismatches": [],
+    "recorder_records_compared": 512,
+    "verdict": "MATCH"
+   },
+   "issues": [],
+   "output_bytes": 8095379,
+   "seconds": 52.6
+  },
+  "static/A1/E0_static__160bars__seed4202": {
+   "cumulative_hours": 0.2239,
+   "free_disk_gb_after": 21.13,
+   "historical": {
+    "keys_only_new": [],
+    "keys_only_old": [],
+    "ledger_mismatches": [],
+    "ledger_rows_compared": 512,
+    "recorder_mismatches": [],
+    "recorder_records_compared": 512,
+    "verdict": "MATCH"
+   },
+   "issues": [],
+   "output_bytes": 8229437,
+   "seconds": 52.8
+  },
+  "static/A1/E0_static__160bars__seed4203": {
+   "cumulative_hours": 0.3674,
+   "free_disk_gb_after": 21.05,
+   "historical": {
+    "keys_only_new": [],
+    "keys_only_old": [],
+    "ledger_mismatches": [],
+    "ledger_rows_compared": 512,
+    "recorder_mismatches": [],
+    "recorder_records_compared": 512,
+    "verdict": "MATCH"
+   },
+   "issues": [],
+   "output_bytes": 8106731,
+   "seconds": 52.9
+  },
+  "static/A1/E0_static__160bars__seed4204": {
+   "cumulative_hours": 0.5135,
+   "free_disk_gb_after": 20.97,
+   "historical": {
+    "keys_only_new": [],
+    "keys_only_old": [],
+    "ledger_mismatches": [],
+    "ledger_rows_compared": 512,
+    "recorder_mismatches": [],
+    "recorder_records_compared": 512,
+    "verdict": "MATCH"
+   },
+   "issues": [],
+   "output_bytes": 8111273,
+   "seconds": 53.6
+  },
+  "static/A1/E0_static__160bars__seed4205": {
+   "cumulative_hours": 0.6657,
+   "free_disk_gb_after": 20.89,
+   "historical": {
+    "keys_only_new": [],
+    "keys_only_old": [],
+    "ledger_mismatches": [],
+    "ledger_rows_compared": 512,
+    "recorder_mismatches": [],
+    "recorder_records_compared": 512,
+    "verdict": "MATCH"
+   },
+   "issues": [],
+   "output_bytes": 8311211,
+   "seconds": 54.2
+  },
+  "static/A1/E0_static__160bars__seed4206": {
+   "cumulative_hours": 0.8651,
+   "free_disk_gb_after": 20.78,
+   "historical": {
+    "keys_only_new": [],
+    "keys_only_old": [],
+    "ledger_mismatches": [],
+    "ledger_rows_compared": 512,
+    "recorder_mismatches": [],
+    "recorder_records_compared": 512,
+    "verdict": "MATCH"
+   },
+   "issues": [],
+   "output_bytes": 8776597,
+   "seconds": 56.7
+  },
+  "static/A1/E0_static__160bars__seed4207": {
+   "cumulative_hours": 1.0147,
+   "free_disk_gb_after": 20.7,
+   "historical": {
+    "keys_only_new": [],
+    "keys_only_old": [],
+    "ledger_mismatches": [],
+    "ledger_rows_compared": 512,
+    "recorder_mismatches": [],
+    "recorder_records_compared": 512,
+    "verdict": "MATCH"
+   },
+   "issues": [],
+   "output_bytes": 8345436,
+   "seconds": 55.0
+  },
+  "static/A1/E0_static__205bars__seed4201": {
+   "cumulative_hours": 0.119,
+   "free_disk_gb_after": 21.19,
+   "historical": {
+    "keys_only_new": [],
+    "keys_only_old": [],
+    "ledger_mismatches": [],
+    "ledger_rows_compared": 512,
+    "recorder_mismatches": [],
+    "recorder_records_compared": 512,
+    "verdict": "MATCH"
+   },
+   "issues": [],
+   "output_bytes": 10022343,
+   "seconds": 61.0
+  },
+  "static/A1/E0_static__205bars__seed4202": {
+   "cumulative_hours": 0.2608,
+   "free_disk_gb_after": 21.11,
+   "historical": {
+    "keys_only_new": [],
+    "keys_only_old": [],
+    "ledger_mismatches": [],
+    "ledger_rows_compared": 512,
+    "recorder_mismatches": [],
+    "recorder_records_compared": 512,
+    "verdict": "MATCH"
+   },
+   "issues": [],
+   "output_bytes": 9226859,
+   "seconds": 56.6
+  },
+  "static/A1/E0_static__205bars__seed4203": {
+   "cumulative_hours": 0.4066,
+   "free_disk_gb_after": 21.03,
+   "historical": {
+    "keys_only_new": [],
+    "keys_only_old": [],
+    "ledger_mismatches": [],
+    "ledger_rows_compared": 512,
+    "recorder_mismatches": [],
+    "recorder_records_compared": 512,
+    "verdict": "MATCH"
+   },
+   "issues": [],
+   "output_bytes": 9193341,
+   "seconds": 57.6
+  },
+  "static/A1/E0_static__205bars__seed4204": {
+   "cumulative_hours": 0.5579,
+   "free_disk_gb_after": 20.95,
+   "historical": {
+    "keys_only_new": [],
+    "keys_only_old": [],
+    "ledger_mismatches": [],
+    "ledger_rows_compared": 512,
+    "recorder_mismatches": [],
+    "recorder_records_compared": 512,
+    "verdict": "MATCH"
+   },
+   "issues": [],
+   "output_bytes": 10932655,
+   "seconds": 67.4
+  },
+  "static/A1/E0_static__205bars__seed4205": {
+   "cumulative_hours": 0.721,
+   "free_disk_gb_after": 20.86,
+   "historical": {
+    "keys_only_new": [],
+    "keys_only_old": [],
+    "ledger_mismatches": [],
+    "ledger_rows_compared": 512,
+    "recorder_mismatches": [],
+    "recorder_records_compared": 512,
+    "verdict": "MATCH"
+   },
+   "issues": [],
+   "output_bytes": 12929194,
+   "seconds": 76.5
+  },
+  "static/A1/E0_static__205bars__seed4206": {
+   "cumulative_hours": 0.9079,
+   "free_disk_gb_after": 20.76,
+   "historical": {
+    "keys_only_new": [],
+    "keys_only_old": [],
+    "ledger_mismatches": [],
+    "ledger_rows_compared": 512,
+    "recorder_mismatches": [],
+    "recorder_records_compared": 512,
+    "verdict": "MATCH"
+   },
+   "issues": [],
+   "output_bytes": 10123702,
+   "seconds": 62.1
+  },
+  "static/A1/E0_static__205bars__seed4207": {
+   "cumulative_hours": 1.0646,
+   "free_disk_gb_after": 20.67,
+   "historical": {
+    "keys_only_new": [],
+    "keys_only_old": [],
+    "ledger_mismatches": [],
+    "ledger_rows_compared": 512,
+    "recorder_mismatches": [],
+    "recorder_records_compared": 512,
+    "verdict": "MATCH"
+   },
+   "issues": [],
+   "output_bytes": 9126963,
+   "seconds": 57.9
+  },
+  "static/A1/E0_static__70bars__seed4201": {
+   "cumulative_hours": 0.0143,
+   "free_disk_gb_after": 21.24,
+   "historical": {
+    "keys_only_new": [],
+    "keys_only_old": [],
+    "ledger_mismatches": [],
+    "ledger_rows_compared": 512,
+    "recorder_mismatches": [],
+    "recorder_records_compared": 512,
+    "verdict": "MATCH"
+   },
+   "issues": [],
+   "output_bytes": 7303471,
+   "seconds": 51.4
+  },
+  "static/A1/E0_static__70bars__seed4202": {
+   "cumulative_hours": 0.1565,
+   "free_disk_gb_after": 21.17,
+   "historical": {
+    "keys_only_new": [],
+    "keys_only_old": [],
+    "ledger_mismatches": [],
+    "ledger_rows_compared": 512,
+    "recorder_mismatches": [],
+    "recorder_records_compared": 512,
+    "verdict": "MATCH"
+   },
+   "issues": [],
+   "output_bytes": 7216182,
+   "seconds": 50.5
+  },
+  "static/A1/E0_static__70bars__seed4203": {
+   "cumulative_hours": 0.2968,
+   "free_disk_gb_after": 21.09,
+   "historical": {
+    "keys_only_new": [],
+    "keys_only_old": [],
+    "ledger_mismatches": [],
+    "ledger_rows_compared": 512,
+    "recorder_mismatches": [],
+    "recorder_records_compared": 512,
+    "verdict": "MATCH"
+   },
+   "issues": [],
+   "output_bytes": 6476702,
+   "seconds": 47.8
+  },
+  "static/A1/E0_static__70bars__seed4204": {
+   "cumulative_hours": 0.4463,
+   "free_disk_gb_after": 21.01,
+   "historical": {
+    "keys_only_new": [],
+    "keys_only_old": [],
+    "ledger_mismatches": [],
+    "ledger_rows_compared": 512,
+    "recorder_mismatches": [],
+    "recorder_records_compared": 512,
+    "verdict": "MATCH"
+   },
+   "issues": [],
+   "output_bytes": 6154738,
+   "seconds": 45.9
+  },
+  "static/A1/E0_static__70bars__seed4205": {
+   "cumulative_hours": 0.598,
+   "free_disk_gb_after": 20.93,
+   "historical": {
+    "keys_only_new": [],
+    "keys_only_old": [],
+    "ledger_mismatches": [],
+    "ledger_rows_compared": 512,
+    "recorder_mismatches": [],
+    "recorder_records_compared": 512,
+    "verdict": "MATCH"
+   },
+   "issues": [],
+   "output_bytes": 6229270,
+   "seconds": 47.9
+  },
+  "static/A1/E0_static__70bars__seed4206": {
+   "cumulative_hours": 0.7918,
+   "free_disk_gb_after": 20.82,
+   "historical": {
+    "keys_only_new": [],
+    "keys_only_old": [],
+    "ledger_mismatches": [],
+    "ledger_rows_compared": 512,
+    "recorder_mismatches": [],
+    "recorder_records_compared": 512,
+    "verdict": "MATCH"
+   },
+   "issues": [],
+   "output_bytes": 6689830,
+   "seconds": 49.8
+  },
+  "static/A1/E0_static__70bars__seed4207": {
+   "cumulative_hours": 0.945,
+   "free_disk_gb_after": 20.74,
+   "historical": {
+    "keys_only_new": [],
+    "keys_only_old": [],
+    "ledger_mismatches": [],
+    "ledger_rows_compared": 512,
+    "recorder_mismatches": [],
+    "recorder_records_compared": 512,
+    "verdict": "MATCH"
+   },
+   "issues": [],
+   "output_bytes": 6285766,
+   "seconds": 46.8
+  }
+ },
+ "finished_at": "2026-10-16T18:25:37.459931+00:00",
+ "g0_report": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_pilot_v1/OCC-G0_rerun1/g0_report.json",
+ "g0_report_sha256": "ae17bfa538777639328b4554b3929b72f7d7c2acccf2422a79dfdb242ba19632",
+ "git_commit": "6441c1ff74b6d085d14ed5604d1d60d66a4634fe",
+ "gpu_hours": 1.0944,
+ "historical_matches": 56,
+ "output_bytes": 599528700,
+ "output_root": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_pilot_v1/OCC-P1_rerun1",
+ "policy_f_sha256_after": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+ "rerun_note": "rerun: first attempt (OCC-P1/) stopped after cell 1 because a WORKLOG edit dirtied the tracked tree during the run",
+ "run_id": "OCC-P1",
+ "stop_reason": null,
+ "verdict": "PILOT_COMPLETE"
+}

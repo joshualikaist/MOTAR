@@ -1,0 +1,53 @@
+{
+  "problems": [],
+  "files_verified": 1941,
+  "manifests": {
+    "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_pilot_v1/OCC-G0/RAW_MANIFEST.json": {
+      "sha256": "2e051977a68c34c21e1dd8a674b3673c1016d855295ecc73350d323fb007bc88",
+      "files_verified": 53
+    },
+    "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_pilot_v1/OCC-G0_rerun1/RAW_MANIFEST.json": {
+      "sha256": "cc26a68a9822da9e99762cda984ded59ce161292adbd56cdc1c7313f4a14a599",
+      "files_verified": 194
+    },
+    "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_pilot_v1/OCC-P1/RAW_MANIFEST.json": {
+      "sha256": "b0f071e873c26829bc13d12d26daa19e9c6aee5c3ddd38ceaa0498d43c0423c4",
+      "files_verified": 14
+    },
+    "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_pilot_v1/OCC-P1_rerun1/RAW_MANIFEST.json": {
+      "sha256": "6e12d9ac4350419a2214933a4cf445cff642c4ca85cdcf6da0116bc7eacda120",
+      "files_verified": 704
+    },
+    "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/mt_p1_precision_v1/MT-P2-C01/RAW_MANIFEST.json": {
+      "sha256": "9b28af167706e6f39224402056943aa1bc1adbb8fa021efac6ef65cea6ebb4e4",
+      "files_verified": 131
+    },
+    "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/mt_p1_precision_v1/KROC27-A-M02/RAW_MANIFEST.json": {
+      "sha256": "bc90b5b086cbae9db4daebbfcc81cf448f21348f1f648a1df3e025c9cba4bdd7",
+      "files_verified": 452
+    },
+    "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/kroc2027_A_v1/RAW_MANIFEST.json": {
+      "sha256": "7a8042aa0d1a36a6c7fb34d8bf273ef49606e3ee7bf4bde44755ff1628575726",
+      "files_verified": 393
+    }
+  },
+  "pilot_seeds": [
+    4201,
+    4202,
+    4203,
+    4204,
+    4205,
+    4206,
+    4207
+  ],
+  "pilot_unique_scene_hashes": 42120,
+  "pilot_scene_set_sha256": "61e997fc8edd1f4355146876c3f61d8d1f0d44cd5e8b3ed3b31d6c092f8b3ed1",
+  "main_head": "cb644bbe46456b1900020177617a13040a3f1552",
+  "stash": "23ddb33f92cf6c75cf9095e149bb7e2516eb7543 stash@{0} On main: KROC2027 merge 2026-10-15: user WIP (.gitignore, WORKLOG.md, presentations/README.md) - restore after canary\n",
+  "main_wip_sha256": {
+    ".gitignore": "0fc139965f0e1e218883e22cb1c2e2cc6c8cf86487b1dd7d402a28a369fb5296",
+    "WORKLOG.md": "a63118ee730803b6c7e0afcceeec0d0595fdbf347ed56fb3474364b79bf6454c",
+    "presentations/README.md": "be8c4b2350a49580c5ea70a45f34c307c34a46f2509ce2eeab8f0f9fdfb69731"
+  },
+  "branch_head_before": "a4be7aa158ddebf2acd4deaeb31abfaa28b167ad"
+}
