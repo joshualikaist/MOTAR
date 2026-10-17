@@ -21116,3 +21116,25 @@ Next review: the complete diff and new plan; local commit requires user diff app
   and main with WIP3 and stash.
 - Evidence: `docs/evidence/s_l1c_2026-10-18/`. Next: independent review, then the GO/NO-GO for
   S-L1D.
+
+## 2026-10-18 — S-L1C independent review (Fable 5.1): GO-WITH-NOTES; decision S-L1C GO
+
+- First Fable 5.1 attempt: stopped on an API safeguard false positive (`general_harms`) with no
+  verdict, so it is not counted. Second attempt with neutral wording: **GO-WITH-NOTES, no
+  blocker**. The reviewer re-ran the CPU tests, the whole-file SHA-256 regressions, the manifests
+  and the byte-identical analysis, and confirmed the formulas, the GT isolation and that the trace
+  wrapper is inert.
+- Corrected limit (addendum `docs/evidence/s_l1c_2026-10-18/REVIEW_ADDENDUM.md`): the shape test
+  also rejects genuine sphere returns whose centre lies between rows, up to 0.20/sin 5° = 2.295 m.
+
+  | Centre range | Rejected (of 53 genuine-hit elevations) |
+  | --- | --- |
+  | 1.16 m | 47 |
+  | 1.5 m | 23 |
+  | 2.0 m | 8 |
+  | 2.28 m | 2 |
+  | 2.30 m | 0 |
+
+  No preregistered fixture lay in the band; about 2–3% of closed-loop steps do. The fix (an
+  elevation-aware shape test) needs a new `s_l1c_v2` preregistration.
+- Decision: **S-L1C GO**. S-L1D may start; its preregistration carries this inherited limitation.
