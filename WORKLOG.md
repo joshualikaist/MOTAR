@@ -20773,3 +20773,20 @@ Next review: the complete diff and new plan; local commit requires user diff app
   code or GPU measurement exists yet. Next is the independent float64 CPU oracle, committed before
   production implementation. Start around 03:20 KST; quota timer is unavailable; conservative
   wrap-up by 07:20 KST with time reserved for verification, commits and handoff.
+
+## 2026-10-18 — S-L1A independent float64 CPU oracle verified before production implementation
+
+- Preregistration `d1c3f10` remains unchanged. Files: `tools/audits/s_l1a_reference.py`,
+  `tests/test_s_l1a_reference.py`, `WORKLOG.md` (append only). No production sensor import or edit.
+- Independent normalized pinhole rays, slab box intersections, stable quadratic sphere roots and
+  first-hit labels use NumPy float64. Eight ±0.01 px neighboring object-label checks identify
+  robust pixels. The carve oracle uses current camera-pixel minimum depth, zero inward tolerance,
+  narrow modeled angular support and the fixed 0.55 m upper window; no tracker/semantic GT input.
+- CPU tests 17/17 PASS and four exact self-checks PASS. Hand cases include oblique slant range,
+  parallel/inside/negative rays, two-depth interpolated phantom surfaces and false-clear,
+  no-hit false-positive, a thin obstacle missed on 40×24 rays, foreground retention, angular/range
+  boundaries, invalid/no-camera/no-return abstention, input immutability and RNG non-interference.
+  `CUDA_VISIBLE_DEVICES='' PYTHONNOUSERSITE=1 .../aerialgym/bin/python -B tests/test_s_l1a_reference.py`;
+  the same interpreter runs `tools/audits/s_l1a_reference.py --self-test`. Diff reviewed/check PASS.
+- No GPU, PPO or runtime correction yet. Next: S-L1A-only detector/perception helper and CPU
+  regression against this committed independent oracle, then a separate code commit before canary.
