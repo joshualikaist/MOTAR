@@ -288,6 +288,11 @@ class NavRLTargetDetector:
     """Pixel-derived camera detection plus short detector-side tracking memory."""
 
     def __init__(self, warp_env, num_envs, device, vis_cfg, step_dt):
+        self.sensor_lineage_s_l1a = False
+        if os.environ.get("NAVRL_SENSOR_LINEAGE", "off") != "off":
+            from aerial_gym.task.navrl_task.navrl_sensor_lineage import sensor_lineage_enabled
+
+            self.sensor_lineage_s_l1a = sensor_lineage_enabled()
         self.num_envs = int(num_envs)
         self.device = device
         self.width = int(getattr(vis_cfg, "camera_width", 160))
@@ -442,6 +447,15 @@ class NavRLTargetDetector:
         self.target_render_mode = "analytic_flat"
         self._depth_wp = wp.from_torch(self.target_depth, dtype=wp.float32)
         self._obstacle_depth_wp = wp.from_torch(self.obstacle_depth, dtype=wp.float32)
+        # S-L1A queries the actual camera rays separately; native depth and RGB shading
+        # stay legacy. OFF creates no extra tensor, Warp array or mesh query.
+        self.s_l1a_obstacle_depth = None
+        if self.sensor_lineage_s_l1a:
+            self.s_l1a_obstacle_depth = torch.full(
+                (self.num_envs, self.height, self.width), self.obstacle_max_range,
+                dtype=torch.float32, device=device,
+            )
+            self._s_l1a_obstacle_depth_wp = wp.from_torch(self.s_l1a_obstacle_depth, dtype=wp.float32)
 
         # -- appearance distractors (only when some exist). No buffer, no ray table entry and no
         # kernel launch at zero count, so the default render is the historical one.
@@ -870,6 +884,14 @@ class NavRLTargetDetector:
             ],
             device=str(self.device),
         )
+        if getattr(self, "sensor_lineage_s_l1a", False):
+            wp.launch(
+                kernel=_render_obstacle_depth_kernel,
+                dim=(self.num_envs, self.height, self.width),
+                inputs=[self.mesh_ids, self._origins_wp, self._orientations_wp,
+                        self._ray_vectors_wp, self.obstacle_max_range, self._s_l1a_obstacle_depth_wp],
+                device=str(self.device),
+            )
         if self.num_distractors > 0:
             # Same origins/orientations and the same camera ray table as the target render above,
             # so the distractor mask is registered pixel-for-pixel with the target mask.
@@ -923,7 +945,8 @@ class NavRLTargetDetector:
         if self.app_texture_std > 0.0:
             luminance = luminance * self.texture_field
         rgb = luminance.unsqueeze(1) * self.albedo_tint
-        depth = obstacle_depth_hi.clone()
+        depth = (self.s_l1a_obstacle_depth.clone() if getattr(self, "sensor_lineage_s_l1a", False)
+                 else obstacle_depth_hi.clone())
 
         # Appearance distractors are painted FIRST, with the same per-env target colour and their
         # own exact camera-resolution depth. Deliberately indistinguishable from the target in the

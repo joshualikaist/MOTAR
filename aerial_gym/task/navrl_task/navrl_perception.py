@@ -727,6 +727,11 @@ class NavRLPerceptionModule:
     """RGB-D/LiDAR fusion, tracking, uncertainty, and 2-second history encoding."""
 
     def __init__(self, num_envs, device, cfg, step_dt, camera_cfg):
+        self.sensor_lineage_s_l1a = False
+        if os.environ.get("NAVRL_SENSOR_LINEAGE", "off") != "off":
+            from aerial_gym.task.navrl_task.navrl_sensor_lineage import sensor_lineage_enabled
+
+            self.sensor_lineage_s_l1a = sensor_lineage_enabled()
         self.num_envs = int(num_envs)
         self.device = device
         self.cfg = cfg
@@ -1051,6 +1056,14 @@ class NavRLPerceptionModule:
 
         if self.detect_decoupled:
             self._assert_detect_decoupling_is_equivalent(cfg)
+
+        if self.sensor_lineage_s_l1a and (
+            self.detection_latency_s != 0.0 or self.target_mask_backfill
+            or self.latency_obstacle_fix != "off"
+            or (self.empirical_error is not None and self.empirical_error.max_latency_steps > 0)
+        ):
+            raise ValueError("S-L1A requires fresh camera measurements: no detection latency, "
+                             "mask backfill, delayed empirical errors or latency obstacle fix")
 
         self.tracker = BatchedConstantVelocityTracker(
             num_envs, device, step_dt, float(camera_cfg.tracker_memory_s)
@@ -1798,20 +1811,35 @@ class NavRLPerceptionModule:
         visible,
         drone_vel_w=None,
         vehicle_quat=None,
+        camera_visible=None,
     ):
         scan = lidar_m.view(self.num_envs, VBEAMS, HBEAMS).clone()
 
-        # Camera-associated LiDAR returns are target evidence, not static obstacles. No semantic
-        # ID is consulted: association uses only bearing and metric range agreement.
-        angle_delta = torch.atan2(
-            torch.sin(self._lidar_angles.view(1, 1, HBEAMS) - target_bearing.view(-1, 1, 1)),
-            torch.cos(self._lidar_angles.view(1, 1, HBEAMS) - target_bearing.view(-1, 1, 1)),
-        ).abs()
-        target_like = (
-            visible.view(-1, 1, 1)
-            & (angle_delta < TARGET_LIKE_ANGLE_RAD)
-            & ((scan - target_surface_range.view(-1, 1, 1)).abs() < TARGET_LIKE_RANGE_TOL_M)
-        )
+        if getattr(self, "sensor_lineage_s_l1a", False):
+            from aerial_gym.task.navrl_task.navrl_sensor_lineage import conservative_carve_masks
+
+            # The current perception pixels, never a tracker/LiDAR-inferred surface,
+            # authorize exclusion. Unsupported evidence leaves all returns intact.
+            confirmed = (torch.zeros_like(visible) if camera_visible is None
+                         else visible & camera_visible)
+            masks = conservative_carve_masks(
+                scan, self._lidar_angles, raw_depth, target_pixels, confirmed, target_bearing,
+                target_radius=self.target_radius, min_target_pixels=self.min_pixels,
+                lidar_far_m=self.lidar_max_range, camera_far_m=self.max_camera_range,
+            )
+            target_like = masks["lidar_carve_mask"]
+            target_pixels = masks["camera_blank_mask"]
+        else:
+            # Historical association window, retained unchanged for Frozen F.
+            angle_delta = torch.atan2(
+                torch.sin(self._lidar_angles.view(1, 1, HBEAMS) - target_bearing.view(-1, 1, 1)),
+                torch.cos(self._lidar_angles.view(1, 1, HBEAMS) - target_bearing.view(-1, 1, 1)),
+            ).abs()
+            target_like = (
+                visible.view(-1, 1, 1)
+                & (angle_delta < TARGET_LIKE_ANGLE_RAD)
+                & ((scan - target_surface_range.view(-1, 1, 1)).abs() < TARGET_LIKE_RANGE_TOL_M)
+            )
         self.last_target_like[:] = target_like
         scan = torch.where(target_like, torch.full_like(scan, self.lidar_max_range), scan)
 
@@ -2169,6 +2197,7 @@ class NavRLPerceptionModule:
             map_visible,
             drone_vel_w=drone_vel_w,
             vehicle_quat=vehicle_quat,
+            **({"camera_visible": visible} if self.sensor_lineage_s_l1a else {}),
         )
         target_now = self._target_features(
             drone_pos_w, drone_vel_w, vehicle_quat, confidence, lidar_confidence

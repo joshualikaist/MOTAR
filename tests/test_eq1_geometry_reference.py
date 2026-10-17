@@ -42,9 +42,10 @@ class ReferenceSelfTest(unittest.TestCase):
         self.assertAlmostEqual(geo.ray_box(o, d, lo, hi), 2.0, places=12)
         self.assertTrue(math.isinf(geo.ray_box(o, -d, lo, hi)))
 
-    def test_source_is_the_measured_source(self):
-        src = record()["source"]
-        self.assertTrue(src["identical_to_measurement_source"], src)
+    # The live "HEAD equals measurement source" check moved to tests/test_s_l1a_eq1_provenance.py:
+    # the approved opt-in S-L1A lineage edits navrl_detector.py and navrl_perception.py. That test
+    # binds this frozen record to immutable measurement-source blobs. The live counterexamples below
+    # still run the default-OFF production path.
 
 
 class GeometryCounterexampleTest(unittest.TestCase):

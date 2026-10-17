@@ -20802,3 +20802,32 @@ Next review: the complete diff and new plan; local commit requires user diff app
 - Files: those two amendment files and this appended WORKLOG entry. JSON parse and local links
   checked; exact historical process seeds verified against the committed E-L0 plan. Next: finish
   implementation/CPU validation, then commit all source before the GPU canary.
+
+## 2026-10-18 — S-L1A recovered runtime, tests and runner committed after CPU validation
+
+- Session resumed 04:12 KST after the usage limit at HEAD `41cc044`. All uncommitted S-L1A paths
+  were backed up to session scratch with SHA-256 before any edit. Runtime source (detector,
+  perception, new `navrl_sensor_lineage.py`), launcher, runner, analysis and their run/analysis
+  tests are committed unchanged from recovery. Inventory and reasons:
+  `docs/evidence/s_l1a_2026-10-18/RECOVERY_CPU_VALIDATION.md`.
+- EQ-1A test change: the recovered in-place rewrite of `test_source_is_the_measured_source` is
+  preserved as `eq1_test_change_recovered.patch`. The live "HEAD equals 5ff285a" assertion becomes
+  false by construction once approved S-L1A edits are committed. It moved to the new
+  `tests/test_s_l1a_eq1_provenance.py`, which checks frozen record ↔ immutable blobs, unchanged
+  through base `289fd80`, and unchanged live LiDAR config/occlusion geometry. EQ-1 criteria,
+  oracles and counterexample FAILs are unchanged; the EQ-1 file differs only by that method.
+- Runtime test harness: stub packages plus the path-loaded helper inside `eq1_common.production()`
+  (ON import no longer loads Isaac Gym). New CPU test on the detector's own ray tables:
+
+  | Fixture | S-L1A max err / false-clear / false-obstacle | Legacy 40×24 max err / FC / FO |
+  | --- | --- | --- |
+  | two-depth | 8.4e−7 m / 0 / 0 | 1.746 m / 180 / 0 |
+  | edge | 4.2e−7 m / 0 / 0 | 2.626 m / 180 / 180 |
+  | thin bar | 4.7e−7 m / 0 / 0 | 2.000 m / 20 / 0 |
+
+- CPU: S-L1A reference 17, runtime 13, run 14, analysis 12, EQ-1 provenance 3, EQ-1A 8 and the frozen
+  adapter contract: 81 OK. ON guard constructs all 11 process configs (latency 0, no backfill, fix
+  off). PUBLIC_CPU before commit: 2,477 run, 1 failure = working-tree-vs-HEAD byte check that holds
+  only after commit; re-run after commit follows in the result entry.
+- Next: preflight and GPU canary `SL1A-C01` at this commit (no tracked edits while it runs), then
+  manifest/preservation/analysis in a separate result commit. Wrap-up target 08:12 KST.

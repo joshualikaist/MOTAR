@@ -1,0 +1,37 @@
+diff --git a/tests/test_eq1_geometry_reference.py b/tests/test_eq1_geometry_reference.py
+index be710d8..9380fb6 100644
+--- a/tests/test_eq1_geometry_reference.py
++++ b/tests/test_eq1_geometry_reference.py
+@@ -43,8 +43,31 @@ class ReferenceSelfTest(unittest.TestCase):
+         self.assertTrue(math.isinf(geo.ray_box(o, -d, lo, hi)))
+ 
+     def test_source_is_the_measured_source(self):
+-        src = record()["source"]
++        import hashlib
++        import json
++        import subprocess
++
++        # S-L1A is an approved opt-in lineage with its own validation record.
++        # Bind the historical EQ-1 measurement to its immutable Git blobs; current
++        # OFF behavior remains exercised by every live counterexample below and
++        # the S-L1A regression tests. New HEAD bytes need not equal old source.
++        frozen = ROOT / "docs/evidence/eq1_validation_2026-10-18/eq1a_geometry.json"
++        src = json.loads(frozen.read_text())["source"]
++        self.assertEqual(src["measurement_source"], geo.common.MEASUREMENT_SOURCE)
+         self.assertTrue(src["identical_to_measurement_source"], src)
++        expected_paths = {
++            "aerial_gym/config/sensor_config/lidar_config/navrl_lidar_config.py",
++            "aerial_gym/task/navrl_task/navrl_detector.py",
++            "aerial_gym/task/navrl_task/navrl_perception.py",
++            "motar_eval/occlusion_geometry.py",
++        }
++        self.assertEqual(set(src["files_sha256"]), expected_paths)
++        for relative, expected_sha256 in src["files_sha256"].items():
++            with self.subTest(path=relative):
++                blob = subprocess.check_output([
++                    "git", "-C", str(ROOT), "show", src["measurement_source"] + ":" + relative,
++                ])
++                self.assertEqual(hashlib.sha256(blob).hexdigest(), expected_sha256)
+ 
+ 
+ class GeometryCounterexampleTest(unittest.TestCase):
