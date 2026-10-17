@@ -21199,3 +21199,21 @@ Next review: the complete diff and new plan; local commit requires user diff app
 - Minimal edit to the S-L1C switch test: the literal `s_l1d_v1` became a declared lineage, so it
   is replaced by `s_l1z_v1`, plus an ordering assertion, matching the S-L1B precedent. All
   S-L1A/B/C/D suites are OK.
+
+## 2026-10-18 — S-L1D canary launcher, runner and independent analysis (pre-run)
+
+- Files: `tools/s_l1d_launcher.py`, `tools/s_l1d_run.py`, `tools/s_l1d_analysis.py`,
+  `tests/test_s_l1d_run.py` (6 OK).
+- Launcher: per pass it records the delivered depth, the camera result and the E-L0 classes. It
+  then probes with the track primed at the true centre (covariance 1e−6·I; fixture input only).
+  The closed-loop trace is evaluator-only, read-only, and present only for s_l1d.
+- Runner: off is compared with EL0-R1, s_l1c with SL1C-C01, s_l1d P2 with s_l1c in the same run
+  (diagnostic only), and P1 with P2. It inherits the EQ-1D/E-L0 plan paths from the referenced
+  S-L1C plan.
+- Mechanics smoke (scratch only, not evidence): `sensors_s_l1d` and `static_s_l1d_p2` rc=0.
+  - The comparison with s_l1c was absent in the smoke subset, so it is now guarded by existence,
+    as the P1 comparison already was.
+  - Sensor probe: 30 gated cases with 30/30 agreement; support equals E-L0 and the oracle (0
+    mismatches); 0 occlusion classes in alone passes.
+  - Every GPU CENTRE_ONLY/PARTIAL pass was detected, so those online classes are evidenced on CPU
+    only.
