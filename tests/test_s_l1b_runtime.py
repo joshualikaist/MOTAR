@@ -74,9 +74,12 @@ class SwitchAndCalibrationTest(unittest.TestCase):
         self.assertEqual(sensor.sensor_lineage_level({sensor.SWITCH: "s_l1a_v1"}), 1)
         self.assertEqual(sensor.sensor_lineage_level({sensor.SWITCH: "s_l1b_v1"}), 2)
         self.assertTrue(sensor.sensor_lineage_enabled({sensor.SWITCH: "s_l1b_v1"}))
-        for value in ("", "on", "s_l1b", "S_L1B_V1", "s_l1c_v1", " s_l1b_v1"):
+        for value in ("", "on", "s_l1b", "S_L1B_V1", "s_l1z_v1", " s_l1b_v1"):
             with self.subTest(value=value), self.assertRaises(ValueError):
                 sensor.sensor_lineage_level({sensor.SWITCH: value})
+        # s_l1c_v1 was unknown when S-L1B was qualified; it is now the preregistered cumulative
+        # successor (docs/plans/s_l1c_v1.json) and must sit above S-L1B, never below it.
+        self.assertGreater(sensor.sensor_lineage_level({sensor.SWITCH: "s_l1c_v1"}), 2)
 
     def test_declared_constants_match_sensor_configs(self):
         tree = ast.parse((ROOT / "aerial_gym/config/sensor_config/lidar_config/navrl_lidar_config.py").read_text())

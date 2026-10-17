@@ -1,4 +1,4 @@
-"""Opt-in S-L1A/S-L1B sensor corrections; only delivered sensor evidence enters these helpers.
+"""Opt-in S-L1A/B/C sensor corrections; only delivered sensor evidence enters these helpers.
 
 The legacy path does not call any helper. No simulator pose, semantic labels,
 renderer-private target mask, tracker state or evaluator provenance is accepted here.
@@ -12,7 +12,7 @@ import torch
 
 SWITCH = "NAVRL_SENSOR_LINEAGE"
 LINEAGE = "s_l1a_v1"
-LINEAGES = ("s_l1a_v1", "s_l1b_v1")
+LINEAGES = ("s_l1a_v1", "s_l1b_v1", "s_l1c_v1")
 
 # S-L1B declared calibration constants, bound by tests to the sensor configs
 # (navrl_lidar_config: vertical_fov_deg_max/min, target_radius).
@@ -22,7 +22,7 @@ LIDAR_TARGET_PROXY_RADIUS_M = 0.20
 
 
 def sensor_lineage_level(environ=None):
-    """0 = legacy (unset/off), 1 = s_l1a_v1, 2 = s_l1b_v1; every unknown value fails closed."""
+    """0 = legacy (unset/off), 1 = s_l1a_v1, 2 = s_l1b_v1, 3 = s_l1c_v1; unknown values fail closed."""
     value = (os.environ if environ is None else environ).get(SWITCH, "off")
     if value != "off" and value not in LINEAGES:
         raise ValueError(SWITCH + " must be off or one of " + ", ".join(LINEAGES))
@@ -198,3 +198,73 @@ def common_frame_carve_masks(lidar_ranges, lidar_angles, camera_depth, camera_ca
             "anchor_body_m": torch.where(supported, anchor, torch.zeros_like(anchor)),
             "lidar_surface_lower_m": lower, "supported": supported, "angular_limit_rad": angular,
             "valid_candidate_count": base["valid_candidate_count"]}
+
+
+# S-L1C declared measurement-model constants (range-only LiDAR association).
+S_L1C_SHAPE_TOLERANCE_M = 0.10
+S_L1C_RANGE_SIGMA_M = 0.08
+S_L1C_UNOBSERVED_SIGMA_M = 50.0
+
+
+def range_only_lidar_association(lidar_ranges, lidar_angles, lidar_elevations, predicted_rel, camera_visible,
+                                 active, gate_m, *, lidar_far_m, lidar_target_radius=LIDAR_TARGET_PROXY_RADIUS_M,
+                                 shape_tolerance_m=S_L1C_SHAPE_TOLERANCE_M):
+    """S-L1C LiDAR association: identity-free and range-only.
+
+    Inputs are the raw LiDAR scan [N,V,H], the declared ray table, the track's own predicted
+    centre in the vehicle frame [N,3], the camera flag, the track-active flag and the gate [N].
+    Only rows that can meet the proxy sphere around the prediction are eligible. A return whose
+    vertically adjacent row (same column) has the same horizontal range within the tolerance
+    belongs to a vertically extended surface that the proxy cannot produce beyond
+    r / sin(row spacing); closer predictions are inconclusive and refused. The centre range adds
+    the LiDAR proxy radius. The measurement point lies on the unit vector to the prediction.
+    """
+    if lidar_ranges.ndim != 3 or predicted_rel.shape != (lidar_ranges.shape[0], 3):
+        raise ValueError("LiDAR scan must be [N,V,H] and the prediction [N,3]")
+    n, v, h = lidar_ranges.shape
+    if lidar_angles.shape != (h,) or lidar_elevations.shape != (v,) or v < 2:
+        raise ValueError("ray table does not match the scan")
+    if not math.isfinite(shape_tolerance_m) or shape_tolerance_m <= 0 or lidar_target_radius <= 0:
+        raise ValueError("tolerance and radius must be positive")
+    rows = torch.arange(n, device=lidar_ranges.device)
+    distance = predicted_rel.norm(dim=1).clamp(min=1e-6)
+    bearing = torch.atan2(predicted_rel[:, 1], predicted_rel[:, 0])
+    elevation = torch.atan2(predicted_rel[:, 2], torch.hypot(predicted_rel[:, 0], predicted_rel[:, 1]))
+    angular_error = torch.atan2(torch.sin(lidar_angles.view(1, -1) - bearing.view(-1, 1)),
+                                torch.cos(lidar_angles.view(1, -1) - bearing.view(-1, 1))).abs()
+    column_index = angular_error.argmin(dim=1)
+    column = lidar_ranges[rows, :, column_index]
+    half = torch.asin((lidar_target_radius / distance).clamp(max=1.0))
+    eligible = (lidar_elevations.view(1, -1) - elevation.view(-1, 1)).abs() < half.view(-1, 1)
+    measured, row = column.masked_fill(~eligible, math.inf).min(dim=1)
+    any_eligible = eligible.any(dim=1)
+    cos_el = torch.cos(lidar_elevations)
+    horizontal = measured * cos_el[row]
+    extended = torch.zeros(n, dtype=torch.bool, device=lidar_ranges.device)
+    for offset in (-1, 1):
+        adj = row + offset
+        inside = (adj >= 0) & (adj < v)
+        adj_c = adj.clamp(0, v - 1)
+        r_adj = column.gather(1, adj_c.view(-1, 1)).squeeze(1)
+        valid_adj = inside & (r_adj > 0) & (r_adj < lidar_far_m * 0.995)
+        extended = extended | (valid_adj & ((r_adj * cos_el[adj_c] - horizontal).abs() <= shape_tolerance_m))
+    spacing = (lidar_elevations[:-1] - lidar_elevations[1:]).abs().min()
+    conclusive = distance >= lidar_target_radius / torch.sin(spacing)
+    measured = torch.where(any_eligible, measured, torch.full_like(measured, float(lidar_far_m)))
+    predicted_surface = (distance - lidar_target_radius).clamp(min=0.0)
+    valid = (active & ~camera_visible & any_eligible & conclusive & ~extended
+             & (predicted_surface < lidar_far_m) & (measured < lidar_far_m * 0.995)
+             & ((measured - predicted_surface).abs() < gate_m))
+    centre = measured + lidar_target_radius
+    unit = predicted_rel / distance.view(-1, 1)
+    return {"valid": valid, "measured_surface": measured, "predicted_surface": predicted_surface,
+            "centre_range": centre, "measurement_vehicle": unit * centre.view(-1, 1), "unit_vehicle": unit,
+            "bearing": bearing, "column": column_index, "row": row, "eligible_any": any_eligible,
+            "extended": extended, "conclusive": conclusive}
+
+
+def range_only_covariance(unit_world, *, sigma_range_m=S_L1C_RANGE_SIGMA_M, sigma_unobserved_m=S_L1C_UNOBSERVED_SIGMA_M):
+    """R = sr^2 u u^T + su^2 (I - u u^T): information only along the measured ray (EKF H = u^T)."""
+    outer = unit_world.unsqueeze(2) * unit_world.unsqueeze(1)
+    eye = torch.eye(3, device=unit_world.device, dtype=unit_world.dtype).unsqueeze(0)
+    return sigma_range_m ** 2 * outer + sigma_unobserved_m ** 2 * (eye - outer)

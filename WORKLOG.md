@@ -21049,3 +21049,26 @@ Next review: the complete diff and new plan; local commit requires user diff app
     track.
   - Covariance: the range-only update keeps orthogonal variance ≥ 0.99 at 0/45/90° and 0/8°;
     legacy's diagonal update shrinks the tangential variance below 0.03 (EQ-1C T4).
+
+## 2026-10-18 — S-L1C runtime (opt-in `s_l1c_v1`) and CPU gates
+
+- Runtime: `navrl_sensor_lineage.py` adds level 3, `range_only_lidar_association` and
+  `range_only_covariance`. `navrl_perception.py` uses them only when `sensor_lineage_s_l1c`:
+  - the association branch (identity-free, row-eligible, shape test, proxy radius 0.20,
+    R = 0.08²uuᵀ + 50²(I − uuᵀ));
+  - the evaluator-only `s_l1c_identity_age` and `s_l1c_update_source` diagnostics, with reset.
+  The legacy/S-L1A/S-L1B association code runs verbatim after the branch. The fused-age expiry
+  is unchanged.
+- CPU: `test_s_l1c_runtime` 8 OK.
+  - The helper equals the oracle on 7 negatives and 45 positive trials.
+  - Production association rejects the 7 bar layouts.
+  - It accepts 15 target positions with a centre error ≤ 1e−4 m and orthogonal variance ratio
+    ≥ 0.99.
+  - Identity clock: camera, LiDAR, LiDAR, camera, LiDAR gives sources [1, 2, 2, 1, 2], ages
+    [0, dt, 2dt, 0, dt], and the fused track age stays 0.
+  - Off/s_l1a/s_l1b association and `observe` are bitwise equal to `a1f97e9`; firewall OK.
+- One minimal edit to the S-L1B switch test: it listed `s_l1c_v1` among the unknown values, which
+  became false by construction once S-L1C was preregistered. The literal is replaced by
+  `s_l1z_v1`, and a new assertion checks that `s_l1c_v1` ranks above S-L1B. The fail-closed intent
+  is unchanged.
+- PUBLIC_CPU (pre-commit): 2,533 run, 1 failure = the working-tree-vs-HEAD byte check.
