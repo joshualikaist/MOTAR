@@ -21072,3 +21072,21 @@ Next review: the complete diff and new plan; local commit requires user diff app
   `s_l1z_v1`, and a new assertion checks that `s_l1c_v1` ranks above S-L1B. The fail-closed intent
   is unchanged.
 - PUBLIC_CPU (pre-commit): 2,533 run, 1 failure = the working-tree-vs-HEAD byte check.
+
+## 2026-10-18 — S-L1C canary launcher, runner and independent analysis (pre-run)
+
+- Files: `tools/s_l1c_launcher.py`, `tools/s_l1c_run.py`, `tools/s_l1c_analysis.py` and
+  `tests/test_s_l1c_run.py` (7 OK).
+- Launcher: it keeps the EQ-1D D2-N2 negative priming and adds positive and covariance probes
+  primed at the true target centre (±0.15 m, camera lost; fixture input only). In closed loop it
+  records an evaluator-only read-only diagnostics trace.
+- Runner: it reuses the S-L1A/S-L1B supervision and compares off against EL0-R1, s_l1a against
+  SL1A-C01, s_l1b against SL1B-C01, and s_l1c P1 against P2.
+- Analysis: positive eligibility comes only from analytic LiDAR truth.
+- Mechanics smoke (scratch only, not evidence): `sensors_s_l1c` and `static_s_l1c_p2` rc=0.
+  The probe exercised every path:
+  - negatives 0/21 with 0 oracle mismatches;
+  - positives 117/117;
+  - beam-centred radius 2.5e−5 m;
+  - orthogonal variance ratio ≥ 0.9996;
+  - closed-loop sources 3,886 camera, 421 LiDAR and 501 none, with all invariants holding.
