@@ -21730,3 +21730,27 @@ docs/evidence/h_r3_p02_2026-10-18; raw stays outside Git at HR3-P02-SMOKE02. SMO
 Next authorized unit: exactly seeds4601/4602, six arms,128envs,600steps; no adaptive expansion.
 Runtime files and all preregistration/code/test hashes remain unchanged from this passing smoke.
 No production/checkpoint/P01 edits, main merge or push.
+
+## 2026-10-18 — H-R3 P02 main completed, INTEGRITY FAIL / confirmation NO-GO
+
+All12 processes (seeds4601/4602, B0–B5,128envs,600steps) finished at source
+ d64cf84185018ab720040f266a4a481929cfa62b,2359.00 GPU process wall-seconds,peak5402MiB.
+Frozen analysis FAIL:246 reference triggers,203 all-arm matched,53 integrity reasons including
+non-trigger rows; geometric candidates56(FULL44,CENTRE_ONLY12,PARTIAL0),14 with bad prefixes.
+FOV_EXIT181 and VISIBLE9 remain separate. No event is dropped to salvage causal inference.
+INVALID nominal equal-seed differences only: B3−B2+5.61pp,B3−B4−10.45pp,B3−B5+8.84pp.
+B2/B3/B4/B5 spatial successes34/37/43/32 of56; these are not valid matched causal effects.
+All56 B0 immediate pre-loss spatial identities are confirmed, but matching failure is unresolved.
+Nominal budget parity does not ensure realized effort parity; prereg10% diagnostic not jointly met.
+N16 SMOKE02 PASS did not establish N128 independence. No additional GPU/seed/retry/confirmation starts.
+Read-only onset audit: seed4602 step7 env2 and seed4601 step11 env1 differ in state/raw-sensor
+hashes at first differing other-env reset sets, with recorded numeric state/actions/probes equal.
+WarpEnv.reset_idx globally recomputes vertices despite selected env_ids; this is a source-consistent
+candidate, not a proven numerical cause (mesh vertices/per-modality raw NOT_RECORDED).
+Full report, original FAIL analysis, manifest, CPU logs and conditional planning grid are recorded
+under docs/evidence/h_r3_p02_2026-10-18. Planning is HOLD, not a recommendation to launch32seeds.
+Preservation PASS:5954 original tracked files unchanged except append-only WORKLOG;26 historical
+manifests/5835 raw members plus new manifests verified; main cb644bbe,WIP3,stash,FrozenF unchanged.
+Raw payload remains outside Git; external backup NOT_ESTABLISHED. Production/P01 untouched.
+Next: result commit then independent Fable5.1 read-only review. H-R3 stays PROVISIONAL; no PPO,
+production sensor correction/Planner, main merge/push, force-push/history rewrite or data deletion.

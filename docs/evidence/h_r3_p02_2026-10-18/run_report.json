@@ -1,0 +1,879 @@
+{
+  "schema": "motar.h-r3-p02-run-report.v1",
+  "run_dir": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/h_r3_p02_v1/HR3-P02",
+  "smoke": false,
+  "preflight": {
+    "head": "d64cf84185018ab720040f266a4a481929cfa62b",
+    "tracked_tree_clean": true,
+    "plan_committed_unchanged": true,
+    "policy_f_sha256": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+    "rms_digest": "642fc9f7f86b068e816e156fea7a34782bbc525966650f73cd85aae8cc18387f",
+    "import_origins": {
+      "aerial_gym@MOTAR-mt-p1": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/aerial_gym/__init__.py",
+      "motar_eval@MOTAR-mt-p1": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/motar_eval/__init__.py",
+      "aerial_gym@rl_games": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/aerial_gym/__init__.py",
+      "motar_eval@rl_games": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/motar_eval/__init__.py"
+    },
+    "run_dir": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/h_r3_p02_v1/HR3-P02",
+    "free_disk_gb": 18.459398144,
+    "gpu": {
+      "name": "NVIDIA GeForce RTX 3070",
+      "total_mib": 8192,
+      "used_mib": 674,
+      "free_mib": 7169,
+      "compute_apps": [
+        {
+          "pid": 3053780,
+          "name": "/usr/share/rustdesk/rustdesk",
+          "used_mib": 190
+        }
+      ]
+    },
+    "receipt_sha256": "85c13b08ba75f58dfe005d8747ef7922d31675ccc7347412cace5feeaabc963c",
+    "hr3_committed_inputs": {
+      "docs/plans/h_r3_p02.json": true,
+      "docs/plans/h_r3_p02.md": true,
+      "docs/plans/h_r3_p02_amendment1.md": true,
+      "docs/plans/h_r3_p02_amendment2.md": true,
+      "tools/h_r3_p02_run.py": true,
+      "tools/h_r3_p02_launcher.py": true,
+      "motar_eval/h_r3_p02_arms.py": true,
+      "motar_eval/h_r3_p02_identity.py": true,
+      "tools/h_r3_p02_rng.py": true,
+      "tools/h_r3_p02_analysis.py": true,
+      "tests/test_h_r3_p02_arms.py": true,
+      "tests/test_h_r3_p02_identity.py": true,
+      "tests/test_h_r3_p02_rng.py": true,
+      "tests/test_h_r3_p02_analysis.py": true,
+      "tests/test_h_r3_p02_runner.py": true,
+      "tools/h_r3_p02_planning.py": true,
+      "tests/test_h_r3_p02_planning.py": true
+    },
+    "hr3_input_sha256": {
+      "docs/plans/h_r3_p02.json": "11586c14ea0f4a44aa565738e26403a90e575c0f833c7106199f4a9d1c362eef",
+      "docs/plans/h_r3_p02.md": "bc74855cc858f349372c16ba558452ff8c362a0a14d343d5ff3f2e55b8812657",
+      "docs/plans/h_r3_p02_amendment1.md": "67ebb4ebe2d22d9423637f3ec394886ae6242a253304b23124b3a137cc71b505",
+      "docs/plans/h_r3_p02_amendment2.md": "a97dc07b050d82da016a1f85a3a22764c305235dde1a14b871dcbcbd52f2f488",
+      "tools/h_r3_p02_run.py": "a498a4f3fb91726cb9530b1f4cfed9520b13b0c5e29db696ab16d9498ad979d8",
+      "tools/h_r3_p02_launcher.py": "9c89c113fecd8ab8f912575da72f025079570175e7ba27b0e3b2bb6d4604ee48",
+      "motar_eval/h_r3_p02_arms.py": "84d580059a803cf2c5a85d70fdf8831fff371fb862b2c0ca46206168c7a8627f",
+      "motar_eval/h_r3_p02_identity.py": "a71b2783d5e329431069b50854e0eb96630118fe2c61c5963b65d1a77a76a8ac",
+      "tools/h_r3_p02_rng.py": "ef9a98d85b4b40b5af26623d7c15682eca64c38bcdaa89d04a46cc76732cf4e0",
+      "tools/h_r3_p02_analysis.py": "902137c34caa008f51c0313073b03870900523adf4300b85d9cb0fc33b4eb942",
+      "tests/test_h_r3_p02_arms.py": "522dc25c02a4a8b43555312854d3c17b907f85b9e1365fd310e1e29b90d6c1ad",
+      "tests/test_h_r3_p02_identity.py": "40c5b3cec60355a8e2c419c18f33bc8416f4cc57a0a759fb08f9cc2a2344908b",
+      "tests/test_h_r3_p02_rng.py": "493624326a4e4ef84d83c07412cb317f4299f3dea00382134a40cc4ee3e2c919",
+      "tests/test_h_r3_p02_analysis.py": "f2a016fb6fb8309ec1033d5d1817e4cbb491895525492158243476163b5959dd",
+      "tests/test_h_r3_p02_runner.py": "fb5fce2684b46279be5d1e4816a2c57392ad5e808462a5267e3b35769bbaba77",
+      "tools/h_r3_p02_planning.py": "8214921ffe3ad713dab36a8efa519feedf7889e98a0f2d7fcf77e7833d207d81",
+      "tests/test_h_r3_p02_planning.py": "5448e5dc3e4fad47963b372fd2a23e30f5fc7f47f3a58a2bceddb8dcfad399dc"
+    },
+    "untracked_runtime_files": [],
+    "smoke_analysis_sha256": "2ec2d2a5ddf57b0e011f0d5d3bd8f6e88736ce1fe456a4be796078a9a9e9aec7"
+  },
+  "effective_processes": [
+    {
+      "id": "seed4601_B0",
+      "batch": "HR3",
+      "hr3_arm": "B0",
+      "config": "moving",
+      "arm": "P0",
+      "seed": 4601,
+      "num_envs": 128,
+      "steps": 600,
+      "cap_s": 1200,
+      "lineage": "off"
+    },
+    {
+      "id": "seed4601_B1",
+      "batch": "HR3",
+      "hr3_arm": "B1",
+      "config": "moving",
+      "arm": "P0",
+      "seed": 4601,
+      "num_envs": 128,
+      "steps": 600,
+      "cap_s": 1200,
+      "lineage": "off"
+    },
+    {
+      "id": "seed4601_B2",
+      "batch": "HR3",
+      "hr3_arm": "B2",
+      "config": "moving",
+      "arm": "P0",
+      "seed": 4601,
+      "num_envs": 128,
+      "steps": 600,
+      "cap_s": 1200,
+      "lineage": "off"
+    },
+    {
+      "id": "seed4601_B3",
+      "batch": "HR3",
+      "hr3_arm": "B3",
+      "config": "moving",
+      "arm": "P0",
+      "seed": 4601,
+      "num_envs": 128,
+      "steps": 600,
+      "cap_s": 1200,
+      "lineage": "off"
+    },
+    {
+      "id": "seed4601_B4",
+      "batch": "HR3",
+      "hr3_arm": "B4",
+      "config": "moving",
+      "arm": "P0",
+      "seed": 4601,
+      "num_envs": 128,
+      "steps": 600,
+      "cap_s": 1200,
+      "lineage": "off"
+    },
+    {
+      "id": "seed4601_B5",
+      "batch": "HR3",
+      "hr3_arm": "B5",
+      "config": "moving",
+      "arm": "P0",
+      "seed": 4601,
+      "num_envs": 128,
+      "steps": 600,
+      "cap_s": 1200,
+      "lineage": "off"
+    },
+    {
+      "id": "seed4602_B0",
+      "batch": "HR3",
+      "hr3_arm": "B0",
+      "config": "moving",
+      "arm": "P0",
+      "seed": 4602,
+      "num_envs": 128,
+      "steps": 600,
+      "cap_s": 1200,
+      "lineage": "off"
+    },
+    {
+      "id": "seed4602_B1",
+      "batch": "HR3",
+      "hr3_arm": "B1",
+      "config": "moving",
+      "arm": "P0",
+      "seed": 4602,
+      "num_envs": 128,
+      "steps": 600,
+      "cap_s": 1200,
+      "lineage": "off"
+    },
+    {
+      "id": "seed4602_B2",
+      "batch": "HR3",
+      "hr3_arm": "B2",
+      "config": "moving",
+      "arm": "P0",
+      "seed": 4602,
+      "num_envs": 128,
+      "steps": 600,
+      "cap_s": 1200,
+      "lineage": "off"
+    },
+    {
+      "id": "seed4602_B3",
+      "batch": "HR3",
+      "hr3_arm": "B3",
+      "config": "moving",
+      "arm": "P0",
+      "seed": 4602,
+      "num_envs": 128,
+      "steps": 600,
+      "cap_s": 1200,
+      "lineage": "off"
+    },
+    {
+      "id": "seed4602_B4",
+      "batch": "HR3",
+      "hr3_arm": "B4",
+      "config": "moving",
+      "arm": "P0",
+      "seed": 4602,
+      "num_envs": 128,
+      "steps": 600,
+      "cap_s": 1200,
+      "lineage": "off"
+    },
+    {
+      "id": "seed4602_B5",
+      "batch": "HR3",
+      "hr3_arm": "B5",
+      "config": "moving",
+      "arm": "P0",
+      "seed": 4602,
+      "num_envs": 128,
+      "steps": 600,
+      "cap_s": 1200,
+      "lineage": "off"
+    }
+  ],
+  "processes": [
+    {
+      "id": "seed4601_B0",
+      "gpu_at_launch": {
+        "name": "NVIDIA GeForce RTX 3070",
+        "total_mib": 8192,
+        "used_mib": 674,
+        "free_mib": 7169,
+        "compute_apps": [
+          {
+            "pid": 3053780,
+            "name": "/usr/share/rustdesk/rustdesk",
+            "used_mib": 190
+          }
+        ]
+      },
+      "gpu_memory_cap_mib": 7006,
+      "free_disk_gb_before": 18.459394048,
+      "command": [
+        "/home/fair/miniconda3/envs/aerialgym/bin/python",
+        "-B",
+        "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tools/h_r3_p02_launcher.py",
+        "--arm",
+        "B0",
+        "--num-envs",
+        "128",
+        "--steps",
+        "600",
+        "--out",
+        "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/h_r3_p02_v1/HR3-P02/seed4601_B0",
+        "--process-id",
+        "seed4601_B0",
+        "--seed",
+        "4601"
+      ],
+      "returncode": 0,
+      "wall_s": 198.1316409590072,
+      "peak_gpu_mib": 5402,
+      "process_done": {
+        "actor_obs_dim": 898,
+        "files": [
+          {
+            "bytes": 23465469,
+            "file": "h_r3_p02_trace.npz",
+            "sha256": "a1fddb10574aa4b6c4c5f653a56d593453ae6143eb64c191813df3967a7e2ada"
+          },
+          {
+            "bytes": 7393,
+            "file": "h_r3_p02_meta.json",
+            "sha256": "db2b2f8555757990ebf7b81be4f65a16bb5091e1f109c8d476bf6b1a7afaf386"
+          }
+        ],
+        "nan_fields": [],
+        "peak_allocated_bytes": 439948800,
+        "process": "seed4601_B0",
+        "wall_s": 176.25061330501921
+      }
+    },
+    {
+      "id": "seed4601_B1",
+      "gpu_at_launch": {
+        "name": "NVIDIA GeForce RTX 3070",
+        "total_mib": 8192,
+        "used_mib": 685,
+        "free_mib": 7158,
+        "compute_apps": [
+          {
+            "pid": 3053780,
+            "name": "/usr/share/rustdesk/rustdesk",
+            "used_mib": 190
+          }
+        ]
+      },
+      "gpu_memory_cap_mib": 6995,
+      "free_disk_gb_before": 18.4356864,
+      "command": [
+        "/home/fair/miniconda3/envs/aerialgym/bin/python",
+        "-B",
+        "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tools/h_r3_p02_launcher.py",
+        "--arm",
+        "B1",
+        "--num-envs",
+        "128",
+        "--steps",
+        "600",
+        "--out",
+        "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/h_r3_p02_v1/HR3-P02/seed4601_B1",
+        "--process-id",
+        "seed4601_B1",
+        "--seed",
+        "4601"
+      ],
+      "returncode": 0,
+      "wall_s": 197.70926974195754,
+      "peak_gpu_mib": 5402,
+      "process_done": {
+        "actor_obs_dim": 898,
+        "files": [
+          {
+            "bytes": 23430466,
+            "file": "h_r3_p02_trace.npz",
+            "sha256": "4e864edb11710dac3aed33412c66de0abe351cff2dfe7bf622d0fd26465f958f"
+          },
+          {
+            "bytes": 7379,
+            "file": "h_r3_p02_meta.json",
+            "sha256": "6d7f3b5d8c1ebcfbacebafbc5b44b825af540635bf3ef457ceb9b96406b7f1f0"
+          }
+        ],
+        "nan_fields": [],
+        "peak_allocated_bytes": 439948800,
+        "process": "seed4601_B1",
+        "wall_s": 171.0448605210404
+      }
+    },
+    {
+      "id": "seed4601_B2",
+      "gpu_at_launch": {
+        "name": "NVIDIA GeForce RTX 3070",
+        "total_mib": 8192,
+        "used_mib": 660,
+        "free_mib": 7184,
+        "compute_apps": [
+          {
+            "pid": 3053780,
+            "name": "/usr/share/rustdesk/rustdesk",
+            "used_mib": 190
+          }
+        ]
+      },
+      "gpu_memory_cap_mib": 7020,
+      "free_disk_gb_before": 18.41209344,
+      "command": [
+        "/home/fair/miniconda3/envs/aerialgym/bin/python",
+        "-B",
+        "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tools/h_r3_p02_launcher.py",
+        "--arm",
+        "B2",
+        "--num-envs",
+        "128",
+        "--steps",
+        "600",
+        "--out",
+        "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/h_r3_p02_v1/HR3-P02/seed4601_B2",
+        "--process-id",
+        "seed4601_B2",
+        "--seed",
+        "4601"
+      ],
+      "returncode": 0,
+      "wall_s": 197.88724540598923,
+      "peak_gpu_mib": 5402,
+      "process_done": {
+        "actor_obs_dim": 898,
+        "files": [
+          {
+            "bytes": 23469319,
+            "file": "h_r3_p02_trace.npz",
+            "sha256": "f03bf0cd93ba4d6a8ceb4130935c117879a0b741bfbd3dfd7f8f8f82cd8a8224"
+          },
+          {
+            "bytes": 7380,
+            "file": "h_r3_p02_meta.json",
+            "sha256": "4e40119df4e9066a960fa7cd0cff8160f816d7c4432039d0b23a64d41d36c204"
+          }
+        ],
+        "nan_fields": [],
+        "peak_allocated_bytes": 439948800,
+        "process": "seed4601_B2",
+        "wall_s": 172.0128492770018
+      }
+    },
+    {
+      "id": "seed4601_B3",
+      "gpu_at_launch": {
+        "name": "NVIDIA GeForce RTX 3070",
+        "total_mib": 8192,
+        "used_mib": 663,
+        "free_mib": 7181,
+        "compute_apps": [
+          {
+            "pid": 3053780,
+            "name": "/usr/share/rustdesk/rustdesk",
+            "used_mib": 190
+          }
+        ]
+      },
+      "gpu_memory_cap_mib": 7017,
+      "free_disk_gb_before": 18.388451328,
+      "command": [
+        "/home/fair/miniconda3/envs/aerialgym/bin/python",
+        "-B",
+        "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tools/h_r3_p02_launcher.py",
+        "--arm",
+        "B3",
+        "--num-envs",
+        "128",
+        "--steps",
+        "600",
+        "--out",
+        "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/h_r3_p02_v1/HR3-P02/seed4601_B3",
+        "--process-id",
+        "seed4601_B3",
+        "--seed",
+        "4601"
+      ],
+      "returncode": 0,
+      "wall_s": 203.1931853099959,
+      "peak_gpu_mib": 5402,
+      "process_done": {
+        "actor_obs_dim": 898,
+        "files": [
+          {
+            "bytes": 23455845,
+            "file": "h_r3_p02_trace.npz",
+            "sha256": "c75e09c5425ebcd752832bcf0e1b576abf1714120a80954ef4e42af63394b5f8"
+          },
+          {
+            "bytes": 7389,
+            "file": "h_r3_p02_meta.json",
+            "sha256": "c838d831395863ca907055bcf4d023ed3d9a0728ad48b22580fd19b719e58b4a"
+          }
+        ],
+        "nan_fields": [],
+        "peak_allocated_bytes": 439948800,
+        "process": "seed4601_B3",
+        "wall_s": 176.67393110500416
+      }
+    },
+    {
+      "id": "seed4601_B4",
+      "gpu_at_launch": {
+        "name": "NVIDIA GeForce RTX 3070",
+        "total_mib": 8192,
+        "used_mib": 692,
+        "free_mib": 7151,
+        "compute_apps": [
+          {
+            "pid": 3053780,
+            "name": "/usr/share/rustdesk/rustdesk",
+            "used_mib": 190
+          }
+        ]
+      },
+      "gpu_memory_cap_mib": 6988,
+      "free_disk_gb_before": 18.368651264,
+      "command": [
+        "/home/fair/miniconda3/envs/aerialgym/bin/python",
+        "-B",
+        "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tools/h_r3_p02_launcher.py",
+        "--arm",
+        "B4",
+        "--num-envs",
+        "128",
+        "--steps",
+        "600",
+        "--out",
+        "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/h_r3_p02_v1/HR3-P02/seed4601_B4",
+        "--process-id",
+        "seed4601_B4",
+        "--seed",
+        "4601"
+      ],
+      "returncode": 0,
+      "wall_s": 197.54253012198023,
+      "peak_gpu_mib": 5402,
+      "process_done": {
+        "actor_obs_dim": 898,
+        "files": [
+          {
+            "bytes": 23463535,
+            "file": "h_r3_p02_trace.npz",
+            "sha256": "cc8494ce6bbffe82776f60d120dc220f4df0c6913e3b060ef3db369856f4b22a"
+          },
+          {
+            "bytes": 7381,
+            "file": "h_r3_p02_meta.json",
+            "sha256": "005269d4ece86e80700f48f67fbf6842dd856ef7a972b0b3dc7874f04c68c7c7"
+          }
+        ],
+        "nan_fields": [],
+        "peak_allocated_bytes": 439948800,
+        "process": "seed4601_B4",
+        "wall_s": 172.02158073097235
+      }
+    },
+    {
+      "id": "seed4601_B5",
+      "gpu_at_launch": {
+        "name": "NVIDIA GeForce RTX 3070",
+        "total_mib": 8192,
+        "used_mib": 436,
+        "free_mib": 7408,
+        "compute_apps": []
+      },
+      "gpu_memory_cap_mib": 7244,
+      "free_disk_gb_before": 18.346856448,
+      "command": [
+        "/home/fair/miniconda3/envs/aerialgym/bin/python",
+        "-B",
+        "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tools/h_r3_p02_launcher.py",
+        "--arm",
+        "B5",
+        "--num-envs",
+        "128",
+        "--steps",
+        "600",
+        "--out",
+        "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/h_r3_p02_v1/HR3-P02/seed4601_B5",
+        "--process-id",
+        "seed4601_B5",
+        "--seed",
+        "4601"
+      ],
+      "returncode": 0,
+      "wall_s": 192.22424506099196,
+      "peak_gpu_mib": 5402,
+      "process_done": {
+        "actor_obs_dim": 898,
+        "files": [
+          {
+            "bytes": 23458684,
+            "file": "h_r3_p02_trace.npz",
+            "sha256": "4e60979215d171b1027477a7ef17f7dd03a57c428620f447100d7dcf455b6f64"
+          },
+          {
+            "bytes": 7381,
+            "file": "h_r3_p02_meta.json",
+            "sha256": "bf29d91e7f26b93c2c0133d7e223089e009a19e88fc005e6ea5e36611ff18bd9"
+          }
+        ],
+        "nan_fields": [],
+        "peak_allocated_bytes": 439948800,
+        "process": "seed4601_B5",
+        "wall_s": 169.25276493298588
+      }
+    },
+    {
+      "id": "seed4602_B0",
+      "gpu_at_launch": {
+        "name": "NVIDIA GeForce RTX 3070",
+        "total_mib": 8192,
+        "used_mib": 453,
+        "free_mib": 7390,
+        "compute_apps": []
+      },
+      "gpu_memory_cap_mib": 7227,
+      "free_disk_gb_before": 18.322608128,
+      "command": [
+        "/home/fair/miniconda3/envs/aerialgym/bin/python",
+        "-B",
+        "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tools/h_r3_p02_launcher.py",
+        "--arm",
+        "B0",
+        "--num-envs",
+        "128",
+        "--steps",
+        "600",
+        "--out",
+        "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/h_r3_p02_v1/HR3-P02/seed4602_B0",
+        "--process-id",
+        "seed4602_B0",
+        "--seed",
+        "4602"
+      ],
+      "returncode": 0,
+      "wall_s": 197.46090680296766,
+      "peak_gpu_mib": 5402,
+      "process_done": {
+        "actor_obs_dim": 898,
+        "files": [
+          {
+            "bytes": 23460865,
+            "file": "h_r3_p02_trace.npz",
+            "sha256": "a1f65226509fcddb2707d033419a4fd98f072e91fb2abbf5d058fd1b4105d301"
+          },
+          {
+            "bytes": 7346,
+            "file": "h_r3_p02_meta.json",
+            "sha256": "5d595bb00134192dab8b840113366e599beafd1db780aea8db7c071df5a027c6"
+          }
+        ],
+        "nan_fields": [],
+        "peak_allocated_bytes": 439948800,
+        "process": "seed4602_B0",
+        "wall_s": 174.65142299397849
+      }
+    },
+    {
+      "id": "seed4602_B1",
+      "gpu_at_launch": {
+        "name": "NVIDIA GeForce RTX 3070",
+        "total_mib": 8192,
+        "used_mib": 437,
+        "free_mib": 7407,
+        "compute_apps": []
+      },
+      "gpu_memory_cap_mib": 7243,
+      "free_disk_gb_before": 18.298322944,
+      "command": [
+        "/home/fair/miniconda3/envs/aerialgym/bin/python",
+        "-B",
+        "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tools/h_r3_p02_launcher.py",
+        "--arm",
+        "B1",
+        "--num-envs",
+        "128",
+        "--steps",
+        "600",
+        "--out",
+        "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/h_r3_p02_v1/HR3-P02/seed4602_B1",
+        "--process-id",
+        "seed4602_B1",
+        "--seed",
+        "4602"
+      ],
+      "returncode": 0,
+      "wall_s": 192.523620611988,
+      "peak_gpu_mib": 5402,
+      "process_done": {
+        "actor_obs_dim": 898,
+        "files": [
+          {
+            "bytes": 23429205,
+            "file": "h_r3_p02_trace.npz",
+            "sha256": "199dd949e8b626c877a8a3f92195ab3f3bece51dfd5181486f2e877397c6979f"
+          },
+          {
+            "bytes": 7332,
+            "file": "h_r3_p02_meta.json",
+            "sha256": "9809a0d01e7c50daf6f4e9610558d2bb531a2f89494f2f7c85d0356f5250676e"
+          }
+        ],
+        "nan_fields": [],
+        "peak_allocated_bytes": 439948800,
+        "process": "seed4602_B1",
+        "wall_s": 168.8123585950234
+      }
+    },
+    {
+      "id": "seed4602_B2",
+      "gpu_at_launch": {
+        "name": "NVIDIA GeForce RTX 3070",
+        "total_mib": 8192,
+        "used_mib": 450,
+        "free_mib": 7393,
+        "compute_apps": []
+      },
+      "gpu_memory_cap_mib": 7230,
+      "free_disk_gb_before": 18.27416064,
+      "command": [
+        "/home/fair/miniconda3/envs/aerialgym/bin/python",
+        "-B",
+        "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tools/h_r3_p02_launcher.py",
+        "--arm",
+        "B2",
+        "--num-envs",
+        "128",
+        "--steps",
+        "600",
+        "--out",
+        "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/h_r3_p02_v1/HR3-P02/seed4602_B2",
+        "--process-id",
+        "seed4602_B2",
+        "--seed",
+        "4602"
+      ],
+      "returncode": 0,
+      "wall_s": 194.2636573589989,
+      "peak_gpu_mib": 5402,
+      "process_done": {
+        "actor_obs_dim": 898,
+        "files": [
+          {
+            "bytes": 23468127,
+            "file": "h_r3_p02_trace.npz",
+            "sha256": "81375d7cdd974bf8c42399db1f15bb17886aec4505e0d9c70c3bd1f6f9ae2600"
+          },
+          {
+            "bytes": 7330,
+            "file": "h_r3_p02_meta.json",
+            "sha256": "831a78b89023708c7cb5e48874bb945421cfa4ce4b65453080f4bde392a7331f"
+          }
+        ],
+        "nan_fields": [],
+        "peak_allocated_bytes": 439948800,
+        "process": "seed4602_B2",
+        "wall_s": 169.486704319017
+      }
+    },
+    {
+      "id": "seed4602_B3",
+      "gpu_at_launch": {
+        "name": "NVIDIA GeForce RTX 3070",
+        "total_mib": 8192,
+        "used_mib": 450,
+        "free_mib": 7394,
+        "compute_apps": []
+      },
+      "gpu_memory_cap_mib": 7230,
+      "free_disk_gb_before": 18.249920512,
+      "command": [
+        "/home/fair/miniconda3/envs/aerialgym/bin/python",
+        "-B",
+        "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tools/h_r3_p02_launcher.py",
+        "--arm",
+        "B3",
+        "--num-envs",
+        "128",
+        "--steps",
+        "600",
+        "--out",
+        "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/h_r3_p02_v1/HR3-P02/seed4602_B3",
+        "--process-id",
+        "seed4602_B3",
+        "--seed",
+        "4602"
+      ],
+      "returncode": 0,
+      "wall_s": 192.52085326297674,
+      "peak_gpu_mib": 5402,
+      "process_done": {
+        "actor_obs_dim": 898,
+        "files": [
+          {
+            "bytes": 23469850,
+            "file": "h_r3_p02_trace.npz",
+            "sha256": "4efb6a03745fda7c345a643516fd36aee50dcd243919c6ac8dccd7256e7bae8a"
+          },
+          {
+            "bytes": 7329,
+            "file": "h_r3_p02_meta.json",
+            "sha256": "0a67912d4cd345f9419d161eab6e912e69bad5bd97d3162a2b8c7fd416ccbc18"
+          }
+        ],
+        "nan_fields": [],
+        "peak_allocated_bytes": 439948800,
+        "process": "seed4602_B3",
+        "wall_s": 169.46041215601144
+      }
+    },
+    {
+      "id": "seed4602_B4",
+      "gpu_at_launch": {
+        "name": "NVIDIA GeForce RTX 3070",
+        "total_mib": 8192,
+        "used_mib": 433,
+        "free_mib": 7411,
+        "compute_apps": []
+      },
+      "gpu_memory_cap_mib": 7247,
+      "free_disk_gb_before": 18.22568448,
+      "command": [
+        "/home/fair/miniconda3/envs/aerialgym/bin/python",
+        "-B",
+        "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tools/h_r3_p02_launcher.py",
+        "--arm",
+        "B4",
+        "--num-envs",
+        "128",
+        "--steps",
+        "600",
+        "--out",
+        "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/h_r3_p02_v1/HR3-P02/seed4602_B4",
+        "--process-id",
+        "seed4602_B4",
+        "--seed",
+        "4602"
+      ],
+      "returncode": 0,
+      "wall_s": 197.83884435001528,
+      "peak_gpu_mib": 5402,
+      "process_done": {
+        "actor_obs_dim": 898,
+        "files": [
+          {
+            "bytes": 23462717,
+            "file": "h_r3_p02_trace.npz",
+            "sha256": "78a340ea62ef706b28004f790699f7e20b07af984bc353351b2ecf576acb3955"
+          },
+          {
+            "bytes": 7335,
+            "file": "h_r3_p02_meta.json",
+            "sha256": "fe19b3046b833bc82804a47556a17f50a7f2c5bb7d59f1bb9c16f75b4d988dd9"
+          }
+        ],
+        "nan_fields": [],
+        "peak_allocated_bytes": 439948800,
+        "process": "seed4602_B4",
+        "wall_s": 171.38753635901958
+      }
+    },
+    {
+      "id": "seed4602_B5",
+      "gpu_at_launch": {
+        "name": "NVIDIA GeForce RTX 3070",
+        "total_mib": 8192,
+        "used_mib": 667,
+        "free_mib": 7177,
+        "compute_apps": [
+          {
+            "pid": 3428669,
+            "name": "/usr/share/rustdesk/rustdesk",
+            "used_mib": 190
+          }
+        ]
+      },
+      "gpu_memory_cap_mib": 7013,
+      "free_disk_gb_before": 18.202042368,
+      "command": [
+        "/home/fair/miniconda3/envs/aerialgym/bin/python",
+        "-B",
+        "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tools/h_r3_p02_launcher.py",
+        "--arm",
+        "B5",
+        "--num-envs",
+        "128",
+        "--steps",
+        "600",
+        "--out",
+        "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/h_r3_p02_v1/HR3-P02/seed4602_B5",
+        "--process-id",
+        "seed4602_B5",
+        "--seed",
+        "4602"
+      ],
+      "returncode": 0,
+      "wall_s": 197.70776407397352,
+      "peak_gpu_mib": 5402,
+      "process_done": {
+        "actor_obs_dim": 898,
+        "files": [
+          {
+            "bytes": 23464378,
+            "file": "h_r3_p02_trace.npz",
+            "sha256": "b114ea402ad9ef0d108d2e079916b85c67c92b61634c88048a33b4421f829d3c"
+          },
+          {
+            "bytes": 7332,
+            "file": "h_r3_p02_meta.json",
+            "sha256": "e69f9124144c58d9357917b5d02f4a5cdb6b70206887fb816f115421ee3f630b"
+          }
+        ],
+        "nan_fields": [],
+        "peak_allocated_bytes": 439948800,
+        "process": "seed4602_B5",
+        "wall_s": 171.59845085302368
+      }
+    }
+  ],
+  "source_commit": "d64cf84185018ab720040f266a4a481929cfa62b",
+  "status": "COMPLETED",
+  "stop_reason": null,
+  "plan_sha256": "11586c14ea0f4a44aa565738e26403a90e575c0f833c7106199f4a9d1c362eef",
+  "wall_s_total": 2359.835942213016,
+  "gpu_seconds_total": 2359.003763060842,
+  "output_bytes_total": 282353364,
+  "free_disk_gb_after": 18.1782528,
+  "policy_f_sha256_after": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40"
+}

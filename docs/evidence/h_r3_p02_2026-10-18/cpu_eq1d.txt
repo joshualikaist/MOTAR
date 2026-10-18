@@ -1,0 +1,18 @@
+test_d1_motor_fidelity_on_synthetic_record (test_eq1d_qualification.AnalysisReferenceTest) ... ok
+test_motor_gain_and_sat (test_eq1d_qualification.AnalysisReferenceTest) ... ok
+test_ray_tables (test_eq1d_qualification.AnalysisReferenceTest) ... ok
+test_gates_on_synthetic_meta (test_eq1d_qualification.D3AnalysisTest) ... ok
+test_env_scrub_and_overrides (test_eq1d_qualification.OrchestratorTest) ... ok
+test_official_run_refuses_subset_and_wrong_commit (test_eq1d_qualification.OrchestratorTest) ... ok
+test_recompute_from_restored_state_is_bitwise (test_eq1d_qualification.PerceptionSnapshotTest) ... ok
+test_matrix (test_eq1d_qualification.PlanTest) ... ok
+test_official_run_record (test_eq1d_qualification.RecordedEvidenceTest) ... ok
+test_d1_commands (test_eq1d_qualification.TelemetryTest) ... ok
+test_recorder_and_tap (test_eq1d_qualification.TelemetryTest) ... ok
+test_snapshot_restore_plain_object (test_eq1d_qualification.TelemetryTest) ... ok
+test_write_refuses_overwrite (test_eq1d_qualification.TelemetryTest) ... ok
+
+----------------------------------------------------------------------
+Ran 13 tests in 0.036s
+
+OK
