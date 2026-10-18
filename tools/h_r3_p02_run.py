@@ -22,6 +22,7 @@ a, base, el0 = b.a, b.base, b.el0
 PLAN_PATH = ROOT / "docs/plans/h_r3_p02.json"
 LAUNCHER = ROOT / "tools/h_r3_p02_launcher.py"
 ARMS = ("B0", "B1", "B2", "B3", "B4", "B5")
+SMOKE_ID = "HR3-P02-SMOKE02"
 
 
 def load_plan():
@@ -41,7 +42,7 @@ def preflight(p, approved, run_dir, smoke=False):
     # P02 mechanics output is preregistered under results/ and requires the same
     # exact-HEAD/clean-tree guards as main. EQ-1D's temporary-smoke relaxation is inapplicable.
     problems, checks = base.preflight(old, approved, run_dir, False)
-    paths = (PLAN_PATH, PLAN_PATH.with_suffix(".md"), ROOT / "docs/plans/h_r3_p02_amendment1.md", Path(__file__).resolve(), LAUNCHER,
+    paths = (PLAN_PATH, PLAN_PATH.with_suffix(".md"), ROOT / "docs/plans/h_r3_p02_amendment1.md", ROOT / "docs/plans/h_r3_p02_amendment2.md", Path(__file__).resolve(), LAUNCHER,
              ROOT / "motar_eval/h_r3_p02_arms.py", ROOT / "motar_eval/h_r3_p02_identity.py", ROOT / "tools/h_r3_p02_rng.py",
              ROOT / "tools/h_r3_p02_analysis.py", ROOT / "tests/test_h_r3_p02_arms.py", ROOT / "tests/test_h_r3_p02_identity.py",
              ROOT / "tests/test_h_r3_p02_rng.py", ROOT / "tests/test_h_r3_p02_analysis.py", ROOT / "tests/test_h_r3_p02_runner.py", ROOT / "tools/h_r3_p02_planning.py", ROOT / "tests/test_h_r3_p02_planning.py")
@@ -60,7 +61,7 @@ def preflight(p, approved, run_dir, smoke=False):
         try:
             gates=a.read_json(evidence/"smoke_analysis.json")
             if gates["smoke_status"]!="PASS":problems.append("P02 smoke not PASS")
-            prior=a.read_json(base.resolve(p["run"]["output_root"])/"HR3-P02-SMOKE01/run_report.json")
+            prior=a.read_json(base.resolve(p["run"]["output_root"])/SMOKE_ID/"run_report.json")
             if prior["preflight"]["hr3_input_sha256"]!=checks["hr3_input_sha256"]:problems.append("P02 source differs from smoke")
             if not a.committed(evidence/"smoke_analysis.json"):problems.append("P02 smoke result not committed")
             checks["smoke_analysis_sha256"]=base.sha256_file(evidence/"smoke_analysis.json")
@@ -164,7 +165,7 @@ def main(argv=None):
     args=ap.parse_args(argv);p=load_plan();smoke=args.stage=="smoke" or args.smoke
     if smoke:
         seeds=[p["run"]["smoke"]["seed"]];n=p["run"]["smoke"]["num_envs"];steps=p["run"]["smoke"]["steps"]
-        run_dir=base.resolve(p["run"]["output_root"])/"HR3-P02-SMOKE01"
+        run_dir=base.resolve(p["run"]["output_root"])/SMOKE_ID
     else:seeds=p["run"]["seeds"];n=p["run"]["num_envs"];steps=p["run"]["steps"];run_dir=base.resolve(p["run"]["output_root"])/p["run"]["run_id"]
     specs=process_specs(p,seeds,n,steps)
     if smoke:

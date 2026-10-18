@@ -29,6 +29,13 @@ def keyed_seed(seed, *coordinates):
     return int.from_bytes(hashlib.sha256(payload).digest()[:8], "little") & ((1 << 63) - 1)
 
 
+def _unwrap_tensor(tensor):
+    # Lazy import keeps this runner helper importable by public CPU tests without Isaac Gym.
+    from isaacgym import gymtorch
+
+    return gymtorch.unwrap_tensor(tensor)
+
+
 class FixedNRandomness:
     """Instance-local reset/waypoint hooks plus restored step/action RNG scopes.
 
@@ -47,9 +54,11 @@ class FixedNRandomness:
         self.episodes = [-1] * self.num_envs
         self.pending = [False] * self.num_envs
         self._phase = "runtime"
+        self._reset_env_id = None
+        self._pending_root_envs = set()
         self._calls = {}
         self._totals = {"manager_reset": 0, "task_reset": 0, "waypoint": 0,
-                        "step": 0, "action": 0, "forced_reset": 0}
+                        "step": 0, "action": 0, "forced_reset": 0, "indexed_root_write": 0}
         self.checked_flags = self._validate() if validate else {"validation": "CPU_FIXTURE_ONLY"}
         self._cuda_devices = []
         if self.device.type == "cuda":
@@ -58,9 +67,20 @@ class FixedNRandomness:
         self._manager_reset = task.sim_env.reset_idx
         self._task_reset = task.reset_idx
         self._waypoints = task._sample_waypoints
+        self._ige = task.sim_env.IGE_env
+        self._write_to_sim = self._ige.write_to_sim
+        if bool(getattr(self._ige, "sim_has_dof", False)):
+            raise RuntimeError("P02 indexed reset writes require the audited no-DOF robot")
+        root = self._ige.global_tensor_dict["unfolded_env_asset_state_tensor"]
+        if root.ndim != 2 or root.shape[0] % self.num_envs != 0 or root.shape[1] != 13:
+            raise RuntimeError("P02 actor root tensor must have complete equal-N rows of 13 states")
+        self._actors_per_env = int(root.shape[0] // self.num_envs)
+        if self._actors_per_env < 1:
+            raise RuntimeError("P02 actor root tensor has no actors")
         task.sim_env.reset_idx = self._reset_manager
         task.reset_idx = self._reset_task
         task._sample_waypoints = self._sample_waypoints
+        self._ige.write_to_sim = self._write_selected_roots
         task._h_r3_p02_rng = self
 
     def _validate(self):
@@ -101,6 +121,7 @@ class FixedNRandomness:
                      "app_motion_blur", "mount_rot_deg", "mount_trans_m"):
             require("detector." + name, float(getattr(detector, name, 0.0)), 0.0)
         manager = task.sim_env
+        require("physics.has_dof", bool(getattr(manager.IGE_env, "sim_has_dof", False)), False)
         env_cfg = getattr(getattr(manager, "cfg", None), "env", None)
         require("physics_substep_std", float(getattr(env_cfg, "num_physics_steps_per_env_step_std", float("nan"))), 0.0)
         robot_manager = manager.robot_manager
@@ -152,6 +173,35 @@ class FixedNRandomness:
     def _row(self, env_id):
         return torch.tensor([env_id], dtype=torch.long, device=self.device)
 
+    def _write_selected_roots(self):
+        if self._reset_env_id is None:
+            if self._pending_root_envs:
+                raise RuntimeError("P02 full root write during an unfinished reset transaction")
+            return self._write_to_sim()
+        # Original manager and task reset methods can request the same write repeatedly.
+        # Delay them until every reset row's task stage is finished, then submit one union.
+        self._pending_root_envs.add(self._reset_env_id)
+
+    def _flush_selected_roots(self):
+        if not self._pending_root_envs:
+            return
+        if bool(getattr(self._ige, "sim_has_dof", False)):
+            raise RuntimeError("P02 indexed reset writes reject DOF state")
+        root = self._ige.global_tensor_dict["unfolded_env_asset_state_tensor"]
+        if root.shape != (self.num_envs * self._actors_per_env, 13):
+            raise RuntimeError("P02 actor root layout changed after RNG attachment")
+        # Retain the int32 tensor reference across unwrap and setter; Gym does not copy it.
+        actor_ids = torch.tensor([env_id * self._actors_per_env + actor
+                                  for env_id in sorted(self._pending_root_envs)
+                                  for actor in range(self._actors_per_env)],
+                                 dtype=torch.int32, device=root.device)
+        ok = self._ige.gym.set_actor_root_state_tensor_indexed(
+            self._ige.sim, _unwrap_tensor(root), _unwrap_tensor(actor_ids), actor_ids.numel())
+        if not ok:
+            raise RuntimeError("P02 indexed actor-root setter rejected reset rows")
+        self._totals["indexed_root_write"] += 1
+        self._pending_root_envs.clear()
+
     @contextmanager
     def _preserve_other_kinematics(self, env_id):
         # Original robot.update_states writes all rows, including other envs whose normal
@@ -162,9 +212,12 @@ class FixedNRandomness:
             value = getattr(robot, name, None)
             if isinstance(value, torch.Tensor) and value.ndim > 0 and value.shape[0] == self.num_envs:
                 saved.append((value, value.clone()))
+        prior_reset_env = self._reset_env_id
+        self._reset_env_id = env_id
         try:
             yield
         finally:
+            self._reset_env_id = prior_reset_env
             for value, original in saved:
                 other = torch.arange(self.num_envs, device=value.device) != env_id
                 value[other] = original[other]
@@ -196,6 +249,8 @@ class FixedNRandomness:
                 self._totals["task_reset"] += 1
         finally:
             self._phase = prior_phase
+        if not any(self.pending):
+            self._flush_selected_roots()
 
     def _sample_waypoints(self, env_ids, *args, **kwargs):
         ids = self._ids(env_ids)
@@ -264,7 +319,10 @@ class FixedNRandomness:
                 "batch_size_invariant": False, "constructor_rng": "COMMON_UNMODIFIED_INITIALIZATION",
                 "logical_step": self.logical_step, "episode_id": list(self.episodes),
                 "pending_task_reset": list(self.pending), "calls": dict(self._totals),
+                "pending_root_envs": sorted(self._pending_root_envs),
                 "checked_flags": dict(self.checked_flags),
                 "unaffected_reset_rows_preserved": list(DERIVED_KINEMATICS),
+                "reset_root_setter": "INSTANCE_ONLY_ONCE_PER_RESET_TRANSACTION_INDEXED_ENV_UNION_ALL_ACTORS",
+                "actors_per_env": self._actors_per_env,
                 "waypoint_callsite_keys": sorted({key[4] for key in self._calls}),
                 "probe": "SYNTHETIC_UNIFORM2_NORMAL2_NOT_PHYSICAL_SENSOR_NOISE"}

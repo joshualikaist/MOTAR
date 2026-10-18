@@ -4,6 +4,7 @@ from pathlib import Path
 import sys
 from types import SimpleNamespace
 import unittest
+from unittest import mock
 
 import numpy as np
 import torch
@@ -21,6 +22,7 @@ class FakeManager:
     def __init__(self, task):
         self.task = task
         self.cfg = SimpleNamespace(env=SimpleNamespace(num_physics_steps_per_env_step_std=0))
+        self.IGE_env = FakeIGE(task.num_envs)
         self.robot_manager = SimpleNamespace(
             robot=SimpleNamespace(cfg=SimpleNamespace(), controller=SimpleNamespace(cfg=SimpleNamespace()),
                                   robot_euler_angles=torch.zeros(task.num_envs, 3)),
@@ -45,6 +47,31 @@ class FakeManager:
         if render_components != "sensors":
             raise AssertionError("unexpected render")
         self.task.raw = self.task.state.clone()
+
+
+class FakeGym:
+    def __init__(self):
+        self.indexed, self.full = [], []
+        self.accept = True
+
+    def set_actor_root_state_tensor_indexed(self, sim, root, ids, count):
+        self.indexed.append((sim, root, ids.clone(), count))
+        return self.accept
+
+    def set_actor_root_state_tensor(self, sim, root):
+        self.full.append((sim, root))
+        return True
+
+
+class FakeIGE:
+    def __init__(self, n):
+        self.sim_has_dof = False
+        self.gym, self.sim = FakeGym(), object()
+        self.global_tensor_dict = {"unfolded_env_asset_state_tensor": torch.zeros(n * 3, 13)}
+
+    def write_to_sim(self):
+        return self.gym.set_actor_root_state_tensor(
+            self.sim, self.global_tensor_dict["unfolded_env_asset_state_tensor"])
 
 
 class FakeTask:
@@ -253,6 +280,65 @@ class ProfileTest(unittest.TestCase):
                 FixedNRandomness(task, 4601)
             self.assertEqual(original, task.reset_idx)
             self.assertFalse(hasattr(task, "_h_r3_p02_rng"))
+
+
+class IndexedResetTest(unittest.TestCase):
+    def _fixture(self):
+        task = FakeTask()
+        manager_reset, task_reset = task.sim_env.reset_idx, task.reset_idx
+
+        def manager_with_writes(ids):
+            manager_reset(ids)
+            task.sim_env.IGE_env.write_to_sim()
+            task.sim_env.IGE_env.write_to_sim()
+
+        def task_with_writes(ids):
+            task_reset(ids)
+            task.sim_env.IGE_env.write_to_sim()
+            task.sim_env.IGE_env.write_to_sim()
+
+        task.sim_env.reset_idx, task.reset_idx = manager_with_writes, task_with_writes
+        return task, FixedNRandomness(task, 4601)
+
+    @mock.patch("h_r3_p02_rng._unwrap_tensor", side_effect=lambda tensor: tensor)
+    def test_selected_env_actor_union_submitted_once_with_original_state_buffer(self, _unwrap):
+        task, rng = self._fixture()
+        ige = task.sim_env.IGE_env
+        task.sim_env.reset_idx(torch.tensor([3, 1]))
+        self.assertEqual(len(ige.gym.indexed), 0)
+        self.assertEqual(len(ige.gym.full), 0)
+        task.reset_idx(torch.tensor([3, 1]))
+        self.assertEqual(len(ige.gym.indexed), 1)
+        sim, root, ids, count = ige.gym.indexed[0]
+        self.assertIs(sim, ige.sim)
+        self.assertIs(root, ige.global_tensor_dict["unfolded_env_asset_state_tensor"])
+        self.assertEqual(ids.dtype, torch.int32)
+        self.assertEqual(ids.tolist(), [3, 4, 5, 9, 10, 11])
+        self.assertEqual(count, 6)
+        self.assertEqual(rng.metadata()["pending_root_envs"], [])
+        self.assertTrue(ige.write_to_sim())
+        self.assertEqual(len(ige.gym.full), 1)
+        self.assertEqual(len(ige.gym.indexed), 1)
+
+    @mock.patch("h_r3_p02_rng._unwrap_tensor", side_effect=lambda tensor: tensor)
+    def test_failed_indexed_setter_is_integrity_failure(self, _unwrap):
+        task, _rng = self._fixture()
+        task.sim_env.IGE_env.gym.accept = False
+        task.sim_env.reset_idx(torch.tensor([2]))
+        with self.assertRaisesRegex(RuntimeError, "setter rejected"):
+            task.reset_idx(torch.tensor([2]))
+
+    def test_dof_and_nondivisible_actor_layout_fail_before_hook_install(self):
+        task = FakeTask()
+        task.sim_env.IGE_env.sim_has_dof = True
+        with self.assertRaisesRegex(RuntimeError, "has_dof"):
+            FixedNRandomness(task, 4601)
+        task = FakeTask()
+        task.sim_env.IGE_env.global_tensor_dict["unfolded_env_asset_state_tensor"] = torch.zeros(11, 13)
+        original = task.reset_idx
+        with self.assertRaisesRegex(RuntimeError, "actor root tensor"):
+            FixedNRandomness(task, 4601)
+        self.assertEqual(original, task.reset_idx)
 
 
 if __name__ == "__main__":

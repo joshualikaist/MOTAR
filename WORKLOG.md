@@ -21702,3 +21702,17 @@ manifest; raw remains ../aerial_gym_simulator/results/h_r3_p02_v1/HR3-P02-SMOKE0
 Suspected full PhysX root setter cross-env effect is under runner-only investigation. No effect
 estimate or confirmation claim; equality gates are not relaxed. Next: committed instance-only
 indexed/batched reset write repair and fresh SMOKE02 before any main pilot.
+
+## 2026-10-18 — P02 amendment2, batched selected-environment reset writes
+
+Following SMOKE01 FAIL, P02-only RNG wrapper queues manager/task reset writes and submits one
+indexed actor-root union after all task-reset tokens are consumed. Other environments are not
+submitted to PhysX. No-DOF/layout/API success guards fail closed. Production code is untouched.
+The forced env15 reset at40 now joins the ordinary reset transaction before selection, after
+physical telemetry capture, avoiding a second setter between physics steps. Amendment2 retains
+all gates and records fresh immutable HR3-P02-SMOKE02. P01 and SMOKE01 remain unchanged.
+Focused CPU H-R3 suite: 69 PASS, including three new indexed setter/layout/failure tests;
+previous E-L0 14 and EQ-1D 13 PASS remain applicable (96 distinct focused tests total).
+GPU proof is still NOT_TESTED for this repair. Next: exact-source SMOKE02; main only after PASS.
+Files: docs/plans/h_r3_p02_amendment2.md, tools/h_r3_p02_{rng,launcher,run}.py,
+tests/test_h_r3_p02_rng.py and this append-only log.

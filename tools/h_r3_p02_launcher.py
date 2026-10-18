@@ -62,6 +62,10 @@ def main():
         for key,value in [('position',od['robot_position']),('velocity',od['robot_linvel']),('target',task.target_position),
                           ('crashed',task.crashed_now.bool()),('captured',task.captured_now.bool()),('timeout',task.truncations.bool() & ~task.crashed_now.bool() & ~task.captured_now.bool())]:
             physical[key]=value.detach().clone()
+        # Join the ordinary reset transaction, rather than issuing a second PhysX setter
+        # between simulate calls. Only diagnostic env15's terminal flag is injected.
+        if args.force_reset and rng.logical_step==40:
+            task.sim_env.truncation_tensor[15]=1
         return old_post()
     task.sim_env.post_reward_calculation_step=post
     command={};old_transform=task.transform_action_to_command
@@ -108,7 +112,6 @@ def main():
         record('shadow_clear',details['clear_found']);record('budget_error',nominal_error);record('sham_sign',sign)
         contact.begin_action()
         with rng.step(k):obs,rew,done,info=player.env_step(player.env,action)
-        if args.force_reset and k==40:rng.force_reset([15])
         if sensor['calls']<=sensor_calls:raise RuntimeError('stale RGB-D packet')
         if identity is not None:
             if identity.call_count<=identity_calls:raise RuntimeError('stale identity packet')
