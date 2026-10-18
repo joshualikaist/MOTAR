@@ -21315,3 +21315,25 @@ Next review: the complete diff and new plan; local commit requires user diff app
 - Preservation PASS: 2,092 files with 41 allowed paths, 101 evidence files, 10/3,479 raw, Policy F,
   and main `cb644bb` with WIP3 and stash `23ddb33`.
 - Evidence: `docs/evidence/s_l1d_2026-10-18/c02/`. The S-L1D decision follows the independent review.
+
+## 2026-10-18 — SL1D-C02 independent review (Fable 5.1): GO; decision S-L1D GO; S-L1C v2 and S-L1B carve plans
+
+- Reviewer (read-only `claude-fable-5-1`): **GO, no blocker**. It reproduced the analysis byte for
+  byte and checked raw manifests 23/23 and the report rows (0 mismatches).
+  - Non-vacuity: the same 2-pixel targets are detected in the alone passes; occluder gaps
+    6.1–6.7 m ≫ τ.
+  - Exact and proxy centre verdicts agree in all 8 PA/CO scenes.
+  - Production identical to `76f0f4c`.
+- Notes, recorded in `docs/evidence/s_l1d_2026-10-18/c02/REVIEW.md`:
+  - Attitude passes are identical except the unused roll/pitch quaternion.
+  - The scale constraint for VISIBLE with alone < min is a pre-run tightening of the analysis
+    gate.
+  - Scope: results use a primed exact belief, so robustness to belief error is not shown.
+- **Decision: S-L1D GO (under amendment 1).** With S-L1B GO and S-L1C GO, the sensor-correction
+  lineages S-L1A/B/C/D are complete within their stated scope.
+- Plan only (no implementation): `docs/plans/s_l1c_v2_and_s_l1b_carve_plan.md`.
+  - S-L1C v2: off-row recall in the 1.152–2.295 m band via a sphere-vs-vertical-surface hypothesis
+    test, azimuth support or camera confirmation, matched against v1 with bar-only false
+    association gates.
+  - S-L1B carve: an analytic pixel-sampling bound or a per-beam sphere range, aiming to reduce
+    84/102 retention without carving any foreground bar.
