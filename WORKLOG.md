@@ -21792,3 +21792,8 @@ will be committed with the amendment/source before GPU. No GPU launched at this 
 Session start21:56KST; actual quota deadline unknown; conservative wrap-up01:56KST Oct19 reserves
 verification/commit/handoff before any presumed five-hour window. No deletion, main merge/push,
 force/history rewrite, retraining, Planner, extra exploratory seed or confirmation.
+
+
+## 2026-10-18 — Environment isolation CPU qualification and diagnostic source
+
+User-authorized minimal isolation qualification only. Independent float64 SE(3)/ray oracle and actual Warp CPU BVH tests reproduce global-write/selected-refit cross-environment mutation, including tiny quaternion normalization. Selected-only evaluation wrapper preserves untouched geometry and updates selected mesh correctly. 24 focused tests PASS; production/P01/P02 source unchanged. Amendment1 and new bounded five-process N128 B0 runner are frozen before ISO-Q01 GPU diagnostics. H-R3 remains PROVISIONAL / CONFIRMATION HOLD; no historical P02 cause proof or P03 authorization. CPU evidence: docs/evidence/h_r3_env_isolation_2026-10-18/.

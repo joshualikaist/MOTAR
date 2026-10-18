@@ -1,0 +1,38 @@
+Warp CUDA error 100: no CUDA-capable device is detected (in function init_cuda_driver, /buildAgent/work/a9ae500d09a78409/warp/native/cuda_util.cpp:218)
+Warp CUDA error 3: initialization error (in function cuda_device_get_count, /buildAgent/work/a9ae500d09a78409/warp/native/warp.cu:1589)
+test_all_env_initial_reset_actual_bvh_and_mapping (test_h_r3_env_isolation.GeometryQualification) ... ok
+test_bad_reset_ids_fail_before_write_and_close_restores (test_h_r3_env_isolation.GeometryQualification) ... ok
+test_independent_analytic_box_rotation_first_hit (test_h_r3_env_isolation.GeometryQualification) ... ok
+test_legacy_negative_global_write_stale_bvh_and_ray_miss (test_h_r3_env_isolation.GeometryQualification) ... ok
+test_nonunit_quaternion_legacy_own_reset_contract_preserved (test_h_r3_env_isolation.GeometryQualification) ... ok
+test_order_batch_split_and_empty_reset_invariance (test_h_r3_env_isolation.GeometryQualification) ... ok
+test_pose_quaternion_other_reset_preserves_unselected_vertex_and_ray_bytes (test_h_r3_env_isolation.GeometryQualification) ... ok
+test_reject_malformed_mapping_and_mesh_aliases (test_h_r3_env_isolation.GeometryQualification) ... ok
+test_runtime_mapping_mesh_storage_lifetime_guard (test_h_r3_env_isolation.GeometryQualification) ... ok
+test_selected_pose_quaternion_updates_points_and_actual_bvh (test_h_r3_env_isolation.GeometryQualification) ... ok
+test_tiny_quaternion_normalization_changes_actual_legacy_ray_but_fix_isolates (test_h_r3_env_isolation.GeometryQualification) ... ok
+test_bitwise_equality_detects_signed_zero (test_h_r3_env_isolation_analysis.AnalysisTests) ... ok
+test_controlled_fixture_qualifies_mechanics_not_historical_causality (test_h_r3_env_isolation_analysis.AnalysisTests) ... ok
+test_cpu_not_pass_blocks_go (test_h_r3_env_isolation_analysis.AnalysisTests) ... ok
+test_evaluator_off_on_checks_selected_127_also (test_h_r3_env_isolation_analysis.AnalysisTests) ... ok
+test_natural_reset_overlap_invalid (test_h_r3_env_isolation_analysis.AnalysisTests) ... ok
+test_numeric_hash_disagreement_rejected (test_h_r3_env_isolation_analysis.AnalysisTests) ... ok
+test_selected_reset_semantics_not_ignored (test_h_r3_env_isolation_analysis.AnalysisTests) ... ok
+test_small_mock_cannot_qualify_actual_n128 (test_h_r3_env_isolation_analysis.AnalysisTests) ... ok
+test_unselected_sensor_failure_no_exclusion (test_h_r3_env_isolation_analysis.AnalysisTests) ... ok
+test_wrong_vertex_actor_map_rejected (test_h_r3_env_isolation_analysis.AnalysisTests) ... ok
+test_bound_completion_rejects_tampering (test_h_r3_env_isolation_run.QualificationRunTests) ... ok
+test_bounded_authorized_matrix (test_h_r3_env_isolation_run.QualificationRunTests) ... ok
+test_old_runtime_sources_frozen (test_h_r3_env_isolation_run.QualificationRunTests) ... ok
+
+----------------------------------------------------------------------
+Ran 24 tests in 13.164s
+
+OK
+Warp 1.0.0 initialized:
+   CUDA devices not available
+   Devices:
+     "cpu"      : "x86_64"
+   Kernel cache:
+     /home/fair/.cache/warp/1.0.0
+Module test_h_r3_env_isolation load on device 'cpu' took 0.71 ms
