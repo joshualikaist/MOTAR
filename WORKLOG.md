@@ -21337,3 +21337,23 @@ Next review: the complete diff and new plan; local commit requires user diff app
     association gates.
   - S-L1B carve: an analytic pixel-sampling bound or a per-beam sphere range, aiming to reduce
     84/102 retention without carving any foreground bar.
+
+## 2026-10-18 — Preregister S-L1C v2 candidate comparison before implementation
+
+- User accepts A/B/C/D scope-limited GO at `aed6aff` and authorizes independent C-v2 CPU/GPU
+  qualification, result commit and Fable 5.1 read-only review; only research-branch fast-forward
+  push. No B/D production, P/G, PPO, Planner or H-R experiment.
+- Files: `docs/plans/s_l1c_v2.md`, `.json`, this appended WORKLOG. V2-0/A/B/C, exact positive and
+  negative grids, bounded noise/abstention, strict paired recall/false-association/range gates and
+  deterministic candidate selection are fixed before comparison. C is not selectable without
+  separate clock/expiry proof. No passing A/B => NO-GO before runtime or GPU implementation.
+- CPU grids: 8,784 positive and 2,928 negative prediction cases, nine noise patterns = 105,408
+  matched cases; 1,152 angular-error diagnostics. GPU matrix is preregistered conditionally on CPU
+  selection, with 144 positives and 31 negatives plus static/moving regression arms.
+- Actual HEAD and remote research branch both `aed6affbd2567feee79e658fbe5f07510b039f36` at start;
+  tracked tree clean, existing two raw symlinks untracked. No live qualification process observed.
+  Preservation baseline captures all tracked blobs, original raw manifests, Policy F, main WIP3
+  and stash before edits. No historical result or preregistration is changed.
+- JSON/matrix arithmetic and local links reviewed before commit. Next: NumPy-only oracle and
+  candidate comparison, without production sensor imports. Session 14:52 KST; hidden reset timer
+  unavailable, conservative wrap-up 18:52 KST with time reserved for verified commits/handoff.
