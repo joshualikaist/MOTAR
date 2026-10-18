@@ -21423,3 +21423,16 @@ Next review: the complete diff and new plan; local commit requires user diff app
   verified source, then rerun that guard and PUBLIC_CPU on the clean tree before GPU.
 - No GPU process has run. Next: fixed canary tooling, clean-source CPU regression and a source
   commit containing all launch/analysis code before the registered GPU matrix.
+
+## 2026-10-18 — Clean C-v2 CPU regression PASS; add task-level actor firewall before GPU
+
+- After source commit `5b57021`, unchanged PUBLIC_CPU completes 2,587 tests, 0 failures/errors,
+  10 skipped, 5 excluded (136.5s). The earlier dirty-HEAD guard failure is resolved by committing
+  the source, without weakening a test. Subsequent targeted tests: C-v2 runtime 7/7 and fixed
+  canary design/covariance/reference-path tests 5/5 PASS. D API shape/non-mutation checked only;
+  no D-v2 validity accuracy qualification is inferred.
+- New `docs/plans/s_l1c_v2_amendment2.md` registers an extra n4/320-step EQ-1D D3 actor packet-replay
+  firewall on v2, including positive and reset controls. Matrix 23 processes; original scene counts,
+  thresholds and watchdogs unchanged. No C-v2 GPU execution or result inspected yet.
+- Next: commit all canary source and run preflight; freeze the tracked tree and HEAD throughout
+  the GPU canary. Original source/evidence remain preserved.
