@@ -21569,3 +21569,53 @@ Next review: the complete diff and new plan; local commit requires user diff app
   - The preregistered digest rule already excludes the affected events. This is reported as a
     limit, not as a design change; the analysis records the onset step.
 - Next: PUBLIC_CPU once, commit, official preflight, then the N128 pilot (seed 4502).
+
+## 2026-10-18 — H-R3 pilot HR3-P01 (seed 4502): exploratory result, translation adds reobservation over yaw-only
+
+- **Run.** Source `5c8afde`, preflight clean. Moving E2, density 160, N128, 600 steps, seed 4502.
+  4/4 arms rc=0 at about 104 s each; peak 5,414 MiB under a 7,020 MiB cap. GPU total 416.5 s.
+  Raw: `../aerial_gym_simulator/results/h_r3_pilot_v1/HR3-P01_seed4502`, 21 files, 17 MB.
+  `RAW_MANIFEST.json` sha256 `ae2633a2…`, 21/21 verified.
+- **Seed 4503 not run.** There were 22 matched geometric events, at least the preregistered 20.
+- **Matching.**
+  - 125 triggers: 107 matched, 18 unmatched (9 differ in t0, 9 in prefix digest), reported and not
+    analysed.
+  - Cross-env coupling onset at step 10, so no primary window shares noise realisations.
+  - Targets are identical before termination, with a maximum difference of 0.0 m.
+- **Primary result** (identity-correct reobservation within 2 s, n = 22, FULL 18 / CENTRE_ONLY 4):
+
+  | Arm | Reobserved | Censored mean time (s) | Δ distance (m) | Capture by 5 s | Collision under control |
+  |---|---|---|---|---|---|
+  | B0 | 18/22 | 1.18 | −4.25 | 11 | 0 |
+  | B1 | 7/22 | 1.67 | −2.02 | 6 | 0 |
+  | B2 | 9/22 | 1.55 | −2.11 | 4 | 0 |
+  | B3 | 17/22 | 1.29 | −2.32 | 6 | 0 |
+
+  - B3−B2: +36.4 pp, bootstrap [+13.6, +59.1]. 9 / 1 discordant, McNemar p = 0.021. Censored
+    time −0.27 s.
+  - B3−B1: +45.5 pp, p = 0.006. B2−B1: +9.1 pp, p = 0.5. B3−B0: −4.5 pp, p = 1.0.
+  - Patterns (B1B2B3): `111` 6 (natural unocclusion), `011` 2, `001` 9, `110` 1, `000` 4.
+- **FOV_EXIT, separate (n = 83).** Yaw is what matters: B2 82/83 against B1 33/83. Translation adds
+  nothing: B3 81/83.
+- **Post-hoc** (`tools/h_r3_posthoc.py`, new; labelled post hoc):
+  - In all 10 B2/B3-discordant events the divergence starts with B3's lateral command, not the
+    noise stream.
+  - On same-state steps under control, B3's action equals B2's in 140/140 steps with offset 0 and
+    in 0/55 with a nonzero offset.
+  - **Confound not separated:** B3's median maximum commanded speed is 1.80 m/s against 1.00 for B2
+    (+0.39 m translation). No sham-lateral or speed-matched arm was run.
+- **Trade-off.** Scripted arms approach and capture less than Policy F. No collisions under
+  scripted control on primary events. No physical-safety claim.
+- **Compute.** B1/B2/B3 mean 1.64–1.67 ms, P99 1.83–1.90 ms. B0 (shadow only) 0.88 ms.
+- **Decision.** H-R3 stays PROVISIONAL; the exploratory signal favours translation over yaw-only
+  for geometric occlusion.
+- **Hypothesis rejected:** "translation adds benefit for FOV exit" — measured B3−B2 −1.2 pp.
+- **Recommended confirmatory design (not run):**
+  - B3 vs B2 needs 32 events at the pilot effect and 141 at half the effect. Use about 8 new seeds,
+    with B3-sham and speed-matched B2 arms and Holm correction.
+  - Preregister before running. No confirmatory run is started.
+- **Evidence and tests.** Evidence: `docs/evidence/h_r3_pilot_2026-10-18/`. Tests:
+  `test_h_r3_analysis.py` 7 OK and `test_h_r3_arms.py` 6 OK.
+- **Preservation.** Policy F, RMS and earlier raw records are unchanged. The three main-checkout WIP
+  files and stash `23ddb33` are unchanged.
+- **Next.** Independent Fable 5.1 read-only review, then a branch-only push.

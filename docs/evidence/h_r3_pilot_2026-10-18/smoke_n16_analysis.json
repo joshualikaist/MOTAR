@@ -1,0 +1,2260 @@
+{
+  "schema": "motar.h-r3-pilot-analysis.v1",
+  "run": "/tmp/claude-1000/-home-fair-workspaces-aerial-gym-ws-src/35a63340-4061-4cc2-958f-43729b9e3417/scratchpad/hr3/smoke/hr3_smoke_20261018_163246",
+  "counts": {
+    "triggered_envs": 16,
+    "matched_events": 15,
+    "unmatched": 1,
+    "primary_events": 5,
+    "by_class": {
+      "CENTRE_ONLY": 2,
+      "FOV_EXIT": 10,
+      "FULL": 3
+    },
+    "primary_window_before_coupling": 0
+  },
+  "unmatched": [
+    {
+      "seed": 4502,
+      "env": 15,
+      "t0": 18,
+      "t0_by_arm": {
+        "B0": 18,
+        "B1": 18,
+        "B2": 18,
+        "B3": 18
+      },
+      "reason": "prefix digest differs"
+    }
+  ],
+  "coupling_onset_step_vs_B0": {
+    "4502": {
+      "B1": 14,
+      "B2": 14,
+      "B3": 14
+    }
+  },
+  "primary": {
+    "arms": {
+      "B0": {
+        "n": 5,
+        "reobserved": 4,
+        "rate": 0.8,
+        "wilson95": [
+          0.375534627029995,
+          0.9637758917743693
+        ],
+        "median_time_s": 0.9,
+        "mean_time_censored_s": 1.1400000000000001,
+        "collision_in_window": 0,
+        "collision_under_arm_control": 0,
+        "collision_free_reobs": 4,
+        "capture_in_window": 0,
+        "terminal_in_window": 0,
+        "camera_detection_without_target_pixels": 0,
+        "capture_by_w_plus_3s": 5,
+        "crash_by_w_plus_3s": 1,
+        "mean_distance_change_m": -4.97598671913147,
+        "mean_translation_m": 5.300742149353027,
+        "mean_fov_retention": 0.7100000000000001,
+        "mean_camera_fraction": 0.4,
+        "mean_lidar_only_fraction": 0.02
+      },
+      "B1": {
+        "n": 5,
+        "reobserved": 0,
+        "rate": 0.0,
+        "wilson95": [
+          0.0,
+          0.43448246865939283
+        ],
+        "median_time_s": null,
+        "mean_time_censored_s": 2.0,
+        "collision_in_window": 0,
+        "collision_under_arm_control": 0,
+        "collision_free_reobs": 0,
+        "capture_in_window": 0,
+        "terminal_in_window": 0,
+        "camera_detection_without_target_pixels": 0,
+        "capture_by_w_plus_3s": 1,
+        "crash_by_w_plus_3s": 0,
+        "mean_distance_change_m": -2.27935676574707,
+        "mean_translation_m": 2.394916319847107,
+        "mean_fov_retention": 0.45,
+        "mean_camera_fraction": 0.0,
+        "mean_lidar_only_fraction": 0.02
+      },
+      "B2": {
+        "n": 5,
+        "reobserved": 3,
+        "rate": 0.6,
+        "wilson95": [
+          0.23072427940911855,
+          0.8823792268590028
+        ],
+        "median_time_s": 1.0,
+        "mean_time_censored_s": 1.5,
+        "collision_in_window": 0,
+        "collision_under_arm_control": 0,
+        "collision_free_reobs": 3,
+        "capture_in_window": 0,
+        "terminal_in_window": 0,
+        "camera_detection_without_target_pixels": 0,
+        "capture_by_w_plus_3s": 1,
+        "crash_by_w_plus_3s": 0,
+        "mean_distance_change_m": -2.76196231842041,
+        "mean_translation_m": 2.8689327239990234,
+        "mean_fov_retention": 0.9800000000000001,
+        "mean_camera_fraction": 0.22000000000000003,
+        "mean_lidar_only_fraction": 0.01
+      },
+      "B3": {
+        "n": 5,
+        "reobserved": 4,
+        "rate": 0.8,
+        "wilson95": [
+          0.375534627029995,
+          0.9637758917743693
+        ],
+        "median_time_s": 1.2,
+        "mean_time_censored_s": 1.3,
+        "collision_in_window": 0,
+        "collision_under_arm_control": 0,
+        "collision_free_reobs": 4,
+        "capture_in_window": 0,
+        "terminal_in_window": 0,
+        "camera_detection_without_target_pixels": 0,
+        "capture_by_w_plus_3s": 3,
+        "crash_by_w_plus_3s": 1,
+        "mean_distance_change_m": -2.9057947158813477,
+        "mean_translation_m": 3.509050178527832,
+        "mean_fov_retention": 0.9800000000000001,
+        "mean_camera_fraction": 0.31999999999999995,
+        "mean_lidar_only_fraction": 0.06999999999999999
+      }
+    },
+    "contrasts": {
+      "B3-B2": {
+        "rate_diff": 0.2,
+        "n10": 1,
+        "n01": 0,
+        "mcnemar_p": 1.0,
+        "bootstrap95": [
+          0.0,
+          0.6
+        ],
+        "censored_time_diff_s": -0.2,
+        "censored_time_bootstrap95": [
+          -0.7,
+          0.2
+        ]
+      },
+      "B3-B1": {
+        "rate_diff": 0.8,
+        "n10": 4,
+        "n01": 0,
+        "mcnemar_p": 0.125,
+        "bootstrap95": [
+          0.4,
+          1.0
+        ],
+        "censored_time_diff_s": -0.7,
+        "censored_time_bootstrap95": [
+          -1.1599999999999997,
+          -0.3
+        ]
+      },
+      "B2-B1": {
+        "rate_diff": 0.6,
+        "n10": 3,
+        "n01": 0,
+        "mcnemar_p": 0.25,
+        "bootstrap95": [
+          0.2,
+          1.0
+        ],
+        "censored_time_diff_s": -0.5,
+        "censored_time_bootstrap95": [
+          -1.0399999999999998,
+          -0.019999999999999973
+        ]
+      },
+      "B1-B0": {
+        "rate_diff": -0.8,
+        "n10": 0,
+        "n01": 4,
+        "mcnemar_p": 0.125,
+        "bootstrap95": [
+          -1.0,
+          -0.4
+        ],
+        "censored_time_diff_s": 0.8600000000000001,
+        "censored_time_bootstrap95": [
+          0.41999999999999993,
+          1.22
+        ]
+      },
+      "B2-B0": {
+        "rate_diff": -0.2,
+        "n10": 0,
+        "n01": 1,
+        "mcnemar_p": 1.0,
+        "bootstrap95": [
+          -0.6,
+          0.0
+        ],
+        "censored_time_diff_s": 0.36,
+        "censored_time_bootstrap95": [
+          -0.12000000000000002,
+          0.8600000000000001
+        ]
+      },
+      "B3-B0": {
+        "rate_diff": 0.0,
+        "n10": 1,
+        "n01": 1,
+        "mcnemar_p": 1.0,
+        "bootstrap95": [
+          -0.6,
+          0.6
+        ],
+        "censored_time_diff_s": 0.16,
+        "censored_time_bootstrap95": [
+          -0.26,
+          0.66
+        ]
+      }
+    },
+    "patterns_B1B2B3": {
+      "000": 1,
+      "001": 1,
+      "011": 3
+    }
+  },
+  "primary_window_before_coupling": {
+    "arms": {
+      "B0": {
+        "n": 0,
+        "reobserved": 0,
+        "rate": null,
+        "wilson95": [
+          null,
+          null
+        ],
+        "median_time_s": null,
+        "mean_time_censored_s": null,
+        "collision_in_window": 0,
+        "collision_under_arm_control": 0,
+        "collision_free_reobs": 0,
+        "capture_in_window": 0,
+        "terminal_in_window": 0,
+        "camera_detection_without_target_pixels": 0,
+        "capture_by_w_plus_3s": 0,
+        "crash_by_w_plus_3s": 0,
+        "mean_distance_change_m": null,
+        "mean_translation_m": null,
+        "mean_fov_retention": null,
+        "mean_camera_fraction": null,
+        "mean_lidar_only_fraction": null
+      },
+      "B1": {
+        "n": 0,
+        "reobserved": 0,
+        "rate": null,
+        "wilson95": [
+          null,
+          null
+        ],
+        "median_time_s": null,
+        "mean_time_censored_s": null,
+        "collision_in_window": 0,
+        "collision_under_arm_control": 0,
+        "collision_free_reobs": 0,
+        "capture_in_window": 0,
+        "terminal_in_window": 0,
+        "camera_detection_without_target_pixels": 0,
+        "capture_by_w_plus_3s": 0,
+        "crash_by_w_plus_3s": 0,
+        "mean_distance_change_m": null,
+        "mean_translation_m": null,
+        "mean_fov_retention": null,
+        "mean_camera_fraction": null,
+        "mean_lidar_only_fraction": null
+      },
+      "B2": {
+        "n": 0,
+        "reobserved": 0,
+        "rate": null,
+        "wilson95": [
+          null,
+          null
+        ],
+        "median_time_s": null,
+        "mean_time_censored_s": null,
+        "collision_in_window": 0,
+        "collision_under_arm_control": 0,
+        "collision_free_reobs": 0,
+        "capture_in_window": 0,
+        "terminal_in_window": 0,
+        "camera_detection_without_target_pixels": 0,
+        "capture_by_w_plus_3s": 0,
+        "crash_by_w_plus_3s": 0,
+        "mean_distance_change_m": null,
+        "mean_translation_m": null,
+        "mean_fov_retention": null,
+        "mean_camera_fraction": null,
+        "mean_lidar_only_fraction": null
+      },
+      "B3": {
+        "n": 0,
+        "reobserved": 0,
+        "rate": null,
+        "wilson95": [
+          null,
+          null
+        ],
+        "median_time_s": null,
+        "mean_time_censored_s": null,
+        "collision_in_window": 0,
+        "collision_under_arm_control": 0,
+        "collision_free_reobs": 0,
+        "capture_in_window": 0,
+        "terminal_in_window": 0,
+        "camera_detection_without_target_pixels": 0,
+        "capture_by_w_plus_3s": 0,
+        "crash_by_w_plus_3s": 0,
+        "mean_distance_change_m": null,
+        "mean_translation_m": null,
+        "mean_fov_retention": null,
+        "mean_camera_fraction": null,
+        "mean_lidar_only_fraction": null
+      }
+    },
+    "contrasts": {
+      "B3-B2": null,
+      "B3-B1": null,
+      "B2-B1": null,
+      "B1-B0": null,
+      "B2-B0": null,
+      "B3-B0": null
+    },
+    "patterns_B1B2B3": {}
+  },
+  "separate_classes": {
+    "FOV_EXIT": {
+      "arms": {
+        "B0": {
+          "n": 10,
+          "reobserved": 10,
+          "rate": 1.0,
+          "wilson95": [
+            0.7224671969739421,
+            0.9999999999999999
+          ],
+          "median_time_s": 0.25,
+          "mean_time_censored_s": 0.44000000000000006,
+          "collision_in_window": 1,
+          "collision_under_arm_control": 0,
+          "collision_free_reobs": 10,
+          "capture_in_window": 0,
+          "terminal_in_window": 1,
+          "camera_detection_without_target_pixels": 0,
+          "capture_by_w_plus_3s": 6,
+          "crash_by_w_plus_3s": 2,
+          "mean_distance_change_m": -6.1589675664901735,
+          "mean_translation_m": 5.516742646694183,
+          "mean_fov_retention": 0.65,
+          "mean_camera_fraction": 0.74,
+          "mean_lidar_only_fraction": 0.16499999999999998
+        },
+        "B1": {
+          "n": 10,
+          "reobserved": 4,
+          "rate": 0.4,
+          "wilson95": [
+            0.1681803285264069,
+            0.6873262320788047
+          ],
+          "median_time_s": 0.1,
+          "mean_time_censored_s": 1.25,
+          "collision_in_window": 0,
+          "collision_under_arm_control": 0,
+          "collision_free_reobs": 4,
+          "capture_in_window": 0,
+          "terminal_in_window": 0,
+          "camera_detection_without_target_pixels": 0,
+          "capture_by_w_plus_3s": 8,
+          "crash_by_w_plus_3s": 0,
+          "mean_distance_change_m": -4.3672668695449826,
+          "mean_translation_m": 3.639533579349518,
+          "mean_fov_retention": 0.31,
+          "mean_camera_fraction": 0.34500000000000003,
+          "mean_lidar_only_fraction": 0.32500000000000007
+        },
+        "B2": {
+          "n": 10,
+          "reobserved": 10,
+          "rate": 1.0,
+          "wilson95": [
+            0.7224671969739421,
+            0.9999999999999999
+          ],
+          "median_time_s": 0.2,
+          "mean_time_censored_s": 0.18,
+          "collision_in_window": 1,
+          "collision_under_arm_control": 0,
+          "collision_free_reobs": 10,
+          "capture_in_window": 0,
+          "terminal_in_window": 1,
+          "camera_detection_without_target_pixels": 0,
+          "capture_by_w_plus_3s": 7,
+          "crash_by_w_plus_3s": 1,
+          "mean_distance_change_m": -5.584175086021423,
+          "mean_translation_m": 4.9341044425964355,
+          "mean_fov_retention": 0.615,
+          "mean_camera_fraction": 0.675,
+          "mean_lidar_only_fraction": 0.19
+        },
+        "B3": {
+          "n": 10,
+          "reobserved": 10,
+          "rate": 1.0,
+          "wilson95": [
+            0.7224671969739421,
+            0.9999999999999999
+          ],
+          "median_time_s": 0.2,
+          "mean_time_censored_s": 0.18,
+          "collision_in_window": 1,
+          "collision_under_arm_control": 0,
+          "collision_free_reobs": 10,
+          "capture_in_window": 0,
+          "terminal_in_window": 1,
+          "camera_detection_without_target_pixels": 0,
+          "capture_by_w_plus_3s": 7,
+          "crash_by_w_plus_3s": 1,
+          "mean_distance_change_m": -5.629864978790283,
+          "mean_translation_m": 4.987954998016358,
+          "mean_fov_retention": 0.6249999999999999,
+          "mean_camera_fraction": 0.6849999999999999,
+          "mean_lidar_only_fraction": 0.185
+        }
+      },
+      "contrasts": {
+        "B3-B2": {
+          "rate_diff": 0.0,
+          "n10": 0,
+          "n01": 0,
+          "mcnemar_p": 1.0,
+          "bootstrap95": [
+            0.0,
+            0.0
+          ],
+          "censored_time_diff_s": 0.0,
+          "censored_time_bootstrap95": [
+            0.0,
+            0.0
+          ]
+        },
+        "B3-B1": {
+          "rate_diff": 0.6,
+          "n10": 6,
+          "n01": 0,
+          "mcnemar_p": 0.03125,
+          "bootstrap95": [
+            0.3,
+            0.9
+          ],
+          "censored_time_diff_s": -1.07,
+          "censored_time_bootstrap95": [
+            -1.6,
+            -0.53
+          ]
+        },
+        "B2-B1": {
+          "rate_diff": 0.6,
+          "n10": 6,
+          "n01": 0,
+          "mcnemar_p": 0.03125,
+          "bootstrap95": [
+            0.3,
+            0.9
+          ],
+          "censored_time_diff_s": -1.07,
+          "censored_time_bootstrap95": [
+            -1.6099999999999999,
+            -0.53
+          ]
+        },
+        "B1-B0": {
+          "rate_diff": -0.6,
+          "n10": 0,
+          "n01": 6,
+          "mcnemar_p": 0.03125,
+          "bootstrap95": [
+            -0.9,
+            -0.3
+          ],
+          "censored_time_diff_s": 0.8099999999999999,
+          "censored_time_bootstrap95": [
+            0.34,
+            1.27
+          ]
+        },
+        "B2-B0": {
+          "rate_diff": 0.0,
+          "n10": 0,
+          "n01": 0,
+          "mcnemar_p": 1.0,
+          "bootstrap95": [
+            0.0,
+            0.0
+          ],
+          "censored_time_diff_s": -0.26000000000000006,
+          "censored_time_bootstrap95": [
+            -0.5100000000000001,
+            -0.06000000000000001
+          ]
+        },
+        "B3-B0": {
+          "rate_diff": 0.0,
+          "n10": 0,
+          "n01": 0,
+          "mcnemar_p": 1.0,
+          "bootstrap95": [
+            0.0,
+            0.0
+          ],
+          "censored_time_diff_s": -0.26000000000000006,
+          "censored_time_bootstrap95": [
+            -0.5200000000000001,
+            -0.06000000000000001
+          ]
+        }
+      },
+      "patterns_B1B2B3": {
+        "011": 6,
+        "111": 4
+      }
+    }
+  },
+  "all_matched": {
+    "arms": {
+      "B0": {
+        "n": 15,
+        "reobserved": 14,
+        "rate": 0.9333333333333333,
+        "wilson95": [
+          0.7018346989112435,
+          0.9881331046384677
+        ],
+        "median_time_s": 0.45000000000000007,
+        "mean_time_censored_s": 0.6733333333333333,
+        "collision_in_window": 1,
+        "collision_under_arm_control": 0,
+        "collision_free_reobs": 14,
+        "capture_in_window": 0,
+        "terminal_in_window": 1,
+        "camera_detection_without_target_pixels": 0,
+        "capture_by_w_plus_3s": 11,
+        "crash_by_w_plus_3s": 3,
+        "mean_distance_change_m": -5.764640617370605,
+        "mean_translation_m": 5.444742480913798,
+        "mean_fov_retention": 0.67,
+        "mean_camera_fraction": 0.6266666666666667,
+        "mean_lidar_only_fraction": 0.11666666666666667
+      },
+      "B1": {
+        "n": 15,
+        "reobserved": 4,
+        "rate": 0.26666666666666666,
+        "wilson95": [
+          0.1089745324961737,
+          0.5195043425155202
+        ],
+        "median_time_s": 0.1,
+        "mean_time_censored_s": 1.5,
+        "collision_in_window": 0,
+        "collision_under_arm_control": 0,
+        "collision_free_reobs": 4,
+        "capture_in_window": 0,
+        "terminal_in_window": 0,
+        "camera_detection_without_target_pixels": 0,
+        "capture_by_w_plus_3s": 9,
+        "crash_by_w_plus_3s": 0,
+        "mean_distance_change_m": -3.6712968349456787,
+        "mean_translation_m": 3.2246611595153807,
+        "mean_fov_retention": 0.35666666666666663,
+        "mean_camera_fraction": 0.23,
+        "mean_lidar_only_fraction": 0.22333333333333333
+      },
+      "B2": {
+        "n": 15,
+        "reobserved": 13,
+        "rate": 0.8666666666666667,
+        "wilson95": [
+          0.6211801694601944,
+          0.9626387412357151
+        ],
+        "median_time_s": 0.2,
+        "mean_time_censored_s": 0.6199999999999998,
+        "collision_in_window": 1,
+        "collision_under_arm_control": 0,
+        "collision_free_reobs": 13,
+        "capture_in_window": 0,
+        "terminal_in_window": 1,
+        "camera_detection_without_target_pixels": 0,
+        "capture_by_w_plus_3s": 8,
+        "crash_by_w_plus_3s": 1,
+        "mean_distance_change_m": -4.643437496821085,
+        "mean_translation_m": 4.245713869730632,
+        "mean_fov_retention": 0.7366666666666666,
+        "mean_camera_fraction": 0.5233333333333333,
+        "mean_lidar_only_fraction": 0.13
+      },
+      "B3": {
+        "n": 15,
+        "reobserved": 14,
+        "rate": 0.9333333333333333,
+        "wilson95": [
+          0.7018346989112435,
+          0.9881331046384677
+        ],
+        "median_time_s": 0.2,
+        "mean_time_censored_s": 0.5533333333333332,
+        "collision_in_window": 1,
+        "collision_under_arm_control": 0,
+        "collision_free_reobs": 14,
+        "capture_in_window": 0,
+        "terminal_in_window": 1,
+        "camera_detection_without_target_pixels": 0,
+        "capture_by_w_plus_3s": 10,
+        "crash_by_w_plus_3s": 2,
+        "mean_distance_change_m": -4.721841557820638,
+        "mean_translation_m": 4.494986724853516,
+        "mean_fov_retention": 0.7433333333333334,
+        "mean_camera_fraction": 0.5633333333333332,
+        "mean_lidar_only_fraction": 0.14666666666666667
+      }
+    },
+    "contrasts": {
+      "B3-B2": {
+        "rate_diff": 0.06666666666666667,
+        "n10": 1,
+        "n01": 0,
+        "mcnemar_p": 1.0,
+        "bootstrap95": [
+          0.0,
+          0.2
+        ],
+        "censored_time_diff_s": -0.06666666666666667,
+        "censored_time_bootstrap95": [
+          -0.23333333333333334,
+          0.06666666666666667
+        ]
+      },
+      "B3-B1": {
+        "rate_diff": 0.6666666666666666,
+        "n10": 10,
+        "n01": 0,
+        "mcnemar_p": 0.001953125,
+        "bootstrap95": [
+          0.4,
+          0.8666666666666667
+        ],
+        "censored_time_diff_s": -0.9466666666666669,
+        "censored_time_bootstrap95": [
+          -1.3333333333333333,
+          -0.5533333333333333
+        ]
+      },
+      "B2-B1": {
+        "rate_diff": 0.6,
+        "n10": 9,
+        "n01": 0,
+        "mcnemar_p": 0.00390625,
+        "bootstrap95": [
+          0.3333333333333333,
+          0.8666666666666667
+        ],
+        "censored_time_diff_s": -0.8800000000000001,
+        "censored_time_bootstrap95": [
+          -1.3,
+          -0.4666666666666666
+        ]
+      },
+      "B1-B0": {
+        "rate_diff": -0.6666666666666666,
+        "n10": 0,
+        "n01": 10,
+        "mcnemar_p": 0.001953125,
+        "bootstrap95": [
+          -0.8666666666666667,
+          -0.4
+        ],
+        "censored_time_diff_s": 0.8266666666666665,
+        "censored_time_bootstrap95": [
+          0.48666666666666664,
+          1.1666666666666667
+        ]
+      },
+      "B2-B0": {
+        "rate_diff": -0.06666666666666667,
+        "n10": 0,
+        "n01": 1,
+        "mcnemar_p": 1.0,
+        "bootstrap95": [
+          -0.2,
+          0.0
+        ],
+        "censored_time_diff_s": -0.05333333333333335,
+        "censored_time_bootstrap95": [
+          -0.31999999999999995,
+          0.2333333333333333
+        ]
+      },
+      "B3-B0": {
+        "rate_diff": 0.0,
+        "n10": 1,
+        "n01": 1,
+        "mcnemar_p": 1.0,
+        "bootstrap95": [
+          -0.2,
+          0.2
+        ],
+        "censored_time_diff_s": -0.12000000000000002,
+        "censored_time_bootstrap95": [
+          -0.3533333333333334,
+          0.12666666666666665
+        ]
+      }
+    },
+    "patterns_B1B2B3": {
+      "000": 1,
+      "001": 1,
+      "011": 9,
+      "111": 4
+    }
+  },
+  "safety": {
+    "collision_in_window_fraction_all_matched": {
+      "B0": 0.06666666666666667,
+      "B1": 0.0,
+      "B2": 0.06666666666666667,
+      "B3": 0.06666666666666667
+    },
+    "stop_fraction": 0.3,
+    "unsafe_arms": []
+  },
+  "target_independence": {
+    "max_target_diff_pre_terminal_m": 0.0,
+    "events_with_target_diff": 0
+  },
+  "compute_ms": {
+    "B0": {
+      "mean": 0.9113237209385261,
+      "p95": 1.0151466180104762,
+      "p99": 1.101350567769259
+    },
+    "B1": {
+      "mean": 1.6233373598273222,
+      "p95": 1.796899433247745,
+      "p99": 1.922966407146303
+    },
+    "B2": {
+      "mean": 1.687171360439,
+      "p95": 1.8169558636145666,
+      "p99": 1.8800943833775818
+    },
+    "B3": {
+      "mean": 1.666272504371591,
+      "p95": 1.8509003682993352,
+      "p99": 1.9357901276089238
+    }
+  },
+  "primary_key_cases": [
+    {
+      "seed": 4502,
+      "env": 1,
+      "t0": 7,
+      "class": "CENTRE_ONLY",
+      "shadow_offset_m": 0.0,
+      "outcomes": {
+        "B0": "miss",
+        "B1": "miss",
+        "B2": "miss",
+        "B3": "reobs 1.5s"
+      }
+    },
+    {
+      "seed": 4502,
+      "env": 10,
+      "t0": 14,
+      "class": "FULL",
+      "shadow_offset_m": 0.0,
+      "outcomes": {
+        "B0": "reobs 0.9s",
+        "B1": "miss",
+        "B2": "miss",
+        "B3": "miss"
+      }
+    }
+  ],
+  "events": [
+    {
+      "seed": 4502,
+      "env": 0,
+      "t0": 5,
+      "t0_by_arm": {
+        "B0": 5,
+        "B1": 5,
+        "B2": 5,
+        "B3": 5
+      },
+      "el0_class": "FOV_EXIT",
+      "primary": false,
+      "target_max_diff_pre_terminal_m": 0.0,
+      "window_before_coupling": false,
+      "shadow_offset_m": -0.25,
+      "shadow_clear": true,
+      "end_reason": {
+        "B0": "reobserved",
+        "B1": "window",
+        "B2": "reobserved",
+        "B3": "reobserved"
+      },
+      "results": {
+        "B0": {
+          "reobserved": true,
+          "time_to_reobs_s": 0.8,
+          "time_censored_s": 0.8,
+          "collision_in_window": false,
+          "collision_under_arm_control": false,
+          "collision_free_reobs": true,
+          "capture_in_window": false,
+          "terminal_in_window": false,
+          "camera_detection_without_target_pixels": false,
+          "distance_change_m": -7.0802717208862305,
+          "translation_m": 5.814869403839111,
+          "fov_retention": 0.65,
+          "camera_fraction": 0.65,
+          "lidar_only_fraction": 0.2,
+          "capture_by_w_plus_3s": true,
+          "crash_by_w_plus_3s": false
+        },
+        "B1": {
+          "reobserved": false,
+          "time_to_reobs_s": null,
+          "time_censored_s": 2.0,
+          "collision_in_window": false,
+          "collision_under_arm_control": false,
+          "collision_free_reobs": false,
+          "capture_in_window": false,
+          "terminal_in_window": false,
+          "camera_detection_without_target_pixels": false,
+          "distance_change_m": -3.535769462585449,
+          "translation_m": 2.1875813007354736,
+          "fov_retention": 0.0,
+          "camera_fraction": 0.0,
+          "lidar_only_fraction": 0.3,
+          "capture_by_w_plus_3s": true,
+          "crash_by_w_plus_3s": false
+        },
+        "B2": {
+          "reobserved": true,
+          "time_to_reobs_s": 0.30000000000000004,
+          "time_censored_s": 0.30000000000000004,
+          "collision_in_window": false,
+          "collision_under_arm_control": false,
+          "collision_free_reobs": true,
+          "capture_in_window": false,
+          "terminal_in_window": false,
+          "camera_detection_without_target_pixels": false,
+          "distance_change_m": -5.707916259765625,
+          "translation_m": 4.363236904144287,
+          "fov_retention": 0.45,
+          "camera_fraction": 0.6,
+          "lidar_only_fraction": 0.25,
+          "capture_by_w_plus_3s": true,
+          "crash_by_w_plus_3s": false
+        },
+        "B3": {
+          "reobserved": true,
+          "time_to_reobs_s": 0.30000000000000004,
+          "time_censored_s": 0.30000000000000004,
+          "collision_in_window": false,
+          "collision_under_arm_control": false,
+          "collision_free_reobs": true,
+          "capture_in_window": false,
+          "terminal_in_window": false,
+          "camera_detection_without_target_pixels": false,
+          "distance_change_m": -5.916926145553589,
+          "translation_m": 4.600313663482666,
+          "fov_retention": 0.45,
+          "camera_fraction": 0.6,
+          "lidar_only_fraction": 0.25,
+          "capture_by_w_plus_3s": true,
+          "crash_by_w_plus_3s": false
+        }
+      }
+    },
+    {
+      "seed": 4502,
+      "env": 1,
+      "t0": 7,
+      "t0_by_arm": {
+        "B0": 7,
+        "B1": 7,
+        "B2": 7,
+        "B3": 7
+      },
+      "el0_class": "CENTRE_ONLY",
+      "primary": true,
+      "target_max_diff_pre_terminal_m": 0.0,
+      "window_before_coupling": false,
+      "shadow_offset_m": 0.0,
+      "shadow_clear": false,
+      "end_reason": {
+        "B0": "window",
+        "B1": "window",
+        "B2": "window",
+        "B3": "reobserved"
+      },
+      "results": {
+        "B0": {
+          "reobserved": false,
+          "time_to_reobs_s": null,
+          "time_censored_s": 2.0,
+          "collision_in_window": false,
+          "collision_under_arm_control": false,
+          "collision_free_reobs": false,
+          "capture_in_window": false,
+          "terminal_in_window": false,
+          "camera_detection_without_target_pixels": false,
+          "distance_change_m": -3.219839096069336,
+          "translation_m": 4.163270473480225,
+          "fov_retention": 0.5,
+          "camera_fraction": 0.0,
+          "lidar_only_fraction": 0.0,
+          "capture_by_w_plus_3s": true,
+          "crash_by_w_plus_3s": true
+        },
+        "B1": {
+          "reobserved": false,
+          "time_to_reobs_s": null,
+          "time_censored_s": 2.0,
+          "collision_in_window": false,
+          "collision_under_arm_control": false,
+          "collision_free_reobs": false,
+          "capture_in_window": false,
+          "terminal_in_window": false,
+          "camera_detection_without_target_pixels": false,
+          "distance_change_m": -1.3805761337280273,
+          "translation_m": 2.354398250579834,
+          "fov_retention": 0.05,
+          "camera_fraction": 0.0,
+          "lidar_only_fraction": 0.0,
+          "capture_by_w_plus_3s": false,
+          "crash_by_w_plus_3s": false
+        },
+        "B2": {
+          "reobserved": false,
+          "time_to_reobs_s": null,
+          "time_censored_s": 2.0,
+          "collision_in_window": false,
+          "collision_under_arm_control": false,
+          "collision_free_reobs": false,
+          "capture_in_window": false,
+          "terminal_in_window": false,
+          "camera_detection_without_target_pixels": false,
+          "distance_change_m": -1.4784889221191406,
+          "translation_m": 2.4106979370117188,
+          "fov_retention": 1.0,
+          "camera_fraction": 0.0,
+          "lidar_only_fraction": 0.0,
+          "capture_by_w_plus_3s": false,
+          "crash_by_w_plus_3s": false
+        },
+        "B3": {
+          "reobserved": true,
+          "time_to_reobs_s": 1.5,
+          "time_censored_s": 1.5,
+          "collision_in_window": false,
+          "collision_under_arm_control": false,
+          "collision_free_reobs": true,
+          "capture_in_window": false,
+          "terminal_in_window": false,
+          "camera_detection_without_target_pixels": false,
+          "distance_change_m": -1.8298563957214355,
+          "translation_m": 3.3232533931732178,
+          "fov_retention": 1.0,
+          "camera_fraction": 0.3,
+          "lidar_only_fraction": 0.0,
+          "capture_by_w_plus_3s": false,
+          "crash_by_w_plus_3s": true
+        }
+      }
+    },
+    {
+      "seed": 4502,
+      "env": 2,
+      "t0": 8,
+      "t0_by_arm": {
+        "B0": 8,
+        "B1": 8,
+        "B2": 8,
+        "B3": 8
+      },
+      "el0_class": "FOV_EXIT",
+      "primary": false,
+      "target_max_diff_pre_terminal_m": 0.0,
+      "window_before_coupling": false,
+      "shadow_offset_m": -0.75,
+      "shadow_clear": true,
+      "end_reason": {
+        "B0": "reobserved",
+        "B1": "window",
+        "B2": "reobserved",
+        "B3": "reobserved"
+      },
+      "results": {
+        "B0": {
+          "reobserved": true,
+          "time_to_reobs_s": 0.9,
+          "time_censored_s": 0.9,
+          "collision_in_window": false,
+          "collision_under_arm_control": false,
+          "collision_free_reobs": true,
+          "capture_in_window": false,
+          "terminal_in_window": false,
+          "camera_detection_without_target_pixels": false,
+          "distance_change_m": -6.4168970584869385,
+          "translation_m": 5.397919178009033,
+          "fov_retention": 0.6,
+          "camera_fraction": 0.6,
+          "lidar_only_fraction": 0.25,
+          "capture_by_w_plus_3s": true,
+          "crash_by_w_plus_3s": false
+        },
+        "B1": {
+          "reobserved": false,
+          "time_to_reobs_s": null,
+          "time_censored_s": 2.0,
+          "collision_in_window": false,
+          "collision_under_arm_control": false,
+          "collision_free_reobs": false,
+          "capture_in_window": false,
+          "terminal_in_window": false,
+          "camera_detection_without_target_pixels": false,
+          "distance_change_m": -3.3077425956726074,
+          "translation_m": 2.274125337600708,
+          "fov_retention": 0.0,
+          "camera_fraction": 0.0,
+          "lidar_only_fraction": 0.55,
+          "capture_by_w_plus_3s": true,
+          "crash_by_w_plus_3s": false
+        },
+        "B2": {
+          "reobserved": true,
+          "time_to_reobs_s": 0.30000000000000004,
+          "time_censored_s": 0.30000000000000004,
+          "collision_in_window": false,
+          "collision_under_arm_control": false,
+          "collision_free_reobs": true,
+          "capture_in_window": false,
+          "terminal_in_window": false,
+          "camera_detection_without_target_pixels": false,
+          "distance_change_m": -5.878883123397827,
+          "translation_m": 4.956639766693115,
+          "fov_retention": 0.6,
+          "camera_fraction": 0.65,
+          "lidar_only_fraction": 0.15,
+          "capture_by_w_plus_3s": true,
+          "crash_by_w_plus_3s": false
+        },
+        "B3": {
+          "reobserved": true,
+          "time_to_reobs_s": 0.30000000000000004,
+          "time_censored_s": 0.30000000000000004,
+          "collision_in_window": false,
+          "collision_under_arm_control": false,
+          "collision_free_reobs": true,
+          "capture_in_window": false,
+          "terminal_in_window": false,
+          "camera_detection_without_target_pixels": false,
+          "distance_change_m": -6.126772165298462,
+          "translation_m": 5.258068561553955,
+          "fov_retention": 0.7,
+          "camera_fraction": 0.75,
+          "lidar_only_fraction": 0.1,
+          "capture_by_w_plus_3s": true,
+          "crash_by_w_plus_3s": false
+        }
+      }
+    },
+    {
+      "seed": 4502,
+      "env": 3,
+      "t0": 6,
+      "t0_by_arm": {
+        "B0": 6,
+        "B1": 6,
+        "B2": 6,
+        "B3": 6
+      },
+      "el0_class": "FOV_EXIT",
+      "primary": false,
+      "target_max_diff_pre_terminal_m": 0.0,
+      "window_before_coupling": false,
+      "shadow_offset_m": 0.0,
+      "shadow_clear": true,
+      "end_reason": {
+        "B0": "reobserved",
+        "B1": "reobserved",
+        "B2": "reobserved",
+        "B3": "reobserved"
+      },
+      "results": {
+        "B0": {
+          "reobserved": true,
+          "time_to_reobs_s": 0.1,
+          "time_censored_s": 0.1,
+          "collision_in_window": true,
+          "collision_under_arm_control": false,
+          "collision_free_reobs": true,
+          "capture_in_window": false,
+          "terminal_in_window": true,
+          "camera_detection_without_target_pixels": false,
+          "distance_change_m": -2.369108200073242,
+          "translation_m": 1.9376882314682007,
+          "fov_retention": 1.0,
+          "camera_fraction": 1.0,
+          "lidar_only_fraction": 0.0,
+          "capture_by_w_plus_3s": false,
+          "crash_by_w_plus_3s": true
+        },
+        "B1": {
+          "reobserved": true,
+          "time_to_reobs_s": 0.1,
+          "time_censored_s": 0.1,
+          "collision_in_window": false,
+          "collision_under_arm_control": false,
+          "collision_free_reobs": true,
+          "capture_in_window": false,
+          "terminal_in_window": false,
+          "camera_detection_without_target_pixels": false,
+          "distance_change_m": -5.6819984912872314,
+          "translation_m": 4.5201735496521,
+          "fov_retention": 1.0,
+          "camera_fraction": 0.8,
+          "lidar_only_fraction": 0.0,
+          "capture_by_w_plus_3s": true,
+          "crash_by_w_plus_3s": false
+        },
+        "B2": {
+          "reobserved": true,
+          "time_to_reobs_s": 0.1,
+          "time_censored_s": 0.1,
+          "collision_in_window": true,
+          "collision_under_arm_control": false,
+          "collision_free_reobs": true,
+          "capture_in_window": false,
+          "terminal_in_window": true,
+          "camera_detection_without_target_pixels": false,
+          "distance_change_m": -2.603454113006592,
+          "translation_m": 2.111804485321045,
+          "fov_retention": 1.0,
+          "camera_fraction": 0.5,
+          "lidar_only_fraction": 0.0,
+          "capture_by_w_plus_3s": false,
+          "crash_by_w_plus_3s": true
+        },
+        "B3": {
+          "reobserved": true,
+          "time_to_reobs_s": 0.1,
+          "time_censored_s": 0.1,
+          "collision_in_window": true,
+          "collision_under_arm_control": false,
+          "collision_free_reobs": true,
+          "capture_in_window": false,
+          "terminal_in_window": true,
+          "camera_detection_without_target_pixels": false,
+          "distance_change_m": -2.603454113006592,
+          "translation_m": 2.111804485321045,
+          "fov_retention": 1.0,
+          "camera_fraction": 0.5,
+          "lidar_only_fraction": 0.0,
+          "capture_by_w_plus_3s": false,
+          "crash_by_w_plus_3s": true
+        }
+      }
+    },
+    {
+      "seed": 4502,
+      "env": 4,
+      "t0": 5,
+      "t0_by_arm": {
+        "B0": 5,
+        "B1": 5,
+        "B2": 5,
+        "B3": 5
+      },
+      "el0_class": "CENTRE_ONLY",
+      "primary": true,
+      "target_max_diff_pre_terminal_m": 0.0,
+      "window_before_coupling": false,
+      "shadow_offset_m": -1.5,
+      "shadow_clear": true,
+      "end_reason": {
+        "B0": "reobserved",
+        "B1": "window",
+        "B2": "reobserved",
+        "B3": "reobserved"
+      },
+      "results": {
+        "B0": {
+          "reobserved": true,
+          "time_to_reobs_s": 0.9,
+          "time_censored_s": 0.9,
+          "collision_in_window": false,
+          "collision_under_arm_control": false,
+          "collision_free_reobs": true,
+          "capture_in_window": false,
+          "terminal_in_window": false,
+          "camera_detection_without_target_pixels": false,
+          "distance_change_m": -6.131458520889282,
+          "translation_m": 5.954050064086914,
+          "fov_retention": 0.75,
+          "camera_fraction": 0.5,
+          "lidar_only_fraction": 0.1,
+          "capture_by_w_plus_3s": true,
+          "crash_by_w_plus_3s": false
+        },
+        "B1": {
+          "reobserved": false,
+          "time_to_reobs_s": null,
+          "time_censored_s": 2.0,
+          "collision_in_window": false,
+          "collision_under_arm_control": false,
+          "collision_free_reobs": false,
+          "capture_in_window": false,
+          "terminal_in_window": false,
+          "camera_detection_without_target_pixels": false,
+          "distance_change_m": -2.317416191101074,
+          "translation_m": 1.9830845594406128,
+          "fov_retention": 1.0,
+          "camera_fraction": 0.0,
+          "lidar_only_fraction": 0.1,
+          "capture_by_w_plus_3s": true,
+          "crash_by_w_plus_3s": false
+        },
+        "B2": {
+          "reobserved": true,
+          "time_to_reobs_s": 1.9000000000000001,
+          "time_censored_s": 1.9000000000000001,
+          "collision_in_window": false,
+          "collision_under_arm_control": false,
+          "collision_free_reobs": true,
+          "capture_in_window": false,
+          "terminal_in_window": false,
+          "camera_detection_without_target_pixels": false,
+          "distance_change_m": -2.430065155029297,
+          "translation_m": 2.1540398597717285,
+          "fov_retention": 1.0,
+          "camera_fraction": 0.1,
+          "lidar_only_fraction": 0.05,
+          "capture_by_w_plus_3s": true,
+          "crash_by_w_plus_3s": false
+        },
+        "B3": {
+          "reobserved": true,
+          "time_to_reobs_s": 0.9,
+          "time_censored_s": 0.9,
+          "collision_in_window": false,
+          "collision_under_arm_control": false,
+          "collision_free_reobs": true,
+          "capture_in_window": false,
+          "terminal_in_window": false,
+          "camera_detection_without_target_pixels": false,
+          "distance_change_m": -3.881608009338379,
+          "translation_m": 4.088208198547363,
+          "fov_retention": 1.0,
+          "camera_fraction": 0.6,
+          "lidar_only_fraction": 0.0,
+          "capture_by_w_plus_3s": true,
+          "crash_by_w_plus_3s": false
+        }
+      }
+    },
+    {
+      "seed": 4502,
+      "env": 5,
+      "t0": 5,
+      "t0_by_arm": {
+        "B0": 5,
+        "B1": 5,
+        "B2": 5,
+        "B3": 5
+      },
+      "el0_class": "FOV_EXIT",
+      "primary": false,
+      "target_max_diff_pre_terminal_m": 0.0,
+      "window_before_coupling": false,
+      "shadow_offset_m": 0.0,
+      "shadow_clear": true,
+      "end_reason": {
+        "B0": "reobserved",
+        "B1": "window",
+        "B2": "reobserved",
+        "B3": "reobserved"
+      },
+      "results": {
+        "B0": {
+          "reobserved": true,
+          "time_to_reobs_s": 0.30000000000000004,
+          "time_censored_s": 0.30000000000000004,
+          "collision_in_window": false,
+          "collision_under_arm_control": false,
+          "collision_free_reobs": true,
+          "capture_in_window": false,
+          "terminal_in_window": false,
+          "camera_detection_without_target_pixels": false,
+          "distance_change_m": -6.351059913635254,
+          "translation_m": 5.986500263214111,
+          "fov_retention": 0.7,
+          "camera_fraction": 0.75,
+          "lidar_only_fraction": 0.1,
+          "capture_by_w_plus_3s": false,
+          "crash_by_w_plus_3s": true
+        },
+        "B1": {
+          "reobserved": false,
+          "time_to_reobs_s": null,
+          "time_censored_s": 2.0,
+          "collision_in_window": false,
+          "collision_under_arm_control": false,
+          "collision_free_reobs": false,
+          "capture_in_window": false,
+          "terminal_in_window": false,
+          "camera_detection_without_target_pixels": false,
+          "distance_change_m": -2.8800606727600098,
+          "translation_m": 2.541137456893921,
+          "fov_retention": 0.0,
+          "camera_fraction": 0.0,
+          "lidar_only_fraction": 0.6,
+          "capture_by_w_plus_3s": true,
+          "crash_by_w_plus_3s": false
+        },
+        "B2": {
+          "reobserved": true,
+          "time_to_reobs_s": 0.2,
+          "time_censored_s": 0.2,
+          "collision_in_window": false,
+          "collision_under_arm_control": false,
+          "collision_free_reobs": true,
+          "capture_in_window": false,
+          "terminal_in_window": false,
+          "camera_detection_without_target_pixels": false,
+          "distance_change_m": -5.82539701461792,
+          "translation_m": 5.450658321380615,
+          "fov_retention": 0.7,
+          "camera_fraction": 0.85,
+          "lidar_only_fraction": 0.0,
+          "capture_by_w_plus_3s": false,
+          "crash_by_w_plus_3s": false
+        },
+        "B3": {
+          "reobserved": true,
+          "time_to_reobs_s": 0.2,
+          "time_censored_s": 0.2,
+          "collision_in_window": false,
+          "collision_under_arm_control": false,
+          "collision_free_reobs": true,
+          "capture_in_window": false,
+          "terminal_in_window": false,
+          "camera_detection_without_target_pixels": false,
+          "distance_change_m": -5.82539701461792,
+          "translation_m": 5.450658321380615,
+          "fov_retention": 0.7,
+          "camera_fraction": 0.85,
+          "lidar_only_fraction": 0.0,
+          "capture_by_w_plus_3s": false,
+          "crash_by_w_plus_3s": false
+        }
+      }
+    },
+    {
+      "seed": 4502,
+      "env": 6,
+      "t0": 5,
+      "t0_by_arm": {
+        "B0": 5,
+        "B1": 5,
+        "B2": 5,
+        "B3": 5
+      },
+      "el0_class": "FULL",
+      "primary": true,
+      "target_max_diff_pre_terminal_m": 0.0,
+      "window_before_coupling": false,
+      "shadow_offset_m": -1.5,
+      "shadow_clear": true,
+      "end_reason": {
+        "B0": "reobserved",
+        "B1": "window",
+        "B2": "reobserved",
+        "B3": "reobserved"
+      },
+      "results": {
+        "B0": {
+          "reobserved": true,
+          "time_to_reobs_s": 0.6000000000000001,
+          "time_censored_s": 0.6000000000000001,
+          "collision_in_window": false,
+          "collision_under_arm_control": false,
+          "collision_free_reobs": true,
+          "capture_in_window": false,
+          "terminal_in_window": false,
+          "camera_detection_without_target_pixels": false,
+          "distance_change_m": -6.1769914627075195,
+          "translation_m": 5.622691631317139,
+          "fov_retention": 0.95,
+          "camera_fraction": 0.6,
+          "lidar_only_fraction": 0.0,
+          "capture_by_w_plus_3s": true,
+          "crash_by_w_plus_3s": false
+        },
+        "B1": {
+          "reobserved": false,
+          "time_to_reobs_s": null,
+          "time_censored_s": 2.0,
+          "collision_in_window": false,
+          "collision_under_arm_control": false,
+          "collision_free_reobs": false,
+          "capture_in_window": false,
+          "terminal_in_window": false,
+          "camera_detection_without_target_pixels": false,
+          "distance_change_m": -2.949826717376709,
+          "translation_m": 2.4404215812683105,
+          "fov_retention": 0.15,
+          "camera_fraction": 0.0,
+          "lidar_only_fraction": 0.0,
+          "capture_by_w_plus_3s": false,
+          "crash_by_w_plus_3s": false
+        },
+        "B2": {
+          "reobserved": true,
+          "time_to_reobs_s": 0.6000000000000001,
+          "time_censored_s": 0.6000000000000001,
+          "collision_in_window": false,
+          "collision_under_arm_control": false,
+          "collision_free_reobs": true,
+          "capture_in_window": false,
+          "terminal_in_window": false,
+          "camera_detection_without_target_pixels": false,
+          "distance_change_m": -4.480562210083008,
+          "translation_m": 3.8807477951049805,
+          "fov_retention": 1.0,
+          "camera_fraction": 0.6,
+          "lidar_only_fraction": 0.0,
+          "capture_by_w_plus_3s": false,
+          "crash_by_w_plus_3s": false
+        },
+        "B3": {
+          "reobserved": true,
+          "time_to_reobs_s": 0.6000000000000001,
+          "time_censored_s": 0.6000000000000001,
+          "collision_in_window": false,
+          "collision_under_arm_control": false,
+          "collision_free_reobs": true,
+          "capture_in_window": false,
+          "terminal_in_window": false,
+          "camera_detection_without_target_pixels": false,
+          "distance_change_m": -4.554870128631592,
+          "translation_m": 4.078006744384766,
+          "fov_retention": 1.0,
+          "camera_fraction": 0.55,
+          "lidar_only_fraction": 0.2,
+          "capture_by_w_plus_3s": true,
+          "crash_by_w_plus_3s": false
+        }
+      }
+    },
+    {
+      "seed": 4502,
+      "env": 7,
+      "t0": 4,
+      "t0_by_arm": {
+        "B0": 4,
+        "B1": 4,
+        "B2": 4,
+        "B3": 4
+      },
+      "el0_class": "FULL",
+      "primary": true,
+      "target_max_diff_pre_terminal_m": 0.0,
+      "window_before_coupling": false,
+      "shadow_offset_m": 0.0,
+      "shadow_clear": true,
+      "end_reason": {
+        "B0": "reobserved",
+        "B1": "window",
+        "B2": "reobserved",
+        "B3": "reobserved"
+      },
+      "results": {
+        "B0": {
+          "reobserved": true,
+          "time_to_reobs_s": 1.3,
+          "time_censored_s": 1.3,
+          "collision_in_window": false,
+          "collision_under_arm_control": false,
+          "collision_free_reobs": true,
+          "capture_in_window": false,
+          "terminal_in_window": false,
+          "camera_detection_without_target_pixels": false,
+          "distance_change_m": -4.260428428649902,
+          "translation_m": 4.702392101287842,
+          "fov_retention": 0.35,
+          "camera_fraction": 0.3,
+          "lidar_only_fraction": 0.0,
+          "capture_by_w_plus_3s": true,
+          "crash_by_w_plus_3s": false
+        },
+        "B1": {
+          "reobserved": false,
+          "time_to_reobs_s": null,
+          "time_censored_s": 2.0,
+          "collision_in_window": false,
+          "collision_under_arm_control": false,
+          "collision_free_reobs": false,
+          "capture_in_window": false,
+          "terminal_in_window": false,
+          "camera_detection_without_target_pixels": false,
+          "distance_change_m": -1.6778278350830078,
+          "translation_m": 2.12609601020813,
+          "fov_retention": 0.05,
+          "camera_fraction": 0.0,
+          "lidar_only_fraction": 0.0,
+          "capture_by_w_plus_3s": false,
+          "crash_by_w_plus_3s": false
+        },
+        "B2": {
+          "reobserved": true,
+          "time_to_reobs_s": 1.0,
+          "time_censored_s": 1.0,
+          "collision_in_window": false,
+          "collision_under_arm_control": false,
+          "collision_free_reobs": true,
+          "capture_in_window": false,
+          "terminal_in_window": false,
+          "camera_detection_without_target_pixels": false,
+          "distance_change_m": -2.4122228622436523,
+          "translation_m": 2.9000697135925293,
+          "fov_retention": 0.9,
+          "camera_fraction": 0.4,
+          "lidar_only_fraction": 0.0,
+          "capture_by_w_plus_3s": false,
+          "crash_by_w_plus_3s": false
+        },
+        "B3": {
+          "reobserved": true,
+          "time_to_reobs_s": 1.5,
+          "time_censored_s": 1.5,
+          "collision_in_window": false,
+          "collision_under_arm_control": false,
+          "collision_free_reobs": true,
+          "capture_in_window": false,
+          "terminal_in_window": false,
+          "camera_detection_without_target_pixels": false,
+          "distance_change_m": -1.5306825637817383,
+          "translation_m": 2.4879448413848877,
+          "fov_retention": 0.9,
+          "camera_fraction": 0.15,
+          "lidar_only_fraction": 0.05,
+          "capture_by_w_plus_3s": false,
+          "crash_by_w_plus_3s": false
+        }
+      }
+    },
+    {
+      "seed": 4502,
+      "env": 8,
+      "t0": 6,
+      "t0_by_arm": {
+        "B0": 6,
+        "B1": 6,
+        "B2": 6,
+        "B3": 6
+      },
+      "el0_class": "FOV_EXIT",
+      "primary": false,
+      "target_max_diff_pre_terminal_m": 0.0,
+      "window_before_coupling": false,
+      "shadow_offset_m": 0.0,
+      "shadow_clear": true,
+      "end_reason": {
+        "B0": "reobserved",
+        "B1": "reobserved",
+        "B2": "reobserved",
+        "B3": "reobserved"
+      },
+      "results": {
+        "B0": {
+          "reobserved": true,
+          "time_to_reobs_s": 0.1,
+          "time_censored_s": 0.1,
+          "collision_in_window": false,
+          "collision_under_arm_control": false,
+          "collision_free_reobs": true,
+          "capture_in_window": false,
+          "terminal_in_window": false,
+          "camera_detection_without_target_pixels": false,
+          "distance_change_m": -7.729836344718933,
+          "translation_m": 6.1308088302612305,
+          "fov_retention": 0.4,
+          "camera_fraction": 0.7,
+          "lidar_only_fraction": 0.3,
+          "capture_by_w_plus_3s": true,
+          "crash_by_w_plus_3s": false
+        },
+        "B1": {
+          "reobserved": true,
+          "time_to_reobs_s": 0.1,
+          "time_censored_s": 0.1,
+          "collision_in_window": false,
+          "collision_under_arm_control": false,
+          "collision_free_reobs": true,
+          "capture_in_window": false,
+          "terminal_in_window": false,
+          "camera_detection_without_target_pixels": false,
+          "distance_change_m": -7.513749599456787,
+          "translation_m": 5.896747589111328,
+          "fov_retention": 0.3,
+          "camera_fraction": 0.75,
+          "lidar_only_fraction": 0.25,
+          "capture_by_w_plus_3s": true,
+          "crash_by_w_plus_3s": false
+        },
+        "B2": {
+          "reobserved": true,
+          "time_to_reobs_s": 0.1,
+          "time_censored_s": 0.1,
+          "collision_in_window": false,
+          "collision_under_arm_control": false,
+          "collision_free_reobs": true,
+          "capture_in_window": false,
+          "terminal_in_window": false,
+          "camera_detection_without_target_pixels": false,
+          "distance_change_m": -7.133382320404053,
+          "translation_m": 5.542957305908203,
+          "fov_retention": 0.35,
+          "camera_fraction": 0.6,
+          "lidar_only_fraction": 0.4,
+          "capture_by_w_plus_3s": true,
+          "crash_by_w_plus_3s": false
+        },
+        "B3": {
+          "reobserved": true,
+          "time_to_reobs_s": 0.1,
+          "time_censored_s": 0.1,
+          "collision_in_window": false,
+          "collision_under_arm_control": false,
+          "collision_free_reobs": true,
+          "capture_in_window": false,
+          "terminal_in_window": false,
+          "camera_detection_without_target_pixels": false,
+          "distance_change_m": -7.133382320404053,
+          "translation_m": 5.542957305908203,
+          "fov_retention": 0.35,
+          "camera_fraction": 0.6,
+          "lidar_only_fraction": 0.4,
+          "capture_by_w_plus_3s": true,
+          "crash_by_w_plus_3s": false
+        }
+      }
+    },
+    {
+      "seed": 4502,
+      "env": 9,
+      "t0": 5,
+      "t0_by_arm": {
+        "B0": 5,
+        "B1": 5,
+        "B2": 5,
+        "B3": 5
+      },
+      "el0_class": "FOV_EXIT",
+      "primary": false,
+      "target_max_diff_pre_terminal_m": 0.0,
+      "window_before_coupling": false,
+      "shadow_offset_m": 0.0,
+      "shadow_clear": true,
+      "end_reason": {
+        "B0": "reobserved",
+        "B1": "reobserved",
+        "B2": "reobserved",
+        "B3": "reobserved"
+      },
+      "results": {
+        "B0": {
+          "reobserved": true,
+          "time_to_reobs_s": 0.2,
+          "time_censored_s": 0.2,
+          "collision_in_window": false,
+          "collision_under_arm_control": false,
+          "collision_free_reobs": true,
+          "capture_in_window": false,
+          "terminal_in_window": false,
+          "camera_detection_without_target_pixels": false,
+          "distance_change_m": -7.654350757598877,
+          "translation_m": 6.26737117767334,
+          "fov_retention": 0.85,
+          "camera_fraction": 0.95,
+          "lidar_only_fraction": 0.05,
+          "capture_by_w_plus_3s": true,
+          "crash_by_w_plus_3s": false
+        },
+        "B1": {
+          "reobserved": true,
+          "time_to_reobs_s": 0.2,
+          "time_censored_s": 0.2,
+          "collision_in_window": false,
+          "collision_under_arm_control": false,
+          "collision_free_reobs": true,
+          "capture_in_window": false,
+          "terminal_in_window": false,
+          "camera_detection_without_target_pixels": false,
+          "distance_change_m": -7.1719584465026855,
+          "translation_m": 5.777817726135254,
+          "fov_retention": 0.8,
+          "camera_fraction": 0.9,
+          "lidar_only_fraction": 0.1,
+          "capture_by_w_plus_3s": true,
+          "crash_by_w_plus_3s": false
+        },
+        "B2": {
+          "reobserved": true,
+          "time_to_reobs_s": 0.2,
+          "time_censored_s": 0.2,
+          "collision_in_window": false,
+          "collision_under_arm_control": false,
+          "collision_free_reobs": true,
+          "capture_in_window": false,
+          "terminal_in_window": false,
+          "camera_detection_without_target_pixels": false,
+          "distance_change_m": -6.874927520751953,
+          "translation_m": 5.456015586853027,
+          "fov_retention": 0.85,
+          "camera_fraction": 0.85,
+          "lidar_only_fraction": 0.1,
+          "capture_by_w_plus_3s": true,
+          "crash_by_w_plus_3s": false
+        },
+        "B3": {
+          "reobserved": true,
+          "time_to_reobs_s": 0.2,
+          "time_censored_s": 0.2,
+          "collision_in_window": false,
+          "collision_under_arm_control": false,
+          "collision_free_reobs": true,
+          "capture_in_window": false,
+          "terminal_in_window": false,
+          "camera_detection_without_target_pixels": false,
+          "distance_change_m": -6.874927520751953,
+          "translation_m": 5.456015586853027,
+          "fov_retention": 0.85,
+          "camera_fraction": 0.85,
+          "lidar_only_fraction": 0.1,
+          "capture_by_w_plus_3s": true,
+          "crash_by_w_plus_3s": false
+        }
+      }
+    },
+    {
+      "seed": 4502,
+      "env": 10,
+      "t0": 14,
+      "t0_by_arm": {
+        "B0": 14,
+        "B1": 14,
+        "B2": 14,
+        "B3": 14
+      },
+      "el0_class": "FULL",
+      "primary": true,
+      "target_max_diff_pre_terminal_m": 0.0,
+      "window_before_coupling": false,
+      "shadow_offset_m": 0.0,
+      "shadow_clear": false,
+      "end_reason": {
+        "B0": "reobserved",
+        "B1": "window",
+        "B2": "window",
+        "B3": "window"
+      },
+      "results": {
+        "B0": {
+          "reobserved": true,
+          "time_to_reobs_s": 0.9,
+          "time_censored_s": 0.9,
+          "collision_in_window": false,
+          "collision_under_arm_control": false,
+          "collision_free_reobs": true,
+          "capture_in_window": false,
+          "terminal_in_window": false,
+          "camera_detection_without_target_pixels": false,
+          "distance_change_m": -5.091216087341309,
+          "translation_m": 6.061306476593018,
+          "fov_retention": 1.0,
+          "camera_fraction": 0.6,
+          "lidar_only_fraction": 0.0,
+          "capture_by_w_plus_3s": true,
+          "crash_by_w_plus_3s": false
+        },
+        "B1": {
+          "reobserved": false,
+          "time_to_reobs_s": null,
+          "time_censored_s": 2.0,
+          "collision_in_window": false,
+          "collision_under_arm_control": false,
+          "collision_free_reobs": false,
+          "capture_in_window": false,
+          "terminal_in_window": false,
+          "camera_detection_without_target_pixels": false,
+          "distance_change_m": -3.071136951446533,
+          "translation_m": 3.0705811977386475,
+          "fov_retention": 1.0,
+          "camera_fraction": 0.0,
+          "lidar_only_fraction": 0.0,
+          "capture_by_w_plus_3s": false,
+          "crash_by_w_plus_3s": false
+        },
+        "B2": {
+          "reobserved": false,
+          "time_to_reobs_s": null,
+          "time_censored_s": 2.0,
+          "collision_in_window": false,
+          "collision_under_arm_control": false,
+          "collision_free_reobs": false,
+          "capture_in_window": false,
+          "terminal_in_window": false,
+          "camera_detection_without_target_pixels": false,
+          "distance_change_m": -3.008472442626953,
+          "translation_m": 2.99910831451416,
+          "fov_retention": 1.0,
+          "camera_fraction": 0.0,
+          "lidar_only_fraction": 0.0,
+          "capture_by_w_plus_3s": false,
+          "crash_by_w_plus_3s": false
+        },
+        "B3": {
+          "reobserved": false,
+          "time_to_reobs_s": null,
+          "time_censored_s": 2.0,
+          "collision_in_window": false,
+          "collision_under_arm_control": false,
+          "collision_free_reobs": false,
+          "capture_in_window": false,
+          "terminal_in_window": false,
+          "camera_detection_without_target_pixels": false,
+          "distance_change_m": -2.7319564819335938,
+          "translation_m": 3.567837715148926,
+          "fov_retention": 1.0,
+          "camera_fraction": 0.0,
+          "lidar_only_fraction": 0.1,
+          "capture_by_w_plus_3s": true,
+          "crash_by_w_plus_3s": false
+        }
+      }
+    },
+    {
+      "seed": 4502,
+      "env": 11,
+      "t0": 6,
+      "t0_by_arm": {
+        "B0": 6,
+        "B1": 6,
+        "B2": 6,
+        "B3": 6
+      },
+      "el0_class": "FOV_EXIT",
+      "primary": false,
+      "target_max_diff_pre_terminal_m": 0.0,
+      "window_before_coupling": false,
+      "shadow_offset_m": 0.0,
+      "shadow_clear": true,
+      "end_reason": {
+        "B0": "reobserved",
+        "B1": "reobserved",
+        "B2": "reobserved",
+        "B3": "reobserved"
+      },
+      "results": {
+        "B0": {
+          "reobserved": true,
+          "time_to_reobs_s": 0.1,
+          "time_censored_s": 0.1,
+          "collision_in_window": false,
+          "collision_under_arm_control": false,
+          "collision_free_reobs": true,
+          "capture_in_window": false,
+          "terminal_in_window": false,
+          "camera_detection_without_target_pixels": false,
+          "distance_change_m": -3.955953598022461,
+          "translation_m": 6.503273963928223,
+          "fov_retention": 1.0,
+          "camera_fraction": 1.0,
+          "lidar_only_fraction": 0.0,
+          "capture_by_w_plus_3s": false,
+          "crash_by_w_plus_3s": false
+        },
+        "B1": {
+          "reobserved": true,
+          "time_to_reobs_s": 0.1,
+          "time_censored_s": 0.1,
+          "collision_in_window": false,
+          "collision_under_arm_control": false,
+          "collision_free_reobs": true,
+          "capture_in_window": false,
+          "terminal_in_window": false,
+          "camera_detection_without_target_pixels": false,
+          "distance_change_m": -3.707487106323242,
+          "translation_m": 6.253317356109619,
+          "fov_retention": 1.0,
+          "camera_fraction": 1.0,
+          "lidar_only_fraction": 0.0,
+          "capture_by_w_plus_3s": false,
+          "crash_by_w_plus_3s": false
+        },
+        "B2": {
+          "reobserved": true,
+          "time_to_reobs_s": 0.1,
+          "time_censored_s": 0.1,
+          "collision_in_window": false,
+          "collision_under_arm_control": false,
+          "collision_free_reobs": true,
+          "capture_in_window": false,
+          "terminal_in_window": false,
+          "camera_detection_without_target_pixels": false,
+          "distance_change_m": -3.3906168937683105,
+          "translation_m": 5.98786735534668,
+          "fov_retention": 1.0,
+          "camera_fraction": 1.0,
+          "lidar_only_fraction": 0.0,
+          "capture_by_w_plus_3s": false,
+          "crash_by_w_plus_3s": false
+        },
+        "B3": {
+          "reobserved": true,
+          "time_to_reobs_s": 0.1,
+          "time_censored_s": 0.1,
+          "collision_in_window": false,
+          "collision_under_arm_control": false,
+          "collision_free_reobs": true,
+          "capture_in_window": false,
+          "terminal_in_window": false,
+          "camera_detection_without_target_pixels": false,
+          "distance_change_m": -3.3906168937683105,
+          "translation_m": 5.98786735534668,
+          "fov_retention": 1.0,
+          "camera_fraction": 1.0,
+          "lidar_only_fraction": 0.0,
+          "capture_by_w_plus_3s": false,
+          "crash_by_w_plus_3s": false
+        }
+      }
+    },
+    {
+      "seed": 4502,
+      "env": 12,
+      "t0": 6,
+      "t0_by_arm": {
+        "B0": 6,
+        "B1": 6,
+        "B2": 6,
+        "B3": 6
+      },
+      "el0_class": "FOV_EXIT",
+      "primary": false,
+      "target_max_diff_pre_terminal_m": 0.0,
+      "window_before_coupling": false,
+      "shadow_offset_m": 0.0,
+      "shadow_clear": true,
+      "end_reason": {
+        "B0": "reobserved",
+        "B1": "window",
+        "B2": "reobserved",
+        "B3": "reobserved"
+      },
+      "results": {
+        "B0": {
+          "reobserved": true,
+          "time_to_reobs_s": 0.2,
+          "time_censored_s": 0.2,
+          "collision_in_window": false,
+          "collision_under_arm_control": false,
+          "collision_free_reobs": true,
+          "capture_in_window": false,
+          "terminal_in_window": false,
+          "camera_detection_without_target_pixels": false,
+          "distance_change_m": -7.619832158088684,
+          "translation_m": 5.545976161956787,
+          "fov_retention": 0.8,
+          "camera_fraction": 0.9,
+          "lidar_only_fraction": 0.05,
+          "capture_by_w_plus_3s": false,
+          "crash_by_w_plus_3s": false
+        },
+        "B1": {
+          "reobserved": false,
+          "time_to_reobs_s": null,
+          "time_censored_s": 2.0,
+          "collision_in_window": false,
+          "collision_under_arm_control": false,
+          "collision_free_reobs": false,
+          "capture_in_window": false,
+          "terminal_in_window": false,
+          "camera_detection_without_target_pixels": false,
+          "distance_change_m": -3.984499931335449,
+          "translation_m": 1.9283455610275269,
+          "fov_retention": 0.0,
+          "camera_fraction": 0.0,
+          "lidar_only_fraction": 0.4,
+          "capture_by_w_plus_3s": true,
+          "crash_by_w_plus_3s": false
+        },
+        "B2": {
+          "reobserved": true,
+          "time_to_reobs_s": 0.1,
+          "time_censored_s": 0.1,
+          "collision_in_window": false,
+          "collision_under_arm_control": false,
+          "collision_free_reobs": true,
+          "capture_in_window": false,
+          "terminal_in_window": false,
+          "camera_detection_without_target_pixels": false,
+          "distance_change_m": -7.2955169677734375,
+          "translation_m": 5.188491344451904,
+          "fov_retention": 0.65,
+          "camera_fraction": 0.95,
+          "lidar_only_fraction": 0.05,
+          "capture_by_w_plus_3s": true,
+          "crash_by_w_plus_3s": false
+        },
+        "B3": {
+          "reobserved": true,
+          "time_to_reobs_s": 0.1,
+          "time_censored_s": 0.1,
+          "collision_in_window": false,
+          "collision_under_arm_control": false,
+          "collision_free_reobs": true,
+          "capture_in_window": false,
+          "terminal_in_window": false,
+          "camera_detection_without_target_pixels": false,
+          "distance_change_m": -7.2955169677734375,
+          "translation_m": 5.188491344451904,
+          "fov_retention": 0.65,
+          "camera_fraction": 0.95,
+          "lidar_only_fraction": 0.05,
+          "capture_by_w_plus_3s": true,
+          "crash_by_w_plus_3s": false
+        }
+      }
+    },
+    {
+      "seed": 4502,
+      "env": 13,
+      "t0": 5,
+      "t0_by_arm": {
+        "B0": 5,
+        "B1": 5,
+        "B2": 5,
+        "B3": 5
+      },
+      "el0_class": "FOV_EXIT",
+      "primary": false,
+      "target_max_diff_pre_terminal_m": 0.0,
+      "window_before_coupling": false,
+      "shadow_offset_m": 0.0,
+      "shadow_clear": true,
+      "end_reason": {
+        "B0": "reobserved",
+        "B1": "window",
+        "B2": "reobserved",
+        "B3": "reobserved"
+      },
+      "results": {
+        "B0": {
+          "reobserved": true,
+          "time_to_reobs_s": 1.4000000000000001,
+          "time_censored_s": 1.4000000000000001,
+          "collision_in_window": false,
+          "collision_under_arm_control": false,
+          "collision_free_reobs": true,
+          "capture_in_window": false,
+          "terminal_in_window": false,
+          "camera_detection_without_target_pixels": false,
+          "distance_change_m": -6.867034912109375,
+          "translation_m": 5.919987201690674,
+          "fov_retention": 0.25,
+          "camera_fraction": 0.25,
+          "lidar_only_fraction": 0.45,
+          "capture_by_w_plus_3s": true,
+          "crash_by_w_plus_3s": false
+        },
+        "B1": {
+          "reobserved": false,
+          "time_to_reobs_s": null,
+          "time_censored_s": 2.0,
+          "collision_in_window": false,
+          "collision_under_arm_control": false,
+          "collision_free_reobs": false,
+          "capture_in_window": false,
+          "terminal_in_window": false,
+          "camera_detection_without_target_pixels": false,
+          "distance_change_m": -3.7554173469543457,
+          "translation_m": 2.7921016216278076,
+          "fov_retention": 0.0,
+          "camera_fraction": 0.0,
+          "lidar_only_fraction": 0.7,
+          "capture_by_w_plus_3s": true,
+          "crash_by_w_plus_3s": false
+        },
+        "B2": {
+          "reobserved": true,
+          "time_to_reobs_s": 0.2,
+          "time_censored_s": 0.2,
+          "collision_in_window": false,
+          "collision_under_arm_control": false,
+          "collision_free_reobs": true,
+          "capture_in_window": false,
+          "terminal_in_window": false,
+          "camera_detection_without_target_pixels": false,
+          "distance_change_m": -6.227352619171143,
+          "translation_m": 5.293504238128662,
+          "fov_retention": 0.25,
+          "camera_fraction": 0.25,
+          "lidar_only_fraction": 0.55,
+          "capture_by_w_plus_3s": true,
+          "crash_by_w_plus_3s": false
+        },
+        "B3": {
+          "reobserved": true,
+          "time_to_reobs_s": 0.2,
+          "time_censored_s": 0.2,
+          "collision_in_window": false,
+          "collision_under_arm_control": false,
+          "collision_free_reobs": true,
+          "capture_in_window": false,
+          "terminal_in_window": false,
+          "camera_detection_without_target_pixels": false,
+          "distance_change_m": -6.227352619171143,
+          "translation_m": 5.293504238128662,
+          "fov_retention": 0.25,
+          "camera_fraction": 0.25,
+          "lidar_only_fraction": 0.55,
+          "capture_by_w_plus_3s": true,
+          "crash_by_w_plus_3s": false
+        }
+      }
+    },
+    {
+      "seed": 4502,
+      "env": 14,
+      "t0": 5,
+      "t0_by_arm": {
+        "B0": 5,
+        "B1": 5,
+        "B2": 5,
+        "B3": 5
+      },
+      "el0_class": "FOV_EXIT",
+      "primary": false,
+      "target_max_diff_pre_terminal_m": 0.0,
+      "window_before_coupling": false,
+      "shadow_offset_m": 0.0,
+      "shadow_clear": true,
+      "end_reason": {
+        "B0": "reobserved",
+        "B1": "window",
+        "B2": "reobserved",
+        "B3": "reobserved"
+      },
+      "results": {
+        "B0": {
+          "reobserved": true,
+          "time_to_reobs_s": 0.30000000000000004,
+          "time_censored_s": 0.30000000000000004,
+          "collision_in_window": false,
+          "collision_under_arm_control": false,
+          "collision_free_reobs": true,
+          "capture_in_window": false,
+          "terminal_in_window": false,
+          "camera_detection_without_target_pixels": false,
+          "distance_change_m": -5.545331001281738,
+          "translation_m": 5.663032054901123,
+          "fov_retention": 0.25,
+          "camera_fraction": 0.6,
+          "lidar_only_fraction": 0.25,
+          "capture_by_w_plus_3s": true,
+          "crash_by_w_plus_3s": false
+        },
+        "B1": {
+          "reobserved": false,
+          "time_to_reobs_s": null,
+          "time_censored_s": 2.0,
+          "collision_in_window": false,
+          "collision_under_arm_control": false,
+          "collision_free_reobs": false,
+          "capture_in_window": false,
+          "terminal_in_window": false,
+          "camera_detection_without_target_pixels": false,
+          "distance_change_m": -2.1339850425720215,
+          "translation_m": 2.2239882946014404,
+          "fov_retention": 0.0,
+          "camera_fraction": 0.0,
+          "lidar_only_fraction": 0.35,
+          "capture_by_w_plus_3s": false,
+          "crash_by_w_plus_3s": false
+        },
+        "B2": {
+          "reobserved": true,
+          "time_to_reobs_s": 0.2,
+          "time_censored_s": 0.2,
+          "collision_in_window": false,
+          "collision_under_arm_control": false,
+          "collision_free_reobs": true,
+          "capture_in_window": false,
+          "terminal_in_window": false,
+          "camera_detection_without_target_pixels": false,
+          "distance_change_m": -4.904304027557373,
+          "translation_m": 4.989869117736816,
+          "fov_retention": 0.3,
+          "camera_fraction": 0.5,
+          "lidar_only_fraction": 0.4,
+          "capture_by_w_plus_3s": true,
+          "crash_by_w_plus_3s": false
+        },
+        "B3": {
+          "reobserved": true,
+          "time_to_reobs_s": 0.2,
+          "time_censored_s": 0.2,
+          "collision_in_window": false,
+          "collision_under_arm_control": false,
+          "collision_free_reobs": true,
+          "capture_in_window": false,
+          "terminal_in_window": false,
+          "camera_detection_without_target_pixels": false,
+          "distance_change_m": -4.904304027557373,
+          "translation_m": 4.989869117736816,
+          "fov_retention": 0.3,
+          "camera_fraction": 0.5,
+          "lidar_only_fraction": 0.4,
+          "capture_by_w_plus_3s": true,
+          "crash_by_w_plus_3s": false
+        }
+      }
+    }
+  ]
+}

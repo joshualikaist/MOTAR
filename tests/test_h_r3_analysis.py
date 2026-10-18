@@ -121,11 +121,34 @@ class AnalysisTest(unittest.TestCase):
         self.assertAlmostEqual(lo, 0.3755, places=3)
         self.assertAlmostEqual(hi, 0.9638, places=3)
 
+    def test_posthoc_separates_noise_from_action_divergence(self):
+        import h_r3_posthoc as hp
+
+        def edit(arm, tr):
+            if arm == "B3":
+                tr["camera"][12, 0], tr["el0_visible_px"][12, 0] = True, 40
+                tr["action"][11, 0, 1] = 0.5                  # env 0: lateral command first, at step 11
+                tr["digest"][11:, 0] += np.uint64(10 ** 6)
+                tr["digest"][13:, 2] += np.uint64(10 ** 6)    # env 2: digests separate with equal actions
+            tr["intervening"][10:20, :3] = True
+        with tempfile.TemporaryDirectory() as tmp:
+            write_run(tmp, arms_from(edit))
+            analysis = ha.analyse(tmp)
+            analysis["max_velocity"] = 2.5
+            rows = {r["env"]: r for r in hp.diagnose(tmp, analysis, W)["events"]}
+        self.assertEqual((rows[0]["first_action_diff_step"], rows[0]["first_digest_diff_step"]), (1, 1))
+        self.assertFalse(rows[0]["noise_before_action"])
+        self.assertEqual(rows[0]["pattern_B1B2B3"], "001")
+        self.assertTrue(rows[2]["noise_before_action"])
+        self.assertAlmostEqual(rows[0]["max_cmd_speed_mps"]["B3"], 1.25, places=5)
+        self.assertEqual(hp.mcnemar_events(9 / 22, 1 / 22), 32)
+
     def test_imports_no_production_code(self):
-        tree = ast.parse((ROOT / "tools/h_r3_analysis.py").read_text())
-        mods = {a.name.split(".")[0] for n in ast.walk(tree) if isinstance(n, ast.Import) for a in n.names}
-        mods |= {n.module.split(".")[0] for n in ast.walk(tree) if isinstance(n, ast.ImportFrom) and n.module}
-        self.assertEqual(mods, {"__future__", "argparse", "json", "math", "pathlib", "numpy"})
+        for name in ("h_r3_analysis.py", "h_r3_posthoc.py"):
+            tree = ast.parse((ROOT / "tools" / name).read_text())
+            mods = {a.name.split(".")[0] for n in ast.walk(tree) if isinstance(n, ast.Import) for a in n.names}
+            mods |= {n.module.split(".")[0] for n in ast.walk(tree) if isinstance(n, ast.ImportFrom) and n.module}
+            self.assertEqual(mods, {"__future__", "argparse", "json", "math", "pathlib", "numpy"}, name)
 
 
 if __name__ == "__main__":
