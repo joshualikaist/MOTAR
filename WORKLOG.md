@@ -21716,3 +21716,17 @@ previous E-L0 14 and EQ-1D 13 PASS remain applicable (96 distinct focused tests 
 GPU proof is still NOT_TESTED for this repair. Next: exact-source SMOKE02; main only after PASS.
 Files: docs/plans/h_r3_p02_amendment2.md, tools/h_r3_p02_{rng,launcher,run}.py,
 tests/test_h_r3_p02_rng.py and this append-only log.
+
+## 2026-10-18 — H-R3 P02 SMOKE02 PASS, committed mechanics evidence
+
+Source 1ca0c8a; all eight processes completed, 208.14 GPU wall-seconds, peak4754MiB.
+Independent stored-trace analysis: integrity PASS, zero prebranch mismatches, 16 matched triggers;
+FULL2/CENTRE_ONLY0/PARTIAL0/FOV_EXIT14. This is mechanics only, not effect evidence.
+Forced env15 reset40 leaves other15 envs' full state/raw RGB-D/LiDAR/action/probes bitwise identical
+through180 steps. Evaluator OFF/ON all16 envs likewise identical. All six own-trigger safety
+fractions0/16; B3/B4 active lateral samples135/140; nominal norm error2.3841858e-7m/s <1e-6.
+Manifest member hashes/sizes verified. Compact smoke analysis/report/manifest committed under
+docs/evidence/h_r3_p02_2026-10-18; raw stays outside Git at HR3-P02-SMOKE02. SMOKE01 FAIL retained.
+Next authorized unit: exactly seeds4601/4602, six arms,128envs,600steps; no adaptive expansion.
+Runtime files and all preregistration/code/test hashes remain unchanged from this passing smoke.
+No production/checkpoint/P01 edits, main merge or push.
