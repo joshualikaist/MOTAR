@@ -21912,3 +21912,52 @@ ActualquotadeadlineUNKNOWN, conservativewrapup05:03KST; nextsession mustreview, 
     `motar-6nn.5`.
 - **Next:** `bd ready` (`motar-d43.1`, `motar-6nn.1`, `motar-lp5.1`). No push. User decisions are
   pending: Node 20 as the default `node`, and claude-mem sign-in, which is declined by default.
+
+## 2026-10-19 — Occlusion-handling algorithm v1: G0–G3 research design (25-paper basis); BOIA recommended; G4 awaits approval
+
+- **Scope.** Approved: G0–G3 only (state/PDF check, reading and source audit, MOTAR audit, design).
+  Nothing was implemented or run on a GPU, and no production file was edited. Beads epic `motar-3p3`:
+  G0/G1/G2/G3 closed; G1b (`.6`) and G4 (`.5`, needs approval) open.
+- **G0 papers.** The user's inventory came from another machine.
+  - 5 PDFs were found locally with the same SHA-256, and 14 more were downloaded (arXiv/CVF) with
+    identical SHA-256: **19 identical** in total.
+  - 4 are different versions: EGO-Planner v2, ORTrack v1, Star-Convex v1, Lee SE(3) arXiv v1.
+  - 2 are NOT_AVAILABLE (YOPO, IEEE only; OCTrack, not found) and are not summarised.
+  - PDFs are in `reference/papers_occlusion_v1/` (outside Git), with a manifest.
+- **G1.** 23 papers read: 18 FULL_READ, 5 METHOD_REVIEWED, with page/equation refs. 11 official
+  repos audited by no-checkout clones (commit, licence, file:line), none run, so CODE_VERIFIED = 0.
+  The clones were deleted afterwards.
+  - Licence gate: UAST, YOPO and YOPO-Tracker are MIT; Eva-Tracker is AGPL; Elastic and EGO are GPL.
+- **G2 MOTAR facts (file:line in `notes/M1`, `notes/M2`; spot-checked):**
+  - **Oracle-grade detector.** The renderer paints the GT silhouette red and a fixed 1×1 conv
+    recovers it.
+  - **The riskcap governor is not a brake.** Its 2.0 m/s floor holds at any clearance.
+  - The camera has no innovation gate, and its R is diagonal in world axes (a new finding).
+  - The terminal observation is post-reset.
+  - Planner actions enter Policy F's `prev_action`.
+- **G2 failure data (`notes/M3`, associations only).** The KROC arm capture totals reproduce exactly.
+  - Policy F re-observes FOV exits 96–99 % of the time and geometric losses 77–82 % within 2 s;
+    fused resumption is 100 %.
+  - Visible-start failures are crashes: 25–34 % happened with an in-view occlusion open, against a
+    1.4–15 % time share.
+  - Crash within 2 s after an incident geometric-occlusion onset: 3.23 % (160 bars), 3.82 % (205).
+  - Hidden-start never-acquired failures are 32–62 %, a separate problem.
+- **Hypothesis rejected for the MVP target:** "re-observation is Policy F's main headroom". Measured:
+  re-observation is already 96–99 % for FOV exits and 100 % after restoration.
+- **G3 design.** BOIA, belief-conditioned occlusion/interception arbitration over the frozen
+  Policy F:
+  - joint Monte Carlo detection forecast and BPOD expected covariance;
+  - a governor-aware rollout of 20 candidates, Policy F's own command included;
+  - a two-tier hard screen (fixed after finding 0.47–0.59 m gaps) plus FASTER-style stopping
+    feasibility;
+  - capture-aware cost, calibrated-advantage hysteresis, terminal-first handling.
+  - Candidate A (reactive) is the baseline and C (learned scorer) the extension; the scores were
+    A 17, B 24, C 15.
+- **Novelty.** Elements (a), (b) and (d) are prior art (BPOD, UAST/YOPO, FASTER). Element (c) is
+  unverified outside the 25 papers (G1b).
+- **Experiment plan.** Arms F0–F5; primary endpoint is the Aalen–Johansen crash CIF within 2 s of
+  onset, with capture/crash guards and a detector-realism factor; gates V0–V8.
+- **Files.** `docs/research/occlusion_algorithm_v1/` (00–12, `paper_manifest.json`, `notes/` with
+  10 working notes and the M3 scripts); `docs/ROADMAP.md` M7.
+- **Next.** The user's decision on G4-U1, the CPU geometry and visibility kernel
+  (`12_next_approval.md`). No push.

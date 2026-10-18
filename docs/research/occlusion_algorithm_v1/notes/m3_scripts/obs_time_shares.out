@@ -1,0 +1,16 @@
+OCC-P2_static 70 fused_invalid_post_acq=0.0309 out_of_fov=0.1887 centre_occ_in_fov=0.0141 geo_visible_but_camera_invalid=0.0000 obs=258632
+OCC-P2_static 115 fused_invalid_post_acq=0.0526 out_of_fov=0.2496 centre_occ_in_fov=0.0233 geo_visible_but_camera_invalid=0.0000 obs=262511
+OCC-P2_static 160 fused_invalid_post_acq=0.0816 out_of_fov=0.2985 centre_occ_in_fov=0.0388 geo_visible_but_camera_invalid=0.0001 obs=267409
+OCC-P2_static 205 fused_invalid_post_acq=0.1042 out_of_fov=0.3332 centre_occ_in_fov=0.0484 geo_visible_but_camera_invalid=0.0001 obs=274098
+OCC-P2_E2 70 fused_invalid_post_acq=0.0674 out_of_fov=0.1768 centre_occ_in_fov=0.0554 geo_visible_but_camera_invalid=0.0000 obs=289144
+OCC-P2_E2 115 fused_invalid_post_acq=0.1177 out_of_fov=0.2218 centre_occ_in_fov=0.0911 geo_visible_but_camera_invalid=0.0000 obs=309275
+OCC-P2_E2 160 fused_invalid_post_acq=0.1637 out_of_fov=0.2578 centre_occ_in_fov=0.1217 geo_visible_but_camera_invalid=0.0001 obs=320387
+OCC-P2_E2 205 fused_invalid_post_acq=0.2082 out_of_fov=0.2883 centre_occ_in_fov=0.1477 geo_visible_but_camera_invalid=0.0001 obs=338929
+KROC-A1 70 fused_invalid_post_acq=0.0294 out_of_fov=0.1875 centre_occ_in_fov=0.0138 geo_visible_but_camera_invalid=0.0000 obs=515361
+KROC-A1 115 fused_invalid_post_acq=0.0522 out_of_fov=0.2478 centre_occ_in_fov=0.0245 geo_visible_but_camera_invalid=0.0001 obs=523950
+KROC-A1 160 fused_invalid_post_acq=0.0772 out_of_fov=0.2969 centre_occ_in_fov=0.0348 geo_visible_but_camera_invalid=0.0001 obs=534055
+KROC-A1 205 fused_invalid_post_acq=0.1013 out_of_fov=0.3303 centre_occ_in_fov=0.0471 geo_visible_but_camera_invalid=0.0001 obs=545990
+KROC-A3 70 fused_invalid_post_acq=0.0669 out_of_fov=0.1734 centre_occ_in_fov=0.0555 geo_visible_but_camera_invalid=0.0000 obs=578805
+KROC-A3 115 fused_invalid_post_acq=0.1147 out_of_fov=0.2203 centre_occ_in_fov=0.0904 geo_visible_but_camera_invalid=0.0000 obs=608079
+KROC-A3 160 fused_invalid_post_acq=0.1619 out_of_fov=0.2548 centre_occ_in_fov=0.1219 geo_visible_but_camera_invalid=0.0000 obs=642374
+KROC-A3 205 fused_invalid_post_acq=0.2059 out_of_fov=0.2870 centre_occ_in_fov=0.1502 geo_visible_but_camera_invalid=0.0001 obs=677445

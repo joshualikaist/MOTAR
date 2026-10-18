@@ -1,0 +1,4 @@
+OCC-P2 static vs KROC-B0 (same seed/density cells): 3584 of 14336 P2 scene hashes also in B0
+any-cell overlap P2(static+moving) vs B0: 3585 of 50155
+static vs moving P2 shared scene hashes: 7189
+OCC-P1 static (n=14336) vs KROC-A1 first-4 (n=14336) overlap: 14336

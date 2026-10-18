@@ -1,0 +1,9 @@
+group dens eps crash timeout | crash@centreOcc crash@OOV crash@gfull crash@fusedloss | share_crash_centre share_crash_OOV share_crash_(centre+OOV) | frame share gfull, clear_in_view, other | onset c2b/reentry/other
+('moving', 70) 7168 104 0 | 28 42 26 35 | 0.269 0.404 0.673 | 0.0407 0.7678 0.1915 | 1413 250 {} timeout ends centre: 0 oov: 0 oov_capture 2648 acq 7168
+('moving', 115) 7168 180 1 | 56 47 49 68 | 0.311 0.261 0.572 | 0.0681 0.6871 0.2448 | 2384 580 {'onset_left_prevalent_at_post_acquisition_entry': 1} timeout ends centre: 0 oov: 0 oov_capture 2898 acq 7168
+('moving', 160) 7168 393 1 | 125 112 103 132 | 0.318 0.285 0.603 | 0.0923 0.6205 0.2872 | 3067 1016 {'onset_left_prevalent_at_post_acquisition_entry': 1} timeout ends centre: 0 oov: 0 oov_capture 2902 acq 7168
+('moving', 205) 7168 649 1 | 192 242 173 267 | 0.296 0.373 0.669 | 0.1135 0.5640 0.3224 | 3694 1618 {'onset_left_prevalent_at_post_acquisition_entry': 3} timeout ends centre: 0 oov: 0 oov_capture 2950 acq 7168
+('static', 70) 7168 25 0 | 7 8 6 8 | 0.280 0.320 0.600 | 0.0091 0.7972 0.1937 | 367 69 {} timeout ends centre: 0 oov: 0 oov_capture 4435 acq 7168
+('static', 115) 7168 76 0 | 19 14 19 25 | 0.250 0.184 0.434 | 0.0148 0.7272 0.2580 | 660 163 {} timeout ends centre: 0 oov: 0 oov_capture 4294 acq 7168
+('static', 160) 7168 167 0 | 56 25 51 59 | 0.335 0.150 0.485 | 0.0252 0.6626 0.3121 | 1044 304 {'onset_left_prevalent_at_post_acquisition_entry': 3} timeout ends centre: 0 oov: 0 oov_capture 4211 acq 7168
+('static', 205) 7168 304 2 | 91 51 80 94 | 0.299 0.168 0.467 | 0.0303 0.6171 0.3526 | 1357 489 {'onset_left_prevalent_at_post_acquisition_entry': 2} timeout ends centre: 0 oov: 0 oov_capture 4092 acq 7167

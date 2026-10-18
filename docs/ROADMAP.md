@@ -91,6 +91,19 @@ claim and no state-of-the-art claim.
   - TD-T1/TD-T2, D9, TM-E3/E4, Elastic Tracker B0 and E3-P.
 - **Each item** is to be kept, dropped or scheduled, with a recorded reason.
 
+### M7 — Occlusion-handling navigation algorithm v1 (epic `motar-3p3`, label `occ-algo`)
+
+- **Goal:** a new opt-in arbitration layer over the frozen Policy F (BOIA). It aims to reduce crash
+  risk after occlusion onset without lowering capture.
+- **Success condition:** gates V0–V7 pass, with a preregistered primary endpoint and capture/crash
+  guards; then a separately approved confirmation.
+- **Status:**
+  - G0–G3 research design is complete:
+    [`research/occlusion_algorithm_v1/`](research/occlusion_algorithm_v1/00_README.md).
+  - G1b, the prior-art check outside the paper set, is open.
+  - G4 implementation awaits approval.
+- **Order:** secondary to M1 until the KROC2027 freeze, unless the user decides otherwise.
+
 ## Checking for forgotten work
 
 1. **Epics:** `bd list --type epic` should show one epic per milestone above.
