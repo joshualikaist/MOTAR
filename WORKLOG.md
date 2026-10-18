@@ -21649,3 +21649,19 @@ Next review: the complete diff and new plan; local commit requires user diff app
   and the smoke run records. The corrections have not had a second independent review.
 - **Decision unchanged.** Exploratory; H-R3 PROVISIONAL. No confirmatory run. Next: branch-only
   push after the audit.
+
+## 2026-10-18 — H-R3 P02 exploratory comparison preregistered before implementation
+
+- User accepts P01 only as exploratory and authorizes P02 fair-comparison preparation plus at
+  most two new exploratory seeds. Base fbee900b; H-R3 remains PROVISIONAL. Existing26 raw
+  manifests/5,835 members and5,955 tracked-file hashes verified; main WIP3/stash preserved.
+- New docs/plans/h_r3_p02.json/.md fix B4 sham SIDE and B5 same-state nominal-budget pursuit,
+  fixed20-step interventions, spatial detector/silhouette association primary plus old metrics,
+  runner-only fixed-N RNG isolation, full prefix/sensor equality and forced-other-reset proof.
+  Achieved effort need not match; >10% diagnostic imbalance prevents a pure viewpoint claim.
+- Focused CPU then N16/180step seed4601 smoke (six arms+forced-reset+evaluator-off controls),
+  necessary focused regression, then ONLY4601/4602 N128/600step (12processes). No expansion for
+  low event counts. Exact guards/metrics and per-class/seed-cluster analysis fixed before code.
+- All old production/P01 files remain frozen; new P02-only modules/tools/tests, no new sensor
+  correction/PPO/Planner/P-L1/G-L1/main operations. Session start17:42KST, conservative wrap-up
+  21:42KST; actual quota deadline unavailable. Next implement and focused-test these units.
