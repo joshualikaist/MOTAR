@@ -21277,3 +21277,17 @@ Next review: the complete diff and new plan; local commit requires user diff app
 - C02 gates: UNIQUE (level pass only), ORACLE (production online equal to the oracle on the
   delivered GPU depth), MAPPING (no exclusion), SCALE/PARTIAL/CENTRE realisation,
   SENSOR-NONINTERFERENCE and INTEGRITY, with the GO/FAIL/INCOMPLETE rule as the user specified.
+
+## 2026-10-18 — SL1D-C02 launcher, runner and independent analysis (pre-run)
+
+- Files: `tools/s_l1d_c02_launcher.py` (reuses the committed S-L1D sensor launcher; only the
+  scene list is replaced by the 13 amendment scenes), `tools/s_l1d_c02_run.py`,
+  `tools/s_l1d_c02_analysis.py` and `tests/test_s_l1d_c02_run.py` (4 OK).
+  - The runner is sensor-only (s_l1c and s_l1d). Preflight refuses if production differs from
+    `76f0f4c` or if inputs are uncommitted.
+  - The analysis imports no production code. It recomputes the oracle online class on the
+    delivered GPU depth, counts only level passes, and keeps every scene.
+- Mechanics smoke (scratch, not evidence): 2/2 rc=0, 10.2 s each. It exposed one analysis bug,
+  fixed before commit: a NaN-unaware equality made `sensors_s_l1c` and `sensors_s_l1d` renders look
+  different. With NaN-aware comparison all 105 render keys are equal. No scene was changed after
+  the smoke.
