@@ -21405,3 +21405,21 @@ Next review: the complete diff and new plan; local commit requires user diff app
 - Before any C-v2 GPU run; no GPU results inspected. No count, gate, margin, candidate or error
   limit changes, original preregistration unchanged. The seven replays will be reported separately
   from live-rendered cases. This is an execution clarification, not a relaxed acceptance rule.
+
+## 2026-10-18 — Implement selected C-v2 sphere hypothesis behind a separate opt-in switch
+
+- CPU selection `483e0c2` chooses A. Runtime files: new `navrl_lidar_association_v2.py`, switch
+  mapping in `navrl_sensor_lineage.py`, opt-in dispatch in `navrl_perception.py` (all under
+  `aerial_gym/task/navrl_task/`). New `tests/test_s_l1c_v2_runtime.py`; appended WORKLOG.
+  The v1 association/covariance and D diagnostic function ASTs are unchanged. New C-v2 has A/B/C
+  level3 and explicitly does not enable D. Frozen F, 898-D schema and clock update code unchanged.
+- Six focused real-production CPU tests PASS, including 504 matched sphere/prediction cases,
+  negative examples, float32 recovery, camera/active guards, noise abstention, old five-mode
+  observation/state/covariance equality versus `aed6aff`, tangential covariance, identity age and
+  the 51st-miss expiry. C-v2 adds only sensor/track-based recoveries; no GT/semantic input.
+- Initial PUBLIC_CPU: 2,587 run, 1 failure, 0 errors, 10 skipped, 5 excluded. The sole failure is
+  `test_no_new_runtime_readback_or_frozen_source_edits`: it requires current runtime bytes equal
+  HEAD, and correctly rejects this uncommitted implementation. No test was relaxed. Commit the
+  verified source, then rerun that guard and PUBLIC_CPU on the clean tree before GPU.
+- No GPU process has run. Next: fixed canary tooling, clean-source CPU regression and a source
+  commit containing all launch/analysis code before the registered GPU matrix.

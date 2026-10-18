@@ -12,7 +12,7 @@ import torch
 
 SWITCH = "NAVRL_SENSOR_LINEAGE"
 LINEAGE = "s_l1a_v1"
-LINEAGES = ("s_l1a_v1", "s_l1b_v1", "s_l1c_v1", "s_l1d_v1")
+LINEAGES = ("s_l1a_v1", "s_l1b_v1", "s_l1c_v1", "s_l1d_v1", "s_l1c_v2")
 
 # S-L1B declared calibration constants, bound by tests to the sensor configs
 # (navrl_lidar_config: vertical_fov_deg_max/min, target_radius).
@@ -26,6 +26,9 @@ def sensor_lineage_level(environ=None):
     value = (os.environ if environ is None else environ).get(SWITCH, "off")
     if value != "off" and value not in LINEAGES:
         raise ValueError(SWITCH + " must be off or one of " + ", ".join(LINEAGES))
+    # C-v2 inherits A/B/C contracts, not D's separately qualified diagnostics.
+    if value == "s_l1c_v2":
+        return 3
     return 0 if value == "off" else LINEAGES.index(value) + 1
 
 

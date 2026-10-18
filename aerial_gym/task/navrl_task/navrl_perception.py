@@ -731,6 +731,7 @@ class NavRLPerceptionModule:
         self.sensor_lineage_s_l1b = False
         self.sensor_lineage_s_l1c = False
         self.sensor_lineage_s_l1d = False
+        self.sensor_lineage_s_l1c_v2 = os.environ.get("NAVRL_SENSOR_LINEAGE", "off") == "s_l1c_v2"
         if os.environ.get("NAVRL_SENSOR_LINEAGE", "off") != "off":
             from aerial_gym.task.navrl_task.navrl_sensor_lineage import sensor_lineage_level
 
@@ -2063,7 +2064,11 @@ class NavRLPerceptionModule:
 
             # S-L1C: identity-free, range-only association with geometric row eligibility, a
             # vertical-extent shape test and the LiDAR proxy radius; R constrains only the ray.
-            assoc = range_only_lidar_association(
+            association = range_only_lidar_association
+            if getattr(self, "sensor_lineage_s_l1c_v2", False):
+                from aerial_gym.task.navrl_task.navrl_lidar_association_v2 import range_only_lidar_association_v2
+                association = range_only_lidar_association_v2
+            assoc = association(
                 raw_scan, self._lidar_angles, self._s_l1b_lidar_elevations, rel, camera_visible,
                 self.tracker.active, gate, lidar_far_m=self.lidar_max_range)
             s_valid = assoc["valid"]
