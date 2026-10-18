@@ -21395,3 +21395,13 @@ Next review: the complete diff and new plan; local commit requires user diff app
   selection gates and actual ledger/manifest hashes checked before commit.
 - Next: only selected A opt-in implementation/CPU regression. Preserve old modes, covariance,
   identity clock/5s expiry; do not automatically inherit S-L1D qualification.
+
+## 2026-10-18 — C-v2 execution clarification: exact original EQ-1D negative packets
+
+- New `docs/plans/s_l1c_v2_amendment1.md` distinguishes seven SHA-bound original GPU sensor
+  replays from 24 newly rendered hard negatives. Reconstructing the old layout with newly
+  randomized asset dimensions would not be the same fixture. Replay preserves the actual original
+  measurement and its independently checked first-hit geometry; labels never enter association.
+- Before any C-v2 GPU run; no GPU results inspected. No count, gate, margin, candidate or error
+  limit changes, original preregistration unchanged. The seven replays will be reported separately
+  from live-rendered cases. This is an execution clarification, not a relaxed acceptance rule.
