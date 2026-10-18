@@ -12,6 +12,9 @@
 | How do I reproduce it? | [`docs/REPRODUCIBILITY.md`](REPRODUCIBILITY.md) |
 | How do I operate it? | [`docs/OPERATIONS.md`](OPERATIONS.md) |
 | What happened historically? | [`docs/HISTORY.md`](HISTORY.md) |
+| What is the current state, and what is next? | [`docs/PROJECT_STATE.md`](PROJECT_STATE.md) (open work itself is in Beads: `bd ready`) |
+| Where is the project going? | [`docs/ROADMAP.md`](ROADMAP.md) |
+| Which decisions were made, and why? | [`docs/DECISIONS.md`](DECISIONS.md) |
 | How should the site and figures look? | [`DESIGN_SYSTEM.md`](../DESIGN_SYSTEM.md) |
 
 Each file has one job. If two files seem to disagree, the one named in this table is right. Report

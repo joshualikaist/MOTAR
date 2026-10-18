@@ -21864,3 +21864,51 @@ Next: userreview NEXT_P03_PLAN.md estimand/controlproposal first; optionalseeds4
 Holm/seedcluster/samplesize sensitivity plan. No ownedGPU/reviewprocess remains; no push/merge,
 PPO/planner/newlineage/largepilot. Verifiedauthorizedunit complete; results localcommit only.
 ActualquotadeadlineUNKNOWN, conservativewrapup05:03KST; nextsession mustreview, notautoexecute.
+
+## 2026-10-19 — Beads + Claude-Mem operating system set up; open work migrated to Beads; state docs added
+
+- **Environment:**
+  - Ubuntu 20.04 (glibc 2.31), Claude Code 2.1.302.
+  - System Node is v10.19.0 and is left unchanged.
+  - Node 20.20.2 and Go 1.27.2 are in a separate conda env, `devtools`; `aerialgym` and the system
+    packages are untouched.
+- **Beads 1.3.1:**
+  - The official release binary needs glibc 2.34, so `bd` was built from source with
+    `go install … @v1.3.1` (CGO, `gms_pure_go`) and installed to `~/.local/bin/bd`. Go caches were
+    removed afterwards.
+  - `bd init --skip-agents --skip-hooks -p motar` put the database in the main checkout's `.beads/`,
+    which all worktrees share. It is untracked via `.git/info/exclude`; no Beads git hooks.
+  - init auto-added a Dolt remote pointing at the GitHub origin; it was removed before any write.
+    `git ls-remote` shows no Dolt refs. Metrics are off.
+  - `bd setup claude` added a SessionStart `bd prime` hook in `.claude/settings.json` and a managed
+    block in AGENTS.md. CLAUDE.md is byte-unchanged.
+  - Checks: `bd setup claude --check` OK, and embedded `bd doctor` checks (artifacts, conventions,
+    pollution) pass.
+- **Claude-Mem 14.0.1:**
+  - Installed with `npx claude-mem install --ide claude-code --provider claude`, with
+    `DO_NOT_TRACK=1` and npm legacy-peer-deps to work around an npm 10.8.2 bug.
+  - Plugin registered in the user settings (`enabledPlugins`). Cloud sync is off and native
+    auto-memory is left enabled. The installer added Bun to `~/.bashrc`.
+  - Telemetry opted out in `~/.claude-mem/telemetry.json`. The installer did contact cmem.ai once,
+    to create a sign-in link, which was not opened.
+  - Worker healthy on 127.0.0.1:37700. Doctor: all required checks OK except the npx PATH artifact
+    for the launcher; the real launcher reports protocol 1.
+  - Known limits:
+    - tree-sitter CLI needs glibc 2.35, so `smart_search`/`smart_outline` are off;
+    - the SessionStart `ensure-launcher.cjs` hook fails under system Node v10 (non-blocking).
+- **Migration (sources: subagent inventory of plans, evidence, the WORKLOG tail and memory):** 29
+  Beads issues.
+  - 6 epics (one per ROADMAP milestone) and 23 tasks/decisions/bugs. Items already done or declined
+    were not migrated.
+  - New `docs/PROJECT_STATE.md`, `docs/ROADMAP.md` and `docs/DECISIONS.md`, registered in the
+    `docs/README.md` table.
+  - New sections: `docs/OPERATIONS.md` §9 and an AGENTS.md precedence section placed outside the
+    managed block. No `docs/HISTORY/` directory, because `docs/HISTORY.md` already holds that role.
+- **Tests:**
+  - `test_canonical_docs` and `test_branch_policy` OK; `check_public_docs` PASS; `git diff --check` OK.
+  - PUBLIC_CPU **FAIL: 2,739 ran, 0 failures, 4 errors**, reproduced twice. All 4 are in
+    `test_navrl_detect_resolution`, which passes alone. They are caused by `test_h_r3_p03_isolation`
+    (from `0e87901`) running in the same process, so they predate this docs-only change. Filed as
+    `motar-6nn.5`.
+- **Next:** `bd ready` (`motar-d43.1`, `motar-6nn.1`, `motar-lp5.1`). No push. User decisions are
+  pending: Node 20 as the default `node`, and claude-mem sign-in, which is declined by default.

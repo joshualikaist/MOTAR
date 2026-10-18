@@ -136,3 +136,51 @@ These rules exist because breaking them has voided runs before (see `results/VOI
 - **Never** run `git clean -X` or `git clean -fdX`. Ignored paths include `runs/`, checkpoint and source
   snapshots bound by receipts, a registered worktree and `aerial_gym/lms_rl_trial/`.
 - Everything under `results/` is evidence, including logs and VOID folders. Do not delete it.
+
+## 9. Task tracking and session memory
+
+**Beads (`bd`) is the only tracker for actionable work** (decision D-2026-10-19-2 in
+[`DECISIONS.md`](DECISIONS.md)).
+- Long-term direction is in [`ROADMAP.md`](ROADMAP.md) and the current state in
+  [`PROJECT_STATE.md`](PROJECT_STATE.md).
+- Do not keep a Markdown TODO list that duplicates Beads.
+
+```bash
+bd ready                          # unblocked work, highest priority first
+bd list                           # every issue as a tree (epics = roadmap milestones)
+bd show <id>                      # description, acceptance criteria, dependencies
+bd update <id> --claim            # take an issue before working on it
+bd close <id> --reason "..."      # only when its acceptance criteria are met, with the evidence
+bd blocked                        # what is waiting, and on what
+bd stats                          # counts by status
+bd create "title" -p 1 --parent <epic> -d "..." --acceptance "..."   # new work, with source and criteria
+```
+
+**Where the data lives.** The issue database is a local embedded Dolt database in the main
+checkout's `.beads/`. All worktrees resolve to it: run `bd where` to see the path.
+- It is untracked: `.git/info/exclude` lists `/.beads/`.
+- No Dolt remote is configured, and `bd dolt push` needs user approval.
+- `bd init` was run with `--skip-hooks`, so there are no Beads git hooks in the shared `.git/hooks`.
+- Usage metrics are off (`bd metrics`).
+
+**Claude-Mem** is the plugin that records Claude Code sessions in the local `~/.claude-mem/`. It is
+not in this repository.
+- Use it to find *why* something was done (`claude-mem search <query>`, or the memory MCP tools).
+- It never outranks code, tests or committed records.
+- It runs on the user's Anthropic plan (`--provider claude`): cloud sync is off and telemetry is
+  opted out.
+- Never copy its database or logs into the repository.
+
+**Session start:**
+1. Check the Git state.
+2. Read the `bd prime` output (a SessionStart hook prints it) and run `bd ready`.
+3. Read `PROJECT_STATE.md` and only the documents the task needs.
+4. Search memory only when past reasons matter.
+
+**Session end:**
+1. Close only issues whose acceptance criteria are met.
+2. Record blockers on open issues.
+3. Update `PROJECT_STATE.md` or `ROADMAP.md` only if the state or the direction really changed.
+4. Write the WORKLOG entry.
+5. Report the next three ready issues.
+6. Ask before any `git push` or `bd dolt push`.
