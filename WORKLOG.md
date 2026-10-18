@@ -21619,3 +21619,33 @@ Next review: the complete diff and new plan; local commit requires user diff app
 - **Preservation.** Policy F, RMS and earlier raw records are unchanged. The three main-checkout WIP
   files and stash `23ddb33` are unchanged.
 - **Next.** Independent Fable 5.1 read-only review, then a branch-only push.
+
+## 2026-10-18 — H-R3 independent Fable 5.1 review: ACCEPT_WITH_CORRECTIONS, corrections recorded
+
+- **Review.** A read-only `claude-fable-5-1` subagent reviewed `b6aba18` and completed on the first
+  attempt. It recomputed the results from raw with its own NumPy script, archived in
+  `docs/evidence/h_r3_pilot_2026-10-18/review/`.
+  - PASS: matching, GT leakage, primary denominator. All primary numbers reproduced.
+  - CONCERN: confounding, and a hidden mis-attribution outside the primary population.
+- **Defect.** `tools/h_r3_analysis.py` counted a camera detection on a terminal (post-reset) step
+  as a reobservation. Corrected FOV_EXIT B1 is 32/83 (not 33); B2−B1 is 50/0 and +60.2 pp. The
+  primary result is unchanged. The v1 tool and JSON are kept; there is a new
+  `tools/h_r3_review_corrections.py` plus 3 tests (`test_h_r3_analysis.py` 10 OK).
+- **Under arm control only:**
+  - translation B2 1.65 / B3 1.66 m; in the `001` events, 1.81 / 1.60 m;
+  - commanded speed 0.83 / 1.22 m/s;
+  - B2 stalled by the safety filter in envs 73, 76 and 84.
+
+  The "+0.39 m" in REPORT was window translation including Policy F, and is superseded. The
+  viewpoint-versus-stall confound stays open, which is why the confirmatory design keeps the
+  speed-matched B2 and sham-lateral arms.
+- **Selection.** Matched = branched by onset step 10 (B0 env 79 reset). The primary events are
+  spawn-pose occlusions: first detection at step 0, t0 between 2 and 9.
+- **Preservation and binding.**
+  - Smoke runs preserved as new raw at `../aerial_gym_simulator/results/h_r3_pilot_v1/smoke/`
+    (5/5 and 17/17 verified). Smoke coupling recomputed: 0.00136 m.
+  - Analysis tool SHA `42338457…` equals the `5c8afde` blob; the re-run is byte-identical.
+- **Records.** REPORT has an append-only addendum. Files: REVIEW.md, `h_r3_review_corrections.json`
+  and the smoke run records. The corrections have not had a second independent review.
+- **Decision unchanged.** Exploratory; H-R3 PROVISIONAL. No confirmatory run. Next: branch-only
+  push after the audit.

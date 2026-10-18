@@ -143,6 +143,41 @@ class AnalysisTest(unittest.TestCase):
         self.assertAlmostEqual(rows[0]["max_cmd_speed_mps"]["B3"], 1.25, places=5)
         self.assertEqual(hp.mcnemar_events(9 / 22, 1 / 22), 32)
 
+    def test_review_correction_terminal_step_is_not_reobservation(self):
+        import h_r3_review_corrections as hc
+
+        def edit(arm, tr):
+            if arm == "B1":                      # crash at index 12; index 12 holds the new episode's view
+                tr["crashed"][12, 0] = tr["reset"][12, 0] = True
+                tr["camera"][12, 0], tr["el0_visible_px"][12, 0] = True, 4
+        traces = arms_from(edit)
+        with tempfile.TemporaryDirectory() as tmp:
+            write_run(tmp, traces)
+            r = ha.analyse(tmp)
+        ev = [e for e in r["events"] if e["env"] == 0][0]
+        self.assertTrue(ev["results"]["B1"]["reobserved"])          # v1 same-index behaviour (recorded defect)
+        self.assertFalse(hc.strict_reobserved(traces["B1"], 0, 10, W))
+        traces["B3"]["camera"][11, 0], traces["B3"]["el0_visible_px"][11, 0] = True, 30
+        self.assertTrue(hc.strict_reobserved(traces["B3"], 0, 10, W))
+
+    def test_review_correction_motion_counts_control_steps_only(self):
+        import h_r3_review_corrections as hc
+        tr = base_trace()
+        tr["robot_pos"][10:, 0, 0] = np.arange(1, STEPS - 9)        # 1 m per step throughout
+        tr["intervening"][10:13, 0] = True                          # three steps under arm control
+        tr["action"][10:13, 0, 0] = [0.4, 0.4, 0.02]
+        m = hc.control_motion(tr, 0, 10, W, 2.5)
+        self.assertEqual(m["control_steps"], 3)
+        self.assertAlmostEqual(m["translation_m"], 3.0)
+        self.assertAlmostEqual(m["min_cmd_speed_mps"], 0.05, places=6)
+        self.assertAlmostEqual(m["mean_cmd_speed_mps"], (1.0 + 1.0 + 0.05) / 3, places=6)
+
+    def test_review_correction_imports_no_production_code(self):
+        tree = ast.parse((ROOT / "tools/h_r3_review_corrections.py").read_text())
+        mods = {a.name.split(".")[0] for n in ast.walk(tree) if isinstance(n, ast.Import) for a in n.names}
+        mods |= {n.module.split(".")[0] for n in ast.walk(tree) if isinstance(n, ast.ImportFrom) and n.module}
+        self.assertEqual(mods, {"__future__", "argparse", "hashlib", "json", "pathlib", "sys", "numpy", "h_r3_analysis"})
+
     def test_imports_no_production_code(self):
         for name in ("h_r3_analysis.py", "h_r3_posthoc.py"):
             tree = ast.parse((ROOT / "tools" / name).read_text())

@@ -1,0 +1,29 @@
+{
+ "members": [
+  {
+   "path": "run_report.json",
+   "bytes": 5264,
+   "sha256": "d94cda2612b0d65a45fdd317b80e397cfd9f40042701044699748983d0f7ff85"
+  },
+  {
+   "path": "seed4502_B0/h_r3_meta.json",
+   "bytes": 2425,
+   "sha256": "eb2f28e8059dfe99db1995a252c75c36abe1b9300339aa0f35e2ec0a5e861ba0"
+  },
+  {
+   "path": "seed4502_B0/h_r3_trace.npz",
+   "bytes": 270490,
+   "sha256": "7b20d9f1cd931a4a4343d924bafb6a428a167067f0cde8f1409592b0e31116b8"
+  },
+  {
+   "path": "seed4502_B0/process_done.json",
+   "bytes": 422,
+   "sha256": "06a3b8032690ad71c6ec6a4dcb4aa5ebda369634bb4af47c445d274bb391a029"
+  },
+  {
+   "path": "seed4502_B0.log",
+   "bytes": 20012,
+   "sha256": "cd50d2738f4e979d2c1b36fd6d6425f1af1eb28cd7bf776486081447d10ae543"
+  }
+ ]
+}

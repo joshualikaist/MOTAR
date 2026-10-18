@@ -219,3 +219,44 @@ The per-event traces are in `h_r3_analysis.json` (`events`) and the raw run.
 
 Raw data: `../aerial_gym_simulator/results/h_r3_pilot_v1/HR3-P01_seed4502` (21 files, 17 MB;
 `RAW_MANIFEST.json` sha256 `ae2633a28859b91c6ad0499d0835872a430b8a3a97c946cfca5cff885a3ecfcf`).
+
+## Addendum — post-review corrections (2026-10-18, append-only)
+
+The independent Fable 5.1 review ([`REVIEW.md`](REVIEW.md)) returned ACCEPT_WITH_CORRECTIONS.
+Everything above this addendum is left as first written. Where the two differ, the addendum
+supersedes the text above. The numbers below come from
+[`h_r3_review_corrections.json`](h_r3_review_corrections.json).
+
+1. **Terminal-step rule.** The v1 analysis counted a camera detection on a terminal step as a
+   reobservation. That observation holds the post-reset state, which conflicts with the
+   preregistered rule that a crash before reobservation is a failure.
+   - **Affected outcome:** one, B1 env 34 (FOV_EXIT, crash under arm control at index 13). The
+     launcher's `end_reason` labels it "reobserved" for the same reason.
+   - **Corrected FOV_EXIT:** B1 32/83 (not 33); B2−B1 +60.2 pp, 50 / 0 discordant (not +59.0 pp,
+     49 / 0). B3−B2 is unchanged at −1.2 pp, 0 / 1.
+   - **Primary population:** no outcome changes.
+2. **Translation and speed under arm control.** The table's "Translation (m)" is window translation.
+   It includes Policy-F steps after reobservation, so the sentence "B3 travels 0.39 m more than B2"
+   describes policy resumption, not the manoeuvre. Under arm control only:
+   - B2 translates 1.65 m and B3 1.66 m. In the nine translation-only (`001`) events it is 1.81 m
+     and 1.60 m.
+   - The mean commanded speed is 0.83 m/s for B2 and 1.22 m/s for B3.
+   - In 3 of the 9 `001` events (envs 73, 76, 84), B2 is stalled behind the bar by the shared LiDAR
+     safety filter: its minimum commanded speed is below 0.1 m/s.
+
+   So B3 does not move farther, but it keeps moving. "B3 chose a clear viewpoint" is still not
+   separated from "B2 is held back by the safety filter in the occluding geometry". The
+   recommended speed-matched B2 and sham-lateral arms address both.
+3. **Selection.** The matched set is exactly the envs that branched at or before the coupling onset
+   at step 10. That onset coincides with an arm-dependent reset: B0 env 79 at step 10, with no
+   scripted-arm reset at that step. All 22 primary events have their first camera detection at
+   step 0 and t0 between 2 and 9. They are occlusions under the start-of-episode policy within
+   0.9 s of spawn.
+4. **Records.**
+   - Both smoke runs are now preserved as raw, verified 5/5 and 17/17, in
+     `../aerial_gym_simulator/results/h_r3_pilot_v1/smoke/`; their records are in
+     `run_records/smoke/`.
+   - The smoke coupling figure is recomputed from them: tracker change 0.00136 m at step 14, target
+     change 0.0 m, prefix identical before that step.
+   - `h_r3_analysis.json` is bound to `tools/h_r3_analysis.py` with SHA-256 `42338457…`. That equals
+     the `5c8afde` blob, and the re-run is byte-identical.

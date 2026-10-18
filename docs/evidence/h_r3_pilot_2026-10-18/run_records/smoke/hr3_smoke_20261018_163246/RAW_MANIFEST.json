@@ -1,0 +1,89 @@
+{
+ "members": [
+  {
+   "path": "run_report.json",
+   "bytes": 10703,
+   "sha256": "d5c19671f6c7f8c891e4db396b1f4b1c136105c0fe319034e72446ef69210cb9"
+  },
+  {
+   "path": "seed4502_B0/h_r3_meta.json",
+   "bytes": 2424,
+   "sha256": "bfc42cde546448dc7aa59b05dfc25e1879aceb3345c685212f0ce8697b32ae1b"
+  },
+  {
+   "path": "seed4502_B0/h_r3_trace.npz",
+   "bytes": 270494,
+   "sha256": "aaf06fbeb8f9c836dc46f54474af5d50f6b6692bd3d7cfe7278349a4d77a2ef0"
+  },
+  {
+   "path": "seed4502_B0/process_done.json",
+   "bytes": 426,
+   "sha256": "96b63c7a57bc9aa6e7180cba8fd60c831b2629b83770edc165d06acc8510039c"
+  },
+  {
+   "path": "seed4502_B0.log",
+   "bytes": 20012,
+   "sha256": "db463586fb1e67fd4e217390317ecf88ac908787dbdafa577f8c8e8f754d25de"
+  },
+  {
+   "path": "seed4502_B1/h_r3_meta.json",
+   "bytes": 2381,
+   "sha256": "1361a4b7a830ebff072e8b088623e26809e260ec05656f3063d1831af557d32a"
+  },
+  {
+   "path": "seed4502_B1/h_r3_trace.npz",
+   "bytes": 268790,
+   "sha256": "2e5d9007af7e61ed21d36916b76b0f9ce4e9f01cd3ff2296d4b5689a5b302cd0"
+  },
+  {
+   "path": "seed4502_B1/process_done.json",
+   "bytes": 427,
+   "sha256": "86bd6ec96367cec7a70e879533c23fc2ec3a2d830cafe69e7a1a8769f63293f0"
+  },
+  {
+   "path": "seed4502_B1.log",
+   "bytes": 20012,
+   "sha256": "1fa31874d0736a718ff8a890bc72a195afab1099f6db29fbbabcfe2042e96511"
+  },
+  {
+   "path": "seed4502_B2/h_r3_meta.json",
+   "bytes": 2420,
+   "sha256": "6edb485e7428b66e01bf6b3c39caeb4dd6faaebabaf403779cf90df1fb89529f"
+  },
+  {
+   "path": "seed4502_B2/h_r3_trace.npz",
+   "bytes": 270670,
+   "sha256": "291f8fcc68e54294736ddf59abc7fb8e7991b6cd9ec14d49a3384707149e307a"
+  },
+  {
+   "path": "seed4502_B2/process_done.json",
+   "bytes": 426,
+   "sha256": "8089253660bb1776ab0aba80d707cad0b037b6d1c433ac33f507a2cbf230b210"
+  },
+  {
+   "path": "seed4502_B2.log",
+   "bytes": 20012,
+   "sha256": "d0a04d77e507e347d260b85307311b04c4cc6b2be24a7f5873cf68ed2c236e80"
+  },
+  {
+   "path": "seed4502_B3/h_r3_meta.json",
+   "bytes": 2424,
+   "sha256": "8dc67098f72747fcb3e4cbcaad3d055e7f58f83f77de9b722aadba3bcb7cf2ed"
+  },
+  {
+   "path": "seed4502_B3/h_r3_trace.npz",
+   "bytes": 270293,
+   "sha256": "b1c0b9d6da8fcde1cfd1870763ffe56cf674a771103cb69efc15264efd08b23f"
+  },
+  {
+   "path": "seed4502_B3/process_done.json",
+   "bytes": 426,
+   "sha256": "9c4389e02cc6b27395f95a9441dd955f851d14543508e60ec2c7a5c7c8e61afa"
+  },
+  {
+   "path": "seed4502_B3.log",
+   "bytes": 20012,
+   "sha256": "e8bae66a30d706367f8eef9075881c1b3024312631a1c3076f7c571bcdd4426b"
+  }
+ ]
+}

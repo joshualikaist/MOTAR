@@ -1,0 +1,152 @@
+{
+  "schema": "motar.h-r3-run-report.v1",
+  "run_dir": "/tmp/claude-1000/-home-fair-workspaces-aerial-gym-ws-src/35a63340-4061-4cc2-958f-43729b9e3417/scratchpad/hr3/smoke/hr3_smoke_20261018_163202",
+  "smoke": true,
+  "preflight": {
+    "head": "5f8719f2e8ccc028e6c4b4bdd9c59c14bc18592b",
+    "tracked_tree_clean": true,
+    "plan_committed_unchanged": true,
+    "policy_f_sha256": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+    "rms_digest": "642fc9f7f86b068e816e156fea7a34782bbc525966650f73cd85aae8cc18387f",
+    "import_origins": {
+      "aerial_gym@MOTAR-mt-p1": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/aerial_gym/__init__.py",
+      "motar_eval@MOTAR-mt-p1": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/motar_eval/__init__.py",
+      "aerial_gym@rl_games": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/aerial_gym/__init__.py",
+      "motar_eval@rl_games": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/motar_eval/__init__.py"
+    },
+    "run_dir": "/tmp/claude-1000/-home-fair-workspaces-aerial-gym-ws-src/35a63340-4061-4cc2-958f-43729b9e3417/scratchpad/hr3/smoke/hr3_smoke_20261018_163202",
+    "free_disk_gb": 18.52321792,
+    "gpu": {
+      "name": "NVIDIA GeForce RTX 3070",
+      "total_mib": 8192,
+      "used_mib": 657,
+      "free_mib": 7187,
+      "compute_apps": [
+        {
+          "pid": 2604705,
+          "name": "/usr/share/rustdesk/rustdesk",
+          "used_mib": 190
+        }
+      ]
+    },
+    "receipt_sha256": "85c13b08ba75f58dfe005d8747ef7922d31675ccc7347412cace5feeaabc963c",
+    "hr3_committed_inputs": {
+      "docs/plans/h_r3_pilot_v1.json": true,
+      "docs/plans/h_r3_pilot_v1.md": true,
+      "tools/h_r3_run.py": false,
+      "tools/h_r3_launcher.py": false,
+      "motar_eval/h_r3_arms.py": false,
+      "tools/s_l1b_run.py": true,
+      "tools/s_l1a_run.py": true
+    },
+    "hr3_input_sha256": {
+      "docs/plans/h_r3_pilot_v1.json": "7ce914c6b90435126023217b8cd77af6826b3e0aa7b1d8eda34e053f3427c2fe",
+      "docs/plans/h_r3_pilot_v1.md": "d71ee734cd17824211043ae579ef28f4b7672088cbc1cfbcd5e8debbf496e76c",
+      "tools/h_r3_run.py": "5dcf3b0fb6f976b04d15691230c9b1c195d6c62703b20178642cc513b178dbb0",
+      "tools/h_r3_launcher.py": "3ea6c3dc2b1cb08727b2a4df8f3861b6076f19fc5804083f469db3a7d322603e",
+      "motar_eval/h_r3_arms.py": "df31a398bf1211a7e690f8e72ae27badde40f57c275a54f2d35a27338c51fea7",
+      "tools/s_l1b_run.py": "c9a801e8d51c430ab7e81bb084aac4e4d84b2c5051604927c4f98ac51a3a2d49",
+      "tools/s_l1a_run.py": "7e782b4af552bb49cd8c3c8c4261ed0c794a9eb097afa1d83bc1e8c5510e1f9f"
+    },
+    "untracked_runtime_files": [
+      "motar_eval/h_r3_arms.py",
+      "tools/h_r3_launcher.py",
+      "tools/h_r3_run.py"
+    ]
+  },
+  "effective_processes": [
+    {
+      "id": "seed4502_B0",
+      "batch": "HR3",
+      "hr3_arm": "B0",
+      "config": "moving",
+      "arm": "P0",
+      "seed": 4502,
+      "num_envs": 16,
+      "steps": 300,
+      "cap_s": 1200,
+      "lineage": "off"
+    },
+    {
+      "id": "seed4502_B1",
+      "batch": "HR3",
+      "hr3_arm": "B1",
+      "config": "moving",
+      "arm": "P0",
+      "seed": 4502,
+      "num_envs": 16,
+      "steps": 300,
+      "cap_s": 1200,
+      "lineage": "off"
+    },
+    {
+      "id": "seed4502_B2",
+      "batch": "HR3",
+      "hr3_arm": "B2",
+      "config": "moving",
+      "arm": "P0",
+      "seed": 4502,
+      "num_envs": 16,
+      "steps": 300,
+      "cap_s": 1200,
+      "lineage": "off"
+    },
+    {
+      "id": "seed4502_B3",
+      "batch": "HR3",
+      "hr3_arm": "B3",
+      "config": "moving",
+      "arm": "P0",
+      "seed": 4502,
+      "num_envs": 16,
+      "steps": 300,
+      "cap_s": 1200,
+      "lineage": "off"
+    }
+  ],
+  "processes": [
+    {
+      "id": "seed4502_B0",
+      "gpu_at_launch": {
+        "name": "NVIDIA GeForce RTX 3070",
+        "total_mib": 8192,
+        "used_mib": 657,
+        "free_mib": 7187,
+        "compute_apps": [
+          {
+            "pid": 2604705,
+            "name": "/usr/share/rustdesk/rustdesk",
+            "used_mib": 190
+          }
+        ]
+      },
+      "gpu_memory_cap_mib": 7023,
+      "free_disk_gb_before": 18.523213824,
+      "command": [
+        "/home/fair/miniconda3/envs/aerialgym/bin/python",
+        "-B",
+        "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tools/h_r3_launcher.py",
+        "--arm",
+        "B0",
+        "--num-envs",
+        "16",
+        "--steps",
+        "300",
+        "--out",
+        "/tmp/claude-1000/-home-fair-workspaces-aerial-gym-ws-src/35a63340-4061-4cc2-958f-43729b9e3417/scratchpad/hr3/smoke/hr3_smoke_20261018_163202/seed4502_B0"
+      ],
+      "returncode": 0,
+      "wall_s": 31.16198555601295,
+      "peak_gpu_mib": 4754
+    }
+  ],
+  "source_commit": "5f8719f2e8ccc028e6c4b4bdd9c59c14bc18592b",
+  "status": "STOPPED_INTEGRITY",
+  "stop_reason": "INTEGRITY_EXCEPTION: ValueError: missing completion identity or nonfinite-state record",
+  "plan_sha256": "7ce914c6b90435126023217b8cd77af6826b3e0aa7b1d8eda34e053f3427c2fe",
+  "wall_s_total": 31.235707113984972,
+  "gpu_seconds_total": 31.16198555601295,
+  "output_bytes_total": 293349,
+  "free_disk_gb_after": 18.522906624,
+  "policy_f_sha256_after": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40"
+}
