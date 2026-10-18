@@ -1,0 +1,347 @@
+{
+  "schema": "h-r3.environment-isolation-analysis.v1",
+  "scope": "CPU_ORACLE_AND_ACTUAL_N128_GPU_MECHANICS",
+  "verdict": "GO_MECHANICS_QUALIFIED",
+  "failures": [],
+  "comparisons": {
+    "legacy_negative": {
+      "left": "legacy_normal",
+      "right": "legacy_forced",
+      "excluded_envs": [
+        127
+      ],
+      "compared_envs": 127,
+      "equal": false,
+      "first_mismatch": {
+        "rgb": {
+          "step": 2,
+          "changed_rows": 126,
+          "max_abs_delta": 3.787875175476074e-05
+        },
+        "depth": {
+          "step": 2,
+          "changed_rows": 126,
+          "max_abs_delta": 0.0008594989776611328
+        },
+        "lidar": {
+          "step": 2,
+          "changed_rows": 126,
+          "max_abs_delta": 0.00018024444580078125
+        },
+        "actor_obs": {
+          "step": 2,
+          "changed_rows": 126,
+          "max_abs_delta": 6.493926048278809e-05
+        },
+        "obstacle_history": {
+          "step": 2,
+          "changed_rows": 126,
+          "max_abs_delta": 6.490945816040039e-05
+        },
+        "rgb_sha": {
+          "step": 2,
+          "changed_rows": 126,
+          "max_abs_delta": 250.0
+        },
+        "depth_sha": {
+          "step": 2,
+          "changed_rows": 126,
+          "max_abs_delta": 254.0
+        },
+        "lidar_sha": {
+          "step": 2,
+          "changed_rows": 126,
+          "max_abs_delta": 253.0
+        },
+        "state_sha": {
+          "step": 2,
+          "changed_rows": 126,
+          "max_abs_delta": 254.0
+        },
+        "vertices_sha": {
+          "step": 2,
+          "changed_rows": 126,
+          "max_abs_delta": 254.0
+        },
+        "vertices": {
+          "step": 2,
+          "changed_rows": 154832,
+          "max_abs_delta": 1.52587890625e-05
+        },
+        "root_state": {
+          "step": 3,
+          "changed_rows": 108,
+          "max_abs_delta": 0.00857388973236084
+        },
+        "robot_pos": {
+          "step": 3,
+          "changed_rows": 106,
+          "max_abs_delta": 6.103515625e-05
+        },
+        "robot_quat": {
+          "step": 3,
+          "changed_rows": 108,
+          "max_abs_delta": 0.00012724101543426514
+        },
+        "robot_linvel": {
+          "step": 3,
+          "changed_rows": 108,
+          "max_abs_delta": 0.00047719478607177734
+        },
+        "robot_angvel": {
+          "step": 3,
+          "changed_rows": 108,
+          "max_abs_delta": 0.00857388973236084
+        },
+        "tracker_state": {
+          "step": 3,
+          "changed_rows": 99,
+          "max_abs_delta": 0.0008819848299026489
+        },
+        "tracker_cov": {
+          "step": 3,
+          "changed_rows": 94,
+          "max_abs_delta": 3.2186508178710938e-06
+        },
+        "robot_history": {
+          "step": 3,
+          "changed_rows": 108,
+          "max_abs_delta": 0.0004939772188663483
+        },
+        "target_history": {
+          "step": 3,
+          "changed_rows": 108,
+          "max_abs_delta": 0.00048404932022094727
+        },
+        "action": {
+          "step": 3,
+          "changed_rows": 107,
+          "max_abs_delta": 0.0006134286522865295
+        },
+        "derived_robot_euler_angles": {
+          "step": 3,
+          "changed_rows": 108,
+          "max_abs_delta": 0.000194549560546875
+        },
+        "derived_robot_vehicle_orientation": {
+          "step": 3,
+          "changed_rows": 107,
+          "max_abs_delta": 7.82012939453125e-05
+        },
+        "derived_robot_vehicle_linvel": {
+          "step": 3,
+          "changed_rows": 108,
+          "max_abs_delta": 0.0004207789897918701
+        },
+        "derived_robot_body_linvel": {
+          "step": 3,
+          "changed_rows": 108,
+          "max_abs_delta": 0.0003877580165863037
+        },
+        "derived_robot_body_angvel": {
+          "step": 3,
+          "changed_rows": 108,
+          "max_abs_delta": 0.008290648460388184
+        },
+        "tracker_age": {
+          "step": 8,
+          "changed_rows": 2,
+          "max_abs_delta": 0.10000000149011612
+        },
+        "camera": {
+          "step": 8,
+          "changed_rows": 2,
+          "max_abs_delta": 1.0
+        },
+        "fused": {
+          "step": 8,
+          "changed_rows": 2,
+          "max_abs_delta": 1.0
+        },
+        "target_pos": {
+          "step": 31,
+          "changed_rows": 1,
+          "max_abs_delta": 3.9613399505615234
+        },
+        "target_vel": {
+          "step": 31,
+          "changed_rows": 1,
+          "max_abs_delta": 0.2635718584060669
+        },
+        "reset": {
+          "step": 31,
+          "changed_rows": 1,
+          "max_abs_delta": 1.0
+        },
+        "natural_reset": {
+          "step": 31,
+          "changed_rows": 1,
+          "max_abs_delta": 1.0
+        }
+      },
+      "frames": 41,
+      "modalities": {
+        "rgb": {
+          "equal": false,
+          "first_mismatch": {
+            "step": 2,
+            "changed_rows": 126,
+            "max_abs_delta": 3.787875175476074e-05
+          }
+        },
+        "depth": {
+          "equal": false,
+          "first_mismatch": {
+            "step": 2,
+            "changed_rows": 126,
+            "max_abs_delta": 0.0008594989776611328
+          }
+        },
+        "lidar": {
+          "equal": false,
+          "first_mismatch": {
+            "step": 2,
+            "changed_rows": 126,
+            "max_abs_delta": 0.00018024444580078125
+          }
+        }
+      }
+    },
+    "fixed_isolation": {
+      "left": "fixed_normal",
+      "right": "fixed_forced",
+      "excluded_envs": [
+        127
+      ],
+      "compared_envs": 127,
+      "equal": true,
+      "first_mismatch": {},
+      "frames": 41,
+      "modalities": {
+        "rgb": {
+          "equal": true,
+          "first_mismatch": null
+        },
+        "depth": {
+          "equal": true,
+          "first_mismatch": null
+        },
+        "lidar": {
+          "equal": true,
+          "first_mismatch": null
+        }
+      }
+    },
+    "evaluator_noninterference": {
+      "left": "fixed_normal",
+      "right": "fixed_noeval",
+      "excluded_envs": [],
+      "compared_envs": 128,
+      "equal": true,
+      "first_mismatch": {},
+      "frames": 41,
+      "modalities": {
+        "rgb": {
+          "equal": true,
+          "first_mismatch": null
+        },
+        "depth": {
+          "equal": true,
+          "first_mismatch": null
+        },
+        "lidar": {
+          "equal": true,
+          "first_mismatch": null
+        }
+      }
+    }
+  },
+  "source_commit": "9dabd3c3771ba7f381b20e7fa67ed8820052c50d",
+  "cpu_oracle": {
+    "status": "PASS",
+    "report_sha256": "1fb3a579fda307c285401e340fbcca32b39717d33eb31e3a398d9496a98b278e",
+    "tests": 11
+  },
+  "reset_chronology": {
+    "legacy_normal": {
+      "PASS": true,
+      "reset_ids": [],
+      "natural_reset_ids": [],
+      "forced_injected": false
+    },
+    "legacy_forced": {
+      "PASS": true,
+      "reset_ids": [
+        127
+      ],
+      "natural_reset_ids": [],
+      "forced_injected": true
+    },
+    "fixed_normal": {
+      "PASS": true,
+      "reset_ids": [],
+      "natural_reset_ids": [],
+      "forced_injected": false
+    },
+    "fixed_forced": {
+      "PASS": true,
+      "reset_ids": [
+        127
+      ],
+      "natural_reset_ids": [],
+      "forced_injected": true
+    },
+    "fixed_noeval": {
+      "PASS": true,
+      "reset_ids": [],
+      "natural_reset_ids": [],
+      "forced_injected": false
+    }
+  },
+  "selected_reset_parity": {
+    "PASS": true,
+    "fields": {
+      "rgb": true,
+      "depth": true,
+      "lidar": true,
+      "actor_obs": true,
+      "root_state": true,
+      "robot_pos": true,
+      "robot_quat": true,
+      "robot_linvel": true,
+      "robot_angvel": true,
+      "target_pos": true,
+      "target_vel": true,
+      "tracker_state": true,
+      "tracker_cov": true,
+      "tracker_age": true,
+      "tracker_active": true,
+      "robot_history": true,
+      "target_history": true,
+      "obstacle_history": true,
+      "camera": true,
+      "fused": true,
+      "action": true,
+      "derived_robot_euler_angles": true,
+      "derived_robot_vehicle_orientation": true,
+      "derived_robot_vehicle_linvel": true,
+      "derived_robot_body_linvel": true,
+      "derived_robot_body_angvel": true,
+      "rgb_sha": true,
+      "depth_sha": true,
+      "lidar_sha": true,
+      "state_sha": true,
+      "vertices_sha": true,
+      "vertices": true
+    }
+  },
+  "initial_all_process_equal": true,
+  "causality": {
+    "legacy_negative_reproduced": true,
+    "unselected_vertices_onset_step2": true,
+    "sensor_onset_step2": true,
+    "classification": "CONTROLLED_CURRENT_DIAGNOSTIC_CAUSE_SUPPORTED_NOT_RETROSPECTIVE_PROOF",
+    "historical_P02_numerical_cause_proven": false
+  },
+  "n128_verified": true
+}

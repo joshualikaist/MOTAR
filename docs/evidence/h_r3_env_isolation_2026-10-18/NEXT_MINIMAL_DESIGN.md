@@ -1,0 +1,15 @@
+# Next H-R3 controls — design only, not approved execution
+
+Mechanics GO is limited to ISO-Q02; H-R3 remains provisional and P03/confirmation HOLD. Before any future experiment, carry selected-only evaluator isolation into its own source, retain prefix checks and register a fresh RunID/seeds. Do not reuse P01/P02 as confirmation samples. No controller was modified here.
+
+## B4 direction choice
+
+P02 sham_signs is keyed only seed/env, and B4's magnitude remains B3's visibility-derived magnitude at each arm's current state. It is a side control with feedback, not a blind matched full maneuver, and an exact50% effect dilution is not justified. Minimal proposed interface: episode/event/decision identity in an exogenous deterministic sham assignment (independent of reset order and visibility scores). Explicitly separate desired side from magnitude. Freeze one shared loss-prefix magnitude/budget schedule for the direction-isolation contrast (also apply it to its B3 comparator), or preregister clearly that the contrast is only an online side-selection policy comparison. Choose between these designs before outcomes; never relabel the historical B3 comparison. Same yaw/safety/filter rules and permitted RGB-D+LiDAR/belief inputs; never use evaluator GT or another arm's future observations. Record candidate scores, selected/sham side, commanded/post-filter magnitude and side changes. Zero eligible lateral command is reported with its denominator, not silently removed. CPU sign independence and identical-prefix tests precede any future smoke.
+
+## B5 actual motion and effort
+
+P02 matches same-input nominal command norm only. Safety projection, governor and dynamics break realized speed/path matching. Proposed minimal design: a common preregistered speed/effort reference fixed from the shared pre-loss prefix, supplied to both its B3 comparator and pursuit-only B5; bounded own-speed feedback may reduce commands but never reverse a safety attenuation or borrow the other arm's realized future trajectory. Log requested/post-point/post-cap/governor speeds, actual speed, integrated path length, acceleration/control effort, time stopped, yaw, clearance/contact/crash separately. Common budget alone is not proof of actual matching.
+
+Before GPU, justify tolerances from sensor/control resolution and set matched checks on actual speed/path/effort over the registered window. If safety makes matching infeasible, keep all randomized pairs, report the residual and mark pure viewpoint attribution INCONCLUSIVE; do not increase unsafe commands, exclude difficult events or retrospectively match on post-treatment success/motion. Direction can change collision risk legitimately. Report total controller-system effect separately from any qualified effort-controlled contrast.
+
+Requested next decision after review: choose the common-prefix budget design and its tolerances. Only then implement focused B4/B5 changes and register a small qualification smoke if approved; no sample-size escalation or H-R3 confirmation is implied by Mechanics GO.

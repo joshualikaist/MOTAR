@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "failures": [],
+  "baseline_sha": "e6814a675a7b0d645d24e36b48bbeb2d6681f706",
+  "old_tracked_paths": 6006,
+  "old_raw_manifests": 31,
+  "old_raw_members": 5950,
+  "main_head": "cb644bbe46456b1900020177617a13040a3f1552",
+  "main_wip_unchanged": true,
+  "stash_unchanged": true,
+  "protected_untracked_preserved": true,
+  "policy_f_sha256": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+  "external_backup": "NOT_ESTABLISHED"
+}
