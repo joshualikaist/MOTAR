@@ -1,0 +1,48 @@
+{
+  "schema": "motar.s-l1c-v2-fable-review.v1",
+  "requested_model": "claude-fable-5-1",
+  "verified_canonical_model": "claude-fable-5-1",
+  "model_usage": {
+    "claude-fable-5-1": {
+      "inputTokens": 516,
+      "outputTokens": 47767,
+      "cacheReadInputTokens": 2664047,
+      "cacheCreationInputTokens": 228708,
+      "webSearchRequests": 0,
+      "costUSD": 7.633681749999999,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 64000,
+      "thinkingTokens": 18422,
+      "canonicalModel": "claude-fable-5-1",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "cli_version": "2.1.302",
+  "initial_attempt": "API400: CLI2.1.247 below required2.1.251; no review ran; updater installed2.1.302 and retry succeeded.",
+  "result_type": "success",
+  "is_error": false,
+  "stop_reason": "end_turn",
+  "num_turns": 2,
+  "duration_ms": 80294,
+  "permission_denials": [],
+  "raw_root": "../aerial_gym_simulator/results/s_l1c_v2_review/SL1CV2-R01",
+  "raw_manifest_sha256": "c43477a27416410ac436100e273c9b1c62ce4914efab8955567465215e8b2e8d",
+  "raw_reply_sha256": "96acce03f332084638d1e9789e265901596d3b62d97a1e8f305f0a0922cc8a3f",
+  "prompt_sha256": "0ff9c6b026697f9cd52898a72bd36b0b428dfc3d87b4b85148fb69f4363bf59e",
+  "reviewed_source": "e45794e876b15f71b5f38c65702fefadc368f93a",
+  "reviewed_result_commit": "d063e7d3c6b2eed0243d1375f53b986ed0ff1d3b",
+  "verdict": "SUBSTANTIATED_GO",
+  "blockers": 0,
+  "medium_disclosure_findings": 1,
+  "read_only_preservation": "tracked tree unchanged after review; full baseline/raw/hash recheck recorded in final preservation verification",
+  "reviewer_reported_tests": {
+    "targeted": 22,
+    "public_cpu": 2593,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 10,
+    "excluded": 5
+  },
+  "reviewer_analysis_byte_identical": true
+}

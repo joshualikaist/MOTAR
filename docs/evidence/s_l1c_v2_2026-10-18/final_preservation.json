@@ -1,0 +1,170 @@
+{
+  "baseline_sha256": "4094dd3ef800ddb93ebcef3f3b86cbb57dab732b4d799ab063df9f08cf4b1eb2",
+  "tracked_count": 5887,
+  "modified_baseline_paths": [
+    "WORKLOG.md",
+    "aerial_gym/task/navrl_task/navrl_perception.py",
+    "aerial_gym/task/navrl_task/navrl_sensor_lineage.py",
+    "docs/SENSOR_CONTRACT.md"
+  ],
+  "unexpected_modified_baseline_paths": [],
+  "worklog_prefix_preserved": true,
+  "main_head_unchanged": true,
+  "main_status_unchanged": true,
+  "main_wip_hashes_unchanged": true,
+  "stash_unchanged": true,
+  "policy_f_sha256": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+  "main_policy_f_sha256": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+  "policy_f_unchanged": true,
+  "historical_raw": [
+    {
+      "run": "s_l1a_v1/SL1A-C01",
+      "manifest_sha256": "cee40f012738de3b3c1df82dcb49888035b0d69542cc18397a21dde5176e42f9",
+      "manifest_unchanged": true,
+      "members": 138,
+      "baseline_member_count": 138,
+      "mismatches": []
+    },
+    {
+      "run": "s_l1b_v1/SL1B-C01",
+      "manifest_sha256": "11aab182827ec04a22a12036bd77ace60e080a91c6232c4ba8d4e6499bd15169",
+      "manifest_unchanged": true,
+      "members": 138,
+      "baseline_member_count": 138,
+      "mismatches": []
+    },
+    {
+      "run": "s_l1c_v1/SL1C-C01",
+      "manifest_sha256": "29448df8e9abd5167db624d117030dbbc90fd56475b509ea1f71f2a53fdf60dc",
+      "manifest_unchanged": true,
+      "members": 176,
+      "baseline_member_count": 176,
+      "mismatches": []
+    },
+    {
+      "run": "s_l1d_v1/SL1D-C01",
+      "manifest_sha256": "2b5fd37ead4e9671288c8bb37790f7dc1f08ffce94f6daa5d2b5df7c3aa4c598",
+      "manifest_unchanged": true,
+      "members": 131,
+      "baseline_member_count": 131,
+      "mismatches": []
+    },
+    {
+      "run": "s_l1d_v1/SL1D-C02",
+      "manifest_sha256": "b131bc252313d0d2e3cddd6ac191487ce7cef9d90b448c00b8d2a7f48d09f81c",
+      "manifest_unchanged": true,
+      "members": 23,
+      "baseline_member_count": 23,
+      "mismatches": []
+    },
+    {
+      "run": "occlusion_confirmatory_v1/OCC-P2",
+      "manifest_sha256": "c5cd1dbc160122d444119af255fee450405c7d3373025cad6f866d5c0a0cfc68",
+      "manifest_unchanged": true,
+      "members": 1406,
+      "baseline_member_count": 1406,
+      "mismatches": []
+    },
+    {
+      "run": "occlusion_pilot_v1/OCC-G0_rerun1",
+      "manifest_sha256": "cc26a68a9822da9e99762cda984ded59ce161292adbd56cdc1c7313f4a14a599",
+      "manifest_unchanged": true,
+      "members": 194,
+      "baseline_member_count": 194,
+      "mismatches": []
+    },
+    {
+      "run": "occlusion_pilot_v1/OCC-P1",
+      "manifest_sha256": "b0f071e873c26829bc13d12d26daa19e9c6aee5c3ddd38ceaa0498d43c0423c4",
+      "manifest_unchanged": true,
+      "members": 14,
+      "baseline_member_count": 14,
+      "mismatches": []
+    },
+    {
+      "run": "occlusion_pilot_v1/OCC-P1_rerun1",
+      "manifest_sha256": "6e12d9ac4350419a2214933a4cf445cff642c4ca85cdcf6da0116bc7eacda120",
+      "manifest_unchanged": true,
+      "members": 704,
+      "baseline_member_count": 704,
+      "mismatches": []
+    },
+    {
+      "run": "occlusion_pilot_v1/OCC-G0",
+      "manifest_sha256": "2e051977a68c34c21e1dd8a674b3673c1016d855295ecc73350d323fb007bc88",
+      "manifest_unchanged": true,
+      "members": 53,
+      "baseline_member_count": 53,
+      "mismatches": []
+    },
+    {
+      "run": "mt_p1_precision_v1/KROC27-A-M02",
+      "manifest_sha256": "bc90b5b086cbae9db4daebbfcc81cf448f21348f1f648a1df3e025c9cba4bdd7",
+      "manifest_unchanged": true,
+      "members": 452,
+      "baseline_member_count": 452,
+      "mismatches": []
+    },
+    {
+      "run": "mt_p1_precision_v1/MT-P2-C01",
+      "manifest_sha256": "9b28af167706e6f39224402056943aa1bc1adbb8fa021efac6ef65cea6ebb4e4",
+      "manifest_unchanged": true,
+      "members": 131,
+      "baseline_member_count": 131,
+      "mismatches": []
+    },
+    {
+      "run": "eq1d_qualification_v1/EQ1D-R1",
+      "manifest_sha256": "e28dfc68531b559161bbbc217e541917e696b0960837c3418e71f6115efb4b22",
+      "manifest_unchanged": true,
+      "members": 33,
+      "baseline_member_count": 33,
+      "mismatches": []
+    },
+    {
+      "run": "e_l0_evaluation_v1/EL0-R1",
+      "manifest_sha256": "bbc7365e2bf6b638c71e6aaa26518143a7bac22849b99cd3bfa86461ed45f723",
+      "manifest_unchanged": true,
+      "members": 99,
+      "baseline_member_count": 99,
+      "mismatches": []
+    },
+    {
+      "run": "kroc2027_A_v1",
+      "manifest_sha256": "7a8042aa0d1a36a6c7fb34d8bf273ef49606e3ee7bf4bde44755ff1628575726",
+      "manifest_unchanged": true,
+      "members": 393,
+      "baseline_member_count": 393,
+      "mismatches": []
+    }
+  ],
+  "historical_raw_members_verified": 4085,
+  "new_raw": [
+    {
+      "run": "s_l1c_v2_cpu/SL1CV2-CPU01",
+      "manifest_sha256": "14d55c094b804e9c6de3c7edd16455c1e2b6a1d8b2977df89afa314154ac3f95",
+      "members": 2,
+      "mismatches": []
+    },
+    {
+      "run": "s_l1c_v2/SL1CV2-C01",
+      "manifest_sha256": "fce6b844146a6e2869f6e619bb7c57aef8d049c662855d9a05c3034c0cb7443b",
+      "members": 284,
+      "mismatches": []
+    },
+    {
+      "run": "s_l1c_v2_review/SL1CV2-R01",
+      "manifest_sha256": "c43477a27416410ac436100e273c9b1c62ce4914efab8955567465215e8b2e8d",
+      "members": 6,
+      "mismatches": []
+    }
+  ],
+  "external_backup": "NOT_ESTABLISHED_BY_THIS_TASK; original raw retained on existing disk",
+  "baseline_base_sha": "aed6affbd2567feee79e658fbe5f07510b039f36",
+  "main_wip_files": [
+    ".gitignore",
+    "WORKLOG.md",
+    "presentations/README.md"
+  ],
+  "PASS": true
+}

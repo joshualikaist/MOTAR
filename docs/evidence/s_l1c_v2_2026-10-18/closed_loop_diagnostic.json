@@ -1,0 +1,88 @@
+{
+  "schema": "motar.s-l1c-v2-posthoc-robustness-diagnostic.v1",
+  "source_sha": "e45794e876b15f71b5f38c65702fefadc368f93a",
+  "run_id": "SL1CV2-C01",
+  "rows": [
+    {
+      "config": "static",
+      "mode": "v1",
+      "completed_episodes": 121,
+      "outcomes": {
+        "capture": 116,
+        "crash": 5
+      },
+      "ledger_relative_path": "static_s_l1c/kroc2027_episodes.jsonl",
+      "ledger_sha256": "239c648617d90e8216896e9ebc850849c28dfb89d9e3410a41a719a8a9628457",
+      "el0_frames": 4800,
+      "el0_lidar_visible": 419,
+      "el0_provenance_counts": {
+        "1": 419
+      },
+      "el0_summary_sha256": "304a5ecbffff7b4f7c059958311705eeef582739b375ddaeefa7dcd6d6797b36",
+      "el0_frames_sha256": "1da23651a5b2bb59403744b5a6defac2f30694ab38eaebe68de69de00851f751"
+    },
+    {
+      "config": "static",
+      "mode": "v2",
+      "completed_episodes": 121,
+      "outcomes": {
+        "capture": 116,
+        "crash": 5
+      },
+      "ledger_relative_path": "static_v2_p2/kroc2027_episodes.jsonl",
+      "ledger_sha256": "48aca2aa8033d589240b4a315e8677a21a9cc547a15fc52e0d5c2cfd6c4c510d",
+      "el0_frames": 4800,
+      "el0_lidar_visible": 419,
+      "el0_provenance_counts": {
+        "1": 419
+      },
+      "el0_summary_sha256": "e01fba1ccb0a47a146d2a36c8a653ef3e04407c04ac163cf302a31d4776ed455",
+      "el0_frames_sha256": "1da23651a5b2bb59403744b5a6defac2f30694ab38eaebe68de69de00851f751"
+    },
+    {
+      "config": "moving",
+      "mode": "v1",
+      "completed_episodes": 100,
+      "outcomes": {
+        "capture": 96,
+        "crash": 4
+      },
+      "ledger_relative_path": "moving_s_l1c/kroc2027_episodes.jsonl",
+      "ledger_sha256": "450ada2495e3a2ef1ec0fbe1ea0f78f420ccc927b727b94ac822dc7344ce0172",
+      "el0_frames": 4800,
+      "el0_lidar_visible": 362,
+      "el0_provenance_counts": {
+        "1": 362
+      },
+      "el0_summary_sha256": "c652fa7a60dd412d7dbcd6a16ce83bb693d8e224e992d8b9738588c9639e0330",
+      "el0_frames_sha256": "b35287cc965adfc5692925c50a8339c2efc8a2ecaafbb4b5ed15e523cbba72cf"
+    },
+    {
+      "config": "moving",
+      "mode": "v2",
+      "completed_episodes": 94,
+      "outcomes": {
+        "capture": 89,
+        "crash": 5
+      },
+      "ledger_relative_path": "moving_v2_p2/kroc2027_episodes.jsonl",
+      "ledger_sha256": "018422ccfd0568bec6bc2a63d520150ad37cf59348100ab736c2204686042277",
+      "el0_frames": 4800,
+      "el0_lidar_visible": 431,
+      "el0_provenance_counts": {
+        "1": 431
+      },
+      "el0_summary_sha256": "a8e6e05c07b78877492b23879e84a339cacdb2057fdf2d1c249860d4e519520c",
+      "el0_frames_sha256": "08e3936a119cbba0162dd9811c5a8809a1d1602d2c76d278ea344c00b1610f85"
+    }
+  ],
+  "scope": "Post-hoc descriptive frozen-checkpoint robustness only; not a preregistered GO gate or algorithm performance estimate. Fixed 600 steps/8 envs, automatic resets and differing episode counts prevent a matched completed-cohort comparison.",
+  "open_episodes_at_cutoff": "NOT_RECORDED in completed-episode ledger; no imputed outcome",
+  "production_abstention_reason_telemetry": "NOT_RECORDED; valid/rejected decisions are saved. gpu_metrics decision_counts are reconstructed by the independent reference from saved scans/predictions, not exported production reason codes.",
+  "el0_provenance_legend": {
+    "0": "NONE",
+    "1": "CORRECT",
+    "2": "FALSE_ASSOCIATION"
+  },
+  "provenance_limit": "Post-review descriptive E-L0 semantic provenance recount only; not a new independent geometric per-frame re-render or a matched causal comparison. All four arms have zero evaluator-labelled false associations."
+}

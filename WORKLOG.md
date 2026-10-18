@@ -21486,3 +21486,34 @@ Next review: the complete diff and new plan; local commit requires user diff app
 - Decision now GPU_QUALIFIED_PENDING_REVIEW, not final GO. Next: result commit, independent
   Fable 5.1 read-only review, then record final decision; branch-only fast-forward push after
   refreshed full-unpublished-history/security/WIP/raw/symlink/path/remote checks. No main merge.
+
+## 2026-10-18 — C-v2 independent Fable review and final scoped GO
+
+- Fable CLI 2.1.247 initially returned API400 (model requires ≥2.1.251), so no review occurred on
+  that attempt. Its updater installed2.1.302; retry canonical model `claude-fable-5-1` completed
+  read-only review of source `e45794e`/result `d063e7d`: SUBSTANTIATED_GO, no blocker.
+- Review reports its own sphere-intersection truth, complete CPU ledger recount, covariance/
+  clocks/firewall/raw hashes, 22 targeted tests and full PUBLIC_CPU2,593/0 failures/0 errors/
+  10 skipped/5 excluded. Its reanalysis matches the committed analysis byte-for-byte.
+- Resolved the medium disclosure finding with an append-only RESULTS addendum: ±1° prediction
+  diagnostic v1 312/864→v2 504/864, 648/1,152 v2 abstentions, no false accept, new max centre error
+  5.159mm. GPU91.67% requires angularly exact predictions; angular-error robustness is diagnostic,
+  not qualified. Ground/top/non-vertical/multiple-object returns remain NOT_TESTED. Reason-label
+  split is explicitly independent-reference reconstruction; production reason codes NOT_RECORDED.
+- Post-review descriptive E-L0 recount: all saved LiDAR associations labelled correct, static
+  419/419 both, moving362/362→431/431; semantic evaluator scoring, not independent per-frame ray
+  truth. Completed moving capture96/crash4→capture89/crash5 at fixed600steps; differing episodes/
+  trajectories prevent a matched cohort or performance-gain claim. Original raw/gates unchanged.
+- Final GO is limited to the preregistered precision-limited simulator: improved genuine near
+  recall with no additional matched false association, covariance/identity5s/legacy modes/firewall
+  and preservation PASS. S-L1D remains disabled on C-v2. No hardware, Recovery or PPO claim.
+- Added FABLE_REVIEW.md, metadata and review-manifest copy, QUALIFICATION.md, final preservation,
+  closed-loop diagnostic, PUBLICATION_CHECKS.md and full CHANGED_FILES.txt in the evidence package.
+  Review raw retained in `../aerial_gym_simulator/results/s_l1c_v2_review/SL1CV2-R01` (six files,
+  manifest `c43477a27416410ac436100e273c9b1c62ce4914efab8955567465215e8b2e8d`). Existing records,
+  Policy F, main three WIP files and stash unchanged. No tracked runtime change after GPU source.
+- Publication at this commit is pending the refreshed exact-HEAD full-unpublished-history audit.
+  The preliminary eight-commit audit found no secret/payload/new-link/WIP candidate. Only the
+  user-authorized ordinary `codex/mt-p1` refspec will be pushed after final checks; main prohibited.
+  Final audit/push receipts retained in `/tmp/motar_s_l1c_v2_20261018/`, actual remote SHA reported
+  to the user. No source change, additional GPU, B/D production implementation or cleanup planned.

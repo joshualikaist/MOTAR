@@ -87,3 +87,37 @@ python -B tools/s_l1c_v2_report.py --run ../aerial_gym_simulator/results/s_l1c_v
 ```
 
 Use fresh output names; originals are not overwritten. GPU reexecution would require a new run ID/preregistration and authorization, not reuse of the immutable raw folder.
+
+## 2026-10-18 review disclosure addendum
+
+This append-only addendum addresses the independent [Fable review](FABLE_REVIEW.md); the original result section and preregistered gates above are unchanged. Final disposition: [QUALIFICATION.md](QUALIFICATION.md).
+
+### Angular prediction error — diagnostic, not qualified
+
+The headline GPU 91.67% is for angularly exact predictions with radial offsets only. The preregistered CPU ±1° bearing/elevation error set is substantially harder:
+
+| Candidate | True hits / opportunities | Recall | Abstentions / total probes | New max centre error |
+| --- | ---: | ---: | ---: | ---: |
+| V2-0 | 312/864 | 36.11% | 0/1152 | — (no new accepts) |
+| V2-A | 504/864 | 58.33% | 648/1152 | 0.0051587279m |
+
+V1 has 840 explicit rejections; V2-A has 648 abstentions. Both have zero false accepts and zero paired true loss in this diagnostic. The 192 additional correct associations have maximum centre error 5.159mm. These figures are read from the committed CPU aggregate; angular-error robustness is **diagnostic, not qualified**, and cannot inherit the GPU angularly exact headline. Production assumes the fixed 0.1mm simulator precision bound; offline higher-noise trials increase that bound in the hypothesis test. They do not establish that fixed-parameter production is hardware-noise robust.
+
+### Negative coverage and reconstructed reason labels
+
+Negative coverage is vertical box faces and the named EQ-1D fixtures. Ground/top edges, non-vertical surfaces and adjacent rows hitting different objects remain NOT_TESTED. CPU uses gate 0.696m; GPU covariance-prior probes also exercise the production adaptive gate up to 1m, with no negative accepts. This does not qualify all adaptive-gate scene distributions.
+
+The `decision_counts` in gpu_metrics.json are **independent-reference reconstructions from saved scans/predictions**, with valid decisions checked against production. Production reason-code telemetry is NOT_RECORDED. The actual saved production rejected counts are 96/432 positive and 93/93 negative probes for v2; the 47-versus-46 negative abstention/veto split is the reference diagnosis, not an exported runtime reason code.
+
+### Post-review closed-loop robustness disclosure
+
+This descriptive recount is new after review and is not a preregistered selection/GO gate. Source and raw are unchanged. [Diagnostic JSON](closed_loop_diagnostic.json) binds every ledger/frame hash.
+
+| Config | Mode | Completed capture | Crash | E-L0 correct LiDAR / false |
+| --- | --- | ---: | ---: | ---: |
+| static | v1 | 116 | 5 | 419 / 0 |
+| static | v2 | 116 | 5 | 419 / 0 |
+| moving | v1 | 96 | 4 | 362 / 0 |
+| moving | v2 | 89 | 5 | 431 / 0 |
+
+Moving trajectories diverge from frame 105 (review finding); fixed 600-step runs produce different completed-episode counts. These counts are not a matched completed cohort, and no performance improvement is established. Open episode outcomes are not imputed. E-L0 records 4,800 action-aligned frames per arm; the 4,808 update-source observations above include initialization staging, explaining static 419 versus 421 LiDAR updates. Semantic provenance scoring is evaluator-only and does not newly establish independent geometric truth for every closed-loop frame.
