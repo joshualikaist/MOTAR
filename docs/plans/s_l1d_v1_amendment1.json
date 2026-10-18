@@ -1,0 +1,312 @@
+{
+  "schema": "motar.s-l1d-plan-amendment.v1",
+  "amendment": 1,
+  "date_kst": "2026-10-18",
+  "authority": "User message 'MOTAR - S-L1D INCOMPLETE \ud574\uc18c\ub97c \uc704\ud55c SL1D-C02 \uc2b9\uc778' (2026-10-18)",
+  "timing": "After SL1D-C01 (results aab7379, INCOMPLETE record bd65d55) and before any SL1D-C02 process; s_l1d_v1.json/.md bytes and SL1D-C01 results unchanged",
+  "reason": "SL1D-C01 produced no undetected GPU PARTIAL, CENTRE_ONLY or SCALE_LOSS state (all 12 CENTRE_ONLY/PARTIAL passes detected, no SCALE_LOSS fixture), so the user's GPU-comparison requirement for those classes was missing",
+  "unchanged": "S-L1D production algorithm (source 76f0f4c aerial_gym/ and motar_eval/), online classification rules, precedence, tau, the preregistered evaluator-to-online mapping, and every v1 gate; S-L1A/B/C unchanged",
+  "scene_design": {
+    "tool": "tools/audits/s_l1d_c02_scene_search.py (float64, NumPy, S-L1D oracle only)",
+    "scale0": "target-alone support 0 with every pixel ray >= 3 mm outside the sphere boundary, evaluator SCALE_LOSS (in frustum, centre range - r < 20 m); two geometries at 19.8 and 20.0 m",
+    "scale1": "support exactly 1 with 3 mm boundary margin; two clear geometries at 15 and 18 m and the 18 m one behind a bar (evaluator FULL with alone 1)",
+    "occlusion": "two same-row adjacent support pixels; a bar edge (edge_left_y / edge_right_y, the slot extents are randomised) placed midway between a pixel ray and the exact centre ray at the bar distance; accepted only if the oracle class, alone_px = 2, visible_px = 1 and centre-robustness are stable across bar half extents hx 0.20/0.30/0.40 x hy 0.20/0.40, edge shifts +-4 mm and target shifts +-1.5 mm",
+    "expected_from_design": {
+      "C02_SC0_1": {
+        "design_evaluator_class": "SCALE_LOSS",
+        "design_alone_px": 0,
+        "design_visible_px": 0,
+        "design_online_class": "PRED_SCALE_LOSS",
+        "sphere_boundary_margin_m": 0.0184
+      },
+      "C02_SC0_2": {
+        "design_evaluator_class": "SCALE_LOSS",
+        "design_alone_px": 0,
+        "design_visible_px": 0,
+        "design_online_class": "PRED_SCALE_LOSS",
+        "sphere_boundary_margin_m": 0.0201
+      },
+      "C02_SC1_1": {
+        "design_evaluator_class": "VISIBLE",
+        "design_alone_px": 1,
+        "design_visible_px": 1,
+        "design_online_class": "PRED_SCALE_LOSS",
+        "sphere_boundary_margin_m": 0.0253
+      },
+      "C02_SC1_2": {
+        "design_evaluator_class": "VISIBLE",
+        "design_alone_px": 1,
+        "design_visible_px": 1,
+        "design_online_class": "PRED_SCALE_LOSS",
+        "sphere_boundary_margin_m": 0.0564
+      },
+      "C02_SC1_FULL": {
+        "design_evaluator_class": "FULL",
+        "design_alone_px": 1,
+        "design_visible_px": 0,
+        "design_online_class": "PRED_SCALE_LOSS",
+        "sphere_boundary_margin_m": 0.0564
+      },
+      "C02_PA_1": {
+        "design_evaluator_class": "PARTIAL",
+        "design_alone_px": 2,
+        "design_visible_px": 1,
+        "design_online_class": "OCCLUSION_PARTIAL_EVIDENCE",
+        "sphere_boundary_margin_m": 0.0034
+      },
+      "C02_PA_2": {
+        "design_evaluator_class": "PARTIAL",
+        "design_alone_px": 2,
+        "design_visible_px": 1,
+        "design_online_class": "OCCLUSION_PARTIAL_EVIDENCE",
+        "sphere_boundary_margin_m": 0.0045
+      },
+      "C02_PA_3": {
+        "design_evaluator_class": "PARTIAL",
+        "design_alone_px": 2,
+        "design_visible_px": 1,
+        "design_online_class": "OCCLUSION_PARTIAL_EVIDENCE",
+        "sphere_boundary_margin_m": 0.0042
+      },
+      "C02_PA_4": {
+        "design_evaluator_class": "PARTIAL",
+        "design_alone_px": 2,
+        "design_visible_px": 1,
+        "design_online_class": "OCCLUSION_PARTIAL_EVIDENCE",
+        "sphere_boundary_margin_m": 0.0147
+      },
+      "C02_CO_1": {
+        "design_evaluator_class": "CENTRE_ONLY",
+        "design_alone_px": 2,
+        "design_visible_px": 1,
+        "design_online_class": "OCCLUSION_CENTRE_EVIDENCE",
+        "sphere_boundary_margin_m": 0.0034
+      },
+      "C02_CO_2": {
+        "design_evaluator_class": "CENTRE_ONLY",
+        "design_alone_px": 2,
+        "design_visible_px": 1,
+        "design_online_class": "OCCLUSION_CENTRE_EVIDENCE",
+        "sphere_boundary_margin_m": 0.0045
+      },
+      "C02_CO_3": {
+        "design_evaluator_class": "CENTRE_ONLY",
+        "design_alone_px": 2,
+        "design_visible_px": 1,
+        "design_online_class": "OCCLUSION_CENTRE_EVIDENCE",
+        "sphere_boundary_margin_m": 0.0042
+      },
+      "C02_CO_4": {
+        "design_evaluator_class": "CENTRE_ONLY",
+        "design_alone_px": 2,
+        "design_visible_px": 1,
+        "design_online_class": "OCCLUSION_CENTRE_EVIDENCE",
+        "sphere_boundary_margin_m": 0.0147
+      }
+    }
+  },
+  "scenes": [
+    {
+      "id": "C02_SC0_1",
+      "target": [
+        19.8,
+        0.0,
+        0.03
+      ],
+      "bars": []
+    },
+    {
+      "id": "C02_SC0_2",
+      "target": [
+        20.0,
+        0.0,
+        0.03
+      ],
+      "bars": []
+    },
+    {
+      "id": "C02_SC1_1",
+      "target": [
+        15.0,
+        -0.09,
+        -0.07
+      ],
+      "bars": []
+    },
+    {
+      "id": "C02_SC1_2",
+      "target": [
+        18.0,
+        -0.1,
+        -0.07
+      ],
+      "bars": []
+    },
+    {
+      "id": "C02_SC1_FULL",
+      "target": [
+        18.0,
+        -0.1,
+        -0.07
+      ],
+      "bars": [
+        {
+          "x": 9.0,
+          "y": 0.0
+        }
+      ]
+    },
+    {
+      "id": "C02_PA_1",
+      "target": [
+        12.0,
+        -0.02,
+        -0.045
+      ],
+      "bars": [
+        {
+          "x": 6.0,
+          "edge_left_y": 0.0125
+        }
+      ]
+    },
+    {
+      "id": "C02_PA_2",
+      "target": [
+        12.0,
+        0.005,
+        -0.05
+      ],
+      "bars": [
+        {
+          "x": 6.0,
+          "edge_right_y": -0.0163
+        }
+      ]
+    },
+    {
+      "id": "C02_PA_3",
+      "target": [
+        13.0,
+        -0.06,
+        -0.055
+      ],
+      "bars": [
+        {
+          "x": 6.5,
+          "edge_left_y": 0.0041
+        }
+      ]
+    },
+    {
+      "id": "C02_PA_4",
+      "target": [
+        13.0,
+        0.005,
+        -0.06
+      ],
+      "bars": [
+        {
+          "x": 6.5,
+          "edge_right_y": -0.0177
+        }
+      ]
+    },
+    {
+      "id": "C02_CO_1",
+      "target": [
+        12.0,
+        -0.02,
+        -0.045
+      ],
+      "bars": [
+        {
+          "x": 6.0,
+          "edge_right_y": 0.0125
+        }
+      ]
+    },
+    {
+      "id": "C02_CO_2",
+      "target": [
+        12.0,
+        0.005,
+        -0.05
+      ],
+      "bars": [
+        {
+          "x": 6.0,
+          "edge_left_y": -0.0163
+        }
+      ]
+    },
+    {
+      "id": "C02_CO_3",
+      "target": [
+        13.0,
+        -0.06,
+        -0.055
+      ],
+      "bars": [
+        {
+          "x": 6.5,
+          "edge_right_y": 0.0041
+        }
+      ]
+    },
+    {
+      "id": "C02_CO_4",
+      "target": [
+        13.0,
+        0.005,
+        -0.06
+      ],
+      "bars": [
+        {
+          "x": 6.5,
+          "edge_left_y": -0.0177
+        }
+      ]
+    }
+  ],
+  "run": {
+    "run_id": "SL1D-C02",
+    "output_root": "../aerial_gym_simulator/results/s_l1d_v1",
+    "sensor_modes": [
+      "s_l1c",
+      "s_l1d"
+    ],
+    "sensor_num_envs": 13,
+    "sensor_seed": 4401,
+    "closed_loop": "none (sensor-only canary)",
+    "disk_min_free_gb": 8.0,
+    "output_max_gb": 2.0,
+    "oom_reserve_mib": 512,
+    "poll_s": 5,
+    "total_wall_cap_s": 1800,
+    "process_wall_cap_s": 900,
+    "no_retry": true
+  },
+  "recorded_per_scene_and_pass": [
+    "E-L0 evaluator class (GPU) and the independent oracle class",
+    "target-alone support (E-L0 alone_px)",
+    "rendered visible target pixels (E-L0 visible_px)",
+    "camera detection flag",
+    "delivered RGB-D depth over the predicted support (min and the predicted surface)",
+    "primed belief (true centre) and covariance 1e-6 I",
+    "production online class, support and occluded count",
+    "independent oracle online class on the delivered GPU depth",
+    "oracle agreement"
+  ],
+  "gates": {
+    "C02-UNIQUE": "level, roll15 and pitch15 passes are verified bitwise identical (depth, LiDAR, detection, E-L0 labels, online outputs); only the level scene pass of each scene counts as an independent case",
+    "C02-ORACLE": "for every scene: production support == E-L0 alone_px == oracle support within the boundary-ambiguous allowance, and production online class == the oracle online class recomputed on the delivered GPU depth with the primed belief",
+    "C02-MAPPING": "every undetected unique case is checked against the v1 mapping; additionally an undetected case with alone_px < min_target_pixels must be PRED_SCALE_LOSS whatever its evaluator class (the v1 rule's precedence made explicit); no scene is excluded because its rendered class differs from the design",
+    "C02-SCALE": ">= 1 unique undetected case with alone_px in {0, 1} and online PRED_SCALE_LOSS, oracle-agreeing",
+    "C02-PARTIAL": ">= 1 unique undetected case with GPU evaluator PARTIAL, alone_px >= min_target_pixels, online class per the v1 mapping (exact centre verdict when centre-robust), oracle-agreeing",
+    "C02-CENTRE": ">= 1 unique undetected case with GPU evaluator CENTRE_ONLY, alone_px >= min_target_pixels, centre-robust, online OCCLUSION_CENTRE_EVIDENCE, oracle-agreeing",
+    "C02-SENSOR-NONINTERFERENCE": "sensors_s_l1c and sensors_s_l1d deliver bitwise identical renders (d2_renders) and detection",
+    "C02-INTEGRITY": "production paths (aerial_gym/, motar_eval/) identical to 76f0f4c; plan, amendment and code committed; checkpoint, import origins, frozen tree, raw manifest valid; no NaN/Inf",
+    "verdict": "GO if C02-SCALE, C02-PARTIAL and C02-CENTRE are realised and every C02 gate passes (with SL1D-C01's 8/8 v1 gates retained); FAIL if a required state is realised but the online result violates the preregistered mapping or the oracle; INCOMPLETE if a required state is not realised on GPU or independent evidence is missing. GO does not claim real-robot sensor accuracy or Recovery performance"
+  }
+}

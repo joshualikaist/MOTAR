@@ -21259,3 +21259,21 @@ Next review: the complete diff and new plan; local commit requires user diff app
 - Resume: amendment 1 with far one/zero-pixel and edge-occluded far-target GPU scenes, then
   sensor-only canary SL1D-C02, review and push. P-L1, G-L1, PPO and the Recovery Planner stay
   unstarted.
+
+## 2026-10-18 — S-L1D amendment 1: SL1D-C02 GPU fixtures for undetected partial/centre-only/scale (before run)
+
+- Authority: the user's SL1D-C02 approval, limited to fixtures, runner, analysis, tests and
+  evidence. Base `bd65d55`; the remote matches it.
+- Files: `docs/plans/s_l1d_v1_amendment1.md/.json`, `tools/audits/s_l1d_c02_scene_search.py` and
+  `tests/test_s_l1d_c02_design.py` (2 OK).
+- Unchanged: the S-L1D production algorithm, the online rules and mapping, and all v1 gates.
+- Scene design: an independent float64 oracle grid search found 2,154 support-0, 1,378 support-1
+  and 2,848 two-to-four-pixel candidates. From these, 13 robust scenes were chosen, each stable
+  across bar hx 0.20/0.30/0.40 × hy 0.20/0.40, ±4 mm edges and ±1.5 mm target shifts:
+  - SCALE_LOSS at 19.8 and 20.0 m (0 px);
+  - VISIBLE 1 px at 15 and 18 m;
+  - FULL with alone 1 at 18 m;
+  - PARTIAL ×4 and CENTRE_ONLY ×4 at 12/13 m (2 alone / 1 visible, centre-robust).
+- C02 gates: UNIQUE (level pass only), ORACLE (production online equal to the oracle on the
+  delivered GPU depth), MAPPING (no exclusion), SCALE/PARTIAL/CENTRE realisation,
+  SENSOR-NONINTERFERENCE and INTEGRITY, with the GO/FAIL/INCOMPLETE rule as the user specified.
