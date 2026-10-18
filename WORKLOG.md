@@ -21691,3 +21691,14 @@ smoke mode only permits temporary output and relaxes HEAD/tree checks. P02 now i
 strict committed-run preflight for both mechanics and main, preserving its preregistered path and
 strengthening exact-HEAD/clean-tree enforcement. No GPU process was started; no analysis gate,
 seed, output identifier or preregistration changed. Focused runner contracts: 5 PASS.
+
+## 2026-10-18 — H-R3 P02 SMOKE01 FAIL, fail-closed stop
+
+Source 125690c3c02c619575ec2ed868d2a126734811fc; B0 and forced B0 completed in 51.94 GPU wall-seconds.
+Unaffected env8 state/raw-sensor hash diverges at99 (action100), when normal env15 resets but
+forced env15 does not. Synthetic probes and unaffected target trajectories match. Main did not start.
+FAIL is preserved in docs/evidence/h_r3_p02_2026-10-18/smoke01_failed/ with original run report and
+manifest; raw remains ../aerial_gym_simulator/results/h_r3_p02_v1/HR3-P02-SMOKE01, immutable.
+Suspected full PhysX root setter cross-env effect is under runner-only investigation. No effect
+estimate or confirmation claim; equality gates are not relaxed. Next: committed instance-only
+indexed/batched reset write repair and fresh SMOKE02 before any main pilot.
