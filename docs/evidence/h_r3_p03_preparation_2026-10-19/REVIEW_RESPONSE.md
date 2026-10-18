@@ -1,0 +1,11 @@
+# Closure of conditional source review before GPU
+
+Fable5.1 completed its single read-only review (no BLOCKER/HIGH). Its CONDITIONAL verdict is retained verbatim. Three MEDIUM items were closed before source commit, without a GPU call or threshold change.
+
+1. **Direction-invalid horizontal abstention:** `_candidates` now zeros direction/normal where distance<1e-6. Added1e-8,5e-7 and exact1e-6 boundary regression. Independent second-agent read-only verification used8 axis/diagonal/negative-bearing cases; invalid horizontal nominalcommands B1–B5 are exactlyzero, valid boundary retains registerednorm. Yaw intentionally follows unchanged common rules; this is not all-actionzero/hover. Only arms module and its test changed after Fable's snapshot; all other reviewed file hashes are identical.
+2. **Preflight binding fields:** actual zero-GPU preflight output contains head,policy_f_sha256,rms_digest. Its expected NOT_READY reasons were uncommitted newsource, missing reviewreceipt and intentionally abbreviated approvedSHA. Final fullSHA/committed clean preflight must pass before GPU.
+3. **Environment builder/RNG:** actual inherited process_env onCPU returns NAVRL_SEED4801,160bars, sensorlineageoff, direct_l2_v1,bounded motion,vision1. NUM_ENVS envvar is absent by design: launcher explicitly calls build_player(128), and runtime meta enforces128. Existing RNG class on N128 CPU fake manager/task initial reset produces episodes[0]*128, pendingfalse. This is a counter-contract probe, not realPhysX proof. Registered initialroot chronology and shortN128process independently gate actual reset behavior before long runs.
+
+Post-fix focused suite52/52 PASS,0.263s. No tolerance relaxed, no event excluded and no raw reused. LOW observations retained: perdecision sham can produce realizedimbalance, nominaltolerance remains hardfail, naturalreset overlap at2 remains hardfail. GPU/modeparity/600-step results remain NOT_TESTED until actual qualification.
+
+GT/geometry/identity telemetry never enters onlinecontrols. Existing FrozenF actor898/RGB-D+LiDAR and originalproduction/P01/P02/ISO source are unchanged. Independent source review is complete and its specified items closed by CPU/source checks; no claim that Fable re-ran the fix or reviewed future GPU results.

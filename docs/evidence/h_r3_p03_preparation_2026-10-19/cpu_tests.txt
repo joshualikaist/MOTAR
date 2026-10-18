@@ -1,0 +1,66 @@
+Warp CUDA error 100: no CUDA-capable device is detected (in function init_cuda_driver, /buildAgent/work/a9ae500d09a78409/warp/native/cuda_util.cpp:218)
+Warp CUDA error 3: initialization error (in function cuda_device_get_count, /buildAgent/work/a9ae500d09a78409/warp/native/warp.cu:1589)
+test_actual_velocity_acceleration_stall_and_energy_labels (test_h_r3_p03_analysis.MetricsTest) ... ok
+test_archived_common_schedule_exposure_and_invalid_direction_are_independent_gates (test_h_r3_p03_analysis.MetricsTest) ... ok
+test_class_denominators_and_success_latency_remain_descriptive (test_h_r3_p03_analysis.MetricsTest) ... ok
+test_spatial_identity_terminal_first_and_physical_terminal_action (test_h_r3_p03_analysis.MetricsTest) ... ok
+test_unequal_effort_and_empty_coverage_do_not_support_pure_viewpoint (test_h_r3_p03_analysis.MetricsTest) ... ok
+test_zero_both_effort_is_retained_as_equal_without_causal_claim (test_h_r3_p03_analysis.MetricsTest) ... ok
+test_actual_refit_ids_and_root_chronology_are_independent_gates (test_h_r3_p03_analysis.PrefixAndIsolationTest) ... ok
+test_complete_prefix_and_no_event_envs_are_required (test_h_r3_p03_analysis.PrefixAndIsolationTest) ... ok
+test_forced_reset_exact_clock_and_unaffected_envs (test_h_r3_p03_analysis.PrefixAndIsolationTest) ... ok
+test_initial_and_last_preloss_sensor_history_are_compared (test_h_r3_p03_analysis.PrefixAndIsolationTest) ... ok
+test_missing_snapshot_and_tampered_completion_fail_closed (test_h_r3_p03_analysis.PrefixAndIsolationTest) ... ok
+test_numeric_windows_catch_sensor_change_even_if_digests_unchanged (test_h_r3_p03_analysis.PrefixAndIsolationTest) ... ok
+test_perprocess_control_gate_rejects_forged_zero_budget_error (test_h_r3_p03_analysis.PrefixAndIsolationTest) ... ok
+test_postbranch_changes_allowed_but_t0_mismatch_is_global_failure (test_h_r3_p03_analysis.PrefixAndIsolationTest) ... ok
+test_sham_assignment_uses_actual_full_event_episode_decision_key (test_h_r3_p03_analysis.PrefixAndIsolationTest) ... ok
+test_subset_gate_supports_stop_after_each_new_arm (test_h_r3_p03_analysis.PrefixAndIsolationTest) ... ok
+test_unlisted_output_and_symlink_parent_fail_closed (test_h_r3_p03_analysis.PrefixAndIsolationTest) ... ok
+test_assignment_is_batch_order_and_reset_order_independent (test_h_r3_p03_arms.AssignmentAndFirewallTest) ... ok
+test_assignment_rejects_invalid_identity (test_h_r3_p03_arms.AssignmentAndFirewallTest) ... ok
+test_batched_control_preserves_environment_identity (test_h_r3_p03_arms.AssignmentAndFirewallTest) ... ok
+test_episode_event_and_decision_each_affect_assignment_sequence (test_h_r3_p03_arms.AssignmentAndFirewallTest) ... ok
+test_hash_matches_full_registered_domain_and_key (test_h_r3_p03_arms.AssignmentAndFirewallTest) ... ok
+test_inputs_schedule_and_global_rng_are_unchanged (test_h_r3_p03_arms.AssignmentAndFirewallTest) ... ok
+test_online_boundary_contains_only_permitted_inputs (test_h_r3_p03_arms.AssignmentAndFirewallTest) ... ok
+test_budget_metadata_uses_full_registered_window (test_h_r3_p03_arms.PrefixBudgetTest) ... ok
+test_clear_centre_keeps_feasible_prefix_lateral_budget (test_h_r3_p03_arms.PrefixBudgetTest) ... ok
+test_coincident_belief_reports_abstention_without_fabricated_direction (test_h_r3_p03_arms.PrefixBudgetTest) ... ok
+test_freeze_has_fixed_detached_20_step_window (test_h_r3_p03_arms.PrefixBudgetTest) ... ok
+test_frozen_b1_b2_and_b0_passthrough (test_h_r3_p03_arms.PrefixBudgetTest) ... ok
+test_informed_side_responds_online_but_sham_and_magnitude_do_not (test_h_r3_p03_arms.PrefixBudgetTest) ... ok
+test_invalid_schedule_decision_and_inputs_fail_closed (test_h_r3_p03_arms.PrefixBudgetTest) ... ok
+test_near_zero_belief_direction_abstains_but_threshold_is_valid (test_h_r3_p03_arms.PrefixBudgetTest) ... ok
+test_nominal_common_norm_and_sham_side_across_future_states (test_h_r3_p03_arms.PrefixBudgetTest) ... ok
+test_online_changes_cannot_reestimate_magnitude (test_h_r3_p03_arms.PrefixBudgetTest) ... ok
+test_reference_is_bounded_without_reversing_safety (test_h_r3_p03_arms.PrefixBudgetTest) ... ok
+test_zero_lateral_and_no_candidate_keep_denominators (test_h_r3_p03_arms.PrefixBudgetTest) ... ok
+test_attach_modes_and_explicit_diagnostic_snapshot (test_h_r3_p03_isolation.P03IsolationQualification) ... ok
+test_bad_ids_fail_before_update_and_close_restores_instance (test_h_r3_p03_isolation.P03IsolationQualification) ... ok
+test_nonfinite_selected_geometry_is_not_accepted_as_matching_nan_bits (test_h_r3_p03_isolation.P03IsolationQualification) ... ok
+test_runtime_audit_exact_geometry_ray_and_reset_parity (test_h_r3_p03_isolation.P03IsolationQualification) ... ok
+test_runtime_guard_rejects_value_and_signed_zero_mutations (test_h_r3_p03_isolation.P03IsolationQualification) ... ok
+test_runtime_has_no_full_vertex_downloads_after_installation (test_h_r3_p03_isolation.P03IsolationQualification) ... ok
+test_six_hundred_cpu_steps_do_not_substitute_for_gpu_qualification (test_h_r3_p03_isolation.P03IsolationQualification) ... ok
+test_storage_mesh_mapping_and_layout_mutations_fail_closed (test_h_r3_p03_isolation.P03IsolationQualification) ... ok
+test_unselected_root_drift_preserves_geometry_and_rays_in_both_modes (test_h_r3_p03_isolation.P03IsolationQualification) ... ok
+test_unselected_write_during_transform_is_rejected_after_reset (test_h_r3_p03_isolation.P03IsolationQualification) ... ok
+test_binding_change_rejected (test_h_r3_p03_runner.RunnerTests) ... ok
+test_bounded_matrix_no_full_pilot (test_h_r3_p03_runner.RunnerTests) ... ok
+test_failure_stops_no_second_gpu_launch (test_h_r3_p03_runner.RunnerTests) ... ok
+test_natural_reset_blindspot_rejected (test_h_r3_p03_runner.RunnerTests) ... ok
+test_online_control_inputs_exclude_evaluation_gt (test_h_r3_p03_runner.RunnerTests) ... ok
+test_original_sources_unchanged (test_h_r3_p03_runner.RunnerTests) ... ok
+
+----------------------------------------------------------------------
+Ran 52 tests in 0.263s
+
+OK
+Warp 1.0.0 initialized:
+   CUDA devices not available
+   Devices:
+     "cpu"      : "x86_64"
+   Kernel cache:
+     /home/fair/.cache/warp/1.0.0
+Module test_h_r3_env_isolation load on device 'cpu' took 0.73 ms

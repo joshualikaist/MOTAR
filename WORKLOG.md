@@ -21809,3 +21809,14 @@ Focused Fable5.1 review completed on resultbe4514b: scoped Mechanics GO supporte
 ## 2026-10-19 — P03 preparation qualification preregistration
 
 User approves implementation/focusedCPU/boundedGPU qualification only. Preregister newseed4801/N128/160bars,2short16stepB0resetchecks then9long600step qualificationprocesses, aggregate3600s cap, disk8GB/OOM512MiB. New selected-only audit/runtime source, shared preloss budgets forB3/B4/B5, separate sensors/state/prefix and realizedeffort diagnostics. No largeP03/confirmation/push/mainmerge/PPO/planner. Historicaldata/source/WIP/stash protected. Baseline recorded in /tmp/motar_p03prep_20261019/baseline.json; currentremote andlocalce3d10a agree. Actualquota deadlineUNKNOWN; knownsession01:03KST, conservativewrapup05:03KST.
+
+## 2026-10-19 — P03 preparation source and independent review closed
+
+Newopt-in files: tools/h_r3_p03_{isolation,launcher,analysis,run}.py; motar_eval/h_r3_p03_arms.py; four focusedtestmodules. Audit/runtime shareselected-only math/refit; runtime exactGPUbitguards removefullvertexhostcopies. B3/B4/B5 shareprefixfeasiblemagnitude20steps, B4hash episode/event/decision; B5nominalbudgetonly withrealizeddiagnostics.
+
+| CPU stage | Tests | Result |
+|---|---:|---|
+| Initialfocused |51|PASS|
+| Postreviewfocused |52|PASS|
+
+OneFable5.1 review completedCONDITIONAL/noBLOCKER/HIGH. ClosedMEDIUM smallpositiveinvaliddistance horizontalabstention withregression+independent8casecheck; actualpreflight/envbuilder fields andN128CPUfakeinitialcounter probesPASS. Reviewresponsehashes bindpostfixsource. Originalsource/WIP/stash/manifeststat preservationPASS; historicalrawfullrehashnotrepeatedperuser. GPU remainsNOT_TESTED, expected next action frozenfullsourcecommit then registeredHR3-P03-Q01 qualification only. No push/mainmerge/largepilot/confirmation.
