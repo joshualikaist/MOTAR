@@ -1,0 +1,38 @@
+{
+  "status": "PASS",
+  "checks": [
+    "Compact JSON parse and post-run Python syntax PASS",
+    "Nine runtime/test files equal CPU receipt and frozen GPU source",
+    "Primary denominators/classes/contrasts and INCONCLUSIVE attribution reconcile",
+    "Secondary original-episode totals, terminal ranges and censor coverage reconcile",
+    "Registered process inventory and resource caps reconcile",
+    "Report/plan local evidence links resolve",
+    "Main HEAD/three WIP hashes and stash inventory unchanged",
+    "Only existing tracked edit is append-only WORKLOG; all executable changes new paths"
+  ],
+  "focused_cpu_tests": 52,
+  "source_commit": "0e8790109a26abdb6d432b50cb7a6b31e9273e9c",
+  "raw_verification": "221 payload members fully SHA/size/inventory verified independently by summarize_results.py; not redundantly rehashed here",
+  "validation_note": "Initial packaging check used tabs/full subject rather than baseline spaces/%s for stash. Correct baseline serialization confirms identical SHA/entry; no stash or research criterion changed.",
+  "report_scope": "Qualification GO only; pure viewpoint INCONCLUSIVE; future pilot/confirmation not executed",
+  "compact_sha256": {
+    "docs/evidence/h_r3_p03_preparation_2026-10-19/CHANGED_FILES.md": "7e314382ec47b00e2f93ffd224e584517f3a37a3c0ace6a7a52883316f2eb015",
+    "docs/evidence/h_r3_p03_preparation_2026-10-19/FABLE_REVIEW.md": "3cac80df42a824522c6ca6358343c69d869b2a6550ef49f824bd5de93fdba8bc",
+    "docs/evidence/h_r3_p03_preparation_2026-10-19/NEXT_P03_PLAN.md": "cbc01d60e90d4d29df57df66fb00d1964123304ddb32d2fd54ce9a3664ba8731",
+    "docs/evidence/h_r3_p03_preparation_2026-10-19/RAW_MANIFEST.json": "50401c0bbf0211758d4cf466f3465fa00e977f10ce19b220c59017e655bb2099",
+    "docs/evidence/h_r3_p03_preparation_2026-10-19/REPORT.md": "233579ff49875f54b9b10e42da97eedb25b2baaebdbce198291f66e5c37a36e5",
+    "docs/evidence/h_r3_p03_preparation_2026-10-19/REVIEW_RESPONSE.md": "54d14c8a24f18c8da40e26e3a25f0b234750663e6918952414255dbf9ce49e04",
+    "docs/evidence/h_r3_p03_preparation_2026-10-19/cpu_tests.txt": "157a1a386d8311fd1f03b251dda020859ce6a66bae7ad4e9a8c25dbbb911882a",
+    "docs/evidence/h_r3_p03_preparation_2026-10-19/cpu_validation.json": "b68ab9a9bce300bd56e317a78fca5f1732228520539aac55d0ab9044d9f1044f",
+    "docs/evidence/h_r3_p03_preparation_2026-10-19/preservation.json": "a0debe97d994d2079632ef0164801cab5e712058b08991669af22d5c586636d8",
+    "docs/evidence/h_r3_p03_preparation_2026-10-19/qualification_summary.json": "009f47ec006421204624c196727a3d8b3cf98e6a06f2a7771492c1d20a396dbf",
+    "docs/evidence/h_r3_p03_preparation_2026-10-19/raw_verification.json": "2a48cabe2c6ecd9cb7776e4d640f68852943660f8889eed4c95cece74ffb7bb8",
+    "docs/evidence/h_r3_p03_preparation_2026-10-19/resource_report.json": "74496e89cf6b339651f06edd5d0d0f1b82efec661e4e7786e361c1d6e6955776",
+    "docs/evidence/h_r3_p03_preparation_2026-10-19/review_RAW_MANIFEST.json": "6d9119b9e3793753aa7a3db785f1a92792bd6eb36b216c737f2f03cf74356b6e",
+    "docs/evidence/h_r3_p03_preparation_2026-10-19/review_cpu_probes.json": "d080ce4d753c9c84a443f2bff15375cb2f5fa482ab4f25c1fae6b7e32ae52aac",
+    "docs/evidence/h_r3_p03_preparation_2026-10-19/review_receipt.json": "bb45ab6adebc6d7d85faa3df463940c2a4267b031f67e96d3c683f790348a473",
+    "docs/evidence/h_r3_p03_preparation_2026-10-19/sample_size_sensitivity.json": "91b1b2121b33f3be03ce3ef5af3a95826037ef45668782a86f53c2545f9c2500",
+    "docs/evidence/h_r3_p03_preparation_2026-10-19/secondary_followup.json": "bea6ef8aa668206650b90eeb1cb2056179977a18bdcb638b7e47a919c9ff68fb",
+    "docs/evidence/h_r3_p03_preparation_2026-10-19/summarize_results.py": "88d19f7511ed8cf9daf864de9a4d91e404392e7f305588e91356e7a0c4d55656"
+  }
+}

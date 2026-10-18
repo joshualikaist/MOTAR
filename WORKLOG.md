@@ -21820,3 +21820,47 @@ Newopt-in files: tools/h_r3_p03_{isolation,launcher,analysis,run}.py; motar_eval
 | Postreviewfocused |52|PASS|
 
 OneFable5.1 review completedCONDITIONAL/noBLOCKER/HIGH. ClosedMEDIUM smallpositiveinvaliddistance horizontalabstention withregression+independent8casecheck; actualpreflight/envbuilder fields andN128CPUfakeinitialcounter probesPASS. Reviewresponsehashes bindpostfixsource. Originalsource/WIP/stash/manifeststat preservationPASS; historicalrawfullrehashnotrepeatedperuser. GPU remainsNOT_TESTED, expected next action frozenfullsourcecommit then registeredHR3-P03-Q01 qualification only. No push/mainmerge/largepilot/confirmation.
+
+## 2026-10-19 — P03 preparation qualification GO, viewpoint attribution INCONCLUSIVE
+
+Source `0e8790109a26abdb6d432b50cb7a6b31e9273e9c`, RunID HR3-P03-Q01, seed4801/N128/moving160bars:
+11/11 registered processes PASS (two16step, nine600step). Selected-only reset preserves127 untouched
+envs; evaluatorOFF/ON and audit/runtime all128 exact through600steps plus initial. Split RGB/depth/
+LiDAR, state/history/actions and registered numeric windows agree. Baseline step2 naturalreset empty,
+forcedonly127, chronology/refit/indexedroots PASS. All121 firstloss triggers match across B0–B5;
+FULL21/CENTRE_ONLY5/PARTIAL0, FOV_EXIT95 separate. Twozero-lateral events retained among26primary.
+
+| Arm | Spatial identity-correct reobservation by2s | Rate |
+| --- | --- | --- |
+| B0 | 21/26 | 80.77% |
+| B1 | 13/26 | 50.00% |
+| B2 | 14/26 | 53.85% |
+| B3 | 22/26 | 84.62% |
+| B4 | 18/26 | 69.23% |
+| B5 | 13/26 | 50.00% |
+
+Descriptive B3−B2/B4/B5 +30.77/+15.38/+34.62pp, no populationp/CI with onequalificationseed.
+Sharedprefix nominalbudget/sham PASS, but scene-level XYpath imbalance29.51/20.25/20.59% and
+actualspeed imbalance30.96/20.89/21.34% exceed registered10% engineeringdiagnostic. Pureviewpoint
+INCONCLUSIVE. Groupmean proximity does not establish scene-level matching. P01/P02 outcomes are
+not reused. Primaryidentity differs from trackerfreshness; PARTIAL unobserved, no effectclaim.
+Additional saved-trace originalepisode followup is posthocdescriptive: B0/B1/B2/B3/B4/B5 capture
+21/22/21/24/25/24 of26, crash5/4/5/2/1/2, timeout0/censor0. After2s FrozenF resumes; reobservation
+alone is not tasksuccess. NearestLiDAR includes targetreturns; trueobstacleclearance, mechanical
+energy andsafeabort NOT_RECORDED. No sensorrealism/generalcausalclaim.
+
+GPUprocesswall 2086.125s (34.77min), supervisor2119.587s under3600s;
+peakwholedevice5398/8192MiB, raw1,735,489,055bytes, diskafter13.900GB.
+MatchedB0 runtime wall20.41% andoutputbytes25.65% lower than audit, singlepairdescriptive only.
+CPU52PASS; oneFable5.1 conditional source review closed beforeGPU, no claim of FableGPU execution.
+FullnewrawSHA inventory221members PASS, manifest50401c0bbf0211758d4cf466f3465fa00e977f10ce19b220c59017e655bb2099.
+Historicalpreservation6035originalpaths,12manifestSHA/463memberstatchecks, mainWIP3/stash/FrozenF/RMS
+unchanged; no historicalpayloadfullrehash repeated. Userdeclinedbackup/bundle, no deletion.
+
+Resultdocs/compactJSON/RAW_MANIFEST andCPU-only summarize_results.py are in
+`docs/evidence/h_r3_p03_preparation_2026-10-19/`; exactfilelist CHANGED_FILES.md.
+Next: userreview NEXT_P03_PLAN.md estimand/controlproposal first; optionalseeds4802/4803 B0/B2/B3/B4/B5
+10processpilot is PLANNED/NOT_EXECUTED, requiresapproval. ConfirmationHOLD with assumptiononly
+Holm/seedcluster/samplesize sensitivity plan. No ownedGPU/reviewprocess remains; no push/merge,
+PPO/planner/newlineage/largepilot. Verifiedauthorizedunit complete; results localcommit only.
+ActualquotadeadlineUNKNOWN, conservativewrapup05:03KST; nextsession mustreview, notautoexecute.

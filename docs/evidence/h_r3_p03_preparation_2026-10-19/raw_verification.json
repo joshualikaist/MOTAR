@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "source_commit": "0e8790109a26abdb6d432b50cb7a6b31e9273e9c",
+  "raw_path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/h_r3_p03_qualification_v1/HR3-P03-Q01",
+  "raw_manifest_sha256": "50401c0bbf0211758d4cf466f3465fa00e977f10ce19b220c59017e655bb2099",
+  "verified_members": 221,
+  "verified_payload_bytes": 1735455078,
+  "complete_inventory": true,
+  "analysis_sha256": "d01983f43c8b9064376caed24f7d5319fc0840e4a8c29f20ab876949caea7ae8",
+  "run_report_sha256": "85f7b497a4731db08d699e251d173f318501675ae28ef0b8a8698e008f6ab9e2",
+  "method": "Independent streaming SHA-256/size/full inventory verification after all GPU processes exited",
+  "raw_mutated": false
+}
