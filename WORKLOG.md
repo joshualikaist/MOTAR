@@ -21538,3 +21538,34 @@ Next review: the complete diff and new plan; local commit requires user diff app
   analysed separately.
 - Run: moving E2, density 160, N128, 600 steps, seed 4502; seed 4503 only if fewer than 20 events.
   Smoke safety gate: more than 30% in-window collisions means shadow mode only.
+
+## 2026-10-18 — H-R3 pilot source, CPU tests and N16 smoke (safety gate passed)
+
+- New source:
+  - `motar_eval/h_r3_arms.py`: scripted B1/B2/B3. Imports only torch/math. Inputs are own pose,
+    tracker belief and raw LiDAR.
+  - `tools/h_r3_launcher.py`: the per-arm process. Policy F/RMS/898-D checks, per-env prefix
+    digests, an evaluator-only E-L0 trace, and the shadow B3 evaluation run in every arm.
+  - `tools/h_r3_run.py`: S-L1 supervision. Watchdog, GPU cap, disk stop, frozen tree, no retry.
+  - `tools/h_r3_analysis.py`: NumPy only.
+  - Tests: `tests/test_h_r3_arms.py` (6 OK) and `tests/test_h_r3_analysis.py` (6 OK).
+- First smoke stopped closed with "missing completion identity": the launcher's process id did
+  not match the runner's spec id. Fixed by passing `--process-id`. Smoke 2 (N16, 300 steps, seed
+  4502, scratch only): 4/4 arms rc=0, about 31 s each, peak 4,754 MiB.
+- Smoke, diagnostic only (not pilot evidence):
+  - 16 triggers. 15 matched, 1 unmatched (env 15, t0=18: prefix digest differs).
+  - Matched classes: FOV_EXIT 10, FULL 3, CENTRE_ONLY 2.
+  - Collisions in the 2 s window: B0/B2/B3 1/15, B1 0/15. The 30% safety gate passes, so the
+    intervention runs.
+  - No target-trajectory difference before termination.
+  - Controller time: B0 (shadow only) 0.91 ms mean; B1/B2/B3 about 1.6–1.7 ms, P99 up to 1.94 ms.
+- Coupling finding: env 15's tracker belief differs by 1.4 mm at step 14. That is the step at
+  which env 3, which branched at t0=6, crashed and reset in B0 but not in B1. Its target is
+  unchanged. This is consistent with a shared random stream advanced by arm-dependent resets.
+  - Pre-branch matching therefore holds only for events with t0 at or before the first such
+    reset ("coupling onset").
+  - Post-branch noise realisations are not shared across arms once the onset passes; all 5 smoke
+    primary windows overlap it.
+  - The preregistered digest rule already excludes the affected events. This is reported as a
+    limit, not as a design change; the analysis records the onset step.
+- Next: PUBLIC_CPU once, commit, official preflight, then the N128 pilot (seed 4502).
