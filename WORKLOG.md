@@ -21517,3 +21517,24 @@ Next review: the complete diff and new plan; local commit requires user diff app
   user-authorized ordinary `codex/mt-p1` refspec will be pushed after final checks; main prohibited.
   Final audit/push receipts retained in `/tmp/motar_s_l1c_v2_20261018/`, actual remote SHA reported
   to the user. No source change, additional GPU, B/D production implementation or cleanup planned.
+
+## 2026-10-18 — H-R3 pilot v1 preregistered (exploratory, before code)
+
+- Base `b9c5839`; local and remote HEAD match. Files: `docs/plans/h_r3_pilot_v1.md` and `.json`.
+- Arms:
+  - B0: Frozen Policy F.
+  - B1: scripted pursuit toward the online tracker belief.
+  - B2: B1 plus yaw toward the belief.
+  - B3: B2 plus lateral movement toward the nearest viewpoint with a raw-LiDAR-clear line of sight.
+
+  B1/B2/B3 share inputs, pursuit speed, candidate evaluation (computed in all three), the safety
+  filter and the task's governor. None uses GT.
+- Matching: deterministic replay in separate processes with the same seed. Snapshots are not
+  used, because `get_env_state` restores only the curriculum. A matched event requires per-env
+  prefix digests identical across all four arms. One event per env: its first camera drop after
+  acquisition.
+- Primary metric: identity-correct camera reobservation within 2.0 s on matched
+  geometric-occlusion events (E-L0 FULL/CENTRE_ONLY/PARTIAL at t0). FOV/range/scale events are
+  analysed separately.
+- Run: moving E2, density 160, N128, 600 steps, seed 4502; seed 4503 only if fewer than 20 events.
+  Smoke safety gate: more than 30% in-window collisions means shadow mode only.
