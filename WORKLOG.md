@@ -21683,3 +21683,11 @@ No production/sensor correction, checkpoint, P01 raw or historical results edite
 untracked raw symlinks remain excluded. No GPU, PPO, main merge or push occurred in this unit.
 Session resumed after account quota interruption; actual quota deadline unavailable. Original
 17:42 KST start and conservative 21:42 KST wrap-up retained, with verified commits/handoff reserved.
+
+## 2026-10-18 — P02 preflight compatibility correction before first GPU launch
+
+First read-only preflight rejected the preregistered smoke path under results/: inherited EQ-1D
+smoke mode only permits temporary output and relaxes HEAD/tree checks. P02 now invokes EQ-1D's
+strict committed-run preflight for both mechanics and main, preserving its preregistered path and
+strengthening exact-HEAD/clean-tree enforcement. No GPU process was started; no analysis gate,
+seed, output identifier or preregistration changed. Focused runner contracts: 5 PASS.

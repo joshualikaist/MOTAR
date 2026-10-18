@@ -38,7 +38,9 @@ def process_specs(p, seeds, num_envs, steps):
 
 def preflight(p, approved, run_dir, smoke=False):
     old = a.read_json(base.resolve(p["references"]["eq1d_plan"]))
-    problems, checks = base.preflight(old, approved, run_dir, smoke)
+    # P02 mechanics output is preregistered under results/ and requires the same
+    # exact-HEAD/clean-tree guards as main. EQ-1D's temporary-smoke relaxation is inapplicable.
+    problems, checks = base.preflight(old, approved, run_dir, False)
     paths = (PLAN_PATH, PLAN_PATH.with_suffix(".md"), ROOT / "docs/plans/h_r3_p02_amendment1.md", Path(__file__).resolve(), LAUNCHER,
              ROOT / "motar_eval/h_r3_p02_arms.py", ROOT / "motar_eval/h_r3_p02_identity.py", ROOT / "tools/h_r3_p02_rng.py",
              ROOT / "tools/h_r3_p02_analysis.py", ROOT / "tests/test_h_r3_p02_arms.py", ROOT / "tests/test_h_r3_p02_identity.py",
