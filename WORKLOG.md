@@ -21376,3 +21376,22 @@ Next review: the complete diff and new plan; local commit requires user diff app
   SHA `4094dd3ef800ddb93ebcef3f3b86cbb57dab732b4d799ab063df9f08cf4b1eb2`.
 - Diff checked before local commit. Next: execute the frozen CPU matrix and record candidate
   selection; no runtime edit, GPU process or clock change has been made.
+
+## 2026-10-18 — S-L1C v2 CPU candidate selection: V2-A alone passes; no runtime/GPU claim yet
+
+- Source `396ca61`, prereg `51a9015`; 105,408 matrix cases and 1,152 angular diagnostics completed
+  in 27.2s. Raw `../aerial_gym_simulator/results/s_l1c_v2_cpu/SL1CV2-CPU01`, compressed per-case
+  ledger, full strata and SHA manifest preserved. Compact records under `docs/evidence/s_l1c_v2_2026-10-18/`.
+- V2-A selected by all fixed CPU gates. Zero-noise near recall 2,860/4,383 → 3,966/4,383
+  (65.252% → 90.486%); ±0.1mm 5,720/8,766 → 7,932/8,766. No paired true loss or additional false
+  association across the full declared noise/negative matrix. Existing 135 false accepts retained
+  as false. Original EQ-1D negatives zero at primary bounds. New primary correct accepts 3,318;
+  mean centre error 3.213e-6m. Deterministic fixture counts are not population estimates.
+- V2-B adds no primary recall; V2-C adds 18,054 false accepts versus 135 baseline, fails range
+  limits and remains clock-contract ineligible. No C implementation. At 1cm A adds little recall;
+  at 3cm A adds none. Noise/abstention limits remain explicit, no hardware conclusion.
+- Files: `CPU_SELECTION.md`, `cpu_selection_summary.json`, `cpu_distance_elevation.csv`,
+  `CPU_RAW_MANIFEST.json` in that new evidence directory and this appended log. Matrix counts,
+  selection gates and actual ledger/manifest hashes checked before commit.
+- Next: only selected A opt-in implementation/CPU regression. Preserve old modes, covariance,
+  identity clock/5s expiry; do not automatically inherit S-L1D qualification.
