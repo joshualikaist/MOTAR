@@ -10,7 +10,7 @@ a,base=b.a,b.base
 PLAN=ROOT/'docs/plans/h_r3_env_isolation_v1.json'
 CPU=ROOT/'docs/evidence/h_r3_env_isolation_2026-10-18/cpu_report.json'
 LAUNCHER=ROOT/'tools/h_r3_env_isolation_launcher.py'
-INPUTS=[PLAN,PLAN.with_suffix('.md'),ROOT/'docs/plans/h_r3_env_isolation_amendment1.md',CPU]+[ROOT/p for p in (
+INPUTS=[PLAN,PLAN.with_suffix('.md'),ROOT/'docs/plans/h_r3_env_isolation_amendment1.md',CPU,ROOT/'docs/plans/h_r3_env_isolation_amendment2.md']+[ROOT/p for p in (
  'tools/h_r3_env_isolation.py','tools/h_r3_env_isolation_launcher.py','tools/h_r3_env_isolation_run.py','tools/h_r3_env_isolation_analysis.py',
  'tests/test_h_r3_env_isolation.py','tests/test_h_r3_env_isolation_analysis.py','tests/test_h_r3_env_isolation_run.py')]
 
@@ -33,7 +33,17 @@ def preflight(p,approved,out):
 
 
 def validate(out,spec,checks):
-    done=a.validate_done(out,spec,checks);m=a.read_json(out/'process_meta.json')
+    done=a.read_json(out/'process_done.json')
+    if done.get('process')!=spec['id'] or done.get('nan_fields')!=[] or not done.get('files'):raise ValueError('invalid completion identity/outputs')
+    seen=set()
+    for item in done['files']:
+        rel=Path(item['file']);path=out/rel
+        if rel.is_absolute() or '..'in rel.parts or item['file']in seen or out.resolve()not in path.resolve().parents or any((out/Path(*rel.parts[:i])).is_symlink()for i in range(1,len(rel.parts)+1)):raise ValueError('unsafe or duplicate completion output')
+        seen.add(item['file'])
+        if path.stat().st_size!=item['bytes'] or base.sha256_file(path)!=item['sha256']:raise ValueError('missing or changed completion output')
+    actual={str(x.relative_to(out))for x in out.rglob('*')if x.is_file()and x.name!='process_done.json'}
+    if actual!=seen:raise ValueError('unbound completion output')
+    m=a.read_json(out/'process_meta.json')
     for key in ('id','seed','num_envs','steps','mode','force_reset','evaluator'):
         if m[key]!=spec[key]:raise ValueError('process specification changed: '+key)
     if m['actor_obs_dim']!=898 or done['actor_obs_dim']!=898 or m['model_training'] or m['step_dt']!=.1:raise ValueError('actor/timing mode changed')
@@ -73,8 +83,8 @@ def run(p,out,checks):
 
 
 def main():
-    ap=argparse.ArgumentParser(description=__doc__);ap.add_argument('stage',choices=('preflight','run'));ap.add_argument('--approved-commit',required=True);args=ap.parse_args()
-    p=a.read_json(PLAN);out=base.resolve(p['run']['output_root'])/p['run']['run_id'];problems,checks=preflight(p,args.approved_commit,out)
+    ap=argparse.ArgumentParser(description=__doc__);ap.add_argument('stage',choices=('preflight','run'));ap.add_argument('--approved-commit',required=True);ap.add_argument('--run-id',choices=('ISO-Q02',),default='ISO-Q02');args=ap.parse_args()
+    p=a.read_json(PLAN);p['run']['run_id']=args.run_id;out=base.resolve(p['run']['output_root'])/p['run']['run_id'];problems,checks=preflight(p,args.approved_commit,out)
     if problems or args.stage=='preflight':print(json.dumps(dict(problems=problems,checks=checks),indent=2));return 2 if problems else 0
     report=run(p,out,checks);print(json.dumps({k:report[k]for k in ('status','stop_reason','gpu_seconds')},indent=2));return 0 if report['status']=='COMPLETED'else 1
 

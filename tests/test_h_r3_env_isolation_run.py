@@ -16,7 +16,14 @@ class QualificationRunTests(unittest.TestCase):
   with tempfile.TemporaryDirectory()as d:
    out=Path(d);m=dict(spec,actor_obs_dim=898,model_training=False,step_dt=.1,rms_digest_start='r',rms_digest_end='r',policy_f_sha256='c',source_commit='h',origins={k:str(ROOT/k/'__init__.py')for k in ('aerial_gym','motar_eval')})
    data=json.dumps(m).encode();(out/'process_meta.json').write_bytes(data);done=dict(process=spec['id'],actor_obs_dim=898,nan_fields=[],files=[dict(file='process_meta.json',bytes=len(data),sha256=hashlib.sha256(data).hexdigest())]);(out/'process_done.json').write_text(json.dumps(done))
+   (out/'frames').mkdir();(out/'frames/a.bin').write_bytes(b'raw');done['files'].append(dict(file='frames/a.bin',bytes=3,sha256=hashlib.sha256(b'raw').hexdigest()));(out/'process_done.json').write_text(json.dumps(done))
    checks=dict(rms_digest='r',policy_f_sha256='c',head='h');run.validate(out,spec,checks)
-   (out/'process_meta.json').write_text('{}')
+   (out/'frames/a.bin').write_bytes(b'bad')
    with self.assertRaises(ValueError):run.validate(out,spec,checks)
+ def test_unsafe_nested_completion_rejected(self):
+  with tempfile.TemporaryDirectory()as d:
+   out=Path(d);spec=run.specs(run.a.read_json(run.PLAN))[0]
+   for name in ('../escape','/tmp/escape','frames/../../escape'):
+    (out/'process_done.json').write_text(json.dumps(dict(process=spec['id'],nan_fields=[],files=[dict(file=name,bytes=0,sha256='0')])) )
+    with self.assertRaises(ValueError):run.validate(out,spec,{})
 if __name__=='__main__':unittest.main()

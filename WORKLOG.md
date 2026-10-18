@@ -21797,3 +21797,5 @@ force/history rewrite, retraining, Planner, extra exploratory seed or confirmati
 ## 2026-10-18 — Environment isolation CPU qualification and diagnostic source
 
 User-authorized minimal isolation qualification only. Independent float64 SE(3)/ray oracle and actual Warp CPU BVH tests reproduce global-write/selected-refit cross-environment mutation, including tiny quaternion normalization. Selected-only evaluation wrapper preserves untouched geometry and updates selected mesh correctly. 24 focused tests PASS; production/P01/P02 source unchanged. Amendment1 and new bounded five-process N128 B0 runner are frozen before ISO-Q01 GPU diagnostics. H-R3 remains PROVISIONAL / CONFIRMATION HOLD; no historical P02 cause proof or P03 authorization. CPU evidence: docs/evidence/h_r3_env_isolation_2026-10-18/.
+
+ISO-Q01 preserved: normal B0 completed40 steps, then nested-output completion validation failed closed before second launch. Amendment2 fixes only new supervisor path validation, adds regression, and preregisters fresh ISO-Q02 with identical scientific gates. No source edits occurred while GPU process was running.
