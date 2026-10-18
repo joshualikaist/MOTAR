@@ -1,0 +1,278 @@
+{
+  "base_advertised_origin_research_branch": "fbee900b0d1483bdc336716eb6e57180e06deebb",
+  "branch": "codex/mt-p1",
+  "commit_count": 7,
+  "commits_oldest_first": [
+    "4083c6cec3102ff4f4eec3736a3073d29965a4fb",
+    "070d5ba901538dfb0c919b4de2da3581e9dc1023",
+    "125690c3c02c619575ec2ed868d2a126734811fc",
+    "acca18837676c9bfaceb20e25e57a9110c26fce0",
+    "1ca0c8aadbcdfafbf5ee96f3124ba8d35537cd7e",
+    "d64cf84185018ab720040f266a4a481929cfa62b",
+    "b98b400bc29d5d2cf18c91e63a72142719615431"
+  ],
+  "generated_at_utc": "2026-10-18T12:02:55.818969+00:00",
+  "head": "b98b400bc29d5d2cf18c91e63a72142719615431",
+  "limits": [
+    "Finite pattern/assignment scan cannot prove absence of arbitrary encoded or unknown credentials.",
+    "Already-advertised origin/codex/mt-p1 ancestry is not new publication; inherited symlinks are separately counted.",
+    "No Git history rewritten or repository/index/remote ref modified.",
+    "This audit binds the exact HEAD; any later commit or different push ref requires refreshed coverage.",
+    "Remote advertisement can change after check; recheck before actual ordinary single-branch push."
+  ],
+  "local_path_disclosure": {
+    "categories": {
+      "/home/[USER]/": {
+        "occurrences": 371,
+        "repository_paths": [
+          "WORKLOG.md",
+          "docs/evidence/h_r3_p02_2026-10-18/REPORT.md",
+          "docs/evidence/h_r3_p02_2026-10-18/analysis.json",
+          "docs/evidence/h_r3_p02_2026-10-18/main_failure_audit.json",
+          "docs/evidence/h_r3_p02_2026-10-18/main_failure_audit.md",
+          "docs/evidence/h_r3_p02_2026-10-18/main_failure_audit.py",
+          "docs/evidence/h_r3_p02_2026-10-18/preservation.json",
+          "docs/evidence/h_r3_p02_2026-10-18/run_report.json",
+          "docs/evidence/h_r3_p02_2026-10-18/smoke01_failed/run_report.json",
+          "docs/evidence/h_r3_p02_2026-10-18/smoke_analysis.json",
+          "docs/evidence/h_r3_p02_2026-10-18/smoke_run_report.json"
+        ],
+        "unique_objects": 17
+      },
+      "/opt/": {
+        "occurrences": 7,
+        "repository_paths": [
+          "WORKLOG.md"
+        ],
+        "unique_objects": 7
+      },
+      "/root/": {
+        "occurrences": 7,
+        "repository_paths": [
+          "WORKLOG.md"
+        ],
+        "unique_objects": 7
+      },
+      "/tmp/": {
+        "occurrences": 151,
+        "repository_paths": [
+          "WORKLOG.md",
+          "docs/evidence/h_r3_p02_2026-10-18/REPORT.md",
+          "docs/evidence/h_r3_p02_2026-10-18/main_failure_audit.md",
+          "docs/evidence/h_r3_p02_2026-10-18/main_failure_audit.py"
+        ],
+        "unique_objects": 10
+      },
+      "/usr/": {
+        "occurrences": 47,
+        "repository_paths": [
+          "WORKLOG.md",
+          "docs/evidence/h_r3_p02_2026-10-18/run_report.json",
+          "docs/evidence/h_r3_p02_2026-10-18/smoke01_failed/run_report.json",
+          "docs/evidence/h_r3_p02_2026-10-18/smoke_run_report.json",
+          "tools/h_r3_p02_analysis.py",
+          "tools/h_r3_p02_launcher.py",
+          "tools/h_r3_p02_planning.py",
+          "tools/h_r3_p02_run.py"
+        ],
+        "unique_objects": 17
+      }
+    },
+    "classification": "PASS_CONTEXT_REVIEW: disclosed project/interpreter/scratch/provenance paths; historical WORKLOG paths already existed in advertised base; no sensitive credential path candidate",
+    "sensitive_absolute_path_candidates": []
+  },
+  "main_wip": [
+    {
+      "bytes": 4721,
+      "exact_matches_any_new_historical_blob": [],
+      "insert_replace_blocks": [
+        {
+          "bytes": 7,
+          "line_count": 1,
+          "line_range": [
+            1,
+            1
+          ],
+          "matching_new_historical_blob_oids": [],
+          "sha256": "992f0f1b43d9eeaf49616f11749b0ba419d1a8729e689d0f630ac1d5152b574e"
+        }
+      ],
+      "main_head": "cb644bbe46456b1900020177617a13040a3f1552",
+      "path": ".gitignore",
+      "same_as_branch_head": false,
+      "sha256": "0fc139965f0e1e218883e22cb1c2e2cc6c8cf86487b1dd7d402a28a369fb5296",
+      "status": " M"
+    },
+    {
+      "bytes": 1477703,
+      "exact_matches_any_new_historical_blob": [],
+      "insert_replace_blocks": [
+        {
+          "bytes": 3651,
+          "line_count": 36,
+          "line_range": [
+            20001,
+            20036
+          ],
+          "matching_new_historical_blob_oids": [],
+          "sha256": "f408c9c2171bf9cb87b5696ec89af190b620535b4d4b46b250523b43c96b3517"
+        }
+      ],
+      "main_head": "cb644bbe46456b1900020177617a13040a3f1552",
+      "path": "WORKLOG.md",
+      "same_as_branch_head": false,
+      "sha256": "a63118ee730803b6c7e0afcceeec0d0595fdbf347ed56fb3474364b79bf6454c",
+      "status": " M"
+    },
+    {
+      "bytes": 2795,
+      "exact_matches_any_new_historical_blob": [],
+      "insert_replace_blocks": [
+        {
+          "bytes": 357,
+          "line_count": 5,
+          "line_range": [
+            2,
+            6
+          ],
+          "matching_new_historical_blob_oids": [],
+          "sha256": "f0a02e4c8a356d6f34b03385d728a4c06fefe9c2ab89e2165ff457da94c6988e"
+        }
+      ],
+      "main_head": "cb644bbe46456b1900020177617a13040a3f1552",
+      "path": "presentations/README.md",
+      "same_as_branch_head": false,
+      "sha256": "be8c4b2350a49580c5ea70a45f34c307c34a46f2509ce2eeab8f0f9fdfb69731",
+      "status": " M"
+    }
+  ],
+  "object_scan": {
+    "all_new_blob_bytes_and_commit_headers_messages_scanned": true,
+    "binary_blobs": [],
+    "largest_new_blobs": [
+      {
+        "bytes": 5219619,
+        "oid": "a5df06bac1d75c6b8675c509a060c06dcb3c42ae",
+        "paths": [
+          "docs/evidence/h_r3_p02_2026-10-18/analysis.json"
+        ]
+      },
+      {
+        "bytes": 1626902,
+        "oid": "83a188f5c92eab205ff74926c2c5b25b16676ea2",
+        "paths": [
+          "WORKLOG.md"
+        ]
+      },
+      {
+        "bytes": 1624825,
+        "oid": "9103635e9af68f4c4816fb0efd4582fb2971c82c",
+        "paths": [
+          "WORKLOG.md"
+        ]
+      },
+      {
+        "bytes": 1623754,
+        "oid": "b0261457b46fd767e104a6309e8003fd9c57e1dd",
+        "paths": [
+          "WORKLOG.md"
+        ]
+      },
+      {
+        "bytes": 1622707,
+        "oid": "324c6ffbdea5da195eb30ef140c874dba368d3e2",
+        "paths": [
+          "WORKLOG.md"
+        ]
+      },
+      {
+        "bytes": 1621888,
+        "oid": "0a69db75b44e081ce48e72ce663a6c6b046c19cc",
+        "paths": [
+          "WORKLOG.md"
+        ]
+      },
+      {
+        "bytes": 1621335,
+        "oid": "7b921b49b4b80a6728e8ef4e8327ff43c3fd6b4c",
+        "paths": [
+          "WORKLOG.md"
+        ]
+      },
+      {
+        "bytes": 1619775,
+        "oid": "04dac1b9e2b629511c631477aaba7418e48d4b0e",
+        "paths": [
+          "WORKLOG.md"
+        ]
+      }
+    ],
+    "new_blob_bytes": 18090000,
+    "new_blob_count": 48,
+    "unique_git_objects": 84,
+    "unscanned_binary_blob_count": 0
+  },
+  "overall": "PASS_PRELIMINARY_PENDING_FINAL_HEAD_RESCAN",
+  "publication_payload": {
+    "distinct_changed_paths": 37,
+    "head_symlinks_already_identical_on_advertised_origin_research_branch": 296,
+    "head_total_symlink_paths": 296,
+    "manual_classification": "PASS: no raw/checkpoint/binary payload, new symlink/gitlink, or WIP content blocks; existing symlinks unchanged",
+    "new_gitlinks": [],
+    "new_payload_extension_or_raw_name_candidates": [],
+    "new_symlink_versions": [],
+    "results_distinct_changed_paths": [],
+    "untracked_raw_symlinks": [
+      "?? results/mt_p1_precision_v1",
+      "?? results/occlusion_pilot_v1"
+    ]
+  },
+  "range": "fbee900b0d1483bdc336716eb6e57180e06deebb..b98b400bc29d5d2cf18c91e63a72142719615431",
+  "remote": {
+    "advertised": {
+      "refs/heads/codex/mt-p1": "fbee900b0d1483bdc336716eb6e57180e06deebb",
+      "refs/heads/main": "2da5b12c1954ee768fcba59d1fb1fb9c78f7d536"
+    },
+    "branch_absent_on_server_at_check": false,
+    "configured": {
+      "fetch": [
+        "git@github.com:joshualikaist/MOTAR.git"
+      ],
+      "push": [
+        "git@github.com:joshualikaist/MOTAR.git"
+      ]
+    },
+    "destination_ref": "refs/heads/codex/mt-p1",
+    "expected_target": "git@github.com:joshualikaist/MOTAR.git",
+    "fetch_or_push_performed": false,
+    "planned_ordinary_refspec_only": "HEAD:refs/heads/codex/mt-p1",
+    "read_only_ls_remote_return_code": 0
+  },
+  "same_commit_set_as_HEAD_not_all_local_remote_refs": true,
+  "schema": "motar.research-branch.full-unpublished-history-audit.v1",
+  "secrets": {
+    "candidates": [],
+    "credential_values_exported": false,
+    "external_scanner_availability": {
+      "detect-secrets": false,
+      "gitleaks": false,
+      "trufflehog": false
+    },
+    "manual_classification": "PASS: zero credential/value/path candidates; no values exported",
+    "patterns": [
+      "private_key_material_header",
+      "github_token",
+      "openai_style_secret",
+      "aws_access_key_id",
+      "google_api_key",
+      "google_oauth_secret",
+      "huggingface_token",
+      "slack_token",
+      "jwt_like",
+      "url_embedded_password",
+      "credential_literal_assignment"
+    ],
+    "scanner": "independent finite byte-regex scan of every new blob and commit message; no size skips; quoted credential assignment candidates + entropy metadata",
+    "sensitive_credential_path_candidates": []
+  }
+}

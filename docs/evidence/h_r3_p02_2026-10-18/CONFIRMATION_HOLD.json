@@ -1,0 +1,19 @@
+{
+  "schema": "motar.hr3p02-confirmation-hold.v1",
+  "status": "HOLD_NO_GO",
+  "reason": "Preregistered all-arm common-prefix integrity FAIL; pilot effects invalid for causal inference",
+  "analysis_sha256": "6ffc0a81a23100ccf4a71eac1a975c16b85329cb7ae562cc339e4640b13594cd",
+  "planning_grid_sha256": "118ce8c6058dba3c606e782ef8e6e6ae68da5b28afd46eabd130fde4995205df",
+  "planning_grid_role": "ASSUMPTION_SCENARIOS_ONLY_NOT_EXECUTABLE_RECOMMENDATION",
+  "reliable_population_effect_or_icc": "NOT_ESTIMABLE",
+  "candidate_geometric_events": 56,
+  "failed_primary_prefixes": 14,
+  "additional_gpu_or_enrollment": "NOT_STARTED",
+  "required_before_sample_fixation": [
+    "Qualify actual-N128 reset/state/sensor independence",
+    "Review sham-side and nominal-vs-realized effort controls",
+    "Justify meaningful margin and discordance/ICC/yield scenarios",
+    "Register cluster/paired-scene analysis, Holm3 and joint power validation",
+    "User review before further exploratory or confirmatory execution"
+  ]
+}

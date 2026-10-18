@@ -21754,3 +21754,28 @@ manifests/5835 raw members plus new manifests verified; main cb644bbe,WIP3,stash
 Raw payload remains outside Git; external backup NOT_ESTABLISHED. Production/P01 untouched.
 Next: result commit then independent Fable5.1 read-only review. H-R3 stays PROVISIONAL; no PPO,
 production sensor correction/Planner, main merge/push, force-push/history rewrite or data deletion.
+
+## 2026-10-18 — P02 independent Fable5.1 review and qualified NO-GO record
+
+Result b98b400 reviewed by actual canonical claude-fable-5-1. First broad review timed out900s,
+no verdict; its transcript retained outside Git. Focused same-model follow-up completed235.86s,
+source/arithmetic review only (no independent CPU/GPU tests or raw NPZ verification), verdictNO-GO.
+Review accepts common-prefix failure, target-spatial scoring/firewall, terminal-first logic and
+report arithmetic; warns about unqualified postbranch sensors, weak synthetic probes, smoke40
+blindspot, realized effort imbalance and planning assumptions. Full review retained verbatim.
+Root source-check response corrects item7: cited task root writes are inside reset_idx and queued
+by the selected-row wrapper; not a proven outside-reset bypass. Sham-side agreement does not imply
+exact50% episode-effect dilution. Target mask is occlusion-aware in analytic kernel; all12 existing
+bulk-eval receipts haveD8OFF. Integer pixel centers match renderer/scorer. Numerical geometry
+fidelity and exact Warp cause remain NOT_PROVEN/NOT_RECORDED; no code repair or GPU follows.
+New evidence includes decision.json, CONFIRMATION_HOLD.json, review/response/receipt/manifest,
+source checks, complete changed-file index, and NEXT_VALIDATION_PLAN.md (plan only). CPU1–2h then
+separately reviewed N128 mechanics10–20min are estimates for future work, not started. H-R3 remains
+PROVISIONAL; invalid56-candidate outcomes are not matched causal effects or power estimates.
+Preliminary full unpublished-history audit throughb98b400 scanned7commits/48blobs/18,090,000bytes,
+no secret/payload/new symlink/gitlink or WIP-block hits. Project/provenance local paths were reviewed.
+Final HEAD requires a refreshed full scan and remote recheck before an ordinary branch-only push.
+Main/WIP/stash/FrozenF/historicalRaw preserved; external backup NOT_ESTABLISHED. No main merge,
+force/history rewrite, data deletion, new sensor/controller correction, PPO or Planner work.
+Session wrap-up: GPU ended, both review processes ended, verified work committed; remaining research
+is actual-N128 isolation qualification and a fresh fair-comparison design after user review.
