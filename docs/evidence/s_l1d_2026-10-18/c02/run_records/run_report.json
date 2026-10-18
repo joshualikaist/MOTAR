@@ -1,0 +1,283 @@
+{
+  "schema": "motar.s-l1d-c02-run-report.v1",
+  "run_dir": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/s_l1d_v1/SL1D-C02",
+  "smoke": false,
+  "preflight": {
+    "head": "7d0bb37358c0e4a26fe6581cf9ff3f6db30254ed",
+    "tracked_tree_clean": true,
+    "plan_committed_unchanged": true,
+    "policy_f_sha256": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+    "rms_digest": "642fc9f7f86b068e816e156fea7a34782bbc525966650f73cd85aae8cc18387f",
+    "import_origins": {
+      "aerial_gym@MOTAR-mt-p1": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/aerial_gym/__init__.py",
+      "motar_eval@MOTAR-mt-p1": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/motar_eval/__init__.py",
+      "aerial_gym@rl_games": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/aerial_gym/__init__.py",
+      "motar_eval@rl_games": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/motar_eval/__init__.py"
+    },
+    "run_dir": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/s_l1d_v1/SL1D-C02",
+    "free_disk_gb": 19.035451392,
+    "gpu": {
+      "name": "NVIDIA GeForce RTX 3070",
+      "total_mib": 8192,
+      "used_mib": 660,
+      "free_mib": 7183,
+      "compute_apps": [
+        {
+          "pid": 2604705,
+          "name": "/usr/share/rustdesk/rustdesk",
+          "used_mib": 190
+        }
+      ]
+    },
+    "receipt_sha256": "85c13b08ba75f58dfe005d8747ef7922d31675ccc7347412cace5feeaabc963c",
+    "c02_committed_inputs": {
+      "docs/plans/s_l1d_v1.json": true,
+      "docs/plans/s_l1d_v1.md": true,
+      "docs/plans/s_l1d_v1_amendment1.json": true,
+      "docs/plans/s_l1d_v1_amendment1.md": true,
+      "tools/s_l1d_c02_run.py": true,
+      "tools/s_l1d_c02_launcher.py": true,
+      "tools/s_l1d_launcher.py": true,
+      "tools/s_l1d_run.py": true,
+      "tools/s_l1c_run.py": true,
+      "tools/s_l1b_run.py": true,
+      "tools/s_l1a_run.py": true
+    },
+    "c02_input_sha256": {
+      "docs/plans/s_l1d_v1.json": "73899f2dd25ed36b3a792254579893f9cde791fdef6cd7484294f74df695751a",
+      "docs/plans/s_l1d_v1.md": "80e5891a90c91cb388ca55c1502afb1aac92bf77e484ab3e5717efa9fb901052",
+      "docs/plans/s_l1d_v1_amendment1.json": "56a8cfc5bb8853030639299690339bb8f3e337768a42cd427c8a93baf044bbfc",
+      "docs/plans/s_l1d_v1_amendment1.md": "53ca09dad62ef006049c73db56f67e30a811e0f9d6b0347535483bd6d654ef87",
+      "tools/s_l1d_c02_run.py": "9813950ea083bde1f427422771433f04031c4e5987fb47e4a7aaebf13f56e332",
+      "tools/s_l1d_c02_launcher.py": "b04f5c8bbb94e4c106e80f17b44e1778e43211dd4e364babb489a31ab23491de",
+      "tools/s_l1d_launcher.py": "6598927c306e173446c3f40856918783becc98fd68799e23f6d4d2ce3d0ae485",
+      "tools/s_l1d_run.py": "a696686dd452390da8cbbefbbd775124a254438859e3904775a9d731c95a73b7",
+      "tools/s_l1c_run.py": "c9e90875f93a59758e85769698fb1cc98d5c06c62abfbd67465bc207a1e5e5bc",
+      "tools/s_l1b_run.py": "c9a801e8d51c430ab7e81bb084aac4e4d84b2c5051604927c4f98ac51a3a2d49",
+      "tools/s_l1a_run.py": "7e782b4af552bb49cd8c3c8c4261ed0c794a9eb097afa1d83bc1e8c5510e1f9f"
+    },
+    "production_identical_to_76f0f4c": true,
+    "untracked_runtime_files": [],
+    "sl1d_c01_manifest_sha256": "2b5fd37ead4e9671288c8bb37790f7dc1f08ffce94f6daa5d2b5df7c3aa4c598",
+    "effective_processes": [
+      {
+        "id": "sensors_s_l1c",
+        "batch": "SENSORS",
+        "mode": "s_l1c",
+        "config": "static",
+        "arm": "P2",
+        "num_envs": 13,
+        "seed": 4401,
+        "cap_s": 900,
+        "lineage": "s_l1c_v1"
+      },
+      {
+        "id": "sensors_s_l1d",
+        "batch": "SENSORS",
+        "mode": "s_l1d",
+        "config": "static",
+        "arm": "P2",
+        "num_envs": 13,
+        "seed": 4401,
+        "cap_s": 900,
+        "lineage": "s_l1d_v1"
+      }
+    ],
+    "effective_run_limits": {
+      "run_id": "SL1D-C02",
+      "output_root": "../aerial_gym_simulator/results/s_l1d_v1",
+      "disk_min_free_gb": 8.0,
+      "output_max_gb": 2.0,
+      "oom_reserve_mib": 512,
+      "poll_s": 5,
+      "total_wall_cap_s": 1800,
+      "process_wall_cap_s": 900,
+      "sensor_modes": [
+        "s_l1c",
+        "s_l1d"
+      ],
+      "sensor_num_envs": 13,
+      "sensor_seed": 4401,
+      "closed_loop_variants": [
+        "off",
+        "s_l1c",
+        "s_l1d_p1",
+        "s_l1d_p2"
+      ],
+      "closed_loop_num_envs": 8,
+      "closed_loop_steps": 600,
+      "closed_loop_density": 160,
+      "closed_loop_seed_by_config": {
+        "static": 4501,
+        "moving": 4502
+      },
+      "no_retry": true
+    }
+  },
+  "effective_processes": [
+    {
+      "id": "sensors_s_l1c",
+      "batch": "SENSORS",
+      "mode": "s_l1c",
+      "config": "static",
+      "arm": "P2",
+      "num_envs": 13,
+      "seed": 4401,
+      "cap_s": 900,
+      "lineage": "s_l1c_v1"
+    },
+    {
+      "id": "sensors_s_l1d",
+      "batch": "SENSORS",
+      "mode": "s_l1d",
+      "config": "static",
+      "arm": "P2",
+      "num_envs": 13,
+      "seed": 4401,
+      "cap_s": 900,
+      "lineage": "s_l1d_v1"
+    }
+  ],
+  "processes": [
+    {
+      "id": "sensors_s_l1c",
+      "gpu_at_launch": {
+        "name": "NVIDIA GeForce RTX 3070",
+        "total_mib": 8192,
+        "used_mib": 660,
+        "free_mib": 7183,
+        "compute_apps": [
+          {
+            "pid": 2604705,
+            "name": "/usr/share/rustdesk/rustdesk",
+            "used_mib": 190
+          }
+        ]
+      },
+      "gpu_memory_cap_mib": 7020,
+      "free_disk_gb_before": 19.035447296,
+      "command": [
+        "/home/fair/miniconda3/envs/aerialgym/bin/python",
+        "-B",
+        "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tools/s_l1d_c02_launcher.py",
+        "--process",
+        "sensors_s_l1c",
+        "--out",
+        "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/s_l1d_v1/SL1D-C02/sensors_s_l1c"
+      ],
+      "returncode": 0,
+      "wall_s": 10.259235706005711,
+      "peak_gpu_mib": 4042,
+      "process_done": {
+        "files": [
+          {
+            "bytes": 149178,
+            "file": "d2_renders.npz",
+            "sha256": "5c3eeed6274490a81a1472545f04a0080678ae6767d4099c71005d4734f4ffc5"
+          },
+          {
+            "bytes": 3429,
+            "file": "d2_meta.json",
+            "sha256": "b63d363e2082e38764ad8740044416fd76b8fe366d99dd1098231628cc673df0"
+          },
+          {
+            "bytes": 5988,
+            "file": "validity_probes.npz",
+            "sha256": "beb4aab4e8e1dd7d107762097b7e321fbbcba9b856fd51c51b4ca73395d93bc6"
+          },
+          {
+            "bytes": 419,
+            "file": "s_l1d_sensor_meta.json",
+            "sha256": "691222a6d3c8b87c6128d664322334703d70104099a62cd50a46d4d4a9f87852"
+          }
+        ],
+        "nan_fields": [],
+        "peak_allocated_bytes": 41012224,
+        "process": "sensors_s_l1c",
+        "process_spec": {
+          "batch": "SENSORS",
+          "id": "sensors_s_l1c",
+          "mode": "s_l1c",
+          "num_envs": 13,
+          "seed": 4401
+        },
+        "wall_s": 5.102760076522827
+      }
+    },
+    {
+      "id": "sensors_s_l1d",
+      "gpu_at_launch": {
+        "name": "NVIDIA GeForce RTX 3070",
+        "total_mib": 8192,
+        "used_mib": 665,
+        "free_mib": 7179,
+        "compute_apps": [
+          {
+            "pid": 2604705,
+            "name": "/usr/share/rustdesk/rustdesk",
+            "used_mib": 190
+          }
+        ]
+      },
+      "gpu_memory_cap_mib": 7015,
+      "free_disk_gb_before": 19.0352384,
+      "command": [
+        "/home/fair/miniconda3/envs/aerialgym/bin/python",
+        "-B",
+        "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tools/s_l1d_c02_launcher.py",
+        "--process",
+        "sensors_s_l1d",
+        "--out",
+        "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/s_l1d_v1/SL1D-C02/sensors_s_l1d"
+      ],
+      "returncode": 0,
+      "wall_s": 10.287759160040878,
+      "peak_gpu_mib": 4042,
+      "process_done": {
+        "files": [
+          {
+            "bytes": 149178,
+            "file": "d2_renders.npz",
+            "sha256": "5c3eeed6274490a81a1472545f04a0080678ae6767d4099c71005d4734f4ffc5"
+          },
+          {
+            "bytes": 3429,
+            "file": "d2_meta.json",
+            "sha256": "ff8a8eb7ca471c221b0e5b5d6a2de9b72fc606855b84ab1f81be943c570df06a"
+          },
+          {
+            "bytes": 14109,
+            "file": "validity_probes.npz",
+            "sha256": "4524105a84ca0a1ec40a45c5db8cb786bac2dd61a5ebcf8ce71cd963a6ec7f56"
+          },
+          {
+            "bytes": 418,
+            "file": "s_l1d_sensor_meta.json",
+            "sha256": "553c9079c194cbaf9207bd5b9532c4e68b560375a524ec7f93b9f88ec492c3f6"
+          }
+        ],
+        "nan_fields": [],
+        "peak_allocated_bytes": 41017856,
+        "process": "sensors_s_l1d",
+        "process_spec": {
+          "batch": "SENSORS",
+          "id": "sensors_s_l1d",
+          "mode": "s_l1d",
+          "num_envs": 13,
+          "seed": 4401
+        },
+        "wall_s": 5.095077991485596
+      }
+    }
+  ],
+  "source_commit": "7d0bb37358c0e4a26fe6581cf9ff3f6db30254ed",
+  "status": "COMPLETED",
+  "stop_reason": null,
+  "plan_sha256": "73899f2dd25ed36b3a792254579893f9cde791fdef6cd7484294f74df695751a",
+  "amendment_sha256": "56a8cfc5bb8853030639299690339bb8f3e337768a42cd427c8a93baf044bbfc",
+  "wall_s_total": 20.660325455013663,
+  "gpu_seconds_total": 20.54699486604659,
+  "output_bytes_total": 373975,
+  "free_disk_gb_after": 19.035021312,
+  "policy_f_sha256_after": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40"
+}

@@ -21291,3 +21291,27 @@ Next review: the complete diff and new plan; local commit requires user diff app
   fixed before commit: a NaN-unaware equality made `sensors_s_l1c` and `sensors_s_l1d` renders look
   different. With NaN-aware comparison all 105 render keys are equal. No scene was changed after
   the smoke.
+
+## 2026-10-18 — SL1D-C02 (sensor-only): undetected PARTIAL / CENTRE_ONLY / SCALE_LOSS realised on GPU; C02 gates 8/8 PASS
+
+- Run at fixed source `7d0bb37`, with production identical to `76f0f4c`: 2/2 sensor processes rc=0,
+  20.7 s, peak 4,042 MiB under caps of 7,015–7,020 MiB, disk 19.0 GB free. Raw
+  `../aerial_gym_simulator/results/s_l1d_v1/SL1D-C02` (manifest `b131bc25…`, 23 members, 0
+  mismatches). Policy F unchanged; SL1A/B/C/D-C01 manifests still verify.
+- 13 unique level passes (attitude duplicates bitwise identical, not counted), all undetected by
+  the camera:
+
+  | Scenes | E-L0 GPU class | Online class |
+  | --- | --- | --- |
+  | SC0 ×2 | SCALE_LOSS (alone 0) | PRED_SCALE_LOSS |
+  | SC1 ×2 | VISIBLE (1 px) | PRED_SCALE_LOSS |
+  | SC1_FULL | FULL (alone 1) | PRED_SCALE_LOSS |
+  | PA ×4 | PARTIAL (2/1, centre open) | OCCLUSION_PARTIAL_EVIDENCE |
+  | CO ×4 | CENTRE_ONLY (2/1, centre blocked, centre-robust) | OCCLUSION_CENTRE_EVIDENCE |
+
+  The production online class equals the independent oracle recomputed on the delivered GPU depth
+  in 13/13 scenes. Support equals E-L0 and the oracle; 0 mapping violations; no alone-pass
+  occlusion. s_l1c and s_l1d renders and detection are identical.
+- Preservation PASS: 2,092 files with 41 allowed paths, 101 evidence files, 10/3,479 raw, Policy F,
+  and main `cb644bb` with WIP3 and stash `23ddb33`.
+- Evidence: `docs/evidence/s_l1d_2026-10-18/c02/`. The S-L1D decision follows the independent review.
