@@ -21779,3 +21779,16 @@ Main/WIP/stash/FrozenF/historicalRaw preserved; external backup NOT_ESTABLISHED.
 force/history rewrite, data deletion, new sensor/controller correction, PPO or Planner work.
 Session wrap-up: GPU ended, both review processes ended, verified work committed; remaining research
 is actual-N128 isolation qualification and a fresh fair-comparison design after user review.
+
+## 2026-10-18 — Environment Isolation Qualification preregistration
+
+User authorizes only CPU geometry/rootcause reproduction and a bounded actual-N128 diagnostic,
+not P03. Base e6814a675a7b0d645d24e36b48bbeb2d6681f706, branch codex/mt-p1, protected raw symlinks2.
+New plan docs/plans/h_r3_env_isolation_v1.{json,md}: five B0 processes,seed4602,N128,40steps,
+legacy normal/forced and fixed normal/forced/evaluatorOFF; force127 atstep2 with natural-reset
+absence required. Original production/P01/P02/frozen policy/actor898/RGB-D+LiDAR preserved.
+CPU implementation is new opt-in module/tests only; actual Warp CPU independent oracle evidence
+will be committed with the amendment/source before GPU. No GPU launched at this commit.
+Session start21:56KST; actual quota deadline unknown; conservative wrap-up01:56KST Oct19 reserves
+verification/commit/handoff before any presumed five-hour window. No deletion, main merge/push,
+force/history rewrite, retraining, Planner, extra exploratory seed or confirmation.

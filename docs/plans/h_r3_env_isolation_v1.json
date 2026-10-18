@@ -1,0 +1,18 @@
+{
+  "schema":"motar.environment-isolation-qualification.v1",
+  "base_sha":"e6814a675a7b0d645d24e36b48bbeb2d6681f706",
+  "authority":"User approved independent CPU reproduction, opt-in evaluation-only repair, bounded N128 diagnostic; no P03 or confirmation",
+  "status":"H-R3 PROVISIONAL; mechanism qualification only",
+  "hypothesis":"Global vertex refresh plus selected-only BVH refit changes untouched sensor scenes under arm-dependent reset schedules; causal reproduction requires measured roots/vertices/rays/sensor onset and removal by selected-only intervention",
+  "cpu":{"required":"Independent float64 SE(3)/ray oracle AND actual Warp CPU Mesh.refit/ray queries; legacy negative, selected invariance, mapping/order/batch/lifetime tests PASS","report":"docs/evidence/h_r3_env_isolation_2026-10-18/cpu_report.json","unselected_equality":"bitwise; no tolerance","selected_oracle":"declared CPU fixture numerical tolerances; no GPU tolerance relaxation"},
+  "run":{"run_id":"ISO-Q01","output_root":"../aerial_gym_simulator/results/h_r3_env_isolation_v1","seed":4602,"num_envs":128,"steps":40,"config":"moving","density":160,"forced_step":2,"forced_env":127,"process_wall_cap_s":600,"total_wall_cap_s":3600,"disk_min_free_gb":8.0,"output_max_gb":4.0,"oom_reserve_mib":512,"poll_s":5,"no_retry":true},
+  "processes":[{"id":"legacy_normal","mode":"legacy_audit","force_reset":false,"evaluator":true},{"id":"legacy_forced","mode":"legacy_audit","force_reset":true,"evaluator":true},{"id":"fixed_normal","mode":"selected","force_reset":false,"evaluator":true},{"id":"fixed_forced","mode":"selected","force_reset":true,"evaluator":true},{"id":"fixed_noeval","mode":"selected","force_reset":false,"evaluator":false}],
+  "preserve":"Original production, P01/P02 source/prereg/raw and failed verdicts; FrozenF actor898 RGB-D+LiDAR, dynamics/controller/expiry/sensor correction contracts; main WIP/stash/protected untracked paths. No deletion.",
+  "policy_f_sha256":"f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+  "instrumentation":"Numerical perframe RGB/depth/LiDAR plus separate full SHA256, own root/quaternion/angularvel/derived caches, all actor roots/static geometry/vertices/mapping/meshIDs/refit indices, tracker/cov/history/actor898; intermediate LiDAR renders and root write events; evaluator-only GT",
+  "go":"CPU PASS; actual force2/env127, natural reset absent at2; all127 untouched env state/geometry/sensors exact across fixed pair for entire40steps+initial; evaluator ON/OFF all128 exact; selected reset roots/target/geometry match legacy selected reset semantics; finite valid telemetry, mapping/refit/firewall/provenance/preservation PASS",
+  "negative_control":"Legacy mismatch is expected evidence and does not stop fixed diagnostic. Legacy reproduction plus fixed removal identifies mechanism only in this measured profile; original P02 snapshots remain insufficient retrospective proof.",
+  "no_go":"Fixed sensor/state mismatch, unexplained geometry mutation, altered selected reset physics, GT leakage, original damage or natural/forced overlap. Missing causal reproduction is INCOMPLETE, never rescued by exclusions or thresholds.",
+  "completion":"Separate source+CPU amendment commit before GPU; frozen source while running; result commit; focused Fable5.1 review if available; final review record and ordinary research-branch-only push after full history/security checks. No extra pilot, seed, confirmation, production rewrite, PPO, Planner, main merge/push or force-push.",
+  "next_only":"Minimal B4 side-choice and B5 achieved-motion matching design; no implementation"
+}
