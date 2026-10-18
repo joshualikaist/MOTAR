@@ -21665,3 +21665,21 @@ Next review: the complete diff and new plan; local commit requires user diff app
 - All old production/P01 files remain frozen; new P02-only modules/tools/tests, no new sensor
   correction/PPO/Planner/P-L1/G-L1/main operations. Session start17:42KST, conservative wrap-up
   21:42KST; actual quota deadline unavailable. Next implement and focused-test these units.
+
+## 2026-10-18 — H-R3 P02 isolated runner source, before GPU measurement
+
+Authorized exploratory scope only: frozen P01/base fbee900b remains untouched; H-R3 remains PROVISIONAL.
+Preregistration 4083c6c fixes seeds 4601/4602, six arms and the mechanics smoke. Amendment1 documents
+selected-row reset-cache isolation discovered before GPU measurement; no production file changes.
+New P02-only files: tools/h_r3_p02_{rng,launcher,run,analysis,planning}.py,
+motar_eval/h_r3_p02_{arms,identity}.py and tests/test_h_r3_p02_{rng,runner,analysis,planning,arms,identity}.py.
+CPU validation: 66 focused H-R3 tests, 14 E-L0 tests and 13 EQ-1D tests passed (93 total).
+Reviewed explicit source scope, independent mask/oracle fixtures, reset token/cache isolation,
+fixed-window controls, terminal-first scoring, nominal-budget shadows and two-cluster limitations.
+The 30% own-trigger collision stop applies to smoke only, as preregistered; main safety remains reported.
+GPU runtime, forced-reset physical noninterference and actual detector-evaluator noninterference are
+NOT_TESTED at this commit. Next: committed-source eight-process smoke, then only on PASS the two-seed pilot.
+No production/sensor correction, checkpoint, P01 raw or historical results edited; two pre-existing
+untracked raw symlinks remain excluded. No GPU, PPO, main merge or push occurred in this unit.
+Session resumed after account quota interruption; actual quota deadline unavailable. Original
+17:42 KST start and conservative 21:42 KST wrap-up retained, with verified commits/handoff reserved.
