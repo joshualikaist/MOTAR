@@ -21357,3 +21357,22 @@ Next review: the complete diff and new plan; local commit requires user diff app
 - JSON/matrix arithmetic and local links reviewed before commit. Next: NumPy-only oracle and
   candidate comparison, without production sensor imports. Session 14:52 KST; hidden reset timer
   unavailable, conservative wrap-up 18:52 KST with time reserved for verified commits/handoff.
+
+## 2026-10-18 — Independent S-L1C v2 oracle and fixed CPU candidate comparison ready
+
+- Preregistration `51a9015` remains unchanged. New files: `tools/audits/s_l1c_v2_reference.py`,
+  `tools/s_l1c_v2_cpu.py`, `tests/test_s_l1c_v2_reference.py`; append-only WORKLOG.
+  NumPy geometry/labels and hypothesis fitting are separate from production; only scan/prediction
+  enter candidate decisions. A/B keep v1 accepted row/range. Sphere centre inversion is checked
+  against the independent first-hit quadratic, including ±0.15m radial prediction error.
+- CPU hand tests 10/10 PASS: off-row two-row spheres at 1.16/1.5/2/2.28m, vertical negatives,
+  noise-driven abstention, azimuth-premise abstention, old acceptance preservation, C's contract
+  ineligibility, no-return/invalid evidence, immutable perturbations and all-gates selection.
+- The full matched sweep is not run yet. The runner refuses an existing output and dirty tracked
+  source, preserves per-case compressed ledger, stratified counts and SHA manifest, and stops at
+  NO-GO before production/GPU if no eligible candidate passes. CPU selection is not qualification.
+- Preservation baseline: 5,887 tracked entries and 15 raw manifests / 4,085 members match; Policy F
+  SHA unchanged; main WIP3/stash preserved. Snapshot `/tmp/motar_s_l1c_v2_20261018/baseline.json`,
+  SHA `4094dd3ef800ddb93ebcef3f3b86cbb57dab732b4d799ab063df9f08cf4b1eb2`.
+- Diff checked before local commit. Next: execute the frozen CPU matrix and record candidate
+  selection; no runtime edit, GPU process or clock change has been made.
