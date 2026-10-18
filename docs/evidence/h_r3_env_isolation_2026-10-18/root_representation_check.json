@@ -1,0 +1,22 @@
+{
+  "scope": "READ_ONLY_REAL_GPU_ROOT_SNAPSHOTS; mapped static mesh actors except env127; initial versus legacy-normal step2",
+  "mapped_actor_count": 38100,
+  "changed_quaternion_actors": 0,
+  "changed_position_actors": 19364,
+  "max_abs_position_delta_m": 1.52587890625e-05,
+  "max_abs_quaternion_component_delta": 0.0,
+  "max_pre_norm_error": null,
+  "max_post_norm_error": null,
+  "max_normalized_initial_vs_step2_quaternion_delta": null,
+  "max_mapped_linear_velocity_mps": 0.0,
+  "max_mapped_angular_velocity_radps": 0.0,
+  "interpretation": "Initial saved frame to step2 has mapped static actor translation drift up to1.52587890625e-5m, zero quaternion difference and zero velocities. This is not GPU evidence for quaternion normalization; exact PhysX/internal numerical stage remains unmeasured. Global geometry-rewrite mechanism is separately measured. No historical P02 causation proof.",
+  "vertex_translation_consistency": {
+    "vertex_rows": 304800,
+    "changed_root_translation_vertex_rows": 154912,
+    "changed_vertex_rows": 154832,
+    "exact_delta_rows": 298488,
+    "max_residual_m": 1.9073486328125e-06,
+    "interpretation": "Read-only diagnostic consistency, not a new qualification tolerance; remaining residual includes float32 arithmetic. No source of internal translation drift is uniquely identified."
+  }
+}

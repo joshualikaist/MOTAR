@@ -1,0 +1,40 @@
+{
+  "schema": "motar.environment-isolation.review-manifest.v1",
+  "members": [
+    {
+      "path": "fable_prompt.txt",
+      "bytes": 81478,
+      "sha256": "6528ff865a9efe32f6d66f4941107330abf77918324367d5187e2f8c87c390c2"
+    },
+    {
+      "path": "fable_output.json",
+      "bytes": 6159,
+      "sha256": "44e9b80cd22e2299ddb83e12d2d2a42ca3a21f395a94ca698dbd9631cd7f640d"
+    },
+    {
+      "path": "fable_stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "fable_process.json",
+      "bytes": 750,
+      "sha256": "f8b1c412176680e3398990c20f637c839e0bd16145d175a93e1a263e6fec60fb"
+    },
+    {
+      "path": "root_representation_check.py",
+      "bytes": 2625,
+      "sha256": "75e3f196437daedac2187b32a186241088bf7b308e614cfae9388ae25795c4f1"
+    },
+    {
+      "path": "root_representation_check.json",
+      "bytes": 1337,
+      "sha256": "aefecdf2398ab4c44628b870d067e2aacba10b87a90c1043b98add4407d6d320"
+    },
+    {
+      "path": "root_representation_check.log",
+      "bytes": 1337,
+      "sha256": "aefecdf2398ab4c44628b870d067e2aacba10b87a90c1043b98add4407d6d320"
+    }
+  ]
+}
