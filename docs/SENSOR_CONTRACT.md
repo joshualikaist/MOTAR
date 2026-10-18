@@ -28,21 +28,24 @@ boundary. Do not substitute oracle range/depth for the declared RGB-D or LiDAR m
 
 ## S-L1 scope
 
-S-L1 improves the correctness and reliability of the existing fusion system. The user confirms
-that **only S-L1A is approved for production modification**:
+S-L1 improves the correctness and reliability of the existing fusion system. The original
+sensor correction approved only S-L1A. The user's subsequent acceptance at `aed6aff` recognizes
+S-L1A/B/C/D v1 within their preregistered scopes and authorizes the separate C-v2 investigation:
 
 | Package | Technical objective | Current production scope |
 | --- | --- | --- |
-| S-L1A | Obstacle depth and target-like carve-out correction | Approved; retain both sensors and the frozen baseline path |
-| S-L1B | Camera–LiDAR pinhole / SE(3) calibration | Planned; separate approval required |
-| S-L1C | LiDAR false association, tracker identity and covariance | Planned; separate approval required |
-| S-L1D | Silhouette occlusion and sensor measurement validity | Planned; separate approval required |
+| S-L1A | Obstacle depth and target-like carve-out correction | v1 accepted within its recorded qualification scope |
+| S-L1B | Camera–LiDAR pinhole / SE(3) calibration | v1 accepted; further carve-retention production changes require approval |
+| S-L1C | LiDAR false association, tracker identity and covariance | v1 accepted; separate opt-in v2 authorized under its own gates |
+| S-L1D | Silhouette occlusion and sensor measurement validity | v1 accepted on C-v1; qualification is not inherited by C-v2 |
 
-The current documentation correction implements none of these packages. The
-[v2 correction plan](plans/correction_lineages_plan_v2.md) records the implementation boundary;
-the [dated amendment](plans/sensor_contract_amendment_2026-10-18.md) supersedes incorrect roadmap
-statements without changing historical evidence or preregistrations. This correction authorizes
-no new GPU run, PPO training, Recovery Planner, actor-schema change or main merge.
+The [v2 correction plan](plans/correction_lineages_plan_v2.md) and
+[dated sensor amendment](plans/sensor_contract_amendment_2026-10-18.md) remain historical records
+of the original approval boundary. They are not rewritten. The subsequent
+[C-v2 preregistration](plans/s_l1c_v2.md) and [measured evidence](evidence/s_l1c_v2_2026-10-18/RESULTS.md)
+record the newly authorized work and its narrower qualification limits. Neither the sensor
+correction nor these scope updates authorize PPO, Recovery Planner, actor-schema changes or
+main merge. RGB-D + LiDAR remains the official contract throughout.
 
 ## Provisional Recovery hypotheses under fusion
 

@@ -21455,3 +21455,34 @@ Next review: the complete diff and new plan; local commit requires user diff app
 - Next: preflight at this source SHA, then the user-authorized bounded canary on a clean tracked
   tree. No tracked edits or commits during execution. Qualification does not auto-approve D-v2,
   hardware realism, Recovery, retraining or main changes.
+
+## 2026-10-18 — C-v2 fixed-source GPU qualification completed; pending independent review
+
+- SL1CV2-C01 at source `e45794e876b15f71b5f38c65702fefadc368f93a`: 23/23 processes
+  COMPLETED, 863.892 process-wall seconds, 865.556 runner-wall seconds, peak device 4,670MiB;
+  18.911→18.808GB free, 30,891,408 output bytes. No tracked/source/WORKLOG change during GPU.
+- Independent first-hit NumPy analysis: all nine gates PASS; near recall 140/288→264/288,
+  124 new genuine hits, no paired true loss, no additional false association. Seven original
+  EQ-1D replays 0/21, twelve new bars 0/36, twelve new foreground scenes 0/36 per lineage.
+  New accepted centre error MAE 1.619e-6m/max 1.291e-5m. Inherited 0.168693m maximum and CPU
+  full-matrix 135 residual false accepts remain documented failures; no relabelling.
+- Covariance orthogonal ratio ≥0.999600; identity age camera-only and fused 5s/51-miss expiry
+  preserved. Historical OFF/A/B/C/D static/moving 600-step 14-key digests and v2 E-L0 P1/P2
+  all identical (12 pairs). Sensor GT/semantic replay plus actor898 firewall five branches
+  and five measurement-positive controls PASS; RMS/checkpoint/import/flags unchanged.
+- CPU: PUBLIC_CPU 2,587/0 failures/0 errors/10 skipped/5 excluded on committed runtime source;
+  post-run combined C-v2 reference/runtime/canary suite 22/22 PASS using aerialgym Python.
+  Base-Python retry lacked torch and was corrected by selecting the documented interpreter.
+  New CPU-only reporting script reproduces GPU metrics and distance/elevation CSVs from raw.
+- New compact evidence under `docs/evidence/s_l1c_v2_2026-10-18/`: GPU manifest/report, independent
+  analysis, metrics/tables, CPU validation, preservation and RESULTS. Raw remains external to Git;
+  GPU manifest `fce6b844146a6e2869f6e619bb7c57aef8d049c662855d9a05c3034c0cb7443b` (284 files).
+  Existing 15 manifests/4,085 members, Policy F both copies, main HEAD/WIP three hashes/stash,
+  historical records and WORKLOG prefix preserved. External backup not established in this task.
+- Updated mutable `docs/SENSOR_CONTRACT.md` approval table to reflect the user's A/B/C/D-v1
+  acceptance and C-v2 authorization; original dated amendment/preregistrations unchanged.
+  Added `docs/plans/post_s_l1c_v2_validation_design.md`: D empirical belief-error stress, B carve
+  retention and camera centre-range bias, design only. No B/D production change or extra GPU.
+- Decision now GPU_QUALIFIED_PENDING_REVIEW, not final GO. Next: result commit, independent
+  Fable 5.1 read-only review, then record final decision; branch-only fast-forward push after
+  refreshed full-unpublished-history/security/WIP/raw/symlink/path/remote checks. No main merge.

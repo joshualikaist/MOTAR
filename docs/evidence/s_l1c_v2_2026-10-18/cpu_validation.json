@@ -1,0 +1,33 @@
+{
+  "schema": "motar.s-l1c-v2-cpu-validation.v1",
+  "public_cpu_source": "5b57021",
+  "public_cpu": {
+    "profile": "PUBLIC_CPU",
+    "status": "PASS",
+    "ran": 2587,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 10,
+    "excluded": 5,
+    "excluded_reasons": {
+      "test_navrl_nonoverlap_placement.TestFootprintClearancePlacement": "setUpClass starts a worker that imports aerial_gym (Isaac Gym and Warp need a CUDA device)",
+      "test_navrl_physical_target_lower_contract.LowerContractTest.test_fresh_child_imports_isaacgym_before_packed_torch": "the child process imports isaacgym, which needs a CUDA device"
+    }
+  },
+  "public_cpu_log_sha256": "9876e25e7191c21b7bfbdf6e252cad14b799ae31c6cdd1885710d327487d50ba",
+  "targeted_command": "PYTHONNOUSERSITE=1 /home/fair/miniconda3/envs/aerialgym/bin/python -B -m unittest discover -s tests -p 'test_s_l1c_v2*.py' -v",
+  "targeted": {
+    "run": 22,
+    "failures": 0,
+    "errors": 0,
+    "reference": 10,
+    "runtime": 7,
+    "canary": 5
+  },
+  "targeted_log_sha256": "bdd0afdde0ffbb56f1b06ad3c33ca0038d18a0d4612015d7a311ae52e03e9853",
+  "report_tool_reproduction": "gpu_metrics.json and three CSV tables byte-reproduced from original raw using tools/s_l1c_v2_report.py",
+  "earlier_attempts": [
+    "PUBLIC_CPU dirty-HEAD guard failed pre-source-commit; identical suite PASS after commit; tests not weakened.",
+    "Post-run combined unittest attempt with base Python3.13 lacked torch; correct aerialgym interpreter passes all22; no source edit required."
+  ]
+}
