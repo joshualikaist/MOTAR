@@ -21436,3 +21436,22 @@ Next review: the complete diff and new plan; local commit requires user diff app
   thresholds and watchdogs unchanged. No C-v2 GPU execution or result inspected yet.
 - Next: commit all canary source and run preflight; freeze the tracked tree and HEAD throughout
   the GPU canary. Original source/evidence remain preserved.
+
+## 2026-10-18 — C-v2 fixed GPU canary tooling and independent analysis ready before launch
+
+- New `tools/s_l1c_v2_launcher.py`, `tools/s_l1c_v2_run.py`, `tools/s_l1c_v2_analysis.py`,
+  `tests/test_s_l1c_v2_canary.py`; additional D-API non-mutation case in
+  `tests/test_s_l1c_v2_runtime.py`, this appended log. No further production change.
+- Fixed matrix: 144 clear-sphere positives in three n48 groups, 31 negatives (seven exact frozen
+  EQ-1D sensor replays and 24 new Warp AABB sensor fixtures), v1/v2 matched radial probes, fourteen
+  closed-loop regression/EL0 processes, one n4 actor firewall: 23 processes total. Narrow fixture
+  meshes are scaled in the sensor-only process; no dynamics or physical-contact claim.
+- Independent analysis uses first-hit box/sphere geometry, actual returned row, saved covariance,
+  full identity/expiry traces, GT-replay arrays, raw actor firewall branches and independent
+  re-reading of all 14-key digest pairs. Actual lineage flags and matched sensor packets are checked.
+- CPU: new canary tests 5/5 and runtime tests 7/7 PASS; PUBLIC_CPU on committed runtime source
+  remains 2,587/0 failures/0 errors/10 skipped/5 excluded. All launch/analysis syntax and diff checks
+  PASS. Inherited watchdog/OOM/disk/source guards run before, during and after every process.
+- Next: preflight at this source SHA, then the user-authorized bounded canary on a clean tracked
+  tree. No tracked edits or commits during execution. Qualification does not auto-approve D-v2,
+  hardware realism, Recovery, retraining or main changes.

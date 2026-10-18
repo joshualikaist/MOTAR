@@ -124,4 +124,17 @@ class ModelTest(unittest.TestCase):
             for _ in range(50):observe(torch.full((1,288),12.))
             self.assertTrue(bool(tr.active[0]));observe(torch.full((1,288),12.));self.assertFalse(bool(tr.active[0]))
 
+    def test_d_diagnostic_api_reads_v2_belief_without_mutation_or_automatic_activation(self):
+        with common.production(dict(common.receipt_env(),NAVRL_SENSOR_LINEAGE='s_l1c_v2')):
+            current,_,_=common.build_perception(1)
+            sensor=importlib.import_module('aerial_gym.task.navrl_task.navrl_sensor_lineage')
+            before_state=current.tracker.state.clone();before_cov=current.tracker.cov.clone()
+            out=sensor.measurement_validity(torch.full((1,90,160),10.),torch.zeros(1,dtype=torch.bool),
+                torch.ones(1,dtype=torch.bool),torch.tensor([[1.5,0,.13]]),torch.eye(3).view(1,3,3)*.01,
+                current._s_l1b_rays,current.camera_offset.view(3),target_radius=.15,camera_far_m=20.,min_target_pixels=2,
+                hfov=current.hfov,vfov=current.vfov,fx=current.fx,fy=current.fy,cx=current.cx,cy=current.cy)
+            self.assertTrue(torch.isfinite(out['tau_m']).all())
+            self.assertTrue(torch.equal(current.tracker.state,before_state));self.assertTrue(torch.equal(current.tracker.cov,before_cov))
+            self.assertFalse(current.sensor_lineage_s_l1d)
+
 if __name__=='__main__':unittest.main()
