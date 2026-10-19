@@ -1,0 +1,735 @@
+{
+  "schema": "BOIA_G4_P0_SAFETY_AUDIT_V1",
+  "date": "2026-10-20",
+  "base_sha": "13d5f195399bf1a7f1cdf9ddeccd3338d8e34c0f",
+  "scope": "P0-C physical point-clearance radius fix; P0-D read-only dynamics audit and authorized safety-only internal tail envelope. No plant qualification.",
+  "overall_status": "BLOCKED_FOR_HARD_SAFETY_OR_G5_QUALIFICATION",
+  "geometry": {
+    "collision_asset": "resources/robots/quad/quad_navrl_collide.urdf",
+    "box_size_m": [
+      0.28,
+      0.28,
+      0.08
+    ],
+    "level_xy_circumradius_m": 0.19798989873223333,
+    "full_3d_radius_m": 0.20199009876724155,
+    "counterexample_tilt_deg": 11.421753658962295,
+    "r_hard_old_m": 0.14,
+    "r_hard_new_m": 0.20199009876724155,
+    "legacy_soft_r_body_m": 0.198,
+    "effective_floor": "max(r_hard,r_body,VERIFIED_COLLISION_RADIUS_M)",
+    "uncertainties": {
+      "position_m": "NOT_RECORDED",
+      "control_tracking_m": "NOT_RECORDED",
+      "sensor_range_bearing_m": "NOT_RECORDED",
+      "t_det_s": 0.09,
+      "t_det_interpretation": "historical contact-detection delay allowance, not sensing latency calibration",
+      "physx_contact_offset_m": 0.002,
+      "physx_rest_offset_m": 0.001
+    }
+  },
+  "six_speed_comparison": [
+    {
+      "speed_mps": 0.0,
+      "tilted_collision_hard_ok": true,
+      "tail_overlap_stop_ok": true,
+      "undersized_capsule_probe_hard_ok": true,
+      "old_hard_threshold_m": 0.14,
+      "new_minimum_threshold_m": 0.20199009876724155,
+      "post_tilted_collision_hard_ok": false,
+      "post_tail_overlap_stop_ok": false,
+      "post_undersized_capsule_probe_hard_ok": false,
+      "empirical_total_stop_m": 0.0,
+      "own_model_continuous_total_m": 0.0,
+      "new_stop_envelope_m": 0.0
+    },
+    {
+      "speed_mps": 0.6,
+      "tilted_collision_hard_ok": true,
+      "tail_overlap_stop_ok": true,
+      "undersized_capsule_probe_hard_ok": true,
+      "old_hard_threshold_m": 0.194,
+      "new_minimum_threshold_m": 0.25599009876724155,
+      "post_tilted_collision_hard_ok": false,
+      "post_tail_overlap_stop_ok": false,
+      "post_undersized_capsule_probe_hard_ok": false,
+      "empirical_total_stop_m": 0.13379999999999997,
+      "own_model_continuous_total_m": 0.3,
+      "new_stop_envelope_m": 0.3
+    },
+    {
+      "speed_mps": 1.2,
+      "tilted_collision_hard_ok": false,
+      "tail_overlap_stop_ok": true,
+      "undersized_capsule_probe_hard_ok": true,
+      "old_hard_threshold_m": 0.248,
+      "new_minimum_threshold_m": 0.30999009876724154,
+      "post_tilted_collision_hard_ok": false,
+      "post_tail_overlap_stop_ok": false,
+      "post_undersized_capsule_probe_hard_ok": false,
+      "empirical_total_stop_m": 0.41519999999999996,
+      "own_model_continuous_total_m": 0.6,
+      "new_stop_envelope_m": 0.6
+    },
+    {
+      "speed_mps": 2.0,
+      "tilted_collision_hard_ok": false,
+      "tail_overlap_stop_ok": true,
+      "undersized_capsule_probe_hard_ok": true,
+      "old_hard_threshold_m": 0.32,
+      "new_minimum_threshold_m": 0.38199009876724155,
+      "post_tilted_collision_hard_ok": false,
+      "post_tail_overlap_stop_ok": false,
+      "post_undersized_capsule_probe_hard_ok": false,
+      "empirical_total_stop_m": 1.02,
+      "own_model_continuous_total_m": 1.0,
+      "new_stop_envelope_m": 1.02
+    },
+    {
+      "speed_mps": 2.5,
+      "tilted_collision_hard_ok": false,
+      "tail_overlap_stop_ok": true,
+      "undersized_capsule_probe_hard_ok": true,
+      "old_hard_threshold_m": 0.365,
+      "new_minimum_threshold_m": 0.42699009876724153,
+      "post_tilted_collision_hard_ok": false,
+      "post_tail_overlap_stop_ok": false,
+      "post_undersized_capsule_probe_hard_ok": false,
+      "empirical_total_stop_m": 1.3,
+      "own_model_continuous_total_m": 1.25,
+      "new_stop_envelope_m": 1.3
+    },
+    {
+      "speed_mps": 3.52,
+      "tilted_collision_hard_ok": false,
+      "tail_overlap_stop_ok": true,
+      "undersized_capsule_probe_hard_ok": true,
+      "old_hard_threshold_m": 0.4568,
+      "new_minimum_threshold_m": 0.5187900987672416,
+      "post_tilted_collision_hard_ok": false,
+      "post_tail_overlap_stop_ok": false,
+      "post_undersized_capsule_probe_hard_ok": false,
+      "empirical_total_stop_m": 1.9220000000000002,
+      "own_model_continuous_total_m": 1.7600000000000002,
+      "new_stop_envelope_m": 1.9220000000000002
+    }
+  ],
+  "four_model_braking_comparison": [
+    {
+      "nominal_speed_mps": 2.0,
+      "surrogate_no_reaction_asymptote_m": 0.78,
+      "empirical_design_knot_no_reaction_m": 0.82,
+      "surrogate_minus_knot_m": -0.039999999999999925,
+      "surrogate_minus_knot_relative_pct": -4.878048780487796,
+      "reaction_m": 0.2,
+      "empirical_plus_reaction_m": 1.02,
+      "riskcap_telemetry_total_m": 0.8756756756756756,
+      "historical_actual_lee_dt10": {
+        "fixture": 13,
+        "mean_decel_mps2": 2.1188855184656328,
+        "riskcap_model_m": 0.8690892471839069,
+        "run": "d1_dt10",
+        "speed_at_brake_mps": 1.9917523873576948,
+        "status": "PASS",
+        "stopping_distance_m": 0.82452392578125,
+        "stopping_time_s": 0.9400000000000001
+      },
+      "historical_actual_lee_all_dt": [
+        {
+          "fixture": 13,
+          "mean_decel_mps2": 2.1188855184656328,
+          "riskcap_model_m": 0.8690892471839069,
+          "run": "d1_dt10",
+          "speed_at_brake_mps": 1.9917523873576948,
+          "status": "PASS",
+          "stopping_distance_m": 0.82452392578125,
+          "stopping_time_s": 0.9400000000000001
+        },
+        {
+          "fixture": 13,
+          "mean_decel_mps2": 2.1076646434783286,
+          "riskcap_model_m": 0.8690820617632455,
+          "run": "d1_dt5",
+          "speed_at_brake_mps": 1.9917430880870206,
+          "status": "PASS",
+          "stopping_distance_m": 0.8304061889648438,
+          "stopping_time_s": 0.9450000000000001
+        },
+        {
+          "fixture": 13,
+          "mean_decel_mps2": 2.1020680446140063,
+          "riskcap_model_m": 0.8690560875211271,
+          "run": "d1_dt2p5",
+          "speed_at_brake_mps": 1.9917094722717712,
+          "status": "PASS",
+          "stopping_distance_m": 0.8339157104492188,
+          "stopping_time_s": 0.9475
+        }
+      ],
+      "new_actual_lee_run": "NOT_TESTED"
+    },
+    {
+      "nominal_speed_mps": 2.5,
+      "surrogate_no_reaction_asymptote_m": 0.9750000000000001,
+      "empirical_design_knot_no_reaction_m": 1.05,
+      "surrogate_minus_knot_m": -0.07499999999999996,
+      "surrogate_minus_knot_relative_pct": -7.142857142857138,
+      "reaction_m": 0.25,
+      "empirical_plus_reaction_m": 1.3,
+      "riskcap_telemetry_total_m": 1.3057432432432432,
+      "historical_actual_lee_dt10": {
+        "fixture": 15,
+        "mean_decel_mps2": 2.540514420490376,
+        "riskcap_model_m": 1.2957225273997484,
+        "run": "d1_dt10",
+        "speed_at_brake_mps": 2.4897041320805684,
+        "status": "PASS",
+        "stopping_distance_m": 1.05291748046875,
+        "stopping_time_s": 0.98
+      },
+      "historical_actual_lee_all_dt": [
+        {
+          "fixture": 15,
+          "mean_decel_mps2": 2.540514420490376,
+          "riskcap_model_m": 1.2957225273997484,
+          "run": "d1_dt10",
+          "speed_at_brake_mps": 2.4897041320805684,
+          "status": "PASS",
+          "stopping_distance_m": 1.05291748046875,
+          "stopping_time_s": 0.98
+        },
+        {
+          "fixture": 15,
+          "mean_decel_mps2": 2.5405557788172737,
+          "riskcap_model_m": 1.2957606620137332,
+          "run": "d1_dt5",
+          "speed_at_brake_mps": 2.4897446632409284,
+          "status": "PASS",
+          "stopping_distance_m": 1.0587615966796875,
+          "stopping_time_s": 0.98
+        },
+        {
+          "fixture": 15,
+          "mean_decel_mps2": 2.5405107713068693,
+          "riskcap_model_m": 1.2957191626818503,
+          "run": "d1_dt2p5",
+          "speed_at_brake_mps": 2.4897005558807317,
+          "status": "PASS",
+          "stopping_distance_m": 1.0629425048828125,
+          "stopping_time_s": 0.98
+        }
+      ],
+      "new_actual_lee_run": "NOT_TESTED"
+    },
+    {
+      "nominal_speed_mps": 3.52,
+      "surrogate_no_reaction_asymptote_m": 1.3728,
+      "empirical_design_knot_no_reaction_m": 1.57,
+      "surrogate_minus_knot_m": -0.19720000000000004,
+      "surrogate_minus_knot_relative_pct": -12.56050955414013,
+      "reaction_m": 0.35200000000000004,
+      "empirical_plus_reaction_m": 1.9220000000000002,
+      "riskcap_telemetry_total_m": 2.444972972972973,
+      "historical_actual_lee_dt10": {
+        "fixture": 14,
+        "mean_decel_mps2": 3.4519812814312174,
+        "riskcap_model_m": 2.445662872666907,
+        "run": "d1_dt10",
+        "speed_at_brake_mps": 3.521020907059842,
+        "status": "PASS",
+        "stopping_distance_m": 1.5601413988396051,
+        "stopping_time_s": 1.02
+      },
+      "historical_actual_lee_all_dt": [
+        {
+          "fixture": 14,
+          "mean_decel_mps2": 3.4519812814312174,
+          "riskcap_model_m": 2.445662872666907,
+          "run": "d1_dt10",
+          "speed_at_brake_mps": 3.521020907059842,
+          "status": "PASS",
+          "stopping_distance_m": 1.5601413988396051,
+          "stopping_time_s": 1.02
+        },
+        {
+          "fixture": 14,
+          "mean_decel_mps2": 3.4352479790880572,
+          "riskcap_model_m": 2.445802455918947,
+          "run": "d1_dt5",
+          "speed_at_brake_mps": 3.5211291785652583,
+          "status": "PASS",
+          "stopping_distance_m": 1.5710695309441827,
+          "stopping_time_s": 1.025
+        },
+        {
+          "fixture": 14,
+          "mean_decel_mps2": 3.418549970707412,
+          "riskcap_model_m": 2.445773179565755,
+          "run": "d1_dt2p5",
+          "speed_at_brake_mps": 3.5211064698286343,
+          "status": "PASS",
+          "stopping_distance_m": 1.5775381682928153,
+          "stopping_time_s": 1.03
+        }
+      ],
+      "new_actual_lee_run": "NOT_TESTED"
+    }
+  ],
+  "low_speed_before_after": [
+    {
+      "speed_mps": 0.6,
+      "obstacle_from_endpoint_m": 0.4,
+      "helper_total_stop_m": 0.13379999999999997,
+      "surrogate_8s_stop_m": 0.2339999996259683,
+      "hard_ok": true,
+      "stop_ok": true,
+      "world_residual_at_surrogate_stop_m": 0.16600000037403173,
+      "independent_body_coordinates_m": [
+        0.11737972594144726,
+        0.11737972594144726,
+        0.0
+      ],
+      "box_contains_point": true,
+      "post_stop_ok": false,
+      "new_stop_envelope_m": 0.3
+    },
+    {
+      "speed_mps": 1.2,
+      "obstacle_from_endpoint_m": 0.64,
+      "helper_total_stop_m": 0.41519999999999996,
+      "surrogate_8s_stop_m": 0.4679999992519366,
+      "hard_ok": true,
+      "stop_ok": true,
+      "world_residual_at_surrogate_stop_m": 0.17200000074806343,
+      "independent_body_coordinates_m": [
+        0.1216223668930469,
+        0.1216223668930469,
+        0.0
+      ],
+      "box_contains_point": true,
+      "post_stop_ok": false,
+      "new_stop_envelope_m": 0.6
+    }
+  ],
+  "known_free_body_counterexample": {
+    "center_world_xy_m": [
+      1.0,
+      0.0
+    ],
+    "body_point_world_xy_m": [
+      1.0,
+      0.1
+    ],
+    "body_point_offset_m": [
+      0.0,
+      0.1
+    ],
+    "sector_center_deg": 5.0,
+    "sector_free_radius_m": 0.5,
+    "body_point_scan_range_m": 1.004987562112089,
+    "current_hard_ok": true,
+    "current_stop_ok": true,
+    "full_body_known_free": "FAIL_UNRESOLVED"
+  },
+  "function_coverage": [
+    {
+      "file": "types.py",
+      "name": "BoiaParams.__post_init__",
+      "input_output": "Frozen scalar priors to validated record; no state or sensor reads.",
+      "units_frame_dt_batch": "Counts H/S/M/K; dt/tau/t_det/t_react seconds, radius/distances metres, a_max m/s^2; weights/thresholds dimensionless. Config is shared explicitly across N; no global mutable state.",
+      "status": "LIMITED_VALIDITY",
+      "limits": "Only explicit positive finite tau_on, nonnegative declared r_bar_est, p_miss range and positive H/S/M/K/dt are checked here; this is not complete semantic validation or calibration. Added safety consumer validates its geometry, response and discretization requirements.",
+      "source_path": "motar_eval/boia/types.py",
+      "line": 59,
+      "end_line": 66
+    },
+    {
+      "file": "dynamics.py",
+      "name": "RiskcapConfig.__post_init__",
+      "input_output": "Frozen riskcap-only config to finite nonnegative checks, positive width/brake/range, cap/release ordering.",
+      "units_frame_dt_batch": "Caps m/s; width/margins/clearances metres; reaction/TTC seconds; brake m/s^2. No integration or batch state.",
+      "status": "PASS_CONTRACT",
+      "limits": "Only receipt-bound riskcap branch, with runtime brake=2.96 unlike upstream default=2.0; not a stopping policy.",
+      "source_path": "motar_eval/boia/dynamics.py",
+      "line": 34,
+      "end_line": 45
+    },
+    {
+      "file": "dynamics.py",
+      "name": "directional_lidar_clearance",
+      "input_output": "(N,V,B) measured slant ranges, (B,) vehicle bearings, (N,2) commanded vehicle XY velocity and optional permitted association mask -> (N,) forward corridor clearance.",
+      "units_frame_dt_batch": "Metres/radians/m/s; horizontal projection cos(elevation), per-bearing minimum rows; every env independent, no dt.",
+      "status": "PASS_MATCHED_ARITHMETIC",
+      "limits": "Original pure file bitwise equality CPU float32/64; finite rows below .995 Rmax; fixed original vertical FOV convention; sparse returns do not certify complete obstacle volume.",
+      "source_path": "motar_eval/boia/dynamics.py",
+      "line": 48,
+      "end_line": 79
+    },
+    {
+      "file": "dynamics.py",
+      "name": "apply_riskcap",
+      "input_output": "(N,2) vehicle XY request + (N,) corridor clearance -> governed vehicle request and N-first cap/scale/TTC/stopping-margin telemetry.",
+      "units_frame_dt_batch": "Velocity m/s, clearance/margin metres, TTC seconds. No integration; rows independent.",
+      "status": "PASS_MATCHED_ARITHMETIC",
+      "limits": "2 m/s is cap FLOOR, never a minimum requested/executed velocity; brake/reaction/margin affect telemetry only. Does not enforce stopping feasibility.",
+      "source_path": "motar_eval/boia/dynamics.py",
+      "line": 82,
+      "end_line": 105
+    },
+    {
+      "file": "dynamics.py",
+      "name": "point_corridor_clearance",
+      "input_output": "Original world XY points/validity (N,P,2)/(N,P), predicted world pose (N,K,3), yaw (N,K), vehicle request (N,K,2) -> (N,K) corridor clearance.",
+      "units_frame_dt_batch": "Metres/radians/m/s; subtract world translation and invert current yaw; N and K independent; no new sensor scan or integration.",
+      "status": "LIMITED_VALIDITY",
+      "limits": "Reprojects measured snapshot at moved poses, cannot discover unseen obstacles; explicitly ADAPTED and not raw-scan bitwise equivalence.",
+      "source_path": "motar_eval/boia/dynamics.py",
+      "line": 108,
+      "end_line": 127
+    },
+    {
+      "file": "dynamics.py",
+      "name": "rollout",
+      "input_output": "Normalized candidates (N,K,4), world p/v (N,3), yaw (N,), points, config and explicit H/S/dt -> Rollout records.",
+      "units_frame_dt_batch": "Clip normalized action, XY*2.5 m/s per axis, yaw*3 rad/s; body/vehicle command re-rotated using each current yaw. dt=.1 s, S=10 -> .01 s substep; semi-implicit world XY integration, fixed z/zero vz; N/K independent.",
+      "status": "LIMITED_VALIDITY",
+      "limits": "tau_v=.4 s unqualified prior, clipped acceleration 9.81 m/s^2; no actual Lee attitude/motor/altitude dynamics. Positive tau_psi requires explicit initial Euler yaw rate. H/S/dt are call arguments; safety assumes params.dt is the same decision interval used to generate Rollout.",
+      "source_path": "motar_eval/boia/dynamics.py",
+      "line": 130,
+      "end_line": 194
+    },
+    {
+      "file": "dynamics.py",
+      "name": "braking_distance",
+      "input_output": "Finite nonnegative speed tensor, declared knot tuple and reaction -> total distance and above-last-knot flag of same shape.",
+      "units_frame_dt_batch": "Speed m/s, distance metres; reaction seconds included ONCE. Below-first constant-deceleration extension, linear interpolation, above-last anchored quadratic extension. Tensor shape preserved.",
+      "status": "LIMITED_VALIDITY",
+      "limits": "Exact nominal knots .82/1.05/1.57 are fixed design values, not newly measured means. Extrapolation is a prior; no low-speed actual Lee calibration. Original helper remains unchanged; safety now envelopes its low-speed inconsistency.",
+      "source_path": "motar_eval/boia/dynamics.py",
+      "line": 197,
+      "end_line": 220
+    },
+    {
+      "file": "safety.py",
+      "name": "_segment_clearance",
+      "input_output": "World XY segment batches (N,...,2), points (N,P,2), validity (N,P) -> minimum sensed-point segment distance (N,...).",
+      "units_frame_dt_batch": "Metres, all shared world XY; element-wise difference-based distances, no matrix-distance TF32 path; N-independent, no dt.",
+      "status": "PASS_ANALYTIC_POINT_GEOMETRY",
+      "limits": "Empty/all-invalid point sets give +inf; only sensed points, not obstacle surfaces, ray gaps or whole-body known-free containment.",
+      "source_path": "motar_eval/boia/safety.py",
+      "line": 16,
+      "end_line": 21
+    },
+    {
+      "file": "safety.py",
+      "name": "_stopping_envelope",
+      "input_output": "Final planar speed (N,K), explicit response config and actual Rollout substep count -> conservative maximum of table total and own-model continuous total.",
+      "units_frame_dt_batch": "Metres from m/s, seconds, m/s^2. Checks finite positive tau/a/dt and params.dt/substeps <= tau. Each N/K entry independent.",
+      "status": "PASS_OWN_MODEL_BOUND_ONLY",
+      "limits": "Continuous derivation for dv/dt=-min(v/tau,a) bounds resolved semi-implicit zero-command response; one reaction term per branch before max. No actual-plant certificate or uncertainty budget; decision interval consistency is an explicit caller precondition.",
+      "source_path": "motar_eval/boia/safety.py",
+      "line": 24,
+      "end_line": 39
+    },
+    {
+      "file": "safety.py",
+      "name": "screen",
+      "input_output": "Rollout (N,K,H,S,...), permitted world XY point set/validity and FreeContext -> hard_ok/stop_ok (N,K), clr_min (N,K,H), soft deficit (N,K).",
+      "units_frame_dt_batch": "All positions/clearances metres, velocity world m/s; speed*delay metres. Uses every initial-to-substep and substep-to-substep segment; chunks 256 segments, no cross-env reductions. Endpoint stop extends current planar velocity direction by new envelope.",
+      "status": "LIMITED_VALIDITY",
+      "limits": "Physical radius floor fixed for current NavRL URDF; full-body containment in known free unresolved; position/control/sensor errors NOT_RECORDED. Linear tail direction/first-order response is not actual Lee certification; finite candidate rejection does not prove unavoidable collision.",
+      "source_path": "motar_eval/boia/safety.py",
+      "line": 42,
+      "end_line": 102
+    }
+  ],
+  "record_field_contracts": [
+    {
+      "record": "BoiaParams",
+      "fields": "H,dt,S,M,K,d_int,p_pre,H_pre,sigma2_lost,n_lost,r_hard,r_body,m_s,t_det,t_react,m_free,r_T,r_bar_est,s_Q,tau_v,tau_psi,a_max,weights_visible,weights_lost,tau_on,tau_off_ratio,n_min,n_off,min_pixels,p_miss,beta,n_0,unknown_blocks,R_camera_diag",
+      "contract": "Counts/weights/probabilities and explicit priors; time seconds, distance metres, variance m^2, acceleration m/s^2; R_camera_diag is declared mixed camera measurement covariance, no invented default. tau_on and r_bar_est remain explicit/None as documented. Only r_hard default amended; r_body .198 is legacy XY soft prior."
+    },
+    {
+      "record": "CameraParams",
+      "fields": "hfov,vfov,fx,fy,cx,cy,camera_offset,target_radius,max_camera_range,min_pixels",
+      "contract": "FOV radians, intrinsics/pixel threshold pixels, offset/target radius/range metres; offset expressed in yaw-only vehicle frame. Declaration alone is not calibration."
+    },
+    {
+      "record": "FreeContext",
+      "fields": "pos,yaw,free_radius,angles,far_m",
+      "contract": "Original scan origin world (N,3), yaw radians (N,), sector radii metres (N,B), bearing radians (B,), far metres; centre-point radial set, not body occupancy."
+    },
+    {
+      "record": "OnlineInputs",
+      "fields": "pos,vel,vehicle_quat,yaw,body_angvel,lidar_m,angles,elevations,mu,Sigma,active,age,camera_visible,policy_action,cam,lidar_far_m",
+      "contract": "N-first copied allowed online inputs. Own p/v world m,m/s, XYZW yaw vehicle quaternion, body angular velocity rad/s, scan metres/bearings/elevations radians; CV target belief [position m,velocity m/s], mixed covariance, age seconds, camera flag, normalized action. Tensor contents are mutable even inside a frozen dataclass; access module owns copying."
+    },
+    {
+      "record": "Rollout",
+      "fields": "pos,vel,psi,step_pos,step_vel,step_psi,governed_cmd,diagnostics",
+      "contract": "World p/v (N,K,H,S,3) m,m/s and yaw (N,K,H,S) rad; step_* select substep end. governed_cmd (N,K,H,4) physical vehicle [m/s,m/s,0,rad/s]. Initial p/v diagnostics are mandatory for safety; tuple is frozen, tensor storage is not immutable."
+    },
+    {
+      "record": "Decision",
+      "fields": "action,candidate_commands,hard_ok,stop_ok,cost,terms,advantage,mode,engaged,reason,new_state,trace,diagnostics",
+      "contract": "Action/candidates normalized (N,4)/(N,K,4); masks/costs (N,K), status N-first, optional explicit next state and trace. No online sensor reads inside record declaration; scores have cost-defined normalization."
+    }
+  ],
+  "issues": [
+    {
+      "id": "C01",
+      "proposed_severity": "HIGH",
+      "status": "FIXED_CPU",
+      "finding": "Default .14 m and caller shrinking override underbound collision footprint, including at rest. Full XYZ box half diagonal .20199009876724155 m now immutable declared floor/default in both screens.",
+      "evidence": "15-test pristine-base run: 19 failures; independent yaw/tilt inside-box oracle and six-speed/tail regressions. No production source modified."
+    },
+    {
+      "id": "C02",
+      "proposed_severity": "BLOCKER_FOR_HARD_SAFETY_CLAIM",
+      "status": "UNRESOLVED",
+      "finding": "known_free certifies centreline, not entire body. Centre (1,0) can be accepted while physical body point (1,.1) is inside an adjacent unknown sector.",
+      "evidence": "test_known_free_centerline_does_not_certify_body_containment; independent angle/point-in-box oracle; no occupancy-model workaround added."
+    },
+    {
+      "id": "C03",
+      "proposed_severity": "HIGH_FOR_PLANT_QUALIFICATION",
+      "status": "NOT_RECORDED",
+      "finding": "Independent position/control/sensor uncertainty bounds are absent. The .09 s term reflects historical contact-to-step-end delay, not calibrated sensing delay or guaranteed pre-contact response.",
+      "evidence": "EQ-1D REPORT D1-K2; source PhysX contact/rest offsets .002/.001 m retained separately and not silently added as a calibrated uncertainty margin."
+    },
+    {
+      "id": "D01",
+      "proposed_severity": "HIGH",
+      "status": "FIXED_INTERNAL_MODEL_ONLY",
+      "finding": "Below-2 quadratic table extension understated own zero-command surrogate tail; hard+stop accepted boxes intersected during that response. Safety-only max envelope now prevents this inconsistency.",
+      "evidence": "Pre-D01 19-test run had 10 failures; .6/1.2 box counterexamples, saturation scalar oracle, reaction-once and discretization tests now PASS. dynamics.py unchanged."
+    },
+    {
+      "id": "D02",
+      "proposed_severity": "MEDIUM",
+      "status": "LIMITED_VALIDITY_USER_ACCEPTED",
+      "finding": "tau=.4 prior underpredicts declared high-speed knot by 12.56050955%; exceeds 10% target, within 25% user-approved continuation threshold.",
+      "evidence": "Signed three-speed table and unchanged independent 8 s geometric-series oracle. No retuning."
+    },
+    {
+      "id": "D03",
+      "proposed_severity": "MEDIUM_DOCUMENTATION",
+      "status": "CORRECTED_BY_EXPLICIT_M2_BANNER_AND_AMENDMENT14",
+      "finding": "M2 section3 sentence saying the law never brakes below 2 overstates a cap FLOOR as an executed-speed minimum. Zero/.6/1.2 requests remain zero/.6/1.2.",
+      "evidence": "Original speed_governor.py:465-503 and independent cap test; parent added explicit dated M2 banner preserving historical text below and amendment14. No production change."
+    },
+    {
+      "id": "D04",
+      "proposed_severity": "HIGH_FOR_PLANT_QUALIFICATION",
+      "status": "NOT_TESTED_CURRENT_PLANT",
+      "finding": "Scalar first-order rollout and straight-line braking tail omit actual Lee attitude/motor dynamics, yaw drift, altitude transients and state dependence. Zero command is not instantaneous stop; fallback cannot certify safety.",
+      "evidence": "Historical EQ-1D exact braking records retained separately; actual desired tilt45deg does not bound measured contact tilt. No new simulator/GPU run or low-speed plant qualification."
+    },
+    {
+      "id": "D05",
+      "proposed_severity": "MEDIUM",
+      "status": "LIMITED_VALIDITY",
+      "finding": "Low/above-table distances are uncalibrated extrapolation. Above-3.52 warning is returned by braking_distance, not exposed by safety.screen tuple. Candidate rejection means no feasible sampled action under this model, not physically unavoidable collision.",
+      "evidence": "Unchanged helper API and finite candidate/centreline nature; no threshold relaxation or false collision-free/inevitability label introduced."
+    }
+  ],
+  "base_regression": {
+    "base_sha": "13d5f195399bf1a7f1cdf9ddeccd3338d8e34c0f",
+    "source_sha256": {
+      "motar_eval/boia/safety.py": "7cc77a9b0893ab006b8614e55394e0f428fb489fd25015aa557b6eec2bdce7ab",
+      "motar_eval/boia/types.py": "99a30ca9da150a22a4393504276e1dc281af64fa9dead2be4a93fe2c276d5b45",
+      "motar_eval/boia/dynamics.py": "9ef55b71734100cfc48b70e35da98f4a4764adf1821fa6997a8bab30683a68ac",
+      "resources/robots/quad/quad_navrl_collide.urdf": "ad9a3110037cb01f94caa11054e367e557e9089b4edd520d0aa59b78578988be",
+      "aerial_gym/config/robot_config/navrl_quad_config.py": "a76f8a3dd1ce7a39614a989ecf3b6a493e7703f2f4cbaa7f77132a9e6322223e"
+    },
+    "test_sha256": "1a985844127456eaccf18b4155684de01172ed9045e48008bb328e0159b9fcc4",
+    "command": "CUDA_VISIBLE_DEVICES= PYTHONNOUSERSITE=1 python -B tests/test_boia_p0_safety.py -v",
+    "returncode": 1,
+    "stdout": "",
+    "stderr": "test_cap_floor_is_not_a_minimum_commanded_velocity (__main__.BrakingInterpretationTest) ... ok\ntest_empirical_helper_reaction_once_and_telemetry_is_a_distinct_model (__main__.BrakingInterpretationTest) ... ok\ntest_zero_command_is_not_an_instantaneous_stop_and_prior_errors_remain (__main__.BrakingInterpretationTest) ... ok\ntest_configured_smaller_radii_cannot_shrink_physical_floor (__main__.PhysicalFootprintTest) ... FAIL\ntest_independent_transformed_vertices_are_bounded_at_arbitrary_attitudes (__main__.PhysicalFootprintTest) ... ok\ntest_known_free_centerline_does_not_certify_body_containment (__main__.PhysicalFootprintTest) ... ok\ntest_larger_declared_radius_and_low_speed_gap_remain_meaningful (__main__.PhysicalFootprintTest) ... ok\ntest_level_yaw_corner_inside_box_is_not_clear_at_rest (__main__.PhysicalFootprintTest) ... FAIL\ntest_negative_delay_cannot_undo_the_physical_floor (__main__.PhysicalFootprintTest) ... FAIL\ntest_old_xy_radius_is_insufficient_even_when_explicitly_configured (__main__.PhysicalFootprintTest) ... FAIL\ntest_physical_floor_plus_existing_delay_at_all_six_speeds (__main__.PhysicalFootprintTest) ... test_purity_float32_float64_and_no_random_state_changes (__main__.PhysicalFootprintTest) ... ok\ntest_source_box_and_orientation_independent_default (__main__.PhysicalFootprintTest) ... FAIL\ntest_stop_tail_retains_full_footprint_at_all_six_speeds (__main__.PhysicalFootprintTest) ... test_tilted_corner_collision_all_six_speeds (__main__.PhysicalFootprintTest) ... \n======================================================================\nFAIL: test_configured_smaller_radii_cannot_shrink_physical_floor (__main__.PhysicalFootprintTest)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"tests/test_boia_p0_safety.py\", line 115, in test_configured_smaller_radii_cannot_shrink_physical_floor\n    self.assertFalse(bool(hard))\nAssertionError: True is not false\n\n======================================================================\nFAIL: test_level_yaw_corner_inside_box_is_not_clear_at_rest (__main__.PhysicalFootprintTest)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"tests/test_boia_p0_safety.py\", line 93, in test_level_yaw_corner_inside_box_is_not_clear_at_rest\n    self.assertFalse(bool(hard))\nAssertionError: True is not false\n\n======================================================================\nFAIL: test_negative_delay_cannot_undo_the_physical_floor (__main__.PhysicalFootprintTest)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"tests/test_boia_p0_safety.py\", line 166, in test_negative_delay_cannot_undo_the_physical_floor\n    evaluate((.18, 0.), speed=1., config=params(t_det=-1.))\nAssertionError: ValueError not raised\n\n======================================================================\nFAIL: test_old_xy_radius_is_insufficient_even_when_explicitly_configured (__main__.PhysicalFootprintTest)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"tests/test_boia_p0_safety.py\", line 110, in test_old_xy_radius_is_insufficient_even_when_explicitly_configured\n    self.assertFalse(bool(hard))\nAssertionError: True is not false\n\n======================================================================\nFAIL: test_physical_floor_plus_existing_delay_at_all_six_speeds (__main__.PhysicalFootprintTest) (speed=0.0)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"tests/test_boia_p0_safety.py\", line 125, in test_physical_floor_plus_existing_delay_at_all_six_speeds\n    self.assertFalse(bool(hard))\nAssertionError: True is not false\n\n======================================================================\nFAIL: test_physical_floor_plus_existing_delay_at_all_six_speeds (__main__.PhysicalFootprintTest) (speed=0.6)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"tests/test_boia_p0_safety.py\", line 125, in test_physical_floor_plus_existing_delay_at_all_six_speeds\n    self.assertFalse(bool(hard))\nAssertionError: True is not false\n\n======================================================================\nFAIL: test_physical_floor_plus_existing_delay_at_all_six_speeds (__main__.PhysicalFootprintTest) (speed=1.2)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"tests/test_boia_p0_safety.py\", line 125, in test_physical_floor_plus_existing_delay_at_all_six_speeds\n    self.assertFalse(bool(hard))\nAssertionError: True is not false\n\n======================================================================\nFAIL: test_physical_floor_plus_existing_delay_at_all_six_speeds (__main__.PhysicalFootprintTest) (speed=2.0)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"tests/test_boia_p0_safety.py\", line 125, in test_physical_floor_plus_existing_delay_at_all_six_speeds\n    self.assertFalse(bool(hard))\nAssertionError: True is not false\n\n======================================================================\nFAIL: test_physical_floor_plus_existing_delay_at_all_six_speeds (__main__.PhysicalFootprintTest) (speed=2.5)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"tests/test_boia_p0_safety.py\", line 125, in test_physical_floor_plus_existing_delay_at_all_six_speeds\n    self.assertFalse(bool(hard))\nAssertionError: True is not false\n\n======================================================================\nFAIL: test_physical_floor_plus_existing_delay_at_all_six_speeds (__main__.PhysicalFootprintTest) (speed=3.52)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"tests/test_boia_p0_safety.py\", line 125, in test_physical_floor_plus_existing_delay_at_all_six_speeds\n    self.assertFalse(bool(hard))\nAssertionError: True is not false\n\n======================================================================\nFAIL: test_source_box_and_orientation_independent_default (__main__.PhysicalFootprintTest)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"tests/test_boia_p0_safety.py\", line 85, in test_source_box_and_orientation_independent_default\n    self.assertGreaterEqual(params().r_hard, radius)\nAssertionError: 0.14 not greater than or equal to 0.20199009876724155\n\n======================================================================\nFAIL: test_stop_tail_retains_full_footprint_at_all_six_speeds (__main__.PhysicalFootprintTest) (speed=0.0)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"tests/test_boia_p0_safety.py\", line 133, in test_stop_tail_retains_full_footprint_at_all_six_speeds\n    self.assertFalse(bool(stop))\nAssertionError: True is not false\n\n======================================================================\nFAIL: test_stop_tail_retains_full_footprint_at_all_six_speeds (__main__.PhysicalFootprintTest) (speed=0.6)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"tests/test_boia_p0_safety.py\", line 133, in test_stop_tail_retains_full_footprint_at_all_six_speeds\n    self.assertFalse(bool(stop))\nAssertionError: True is not false\n\n======================================================================\nFAIL: test_stop_tail_retains_full_footprint_at_all_six_speeds (__main__.PhysicalFootprintTest) (speed=1.2)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"tests/test_boia_p0_safety.py\", line 133, in test_stop_tail_retains_full_footprint_at_all_six_speeds\n    self.assertFalse(bool(stop))\nAssertionError: True is not false\n\n======================================================================\nFAIL: test_stop_tail_retains_full_footprint_at_all_six_speeds (__main__.PhysicalFootprintTest) (speed=2.0)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"tests/test_boia_p0_safety.py\", line 133, in test_stop_tail_retains_full_footprint_at_all_six_speeds\n    self.assertFalse(bool(stop))\nAssertionError: True is not false\n\n======================================================================\nFAIL: test_stop_tail_retains_full_footprint_at_all_six_speeds (__main__.PhysicalFootprintTest) (speed=2.5)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"tests/test_boia_p0_safety.py\", line 133, in test_stop_tail_retains_full_footprint_at_all_six_speeds\n    self.assertFalse(bool(stop))\nAssertionError: True is not false\n\n======================================================================\nFAIL: test_stop_tail_retains_full_footprint_at_all_six_speeds (__main__.PhysicalFootprintTest) (speed=3.52)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"tests/test_boia_p0_safety.py\", line 133, in test_stop_tail_retains_full_footprint_at_all_six_speeds\n    self.assertFalse(bool(stop))\nAssertionError: True is not false\n\n======================================================================\nFAIL: test_tilted_corner_collision_all_six_speeds (__main__.PhysicalFootprintTest) (speed=0.0)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"tests/test_boia_p0_safety.py\", line 105, in test_tilted_corner_collision_all_six_speeds\n    self.assertFalse(bool(hard))\nAssertionError: True is not false\n\n======================================================================\nFAIL: test_tilted_corner_collision_all_six_speeds (__main__.PhysicalFootprintTest) (speed=0.6)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"tests/test_boia_p0_safety.py\", line 105, in test_tilted_corner_collision_all_six_speeds\n    self.assertFalse(bool(hard))\nAssertionError: True is not false\n\n----------------------------------------------------------------------\nRan 15 tests in 0.111s\n\nFAILED (failures=19)\n"
+  },
+  "pre_tail_fix_regression": {
+    "phase": "AFTER_C01_BEFORE_D01",
+    "source_sha256": {
+      "motar_eval/boia/safety.py": "3b2a25a0138ff240affddb47f384771ab50b2c7ce830b3e8a2a569f94adf4c97",
+      "motar_eval/boia/types.py": "7cd7dcf2fcb34a94e91f5bb2f5dae6139182a74d8393fb0b373b7f0edae9db65",
+      "motar_eval/boia/dynamics.py": "9ef55b71734100cfc48b70e35da98f4a4764adf1821fa6997a8bab30683a68ac"
+    },
+    "test_sha256": "b9291c08f5666edb915fc803002ddaf06962384a989098d075959de8e43ff7c2",
+    "returncode": 1,
+    "stdout": "",
+    "stderr": "test_cap_floor_is_not_a_minimum_commanded_velocity (__main__.BrakingInterpretationTest) ... ok\ntest_empirical_helper_reaction_once_and_telemetry_is_a_distinct_model (__main__.BrakingInterpretationTest) ... ok\ntest_low_speed_stop_tail_cannot_contradict_own_zero_command_response (__main__.BrakingInterpretationTest) ... test_saturated_braking_tail_is_screened_against_independent_scalar_steps (__main__.BrakingInterpretationTest) ... FAIL\ntest_stop_envelope_reaction_is_once_in_each_branch_before_maximum (__main__.BrakingInterpretationTest) ... test_stopping_surrogate_requires_valid_parameters_and_resolved_substeps (__main__.BrakingInterpretationTest) ... test_zero_command_is_not_an_instantaneous_stop_and_prior_errors_remain (__main__.BrakingInterpretationTest) ... ok\ntest_configured_smaller_radii_cannot_shrink_physical_floor (__main__.PhysicalFootprintTest) ... ok\ntest_independent_transformed_vertices_are_bounded_at_arbitrary_attitudes (__main__.PhysicalFootprintTest) ... ok\ntest_known_free_centerline_does_not_certify_body_containment (__main__.PhysicalFootprintTest) ... ok\ntest_larger_declared_radius_and_low_speed_gap_remain_meaningful (__main__.PhysicalFootprintTest) ... ok\ntest_level_yaw_corner_inside_box_is_not_clear_at_rest (__main__.PhysicalFootprintTest) ... ok\ntest_negative_delay_cannot_undo_the_physical_floor (__main__.PhysicalFootprintTest) ... ok\ntest_old_xy_radius_is_insufficient_even_when_explicitly_configured (__main__.PhysicalFootprintTest) ... ok\ntest_physical_floor_plus_existing_delay_at_all_six_speeds (__main__.PhysicalFootprintTest) ... ok\ntest_purity_float32_float64_and_no_random_state_changes (__main__.PhysicalFootprintTest) ... ok\ntest_source_box_and_orientation_independent_default (__main__.PhysicalFootprintTest) ... ok\ntest_stop_tail_retains_full_footprint_at_all_six_speeds (__main__.PhysicalFootprintTest) ... ok\ntest_tilted_corner_collision_all_six_speeds (__main__.PhysicalFootprintTest) ... ok\n\n======================================================================\nFAIL: test_low_speed_stop_tail_cannot_contradict_own_zero_command_response (__main__.BrakingInterpretationTest) (speed=0.6)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"tests/test_boia_p0_safety.py\", line 202, in test_low_speed_stop_tail_cannot_contradict_own_zero_command_response\n    self.assertFalse(bool(stop))\nAssertionError: True is not false\n\n======================================================================\nFAIL: test_low_speed_stop_tail_cannot_contradict_own_zero_command_response (__main__.BrakingInterpretationTest) (speed=1.2)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"tests/test_boia_p0_safety.py\", line 202, in test_low_speed_stop_tail_cannot_contradict_own_zero_command_response\n    self.assertFalse(bool(stop))\nAssertionError: True is not false\n\n======================================================================\nFAIL: test_saturated_braking_tail_is_screened_against_independent_scalar_steps (__main__.BrakingInterpretationTest)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"tests/test_boia_p0_safety.py\", line 216, in test_saturated_braking_tail_is_screened_against_independent_scalar_steps\n    self.assertFalse(bool(stop))\nAssertionError: True is not false\n\n======================================================================\nFAIL: test_stop_envelope_reaction_is_once_in_each_branch_before_maximum (__main__.BrakingInterpretationTest) (speed=0.6)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"tests/test_boia_p0_safety.py\", line 228, in test_stop_envelope_reaction_is_once_in_each_branch_before_maximum\n    self.assertEqual(bool(stop), expected)\nAssertionError: True != False\n\n======================================================================\nFAIL: test_stop_envelope_reaction_is_once_in_each_branch_before_maximum (__main__.BrakingInterpretationTest) (speed=1.2)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"tests/test_boia_p0_safety.py\", line 228, in test_stop_envelope_reaction_is_once_in_each_branch_before_maximum\n    self.assertEqual(bool(stop), expected)\nAssertionError: True != False\n\n======================================================================\nFAIL: test_stopping_surrogate_requires_valid_parameters_and_resolved_substeps (__main__.BrakingInterpretationTest) (kwargs={'tau_v': 0.0})\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"tests/test_boia_p0_safety.py\", line 234, in test_stopping_surrogate_requires_valid_parameters_and_resolved_substeps\n    evaluate((2., 0.), .6, params(**kwargs))\nAssertionError: ValueError not raised\n\n======================================================================\nFAIL: test_stopping_surrogate_requires_valid_parameters_and_resolved_substeps (__main__.BrakingInterpretationTest) (kwargs={'tau_v': nan})\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"tests/test_boia_p0_safety.py\", line 234, in test_stopping_surrogate_requires_valid_parameters_and_resolved_substeps\n    evaluate((2., 0.), .6, params(**kwargs))\nAssertionError: ValueError not raised\n\n======================================================================\nFAIL: test_stopping_surrogate_requires_valid_parameters_and_resolved_substeps (__main__.BrakingInterpretationTest) (kwargs={'a_max': 0.0})\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"tests/test_boia_p0_safety.py\", line 234, in test_stopping_surrogate_requires_valid_parameters_and_resolved_substeps\n    evaluate((2., 0.), .6, params(**kwargs))\nAssertionError: ValueError not raised\n\n======================================================================\nFAIL: test_stopping_surrogate_requires_valid_parameters_and_resolved_substeps (__main__.BrakingInterpretationTest) (kwargs={'a_max': inf})\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"tests/test_boia_p0_safety.py\", line 234, in test_stopping_surrogate_requires_valid_parameters_and_resolved_substeps\n    evaluate((2., 0.), .6, params(**kwargs))\nAssertionError: ValueError not raised\n\n======================================================================\nFAIL: test_stopping_surrogate_requires_valid_parameters_and_resolved_substeps (__main__.BrakingInterpretationTest) (kwargs={'dt': 0.5})\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"tests/test_boia_p0_safety.py\", line 234, in test_stopping_surrogate_requires_valid_parameters_and_resolved_substeps\n    evaluate((2., 0.), .6, params(**kwargs))\nAssertionError: ValueError not raised\n\n----------------------------------------------------------------------\nRan 19 tests in 0.133s\n\nFAILED (failures=10)\n"
+  },
+  "post_regression": [
+    {
+      "test_file": "test_boia_p0_safety.py",
+      "command": [
+        "/home/fair/miniconda3/envs/aerialgym/bin/python",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-p",
+        "test_boia_p0_safety.py",
+        "-v"
+      ],
+      "returncode": 0,
+      "tests": 19,
+      "unittest_seconds": 0.16,
+      "wall_seconds": 0.897005558013916,
+      "stdout": "",
+      "stderr": "test_cap_floor_is_not_a_minimum_commanded_velocity (test_boia_p0_safety.BrakingInterpretationTest) ... ok\ntest_empirical_helper_reaction_once_and_telemetry_is_a_distinct_model (test_boia_p0_safety.BrakingInterpretationTest) ... ok\ntest_low_speed_stop_tail_cannot_contradict_own_zero_command_response (test_boia_p0_safety.BrakingInterpretationTest) ... ok\ntest_saturated_braking_tail_is_screened_against_independent_scalar_steps (test_boia_p0_safety.BrakingInterpretationTest) ... ok\ntest_stop_envelope_reaction_is_once_in_each_branch_before_maximum (test_boia_p0_safety.BrakingInterpretationTest) ... ok\ntest_stopping_surrogate_requires_valid_parameters_and_resolved_substeps (test_boia_p0_safety.BrakingInterpretationTest) ... ok\ntest_zero_command_is_not_an_instantaneous_stop_and_prior_errors_remain (test_boia_p0_safety.BrakingInterpretationTest) ... ok\ntest_configured_smaller_radii_cannot_shrink_physical_floor (test_boia_p0_safety.PhysicalFootprintTest) ... ok\ntest_independent_transformed_vertices_are_bounded_at_arbitrary_attitudes (test_boia_p0_safety.PhysicalFootprintTest) ... ok\ntest_known_free_centerline_does_not_certify_body_containment (test_boia_p0_safety.PhysicalFootprintTest) ... ok\ntest_larger_declared_radius_and_low_speed_gap_remain_meaningful (test_boia_p0_safety.PhysicalFootprintTest) ... ok\ntest_level_yaw_corner_inside_box_is_not_clear_at_rest (test_boia_p0_safety.PhysicalFootprintTest) ... ok\ntest_negative_delay_cannot_undo_the_physical_floor (test_boia_p0_safety.PhysicalFootprintTest) ... ok\ntest_old_xy_radius_is_insufficient_even_when_explicitly_configured (test_boia_p0_safety.PhysicalFootprintTest) ... ok\ntest_physical_floor_plus_existing_delay_at_all_six_speeds (test_boia_p0_safety.PhysicalFootprintTest) ... ok\ntest_purity_float32_float64_and_no_random_state_changes (test_boia_p0_safety.PhysicalFootprintTest) ... ok\ntest_source_box_and_orientation_independent_default (test_boia_p0_safety.PhysicalFootprintTest) ... ok\ntest_stop_tail_retains_full_footprint_at_all_six_speeds (test_boia_p0_safety.PhysicalFootprintTest) ... ok\ntest_tilted_corner_collision_all_six_speeds (test_boia_p0_safety.PhysicalFootprintTest) ... ok\n\n----------------------------------------------------------------------\nRan 19 tests in 0.160s\n\nOK\n"
+    },
+    {
+      "test_file": "test_boia_candidates_safety.py",
+      "command": [
+        "/home/fair/miniconda3/envs/aerialgym/bin/python",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-p",
+        "test_boia_candidates_safety.py",
+        "-v"
+      ],
+      "returncode": 0,
+      "tests": 16,
+      "unittest_seconds": 0.042,
+      "wall_seconds": 0.778370050014928,
+      "stdout": "",
+      "stderr": "test_arc_first_clear_offset_uses_independent_line_distance_fixture (test_boia_candidates_safety.CandidateTest) ... ok\ntest_arc_no_clear_path_returns_zero_offsets_with_false_diagnostics (test_boia_candidates_safety.CandidateTest) ... ok\ntest_coincident_active_belief_is_finite_and_explicitly_abstains (test_boia_candidates_safety.CandidateTest) ... ok\ntest_inactive_nan_belief_uses_velocity_then_yaw_without_virtual_goal (test_boia_candidates_safety.CandidateTest) ... ok\ntest_inputs_are_not_mutated_and_global_rng_is_unchanged (test_boia_candidates_safety.CandidateTest) ... ok\ntest_invalid_f_is_rejected_instead_of_silently_clipped (test_boia_candidates_safety.CandidateTest) ... ok\ntest_lattice_speeds_bearings_and_frame_rotation_independently (test_boia_candidates_safety.CandidateTest) ... ok\ntest_twenty_families_and_exact_policy_f_preservation (test_boia_candidates_safety.CandidateTest) ... ok\ntest_narrow_gap_accepts_low_speed_but_rejects_latency_margin_at_high_speed (test_boia_candidates_safety.SafetyTest) ... ok\ntest_public_shapes_multiple_candidates_horizons_and_cpu_purity (test_boia_candidates_safety.SafetyTest) ... ok\ntest_static_pure_import_and_distance_contract (test_boia_candidates_safety.SafetyTest) ... ok\ntest_stop_is_exact_segment_not_endpoint_test (test_boia_candidates_safety.SafetyTest) ... ok\ntest_stop_two_mps_point_eight_ahead_rejected_and_reaction_added_once (test_boia_candidates_safety.SafetyTest) ... ok\ntest_swept_crossing_rejected_even_when_substep_endpoints_are_clear (test_boia_candidates_safety.SafetyTest) ... ok\ntest_unknown_blocks_even_when_visibility_ablation_is_off (test_boia_candidates_safety.SafetyTest) ... ok\ntest_zero_velocity_empty_scan_and_invalid_points_are_well_defined (test_boia_candidates_safety.SafetyTest) ... ok\n\n----------------------------------------------------------------------\nRan 16 tests in 0.042s\n\nOK\n"
+    },
+    {
+      "test_file": "test_boia_dynamics.py",
+      "command": [
+        "/home/fair/miniconda3/envs/aerialgym/bin/python",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-p",
+        "test_boia_dynamics.py",
+        "-v"
+      ],
+      "returncode": 0,
+      "tests": 11,
+      "unittest_seconds": 2.963,
+      "wall_seconds": 3.711326736956835,
+      "stdout": "",
+      "stderr": "test_knots_interpolation_and_reaction_exactly_once (test_boia_dynamics.BrakingTableTest) ... ok\ntest_piecewise_extension_continuity_and_invalid_table (test_boia_dynamics.BrakingTableTest) ... ok\ntest_moved_pose_point_corridor_is_explicitly_geometry_not_new_scan (test_boia_dynamics.GovernorTest) ... ok\ntest_original_normal_import_chain_is_not_executed (test_boia_dynamics.GovernorTest) ... ok\ntest_policy_f_values_are_declared_and_riskcap_does_not_force_braking (test_boia_dynamics.GovernorTest) ... ok\ntest_raw_corridor_and_riskcap_bitwise_against_original_subprocess (test_boia_dynamics.GovernorTest) ... ok\ntest_clip_acceleration_bound_and_altitude_zero_authority (test_boia_dynamics.RolloutTest) ... ok\ntest_current_yaw_rerotation_matches_independent_complex_closed_form (test_boia_dynamics.RolloutTest) ... ok\ntest_prior_braking_target_miss_is_limited_validity_not_retuned (test_boia_dynamics.RolloutTest) ... ok\ntest_rollout_determinism_batch_and_rng_noninterference (test_boia_dynamics.RolloutTest) ... ok\ntest_yaw_lag_requires_explicit_rate_and_matches_scalar_solution (test_boia_dynamics.RolloutTest) ... ok\n\n----------------------------------------------------------------------\nRan 11 tests in 2.963s\n\nOK\n"
+    }
+  ],
+  "reference_bindings": [
+    {
+      "path": "resources/robots/quad/quad_navrl_collide.urdf",
+      "base_sha256": "ad9a3110037cb01f94caa11054e367e557e9089b4edd520d0aa59b78578988be",
+      "current_sha256": "ad9a3110037cb01f94caa11054e367e557e9089b4edd520d0aa59b78578988be",
+      "unchanged_from_base": true
+    },
+    {
+      "path": "aerial_gym/config/robot_config/navrl_quad_config.py",
+      "base_sha256": "a76f8a3dd1ce7a39614a989ecf3b6a493e7703f2f4cbaa7f77132a9e6322223e",
+      "current_sha256": "a76f8a3dd1ce7a39614a989ecf3b6a493e7703f2f4cbaa7f77132a9e6322223e",
+      "unchanged_from_base": true
+    },
+    {
+      "path": "aerial_gym/config/sim_config/base_sim_config.py",
+      "base_sha256": "a555a9c3cd4908277ffec78b5000a03bcec5f03608c9204c338a8f5405adad3a",
+      "current_sha256": "a555a9c3cd4908277ffec78b5000a03bcec5f03608c9204c338a8f5405adad3a",
+      "unchanged_from_base": true
+    },
+    {
+      "path": "aerial_gym/config/env_config/navrl_bars_env.py",
+      "base_sha256": "990cc63edfd635d4b3461bebd98d9981d23b9eb6e44f027f7c295e80530848f8",
+      "current_sha256": "990cc63edfd635d4b3461bebd98d9981d23b9eb6e44f027f7c295e80530848f8",
+      "unchanged_from_base": true
+    },
+    {
+      "path": "aerial_gym/config/controller_config/lee_controller_config.py",
+      "base_sha256": "d09ce59e3a9f621f44d21597739feb51e46ad4bb4aea46f5630a6b990803b9d9",
+      "current_sha256": "d09ce59e3a9f621f44d21597739feb51e46ad4bb4aea46f5630a6b990803b9d9",
+      "unchanged_from_base": true
+    },
+    {
+      "path": "aerial_gym/config/controller_config/lee_controller_config_navrl.py",
+      "base_sha256": "17b0b86c045d3d901aae6a0fa5546a2aeee2d4721e1b350754020401dba7adf2",
+      "current_sha256": "17b0b86c045d3d901aae6a0fa5546a2aeee2d4721e1b350754020401dba7adf2",
+      "unchanged_from_base": true
+    },
+    {
+      "path": "aerial_gym/control/controllers/velocity_control.py",
+      "base_sha256": "fd01a61d3f4e2d49087763d2c3559df13fdb4a377f20ef9e057e84a9bdbfcec8",
+      "current_sha256": "fd01a61d3f4e2d49087763d2c3559df13fdb4a377f20ef9e057e84a9bdbfcec8",
+      "unchanged_from_base": true
+    },
+    {
+      "path": "aerial_gym/control/controllers/base_lee_controller.py",
+      "base_sha256": "5722b0111a735ac4273fc7087ab18327ff8abe53e7a8d65df39bfa042d23cb14",
+      "current_sha256": "5722b0111a735ac4273fc7087ab18327ff8abe53e7a8d65df39bfa042d23cb14",
+      "unchanged_from_base": true
+    },
+    {
+      "path": "aerial_gym/control/motor_model.py",
+      "base_sha256": "1463e22cbeac24474755d1ece5b7757f52af25c67062f26701f503aeeb5f79c3",
+      "current_sha256": "1463e22cbeac24474755d1ece5b7757f52af25c67062f26701f503aeeb5f79c3",
+      "unchanged_from_base": true
+    },
+    {
+      "path": "aerial_gym/config/robot_config/base_quad_config.py",
+      "base_sha256": "7fd5ecab0f2264d3fd6a06c2d05c5ec1f56d4b9a55a48659fc61425e74559975",
+      "current_sha256": "7fd5ecab0f2264d3fd6a06c2d05c5ec1f56d4b9a55a48659fc61425e74559975",
+      "unchanged_from_base": true
+    },
+    {
+      "path": "aerial_gym/task/navrl_task/speed_governor.py",
+      "base_sha256": "fe00c84c3b9a4f62518445c134ee9b0b3eb085486e82feddfeb0ea736ebb6847",
+      "current_sha256": "fe00c84c3b9a4f62518445c134ee9b0b3eb085486e82feddfeb0ea736ebb6847",
+      "unchanged_from_base": true
+    },
+    {
+      "path": "docs/evidence/eq1d_qualification_2026-10-18/eq1d_analysis.json",
+      "base_sha256": "c33b034a3185c8ea734362c80c69b0a4734d84b0eccc5b6b4c05aebcefbe4e39",
+      "current_sha256": "c33b034a3185c8ea734362c80c69b0a4734d84b0eccc5b6b4c05aebcefbe4e39",
+      "unchanged_from_base": true
+    },
+    {
+      "path": "docs/evidence/eq1d_qualification_2026-10-18/REPORT.md",
+      "base_sha256": "2f7ac23e17d68dcbc0bd3cc74ceea720b741f575fb1f174b54675201a29e1b3f",
+      "current_sha256": "2f7ac23e17d68dcbc0bd3cc74ceea720b741f575fb1f174b54675201a29e1b3f",
+      "unchanged_from_base": true
+    },
+    {
+      "path": "docs/research/occlusion_algorithm_v1/notes/M2_dynamics_contract.md",
+      "base_sha256": "fbe54de3477f31af8a86239ce60147a779f3e0246d9f9dda24a7584d60e9fd0a",
+      "current_sha256": "c82af4b4c965cf89d4689a6f2d6e18f3ba7d979e9cf5a873899186828d4d36dc",
+      "unchanged_from_base": false,
+      "change_explanation": "Coordinated parent-owned explicit 2026-10-20 wording banner, preserving original audit below; amendment14 supersedes cap-floor overstatement. This subagent did not edit the file.",
+      "historical_body_preserved": true
+    }
+  ],
+  "implementation_bindings": {
+    "motar_eval/boia/types.py": "7cd7dcf2fcb34a94e91f5bb2f5dae6139182a74d8393fb0b373b7f0edae9db65",
+    "motar_eval/boia/safety.py": "0d2f200291880a3f0bb01374494740693e059d5245d1d3c065ebd605304c8da9",
+    "motar_eval/boia/dynamics.py": "9ef55b71734100cfc48b70e35da98f4a4764adf1821fa6997a8bab30683a68ac",
+    "tests/test_boia_p0_safety.py": "b9291c08f5666edb915fc803002ddaf06962384a989098d075959de8e43ff7c2"
+  },
+  "preservation": {
+    "all_bound_reference_files_unchanged": false,
+    "production_changed": false,
+    "dynamics_changed": false,
+    "gpu_or_simulator_runs": 0,
+    "raw_writes": 0,
+    "checkpoint_writes": 0,
+    "commits_by_this_agent": 0,
+    "pushes_by_this_agent": 0,
+    "raw_full_integrity_rehash": "NOT_RUN_BY_THIS_SUBAUDIT; parent owns inventory",
+    "disk_floor_bytes": 3000000000,
+    "immutable_production_and_evidence_references_unchanged": true
+  }
+}

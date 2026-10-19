@@ -1,13 +1,16 @@
-"""07 §7 [ADAPTED/NEW]: sensed-point swept clearance and empirical stopping screen.
+"""07 §7 [ADAPTED/NEW], P0-C amendment: point clearance and stopping screen.
 
 Unknown space always blocks safety, independently of the visibility-ablation setting.
+Free-set containment certifies the centre segments only, not the whole body envelope.
 This screen does not guarantee physical collision freedom or calibrated false alarms.
 """
+import math
+
 import torch
 
 from .dynamics import braking_distance
 from .geometry import seg_point_dist, segment_in_known_free
-from .types import FreeContext, Rollout
+from .types import FreeContext, Rollout, VERIFIED_COLLISION_RADIUS_M
 
 
 def _segment_clearance(a, b, points, valid):
@@ -18,21 +21,48 @@ def _segment_clearance(a, b, points, valid):
     return torch.where(mask, distance, torch.full_like(distance, float("inf"))).amin(-1)
 
 
+def _stopping_envelope(speed, params, substeps):
+    """P0-D: cover both the empirical table and the planner's own zero-command model.
+
+    For dv/dt=-min(v/tau,a), the continuous distance is tau*v plus a constant-
+    deceleration prefix relu(v-a*tau)^2/(2a). It upper-bounds U4's semi-implicit
+    discretization when dt/substeps <= tau. Add reaction ONCE per alternative,
+    then take their maximum. This is internal consistency, not a real-plant bound.
+    """
+    tau, accel, dt = float(params.tau_v), float(params.a_max), float(params.dt)
+    if any(not math.isfinite(x) or x <= 0 for x in (tau, accel, dt)):
+        raise ValueError("stopping response, acceleration and decision interval must be finite and positive")
+    if dt / substeps > tau:
+        raise ValueError("stopping discretization must resolve the first-order response")
+    table_total, _ = braking_distance(speed, t_react=params.t_react)
+    model_distance = tau * speed + (speed - accel * tau).clamp(min=0).square() / (2 * accel)
+    return torch.maximum(table_total, speed * params.t_react + model_distance)
+
+
 def screen(roll, pts_obs, valid_obs, free_ctx, params):
     """Return hard_ok/stop_ok (N,K), clr_min (N,K,H), soft deficit (N,K).
 
     Every consecutive rollout substep is screened as a straight swept segment, with
-    the larger endpoint speed for r_hard+speed*t_det. U4's ``initial_pos`` and
+    the larger endpoint speed for body_radius+speed*t_det. body_radius is at least
+    the verified collision-box 3-D half diagonal and both configured radii, even
+    when the caller requests a smaller value. This is a physical geometry floor;
+    position/control/sensor uncertainty bounds remain unqualified. U4's ``initial_pos`` and
     ``initial_vel`` diagnostics are required for the initial-to-first-substep segment;
     no starting pose or speed is invented.
     clr_min is each decision interval's minimum swept sensed-point clearance.
     clr_soft_cost is the mean deficit in METRES below r_body+m_s (.398 m), diagnostic
     only. It is NOT §9's normalized d_soft=1 m cost, which the cost module computes.
-    The endpoint stop uses braking_distance's reaction-inclusive distance ONCE, plus
-    exact segment free-set containment and r_hard point clearance. Table extrapolation
-    has the same limited validity as U4; the helper's warning remains available there.
+    The endpoint stop takes the maximum of the reaction-inclusive empirical table
+    and a continuous upper bound on U4's zero-command response, with reaction ONCE
+    in each alternative. Centre-segment containment and body_radius point clearance
+    still cannot certify the real plant or full-body containment in unknown space.
+    Table extrapolation has U4's limited validity; its warning remains available there.
     """
     assert isinstance(roll, Rollout) and isinstance(free_ctx, FreeContext)
+    physical_terms = (float(params.r_hard), float(params.r_body), float(params.t_det))
+    if any(not math.isfinite(x) or x < 0 for x in physical_terms):
+        raise ValueError("physical radii and detection-delay allowance must be finite and nonnegative")
+    body_radius = max(physical_terms[:2] + (VERIFIED_COLLISION_RADIUS_M,))
     assert roll.pos.ndim == 5 and roll.pos.shape[-1] == 3 and roll.vel.shape == roll.pos.shape
     n, k, h, sub, _ = roll.pos.shape
     assert pts_obs.ndim == 3 and pts_obs.shape[0] == n and pts_obs.shape[-1] == 2
@@ -49,7 +79,7 @@ def screen(roll, pts_obs, valid_obs, free_ctx, params):
     assert initial_vel.shape == (n, k, 3) and bool(torch.isfinite(initial_vel).all())
     initial_speed = (initial_vel ** 2).sum(-1).sqrt()
     previous_speed = torch.cat((initial_speed[:, :, None], speeds[:, :, :-1]), 2)
-    threshold = params.r_hard + torch.maximum(speeds, previous_speed) * params.t_det
+    threshold = body_radius + torch.maximum(speeds, previous_speed) * params.t_det
     start, end = previous.reshape(n, -1, 2), points.reshape(n, -1, 2)
     clearances = roll.pos.new_empty((n, k * h * sub))
     free = torch.empty(clearances.shape, dtype=torch.bool, device=roll.pos.device)
@@ -64,9 +94,9 @@ def screen(roll, pts_obs, valid_obs, free_ctx, params):
     final_pos, final_vel = roll.pos[:, :, -1, -1], roll.vel[:, :, -1, -1]
     assert bool((final_vel[..., 2] == 0).all()), "the stopping model has no vertical authority"
     speed = (final_vel[..., :2] ** 2).sum(-1).sqrt()
-    distance, _ = braking_distance(speed, t_react=params.t_react)
+    distance = _stopping_envelope(speed, params, sub)
     direction = final_vel[..., :2] / speed.clamp(min=torch.finfo(speed.dtype).tiny)[..., None]
     stop_end = final_pos[..., :2] + distance[..., None] * direction
-    stop_ok = ((_segment_clearance(final_pos[..., :2], stop_end, pts_obs, valid_obs) >= params.r_hard)
+    stop_ok = ((_segment_clearance(final_pos[..., :2], stop_end, pts_obs, valid_obs) >= body_radius)
                & segment_in_known_free(final_pos[..., :2], stop_end, free_ctx))
     return hard_ok, stop_ok, clr_min, clr_soft_cost

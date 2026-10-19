@@ -1,9 +1,16 @@
 """07 §§1,6,14 [ADAPTED/NEW]: immutable records and uncalibrated design priors."""
 import math
 from dataclasses import dataclass
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Final, Optional, Tuple
 
 import torch
+
+
+# resources/robots/quad/quad_navrl_collide.urdf:13-20; NavRLQuadCfg:21-27.
+# The only collision box is .28 x .28 x .08 m, centred on base_link. Its 3-D
+# half diagonal bounds its horizontal projection at ANY attitude, unlike the
+# .19799 m level-XY radius. This is geometry only, not an uncertainty allowance.
+VERIFIED_COLLISION_RADIUS_M: Final[float] = math.sqrt(.14 ** 2 + .14 ** 2 + .04 ** 2)
 
 
 @dataclass(frozen=True)
@@ -19,8 +26,8 @@ class BoiaParams:
     H_pre: int = 5
     sigma2_lost: float = 1.0
     n_lost: int = 20
-    r_hard: float = 0.14
-    r_body: float = 0.198
+    r_hard: float = VERIFIED_COLLISION_RADIUS_M
+    r_body: float = 0.198  # Legacy level-XY soft prior; NOT a full-attitude body bound.
     m_s: float = 0.20
     t_det: float = 0.09
     t_react: float = 0.1
