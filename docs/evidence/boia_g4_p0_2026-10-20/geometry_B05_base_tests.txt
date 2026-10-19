@@ -1,0 +1,197 @@
+test_invalid_context_row_never_certifies_point_or_segment (p0_geometry_tests.ContextInputCounterexamples) ... test_nonfinite_or_nonpositive_far_never_certifies_free (p0_geometry_tests.ContextInputCounterexamples) ... 
+======================================================================
+FAIL: test_invalid_context_row_never_certifies_point_or_segment (p0_geometry_tests.ContextInputCounterexamples) (method='point', field='radius', value=nan)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_p0_geometry.py", line 153, in test_invalid_context_row_never_certifies_point_or_segment
+    self.assertTrue(torch.equal(actual, expected), str(actual))
+AssertionError: False is not true : tensor([[True, True],
+        [True, True]])
+
+======================================================================
+FAIL: test_invalid_context_row_never_certifies_point_or_segment (p0_geometry_tests.ContextInputCounterexamples) (method='segment', field='radius', value=nan)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_p0_geometry.py", line 153, in test_invalid_context_row_never_certifies_point_or_segment
+    self.assertTrue(torch.equal(actual, expected), str(actual))
+AssertionError: False is not true : tensor([[True, True],
+        [True, True]])
+
+======================================================================
+FAIL: test_invalid_context_row_never_certifies_point_or_segment (p0_geometry_tests.ContextInputCounterexamples) (method='point', field='radius', value=inf)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_p0_geometry.py", line 153, in test_invalid_context_row_never_certifies_point_or_segment
+    self.assertTrue(torch.equal(actual, expected), str(actual))
+AssertionError: False is not true : tensor([[True, True],
+        [True, True]])
+
+======================================================================
+FAIL: test_invalid_context_row_never_certifies_point_or_segment (p0_geometry_tests.ContextInputCounterexamples) (method='segment', field='radius', value=inf)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_p0_geometry.py", line 153, in test_invalid_context_row_never_certifies_point_or_segment
+    self.assertTrue(torch.equal(actual, expected), str(actual))
+AssertionError: False is not true : tensor([[True, True],
+        [True, True]])
+
+======================================================================
+FAIL: test_invalid_context_row_never_certifies_point_or_segment (p0_geometry_tests.ContextInputCounterexamples) (method='point', field='radius', value=-1.0)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_p0_geometry.py", line 153, in test_invalid_context_row_never_certifies_point_or_segment
+    self.assertTrue(torch.equal(actual, expected), str(actual))
+AssertionError: False is not true : tensor([[True, True],
+        [True, True]])
+
+======================================================================
+FAIL: test_invalid_context_row_never_certifies_point_or_segment (p0_geometry_tests.ContextInputCounterexamples) (method='segment', field='radius', value=-1.0)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_p0_geometry.py", line 153, in test_invalid_context_row_never_certifies_point_or_segment
+    self.assertTrue(torch.equal(actual, expected), str(actual))
+AssertionError: False is not true : tensor([[True, True],
+        [True, True]])
+
+======================================================================
+FAIL: test_invalid_context_row_never_certifies_point_or_segment (p0_geometry_tests.ContextInputCounterexamples) (method='point', field='radius', value=12.01)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_p0_geometry.py", line 153, in test_invalid_context_row_never_certifies_point_or_segment
+    self.assertTrue(torch.equal(actual, expected), str(actual))
+AssertionError: False is not true : tensor([[True, True],
+        [True, True]])
+
+======================================================================
+FAIL: test_invalid_context_row_never_certifies_point_or_segment (p0_geometry_tests.ContextInputCounterexamples) (method='segment', field='radius', value=12.01)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_p0_geometry.py", line 153, in test_invalid_context_row_never_certifies_point_or_segment
+    self.assertTrue(torch.equal(actual, expected), str(actual))
+AssertionError: False is not true : tensor([[True, True],
+        [True, True]])
+
+======================================================================
+FAIL: test_invalid_context_row_never_certifies_point_or_segment (p0_geometry_tests.ContextInputCounterexamples) (method='point', field='yaw', value=nan)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_p0_geometry.py", line 153, in test_invalid_context_row_never_certifies_point_or_segment
+    self.assertTrue(torch.equal(actual, expected), str(actual))
+AssertionError: False is not true : tensor([[True, True],
+        [True, True]])
+
+======================================================================
+FAIL: test_invalid_context_row_never_certifies_point_or_segment (p0_geometry_tests.ContextInputCounterexamples) (method='segment', field='yaw', value=nan)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_p0_geometry.py", line 153, in test_invalid_context_row_never_certifies_point_or_segment
+    self.assertTrue(torch.equal(actual, expected), str(actual))
+AssertionError: False is not true : tensor([[True, True],
+        [True, True]])
+
+======================================================================
+FAIL: test_invalid_context_row_never_certifies_point_or_segment (p0_geometry_tests.ContextInputCounterexamples) (method='point', field='yaw', value=inf)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_p0_geometry.py", line 153, in test_invalid_context_row_never_certifies_point_or_segment
+    self.assertTrue(torch.equal(actual, expected), str(actual))
+AssertionError: False is not true : tensor([[True, True],
+        [True, True]])
+
+======================================================================
+FAIL: test_invalid_context_row_never_certifies_point_or_segment (p0_geometry_tests.ContextInputCounterexamples) (method='segment', field='yaw', value=inf)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_p0_geometry.py", line 153, in test_invalid_context_row_never_certifies_point_or_segment
+    self.assertTrue(torch.equal(actual, expected), str(actual))
+AssertionError: False is not true : tensor([[True, True],
+        [True, True]])
+
+======================================================================
+FAIL: test_invalid_context_row_never_certifies_point_or_segment (p0_geometry_tests.ContextInputCounterexamples) (method='point', field='position_z', value=nan)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_p0_geometry.py", line 153, in test_invalid_context_row_never_certifies_point_or_segment
+    self.assertTrue(torch.equal(actual, expected), str(actual))
+AssertionError: False is not true : tensor([[True, True],
+        [True, True]])
+
+======================================================================
+FAIL: test_invalid_context_row_never_certifies_point_or_segment (p0_geometry_tests.ContextInputCounterexamples) (method='segment', field='position_z', value=nan)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_p0_geometry.py", line 153, in test_invalid_context_row_never_certifies_point_or_segment
+    self.assertTrue(torch.equal(actual, expected), str(actual))
+AssertionError: False is not true : tensor([[True, True],
+        [True, True]])
+
+======================================================================
+FAIL: test_invalid_context_row_never_certifies_point_or_segment (p0_geometry_tests.ContextInputCounterexamples) (method='point', field='position_z', value=inf)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_p0_geometry.py", line 153, in test_invalid_context_row_never_certifies_point_or_segment
+    self.assertTrue(torch.equal(actual, expected), str(actual))
+AssertionError: False is not true : tensor([[True, True],
+        [True, True]])
+
+======================================================================
+FAIL: test_invalid_context_row_never_certifies_point_or_segment (p0_geometry_tests.ContextInputCounterexamples) (method='segment', field='position_z', value=inf)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_p0_geometry.py", line 153, in test_invalid_context_row_never_certifies_point_or_segment
+    self.assertTrue(torch.equal(actual, expected), str(actual))
+AssertionError: False is not true : tensor([[True, True],
+        [True, True]])
+
+======================================================================
+FAIL: test_nonfinite_or_nonpositive_far_never_certifies_free (p0_geometry_tests.ContextInputCounterexamples) (method='point', far=inf)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_p0_geometry.py", line 165, in test_nonfinite_or_nonpositive_far_never_certifies_free
+    self.assertFalse(bool(actual))
+AssertionError: True is not false
+
+======================================================================
+FAIL: test_nonfinite_or_nonpositive_far_never_certifies_free (p0_geometry_tests.ContextInputCounterexamples) (method='segment', far=inf)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_p0_geometry.py", line 165, in test_nonfinite_or_nonpositive_far_never_certifies_free
+    self.assertFalse(bool(actual))
+AssertionError: True is not false
+
+======================================================================
+FAIL: test_nonfinite_or_nonpositive_far_never_certifies_free (p0_geometry_tests.ContextInputCounterexamples) (method='point', far=-1.0)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_p0_geometry.py", line 165, in test_nonfinite_or_nonpositive_far_never_certifies_free
+    self.assertFalse(bool(actual))
+AssertionError: True is not false
+
+======================================================================
+FAIL: test_nonfinite_or_nonpositive_far_never_certifies_free (p0_geometry_tests.ContextInputCounterexamples) (method='segment', far=-1.0)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_p0_geometry.py", line 165, in test_nonfinite_or_nonpositive_far_never_certifies_free
+    self.assertFalse(bool(actual))
+AssertionError: True is not false
+
+======================================================================
+FAIL: test_nonfinite_or_nonpositive_far_never_certifies_free (p0_geometry_tests.ContextInputCounterexamples) (method='point', far=0.0)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_p0_geometry.py", line 165, in test_nonfinite_or_nonpositive_far_never_certifies_free
+    self.assertFalse(bool(actual))
+AssertionError: True is not false
+
+======================================================================
+FAIL: test_nonfinite_or_nonpositive_far_never_certifies_free (p0_geometry_tests.ContextInputCounterexamples) (method='segment', far=0.0)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_p0_geometry.py", line 165, in test_nonfinite_or_nonpositive_far_never_certifies_free
+    self.assertFalse(bool(actual))
+AssertionError: True is not false
+
+----------------------------------------------------------------------
+Ran 2 tests in 0.011s
+
+FAILED (failures=22)

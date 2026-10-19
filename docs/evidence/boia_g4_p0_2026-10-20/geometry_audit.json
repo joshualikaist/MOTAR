@@ -1,0 +1,612 @@
+{
+  "schema": "motar.boia.p0.geometry.audit.v1",
+  "date": "2026-10-20",
+  "base_sha": "13d5f195399bf1a7f1cdf9ddeccd3338d8e34c0f",
+  "scope": "CPU synthetic source qualification only; evaluator module fixes, no production simulator/PolicyF/checkpoint/raw edits",
+  "source": {
+    "geometry": {
+      "path": "motar_eval/boia/geometry.py",
+      "base_sha256": "83f97733ee15148d16f6685c37e7ba9301ae10b707c3a984c6372188081a1133",
+      "current_sha256": "a2bef3da924aa36be5c1ed9346e6ae1192f683bdcb4010d806a1df0fdc06511d",
+      "base": {
+        "lidar_points_xy": [
+          9,
+          18
+        ],
+        "exclude_target": [
+          21,
+          29
+        ],
+        "seg_point_dist": [
+          32,
+          44
+        ],
+        "known_free": [
+          47,
+          54
+        ],
+        "_radii": [
+          57,
+          73
+        ],
+        "point_in_known_free": [
+          76,
+          82
+        ],
+        "segment_in_known_free": [
+          85,
+          111
+        ]
+      },
+      "current": {
+        "lidar_points_xy": [
+          13,
+          22
+        ],
+        "exclude_target": [
+          25,
+          38
+        ],
+        "seg_point_dist": [
+          41,
+          53
+        ],
+        "known_free": [
+          56,
+          83
+        ],
+        "_radii": [
+          86,
+          102
+        ],
+        "_safe_context": [
+          105,
+          121
+        ],
+        "point_in_known_free": [
+          124,
+          131
+        ],
+        "segment_in_known_free": [
+          134,
+          161
+        ]
+      }
+    },
+    "visibility": {
+      "path": "motar_eval/boia/visibility.py",
+      "base_sha256": "1973a5ee411270dcfe0f73c6067773e3a697391cdcffb3f17122a5fd15aa8d62",
+      "current_sha256": "ec0d92ab647390b4bc9fc12fecc5c8416fd73611c357fc59ac7dbc5ec567b9dd",
+      "base": {
+        "fov_mask": [
+          9,
+          14
+        ],
+        "los_clear": [
+          17,
+          27
+        ],
+        "_to_camera": [
+          30,
+          35
+        ],
+        "forecast": [
+          38,
+          64
+        ],
+        "p_any": [
+          67,
+          70
+        ],
+        "_normal_clearance": [
+          73,
+          80
+        ],
+        "bpod_analytic": [
+          83,
+          122
+        ]
+      },
+      "current": {
+        "fov_mask": [
+          9,
+          14
+        ],
+        "los_clear": [
+          17,
+          27
+        ],
+        "_to_camera": [
+          30,
+          35
+        ],
+        "_camera_origin_xy": [
+          38,
+          43
+        ],
+        "forecast": [
+          46,
+          73
+        ],
+        "p_any": [
+          76,
+          79
+        ],
+        "_normal_clearance": [
+          82,
+          89
+        ],
+        "bpod_analytic": [
+          92,
+          132
+        ]
+      }
+    }
+  },
+  "function_coverage": [
+    {
+      "file": "motar_eval/boia/geometry.py",
+      "function": "lidar_points_xy",
+      "base_lines": [
+        9,
+        18
+      ],
+      "current_lines": [
+        13,
+        22
+      ],
+      "inputs": "rho (N,V*B) slant metres; azimuth (B), elevation (V), yaw (N) radians; pos (N,3) world metres",
+      "outputs": "points (N,V*B,2) world XY metres and validity (N,V*B) bool",
+      "assumptions_and_limits": "Yaw-only LiDAR orientation; horizontal distance rho*cos(elevation), finite positive range strictly below .995*far is a measured hit. No surface extent or beam footprint reconstruction.",
+      "time_contract": "No dt advancement; consumes supplied snapshot or H-indexed rollout. Physical timing, sensor delay and latency are not independently calibrated here.",
+      "independent_evidence": "HorizontalFreeCounterexamples.test_invalid_and_nearzero_ranges_cannot_expand_free_space",
+      "qualification": "LIMITED_VALIDITY: synthetic planar contract only; not 3D/sensor realism or end-to-end safety qualification"
+    },
+    {
+      "file": "motar_eval/boia/geometry.py",
+      "function": "exclude_target",
+      "base_lines": [
+        21,
+        29
+      ],
+      "current_lines": [
+        25,
+        38
+      ],
+      "inputs": "points (N,P,2) world XY m; valid (N,P) bool; belief mean (N,2) m and covariance (N,2,2) m^2; target radius m and chi2 dimensionless",
+      "outputs": "independent cloned validity (N,P) bool",
+      "assumptions_and_limits": "ABSTAIN: beliefs cannot prove identity. All previously valid target and obstacle hits are retained. No semantic/GT input; target self-blocking remains.",
+      "time_contract": "No dt advancement; consumes supplied snapshot or H-indexed rollout. Physical timing, sensor delay and latency are not independently calibrated here.",
+      "independent_evidence": "ExclusionCounterexamples: six object-role cases plus mask/order/no-mutation",
+      "qualification": "LIMITED_VALIDITY: synthetic planar contract only; not 3D/sensor realism or end-to-end safety qualification"
+    },
+    {
+      "file": "motar_eval/boia/geometry.py",
+      "function": "seg_point_dist",
+      "base_lines": [
+        32,
+        44
+      ],
+      "current_lines": [
+        41,
+        53
+      ],
+      "inputs": "broadcast segment endpoints (N,*Q,2) world XY m; measured points (N,P,2) world XY m",
+      "outputs": "nonnegative distances (N,*Q,P) m",
+      "assumptions_and_limits": "Euclidean closed-segment projection with clamped [0,1] parameter; zero-length segment reduces to point distance. Assumes finite valid geometry supplied by caller.",
+      "time_contract": "No dt advancement; consumes supplied snapshot or H-indexed rollout. Physical timing, sensor delay and latency are not independently calibrated here.",
+      "independent_evidence": "VisibilityOriginsAndModelLimits.test_segment_distance_zero_length_and_partition_independent_examples; independent Python scalar projection",
+      "qualification": "LIMITED_VALIDITY: synthetic planar contract only; not 3D/sensor realism or end-to-end safety qualification"
+    },
+    {
+      "file": "motar_eval/boia/geometry.py",
+      "function": "known_free",
+      "base_lines": [
+        47,
+        54
+      ],
+      "current_lines": [
+        56,
+        83
+      ],
+      "inputs": "rho (N,V*B) slant m; azimuth (B) rad; pos (N,3) m, yaw (N) rad; far and horizontal margin m; optional elevations (V) rad",
+      "outputs": "scan-relative radii (N,B), horizontal m",
+      "assumptions_and_limits": "Default six-argument contract is explicitly four elevations [20,10,0,-10] deg. Other layouts require elevations. Project rows before row minimum, subtract horizontal margin, then adjacent-bin minimum. Invalid/nonpositive evidence never expands a ray; no target-like far fill. Sparse-sector and 2D assumptions remain.",
+      "time_contract": "No dt advancement; consumes supplied snapshot or H-indexed rollout. Physical timing, sensor delay and latency are not independently calibrated here.",
+      "independent_evidence": "HorizontalFreeCounterexamples: 0,+/-10,+/-20 deg; before-min projection; undeclared layouts; invalid/near-zero returns",
+      "qualification": "LIMITED_VALIDITY: synthetic planar contract only; not 3D/sensor realism or end-to-end safety qualification"
+    },
+    {
+      "file": "motar_eval/boia/geometry.py",
+      "function": "_radii",
+      "base_lines": [
+        57,
+        73
+      ],
+      "current_lines": [
+        86,
+        102
+      ],
+      "inputs": "relative XY queries (N,*Q,2) m; yaw (N) rad; sector radii (N,B) m; angles (B) rad",
+      "outputs": "assigned radii (N,*Q) m",
+      "assumptions_and_limits": "Requires >=3 uniformly decreasing full-circle rays; nearest-ray sectors use smaller adjacent radius exactly at numerical boundary (8 machine eps). Sector interpolation is a model, not physical beam coverage.",
+      "time_contract": "No dt advancement; consumes supplied snapshot or H-indexed rollout. Physical timing, sensor delay and latency are not independently calibrated here.",
+      "independent_evidence": "IndependentHelperChecks.test_sector_helper_uses_minimum_on_boundary",
+      "qualification": "LIMITED_VALIDITY: synthetic planar contract only; not 3D/sensor realism or end-to-end safety qualification"
+    },
+    {
+      "file": "motar_eval/boia/geometry.py",
+      "function": "_safe_context",
+      "base_lines": null,
+      "current_lines": [
+        105,
+        121
+      ],
+      "inputs": "pos (N,3) m; yaw (N) rad; radii (N,B) m; far scalar m",
+      "outputs": "valid env mask (N) and locally sanitized pose/yaw/radii with same shapes",
+      "assumptions_and_limits": "Whole env invalid on any nonfinite position/yaw/radius, negative/above-far radius, or nonfinite/nonpositive far. Local zero values must always be combined with valid mask. No scan mutation.",
+      "time_contract": "No dt advancement; consumes supplied snapshot or H-indexed rollout. Physical timing, sensor delay and latency are not independently calibrated here.",
+      "independent_evidence": "ContextInputCounterexamples: point and segment checked separately with valid second env",
+      "qualification": "LIMITED_VALIDITY: synthetic planar contract only; not 3D/sensor realism or end-to-end safety qualification"
+    },
+    {
+      "file": "motar_eval/boia/geometry.py",
+      "function": "point_in_known_free",
+      "base_lines": [
+        76,
+        82
+      ],
+      "current_lines": [
+        124,
+        131
+      ],
+      "inputs": "queries (N,*Q,2) world XY m and original scan pos/yaw/radii/angles/far",
+      "outputs": "bool membership (N,*Q)",
+      "assumptions_and_limits": "Original LiDAR origin, per-env input guard, finite query, radius bound. Valid finite contexts preserve nearest-sector behavior. Does not certify unobserved inter-ray space or altitude clearance.",
+      "time_contract": "No dt advancement; consumes supplied snapshot or H-indexed rollout. Physical timing, sensor delay and latency are not independently calibrated here.",
+      "independent_evidence": "HorizontalFreeCounterexamples; ContextInputCounterexamples; sparse scan limitation fixture",
+      "qualification": "LIMITED_VALIDITY: synthetic planar contract only; not 3D/sensor realism or end-to-end safety qualification"
+    },
+    {
+      "file": "motar_eval/boia/geometry.py",
+      "function": "segment_in_known_free",
+      "base_lines": [
+        85,
+        111
+      ],
+      "current_lines": [
+        134,
+        161
+      ],
+      "inputs": "broadcast endpoints (N,*Q,2) world XY m; original FreeContext",
+      "outputs": "bool segment membership (N,*Q)",
+      "assumptions_and_limits": "Partitions segment at sector-boundary intersections; radial convexity makes endpoint max sufficient within each sector. Exact for represented 2D radial-sector model only. Zero-length segments and invalid context guard included; no physical 3D guarantee.",
+      "time_contract": "No dt advancement; consumes supplied snapshot or H-indexed rollout. Physical timing, sensor delay and latency are not independently calibrated here.",
+      "independent_evidence": "Scalar segment examples; ContextInputCounterexamples; retained 6/5.8 negative",
+      "qualification": "LIMITED_VALIDITY: synthetic planar contract only; not 3D/sensor realism or end-to-end safety qualification"
+    },
+    {
+      "file": "motar_eval/boia/visibility.py",
+      "function": "fov_mask",
+      "base_lines": [
+        9,
+        14
+      ],
+      "current_lines": [
+        9,
+        14
+      ],
+      "inputs": "camera-frame vectors (...,3) m; hfov/vfov rad; radial max range m",
+      "outputs": "bool (...), forward x and finite vectors",
+      "assumptions_and_limits": "Yaw-only pinhole centre FOV and Euclidean radial range. Exact floating boundaries have no numerical tolerance; silhouette/partial visibility and exposure effects are not represented.",
+      "time_contract": "No dt advancement; consumes supplied snapshot or H-indexed rollout. Physical timing, sensor delay and latency are not independently calibrated here.",
+      "independent_evidence": "IndependentHelperChecks.test_fov_and_camera_transform_use_declared_yaw_frame; interior/exterior margin .01m",
+      "qualification": "LIMITED_VALIDITY: synthetic planar contract only; not 3D/sensor realism or end-to-end safety qualification"
+    },
+    {
+      "file": "motar_eval/boia/visibility.py",
+      "function": "los_clear",
+      "base_lines": [
+        17,
+        27
+      ],
+      "current_lines": [
+        17,
+        27
+      ],
+      "inputs": "explicit start/end (N,*Q,2) world XY m; obstacle points (N,P,2) m; valid mask; disc radius m; optional original FreeContext",
+      "outputs": "bool LOS (N,*Q)",
+      "assumptions_and_limits": "Point-disc segment clearance and optionally original scan-sector coverage. Caller must provide optical origin for camera LOS; no height, silhouette, material/transparency, rolling shutter or new-depth synthesis.",
+      "time_contract": "No dt advancement; consumes supplied snapshot or H-indexed rollout. Physical timing, sensor delay and latency are not independently calibrated here.",
+      "independent_evidence": "Camera-origin scalar oracle and retained 6/5.8 negative; geometry scalar-distance check",
+      "qualification": "LIMITED_VALIDITY: synthetic planar contract only; not 3D/sensor realism or end-to-end safety qualification"
+    },
+    {
+      "file": "motar_eval/boia/visibility.py",
+      "function": "_to_camera",
+      "base_lines": [
+        30,
+        35
+      ],
+      "current_lines": [
+        30,
+        35
+      ],
+      "inputs": "world-relative vectors (N,*Q,3) m; yaw (N,*prefix) rad; declared yaw-frame camera offset m",
+      "outputs": "camera-relative vectors with same shape, m",
+      "assumptions_and_limits": "Inverse yaw rotation then subtract camera offset exactly once. Roll/pitch and full SE(3) calibration are not modeled.",
+      "time_contract": "No dt advancement; consumes supplied snapshot or H-indexed rollout. Physical timing, sensor delay and latency are not independently calibrated here.",
+      "independent_evidence": "IndependentHelperChecks scalar +90deg rotation/offset; rotated LOS fixture",
+      "qualification": "LIMITED_VALIDITY: synthetic planar contract only; not 3D/sensor realism or end-to-end safety qualification"
+    },
+    {
+      "file": "motar_eval/boia/visibility.py",
+      "function": "_camera_origin_xy",
+      "base_lines": null,
+      "current_lines": [
+        38,
+        43
+      ],
+      "inputs": "ego position (N,*Q,3) world m; yaw (N,*Q) rad; camera offset in vehicle yaw frame m",
+      "outputs": "optical origin (N,*Q,2) world XY m",
+      "assumptions_and_limits": "Added minimal B02 fix: p_ego,XY + R_yaw*camera_offset,XY. Vertical offset is not a planar LOS certificate. Does not alter original LiDAR free-set origin.",
+      "time_contract": "No dt advancement; consumes supplied snapshot or H-indexed rollout. Physical timing, sensor delay and latency are not independently calibrated here.",
+      "independent_evidence": "Scalar (0.1,0) optical origin and +90deg rotated counterexample",
+      "qualification": "LIMITED_VALIDITY: synthetic planar contract only; not 3D/sensor realism or end-to-end safety qualification"
+    },
+    {
+      "file": "motar_eval/boia/visibility.py",
+      "function": "forecast",
+      "base_lines": [
+        38,
+        64
+      ],
+      "current_lines": [
+        46,
+        73
+      ],
+      "inputs": "ego rollout (N,K,H,3) world m; yaw (N,K,H) rad; target sample paths (N,M,H,6) [m,m/s]; obstacle points, free context, camera and explicit priors",
+      "outputs": "P_det (N,K,M,H), dimensionless",
+      "assumptions_and_limits": "Uses original static point map, optical-origin LOS, yaw-only camera and projected-area gate. Oracle means this declared geometry model, not simulator GT. Stress p_miss/beta/n0 are explicit uncalibrated priors. Uses params r_T/min_pixels; caller must match camera calibration. No online GT.",
+      "time_contract": "No dt advancement; consumes supplied snapshot or H-indexed rollout. Physical timing, sensor delay and latency are not independently calibrated here.",
+      "independent_evidence": "Base false-clear versus independent scalar oracle; corrected optical origin and no-double-offset tests; retained negative",
+      "qualification": "LIMITED_VALIDITY: synthetic planar contract only; not 3D/sensor realism or end-to-end safety qualification"
+    },
+    {
+      "file": "motar_eval/boia/visibility.py",
+      "function": "p_any",
+      "base_lines": [
+        67,
+        70
+      ],
+      "current_lines": [
+        76,
+        79
+      ],
+      "inputs": "joint sampled detection probabilities (N,K,M,H)",
+      "outputs": "per-candidate probabilities (N,K)",
+      "assumptions_and_limits": "First product/union within each sampled trajectory, then average over M. Within-path Bernoulli draw independence is a stress-model assumption; geometry 0/1 case is deterministic. Not union of separately averaged marginals.",
+      "time_contract": "No dt advancement; consumes supplied snapshot or H-indexed rollout. Physical timing, sensor delay and latency are not independently calibrated here.",
+      "independent_evidence": "IndependentHelperChecks.test_union_is_computed_per_joint_path_before_averaging, hand result .72 versus .66",
+      "qualification": "LIMITED_VALIDITY: synthetic planar contract only; not 3D/sensor realism or end-to-end safety qualification"
+    },
+    {
+      "file": "motar_eval/boia/visibility.py",
+      "function": "_normal_clearance",
+      "base_lines": [
+        73,
+        80
+      ],
+      "current_lines": [
+        82,
+        89
+      ],
+      "inputs": "signed margin g m; gradient dimensionless; symmetric PSD covariance m^2; optional strict boolean boundary",
+      "outputs": "linearized Gaussian clearance probability with g shape",
+      "assumptions_and_limits": "Gradient covariance contraction and scalar normal CDF. Valid PSD covariance is caller contract; numerical negative variance clamped to zero. Deterministic zero-variance boundary uses strict forward gate where requested.",
+      "time_contract": "No dt advancement; consumes supplied snapshot or H-indexed rollout. Physical timing, sensor delay and latency are not independently calibrated here.",
+      "independent_evidence": "IndependentHelperChecks scalar erf oracle at variance4, g=-1/0/1; strict zero-variance case",
+      "qualification": "LIMITED_VALIDITY: synthetic planar contract only; not 3D/sensor realism or end-to-end safety qualification"
+    },
+    {
+      "file": "motar_eval/boia/visibility.py",
+      "function": "bpod_analytic",
+      "base_lines": [
+        83,
+        122
+      ],
+      "current_lines": [
+        92,
+        132
+      ],
+      "inputs": "ego (N,*Q,3) m; yaw (N,*Q) rad; target mean (N,3) m; covariance (N,3,3) m^2; measured points/valid/radius; camera",
+      "outputs": "dimensionless probability (N,*Q)",
+      "assumptions_and_limits": "Fixed-ego, active-margin FOV/size/range linearization and independent point-disc clearance products. B02 corrected optical-origin mean segment and its derivative. Unknown-space probability omitted by design; forecast comparison requires declared model alignment. Uses cam target_radius/min_pixels (caller must match params).",
+      "time_contract": "No dt advancement; consumes supplied snapshot or H-indexed rollout. Physical timing, sensor delay and latency are not independently calibrated here.",
+      "independent_evidence": "Base false-clear versus scalar geometry; corrected zero-covariance optical-origin result; normal-CDF helper oracle",
+      "qualification": "LIMITED_VALIDITY: synthetic planar contract only; not 3D/sensor realism or end-to-end safety qualification"
+    }
+  ],
+  "risks": [
+    {
+      "id": "A01",
+      "severity": "P0",
+      "base_location": "geometry.py:21-29",
+      "current_location": "geometry.py:25-38",
+      "claim": "Belief ellipse exclusion can erase measured foreground first hits, including at zero covariance.",
+      "counterexample": "Sigma=0,rT=.15 gives sqrt(9.21)*rT=.45522m deletion radius; hit5.8m against belief6m is deleted. Cov=.01 deletes .53m foreground; large covariance, false association and mismatched camera depth are also reproduced.",
+      "independent_test": "ExclusionCounterexamples six role cases, valid mask/order/no mutation; closed-form scalar Mahalanobis checks",
+      "baseline": "Six valid role hits erased, including actual target; failures recorded before editing source.",
+      "fix": "ABSTAIN from identity and retain all valid first hits; API retained.",
+      "status": "FIXED_AS_FAIL_CLOSED_ABSTENTION",
+      "remaining": "Actual target also retained. Correct identity-aware exclusion is NOT_IMPLEMENTED; self-blocking and recall/efficiency cost remain."
+    },
+    {
+      "id": "B01",
+      "severity": "P0",
+      "base_location": "geometry.py:47-54",
+      "current_location": "geometry.py:56-84",
+      "claim": "Raw slant scan ranges were compared to horizontal world-XY query distance.",
+      "counterexample": "20deg slant5m -> horizontal4.698463103929543m; old radius5m falsely admits q=4.85m. Projecting only the selected row minimum is also wrong when 0deg4.9 competes with20deg5.",
+      "independent_test": "HorizontalFreeCounterexamples, scalar rho*cos(alpha) at0,+/-10,+/-20 degrees",
+      "baseline": "Bound5m; explicit elevation API absent; original proof includes5 expected keyword TypeErrors.",
+      "fix": "Project every row, then row minimum and horizontal margin. Default declared4row contract; explicit elevations for nonstandard rows.",
+      "status": "FIXED_WITHIN_DECLARED_PLANAR_CONTRACT",
+      "remaining": "Sparse finite beams and different hit heights do not make a physical free-space certificate (B03)."
+    },
+    {
+      "id": "B02",
+      "severity": "P0",
+      "base_location": "visibility.py:60-62,111",
+      "current_location": "visibility.py:38-43,68-71,120-121",
+      "claim": "FOV used the camera offset but forecast/BPOD LOS began at body origin.",
+      "counterexample": "ego(0,0),camera(.1,0),target(4,2),obstacle(2,.6),rOcc=.35: body-line distance .3577708764 (clear), optical-line .3331111527 (blocked), target in FOV.",
+      "independent_test": "Scalar segment oracle plus forecast/BPOD, rotated90deg fixture and no-double-offset control",
+      "baseline": "Forecast=1,BPOD=1; physical declared planar oracle=0.",
+      "fix": "Use yaw-rotated optical origin for both LOS paths; original LiDAR context stays at original scan pose.",
+      "status": "FIXED_WITHIN_YAW_ONLY_XY_MODEL",
+      "remaining": "No full SE(3), height-aware occlusion or silhouette certificate; declared camera calibration still needs runtime validation."
+    },
+    {
+      "id": "B03",
+      "severity": "MODEL_BLOCKER",
+      "base_location": "geometry.py:47-54,57-111; visibility.py:17-27",
+      "current_location": "geometry.py:56-84,87-162",
+      "claim": "Interpolated sparse-ray sectors do not prove continuous physical free space.",
+      "counterexample": "A radius.2m obstacle at5m and bearing2.5deg misses neighboring0/5deg rays: nearest-ray distance5*sin(2.5deg)=.2180969368>.2. All-no-return scan can nevertheless label its centre free.",
+      "independent_test": "VisibilityOriginsAndModelLimits.test_sparse_scan_sectors_are_not_a_physical_free_certificate",
+      "baseline": "Analytic unobserved obstacle and sector-free output can coexist.",
+      "fix": "No unsupported ray filling or physical-free claim; retained explicit model limitation.",
+      "status": "BLOCKED_FOR_PHYSICAL_FREE_SPACE_CERTIFICATION",
+      "remaining": "Requires separately authorized observation/coverage model; 2D extrusion also cannot certify altitude or UAV attitude/vertical clearance."
+    },
+    {
+      "id": "B04",
+      "severity": "MODEL_BLOCKER",
+      "base_location": "geometry.py:47-54; visibility.py:17-27,38-64",
+      "current_location": "geometry.py:25-38,56-84; visibility.py:17-27,46-73",
+      "claim": "True target first hit can self-block forecast and stop free-space extent short of target belief.",
+      "counterexample": "Target centre6m, raw first hit5.8m, margin.1m -> original sector endpoint5.7m and visible target hypothesis beyond it. Even excluding a point would not create measured free space behind the hit.",
+      "independent_test": "VisibilityOriginsAndModelLimits.test_six_metre_target_with_first_hit5p8_remains_blocked",
+      "baseline": "Blocked rather than identity-correct positive visibility.",
+      "fix": "Preserved fail-closed BLOCKED. A01 retains true target too; no target-like return is filled to far.",
+      "status": "BLOCKED_UNRESOLVED",
+      "remaining": "No qualified positive target-retention/visibility mechanism; cannot interpret a clear no-return synthetic scene as general sensor visibility validation."
+    },
+    {
+      "id": "B05",
+      "severity": "P1_INPUT_CONTRACT",
+      "base_location": "geometry.py:76-82,85-111",
+      "current_location": "geometry.py:105-162",
+      "claim": "Nonfinite/negative/out-of-range context evidence can certify free space after clipping or incomplete finite checks.",
+      "counterexample": "An unqueried inf/negative/above-far sector or NaN yaw/z-only pose may still return true; nonpositive/nonfinite far can admit origin.",
+      "independent_test": "ContextInputCounterexamples: invalid radii/yaw/position/far, point and segment separately, second valid env control",
+      "baseline": "22 failing subtest entries across2 methods in expanded isolated13d5 source check; initial pre-guard proof also retained in scratch.",
+      "fix": "Invalidate whole env context row; sanitize only local arithmetic and AND validity mask on every answer; no source data writes or inf clipping.",
+      "status": "FIXED_FAIL_CLOSED",
+      "remaining": "Angle-grid shape/uniformity remains an asserted structural contract, not arbitrary malformed-input recovery."
+    }
+  ],
+  "final_tests": {
+    "tests_run": 23,
+    "failures": 0,
+    "errors": 0,
+    "wall_seconds": 0.016960033972281963,
+    "test_path": "tests/test_boia_p0_geometry.py",
+    "test_sha256": "088aa2fde66403990baa8fd2adb2553273886860d41ba09bdf6f22edf5fa059f",
+    "command": "env PYTHONNOUSERSITE=1 CUDA_VISIBLE_DEVICES='' /home/fair/miniconda3/envs/aerialgym/bin/python -B -m unittest discover -s tests -p test_boia_p0_geometry.py -v"
+  },
+  "baseline_proofs": {
+    "initial_methods": 17,
+    "initial_failure_entries": [
+      {
+        "test": "test_camera_lidar_depth_mismatch_is_conservatively_preserved (test_boia_p0_geometry.ExclusionCounterexamples)",
+        "traceback": "Traceback (most recent call last):\n  File \"/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_p0_geometry.py\", line 67, in test_camera_lidar_depth_mismatch_is_conservatively_preserved\n    self.assertTrue(bool(retained((4., 0.), mean=(6., 0.), covariance=.5)))\nAssertionError: False is not true\n"
+      },
+      {
+        "test": "test_eq1d_style_bar_point53m_before_belief_is_preserved (test_boia_p0_geometry.ExclusionCounterexamples)",
+        "traceback": "Traceback (most recent call last):\n  File \"/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_p0_geometry.py\", line 57, in test_eq1d_style_bar_point53m_before_belief_is_preserved\n    self.assertTrue(bool(retained((5.47, 0.), covariance=.01)))\nAssertionError: False is not true\n"
+      },
+      {
+        "test": "test_false_association_on_bar_has_no_identity_privilege (test_boia_p0_geometry.ExclusionCounterexamples)",
+        "traceback": "Traceback (most recent call last):\n  File \"/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_p0_geometry.py\", line 63, in test_false_association_on_bar_has_no_identity_privilege\n    self.assertTrue(bool(retained((3., .2), mean=(3., .2), covariance=.01)))\nAssertionError: False is not true\n"
+      },
+      {
+        "test": "test_large_belief_covariance_cannot_erase_far_foreground (test_boia_p0_geometry.ExclusionCounterexamples)",
+        "traceback": "Traceback (most recent call last):\n  File \"/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_p0_geometry.py\", line 60, in test_large_belief_covariance_cannot_erase_far_foreground\n    self.assertTrue(bool(retained((3., 0.), covariance=4.)))\nAssertionError: False is not true\n"
+      },
+      {
+        "test": "test_near_foreground_bar_is_not_erased_by_zero_covariance_gate (test_boia_p0_geometry.ExclusionCounterexamples)",
+        "traceback": "Traceback (most recent call last):\n  File \"/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_p0_geometry.py\", line 53, in test_near_foreground_bar_is_not_erased_by_zero_covariance_gate\n    self.assertTrue(bool(retained((5.8, 0.))))\nAssertionError: False is not true\n"
+      },
+      {
+        "test": "test_positive_actual_target_is_retained_with_abstention_tradeoff (test_boia_p0_geometry.ExclusionCounterexamples)",
+        "traceback": "Traceback (most recent call last):\n  File \"/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_p0_geometry.py\", line 48, in test_positive_actual_target_is_retained_with_abstention_tradeoff\n    self.assertTrue(bool(retained((5.85, 0.))))\nAssertionError: False is not true\n"
+      },
+      {
+        "test": "test_return_order_invalid_mask_and_source_arrays_are_preserved (test_boia_p0_geometry.ExclusionCounterexamples)",
+        "traceback": "Traceback (most recent call last):\n  File \"/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_p0_geometry.py\", line 75, in test_return_order_invalid_mask_and_source_arrays_are_preserved\n    self.assertTrue(torch.equal(result, valid))\nAssertionError: False is not true\n"
+      },
+      {
+        "test": "test_default_declared_four_rows_use_horizontal_first_hit (test_boia_p0_geometry.HorizontalFreeCounterexamples)",
+        "traceback": "Traceback (most recent call last):\n  File \"/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_p0_geometry.py\", line 88, in test_default_declared_four_rows_use_horizontal_first_hit\n    self.assertAlmostEqual(float(radius[0, 36]), expected, places=12)\nAssertionError: 5.0 != 4.698463103929543 within 12 places (0.3015368960704574 difference)\n"
+      },
+      {
+        "test": "test_row_minimum_is_taken_after_projection_not_before (test_boia_p0_geometry.HorizontalFreeCounterexamples)",
+        "traceback": "Traceback (most recent call last):\n  File \"/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_p0_geometry.py\", line 98, in test_row_minimum_is_taken_after_projection_not_before\n    self.assertAlmostEqual(float(radius[0, 36]), 5 * math.cos(math.radians(20)) - .1, places=12)\nAssertionError: 4.800000000000001 != 4.598463103929543 within 12 places (0.20153689607045777 difference)\n"
+      },
+      {
+        "test": "test_undeclared_nonstandard_rows_fail_closed (test_boia_p0_geometry.HorizontalFreeCounterexamples)",
+        "traceback": "Traceback (most recent call last):\n  File \"/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_p0_geometry.py\", line 111, in test_undeclared_nonstandard_rows_fail_closed\n    geom.known_free(torch.ones(1, 72, dtype=DT), angles(), torch.zeros(1, 3, dtype=DT),\nAssertionError: ValueError not raised\n"
+      },
+      {
+        "test": "test_camera_offset_los_counterexample_forecast_and_bpod (test_boia_p0_geometry.VisibilityOriginsAndModelLimits) (method='forecast')",
+        "traceback": "Traceback (most recent call last):\n  File \"/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_p0_geometry.py\", line 144, in test_camera_offset_los_counterexample_forecast_and_bpod\n    self.assertEqual(float(value), 0.)\nAssertionError: 1.0 != 0.0\n"
+      },
+      {
+        "test": "test_camera_offset_los_counterexample_forecast_and_bpod (test_boia_p0_geometry.VisibilityOriginsAndModelLimits) (method='bpod')",
+        "traceback": "Traceback (most recent call last):\n  File \"/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_p0_geometry.py\", line 144, in test_camera_offset_los_counterexample_forecast_and_bpod\n    self.assertEqual(float(value), 0.)\nAssertionError: 1.0 != 0.0\n"
+      },
+      {
+        "test": "test_yaw_rotated_camera_origin_and_no_double_offset (test_boia_p0_geometry.VisibilityOriginsAndModelLimits)",
+        "traceback": "Traceback (most recent call last):\n  File \"/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_p0_geometry.py\", line 155, in test_yaw_rotated_camera_origin_and_no_double_offset\n    self.assertEqual(float(vis.forecast(pos, yaw, sample, points, valid, None, camera, params)), 0.)\nAssertionError: 1.0 != 0.0\n"
+      }
+    ],
+    "initial_error_entries": [
+      {
+        "test": "test_explicit_zero_and_positive_negative_elevations (test_boia_p0_geometry.HorizontalFreeCounterexamples) (alpha=0.0)",
+        "traceback": "Traceback (most recent call last):\n  File \"/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_p0_geometry.py\", line 104, in test_explicit_zero_and_positive_negative_elevations\n    radius = geom.known_free(rho, angles(), torch.zeros(1, 3, dtype=DT),\nTypeError: known_free() got an unexpected keyword argument 'elevations'\n"
+      },
+      {
+        "test": "test_explicit_zero_and_positive_negative_elevations (test_boia_p0_geometry.HorizontalFreeCounterexamples) (alpha=10.0)",
+        "traceback": "Traceback (most recent call last):\n  File \"/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_p0_geometry.py\", line 104, in test_explicit_zero_and_positive_negative_elevations\n    radius = geom.known_free(rho, angles(), torch.zeros(1, 3, dtype=DT),\nTypeError: known_free() got an unexpected keyword argument 'elevations'\n"
+      },
+      {
+        "test": "test_explicit_zero_and_positive_negative_elevations (test_boia_p0_geometry.HorizontalFreeCounterexamples) (alpha=20.0)",
+        "traceback": "Traceback (most recent call last):\n  File \"/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_p0_geometry.py\", line 104, in test_explicit_zero_and_positive_negative_elevations\n    radius = geom.known_free(rho, angles(), torch.zeros(1, 3, dtype=DT),\nTypeError: known_free() got an unexpected keyword argument 'elevations'\n"
+      },
+      {
+        "test": "test_explicit_zero_and_positive_negative_elevations (test_boia_p0_geometry.HorizontalFreeCounterexamples) (alpha=-10.0)",
+        "traceback": "Traceback (most recent call last):\n  File \"/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_p0_geometry.py\", line 104, in test_explicit_zero_and_positive_negative_elevations\n    radius = geom.known_free(rho, angles(), torch.zeros(1, 3, dtype=DT),\nTypeError: known_free() got an unexpected keyword argument 'elevations'\n"
+      },
+      {
+        "test": "test_explicit_zero_and_positive_negative_elevations (test_boia_p0_geometry.HorizontalFreeCounterexamples) (alpha=-20.0)",
+        "traceback": "Traceback (most recent call last):\n  File \"/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_p0_geometry.py\", line 104, in test_explicit_zero_and_positive_negative_elevations\n    radius = geom.known_free(rho, angles(), torch.zeros(1, 3, dtype=DT),\nTypeError: known_free() got an unexpected keyword argument 'elevations'\n"
+      }
+    ],
+    "B05_methods": 2,
+    "B05_failure_entries": 22,
+    "B05_error_entries": 0,
+    "count_note": "Subtest entries are not independent test methods; new helper checks were added for final coverage."
+  },
+  "assumption_limits": [
+    "Static measured XY point map; yaw-only projection; no full 3D SE(3)/silhouette/camera-realism qualification.",
+    "Known-free is an interpolated 2D scan-sector model, not a physical free-space guarantee.",
+    "Forecast/BPOD size thresholds must be declared consistently: params.r_T/min_pixels versus cam.target_radius/min_pixels.",
+    "Projected-area gate and stress detector rates are uncalibrated online predictions; oracle label does not mean simulator GT.",
+    "Gaussian active-margin linearization, independent obstacle products and stress Bernoulli independence remain approximations.",
+    "Exact FOV boundary floating comparisons have no tolerance; tan(pi/4) can round inward. Interior/exterior helper fixture uses .01m margin; source threshold not loosened.",
+    "No function advances dt; consumes supplied horizon. Sensor latency, real compute deadline and GPU behavior NOT_TESTED."
+  ],
+  "preservation": "No raw/checkpoint reads or writes in this unit; source production modules untouched. Whole-repository protected-path SHA checks belong to parent integration receipt."
+}

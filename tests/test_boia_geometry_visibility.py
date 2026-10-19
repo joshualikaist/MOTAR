@@ -92,13 +92,16 @@ class GeometryTest(unittest.TestCase):
         self.assertTrue(bool((out[0] == 5.).all()))
         self.assertTrue(bool((out[1] == 2.).all()))
 
-    def test_belief_gate_excludes_self_and_preserves_distant_bar(self):
+    def test_belief_gate_abstains_without_identity_and_preserves_all_hits(self):
         pts = torch.tensor([[[6., 0.], [6.1, 0.], [3., 0.]]], dtype=torch.float64)
         before = pts.clone()
         keep = geom.exclude_target(pts, torch.ones(1, 3, dtype=torch.bool),
                                    torch.tensor([[6., 0.]], dtype=torch.float64),
                                    torch.eye(2, dtype=torch.float64)[None] * .01, .15)
-        self.assertEqual(keep.tolist(), [[False, False, True]])
+        # P0-A: a Gaussian association is not a target identity certificate.
+        # The original expected deletion is preserved in base13d5f195; all first
+        # hits now remain obstacles until online classification is justified.
+        self.assertEqual(keep.tolist(), [[True, True, True]])
         self.assertTrue(torch.equal(pts, before))
 
     def test_known_free_row_and_neighbor_minimum(self):
@@ -106,8 +109,10 @@ class GeometryTest(unittest.TestCase):
         rho[0, 72 + 10] = 2.
         ctx = context()
         radius = geom.known_free(rho, ctx.angles, ctx.pos, ctx.yaw, 12., .1)
-        torch.testing.assert_close(radius[0, 9:12], torch.full((3,), 1.9, dtype=torch.float64))
-        self.assertAlmostEqual(float(radius[0, 8]), 11.9)
+        # Independently project row1's 10deg slant distance before XY margin.
+        expected = 2. * math.cos(math.radians(10.)) - .1
+        torch.testing.assert_close(radius[0, 9:12], torch.full((3,), expected, dtype=torch.float64))
+        self.assertAlmostEqual(float(radius[0, 8]), 12. * math.cos(math.radians(20.)) - .1)
         rho[0, 20] = float("nan")
         self.assertEqual(float(geom.known_free(rho, ctx.angles, ctx.pos, ctx.yaw, 12., .1)[0, 20]), 0.)
 

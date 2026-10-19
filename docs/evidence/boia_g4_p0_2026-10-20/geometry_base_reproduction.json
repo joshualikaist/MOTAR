@@ -1,0 +1,89 @@
+{
+  "schema": "motar.boia.p0.geometry.baseline.v2",
+  "source_sha": "13d5f195399bf1a7f1cdf9ddeccd3338d8e34c0f",
+  "file_sha256": {
+    "motar_eval/boia/geometry.py": "83f97733ee15148d16f6685c37e7ba9301ae10b707c3a984c6372188081a1133",
+    "motar_eval/boia/visibility.py": "1973a5ee411270dcfe0f73c6067773e3a697391cdcffb3f17122a5fd15aa8d62",
+    "tests/test_boia_p0_geometry.py": "47079baf7fd88fd84ad38aaae3e0509547eb52a82d2f36c176f1c0fc7533779f"
+  },
+  "tests_run": 17,
+  "failures": [
+    {
+      "test": "test_camera_lidar_depth_mismatch_is_conservatively_preserved (test_boia_p0_geometry.ExclusionCounterexamples)",
+      "traceback": "Traceback (most recent call last):\n  File \"/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_p0_geometry.py\", line 67, in test_camera_lidar_depth_mismatch_is_conservatively_preserved\n    self.assertTrue(bool(retained((4., 0.), mean=(6., 0.), covariance=.5)))\nAssertionError: False is not true\n"
+    },
+    {
+      "test": "test_eq1d_style_bar_point53m_before_belief_is_preserved (test_boia_p0_geometry.ExclusionCounterexamples)",
+      "traceback": "Traceback (most recent call last):\n  File \"/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_p0_geometry.py\", line 57, in test_eq1d_style_bar_point53m_before_belief_is_preserved\n    self.assertTrue(bool(retained((5.47, 0.), covariance=.01)))\nAssertionError: False is not true\n"
+    },
+    {
+      "test": "test_false_association_on_bar_has_no_identity_privilege (test_boia_p0_geometry.ExclusionCounterexamples)",
+      "traceback": "Traceback (most recent call last):\n  File \"/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_p0_geometry.py\", line 63, in test_false_association_on_bar_has_no_identity_privilege\n    self.assertTrue(bool(retained((3., .2), mean=(3., .2), covariance=.01)))\nAssertionError: False is not true\n"
+    },
+    {
+      "test": "test_large_belief_covariance_cannot_erase_far_foreground (test_boia_p0_geometry.ExclusionCounterexamples)",
+      "traceback": "Traceback (most recent call last):\n  File \"/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_p0_geometry.py\", line 60, in test_large_belief_covariance_cannot_erase_far_foreground\n    self.assertTrue(bool(retained((3., 0.), covariance=4.)))\nAssertionError: False is not true\n"
+    },
+    {
+      "test": "test_near_foreground_bar_is_not_erased_by_zero_covariance_gate (test_boia_p0_geometry.ExclusionCounterexamples)",
+      "traceback": "Traceback (most recent call last):\n  File \"/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_p0_geometry.py\", line 53, in test_near_foreground_bar_is_not_erased_by_zero_covariance_gate\n    self.assertTrue(bool(retained((5.8, 0.))))\nAssertionError: False is not true\n"
+    },
+    {
+      "test": "test_positive_actual_target_is_retained_with_abstention_tradeoff (test_boia_p0_geometry.ExclusionCounterexamples)",
+      "traceback": "Traceback (most recent call last):\n  File \"/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_p0_geometry.py\", line 48, in test_positive_actual_target_is_retained_with_abstention_tradeoff\n    self.assertTrue(bool(retained((5.85, 0.))))\nAssertionError: False is not true\n"
+    },
+    {
+      "test": "test_return_order_invalid_mask_and_source_arrays_are_preserved (test_boia_p0_geometry.ExclusionCounterexamples)",
+      "traceback": "Traceback (most recent call last):\n  File \"/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_p0_geometry.py\", line 75, in test_return_order_invalid_mask_and_source_arrays_are_preserved\n    self.assertTrue(torch.equal(result, valid))\nAssertionError: False is not true\n"
+    },
+    {
+      "test": "test_default_declared_four_rows_use_horizontal_first_hit (test_boia_p0_geometry.HorizontalFreeCounterexamples)",
+      "traceback": "Traceback (most recent call last):\n  File \"/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_p0_geometry.py\", line 88, in test_default_declared_four_rows_use_horizontal_first_hit\n    self.assertAlmostEqual(float(radius[0, 36]), expected, places=12)\nAssertionError: 5.0 != 4.698463103929543 within 12 places (0.3015368960704574 difference)\n"
+    },
+    {
+      "test": "test_row_minimum_is_taken_after_projection_not_before (test_boia_p0_geometry.HorizontalFreeCounterexamples)",
+      "traceback": "Traceback (most recent call last):\n  File \"/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_p0_geometry.py\", line 98, in test_row_minimum_is_taken_after_projection_not_before\n    self.assertAlmostEqual(float(radius[0, 36]), 5 * math.cos(math.radians(20)) - .1, places=12)\nAssertionError: 4.800000000000001 != 4.598463103929543 within 12 places (0.20153689607045777 difference)\n"
+    },
+    {
+      "test": "test_undeclared_nonstandard_rows_fail_closed (test_boia_p0_geometry.HorizontalFreeCounterexamples)",
+      "traceback": "Traceback (most recent call last):\n  File \"/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_p0_geometry.py\", line 111, in test_undeclared_nonstandard_rows_fail_closed\n    geom.known_free(torch.ones(1, 72, dtype=DT), angles(), torch.zeros(1, 3, dtype=DT),\nAssertionError: ValueError not raised\n"
+    },
+    {
+      "test": "test_camera_offset_los_counterexample_forecast_and_bpod (test_boia_p0_geometry.VisibilityOriginsAndModelLimits) (method='forecast')",
+      "traceback": "Traceback (most recent call last):\n  File \"/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_p0_geometry.py\", line 144, in test_camera_offset_los_counterexample_forecast_and_bpod\n    self.assertEqual(float(value), 0.)\nAssertionError: 1.0 != 0.0\n"
+    },
+    {
+      "test": "test_camera_offset_los_counterexample_forecast_and_bpod (test_boia_p0_geometry.VisibilityOriginsAndModelLimits) (method='bpod')",
+      "traceback": "Traceback (most recent call last):\n  File \"/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_p0_geometry.py\", line 144, in test_camera_offset_los_counterexample_forecast_and_bpod\n    self.assertEqual(float(value), 0.)\nAssertionError: 1.0 != 0.0\n"
+    },
+    {
+      "test": "test_yaw_rotated_camera_origin_and_no_double_offset (test_boia_p0_geometry.VisibilityOriginsAndModelLimits)",
+      "traceback": "Traceback (most recent call last):\n  File \"/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_p0_geometry.py\", line 155, in test_yaw_rotated_camera_origin_and_no_double_offset\n    self.assertEqual(float(vis.forecast(pos, yaw, sample, points, valid, None, camera, params)), 0.)\nAssertionError: 1.0 != 0.0\n"
+    }
+  ],
+  "errors": [
+    {
+      "test": "test_explicit_zero_and_positive_negative_elevations (test_boia_p0_geometry.HorizontalFreeCounterexamples) (alpha=0.0)",
+      "traceback": "Traceback (most recent call last):\n  File \"/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_p0_geometry.py\", line 104, in test_explicit_zero_and_positive_negative_elevations\n    radius = geom.known_free(rho, angles(), torch.zeros(1, 3, dtype=DT),\nTypeError: known_free() got an unexpected keyword argument 'elevations'\n"
+    },
+    {
+      "test": "test_explicit_zero_and_positive_negative_elevations (test_boia_p0_geometry.HorizontalFreeCounterexamples) (alpha=10.0)",
+      "traceback": "Traceback (most recent call last):\n  File \"/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_p0_geometry.py\", line 104, in test_explicit_zero_and_positive_negative_elevations\n    radius = geom.known_free(rho, angles(), torch.zeros(1, 3, dtype=DT),\nTypeError: known_free() got an unexpected keyword argument 'elevations'\n"
+    },
+    {
+      "test": "test_explicit_zero_and_positive_negative_elevations (test_boia_p0_geometry.HorizontalFreeCounterexamples) (alpha=20.0)",
+      "traceback": "Traceback (most recent call last):\n  File \"/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_p0_geometry.py\", line 104, in test_explicit_zero_and_positive_negative_elevations\n    radius = geom.known_free(rho, angles(), torch.zeros(1, 3, dtype=DT),\nTypeError: known_free() got an unexpected keyword argument 'elevations'\n"
+    },
+    {
+      "test": "test_explicit_zero_and_positive_negative_elevations (test_boia_p0_geometry.HorizontalFreeCounterexamples) (alpha=-10.0)",
+      "traceback": "Traceback (most recent call last):\n  File \"/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_p0_geometry.py\", line 104, in test_explicit_zero_and_positive_negative_elevations\n    radius = geom.known_free(rho, angles(), torch.zeros(1, 3, dtype=DT),\nTypeError: known_free() got an unexpected keyword argument 'elevations'\n"
+    },
+    {
+      "test": "test_explicit_zero_and_positive_negative_elevations (test_boia_p0_geometry.HorizontalFreeCounterexamples) (alpha=-20.0)",
+      "traceback": "Traceback (most recent call last):\n  File \"/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_p0_geometry.py\", line 104, in test_explicit_zero_and_positive_negative_elevations\n    radius = geom.known_free(rho, angles(), torch.zeros(1, 3, dtype=DT),\nTypeError: known_free() got an unexpected keyword argument 'elevations'\n"
+    }
+  ],
+  "scope": "CPU_SYNTHETIC_NO_SIMULATOR_NO_RAW",
+  "note": "Forecast and BPOD each receive an independent failing subtest; prior attempt retained.",
+  "evidence_note": "Original 17-method baseline before source edits. Failures/errors count subtest entries, not independent methods. Five errors are the absent explicit-elevations keyword, not runtime numerical crashes."
+}

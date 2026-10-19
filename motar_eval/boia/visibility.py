@@ -35,6 +35,14 @@ def _to_camera(relative, yaw, cam):
     return torch.stack((x, y, relative[..., 2]), -1) - offset
 
 
+def _camera_origin_xy(position, yaw, cam):
+    """World XY optical centre from yaw-frame calibration; no 3D LOS guarantee."""
+    offset = position.new_tensor(cam.camera_offset[:2])
+    translated = torch.stack((yaw.cos() * offset[0] - yaw.sin() * offset[1],
+                              yaw.sin() * offset[0] + yaw.cos() * offset[1]), -1)
+    return position[..., :2] + translated
+
+
 def forecast(rollout_pos, rollout_yaw, samples, pts_obs, valid_obs, free_ctx, cam, params, mode="oracle"):
     """(N,K,H,3), (N,K,H), (N,M,H,6) -> P_det (N,K,M,H); candidate/time chunks."""
     n, k, h, xyz = rollout_pos.shape
@@ -57,7 +65,8 @@ def forecast(rollout_pos, rollout_yaw, samples, pts_obs, valid_obs, free_ctx, ca
             detector = (pixels >= params.min_pixels).to(local.dtype)
             if mode != "oracle":
                 detector = (1 - params.p_miss) * torch.sigmoid(params.beta * (pixels - params.n_0))
-            ego = rollout_pos[:, c, j, None, :2].expand(n, samples.shape[1], 2)
+            ego = _camera_origin_xy(rollout_pos[:, c, j], rollout_yaw[:, c, j], cam)
+            ego = ego[:, None].expand(n, samples.shape[1], 2)
             los = los_clear(ego, samples[:, :, j, :2], pts_obs, valid_obs,
                             params.r_bar_est + params.r_T, free_ctx, params.unknown_blocks)
             out[:, c, :, j] = torch.where(fov & los, detector, torch.zeros_like(detector))
@@ -108,7 +117,8 @@ def bpod_analytic(p_ego, yaw, mu_pos, Sigma_pos, pts_obs, valid_obs, r_occ, cam)
     grad_world = torch.stack((gv[..., 0] * yaw.cos() - gv[..., 1] * yaw.sin(),
                               gv[..., 0] * yaw.sin() + gv[..., 1] * yaw.cos(), gv[..., 2]), -1)
     gamma_fov = _normal_clearance(margins.amin(-1), grad_world, cov, strict=active == 0)
-    a, b = p_ego[..., :2], mu[..., :2].expand_as(p_ego[..., :2])
+    a = _camera_origin_xy(p_ego, yaw, cam)
+    b = mu[..., :2].expand_as(a)
     points = pts_obs.reshape(n, *([1] * qdim), pts_obs.shape[1], 2)
     ab = (b - a).unsqueeze(-2)
     ap = points - a.unsqueeze(-2)

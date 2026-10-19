@@ -22047,3 +22047,11 @@ One cold CPU decision (N128, K20, M32, H10, single thread) took 12.9 s: NOT_A_GP
 Raw inventory is representative headers only (payload integrity not verified, field time alignment NOT_TESTED); no calibration conclusion.
 Unresolved and blocking G5: target-return known-free counterexample (motar-3p3.13) and the 3.52 m/s braking-prior miss (12.56 percent against a 10 percent sanity target; the 25 percent hard gate passed). 07-09 unchanged.
 New CPU opt-in only; no simulator/GPU/production/raw calibration/PPO/main merge. Authorised push of codex/mt-p1 follows in a separate step.
+
+## 2026-10-20 — BOIA G4 P0-A/B CPU geometry correction
+
+Authority: precise source audit/confirmed P0 fixes, base13d5f195399bf1a7f1cdf9ddeccd3338d8e34c0f; CPU only.
+Changed opt-in geometry.exclude_target to ABSTAIN/preserve valid first hits; known_free projects each elevation before minimum; visibility.forecast/bpod_analytic use optical XY origin. Invalid free contexts fail closed. No production path/actor/tracker/simulator change.
+Independent CPU regression: geometry23/23 PASS. Isolated base proof17 methods:13 failing assertion entries and5 missing-new-API errors; defensive-context proof2 methods/22 failing subtest entries. Proofs bind base/source/test SHA. Root initial joint BOIA156/156 PASS; four later helper checks pass in geometry23 and are included in frozen-tree follow-up verification.
+Two original U1 expectations corrected explicitly: uncertain target-like points are retained, and known-free expected radii use scalar cos(elevation). Historical tests/receipts remain in base history; no threshold relaxation.
+Evidence: docs/evidence/boia_g4_p0_2026-10-20/geometry_*.{md,json,txt}. B03 sparse physical coverage and B04 target-self-hit visibility remain BLOCKED. No ray filling, GT classification, Raw/checkpoint writes, GPU, PPO, push or merge. Protected results symlinks, main WIP and stash preserved. G5 HOLD.
