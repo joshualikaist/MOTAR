@@ -1,0 +1,5093 @@
+{
+  "schema": "motar.boia.raw-field-inventory.v1",
+  "scope": "REPRESENTATIVE_HEADERS_ONLY",
+  "raw_root": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results",
+  "p03_trace": {
+    "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/h_r3_p03_qualification_v1/HR3-P03-Q01/long_B0/h_r3_p03_trace.npz",
+    "status": "HEADER_ONLY",
+    "bytes": 40273659,
+    "arrays": {
+      "before_pos": {
+        "shape": [
+          600,
+          128,
+          3
+        ],
+        "dtype": "<f4",
+        "fortran_order": false,
+        "header_sha256": "a1ece15f681548d36b02aa4faa3533c8bbf2c317d12847d4926f26d17a0a559e"
+      },
+      "pre_vel": {
+        "shape": [
+          600,
+          128,
+          3
+        ],
+        "dtype": "<f4",
+        "fortran_order": false,
+        "header_sha256": "a1ece15f681548d36b02aa4faa3533c8bbf2c317d12847d4926f26d17a0a559e"
+      },
+      "raw_nearest_m": {
+        "shape": [
+          600,
+          128
+        ],
+        "dtype": "<f4",
+        "fortran_order": false,
+        "header_sha256": "0399802b15786dc2541c2b3f38b89ebffe99296effa4298d2dab2c4992e6b2f1"
+      },
+      "nominal_xy": {
+        "shape": [
+          600,
+          128,
+          2
+        ],
+        "dtype": "<f4",
+        "fortran_order": false,
+        "header_sha256": "d5daed90175f5ad4599774311528840f9fc340710f1d1e4a712822e0d6ffc92b"
+      },
+      "shadow_B2_nominal_xy": {
+        "shape": [
+          600,
+          128,
+          2
+        ],
+        "dtype": "<f4",
+        "fortran_order": false,
+        "header_sha256": "d5daed90175f5ad4599774311528840f9fc340710f1d1e4a712822e0d6ffc92b"
+      },
+      "shadow_B3_nominal_xy": {
+        "shape": [
+          600,
+          128,
+          2
+        ],
+        "dtype": "<f4",
+        "fortran_order": false,
+        "header_sha256": "d5daed90175f5ad4599774311528840f9fc340710f1d1e4a712822e0d6ffc92b"
+      },
+      "shadow_B4_nominal_xy": {
+        "shape": [
+          600,
+          128,
+          2
+        ],
+        "dtype": "<f4",
+        "fortran_order": false,
+        "header_sha256": "d5daed90175f5ad4599774311528840f9fc340710f1d1e4a712822e0d6ffc92b"
+      },
+      "shadow_B5_nominal_xy": {
+        "shape": [
+          600,
+          128,
+          2
+        ],
+        "dtype": "<f4",
+        "fortran_order": false,
+        "header_sha256": "d5daed90175f5ad4599774311528840f9fc340710f1d1e4a712822e0d6ffc92b"
+      },
+      "post_point_xy": {
+        "shape": [
+          600,
+          128,
+          2
+        ],
+        "dtype": "<f4",
+        "fortran_order": false,
+        "header_sha256": "d5daed90175f5ad4599774311528840f9fc340710f1d1e4a712822e0d6ffc92b"
+      },
+      "shadow_B2_post_point_xy": {
+        "shape": [
+          600,
+          128,
+          2
+        ],
+        "dtype": "<f4",
+        "fortran_order": false,
+        "header_sha256": "d5daed90175f5ad4599774311528840f9fc340710f1d1e4a712822e0d6ffc92b"
+      },
+      "shadow_B3_post_point_xy": {
+        "shape": [
+          600,
+          128,
+          2
+        ],
+        "dtype": "<f4",
+        "fortran_order": false,
+        "header_sha256": "d5daed90175f5ad4599774311528840f9fc340710f1d1e4a712822e0d6ffc92b"
+      },
+      "shadow_B4_post_point_xy": {
+        "shape": [
+          600,
+          128,
+          2
+        ],
+        "dtype": "<f4",
+        "fortran_order": false,
+        "header_sha256": "d5daed90175f5ad4599774311528840f9fc340710f1d1e4a712822e0d6ffc92b"
+      },
+      "shadow_B5_post_point_xy": {
+        "shape": [
+          600,
+          128,
+          2
+        ],
+        "dtype": "<f4",
+        "fortran_order": false,
+        "header_sha256": "d5daed90175f5ad4599774311528840f9fc340710f1d1e4a712822e0d6ffc92b"
+      },
+      "post_cap_xy": {
+        "shape": [
+          600,
+          128,
+          2
+        ],
+        "dtype": "<f4",
+        "fortran_order": false,
+        "header_sha256": "d5daed90175f5ad4599774311528840f9fc340710f1d1e4a712822e0d6ffc92b"
+      },
+      "shadow_B2_post_cap_xy": {
+        "shape": [
+          600,
+          128,
+          2
+        ],
+        "dtype": "<f4",
+        "fortran_order": false,
+        "header_sha256": "d5daed90175f5ad4599774311528840f9fc340710f1d1e4a712822e0d6ffc92b"
+      },
+      "shadow_B3_post_cap_xy": {
+        "shape": [
+          600,
+          128,
+          2
+        ],
+        "dtype": "<f4",
+        "fortran_order": false,
+        "header_sha256": "d5daed90175f5ad4599774311528840f9fc340710f1d1e4a712822e0d6ffc92b"
+      },
+      "shadow_B4_post_cap_xy": {
+        "shape": [
+          600,
+          128,
+          2
+        ],
+        "dtype": "<f4",
+        "fortran_order": false,
+        "header_sha256": "d5daed90175f5ad4599774311528840f9fc340710f1d1e4a712822e0d6ffc92b"
+      },
+      "shadow_B5_post_cap_xy": {
+        "shape": [
+          600,
+          128,
+          2
+        ],
+        "dtype": "<f4",
+        "fortran_order": false,
+        "header_sha256": "d5daed90175f5ad4599774311528840f9fc340710f1d1e4a712822e0d6ffc92b"
+      },
+      "action": {
+        "shape": [
+          600,
+          128,
+          4
+        ],
+        "dtype": "<f4",
+        "fortran_order": false,
+        "header_sha256": "d78a2fccbb9e819ee58e13447b0bf0db070017cd7246e84cb9d7211f379d5bb1"
+      },
+      "intervening": {
+        "shape": [
+          600,
+          128
+        ],
+        "dtype": "|b1",
+        "fortran_order": false,
+        "header_sha256": "637ce1f51bbb86f7b5ff9e96a3d9fe8ae9d428c2be11b789110316ab4ac84462"
+      },
+      "shadow_offset": {
+        "shape": [
+          600,
+          128
+        ],
+        "dtype": "<f4",
+        "fortran_order": false,
+        "header_sha256": "0399802b15786dc2541c2b3f38b89ebffe99296effa4298d2dab2c4992e6b2f1"
+      },
+      "shadow_clear": {
+        "shape": [
+          600,
+          128
+        ],
+        "dtype": "|b1",
+        "fortran_order": false,
+        "header_sha256": "637ce1f51bbb86f7b5ff9e96a3d9fe8ae9d428c2be11b789110316ab4ac84462"
+      },
+      "budget_error": {
+        "shape": [
+          600,
+          128,
+          3
+        ],
+        "dtype": "<f4",
+        "fortran_order": false,
+        "header_sha256": "a1ece15f681548d36b02aa4faa3533c8bbf2c317d12847d4926f26d17a0a559e"
+      },
+      "sham_sign": {
+        "shape": [
+          600,
+          128
+        ],
+        "dtype": "<f4",
+        "fortran_order": false,
+        "header_sha256": "0399802b15786dc2541c2b3f38b89ebffe99296effa4298d2dab2c4992e6b2f1"
+      },
+      "selected_side": {
+        "shape": [
+          600,
+          128
+        ],
+        "dtype": "<f4",
+        "fortran_order": false,
+        "header_sha256": "0399802b15786dc2541c2b3f38b89ebffe99296effa4298d2dab2c4992e6b2f1"
+      },
+      "sham_side": {
+        "shape": [
+          600,
+          128
+        ],
+        "dtype": "<f4",
+        "fortran_order": false,
+        "header_sha256": "0399802b15786dc2541c2b3f38b89ebffe99296effa4298d2dab2c4992e6b2f1"
+      },
+      "candidate_scores": {
+        "shape": [
+          600,
+          128,
+          17
+        ],
+        "dtype": "<f4",
+        "fortran_order": false,
+        "header_sha256": "a90c67de768090a35d419ebffb0719c914f748d3fb6d66679aeeea19a3089898"
+      },
+      "direction_valid": {
+        "shape": [
+          600,
+          128
+        ],
+        "dtype": "|b1",
+        "fortran_order": false,
+        "header_sha256": "637ce1f51bbb86f7b5ff9e96a3d9fe8ae9d428c2be11b789110316ab4ac84462"
+      },
+      "schedule_lateral_mps": {
+        "shape": [
+          600,
+          128
+        ],
+        "dtype": "<f4",
+        "fortran_order": false,
+        "header_sha256": "0399802b15786dc2541c2b3f38b89ebffe99296effa4298d2dab2c4992e6b2f1"
+      },
+      "reference_norm_mps": {
+        "shape": [
+          600,
+          128
+        ],
+        "dtype": "<f4",
+        "fortran_order": false,
+        "header_sha256": "0399802b15786dc2541c2b3f38b89ebffe99296effa4298d2dab2c4992e6b2f1"
+      },
+      "budget_frozen": {
+        "shape": [
+          600,
+          128
+        ],
+        "dtype": "|b1",
+        "fortran_order": false,
+        "header_sha256": "637ce1f51bbb86f7b5ff9e96a3d9fe8ae9d428c2be11b789110316ab4ac84462"
+      },
+      "decision_index": {
+        "shape": [
+          600,
+          128
+        ],
+        "dtype": "<i8",
+        "fortran_order": false,
+        "header_sha256": "56a1694f2718f183e3fa3c436a593754cc8795f6f469653d51bae168cdfb18f1"
+      },
+      "episode_id": {
+        "shape": [
+          600,
+          128
+        ],
+        "dtype": "<i8",
+        "fortran_order": false,
+        "header_sha256": "56a1694f2718f183e3fa3c436a593754cc8795f6f469653d51bae168cdfb18f1"
+      },
+      "event_id": {
+        "shape": [
+          600,
+          128
+        ],
+        "dtype": "<i8",
+        "fortran_order": false,
+        "header_sha256": "56a1694f2718f183e3fa3c436a593754cc8795f6f469653d51bae168cdfb18f1"
+      },
+      "id_detector_px": {
+        "shape": [
+          600,
+          128
+        ],
+        "dtype": "<i8",
+        "fortran_order": false,
+        "header_sha256": "56a1694f2718f183e3fa3c436a593754cc8795f6f469653d51bae168cdfb18f1"
+      },
+      "id_visible_px": {
+        "shape": [
+          600,
+          128
+        ],
+        "dtype": "<i8",
+        "fortran_order": false,
+        "header_sha256": "56a1694f2718f183e3fa3c436a593754cc8795f6f469653d51bae168cdfb18f1"
+      },
+      "id_overlap_px": {
+        "shape": [
+          600,
+          128
+        ],
+        "dtype": "<i8",
+        "fortran_order": false,
+        "header_sha256": "56a1694f2718f183e3fa3c436a593754cc8795f6f469653d51bae168cdfb18f1"
+      },
+      "id_detector_false_px": {
+        "shape": [
+          600,
+          128
+        ],
+        "dtype": "<i8",
+        "fortran_order": false,
+        "header_sha256": "56a1694f2718f183e3fa3c436a593754cc8795f6f469653d51bae168cdfb18f1"
+      },
+      "id_detector_overlap_fraction": {
+        "shape": [
+          600,
+          128
+        ],
+        "dtype": "<f4",
+        "fortran_order": false,
+        "header_sha256": "0399802b15786dc2541c2b3f38b89ebffe99296effa4298d2dab2c4992e6b2f1"
+      },
+      "id_target_recall": {
+        "shape": [
+          600,
+          128
+        ],
+        "dtype": "<f4",
+        "fortran_order": false,
+        "header_sha256": "0399802b15786dc2541c2b3f38b89ebffe99296effa4298d2dab2c4992e6b2f1"
+      },
+      "id_mask_iou": {
+        "shape": [
+          600,
+          128
+        ],
+        "dtype": "<f4",
+        "fortran_order": false,
+        "header_sha256": "0399802b15786dc2541c2b3f38b89ebffe99296effa4298d2dab2c4992e6b2f1"
+      },
+      "id_detector_bbox": {
+        "shape": [
+          600,
+          128,
+          4
+        ],
+        "dtype": "<i8",
+        "fortran_order": false,
+        "header_sha256": "4ae98b60b88f9d2977511290bec1cb6403606498414128af80774908903acd37"
+      },
+      "id_reported_centroid_uv": {
+        "shape": [
+          600,
+          128,
+          2
+        ],
+        "dtype": "<f4",
+        "fortran_order": false,
+        "header_sha256": "d5daed90175f5ad4599774311528840f9fc340710f1d1e4a712822e0d6ffc92b"
+      },
+      "id_centroid_near_visible": {
+        "shape": [
+          600,
+          128
+        ],
+        "dtype": "|b1",
+        "fortran_order": false,
+        "header_sha256": "637ce1f51bbb86f7b5ff9e96a3d9fe8ae9d428c2be11b789110316ab4ac84462"
+      },
+      "id_camera_delivered": {
+        "shape": [
+          600,
+          128
+        ],
+        "dtype": "|b1",
+        "fortran_order": false,
+        "header_sha256": "637ce1f51bbb86f7b5ff9e96a3d9fe8ae9d428c2be11b789110316ab4ac84462"
+      },
+      "id_camera_identity_correct": {
+        "shape": [
+          600,
+          128
+        ],
+        "dtype": "|b1",
+        "fortran_order": false,
+        "header_sha256": "637ce1f51bbb86f7b5ff9e96a3d9fe8ae9d428c2be11b789110316ab4ac84462"
+      },
+      "id_camera_identity_correct_025": {
+        "shape": [
+          600,
+          128
+        ],
+        "dtype": "|b1",
+        "fortran_order": false,
+        "header_sha256": "637ce1f51bbb86f7b5ff9e96a3d9fe8ae9d428c2be11b789110316ab4ac84462"
+      },
+      "id_camera_identity_correct_075": {
+        "shape": [
+          600,
+          128
+        ],
+        "dtype": "|b1",
+        "fortran_order": false,
+        "header_sha256": "637ce1f51bbb86f7b5ff9e96a3d9fe8ae9d428c2be11b789110316ab4ac84462"
+      },
+      "camera": {
+        "shape": [
+          600,
+          128
+        ],
+        "dtype": "|b1",
+        "fortran_order": false,
+        "header_sha256": "637ce1f51bbb86f7b5ff9e96a3d9fe8ae9d428c2be11b789110316ab4ac84462"
+      },
+      "lidar_only": {
+        "shape": [
+          600,
+          128
+        ],
+        "dtype": "|b1",
+        "fortran_order": false,
+        "header_sha256": "637ce1f51bbb86f7b5ff9e96a3d9fe8ae9d428c2be11b789110316ab4ac84462"
+      },
+      "el0_cls": {
+        "shape": [
+          600,
+          128
+        ],
+        "dtype": "<i8",
+        "fortran_order": false,
+        "header_sha256": "56a1694f2718f183e3fa3c436a593754cc8795f6f469653d51bae168cdfb18f1"
+      },
+      "el0_visible_px": {
+        "shape": [
+          600,
+          128
+        ],
+        "dtype": "<i8",
+        "fortran_order": false,
+        "header_sha256": "56a1694f2718f183e3fa3c436a593754cc8795f6f469653d51bae168cdfb18f1"
+      },
+      "el0_alone_px": {
+        "shape": [
+          600,
+          128
+        ],
+        "dtype": "<i8",
+        "fortran_order": false,
+        "header_sha256": "56a1694f2718f183e3fa3c436a593754cc8795f6f469653d51bae168cdfb18f1"
+      },
+      "el0_in_frustum": {
+        "shape": [
+          600,
+          128
+        ],
+        "dtype": "|b1",
+        "fortran_order": false,
+        "header_sha256": "637ce1f51bbb86f7b5ff9e96a3d9fe8ae9d428c2be11b789110316ab4ac84462"
+      },
+      "reset": {
+        "shape": [
+          600,
+          128
+        ],
+        "dtype": "|b1",
+        "fortran_order": false,
+        "header_sha256": "637ce1f51bbb86f7b5ff9e96a3d9fe8ae9d428c2be11b789110316ab4ac84462"
+      },
+      "natural_reset": {
+        "shape": [
+          600,
+          128
+        ],
+        "dtype": "|b1",
+        "fortran_order": false,
+        "header_sha256": "637ce1f51bbb86f7b5ff9e96a3d9fe8ae9d428c2be11b789110316ab4ac84462"
+      },
+      "forced_injected": {
+        "shape": [
+          600,
+          128
+        ],
+        "dtype": "|b1",
+        "fortran_order": false,
+        "header_sha256": "637ce1f51bbb86f7b5ff9e96a3d9fe8ae9d428c2be11b789110316ab4ac84462"
+      },
+      "crashed": {
+        "shape": [
+          600,
+          128
+        ],
+        "dtype": "|b1",
+        "fortran_order": false,
+        "header_sha256": "637ce1f51bbb86f7b5ff9e96a3d9fe8ae9d428c2be11b789110316ab4ac84462"
+      },
+      "captured": {
+        "shape": [
+          600,
+          128
+        ],
+        "dtype": "|b1",
+        "fortran_order": false,
+        "header_sha256": "637ce1f51bbb86f7b5ff9e96a3d9fe8ae9d428c2be11b789110316ab4ac84462"
+      },
+      "timeout": {
+        "shape": [
+          600,
+          128
+        ],
+        "dtype": "|b1",
+        "fortran_order": false,
+        "header_sha256": "637ce1f51bbb86f7b5ff9e96a3d9fe8ae9d428c2be11b789110316ab4ac84462"
+      },
+      "actual_pos": {
+        "shape": [
+          600,
+          128,
+          3
+        ],
+        "dtype": "<f4",
+        "fortran_order": false,
+        "header_sha256": "a1ece15f681548d36b02aa4faa3533c8bbf2c317d12847d4926f26d17a0a559e"
+      },
+      "actual_vel": {
+        "shape": [
+          600,
+          128,
+          3
+        ],
+        "dtype": "<f4",
+        "fortran_order": false,
+        "header_sha256": "a1ece15f681548d36b02aa4faa3533c8bbf2c317d12847d4926f26d17a0a559e"
+      },
+      "actual_angvel": {
+        "shape": [
+          600,
+          128,
+          3
+        ],
+        "dtype": "<f4",
+        "fortran_order": false,
+        "header_sha256": "a1ece15f681548d36b02aa4faa3533c8bbf2c317d12847d4926f26d17a0a559e"
+      },
+      "target_pos": {
+        "shape": [
+          600,
+          128,
+          3
+        ],
+        "dtype": "<f4",
+        "fortran_order": false,
+        "header_sha256": "a1ece15f681548d36b02aa4faa3533c8bbf2c317d12847d4926f26d17a0a559e"
+      },
+      "robot_pos": {
+        "shape": [
+          600,
+          128,
+          3
+        ],
+        "dtype": "<f4",
+        "fortran_order": false,
+        "header_sha256": "a1ece15f681548d36b02aa4faa3533c8bbf2c317d12847d4926f26d17a0a559e"
+      },
+      "belief_pos": {
+        "shape": [
+          600,
+          128,
+          3
+        ],
+        "dtype": "<f4",
+        "fortran_order": false,
+        "header_sha256": "a1ece15f681548d36b02aa4faa3533c8bbf2c317d12847d4926f26d17a0a559e"
+      },
+      "tracker_active": {
+        "shape": [
+          600,
+          128
+        ],
+        "dtype": "|b1",
+        "fortran_order": false,
+        "header_sha256": "637ce1f51bbb86f7b5ff9e96a3d9fe8ae9d428c2be11b789110316ab4ac84462"
+      },
+      "tracker_age": {
+        "shape": [
+          600,
+          128
+        ],
+        "dtype": "<f4",
+        "fortran_order": false,
+        "header_sha256": "0399802b15786dc2541c2b3f38b89ebffe99296effa4298d2dab2c4992e6b2f1"
+      },
+      "command": {
+        "shape": [
+          600,
+          128,
+          4
+        ],
+        "dtype": "<f4",
+        "fortran_order": false,
+        "header_sha256": "d78a2fccbb9e819ee58e13447b0bf0db070017cd7246e84cb9d7211f379d5bb1"
+      },
+      "contact_peak_n": {
+        "shape": [
+          600,
+          128
+        ],
+        "dtype": "<f4",
+        "fortran_order": false,
+        "header_sha256": "0399802b15786dc2541c2b3f38b89ebffe99296effa4298d2dab2c4992e6b2f1"
+      },
+      "contact_substeps": {
+        "shape": [
+          600,
+          128
+        ],
+        "dtype": "<i8",
+        "fortran_order": false,
+        "header_sha256": "56a1694f2718f183e3fa3c436a593754cc8795f6f469653d51bae168cdfb18f1"
+      },
+      "rng_probe": {
+        "shape": [
+          600,
+          128,
+          4
+        ],
+        "dtype": "<f4",
+        "fortran_order": false,
+        "header_sha256": "d78a2fccbb9e819ee58e13447b0bf0db070017cd7246e84cb9d7211f379d5bb1"
+      },
+      "governor_clearance_m": {
+        "shape": [
+          600,
+          128
+        ],
+        "dtype": "<f4",
+        "fortran_order": false,
+        "header_sha256": "0399802b15786dc2541c2b3f38b89ebffe99296effa4298d2dab2c4992e6b2f1"
+      },
+      "governor_requested_speed_mps": {
+        "shape": [
+          600,
+          128
+        ],
+        "dtype": "<f4",
+        "fortran_order": false,
+        "header_sha256": "0399802b15786dc2541c2b3f38b89ebffe99296effa4298d2dab2c4992e6b2f1"
+      },
+      "governor_executed_speed_mps": {
+        "shape": [
+          600,
+          128
+        ],
+        "dtype": "<f4",
+        "fortran_order": false,
+        "header_sha256": "0399802b15786dc2541c2b3f38b89ebffe99296effa4298d2dab2c4992e6b2f1"
+      },
+      "governor_scale": {
+        "shape": [
+          600,
+          128
+        ],
+        "dtype": "<f4",
+        "fortran_order": false,
+        "header_sha256": "0399802b15786dc2541c2b3f38b89ebffe99296effa4298d2dab2c4992e6b2f1"
+      },
+      "digest": {
+        "shape": [
+          600,
+          128,
+          32
+        ],
+        "dtype": "|u1",
+        "fortran_order": false,
+        "header_sha256": "fb82e197a22fe06df64df0c5ebcaa16365c53a2575f4635567c8b8d161473420"
+      },
+      "sensor_digest": {
+        "shape": [
+          600,
+          128,
+          32
+        ],
+        "dtype": "|u1",
+        "fortran_order": false,
+        "header_sha256": "fb82e197a22fe06df64df0c5ebcaa16365c53a2575f4635567c8b8d161473420"
+      },
+      "rgb_digest": {
+        "shape": [
+          600,
+          128,
+          32
+        ],
+        "dtype": "|u1",
+        "fortran_order": false,
+        "header_sha256": "fb82e197a22fe06df64df0c5ebcaa16365c53a2575f4635567c8b8d161473420"
+      },
+      "depth_digest": {
+        "shape": [
+          600,
+          128,
+          32
+        ],
+        "dtype": "|u1",
+        "fortran_order": false,
+        "header_sha256": "fb82e197a22fe06df64df0c5ebcaa16365c53a2575f4635567c8b8d161473420"
+      },
+      "lidar_digest": {
+        "shape": [
+          600,
+          128,
+          32
+        ],
+        "dtype": "|u1",
+        "fortran_order": false,
+        "header_sha256": "fb82e197a22fe06df64df0c5ebcaa16365c53a2575f4635567c8b8d161473420"
+      },
+      "roots_digest": {
+        "shape": [
+          600,
+          128,
+          32
+        ],
+        "dtype": "|u1",
+        "fortran_order": false,
+        "header_sha256": "fb82e197a22fe06df64df0c5ebcaa16365c53a2575f4635567c8b8d161473420"
+      },
+      "tracker_digest": {
+        "shape": [
+          600,
+          128,
+          32
+        ],
+        "dtype": "|u1",
+        "fortran_order": false,
+        "header_sha256": "fb82e197a22fe06df64df0c5ebcaa16365c53a2575f4635567c8b8d161473420"
+      },
+      "actor_history_digest": {
+        "shape": [
+          600,
+          128,
+          32
+        ],
+        "dtype": "|u1",
+        "fortran_order": false,
+        "header_sha256": "fb82e197a22fe06df64df0c5ebcaa16365c53a2575f4635567c8b8d161473420"
+      },
+      "initial_camera": {
+        "shape": [
+          128
+        ],
+        "dtype": "|b1",
+        "fortran_order": false,
+        "header_sha256": "7a4d5185f14be2fd29ea58107e2c12d22d08a5a9f6450152cf2c3dc0dafa208f"
+      },
+      "initial_identity_correct": {
+        "shape": [
+          128
+        ],
+        "dtype": "|b1",
+        "fortran_order": false,
+        "header_sha256": "7a4d5185f14be2fd29ea58107e2c12d22d08a5a9f6450152cf2c3dc0dafa208f"
+      },
+      "t0": {
+        "shape": [
+          128
+        ],
+        "dtype": "<i8",
+        "fortran_order": false,
+        "header_sha256": "527ce83cdb90e26189d0c4f8be8b1e8559547a71759e04ae4711032eae1b4e89"
+      },
+      "event_schedule_lateral_mps": {
+        "shape": [
+          128,
+          20
+        ],
+        "dtype": "<f4",
+        "fortran_order": false,
+        "header_sha256": "3a14e440c1e56adeea330ee7a5614485db1bf0a23a6e6c063bec43201e443983"
+      },
+      "event_reference_norm_mps": {
+        "shape": [
+          128,
+          20
+        ],
+        "dtype": "<f4",
+        "fortran_order": false,
+        "header_sha256": "3a14e440c1e56adeea330ee7a5614485db1bf0a23a6e6c063bec43201e443983"
+      },
+      "event_budget_digest": {
+        "shape": [
+          128,
+          32
+        ],
+        "dtype": "|u1",
+        "fortran_order": false,
+        "header_sha256": "389b482c8372417401f1f2d6e226906b28abad9d96ec87a0ef9121a7825e74f2"
+      },
+      "controller_ms": {
+        "shape": [
+          600
+        ],
+        "dtype": "<f8",
+        "fortran_order": false,
+        "header_sha256": "dd4f3db443e568f38bd769cece496c69435f74e13c717fd298b0881dd883638c"
+      },
+      "geometry_check_ms": {
+        "shape": [
+          600
+        ],
+        "dtype": "<f8",
+        "fortran_order": false,
+        "header_sha256": "dd4f3db443e568f38bd769cece496c69435f74e13c717fd298b0881dd883638c"
+      },
+      "initial_digest": {
+        "shape": [
+          128,
+          32
+        ],
+        "dtype": "|u1",
+        "fortran_order": false,
+        "header_sha256": "389b482c8372417401f1f2d6e226906b28abad9d96ec87a0ef9121a7825e74f2"
+      },
+      "initial_sensor_digest": {
+        "shape": [
+          128,
+          32
+        ],
+        "dtype": "|u1",
+        "fortran_order": false,
+        "header_sha256": "389b482c8372417401f1f2d6e226906b28abad9d96ec87a0ef9121a7825e74f2"
+      },
+      "initial_rgb_digest": {
+        "shape": [
+          128,
+          32
+        ],
+        "dtype": "|u1",
+        "fortran_order": false,
+        "header_sha256": "389b482c8372417401f1f2d6e226906b28abad9d96ec87a0ef9121a7825e74f2"
+      },
+      "initial_depth_digest": {
+        "shape": [
+          128,
+          32
+        ],
+        "dtype": "|u1",
+        "fortran_order": false,
+        "header_sha256": "389b482c8372417401f1f2d6e226906b28abad9d96ec87a0ef9121a7825e74f2"
+      },
+      "initial_lidar_digest": {
+        "shape": [
+          128,
+          32
+        ],
+        "dtype": "|u1",
+        "fortran_order": false,
+        "header_sha256": "389b482c8372417401f1f2d6e226906b28abad9d96ec87a0ef9121a7825e74f2"
+      },
+      "initial_roots_digest": {
+        "shape": [
+          128,
+          32
+        ],
+        "dtype": "|u1",
+        "fortran_order": false,
+        "header_sha256": "389b482c8372417401f1f2d6e226906b28abad9d96ec87a0ef9121a7825e74f2"
+      },
+      "initial_tracker_digest": {
+        "shape": [
+          128,
+          32
+        ],
+        "dtype": "|u1",
+        "fortran_order": false,
+        "header_sha256": "389b482c8372417401f1f2d6e226906b28abad9d96ec87a0ef9121a7825e74f2"
+      },
+      "initial_actor_history_digest": {
+        "shape": [
+          128,
+          32
+        ],
+        "dtype": "|u1",
+        "fortran_order": false,
+        "header_sha256": "389b482c8372417401f1f2d6e226906b28abad9d96ec87a0ef9121a7825e74f2"
+      }
+    },
+    "array_payload_read": false
+  },
+  "p03_snapshot_names": [
+    "initial",
+    "step0000",
+    "step0001",
+    "step0002",
+    "step0003",
+    "step0004",
+    "step0038",
+    "step0039",
+    "step0040",
+    "step0041",
+    "step0042",
+    "step0598",
+    "step0599"
+  ],
+  "p03_snapshots": [
+    {
+      "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/h_r3_p03_qualification_v1/HR3-P03-Q01/long_B0/snapshots/initial.npz",
+      "status": "HEADER_ONLY",
+      "bytes": 9682166,
+      "arrays": {
+        "rgb": {
+          "shape": [
+            128,
+            3,
+            90,
+            160
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "98fc36875e5cdb7cb41a36069619ac190ba1c2e648d6a21a8911113fdddc53cd"
+        },
+        "depth": {
+          "shape": [
+            128,
+            90,
+            160
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "77fb021e6bc793c97b46434fdabd74c1c8abeeb52f620340f4bb6fb154b24f62"
+        },
+        "lidar": {
+          "shape": [
+            128,
+            288
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "6fac1698fa7267fef28b79318a116ef45a91c84973e6ae21784b1ba9b4a890af"
+        },
+        "actor_obs": {
+          "shape": [
+            128,
+            898
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "7492f15f8d6b4649eb0db8a76148f3f2d27418d46a55c175e1790be14d31749f"
+        },
+        "root_state": {
+          "shape": [
+            128,
+            301,
+            13
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "7476aac2d3538302802ee587a5c8a63547270a668bcd90220dbb304f5317a193"
+        },
+        "vertices": {
+          "shape": [
+            307200,
+            3
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "662b0b30880f4eb3ce49ca2806d0e278aa7d199839c556656b046ff55ac8b423"
+        },
+        "vertex_env_index": {
+          "shape": [
+            307200
+          ],
+          "dtype": "<i8",
+          "fortran_order": false,
+          "header_sha256": "e14c555d064edb11396d4bcc31119f4d05b7fa181906bcfd777d0eab77e37829"
+        },
+        "vertex_actor_index": {
+          "shape": [
+            307200
+          ],
+          "dtype": "<i8",
+          "fortran_order": false,
+          "header_sha256": "e14c555d064edb11396d4bcc31119f4d05b7fa181906bcfd777d0eab77e37829"
+        },
+        "vertex_ranges": {
+          "shape": [
+            128,
+            2
+          ],
+          "dtype": "<i8",
+          "fortran_order": false,
+          "header_sha256": "e3a4cb9f827cc78fa32b475b628cc37a0c954b7ebb3f82eae0b11870d3eb21dc"
+        },
+        "mesh_ids": {
+          "shape": [
+            128
+          ],
+          "dtype": "<u8",
+          "fortran_order": false,
+          "header_sha256": "6cb8476f9970679fda4779aadbf7c6775cb161af35187584df658a3ffb02f5b6"
+        },
+        "action": {
+          "shape": [
+            128,
+            4
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "464e18dab18da41af49add866aa82ba1e6e0c1ce76961124734fcd4792b0d526"
+        },
+        "tracker_state": {
+          "shape": [
+            128,
+            6
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "db91828ad0902eeb34d2990a3cff8c95f3d23bf5eb3af9f2f41afb2194046f29"
+        },
+        "tracker_cov": {
+          "shape": [
+            128,
+            6,
+            6
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "1ad2a1f00f7b7255bc007a757a2a4faae2abe37e76de35924c1885dd8967895e"
+        },
+        "tracker_age": {
+          "shape": [
+            128
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "330444a12124e2e5e55411baa17a6a471b9e5909b4deb620f384054c4386873d"
+        },
+        "tracker_active": {
+          "shape": [
+            128
+          ],
+          "dtype": "|b1",
+          "fortran_order": false,
+          "header_sha256": "7a4d5185f14be2fd29ea58107e2c12d22d08a5a9f6450152cf2c3dc0dafa208f"
+        },
+        "robot_history": {
+          "shape": [
+            128,
+            5,
+            10
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "f1d167d94fde6c3c5362592c97eea15b228b4b74eaa01d63172603cfcbf96d3a"
+        },
+        "target_history": {
+          "shape": [
+            128,
+            5,
+            16
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "144ba5f2c8ea284c68f64e29942fba045424a759bdd99f21b974c032d4ba516f"
+        },
+        "obstacle_history": {
+          "shape": [
+            128,
+            5,
+            8,
+            12
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "7cdfdba1c828a0f80adcc0b5d78e9b486d4e6740b6d424fda0af72444e530347"
+        },
+        "rgb_sha": {
+          "shape": [
+            128,
+            32
+          ],
+          "dtype": "|u1",
+          "fortran_order": false,
+          "header_sha256": "389b482c8372417401f1f2d6e226906b28abad9d96ec87a0ef9121a7825e74f2"
+        },
+        "depth_sha": {
+          "shape": [
+            128,
+            32
+          ],
+          "dtype": "|u1",
+          "fortran_order": false,
+          "header_sha256": "389b482c8372417401f1f2d6e226906b28abad9d96ec87a0ef9121a7825e74f2"
+        },
+        "lidar_sha": {
+          "shape": [
+            128,
+            32
+          ],
+          "dtype": "|u1",
+          "fortran_order": false,
+          "header_sha256": "389b482c8372417401f1f2d6e226906b28abad9d96ec87a0ef9121a7825e74f2"
+        }
+      },
+      "array_payload_read": false
+    },
+    {
+      "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/h_r3_p03_qualification_v1/HR3-P03-Q01/long_B0/snapshots/step0000.npz",
+      "status": "HEADER_ONLY",
+      "bytes": 9715728,
+      "arrays": {
+        "rgb": {
+          "shape": [
+            128,
+            3,
+            90,
+            160
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "98fc36875e5cdb7cb41a36069619ac190ba1c2e648d6a21a8911113fdddc53cd"
+        },
+        "depth": {
+          "shape": [
+            128,
+            90,
+            160
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "77fb021e6bc793c97b46434fdabd74c1c8abeeb52f620340f4bb6fb154b24f62"
+        },
+        "lidar": {
+          "shape": [
+            128,
+            288
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "6fac1698fa7267fef28b79318a116ef45a91c84973e6ae21784b1ba9b4a890af"
+        },
+        "actor_obs": {
+          "shape": [
+            128,
+            898
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "7492f15f8d6b4649eb0db8a76148f3f2d27418d46a55c175e1790be14d31749f"
+        },
+        "root_state": {
+          "shape": [
+            128,
+            301,
+            13
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "7476aac2d3538302802ee587a5c8a63547270a668bcd90220dbb304f5317a193"
+        },
+        "vertices": {
+          "shape": [
+            307200,
+            3
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "662b0b30880f4eb3ce49ca2806d0e278aa7d199839c556656b046ff55ac8b423"
+        },
+        "vertex_env_index": {
+          "shape": [
+            307200
+          ],
+          "dtype": "<i8",
+          "fortran_order": false,
+          "header_sha256": "e14c555d064edb11396d4bcc31119f4d05b7fa181906bcfd777d0eab77e37829"
+        },
+        "vertex_actor_index": {
+          "shape": [
+            307200
+          ],
+          "dtype": "<i8",
+          "fortran_order": false,
+          "header_sha256": "e14c555d064edb11396d4bcc31119f4d05b7fa181906bcfd777d0eab77e37829"
+        },
+        "vertex_ranges": {
+          "shape": [
+            128,
+            2
+          ],
+          "dtype": "<i8",
+          "fortran_order": false,
+          "header_sha256": "e3a4cb9f827cc78fa32b475b628cc37a0c954b7ebb3f82eae0b11870d3eb21dc"
+        },
+        "mesh_ids": {
+          "shape": [
+            128
+          ],
+          "dtype": "<u8",
+          "fortran_order": false,
+          "header_sha256": "6cb8476f9970679fda4779aadbf7c6775cb161af35187584df658a3ffb02f5b6"
+        },
+        "action": {
+          "shape": [
+            128,
+            4
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "464e18dab18da41af49add866aa82ba1e6e0c1ce76961124734fcd4792b0d526"
+        },
+        "tracker_state": {
+          "shape": [
+            128,
+            6
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "db91828ad0902eeb34d2990a3cff8c95f3d23bf5eb3af9f2f41afb2194046f29"
+        },
+        "tracker_cov": {
+          "shape": [
+            128,
+            6,
+            6
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "1ad2a1f00f7b7255bc007a757a2a4faae2abe37e76de35924c1885dd8967895e"
+        },
+        "tracker_age": {
+          "shape": [
+            128
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "330444a12124e2e5e55411baa17a6a471b9e5909b4deb620f384054c4386873d"
+        },
+        "tracker_active": {
+          "shape": [
+            128
+          ],
+          "dtype": "|b1",
+          "fortran_order": false,
+          "header_sha256": "7a4d5185f14be2fd29ea58107e2c12d22d08a5a9f6450152cf2c3dc0dafa208f"
+        },
+        "robot_history": {
+          "shape": [
+            128,
+            5,
+            10
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "f1d167d94fde6c3c5362592c97eea15b228b4b74eaa01d63172603cfcbf96d3a"
+        },
+        "target_history": {
+          "shape": [
+            128,
+            5,
+            16
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "144ba5f2c8ea284c68f64e29942fba045424a759bdd99f21b974c032d4ba516f"
+        },
+        "obstacle_history": {
+          "shape": [
+            128,
+            5,
+            8,
+            12
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "7cdfdba1c828a0f80adcc0b5d78e9b486d4e6740b6d424fda0af72444e530347"
+        },
+        "rgb_sha": {
+          "shape": [
+            128,
+            32
+          ],
+          "dtype": "|u1",
+          "fortran_order": false,
+          "header_sha256": "389b482c8372417401f1f2d6e226906b28abad9d96ec87a0ef9121a7825e74f2"
+        },
+        "depth_sha": {
+          "shape": [
+            128,
+            32
+          ],
+          "dtype": "|u1",
+          "fortran_order": false,
+          "header_sha256": "389b482c8372417401f1f2d6e226906b28abad9d96ec87a0ef9121a7825e74f2"
+        },
+        "lidar_sha": {
+          "shape": [
+            128,
+            32
+          ],
+          "dtype": "|u1",
+          "fortran_order": false,
+          "header_sha256": "389b482c8372417401f1f2d6e226906b28abad9d96ec87a0ef9121a7825e74f2"
+        }
+      },
+      "array_payload_read": false
+    },
+    {
+      "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/h_r3_p03_qualification_v1/HR3-P03-Q01/long_B0/snapshots/step0001.npz",
+      "status": "HEADER_ONLY",
+      "bytes": 9545816,
+      "arrays": {
+        "rgb": {
+          "shape": [
+            128,
+            3,
+            90,
+            160
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "98fc36875e5cdb7cb41a36069619ac190ba1c2e648d6a21a8911113fdddc53cd"
+        },
+        "depth": {
+          "shape": [
+            128,
+            90,
+            160
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "77fb021e6bc793c97b46434fdabd74c1c8abeeb52f620340f4bb6fb154b24f62"
+        },
+        "lidar": {
+          "shape": [
+            128,
+            288
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "6fac1698fa7267fef28b79318a116ef45a91c84973e6ae21784b1ba9b4a890af"
+        },
+        "actor_obs": {
+          "shape": [
+            128,
+            898
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "7492f15f8d6b4649eb0db8a76148f3f2d27418d46a55c175e1790be14d31749f"
+        },
+        "root_state": {
+          "shape": [
+            128,
+            301,
+            13
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "7476aac2d3538302802ee587a5c8a63547270a668bcd90220dbb304f5317a193"
+        },
+        "vertices": {
+          "shape": [
+            307200,
+            3
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "662b0b30880f4eb3ce49ca2806d0e278aa7d199839c556656b046ff55ac8b423"
+        },
+        "vertex_env_index": {
+          "shape": [
+            307200
+          ],
+          "dtype": "<i8",
+          "fortran_order": false,
+          "header_sha256": "e14c555d064edb11396d4bcc31119f4d05b7fa181906bcfd777d0eab77e37829"
+        },
+        "vertex_actor_index": {
+          "shape": [
+            307200
+          ],
+          "dtype": "<i8",
+          "fortran_order": false,
+          "header_sha256": "e14c555d064edb11396d4bcc31119f4d05b7fa181906bcfd777d0eab77e37829"
+        },
+        "vertex_ranges": {
+          "shape": [
+            128,
+            2
+          ],
+          "dtype": "<i8",
+          "fortran_order": false,
+          "header_sha256": "e3a4cb9f827cc78fa32b475b628cc37a0c954b7ebb3f82eae0b11870d3eb21dc"
+        },
+        "mesh_ids": {
+          "shape": [
+            128
+          ],
+          "dtype": "<u8",
+          "fortran_order": false,
+          "header_sha256": "6cb8476f9970679fda4779aadbf7c6775cb161af35187584df658a3ffb02f5b6"
+        },
+        "action": {
+          "shape": [
+            128,
+            4
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "464e18dab18da41af49add866aa82ba1e6e0c1ce76961124734fcd4792b0d526"
+        },
+        "tracker_state": {
+          "shape": [
+            128,
+            6
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "db91828ad0902eeb34d2990a3cff8c95f3d23bf5eb3af9f2f41afb2194046f29"
+        },
+        "tracker_cov": {
+          "shape": [
+            128,
+            6,
+            6
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "1ad2a1f00f7b7255bc007a757a2a4faae2abe37e76de35924c1885dd8967895e"
+        },
+        "tracker_age": {
+          "shape": [
+            128
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "330444a12124e2e5e55411baa17a6a471b9e5909b4deb620f384054c4386873d"
+        },
+        "tracker_active": {
+          "shape": [
+            128
+          ],
+          "dtype": "|b1",
+          "fortran_order": false,
+          "header_sha256": "7a4d5185f14be2fd29ea58107e2c12d22d08a5a9f6450152cf2c3dc0dafa208f"
+        },
+        "robot_history": {
+          "shape": [
+            128,
+            5,
+            10
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "f1d167d94fde6c3c5362592c97eea15b228b4b74eaa01d63172603cfcbf96d3a"
+        },
+        "target_history": {
+          "shape": [
+            128,
+            5,
+            16
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "144ba5f2c8ea284c68f64e29942fba045424a759bdd99f21b974c032d4ba516f"
+        },
+        "obstacle_history": {
+          "shape": [
+            128,
+            5,
+            8,
+            12
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "7cdfdba1c828a0f80adcc0b5d78e9b486d4e6740b6d424fda0af72444e530347"
+        },
+        "rgb_sha": {
+          "shape": [
+            128,
+            32
+          ],
+          "dtype": "|u1",
+          "fortran_order": false,
+          "header_sha256": "389b482c8372417401f1f2d6e226906b28abad9d96ec87a0ef9121a7825e74f2"
+        },
+        "depth_sha": {
+          "shape": [
+            128,
+            32
+          ],
+          "dtype": "|u1",
+          "fortran_order": false,
+          "header_sha256": "389b482c8372417401f1f2d6e226906b28abad9d96ec87a0ef9121a7825e74f2"
+        },
+        "lidar_sha": {
+          "shape": [
+            128,
+            32
+          ],
+          "dtype": "|u1",
+          "fortran_order": false,
+          "header_sha256": "389b482c8372417401f1f2d6e226906b28abad9d96ec87a0ef9121a7825e74f2"
+        }
+      },
+      "array_payload_read": false
+    },
+    {
+      "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/h_r3_p03_qualification_v1/HR3-P03-Q01/long_B0/snapshots/step0002.npz",
+      "status": "HEADER_ONLY",
+      "bytes": 9252831,
+      "arrays": {
+        "rgb": {
+          "shape": [
+            128,
+            3,
+            90,
+            160
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "98fc36875e5cdb7cb41a36069619ac190ba1c2e648d6a21a8911113fdddc53cd"
+        },
+        "depth": {
+          "shape": [
+            128,
+            90,
+            160
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "77fb021e6bc793c97b46434fdabd74c1c8abeeb52f620340f4bb6fb154b24f62"
+        },
+        "lidar": {
+          "shape": [
+            128,
+            288
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "6fac1698fa7267fef28b79318a116ef45a91c84973e6ae21784b1ba9b4a890af"
+        },
+        "actor_obs": {
+          "shape": [
+            128,
+            898
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "7492f15f8d6b4649eb0db8a76148f3f2d27418d46a55c175e1790be14d31749f"
+        },
+        "root_state": {
+          "shape": [
+            128,
+            301,
+            13
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "7476aac2d3538302802ee587a5c8a63547270a668bcd90220dbb304f5317a193"
+        },
+        "vertices": {
+          "shape": [
+            307200,
+            3
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "662b0b30880f4eb3ce49ca2806d0e278aa7d199839c556656b046ff55ac8b423"
+        },
+        "vertex_env_index": {
+          "shape": [
+            307200
+          ],
+          "dtype": "<i8",
+          "fortran_order": false,
+          "header_sha256": "e14c555d064edb11396d4bcc31119f4d05b7fa181906bcfd777d0eab77e37829"
+        },
+        "vertex_actor_index": {
+          "shape": [
+            307200
+          ],
+          "dtype": "<i8",
+          "fortran_order": false,
+          "header_sha256": "e14c555d064edb11396d4bcc31119f4d05b7fa181906bcfd777d0eab77e37829"
+        },
+        "vertex_ranges": {
+          "shape": [
+            128,
+            2
+          ],
+          "dtype": "<i8",
+          "fortran_order": false,
+          "header_sha256": "e3a4cb9f827cc78fa32b475b628cc37a0c954b7ebb3f82eae0b11870d3eb21dc"
+        },
+        "mesh_ids": {
+          "shape": [
+            128
+          ],
+          "dtype": "<u8",
+          "fortran_order": false,
+          "header_sha256": "6cb8476f9970679fda4779aadbf7c6775cb161af35187584df658a3ffb02f5b6"
+        },
+        "action": {
+          "shape": [
+            128,
+            4
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "464e18dab18da41af49add866aa82ba1e6e0c1ce76961124734fcd4792b0d526"
+        },
+        "tracker_state": {
+          "shape": [
+            128,
+            6
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "db91828ad0902eeb34d2990a3cff8c95f3d23bf5eb3af9f2f41afb2194046f29"
+        },
+        "tracker_cov": {
+          "shape": [
+            128,
+            6,
+            6
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "1ad2a1f00f7b7255bc007a757a2a4faae2abe37e76de35924c1885dd8967895e"
+        },
+        "tracker_age": {
+          "shape": [
+            128
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "330444a12124e2e5e55411baa17a6a471b9e5909b4deb620f384054c4386873d"
+        },
+        "tracker_active": {
+          "shape": [
+            128
+          ],
+          "dtype": "|b1",
+          "fortran_order": false,
+          "header_sha256": "7a4d5185f14be2fd29ea58107e2c12d22d08a5a9f6450152cf2c3dc0dafa208f"
+        },
+        "robot_history": {
+          "shape": [
+            128,
+            5,
+            10
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "f1d167d94fde6c3c5362592c97eea15b228b4b74eaa01d63172603cfcbf96d3a"
+        },
+        "target_history": {
+          "shape": [
+            128,
+            5,
+            16
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "144ba5f2c8ea284c68f64e29942fba045424a759bdd99f21b974c032d4ba516f"
+        },
+        "obstacle_history": {
+          "shape": [
+            128,
+            5,
+            8,
+            12
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "7cdfdba1c828a0f80adcc0b5d78e9b486d4e6740b6d424fda0af72444e530347"
+        },
+        "rgb_sha": {
+          "shape": [
+            128,
+            32
+          ],
+          "dtype": "|u1",
+          "fortran_order": false,
+          "header_sha256": "389b482c8372417401f1f2d6e226906b28abad9d96ec87a0ef9121a7825e74f2"
+        },
+        "depth_sha": {
+          "shape": [
+            128,
+            32
+          ],
+          "dtype": "|u1",
+          "fortran_order": false,
+          "header_sha256": "389b482c8372417401f1f2d6e226906b28abad9d96ec87a0ef9121a7825e74f2"
+        },
+        "lidar_sha": {
+          "shape": [
+            128,
+            32
+          ],
+          "dtype": "|u1",
+          "fortran_order": false,
+          "header_sha256": "389b482c8372417401f1f2d6e226906b28abad9d96ec87a0ef9121a7825e74f2"
+        }
+      },
+      "array_payload_read": false
+    },
+    {
+      "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/h_r3_p03_qualification_v1/HR3-P03-Q01/long_B0/snapshots/step0003.npz",
+      "status": "HEADER_ONLY",
+      "bytes": 9285235,
+      "arrays": {
+        "rgb": {
+          "shape": [
+            128,
+            3,
+            90,
+            160
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "98fc36875e5cdb7cb41a36069619ac190ba1c2e648d6a21a8911113fdddc53cd"
+        },
+        "depth": {
+          "shape": [
+            128,
+            90,
+            160
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "77fb021e6bc793c97b46434fdabd74c1c8abeeb52f620340f4bb6fb154b24f62"
+        },
+        "lidar": {
+          "shape": [
+            128,
+            288
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "6fac1698fa7267fef28b79318a116ef45a91c84973e6ae21784b1ba9b4a890af"
+        },
+        "actor_obs": {
+          "shape": [
+            128,
+            898
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "7492f15f8d6b4649eb0db8a76148f3f2d27418d46a55c175e1790be14d31749f"
+        },
+        "root_state": {
+          "shape": [
+            128,
+            301,
+            13
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "7476aac2d3538302802ee587a5c8a63547270a668bcd90220dbb304f5317a193"
+        },
+        "vertices": {
+          "shape": [
+            307200,
+            3
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "662b0b30880f4eb3ce49ca2806d0e278aa7d199839c556656b046ff55ac8b423"
+        },
+        "vertex_env_index": {
+          "shape": [
+            307200
+          ],
+          "dtype": "<i8",
+          "fortran_order": false,
+          "header_sha256": "e14c555d064edb11396d4bcc31119f4d05b7fa181906bcfd777d0eab77e37829"
+        },
+        "vertex_actor_index": {
+          "shape": [
+            307200
+          ],
+          "dtype": "<i8",
+          "fortran_order": false,
+          "header_sha256": "e14c555d064edb11396d4bcc31119f4d05b7fa181906bcfd777d0eab77e37829"
+        },
+        "vertex_ranges": {
+          "shape": [
+            128,
+            2
+          ],
+          "dtype": "<i8",
+          "fortran_order": false,
+          "header_sha256": "e3a4cb9f827cc78fa32b475b628cc37a0c954b7ebb3f82eae0b11870d3eb21dc"
+        },
+        "mesh_ids": {
+          "shape": [
+            128
+          ],
+          "dtype": "<u8",
+          "fortran_order": false,
+          "header_sha256": "6cb8476f9970679fda4779aadbf7c6775cb161af35187584df658a3ffb02f5b6"
+        },
+        "action": {
+          "shape": [
+            128,
+            4
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "464e18dab18da41af49add866aa82ba1e6e0c1ce76961124734fcd4792b0d526"
+        },
+        "tracker_state": {
+          "shape": [
+            128,
+            6
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "db91828ad0902eeb34d2990a3cff8c95f3d23bf5eb3af9f2f41afb2194046f29"
+        },
+        "tracker_cov": {
+          "shape": [
+            128,
+            6,
+            6
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "1ad2a1f00f7b7255bc007a757a2a4faae2abe37e76de35924c1885dd8967895e"
+        },
+        "tracker_age": {
+          "shape": [
+            128
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "330444a12124e2e5e55411baa17a6a471b9e5909b4deb620f384054c4386873d"
+        },
+        "tracker_active": {
+          "shape": [
+            128
+          ],
+          "dtype": "|b1",
+          "fortran_order": false,
+          "header_sha256": "7a4d5185f14be2fd29ea58107e2c12d22d08a5a9f6450152cf2c3dc0dafa208f"
+        },
+        "robot_history": {
+          "shape": [
+            128,
+            5,
+            10
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "f1d167d94fde6c3c5362592c97eea15b228b4b74eaa01d63172603cfcbf96d3a"
+        },
+        "target_history": {
+          "shape": [
+            128,
+            5,
+            16
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "144ba5f2c8ea284c68f64e29942fba045424a759bdd99f21b974c032d4ba516f"
+        },
+        "obstacle_history": {
+          "shape": [
+            128,
+            5,
+            8,
+            12
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "7cdfdba1c828a0f80adcc0b5d78e9b486d4e6740b6d424fda0af72444e530347"
+        },
+        "rgb_sha": {
+          "shape": [
+            128,
+            32
+          ],
+          "dtype": "|u1",
+          "fortran_order": false,
+          "header_sha256": "389b482c8372417401f1f2d6e226906b28abad9d96ec87a0ef9121a7825e74f2"
+        },
+        "depth_sha": {
+          "shape": [
+            128,
+            32
+          ],
+          "dtype": "|u1",
+          "fortran_order": false,
+          "header_sha256": "389b482c8372417401f1f2d6e226906b28abad9d96ec87a0ef9121a7825e74f2"
+        },
+        "lidar_sha": {
+          "shape": [
+            128,
+            32
+          ],
+          "dtype": "|u1",
+          "fortran_order": false,
+          "header_sha256": "389b482c8372417401f1f2d6e226906b28abad9d96ec87a0ef9121a7825e74f2"
+        }
+      },
+      "array_payload_read": false
+    },
+    {
+      "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/h_r3_p03_qualification_v1/HR3-P03-Q01/long_B0/snapshots/step0004.npz",
+      "status": "HEADER_ONLY",
+      "bytes": 9490061,
+      "arrays": {
+        "rgb": {
+          "shape": [
+            128,
+            3,
+            90,
+            160
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "98fc36875e5cdb7cb41a36069619ac190ba1c2e648d6a21a8911113fdddc53cd"
+        },
+        "depth": {
+          "shape": [
+            128,
+            90,
+            160
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "77fb021e6bc793c97b46434fdabd74c1c8abeeb52f620340f4bb6fb154b24f62"
+        },
+        "lidar": {
+          "shape": [
+            128,
+            288
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "6fac1698fa7267fef28b79318a116ef45a91c84973e6ae21784b1ba9b4a890af"
+        },
+        "actor_obs": {
+          "shape": [
+            128,
+            898
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "7492f15f8d6b4649eb0db8a76148f3f2d27418d46a55c175e1790be14d31749f"
+        },
+        "root_state": {
+          "shape": [
+            128,
+            301,
+            13
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "7476aac2d3538302802ee587a5c8a63547270a668bcd90220dbb304f5317a193"
+        },
+        "vertices": {
+          "shape": [
+            307200,
+            3
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "662b0b30880f4eb3ce49ca2806d0e278aa7d199839c556656b046ff55ac8b423"
+        },
+        "vertex_env_index": {
+          "shape": [
+            307200
+          ],
+          "dtype": "<i8",
+          "fortran_order": false,
+          "header_sha256": "e14c555d064edb11396d4bcc31119f4d05b7fa181906bcfd777d0eab77e37829"
+        },
+        "vertex_actor_index": {
+          "shape": [
+            307200
+          ],
+          "dtype": "<i8",
+          "fortran_order": false,
+          "header_sha256": "e14c555d064edb11396d4bcc31119f4d05b7fa181906bcfd777d0eab77e37829"
+        },
+        "vertex_ranges": {
+          "shape": [
+            128,
+            2
+          ],
+          "dtype": "<i8",
+          "fortran_order": false,
+          "header_sha256": "e3a4cb9f827cc78fa32b475b628cc37a0c954b7ebb3f82eae0b11870d3eb21dc"
+        },
+        "mesh_ids": {
+          "shape": [
+            128
+          ],
+          "dtype": "<u8",
+          "fortran_order": false,
+          "header_sha256": "6cb8476f9970679fda4779aadbf7c6775cb161af35187584df658a3ffb02f5b6"
+        },
+        "action": {
+          "shape": [
+            128,
+            4
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "464e18dab18da41af49add866aa82ba1e6e0c1ce76961124734fcd4792b0d526"
+        },
+        "tracker_state": {
+          "shape": [
+            128,
+            6
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "db91828ad0902eeb34d2990a3cff8c95f3d23bf5eb3af9f2f41afb2194046f29"
+        },
+        "tracker_cov": {
+          "shape": [
+            128,
+            6,
+            6
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "1ad2a1f00f7b7255bc007a757a2a4faae2abe37e76de35924c1885dd8967895e"
+        },
+        "tracker_age": {
+          "shape": [
+            128
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "330444a12124e2e5e55411baa17a6a471b9e5909b4deb620f384054c4386873d"
+        },
+        "tracker_active": {
+          "shape": [
+            128
+          ],
+          "dtype": "|b1",
+          "fortran_order": false,
+          "header_sha256": "7a4d5185f14be2fd29ea58107e2c12d22d08a5a9f6450152cf2c3dc0dafa208f"
+        },
+        "robot_history": {
+          "shape": [
+            128,
+            5,
+            10
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "f1d167d94fde6c3c5362592c97eea15b228b4b74eaa01d63172603cfcbf96d3a"
+        },
+        "target_history": {
+          "shape": [
+            128,
+            5,
+            16
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "144ba5f2c8ea284c68f64e29942fba045424a759bdd99f21b974c032d4ba516f"
+        },
+        "obstacle_history": {
+          "shape": [
+            128,
+            5,
+            8,
+            12
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "7cdfdba1c828a0f80adcc0b5d78e9b486d4e6740b6d424fda0af72444e530347"
+        },
+        "rgb_sha": {
+          "shape": [
+            128,
+            32
+          ],
+          "dtype": "|u1",
+          "fortran_order": false,
+          "header_sha256": "389b482c8372417401f1f2d6e226906b28abad9d96ec87a0ef9121a7825e74f2"
+        },
+        "depth_sha": {
+          "shape": [
+            128,
+            32
+          ],
+          "dtype": "|u1",
+          "fortran_order": false,
+          "header_sha256": "389b482c8372417401f1f2d6e226906b28abad9d96ec87a0ef9121a7825e74f2"
+        },
+        "lidar_sha": {
+          "shape": [
+            128,
+            32
+          ],
+          "dtype": "|u1",
+          "fortran_order": false,
+          "header_sha256": "389b482c8372417401f1f2d6e226906b28abad9d96ec87a0ef9121a7825e74f2"
+        }
+      },
+      "array_payload_read": false
+    },
+    {
+      "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/h_r3_p03_qualification_v1/HR3-P03-Q01/long_B0/snapshots/step0038.npz",
+      "status": "HEADER_ONLY",
+      "bytes": 10067143,
+      "arrays": {
+        "rgb": {
+          "shape": [
+            128,
+            3,
+            90,
+            160
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "98fc36875e5cdb7cb41a36069619ac190ba1c2e648d6a21a8911113fdddc53cd"
+        },
+        "depth": {
+          "shape": [
+            128,
+            90,
+            160
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "77fb021e6bc793c97b46434fdabd74c1c8abeeb52f620340f4bb6fb154b24f62"
+        },
+        "lidar": {
+          "shape": [
+            128,
+            288
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "6fac1698fa7267fef28b79318a116ef45a91c84973e6ae21784b1ba9b4a890af"
+        },
+        "actor_obs": {
+          "shape": [
+            128,
+            898
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "7492f15f8d6b4649eb0db8a76148f3f2d27418d46a55c175e1790be14d31749f"
+        },
+        "root_state": {
+          "shape": [
+            128,
+            301,
+            13
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "7476aac2d3538302802ee587a5c8a63547270a668bcd90220dbb304f5317a193"
+        },
+        "vertices": {
+          "shape": [
+            307200,
+            3
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "662b0b30880f4eb3ce49ca2806d0e278aa7d199839c556656b046ff55ac8b423"
+        },
+        "vertex_env_index": {
+          "shape": [
+            307200
+          ],
+          "dtype": "<i8",
+          "fortran_order": false,
+          "header_sha256": "e14c555d064edb11396d4bcc31119f4d05b7fa181906bcfd777d0eab77e37829"
+        },
+        "vertex_actor_index": {
+          "shape": [
+            307200
+          ],
+          "dtype": "<i8",
+          "fortran_order": false,
+          "header_sha256": "e14c555d064edb11396d4bcc31119f4d05b7fa181906bcfd777d0eab77e37829"
+        },
+        "vertex_ranges": {
+          "shape": [
+            128,
+            2
+          ],
+          "dtype": "<i8",
+          "fortran_order": false,
+          "header_sha256": "e3a4cb9f827cc78fa32b475b628cc37a0c954b7ebb3f82eae0b11870d3eb21dc"
+        },
+        "mesh_ids": {
+          "shape": [
+            128
+          ],
+          "dtype": "<u8",
+          "fortran_order": false,
+          "header_sha256": "6cb8476f9970679fda4779aadbf7c6775cb161af35187584df658a3ffb02f5b6"
+        },
+        "action": {
+          "shape": [
+            128,
+            4
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "464e18dab18da41af49add866aa82ba1e6e0c1ce76961124734fcd4792b0d526"
+        },
+        "tracker_state": {
+          "shape": [
+            128,
+            6
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "db91828ad0902eeb34d2990a3cff8c95f3d23bf5eb3af9f2f41afb2194046f29"
+        },
+        "tracker_cov": {
+          "shape": [
+            128,
+            6,
+            6
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "1ad2a1f00f7b7255bc007a757a2a4faae2abe37e76de35924c1885dd8967895e"
+        },
+        "tracker_age": {
+          "shape": [
+            128
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "330444a12124e2e5e55411baa17a6a471b9e5909b4deb620f384054c4386873d"
+        },
+        "tracker_active": {
+          "shape": [
+            128
+          ],
+          "dtype": "|b1",
+          "fortran_order": false,
+          "header_sha256": "7a4d5185f14be2fd29ea58107e2c12d22d08a5a9f6450152cf2c3dc0dafa208f"
+        },
+        "robot_history": {
+          "shape": [
+            128,
+            5,
+            10
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "f1d167d94fde6c3c5362592c97eea15b228b4b74eaa01d63172603cfcbf96d3a"
+        },
+        "target_history": {
+          "shape": [
+            128,
+            5,
+            16
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "144ba5f2c8ea284c68f64e29942fba045424a759bdd99f21b974c032d4ba516f"
+        },
+        "obstacle_history": {
+          "shape": [
+            128,
+            5,
+            8,
+            12
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "7cdfdba1c828a0f80adcc0b5d78e9b486d4e6740b6d424fda0af72444e530347"
+        },
+        "rgb_sha": {
+          "shape": [
+            128,
+            32
+          ],
+          "dtype": "|u1",
+          "fortran_order": false,
+          "header_sha256": "389b482c8372417401f1f2d6e226906b28abad9d96ec87a0ef9121a7825e74f2"
+        },
+        "depth_sha": {
+          "shape": [
+            128,
+            32
+          ],
+          "dtype": "|u1",
+          "fortran_order": false,
+          "header_sha256": "389b482c8372417401f1f2d6e226906b28abad9d96ec87a0ef9121a7825e74f2"
+        },
+        "lidar_sha": {
+          "shape": [
+            128,
+            32
+          ],
+          "dtype": "|u1",
+          "fortran_order": false,
+          "header_sha256": "389b482c8372417401f1f2d6e226906b28abad9d96ec87a0ef9121a7825e74f2"
+        }
+      },
+      "array_payload_read": false
+    },
+    {
+      "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/h_r3_p03_qualification_v1/HR3-P03-Q01/long_B0/snapshots/step0039.npz",
+      "status": "HEADER_ONLY",
+      "bytes": 9916529,
+      "arrays": {
+        "rgb": {
+          "shape": [
+            128,
+            3,
+            90,
+            160
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "98fc36875e5cdb7cb41a36069619ac190ba1c2e648d6a21a8911113fdddc53cd"
+        },
+        "depth": {
+          "shape": [
+            128,
+            90,
+            160
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "77fb021e6bc793c97b46434fdabd74c1c8abeeb52f620340f4bb6fb154b24f62"
+        },
+        "lidar": {
+          "shape": [
+            128,
+            288
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "6fac1698fa7267fef28b79318a116ef45a91c84973e6ae21784b1ba9b4a890af"
+        },
+        "actor_obs": {
+          "shape": [
+            128,
+            898
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "7492f15f8d6b4649eb0db8a76148f3f2d27418d46a55c175e1790be14d31749f"
+        },
+        "root_state": {
+          "shape": [
+            128,
+            301,
+            13
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "7476aac2d3538302802ee587a5c8a63547270a668bcd90220dbb304f5317a193"
+        },
+        "vertices": {
+          "shape": [
+            307200,
+            3
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "662b0b30880f4eb3ce49ca2806d0e278aa7d199839c556656b046ff55ac8b423"
+        },
+        "vertex_env_index": {
+          "shape": [
+            307200
+          ],
+          "dtype": "<i8",
+          "fortran_order": false,
+          "header_sha256": "e14c555d064edb11396d4bcc31119f4d05b7fa181906bcfd777d0eab77e37829"
+        },
+        "vertex_actor_index": {
+          "shape": [
+            307200
+          ],
+          "dtype": "<i8",
+          "fortran_order": false,
+          "header_sha256": "e14c555d064edb11396d4bcc31119f4d05b7fa181906bcfd777d0eab77e37829"
+        },
+        "vertex_ranges": {
+          "shape": [
+            128,
+            2
+          ],
+          "dtype": "<i8",
+          "fortran_order": false,
+          "header_sha256": "e3a4cb9f827cc78fa32b475b628cc37a0c954b7ebb3f82eae0b11870d3eb21dc"
+        },
+        "mesh_ids": {
+          "shape": [
+            128
+          ],
+          "dtype": "<u8",
+          "fortran_order": false,
+          "header_sha256": "6cb8476f9970679fda4779aadbf7c6775cb161af35187584df658a3ffb02f5b6"
+        },
+        "action": {
+          "shape": [
+            128,
+            4
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "464e18dab18da41af49add866aa82ba1e6e0c1ce76961124734fcd4792b0d526"
+        },
+        "tracker_state": {
+          "shape": [
+            128,
+            6
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "db91828ad0902eeb34d2990a3cff8c95f3d23bf5eb3af9f2f41afb2194046f29"
+        },
+        "tracker_cov": {
+          "shape": [
+            128,
+            6,
+            6
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "1ad2a1f00f7b7255bc007a757a2a4faae2abe37e76de35924c1885dd8967895e"
+        },
+        "tracker_age": {
+          "shape": [
+            128
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "330444a12124e2e5e55411baa17a6a471b9e5909b4deb620f384054c4386873d"
+        },
+        "tracker_active": {
+          "shape": [
+            128
+          ],
+          "dtype": "|b1",
+          "fortran_order": false,
+          "header_sha256": "7a4d5185f14be2fd29ea58107e2c12d22d08a5a9f6450152cf2c3dc0dafa208f"
+        },
+        "robot_history": {
+          "shape": [
+            128,
+            5,
+            10
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "f1d167d94fde6c3c5362592c97eea15b228b4b74eaa01d63172603cfcbf96d3a"
+        },
+        "target_history": {
+          "shape": [
+            128,
+            5,
+            16
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "144ba5f2c8ea284c68f64e29942fba045424a759bdd99f21b974c032d4ba516f"
+        },
+        "obstacle_history": {
+          "shape": [
+            128,
+            5,
+            8,
+            12
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "7cdfdba1c828a0f80adcc0b5d78e9b486d4e6740b6d424fda0af72444e530347"
+        },
+        "rgb_sha": {
+          "shape": [
+            128,
+            32
+          ],
+          "dtype": "|u1",
+          "fortran_order": false,
+          "header_sha256": "389b482c8372417401f1f2d6e226906b28abad9d96ec87a0ef9121a7825e74f2"
+        },
+        "depth_sha": {
+          "shape": [
+            128,
+            32
+          ],
+          "dtype": "|u1",
+          "fortran_order": false,
+          "header_sha256": "389b482c8372417401f1f2d6e226906b28abad9d96ec87a0ef9121a7825e74f2"
+        },
+        "lidar_sha": {
+          "shape": [
+            128,
+            32
+          ],
+          "dtype": "|u1",
+          "fortran_order": false,
+          "header_sha256": "389b482c8372417401f1f2d6e226906b28abad9d96ec87a0ef9121a7825e74f2"
+        }
+      },
+      "array_payload_read": false
+    },
+    {
+      "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/h_r3_p03_qualification_v1/HR3-P03-Q01/long_B0/snapshots/step0040.npz",
+      "status": "HEADER_ONLY",
+      "bytes": 10106374,
+      "arrays": {
+        "rgb": {
+          "shape": [
+            128,
+            3,
+            90,
+            160
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "98fc36875e5cdb7cb41a36069619ac190ba1c2e648d6a21a8911113fdddc53cd"
+        },
+        "depth": {
+          "shape": [
+            128,
+            90,
+            160
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "77fb021e6bc793c97b46434fdabd74c1c8abeeb52f620340f4bb6fb154b24f62"
+        },
+        "lidar": {
+          "shape": [
+            128,
+            288
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "6fac1698fa7267fef28b79318a116ef45a91c84973e6ae21784b1ba9b4a890af"
+        },
+        "actor_obs": {
+          "shape": [
+            128,
+            898
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "7492f15f8d6b4649eb0db8a76148f3f2d27418d46a55c175e1790be14d31749f"
+        },
+        "root_state": {
+          "shape": [
+            128,
+            301,
+            13
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "7476aac2d3538302802ee587a5c8a63547270a668bcd90220dbb304f5317a193"
+        },
+        "vertices": {
+          "shape": [
+            307200,
+            3
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "662b0b30880f4eb3ce49ca2806d0e278aa7d199839c556656b046ff55ac8b423"
+        },
+        "vertex_env_index": {
+          "shape": [
+            307200
+          ],
+          "dtype": "<i8",
+          "fortran_order": false,
+          "header_sha256": "e14c555d064edb11396d4bcc31119f4d05b7fa181906bcfd777d0eab77e37829"
+        },
+        "vertex_actor_index": {
+          "shape": [
+            307200
+          ],
+          "dtype": "<i8",
+          "fortran_order": false,
+          "header_sha256": "e14c555d064edb11396d4bcc31119f4d05b7fa181906bcfd777d0eab77e37829"
+        },
+        "vertex_ranges": {
+          "shape": [
+            128,
+            2
+          ],
+          "dtype": "<i8",
+          "fortran_order": false,
+          "header_sha256": "e3a4cb9f827cc78fa32b475b628cc37a0c954b7ebb3f82eae0b11870d3eb21dc"
+        },
+        "mesh_ids": {
+          "shape": [
+            128
+          ],
+          "dtype": "<u8",
+          "fortran_order": false,
+          "header_sha256": "6cb8476f9970679fda4779aadbf7c6775cb161af35187584df658a3ffb02f5b6"
+        },
+        "action": {
+          "shape": [
+            128,
+            4
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "464e18dab18da41af49add866aa82ba1e6e0c1ce76961124734fcd4792b0d526"
+        },
+        "tracker_state": {
+          "shape": [
+            128,
+            6
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "db91828ad0902eeb34d2990a3cff8c95f3d23bf5eb3af9f2f41afb2194046f29"
+        },
+        "tracker_cov": {
+          "shape": [
+            128,
+            6,
+            6
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "1ad2a1f00f7b7255bc007a757a2a4faae2abe37e76de35924c1885dd8967895e"
+        },
+        "tracker_age": {
+          "shape": [
+            128
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "330444a12124e2e5e55411baa17a6a471b9e5909b4deb620f384054c4386873d"
+        },
+        "tracker_active": {
+          "shape": [
+            128
+          ],
+          "dtype": "|b1",
+          "fortran_order": false,
+          "header_sha256": "7a4d5185f14be2fd29ea58107e2c12d22d08a5a9f6450152cf2c3dc0dafa208f"
+        },
+        "robot_history": {
+          "shape": [
+            128,
+            5,
+            10
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "f1d167d94fde6c3c5362592c97eea15b228b4b74eaa01d63172603cfcbf96d3a"
+        },
+        "target_history": {
+          "shape": [
+            128,
+            5,
+            16
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "144ba5f2c8ea284c68f64e29942fba045424a759bdd99f21b974c032d4ba516f"
+        },
+        "obstacle_history": {
+          "shape": [
+            128,
+            5,
+            8,
+            12
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "7cdfdba1c828a0f80adcc0b5d78e9b486d4e6740b6d424fda0af72444e530347"
+        },
+        "rgb_sha": {
+          "shape": [
+            128,
+            32
+          ],
+          "dtype": "|u1",
+          "fortran_order": false,
+          "header_sha256": "389b482c8372417401f1f2d6e226906b28abad9d96ec87a0ef9121a7825e74f2"
+        },
+        "depth_sha": {
+          "shape": [
+            128,
+            32
+          ],
+          "dtype": "|u1",
+          "fortran_order": false,
+          "header_sha256": "389b482c8372417401f1f2d6e226906b28abad9d96ec87a0ef9121a7825e74f2"
+        },
+        "lidar_sha": {
+          "shape": [
+            128,
+            32
+          ],
+          "dtype": "|u1",
+          "fortran_order": false,
+          "header_sha256": "389b482c8372417401f1f2d6e226906b28abad9d96ec87a0ef9121a7825e74f2"
+        }
+      },
+      "array_payload_read": false
+    },
+    {
+      "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/h_r3_p03_qualification_v1/HR3-P03-Q01/long_B0/snapshots/step0041.npz",
+      "status": "HEADER_ONLY",
+      "bytes": 10372331,
+      "arrays": {
+        "rgb": {
+          "shape": [
+            128,
+            3,
+            90,
+            160
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "98fc36875e5cdb7cb41a36069619ac190ba1c2e648d6a21a8911113fdddc53cd"
+        },
+        "depth": {
+          "shape": [
+            128,
+            90,
+            160
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "77fb021e6bc793c97b46434fdabd74c1c8abeeb52f620340f4bb6fb154b24f62"
+        },
+        "lidar": {
+          "shape": [
+            128,
+            288
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "6fac1698fa7267fef28b79318a116ef45a91c84973e6ae21784b1ba9b4a890af"
+        },
+        "actor_obs": {
+          "shape": [
+            128,
+            898
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "7492f15f8d6b4649eb0db8a76148f3f2d27418d46a55c175e1790be14d31749f"
+        },
+        "root_state": {
+          "shape": [
+            128,
+            301,
+            13
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "7476aac2d3538302802ee587a5c8a63547270a668bcd90220dbb304f5317a193"
+        },
+        "vertices": {
+          "shape": [
+            307200,
+            3
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "662b0b30880f4eb3ce49ca2806d0e278aa7d199839c556656b046ff55ac8b423"
+        },
+        "vertex_env_index": {
+          "shape": [
+            307200
+          ],
+          "dtype": "<i8",
+          "fortran_order": false,
+          "header_sha256": "e14c555d064edb11396d4bcc31119f4d05b7fa181906bcfd777d0eab77e37829"
+        },
+        "vertex_actor_index": {
+          "shape": [
+            307200
+          ],
+          "dtype": "<i8",
+          "fortran_order": false,
+          "header_sha256": "e14c555d064edb11396d4bcc31119f4d05b7fa181906bcfd777d0eab77e37829"
+        },
+        "vertex_ranges": {
+          "shape": [
+            128,
+            2
+          ],
+          "dtype": "<i8",
+          "fortran_order": false,
+          "header_sha256": "e3a4cb9f827cc78fa32b475b628cc37a0c954b7ebb3f82eae0b11870d3eb21dc"
+        },
+        "mesh_ids": {
+          "shape": [
+            128
+          ],
+          "dtype": "<u8",
+          "fortran_order": false,
+          "header_sha256": "6cb8476f9970679fda4779aadbf7c6775cb161af35187584df658a3ffb02f5b6"
+        },
+        "action": {
+          "shape": [
+            128,
+            4
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "464e18dab18da41af49add866aa82ba1e6e0c1ce76961124734fcd4792b0d526"
+        },
+        "tracker_state": {
+          "shape": [
+            128,
+            6
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "db91828ad0902eeb34d2990a3cff8c95f3d23bf5eb3af9f2f41afb2194046f29"
+        },
+        "tracker_cov": {
+          "shape": [
+            128,
+            6,
+            6
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "1ad2a1f00f7b7255bc007a757a2a4faae2abe37e76de35924c1885dd8967895e"
+        },
+        "tracker_age": {
+          "shape": [
+            128
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "330444a12124e2e5e55411baa17a6a471b9e5909b4deb620f384054c4386873d"
+        },
+        "tracker_active": {
+          "shape": [
+            128
+          ],
+          "dtype": "|b1",
+          "fortran_order": false,
+          "header_sha256": "7a4d5185f14be2fd29ea58107e2c12d22d08a5a9f6450152cf2c3dc0dafa208f"
+        },
+        "robot_history": {
+          "shape": [
+            128,
+            5,
+            10
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "f1d167d94fde6c3c5362592c97eea15b228b4b74eaa01d63172603cfcbf96d3a"
+        },
+        "target_history": {
+          "shape": [
+            128,
+            5,
+            16
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "144ba5f2c8ea284c68f64e29942fba045424a759bdd99f21b974c032d4ba516f"
+        },
+        "obstacle_history": {
+          "shape": [
+            128,
+            5,
+            8,
+            12
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "7cdfdba1c828a0f80adcc0b5d78e9b486d4e6740b6d424fda0af72444e530347"
+        },
+        "rgb_sha": {
+          "shape": [
+            128,
+            32
+          ],
+          "dtype": "|u1",
+          "fortran_order": false,
+          "header_sha256": "389b482c8372417401f1f2d6e226906b28abad9d96ec87a0ef9121a7825e74f2"
+        },
+        "depth_sha": {
+          "shape": [
+            128,
+            32
+          ],
+          "dtype": "|u1",
+          "fortran_order": false,
+          "header_sha256": "389b482c8372417401f1f2d6e226906b28abad9d96ec87a0ef9121a7825e74f2"
+        },
+        "lidar_sha": {
+          "shape": [
+            128,
+            32
+          ],
+          "dtype": "|u1",
+          "fortran_order": false,
+          "header_sha256": "389b482c8372417401f1f2d6e226906b28abad9d96ec87a0ef9121a7825e74f2"
+        }
+      },
+      "array_payload_read": false
+    },
+    {
+      "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/h_r3_p03_qualification_v1/HR3-P03-Q01/long_B0/snapshots/step0042.npz",
+      "status": "HEADER_ONLY",
+      "bytes": 10297080,
+      "arrays": {
+        "rgb": {
+          "shape": [
+            128,
+            3,
+            90,
+            160
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "98fc36875e5cdb7cb41a36069619ac190ba1c2e648d6a21a8911113fdddc53cd"
+        },
+        "depth": {
+          "shape": [
+            128,
+            90,
+            160
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "77fb021e6bc793c97b46434fdabd74c1c8abeeb52f620340f4bb6fb154b24f62"
+        },
+        "lidar": {
+          "shape": [
+            128,
+            288
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "6fac1698fa7267fef28b79318a116ef45a91c84973e6ae21784b1ba9b4a890af"
+        },
+        "actor_obs": {
+          "shape": [
+            128,
+            898
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "7492f15f8d6b4649eb0db8a76148f3f2d27418d46a55c175e1790be14d31749f"
+        },
+        "root_state": {
+          "shape": [
+            128,
+            301,
+            13
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "7476aac2d3538302802ee587a5c8a63547270a668bcd90220dbb304f5317a193"
+        },
+        "vertices": {
+          "shape": [
+            307200,
+            3
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "662b0b30880f4eb3ce49ca2806d0e278aa7d199839c556656b046ff55ac8b423"
+        },
+        "vertex_env_index": {
+          "shape": [
+            307200
+          ],
+          "dtype": "<i8",
+          "fortran_order": false,
+          "header_sha256": "e14c555d064edb11396d4bcc31119f4d05b7fa181906bcfd777d0eab77e37829"
+        },
+        "vertex_actor_index": {
+          "shape": [
+            307200
+          ],
+          "dtype": "<i8",
+          "fortran_order": false,
+          "header_sha256": "e14c555d064edb11396d4bcc31119f4d05b7fa181906bcfd777d0eab77e37829"
+        },
+        "vertex_ranges": {
+          "shape": [
+            128,
+            2
+          ],
+          "dtype": "<i8",
+          "fortran_order": false,
+          "header_sha256": "e3a4cb9f827cc78fa32b475b628cc37a0c954b7ebb3f82eae0b11870d3eb21dc"
+        },
+        "mesh_ids": {
+          "shape": [
+            128
+          ],
+          "dtype": "<u8",
+          "fortran_order": false,
+          "header_sha256": "6cb8476f9970679fda4779aadbf7c6775cb161af35187584df658a3ffb02f5b6"
+        },
+        "action": {
+          "shape": [
+            128,
+            4
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "464e18dab18da41af49add866aa82ba1e6e0c1ce76961124734fcd4792b0d526"
+        },
+        "tracker_state": {
+          "shape": [
+            128,
+            6
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "db91828ad0902eeb34d2990a3cff8c95f3d23bf5eb3af9f2f41afb2194046f29"
+        },
+        "tracker_cov": {
+          "shape": [
+            128,
+            6,
+            6
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "1ad2a1f00f7b7255bc007a757a2a4faae2abe37e76de35924c1885dd8967895e"
+        },
+        "tracker_age": {
+          "shape": [
+            128
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "330444a12124e2e5e55411baa17a6a471b9e5909b4deb620f384054c4386873d"
+        },
+        "tracker_active": {
+          "shape": [
+            128
+          ],
+          "dtype": "|b1",
+          "fortran_order": false,
+          "header_sha256": "7a4d5185f14be2fd29ea58107e2c12d22d08a5a9f6450152cf2c3dc0dafa208f"
+        },
+        "robot_history": {
+          "shape": [
+            128,
+            5,
+            10
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "f1d167d94fde6c3c5362592c97eea15b228b4b74eaa01d63172603cfcbf96d3a"
+        },
+        "target_history": {
+          "shape": [
+            128,
+            5,
+            16
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "144ba5f2c8ea284c68f64e29942fba045424a759bdd99f21b974c032d4ba516f"
+        },
+        "obstacle_history": {
+          "shape": [
+            128,
+            5,
+            8,
+            12
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "7cdfdba1c828a0f80adcc0b5d78e9b486d4e6740b6d424fda0af72444e530347"
+        },
+        "rgb_sha": {
+          "shape": [
+            128,
+            32
+          ],
+          "dtype": "|u1",
+          "fortran_order": false,
+          "header_sha256": "389b482c8372417401f1f2d6e226906b28abad9d96ec87a0ef9121a7825e74f2"
+        },
+        "depth_sha": {
+          "shape": [
+            128,
+            32
+          ],
+          "dtype": "|u1",
+          "fortran_order": false,
+          "header_sha256": "389b482c8372417401f1f2d6e226906b28abad9d96ec87a0ef9121a7825e74f2"
+        },
+        "lidar_sha": {
+          "shape": [
+            128,
+            32
+          ],
+          "dtype": "|u1",
+          "fortran_order": false,
+          "header_sha256": "389b482c8372417401f1f2d6e226906b28abad9d96ec87a0ef9121a7825e74f2"
+        }
+      },
+      "array_payload_read": false
+    },
+    {
+      "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/h_r3_p03_qualification_v1/HR3-P03-Q01/long_B0/snapshots/step0598.npz",
+      "status": "HEADER_ONLY",
+      "bytes": 9975257,
+      "arrays": {
+        "rgb": {
+          "shape": [
+            128,
+            3,
+            90,
+            160
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "98fc36875e5cdb7cb41a36069619ac190ba1c2e648d6a21a8911113fdddc53cd"
+        },
+        "depth": {
+          "shape": [
+            128,
+            90,
+            160
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "77fb021e6bc793c97b46434fdabd74c1c8abeeb52f620340f4bb6fb154b24f62"
+        },
+        "lidar": {
+          "shape": [
+            128,
+            288
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "6fac1698fa7267fef28b79318a116ef45a91c84973e6ae21784b1ba9b4a890af"
+        },
+        "actor_obs": {
+          "shape": [
+            128,
+            898
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "7492f15f8d6b4649eb0db8a76148f3f2d27418d46a55c175e1790be14d31749f"
+        },
+        "root_state": {
+          "shape": [
+            128,
+            301,
+            13
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "7476aac2d3538302802ee587a5c8a63547270a668bcd90220dbb304f5317a193"
+        },
+        "vertices": {
+          "shape": [
+            307200,
+            3
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "662b0b30880f4eb3ce49ca2806d0e278aa7d199839c556656b046ff55ac8b423"
+        },
+        "vertex_env_index": {
+          "shape": [
+            307200
+          ],
+          "dtype": "<i8",
+          "fortran_order": false,
+          "header_sha256": "e14c555d064edb11396d4bcc31119f4d05b7fa181906bcfd777d0eab77e37829"
+        },
+        "vertex_actor_index": {
+          "shape": [
+            307200
+          ],
+          "dtype": "<i8",
+          "fortran_order": false,
+          "header_sha256": "e14c555d064edb11396d4bcc31119f4d05b7fa181906bcfd777d0eab77e37829"
+        },
+        "vertex_ranges": {
+          "shape": [
+            128,
+            2
+          ],
+          "dtype": "<i8",
+          "fortran_order": false,
+          "header_sha256": "e3a4cb9f827cc78fa32b475b628cc37a0c954b7ebb3f82eae0b11870d3eb21dc"
+        },
+        "mesh_ids": {
+          "shape": [
+            128
+          ],
+          "dtype": "<u8",
+          "fortran_order": false,
+          "header_sha256": "6cb8476f9970679fda4779aadbf7c6775cb161af35187584df658a3ffb02f5b6"
+        },
+        "action": {
+          "shape": [
+            128,
+            4
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "464e18dab18da41af49add866aa82ba1e6e0c1ce76961124734fcd4792b0d526"
+        },
+        "tracker_state": {
+          "shape": [
+            128,
+            6
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "db91828ad0902eeb34d2990a3cff8c95f3d23bf5eb3af9f2f41afb2194046f29"
+        },
+        "tracker_cov": {
+          "shape": [
+            128,
+            6,
+            6
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "1ad2a1f00f7b7255bc007a757a2a4faae2abe37e76de35924c1885dd8967895e"
+        },
+        "tracker_age": {
+          "shape": [
+            128
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "330444a12124e2e5e55411baa17a6a471b9e5909b4deb620f384054c4386873d"
+        },
+        "tracker_active": {
+          "shape": [
+            128
+          ],
+          "dtype": "|b1",
+          "fortran_order": false,
+          "header_sha256": "7a4d5185f14be2fd29ea58107e2c12d22d08a5a9f6450152cf2c3dc0dafa208f"
+        },
+        "robot_history": {
+          "shape": [
+            128,
+            5,
+            10
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "f1d167d94fde6c3c5362592c97eea15b228b4b74eaa01d63172603cfcbf96d3a"
+        },
+        "target_history": {
+          "shape": [
+            128,
+            5,
+            16
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "144ba5f2c8ea284c68f64e29942fba045424a759bdd99f21b974c032d4ba516f"
+        },
+        "obstacle_history": {
+          "shape": [
+            128,
+            5,
+            8,
+            12
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "7cdfdba1c828a0f80adcc0b5d78e9b486d4e6740b6d424fda0af72444e530347"
+        },
+        "rgb_sha": {
+          "shape": [
+            128,
+            32
+          ],
+          "dtype": "|u1",
+          "fortran_order": false,
+          "header_sha256": "389b482c8372417401f1f2d6e226906b28abad9d96ec87a0ef9121a7825e74f2"
+        },
+        "depth_sha": {
+          "shape": [
+            128,
+            32
+          ],
+          "dtype": "|u1",
+          "fortran_order": false,
+          "header_sha256": "389b482c8372417401f1f2d6e226906b28abad9d96ec87a0ef9121a7825e74f2"
+        },
+        "lidar_sha": {
+          "shape": [
+            128,
+            32
+          ],
+          "dtype": "|u1",
+          "fortran_order": false,
+          "header_sha256": "389b482c8372417401f1f2d6e226906b28abad9d96ec87a0ef9121a7825e74f2"
+        }
+      },
+      "array_payload_read": false
+    },
+    {
+      "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/h_r3_p03_qualification_v1/HR3-P03-Q01/long_B0/snapshots/step0599.npz",
+      "status": "HEADER_ONLY",
+      "bytes": 9913748,
+      "arrays": {
+        "rgb": {
+          "shape": [
+            128,
+            3,
+            90,
+            160
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "98fc36875e5cdb7cb41a36069619ac190ba1c2e648d6a21a8911113fdddc53cd"
+        },
+        "depth": {
+          "shape": [
+            128,
+            90,
+            160
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "77fb021e6bc793c97b46434fdabd74c1c8abeeb52f620340f4bb6fb154b24f62"
+        },
+        "lidar": {
+          "shape": [
+            128,
+            288
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "6fac1698fa7267fef28b79318a116ef45a91c84973e6ae21784b1ba9b4a890af"
+        },
+        "actor_obs": {
+          "shape": [
+            128,
+            898
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "7492f15f8d6b4649eb0db8a76148f3f2d27418d46a55c175e1790be14d31749f"
+        },
+        "root_state": {
+          "shape": [
+            128,
+            301,
+            13
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "7476aac2d3538302802ee587a5c8a63547270a668bcd90220dbb304f5317a193"
+        },
+        "vertices": {
+          "shape": [
+            307200,
+            3
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "662b0b30880f4eb3ce49ca2806d0e278aa7d199839c556656b046ff55ac8b423"
+        },
+        "vertex_env_index": {
+          "shape": [
+            307200
+          ],
+          "dtype": "<i8",
+          "fortran_order": false,
+          "header_sha256": "e14c555d064edb11396d4bcc31119f4d05b7fa181906bcfd777d0eab77e37829"
+        },
+        "vertex_actor_index": {
+          "shape": [
+            307200
+          ],
+          "dtype": "<i8",
+          "fortran_order": false,
+          "header_sha256": "e14c555d064edb11396d4bcc31119f4d05b7fa181906bcfd777d0eab77e37829"
+        },
+        "vertex_ranges": {
+          "shape": [
+            128,
+            2
+          ],
+          "dtype": "<i8",
+          "fortran_order": false,
+          "header_sha256": "e3a4cb9f827cc78fa32b475b628cc37a0c954b7ebb3f82eae0b11870d3eb21dc"
+        },
+        "mesh_ids": {
+          "shape": [
+            128
+          ],
+          "dtype": "<u8",
+          "fortran_order": false,
+          "header_sha256": "6cb8476f9970679fda4779aadbf7c6775cb161af35187584df658a3ffb02f5b6"
+        },
+        "action": {
+          "shape": [
+            128,
+            4
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "464e18dab18da41af49add866aa82ba1e6e0c1ce76961124734fcd4792b0d526"
+        },
+        "tracker_state": {
+          "shape": [
+            128,
+            6
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "db91828ad0902eeb34d2990a3cff8c95f3d23bf5eb3af9f2f41afb2194046f29"
+        },
+        "tracker_cov": {
+          "shape": [
+            128,
+            6,
+            6
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "1ad2a1f00f7b7255bc007a757a2a4faae2abe37e76de35924c1885dd8967895e"
+        },
+        "tracker_age": {
+          "shape": [
+            128
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "330444a12124e2e5e55411baa17a6a471b9e5909b4deb620f384054c4386873d"
+        },
+        "tracker_active": {
+          "shape": [
+            128
+          ],
+          "dtype": "|b1",
+          "fortran_order": false,
+          "header_sha256": "7a4d5185f14be2fd29ea58107e2c12d22d08a5a9f6450152cf2c3dc0dafa208f"
+        },
+        "robot_history": {
+          "shape": [
+            128,
+            5,
+            10
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "f1d167d94fde6c3c5362592c97eea15b228b4b74eaa01d63172603cfcbf96d3a"
+        },
+        "target_history": {
+          "shape": [
+            128,
+            5,
+            16
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "144ba5f2c8ea284c68f64e29942fba045424a759bdd99f21b974c032d4ba516f"
+        },
+        "obstacle_history": {
+          "shape": [
+            128,
+            5,
+            8,
+            12
+          ],
+          "dtype": "<f4",
+          "fortran_order": false,
+          "header_sha256": "7cdfdba1c828a0f80adcc0b5d78e9b486d4e6740b6d424fda0af72444e530347"
+        },
+        "rgb_sha": {
+          "shape": [
+            128,
+            32
+          ],
+          "dtype": "|u1",
+          "fortran_order": false,
+          "header_sha256": "389b482c8372417401f1f2d6e226906b28abad9d96ec87a0ef9121a7825e74f2"
+        },
+        "depth_sha": {
+          "shape": [
+            128,
+            32
+          ],
+          "dtype": "|u1",
+          "fortran_order": false,
+          "header_sha256": "389b482c8372417401f1f2d6e226906b28abad9d96ec87a0ef9121a7825e74f2"
+        },
+        "lidar_sha": {
+          "shape": [
+            128,
+            32
+          ],
+          "dtype": "|u1",
+          "fortran_order": false,
+          "header_sha256": "389b482c8372417401f1f2d6e226906b28abad9d96ec87a0ef9121a7825e74f2"
+        }
+      },
+      "array_payload_read": false
+    }
+  ],
+  "p03_metadata": {
+    "actor_obs_dim": 898,
+    "arm": "B0",
+    "el0_classes": [
+      "NONE",
+      "RANGE_EXIT",
+      "FOV_EXIT",
+      "SCALE_LOSS",
+      "FULL",
+      "CENTRE_ONLY",
+      "PARTIAL",
+      "VISIBLE"
+    ],
+    "end_reason": [
+      "window",
+      "window",
+      "window",
+      "window",
+      "window",
+      "terminal",
+      "window",
+      "window",
+      "window",
+      "window",
+      "terminal",
+      "window",
+      "window",
+      "window",
+      "window",
+      "window",
+      "",
+      "window",
+      "window",
+      "",
+      "terminal",
+      "terminal",
+      "window",
+      "window",
+      "window",
+      "window",
+      "",
+      "window",
+      "window",
+      "window",
+      "window",
+      "window",
+      "window",
+      "window",
+      "window",
+      "window",
+      "window",
+      "window",
+      "window",
+      "window",
+      "window",
+      "window",
+      "window",
+      "window",
+      "window",
+      "window",
+      "window",
+      "window",
+      "window",
+      "window",
+      "window",
+      "window",
+      "window",
+      "window",
+      "terminal",
+      "window",
+      "window",
+      "window",
+      "window",
+      "window",
+      "window",
+      "window",
+      "window",
+      "window",
+      "window",
+      "window",
+      "window",
+      "terminal",
+      "window",
+      "window",
+      "window",
+      "window",
+      "window",
+      "window",
+      "window",
+      "window",
+      "window",
+      "window",
+      "terminal",
+      "window",
+      "window",
+      "window",
+      "",
+      "window",
+      "window",
+      "window",
+      "window",
+      "window",
+      "terminal",
+      "window",
+      "terminal",
+      "window",
+      "window",
+      "window",
+      "window",
+      "window",
+      "window",
+      "window",
+      "window",
+      "window",
+      "window",
+      "window",
+      "window",
+      "window",
+      "window",
+      "window",
+      "window",
+      "window",
+      "window",
+      "window",
+      "window",
+      "window",
+      "",
+      "window",
+      "window",
+      "window",
+      "window",
+      "terminal",
+      "window",
+      "window",
+      "window",
+      "window",
+      "window",
+      "window",
+      "terminal",
+      "",
+      "",
+      "window"
+    ],
+    "env": {
+      "NAVRL_KROC2027_INITIAL_DISTANCE_M": "10.0",
+      "NAVRL_KROC2027_INITIAL_VIEW": "visible",
+      "NAVRL_NUM_BARS": "160",
+      "NAVRL_SEED": "4801",
+      "NAVRL_SENSOR_LINEAGE": "off",
+      "NAVRL_TARGET_BEHAVIOR_LEVEL": "e2_obstacle_aware",
+      "NAVRL_TARGET_DISTANCE_BACKEND": "direct_l2_v1",
+      "NAVRL_TARGET_DYNAMICS": "bounded",
+      "NAVRL_TARGET_PATTERN": "waypoint",
+      "NAVRL_TARGET_ROUTE_MODE": "off",
+      "NAVRL_TARGET_SPEED_FINAL": "1.5",
+      "NAVRL_TARGET_SPEED_MIN": "0.3",
+      "NAVRL_TARGET_SPEED_RAMP_EPOCHS": "300"
+    },
+    "evaluator": true,
+    "force_reset": false,
+    "forced_reset": false,
+    "geometry_integrity": {
+      "bitwise_geometry": true,
+      "checks": 4174,
+      "immutable_topology": true,
+      "mesh_count": 128,
+      "mode": "runtime",
+      "reset_event_count": 1779,
+      "schema": "h-r3.p03-isolation.v1",
+      "status": "PASS",
+      "vertex_count": 307200
+    },
+    "id": "long_B0",
+    "identity_enabled": true,
+    "isolation_mode": "runtime",
+    "loop_wall_s": 202.46515867701964,
+    "max_velocity": 2.5,
+    "model_training_flag": false,
+    "nan_fields": [],
+    "num_envs": 128,
+    "online_GT": "UNCHANGED; all GT/provenance telem evaluationonly",
+    "origins": {
+      "aerial_gym": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/aerial_gym/__init__.py",
+      "motar_eval": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/motar_eval/__init__.py"
+    },
+    "policy_f_sha256": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+    "rms_digest_end": "642fc9f7f86b068e816e156fea7a34782bbc525966650f73cd85aae8cc18387f",
+    "rms_digest_start": "642fc9f7f86b068e816e156fea7a34782bbc525966650f73cd85aae8cc18387f",
+    "rng": {
+      "actors_per_env": 301,
+      "batch_size_invariant": false,
+      "calls": {
+        "action": 600,
+        "forced_reset": 0,
+        "indexed_root_write": 552,
+        "manager_reset": 1779,
+        "step": 600,
+        "task_reset": 1779,
+        "waypoint": 1867
+      },
+      "checked_flags": {
+        "controller.randomize_params": false,
+        "detector.app_albedo_jitter": 0.0,
+        "detector.app_hue_deg": 0.0,
+        "detector.app_light_gain": 0.0,
+        "detector.app_motion_blur": 0.0,
+        "detector.app_texture_std": 0.0,
+        "detector.mount_rot_deg": 0.0,
+        "detector.mount_trans_m": 0.0,
+        "detector.present": true,
+        "general_eval_mode": false,
+        "general_spawn_mode": true,
+        "lidar.present": true,
+        "lidar.randomize_placement": false,
+        "lidar.sensor_noise": false,
+        "perception.detection_latency_s": 0.0,
+        "perception.detector_noise_active": false,
+        "perception.empirical_error": false,
+        "perception.enable_perturbations": false,
+        "perception.geofence_actor": false,
+        "perception.geofence_dropout": 0.0,
+        "perception.geofence_noise_std_m": 0.0,
+        "perception.pose_noise_pos_m": 0.0,
+        "perception.pose_noise_yaw_deg": 0.0,
+        "perception.present": true,
+        "perception_mode": true,
+        "physical_target": false,
+        "physics.has_dof": false,
+        "physics_substep_std": 0.0,
+        "robot.disturbance": false,
+        "robot.imu_sensor": false,
+        "robot.native_camera_sensor": false,
+        "target_behavior_level": "e2_obstacle_aware",
+        "target_dynamics": "bounded",
+        "target_pattern": "waypoint",
+        "target_route_enabled": false,
+        "vision_mode": true
+      },
+      "constructor_rng": "COMMON_UNMODIFIED_INITIALIZATION",
+      "episode_id": [
+        11,
+        13,
+        16,
+        12,
+        14,
+        15,
+        11,
+        14,
+        12,
+        14,
+        15,
+        12,
+        12,
+        13,
+        14,
+        13,
+        14,
+        12,
+        13,
+        15,
+        15,
+        11,
+        13,
+        14,
+        13,
+        13,
+        11,
+        14,
+        12,
+        10,
+        13,
+        12,
+        13,
+        13,
+        13,
+        9,
+        15,
+        13,
+        16,
+        13,
+        15,
+        12,
+        13,
+        13,
+        13,
+        10,
+        12,
+        14,
+        15,
+        13,
+        15,
+        14,
+        13,
+        12,
+        14,
+        12,
+        9,
+        13,
+        12,
+        11,
+        10,
+        14,
+        12,
+        13,
+        11,
+        14,
+        13,
+        12,
+        14,
+        13,
+        13,
+        12,
+        13,
+        14,
+        13,
+        14,
+        13,
+        12,
+        10,
+        12,
+        15,
+        13,
+        13,
+        13,
+        12,
+        12,
+        13,
+        13,
+        13,
+        12,
+        12,
+        12,
+        15,
+        14,
+        14,
+        15,
+        13,
+        12,
+        11,
+        13,
+        13,
+        12,
+        12,
+        12,
+        15,
+        12,
+        12,
+        12,
+        13,
+        13,
+        14,
+        14,
+        15,
+        13,
+        14,
+        12,
+        12,
+        15,
+        12,
+        13,
+        14,
+        11,
+        14,
+        14,
+        12,
+        11,
+        14,
+        13
+      ],
+      "fixed_num_envs": 128,
+      "logical_step": 599,
+      "pending_root_envs": [],
+      "pending_task_reset": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "probe": "SYNTHETIC_UNIFORM2_NORMAL2_NOT_PHYSICAL_SENSOR_NOISE",
+      "reset_root_setter": "INSTANCE_ONLY_ONCE_PER_RESET_TRANSACTION_INDEXED_ENV_UNION_ALL_ACTORS",
+      "schema": "p02.fixedN.seeded-isolated.v1",
+      "seed": 4801,
+      "unaffected_reset_rows_preserved": [
+        "robot_euler_angles",
+        "robot_vehicle_orientation",
+        "robot_vehicle_linvel",
+        "robot_body_linvel",
+        "robot_body_angvel"
+      ],
+      "waypoint_callsite_keys": [
+        "_advance_target:8232",
+        "_sample_target_motion:7526"
+      ]
+    },
+    "schema": "motar.hr3-p03-qualification.process.v1",
+    "seed": 4801,
+    "sensor_digest_wall_s": 19.429556085553486,
+    "sensor_lineage": "off",
+    "snapshot_count": 13,
+    "source_commit": "0e8790109a26abdb6d432b50cb7a6b31e9273e9c",
+    "speed_governor": "riskcap",
+    "step_dt": 0.1,
+    "steps": 600,
+    "transform_binding": "__torch__.aerial_gym.utils.math.tf_apply",
+    "vision_mode": true,
+    "window_steps": 20,
+    "yaw_rate_max": 3.0
+  },
+  "coverage": {
+    "lidar_scan": {
+      "dense_fields": [],
+      "snapshot_fields": [
+        "lidar"
+      ]
+    },
+    "tracker_state": {
+      "dense_fields": [],
+      "snapshot_fields": [
+        "tracker_state"
+      ]
+    },
+    "tracker_covariance": {
+      "dense_fields": [],
+      "snapshot_fields": [
+        "tracker_cov"
+      ]
+    },
+    "camera_flag": {
+      "dense_fields": [
+        "camera"
+      ],
+      "snapshot_fields": []
+    },
+    "own_position": {
+      "dense_fields": [
+        "before_pos",
+        "actual_pos",
+        "robot_pos"
+      ],
+      "snapshot_fields": []
+    },
+    "own_velocity": {
+      "dense_fields": [
+        "pre_vel",
+        "actual_vel"
+      ],
+      "snapshot_fields": []
+    },
+    "own_orientation": {
+      "dense_fields": [],
+      "snapshot_fields": [],
+      "snapshot_container_fields": [
+        "root_state"
+      ]
+    },
+    "policy_action": {
+      "dense_fields": [
+        "action"
+      ],
+      "snapshot_fields": [
+        "action"
+      ]
+    },
+    "terminal_flags": {
+      "dense_fields": [
+        "reset",
+        "captured",
+        "crashed",
+        "timeout"
+      ],
+      "snapshot_fields": []
+    }
+  },
+  "occ_representatives": [
+    {
+      "run": "OCC-P2",
+      "motion": "moving",
+      "cell": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_confirmatory_v1/OCC-P2/moving/A3/E2_obstacle_aware__160bars__seed4301",
+      "frame_summary": {
+        "bytes": {
+          "occlusion_frames.bin": 4584192,
+          "occlusion_layouts.npz": 1774363
+        },
+        "files": {
+          "occlusion_frames.bin": "3aaeaba0e4ac62ae2a35c7f3823dd4ff23e2e0d8aff59d54021ccc38de54c0b6",
+          "occlusion_layouts.npz": "99ddf5ab01ef38d54de64110b3eff37839bb629289b9816923ea4570b5fd1153"
+        },
+        "frame_dtype": [
+          [
+            "env",
+            "<u2"
+          ],
+          [
+            "frame",
+            "<u2"
+          ],
+          [
+            "episode",
+            "<u4"
+          ],
+          [
+            "p_pos",
+            "<f4",
+            [
+              3
+            ]
+          ],
+          [
+            "p_vel",
+            "<f4",
+            [
+              3
+            ]
+          ],
+          [
+            "p_quat",
+            "<f4",
+            [
+              4
+            ]
+          ],
+          [
+            "p_vehicle_quat",
+            "<f4",
+            [
+              4
+            ]
+          ],
+          [
+            "t_pos",
+            "<f4",
+            [
+              3
+            ]
+          ],
+          [
+            "t_vel",
+            "<f4",
+            [
+              3
+            ]
+          ],
+          [
+            "flags",
+            "|u1"
+          ],
+          [
+            "probe_center_blocked",
+            "|i1"
+          ],
+          [
+            "probe_visible_pixels",
+            "<i4"
+          ]
+        ],
+        "frame_itemsize": 94,
+        "frames": 48768,
+        "layouts": 1156,
+        "metadata": {
+          "camera": {
+            "frame": "yaw-only vehicle frame, x forward, y left, z up",
+            "hfov_deg": 87.0,
+            "max_range_m": 20.0,
+            "translation_m": [
+              0.1,
+              0.0,
+              0.03
+            ],
+            "vfov_deg": 58.00000000000001
+          },
+          "context": {
+            "arm": "A3",
+            "bars": 160,
+            "cell_id": "E2_obstacle_aware__160bars__seed4301",
+            "cfg_target_distance_backend": "direct_l2_v1",
+            "checkpoint_sha256": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+            "initial_distance_m": "10.0",
+            "initial_view": "visible",
+            "protocol_sha256": "ad706d7121fc213360b179796e45c70227f82b1afedff50fcc0fe60cf6e0c803",
+            "run_id": "OCC-P2",
+            "seed": 4301,
+            "target_behavior_level": "e2_obstacle_aware",
+            "target_motion_model_id": "bounded_planar_drone_v1_rollout_direct_l2_v1"
+          },
+          "detection_latency_s": 0.0,
+          "dt_s": 0.1,
+          "evaluation_only": true,
+          "frame_contract": "frame k = state after k completed actions; recorded when its observation is consumed",
+          "geometry": {
+            "bar_pool": "bars_h3",
+            "box_source": "obstacle_position + asset_collision_half_extents (+ obstacle_orientation)",
+            "obstacle_slots": [
+              0,
+              160
+            ],
+            "scene_contract": "static_scene_mesh"
+          },
+          "gpu_trajectory_noninterference": "NOT_TESTED",
+          "identity": {
+            "behavior_level": "e2_obstacle_aware",
+            "distance_backend": "direct_l2_v1",
+            "target_dynamics": "bounded",
+            "target_motion_model": "bounded_planar_drone_v1_rollout_direct_l2_v1"
+          },
+          "render_alignment": "ZERO_LATENCY_RENDER_DELIVERY",
+          "sensor_capture_time": "NOT_RECORDED",
+          "source_commit": "5ff285ad053f181c5a1c86dddb2462bb44e6327b",
+          "source_dirty": false,
+          "source_files_sha256": {
+            "aerial_gym/config/task_config/navrl_task_config.py": "f35e1959cb6f7035937642c479bb073d05d8ce3796db9e7c8e9e036c992b6267",
+            "aerial_gym/task/navrl_task/kroc_eval_adapter.py": "1712a7ef38e1dfc3542888eae4c556138695e96d38ee158811955a81c13819af",
+            "aerial_gym/task/navrl_task/navrl_perception.py": "0b7f26aa9c12db5e528a3fe75aa28a146a9fbfb695dc8f988e7b172b11c3082f",
+            "aerial_gym/task/navrl_task/navrl_task.py": "c54616567da64cc5fa8d210ba51f4452af623c10a1a5934db58482f5d761cd0d",
+            "motar_eval/occlusion_trace.py": "ec4aa27c994afb233aedcc48901db29d5c40e9ef33373580f99c03cb68a750e1"
+          },
+          "target_radius_m": 0.15
+        },
+        "reason": "complete",
+        "resets": 1156,
+        "schema": "motar.occlusion-trace.v1"
+      },
+      "frames_stat_bytes": 4584192,
+      "frame_payload_read": false,
+      "layouts": {
+        "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_confirmatory_v1/OCC-P2/moving/A3/E2_obstacle_aware__160bars__seed4301/occlusion_layouts.npz",
+        "status": "HEADER_ONLY",
+        "bytes": 1774363,
+        "arrays": {
+          "center": {
+            "shape": [
+              184960,
+              3
+            ],
+            "dtype": "<f4",
+            "fortran_order": false,
+            "header_sha256": "5a2852c820143fa08a839d3ebc9853357f58a56ef522ce979102b40e9cab518a"
+          },
+          "half": {
+            "shape": [
+              184960,
+              3
+            ],
+            "dtype": "<f4",
+            "fortran_order": false,
+            "header_sha256": "5a2852c820143fa08a839d3ebc9853357f58a56ef522ce979102b40e9cab518a"
+          },
+          "quat": {
+            "shape": [
+              184960,
+              4
+            ],
+            "dtype": "<f4",
+            "fortran_order": false,
+            "header_sha256": "9c6808479d70a5644ab115c2c2dedb1e4b6137c8a035b80ace9f9a2633a62f7d"
+          },
+          "offsets": {
+            "shape": [
+              1157
+            ],
+            "dtype": "<i8",
+            "fortran_order": false,
+            "header_sha256": "197c52e07115b4ebc08fbf32e88505066ca64814786946cd1cc7487fd2833b37"
+          },
+          "hashes": {
+            "shape": [
+              1156
+            ],
+            "dtype": "<U64",
+            "fortran_order": false,
+            "header_sha256": "5044a3fa7724778cfbb723d500db8324ca9eaaf3a24f7302df749c2d9a8190f9"
+          },
+          "resets": {
+            "shape": [
+              1156
+            ],
+            "dtype": [
+              [
+                "env",
+                "<u2"
+              ],
+              [
+                "episode",
+                "<u4"
+              ],
+              [
+                "layout",
+                "<u4"
+              ]
+            ],
+            "fortran_order": false,
+            "header_sha256": "2f21f40c07a91d00e05eb741d7d9b17b01e3ebafb6c24808824f9de8bc3c4002"
+          }
+        },
+        "array_payload_read": false
+      },
+      "field_scope": {
+        "scan_state_cov_action": "NOT_IN_FRAME_SCHEMA",
+        "camera_validity": "flags bit1; motar_eval/occlusion_trace.py:35",
+        "own_pose_velocity": "p_pos/p_vel/p_quat/p_vehicle_quat in frame_dtype",
+        "termination": "NOT_IN_FRAME_SCHEMA; episode files not read"
+      }
+    },
+    {
+      "run": "OCC-P2",
+      "motion": "static",
+      "cell": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_confirmatory_v1/OCC-P2/static/A1/E0_static__160bars__seed4301",
+      "frame_summary": {
+        "bytes": {
+          "occlusion_frames.bin": 2262016,
+          "occlusion_layouts.npz": 1092043
+        },
+        "files": {
+          "occlusion_frames.bin": "0dbdbb1473a37ba5fef6b054df894b3e6e1a7ec053d52f4202853d9fde5009e0",
+          "occlusion_layouts.npz": "743162d906ab606551e3e6c17049d6dcbcd925ae209256bea3e0cb2fe12822e4"
+        },
+        "frame_dtype": [
+          [
+            "env",
+            "<u2"
+          ],
+          [
+            "frame",
+            "<u2"
+          ],
+          [
+            "episode",
+            "<u4"
+          ],
+          [
+            "p_pos",
+            "<f4",
+            [
+              3
+            ]
+          ],
+          [
+            "p_vel",
+            "<f4",
+            [
+              3
+            ]
+          ],
+          [
+            "p_quat",
+            "<f4",
+            [
+              4
+            ]
+          ],
+          [
+            "p_vehicle_quat",
+            "<f4",
+            [
+              4
+            ]
+          ],
+          [
+            "t_pos",
+            "<f4",
+            [
+              3
+            ]
+          ],
+          [
+            "t_vel",
+            "<f4",
+            [
+              3
+            ]
+          ],
+          [
+            "flags",
+            "|u1"
+          ],
+          [
+            "probe_center_blocked",
+            "|i1"
+          ],
+          [
+            "probe_visible_pixels",
+            "<i4"
+          ]
+        ],
+        "frame_itemsize": 94,
+        "frames": 24064,
+        "layouts": 711,
+        "metadata": {
+          "camera": {
+            "frame": "yaw-only vehicle frame, x forward, y left, z up",
+            "hfov_deg": 87.0,
+            "max_range_m": 20.0,
+            "translation_m": [
+              0.1,
+              0.0,
+              0.03
+            ],
+            "vfov_deg": 58.00000000000001
+          },
+          "context": {
+            "arm": "A1",
+            "bars": 160,
+            "cell_id": "E0_static__160bars__seed4301",
+            "checkpoint_sha256": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+            "initial_distance_m": "10.0",
+            "initial_view": "visible",
+            "protocol_sha256": "ad706d7121fc213360b179796e45c70227f82b1afedff50fcc0fe60cf6e0c803",
+            "run_id": "OCC-P2",
+            "seed": 4301,
+            "target_behavior_level": "e0_static"
+          },
+          "detection_latency_s": 0.0,
+          "dt_s": 0.1,
+          "evaluation_only": true,
+          "frame_contract": "frame k = state after k completed actions; recorded when its observation is consumed",
+          "geometry": {
+            "bar_pool": "bars_h3",
+            "box_source": "obstacle_position + asset_collision_half_extents (+ obstacle_orientation)",
+            "obstacle_slots": [
+              0,
+              160
+            ],
+            "scene_contract": "static_scene_mesh"
+          },
+          "gpu_trajectory_noninterference": "NOT_TESTED",
+          "identity": {
+            "behavior_level": "e0_static",
+            "distance_backend": "legacy_cdist",
+            "target_dynamics": "bounded",
+            "target_motion_model": "bounded_planar_drone_v1_rollout"
+          },
+          "render_alignment": "ZERO_LATENCY_RENDER_DELIVERY",
+          "sensor_capture_time": "NOT_RECORDED",
+          "source_commit": "5ff285ad053f181c5a1c86dddb2462bb44e6327b",
+          "source_dirty": false,
+          "source_files_sha256": {
+            "aerial_gym/config/task_config/navrl_task_config.py": "f35e1959cb6f7035937642c479bb073d05d8ce3796db9e7c8e9e036c992b6267",
+            "aerial_gym/task/navrl_task/kroc_eval_adapter.py": "1712a7ef38e1dfc3542888eae4c556138695e96d38ee158811955a81c13819af",
+            "aerial_gym/task/navrl_task/navrl_perception.py": "0b7f26aa9c12db5e528a3fe75aa28a146a9fbfb695dc8f988e7b172b11c3082f",
+            "aerial_gym/task/navrl_task/navrl_task.py": "c54616567da64cc5fa8d210ba51f4452af623c10a1a5934db58482f5d761cd0d",
+            "motar_eval/occlusion_trace.py": "ec4aa27c994afb233aedcc48901db29d5c40e9ef33373580f99c03cb68a750e1"
+          },
+          "target_radius_m": 0.15
+        },
+        "reason": "complete",
+        "resets": 711,
+        "schema": "motar.occlusion-trace.v1"
+      },
+      "frames_stat_bytes": 2262016,
+      "frame_payload_read": false,
+      "layouts": {
+        "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_confirmatory_v1/OCC-P2/static/A1/E0_static__160bars__seed4301/occlusion_layouts.npz",
+        "status": "HEADER_ONLY",
+        "bytes": 1092043,
+        "arrays": {
+          "center": {
+            "shape": [
+              113760,
+              3
+            ],
+            "dtype": "<f4",
+            "fortran_order": false,
+            "header_sha256": "9021b1966eb5e41e353fe7433d76ece6efaf236c5cb3005edae35023d30889f8"
+          },
+          "half": {
+            "shape": [
+              113760,
+              3
+            ],
+            "dtype": "<f4",
+            "fortran_order": false,
+            "header_sha256": "9021b1966eb5e41e353fe7433d76ece6efaf236c5cb3005edae35023d30889f8"
+          },
+          "quat": {
+            "shape": [
+              113760,
+              4
+            ],
+            "dtype": "<f4",
+            "fortran_order": false,
+            "header_sha256": "dd3e22e4f122514751b4a8339c867a377ff953f134078f498fca8f19e470cf34"
+          },
+          "offsets": {
+            "shape": [
+              712
+            ],
+            "dtype": "<i8",
+            "fortran_order": false,
+            "header_sha256": "7fb8a635b248993c068b23df2794df50e56c2ccfd86f12a49e6848e4c854fb85"
+          },
+          "hashes": {
+            "shape": [
+              711
+            ],
+            "dtype": "<U64",
+            "fortran_order": false,
+            "header_sha256": "ac25998bef7457b50ff6950581e21f058487189354b6145a9eab7c22eded69db"
+          },
+          "resets": {
+            "shape": [
+              711
+            ],
+            "dtype": [
+              [
+                "env",
+                "<u2"
+              ],
+              [
+                "episode",
+                "<u4"
+              ],
+              [
+                "layout",
+                "<u4"
+              ]
+            ],
+            "fortran_order": false,
+            "header_sha256": "6872d00521814e4c3db383af13fd1ad24ac0b7350cc75e3a4e397cc1fa4c5429"
+          }
+        },
+        "array_payload_read": false
+      },
+      "field_scope": {
+        "scan_state_cov_action": "NOT_IN_FRAME_SCHEMA",
+        "camera_validity": "flags bit1; motar_eval/occlusion_trace.py:35",
+        "own_pose_velocity": "p_pos/p_vel/p_quat/p_vehicle_quat in frame_dtype",
+        "termination": "NOT_IN_FRAME_SCHEMA; episode files not read"
+      }
+    },
+    {
+      "run": "OCC-P1",
+      "motion": "moving",
+      "cell": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_pilot_v1/OCC-P1_rerun1/moving/A3/E2_obstacle_aware__160bars__seed4201",
+      "frame_summary": {
+        "bytes": {
+          "occlusion_frames.bin": 3417088,
+          "occlusion_layouts.npz": 1340362
+        },
+        "files": {
+          "occlusion_frames.bin": "20829a61066a568b26d2cf0ffc89a97d250163262c5abea1ba07e53215cfc5d8",
+          "occlusion_layouts.npz": "2586939e3ef50b22a172a251b1befdcb3f79d1809bf2d540a3d845a9ad941a38"
+        },
+        "frame_dtype": [
+          [
+            "env",
+            "<u2"
+          ],
+          [
+            "frame",
+            "<u2"
+          ],
+          [
+            "episode",
+            "<u4"
+          ],
+          [
+            "p_pos",
+            "<f4",
+            [
+              3
+            ]
+          ],
+          [
+            "p_vel",
+            "<f4",
+            [
+              3
+            ]
+          ],
+          [
+            "p_quat",
+            "<f4",
+            [
+              4
+            ]
+          ],
+          [
+            "p_vehicle_quat",
+            "<f4",
+            [
+              4
+            ]
+          ],
+          [
+            "t_pos",
+            "<f4",
+            [
+              3
+            ]
+          ],
+          [
+            "t_vel",
+            "<f4",
+            [
+              3
+            ]
+          ],
+          [
+            "flags",
+            "|u1"
+          ],
+          [
+            "probe_center_blocked",
+            "|i1"
+          ],
+          [
+            "probe_visible_pixels",
+            "<i4"
+          ]
+        ],
+        "frame_itemsize": 94,
+        "frames": 36352,
+        "layouts": 873,
+        "metadata": {
+          "camera": {
+            "frame": "yaw-only vehicle frame, x forward, y left, z up",
+            "hfov_deg": 87.0,
+            "max_range_m": 20.0,
+            "translation_m": [
+              0.1,
+              0.0,
+              0.03
+            ],
+            "vfov_deg": 58.00000000000001
+          },
+          "context": {
+            "arm": "A3",
+            "bars": 160,
+            "cell_id": "E2_obstacle_aware__160bars__seed4201",
+            "cfg_target_distance_backend": "direct_l2_v1",
+            "checkpoint_sha256": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+            "initial_distance_m": "10.0",
+            "initial_view": "visible",
+            "protocol_sha256": "ad706d7121fc213360b179796e45c70227f82b1afedff50fcc0fe60cf6e0c803",
+            "run_id": "OCC-P1",
+            "seed": 4201,
+            "target_behavior_level": "e2_obstacle_aware",
+            "target_motion_model_id": "bounded_planar_drone_v1_rollout_direct_l2_v1"
+          },
+          "detection_latency_s": 0.0,
+          "dt_s": 0.1,
+          "evaluation_only": true,
+          "frame_contract": "frame k = state after k completed actions; recorded when its observation is consumed",
+          "geometry": {
+            "bar_pool": "bars_h3",
+            "box_source": "obstacle_position + asset_collision_half_extents (+ obstacle_orientation)",
+            "obstacle_slots": [
+              0,
+              160
+            ],
+            "scene_contract": "static_scene_mesh"
+          },
+          "gpu_trajectory_noninterference": "NOT_TESTED",
+          "identity": {
+            "behavior_level": "e2_obstacle_aware",
+            "distance_backend": "direct_l2_v1",
+            "target_dynamics": "bounded",
+            "target_motion_model": "bounded_planar_drone_v1_rollout_direct_l2_v1"
+          },
+          "render_alignment": "ZERO_LATENCY_RENDER_DELIVERY",
+          "sensor_capture_time": "NOT_RECORDED",
+          "source_commit": "6441c1ff74b6d085d14ed5604d1d60d66a4634fe",
+          "source_dirty": false,
+          "source_files_sha256": {
+            "aerial_gym/config/task_config/navrl_task_config.py": "f35e1959cb6f7035937642c479bb073d05d8ce3796db9e7c8e9e036c992b6267",
+            "aerial_gym/task/navrl_task/kroc_eval_adapter.py": "1712a7ef38e1dfc3542888eae4c556138695e96d38ee158811955a81c13819af",
+            "aerial_gym/task/navrl_task/navrl_perception.py": "0b7f26aa9c12db5e528a3fe75aa28a146a9fbfb695dc8f988e7b172b11c3082f",
+            "aerial_gym/task/navrl_task/navrl_task.py": "c54616567da64cc5fa8d210ba51f4452af623c10a1a5934db58482f5d761cd0d",
+            "motar_eval/occlusion_trace.py": "ec4aa27c994afb233aedcc48901db29d5c40e9ef33373580f99c03cb68a750e1"
+          },
+          "target_radius_m": 0.15
+        },
+        "reason": "complete",
+        "resets": 873,
+        "schema": "motar.occlusion-trace.v1"
+      },
+      "frames_stat_bytes": 3417088,
+      "frame_payload_read": false,
+      "layouts": {
+        "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_pilot_v1/OCC-P1_rerun1/moving/A3/E2_obstacle_aware__160bars__seed4201/occlusion_layouts.npz",
+        "status": "HEADER_ONLY",
+        "bytes": 1340362,
+        "arrays": {
+          "center": {
+            "shape": [
+              139680,
+              3
+            ],
+            "dtype": "<f4",
+            "fortran_order": false,
+            "header_sha256": "228c2b40bd0fb1039e63df8b6b12b6abaf1f0f39e077679077e926abfa2b43ef"
+          },
+          "half": {
+            "shape": [
+              139680,
+              3
+            ],
+            "dtype": "<f4",
+            "fortran_order": false,
+            "header_sha256": "228c2b40bd0fb1039e63df8b6b12b6abaf1f0f39e077679077e926abfa2b43ef"
+          },
+          "quat": {
+            "shape": [
+              139680,
+              4
+            ],
+            "dtype": "<f4",
+            "fortran_order": false,
+            "header_sha256": "cc677822ff5127dbe1ab7c192b0a571e729791202a95be9ff8c576afff125c1f"
+          },
+          "offsets": {
+            "shape": [
+              874
+            ],
+            "dtype": "<i8",
+            "fortran_order": false,
+            "header_sha256": "d3c678926d78871dd199de810bdf4bd0779a1d744653c7d25c92b40457327827"
+          },
+          "hashes": {
+            "shape": [
+              873
+            ],
+            "dtype": "<U64",
+            "fortran_order": false,
+            "header_sha256": "f1d7a91c8878cc336325244bcbc8937db74f57dff7b047ec739f00f290edb54a"
+          },
+          "resets": {
+            "shape": [
+              873
+            ],
+            "dtype": [
+              [
+                "env",
+                "<u2"
+              ],
+              [
+                "episode",
+                "<u4"
+              ],
+              [
+                "layout",
+                "<u4"
+              ]
+            ],
+            "fortran_order": false,
+            "header_sha256": "11beca1f9dfab237ac5814ade3092ae6b9c577e62566dd5d327804b099daaedf"
+          }
+        },
+        "array_payload_read": false
+      },
+      "field_scope": {
+        "scan_state_cov_action": "NOT_IN_FRAME_SCHEMA",
+        "camera_validity": "flags bit1; motar_eval/occlusion_trace.py:35",
+        "own_pose_velocity": "p_pos/p_vel/p_quat/p_vehicle_quat in frame_dtype",
+        "termination": "NOT_IN_FRAME_SCHEMA; episode files not read"
+      }
+    },
+    {
+      "run": "OCC-P1",
+      "motion": "static",
+      "cell": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_pilot_v1/OCC-P1_rerun1/static/A1/E0_static__160bars__seed4201",
+      "frame_summary": {
+        "bytes": {
+          "occlusion_frames.bin": 2057472,
+          "occlusion_layouts.npz": 987865
+        },
+        "files": {
+          "occlusion_frames.bin": "46de277d3eb31b9403bd8e688a4e0f61686cf355c6b624143db90ca3dce72626",
+          "occlusion_layouts.npz": "bba9df89d787c45af84a48feb55edeeb09d489b7aa7467afc1806e25262fc8c9"
+        },
+        "frame_dtype": [
+          [
+            "env",
+            "<u2"
+          ],
+          [
+            "frame",
+            "<u2"
+          ],
+          [
+            "episode",
+            "<u4"
+          ],
+          [
+            "p_pos",
+            "<f4",
+            [
+              3
+            ]
+          ],
+          [
+            "p_vel",
+            "<f4",
+            [
+              3
+            ]
+          ],
+          [
+            "p_quat",
+            "<f4",
+            [
+              4
+            ]
+          ],
+          [
+            "p_vehicle_quat",
+            "<f4",
+            [
+              4
+            ]
+          ],
+          [
+            "t_pos",
+            "<f4",
+            [
+              3
+            ]
+          ],
+          [
+            "t_vel",
+            "<f4",
+            [
+              3
+            ]
+          ],
+          [
+            "flags",
+            "|u1"
+          ],
+          [
+            "probe_center_blocked",
+            "|i1"
+          ],
+          [
+            "probe_visible_pixels",
+            "<i4"
+          ]
+        ],
+        "frame_itemsize": 94,
+        "frames": 21888,
+        "layouts": 643,
+        "metadata": {
+          "camera": {
+            "frame": "yaw-only vehicle frame, x forward, y left, z up",
+            "hfov_deg": 87.0,
+            "max_range_m": 20.0,
+            "translation_m": [
+              0.1,
+              0.0,
+              0.03
+            ],
+            "vfov_deg": 58.00000000000001
+          },
+          "context": {
+            "arm": "A1",
+            "bars": 160,
+            "cell_id": "E0_static__160bars__seed4201",
+            "checkpoint_sha256": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+            "initial_distance_m": "10.0",
+            "initial_view": "visible",
+            "protocol_sha256": "ad706d7121fc213360b179796e45c70227f82b1afedff50fcc0fe60cf6e0c803",
+            "run_id": "OCC-P1",
+            "seed": 4201,
+            "target_behavior_level": "e0_static"
+          },
+          "detection_latency_s": 0.0,
+          "dt_s": 0.1,
+          "evaluation_only": true,
+          "frame_contract": "frame k = state after k completed actions; recorded when its observation is consumed",
+          "geometry": {
+            "bar_pool": "bars_h3",
+            "box_source": "obstacle_position + asset_collision_half_extents (+ obstacle_orientation)",
+            "obstacle_slots": [
+              0,
+              160
+            ],
+            "scene_contract": "static_scene_mesh"
+          },
+          "gpu_trajectory_noninterference": "NOT_TESTED",
+          "identity": {
+            "behavior_level": "e0_static",
+            "distance_backend": "legacy_cdist",
+            "target_dynamics": "bounded",
+            "target_motion_model": "bounded_planar_drone_v1_rollout"
+          },
+          "render_alignment": "ZERO_LATENCY_RENDER_DELIVERY",
+          "sensor_capture_time": "NOT_RECORDED",
+          "source_commit": "6441c1ff74b6d085d14ed5604d1d60d66a4634fe",
+          "source_dirty": false,
+          "source_files_sha256": {
+            "aerial_gym/config/task_config/navrl_task_config.py": "f35e1959cb6f7035937642c479bb073d05d8ce3796db9e7c8e9e036c992b6267",
+            "aerial_gym/task/navrl_task/kroc_eval_adapter.py": "1712a7ef38e1dfc3542888eae4c556138695e96d38ee158811955a81c13819af",
+            "aerial_gym/task/navrl_task/navrl_perception.py": "0b7f26aa9c12db5e528a3fe75aa28a146a9fbfb695dc8f988e7b172b11c3082f",
+            "aerial_gym/task/navrl_task/navrl_task.py": "c54616567da64cc5fa8d210ba51f4452af623c10a1a5934db58482f5d761cd0d",
+            "motar_eval/occlusion_trace.py": "ec4aa27c994afb233aedcc48901db29d5c40e9ef33373580f99c03cb68a750e1"
+          },
+          "target_radius_m": 0.15
+        },
+        "reason": "complete",
+        "resets": 643,
+        "schema": "motar.occlusion-trace.v1"
+      },
+      "frames_stat_bytes": 2057472,
+      "frame_payload_read": false,
+      "layouts": {
+        "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_pilot_v1/OCC-P1_rerun1/static/A1/E0_static__160bars__seed4201/occlusion_layouts.npz",
+        "status": "HEADER_ONLY",
+        "bytes": 987865,
+        "arrays": {
+          "center": {
+            "shape": [
+              102880,
+              3
+            ],
+            "dtype": "<f4",
+            "fortran_order": false,
+            "header_sha256": "7bc2c75ad3bd0e72ca4ad8317566a62a1444c1f1ab1c3ea4f53162fbe29490e2"
+          },
+          "half": {
+            "shape": [
+              102880,
+              3
+            ],
+            "dtype": "<f4",
+            "fortran_order": false,
+            "header_sha256": "7bc2c75ad3bd0e72ca4ad8317566a62a1444c1f1ab1c3ea4f53162fbe29490e2"
+          },
+          "quat": {
+            "shape": [
+              102880,
+              4
+            ],
+            "dtype": "<f4",
+            "fortran_order": false,
+            "header_sha256": "aaf5e0208b517a905af0655d142e20833c5c9b4515ef1ea30a79bc2aa522cb85"
+          },
+          "offsets": {
+            "shape": [
+              644
+            ],
+            "dtype": "<i8",
+            "fortran_order": false,
+            "header_sha256": "3a55f740a40927c7b63e89f997398789c5d4e3981a809b8362a903cc82e9109f"
+          },
+          "hashes": {
+            "shape": [
+              643
+            ],
+            "dtype": "<U64",
+            "fortran_order": false,
+            "header_sha256": "29a0136c39d0c9f11db2e43317ee5a2bb7f0361db9d5c510af1cad8ce4eb0f3c"
+          },
+          "resets": {
+            "shape": [
+              643
+            ],
+            "dtype": [
+              [
+                "env",
+                "<u2"
+              ],
+              [
+                "episode",
+                "<u4"
+              ],
+              [
+                "layout",
+                "<u4"
+              ]
+            ],
+            "fortran_order": false,
+            "header_sha256": "1932b2c57180fef198c92d37e9d3af39f9b967c94979eed72a38816ee4d036a1"
+          }
+        },
+        "array_payload_read": false
+      },
+      "field_scope": {
+        "scan_state_cov_action": "NOT_IN_FRAME_SCHEMA",
+        "camera_validity": "flags bit1; motar_eval/occlusion_trace.py:35",
+        "own_pose_velocity": "p_pos/p_vel/p_quat/p_vehicle_quat in frame_dtype",
+        "termination": "NOT_IN_FRAME_SCHEMA; episode files not read"
+      }
+    }
+  ],
+  "payload_integrity_verified": false,
+  "field_time_alignment": "NOT_TESTED; pre/post step fields must not be silently interchanged",
+  "dense_orientation_reconstruction": "NOT_TESTED; snapshot root_state is only a container",
+  "conclusions": [
+    "Presence is reported by the actual header coverage/status; missing representatives cannot establish absence elsewhere.",
+    "Digests, belief_pos and actor_obs do not reconstruct omitted online inputs.",
+    "OCC flags expose camera/track validity; their bitfield is not a recorded scan or tracker covariance.",
+    "Root actor pose can be derived only in a future separately authorized raw-calibration step.",
+    "No NEES/NIS/reliability/false-alarm or performance conclusion is computed."
+  ]
+}

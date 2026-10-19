@@ -132,3 +132,5 @@ class Decision:
     engaged: torch.Tensor
     reason: torch.Tensor
     new_state: Any = None
+    trace: Any = None
+    diagnostics: Any = None

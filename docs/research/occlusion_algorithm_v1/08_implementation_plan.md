@@ -68,3 +68,25 @@ An opt-in hook in a **new** launcher (`tools/boia_launcher.py`), following the `
 pattern. It substitutes the action after `player.get_action` and before `env_step`, inside the
 qualified isolation runner, with no change to the production task. PUBLIC_CPU must stay green, apart
 from the pre-existing `motar-6nn.5` pollution failure, which is tracked separately.
+
+## Implementation status (G4, CPU-only, 2026-10-19) — appended
+
+| Unit | Commit | Focused CPU tests |
+| --- | --- | --- |
+| U1 geometry and visibility | `dc2b6d3` | 21 pass |
+| U2 whitelist access and firewall | `f5cdcf1` | 14 pass |
+| U3 belief | `314f93d` | 14 pass |
+| U4 governor-aware rollout | `a678b34` | 11 pass |
+| U5 candidates and safety | `b3dff79` | 16 pass |
+| U6 cost, arbitration, fallback, terminal | `3c92982` | 17 pass |
+| U7 planner, trace, replay, raw schema inventory | the commit that adds this section | 16 pass |
+
+- PUBLIC_CPU after U7: 2848 run, 0 failures, 4 errors; the four errors are the existing `motar-6nn.5`
+  pollution and none comes from BOIA.
+- U7 delivers synthetic orchestration and a representative raw header inventory only. It does **not**
+  calibrate anything, and no launcher or simulator hook exists (G5).
+- Unresolved, blocking G5 calibration: the known-free target-return counterexample
+  ([13](13_design_deltas.md), `motar-3p3.13`) and the default response prior missing the 10 % braking
+  sanity target at 3.52 m/s (12.56 %; the 25 % hard gate passed; R20 in [11](11_assumptions_risks.md)).
+- The 5 ms decision target is a GPU target. The recorded CPU figure (12.9 s, one cold decision) is
+  not comparable and is `NOT_A_GPU_MEASUREMENT`.

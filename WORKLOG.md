@@ -22036,3 +22036,14 @@ Files: motar_eval/boia/cost.py, motar_eval/boia/arbitration.py, motar_eval/boia/
 FocusedCPU 17 tests PASS, failures0/errors0, 0.035s. Focused17PASS; independent cost oracle, exact engaged-step dwell, safety/terminal/mode handling PASS. Independent review MEDIUM advantage direct-call bug fixed with regression. Separate specification-conforming target-return known-free counterexample is NOT_CORRECTED (motar-3p3.13); G5 calibrated visibility/supervisor qualification blocked, not a CPU software gate failure.
 Receipts g4_u6_validation.json and g4_u6_tests.txt in docs/research/occlusion_algorithm_v1/.
 NewCPUoptin only; no simulator/GPU/production/rawcalibration/PPO/push/merge. Next: diffreview/localcommit thennextunitgate.
+
+## 2026-10-19 — BOIA U7 CPU implementation, synthetic orchestration and raw schema inventory
+
+Files: motar_eval/boia/planner.py, motar_eval/boia/trace.py, motar_eval/boia/types.py (two optional Decision fields),
+tests/test_boia_planner.py, tools/boia_replay.py, tools/boia_raw_inventory.py, docs/research/occlusion_algorithm_v1/{raw_inventory,g4_cpu_timing,g4_u7_validation}.json, g4_u7_tests.txt.
+Focused CPU 16 tests PASS, failures 0/errors 0, 8.6 s. All seven BOIA test files pass standalone (109 tests).
+PUBLIC_CPU 2848 run, failures 0/errors 4 (existing motar-6nn.5 detect-resolution pollution), skipped 10; new BOIA failures/errors 0.
+One cold CPU decision (N128, K20, M32, H10, single thread) took 12.9 s: NOT_A_GPU_MEASUREMENT, the 5 ms GPU target is NOT_TESTED.
+Raw inventory is representative headers only (payload integrity not verified, field time alignment NOT_TESTED); no calibration conclusion.
+Unresolved and blocking G5: target-return known-free counterexample (motar-3p3.13) and the 3.52 m/s braking-prior miss (12.56 percent against a 10 percent sanity target; the 25 percent hard gate passed). 07-09 unchanged.
+New CPU opt-in only; no simulator/GPU/production/raw calibration/PPO/main merge. Authorised push of codex/mt-p1 follows in a separate step.
