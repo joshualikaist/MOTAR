@@ -1,0 +1,274 @@
+{
+  "schema": "motar.boia.g4.precise-issues.v1",
+  "base_sha": "13d5f195399bf1a7f1cdf9ddeccd3338d8e34c0f",
+  "counts": {
+    "P0": 8,
+    "P1": 16,
+    "P2": 2
+  },
+  "p0_fixed": 5,
+  "p0_blocked": 3,
+  "count_semantics": "Distinct tracked findings including unqualified design assumptions, not all observed production failures. B02 is counted once despite two audit receipts. D04 plant dynamics differs from ON-09 missing end-to-end outcomes.",
+  "issues": [
+    {
+      "id": "A01",
+      "severity": "P0",
+      "file": "geometry.py:26",
+      "claim": "Belief ellipse authorizes point deletion; zero-covariance radius .45522 m.",
+      "counterexample": "True target, nearby/foreground bar, false association and camera/LiDAR mismatch are indistinguishable.",
+      "independent_test": "ExclusionCounterexamples (seven independent fixtures)",
+      "fix": "Preserve all valid first hits; ABSTAIN",
+      "status": "FIXED_CPU"
+    },
+    {
+      "id": "B01",
+      "severity": "P0",
+      "file": "geometry.py:56",
+      "claim": "Slant range was treated as horizontal free radius.",
+      "counterexample": "5 m at20 degrees projects to4.698463 m, not5 m.",
+      "independent_test": "HorizontalFreeCounterexamples scalar trig oracle",
+      "fix": "Project each elevation before row minimum",
+      "status": "FIXED_CPU"
+    },
+    {
+      "id": "B02",
+      "severity": "P0",
+      "file": "visibility.py:38,68,120",
+      "claim": "FOV and LOS used different sensor origins.",
+      "counterexample": "Optical offset .1 m changes bar distance .35777 to .33311 m across .35 threshold.",
+      "independent_test": "VisibilityOriginsAndModelLimits independent scalar geometry",
+      "fix": "Use optical XY centre for forecast and BPOD",
+      "status": "FIXED_CPU"
+    },
+    {
+      "id": "B03",
+      "severity": "P0",
+      "file": "geometry.py:56,86",
+      "claim": "Adjacent-sector minimum is not a physical free-space certificate.",
+      "counterexample": "Thin bar between5-degree rays can intersect a queried ray despite empty sampled rays.",
+      "independent_test": "test_sparse_scan_sectors_are_not_a_physical_free_certificate",
+      "fix": "No arbitrary occupancy fill; need a justified free-volume model",
+      "status": "BLOCKED"
+    },
+    {
+      "id": "B04",
+      "severity": "P0",
+      "file": "geometry.py:26; visibility.py:17",
+      "claim": "Target-return/foreground ambiguity conflicts with visibility/approach.",
+      "counterexample": "6 m target and5.8 m first hit block current LOS; erasing/filling could hide an actual foreground obstacle.",
+      "independent_test": "test_six_metre_target_with_first_hit5p8_remains_blocked",
+      "fix": "Keep fail-closed; no target-ID invention or ray fill",
+      "status": "BLOCKED"
+    },
+    {
+      "id": "B05",
+      "severity": "P1",
+      "file": "geometry.py:105,125,135",
+      "claim": "Invalid free context was clamped into valid-looking free evidence.",
+      "counterexample": "Infinite radius or invalid yaw/pose outside queried sector can admit/poison queries.",
+      "independent_test": "ContextInputCounterexamples; isolated base FAIL",
+      "fix": "Per-environment invalid context returns false",
+      "status": "FIXED_CPU"
+    },
+    {
+      "id": "C01",
+      "severity": "P0",
+      "file": "types.py:15,29; safety.py:59,82,101",
+      "claim": "Hard radius .14 m underbounds collision box.",
+      "counterexample": ".200 m point lies inside box at11.42-degree tilt; .198 level radius also insufficient.",
+      "independent_test": "PhysicalFootprintTest independent URDF/SE(3), six speeds",
+      "fix": "Immutable .201990099 m floor in hard/stop screens",
+      "status": "FIXED_CPU"
+    },
+    {
+      "id": "C02",
+      "severity": "P0",
+      "file": "safety.py:88,102",
+      "claim": "Centre-segment containment does not enclose entire body.",
+      "counterexample": "Centre(1,0) passes; body point(1,.1) enters adjacent unknown sector with .5 m free bound.",
+      "independent_test": "test_known_free_centerline_does_not_certify_body_containment",
+      "fix": "No unsupported workaround; whole-body containment needs design",
+      "status": "BLOCKED"
+    },
+    {
+      "id": "C03",
+      "severity": "P1",
+      "file": "safety.py:82; types.py:32",
+      "claim": "v*t_det is not a calibrated total uncertainty/latency bound.",
+      "counterexample": "Position, tracking and sensor-error magnitudes are NOT_RECORDED; contact timing is not sensing delay.",
+      "independent_test": "Source and historical EQ-1D audit; uncertainty qualification NOT_TESTED",
+      "fix": "Plan separate uncertainty/latency budget",
+      "status": "NOT_RECORDED"
+    },
+    {
+      "id": "D01",
+      "severity": "P0",
+      "file": "safety.py:24,97",
+      "claim": "Low-speed empirical extension underbounds own modeled stopping tail.",
+      "counterexample": "At .6/1.2 m/s old total .1338/.4152 m allows collisions during .234/.468 m surrogate travel.",
+      "independent_test": "BrakingInterpretationTest scalar geometric series, saturated Euler and actual box",
+      "fix": "max(empirical total, own continuous bound + one reaction)",
+      "status": "FIXED_INTERNAL_MODEL_ONLY"
+    },
+    {
+      "id": "D02",
+      "severity": "P1",
+      "file": "dynamics.py:130,197",
+      "claim": "Surrogate is not empirical/plant-equivalent braking.",
+      "counterexample": "3.52 m/s:1.3728 vs1.57 m, -12.5605 percent.",
+      "independent_test": "Independent geometric-series/table oracle",
+      "fix": "Keep tau=.4; user accepts <=25 percent for CPU continuation",
+      "status": "LIMITED_VALIDITY"
+    },
+    {
+      "id": "D03",
+      "severity": "P1",
+      "file": "notes/M2_dynamics_contract.md:166,484,516",
+      "claim": "Cap floor was described as minimum executed speed.",
+      "counterexample": "Riskcap preserves0/.6/1.2 requests below2.",
+      "independent_test": "Independent cap test and original pure-governor equality",
+      "fix": "Explicit dated banner and amendment14; arithmetic unchanged",
+      "status": "CORRECTED_DOCUMENTATION"
+    },
+    {
+      "id": "D04",
+      "severity": "P1",
+      "file": "dynamics.py:130; fallback.py:5",
+      "claim": "First-order planar model omits actual Lee/attitude/motor/vertical response.",
+      "counterexample": "Zero request has nonzero travel; low-speed plant and adversarial state responses unmeasured.",
+      "independent_test": "Historical EQ-1D records, independent zero-command oracle; current plant NOT_TESTED",
+      "fix": "Plan identified plant/model error qualification",
+      "status": "NOT_TESTED_CURRENT_PLANT"
+    },
+    {
+      "id": "D05",
+      "severity": "P1",
+      "file": "dynamics.py:197; safety.py:24",
+      "claim": "Table extrapolation/warnings do not imply real stopping guarantee.",
+      "counterexample": "Below2 and above3.52 not calibrated; warning not propagated by screen; finite candidates are incomplete.",
+      "independent_test": "Read-only helper/API audit; saturated-model tests cover internal algebra only",
+      "fix": "Expose validity in a later approved design; no inevitability claim",
+      "status": "LIMITED_VALIDITY"
+    },
+    {
+      "id": "ON-01",
+      "severity": "P1",
+      "file": "`planner.py:94\u201397`; `access.py:37\u201338`: only live rows are evaluated/logged, but the full batch is copied and validated first.",
+      "claim": "`planner.py:94\u201397`; `access.py:37\u201338`: only live rows are evaluated/logged, but the full batch is copied and validated first.",
+      "counterexample": "With terminal mask `[True,False]`, NaN in env0 position or belief aborts env1 with `ValueError`. All-terminal bypass is correct.",
+      "independent_test": "`test_o01_mixed_terminal_nan_blocks_unrelated_live_row`. Reproduced, **NOT_FIXED**. This is fail-closed batch availability and reset-isolation failure, not unsafe returned control. Later accessor masking must preserve whitelist and live-row validation.",
+      "fix": "Plan only; source unchanged",
+      "status": "OPEN_OR_SPEC_LIMIT"
+    },
+    {
+      "id": "ON-02",
+      "severity": "P1",
+      "file": "`planner.py:97,109`; `belief.py:151\u2013157`: one local generator draws a tensor whose leading size is `N_live`.",
+      "claim": "`planner.py:97,109`; `belief.py:151\u2013157`: one local generator draws a tensor whose leading size is `N_live`.",
+      "counterexample": "Masking env0 changes env1's Monte Carlo path despite identical env1 input digest and generator seed. Identical local seed is insufficient for paired exogenous randomness under asynchronous terminations.",
+      "independent_test": "`test_o02_other_terminal_mask_reassigns_live_env_samples`. Reproduced, **NOT_FIXED**. All candidates within one call still share paths correctly; no global RNG is used. Per-env streams/counters and matched-reset tests require an approved integration design.",
+      "fix": "Plan only; source unchanged",
+      "status": "OPEN_OR_SPEC_LIMIT"
+    },
+    {
+      "id": "ON-03",
+      "severity": "P1",
+      "file": "`access.py:102\u2013118`; `visibility.py:56\u201359`: camera intrinsics are copied, while primary detection uses `cam.fx`, `params.r_T`, `params.min_pixels`.",
+      "claim": "`access.py:102\u2013118`; `visibility.py:56\u201359`: camera intrinsics are copied, while primary detection uses `cam.fx`, `params.r_T`, `params.min_pixels`.",
+      "counterexample": "Adding a 320\u00d7180 DETECT path leaves BOIA's copied/digested calibration unchanged. An independent 18 m on-axis sphere has 0 pixels at160\u00d790 and4 at320\u00d7180, crossing the real2-pixel gate; primary area using the old `fx` remains below2. Separately, copied `cam.min_pixels=100` still yields primary probability1 at6m with default parameter threshold2.",
+      "independent_test": "`test_o03_detect_resolution_is_not_part_of_current_accessor`, `test_o03_primary_gate_ignores_copied_camera_pixel_threshold`. Production source independently distinguishes camera and DETECT intrinsics at `navrl_perception.py:765\u2013783`, thresholds at1608. Defaults have equal resolutions; no claim that frozen P03 used a decoupled setting. **NOT_FIXED**; changing the explicitly approved whitelist/priors requires review.",
+      "fix": "Plan only; source unchanged",
+      "status": "OPEN_OR_SPEC_LIMIT"
+    },
+    {
+      "id": "ON-04",
+      "severity": "P1",
+      "file": "`access.py:75\u201379`; `arbitration.py:58\u201373`; `planner.py:109,115`: active/age/camera flag contain no confirmed identity or measurement timestamp.",
+      "claim": "`access.py:75\u201379`; `arbitration.py:58\u201373`; `planner.py:109,115`: active/age/camera flag contain no confirmed identity or measurement timestamp.",
+      "counterexample": "Active fused track with age0 and camera miss streak20 is LOST_PREDICTABLE; it does not establish identity or a fresh camera measurement. An inactive/stale mean is still sampled/scored when choosing a safety alternative, although it cannot trigger gain intervention.",
+      "independent_test": "`test_o04_active_and_fused_age_are_not_identity_or_timestamp` plus source inspection. Tracker LiDAR corrections can reset fused age (`navrl_perception.py:2077\u20132080`); separate identity bookkeeping exists at2274\u20132279. **NOT_FIXED / NOT_CALIBRATED**. No forbidden diagnostic/GT was added. Future alignment/identity contract must be explicit.",
+      "fix": "Plan only; source unchanged",
+      "status": "OPEN_OR_SPEC_LIMIT"
+    },
+    {
+      "id": "ON-05",
+      "severity": "P1",
+      "file": "`candidates.py:28,83\u201387`: the family named \u201cyaw-only\u201d includes translation.",
+      "claim": "`candidates.py:28,83\u201387`: the family named \u201cyaw-only\u201d includes translation.",
+      "counterexample": "Candidate19 requests0.6m/s along current velocity heading, or yaw heading when stopped. It is not a translation-free yaw baseline and cannot isolate pure yaw contribution.",
+      "independent_test": "`test_o05_candidate19_translates_and_intercept_never_decline_gain`. Independent norm is0.6m/s. **SPEC_CONFORMING**: user B5 and07\u00a78 explicitly require this command. No automatic change.",
+      "fix": "Plan only; source unchanged",
+      "status": "OPEN_OR_SPEC_LIMIT"
+    },
+    {
+      "id": "ON-06",
+      "severity": "P1",
+      "file": "`arbitration.py:67,73,115\u2013127`: INTERCEPT and NEVER_ACQUIRED disable gain intervention.",
+      "claim": "`arbitration.py:67,73,115\u2013127`: INTERCEPT and NEVER_ACQUIRED disable gain intervention.",
+      "counterexample": "Even when another feasible candidate has cost\u221210 vs F cost10, these modes return feasible F. d_int=3m hands the final approach back to F; never-acquired starts are not BOIA search trials.",
+      "independent_test": "Same `test_o05...` direct counterfactual costs. **SPEC_CONFORMING** under user B6/07\u00a72. Do not claim close-range recovery improvement or initial search capability without separate evidence/design.",
+      "fix": "Plan only; source unchanged",
+      "status": "OPEN_OR_SPEC_LIMIT"
+    },
+    {
+      "id": "ON-07",
+      "severity": "P1",
+      "file": "`belief.py:71\u201379,97\u201399,127\u2013164,195\u2013205`; `planner.py:90\u2013114`: Q is mirrored CV noise and R is an explicit fixed world-diagonal prior.",
+      "claim": "`belief.py:71\u201379,97\u201399,127\u2013164,195\u2013205`; `planner.py:90\u2013114`: Q is mirrored CV noise and R is an explicit fixed world-diagonal prior.",
+      "counterexample": "Scalar Joseph arithmetic is correct, but neither correct algebra nor Gaussian samples calibrate E2 manoeuvres, detector error, cross-correlation, identity switches or latency. R is not the live range/pixel-dependent measurement covariance.",
+      "independent_test": "`test_expected_update_matches_independent_scalar_and_does_not_calibrate`: position variance0.68 for P=1,p=.4,R=.25; unobserved velocity variance stays1; p=0 is exact; singular entropy fails closed. **NEES/NIS, reliability, coverage and s_Q/R calibration NOT_TESTED**. G5 only.",
+      "fix": "Plan only; source unchanged",
+      "status": "OPEN_OR_SPEC_LIMIT"
+    },
+    {
+      "id": "ON-08",
+      "severity": "P1",
+      "file": "`visibility.py:38\u201363`; `planner.py:99\u2013106`: one fixed horizontal sensed point set/free context is reused throughout H.",
+      "claim": "`visibility.py:38\u201363`; `planner.py:99\u2013106`: one fixed horizontal sensed point set/free context is reused throughout H.",
+      "counterexample": "No obstacle velocity or occupancy timestamp is supplied. A moving obstacle entering a formerly free ray is outside the model; geometric camera silhouette/partial support is also not represented by the centre-line forecast.",
+      "independent_test": "Source/interface absence, not an observed simulation incident. Independent moving-obstacle/partial-silhouette validation **NOT_TESTED**; no test is mislabeled PASS. Existing static vertical-bar scope is explicit.",
+      "fix": "Plan only; source unchanged",
+      "status": "OPEN_OR_SPEC_LIMIT"
+    },
+    {
+      "id": "ON-09",
+      "severity": "P1",
+      "file": "`terminal.py:7\u201317`; `planner.py:60\u2013133`; `fallback.py:5\u201317`: outcomes are externally flagged and fallback requests zero translation.",
+      "claim": "`terminal.py:7\u201317`; `planner.py:60\u2013133`; `fallback.py:5\u201317`: outcomes are externally flagged and fallback requests zero translation.",
+      "counterexample": "Synthetic static-observation replay does not produce actual capture, collision, timeout, safe-abort or hand-back actor-history outcomes. Zero command cannot establish collision-free stopping when all candidate stopping tests already failed.",
+      "independent_test": "Source/interface inspection. **NOT_TESTED end-to-end**; no capture/abort declaration exists, which correctly avoids GT/outcome leakage. Mechanics/plant/sensor validation and independently recorded simulator outcomes remain required before a Recovery claim.",
+      "fix": "Plan only; source unchanged",
+      "status": "OPEN_OR_SPEC_LIMIT"
+    },
+    {
+      "id": "ON-10",
+      "severity": "P1",
+      "file": "`cost.py:46`; controller interpretation07\u00a76.1/user B4: all4 normalized actions enter smoothness although a_z is overwritten by altitude PI.",
+      "claim": "`cost.py:46`; controller interpretation07\u00a76.1/user B4: all4 normalized actions enter smoothness although a_z is overwritten by altitude PI.",
+      "counterexample": "Identical modeled physical trajectories with commands differing only by a_z=.9 vs0 have smoothness difference .2025 and default weighted J difference .010125. This is utility variation without differing physical effort.",
+      "independent_test": "`test_o10_overwritten_vertical_action_changes_smoothness_cost`. **SPEC_CONFORMING / NOT_FIXED**, because07\u00a79 explicitly defines the four-component norm. Review the utility/advantage interpretation before calibration; do not silently alter the objective.",
+      "fix": "Plan only; source unchanged",
+      "status": "OPEN_OR_SPEC_LIMIT"
+    },
+    {
+      "id": "ON-11",
+      "severity": "P2",
+      "file": "`trace.py:76\u2013115`: digest binds copied online inputs, not complete controller execution state.",
+      "claim": "`trace.py:76\u2013115`: digest binds copied online inputs, not complete controller execution state.",
+      "counterexample": "Same input digest can accompany different RNG state, BOIA dwell/history, parameters or source version. The trace omits complete planner state and local generator state. First8 SHA bytes are a64-bit fingerprint, not a collision-proof archival identifier.",
+      "independent_test": "SHA independent vectors and trace copy mutation pass (`test_sha_standard_vectors_and_trace_copy_remain_isolated`). **REQUIRED OUT-OF-BAND PROVENANCE**, not a failed input-digest implementation. Generic helper schema growth also needs an explicit serialization-version review.",
+      "fix": "Plan only; source unchanged",
+      "status": "LIMITED_VALIDITY"
+    },
+    {
+      "id": "ON-12",
+      "severity": "P2",
+      "file": "`visibility.py:59,67\u201370,83\u2013122`: stressed detector and analytic comparator retain declared approximations.",
+      "claim": "`visibility.py:59,67\u201370,83\u2013122`: stressed detector and analytic comparator retain declared approximations.",
+      "counterexample": "Within-path product assumes conditionally independent detector misses. BPOD uses one active linearized FOV boundary and a product across obstacle events, omits unknown-space probability, and can be biased in either direction under correlation.",
+      "independent_test": "Source/formula inspection; prior focused unit evidence only, no new universal calibration claim. **LIMITED_VALIDITY**. These comparison utilities are not calibrated online detection probabilities.",
+      "fix": "Plan only; source unchanged",
+      "status": "LIMITED_VALIDITY"
+    }
+  ]
+}

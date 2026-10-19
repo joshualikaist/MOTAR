@@ -1,0 +1,68 @@
+{
+  "schema": "motar.boia.g4.precise-validation.v1",
+  "base_sha": "13d5f195399bf1a7f1cdf9ddeccd3338d8e34c0f",
+  "source_commit": "5094af97cf8add10c37abe58eb63c19a154e34bf",
+  "source_sha256": {
+    "motar_eval/boia/__init__.py": "9761f309c2328833d2c2b6ed1c2a33e260aa0f59a2fbe57eb6de2ec6e950179a",
+    "motar_eval/boia/access.py": "02e8c67a9edc84c84dfc51b1312a57051e552c491dc21effc4ee9433b11da4d6",
+    "motar_eval/boia/arbitration.py": "2d5d6b19f88132c1a9d5cad950febe618aa9674e13bb43ea695aec6215c33e5e",
+    "motar_eval/boia/belief.py": "dcdbb3d9c4c4ef06f241a7ffde6d3fcdc0d2f6c51c682d659339a02d8bd4160e",
+    "motar_eval/boia/candidates.py": "7feb0298d0193d868aef0243d47f9c796d4ddc26ae9ee7a715ee8ec41da6cd34",
+    "motar_eval/boia/cost.py": "a8a16d165c172126b11834621617794eda6f13b0639585b1e51a1bf83e00ed68",
+    "motar_eval/boia/dynamics.py": "9ef55b71734100cfc48b70e35da98f4a4764adf1821fa6997a8bab30683a68ac",
+    "motar_eval/boia/fallback.py": "e3740cecb30de9189b3e8b44efde94bb2675aeceb2397ccf00361ffd62dfc69e",
+    "motar_eval/boia/geometry.py": "a2bef3da924aa36be5c1ed9346e6ae1192f683bdcb4010d806a1df0fdc06511d",
+    "motar_eval/boia/planner.py": "3daf4d58866a1f3b8cfd644ea7d8d9fb71ece0790135da234a323b1cc930c2b8",
+    "motar_eval/boia/safety.py": "0d2f200291880a3f0bb01374494740693e059d5245d1d3c065ebd605304c8da9",
+    "motar_eval/boia/terminal.py": "804fa6fc03de6489e2314f2f8bfd917a0bc0995cd253cc5ee94eb277847f2576",
+    "motar_eval/boia/trace.py": "784008f611974713853ba8fb2cd4df8d3c7dc4762a9ab3b51c8c6ab105354c5b",
+    "motar_eval/boia/types.py": "7cd7dcf2fcb34a94e91f5bb2f5dae6139182a74d8393fb0b373b7f0edae9db65",
+    "motar_eval/boia/visibility.py": "ec0d92ab647390b4bc9fc12fecc5c8416fd73611c357fc59ac7dbc5ec567b9dd"
+  },
+  "focused": {
+    "command": "PYTHONNOUSERSITE=1 CUDA_VISIBLE_DEVICES='' OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 TMPDIR=/tmp/codex_occ /home/fair/miniconda3/envs/aerialgym/bin/python -B -m unittest discover -s tests -p 'test_boia*.py' -v",
+    "ran": 160,
+    "failures": 0,
+    "errors": 0,
+    "seconds": 13.082,
+    "status": "PASS",
+    "new_p0_or_characterization_methods": 51,
+    "original_boia_methods": 109
+  },
+  "public_cpu": {
+    "profile": "PUBLIC_CPU",
+    "status": "FAIL",
+    "ran": 2899,
+    "failures": 0,
+    "errors": 4,
+    "skipped": 10,
+    "excluded": 5,
+    "excluded_reasons": {
+      "test_navrl_nonoverlap_placement.TestFootprintClearancePlacement": "setUpClass starts a worker that imports aerial_gym (Isaac Gym and Warp need a CUDA device)",
+      "test_navrl_physical_target_lower_contract.LowerContractTest.test_fresh_child_imports_isaacgym_before_packed_torch": "the child process imports isaacgym, which needs a CUDA device"
+    }
+  },
+  "public_cpu_seconds": 155.117,
+  "public_errors": "All four DetectReduction tests in test_navrl_detect_resolution; same pre-existing test-order pollution tracked by motar-6nn.5 and base U7 receipt. Entire PUBLIC_CPU status remains FAIL, never PASS_WITH_EXCEPTION.",
+  "public_command": "PYTHONNOUSERSITE=1 CUDA_VISIBLE_DEVICES= OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 TMPDIR=/tmp/codex_occ /home/fair/miniconda3/envs/aerialgym/bin/python -B tools/run_tests.py",
+  "baseline_reference": "docs/research/occlusion_algorithm_v1/g4_u7_validation.json",
+  "full_original_public_log_sha256": "baee7427089b5352cbadd9e2f59f30aa18446ac7f42226b800dc477b693ba4b6",
+  "new_tests_sha256": {
+    "tests/test_boia_p0_geometry.py": "088aa2fde66403990baa8fd2adb2553273886860d41ba09bdf6f22edf5fa059f",
+    "tests/test_boia_p0_online.py": "be05cfbac7fd88c802b0d88a773ef4715639fe282b74af8eb435688cb74c331b",
+    "tests/test_boia_p0_safety.py": "b9291c08f5666edb915fc803002ddaf06962384a989098d075959de8e43ff7c2"
+  },
+  "cpu_log_normalization": "Trailing whitespace only removed from geometry_B05_base_tests.txt; original transcript is retained in geometry commit9aaf4b5 and scratch. Failure counts/assertions unchanged.",
+  "G5": "HOLD",
+  "gpu_runs": 0,
+  "production_changes": false,
+  "audit_links": {
+    "status": "PASS",
+    "scope": "All relative file links in new audit Markdown; heading anchors and external URLs not checked"
+  },
+  "public_docs_check": {
+    "status": "PASS",
+    "errors": [],
+    "scope": "Declared public surfaces; local path existence, not external URLs or heading anchors"
+  }
+}

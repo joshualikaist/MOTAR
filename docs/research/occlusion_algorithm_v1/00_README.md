@@ -1,3 +1,8 @@
+> **2026-10-20 current gate: G5 HOLD.** U1–U7 CPU implementation completed, but the
+> precise source audit found unresolved P0 geometry/visibility limitations. See
+> [amendment14](14_p0_source_audit_amendment.md) and its linked evidence. Earlier status
+> and requests below are preserved historical text; they do not authorize GPU/integration.
+
 # Occlusion-handling navigation algorithm v1 — research and design record
 
 **Status: G1-R COMPLETE (2026-10-19, Codex); G4 CPU U1–U7 IN_PROGRESS; no simulator validation.** Nothing is validated. Nothing

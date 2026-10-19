@@ -1,3 +1,8 @@
+> **2026-10-20 current gate: G5 HOLD.** U1–U7 CPU implementation completed, but the
+> precise source audit found unresolved P0 geometry/visibility limitations. See
+> [amendment14](14_p0_source_audit_amendment.md) and its linked evidence. Earlier status
+> and requests below are preserved historical text; they do not authorize GPU/integration.
+
 # Current authority — G1-R and CPU-only G4 approved (2026-10-19)
 
 Original PDF provision is **COMPLETE**:30files,29unique papers. G1-R reading/corrections are complete

@@ -1,3 +1,7 @@
+> **2026-10-20 correction to R4:** “2 m/s floor” means the speed-cap floor, not a
+> minimum executed speed. See [amendment14](14_p0_source_audit_amendment.md).
+> Current G5 gate is HOLD; historical risk rows below remain preserved.
+
 # 11 — Unverified assumptions, risks and stop conditions
 
 | ID | Risk or unverified assumption | Evidence | Effect if true | Stop / mitigation |

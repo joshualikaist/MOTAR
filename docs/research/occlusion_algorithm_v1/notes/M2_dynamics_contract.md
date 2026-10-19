@@ -1,3 +1,9 @@
+> **2026-10-20 explicit wording correction:** riskcap's2 m/s floor applies to its
+> **cap**, not executed speed. Executed command is `min(requested, cap)`; zero/.6/1.2
+> requests stay below2. Earlier contrary prose/table entries below are retained as historical
+> audit text and superseded by [amendment14](../14_p0_source_audit_amendment.md).
+> No governor/controller code or historical measurement is changed.
+
 # M2 — Action → motion → termination contract for an arbitration planner over frozen Policy F
 
 Read-only audit of `/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1` (worktree, branch `codex/mt-p1`, HEAD `1d4696c`), 2026-10-19.

@@ -1,0 +1,874 @@
+{
+  "schema": "motar.boia.g4.p0-online-audit.v1",
+  "date": "2026-10-20",
+  "base_sha": "13d5f195399bf1a7f1cdf9ddeccd3338d8e34c0f",
+  "head_when_receipt_written": "13d5f195399bf1a7f1cdf9ddeccd3338d8e34c0f",
+  "branch": "codex/mt-p1",
+  "source_edited_by_this_audit": false,
+  "base_functions_reviewed": 44,
+  "working_functions_reviewed": 45,
+  "coordinated_changes_note": "Root B02: visibility camera-origin helper/call sites added by the geometry P0 owner during review; independently inspected, not an additional online-audit issue count.",
+  "qualification": "NOT_QUALIFIED; no additional P0 established in this delegated scope; geometry-owned P0 and issue13 remain separately tracked",
+  "new_focused_tests": {
+    "file": "tests/test_boia_p0_online.py",
+    "count": 9,
+    "failures": 0,
+    "errors": 0,
+    "wall_s": 0.329,
+    "kind": "Adversarial characterizations; limitation reproductions PASS, not qualification PASS",
+    "command": "env PYTHONNOUSERSITE=1 CUDA_VISIBLE_DEVICES='' OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 /home/fair/miniconda3/envs/aerialgym/bin/python -B -m unittest discover -s tests -p test_boia_p0_online.py -v"
+  },
+  "files": [
+    {
+      "path": "motar_eval/boia/access.py",
+      "base_sha256": "02e8c67a9edc84c84dfc51b1312a57051e552c491dc21effc4ee9433b11da4d6",
+      "reviewed_working_sha256": "02e8c67a9edc84c84dfc51b1312a57051e552c491dc21effc4ee9433b11da4d6",
+      "changed_from_base": false,
+      "input_output_units_frames_batch": "Copied N-first own state/metre LiDAR/world-frame [position m,velocity m/s] belief; xyzw quaternion and yaw radians; camera calibration. No timestamp/identity guarantee.",
+      "validation_dt_probability_numeric_notes": "Strict tensor shape/finite/bool/device/quat/range checks; detach+clone. Batch-wide checks include terminal rows before planner subsetting.",
+      "functions": [
+        {
+          "function": "_copy_tensor",
+          "line": 27,
+          "end_line": 39,
+          "base_line": 27,
+          "inspected": true,
+          "claim": "Checks exact shape/float or bool dtype/finiteness; returns independent detached clone.",
+          "evidence_kind": "SOURCE_READ",
+          "risk_ids": [
+            "ON-01",
+            "ON-03",
+            "ON-04"
+          ]
+        },
+        {
+          "function": "_scalar",
+          "line": 42,
+          "end_line": 48,
+          "base_line": 42,
+          "inspected": true,
+          "claim": "Numeric scalar excludes bool, validates finite and optional positivity.",
+          "evidence_kind": "SOURCE_READ",
+          "risk_ids": [
+            "ON-01",
+            "ON-03",
+            "ON-04"
+          ]
+        },
+        {
+          "function": "read_online",
+          "line": 51,
+          "end_line": 121,
+          "base_line": 51,
+          "inspected": true,
+          "claim": "Whitelist copies own state, LiDAR and tracker/camera data; computes xyzw yaw; validates calibration/ranges.",
+          "evidence_kind": "SOURCE_READ",
+          "risk_ids": [
+            "ON-01",
+            "ON-03",
+            "ON-04"
+          ]
+        }
+      ],
+      "source_read_complete": true
+    },
+    {
+      "path": "motar_eval/boia/belief.py",
+      "base_sha256": "dcdbb3d9c4c4ef06f241a7ffde6d3fcdc0d2f6c51c682d659339a02d8bd4160e",
+      "reviewed_working_sha256": "dcdbb3d9c4c4ef06f241a7ffde6d3fcdc0d2f6c51c682d659339a02d8bd4160e",
+      "changed_from_base": false,
+      "input_output_units_frames_batch": "CV world [p m,v m/s], 6x6 covariance; dt seconds, H positive steps, M paths. N-first independent algebra, one explicit batched local RNG.",
+      "validation_dt_probability_numeric_notes": "Finite symmetric PSD float32/64; per-env recorded Cholesky jitter. Expected Joseph-mixture update, p in [0,1], camera R world m\u00b2. No fitted noise/calibration.",
+      "functions": [
+        {
+          "function": "_positive_dt",
+          "line": 13,
+          "end_line": 19,
+          "base_line": 13,
+          "inspected": true,
+          "claim": "Validates finite positive numeric dt seconds.",
+          "evidence_kind": "SOURCE_READ",
+          "risk_ids": [
+            "ON-02",
+            "ON-07"
+          ]
+        },
+        {
+          "function": "_positive_count",
+          "line": 22,
+          "end_line": 25,
+          "base_line": 22,
+          "inspected": true,
+          "claim": "Validates integer positive sample/step count.",
+          "evidence_kind": "SOURCE_READ",
+          "risk_ids": [
+            "ON-02",
+            "ON-07"
+          ]
+        },
+        {
+          "function": "_real",
+          "line": 28,
+          "end_line": 32,
+          "base_line": 28,
+          "inspected": true,
+          "claim": "Restricts finite float32/64 tensor.",
+          "evidence_kind": "SOURCE_READ",
+          "risk_ids": [
+            "ON-02",
+            "ON-07"
+          ]
+        },
+        {
+          "function": "_covariance",
+          "line": 35,
+          "end_line": 47,
+          "base_line": 35,
+          "inspected": true,
+          "claim": "Checks dimensions, scale-aware symmetry/PSD; returns symmetric average.",
+          "evidence_kind": "SOURCE_READ",
+          "risk_ids": [
+            "ON-02",
+            "ON-07"
+          ]
+        },
+        {
+          "function": "_state",
+          "line": 50,
+          "end_line": 59,
+          "base_line": 50,
+          "inspected": true,
+          "claim": "Checks N,6 mean and N,6,6 covariance dtype/device.",
+          "evidence_kind": "SOURCE_READ",
+          "risk_ids": [
+            "ON-02",
+            "ON-07"
+          ]
+        },
+        {
+          "function": "_process",
+          "line": 62,
+          "end_line": 68,
+          "base_line": 62,
+          "inspected": true,
+          "claim": "Checks6,6 or N,6,6 PSD Q and broadcasts per env.",
+          "evidence_kind": "SOURCE_READ",
+          "risk_ids": [
+            "ON-02",
+            "ON-07"
+          ]
+        },
+        {
+          "function": "tracker_Q",
+          "line": 71,
+          "end_line": 79,
+          "base_line": 71,
+          "inspected": true,
+          "claim": "Reproduces diagonal .025dt\u00b2 position and .25dt velocity process variances.",
+          "evidence_kind": "SOURCE_READ",
+          "risk_ids": [
+            "ON-02",
+            "ON-07"
+          ]
+        },
+        {
+          "function": "predict",
+          "line": 82,
+          "end_line": 102,
+          "base_line": 82,
+          "inspected": true,
+          "claim": "Recurses deterministic CV means and FPF\u1d40+Q from t+dt to t+Hdt.",
+          "evidence_kind": "SOURCE_READ",
+          "risk_ids": [
+            "ON-02",
+            "ON-07"
+          ]
+        },
+        {
+          "function": "_factor",
+          "line": 105,
+          "end_line": 124,
+          "base_line": 105,
+          "inspected": true,
+          "claim": "Per-env Cholesky retries with explicit recorded diagonal jitter.",
+          "evidence_kind": "SOURCE_READ",
+          "risk_ids": [
+            "ON-02",
+            "ON-07"
+          ]
+        },
+        {
+          "function": "sample",
+          "line": 127,
+          "end_line": 164,
+          "base_line": 127,
+          "inspected": true,
+          "claim": "Initial Gaussian belief plus independent per-step Q increments; explicit local Generator advances.",
+          "evidence_kind": "SOURCE_READ",
+          "risk_ids": [
+            "ON-02",
+            "ON-07"
+          ]
+        },
+        {
+          "function": "expected_cov",
+          "line": 167,
+          "end_line": 206,
+          "base_line": 167,
+          "inspected": true,
+          "claim": "Prior/Joseph-posterior convex mixture; exact original at p=0; singular innovation fails closed.",
+          "evidence_kind": "SOURCE_READ",
+          "risk_ids": [
+            "ON-02",
+            "ON-07"
+          ]
+        }
+      ],
+      "source_read_complete": true
+    },
+    {
+      "path": "motar_eval/boia/visibility.py",
+      "base_sha256": "1973a5ee411270dcfe0f73c6067773e3a697391cdcffb3f17122a5fd15aa8d62",
+      "reviewed_working_sha256": "ec0d92ab647390b4bc9fc12fecc5c8416fd73611c357fc59ac7dbc5ec567b9dd",
+      "changed_from_base": true,
+      "input_output_units_frames_batch": "World ego/samples converted to yaw-only camera frame, radians FOV and metres range; P_det N,K,M,H and P_any N,K in [0,1].",
+      "validation_dt_probability_numeric_notes": "Static horizontal point/known-free LOS, explicit occluder prior; size gate and optional stressed sigmoid. BPOD is an independent-event linearized comparator only.",
+      "functions": [
+        {
+          "function": "fov_mask",
+          "line": 9,
+          "end_line": 14,
+          "base_line": 9,
+          "inspected": true,
+          "claim": "Finite positive-forward pinhole FOV and radial far gate.",
+          "evidence_kind": "SOURCE_READ",
+          "risk_ids": [
+            "ON-03",
+            "ON-08",
+            "ON-12"
+          ]
+        },
+        {
+          "function": "los_clear",
+          "line": 17,
+          "end_line": 27,
+          "base_line": 17,
+          "inspected": true,
+          "claim": "Point-disc segment clearance plus optional mandatory known-free segment containment.",
+          "evidence_kind": "SOURCE_READ",
+          "risk_ids": [
+            "ON-03",
+            "ON-08",
+            "ON-12"
+          ]
+        },
+        {
+          "function": "_to_camera",
+          "line": 30,
+          "end_line": 35,
+          "base_line": 30,
+          "inspected": true,
+          "claim": "Rotates world relative vector to yaw-only V and subtracts camera offset.",
+          "evidence_kind": "SOURCE_READ",
+          "risk_ids": [
+            "ON-03",
+            "ON-08",
+            "ON-12"
+          ]
+        },
+        {
+          "function": "_camera_origin_xy",
+          "line": 38,
+          "end_line": 43,
+          "base_line": null,
+          "inspected": true,
+          "claim": "Coordinated P0 patch: world optical centre p_xy+R_yaw offset_xy; excludes vertical LOS guarantee.",
+          "evidence_kind": "SOURCE_READ",
+          "risk_ids": [
+            "ON-03",
+            "ON-08",
+            "ON-12"
+          ]
+        },
+        {
+          "function": "forecast",
+          "line": 46,
+          "end_line": 73,
+          "base_line": 38,
+          "inspected": true,
+          "claim": "Loops candidate/time with shared target paths and fixed point/free sets; oracle or stressed gate.",
+          "evidence_kind": "SOURCE_READ",
+          "risk_ids": [
+            "ON-03",
+            "ON-08",
+            "ON-12"
+          ]
+        },
+        {
+          "function": "p_any",
+          "line": 76,
+          "end_line": 79,
+          "base_line": 67,
+          "inspected": true,
+          "claim": "Mean across paths of within-path1-product(1-p); temporal independence conditional assumption.",
+          "evidence_kind": "SOURCE_READ",
+          "risk_ids": [
+            "ON-03",
+            "ON-08",
+            "ON-12"
+          ]
+        },
+        {
+          "function": "_normal_clearance",
+          "line": 82,
+          "end_line": 89,
+          "base_line": 73,
+          "inspected": true,
+          "claim": "Linear Gaussian signed-margin probability, deterministic branch at zero variance.",
+          "evidence_kind": "SOURCE_READ",
+          "risk_ids": [
+            "ON-03",
+            "ON-08",
+            "ON-12"
+          ]
+        },
+        {
+          "function": "bpod_analytic",
+          "line": 92,
+          "end_line": 132,
+          "base_line": 83,
+          "inspected": true,
+          "claim": "Linearizes one active FOV margin and point-disc clear events, then independent product.",
+          "evidence_kind": "SOURCE_READ",
+          "risk_ids": [
+            "ON-03",
+            "ON-08",
+            "ON-12"
+          ]
+        }
+      ],
+      "source_read_complete": true
+    },
+    {
+      "path": "motar_eval/boia/candidates.py",
+      "base_sha256": "7feb0298d0193d868aef0243d47f9c796d4ddc26ae9ee7a715ee8ec41da6cd34",
+      "reviewed_working_sha256": "7feb0298d0193d868aef0243d47f9c796d4ddc26ae9ee7a715ee8ec41da6cd34",
+      "changed_from_base": false,
+      "input_output_units_frames_batch": "Normalized N,20,4 actions; x/y body velocity scaled by2.5m/s and yaw by3rad/s; F index0 exactly preserved.",
+      "validation_dt_probability_numeric_notes": "Finite in-box F, active-aware bearing, deterministic lattice/arcs; no RNG. Candidate19 translates0.6m/s, not pure yaw. Safety validates candidates later.",
+      "functions": [
+        {
+          "function": "_clear",
+          "line": 16,
+          "end_line": 21,
+          "base_line": 16,
+          "inspected": true,
+          "claim": "Boolean segment clearance against per-env valid points.",
+          "evidence_kind": "SOURCE_READ",
+          "risk_ids": [
+            "ON-05",
+            "ON-06"
+          ]
+        },
+        {
+          "function": "generate",
+          "line": 24,
+          "end_line": 94,
+          "base_line": 24,
+          "inspected": true,
+          "claim": "Produces20 deterministic normalized candidate commands and family/fallback diagnostics.",
+          "evidence_kind": "SOURCE_READ",
+          "risk_ids": [
+            "ON-05",
+            "ON-06"
+          ]
+        }
+      ],
+      "source_read_complete": true
+    },
+    {
+      "path": "motar_eval/boia/cost.py",
+      "base_sha256": "a8a16d165c172126b11834621617794eda6f13b0639585b1e51a1bf83e00ed68",
+      "reviewed_working_sha256": "a8a16d165c172126b11834621617794eda6f13b0639585b1e51a1bf83e00ed68",
+      "changed_from_base": false,
+      "input_output_units_frames_batch": "N,K score and dimensionless Phi/P_loss/U/S/C; physical distance/time-normalized progress, position logdet difference, 4-channel normalized action norm,1m clearance scale.",
+      "validation_dt_probability_numeric_notes": "Strict PD entropy input, finite modeled states, +inf infeasible; no NaN-based choice. Probability/calibration/physical effort interpretation not established.",
+      "functions": [
+        {
+          "function": "_logdet_pd",
+          "line": 8,
+          "end_line": 15,
+          "base_line": 8,
+          "inspected": true,
+          "claim": "Cholesky logdet; symmetric finite strictly PD required, no hidden entropy floor.",
+          "evidence_kind": "SOURCE_READ",
+          "risk_ids": [
+            "ON-07",
+            "ON-10"
+          ]
+        },
+        {
+          "function": "evaluate",
+          "line": 18,
+          "end_line": 57,
+          "base_line": 18,
+          "inspected": true,
+          "claim": "Computes five specified scalar utilities and mode weights; masks infeasible/nonfinite scores to+inf.",
+          "evidence_kind": "SOURCE_READ",
+          "risk_ids": [
+            "ON-07",
+            "ON-10"
+          ]
+        }
+      ],
+      "source_read_complete": true
+    },
+    {
+      "path": "motar_eval/boia/arbitration.py",
+      "base_sha256": "2d5d6b19f88132c1a9d5cad950febe618aa9674e13bb43ea695aec6215c33e5e",
+      "reviewed_working_sha256": "2d5d6b19f88132c1a9d5cad950febe618aa9674e13bb43ea695aec6215c33e5e",
+      "changed_from_base": false,
+      "input_output_units_frames_batch": "Explicit frozen N-first state; camera-only acquisition/miss counts; integer modes/counters; normalized action output and new state.",
+      "validation_dt_probability_numeric_notes": "INTERCEPT before PRE; NEVER/unlocalized no gain; safety bypasses dwell;5 engaged decisions before gain-only release; all-infeasible sentinel0 and SAFE_HOLD slot1.",
+      "functions": [
+        {
+          "function": "initial_state",
+          "line": 35,
+          "end_line": 41,
+          "base_line": 35,
+          "inspected": true,
+          "claim": "Independent N-first zero state using reference dtype/device.",
+          "evidence_kind": "SOURCE_READ",
+          "risk_ids": [
+            "ON-04",
+            "ON-06"
+          ]
+        },
+        {
+          "function": "update_mode",
+          "line": 44,
+          "end_line": 78,
+          "base_line": 44,
+          "inspected": true,
+          "claim": "Updates camera-only misses/acquisition once; current terminal mask, INTERCEPT and PRE precedence.",
+          "evidence_kind": "SOURCE_READ",
+          "risk_ids": [
+            "ON-04",
+            "ON-06"
+          ]
+        },
+        {
+          "function": "advantage",
+          "line": 81,
+          "end_line": 93,
+          "base_line": 81,
+          "inspected": true,
+          "claim": "Finite feasible F minus best; +inf for unavailable F with alternative;0 sentinel if none.",
+          "evidence_kind": "SOURCE_READ",
+          "risk_ids": [
+            "ON-04",
+            "ON-06"
+          ]
+        },
+        {
+          "function": "decide",
+          "line": 96,
+          "end_line": 142,
+          "base_line": 96,
+          "inspected": true,
+          "claim": "Safety/gain/dwell arbitration, feasible argmin or hold slot1; exact four-result API and new state.",
+          "evidence_kind": "SOURCE_READ",
+          "risk_ids": [
+            "ON-04",
+            "ON-06"
+          ]
+        }
+      ],
+      "source_read_complete": true
+    },
+    {
+      "path": "motar_eval/boia/fallback.py",
+      "base_sha256": "e3740cecb30de9189b3e8b44efde94bb2675aeceb2397ccf00361ffd62dfc69e",
+      "reviewed_working_sha256": "e3740cecb30de9189b3e8b44efde94bb2675aeceb2397ccf00361ffd62dfc69e",
+      "changed_from_base": false,
+      "input_output_units_frames_batch": "N,4 normalized zero translation with active-belief yaw; inactive yaw exactly0.",
+      "validation_dt_probability_numeric_notes": "No source mutation/outcome declaration; zero commanded velocity is not an independently qualified physical safe stop.",
+      "functions": [
+        {
+          "function": "safe_hold",
+          "line": 5,
+          "end_line": 17,
+          "base_line": 5,
+          "inspected": true,
+          "claim": "Zero normalized translation plus permitted active-bearing yaw, no declared outcome.",
+          "evidence_kind": "SOURCE_READ",
+          "risk_ids": [
+            "ON-09"
+          ]
+        }
+      ],
+      "source_read_complete": true
+    },
+    {
+      "path": "motar_eval/boia/terminal.py",
+      "base_sha256": "804fa6fc03de6489e2314f2f8bfd917a0bc0995cd253cc5ee94eb277847f2576",
+      "reviewed_working_sha256": "804fa6fc03de6489e2314f2f8bfd917a0bc0995cd253cc5ee94eb277847f2576",
+      "changed_from_base": false,
+      "input_output_units_frames_batch": "Current N bool flags reset only matching BOIA rows; incoming state retained by copying on other rows.",
+      "validation_dt_probability_numeric_notes": "No simulator flags inferred from distance; no outcome declaration; old TERMINAL does not latch when live modes are reclassified.",
+      "functions": [
+        {
+          "function": "apply",
+          "line": 7,
+          "end_line": 17,
+          "base_line": 7,
+          "inspected": true,
+          "claim": "Pure current-terminal-row BOIA reset; never writes simulator or tracker.",
+          "evidence_kind": "SOURCE_READ",
+          "risk_ids": [
+            "ON-01",
+            "ON-09"
+          ]
+        }
+      ],
+      "source_read_complete": true
+    },
+    {
+      "path": "motar_eval/boia/planner.py",
+      "base_sha256": "3daf4d58866a1f3b8cfd644ea7d8d9fb71ece0790135da234a323b1cc930c2b8",
+      "reviewed_working_sha256": "3daf4d58866a1f3b8cfd644ea7d8d9fb71ece0790135da234a323b1cc930c2b8",
+      "changed_from_base": false,
+      "input_output_units_frames_batch": "task/perception whitelist + normalized aF N,4 + current terminal mask + explicit Generator -> action and Decision/new_state; state persistence explicit with_state.",
+      "validation_dt_probability_numeric_notes": "dt passed explicitly; covariance propagated recursively; camera R explicit positive and unavailable yaw lag rejected; only live eval/digests after full read/validation.",
+      "functions": [
+        {
+          "function": "_subset",
+          "line": 17,
+          "end_line": 20,
+          "base_line": 17,
+          "inspected": true,
+          "claim": "Selects live N rows; shared angles/elevations/camera calibration retained.",
+          "evidence_kind": "SOURCE_READ",
+          "risk_ids": [
+            "ON-01",
+            "ON-02",
+            "ON-03",
+            "ON-04",
+            "ON-07",
+            "ON-08",
+            "ON-09",
+            "ON-10",
+            "ON-11"
+          ]
+        },
+        {
+          "function": "_state_subset",
+          "line": 23,
+          "end_line": 24,
+          "base_line": 23,
+          "inspected": true,
+          "claim": "Clones selected explicit BOIA state rows.",
+          "evidence_kind": "SOURCE_READ",
+          "risk_ids": [
+            "ON-01",
+            "ON-02",
+            "ON-03",
+            "ON-04",
+            "ON-07",
+            "ON-08",
+            "ON-09",
+            "ON-10",
+            "ON-11"
+          ]
+        },
+        {
+          "function": "_merge_state",
+          "line": 27,
+          "end_line": 33,
+          "base_line": 27,
+          "inspected": true,
+          "claim": "Copies complete state and replaces only selected rows.",
+          "evidence_kind": "SOURCE_READ",
+          "risk_ids": [
+            "ON-01",
+            "ON-02",
+            "ON-03",
+            "ON-04",
+            "ON-07",
+            "ON-08",
+            "ON-09",
+            "ON-10",
+            "ON-11"
+          ]
+        },
+        {
+          "function": "expected_horizon",
+          "line": 36,
+          "end_line": 48,
+          "base_line": 36,
+          "inspected": true,
+          "claim": "Carries each expected posterior into next F/Q prediction, not independent horizon updates.",
+          "evidence_kind": "SOURCE_READ",
+          "risk_ids": [
+            "ON-01",
+            "ON-02",
+            "ON-03",
+            "ON-04",
+            "ON-07",
+            "ON-08",
+            "ON-09",
+            "ON-10",
+            "ON-11"
+          ]
+        },
+        {
+          "function": "with_state",
+          "line": 57,
+          "end_line": 58,
+          "base_line": 57,
+          "inspected": true,
+          "claim": "Returns a new frozen planner; no implicit retained mutation.",
+          "evidence_kind": "SOURCE_READ",
+          "risk_ids": [
+            "ON-01",
+            "ON-02",
+            "ON-03",
+            "ON-04",
+            "ON-07",
+            "ON-08",
+            "ON-09",
+            "ON-10",
+            "ON-11"
+          ]
+        },
+        {
+          "function": "step",
+          "line": 60,
+          "end_line": 133,
+          "base_line": 60,
+          "inspected": true,
+          "claim": "Whitelist/read, live geometry/candidates/rollout/safety/sampling/forecast/cost/arbitration, fallback merge and trace.",
+          "evidence_kind": "SOURCE_READ",
+          "risk_ids": [
+            "ON-01",
+            "ON-02",
+            "ON-03",
+            "ON-04",
+            "ON-07",
+            "ON-08",
+            "ON-09",
+            "ON-10",
+            "ON-11"
+          ]
+        }
+      ],
+      "source_read_complete": true
+    },
+    {
+      "path": "motar_eval/boia/trace.py",
+      "base_sha256": "784008f611974713853ba8fb2cd4df8d3c7dc4762a9ab3b51c8c6ab105354c5b",
+      "reviewed_working_sha256": "784008f611974713853ba8fb2cd4df8d3c7dc4762a9ab3b51c8c6ab105354c5b",
+      "changed_from_base": false,
+      "input_output_units_frames_batch": "Permitted OnlineInputs row -> framed versioned bytes and first8 SHA-256 bytes; live Decision -> detached/copied NumPy arrays.",
+      "validation_dt_probability_numeric_notes": "Canonical dtype/shape/name framing and ASCII float.hex independent of native byte order; terminal rows omitted before serialization; no raw task/evaluator access.",
+      "functions": [
+        {
+          "function": "_primes",
+          "line": 13,
+          "end_line": 19,
+          "base_line": 13,
+          "inspected": true,
+          "claim": "Derives immutable SHA constants from deterministic integer primes.",
+          "evidence_kind": "SOURCE_READ",
+          "risk_ids": [
+            "ON-11"
+          ]
+        },
+        {
+          "function": "_cube_root",
+          "line": 22,
+          "end_line": 30,
+          "base_line": 22,
+          "inspected": true,
+          "claim": "Integer cube root for exact SHA fractional-cube-root constants.",
+          "evidence_kind": "SOURCE_READ",
+          "risk_ids": [
+            "ON-11"
+          ]
+        },
+        {
+          "function": "sha256",
+          "line": 38,
+          "end_line": 61,
+          "base_line": 38,
+          "inspected": true,
+          "claim": "Standard SHA-256 padding,32bit schedule/rounds,32byte output.",
+          "evidence_kind": "SOURCE_READ",
+          "risk_ids": [
+            "ON-11"
+          ]
+        },
+        {
+          "function": "_frame",
+          "line": 64,
+          "end_line": 65,
+          "base_line": 64,
+          "inspected": true,
+          "claim": "8-byte big-endian payload length followed by bytes.",
+          "evidence_kind": "SOURCE_READ",
+          "risk_ids": [
+            "ON-11"
+          ]
+        },
+        {
+          "function": "_scalar",
+          "line": 68,
+          "end_line": 73,
+          "base_line": 68,
+          "inspected": true,
+          "claim": "Framed tuple values and typed ASCII primitives; floats use exact logical float.hex.",
+          "evidence_kind": "SOURCE_READ",
+          "risk_ids": [
+            "ON-11"
+          ]
+        },
+        {
+          "function": "canonical_input",
+          "line": 76,
+          "end_line": 91,
+          "base_line": 76,
+          "inspected": true,
+          "claim": "Versioned per-field framing of only copied OnlineInputs, global sensor angles and camera calibration.",
+          "evidence_kind": "SOURCE_READ",
+          "risk_ids": [
+            "ON-11"
+          ]
+        },
+        {
+          "function": "record",
+          "line": 94,
+          "end_line": 116,
+          "base_line": 94,
+          "inspected": true,
+          "claim": "Exports only live rows and independent copies; no post-reset digest or evaluator label.",
+          "evidence_kind": "SOURCE_READ",
+          "risk_ids": [
+            "ON-11"
+          ]
+        }
+      ],
+      "source_read_complete": true
+    },
+    {
+      "path": "motar_eval/boia/__init__.py",
+      "base_sha256": "9761f309c2328833d2c2b6ed1c2a33e260aa0f59a2fbe57eb6de2ec6e950179a",
+      "reviewed_working_sha256": "9761f309c2328833d2c2b6ed1c2a33e260aa0f59a2fbe57eb6de2ec6e950179a",
+      "changed_from_base": false,
+      "input_output_units_frames_batch": "Docstring only; no eager imports, mutable state, functions or simulator dependency.",
+      "validation_dt_probability_numeric_notes": "Inspected complete module.",
+      "functions": [],
+      "source_read_complete": true
+    }
+  ],
+  "risks": [
+    {
+      "id": "ON-01",
+      "severity": "P1",
+      "file_line_claim": "`planner.py:94\u201397`; `access.py:37\u201338`: only live rows are evaluated/logged, but the full batch is copied and validated first.",
+      "counterexample_or_limit": "With terminal mask `[True,False]`, NaN in env0 position or belief aborts env1 with `ValueError`. All-terminal bypass is correct.",
+      "independent_test_and_fix_status": "`test_o01_mixed_terminal_nan_blocks_unrelated_live_row`. Reproduced, **NOT_FIXED**. This is fail-closed batch availability and reset-isolation failure, not unsafe returned control. Later accessor masking must preserve whitelist and live-row validation."
+    },
+    {
+      "id": "ON-02",
+      "severity": "P1",
+      "file_line_claim": "`planner.py:97,109`; `belief.py:151\u2013157`: one local generator draws a tensor whose leading size is `N_live`.",
+      "counterexample_or_limit": "Masking env0 changes env1's Monte Carlo path despite identical env1 input digest and generator seed. Identical local seed is insufficient for paired exogenous randomness under asynchronous terminations.",
+      "independent_test_and_fix_status": "`test_o02_other_terminal_mask_reassigns_live_env_samples`. Reproduced, **NOT_FIXED**. All candidates within one call still share paths correctly; no global RNG is used. Per-env streams/counters and matched-reset tests require an approved integration design."
+    },
+    {
+      "id": "ON-03",
+      "severity": "P1",
+      "file_line_claim": "`access.py:102\u2013118`; `visibility.py:56\u201359`: camera intrinsics are copied, while primary detection uses `cam.fx`, `params.r_T`, `params.min_pixels`.",
+      "counterexample_or_limit": "Adding a 320\u00d7180 DETECT path leaves BOIA's copied/digested calibration unchanged. An independent 18 m on-axis sphere has 0 pixels at160\u00d790 and4 at320\u00d7180, crossing the real2-pixel gate; primary area using the old `fx` remains below2. Separately, copied `cam.min_pixels=100` still yields primary probability1 at6m with default parameter threshold2.",
+      "independent_test_and_fix_status": "`test_o03_detect_resolution_is_not_part_of_current_accessor`, `test_o03_primary_gate_ignores_copied_camera_pixel_threshold`. Production source independently distinguishes camera and DETECT intrinsics at `navrl_perception.py:765\u2013783`, thresholds at1608. Defaults have equal resolutions; no claim that frozen P03 used a decoupled setting. **NOT_FIXED**; changing the explicitly approved whitelist/priors requires review."
+    },
+    {
+      "id": "ON-04",
+      "severity": "P1",
+      "file_line_claim": "`access.py:75\u201379`; `arbitration.py:58\u201373`; `planner.py:109,115`: active/age/camera flag contain no confirmed identity or measurement timestamp.",
+      "counterexample_or_limit": "Active fused track with age0 and camera miss streak20 is LOST_PREDICTABLE; it does not establish identity or a fresh camera measurement. An inactive/stale mean is still sampled/scored when choosing a safety alternative, although it cannot trigger gain intervention.",
+      "independent_test_and_fix_status": "`test_o04_active_and_fused_age_are_not_identity_or_timestamp` plus source inspection. Tracker LiDAR corrections can reset fused age (`navrl_perception.py:2077\u20132080`); separate identity bookkeeping exists at2274\u20132279. **NOT_FIXED / NOT_CALIBRATED**. No forbidden diagnostic/GT was added. Future alignment/identity contract must be explicit."
+    },
+    {
+      "id": "ON-05",
+      "severity": "P1",
+      "file_line_claim": "`candidates.py:28,83\u201387`: the family named \u201cyaw-only\u201d includes translation.",
+      "counterexample_or_limit": "Candidate19 requests0.6m/s along current velocity heading, or yaw heading when stopped. It is not a translation-free yaw baseline and cannot isolate pure yaw contribution.",
+      "independent_test_and_fix_status": "`test_o05_candidate19_translates_and_intercept_never_decline_gain`. Independent norm is0.6m/s. **SPEC_CONFORMING**: user B5 and07\u00a78 explicitly require this command. No automatic change."
+    },
+    {
+      "id": "ON-06",
+      "severity": "P1",
+      "file_line_claim": "`arbitration.py:67,73,115\u2013127`: INTERCEPT and NEVER_ACQUIRED disable gain intervention.",
+      "counterexample_or_limit": "Even when another feasible candidate has cost\u221210 vs F cost10, these modes return feasible F. d_int=3m hands the final approach back to F; never-acquired starts are not BOIA search trials.",
+      "independent_test_and_fix_status": "Same `test_o05...` direct counterfactual costs. **SPEC_CONFORMING** under user B6/07\u00a72. Do not claim close-range recovery improvement or initial search capability without separate evidence/design."
+    },
+    {
+      "id": "ON-07",
+      "severity": "P1",
+      "file_line_claim": "`belief.py:71\u201379,97\u201399,127\u2013164,195\u2013205`; `planner.py:90\u2013114`: Q is mirrored CV noise and R is an explicit fixed world-diagonal prior.",
+      "counterexample_or_limit": "Scalar Joseph arithmetic is correct, but neither correct algebra nor Gaussian samples calibrate E2 manoeuvres, detector error, cross-correlation, identity switches or latency. R is not the live range/pixel-dependent measurement covariance.",
+      "independent_test_and_fix_status": "`test_expected_update_matches_independent_scalar_and_does_not_calibrate`: position variance0.68 for P=1,p=.4,R=.25; unobserved velocity variance stays1; p=0 is exact; singular entropy fails closed. **NEES/NIS, reliability, coverage and s_Q/R calibration NOT_TESTED**. G5 only."
+    },
+    {
+      "id": "ON-08",
+      "severity": "P1",
+      "file_line_claim": "`visibility.py:38\u201363`; `planner.py:99\u2013106`: one fixed horizontal sensed point set/free context is reused throughout H.",
+      "counterexample_or_limit": "No obstacle velocity or occupancy timestamp is supplied. A moving obstacle entering a formerly free ray is outside the model; geometric camera silhouette/partial support is also not represented by the centre-line forecast.",
+      "independent_test_and_fix_status": "Source/interface absence, not an observed simulation incident. Independent moving-obstacle/partial-silhouette validation **NOT_TESTED**; no test is mislabeled PASS. Existing static vertical-bar scope is explicit."
+    },
+    {
+      "id": "ON-09",
+      "severity": "P1",
+      "file_line_claim": "`terminal.py:7\u201317`; `planner.py:60\u2013133`; `fallback.py:5\u201317`: outcomes are externally flagged and fallback requests zero translation.",
+      "counterexample_or_limit": "Synthetic static-observation replay does not produce actual capture, collision, timeout, safe-abort or hand-back actor-history outcomes. Zero command cannot establish collision-free stopping when all candidate stopping tests already failed.",
+      "independent_test_and_fix_status": "Source/interface inspection. **NOT_TESTED end-to-end**; no capture/abort declaration exists, which correctly avoids GT/outcome leakage. Mechanics/plant/sensor validation and independently recorded simulator outcomes remain required before a Recovery claim."
+    },
+    {
+      "id": "ON-10",
+      "severity": "P1",
+      "file_line_claim": "`cost.py:46`; controller interpretation07\u00a76.1/user B4: all4 normalized actions enter smoothness although a_z is overwritten by altitude PI.",
+      "counterexample_or_limit": "Identical modeled physical trajectories with commands differing only by a_z=.9 vs0 have smoothness difference .2025 and default weighted J difference .010125. This is utility variation without differing physical effort.",
+      "independent_test_and_fix_status": "`test_o10_overwritten_vertical_action_changes_smoothness_cost`. **SPEC_CONFORMING / NOT_FIXED**, because07\u00a79 explicitly defines the four-component norm. Review the utility/advantage interpretation before calibration; do not silently alter the objective."
+    },
+    {
+      "id": "ON-11",
+      "severity": "P2",
+      "file_line_claim": "`trace.py:76\u2013115`: digest binds copied online inputs, not complete controller execution state.",
+      "counterexample_or_limit": "Same input digest can accompany different RNG state, BOIA dwell/history, parameters or source version. The trace omits complete planner state and local generator state. First8 SHA bytes are a64-bit fingerprint, not a collision-proof archival identifier.",
+      "independent_test_and_fix_status": "SHA independent vectors and trace copy mutation pass (`test_sha_standard_vectors_and_trace_copy_remain_isolated`). **REQUIRED OUT-OF-BAND PROVENANCE**, not a failed input-digest implementation. Generic helper schema growth also needs an explicit serialization-version review."
+    },
+    {
+      "id": "ON-12",
+      "severity": "P2",
+      "file_line_claim": "`visibility.py:59,67\u201370,83\u2013122`: stressed detector and analytic comparator retain declared approximations.",
+      "counterexample_or_limit": "Within-path product assumes conditionally independent detector misses. BPOD uses one active linearized FOV boundary and a product across obstacle events, omits unknown-space probability, and can be biased in either direction under correlation.",
+      "independent_test_and_fix_status": "Source/formula inspection; prior focused unit evidence only, no new universal calibration claim. **LIMITED_VALIDITY**. These comparison utilities are not calibrated online detection probabilities."
+    }
+  ],
+  "cpu_only": true,
+  "simulator_imports": false,
+  "raw_array_access": false,
+  "gpu_run": false,
+  "push": false,
+  "main_merge": false,
+  "own_commit": null,
+  "counts": {
+    "P0": 0,
+    "P1": 10,
+    "P2": 2
+  },
+  "test_file_sha256": "be05cfbac7fd88c802b0d88a773ef4715639fe282b74af8eb435688cb74c331b",
+  "report_sha256": "777554a545cfd99e1e9fd3b46cb475ed27ab8720ba3db9bb38d61da8ac483b98",
+  "created_at_local": "2026-10-20T02:03:19.999586+09:00"
+}
