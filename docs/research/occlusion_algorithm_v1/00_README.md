@@ -94,4 +94,6 @@ FULL_READ records were checked against the originals. Physical read pages and sp
 2. The full G1/G2 working notes, with page/equation and file:line detail, are in
    [`notes/`](notes/), together with M3's analysis scripts and outputs in `notes/m3_scripts/`. The
    numbered files above are curated from them.
-3. G1-R committedf103721; U5 focusedCPU16PASS; next unit pending localcommit/gate. Diskstop3GB; G5/GPU unapproved.
+3. G1-R committedf103721; U6 focusedCPU17PASS; next unit pending localcommit/gate. Diskstop3GB; G5/GPU unapproved.
+
+Known G4 model limit: target-like returns can leave the forecast endpoint outside raw known-free space (`motar-3p3.13`). See [counterexample](g4_known_model_limitation.json). G5 calibrated visibility/supervisor qualification is BLOCKED pending model review; no fix applied.

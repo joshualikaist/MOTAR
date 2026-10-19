@@ -22029,3 +22029,10 @@ FocusedCPU 16 tests PASS, failures0/errors0, 0.021s. K20 exact F, inactive fallb
 PUBLIC_CPU 2815 run, failures0/errors4 (existingmotar-6nn.5 detect-resolution pollution), skipped10; newBOIAfailures/errors0.
 Receipts g4_u5_validation.json and g4_u5_tests.txt in docs/research/occlusion_algorithm_v1/.
 NewCPUoptin only; no simulator/GPU/production/rawcalibration/PPO/push/merge. Next: diffreview/localcommit thennextunitgate.
+
+## 2026-10-19 — BOIA U6 CPU implementation
+
+Files: motar_eval/boia/cost.py, motar_eval/boia/arbitration.py, motar_eval/boia/fallback.py, motar_eval/boia/terminal.py, tests/test_boia_arbitration.py.
+FocusedCPU 17 tests PASS, failures0/errors0, 0.035s. Focused17PASS; independent cost oracle, exact engaged-step dwell, safety/terminal/mode handling PASS. Independent review MEDIUM advantage direct-call bug fixed with regression. Separate specification-conforming target-return known-free counterexample is NOT_CORRECTED (motar-3p3.13); G5 calibrated visibility/supervisor qualification blocked, not a CPU software gate failure.
+Receipts g4_u6_validation.json and g4_u6_tests.txt in docs/research/occlusion_algorithm_v1/.
+NewCPUoptin only; no simulator/GPU/production/rawcalibration/PPO/push/merge. Next: diffreview/localcommit thennextunitgate.

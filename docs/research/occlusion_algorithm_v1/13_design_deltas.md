@@ -143,3 +143,33 @@ continue when the error is within25%. Above25% remains a model-form failure. Kee
 - The body soft deficit below.398m is a diagnostic in metres; it is not a hard rejection and not
   the §9 cost. U6 computes the specified normalized clearance cost with d_soft=1m from clr_min.
   Unknown always blocks safety, even when the visibility unknown-space ablation is disabled.
+
+## Implementation resolutions — U6
+
+- PRE_OCCLUSION is triggered by the minimum across the first min(H_pre,H) mean-sample detection
+  probabilities. INTERCEPT has priority. This makes the previously unspecified horizon aggregator
+  explicit; no new threshold or paper claim is introduced.
+- dwell counts engaged decisions, including an argmin that happens to equal F. Five decisions are
+  held before gain-only release becomes eligible on call6. It does not force a worse non-F command
+  or claim five distinct physical interventions. Safe-mode/terminal handback bypasses that hold.
+- Cost requires strictly positive-definite initial/final position covariances. Singular PSD inputs
+  fail explicitly; no hidden floor changes their entropy. Belief kernels still support PSD inputs.
+- All-infeasible advantage is a zero sentinel; infeasible F with a valid alternative has+inf.
+  An independent review found a direct-call finite-cost/invalid-F mismatch; it was fixed and
+  regressed before commit. The intended cost-masked pipeline was not affected by that mismatch.
+
+## Known model limitation found during G4 — NOT_CORRECTED
+
+`motar-3p3.13` / [machine counterexample](g4_known_model_limitation.json): an ideal clear target
+belief at6m with a LiDAR first surface5.8m is excluded from obstacle points, yet the raw known-free
+radius remains5.7m. The target-centre endpoint is outside that free set, so the default forecast is0;
+with the unknown-space visibility ablation it is1. The independent inequality6>5.8-.1 explains it
+without relying on the implementation. This can bias detection probability down and trigger false
+PRE_OCCLUSION. The synthetic return is an explicit fixture, not proof of actual semantic identity.
+
+Classification: **SPEC_CONFORMING_G4 / KNOWN_DESIGN_MODEL_LIMITATION / NOT_CORRECTED**. This does not
+invalidate the arithmetic or authorize a source change; the CPU implementation can be completed.
+It blocks **G5 calibrated P_det and online-supervisor qualification** until model review. Do not
+claim visibility/recovery/safety validity. Filling a target-like ray to12m is not a valid automatic
+fix: the belief gate may also contain a foreground bar.07–09 remain unchanged apart from the
+approved eventual append-only08 implementation status; no new model or sensor lineage is applied.
