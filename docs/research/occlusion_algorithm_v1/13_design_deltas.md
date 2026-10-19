@@ -127,3 +127,19 @@ continue when the error is within25%. Above25% remains a model-form failure. Kee
   new fit. `braking_distance` returns the reaction-inclusive total, so safety adds no second
   reaction term. The default tau_v=.4 prior has a12.5605% high-speed discrepancy: **LIMITED_VALIDITY**,
   below the user's25% stop criterion. The10% target is not passed and no parameter is retuned.
+
+## Implementation resolutions — U5
+
+- Candidate generation additionally returns a diagnostics dictionary alongside commands and family
+  IDs, so inactive/zero-distance belief fallback and failed arc searches are explicit. Candidate0
+  is copied exactly; an invalid out-of-box F command fails closed rather than being changed.
+- Inactive beliefs use own velocity heading, or own yaw when stationary, with zero yaw request and
+  zero/invalid arc offsets; no synthetic target range is invented. Arc-path geometry uses07 §4's
+  belief-excluded obstacle set, whereas the older H-R3 script used its unexcluded set for that leg.
+- Safety checks each consecutive substep segment, including the initial segment, with the larger
+  endpoint speed. Both U4 initial-position and initial-velocity diagnostics are required, so a
+  missing initial endpoint cannot silently be invented. This is conservative relative to point-only
+  substep checks, but remains an unqualified sensed-point surrogate.
+- The body soft deficit below.398m is a diagnostic in metres; it is not a hard rejection and not
+  the §9 cost. U6 computes the specified normalized clearance cost with d_soft=1m from clr_min.
+  Unknown always blocks safety, even when the visibility unknown-space ablation is disabled.

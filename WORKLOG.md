@@ -22021,3 +22021,11 @@ Files: motar_eval/boia/dynamics.py, tests/test_boia_dynamics.py.
 FocusedCPU 11 tests PASS, failures0/errors0, 3.070s. Focused11PASS; original raw-scan/riskcap arithmetic and diagnostics bitwise match in isolated CPU children. Prior braking errors4.878%,7.143%,12.5605%:10% target missed at3.52m/s,25% hard gate passed; user explicitly permits later CPU units. Fixed tau_v=.4, no raw fit.
 Receipts g4_u4_validation.json and g4_u4_tests.txt in docs/research/occlusion_algorithm_v1/.
 NewCPUoptin only; no simulator/GPU/production/rawcalibration/PPO/push/merge. Next: diffreview/localcommit thennextunitgate.
+
+## 2026-10-19 — BOIA U5 CPU implementation
+
+Files: motar_eval/boia/candidates.py, motar_eval/boia/safety.py, tests/test_boia_candidates_safety.py.
+FocusedCPU 16 tests PASS, failures0/errors0, 0.021s. K20 exact F, inactive fallback and minimum-clear arcs PASS. Swept-segment hard/unknown and reaction-inclusive stopping checks PASS;0.55m gap .6m/s accepted and2m/s rejected;2m/s0.8m stop rejected. Soft.398m diagnostic kept separate from1m cost. PUBLIC_CPU retains four existing errors only.
+PUBLIC_CPU 2815 run, failures0/errors4 (existingmotar-6nn.5 detect-resolution pollution), skipped10; newBOIAfailures/errors0.
+Receipts g4_u5_validation.json and g4_u5_tests.txt in docs/research/occlusion_algorithm_v1/.
+NewCPUoptin only; no simulator/GPU/production/rawcalibration/PPO/push/merge. Next: diffreview/localcommit thennextunitgate.
