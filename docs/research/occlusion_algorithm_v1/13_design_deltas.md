@@ -95,3 +95,18 @@ change07 defaults, silently relax acceptance criteria or supply any performance 
 The user explicitly selected: a10% braking-target miss is **LIMITED_VALIDITY**, and CPU units may
 continue when the error is within25%. Above25% remains a model-form failure. Keep the uncalibrated
 τ_v=.4 prior; this does not waive or claim the10% target, authorize calibration or change07.
+
+## Implementation resolutions — U3
+
+- The instruction's sampling signature omits the transition timestep. `sample` therefore adds an
+  explicit keyword `dt=.1`; the orchestrator must pass `params.dt`. Every returned future state
+  includes that step's process increment, matching the t+dt through t+Hdt prediction convention.
+- No-detection preservation means no measurement-induced reduction relative to the supplied
+  predicted covariance. CV propagation with negative position–velocity cross-covariance can reduce
+  a position variance; a blanket Loewner-growth assertion would be mathematically false. The test
+  includes this counterexample instead of changing the CV model.
+- Expected covariance uses the algebraically equivalent convex mixture of prior and Joseph
+  posterior for numerical PSD stability. Probability zero returns an exact copy. Across-horizon
+  propagation of these expected updates belongs to U7, not independent pointwise calls over H.
+- Cholesky retries are per environment and returned as optional explicit diagnostics; any jitter
+  changes the sampling covariance by the recorded diagonal amount. Neither Q nor R is calibrated.

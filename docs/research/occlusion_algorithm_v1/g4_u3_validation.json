@@ -1,0 +1,41 @@
+{
+  "unit": "U3",
+  "status": "CPU_TESTS_PASS",
+  "tests": {
+    "run": 14,
+    "failures": 0,
+    "errors": 0,
+    "wall_s": 0.036
+  },
+  "base_sha": "f5cdcf138b1f562f45dfee09aea8686611b8cb48",
+  "source_binding": "Source and this receipt are in the same unit commit; hashes refer to that commit, not later extensions",
+  "source_files": [
+    "motar_eval/boia/belief.py",
+    "tests/test_boia_belief.py"
+  ],
+  "source_sha256": {
+    "motar_eval/boia/belief.py": "dcdbb3d9c4c4ef06f241a7ffde6d3fcdc0d2f6c51c682d659339a02d8bd4160e",
+    "tests/test_boia_belief.py": "1d21aa970378778fb7f9e0d5b0473dd740b0d0228b7053b6e9b3612bb7fbeb2e"
+  },
+  "source_line_counts": {
+    "motar_eval/boia/belief.py": 206,
+    "tests/test_boia_belief.py": 261
+  },
+  "public_cpu": {
+    "profile": "PUBLIC_CPU",
+    "status": "FAIL",
+    "ran": 2788,
+    "failures": 0,
+    "errors": 4,
+    "skipped": 10,
+    "excluded": 5,
+    "excluded_reasons": {
+      "test_navrl_nonoverlap_placement.TestFootprintClearancePlacement": "setUpClass starts a worker that imports aerial_gym (Isaac Gym and Warp need a CUDA device)",
+      "test_navrl_physical_target_lower_contract.LowerContractTest.test_fresh_child_imports_isaacgym_before_packed_torch": "the child process imports isaacgym, which needs a CUDA device"
+    }
+  },
+  "interpretation": "CPU unit evidence only; no performance/calibration/simulator/GPU qualification",
+  "note": "Independent scalar CV and Joseph checks, exact zero-probability preservation, PSD, explicit-generator sampling and retry diagnostics PASS. PUBLIC_CPU retains only the four documented detect-resolution errors (motar-6nn.5); no new BOIA error. No raw calibration.",
+  "disk_stop_below_bytes": 3000000000,
+  "free_bytes": 9357832192
+}

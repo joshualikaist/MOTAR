@@ -1,0 +1,19 @@
+test_batched_q_and_source_tensors_are_not_modified (test_boia_belief.BeliefTest) ... ok
+test_cholesky_retries_are_per_environment_and_recorded (test_boia_belief.BeliefTest) ... ok
+test_covariance_and_probability_validation_fail_closed (test_boia_belief.BeliefTest) ... ok
+test_float32_path_and_invalid_shapes_counts (test_boia_belief.BeliefTest) ... ok
+test_fractional_update_matches_bpod_adaptation_and_psd (test_boia_belief.BeliefTest) ... ok
+test_mixed_zero_probability_does_not_invert_its_singular_scene (test_boia_belief.BeliefTest) ... ok
+test_prediction_does_not_assume_each_variance_increases (test_boia_belief.BeliefTest) ... ok
+test_prediction_matches_independent_scalar_cv_oracle (test_boia_belief.BeliefTest) ... ok
+test_probability_one_matches_independent_joseph_update (test_boia_belief.BeliefTest) ... ok
+test_sampling_dt_keyword_applies_before_first_future_output (test_boia_belief.BeliefTest) ... ok
+test_sampling_matches_future_cv_mean_and_covariance (test_boia_belief.BeliefTest) ... ok
+test_sampling_uses_explicit_generator_and_preserves_global_state (test_boia_belief.BeliefTest) ... ok
+test_tracker_q_matches_frozen_source_constants_without_import (test_boia_belief.BeliefTest) ... ok
+test_zero_probability_exactly_preserves_given_prediction (test_boia_belief.BeliefTest) ... ok
+
+----------------------------------------------------------------------
+Ran 14 tests in 0.036s
+
+OK

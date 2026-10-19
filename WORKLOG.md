@@ -22006,3 +22006,11 @@ Files: motar_eval/boia/access.py, tests/test_boia_access.py.
 FocusedCPU 14 tests PASS, failures0/errors0, 0.031s. Whitelist-only detached sensor copies; nested forbidden-value mutations, single LiDAR read, calibration and yaw checks PASS. User U4 target clarification and resumed session recorded without changing frozen design.
 Receipts g4_u2_validation.json and g4_u2_tests.txt in docs/research/occlusion_algorithm_v1/.
 NewCPUoptin only; no simulator/GPU/production/rawcalibration/PPO/push/merge. Next: diffreview/localcommit thennextunitgate.
+
+## 2026-10-19 — BOIA U3 CPU implementation
+
+Files: motar_eval/boia/belief.py, tests/test_boia_belief.py.
+FocusedCPU 14 tests PASS, failures0/errors0, 0.036s. Independent scalar CV and Joseph checks, exact zero-probability preservation, PSD, explicit-generator sampling and retry diagnostics PASS. PUBLIC_CPU retains only the four documented detect-resolution errors (motar-6nn.5); no new BOIA error. No raw calibration.
+PUBLIC_CPU 2788 run, failures0/errors4 (existingmotar-6nn.5 detect-resolution pollution), skipped10; newBOIAfailures/errors0.
+Receipts g4_u3_validation.json and g4_u3_tests.txt in docs/research/occlusion_algorithm_v1/.
+NewCPUoptin only; no simulator/GPU/production/rawcalibration/PPO/push/merge. Next: diffreview/localcommit thennextunitgate.
