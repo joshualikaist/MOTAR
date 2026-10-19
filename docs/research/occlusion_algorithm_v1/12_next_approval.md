@@ -1,3 +1,15 @@
+# Current authority — G1-R and CPU-only G4 approved (2026-10-19)
+
+Original PDF provision is **COMPLETE**:30files,29unique papers. G1-R reading/corrections are complete
+with **MINOR_ADJUSTMENTS_PROPOSED** ([13](13_design_deltas.md)). The user approved **U1–U7 CPU-only**
+after that gate, not only U1. This supersedes the historical request below; it is retained as history.
+Current disk stop is **3GB**, explicitly amended by the user after the initial8GB startup stop.
+G5 simulator integration/raw calibration and G6+ GPU/pilots remain **NOT_APPROVED**. No production
+change, PPO, push or main merge. Minor design proposals remain unapplied;07 is the implementation
+basis. Required U7 work is synthetic replay plus raw schema inventory only, not calibration.
+
+---
+
 # 12 — Requested approval: first code unit (G4-U1)
 
 **Request.** Approve G4-U1 only: an opt-in, CPU-only geometry and visibility kernel for BOIA.

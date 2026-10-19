@@ -1,10 +1,10 @@
 # P5 — Perception: occlusion-robust tracking and perception-aware planning
 
 ## NOT_AVAILABLE (not in this batch, not described here)
-- "Rethinking Occlusion Modeling for UAV Tracking" (OCTrack): NOT_AVAILABLE
-- "You Only Plan Once" (YOPO): NOT_AVAILABLE
+- "Rethinking Occlusion Modeling for UAV Tracking" (OCTrack): NOT_AVAILABLE [CORRECTED: original supplied and FULL_READ on 2026-10-19; see §4.]
+- "You Only Plan Once" (YOPO): NOT_AVAILABLE [CORRECTED: original supplied and FULL_READ on 2026-10-19; see P3 §6.]
 
-Conventions: "p.N" means the physical 1-based PDF page. Eq. numbers are the paper's own. All three PDFs were read page by page as rendered images with the Read tool, and pdftotext was used as a cross-check. Anything marked [UNCERTAIN] is a transcription or interpretation I am not sure about. Anything marked [MOTAR inference] is my own reasoning and does not come from the paper.
+Conventions: "p.N" means the physical 1-based PDF page. Eq. numbers are the paper's own. All three PDFs were read page by page as rendered images with the Read tool, and pdftotext was used as a cross-check. Anything marked [UNCERTAIN] is a transcription or interpretation I am not sure about. Anything marked [MOTAR inference] is my own reasoning and does not come from the paper. [CORRECTED: this is the prior reader's method; the 2026-10-19 Codex re-read uses all-page pdftotext plus selected equation-page rendering, explicitly receipted below.]
 
 ---
 
@@ -42,7 +42,7 @@ Single-stream ViT trackers for UAVs lack strategies for occlusions caused by bui
   - Points Ξ are drawn by inhomogeneous-Poisson **thinning** (p.4). b'_ij = 1 if (i,j) ∈ Ξ, and m_C(Z) = Z ⊙ (b' ⊗ 1).
   - With ς = ⌊(1−σ)H_zW_z⌉, the expected masking ratio equals that of m_U. The random Γ also makes the masking ratio itself random, which gives "more diverse pattern of occlusion" (p.4).
   - Stated rationale (p.3): the target sits near the template centre, so masking should hit it with higher probability than uniform masking does.
-  - [UNCERTAIN] As written, Z ⊙ (b'⊗1) *keeps* the patches where b'=1. That reads as centre-concentrated points being kept, which seems to contradict the stated intent of masking the target with higher probability. The prose and the formula are ambiguous about which way it goes. Check the code before reusing this.
+  - [UNCERTAIN] As written, Z ⊙ (b'⊗1) *keeps* the patches where b'=1. That reads as centre-concentrated points being kept, which seems to contradict the stated intent of masking the target with higher probability. The prose and the formula are ambiguous about which way it goes. Check the code before reusing this. [CORRECTED: accepted original p.4 preserves this contradiction; centre-retaining algebra is confirmed, intended/implemented centre-erasing behavior remains UNRESOLVED.]
 - **ORR loss, Eq. (2), p.5:** L_orr = ‖t^L_{1:K_z}(Z,X;B_T) − t^L_{1:K_z}(Z',X;B_T)‖². This is the MSE between L-th-layer template tokens with and without masking.
 - **AFKD, Eq. (3), p.5:** L_afkd = (α + β(L_iou − mean(L_iou)))·‖t^L_{1:K}(Z,X;B_T) − t^L_{1:K}(Z,X;B_S)‖². The distillation weight is linear in how far the GIoU loss deviates from its average, which serves as the difficulty measure.
 - **Prediction loss, Eq. (4), p.5:** L_pred = L_cls (weighted focal) + λ_iou·L_iou + λ_L1·L_L1, with λ_iou=2 and λ_L1=5.
@@ -126,6 +126,44 @@ Single-stream ViT trackers for UAVs lack strategies for occlusions caused by bui
 
 ---
 
+#### 2026-10-19 original-copy re-read (Codex)
+
+**Receipt.** You Wu, Xucheng Wang, Xiangyang Yang, Mengyuan Liu, Dan Zeng, Hengzhou Ye and Shuiwang Li, *Learning Occlusion-Robust Vision Transformers for Real-Time UAV Tracking*. User original `/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/논문/Learning Occlusion-Robust Vision Transformers for Real-Time UAV Tracking.pdf`, SHA-256 `b5087dfe88af1523…`, **11 physical pages**, is **different** from the old arXiv v1 SHA `a0b634037b96340b…`. Newly read **pp.1–11 in full**, methods/results/conclusion/references; **FULL_READ**. The original is the CVPR Open Access accepted version, printed proceedings pages17103–17113. The watermark does not print a year; CVPR2025 is supported separately by OCTrack p.11 ref.[51], not invented from the placeholder. Page4 was rendered to inspect the masking definition. No supplementary PDF is included, so its contents are **NOT_READ**.
+
+**Problem, assumptions, pipeline.** Monocular template/search single-object image tracking under occlusion; no depth/LiDAR fusion, moving-camera dynamics, map or control policy. Template128×128/search256×256 are RGB inputs (p.6). A chosen initial template is assumed, but the source does not establish persistent physical identity after complete loss. Train teacher ViT with both original and masked template plus search; impose feature invariance; freeze teacher; train a shallower student via adaptive feature distillation; at inference only unmasked template/search enter the compact tracker (pp.3–5). Search tokens feed Conv-BN-ReLU head producing location-offset, box-size and focal-trained classification maps. This is **not** a motion/visibility forecaster.
+
+**Equations, corrections, decisions.**
+
+| Original | Verified meaning |
+|---|---|
+| p.3 uniform masking; p.4 Eq.(1) | Uniform keep-mask selects K=round((1−σ)H_zW_z) entries. Cox intensity `λ(x,y)=Γ exp(−x²−y²)/∫_B exp(−x²−y²)` with Γ~Poisson(ς), followed by thinning. |
+| p.4 mask definition after Eq.(1) | It explicitly sets `b′_ij=1` at sampled Cox points and multiplies `Z⊙(b′⊗1)`. Thus centre-heavy sampled points are **retained algebraically**, while p.3 prose says the target is more often masked. The original does **not resolve** this contradiction. |
+| p.5 Eq.(2) | Template-token feature MSE between unmasked/masked inputs. |
+| p.5 Eq.(3) | `(α+β(L_iou−mean L_iou)) · ‖teacher tokens−student tokens‖²`. Prose calls α slope and β intercept, opposite the printed expression; preserve the expression and label the prose inconsistency. |
+| p.5 Eq.(4) | Focal classification +2×GIoU+5×L1; teacher adds2e−4×ORR, student adds AFKD. |
+
+The paper also prints K using pixel-area H_zW_z rather than the displayed patch-grid area (p.3); unless b=1/implicit feature-grid reinterpretation, units are underspecified. The p.4 final comparison says expected masking ratio equals that of m_C itself, apparently a self-reference typo. These source issues mean a centre-erasing Cox simulator must be specified and tested independently rather than copied as an unambiguous published algorithm. Figures2/5 depict masked training examples and attention, but cannot establish which implementation convention produced the experiment.
+
+**GT and execution boundary.** GT boxes/classes enter supervised losses and evaluation, not online per-frame geometric target state (pp.5–6). The online prediction is an uncalibrated score-map argmax plus offset and box size (p.5). No range covariance, detection-probability calibration, visibility percentage estimator, planner transition, stop behavior or terminal-first logic is provided. The appearance tracker alone cannot establish identity-correct end-to-end UAV recovery.
+
+**Costs, experiments and version-specific numbers.** Hardware i9-10850K/16GB/TitanX (p.5). Table1 p.6 gives ORTrack-DeiT **7.9M**,2.4GMac, mean226.4GPU/55.4CPU FPS; student **5.3M**,1.5GMac,292.3/64.7FPS. The p.1 figure caption instead says236/~313FPS; this is an internal caption/table difference, not silently averaged. Table2 p.7 gives206.2GPUFPS specifically for VisDrone2018, so table scopes must stay separate. No inference with IsaacGym or RTX3070 was run here.
+
+- **Partial occlusion:** original p.7 Fig.3/paragraph, VisDrone2018 subset: ORTrack-DeiT85.0% precision; +6.9pp over without ORR (78.1%, inferred by that subtraction and consistent with the earlier figure reading). It ranks second, .2pp below AQATrack. This is benchmark box-center precision, not future p_det or UAV mission success.
+- **Mask-pattern ablation:** p.7 Table4, VisDrone2018 baseline81.6/62.2 precision/success; uniform86.7/65.4; Cox88.6/66.8; SAM86.8/65.6; AdAutoMix84.3/63.8; CutMix85.7/64.2. Pattern matters under that training/evaluation contract.
+- **Distillation:** p.7 Table3 ORTrack-DeiT baseline218.4FPS→298.7FPS under its ablation scope; do not replace Table1 means with these values. p.8 Table5 evaluates generalization and Table6 ORR transfer; Fig.5 uses0/10/30/70% masks, not a calibrated probability curve.
+
+**Limits and source URLs.** No dedicated limitations section; observed source-mask inconsistency, static appearance-level augmentation and no sensor/calibration/control loop restrict transfer. Code printed p.1: https://github.com/wuyou3474/ORTrack . No weights URL is printed. The new original validates the empirical pattern benefit but leaves the mask complement **UNRESOLVED**; nothing was CODE_VERIFIED or REPRODUCED.
+
+**MOTAR/design effect.** Useful for a future held-out, structured-mask stress set over the **actual MOTAR detector**, using explicit0=occluded/1=visible conventions. It does not justify setting p_det from its benchmark precision. Frozen RGB-D+LiDAR, identity clocks, actor898 and current detector remain unchanged in G4.
+
+| BOIA element | Overlap | Evidence |
+|---|---|---|
+| (a) | partial | Training-time occlusion robustness, but no belief+geometry future detection probability, pp.3–5. |
+| (b) | no | Image boxes, not dynamical command candidates, p.5. |
+| (c) | no | Teacher/student training, not online arbitration over frozen RL, pp.3–5. |
+| (d) | no | No stop or simulator-terminal handling, pp.3–5. |
+| (e) | no | Tracking precision/success curves, no mission-level competing risk, pp.6–8. |
+
 ## Paper 2: Perception-Aware Time-Optimal Planning for Quadrotor Waypoint Flight
 
 - **Authors / venue / year:** Chao Qin, Jiaxu Xing, Rudolf Reiter, Angel Romero, Yifan Lin, Hugh H.-T. Liu, Davide Scaramuzza (UTIAS and UZH RPG). arXiv:2603.04305v1 [cs.RO], 4 Mar 2026 (p.1 margin).
@@ -184,7 +222,7 @@ Time-optimal quadrotor trajectories for racing or waypoint flight ignore visual-
     - v_β = ½ + ½ tanh(λ_v(β_max − |β|)),
     - v_Z = ½ + ½ tanh(λ_v(Z_min − Z)).
 
-    v_Z is transcribed as printed. [UNCERTAIN: the sign looks inverted relative to Eq. 11's Z > Z_min, so this is likely a typo.]
+    v_Z is transcribed as printed. [UNCERTAIN: the sign looks inverted relative to Eq. 11's Z > Z_min, so this is likely a typo.] [CORRECTED: opposite sign is confirmed in original p.7 Eq.(33); it contradicts p.4 Eq.(11), and is not safe to copy.]
   - Eqs. (34)–(36): bearing Jacobian.
   - **Proposition 1, Eqs. (37)–(39):** with isotropic Σ_ρ, I_FIM(p) = Σ v_ij A_ijᵀ Σ_ρ A_ij, where A = (1/d)(I − ρρᵀ). This depends only on position, not on rotation. Proof in Appendix B, Eqs. 69–70 (p.20).
   - Eq. (40): L_PUM = −log det(I_FIM).
@@ -283,6 +321,16 @@ Time-optimal quadrotor trajectories for racing or waypoint flight ignore visual-
 | (d) safe fallback, terminal-first | **no** | Not addressed. |
 
 ---
+
+#### 2026-10-19 original-copy re-read (Codex)
+
+**Receipt and scope.** User original `Perception-Aware Time-Optimal Planning for.pdf`, SHA-256 `a9eaf4809b30e32a…`,21 physical pages, matches the previous payload SHA. Prior **FULL_READ pp.1–21 is carried forward**; newly inspected pp.4,7, with random checks (`random.Random(20261019)`, after prior groups): **p.7 Eq.(40), p.4 Eq.(8), p.7 Eq.(29)**. Equation numbers/content match the notes; the issues below are source-level, not extraction artifacts. Equation33 was additionally rendered on p.7.
+
+- Eq.(8) transforms a known world landmark through inverse vehicle rotation and camera extrinsics (p.4). Eq.(40) is `logdet Σ_lb=−logdet I_FIM` (p.7). No changes to those transcriptions.
+- **Correction/confirmed inconsistency:** Eq.(29) prints `JᵀΣ_ρJ` and Eq.(37) analogously, although Eq.(28) defines Σ_ρ as a **covariance**. Fisher information normally weights by inverse covariance; the printed expression cannot be adopted as calibrated information without a separate derivation. This does not alter BOIA07§3.3, which explicitly uses measurement covariance inside the Kalman innovation inverse.
+- **Correction/confirmed inconsistency:** Eq.(33) prints `½+½ tanh(λ_v(Z_min−Z))`; it tends to zero for valid positive large Z, contradicting the intended `Z>Z_min` gate in p.4 Eq.(11). Do not copy its sign for a future sensor model.
+- The source models known-landmark localization, not moving-target detector recovery. Retain the earlier offline planning/hardware limitations. No new model, pipeline or experiment was run.
+- **BOIA (a) partial** smooth FOV/range-related localization quality (pp.4,7); **(b) partial** continuous perception/progress trajectory optimization rather than finite candidate set (earlier full read p.10); **(c) no**, **(d) no**, **(e) no** for the frozen-RL arbitration, terminal-first fallback and occlusion-triggered target mission metrics. Proposed use is a corrected, independently tested FOV idea only, followed by G5 calibration; no direct equation invalidation of BOIA found.
 
 ## Paper 3: Perception-aware Planning for Quadrotor Flight in Unknown and Feature-limited Environments
 
@@ -404,6 +452,58 @@ Table I (p.7) gives success / navigation time / runtime:
 
 ---
 
+#### 2026-10-19 original-copy re-read (Codex)
+
+**Receipt and scope.** User original `Perception-aware Planning for Quadrotor Flight in Unknown and.pdf`, SHA-256 `97639b6c620f6ee4…`,8 physical pages, is byte-identical to the previous full-read payload. Carry forward **FULL_READ pp.1–8**; newly inspected **pp.3,5**. Reproducible random checks: p.3 Eq.(4),p.3 Eq.(1),p.5 Eq.(12); all agree with existing notes. No new implementation or performance verification.
+
+- Eq.(4) samples feature viewpoints from overlapping range regions while keeping both cluster centers in FOV; Eq.(1) is cylindrical sampling around the frontier centroid (p.3).
+- Eq.(12) scores yaw transitions through squared angular change multiplied by `[1+exp(−μ_e c_e)]`, with gain from newly seen frontier cells and goal FOV (p.5).
+- **Residual uncertainty preserved:** p.3 calls FOV the set of 'visible' points but does not explicitly define per-feature LOS/raycast semantics. p.5 explicitly raycasts and filters blocked **frontier cells** in J_e. Therefore 'all feature-count constraints rigorously include occlusion' remains **NOT_ESTABLISHED by this PDF**.
+- **BOIA:** (a) **partial** sensed frontier LOS/FOV, no calibrated moving-target reliability (pp.3,5); (b) **partial** finite viewpoint graph then continuous trajectories, not Policy-F-inclusive command lattice (pp.3–5); (c) **no** frozen policy arbitration; (d) **partial** backtracking/dead-end handling in prior full-read results, not stop/terminal-first contract; (e) **no** target-recovery competing risks. Retain the current BOIA known-free firewall; this paper does not authorize simulator map access.
+
+## 4. OCTrack (original copy)
+
+#### 2026-10-19 original-copy re-read (Codex)
+
+**Receipt.** Jian Zhang, Xincheng Yu and Yi Lin, *Rethinking Occlusion Modeling for UAV Tracking*. User original `/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/논문/Rethinking Occlusion Modeling for UAV Tracking.pdf`, SHA-256 `95e0f1d08a2a2c6…`,**11 physical pages**. Newly read **pp.1–11 in full**, methods/experiments/conclusion/references; **FULL_READ**. The accepted Open Access **CVPR** watermark and proceedings pages13563–13573 are printed; calendar year is **NOT_PRINTED** in this copy and is not inferred from neighbouring citations. No separate appendix/supplement was supplied. Previously NOT_AVAILABLE is superseded only for the original-copy reading.
+
+**Problem and assumptions.** RGB template/search single-object UAV image tracking under structured occlusion with restricted inference cost. No depth camera/LiDAR, metric depth estimates, obstacle map, dynamics or UAV-control supervisor. Initial target template is an input; persistent instance identity and full-loss reacquisition are not established. The method trains on annotated tracking/image datasets; no online simulator semantics or GT physical state is prescribed (pp.5–6).
+
+**Pipeline and exact terminology.** A single-stream ViT plus center-based box head uses **Clustered Occlusion Modeling (COM)** at training and **Cost-Aware Depth Bias (CADB)** for layer routing (pp.3–6). COM includes **Adaptive Cluster Parameterization (ACP)**. The word **depth in CADB means transformer layer depth**, not sensor range or depth image. Template128×128,search256×256; DeiT-Tiny,ViT-Tiny,Eva-Tiny variants; Conv-BN-ReLU head predicts confidence map, offsets and normalized box size (p.6).
+
+| Reference | Verified definition |
+|---|---|
+| p.3 Eq.(1) | 0=occluded,1=visible keep-mask; exactly floor(ρhw) zeros for baseline random masking, nearest-neighbor upsample to feature resolution. This convention is more explicit than ORTrack's source. |
+| p.4 Eq.(3) | Mixture intensity `π(p) ∝ Σ_i w_i exp(−‖p−c_i‖²/(2σ²))`, N_p~Poisson(λ_p HW),w_i~Poisson(μ). |
+| p.4 Eq.(4) | Occluded points `p_ij~N(c_i,σ²I₂)`; union forms mask, random subsampling maintains mask ratio when necessary. ACP controls cluster number,strength,dispersion. |
+| p.4 Eq.(5) | Feature invariance `‖t_Z^(L)−t_Z′^(L)‖²`; COM adds no inference-time masking. |
+| p.5 Eq.(6) | Layer prior `b_i=κ[1−2(i−i_ref)/(L−1)]`; logits corrected by b then softmax with temperature. κ>0 favors shallow layers. |
+| p.5 Eq.(7) | Router cross-entropy to one-hot layer selected by greatest cosine alignment with reference-layer feature; no sensor-identity confidence calibration. |
+| p.6 Eq.(8) | Focal +2×GIoU+5×L1 +.1×routing loss. How Eq.(5)'s separate representation objective is weighted into this printed final loss is **NOT_EXPLICIT**. |
+
+**Decisions/limits.** The first six layers encode features; later depth selection is influenced by κ (p.8). Dense/balanced/sparse mask settings use30/10/3 clusters and small/medium/large σ (p.6); σ scaling is qualitative rather than a fully specified numeric calibration. COM is called adaptive, but the provided equations describe random parameterized sampling, not a learned geometric occluder or measured detector model. Page8 says hard routing executes exactly one depth per κ and ASLI degenerates to routed depth; this does not establish calibrated frame-wise inference confidence. There is no explicit tracker-loss mode machine, re-ID threshold, safety fallback or terminal controller.
+
+**Training/GT boundary.** GOT-10k,LaSOT,COCO,TrackingNet annotations supervise the focal/box objectives; unmasked/masked representations and cross-layer pseudo-labels supervise invariance/routing (pp.4–6). No per-frame GT obstacle/target mask is specified at inference. Such training-time masks must not be supplied to BOIA online. Template bounding-box/initialization provenance beyond a provided target template is **NOT_RECORDED** in the method; do not equate SOT continuity with physical instance re-identification.
+
+**Runtime and results, paper context only.** Python3.8/PyTorch1.10; i7-12700K/RTX4060Ti re-evaluation of ViT runtime (p.6). Table1 p.6 balanced OCTrack-DeiT: averaged precision86.0%,AUC65.7%,**265.2GPU/82.5CPU FPS**,1.7–2.4GMac,5.8–8M active parameters. Actual memory beside IsaacGym/RTX3070 is **NOT_TESTED**. Non-ViT baseline runtime is borrowed from a previous benchmark, so tables are not universally matched hardware.
+
+- **Partial occlusion:** Fig.4/p.7 UAVDT subset, balanced OCTrack-DeiT AUC **.656**, roughly3pp above the next plotted method. This is OPE tracking overlap AUC, not conditional detection probability or recovery within2s.
+- **COM/CADB ablation:** Table2 p.7 DeiT baseline80.4/59.6 P/AUC at197.6FPS; COM85.2/62.9; COM+CADB85.0/63.0 at265.2FPS. COM and runtime routing have separate tradeoffs.
+- **Mask structure:** Table3 p.8 VisDrone2018 AUC62.9 random,65.9 Cox,67.0 COM; structured masks affect tracking robustness. These are not reliability curves indexed by actual visible fraction.
+- **Bias strength:** Table4 p.8 κ=.0/.1/.3/.5 gives selected layer10/9/8/7 and197.6/230.4/265.2/278.4FPS, with nonmonotonic AUC. No universally best depth or calibrated uncertainty is established.
+
+**Limitations.** Authors give no dedicated limitation section; observed fixed benchmark appearance tracking, no mission loop, unspecified final Eq.(5) weighting/σ values and no probability calibration limit adaptation. Code and weights URLs are **NOT_PRINTED in this PDF** (the source was not augmented by guessed repository links). MOTAR can use COM as a **future structured-occlusion stress generator idea** while preserving RGB-D+LiDAR. Adding this learned tracker would be separate sensor-lineage work, not G4.
+
+| BOIA element | Overlap | Physical-page evidence |
+|---|---|---|
+| (a) | partial | Occlusion-robust appearance training only, no belief-conditioned FOV×LOS×reliability forecast, pp.3–6. |
+| (b) | no | Transformer layer candidates are computational routing, not dynamical motion candidates, p.5. |
+| (c) | no | Router selects layers; no control arbitration over frozen RL, pp.5–6. |
+| (d) | no | No stopping/terminal-first mechanism, pp.5–6. |
+| (e) | no | Benchmark tracking AUC/precision, not mission competing-risk recovery, pp.6–8. |
+
+**Design conclusion.** OCTrack supports testing **mask spatial structure** separately from visible fraction. It supplies no fitted p_det(n_px,ν) and no proof of conditional miss independence, so07§5's oracle is still a declared model and stress parameters need G5 data. New paper does not invalidate BOIA equations; no automatic candidate/production-detector change is justified.
+
 ## How to model detector reliability p_det under partial occlusion in MOTAR
 
 Target form: p_det = f_FOV(α, β, Z) · f_LOS(visible fraction ν, occlusion pattern) · f_range/angle(d, φ, apparent pixel size) · f_motion(ω). Calibrate it against the simulated detector's actual outputs. Each idea below is tied to a page.
@@ -437,6 +537,14 @@ Target form: p_det = f_FOV(α, β, Z) · f_LOS(visible fraction ν, occlusion pa
     - Use additive covariance inflation during non-detection, and information-additive updates (Σ⁻¹ sum) on detection. Weight by p_det for the expected-covariance forecast [MOTAR inference].
 
 ---
+
+#### 2026-10-19 original-copy re-read (Codex)
+
+12. **OCTrack structured-mask stress is a future calibration design, not calibration evidence.** Original pp.4–5 Eqs.(3)–(5) provide COM's clustered intensity/feature-invariance idea; p.8 Table3 demonstrates mask-pattern sensitivity. For MOTAR, generate independently specified bar/cluster masks, retain the true visible-fraction/pattern label **only in an offline evaluator**, and fit detector misses on held-out scenes under the exact detector lineage. Report false association and calibration, not only target recall. RGB-D+LiDAR remains the online contract. CADB is network-layer cost bias, not a metric-depth measurement model.
+
+13. **Source contradictions must not become online rules.** ORTrack p.4's multiplied Cox mask retains sampled center-heavy cells although p.3 prose describes erasing them; the original does not fix this. Define and unit-test a mask convention rather than claim a verified reproduction. PA Time-Optimal p.7 Eq.(33)'s depth-gate sign conflicts with p.4 Eq.(11); its printed covariance-weighted FIM in Eq.(29) needs correction/derivation before reuse. Neither expression is imported into BOIA's current KF-based covariance update.
+
+14. **Partial visibility is a distinct future extension.** COM/ORTrack do not turn a centre-LOS ray into a silhouette visibility probability. BOIA07§5 explicitly leaves visible-fraction modeling to a later calibrated extension; neither paper supplies calibration data for MOTAR's oracle-like detector. Whole-target identity and mission recovery still need separate evaluator labels and experiments.
 
 ## Cross-paper table
 

@@ -115,3 +115,18 @@ Decisions before October 2026 are recorded in:
 - [`HISTORY.md`](HISTORY.md);
 - [`discipline_review_2026-08-22.md`](discipline_review_2026-08-22.md) (standing prohibitions);
 - [`cleanup/cleanup_record_2026-09-24.md`](cleanup/cleanup_record_2026-09-24.md).
+
+## D-2026-10-19-3 — Occlusion-algorithm v1: G1-R and G4 (CPU-only U1–U7) approved
+
+- **Authority:** user instruction 2026-10-19 (original-PDF G1-R and CPU-only G4 attachment).
+- **Approved:** original 25+4 papers, preserved v1/v2 manifests and factual reading corrections;
+  then CPU-only opt-in U1–U7, each locally committed. The design-delta gate precedes implementation:
+  G3_REVIEW_REQUIRED permits only unaffected U1–U3. Proposed changes to07–09 remain unapplied.
+- **Not approved:** G5 simulator integration/raw calibration, G6+ GPU/simulator/pilot, production
+  changes, PPO, checkpoint/actor replacement, remote push or main merge.
+- **Disk amendment:** the user's subsequent instruction explicitly supersedes the attachment's8GB
+  floor with **3,000,000,000 bytes**. Initial startup stopped at7,975,260,160bytes; the user removed
+  files and requested resume. Resume check measured9,547,649,024bytes. No agent data deletion or
+  backup/bundle action was taken. Preserve PDFs, historical raw, symlinks, main WIP and stash.
+- **Boundary:** G4 unit tests do not qualify performance, safety, calibration or recovery. G5 and
+  above need separate user approval. Session quota deadline is unknown; conservative wrap-up17:38KST.

@@ -1,6 +1,6 @@
 # Occlusion-handling navigation algorithm v1 — research and design record
 
-**Status: RESEARCH DESIGN COMPLETE (G0–G3); G4 AWAITS USER APPROVAL.** Nothing is implemented, and nothing is validated. Nothing
+**Status: G1-R COMPLETE (2026-10-19, Codex); G4 CPU U1–U7 APPROVED, NOT_YET_IMPLEMENTED.** Nothing is validated. Nothing
 in this folder is a performance claim. Proposed equations and modules are research hypotheses until
 CPU and simulator evidence exists.
 
@@ -13,8 +13,8 @@ CPU and simulator evidence exists.
   - **G1:** paper reading and official source audit.
   - **G2:** MOTAR perception, dynamics and occlusion-failure audit.
   - **G3:** algorithm selection and mathematical/software design.
+- **Additional authority (2026-10-19):** G1-R original25+4 papers and CPU-only G4 U1–U7.
 - **Not approved:**
-  - G4 code implementation;
   - G5 CPU integration;
   - G6/G7 GPU qualification and pilots;
   - G8 confirmation;
@@ -26,13 +26,13 @@ CPU and simulator evidence exists.
   - `.2` G1;
   - `.3` G2;
   - `.4` G3;
-  - `.5` G4, which needs approval.
+  - `.5` G4 CPU-only approved; `.7` G1-R.
 
 ## Files
 
 | File | Content | Status |
 | --- | --- | --- |
-| `paper_manifest.json` | 25 papers: SHA-256 against the user's inventory, pages, local path | DONE |
+| `paper_manifest.json` | 25+4 originals plus duplicate: SHA-256, pages, read status, prior-copy identity | DONE |
 | `01_paper_audit.md` | Per-paper read status, sections read, key equations with page and equation numbers | DONE |
 | `02_methods_comparison.md` | Method and equation comparison across papers | DONE |
 | `03_code_audit.md` | Official repositories: commit, licence, files/functions, portability | DONE |
@@ -44,30 +44,22 @@ CPU and simulator evidence exists.
 | `09_experiment_plan.md` | Density × target motion × occlusion experiment design | DONE |
 | `10_roadmap.md` | Domestic-conference MVP and international-paper extension | DONE |
 | `11_assumptions_risks.md` | Unverified assumptions, risks, stop conditions | DONE |
-| `12_next_approval.md` | Scope of the first code unit for which approval is requested | DONE |
+| `12_next_approval.md` | Current G4 authority plus preserved historical request | DONE |
+| `13_design_deltas.md` | Original-copy corrections and unapplied proposals | G1-R DONE |
+| `notes/P6_extra_papers.md` | Four extra original-paper full reads | DONE |
+| `reading_receipts.json` | Per-reader pages, checks, original SHA and design findings | DONE |
 
-## G0 result: paper availability
+## G0 result and G1-R original-copy update
 
-The user's inventory came from a different machine (a ChatGPT sandbox). On this machine:
-- **5 papers** were found locally with identical SHA-256.
-- **14 more** were downloaded from arXiv or CVF open access, and their SHA-256 is identical to the
-  user's.
+The prior public-copy audit had19 byte-identical papers, four different versions and two missing.
+That history is preserved in `paper_manifest.v1.json` and the earlier dated notes. The supplied
+originals now resolve availability/version identity:30PDF files represent25core+4extra papers and
+one byte-identical EGO-Planner duplicate. All30sources are unchanged by the reading pass. Of the
+original25,24match the available user-inventory SHA; YOPO's inventorySHA is null, not guessed.
 
-That gives **19 identical copies**. For the rest:
-- **4 are different versions:**
-  - EGO-Planner: arXiv v2;
-  - ORTrack: arXiv v1;
-  - Star-Convex: arXiv v1;
-  - Lee SE(3): arXiv 1003.2005v1, 8 pages, against the user's 6-page conference version.
-
-  Their content may differ from the user's copies.
-- **2 are NOT_AVAILABLE:**
-  - YOPO: only on IEEE Xplore (paywalled), with no arXiv version. Its official code is audited
-    instead.
-  - "Rethinking Occlusion Modeling for UAV Tracking" (OCTrack): not found on arXiv or CVF.
-
-Neither missing paper is summarised from memory. The PDFs are stored outside every Git repository,
-at `/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/`.
+All29papers have cumulativeFULL_READ status:15were fully read now and14earlier identical-copy
+FULL_READ records were checked against the originals. Physical read pages and spot checks are in
+[01](01_paper_audit.md) and [receipts](reading_receipts.json). The originals remain outside Git.
 
 ## Conclusions of G0–G3 (detail in the numbered files)
 
@@ -90,10 +82,11 @@ at `/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/`.
    - capture-aware cost;
    - calibrated-advantage arbitration with hysteresis;
    - terminal-first handling.
-4. **Novelty.** BOIA elements (a), (b) and (d) are prior art. Element (c), the arbitration, is not
-   in the 23 papers read, but is **unverified** against literature outside the 25 (06 §3; Beads
-   `motar-3p3.6`).
-5. **Next step.** G4-U1, the CPU geometry and visibility kernel (12). It needs the user's approval.
+4. **Novelty.** Elements(a),(b),(d) are prior art. PRIMER also covers generic learned-plan safety
+   rejection/fallback, so that broad claim is NOT_NOVEL_ENOUGH. Narrow calibrated advantage over
+   FrozenF remains CANDIDATE_CONTRIBUTION_UNVERIFIED; G1b `motar-3p3.6` is still open.
+5. **Next step.** Implement the approved CPU-only U1–U7 sequentially; no G5/simulator/GPU work.
+   G1-R conclusion is MINOR_ADJUSTMENTS_PROPOSED; proposals in13are not applied to07–09.
 
 ## How to resume
 
@@ -101,4 +94,5 @@ at `/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/`.
 2. The full G1/G2 working notes, with page/equation and file:line detail, are in
    [`notes/`](notes/), together with M3's analysis scripts and outputs in `notes/m3_scripts/`. The
    numbered files above are curated from them.
-3. Do not start G4 without the user's approval of `12_next_approval.md`.
+3. G1-R done; G4 U1–U7 approved and pending. Resume at U1 after the PartA commit. Disk stop3GB.
+   Check the current Beads child status first; do not treat this as approval for G5 or GPU.

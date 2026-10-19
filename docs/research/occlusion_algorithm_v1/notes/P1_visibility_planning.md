@@ -104,7 +104,7 @@ Assumptions the paper itself states:
 
 ### Decision logic
 - There are no explicit search/track/reacquire modes. A single MPC objective is used throughout.
-- Loss of the target is handled implicitly. μ=0, so the covariance grows through Eq. 11d and the planner tends to reduce entropy or raise BPOD.
+- Loss of the target is handled implicitly. μ=0, so the covariance grows through Eq. 11d and the planner tends to reduce entropy or raise BPOD. [CORRECTED: observed no-detection uses p.3 Eq.(5c) with mu=0 plus prediction p.2 Eq.(4b); future expected Eq.(11d) instead uses gamma and can still predict a covariance reduction.]
 - **Failure definition (evaluation only):** collision, or losing sight for 15 consecutive steps (p.6).
 - **Termination:** the SCP convergence tolerances (Alg. 2). There is no task-level termination logic.
 
@@ -136,7 +136,7 @@ Assumptions the paper itself states:
 - **Observed:**
   - 2D only, with a known convex-polygon map. GJK/EPA requires a convex FOV, so the FOV is shrunk (p.6).
   - Target prediction holds the last control constant over 2 s, with no multi-hypothesis.
-  - Independence across obstacles (Eq. 15) is optimistic when occluders are correlated (adjacent bars).
+  - Independence across obstacles (Eq. 15) is optimistic when occluders are correlated (adjacent bars). [CORRECTED: bias direction depends on event correlation; positively correlated LOS-clear events can make the product pessimistic; original pp.4–5 and probability analysis in the original-copy reread below]
   - There is no detector false-negative model, so a visible but undetected target is impossible by construction.
   - There is no explicit reacquisition behaviour.
   - Ground robot (unicycle); quadrotor or 3D aspects are not addressed.
@@ -169,6 +169,21 @@ None printed in the PDF.
 | (b) finite set of dynamics-feasible short-horizon candidates; cost = capture progress + loss-of-track probability + covariance growth | **Partly** | The cost uses cumulative entropy of the expected covariance (J1, Eq. 12 with Eq. 11d) or cumulative BPOD (J2); both are p.4. It is a continuous SCP-optimised MPC, not a finite candidate set. There is no capture/progress term (the goal is tracking). |
 | (c) arbitration overriding a frozen RL policy only when a calibrated expected advantage exceeds a threshold, with hysteresis | **No** | The MPC always acts. There is no learned policy and no arbitration (p.3–6). |
 | (d) explicit safe fallback and terminal-first handling | **No** (collision chance constraint only) | Chance constraint Eq. 17 (p.4); there is no fallback mode and no terminal phase. |
+
+#### 2026-10-19 original-copy re-read (Codex)
+
+- **Original:** `/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/논문/Probabilistic Visibility-Aware Trajectory Planning for Target Tracking.pdf`; SHA-256 `e94a8e4112f9a7f3`; 8 physical PDF pages. Previous-public-copy SHA is **identical**.
+- **Read coverage:** physical pp.2,3,4,5; **FULL_READ** (retained earlier all-pages read of an identical copy; this pass rechecked physical pp.2–5 and at least three SHA-seeded equation references). No source code was executed and no result was reproduced.
+- **Equation spot checks:** p.5 Eq.(20); p.4 Eq.(12); p.3 Eq.(9). The sampling rule uses a local `random.Random` seeded from this PDF SHA; mandatory checks below are additional.
+
+- **Metadata/assumptions:** title/authors/arXiv:2306.06363v2 (2024 stamp) remain as above; known static convex-polygon map, 2D stochastic robot/target, Gaussian beliefs, limited annular-sector sensor, two-second planning horizon (p.6). This is a model-based MPC, with no learned policy or trained weights.
+- **Mandatory BPOD answers — confirmed:** p.4 immediately before Eq.(15) explicitly assumes the FOV event and all per-obstacle LOS-clear events are mutually independent; Eq.(15) is `gamma = gamma_FOV * product(gamma_LOS_i)`. p.3 Eq.(11d) is `P_tilde = P_minus - gamma K_tilde C_tilde P_minus`. p.5 Eq.(19) is `Pr(a^T x <= b) = (1-erf((a^T mu-b)/sqrt(2 a^T Sigma a)))/2`. The p.2 footnote explicitly assumes a perfect sensor: a nonempty measurement iff the target is in the unoccluded FOV. Imperfect-detector extension is suggested, not validated.
+- **Exactness boundary:** Eq.(11b) replaces the measurement Jacobian/gain by values at the belief means, allowing them outside the expectation in Eq.(11c); Eq.(11d) is therefore an approximation for the nonlinear range/bearing sensor. With fixed linear H and R, the Bernoulli expected-update algebra is exact for that surrogate. Eq.(19) is exact for a Gaussian *linear* inequality; its use for geometric visibility additionally linearizes the signed distance and fixes closest-point/contact geometry (pp.4–5, Alg.1).
+- **Correlation correction:** independence does not have a universal optimistic bias. For positively correlated LOS-clear events, such as two duplicate or nearly coincident occluder constraints, the product can *underestimate* the joint clear probability. For negatively correlated clear events it can overestimate it. The same uncertain target sample must be tested against every obstacle to estimate the joint event. A BOIA regression must state the constructed correlation and expected bias sign rather than assert that all adjacent bars are optimistic. This is an independent probability observation, not a theorem supplied by BPOD.
+- **Online information/logic/cost:** p.2 known obstacle map; target state estimated from intermittent measurements; p.6 V-A assumes known target control, while p.7 V-B estimates it. No privileged learned training is involved. One MPC runs through loss; there is no frozen-policy override or explicit recovery clock. Existing p.6–8 experiment/hardware notes remain applicable to the same bytes (MATLAB/MOSEK, laptop/desktop CPU); no code/weight URL is printed. Runtime timing is not a MOTAR measurement.
+- **BOIA overlap:** (a) **partial, strong** (belief-conditioned FOV/LOS, pp.3–5, no detector-reliability model); (b) **partial** (covariance entropy/detection objectives p.4 Eq.12, continuous MPC rather than finite candidates); (c) **no** (p.3 Eq.7 acts every step); (d) **no** (chance constraint p.4 Eq.17 is not a backup); (e) **partial only at metric level** (collision/long-loss failure p.6, no terminal-first two-second competing-risk rendezvous protocol).
+- **Design consequence:** keep BOIA joint path sampling and the declared BPOD analytic comparator; keep the expected covariance update labeled a surrogate, and calibrate geometry/detector predictions in G5. No change to 07–09 is applied here.
+
 
 ---
 
@@ -304,6 +319,19 @@ https://github.com/Yue-0/Eva-Tracker (p.1 abstract).
 | (c) calibrated-advantage arbitration over a frozen RL policy with hysteresis | **No** | — |
 | (d) explicit safe fallback + terminal-first handling | **No** | Collision is handled only as a penalty (Eq. 20b, p.5). Reacquisition is implicit (p.3, p.7); there is no fallback mode. |
 
+#### 2026-10-19 original-copy re-read (Codex)
+
+- **Original:** `/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/논문/Eva-Tracker ESDF-update-free, Visibility-aware Planning with Target Reacquisition for Robust Aerial Tracking.pdf`; SHA-256 `7a828519abb5ee73`; 8 physical PDF pages. Previous-public-copy SHA is **identical**.
+- **Read coverage:** physical pp.1,3,4,5,6,7,8; **FULL_READ** (retained earlier FULL_READ of identical bytes; original equation/limitations spot checks this pass). No source code was executed and no result was reproduced.
+- **Equation spot checks:** p.3 Eq.(4); p.3 Eq.(3); p.4 Eq.(12). The sampling rule uses a local `random.Random` seeded from this PDF SHA; mandatory checks below are additional.
+
+- **Identity/assumptions:** Yue Lin, Yang Liu, Dong Wang, Huchuan Lu; arXiv:2602.12549v1 (13 February 2026), not a journal venue claimed here. The prebuilt FoV-ESDF models fixed camera intrinsics; obstacles are updated online (p.4 Eq.12), and MINCO replans position/yaw. The sample equations agree with the historical transcriptions.
+- **Mandatory reacquisition answer — confirmed with qualification:** p.3 Eq.(1) uses degree `n=2m`, `T=m*tau` and predicts on `[0,T]` from historical samples on `[-T,0]`; p.5 sets `tau=0.5 s`, `m=2`, hence the configured future extrapolation is **1 s**. p.8 explicitly limits reacquisition to short-term losses; long occlusion with trajectory deviation is difficult. The one-second number follows from pp.3/5, not an explicit universal maximum in p.8.
+- **Online/GT boundary:** p.5 states target position is continuously transmitted in simulation, so that benchmark does not prove sensor-only recovery during loss. In hardware pp.6–7, Mid-360 LiDAR supplies environmental measurements, Faster-LIO supplies ego localization, YOLOv11 skeletons + MonoLoco estimate a person; a predicted trajectory is used on missed detection. p.7 removes LiDAR points within the *estimated* target radius before mapping. This is a sensor-conditioned carve-out that can remove foreground obstacles if the estimate is wrong; it is not a safe GT mask for MOTAR to copy.
+- **Decision/cost/experiments:** p.3 bidirectional arc search chooses the nearest unoccluded waypoint at desired distance, then continuous optimization (p.4 Eq.7). Reacquisition has no explicit separate search mode. p.6 TableII total planning 10.75 ms (0.02 path +10.73 optimization), on p.5 i7-1165G7/RTX2060 simulation hardware; p.6–7 deployment Orin NX, no model-size or full pipeline latency bound supplied. p.6 OR/FR are geometric occlusion/FOV failure rates, not capture-safe two-second reobservation rates. Code: https://github.com/Yue-0/Eva-Tracker (p.1); pretrained weights **NOT_RECORDED in PDF**.
+- **BOIA overlap:** (a) **partial** (deterministic future visibility, pp.3–5; no belief-probability calibration); (b) **partial** (arc front-end and continuous feasible optimization); (c) **no** (no frozen RL arbitration); (d) **no** (no retained certified backup/terminal-first task logic); (e) **no** (OR/FR and qualitative short-loss recovery are different endpoints). MOTAR retains RGB-D+LiDAR, existing expiry, and evaluator-only GT.
+
+
 ---
 
 ## 3. Elastic Tracker — A Spatio-temporal Trajectory Planner for Flexible Aerial Tracking
@@ -358,11 +386,11 @@ Aerial tracking of a moving person with guaranteed safety and visibility. "Elast
 | p.2 Eq.(1) | T = {t_k ∈ [0,T_p] \| t_k → z_k, 0<k≤M_T} | predicted target waypoints |
 | p.2 Eq.(2a,b) | f^k(n) = g^k(n)+h^k(n); h^k(n) = √({d^k_xy(n) − d_d}² + {d^k_z(n)}²) | heuristic pulls nodes to horizontal distance d_d and zero vertical offset from z_k |
 | p.3 Eq.(3) | P = ∪ P_i, P_i = {x ∈ R³ \| A_i x ≤ b_i} | corridor polytopes |
-| p.3 Eq.(4) | V_k = {x ∈ R³ \| ⟨x − z_k, ξ_k⟩ ≤ θ_k} | as printed. ⟨·,·⟩ must denote the *angle* between vectors, consistent with Eq. 16 [UNCERTAIN notation] |
+| p.3 Eq.(4) | V_k = {x ∈ R³ \| ⟨x − z_k, ξ_k⟩ ≤ θ_k} | as printed. ⟨·,·⟩ must denote the *angle* between vectors, consistent with Eq. 16 [UNCERTAIN notation] [CORRECTED: original p.4 Eq.(16) specifies a normalized dot-product cosine-angle constraint] |
 | p.3 Eq.(8a–g) | min ∫‖p^{(3)}‖² dt + ρT, s.t. boundary conditions, ‖p^{(1)}‖≤v_m, ‖p^{(2)}‖≤a_m, p(t)∈P, p(t_k)∈V_k, d_l ≤ ‖p(t_k) − z_k‖ ≤ d_u, T ≥ T_p | — |
 | p.4 Eq.(10) | G_h = A_i p_i(t) − b_i ≤ 0; G_v = ‖p^{(1)}‖² − v_m² ≤ 0; G_a = ‖p^{(2)}‖² − a_m² ≤ 0 | — |
 | p.4 Eq.(11a) | I^⋆_i = (T_i/κ_i) Σ_j ω̄_j max[G_⋆(c_i,T_i,j/κ_i),0]³ | trapezoid quadrature |
-| p.4 Eq.(14) | H_d(x) = (x−d_l)³ for x ≤ d_l; 0 for d_l ≤ x < d_u−ε; (1/ε³)(x−d_u+ε)³(3ε − x + d_u) for d_u−ε ≤ x < d_u+ε; 16(x−d_u) for x > d_u+ε | C² distance penalty. As printed, the first branch (x−d_l)³ is *negative* for x<d_l, whereas Fig. 4 shows a positive cost rising toward 0. The sign is likely (d_l−x)³ [UNCERTAIN sign]. |
+| p.4 Eq.(14) | H_d(x) = (x−d_l)³ for x ≤ d_l; 0 for d_l ≤ x < d_u−ε; (1/ε³)(x−d_u+ε)³(3ε − x + d_u) for d_u−ε ≤ x < d_u+ε; 16(x−d_u) for x > d_u+ε | C² distance penalty. As printed, the first branch (x−d_l)³ is *negative* for x<d_l, whereas Fig. 4 shows a positive cost rising toward 0. The sign is likely (d_l−x)³ [UNCERTAIN sign]. [CORRECTED: rendered original p.4 confirms printed (x−d_l)^3; intent remains an inference and conflicts with Fig.4] |
 | p.4 Eq.(15) | J^d_a = Σ_k H_d(δ^h_k) + max{δ^v_k − δ^v_d, 0}³ | horizontal/vertical split, "since the drone lacks the independent DOF of pitch" |
 | p.4 Eq.(16) | G_o(x,k) = cos(θ_k − θ_ε) − ((x − z_k)·ξ_k)/‖x − z_k‖ ≤ 0 | θ_ε = tunable angle clearance |
 | p.4 Eq.(17) | J^v_a = Σ_k max[G_o(p(t_k),k),0]³ | — |
@@ -425,6 +453,19 @@ https://github.com/ZJU-FAST-Lab/Elastic-Tracker (p.1 footnote 1).
 | (c) RL-policy arbitration | **No** | — |
 | (d) safe fallback + terminal-first | **No** (corridor hard constraint only) | Corridor constraint Eq. 8d (p.3); there is no fallback mode. |
 
+#### 2026-10-19 original-copy re-read (Codex)
+
+- **Original:** `/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/논문/Elastic Tracker A Spatio-temporal Trajectory Planner.pdf`; SHA-256 `fd07679698aacf19`; 7 physical PDF pages. Previous-public-copy SHA is **identical**.
+- **Read coverage:** physical pp.1,2,3,4,5; **FULL_READ** (retained earlier FULL_READ of identical bytes; original equation/assumption spot checks this pass). No source code was executed and no result was reproduced.
+- **Equation spot checks:** p.4 Eq.(16); p.5 Eq.(20); p.3 Eq.(8). The sampling rule uses a local `random.Random` seeded from this PDF SHA; mandatory checks below are additional.
+
+- **Metadata/assumptions:** Jialin Ji, Neng Pan, Chao Xu, Fei Gao; this copy is arXiv:2109.07111v2, 2 March 2022 (p.1); ICRA2022 identity is bibliographic context, not a new printed venue assertion. Given predicted target samples, ESDF-free visible sectors plus known-free polytopes feed MINCO (pp.2–4); yaw is planned separately (p.5), not joint belief-space planning.
+- **Uncertainty resolved by rendered p.4:** Eq.(14) really prints `(x-d_l)^3` on `x<=d_l`, a negative value that conflicts with the positive rising-near-distance cost in Fig.4. This is an apparent *printed formula inconsistency*, not extraction uncertainty. Do not silently replace it or claim the code was verified. The physically intended positive branch would use `(d_l-x)^3`, but that is an independent inference. Eq.(4) p.3 uses angle-bracket notation for a sector; Eq.(16) p.4 resolves it as the normalized dot-product/cosine angle constraint, not a raw inner-product bound in distance units.
+- **Online information and decisions:** p.5 OpenPose observations + CV EKF and minimum-acceleration safe target primitives; target-neighborhood point clouds are described as removed manually. No learned planner/privileged-training scheme or loss-state supervisor is given. Eq.(8g) p.3 permits `T>=T_p`; p.5 Eq.(20) eliminates this time slack. Solver failures, identity expiry, and terminal-first collision/capture rules are not specified.
+- **Cost/validation/URLs:** p.5 simulation i7-6700; hardware has D435, monocular85x72deg camera, Xavier NX detector and Manifold2 other compute. Existing experimental timing notes remain historical observations of the same copy, with no speed transfer to RTX3070 inferred. Paper p.1 project URL in the historical Code subsection is retained; no weights are specified. The printed negative-cost branch remains a known issue, not a reproduced failure.
+- **BOIA overlap:** (a) **partial** (sector visibility about deterministic predicted positions); (b) **partial** (discrete front-end plus continuous MINCO with soft constraints pp.3–5); (c) **no**; (d) **no** (no braking backup/terminal-first supervisor); (e) **no** (visibility/tracking evaluation, no rendezvous competing-risk protocol). Never copy manual target carving into BOIA's online inputs.
+
+
 ---
 
 ## 4. Visibility-aware Trajectory Optimization with Application to Aerial Tracking
@@ -470,7 +511,7 @@ Further assumptions:
 | Ref | Equation | Notes |
 |---|---|---|
 | p.3 Eq.(1) | od_min < ‖p − c‖ < od_max | DO; p = robot position, c = target |
-| p.3 Eq.(2) | ψ_best = atan2(e_yᵀ(p − c), e_xᵀ(p − c)) | AO, as printed (p − c) [UNCERTAIN: facing the target would usually use c − p; transcribed as printed] |
+| p.3 Eq.(2) | ψ_best = atan2(e_yᵀ(p − c), e_xᵀ(p − c)) | AO, as printed (p − c) [UNCERTAIN: facing the target would usually use c − p; transcribed as printed] [CORRECTED: original p.3 Eq.(2) confirms p−c in print; standard forward-target bearing uses c−p] |
 | p.3 Eq.(3)–(4) | c_i = p + λ_i(c − p); r_i = ρ·λ_i·‖p − c‖, λ_i = i/M | balls along the LOS; ρ sets the confident-FOV size |
 | p.3 Eq.(5) | r_i < Ξ(c_i) | Ξ = ESDF (distance to the closest obstacle) |
 | p.3 Eq.(6)–(7) | p_k = (Q_k + 4Q_{k+1} + Q_{k+2})/6; d_k = ‖p_k − c_k‖ | B-spline waypoint from control points |
@@ -544,12 +585,24 @@ https://github.com/ZJU-FAST-Lab/visPlanner (p.2 footnote 1). Video: https://www.
 | (c) RL-policy arbitration | **No** | — |
 | (d) safe fallback + terminal-first | **No** | Collision penalty only (Eq. 21, p.4); J_v keeps motion in known space (p.5), a weak form of safety-aware sensing. |
 
+#### 2026-10-19 original-copy re-read (Codex)
+
+- **Original:** `/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/논문/Visibility-aware Trajectory Optimization.pdf`; SHA-256 `a7a3b8bb697ee403`; 8 physical PDF pages. Previous-public-copy SHA is **identical**.
+- **Read coverage:** physical pp.1,2,3,4,5; **FULL_READ** (retained earlier FULL_READ of identical bytes; original equation spot checks and rendered p.4 this pass). No source code was executed and no result was reproduced.
+- **Equation spot checks:** p.4 Eq.(21); p.3 Eq.(5); p.4 Eq.(17). The sampling rule uses a local `random.Random` seeded from this PDF SHA; mandatory checks below are additional.
+
+- **Metadata/assumptions:** Qianhao Wang, Yuman Gao, Jialin Ji, Chao Xu, Fei Gao; arXiv:2103.06742v1 (11 March2021). Single smooth target, bounded motion and forward conical camera are explicit p.3 assumptions. ESDF/local mapping and Bezier history prediction provide deterministic geometry, not a calibrated detection distribution.
+- **Printed equations:** p.3 Eq.(2) indeed prints `atan2(e_y^T(p-c), e_x^T(p-c))`, while p/c are explicitly robot/target. That reverses the usual forward-target bearing by pi. It is a printed sign/convention inconsistency relative to its verbal goal; code behavior was not checked. p.3 Eqs.(3)–(5) define balls `c_i=p+lambda_i(c-p)`, `r_i=rho lambda_i ||p-c||`, `r_i<Xi(c_i)`. p.4 Eq.(15) uses **squared** radius and ESDF distance. Rendered p.4 Eq.(21) really includes the trailing factor `(Xi(Q_i))` multiplying `g(d_thr^2-Xi(Q_i)^2)`. Its intended role is not explained; this is not removed as an extraction artifact.
+- **Logic/inputs/cost:** p.5 hybrid-state A* front-end rejects occluded nodes, back-end jointly optimizes position/yaw, and Eq.(22) encourages velocity to remain in viewed space. Historical pp.6–8 experiments/hardware remain the earlier full read of identical bytes. There is no calibrated detection confidence, loss/expiry state machine, frozen-policy threshold, or explicit backup. Code is https://github.com/ZJU-FAST-Lab/visPlanner (p.2); weights are not applicable to this nonlearned planner.
+- **BOIA overlap:** (a) **partial** (deterministic OD/AO/OE, p.3–4); (b) **partial** (front-end primitives and continuous optimization, no finite covariance-loss arbiter); (c) **no**; (d) **no**; (e) **no**. For BOIA use the correct forward-target bearing and measured-point geometry, not these ambiguous printed factors or GT ESDF online.
+
+
 ---
 
 ## 5. Star-Convex Constrained Optimization for Visibility Planning (with Application to Aerial Inspection)
 
 - **Title as printed in this file:** "Star-Convex Constrained Optimization for Visibility Planning with Application to Aerial Inspection" (p.1).
-- **Authors:** Tianyu Liu, Qianhao Wang, Xingguang Zhong, Zhepei Wang, Chao Xu, Fu Zhang, Fei Gao (Zhejiang University / HKU). p.1
+- **Authors:** Tianyu Liu, Qianhao Wang, Xingguang Zhong, Zhepei Wang, Chao Xu, Fu Zhang, Fei Gao (Zhejiang University / HKU). p.1 [CORRECTED: original p.1 author list excludes Fu Zhang; earlier v1 record preserved]
 - **Venue/year as printed:** arXiv:2204.04393v1 [cs.RO], 9 Apr 2022 (side stamp p.1). No venue is printed.
 - **File:** /home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/downloaded/StarConvex__2204.04393v1.pdf
 - **Identity status: DIFFERENT version from the user's copy** (per brief). This is arXiv **v1**. I had no access to the user's copy, so I cannot list the differences. Equation numbers, page numbers and any numbers below refer to v1 only. They should be re-checked against the user's version before citing.
@@ -604,7 +657,7 @@ Further assumptions:
 | p.3 Eq.(4)–(5) | Ξ(x̂) > d_min; Ξ(x̂) = max_i {d_i = n_iᵀ(x̂ − a_i)} | signed distance to the hull, positive outside |
 | p.3 Eq.(6) | Ξ ≈ LSE(d_1..d_K) = (1/α) log(Σ e^{α d_i}) | → max as α → ∞; α = 100 was used (p.5) |
 | p.3 Eq.(7)–(9) | min J(x) + V(LSÊ); V = λ max{LSÊ, 0}³; LSÊ = d_min − (1/α) log Σ e^{α d_i} | λ = very large penalty weight |
-| p.3 Eq.(10) | g_scp = ∂V/∂x = 6λ LSÊ² · (Σ e^{αd_i} n_i / Σ e^{αd_i}) · (r/‖x‖³)(‖x‖² − x xᵀ − ‖x‖³/(2r)) | [UNCERTAIN] Multi-line typeset formula; the pdftotext extraction is garbled. The grouping and signs are as best read from the rendered p.3. |
+| p.3 Eq.(10) | g_scp = ∂V/∂x = 6λ LSÊ² · (Σ e^{αd_i} n_i / Σ e^{αd_i}) · (r/‖x‖³)(‖x‖² − x xᵀ − ‖x‖³/(2r)) | [UNCERTAIN] Multi-line typeset formula; the pdftotext extraction is garbled. The grouping and signs are as best read from the rendered p.3. [CORRECTED: original p.3 rendered and chain rule checked; positive sign is printed but conflicts with derivative of Eqs.(1),(8),(9); see original-copy reread] |
 | p.4 Eq.(11) | min Σ‖w_i − w_{i−1}‖ (+ start/end) s.t. w_i ∈ S_i | route waypoint refinement |
 | p.4 Eq.(12) | J_w = Σ √(‖w_i − w_{i−1}‖² + ε) + Σ λ_i V(LSÊ(w_i\|S_i)) | — |
 | p.4 Eq.(14a–d) | min ∫‖σ^{(3)}‖² + ρT_Σ, s.t. boundary conditions, σ(t) ∈ F (SVC), v/a limits, σ^i(t) ∈ S_i with T_i > τ_i | — |
@@ -666,6 +719,21 @@ None printed in the PDF (v1). The only URL is the Insta360 footnote (p.6).
 | (b) finite candidates + loss-prob/covariance cost | **No** | Continuous MINCO optimisation within the SVC (p.4–5). |
 | (c) RL-policy arbitration | **No** | — |
 | (d) safe fallback + terminal-first | **No** | Safety comes only from the corridor (p.4). |
+
+#### 2026-10-19 original-copy re-read (Codex)
+
+- **Original:** `/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/논문/Star-Convex Constrained Optimization for Visibility Planning.pdf`; SHA-256 `7f80eef8c37662f0`; 7 physical PDF pages. Previous-public-copy SHA is **different**.
+- **Read coverage:** physical pp.1,2,3,4,5,6,7; **FULL_READ** (full reread of the different original user copy; rendered p.3 Eq.10). No source code was executed and no result was reproduced.
+
+- **Correct original metadata:** Tianyu Liu, Qianhao Wang, Xingguang Zhong, Zhepei Wang, Chao Xu, Fei Gao (p.1). **Fu Zhang is not in this original author list.** The user copy has no printed conference/date/arXiv side stamp; do not transfer the prior v1 stamp to this file. The bibliographic arXiv identifier of the earlier copy remains historical provenance.
+- **Problem/assumptions/online information:** fixed inspection TRPs with prescribed dwell times; p.2 explicitly assumes omnidirectional sensing and body containment within the target's sensible ball. Point-cloud map in a k-d tree; p.6 explicitly prebuilds it using LiDAR and plans offline. RealSense D435 estimates state and Insta360 One X2 supplies omnidirectional imagery. No target belief, learned training, detector confidence, or online GT simulation mask is used in this planning formulation.
+- **Pipeline/equations:** p.2 Eq.(1) flips `z=x-c_i` by `F(z)=(2r/||z||-1)z`; p.3 convex hull `P_i={x:Ax<=b}` Eq.(3), outside-hull test Eqs.(4)–(5), LSE Eq.(6), and active violation `s=d_min-LSE`, `V=lambda max(s,0)^3` Eqs.(8)–(9). p.4 ATSP route and kinodynamic A* join SCPs with convex safe corridors; MINCO problem Eq.(14). p.5 Eq.(15) samples visibility penalties; Eq.(16) `T_i=exp(xi_i)+tau_i` enforces positive dwell slack. This is a continuous/offline optimizer, not a policy arbiter.
+- **Eq.(10) transcription resolved, derivative caveat:** rendered physical p.3 prints a **positive** `6 lambda s^2` times the softmax-weighted normals and `r/||z||^3 (||z||^2 I - zz^T - ||z||^3/(2r) I)`; identity matrices are implicit in the typesetting and coordinates are centered on the TRP. From Eq.(1), `DF=2r/||z||(I-zz^T/||z||^2)-I`; chain rule on Eqs.(8)–(9) gives `grad V = -3 lambda s^2 DF^T sum_i(w_i n_i)` for `s>0`, the **negative** of the printed expression. This is an independent algebra check identifying an apparent paper sign error. It is not a code reproduction and is not adopted as an implementation formula. At `z=0` the flip is undefined.
+- **Guarantee boundary:** p.3 LSE smooths max and p.5 Eq.(15) softens/samples the visibility constraint; finite penalties and sampled checks alone are not a continuous-time sensor/visibility theorem. The authors' visibility-guaranteed language concerns their deterministic known-map representation and experimental tasks. Occluded/unobserved parts of a sparse moving LiDAR scan are not automatically known-free point-cloud space.
+- **Cost/experiments:** p.5 i7-9750H2.6GHz; Fig.4 40x150m/40spot example plans in4.4s. TableI reports observed-spot fraction and squared-jerk integral, not target-recovery rates. p.6 static indoor inspection uses1.5m/s,1.0m/s^2 and1s dwell. The stated main limitation p.6 is omnidirectional perception; limited FOV/yaw are future work. No code or weight URL is printed in pp.1–7; the p.6 Insta360 link is a device URL.
+- **BOIA overlap:** (a) **no** (deterministic static inspection rather than belief-conditioned P_det); (b) **no** (continuous MINCO, pp.4–5); (c) **no**; (d) **no** (known safe corridor but no retained braking/terminal-first supervisor); (e) **no** (inspection coverage, no capture/competing risk).
+- **Design implication:** a geometric inspiration only. BOIA does not use SCP, its Eq.(10) gradient, omnidirectional sensing, or offline GT maps, so this correction does not invalidate BOIA's specified formulas. No 07–09 change applied.
+
 
 ---
 

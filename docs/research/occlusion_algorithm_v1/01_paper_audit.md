@@ -1,67 +1,68 @@
-# 01 — 25-paper verification and reading record
+# 01 — Original-copy paper verification and reading record (G1-R)
 
-**Scope.** This is the G1 reading record for the 25-paper set the user named on 2026-10-19.
+**2026-10-19 G1-R complete.** The original25 and four extras are separately accounted for.
+Physical PDF pages start at1. Sources are read-only local originals, identified by title/content,
+metadata and SHA, not filenames alone. [Manifestv2](paper_manifest.json) and
+[machine reading receipts](reading_receipts.json) bind the notes. [Manifestv1](paper_manifest.v1.json)
+preserves the prior public-copy/availability state.
 
-**Sources.**
-- **Identity:** [`paper_manifest.json`](paper_manifest.json), which compares SHA-256 against the
-  user's inventory.
-- **Detail:** the per-paper notes, written by five read-only reading passes and linked below. Each
-  note records the PDF pages actually read and gives equations as "p.N Eq.(k)".
+FULL_READ is cumulative:15 originals were fully read this pass;14 byte-identical previously
+FULL_READ papers retain that status after current original-copy spot checks. This does not claim
+29 entirely new full readings. FASTER has only two numbered equations; both plus algorithm/curve
+identities were checked rather than inventing a third. No external code or result was reproduced.
 
-**Labels used:**
-- **FULL_READ:** every page was read.
-- **METHOD_REVIEWED:** the method and experiments were read in full, but not every appendix page.
-- **ABSTRACT_ONLY:** only the abstract was read.
-- **NOT_AVAILABLE:** no PDF was available, so the paper is not summarised.
-- **CODE_VERIFIED:** never used here, because no official code was run.
-- **REPRODUCED:** never used here, because no paper result was reproduced.
+## Status table — original25
 
-## Status table
-
-| # | Paper (short) | File identity vs user copy | Pages | Read status | Notes |
-| --- | --- | --- | ---: | --- | --- |
-| 1 | BPOD — Probabilistic Visibility-Aware Trajectory Planning (arXiv 2306.06363v2) | IDENTICAL | 8 | FULL_READ (pp.1–8) | [P1 §1](notes/P1_visibility_planning.md) |
-| 2 | Eva-Tracker (arXiv 2602.12549v1) | IDENTICAL | 8 | FULL_READ | P1 §2 |
-| 3 | Elastic Tracker (arXiv 2109.07111v2) | IDENTICAL | 7 | FULL_READ | P1 §3 |
-| 4 | Visibility-aware Trajectory Optimization (arXiv 2103.06742v1) | IDENTICAL | 8 | FULL_READ | P1 §4 |
-| 5 | Star-Convex Constrained Optimization for Visibility Planning (arXiv 2204.04393v1) | **DIFFERENT_VERSION** | 7 | FULL_READ of v1 | P1 §5 |
-| 6 | OA-VAT — Instance-level Visual Active Tracking with Occlusion-Aware Planning | IDENTICAL | 15 | FULL_READ | [P2 §1](notes/P2_active_tracking.md) |
-| 7 | UAST — Unified Active Search and Tracking (CVPR 2026, CVF open access) | IDENTICAL | 10 | FULL_READ (no supplement available) | P2 §2 |
-| 8 | TrackVLA (arXiv 2505.23189v1) | IDENTICAL | 25 | FULL_READ (text level) | P2 §3 |
-| 9 | TrackVLA++ (arXiv 2510.07134v1) | IDENTICAL | 9 | FULL_READ | P2 §4 |
-| 10 | Open-World Drone Active Tracking with Goal-Centered Rewards (DAT) | IDENTICAL | 36 | METHOD_REVIEWED (main pp.1–10, appendix prose pp.16–29) | P2 §5 |
-| 11 | YOPOv2-Tracker (arXiv 2505.06923v1) | IDENTICAL | 19 | FULL_READ | [P3 §1](notes/P3_learned_planners.md) |
-| 12 | NavRL++ | IDENTICAL | 18 | FULL_READ | P3 §2 |
-| 13 | PANTHER (arXiv 2103.06372v3) | IDENTICAL | 16 | METHOD_REVIEWED | P3 §3 |
-| 14 | Deep-PANTHER (arXiv 2209.01268v2) | IDENTICAL | 9 | METHOD_REVIEWED | P3 §4 |
-| 15 | RAPTOR (arXiv 2007.03465v1) | IDENTICAL | 16 | METHOD_REVIEWED | P3 §5 |
-| 16 | FASTER (arXiv 1903.03558v3) | IDENTICAL | 7 | FULL_READ | [P4 §1](notes/P4_safety_dynamics.md) |
-| 17 | Lee, Leok, McClamroch — Geometric Tracking Control on SE(3) (arXiv 1003.2005v1) | **DIFFERENT_VERSION** (8-page arXiv v1; user holds the 6-page CDC version) | 8 | FULL_READ of v1 | P4 §2 |
-| 18 | Aerial Gym Simulator (RA-L 2025) | IDENTICAL | 8 | FULL_READ | P4 §3 |
-| 19 | EGO-Planner (arXiv 2008.08835v2) | **DIFFERENT_VERSION** | 8 | FULL_READ of v2 | P4 §4 |
-| 20 | Adaptive Tracking and Perching for Quadrotor in Dynamic Scenarios (arXiv 2312.11866v2) | IDENTICAL | 20 | METHOD_REVIEWED (pp.1–18) | P4 §5 |
-| 21 | ORTrack — Occlusion-Robust ViT for Real-Time UAV Tracking (arXiv 2504.09228v1) | **DIFFERENT_VERSION** | 11 | FULL_READ of v1 | [P5 §1](notes/P5_perception.md) |
-| 22 | Perception-Aware Time-Optimal Planning for Quadrotor Waypoint Flight (arXiv 2603.04305v1) | IDENTICAL | 21 | FULL_READ | P5 §2 |
-| 23 | Perception-aware Planning in Unknown and Feature-limited Environments (arXiv 2503.15273v2) | IDENTICAL | 8 | FULL_READ | P5 §3 |
-| 24 | YOPO — You Only Plan Once | **NOT_AVAILABLE** (IEEE RA-L only, no arXiv) | — | Not summarised; YOPOv2-Tracker's own statements about YOPO are recorded in P3 §1, and the official code is audited in [K2 §2](notes/K2_code_audit.md) | — |
-| 25 | Rethinking Occlusion Modeling for UAV Tracking (OCTrack) | **NOT_AVAILABLE** (not found on arXiv or CVF) | — | Not summarised | — |
+| # | Paper | Identity | PDF pages | Status / current pass | Notes |
+| --- | --- | --- | --- | --- | --- |
+| 1 | Adaptive Tracking and Perching | IDENTICAL_TO_USER_COPY | 20 | FULL_READ / full original | [P4_safety_dynamics](notes/P4_safety_dynamics.md) |
+| 2 | Aerial Gym Simulator | IDENTICAL_TO_USER_COPY | 8 | FULL_READ / identical-copy spot checks | [P4_safety_dynamics](notes/P4_safety_dynamics.md) |
+| 3 | Deep-PANTHER | IDENTICAL_TO_USER_COPY | 9 | FULL_READ / full original | [P3_learned_planners](notes/P3_learned_planners.md) |
+| 4 | EGO-Planner | USER_COPY_NOW_READ | 8 | FULL_READ / full original | [P4_safety_dynamics](notes/P4_safety_dynamics.md) |
+| 5 | Elastic Tracker | IDENTICAL_TO_USER_COPY | 7 | FULL_READ / identical-copy spot checks | [P1_visibility_planning](notes/P1_visibility_planning.md) |
+| 6 | Eva-Tracker | IDENTICAL_TO_USER_COPY | 8 | FULL_READ / identical-copy spot checks | [P1_visibility_planning](notes/P1_visibility_planning.md) |
+| 7 | FASTER | IDENTICAL_TO_USER_COPY | 7 | FULL_READ / identical-copy spot checks | [P4_safety_dynamics](notes/P4_safety_dynamics.md) |
+| 8 | Lee SE3 | USER_COPY_NOW_READ | 6 | FULL_READ / full original | [P4_safety_dynamics](notes/P4_safety_dynamics.md) |
+| 9 | OA-VAT | IDENTICAL_TO_USER_COPY | 15 | FULL_READ / identical-copy spot checks | [P2_active_tracking](notes/P2_active_tracking.md) |
+| 10 | ORTrack | USER_COPY_NOW_READ | 11 | FULL_READ / full original | [P5_perception](notes/P5_perception.md) |
+| 11 | NavRL++ | IDENTICAL_TO_USER_COPY | 18 | FULL_READ / identical-copy spot checks | [P3_learned_planners](notes/P3_learned_planners.md) |
+| 12 | Open-World DAT | IDENTICAL_TO_USER_COPY | 36 | FULL_READ / full original | [P2_active_tracking](notes/P2_active_tracking.md) |
+| 13 | PANTHER | IDENTICAL_TO_USER_COPY | 16 | FULL_READ / full original | [P3_learned_planners](notes/P3_learned_planners.md) |
+| 14 | Perception-Aware Time-Optimal | IDENTICAL_TO_USER_COPY | 21 | FULL_READ / identical-copy spot checks | [P5_perception](notes/P5_perception.md) |
+| 15 | Perception-aware Unknown Feature-limited | IDENTICAL_TO_USER_COPY | 8 | FULL_READ / identical-copy spot checks | [P5_perception](notes/P5_perception.md) |
+| 16 | BPOD | IDENTICAL_TO_USER_COPY | 8 | FULL_READ / identical-copy spot checks | [P1_visibility_planning](notes/P1_visibility_planning.md) |
+| 17 | RAPTOR | IDENTICAL_TO_USER_COPY | 16 | FULL_READ / full original | [P3_learned_planners](notes/P3_learned_planners.md) |
+| 18 | OCTrack | USER_COPY_NOW_READ | 11 | FULL_READ / full original | [P5_perception](notes/P5_perception.md) |
+| 19 | Star-Convex | USER_COPY_NOW_READ | 7 | FULL_READ / full original | [P1_visibility_planning](notes/P1_visibility_planning.md) |
+| 20 | TrackVLA | IDENTICAL_TO_USER_COPY | 25 | FULL_READ / identical-copy spot checks | [P2_active_tracking](notes/P2_active_tracking.md) |
+| 21 | TrackVLA++ | IDENTICAL_TO_USER_COPY | 9 | FULL_READ / identical-copy spot checks | [P2_active_tracking](notes/P2_active_tracking.md) |
+| 22 | UAST | IDENTICAL_TO_USER_COPY | 10 | FULL_READ / identical-copy spot checks | [P2_active_tracking](notes/P2_active_tracking.md) |
+| 23 | Visibility-aware Traj Opt | IDENTICAL_TO_USER_COPY | 8 | FULL_READ / identical-copy spot checks | [P1_visibility_planning](notes/P1_visibility_planning.md) |
+| 24 | YOPOv2-Tracker | IDENTICAL_TO_USER_COPY | 19 | FULL_READ / identical-copy spot checks | [P3_learned_planners](notes/P3_learned_planners.md) |
+| 25 | YOPO | USER_COPY_NOW_READ | 8 | FULL_READ / full original | [P3_learned_planners](notes/P3_learned_planners.md) |
 
 ## Totals
 
-| | Count | Of which |
-| --- | ---: | --- |
-| Readable | 23 of 25 (302 PDF pages) | 19 identical to the user's copies; 4 different versions |
-| FULL_READ | 18 | — |
-| METHOD_REVIEWED | 5 | DAT, PANTHER, Deep-PANTHER, RAPTOR, Adaptive Perching |
-| CODE_VERIFIED | 0 | — |
-| REPRODUCED | 0 | — |
+| Population | Unique papers | PDF pages | FULL_READ | METHOD_REVIEWED | ABSTRACT_ONLY |
+| --- | --- | --- | --- | --- | --- |
+| Original25 | 25 | 319 | 25 | 0 | 0 |
+| Extra4 | 4 | 33 | 4 | 0 | 0 |
 
-**What the user can provide.** The user can place the original YOPO and OCTrack PDFs, and the
-original versions of the four DIFFERENT_VERSION papers, on this machine. The four would then be
-re-read for their page and equation references. The equation numbers cited from those four papers
-refer to the versions listed above.
+CODE_VERIFIED=0; REPRODUCED=0. Original inventory:24 known SHA matches, YOPO inventory SHA null; no mismatch. Original-copy identity19same bytes/6nowread. Two EGO-Planner files are byte-identical; the filename without `(1)` is representative and the other is retained as duplicate. Thirty files represent29 unique papers.
 
-## One-line takeaway per paper
+## Extra papers (not in the original25)
+
+| Paper | Pages | Read status | Decision | Notes |
+| --- | --- | --- | --- | --- |
+| EGO-Swarm | 7 | FULL_READ | REFERENCE_ONLY | [P6](notes/P6_extra_papers.md) |
+| PPTracker | 8 | FULL_READ | ADD_TO_CORE | [P6](notes/P6_extra_papers.md) |
+| PRIMER | 7 | FULL_READ | ADD_TO_CORE | [P6](notes/P6_extra_papers.md) |
+| Similarity-Guided Layer-Adaptive ViT | 11 | FULL_READ | REFERENCE_ONLY | [P6](notes/P6_extra_papers.md) |
+
+PRIMER narrows generic arbitration/fallback novelty; PPTracker exposes online GT initialization and identity constraints. EGO-Swarm is a navigation precedent, SGLATrack a possible later detector stress reference. No performance number is compared with MOTAR.
+
+## One-line takeaways from G1, corrected by G1-R
+
 
 1. **BPOD.** It forecasts a belief-conditioned detection probability:
    - γ = γ_FOV · Π_i γ_LOS,i (p.4 Eq.15). This assumes mutually independent events and a perfect
@@ -72,8 +73,7 @@ refer to the versions listed above.
    - It works in 2D, with a known map of convex obstacles.
 2. **Eva-Tracker.** It puts candidate viewpoints on an arc around the predicted target and keeps the
    nearest one with a clear line of sight (p.3). It looks up visibility in a camera-frame "FoV-ESDF"
-   (p.3–4). After a loss it follows a deterministic Bézier extrapolation of about 1 s; the authors
-   say this suits short losses only (p.8).
+   (p.3–4). After a loss it follows Bézier extrapolation; its configured horizon is about1s (pp.3/5), and p.8 explicitly limits it to short losses.
 3. **Elastic Tracker.** It adds an asymmetric distance penalty and a visible sector, using a
    horizontal/vertical split. There is no uncertainty model and no re-acquisition. In simulation it
    is fed the GT target position.
@@ -95,8 +95,7 @@ refer to the versions listed above.
    - **Control:** a V×H grid of quintic end-state candidates scored by a learned cost. In training,
      that cost includes SDF line-of-sight and FOV terms (pp.5–6).
    - **Missing:** thresholds and the horizon are not given.
-8. **TrackVLA.** A 7B VLA with an anchor-diffusion head that needs about an RTX 4090. It is not
-   feasible on an 8 GB GPU; it is useful only for metric design.
+8. **TrackVLA.** A 7B VLA with an anchor-diffusion head that needs about an RTX 4090. Concurrent operation on the MOTAR 8 GB GPU is NOT_TESTED; it is useful for metric design.
 9. **TrackVLA++.** Adds an `<invalid>` (occluded) token and an identity memory gated by entropy. It
    classifies current visibility; it does not forecast it.
 10. **DAT.** An RL tracking benchmark with privileged GT used only in the reward. Its metric
@@ -123,7 +122,7 @@ refer to the versions listed above.
     - It is the direct precedent for the safe fallback.
 17. **Lee SE(3).**
     - Convention: e3 points down, gravity is +mg e3 and thrust is −fRe3 (Eq.3).
-    - Stability: exponential stability needs an initial attitude error below 90° (Eqs.20, 27).
+    - Stability: exponential stability needs an initial attitude error below 90° (CDC Eq.27 and Prop.2).
     - MOTAR's velocity controller changes the thrust law (45° tilt cap, T = f_z/b3_z), so Lee's proof
       does not transfer.
 18. **Aerial Gym.**
@@ -134,7 +133,7 @@ refer to the versions listed above.
 19. **EGO-Planner.** The B-spline convex-hull property gives per-axis feasibility. Safety is a pipe
     post-check, and there is no backup trajectory.
 20. **Adaptive Perching.** Occlusion is a deterministic chain of balls along the line of sight
-    (Eqs.15–18), and terminal states can be relaxed (Eqs.46–50). There is no formal guarantee.
+    (original pp.6 Eqs.15–19), and terminal states can be relaxed (pp.8–9 Eqs.46–50). There is no formal guarantee.
 21. **ORTrack.**
     - Training masks part of the template with centre-weighted random patterns (Eq.1) and adds a
       feature-invariance loss (Eq.2).
@@ -153,3 +152,28 @@ refer to the versions listed above.
 - PANTHER's default simulation uses GT obstacle trajectories.
 
 None of these performance numbers transfers to MOTAR.
+
+24. **YOPO original.** Fifteen anchors with learned trajectories and a **−J score** (p.5 Eq.21).
+    The audited YOPO-Simple branch is different; original numerical anchor extents/radius are not
+    recorded. Keep BOIA's own heading/speed lattice, not an unsupported endpoint transplant.
+25. **OCTrack.** COM/ACP synthesizes structured occlusion; CADB refers to transformer layer depth.
+    It does not supply calibrated detection probability for BOIA; see P5 §4.
+
+## Mandatory original-copy questions and corrections
+
+- **BPOD:** independence p.4 Eq.15, expected covariance p.3 Eq.11d and erf p.5 Eq.19 confirmed;
+  perfect sensor assumption p.2 footnote1. Independence bias has no universal sign.
+- **UAST:** p.6 Eq.13 is a product, p.4 innovation uses R, not S; numeric thresholds/horizon absent.
+- **Eva:** configured approximately1s extrapolation derives from pp.3/5; p.8 states short-loss limit.
+- **OA-VAT:** p.4 Eq.9 decreasing sigmoid confirmed; p.4 versusp.5 trigger descriptions still differ.
+- **YOPOv2:** p.13 names occlusion a main failure; P3 §1 verifies5×3×14 output.
+- **NavRL++:** dropout0.3 and safety-stop rules rechecked in P3 §2; code-release statement is bounded
+  to the original manuscript/audited repository, not a live guarantee of perpetual unavailability.
+- **FASTER:** p.4 by-construction claim depends on static known-free space and tracking assumptions;
+  p.3 velocity bounds are checked at interval starts.
+- **AerialGym:** global physics timestep absent; control-rate numbers are not that timestep.
+  Eq.4/5 concern is convention-dependent; static mesh randomization description is explicit.
+
+ORTrack complement/sign ambiguity and several author-internal formula discrepancies remain
+explicitly unresolved. No source typo is silently converted into a BOIA formula. Detailed version
+maps and rendered-page checks are in P1–P6; the design consequence is [13](13_design_deltas.md).

@@ -18,7 +18,7 @@
 | [PANTHER](https://github.com/mit-acl/panther) | `50be45b` (2022-11-01) | BSD-3 (CasADi/IPOPT/HSL deps; solver files are LFS pointers) | C++, ROS1, MATLAB codegen | FUNCTIONS_READ (limited) | GT obstacle trajectories by default | Sigmoid FOV term (`main.m:285-320`): reimplement |
 | BPOD | — | — | — | — | — | **No code link in the paper.** Ideas only |
 | [OA-VAT](https://github.com/SHWplus/OA-VAT) | `cea1f6b` (2026-04-24) | README says MIT; **no LICENSE file**; vendored DINOv3 licence; YOLOE is AGPL | Python 3.10, torch 2.2.2, UnrealCV | FUNCTIONS_READ | Detector + re-ID + image KF | Confidence → noise mapping: reimplement. The confidence-aware KF methods in `kalman_filter.py` are **never called**; the loop uses pykalman instead |
-| [YOPO](https://github.com/TJU-Aerial-Robotics/YOPO) (`YOPO-Simple` branch) | `bd8a7f9` (2026-08-14) | MIT | Python 3.8, torch 2.4.1, ROS1 | FUNCTIONS_READ | n/a (goal navigation) | 5×3 lattice (±36°/±20°, r = 5 m) + quintic (`policy/primitive.py:30-84`): **direct port possible** as a network-free candidate generator. The paper-version branch `main` was not audited |
+| [YOPO](https://github.com/TJU-Aerial-Robotics/YOPO) (`YOPO-Simple` branch) | `bd8a7f9` (2026-08-14) | MIT | Python 3.8, torch 2.4.1, ROS1 | FUNCTIONS_READ | n/a (goal navigation) | 5×3 lattice (±36°/±20°, r = 5 m) + quintic (`policy/primitive.py:30-84`): **direct port possible** as a network-free candidate generator. Original paper now FULL_READ (G1-R); this code audit is YOPO-Simple `bd8a7f9`, not the paper-version `main`, which remains unaudited |
 | [YOPO-Tracker](https://github.com/TJU-Aerial-Robotics/YOPO-Tracker) | `d313f86` (2026-10-15) | MIT | Python 3.12, ROS2 Jazzy, Unity | FUNCTIONS_READ | Own detection head + gated CV-KF; GT labels in training | KF + back-projection + costs: direct port possible. Brake-and-spin search (`test_yopo_ros.py:246`): reimplement |
 | [NavRL](https://github.com/Zhefan-Xu/NavRL) | `3725bcc` (2025-07-03); local `reference/NavRL` identical | MIT | Python 3.10, Isaac Sim, torchrl | FUNCTIONS_READ | Known goal; dynamic obstacles from a detector | ORCA shield (`safeAction.cpp:53,139`): reimplement. **No NavRL++ code is released** |
 | [EGO-Planner](https://github.com/ZJU-FAST-Lab/ego-planner) | `bfda512` (2025-03-08) | **GPL-3.0** | C++14, ROS1 | STRUCTURE_MAPPED | n/a | Ideas only |
@@ -43,3 +43,13 @@
 - **No capture or terminal phase.** All are keep-distance trackers or navigators.
 
 That gap is what [`06_novelty_matrix.md`](06_novelty_matrix.md) examines.
+
+## G1-R source-scope amendment
+
+No new repository was cloned or executed in G1-R. The original YOPO paper's−J/high-score convention
+does not match the audited YOPO-Simple cost/argmin convention; K2 remains a branch-specific code
+audit, not a verification of paper-version main. All URLs for the four extras in
+[P6](notes/P6_extra_papers.md) are **audit not done**. Their paper descriptions, including PRIMER's
+runtime reject/reuse behavior, do not certify source implementation or weights. The old section
+“What no repository provides” refers only to the eleven audited snapshots and cannot support a
+general novelty claim beyond that scope.

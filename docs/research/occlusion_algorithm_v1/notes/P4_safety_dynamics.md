@@ -128,6 +128,19 @@ https://github.com/mit-acl/faster; worlds at https://github.com/jtorde; video ht
 - **(c) No.** It does arbitrate between "commit new" and "keep previous committed" by hard feasibility/timing tests (p.4). There is no learned policy, no calibrated threshold, no hysteresis.
 - **(d) Partly to strong** for safe fallback: the committed backup trajectory in F with a terminal stop is the canonical precedent (p.2, p.4). It has no terminal-first / capture-terminal handling.
 
+#### 2026-10-19 original-copy re-read (Codex)
+
+- **Original:** `/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/논문/FASTER Fast and Safe Trajectory Planner for Flights.pdf`; SHA-256 `f31547f387a29588`; 7 physical PDF pages. Previous-public-copy SHA is **identical**.
+- **Read coverage:** physical pp.1,2,3,4; **FULL_READ** (retained earlier FULL_READ of identical bytes; both numbered equations and the cubic-Bezier identity checked (only two numbered equations exist)). No source code was executed and no result was reproduced.
+
+- **Equation sampling exception:** the paper has only two numbered equations: MIQP Eq.(1) and time-allocation Eq.(2), both p.3. Both were checked, plus the unnumbered cubic-to-Bezier conversion and Alg.1 lines18–23. A third numbered equation cannot be sampled; this is reported rather than fabricated.
+- **Metadata/model:** Jesus Tordesillas, Brett T. Lopez, Jonathan P. How; accepted IROS2019 (p.1), arXiv:1903.03558v3 stamp13May2020. Triple integrator/constant jerk per interval, depth-derived occupancy with known-free F, occupied O, unknown U (pp.2–4). The model is a planning abstraction, not rotor-level dynamics.
+- **Mandatory safety answer — confirmed, conditional:** p.4 permits commit only if both whole and safe optimizations succeed, the complete A-to-R piece does not intersect U, and replanning finishes within delta_t. Otherwise it continues the previous committed trajectory. The committed prefix plus terminal-stopping safe tail lies wholly inside F; p.4 inflates O and U by robot radius. Accurate free-space mapping, collision inflation, existence of the initial committed backup, static/persistent free space and sufficiently accurate tracking/state/timing are assumptions needed to carry this planned-trajectory argument to the physical robot. Perfect tracking/static obstacles are not a robust tracking-error theorem proven in the paper. The 'high probability' statement applies to timely replanning opportunities, not to a quantified collision probability for real flight.
+- **Mandatory derivative-bound answer — confirmed:** p.3 Eq.(1) constrains `||v_n(0)||_inf<=vmax` and `||a_n(0)||_inf<=amax` at each interval start; jerk is constant and bounded per interval. A quadratic velocity can overshoot between starts. The Bezier convex-hull containment certifies geometric containment, not these continuous derivative bounds by itself. BOIA must inspect all rollout substeps/swept segments rather than infer them from FASTER's knots.
+- **Online inputs/logic/experiments:** online state/depth occupancy and goal; no target, detector, trained policy or training GT. Whole trajectory may explore F union U; only committed trajectory is flown in F. Existing hardware/timing and flight benchmarks in the earlier identical FULL_READ remain valid with their recorded context, not as bounds for MOTAR. Code URL in historical Code subsection is retained; no learned weights. No experiment in this pass was run.
+- **BOIA overlap:** (a) **no**; (b) **partial** (candidate direction cost-to-go, continuous MIQP rather than finite loss/covariance scorer); (c) **no** (commit/keep-previous is not learned-policy advantage arbitration); (d) **partial/strong for retained safe backup**, not simulator terminal-first or unconditional safe-hold; (e) **no** (flight collision/success rather than post-occlusion rendezvous protocol). A newly generated zero command is not automatically FASTER's previously certified brake.
+
+
 ---
 
 ## 2. Geometric Tracking Control of a Quadrotor UAV on SE(3), Lee, Leok, McClamroch
@@ -180,14 +193,14 @@ Tracking of position x_d(t) and heading direction b⃗_1d(t) for an underactuate
 ### Stability claims and assumptions
 - **Prop. 1 (p.3): attitude only.** Holds for any k_R, k_Ω > 0, under:
   - Ψ(R(0), R_d(0)) < 2, Eq. (17);
-  - ‖e_Ω(0)‖² < (2/λ_min(J)) k_R (2 − Ψ(0)), Eq. (18).
+  - ‖e_Ω(0)‖² < (2/λ_min(J)) k_R (2 − Ψ(0)), Eq. (18). [CORRECTED: original CDC p.4 Eqs.(18),(27),(29) use lambda_max(J); old arXiv transcription must not supply a runtime stability bound.]
   - Then (e_R, e_Ω) = 0 is exponentially stable and Ψ(t) ≤ min{2, α₂e^{−β₂t}}, Eq. (19).
   - Interpretation: initial attitude error < 180°. A larger k_R enlarges the angular-velocity region (p.3).
 - **Prop. 2 (p.4): complete dynamics, exponential stability.** Conditions:
   - Ψ(R(0), R_d(0)) ≤ ψ₁ < 1, Eq. (20), i.e. initial attitude error **< 90°**.
   - W1, W12, W2 as in Eqs. (21)–(23), with α = √(ψ₁(2−ψ₁)) and e_vmax = max{‖e_v(0)‖, B/(k_v(1−α))}.
   - Gain conditions Eq. (24) on c1; Eq. (25) on c2; Eq. (26) λ_min(W2) > 4‖W12‖²/λ_min(W1).
-  - Region of attraction: (20) plus ‖e_Ω(0)‖² < (2/λ_min(J)) k_R (1 − Ψ(0)), Eq. (27).
+  - Region of attraction: (20) plus ‖e_Ω(0)‖² < (2/λ_min(J)) k_R (1 − Ψ(0)), Eq. (27). [CORRECTED: original CDC p.4 Eqs.(18),(27),(29) use lambda_max(J); old arXiv transcription must not supply a runtime stability bound.]
 - **Prop. 3 (p.4): almost-global exponential attractiveness.** Conditions 1 ≤ Ψ(0) < 2, Eq. (28), and Eq. (29), same form as (18).
   - The attitude first enters the Prop. 2 region in finite time; e_x and e_v stay bounded meanwhile (proof p.8).
   - Definition 1 (p.4) distinguishes "exponentially attractive" from exponential stability.
@@ -239,7 +252,7 @@ None given. Animations at http://my.fit.edu/~taeyoung (p.5–6).
 - **MOTAR's torque law omits the J(…) feed-forward term of Eq. (13)** [code: `compute_body_torque` in `base_lee_controller.py`]. It keeps Ω × JΩ and uses the yaw rate via Euler-rate → body-rate conversion. Aerial Gym Eq. (3) also omits the term (Aerial Gym p.3).
 - **Useful runtime monitors:**
   - Ψ(R, R_d) = ½ tr(I − R_dᵀR), logged per step. Ψ < 1 is the Prop. 2 regime.
-  - ‖e_Ω‖² vs (2/λ_min(J)) k_R (1 − Ψ), Eq. (27).
+  - ‖e_Ω‖² vs (2/λ_min(J)) k_R (1 − Ψ), Eq. (27). [CORRECTED: original CDC p.4 Eqs.(18),(27),(29) use lambda_max(J); old arXiv transcription must not supply a runtime stability bound.]
   - commanded-force norm > 0, Eq. (15).
   - bounded desired acceleration, Eq. (16), which the speed governor should enforce.
   - These can gate BOIA fallback execution: a fallback brake is only "trackable" when they hold.
@@ -247,6 +260,33 @@ None given. Animations at http://my.fit.edu/~taeyoung (p.5–6).
 ### BOIA novelty overlap
 - **(a) No. (b) No. (c) No.**
 - **(d) No direct overlap.** It only supplies the conditions under which a fallback reference is trackable. Region-of-attraction bounds: Eqs. (17)–(18), (20), (27) (p.3–4).
+
+#### 2026-10-19 original-copy re-read (Codex)
+
+- **Original:** `/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/논문/Geometric Tracking Control of a Quadrotor UAV on SE(3).pdf`; SHA-256 `a664bdd644e82db8`; 6 physical PDF pages. Previous-public-copy SHA is **different**.
+- **Read coverage:** physical pp.1,2,3,4,5,6; **FULL_READ** (full reread of six-page original CDC2010 copy including examples and references; earlier eight-page arXiv copy remains historical). No source code was executed and no result was reproduced.
+
+- **Original metadata:** Taeyoung Lee, Melvin Leok, N. Harris McClamroch; 49th IEEE Conference on Decision and Control, Atlanta,15–17December2010; printed pp.5420–5425 correspond to physical pp.1–6. The six-page paper sends all proofs to reference[20], the eight-page arXiv:1003.2005v1 (p.3); the proofs are not in this original.
+- **Signs/model — confirmed:** p.1 body b3 points down, thrust opposite it; p.2 Eqs.(2)–(5) give `xdot=v`, `m vdot=m g e3-f R e3`, `Rdot=R hat(Omega)`, `J Omegadot+Omega cross J Omega=M`. Rotor thrust/moment are directly commanded, with no motor dynamics/saturation. p.2 says rotors1/3 clockwise and2/4 counterclockwise; the earlier arXiv prose is not the source for this original's direction convention.
+- **Errors and desired orientation:** p.3 Eqs.(6)/(7) `ex=x-xd`, `ev=v-vd`; Eq.(8) `Psi=tr(I-Rd^T R)/2`; Eqs.(10)/(11) `eR=vee(Rd^T R-R^T Rd)/2`, `eOmega=Omega-R^T Rd Omega_d`. Unlike the earlier v1 shorthand, p.2 and p.3 explicitly project b1d into the plane normal to b3d: normalized `b2d=(b3d cross b1d)/||...||`, `Rd=[b2d cross b3d,b2d,b3d]`. Nonparallel axes are required.
+
+| Quantity | Earlier arXiv equation | Original CDC equation / physical page |
+|---|---|---|
+| Dynamics | (2)–(5) | (2)–(5), p.2 |
+| ex, ev, Psi, eR, eOmega | (6)–(11) | (6)–(11), p.3 |
+| Thrust f | (12) | **(15), p.3** |
+| Moment M with angular feedforward | (13) | **(16), p.3** |
+| Desired b3d | (14) | **(12), p.3** |
+| Nonzero desired force | (15) | **(13), p.3** |
+| Bounded desired acceleration/gravity term | (16) | **(14), p.3** |
+| Propositions/gain conditions | (17)–(29) | (17)–(29), **p.4** |
+
+- **Control:** write `A=-kx ex-kv ev-mg e3+m xdd_d`; original Eq.(12) `b3d=-A/||A||`, Eq.(15) `f=-A dot R e3`, Eq.(16) `M=-kR eR-kOmega eOmega+Omega cross J Omega-J(hat(Omega) R^T Rd Omega_d-R^T Rd Omegadot_d)`. Eq.(13) requires `||A||!=0`; Eq.(14) requires bounded `||-mg e3+m xdd_d||<B`. The thrust projection is integral to the stability argument, not an optional interchangeable detail.
+- **Stability — confirmed with full conditions:** p.4 Prop.1 requires `Psi(0)<2` **and** Eq.(18) `||eOmega(0)||^2 < 2 kR(2-Psi(0))/lambda_max(J)`. Prop.2 complete-system exponential stability requires `Psi(0)<=psi1<1`, gain conditions Eqs.(24)–(26), and Eq.(27) `||eOmega(0)||^2 < 2 kR(1-Psi(0))/lambda_max(J)`. Thus '<90deg' alone is insufficient. Prop.3 with `1<=Psi(0)<2` plus Eq.(29) angular-rate bound and Prop.2 design gives exponential **attractiveness**, not global exponential stability. The denominator is **lambda_max(J)** in original Eqs.(18),(27),(29), not lambda_min.
+- **Inputs/cost/validation:** exact full state/parameters and differentiable reference; no perception, map, target-belief training or GT-boundary experiment. Outputs direct f/M/individual rotor thrust. p.5 numerical helix and178deg recovery, figures p.6; no real-flight claim, compute/hardware latency or trained model size. Animation URL `http://my.fit.edu/~taeyoung` (p.6 figure captions); no implementation or weights URL.
+- **MOTAR comparison:** M2 §4 source audit reports ENU/+b3 thrust,45deg desired tilt clipping, `T=f_z/b3_z` compensation and omitted angular feedforward. These are departures from CDC Eq.(15)/(16), so the ideal Lee stability proof cannot be cited as a guarantee for FrozenPolicyF/BOIA. No production code is changed. The M2 verbal Lee-force expression is also historically sign-inconsistent with this original; the authoritative A/f expression above resolves it. That source-attribution correction does not change M2's correctly read MOTAR velocity law or BOIA's stated surrogate rollout.
+- **BOIA overlap:** (a) **no**, (b) **no**, (c) **no**, (d) **no direct backup/terminal-first algorithm**, (e) **no**. It supplies conditional trackability context only. Any dynamic safety claim still needs G5 qualification of the actual controller and braking envelope.
+
 
 ---
 
@@ -286,7 +326,7 @@ A parallel GPU simulator for arbitrary multirotors with a control suite at many 
   - χ = [cos Φ_d, sin Φ_d, 0]ᵀ, b_2c = (b_3c × χ)/‖·‖, R_d = [b_2c × b_3c; b_2c; b_3c] (p.4).
   - Modes: velocity control sets e_x = 0 and ẍ_d = 0; acceleration control sets e_x = e_v = 0; position control sets e_v = 0 and ẍ_d = 0 (p.4).
   - e3 is "a unit vector in the z-direction". The sign of e_x is not defined in the paper.
-  - [observed] **Sign inconsistency in print.** With ENU and z up, Eq. (4) is consistent only if e_x = x_d − x. The −m ẍ_d term then has the wrong sign for an acceleration feed-forward. Eq. (5) is Lee's NED Eq. (14) copied verbatim.
+  - [observed] **Sign inconsistency in print.** With ENU and z up, Eq. (4) is consistent only if e_x = x_d − x. The −m ẍ_d term then has the wrong sign for an acceleration feed-forward. Eq. (5) is Lee's NED Eq. (14) copied verbatim. [CORRECTED: original pp.3–4 indeed print negative acceleration feedforward, but physical inconsistency is conditional on ENU/error conventions; the PDF alone does not establish a production bug.]
   - [code] The MOTAR velocity controller uses e = setpoint − current and accel_cmd = K_pos e_x + K_vel e_v. In velocity mode there is no ẍ_d term, so the printed −mẍ_d sign does not bite there. **Verify the acceleration-control mode separately.**
 - **Body-wrench control:** W = B U and U_ref = B⁺ W_ref (pseudoinverse), Eqs. (6)–(7).
   - "suboptimal for systems with input constraints". That is, **no saturation-aware allocation** (p.4).
@@ -371,6 +411,21 @@ This is the MOTAR substrate. What must be validated:
 ### BOIA novelty overlap
 - **(a) No. (b) No. (d) No.**
 - **(c) No.** It provides only the action interface v_ref + Ω_z^ref in the vehicle frame (p.6). Arbitration must sit between the policy and this controller.
+
+#### 2026-10-19 original-copy re-read (Codex)
+
+- **Original:** `/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/논문/Aerial Gym Simulator A Framework for Highly Parallelized.pdf`; SHA-256 `5c73cafa8c22f042`; 8 physical PDF pages. Previous-public-copy SHA is **identical**.
+- **Read coverage:** physical pp.1,2,3,4,5,6,7; **FULL_READ** (retained earlier FULL_READ of identical copy; equations plus mandatory timing/mesh/sign questions checked this pass). No source code was executed and no result was reproduced.
+- **Equation spot checks:** p.3 Eq.(4); p.5 Eq.(10); p.4 Eq.(8). The sampling rule uses a local `random.Random` seeded from this PDF SHA; mandatory checks below are additional.
+
+- **Original metadata:** Mihir Kulkarni, Welf Rehberg, Kostas Alexis; RA-L preprint accepted February2025, arXiv:2503.01471v1 stamp3March2025 (p.1). Simulator methods and benchmarks are not automatically MOTAR qualification.
+- **Physics timestep question — confirmed:** pp.1–8 do not specify a global physics dt/substeps. p.7 explicitly states **0.01s control timestep** for the motor-policy example and250Hz hardware inference. This is not evidence that every simulation experiment uses a0.01s physics integrator. M2's actual source-config/receipt evidence remains necessary.
+- **Eq.(4)/(5) sign question — printed negative, physical interpretation conditional:** p.3 Eq.(4) prints `(kx ex+kv ev+mg e3-m xdd_d) dot R e3`; p.4 Eq.(5) outer-minus form yields the same direction proportional to `kx ex+kv ev+mg e3-m xdd_d`. The negative acceleration term is unambiguous in print. With MOTAR's ENU,+body-z thrust and setpoint-minus-current errors, a nonzero desired acceleration would require the opposite feedforward sign. However, the paper does not fully define ex/ev signs or inertial gravity-axis orientation, and the formula algebra is consistent with the original Lee downward-e3 convention. Therefore **a production sign bug is NOT established by the PDF alone**. In p.4 velocity mode `xdd_d=0`, so this issue has no direct effect on FrozenPolicyF's velocity interface or BOIA v1. Acceleration-mode sign remains a separate source/physics validation task, not executed here.
+- **Mesh question — confirmed with scope:** p.4 introduces per-env base meshes/transforms/BVH but explicitly says expensive transforms are performed exclusively for randomization of **static environments**. pp.5–6 also advertise runtime modification of individual env meshes. These capability statements do not demonstrate same-step dynamic-target freshness or cross-env reset isolation; MOTAR's independent ISO evidence supplies that qualification.
+- **Other equation checks:** p.3 Eqs.(1)–(3) omit Lee angular-feedforward; p.4 Eqs.(6)–(7) use unconstrained pseudoinverse allocation; Eqs.(8)–(9) model first-order RPM response with separate rise/fall constants. p.4 distinguishes optical-plane camera depth from radial LiDAR range. Those semantics matter to BOIA's geometry; do not interchange them.
+- **Online/training/logic/cost:** p.2 GTD shares simulator state internally; this is not permission to expose GT to a new online supervisor. p.6 state-based setpoint tasks use full robot state, navigation uses depth features; p.7 motor-control deployment uses Qualisys pose. Those are different task contracts, not proof of MOTAR target identity realism. No recovery/expiry/termination supervisor is specified. p.5 benchmark uses ThreadripperPro3975WX/RTX3090; p.6 TableII rendering is scene/resolution/env-count-specific, not a BOIA5ms guarantee. Source: https://github.com/ntnu-arl/aerial_gym_simulator (pp.1,7); no BOIA weights exist.
+- **BOIA overlap:** (a) **no**, (b) **no**, (c) **no**, (d) **no**, (e) **no**. Relevant as simulator/control/sensor context only; current RGB-D+LiDAR contract remains unchanged.
+
 
 ---
 
@@ -466,6 +521,34 @@ https://github.com/ZJU-FAST-Lab/ego-planner (footnote, p.2). Video https://youtu
 - **(c) No.**
 - **(d) No.** No fallback. The only safety measure is the post-optimisation pipe check (p.6).
 
+#### 2026-10-19 original-copy re-read (Codex)
+
+- **Original:** `/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/논문/EGO-Planner An ESDF-Free Gradient-Based.pdf`; SHA-256 `0d316681d1ae9ecd`; 8 physical PDF pages. Previous-public-copy SHA is **different**.
+- **Read coverage:** physical pp.1,2,3,4,5,6,7,8; **FULL_READ** (full original final RA-L copy reread; duplicate original has identical SHA and remains preserved; rendered p.6 tables). No source code was executed and no result was reproduced.
+
+- **Original identity:** Xin Zhou, Zhepei Wang, Hongkai Ye, Chao Xu, Fei Gao; IEEE RA-L6(2),April2021,pp.478–485, DOI10.1109/LRA.2020.3047728 (p.1). Both user EGO-Planner filenames have SHA `0d316681d1ae9ecd22a589f6b3e7e8c1b93b3d66a1f309d2a6b0e2686f88b7c7`; this normal filename is representative and the `(1)` duplicate is retained. The earlier arXiv v2 SHA differs.
+- **Collision/mapping:** p.2 Eq.(1) `d_ij=(Q_i-p_ij) dot v_ij`, with per-control-point anchor/direction pairs found from a collision-free A* guide. p.3 only newly relevant obstacles are added; this is an on-demand obstacle surrogate, not an ESDF or semantic-GT target map.
+- **Feasibility:** p.3 Eq.(2) derivative control points `V=(Q_next-Q)/dt`, then A,J recursively; convex-hull containment gives sufficient per-axis bounds over entire B-spline spans when derivative control points meet those bounds. p.4 Eqs.(8)–(10) enforce limits as weighted soft penalties, so convex-hull theory does not mean every numerical solution automatically meets them. Norm/thrust/tilt/rate feasibility is not implied by per-axis spline bounds.
+
+| Formula | Earlier v2 citation | Original final copy |
+|---|---|---|
+| Anchor distance Eq.(1) | physical p.3 | **p.2 Eq.(1)** |
+| Derivative control points Eq.(2) | p.3 | p.3 Eq.(2) |
+| Objective/costs Eqs.(3)–(6) | p.4 | **p.3 Eqs.(3)–(6)** |
+| Collision gradient/feasibility Eqs.(7)–(10) | p.4 | p.4 Eqs.(7)–(10) |
+| L-BFGS step/update Eqs.(11)–(12) | p.5 | **p.4 Eqs.(11)–(12)** |
+| Initial Hessian Eq.(13) | p.5 | p.5 Eq.(13) |
+| Time scaling Eqs.(14)–(15) | p.5 | p.5 Eqs.(14)–(15), unchanged numbering |
+| Anisotropic fitting Eqs.(16)–(18) | p.5 | p.5 Eqs.(16)–(18) |
+| Tangent Eq.(19)/pipe check | p.6 | p.6 Eq.(19)/unnumbered pipe-check prose |
+
+- **Time allocation and pipe check — confirmed:** p.5 Eq.(14) uses the maximum of velocity ratio, square-root acceleration ratio, cube-root jerk ratio and1 across axes/control points; Eq.(15) scales uniform dt by this ratio. It then refits under feasibility/smoothness/anisotropic shape cost. p.6 separately tests a fixed-radius circular pipe around the **final trajectory** and stops only if no collision is detected. Plain rescaling or endpoint checks are insufficient substitutes for this final geometric check.
+- **Inputs/control/GT:** depth-built occupancy map and own state, fixed/abruptly supplied navigation goals, uniform cubic B-spline reference; no target-tracking or learned frozen-policy interface, no privileged learned training. p.6 uses RealSenseD435 depth with emitter strobing; controller/platform details are delegated to ref[19]. Hardware/CPU model is not explicitly printed in the original implementation section: **NOT_RECORDED in this PDF**, rather than inferred from a related platform.
+- **Cost/experiments:** p.6 TableI,100 randomized maps, L-BFGS success0.89 and average optimizer time0.37ms; TableII total EGO0.37ms vs EI5.55ms, but failures are excluded from successful-case timing as stated p.6. No runtime bound or MOTAR comparison follows. p.7 reports indoor3.56m/s and sub1m passage. p.8 explicitly limits design to static environments; '<0.5m/s moving obstacles' is empirical tolerance, not a dynamic-obstacle safety theorem. Stated limitations are A*-induced local minima and conservative unified reallocation.
+- **Code/weights:** https://github.com/ZJU-FAST-Lab/ego-planner (p.2), video https://youtu.be/UKoaGW7t7Dk (p.7); no learned weights.
+- **BOIA overlap:** (a) **no**; (b) **partial** (feasible trajectory optimization and post-check, pp.3–6); (c) **no**; (d) **no** (no preserved terminal-stopping backup or task termination handling); (e) **no**. Useful feasibility inspiration, not proof that BOIA's first-order rollout matches its real controller.
+
+
 ---
 
 ## 5. Adaptive Tracking and Perching for Quadrotor in Dynamic Scenarios
@@ -499,7 +582,7 @@ https://github.com/ZJU-FAST-Lab/ego-planner (footnote, p.2). Video https://youtu
 
 ### Visibility metrics (tracking, Sec. IV, p.5–6)
 - **Observation distance (OD):** d_ℓ ≤ δ ≤ d_u separately for horizontal and vertical, Eq. (8).
-  - Penalties in Eq. (9), using g(x) = max(x, 0)³ and the C² smooth L_µ of Eq. (10). The "3" in g's definition is [UNCERTAIN] in the extraction.
+  - Penalties in Eq. (9), using g(x) = max(x, 0)³ and the C² smooth L_µ of Eq. (10). The "3" in g's definition is [UNCERTAIN] in the extraction. [CORRECTED: original p.5 Eq.(9) confirms cubic max(x,0)^3.]
 - **Observation angle (OA):** ψ_e = atan2(e2ᵀ(ϱ−p), e1ᵀ(ϱ−p)), Eq. (11). J_OA = (ψ − ψ_e)², Eq. (12). Gradients in Eqs. (13)–(14).
 - **Elastic occlusion effect (OE):**
   - the "confident FoV" is approximated by M balls along the line of sight: c_i = p + λ_i(ϱ − p), r_i = ρ λ_i ‖p − ϱ‖, λ_i = i/M, Eqs. (15)–(16);
@@ -523,7 +606,7 @@ https://github.com/ZJU-FAST-Lab/ego-planner (footnote, p.2). Video https://youtu
   - The hard relative-velocity condition, Eq. (45), is **relaxed** to p⁽¹⁾(T) = ϱ⁽¹⁾(T) + δ_v(T), with tangential slack ν = [ν_x, ν_y] and J_ν = ‖ν‖², Eqs. (46)–(47).
   - Motivation (Fig. 7, p.8): hard terminal velocity conflicts with the safety and actuator constraints.
   - Attitude alignment: z_b(T) = z_s(T), Eqs. (48)–(49). It is converted to terminal acceleration p⁽²⁾(T) = τ_e z_s(T) − ḡe3, with τ_e = τ_m + τ_r sin(τ_f) keeping the thrust in bounds implicitly, Eq. (50).
-  - Terminal jerk = 0. Collected as z^[s−1](T) = F(ϱ(T)), Eq. (51).
+  - Terminal jerk = 0. Collected as z^{s−1}(T) = F(ϱ(T)), Eq. (51).
 
 ### Front-end and optimiser (Sec. VI, p.9–11)
 - **Alg. 1 (p.9), occlusion-aware greedy viewpoint search:**
@@ -547,7 +630,7 @@ https://github.com/ZJU-FAST-Lab/ego-planner (footnote, p.2). Video https://youtu
   - **Tracking sim (Table I, p.12):**
     - drone v_max 3.0 m/s, a_max 6.0 m/s²; target 1.5 m/s, 2.0 m/s²;
     - ‖ω_max‖ 3.0 rad/s; FoV 80°×65°; 640×480; tracking distance 5.5 m.
-  - **Computation (Table II, p.12):** Ours t_path 0.96 + t_opt 1.85 = 2.81 ms; Elastic 3.58 ms; Fast 9.94 ms; Jeon's 14.32 ms [UNCERTAIN: Jeon's sum 11.32 + 3.20 ≠ 14.32 as extracted].
+  - **Computation (Table II, p.12):** Ours t_path 0.96 + t_opt 1.85 = 2.81 ms; Elastic 3.58 ms; Fast 9.94 ms; Jeon's 14.32 ms [UNCERTAIN: Jeon's sum 11.32 + 3.20 ≠ 14.32 as extracted]. [CORRECTED: rendered original p.12 TableII confirms all three printed values; this is a source arithmetic inconsistency.]
   - **Occlusion threshold:** D_occ = 0.3 m (Fig. 11, p.13). Obstacle spacings 6 / 5 / 4 m for sparse / medium / dense (p.12).
   - **Perching sim (Table III, p.13):** τ_min 5.0, τ_max 17.0 m/s², ‖ω_max‖ 3.0 rad/s.
   - **Perching computation (Table IV, p.13):** ours 3.76 / 4.31 / 16.68 ms at 30° / 60° / 90°; Paneque 239.59 / 308.05 / 208.81 ms.
@@ -598,6 +681,21 @@ No repository URL found in pp.1–18. Videos: youtu.be/5XKm7qkp2Xs and youtu.be/
 - **(c) No.**
 - **(d) Partly.** Terminal handling via flexible terminal adjustment and relaxation (Eqs. (43)–(51), p.8–9). There is no safe fallback trajectory.
 
+#### 2026-10-19 original-copy re-read (Codex)
+
+- **Original:** `/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/논문/Adaptive Tracking and Perching for Quadrotor.pdf`; SHA-256 `d22709ab18b007b6`; 20 physical PDF pages. Previous-public-copy SHA is **identical**.
+- **Read coverage:** physical pp.1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20; **FULL_READ** (full original copy reread including previously unfinished pp.19–20; identical SHA to earlier public copy; rendered pp.8/12). No source code was executed and no result was reproduced.
+
+- **Metadata:** Yuman Gao, Jialin Ji, Qianhao Wang, Rui Jin, Yi Lin, Zhimeng Shang, Yanjun Cao, Shaojie Shen, Chao Xu, Fei Gao; this copy is arXiv:2312.11866v2,18January2024 (p.1), not a journal typeset copy. All20physical pages were read. pp.19–20 finish Fig.21, references[16]–[52], and author biographies; there is no hidden algorithm appendix or new controller proof there.
+- **Assumptions/inputs:** p.3 target measurements fuse visual tags with cooperative differential-GPS relative localization; pp.4–5 CTRV EKF and collision-aware CTRA primitives give deterministic future target states. The ESDF map and onboard own-state estimates feed flat-output planning; there is no calibrated target-belief detection-probability model or learned-policy training. Real deployment p.16 retains DJI localization/mapping and uses front/down cameras/tags, with cooperative coarse localization. These are not MOTAR's noncooperative RGB-D+LiDAR measurement contract.
+- **LOS ball chain — confirmed original numbering:** p.6 Eq.(15) `c_i=p+lambda_i(rho_target-p)`; Eq.(16) `r_i=rho lambda_i ||p-rho_target||`; Eq.(17) `r_i<Xi(c_i)`; Eq.(18a/b) `J_OE=sum g(r_i-Xi(c_i))`; Eq.(19) supplies the p-gradient. The cone/ball volume criterion is a deterministic visibility margin, not the probability of a partial silhouette or detector output. p.5 Eq.(9) uses `g(x)=max(x,0)^3`; the cubic exponent is confirmed. Eq.(10) separately smooths the far-distance linear penalty.
+- **Terminal relaxation — confirmed:** p.8 Eq.(43) aligns position with the moving plane; Eq.(44) yaw; Eq.(45) hard relative velocity includes normal approach `-vbar_n z_s`. Eq.(46a/b) adds tangential velocity components `nu_x x_s+nu_y y_s`, while keeping the normal approach; Eq.(47) penalizes `||nu||^2`; Eq.(48) aligns body-z/plane normal. p.9 Eqs.(49)/(50) convert this to final acceleration and bound terminal thrust with `tau_e=tau_m+tau_r sin(tau_f)`. This is terminal *state optimization*, not simulator capture/termination ordering and not a braking backup.
+- **Printed issue beyond historical extraction uncertainty:** rendered p.8 Eq.(40) prints `||omega_xy||^2=omega_x^2+omega_y^2=||zdot_b||` with no square on the last norm. For a unit body-z vector, the physically consistent relation is `||omega_xy||^2=||zdot_b||^2`; the printed final term is dimensionally inconsistent. Eqs.(41)–(42) define `zdot_b=f_DN(tau) p^(3)` correctly as a rate. This is an apparent paper typo, not a reproduced implementation error, and BOIA v1 does not implement this perching constraint.
+- **Guarantee/cost/experiments:** p.10 replaces inequalities by sampled penalties plus a fast post-optimization safety/feasibility check, so do not elevate all continuous constraints into a formal robust guarantee. pp.11–13 simulation uses i5-9400F and GTX2060; p.12 TableII ours0.96+1.85=2.81ms. The same rendered table actually prints Jeon's11.32+3.20=14.32ms: the total is arithmetically inconsistent and must remain a flagged source issue, not 'corrected' to invented data. p.16 onboard MAVIC3 replans20Hz on a platform described as8x slower; this is not a measured RTX3070 BOIA budget. pp.17–19 perching errors/trajectory plots remain system-level cooperative experiments, not MOTAR recovery evidence.
+- **Transitions/limitations/URLs:** p.16 perching begins on an **external order**. p.17 cites perception/link delay and tracking error as perching-error sources. No explicit blind long-loss search, identity clock, safe fallback or terminal-first capture rule is defined. Videos at https://youtu.be/5XKm7qkp2Xs and https://youtu.be/fBwW93Zq9ss (p.1); no repository/weights URL is printed in pp.1–20. Observed limitations: cooperative target localization, ESDF dependence and deterministic extrapolation; distinguish these from author-stated latency issues.
+- **BOIA overlap:** (a) **partial** (deterministic future LOS/FOV, no probabilistic belief forecast); (b) **partial** (greedy finite front-end plus continuous MINCO, pp.9–11); (c) **no**; (d) **partial only for terminal-boundary relaxation**, no fallback/terminal-first ordering; (e) **partial at task level** (safe moving-platform rendezvous/perching endpoints), no post-occlusion two-second competing-risk evaluation. No change to 07–09 or production is applied.
+
+
 ---
 
 ## Checks MOTAR must run (derived from these papers)
@@ -621,7 +719,7 @@ Each check names its source and a pass criterion. [code] references are to `/hom
    - The Lee Eq. (13) feed-forward −J(Ω̂RᵀR_dΩ_d − RᵀR_dΩ̇_d) is omitted ([code] `compute_body_torque`; Aerial Gym Eq. (3)). Quantify the yaw-tracking error that results.
 5. **Lee regime monitors per physics step.** Log:
    - Ψ = ½ tr(I − R_dᵀR);
-   - ‖e_Ω‖² vs (2/λ_min(J)) k_R (1 − Ψ) (Eq. (27));
+   - ‖e_Ω‖² vs (2/λ_min(J)) k_R (1 − Ψ) (Eq. (27)); [CORRECTED: original CDC p.4 Eqs.(18),(27),(29) use lambda_max(J); old arXiv transcription must not supply a runtime stability bound.]
    - the commanded-force norm (Eq. (15) requires > 0).
    - Report the fraction of steps with Ψ ≥ 1 (outside the Prop. 2 regime) and with Ψ ≥ 2 − ε.
    - Pass: Ψ < 1 on ≥ 99.9% of non-collision steps, and the fallback brake executes only while Ψ < 1.

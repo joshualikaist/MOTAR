@@ -21961,3 +21961,34 @@ ActualquotadeadlineUNKNOWN, conservativewrapup05:03KST; nextsession mustreview, 
   10 working notes and the M3 scripts); `docs/ROADMAP.md` M7.
 - **Next.** The user's decision on G4-U1, the CPU geometry and visibility kernel
   (`12_next_approval.md`). No push.
+
+## 2026-10-19 — G1-R supplied originals read; CPU U1–U7 authority recorded
+
+Base a4472d81; user G1-R/G4 CPU-only approval in D-2026-10-19-3. Startup7.975GB was stopped
+under the attachment8GB floor; user freedspace and amended the stop to3GB; resume9.548GB.
+No agent data deletion, backup/bundle, simulator/GPU, PPO, productionedit or remoteaction.
+
+| Paper population | Unique papers | Pages | CumulativeFULL_READ | Scope now |
+| --- | ---: | ---: | ---: | --- |
+| Original25 |25|319|25|11newfulloriginalreads +14identicalpriorFULLspotchecks|
+| Extra4 |4|33|4|4newfullreads|
+| Files |30|360|29unique|EGOduplicate8pages retained, sameSHA|
+
+Manifestv2: original19samebytes/6nowread;24inventorymatches, YOPOinventorySHAnull; no mismatch.
+Bothv1manifests preserved, bothv2copies identical; PDF30/30SHAunchanged. CODE_VERIFIED0/REPRODUCED0.
+YOPOoriginal -J/highscore differs from auditedYOPO-Simple +J/argmin. OCTrackCADB meanslayerdepth,
+notmetricdepth; no calibratedpdet. PRIMER pp2–3 establishes learnedplanreject/priorfallback, so
+broadarbitrationnovelty NOT_NOVEL_ENOUGH. Narrowexpectedadvantage/hysteresis FrozenF remains
+CANDIDATE_CONTRIBUTION_UNVERIFIED; G1bopen. PPTrackeronlineGTinitialboxes mustnotenterBOIA.
+BPODindependence explicit, biasnotuniversallyoptimistic; UASTEq13product/Rnormalizationconfirmed.
+LeeCDCmap corrected; ORmaskcomplement remainsinternalinconsistency; suspectunusedsourceformulas
+notported. Conclusion13 MINOR_ADJUSTMENTS_PROPOSED,07–09equations/defaultsunmodified.
+Defaulttau_v.4 scalarbraking3.52m/s error12.56%:10%targetNOT_MET,25%hardfailureNOT_TRIGGERED;
+retainprior andreportlimitation, no calibration/tuning. Barpool40distinctURDFs needsdeclaredprior.
+
+PublicdocsPASS, researchlinksPASS, canonical25/25 +branch4/4PASS, JSON/count/copy/PDFchecksPASS.
+G1-R evidence: docs/research/occlusion_algorithm_v1/{paper_manifest,reading_receipts,g1r_validation}.json,
+notesP1–P6,13_design_deltas.md. Fiveproposalissues recordedin13; G1-Rmotar-3p3.7 closesaftercommit.
+Next: approvedCPUU1–U7 sequentialunits (motar-3p3.5.1–.7), testsbeforeeachlocalcommit; U3/U5/U7
+PUBLIC_CPU compareexisting4errors. G5rawcalibration/simulator/GPU remainunapproved; nopush/merge.
+Sessionstart13:38KST, actualquotadeadlineUNKNOWN, conservativewrapup17:38KST; preservehandoff.

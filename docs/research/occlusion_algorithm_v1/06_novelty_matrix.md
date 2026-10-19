@@ -1,10 +1,10 @@
 # 06 — Prior-art overlap and novelty
 
-**Basis.** The 23 readable papers ([01](01_paper_audit.md)), the 11 audited repositories
+**Basis.** The 29 original-copy papers ([01](01_paper_audit.md)), the 11 audited repositories
 ([03](03_code_audit.md)) and MOTAR's own H-R3 work.
 
 **What counts as "covered".** An element is marked covered only where a page or code reference
-supports it; the references are in the notes. **Absence from these 23 papers is not evidence of
+supports it; the references are in the notes. **Absence from these29 papers is not evidence of
 novelty in the wider literature** (see §3).
 
 ## 1. Matrix
@@ -42,7 +42,13 @@ Column key:
 | PA Unknown/Feature-limited | Navigation, feature visibility | Depth | Online | — | LOS raycast | Count thresholds | Viewpoint graph | — | — | — | — |
 | Lee SE(3), Aerial Gym | Control / simulator substrate | — | — | — | — | — | — | — | — | — | — |
 | MOTAR H-R3 arms | Re-observation after loss | RGB-D + LiDAR | Raw LiDAR | MOTAR tracker | Deterministic LOS-clear offset | No | 17 offsets | Capture recorded | Event-triggered window | Shared filter | No (firewalled) |
-| **BOIA (proposed)** | **Crash-and-capture under occlusion** for a frozen RL interceptor | RGB-D + LiDAR | Sensed points, unknown ≠ free | MOTAR KF with an expected-covariance forecast | **Joint Monte Carlo** P_det over the horizon, from the same samples | **Yes**, p_det(size, visible fraction), stress-tested | ~26 rolled-out commands, **Policy F's own included** | **Yes**: capture progress in J, terminal-first | **Calibrated advantage over a frozen policy + hysteresis + dwell** | **Stopping-feasible screen + SAFE_HOLD** | No (whitelist + firewall test) |
+| YOPO original (P3 §6) | Goal navigation | Depth + state | ESDF only in training | — | Trajectory collision cost | None |15anchors | No | No | No | Privileged map training |
+| OCTrack (P5 §4) | Passive visual tracking | RGB | — | Template features | COM training masks | Uncalibrated score | — | No | No | No | Ground-truth labels in training/evaluation |
+| EGO-Swarm (P6 §1) | Multi-UAV navigation | Depth + neighbor state | Occupancy | Neighbor motion | No target visibility | No | Local optimization | Goal only | No | Planning checks | Neighbor broadcasts |
+| PPTracker (P6 §2) | Multi-target UAV-image tracking | RGB + initial boxes | — | Prior tracks | Structured crowd/occlusion features | Uncalibrated | — | No | No | No | First-frame GT boxes online |
+| PRIMER (P6 §3) | Multi-agent learned navigation | Depth + neighbors | Local sensor model | Neighbor trajectories | FOV awareness, no explicit LOS forecast | No | Learned trajectories | Goal only | Safety accept/reject | Prior committed trajectory | Expert training state |
+| Similarity-Guided ViT (P6 §4) | Passive UAV visual tracking | RGB | — | Template tracking | Layer adaptation, no future LOS forecast | Not calibrated for BOIA | Layer routing | No | No | No | Dataset annotations |
+| **BOIA (proposed)** | **Crash-and-capture under occlusion** for a frozen RL interceptor | RGB-D + LiDAR | Sensed points, unknown ≠ free | MOTAR KF with an expected-covariance forecast | **Joint Monte Carlo** P_det over the horizon, from the same samples | **Yes**, p_det(size) and centre-ray LOS in v1; detector stress unvalidated | 20 rolled-out commands, **Policy F's own included** | **Yes**: capture progress in J, terminal-first | **Calibrated advantage over a frozen policy + hysteresis + dwell** | **Stopping-feasible screen + SAFE_HOLD** | No (whitelist + firewall test) |
 
 ## 2. Element-wise overlap of BOIA
 
@@ -51,9 +57,9 @@ Column key:
 | (a) Belief-conditioned probability of future detection, FOV × LOS | BPOD Eq.9/15 (p.3–4) | **Not new.** Only these changes are new for the MOTAR setting: the joint Monte Carlo over correlated bars instead of the independence product, the 3D-from-2D bar geometry from sensed points instead of a known map, and the detector-reliability factor |
 | (a′) Expected covariance under forecast detection | BPOD Eq.11d (p.3) | **Not new.** Reused as published |
 | (b) Finite candidate set with rollout scoring | UAST V×H grid (p.5); YOPO 5×3 lattice | **Not new.** New only for MOTAR: Policy F's own command as a candidate, the cost mixing capture progress with loss probability and covariance, and rollout through the measured governor and response model |
-| (c) Arbitration over a frozen RL policy by calibrated expected advantage, with hysteresis and dwell | NavRL++ (safety-only override); OA-VAT (rule switch) | **Not found in the 23 papers.** Candidate contribution, pending §3 |
+| (c) Arbitration over a frozen RL policy by calibrated expected advantage, with hysteresis and dwell | NavRL++ (safety-only override); OA-VAT (rule switch) | **CANDIDATE_CONTRIBUTION_UNVERIFIED.** Generic safety arbitration is covered by PRIMER; narrower calibrated advantage/dwell still pending §3 |
 | (d) Stopping-feasible safety screen + safe hold + terminal-first | FASTER (backup); NavRL++ (stop); Deep-PANTHER (keep plan) | **Not new** as a fallback. Its *coupling* to an occlusion-risk arbitration and the terminal-first handling are integration details, not a contribution |
-| (e) Mission-level evaluation: crash within 2 s after occlusion onset as a competing risk, plus capture guards | None of the 23 (they report tracking success or visibility) | Candidate contribution (evaluation methodology) |
+| (e) Mission-level evaluation: crash within 2 s after occlusion onset as a competing risk, plus capture guards | None of the29 (they report tracking success or visibility) | Candidate contribution (evaluation methodology) |
 | (f) Detector-realism stress (oracle against perturbed detector) as a factor | NavRL++ trains with dropouts; ORTrack masks occlusions | Methodological necessity, not a contribution |
 
 **Honest contribution statement, provisional.** A **minimally invasive arbitration layer** over a
@@ -84,3 +90,14 @@ read in this pass:
 
 Checking these is a separate task: Beads issue `motar-3p3.6` (G1b), "read-only literature check
 before any novelty claim". Until it closes, element (c) stays **CANDIDATE_CONTRIBUTION_UNVERIFIED**.
+
+## G1-R novelty correction
+
+Original25+four extras are now read; see [01](01_paper_audit.md) for fresh-read versus retained
+identical-copy FULL_READ scope. PRIMER pp.2–3 is direct prior art for learned trajectories followed
+by safety rejection and reuse of a committed trajectory. Therefore **generic learned-policy plus
+fallback is NOT_NOVEL_ENOUGH**. PARM* is the training expert, not a demonstrated online calibrated
+expert/learner advantage switch. The narrower FrozenF/expected-advantage/hysteresis combination
+remains **CANDIDATE_CONTRIBUTION_UNVERIFIED**, not proved novel by absence here. Outside-set G1b
+remains open; four added papers do not close the shield/CBF/runtime-assurance/residual-policy audit.
+Mission-level evaluation is also only a candidate contribution. No new performance is established.

@@ -105,7 +105,7 @@ BOIA concept components: (a) a belief-conditioned forecast of future detection p
 
 ### MOTAR relevance
 - **Reusable:**
-  - The confidence→measurement-noise sigmoid (Eq. 9) can go straight into the MOTAR Kalman tracker (detector score → R).
+  - The confidence→measurement-noise sigmoid (Eq. 9) can go straight into the MOTAR Kalman tracker (detector score → R). [CORRECTED: original p.4 defines an image-plane empirical covariance map, not a drop-in calibrated world-frame MOTAR law; separate calibration required.]
   - The Algorithm 1 gating pattern: drop the measurement when confidence < η_c and keep predicting.
   - The general idea of conditioning a recovery behaviour on the **predicted target state** rather than on appearance.
   - The prototype+EMA re-ID would matter only if MOTAR has look-alike distractors. With vertical bars as the clutter, identity confusion is probably secondary (observed).
@@ -122,6 +122,44 @@ BOIA concept components: (a) a belief-conditioned forecast of future detection p
 - (d) Safe fallback + terminal-first: **No.** There is no explicit safety fallback or terminal handling. Collision-freeness comes only from the A*-labelled training data (p5).
 
 ---
+
+
+#### 2026-10-19 original-copy re-read (Codex)
+
+**Original now checked:** `/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/논문/Instance-level Visual Active Tracking with Occlusion-Aware Planning.pdf`; SHA-256 `359b64b75bc57720f2767bd917c1ee2b6bf5ec7bbfa0252f490051f613b35a7d`; 15 physical pages. The full SHA matches the previous read-copy manifest. **Status: FULL_READ retained**, not a new all-page read: the previous identical-copy pp.1–15 full-read record above remains the basis. This session re-read pp.3–5 and p.13, with p.4 image verification, to check a reproducible equation sample and the requested switching question.
+
+**Printed identity:** *Instance-level Visual Active Tracking with Occlusion-Aware Planning*, Haowei Sun,
+Kai Zhou, Hao Gao, Shiteng Zhang, Jinwu Hu, Xutao Wen, Qixiang Ye, Mingkui Tan;
+arXiv:2604.21453v1,23April2026(p.1); own Table1p.6 says CVPR2026, not an independent venue audit.
+
+Random equation sample uses `random.Random(20261019)`, ordered paper pools in the session receipt:
+
+| Check | Original | Result |
+|---|---|---|
+| Eq.(4) cosine prototype/candidate similarity | p.4 | CONFIRMED: normalized dot product, not a calibrated identity probability |
+| Eq.(8) KF gain | p.4 | CONFIRMED: `P⁻Hᵀ(HP⁻Hᵀ+R_t)⁻¹` |
+| Eq.(12) prototype separation inequality | p.5 | CONFIRMED: minimum squared-distance inequality, conditional on manifold assumptions; not an unconditional identity guarantee |
+| Required Eq.(9) | p.4, image checked | CONFIRMED: `R_t=σ²(c_t)I`, `σ²(c)=1/(1+exp(λ(c−γ)))`; decreases with confidence |
+| Planner switch | p.4 vs p.5 | CONFIRMED INCONSISTENCY: p.4 requires no measurement for “many consecutive frames”; p.5 says unreliable `c_t<η_c`; no exact missing-frame count/η_c resolves the difference |
+
+The pipeline/assumptions in this section remain: RGB+reference-image instance prototype/segmentation →
+ORTrack → confidence-weighted image-plane KF → diffusion recovery trajectory; no online scene map,
+depth or LiDAR (pp.3–5). Planning-20k uses an occupancy map/A* and known target boxes for **offline
+supervision**, not online GT (p.4Fig.3,p.5). The planner's numeric horizon/denoising deployment contract
+and terminal-first/safe-stop logic are not supplied. λ=15,γ=0.4 and the η_s=0.5/EMAβ=0.8 details remain
+p.13 sources; they are not MOTAR-calibrated parameters. Existing35FPS/584M/15h figures retain their
+original own-paper contexts/pages above; no8GB deployment or MOTAR comparison was run.
+
+**Correction/limits:** confidence-to-covariance is an image-box empirical mapping, with units and
+calibration different from MOTAR's world-frame fused tracker. It must not be copied as a physically
+calibrated covariance law or treated as a future detection probability. The author supplies confidence
+as an uncertainty hypothesis (p.4); the absence of calibrated reliability and a fully specified switch
+is an auditor limitation. URLs remain <https://github.com/SHWplus/OA-VAT> and
+<https://arxiv.org/abs/2604.21453v1>; code/weights were not executed or newly audited.
+
+BOIA(a) **No/adjacent**, (b) **No** for Policy-F candidate scoring, (c) **Partial** rule-based switch
+only, (d) **No**, (e) **No** for collision-competing2s recovery/capture. Novelty is not established by
+these absences. **No §07 formula invalidation found; calibration/switch clarification proposed only.**
 
 ## 2. UAST — "Unified Active Search and Tracking for Arbitrary Targets with UAVs"
 
@@ -184,7 +222,7 @@ BOIA concept components: (a) a belief-conditioned forecast of future detection p
 - Eqs. 7–8 (p5): quintic polynomial and derived commands.
 - Eq. 11 (p6): L_track = λ_a L_occ + λ_f L_fov, evaluated only on the **mid-segment (1/3–2/3 of the horizon)**.
 - Eq. 12 (p6): L_occ = Σ_i Σ_j ReLU(d_voxel − d_ij), with SDF samples d_ij along the ray from trajectory point p_i to the target p_g. This is a differentiable LOS-occlusion penalty.
-- Eq. 13 (p6): L_fov = Σ_i ReLU(|ψ_i−ψ_g|−ψ_fov) · ReLU(|φ_i−φ_g|−φ_fov) [UNCERTAIN: the operator between the two ReLU terms is not legible on the page image; they appear juxtaposed (a product?)]. ψ and φ are the yaw/pitch of the UAV **velocity vector** vs the target direction.
+- Eq. 13 (p6): L_fov = Σ_i ReLU(|ψ_i−ψ_g|−ψ_fov) · ReLU(|φ_i−φ_g|−φ_fov) [UNCERTAIN: the operator between the two ReLU terms is not legible on the page image; they appear juxtaposed (a product?)]. ψ and φ are the yaw/pitch of the UAV **velocity vector** vs the target direction. [CORRECTED: product confirmed on original p.6 Eq.(13), page image checked 2026-10-19.]
 - Eq. 14 (p6): L_goal (length error plus a lateral-deviation term, weighted by ω_p, which grows as the UAV nears the goal).
 - Eq. 15 (p6): L_smooth = Σ_k s_k^T R_s s_k.
 - Eq. 16 (p6): L_safe = ∫_0^T exp(−(d(p(t))−d_0)/β) dt.
@@ -247,7 +285,7 @@ BOIA concept components: (a) a belief-conditioned forecast of future detection p
 - **Reusable in MOTAR without touching the frozen policy:**
   1. Central-box median depth back-projection (Eqs. 2–3) as the 3D measurement for the MOTAR KF.
   2. Innovation gating to reject outlier detections. MOTAR should use the full S, not R (observed).
-  3. The **guidance-point substitution pattern**: feed the KF-predicted or search-generated point to the controller in place of the detection. If the frozen 898-D actor observes a target-relative position, this is a no-retrain "goal rewrite" lever.
+  3. The **guidance-point substitution pattern**: feed the KF-predicted or search-generated point to the controller in place of the detection. If the frozen 898-D actor observes a target-relative position, this is a no-retrain "goal rewrite" lever. [CORRECTED: this is a speculative adaptation, not an approved actor-observation rewrite; BOIA §07 preserves the898-D observation and reads belief only; original UAST pp.4–5 does not establish MOTAR compatibility.]
   4. FOV-swept explored-region bookkeeping plus farthest-unexplored / spiral fallback as a search goal generator.
   5. L_occ/L_fov as a **template for offline labels** of LOS/FOV loss.
 - **Conflicts:**
@@ -266,6 +304,49 @@ BOIA concept components: (a) a belief-conditioned forecast of future detection p
 - (d) Safe fallback + terminal-first: **No / partly.** Safety exists only as a training loss (L_safe, Eq. 16) and the 0.2 m clearance in the success criterion (p7). There is no runtime safety fallback and no terminal handling.
 
 ---
+
+
+#### 2026-10-19 original-copy re-read (Codex)
+
+**Original now checked:** `/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/논문/UAST_Unified_Active_Search_and_Tracking_for_Arbitrary_Targets_with_CVPR_2026_paper.pdf`; SHA-256 `e19a723113bdc7636b1b370c530c8ab6aa33990e33f18563135769cf7b79d5a2`; 10 physical pages. The full SHA matches the previous read-copy manifest. **Status: FULL_READ retained** from the prior identical ten-page read. This session re-read pp.4–8, with p.4/p.6 equation images; no unavailable supplement was claimed read.
+
+**Printed identity:** *UAST: Unified Active Search and Tracking for Arbitrary Targets with UAVs*, Liang
+Qin, Min Wang, Xingyu Lu, Aowen Qiu, Wengang Zhou, Houqiang Li; CVPR Open Access watermark,
+proceedings13464–13473(p.1). Numeric year is not printed on the checked title page; “2026” remains
+source/filename metadata rather than a newly verified printed date.
+
+| Check | Original | Result |
+|---|---|---|
+| Random Eq.(7) | p.5 | CONFIRMED: fifth-order polynomial, six endpoint p/v/a constraints; smoothness alone is not a dynamic-limit proof |
+| Random Eq.(9) | p.5 | CONFIRMED: total trajectory-loss + score-loss objective |
+| Random Eq.(16) | p.6 | CONFIRMED: integral of `exp(−(d(p(t))−d0)/β)`; soft safety cost, not hard fallback |
+| Required Eq.(13) operator | p.6 image | CORRECTED/RESOLVED: the two ReLU terms are juxtaposed, a **product**, not a plus |
+| Innovation normalization | p.4 image | CONFIRMED: `η_t=‖y_t−H x̂⁻_t‖_(R⁻¹)`; **R**, not `S=HP⁻Hᵀ+R` |
+| τ_det / τ_innov / T_lost / numeric horizonT | pp.4–6 and original full-PDF record | NOT_SPECIFIED in supplied ten-page PDF |
+
+The literal product in Eq.(13) is zero if only one angular limit is exceeded. That mathematical
+observation does not prove which operator an unaudited implementation uses, and it does not justify
+silently changing the publication to addition. BOIA §07 uses a separate explicit FOV indicator rather
+than importing this training loss; no §07 formula stop follows.
+
+RGB-D/template + own v/a/pose → fixed Siamese target branch and depth branch → visible/predict/lost
+rule-based guidance → V×H end-state offsets/scores → quintic p/v/a command remains confirmed(pp.4–5).
+The scene SDF/target projection labels supervise **training** LOS/safety costs(pp.5–6); runtime target
+GT/masks are not stated inputs, and the real Fast-LIO odometry is sensor-based(p.8). Numeric FOV,
+horizon, R and association-gate settings are missing. Do not import its R-normalized gating as a
+MOTAR statistical χ² gate without a separate design/calibration gate.
+
+Existing compute/results retain their p.6–8 contexts:8.6ms cycle on i9-13980HX+RTX4090,50epochs/8h,
+qualitative JetsonNX flights; no MOTAR efficacy/resource inference. Author-stated forward-only
+RGB-D safe-retreat restriction(p.8) remains. Auditor limits include underspecified thresholds,
+learned safety rather than runtime guarantee and unknown FOV explored-region occlusion implementation.
+Code <https://github.com/qinliangql/UAST> remains **not executed/newly audited**.
+
+BOIA(a) **Partial**, (b) **Partial/strong**, (c) **No** for frozen-RL calibrated arbitration, (d)
+**Partial/weak** safety objective but no stopping/terminal-first, (e) **No** for the2s competing-event
+capture contract. Guidance-point substitution is **not approval to rewrite actor observations**;
+BOIA reads the existing fused belief and cannot replace PolicyF's898-D observation. **No §07 formula
+invalidation found.**
 
 ## 3. TrackVLA — "TrackVLA: Embodied Visual Tracking in the Wild"
 
@@ -350,6 +431,34 @@ BOIA concept components: (a) a belief-conditioned forecast of future detection p
 
 ---
 
+
+#### 2026-10-19 original-copy re-read (Codex)
+
+**Original now checked:** `/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/논문/TrackVLA Embodied Visual Tracking in the Wild.pdf`; SHA-256 `c27d8f435b32a831408a0aa346821286c63272ff27bdf86151d3b7d874bace34`; 25 physical pages. The full SHA matches the previous read-copy manifest. **Status: FULL_READ retained** from prior identical pp.1–25 read (figure-only pages remain the previously declared caption-level review). Current spot-check pages:4–5; equations(1),(2),(3), sampled without replacement from all three cited equations using the recorded seeded procedure.
+
+**Printed identity:** *TrackVLA: Embodied Visual Tracking in the Wild*, Shaoan Wang, Jiazhao Zhang,
+Minghan Li, Jiahang Liu, Anqi Li, Kui Wu, Fangwei Zhong, Junzhi Yu, Zhizheng Zhang, He Wang;
+arXiv:2505.23189v1,29May2025(p.1). No accepted venue is printed on the supplied title page.
+
+- **p.4 Eq.(1): CONFIRMED**, grid pooling yields64current/4historical visual tokens; retain32-frame
+  history. This is token compression, not belief covariance or visibility probability.
+- **p.4 Eq.(2): CONFIRMED**, anchors+conditioning token produce denoised trajectories and scores.
+- **p.5 Eq.(3): CONFIRMED**, positive-anchor-only MSE plus per-anchor BCE. Top1score selects the
+  executed proposal after two DDIM steps(p.5). The score predicts nearest-expert anchor suitability,
+  not calibrated probability of identity-correct reobservation/collision-free capture.
+
+The prior sensor/platform assumptions remain RGB+language and a ground robot, no online privileged
+target pose, training expert trajectories and VQA/recognition supervision(pp.4–5). Waypoints and
+robot-side control/LiDAR avoidance are a different interface from FrozenPolicyF'svelocity/yaw-rate.
+No explicit searched-mode threshold, tracker expiry, collision-competing2s recovery termination or
+known-free braking fallback is specified by these equations. Existing7B/remote4090/10FPS and training
+cost claims retain their own-page sources above, not shared8GB feasibility. Author concerns and
+observed embodiment/initialization/memory limits above remain; no new real-flight claim for MOTAR.
+Project/code promise <https://pku-epic.github.io/TrackVLA-web> (p.1); no code/weights executed.
+
+BOIA(a) **No**, (b) **Partial** finite scored anchors, (c) **No**, (d) **Partial** separate deployment
+avoidance, (e) **No** for the exact competing-risk/capture guard. **No §07 formula invalidation found.**
+
 ## 4. TrackVLA++ — "Unleashing Reasoning and Memory Capabilities in VLA Models for Embodied Visual Tracking"
 
 - **Authors / venue as printed:** Liu, Qi, Zhang, Li, Wang, Wu, Ye, Zhang, Chen, Zhong, Zhang, Wang (PKU, Galbot, USTC, BAAI, et al.). arXiv:2510.07134v1 [cs.RO], 8 Oct 2025 (p1). Venue not printed.
@@ -430,6 +539,40 @@ BOIA concept components: (a) a belief-conditioned forecast of future detection p
 
 ---
 
+
+#### 2026-10-19 original-copy re-read (Codex)
+
+**Original now checked:** `/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/논문/TrackVLA++ Unleashing Reasoning and Memory Capabilities in VLA.pdf`; SHA-256 `7f7de4b53d6d75033edf7cda575e01914cfcae6464f4715d2a7b34c1c934b365`; 9 physical pages. The full SHA matches the previous read-copy manifest. **Status: FULL_READ retained** from the prior identical pp.1–9 read. Current re-read pp.3–4 includes sampled equations(1),(3),(6) plus the nearby confidence/memory equations; no model was run.
+
+**Printed identity:** *TrackVLA++: Unleashing Reasoning and Memory Capabilities in VLA Models for
+Embodied Visual Tracking*, Jiahang Liu, Yunpeng Qi, Jiazhao Zhang, Minghan Li, Shaoan Wang,
+Kui Wu, Hanjing Ye, Hong Zhang, Zhibo Chen, Fangwei Zhong, Zhizheng Zhang, He Wang;
+arXiv:2510.07134v1,8October2025(p.1); no proceedings venue printed.
+
+| Random check | Original | Result |
+|---|---|---|
+| Eq.(1) | p.4 | CONFIRMED: shared projector maps current/history and TIM visual tokens to LLM space |
+| Eq.(3) | p.4 | CONFIRMED: `(1−w_T)M_(T−1)+w_T f_(T−1)` memory update |
+| Eq.(6) | p.4 | CONFIRMED: memory+visual+language+reasoning-token-conditioned action token |
+
+The same page's `<invalid>` token forces zero confidence and freezes the next memory update.
+Entropy confidence from Eq.(5) is a normalized token-logit statistic, **not independently calibrated
+identity confidence**. Its effectiveness on the paper's recognition benchmark does not validate
+MOTAR LiDAR association or camera recency. Training uses simulator target angle/distance/masks for
+reasoning labels; online inputs remain one/four RGB views+language, as previously described(pp.3–5).
+No metric map, fixed-policy arbitration, stopping feasibility or independent terminal-first contract
+is introduced. Ground platform, waypoint action and expensive remoteVLA remain unlike MOTAR's
+8GB simulated UAV control; published4.8FPS/192H100-h retain their original context/pages above.
+
+**Author-described mechanism:** keep the last reliable memory until confident redetection(p.4).
+**Auditor limit:** memory freezing may preserve a wrong prior identity if confidence is wrong; it
+is not a proof of identity continuity or a substitute for an explicit instance association metric.
+URLs <https://pku-epic.github.io/TrackVLA-plus-plus-Web/> (p.1) and
+<https://arxiv.org/abs/2510.07134v1>; code/weights not executed or newly audited.
+
+BOIA(a) **Partial/weak adjacent** confidence only, (b) **No**, (c) **No**, (d) **No**, (e) **No** for
+collision-competing recovery+capture. **No §07 formula invalidation found.**
+
 ## 5. DAT / GC-VAT — "Open-World Drone Active Tracking with Goal-Centered Rewards"
 
 - **Authors / venue as printed:** Sun, Hu, Zhang, Tian, Xie, Wang, Xie, Lin, Yu, Tan (SCUT et al.; the same group as OA-VAT). "39th Conference on Neural Information Processing Systems (NeurIPS 2025)"; arXiv:2412.00744v2 [cs.RO], 22 Oct 2025 (p1).
@@ -440,7 +583,7 @@ BOIA concept components: (a) a belief-conditioned forecast of future detection p
   - appendix prose p16–p29 read (A related work, B benchmark incl. Tables 8–9, C reward proof and implementation incl. Tables 10–11, D baselines, E experiments, F limitation p29);
   - per-scene appendix Tables 12–17 (p23–p26) **skimmed only** from garbled extraction, numbers not verified;
   - NeurIPS checklist p30–p36 skimmed.
-- **Read status: METHOD_REVIEWED** (main paper full read plus appendix prose; per-scene tables not verified).
+- **Read status: METHOD_REVIEWED** (main paper full read plus appendix prose; per-scene tables not verified). [CORRECTED: FULL_READ original pp.1–36 completed 2026-10-19; see dated addendum.]
 
 ### Problem and assumptions
 - Task: drone visual active tracking of a **ground** target ("air-to-ground"), keeping the target at the image centre (p2–3).
@@ -452,7 +595,7 @@ BOIA concept components: (a) a belief-conditioned forecast of future detection p
 - Map: none at inference.
 
 ### Pipeline (GC-VAT)
-- End-to-end RL: CNN (C8×8-16S4, C4×4-32S2) → FC200 → FC100 → GRU256, with an actor FC7 and a critic FC1 (Fig. 11, p21).
+- End-to-end RL: CNN (C8×8-16S4, C4×4-32S2) → FC200 → FC100 → GRU256, with an actor FC7 and a critic FC1 (Fig. 11, p21). [CORRECTED: CNN→GRU256→FC200→FC100, original p.21 Fig.11.]
 - Trained with PPO (γ = 0.9, λ_GAE = 0.95, entropy 0.01, clip 0.2; p24) and 35 parallel envs, for 9.2–21.3M total steps per scene. Webots runs at 500 Hz; the policy updates every 4 steps (125 Hz). Episodes are ≤1500 steps, terminated after >100 consecutive steps of loss, a collision, or a crash (p27, Table 10 p22).
 - **Curriculum-Based Training (Alg. 1, p6):**
   - phase 1: straight-line target, no obstacles;
@@ -530,6 +673,72 @@ BOIA concept components: (a) a belief-conditioned forecast of future detection p
 - (d) Safe fallback / terminal: **No.** Collision only ends the episode (p27).
 
 ---
+
+
+#### 2026-10-19 original-copy re-read (Codex)
+
+**Original now checked:** `/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/논문/Open-World Drone Active Tracking with.pdf`; SHA-256 `a54dc19d3e832df004bc6e35cb1a0036e332f1d039270529a98295c82a4fd0c3`; 36 physical pages. The full SHA matches the previous read-copy manifest. **Status upgraded to FULL_READ**, physical pp.1–36 read this session, including all experiments, references, appendixA–F and the complete NeurIPS checklist. Current images checked p.21network and pp.23–26Tables12–17/PPO. This supersedes the earlier METHOD_REVIEWED record without deleting it.
+
+**Printed identity:** *Open-World Drone Active Tracking with Goal-Centered Rewards*, Haowei Sun,
+Jinwu Hu, Zhirui Zhang, Haoyuan Tian, Xinze Xie, Yufeng Wang, Xiaohua Xie, Yun Lin,
+Zhuliang Yu, Mingkui Tan; NeurIPS2025 and arXiv:2412.00744v2,22October2025(p.1).
+
+**Problem/assumptions:** air-to-ground tracking of an initially centered target, rather than hidden
+first acquisition. GC-VAT's MDP state is84×84RGB(p.4), while **DAT benchmark** offers additional
+LiDAR(RPLIDARA2), GPS, IMU/accelerometer/gyro(p.19Table8). That distinction must not be repurposed
+as a camera-only requirement for MOTAR: MOTAR remains RGB-D+LiDAR. Webots DJI-Matrice100 dynamics,
+gimbal, SUMO ground targets and 24city/weather scenes differ from MOTAR's forward low-altitude
+bar forest. Flight altitude13–22m/pitch0.6–1.38rad(training,p.22), test22m/1.37rad(p.27);
+translation40m/s/yaw2rad/s and targetmax20m/s±25m/s² are the printed experimental settings(p.27).
+No explicit target-belief forecasting or control-horizon lattice is used.
+
+**Pipeline correction:** p.21Fig.11 is CNN → **GRU256 → FC200 → FC100** → actorFC7/criticFC1,
+not FC200→FC100→GRU256. PPO with domain randomization and two-stage curriculum learns a new
+policy; this cannot be a drop-in non-retrained PolicyF intervention. Stage1 simple straight target,
+stage2 complex scenes, switch by buffered mean rewardη(p.6Alg.1); numericalη is not specified.
+Runtime modes/search/identity-expiry arbitration are absent. Episodes stop at1500steps, >100lost
+steps, collision or crash(p.27). Physics500Hz/control125Hz are source values, not MOTAR timestep.
+
+| Key source | Verified content / caution |
+|---|---|
+| p.5 Eqs.(1)–(3) | Footprint-normalized deviation and clipped goal-centered reward; flat-ground/camera projection assumption |
+| p.6 Eqs.(4)–(5); p.22 Eqs.(10)–(13) | Ray/ground-plane intersections and SE(3) transforms; no LOS obstacle visibility condition is added by projection alone |
+| p.23 Eq.(14) | Sparse in-image reward `r_d=1` inside image range,0outside; used for TSR |
+| p.7 TSR formula | `Σ_(t≤E_l) r_dt / E_ml`, denominator **maximum** episode length, not observed/surviving duration |
+| p.24 Eqs.(15)–(19) | PPO ratio/entropy/clipped actor/GAE/critic objectives, γ=.9,λ=.95,β=.01,ε=.2 |
+| p.23 Tables12–13 | CR/TSR broken down by train scene and test scene/weather; high episode variability, not seed-level confidence intervals |
+| p.25 Tables14–15 | CBT ablation is scene dependent; it does not uniformly beat no-CBT in every train/test cell |
+| p.26 Tables16–17 | Same-policy reward ablation against the modified D-VAT reward; not an unmodified external algorithm reproduction |
+
+**Concrete table spot-checks, page images verified:** p.23Table13, citystreet-trained GC-VAT gives
+TSR0.80±0.30 within-citystreet,0.54±0.32 desert,0.44±0.24 lake,0.93±0.14foggy. p.25Table15,
+desert-trained no-CBT has0.83±0.28 on citystreet versus GC-VAT0.73±0.31, while same-desert GC-VAT
+0.84±0.29 exceeds no-CBT0.75±0.32. The p.29text expressly says no-CBT converges on desert/village/lake
+and fails on citystreet/downtown/farmland. Retain that scope when describing curriculum.
+p.26Table17, citystreet-within RD-VAT0.06±0.00 versus GC-VAT0.80±0.30. These are source-context
+checks, not MOTAR effect sizes or a reanalysis of their significance.
+
+**GT/inference:** privileged target pose/HTMs support simulation rewards(p.19–20,p.22); no such
+privileged data is available in testing/deployment(p.22). Episode loss/visibility and reward flags
+are benchmark evaluators, not evidence that an online learned policy observes identity-correct
+visibility. Image-based CAR checks(p.9–10,28–29) evaluate reasonable discrete actions on fixed
+videos, not closed-loop collision-safe recovery. Baseline changes are material: AOTc200→9(p.25),
+D-VAT continuous→discrete, speed/control penalties setzero and critic accelerationzero(pp.26–27).
+Do not state these results as matched untouched external baselines.
+
+**Compute/results:**35parallel training agents,9.2–21.3M cumulative steps per scene(p.22Table10),
+trainingwall/GPUmemory **NOT_RECORDED** despite a checklist assertion of sufficient compute detail.
+Real deployment>30FPS on RTX3050+i5(p.10) is not MOTAR simulator co-residency. Within/cross-domain
+averages and realTSR/CAR above retain their source scope. The author limitation is real open-world
+confusers/complexity and remaining sim-real gap(p.29); auditor limits include no explicit recovery
+latency/identity metric, centered starts, high commanded speed and per-episode rather than
+training-seed uncertainty. Numeric±definition is imprecise: mainp.8 says mean/variance, not a clear
+seed-based CI, so no statistical interpretation beyond reported spread is assigned.
+
+Paper/code: <https://arxiv.org/abs/2412.00744v2>, <https://github.com/SHWplus/DAT_Benchmark>(p.1).
+No code or weights executed/audited anew. BOIA(a) **No**, (b) **No**, (c) **No**, (d) **Partial** only
+ordinary episode termination, (e) **No** for a2s collision-competing identity-correct recovery/capture
+contract. **No §07 formula invalidation found.**
 
 ## Cross-paper summary table
 

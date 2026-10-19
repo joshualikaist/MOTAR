@@ -13,7 +13,7 @@ All [ADAPTED] and [NEW] items are hypotheses until the CPU tests of
 
 | Approach | Formulation | Uncertainty | Detector reliability | Occluder model | Cost per evaluation | Fit to MOTAR |
 | --- | --- | --- | --- | --- | --- | --- |
-| BPOD [PAPER] | γ_k = γ_FOV · Π_i γ_LOS,i (p.4 Eq.15). Each factor is a Gaussian linear-inequality probability on a linearised signed distance, ½(1 − erf((aᵀx̂ − b)/√(2aᵀΣa))) (p.5 Eq.19) | Robot and target Gaussian beliefs | None (perfect sensor, p.2 footnote) | Known convex 2D polygons; independent across obstacles | Below 1 ms per γ (MATLAB, p.7) | Strong: vertical bars make line of sight a 2D problem. Weak: needs a known map, and the independence assumption is optimistic for adjacent bars |
+| BPOD [PAPER] | γ_k = γ_FOV · Π_i γ_LOS,i (p.4 Eq.15). Each factor is a Gaussian linear-inequality probability on a linearised signed distance, ½(1 − erf((aᵀx̂ − b)/√(2aᵀΣa))) (p.5 Eq.19) | Robot and target Gaussian beliefs | None (perfect sensor, p.2 footnote) | Known convex 2D polygons; independent across obstacles | Below 1 ms per γ (MATLAB, p.7) | Strong: vertical bars make line of sight a 2D problem. Weak: needs a known map, and independence bias depends on correlation between clear events |
 | Visibility-aware Traj. Opt. [PAPER] | Balls c_i along the line of sight; occlusion margin min_i(Ξ(c_i) − r_i) (p.3 Eqs.3–5) | None (deterministic) | None | ESDF Ξ | Not reported | Batchable against LiDAR points |
 | Eva-Tracker [PAPER] | A camera-frame FoV-ESDF lookup penalising obstacles inside the frustum (p.3–4); line-of-sight-clear viewpoint on an arc (p.3) | Deterministic Bézier prediction | None | Point cloud within the view frustum | Real-time ROS | Arc-viewpoint generation reusable (AGPL code, so clean-room only) |
 | Elastic Tracker [PAPER] | Visible sector around the target and an angular visibility hinge | None | None | Grid map | Real-time ROS | Sector idea reusable (GPL code, so clean-room only) |
@@ -21,7 +21,7 @@ All [ADAPTED] and [NEW] items are hypotheses until the CPU tests of
 | Star-Convex [PAPER] | Spherical flipping + convex hull gives a point-cloud visibility test | None | None | Point cloud, omnidirectional sensor | Offline | Idea only |
 | PANTHER [PAPER] | Sigmoid in-FOV term for a tracked obstacle | Gaussian obstacle prediction | None | No line of sight | ~49–59 ms (NUC) | FOV-only factor |
 | PA Time-Optimal [PAPER] | tanh-smoothed FOV product (p.7 Eqs.30–33); range noise ∝ d² (Eq.44); close-range partial-visibility correction (Eq.45) | Fisher information (Eqs.40, 48) | Implicit | None | Offline | Range-dependent measurement noise model |
-| **BOIA forecast [NEW]** | P_det(γ, j) = E_{x∼b_T(j\|γ)}[1_FOV(x) · 1_LOS(x; M_t) · p_det(x)], estimated jointly by Monte Carlo over target belief samples and the sensed local point model; P_loss over the horizon computed from the **same** samples (no product over time) | KF belief (MOTAR tracker) | p_det(apparent size, visible fraction); see 07 §5 | LiDAR points → inflated discs; unknown ≠ free | Target below 2 ms per env per decision for 26 candidates × 32 samples (to be measured) | Designed for MOTAR. BPOD's analytic form is kept as a fast path and an ablation |
+| **BOIA forecast [NEW]** | P_det(γ, j) = E_{x∼b_T(j\|γ)}[1_FOV(x) · 1_LOS(x; M_t) · p_det(x)], estimated jointly by Monte Carlo over target belief samples and the sensed local point model; P_loss over the horizon computed from the **same** samples (no product over time) | KF belief (MOTAR tracker) | p_det(apparent size) with centre-ray LOS in v1; visible-fraction calibration is a v2 proposal; see07 §5 | LiDAR points → inflated discs; unknown ≠ free | 07 target≤5ms per decision on RTX3070 at N128,K20,M32; NOT_MEASURED | Designed for MOTAR. BPOD's analytic form is kept as a fast path and an ablation |
 
 ## 2. Target estimation
 
@@ -39,7 +39,7 @@ All [ADAPTED] and [NEW] items are hypotheses until the CPU tests of
 | Approach | Candidate set | Score | Executes | Switching rule |
 | --- | --- | --- | --- | --- |
 | UAST [PAPER] | V×H grid of quintic end states (p.5) | Learned cost regressed on the trajectory loss (p.6 Eq.17) | Lowest-cost polynomial (p/v/a) | Rule-based modes: τ_det, τ_innov, T_lost |
-| YOPO / YOPOv2 [code / PAPER] | 5×3 anchor lattice, quintic (`primitive.py:30-84`) | Network-predicted cost | Lowest cost, then an attitude controller | None |
+| YOPO-Simple / YOPOv2 [code / PAPER] | 5×3 anchor lattice, quintic (`primitive.py:30-84`) | Network-predicted cost | Lowest cost, then an attitude controller | None |
 | Deep-PANTHER [PAPER] | 6 learned trajectories | Cost ranking | Best feasible, else the previous plan | Fallback only |
 | FASTER [PAPER] | Committed trajectory + new plan | Feasibility tests | New plan only if the safe part is in known-free space; otherwise keep the committed one | Hard tests (p.4) |
 | NavRL++ [PAPER] | RL velocity, then projection | Velocity-obstacle safety | Projected command or stop | Safety only |
@@ -77,3 +77,21 @@ All [ADAPTED] and [NEW] items are hypotheses until the CPU tests of
   - Speed is capped by the exact riskcap law.
   - The altitude PI holds z.
   - Braking table (EQ-1D D1-B1): 0.82, 1.05 and 1.57 m from 2.0, 2.5 and 3.52 m/s.
+
+## G1-R original-copy amendment (2026-10-19)
+
+The original-copy references in P1–P6 supersede historical version-specific citations above.
+
+| Work | Original mechanism | Implication |
+| --- | --- | --- |
+| YOPO original, P3 §6 | 15 anchors; score supervised as−J (p.5 Eq.21), high-score selection; learned quintic trajectory interface | Distinct from the cost/argmin YOPO-Simple branch; BOIA's explicit J minimization and heading/speed lattice are its own adaptation |
+| OCTrack original, P5 §4 | COM, ACP and layer-depth CADB, structured occlusion training | No metric-depth obstacle model and no calibrated p_det(size,visible fraction) |
+| PRIMER, P6 §3 | RMADER Check/Delay Check after learned trajectory prediction; reject/reuse committed trajectory (pp.2–3) | Generic learned-policy/safety fallback already exists; calibrated FrozenF advantage is a narrower unverified candidate |
+| PPTracker, P6 §2 | First-frame GT-box online initialization (p.3), then prior tracked boxes | No permission to introduce GT initialization into BOIA or equate active track with identity |
+
+BPOD p.4 Eq.15 explicitly assumes independence. Positive-correlated clear events can make its
+product pessimistic about clearance, while other correlations reverse the bias. UAST p.6 Eq.13
+multiplies two ReLUs; it does not add them. PANTHER's p.8 optimization is unnumbered, not Eq.3.
+Lee original CDC uses b3d/f/M Eqs12/15/16; its six-page reference replaces the8-page equation map.
+The forecast's within-sample temporal product still assumes conditionally independent detector
+errors in stressed mode (07 §5); this is distinct from BPOD's between-occluder independence.

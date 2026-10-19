@@ -1,0 +1,1913 @@
+{
+  "schema": "motar.g1r.read-receipts.v1",
+  "readers": [
+    {
+      "schema": "motar.g1r.geometry-control.original-read.v1",
+      "agent": "Codex geometry/control reader",
+      "date": "2026-10-19",
+      "scope": "notes/P1 and notes/P4 only; no simulator/GPU/production execution; no commits or push",
+      "disk_floor_bytes": 3000000000,
+      "papers": [
+        {
+          "key": "BPOD",
+          "user_copy_path": "/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/논문/Probabilistic Visibility-Aware Trajectory Planning for Target Tracking.pdf",
+          "user_copy_sha256": "e94a8e4112f9a7f38e509b6f5dbaf3e2a90669c547eae656dc6ba1774daeb257",
+          "pages": 8,
+          "read_pages_this_pass": [
+            2,
+            3,
+            4,
+            5
+          ],
+          "status": "FULL_READ",
+          "read_method": "retained earlier all-pages read of an identical copy; this pass rechecked physical pp.2–5 and at least three SHA-seeded equation references",
+          "previous_read_copy": {
+            "key": "BPOD",
+            "user_inventory_sha256": "e94a8e4112f9a7f38e509b6f5dbaf3e2a90669c547eae656dc6ba1774daeb257",
+            "source": "arXiv:2306.06363v2",
+            "path": "/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/downloaded/BPOD__2306.06363v2.pdf",
+            "pages": 8,
+            "sha256": "e94a8e4112f9a7f38e509b6f5dbaf3e2a90669c547eae656dc6ba1774daeb257",
+            "identity": "IDENTICAL_TO_USER_COPY"
+          },
+          "original_copy_same_sha_as_previous": true,
+          "spot_checks": [
+            "p.5 Eq.(20)",
+            "p.4 Eq.(12)",
+            "p.3 Eq.(9)"
+          ],
+          "production_changed": false,
+          "execution": "NONE; PDF/text reads and rendered-equation inspection only",
+          "boia_overlap": {
+            "a": "partial_strong",
+            "b": "partial",
+            "c": "no",
+            "d": "no",
+            "e": "partial_metric_only"
+          },
+          "mandatory_answers": {
+            "independence": "CONFIRMED p4 Eq15",
+            "covariance": "CONFIRMED p3 Eq11d",
+            "erf": "CONFIRMED p5 Eq19",
+            "perfect_sensor": "CONFIRMED p2 footnote1"
+          },
+          "corrections": [
+            "Eq11d is on physical p3, not p4",
+            "The independence-product bias has no universal sign; positive correlation can underestimate LOS-clear probability",
+            "Expected nonlinear covariance update is approximate after mean-state Jacobian/gain freeze",
+            "Observed no-detection covariance uses Eq5c withmu0 andEq4b prediction; futureexpected Eq11d usesgamma andmaypredictreduction"
+          ],
+          "design_proposals": [
+            {
+              "target": "07 §5 and U1 correlated-occluder regression",
+              "proposal": "Use the same belief sample for all occluders; choose a constructed positive-correlation fixture and assert product underestimates joint visibility, do not assume a universal bias direction",
+              "gate": "V2–V5",
+              "status": "USER_APPROVAL_REQUIRED_FOR_DESIGN_CHANGE"
+            }
+          ]
+        },
+        {
+          "key": "Eva-Tracker",
+          "user_copy_path": "/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/논문/Eva-Tracker ESDF-update-free, Visibility-aware Planning with Target Reacquisition for Robust Aerial Tracking.pdf",
+          "user_copy_sha256": "7a828519abb5ee73dd0ce0c9b148c8e39b9810a935d58a843d4fd715ce63ca6e",
+          "pages": 8,
+          "read_pages_this_pass": [
+            1,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8
+          ],
+          "status": "FULL_READ",
+          "read_method": "retained earlier FULL_READ of identical bytes; original equation/limitations spot checks this pass",
+          "previous_read_copy": {
+            "key": "Eva-Tracker",
+            "user_inventory_sha256": "7a828519abb5ee73dd0ce0c9b148c8e39b9810a935d58a843d4fd715ce63ca6e",
+            "source": "arXiv:2602.12549v1",
+            "path": "/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/downloaded/EvaTracker__2602.12549v1.pdf",
+            "pages": 8,
+            "sha256": "7a828519abb5ee73dd0ce0c9b148c8e39b9810a935d58a843d4fd715ce63ca6e",
+            "identity": "IDENTICAL_TO_USER_COPY"
+          },
+          "original_copy_same_sha_as_previous": true,
+          "spot_checks": [
+            "p.3 Eq.(4)",
+            "p.3 Eq.(3)",
+            "p.4 Eq.(12)"
+          ],
+          "production_changed": false,
+          "execution": "NONE; PDF/text reads and rendered-equation inspection only",
+          "boia_overlap": {
+            "a": "partial",
+            "b": "partial",
+            "c": "no",
+            "d": "no",
+            "e": "no"
+          },
+          "mandatory_answers": {
+            "short_loss": "CONFIRMED p8; 1-second horizon derived from p3 Eq1 plus p5 m2,tau0.5"
+          },
+          "corrections": [
+            "One second is a configured extrapolation horizon derived from pp3/5; p8 itself states short-term limitation rather than one-second theorem"
+          ],
+          "design_proposals": []
+        },
+        {
+          "key": "Elastic Tracker",
+          "user_copy_path": "/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/논문/Elastic Tracker A Spatio-temporal Trajectory Planner.pdf",
+          "user_copy_sha256": "fd07679698aacf19a9dbe94bbf1422bfd8ddde072f41709ae997272d31509f2b",
+          "pages": 7,
+          "read_pages_this_pass": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "status": "FULL_READ",
+          "read_method": "retained earlier FULL_READ of identical bytes; original equation/assumption spot checks this pass",
+          "previous_read_copy": {
+            "key": "Elastic Tracker",
+            "user_inventory_sha256": "fd07679698aacf19a9dbe94bbf1422bfd8ddde072f41709ae997272d31509f2b",
+            "source": "earlier Claude web-fetch cache",
+            "path": "/home/fair/.claude/projects/-home-fair-workspaces-aerial-gym-ws/626171c0-3144-45d9-ba31-4e1386f262dc/tool-results/webfetch-1789740878632-4s1lxh.pdf",
+            "pages": 7,
+            "sha256": "fd07679698aacf19a9dbe94bbf1422bfd8ddde072f41709ae997272d31509f2b",
+            "identity": "IDENTICAL_TO_USER_COPY"
+          },
+          "original_copy_same_sha_as_previous": true,
+          "spot_checks": [
+            "p.4 Eq.(16)",
+            "p.5 Eq.(20)",
+            "p.3 Eq.(8)"
+          ],
+          "production_changed": false,
+          "execution": "NONE; PDF/text reads and rendered-equation inspection only",
+          "boia_overlap": {
+            "a": "partial",
+            "b": "partial",
+            "c": "no",
+            "d": "no",
+            "e": "no"
+          },
+          "corrections": [
+            "p4 Eq14 negative near-distance cubic is actually printed and conflicts with Fig4; intended sign remains an inference",
+            "p3 Eq4 angle notation is disambiguated by p4 Eq16 cosine constraint"
+          ],
+          "design_proposals": []
+        },
+        {
+          "key": "Visibility-aware Traj Opt",
+          "user_copy_path": "/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/논문/Visibility-aware Trajectory Optimization.pdf",
+          "user_copy_sha256": "a7a3b8bb697ee4032a3ef3ed1cd899ab6ac035cb97d14525ddb50f5231135653",
+          "pages": 8,
+          "read_pages_this_pass": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "status": "FULL_READ",
+          "read_method": "retained earlier FULL_READ of identical bytes; original equation spot checks and rendered p.4 this pass",
+          "previous_read_copy": {
+            "key": "Visibility-aware Traj Opt",
+            "user_inventory_sha256": "a7a3b8bb697ee4032a3ef3ed1cd899ab6ac035cb97d14525ddb50f5231135653",
+            "source": "arXiv:2103.06742v1",
+            "path": "/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/downloaded/VisAwareTrajOpt__2103.06742v1.pdf",
+            "pages": 8,
+            "sha256": "a7a3b8bb697ee4032a3ef3ed1cd899ab6ac035cb97d14525ddb50f5231135653",
+            "identity": "IDENTICAL_TO_USER_COPY"
+          },
+          "original_copy_same_sha_as_previous": true,
+          "spot_checks": [
+            "p.4 Eq.(21)",
+            "p.3 Eq.(5)",
+            "p.4 Eq.(17)"
+          ],
+          "production_changed": false,
+          "execution": "NONE; PDF/text reads and rendered-equation inspection only",
+          "boia_overlap": {
+            "a": "partial",
+            "b": "partial",
+            "c": "no",
+            "d": "no",
+            "e": "no"
+          },
+          "corrections": [
+            "p3 Eq2 reversed p-c bearing confirmed printed; standard forward-target bearing differs by pi",
+            "p4 Eq21 trailing Xi(Q_i) is actually printed; intended factor NOT_EXPLAINED"
+          ],
+          "design_proposals": []
+        },
+        {
+          "key": "Star-Convex",
+          "user_copy_path": "/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/논문/Star-Convex Constrained Optimization for Visibility Planning.pdf",
+          "user_copy_sha256": "7f80eef8c37662f038de55a70b166b8b70f20864c17a5d6fb6a23a6249655ab0",
+          "pages": 7,
+          "read_pages_this_pass": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "status": "FULL_READ",
+          "read_method": "full reread of the different original user copy; rendered p.3 Eq.10",
+          "previous_read_copy": {
+            "key": "Star-Convex",
+            "user_inventory_sha256": "7f80eef8c37662f038de55a70b166b8b70f20864c17a5d6fb6a23a6249655ab0",
+            "source": "arXiv:2204.04393v1",
+            "path": "/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/downloaded/StarConvex__2204.04393v1.pdf",
+            "pages": 7,
+            "sha256": "7a940d4c7d72addc874a0f887ebb946c01cfc64dab0c1bb102b827ccaaf44c0c",
+            "identity": "DIFFERENT_VERSION"
+          },
+          "original_copy_same_sha_as_previous": false,
+          "spot_checks": [],
+          "production_changed": false,
+          "execution": "NONE; PDF/text reads and rendered-equation inspection only",
+          "boia_overlap": {
+            "a": "no",
+            "b": "no",
+            "c": "no",
+            "d": "no",
+            "e": "no"
+          },
+          "corrections": [
+            "Original p1 six-author list excludes Fu Zhang",
+            "Original has no printed arXiv/venue stamp",
+            "p3 Eq10 rendering is resolved, apparent derivative sign error identified independently",
+            "Finite smooth penalties and samples do not independently prove continuous-time visibility"
+          ],
+          "design_proposals": []
+        },
+        {
+          "key": "FASTER",
+          "user_copy_path": "/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/논문/FASTER Fast and Safe Trajectory Planner for Flights.pdf",
+          "user_copy_sha256": "f31547f387a29588f4e177b07f811b7d71209f9e2191fa75f936a23e64d38590",
+          "pages": 7,
+          "read_pages_this_pass": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "status": "FULL_READ",
+          "read_method": "retained earlier FULL_READ of identical bytes; both numbered equations and the cubic-Bezier identity checked (only two numbered equations exist)",
+          "previous_read_copy": {
+            "key": "FASTER",
+            "user_inventory_sha256": "f31547f387a29588f4e177b07f811b7d71209f9e2191fa75f936a23e64d38590",
+            "source": "arXiv:1903.03558v3",
+            "path": "/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/downloaded/FASTER__1903.03558v3.pdf",
+            "pages": 7,
+            "sha256": "f31547f387a29588f4e177b07f811b7d71209f9e2191fa75f936a23e64d38590",
+            "identity": "IDENTICAL_TO_USER_COPY"
+          },
+          "original_copy_same_sha_as_previous": true,
+          "spot_checks": [
+            "p.3 Eq.(1)",
+            "p.3 Eq.(2)",
+            "p.3 unnumbered cubic-Bezier control-point conversion"
+          ],
+          "production_changed": false,
+          "execution": "NONE; PDF/text reads and rendered-equation inspection only",
+          "boia_overlap": {
+            "a": "no",
+            "b": "partial",
+            "c": "no",
+            "d": "partial_strong_backup_only",
+            "e": "no"
+          },
+          "mandatory_answers": {
+            "by_construction": "CONFIRMED conditional p4",
+            "velocity_knots": "CONFIRMED p3 Eq1 only interval starts"
+          },
+          "corrections": [
+            "Only two numbered equations exist; checked both and one unnumbered identity, no third invented",
+            "By-construction planned safety needs persistent known-free space and tracking/state/model assumptions; it is not measured robust collision probability"
+          ],
+          "design_proposals": [
+            {
+              "target": "07 §7 and §11 safety wording",
+              "proposal": "Keep model-feasibility wording and distinguish a newly commanded hold from a maintained valid braking backup; measured stopping uncertainty remains G5",
+              "gate": "V4–V5",
+              "status": "USER_APPROVAL_REQUIRED_FOR_DESIGN_CHANGE"
+            }
+          ]
+        },
+        {
+          "key": "Lee SE3",
+          "user_copy_path": "/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/논문/Geometric Tracking Control of a Quadrotor UAV on SE(3).pdf",
+          "user_copy_sha256": "a664bdd644e82db8b49ee6005baaeb05879c66ccb128a9a73396407928db1ce5",
+          "pages": 6,
+          "read_pages_this_pass": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "status": "FULL_READ",
+          "read_method": "full reread of six-page original CDC2010 copy including examples and references; earlier eight-page arXiv copy remains historical",
+          "previous_read_copy": {
+            "key": "Lee SE3",
+            "user_inventory_sha256": "a664bdd644e82db8b49ee6005baaeb05879c66ccb128a9a73396407928db1ce5",
+            "source": "arXiv:1003.2005v1 (8-page arXiv version; user has 6-page CDC version)",
+            "path": "/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/downloaded/LeeSE3__1003.2005v1.pdf",
+            "pages": 8,
+            "sha256": "977ae50eb51f7801bf44c4ad5a7479a6b47d0926e615104312197411cd08f789",
+            "identity": "DIFFERENT_VERSION"
+          },
+          "original_copy_same_sha_as_previous": false,
+          "spot_checks": [],
+          "production_changed": false,
+          "execution": "NONE; PDF/text reads and rendered-equation inspection only",
+          "boia_overlap": {
+            "a": "no",
+            "b": "no",
+            "c": "no",
+            "d": "no",
+            "e": "no"
+          },
+          "corrections": [
+            "CDC equation map f12->15, M13->16, b3d14->12, nonzero15->13, bound16->14",
+            "Original CDC angular-rate bounds use lambda_max(J), correcting historical notes lambda_min(J)",
+            "Original CDC explicitly orthonormalizes desired axes, so old v1 perpendicularity criticism does not apply",
+            "CDC original p2 rotor1/3 clockwise,2/4 counterclockwise",
+            "M2 verbal Lee-force expression has sign attribution error; actualMOTARvelocitylaw unaffected"
+          ],
+          "design_proposals": []
+        },
+        {
+          "key": "Aerial Gym Simulator",
+          "user_copy_path": "/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/논문/Aerial Gym Simulator A Framework for Highly Parallelized.pdf",
+          "user_copy_sha256": "5c73cafa8c22f042be02a8fc6729f3cb6de510c054e3646a2aade76e60b5ecd0",
+          "pages": 8,
+          "read_pages_this_pass": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "status": "FULL_READ",
+          "read_method": "retained earlier FULL_READ of identical copy; equations plus mandatory timing/mesh/sign questions checked this pass",
+          "previous_read_copy": {
+            "key": "Aerial Gym Simulator",
+            "user_inventory_sha256": "5c73cafa8c22f042be02a8fc6729f3cb6de510c054e3646a2aade76e60b5ecd0",
+            "source": "user local copy",
+            "path": "/home/fair/Downloads/Aerial Gym Simulator: A Framework for Highly Parallelized.pdf",
+            "pages": 8,
+            "sha256": "5c73cafa8c22f042be02a8fc6729f3cb6de510c054e3646a2aade76e60b5ecd0",
+            "identity": "IDENTICAL_TO_USER_COPY"
+          },
+          "original_copy_same_sha_as_previous": true,
+          "spot_checks": [
+            "p.3 Eq.(4)",
+            "p.5 Eq.(10)",
+            "p.4 Eq.(8)"
+          ],
+          "production_changed": false,
+          "execution": "NONE; PDF/text reads and rendered-equation inspection only",
+          "boia_overlap": {
+            "a": "no",
+            "b": "no",
+            "c": "no",
+            "d": "no",
+            "e": "no"
+          },
+          "mandatory_answers": {
+            "physics_dt": "CONFIRMED absent global physicsdt; p7 control0.01s is distinct",
+            "feedforward_sign": "CORRECTED conditional ENU interpretation; printed negative, not demonstrated productionbug",
+            "mesh": "CONFIRMED static-randomization scope p4; p5/6 runtime modification capability not dynamic correctness proof"
+          },
+          "corrections": [
+            "Printed feedforward has negative sign but NED convention can explain it; PDF alone does not establish runtime signbug",
+            "p7 control dt must not be mislabeled global physics dt",
+            "Runtime per-env mesh modification is a capability, not proof of dynamic/reset correctness"
+          ],
+          "design_proposals": []
+        },
+        {
+          "key": "EGO-Planner",
+          "user_copy_path": "/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/논문/EGO-Planner An ESDF-Free Gradient-Based.pdf",
+          "user_copy_sha256": "0d316681d1ae9ecd22a589f6b3e7e8c1b93b3d66a1f309d2a6b0e2686f88b7c7",
+          "pages": 8,
+          "read_pages_this_pass": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8
+          ],
+          "status": "FULL_READ",
+          "read_method": "full original final RA-L copy reread; duplicate original has identical SHA and remains preserved; rendered p.6 tables",
+          "previous_read_copy": {
+            "key": "EGO-Planner",
+            "user_inventory_sha256": "0d316681d1ae9ecd22a589f6b3e7e8c1b93b3d66a1f309d2a6b0e2686f88b7c7",
+            "source": "arXiv:2008.08835v2",
+            "path": "/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/downloaded/EGOPlanner__2008.08835v2.pdf",
+            "pages": 8,
+            "sha256": "a3960f4bd97e2737dccb288aee724b9f6e1cdf00dcc552afc51d53deceef5813",
+            "identity": "DIFFERENT_VERSION"
+          },
+          "original_copy_same_sha_as_previous": false,
+          "spot_checks": [],
+          "production_changed": false,
+          "execution": "NONE; PDF/text reads and rendered-equation inspection only",
+          "boia_overlap": {
+            "a": "no",
+            "b": "partial",
+            "c": "no",
+            "d": "no",
+            "e": "no"
+          },
+          "corrections": [
+            "Original is final RA-L6(2)April2021, not olderarXivv2",
+            "Equation numbers1–19 retained but physical page locations change per table",
+            "Time scaleEq14/15 unchanged; pipecheck is unnumberedp6",
+            "CPU model NOT_RECORDED in original"
+          ],
+          "design_proposals": []
+        },
+        {
+          "key": "Adaptive Tracking and Perching",
+          "user_copy_path": "/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/논문/Adaptive Tracking and Perching for Quadrotor.pdf",
+          "user_copy_sha256": "d22709ab18b007b6be6e3fb53219d27588b78f607d9b0b76f6778a8b6b0cd23a",
+          "pages": 20,
+          "read_pages_this_pass": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20
+          ],
+          "status": "FULL_READ",
+          "read_method": "full original copy reread including previously unfinished pp.19–20; identical SHA to earlier public copy; rendered pp.8/12",
+          "previous_read_copy": {
+            "key": "Adaptive Tracking and Perching",
+            "user_inventory_sha256": "d22709ab18b007b6be6e3fb53219d27588b78f607d9b0b76f6778a8b6b0cd23a",
+            "source": "arXiv:2312.11866v2",
+            "path": "/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/downloaded/AdaptivePerching__2312.11866v2.pdf",
+            "pages": 20,
+            "sha256": "d22709ab18b007b6be6e3fb53219d27588b78f607d9b0b76f6778a8b6b0cd23a",
+            "identity": "IDENTICAL_TO_USER_COPY"
+          },
+          "original_copy_same_sha_as_previous": true,
+          "spot_checks": [],
+          "production_changed": false,
+          "execution": "NONE; PDF/text reads and rendered-equation inspection only",
+          "boia_overlap": {
+            "a": "partial",
+            "b": "partial",
+            "c": "no",
+            "d": "partial_terminal_boundary_only",
+            "e": "partial_task_level"
+          },
+          "corrections": [
+            "Completed previous missingpp19–20; no algorithmappendix",
+            "p5 g(x) cubic exponentconfirmed",
+            "p12 TableII Jeontotal actuallyarithmeticinconsistent",
+            "p8 Eq40 missing squarednorm is printed dimensionallyinconsistent",
+            "Terminal relaxation is not simulator terminal-first control"
+          ],
+          "design_proposals": []
+        }
+      ],
+      "conclusion": "MINOR_ADJUSTMENTS_PROPOSED",
+      "g3_review_required": false,
+      "conclusion_limits": "Prior-art printed formula errors documented without importing them into BOIA; independent BOIA model validity remains G5; no novelty or performance claim",
+      "generated_images_viewed": [
+        "gc_star_p3-3.png",
+        "gc_ego_p6-6.png",
+        "gc_adapt_p12-12.png",
+        "gc_elastic_p4-4.png",
+        "gc_vis_p4-4.png",
+        "gc_adapt_p8-08.png"
+      ],
+      "notes": [
+        "docs/research/occlusion_algorithm_v1/notes/P1_visibility_planning.md",
+        "docs/research/occlusion_algorithm_v1/notes/P4_safety_dynamics.md"
+      ],
+      "additional_design_proposals": [
+        {
+          "target": "07 §6 first-order prior and U4 braking sanity",
+          "proposal": "Retain tau_v=.4 without retuning. Report each prescribed distance error; if above10% but below25%, label target miss/LIMITED_VALIDITY, do not claim10%PASS. Require separately approved V4 model qualification before safety claims.",
+          "basis": "FASTER original p4 known-valid committed backup presupposes accurate model/tracking; Lee original pp3–4 proof does not apply to capped/compensated MOTAR controller. Root scalar preflight is separate evidence, not a paper result.",
+          "gate": "V4–V5",
+          "status": "USER_APPROVAL_REQUIRED_FOR_DESIGN_CHANGE"
+        }
+      ]
+    },
+    {
+      "schema": "motar.g1r.active-extra-reading.v1",
+      "reader": "Codex",
+      "date": "2026-10-19",
+      "base_commit": "a4472d8",
+      "disk_floor_bytes_latest_user": 3000000000,
+      "no_sim_gpu_code_execution": true,
+      "no_commit_push": true,
+      "spotcheck_sampling": {
+        "python_seed": 20261019,
+        "ordered_pools": {
+          "OA-VAT": [
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12
+          ],
+          "UAST": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17
+          ],
+          "TrackVLA": [
+            1,
+            2,
+            3
+          ],
+          "TrackVLA++": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10
+          ]
+        },
+        "sample_without_replacement": 3
+      },
+      "papers": [
+        {
+          "key": "OA-VAT",
+          "title": "Instance-level Visual Active Tracking with Occlusion-Aware Planning",
+          "authors": [
+            "Haowei Sun",
+            "Kai Zhou",
+            "Hao Gao",
+            "Shiteng Zhang",
+            "Jinwu Hu",
+            "Xutao Wen",
+            "Qixiang Ye",
+            "Mingkui Tan"
+          ],
+          "printed_version_venue_year": "arXiv2604.21453v1,23April2026; ownTable1 saysCVPR2026",
+          "source_path": "/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/논문/Instance-level Visual Active Tracking with Occlusion-Aware Planning.pdf",
+          "sha256": "359b64b75bc57720f2767bd917c1ee2b6bf5ec7bbfa0252f490051f613b35a7d",
+          "pages": 15,
+          "status": "FULL_READ",
+          "previous_status": "FULL_READ",
+          "previous_read_copy_sha256": "359b64b75bc57720f2767bd917c1ee2b6bf5ec7bbfa0252f490051f613b35a7d",
+          "same_as_previous_copy": true,
+          "read_method": "RETAINED_IDENTICAL_COPY_FULL_READ",
+          "current_session_pages_read": [
+            3,
+            4,
+            5,
+            13
+          ],
+          "retained_full_read_pages": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15
+          ],
+          "random_equation_spotchecks": [
+            "p4 Eq4",
+            "p4 Eq8",
+            "p5 Eq12"
+          ],
+          "boia_overlap_a_through_e": [
+            "No/adjacent",
+            "No",
+            "Partial",
+            "No",
+            "No"
+          ],
+          "corrections": [
+            "Eq9 decreasing sigmoid confirmed; image-box covariance is not calibrated world-frame R",
+            "p4 multiple missing frames vs p5 low-confidence switch inconsistency persists"
+          ],
+          "decision": "ORIGINAL_CORE_RETAINED"
+        },
+        {
+          "key": "UAST",
+          "title": "UAST: Unified Active Search and Tracking for Arbitrary Targets with UAVs",
+          "authors": [
+            "Liang Qin",
+            "Min Wang",
+            "Xingyu Lu",
+            "Aowen Qiu",
+            "Wengang Zhou",
+            "Houqiang Li"
+          ],
+          "printed_version_venue_year": "CVPR OpenAccess,13464–13473; numeric year not printed on titlepage",
+          "source_path": "/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/논문/UAST_Unified_Active_Search_and_Tracking_for_Arbitrary_Targets_with_CVPR_2026_paper.pdf",
+          "sha256": "e19a723113bdc7636b1b370c530c8ab6aa33990e33f18563135769cf7b79d5a2",
+          "pages": 10,
+          "status": "FULL_READ",
+          "previous_status": "FULL_READ",
+          "previous_read_copy_sha256": "e19a723113bdc7636b1b370c530c8ab6aa33990e33f18563135769cf7b79d5a2",
+          "same_as_previous_copy": true,
+          "read_method": "RETAINED_IDENTICAL_COPY_FULL_READ",
+          "current_session_pages_read": [
+            4,
+            5,
+            6,
+            7,
+            8
+          ],
+          "retained_full_read_pages": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10
+          ],
+          "random_equation_spotchecks": [
+            "p5 Eq7",
+            "p5 Eq9",
+            "p6 Eq16"
+          ],
+          "boia_overlap_a_through_e": [
+            "Partial",
+            "Partial/strong",
+            "No",
+            "Partial/weak",
+            "No"
+          ],
+          "corrections": [
+            "p6 Eq13 is product, not addition; single-axis violation incurs zero literal FOV cost",
+            "p4 innovation normalized by R^{-1}, not full S^{-1}",
+            "τ_det,τ_innov,T_lost,numericT missing in suppliedPDF",
+            "Guidance substitution is not permission to rewrite actor898 observation"
+          ],
+          "decision": "ORIGINAL_CORE_RETAINED"
+        },
+        {
+          "key": "TrackVLA",
+          "title": "TrackVLA: Embodied Visual Tracking in the Wild",
+          "authors": [
+            "Shaoan Wang",
+            "Jiazhao Zhang",
+            "Minghan Li",
+            "Jiahang Liu",
+            "Anqi Li",
+            "Kui Wu",
+            "Fangwei Zhong",
+            "Junzhi Yu",
+            "Zhizheng Zhang",
+            "He Wang"
+          ],
+          "printed_version_venue_year": "arXiv2505.23189v1,29May2025; no proceedings venue printed",
+          "source_path": "/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/논문/TrackVLA Embodied Visual Tracking in the Wild.pdf",
+          "sha256": "c27d8f435b32a831408a0aa346821286c63272ff27bdf86151d3b7d874bace34",
+          "pages": 25,
+          "status": "FULL_READ",
+          "previous_status": "FULL_READ",
+          "previous_read_copy_sha256": "c27d8f435b32a831408a0aa346821286c63272ff27bdf86151d3b7d874bace34",
+          "same_as_previous_copy": true,
+          "read_method": "RETAINED_IDENTICAL_COPY_FULL_READ",
+          "current_session_pages_read": [
+            4,
+            5
+          ],
+          "retained_full_read_pages": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25
+          ],
+          "random_equation_spotchecks": [
+            "p4 Eq1",
+            "p4 Eq2",
+            "p5 Eq3"
+          ],
+          "boia_overlap_a_through_e": [
+            "No",
+            "Partial",
+            "No",
+            "Partial",
+            "No"
+          ],
+          "corrections": [
+            "Anchor scores are imitation suitability, not calibrated recovery probability"
+          ],
+          "decision": "ORIGINAL_CORE_RETAINED"
+        },
+        {
+          "key": "TrackVLA++",
+          "title": "TrackVLA++: Unleashing Reasoning and Memory Capabilities in VLA Models for Embodied Visual Tracking",
+          "authors": [
+            "Jiahang Liu",
+            "Yunpeng Qi",
+            "Jiazhao Zhang",
+            "Minghan Li",
+            "Shaoan Wang",
+            "Kui Wu",
+            "Hanjing Ye",
+            "Hong Zhang",
+            "Zhibo Chen",
+            "Fangwei Zhong",
+            "Zhizheng Zhang",
+            "He Wang"
+          ],
+          "printed_version_venue_year": "arXiv2510.07134v1,8October2025; no proceedings venue printed",
+          "source_path": "/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/논문/TrackVLA++ Unleashing Reasoning and Memory Capabilities in VLA.pdf",
+          "sha256": "7f7de4b53d6d75033edf7cda575e01914cfcae6464f4715d2a7b34c1c934b365",
+          "pages": 9,
+          "status": "FULL_READ",
+          "previous_status": "FULL_READ",
+          "previous_read_copy_sha256": "7f7de4b53d6d75033edf7cda575e01914cfcae6464f4715d2a7b34c1c934b365",
+          "same_as_previous_copy": true,
+          "read_method": "RETAINED_IDENTICAL_COPY_FULL_READ",
+          "current_session_pages_read": [
+            3,
+            4
+          ],
+          "retained_full_read_pages": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "random_equation_spotchecks": [
+            "p4 Eq1",
+            "p4 Eq3",
+            "p4 Eq6"
+          ],
+          "boia_overlap_a_through_e": [
+            "Partial/weak",
+            "No",
+            "No",
+            "No",
+            "No"
+          ],
+          "corrections": [
+            "Entropy memory gating confirmed; it is not independently calibrated identity confidence"
+          ],
+          "decision": "ORIGINAL_CORE_RETAINED"
+        },
+        {
+          "key": "Open-World DAT",
+          "title": "Open-World Drone Active Tracking with Goal-Centered Rewards",
+          "authors": [
+            "Haowei Sun",
+            "Jinwu Hu",
+            "Zhirui Zhang",
+            "Haoyuan Tian",
+            "Xinze Xie",
+            "Yufeng Wang",
+            "Xiaohua Xie",
+            "Yun Lin",
+            "Zhuliang Yu",
+            "Mingkui Tan"
+          ],
+          "printed_version_venue_year": "NeurIPS2025; arXiv2412.00744v2,22October2025",
+          "source_path": "/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/논문/Open-World Drone Active Tracking with.pdf",
+          "sha256": "a54dc19d3e832df004bc6e35cb1a0036e332f1d039270529a98295c82a4fd0c3",
+          "pages": 36,
+          "status": "FULL_READ",
+          "previous_status": "METHOD_REVIEWED",
+          "previous_read_copy_sha256": "a54dc19d3e832df004bc6e35cb1a0036e332f1d039270529a98295c82a4fd0c3",
+          "same_as_previous_copy": true,
+          "read_method": "NEW_COMPLETE_ORIGINAL_READ",
+          "current_session_pages_read": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36
+          ],
+          "retained_full_read_pages": null,
+          "random_equation_spotchecks": [],
+          "boia_overlap_a_through_e": [
+            "No",
+            "No",
+            "No",
+            "Partial ordinary termination only",
+            "No"
+          ],
+          "corrections": [
+            "p21 network CNN→GRU256→FC200→FC100 correction",
+            "pp23–26 tables12–17 imageverified; no-CBT converges desert/village/lake, not universal failure",
+            "Benchmark offersLiDAR/GPS, GC-VAT actorRGB-only; MOTAR sensorcontractunchanged",
+            "TSR uses maximumepisodelength denominator, not survivalconditioning"
+          ],
+          "decision": "ORIGINAL_CORE_RETAINED"
+        },
+        {
+          "key": "EGO-Swarm",
+          "title": "EGO-Swarm: A Fully Autonomous and Decentralized Quadrotor Swarm System in Cluttered Environments",
+          "authors": [
+            "Xin Zhou",
+            "Jiangchao Zhu",
+            "Hongyu Zhou",
+            "Chao Xu",
+            "Fei Gao"
+          ],
+          "printed_version_venue_year": "arXiv2011.04183v3,5May2021; no proceedings venue printed",
+          "source_path": "/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/논문/EGO-Swarm A Fully Autonomous and Decentralized Quadrotor.pdf",
+          "sha256": "3fe008fa358dfff54c0d5ea632a7f6f3baa74339f7f8fe766383fc9343743ff5",
+          "pages": 7,
+          "status": "FULL_READ",
+          "previous_status": "NOT_PREVIOUSLY_READ",
+          "previous_read_copy_sha256": null,
+          "same_as_previous_copy": null,
+          "read_method": "NEW_COMPLETE_ORIGINAL_READ",
+          "current_session_pages_read": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "retained_full_read_pages": null,
+          "random_equation_spotchecks": [],
+          "boia_overlap_a_through_e": [
+            "No",
+            "Partial",
+            "No",
+            "Partial",
+            "No"
+          ],
+          "corrections": [
+            "Other-agent avoidance/localization tracking is not designated target pursuit/recovery"
+          ],
+          "decision": "REFERENCE_ONLY"
+        },
+        {
+          "key": "PPTracker",
+          "title": "PPTracker: Tracking UAV Swarms with Prior Prompt",
+          "authors": [
+            "Haolin Qin",
+            "Tianhao Li",
+            "Tingfa Xu",
+            "Jingxuan Xu",
+            "Yuqiang Fang",
+            "Jianan Li"
+          ],
+          "printed_version_venue_year": "CVPR Workshop OpenAccess,6594–6601; numeric year not printed ontitlepage",
+          "source_path": "/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/논문/PPTracker  Tracking UAV Swarms with Prior Prompt.pdf",
+          "sha256": "dbdc38f4231e09215e7344c4ac6511a0947741c6601df732b34d7748200f9fdb",
+          "pages": 8,
+          "status": "FULL_READ",
+          "previous_status": "NOT_PREVIOUSLY_READ",
+          "previous_read_copy_sha256": null,
+          "same_as_previous_copy": null,
+          "read_method": "NEW_COMPLETE_ORIGINAL_READ",
+          "current_session_pages_read": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8
+          ],
+          "retained_full_read_pages": null,
+          "random_equation_spotchecks": [],
+          "boia_overlap_a_through_e": [
+            "Partial/adjacent",
+            "No",
+            "No",
+            "No",
+            "Partial metric caution"
+          ],
+          "corrections": [
+            "p3 firstframeGTboxes onlineinitialization; later priors are track results",
+            "MOTA includesIDSW but standaloneIDSW/IDF1/FPS not reported",
+            "p6Table1 increments6.31/7.81pp conflict prose2%/3%"
+          ],
+          "decision": "ADD_TO_CORE"
+        },
+        {
+          "key": "PRIMER",
+          "title": "PRIMER: Perception-Aware Robust Learning-based Multiagent Trajectory Planner",
+          "authors": [
+            "Kota Kondo",
+            "Claudius T. Tewari",
+            "Andrea Tagliabue",
+            "Jesus Tordesillas",
+            "Parker C. Lusk",
+            "Mason B. Peterson",
+            "Jonathan P. How"
+          ],
+          "printed_version_venue_year": "arXiv2406.10060v4,13May2025; no proceedings venue printed",
+          "source_path": "/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/논문/PRIMER Perception-Aware Robust Learning-based.pdf",
+          "sha256": "9f60cd5d5874073d66abd1255ecfa4e750e99f3aaee53e7d09a3c07517e2c16e",
+          "pages": 7,
+          "status": "FULL_READ",
+          "previous_status": "NOT_PREVIOUSLY_READ",
+          "previous_read_copy_sha256": null,
+          "same_as_previous_copy": null,
+          "read_method": "NEW_COMPLETE_ORIGINAL_READ",
+          "current_session_pages_read": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "retained_full_read_pages": null,
+          "random_equation_spotchecks": [],
+          "boia_overlap_a_through_e": [
+            "Partial/adjacent",
+            "Partial",
+            "Partial",
+            "Partial/important",
+            "No"
+          ],
+          "corrections": [
+            "p2Eq1 integrand inFOV cubed, FOV not explicitLOS",
+            "pp2–3 RMADER checks reject learnedtraj and reusepriorcommittedtraj",
+            "ExpertPARM* suppliesDAggertraining, not reportedonlineruntimeexpert/studentgain arbitration",
+            "Genericlearnedplanner+safetyfallbackNOT_NOVEL_ENOUGH; narrowBOIA(c)unresolved, notG3formulafailure"
+          ],
+          "decision": "ADD_TO_CORE"
+        },
+        {
+          "key": "Similarity-Guided ViT",
+          "title": "Similarity-Guided Layer-Adaptive Vision Transformer for UAV Tracking",
+          "authors": [
+            "Chaocan Xue",
+            "Bineng Zhong",
+            "Qihua Liang",
+            "Yaozong Zheng",
+            "Ning Li",
+            "Yuanliang Xue",
+            "Shuxiang Song"
+          ],
+          "printed_version_venue_year": "arXiv2503.06625v1,9March2025; no proceedings venue printed",
+          "source_path": "/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/논문/Similarity-Guided Layer-Adaptive Vision Transformer for UAV Tracking.pdf",
+          "sha256": "ad303ff4fd5c043c1d979efa1bced6a09069869fbdbf0b214c51064df372758b",
+          "pages": 11,
+          "status": "FULL_READ",
+          "previous_status": "NOT_PREVIOUSLY_READ",
+          "previous_read_copy_sha256": null,
+          "same_as_previous_copy": null,
+          "read_method": "NEW_COMPLETE_ORIGINAL_READ",
+          "current_session_pages_read": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11
+          ],
+          "retained_full_read_pages": null,
+          "random_equation_spotchecks": [],
+          "boia_overlap_a_through_e": [
+            "No",
+            "No",
+            "No",
+            "No",
+            "No"
+          ],
+          "corrections": [
+            "DifferentpaperfromarXiv2602.13636LGTrack(primaryrecordtitle/authorschecked)",
+            "l*=6fixed, subsequentlayerdynamicallyselected",
+            "Classification/layerselectionnotcalibratedp_det",
+            "JetsonTX2 4GB33FPSdoesnotproveIsaacGym/N1288GBfeasibility"
+          ],
+          "decision": "REFERENCE_ONLY"
+        }
+      ],
+      "overall_design_delta": "MINOR_ADJUSTMENTS_PROPOSED",
+      "g3_review_required": false,
+      "novelty": "NARROWED_NOT_ESTABLISHED",
+      "proposed_deltas": [
+        {
+          "target": "06 novelty; 07 sections9 and11",
+          "source": "PRIMER pp.2–3 Fig.1 and sectionII.B",
+          "proposal": "Acknowledge learned-trajectory rejection and prior-trajectory fallback as prior art. Narrow BOIA(c) to a calibrated conditional-gain wrapper with registered hysteresis, without claiming novelty established.",
+          "applied": false
+        },
+        {
+          "target": "07 sections1,2,12; future V2/V3",
+          "source": "PPTracker p.3, p.5 Eq.3, p.7",
+          "proposal": "Distinguish camera acquisition, fused recency and verified identity. Future evaluation needs identity-correct metrics, and cannot adopt online GT initialization.",
+          "applied": false
+        },
+        {
+          "target": "07 section5; future V2",
+          "source": "SGLATrack pp.5–8",
+          "proposal": "Consider an offline image-tracker stress reference. Calibration and shared8GB simulator resource feasibility require separate validation; no production adoption in G4.",
+          "applied": false
+        },
+        {
+          "target": "07 section3; future V2/V3",
+          "source": "OA-VAT p.4 Eq.9 and UAST p.4 innovation definition",
+          "proposal": "Do not transplant image-confidence covariance without units/calibration. Use full innovation covarianceS when separately designing a statistical gate.",
+          "applied": false
+        }
+      ],
+      "written_files": [
+        {
+          "path": "docs/research/occlusion_algorithm_v1/notes/P2_active_tracking.md",
+          "sha256": "da342621c24f89b1526fe46d477ee15e05e5067d632dfc5000ac7d710d3cd342",
+          "bytes": 73211
+        },
+        {
+          "path": "docs/research/occlusion_algorithm_v1/notes/P6_extra_papers.md",
+          "sha256": "39659d2757e4e564fdb0bbb692c8ac377c9740b6d72848ea5354fa073854682a",
+          "bytes": 25576
+        }
+      ],
+      "design_impact_summary": "MINOR_ADJUSTMENTS_PROPOSED: PRIMER narrows generic fallback novelty; none of these checks invalidates a formula or assumption in section07."
+    },
+    {
+      "schema": "motar.occlusion-g1r.learned-perception.v1",
+      "status": "COMPLETE_ASSIGNED_SCOPE",
+      "new_full_read_count": 6,
+      "new_full_read_pages": 71,
+      "prior_full_read_spotcheck_count": 4,
+      "spotcheck_selection_file": "/tmp/codex_occ/g1lp_spot_selection.json",
+      "papers": [
+        {
+          "key": "YOPO",
+          "status": "FULL_READ",
+          "newly_full_read": true,
+          "prior_full_read_carried_forward": false,
+          "read_pages": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8
+          ],
+          "newly_read_pages": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8
+          ],
+          "pages": 8,
+          "title": "You Only Plan Once: A Learning-based One-stage Planner with Guidance Learning",
+          "authors": [
+            "Junjie Lu",
+            "Xuewei Zhang",
+            "Hongming Shen",
+            "Liwen Xu",
+            "Bailing Tian"
+          ],
+          "printed_venue": "NOT_PRINTED",
+          "printed_year": "NOT_PRINTED",
+          "path": "/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/논문/You Only Plan Once A Learning-based One-stage.pdf",
+          "sha256": "91c48521ecc2837ef724db74e62e2cea8e1b1aae1f7b160f820152c6e9b143ef",
+          "sha256_after": "91c48521ecc2837ef724db74e62e2cea8e1b1aae1f7b160f820152c6e9b143ef",
+          "sha_unchanged": true,
+          "reading_method": "all-page extracted text + selected unclear equation renders",
+          "spotcheck_seed": null,
+          "checks": [
+            "p.3 Eqs3–5",
+            "p.4 Eq10/2s15Hz",
+            "p.5 Eq21 score=-J",
+            "p.6 5x3/160x96",
+            "p.8 hardware16ms"
+          ],
+          "overlap": {
+            "a": "no",
+            "b": "partial",
+            "c": "no",
+            "d": "no",
+            "e": "no"
+          },
+          "factual_corrections": [
+            "Original p.5Eq21 negative cost score vs YOPO-Simple positive cost argmin",
+            "Original horizon2s/replan15Hz/reference50Hz vs version-specific code settings",
+            "Numeric anchor angles/radius NOT_RECORDED; do not import bd8a7f9 constants into paper",
+            "Positive .04 threshold vs negative cost score is internal inconsistency; unresolved"
+          ],
+          "design_formula_invalidated": false,
+          "G3_REVIEW_REQUIRED": false,
+          "notes": "notes/P3_learned_planners.md"
+        },
+        {
+          "key": "OCTrack",
+          "status": "FULL_READ",
+          "newly_full_read": true,
+          "prior_full_read_carried_forward": false,
+          "read_pages": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11
+          ],
+          "newly_read_pages": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11
+          ],
+          "pages": 11,
+          "title": "Rethinking Occlusion Modeling for UAV Tracking",
+          "authors": [
+            "Jian Zhang",
+            "Xincheng Yu",
+            "Yi Lin"
+          ],
+          "printed_venue": "CVPR Open Access accepted copy",
+          "printed_year": "NOT_PRINTED",
+          "path": "/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/논문/Rethinking Occlusion Modeling for UAV Tracking.pdf",
+          "sha256": "95e0f1d08a2a2c6acf52031a91a708da2ebeb797f1b8261239c54044b37d33fe",
+          "sha256_after": "95e0f1d08a2a2c6acf52031a91a708da2ebeb797f1b8261239c54044b37d33fe",
+          "sha_unchanged": true,
+          "reading_method": "all-page extracted text + selected unclear equation renders",
+          "spotcheck_seed": null,
+          "checks": [
+            "p.4 Eqs3–5 COM/ACP",
+            "p.5 Eqs6–7 CADB layer depth",
+            "p.6 Table1 hardware/params",
+            "p.7 partial subset AUC0.656",
+            "p.8 Table3 structured masks"
+          ],
+          "overlap": {
+            "a": "partial",
+            "b": "no",
+            "c": "no",
+            "d": "no",
+            "e": "no"
+          },
+          "factual_corrections": [
+            "COM/ACP exact names and equations",
+            "CADB transformer layer depth, not metric depth",
+            "No calibrated pdet,size/visiblefraction function; original supports stress design only",
+            "Eq5 invariance weighting not explicit in Eq8 final loss"
+          ],
+          "design_formula_invalidated": false,
+          "G3_REVIEW_REQUIRED": false,
+          "notes": "notes/P5_perception.md"
+        },
+        {
+          "key": "ORTrack",
+          "status": "FULL_READ",
+          "newly_full_read": true,
+          "prior_full_read_carried_forward": false,
+          "read_pages": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11
+          ],
+          "newly_read_pages": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11
+          ],
+          "pages": 11,
+          "title": "Learning Occlusion-Robust Vision Transformers for Real-Time UAV Tracking",
+          "authors": [
+            "You Wu",
+            "Xucheng Wang",
+            "Xiangyang Yang",
+            "Mengyuan Liu",
+            "Dan Zeng",
+            "Hengzhou Ye",
+            "Shuiwang Li"
+          ],
+          "printed_venue": "CVPR Open Access accepted copy",
+          "printed_year": "NOT_PRINTED; CVPR2025 identified independently in OCTrack p.11 ref51",
+          "path": "/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/논문/Learning Occlusion-Robust Vision Transformers for Real-Time UAV Tracking.pdf",
+          "sha256": "b5087dfe88af15238f24257bbb70d8b5f9450bc95cf5db498b07f2ba630c835d",
+          "sha256_after": "b5087dfe88af15238f24257bbb70d8b5f9450bc95cf5db498b07f2ba630c835d",
+          "sha_unchanged": true,
+          "reading_method": "all-page extracted text + selected unclear equation renders",
+          "spotcheck_seed": null,
+          "checks": [
+            "p.4 Eq1 mask complement inconsistency",
+            "p.5 Eqs2–4",
+            "p.6 Table1 param/FPS",
+            "p.7 Fig3/Table4",
+            "p.8 Table5–6"
+          ],
+          "overlap": {
+            "a": "partial",
+            "b": "no",
+            "c": "no",
+            "d": "no",
+            "e": "no"
+          },
+          "factual_corrections": [
+            "Accepted original retains centre-retaining Cox mask vs centre-erasing prose inconsistency",
+            "Eq3 printed alpha+beta deviation vs prose slope/intercept mismatch",
+            "Originalp7Fig3 85.0 vs78.1,Table4 81.6/62.2→88.6/66.8",
+            "Originalp6Table1 FPS226.4/292.3 vs p1caption236/313; scopes retained"
+          ],
+          "design_formula_invalidated": false,
+          "G3_REVIEW_REQUIRED": false,
+          "notes": "notes/P5_perception.md"
+        },
+        {
+          "key": "PANTHER",
+          "status": "FULL_READ",
+          "newly_full_read": true,
+          "prior_full_read_carried_forward": false,
+          "read_pages": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16
+          ],
+          "newly_read_pages": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16
+          ],
+          "pages": 16,
+          "title": "PANTHER: Perception-Aware Trajectory Planner in Dynamic Environments",
+          "authors": [
+            "Jesus Tordesillas",
+            "Jonathan P. How"
+          ],
+          "printed_venue": "IEEE Access template; publication fields placeholder",
+          "printed_year": "2022 arXiv stamp",
+          "path": "/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/논문/PANTHE Perception-Aware Trajectory.pdf",
+          "sha256": "c0f83fff0ac6f54ffdd6906f7942653b8958f365db634d90ed6710edb8ca7986",
+          "sha256_after": "c0f83fff0ac6f54ffdd6906f7942653b8958f365db634d90ed6710edb8ca7986",
+          "sha_unchanged": true,
+          "reading_method": "all-page extracted text + selected unclear equation renders",
+          "spotcheck_seed": null,
+          "checks": [
+            "p.3 Table2 FOV-only",
+            "p.6 Eqs1–2",
+            "p.8 unnumbered optimization",
+            "p.10–11 results/perfect prediction",
+            "p.14 limits/runtime"
+          ],
+          "overlap": {
+            "a": "partial",
+            "b": "partial",
+            "c": "no",
+            "d": "partial",
+            "e": "no"
+          },
+          "factual_corrections": [
+            "p8 optimization unnumbered, notEq3",
+            "FOV/blur only, no LOS",
+            "Simulation perfecttracking; exactobstaclefuture only in singledynamic/compute studies"
+          ],
+          "design_formula_invalidated": false,
+          "G3_REVIEW_REQUIRED": false,
+          "notes": "notes/P3_learned_planners.md"
+        },
+        {
+          "key": "Deep-PANTHER",
+          "status": "FULL_READ",
+          "newly_full_read": true,
+          "prior_full_read_carried_forward": false,
+          "read_pages": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "newly_read_pages": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "pages": 9,
+          "title": "Deep-PANTHER: Learning-Based Perception-Aware Trajectory Planner in Dynamic Environments",
+          "authors": [
+            "Jesus Tordesillas",
+            "Jonathan P. How"
+          ],
+          "printed_venue": "IEEE Robotics and Automation Letters preprint accepted January",
+          "printed_year": "2023",
+          "path": "/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/논문/Deep-PANTHER Learning-Based.pdf",
+          "sha256": "ebd98093f2a37de7f09a19ee25fe707b38b20a95201dc46057396b8de254ca59",
+          "sha256_after": "ebd98093f2a37de7f09a19ee25fe707b38b20a95201dc46057396b8de254ca59",
+          "sha_unchanged": true,
+          "reading_method": "all-page extracted text + selected unclear equation renders",
+          "spotcheck_seed": null,
+          "checks": [
+            "p.3 ns/architecture",
+            "p.4 LSA loss",
+            "p.5 Eq1/footnote4/6candidates/fallback/GTfuture",
+            "p.7 TableII",
+            "p.8 limits"
+          ],
+          "overlap": {
+            "a": "partial",
+            "b": "partial",
+            "c": "no",
+            "d": "partial",
+            "e": "no"
+          },
+          "factual_corrections": [
+            "p5footnote4 inFOV cubed visually confirmed",
+            "6candidates ranking and previousplanfallback confirmed",
+            "Groundtruthfuture obstacle fit in all simulations, not onlineperception evidence"
+          ],
+          "design_formula_invalidated": false,
+          "G3_REVIEW_REQUIRED": false,
+          "notes": "notes/P3_learned_planners.md"
+        },
+        {
+          "key": "RAPTOR",
+          "status": "FULL_READ",
+          "newly_full_read": true,
+          "prior_full_read_carried_forward": false,
+          "read_pages": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16
+          ],
+          "newly_read_pages": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16
+          ],
+          "pages": 16,
+          "title": "RAPTOR: Robust and Perception-aware Trajectory Replanning for Quadrotor Fast Flight",
+          "authors": [
+            "Boyu Zhou",
+            "Jie Pan",
+            "Fei Gao",
+            "Shaojie Shen"
+          ],
+          "printed_venue": "arXiv2007.03465v1; no journal venue printed",
+          "printed_year": "2020",
+          "path": "/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/논문/RAPTOR Robust and Perception-aware Trajectory.pdf",
+          "sha256": "208a3f0ec3ee23bfb06895d9e276393f94a6e3fa20f8b08845dfca4384df3d01",
+          "sha256_after": "208a3f0ec3ee23bfb06895d9e276393f94a6e3fa20f8b08845dfca4384df3d01",
+          "sha_unchanged": true,
+          "reading_method": "all-page extracted text + selected unclear equation renders",
+          "spotcheck_seed": null,
+          "checks": [
+            "p.5 UVD",
+            "p.7 Eq5 LOS",
+            "p.8 Eqs6–14 stopping",
+            "p.9 Eqs15–16 yaw/IG",
+            "p.10 onlineESDF",
+            "p.13 TableII"
+          ],
+          "overlap": {
+            "a": "partial",
+            "b": "partial",
+            "c": "no",
+            "d": "partial",
+            "e": "no"
+          },
+          "factual_corrections": [
+            "LOS Eq5 toward mapfrontier confirmed",
+            "Stop Eq6 assumesa_max and consistent map/trajectory",
+            "p8Eq9 pi vs pr notation inconsistency",
+            "Analytic simulator cylinder geometry remains evaluator-only; online must sense map",
+            "p13 table successfulcounts not blindly10 independentepisodes; p12five trials/map"
+          ],
+          "design_formula_invalidated": false,
+          "G3_REVIEW_REQUIRED": false,
+          "notes": "notes/P3_learned_planners.md"
+        },
+        {
+          "key": "YOPOv2-Tracker",
+          "status": "FULL_READ",
+          "newly_full_read": false,
+          "prior_full_read_carried_forward": true,
+          "read_pages": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19
+          ],
+          "newly_read_pages": [
+            6,
+            8,
+            9,
+            13
+          ],
+          "pages": 19,
+          "title": "YOPOv2-Tracker: An End-to-End Agile Tracking and Navigation Framework from Perception to Action",
+          "authors": [
+            "Junjie Lu",
+            "Yulin Hui",
+            "Xuewei Zhang",
+            "Wencan Feng",
+            "Hongming Shen",
+            "Zhiyu Li",
+            "Bailing Tian"
+          ],
+          "printed_venue": "arXiv2505.06923v1",
+          "printed_year": "2025",
+          "path": "/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/논문/YOPOv2-Tracker An End-to-End Agile Tracking and Navigation.pdf",
+          "sha256": "a7e0d432aed878492d23cb3ec34048a53d744bb937451ac2a34cca672e8110d9",
+          "sha256_after": "a7e0d432aed878492d23cb3ec34048a53d744bb937451ac2a34cca672e8110d9",
+          "sha_unchanged": true,
+          "reading_method": "verified identical payload; >=3 reproducibly random equation spotchecks plus mandatory questions",
+          "spotcheck_seed": 20261019,
+          "checks": [
+            "random p.8 Eq16",
+            "random p.6 Eq5",
+            "random p.9 Eq25",
+            "mandatory p.6 5x3x14",
+            "mandatory p.13 mainfailure=occlusion"
+          ],
+          "overlap": {
+            "a": "no",
+            "b": "partial",
+            "c": "no",
+            "d": "partial",
+            "e": "no"
+          },
+          "factual_corrections": [
+            "p6 5x3x14 confirmed",
+            "p13 mainfailures targetocclusion confirmed",
+            "Eq11force vsEq13acceleration disturbanceunits remain unresolved"
+          ],
+          "design_formula_invalidated": false,
+          "G3_REVIEW_REQUIRED": false,
+          "notes": "notes/P3_learned_planners.md",
+          "metadata_pages": [
+            1
+          ]
+        },
+        {
+          "key": "NavRL++",
+          "status": "FULL_READ",
+          "newly_full_read": false,
+          "prior_full_read_carried_forward": true,
+          "read_pages": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18
+          ],
+          "newly_read_pages": [
+            1,
+            2,
+            5,
+            6,
+            7,
+            8,
+            9,
+            16
+          ],
+          "pages": 18,
+          "title": "NavRL++: A System-Level Framework for Improving Sim-to-Real Transfer in Reinforcement Learning-Based Robot Navigation",
+          "authors": [
+            "Zhefan Xu",
+            "Hanyu Jin",
+            "Kenji Shimada"
+          ],
+          "printed_venue": "arXiv2605.15559v1",
+          "printed_year": "2026",
+          "path": "/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/논문/NavRL++ A System-Level Framework for Improving Sim-to-Real.pdf",
+          "sha256": "4d79836c6854ffa4df73e110ac93dd92bf06167c219bf7af4b0a1c985f51d25e",
+          "sha256_after": "4d79836c6854ffa4df73e110ac93dd92bf06167c219bf7af4b0a1c985f51d25e",
+          "sha_unchanged": true,
+          "reading_method": "verified identical payload; >=3 reproducibly random equation spotchecks plus mandatory questions",
+          "spotcheck_seed": 20261019,
+          "checks": [
+            "random p.8 Eq15",
+            "random p.8 Eq16",
+            "random Eq8 actually p.6",
+            "mandatory p.7 dropout0.3",
+            "mandatory p.9 fallbackzero",
+            "mandatory p.2 releasepromise/noURL"
+          ],
+          "overlap": {
+            "a": "no",
+            "b": "no",
+            "c": "partial",
+            "d": "partial",
+            "e": "no"
+          },
+          "factual_corrections": [
+            "Eq8 physicalpage6 ratherthanpage5",
+            "Codepromise physicalp2 noURL/currentremoteNOT_CHECKED",
+            "Dropout0.3p7 andzero-fallbackp9 confirmed"
+          ],
+          "design_formula_invalidated": false,
+          "G3_REVIEW_REQUIRED": false,
+          "notes": "notes/P3_learned_planners.md"
+        },
+        {
+          "key": "Perception-Aware Time-Optimal",
+          "status": "FULL_READ",
+          "newly_full_read": false,
+          "prior_full_read_carried_forward": true,
+          "read_pages": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21
+          ],
+          "newly_read_pages": [
+            4,
+            7
+          ],
+          "pages": 21,
+          "title": "Perception-Aware Time-Optimal Planning for Quadrotor Waypoint Flight",
+          "authors": [
+            "Chao Qin",
+            "Jiaxu Xing",
+            "Rudolf Reiter",
+            "Angel Romero",
+            "Yifan Lin",
+            "Hugh H.-T. Liu",
+            "Davide Scaramuzza"
+          ],
+          "printed_venue": "IEEE Journal of LaTeX Class Files placeholder; arXiv2603.04305v1",
+          "printed_year": "2026",
+          "path": "/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/논문/Perception-Aware Time-Optimal Planning for.pdf",
+          "sha256": "a9eaf4809b30e32ad2a6a69de4161af25e113422ac10dd8b3d4195a0479ca47a",
+          "sha256_after": "a9eaf4809b30e32ad2a6a69de4161af25e113422ac10dd8b3d4195a0479ca47a",
+          "sha_unchanged": true,
+          "reading_method": "verified identical payload; >=3 reproducibly random equation spotchecks plus mandatory questions",
+          "spotcheck_seed": 20261019,
+          "checks": [
+            "random p.7 Eq40",
+            "random p.4 Eq8",
+            "random p.7 Eq29",
+            "additional p.7 Eq33 sign"
+          ],
+          "overlap": {
+            "a": "partial",
+            "b": "partial",
+            "c": "no",
+            "d": "no",
+            "e": "no"
+          },
+          "factual_corrections": [
+            "p7Eq33 sign Zmin-Z contradictsp4Eq11",
+            "p7Eq29,37 use covariance ratherthaninverse despiteEq28 definition; do notcopywithoutderivation"
+          ],
+          "design_formula_invalidated": false,
+          "G3_REVIEW_REQUIRED": false,
+          "notes": "notes/P5_perception.md",
+          "metadata_pages": [
+            1
+          ]
+        },
+        {
+          "key": "Perception-aware Unknown Feature-limited",
+          "status": "FULL_READ",
+          "newly_full_read": false,
+          "prior_full_read_carried_forward": true,
+          "read_pages": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8
+          ],
+          "newly_read_pages": [
+            3,
+            5
+          ],
+          "pages": 8,
+          "title": "Perception-aware Planning for Quadrotor Flight in Unknown and Feature-limited Environments",
+          "authors": [
+            "Chenxin Yu",
+            "Zihong Lu",
+            "Jie Mei",
+            "Boyu Zhou"
+          ],
+          "printed_venue": "arXiv2503.15273v2",
+          "printed_year": "2025",
+          "path": "/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/논문/Perception-aware Planning for Quadrotor Flight in Unknown and.pdf",
+          "sha256": "97639b6c620f6ee4c202118dd6ef707fd3789e97c8641f551c3413d5500504de",
+          "sha256_after": "97639b6c620f6ee4c202118dd6ef707fd3789e97c8641f551c3413d5500504de",
+          "sha_unchanged": true,
+          "reading_method": "verified identical payload; >=3 reproducibly random equation spotchecks plus mandatory questions",
+          "spotcheck_seed": 20261019,
+          "checks": [
+            "random p.3 Eq4",
+            "random p.3 Eq1",
+            "random p.5 Eq12",
+            "additional featureLOS uncertainty retained"
+          ],
+          "overlap": {
+            "a": "partial",
+            "b": "partial",
+            "c": "no",
+            "d": "partial",
+            "e": "no"
+          },
+          "factual_corrections": [
+            "Featurecount LOS semanticsremainnotestablished; p5 explicitlyraycastsfrontiercells only"
+          ],
+          "design_formula_invalidated": false,
+          "G3_REVIEW_REQUIRED": false,
+          "notes": "notes/P5_perception.md",
+          "metadata_pages": [
+            1
+          ]
+        }
+      ],
+      "design_deltas": [
+        {
+          "target": "07§8",
+          "proposal": "retain BOIA bearing×speed lattice; YOPO anchor geometry is different dimension/control contract; no compelled change",
+          "gate": "G5 candidate coverage/dynamics later"
+        },
+        {
+          "target": "07§5; future detector stress",
+          "proposal": "Use explicit clustered/bar mask stress inspired by COM, fit held-out actualdetector reliability later; never import benchmarkprecision as pdet",
+          "gate": "V2/V3 G5"
+        },
+        {
+          "target": "future FOV/FIM reuse",
+          "proposal": "Correct and independentlyderive PATime depthgate and inversecovariance FIM before reuse; current BOIA KF formula alreadydifferent",
+          "gate": "future V2/V3; noG3 invalidation"
+        },
+        {
+          "target": "notes only",
+          "proposal": "Resolve citations PANTHER unnumbered/Deepcubic; retain OR source inconsistency; preservegtfirewall in RAPTOR reuse",
+          "gate": "documentation"
+        }
+      ],
+      "G3_REVIEW_REQUIRED": false,
+      "reason_no_G3": "No finding invalidates the currently declared BOIA formulas/assumptions; source inconsistencies are not imported into its analytic J/KF/oracle. Newnoveltyoverlap and calibrationneeds requirebounded wording and futuregates, not silent07–09 edits.",
+      "production_changed": false,
+      "gpu_or_external_code_executed": false,
+      "changed_files": [
+        "docs/research/occlusion_algorithm_v1/notes/P3_learned_planners.md",
+        "docs/research/occlusion_algorithm_v1/notes/P5_perception.md"
+      ],
+      "free_disk_bytes": 9398886400
+    }
+  ]
+}
