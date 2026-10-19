@@ -130,3 +130,14 @@ Decisions before October 2026 are recorded in:
   backup/bundle action was taken. Preserve PDFs, historical raw, symlinks, main WIP and stash.
 - **Boundary:** G4 unit tests do not qualify performance, safety, calibration or recovery. G5 and
   above need separate user approval. Session quota deadline is unknown; conservative wrap-up17:38KST.
+
+### D-2026-10-19-3 amendment — U4 target miss versus hard failure
+
+The user explicitly confirmed that a braking-prior error above10% is **LIMITED_VALIDITY**;
+when it remains within25%, subsequent CPU units may proceed. Retain the τ_v=.4 prior, record
+both criteria and do not claim10% agreement. Above25% still fails the model-form gate. This
+clarifies G4 execution only; no raw calibration, simulator or GPU authority is added.
+
+The usage-limit interruption left G1-R f103721 and U1 dc2b6d3 committed; U2 had no source files.
+Resume20:51KST Oct19, actual quota deadline UNKNOWN, conservative wrap-up00:51KST Oct20. Disk
+stop remains3GB. All still-authorized CPU work resumes without a new GPU/push/merge permission.

@@ -1,0 +1,19 @@
+test_all_forbidden_mutations_leave_output_bitwise_equal (test_boia_access.AccessTest) ... ok
+test_copies_detach_and_do_not_alias_or_change_source (test_boia_access.AccessTest) ... ok
+test_exact_shapes_calibration_and_raw_lidar_contract (test_boia_access.AccessTest) ... ok
+test_lidar_method_called_once_and_never_rendered (test_boia_access.AccessTest) ... ok
+test_read_preserves_global_rng_dtype_and_tf32_flag (test_boia_access.AccessTest) ... ok
+test_reader_does_not_write_any_source_tensor (test_boia_access.AccessTest) ... ok
+test_reads_actual_calibration_not_parameter_defaults (test_boia_access.AccessTest) ... ok
+test_rejects_invalid_calibration_scan_and_quaternion (test_boia_access.AccessTest) ... ok
+test_rejects_nonfinite_and_wrong_flag_dtype (test_boia_access.AccessTest) ... ok
+test_rejects_wrong_shapes_and_missing_names_without_fallback (test_boia_access.AccessTest) ... ok
+test_repeated_reads_are_independent (test_boia_access.AccessTest) ... ok
+test_static_guard_rejects_forbidden_reads_and_computed_access (test_boia_access.AccessTest) ... ok
+test_static_whitelist_source_and_literal_audit_exception (test_boia_access.AccessTest) ... ok
+test_yaw_matches_independent_rotated_forward_vector (test_boia_access.AccessTest) ... ok
+
+----------------------------------------------------------------------
+Ran 14 tests in 0.031s
+
+OK

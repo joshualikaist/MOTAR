@@ -1,6 +1,6 @@
 # Occlusion-handling navigation algorithm v1 — research and design record
 
-**Status: G1-R COMPLETE (2026-10-19, Codex); G4 CPU U1–U7 APPROVED, NOT_YET_IMPLEMENTED.** Nothing is validated. Nothing
+**Status: G1-R COMPLETE (2026-10-19, Codex); G4 CPU U1–U7 IN_PROGRESS; no simulator validation.** Nothing is validated. Nothing
 in this folder is a performance claim. Proposed equations and modules are research hypotheses until
 CPU and simulator evidence exists.
 
@@ -94,4 +94,4 @@ FULL_READ records were checked against the originals. Physical read pages and sp
 2. The full G1/G2 working notes, with page/equation and file:line detail, are in
    [`notes/`](notes/), together with M3's analysis scripts and outputs in `notes/m3_scripts/`. The
    numbered files above are curated from them.
-3. G1-R committedf103721; U1 focusedCPU21PASS; next unit pending localcommit/gate. Diskstop3GB; G5/GPU unapproved.
+3. G1-R committedf103721; U2 focusedCPU14PASS; next unit pending localcommit/gate. Diskstop3GB; G5/GPU unapproved.

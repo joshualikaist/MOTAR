@@ -21999,3 +21999,10 @@ Files: motar_eval/boia/__init__.py, motar_eval/boia/types.py, motar_eval/boia/ge
 FocusedCPU 21 tests PASS, failures0/errors0, 0.051s. 368source lines; exact sector-crossing free model, explicit-prior pointdiscs, MC1024 antithetic singlebar and positive-correlated independent-product bias checks. Root near-boundary falseclear and NaN stress bugs fixed before commit; independent read-only geometry/analytic review found no remaining HIGH. Model validity/foreground self-exclusion remain unqualified. No global RNG or TF32 distance-matrix expansion.
 Receipts g4_u1_validation.json and g4_u1_tests.txt in docs/research/occlusion_algorithm_v1/.
 NewCPUoptin only; no simulator/GPU/production/rawcalibration/PPO/push/merge. Next: diffreview/localcommit thennextunitgate.
+
+## 2026-10-19 — BOIA U2 CPU implementation
+
+Files: motar_eval/boia/access.py, tests/test_boia_access.py.
+FocusedCPU 14 tests PASS, failures0/errors0, 0.031s. Whitelist-only detached sensor copies; nested forbidden-value mutations, single LiDAR read, calibration and yaw checks PASS. User U4 target clarification and resumed session recorded without changing frozen design.
+Receipts g4_u2_validation.json and g4_u2_tests.txt in docs/research/occlusion_algorithm_v1/.
+NewCPUoptin only; no simulator/GPU/production/rawcalibration/PPO/push/merge. Next: diffreview/localcommit thennextunitgate.

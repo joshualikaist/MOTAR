@@ -1,0 +1,29 @@
+{
+  "unit": "U2",
+  "status": "CPU_TESTS_PASS",
+  "tests": {
+    "run": 14,
+    "failures": 0,
+    "errors": 0,
+    "wall_s": 0.031
+  },
+  "base_sha": "dc2b6d33fd5007c50f06bb9b215e88ef2d52caf4",
+  "source_binding": "Source and this receipt are in the same unit commit; hashes refer to that commit, not later extensions",
+  "source_files": [
+    "motar_eval/boia/access.py",
+    "tests/test_boia_access.py"
+  ],
+  "source_sha256": {
+    "motar_eval/boia/access.py": "02e8c67a9edc84c84dfc51b1312a57051e552c491dc21effc4ee9433b11da4d6",
+    "tests/test_boia_access.py": "a5665da273dae1a20e4caeebda8fa7f92a3a13fd6873d32dd8dd370e919c53ff"
+  },
+  "source_line_counts": {
+    "motar_eval/boia/access.py": 121,
+    "tests/test_boia_access.py": 331
+  },
+  "public_cpu": null,
+  "interpretation": "CPU unit evidence only; no performance/calibration/simulator/GPU qualification",
+  "note": "Whitelist-only detached sensor copies; nested forbidden-value mutations, single LiDAR read, calibration and yaw checks PASS. User U4 target clarification and resumed session recorded without changing frozen design.",
+  "disk_stop_below_bytes": 3000000000,
+  "free_bytes": 9360789504
+}

@@ -89,3 +89,9 @@ change07 defaults, silently relax acceptance criteria or supply any performance 
 - `motar-3p3.10`: G1-R proposal: narrow FrozenF arbitration novelty against PRIMER and shielding
 - `motar-3p3.11`: G1-R proposal: sensor-only identity confirmation without GT initialization
 - `motar-3p3.12`: G1-R proposal: qualify SGLATrack as later detector stress reference
+
+## User clarification after the usage-limit pause
+
+The user explicitly selected: a10% braking-target miss is **LIMITED_VALIDITY**, and CPU units may
+continue when the error is within25%. Above25% remains a model-form failure. Keep the uncalibrated
+τ_v=.4 prior; this does not waive or claim the10% target, authorize calibration or change07.
