@@ -94,5 +94,4 @@ FULL_READ records were checked against the originals. Physical read pages and sp
 2. The full G1/G2 working notes, with page/equation and file:line detail, are in
    [`notes/`](notes/), together with M3's analysis scripts and outputs in `notes/m3_scripts/`. The
    numbered files above are curated from them.
-3. G1-R done; G4 U1–U7 approved and pending. Resume at U1 after the PartA commit. Disk stop3GB.
-   Check the current Beads child status first; do not treat this as approval for G5 or GPU.
+3. G1-R committedf103721; U1 focusedCPU21PASS; next unit pending localcommit/gate. Diskstop3GB; G5/GPU unapproved.
