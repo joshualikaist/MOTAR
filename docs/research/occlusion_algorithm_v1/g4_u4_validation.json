@@ -1,0 +1,62 @@
+{
+  "unit": "U4",
+  "status": "LIMITED_VALIDITY",
+  "tests": {
+    "run": 11,
+    "failures": 0,
+    "errors": 0,
+    "wall_s": 3.07
+  },
+  "base_sha": "314f93dd115a429cdd3ec14eadb2cf0b7384573b",
+  "source_binding": "Source and this receipt are in the same unit commit; hashes refer to that commit, not later extensions",
+  "source_files": [
+    "motar_eval/boia/dynamics.py",
+    "tests/test_boia_dynamics.py"
+  ],
+  "source_sha256": {
+    "motar_eval/boia/dynamics.py": "9ef55b71734100cfc48b70e35da98f4a4764adf1821fa6997a8bab30683a68ac",
+    "tests/test_boia_dynamics.py": "e9ae9206d674f5a9076945c6e274c133429381660e3704572c904b107b3a85fe"
+  },
+  "source_line_counts": {
+    "motar_eval/boia/dynamics.py": 220,
+    "tests/test_boia_dynamics.py": 234
+  },
+  "public_cpu": null,
+  "interpretation": "CPU unit evidence only; no performance/calibration/simulator/GPU qualification",
+  "note": "Focused11PASS; original raw-scan/riskcap arithmetic and diagnostics bitwise match in isolated CPU children. Prior braking errors4.878%,7.143%,12.5605%:10% target missed at3.52m/s,25% hard gate passed; user explicitly permits later CPU units. Fixed tau_v=.4, no raw fit.",
+  "disk_stop_below_bytes": 3000000000,
+  "free_bytes": 9356148736,
+  "braking_prior": {
+    "method": "Independent scalar geometric-series oracle; matched rollout in focused test to3e-9",
+    "tau_v_s": 0.4,
+    "substep_s": 0.01,
+    "substeps": 800,
+    "reference": "07 section7.2, M2 recorded braking evidence; no raw reopened or fitted",
+    "rows": [
+      {
+        "speed_mps": 2.0,
+        "reference_braking_m": 0.82,
+        "prior_800_substep_distance_m": 0.779999998753227,
+        "relative_error_percent": 4.878048932533286,
+        "target_10pct_pass": true,
+        "hard_25pct_pass": true
+      },
+      {
+        "speed_mps": 2.5,
+        "reference_braking_m": 1.05,
+        "prior_800_substep_distance_m": 0.9749999984415337,
+        "relative_error_percent": 7.142857291282506,
+        "target_10pct_pass": true,
+        "hard_25pct_pass": true
+      },
+      {
+        "speed_mps": 3.52,
+        "reference_braking_m": 1.57,
+        "prior_800_substep_distance_m": 1.3727999978056797,
+        "relative_error_percent": 12.560509693905752,
+        "target_10pct_pass": false,
+        "hard_25pct_pass": true
+      }
+    ]
+  }
+}

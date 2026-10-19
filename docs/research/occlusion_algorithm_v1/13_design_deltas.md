@@ -110,3 +110,20 @@ continue when the error is within25%. Above25% remains a model-form failure. Kee
   propagation of these expected updates belongs to U7, not independent pointwise calls over H.
 - Cholesky retries are per environment and returned as optional explicit diagnostics; any jitter
   changes the sampling covariance by the recorded diagonal amount. Neither Q nor R is calibrated.
+
+## Implementation resolutions — U4
+
+- Normal `aerial_gym` package import reaches Isaac Gym. The BOIA package therefore mirrors the
+  pure riskcap/raw-scan arithmetic; tests load only the original standalone governor file in an
+  isolated CPU child. Equality is conditional on identical scan and configuration. At predicted
+  poses, the original measured world-point corridor is an **ADAPTED** approximation, not a new
+  scan or an equivalence claim for the complete production filter.
+- Frozen runtime values follow M2 §0, including free cap3.53553390593 and telemetry brake2.96;
+  the standalone source defaults differ. `governed_cmd` stores physical m/s and rad/s, whereas
+  input/output actions remain normalized. Positive yaw lag requires an explicit initial rate;
+  unknown lag is not inferred from body-z angular velocity.
+- The first braking knot fixes a=2²/(2·.82). Below it use v²/(2a); between knots interpolate;
+  above the last use D_last+(v²-v_last²)/(2a) with a warning. This retains continuity without a
+  new fit. `braking_distance` returns the reaction-inclusive total, so safety adds no second
+  reaction term. The default tau_v=.4 prior has a12.5605% high-speed discrepancy: **LIMITED_VALIDITY**,
+  below the user's25% stop criterion. The10% target is not passed and no parameter is retuned.
