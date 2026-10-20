@@ -1,17 +1,22 @@
 # BOIA Research Master Plan
 
-2026-10-21 KST · `codex/mt-p1` · G4-R4 living research entry point
-(2026-10-20 request/evidence lineage).
+2026-10-21 KST · `codex/mt-p1` · G4-R5 living research entry point.
 Committed C02 base: `8689efcd066d64e7b49cecf011e3bd8675380cdb`.
 R1 research source: local `82ef02c340fba0baec18162ad33fc03dca7301d5`.
 This plan preserves the original specifications, preregistrations, experiments and
 receipts as historical evidence. It does not retroactively qualify them or authorize
 GPU, simulation, training, production/controller changes, online activation or push.
-**Current scope: R0 inventory/control and R1 research CPU correction; G5 HOLD.**
+**Current scope: R2/R3 source/observability audit, R4 continuation/evaluation design
+and disconnected Shadow specification; G5 HOLD.**
 R0 is PASS_CONTROLLED; R1 is CPU_VERIFIED within its nominal declaration contract
 (50 focused /252 combined BOIA tests PASS). Independent read-only review found no
 blocker within the nominal typed CPU scope. Exact source/results belong to the R4 evidence
 record. Physical qualification and online/C02 integration remain unavailable.
+The [G4-R5 evidence](../../evidence/boia_g4r5_2026-10-21/SHADOW_READINESS.md)
+binds the actual field inventory, B03/B04 counterexamples and missing continuation/
+terminal contracts to source `45a7b6839e9b3855cf0a847b362d18dac29af315`.
+Its CPU schema probes do not install a runtime observer. Shadow is
+**HOLD_PENDING_EVALUATOR_IMPLEMENTATION**; no GPU run is authorized.
 
 ## 1. Research question and mission
 
@@ -108,7 +113,7 @@ snapshot, whose final hashes are recorded with its validation receipt.
 | Capture / height | Swept relative distance<0.5m; z<0.1m or z>4m fails | Same operational task definitions. |
 | Governor | Environment-dependent | riskcap; brake2.9608856678m/s², reaction0.1s, TTC1.2s. |
 | Target | Default dynamics legacy | E0 bounded static, speed0; E2 bounded waypoint virtual executor, final speed1.5m/s. E2 is not a PhysX target actor. Moving OCC uses direct_l2_v1. |
-| Sensors | Runtime-dependent | Launcher dropout0.3, depth-noise0.02, RGB-noise0.015; these knobs are not empirical reliability certificates. |
+| Sensors | Runtime-dependent; perception perturbations default OFF | Launcher dropout0.3, depth-noise0.02, RGB-noise0.015 apply only when `enable_perturbations` is true. The knobs alone do not establish active noise or empirical reliability. |
 
 References: `config/task_config/navrl_task_config.py:135–158,239,465–483,595–620,727–732`;
 `rl_training/rl_games/eval_navrl_target_behavior_arms.sh:57–98,120–134`;
@@ -117,6 +122,12 @@ Frozen checkpoint SHA is `f702213936601860995cf61dcc570247e72543b1976e3716055cd8
 (launcher:30); this plan does not load or replace it. Historical OCC execution
 scrubbed inherited NAVRL knobs and did not opt into later sensor corrections; do
 not silently substitute a newer sensor lineage for those original results.
+G4-R5 checks the actual perturbation gate (`navrl_task.py:6477`,
+`navrl_perception.py:1593–1641`, task config:277); no historical run's active flag
+is inferred from configured noise amplitudes alone. Public modality capture/arrival
+clocks are absent, current Frozen perception does not produce a bbox, and sanitized
+LiDAR ranges collapse no-hit/saturation/some invalid values. See the R5 inventory
+for exact available, privileged, missing and uncertain fields.
 
 ## 3. Module status and evidence
 
@@ -158,6 +169,13 @@ remain unverified. PUBLIC_CPU was NOT_RERUN for R1.
 Committed C02 PUBLIC_CPU had2941 tests,0 failures and4 exact-known errors; its
 process status remains FAIL, with previous-error equivalence recorded. Do not call
 that an all-green public run or imply it was rerun for later research code.
+G4-R5 reran the combined BOIA suite once before local commit:252 PASS,
+0 failures/errors (15.095s), plus14 new standalone CPU contract probes. Independent
+read-only review reran14 and checked7 narrow controls before the final identifier-
+format correction; root reran14 after it, while independent recheck hit usage limit.
+PUBLIC_CPU remains
+NOT_RERUN with its four existing errors unresolved. Actual sensor packets,
+runtime OFF/ON parity and simulator/GPU behavior remain NOT_TESTED.
 
 ## 4. Mathematics, decision rule and interception
 
@@ -173,6 +191,12 @@ label. Aligned measured intervals, timestamps and calibration domains are necess
 conditions. The research implementation checks supplied records; it does not prove
 their provenance or infer missing physical evidence. Ambiguous first hits remain
 occupied evidence and are never deleted to make a trajectory safe.
+The actual LiDAR target proxy radius is0.20m, versus RGB-D0.15m with camera
+offset(.10,0,.03)m. Thus an on-axis6m LiDAR sphere centre produces5.8m, as can a
+foreground surface. This proves ambiguity of one range/centre summary, not of
+every RGB-D pixel and beam. Nominal5° ray gaps at6m span0.52343m; valid rays alone
+do not certify the intervening volume. R5 preserves these UNKNOWN/ABSTAIN limits
+without using semantic identity or synthesizing mission loss.
 
 **Visibility and old cost.** The legacy forecast combines sampled target paths,
 camera FOV, size gate and sensed-point LOS. `forecast(...,mode="oracle")` is its
@@ -370,9 +394,9 @@ abort-monitor protocol must be separately approved and labelled F0_WITH_ABORT_PR
 | --- | --- | --- |
 | R0 Git hygiene / ownership | All-worktree/staged/unstaged/untracked inventory → protected classification and controlled local exclusions | PASS_CONTROLLED per R0_GATE; initial target29 and main3725 explained, no raw deletion. Final gate rechecked after scoped commits. |
 | R1 CPU safety/utility separation | Independent safety context/evidence → strict research selector, preserved assertions,20 new failure controls | CPU_VERIFIED nominal contract:50 focused /252 combined BOIA PASS; missing/stale utility preserves a valid safety backup and missing/stale safety refuses. Read-only review found no blocker in this scope; no physical/online provider or production coupling. |
-| R2 Real measurement contract | Actual RGB-D/LiDAR/tracker clocks, calibration and permitted identity support → approved evidence adapter/schema | HOLD until supported provenance/no GT leakage; missing bounds stay unavailable. |
-| R3 B03/B04 identifiability | Independent indistinguishable-world and sparse-coverage tests → supported-volume/ambiguity limits | HOLD if requested inference is unidentifiable; preserve occupied/unknown evidence. |
-| R4 F continuation | Qualified matched prefix branches + actor/history state → continuation model/error receipts | HOLD until actual F matches the declared option, not held-command surrogate. |
+| R2 Real measurement contract | Actual RGB-D/LiDAR/tracker clocks, calibration and permitted identity support → approved evidence adapter/schema | R5 STATIC_AUDIT/CPU_SCHEMA_VERIFIED only; actual observer/clocks/reset joins NOT_IMPLEMENTED. Missing physical bounds stay unavailable. |
+| R3 B03/B04 identifiability | Independent range ambiguity and sparse-coverage tests → supported-volume/ambiguity limits | R5 counterexamples verified in nominal CPU geometry; physical coverage/identity remain unresolved. Preserve occupied/UNKNOWN evidence. |
+| R4 F continuation | Qualified matched prefix branches + actor/history state → continuation model/error receipts | Existing fresh-process prefix pattern is reusable; full snapshot restore and new-profile continuation NOT_QUALIFIED. Required state/API gaps recorded in R5. |
 | R5 Mission benefit calibration | R2–R4 models + held-out independent scenes → bounded loss/benefit/selection calibration | HOLD on unsupported strata, missing error terms or no predictive discrimination. |
 | R6 Real-time / G5 eligibility | Qualified geometry/plant/sensing/models → device-specific deadline and eligibility report | G5 HOLD; CPU/GPU/transfer/trace checks and separate user decision required. |
 | R7 Approved small execution | Frozen source/preregistration + passed gates + explicit approval → bounded small-run raw/manifest | NOT_AUTHORIZED; stop on integrity/resource/deadline failures; no automatic expansion. |
@@ -386,7 +410,29 @@ exclusion; raw remains visible/protected. PASS_CONTROLLED does not mean clean ma
 or permission to stage its assets. Existing source/history and raw manifests remain
 authoritative; this plan is their entry point, not a replacement evidence record.
 
-Only R0/R1 and documentation are authorized now. Stop resource work below
+### Shortest next execution unit
+
+The R5 source audit and schema/design unit is complete; no runtime code was changed.
+Next, seek approval for **one evaluator-only observer/logger plus focused CPU
+tests**, reusing the single `perception.observe` call boundary, `access.read_online`
+and Kroc/E-L0 terminal/contact callbacks. Record modality scheduling/frames,
+reset-aware IDs and pre-mask contact/height/OOB separately: post-compute crashes
+alias the resolved termination buffer and cannot recover suppressed causes.
+
+| Gate | Requirement |
+| --- | --- |
+| MUST_BEFORE_SHADOW | Tiny permitted-input collector/header/terminal logger, exactly-once sensing and structurally disconnected output, CPU invariance/reset/domain tests; fixed source/config/checkpoint and exclusive output/watchdog contracts. Then seek separate GPU approval. |
+| MAY_DEFER_UNTIL_AFTER_SHADOW | B03/B04 physical resolution, calibrated utility and F-continuation model. Keep them UNKNOWN/ABSTAIN; passive availability shadow estimates no capture gain. |
+| MUST_BEFORE_ONLINE_CONTROL | Physical C02/backup, all used evidence/model bounds, action ownership/hand-back, controller/plant/deadline/endgame qualification and explicit user approval. G5 remains HOLD. |
+
+The design-only first shadow is N1, one moving/70bar profile, an OFF/ON pair of
+at most200 actions each plus a20-action smoke, at most12min GPU wall reservation.
+Actual OFF/ON parity is an early qualification objective, not a present PASS.
+Full planner/value computation is skipped where unsupported. Its exact resource,
+latency, censoring and failure guards are in the single R5 evidence document;
+these are a proposed specification, not a committed run preregistration/approval.
+
+Stop resource work below
 3,000,000,000 free bytes. Keep commits separated by approved research unit, stage
 explicit paths, report local source/result SHA and distinguish local from remote.
 No main merge/push, force push, history rewrite, raw/checkpoint deletion or automatic
