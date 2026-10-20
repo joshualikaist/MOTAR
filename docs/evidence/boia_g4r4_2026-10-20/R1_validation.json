@@ -1,0 +1,70 @@
+{
+  "schema": "motar.g4r4.R1.validation.v1",
+  "base_sha": "8689efcd066d64e7b49cecf011e3bd8675380cdb",
+  "source_sha256": {
+    "motar_eval/boia_research/__init__.py": "b058a6309ac89e4ca24f62f7df41d9bfe214defc5051564bdcb0f4e65634e0dc",
+    "motar_eval/boia_research/benefit.py": "5053f400ac6e7ea2af9f79ed8680a61696920f40de900d0de06d0cffd2c76473",
+    "motar_eval/boia_research/decision.py": "a7c4ab115711f20417467b96b7bd498bc9bb6f3ede8644d67c65cbc71ccf0c7a",
+    "motar_eval/boia_research/evidence.py": "8c20b71bec2ee58b3e4044b4f9d8fe111d1cd8a81d4ec6914c69354ab51b7e04",
+    "motar_eval/boia_research/safety.py": "8e49ed723adb020122f874a4d0040a16db224aaa01d759bcdd76f9d07debda73",
+    "motar_eval/boia_research/types.py": "77bddb5fed05f090b09bffd930872d7f1679e0ac4d629e3cdf8b7a76d0c472a9",
+    "tests/test_boia_research.py": "83c2e4d06b807a2506aa6d49f552558eeaf5e2b29d4bfa450570b99156954bce",
+    "tests/test_boia_research_safety.py": "d188b8229c079348041fa62d2346f41165a6b960fd9a5b9c6cb91cc768b8e6d0"
+  },
+  "scope": "NOMINAL_CPU_RESEARCH_ONLY",
+  "physical_qualified": false,
+  "focused": {
+    "ran": 50,
+    "original_methods": 30,
+    "new_methods": 20,
+    "failures": 0,
+    "errors": 0,
+    "seconds": 0.015,
+    "exit_code": 0
+  },
+  "boia": {
+    "ran": 252,
+    "previous_methods": 232,
+    "new_methods": 20,
+    "failures": 0,
+    "errors": 0,
+    "seconds": 15.123,
+    "exit_code": 0
+  },
+  "pre_fix": {
+    "ran": 20,
+    "failures": 14,
+    "errors": 2,
+    "status": "FAIL_REPRODUCED",
+    "note": "Exact archived old selector uses additive current records/fixtures; errors are utilityNone AttributeErrors, not missing API import errors."
+  },
+  "original_test_methods_AST_unchanged": true,
+  "new_strict_import_isolation": "PASS: no aerial_gym/oldBOIA/tools/resources callers",
+  "source_AST": "PASS",
+  "PUBLIC_CPU": "NOT_RERUN",
+  "last_PUBLIC_CPU": {
+    "source_commit": "8689efcd066d64e7b49cecf011e3bd8675380cdb",
+    "ran": 2941,
+    "failures": 0,
+    "errors": 4,
+    "status": "FAIL: exact pre-existing DetectReduction errors",
+    "issue": "motar-6nn.5"
+  },
+  "environment": {
+    "prefix": "PYTHONNOUSERSITE=1 CUDA_VISIBLE_DEVICES='' OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 TMPDIR=/tmp/codex_occ /home/fair/miniconda3/envs/aerialgym/bin/python -B",
+    "commands": {
+      "focused": "-m unittest discover -s tests -p 'test_boia_research*.py' -v",
+      "boia": "-m unittest discover -s tests -p 'test_boia*.py' -v",
+      "negative": "docs/evidence/boia_g4r4_2026-10-20/run_pre_r1_negative.py --output docs/evidence/boia_g4r4_2026-10-20/pre_r1_negative.json"
+    }
+  },
+  "independent_review": {
+    "type": "read-only agent",
+    "focused": 50,
+    "status": "NO_BLOCKING_DEFECT_WITHIN_NOMINAL_TYPED_CPU_SCOPE",
+    "source_unchanged": true
+  },
+  "online_integration": false,
+  "GPU": false,
+  "G5": "HOLD"
+}

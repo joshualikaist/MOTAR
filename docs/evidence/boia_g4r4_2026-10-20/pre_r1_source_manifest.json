@@ -1,0 +1,26 @@
+{
+  "motar_eval/boia_research/__init__.py": {
+    "sha256": "b058a6309ac89e4ca24f62f7df41d9bfe214defc5051564bdcb0f4e65634e0dc",
+    "archive": "pre_r1___init__.py.txt"
+  },
+  "motar_eval/boia_research/benefit.py": {
+    "sha256": "5053f400ac6e7ea2af9f79ed8680a61696920f40de900d0de06d0cffd2c76473",
+    "archive": "pre_r1_benefit.py.txt"
+  },
+  "motar_eval/boia_research/decision.py": {
+    "sha256": "5c21a61251f04a2996c2bec8634c43e75285017d0f609067754ef5207ff67f6a",
+    "archive": "pre_r1_decision.py.txt"
+  },
+  "motar_eval/boia_research/evidence.py": {
+    "sha256": "8c20b71bec2ee58b3e4044b4f9d8fe111d1cd8a81d4ec6914c69354ab51b7e04",
+    "archive": "pre_r1_evidence.py.txt"
+  },
+  "motar_eval/boia_research/types.py": {
+    "sha256": "f4f0561d4fd53479e22492609c2b83097dd5960f64117361d053ab2057012cd0",
+    "archive": "pre_r1_types.py.txt"
+  },
+  "tests/test_boia_research.py": {
+    "sha256": "b51807bf4f7405317bf6f1fc14081eba471baf95c3124b42aa4dcbd7a0d1f745",
+    "archive": "pre_r1_test_boia_research.py.txt"
+  }
+}

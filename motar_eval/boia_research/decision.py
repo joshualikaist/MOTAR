@@ -1,0 +1,176 @@
+"""C4/C5 finite-grid timing and pure ID arbitration, never executable control."""
+from .evidence import _finite
+from .safety import validate_safety
+from .types import BenefitResult, Decision, ResearchState, UtilityValidity, WindowResult
+
+
+def initial_state(env_id, episode_id, baseline_id):
+    return ResearchState(env_id, episode_id, baseline_id)
+
+
+def _policy_valid(policy):
+    return (_finite(policy.tau_on) and _finite(policy.tau_off)
+            and 0 <= policy.tau_off < policy.tau_on
+            and all(isinstance(x, int) and not isinstance(x, bool) and x > 0
+                    for x in (policy.min_hold, policy.off_steps)))
+
+
+def _option_safe(case, option):
+    """Boolean may veto; independent current safety evidence must authorize."""
+    return (isinstance(option.candidate_id, str) and bool(option.candidate_id)
+            and option.candidate_id != case.baseline_id
+            and _finite(option.wait_s) and option.wait_s >= 0
+            and option.safety_valid is True
+            and sum(o.candidate_id == option.candidate_id and o.wait_s == option.wait_s
+                    for o in case.options) == 1
+            and validate_safety(case.safety_context, case.key, option.candidate_id,
+                                option.wait_s, option.safety_evidence).valid)
+
+
+def _current_safe(case, option):
+    """Immediate backup validity is completely independent of utility records."""
+    return _finite(option.wait_s) and option.wait_s == 0 and _option_safe(case, option)
+
+
+def _baseline_safe(case):
+    return (case.baseline_safe is True
+            and validate_safety(case.safety_context, case.key, case.baseline_id, 0.,
+                                case.baseline_safety_evidence).valid)
+
+
+def opportunity_window(case):
+    """Current contiguous grid window and globally preferred supported option.
+
+    Later reappearance never bridges a gap in the current window. A future option
+    is advisory: KEEP_F now and re-evaluate later, not a queued executable action.
+    Entire wait INTERVAL safety is supplied by caller, not inferred at endpoints.
+    """
+    def fail(reason):
+        return WindowResult(case.key, False, reason)
+
+    if not _baseline_safe(case):
+        return fail("BASELINE_SAFETY_NOT_CURRENT")
+    grid = case.wait_grid_s
+    if (not grid or not all(_finite(x) and x >= 0 for x in grid) or grid[0] != 0
+            or any(b <= a for a, b in zip(grid, grid[1:]))
+            or len(case.wait_interval_safe) != len(grid) - 1
+            or not all(isinstance(x, bool) for x in case.wait_interval_safe)
+            or not _policy_valid(case.policy)):
+        return fail("INVALID_GRID_WAIT_SAFETY_OR_SWITCH_POLICY")
+    evidence = case.evidence
+    if (evidence is None or evidence.valid is not True or evidence.key != case.key
+            or not evidence.labels or "UNKNOWN_OR_UNOBSERVED" in evidence.labels):
+        return fail("COMMON_EVIDENCE_UNSUPPORTED")
+    cumulative = [True]
+    for safe in case.wait_interval_safe:
+        cumulative.append(cumulative[-1] and safe)
+    pairs = [(o.candidate_id, o.wait_s) for o in case.options]
+    valid, declared_safe = [], False
+    for option, pair in zip(case.options, pairs):
+        benefit = option.benefit
+        safe = _option_safe(case, option)
+        if (safe and option.wait_s in grid and cumulative[grid.index(option.wait_s)]):
+            declared_safe = True
+        # Duplicate identities cannot silently select different numerical records.
+        if (not isinstance(option.candidate_id, str) or not option.candidate_id
+                or option.candidate_id == case.baseline_id
+                or not _finite(option.wait_s) or option.wait_s not in grid
+                or pairs.count(pair) != 1 or not safe
+                or not isinstance(option.utility, UtilityValidity)
+                or not isinstance(benefit, BenefitResult)
+                or option.utility.valid is not True or benefit.valid is not True
+                or not evidence.domain or option.utility.domain != evidence.domain
+                or benefit.domain != evidence.domain
+                or benefit.key != case.key or benefit.candidate_id != option.candidate_id
+                or benefit.wait_s != option.wait_s or not _finite(benefit.lower_bound)
+                or not set(evidence.labels).issubset(benefit.covered_hypotheses)
+                or (benefit.statistical and benefit.tested_options < len(case.options))):
+            continue
+        if cumulative[grid.index(option.wait_s)]:
+            valid.append(option)
+    if declared_safe and not valid:
+        return fail("NO_UTILITY_SUPPORTED_COMPARISON")
+    positive = [o for o in valid if o.benefit.lower_bound > case.policy.tau_on]
+    times = tuple(t for t in grid if any(o.wait_s == t for o in positive))
+    current = []
+    for t in grid:
+        if t not in times:
+            break
+        current.append(t)
+    best = min(positive, key=lambda o: (-o.benefit.lower_bound, o.wait_s, o.candidate_id)) if positive else None
+    reason = ("NO_SAFE_ALTERNATIVE" if not declared_safe
+              else "EMPTY_CURRENT_LATE_ADVISORY" if not current and times
+              else "EMPTY_CURRENT_WINDOW" if not current else "SUPPORTED_GRID_WINDOW")
+    return WindowResult(case.key, True, reason, tuple(current), times,
+                        bool(current) and len(current) < len(grid),
+                        bool(current) and len(current) == len(grid),
+                        best.candidate_id if best else None, best.wait_s if best else None,
+                        best.benefit.lower_bound if best else None,
+                        tuple(sorted(valid, key=lambda o: (o.wait_s, o.candidate_id))))
+
+
+def decide(case, state):
+    """Safety > supported evidence > paired benefit > timing > hysteresis.
+
+    Safety evidence qualifies only a nominal CPU model. Flags alone never authorize.
+    NO_CERTIFIED_BACKUP has no selected ID;
+    it does not claim a physical safe stop. No hidden history or automatic reset.
+    """
+    env_id, episode_id = case.key[:2]
+
+    def result(outcome, reason, selected, window=None, off=0):
+        matching = state.env_id == env_id and state.episode_id == episode_id
+        dwell = (state.dwell + 1 if matching and state.owner_id == selected else 1)
+        if selected is None or selected == case.baseline_id:
+            dwell, off = 0, 0
+        new = ResearchState(env_id, episode_id, selected or case.baseline_id, dwell, off,
+                            None if case.terminal else case.key[2])
+        return Decision(case.key, outcome, reason, selected, new, window)
+
+    if case.terminal:
+        return result("KEEP_F", "TERMINAL_RESET_NO_ACTION", case.baseline_id)
+    step = case.key[2]
+    if not isinstance(step, int) or isinstance(step, bool) or step < 0:
+        return Decision(case.key, "NO_CERTIFIED_BACKUP", "INVALID_DECISION_ID_NO_CURRENT_CERTIFICATE", None, state)
+    if state.env_id == env_id and state.episode_id == episode_id and state.last_decision_id is not None:
+        last = state.last_decision_id
+        if not isinstance(last, int) or isinstance(last, bool) or last < 0:
+            return Decision(case.key, "NO_CERTIFIED_BACKUP", "INVALID_STATE_DECISION_ID_NO_CURRENT_CERTIFICATE", None, state)
+        if step <= last:
+            return Decision(case.key, "NO_CERTIFIED_BACKUP", "STALE_DECISION_NO_CURRENT_CERTIFICATE", None, state)
+    if not _baseline_safe(case):
+        safe = sorted({o.candidate_id for o in case.options if _current_safe(case, o)})
+        if not safe:
+            if state.env_id != env_id or state.episode_id != episode_id:
+                return Decision(case.key, "NO_CERTIFIED_BACKUP", "EXPLICIT_STATE_RESET_REQUIRED", None, state)
+            return result("NO_CERTIFIED_BACKUP", "NO_CURRENT_VALID_SAFETY_EVIDENCE", None)
+        selected = case.backup_id if case.backup_id in safe else safe[0]
+        return result("SAFETY_OVERRIDE", "BASELINE_SAFETY_UNSUPPORTED_CURRENT_BACKUP", selected)
+    if state.env_id != env_id or state.episode_id != episode_id:
+        return Decision(case.key, "ABSTAIN", "EXPLICIT_STATE_RESET_REQUIRED", case.baseline_id, state)
+    if case.endgame or not case.acquired:
+        return result("KEEP_F", "ENDGAME_PROTECTION" if case.endgame else "NO_INITIAL_SEARCH", case.baseline_id)
+    window = opportunity_window(case)
+    if not window.valid:
+        return result("ABSTAIN", window.reason, case.baseline_id, window)
+    immediate = [o for o in window.valid_options if o.wait_s == 0]
+    owner = next((o for o in immediate if o.candidate_id == state.owner_id), None)
+    selected = window.selected_id if window.selected_wait_s == 0 else case.baseline_id
+    reason = ("POSITIVE_SUPPORTED_NOW" if selected != case.baseline_id
+              else "WAIT_FOR_LATER_OPPORTUNITY" if window.selected_id
+              else "NO_SAFE_ALTERNATIVE" if window.reason == "NO_SAFE_ALTERNATIVE"
+              else "NONPOSITIVE_SUPPORTED_BENEFIT")
+    off = 0
+    if state.owner_id != case.baseline_id and selected == case.baseline_id:
+        # Hold only a currently supported, safe, nonharmful owner. Invalid/unsafe
+        # ownership never inherits yesterday's safety or calibration declaration.
+        if owner is not None and owner.benefit.lower_bound >= 0:
+            off = state.off_count + 1 if owner.benefit.lower_bound < case.policy.tau_off else 0
+            if state.dwell < case.policy.min_hold or off < case.policy.off_steps:
+                selected, reason = owner.candidate_id, "SUPPORTED_NONHARMFUL_HYSTERESIS_HOLD"
+        elif owner is not None:
+            reason = "HARMFUL_OWNER_RELEASE"
+        else:
+            reason = "UNSUPPORTED_OR_UNSAFE_OWNER_RELEASE"
+    return result("INTERVENE" if selected != case.baseline_id else "KEEP_F",
+                  reason, selected, window, off)

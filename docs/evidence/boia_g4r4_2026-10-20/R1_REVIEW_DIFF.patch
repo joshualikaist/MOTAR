@@ -1,0 +1,255 @@
+
+
+diff --git a/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/docs/evidence/boia_g4r4_2026-10-20/pre_r1_decision.py.txt b/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/motar_eval/boia_research/decision.py
+index ff1f76f..b7df9a7 100644
+--- a/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/docs/evidence/boia_g4r4_2026-10-20/pre_r1_decision.py.txt
++++ b/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/motar_eval/boia_research/decision.py
+@@ -1,6 +1,7 @@
+ """C4/C5 finite-grid timing and pure ID arbitration, never executable control."""
+ from .evidence import _finite
+-from .types import Decision, ResearchState, WindowResult
++from .safety import validate_safety
++from .types import BenefitResult, Decision, ResearchState, UtilityValidity, WindowResult
+ 
+ 
+ def initial_state(env_id, episode_id, baseline_id):
+@@ -14,14 +15,27 @@ def _policy_valid(policy):
+                     for x in (policy.min_hold, policy.off_steps)))
+ 
+ 
+-def _current_safe(case, option):
+-    """Caller safety declaration must belong to THIS case and immediate option."""
++def _option_safe(case, option):
++    """Boolean may veto; independent current safety evidence must authorize."""
+     return (isinstance(option.candidate_id, str) and bool(option.candidate_id)
+             and option.candidate_id != case.baseline_id
+-            and _finite(option.wait_s) and option.wait_s == 0
+-            and option.safety_valid is True and option.benefit.key == case.key
+-            and sum(o.candidate_id == option.candidate_id and o.wait_s == 0
+-                    for o in case.options) == 1)
++            and _finite(option.wait_s) and option.wait_s >= 0
++            and option.safety_valid is True
++            and sum(o.candidate_id == option.candidate_id and o.wait_s == option.wait_s
++                    for o in case.options) == 1
++            and validate_safety(case.safety_context, case.key, option.candidate_id,
++                                option.wait_s, option.safety_evidence).valid)
++
++
++def _current_safe(case, option):
++    """Immediate backup validity is completely independent of utility records."""
++    return _finite(option.wait_s) and option.wait_s == 0 and _option_safe(case, option)
++
++
++def _baseline_safe(case):
++    return (case.baseline_safe is True
++            and validate_safety(case.safety_context, case.key, case.baseline_id, 0.,
++                                case.baseline_safety_evidence).valid)
+ 
+ 
+ def opportunity_window(case):
+@@ -34,6 +48,8 @@ def opportunity_window(case):
+     def fail(reason):
+         return WindowResult(case.key, False, reason)
+ 
++    if not _baseline_safe(case):
++        return fail("BASELINE_SAFETY_NOT_CURRENT")
+     grid = case.wait_grid_s
+     if (not grid or not all(_finite(x) and x >= 0 for x in grid) or grid[0] != 0
+             or any(b <= a for a, b in zip(grid, grid[1:]))
+@@ -52,16 +68,16 @@ def opportunity_window(case):
+     valid, declared_safe = [], False
+     for option, pair in zip(case.options, pairs):
+         benefit = option.benefit
+-        if (isinstance(option.candidate_id, str) and bool(option.candidate_id)
+-                and option.candidate_id != case.baseline_id and _finite(option.wait_s)
+-                and option.wait_s in grid and option.safety_valid is True
+-                and benefit.key == case.key and cumulative[grid.index(option.wait_s)]):
++        safe = _option_safe(case, option)
++        if (safe and option.wait_s in grid and cumulative[grid.index(option.wait_s)]):
+             declared_safe = True
+         # Duplicate identities cannot silently select different numerical records.
+         if (not isinstance(option.candidate_id, str) or not option.candidate_id
+                 or option.candidate_id == case.baseline_id
+                 or not _finite(option.wait_s) or option.wait_s not in grid
+-                or pairs.count(pair) != 1 or option.safety_valid is not True
++                or pairs.count(pair) != 1 or not safe
++                or not isinstance(option.utility, UtilityValidity)
++                or not isinstance(benefit, BenefitResult)
+                 or option.utility.valid is not True or benefit.valid is not True
+                 or not evidence.domain or option.utility.domain != evidence.domain
+                 or benefit.domain != evidence.domain
+@@ -96,7 +112,8 @@ def opportunity_window(case):
+ def decide(case, state):
+     """Safety > supported evidence > paired benefit > timing > hysteresis.
+ 
+-    Safety flags are declarations only. NO_CERTIFIED_BACKUP has no selected ID;
++    Safety evidence qualifies only a nominal CPU model. Flags alone never authorize.
++    NO_CERTIFIED_BACKUP has no selected ID;
+     it does not claim a physical safe stop. No hidden history or automatic reset.
+     """
+     env_id, episode_id = case.key[:2]
+@@ -121,12 +138,14 @@ def decide(case, state):
+             return Decision(case.key, "NO_CERTIFIED_BACKUP", "INVALID_STATE_DECISION_ID_NO_CURRENT_CERTIFICATE", None, state)
+         if step <= last:
+             return Decision(case.key, "NO_CERTIFIED_BACKUP", "STALE_DECISION_NO_CURRENT_CERTIFICATE", None, state)
+-    if case.baseline_safe is not True:
++    if not _baseline_safe(case):
+         safe = sorted({o.candidate_id for o in case.options if _current_safe(case, o)})
+         if not safe:
+-            return result("NO_CERTIFIED_BACKUP", "NO_CURRENT_VALID_SAFETY_DECLARATION", None)
++            if state.env_id != env_id or state.episode_id != episode_id:
++                return Decision(case.key, "NO_CERTIFIED_BACKUP", "EXPLICIT_STATE_RESET_REQUIRED", None, state)
++            return result("NO_CERTIFIED_BACKUP", "NO_CURRENT_VALID_SAFETY_EVIDENCE", None)
+         selected = case.backup_id if case.backup_id in safe else safe[0]
+-        return result("SAFETY_OVERRIDE", "BASELINE_UNSAFE_SUPPLIED_BACKUP_ONLY", selected)
++        return result("SAFETY_OVERRIDE", "BASELINE_SAFETY_UNSUPPORTED_CURRENT_BACKUP", selected)
+     if state.env_id != env_id or state.episode_id != episode_id:
+         return Decision(case.key, "ABSTAIN", "EXPLICIT_STATE_RESET_REQUIRED", case.baseline_id, state)
+     if case.endgame or not case.acquired:
+
+
+diff --git a/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/docs/evidence/boia_g4r4_2026-10-20/pre_r1_types.py.txt b/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/motar_eval/boia_research/types.py
+index 11f285f..e08befc 100644
+--- a/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/docs/evidence/boia_g4r4_2026-10-20/pre_r1_types.py.txt
++++ b/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/motar_eval/boia_research/types.py
+@@ -106,13 +106,63 @@ class BenefitResult(ResearchResult):
+     domain: str = ""
+ 
+ 
++@dataclass(frozen=True)
++class SafetyProvenance:
++    """Nominal CPU oracle declaration; independent from utility calibration."""
++    kind: str
++    reference: str
++    model_id: str
++    supported: bool = False
++
++
++@dataclass(frozen=True)
++class SafetyContext:
++    key: Tuple[str, str, int]
++    now_s: float
++    sensor_version: str
++    boundary_version: str
++    sensor_timestamp_s: float
++    boundary_timestamp_s: float
++    model_id: str
++    max_age_s: float = .2
++    decision_interval_s: float = .1
++
++
++@dataclass(frozen=True)
++class SafetyEvidence(ResearchResult):
++    key: Tuple[str, str, int]
++    candidate_id: str
++    wait_s: float
++    sensor_version: str
++    boundary_version: str
++    sensor_timestamp_s: float
++    boundary_timestamp_s: float
++    issued_at_s: float
++    expires_at_s: float
++    prefix_safe: bool
++    backup_feasible: bool
++    prefix_horizon_s: float
++    prefix_reference: str
++    backup_reference: str
++    model_id: str
++    model_qualification: str
++    provenance: SafetyProvenance
++
++
++@dataclass(frozen=True)
++class SafetyValidity(ResearchResult):
++    valid: bool
++    reason: str
++
++
+ @dataclass(frozen=True)
+ class Option:
+     candidate_id: str
+     wait_s: float
+     safety_valid: bool
+-    utility: UtilityValidity
+-    benefit: BenefitResult
++    utility: Optional[UtilityValidity]
++    benefit: Optional[BenefitResult]
++    safety_evidence: Optional[SafetyEvidence] = None
+ 
+ 
+ @dataclass(frozen=True)
+@@ -147,6 +197,8 @@ class ResearchCase:
+     terminal: bool = False
+     endgame: bool = False
+     acquired: bool = True
++    safety_context: Optional[SafetyContext] = None
++    baseline_safety_evidence: Optional[SafetyEvidence] = None
+ 
+ 
+ @dataclass(frozen=True)
+
+diff --git a/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/docs/evidence/boia_g4r4_2026-10-20/pre_r1_test_boia_research.py.txt b/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_research.py
+index 2cf1dc7..a0c4d7a 100644
+--- a/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/docs/evidence/boia_g4r4_2026-10-20/pre_r1_test_boia_research.py.txt
++++ b/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_research.py
+@@ -14,6 +14,7 @@ from motar_eval.boia_research.types import (
+     BoundContract, ErrorAllowances, EvidenceSet, LossTable, MeasuredEvidence,
+     Option, ProbabilityInterval, Provenance, ResearchCase, ResearchState,
+     SwitchPolicy, UtilityValidity,
++    SafetyContext, SafetyEvidence, SafetyProvenance,
+ )
+ 
+ 
+@@ -23,6 +24,21 @@ LABELS = ("FOREGROUND_OCCLUDER", "TARGET_SURFACE")
+ ZERO = ErrorAllowances(0., 0., 0., 0., 0.)
+ 
+ 
++def safety_context(key=KEY):
++    return SafetyContext(key, 1.02, "synthetic-sensor-v1", "synthetic-boundary-v1",
++                         1., 1., "exact-planar-test-v1")
++
++
++def safety_evidence(candidate_id, wait_s=0., key=KEY):
++    # Explicit exhaustive synthetic fixture, not inferred from boolean/utility.
++    return SafetyEvidence(key, candidate_id, wait_s, "synthetic-sensor-v1",
++                          "synthetic-boundary-v1", 1., 1., 1.02, 1.2, True, True,
++                          wait_s + .1, "exact-wait-and-prefix", "exact-complete-backup",
++                          "exact-planar-test-v1", "NOMINAL_CPU_MODEL_ONLY",
++                          SafetyProvenance("EXACT_SYNTHETIC", "finite fixture proof",
++                                           "exact-planar-test-v1", True))
++
++
+ def proof(**changes):
+     return replace(Provenance("EXACT_SYNTHETIC", "enumerated two-world surrogate fixture",
+                               DOMAIN, True, True), **changes)
+@@ -55,13 +71,16 @@ def bound(candidate_id="A", wait_s=0., gain=1., key=KEY, switching=0., **changes
+ def option(candidate_id="A", wait_s=0., gain=1., key=KEY, safe=True, **changes):
+     return replace(Option(candidate_id, wait_s, safe,
+                           UtilityValidity(True, "EXACT_SYNTHETIC_DECLARATION", DOMAIN),
+-                          bound(candidate_id, wait_s, gain, key)), **changes)
++                          bound(candidate_id, wait_s, gain, key),
++                          safety_evidence(candidate_id, wait_s, key)), **changes)
+ 
+ 
+ def case(options=(), key=KEY, **changes):
+     return replace(ResearchCase(key, "F", True, tuple(options), evidence(key),
+                                 (0., .2, .4), (True, True),
+-                                SwitchPolicy(.2, .1, 2, 2)), **changes)
++                                SwitchPolicy(.2, .1, 2, 2),
++                                safety_context=safety_context(key),
++                                baseline_safety_evidence=safety_evidence("F", key=key)), **changes)
+ 
+ 
+ def choose(c, state=None):
+@@ -71,7 +90,10 @@ def choose(c, state=None):
+ def advance(c, decision_id):
+     key = (c.key[0], c.key[1], decision_id)
+     return replace(c, key=key, evidence=replace(c.evidence, key=key),
+-                   options=tuple(replace(o, benefit=replace(o.benefit, key=key)) for o in c.options))
++                   options=tuple(replace(o, benefit=replace(o.benefit, key=key),
++                                         safety_evidence=replace(o.safety_evidence, key=key)) for o in c.options),
++                   safety_context=replace(c.safety_context, key=key),
++                   baseline_safety_evidence=replace(c.baseline_safety_evidence, key=key))
+ 
+ 
+ class TestBoiaResearch(unittest.TestCase):

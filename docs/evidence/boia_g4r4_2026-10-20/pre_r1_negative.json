@@ -1,0 +1,79 @@
+{
+  "schema": "motar.g4r4.r1.negative.v1",
+  "selector_sha256": "5c21a61251f04a2996c2bec8634c43e75285017d0f609067754ef5207ff67f6a",
+  "test_sha256": "d188b8229c079348041fa62d2346f41165a6b960fd9a5b9c6cb91cc768b8e6d0",
+  "ran": 20,
+  "failures": 14,
+  "errors": 2,
+  "failure_details": [
+    {
+      "id": "r4_pre_r1_test.TestIndependentSafety.test_01_current_safety_stale_utility_may_override",
+      "traceback": "Traceback (most recent call last):\n  File \"/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_research_safety.py\", line 27, in test_01_current_safety_stale_utility_may_override\n    self.assertEqual((out.outcome, out.selected_id), (\"SAFETY_OVERRIDE\", \"A\"))\nAssertionError: Tuples differ: ('NO_CERTIFIED_BACKUP', None) != ('SAFETY_OVERRIDE', 'A')\n\nFirst differing element 0:\n'NO_CERTIFIED_BACKUP'\n'SAFETY_OVERRIDE'\n\n- ('NO_CERTIFIED_BACKUP', None)\n+ ('SAFETY_OVERRIDE', 'A')\n"
+    },
+    {
+      "id": "r4_pre_r1_test.TestIndependentSafety.test_02_stale_safety_current_utility_refused",
+      "traceback": "Traceback (most recent call last):\n  File \"/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_research_safety.py\", line 32, in test_02_stale_safety_current_utility_refused\n    self.assertEqual((out.outcome, out.selected_id), (\"NO_CERTIFIED_BACKUP\", None))\nAssertionError: Tuples differ: ('SAFETY_OVERRIDE', 'A') != ('NO_CERTIFIED_BACKUP', None)\n\nFirst differing element 0:\n'SAFETY_OVERRIDE'\n'NO_CERTIFIED_BACKUP'\n\n- ('SAFETY_OVERRIDE', 'A')\n+ ('NO_CERTIFIED_BACKUP', None)\n"
+    },
+    {
+      "id": "r4_pre_r1_test.TestIndependentSafety.test_03_candidate_binding",
+      "traceback": "Traceback (most recent call last):\n  File \"/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_research_safety.py\", line 36, in test_03_candidate_binding\n    self.assertEqual(choose(f.case((o,), baseline_safe=False)).outcome, \"NO_CERTIFIED_BACKUP\")\nAssertionError: 'SAFETY_OVERRIDE' != 'NO_CERTIFIED_BACKUP'\n- SAFETY_OVERRIDE\n+ NO_CERTIFIED_BACKUP\n\n"
+    },
+    {
+      "id": "r4_pre_r1_test.TestIndependentSafety.test_04_episode_binding",
+      "traceback": "Traceback (most recent call last):\n  File \"/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_research_safety.py\", line 40, in test_04_episode_binding\n    self.assertEqual(choose(f.case((o,), baseline_safe=False)).outcome, \"NO_CERTIFIED_BACKUP\")\nAssertionError: 'SAFETY_OVERRIDE' != 'NO_CERTIFIED_BACKUP'\n- SAFETY_OVERRIDE\n+ NO_CERTIFIED_BACKUP\n\n"
+    },
+    {
+      "id": "r4_pre_r1_test.TestIndependentSafety.test_05_decision_binding",
+      "traceback": "Traceback (most recent call last):\n  File \"/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_research_safety.py\", line 44, in test_05_decision_binding\n    self.assertEqual(choose(f.case((o,), baseline_safe=False)).outcome, \"NO_CERTIFIED_BACKUP\")\nAssertionError: 'SAFETY_OVERRIDE' != 'NO_CERTIFIED_BACKUP'\n- SAFETY_OVERRIDE\n+ NO_CERTIFIED_BACKUP\n\n"
+    },
+    {
+      "id": "r4_pre_r1_test.TestIndependentSafety.test_06_missing_safety_is_not_minted_from_boolean",
+      "traceback": "Traceback (most recent call last):\n  File \"/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_research_safety.py\", line 50, in test_06_missing_safety_is_not_minted_from_boolean\n    self.assertEqual((out.outcome, out.selected_id), (\"NO_CERTIFIED_BACKUP\", None))\nAssertionError: Tuples differ: ('SAFETY_OVERRIDE', 'A') != ('NO_CERTIFIED_BACKUP', None)\n\nFirst differing element 0:\n'SAFETY_OVERRIDE'\n'NO_CERTIFIED_BACKUP'\n\n- ('SAFETY_OVERRIDE', 'A')\n+ ('NO_CERTIFIED_BACKUP', None)\n"
+    },
+    {
+      "id": "r4_pre_r1_test.TestIndependentSafety.test_07_insufficient_F_current_alternative",
+      "traceback": "Traceback (most recent call last):\n  File \"/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_research_safety.py\", line 54, in test_07_insufficient_F_current_alternative\n    self.assertEqual((out.outcome, out.selected_id), (\"SAFETY_OVERRIDE\", \"A\"))\nAssertionError: Tuples differ: ('INTERVENE', 'A') != ('SAFETY_OVERRIDE', 'A')\n\nFirst differing element 0:\n'INTERVENE'\n'SAFETY_OVERRIDE'\n\n- ('INTERVENE', 'A')\n+ ('SAFETY_OVERRIDE', 'A')\n"
+    },
+    {
+      "id": "r4_pre_r1_test.TestIndependentSafety.test_08_insufficient_F_all_alternatives_unverified",
+      "traceback": "Traceback (most recent call last):\n  File \"/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_research_safety.py\", line 58, in test_08_insufficient_F_all_alternatives_unverified\n    self.assertEqual((out.outcome, out.selected_id), (\"NO_CERTIFIED_BACKUP\", None))\nAssertionError: Tuples differ: ('INTERVENE', 'A') != ('NO_CERTIFIED_BACKUP', None)\n\nFirst differing element 0:\n'INTERVENE'\n'NO_CERTIFIED_BACKUP'\n\n- ('INTERVENE', 'A')\n+ ('NO_CERTIFIED_BACKUP', None)\n"
+    },
+    {
+      "id": "r4_pre_r1_test.TestIndependentSafety.test_13_env_binding_and_version_binding",
+      "traceback": "Traceback (most recent call last):\n  File \"/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_research_safety.py\", line 97, in test_13_env_binding_and_version_binding\n    self.assertEqual(choose(f.case((o,), baseline_safe=False)).outcome, \"NO_CERTIFIED_BACKUP\")\nAssertionError: 'SAFETY_OVERRIDE' != 'NO_CERTIFIED_BACKUP'\n- SAFETY_OVERRIDE\n+ NO_CERTIFIED_BACKUP\n\n"
+    },
+    {
+      "id": "r4_pre_r1_test.TestIndependentSafety.test_14_time_nan_future_measurement_and_age",
+      "traceback": "Traceback (most recent call last):\n  File \"/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_research_safety.py\", line 103, in test_14_time_nan_future_measurement_and_age\n    self.assertEqual(choose(f.case((o,), baseline_safe=False)).outcome, \"NO_CERTIFIED_BACKUP\")\nAssertionError: 'SAFETY_OVERRIDE' != 'NO_CERTIFIED_BACKUP'\n- SAFETY_OVERRIDE\n+ NO_CERTIFIED_BACKUP\n\n"
+    },
+    {
+      "id": "r4_pre_r1_test.TestIndependentSafety.test_15_prefix_backup_refs_qualification_and_provenance",
+      "traceback": "Traceback (most recent call last):\n  File \"/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_research_safety.py\", line 115, in test_15_prefix_backup_refs_qualification_and_provenance\n    self.assertEqual(choose(f.case((o,), baseline_safe=False)).outcome, \"NO_CERTIFIED_BACKUP\")\nAssertionError: 'SAFETY_OVERRIDE' != 'NO_CERTIFIED_BACKUP'\n- SAFETY_OVERRIDE\n+ NO_CERTIFIED_BACKUP\n\n"
+    },
+    {
+      "id": "r4_pre_r1_test.TestIndependentSafety.test_16_baseline_also_requires_fresh_proof_before_keep_wait_endgame",
+      "traceback": "Traceback (most recent call last):\n  File \"/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_research_safety.py\", line 122, in test_16_baseline_also_requires_fresh_proof_before_keep_wait_endgame\n    self.assertEqual((out.outcome, out.selected_id), (\"NO_CERTIFIED_BACKUP\", None))\nAssertionError: Tuples differ: ('KEEP_F', 'F') != ('NO_CERTIFIED_BACKUP', None)\n\nFirst differing element 0:\n'KEEP_F'\n'NO_CERTIFIED_BACKUP'\n\n- ('KEEP_F', 'F')\n+ ('NO_CERTIFIED_BACKUP', None)\n"
+    },
+    {
+      "id": "r4_pre_r1_test.TestIndependentSafety.test_17_future_proof_covers_wait_and_issuance_age",
+      "traceback": "Traceback (most recent call last):\n  File \"/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_research_safety.py\", line 127, in test_17_future_proof_covers_wait_and_issuance_age\n    self.assertEqual(choose(f.case((a, b))).selected_id, \"A\")\nAssertionError: 'F' != 'A'\n- F\n+ A\n\n"
+    },
+    {
+      "id": "r4_pre_r1_test.TestIndependentSafety.test_19_unsafe_or_unknown_candidate_cannot_win_utility",
+      "traceback": "Traceback (most recent call last):\n  File \"/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_research_safety.py\", line 140, in test_19_unsafe_or_unknown_candidate_cannot_win_utility\n    self.assertEqual(choose(f.case((bad, good))).selected_id, \"B\")\nAssertionError: 'A' != 'B'\n- A\n+ B\n\n"
+    }
+  ],
+  "error_details": [
+    {
+      "id": "r4_pre_r1_test.TestIndependentSafety.test_09_missing_utility_never_authorizes_F_or_blocks_backup",
+      "traceback": "Traceback (most recent call last):\n  File \"/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_research_safety.py\", line 62, in test_09_missing_utility_never_authorizes_F_or_blocks_backup\n    self.assertEqual(choose(f.case((o,), baseline_safe=False, evidence=None)).outcome, \"SAFETY_OVERRIDE\")\n  File \"/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_research_safety.py\", line 20, in choose\n    return decide(c, state or initial_state(c.key[0], c.key[1], c.baseline_id))\n  File \"/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/docs/evidence/boia_g4r4_2026-10-20/pre_r1_decision.py.txt\", line 125, in decide\n    safe = sorted({o.candidate_id for o in case.options if _current_safe(case, o)})\n  File \"/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/docs/evidence/boia_g4r4_2026-10-20/pre_r1_decision.py.txt\", line 125, in <setcomp>\n    safe = sorted({o.candidate_id for o in case.options if _current_safe(case, o)})\n  File \"/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/docs/evidence/boia_g4r4_2026-10-20/pre_r1_decision.py.txt\", line 22, in _current_safe\n    and option.safety_valid is True and option.benefit.key == case.key\nAttributeError: 'NoneType' object has no attribute 'key'\n"
+    },
+    {
+      "id": "r4_pre_r1_test.TestIndependentSafety.test_11_order_independence",
+      "traceback": "Traceback (most recent call last):\n  File \"/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_research_safety.py\", line 76, in test_11_order_independence\n    a, b = choose(c), choose(replace(c, options=tuple(reversed(opts))))\n  File \"/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_research_safety.py\", line 20, in choose\n    return decide(c, state or initial_state(c.key[0], c.key[1], c.baseline_id))\n  File \"/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/docs/evidence/boia_g4r4_2026-10-20/pre_r1_decision.py.txt\", line 125, in decide\n    safe = sorted({o.candidate_id for o in case.options if _current_safe(case, o)})\n  File \"/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/docs/evidence/boia_g4r4_2026-10-20/pre_r1_decision.py.txt\", line 125, in <setcomp>\n    safe = sorted({o.candidate_id for o in case.options if _current_safe(case, o)})\n  File \"/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/docs/evidence/boia_g4r4_2026-10-20/pre_r1_decision.py.txt\", line 22, in _current_safe\n    and option.safety_valid is True and option.benefit.key == case.key\nAttributeError: 'NoneType' object has no attribute 'key'\n"
+    }
+  ],
+  "status": "PRE_FIX_FAIL_REPRODUCED",
+  "additive_schema_fixture_only": true,
+  "safety_module_static_test_scope": "Checks frozen current helper imports; negative behaviors use exact old selector"
+}

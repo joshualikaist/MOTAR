@@ -1,0 +1,97 @@
+{
+  "schema": "motar.g4r3.research.final.validation.v1",
+  "base_sha": "8689efcd066d64e7b49cecf011e3bd8675380cdb",
+  "source_sha256": {
+    "motar_eval/boia_research/__init__.py": "b058a6309ac89e4ca24f62f7df41d9bfe214defc5051564bdcb0f4e65634e0dc",
+    "motar_eval/boia_research/benefit.py": "5053f400ac6e7ea2af9f79ed8680a61696920f40de900d0de06d0cffd2c76473",
+    "motar_eval/boia_research/decision.py": "5c21a61251f04a2996c2bec8634c43e75285017d0f609067754ef5207ff67f6a",
+    "motar_eval/boia_research/evidence.py": "8c20b71bec2ee58b3e4044b4f9d8fe111d1cd8a81d4ec6914c69354ab51b7e04",
+    "motar_eval/boia_research/types.py": "f4f0561d4fd53479e22492609c2b83097dd5960f64117361d053ab2057012cd0",
+    "tests/test_boia_research.py": "b51807bf4f7405317bf6f1fc14081eba471baf95c3124b42aa4dcbd7a0d1f745"
+  },
+  "source_line_count": 484,
+  "environment": {
+    "python": "/home/fair/miniconda3/envs/aerialgym/bin/python",
+    "python_version": "3.8",
+    "flags": "-B",
+    "PYTHONNOUSERSITE": "1",
+    "CUDA_VISIBLE_DEVICES": "",
+    "OMP_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1",
+    "TMPDIR": "/tmp/codex_occ"
+  },
+  "command_prefix": "PYTHONNOUSERSITE=1 CUDA_VISIBLE_DEVICES='' OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 TMPDIR=/tmp/codex_occ /home/fair/miniconda3/envs/aerialgym/bin/python -B",
+  "commands": {
+    "focused": "-m unittest discover -s tests -p 'test_boia_research.py' -v",
+    "boia": "-m unittest discover -s tests -p 'test_boia*.py' -v",
+    "independent": "docs/evidence/boia_g4r3_research_2026-10-20/run_independent_oracles.py --output docs/evidence/boia_g4r3_research_2026-10-20/independent_oracle.json",
+    "public_docs": "tools/check_public_docs.py"
+  },
+  "focused": {
+    "status": "PASS",
+    "ran": 30,
+    "failures": 0,
+    "errors": 0,
+    "seconds": 0.008,
+    "exit_code": 0
+  },
+  "boia": {
+    "status": "PASS",
+    "ran": 232,
+    "old_and_c02": 202,
+    "new_research": 30,
+    "failures": 0,
+    "errors": 0,
+    "seconds": 15.435,
+    "exit_code": 0
+  },
+  "independent_scalar_oracles": {
+    "status": "PASS",
+    "checks": 17,
+    "receipt": "independent_oracle.json",
+    "exit_code": 0
+  },
+  "public_docs": {
+    "status": "PASS",
+    "exit_code": 0
+  },
+  "public_cpu_c02_committed": {
+    "status": "FAIL",
+    "ran": 2941,
+    "failures": 0,
+    "errors": 4,
+    "skipped": 10,
+    "excluded": 5,
+    "seconds": 160.451,
+    "exit_code": 1,
+    "exact_previous_error_match": true,
+    "per_method_receipt": "public_cpu_per_test.json",
+    "exception_comparison": "public_error_comparison.json"
+  },
+  "public_cpu_part_c": "NOT_RERUN; focused+full BOIA used; no unresolved new coupling/failure found",
+  "review": {
+    "type": "independent read-only agent",
+    "focused_pass": 30,
+    "source_hashes_match": true,
+    "scope": "typed-input CPU declarations, not measured evidence or mission calibration",
+    "blockers": 0
+  },
+  "timing": {
+    "samples": 1000,
+    "options": 2,
+    "wait_grid": 3,
+    "median_us": 9.536,
+    "p95_us": 10.354,
+    "p99_us": 14.232,
+    "max_observed_us": 47.021,
+    "claim": "finite prebuilt kernel only, not WCET or full planner latency"
+  },
+  "scope": "CPU_RESEARCH_ONLY",
+  "physical_qualified": false,
+  "mission_effect": "NOT_TESTED",
+  "novelty": "CANDIDATE / NOT_VERIFIED",
+  "part_c_commit": "FORBIDDEN_BY_CURRENT_USER_INSTRUCTION",
+  "push": false,
+  "merge": false,
+  "G5": "HOLD"
+}

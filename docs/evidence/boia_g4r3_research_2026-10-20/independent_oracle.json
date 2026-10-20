@@ -1,0 +1,162 @@
+{
+  "schema": "motar.g4r3.research.independent-oracle.v1",
+  "scope": "CPU_RESEARCH_ONLY",
+  "physical_qualified": false,
+  "actual_mission": "NOT_TESTED",
+  "checks": [
+    {
+      "name": "paired_worst_scene_gain",
+      "actual": 1.0,
+      "expected": 1.0,
+      "passed": true
+    },
+    {
+      "name": "unpaired_cross_world_expression_is_different",
+      "actual": -8.0,
+      "expected": -8.0,
+      "passed": true
+    },
+    {
+      "name": "added_adverse_world",
+      "actual": -2.0,
+      "expected": -2.0,
+      "passed": true
+    },
+    {
+      "name": "switch_cost_net",
+      "actual": -0.10000000000000009,
+      "expected": -0.1,
+      "passed": true
+    },
+    {
+      "name": "switch_cost_reverses_intervention",
+      "actual": "KEEP_F",
+      "expected": "KEEP_F",
+      "passed": true
+    },
+    {
+      "name": "time_options_wait",
+      "actual": [
+        "KEEP_F",
+        "WAIT_FOR_LATER_OPPORTUNITY",
+        0.2
+      ],
+      "expected": [
+        "KEEP_F",
+        "WAIT_FOR_LATER_OPPORTUNITY",
+        0.2
+      ],
+      "passed": true
+    },
+    {
+      "name": "immediate_only_differs",
+      "actual": "INTERVENE",
+      "expected": "INTERVENE",
+      "passed": true
+    },
+    {
+      "name": "unsafe_wait_cannot_authorize_later",
+      "actual": "A",
+      "expected": "A",
+      "passed": true
+    },
+    {
+      "name": "pre_loss_positive_option",
+      "actual": "INTERVENE",
+      "expected": "INTERVENE",
+      "passed": true
+    },
+    {
+      "name": "actual_loss_only_rule_while_currently_seen",
+      "actual": "KEEP_F",
+      "expected": "KEEP_F",
+      "passed": true
+    },
+    {
+      "name": "missing_evidence_abstains_safe_F",
+      "actual": "ABSTAIN",
+      "expected": "ABSTAIN",
+      "passed": true
+    },
+    {
+      "name": "safety_overrides_utility_and_endgame",
+      "actual": "SAFETY_OVERRIDE",
+      "expected": "SAFETY_OVERRIDE",
+      "passed": true
+    },
+    {
+      "name": "no_backup_not_safe_stop",
+      "actual": [
+        "NO_CERTIFIED_BACKUP",
+        null
+      ],
+      "expected": [
+        "NO_CERTIFIED_BACKUP",
+        null
+      ],
+      "passed": true
+    },
+    {
+      "name": "stale_proof_not_reused",
+      "actual": [
+        "NO_CERTIFIED_BACKUP",
+        null
+      ],
+      "expected": [
+        "NO_CERTIFIED_BACKUP",
+        null
+      ],
+      "passed": true
+    },
+    {
+      "name": "stale_does_not_advance_state",
+      "actual": true,
+      "expected": true,
+      "passed": true
+    },
+    {
+      "name": "all_five_outcomes",
+      "actual": [
+        "ABSTAIN",
+        "INTERVENE",
+        "KEEP_F",
+        "NO_CERTIFIED_BACKUP",
+        "SAFETY_OVERRIDE"
+      ],
+      "expected": [
+        "ABSTAIN",
+        "INTERVENE",
+        "KEEP_F",
+        "NO_CERTIFIED_BACKUP",
+        "SAFETY_OVERRIDE"
+      ],
+      "passed": true
+    },
+    {
+      "name": "outputs_research_only",
+      "actual": true,
+      "expected": true,
+      "passed": true
+    }
+  ],
+  "status": "PASS",
+  "synthetic_decision_contrasts": 2,
+  "timing": {
+    "samples": 1000,
+    "options": 2,
+    "wait_grid": 3,
+    "median_us": 9.536,
+    "p95_us": 10.354,
+    "p99_us": 14.232,
+    "max_observed_us": 47.021,
+    "claim": "finite prebuilt kernel only, not WCET or full planner latency"
+  },
+  "source_sha256": {
+    "motar_eval/boia_research/__init__.py": "b058a6309ac89e4ca24f62f7df41d9bfe214defc5051564bdcb0f4e65634e0dc",
+    "motar_eval/boia_research/benefit.py": "5053f400ac6e7ea2af9f79ed8680a61696920f40de900d0de06d0cffd2c76473",
+    "motar_eval/boia_research/decision.py": "5c21a61251f04a2996c2bec8634c43e75285017d0f609067754ef5207ff67f6a",
+    "motar_eval/boia_research/evidence.py": "8c20b71bec2ee58b3e4044b4f9d8fe111d1cd8a81d4ec6914c69354ab51b7e04",
+    "motar_eval/boia_research/types.py": "f4f0561d4fd53479e22492609c2b83097dd5960f64117361d053ab2057012cd0",
+    "tests/test_boia_research.py": "b51807bf4f7405317bf6f1fc14081eba471baf95c3124b42aa4dcbd7a0d1f745"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "original_30_test_method_AST_unchanged": true,
+  "old_fixture_helpers_explicitly_migrated": [
+    "imports",
+    "safety_context",
+    "safety_evidence",
+    "option",
+    "case",
+    "advance"
+  ],
+  "no_implicit_runtime_evidence_minting": true,
+  "original_test_sha256": "b51807bf4f7405317bf6f1fc14081eba471baf95c3124b42aa4dcbd7a0d1f745",
+  "current_test_sha256": "83c2e4d06b807a2506aa6d49f552558eeaf5e2b29d4bfa450570b99156954bce",
+  "source_ast_parse": "PASS"
+}
