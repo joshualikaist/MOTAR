@@ -1,0 +1,58 @@
+{
+  "schema": "motar.g4r3.preflight.v1",
+  "base_sha": "cdfaffd28534cd37693a6cd678de9766bef4bd25",
+  "current_request_start_utc": "2026-10-20T08:00:36Z",
+  "actual_session_quota_deadline": "UNKNOWN",
+  "conservative_current_request_wrapup_kst": "2026-10-20 21:00 KST",
+  "previous_unit_wrapup_note": "Prior G4-R unit finished03:33UTC before its declared wrapup; current request arrived08:00UTC. Hidden quota remaining is not observable.",
+  "original_g4r_artifacts": {
+    "docs/evidence/boia_g4r_2026-10-20/C02_SOURCE_DIFF.patch": "8358cdb3649e1f5df0b9c4dc94c67553f08b004e72e2b02d57102384c69ba0ba",
+    "docs/evidence/boia_g4r_2026-10-20/CPU_VALIDATION_PROTOCOL.md": "ba7cf06c8e0d3ba8b15feed6a61a8e5aa96ca208dee6d19b375cce399dd0d552",
+    "docs/evidence/boia_g4r_2026-10-20/HANDOFF.md": "2b0aff2720ccd86e9d5bc4c7ff7d649621d0a8977fb8ad051c8decfd7c2f2092",
+    "docs/evidence/boia_g4r_2026-10-20/IMPLEMENTATION_REPORT.md": "cb49d87decaddd65011b7337e8fc2dbab6a252618ad8853b5a8961473f9c8c08",
+    "docs/evidence/boia_g4r_2026-10-20/adversarial_geometry.json": "9a0ddf15b46a624ca6803de394476b72710eb187da1d1a50e78221595fee3a24",
+    "docs/evidence/boia_g4r_2026-10-20/adversarial_geometry_check.py": "9f7c827698508d03c5bb836dbbc833ebecc8cff9d67cf3c2078199f644f4f16c",
+    "docs/evidence/boia_g4r_2026-10-20/boia_before_timing_guard.txt": "74edf04474a5712a6a924f164ce03a4e0ed520df4ccfa8d8f3689f7803677dd2",
+    "docs/evidence/boia_g4r_2026-10-20/boia_final_tests.txt": "9b7e69a68c177ca36c1293837b1897fa6f17740bf2c824a1975b2018c353da30",
+    "docs/evidence/boia_g4r_2026-10-20/collect_model_receipt.py": "b1407712100bf16b42faa125c6ec076c91d66fb0a748633d1ca1972bf5f33a2d",
+    "docs/evidence/boia_g4r_2026-10-20/integrity.json": "8fd5d78ca0c0d5ef7fb04fc06a420e691004abe969b2f3a7836afd23d0345c4e",
+    "docs/evidence/boia_g4r_2026-10-20/model_receipt.json": "c9149f86f6e5986e2d8807d6cffc1aed82565239f9b43906fc6f3b58fe3b5030",
+    "docs/evidence/boia_g4r_2026-10-20/public_cpu_before_timing_guard.txt": "fb25d8b55ef93331ac3671ac6096497046c15a21cd8b338f49b8f396229c5351",
+    "docs/evidence/boia_g4r_2026-10-20/public_cpu_build.json": "09e3f63966d2f833fc886fb6f00ea16d5a49cdcb8059ad924d5483cffbc17f2a",
+    "docs/evidence/boia_g4r_2026-10-20/validation.json": "7fc98e761e561eae7aa2fa28767a2dc06867ec6cdcbdcea1b9f911dfab8aaea5",
+    "docs/research/occlusion_algorithm_v1/g4r_2026-10-20/ALGORITHM_PROPOSAL.md": "316cf27689e7a789cfb176c7cc311bc0718e9006f29c69d6deb89485b64611dc",
+    "docs/research/occlusion_algorithm_v1/g4r_2026-10-20/EXPERIMENT_DRAFT.md": "d459677d26873341a2284f7d4d323ca5b7b31bbc444e3044789772dde2328f4d",
+    "docs/research/occlusion_algorithm_v1/g4r_2026-10-20/NOVELTY_REVIEW.md": "5124e69455dc63fece1a0d2b089293c2226142b7cf114c31af8926fe17672841"
+  },
+  "original_g4r_manifest_sha256": "f33aa8cfeb146649dfab8a600a7ef30e8b99de2723ce68f4971a7143504aadb5",
+  "original_boia_tests_sha256": {
+    "tests/test_boia_access.py": "a5665da273dae1a20e4caeebda8fa7f92a3a13fd6873d32dd8dd370e919c53ff",
+    "tests/test_boia_arbitration.py": "7fc8ad95c738854fd069a8ebe054d2f8f74c2d61bd6fc8b1abb8c09ed50dede6",
+    "tests/test_boia_belief.py": "1d21aa970378778fb7f9e0d5b0473dd740b0d0228b7053b6e9b3612bb7fbeb2e",
+    "tests/test_boia_c02_geometry.py": "78752dde05832c1e32013e4abdcadc8733bb28eea7ffc39972dad9b97d5562c0",
+    "tests/test_boia_c02_safety.py": "d2d3d7268f29f9dcada238782050a8b035a0ad4fcc19cc4063f30d7c59eb9c2e",
+    "tests/test_boia_candidates_safety.py": "4c5c2948275cb40793d54271d8fced79969e316a4b2bfb0f66bf46337f9b3e11",
+    "tests/test_boia_dynamics.py": "e9ae9206d674f5a9076945c6e274c133429381660e3704572c904b107b3a85fe",
+    "tests/test_boia_geometry_visibility.py": "cd837bd9441f0c09b04264909c8861ede78533e5fc360f54c3c6e024262125e7",
+    "tests/test_boia_p0_geometry.py": "088aa2fde66403990baa8fd2adb2553273886860d41ba09bdf6f22edf5fa059f",
+    "tests/test_boia_p0_online.py": "be05cfbac7fd88c802b0d88a773ef4715639fe282b74af8eb435688cb74c331b",
+    "tests/test_boia_p0_safety.py": "b9291c08f5666edb915fc803002ddaf06962384a989098d075959de8e43ff7c2",
+    "tests/test_boia_planner.py": "c459906af2e01966a5dd9afc95c2cf6175f2381a79eee5565895b241a6df9a1e"
+  },
+  "legacy_reference": "docs/evidence/boia_g4r_2026-10-20/integrity.json",
+  "policy_sha256": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+  "main_wip_sha256": {
+    ".gitignore": "0fc139965f0e1e218883e22cb1c2e2cc6c8cf86487b1dd7d402a28a369fb5296",
+    "WORKLOG.md": "a63118ee730803b6c7e0afcceeec0d0595fdbf347ed56fb3474364b79bf6454c",
+    "presentations/README.md": "be8c4b2350a49580c5ea70a45f34c307c34a46f2509ce2eeab8f0f9fdfb69731"
+  },
+  "stash_sha": "23ddb33f92cf6c75cf9095e149bb7e2516eb7543",
+  "protected_symlinks": {
+    "results/mt_p1_precision_v1": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/mt_p1_precision_v1",
+    "results/occlusion_pilot_v1": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_pilot_v1"
+  },
+  "disk_free_bytes": 9639989248,
+  "stop_below_bytes": 3000000000,
+  "full_raw_rehash": "NOT_RUN",
+  "external_backup": "NOT_CREATED"
+}

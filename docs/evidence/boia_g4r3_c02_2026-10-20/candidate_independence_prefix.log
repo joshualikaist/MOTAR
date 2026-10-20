@@ -1,0 +1,116 @@
+Exit code: 1
+test_candidate_diagnostics_and_step_consistency_faults_remain_local (test_boia_c02_candidate_independence.CandidateIndependenceTest) ... test_case_a_one_nan_candidate_preserves_nineteen_healthy_candidates (test_boia_c02_candidate_independence.CandidateIndependenceTest) ... test_case_b_three_environments_isolate_exactly_three_bad_candidates (test_boia_c02_candidate_independence.CandidateIndependenceTest) ... FAIL
+test_case_c_timing_and_residual_are_candidate_shaped (test_boia_c02_candidate_independence.CandidateIndependenceTest) ... FAIL
+test_case_d_vertical_candidate_is_unknown_without_rejecting_others (test_boia_c02_candidate_independence.CandidateIndependenceTest) ... FAIL
+test_case_e_candidate_and_environment_permutations_preserve_results (test_boia_c02_candidate_independence.CandidateIndependenceTest) ... FAIL
+test_case_f_single_vs_mixed_batch_is_numerically_exact (test_boia_c02_candidate_independence.CandidateIndependenceTest) ... FAIL
+test_common_scan_invalid_rejects_only_its_environment (test_boia_c02_candidate_independence.CandidateIndependenceTest) ... ERROR
+test_float32_candidate_isolation_matches_single_result (test_boia_c02_candidate_independence.CandidateIndependenceTest) ... FAIL
+test_repeatability_rng_and_input_preservation (test_boia_c02_candidate_independence.CandidateIndependenceTest) ... ok
+
+======================================================================
+ERROR: test_common_scan_invalid_rejects_only_its_environment (test_boia_c02_candidate_independence.CandidateIndependenceTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_c02_candidate_independence.py", line 207, in test_common_scan_invalid_rejects_only_its_environment
+    check = out.diagnostics["candidate_validation"]
+KeyError: 'candidate_validation'
+
+======================================================================
+FAIL: test_candidate_diagnostics_and_step_consistency_faults_remain_local (test_boia_c02_candidate_independence.CandidateIndependenceTest) (kind='diagnostic')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_c02_candidate_independence.py", line 217, in test_candidate_diagnostics_and_step_consistency_faults_remain_local
+    self.assertEqual(int(out.model_safe.sum()), 19)
+AssertionError: 0 != 19
+
+======================================================================
+FAIL: test_candidate_diagnostics_and_step_consistency_faults_remain_local (test_boia_c02_candidate_independence.CandidateIndependenceTest) (kind='step')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_c02_candidate_independence.py", line 217, in test_candidate_diagnostics_and_step_consistency_faults_remain_local
+    self.assertEqual(int(out.model_safe.sum()), 19)
+AssertionError: 0 != 19
+
+======================================================================
+FAIL: test_case_a_one_nan_candidate_preserves_nineteen_healthy_candidates (test_boia_c02_candidate_independence.CandidateIndependenceTest) (field='position')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_c02_candidate_independence.py", line 135, in test_case_a_one_nan_candidate_preserves_nineteen_healthy_candidates
+    self.assertEqual(out.status[0, :19].tolist(), [SafetyStatus.MODEL_SAFE] * 19)
+AssertionError: Lists differ: [3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3] != [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+First differing element 0:
+3
+0
+
+- [3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3]
++ [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+======================================================================
+FAIL: test_case_a_one_nan_candidate_preserves_nineteen_healthy_candidates (test_boia_c02_candidate_independence.CandidateIndependenceTest) (field='velocity')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_c02_candidate_independence.py", line 135, in test_case_a_one_nan_candidate_preserves_nineteen_healthy_candidates
+    self.assertEqual(out.status[0, :19].tolist(), [SafetyStatus.MODEL_SAFE] * 19)
+AssertionError: Lists differ: [3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3] != [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+First differing element 0:
+3
+0
+
+- [3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3]
++ [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+======================================================================
+FAIL: test_case_b_three_environments_isolate_exactly_three_bad_candidates (test_boia_c02_candidate_independence.CandidateIndependenceTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_c02_candidate_independence.py", line 142, in test_case_b_three_environments_isolate_exactly_three_bad_candidates
+    self.assertTrue(torch.equal(out.status, expected))
+AssertionError: False is not true
+
+======================================================================
+FAIL: test_case_c_timing_and_residual_are_candidate_shaped (test_boia_c02_candidate_independence.CandidateIndependenceTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_c02_candidate_independence.py", line 150, in test_case_c_timing_and_residual_are_candidate_shaped
+    self.assertTrue(torch.equal(out.status, expected))
+AssertionError: False is not true
+
+======================================================================
+FAIL: test_case_d_vertical_candidate_is_unknown_without_rejecting_others (test_boia_c02_candidate_independence.CandidateIndependenceTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_c02_candidate_independence.py", line 160, in test_case_d_vertical_candidate_is_unknown_without_rejecting_others
+    self.assertTrue(torch.equal(out.status, expected))
+AssertionError: False is not true
+
+======================================================================
+FAIL: test_case_e_candidate_and_environment_permutations_preserve_results (test_boia_c02_candidate_independence.CandidateIndependenceTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_c02_candidate_independence.py", line 170, in test_case_e_candidate_and_environment_permutations_preserve_results
+    self.assertTrue(torch.equal(base.status, expected))
+AssertionError: False is not true
+
+======================================================================
+FAIL: test_case_f_single_vs_mixed_batch_is_numerically_exact (test_boia_c02_candidate_independence.CandidateIndependenceTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_c02_candidate_independence.py", line 191, in test_case_f_single_vs_mixed_batch_is_numerically_exact
+    self.assertTrue(torch.equal(out.status, expected))
+AssertionError: False is not true
+
+======================================================================
+FAIL: test_float32_candidate_isolation_matches_single_result (test_boia_c02_candidate_independence.CandidateIndependenceTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_c02_candidate_independence.py", line 227, in test_float32_candidate_isolation_matches_single_result
+    self.assertEqual(int(out.model_safe.sum()), 59)
+AssertionError: 40 != 59
+
+----------------------------------------------------------------------
+Ran 10 tests in 0.249s
+
+FAILED (failures=10, errors=1)

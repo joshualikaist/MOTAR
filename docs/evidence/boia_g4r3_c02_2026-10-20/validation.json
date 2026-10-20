@@ -1,0 +1,90 @@
+{
+  "schema": "motar.g4r3.c02.final.validation.v1",
+  "base_sha": "cdfaffd28534cd37693a6cd678de9766bef4bd25",
+  "source_sha256": {
+    "motar_eval/boia/__init__.py": "9761f309c2328833d2c2b6ed1c2a33e260aa0f59a2fbe57eb6de2ec6e950179a",
+    "motar_eval/boia/access.py": "02e8c67a9edc84c84dfc51b1312a57051e552c491dc21effc4ee9433b11da4d6",
+    "motar_eval/boia/arbitration.py": "2d5d6b19f88132c1a9d5cad950febe618aa9674e13bb43ea695aec6215c33e5e",
+    "motar_eval/boia/belief.py": "dcdbb3d9c4c4ef06f241a7ffde6d3fcdc0d2f6c51c682d659339a02d8bd4160e",
+    "motar_eval/boia/candidates.py": "7feb0298d0193d868aef0243d47f9c796d4ddc26ae9ee7a715ee8ec41da6cd34",
+    "motar_eval/boia/cost.py": "a8a16d165c172126b11834621617794eda6f13b0639585b1e51a1bf83e00ed68",
+    "motar_eval/boia/dynamics.py": "9ef55b71734100cfc48b70e35da98f4a4764adf1821fa6997a8bab30683a68ac",
+    "motar_eval/boia/fallback.py": "e3740cecb30de9189b3e8b44efde94bb2675aeceb2397ccf00361ffd62dfc69e",
+    "motar_eval/boia/geometry.py": "8cd6eb76ce2e3b9599da738345e6d42777a95732479600797e2d19268f5c1840",
+    "motar_eval/boia/planner.py": "3daf4d58866a1f3b8cfd644ea7d8d9fb71ece0790135da234a323b1cc930c2b8",
+    "motar_eval/boia/safety.py": "b2638ca46324be01858de38144b4a259b425c33970cfb22dc8c58283d3363b1c",
+    "motar_eval/boia/terminal.py": "804fa6fc03de6489e2314f2f8bfd917a0bc0995cd253cc5ee94eb277847f2576",
+    "motar_eval/boia/trace.py": "784008f611974713853ba8fb2cd4df8d3c7dc4762a9ab3b51c8c6ab105354c5b",
+    "motar_eval/boia/types.py": "f79e69dba3eb4bf4ca99ef3455144a1b3d493541084fa5b4843d9028c6daaf77",
+    "motar_eval/boia/visibility.py": "ec0d92ab647390b4bc9fc12fecc5c8416fd73611c357fc59ac7dbc5ec567b9dd"
+  },
+  "tests_sha256": {
+    "tests/test_boia_access.py": "a5665da273dae1a20e4caeebda8fa7f92a3a13fd6873d32dd8dd370e919c53ff",
+    "tests/test_boia_arbitration.py": "7fc8ad95c738854fd069a8ebe054d2f8f74c2d61bd6fc8b1abb8c09ed50dede6",
+    "tests/test_boia_belief.py": "1d21aa970378778fb7f9e0d5b0473dd740b0d0228b7053b6e9b3612bb7fbeb2e",
+    "tests/test_boia_c02_candidate_independence.py": "4bd8fc65cac3389bd57437caecaf263be6ac350aba3795e5402d97f44f42bbbe",
+    "tests/test_boia_c02_geometry.py": "78752dde05832c1e32013e4abdcadc8733bb28eea7ffc39972dad9b97d5562c0",
+    "tests/test_boia_c02_safety.py": "d2d3d7268f29f9dcada238782050a8b035a0ad4fcc19cc4063f30d7c59eb9c2e",
+    "tests/test_boia_candidates_safety.py": "4c5c2948275cb40793d54271d8fced79969e316a4b2bfb0f66bf46337f9b3e11",
+    "tests/test_boia_dynamics.py": "e9ae9206d674f5a9076945c6e274c133429381660e3704572c904b107b3a85fe",
+    "tests/test_boia_geometry_visibility.py": "cd837bd9441f0c09b04264909c8861ede78533e5fc360f54c3c6e024262125e7",
+    "tests/test_boia_p0_geometry.py": "088aa2fde66403990baa8fd2adb2553273886860d41ba09bdf6f22edf5fa059f",
+    "tests/test_boia_p0_online.py": "be05cfbac7fd88c802b0d88a773ef4715639fe282b74af8eb435688cb74c331b",
+    "tests/test_boia_p0_safety.py": "b9291c08f5666edb915fc803002ddaf06962384a989098d075959de8e43ff7c2",
+    "tests/test_boia_planner.py": "c459906af2e01966a5dd9afc95c2cf6175f2381a79eee5565895b241a6df9a1e"
+  },
+  "boia": {
+    "status": "PASS",
+    "ran": 202,
+    "old": 160,
+    "prior_c02": 29,
+    "candidate_independence_new": 13,
+    "failures": 0,
+    "errors": 0,
+    "seconds": 15.089,
+    "exit_code": 0
+  },
+  "public_cpu": {
+    "status": "FAIL",
+    "ran": 2941,
+    "failures": 0,
+    "errors": 4,
+    "skipped": 10,
+    "excluded": 5,
+    "seconds": 160.451,
+    "exit_code": 1,
+    "exact_previous_error_match": true,
+    "per_method_receipt": "public_cpu_per_test.json",
+    "exception_comparison": "public_error_comparison.json"
+  },
+  "conditional_c02_local_commit_gate": "PASS",
+  "commands": {
+    "boia": "PYTHONNOUSERSITE=1 CUDA_VISIBLE_DEVICES='' OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 TMPDIR=/tmp/codex_occ /home/fair/miniconda3/envs/aerialgym/bin/python -B -m unittest discover -s tests -p 'test_boia*.py' -v",
+    "public_cpu": "PYTHONNOUSERSITE=1 CUDA_VISIBLE_DEVICES='' OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 TMPDIR=/tmp/codex_occ timeout 600s /home/fair/miniconda3/envs/aerialgym/bin/python -B docs/evidence/boia_g4r3_c02_2026-10-20/run_public_cpu_with_results.py --output /tmp/codex_occ/g4r3_public_cpu_results.json",
+    "pre_fix_replay": "PYTHONNOUSERSITE=1 CUDA_VISIBLE_DEVICES='' /home/fair/miniconda3/envs/aerialgym/bin/python -B docs/evidence/boia_g4r3_c02_2026-10-20/replay_candidate_independence_prefix.py"
+  },
+  "physical_qualification": "NOT_AVAILABLE",
+  "B03": "BLOCKED",
+  "B04": "BLOCKED",
+  "G5": "HOLD",
+  "part_c_status_at_this_commit": "NOT_STARTED_GATE_REQUIRED",
+  "new_arbitrator_online": "NOT_IMPLEMENTED",
+  "mission_effect": "NOT_TESTED",
+  "gpu": "NOT_RUN",
+  "push": false,
+  "merge": false,
+  "staged_review": {
+    "explicit_path_count": 39,
+    "exact_scope_match": true,
+    "credential_pattern_scan": "PASS",
+    "source_tests_markdown_json_whitespace": "PASS",
+    "full_staged_whitespace_exit": 2,
+    "artifact_only_trailing_whitespace_preserved": [
+      "docs/evidence/boia_g4r3_c02_2026-10-20/C02_FINAL_SOURCE_DIFF.patch",
+      "docs/evidence/boia_g4r3_c02_2026-10-20/public_cpu_final.txt",
+      "docs/evidence/boia_g4r_2026-10-20/C02_SOURCE_DIFF.patch",
+      "docs/evidence/boia_g4r_2026-10-20/public_cpu_before_timing_guard.txt"
+    ],
+    "generic_log_ignore_override": "Only two named compact CPU transcripts; no Raw/checkpoint/symlink"
+  }
+}

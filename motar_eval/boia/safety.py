@@ -11,6 +11,8 @@ import torch
 from .dynamics import braking_distance
 from .geometry import seg_point_dist, segment_in_known_free
 from .types import FreeContext, Rollout, VERIFIED_COLLISION_RADIUS_M
+from .types import (ContainmentReason, FreeBoundary2D, NextCycleSafetyResult,
+                    SafetyStatus, SweepBounds)
 
 
 def _segment_clearance(a, b, points, valid):
@@ -100,3 +102,319 @@ def screen(roll, pts_obs, valid_obs, free_ctx, params):
     stop_ok = ((_segment_clearance(final_pos[..., :2], stop_end, pts_obs, valid_obs) >= body_radius)
                & segment_in_known_free(final_pos[..., :2], stop_end, free_ctx))
     return hard_ok, stop_ok, clr_min, clr_soft_cost
+
+
+def _c02_point_check(a, b, points, valid, radius):
+    """Float64 segment distances and one-sided numerical abstention, N-first.
+
+    A 128-epsilon coordinate-scale band removes near-contact certificates; it is
+    a numerical ambiguity policy, NOT a physical sensor/control safety margin.
+    """
+    a, b, points = a.to(torch.float64), b.to(torch.float64), points.to(torch.float64)
+    shape = a.shape[:-1]
+    aa, bb = a.reshape(a.shape[0], -1, 2), b.reshape(b.shape[0], -1, 2)
+    distance = a.new_empty(aa.shape[:-1])
+    for j in range(0, aa.shape[1], 256):
+        distance[:, j:j + 256] = _segment_clearance(aa[:, j:j + 256], bb[:, j:j + 256], points, valid)
+    distance = distance.reshape(shape)
+    point_scale = (torch.where(valid[..., None], points.abs(), torch.zeros_like(points)).amax((1, 2))
+                   if points.shape[1] else a.new_zeros(a.shape[0]))
+    scale = 1 + a.abs().sum(-1) + b.abs().sum(-1)
+    scale += point_scale.reshape(a.shape[0], *([1] * (a.ndim - 2)))
+    band = 128 * torch.finfo(torch.float64).eps * scale
+    residual = distance - radius
+    numerical = (~torch.isfinite(distance)
+                 & valid.any(-1).reshape(a.shape[0], *([1] * (a.ndim - 2))))
+    return distance, residual < -band, (residual.abs() <= band) | numerical
+
+
+def _c02_backup(p, v, params, substeps, sample_cap=64):
+    """Reaction coast, actual zero-input U4 samples, then an infinite-tail cap.
+
+    Zero commanded XY makes the scalar response direction preserving even if yaw
+    changes. A single capsule to the conservative endpoint therefore contains the
+    coast, every sampled segment and the untruncated asymptotic remainder. The
+    fixed computational cap is NOT a stopping-speed tolerance or a finite-stop claim.
+    """
+    p, v = p.to(torch.float64), v.to(torch.float64)
+    delta, tau, accel = params.dt / substeps, params.tau_v, params.a_max
+    speed = (v[..., :2] ** 2).sum(-1).sqrt()
+    direction = v[..., :2] / speed.clamp(min=torch.finfo(v.dtype).tiny)[..., None]
+    total = _stopping_envelope(speed, params, substeps)
+    current_p, current_v = p + v * params.t_react, v.clone()
+    positions, velocities = [p.clone(), current_p.clone()], [v.clone(), current_v.clone()]
+    for _ in range(sample_cap):
+        norm = (current_v[..., :2] ** 2).sum(-1, keepdim=True).sqrt()
+        factor = (delta * torch.minimum(norm / tau, torch.full_like(norm, accel))
+                  / norm.clamp(min=torch.finfo(v.dtype).tiny)).clamp(max=1)
+        current_v = current_v * (1 - factor)
+        current_p = current_p + delta * current_v
+        positions.append(current_p.clone())
+        velocities.append(current_v.clone())
+    remaining_v = (current_v[..., :2] ** 2).sum(-1).sqrt()
+    remaining = tau * remaining_v + (remaining_v - accel * tau).clamp(min=0).square() / (2 * accel)
+    travelled = ((current_p[..., :2] - p[..., :2]) * direction).sum(-1)
+    # Outward maximum also protects the decomposition from floating summation drift.
+    total = torch.maximum(total, travelled + remaining)
+    # One outward float64 ULP is numerical containment, not an added physical margin.
+    total = torch.where(total > 0, torch.nextafter(total, torch.full_like(total, float("inf"))), total)
+    endpoint = p[..., :2] + total[..., None] * direction
+    _, extrapolated = braking_distance(speed, t_react=params.t_react)
+    return endpoint, total, {"backup_positions_m": torch.stack(positions, -2),
+                            "backup_velocities_mps": torch.stack(velocities, -2),
+                            "backup_remaining_continuous_bound_m": remaining,
+                            "backup_remaining_cap_m": (total - travelled).clamp(min=0),
+                            "backup_sample_cap": sample_cap, "backup_substep_s": delta,
+                            "reaction_coast_s": params.t_react,
+                            "braking_model": "ZERO_INPUT_U4_PLUS_CONTINUOUS_REMAINDER",
+                            "empirical_table_extrapolated": extrapolated,
+                            "braking_validity": "LIMITED_VALIDITY_UNQUALIFIED_PLANT",
+                            "backup_complete_by_envelope": torch.ones_like(speed, dtype=torch.bool)}
+
+
+def _c02_legacy_point_collision(roll, points, valid, params):
+    """Distinguish a measured-point violation from legacy unknown-space rejection."""
+    n, k, h, sub, _ = roll.pos.shape
+    end = roll.pos[..., :2].reshape(n, k, h * sub, 2)
+    start = torch.cat((roll.diagnostics["initial_pos"][:, :, None, :2], end[:, :, :-1]), 2)
+    speed = (roll.vel ** 2).sum(-1).sqrt().reshape(n, k, h * sub)
+    previous = torch.cat(((roll.diagnostics["initial_vel"] ** 2).sum(-1).sqrt()[:, :, None], speed[:, :, :-1]), 2)
+    radius = max(params.r_hard, params.r_body, VERIFIED_COLLISION_RADIUS_M)
+    _, collision, ambiguous = _c02_point_check(start, end, points, valid, radius + torch.maximum(speed, previous) * params.t_det)
+    final, _, _ = _c02_backup(roll.pos[:, :, -1, -1], roll.vel[:, :, -1, -1], params, sub, sample_cap=0)
+    _, tail_collision, tail_ambiguous = _c02_point_check(end[:, :, -1], final, points, valid, radius)
+    return collision.any(-1) | tail_collision, ambiguous.any(-1) | tail_ambiguous
+
+
+def screen_next_cycle(roll, pts_obs, valid_obs, free_ctx, params, *, bounds=None):
+    """Standalone opt-in C02 MODEL check; no planner/controller calls this API.
+
+    Retain legacy full-horizon and terminal-stop checks, then screen every segment
+    of the first .1 s decision and its reaction-plus-zero-command backup capsule.
+    The sphere covers the current collision box at every attitude; the free set is
+    only a planar interpolation model. Missing uncertainty evidence stays explicit
+    and physical qualification is ALWAYS unavailable, including MODEL_SAFE results.
+    Nonzero latency/scan-attitude allowances are unsupported, producing UNKNOWN.
+    """
+    from .geometry import capsule_in_free_model
+
+    if not isinstance(roll, Rollout) or not isinstance(free_ctx, FreeContext):
+        raise TypeError("a Rollout and explicit planar FreeContext are required")
+    if (not isinstance(roll.pos, torch.Tensor) or roll.pos.ndim < 2
+            or roll.pos.dtype not in (torch.float32, torch.float64) or roll.pos.device.type != "cpu"):
+        raise ValueError("Rollout position must provide CPU float32/64 N and K axes")
+    n, k = roll.pos.shape[:2]
+    if min(n, k) <= 0:
+        raise ValueError("at least one environment and candidate are required")
+    shape = (n, k)
+    status = torch.full(shape, int(SafetyStatus.INVALID), dtype=torch.int64, device=roll.pos.device)
+    flag = lambda: torch.zeros(shape, dtype=torch.bool, device=roll.pos.device)
+    metric = lambda: roll.pos.new_full(shape, float("nan"))
+    result = NextCycleSafetyResult(status, flag(), flag(), flag(), flag(), metric(), metric(), metric(),
+                                   {"reason": torch.full_like(status, int(ContainmentReason.INVALID_INPUT)),
+                                    "execution_interval_s": .1, "physical_bounds_used": False,
+                                    "timing_basis": "ASSUMED_0.1S_GRID;PREFIX_SEMI_IMPLICIT_CONSISTENCY;NO_MEASURED_TIMESTAMP",
+                                    "verification_dtype": "float64", "input_dtype": str(roll.pos.dtype),
+                                    "numerical_policy": "FLOAT64_POINT_BAND_128_EPS;OUTWARD_BACKUP_ULP"})
+    if bounds is None:
+        bounds = SweepBounds()
+    if not isinstance(bounds, SweepBounds):
+        return result
+    result.diagnostics["missing_uncertainty_bounds"] = bounds.missing_fields
+    result.diagnostics["declared_bounds"] = bounds
+    unsupported = tuple(name for name in ("latency_s", "attitude_error_rad")
+                        if getattr(bounds, name) not in (None, 0.))
+    extra = bounds.model_extra_radius_m + sum(x for x in (bounds.position_error_m,
+                 bounds.tracking_error_m, bounds.sensor_error_m) if x is not None)
+    if not math.isfinite(extra):
+        return result
+    result.diagnostics["model_radius_allowance_m"] = extra
+    if (roll.pos.ndim != 5 or roll.pos.shape[-1] != 3
+            or not isinstance(roll.vel, torch.Tensor) or roll.vel.shape != roll.pos.shape):
+        return result
+    _, _, horizon, substeps, _ = roll.pos.shape
+    if min(horizon, substeps) < 1 or roll.diagnostics is None:
+        status.fill_(int(SafetyStatus.UNKNOWN))
+        result.diagnostics["reason"].fill_(int(ContainmentReason.INSUFFICIENT_PREFIX))
+        return result
+    if not isinstance(roll.diagnostics, dict):
+        return result
+    initial = roll.diagnostics.get("initial_pos")
+    initial_v = roll.diagnostics.get("initial_vel")
+    if initial is None or initial_v is None:
+        status.fill_(int(SafetyStatus.UNKNOWN))
+        result.diagnostics["reason"].fill_(int(ContainmentReason.INSUFFICIENT_PREFIX))
+        return result
+    tensors = (roll.vel, roll.psi, roll.step_pos, roll.step_vel, roll.step_psi,
+               roll.governed_cmd, pts_obs, free_ctx.pos, free_ctx.yaw, free_ctx.free_radius,
+               free_ctx.angles, initial, initial_v)
+    if not all(isinstance(x, torch.Tensor) and x.device == roll.pos.device and x.dtype == roll.pos.dtype for x in tensors):
+        return result
+    if not isinstance(valid_obs, torch.Tensor):
+        return result
+    if (initial.shape != (n, k, 3) or initial_v.shape != initial.shape
+            or roll.psi.shape != roll.pos.shape[:-1] or roll.step_pos.shape != (n, k, horizon, 3)
+            or roll.step_vel.shape != roll.step_pos.shape or roll.step_psi.shape != (n, k, horizon)
+            or roll.governed_cmd.shape != (n, k, horizon, 4) or pts_obs.ndim != 3
+            or pts_obs.shape[0] != n or pts_obs.shape[-1] != 2 or valid_obs.shape != pts_obs.shape[:2]
+            or valid_obs.dtype != torch.bool or valid_obs.device != roll.pos.device
+            or free_ctx.pos.shape != (n, 3) or free_ctx.yaw.shape != (n,)
+            or free_ctx.free_radius.ndim != 2 or free_ctx.free_radius.shape[0] != n
+            or free_ctx.angles.ndim != 1 or free_ctx.angles.numel() < 3
+            or free_ctx.free_radius.shape[1] != free_ctx.angles.numel()):
+        return result
+    scalar_values = (params.r_hard, params.r_body, params.t_det, params.t_react,
+                     params.tau_v, params.a_max, params.dt, free_ctx.far_m)
+    if any(not math.isfinite(x) or x < 0 for x in scalar_values) or min(scalar_values[-4:]) <= 0:
+        return result
+    if params.dt / substeps > params.tau_v:
+        return result
+    if abs(params.dt - .1) > 1e-12:
+        status.fill_(int(SafetyStatus.UNKNOWN))
+        result.diagnostics["reason"].fill_(int(ContainmentReason.INSUFFICIENT_PREFIX))
+        return result
+    b = free_ctx.angles.numel()
+    gaps = torch.remainder(free_ctx.angles - free_ctx.angles.roll(-1), 2 * math.pi)
+    if not bool(torch.isfinite(gaps).all()) or not bool(torch.allclose(gaps, torch.full_like(gaps, 2 * math.pi / b), atol=1e-5, rtol=1e-5)):
+        return result
+    # Candidate value validity is (N,K). Common scan validity is (N) and
+    # broadcasts only to candidates from its own environment. Structural schema
+    # failures above remain global INVALID because they cannot be sliced safely.
+    common = torch.ones(n, dtype=torch.bool, device=roll.pos.device)
+    for x in (free_ctx.pos, free_ctx.yaw, free_ctx.free_radius):
+        common &= torch.isfinite(x).reshape(n, -1).all(-1)
+    common &= (torch.isfinite(pts_obs).all(-1) | ~valid_obs).all(-1)
+    common &= ((free_ctx.free_radius >= 0) & (free_ctx.free_radius <= free_ctx.far_m)).all(-1)
+    finite = torch.ones(shape, dtype=torch.bool, device=roll.pos.device)
+    for x in (roll.pos,) + tensors[:6] + (initial, initial_v):
+        finite &= torch.isfinite(x).reshape(n, k, -1).all(-1)
+    finite &= torch.isfinite((roll.vel ** 2).sum(-1)).reshape(n, k, -1).all(-1)
+    finite &= torch.isfinite((initial_v ** 2).sum(-1))
+    step_ok = (roll.step_pos == roll.pos[:, :, :, -1]).reshape(n, k, -1).all(-1)
+    step_ok &= (roll.step_vel == roll.vel[:, :, :, -1]).reshape(n, k, -1).all(-1)
+    step_ok &= (roll.step_psi == roll.psi[:, :, :, -1]).reshape(n, k, -1).all(-1)
+    # Validate the caller's claimed first-cycle time grid against U4's update.
+    # This is nominal consistency, not a measured timestamp or dt identification
+    # at rest. Only input-dtype arithmetic/subnormal roundoff is admitted.
+    end64 = roll.pos[:, :, 0].to(torch.float64)
+    start64 = torch.cat((initial.to(torch.float64)[:, :, None], end64[:, :, :-1]), 2)
+    delta_v64 = (params.dt / substeps) * roll.vel[:, :, 0].to(torch.float64)
+    residual = ((end64 - start64) - delta_v64).abs()
+    scale = torch.maximum(torch.maximum(start64.abs(), end64.abs()), delta_v64.abs())
+    info = torch.finfo(roll.pos.dtype)
+    roundoff = 8 * info.eps * scale + 8 * (info.tiny * info.eps)
+    timing_ok = (torch.isfinite(residual) & (residual <= roundoff)).reshape(n, k, -1).all(-1)
+    timing_residual = residual.reshape(n, k, -1).amax(-1)
+    timing_roundoff = roundoff.reshape(n, k, -1).amax(-1)
+    planar = (roll.vel[..., 2] == 0).reshape(n, k, -1).all(-1) & (initial_v[..., 2] == 0)
+    planar &= (roll.pos[..., 2] == initial[:, :, None, None, 2]).reshape(n, k, -1).all(-1)
+    candidate_valid = common[:, None] & finite & step_ok & timing_ok
+    vertical = candidate_valid & ~planar
+    status[vertical] = int(SafetyStatus.UNKNOWN)
+    result.diagnostics["reason"][vertical] = int(ContainmentReason.INCOMPLETE_BRAKING)
+    eligible = candidate_valid & planar
+    result.diagnostics.update({
+        # Legacy environment summaries retained for prior K=1 consumers. The
+        # canonical candidate_validation record below preserves every K axis.
+        "prefix_kinematic_consistent": timing_ok.all(-1),
+        "prefix_kinematic_max_residual_m": timing_residual.amax(-1),
+        "prefix_kinematic_roundoff_max_m": timing_roundoff.amax(-1),
+        "legacy_timing_summary_scope": "ENVIRONMENT_AGGREGATE;NOT_USED_FOR_ELIGIBILITY",
+        "candidate_validation": {"finite": finite, "common_valid": common[:, None].expand(n, k).clone(),
+            "step_end_consistent": step_ok, "timing_ok": timing_ok,
+            "timing_max_residual_m": timing_residual, "timing_roundoff_max_m": timing_roundoff,
+            "planar": planar, "eligible": eligible, "status": status, "reason": result.diagnostics["reason"]},
+        "candidate_backup": {},
+        "validated_rollout_diagnostics": ("initial_pos", "initial_vel"),
+        "unused_rollout_diagnostics": "NOT_SAFETY_EVIDENCE"})
+    pairs = eligible.nonzero(as_tuple=False)
+    if not pairs.numel():
+        return result
+    env_ids, candidate_ids = pairs[:, 0], pairs[:, 1]
+    index = (env_ids, candidate_ids)
+    # Each eligible pair becomes one pseudo-environment with K=1. In particular,
+    # legacy screen never receives a malformed sibling. Common sensor/pose data
+    # is gathered by env_ids, while trajectory data uses both pair coordinates.
+    take = lambda x: x[index][:, None]
+    rr = Rollout(*(take(x) for x in (roll.pos, roll.vel, roll.psi, roll.step_pos,
+                 roll.step_vel, roll.step_psi, roll.governed_cmd)),
+                 {"initial_pos": take(initial), "initial_vel": take(initial_v)})
+    ctx = FreeContext(free_ctx.pos[env_ids], free_ctx.yaw[env_ids], free_ctx.free_radius[env_ids],
+                      free_ctx.angles, free_ctx.far_m)
+    points, valid = pts_obs[env_ids], valid_obs[env_ids]
+    legacy_hard, legacy_stop, _, _ = screen(rr, points, valid, ctx, params)
+    result.legacy_hard_ok[index], result.legacy_stop_ok[index] = legacy_hard[:, 0], legacy_stop[:, 0]
+    if unsupported:
+        status[index] = int(SafetyStatus.UNKNOWN)
+        result.diagnostics["reason"][index] = int(ContainmentReason.INCOMPLETE_BRAKING)
+        result.diagnostics["unsupported_bounds"] = unsupported
+        return result
+    # Treat represented float32 inputs as exact supplied states, then verify the
+    # opt-in model locally in float64; the legacy comparison above stays untouched.
+    rr = Rollout(*(x.to(torch.float64) for x in (rr.pos, rr.vel, rr.psi, rr.step_pos,
+                 rr.step_vel, rr.step_psi, rr.governed_cmd)),
+                 {name: value.to(torch.float64) for name, value in rr.diagnostics.items()})
+    initial, initial_v = rr.diagnostics["initial_pos"], rr.diagnostics["initial_vel"]
+    points = points.to(torch.float64)
+    ctx = FreeContext(ctx.pos.to(torch.float64), ctx.yaw.to(torch.float64),
+                      ctx.free_radius.to(torch.float64), ctx.angles.to(torch.float64), ctx.far_m)
+    radius = max(params.r_hard, params.r_body, VERIFIED_COLLISION_RADIUS_M) + extra
+    prefix = rr.pos[:, :, 0, :, :2]
+    starts = torch.cat((initial[:, :, None, :2], prefix[:, :, :-1]), 2)
+    speeds = (rr.vel[:, :, 0] ** 2).sum(-1).sqrt()
+    previous_speed = torch.cat(((initial_v ** 2).sum(-1).sqrt()[:, :, None], speeds[:, :, :-1]), 2)
+    radii = radius + torch.maximum(speeds, previous_speed) * params.t_det
+    point_distance, prefix_collision, prefix_ambiguous = _c02_point_check(starts, prefix, points, valid, radii)
+    prefix_free = capsule_in_free_model(starts, prefix, FreeBoundary2D(ctx), radii)
+    prefix_ok = (prefix_free.model_safe & ~prefix_collision & ~prefix_ambiguous).all(-1)
+    endpoint, distance, backup = _c02_backup(rr.pos[:, :, 0, -1], rr.vel[:, :, 0, -1], params, substeps)
+    backup_start = rr.pos[:, :, 0, -1, :2]
+    backup_points, backup_collision, backup_ambiguous = _c02_point_check(backup_start, endpoint, points, valid, radius)
+    backup_free = capsule_in_free_model(backup_start, endpoint, FreeBoundary2D(ctx), radius)
+    backup_ok = backup_free.model_safe & ~backup_collision & ~backup_ambiguous
+    result.prefix_ok[index], result.backup_ok[index] = prefix_ok[:, 0], backup_ok[:, 0]
+    prefix_clearance = torch.minimum((point_distance - radii).amin(-1), prefix_free.min_clearance_m.amin(-1))
+    backup_clearance = torch.minimum(backup_points - radius, backup_free.min_clearance_m)
+    result.prefix_min_clearance_m[index] = prefix_clearance[:, 0].to(roll.pos.dtype)
+    result.backup_min_clearance_m[index] = backup_clearance[:, 0].to(roll.pos.dtype)
+    result.backup_distance_m[index] = distance[:, 0].to(roll.pos.dtype)
+    live_status = torch.where(legacy_hard & legacy_stop & prefix_ok & backup_ok,
+                             int(SafetyStatus.MODEL_SAFE), int(SafetyStatus.UNKNOWN))
+    legacy_collision, legacy_ambiguous = _c02_legacy_point_collision(rr, points, valid, params)
+    ambiguous = prefix_ambiguous.any(-1) | backup_ambiguous | legacy_ambiguous
+    live_status = torch.where(ambiguous, int(SafetyStatus.UNKNOWN), live_status)
+    collision = prefix_collision.any(-1) | backup_collision | legacy_collision
+    live_status = torch.where(collision, int(SafetyStatus.MODEL_UNSAFE), live_status)
+    invalid = (prefix_free.status == int(SafetyStatus.INVALID)).any(-1) | (backup_free.status == int(SafetyStatus.INVALID))
+    live_status = torch.where(invalid, int(SafetyStatus.INVALID), live_status)
+    status[index] = live_status[:, 0]
+    reason = torch.where(live_status == int(SafetyStatus.MODEL_SAFE), int(ContainmentReason.CLEAR),
+                         int(ContainmentReason.UNKNOWN_SPACE))
+    reason = torch.where(collision, int(ContainmentReason.MODEL_COLLISION), reason)
+    result.diagnostics["reason"][index] = torch.where(invalid, int(ContainmentReason.INVALID_INPUT), reason)[:, 0]
+    # Full candidate-shaped traces keep INVALID/UNKNOWN siblings explicit. NaN
+    # means NOT_EVALUATED, never zero travel or an inferred clear backup.
+    candidate_backup = {}
+    for name, value in backup.items():
+        if isinstance(value, torch.Tensor) and value.shape[:2] == (pairs.shape[0], 1):
+            fill = float("nan") if value.is_floating_point() else False if value.dtype == torch.bool else 0
+            full = torch.full((n, k) + value.shape[2:], fill, dtype=value.dtype, device=value.device)
+            full[index] = value[:, 0]
+            candidate_backup[name] = full
+        else:
+            candidate_backup[name] = value
+    result.diagnostics.update({"live_env_index": env_ids.clone(), "live_candidate_index": candidate_ids.clone(),
+                               "live_pair_index": pairs.clone(), "backup": backup, "candidate_backup": candidate_backup,
+                               "compact_diagnostics_scope": "LIVE_PAIR_ORDER;SEE_LIVE_PAIR_INDEX",
+                               "prefix_radius_m": radii, "backup_radius_m": radius,
+                               "backup_endpoint_xy_m": endpoint,
+                               "prefix_unknown": ~prefix_free.model_safe,
+                               "backup_unknown": ~backup_free.model_safe,
+                               "point_numerical_ambiguity": ambiguous,
+                               "verification_prefix_min_clearance_m": prefix_clearance,
+                               "verification_backup_min_clearance_m": backup_clearance,
+                               "clearance_units": "METRES_RESIDUAL_AFTER_RADIUS",
+                               "future_horizon_scope": "LEGACY_CENTRELINE_AND_MEASURED_POINT_CHECKS_ONLY",
+                               "delay_ledger": "PREFIX_T_DET_ISOTROPIC_ALLOWANCE;BACKUP_REACTION_COAST_ONCE;NO_SECOND_T_DET",
+                               "trajectory_interpretation": "U4_PIECEWISE_LINEAR_PLANAR_MODEL_ONLY"})
+    return result

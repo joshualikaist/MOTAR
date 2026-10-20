@@ -1,6 +1,6 @@
 """07 §§1,6,14 [ADAPTED/NEW]: immutable records and uncalibrated design priors."""
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Dict, Final, Optional, Tuple
 
 import torch
@@ -141,3 +141,101 @@ class Decision:
     new_state: Any = None
     trace: Any = None
     diagnostics: Any = None
+
+
+class SafetyStatus:
+    """Opt-in C02 model results; none of these is a flight-safety certificate."""
+    MODEL_SAFE = 0
+    MODEL_UNSAFE = 1
+    UNKNOWN = 2
+    INVALID = 3
+
+
+class ContainmentReason:
+    CLEAR = 0
+    UNKNOWN_SPACE = 1
+    INVALID_INPUT = 2
+    MODEL_COLLISION = 3
+    INSUFFICIENT_PREFIX = 4
+    INCOMPLETE_BRAKING = 5
+
+
+@dataclass(frozen=True)
+class FreeBoundary2D:
+    """Explicit legacy planar interpolation, NOT sensor-certified free volume.
+
+    A scan timestamp is provenance only; this version cannot qualify ageing or
+    transform the set into a measured 3-D volume. Unknown time remains None.
+    """
+    context: FreeContext
+    scan_timestamp_s: Optional[float] = None
+    model_name: str = field(default="PLANAR_SECTOR_INTERPOLATION_V1", init=False)
+    physical_qualification: str = field(default="PHYSICAL_QUALIFICATION_NOT_AVAILABLE", init=False)
+
+
+@dataclass(frozen=True)
+class SweepBounds:
+    """Nominal model allowance and separately declared, unqualified error bounds.
+
+    None is missing evidence, not a measured zero. Even a fully populated record
+    does not resolve sparse coverage, plant uncertainty or the absent 3-D map.
+    This record never converts a model result into physical qualification.
+    """
+    model_extra_radius_m: float = 0.0
+    position_error_m: Optional[float] = None
+    tracking_error_m: Optional[float] = None
+    sensor_error_m: Optional[float] = None
+    latency_s: Optional[float] = None
+    attitude_error_rad: Optional[float] = None
+
+    def __post_init__(self):
+        for name in ("model_extra_radius_m", "position_error_m", "tracking_error_m",
+                     "sensor_error_m", "latency_s", "attitude_error_rad"):
+            value = getattr(self, name)
+            if value is not None and (isinstance(value, bool) or not isinstance(value, (int, float))
+                                      or not math.isfinite(value) or value < 0):
+                raise ValueError("{} must be a finite nonnegative declaration or None".format(name))
+        if self.model_extra_radius_m is None:
+            raise ValueError("nominal extra radius must be explicitly numeric")
+
+    @property
+    def missing_fields(self):
+        return tuple(name for name in ("position_error_m", "tracking_error_m", "sensor_error_m",
+                                       "latency_s", "attitude_error_rad")
+                     if getattr(self, name) is None)
+
+
+@dataclass(frozen=True)
+class ContainmentResult:
+    """N-first status/reason tensors and boundary distance in metres."""
+    status: torch.Tensor
+    min_clearance_m: torch.Tensor
+    reason: torch.Tensor
+    physical_qualification: str = field(default="PHYSICAL_QUALIFICATION_NOT_AVAILABLE", init=False)
+
+    @property
+    def model_safe(self):
+        return self.status == int(SafetyStatus.MODEL_SAFE)
+
+    @property
+    def model_ok(self):
+        return self.model_safe
+
+
+@dataclass(frozen=True)
+class NextCycleSafetyResult:
+    """Standalone opt-in diagnostics; no planner/controller installs this result."""
+    status: torch.Tensor
+    prefix_ok: torch.Tensor
+    backup_ok: torch.Tensor
+    legacy_hard_ok: torch.Tensor
+    legacy_stop_ok: torch.Tensor
+    prefix_min_clearance_m: torch.Tensor
+    backup_min_clearance_m: torch.Tensor
+    backup_distance_m: torch.Tensor
+    diagnostics: Dict[str, Any]
+    physical_qualification: str = field(default="PHYSICAL_QUALIFICATION_NOT_AVAILABLE", init=False)
+
+    @property
+    def model_safe(self):
+        return self.status == int(SafetyStatus.MODEL_SAFE)

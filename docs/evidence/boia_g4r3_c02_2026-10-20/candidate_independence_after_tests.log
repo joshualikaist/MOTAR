@@ -1,0 +1,35 @@
+Source/test SHA-256: {"motar_eval/boia/dynamics.py": "9ef55b71734100cfc48b70e35da98f4a4764adf1821fa6997a8bab30683a68ac", "motar_eval/boia/geometry.py": "8cd6eb76ce2e3b9599da738345e6d42777a95732479600797e2d19268f5c1840", "motar_eval/boia/safety.py": "b2638ca46324be01858de38144b4a259b425c33970cfb22dc8c58283d3363b1c", "motar_eval/boia/types.py": "f79e69dba3eb4bf4ca99ef3455144a1b3d493541084fa5b4843d9028c6daaf77", "tests/test_boia_c02_candidate_independence.py": "4bd8fc65cac3389bd57437caecaf263be6ac350aba3795e5402d97f44f42bbbe", "tests/test_boia_c02_safety.py": "d2d3d7268f29f9dcada238782050a8b035a0ad4fcc19cc4063f30d7c59eb9c2e"}
+Exit code: 0
+test_all_consumed_candidate_fields_isolate_nonfinite_or_step_faults (test_boia_c02_candidate_independence.CandidateIndependenceTest) ... ok
+test_asymmetric_scan_binding_has_independently_different_outcomes (test_boia_c02_candidate_independence.CandidateIndependenceTest) ... ok
+test_candidate_diagnostics_and_step_consistency_faults_remain_local (test_boia_c02_candidate_independence.CandidateIndependenceTest) ... ok
+test_case_a_one_nan_candidate_preserves_nineteen_healthy_candidates (test_boia_c02_candidate_independence.CandidateIndependenceTest) ... ok
+test_case_b_three_environments_isolate_exactly_three_bad_candidates (test_boia_c02_candidate_independence.CandidateIndependenceTest) ... ok
+test_case_c_timing_and_residual_are_candidate_shaped (test_boia_c02_candidate_independence.CandidateIndependenceTest) ... ok
+test_case_d_vertical_candidate_is_unknown_without_rejecting_others (test_boia_c02_candidate_independence.CandidateIndependenceTest) ... ok
+test_case_e_candidate_and_environment_permutations_preserve_results (test_boia_c02_candidate_independence.CandidateIndependenceTest) ... ok
+test_case_f_single_vs_mixed_batch_is_numerically_exact (test_boia_c02_candidate_independence.CandidateIndependenceTest) ... ok
+test_common_scan_invalid_rejects_only_its_environment (test_boia_c02_candidate_independence.CandidateIndependenceTest) ... ok
+test_float32_candidate_isolation_matches_single_result (test_boia_c02_candidate_independence.CandidateIndependenceTest) ... ok
+test_repeatability_rng_and_input_preservation (test_boia_c02_candidate_independence.CandidateIndependenceTest) ... ok
+test_structural_schema_failures_return_global_invalid (test_boia_c02_candidate_independence.CandidateIndependenceTest) ... ok
+test_center_only_false_safe_and_sector_boundary_penetration (test_boia_c02_safety.NextCycleOracleTest) ... ok
+test_curved_prefix_uses_current_velocity_for_direction_preserving_backup (test_boia_c02_safety.NextCycleOracleTest) ... ok
+test_float32_body_floor_rounddown_cannot_create_a_point_certificate (test_boia_c02_safety.NextCycleOracleTest) ... ok
+test_legacy_functions_policy_inputs_and_default_path_are_unchanged (test_boia_c02_safety.NextCycleOracleTest) ... ok
+test_mismatched_prefix_time_grid_is_invalid_without_poisoning_other_env (test_boia_c02_safety.NextCycleOracleTest) ... ok
+test_missing_bounds_and_supplied_unsupported_bounds_are_explicit (test_boia_c02_safety.NextCycleOracleTest) ... ok
+test_narrow_gap_low_high_speed_and_declared_radius_allowance (test_boia_c02_safety.NextCycleOracleTest) ... ok
+test_nonconvex_free_space_corners_are_not_a_containment_oracle (test_boia_c02_safety.NextCycleOracleTest) ... ok
+test_original_raw_row2_bin25_horizon_pass_next_cycle_fail (test_boia_c02_safety.NextCycleOracleTest) ... ok
+test_per_environment_invalid_isolation_and_batch_independence (test_boia_c02_safety.NextCycleOracleTest) ... ok
+test_repeatability_and_no_global_rng_contamination (test_boia_c02_safety.NextCycleOracleTest) ... ok
+test_sample_cap_has_a_complete_acceleration_saturated_remainder (test_boia_c02_safety.NextCycleOracleTest) ... ok
+test_shapes_and_cpu_only_transport_fail_explicitly (test_boia_c02_safety.NextCycleOracleTest) ... ok
+test_vertical_fov_blindspot_and_real_rotor_shape_remain_unqualified (test_boia_c02_safety.NextCycleOracleTest) ... ok
+test_zero_speed_near_boundary_and_unknown_only_environment (test_boia_c02_safety.NextCycleOracleTest) ... ok
+
+----------------------------------------------------------------------
+Ran 28 tests in 1.163s
+
+OK

@@ -1,0 +1,16 @@
+{
+  "motar_eval/boia/safety.py": "0041a40ddb599c400c2e5d0ac7c7a0517d6ffbefa8a7f019c1905a6ab6c883f8",
+  "motar_eval/boia/types.py": "f79e69dba3eb4bf4ca99ef3455144a1b3d493541084fa5b4843d9028c6daaf77",
+  "motar_eval/boia/geometry.py": "8cd6eb76ce2e3b9599da738345e6d42777a95732479600797e2d19268f5c1840",
+  "motar_eval/boia/dynamics.py": "9ef55b71734100cfc48b70e35da98f4a4764adf1821fa6997a8bab30683a68ac",
+  "tests/test_boia_c02_safety.py": "d2d3d7268f29f9dcada238782050a8b035a0ad4fcc19cc4063f30d7c59eb9c2e",
+  "tests/test_boia_c02_candidate_independence.py": "063bb0ba19554be734a7a26b837e8ff6908e1d0e197c8421ea111f2e0a6a61da",
+  "fixture_function_sha256": {
+    "fixture": "8be57aa578ffa611c8aa32a741b59fd4ff4eb1511978b52cd53ef8744c7ccac4",
+    "evaluate": "731ded3648eb690d28c2903c193ba8af3aa602d8772df9f2cef72a156bf11d1c",
+    "select": "7797aa3bc19ac953ab3b9fbdc608f19c6958aa80a691ea5f27ee95fe6df4d516",
+    "permute": "13918b5f7e0da8ba7fdff9a9954757c52a1dfd6f31dc6bf3aded86d6fd6942fb",
+    "malformed": "597af89c05975e5c0c766ec5c89571675b53a6d1ec02dfb1685c5f42c2a50256",
+    "case": "5cb15c4958c43c4d992d1aa9a365b12af07308ab16872d2c2d6e3ed24c6e38d5"
+  }
+}
