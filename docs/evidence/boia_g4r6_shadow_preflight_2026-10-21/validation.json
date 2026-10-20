@@ -1,0 +1,529 @@
+{
+  "schema": "motar.boia.g4r6.shadow-preflight.v1",
+  "created_UTC": "2026-10-20T22:01:46.524833+00:00",
+  "base_SHA": "a9300660fbf1917c8431f060ddda9253f523ead1",
+  "branch": "codex/mt-p1",
+  "verdict": "READY_FOR_BOUNDED_GPU_SHADOW_APPROVAL",
+  "scope": "CPU_IMPLEMENTATION_AND_QUALIFICATION_ONLY; actual clean-HEAD preflight after containing local commit",
+  "gates": {
+    "Observer implementation": "PASS_CPU",
+    "Logger implementation": "PASS_CPU",
+    "Exactly-once observe": "PASS_CPU",
+    "Immutable packet copy": "PASS_CPU",
+    "GT firewall": "PASS_CPU",
+    "Observation/action ID join": "PASS_CPU",
+    "Terminal/reset isolation": "PASS_CPU",
+    "Frozen F CPU noninterference": "PASS_CPU",
+    "Source/config/checkpoint guard contracts": "PASS_CPU",
+    "CPU focused tests": "PASS_CPU",
+    "BOIA regression": "PASS_CPU",
+    "Pre-mask failure telemetry": "PASS_QUALIFIED_SUBSTEP_THRESHOLD_CONTACT_AND_ACTION_BOUNDARY_HEIGHT_OOB",
+    "Git integrity": "PASS_PRESERVATION_AND_EXPLICIT_SCOPE; CLEAN_HEAD_GATE_AFTER_COMMIT",
+    "GPU launch configuration": "PREPARED",
+    "GPU actual OFF/ON parity": "NOT_TESTED_GPU_PENDING",
+    "Physical BOIA safety qualification": "NOT_QUALIFIED",
+    "G5": "HOLD"
+  },
+  "source_sha256": {
+    "motar_eval/boia_shadow.py": "e2e1233270f485b45626b6f3061b8241e611983f66fd027b5023c520ce8c614e",
+    "tools/boia_shadow.py": "b892d907898d10ff764bca43f4cffecb959a48bb076b645fd85c7d7db09ef6df"
+  },
+  "tests_sha256": {
+    "tests/test_boia_shadow.py": "d937678fa4e2b9f587319dc29d5ca6964d5146c53f967fd0253454058c000539",
+    "tests/test_boia_shadow_runner.py": "c0dd7887d34cf5e513f5a2a5712f1d30565d9584e1bcacccd149b2d870f4d167"
+  },
+  "config_sha256": "759fef83ebbc4365c9080cb8dc15ebbb2209cc4d097f7dc5a235f1a41bc54df8",
+  "preregistration_sha256": "cf5da98367770a1f6ebaf83461a533ed74e40c3469402b3e2f269e8a179f36b0",
+  "prior_source_sha256": {
+    "aerial_gym/config/env_config/navrl_bars_env.py": "990cc63edfd635d4b3461bebd98d9981d23b9eb6e44f027f7c295e80530848f8",
+    "aerial_gym/config/sensor_config/lidar_config/navrl_lidar_config.py": "8892f6f04853290e44a0de578734dcd0617c45d71225bc8dd6735aad996f9697",
+    "aerial_gym/config/sim_config/base_sim_config.py": "a555a9c3cd4908277ffec78b5000a03bcec5f03608c9204c338a8f5405adad3a",
+    "aerial_gym/config/task_config/navrl_task_config.py": "f35e1959cb6f7035937642c479bb073d05d8ce3796db9e7c8e9e036c992b6267",
+    "aerial_gym/control/controllers/base_lee_controller.py": "5722b0111a735ac4273fc7087ab18327ff8abe53e7a8d65df39bfa042d23cb14",
+    "aerial_gym/control/motor_model.py": "1463e22cbeac24474755d1ece5b7757f52af25c67062f26701f503aeeb5f79c3",
+    "aerial_gym/env_manager/IGE_env_manager.py": "2b447a215e55d53f8e711a4ca63224484d7f10eff3720a3d46d33468e56c5fc9",
+    "aerial_gym/env_manager/env_manager.py": "8802061db7102db1dd98d67d554ddd7e28351b8a40fe69dbc4d768c9fecf16c8",
+    "aerial_gym/env_manager/warp_env_manager.py": "83e43b8785d75e6ed8524c4ad6e9e55b089bec19ab71090c10fb025d7bb3ec9d",
+    "aerial_gym/rl_training/rl_games/navrl_transformer_network.py": "eaa67b3ce0690fa32c871b6d19603d781d0eb9195b16050a930357c78af9422e",
+    "aerial_gym/robots/base_multirotor.py": "90aa24dc6b19b9833954ac7abd0bf976062fcf29e2009e72286482835bd4f24c",
+    "aerial_gym/robots/base_robot.py": "a1659179927899fd8f6fa8212319d21799911cb0cb05e248f185513ccacd64ec",
+    "aerial_gym/sensors/warp/warp_kernels/warp_lidar_kernels.py": "a5970cf9523392d340d22ca4a7d17d5708fc6cac65ac558be031176c503fa9be",
+    "aerial_gym/sensors/warp/warp_lidar.py": "8e2aef1e67d9fad2886543a322fffe7772940120b2639e14a817bdaaa423f2ed",
+    "aerial_gym/sensors/warp/warp_sensor.py": "a47906ec19109b54c8a193dccbf1504e7c8cfc91fc86e0c69b0980bd63252e84",
+    "aerial_gym/task/navrl_task/kroc_eval_adapter.py": "1712a7ef38e1dfc3542888eae4c556138695e96d38ee158811955a81c13819af",
+    "aerial_gym/task/navrl_task/navrl_detector.py": "8f634f225bbb0242aa287bcce5f7f12ebc13bc40a25ef900df84355c286b121b",
+    "aerial_gym/task/navrl_task/navrl_perception.py": "c107d96b29c3810b6b7cc275748cda9ca75dc42e21ba1684feff9c06a13dd4a6",
+    "aerial_gym/task/navrl_task/navrl_sensor_lineage.py": "3e5ece3e8ab4e7cb32c96c59a9d05630aededd5f81bf0d212f22c824a2e884da",
+    "aerial_gym/task/navrl_task/navrl_task.py": "c54616567da64cc5fa8d210ba51f4452af623c10a1a5934db58482f5d761cd0d",
+    "aerial_gym/task/navrl_task/speed_governor.py": "fe00c84c3b9a4f62518445c134ee9b0b3eb085486e82feddfeb0ea736ebb6847",
+    "motar_eval/boia/__init__.py": "9761f309c2328833d2c2b6ed1c2a33e260aa0f59a2fbe57eb6de2ec6e950179a",
+    "motar_eval/boia/access.py": "02e8c67a9edc84c84dfc51b1312a57051e552c491dc21effc4ee9433b11da4d6",
+    "motar_eval/boia/arbitration.py": "2d5d6b19f88132c1a9d5cad950febe618aa9674e13bb43ea695aec6215c33e5e",
+    "motar_eval/boia/belief.py": "dcdbb3d9c4c4ef06f241a7ffde6d3fcdc0d2f6c51c682d659339a02d8bd4160e",
+    "motar_eval/boia/candidates.py": "7feb0298d0193d868aef0243d47f9c796d4ddc26ae9ee7a715ee8ec41da6cd34",
+    "motar_eval/boia/cost.py": "a8a16d165c172126b11834621617794eda6f13b0639585b1e51a1bf83e00ed68",
+    "motar_eval/boia/dynamics.py": "9ef55b71734100cfc48b70e35da98f4a4764adf1821fa6997a8bab30683a68ac",
+    "motar_eval/boia/fallback.py": "e3740cecb30de9189b3e8b44efde94bb2675aeceb2397ccf00361ffd62dfc69e",
+    "motar_eval/boia/geometry.py": "8cd6eb76ce2e3b9599da738345e6d42777a95732479600797e2d19268f5c1840",
+    "motar_eval/boia/planner.py": "3daf4d58866a1f3b8cfd644ea7d8d9fb71ece0790135da234a323b1cc930c2b8",
+    "motar_eval/boia/safety.py": "b2638ca46324be01858de38144b4a259b425c33970cfb22dc8c58283d3363b1c",
+    "motar_eval/boia/terminal.py": "804fa6fc03de6489e2314f2f8bfd917a0bc0995cd253cc5ee94eb277847f2576",
+    "motar_eval/boia/trace.py": "784008f611974713853ba8fb2cd4df8d3c7dc4762a9ab3b51c8c6ab105354c5b",
+    "motar_eval/boia/types.py": "f79e69dba3eb4bf4ca99ef3455144a1b3d493541084fa5b4843d9028c6daaf77",
+    "motar_eval/boia/visibility.py": "ec0d92ab647390b4bc9fc12fecc5c8416fd73611c357fc59ac7dbc5ec567b9dd",
+    "motar_eval/boia_research/__init__.py": "b058a6309ac89e4ca24f62f7df41d9bfe214defc5051564bdcb0f4e65634e0dc",
+    "motar_eval/boia_research/benefit.py": "5053f400ac6e7ea2af9f79ed8680a61696920f40de900d0de06d0cffd2c76473",
+    "motar_eval/boia_research/decision.py": "a7c4ab115711f20417467b96b7bd498bc9bb6f3ede8644d67c65cbc71ccf0c7a",
+    "motar_eval/boia_research/evidence.py": "8c20b71bec2ee58b3e4044b4f9d8fe111d1cd8a81d4ec6914c69354ab51b7e04",
+    "motar_eval/boia_research/safety.py": "8e49ed723adb020122f874a4d0040a16db224aaa01d759bcdd76f9d07debda73",
+    "motar_eval/boia_research/types.py": "77bddb5fed05f090b09bffd930872d7f1679e0ac4d629e3cdf8b7a76d0c472a9",
+    "motar_eval/e_l0.py": "611dc539d828252a6cb74fcbad343102bc94997bcffe8d2f6022b7b25c5f3eb2",
+    "motar_eval/eq1d_telemetry.py": "1bfff3d3cfbbd4577e0fe357d86bc0ce3358dc81cf58b40a7437345c5932d5ce",
+    "tools/eq1d_fixture_launcher.py": "eff84cf9edc4e66f0cf54cd6f37e45fbc0792e82cb44806fa701970793fe0fb0",
+    "tools/h_r3_env_isolation.py": "68574cfac96bbc1748e258ae3b900d8073d72d3732c6f634affd16f2ddeb48b4",
+    "tools/h_r3_p02_rng.py": "ef9a98d85b4b40b5af26623d7c15682eca64c38bcdaa89d04a46cc76732cf4e0",
+    "tools/h_r3_p03_analysis.py": "b4c220f81d4c7b80f6cf299a29bf1507c4ae2e6c67cf67653eaeb8b1e688e6a3",
+    "tools/h_r3_p03_launcher.py": "578fba171bb8f5be4bcaaf5ea6aaf3538f294b922c23aeb66b36d7cb2bc95d20"
+  },
+  "tests": {
+    "focused": {
+      "ran": 54,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 0.297,
+      "status": "PASS",
+      "IDs": [
+        "test_boia_shadow.CallThroughTests.test_GT_poison_not_copied_into_sensor_packet",
+        "test_boia_shadow.CallThroughTests.test_OFF_ON_every_action_exact_and_stride_only_diagnostics",
+        "test_boia_shadow.CallThroughTests.test_current_returned_camera_flag_not_stale_task_flag",
+        "test_boia_shadow.CallThroughTests.test_exactly_once_counts_and_actor_policy_PI_unmodified",
+        "test_boia_shadow.CallThroughTests.test_existing_substep_callback_chained_once",
+        "test_boia_shadow.CallThroughTests.test_extra_renderer_call_is_integrity_failure",
+        "test_boia_shadow.CallThroughTests.test_height_and_OOB_capture_before_reset",
+        "test_boia_shadow.CallThroughTests.test_hook_lifecycle_restored_even_on_exception",
+        "test_boia_shadow.CallThroughTests.test_mismatch_stops_before_action_or_command_execution",
+        "test_boia_shadow.CallThroughTests.test_no_writer_capability_or_extra_detector_in_diagnostics",
+        "test_boia_shadow.CallThroughTests.test_rng_unchanged_by_observer",
+        "test_boia_shadow.CallThroughTests.test_snapshot_keeps_sensor_bytes_and_does_not_draw_rng",
+        "test_boia_shadow.CallThroughTests.test_substep_contact_capture_preserved_despite_mask",
+        "test_boia_shadow.CallThroughTests.test_terminal_postreset_sensor_mutation_is_also_compared",
+        "test_boia_shadow.PacketTests.test_clock_and_frame_semantics_are_in_fingerprint_but_host_time_is_not",
+        "test_boia_shadow.PacketTests.test_detached_immutable_byte_copy",
+        "test_boia_shadow.PacketTests.test_metadata_cannot_hold_mutable_GT_or_source_handles",
+        "test_boia_shadow.PacketTests.test_missing_utility_and_safety_never_fabricated",
+        "test_boia_shadow.PacketTests.test_raw_invalid_status_cannot_recover_true_no_hit",
+        "test_boia_shadow.PacketTests.test_shape_units_and_flags_reject",
+        "test_boia_shadow.PacketTests.test_source_width_and_lineage",
+        "test_boia_shadow.PacketTests.test_tensor_storage_does_not_accept_objects_or_mutable_payload",
+        "test_boia_shadow.PacketTests.test_timestamps_missing_stale_future_and_wrong_frame",
+        "test_boia_shadow.PacketTests.test_unknown_fields_and_object_handles_rejected",
+        "test_boia_shadow.ProtocolTests.test_capture_crash_height_oob_truth_table",
+        "test_boia_shadow.ProtocolTests.test_earlier_contact_blocks_later_capture",
+        "test_boia_shadow.ProtocolTests.test_initial_action0_and_duplicate_observation",
+        "test_boia_shadow.ProtocolTests.test_log_size_and_existing_path_fail_closed",
+        "test_boia_shadow.ProtocolTests.test_logger_error_is_fatal_without_alternate_action",
+        "test_boia_shadow.ProtocolTests.test_missing_sensor_or_command_refused",
+        "test_boia_shadow.ProtocolTests.test_out_of_order_and_invalid_ID_rejected",
+        "test_boia_shadow.ProtocolTests.test_process_cap_is_censor_not_timeout",
+        "test_boia_shadow.ProtocolTests.test_reset_requires_old_terminal_record",
+        "test_boia_shadow.ProtocolTests.test_terminal_reset_and_new_sensor_join",
+        "test_boia_shadow.ProtocolTests.test_unsupported_substep_contract_rejected",
+        "test_boia_shadow_runner.RunnerTests.test_device_query_failure_keeps_partial_receipt_and_manifest",
+        "test_boia_shadow_runner.RunnerTests.test_dirty_HEAD_config_and_untracked_guards",
+        "test_boia_shadow_runner.RunnerTests.test_exclusive_JSON_write_no_overwrite",
+        "test_boia_shadow_runner.RunnerTests.test_fixed_N_seed_caps_lineage_and_resource_plan",
+        "test_boia_shadow_runner.RunnerTests.test_latency_summary_is_named_and_handles_empty_sample",
+        "test_boia_shadow_runner.RunnerTests.test_manifest_hashes_partial_data_without_modifying_it",
+        "test_boia_shadow_runner.RunnerTests.test_no_GPU_subcommand_without_explicit_switch",
+        "test_boia_shadow_runner.RunnerTests.test_only_worker_function_contains_simulator_import",
+        "test_boia_shadow_runner.RunnerTests.test_output_disk_and_VRAM_guards_independent_of_worker",
+        "test_boia_shadow_runner.RunnerTests.test_parity_exact_including_missing_rows_and_keys",
+        "test_boia_shadow_runner.RunnerTests.test_parity_requires_committed_source_and_completed_metadata",
+        "test_boia_shadow_runner.RunnerTests.test_preflight_is_import_only_and_never_invokes_device_or_launcher",
+        "test_boia_shadow_runner.RunnerTests.test_runtime_env_scrubs_inherited_risk_and_keeps_safe_process_contract",
+        "test_boia_shadow_runner.RunnerTests.test_runtime_profile_handles_actual_InitialViewSpec_contract",
+        "test_boia_shadow_runner.RunnerTests.test_stage_requires_completed_predecessor_and_no_retry",
+        "test_boia_shadow_runner.RunnerTests.test_static_hooks_match_real_source_boundaries",
+        "test_boia_shadow_runner.RunnerTests.test_watchdog_stops_CPU_standin_and_does_not_make_task_timeout",
+        "test_boia_shadow_runner.RunnerTests.test_worker_cannot_bypass_supervisor_or_import_Isaac",
+        "test_boia_shadow_runner.RunnerTests.test_worker_reference_load_error_preserves_original_failure_receipt"
+      ]
+    },
+    "Tier2": "Related legacy BOIA regressions included once in the Tier3 suite",
+    "BOIA_combined": {
+      "tests": 306,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 15.089912926079705,
+      "status": "PASS"
+    },
+    "PUBLIC_CPU": {
+      "profile": "PUBLIC_CPU",
+      "status": "FAIL",
+      "ran": 3045,
+      "failures": 0,
+      "errors": 4,
+      "skipped": 10,
+      "seconds": 158.8827845340129,
+      "exit_code": 1,
+      "disk_guard_triggered": false,
+      "environment": {
+        "PYTHONNOUSERSITE": "1",
+        "CUDA_VISIBLE_DEVICES": "",
+        "OMP_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+        "TMPDIR": "/tmp/codex_occ"
+      },
+      "interpreter": "/home/fair/miniconda3/envs/aerialgym/bin/python",
+      "runner_sha256": "7a6dbdc7b9bb7a66da02530ff3ab652a9ff986daf75b49bd533aeb7ba400768d",
+      "excluded": 5,
+      "exact_previous_error_match": true,
+      "comparison": {
+        "test_navrl_detect_resolution.DetectReduction.test_bounding_box_and_empty_convention": {
+          "same_exception_types_messages": true,
+          "same_terminal_frames": true,
+          "chain": [
+            {
+              "type": "ValueError",
+              "message": "Failed to convert argument for param target_half_extents to vec3f"
+            },
+            {
+              "type": "TypeError",
+              "message": "must be real number, not NoneType"
+            }
+          ],
+          "terminal_frames": [
+            [
+              "test_navrl_detect_resolution.py",
+              256,
+              "_run"
+            ],
+            [
+              "navrl_detector.py",
+              698,
+              "_render_detect"
+            ],
+            [
+              "context.py",
+              4218,
+              "launch"
+            ],
+            [
+              "context.py",
+              4190,
+              "pack_args"
+            ],
+            [
+              "context.py",
+              3975,
+              "pack_arg"
+            ]
+          ]
+        },
+        "test_navrl_detect_resolution.DetectReduction.test_count_centroid_and_range": {
+          "same_exception_types_messages": true,
+          "same_terminal_frames": true,
+          "chain": [
+            {
+              "type": "ValueError",
+              "message": "Failed to convert argument for param target_half_extents to vec3f"
+            },
+            {
+              "type": "TypeError",
+              "message": "must be real number, not NoneType"
+            }
+          ],
+          "terminal_frames": [
+            [
+              "test_navrl_detect_resolution.py",
+              256,
+              "_run"
+            ],
+            [
+              "navrl_detector.py",
+              698,
+              "_render_detect"
+            ],
+            [
+              "context.py",
+              4218,
+              "launch"
+            ],
+            [
+              "context.py",
+              4190,
+              "pack_args"
+            ],
+            [
+              "context.py",
+              3975,
+              "pack_arg"
+            ]
+          ]
+        },
+        "test_navrl_detect_resolution.DetectReduction.test_frame_carries_the_rendered_target_colour_and_far_plane": {
+          "same_exception_types_messages": true,
+          "same_terminal_frames": true,
+          "chain": [
+            {
+              "type": "ValueError",
+              "message": "Failed to convert argument for param target_half_extents to vec3f"
+            },
+            {
+              "type": "TypeError",
+              "message": "must be real number, not NoneType"
+            }
+          ],
+          "terminal_frames": [
+            [
+              "test_navrl_detect_resolution.py",
+              256,
+              "_run"
+            ],
+            [
+              "navrl_detector.py",
+              698,
+              "_render_detect"
+            ],
+            [
+              "context.py",
+              4218,
+              "launch"
+            ],
+            [
+              "context.py",
+              4190,
+              "pack_args"
+            ],
+            [
+              "context.py",
+              3975,
+              "pack_arg"
+            ]
+          ]
+        },
+        "test_navrl_detect_resolution.DetectReduction.test_the_frame_carries_no_image_sized_tensor": {
+          "same_exception_types_messages": true,
+          "same_terminal_frames": true,
+          "chain": [
+            {
+              "type": "ValueError",
+              "message": "Failed to convert argument for param target_half_extents to vec3f"
+            },
+            {
+              "type": "TypeError",
+              "message": "must be real number, not NoneType"
+            }
+          ],
+          "terminal_frames": [
+            [
+              "test_navrl_detect_resolution.py",
+              256,
+              "_run"
+            ],
+            [
+              "navrl_detector.py",
+              698,
+              "_render_detect"
+            ],
+            [
+              "context.py",
+              4218,
+              "launch"
+            ],
+            [
+              "context.py",
+              4190,
+              "pack_args"
+            ],
+            [
+              "context.py",
+              3975,
+              "pack_arg"
+            ]
+          ]
+        }
+      },
+      "full_report_path": "/tmp/codex_occ/g4r6_public_cpu_results.json",
+      "full_report_sha256": "6346557f8b8b6f6b2a7f21c62cb80691a14c5c95a930d088d3eb2ba59a823c5b",
+      "new_scope_regression": "NO_NEW_FAILURES_OR_ERRORS",
+      "aggregate_status": "FAIL_RETAINED"
+    },
+    "independent_read_only_review": {
+      "status": "NO_REMAINING_BLOCKER_IN_DECLARED_N1_OFF_SYNCHRONOUS_CPU_SCOPE",
+      "focused_ran": 54,
+      "failures": 0,
+      "errors": 0,
+      "seconds": 0.293,
+      "reviewed_sha256": {
+        "motar_eval/boia_shadow.py": "e2e1233270f485b45626b6f3061b8241e611983f66fd027b5023c520ce8c614e",
+        "tools/boia_shadow.py": "b892d907898d10ff764bca43f4cffecb959a48bb076b645fd85c7d7db09ef6df",
+        "tests/test_boia_shadow.py": "d937678fa4e2b9f587319dc29d5ca6964d5146c53f967fd0253454058c000539",
+        "tests/test_boia_shadow_runner.py": "c0dd7887d34cf5e513f5a2a5712f1d30565d9584e1bcacccd149b2d870f4d167"
+      },
+      "second_reviewer": "source guards/partial receipts/ContactChain/reset boundary checked; no remaining blocker",
+      "Fable": "NOT_REQUESTED_OR_USED"
+    }
+  },
+  "error_fixes": [
+    {
+      "issue": "JoinKey JSON serialization",
+      "initial_observation": "30test run,19errors; nested JoinKey TypeError",
+      "fix": "explicit scalar key serialization",
+      "regression": "parsed evaluator capture/crash/height/OOB truth-table rows"
+    },
+    {
+      "issue": "mutable GT-bearing clock metadata",
+      "fix": "strict scalar/None timestamps and string tags; immutable field pairs/calibration",
+      "regression": "test_metadata_cannot_hold_mutable_GT_or_source_handles"
+    },
+    {
+      "issue": "deterministic time/frame semantics omitted from fingerprint",
+      "fix": "include every deterministic clock member; exclude host monotonic only",
+      "regression": "test_clock_and_frame_semantics_are_in_fingerprint_but_host_time_is_not"
+    },
+    {
+      "issue": "overflowing integer clock",
+      "fix": "finite refuses OverflowError",
+      "regression": "same metadata regression"
+    },
+    {
+      "issue": "terminal-final returned/reset packet outside parity",
+      "fix": "complete parity after original step returns; compare next sensor/actor/history/RNG/obstacles",
+      "regression": "test_terminal_postreset_sensor_mutation_is_also_compared"
+    },
+    {
+      "issue": "reference-load failure before recorder creation",
+      "fix": "recorder initialized None, original error preserved in partial receipt",
+      "regression": "test_worker_reference_load_error_preserves_original_failure_receipt"
+    },
+    {
+      "issue": "InitialViewSpec object compared with string",
+      "fix": "native view/distance attributes, strict runtime profile",
+      "regression": "test_runtime_profile_handles_actual_InitialViewSpec_contract"
+    }
+  ],
+  "preservation": {
+    "checked_UTC": "2026-10-20T22:00:37.359787+00:00",
+    "checks": {
+      "branch_and_head": true,
+      "main_head": true,
+      "main_WIP": true,
+      "stash": true,
+      "symlinks": true,
+      "checkpoint": true,
+      "all_prior_audited_sources": true,
+      "no_existing_runtime_or_historical_changes": true,
+      "Raw3474_visible": true,
+      "main_WIP_names": true,
+      "main_index_empty": true,
+      "target_index_initially_empty": true,
+      "disk_above_3GB": true
+    },
+    "main_head": "f74390a1d44ca264960d39018f5e51710e9b7b0a",
+    "main_WIP_sha256": {
+      ".gitignore": "0fc139965f0e1e218883e22cb1c2e2cc6c8cf86487b1dd7d402a28a369fb5296",
+      "WORKLOG.md": "a63118ee730803b6c7e0afcceeec0d0595fdbf347ed56fb3474364b79bf6454c",
+      "presentations/README.md": "be8c4b2350a49580c5ea70a45f34c307c34a46f2509ce2eeab8f0f9fdfb69731"
+    },
+    "stash_SHA": "23ddb33f92cf6c75cf9095e149bb7e2516eb7543",
+    "protected_symlinks": {
+      "results/mt_p1_precision_v1": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/mt_p1_precision_v1",
+      "results/occlusion_pilot_v1": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_pilot_v1"
+    },
+    "checkpoint_sha256": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+    "main_status_paths": 3556,
+    "Raw_visible_files": 3474,
+    "Raw_full_rehash": "NOT_RUN",
+    "external_backup": "NOT_CREATED",
+    "free_bytes": 9153548288,
+    "owned_processes_remaining": []
+  },
+  "prohibitions_observed": {
+    "GPU_evaluation": "NOT_RUN",
+    "Isaac_simulation": "NOT_RUN",
+    "PPO_training": "NOT_RUN",
+    "online_intervention": "NOT_RUN",
+    "production_edit": false,
+    "Raw_or_checkpoint_modification": false,
+    "push": false,
+    "main_merge": false
+  },
+  "runtime_qualification_pending": [
+    "actual GPU/library/compile/device compatibility",
+    "real OFF/ON packet/action/command/RNG/reset parity",
+    "actual VRAM and end-to-end latency",
+    "calibrated timestamps/extrinsics/identity/error support",
+    "physical C02/backup/plant/deadline/endgame",
+    "Frozen F continuation and actual mission-loss/benefit model"
+  ],
+  "logging_scope": {
+    "sensor_packets": "immutable bytes; small values and full byte fingerprints; <=8 full NPZ snapshots total",
+    "timing": "DECLARED_SIM_SCHEDULE; host arrival separate; not hardware measurements",
+    "geometry": "B03/B04 unresolved; no first-hit erasure or free-volume certificate",
+    "collision_free": "qualified original capture with zero episode substep contacts>.05N and no action-boundary height/OOB",
+    "utility": "ABSTAIN; no actual WAIT/INTERVENE benefit inferred",
+    "diagnostic_latency": "full native step vs host observer copy/schema/diagnostic/SHA/log; no CUDA kernel-only or WCET claim"
+  },
+  "reproduce": {
+    "focused": "PYTHONNOUSERSITE=1 CUDA_VISIBLE_DEVICES='' OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 TMPDIR=/tmp/codex_occ /home/fair/miniconda3/envs/aerialgym/bin/python -B -m unittest discover -s tests -p 'test_boia_shadow*.py' -v",
+    "combined": "PYTHONNOUSERSITE=1 CUDA_VISIBLE_DEVICES='' OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 TMPDIR=/tmp/codex_occ /home/fair/miniconda3/envs/aerialgym/bin/python -B -m unittest discover -s tests -p 'test_boia*.py' -v",
+    "PUBLIC_CPU": "PYTHONNOUSERSITE=1 CUDA_VISIBLE_DEVICES='' OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 TMPDIR=/tmp/codex_occ /home/fair/miniconda3/envs/aerialgym/bin/python -B tools/run_tests.py --profile PUBLIC_CPU",
+    "actual_preflight_after_commit": "PYTHONNOUSERSITE=1 /home/fair/miniconda3/envs/aerialgym/bin/python -B tools/boia_shadow.py preflight --approved-commit CONTAINING_APPROVED_COMMIT"
+  },
+  "git_scope": {
+    "exact_files": [
+      "motar_eval/boia_shadow.py",
+      "tools/boia_shadow.py",
+      "tests/test_boia_shadow.py",
+      "tests/test_boia_shadow_runner.py",
+      "docs/plans/boia_shadow_q01_v1.json",
+      "docs/plans/boia_shadow_q01_v1.md",
+      "docs/research/occlusion_algorithm_v1/BOIA_RESEARCH_MASTER_PLAN.md",
+      "WORKLOG.md",
+      "docs/evidence/boia_g4r6_shadow_preflight_2026-10-21/IMPLEMENTATION_REPORT.md",
+      "docs/evidence/boia_g4r6_shadow_preflight_2026-10-21/validation.json",
+      "docs/evidence/boia_g4r6_shadow_preflight_2026-10-21/CPU_TEST_RESULTS.txt",
+      "docs/evidence/boia_g4r6_shadow_preflight_2026-10-21/GPU_SHADOW_RUNBOOK.md",
+      "docs/evidence/boia_g4r6_shadow_preflight_2026-10-21/HANDOFF.md"
+    ],
+    "commit_count_this_unit": 1,
+    "new_commit_SHA": "containing commit; omitted to avoid self-reference",
+    "post_commit_preflight_receipt": "/tmp/codex_occ/g4r6_cpu_preflight_after_commit.json; completion report records real result",
+    "untracked_protected_links": [
+      "results/mt_p1_precision_v1",
+      "results/occlusion_pilot_v1"
+    ]
+  },
+  "beads": {
+    "current": "motar-3p3.21",
+    "next_approval_required": "motar-3p3.22",
+    "PUBLIC_CPU_errors": "motar-6nn.5",
+    "B03": "motar-3p3.15",
+    "B04": "motar-3p3.13"
+  },
+  "session": {
+    "start_KST": "2026-10-21 06:28:47 KST",
+    "actual_quota_deadline": "UNKNOWN",
+    "conservative_wrapup_KST": "2026-10-21 09:28 KST; actual quota deadline UNKNOWN",
+    "owned_processes_remaining": []
+  },
+  "document_validation": {
+    "exact_file_count": 13,
+    "source_hashes": "PASS",
+    "strict_JSON": "PASS",
+    "WORKLOG_append_only": "PASS",
+    "AST": "PASS",
+    "markdown_links_checked": 18,
+    "credential_pattern_scan": "PASS",
+    "owned_processes_remaining": []
+  },
+  "evidence_sha256": {
+    "docs/evidence/boia_g4r6_shadow_preflight_2026-10-21/IMPLEMENTATION_REPORT.md": "92bbf347a24fabddb994bcf3dbe2b9bb3f32ddfff03a873455d262953e0f30d6",
+    "docs/evidence/boia_g4r6_shadow_preflight_2026-10-21/GPU_SHADOW_RUNBOOK.md": "215ff63fa891c4ea511ee3f0cb82a0099da01d9318f0100a69a276fb6c3eb40f",
+    "docs/evidence/boia_g4r6_shadow_preflight_2026-10-21/CPU_TEST_RESULTS.txt": "69423b4d3c5a342d4a5178c0025c1fa3bad4b218586b1669970fedeb6a967b4b",
+    "docs/evidence/boia_g4r6_shadow_preflight_2026-10-21/HANDOFF.md": "30ac045fb4b608fd1ade9c5cc385c95588abc3d0246ff7b9623f9efa99e412f3"
+  }
+}

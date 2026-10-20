@@ -1,13 +1,13 @@
 # BOIA Research Master Plan
 
-2026-10-21 KST · `codex/mt-p1` · G4-R5 living research entry point.
+2026-10-21 KST · `codex/mt-p1` · G4-R6 living research entry point.
 Committed C02 base: `8689efcd066d64e7b49cecf011e3bd8675380cdb`.
 R1 research source: local `82ef02c340fba0baec18162ad33fc03dca7301d5`.
 This plan preserves the original specifications, preregistrations, experiments and
 receipts as historical evidence. It does not retroactively qualify them or authorize
 GPU, simulation, training, production/controller changes, online activation or push.
-**Current scope: R2/R3 source/observability audit, R4 continuation/evaluation design
-and disconnected Shadow specification; G5 HOLD.**
+**Current scope: passive evaluator observer/logger, bounded Q01 launcher and CPU
+qualification completed; GPU execution requires separate approval. G5 HOLD.**
 R0 is PASS_CONTROLLED; R1 is CPU_VERIFIED within its nominal declaration contract
 (50 focused /252 combined BOIA tests PASS). Independent read-only review found no
 blocker within the nominal typed CPU scope. Exact source/results belong to the R4 evidence
@@ -15,8 +15,12 @@ record. Physical qualification and online/C02 integration remain unavailable.
 The [G4-R5 evidence](../../evidence/boia_g4r5_2026-10-21/SHADOW_READINESS.md)
 binds the actual field inventory, B03/B04 counterexamples and missing continuation/
 terminal contracts to source `45a7b6839e9b3855cf0a847b362d18dac29af315`.
-Its CPU schema probes do not install a runtime observer. Shadow is
-**HOLD_PENDING_EVALUATOR_IMPLEMENTATION**; no GPU run is authorized.
+That R5 receipt predates implementation. G4-R6 now adds `motar_eval/boia_shadow.py`
+and `tools/boia_shadow.py`: strict copied sensor packets, phase/reset joins,
+refusal-only diagnostics and isolated outcome/parity logging.54 focused and306
+combined BOIA CPU tests pass. Actual GPU packets/parity remain NOT_TESTED.
+See the [G4-R6 implementation evidence](../../evidence/boia_g4r6_shadow_preflight_2026-10-21/IMPLEMENTATION_REPORT.md)
+and [Q01 preregistration](../../plans/boia_shadow_q01_v1.md). No GPU run is authorized.
 
 ## 1. Research question and mission
 
@@ -75,6 +79,12 @@ Independent nominal safety declarations --> validate_safety --> strict selector
 Actual sensor evidence -X-> these research records
 C02 result -X-> actual research safety-evidence provider (NOT CONNECTED)
 Research decision -X-> Frozen F / controller / endgame executor
+
+G4-R6 PASSIVE EVALUATOR (implemented; runtime GPU_PENDING)
+Exactly one existing observe result --> immutable permitted sensor bytes + IDs
+                                   --> research hypotheses/refusal --> ABSTAIN log
+Existing action/command/terminal/reset --> separate evaluator/parity trace
+Shadow diagnostics -X-> action writer (no action sink exposed)
 ```
 
 The desired full chain is sensor evidence → hypotheses → occlusion/reacquisition
@@ -147,6 +157,7 @@ scope. Neither means ONLINE_INTEGRATED, calibrated or physically qualified.
 | Research timing/state | `boia_research/decision.py:41,112`; IMPLEMENTED | CPU_VERIFIED R4 focused50 / combined252 tests | Candidate IDs only; NOT CONNECTED | Real evidence/mission models and qualified executor remain absent. |
 | Independent SafetyContext/SafetyEvidence | `boia_research/safety.py:15`; `decision.py:18–38`; IMPLEMENTED nominal safety validator and strict selector | CPU_VERIFIED R1: valid independent safety survives missing/stale utility; stale/missing safety refuses | Actual sensor/C02 provider NOT CONNECTED | Checks supplied bindings/declarations, not calibration or physical proof. |
 | Trace / replay | `boia/trace.py:94`; `tools/boia_replay.py:76`; IMPLEMENTED | CPU hashes/terminal/fixtures | No plant replay | No qualified counterfactual closed-loop mission outcomes. |
+| Passive Q01 observer/logger | `boia_shadow.py:EvaluatorTap/Recorder/EventLogger`; IMPLEMENTED evaluator-only |54 focused /306 combined CPU PASS; read-only source review | Runtime launcher PREPARED, GPU NOT_RUN | Actual runtime packet/OFF-ON/compile/resource qualification pending; no utility or physical certificate. |
 | Mission execution / endgame bridge | Proposed ID-to-action/backup/handoff executor; NOT_IMPLEMENTED | NOT_TESTED | NOT CONNECTED | Plant qualification and explicit approval. |
 
 The committed C02 receipt is [C02_REPORT](../../evidence/boia_g4r3_c02_2026-10-20/C02_REPORT.md).
@@ -176,6 +187,12 @@ format correction; root reran14 after it, while independent recheck hit usage li
 PUBLIC_CPU remains
 NOT_RERUN with its four existing errors unresolved. Actual sensor packets,
 runtime OFF/ON parity and simulator/GPU behavior remain NOT_TESTED.
+
+G4-R6 supersedes the implementation-readiness status only:54 focused and306
+combined BOIA CPU PASS. Final-source PUBLIC_CPU ran3045 tests,0failures/4errors,
+10skips/5profile exclusions; exact error IDs, exception chains and terminal frames
+match the prior DetectReduction errors. Aggregate PUBLIC_CPU remains FAIL and
+motar-6nn.5 remains open. No test was deleted/skipped to obtain BOIA qualification.
 
 ## 4. Mathematics, decision rule and interception
 
@@ -394,7 +411,7 @@ abort-monitor protocol must be separately approved and labelled F0_WITH_ABORT_PR
 | --- | --- | --- |
 | R0 Git hygiene / ownership | All-worktree/staged/unstaged/untracked inventory → protected classification and controlled local exclusions | PASS_CONTROLLED per R0_GATE; initial target29 and main3725 explained, no raw deletion. Final gate rechecked after scoped commits. |
 | R1 CPU safety/utility separation | Independent safety context/evidence → strict research selector, preserved assertions,20 new failure controls | CPU_VERIFIED nominal contract:50 focused /252 combined BOIA PASS; missing/stale utility preserves a valid safety backup and missing/stale safety refuses. Read-only review found no blocker in this scope; no physical/online provider or production coupling. |
-| R2 Real measurement contract | Actual RGB-D/LiDAR/tracker clocks, calibration and permitted identity support → approved evidence adapter/schema | R5 STATIC_AUDIT/CPU_SCHEMA_VERIFIED only; actual observer/clocks/reset joins NOT_IMPLEMENTED. Missing physical bounds stay unavailable. |
+| R2 Real measurement contract | Actual RGB-D/LiDAR/tracker clocks, calibration and permitted identity support → approved evidence adapter/schema | G4-R6 observer/phase/reset/schema IMPLEMENTED and CPU_QUALIFIED; actual GPU packets/parity NOT_TESTED. Clock tags are DECLARED_SIM_SCHEDULE, not measured hardware time. Physical bounds/calibration remain unavailable. |
 | R3 B03/B04 identifiability | Independent range ambiguity and sparse-coverage tests → supported-volume/ambiguity limits | R5 counterexamples verified in nominal CPU geometry; physical coverage/identity remain unresolved. Preserve occupied/UNKNOWN evidence. |
 | R4 F continuation | Qualified matched prefix branches + actor/history state → continuation model/error receipts | Existing fresh-process prefix pattern is reusable; full snapshot restore and new-profile continuation NOT_QUALIFIED. Required state/API gaps recorded in R5. |
 | R5 Mission benefit calibration | R2–R4 models + held-out independent scenes → bounded loss/benefit/selection calibration | HOLD on unsupported strata, missing error terms or no predictive discrimination. |
@@ -412,25 +429,29 @@ authoritative; this plan is their entry point, not a replacement evidence record
 
 ### Shortest next execution unit
 
-The R5 source audit and schema/design unit is complete; no runtime code was changed.
-Next, seek approval for **one evaluator-only observer/logger plus focused CPU
-tests**, reusing the single `perception.observe` call boundary, `access.read_online`
-and Kroc/E-L0 terminal/contact callbacks. Record modality scheduling/frames,
-reset-aware IDs and pre-mask contact/height/OOB separately: post-compute crashes
-alias the resolved termination buffer and cannot recover suppressed causes.
+G4-R6 completes the observer/logger and launcher without production edits. The
+single `observe` result is copied once; actual F action binds at task.step entry,
+transform is called once, pre-mask causes precede alias overwrite, and the returned
+normal/reset observation boundary is also compared. ContactChain preserves the
+existing callback. Body/target/semantic truth never enters BOIA packets.
+Next: **seek separate approval for Q01 N1 S0/S1_OFF/S1_ON**, using the fixed
+[runbook](../../evidence/boia_g4r6_shadow_preflight_2026-10-21/GPU_SHADOW_RUNBOOK.md).
+No additional implementation project is required before that bounded execution.
 
 | Gate | Requirement |
 | --- | --- |
-| MUST_BEFORE_SHADOW | Tiny permitted-input collector/header/terminal logger, exactly-once sensing and structurally disconnected output, CPU invariance/reset/domain tests; fixed source/config/checkpoint and exclusive output/watchdog contracts. Then seek separate GPU approval. |
+| MUST_BEFORE_SHADOW | Observer/logger/phase/whitelist/copy and CPU noninterference tests complete; launcher/config/preregistration prepared. Exact containing commit, clean tree and checkpoint/config guards must pass final CPU preflight. Separate GPU approval is still required. |
 | MAY_DEFER_UNTIL_AFTER_SHADOW | B03/B04 physical resolution, calibrated utility and F-continuation model. Keep them UNKNOWN/ABSTAIN; passive availability shadow estimates no capture gain. |
 | MUST_BEFORE_ONLINE_CONTROL | Physical C02/backup, all used evidence/model bounds, action ownership/hand-back, controller/plant/deadline/endgame qualification and explicit user approval. G5 remains HOLD. |
 
-The design-only first shadow is N1, one moving/70bar profile, an OFF/ON pair of
+The implemented but unexecuted first shadow is N1,seed4901,moving70bar, an OFF/ON pair of
 at most200 actions each plus a20-action smoke, at most12min GPU wall reservation.
 Actual OFF/ON parity is an early qualification objective, not a present PASS.
 Full planner/value computation is skipped where unsupported. Its exact resource,
-latency, censoring and failure guards are in the single R5 evidence document;
-these are a proposed specification, not a committed run preregistration/approval.
+latency, censoring and failure guards are in the Q01 executable plan/preregistration.
+CPU preflight does not import Isaac/torch, unpickle checkpoint or query/run GPU.
+Observer timing includes copy/schema/diagnostic/hash/log apart from full-step time;
+no real-time guarantee. Physical C02/B03/B04/F-continuation and utility remain open.
 
 Stop resource work below
 3,000,000,000 free bytes. Keep commits separated by approved research unit, stage

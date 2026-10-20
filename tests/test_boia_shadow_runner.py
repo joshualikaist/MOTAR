@@ -1,0 +1,200 @@
+"""CPU guard/supervisor tests. GPU queries and child execution use explicit stand-ins."""
+import ast
+import copy
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+import tempfile
+from types import SimpleNamespace as NS, ModuleType
+import unittest
+from unittest.mock import patch
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+from tools import boia_shadow as b
+
+
+class RunnerTests(unittest.TestCase):
+    def setUp(self):
+        self.p=b.load(b.PLAN);self.tmp=tempfile.TemporaryDirectory();self.addCleanup(self.tmp.cleanup)
+        self.p['output_root']=str(Path(self.tmp.name)/'BOIA-SHADOW-Q01')
+
+    def test_fixed_N_seed_caps_lineage_and_resource_plan(self):
+        b.validate_plan(self.p)
+        for section,key,value in (('profile','num_envs',128),('profile','seed',4701),
+                                  ('limits','disk_stop_bytes',8000000000),('limits','no_retry',False),
+                                  ('limits','campaign_wall_s',3600),('profile','lineage','s_l1d_v1')):
+            p=copy.deepcopy(self.p);p[section][key]=value
+            with self.subTest(key=key),self.assertRaises(ValueError):b.validate_plan(p)
+
+    def test_runtime_env_scrubs_inherited_risk_and_keeps_safe_process_contract(self):
+        with patch.dict(os.environ,{'NAVRL_TARGET_DYNAMICS':'physical','AERIAL_GYM_SIM_NAME':'wrong',
+                                    'NAVRL_RANDOM_EXTRA':'1','PYTHONPATH':'/outside','BOIA_SHADOW_OLD':'1','PATH':'/bin'}):
+            e=b.process_env(self.p,123,'abc')
+        self.assertEqual(e['NAVRL_TARGET_DYNAMICS'],'bounded');self.assertNotIn('NAVRL_RANDOM_EXTRA',e)
+        self.assertEqual(e['PYTHONPATH'],str(ROOT));self.assertEqual(e['BOIA_SHADOW_PARENT_PID'],'123')
+        self.assertNotIn('BOIA_SHADOW_OLD',e);self.assertEqual(e['PYTHONNOUSERSITE'],'1')
+
+    def test_no_GPU_subcommand_without_explicit_switch(self):
+        for command in ('s0','s1-off','s1-on','campaign'):
+            with self.subTest(command=command),patch.object(b,'run_stage')as launch:
+                with self.assertRaisesRegex(ValueError,'GPU execution requires'):
+                    b.main([command,'--approved-commit','a'*40])
+                launch.assert_not_called()
+
+    def test_worker_cannot_bypass_supervisor_or_import_Isaac(self):
+        with patch.dict(os.environ,{},clear=True),patch.object(b,'guard_sources')as guard:
+            with self.assertRaisesRegex(ValueError,'SUPERVISOR'):b.worker(self.p,'S0','a'*40)
+            guard.assert_not_called()
+
+    def test_preflight_is_import_only_and_never_invokes_device_or_launcher(self):
+        code="import json,sys;from tools import boia_shadow as b;p=b.load(b.PLAN);x=b.preflight(p,b.git('rev-parse','HEAD'));assert 'isaacgym' not in sys.modules;assert 'torch' not in sys.modules;print(json.dumps({'status':x['status'],'no_gpu_import':True}))"
+        e=dict(os.environ,PYTHONNOUSERSITE='1',CUDA_VISIBLE_DEVICES='')
+        done=subprocess.run([sys.executable,'-B','-c',code],cwd=str(ROOT),env=e,capture_output=True,text=True,timeout=20)
+        self.assertEqual(done.returncode,0,done.stderr)
+        self.assertTrue(json.loads(done.stdout)['no_gpu_import'])
+
+    def test_dirty_HEAD_config_and_untracked_guards(self):
+        for values in (['wrong','',''],['a'*40,' M tracked.py',''],['a'*40,'','rogue.py']):
+            with self.subTest(values=values),patch.object(b,'git',side_effect=values):
+                with self.assertRaises(ValueError):b.guard_sources('a'*40,'b'*64)
+        with patch.object(b,'git',side_effect=['a'*40,'','']),patch.object(b,'sha',return_value='wrong'):
+            with self.assertRaisesRegex(ValueError,'CONFIG_CHANGED'):b.guard_sources('a'*40,'b'*64)
+
+    def test_parity_exact_including_missing_rows_and_keys(self):
+        a=Path(self.tmp.name)/'off';c=Path(self.tmp.name)/'on';a.mkdir();c.mkdir()
+        row={'key':{'episode':0,'action':0},'sensor':'raw','rng_after':'fixed','outcome':[False,False,False]}
+        for path in (a,c):(path/'parity.jsonl').write_text(json.dumps(row)+'\n')
+        self.assertEqual(b.compare(a,c)['actions'],1)
+        for change in ({**row,'sensor':'changed'},{**row,'reset_expected':True}):
+            (c/'parity.jsonl').write_text(json.dumps(change)+'\n')
+            with self.assertRaises(ValueError):b.compare(a,c)
+        (c/'parity.jsonl').write_text('')
+        with self.assertRaises(ValueError):b.compare(a,c)
+
+    def test_parity_requires_committed_source_and_completed_metadata(self):
+        root=Path(self.p['output_root']);root.mkdir()
+        for name in ('S1_OFF','S1_ON'):
+            path=root/name;path.mkdir();b.write_new(path/'process_done.json',dict(status='COMPLETED',source='wrong',config_sha=b.sha(b.PLAN),checkpoint=self.p['frozen']['policy_f_sha256']))
+        with patch.object(b,'guard_sources'):
+            with self.assertRaisesRegex(ValueError,'METADATA_BINDING'):b.compare_qualified(self.p,'a'*40)
+
+    def test_stage_requires_completed_predecessor_and_no_retry(self):
+        with patch.object(b,'preflight',return_value={'status':'PASS_CPU_PREFLIGHT','checks':{},'config_sha256':b.sha(b.PLAN)}):
+            with self.assertRaises(FileNotFoundError):b.run_stage(self.p,'S1_OFF','a'*40)
+            Path(self.p['output_root']).mkdir()
+            with self.assertRaisesRegex(ValueError,'PATH_EXISTS'):b.run_stage(self.p,'S0','a'*40)
+
+    def test_device_query_failure_keeps_partial_receipt_and_manifest(self):
+        pref={'status':'PASS_CPU_PREFLIGHT','checks':{},'config_sha256':b.sha(b.PLAN)}
+        with patch.object(b,'preflight',return_value=pref),patch.object(b,'gpu_state',side_effect=RuntimeError('device unavailable')):
+            result=b.run_stage(self.p,'S0','a'*40)
+        self.assertEqual(result['status'],'STOPPED_INTEGRITY')
+        self.assertIn('device unavailable',result['reason'])
+        root=Path(self.p['output_root']);self.assertTrue((root/'S0_RAW_MANIFEST.json').is_file())
+        self.assertTrue((root/'S0_supervisor.json').is_file())
+        with self.assertRaises(ValueError):
+            with patch.object(b,'preflight',return_value=pref):b.run_stage(self.p,'S0','a'*40)
+
+    def test_watchdog_stops_CPU_standin_and_does_not_make_task_timeout(self):
+        class Proc:
+            pid=999999;returncode=None
+            def poll(self):return None
+        pref={'status':'PASS_CPU_PREFLIGHT','checks':{},'config_sha256':b.sha(b.PLAN)}
+        with patch.object(b,'preflight',return_value=pref),patch.object(b,'gpu_state',return_value=dict(name='RTX3070',total_mib=8192,used_mib=100)),patch.object(b.subprocess,'Popen',return_value=Proc()),patch.object(b,'_terminate')as stop,patch.object(b.time,'monotonic',side_effect=[0.,120.,120.]):
+            result=b.run_stage(self.p,'S0','a'*40)
+        stop.assert_called_once();self.assertEqual(result['status'],'STOPPED_INTEGRITY')
+        self.assertIn('CENSORING_NOT_TASK_TIMEOUT',result['reason'])
+
+    def test_output_disk_and_VRAM_guards_independent_of_worker(self):
+        class Proc:
+            pid=999999;returncode=None
+            def poll(self):return None
+        for cause in ('disk','output','vram'):
+            p=copy.deepcopy(self.p);p['output_root']=str(Path(self.tmp.name)/cause/'BOIA-SHADOW-Q01')
+            pref={'status':'PASS_CPU_PREFLIGHT','checks':{},'config_sha256':b.sha(b.PLAN)}
+            def gpu():return dict(name='RTX3070',total_mib=8192,used_mib=7000 if cause=='vram' else 100)
+            with self.subTest(cause=cause),patch.object(b,'preflight',return_value=pref),patch.object(b,'gpu_state',side_effect=gpu),patch.object(b.subprocess,'Popen',return_value=Proc()),patch.object(b,'guard_sources'),patch.object(b,'_terminate'),patch.object(b.shutil,'disk_usage',return_value=NS(free=1 if cause=='disk' else 9000000000)),patch.object(b,'directory_bytes',return_value=999999999 if cause=='output' else 0):
+                result=b.run_stage(p,'S0','a'*40)
+            self.assertEqual(result['status'],'STOPPED_INTEGRITY');self.assertIsNotNone(result['reason'])
+
+    def test_latency_summary_is_named_and_handles_empty_sample(self):
+        self.assertEqual(b.latency_summary([])['n'],0)
+        x=b.latency_summary([1.,2.,3.]);self.assertEqual((x['n'],x['P50'],x['maximum']),(3,2.,3.))
+        self.assertAlmostEqual(x['P95'],2.9)
+
+    def test_manifest_hashes_partial_data_without_modifying_it(self):
+        d=Path(self.tmp.name)/'data';d.mkdir();p=d/'partial.txt';p.write_text('failed original\n');before=b.sha(p)
+        b.manifest(d,d/'manifest.json');self.assertEqual(b.sha(p),before)
+        self.assertEqual(b.load(d/'manifest.json')['files']['partial.txt']['sha256'],before)
+
+    def test_exclusive_JSON_write_no_overwrite(self):
+        p=Path(self.tmp.name)/'receipt.json';b.write_new(p,{'status':'FAIL'})
+        with self.assertRaises(FileExistsError):b.write_new(p,{'status':'PASS'})
+        self.assertEqual(b.load(p)['status'],'FAIL')
+
+    def test_only_worker_function_contains_simulator_import(self):
+        tree=ast.parse((ROOT/'tools/boia_shadow.py').read_text())
+        for node in tree.body:
+            if isinstance(node,ast.FunctionDef)and node.name=='worker':continue
+            for child in ast.walk(node):
+                if isinstance(child,ast.Import):self.assertFalse(any(x.name in ('isaacgym','torch')for x in child.names))
+
+    def test_runtime_profile_handles_actual_InitialViewSpec_contract(self):
+        import torch
+        from motar_eval.initial_view import InitialViewSpec
+        pc=NS(detection_latency_s=0.,camera_offset=torch.tensor([[.1,0.,.03]]),pose_noise_pos_m=0.,
+              pose_noise_yaw_deg=0.,empirical_error=None,_detector_noise_active=False)
+        detector=NS(height=90,width=160,detect_height=90,detect_width=160,target_radius=.15,
+                    **{x:0. for x in ('app_hue_deg','app_light_gain','app_albedo_jitter','app_texture_std',
+                                     'app_motion_blur','mount_rot_deg','mount_trans_m')})
+        cfg=NS(height=4,width=72,max_range=12.,min_range=.2,target_radius=.20,
+               sensor_noise=NS(enable_sensor_noise=False),yaw_only_attach=True,randomize_placement=False,
+               normalize_range=True,return_pointcloud=False,pointcloud_in_world_frame=False,
+               nominal_position=[0.,0.,0.],euler_frame_rot_deg=[0.,0.,0.],
+               horizontal_fov_deg_min=-175.,horizontal_fov_deg_max=180.,vertical_fov_deg_min=-10.,vertical_fov_deg_max=20.)
+        task=NS(perception=pc,detector=detector,task_config=NS(episode_len_steps=600),num_envs=1,
+                task_obs={'observations':torch.zeros(1,898)},step_dt=.1,vision_mode=True,perception_mode=True,
+                _target_distance_backend='direct_l2_v1',_target_dynamics='bounded',_physical_target=False,
+                _target_behavior_level='e2_obstacle_aware',n_bars_active=70,_kroc_initial_view=InitialViewSpec('visible'),
+                perception_cfg=NS(enable_perturbations=False),speed_governor_cfg=NS(mode='riskcap'),
+                _kroc_search=None,interactive_mode=False,_kroc_adapter=None,
+                sim_env=NS(robot_manager=NS(warp_sensor=NS(cfg=cfg)),sim_config=NS(sim=NS(dt=.01)),
+                           cfg=NS(env=NS(num_physics_steps_per_env_step_mean=10,num_physics_steps_per_env_step_std=0.))))
+        player=NS(model=NS(training=False),is_rnn=False)
+        with patch.dict(os.environ,{'NAVRL_SENSOR_LINEAGE':'off'}):
+            self.assertTrue(all(b.runtime_profile(task,player,self.p).values()))
+            pc.detection_latency_s=.1
+            with self.assertRaisesRegex(ValueError,'RUNTIME_PROFILE_FAILED'):b.runtime_profile(task,player,self.p)
+
+    def test_worker_reference_load_error_preserves_original_failure_receipt(self):
+        # Library/player are CPU stand-ins; no real Isaac import or CUDA call occurs.
+        import torch
+        from motar_eval import eq1d_telemetry as tel
+        fake=ModuleType('eq1d_fixture_launcher');fake.build_player=lambda *a:(NS(model=NS()),{})
+        fake.find_task=lambda player:NS();fake.check_origins=lambda:{};fake.find_rms=lambda model:NS()
+        Path(self.p['output_root']).mkdir()
+        env={'BOIA_SHADOW_PARENT_PID':str(os.getppid()),'BOIA_SHADOW_CONFIG_SHA':b.sha(b.PLAN)}
+        with patch.dict(sys.modules,{'isaacgym':ModuleType('isaacgym'),'eq1d_fixture_launcher':fake}),patch.dict(os.environ,env),patch.object(b,'guard_sources'),patch.object(b,'runtime_profile',return_value={}),patch.object(tel,'rms_digest',return_value=self.p['frozen']['rms_digest_sha256']),patch.object(torch.cuda,'reset_peak_memory_stats')as cuda:
+            with self.assertRaisesRegex(RuntimeError,'FileNotFoundError'):
+                b.worker(self.p,'S1_ON','a'*40)
+            cuda.assert_not_called()
+        failure=b.load(Path(self.p['output_root'])/'S1_ON/failure.json')
+        self.assertIsNone(failure['actions_completed']);self.assertNotIn('UnboundLocalError',failure['reason'])
+
+    def test_static_hooks_match_real_source_boundaries(self):
+        tree=ast.parse((ROOT/'aerial_gym/task/navrl_task/navrl_task.py').read_text())
+        methods={n.name:n for c in tree.body if isinstance(c,ast.ClassDef)
+                 for n in c.body if isinstance(n,ast.FunctionDef)}
+        def calls(node,name):return sum(isinstance(n,ast.Call)and isinstance(n.func,ast.Attribute)and n.func.attr==name for n in ast.walk(node))
+        self.assertEqual(calls(methods['_process_obs_perception'],'observe'),1)
+        self.assertEqual(calls(methods['_process_obs_perception'],'render_raw_rgbd'),1)
+        for name in ('transform_action_to_command','compute_state_reward_and_terminations','post_reward_calculation_step'):
+            self.assertEqual(calls(methods['step'],name),1,name)
+        self.assertEqual(calls(methods['get_return_tuple'],'process_obs_for_task'),1)
+        self.assertEqual(calls(methods['process_obs_for_task'],'_process_obs_perception'),1)
+
+
+if __name__=='__main__':unittest.main()
