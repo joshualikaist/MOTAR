@@ -141,3 +141,20 @@ clarifies G4 execution only; no raw calibration, simulator or GPU authority is a
 The usage-limit interruption left G1-R f103721 and U1 dc2b6d3 committed; U2 had no source files.
 Resume20:51KST Oct19, actual quota deadline UNKNOWN, conservative wrap-up00:51KST Oct20. Disk
 stop remains3GB. All still-authorized CPU work resumes without a new GPU/push/merge permission.
+
+
+## D-2026-10-21-0 — G4-R4 controlled Git state and independent nominal safety
+
+- **Authority:** user G4-R4 instruction, received2026-10-20UTC/2026-10-21KST work completion.
+- **Research entry point:** [BOIA Master Plan](research/occlusion_algorithm_v1/BOIA_RESEARCH_MASTER_PLAN.md)
+  for current direction; it preserves old evidence/specs instead of overwriting them.
+- **Git:** source8689efcd preserved; verified research/P1 changes committed separately from Git
+  administration/master docs. Main WIP3/stash/Raw/results/checkpoints/symlinks are protected.
+  Only169verified nonRawCPython caches receive anchored local info/exclude rules; no Raw hiding.
+- **Safety:** utility failure must not erase a valid current backup. Independent env/episode/decision/
+  candidate/version/time/model/provenance and complete-prefix/backup bindings are now required,
+  including F. Booleans only veto; all qualification is nominalCPU, not physical certification.
+- **Execution:** R0/R1+docs only. R2 onward, online/GPU/Isaac/learning/push/merge remain unapproved;
+  G5HOLD. Current instruction supersedes earlier PART C no-auto-local-commit only for this scope.
+- **Evidence:** [R1 report](evidence/boia_g4r4_2026-10-20/R1_REPORT.md),
+  [Git audit](evidence/boia_g4r4_2026-10-20/GIT_HYGIENE_REPORT.md).

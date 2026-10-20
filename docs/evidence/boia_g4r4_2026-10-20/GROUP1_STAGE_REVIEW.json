@@ -1,0 +1,11 @@
+{
+  "group1_explicit_paths": 44,
+  "full_staged_diff_whitespace_exit": 2,
+  "artifact_only_warning": "R1_REVIEW_DIFF.patch unified context blank lines preserved",
+  "all_other_staged_whitespace_exit": 0,
+  "active_executable_hooks": [],
+  "credential_pattern_scan": "PASS limited credential patterns; no actual secret pattern found",
+  "raw_checkpoint_symlink_staged": false,
+  "manifest_bindings": "PASS",
+  "source_test_verification": "R1_validation.json source8hashes reviewed/frozen and252BOIA PASS"
+}

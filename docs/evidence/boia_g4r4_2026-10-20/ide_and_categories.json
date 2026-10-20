@@ -1,0 +1,545 @@
+{
+  "time_unix": 1792508003.9740736,
+  "metadata_categories": [
+    {
+      "repo": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator",
+      "categories": [
+        {
+          "prefix": "results/occlusion_confirmatory_v1",
+          "count": 1182,
+          "lstat_bytes": 1191052975
+        },
+        {
+          "prefix": "results/occlusion_pilot_v1",
+          "count": 804,
+          "lstat_bytes": 645039836
+        },
+        {
+          "prefix": "results/mt_p1_precision_v1",
+          "count": 513,
+          "lstat_bytes": 540911556
+        },
+        {
+          "prefix": "results/s_l1c_v2",
+          "count": 202,
+          "lstat_bytes": 25649255
+        },
+        {
+          "prefix": "results/s_l1c_v1",
+          "count": 125,
+          "lstat_bytes": 17806334
+        },
+        {
+          "prefix": "results/s_l1d_v1",
+          "count": 112,
+          "lstat_bytes": 14086795
+        },
+        {
+          "prefix": "results/s_l1a_v1",
+          "count": 103,
+          "lstat_bytes": 14077486
+        },
+        {
+          "prefix": "results/s_l1b_v1",
+          "count": 103,
+          "lstat_bytes": 14030356
+        },
+        {
+          "prefix": "presentations/professor_2026-10-01",
+          "count": 78,
+          "lstat_bytes": 15148540
+        },
+        {
+          "prefix": "results/h_r3_p02_v1",
+          "count": 76,
+          "lstat_bytes": 2257205
+        },
+        {
+          "prefix": "results/h_r3_p03_qualification_v1",
+          "count": 74,
+          "lstat_bytes": 71538908
+        },
+        {
+          "prefix": "results/e_l0_evaluation_v1",
+          "count": 72,
+          "lstat_bytes": 25677024
+        },
+        {
+          "prefix": "aerial_gym/config",
+          "count": 59,
+          "lstat_bytes": 178609
+        },
+        {
+          "prefix": "results/h_r3_env_isolation_v1",
+          "count": 50,
+          "lstat_bytes": 45821803
+        },
+        {
+          "prefix": "aerial_gym/task",
+          "count": 32,
+          "lstat_bytes": 653463
+        },
+        {
+          "prefix": "results/h_r3_pilot_v1",
+          "count": 28,
+          "lstat_bytes": 164087
+        },
+        {
+          "prefix": "aerial_gym/rl_training",
+          "count": 18,
+          "lstat_bytes": 190060
+        },
+        {
+          "prefix": "results/eq1d_qualification_v1",
+          "count": 18,
+          "lstat_bytes": 313877
+        },
+        {
+          "prefix": "aerial_gym/control",
+          "count": 13,
+          "lstat_bytes": 32775
+        },
+        {
+          "prefix": "aerial_gym/sensors",
+          "count": 12,
+          "lstat_bytes": 59927
+        },
+        {
+          "prefix": "aerial_gym/env_manager",
+          "count": 9,
+          "lstat_bytes": 71824
+        },
+        {
+          "prefix": "aerial_gym/robots",
+          "count": 7,
+          "lstat_bytes": 38761
+        },
+        {
+          "prefix": "aerial_gym/utils",
+          "count": 6,
+          "lstat_bytes": 28469
+        },
+        {
+          "prefix": "results/s_l1c_v2_review",
+          "count": 6,
+          "lstat_bytes": 521801
+        },
+        {
+          "prefix": "aerial_gym/registry",
+          "count": 4,
+          "lstat_bytes": 7195
+        },
+        {
+          "prefix": "tools/renderer_validation",
+          "count": 4,
+          "lstat_bytes": 39488
+        },
+        {
+          "prefix": "aerial_gym/assets",
+          "count": 3,
+          "lstat_bytes": 5825
+        },
+        {
+          "prefix": "results/s_l1c_v2_cpu",
+          "count": 3,
+          "lstat_bytes": 106177159
+        },
+        {
+          "prefix": "aerial_gym/sim",
+          "count": 2,
+          "lstat_bytes": 2269
+        },
+        {
+          "prefix": "results/dynamic_mesh_policy_sensitivity_d8b_2026-09-13",
+          "count": 2,
+          "lstat_bytes": 32136
+        },
+        {
+          "prefix": "results/verification_export_2026-09-06",
+          "count": 1,
+          "lstat_bytes": 5052
+        },
+        {
+          "prefix": "tests/test_professor_presentation.py",
+          "count": 1,
+          "lstat_bytes": 4860
+        }
+      ]
+    },
+    {
+      "repo": "/home/fair/workspaces/aerial_gym_ws/.codex_worktrees/distractor_envelope",
+      "categories": [
+        {
+          "prefix": "docs/prereg_2026-09-01_distractor_envelope.md",
+          "count": 1,
+          "lstat_bytes": 8823
+        }
+      ]
+    },
+    {
+      "repo": "/home/fair/workspaces/aerial_gym_ws/.codex_worktrees/kroc2027-phase2",
+      "categories": [
+        {
+          "prefix": "results/kroc2027_B_v1",
+          "count": 3,
+          "lstat_bytes": 20013
+        },
+        {
+          "prefix": "aerial_gym/rl_training",
+          "count": 1,
+          "lstat_bytes": 97
+        }
+      ]
+    },
+    {
+      "repo": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1",
+      "categories": [
+        {
+          "prefix": "docs/evidence",
+          "count": 17,
+          "lstat_bytes": 129423
+        },
+        {
+          "prefix": "motar_eval/boia_research",
+          "count": 5,
+          "lstat_bytes": 21338
+        },
+        {
+          "prefix": "docs/research",
+          "count": 3,
+          "lstat_bytes": 55788
+        },
+        {
+          "prefix": "results/mt_p1_precision_v1",
+          "count": 1,
+          "lstat_bytes": 87
+        },
+        {
+          "prefix": "results/occlusion_pilot_v1",
+          "count": 1,
+          "lstat_bytes": 87
+        },
+        {
+          "prefix": "tests/test_boia_research.py",
+          "count": 1,
+          "lstat_bytes": 19909
+        }
+      ]
+    }
+  ],
+  "git_scm_settings": [
+    {
+      "path": "/home/fair/.config/Code/User/settings.json",
+      "settings": {}
+    }
+  ],
+  "matching_workspace_storage": [
+    {
+      "path": "/home/fair/.config/Code/User/workspaceStorage/f9acc00381ed1d4da1fd8b3ee822d8d2/workspace.json",
+      "workspace_reference": "file:///home/fair/workspaces/aerial_gym_ws"
+    },
+    {
+      "path": "/home/fair/.config/Code/User/workspaceStorage/035b99fc410f0704364ac83b4af0bda7/workspace.json",
+      "workspace_reference": "file:///home/fair/workspaces/aerial_gym_ws/src"
+    }
+  ],
+  "git_extension_logs": [
+    {
+      "path": "/home/fair/.config/Code/logs/20261014T171235/window1/exthost/vscode.git/Git.log",
+      "repository_events": [
+        {
+          "line": 13,
+          "event": "2026-10-14 17:12:36.687 [info] [Model][openRepository] Opened repository (path): /home/fair/workspaces/aerial_gym_ws/src/MOTAR-paper-positioning-20260918"
+        },
+        {
+          "line": 14,
+          "event": "2026-10-14 17:12:36.687 [info] [Model][openRepository] Opened repository (real path): /home/fair/workspaces/aerial_gym_ws/src/MOTAR-paper-positioning-20260918"
+        },
+        {
+          "line": 22,
+          "event": "2026-10-14 17:12:37.632 [info] [Model][openRepository] Opened repository (path): /home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator"
+        },
+        {
+          "line": 23,
+          "event": "2026-10-14 17:12:37.632 [info] [Model][openRepository] Opened repository (real path): /home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator"
+        },
+        {
+          "line": 29,
+          "event": "2026-10-14 17:12:37.736 [info] [Model][openRepository] Opened repository (path): /home/fair/workspaces/aerial_gym_ws/src/urdfpy"
+        },
+        {
+          "line": 30,
+          "event": "2026-10-14 17:12:37.736 [info] [Model][openRepository] Opened repository (real path): /home/fair/workspaces/aerial_gym_ws/src/urdfpy"
+        },
+        {
+          "line": 89,
+          "event": "2026-10-14 17:12:38.455 [info] [Model][openRepository] Opened repository (path): /home/fair/workspaces/aerial_gym_ws/.codex_worktrees/braking_route_v3"
+        },
+        {
+          "line": 90,
+          "event": "2026-10-14 17:12:38.455 [info] [Model][openRepository] Opened repository (real path): /home/fair/workspaces/aerial_gym_ws/.codex_worktrees/braking_route_v3"
+        },
+        {
+          "line": 97,
+          "event": "2026-10-14 17:12:38.481 [info] [Model][openRepository] Opened repository (path): /home/fair/workspaces/aerial_gym_ws/.codex_worktrees/distractor_envelope"
+        },
+        {
+          "line": 98,
+          "event": "2026-10-14 17:12:38.481 [info] [Model][openRepository] Opened repository (real path): /home/fair/workspaces/aerial_gym_ws/.codex_worktrees/distractor_envelope"
+        },
+        {
+          "line": 119,
+          "event": "2026-10-14 17:12:38.557 [info] [Model][openRepository] Opened repository (path): /home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/.codex_worktrees/route_recovery_forensics"
+        },
+        {
+          "line": 120,
+          "event": "2026-10-14 17:12:38.557 [info] [Model][openRepository] Opened repository (real path): /home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/.codex_worktrees/route_recovery_forensics"
+        },
+        {
+          "line": 137,
+          "event": "2026-10-14 17:12:38.598 [info] [Model][openRepository] Opened repository (path): /home/fair/workspaces/aerial_gym_ws/.codex_worktrees/two_envelope_recovery_integration"
+        },
+        {
+          "line": 138,
+          "event": "2026-10-14 17:12:38.598 [info] [Model][openRepository] Opened repository (real path): /home/fair/workspaces/aerial_gym_ws/.codex_worktrees/two_envelope_recovery_integration"
+        },
+        {
+          "line": 238,
+          "event": "2026-10-15 01:30:49.506 [info] [Model][openRepository] Opened repository (path): /home/fair/workspaces/aerial_gym_ws/.codex_worktrees/kroc2027-phase1"
+        },
+        {
+          "line": 239,
+          "event": "2026-10-15 01:30:49.506 [info] [Model][openRepository] Opened repository (real path): /home/fair/workspaces/aerial_gym_ws/.codex_worktrees/kroc2027-phase1"
+        },
+        {
+          "line": 1918,
+          "event": "2026-10-15 21:04:37.858 [info] [Model][openRepository] Opened repository (path): /home/fair/workspaces/aerial_gym_ws/.codex_worktrees/kroc2027-phase2"
+        },
+        {
+          "line": 1919,
+          "event": "2026-10-15 21:04:37.858 [info] [Model][openRepository] Opened repository (real path): /home/fair/workspaces/aerial_gym_ws/.codex_worktrees/kroc2027-phase2"
+        },
+        {
+          "line": 3593,
+          "event": "2026-10-16 12:45:51.908 [info] [Model][openRepository] Opened repository (path): /home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1"
+        },
+        {
+          "line": 3594,
+          "event": "2026-10-16 12:45:51.908 [info] [Model][openRepository] Opened repository (real path): /home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1"
+        },
+        {
+          "line": 4004,
+          "event": "2026-10-16 14:49:00.834 [info] [Model][openRepository] Opened repository (path): /tmp/MOTAR-mt-p1-baseline"
+        },
+        {
+          "line": 4005,
+          "event": "2026-10-16 14:49:00.834 [info] [Model][openRepository] Opened repository (real path): /tmp/MOTAR-mt-p1-baseline"
+        }
+      ]
+    },
+    {
+      "path": "/home/fair/.config/Code/logs/20261014T155800/window1/exthost/vscode.git/Git.log",
+      "repository_events": [
+        {
+          "line": 9,
+          "event": "2026-10-14 15:58:02.723 [info] [Model][openRepository] Opened repository (path): /home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator"
+        },
+        {
+          "line": 10,
+          "event": "2026-10-14 15:58:02.723 [info] [Model][openRepository] Opened repository (real path): /home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator"
+        },
+        {
+          "line": 20,
+          "event": "2026-10-14 15:58:02.773 [info] [Model][openRepository] Opened repository (path): /home/fair/workspaces/aerial_gym_ws/src/MOTAR-paper-positioning-20260918"
+        },
+        {
+          "line": 21,
+          "event": "2026-10-14 15:58:02.773 [info] [Model][openRepository] Opened repository (real path): /home/fair/workspaces/aerial_gym_ws/src/MOTAR-paper-positioning-20260918"
+        },
+        {
+          "line": 27,
+          "event": "2026-10-14 15:58:02.803 [info] [Model][openRepository] Opened repository (path): /home/fair/workspaces/aerial_gym_ws/src/urdfpy"
+        },
+        {
+          "line": 28,
+          "event": "2026-10-14 15:58:02.803 [info] [Model][openRepository] Opened repository (real path): /home/fair/workspaces/aerial_gym_ws/src/urdfpy"
+        },
+        {
+          "line": 81,
+          "event": "2026-10-14 15:58:04.021 [info] [Model][openRepository] Opened repository (path): /home/fair/workspaces/aerial_gym_ws/.codex_worktrees/braking_route_v3"
+        },
+        {
+          "line": 82,
+          "event": "2026-10-14 15:58:04.021 [info] [Model][openRepository] Opened repository (real path): /home/fair/workspaces/aerial_gym_ws/.codex_worktrees/braking_route_v3"
+        },
+        {
+          "line": 88,
+          "event": "2026-10-14 15:58:04.041 [info] [Model][openRepository] Opened repository (path): /home/fair/workspaces/aerial_gym_ws/.codex_worktrees/distractor_envelope"
+        },
+        {
+          "line": 89,
+          "event": "2026-10-14 15:58:04.041 [info] [Model][openRepository] Opened repository (real path): /home/fair/workspaces/aerial_gym_ws/.codex_worktrees/distractor_envelope"
+        },
+        {
+          "line": 107,
+          "event": "2026-10-14 15:58:04.083 [info] [Model][openRepository] Opened repository (path): /home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/.codex_worktrees/route_recovery_forensics"
+        },
+        {
+          "line": 108,
+          "event": "2026-10-14 15:58:04.083 [info] [Model][openRepository] Opened repository (real path): /home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/.codex_worktrees/route_recovery_forensics"
+        },
+        {
+          "line": 117,
+          "event": "2026-10-14 15:58:04.097 [info] [Model][openRepository] Opened repository (path): /home/fair/workspaces/aerial_gym_ws/.codex_worktrees/two_envelope_recovery_integration"
+        },
+        {
+          "line": 118,
+          "event": "2026-10-14 15:58:04.097 [info] [Model][openRepository] Opened repository (real path): /home/fair/workspaces/aerial_gym_ws/.codex_worktrees/two_envelope_recovery_integration"
+        }
+      ]
+    },
+    {
+      "path": "/home/fair/.config/Code/logs/20261014T155105/window1/exthost/vscode.git/Git.log",
+      "repository_events": [
+        {
+          "line": 13,
+          "event": "2026-10-14 15:51:07.435 [info] [Model][openRepository] Opened repository (path): /home/fair/workspaces/aerial_gym_ws/src/MOTAR-paper-positioning-20260918"
+        },
+        {
+          "line": 14,
+          "event": "2026-10-14 15:51:07.435 [info] [Model][openRepository] Opened repository (real path): /home/fair/workspaces/aerial_gym_ws/src/MOTAR-paper-positioning-20260918"
+        },
+        {
+          "line": 19,
+          "event": "2026-10-14 15:51:07.446 [info] [Model][openRepository] Opened repository (path): /home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator"
+        },
+        {
+          "line": 20,
+          "event": "2026-10-14 15:51:07.446 [info] [Model][openRepository] Opened repository (real path): /home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator"
+        },
+        {
+          "line": 29,
+          "event": "2026-10-14 15:51:07.458 [info] [Model][openRepository] Opened repository (path): /home/fair/workspaces/aerial_gym_ws/src/urdfpy"
+        },
+        {
+          "line": 30,
+          "event": "2026-10-14 15:51:07.458 [info] [Model][openRepository] Opened repository (real path): /home/fair/workspaces/aerial_gym_ws/src/urdfpy"
+        },
+        {
+          "line": 77,
+          "event": "2026-10-14 15:51:08.185 [info] [Model][openRepository] Opened repository (path): /home/fair/workspaces/aerial_gym_ws/.codex_worktrees/braking_route_v3"
+        },
+        {
+          "line": 78,
+          "event": "2026-10-14 15:51:08.185 [info] [Model][openRepository] Opened repository (real path): /home/fair/workspaces/aerial_gym_ws/.codex_worktrees/braking_route_v3"
+        },
+        {
+          "line": 84,
+          "event": "2026-10-14 15:51:08.195 [info] [Model][openRepository] Opened repository (path): /home/fair/workspaces/aerial_gym_ws/.codex_worktrees/distractor_envelope"
+        },
+        {
+          "line": 85,
+          "event": "2026-10-14 15:51:08.195 [info] [Model][openRepository] Opened repository (real path): /home/fair/workspaces/aerial_gym_ws/.codex_worktrees/distractor_envelope"
+        },
+        {
+          "line": 93,
+          "event": "2026-10-14 15:51:08.208 [info] [Model][openRepository] Opened repository (path): /home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/.codex_worktrees/route_recovery_forensics"
+        },
+        {
+          "line": 94,
+          "event": "2026-10-14 15:51:08.208 [info] [Model][openRepository] Opened repository (real path): /home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/.codex_worktrees/route_recovery_forensics"
+        },
+        {
+          "line": 100,
+          "event": "2026-10-14 15:51:08.224 [info] [Model][openRepository] Opened repository (path): /home/fair/workspaces/aerial_gym_ws/.codex_worktrees/two_envelope_recovery_integration"
+        },
+        {
+          "line": 101,
+          "event": "2026-10-14 15:51:08.224 [info] [Model][openRepository] Opened repository (real path): /home/fair/workspaces/aerial_gym_ws/.codex_worktrees/two_envelope_recovery_integration"
+        }
+      ]
+    },
+    {
+      "path": "/home/fair/.config/Code/logs/20261014T153747/window1/exthost/vscode.git/Git.log",
+      "repository_events": [
+        {
+          "line": 17,
+          "event": "2026-10-14 15:37:48.380 [info] [Model][openRepository] Opened repository (path): /home/fair/workspaces/aerial_gym_ws/MOTAR-public-release-candidate"
+        },
+        {
+          "line": 18,
+          "event": "2026-10-14 15:37:48.380 [info] [Model][openRepository] Opened repository (real path): /home/fair/workspaces/aerial_gym_ws/MOTAR-public-release-candidate"
+        },
+        {
+          "line": 81,
+          "event": "2026-10-14 15:38:23.958 [info] [Model][openRepository] Opened repository (path): /home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator"
+        },
+        {
+          "line": 82,
+          "event": "2026-10-14 15:38:23.958 [info] [Model][openRepository] Opened repository (real path): /home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator"
+        },
+        {
+          "line": 92,
+          "event": "2026-10-14 15:38:24.002 [info] [Model][openRepository] Opened repository (path): /home/fair/workspaces/aerial_gym_ws/src/MOTAR-paper-positioning-20260918"
+        },
+        {
+          "line": 93,
+          "event": "2026-10-14 15:38:24.002 [info] [Model][openRepository] Opened repository (real path): /home/fair/workspaces/aerial_gym_ws/src/MOTAR-paper-positioning-20260918"
+        },
+        {
+          "line": 98,
+          "event": "2026-10-14 15:38:24.020 [info] [Model][openRepository] Opened repository (path): /home/fair/workspaces/aerial_gym_ws/src/urdfpy"
+        },
+        {
+          "line": 99,
+          "event": "2026-10-14 15:38:24.020 [info] [Model][openRepository] Opened repository (real path): /home/fair/workspaces/aerial_gym_ws/src/urdfpy"
+        },
+        {
+          "line": 161,
+          "event": "2026-10-14 15:38:24.789 [info] [Model][openRepository] Opened repository (path): /home/fair/workspaces/aerial_gym_ws/.codex_worktrees/braking_route_v3"
+        },
+        {
+          "line": 162,
+          "event": "2026-10-14 15:38:24.789 [info] [Model][openRepository] Opened repository (real path): /home/fair/workspaces/aerial_gym_ws/.codex_worktrees/braking_route_v3"
+        },
+        {
+          "line": 168,
+          "event": "2026-10-14 15:38:24.805 [info] [Model][openRepository] Opened repository (path): /home/fair/workspaces/aerial_gym_ws/.codex_worktrees/distractor_envelope"
+        },
+        {
+          "line": 169,
+          "event": "2026-10-14 15:38:24.806 [info] [Model][openRepository] Opened repository (real path): /home/fair/workspaces/aerial_gym_ws/.codex_worktrees/distractor_envelope"
+        },
+        {
+          "line": 177,
+          "event": "2026-10-14 15:38:25.083 [info] [Model][openRepository] Opened repository (path): /home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/.codex_worktrees/route_recovery_forensics"
+        },
+        {
+          "line": 178,
+          "event": "2026-10-14 15:38:25.083 [info] [Model][openRepository] Opened repository (real path): /home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/.codex_worktrees/route_recovery_forensics"
+        },
+        {
+          "line": 184,
+          "event": "2026-10-14 15:38:25.095 [info] [Model][openRepository] Opened repository (path): /home/fair/workspaces/aerial_gym_ws/.codex_worktrees/two_envelope_recovery_integration"
+        },
+        {
+          "line": 185,
+          "event": "2026-10-14 15:38:25.095 [info] [Model][openRepository] Opened repository (real path): /home/fair/workspaces/aerial_gym_ws/.codex_worktrees/two_envelope_recovery_integration"
+        }
+      ]
+    },
+    {
+      "path": "/home/fair/.config/Code/logs/20260728T184844/window1/exthost/vscode.git/Git.log",
+      "repository_events": [
+        {
+          "line": 7,
+          "event": "2026-07-28 18:48:45.537 [info] [Model][openRepository] Opened repository (path): /home/fair/workspaces/aerial_gym_ws"
+        },
+        {
+          "line": 8,
+          "event": "2026-07-28 18:48:45.537 [info] [Model][openRepository] Opened repository (real path): /home/fair/workspaces/aerial_gym_ws"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,48 @@
+{
+  "schema": "motar.g4r4.R0.controlled.v1",
+  "status": "PASS_CONTROLLED",
+  "checks": {
+    "initial_target_29_explained": true,
+    "main_3725_explained": true,
+    "no_staged_in_any_examined_repository": true,
+    "no_staged_unstaged_duplicates": true,
+    "raw3474_preserved_visible": true,
+    "verified_caches169_only_new_exclusion": true,
+    "protected_symlinks_not_ignored_or_staged": true,
+    "main_wip_and_stash_preserved": true,
+    "target_source_preserved_before_R1": true,
+    "unknown_large_change_set": false
+  },
+  "main_before": {
+    "staged": 0,
+    "unstaged": 3,
+    "untracked": 3722,
+    "unique": 3725
+  },
+  "main_after_cache_policy": {
+    "staged": 0,
+    "unstaged": 3,
+    "untracked": 3553,
+    "unique": 3556
+  },
+  "target_before": {
+    "staged": 0,
+    "unstaged": 1,
+    "untracked": 28,
+    "unique": 29
+  },
+  "main_composition": {
+    "raw_results": 3474,
+    "reconstructable_bytecode": 169,
+    "user_presentations": 78,
+    "user_test_source": 1,
+    "tracked_user_WIP": 3
+  },
+  "ide_specific_count": "Exact historical GUI display NOT_RECORDED; thousands reproduced in sibling main, not target. No GUI repository selection claim.",
+  "ownership": "Historical Raw/source receipts protected A; user slides/test/WIP preserved A; known Codex BOIA B;169verified bytecode C; small other worktree owned work preserved, no staging.",
+  "local_exclude_sha256_before": "3665b7ca0cafc1ea9f74e069e1d1088d7f578ca3e218f33d32a6be6851d3d550",
+  "local_exclude_sha256_after": "b1373c9353c0b074cfd72b0b3b9b3fbaf5239d17badd1b0164787da43ac4d8cc",
+  "source_or_raw_deletion": false,
+  "main_wip_changed": false,
+  "gate_boundary": "Controlled inventory permits R1 only after unified research direction. Final Hygiene Gate revalidated after scoped commits."
+}

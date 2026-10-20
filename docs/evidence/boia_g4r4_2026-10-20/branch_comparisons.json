@@ -1,0 +1,30 @@
+{
+  "main": {
+    "sha": "f74390a1d44ca264960d39018f5e51710e9b7b0a",
+    "branch_diff_unique_paths": 773,
+    "status_counts": {
+      "D": 1,
+      "A": 758,
+      "M": 14
+    },
+    "ahead_behind": "1\t95"
+  },
+  "origin/codex/mt-p1": {
+    "sha": "13d5f195399bf1a7f1cdf9ddeccd3338d8e34c0f",
+    "branch_diff_unique_paths": 74,
+    "status_counts": {
+      "M": 10,
+      "A": 64
+    },
+    "ahead_behind": "0\t4"
+  },
+  "origin/main": {
+    "sha": "2da5b12c1954ee768fcba59d1fb1fb9c78f7d536",
+    "branch_diff_unique_paths": 829,
+    "status_counts": {
+      "A": 805,
+      "M": 24
+    },
+    "ahead_behind": "0\t114"
+  }
+}

@@ -1,0 +1,115 @@
+{
+  "schema": "motar.g4r4.final_gate.v1",
+  "status": "PASS_PRECOMMIT_CONTROLLED",
+  "checked_utc": "2026-10-20T15:17:03.379026+00:00",
+  "checks": {
+    "code_commit_head": true,
+    "source_R1_frozen": true,
+    "C02_source_unchanged": true,
+    "C02_old_tests_unchanged": true,
+    "old_G4R_artifacts_unchanged": true,
+    "old_G4R_manifest_unchanged": true,
+    "main_head": true,
+    "main_WIP": true,
+    "stash": true,
+    "PolicyF": true,
+    "protected_symlinks": true,
+    "local_exclude_exact": true,
+    "index_empty_before_named_staging": true,
+    "code_commit_scope_exact": true,
+    "C02_history_preserved": true,
+    "Raw3474_visible_names_preserved": true,
+    "main_after_counts": true,
+    "disk_above_3GB": true
+  },
+  "hygiene_ten_conditions": {
+    "1": {
+      "status": "PASS_PRECOMMIT_CONTROLLED",
+      "criterion": "Quantified main/target cause and IDE repository scope"
+    },
+    "2": {
+      "status": "PASS_PRECOMMIT_CONTROLLED",
+      "criterion": "Original staged ownership known: all empty"
+    },
+    "3": {
+      "status": "PASS_PRECOMMIT_CONTROLLED",
+      "criterion": "No protected Raw/checkpoint/symlink staged"
+    },
+    "4": {
+      "status": "PASS_PRECOMMIT_CONTROLLED",
+      "criterion": "BOIA and documentation commit scopes separated"
+    },
+    "5": {
+      "status": "PASS_PRECOMMIT_CONTROLLED",
+      "criterion": "Research source and historical bindings preserved"
+    },
+    "6": {
+      "status": "PASS_PRECOMMIT_CONTROLLED",
+      "criterion": "Verified cache-only local exclude; no Raw hidden"
+    },
+    "7": {
+      "status": "PASS_PRECOMMIT_CONTROLLED",
+      "criterion": "No unexplained staged entries"
+    },
+    "8": {
+      "status": "PASS_PRECOMMIT_CONTROLLED",
+      "criterion": "Remaining protected WIP/symlinks classified"
+    },
+    "9": {
+      "status": "PASS_PRECOMMIT_CONTROLLED",
+      "criterion": "Actual Group1 scope and planned Group2/history consistent"
+    },
+    "10": {
+      "status": "PASS_PRECOMMIT_CONTROLLED",
+      "criterion": "Protected hashes/Raw metadata/actions preserved; full Raw rehash explicitly NOT_RUN"
+    }
+  },
+  "head_before_docs_commit": "82ef02c340fba0baec18162ad33fc03dca7301d5",
+  "main_observed_counts": {
+    "staged": 0,
+    "unstaged": 3,
+    "untracked": 3553,
+    "unique": 3556,
+    "overlap": 0
+  },
+  "target_initial_counts": {
+    "staged": 0,
+    "unstaged": 1,
+    "untracked": 28,
+    "unique": 29
+  },
+  "target_expected_after_docs_commit": {
+    "staged": 0,
+    "unstaged": 0,
+    "untracked": 2,
+    "unique": 2,
+    "overlap": 0
+  },
+  "target_expected_remaining": [
+    "results/mt_p1_precision_v1",
+    "results/occlusion_pilot_v1"
+  ],
+  "docs_validation": {
+    "local_links": "PASS",
+    "strict_JSON": "PASS",
+    "master_eight_sections": "PASS",
+    "public_docs": "PASS",
+    "source_AST_and_import_isolation": "PASS"
+  },
+  "R1_tests": {
+    "focused": 50,
+    "boia": 252,
+    "failures": 0,
+    "errors": 0
+  },
+  "PUBLIC_CPU": "NOT_RERUN",
+  "disk_free_bytes": 9166024704,
+  "stop_below_bytes": 3000000000,
+  "Raw_full_rehash": "NOT_RUN",
+  "external_backup": "NOT_CREATED; existing declined decision retained",
+  "owned_processes": [],
+  "remote_push": false,
+  "main_merge": false,
+  "G5": "HOLD",
+  "postcommit_verification": "Run inventory/protected/source/hash/index checks after commit; actual final SHA/state in final user report."
+}

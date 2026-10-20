@@ -1,0 +1,50 @@
+{
+  "target_nested_git_markers": [
+    "."
+  ],
+  "tracked_gitlinks": 0,
+  "other_preserved_items": [
+    {
+      "worktree": "/home/fair/workspaces/aerial_gym_ws/.codex_worktrees/distractor_envelope",
+      "path": "docs/prereg_2026-09-01_distractor_envelope.md",
+      "size": 8823,
+      "treatment": "Preserve existing other-worktree research; not staged/edited",
+      "grade": "A",
+      "symlink_target": null,
+      "sha256": "092626be45f6a071bf3049cebcd3551ba45a6ca4400c8ee07010d4ef52be06cb"
+    },
+    {
+      "worktree": "/home/fair/workspaces/aerial_gym_ws/.codex_worktrees/kroc2027-phase2",
+      "path": "aerial_gym/rl_training/rl_games/runs",
+      "size": 97,
+      "treatment": "Preserve existing other-worktree research; not staged/edited",
+      "grade": "A",
+      "symlink_target": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/aerial_gym/rl_training/rl_games/runs"
+    },
+    {
+      "worktree": "/home/fair/workspaces/aerial_gym_ws/.codex_worktrees/kroc2027-phase2",
+      "path": "results/kroc2027_B_v1/B0",
+      "size": 85,
+      "treatment": "Preserve existing other-worktree research; not staged/edited",
+      "grade": "A",
+      "symlink_target": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/kroc2027_B_v1/B0"
+    },
+    {
+      "worktree": "/home/fair/workspaces/aerial_gym_ws/.codex_worktrees/kroc2027-phase2",
+      "path": "results/kroc2027_B_v1/B1",
+      "size": 85,
+      "treatment": "Preserve existing other-worktree research; not staged/edited",
+      "grade": "A",
+      "symlink_target": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/kroc2027_B_v1/B1"
+    },
+    {
+      "worktree": "/home/fair/workspaces/aerial_gym_ws/.codex_worktrees/kroc2027-phase2",
+      "path": "results/kroc2027_B_v1/analysis_secondary.json",
+      "size": 19843,
+      "treatment": "Preserve existing other-worktree research; not staged/edited",
+      "grade": "A",
+      "symlink_target": null,
+      "sha256": "38cd1c877bb80ee603b79f93839939ea9773dbb9821105f386873483c6d6e4f7"
+    }
+  ]
+}
