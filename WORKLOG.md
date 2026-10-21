@@ -22476,3 +22476,30 @@ Hypothesis "an image that passes the complete window test with obstacle_depth OK
 grid" rejected for contact range: measured 956 phantom cells at 0.28 m. Record:
 `docs/evidence/q02a_v21_fable_delta_review_2026-10-22/` (REVIEW.md, probes/). GPU NOT_RUN, G5 HOLD.
 Next: minimal fix of D1/D2 (+D7) as contract Q02A-v2.2 and a confirmation review.
+
+## 2026-10-22 — Q02-A v2.2: contact-range guard and fill-free paste mask (delta review D1, D2, D7)
+
+Minimal fixes of the two P1 findings (contract `Q02A-v2.2`; only `motar_eval/q02/*` and the Q02 tests).
+- **D1:** a declared contact range of 0.10 m. Any observed native cell nearer than it makes `obstacle_depth`
+  UNAVAILABLE (`CONTACT_RANGE`), withholds `depth_native` and raises `near_obstacle_warning`; the camera flag keeps working.
+- **D2:** pixels at the 10 m fill value are never "pasted" (`recover_native_depth(fill_value=)`).
+- **D7:** a stale or diffuse belief makes the flag's footprint NOT_TESTABLE.
+
+Not changed:
+- D4: the proposed residual-0 fix would accept pure-noise frames and undo the F3 test.
+- D5: at ≥ ~9 m the 5° beam spacing exceeds the 0.8 m bar width, so adjacency cannot separate objects.
+
+Both are documented limits.
+
+| Check (CPU) | Result |
+| --- | --- |
+| `tests/test_q02_evidence.py` | 40 OK (37 kept, version string updated; 3 new D1/D2/D7) |
+| PUBLIC_CPU | 3105 ran, 0 failures, same 4 `DetectReduction` errors; aggregate FAIL (pre-existing) |
+| Close-range map, 310 flagged frames | obstacle OK with phantom cells 16 → 0; 289 SUPPORTED with obstacle depth UNAVAILABLE; 13 depth INVALID (≤ 0.275 m); 8 FRAME_MISMATCH (D4) |
+| v2.1 → v2.2 on identical inputs | only D2 (SUPPORTED/RANGE_CONTRADICTED from fill → NOT_TESTABLE/CONTRADICTED) and D7 (SUPPORTED → NOT_TESTABLE) change; all earlier cases and Q01 frames unchanged |
+| Q01-V2 frames | SUPPORTED; pasted at range 36/65/14 → 4/12/14 (fill pixels removed) |
+| Recovery fuzz (7 ×1000, 101 ×3000, 2024 ×1500) | 0 silent leaks; sphere sweep 0/400 |
+
+Records: `docs/evidence/q02a_v22_repair_2026-10-22/` (REPAIR.md, compare_v21_v22.py/.json,
+fuzz_recovery.py, fuzz_results.json). Q02-B WIP unchanged. GPU NOT_RUN, G5 HOLD. Next: Fable
+confirmation review of this commit; Q02-B stays blocked until it reports.

@@ -1,4 +1,4 @@
-"""Q02-A CPU tests (contract Q02A-v2.1): constants, frames, sensor semantics, validation and the rule.
+"""Q02-A CPU tests (contract Q02A-v2.2): constants, frames, sensor semantics, validation and the rule.
 
 Scenes are synthetic ray casts reproducing the production sensor pipeline: camera depth = a native
 40x24 obstacle render (bars only, no hit -> 10 m) bilinearly upsampled to 160x90 with the target
@@ -211,7 +211,7 @@ class EvidenceTests(unittest.TestCase):
         self.assertEqual((r.utility, r.ground_truth_used, r.calibration), ("ABSTAIN", False, "NONE_DECLARED_PRIORS"))
         # F7: production confidence = max(camera segmenter support, LiDAR association gate), navrl_perception.py:2396
         self.assertEqual(r.confidence_semantics, "MAX_OF_CAMERA_SEGMENTER_SUPPORT_AND_LIDAR_ASSOCIATION_GATE_NOT_A_PROBABILITY")
-        self.assertEqual(r.contract_version, "Q02A-v2.1")   # v2.1: re-review R1-R4 repairs
+        self.assertEqual(r.contract_version, "Q02A-v2.2")   # v2.1: re-review R1-R4; v2.2: delta review D1/D2/D7
         self.assertEqual(r.belief_kind, "PREDICTED_ONLY")
         self.assertIn(r.hypothesis, ev.HYPOTHESES)
         names = {f.name for f in fields(c.EvidenceInput)}
@@ -530,6 +530,47 @@ class ReReviewR1toR4Tests(unittest.TestCase):
                 if rng_ <= 0.45:                                            # too little obstacle render left to read
                     self.assertEqual(report.status("obstacle_depth"), va.UNAVAILABLE)
                     self.assertEqual(hyp(target_v=(rng_, 0., 0.)).reasons, ("CAMERA_OBSTACLE_DEPTH_UNAVAILABLE",))
+
+
+class DeltaReviewD1D2Tests(unittest.TestCase):
+    """Q02A-v2.2: the P1 findings of the v2.1 delta review (docs/evidence/q02a_v21_fable_delta_review_2026-10-22)."""
+
+    def test_D1_contact_range_target_is_never_read_as_obstacle_depth(self):
+        contact = 0
+        for rng_ in np.arange(0.255, 0.355, 0.005):
+            for lat, z in ((0.0, 0.0), (0.03, 0.0), (0.0, 0.05), (0.03, 0.05)):
+                tv = (float(rng_), lat, z)
+                report = va.validate(make(target_v=tv), CAM, LID)
+                with self.subTest(target=tv, obstacle_depth=report.status("obstacle_depth")):
+                    if report.obstacle_depth_usable:            # empty scene: every observed cell is the 10 m fill
+                        seen = np.isfinite(report.depth_native)
+                        self.assertGreaterEqual(report.depth_native[seen].min(), PROF.obstacle_far_m - 1e-3)
+                    contact += report.camera_contact_range
+        self.assertGreater(contact, 0)                           # v2.1: 16 such frames read as obstacle depth
+        flagged = hyp(target_v=(0.28, 0., 0.), detected=True)
+        self.assertEqual(flagged.hypothesis, ev.TARGET_VISIBLE); self.assertTrue(flagged.near_obstacle_warning)
+        self.assertEqual(hyp(target_v=(0.28, 0., 0.)).reasons, ("CAMERA_OBSTACLE_DEPTH_UNAVAILABLE",))
+
+    def test_D2_no_return_fill_pixels_never_count_as_pasted(self):
+        inp = make(target_v=(8., 0., 0.))
+        report = va.validate(inp, CAM, LID)
+        self.assertTrue(report.depth_pasted.any())
+        self.assertFalse((report.depth_pasted & (np.asarray(inp.depth) >= PROF.obstacle_far_m - 1e-3)).any())
+        for rng_ in (10.0, 9.8, 9.5):                            # v2.1: SUPPORTED from fill pixels alone
+            base = make(target_v=(rng_, 0., 0.), detected=True)
+            mean = np.array(base.track_mean); mean[1] += 0.5       # track 0.5 m beside the pasted target
+            with self.subTest(range_m=rng_):
+                r = ev.estimate(make(target_v=(rng_, 0., 0.), detected=True, track_mean=mean))
+                self.assertNotEqual(r.identity_status, "SUPPORTED_BY_FOOTPRINT")
+                self.assertEqual(r.pasted_pixels_at_track_range, 0)
+        self.assertEqual(hyp(target_v=(10.0, 0., 0.), detected=True).identity_status, "SUPPORTED_BY_FOOTPRINT")
+
+    def test_D7_stale_or_diffuse_belief_makes_the_flag_footprint_not_testable(self):
+        for kw in (dict(age=5.0), dict(cov=np.diag([4.0, 4.0, 4.0, .1, .1, .1]))):
+            with self.subTest(**{k: str(v)[:20] for k, v in kw.items()}):
+                r = hyp(detected=True, **kw)
+                self.assertEqual((r.hypothesis, r.identity_status), (ev.TARGET_VISIBLE, "NOT_TESTABLE"))
+                self.assertIn("BELIEF_STALE_OR_DIFFUSE_FOOTPRINT_NOT_TESTABLE", r.reasons)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,50 @@
+{
+ "contract": "Q02A-v2.2",
+ "blas_threads": "set OMP/OPENBLAS/MKL_NUM_THREADS=1 for timing",
+ "fuzz": [
+  {
+   "seed": 7,
+   "cases": 1000,
+   "silent_leaks": 0,
+   "outcomes": {
+    "OK": 843,
+    "PASTED_DOMINATES": 135,
+    "PASTE_SPANS_OPPOSITE_BORDERS": 20,
+    "ILL_CONDITIONED": 2
+   },
+   "recovery_ms_median": 29.7,
+   "recovery_ms_max": 90.3
+  },
+  {
+   "seed": 101,
+   "cases": 3000,
+   "silent_leaks": 0,
+   "outcomes": {
+    "OK": 2534,
+    "PASTED_DOMINATES": 404,
+    "PASTE_SPANS_OPPOSITE_BORDERS": 55,
+    "ILL_CONDITIONED": 7
+   },
+   "recovery_ms_median": 29.7,
+   "recovery_ms_max": 93.3
+  },
+  {
+   "seed": 2024,
+   "cases": 1500,
+   "silent_leaks": 0,
+   "outcomes": {
+    "PASTED_DOMINATES": 197,
+    "OK": 1280,
+    "PASTE_SPANS_OPPOSITE_BORDERS": 23
+   },
+   "recovery_ms_median": 30.1,
+   "recovery_ms_max": 47.2
+  }
+ ],
+ "sphere_sweep": {
+  "seed": 9,
+  "frames": 400,
+  "usable_frames_with_paste_kept": 0,
+  "occluded": 0
+ }
+}

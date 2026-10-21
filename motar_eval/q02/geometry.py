@@ -105,10 +105,11 @@ RECOVERY_PASTE_SPANS_BORDERS = "PASTE_SPANS_OPPOSITE_BORDERS"  # a pasted blob m
 @dataclass(frozen=True)
 class NativeDepth:
     """Result of recover_native_depth. `excluded` = pixels not used for the solve (pasted blobs grown
-    to their bounding boxes); `foreign` = pixels flagged by the linearity or residual test that the
-    recovered obstacle grid does not reproduce (|y - fit| > tol, or a cell unobserved): the pasted
-    target/distractor pixels, possibly with up to two stencil neighbours at an edge. The smooth
-    interior of a large constant paste is excluded but need not be foreign."""
+    to their bounding boxes); `foreign` = pixels flagged by the window or residual test that the
+    recovered obstacle grid does not reproduce (|y - fit| > tol, or a cell unobserved), minus pixels
+    at the no-return fill value. Besides the pasted target/distractor pixels this can include
+    obstacle-blend pixels next to a paste whose native cells are unobserved. The smooth interior of a
+    large paste is excluded but need not be foreign."""
     native: object
     excluded: object
     foreign: object
@@ -203,7 +204,7 @@ def _nonlinear_pixels(y, av, ah, tol):
     return flag
 
 
-def recover_native_depth(depth, native_wh, tol=1e-3, max_passes=8):
+def recover_native_depth(depth, native_wh, tol=1e-3, max_passes=8, fill_value=None):
     """Invert the 40x24 -> 160x90 bilinear upsampling (both 1-D operators have full column rank).
 
     Pasted pixels (target/distractor, foreign content) are found by a local two-segment window test
@@ -214,7 +215,8 @@ def recover_native_depth(depth, native_wh, tol=1e-3, max_passes=8):
     closed boundary, so it is reported (PASTE_SPANS_OPPOSITE_BORDERS) rather than trusted. Pixels
     inconsistent with the solve are excluded and the solve repeated until none remain (else
     NOT_CONVERGED). Native cells without support are UNOBSERVED (NaN); if the remaining normal matrix
-    is ill-conditioned the grid is not determined (ILL_CONDITIONED, all NaN).
+    is ill-conditioned the grid is not determined (ILL_CONDITIONED, all NaN). A pixel at `fill_value`
+    (the no-return fill) is never foreign: it is indistinguishable from "no hit".
     """
     y = np.asarray(depth, dtype=np.float64)
     ops = _operators(y.shape, native_wh)
@@ -275,6 +277,8 @@ def recover_native_depth(depth, native_wh, tol=1e-3, max_passes=8):
     excluded = ~keep
     explained = (observed[idx] | (wts <= 1e-12)).all(axis=1) & (np.abs(flat - (wts * np.nan_to_num(x)[idx]).sum(axis=1)) <= tol)
     foreign = pasted.reshape(-1) & ~explained     # positively flagged, and not reproduced by the obstacle grid
+    if fill_value is not None:
+        foreign &= np.abs(flat - fill_value) > tol
     return NativeDepth(x.reshape(shape_n), excluded.reshape(y.shape), foreign.reshape(y.shape), residual, status)
 
 

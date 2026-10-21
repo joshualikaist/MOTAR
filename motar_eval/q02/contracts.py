@@ -18,7 +18,7 @@ DEPTH_CONVENTION = "EUCLIDEAN_RAY_RANGE_M"     # range along the unit pixel ray,
 LIDAR_LAYOUT = "LIDAR_ZERO_WIDTH_4x72_5deg_10deg"
 CAMERA_OFFSET_M = (0.10, 0.0, 0.03)
 ACCEPTED_CLOCK_PROVENANCE = ("DECLARED_SIM_SCHEDULE",)
-EVIDENCE_CONTRACT_VERSION = "Q02A-v2.1"   # v1 (a5fee45) read depth as 20 m range and 0 m as a hit; v2 = 87cced6
+EVIDENCE_CONTRACT_VERSION = "Q02A-v2.2"   # v1 (a5fee45) read depth as 20 m range and 0 m as a hit; v2 = 87cced6, v2.1 = aab9b31
 
 # Per-sample semantics, shared by camera depth and LiDAR.
 VALID_HIT, NO_RETURN, NEAR_CLIPPED, INVALID_SAMPLE = "VALID_HIT", "NO_RETURN", "NEAR_CLIPPED", "INVALID"
@@ -93,6 +93,7 @@ class SensorProfile:
     obstacle_native_wh: tuple = (40, 24)
     obstacle_far_m: float = 10.0
     depth_near_clip_m: float = 0.05        # DECLARED: the obstacle kernel has no near clip (navrl_detector.py:28-49)
+    obstacle_contact_m: float = 0.10       # DECLARED: a native cell nearer than this = contact; the grid is not read
     lidar_no_return_m: float = 12.0
     lidar_near_clip_value: float = 0.0
     distractors: int = 0

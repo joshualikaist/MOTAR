@@ -10,6 +10,7 @@ from .geometry import RECOVERY_NOT_CONVERGED, RECOVERY_OK, is_yaw_only, recover_
 
 OK, MISSING, STALE, INVALID, FRAME_MISMATCH = "OK", "MISSING", "STALE", "INVALID", "FRAME_MISMATCH"
 UNAVAILABLE = "UNAVAILABLE"   # input is valid, but this derived quantity cannot be obtained from it
+CONTACT_RANGE = "CONTACT_RANGE"
 
 
 @dataclass(frozen=True)
@@ -53,6 +54,11 @@ class ValidationReport:
     def obstacle_depth_usable(self):
         """The native obstacle grid can be read as ray samples (camera usable and not paste-dominated)."""
         return self.camera_usable and self.ok("obstacle_depth")
+
+    @property
+    def camera_contact_range(self):
+        """The camera sees something within contact range (obstacle grid withheld; a safety warning)."""
+        return dict((c.name, c.detail) for c in self.checks).get("obstacle_depth", "").startswith(CONTACT_RANGE)
 
     @property
     def lidar_usable(self):
@@ -125,7 +131,7 @@ def _depth_structure(depth, profile, max_pasted_fraction):
     a paste that dominates the image or spans opposite borders leaves the frame valid for the camera
     flag but unusable as obstacle ray samples."""
     try:
-        rec = recover_native_depth(depth, profile.obstacle_native_wh)
+        rec = recover_native_depth(depth, profile.obstacle_native_wh, fill_value=profile.obstacle_far_m)
     except np.linalg.LinAlgError:
         return (Check("depth_structure", FRAME_MISMATCH, "native recovery failed"),
                 Check("obstacle_depth", INVALID, "depth structure not verified"), None)
@@ -143,6 +149,10 @@ def _depth_structure(depth, profile, max_pasted_fraction):
         obstacle = Check("obstacle_depth", UNAVAILABLE, "PASTED_DOMINATES %.2f of the image" % rec.excluded.mean())
     elif rec.status != RECOVERY_OK:
         obstacle = Check("obstacle_depth", UNAVAILABLE, rec.status)
+    elif obs.any() and rec.native[obs].min() < profile.obstacle_contact_m:
+        # Something within contact range of the camera. A paste that fills the image with a smooth
+        # surface (the target at contact range) is indistinguishable from an obstacle render here.
+        obstacle = Check("obstacle_depth", UNAVAILABLE, "%s %.3f m" % (CONTACT_RANGE, rec.native[obs].min()))
     else:
         obstacle = Check("obstacle_depth", OK)
     return structure, obstacle, rec

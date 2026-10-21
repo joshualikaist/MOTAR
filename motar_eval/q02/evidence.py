@@ -1,4 +1,4 @@
-"""Module A (contract Q02A-v2.1): explainable sensor evidence about a tracked target's line of sight.
+"""Module A (contract Q02A-v2.2): explainable sensor evidence about a tracked target's line of sight.
 
 Deterministic rule over measured samples; not a calibrated classifier and no probability. UNKNOWN
 is returned whenever the inputs cannot separate the cases, and UNKNOWN is never free space or a
@@ -18,6 +18,10 @@ exclusion is closed on curved/border-crossing blobs, the extent test looks only 
 beams, identity support needs pasted depth inside the track's range interval (a surface at that
 range is not identity evidence), and a paste that dominates the image removes the obstacle ray
 samples but not the camera flag.
+v2.2 repairs the P1 findings of the v2.1 delta review (q02a_v21_fable_delta_review REVIEW.md D1, D2):
+a native cell within contact range withholds the obstacle grid (a target filling the image at
+contact range can pass as an upsample), and no-return fill pixels never count as pasted; a stale or
+diffuse belief makes the camera flag's footprint NOT_TESTABLE (D7).
 In the Frozen F profile the camera flag is oracle-grade (true-pose rasterization), so agreement
 with it is not evidence that this rule would work with a real detector.
 """
@@ -109,7 +113,8 @@ def _record(hypothesis, reasons, source, identity, inp, report, g=None, cam=Sens
                           tuple(float(x) for x in g.get("p_v", (nan, nan, nan))), g.get("range", nan),
                           g.get("bearing", nan), g.get("elevation", nan), g.get("sigma_r", nan), g.get("sigma_lat", nan),
                           g.get("fov_in", 0), g.get("fov_total", 0), g.get("env_cam", nan), g.get("env_lid", nan),
-                          cam, lid, int(pasted[0]), int(pasted[1]), bool(near_beams > 0 or cam.near_clipped > 0), int(near_beams),
+                          cam, lid, int(pasted[0]), int(pasted[1]),
+                          bool(near_beams > 0 or cam.near_clipped > 0 or report.camera_contact_range), int(near_beams),
                           report.problems())
 
 
@@ -229,6 +234,10 @@ def estimate(inp, camera=FROZEN_F_CAMERA, lidar=FROZEN_F_LIDAR, params=EvidenceP
         g = _belief_geometry(inp, camera, lidar, params)
         cam = _camera_evidence(inp, report, camera, profile, params, g)
         lid, near_beams = _lidar_evidence(inp, lidar, profile, params, g) if lidar_ok else (SensorRays(), 0)
+        if inp.track_age_s > params.max_belief_age_s or g["sigma_r"] > params.max_range_sigma_m \
+                or g["extra"] > params.max_envelope_extra_m:      # same belief gates as the ray test
+            return _record(TARGET_VISIBLE, ("CAMERA_FLAG_VISIBLE", "BELIEF_STALE_OR_DIFFUSE_FOOTPRINT_NOT_TESTABLE"),
+                           "CAMERA_FLAG", "NOT_TESTABLE", inp, report, g=g, cam=cam, lid=lid, near_beams=near_beams)
         pasted = _pasted_in_footprint(inp, report, camera, params, g)
         args = dict(g=g, cam=cam, lid=lid, pasted=pasted, near_beams=near_beams)
         notes = [] if report.obstacle_depth_usable else ["CAMERA_OBSTACLE_DEPTH_UNAVAILABLE"]
