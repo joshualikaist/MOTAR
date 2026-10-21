@@ -22457,3 +22457,22 @@ Records: `docs/evidence/q02a_v21_repair_2026-10-22/` (REPAIR.md, compare_v2_v21.
 fuzz_recovery.py, fuzz_results.json). Q02-B WIP unchanged (11/11 hashes); its v2.1 interface
 deltas are listed in REPAIR.md. GPU NOT_RUN, G5 HOLD. Next: Fable delta review of this commit;
 Q02-B stays blocked until it reports.
+
+## 2026-10-22 — Q02-A v2.1 delta review (Fable 5.1, aab9b31): HOLD_P0_P1_REMAINS (D1, D2)
+
+Read-only CPU delta review of v2.1. No P0. Production-shaped frames (sphere paste ≥ 0.305 m) are
+exact in every sweep, and the F1–F7 outcomes and the comparison JSON reproduce byte for byte.
+
+| ID | Sev | Finding |
+| --- | --- | --- |
+| D1 | P1 | Contact range 0.265–0.30 m: the sphere fills the image as a sub-tolerance bowl, so `obstacle_depth` is OK while `depth_native` is the target surface (16/310 frames, native min 0.019–0.051 m) |
+| D2 | P1 | `foreign` contains 10 m fill pixels next to a paste; with a track 0.5 m beside a 10 m target the result is SUPPORTED from fill pixels alone |
+| D3 | P2 | Window test accepts piecewise-bilinear smooth content (bump up to ~1 m, offset 2.8e-3, hole topology): v2.1 completeness wording false; adversarial reach only |
+| D4 | P2 | Flagged frame at 0.31–0.33 m UNKNOWN (all pixels excluded → FRAME_MISMATCH), fail-safe |
+| D5 | P2 | Extent test not range-aware: bar 0.9/1.8 m beside the LOS at 10.3 m → OCCLUDED |
+| D6–D8 | NOTE | Infinite-cylinder test bars; no belief gates on the flag path; depth INVALID up to 0.275 m |
+
+Hypothesis "an image that passes the complete window test with obstacle_depth OK has an exact obstacle
+grid" rejected for contact range: measured 956 phantom cells at 0.28 m. Record:
+`docs/evidence/q02a_v21_fable_delta_review_2026-10-22/` (REVIEW.md, probes/). GPU NOT_RUN, G5 HOLD.
+Next: minimal fix of D1/D2 (+D7) as contract Q02A-v2.2 and a confirmation review.
