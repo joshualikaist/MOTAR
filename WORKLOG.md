@@ -22409,3 +22409,23 @@ footprint (identity status); confidence relabelled. Interface: record fields ver
 Records: `docs/evidence/q02a_v2_repair_2026-10-21/` (REPAIR.md, compare_v1_v2.py/.json). No
 accuracy claim (no labels). Q02-B WIP not modified; its required interface changes are listed
 in REPAIR.md. GPU NOT_RUN, G5 HOLD. Next: Fable re-review of this commit; Q02-B stays blocked.
+
+## 2026-10-21 — Q02-A v2 re-review (Fable 5.1, 87cced6): PASS_WITH_DOCUMENTED_LIMITATIONS
+
+Read-only CPU re-review of the v2 sensor-semantics repair. No P0/P1 remains: F1 (10 m fill), F2
+(LOS window) and F3 (0 m values) are fixed against the production source; F4 and F7 are fixed; F5 and F6 are partial.
+
+| ID | Sev | Finding |
+| --- | --- | --- |
+| R1 | P2 | Paste exclusion not closed: a jump on a segment boundary is invisible to the local test, so a constant disc r40 leaves 209 native cells read as 2.0 m with residual 1.2e-14; border-spanning pastes cannot be fixed by box growth |
+| R2 | P2 | LiDAR extent test uses every hit in the 360° scan: an unrelated bar at the same range turns UNKNOWN into OCCLUDED |
+| R3 | P2 | `SUPPORTED_BY_FOOTPRINT` bearing-only: pasted depth not range-checked; LiDAR/camera surface hits count as identity support |
+| R4 | P2 | Close-range non-monotonic: pasted fraction > 0.5 makes a flagged 0.35–0.45 m target UNKNOWN |
+| R5–R9 | NOTE | Dead Woodbury code / `observed` before drop; native spacing misstated (2.2°×2.4°); one invalid LiDAR sample invalidates the scan; 0.05 m camera near clip declared and bar-height citation; tests lack adversarial recovery and an exact F4 assertion |
+
+Hypothesis "the bounding box of each flagged 4-connected blob covers every pasted pixel" rejected:
+measured 2616 kept pixels for a constant r40 disc. Production-faithful sphere pastes did not flip a
+hypothesis (0 OCCLUDED in 550 frames). Conditions: Q02-B must not read `depth_native` until R1 is
+fixed; ≤ 0.5 m is out of scope; thin occluders stay UNKNOWN. Record:
+`docs/evidence/q02a_v2_fable_rereview_2026-10-21/` (REVIEW.md, probes/). GPU NOT_RUN, G5 HOLD.
+Next: repair R1–R4 (+R5/R6/R8/R9) as contract Q02A-v2.1 and request a delta review.
