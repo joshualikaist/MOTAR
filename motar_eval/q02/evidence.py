@@ -1,4 +1,4 @@
-"""Module A (contract Q02A-v2): explainable sensor evidence about a tracked target's line of sight.
+"""Module A (contract Q02A-v2.1): explainable sensor evidence about a tracked target's line of sight.
 
 Deterministic rule over measured samples; not a calibrated classifier and no probability. UNKNOWN
 is returned whenever the inputs cannot separate the cases, and UNKNOWN is never free space or a
@@ -13,6 +13,11 @@ safe action. v2 repairs the v1 defects found by the Fable review (Q02-A REVIEW.m
   only if it passes within the target envelope (sensor proxy radius + k * lateral sigma) of the
   predicted centre, from that sensor's own origin.
 * LiDAR 0.0 is NEAR_CLIPPED (< 0.2 m): a near-obstacle safety warning, not a range for occlusion.
+v2.1 repairs the P2 findings of the v2 re-review (q02a_v2_fable_rereview REVIEW.md R1-R4): the paste
+exclusion is closed on curved/border-crossing blobs, the extent test looks only at neighbouring
+beams, identity support needs pasted depth inside the track's range interval (a surface at that
+range is not identity evidence), and a paste that dominates the image removes the obstacle ray
+samples but not the camera flag.
 In the Frozen F profile the camera flag is oracle-grade (true-pose rasterization), so agreement
 with it is not evidence that this rule would work with a real detector.
 """
@@ -45,6 +50,8 @@ class EvidenceParams:
     min_fraction: float = 0.5            # share of envelope rays that must agree
     extent_margin_m: float = 0.15        # foreground wider than proxy radius + this is not the target
     extent_range_window_m: float = 0.3
+    extent_neighbour_rows: int = 1       # extent test: only hits within this many rows/columns of a
+    extent_neighbour_cols: int = 2       # foreground ray (beam grid; LiDAR azimuth wraps)
 
 
 @dataclass(frozen=True)
@@ -83,6 +90,7 @@ class EvidenceRecord:
     camera: SensorRays
     lidar: SensorRays
     pasted_pixels_in_footprint: int
+    pasted_pixels_at_track_range: int
     near_obstacle_warning: bool
     near_clipped_lidar_beams: int
     validation_problems: tuple
@@ -93,7 +101,7 @@ class EvidenceRecord:
     calibration: str = "NONE_DECLARED_PRIORS"
 
 
-def _record(hypothesis, reasons, source, identity, inp, report, g=None, cam=SensorRays(), lid=SensorRays(), pasted=0,
+def _record(hypothesis, reasons, source, identity, inp, report, g=None, cam=SensorRays(), lid=SensorRays(), pasted=(0, 0),
             near_beams=0):
     g, nan = g or {}, float("nan")
     return EvidenceRecord(hypothesis, tuple(dict.fromkeys(reasons)), source, identity, inp.camera_detected, inp.confidence,
@@ -101,7 +109,7 @@ def _record(hypothesis, reasons, source, identity, inp, report, g=None, cam=Sens
                           tuple(float(x) for x in g.get("p_v", (nan, nan, nan))), g.get("range", nan),
                           g.get("bearing", nan), g.get("elevation", nan), g.get("sigma_r", nan), g.get("sigma_lat", nan),
                           g.get("fov_in", 0), g.get("fov_total", 0), g.get("env_cam", nan), g.get("env_lid", nan),
-                          cam, lid, int(pasted), bool(near_beams > 0 or cam.near_clipped > 0), int(near_beams),
+                          cam, lid, int(pasted[0]), int(pasted[1]), bool(near_beams > 0 or cam.near_clipped > 0), int(near_beams),
                           report.problems())
 
 
@@ -128,8 +136,9 @@ def _belief_geometry(inp, camera, lidar, params):
                 env_cam=camera.target_radius + extra, env_lid=lidar.target_proxy_radius_m + extra)
 
 
-def _ray_counts(origin, dirs, ranges, cats, far_m, centre, radius, sigma_r, params, proxy_radius, all_hits=None):
-    """Classify every ray that passes through the target envelope (from this sensor's own origin)."""
+def _ray_counts(origin, dirs, ranges, cats, far_m, centre, radius, sigma_r, params, proxy_radius, grid=None):
+    """Classify every ray that passes through the target envelope (from this sensor's own origin).
+    `grid` = (rows, cols, azimuth_wraps) of the flattened ray layout, for the extent test."""
     inside, entry, exit_, _ = ray_envelope(origin, dirs, centre, radius)
     k, tol, fg_m = params.sigma_k, params.range_tol_m, params.foreground_margin_m
     lo, hi = entry - k * sigma_r, exit_ + k * sigma_r
@@ -143,47 +152,61 @@ def _ray_counts(origin, dirs, ranges, cats, far_m, centre, radius, sigma_r, para
     clear = beyond | (noret & (far_m > hi + tol))
     censored = noret & ~(far_m > hi + tol)
     extended = False
-    if fg.any() and all_hits is not None:
+    if fg.any() and grid is not None:
+        # Is the foreground surface wider than the target proxy? Only hits on rays next to a
+        # foreground ray and at its range count, so an unrelated object elsewhere cannot answer.
+        rows, cols, wraps = grid
         t_fg = float(r[fg].min())
-        pts, rng_all = all_hits
-        near = np.abs(rng_all - t_fg) <= params.extent_range_window_m
+        all_r, all_c = np.divmod(np.arange(ranges.size), cols)
+        fg_r, fg_c = np.divmod(np.flatnonzero(inside)[fg], cols)
+        dc = np.abs(all_c[:, None] - fg_c[None, :])
+        if wraps:
+            dc = np.minimum(dc, cols - dc)
+        adjacent = ((np.abs(all_r[:, None] - fg_r[None, :]) <= params.extent_neighbour_rows) &
+                    (dc <= params.extent_neighbour_cols)).any(axis=1)
+        near = adjacent & (cats == VALID_HIT) & (np.abs(ranges - t_fg) <= params.extent_range_window_m)
         los = (np.asarray(centre, float) - np.asarray(origin, float))
         los = los / max(np.linalg.norm(los), 1e-9)
         if near.any():
-            extended = bool((point_line_distance(pts[near], origin, los) > proxy_radius + params.extent_margin_m).any())
+            pts = np.asarray(origin, float) + dirs[near] * ranges[near][:, None]
+            extended = bool((point_line_distance(pts, origin, los) > proxy_radius + params.extent_margin_m).any())
     return SensorRays(int(inside.sum()), int(fg.sum()), int(cons.sum()), int(clear.sum()), int(censored.sum()),
                       int((c == NEAR_CLIPPED).sum()), int((~np.isin(c, (VALID_HIT, NO_RETURN, NEAR_CLIPPED))).sum()),
                       extended)
 
 
 def _camera_evidence(inp, report, camera, profile, params, g):
+    if not report.obstacle_depth_usable:
+        return SensorRays()
     origin = np.asarray(camera.camera_offset, float)
     dirs = native_camera_rays(camera, profile.obstacle_native_wh).reshape(-1, 3)
     native = np.asarray(report.depth_native, float).reshape(-1)
     cats = classify_depth_native(native, profile)
-    hit = cats == VALID_HIT
+    w, h = profile.obstacle_native_wh
     return _ray_counts(origin, dirs, np.nan_to_num(native, nan=-1.0), cats, profile.obstacle_far_m, g["p_v"], g["env_cam"],
-                       g["sigma_r"], params, camera.target_radius,
-                       (origin + dirs[hit] * native[hit][:, None], native[hit]))
+                       g["sigma_r"], params, camera.target_radius, (h, w, False))
 
 
 def _lidar_evidence(inp, lidar, profile, params, g):
     dirs = lidar_directions(lidar).reshape(-1, 3)
     r = np.asarray(inp.lidar, float).reshape(-1)
     cats = classify_lidar(r, lidar, profile)
-    hit = cats == VALID_HIT
     return _ray_counts(np.zeros(3), dirs, r, cats, profile.lidar_no_return_m, g["p_v"], g["env_lid"], g["sigma_r"],
-                       params, lidar.target_proxy_radius_m, (dirs[hit] * r[hit][:, None], r[hit])), int((cats == NEAR_CLIPPED).sum())
+                       params, lidar.target_proxy_radius_m, (lidar.vbeams, lidar.hbeams, True)), int((cats == NEAR_CLIPPED).sum())
 
 
-def _pasted_in_footprint(inp, report, camera, g):
-    """Pasted (target/distractor) pixels whose full-resolution rays pass through the camera envelope."""
+def _pasted_in_footprint(inp, report, camera, params, g):
+    """Pasted (target/distractor) pixels whose full-resolution rays pass through the camera envelope,
+    and how many of them carry a depth inside the track's range interval on that ray."""
     if report.depth_pasted is None or not report.depth_pasted.any():
-        return 0
+        return 0, 0
     v, u = np.nonzero(report.depth_pasted)
     rays = pixel_rays(u, v, camera)
-    inside, _, _, _ = ray_envelope(np.asarray(camera.camera_offset, float), rays, g["p_v"], g["env_cam"])
-    return int(inside.sum())
+    inside, entry, exit_, _ = ray_envelope(np.asarray(camera.camera_offset, float), rays, g["p_v"], g["env_cam"])
+    d = np.asarray(inp.depth, float)[v, u]
+    k, tol = params.sigma_k, params.range_tol_m
+    at = inside & (d >= entry - k * g["sigma_r"] - tol) & (d <= exit_ + k * g["sigma_r"] + tol)
+    return int(inside.sum()), int(at.sum())
 
 
 def estimate(inp, camera=FROZEN_F_CAMERA, lidar=FROZEN_F_LIDAR, params=EvidenceParams(), limits=ValidationLimits(),
@@ -206,15 +229,23 @@ def estimate(inp, camera=FROZEN_F_CAMERA, lidar=FROZEN_F_LIDAR, params=EvidenceP
         g = _belief_geometry(inp, camera, lidar, params)
         cam = _camera_evidence(inp, report, camera, profile, params, g)
         lid, near_beams = _lidar_evidence(inp, lidar, profile, params, g) if lidar_ok else (SensorRays(), 0)
-        pasted = _pasted_in_footprint(inp, report, camera, g)
+        pasted = _pasted_in_footprint(inp, report, camera, params, g)
         args = dict(g=g, cam=cam, lid=lid, pasted=pasted, near_beams=near_beams)
-        if pasted > 0 or lid.consistent > 0:
-            return _record(TARGET_VISIBLE, ("CAMERA_FLAG_VISIBLE", "TRACK_FOOTPRINT_SUPPORTED"), "CAMERA_FLAG",
+        notes = [] if report.obstacle_depth_usable else ["CAMERA_OBSTACLE_DEPTH_UNAVAILABLE"]
+        if cam.consistent or lid.consistent:
+            notes.append("SURFACE_AT_TRACK_RANGE_NOT_IDENTITY_EVIDENCE")
+        if pasted[1] > 0:
+            return _record(TARGET_VISIBLE, ["CAMERA_FLAG_VISIBLE", "PASTED_DEPTH_AT_TRACK_RANGE"] + notes, "CAMERA_FLAG",
                            "SUPPORTED_BY_FOOTPRINT", inp, report, **args)
+        if pasted[0] > 0:
+            return _record(IDENTITY_AMBIGUOUS, ["CAMERA_FLAG_PASTED_DEPTH_OUTSIDE_TRACK_RANGE"] + notes, "CAMERA_FLAG",
+                           "RANGE_CONTRADICTED", inp, report, **args)
+        if report.depth_pasted is not None and not report.depth_pasted.any():
+            notes.append("NO_PASTED_PIXELS_IN_IMAGE")   # the oracle flag normally comes with pasted pixels
         if cam.rays and cam.clear / cam.rays >= params.min_fraction and cam.foreground == 0:
-            return _record(IDENTITY_AMBIGUOUS, ("CAMERA_FLAG_NOT_AT_TRACKED_POSITION",), "CAMERA_FLAG", "CONTRADICTED",
-                           inp, report, **args)
-        return _record(TARGET_VISIBLE, ("CAMERA_FLAG_VISIBLE", "TRACK_FOOTPRINT_NOT_TESTABLE"), "CAMERA_FLAG",
+            return _record(IDENTITY_AMBIGUOUS, ["CAMERA_FLAG_NOT_AT_TRACKED_POSITION"] + notes, "CAMERA_FLAG",
+                           "CONTRADICTED", inp, report, **args)
+        return _record(TARGET_VISIBLE, ["CAMERA_FLAG_VISIBLE", "TRACK_FOOTPRINT_NOT_TESTABLE"] + notes, "CAMERA_FLAG",
                        "NOT_TESTABLE", inp, report, **args)
     if not track_ok:
         return _record(UNKNOWN, ("NO_USABLE_TRACK",), "NONE", "NOT_APPLICABLE", inp, report, near_beams=near_beams)
@@ -222,6 +253,8 @@ def estimate(inp, camera=FROZEN_F_CAMERA, lidar=FROZEN_F_LIDAR, params=EvidenceP
     base = ("TRACKER_PREDICTION", "NOT_APPLICABLE", inp, report)
     if not report.camera_usable:
         return _record(UNKNOWN, ("CAMERA_INPUT_UNUSABLE",), *base, g=g, near_beams=near_beams)
+    if not report.obstacle_depth_usable:
+        return _record(UNKNOWN, ("CAMERA_OBSTACLE_DEPTH_UNAVAILABLE",), *base, g=g, near_beams=near_beams)
     if inp.track_age_s > params.max_belief_age_s:
         return _record(UNKNOWN, ("BELIEF_STALE",), *base, g=g, near_beams=near_beams)
     if g["sigma_r"] > params.max_range_sigma_m:
@@ -246,14 +279,14 @@ def estimate(inp, camera=FROZEN_F_CAMERA, lidar=FROZEN_F_LIDAR, params=EvidenceP
         lid = SensorRays(); reasons.append("LIDAR_INPUT_UNUSABLE")
     if cam.rays == 0:
         reasons.append("CAMERA_NATIVE_NO_COVERAGE")
-    pasted = _pasted_in_footprint(inp, report, camera, g)
+    pasted = _pasted_in_footprint(inp, report, camera, params, g)
     args = dict(g=g, cam=cam, lid=lid, pasted=pasted, near_beams=near_beams)
     frac = lambda n, d: d > 0 and n / d >= params.min_fraction
     cam_fg, lid_fg = frac(cam.foreground, cam.rays), frac(lid.foreground, lid.rays)
     cam_clear, lid_clear = frac(cam.clear, cam.rays), frac(lid.clear, lid.rays)
     if cam.near_clipped or lid.near_clipped:
         return _record(UNKNOWN, reasons + ["NEAR_CLIPPED_IN_LINE_OF_SIGHT"], *base, **args)
-    if pasted:
+    if pasted[0]:
         return _record(IDENTITY_AMBIGUOUS, reasons + ["PASTED_TARGET_LIKE_PIXELS_IN_FOOTPRINT_WITHOUT_DETECTION"],
                        *base, **args)
     if cam_fg:

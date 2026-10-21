@@ -18,7 +18,7 @@ DEPTH_CONVENTION = "EUCLIDEAN_RAY_RANGE_M"     # range along the unit pixel ray,
 LIDAR_LAYOUT = "LIDAR_ZERO_WIDTH_4x72_5deg_10deg"
 CAMERA_OFFSET_M = (0.10, 0.0, 0.03)
 ACCEPTED_CLOCK_PROVENANCE = ("DECLARED_SIM_SCHEDULE",)
-EVIDENCE_CONTRACT_VERSION = "Q02A-v2"   # v1 (a5fee45) read depth as 20 m range and 0 m as a hit
+EVIDENCE_CONTRACT_VERSION = "Q02A-v2.1"   # v1 (a5fee45) read depth as 20 m range and 0 m as a hit; v2 = 87cced6
 
 # Per-sample semantics, shared by camera depth and LiDAR.
 VALID_HIT, NO_RETURN, NEAR_CLIPPED, INVALID_SAMPLE = "VALID_HIT", "NO_RETURN", "NEAR_CLIPPED", "INVALID"
@@ -92,11 +92,12 @@ class SensorProfile:
     """
     obstacle_native_wh: tuple = (40, 24)
     obstacle_far_m: float = 10.0
-    depth_near_clip_m: float = 0.05
+    depth_near_clip_m: float = 0.05        # DECLARED: the obstacle kernel has no near clip (navrl_detector.py:28-49)
     lidar_no_return_m: float = 12.0
     lidar_near_clip_value: float = 0.0
     distractors: int = 0
-    min_obstacle_width_m: float = 0.40     # bar footprint random in [0.4, 0.8] m, 3 m tall (env_object_config.py:796-818)
+    min_obstacle_width_m: float = 0.40     # bar footprint random in [0.4, 0.8] m (env_object_config.py:796-797); 2 m tall,
+                                           # 3 m with NAVRL_BAR_POOL=bars_h3 as pinned by Q01 v2 (:813-818)
 
 
 FROZEN_F_PROFILE = SensorProfile()

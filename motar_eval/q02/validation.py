@@ -6,9 +6,10 @@ import numpy as np
 
 from .contracts import (ACCEPTED_CLOCK_PROVENANCE, CAMERA_OFFSET_M, DEPTH_CONVENTION, FROZEN_F_PROFILE, INVALID_SAMPLE,
                         LIDAR_LAYOUT, NEAR_CLIPPED, NO_RETURN, VALID_HIT, YAW_VEHICLE)
-from .geometry import is_yaw_only, recover_native_depth
+from .geometry import RECOVERY_NOT_CONVERGED, RECOVERY_OK, is_yaw_only, recover_native_depth
 
 OK, MISSING, STALE, INVALID, FRAME_MISMATCH = "OK", "MISSING", "STALE", "INVALID", "FRAME_MISMATCH"
+UNAVAILABLE = "UNAVAILABLE"   # input is valid, but this derived quantity cannot be obtained from it
 
 
 @dataclass(frozen=True)
@@ -19,7 +20,7 @@ class ValidationLimits:
     quat_tol: float = 1e-4
     cov_symmetry_tol: float = 1e-6
     cov_psd_tol: float = 1e-9
-    max_pasted_fraction: float = 0.5   # beyond this the image is not the declared obstacle upsample
+    max_pasted_fraction: float = 0.5   # beyond this too little of the obstacle render is left to read
 
 
 @dataclass(frozen=True)
@@ -32,9 +33,11 @@ class Check:
 @dataclass(frozen=True)
 class ValidationReport:
     checks: tuple
-    depth_native: object = None      # (24, 40) recovered native obstacle depth, NaN = unobserved
-    depth_pasted: object = None      # (90, 160) pixels pasted over the upsample (target/distractor)
+    depth_native: object = None      # (24, 40) recovered native obstacle depth, NaN = unobserved;
+                                     # None unless obstacle_depth is OK (never read it otherwise)
+    depth_pasted: object = None      # (90, 160) pixels the obstacle render does not explain (target/distractor)
     depth_residual: object = None
+    depth_excluded: object = None    # (90, 160) pixels left out of the native solve (pasted blobs grown)
 
     def status(self, name):
         return dict((c.name, c.status) for c in self.checks)[name]
@@ -45,6 +48,11 @@ class ValidationReport:
     @property
     def camera_usable(self):
         return self.ok("camera_clock", "rgb", "depth", "depth_structure", "pose", "calibration")
+
+    @property
+    def obstacle_depth_usable(self):
+        """The native obstacle grid can be read as ray samples (camera usable and not paste-dominated)."""
+        return self.camera_usable and self.ok("obstacle_depth")
 
     @property
     def lidar_usable(self):
@@ -112,18 +120,32 @@ def classify_lidar(r, model, profile=FROZEN_F_PROFILE):
 
 
 def _depth_structure(depth, profile, max_pasted_fraction):
-    """The delivered depth must be a bilinear upsample of a native grid in [0, far] plus pasted pixels."""
+    """The delivered depth must be a bilinear upsample of a native grid in [0, far] plus pasted pixels
+    (depth_structure). Whether the obstacle grid can then be read is a separate check (obstacle_depth):
+    a paste that dominates the image or spans opposite borders leaves the frame valid for the camera
+    flag but unusable as obstacle ray samples."""
     try:
-        native, pasted, residual = recover_native_depth(depth, profile.obstacle_native_wh)
+        rec = recover_native_depth(depth, profile.obstacle_native_wh)
     except np.linalg.LinAlgError:
-        return Check("depth_structure", FRAME_MISMATCH, "native recovery failed"), None, None, None
-    obs = np.isfinite(native)
-    ok = (residual <= 2e-3 and pasted.mean() <= max_pasted_fraction and
-          (native[obs] <= profile.obstacle_far_m + 2e-3).all() and (native[obs] >= -2e-3).all() and
-          (np.asarray(depth)[~pasted] <= profile.obstacle_far_m + 2e-3).all())
-    detail = "" if ok else "not a %dx%d upsample with far %.1f m (residual %.1e, pasted %.2f)" % (
-        profile.obstacle_native_wh[0], profile.obstacle_native_wh[1], profile.obstacle_far_m, residual, pasted.mean())
-    return Check("depth_structure", OK if ok else FRAME_MISMATCH, detail), native, pasted, residual
+        return (Check("depth_structure", FRAME_MISMATCH, "native recovery failed"),
+                Check("obstacle_depth", INVALID, "depth structure not verified"), None)
+    obs = np.isfinite(rec.native)
+    ok = (rec.residual <= 2e-3 and rec.status != RECOVERY_NOT_CONVERGED and
+          (rec.native[obs] <= profile.obstacle_far_m + 2e-3).all() and (rec.native[obs] >= -2e-3).all() and
+          (np.asarray(depth)[~rec.excluded] <= profile.obstacle_far_m + 2e-3).all())
+    detail = "" if ok else "not a %dx%d upsample with far %.1f m (residual %.1e, pasted %.2f, %s)" % (
+        profile.obstacle_native_wh[0], profile.obstacle_native_wh[1], profile.obstacle_far_m, rec.residual,
+        rec.excluded.mean(), rec.status)
+    structure = Check("depth_structure", OK if ok else FRAME_MISMATCH, detail)
+    if not ok:
+        obstacle = Check("obstacle_depth", INVALID, "depth structure not verified")
+    elif rec.excluded.mean() > max_pasted_fraction:
+        obstacle = Check("obstacle_depth", UNAVAILABLE, "PASTED_DOMINATES %.2f of the image" % rec.excluded.mean())
+    elif rec.status != RECOVERY_OK:
+        obstacle = Check("obstacle_depth", UNAVAILABLE, rec.status)
+    else:
+        obstacle = Check("obstacle_depth", OK)
+    return structure, obstacle, rec
 
 
 def validate(inp, camera, lidar, limits=ValidationLimits(), profile=FROZEN_F_PROFILE):
@@ -133,7 +155,7 @@ def validate(inp, camera, lidar, limits=ValidationLimits(), profile=FROZEN_F_PRO
     checks.append(Check("rgb", OK) if np.isfinite(rgb).all() and rgb.min() >= 0 and rgb.max() <= 1
                   else Check("rgb", INVALID, "non-finite or outside [0,1]"))
     depth = inp.depth
-    native = pasted = residual = None
+    rec = None
     if not (np.isfinite(depth).all() and depth.min() >= 0):
         checks.append(Check("depth", INVALID, "non-finite or negative"))
     elif (depth < profile.depth_near_clip_m).all():
@@ -141,10 +163,10 @@ def validate(inp, camera, lidar, limits=ValidationLimits(), profile=FROZEN_F_PRO
     else:
         checks.append(Check("depth", OK))
     if checks[-1].status == OK:
-        structure, native, pasted, residual = _depth_structure(depth, profile, limits.max_pasted_fraction)
-        checks.append(structure)
+        structure, obstacle, rec = _depth_structure(depth, profile, limits.max_pasted_fraction)
+        checks += [structure, obstacle]
     else:
-        checks.append(Check("depth_structure", INVALID, "depth invalid"))
+        checks += [Check("depth_structure", INVALID, "depth invalid"), Check("obstacle_depth", INVALID, "depth invalid")]
     lid = inp.lidar
     categories = classify_lidar(lid, lidar, profile)
     if (categories == INVALID_SAMPLE).any():
@@ -172,4 +194,7 @@ def validate(inp, camera, lidar, limits=ValidationLimits(), profile=FROZEN_F_PRO
     else:
         checks.append(Check("track", OK))
     checks.append(_calibration(inp.calibration, camera, lidar))
-    return ValidationReport(tuple(checks), native, pasted, residual)
+    if rec is None:
+        return ValidationReport(tuple(checks))
+    native = rec.native if dict((c.name, c.status) for c in checks)["obstacle_depth"] == OK else None
+    return ValidationReport(tuple(checks), native, rec.foreign, rec.residual, rec.excluded)

@@ -1,0 +1,38 @@
+{
+ "contract": "Q02A-v2.1",
+ "blas_threads": "set OMP/OPENBLAS/MKL_NUM_THREADS=1 for timing",
+ "fuzz": [
+  {
+   "seed": 7,
+   "cases": 1000,
+   "silent_leaks": 0,
+   "outcomes": {
+    "OK": 843,
+    "PASTED_DOMINATES": 135,
+    "PASTE_SPANS_OPPOSITE_BORDERS": 20,
+    "ILL_CONDITIONED": 2
+   },
+   "recovery_ms_median": 30.3,
+   "recovery_ms_max": 98.6
+  },
+  {
+   "seed": 101,
+   "cases": 3000,
+   "silent_leaks": 0,
+   "outcomes": {
+    "OK": 2534,
+    "PASTED_DOMINATES": 404,
+    "PASTE_SPANS_OPPOSITE_BORDERS": 55,
+    "ILL_CONDITIONED": 7
+   },
+   "recovery_ms_median": 30.4,
+   "recovery_ms_max": 97.3
+  }
+ ],
+ "sphere_sweep": {
+  "seed": 9,
+  "frames": 400,
+  "usable_frames_with_paste_kept": 0,
+  "occluded": 0
+ }
+}

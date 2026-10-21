@@ -22429,3 +22429,31 @@ hypothesis (0 OCCLUDED in 550 frames). Conditions: Q02-B must not read `depth_na
 fixed; ≤ 0.5 m is out of scope; thin occluders stay UNKNOWN. Record:
 `docs/evidence/q02a_v2_fable_rereview_2026-10-21/` (REVIEW.md, probes/). GPU NOT_RUN, G5 HOLD.
 Next: repair R1–R4 (+R5/R6/R8/R9) as contract Q02A-v2.1 and request a delta review.
+
+## 2026-10-22 — Q02-A v2.1: closed paste exclusion, neighbour-only extent, range-checked identity (re-review R1–R4)
+
+Repairs the four P2 findings of the v2 re-review plus notes R5/R6/R8/R9 (contract `Q02A-v2.1`; only
+`motar_eval/q02/*` and `tests/test_q02_evidence.py`). Paste detection is now a two-segment window
+projection along every row and column. The test is complete for the separable bilinear operator and sees
+jumps on segment boundaries. Flags are grouped 8-connected on a dilated mask. A border-spanning
+paste, a dominating paste (> 0.5) or an ill-conditioned grid makes a new `obstacle_depth` check
+UNAVAILABLE without touching the camera flag, and `depth_native` is then withheld. The LiDAR/camera
+extent test only looks at neighbouring rays. Identity support needs pasted depth inside the track's
+interval (new `RANGE_CONTRADICTED`). Dead Woodbury code was removed and conditioning is checked.
+
+Hypothesis "8-connected labelling of the v2 local-test flags closes every paste outline" rejected:
+measured 4/40 silent leaks (edges on segment boundaries) before the window test; 0/4000 after.
+
+| Check (CPU) | Result |
+| --- | --- |
+| `tests/test_q02_evidence.py` | 37 OK (30 kept: 2 API/version adapted, F4 strengthened; 7 new R1–R4) |
+| PUBLIC_CPU | 3102 ran, 0 failures, same 4 `DetectReduction` errors; aggregate FAIL (pre-existing) |
+| Recovery fuzz (seeds 7 ×1000, 101 ×3000) | 0 silent leaks; OK 3377, dominates 539, spans borders 75, ill-conditioned 9; median 30 ms, max 99 ms (1 BLAS thread) |
+| Sphere sweep across the border, 0.5–2.0 m | 0/400 usable frames with a kept paste pixel, 0 OCCLUDED |
+| v2 → v2.1 on identical inputs | 13 earlier counterexamples unchanged; R2 unrelated bar OCCLUDED → UNKNOWN (real bar stays OCCLUDED); R3 three SUPPORTED → RANGE_CONTRADICTED / CONTRADICTED / NOT_TESTABLE; R4 flagged 0.35–0.45 m UNKNOWN → TARGET_VISIBLE |
+| Q01-V2 frames (read-only) | residual ≤ 1.2e-6, status OK; flag set: SUPPORTED with 36/65/14 pasted pixels at track range; flag cleared: IDENTITY_AMBIGUOUS |
+
+Records: `docs/evidence/q02a_v21_repair_2026-10-22/` (REPAIR.md, compare_v2_v21.py/.json,
+fuzz_recovery.py, fuzz_results.json). Q02-B WIP unchanged (11/11 hashes); its v2.1 interface
+deltas are listed in REPAIR.md. GPU NOT_RUN, G5 HOLD. Next: Fable delta review of this commit;
+Q02-B stays blocked until it reports.

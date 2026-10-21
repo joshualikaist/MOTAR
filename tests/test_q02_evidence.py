@@ -1,4 +1,4 @@
-"""Q02-A CPU tests (contract Q02A-v2): constants, frames, sensor semantics, validation and the rule.
+"""Q02-A CPU tests (contract Q02A-v2.1): constants, frames, sensor semantics, validation and the rule.
 
 Scenes are synthetic ray casts reproducing the production sensor pipeline: camera depth = a native
 40x24 obstacle render (bars only, no hit -> 10 m) bilinearly upsampled to 160x90 with the target
@@ -211,7 +211,7 @@ class EvidenceTests(unittest.TestCase):
         self.assertEqual((r.utility, r.ground_truth_used, r.calibration), ("ABSTAIN", False, "NONE_DECLARED_PRIORS"))
         # F7: production confidence = max(camera segmenter support, LiDAR association gate), navrl_perception.py:2396
         self.assertEqual(r.confidence_semantics, "MAX_OF_CAMERA_SEGMENTER_SUPPORT_AND_LIDAR_ASSOCIATION_GATE_NOT_A_PROBABILITY")
-        self.assertEqual(r.contract_version, "Q02A-v2")
+        self.assertEqual(r.contract_version, "Q02A-v2.1")   # v2.1: re-review R1-R4 repairs
         self.assertEqual(r.belief_kind, "PREDICTED_ONLY")
         self.assertIn(r.hypothesis, ev.HYPOTHESES)
         names = {f.name for f in fields(c.EvidenceInput)}
@@ -278,15 +278,17 @@ class SensorSemanticsTests(unittest.TestCase):
         y = torch.nn.functional.interpolate(torch.tensor(x)[None, None], size=(90, 160), mode="bilinear",
                                             align_corners=False)[0, 0].numpy()
         self.assertLess(np.abs(AV @ x @ AH.T - y).max(), 1e-12)
-        native, pasted, residual = geo.recover_native_depth(y.astype(np.float32), (40, 24))
-        self.assertLess(np.abs(native - x).max(), 1e-5); self.assertFalse(pasted.any())
+        rec = geo.recover_native_depth(y.astype(np.float32), (40, 24))
+        self.assertLess(np.abs(rec.native - x).max(), 1e-5); self.assertFalse(rec.excluded.any())
+        self.assertEqual(rec.status, geo.RECOVERY_OK)
         vv, uu = np.mgrid[0:90, 0:160]
         y2 = y.copy(); blob = (vv - 45) ** 2 + (uu - 90) ** 2 < 49; y2[blob] = 3.0 + 0.001 * (uu[blob] - 90) ** 2
-        native2, pasted2, _ = geo.recover_native_depth(y2.astype(np.float32), (40, 24))
-        seen = np.isfinite(native2)
-        self.assertTrue(pasted2[blob].all())                      # every pasted pixel is excluded
-        self.assertLess(np.abs(native2[seen] - x[seen]).max(), 1e-5)  # observed cells stay exact
-        self.assertLess(seen.mean(), 1.0)                           # cells hidden by the blob are UNOBSERVED
+        rec2 = geo.recover_native_depth(y2.astype(np.float32), (40, 24))
+        seen = np.isfinite(rec2.native)
+        self.assertTrue(rec2.excluded[blob].all())                    # every pasted pixel is excluded
+        self.assertTrue(rec2.foreign[blob].all())                     # ... and reported as not obstacle depth
+        self.assertLess(np.abs(rec2.native[seen] - x[seen]).max(), 1e-5)  # observed cells stay exact
+        self.assertLess(seen.mean(), 1.0)                               # cells hidden by the blob are UNOBSERVED
 
     def test_F1_ten_metre_fill_is_no_return_not_a_surface(self):
         self.assertEqual(list(va.classify_depth_native([10.0, 9.9995, 9.5, 0.01, np.nan], PROF)),
@@ -376,6 +378,9 @@ class SensorSemanticsTests(unittest.TestCase):
     def test_F4_foreground_inside_the_envelope_vetoes_a_clear_line_of_sight(self):
         r = hyp(render_target=False, bars=((4., 0.12, .08),))   # thin bar partly across the envelope
         self.assertNotEqual(r.hypothesis, ev.DETECTION_MISS)
+        # R9: the actual outcome. Two of four native rays hit the bar; the LiDAR beam passes beside it.
+        self.assertEqual((r.hypothesis, r.reasons), (ev.UNKNOWN, ("SENSOR_DISAGREEMENT_CAMERA_FOREGROUND_LIDAR_CLEAR",)))
+        self.assertEqual((r.camera.rays, r.camera.foreground, r.camera.clear), (4, 2, 2))
 
     def test_F5_target_nearer_than_predicted_is_not_called_occluded(self):
         inp = make(target_v=(7., 0., 0.), target_in_camera=False)
@@ -418,6 +423,113 @@ class SensorSemanticsTests(unittest.TestCase):
             r = ev.estimate(inp)
             self.assertEqual(r.validation_problems, ()); self.assertEqual(r.identity_status, "SUPPORTED_BY_FOOTPRINT")
         self.assertEqual(before, {p.name: os.stat(p).st_mtime_ns for p in run_root.iterdir()})
+
+
+def _upsample_with_paste(native, mask, value):
+    y = np.clip(AV @ native @ AH.T, 0.0, PROF.obstacle_far_m)
+    y[mask] = value
+    return y
+
+
+class ReReviewR1toR4Tests(unittest.TestCase):
+    """Q02A-v2.1: the P2 findings of the v2 re-review (docs/evidence/q02a_v2_fable_rereview_2026-10-21)."""
+
+    VV, UU = np.mgrid[0:90, 0:160]
+
+    def disc(self, r, cv=45, cu=80):
+        return (self.VV - cv) ** 2 + (self.UU - cu) ** 2 < r * r
+
+    def test_R1_constant_disc_inside_the_image_is_fully_excluded(self):
+        bars = np.full((24, 40), 10.0); bars[:, 5:7] = 4.0; bars[:, 18:21] = 7.5
+        for name, native in (("empty", np.full((24, 40), 10.0)), ("bars", bars)):
+            for radius in (25, 40):
+                with self.subTest(native=name, radius=radius):
+                    m = self.disc(radius)
+                    rec = geo.recover_native_depth(_upsample_with_paste(native, m, 2.0), (40, 24))
+                    seen = np.isfinite(rec.native)
+                    self.assertEqual(rec.status, geo.RECOVERY_OK)
+                    self.assertTrue(rec.excluded[m].all())               # v2: 456 / 2616 pasted pixels read as obstacles
+                    self.assertLess(np.abs(rec.native[seen] - native[seen]).max(), 1e-6)
+
+    def test_R1_paste_spanning_opposite_borders_is_reported_not_read(self):
+        left = np.zeros((90, 160), bool); left[:, :80] = True
+        slabs = np.zeros((90, 160), bool); slabs[:, :17] = True; slabs[:, 18:] = True
+        for name, m in (("disc r60", self.disc(60)), ("left half", left), ("all but one column", slabs)):
+            with self.subTest(paste=name):
+                depth = _upsample_with_paste(np.full((24, 40), 10.0), m, 3.0)
+                self.assertEqual(geo.recover_native_depth(depth, (40, 24)).status, geo.RECOVERY_PASTE_SPANS_BORDERS)
+                report = va.validate(make(render_target=False, depth=depth), CAM, LID)
+                self.assertEqual(report.status("depth_structure"), va.OK)
+                self.assertEqual(report.status("obstacle_depth"), va.UNAVAILABLE)
+                self.assertIsNone(report.depth_native)                       # never handed to a consumer
+                r = hyp(render_target=False, depth=depth)
+                self.assertEqual((r.hypothesis, r.reasons), (ev.UNKNOWN, ("CAMERA_OBSTACLE_DEPTH_UNAVAILABLE",)))
+
+    def test_R1_random_constant_pastes_are_excluded_or_reported(self):
+        rng = np.random.default_rng(23)
+        for k in range(40):
+            native = rng.uniform(0.5, 10.0, (24, 40)); native[rng.uniform(size=native.shape) < 0.6] = 10.0
+            if rng.uniform() < 0.5:
+                m = self.disc(rng.uniform(3, 70), rng.uniform(-20, 110), rng.uniform(-20, 180))
+            else:
+                r0, c0 = rng.integers(0, 90), rng.integers(0, 160)
+                m = np.zeros((90, 160), bool); m[r0:r0 + rng.integers(2, 60), c0:c0 + rng.integers(2, 100)] = True
+            depth = _upsample_with_paste(native, m, rng.uniform(0.5, 9.5)).astype(np.float32)
+            rec = geo.recover_native_depth(depth, (40, 24))
+            with self.subTest(case=k, status=rec.status, pasted=int(m.sum())):
+                if rec.status == geo.RECOVERY_OK and rec.excluded.mean() <= va.ValidationLimits().max_pasted_fraction:
+                    seen = np.isfinite(rec.native)            # usable => every observed cell is the true obstacle depth
+                    self.assertLess(np.abs(rec.native[seen] - native[seen]).max() if seen.any() else 0.0, 1e-3)
+
+    def test_R1_segment_aligned_edges_and_unconverged_recovery_fail_closed(self):
+        from unittest import mock
+        m = np.zeros((90, 160), bool); m[32:47, 61:85] = True       # edges exactly on segment boundaries
+        native = np.random.default_rng(3).uniform(0.5, 10.0, (24, 40))
+        depth = np.clip(AV @ native @ AH.T, 0.0, PROF.obstacle_far_m); depth[m] += 0.5
+        rec = geo.recover_native_depth(depth, (40, 24), max_passes=1)   # the window test sees them in one pass
+        self.assertEqual(rec.status, geo.RECOVERY_OK); self.assertTrue(rec.excluded[m].all())
+        for status, expected in ((geo.RECOVERY_NOT_CONVERGED, (va.FRAME_MISMATCH, va.INVALID)),
+                                 (geo.RECOVERY_ILL_CONDITIONED, (va.OK, va.UNAVAILABLE))):
+            with self.subTest(status=status), mock.patch.object(
+                    va, "recover_native_depth", return_value=geo.NativeDepth(rec.native, rec.excluded, rec.foreign, 0.0, status)):
+                structure, obstacle, _ = va._depth_structure(depth, PROF, 0.5)
+                self.assertEqual((structure.status, obstacle.status), expected)
+
+    def test_R2_unrelated_object_at_the_same_range_does_not_extend_the_foreground(self):
+        base = make(target_v=(10.5, 0., 0.), target_in_camera=False)
+        mean = np.array(base.track_mean); mean[0] += 1.0
+        for bars in (((0., 10.3, .3),), ((-10.3, 0., .3),)):              # 90 deg left, directly behind the vehicle
+            with self.subTest(bars=bars):
+                r = ev.estimate(make(target_v=(10.5, 0., 0.), target_in_camera=False, track_mean=mean, bars=bars))
+                self.assertEqual(r.hypothesis, ev.UNKNOWN); self.assertFalse(r.lidar.foreground_extended)
+                self.assertIn("FOREGROUND_COMPATIBLE_WITH_TARGET_SURFACE", r.reasons)
+
+    def test_R3_identity_support_needs_pasted_depth_inside_the_track_interval(self):
+        ok = hyp(detected=True)
+        self.assertEqual(ok.identity_status, "SUPPORTED_BY_FOOTPRINT"); self.assertIn("PASTED_DEPTH_AT_TRACK_RANGE", ok.reasons)
+        self.assertGreater(ok.pasted_pixels_at_track_range, 0)
+        near = make(target_v=(3., 0., 0.), detected=True)
+        mean = np.array(near.track_mean); mean[0] += 5.0                  # target pasted at 3 m, belief at 8 m
+        r = ev.estimate(make(target_v=(3., 0., 0.), detected=True, track_mean=mean))
+        self.assertEqual((r.hypothesis, r.identity_status), (ev.IDENTITY_AMBIGUOUS, "RANGE_CONTRADICTED"))
+        self.assertEqual(r.pasted_pixels_at_track_range, 0); self.assertGreater(r.pasted_pixels_in_footprint, 0)
+        for bars in (((8., 0., .15),), ((8., 0., .4),)):                # an obstacle surface at the track range
+            with self.subTest(bars=bars):
+                r = hyp(render_target=False, bars=bars, detected=True)
+                self.assertNotEqual(r.identity_status, "SUPPORTED_BY_FOOTPRINT")
+                self.assertIn("SURFACE_AT_TRACK_RANGE_NOT_IDENTITY_EVIDENCE", r.reasons)
+                self.assertIn("NO_PASTED_PIXELS_IN_IMAGE", r.reasons)
+
+    def test_R4_close_target_keeps_the_camera_flag_when_the_paste_dominates(self):
+        for rng_ in (0.30, 0.35, 0.40, 0.45, 0.50, 0.60):
+            with self.subTest(range_m=rng_):
+                flagged = hyp(target_v=(rng_, 0., 0.), detected=True)       # v2: UNKNOWN at 0.35-0.45 m
+                self.assertEqual((flagged.hypothesis, flagged.identity_status), (ev.TARGET_VISIBLE, "SUPPORTED_BY_FOOTPRINT"))
+                report = va.validate(make(target_v=(rng_, 0., 0.)), CAM, LID)
+                self.assertEqual(report.status("depth_structure"), va.OK)
+                if rng_ <= 0.45:                                            # too little obstacle render left to read
+                    self.assertEqual(report.status("obstacle_depth"), va.UNAVAILABLE)
+                    self.assertEqual(hyp(target_v=(rng_, 0., 0.)).reasons, ("CAMERA_OBSTACLE_DEPTH_UNAVAILABLE",))
 
 
 if __name__ == "__main__":

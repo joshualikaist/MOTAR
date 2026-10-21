@@ -1,4 +1,5 @@
 """Frame transforms and sensor geometry matching the audited Frozen F conventions (numpy, CPU)."""
+from dataclasses import dataclass
 import math
 
 import numpy as np
@@ -95,6 +96,24 @@ def bilinear_matrix(n_out, n_in):
 
 
 _RECOVERY_CACHE = {}
+RECOVERY_OK = "OK"
+RECOVERY_NOT_CONVERGED = "NOT_CONVERGED"                      # new inconsistent pixels kept appearing
+RECOVERY_ILL_CONDITIONED = "ILL_CONDITIONED"                  # remaining pixels do not determine the grid
+RECOVERY_PASTE_SPANS_BORDERS = "PASTE_SPANS_OPPOSITE_BORDERS"  # a pasted blob may hide a self-consistent region
+
+
+@dataclass(frozen=True)
+class NativeDepth:
+    """Result of recover_native_depth. `excluded` = pixels not used for the solve (pasted blobs grown
+    to their bounding boxes); `foreign` = pixels flagged by the linearity or residual test that the
+    recovered obstacle grid does not reproduce (|y - fit| > tol, or a cell unobserved): the pasted
+    target/distractor pixels, possibly with up to two stencil neighbours at an edge. The smooth
+    interior of a large constant paste is excluded but need not be foreign."""
+    native: object
+    excluded: object
+    foreign: object
+    residual: float
+    status: str
 
 
 def _operators(out_hw, native_wh):
@@ -111,31 +130,18 @@ def _operators(out_hw, native_wh):
     return _RECOVERY_CACHE[key]
 
 
-def _solve_without(y_img, removed, ops, native_wh):
-    """Exact least squares for the native grid using every pixel except `removed` (flat indices):
-    Woodbury downdate of the separable normal matrix (Av^T Av) (x) (Ah^T Ah). Returns None if the
-    remaining pixels do not determine the grid (cells hidden behind removed pixels)."""
-    av, ah, idx, wts, kvi, khi = ops
-    nh, nw = native_wh[1], native_wh[0]
-    ninv = lambda v: np.einsum("ij,jk...,kl->il...", kvi, v.reshape(nh, nw, *v.shape[1:]), khi).reshape(v.shape)
-    z0 = ninv((av.T @ y_img @ ah).reshape(-1))
-    if removed.size == 0:
-        return z0
-    u = np.zeros((nh * nw, removed.size))
-    for a in range(4):
-        np.add.at(u, (idx[removed, a], np.arange(removed.size)), wts[removed, a])
-    z = ninv(u)
-    m = np.eye(removed.size) - u.T @ z
-    if np.linalg.cond(m) > 1e10:
-        return None
-    yr = y_img.reshape(-1)[removed]
-    # (N - U U^T) x = r - U y_r  with  N^-1 r = z0
-    base = z0 - z @ yr
-    return base + z @ np.linalg.solve(m, u.T @ base)
+def _dilate(mask):
+    """3x3 dilation without wrap-around."""
+    pad = np.pad(mask, 1)
+    out = np.zeros_like(mask)
+    for dr in range(3):
+        for dc in range(3):
+            out |= pad[dr:dr + mask.shape[0], dc:dc + mask.shape[1]]
+    return out
 
 
 def _components(mask):
-    """4-connected components of a boolean image (small, numpy-only BFS)."""
+    """8-connected components of a boolean image (small, numpy-only BFS)."""
     labels, comps = -np.ones(mask.shape, dtype=int), []
     for start in zip(*np.nonzero(mask)):
         if labels[start] >= 0:
@@ -144,75 +150,99 @@ def _components(mask):
         labels[start] = len(comps)
         while stack:
             r, c = stack.pop(); members.append((r, c))
-            for rr, cc in ((r + 1, c), (r - 1, c), (r, c + 1), (r, c - 1)):
-                if 0 <= rr < mask.shape[0] and 0 <= cc < mask.shape[1] and mask[rr, cc] and labels[rr, cc] < 0:
-                    labels[rr, cc] = len(comps); stack.append((rr, cc))
+            for dr in (-1, 0, 1):
+                for dc in (-1, 0, 1):
+                    rr, cc = r + dr, c + dc
+                    if 0 <= rr < mask.shape[0] and 0 <= cc < mask.shape[1] and mask[rr, cc] and labels[rr, cc] < 0:
+                        labels[rr, cc] = len(comps); stack.append((rr, cc))
         comps.append(np.array(members))
     return comps
 
 
 def _segments(a):
-    """Output indices grouped by their left native neighbour: within a group the 1-D bilinear output
-    is exactly linear in the output index (constant in the clamped edge groups)."""
+    """Output indices grouped by their left native neighbour, in output order: within a group the
+    1-D bilinear output is exactly linear in the output index (constant in the clamped edge groups)."""
     x0 = np.argmax(a > 0, axis=1)
     pure = np.isclose(a.max(axis=1), 1.0)      # clamped edge outputs copy one native value
     key = x0 * 2 + pure
-    return [np.flatnonzero(key == k) for k in np.unique(key)]
+    return sorted((np.flatnonzero(key == k) for k in np.unique(key)), key=lambda seg: seg[0])
+
+
+_WINDOW_CACHE = {}
+
+
+def _pair_windows(a):
+    """Windows of two adjacent segments with the projector onto the span of the (<= 3) native columns
+    they depend on. A line is a 1-D upsample iff every such window lies in its span (consecutive
+    windows share a native value, so the local fits chain into one native vector)."""
+    key = (a.shape, a.tobytes())
+    if key not in _WINDOW_CACHE:
+        segs, out = _segments(a), []
+        for s1, s2 in zip(segs[:-1], segs[1:]):
+            w = np.concatenate([s1, s2])
+            cols = np.flatnonzero(np.abs(a[w]).sum(axis=0) > 0)
+            aw = a[np.ix_(w, cols)]
+            out.append((w, np.eye(w.size) - aw @ np.linalg.pinv(aw)))
+        _WINDOW_CACHE[key] = out
+    return _WINDOW_CACHE[key]
 
 
 def _nonlinear_pixels(y, av, ah, tol):
-    """Pixels where a pure bilinear upsample is locally violated (second difference inside a linear
-    segment, along rows or columns). Local by construction: a pasted pixel cannot spread."""
+    """Pixels where a pure bilinear upsample is locally violated: along every column (rows operator)
+    and every row (columns operator), each two-segment window must lie in the span of its native
+    columns. This sees a jump inside a segment and a jump exactly on a segment boundary; the whole
+    window of the offending line is flagged, so a paste's outline is closed. By the separable
+    structure, an image whose rows and columns all pass is an upsample."""
     flag = np.zeros(y.shape, dtype=bool)
-    for axis, a in ((1, ah), (0, av)):
-        for seg in _segments(a):
-            if seg.size < 2:
-                continue
-            block = np.take(y, seg, axis=axis)
-            if seg.size == 2:
-                bad = np.abs(np.diff(block, axis=axis)) > tol if (seg[0] == 0 or seg[-1] == y.shape[axis] - 1) else None
-                if bad is not None:
-                    hit = np.repeat(bad, 2, axis=axis)
-                    idx = [slice(None)] * 2; idx[axis] = seg
-                    flag[tuple(idx)] |= hit
-                continue
-            d2 = np.abs(np.diff(block, n=2, axis=axis)) > tol
-            hit = np.zeros(block.shape, dtype=bool)
-            sl = lambda k: tuple(slice(k, k + d2.shape[axis]) if ax == axis else slice(None) for ax in range(2))
-            for k in range(3):
-                hit[sl(k)] |= d2
-            idx = [slice(None)] * 2; idx[axis] = seg
-            flag[tuple(idx)] |= hit
+    for w, proj in _pair_windows(av):            # columns of the image, window over rows
+        bad = (np.abs(proj @ y[w, :]) > tol).any(axis=0)
+        flag[np.ix_(w, np.flatnonzero(bad))] = True
+    for w, proj in _pair_windows(ah):            # rows of the image, window over columns
+        bad = (np.abs(y[:, w] @ proj.T) > tol).any(axis=1)
+        flag[np.ix_(np.flatnonzero(bad), w)] = True
     return flag
 
 
-def recover_native_depth(depth, native_wh, tol=1e-3):
+def recover_native_depth(depth, native_wh, tol=1e-3, max_passes=8):
     """Invert the 40x24 -> 160x90 bilinear upsampling (both 1-D operators have full column rank).
 
-    Pasted pixels (target/distractor, foreign content) are found by a local linearity test. A pasted
-    blob's smooth interior can itself look like an upsample, so each flagged blob's bounding box,
-    dilated by one native pixel, is treated as pasted. Native cells left without support are
-    UNOBSERVED (NaN). Returns (native (H_n, W_n), pasted mask (H, W), max residual over used pixels).
+    Pasted pixels (target/distractor, foreign content) are found by a local two-segment window test
+    (_nonlinear_pixels) that also sees jumps on segment boundaries, so a paste's outline is closed;
+    flagged pixels are grouped on the 1-px-dilated mask (8-connected), and each group's bounding box,
+    grown by one native pixel, is excluded. The smooth interior of a paste can itself look like an
+    upsample: a blob whose box spans two opposite image borders may enclose such a region without a
+    closed boundary, so it is reported (PASTE_SPANS_OPPOSITE_BORDERS) rather than trusted. Pixels
+    inconsistent with the solve are excluded and the solve repeated until none remain (else
+    NOT_CONVERGED). Native cells without support are UNOBSERVED (NaN); if the remaining normal matrix
+    is ill-conditioned the grid is not determined (ILL_CONDITIONED, all NaN).
     """
     y = np.asarray(depth, dtype=np.float64)
     ops = _operators(y.shape, native_wh)
     av, ah, idx, wts, kvi, khi = ops
-    x = _solve_without(y, np.array([], dtype=int), ops, native_wh)
-    fit = av @ x.reshape(native_wh[1], native_wh[0]) @ ah.T
+    shape_n = (native_wh[1], native_wh[0])
+    x = kvi @ (av.T @ y @ ah) @ khi            # separable normal equations (Av^T Av) (x) (Ah^T Ah)
+    fit = av @ x @ ah.T
     if np.abs(y - fit).max() <= tol:          # pure upsample: exact
-        return x.reshape(native_wh[1], native_wh[0]), np.zeros(y.shape, dtype=bool), float(np.abs(y - fit).max())
+        none = np.zeros(y.shape, dtype=bool)
+        return NativeDepth(x, none, none.copy(), float(np.abs(y - fit).max()), RECOVERY_OK)
     flat, n = y.reshape(-1), native_wh[0] * native_wh[1]
     pad_r = int(math.ceil(y.shape[0] / native_wh[1])); pad_c = int(math.ceil(y.shape[1] / native_wh[0]))
     pasted = _nonlinear_pixels(y, av, ah, tol)
-    for _ in range(3):
-        grown = pasted.copy()
-        for comp in _components(pasted):
+    status = RECOVERY_NOT_CONVERGED
+    for _ in range(max_passes):
+        grown, spans = pasted.copy(), False
+        for comp in _components(_dilate(pasted)):
             r0, c0 = comp.min(axis=0); r1, c1 = comp.max(axis=0)
             grown[max(0, r0 - pad_r):r1 + pad_r + 1, max(0, c0 - pad_c):c1 + pad_c + 1] = True
+            spans |= (r0 == 0 and r1 == y.shape[0] - 1) or (c0 == 0 and c1 == y.shape[1] - 1)
         keep = ~grown.reshape(-1)
-        support = np.bincount(idx[keep].ravel(), weights=wts[keep].ravel(), minlength=n)
-        observed = support >= 1.0
-        keep &= ~((~observed[idx]) & (wts > 1e-12)).any(axis=1)
+        while True:                              # a cell is observed only by pixels that are still used
+            support = np.bincount(idx[keep].ravel(), weights=wts[keep].ravel(), minlength=n)
+            observed = support >= 1.0
+            drop = keep & ((~observed[idx]) & (wts > 1e-12)).any(axis=1)
+            if not drop.any():
+                break
+            keep &= ~drop
         pos = np.full(n, -1); pos[observed] = np.arange(int(observed.sum())); m_obs = int(observed.sum())
         i, w, v = idx[keep], wts[keep], flat[keep]
         ii = np.where(w > 0, pos[i], 0)
@@ -221,18 +251,31 @@ def recover_native_depth(depth, native_wh, tol=1e-3):
             rhs += np.bincount(ii[:, a], weights=w[:, a] * v, minlength=m_obs)
             for b in range(4):
                 normal += np.bincount(ii[:, a] * m_obs + ii[:, b], weights=w[:, a] * w[:, b], minlength=m_obs * m_obs)
+        normal = normal.reshape(m_obs, m_obs)
         x = np.full(n, np.nan)
         try:
-            x[observed] = np.linalg.solve(normal.reshape(m_obs, m_obs), rhs)
+            chol = np.diag(np.linalg.cholesky(normal)) if m_obs else np.ones(1)   # no cell observed: nothing to solve
+            conditioned = chol.min() >= 1e-5 * chol.max()
         except np.linalg.LinAlgError:
-            x[observed] = np.linalg.lstsq(normal.reshape(m_obs, m_obs), rhs, rcond=None)[0]
+            conditioned = False
+        if not conditioned:                      # residual from the minimum-norm fit; grid not reported
+            fit_x = np.zeros(n); fit_x[observed] = np.linalg.lstsq(normal, rhs, rcond=None)[0]
+            fit = (wts * fit_x[idx]).sum(axis=1)
+            status = RECOVERY_ILL_CONDITIONED
+            break
+        if m_obs:
+            x[observed] = np.linalg.solve(normal, rhs)
         fit = (wts * np.nan_to_num(x)[idx]).sum(axis=1)
         late = keep & (np.abs(flat - fit) > tol)       # pasted pixels the local test could not see
         if not late.any():
+            status = RECOVERY_PASTE_SPANS_BORDERS if spans else RECOVERY_OK
             break
         pasted |= late.reshape(y.shape)
     residual = float(np.abs(flat - fit)[keep].max()) if keep.any() else float("inf")
-    return x.reshape(native_wh[1], native_wh[0]), ~keep.reshape(y.shape), residual
+    excluded = ~keep
+    explained = (observed[idx] | (wts <= 1e-12)).all(axis=1) & (np.abs(flat - (wts * np.nan_to_num(x)[idx]).sum(axis=1)) <= tol)
+    foreign = pasted.reshape(-1) & ~explained     # positively flagged, and not reproduced by the obstacle grid
+    return NativeDepth(x.reshape(shape_n), excluded.reshape(y.shape), foreign.reshape(y.shape), residual, status)
 
 
 def native_camera_rays(camera, native_wh):
