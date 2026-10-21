@@ -1,0 +1,10 @@
+{
+ "counts": {
+  "cases": 252,
+  "v22 SUPPORTED": 180,
+  "v23 SUPPORTED": 180,
+  "truth paste at range": 180
+ },
+ "lost_supported": 0,
+ "lost": []
+}

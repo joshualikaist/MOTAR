@@ -105,11 +105,12 @@ RECOVERY_PASTE_SPANS_BORDERS = "PASTE_SPANS_OPPOSITE_BORDERS"  # a pasted blob m
 @dataclass(frozen=True)
 class NativeDepth:
     """Result of recover_native_depth. `excluded` = pixels not used for the solve (pasted blobs grown
-    to their bounding boxes); `foreign` = pixels flagged by the window or residual test that the
-    recovered obstacle grid does not reproduce (|y - fit| > tol, or a cell unobserved), minus pixels
-    at the no-return fill value. Besides the pasted target/distractor pixels this can include
-    obstacle-blend pixels next to a paste whose native cells are unobserved. The smooth interior of a
-    large paste is excluded but need not be foreign."""
+    to their bounding boxes); `foreign` = pixels flagged by the window test along BOTH their row and
+    their column (or by the residual test) that the recovered obstacle grid does not reproduce
+    (|y - fit| > tol, or a cell unobserved), minus pixels at the no-return fill value. A blend pixel
+    beside a paste is usually flagged along one direction only, because a window is flagged as a whole;
+    obstacle pixels inside the paste's window-aligned box can still be foreign. The smooth interior of
+    a large paste is excluded but need not be foreign. Not a segmentation of the paste."""
     native: object
     excluded: object
     foreign: object
@@ -188,20 +189,26 @@ def _pair_windows(a):
     return _WINDOW_CACHE[key]
 
 
-def _nonlinear_pixels(y, av, ah, tol):
+def _window_flags(y, av, ah, tol):
     """Pixels where a pure bilinear upsample is locally violated: along every column (rows operator)
     and every row (columns operator), each two-segment window must lie in the span of its native
     columns. This sees a jump inside a segment and a jump exactly on a segment boundary; the whole
     window of the offending line is flagged, so a paste's outline is closed. By the separable
-    structure, an image whose rows and columns all pass is an upsample."""
-    flag = np.zeros(y.shape, dtype=bool)
+    structure, an image whose rows and columns all pass is an upsample. Returns the flags of the
+    column-direction and the row-direction test separately."""
+    by_col, by_row = np.zeros(y.shape, dtype=bool), np.zeros(y.shape, dtype=bool)
     for w, proj in _pair_windows(av):            # columns of the image, window over rows
         bad = (np.abs(proj @ y[w, :]) > tol).any(axis=0)
-        flag[np.ix_(w, np.flatnonzero(bad))] = True
+        by_col[np.ix_(w, np.flatnonzero(bad))] = True
     for w, proj in _pair_windows(ah):            # rows of the image, window over columns
         bad = (np.abs(y[:, w] @ proj.T) > tol).any(axis=1)
-        flag[np.ix_(np.flatnonzero(bad), w)] = True
-    return flag
+        by_row[np.ix_(np.flatnonzero(bad), w)] = True
+    return by_col, by_row
+
+
+def _nonlinear_pixels(y, av, ah, tol):
+    by_col, by_row = _window_flags(y, av, ah, tol)
+    return by_col | by_row
 
 
 def recover_native_depth(depth, native_wh, tol=1e-3, max_passes=8, fill_value=None):
@@ -229,7 +236,9 @@ def recover_native_depth(depth, native_wh, tol=1e-3, max_passes=8, fill_value=No
         return NativeDepth(x, none, none.copy(), float(np.abs(y - fit).max()), RECOVERY_OK)
     flat, n = y.reshape(-1), native_wh[0] * native_wh[1]
     pad_r = int(math.ceil(y.shape[0] / native_wh[1])); pad_c = int(math.ceil(y.shape[1] / native_wh[0]))
-    pasted = _nonlinear_pixels(y, av, ah, tol)
+    by_col, by_row = _window_flags(y, av, ah, tol)
+    pasted = by_col | by_row                     # union: closes the outline for the exclusion
+    core = by_col & by_row                       # both directions: the pixel itself deviates (paste candidates)
     status = RECOVERY_NOT_CONVERGED
     for _ in range(max_passes):
         grown, spans = pasted.copy(), False
@@ -273,10 +282,11 @@ def recover_native_depth(depth, native_wh, tol=1e-3, max_passes=8, fill_value=No
             status = RECOVERY_PASTE_SPANS_BORDERS if spans else RECOVERY_OK
             break
         pasted |= late.reshape(y.shape)
+        core |= late.reshape(y.shape)            # inconsistent with fully observed cells: a pixel-level deviation
     residual = float(np.abs(flat - fit)[keep].max()) if keep.any() else float("inf")
     excluded = ~keep
     explained = (observed[idx] | (wts <= 1e-12)).all(axis=1) & (np.abs(flat - (wts * np.nan_to_num(x)[idx]).sum(axis=1)) <= tol)
-    foreign = pasted.reshape(-1) & ~explained     # positively flagged, and not reproduced by the obstacle grid
+    foreign = core.reshape(-1) & ~explained       # flagged in both directions, not reproduced by the obstacle grid
     if fill_value is not None:
         foreign &= np.abs(flat - fill_value) > tol
     return NativeDepth(x.reshape(shape_n), excluded.reshape(y.shape), foreign.reshape(y.shape), residual, status)

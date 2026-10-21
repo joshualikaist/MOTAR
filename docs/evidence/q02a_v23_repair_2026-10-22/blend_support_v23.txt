@@ -1,0 +1,16 @@
+--- A. bar at the target range beside the target; track shifted toward the bar (false SUPPORTED?) ---
+  cases 504 FALSE SUPPORTED (no true paste pixel at range): 0
+  by range: Counter()  by track_err: Counter()
+
+--- B. same geometry, track CORRECT: regression check (should be SUPPORTED) ---
+  correct-track cases 64 not SUPPORTED: 0
+
+--- C. bar at a DIFFERENT range beside the target; track shifted onto the bar (RANGE_CONTRADICTED vs CONTRADICTED) ---
+  (identity, true paste inside, blend inside): {('NOT_TESTABLE', False, False): 49, ('CONTRADICTED', False, False): 5}
+
+--- D. no-flag path: blend neighbours inside a wrong footprint -> IDENTITY_AMBIGUOUS? (oracle flag would be set, so informational) ---
+  R=8.0 gap=0.1 err=0.7 -> IDENTITY_AMBIGUOUS SURFACE_AT_EXPECTED_RANGE_WITHOUT_CAMERA_DETECTION in_fp 0 blend 0
+  R=5.0 gap=0.2 err=0.8 -> IDENTITY_AMBIGUOUS SURFACE_AT_EXPECTED_RANGE_WITHOUT_CAMERA_DETECTION in_fp 0 blend 0
+
+--- E. how far from the paste edge do foreign blend pixels extend? (target 8 m, bar 8 m beside, gap 0.5) ---
+  paste cols 78..81 rows 44..46 ; foreign-blend cols [] rows [] ; depths of foreign-blend: []

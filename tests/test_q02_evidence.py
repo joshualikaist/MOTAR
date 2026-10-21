@@ -1,4 +1,4 @@
-"""Q02-A CPU tests (contract Q02A-v2.2): constants, frames, sensor semantics, validation and the rule.
+"""Q02-A CPU tests (contract Q02A-v2.3): constants, frames, sensor semantics, validation and the rule.
 
 Scenes are synthetic ray casts reproducing the production sensor pipeline: camera depth = a native
 40x24 obstacle render (bars only, no hit -> 10 m) bilinearly upsampled to 160x90 with the target
@@ -211,7 +211,7 @@ class EvidenceTests(unittest.TestCase):
         self.assertEqual((r.utility, r.ground_truth_used, r.calibration), ("ABSTAIN", False, "NONE_DECLARED_PRIORS"))
         # F7: production confidence = max(camera segmenter support, LiDAR association gate), navrl_perception.py:2396
         self.assertEqual(r.confidence_semantics, "MAX_OF_CAMERA_SEGMENTER_SUPPORT_AND_LIDAR_ASSOCIATION_GATE_NOT_A_PROBABILITY")
-        self.assertEqual(r.contract_version, "Q02A-v2.2")   # v2.1: re-review R1-R4; v2.2: delta review D1/D2/D7
+        self.assertEqual(r.contract_version, "Q02A-v2.3")   # v2.1: re-review R1-R4; v2.2: D1/D2/D7; v2.3: C1
         self.assertEqual(r.belief_kind, "PREDICTED_ONLY")
         self.assertIn(r.hypothesis, ev.HYPOTHESES)
         names = {f.name for f in fields(c.EvidenceInput)}
@@ -286,7 +286,10 @@ class SensorSemanticsTests(unittest.TestCase):
         rec2 = geo.recover_native_depth(y2.astype(np.float32), (40, 24))
         seen = np.isfinite(rec2.native)
         self.assertTrue(rec2.excluded[blob].all())                    # every pasted pixel is excluded
-        self.assertTrue(rec2.foreign[blob].all())                     # ... and reported as not obstacle depth
+        # v2.3 (C1): foreign = flagged along both row and column, so it marks the paste without being a
+        # segmentation of it (v2.1 asserted every blob pixel foreign; this blob is constant along columns).
+        near_blob = (vv - 45) ** 2 + (uu - 90) ** 2 < 15 ** 2
+        self.assertTrue(rec2.foreign[blob].any()); self.assertFalse((rec2.foreign & ~near_blob).any())
         self.assertLess(np.abs(rec2.native[seen] - x[seen]).max(), 1e-5)  # observed cells stay exact
         self.assertLess(seen.mean(), 1.0)                               # cells hidden by the blob are UNOBSERVED
 
@@ -571,6 +574,21 @@ class DeltaReviewD1D2Tests(unittest.TestCase):
                 r = hyp(detected=True, **kw)
                 self.assertEqual((r.hypothesis, r.identity_status), (ev.TARGET_VISIBLE, "NOT_TESTABLE"))
                 self.assertIn("BELIEF_STALE_OR_DIFFUSE_FOOTPRINT_NOT_TESTABLE", r.reasons)
+
+
+class ConfirmationC1Tests(unittest.TestCase):
+    """Q02A-v2.3: the P1 finding of the v2.2 confirmation review (docs/evidence/q02a_v22_fable_confirmation_review_2026-10-22)."""
+
+    def test_C1_blend_pixels_beside_a_paste_never_grant_identity_support(self):
+        for rng_, gap in ((8.0, 0.1), (5.0, 0.2), (3.0, 0.3)):
+            bars = ((rng_, 0.15 + gap + 0.3, 0.3),)               # bar at the target range, its edge `gap` beside it
+            base = make(target_v=(rng_, 0., 0.), detected=True, bars=bars)
+            self.assertEqual(ev.estimate(base).identity_status, "SUPPORTED_BY_FOOTPRINT")   # correct track
+            for err in (0.5, 0.6, 0.7, 0.8):                       # track on the bar, no target pixel in the envelope
+                mean = np.array(base.track_mean); mean[1] += err
+                with self.subTest(range_m=rng_, gap=gap, track_error=err):
+                    r = ev.estimate(make(target_v=(rng_, 0., 0.), detected=True, bars=bars, track_mean=mean))
+                    self.assertNotEqual(r.identity_status, "SUPPORTED_BY_FOOTPRINT")   # v2.2: SUPPORTED from blend pixels
 
 
 if __name__ == "__main__":

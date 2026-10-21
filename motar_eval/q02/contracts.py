@@ -18,7 +18,8 @@ DEPTH_CONVENTION = "EUCLIDEAN_RAY_RANGE_M"     # range along the unit pixel ray,
 LIDAR_LAYOUT = "LIDAR_ZERO_WIDTH_4x72_5deg_10deg"
 CAMERA_OFFSET_M = (0.10, 0.0, 0.03)
 ACCEPTED_CLOCK_PROVENANCE = ("DECLARED_SIM_SCHEDULE",)
-EVIDENCE_CONTRACT_VERSION = "Q02A-v2.2"   # v1 (a5fee45) read depth as 20 m range and 0 m as a hit; v2 = 87cced6, v2.1 = aab9b31
+EVIDENCE_CONTRACT_VERSION = "Q02A-v2.3"   # v1 (a5fee45) read depth as 20 m range and 0 m as a hit; v2 = 87cced6, v2.1 = aab9b31,
+                                           # v2.2 = 94acd1a
 
 # Per-sample semantics, shared by camera depth and LiDAR.
 VALID_HIT, NO_RETURN, NEAR_CLIPPED, INVALID_SAMPLE = "VALID_HIT", "NO_RETURN", "NEAR_CLIPPED", "INVALID"

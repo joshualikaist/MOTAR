@@ -1,4 +1,4 @@
-"""Module A (contract Q02A-v2.2): explainable sensor evidence about a tracked target's line of sight.
+"""Module A (contract Q02A-v2.3): explainable sensor evidence about a tracked target's line of sight.
 
 Deterministic rule over measured samples; not a calibrated classifier and no probability. UNKNOWN
 is returned whenever the inputs cannot separate the cases, and UNKNOWN is never free space or a
@@ -22,6 +22,8 @@ v2.2 repairs the P1 findings of the v2.1 delta review (q02a_v21_fable_delta_revi
 a native cell within contact range withholds the obstacle grid (a target filling the image at
 contact range can pass as an upsample), and no-return fill pixels never count as pasted; a stale or
 diffuse belief makes the camera flag's footprint NOT_TESTABLE (D7).
+v2.3 (confirmation review C1): a pixel counts as pasted only if the window test flags it along both
+its row and its column, so obstacle-blend pixels beside a paste no longer grant identity support.
 In the Frozen F profile the camera flag is oracle-grade (true-pose rasterization), so agreement
 with it is not evidence that this rule would work with a real detector.
 """
@@ -293,7 +295,7 @@ def estimate(inp, camera=FROZEN_F_CAMERA, lidar=FROZEN_F_LIDAR, params=EvidenceP
     frac = lambda n, d: d > 0 and n / d >= params.min_fraction
     cam_fg, lid_fg = frac(cam.foreground, cam.rays), frac(lid.foreground, lid.rays)
     cam_clear, lid_clear = frac(cam.clear, cam.rays), frac(lid.clear, lid.rays)
-    if cam.near_clipped or lid.near_clipped:
+    if cam.near_clipped or lid.near_clipped:      # camera term unreachable since v2.2 (contact range withholds the grid)
         return _record(UNKNOWN, reasons + ["NEAR_CLIPPED_IN_LINE_OF_SIGHT"], *base, **args)
     if pasted[0]:
         return _record(IDENTITY_AMBIGUOUS, reasons + ["PASTED_TARGET_LIKE_PIXELS_IN_FOOTPRINT_WITHOUT_DETECTION"],

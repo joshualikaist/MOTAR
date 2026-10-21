@@ -145,14 +145,16 @@ def _depth_structure(depth, profile, max_pasted_fraction):
     structure = Check("depth_structure", OK if ok else FRAME_MISMATCH, detail)
     if not ok:
         obstacle = Check("obstacle_depth", INVALID, "depth structure not verified")
+    elif obs.any() and rec.native[obs].min() < profile.obstacle_contact_m:
+        # Something within contact range of the camera (checked first, so the warning is raised for
+        # every recovery status). A paste that fills the image with a smooth surface (the target at
+        # contact range) is indistinguishable from an obstacle render here. Assumes bodies do not
+        # interpenetrate (a sphere inside a bar can pass with a cell just above the threshold).
+        obstacle = Check("obstacle_depth", UNAVAILABLE, "%s %.3f m" % (CONTACT_RANGE, rec.native[obs].min()))
     elif rec.excluded.mean() > max_pasted_fraction:
         obstacle = Check("obstacle_depth", UNAVAILABLE, "PASTED_DOMINATES %.2f of the image" % rec.excluded.mean())
     elif rec.status != RECOVERY_OK:
         obstacle = Check("obstacle_depth", UNAVAILABLE, rec.status)
-    elif obs.any() and rec.native[obs].min() < profile.obstacle_contact_m:
-        # Something within contact range of the camera. A paste that fills the image with a smooth
-        # surface (the target at contact range) is indistinguishable from an obstacle render here.
-        obstacle = Check("obstacle_depth", UNAVAILABLE, "%s %.3f m" % (CONTACT_RANGE, rec.native[obs].min()))
     else:
         obstacle = Check("obstacle_depth", OK)
     return structure, obstacle, rec

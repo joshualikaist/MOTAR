@@ -22519,3 +22519,27 @@ Hypothesis "excluding fill-valued pixels removes every non-target pixel from ide
 rejected: measured 162/504 false SUPPORTED from blend pixels. Hypothesis outputs were correct in all
 sweeps. Record: `docs/evidence/q02a_v22_fable_confirmation_review_2026-10-22/` (REVIEW.md, probes/).
 GPU NOT_RUN, G5 HOLD. Next: fix C1 with the both-direction rule (+C3, C7) as Q02A-v2.3 and request a final confirmation.
+
+## 2026-10-22 — Q02-A v2.3: both-direction paste core (confirmation review C1)
+
+Minimal fix of the one P1 (contract `Q02A-v2.3`; only `motar_eval/q02/*` and the Q02 tests). A pixel is a paste
+candidate (`foreign`) only if the window test flags it along both its row and its column, or the
+residual test flags it. The window test flags whole windows, so a blend pixel beside a paste usually
+deviates along one direction only. The union of the flags still drives the exclusion, so recovery is unchanged.
+C3: the contact check runs before the dominate/span checks, so the warning appears at every status.
+C7: the unreachable camera near-clip term is commented. C2 (no margin at 0.10 m for interpenetrating bodies) is
+documented as an assumption. The test assertion "every blob pixel is foreign" (v2.1) was replaced by
+exclusion + non-empty + locality, because `foreign` is intentionally no longer a segmentation.
+
+| Check (CPU) | Result |
+| --- | --- |
+| `tests/test_q02_evidence.py` | 41 OK (40 kept: version string, 1 assertion re-scoped; 1 new C1) |
+| PUBLIC_CPU | 3106 ran, 0 failures, same 4 `DetectReduction` errors; aggregate FAIL (pre-existing) |
+| Reviewer family A (sphere beside bar, wrong track, 504) | false SUPPORTED 162 → 0; family B correct tracks 64/64 SUPPORTED |
+| Correct-track sweep with slivers/bars/z/yaw (252) | SUPPORTED 180 = cases with true paste at range 180; 0 lost, 0 false |
+| v2.2 → v2.3 comparison (55 cases) | 4 changed (C1 wrong tracks → NOT_TESTABLE ×3 / CONTRADICTED ×1); Q01 frames identical (at range 4/12/14) |
+| Close-range map / recovery fuzz | unchanged: 0 leaks, 289/13/8; 0/5500 silent leaks |
+
+Records: `docs/evidence/q02a_v23_repair_2026-10-22/` (REPAIR.md, compare_v22_v23.py/.json,
+identity_support_sweep.py/.json, blend_support_v23.txt, fuzz_results.json). Q02-B WIP unchanged.
+GPU NOT_RUN, G5 HOLD. Next: final Fable confirmation of this commit; Q02-B stays blocked until it reports.
