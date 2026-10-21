@@ -3,6 +3,10 @@
 Importing this module starts neither a simulator nor CUDA. Only EvaluatorTap holds a
 task reference; neither packets, diagnostics nor the logger receive that reference.
 The first qualification intentionally supports N=1 and the frozen OFF sensor lineage.
+
+`drive` is the one player loop of every Q01 stage. The S1_NATIVE stage runs it with no
+EvaluatorTap/ContactChain; its HostTrace is the read-only baseline the observer stages
+are compared against. Host-side reads exist in every stage, NATIVE included.
 """
 from dataclasses import dataclass, fields
 import hashlib
@@ -345,8 +349,12 @@ class EventLogger:
 
     def diagnostic(self, key, diagnostic, latency_ms):
         require(type(key) is JoinKey and type(diagnostic) is Diagnostic, "LOGGER_DIAGNOSTIC_SCHEMA_ONLY")
+        # diagnose() reads key and clocks only, never sensor values: its time says nothing
+        # about a planner that would consume the packet.
         self._write("shadow", dict(key=key.__dict__, diagnostic=diagnostic.__dict__,
-                                    compute_ms=latency_ms, full_planner="SKIPPED_UNSUPPORTED"))
+                                    compute_ms=latency_ms, full_planner="SKIPPED_UNSUPPORTED",
+                                    latency_scope="DIAGNOSTIC_ONLY_NOT_INFORMATIVE_FOR_FULL_PLANNER",
+                                    diagnose_reads_sensor_values=False))
 
     def action(self, record):
         require(type(record) is ActionRecord, "LOGGER_ACTION_SCHEMA_ONLY")
@@ -509,6 +517,138 @@ def rng_fingerprint(device=None):
     return h.hexdigest()
 
 
+def runtime_attestation(device=None):
+    """Read-only record of numerics settings. Frozen F's process sets them; this never does."""
+    b = torch.backends
+    out = dict(torch=torch.__version__, cuda=torch.version.cuda,
+               cudnn=b.cudnn.version() if b.cudnn.is_available() else None,
+               cudnn_benchmark=bool(b.cudnn.benchmark), cudnn_deterministic=bool(b.cudnn.deterministic),
+               cudnn_allow_tf32=bool(b.cudnn.allow_tf32), matmul_allow_tf32=bool(b.cuda.matmul.allow_tf32),
+               float32_matmul_precision=torch.get_float32_matmul_precision(),
+               deterministic_algorithms=bool(torch.are_deterministic_algorithms_enabled()),
+               device_name=None, device_capability=None)
+    if device is not None and torch.device(device).type == "cuda":
+        require(torch.cuda.is_initialized(), "CUDA_STATE_MUST_ALREADY_EXIST")
+        out.update(device_name=torch.cuda.get_device_name(torch.device(device)),
+                   device_capability=list(torch.cuda.get_device_capability(torch.device(device))))
+    return out
+
+
+HOOK_MARK = "_boia_shadow_hook"
+
+
+def hook_targets(task):
+    """The instance attributes EvaluatorTap wraps, in installation order."""
+    return (("perception.observe", task.perception, "observe"),
+            ("detector.render_raw_rgbd", task.detector, "render_raw_rgbd"),
+            ("warp_sensor.capture", task.sim_env.robot_manager.warp_sensor.sensor, "capture"),
+            ("task.reset_idx", task, "reset_idx"),
+            ("task.transform_action_to_command", task, "transform_action_to_command"),
+            ("task.compute_state_reward_and_terminations", task, "compute_state_reward_and_terminations"),
+            ("sim_env.post_reward_calculation_step", task.sim_env, "post_reward_calculation_step"),
+            ("task.step", task, "step"))
+
+
+def hook_audit(task):
+    """Which owned hooks are live now. Read-only; proves the NATIVE stage runs without them."""
+    from .e_l0 import ContactChain
+    out = {label: bool(getattr(getattr(obj, name), HOOK_MARK, False)) for label, obj, name in hook_targets(task)}
+    out["contact_chain"] = isinstance(task.sim_env.physics_step_callback, ContactChain)
+    return out
+
+
+class HostTrace:
+    """Player-loop record written identically by every stage, NATIVE included.
+
+    Holds no task/model handle. Rows are evaluator-side; online code never reads them.
+    """
+    def __init__(self, directory, max_bytes=8000000):
+        directory = Path(directory)
+        require(directory.is_dir(), "HOST_TRACE_DIRECTORY_REQUIRED")
+        self.max_bytes, self.bytes, self.rows = int(max_bytes), 0, 0
+        self.stream = (directory / "host.jsonl").open("x")
+
+    def write(self, row):
+        line = json.dumps(row, sort_keys=True, allow_nan=False, separators=(",", ":")) + "\n"
+        size = len(line.encode())
+        require(self.bytes + size <= self.max_bytes, "HOST_TRACE_OUTPUT_CAP")
+        try:
+            self.stream.write(line)
+            self.stream.flush()
+        except (OSError, ValueError) as exc:
+            raise IntegrityError("FATAL_HOST_TRACE_IO: " + str(exc)) from exc
+        self.bytes += size
+        self.rows += 1
+
+    def close(self):
+        if not self.stream.closed:
+            self.stream.close()
+
+
+def host_state(task):
+    """Evaluator-only state hashes read from the host loop. Raw bytes, so NaN-safe; no writes."""
+    od, p = task.obs_dict, task.perception
+    groups = (("own_position", od["robot_position"]), ("own_velocity", od["robot_linvel"]),
+              ("own_orientation", od["robot_orientation"]), ("own_body_angvel", od["robot_body_angvel"]),
+              ("crash_buffer", od["crashes"]), ("truncations", task.truncations),
+              ("target_evaluator_only", task.target_position),
+              ("target_velocity_evaluator_only", task.target_vel_w),
+              ("obstacle_evaluator_only", od["obstacle_position"]),
+              ("obstacle_orientation_evaluator_only", od["obstacle_orientation"]),
+              ("tracker_mean", p.tracker.state), ("tracker_covariance", p.tracker.cov),
+              ("tracker_age", p.tracker.age), ("tracker_active", p.tracker.active),
+              ("history_robot", p.robot_history), ("history_target", p.target_history),
+              ("history_obstacle", p.obstacle_history), ("previous_action", task.prev_action))
+    return {name: TensorBytes.copy(value, finite_required=False).sha() for name, value in groups}
+
+
+def _actor(obs):
+    return obs["obs"] if isinstance(obs, dict) else obs
+
+
+def drive(task, reset, act, step, trace, actions, tap=None, recorder=None, after_policy=None):
+    """The single player loop of every stage. Host reads only: no draw, seed or task write.
+
+    The returned observation aliases the task actor buffer, which the next step overwrites
+    in place, so each actor input is hashed before the policy call.
+    """
+    require((tap is None) == (recorder is None), "OBSERVER_AND_RECORDER_GO_TOGETHER")
+    obs = reset()
+    trace.write(dict(kind="INITIAL", returned=TensorBytes.copy(_actor(obs)).sha(),
+                     rng=rng_fingerprint(task.device), state=host_state(task)))
+    times, ended = [], 0
+    for index in range(actions):
+        start = time.perf_counter()
+        actor = TensorBytes.copy(_actor(obs))
+        require(actor == TensorBytes.copy(task.task_obs["observations"]), "ACTOR_INPUT_NOT_CURRENT_TASK_PACKET")
+        rng_pre = rng_fingerprint(task.device)
+        if tap is not None:
+            tap.actor_rng_before = rng_pre
+        action = act(obs)
+        if after_policy is not None:
+            after_policy()
+        rng_policy = rng_fingerprint(task.device)
+        obs, reward, done, _ = step(action)
+        times.append((time.perf_counter() - start) * 1000)
+        done_now = bool(torch.as_tensor(done).reshape(-1).bool().any())
+        row = dict(kind="STEP", index=index, actor=actor.sha(), rng_pre_policy=rng_pre,
+                   action=TensorBytes.copy(action, (1, 4)).record(True), rng_post_policy=rng_policy,
+                   returned=TensorBytes.copy(_actor(obs)).sha(),
+                   reward=TensorBytes.copy(torch.as_tensor(reward), finite_required=False).sha(),
+                   done=done_now, rng_post_step=rng_fingerprint(task.device), state=host_state(task))
+        if recorder is not None:
+            last = recorder.last_parity
+            require(recorder.completed == index + 1 and last["reset_expected"] == done_now,
+                    "HOST_OBSERVER_TERMINAL_JOIN_MISMATCH")
+            require((last["actor"], last["policy"], last["post"]["actor"]) ==
+                    (row["actor"], row["action"]["sha256"], row["returned"]), "HOST_OBSERVER_FINGERPRINT_MISMATCH")
+        trace.write(row)
+        if done_now:
+            ended += 1
+            break
+    return times, ended
+
+
 class EvaluatorTap:
     """Instance call-through wrappers. All changes are reverted on context exit.
 
@@ -531,6 +671,7 @@ class EvaluatorTap:
         had_own = name in vars(obj)
         own = vars(obj).get(name)
         wrapped = factory(old)
+        setattr(wrapped, HOOK_MARK, True)
         setattr(obj, name, wrapped)
         self.originals.append((obj, name, old, wrapped, had_own, own))
 
@@ -543,15 +684,13 @@ class EvaluatorTap:
         self.contact = ContactChain(self.original_callback, lambda: t.obs_dict["robot_contact_force_tensor"],
                                     float(t.sim_env.cfg.env.collision_force_threshold), 1, t.device)
         t.sim_env.set_physics_step_callback(self.contact)
+        factories = dict(observe=self._observe, render_raw_rgbd=self._rgbd, capture=self._capture,
+                         reset_idx=self._reset, transform_action_to_command=self._transform,
+                         compute_state_reward_and_terminations=self._compute,
+                         post_reward_calculation_step=self._post, step=self._step)
         try:
-            self._wrap(t.perception, "observe", self._observe)
-            self._wrap(t.detector, "render_raw_rgbd", self._rgbd)
-            self._wrap(t.sim_env.robot_manager.warp_sensor.sensor, "capture", self._capture)
-            self._wrap(t, "reset_idx", self._reset)
-            self._wrap(t, "transform_action_to_command", self._transform)
-            self._wrap(t, "compute_state_reward_and_terminations", self._compute)
-            self._wrap(t.sim_env, "post_reward_calculation_step", self._post)
-            self._wrap(t, "step", self._step)
+            for _, obj, name in hook_targets(t):
+                self._wrap(obj, name, factories[name])
         except BaseException:
             self.__exit__(None, None, None)
             raise

@@ -5,8 +5,11 @@ import hashlib
 import math
 from pathlib import Path
 import random
+import sys
 import unittest
 
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
 from motar_eval.boia_research.benefit import paired_bound
 from motar_eval.boia_research.decision import decide, initial_state, opportunity_window
 from motar_eval.boia_research.evidence import build_hypotheses, validate_probability

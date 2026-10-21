@@ -1,11 +1,14 @@
 """Independent CPU fixtures for the real call-through observer and phase protocol."""
+from contextlib import contextmanager
+import copy
 from dataclasses import fields, replace, FrozenInstanceError
 import json
+import os
 from pathlib import Path
 import random
 import sys
 import tempfile
-from types import SimpleNamespace as NS
+from types import ModuleType, SimpleNamespace as NS
 import unittest
 from unittest.mock import patch
 
@@ -15,6 +18,7 @@ import torch
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from motar_eval import boia_shadow as s
+from tools import boia_shadow as b
 
 
 def values():
@@ -147,7 +151,8 @@ class FakeTask:
         self.task_obs["observations"][:] = result[0]
         self._camera_visible_now[:] = result[1]["camera_visible"]
         self._visible_now[:] = result[1]["visible"]
-        return self.task_obs["observations"].clone()
+        # Like ExtractObsWrapper: the returned actor tensor IS the task buffer, overwritten next step.
+        return self.task_obs["observations"]
 
     def reset(self):
         self.reset_idx(torch.tensor([0]))
@@ -163,7 +168,8 @@ class FakeTask:
 
     def compute_state_reward_and_terminations(self):
         self.computes += 1
-        self.captured_now[:] = self.scenario.get("capture", False)
+        self.captured_now[:] = bool(self.scenario.get("capture", False) or
+                                    self.steps >= self.scenario.get("capture_after", 10**9))
         raw = self.obs_dict["crashes"].bool().clone()
         z = self.obs_dict["robot_position"][:, 2]
         raw |= (z < .1) | (z > 4)
@@ -173,6 +179,8 @@ class FakeTask:
         self.obs_dict["crashes"][:] = self.crashed_now | self.captured_now  # actual alias hazard
 
     def step(self, action):
+        if self.scenario.get("native_rng"):  # native draws, like env_manager's random.gauss substeps
+            random.gauss(10., 0.); np.random.rand(); torch.rand(1)
         self.transform_action_to_command(action)
         self.prev_action[:] = action
         cb = self.sim_env.physics_step_callback
@@ -196,29 +204,85 @@ class FakeTask:
         return self.observe_current(), torch.tensor([0.]), torch.tensor([len(ids) > 0]), {}
 
 
-def exercise(root, shadow=True, steps=3, scenario=None, reference=None, observed=True):
-    t = FakeTask(scenario)
-    policy_calls = 0
-    log = s.EventLogger(root)
-    r = s.Recorder(log, shadow, reference=reference)
-    tap = s.EvaluatorTap(t, r, BIND)
-    cm = tap if observed else nullcontext()
+def exercise(root, shadow=True, steps=3, scenario=None, reference=None, observed=True,
+             tap_class=None, step_filter=None):
+    """One stage through the production player loop `drive`; observed=False is S1_NATIVE."""
+    t, calls, root = FakeTask(scenario), [0], Path(root)
+    if observed:
+        log = s.EventLogger(root)
+        r = s.Recorder(log, shadow, reference=reference)
+        tap = (tap_class or s.EvaluatorTap)(t, r, BIND)
+    else:
+        root.mkdir(parents=True)
+        log = r = tap = None
+    trace = s.HostTrace(root)
+
+    def act(obs):
+        calls[0] += 1
+        return torch.tanh(obs[:, :4] * .01)
+
+    # Late binding, as player.env_step reaches task.step: the tap replaces it on entry.
+    step = (lambda action: t.step(action)) if step_filter is None else (lambda action: step_filter(t.step(action)))
     try:
-        with cm:
-            obs = t.reset()
-            for k in range(steps):
-                tap.actor_rng_before = s.rng_fingerprint()
-                action = torch.tanh(obs[:, :4] * .01)
-                policy_calls += 1
-                obs, _, done, _ = t.step(action)
-                if bool(done.item()): break
+        with (tap if observed else nullcontext()):
+            s.drive(t, t.reset, act, step, trace, steps, tap, r)
             if observed: r.censor("PROCESS_ACTION_CAP")
     finally:
-        log.close()
-    return t, r, policy_calls
+        trace.close()
+        if log is not None: log.close()
+    return t, r, calls[0]
 
 
 from contextlib import nullcontext
+
+
+def rows(directory, name):
+    return [json.loads(x) for x in (Path(directory) / name).read_text().splitlines()]
+
+
+@contextmanager
+def fresh_rng_each_stage():
+    """Fresh processes start from one seeded state: restore it before each stage and after."""
+    saved = (random.getstate(), np.random.get_state(), torch.get_rng_state())
+
+    def restore():
+        random.setstate(saved[0]); np.random.set_state(saved[1]); torch.set_rng_state(saved[2])
+    try:
+        yield restore
+    finally:
+        restore()
+
+
+class PlantNudgeTap(s.EvaluatorTap):
+    """Fable G4-R6 cx1: an observer that moves the plant 6 mm per action, identically OFF and ON."""
+    def _post(self, old):
+        wrapped = super()._post(old)
+        def nudged(*a, **kw):
+            self.task.obs_dict["robot_position"][:, 0] += .006
+            return wrapped(*a, **kw)
+        return nudged
+
+
+class ResetNudgeTap(s.EvaluatorTap):
+    """Perturbs only the post-terminal reset state, i.e. only the last returned observation."""
+    def _reset(self, old):
+        wrapped = super()._reset(old)
+        def nudged(ids, *a, **kw):
+            out = wrapped(ids, *a, **kw)
+            if self.recorder.episode >= 1:
+                self.task.obs_dict["robot_position"][:, 1] += .006
+            return out
+        return nudged
+
+
+class RngDrawTap(s.EvaluatorTap):
+    """An observer that consumes one global torch draw per action."""
+    def _compute(self, old):
+        wrapped = super()._compute(old)
+        def drawing(*a, **kw):
+            torch.rand(1)
+            return wrapped(*a, **kw)
+        return drawing
 
 
 class PacketTests(unittest.TestCase):
@@ -473,6 +537,165 @@ class CallThroughTests(unittest.TestCase):
     def test_no_writer_capability_or_extra_detector_in_diagnostics(self):
         d=s.diagnose(packet());self.assertFalse(any(callable(x)or isinstance(x,(torch.Tensor,dict))for x in d.__dict__.values()))
         self.assertNotIn('action',d.__dict__);self.assertEqual(d.owner,'F')
+
+
+class NativeBaselineTests(unittest.TestCase):
+    """S1_NATIVE vs S1_OFF vs S1_ON with the production loop (Fable G4-R6 F1)."""
+    def setUp(self):
+        self.tmp=tempfile.TemporaryDirectory();self.addCleanup(self.tmp.cleanup);self.root=Path(self.tmp.name)
+
+    def stages(self, tap_class=None, scenario=None, steps=7):
+        with fresh_rng_each_stage() as fresh:
+            fresh();exercise(self.root/'native',observed=False,steps=steps,scenario=scenario)
+            fresh();exercise(self.root/'off',shadow=False,steps=steps,scenario=scenario,tap_class=tap_class)
+            fresh();exercise(self.root/'on',steps=steps,scenario=scenario,tap_class=tap_class,
+                              reference=rows(self.root/'off','parity.jsonl'))
+        return {k:self.root/k for k in ('native','off','on')}
+
+    def cmp(self, a, c, name):
+        return b.compare_rows(rows(a,name),rows(c,name))
+
+    def test_native_stage_runs_without_any_observer_hook(self):
+        t=FakeTask();original=(t.step,t.perception.observe,t.sim_env.physics_step_callback)
+        self.assertFalse(any(s.hook_audit(t).values()))
+        log=s.EventLogger(self.root/'hooks');r=s.Recorder(log,False)
+        with s.EvaluatorTap(t,r,BIND):
+            audit=s.hook_audit(t);self.assertEqual(len(audit),9);self.assertTrue(all(audit.values()))
+        log.close();self.assertFalse(any(s.hook_audit(t).values()))
+        self.assertEqual((t.step,t.perception.observe,t.sim_env.physics_step_callback),original)
+
+    def test_normal_fixture_native_off_on_all_exact_including_native_rng_draws(self):
+        d=self.stages(scenario={'native_rng':True,'capture_after':4})
+        host=rows(d['native'],'host.jsonl');self.assertTrue(host[-1]['done']);self.assertEqual(len(host),6)
+        self.assertEqual(self.cmp(d['native'],d['off'],'host.jsonl')['status'],'PASS')
+        for name in ('parity.jsonl','host.jsonl'):
+            self.assertEqual(self.cmp(d['off'],d['on'],name)['status'],'PASS')
+        self.assertNotEqual(host[1]['rng_pre_policy'],host[2]['rng_pre_policy'])  # native draws are visible
+
+    def test_cx1_constant_observer_perturbation_passes_off_on_but_fails_native_off(self):
+        d=self.stages(tap_class=PlantNudgeTap)
+        for name in ('parity.jsonl','host.jsonl'):
+            self.assertEqual(self.cmp(d['off'],d['on'],name)['status'],'PASS')  # v1 gate is blind
+        result=self.cmp(d['native'],d['off'],'host.jsonl')
+        self.assertEqual((result['status'],result['index']),('MISMATCH',1))
+        self.assertIn('state.own_position',result['fields'])
+
+    def test_post_reset_perturbation_detected_on_terminal_returned_row(self):
+        d=self.stages(tap_class=ResetNudgeTap,scenario={'capture_after':2})
+        result=self.cmp(d['native'],d['off'],'host.jsonl');host=rows(d['native'],'host.jsonl')
+        self.assertEqual((result['status'],result['index']),('MISMATCH',len(host)-1))
+        self.assertTrue(host[-1]['done']);self.assertIn('state.own_position',result['fields'])
+
+    def test_observer_rng_draw_detected(self):
+        d=self.stages(tap_class=RngDrawTap)
+        result=self.cmp(d['native'],d['off'],'host.jsonl')
+        self.assertEqual(result['status'],'MISMATCH');self.assertIn('rng_post_step',result['fields'])
+
+    def test_actor_hashed_before_policy_although_returned_obs_aliases_task_buffer(self):
+        exercise(self.root/'alias',steps=4);host=rows(self.root/'alias','host.jsonl')
+        for prev,cur in zip(host,host[1:]):
+            self.assertEqual(cur['actor'],prev['returned']);self.assertNotEqual(cur['actor'],cur['returned'])
+
+    def test_host_and_observer_must_agree_on_terminal_and_fingerprints(self):
+        flip=lambda out:(out[0],out[1],~out[2],out[3])
+        with self.assertRaisesRegex(s.IntegrityError,'HOST_OBSERVER_TERMINAL_JOIN_MISMATCH'):
+            exercise(self.root/'flip',steps=2,step_filter=flip)
+        with self.assertRaisesRegex(s.IntegrityError,'OBSERVER_AND_RECORDER'):
+            s.drive(FakeTask(),None,None,None,None,1,tap=object())
+
+    def test_empty_missing_short_and_long_traces_never_pass(self):
+        d=self.stages(steps=3);a=rows(d['native'],'host.jsonl')
+        for left,right,mode in ((a,[],'full'),([],a,'full'),(None,a,'full'),(a,None,'full'),
+                                (a,a[:-1],'full'),(a[:-1],a,'full'),(a[:-1],a,'prefix')):
+            with self.subTest(n=(None if left is None else len(left),None if right is None else len(right),mode)):
+                self.assertEqual(b.compare_rows(left,right,mode)['status'],'MISMATCH')
+        self.assertEqual(b.compare_rows(a[:-1],a,'prefix',left_censored=True)['status'],'PASS')
+        self.assertEqual(b.compare_rows(a,a)['status'],'PASS')
+
+    def test_host_trace_keeps_GT_as_hashes_and_refuses_reuse(self):
+        exercise(self.root/'gt',steps=1);host=rows(self.root/'gt','host.jsonl')
+        for row in host:
+            self.assertTrue(all(len(v)==64 for v in row['state'].values()))
+        self.assertNotIn('6.0',json.dumps(host))  # FakeTask target_position is 6.0 everywhere
+        with self.assertRaises(FileExistsError):s.HostTrace(self.root/'gt')
+        with self.assertRaises(s.IntegrityError):s.HostTrace(self.root/'missing')
+        (self.root/'cap').mkdir();trace=s.HostTrace(self.root/'cap',max_bytes=10)
+        with self.assertRaisesRegex(s.IntegrityError,'HOST_TRACE_OUTPUT_CAP'):trace.write({'kind':'too long'})
+        trace.close()
+
+    def test_runtime_attestation_reads_numerics_without_changing_them(self):
+        flags=lambda:(torch.backends.cudnn.benchmark,torch.backends.cudnn.allow_tf32,
+                      torch.backends.cuda.matmul.allow_tf32,torch.get_float32_matmul_precision())
+        before=flags();a=s.runtime_attestation('cpu');self.assertEqual(flags(),before)
+        self.assertEqual((a['cudnn_benchmark'],a['cudnn_allow_tf32'],a['matmul_allow_tf32'],a['float32_matmul_precision']),before)
+        self.assertIsNone(a['device_name']);self.assertEqual(a['torch'],torch.__version__)
+
+
+class FakePlayer:
+    """rl_games player stand-in over FakeTask (CPU, deterministic)."""
+    def __init__(self,task):self.env,self.model,self.is_rnn=task,NS(training=False),False
+    def env_reset(self,env):return env.reset()
+    def get_batch_size(self,obs,n):self.batch=n
+    def get_action(self,obs,is_deterministic=False):
+        assert is_deterministic;return torch.tanh(obs[:,:4]*.01)
+    def env_step(self,env,action):return env.step(action)
+
+
+class WorkerStandInTests(unittest.TestCase):
+    """The real tools/boia_shadow.worker and verify, with CPU stand-ins for Isaac/player/CUDA."""
+    def setUp(self):
+        self.tmp=tempfile.TemporaryDirectory();self.addCleanup(self.tmp.cleanup);tmp=Path(self.tmp.name)
+        self.p=copy.deepcopy(b.load(b.PLAN));self.p['output_root']=str(tmp/'BOIA-SHADOW-Q01-V2')
+        Path(self.p['output_root']).mkdir()
+        self.ckpt=tmp/'policy.pth';self.ckpt.write_bytes(b'frozen F stand-in')
+        self.p['frozen']['policy_f_sha256']=b.sha(self.ckpt)
+
+    def campaign(self, tap_class=None, scenario=None, stages=b.STAGES):
+        from motar_eval import eq1d_telemetry as tel
+        env={'BOIA_SHADOW_PARENT_PID':str(os.getppid()),'BOIA_SHADOW_CONFIG_SHA':b.sha(b.PLAN)}
+        with fresh_rng_each_stage() as fresh:
+            for stage in stages:
+                fresh();task=FakeTask(scenario);player=FakePlayer(task)
+                fake=ModuleType('eq1d_fixture_launcher');fake.build_player=lambda n,c:(player,{})
+                fake.find_task=lambda pl:task;fake.check_origins=lambda:{};fake.find_rms=lambda m:NS()
+                with patch.dict(sys.modules,{'isaacgym':ModuleType('isaacgym'),'eq1d_fixture_launcher':fake}),\
+                     patch.dict(os.environ,env),patch.object(sys,'path',list(sys.path)),\
+                     patch.object(b,'guard_sources'),patch.object(b,'checkpoint',return_value=self.ckpt),\
+                     patch.object(b,'runtime_profile',return_value={}),\
+                     patch.object(tel,'rms_digest',return_value=self.p['frozen']['rms_digest_sha256']),\
+                     patch.object(torch.cuda,'reset_peak_memory_stats'),patch.object(torch.cuda,'synchronize'),\
+                     patch.object(torch.cuda,'max_memory_allocated',return_value=0),\
+                     patch.object(s,'EvaluatorTap',tap_class or s.EvaluatorTap):
+                    b.worker(self.p,stage,'a'*40)
+        with patch.object(b,'guard_sources'):
+            return b.verify(self.p,'a'*40)
+
+    def test_four_stages_through_real_worker_then_verify_pass(self):
+        result=self.campaign(scenario={'capture_after':30})
+        self.assertEqual(result['verdict'],b.PASS,json.dumps(result['comparisons'],indent=1)[:3000])
+        root=Path(self.p['output_root'])
+        native=b.load(root/'S1_NATIVE/process_done.json')
+        self.assertFalse(any(native['hooks_during'].values()));self.assertIsNone(native['observe_calls'])
+        self.assertEqual(sorted(x.name for x in (root/'S1_NATIVE').iterdir()),['host.jsonl','process_done.json'])
+        self.assertEqual((native['actions'],native['ended_episodes']),(31,1))
+        on=b.load(root/'S1_ON/process_done.json');self.assertTrue(all(on['hooks_during'].values()))
+        self.assertEqual(on['qualification_scope']['wait_intervene_computation'],'NOT_QUALIFIED')
+        self.assertEqual(result['comparisons']['replay_s0_vs_on']['files']['host.jsonl']['rows'],[21,32])
+        self.assertEqual(result['claims']['observer_noninterference'],'SUPPORTED_EXACT_HOST_TRACE_THIS_PROFILE')
+        with self.assertRaises(FileExistsError),patch.object(b,'guard_sources'):b.verify(self.p,'a'*40)
+
+    def test_cx1_through_real_worker_is_reported_as_unattributed_mismatch(self):
+        result=self.campaign(tap_class=PlantNudgeTap)
+        self.assertEqual(result['verdict'],b.MISMATCH)
+        self.assertEqual(result['comparisons']['off_vs_on']['status'],'PASS')
+        self.assertEqual(result['comparisons']['native_vs_off']['status'],'MISMATCH')
+        self.assertEqual(result['claims']['observer_noninterference'],'NOT_SUPPORTED')
+        self.assertEqual(result['claims']['mismatch_cause'],'NOT_VERIFIED')
+
+    def test_incomplete_campaign_is_not_evaluated_as_pass(self):
+        result=self.campaign(stages=('S0','S1_NATIVE'))
+        self.assertEqual(result['verdict'],b.INCOMPLETE)
+        self.assertEqual(result['comparisons']['off_vs_on']['status'],'NOT_AVAILABLE')
 
 
 if __name__=='__main__':unittest.main()

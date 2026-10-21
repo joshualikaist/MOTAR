@@ -22154,3 +22154,39 @@ Fixed development defects with retained/asserted regressions: nestedJoinKey JSON
 Q01 package is ready for separately approved N1/seed4901/movingE2_direct_l2_v1/70bars/visible10m/OFF lineage: S0<=20actions/120s; fresh S1_OFF/ON<=200actions/300s each, first endedepisode stops,720s cumulative. Preflight3.3GB/stop3GB, total256MB,8sensor snapshots, VRAM min6656MiB,total-768MiB; no retries/expansion. Actual F owns commands, utilityABSTAIN/safetyINPUT_CERTIFICATE_UNAVAILABLE/physicalNOT_ASSESSED; no synthetic mission loss. DECLARED_SIM_SCHEDULE is not hardware time. Qualified collision-free proxy requires originalcapture+zeroepisodecontacts>.05N+no action-boundary height/OOB; subthreshold/transient failures not certified. Copy/schema/diagnostic/SHA/log and full-step timing separated, no5ms/10Hz claim.
 
 GPU/Isaac/PPO/online intervention/push/merge/deletion NOT_RUN. Existing runtime/BOIA/research/C02/controller/governor/checkpoint/Raw/prereg/evidence untouched; mainWIP3/stash/protected links and visibleRaw3474 unchanged by SHA/count checks. Raw full rehashNOT_RUN, externalbackupNOT_CREATED; disk>3GB. Runtime device/build/parity/VRAM/latency pending; B03/B04/actualutility/Fcontinuation/physicalC02/backup/plant/deadline/endgame unresolved; G5HOLD. Evidence contains report, validationJSON, compact CPU results, exact runbook and short handoff. Beads .21 completed at local commit; .22 requires separate Q01 GPUapproval. Final cleanHEAD CPU preflight is executed after this containing commit and reported without self-referential amendment. Requeststart06:28:47KST, quota deadlineUNKNOWN, conservativewrapup09:28KST; no owned test/GPU process remains at handoff.
+
+## 2026-10-21 — G4-R7 source: S1_NATIVE baseline, replay control and Q01-V2 preregistration
+
+Fixes for the Fable 5.1 read-only audit of `6bd986e` (G4-R6, `PASS_WITH_EXPLICIT_LIMITATIONS`).
+Its P1 finding F1: S1_OFF and S1_ON both install EvaluatorTap + ContactChain, so exact OFF/ON
+parity cannot show that the observer leaves Frozen F unchanged (cx1: a 6 mm/action plant nudge
+passed v1's gate 6/6). Hypothesis "OFF/ON parity establishes observer noninterference" rejected:
+the cx1 fixture passes OFF/ON while failing NATIVE/OFF.
+
+Changes. `motar_eval/boia_shadow.py`: hook marker and `hook_audit`; `HostTrace`; `drive`, the
+single player loop of every stage (actor hashed before the policy call because the returned
+observation aliases the task buffer); `host_state`; `runtime_attestation` (records torch/CUDA/
+cuDNN and `cudnn.benchmark`/TF32/precision, never changes them); diagnostic rows labelled
+`DIAGNOSTIC_ONLY_NOT_INFORMATIVE_FOR_FULL_PLANNER`. `tools/boia_shadow.py`: Q01-V2 plan,
+stage order S0 → S1_NATIVE → S1_OFF → S1_ON, NATIVE worker path with no tap/ContactChain/
+diagnostic, CPU `verify` (NATIVE/OFF, OFF/ON, S0/ON prefix, runtime profile; exact, unattributed
+`REPLAY_INSTABILITY_OR_PROFILE_MISMATCH`), resource poll 2 s / source guard 10 s, SIGTERM →
+`failure.json`, supervisor receipt embeds the worker's first cause. New
+`docs/plans/boia_shadow_q01_v2.{json,md}` and `boia_shadow_q01_v1_amendment_2026-10-21.md`
+(v1 `WITHDRAWN_BEFORE_EXECUTION_NOT_RUN`, files unchanged); runbook in
+`docs/evidence/boia_g4r7_shadow_v2_preflight_2026-10-21/`. Test-only `sys.path` bootstrap in the
+two research tests (F6). Production, controller, governor, checkpoint, RMS and v1 files untouched.
+
+| Check (CPU, pre-commit) | Result |
+| --- | --- |
+| `tests/test_boia_shadow.py` | 48 ran, OK (35 before) |
+| `tests/test_boia_shadow_runner.py` | 23 ran, OK (19 before) |
+| research tests standalone | both OK (previously ModuleNotFoundError) |
+| combined `tests/test_boia_*.py`, one process | 323 ran, 0 failures, 0 errors (306 before) |
+| PUBLIC_CPU | 3062 ran, 0 failures, 4 errors, 10 skipped; aggregate FAIL (exit 1) |
+
+The 4 errors are the same `DetectReduction` IDs and `target_half_extents` ValueError as G4-R6
+(`motar-6nn.5`); no new failure or error. Q01-V2 caps: 20/200/200/200 actions, 180/300/300/300 s,
+1080 s cumulative (+300 s NATIVE, +60 s S0 versus v1), other limits unchanged. GPU NOT_RUN,
+no push/merge, G5 HOLD. Next: post-commit preflight, worktree-local display exclusion of the two
+protected symlinks, evidence commit, Fable re-review. Beads `motar-3p3.23`.
