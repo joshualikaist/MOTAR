@@ -22215,3 +22215,22 @@ has run under v2. History keeps the `1efbcf8` versions.
 
 GPU NOT_RUN, no push/merge, G5 HOLD. Next: preflight on this commit, a Fable delta review,
 then the evidence commit.
+
+## 2026-10-21 — G4-R7 Fable delta review of e6db0f1 and its NOTE fixes
+
+Fable 5.1 read-only delta review of `1efbcf8..e6db0f1`: PASS, no P0/P1/P2. It confirmed the
+effective seed chain independently (rl_games seeds yaml 42, `BasePlayer` pops and discards it,
+`make_task` passes `seed=None`, `BaseTask.seed(task_config.seed)` reseeds from `NAVRL_SEED=4901`,
+nothing reseeds afterwards), so the earlier R1 claim is rejected. Four NOTEs fixed here:
+`_line_count` closes its file (N1); the stand-in PASS campaign asserts
+`terminal_reset_compared = {native_vs_off: True, off_vs_on: True, replay_s0_vs_on: False}` (N2);
+the v2 prereg/config say "own action cap (20 for S0, 200 otherwise)" (N3, before any approval or
+measurement); the online-mismatch tuple is documented as an allow-list (N4).
+
+| Check (CPU) | Result |
+| --- | --- |
+| shadow fixture / supervisor tests (ResourceWarning as error) | 49 OK / 23 OK |
+| combined `tests/test_boia_*.py` | 324 ran, 0 failures, 0 errors |
+| PUBLIC_CPU | 3063 ran, 0 failures, same 4 `DetectReduction` errors, 10 skipped; aggregate FAIL |
+
+GPU NOT_RUN, no push/merge, G5 HOLD. Next: preflight, a short Fable check of this delta, evidence commit.

@@ -62,7 +62,8 @@ uninstrumented run.
    S0 prefix, or for one specific to the NATIVE process: there is no NATIVE replay control.
 
 The terminal/reset step is compared only when both compared stages end an episode within their
-200-action cap; `verify` reports this per comparison as `terminal_reset_compared`.
+own action cap (20 for S0, 200 otherwise), so the S0/S1_ON replay control will usually not cover
+it; `verify` reports this per comparison as `terminal_reset_compared`.
 
 Each stage also records torch/CUDA/cuDNN versions, device identity, `cudnn.benchmark`,
 `cudnn.deterministic`, both TF32 switches and float32 matmul precision. They must be equal

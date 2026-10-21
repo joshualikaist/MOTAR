@@ -37,7 +37,8 @@ COMPARISONS = {
     "native_vs_off": dict(left="S1_NATIVE", right="S1_OFF", files=["host.jsonl"], mode="full"),
     "off_vs_on": dict(left="S1_OFF", right="S1_ON", files=["parity.jsonl", "host.jsonl"], mode="full"),
     "replay_s0_vs_on": dict(left="S0", right="S1_ON", files=["parity.jsonl", "host.jsonl"], mode="prefix")}
-# Worker stops that are parity evidence; other failures (schema, resources) leave a stage incomplete.
+# Allow-list of worker stops that are parity evidence; other failures (schema, resources, observer
+# self-consistency) leave a stage incomplete. A new online parity reason must be added here.
 ONLINE_MISMATCH = ("OFF_ON_MISMATCH", "OFF_ON_TRACE_LENGTH_MISMATCH", "HOST_OBSERVER_",
                    "OBSERVER_HOOK_STATE_MISMATCH", "RUNTIME_NUMERICS_CHANGED")
 PASS = "PASS_EXACT_NATIVE_OFF_ON_PARITY_WITH_REPLAY_CONTROL"
@@ -244,7 +245,10 @@ def compare_rows(left, right, mode="full", left_censored=False):
 
 
 def _line_count(path):
-    return sum(1 for _ in Path(path).open()) if Path(path).is_file() else None
+    if not Path(path).is_file():
+        return None
+    with Path(path).open() as f:
+        return sum(1 for _ in f)
 
 
 def stage_record(root, stage, p, approved):

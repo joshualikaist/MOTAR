@@ -685,6 +685,8 @@ class WorkerStandInTests(unittest.TestCase):
         self.assertEqual(on['qualification_scope']['wait_intervene_computation'],'NOT_QUALIFIED')
         self.assertEqual(result['comparisons']['replay_s0_vs_on']['files']['host.jsonl']['rows'],[21,32])
         self.assertEqual(result['claims']['observer_noninterference'],'SUPPORTED_EXACT_HOST_TRACE_THIS_PROFILE')
+        self.assertEqual(result['claims']['terminal_reset_compared'],  # S0 stops at its 20-action cap
+                         dict(native_vs_off=True,off_vs_on=True,replay_s0_vs_on=False))
         with self.assertRaises(FileExistsError),patch.object(b,'guard_sources'):b.verify(self.p,'a'*40)
 
     def test_cx1_through_real_worker_is_reported_as_unattributed_mismatch(self):

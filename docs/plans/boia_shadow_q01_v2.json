@@ -244,6 +244,6 @@
     "numerics": "torch/CUDA/cuDNN versions, cudnn.benchmark/deterministic/allow_tf32, matmul allow_tf32 and float32 precision recorded per stage and required equal; never changed by Q01",
     "seed": "rl_games seeds globals with the player yaml seed 42 at runner load; BaseTask.seed(task_config.seed) then reseeds numpy/torch/CUDA/random from NAVRL_SEED=4901 at task construction, so 4901 is effective; runtime_profile requires task_config.seed == profile.seed",
     "replay_control_scope": "ON configuration, S0 prefix only; a mismatch after the prefix or specific to NATIVE is not separable from replay instability",
-    "terminal_reset": "compared only if both stages end an episode within the 200-action cap (claims.terminal_reset_compared)"
+    "terminal_reset": "compared only if both stages end an episode within their own action cap (20 for S0, 200 otherwise) (claims.terminal_reset_compared)"
   }
 }
