@@ -22337,3 +22337,31 @@ OFF/ON (zero thresholded contact, no boundary height/OOB), with its stated limit
 bound in `docs/evidence/boia_shadow_q01_v2_run_2026-10-21/result.json`. No BOIA computation,
 mission-benefit, physical-safety or real-time claim; one episode per stage. G5 HOLD; no further
 experiment authorized.
+
+## 2026-10-21 — Q02-A: code audit, evidence contracts and CPU-only Module A
+
+Start of evidence-aware reacquisition (unknown environment; intervention B = switch to a
+reacquisition/avoidance trajectory; Frozen F unchanged). Audit at `8d286cd` (production unchanged
+since `45a7b68`, so the G4-R5 inventory holds): Frozen F is reactive and map-free — obstacle
+features come from LiDAR fused with camera depth (P:1835–1925), layouts re-sampled each reset
+(EM:321–326), actor 898 = robot 50 + tracker target 80 + obstacle tokens 480 + fused scan 288.
+Ground truth does not enter the tracker as state, but the camera detector is oracle-grade (true-pose
+rasterization in a unique colour), so detection realism is not testable in this profile. Tracker:
+CV Kalman, Q = diag(0.025dt², 0.25dt), 5 s memory, one prediction per observe. Action = vehicle
+velocity ×2.5 m/s and yaw rate ×3.0 rad/s through riskcap and altitude PI to a Lee velocity
+controller; no trajectory follower exists.
+
+New `motar_eval/q02/` (numpy-only): contracts, geometry, validation, evidence record with a
+deterministic geometric hypothesis (TARGET_VISIBLE / OCCLUDED / OUT_OF_FOV / DETECTION_MISS /
+IDENTITY_AMBIGUOUS / UNKNOWN), thresholds as declared priors, utility ABSTAIN. Spec and handoff in
+`docs/research/q02_evidence_aware_reacquisition/`; receipt and Q01 frame replay in
+`docs/evidence/q02a_cpu_2026-10-21/`.
+
+| Check | Result |
+| --- | --- |
+| `tests/test_q02_evidence.py` | 16 OK (synthetic ray-cast scenes) |
+| PUBLIC_CPU | 3081 ran, 0 failures, same 4 `DetectReduction` errors; aggregate FAIL |
+| Q01 replay (3 unique frames, read-only) | all TARGET_VISIBLE; with the camera flag cleared all IDENTITY_AMBIGUOUS (target surface at expected range); 0.14–0.16 ms per call with a detection, 0.33–0.70 ms on the tracker-evidence branch |
+
+No labels exist, so no accuracy claim. Modules B–E are design only. GPU NOT_RUN, G5 HOLD. Next:
+Q02-B (evaluator-side label design, Module C v0 local map, D v0 candidate features).
