@@ -28,15 +28,15 @@ Each item is verified only within the scope stated in its record.
 | Occlusion study | OCC-P2 complete; RQ1/RQ3 supported, RQ2 inconclusive | [`evidence/occ_p2_confirmatory_2026-10-17/`](evidence/occ_p2_confirmatory_2026-10-17/REPORT.md) |
 | Sensor-fusion corrections | S-L1A/B/C/D v1 GO; C-v2 GO in a limited scope | [`evidence/s_l1c_v2_2026-10-18/`](evidence/s_l1c_v2_2026-10-18/QUALIFICATION.md) |
 | H-R3 mechanics | P03-Q01 GO for qualification only | [`evidence/h_r3_p03_preparation_2026-10-19/`](evidence/h_r3_p03_preparation_2026-10-19/REPORT.md) |
-| BOIA CPU research | R1 independent nominal safety/utility separation CPU_VERIFIED;50focused/252BOIA PASS; no online integration, G5 HOLD | [`R4 evidence`](evidence/boia_g4r4_2026-10-20/R1_REPORT.md) |
+| BOIA CPU research | Passive shadow observer with native Frozen F baseline (Q01-V2) CPU-qualified; GPU NOT_RUN; no online integration, G5 HOLD | [`G4-R7 evidence`](evidence/boia_g4r7_shadow_v2_preflight_2026-10-21/IMPLEMENTATION_REPORT.md) |
 | KROC2027 study | H-A supported; H-A2/I_A and H-B inconclusive | [`evidence/mt_precision_review_2026-10-16/`](evidence/mt_precision_review_2026-10-16/README.md) |
 
 ## Current branch and phase
 
 - **Work branch:** `codex/mt-p1`. It is a short-lived worktree branch and is not yet merged into
   `main`. A merge needs user review (`motar-lp5.2`).
-- **Phase:** current authorized work is G4-R4 R0/R1 plus research-document integration; later
-  measured-evidence/continuation/mission work needs approval. KROC2027 freeze remains2026-10-28;
+- **Phase:** G4-R7 (CPU only) prepared the Q01-V2 passive shadow run; executing it needs a
+  separate GPU approval (`motar-3p3.22`). Measured-evidence/continuation/mission work needs approval. KROC2027 freeze remains2026-10-28;
   H-R3 stays PROVISIONAL. BOIA has no qualified episode or online system yet.
 
 ## Known problems and blockers

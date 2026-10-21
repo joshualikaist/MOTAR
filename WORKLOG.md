@@ -22234,3 +22234,24 @@ measurement); the online-mismatch tuple is documented as an allow-list (N4).
 | PUBLIC_CPU | 3063 ran, 0 failures, same 4 `DetectReduction` errors, 10 skipped; aggregate FAIL |
 
 GPU NOT_RUN, no push/merge, G5 HOLD. Next: preflight, a short Fable check of this delta, evidence commit.
+
+## 2026-10-21 — G4-R7 evidence: Q01-V2 ready for separate GPU approval
+
+Evidence folder `docs/evidence/boia_g4r7_shadow_v2_preflight_2026-10-21/`: `validation.json`
+(generated from the actual result files and preflight outputs), `IMPLEMENTATION_REPORT.md`,
+`GPU_SHADOW_RUNBOOK.md` (committed with the source), `GIT_CLEANUP_REPORT.md`, `HANDOFF.md`. Master
+Plan and `docs/PROJECT_STATE.md` updated to Q01-V2. Source commits `1efbcf8`, `e6db0f1`, `a0840c2`
+(final); this commit changes no code.
+
+| Gate | Result |
+| --- | --- |
+| Fable 5.1 re-review | `1efbcf8` PASS_WITH_LIMITATIONS (no P0/P1); delta to `e6db0f1` PASS; micro-review to `a0840c2` PASS |
+| Focused / combined BOIA (final) | 49 + 23 OK / 324 ran, 0 failures, 0 errors |
+| PUBLIC_CPU (final) | 3063 ran, 0 failures, 4 pre-existing errors (`motar-6nn.5`), aggregate FAIL |
+| Preflight | PASS_CPU_PREFLIGHT on `1efbcf8`, `e6db0f1`, `a0840c2` (12/12 checks) |
+| Research worktree | 0 staged / 0 unstaged / 0 untracked shown; two protected symlinks kept, hidden by a worktree-local `core.excludesFile` |
+| Main | 3 WIP + 3553 untracked (3474 raw) unchanged; Raw stat fingerprint, WIP diff and stash `23ddb33` unchanged |
+
+Verdict `READY_FOR_REVISED_GPU_SHADOW_APPROVAL`. Q01-V2: N1, seed 4901, 20/200/200/200 actions,
+180/300/300/300 s, 1080 s total, ≤ 256 MB output, stop below 3 GB. GPU NOT_RUN; runtime parity
+GPU_PENDING; G5 HOLD. Next: user decision on the Q01-V2 GPU run (`motar-3p3.22`).

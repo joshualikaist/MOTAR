@@ -1,13 +1,13 @@
 # BOIA Research Master Plan
 
-2026-10-21 KST · `codex/mt-p1` · G4-R6 living research entry point.
+2026-10-21 KST · `codex/mt-p1` · G4-R7 living research entry point.
 Committed C02 base: `8689efcd066d64e7b49cecf011e3bd8675380cdb`.
 R1 research source: local `82ef02c340fba0baec18162ad33fc03dca7301d5`.
 This plan preserves the original specifications, preregistrations, experiments and
 receipts as historical evidence. It does not retroactively qualify them or authorize
 GPU, simulation, training, production/controller changes, online activation or push.
-**Current scope: passive evaluator observer/logger, bounded Q01 launcher and CPU
-qualification completed; GPU execution requires separate approval. G5 HOLD.**
+**Current scope: passive evaluator observer/logger with a native Frozen F baseline (Q01-V2),
+bounded launcher and CPU qualification completed; GPU execution requires separate approval. G5 HOLD.**
 R0 is PASS_CONTROLLED; R1 is CPU_VERIFIED within its nominal declaration contract
 (50 focused /252 combined BOIA tests PASS). Independent read-only review found no
 blocker within the nominal typed CPU scope. Exact source/results belong to the R4 evidence
@@ -21,6 +21,11 @@ refusal-only diagnostics and isolated outcome/parity logging.54 focused and306
 combined BOIA CPU tests pass. Actual GPU packets/parity remain NOT_TESTED.
 See the [G4-R6 implementation evidence](../../evidence/boia_g4r6_shadow_preflight_2026-10-21/IMPLEMENTATION_REPORT.md)
 and [Q01 preregistration](../../plans/boia_shadow_q01_v1.md). No GPU run is authorized.
+G4-R7 answers the Fable G4-R6 audit: v1's OFF/ON gate could not see observer-versus-native
+interference, so Q01 v1 is withdrawn before execution ([amendment](../../plans/boia_shadow_q01_v1_amendment_2026-10-21.md))
+and replaced by [Q01-V2](../../plans/boia_shadow_q01_v2.md): an `S1_NATIVE` stage without
+observer hooks, one host trace in every stage, and exact NATIVE/OFF, OFF/ON and S0/ON replay
+comparisons. See the [G4-R7 report](../../evidence/boia_g4r7_shadow_v2_preflight_2026-10-21/IMPLEMENTATION_REPORT.md).
 
 ## 1. Research question and mission
 
@@ -157,7 +162,7 @@ scope. Neither means ONLINE_INTEGRATED, calibrated or physically qualified.
 | Research timing/state | `boia_research/decision.py:41,112`; IMPLEMENTED | CPU_VERIFIED R4 focused50 / combined252 tests | Candidate IDs only; NOT CONNECTED | Real evidence/mission models and qualified executor remain absent. |
 | Independent SafetyContext/SafetyEvidence | `boia_research/safety.py:15`; `decision.py:18–38`; IMPLEMENTED nominal safety validator and strict selector | CPU_VERIFIED R1: valid independent safety survives missing/stale utility; stale/missing safety refuses | Actual sensor/C02 provider NOT CONNECTED | Checks supplied bindings/declarations, not calibration or physical proof. |
 | Trace / replay | `boia/trace.py:94`; `tools/boia_replay.py:76`; IMPLEMENTED | CPU hashes/terminal/fixtures | No plant replay | No qualified counterfactual closed-loop mission outcomes. |
-| Passive Q01 observer/logger | `boia_shadow.py:EvaluatorTap/Recorder/EventLogger`; IMPLEMENTED evaluator-only |54 focused /306 combined CPU PASS; read-only source review | Runtime launcher PREPARED, GPU NOT_RUN | Actual runtime packet/OFF-ON/compile/resource qualification pending; no utility or physical certificate. |
+| Passive Q01 observer/logger | `boia_shadow.py:EvaluatorTap/Recorder/EventLogger/HostTrace/drive`; IMPLEMENTED evaluator-only, Q01-V2 native baseline | G4-R7: 49+23 focused /324 combined BOIA CPU PASS; Fable re-review in G4-R7 evidence | Runtime launcher PREPARED, GPU NOT_RUN | Actual NATIVE/OFF, OFF/ON, replay, compile and resource qualification pending; no utility or physical certificate. |
 | Mission execution / endgame bridge | Proposed ID-to-action/backup/handoff executor; NOT_IMPLEMENTED | NOT_TESTED | NOT CONNECTED | Plant qualification and explicit approval. |
 
 The committed C02 receipt is [C02_REPORT](../../evidence/boia_g4r3_c02_2026-10-20/C02_REPORT.md).
@@ -193,6 +198,8 @@ combined BOIA CPU PASS. Final-source PUBLIC_CPU ran3045 tests,0failures/4errors,
 10skips/5profile exclusions; exact error IDs, exception chains and terminal frames
 match the prior DetectReduction errors. Aggregate PUBLIC_CPU remains FAIL and
 motar-6nn.5 remains open. No test was deleted/skipped to obtain BOIA qualification.
+G4-R7 (Q01-V2 source `a0840c2`): 49 + 23 focused and 324 combined BOIA CPU tests pass; PUBLIC_CPU
+ran 3063 tests with 0 failures and the same 4 DetectReduction errors, so its aggregate stays FAIL.
 
 ## 4. Mathematics, decision rule and interception
 
@@ -411,7 +418,7 @@ abort-monitor protocol must be separately approved and labelled F0_WITH_ABORT_PR
 | --- | --- | --- |
 | R0 Git hygiene / ownership | All-worktree/staged/unstaged/untracked inventory → protected classification and controlled local exclusions | PASS_CONTROLLED per R0_GATE; initial target29 and main3725 explained, no raw deletion. Final gate rechecked after scoped commits. |
 | R1 CPU safety/utility separation | Independent safety context/evidence → strict research selector, preserved assertions,20 new failure controls | CPU_VERIFIED nominal contract:50 focused /252 combined BOIA PASS; missing/stale utility preserves a valid safety backup and missing/stale safety refuses. Read-only review found no blocker in this scope; no physical/online provider or production coupling. |
-| R2 Real measurement contract | Actual RGB-D/LiDAR/tracker clocks, calibration and permitted identity support → approved evidence adapter/schema | G4-R6 observer/phase/reset/schema IMPLEMENTED and CPU_QUALIFIED; actual GPU packets/parity NOT_TESTED. Clock tags are DECLARED_SIM_SCHEDULE, not measured hardware time. Physical bounds/calibration remain unavailable. |
+| R2 Real measurement contract | Actual RGB-D/LiDAR/tracker clocks, calibration and permitted identity support → approved evidence adapter/schema | G4-R6 observer/phase/reset/schema IMPLEMENTED and CPU_QUALIFIED; G4-R7 adds the S1_NATIVE baseline and exact host-trace comparisons (CPU); actual GPU packets/parity NOT_TESTED. Clock tags are DECLARED_SIM_SCHEDULE, not measured hardware time. Physical bounds/calibration remain unavailable. |
 | R3 B03/B04 identifiability | Independent range ambiguity and sparse-coverage tests → supported-volume/ambiguity limits | R5 counterexamples verified in nominal CPU geometry; physical coverage/identity remain unresolved. Preserve occupied/UNKNOWN evidence. |
 | R4 F continuation | Qualified matched prefix branches + actor/history state → continuation model/error receipts | Existing fresh-process prefix pattern is reusable; full snapshot restore and new-profile continuation NOT_QUALIFIED. Required state/API gaps recorded in R5. |
 | R5 Mission benefit calibration | R2–R4 models + held-out independent scenes → bounded loss/benefit/selection calibration | HOLD on unsupported strata, missing error terms or no predictive discrimination. |
@@ -434,8 +441,8 @@ single `observe` result is copied once; actual F action binds at task.step entry
 transform is called once, pre-mask causes precede alias overwrite, and the returned
 normal/reset observation boundary is also compared. ContactChain preserves the
 existing callback. Body/target/semantic truth never enters BOIA packets.
-Next: **seek separate approval for Q01 N1 S0/S1_OFF/S1_ON**, using the fixed
-[runbook](../../evidence/boia_g4r6_shadow_preflight_2026-10-21/GPU_SHADOW_RUNBOOK.md).
+Next: **seek separate approval for Q01-V2 N1 S0/S1_NATIVE/S1_OFF/S1_ON**, using the fixed
+[runbook](../../evidence/boia_g4r7_shadow_v2_preflight_2026-10-21/GPU_SHADOW_RUNBOOK.md) (Q01 v1 withdrawn, never run).
 No additional implementation project is required before that bounded execution.
 
 | Gate | Requirement |
@@ -444,9 +451,9 @@ No additional implementation project is required before that bounded execution.
 | MAY_DEFER_UNTIL_AFTER_SHADOW | B03/B04 physical resolution, calibrated utility and F-continuation model. Keep them UNKNOWN/ABSTAIN; passive availability shadow estimates no capture gain. |
 | MUST_BEFORE_ONLINE_CONTROL | Physical C02/backup, all used evidence/model bounds, action ownership/hand-back, controller/plant/deadline/endgame qualification and explicit user approval. G5 remains HOLD. |
 
-The implemented but unexecuted first shadow is N1,seed4901,moving70bar, an OFF/ON pair of
-at most200 actions each plus a20-action smoke, at most12min GPU wall reservation.
-Actual OFF/ON parity is an early qualification objective, not a present PASS.
+The implemented but unexecuted first shadow (Q01-V2) is N1, seed 4901, moving 70 bars: a 20-action
+smoke plus NATIVE, OFF and ON stages of at most 200 actions each, at most 1080 s (18 min) GPU wall.
+Actual NATIVE/OFF and OFF/ON parity are early qualification objectives, not a present PASS.
 Full planner/value computation is skipped where unsupported. Its exact resource,
 latency, censoring and failure guards are in the Q01 executable plan/preregistration.
 CPU preflight does not import Isaac/torch, unpickle checkpoint or query/run GPU.

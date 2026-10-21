@@ -1,0 +1,325 @@
+{
+ "schema": "motar.boia.g4r7.shadow-v2-preflight.v1",
+ "created_UTC": "2026-10-21T06:08:02.927193+00:00",
+ "branch": "codex/mt-p1",
+ "base_SHA": "6bd986eb585600ece1f8c59a7348ebfd8093fd42",
+ "source_commits": [
+  "1efbcf8abeeedf029e6eb937da3500ff90a5acd0",
+  "e6db0f1b1b3c25ade6905268fd55d5cde073bd2e",
+  "a0840c2e5377e433f9e1df46b21b467996af6754"
+ ],
+ "final_source_commit": "a0840c2e5377e433f9e1df46b21b467996af6754",
+ "approval_target": "the HEAD that contains this receipt: an evidence-only commit on top of final_source_commit; code_sha256 below must match and preflight must PASS at that HEAD (reported in the handoff, not here)",
+ "verdict": "READY_FOR_REVISED_GPU_SHADOW_APPROVAL",
+ "fable_rereview": {
+  "full_review_of": "1efbcf8",
+  "full_verdict": "PASS_WITH_LIMITATIONS",
+  "full_p0_p1": 0,
+  "full_findings": {
+   "R1": "P2 seed claim; checked: effective seed is NAVRL_SEED 4901 (BaseTask.seed after rl_games yaml 42); runtime task_seed check added",
+   "R2": "NOTE replay-control scope stated",
+   "R3": "NOTE terminal_reset_compared claim",
+   "R4": "NOTE sim_steps hashed",
+   "R5": "NOTE receipt row counts checked",
+   "R6": "NOTE explicit online-mismatch tags",
+   "R7": "NOTE real SIGTERM test"
+  },
+  "delta_review_of": "1efbcf8..e6db0f1",
+  "delta_verdict": "PASS",
+  "delta_p0_p1_p2": 0,
+  "delta_notes": {
+   "seed": "independently confirmed effective seed 4901 (rl_games 42 discarded by BasePlayer; BaseTask.seed from NAVRL_SEED; no later reseed)",
+   "N1": "unclosed file in _line_count",
+   "N2": "terminal_reset_compared True branch untested",
+   "N3": "prereg said 200-action cap for S0 comparison",
+   "N4": "document ONLINE_MISMATCH allow-list"
+  },
+  "micro_review_of": "e6db0f1..a0840c2 (N1-N4 fixes)",
+  "micro_verdict": "PASS",
+  "micro_max_severity": "NONE",
+  "micro_notes": "micro-review e6db0f1..a0840c2: no findings; N1-N4 verified; v1 files unchanged; WORKLOG append-only",
+  "reviewer": "Fable 5.1 subagent, fresh context, read-only, CPU only"
+ },
+ "gates": {
+  "F1 P1": "FIXED_CPU",
+  "Native baseline": "IMPLEMENTED",
+  "Native/OFF CPU parity": "PASS_CPU_FIXTURE",
+  "OFF/ON CPU parity": "PASS_CPU_FIXTURE",
+  "Replay reproducibility CPU contract": "PASS_CPU_FIXTURE",
+  "cx1 regression": "OFF/ON PASS and NATIVE/OFF MISMATCH, as required",
+  "GT firewall": "PASS_CPU",
+  "Terminal/reset": "PASS_CPU",
+  "Focused CPU tests": "PASS",
+  "BOIA regression": "PASS",
+  "PUBLIC_CPU": "FAIL_PREEXISTING_4_ERRORS_motar-6nn.5_NO_NEW",
+  "Source/config guards": "PASS",
+  "Research staged/unstaged/untracked": "0/0/0 at final source commit (protected symlinks hidden worktree-locally)",
+  "Main protected WIP/Raw": "PRESERVED",
+  "Fable re-review": "PASS",
+  "GPU execution": "NOT_RUN",
+  "GPU runtime parity": "GPU_PENDING",
+  "G5": "HOLD"
+ },
+ "tests": {
+  "at_1efbcf8": {
+   "test_boia_shadow": 48,
+   "test_boia_shadow_runner": 23,
+   "combined_boia": 323,
+   "public_cpu": {
+    "ran": 3062,
+    "failures": 0,
+    "errors": 4,
+    "skipped": 10,
+    "aggregate": "FAIL",
+    "error_ids": [
+     [
+      "test_bounding_box_and_empty_convention",
+      "test_navrl_detect_resolution.DetectReduction"
+     ],
+     [
+      "test_count_centroid_and_range",
+      "test_navrl_detect_resolution.DetectReduction"
+     ],
+     [
+      "test_frame_carries_the_rendered_target_colour_and_far_plane",
+      "test_navrl_detect_resolution.DetectReduction"
+     ],
+     [
+      "test_the_frame_carries_no_image_sized_tensor",
+      "test_navrl_detect_resolution.DetectReduction"
+     ]
+    ],
+    "known_error_text_count": 4
+   }
+  },
+  "at_e6db0f1": {
+   "test_boia_shadow": 49,
+   "test_boia_shadow_runner": 23,
+   "combined_boia": {
+    "ran": 324,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+   },
+   "public_cpu": {
+    "ran": 3063,
+    "failures": 0,
+    "errors": 4,
+    "skipped": 10,
+    "aggregate": "FAIL",
+    "error_ids": [
+     [
+      "test_bounding_box_and_empty_convention",
+      "test_navrl_detect_resolution.DetectReduction"
+     ],
+     [
+      "test_count_centroid_and_range",
+      "test_navrl_detect_resolution.DetectReduction"
+     ],
+     [
+      "test_frame_carries_the_rendered_target_colour_and_far_plane",
+      "test_navrl_detect_resolution.DetectReduction"
+     ],
+     [
+      "test_the_frame_carries_no_image_sized_tensor",
+      "test_navrl_detect_resolution.DetectReduction"
+     ]
+    ],
+    "known_error_text_count": 4
+   }
+  },
+  "at_final": {
+   "test_boia_shadow": 49,
+   "test_boia_shadow_runner": 23,
+   "resource_warning_as_error": true,
+   "research_standalone": {
+    "test_boia_research": 30,
+    "test_boia_research_safety": 20
+   },
+   "combined_boia": {
+    "ran": 324,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+   },
+   "public_cpu": {
+    "ran": 3063,
+    "failures": 0,
+    "errors": 4,
+    "skipped": 10,
+    "aggregate": "FAIL",
+    "error_ids": [
+     [
+      "test_bounding_box_and_empty_convention",
+      "test_navrl_detect_resolution.DetectReduction"
+     ],
+     [
+      "test_count_centroid_and_range",
+      "test_navrl_detect_resolution.DetectReduction"
+     ],
+     [
+      "test_frame_carries_the_rendered_target_colour_and_far_plane",
+      "test_navrl_detect_resolution.DetectReduction"
+     ],
+     [
+      "test_the_frame_carries_no_image_sized_tensor",
+      "test_navrl_detect_resolution.DetectReduction"
+     ]
+    ],
+    "known_error_text_count": 4
+   }
+  },
+  "commands": {
+   "focused": "PYTHONNOUSERSITE=1 CUDA_VISIBLE_DEVICES='' python -B tests/test_boia_shadow.py; ... tests/test_boia_shadow_runner.py",
+   "combined": "all tests/test_boia_*.py in one process with tools/run_tests.py sys.path layout",
+   "public": "PYTHONNOUSERSITE=1 CUDA_VISIBLE_DEVICES='' python -B tools/run_tests.py"
+  }
+ },
+ "preflight": {
+  "1efbcf8": {
+   "status": "PASS_CPU_PREFLIGHT",
+   "checks": {
+    "branch": true,
+    "exact_HEAD": true,
+    "clean_tracked_tree": true,
+    "no_untracked_runtime": true,
+    "committed_inputs": true,
+    "checkpoint_sha": true,
+    "python_available": true,
+    "v1_preserved": true,
+    "superseded_v1_not_run": true,
+    "disk": true,
+    "aerial_gym_origin": true,
+    "motar_eval_origin": true
+   },
+   "config_sha256": "7d9f6830260e35c9f84820d87d4b6ba17d2dd010e4eb2877f755359d67f4cf84"
+  },
+  "e6db0f1": {
+   "status": "PASS_CPU_PREFLIGHT",
+   "checks": {
+    "branch": true,
+    "exact_HEAD": true,
+    "clean_tracked_tree": true,
+    "no_untracked_runtime": true,
+    "committed_inputs": true,
+    "checkpoint_sha": true,
+    "python_available": true,
+    "v1_preserved": true,
+    "superseded_v1_not_run": true,
+    "disk": true,
+    "aerial_gym_origin": true,
+    "motar_eval_origin": true
+   },
+   "config_sha256": "2d129b36dfbdc9121c2e2fd9dac090fc4ce3be53978abec8ac77b36435fe47d4"
+  },
+  "a0840c2": {
+   "status": "PASS_CPU_PREFLIGHT",
+   "checks": {
+    "branch": true,
+    "exact_HEAD": true,
+    "clean_tracked_tree": true,
+    "no_untracked_runtime": true,
+    "committed_inputs": true,
+    "checkpoint_sha": true,
+    "python_available": true,
+    "v1_preserved": true,
+    "superseded_v1_not_run": true,
+    "disk": true,
+    "aerial_gym_origin": true,
+    "motar_eval_origin": true
+   },
+   "config_sha256": "c9462ee3e7ed7e5d2f0d88cbec6cec1ab6e99cd382fbff2fdb07d7587d342e3e",
+   "free_bytes": 7520321536
+  }
+ },
+ "code_sha256": {
+  "motar_eval/boia_shadow.py": "3eadc3f86e44366eb268a6143e1730c303489e281a089e83cc3c472af26bb1f8",
+  "tools/boia_shadow.py": "7c9c62453f7ed959fd289fedf1ec336371afcb7a59fe89b038b6f73c9084fd79",
+  "tests/test_boia_shadow.py": "85622010a2ba792611eb2da5e853f8990c322308b745c534962c47d5ac616123",
+  "tests/test_boia_shadow_runner.py": "3e6a9a34c6774d67556605836e36ea26a3be3ac81c116a7eead854e0a767d808",
+  "tests/test_boia_research.py": "87f61309f4d49e4e61efa4530840cf54f7c00d8a5dada347f9ab74ff556011f5",
+  "tests/test_boia_research_safety.py": "608f943690f383f820e66a6894fa14589370cafd8e29368346a6a9527245b72c",
+  "docs/plans/boia_shadow_q01_v2.json": "c9462ee3e7ed7e5d2f0d88cbec6cec1ab6e99cd382fbff2fdb07d7587d342e3e",
+  "docs/plans/boia_shadow_q01_v2.md": "7f4e2427ddd28e238644ef5829e14ffcbdf13be7889b8bf7f3dbdafe4435a560",
+  "docs/plans/boia_shadow_q01_v1_amendment_2026-10-21.md": "cc159cb5e8f04bfe94838c8078beb34e1d872effb797968343b6e30ca2201324",
+  "docs/evidence/boia_g4r7_shadow_v2_preflight_2026-10-21/GPU_SHADOW_RUNBOOK.md": "0af2ca9733e2084e695681d5bfd56b95e19f5c353ecf179e1629863d91c4f868"
+ },
+ "v1_preserved": {
+  "config": "759fef83ebbc4365c9080cb8dc15ebbb2209cc4d097f7dc5a235f1a41bc54df8",
+  "preregistration": "cf5da98367770a1f6ebaf83461a533ed74e40c3469402b3e2f269e8a179f36b0",
+  "output_root_exists": false
+ },
+ "checkpoint_sha256": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+ "limits": {
+  "actions": [
+   20,
+   200,
+   200,
+   200
+  ],
+  "wall_s": [
+   180,
+   300,
+   300,
+   300
+  ],
+  "campaign_wall_s": 1080,
+  "disk_preflight_bytes": 3300000000,
+  "disk_stop_bytes": 3000000000,
+  "output_bytes": 256000000,
+  "snapshots": 8,
+  "vram": "min(6656 MiB, total-768 MiB), sampled 2 s"
+ },
+ "git": {
+  "research_before_G4R7": {
+   "head": "6bd986eb585600ece1f8c59a7348ebfd8093fd42",
+   "staged": 0,
+   "unstaged": 0,
+   "untracked": 2,
+   "note": "the two protected symlinks, from the G4-R6 audit census"
+  },
+  "research_at_final_source": {
+   "staged": 0,
+   "unstaged": 0,
+   "untracked_visible": 0,
+   "observed": "git status --porcelain=v1 -uall empty right after commit a0840c2, before these evidence files; also confirmed by the Fable micro-review"
+  },
+  "exclusion": {
+   "extensions_worktreeConfig": "true",
+   "core_excludesFile": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/.git/worktrees/MOTAR-mt-p1/motar_display_exclude",
+   "patterns": [
+    "/results/mt_p1_precision_v1",
+    "/results/occlusion_pilot_v1"
+   ],
+   "shared_info_exclude_sha256": "b1373c9353c0b074cfd72b0b3b9b3fbaf5239d17badd1b0164787da43ac4d8cc"
+  },
+  "other_worktrees_unchanged": true,
+  "main": {
+   "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator",
+   "head": "f74390a1d44ca264960d39018f5e51710e9b7b0a",
+   "unstaged": 3,
+   "untracked": 3553,
+   "untracked_results": 3474,
+   "wip_files": [
+    ".gitignore",
+    "WORKLOG.md",
+    "presentations/README.md"
+   ],
+   "wip_diff_sha256_unchanged": true,
+   "results_stat_fingerprint": {
+    "bytes": 13471285828,
+    "files": 41939,
+    "sha256": "31de0c324bf5d43e13f5f3b3b71de5eac35dfc2abdc7477c03773e961f6851bb"
+   },
+   "results_fingerprint_unchanged": true
+  },
+  "stash": [
+   "23ddb33f92cf6c75cf9095e149bb7e2516eb7543 On main: KROC2027 merge 2026-10-15: user WIP (.gitignore, WORKLOG.md, presentations/README.md) - restore after canary"
+  ]
+ },
+ "GPU": "NOT_RUN",
+ "runtime_parity": "GPU_PENDING",
+ "physical_safety": "NOT_QUALIFIED",
+ "online_activation": "NONE",
+ "G5": "HOLD"
+}
