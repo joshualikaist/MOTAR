@@ -22503,3 +22503,19 @@ Both are documented limits.
 Records: `docs/evidence/q02a_v22_repair_2026-10-22/` (REPAIR.md, compare_v21_v22.py/.json,
 fuzz_recovery.py, fuzz_results.json). Q02-B WIP unchanged. GPU NOT_RUN, G5 HOLD. Next: Fable
 confirmation review of this commit; Q02-B stays blocked until it reports.
+
+## 2026-10-22 — Q02-A v2.2 confirmation review (Fable 5.1, 94acd1a): HOLD_P0_P1_REMAINS (C1)
+
+Read-only CPU confirmation review. No P0. D1, D2 (fill pixels) and D7 are fixed as claimed, and every re-run
+numeric claim reproduces (compare JSON byte-identical, 40 OK, fuzz 0 leaks, close map 289/13/8).
+
+| ID | Sev | Finding |
+| --- | --- | --- |
+| C1 | P1 | Obstacle-blend pixels beside a paste (window-flagged, cells unobserved, not fill) still count as pasted depth at track range: sphere beside a bar with a track 0.5–0.8 m off → SUPPORTED with 0 target pixels, 162/504 production-shaped cases |
+| C2 | P2 | Contact threshold 0.10 m has no margin for interpenetrating bodies (6/2768 frames, sphere inside a bar) |
+| C3–C8 | NOTE | Contact warning only at status OK; close-range bands at 1 mm steps; D5 reasoning; timing claim; unreachable camera near-clip term; PUBLIC_CPU not re-run by the reviewer |
+
+Hypothesis "excluding fill-valued pixels removes every non-target pixel from identity support"
+rejected: measured 162/504 false SUPPORTED from blend pixels. Hypothesis outputs were correct in all
+sweeps. Record: `docs/evidence/q02a_v22_fable_confirmation_review_2026-10-22/` (REVIEW.md, probes/).
+GPU NOT_RUN, G5 HOLD. Next: fix C1 with the both-direction rule (+C3, C7) as Q02A-v2.3 and request a final confirmation.
