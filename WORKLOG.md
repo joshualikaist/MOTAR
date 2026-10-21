@@ -22190,3 +22190,28 @@ The 4 errors are the same `DetectReduction` IDs and `target_half_extents` ValueE
 1080 s cumulative (+300 s NATIVE, +60 s S0 versus v1), other limits unchanged. GPU NOT_RUN,
 no push/merge, G5 HOLD. Next: post-commit preflight, worktree-local display exclusion of the two
 protected symlinks, evidence commit, Fable re-review. Beads `motar-3p3.23`.
+
+## 2026-10-21 — G4-R7 follow-up to the Fable re-review of 1efbcf8
+
+A fresh Fable 5.1 read-only re-review of `1efbcf8` returned PASS_WITH_LIMITATIONS, no P0/P1.
+Its P2 (R1) said the preregistered seed 4901 is not the executed seed (yaml 42). Checked and
+rejected as stated: rl_games seeds the globals with the yaml's 42 at runner load, then the player
+builds the env without a seed argument, so `NavRLTask` keeps `task_config.seed = NAVRL_SEED =
+4901` (`navrl_task_config.py:108`) and `BaseTask.seed` reseeds numpy/torch/CUDA/`random` with it.
+The real gap was attestation, so `runtime_profile` now requires `task_config.seed == 4901` and the
+v2 prereg explains the two-step seeding. NOTE fixes: replay-control limits stated (R2);
+`claims.terminal_reset_compared` (R3); `sim_steps` hashed in the host trace (R4); receipts must
+match trace row counts (R5); only explicit online-mismatch tags count as parity evidence, schema
+failures stay INCOMPLETE (R6); a real SIGTERM inside the worker is tested (R7).
+
+The v2 config/prereg were revised in this commit before any approval or measurement; nothing
+has run under v2. History keeps the `1efbcf8` versions.
+
+| Check (CPU) | Result |
+| --- | --- |
+| `tests/test_boia_shadow.py` / `test_boia_shadow_runner.py` | 49 OK / 23 OK |
+| combined `tests/test_boia_*.py` | 324 ran, 0 failures, 0 errors |
+| PUBLIC_CPU | 3063 ran, 0 failures, same 4 `DetectReduction` errors, 10 skipped; aggregate FAIL |
+
+GPU NOT_RUN, no push/merge, G5 HOLD. Next: preflight on this commit, a Fable delta review,
+then the evidence commit.

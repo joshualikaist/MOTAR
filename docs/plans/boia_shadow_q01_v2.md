@@ -14,7 +14,11 @@ RGB-D + LiDAR, the 898-D actor, Frozen F, riskcap and the controller stay unchan
 
 ## Profile (unchanged from v1)
 
-- N1, seed 4901, moving `E2_direct_l2_v1`, 70 bars, initially visible at 10 m.
+- N1, seed 4901, moving `E2_direct_l2_v1`, 70 bars, initially visible at 10 m. Seeding happens
+  twice: loading the rl_games runner seeds the global generators with the player yaml's
+  `seed: 42`, then building the task reseeds numpy, torch, CUDA and `random` with
+  `task_config.seed`, read from `NAVRL_SEED=4901` (the player path passes no seed argument).
+  4901 is therefore the effective seed; the runtime profile requires `task_config.seed == 4901`.
 - OFF sensor-correction lineage. Native F sensing, physics and RNG are retained: no reset or
   RNG replacement, sensor correction, intervention, PPO or branch simulator.
 - The runtime environment is identical to v1's (same keys and values). `NAVRL_DETECTION_DROPOUT`,
@@ -41,8 +45,8 @@ every earlier stage's supervisor receipt is COMPLETED. The cumulative wall budge
 audit must show none live. Every stage, `S1_NATIVE` included, runs the same player loop and
 writes the same read-only host trace (`host.jsonl`): actor-input hash taken before the policy
 call, F action bytes and values, RNG-state fingerprints before and after the policy and after
-the step, returned (including reset) observation hash, reward, done, and evaluator-only state
-hashes. Host-side reads therefore exist in every stage; Q01-V2 compares no fully
+the step, returned (including reset) observation hash, reward, done, and evaluator-side state
+hashes, including `sim_steps`, which drives the native time-limit truncation. Host-side reads therefore exist in every stage; Q01-V2 compares no fully
 uninstrumented run.
 
 ## Comparisons (exact; no tolerance, row exclusion or salvage)
@@ -54,6 +58,11 @@ uninstrumented run.
    first mismatch with S1_OFF records.
 3. **S0 vs S1_ON**, the same files, S0 prefix — fresh-process replay of the ON configuration
    over at most 20 actions. Lengths must match unless S0 stopped at its own action cap.
+   By design it cannot separate replay instability from interference for a mismatch after the
+   S0 prefix, or for one specific to the NATIVE process: there is no NATIVE replay control.
+
+The terminal/reset step is compared only when both compared stages end an episode within their
+200-action cap; `verify` reports this per comparison as `terminal_reset_compared`.
 
 Each stage also records torch/CUDA/cuDNN versions, device identity, `cudnn.benchmark`,
 `cudnn.deterministic`, both TF32 switches and float32 matmul precision. They must be equal

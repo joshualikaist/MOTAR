@@ -83,6 +83,7 @@ class FakeSim:
         self.cfg = NS(env=NS(collision_force_threshold=.05))
         self.robot_manager = NS(warp_sensor=NS(sensor=NS(capture=self.capture)))
         self.capture_count = 0
+        self.sim_steps = torch.zeros(1, dtype=torch.long)
 
     def capture(self):
         self.capture_count += 1
@@ -94,6 +95,7 @@ class FakeSim:
     def post_reward_calculation_step(self):
         if self.task.captured_now.item() or self.task.crashed_now.item() or self.task.truncations.item():
             ids = torch.tensor([0])
+            self.sim_steps.zero_()
             self.task.obs_dict["robot_position"][:] = torch.tensor([[0., 0., 1.]])
             self.task.obs_dict["crashes"].zero_()
             if self.task.scenario.get("reset_mutates_lidar"):
@@ -191,6 +193,7 @@ class FakeTask:
             self.obs_dict["crashes"] |= torch.tensor([force > .05])
             if cb is not None and hasattr(cb, "post_physics_step"): cb.post_physics_step()
         self.obs_dict["robot_position"][:, 0] += .1
+        self.sim_env.sim_steps += 1
         if self.scenario.get("height"): self.obs_dict["robot_position"][:, 2] = -.1
         if self.scenario.get("oob"): self.obs_dict["robot_position"][:, 0] = 42.
         self.compute_state_reward_and_terminations()
@@ -691,6 +694,24 @@ class WorkerStandInTests(unittest.TestCase):
         self.assertEqual(result['comparisons']['native_vs_off']['status'],'MISMATCH')
         self.assertEqual(result['claims']['observer_noninterference'],'NOT_SUPPORTED')
         self.assertEqual(result['claims']['mismatch_cause'],'NOT_VERIFIED')
+
+    @unittest.skipUnless(__import__('threading').current_thread() is __import__('threading').main_thread(),
+                         'signal handlers need the main thread')
+    def test_real_SIGTERM_mid_stage_leaves_failure_receipt_and_restores_handler(self):
+        import signal
+        class KilledPlayer(FakePlayer):
+            calls=0
+            def get_action(self,obs,is_deterministic=False):
+                KilledPlayer.calls+=1
+                if KilledPlayer.calls==3:os.kill(os.getpid(),signal.SIGTERM)
+                return super().get_action(obs,is_deterministic)
+        before=signal.getsignal(signal.SIGTERM)
+        with patch(__name__+'.FakePlayer',KilledPlayer),self.assertRaisesRegex(RuntimeError,'SupervisorStop'):
+            self.campaign(stages=('S0',))
+        self.assertIs(signal.getsignal(signal.SIGTERM),before)
+        failure=b.load(Path(self.p['output_root'])/'S0/failure.json')
+        self.assertIn('SIGTERM_FROM_SUPERVISOR',failure['reason']);self.assertEqual(failure['actions_completed'],2)
+        self.assertEqual(failure['host_rows'],3)  # INITIAL + two completed actions, flushed
 
     def test_incomplete_campaign_is_not_evaluated_as_pass(self):
         result=self.campaign(stages=('S0','S1_NATIVE'))

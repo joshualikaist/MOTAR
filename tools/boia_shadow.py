@@ -37,6 +37,9 @@ COMPARISONS = {
     "native_vs_off": dict(left="S1_NATIVE", right="S1_OFF", files=["host.jsonl"], mode="full"),
     "off_vs_on": dict(left="S1_OFF", right="S1_ON", files=["parity.jsonl", "host.jsonl"], mode="full"),
     "replay_s0_vs_on": dict(left="S0", right="S1_ON", files=["parity.jsonl", "host.jsonl"], mode="prefix")}
+# Worker stops that are parity evidence; other failures (schema, resources) leave a stage incomplete.
+ONLINE_MISMATCH = ("OFF_ON_MISMATCH", "OFF_ON_TRACE_LENGTH_MISMATCH", "HOST_OBSERVER_",
+                   "OBSERVER_HOOK_STATE_MISMATCH", "RUNTIME_NUMERICS_CHANGED")
 PASS = "PASS_EXACT_NATIVE_OFF_ON_PARITY_WITH_REPLAY_CONTROL"
 MISMATCH = "REPLAY_INSTABILITY_OR_PROFILE_MISMATCH"
 INCOMPLETE = "INCOMPLETE_CAMPAIGN_NOT_EVALUATED"
@@ -240,6 +243,10 @@ def compare_rows(left, right, mode="full", left_censored=False):
     return dict(status="PASS", rows=rows, compared=rows[0])
 
 
+def _line_count(path):
+    return sum(1 for _ in Path(path).open()) if Path(path).is_file() else None
+
+
 def stage_record(root, stage, p, approved):
     done, failure = root / stage / "process_done.json", root / stage / "failure.json"
     if done.is_file():
@@ -248,7 +255,11 @@ def stage_record(root, stage, p, approved):
                  meta.get("source") == approved and meta.get("config_sha") == sha(PLAN) and
                  meta.get("checkpoint") == p["frozen"]["policy_f_sha256"] and
                  meta.get("rms_start") == meta.get("rms_end") == p["frozen"]["rms_digest_sha256"])
-        return dict(status="COMPLETED" if bound else "BINDING_MISMATCH", meta=meta)
+        # The receipt must describe the trace files actually on disk.
+        rows = _line_count(root / stage / "host.jsonl") == meta.get("host_rows") == (meta.get("actions") or 0) + 1
+        if p["stages"][stage]["observer"]:
+            rows = rows and _line_count(root / stage / "parity.jsonl") == meta.get("actions")
+        return dict(status="COMPLETED" if bound and rows else "BINDING_MISMATCH", meta=meta)
     if failure.is_file():
         return dict(status="FAILED", meta=load(failure))
     return dict(status="MISSING", meta=None)
@@ -288,7 +299,7 @@ def verify(p, approved):
     comparisons["runtime_profile"] = dict(status="PASS" if same_numerics and hooks_as_planned else "MISMATCH",
                                           attestation=attestation, hooks_during=hooks)
     failed_on_mismatch = [s for s in STAGES if stages[s]["status"] == "FAILED" and
-                          "MISMATCH" in str(stages[s]["meta"].get("reason"))]
+                          any(": " + tag in str(stages[s]["meta"].get("reason")) for tag in ONLINE_MISMATCH)]
     if (any(c["status"] == "MISMATCH" for c in comparisons.values()) or failed_on_mismatch or
             any(stages[s]["status"] == "BINDING_MISMATCH" for s in STAGES)):
         verdict = MISMATCH
@@ -305,6 +316,11 @@ def verify(p, approved):
                                 if comparisons["replay_s0_vs_on"]["status"] == "PASS" else "NOT_SUPPORTED"),
         mismatch_cause="NOT_VERIFIED" if verdict == MISMATCH else None,
         host_instrumentation="READ_ONLY_HOST_TRACE_IN_EVERY_STAGE_NO_UNINSTRUMENTED_RUN",
+        # The mid-episode reset path is compared only if both stages ended an episode in their cap.
+        terminal_reset_compared={name: all(stages[s]["status"] == "COMPLETED" and
+                                           (stages[s]["meta"].get("ended_episodes") or 0) > 0
+                                           for s in (spec["left"], spec["right"]))
+                                 for name, spec in COMPARISONS.items()},
         boia_computation=p["qualification_scope"]["wait_intervene_computation"])
     result = dict(verdict=verdict, tolerance=0, excluded_rows=0, source=approved, config_sha=sha(PLAN),
                   stages={s: dict(status=r["status"], reason=None if r["meta"] is None else r["meta"].get("reason"),
@@ -433,7 +449,10 @@ def runtime_profile(task, player, p):
                   governor=task.speed_governor_cfg.mode == "riskcap",
                   no_supervisor=getattr(task, "_kroc_search", None) is None,
                   no_manual=not task.interactive_mode,
-                  no_other_recorder=getattr(task, "_kroc_adapter", None) is None)
+                  no_other_recorder=getattr(task, "_kroc_adapter", None) is None,
+                  # rl_games seeds globals with the yaml seed first; BaseTask.seed(task_config.seed)
+                  # then reseeds them at env construction from NAVRL_SEED, the effective seed.
+                  task_seed=int(task.task_config.seed) == int(p["profile"]["seed"]))
     checks["physics_dt"] = float(task.sim_env.sim_config.sim.dt) == .01
     checks["physics_substeps"] = (int(task.sim_env.cfg.env.num_physics_steps_per_env_step_mean) == 10 and
                                   float(task.sim_env.cfg.env.num_physics_steps_per_env_step_std) == 0.)

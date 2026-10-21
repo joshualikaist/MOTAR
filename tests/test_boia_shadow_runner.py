@@ -90,7 +90,7 @@ class RunnerTests(unittest.TestCase):
         observer=self.p['stages'][stage]['observer'];rms=self.p['frozen']['rms_digest_sha256']
         done=dict(stage=stage,status='COMPLETED',source='a'*40,config_sha=b.sha(b.PLAN),
                   checkpoint=self.p['frozen']['policy_f_sha256'],rms_start=rms,rms_end=rms,
-                  ended_episodes=ended,actions=len(host)-1,runtime_attestation_start={'cudnn_benchmark':True},
+                  ended_episodes=ended,actions=len(host)-1,host_rows=len(host),runtime_attestation_start={'cudnn_benchmark':True},
                   hooks_during={'task.step':observer,'contact_chain':observer})
         done.update(meta);b.write_new(d/'process_done.json',done)
 
@@ -110,9 +110,11 @@ class RunnerTests(unittest.TestCase):
         if case in changes:changes[case]()
         for name,spec in stage.items():
             if case=='on_missing' and name=='S1_ON':continue
-            if case=='on_online_mismatch' and name=='S1_ON':
-                (root/name).mkdir();b.write_new(root/name/'failure.json',dict(status='STOPPED_INTEGRITY',reason='IntegrityError: OFF_ON_MISMATCH_actor',actions_completed=7))
+            if case in ('on_online_mismatch','on_schema_failure') and name=='S1_ON':
+                reason='IntegrityError: '+('OFF_ON_MISMATCH_actor' if case=='on_online_mismatch' else 'SENSOR_SHAPE_MISMATCH')
+                (root/name).mkdir();b.write_new(root/name/'failure.json',dict(status='STOPPED_INTEGRITY',reason=reason,actions_completed=7))
                 continue
+            if case=='receipt_rows' and name=='S1_OFF':spec=dict(spec,host_rows=len(host)+1)
             self.fake_stage(root,name,**spec)
         try:
             with patch.object(b,'guard_sources'):return b.verify(p,'a'*40)
@@ -122,12 +124,15 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(self.synthetic('pass')['verdict'],b.PASS);results={}
         for case,expected in (('native_row',b.MISMATCH),('off_empty',b.MISMATCH),('on_numerics',b.MISMATCH),
                               ('s0_ended_early',b.MISMATCH),('native_hooked',b.MISMATCH),('wrong_source',b.MISMATCH),
-                              ('on_online_mismatch',b.MISMATCH),('on_missing',b.INCOMPLETE)):
+                              ('on_online_mismatch',b.MISMATCH),('receipt_rows',b.MISMATCH),
+                              ('on_missing',b.INCOMPLETE),('on_schema_failure',b.INCOMPLETE)):
             with self.subTest(case=case):
                 result=results[case]=self.synthetic(case);self.assertEqual(result['verdict'],expected)
-                self.assertNotEqual(result['claims']['observer_noninterference'] if case!='on_missing' else 'x',
+                self.assertNotEqual(result['claims']['observer_noninterference'] if case not in ('on_missing','on_schema_failure') else 'x',
                                     'SUPPORTED_EXACT_HOST_TRACE_THIS_PROFILE')
                 if expected==b.MISMATCH:self.assertEqual(result['claims']['mismatch_cause'],'NOT_VERIFIED')
+        self.assertEqual(self.synthetic('terminal')['claims']['terminal_reset_compared'],
+                         dict(native_vs_off=False,off_vs_on=False,replay_s0_vs_on=False))
         row=results['native_row']['comparisons']['native_vs_off']['files']['host.jsonl']
         self.assertEqual((row['index'],row['fields']),(5,['state.own_position']))
 
@@ -257,7 +262,7 @@ class RunnerTests(unittest.TestCase):
                normalize_range=True,return_pointcloud=False,pointcloud_in_world_frame=False,
                nominal_position=[0.,0.,0.],euler_frame_rot_deg=[0.,0.,0.],
                horizontal_fov_deg_min=-175.,horizontal_fov_deg_max=180.,vertical_fov_deg_min=-10.,vertical_fov_deg_max=20.)
-        task=NS(perception=pc,detector=detector,task_config=NS(episode_len_steps=600),num_envs=1,
+        task=NS(perception=pc,detector=detector,task_config=NS(episode_len_steps=600,seed=4901),num_envs=1,
                 task_obs={'observations':torch.zeros(1,898)},step_dt=.1,vision_mode=True,perception_mode=True,
                 _target_distance_backend='direct_l2_v1',_target_dynamics='bounded',_physical_target=False,
                 _target_behavior_level='e2_obstacle_aware',n_bars_active=70,_kroc_initial_view=InitialViewSpec('visible'),
@@ -268,8 +273,10 @@ class RunnerTests(unittest.TestCase):
         player=NS(model=NS(training=False),is_rnn=False)
         with patch.dict(os.environ,{'NAVRL_SENSOR_LINEAGE':'off'}):
             self.assertTrue(all(b.runtime_profile(task,player,self.p).values()))
-            pc.detection_latency_s=.1
-            with self.assertRaisesRegex(ValueError,'RUNTIME_PROFILE_FAILED'):b.runtime_profile(task,player,self.p)
+            for change in (lambda:setattr(pc,'detection_latency_s',.1),lambda:setattr(task.task_config,'seed',42)):
+                change()
+                with self.assertRaisesRegex(ValueError,'RUNTIME_PROFILE_FAILED'):b.runtime_profile(task,player,self.p)
+                pc.detection_latency_s,task.task_config.seed=0.,4901
 
     def test_worker_reference_load_error_preserves_original_failure_receipt(self):
         # Library/player are CPU stand-ins; no real Isaac import or CUDA call occurs.

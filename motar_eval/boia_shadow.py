@@ -598,7 +598,8 @@ def host_state(task):
               ("tracker_mean", p.tracker.state), ("tracker_covariance", p.tracker.cov),
               ("tracker_age", p.tracker.age), ("tracker_active", p.tracker.active),
               ("history_robot", p.robot_history), ("history_target", p.target_history),
-              ("history_obstacle", p.obstacle_history), ("previous_action", task.prev_action))
+              ("history_obstacle", p.obstacle_history), ("previous_action", task.prev_action),
+              ("sim_steps", task.sim_env.sim_steps))  # drives the native time-limit truncation
     return {name: TensorBytes.copy(value, finite_required=False).sha() for name, value in groups}
 
 
